@@ -58,6 +58,8 @@ def _ok_name(name: str) -> bool:
 
 
 INDICATION_CHARS = set("治主疗杀去除止利益补痛疮毒病风痢血疽瘘痈肿虫")
+# disease headings that end like a formula name (一切痰饮, 留饮): kept only when also used as a name in running text
+DISEASE_TAIL = re.compile(r"(痰饮|悬饮|支饮|溢饮|留饮|伏饮|停饮|宿饮|水饮|酒饮|癖饮|澼饮|冷饮|饮食)$")
 
 
 def _ok_drug(name: str) -> bool:
@@ -72,6 +74,7 @@ class Harvester:
         self.known = known  # normalised surfaces of the curated lexicon (never re-harvested)
         self.formulas: dict[str, Candidate] = {}
         self.herbs: dict[str, Candidate] = {}
+        self._headings: set[tuple[str, str]] = set()  # (book, section path): a heading counts once, not per passage
 
     def _formula(self, name: str, book: str, pattern: str, year: float | None, pid: str) -> None:
         if name in self.known or not _ok_name(name):
@@ -90,8 +93,9 @@ class Harvester:
         if kind in ("toc",):
             return
         norm = self.normalize(text)
-        if section:
-            sec = self.normalize(section)
+        sec = self.normalize(section.split(" · ")[-1]) if section else ""  # the innermost heading of a path
+        if sec and (book, section) not in self._headings:
+            self._headings.add((book, section))  # type: ignore[arg-type]
             m = re.fullmatch(rf"([{HAN}]{{2,9}}?[{SUFFIX}])方?", sec)
             if m:
                 self._formula(m.group(1), book, "heading", year, pid)
@@ -101,7 +105,9 @@ class Harvester:
         for m in re.finditer(rf"(?:者|宜|与|宜服|可与|宜用|服|用|以)([{HAN}]{{2,8}}?[{SUFFIX}])(?:主之|亦主之|治之)", norm):
             self._formula(m.group(1), book, "zhuzhi", year, pid)
         if category == "本草":
-            m = re.match(rf"^(?:衍义曰|图经曰)?([{HAN}]{{1,5}}?)味[甘苦辛酸咸淡涩]", norm)
+            m = re.match(rf"^(?:衍义曰|图经曰)?([{HAN}]{{1,5}}?)[，、：]?味[甘苦辛酸咸淡涩]", norm)
+            if m is None and re.fullmatch(rf"[{HAN}]{{1,5}}", sec) and re.match(r"^(?:气味：?)?味[甘苦辛酸咸淡涩]", norm):
+                m = re.match(r"(.*)", sec)  # punctuated editions: the entry is a heading, the text opens with 味
             if m:
                 cand = self._herb(m.group(1), book, "materia-entry", year, pid)
                 if cand is not None:
@@ -119,6 +125,17 @@ class Harvester:
         formulas = [c for c in self.formulas.values()
                     if c.evidence.get("heading") or c.evidence.get("block", 0) >= 2
                     or (len(c.books) >= min_books and c.count >= min_count)]
+        formulas = [c for c in formulas if not DISEASE_TAIL.search(c.term) or c.evidence.get("zhuzhi")]
+        # 「附都气丸」 is the heading 附 (appended) + 都气丸: merge into the name when that name is attested
+        names = {c.term for c in formulas} | self.known
+        for c in [c for c in formulas if c.term.startswith("附") and c.term[1:] in names]:
+            target = self.formulas.get(c.term[1:])
+            if target is not None:
+                target.count += c.count
+                target.books |= c.books
+                for k, v in c.evidence.items():
+                    target.evidence[k] = target.evidence.get(k, 0) + v
+            formulas.remove(c)
         # a candidate that is a suffix of a longer accepted name seen far more often is a fragment (黄汤 < 麻黄汤)
         names = {c.term for c in formulas}
         formulas = [c for c in formulas if not any(o != c.term and o.endswith(c.term) and len(c.term) <= 2 for o in names)]

@@ -37,11 +37,15 @@ def disclaimer(corpus: Any) -> str:
     """What the evidence rests on: the demo corpus, or the licensed sources of a full corpus store."""
     if not getattr(corpus, "large", False):
         return DISCLAIMER
-    licences = sorted({b.source.license for b in corpus.books.values() if b.source.license})
+    licences = sorted({b.source.license.removesuffix("（本书为现代著作）") for b in corpus.books.values() if b.source.license})
     origins = sorted({b.source.origin for b in corpus.books.values() if b.source.origin})
     verified = sum(1 for b in corpus.books.values() if b.source.verified)
+    sources = set(getattr(corpus, "sources", {}).values())
+    reading = "白文经机器断句抽取" if sources <= {"kanripo"} else "白文（四库本）经机器断句抽取，笈成本沿用整理者标点"
+    undated = sum(1 for b in corpus.books.values() if "成书年代无从考定" in (b.notes or ""))
+    dating = f"{undated} 部成书年代无从考定，按清代保守计；" if undated else ""
     return (f"语料：{len(corpus.books)} 部古籍录文（来源：{'；'.join(origins)}；授权：{'、'.join(licences)}），"
-            f"{len(corpus.books) - verified} 部未经本项目逐字校勘；白文经机器断句抽取，引文均为原文逐字。" + HYPOTHESIS_NOTE)
+            f"{len(corpus.books) - verified} 部未经本项目逐字校勘；{dating}{reading}，引文均为原文逐字。" + HYPOTHESIS_NOTE)
 
 
 def _book(corpus: Any, book_id: str) -> str:

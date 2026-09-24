@@ -10,6 +10,9 @@ generic_references:
   针经:
     note: 《针经》一般认为即今本《灵枢》
     candidates: {lingshu: 1.0}
+  和剂方:
+    note: 《太平惠民和剂局方》的简称
+    candidates: {hejiju: 1.0}
 patterns:
   - {regex: "《([^》]{1,12})》", kind: title}
   - {regex: "(经)(曰|云)", kind: generic}

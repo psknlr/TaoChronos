@@ -156,11 +156,15 @@ class ScriptTable:
     forms → standard forms (Unihan + curated).  Applied for matching only; systematic, so individual
     conversions are not recorded (curated philological variants are)."""
 
-    def __init__(self, root: Path | None = None) -> None:
+    # curated / Unihan variants first, then the 笈成 viewer's variant groups, then OpenCC; the first mapping of a
+    # character wins
+    FILES = ("ancient_variants.tsv", "jicheng_variants.tsv", "t2s.tsv")
+
+    def __init__(self, root: Path | None = None, files: Iterable[str] | None = None) -> None:
         mapping: dict[str, str] = {}
         self.sources: dict[str, int] = {}
         if root is not None and root.exists():
-            for name in ("ancient_variants.tsv", "t2s.tsv"):
+            for name in (self.FILES if files is None else tuple(files)):
                 path = root / name
                 if not path.exists():
                     continue

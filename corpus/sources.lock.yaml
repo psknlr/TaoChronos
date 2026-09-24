@@ -1,4 +1,4 @@
-# Sources ingested into the TaoChronos corpus store (written by `taochronos corpus fetch`).
+# Sources ingested into the TaoChronos corpus store (written by `taochronos corpus fetch` / `corpus unpack`).
 # The texts live in the data directory, not in git; this file pins exactly what was ingested.
 kanripo:
   name: 漢籍リポジトリ Kanseki Repository（Christian Wittern 等）
@@ -707,3 +707,18 @@ kanripo:
       commit_date: '2016-02-05'
       files: 3
       bytes: 136492
+jicheng:
+  name: 笈成檢閱系統資料（笈成中医古籍整理本）
+  program: 笈成檢閱系統v1.4.8
+  version: v1.4.8
+  license: 古籍原文属公有领域；标点、校勘与整理成果归笈成整理者；现代著作可能仍受著作权保护，仅供本地研究使用。检阅程序：授權任何人使用與散布（© 2009-2013 Danny）
+  url: https://jicheng.tw/
+  catalog: jicheng.yaml
+  archive: jc_1_4_8_all.7z
+  sha256: f6d8ed8d5c9c808a4a7e3a6bccfe5a4b87c0e4d38c6b260bcf56f04a2003398e
+  bytes: 317302916
+  volumes: 3
+  files: 858
+  latest_file_date: '2015-06-07'
+  tree_sha256: 6085c8e92e0e0b73a9879684e4dd4d1ba2694e0f10dd05e2b3277e828f1113df
+  locked: '2026-09-24'

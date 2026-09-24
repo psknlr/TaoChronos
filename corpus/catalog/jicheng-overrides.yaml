@@ -1,0 +1,267 @@
+# Curated dating and layer rules for the 笈成 (JiCheng) collection, keyed by file code (data/<X>/<code>.txt).
+# Everything not listed here is catalogued automatically from the book's own [book] block (年份 / 朝代, with
+# reign-era parsing) and, when a work is also in the Kanripo catalog, from that entry's date — see
+# `taochronos corpus catalog jicheng`, which writes corpus/catalog/jicheng.yaml.
+#
+# The vocabulary is the Kanripo catalog's (see kanripo-kr3e.yaml): `composition` dates the main layer; `z_layer` /
+# `s_layer` give the [z] 注 / [s] 疏 notes a dated layer of their own (otherwise they stay inline); `markers` split
+# notes at a marker; `mixed` + `cites_work` date a witness whose layers are not marked (an annotated classic whose
+# commentary is not tagged) by its latest layer; `chapter_layers` / `section_layers` date added chapters or sections.
+# `modern: true` marks works of the 20th century or later (not evidence for historical questions, and possibly
+# still in copyright — local research use only); `category: 非医籍` marks non-medical works; `exclude: true`
+# skips a file entirely.  Dates marked 待核 await review.
+
+A000: {composition: [-300, 25], dynasty: 战国—西汉, attribution: pseudepigraphic, work: suwen, category: 医经,
+       chapter_layers: [{pattern: "天元紀大論|五運行大論|六微[旨㫖]大論|氣交變大論|五常政大論|六元正紀大論|至[真眞]要大論",
+                         layer: 运气七篇（王冰补入）, year: [762, 762], attribution: 王冰次注时补入}],
+       notes_text: 王冰次注本系统之白文（不含注）}
+A000a: {composition: [1000, 1279], attribution: pseudepigraphic, work: suwen_yipian, notes_text: 刺法论、本病论二遗篇，宋人所托（待核）}
+A001: {composition: [-300, 25], dynasty: 战国—西汉, attribution: pseudepigraphic, work: suwen, category: 医经,
+       z_layer: {layer: 王冰注, year: [762, 762], attribution: 唐·王冰次注},
+       s_layer: {layer: 新校正, year: [1068, 1068], attribution: 宋·林亿、孙奇、高保衡等},
+       markers: [{prefix: 新校正云, layer: 新校正, year: [1068, 1068], attribution: 宋·林亿等}],
+       chapter_layers: [{pattern: "天元紀大論|五運行大論|六微[旨㫖]大論|氣交變大論|五常政大論|六元正紀大論|至[真眞]要大論",
+                         layer: 运气七篇（王冰补入）, year: [762, 762], attribution: 王冰次注时补入}]}
+A002: {composition: [605, 683], work: taisu, authors: [杨上善], mixed: {layer: 太素（类编内经原文与杨上善注）, year: [605, 683]}, cites_work: [-300, 25],
+       notes_text: 杨上善撰注，隋末至唐高宗间（待核）}
+A003: {composition: [1670, 1670], mixed: {layer: 素问集注（原文与张志聪等注）, year: [1670, 1670]}, cites_work: [-300, 25]}
+A007: {composition: [960, 1127], attribution: pseudepigraphic, notes_text: 旧题王冰撰，一般认为宋人所托（待核）}
+A100: {composition: [-300, 25], dynasty: 战国—西汉, attribution: pseudepigraphic, work: lingshu, category: 医经, authors: [佚名（托名黄帝、岐伯）]}
+A101: {composition: [1672, 1672], mixed: {layer: 灵枢集注（原文与张志聪等注）, year: [1672, 1672]}, cites_work: [-300, 25]}
+A300: {composition: [0, 200], dynasty: 东汉, attribution: pseudepigraphic, work: nanjing, authors: [旧题秦越人]}
+A301: {composition: [0, 200], work: nanjing, mixed: {layer: 难经集注（原文与诸家注未分）, year: [1100, 1100]}, cites_work: [0, 200]}
+A302: {composition: [1727, 1727], mixed: {layer: 难经经释（原文与徐大椿注）, year: [1727, 1727]}, cites_work: [0, 200]}
+A303: {composition: [1738, 1738], mixed: {layer: 古本难经阐注（原文与丁锦注）, year: [1738, 1738]}, cites_work: [0, 200]}
+A303a: {composition: [1738, 1738], mixed: {layer: 古本难经阐注（原文与丁锦注）, year: [1738, 1738]}, cites_work: [0, 200]}
+A304: {composition: [1895, 1895], mixed: {layer: 难经正义（原文与叶霖注）, year: [1895, 1895]}, cites_work: [0, 200]}
+A306: {composition: [1361, 1361], work: nanjing_benyi, mixed: {layer: 滑寿本义（引难经原文与注）, year: [1361, 1361]}, cites_work: [0, 200]}
+A402: {composition: [1624, 1624], work: leijing, mixed: {layer: 类经（类分内经原文与张注）, year: [1624, 1624]}, cites_work: [-300, 25]}
+A402a: {composition: [1624, 1624], work: leijing, mixed: {layer: 类经（类分内经原文与张注）, year: [1624, 1624]}, cites_work: [-300, 25]}
+A402b: {composition: [1624, 1624], work: leijing, mixed: {layer: 类经（类分内经原文与张注）, year: [1624, 1624]}, cites_work: [-300, 25]}
+A403: {composition: [1624, 1624], work: leijing_tuyi}
+A500: {composition: [-300, -168], dynasty: 战国—西汉, work: mawangdui, category: 医经, notes_text: 马王堆汉墓帛书（墓葬年代前168年）}
+
+B000: {composition: [200, 219], dynasty: 东汉, work: shanghanlun, category: 伤寒, authors: [张机], notes_text: 宋本（赵开美本）系统}
+B000a: {composition: [200, 219], dynasty: 东汉, work: shanghanlun, category: 伤寒, authors: [张机], notes_text: 宋本条文版（条文编号为今人所加，不计入原文）}
+B001: {composition: [1144, 1144], work: shanghanlun, mixed: {layer: 成无己注解本（原文与注未标注区分）, year: [1144, 1144]}, cites_work: [200, 219]}
+B003: {composition: [1108, 1108]}
+B003a: {composition: [1108, 1108]}
+B004: {composition: [1132, 1150]}
+B005: {composition: [1132, 1150]}
+B006: {composition: [1132, 1150]}
+B013: {composition: [1592, 1592], work: shanghan_tiaobian, mixed: {layer: 方有执条辨（重订伤寒论原文与注）, year: [1592, 1592]}, cites_work: [200, 219]}
+B013a: {composition: [1592, 1592], work: shanghan_tiaobian, mixed: {layer: 方有执条辨（重订伤寒论原文与注）, year: [1592, 1592]}, cites_work: [200, 219]}
+B014: {composition: [1624, 1624], work: shanghanlun, mixed: {layer: 张卿子伤寒论（成注本与张注）, year: [1624, 1624]}, cites_work: [200, 219]}
+B025: {composition: [1759, 1759], work: shanghan_leifang, mixed: {layer: 徐大椿类方, year: [1759, 1759]}, cites_work: [200, 219]}
+B025a: {composition: [1759, 1759], work: shanghan_leifang, mixed: {layer: 徐大椿类方, year: [1759, 1759]}, cites_work: [200, 219]}
+B100: {composition: [200, 219], dynasty: 东汉, work: jinkui, category: 杂病, authors: [张机],
+       z_layer: {layer: 宋臣校注, year: [1066, 1066], attribution: 宋·林亿等校定时所加}}
+B100a: {composition: [200, 219], dynasty: 东汉, work: jinkui, category: 杂病, authors: [张机],
+        z_layer: {layer: 宋臣校注, year: [1066, 1066], attribution: 宋·林亿等校定时所加}}
+B108: {composition: [1340, 1400], work: jinkui_gouxuan}
+B108a: {composition: [1340, 1400], work: jinkui_gouxuan}
+
+C000: {composition: [25, 220], dynasty: 东汉, attribution: compiled, work: shennong, category: 本草, authors: [佚名（托名神农）],
+       notes_text: 清人辑本（据证类本草等所载白字辑出）；原文年代按本经计}
+C000a: {composition: [25, 220], dynasty: 东汉, attribution: compiled, work: shennong, category: 本草, authors: [佚名（托名神农）], modern: false,
+        notes_text: 民国辑本（辑本为民国时整理，原文年代按本经计）}
+C000b: {composition: [25, 220], dynasty: 东汉, attribution: compiled, work: shennong, category: 本草, authors: [佚名（托名神农）], notes_text: 孙星衍辑本摘录}
+C001: {composition: [220, 265], dynasty: 三国·魏, attribution: compiled, work: wupu_bencao, authors: [吴普], notes_text: 清人自《太平御览》等辑出}
+C002: {composition: [480, 500], dynasty: 南朝·梁, attribution: compiled, work: bencao_jizhu, authors: [陶弘景], notes_text: 辑本；本经、别录与陶注未分}
+C003: {composition: [659, 659], work: xinxiu_bencao, authors: [苏敬 等]}
+C004: {composition: [701, 741], work: shiliao_bencao, authors: [孟诜, 张鼎]}
+C005: {composition: [907, 925], work: haiyao_bencao, authors: [李珣]}
+C006: {composition: [1061, 1062], work: bencao_tujing, authors: [苏颂], attribution: compiled}
+C007: {composition: [1116, 1116], work: bencao_yanyi, authors: [寇宗奭]}
+C008: {composition: [1289, 1308], work: tangye_bencao}
+C050: {composition: [1082, 1108], work: zhenglei, attribution: compiled, mixed: {layer: 证类本草（各层未标注区分）, year: [1108, 1108]}, cites_work: [25, 500]}
+C100: {composition: [420, 479], attribution: compiled, work: leigong_paozhi, authors: [雷敩], notes_text: 辑本}
+
+D000: {composition: [-300, -168], dynasty: 战国—西汉, work: wushier_bingfang, category: 方书, notes_text: 马王堆帛书}
+D001: {composition: [200, 500], attribution: compiled, work: mingyi_bielu, authors: [佚名], notes_text: 辑本}
+D002: {composition: [682, 682], work: qianjin_yifang, authors: [孙思邈]}
+D002a: {composition: [682, 682], work: qianjin_yifang, authors: [孙思邈]}
+D004: {composition: [752, 752], work: waitai, authors: [王焘]}
+D004a: {composition: [752, 752], work: waitai, authors: [王焘]}
+D005: {composition: [984, 984], work: yixinfang, authors: [丹波康赖], notes_text: 日本平安时代医书，大量引录中国佚籍}
+D007: {composition: [1075, 1101], work: susheng_liangfang}
+D008: {composition: [1047, 1047], work: boji_fang}
+D010: {composition: [1107, 1110], work: hejiju, section_layers: [{pattern: "紹興續添", layer: 绍兴续添方, year: [1151, 1151]},
+       {pattern: "寶慶新增", layer: 宝庆新增方, year: [1225, 1227]}, {pattern: "淳祐新添", layer: 淳祐新添方, year: [1241, 1252]},
+       {pattern: "吳直閣增諸家名方", layer: 吴直阁增诸家名方, year: [1230, 1252]}]}
+D010a: {composition: [1107, 1110], work: hejiju, section_layers: [{pattern: "紹興續添", layer: 绍兴续添方, year: [1151, 1151]},
+        {pattern: "寶慶新增", layer: 宝庆新增方, year: [1225, 1227]}, {pattern: "淳祐新添", layer: 淳祐新添方, year: [1241, 1252]},
+        {pattern: "吳直閣增諸家名方", layer: 吴直阁增诸家名方, year: [1230, 1252]}]}
+D017: {composition: [1125, 1125], work: quansheng_zhimi}
+D018: {composition: [1264, 1264], work: renzhai_zhizhi}
+D019: {composition: [1326, 1326], work: ruizhutang}
+D020: {composition: [1328, 1345], work: shiyi_dexiao}
+D025: {composition: [650, 659], work: qianjin, authors: [孙思邈]}
+D025a: {composition: [650, 659], work: qianjin, authors: [孙思邈]}
+D026: {composition: [306, 363], work: zhouhou, attribution: compiled, mixed: {layer: 葛洪原著与陶弘景增补（未能分离）, year: [500, 500]}, cites_work: [306, 363],
+       section_layers: [{pattern: "附方", layer: 杨用道附广, year: [1144, 1144], attribution: 金·杨用道}]}
+D027: {composition: [1132, 1150], work: benshi_fang}
+D028: {composition: [1253, 1253], work: jisheng}
+D052: {composition: [1900, 1920], attribution: pseudepigraphic, notes_text: 托名华佗，近代始出（待核）}
+D053: {composition: [557, 581], attribution: compiled, work: jiyan_fang, authors: [姚僧垣], notes_text: 辑本}
+D058: {composition: [454, 473], attribution: compiled, work: xiaopin_fang, authors: [陈延之], notes_text: 辑本}
+D074: {composition: [1347, 1350], work: jufang_fahui}
+D077: {modern: true}
+
+F023: {composition: [1172, 1186], notes_text: 旧题刘完素（待核）}
+F024: {composition: [1249, 1249], work: piwei}
+F024a: {composition: [1249, 1249], work: piwei}
+F027: {composition: [1918, 1974], attribution: disputed, mixed: {layer: 近代传抄本（真伪有争议）, year: [1918, 1974]}, cites_work: [480, 536],
+       notes_text: 托名陶弘景之敦煌卷子抄本，原卷已佚，20世纪由张大昌等传出，真伪有争议}
+F000: {composition: [1093, 1093], work: jiaoqi_zhifa}
+
+K000: {composition: [256, 282], work: jiayi, authors: [皇甫谧]}
+K000a: {composition: [256, 282], work: jiayi, authors: [皇甫谧]}
+K013: {composition: [1220, 1220], work: zhenjiu_zisheng}
+K014: {composition: [1329, 1329], work: yulong_jing}
+K019: {composition: [610, 610], work: zhubing, notes_text: 摘自《诸病源候论》}
+K102: {composition: [1100, 1300], work: mingtang_jiujing}
+K103: {composition: [1100, 1300], work: mingtang_jiujing}
+K104: {composition: [1226, 1226]}
+K201: {modern: true}
+L000: {composition: [1127, 1644], attribution: pseudepigraphic, work: yinhai_jingwei}
+L008: {composition: [960, 1644], notes_text: 年代待核}
+L010: {modern: true}
+M100: {composition: [265, 290], work: maijing, authors: [王叔和]}
+M100a: {composition: [265, 290], work: maijing, authors: [王叔和]}
+M101: {composition: [1564, 1564], work: binhu_maixue}
+M106: {composition: [900, 1100], attribution: pseudepigraphic, notes_text: 旧题王叔和，一般认为五代高阳生所托（待核）}
+M111: {composition: [1330, 1370], work: maijue_kanwu}
+
+O034: {composition: [900, 1279], attribution: pseudepigraphic, notes_text: 旧题华佗，一般认为宋代成书（待核）}
+O036: {composition: [1146, 1146], notes_text: 窦材辑（托名扁鹊）}
+O045: {composition: [610, 610], work: zhubing, authors: [巢元方]}
+O045a: {composition: [610, 610], work: zhubing, authors: [巢元方]}
+O048: {composition: [1189, 1224], work: yishuo}
+O086: {composition: [479, 502], attribution: disputed, work: chushi_yishu, mixed: {layer: 南宋始出之本, year: [1201, 1201]}, cites_work: [479, 502]}
+O102: {composition: [1080, 1085], work: shouqin_yanglao}
+O105: {composition: [1572, 1572], work: qijing_bamai_kao}
+O108: {composition: [1624, 1640], work: jingyue}
+O108a: {composition: [1624, 1640], work: jingyue}
+O110: {composition: [1648, 1648], work: shanglun, mixed: {layer: 喻昌尚论（重编伤寒论原文与注）, year: [1648, 1648]}, cites_work: [200, 219]}
+O081: {composition: [1247, 1247], category: 法医, notes_text: 宋慈《洗冤集录》}
+O106: {modern: true}
+O107: {modern: true}
+O114: {modern: true}
+O116: {modern: true}
+O122: {modern: true}
+O123: {modern: true}
+O125: {modern: true}
+O126: {modern: true}
+O127: {modern: true}
+O129: {modern: true}
+
+P0000: {composition: [1742, 1742], work: yizong_jinjian, mixed: {layer: 医宗金鉴（订正仲景全书原文与注）, year: [1742, 1742]}, cites_work: [200, 219]}
+P0001: {composition: [1742, 1742], work: yizong_jinjian, mixed: {layer: 医宗金鉴（订正仲景全书原文与注）, year: [1742, 1742]}, cites_work: [200, 219]}
+P0001a: {composition: [1742, 1742], work: yizong_jinjian, mixed: {layer: 医宗金鉴（订正仲景全书原文与注）, year: [1742, 1742]}, cites_work: [200, 219]}
+P0002: {composition: [1742, 1742], work: yizong_jinjian, mixed: {layer: 医宗金鉴（订正仲景全书原文与注）, year: [1742, 1742]}, cites_work: [200, 219]}
+P0002a: {composition: [1742, 1742], work: yizong_jinjian, mixed: {layer: 医宗金鉴（订正仲景全书原文与注）, year: [1742, 1742]}, cites_work: [200, 219]}
+# 医宗金鉴 (乾隆七年, 1742): each 要诀 is a work of its own; the "a" files are second transcriptions of the same part
+P0003: {composition: [1742, 1742], work: yzjj_mingyi_fanglun, authors: [吴谦 等], dynasty: 清}
+P0003a: {composition: [1742, 1742], work: yzjj_mingyi_fanglun, authors: [吴谦 等], dynasty: 清}
+P0004: {composition: [1742, 1742], work: yzjj_sizhen, authors: [吴谦 等], dynasty: 清}
+P0005: {composition: [1742, 1742], work: yzjj_yunqi, authors: [吴谦 等], dynasty: 清}
+P0006: {composition: [1742, 1742], work: yzjj_shanghan_yaojue, authors: [吴谦 等], dynasty: 清}
+P0007: {composition: [1742, 1742], work: yzjj_zabing, authors: [吴谦 等], dynasty: 清}
+P0007a: {composition: [1742, 1742], work: yzjj_zabing, authors: [吴谦 等], dynasty: 清}
+P0008: {composition: [1742, 1742], work: yzjj_fuke, authors: [吴谦 等], dynasty: 清}
+P0008a: {composition: [1742, 1742], work: yzjj_fuke, authors: [吴谦 等], dynasty: 清}
+P0009: {composition: [1742, 1742], work: yzjj_youke, authors: [吴谦 等], dynasty: 清}
+P0009a: {composition: [1742, 1742], work: yzjj_youke, authors: [吴谦 等], dynasty: 清}
+P0010: {composition: [1742, 1742], work: yzjj_yanke, authors: [吴谦 等], dynasty: 清}
+P0010a: {composition: [1742, 1742], work: yzjj_yanke, authors: [吴谦 等], dynasty: 清}
+P0011: {composition: [1742, 1742], work: yzjj_douzhen, authors: [吴谦 等], dynasty: 清}
+P0011a: {composition: [1742, 1742], work: yzjj_douzhen, authors: [吴谦 等], dynasty: 清}
+P0012: {composition: [1742, 1742], work: yzjj_waike, authors: [吴谦 等], dynasty: 清}
+P0013: {composition: [1742, 1742], work: yzjj_cijiu, authors: [吴谦 等], dynasty: 清}
+P0013a: {composition: [1742, 1742], work: yzjj_cijiu, authors: [吴谦 等], dynasty: 清}
+P0014: {composition: [1742, 1742], work: yzjj_zhenggu, authors: [吴谦 等], dynasty: 清}
+P0014a: {composition: [1742, 1742], work: yzjj_zhenggu, authors: [吴谦 等], dynasty: 清}
+# 证治准绳 (王肯堂, 万历三十年—三十六年)
+P0100: {composition: [1602, 1608], work: zzzs_leifang, authors: [王肯堂], dynasty: 明}
+P0101: {composition: [1604, 1604], work: zzzs_shanghan, authors: [王肯堂], dynasty: 明}
+P0102: {composition: [1602, 1602], work: zzzs_zabing, authors: [王肯堂], dynasty: 明}
+P0103: {composition: [1607, 1607], work: zzzs_nuke, authors: [王肯堂], dynasty: 明}
+P0103a: {composition: [1607, 1607], work: zzzs_nuke, authors: [王肯堂], dynasty: 明}
+P0104: {composition: [1607, 1607], work: zzzs_youke, authors: [王肯堂], dynasty: 明}
+P0105: {composition: [1608, 1608], work: zzzs_yangyi, authors: [王肯堂], dynasty: 明}
+P0200: {composition: [1552, 1578], work: bencao_gangmu}
+P0201: {composition: [1552, 1578], work: bencao_gangmu}
+P0300: {composition: [978, 992], work: taiping_shenghui, authors: [王怀隐 等]}
+P0301: {composition: [978, 992], work: taiping_shenghui, authors: [王怀隐 等]}
+P0400: {composition: [1111, 1117], work: shengji_zonglu}
+P0401: {composition: [1111, 1117], work: shengji_zonglu}
+P0402: {composition: [1111, 1117], work: shengji_zonglu}
+P0403: {composition: [1111, 1117], work: shengji_zonglu}
+P0500: {composition: [1390, 1406], work: puji_fang}
+P0501: {composition: [1390, 1406], work: puji_fang}
+P0502: {composition: [1390, 1406], work: puji_fang}
+P0503: {composition: [1390, 1406], work: puji_fang}
+P0504: {composition: [1390, 1406], work: puji_fang}
+P0505: {composition: [1390, 1406], work: puji_fang}
+P0506: {composition: [1390, 1406], work: puji_fang}
+P0600: {modern: true}
+P0601: {modern: true}
+P0602: {modern: true}
+P0700: {modern: true}
+P0701: {modern: true}
+P0702: {modern: true}
+P0703: {modern: true}
+P0704: {modern: true}
+P0800: {composition: [1556, 1556], work: gujin_yitong}
+P0801: {composition: [1556, 1556], work: gujin_yitong}
+
+N015: {modern: true}
+N062: {modern: true}
+N073: {modern: true}
+N075: {modern: true}
+N076: {modern: true}
+N080: {modern: true}
+N082: {modern: true}
+N083: {modern: true}
+N084: {modern: true}
+N085: {modern: true}
+N086: {modern: true}
+N088: {modern: true}
+N089: {modern: true}
+N090: {modern: true}
+G045: {modern: true}
+R000: {modern: true}
+R001: {modern: true}
+R002: {modern: true}
+R003: {modern: true}
+Z000: {composition: [-1000, -200], category: 非医籍, notes_text: 《易经》，非医籍，默认不进入研究范围}
+test: {exclude: true}
+
+# Corrections of the collection's own metadata (checked against the books' prefaces).
+A200: {composition: [1642, 1642], authors: [李中梓], mixed: {layer: 内经知要（李中梓原书与薛雪重校）, year: [1764, 1764]}, cites_work: [-300, 25],
+       notes_text: 笈成元数据作 1264 年（误）；李中梓撰于崇祯十五年，乾隆甲申薛雪重校}
+O069: {composition: [1826, 1826], authors: [程文囿], dynasty: 清, notes_text: 笈成元数据作元代 1314 年（误）；程杏轩《医述》成于道光六年}
+I003: {composition: [1498, 1498], authors: [周文采], dynasty: 明,
+       notes_text: 笈成元数据题赵宜真、洪武戊午（即《仙传外科集验方》）；本书序署良医副周文采、弘治戊午，按序（待核）}
+C011: {composition: [1505, 1505], authors: [刘文泰 等], dynasty: 明, notes_text: 笈成元数据题王好古、元代（误）；弘治十八年刘文泰等奉敕撰}
+N008: {composition: [1670, 1670], authors: [张志聪], dynasty: 清, notes_text: 书中仅见乾隆己丑王琦刻序；张志聪原书约成于康熙九年（待核）}
+C040: {composition: [1368, 1644], attribution: pseudepigraphic, notes_text: 旧题李杲撰，实为明人辑补（待核）}
+F006: {modern: true, composition: [1949, 2010], notes_text: 今人重编考释（书中所存清人序不代表成书年代）}
+N063: {modern: true, composition: [1937, 1937], authors: [曹颖甫, 姜佐景], notes_text: 曹颖甫医案，姜佐景编按，1937 年刊}
+G003: {composition: [1220, 1220], authors: [齐仲甫], dynasty: 南宋, work: nuke_baiwen, notes_text: 笈成元数据年份作 420—479（刘宋，误）；齐仲甫撰于嘉定十三年}
+G003a: {composition: [1220, 1220], authors: [齐仲甫], dynasty: 南宋, work: nuke_baiwen}
+O005: {composition: [1341, 1341], authors: [滑寿], dynasty: 元, work: shisijing_fahui, notes_text: 笈成元数据作 1314 年；滑寿自序署至正元年（1341）}
+O005a: {composition: [1341, 1341], authors: [滑寿], dynasty: 元, work: shisijing_fahui}
+E004: {composition: [1798, 1813], authors: [吴瑭], dynasty: 清, work: wenbing_tiaobian, notes_text: 吴瑭自序作于嘉庆三年，嘉庆十八年刊}
+E004a: {composition: [1798, 1813], authors: [吴瑭], dynasty: 清, work: wenbing_tiaobian}
+N003: {composition: [1798, 1836], authors: [吴瑭], dynasty: 清, notes_text: 吴瑭医案，辑于其晚年（待核）}
+N003a: {composition: [1798, 1836], authors: [吴瑭], dynasty: 清}
+L003: {composition: [1644, 1644], authors: [傅仁宇], dynasty: 明, work: shenshi_yaohan}
+L003a: {composition: [1644, 1644], authors: [傅仁宇], dynasty: 明, work: shenshi_yaohan}
+C025: {composition: [1769, 1769], authors: [黄宫绣], dynasty: 清, work: bencao_qiuzhen}
+C025a: {composition: [1769, 1769], authors: [黄宫绣], dynasty: 清, work: bencao_qiuzhen}
+G039: {composition: [1620, 1620], authors: [武之望], dynasty: 明, work: jiyin_gangmu}
+G039a: {composition: [1620, 1620], authors: [武之望], dynasty: 明, work: jiyin_gangmu}
+N006: {composition: [1617, 1617], authors: [赵献可], dynasty: 明, notes_text: 笈成元数据年份作 1687（清刻本）；赵献可《医贯》成于万历四十五年}
+

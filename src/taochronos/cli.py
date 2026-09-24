@@ -99,7 +99,30 @@ def cmd_corpus(args: argparse.Namespace) -> None:
 
 
 def _corpus_admin(args: argparse.Namespace, action: str) -> None:
-    """fetch / ingest / status / reindex — build and maintain the full-corpus store."""
+    """fetch / unpack / catalog / ingest / status / reindex — build and maintain the full-corpus store."""
+    home, data = _corpus_paths(args)
+    db = _store_path(args, data)
+    source = args.source or "kanripo"
+    only = [x for x in (args.only or "").split(",") if x] or None
+    if action in ("fetch", "ingest", "unpack", "catalog") and source not in ("kanripo", "jicheng", "all"):
+        raise SystemExit(f"unknown source {source!r}; available: kanripo, jicheng")
+    if source == "jicheng" or (source == "all" and action == "ingest"):
+        if source == "all":
+            _corpus_admin_kanripo(args, "ingest", home, data, db, only)
+        _corpus_admin_jicheng(args, action, home, data, db, only)
+    elif action in ("unpack", "catalog"):
+        raise SystemExit(f"`corpus {action}` applies to the jicheng source (Kanripo texts are fetched and catalogued by hand)")
+    else:
+        _corpus_admin_kanripo(args, action, home, data, db, only)
+    if action == "ingest":  # the registry of cited works outside the corpus travels with the store
+        from .plugins.classics.ingest import load_external_works
+        from .plugins.classics.store import CorpusStore
+
+        n = CorpusStore(db).set_external(load_external_works(home / "corpus" / "catalog" / "external-works.yaml"))
+        print(f"  external works registered: {n}")
+
+
+def _corpus_admin_kanripo(args: argparse.Namespace, action: str, home: Path, data: Path, db: Path, only: list[str] | None) -> None:
     import time
 
     from .plugins.classics.domain import DomainPack
@@ -107,12 +130,6 @@ def _corpus_admin(args: argparse.Namespace, action: str) -> None:
     from .plugins.classics.ingest.fetch import fetch_kanripo, write_lock
     from .plugins.classics.store import CorpusStore, StoreCorpus
 
-    home, data = _corpus_paths(args)
-    db = _store_path(args, data)
-    source = args.source or "kanripo"
-    only = [x for x in (args.only or "").split(",") if x] or None
-    if action in ("fetch", "ingest") and source not in ("kanripo", "all"):
-        raise SystemExit(f"unknown source {source!r}; available: kanripo (笈成 and Wikisource connectors are added as their data arrive)")
     catalog = load_catalog(home / "corpus" / "catalog" / "kanripo-kr3e.yaml")
     sources_dir = data / "sources" / "kanripo"
     if action == "fetch":
@@ -151,6 +168,109 @@ def _corpus_admin(args: argparse.Namespace, action: str) -> None:
           "characters": stats["characters"], "by_period": stats["by_period"], "kinds": kinds, "layers": layers,
           "sources": stats["sources"], "index_current": stats["index_current"],
           "normalizer": {"store": store.meta("normalizer"), "domain": pack.variants.fingerprint}})
+
+
+def _jicheng_root(data: Path, given: str | None = None) -> Path:
+    """The unpacked 笈成 collection: the directory holding config/filelist.txt."""
+    if given:
+        return Path(given)
+    base = data / "sources" / "jicheng"
+    roots = sorted(p.parent.parent for p in base.glob("*/config/filelist.txt"))
+    if not roots:
+        raise SystemExit(f"笈成 data not found under {base}: run `taochronos corpus unpack jicheng <jc_*.7z.001> …` first")
+    return roots[-1]
+
+
+def _corpus_admin_jicheng(args: argparse.Namespace, action: str, home: Path, data: Path, db: Path, only: list[str] | None) -> None:
+    """笈成檢閱系統 data (a user-supplied archive): unpack → catalog → ingest."""
+    import re
+    import time
+
+    import yaml
+
+    from .plugins.classics.chronology import Chronology
+    from .plugins.classics.domain import DomainPack, ScriptTable, VariantTable, _load
+    from .plugins.classics.ingest import build_jicheng_catalog, ingest_jicheng, jicheng_variant_rows, load_catalog
+    from .plugins.classics.ingest.fetch import tree_facts, unpack_archive, write_archive_lock
+    from .plugins.classics.ingest.jicheng import read_synonym_groups
+    from .plugins.classics.store import CorpusStore
+
+    lock_path = home / "corpus" / "sources.lock.yaml"
+    catalog_path = home / "corpus" / "catalog" / "jicheng.yaml"
+    if action == "fetch":
+        raise SystemExit("笈成 data is supplied by the user: `taochronos corpus unpack jicheng <jc_*.7z.001> <….002> …`")
+    if action == "unpack":
+        volumes = [Path(v) for v in (args.paths or [])]
+        if not volumes:
+            raise SystemExit("give the archive volumes: taochronos corpus unpack jicheng jc_1_4_8_all.7z.001 jc_1_4_8_all.7z.002 …")
+        facts = unpack_archive(volumes, data / "sources" / "jicheng", log=print)
+        root = _jicheng_root(data)
+        m = re.search(r"v(\d+(?:\.\d+)+)", root.name)
+        facts = {"name": "笈成檢閱系統資料（笈成中医古籍整理本）", "program": root.name, "version": m.group(0) if m else None,
+                 "license": "古籍原文属公有领域；标点、校勘与整理成果归笈成整理者；现代著作可能仍受著作权保护，仅供本地研究使用。"
+                            "检阅程序：授權任何人使用與散布（© 2009-2013 Danny）",
+                 "url": "https://jicheng.tw/", "catalog": catalog_path.name, **facts, **tree_facts(root)}
+        write_archive_lock(lock_path, "jicheng", facts)
+        _out({"unpacked": str(root), **facts, "lockfile": str(lock_path)})
+        return
+    root = _jicheng_root(data, getattr(args, "root", None))
+    pack = DomainPack(home / "domains" / "classics")
+    if action == "catalog" or (action == "ingest" and not catalog_path.exists()):
+        chronology = Chronology(home / "domains" / "classics" / "eras.yaml", pack.variants.normalize_text)
+        kanripo = load_catalog(home / "corpus" / "catalog" / "kanripo-kr3e.yaml")
+        overrides = yaml.safe_load((home / "corpus" / "catalog" / "jicheng-overrides.yaml").read_text(encoding="utf-8")) or {}
+        cat = build_jicheng_catalog(root, pack.variants.normalize_text, chronology, kanripo, overrides, pack.periods.dynasty_of)
+        header = ("# GENERATED by `taochronos corpus catalog jicheng` from each book's [book] block, the Kanripo catalog and\n"
+                  "# jicheng-overrides.yaml — do not edit here: put corrections in jicheng-overrides.yaml and regenerate.\n")
+        catalog_path.write_text(header + yaml.safe_dump(cat, allow_unicode=True, sort_keys=False, width=160), encoding="utf-8")
+        # the viewer's variant groups → rare forms normalised to their common form (matching only)
+        script_dir = home / "domains" / "classics" / "script"
+        base = VariantTable(_load(home / "domains" / "classics" / "variants.yaml"),
+                            ScriptTable(script_dir, files=[f for f in ScriptTable.FILES if f != "jicheng_variants.tsv"]))
+        existing = set(base.script.map) | set(base.chars)
+        rows = jicheng_variant_rows(read_synonym_groups(root / "config" / "synonyms.txt"), base.normalize_text, existing)
+        (script_dir / "jicheng_variants.tsv").write_text(
+            "# Rare variant forms from the 笈成檢閱系統 variant table (config/synonyms.txt), each mapped to the group's only\n"
+            "# common form; groups with two common forms and the sections 易誤判字 and 一對多簡化字 are left out.\n"
+            "# GENERATED by `taochronos corpus catalog jicheng`.  columns: variant, normalised form, source, group\n"
+            + "".join("\t".join(r) + "\n" for r in rows), encoding="utf-8")
+        dating: dict[str, int] = {}
+        for b in cat["books"]:
+            dating[b["dating"].split(":")[0]] = dating.get(b["dating"].split(":")[0], 0) + 1
+        summary = {"catalog": str(catalog_path), "books": len(cat["books"]), "missing": cat["missing"], "dating": dating,
+                   "modern": sum(1 for b in cat["books"] if b.get("modern")), "variant_rows": len(rows),
+                   "metadata_conflicts": cat["metadata_conflicts"]}
+        if action == "catalog":
+            _out({**summary, "note": "the normaliser changed if variant_rows changed: run `taochronos corpus reindex`"})
+            return
+        pack = DomainPack(home / "domains" / "classics")  # reload with the new variant table
+    catalog = load_catalog(catalog_path)
+    if action != "ingest":
+        raise SystemExit(f"`corpus {action}` is store-wide: run it without a source")
+    lock = (yaml.safe_load(lock_path.read_text(encoding="utf-8")) or {}).get("jicheng", {}) if lock_path.exists() else {}
+    store = CorpusStore(db, create=True)
+    if store.meta("normalizer") not in (None, pack.variants.fingerprint):
+        raise SystemExit("the store was indexed with another normaliser: run `taochronos corpus reindex` first, then ingest")
+    t0 = time.time()
+    report = ingest_jicheng(store, catalog, root, pack.variants.normalize_text, pack.variants.fingerprint, only=only, log=print,
+                            dynasty_of=pack.periods.dynasty_of, version=lock.get("version"),
+                            chronology=Chronology(home / "domains" / "classics" / "eras.yaml", pack.variants.normalize_text),
+                            changed_only=bool(getattr(args, "changed", False)))
+    store.optimize()
+    report["seconds"] = round(time.time() - t0, 1)
+    (data / "corpus").mkdir(parents=True, exist_ok=True)
+    report_path = data / "corpus" / "ingest-jicheng.json"
+    if (only or getattr(args, "changed", False)) and report_path.exists():  # a partial run updates the full report
+        full = json.loads(report_path.read_text(encoding="utf-8"))
+        full["books"].update(report["books"])
+        full["unknown_tags"].update(report["unknown_tags"])
+        report_path.write_text(json.dumps(full, ensure_ascii=False, indent=1), encoding="utf-8")
+    else:
+        report_path.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
+    books = report["books"]
+    _out({"store": str(db), "books": len(books), "passages": sum(b["passages"] for b in books.values()),
+          "characters": sum(b["characters"] for b in books.values()), "records_only": report["records_only"],
+          "missing": report["missing"], "unknown_tags": report["unknown_tags"], "seconds": report["seconds"]})
 
 
 def _mesh_call(harness: Any, tool: str, **arguments: Any) -> Any:
@@ -442,9 +562,13 @@ def build_parser() -> argparse.ArgumentParser:
     add("info", cmd_info, "describe the harness (plugins, capabilities, agents, providers)")
     add("profiles", cmd_profiles, "list profiles", profile=False)
     add("agents", cmd_agents, "list agent specs and their current routes")
-    sp = add("corpus", cmd_corpus, "list the corpus, or fetch / ingest / status / reindex the full-corpus store")
-    sp.add_argument("action", nargs="?", default="list", choices=["list", "fetch", "ingest", "status", "reindex"])
-    sp.add_argument("source", nargs="?", help="source to fetch or ingest (kanripo)")
+    sp = add("corpus", cmd_corpus, "list the corpus, or fetch / unpack / catalog / ingest / status / reindex the full-corpus store")
+    sp.add_argument("action", nargs="?", default="list", choices=["list", "fetch", "unpack", "catalog", "ingest", "status", "reindex"])
+    sp.add_argument("source", nargs="?", help="source: kanripo (fetched from GitHub), jicheng (user-supplied archive) or all")
+    sp.add_argument("paths", nargs="*", help="archive volumes for `unpack jicheng` (jc_1_4_8_all.7z.001 …)")
+    sp.add_argument("--root", help="unpacked 笈成 directory (default: the one under <data>/sources/jicheng)")
+    sp.add_argument("--changed", action="store_true",
+                    help="ingest jicheng: re-parse only books whose dates or layers changed in the catalog; refresh the other records")
     sp.add_argument("--only", help="comma-separated text ids (e.g. KR3e0001,KR3e0013) or book ids")
     sp.add_argument("--db", help="corpus store path (default: <data>/corpus/tcm.sqlite)")
     sp = add("lexicon", cmd_lexicon, "harvest candidate formula / drug names from the corpus store", profile=False)

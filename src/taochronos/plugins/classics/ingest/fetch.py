@@ -8,7 +8,10 @@ and every book's provenance (Gate G0) can be checked.
 from __future__ import annotations
 
 import datetime as _dt
+import hashlib
 import os
+import re
+import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -85,7 +88,86 @@ def write_lock(lock_path: Path, source: str, catalog: dict[str, Any], sources_di
         "locked": _dt.date.today().isoformat(),
         "texts": texts,
     }
-    header = ("# Sources ingested into the TaoChronos corpus store (written by `taochronos corpus fetch`).\n"
+    header = ("# Sources ingested into the TaoChronos corpus store (written by `taochronos corpus fetch` / `corpus unpack`).\n"
+              "# The texts live in the data directory, not in git; this file pins exactly what was ingested.\n")
+    lock_path.write_text(header + yaml.safe_dump(lock, allow_unicode=True, sort_keys=False, width=140), encoding="utf-8")
+    return lock[source]
+
+
+# ---------------------------------------------------------------- user-supplied archives (笈成)
+SEVEN_ZIP_MAGIC = b"7z\xbc\xaf\x27\x1c"
+
+
+def _volume_number(path: Path) -> int:
+    m = re.search(r"\.(\d{3})$", path.name)
+    return int(m.group(1)) if m else 0
+
+
+def archive_name(path: Path) -> str:
+    """``15e4b962-jc_1_4_8_all.7z.001`` → ``jc_1_4_8_all.7z`` (volume suffix and upload prefix removed)."""
+    name = re.sub(r"\.\d{3}$", "", path.name)
+    return re.sub(r"^[0-9a-f]{8}-", "", name)
+
+
+def unpack_archive(volumes: Iterable[Path], dest: Path, *, log: Log = print) -> dict[str, Any]:
+    """Join the volumes of a split 7z archive (.001, .002, …) in order, check it and extract it into ``dest``.
+
+    Uses the ``7z`` program when installed, otherwise the ``py7zr`` package; the joined archive is kept next to
+    the extracted files so its hash can be checked again."""
+    vols = sorted((Path(v) for v in volumes), key=_volume_number)
+    if not vols:
+        raise ValueError("no archive volumes given")
+    numbers = [_volume_number(v) for v in vols]
+    if len(vols) > 1 and numbers != list(range(1, len(vols) + 1)):
+        raise ValueError(f"volumes must be numbered .001 … .{len(vols):03d} without gaps (got {numbers})")
+    dest.mkdir(parents=True, exist_ok=True)
+    target = dest / archive_name(vols[0])
+    digest = hashlib.sha256()
+    with open(target, "wb") as out:
+        for v in vols:
+            with open(v, "rb") as f:
+                for chunk in iter(lambda: f.read(1 << 20), b""):
+                    digest.update(chunk)
+                    out.write(chunk)
+    with open(target, "rb") as f:
+        if f.read(6) != SEVEN_ZIP_MAGIC:
+            raise ValueError(f"{target.name} is not a 7z archive (is the first volume missing?)")
+    log(f"  joined {len(vols)} volume(s) → {target} ({target.stat().st_size} bytes)")
+    seven = shutil.which("7z") or shutil.which("7za")
+    if seven:
+        proc = subprocess.run([seven, "x", "-y", f"-o{dest}", str(target)], capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise RuntimeError((proc.stderr or proc.stdout).strip()[-800:])
+    else:
+        try:
+            import py7zr  # type: ignore[import-not-found]
+        except ImportError as exc:  # pragma: no cover - depends on the machine
+            raise RuntimeError("extracting needs the 7z program (p7zip) or `pip install py7zr`") from exc
+        with py7zr.SevenZipFile(target, mode="r") as z:
+            z.extractall(path=dest)
+    log(f"  extracted into {dest}")
+    return {"archive": target.name, "sha256": digest.hexdigest(), "archive_bytes": target.stat().st_size, "volumes": len(vols)}
+
+
+def tree_facts(root: Path, pattern: str = "data/**/*.txt") -> dict[str, Any]:
+    """Count and fingerprint the text files of an unpacked collection (sha256 over sorted "path<TAB>sha1" lines)."""
+    lines, total, latest = [], 0, ""
+    for path in sorted(root.glob(pattern)):
+        data = path.read_bytes()
+        total += len(data)
+        lines.append(f"{path.relative_to(root).as_posix()}\t{hashlib.sha1(data).hexdigest()}")
+        latest = max(latest, _dt.date.fromtimestamp(path.stat().st_mtime).isoformat())
+    return {"files": len(lines), "text_bytes": total, "latest_file_date": latest or None,
+            "tree_sha256": hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()}
+
+
+def write_archive_lock(lock_path: Path, source: str, facts: dict[str, Any]) -> dict[str, Any]:
+    """Record a user-supplied archive source in the lockfile (other sources are left untouched)."""
+    lock: dict[str, Any] = {}
+    if lock_path.exists():
+        lock = yaml.safe_load(lock_path.read_text(encoding="utf-8")) or {}
+    lock[source] = {**(lock.get(source) or {}), **facts, "locked": _dt.date.today().isoformat()}
+    header = ("# Sources ingested into the TaoChronos corpus store (written by `taochronos corpus fetch` / `corpus unpack`).\n"
               "# The texts live in the data directory, not in git; this file pins exactly what was ingested.\n")
     lock_path.write_text(header + yaml.safe_dump(lock, allow_unicode=True, sort_keys=False, width=140), encoding="utf-8")
     return lock[source]

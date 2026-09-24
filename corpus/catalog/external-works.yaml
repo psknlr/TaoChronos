@@ -1,0 +1,60 @@
+# Works cited in the corpus but not in it (loaded into the corpus store by `taochronos corpus ingest`).
+# status: lost — the work is lost; its quotations in later books are the material for reconstruction (辑佚);
+#         extant — the work survives outside this corpus (mostly non-medical: 类书, 字书, 经史子集); a citation of
+#                  it is not a lost-source clue.
+# Dates are approximate (待核) and are used only as a plausibility bound; titles are simplified, aliases carry the
+# abbreviations and traditional forms found in citations.
+works:
+  # --- lost medical works quoted in 外台秘要, 医心方, 证类本草 and later compilations
+  - {id: gujin_luyan, title: 古今录验方, aliases: [古今录验, 古今錄驗, 古今錄驗方], authors: [甄立言], dynasty: 唐, composition: [618, 650], status: lost}
+  - {id: jinxiao_fang, title: 近效方, aliases: [近效, 近效极要方, 近效极要, 近效極要, 近效極要方], dynasty: 唐, composition: [650, 760], status: lost}
+  - {id: yangsheng_yaoji, title: 养生要集, aliases: [養生要集], authors: [张湛], dynasty: 东晋, composition: [350, 420], status: lost}
+  - {id: shanfan_fang, title: 删繁方, aliases: [删繁, 刪繁方, 刪繁], authors: [谢士泰], dynasty: 北齐, composition: [550, 577], status: lost}
+  - {id: shenshi_fang, title: 深师方, aliases: [深师, 深師方, 深師], authors: [僧深], dynasty: 南朝, composition: [420, 502], status: lost}
+  - {id: fanwang_fang, title: 范汪方, aliases: [范汪, 范東陽方, 范东阳方], authors: [范汪], dynasty: 东晋, composition: [340, 372], status: lost}
+  - {id: huqia_fang, title: 胡洽方, aliases: [胡洽, 胡洽百病方], authors: [胡洽], dynasty: 南朝宋, composition: [420, 479], status: lost}
+  - {id: yannian_milu, title: 延年秘录, aliases: [延年秘錄], dynasty: 唐, composition: [618, 760], status: lost}
+  - {id: bixiao_fang, title: 必效方, aliases: [必效, 必效方], authors: [孟诜], dynasty: 唐, composition: [680, 713], status: lost}
+  - {id: guangji_fang, title: 广济方, aliases: [广济, 廣濟方, 廣濟, 开元广济方, 開元廣濟方], dynasty: 唐, composition: [723, 723], status: lost}
+  - {id: cuishi_fang, title: 崔氏纂要方, aliases: [崔氏方, 崔氏, 崔氏纂要], authors: [崔知悌], dynasty: 唐, composition: [650, 685], status: lost}
+  - {id: zhangwenzhong_fang, title: 张文仲方, aliases: [张文仲, 張文仲], authors: [张文仲], dynasty: 唐, composition: [684, 710], status: lost}
+  - {id: jingxin_lu, title: 经心录, aliases: [經心錄, 经心方], authors: [宋侠], dynasty: 唐, composition: [627, 683], status: lost}
+  - {id: rihuazi_bencao, title: 日华子本草, aliases: [日华子, 日华, 日華子, 日華, 日华子诸家本草, 大明本草], authors: [日华子], dynasty: 五代至北宋初, composition: [908, 970], status: lost}
+  - {id: bencao_shiyi, title: 本草拾遗, aliases: [拾遗, 陈藏器本草, 陳藏器, 本草拾遺], authors: [陈藏器], dynasty: 唐, composition: [739, 739], status: lost}
+  - {id: yaoxing_lun, title: 药性论, aliases: [藥性論, 甄权药性论], authors: [甄权], dynasty: 唐, composition: [600, 643], status: lost}
+  - {id: kaibao_bencao, title: 开宝本草, aliases: [开宝, 開寶, 開寶本草, 开宝重定本草], dynasty: 北宋, composition: [973, 974], status: lost}
+  - {id: jiayou_bencao, title: 嘉祐本草, aliases: [嘉祐, 嘉祐補註本草, 嘉祐补注本草, 補註本草], dynasty: 北宋, composition: [1057, 1061], status: lost}
+  - {id: tujing_bencao, title: 本草图经, aliases: [图经, 圖經, 图经本草, 圖經本草, 本草圖經], authors: [苏颂], dynasty: 北宋, composition: [1061, 1062], status: lost}
+  - {id: shu_bencao, title: 蜀本草, aliases: [蜀本, 重广英公本草], authors: [韩保昇], dynasty: 后蜀, composition: [938, 965], status: lost}
+  - {id: yangsheng_lun_jikang, title: 养生论, aliases: [養生論], authors: [嵇康], dynasty: 魏, composition: [250, 262], status: extant, notes: 嵇康文，见《嵇中散集》《文选》}
+  # --- extant non-medical works (类书, 字书, 经史子集, 道书) often cited by physicians
+  - {id: taiping_yulan, title: 太平御览, aliases: [御览, 御覽, 太平御覽], authors: [李昉 等], dynasty: 北宋, composition: [977, 983], status: extant}
+  - {id: yiwen_leiju, title: 艺文类聚, aliases: [类聚, 類聚, 藝文類聚], authors: [欧阳询 等], dynasty: 唐, composition: [622, 624], status: extant}
+  - {id: shiming, title: 释名, aliases: [釋名], authors: [刘熙], dynasty: 东汉, composition: [180, 220], status: extant}
+  - {id: shuowen, title: 说文解字, aliases: [说文, 說文, 說文解字], authors: [许慎], dynasty: 东汉, composition: [100, 121], status: extant}
+  - {id: erya, title: 尔雅, aliases: [爾雅], dynasty: 先秦至汉, composition: [-300, 0], status: extant}
+  - {id: shanhai_jing, title: 山海经, aliases: [山海經], dynasty: 先秦至汉, composition: [-400, 0], status: extant}
+  - {id: huainanzi, title: 淮南子, aliases: [淮南, 淮南鴻烈], authors: [刘安], dynasty: 西汉, composition: [-139, -139], status: extant}
+  - {id: baopuzi, title: 抱朴子, aliases: [抱朴子內篇, 抱朴子内篇], authors: [葛洪], dynasty: 东晋, composition: [317, 317], status: extant}
+  - {id: zhengao, title: 真诰, aliases: [真誥], authors: [陶弘景], dynasty: 南朝梁, composition: [499, 499], status: extant}
+  - {id: huangting_jing, title: 黄庭经, aliases: [黄庭, 黃庭, 黃庭經, 黄庭内景经, 黃庭內景經], dynasty: 魏晋, composition: [250, 420], status: extant}
+  - {id: bowuzhi, title: 博物志, aliases: [博物誌], authors: [张华], dynasty: 西晋, composition: [280, 300], status: extant}
+  - {id: shenxian_zhuan, title: 神仙传, aliases: [神仙傳], authors: [葛洪], dynasty: 东晋, composition: [317, 343], status: extant}
+  - {id: liexian_zhuan, title: 列仙传, aliases: [列仙傳], dynasty: 汉, composition: [-100, 220], status: extant}
+  - {id: soushen_ji, title: 搜神记, aliases: [搜神記], authors: [干宝], dynasty: 东晋, composition: [317, 350], status: extant}
+  - {id: youyang_zazu, title: 酉阳杂俎, aliases: [酉陽雜俎], authors: [段成式], dynasty: 唐, composition: [850, 860], status: extant}
+  - {id: mengxi_bitan, title: 梦溪笔谈, aliases: [笔谈, 筆談, 夢溪筆談], authors: [沈括], dynasty: 北宋, composition: [1086, 1093], status: extant}
+  - {id: zhouli, title: 周礼, aliases: [周禮], dynasty: 先秦, composition: [-400, -200], status: extant}
+  - {id: liji, title: 礼记, aliases: [禮記], dynasty: 先秦至汉, composition: [-400, -50], status: extant}
+  - {id: shijing, title: 诗经, aliases: [詩經, 毛诗, 毛詩, 诗, 詩], dynasty: 先秦, composition: [-1000, -600], status: extant}
+  - {id: zuozhuan, title: 左传, aliases: [左傳, 春秋左传, 春秋左傳, 左氏传, 左氏傳], dynasty: 先秦, composition: [-400, -300], status: extant}
+  - {id: shiji, title: 史记, aliases: [史記, 太史公书, 太史公書], authors: [司马迁], dynasty: 西汉, composition: [-104, -91], status: extant}
+  - {id: hanshu, title: 汉书, aliases: [漢書, 前汉书, 前漢書], authors: [班固], dynasty: 东汉, composition: [58, 82], status: extant}
+  - {id: houhanshu, title: 后汉书, aliases: [後漢書], authors: [范晔], dynasty: 南朝宋, composition: [432, 445], status: extant}
+  - {id: sanguozhi, title: 三国志, aliases: [三國志, 魏志, 蜀志, 吴志, 吳志], authors: [陈寿], dynasty: 西晋, composition: [280, 297], status: extant}
+  - {id: lunyu, title: 论语, aliases: [論語], dynasty: 先秦, composition: [-480, -400], status: extant}
+  - {id: mengzi, title: 孟子, dynasty: 先秦, composition: [-320, -280], status: extant}
+  - {id: zhuangzi, title: 庄子, aliases: [莊子, 南华经, 南華經], dynasty: 先秦, composition: [-350, -250], status: extant}
+  - {id: laozi, title: 老子, aliases: [道德经, 道德經], dynasty: 先秦, composition: [-500, -300], status: extant}
+  - {id: liezi, title: 列子, aliases: [冲虚经, 沖虛經], dynasty: 先秦至魏晋, composition: [-400, 400], status: extant}
+  - {id: lvshi_chunqiu, title: 吕氏春秋, aliases: [呂氏春秋, 吕览, 呂覽], authors: [吕不韦], dynasty: 秦, composition: [-239, -239], status: extant}

@@ -4,7 +4,7 @@
 # period), and absence / later-attestation checks query the whole store, not just the frame.
 name: full-corpus
 extends: full-discovery
-description: Full-discovery research over the whole ingested corpus (四库全书·医家类 and further sources) via the corpus store.
+description: Full-discovery research over the whole ingested corpus (四库全书·医家类 and the 笈成 collection) via the corpus store.
 bundles:
   - {plugin: taochronos.plugins.classics, config: {domain: domains/classics, store: corpus/tcm.sqlite, lexicon_extra: [lexicon-harvested]}}
   - {plugin: taochronos.plugins.knowledge}
@@ -23,3 +23,4 @@ discovery:
     related_hops: 1           # formulas / herbs co-mentioned with the focus terms are added once
     related_limit: 12
     exclude_kinds: [toc]      # tables of contents are never evidence
+    exclude_categories: [现代, 非医籍]  # 20th-century works and non-medical texts, unless the contract names categories

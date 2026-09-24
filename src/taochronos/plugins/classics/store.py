@@ -16,6 +16,7 @@ LRU cache) and adds the search interface used by retrieval, curation and falsifi
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 import threading
 from collections import OrderedDict
@@ -179,6 +180,16 @@ class CorpusStore:
     def put_external(self, raw: dict[str, Any]) -> None:
         self.db.execute("INSERT OR REPLACE INTO external(id, data) VALUES (?, ?)", (raw["id"], _dump(raw)))
 
+    def set_external(self, works: Iterable[dict[str, Any]]) -> int:
+        """Replace the registry of works cited but not in the corpus (lost or extant elsewhere)."""
+        self.db.execute("DELETE FROM external")
+        n = 0
+        for raw in works:
+            self.put_external(raw)
+            n += 1
+        self.db.commit()
+        return n
+
     def delete_book(self, book_id: str, normalize: Callable[[str], str]) -> int:
         """Remove a book's passages (the contentless index needs the indexed tokens to delete them)."""
         rows = self.db.execute("SELECT rid, text FROM passages WHERE book_id=?", (book_id,)).fetchall()
@@ -262,6 +273,7 @@ class StoreCorpus:
         self._cache_size = cache_size
         self._lock = threading.RLock()
         self._count: int | None = None
+        self._chapters: dict[str, str] | None = None
 
     # ------------------------------------------------------------ plumbing
     def _book_filter(self) -> tuple[str, list[str]]:
@@ -468,6 +480,29 @@ class StoreCorpus:
             for name in [work.title, *work.aliases]:
                 index.setdefault(name, ("external", work.id))
         return index
+
+    # works whose chapters are cited by name; punctuated editions put the names in 书名号 (《脉要精微论》)
+    CHAPTER_WORKS = ("suwen", "lingshu", "taisu", "jiayi", "nanjing", "shanghanlun", "jinkui", "maijing")
+    _CHAPTER = re.compile(r"^[〇○]?《?(.{2,12}?)篇?第[一二三四五六七八九十百]+》?$")
+
+    def chapter_titles(self) -> dict[str, str]:
+        """Normalised chapter names of the canonical classics (上古天真论, 九针十二原, 伤寒例 …) → the earliest book
+        transmitting them, so that a citation of a chapter is not taken for the title of a lost book."""
+        if self._chapters is None:
+            out: dict[str, str] = {}
+            books = sorted((b for b in self.books.values() if getattr(b, "work", None) in self.CHAPTER_WORKS),
+                           key=lambda b: (b.composition.start if b.composition else 0, b.id))
+            with self.store.lock:
+                for book in books:
+                    rows = self.store.db.execute(
+                        "SELECT DISTINCT json_extract(locator, '$.volume'), json_extract(locator, '$.chapter'), "
+                        "json_extract(locator, '$.section') FROM passages WHERE book_id=?", (book.id,)).fetchall()
+                    for raw in (x for row in rows for x in row if x):
+                        m = self._CHAPTER.match(raw.strip())
+                        if m:
+                            out.setdefault(self.normalize(m.group(1)), book.id)
+            self._chapters = out
+        return self._chapters
 
     def stats(self, periods: Any = None) -> dict[str, Any]:
         extra, params = self._book_filter()

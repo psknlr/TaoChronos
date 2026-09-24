@@ -21,7 +21,9 @@ def instructions(ctx: Any) -> str:
     return "Freeze the corpus manifest for this research contract: books, passages, hold-out and coverage warnings."
 
 
-def _books(goal: Any, corpus: Any) -> tuple[list[str], dict[str, str]]:
+def _books(goal: Any, corpus: Any, exclude_categories: Any = ()) -> tuple[list[str], dict[str, str]]:
+    """Books in scope.  ``exclude_categories`` (profile default, e.g. modern works) applies only when the research
+    contract does not name its categories itself."""
     scope = goal.corpus
     excluded: dict[str, str] = {}
     books = []
@@ -32,6 +34,8 @@ def _books(goal: Any, corpus: Any) -> tuple[list[str], dict[str, str]]:
             excluded[book.id] = "excluded by the research contract"
         elif scope.categories and book.category not in scope.categories:
             excluded[book.id] = f"category {book.category} not in scope"
+        elif not scope.categories and not scope.books and book.category in exclude_categories:
+            excluded[book.id] = f"category {book.category} excluded by the profile"
         elif not book.source.license:
             excluded[book.id] = "no license metadata (Gate G0)"
         else:
@@ -122,7 +126,7 @@ def draft_large(ctx: Any) -> dict[str, Any]:
     related_limit = int(cfg.get("related_limit", 12))
     exclude_kinds = set(cfg.get("exclude_kinds", ["toc"]))
     basis = goal.time_basis
-    books, excluded = _books(goal, corpus)
+    books, excluded = _books(goal, corpus, set(cfg.get("exclude_categories", [])))
     allowed_books = set(books)
     after = before = None
     if goal.temporal_scope is not None:

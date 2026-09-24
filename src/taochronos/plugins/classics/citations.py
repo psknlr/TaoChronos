@@ -10,6 +10,11 @@ from .corpus import Corpus
 from .domain import DomainPack
 
 _QUOTE_STOP = re.compile(r"[。；！？]")
+_CHAPTER_CHARS = str.maketrans({"藏": "脏", "府": "腑"})  # 邪氣藏府病形 ~ 邪氣臟腑病形
+
+
+def _chapter_key(name: str) -> str:
+    return name.removesuffix("篇").translate(_CHAPTER_CHARS)
 
 
 @dataclass
@@ -29,6 +34,12 @@ class CitationExtractor:
         self.pack = pack
         self.corpus = corpus
         self.titles = corpus.title_index()
+        norm = pack.variants.normalize_text
+        self.norm_titles: dict[str, tuple[str, str]] = {}
+        for name, value in self.titles.items():
+            self.norm_titles.setdefault(norm(name), value)
+        chapters = getattr(corpus, "chapter_titles", None)
+        self.chapters: dict[str, str] = {_chapter_key(k): v for k, v in (chapters() if chapters else {}).items()}
         self.generic = pack.citations.get("generic_references", {})
         self.patterns = [(re.compile(p["regex"]), p["kind"]) for p in pack.citations.get("patterns", [])]
 
@@ -50,9 +61,30 @@ class CitationExtractor:
             return kind, {target: 1.0}
         if title in self.generic:
             return "book", self._witnessed(dict(self.generic[title]["candidates"]))
-        for name, (kind, target) in self.titles.items():
-            if title in name or name in title:
-                return kind, {target: 0.8}
+        norm = self.pack.variants.normalize_text(title)
+        if norm in self.norm_titles:  # 《内經》 against the alias 内经 …
+            kind, target = self.norm_titles[norm]
+            return kind, {target: 1.0}
+        if norm in self.generic:
+            return "book", self._witnessed(dict(self.generic[norm]["candidates"]))
+        if _chapter_key(norm) in self.chapters:  # 《脉要精微论》: a chapter of the 素问, not a lost book
+            return "book", {self.chapters[_chapter_key(norm)]: 0.9}
+        parts = [p for p in re.split(r"[·‧・]", norm) if p]
+        if len(parts) > 1:  # 《內經‧陰陽別論》: book · chapter
+            kind, candidates = self._resolve_title(parts[0])
+            if kind != "unresolved":
+                return kind, {k: round(v * 0.9, 4) for k, v in candidates.items()}
+            if _chapter_key(parts[-1]) in self.chapters:
+                return "book", {self.chapters[_chapter_key(parts[-1])]: 0.8}
+        # a longer or shorter form of a known title (伤寒杂病论 ~ 伤寒论 is not matched: names of two characters or
+        # more only, the longest wins)
+        best: tuple[int, str, str] | None = None
+        for name, (kind, target) in self.norm_titles.items():
+            if len(name) >= 2 and len(norm) >= 2 and (norm in name or name in norm):
+                if best is None or len(name) > best[0]:
+                    best = (len(name), kind, target)
+        if best is not None:
+            return best[1], {best[2]: 0.8}
         return "unresolved", {title: 1.0}
 
     @staticmethod

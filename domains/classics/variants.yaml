@@ -43,6 +43,7 @@ word_variants:   # context-bound, equal-length variants
   - {from: 瓜蒌, to: 栝楼, kind: variant_char}
   - {from: 栝蒌, to: 栝楼, kind: variant_char}
   - {from: 括楼, to: 栝楼, kind: variant_char}
+  - {from: 括蒌, to: 栝楼, kind: variant_char}
   - {from: 淡饮, to: 痰饮, kind: variant_char, note: 早期文献“痰饮”或作“淡饮”}
 
 # Witness weights used by the philologist when turning variant readings into a

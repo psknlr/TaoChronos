@@ -1,8 +1,12 @@
 # Roadmap
 
 **Data**
-- More sources through the same pipeline: the 笈成 (Jicheng) collection (punctuated texts, variant table, rare
-  characters) and Wikisource (CC BY-SA; the API currently rate-limits this environment's shared address).
+- More sources through the same pipeline: Wikisource (CC BY-SA; the API currently rate-limits this environment's
+  shared address). The 笈成 collection is connected (857 punctuated texts).
+- Expert review of the 149 undated 笈成 books and of the dates taken from prefaces (`dating` in
+  `corpus/catalog/jicheng.yaml`); layer rules for more annotated 笈成 texts (most commentaries are still `mixed`).
+- Use the 笈成 punctuation of the 78 works that are also in the Siku (126 笈成 transcriptions) to evaluate and train the
+  segmentation of 白文.
 - Cross-witness collation of works present in several transcriptions (e.g. 证类 大观本 vs 政和本).
 - Expert review of the harvested formula and drug names; separation of 本经 and 别录 layers.
 - Page images and OCR confidence (completes Claim → Pixel; the Kanripo locators already give page and line).
@@ -10,7 +14,7 @@
 - Edition-level collation across witnesses, with automatic variant discovery.
 
 **Discovery**
-- A learned punctuation / segmentation model for 白文, evaluated against punctuated editions.
+- A learned punctuation / segmentation model for 白文, evaluated against punctuated editions (笈成).
 - Learned extractors (distant supervision from rule claims + expert corrections), evaluated by ClaimEval.
 - Better lineage: rarity-weighted herb overlap and explicit textual statements of derivation, to separate
   convergent composition from inheritance.

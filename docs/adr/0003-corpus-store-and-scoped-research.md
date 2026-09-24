@@ -39,3 +39,12 @@ notes written centuries apart), which the demo never had to face.
 - The quality ceiling is now the rule-based segmentation and the vocabulary: harvested names are candidates,
   and claims read through segmentation carry lower confidence until a learned segmenter or punctuated sources
   (e.g. the 笈成 collection) are added.
+
+## Addendum — a second source (笈成)
+
+The 857 punctuated texts of the 笈成 collection go into the same store through a second connector. Their catalog
+is generated rather than written: curated overrides, then the Kanripo date of the same work, then the books' own
+metadata, then **dated prefaces** (reign-era signatures parsed with an era table), then sibling transcriptions and
+the author's other works. What cannot be dated is placed in the Qing and says so — the policy stays "never date a
+witness earlier than the evidence allows". Works present in both sources share a `work` id, so Gate G5 counts
+them once. Modern works and non-medical texts are stored but excluded from research by profile.

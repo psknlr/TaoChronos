@@ -295,6 +295,12 @@ def _contradictions(ctx: ToolContext, a: dict) -> Any:
 def _missing_sources(ctx: ToolContext, a: dict) -> Any:
     corpus = ctx.cap("corpus")
     present = {p.book_id for p in scope_passages(ctx)}
+    if getattr(corpus, "large", False):
+        # the frame only samples passages: a cited book that is in the store counts as present unless the research
+        # contract excluded it on purpose (held out to be rediscovered)
+        state = ctx.session.state if ctx.session is not None else None
+        withheld = set(state.goal.corpus.exclude_books) if state is not None and state.goal is not None else set()
+        present |= {b for b in corpus.books if b not in withheld}
     aliases = {w.id: [w.title, *w.aliases] for w in corpus.external.values()}
     for b in corpus.books.values():
         aliases.setdefault(b.id, [b.title, *b.aliases])

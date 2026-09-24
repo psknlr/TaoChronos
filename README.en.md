@@ -11,9 +11,9 @@ mining, statistics, hypotheses, falsification, meta-review…). Every conclusion
 mechanically verified textual evidence** and pass the epistemic gates G0–G8; a human expert has the last word.
 
 > ⚠️ `corpus/demo` is an **unverified transcription** of short excerpts assembled to demonstrate the method; the
-> full corpus (the 100 medical works of the Siku quanshu, Kanseki Repository transcriptions, CC BY-SA 4.0) has
-> not been collated by this project either. All outputs are **computational hypotheses** — not medical
-> conclusions and not clinical advice.
+> full corpus (the 100 medical works of the Siku quanshu, Kanseki Repository transcriptions, CC BY-SA 4.0; 857
+> texts of the user-supplied 笈成 collection) has not been collated by this project either. All outputs are
+> **computational hypotheses** — not medical conclusions and not clinical advice.
 
 ## Principles
 
@@ -68,7 +68,7 @@ and indexing are reproducible:
 taochronos corpus fetch kanripo     # one shallow clone per text into the data dir; writes corpus/sources.lock.yaml
 taochronos corpus ingest kanripo    # parse → date every layer → SQLite corpus store + full-text index (~3 min)
 taochronos corpus status            # books, passages, characters, periods, layers; is the index current?
-taochronos lexicon harvest          # candidate formula (~4,800) and drug (~2,100) names harvested from the corpus
+taochronos lexicon harvest          # candidate formula (~12,000) and drug (~3,000) names harvested from the corpus
 taochronos research "消渴的概念如何随时代演变？" --profile full-corpus --focus 消渴 --forbid 消渴=糖尿病
 ```
 
@@ -84,6 +84,34 @@ taochronos research "消渴的概念如何随时代演变？" --profile full-cor
 - **Scale.** The Curator freezes a relevance-scoped, period-stratified sampling frame from the full-text index
   (recorded in the manifest); absence and later-attestation checks run against the **whole store** (respecting
   hold-outs and exclusions), so sampling never manufactures an absence.
+
+### The 笈成 (JiCheng) collection — 857 punctuated texts
+
+The data of the 笈成檢閱系統 v1.4.8 (a user-supplied archive, `jc_1_4_8_all.7z` in three volumes) goes into the
+same store: classics, 伤寒/金匮, materia medica, formularies, warm diseases, the clinical specialties,
+acupuncture, diagnosis, case records and compendia — about **101 million characters in 1.69 million
+passages**, all punctuated by the collection's editors. Together with the Siku texts: **957 books, about
+127 million characters in 2.05 million passages** (a 2.2 GB SQLite store).
+
+```bash
+taochronos corpus unpack jicheng jc_1_4_8_all.7z.001 jc_1_4_8_all.7z.002 jc_1_4_8_all.7z.003  # join, check, extract, lock
+taochronos corpus catalog jicheng   # generated catalog + variant table (curated corrections: jicheng-overrides.yaml)
+taochronos corpus reindex           # after the variant table changed
+taochronos corpus ingest jicheng    # about 5 minutes
+```
+
+- **Markup**: headings become the locator, `[box]` prescription blocks become `formula` passages, 注/疏 are a
+  dated layer or stay inline, the transcribers' collation remarks and later numbering never enter the text,
+  rare characters are resolved through the viewer's table (or kept as 〓 with their description).
+- **Dating**: curated overrides → the same work's date in the Kanripo catalog → the book's own metadata (公元
+  years, reign eras, dynasties; when they contradict, the range a dated preface falls in, else the later one) →
+  **dated prefaces** (「康熙甲戌歲陽月……汪昂書」, the author's own first) → another transcription of the work →
+  the author's other dated works ± 20 years. The 149 books that cannot be dated are placed in the Qing — never
+  earlier. A preface with a dated closing line is dated by it; other paratext is placed at 1911.
+- **Variants**: rare forms from the viewer's variant table map to their group's only common form; the sections
+  of easily misjudged characters and one-to-many simplifications are not merged.
+- **Scope**: modern works (56, category 现代) and non-medical texts are stored but left out of research unless a
+  research contract names its categories.
 
 ## Anatomy of a run
 
@@ -134,8 +162,10 @@ used during development: read the numbers as **regression tests of intended beha
 ## Limitations
 
 The demo corpus is tiny (23 books, 131 excerpts) and unverified; evaluation numbers are illustrative. The full
-corpus consists of uncollated transcriptions of the Siku (with its Qing-era alterations and taboo substitutions);
-segmentation of unpunctuated text is rule-based and can merge adjacent clauses; harvested names are candidates
-for expert review. The rule extractor and curated lexicons were written for the demo. Composition similarity alone cannot separate derivation from
+corpus consists of uncollated transcriptions of the Siku (with its Qing-era alterations and taboo substitutions)
+and of the 笈成 collection (volunteer transcriptions of varying quality; their dates come from the collection's own
+metadata and dated prefaces where no curated date exists, and 149 books could not be dated beyond "Qing or
+earlier"); segmentation of unpunctuated text is rule-based and can merge adjacent clauses; harvested names are
+candidates for expert review. The rule extractor and curated lexicons were written for the demo. Composition similarity alone cannot separate derivation from
 convergence. Link-level time-machine evaluation needs a large corpus. TaoChronos gives no medical advice;
 every result is a research lead until an expert (Gate G7) reviews it.

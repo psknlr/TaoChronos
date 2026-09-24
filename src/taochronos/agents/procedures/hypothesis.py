@@ -169,7 +169,11 @@ def _from_observation(ctx: Any, obs: Any) -> dict[str, Any] | None:
     elif k == "lost_source":
         support = _support_from_citations(ctx, obs)
         bound = f"其成书早于约 {int(d['must_predate'])} 年" if d.get("must_predate") is not None else "其成书年代下限待定"
-        statement = f"佚书《{d['title']}》曾经流传，并被 {len(d['cited_by'])} 处文本直接引用，{bound}；现存引文可作为辑佚线索。"
+        if d.get("status", "lost") in ("lost", "withheld"):
+            statement = f"佚书《{d['title']}》曾经流传，并被 {len(d['cited_by'])} 处文本直接引用，{bound}；现存引文可作为辑佚线索。"
+        else:  # not in the registry of known works: lost, or extant outside the corpus
+            statement = (f"语料未收之书《{d['title']}》曾经流传，并被 {len(d['cited_by'])} 处文本直接引用，{bound}；"
+                         f"若确已亡佚，现存引文可作为辑佚线索（须先核查书目是否存世）。")
         predictions.append({"kind": "link_appears", "subject": f"work:{d['source']}", "object": None, "period": None,
                             "description": f"同时代或稍后的其他类书、方书中应能找到引自《{d['title']}》的佚文"})
         test = f"在语料之外的唐宋类书与方书中检索《{d['title']}》的引文，比对文字异同。"

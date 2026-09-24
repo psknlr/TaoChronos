@@ -99,16 +99,23 @@ def _sources(ctx: Any, focus: set[str]) -> list[Observation]:
     out = []
     for s in ctx.tool("analysis.missing_sources"):
         work = corpus.external.get(s["source"])
-        title = work.title if work else s["source"]
+        if work is not None and work.status == "extant":
+            continue  # a surviving work outside the corpus (类书, 字书, 经史): not a lost-source clue
+        book = corpus.books.get(s["source"])
+        if work is None and book is None and len(s["source"]) < 2:
+            continue  # 《本》《肘》《易》: an abbreviation that cannot be resolved, not a clue to a lost book
+        title = work.title if work else (book.title if book else s["source"])
+        status = work.status if work else ("withheld" if book else "unknown")
+        label = "佚书" if status == "lost" else ("留出之书" if status == "withheld" else "语料未收之书")
         bound = f"成书应早于约 {int(s['must_predate'])} 年" if s.get("must_predate") is not None else "年代下限未知"
         out.append(Observation(
             id=stable_id("obs", "lost_source", s["source"]),
             kind="lost_source",
-            title=f"佚书《{title}》的线索",
+            title=f"{label}《{title}》的线索",
             summary=f"《{title}》不在语料中，但被 {len(s['cited_by'])} 处文本引用（{', '.join(s['cited_by'][:4])}）；{bound}。"
                     + (f"已知状态：{work.status}。" if work else ""),
             detector="source_rediscovery@0.1",
-            data={**s, "title": title},
+            data={**s, "title": title, "status": status},
             passage_ids=list(s["cited_by"]),
             terms=[f"work:{s['source']}"],
             score=round(min(1.0, 0.5 + s["support"] / 2), 4),

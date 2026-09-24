@@ -369,7 +369,9 @@ class ClaimExtractor:
     def _rule_composition(self, ctx: _Ctx) -> None:
         if ctx.passage.kind == "materia_medica":
             return
-        herbs = [m for m in ctx.mentions if m.category == "herb" and not ctx.in_paren(m.start)]
+        stop = re.search(r"(右|上)[一二三四五六七八九十]+味", ctx.norm)  # the preparation begins: solvents are not ingredients
+        herbs = [m for m in ctx.mentions if m.category == "herb" and not ctx.in_paren(m.start)
+                 and (stop is None or m.start < stop.start())]
         dosed: list[tuple[Mention, str | None, str | None]] = []
         pending: list[int] = []
         region_start = None
@@ -382,6 +384,26 @@ class ClaimExtractor:
                 pos = close + 1
             dose_m = DOSE_RE.match(ctx.norm, pos)
             dose = None
+            if processing and not (dose_m and dose_m.group(0)):
+                # the dose written as a small-character note: 麻黄（各二两）, 桂枝（三两，去皮）
+                inner = DOSE_RE.match(processing)
+                if inner and inner.group(0):
+                    dose_m = inner
+                    rest = processing[inner.end():].lstrip("，、 　")
+                    processing = rest or None
+                    pos_after = pos
+                    dose = inner.group(0)
+                    if dose.startswith(("各", "以上各")):
+                        shared = dose.replace("以上", "").lstrip("各")
+                        for idx in pending:
+                            h, _, proc = dosed[idx]
+                            dosed[idx] = (h, shared, proc)
+                        dose = shared
+                    pending = []
+                    region_start = m.start if region_start is None else region_start
+                    dosed.append((m, dose, processing))
+                    del pos_after
+                    continue
             if dose_m and dose_m.group(0):
                 dose = dose_m.group(0)
                 after = dose_m.end()
@@ -397,7 +419,7 @@ class ClaimExtractor:
                 pending = []
                 region_start = m.start if region_start is None else region_start
                 dosed.append((m, dose, processing))
-            elif ctx.norm[pos: pos + 1] in ("、", "，") and region_start is not None or ctx.norm[pos: pos + 1] == "、":
+            elif ctx.norm[pos: pos + 1] in ("、", "，", "　") and region_start is not None or ctx.norm[pos: pos + 1] in ("、", "　"):
                 pending.append(len(dosed))
                 dosed.append((m, None, processing))
                 region_start = m.start if region_start is None else region_start

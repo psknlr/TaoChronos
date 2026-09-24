@@ -1,0 +1,12 @@
+/*
+  Test list in the format of the 笈成檢閱系統 (config/filelist.txt).
+*/
+
+◎內經、難經
+  A/A901.txt	A901-素問測試
+◎傷寒
+  B/B901-傷寒測試.txt	B901-傷寒測試論	//$ 測試備註
+◎方劑
+  D/D901.txt	D901-測試良方
+◎資料庫
+  R/R901.txt	R901-現代測試
