@@ -1,0 +1,78 @@
+# TaoChronos classics ontology (design §7). Historical terms are never
+# overwritten by standard terms; they link through typed ConceptMappings.
+entity_types:
+  documents: [Book, Edition, Volume, Chapter, Passage, Author, Physician, School, Dynasty]
+  medical_concepts: [Disease, Symptom, Sign, Pulse, Tongue, Syndrome, Pathogenesis, Etiology, TreatmentPrinciple, TreatmentMethod]
+  interventions: [Formula, Herb, Dose, Preparation, ProcessingMethod, Administration]
+  conditions: [Age, Sex, Season, Climate, Region, Constitution, DiseaseStage]
+  knowledge_objects: [Claim, Hypothesis, Evidence, Contradiction, Citation, Interpretation]
+
+# lexicon category → ontology entity type and claim role
+categories:
+  symptom: {entity: Symptom, role: symptom}
+  sign: {entity: Sign, role: sign}
+  tongue: {entity: Tongue, role: tongue}
+  pulse: {entity: Pulse, role: pulse}
+  disease: {entity: Disease, role: disease}
+  pattern: {entity: Syndrome, role: pattern}
+  pathogenesis: {entity: Pathogenesis, role: pathogenesis}
+  etiology: {entity: Etiology, role: etiology}
+  treatment_principle: {entity: TreatmentPrinciple, role: treatment_principle}
+  treatment_method: {entity: TreatmentMethod, role: treatment_method}
+  formula: {entity: Formula, role: formula}
+  herb: {entity: Herb, role: herb}
+  organ: {entity: Pathogenesis, role: organ}
+  condition: {entity: DiseaseStage, role: condition}
+  concept: {entity: Interpretation, role: concept}
+
+claim_relations:
+  indicated_for: 方证：某干预（方/药/法）主治某组症状/证候
+  contraindicated: 禁忌：某干预在某条件下不可用
+  defines: 定义：某病/证由某组表现界定
+  causes: 病因：某因素导致某病
+  pathogenesis: 病机：某表现/病归属于某脏腑/病机
+  treatment_principle: 治则：对某状态采用某治法
+  composed_of: 组成：方剂由若干药物组成
+  herb_indication: 本草主治：药物性味与主治
+  transforms_to: 传变：某病转为另一病
+  complication: 并发：某病伴发另一病
+  prognosis: 预后
+  theory: 理论断言
+
+lineage_relations: [cites, transcribes, rephrases, modifies, opposes, extends, inherits, formula_derived_from, concept_derived_from]
+
+# Polarity axes used by contradiction discovery.
+polarity_axes:
+  cold_heat: {negative: 寒, positive: 热}
+  deficiency_excess: {negative: 虚, positive: 实}
+  exterior_interior: {negative: 表, positive: 里}
+  etiology_origin: {negative: 外感, positive: 内伤}
+
+# Thermal direction of "X者Y之" treatment verbs.
+treatment_verbs:
+  热: 1
+  温: 1
+  寒: -1
+  清: -1
+  凉: -1
+
+# Explicit opposition / disagreement markers (lineage `opposes`).
+opposition_markers: [大异, 不可认为, 非, 误, 反, 辄用, 不可更行]
+
+# Canonical representative text of a named tradition (used to resolve `opposes` edges).
+school_canon:
+  伤寒: shanghanlun
+
+# Contradiction discovery: opposite findings and subject links between categories.
+opposite_findings:
+  - [小便不利, 小便多]
+  - [无汗, 汗出]
+  - [不渴, 渴]
+  - [不恶寒, 恶寒]
+  - [大便难, 下利]
+  - [脉浮, 脉沉]
+  - [脉迟, 脉数]
+subject_links:
+  symptom:大热: etiology:热
+  symptom:发热: etiology:热
+  symptom:恶风寒: symptom:恶寒

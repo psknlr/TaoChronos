@@ -1,0 +1,98 @@
+- book: zhubing
+  edition: zhubing@tongxing
+  passages:
+    - id: zhubing.05.xiaoke
+      locator: {volume: 卷五, chapter: 消渴病诸候, section: 消渴候}
+      text: 夫消渴者，渴不止，小便多是也。由少服五石诸丸散，积经年岁，石势结于肾中，使人下焦虚热。
+      tags: [消渴, track:C]
+
+    - id: zhubing.32.yong
+      locator: {volume: 卷三十二, chapter: 痈疽病诸候上, section: 痈候}
+      text: 痈者，由六腑不和所生也。
+      tags: [疮疡, 痈疽, track:C]
+
+    - id: zhubing.32.ju
+      locator: {volume: 卷三十二, chapter: 痈疽病诸候上, section: 疽候}
+      text: 疽者，五脏不调所生也。
+      tags: [疮疡, 痈疽, track:C]
+
+    - id: zhubing.01.fengshibi
+      locator: {volume: 卷一, chapter: 风病诸候上, section: 风湿痹候}
+      text: 风湿痹病之状，或皮肤顽厚，或肌肉酸痛。风寒湿三气杂至，合而成痹。
+      tags: [痹, 湿, 风, track:C]
+
+- book: qianjin
+  edition: qianjin@tongxing
+  passages:
+    - id: qianjin.01.dayi
+      locator: {volume: 卷一, chapter: 序例, section: 大医精诚第二}
+      text: 凡大医治病，必当安神定志，无欲无求，先发大慈恻隐之心，誓愿普救含灵之苦。
+      tags: [医德]
+
+    - id: qianjin.21.jiu
+      locator: {volume: 卷二十一, chapter: 消渴淋闭方, section: 消渴第一}
+      text: 凡积久饮酒，未有不成消渴，然则大寒凝海而酒不冻，明其酒性酷热，物无以加。
+      tags: [消渴, 饮食, track:C]
+
+    - id: qianjin.21.yong
+      locator: {volume: 卷二十一, chapter: 消渴淋闭方, section: 消渴第一}
+      text: 消渴之人，愈与未愈，常须思虑有大痈，何者？消渴之人，必于大骨节间发痈疽而卒，所以戒之在大痈也。
+      tags: [消渴, 痈疽, 并发症, track:C]
+
+    - id: qianjin.21.shen
+      locator: {volume: 卷二十一, chapter: 消渴淋闭方, section: 消渴第一}
+      text: 其所慎者有三：一饮酒，二房室，三咸食及面。
+      tags: [消渴, 调护, track:C]
+
+    - id: qianjin.12.xijiao
+      locator: {volume: 卷十二, chapter: 胆腑, section: 吐血第六}
+      text: 犀角地黄汤，治伤寒及温病应发汗而不汗之内蓄血者，及鼻衄吐血不尽，内余瘀血，面黄，大便黑，消瘀血方。犀角一两，生地黄八两，芍药三两，牡丹皮二两。
+      kind: formula
+      tags: [瘀, 犀角地黄汤, track:A, track:B]
+
+- book: waitai
+  edition: waitai@tongxing
+  passages:
+    - id: waitai.11.gujin
+      locator: {volume: 卷十一, chapter: 消渴消中门}
+      temporal: {t_citation: [618, 650]}
+      text: 《古今录验》论：消渴病有三：一渴而饮水多，小便数，无脂似麸片甜者，皆是消渴病也；二吃食多，不甚渴，小便少，似有油而数者，此是消中病也；三渴饮水不能多，但腿肿脚先瘦小，阴痿弱，数小便者，此是肾消病也。
+      tags: [消渴, 三消, 引文, track:C]
+      notes: 引自已佚的《古今录验》（甄立言，唐初），t_citation 早于《外台秘要》成书。
+
+- book: hejiju
+  edition: hejiju@tongxing
+  defaults: {kind: formula}
+  passages:
+    - id: hejiju.sijunzi
+      locator: {volume: 卷三, chapter: 治一切气, section: 四君子汤}
+      text: 四君子汤：治荣卫气虚，脏腑怯弱，心腹胀满，全不思食，肠鸣泄泻，呕哕吐逆，大宜服之。人参（去芦）、甘草（炙）、茯苓（去皮）、白术各等分。
+      tags: [方剂, 四君子汤, track:B]
+
+    - id: hejiju.erchen
+      locator: {volume: 卷四, chapter: 治痰饮, section: 二陈汤}
+      text: 二陈汤：治痰饮为患，或呕吐恶心，或头眩心悸，或中脘不快，或发为寒热，或因食生冷，脾胃不和。半夏（汤洗七次）、橘红各五两，白茯苓三两，甘草（炙）一两半。
+      tags: [方剂, 痰, 痰饮, track:A]
+
+    - id: hejiju.xiaoyao
+      locator: {volume: 卷九, chapter: 治妇人诸疾, section: 逍遥散}
+      text: 逍遥散：治血虚劳倦，五心烦热，肢体疼痛，头目昏重，心忪颊赤，口燥咽干，发热盗汗，减食嗜卧……甘草（微炙赤）半两，当归（去苗，锉，微炒）、茯苓（去皮，白者）、芍药（白）、白术、柴胡（去苗）各一两。
+      abridged: true
+      tags: [方剂, 逍遥散, track:B]
+
+    - id: hejiju.huoxiang
+      locator: {volume: 卷二, chapter: 治伤寒, section: 藿香正气散}
+      text: 藿香正气散：治伤寒头疼，憎寒壮热，上喘咳嗽，五劳七伤，八般风痰，五般膈气，心腹冷痛，反胃呕恶，气泻霍乱，脏腑虚鸣，山岚瘴疟，遍身虚肿……大腹皮、白芷、紫苏、茯苓各一两，半夏曲、白术、陈皮、厚朴、苦梗各二两，藿香三两，甘草二两半。
+      abridged: true
+      tags: [方剂, 霍乱]
+      notes: 组成节录，炮制注文从略。
+
+- book: xiaoer
+  edition: xiaoer@tongxing
+  passages:
+    - id: xiaoer.dihuang
+      locator: {volume: 卷下, chapter: 诸方, section: 地黄丸}
+      kind: formula
+      text: 地黄丸：治肾怯失音，囟开不合，神不足，目中白睛多，面色㿠白等。熟地黄八钱，山萸肉、干山药各四钱，泽泻、牡丹皮、白茯苓（去皮）各三钱。
+      tags: [方剂, 六味地黄丸, track:B]
+      notes: 钱乙此方后世称“六味地黄丸”，由《金匮》肾气丸去桂枝、附子而成（公认源流，可作为 D3 的已知答案）。

@@ -1,0 +1,82 @@
+- book: shennong
+  edition: shennong@jifu
+  defaults: {kind: materia_medica}
+  passages:
+    - id: shennong.mahuang
+      locator: {volume: 中品, section: 麻黄}
+      text: 麻黄，味苦，温。主中风，伤寒头痛，温疟，发表出汗，去邪热气，止欬逆上气，除寒热，破癥坚积聚。
+      tags: [本草, 伤寒]
+
+    - id: shennong.gualougen
+      locator: {volume: 中品, section: 栝楼根}
+      text: 栝楼根，味苦，寒。主消渴，身热，烦满，大热，补虚安中，续绝伤。
+      tags: [本草, 消渴, track:C]
+
+    - id: shennong.zhimu
+      locator: {volume: 中品, section: 知母}
+      text: 知母，味苦，寒。主消渴热中，除邪气，肢体浮肿，下水，补不足，益气。
+      tags: [本草, 消渴, track:C]
+
+    - id: shennong.huangqi
+      locator: {volume: 上品, section: 黄耆}
+      text: 黄耆，味甘，微温。主痈疽，久败疮，排脓止痛，大风，癞疾，五痔，鼠瘘，补虚，小儿百病。
+      tags: [本草, 疮疡, track:C]
+
+    - id: shennong.renshen
+      locator: {volume: 上品, section: 人参}
+      text: 人参，味甘，微寒。主补五藏，安精神，定魂魄，止惊悸，除邪气，明目，开心益智。久服轻身延年。
+      tags: [本草]
+
+    - id: shennong.shigao
+      locator: {volume: 中品, section: 石膏}
+      text: 石膏，味辛，微寒。主中风寒热，心下逆气，惊喘，口干舌焦，不能息，腹中坚痛，除邪鬼，产乳，金创。
+      tags: [本草]
+
+    - id: shennong.lianqiao
+      locator: {volume: 下品, section: 连翘}
+      text: 连翘，味苦，平。主寒热，鼠瘘，瘰疬，痈肿，恶疮，瘿瘤，结热，蛊毒。
+      tags: [本草, 疮疡, track:C]
+
+    - id: shennong.huanglian
+      locator: {volume: 上品, section: 黄连}
+      text: 黄连，味苦，寒。主热气，目痛，眦伤泣出，明目，肠澼，腹痛，下利，妇人阴中肿痛。久服令人不忘。
+      tags: [本草]
+
+    - id: shennong.dihuang
+      locator: {volume: 上品, section: 干地黄}
+      text: 干地黄，味甘，寒。主折跌绝筋，伤中，逐血痹，填骨髓，长肌肉。作汤，除寒热积聚，除痹。生者尤良。久服轻身不老。
+      tags: [本草, track:B]
+
+    - id: shennong.caohao
+      locator: {volume: 下品, section: 草蒿}
+      text: 草蒿，味苦，寒。主疥瘙，痂痒，恶疮，杀虱，留热在骨节间，明目。一名青蒿。
+      tags: [本草, 青蒿, 疟]
+
+- book: mingyi_bielu
+  edition: mingyi_bielu@jifu
+  defaults: {kind: materia_medica}
+  passages:
+    - id: bielu.rendong
+      locator: {section: 忍冬}
+      text: 忍冬，味甘，温，无毒。主治寒热身肿。久服轻身，长年益寿。
+      tags: [本草, 金银花, track:C]
+
+- book: zhouhou
+  edition: zhouhou@tongxing
+  passages:
+    - id: zhouhou.qinghao
+      locator: {volume: 卷三, chapter: 治寒热诸疟方第十六}
+      kind: formula
+      text: 青蒿一握，以水二升渍，绞取汁，尽服之。
+      tags: [青蒿, 疟]
+      notes: 条文所治之病由篇题“治寒热诸疟方”给出（heading context）。
+
+- book: bencao_gangmu
+  edition: bencao_gangmu@jinling
+  passages:
+    - id: bencao_gangmu.rendong
+      locator: {volume: 草部, section: 忍冬·发明}
+      text: 时珍曰：忍冬，茎叶及花，功用皆同。昔人称其治风除胀，解痢逐尸为要药，而后世不复知用；后世称其消肿散毒治疮为要药，而昔人并未言及。乃知古今之理，万变不同，未可一辙论也。
+      kind: commentary
+      tags: [本草, 金银花, 疮疡, meta:knowledge_change, track:C]
+      notes: 李时珍本人对“知识失传与新用途出现”的明确观察，可作为 D1/D2 发现算法的历史参照。

@@ -1,0 +1,26 @@
+# Modern evidence summaries (Biomedical Space). These are *not* historical texts:
+# they carry evidence_domain != historical_text and are only reachable through
+# explicit cross-space mapping + Gate G8. Summaries only — consult the sources.
+records:
+  - id: modern.artemisinin.who_guideline
+    concept_id: modern:malaria
+    subject: 青蒿素类复方（artemisinin-based combination therapy）
+    statement: >-
+      WHO recommends artemisinin-based combination therapies (ACTs) as first-line
+      treatment for uncomplicated Plasmodium falciparum malaria.
+    evidence_domain: modern_clinical
+    source: "World Health Organization. WHO guidelines for malaria (current edition)."
+    note: Summary statement for demonstration; the guideline text is authoritative.
+    related_terms: [青蒿, 疟]
+
+  - id: modern.artemisinin.nobel2015
+    concept_id: modern:malaria
+    subject: 青蒿素（artemisinin）
+    statement: >-
+      The 2015 Nobel Prize in Physiology or Medicine was awarded in part to Tu Youyou
+      for her discoveries concerning a novel therapy against malaria (artemisinin,
+      isolated from Artemisia annua L.).
+    evidence_domain: pharmacology
+    source: "NobelPrize.org. The Nobel Prize in Physiology or Medicine 2015."
+    note: Botanical identity of historical 青蒿 versus Artemisia annua (黄花蒿) must be handled as a separate mapping.
+    related_terms: [青蒿, 疟]

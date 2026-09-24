@@ -1,0 +1,58 @@
+# Philology tables. Normalisation is used ONLY for matching and retrieval; the
+# original text is always preserved and every normalisation is recorded.
+# All mappings are length-preserving so that offsets into the original text stay valid.
+
+char_variants:   # 异体字 / 古今字 → 通行字
+  鞕: {to: 硬, note: 宋本《伤寒论》多作“鞕”}
+  欬: {to: 咳}
+  痺: {to: 痹}
+  衇: {to: 脉}
+  脈: {to: 脉}
+  鍼: {to: 针}
+  針: {to: 针}
+  煖: {to: 暖}
+  濇: {to: 涩}
+  澁: {to: 涩}
+  澀: {to: 涩}
+  疎: {to: 疏}
+  甞: {to: 尝}
+  嘗: {to: 尝}
+  喫: {to: 吃}
+  腳: {to: 脚}
+  癰: {to: 痈}
+  瘡: {to: 疮}
+  瘍: {to: 疡}
+  瘧: {to: 疟}
+  嘔: {to: 呕}
+  藥: {to: 药}
+  證: {to: 证}
+  証: {to: 证}
+  湯: {to: 汤}
+  蔘: {to: 参}
+  參: {to: 参}
+  黃: {to: 黄}
+  蓯: {to: 苁}
+
+word_variants:   # context-bound, equal-length variants
+  - {from: 募原, to: 膜原, kind: loan_char, note: 《素问·疟论》作“募原”，《温疫论》作“膜原”}
+  - {from: 黄耆, to: 黄芪, kind: variant_char, note: “耆”“芪”古今字}
+  - {from: 五藏, to: 五脏, kind: variant_char, note: 藏府之“藏”后作“脏”}
+  - {from: 六府, to: 六腑, kind: variant_char}
+  - {from: 金创, to: 金疮, kind: variant_char}
+  - {from: 高梁, to: 膏粱, kind: loan_char, note: 《素问》“高梁之变”，高梁通膏粱}
+  - {from: 瓜蒌, to: 栝楼, kind: variant_char}
+  - {from: 栝蒌, to: 栝楼, kind: variant_char}
+  - {from: 括楼, to: 栝楼, kind: variant_char}
+  - {from: 淡饮, to: 痰饮, kind: variant_char, note: 早期文献“痰饮”或作“淡饮”}
+
+# Witness weights used by the philologist when turning variant readings into a
+# probability distribution (see skills/philology/SKILL.md for the rationale).
+witness_weights:
+  base_edition: 1.0
+  edition: 0.8
+  commentator: 0.45
+  conjecture: 0.3
+uncertain_mass:
+  unverified: 0.08
+  collated: 0.05
+  expert_verified: 0.02

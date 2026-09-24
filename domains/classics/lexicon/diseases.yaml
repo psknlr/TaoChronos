@@ -1,0 +1,82 @@
+# Diseases (病) and patterns (证). Historical names are NOT modern diagnoses;
+# period-bound senses live in terminology.yaml.
+category: disease
+entries:
+  - {term: 太阳病, aliases: [太阳之为病], school: 伤寒}
+  - {term: 阳明病, aliases: [阳明之为病], school: 伤寒}
+  - {term: 少阳病, aliases: [少阳之为病], school: 伤寒}
+  - {term: 太阴病, aliases: [太阴之为病], school: 伤寒}
+  - {term: 少阴病, aliases: [少阴之为病], school: 伤寒}
+  - {term: 厥阴病, aliases: [厥阴之为病], school: 伤寒}
+  - {term: 伤寒, aliases: [伤寒之类], name_etiology: [寒]}
+  - {term: 中风, aliases: [风之为病], name_etiology: [风]}
+  - {term: 温病, aliases: [病温, 温证], name_etiology: [热]}
+  - {term: 风温, broader: [温病]}
+  - {term: 温热, broader: [温病]}
+  - {term: 温疫, aliases: [瘟疫], broader: [温病]}
+  - {term: 温毒, broader: [温病]}
+  - {term: 暑温, broader: [温病], name_etiology: [暑]}
+  - {term: 湿温, broader: [温病], name_etiology: [湿, 热]}
+  - {term: 秋燥, broader: [温病]}
+  - {term: 冬温, broader: [温病]}
+  - {term: 温疟, broader: [温病, 疟]}
+  - {term: 热病, aliases: [病热]}
+  - {term: 霍乱, aliases: []}
+  - {term: 疟, aliases: [痎疟, 诸疟, 寒热诸疟, 瘴疟, 山岚瘴疟]}
+  - {term: 消渴, aliases: [消渴病]}
+  - {term: 消中, aliases: [消中病], broader: [消渴]}
+  - {term: 肾消, aliases: [肾消病], broader: [消渴]}
+  - {term: 上消, broader: [消渴]}
+  - {term: 中消, broader: [消渴]}
+  - {term: 下消, broader: [消渴]}
+  - {term: 三消, aliases: [三消之病]}
+  - {term: 消瘅, related: [消渴]}
+  - {term: 脾瘅, related: [消渴]}
+  - {term: 痹, aliases: []}
+  - {term: 行痹, broader: [痹]}
+  - {term: 痛痹, broader: [痹]}
+  - {term: 著痹, broader: [痹]}
+  - {term: 湿痹, broader: [痹], name_etiology: [湿]}
+  - {term: 血痹, broader: [痹]}
+  - {term: 风痹, broader: [痹], name_etiology: [风]}
+  - {term: 风湿痹, aliases: [风湿痹病], broader: [痹], name_etiology: [风, 湿]}
+  - {term: 胸痹, aliases: [胸痹之病]}
+  - {term: 痿, aliases: [痿厥]}
+  - {term: 虚劳, aliases: []}
+  - {term: 痰饮, aliases: [心下有痰饮, 痰饮为患]}
+  - {term: 肠痈, aliases: [肠痈之为病]}
+  - {term: 痈, aliases: [大痈, 痈肿, 诸毒]}
+  - {term: 疽, aliases: []}
+  - {term: 痈疽, aliases: [痈疽诸毒]}
+  - {term: 疔, aliases: [大丁, 疔疮, 诸疔]}
+  - {term: 疮, aliases: [恶疮, 久败疮, 败疮, 疮疡]}
+  - {term: 鼠瘘, aliases: []}
+  - {term: 瘰疬, aliases: []}
+  - {term: 瘿瘤, aliases: []}
+  - {term: 癞疾, aliases: [大风]}
+  - {term: 痔, aliases: [五痔]}
+  - {term: 金疮, aliases: []}
+  - {term: 疥, aliases: [疥瘙, 痂痒]}
+  - {term: 癥瘕, aliases: [癥坚, 积聚, 癥坚积聚]}
+  - {term: 肠澼, aliases: []}
+  - {term: 洞泄, aliases: []}
+  - {term: 飧泄, aliases: []}
+  - {term: 结胸, aliases: []}
+  - {term: 蛊毒, aliases: []}
+  - {term: 瘿, aliases: []}
+  - {term: 太阳中风, category: pattern, aliases: [], broader: [中风, 太阳病], name_etiology: [风]}
+  - {term: 二阳并病, category: pattern}
+  - {term: 表证, category: pattern, aliases: [表证仍在, 伤寒表证]}
+  - {term: 表不解, category: pattern}
+  - {term: 胃家实, category: pattern}
+  - {term: 蓄血, category: pattern, aliases: [内蓄血]}
+  - {term: 湿家, category: pattern}
+  - {term: 肾怯, category: pattern}
+  - {term: 气虚, category: pattern, aliases: [荣卫气虚]}
+  - {term: 血虚, category: pattern}
+  - {term: 脏腑怯弱, category: pattern}
+  - {term: 脾胃不和, category: pattern}
+  - {term: 真阴不足, category: pattern, aliases: [真阴肾水不足]}
+  - {term: 元阳不足, category: pattern}
+  - {term: 虚, category: pattern, weak: true}
+  - {term: 实, category: pattern, weak: true}

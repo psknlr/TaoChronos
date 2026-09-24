@@ -1,0 +1,360 @@
+# TaoChronos demonstration corpus — bibliographic layer (Gate G0 reads `source`).
+# Dates are approximate scholarly conventions; ranges express uncertainty.
+defaults:
+  source: &demo_source
+    origin: TaoChronos demonstration corpus
+    license: "Underlying works are pre-1900 public-domain texts; this excerpt transcription is released under CC0-1.0"
+    acquisition: "Short excerpts transcribed by the TaoChronos authors from commonly circulated modern typeset editions, for software demonstration"
+    transcription: "Not collated against any specific edition; may contain transcription or punctuation errors; verify before citing"
+    verified: false
+
+books:
+  - id: suwen
+    title: 黄帝内经素问
+    aliases: [素问, 黄帝内经, 内经]
+    authors: [佚名（托名黄帝、岐伯）]
+    dynasty: 战国—西汉
+    composition: [-300, 25]
+    attribution: pseudepigraphic
+    category: 医经
+    source: *demo_source
+    editions:
+      - id: suwen@wangbing
+        name: 唐王冰次注、北宋林亿等新校正本系统（现代通行排印本，演示转录）
+        quality: 0.7
+    notes: 运气七篇（含《至真要大论》）一般认为系王冰次注时补入，成书年代有争议，相关段落单独标注时间。
+
+  - id: lingshu
+    title: 灵枢经
+    aliases: [灵枢, 针经, 九卷, 九灵]
+    authors: [佚名（托名黄帝、岐伯）]
+    dynasty: 战国—西汉
+    composition: [-300, 25]
+    attribution: pseudepigraphic
+    category: 医经
+    source: *demo_source
+    editions:
+      - id: lingshu@shisong
+        name: 南宋史崧校正家藏本系统（现代通行排印本，演示转录）
+        year: [1155, 1155]
+        quality: 0.7
+    notes: 《针经》《九卷》一般认为即今本《灵枢》的古称。
+
+  - id: nanjing
+    title: 黄帝八十一难经
+    aliases: [难经, 八十一难]
+    authors: [旧题秦越人]
+    dynasty: 东汉（一说更早）
+    composition: [0, 200]
+    attribution: pseudepigraphic
+    category: 医经
+    source: *demo_source
+    editions:
+      - id: nanjing@tongxing
+        name: 现代通行排印本（演示转录）
+        quality: 0.6
+
+  - id: shennong
+    title: 神农本草经
+    aliases: [本经, 本草经]
+    authors: [佚名（托名神农）]
+    dynasty: 东汉
+    composition: [25, 220]
+    attribution: pseudepigraphic
+    category: 本草
+    source: *demo_source
+    editions:
+      - id: shennong@jifu
+        name: 清代辑复本系统（如孙星衍、孙冯翼辑本）；各辑本文字互有出入（演示转录）
+        year: [1799, 1799]
+        quality: 0.5
+    notes: 原书已佚，今本系后世据《证类本草》等辑复，t_edition 与 t_composition 相距甚远。
+
+  - id: mingyi_bielu
+    title: 名医别录
+    aliases: [别录]
+    authors: [佚名（汉末魏晋医家）]
+    dynasty: 汉末—魏晋
+    composition: [200, 500]
+    attribution: compiled
+    category: 本草
+    source: *demo_source
+    editions:
+      - id: mingyi_bielu@jifu
+        name: 辑复本（原书已佚，据后世本草辑出；演示转录）
+        quality: 0.45
+    notes: 陶弘景《本草经集注》（约500年）收录其内容。
+
+  - id: zhouhou
+    title: 肘后备急方
+    aliases: [肘后方]
+    authors: [葛洪]
+    dynasty: 东晋
+    composition: [317, 343]
+    author_life: [283, 343]
+    category: 方书
+    source: *demo_source
+    editions:
+      - id: zhouhou@tongxing
+        name: 现代通行排印本（今本经陶弘景、杨用道增补；演示转录）
+        quality: 0.55
+    notes: 今本经后人增补，个别条文年代需核。
+
+  - id: shanghanlun
+    title: 伤寒论
+    aliases: [伤寒杂病论]
+    authors: [张机（仲景）]
+    dynasty: 东汉
+    composition: [200, 219]
+    author_life: [150, 219]
+    category: 伤寒
+    school: 仲景学说
+    source: *demo_source
+    editions:
+      - id: shanghanlun@songben
+        name: 宋本（北宋林亿等校定，明赵开美翻刻本系统；现代通行排印本，演示转录）
+        year: [1599, 1599]
+        quality: 0.85
+    notes: 条文编号采用宋本三百九十八条的通行编号。
+
+  - id: jinkui
+    title: 金匮要略方论
+    aliases: [金匮要略, 金匮]
+    authors: [张机（仲景）]
+    dynasty: 东汉
+    composition: [200, 219]
+    author_life: [150, 219]
+    category: 杂病
+    school: 仲景学说
+    source: *demo_source
+    editions:
+      - id: jinkui@dengzhen
+        name: 元邓珍刻本系统（现代通行排印本，演示转录）
+        year: [1340, 1340]
+        quality: 0.8
+    notes: 北宋林亿等据《金匮玉函要略方》整理成书。
+
+  - id: zhubing
+    title: 诸病源候论
+    aliases: [巢氏病源]
+    authors: [巢元方 等]
+    dynasty: 隋
+    composition: [610, 610]
+    attribution: compiled
+    category: 病源
+    source: *demo_source
+    editions:
+      - id: zhubing@tongxing
+        name: 现代通行排印本（演示转录）
+        quality: 0.65
+
+  - id: qianjin
+    title: 备急千金要方
+    aliases: [千金要方, 千金方, 千金]
+    authors: [孙思邈]
+    dynasty: 唐
+    composition: [652, 652]
+    author_life: [581, 682]
+    category: 方书
+    source: *demo_source
+    editions:
+      - id: qianjin@tongxing
+        name: 现代通行排印本（演示转录）
+        quality: 0.65
+
+  - id: waitai
+    title: 外台秘要方
+    aliases: [外台秘要, 外台]
+    authors: [王焘]
+    dynasty: 唐
+    composition: [752, 752]
+    category: 方书
+    source: *demo_source
+    editions:
+      - id: waitai@tongxing
+        name: 现代通行排印本（演示转录）
+        quality: 0.6
+    notes: 大量辑录已佚方书（如《古今录验》），引文的 t_citation 早于成书年代。
+
+  - id: hejiju
+    title: 太平惠民和剂局方
+    aliases: [和剂局方, 局方]
+    authors: [太平惠民和剂局（官修）]
+    dynasty: 宋
+    composition: [1107, 1151]
+    attribution: compiled
+    category: 方书
+    source: *demo_source
+    editions:
+      - id: hejiju@tongxing
+        name: 现代通行排印本（演示转录）
+        quality: 0.6
+
+  - id: xiaoer
+    title: 小儿药证直诀
+    aliases: [小儿药证直诀, 钱氏小儿药证直诀]
+    authors: [钱乙 撰, 阎孝忠 编集]
+    dynasty: 北宋
+    composition: [1119, 1119]
+    author_life: [1032, 1113]
+    category: 儿科
+    source: *demo_source
+    editions:
+      - id: xiaoer@tongxing
+        name: 现代通行排印本（演示转录）
+        quality: 0.65
+
+  - id: piwei
+    title: 脾胃论
+    authors: [李杲（东垣）]
+    dynasty: 金
+    composition: [1249, 1249]
+    author_life: [1180, 1251]
+    category: 内科
+    school: 补土派
+    source: *demo_source
+    editions:
+      - id: piwei@tongxing
+        name: 现代通行排印本（演示转录）
+        quality: 0.65
+
+  - id: danxi
+    title: 丹溪心法
+    authors: [朱震亨（丹溪）述, 门人辑录, 程充 校订]
+    dynasty: 元（学说）/ 明（成书）
+    composition: [1481, 1481]
+    author_life: [1281, 1358]
+    dating_basis: author
+    attribution: compiled
+    category: 内科
+    school: 滋阴派
+    source: *demo_source
+    editions:
+      - id: danxi@tongxing
+        name: 明程充校订本系统（现代通行排印本，演示转录）
+        year: [1481, 1481]
+        quality: 0.6
+    notes: 朱丹溪之学由门人辑录，明代校订刊行；知识归属按作者生年（dating_basis=author），但保留成书年代以便怀疑者检查。
+
+  - id: bencao_gangmu
+    title: 本草纲目
+    aliases: [纲目]
+    authors: [李时珍]
+    dynasty: 明
+    composition: [1552, 1578]
+    author_life: [1518, 1593]
+    category: 本草
+    source: *demo_source
+    editions:
+      - id: bencao_gangmu@jinling
+        name: 金陵本系统（现代通行排印本，演示转录）
+        year: [1593, 1593]
+        quality: 0.7
+
+  - id: waike_zhengzong
+    title: 外科正宗
+    authors: [陈实功]
+    dynasty: 明
+    composition: [1617, 1617]
+    category: 外科
+    source: *demo_source
+    editions:
+      - id: waike_zhengzong@tongxing
+        name: 现代通行排印本（演示转录）
+        quality: 0.6
+
+  - id: jingyue
+    title: 景岳全书
+    authors: [张介宾（景岳）]
+    dynasty: 明
+    composition: [1624, 1624]
+    author_life: [1563, 1640]
+    category: 综合
+    school: 温补派
+    source: *demo_source
+    editions:
+      - id: jingyue@tongxing
+        name: 现代通行排印本（演示转录）
+        quality: 0.6
+    notes: 成书于1624年前后，刊行年代待核。
+
+  - id: wenyilun
+    title: 温疫论
+    authors: [吴有性（又可）]
+    dynasty: 明
+    composition: [1642, 1642]
+    category: 温病
+    school: 温疫学派
+    source: *demo_source
+    editions:
+      - id: wenyilun@tongxing
+        name: 现代通行排印本（演示转录）
+        quality: 0.6
+
+  - id: yizong_jinjian
+    title: 医宗金鉴
+    authors: [吴谦 等（官修）]
+    dynasty: 清
+    composition: [1742, 1742]
+    attribution: compiled
+    category: 综合
+    source: *demo_source
+    editions:
+      - id: yizong_jinjian@tongxing
+        name: 现代通行排印本（演示转录）
+        quality: 0.65
+
+  - id: wenrelun
+    title: 温热论
+    aliases: [外感温热篇]
+    authors: [叶桂（天士）口授, 顾景文 录]
+    dynasty: 清
+    composition: [1730, 1746]
+    author_life: [1667, 1746]
+    attribution: compiled
+    category: 温病
+    school: 温病学派
+    source: *demo_source
+    editions:
+      - id: wenrelun@tongxing
+        name: 华岫云刊本系统（现代通行排印本，演示转录）
+        year: [1766, 1766]
+        quality: 0.6
+    notes: 门人笔录的口授之作，初刊于《临证指南医案》。
+
+  - id: wenbing_tiaobian
+    title: 温病条辨
+    authors: [吴瑭（鞠通）]
+    dynasty: 清
+    composition: [1798, 1798]
+    category: 温病
+    school: 温病学派
+    source: *demo_source
+    editions:
+      - id: wenbing_tiaobian@tongxing
+        name: 现代通行排印本（演示转录）
+        quality: 0.65
+
+  - id: yilin_gaicuo
+    title: 医林改错
+    authors: [王清任]
+    dynasty: 清
+    composition: [1830, 1830]
+    author_life: [1768, 1831]
+    category: 综合
+    source: *demo_source
+    editions:
+      - id: yilin_gaicuo@tongxing
+        name: 现代通行排印本（演示转录）
+        quality: 0.65
+
+# Works cited inside the corpus but not themselves present (lost or external).
+external_works:
+  - id: gujin_luyan
+    title: 古今录验方
+    aliases: [古今录验]
+    authors: [甄立言]
+    dynasty: 唐
+    composition: [618, 650]
+    status: lost
+    notes: 原书已佚，佚文主要见于《外台秘要》等。

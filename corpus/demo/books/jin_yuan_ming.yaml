@@ -1,0 +1,115 @@
+- book: piwei
+  edition: piwei@tongxing
+  passages:
+    - id: piwei.chuanbian
+      locator: {volume: 卷上, chapter: 脾胃虚实传变论}
+      text: 脾胃之气既伤，而元气亦不能充，而诸病之所由生也。
+      tags: [脾胃, 元气, 补土]
+
+    - id: piwei.rezhong
+      locator: {volume: 卷中, chapter: 饮食劳倦所伤始为热中论}
+      text: 惟当以辛甘温之剂，补其中而升其阳，甘寒以泻其火则愈矣。经曰：劳者温之，损者温之。又云：温能除大热。大忌苦寒之药损其脾胃。
+      tags: [甘温除热, 治则, 引文, track:A]
+
+    - id: piwei.buzhong
+      locator: {volume: 卷中, chapter: 饮食劳倦所伤始为热中论, section: 补中益气汤}
+      kind: formula
+      text: 补中益气汤：黄芪（病甚、劳役热甚者一钱），甘草（炙）以上各五分，人参（去芦）三分，当归身（酒焙干或晒干）二分，橘皮（不去白）二分或三分，升麻二分或三分，柴胡二分或三分，白术三分。
+      tags: [方剂, 补中益气汤, track:B]
+
+- book: danxi
+  edition: danxi@tongxing
+  passages:
+    - id: danxi.liuyu
+      locator: {volume: 卷三, chapter: 六郁五十二}
+      text: 气血冲和，万病不生，一有怫郁，诸病生焉。故人身诸病，多生于郁。
+      tags: [郁, track:A]
+
+    - id: danxi.yuejiu
+      locator: {volume: 卷三, chapter: 六郁五十二, section: 越鞠丸}
+      kind: formula
+      text: 越鞠丸：解诸郁，又名芎术丸。苍术、香附、抚芎、神曲、栀子各等分。
+      tags: [方剂, 郁]
+
+    - id: danxi.tan
+      locator: {volume: 卷二, chapter: 痰十三}
+      text: 百病中多有兼痰者，世所不知也。
+      tags: [痰, track:A]
+
+    - id: danxi.xiaoke
+      locator: {volume: 卷三, chapter: 消渴四十六}
+      text: 消渴，养肺、降火、生血为主，分上中下治。
+      tags: [消渴, 三消, track:C]
+
+- book: waike_zhengzong
+  edition: waike_zhengzong@tongxing
+  passages:
+    - id: waike_zhengzong.yuanwei
+      locator: {volume: 卷一, chapter: 痈疽门, section: 痈疽原委论第一}
+      kind: verse
+      text: 痈疽原是火毒生，经络阻隔气血凝。
+      tags: [疮疡, 痈疽, track:C]
+
+    - id: waike_zhengzong.tounong
+      locator: {volume: 卷一, chapter: 痈疽门, section: 透脓散}
+      kind: formula
+      text: 透脓散：治痈疽诸毒，内脓已成，不穿破者，服之即破。黄芪四钱，山甲（炒末）一钱，川芎三钱，当归二钱，皂角针一钱五分。
+      tags: [方剂, 疮疡, track:C]
+
+- book: jingyue
+  edition: jingyue@tongxing
+  passages:
+    - id: jingyue.bulue
+      locator: {chapter: 新方八略, section: 补略}
+      text: 善补阳者，必于阴中求阳，则阳得阴助而生化无穷；善补阴者，必于阳中求阴，则阴得阳升而泉源不竭。
+      tags: [阴阳, 补法]
+
+    - id: jingyue.zuogui
+      locator: {chapter: 新方八阵, section: 补阵·左归丸}
+      kind: formula
+      text: 左归丸：治真阴肾水不足……大怀熟地八两，山药（炒）四两，枸杞四两，山茱萸肉四两，川牛膝（酒洗，蒸熟）三两，菟丝子（制）四两，鹿胶（敲碎，炒珠）四两，龟胶（切碎，炒珠）四两。
+      abridged: true
+      tags: [方剂, 六味地黄丸, track:B]
+
+    - id: jingyue.yougui
+      locator: {chapter: 新方八阵, section: 补阵·右归丸}
+      kind: formula
+      text: 右归丸：治元阳不足……大怀熟地八两，山药（炒）四两，山茱萸（微炒）三两，枸杞（微炒）四两，鹿角胶（炒珠）四两，菟丝子（制）四两，杜仲（姜汤炒）四两，当归三两，肉桂二两，制附子二两。
+      abridged: true
+      tags: [方剂, 肾气丸, track:B]
+
+    - id: jingyue.tan
+      locator: {chapter: 杂证谟, section: 痰饮}
+      text: 痰即人之津液，无非水谷之所化。
+      tags: [痰, track:A]
+
+    - id: jingyue.sanxiao
+      locator: {chapter: 杂证谟, section: 三消干渴}
+      text: 三消之病，三焦受病也。上消者，渴证也，大渴引饮，随饮随渴……中消者，中焦病也，多食善饥，不为肌肉，而日加削瘦……下消者，下焦病也，小便黄赤，为淋为浊，如膏如脂……
+      abridged: true
+      tags: [消渴, 三消, track:C]
+
+- book: wenyilun
+  edition: wenyilun@tongxing
+  passages:
+    - id: wenyilun.xu
+      locator: {chapter: 原序}
+      text: 夫温疫之为病，非风、非寒、非暑、非湿，乃天地间别有一种异气所感。
+      tags: [温病, 温疫, 病因, track:A]
+
+    - id: wenyilun.yuanbing
+      locator: {volume: 上卷, chapter: 原病}
+      text: 邪自口鼻而入，则其所客，内不在脏腑，外不在经络，舍于伏脊之内，去表不远，附近于胃，乃表里之分界，是为半表半里，即《针经》所谓横连膜原是也。
+      tags: [温疫, 膜原, 引文, track:A]
+
+    - id: wenyilun.chuqi
+      locator: {volume: 上卷, chapter: 温疫初起}
+      text: 温疫初起，先憎寒而后发热，日后但热而无憎寒也。……此邪热浮越于经，不可认为伤寒表证，辄用麻黄、桂枝之类强发其汗。此邪不在经，汗之徒伤表气，热亦不减。又不可下，此邪不在里，下之徒伤胃气，其渴愈甚。宜达原饮。
+      abridged: true
+      tags: [温疫, 禁忌, track:A]
+
+    - id: wenyilun.dayuan
+      locator: {volume: 上卷, chapter: 温疫初起, section: 达原饮}
+      kind: formula
+      text: 达原饮：槟榔二钱，厚朴一钱，草果仁五分，知母一钱，芍药一钱，黄芩一钱，甘草五分。
+      tags: [方剂, 温疫]
