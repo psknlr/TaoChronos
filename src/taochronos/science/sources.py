@@ -20,13 +20,17 @@ def infer_missing_sources(
     Each candidate gets an upper date bound (it must predate its earliest citer)
     and a support score from the number and confidence of citing passages.
     """
-    buckets: dict[str, dict] = defaultdict(lambda: {"citers": [], "confidence": 0.0, "quotes": []})
+    buckets: dict[str, dict] = defaultdict(lambda: {"citers": [], "confidence": 0.0, "quotes": [], "relations": set()})
     for e in edges:
-        if e.relation != "cites" or e.target_id in present_books:
+        # an explicit citation — or an explicit argument against a named work — attests that the work existed
+        if e.relation not in ("cites", "opposes") or e.target_id in present_books:
+            continue
+        if e.relation == "opposes" and e.target_kind not in ("book", "external"):
             continue
         rec = buckets[e.target_id]
         rec["citers"].append(e.source_passage or e.source_id)
         rec["confidence"] += e.confidence
+        rec["relations"].add(e.relation)
         quote = e.evidence.get("quote")
         if quote:
             rec["quotes"].append(quote)
@@ -40,6 +44,7 @@ def infer_missing_sources(
             "support": round(rec["confidence"], 4),
             "must_predate": min(years) if years else None,
             "quotes": rec["quotes"][:3],
+            "relations": sorted(rec["relations"]),
         })
     out.sort(key=lambda r: (-r["support"], r["source"]))
     return out

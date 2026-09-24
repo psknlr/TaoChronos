@@ -227,9 +227,32 @@ class HybridRetriever:
         out.sort(key=lambda t: (-t[1], t[0]))
         return out[:k]
 
+    def sense_targets(self, q: ParsedQuery) -> list[tuple[str, str | None, tuple[str, ...]]]:
+        """(historical term, targeted sense or None, anchor cues).
+
+        A query term that is itself a curated term targets all its senses.  A query term that *names* a
+        specific sense (appears in its label, e.g. 三消 → 消渴#病·三消) targets that sense of its head term:
+        concept-level retrieval of passages that describe the concept before the later name existed.  Such
+        a passage must contain an anchor — a cue sharing a morpheme with the query term (消中, 肾消, 上消…) —
+        so associated-but-not-defining cues (痈疽 as a complication) do not count as the concept.
+        """
+        terminology = self.pack.terminology
+        surfaces = {t.split(":", 1)[1] for t in q.terms}
+        targets: list[tuple[str, str | None, tuple[str, ...]]] = [(s, None, ()) for s in sorted(surfaces) if terminology.term(s)]
+        for term in terminology.terms.values():
+            for sense in term.senses:
+                for surface in surfaces:
+                    if len(surface) < 2 or surface == term.id or surface not in sense.label:
+                        continue
+                    morphemes = set(surface) - {"之", "病", "证"}
+                    anchors = tuple(c for c in sense.cues if len(c) >= 2 and set(c) & morphemes)
+                    if anchors:
+                        targets.append((term.id, sense.id, anchors))
+        return targets
+
     def route_sense(self, q: ParsedQuery, cand: set[str], k: int) -> list[tuple[str, float]]:
-        term_surfaces = [t.split(":", 1)[1] for t in q.terms if self.pack.terminology.term(t.split(":", 1)[1])]
-        if not term_surfaces:
+        targets = self.sense_targets(q)
+        if not targets:
             return []
         mid = None
         if q.after is not None or q.before is not None:
@@ -242,14 +265,18 @@ class HybridRetriever:
             passage = self.corpus.passage(pid)
             year = self.corpus.year(passage)
             best = 0.0
-            for term in term_surfaces:
-                if term not in norm:
+            for term, wanted, anchors in targets:
+                if term not in norm or (anchors and not any(a in norm for a in anchors)):
                     continue
                 context = {m.entry.term for m in self.pack.lexicon.match(norm)}
                 sense, p, alts, _ = self.pack.terminology.resolve(term, norm, context, year)
                 if sense is None:
                     continue
-                target = self.pack.terminology.sense(sense)
+                if wanted is not None:
+                    p = alts.get(wanted, 0.0) if sense != wanted else p
+                    if p < 0.3:
+                        continue
+                target = self.pack.terminology.sense(wanted or sense)
                 period_fit = 1.0
                 if mid is not None and target is not None and target.period is not None and not target.period.contains(mid):
                     period_fit = 0.5
@@ -311,14 +338,18 @@ class HybridRetriever:
                         hit.score += self.weights["citation"] * edge.confidence / 61
                         hit.routes.setdefault("citation", 1)
                         hit.note = f"{edge.relation} {seed.passage_id}"
+        sense_heads = [term for term, wanted, _ in self.sense_targets(q) if wanted is not None]
         for hit in fused.values():
             passage = self.corpus.passage(hit.passage_id)
             hit.year = self.corpus.year(passage)
             hit.period = self.pack.periods.period_of(hit.year)
             hit.matched = self._contains_any(hit.passage_id, surfaces, groups)
+            if not hit.matched and "sense" in hit.routes:
+                hit.matched = [t for t in sense_heads if t in self._norm[hit.passage_id]]
+                hit.note = hit.note or "concept-level match (sense route)"
             hit.claim_ids = claim_ids.get(hit.passage_id, [])
             hit.score = round(hit.score * 1000, 4)
-        # relevance floor: a hit must match the query surfaces, a graph claim, or a lineage edge
+        # relevance floor: a hit must match the query surfaces, a graph claim, a lineage edge or a targeted sense
         relevant = [h for h in fused.values() if h.matched or "graph" in h.routes or "citation" in h.routes]
         pool = relevant if (relevant or q.terms) else list(fused.values())
         hits = sorted(pool, key=lambda h: (-h.score, h.passage_id))[:k]

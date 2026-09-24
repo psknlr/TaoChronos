@@ -286,7 +286,7 @@ def _communities(ctx: ToolContext, a: dict) -> Any:
 def _contradictions(ctx: ToolContext, a: dict) -> Any:
     pack, corpus = ctx.cap("domain"), ctx.cap("corpus")
     resolutions = ctx.session.state.term_resolutions if ctx.session is not None else None
-    cctx = contradiction_context(pack, corpus, ctx.cap("philology"), resolutions)
+    cctx = contradiction_context(pack, corpus, ctx.cap("philology"), resolutions, lineage_in_scope(ctx))
     return [to_jsonable(c) for c in find_contradictions(claims_in_scope(ctx), cctx)]
 
 

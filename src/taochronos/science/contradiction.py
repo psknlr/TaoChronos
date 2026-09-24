@@ -17,7 +17,7 @@ from itertools import combinations
 from typing import Callable
 
 from ..protocol.base import stable_id
-from ..protocol.claims import Claim, ClaimRelation, Role
+from ..protocol.claims import INTERVENTION_ROLES, Claim, ClaimRelation, Role
 from ..protocol.research import Contradiction
 
 FINDINGS = (Role.SYMPTOM, Role.SIGN, Role.PULSE, Role.TONGUE)
@@ -38,6 +38,7 @@ class ContradictionContext:
     year_fn: Callable[[Claim], float | None] = lambda c: c.year()
     sense_fn: Callable[[Claim, str], str | None] = lambda c, t: None
     contested_fn: Callable[[Claim, int | None, int | None], bool] = lambda c, s, e: False
+    reuse_fn: Callable[[str, str], str | None] = lambda a, b: None  # passage pair → transcribes / rephrases / inherits
 
 
 @dataclass
@@ -240,6 +241,14 @@ def classify(a: Claim, b: Claim, ctx: ContradictionContext) -> dict:
             explanations.insert(0, f"病种含义变化 / 名同义异：{t.split(':', 1)[1]} 在两处分别为「{sa}」与「{sb}」")
             return {"label": "apparent", "type": "sense_shift", "subject": t, "axis": x.key, "explanations": explanations,
                     "evidence": {"a": [x.term, x.value], "b": [y.term, y.value], "senses": [sa, sb]}}
+    if a.relation == b.relation == ClaimRelation.INDICATED_FOR and x.key.startswith("finding:"):
+        ia = {arg.term_id for arg in a.args(*INTERVENTION_ROLES) if arg.term_id and not arg.negated}
+        ib = {arg.term_id for arg in b.args(*INTERVENTION_ROLES) if arg.term_id and not arg.negated}
+        if ia and ib and not ia & ib:
+            # different presentations, different prescriptions: the texts partition the disease (辨证), they do not conflict
+            return {"label": "unrelated", "type": "differential", "subject": subject, "axis": x.key,
+                    "explanations": ["辨证分治：不同表现用不同方药，属鉴别而非矛盾"],
+                    "evidence": {"a": [x.term, x.value], "b": [y.term, y.value]}}
     ca, cb = _conditions(a), _conditions(b)
     if ca ^ cb:
         diff = sorted(ca ^ cb)
@@ -289,12 +298,23 @@ def _record(a: Claim, b: Claim, verdict: dict, detector: str) -> Contradiction:
     )
 
 
-def classify_passages(claims_a: list[Claim], claims_b: list[Claim], ctx: ContradictionContext) -> dict:
-    """Strongest relation between two passages (used by ContradictionEval)."""
+def classify_passages(claims_a: list[Claim], claims_b: list[Claim], ctx: ContradictionContext,
+                      passage_a: str | None = None, passage_b: str | None = None) -> dict:
+    """Strongest relation between two passages (used by ContradictionEval).
+
+    Text reuse (transcription, rephrasing, inheritance) between the passages counts as support when the
+    claims themselves take no opposing positions.
+    """
     best = {"label": "unrelated", "type": "none"}
     pairs = [(a, a) for a in claims_a] if claims_a == claims_b else [(a, b) for a in claims_a for b in claims_b]
     for a, b in pairs:
         verdict = classify(a, b, ctx)
         if LABEL_ORDER[verdict["label"]] > LABEL_ORDER[best["label"]]:
             best = {**verdict, "claims": [a.id, b.id]}
+    pa = passage_a or (claims_a[0].passage_id if claims_a else None)
+    pb = passage_b or (claims_b[0].passage_id if claims_b else None)
+    if best["label"] == "unrelated" and pa and pb and pa != pb:
+        reuse = ctx.reuse_fn(pa, pb) or ctx.reuse_fn(pb, pa)
+        if reuse:
+            best = {"label": "support", "type": f"text_reuse:{reuse}", "explanations": [f"文本承袭（{reuse}）：两处表达同一学说"]}
     return best

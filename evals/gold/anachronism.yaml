@@ -1,0 +1,24 @@
+# AnachronismEval — medical anachronism (医学时代错置) must be blocked, careful phrasing allowed.
+forbidden_assumptions: [消渴=糖尿病]
+statements:
+  - {text: 消渴即糖尿病。, blocked: true}
+  - {text: 古籍中的消渴就是现代的糖尿病。, blocked: true}
+  - {text: 伤寒即肠伤寒（Typhoid fever）。, blocked: true}
+  - {text: 中风相当于脑卒中。, blocked: true}
+  - {text: 痰即痰液。, blocked: true}
+  - {text: 消渴与糖尿病在症状上部分重叠，但不能等同。, blocked: false}
+  - {text: 《伤寒论》之伤寒是外感热病的总称。, blocked: false}
+  - {text: 中风（卒中义）与脑卒中存在部分对应。, blocked: false}
+  - {text: 痰为津液所化。, blocked: false}
+  - {text: 消渴病的部分描述可能包括后世所说的三消。, blocked: false}
+mappings:                                 # expected relation of the conservative mapping rules
+  - {sense: 消渴#症状, concept: modern:diabetes_mellitus, relation: not_equivalent}
+  - {sense: 消渴#病·多饮多尿, concept: modern:diabetes_mellitus, relation: partially_overlapping}
+  - {sense: 伤寒#广义, concept: modern:typhoid, relation: not_equivalent}
+  - {sense: 伤寒#狭义, concept: modern:typhoid, relation: not_equivalent}
+  - {sense: 中风#外感, concept: modern:stroke, relation: not_equivalent}
+  - {sense: 中风#卒中, concept: modern:stroke, relation: partially_overlapping}
+  - {sense: 痰#津液所化, concept: modern:sputum, relation: not_equivalent}
+  - {sense: 青蒿#药, concept: modern:artemisia_annua, relation: uncertain}
+agent_equivalence:                        # an agent may never assert equivalence; the guard must downgrade it
+  - {sense: 消渴#症状, concept: modern:polydipsia}

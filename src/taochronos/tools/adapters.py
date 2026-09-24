@@ -52,7 +52,8 @@ class SenseOracle:
         return sense
 
 
-def contradiction_context(pack: Any, corpus: Any, philology: Any, resolutions: dict[str, Any] | None = None) -> ContradictionContext:
+def contradiction_context(pack: Any, corpus: Any, philology: Any, resolutions: dict[str, Any] | None = None,
+                          lineage: list | None = None) -> ContradictionContext:
     lex = pack.lexicon
     polarity = {e.term_id: dict(e.polarity) for e in lex.entries.values() if e.polarity}
     origin = {e.term_id: e.origin for e in lex.entries.values() if e.origin}
@@ -96,7 +97,11 @@ def contradiction_context(pack: Any, corpus: Any, philology: Any, resolutions: d
         assessment = philology.assess(corpus.passage(claim.passage_id))
         return any(c.base_probability() < 0.6 for c in assessment.contested_at(start, end))
 
+    reuse = {(e.source_passage, e.target_passage): e.relation for e in lineage or []
+             if e.relation in ("transcribes", "rephrases", "inherits") and e.source_passage and e.target_passage}
+
     return ContradictionContext(
+        reuse_fn=lambda a, b: reuse.get((a, b)),
         polarity=polarity,
         origin=origin,
         nature=nature,

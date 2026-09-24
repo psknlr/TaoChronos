@@ -1,0 +1,15 @@
+# PhilologyEval — the philologist must keep uncertainty, not force a single reading.
+contested:
+  - passage: shanghanlun.c176
+    span_text: 表有热，里有寒          # the base text of the contested span
+    expect_readings: [表有寒，里有热]  # readings that must be kept as options
+    max_base_probability: 0.6          # the coherence check must not let the base reading dominate
+    min_uncertain: 0.05
+no_contest:                              # passages without recorded variants must not invent any
+  - shanghanlun.c013
+  - jinkui.13.xiaoke1
+  - suwen.047
+  - wenyilun.xu
+normalization:                           # matching normalisation (the text itself is never altered)
+  - {text: 横连募原也, contains: 膜原}
+  - {text: 黄耆，味甘，微温, contains: 黄芪}

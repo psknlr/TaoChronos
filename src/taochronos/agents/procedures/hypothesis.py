@@ -207,8 +207,8 @@ def _from_observation(ctx: Any, obs: Any) -> dict[str, Any] | None:
     elif k == "renaming":
         statement = (f"「{d['parent_surface']}」在 {surface(d['child'])} 中作「{d['child_surface']}」，是避讳改名在方剂传承中的痕迹；"
                      f"比较不同时代的方剂组成时应将二者视为同一药物。")
-        predictions.append({"kind": "renaming", "subject": d["herb"], "object": d["child_surface"], "period": None,
-                            "description": "改名后的写法应主要出现在避讳年代之后的文本中"})
+        predictions.append({"kind": "renaming", "subject": d["herb"], "object": d["parent_surface"], "period": None,
+                            "description": f"避讳改名后，原名「{d['parent_surface']}」不应在后世方书中复现"})
         test = "核对改名写法首次出现的年代与相关帝王名讳的年代是否一致。"
     elif k == "association_rule":
         lhs = "、".join(surface(x) for x in d["lhs"])

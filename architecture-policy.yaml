@@ -14,7 +14,7 @@ layers:
   agents:       {paths: [src/taochronos/agents], may_import: [protocol, capabilities, kernel, science, verification, tools, agents]}
   engine:       {paths: [src/taochronos/engine], may_import: [protocol, capabilities, kernel, science, verification, tools, agents, engine]}
   evals:        {paths: [src/taochronos/evals], may_import: ["*"]}
-  app:          {paths: [src/taochronos/cli.py, src/taochronos/bootstrap.py, src/taochronos/config.py, src/taochronos/governance.py, src/taochronos/workspace], may_import: ["*"]}
+  app:          {paths: [src/taochronos/__init__.py, src/taochronos/__main__.py, src/taochronos/cli.py, src/taochronos/bootstrap.py, src/taochronos/config.py, src/taochronos/governance.py, src/taochronos/workspace], may_import: ["*"]}
 # the kernel must stay vendor-, product- and corpus-neutral
 kernel_forbidden_terms: [anthropic, openai, claude, gpt-, deepseek, gemini, neo4j, 伤寒论, 黄帝内经, 神农本草经, 金匮, shanghanlun, suwen]
 # vendor SDKs may only be imported by model-provider plugins

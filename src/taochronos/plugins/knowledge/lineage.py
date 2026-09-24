@@ -374,8 +374,9 @@ class LineageBuilder:
                     continue
                 window = norm[max(0, idx - 12): idx + len(marker) + 12]
                 for school, book_id in canon.items():
-                    if school in window and book_id != p.book_id and book_id in self.corpus.books:
-                        edges.append(self._edge("opposes", p.id, book_id, "passage", "book", confidence=0.6,
+                    if school in window and book_id != p.book_id:
+                        kind = "book" if book_id in self.corpus.books else "external"  # absent works stay traceable
+                        edges.append(self._edge("opposes", p.id, book_id, "passage", kind, confidence=0.6,
                                                 evidence={"marker": marker, "window": window, "school": school},
                                                 source_passage=p.id, note=f"explicit disagreement with the {school} tradition"))
         uniq: dict[str, LineageEdge] = {}

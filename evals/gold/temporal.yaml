@@ -1,0 +1,18 @@
+# TemporalEval — period constraints and earliest attestations.
+constraints:
+  - {query: 宋代以前的消渴方, after: null, before: 960}
+  - {query: 唐以后关于痰的论述, after: 618, before: null}
+  - {query: 明清时期的温病学说, after: 1368, before: 1912}
+  - {query: 从汉代到唐代的消渴, after: -202, before: 907}
+  - {query: 元代以前, after: null, before: 1271}
+  - {query: 东汉, after: 25, before: 220}
+earliest:
+  - {query: 膜原最早见于何书, passage: suwen.035, note: attested as 募原 (loan character) — needs variant normalisation}
+  - {query: 消渴最早的记载, passage: suwen.047}
+  - {query: 治未病的最早出处, passage: nanjing.077}
+  - {query: 三消的最早记载, passage: waitai.11.gujin, note: the three-fold classification predates the name 三消 — needs sense-aware retrieval}
+  - {query: 痰饮最早见于何书, book: jinkui}
+  - {query: 白虎汤最早出处, book: shanghanlun}
+leakage:                                  # no hit may fall outside the stated period
+  - {query: 宋代以前的消渴方}
+  - {query: 明清时期的温病学说}
