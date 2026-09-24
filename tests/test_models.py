@@ -3,6 +3,8 @@
 import io
 import json
 
+import pytest
+
 from taochronos.capabilities.llm import LLMRequest, Message, ToolResultBlock, ToolSchema, ToolUse
 from taochronos.plugins.models.anthropic_provider import FALLBACK_BETA, AnthropicProvider
 from taochronos.plugins.models.openai_compat import OpenAICompatibleProvider
@@ -53,6 +55,7 @@ def _request(model="claude-opus-5"):
 
 
 def test_anthropic_request_shape_with_fallbacks_and_adaptive_thinking(monkeypatch):
+    pytest.importorskip("anthropic")
     provider = AnthropicProvider({"enabled": True})
     client = _Client(_Response([{"type": "text", "text": '{"ok": true}'}]))
     monkeypatch.setattr(provider, "_client_", lambda: client)
@@ -66,6 +69,7 @@ def test_anthropic_request_shape_with_fallbacks_and_adaptive_thinking(monkeypatc
 
 
 def test_anthropic_small_model_takes_no_effort_and_refusal_is_reported(monkeypatch):
+    pytest.importorskip("anthropic")
     provider = AnthropicProvider({"enabled": True})
     client = _Client(_Response([], stop_reason="refusal", model="claude-haiku-4-5"))
     monkeypatch.setattr(provider, "_client_", lambda: client)
