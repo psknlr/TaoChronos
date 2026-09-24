@@ -23,6 +23,12 @@ from .index import BM25Index, DenseIndex, HashingEmbedder, query_tokens
 
 ROUTES = ("bm25", "dense", "graph", "temporal", "citation", "variant", "sense")
 DEFAULT_WEIGHTS = {"bm25": 1.0, "dense": 0.6, "graph": 1.0, "temporal": 0.5, "citation": 0.5, "variant": 0.6, "sense": 0.7}
+# large corpora: candidate generation from the full-text index, then the routes run on the candidates
+CANDIDATES = 4000  # BM25-ranked candidates from the index
+EDGE_CANDIDATES = 60  # earliest and latest attestations kept per query surface (temporal questions)
+DENSE_LIMIT = 1500  # the dense route re-ranks at most this many candidates
+GRAPH_LIMIT = 600  # claims are extracted (and cached) for at most this many candidates per query
+SENSE_LIMIT = 1500
 
 
 @dataclass
@@ -142,21 +148,70 @@ class HybridRetriever:
         self.knowledge = knowledge
         self.analyzer = QueryAnalyzer(pack)
         self.weights = {**DEFAULT_WEIGHTS, **(weights or {})}
+        self.embedder = embedder or HashingEmbedder()
         self.bm25 = BM25Index()
-        self.dense = DenseIndex(embedder or HashingEmbedder())
+        self.dense = DenseIndex(self.embedder)
+        self.large = bool(getattr(corpus, "large", False))
         self._norm: dict[str, str] = {}
-        for p in corpus.passages():
-            norm = pack.variants.normalize_text(p.text)
-            self._norm[p.id] = norm
-            self.bm25.add(p.id, norm)
-            self.dense.add(p.id, norm)
+        self._rank: dict[str, float] = {}  # large corpora: index BM25 rank of the current candidates
+        if not self.large:
+            for p in corpus.passages():
+                norm = pack.variants.normalize_text(p.text)
+                self._norm[p.id] = norm
+                self.bm25.add(p.id, norm)
+                self.dense.add(p.id, norm)
+
+    def norm(self, pid: str) -> str:
+        cached = self._norm.get(pid)
+        if cached is None:
+            cached = self.pack.variants.normalize_text(self.corpus.passage(pid).text)
+            if len(self._norm) > 60_000:
+                self._norm.clear()
+            self._norm[pid] = cached
+        return cached
 
     # ------------------------------------------------------------------ routes
     def _candidates(self, q: ParsedQuery) -> set[str]:
+        if self.large:
+            return self._index_candidates(q)
         ids = set()
         for p in self.corpus.passages(after=q.after, before=q.before):
             ids.add(p.id)
         return ids
+
+    def _index_candidates(self, q: ParsedQuery) -> set[str]:
+        """Full-text-index candidates: the BM25 top of an OR query over every query surface, plus the earliest
+        and latest attestations of each surface (so questions about origins or later fate are not decided by
+        rank), plus passages naming a targeted sense's head term."""
+        surfaces = list(dict.fromkeys(q.all_surfaces() + [s for forms in q.variants.values() for s in forms]))
+        for group in (g for gs in q.groups.values() for g in gs):
+            surfaces.extend(group)
+        if not surfaces:
+            surfaces = [x for x in re.findall(r"[㐀-鿿]{2,4}", self.pack.variants.normalize_text(q.text))][:8]
+        ranked = self.corpus.search(surfaces, limit=CANDIDATES, after=q.after, before=q.before)
+        self._rank = {pid: score for pid, score in ranked}
+        ids = {pid for pid, _ in ranked}
+        for surface in dict.fromkeys(surfaces):
+            if len(surface) < 2 and len(surfaces) > 1:
+                continue
+            hits = self.corpus.contains(surface, after=q.after, before=q.before, verify=False)
+            ids.update(hits[:EDGE_CANDIDATES])
+            ids.update(hits[-EDGE_CANDIDATES:])
+        for term, _wanted, _anchors in self.sense_targets(q):
+            hits = self.corpus.contains(term, after=q.after, before=q.before, verify=False)
+            ids.update(hits[:SENSE_LIMIT // 4])
+        return ids
+
+    def _local_indexes(self, cand: set[str]) -> tuple[BM25Index, DenseIndex]:
+        """Per-query BM25 / dense indexes over the candidates (large corpora)."""
+        bm25 = BM25Index()
+        for pid in cand:
+            bm25.add(pid, self.norm(pid))
+        dense = DenseIndex(self.embedder)
+        order = sorted(cand, key=lambda pid: (-self._rank.get(pid, 0.0), pid))[:DENSE_LIMIT]
+        for pid in order:
+            dense.add(pid, self.norm(pid))
+        return bm25, dense
 
     def route_bm25(self, q: ParsedQuery, cand: set[str], k: int) -> list[tuple[str, float]]:
         toks: list[str] = []
@@ -164,16 +219,23 @@ class HybridRetriever:
             toks.extend(query_tokens(self.pack.variants.normalize_text(s)))
         if not toks:
             toks = query_tokens(self.pack.variants.normalize_text(q.text))
-        return self.bm25.search(toks, k, cand)
+        index = self._local[0] if self.large else self.bm25
+        return index.search(toks, k, cand if not self.large else set(index.docs) & cand)
 
     def route_dense(self, q: ParsedQuery, cand: set[str], k: int) -> list[tuple[str, float]]:
         text = " ".join([q.text, *q.all_surfaces()])
-        return self.dense.search(self.pack.variants.normalize_text(text), k, cand)
+        index = self._local[1] if self.large else self.dense
+        return index.search(self.pack.variants.normalize_text(text), k, cand if not self.large else set(index.vectors) & cand)
 
     def route_graph(self, q: ParsedQuery, cand: set[str], k: int) -> list[tuple[str, float, list[str]]]:
         if self.knowledge is None or not q.terms:
             return []
-        hg = self.knowledge.hypergraph()
+        if self.large:
+            top = sorted(cand, key=lambda pid: (-self._rank.get(pid, 0.0), pid))[:GRAPH_LIMIT]
+            self.knowledge.touch(top)
+            hg = self.knowledge.hypergraph(passage_ids=top)
+        else:
+            hg = self.knowledge.hypergraph()
         targets: list[tuple[set[str], float]] = []  # (term set that must all be members, weight)
         for tid in q.terms:
             targets.append(({tid}, 1.0))
@@ -200,7 +262,7 @@ class HybridRetriever:
         return [(pid, s, ids) for pid, (s, ids) in ranked]
 
     def _contains_any(self, pid: str, surfaces: list[str], groups: list[list[str]] | None = None) -> list[str]:
-        norm = self._norm[pid]
+        norm = self.norm(pid)
         found = [s for s in surfaces if s and self.pack.variants.normalize_text(s) in norm]
         for group in groups or []:
             if all(self.pack.variants.normalize_text(c) in norm for c in group):
@@ -260,8 +322,13 @@ class HybridRetriever:
             hi = q.before if q.before is not None else 1912
             mid = (lo + hi) / 2
         out = []
-        for pid in cand:
-            norm = self._norm[pid]
+        pool = cand
+        if self.large and len(cand) > SENSE_LIMIT:
+            heads = {term for term, _, _ in targets}
+            pool = {pid for pid in cand if any(h in self.norm(pid) for h in heads)}
+            pool = set(sorted(pool, key=lambda pid: (-self._rank.get(pid, 0.0), pid))[:SENSE_LIMIT])
+        for pid in pool:
+            norm = self.norm(pid)
             passage = self.corpus.passage(pid)
             year = self.corpus.year(passage)
             best = 0.0
@@ -296,7 +363,11 @@ class HybridRetriever:
         if allowed is not None:
             cand &= allowed
         if books:
-            cand = {pid for pid in cand if self.corpus.passage(pid).book_id in set(books)}
+            wanted = set(books)
+            cand = {pid for pid in cand if self.corpus.passage(pid).book_id in wanted}
+        if self.large:
+            self.corpus.passages_by_id(sorted(cand))  # one batched fetch warms the passage cache
+            self._local = self._local_indexes(cand)
         active = [r for r in (routes or list(ROUTES)) if r in ROUTES]
         ranked: dict[str, list[tuple[str, float]]] = {}
         claim_ids: dict[str, list[str]] = {}
@@ -326,7 +397,8 @@ class HybridRetriever:
                 if "graph" in h.routes or self._contains_any(h.passage_id, surfaces, groups)
             ]
             seeds = sorted(relevant_seeds, key=lambda h: -h.score)[:k]
-            for edge in self.knowledge.lineage():
+            edges = self.knowledge.lineage(passage_ids=[h.passage_id for h in seeds]) if self.large else self.knowledge.lineage()
+            for edge in edges:
                 for seed in seeds:
                     other = None
                     if edge.source_passage == seed.passage_id and edge.target_passage:
@@ -345,7 +417,7 @@ class HybridRetriever:
             hit.period = self.pack.periods.period_of(hit.year)
             hit.matched = self._contains_any(hit.passage_id, surfaces, groups)
             if not hit.matched and "sense" in hit.routes:
-                hit.matched = [t for t in sense_heads if t in self._norm[hit.passage_id]]
+                hit.matched = [t for t in sense_heads if t in self.norm(hit.passage_id)]
                 hit.note = hit.note or "concept-level match (sense route)"
             hit.claim_ids = claim_ids.get(hit.passage_id, [])
             hit.score = round(hit.score * 1000, 4)
@@ -353,6 +425,12 @@ class HybridRetriever:
         relevant = [h for h in fused.values() if h.matched or "graph" in h.routes or "citation" in h.routes]
         pool = relevant if (relevant or q.terms) else list(fused.values())
         hits = sorted(pool, key=lambda h: (-h.score, h.passage_id))[:k]
+        if self.large and q.intent == "earliest" and ranked.get("temporal"):
+            # in a large corpus the earliest attestations rarely win on relevance score: keep the three
+            # earliest matching passages in the answer to an origin question
+            earliest = [fused[pid] for pid, _ in ranked["temporal"][:3] if pid in fused and fused[pid] in pool]
+            keep = [h for h in hits if h not in earliest][: max(0, k - len(earliest))]
+            hits = earliest + keep
         if q.intent == "earliest":
             hits.sort(key=lambda h: (h.year if h.year is not None else 9999, -h.score))
         return q, hits

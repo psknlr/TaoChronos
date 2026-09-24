@@ -30,6 +30,18 @@ KIND_ZH = {"lost_knowledge": "失传知识", "historical_testimony": "文本证�
            "contradiction": "矛盾分析", "cross_space_bridge": "跨空间桥接"}
 DISCLAIMER = ("演示语料为未经核验的整理本（仅供方法演示）；本报告中的所有假说均为计算推断（Computational Hypothesis Space），"
               "不构成医学结论，需经专家核验（Gate G7）后方可视为研究发现。")
+HYPOTHESIS_NOTE = "本报告中的所有假说均为计算推断（Computational Hypothesis Space），不构成医学结论，需经专家核验（Gate G7）后方可视为研究发现。"
+
+
+def disclaimer(corpus: Any) -> str:
+    """What the evidence rests on: the demo corpus, or the licensed sources of a full corpus store."""
+    if not getattr(corpus, "large", False):
+        return DISCLAIMER
+    licences = sorted({b.source.license for b in corpus.books.values() if b.source.license})
+    origins = sorted({b.source.origin for b in corpus.books.values() if b.source.origin})
+    verified = sum(1 for b in corpus.books.values() if b.source.verified)
+    return (f"语料：{len(corpus.books)} 部古籍录文（来源：{'；'.join(origins)}；授权：{'、'.join(licences)}），"
+            f"{len(corpus.books) - verified} 部未经本项目逐字校勘；白文经机器断句抽取，引文均为原文逐字。" + HYPOTHESIS_NOTE)
 
 
 def _book(corpus: Any, book_id: str) -> str:
@@ -40,8 +52,12 @@ def _cite(corpus: Any, rec: Any) -> str:
     if rec.book_id == "modern-literature":
         return f"[现代文献] {rec.quote[:120]}（{rec.note}）"
     loc = rec.locator.label() if rec.locator else ""
-    year = corpus.year(corpus.passage(rec.passage_id)) if corpus.has_passage(rec.passage_id) else None
+    passage = corpus.passage(rec.passage_id) if corpus.has_passage(rec.passage_id) else None
+    year = corpus.year(passage) if passage is not None else None
     dyn = corpus.books[rec.book_id].dynasty if rec.book_id in corpus.books else ""
+    layer = next((t.split(":", 1)[1] for t in (passage.tags if passage is not None else []) if t.startswith("layer:")), None)
+    if layer:
+        dyn = f"{layer}·{passage.temporal.dynasty}" if passage.temporal.dynasty and passage.temporal.dynasty != dyn else layer
     when = f"{dyn}，约 {int(year)} 年" if year is not None else dyn
     return f"《{_book(corpus, rec.book_id)}》{loc}（{when}）「{rec.quote}」 `{rec.passage_id}[{rec.start}:{rec.end}]`"
 
@@ -236,7 +252,7 @@ def build(harness: Any, state: Any, session_id: str) -> tuple[DiscoveryReport, s
     )
     status = (state.stop or {}).get("status", state.status)
     md = [f"# {report.title}", "", f"> 会话 `{session_id}` · 画像 `{state.profile}` · 状态 {status} · 轮次 {state.round}", "",
-          f"> {DISCLAIMER}", ""]
+          f"> {disclaimer(corpus)}", ""]
     for s in sections:
         md += [f"## {s.title}", "", s.body, ""]
     payload = {

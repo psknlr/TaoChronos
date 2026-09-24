@@ -34,6 +34,17 @@ class ExternalWork:
     notes: str = ""
 
 
+def _positions(text: str, sub: str) -> list[int]:
+    out, start = [], 0
+    while sub:
+        i = text.find(sub, start)
+        if i < 0:
+            return out
+        out.append(i)
+        start = i + 1
+    return out
+
+
 def _merge(base: dict[str, Any] | None, override: dict[str, Any] | None) -> dict[str, Any]:
     out = dict(base or {})
     out.update(override or {})
@@ -41,6 +52,10 @@ def _merge(base: dict[str, Any] | None, override: dict[str, Any] | None) -> dict
 
 
 class Corpus:
+    """In-memory corpus (YAML).  ``large`` corpora (``StoreCorpus``) share the same interface."""
+
+    large = False
+
     def __init__(
         self,
         books: dict[str, Book],
@@ -88,6 +103,7 @@ class Corpus:
                 school=raw.get("school"),
                 editions=editions,
                 notes=raw.get("notes", ""),
+                work=raw.get("work"),
             )
         external = {
             raw["id"]: ExternalWork(
@@ -243,6 +259,14 @@ class Corpus:
         drop = set(book_ids)
         return self.subset(pid for pid, p in self._passages.items() if p.book_id not in drop)
 
+    def witnesses(self, target: str) -> list[str]:
+        """Books that transmit ``target`` — the book itself, or every witness of the work of that id
+        (a generic reference to 《伤寒论》 resolves to 注解伤寒论 when only that witness is ingested)."""
+        if target in self.books:
+            return [target]
+        hits = [b for b in self.books.values() if getattr(b, "work", None) == target]
+        return [b.id for b in sorted(hits, key=lambda b: (b.composition.start if b.composition else 0, b.id))]
+
     def title_index(self) -> dict[str, tuple[str, str]]:
         """Surface title/alias → (kind, id) where kind is 'book' or 'external'."""
         index: dict[str, tuple[str, str]] = {}
@@ -253,6 +277,56 @@ class Corpus:
             for name in [work.title, *work.aliases]:
                 index.setdefault(name, ("external", work.id))
         return index
+
+    # ------------------------------------------------ search interface (scan)
+    def passages_by_id(self, ids: Iterable[str]) -> list[Passage]:
+        return [self._passages[i] for i in ids if i in self._passages]
+
+    def count_range(self, *, after: float | None = None, before: float | None = None) -> int:
+        return len(self.passages(after=after, before=before))
+
+    def book_passage_count(self, book_id: str) -> int:
+        return sum(1 for p in self._passages.values() if p.book_id == book_id)
+
+    def contains(self, surface: str, *, after: float | None = None, before: float | None = None,
+                 book_ids: Iterable[str] | None = None, limit: int | None = None, verify: bool = True,
+                 normalize: Any = None) -> list[str]:
+        norm_fn = normalize or self.normalize or (lambda t: t)
+        target = norm_fn(surface)
+        out = [p.id for p in self.passages(book_ids=book_ids, after=after, before=before) if target in norm_fn(p.text)]
+        return out[:limit] if limit else out
+
+    def count(self, surface: str, *, after: float | None = None, before: float | None = None) -> int:
+        return len(self.contains(surface, after=after, before=before))
+
+    def search(self, surfaces: Iterable[str], *, limit: int = 200, after: float | None = None, before: float | None = None,
+               book_ids: Iterable[str] | None = None) -> list[tuple[str, float]]:
+        norm_fn = self.normalize or (lambda t: t)
+        targets = [norm_fn(s) for s in surfaces if s]
+        scored = []
+        for p in self.passages(book_ids=book_ids, after=after, before=before):
+            text = norm_fn(p.text)
+            hits = sum(text.count(t) for t in targets)
+            if hits:
+                scored.append((p.id, float(hits)))
+        scored.sort(key=lambda t: (-t[1], t[0]))
+        return scored[:limit]
+
+    def near(self, left: Iterable[str], right: Iterable[str], *, distance: int = 24, after: float | None = None,
+             before: float | None = None, limit: int | None = None) -> list[str]:
+        norm_fn = self.normalize or (lambda t: t)
+        ls = [norm_fn(x) for x in left if x]
+        rs = [norm_fn(x) for x in right if x]
+        out = []
+        for p in self.passages(after=after, before=before):
+            text = norm_fn(p.text)
+            lpos = [i for s in ls for i in _positions(text, s)]
+            rpos = [i for s in rs for i in _positions(text, s)]
+            if any(abs(a - b) <= distance for a in lpos for b in rpos):
+                out.append(p.id)
+        return out[:limit] if limit else out
+
+    normalize: Any = None  # set by the classics plugin (the domain's variant normaliser)
 
     def stats(self, periods: Any = None) -> dict[str, Any]:
         by_book: dict[str, int] = {}

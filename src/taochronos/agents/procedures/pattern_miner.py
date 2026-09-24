@@ -267,6 +267,8 @@ def _d5(ctx: Any, focus: set[str]) -> tuple[list[Observation], list[dict]]:
         a, b = claims.get(c.claim_a), claims.get(c.claim_b)
         if a is None or b is None:
             continue
+        if c.type == "segmentation":
+            continue  # an artefact of machine segmentation: recorded as a contradiction record, not an observation
         pair = f"{a.passage_id}（同一条文内部）" if c.claim_a == c.claim_b else f"{a.passage_id} ↔ {b.passage_id}"
         terms = [c.subject] if c.subject else []
         axis = c.axis.split(":")[-1] if c.axis else c.type

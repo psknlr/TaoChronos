@@ -83,6 +83,11 @@ stop: {max_rounds: 2, stop_on_validation: false}
 `Harness` (in `bootstrap.py`) is the composition root: profile → plugins → capabilities → tools → hooks →
 agent specs (validated) → router → runtime → store → artifacts.
 
+The `corpus` capability has two implementations behind one interface: the in-memory YAML corpus (demo) and
+`StoreCorpus`, a lazy view of the SQLite corpus store with a full-text index (the `full-corpus` profile); large
+corpora switch retrieval, curation, lineage and falsification to index-backed candidates (see
+[ADR 0003](adr/0003-corpus-store-and-scoped-research.md)).
+
 ## Tools and the scheduler
 
 The **Tool Mesh** (`tools/mesh.py`) exposes 26 tools in six families (philology, retrieval, knowledge,

@@ -26,7 +26,7 @@ from ...protocol.events import EventType
 from ...protocol.evidence import Stance
 from ...protocol.hypothesis import HypothesisReview, Objection
 from ...science.scoring import novelty
-from .common import cluster_fn, co_mentions, evidence_record, locate, related_terms, scope_passages, surface, year_fn
+from .common import cluster_fn, co_mentions, evidence_record, late_passage_count, locate, related_terms, scope_passages, surface, year_fn
 
 OUTPUT = "ReviewSet"
 MAX_REVISIONS = 1
@@ -144,9 +144,9 @@ def _review(ctx: Any, h: Any) -> dict[str, Any]:
     if h.kind == "lost_knowledge":
         pivot = float(data.get("pivot_year", 960))
         checks += ["sample_size", "statistical", "earliest_source"]
-        late = [p for p in scope_passages(ctx) if (corpus.year(p) or 0) >= pivot]
-        if len(late) < MIN_LATE_PASSAGES:
-            objections.append(_obj(h, "sample_size", "major", f"{int(pivot)} 年后仅有 {len(late)} 段文本在研究范围内，“不再出现”的证据力有限"))
+        late = late_passage_count(ctx, pivot)
+        if late < MIN_LATE_PASSAGES:
+            objections.append(_obj(h, "sample_size", "major", f"{int(pivot)} 年后仅有 {late} 段文本在研究范围内，“不再出现”的证据力有限"))
         p_abs = stats.get("p_absence")
         if isinstance(p_abs, (int, float)) and p_abs >= 0.05:
             objections.append(_obj(h, "statistical", "major", f"按早期关联率推算，后世未见共现的概率为 {p_abs}，缺失并不显著"))

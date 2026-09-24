@@ -10,7 +10,8 @@ TaoChronos 把一次古籍研究变成一个**可重放、可审计、可证伪*
 假说、质疑、元评审……），每一个结论都必须落到**逐字可核的原文证据**上，并经过认识论门控 G0–G8，
 最后由人类专家定夺。
 
-> ⚠️ `corpus/demo` 是为演示方法而整理的**未经核验的节录**，所有输出都是**计算推断**（Computational
+> ⚠️ `corpus/demo` 是为演示方法而整理的**未经核验的节录**；全量语料（《四库全书·子部·医家类》100 部，
+> 汉籍仓库录文，CC BY-SA 4.0）同样**未经本项目逐字校勘**。所有输出都是**计算推断**（Computational
 > Hypothesis Space），不是医学结论，也不是临床建议。
 
 ---
@@ -54,6 +55,31 @@ taochronos demo --profile claude   # Opus 5（前沿层）/ Sonnet 5（中层）
 Claude 提供者默认开启服务端拒答回退（`fallbacks="default"`，适用于 Opus 5）；若模型拒答、输出无法通过
 模式校验或预算耗尽，该任务会回退到确定性过程，并把回退记录为一条 Decision。也支持 OpenAI 兼容端点
 （DeepSeek、Grok、Gemini、本地 vLLM/Ollama）与外部命令子智能体，见 [docs/agents.md](docs/agents.md)。
+
+## 全量古籍语料
+
+演示语料之外，TaoChronos 接入了汉籍仓库（Kanseki Repository）**KR3e 医家类**——即《四库全书·子部·医家类》
+全部 **100 部**医籍：约 **2566 万字、35.4 万段**。原文不进入 git；抓取、入库、索引都可复现：
+
+```bash
+taochronos corpus fetch kanripo     # 逐个浅克隆 100 个文本仓库到数据目录，写 corpus/sources.lock.yaml（提交号、授权、体量）
+taochronos corpus ingest kanripo    # 解析 → 分层断代 → SQLite 语料库 + 全文索引（约 3 分钟）
+taochronos corpus status            # 书数、段数、字数、分期、分层统计；索引是否与当前异体表一致
+taochronos lexicon harvest          # 从全量语料采集候选方名（~4800）与药名（~2100，含“一名”异名与纲目首见出处）
+taochronos research "消渴的概念如何随时代演变？" --profile full-corpus --focus 消渴 --forbid 消渴=糖尿病
+```
+
+- **逐部书目**（`corpus/catalog/kanripo-kr3e.yaml`）：作者、朝代、成书年、类别、学派、版本，以及**分层断代**——
+  王冰注（762）、新校正（1068）、运气七篇（王冰补入，762）、证类本草的陶注/唐本注/开宝/嘉祐/图经/衍义各层、
+  四库提要（按“乾隆 N 年”解析）、卷首序目（按版本）。层次无法可靠分离的传本，一律按最晚一层保守断代，
+  并把所传的早期文本年代记为 `t_citation`。
+- **繁简与古籍异体归一**（`domains/classics/script/`）：OpenCC 繁简表 + Unihan 异体 + 按医籍语境人工校订
+  （䜴→豉、䓤→葱、茰→萸、㪚→散、讝→谵、痟→消……），只用于匹配，原文永不改动。
+- **白文机器断句**：四库本无标点，抽取器在带虚拟标点的“视图”上工作，再把每个引文与论元位置映射回原文，
+  逐字溯源不断链；断句所致的症状对立只记为“表面矛盾”，不生成假说。
+- **规模化研究**：Curator 用全文索引按问题词、异名、相关词与义项线索召回候选，按时期分层抽样成可审计的
+  抽样框架（记录在语料清单里）；而“后世是否再出现”“失传”之类的否证检查由 Skeptic 直接查询**整个语料库**
+  （同时遵守时间留出与书目排除），不受抽样影响。
 
 ## 一次研究如何运行
 
@@ -129,17 +155,21 @@ agents/                    15 个 AgentSpec（YAML）
 skills/                    SKILL.md 能力包
 profiles/                  配置画像：full-discovery、classics-basic、formula-discovery、historical-disease、claude
 domains/classics/          领域包：时期、异体字、词表、历史义项、现代概念、本体、引用、既有认识
-corpus/                    演示语料（未经核验）与现代证据摘要
+corpus/                    演示语料（未经核验）、现代证据摘要、全量书目 catalog/ 与来源锁定 sources.lock.yaml
+domains/classics/script/   繁简与古籍异体归一表（OpenCC / Unihan / 人工校订）
+domains/classics/lexicon-harvested/  从全量语料采集的候选方名、药名（仅 full-corpus 画像加载）
 evals/gold/                评测金标准
 src/taochronos/
   protocol/  kernel/  capabilities/  science/  verification/  tools/  plugins/  agents/  engine/  evals/  workspace/
-tests/                     58 个测试
+tests/                     68 个测试（含汉籍仓库格式样例 fixtures/）
 docs/                      架构、智能体、发现、评测、数据、ADR、路线图
 ```
 
 ## 局限
 
-- 演示语料很小（23 部书、131 段节录），且为未经核验的整理本；数值结果只具说明意义。
+- 演示语料很小（23 部书、131 段节录），且为未经核验的整理本；评测数值只具说明意义。
+- 全量语料为汉籍仓库录文（文渊阁四库本 / 四部丛刊本），未经本项目校勘；四库本有清人删改与避讳改字，
+  白文断句为规则式，长段内可能把相邻条文并入同一主张；采集的方名、药名是候选，需专家审定。
 - 规则抽取器与领域词表为演示而编写，覆盖有限；真实研究需要专家构建的词表、义项与金标准。
 - 组成相似度不足以区分真正的化裁与趋同组方（见 Lineage 评测中的两条伪谱系）。
 - Time Machine 与链接预测需要大规模语料才有统计意义；当前只验证流程。

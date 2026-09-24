@@ -62,7 +62,13 @@ def verify_evidence(record: EvidenceRecord, corpus: Any) -> list[str]:
 
 def find_quote(corpus: Any, quote: str, normalize: Callable[[str], str], passage_id: str | None = None) -> list[tuple[str, int, int]]:
     """Locate a quote verbatim (or after variant normalisation) — used to catch fabricated citations."""
-    targets = [corpus.passage(passage_id)] if passage_id and corpus.has_passage(passage_id) else corpus.passages()
+    if passage_id and corpus.has_passage(passage_id):
+        targets = [corpus.passage(passage_id)]
+    elif getattr(corpus, "large", False):
+        # index lookup; a long quote is checked through its first 24 characters, then verified in full below
+        targets = corpus.passages_by_id(corpus.contains(quote[:24], verify=False, limit=500))
+    else:
+        targets = corpus.passages()
     hits = []
     nq = normalize(quote)
     for p in targets:

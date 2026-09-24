@@ -1,0 +1,214 @@
+# Catalog of the Kanseki Repository texts ingested by TaoChronos: KR3e 醫家類 = 《四库全书·子部·医家类》,
+# all 100 works.  The texts themselves are NOT in this repository: `taochronos corpus fetch kanripo` clones
+# them into the data directory and `taochronos corpus ingest` builds the corpus store.
+#
+# Dating policy (read before trusting a date):
+# * `composition` dates the work's main layer.  A witness is never dated earlier than its own production
+#   unless it is the standard transmission of an earlier text (e.g. 素问 in the 王冰/新校正 recension).
+# * Layers the transcription lets us separate get their own dates: double-column notes (`notes`, `markers`),
+#   indented commentary blocks (`indented_commentary`), chapters added later (`chapter_layers`), and sections
+#   appended by later editors (`section_layers`).
+# * When layers cannot be separated reliably, `mixed` dates every passage by the latest layer and keeps the
+#   older material's date as `t_citation` — conservative for "earliest attestation" questions.
+# * Front matter (卷首: 提要, prefaces, contents) is dated by the 提要 date (乾隆 year parsed from the text) or
+#   the edition.  Dates marked 待核 in `notes` are approximate and await expert review.
+# Dates are years CE (negative = BCE); ranges express uncertainty.
+
+source:
+  id: kanripo
+  name: 漢籍リポジトリ Kanseki Repository（Christian Wittern 等）
+  url: https://www.kanripo.org/
+  license: CC BY-SA 4.0
+  license_url: https://creativecommons.org/licenses/by-sa/4.0/
+  repo: https://github.com/kanripo/{kr_lower}
+  acquisition: shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml
+  transcription: 汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘
+  verified: false
+
+editions:
+  WYG: {name: 文渊阁四库全书本, year: [1773, 1782], quality: 0.6}
+  SBCK: {name: 四部丛刊影印本, year: [1919, 1936], quality: 0.7}
+
+books:
+  - {kr: KR3e0001, id: suwen_wangbing, title: 重广补注黄帝内经素问, aliases: [黄帝内经素问, 素问, 黄帝素问, 内经, 素問], work: suwen,
+     authors: [佚名（托名黄帝、岐伯）], dynasty: 战国—西汉, composition: [-300, 25], attribution: pseudepigraphic, category: 医经,
+     edition: {base: SBCK, name: 四部丛刊影印明顾从德翻宋本, year: [1550, 1550]}, note_order: BA,
+     notes: {layer: 王冰注, year: [762, 762], attribution: 唐·王冰次注},
+     markers: [{prefix: 新校正云, layer: 新校正, year: [1068, 1068], attribution: 宋·林亿、孙奇、高保衡等}],
+     chapter_layers: [{pattern: "天元紀大論|五運行大論|六微[旨㫖]大論|氣交變大論|五常政大論|六元正紀大論|至[真眞]要大論", layer: 运气七篇（王冰补入）,
+                       year: [762, 762], attribution: 王冰次注时补入，来源与年代存疑（一说为《阴阳大论》）}],
+     notes_text: 运气七篇按王冰补入之年保守断代；刺法论、本病论两篇亡佚（遗篇为宋人伪托，本本未收）}
+  - {kr: KR3e0002, id: lingshu_shisong, title: 黄帝素问灵枢经, aliases: [灵枢经, 灵枢, 针经, 九卷, 靈樞經, 靈樞], work: lingshu,
+     authors: [佚名（托名黄帝、岐伯）], dynasty: 战国—西汉, composition: [-300, 25], attribution: pseudepigraphic, category: 医经,
+     edition: {base: SBCK, name: 四部丛刊影印明赵府居敬堂本（史崧校正本系统）, year: [1560, 1570]}, note_order: BA,
+     notes: {layer: 史崧音释, year: [1155, 1155], attribution: 宋·史崧}, notes_text: 今本出南宋史崧家藏本（1155）}
+  - {kr: KR3e0003, id: nanjing_jizhu, title: 王翰林集注黄帝八十一难经, aliases: [难经集注, 八十一难经, 难经, 難經], work: nanjing,
+     authors: [旧题秦越人], dynasty: 东汉, composition: [0, 200], attribution: pseudepigraphic, category: 医经,
+     edition: {base: SBCK, name: 四部丛刊影印日本庆安五年刊本, year: [1652, 1652]},
+     indented_commentary: {layer: 集注（吕广、杨玄操、丁德用、虞庶、杨康侯）, year: [1100, 1100], attribution: 三国至北宋诸家注，按最晚一家保守断代},
+     notes: {layer: 集注（吕广、杨玄操、丁德用、虞庶、杨康侯）, year: [1100, 1100], attribution: 诸家注}}
+  - {kr: KR3e0004, id: nanjing_benyi, title: 难经本义, aliases: [難經本義], work: nanjing_benyi, authors: [滑寿], dynasty: 元, composition: [1361, 1361],
+     category: 医经, mixed: {layer: 滑寿本义（引难经原文与注）, year: [1361, 1361]}, cites_work: [0, 200],
+     indented_commentary: {layer: 滑寿注, year: [1361, 1361], attribution: 元·滑寿}}
+  - {kr: KR3e0005, id: zhenjiu_jiayi, title: 针灸甲乙经, aliases: [甲乙经, 黄帝三部针灸甲乙经, 甲乙, 鍼灸甲乙經], work: jiayi, authors: [皇甫谧],
+     dynasty: 西晋, composition: [256, 282], category: 针灸, notes_text: 双行小注多为宋臣校语（《素问》作…），保留于正文层}
+  - {kr: KR3e0006, id: jinkui_lunzhu, title: 金匮要略论注, aliases: [金匱要畧論註, 金匮论注], work: jinkui_lunzhu, authors: [徐彬], dynasty: 清,
+     composition: [1671, 1671], category: 杂病, school: 仲景学说, mixed: {layer: 徐彬论注（引金匮原文与注）, year: [1671, 1671]}, cites_work: [200, 219],
+     indented_commentary: {layer: 徐彬注, year: [1671, 1671], attribution: 清·徐彬}}
+  - {kr: KR3e0007, id: jinkui_yaolue, title: 新编金匮要略方论, aliases: [金匮要略方论, 金匮要略, 金匮, 金匮方, 新編金匱要畧方論, 金匱要略], work: jinkui,
+     authors: [张机], dynasty: 东汉, composition: [200, 219], category: 杂病, school: 仲景学说,
+     edition: {base: SBCK, name: 四部丛刊影印明刊本（宋林亿等校定本系统，1066）, year: [1522, 1566]},
+     notes_text: 今本为北宋校正医书局据王洙所得蠹简整理（1066）；剂量、炮制等小字注保留于正文层}
+  - {kr: KR3e0008, id: zhujie_shanghanlun, title: 注解伤寒论, aliases: [注解傷寒論, 成无己注伤寒论, 成注本伤寒论], work: shanghanlun,
+     authors: [成无己], dynasty: 金, composition: [1144, 1144], category: 伤寒, school: 仲景学说,
+     edition: {base: SBCK, name: 四部丛刊影印明嘉靖汪济川校刊本, year: [1545, 1545]},
+     mixed: {layer: 成无己注解本（正文与注在录文中未能可靠分离）, year: [1144, 1144]}, cites_work: [200, 219]}
+  - {kr: KR3e0009, id: maijing, title: 脉经, aliases: [王叔和脉经, 新刊王氏脉经, 脈經], work: maijing, authors: [王叔和], dynasty: 西晋,
+     composition: [265, 290], category: 诊法, edition: {base: SBCK, name: 四部丛刊影印元广勤书堂本, year: [1330, 1330]},
+     markers: [{prefix: "臣億等|臣等謹按", layer: 宋臣校语, year: [1068, 1068], attribution: 宋·林亿等}]}
+  - {kr: KR3e0010, id: zhouhou_beiji, title: 肘后备急方, aliases: [肘后方, 肘后, 肘後備急方, 补阙肘后百一方, 葛氏方], work: zhouhou, authors: [葛洪, 陶弘景, 杨用道],
+     dynasty: 东晋, composition: [306, 363], category: 方书, attribution: compiled,
+     mixed: {layer: 葛洪原著与陶弘景增补（未能分离）, year: [500, 500]}, cites_work: [306, 363],
+     section_layers: [{pattern: "附方", layer: 杨用道附广, year: [1144, 1144], attribution: 金·杨用道《附广肘后方》}]}
+  - {kr: KR3e0011, id: chushi_yishu, title: 褚氏遗书, aliases: [褚氏遺書], work: chushi_yishu, authors: [旧题褚澄], dynasty: 南齐（宋代始出）, composition: [479, 502],
+     attribution: disputed, category: 医论, mixed: {layer: 南宋始出之本, year: [1201, 1201]}, cites_work: [479, 502], notes_text: 宋嘉泰间刊行，真伪存疑}
+  - {kr: KR3e0012, id: zhubing_yuanhou, title: 诸病源候总论, aliases: [诸病源候论, 巢氏病源, 病源, 巢氏诸病源候论, 諸病源候論], work: zhubing, authors: [巢元方],
+     dynasty: 隋, composition: [610, 610], category: 病源}
+  - {kr: KR3e0013, id: qianjin_yaofang, title: 备急千金要方, aliases: [千金要方, 千金方, 千金, 備急千金要方], work: qianjin, authors: [孙思邈], dynasty: 唐,
+     composition: [650, 659], category: 方书, markers: [{prefix: "臣億等|臣等謹按", layer: 宋臣校语, year: [1066, 1066], attribution: 宋·林亿等}],
+     notes_text: 剂量、炮制等小字注保留于正文层；标明“臣亿等”者为宋臣校语，另层断代}
+  - {kr: KR3e0014, id: yinhai_jingwei, title: 银海精微, aliases: [銀海精微], work: yinhai_jingwei, authors: [旧题孙思邈], dynasty: 宋元—明（托名唐）,
+     composition: [1127, 1644], attribution: pseudepigraphic, category: 眼科, notes_text: 成书年代待核}
+  - {kr: KR3e0015, id: waitai_miyao, title: 外台秘要方, aliases: [外台秘要, 外台, 外臺秘要], work: waitai, authors: [王焘], dynasty: 唐, composition: [752, 752],
+     category: 方书, markers: [{prefix: "臣億等|臣等謹按", layer: 宋臣校语, year: [1069, 1069], attribution: 宋·林亿、孙兆等}],
+     notes_text: 小字注保留于正文层；标明“臣亿等”者为宋臣校语，另层断代}
+  - {kr: KR3e0016, id: luxin_jing, title: 颅囟经, aliases: [顱顖經], work: luxin_jing, authors: [佚名], dynasty: 唐末宋初, composition: [900, 1100],
+     category: 儿科, notes_text: 自《永乐大典》辑出}
+  - {kr: KR3e0017, id: tongren_zhenjiujing, title: 铜人针灸经, aliases: [銅人鍼灸經], work: tongren_zhenjiujing, authors: [佚名], dynasty: 宋,
+     composition: [1000, 1127], category: 针灸, notes_text: 年代待核}
+  - {kr: KR3e0018, id: mingtang_jiujing, title: 明堂灸经, aliases: [西方子明堂灸经, 明堂灸經], work: mingtang_jiujing, authors: [西方子], dynasty: 宋元,
+     composition: [1100, 1300], category: 针灸, notes_text: 年代待核}
+  - {kr: KR3e0019, id: boji_fang, title: 博济方, aliases: [王氏博济方, 博濟方], work: boji_fang, authors: [王衮], dynasty: 北宋, composition: [1047, 1047], category: 方书}
+  - {kr: KR3e0020, id: susheng_liangfang, title: 苏沈良方, aliases: [苏沈内翰良方, 蘇沈良方], work: susheng_liangfang, authors: [苏轼, 沈括], dynasty: 北宋,
+     composition: [1075, 1101], category: 方书, attribution: compiled}
+  - {kr: KR3e0021, id: shouqin_yanglao, title: 寿亲养老新书, aliases: [养老奉亲书, 壽親養老新書], work: shouqin_yanglao, authors: [陈直, 邹铉], dynasty: 宋元,
+     composition: [1080, 1085], category: 养生, mixed: {layer: 陈直原书与邹铉续增（未分）, year: [1307, 1307]}, cites_work: [1080, 1085]}
+  - {kr: KR3e0022, id: jiaoqi_zhifa, title: 脚气治法总要, aliases: [腳氣治法總要], work: jiaoqi_zhifa, authors: [董汲], dynasty: 北宋, composition: [1093, 1093], category: 内科}
+  - {kr: KR3e0023, id: lvshe_beiyao, title: 旅舍备要方, aliases: [旅舍備要方], work: lvshe_beiyao, authors: [董汲], dynasty: 北宋, composition: [1086, 1086], category: 方书}
+  - {kr: KR3e0024, id: suwen_yunqi_lunao, title: 素问入式运气论奥, aliases: [运气论奥, 素問入式運氣論奧], work: yunqi_lunao, authors: [刘温舒], dynasty: 北宋,
+     composition: [1099, 1099], category: 运气}
+  - {kr: KR3e0025, id: shanghan_weizhi, title: 伤寒微旨论, aliases: [傷寒微旨論], work: shanghan_weizhi, authors: [韩祗和], dynasty: 北宋, composition: [1086, 1086], category: 伤寒}
+  - {kr: KR3e0026, id: shanghan_zongbing, title: 伤寒总病论, aliases: [傷寒總病論], work: shanghan_zongbing, authors: [庞安时], dynasty: 北宋, composition: [1100, 1100], category: 伤寒}
+  - {kr: KR3e0027, id: shengji_zonglu_zuanyao, title: 圣济总录纂要, aliases: [聖濟總錄纂要, 圣济总录], work: shengji_zonglu, authors: [程林], dynasty: 清（原书北宋）,
+     composition: [1111, 1117], category: 方书, mixed: {layer: 程林纂要（节录圣济总录）, year: [1681, 1681]}, cites_work: [1111, 1117]}
+  - {kr: KR3e0028, id: zhenglei_bencao, title: 证类本草, aliases: [经史证类备急本草, 大观本草, 證類本草, 证类], work: zhenglei, authors: [唐慎微, 艾晟], dynasty: 北宋,
+     composition: [1082, 1108], category: 本草, attribution: compiled,
+     mixed: {layer: 本经·别录大字正文（黑白字未能区分）, year: [500, 500]}, cites_work: [25, 220],
+     notes: {layer: 唐慎微等续增注文, year: [1108, 1108], attribution: 未标明出处之注按成书年保守断代},
+     markers: [{prefix: 陶隱居云, layer: 陶弘景注, year: [500, 500]}, {prefix: 唐本注云, layer: 唐本注, year: [659, 659]},
+               {prefix: "唐本注", layer: 唐本注, year: [659, 659]}, {prefix: "今按|今注|今詳", layer: 开宝注, year: [974, 974]},
+               {prefix: 臣禹錫等謹按, layer: 嘉祐注, year: [1061, 1061]}, {prefix: 圖經曰, layer: 图经, year: [1061, 1061]},
+               {prefix: 衍義曰, layer: 本草衍义, year: [1116, 1116]}, {prefix: 雷公云, layer: 雷公炮炙论, year: [479, 479]}]}
+  - {kr: KR3e0029, id: zhenghe_bencao, title: 重修政和经史证类备用本草, aliases: [政和本草, 政和证类本草, 重修政和經史證類備用本草], work: zhenglei, authors: [唐慎微, 曹孝忠, 寇宗奭, 张存惠],
+     dynasty: 北宋—金, composition: [1082, 1116], category: 本草, attribution: compiled,
+     edition: {base: SBCK, name: 四部丛刊影印金泰和晦明轩本, year: [1249, 1249]},
+     mixed: {layer: 本经·别录大字正文（黑白字未能区分）, year: [500, 500]}, cites_work: [25, 220],
+     notes: {layer: 唐慎微等续增注文, year: [1116, 1116], attribution: 未标明出处之注按成书年保守断代},
+     markers: [{prefix: 陶隱居云, layer: 陶弘景注, year: [500, 500]}, {prefix: "唐本注", layer: 唐本注, year: [659, 659]},
+               {prefix: "今按|今注|今詳", layer: 开宝注, year: [974, 974]}, {prefix: 臣禹錫等謹按, layer: 嘉祐注, year: [1061, 1061]},
+               {prefix: 圖經曰, layer: 图经, year: [1061, 1061]}, {prefix: 衍義曰, layer: 本草衍义, year: [1116, 1116]},
+               {prefix: 雷公云, layer: 雷公炮炙论, year: [479, 479]}]}
+  - {kr: KR3e0030, id: quansheng_zhimi, title: 全生指迷方, aliases: [全生指迷方], work: quansheng_zhimi, authors: [王贶], dynasty: 北宋, composition: [1125, 1125], category: 方书}
+  - {kr: KR3e0031, id: xiaoer_weisheng_zongwei, title: 小儿卫生总微论方, aliases: [小兒衞生總微論方, 卫生总微], work: xiaoer_weisheng, authors: [佚名], dynasty: 南宋,
+     composition: [1156, 1156], category: 儿科}
+  - {kr: KR3e0032, id: puji_benshi, title: 类证普济本事方, aliases: [普济本事方, 本事方, 類證普濟本事方], work: benshi_fang, authors: [许叔微], dynasty: 南宋,
+     composition: [1132, 1150], category: 方书}
+  - {kr: KR3e0033, id: hejiju_fang, title: 太平惠民和剂局方, aliases: [和剂局方, 局方, 太平惠民和劑局方], work: hejiju, authors: [陈师文, 裴宗元, 陈承], dynasty: 宋,
+     composition: [1107, 1110], category: 方书, attribution: compiled,
+     section_layers: [{pattern: "紹興續添", layer: 绍兴续添方, year: [1151, 1151]}, {pattern: "寶慶新增", layer: 宝庆新增方, year: [1225, 1227]},
+                      {pattern: "淳祐新添", layer: 淳祐新添方, year: [1241, 1252]}, {pattern: "吳直閣增諸家名方|吴直阁增诸家名方", layer: 吴直阁增诸家名方, year: [1230, 1252]}],
+     notes_text: 大观间陈师文等校订；南宋各朝续有增添，已按分节断代（待核）}
+  - {kr: KR3e0034, id: chuanxin_shiyong, title: 传信适用方, aliases: [傳信適用方], work: chuanxin_shiyong, authors: [吴彦夔], dynasty: 南宋, composition: [1180, 1180], category: 方书}
+  - {kr: KR3e0035, id: weiji_baoshu, title: 卫济宝书, aliases: [衞濟寶書], work: weiji_baoshu, authors: [东轩居士], dynasty: 南宋, composition: [1170, 1170], category: 外科, notes_text: 年代待核}
+  - {kr: KR3e0036, id: yishuo, title: 医说, aliases: [醫說], work: yishuo, authors: [张杲], dynasty: 南宋, composition: [1189, 1224], category: 医史}
+  - {kr: KR3e0037, id: zhenjiu_zisheng, title: 针灸资生经, aliases: [鍼灸資生經, 资生经], work: zhenjiu_zisheng, authors: [王执中], dynasty: 南宋, composition: [1220, 1220], category: 针灸}
+  - {kr: KR3e0038, id: furen_daquan, title: 妇人大全良方, aliases: [妇人良方, 婦人大全良方], work: furen_daquan, authors: [陈自明], dynasty: 南宋, composition: [1237, 1237], category: 妇科}
+  - {kr: KR3e0039, id: taiyiju_chengwen, title: 太医局诸科程文格, aliases: [太醫局諸科程文格], work: taiyiju_chengwen, authors: [何大任], dynasty: 南宋, composition: [1212, 1212], category: 医政}
+  - {kr: KR3e0040, id: chanyu_baoqing, title: 产育宝庆集, aliases: [產育寶慶集], work: chanyu_baoqing, authors: [李师圣, 郭稽中], dynasty: 宋, composition: [1100, 1150], category: 妇科}
+  - {kr: KR3e0041, id: sanyin_fang, title: 三因极一病证方论, aliases: [三因方, 三因极一病源论粹, 三因極一病證方論], work: sanyin, authors: [陈言], dynasty: 南宋, composition: [1174, 1174], category: 方书}
+  - {kr: KR3e0042, id: jiyan_beiju, title: 集验背疽方, aliases: [集驗背疽方], work: jiyan_beiju, authors: [李迅], dynasty: 南宋, composition: [1196, 1196], category: 外科}
+  - {kr: KR3e0043, id: jisheng_fang, title: 济生方, aliases: [严氏济生方, 濟生方], work: jisheng, authors: [严用和], dynasty: 南宋, composition: [1253, 1253], category: 方书}
+  - {kr: KR3e0044, id: chanbao_zhufang, title: 产宝诸方, aliases: [產寶諸方], work: chanbao_zhufang, authors: [佚名], dynasty: 宋, composition: [1100, 1200], category: 妇科}
+  - {kr: KR3e0045, id: renzhai_zhizhi, title: 仁斋直指, aliases: [仁斋直指方, 仁齋直指方論, 仁斋直指方论], work: renzhai_zhizhi, authors: [杨士瀛], dynasty: 南宋, composition: [1264, 1264],
+     category: 综合, section_layers: [{pattern: "附遺|附遗", layer: 朱崇正附遗, year: [1550, 1550], attribution: 明·朱崇正}]}
+  - {kr: KR3e0046, id: jijiu_xianfang, title: 急救仙方, aliases: [急救仙方], work: jijiu_xianfang, authors: [佚名], dynasty: 宋元, composition: [1100, 1368], category: 方书}
+  - {kr: KR3e0047, id: yuanbingshi, title: 素问玄机原病式, aliases: [原病式, 素問玄機原病式], work: yuanbingshi, authors: [刘完素], dynasty: 金, composition: [1152, 1186],
+     category: 医论, school: 河间学派}
+  - {kr: KR3e0048, id: xuanming_lunfang, title: 黄帝素问宣明论方, aliases: [宣明论方, 宣明论, 宣明方論], work: xuanming, authors: [刘完素], dynasty: 金, composition: [1172, 1172],
+     category: 方书, school: 河间学派}
+  - {kr: KR3e0049, id: shanghan_zhige, title: 伤寒直格方, aliases: [伤寒直格, 傷寒直格方], work: shanghan_zhige, authors: [旧题刘完素, 葛雍], dynasty: 金元, composition: [1160, 1200],
+     category: 伤寒, school: 河间学派, attribution: disputed}
+  - {kr: KR3e0050, id: baoming_ji, title: 素问病机气宜保命集, aliases: [保命集, 病机气宜保命集], work: baoming_ji, authors: [刘完素（一说张元素）], dynasty: 金, composition: [1186, 1186],
+     category: 综合, school: 河间学派, attribution: disputed}
+  - {kr: KR3e0051, id: rumen_shiqin, title: 儒门事亲, aliases: [儒門事親], work: rumen_shiqin, authors: [张从正], dynasty: 金, composition: [1217, 1228], category: 综合, school: 攻邪派}
+  - {kr: KR3e0052, id: neiwaishang_bianhuo, title: 内外伤辨惑论, aliases: [内外伤辨, 內外傷辨惑論], work: neiwaishang, authors: [李杲], dynasty: 金, composition: [1247, 1247], category: 综合, school: 补土派}
+  - {kr: KR3e0053, id: piweilun, title: 脾胃论, aliases: [脾胃論], work: piwei, authors: [李杲], dynasty: 金, composition: [1249, 1249], category: 综合, school: 补土派}
+  - {kr: KR3e0054, id: lanshi_micang, title: 兰室秘藏, aliases: [蘭室祕藏], work: lanshi, authors: [李杲, 罗天益], dynasty: 金元, composition: [1249, 1276], category: 综合, school: 补土派}
+  - {kr: KR3e0055, id: cishi_nanzhi, title: 此事难知, aliases: [此事難知], work: cishi_nanzhi, authors: [王好古], dynasty: 元, composition: [1308, 1308], category: 医论, school: 易水学派}
+  - {kr: KR3e0056, id: yilei_yuanrong, title: 医垒元戎, aliases: [醫壘元戎], work: yilei_yuanrong, authors: [王好古], dynasty: 元, composition: [1297, 1297], category: 伤寒, school: 易水学派}
+  - {kr: KR3e0057, id: tangye_bencao, title: 汤液本草, aliases: [湯液本草], work: tangye_bencao, authors: [王好古], dynasty: 元, composition: [1289, 1308], category: 本草, school: 易水学派}
+  - {kr: KR3e0058, id: ruizhutang, title: 瑞竹堂经验方, aliases: [瑞竹堂經驗方], work: ruizhutang, authors: [沙图穆苏], dynasty: 元, composition: [1326, 1326], category: 方书}
+  - {kr: KR3e0059, id: shiyi_dexiao, title: 世医得效方, aliases: [世醫得效方, 得效方], work: shiyi_dexiao, authors: [危亦林], dynasty: 元, composition: [1328, 1345], category: 方书}
+  - {kr: KR3e0060, id: gezhi_yulun, title: 格致余论, aliases: [格致餘論], work: gezhi_yulun, authors: [朱震亨], dynasty: 元, composition: [1347, 1347], category: 医论, school: 滋阴派}
+  - {kr: KR3e0061, id: jufang_fahui, title: 局方发挥, aliases: [局方發揮], work: jufang_fahui, authors: [朱震亨], dynasty: 元, composition: [1347, 1350], category: 医论, school: 滋阴派}
+  - {kr: KR3e0062, id: jinkui_gouxuan, title: 金匮钩玄, aliases: [金匱鈎玄], work: jinkui_gouxuan, authors: [朱震亨, 戴原礼], dynasty: 元明, composition: [1340, 1400], category: 综合, school: 滋阴派}
+  - {kr: KR3e0063, id: yulong_jing, title: 扁鹊神应针灸玉龙经, aliases: [玉龙经, 扁鵲神應鍼灸玉龍經], work: yulong_jing, authors: [王国瑞], dynasty: 元, composition: [1329, 1329], category: 针灸}
+  - {kr: KR3e0064, id: waike_jingyi, title: 外科精义, aliases: [外科精義], work: waike_jingyi, authors: [齐德之], dynasty: 元, composition: [1335, 1335], category: 外科}
+  - {kr: KR3e0065, id: maijue_kanwu, title: 脉诀刊误, aliases: [脈訣刊誤], work: maijue_kanwu, authors: [戴启宗], dynasty: 元, composition: [1330, 1370], category: 诊法}
+  - {kr: KR3e0066, id: yijing_suhui, title: 医经溯洄集, aliases: [醫經溯洄集], work: yijing_suhui, authors: [王履], dynasty: 元明, composition: [1368, 1368], category: 医论}
+  - {kr: KR3e0067, id: puji_fang, title: 普济方, aliases: [普濟方], work: puji_fang, authors: [朱橚, 滕硕, 刘醇], dynasty: 明, composition: [1390, 1406], category: 方书, attribution: compiled}
+  - {kr: KR3e0068, id: yuji_weiyi, title: 玉机微义, aliases: [玉機微義], work: yuji_weiyi, authors: [徐彦纯, 刘纯], dynasty: 明, composition: [1396, 1396], category: 综合}
+  - {kr: KR3e0069, id: renduan_lu, title: 仁端录, aliases: [仁端錄], work: renduan_lu, authors: [徐谦], dynasty: 明, composition: [1500, 1644], category: 儿科, notes_text: 痘疹专书；年代待核}
+  - {kr: KR3e0070, id: xueshi_yian, title: 薛氏医案, aliases: [薛氏醫案], work: xueshi_yian, authors: [薛己, 薛铠], dynasty: 明, composition: [1529, 1600], category: 综合, school: 温补派}
+  - {kr: KR3e0071, id: tuiqiu_shiyi, title: 推求师意, aliases: [推求師意], work: tuiqiu_shiyi, authors: [戴思恭, 汪机], dynasty: 明, composition: [1380, 1405], category: 医论, school: 滋阴派,
+     mixed: {layer: 戴思恭原撰、汪机编录（未分）, year: [1534, 1534]}, cites_work: [1380, 1405]}
+  - {kr: KR3e0072, id: zhenjiu_wendui, title: 针灸问对, aliases: [鍼灸問對], work: zhenjiu_wendui, authors: [汪机], dynasty: 明, composition: [1530, 1530], category: 针灸}
+  - {kr: KR3e0073, id: waike_lili, title: 外科理例, aliases: [外科理例], work: waike_lili, authors: [汪机], dynasty: 明, composition: [1531, 1531], category: 外科}
+  - {kr: KR3e0074, id: shishan_yian, title: 石山医案, aliases: [石山醫案], work: shishan_yian, authors: [汪机, 陈桷], dynasty: 明, composition: [1531, 1531], category: 医案}
+  - {kr: KR3e0075, id: mingyi_leian, title: 名医类案, aliases: [名醫類案], work: mingyi_leian, authors: [江瓘, 江应宿], dynasty: 明, composition: [1549, 1591], category: 医案}
+  - {kr: KR3e0076, id: chishui_xuanzhu, title: 赤水玄珠, aliases: [赤水玄珠全集], work: chishui_xuanzhu, authors: [孙一奎], dynasty: 明, composition: [1584, 1584], category: 综合, school: 温补派}
+  - {kr: KR3e0077, id: yizhi_xuyu, title: 医旨绪余, aliases: [醫旨緒餘], work: yizhi_xuyu, authors: [孙一奎], dynasty: 明, composition: [1573, 1573], category: 医论, school: 温补派}
+  - {kr: KR3e0078, id: zhengzhi_zhunsheng, title: 证治准绳, aliases: [六科证治准绳, 證治準繩], work: zhengzhi_zhunsheng, authors: [王肯堂], dynasty: 明, composition: [1602, 1608], category: 综合}
+  - {kr: KR3e0079, id: bencao_gangmu_skqs, title: 本草纲目, aliases: [纲目, 本草綱目], work: bencao_gangmu, authors: [李时珍], dynasty: 明, composition: [1552, 1578], category: 本草,
+     notes_text: 1593年金陵初刻；书中大量引录前代本草，均按本书成书年断代}
+  - {kr: KR3e0080, id: qijing_bamai_kao, title: 奇经八脉考, aliases: [奇經八脈考], work: qijing_bamai_kao, authors: [李时珍], dynasty: 明, composition: [1572, 1572], category: 针灸}
+  - {kr: KR3e0081, id: binhu_maixue, title: 濒湖脉学, aliases: [瀕湖脈學], work: binhu_maixue, authors: [李时珍], dynasty: 明, composition: [1564, 1564], category: 诊法}
+  - {kr: KR3e0082, id: shanghanlun_tiaobian, title: 伤寒论条辨, aliases: [傷寒論條辨], work: shanghan_tiaobian, authors: [方有执], dynasty: 明, composition: [1582, 1592], category: 伤寒,
+     school: 错简重订派, mixed: {layer: 方有执条辨（重订伤寒论原文与注）, year: [1592, 1592]}, cites_work: [200, 219],
+     indented_commentary: {layer: 方有执注, year: [1592, 1592], attribution: 明·方有执}}
+  - {kr: KR3e0083, id: xianxingzhai_biji, title: 先醒斋广笔记, aliases: [先醒齋廣筆記, 先醒斋医学广笔记], work: xianxingzhai, authors: [缪希雍], dynasty: 明, composition: [1613, 1622], category: 综合}
+  - {kr: KR3e0084, id: bencao_jingshu, title: 神农本草经疏, aliases: [本草经疏, 神農本草經疏], work: bencao_jingshu, authors: [缪希雍], dynasty: 明, composition: [1625, 1625], category: 本草,
+     mixed: {layer: 缪希雍经疏（引本经·别录原文与疏）, year: [1625, 1625]}, cites_work: [25, 500],
+     indented_commentary: {layer: 缪希雍疏, year: [1625, 1625], attribution: 明·缪希雍}}
+  - {kr: KR3e0085, id: leijing, title: 类经, aliases: [類經], work: leijing, authors: [张介宾], dynasty: 明, composition: [1624, 1624], category: 医经, school: 温补派,
+     mixed: {layer: 类经（类分内经原文与张注）, year: [1624, 1624]}, cites_work: [-300, 25]}
+  - {kr: KR3e0086, id: jingyue_quanshu_skqs, title: 景岳全书, aliases: [景岳全书, 景嶽全書], work: jingyue, authors: [张介宾], dynasty: 明, composition: [1624, 1640], category: 综合, school: 温补派}
+  - {kr: KR3e0087, id: wenyilun_skqs, title: 瘟疫论, aliases: [温疫论, 瘟疫論, 溫疫論], work: wenyilun, authors: [吴有性], dynasty: 明, composition: [1642, 1642], category: 温病, school: 温疫学派}
+  - {kr: KR3e0088, id: jienuelun_shu, title: 痎疟论疏, aliases: [痎瘧論疏], work: jienuelun_shu, authors: [卢之颐], dynasty: 明清, composition: [1640, 1664], category: 内科}
+  - {kr: KR3e0089, id: bencao_chengya, title: 本草乘雅半偈, aliases: [本草乘雅], work: bencao_chengya, authors: [卢之颐], dynasty: 明清, composition: [1647, 1647], category: 本草,
+     mixed: {layer: 卢之颐乘雅（引本经原文与核、参）, year: [1647, 1647]}, cites_work: [25, 500]}
+  - {kr: KR3e0090, id: yizong_jinjian, title: 御纂医宗金鉴, aliases: [医宗金鉴, 醫宗金鑑], work: yizong_jinjian, authors: [吴谦 等], dynasty: 清, composition: [1742, 1742], category: 综合,
+     attribution: compiled, mixed: {layer: 医宗金鉴（含订正仲景全书原文与注）, year: [1742, 1742]}, cites_work: [200, 219]}
+  - {kr: KR3e0091, id: shanglun_pian, title: 尚论篇, aliases: [尚論篇, 尚论张仲景伤寒论重编三百九十七法], work: shanglun, authors: [喻昌], dynasty: 清, composition: [1648, 1648],
+     category: 伤寒, school: 错简重订派, mixed: {layer: 喻昌尚论（重编伤寒论原文与注）, year: [1648, 1648]}, cites_work: [200, 219]}
+  - {kr: KR3e0092, id: yimen_falv, title: 医门法律, aliases: [醫門法律], work: yimen_falv, authors: [喻昌], dynasty: 清, composition: [1658, 1658], category: 综合}
+  - {kr: KR3e0093, id: shanghan_shejian, title: 伤寒舌鉴, aliases: [傷寒舌鑑], work: shanghan_shejian, authors: [张登], dynasty: 清, composition: [1668, 1668], category: 诊法}
+  - {kr: KR3e0094, id: shanghan_jianzheng, title: 伤寒兼证析义, aliases: [傷寒兼證析義], work: shanghan_jianzheng, authors: [张倬], dynasty: 清, composition: [1667, 1667], category: 伤寒}
+  - {kr: KR3e0095, id: jiangxueyuan_fangxuan, title: 绛雪园古方选注, aliases: [絳雪園古方選註], work: jiangxueyuan, authors: [王子接], dynasty: 清, composition: [1732, 1732], category: 方书}
+  - {kr: KR3e0096, id: xu_mingyi_leian, title: 续名医类案, aliases: [續名醫類案], work: xu_mingyi_leian, authors: [魏之琇], dynasty: 清, composition: [1770, 1770], category: 医案}
+  - {kr: KR3e0097, id: lantai_guifan, title: 兰台轨范, aliases: [蘭臺軌範], work: lantai_guifan, authors: [徐大椿], dynasty: 清, composition: [1764, 1764], category: 综合}
+  - {kr: KR3e0098, id: bencao_baizhonglu, title: 神农本草经百种录, aliases: [神農本草經百種錄, 本草百种录], work: bencao_baizhonglu, authors: [徐大椿], dynasty: 清, composition: [1736, 1736],
+     category: 本草, mixed: {layer: 徐大椿百种录（引本经原文与释）, year: [1736, 1736]}, cites_work: [25, 220]}
+  - {kr: KR3e0099, id: shanghan_leifang, title: 伤寒类方, aliases: [傷寒類方], work: shanghan_leifang, authors: [徐大椿], dynasty: 清, composition: [1759, 1759], category: 伤寒,
+     mixed: {layer: 徐大椿类方（类编伤寒论方证与按）, year: [1759, 1759]}, cites_work: [200, 219]}
+  - {kr: KR3e0100, id: yixue_yuanliu, title: 医学源流论, aliases: [醫學源流論], work: yixue_yuanliu, authors: [徐大椿], dynasty: 清, composition: [1757, 1757], category: 医论}

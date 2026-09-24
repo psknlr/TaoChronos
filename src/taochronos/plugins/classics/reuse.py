@@ -50,6 +50,8 @@ class TextReuseDetector:
         self.min_weighted_overlap = min_weighted_overlap
         self._idf: dict[str, float] = {}
         self._formula_terms = {e.term for e in pack.lexicon.by_category("formula")}
+        self._corpus = None  # large corpora: document frequencies come from the full-text index on demand
+        self._n = 0
 
     def fit(self, passages: list[Passage]) -> None:
         df: Counter = Counter()
@@ -58,6 +60,20 @@ class TextReuseDetector:
             df.update(set(bigrams(clean)))
         n = max(1, len(passages))
         self._idf = {bg: math.log((n + 1) / (c + 0.5)) for bg, c in df.items()}
+
+    def use_corpus_statistics(self, corpus: object) -> None:
+        self._corpus = corpus
+        self._n = max(1, len(corpus))  # type: ignore[arg-type]
+
+    def idf(self, bg: str, default: float = 1.0) -> float:
+        if bg in self._idf:
+            return self._idf[bg]
+        if self._corpus is None:
+            return default
+        df = self._corpus.document_frequency([bg]).get(bg, 0)  # type: ignore[attr-defined]
+        value = math.log((self._n + 1) / (df + 0.5)) if df else default
+        self._idf[bg] = value
+        return value
 
     def _masked(self, clean: str) -> str:
         """Blank out formula names and prescription formulae so shared names do not look like reuse."""
@@ -98,11 +114,11 @@ class TextReuseDetector:
         ma, mb = self._masked(ca), self._masked(cb)
         shorter = ma if len(ca) <= len(cb) else mb
         shared = {bg for bg in set(bigrams(ma)) & set(bigrams(mb)) if "□" not in bg}
-        total_w = sum(self._idf.get(bg, 1.0) for bg in set(bigrams(shorter))) or 1.0
-        weighted = sum(self._idf.get(bg, 1.0) for bg in shared) / total_w
+        total_w = sum(self.idf(bg) for bg in set(bigrams(shorter))) or 1.0
+        weighted = sum(self.idf(bg) for bg in shared) / total_w
         longest = max((blk["size"] for blk in blocks), default=0)
         containment = sum(blk["size"] for blk in blocks) / len(shorter)
-        distinctive = [bg for bg in shared if self._idf.get(bg, 0) > 1.5]
+        distinctive = [bg for bg in shared if self.idf(bg, 0) > 1.5]
         if not blocks and not (weighted >= self.min_weighted_overlap and len(distinctive) >= 4 and len(shorter) >= 8):
             return None
         relation = "transcribes" if containment >= 0.85 else "rephrases"

@@ -99,6 +99,7 @@ class Book(Model):
     school: str | None = None
     editions: list[Edition] = field_list()
     notes: str = ""
+    work: str | None = None  # the work this witness transmits; witnesses of one work are not independent sources
 
     def edition(self, edition_id: str | None) -> Edition | None:
         for ed in self.editions:

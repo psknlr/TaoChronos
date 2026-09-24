@@ -143,16 +143,50 @@ def block(ctx: Any, hook: str, point: str, reason: str, subject: str = "") -> No
                      actor=ctx.actor.id, task_id=ctx.task.id)
 
 
+def research_window(ctx: Any) -> tuple[float | None, float | None, set[str]]:
+    """(after, before, excluded books) that every whole-corpus query must respect: the contract's temporal
+    scope, its hold-out (nothing at or after the hold-out year may be seen) and its book exclusions."""
+    goal = ctx.goal
+    after = before = None
+    if goal is not None and goal.temporal_scope is not None:
+        after, before = goal.temporal_scope.start, goal.temporal_scope.end + 1
+    if goal is not None and goal.holdout_after is not None:
+        before = goal.holdout_after if before is None else min(before, goal.holdout_after)
+    excluded = set(ctx.state.corpus.excluded) if ctx.state.corpus is not None else set()
+    if goal is not None:
+        excluded |= set(goal.corpus.exclude_books)
+    return after, before, excluded
+
+
+def whole_corpus(ctx: Any) -> bool:
+    """Large corpora answer absence / later-attestation questions from the whole store, not the frame."""
+    return bool(getattr(ctx.cap("corpus"), "large", False))
+
+
+def _candidate_passages(ctx: Any, lefts: list[str], rights: list[str], after: float | None, before: float | None,
+                        level: str) -> list[Any]:
+    corpus = ctx.cap("corpus")
+    if not whole_corpus(ctx):
+        return scope_passages(ctx)
+    lo, hi, excluded = research_window(ctx)
+    after = lo if after is None else (after if lo is None else max(after, lo))
+    before = hi if before is None else (before if hi is None else min(before, hi))
+    ids = corpus.near(lefts, rights, distance=40 if level == "sentence" else 2000, after=after, before=before)
+    return [p for p in corpus.passages_by_id(ids) if p.book_id not in excluded and p.kind != "toc"]
+
+
 def co_mentions(ctx: Any, left: str, right: str, *, after: float | None = None, before: float | None = None,
                 exclude_passages: set[str] | None = None, level: str = "sentence") -> list[tuple[str, int, int]]:
-    """Passages (in scope) mentioning both terms in one sentence (or anywhere in the passage with
-    ``level="passage"``); returns (passage, start, end) of the sentence that mentions the left term."""
+    """Passages mentioning both terms in one sentence (or anywhere in the passage with ``level="passage"``);
+    returns (passage, start, end) of the sentence that mentions the left term.  The search space is the
+    frame for a small corpus and the whole store (within the contract's window) for a large one."""
     corpus = ctx.cap("corpus")
-    normalize = ctx.cap("domain").variants.normalize_text
+    pack = ctx.cap("domain")
+    normalize = pack.variants.normalize_text
     lefts = [normalize(s) for s in surfaces_of(ctx, left) if len(s) > 1 or left.startswith("herb:")]
     rights = [normalize(s) for s in surfaces_of(ctx, right) if len(s) > 1 or right.startswith("herb:")]
     out = []
-    for p in scope_passages(ctx):
+    for p in _candidate_passages(ctx, lefts, rights, after, before, level):
         if exclude_passages and p.id in exclude_passages:
             continue
         y = corpus.year(p)
@@ -161,14 +195,15 @@ def co_mentions(ctx: Any, left: str, right: str, *, after: float | None = None, 
         if before is not None and (y is None or y >= before):
             continue
         norm = normalize(p.text)
+        sentences = _sentences(norm) if p.punctuation != "none" else _segmented_sentences(ctx, norm)
         if level == "passage":
             if any(s in norm for s in lefts) and any(s in norm for s in rights):
-                for sentence_start, sentence in _sentences(norm):
+                for sentence_start, sentence in sentences:
                     if any(s in sentence for s in lefts):
                         out.append((p.id, sentence_start, sentence_start + len(sentence)))
                         break
             continue
-        for sentence_start, sentence in _sentences(norm):
+        for sentence_start, sentence in sentences:
             li = next((sentence.find(s) for s in lefts if s in sentence), -1)
             ri = next((sentence.find(s) for s in rights if s in sentence), -1)
             if li >= 0 and ri >= 0:
@@ -189,6 +224,32 @@ def related_terms(ctx: Any, term_id: str) -> set[str]:
             out.add(e.term_id)
     out.discard(term_id)
     return out
+
+
+def _segmented_sentences(ctx: Any, norm: str) -> list[tuple[int, str]]:
+    """Sentences of unpunctuated text via the extractor's machine-segmentation view (source coordinates)."""
+    segmenter = getattr(ctx.cap("extractor"), "segmenter", None)
+    if segmenter is None:
+        return _sentences(norm)
+    view = segmenter.view(norm)
+    out, start = [], 0
+    for i, ch in enumerate(view.text + "。"):
+        if ch in "。；！？":
+            if i > start:
+                a, b = view.to_source(start, i)
+                if b > a:
+                    out.append((a, norm[a:b]))
+            start = i + 1
+    return out or [(0, norm)]
+
+
+def late_passage_count(ctx: Any, pivot: float) -> int:
+    """Passages dated at or after ``pivot`` that an absence claim is tested against."""
+    corpus = ctx.cap("corpus")
+    if not whole_corpus(ctx):
+        return sum(1 for p in scope_passages(ctx) if (corpus.year(p) or 0) >= pivot)
+    _, before, _ = research_window(ctx)
+    return corpus.count_range(after=pivot, before=before)
 
 
 def _sentences(text: str) -> list[tuple[int, str]]:

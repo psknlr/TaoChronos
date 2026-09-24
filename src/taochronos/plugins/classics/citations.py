@@ -32,12 +32,24 @@ class CitationExtractor:
         self.generic = pack.citations.get("generic_references", {})
         self.patterns = [(re.compile(p["regex"]), p["kind"]) for p in pack.citations.get("patterns", [])]
 
+    def _witnessed(self, candidates: dict[str, float]) -> dict[str, float]:
+        """Map candidate work ids onto the books that transmit them (weights split between witnesses)."""
+        witnesses = getattr(self.corpus, "witnesses", None)
+        if witnesses is None:
+            return candidates
+        out: dict[str, float] = {}
+        for target, weight in candidates.items():
+            books = witnesses(target) or [target]
+            for b in books:
+                out[b] = round(out.get(b, 0.0) + weight / len(books), 4)
+        return out
+
     def _resolve_title(self, title: str) -> tuple[str, dict[str, float]]:
         if title in self.titles:
             kind, target = self.titles[title]
             return kind, {target: 1.0}
         if title in self.generic:
-            return "book", dict(self.generic[title]["candidates"])
+            return "book", self._witnessed(dict(self.generic[title]["candidates"]))
         for name, (kind, target) in self.titles.items():
             if title in name or name in title:
                 return kind, {target: 0.8}
@@ -64,7 +76,7 @@ class CitationExtractor:
                     target_kind, candidates = self._resolve_title(surface)
                 else:
                     spec = self.generic.get(surface, {})
-                    target_kind, candidates = "book", dict(spec.get("candidates", {}))
+                    target_kind, candidates = "book", self._witnessed(dict(spec.get("candidates", {})))
                     if not candidates:
                         continue
                 taken.append((m.start(), m.end()))

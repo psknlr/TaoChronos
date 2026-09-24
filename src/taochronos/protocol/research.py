@@ -6,6 +6,7 @@ change it only by emitting typed events that the kernel's reducer applies.
 
 from __future__ import annotations
 
+from typing import Any
 from dataclasses import dataclass, field
 
 from .artifacts import OPERATIONAL_ARTIFACT_KINDS, Artifact
@@ -114,6 +115,7 @@ class CorpusManifest(Model):
     holdout_passage_ids: list[str] = field_list()
     time_basis: str = "composition"
     warnings: list[str] = field_list()
+    frame: dict[str, Any] = field_dict()  # sampling frame of a relevance-scoped manifest (large corpora)
 
 
 @dataclass(kw_only=True)

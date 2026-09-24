@@ -79,6 +79,8 @@ def _search(ctx: ToolContext, a: dict) -> Any:
         books=books, allowed=allowed,
     )
     corpus = ctx.cap("corpus")
+    if getattr(corpus, "large", False):
+        ctx.cap("knowledge").touch(h.passage_id for h in hits)  # the working set of a session-less large corpus
     return {
         "query": {"terms": q.terms, "after": q.after, "before": q.before, "intent": q.intent,
                   "decomposition": q.decomposition, "variants": q.variants},

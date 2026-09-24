@@ -15,6 +15,15 @@ adverse outcomes. Claims carry a temporal context (author / composition / editio
 knowledge space (classical text). The provenance validator rejects any claim whose quote or argument spans
 do not match the passage.
 
+### Unpunctuated text
+
+Most transcriptions of the classics are 白文. The extractor reads them through a machine-segmented *view*
+(`plugins/classics/segment.py`: rules for 曰/云, sentence-final particles, 主之/宜X, 者 before a verdict or a
+prescription, doses and preparation, 本草 entry structure, list layout) and maps every quote and argument span
+back to the source, so claims stay verbatim. Such claims carry the tag `machine-segmented` and a lower extraction
+confidence; a finding-level opposition read through segmentation is labelled *apparent* (type `segmentation`) and
+never becomes a hypothesis.
+
 ## Discovery engines (tool-first, no model)
 
 **D1 · Lost knowledge.** Association units (herb/formula × finding/disease) attested before a pivot year
@@ -55,6 +64,15 @@ space), verbatim supporting evidence, the earliest evidence, structured **predic
 (`absent_after`, `link_appears`, `cooccurrence_after`, `herb_retained`, `sense_shift`, `renaming`,
 `earlier_attestation`, `resolution`), a testable prediction in words, alternative explanations, and philological and
 anachronism risk labels.
+
+### Scale: frame and whole corpus
+
+On a large corpus the Curator freezes a **sampling frame**: passages the full-text index finds for the question's
+terms, their aliases and variants, related terms and the cues of their historical senses, plus one hop to the
+formulas and drugs most co-mentioned with them — stratified by period (a floor per period, then relevance) and
+recorded in the manifest (`frame`). The reading agents work inside the frame. Absence and later-attestation
+checks do not: the Skeptic's co-mention and late-passage counts query the **whole store** within the contract's
+window (temporal scope, hold-out, excluded books), so sampling can never manufacture an absence.
 
 ### Falsification
 

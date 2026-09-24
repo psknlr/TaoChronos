@@ -21,6 +21,12 @@ def scope_ids(ctx: ToolContext) -> set[str] | None:
 def scope_passages(ctx: ToolContext) -> list[Passage]:
     corpus = ctx.cap("corpus")
     allowed = scope_ids(ctx)
+    if getattr(corpus, "large", False):
+        if allowed is None:
+            # outside a research session a large corpus is represented by the working set (passages retrieved so far)
+            knowledge = ctx.cap("knowledge")
+            return corpus.passages_by_id(list(getattr(knowledge, "_working", {})))
+        return corpus.passages_by_id(sorted(allowed))
     return [p for p in corpus.passages() if allowed is None or p.id in allowed]
 
 
@@ -30,7 +36,10 @@ def claims_in_scope(ctx: ToolContext) -> list[Claim]:
     if session is not None and session.state.claims:
         return sorted(session.state.claims.values(), key=lambda c: c.id)
     allowed = scope_ids(ctx)
-    claims = ctx.cap("knowledge").claims()
+    knowledge = ctx.cap("knowledge")
+    if allowed is not None and getattr(ctx.cap("corpus"), "large", False):
+        return knowledge.claims_for(sorted(allowed))
+    claims = knowledge.claims()
     return [c for c in claims if allowed is None or c.passage_id in allowed]
 
 

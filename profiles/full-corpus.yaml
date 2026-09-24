@@ -1,0 +1,25 @@
+# The full corpus: every ingested classic (see `taochronos corpus fetch|ingest|status`), served from the
+# corpus store instead of the demo YAML.  Research is relevance-scoped: the Curator freezes a sampling frame
+# from the full-text index (focus terms, their variants, related terms and targeted senses, stratified by
+# period), and absence / later-attestation checks query the whole store, not just the frame.
+name: full-corpus
+extends: full-discovery
+description: Full-discovery research over the whole ingested corpus (四库全书·医家类 and further sources) via the corpus store.
+bundles:
+  - {plugin: taochronos.plugins.classics, config: {domain: domains/classics, store: corpus/tcm.sqlite, lexicon_extra: [lexicon-harvested]}}
+  - {plugin: taochronos.plugins.knowledge}
+  - {plugin: taochronos.plugins.retrieval}
+  - {plugin: taochronos.plugins.models.offline}
+  - {plugin: taochronos.plugins.models.anthropic_provider}
+  - {plugin: taochronos.plugins.models.openai_compat}
+  - {plugin: taochronos.plugins.sandbox}
+  - {plugin: taochronos.plugins.subagents}
+  - {plugin: taochronos.plugins.storage, config: {event_store: sqlite}}
+budget: {max_tool_calls: 20000, max_agents: 300}
+discovery:
+  scope:
+    max_passages: 2400        # size of the relevance-scoped frame handed to the reading agents
+    per_period_floor: 60      # keep at least this many passages per analysis period when available
+    related_hops: 1           # formulas / herbs co-mentioned with the focus terms are added once
+    related_limit: 12
+    exclude_kinds: [toc]      # tables of contents are never evidence

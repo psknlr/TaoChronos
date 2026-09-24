@@ -10,8 +10,10 @@ specialists on demand (philology, historical semantics, claim extraction, lineag
 mining, statistics, hypotheses, falsification, meta-review…). Every conclusion must rest on **verbatim,
 mechanically verified textual evidence** and pass the epistemic gates G0–G8; a human expert has the last word.
 
-> ⚠️ `corpus/demo` is an **unverified transcription** of short excerpts assembled to demonstrate the method.
-> All outputs are **computational hypotheses** — not medical conclusions and not clinical advice.
+> ⚠️ `corpus/demo` is an **unverified transcription** of short excerpts assembled to demonstrate the method; the
+> full corpus (the 100 medical works of the Siku quanshu, Kanseki Repository transcriptions, CC BY-SA 4.0) has
+> not been collated by this project either. All outputs are **computational hypotheses** — not medical
+> conclusions and not clinical advice.
 
 ## Principles
 
@@ -55,6 +57,33 @@ Server-side refusal fallbacks (`fallbacks="default"`) are enabled by default for
 schema-invalid output or exhausted budget falls back to the role's deterministic procedure, and the fallback
 is recorded as a Decision. OpenAI-compatible endpoints (DeepSeek, Grok, Gemini, local vLLM/Ollama) and external
 command subagents are supported as well — see [docs/agents.md](docs/agents.md).
+
+## The full corpus
+
+Beyond the demo, TaoChronos ingests the Kanseki Repository's **KR3e 醫家類** — all **100** medical works of the
+*Siku quanshu* (about **25.7 million characters, 354k passages**). The texts stay out of git; fetching, ingestion
+and indexing are reproducible:
+
+```bash
+taochronos corpus fetch kanripo     # one shallow clone per text into the data dir; writes corpus/sources.lock.yaml
+taochronos corpus ingest kanripo    # parse → date every layer → SQLite corpus store + full-text index (~3 min)
+taochronos corpus status            # books, passages, characters, periods, layers; is the index current?
+taochronos lexicon harvest          # candidate formula (~4,800) and drug (~2,100) names harvested from the corpus
+taochronos research "消渴的概念如何随时代演变？" --profile full-corpus --focus 消渴 --forbid 消渴=糖尿病
+```
+
+- A **catalog** (`corpus/catalog/kanripo-kr3e.yaml`) dates every work and every separable **layer**: 王冰's
+  commentary (762), the 新校正 notes (1068), the seven 运气 chapters he added (762), the successive layers of the
+  证类本草, the Siku abstracts (dated from their 乾隆 year), front matter (by edition). Layers that cannot be
+  separated are dated by the latest one, with the older text's date kept as `t_citation`.
+- **Script and variant normalisation** (`domains/classics/script/`: OpenCC, Unihan, curated forms such as
+  䜴→豉, 茰→萸, 㪚→散) is used for matching only; the text is never altered.
+- **Unpunctuated text** is read through a machine-segmented *view*; every quote and argument span is mapped
+  back, so provenance stays verbatim. Finding-level oppositions produced by segmentation are recorded as
+  apparent, never as hypotheses.
+- **Scale.** The Curator freezes a relevance-scoped, period-stratified sampling frame from the full-text index
+  (recorded in the manifest); absence and later-attestation checks run against the **whole store** (respecting
+  hold-outs and exclusions), so sampling never manufactures an absence.
 
 ## Anatomy of a run
 
@@ -104,7 +133,9 @@ used during development: read the numbers as **regression tests of intended beha
 
 ## Limitations
 
-The demo corpus is tiny (23 books, 131 excerpts) and unverified; numbers are illustrative. The rule extractor
-and lexicons were written for the demo. Composition similarity alone cannot separate derivation from
+The demo corpus is tiny (23 books, 131 excerpts) and unverified; evaluation numbers are illustrative. The full
+corpus consists of uncollated transcriptions of the Siku (with its Qing-era alterations and taboo substitutions);
+segmentation of unpunctuated text is rule-based and can merge adjacent clauses; harvested names are candidates
+for expert review. The rule extractor and curated lexicons were written for the demo. Composition similarity alone cannot separate derivation from
 convergence. Link-level time-machine evaluation needs a large corpus. TaoChronos gives no medical advice;
 every result is a research lead until an expert (Gate G7) reviews it.

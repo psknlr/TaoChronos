@@ -69,15 +69,88 @@ def cmd_agents(args: argparse.Namespace) -> None:
     _out("\n".join(rows))
 
 
+def _corpus_paths(args: argparse.Namespace) -> tuple[Path, Path]:
+    from .config import data_dir as default_data_dir
+    from .config import find_home
+
+    home = find_home(args.home)
+    data = Path(args.data) if args.data else default_data_dir(home)
+    return home, data
+
+
+def _store_path(args: argparse.Namespace, data: Path) -> Path:
+    return Path(args.db) if getattr(args, "db", None) else data / "corpus" / "tcm.sqlite"
+
+
 def cmd_corpus(args: argparse.Namespace) -> None:
+    action = getattr(args, "action", None) or "list"
+    if action != "list":
+        return _corpus_admin(args, action)
     harness = _harness(args)
     corpus = harness.corpus
     rows = []
+    count = getattr(corpus, "book_passage_count", None)
     for book in sorted(corpus.books.values(), key=lambda b: (b.composition.start if b.composition else 0, b.id)):
-        rows.append(f"{book.id:22s} 《{book.title}》 {book.dynasty} {book.composition.label() if book.composition else '?':14s} "
-                    f"{book.category} · {len(corpus.passages(book_ids=[book.id]))} 段 · {'已核验' if book.source.verified else '未核验'}")
+        n = count(book.id) if count else len(corpus.passages(book_ids=[book.id]))
+        rows.append(f"{book.id:26s} 《{book.title}》 {book.dynasty} {book.composition.label() if book.composition else '?':14s} "
+                    f"{book.category} · {n} 段 · {book.source.license or '无授权信息'} · {'已核验' if book.source.verified else '未核验'}")
     rows.append(json.dumps(corpus.stats(harness.pack.periods), ensure_ascii=False))
     _out("\n".join(rows))
+
+
+def _corpus_admin(args: argparse.Namespace, action: str) -> None:
+    """fetch / ingest / status / reindex — build and maintain the full-corpus store."""
+    import time
+
+    from .plugins.classics.domain import DomainPack
+    from .plugins.classics.ingest import ingest_kanripo, load_catalog
+    from .plugins.classics.ingest.fetch import fetch_kanripo, write_lock
+    from .plugins.classics.store import CorpusStore, StoreCorpus
+
+    home, data = _corpus_paths(args)
+    db = _store_path(args, data)
+    source = args.source or "kanripo"
+    only = [x for x in (args.only or "").split(",") if x] or None
+    if action in ("fetch", "ingest") and source not in ("kanripo", "all"):
+        raise SystemExit(f"unknown source {source!r}; available: kanripo (笈成 and Wikisource connectors are added as their data arrive)")
+    catalog = load_catalog(home / "corpus" / "catalog" / "kanripo-kr3e.yaml")
+    sources_dir = data / "sources" / "kanripo"
+    if action == "fetch":
+        res = fetch_kanripo(catalog, sources_dir, only=only, log=print)
+        lock = write_lock(home / "corpus" / "sources.lock.yaml", "kanripo", catalog, sources_dir)
+        _out({"fetched": len(res["ok"]), "already_present": len(res["skipped"]), "failed": res["failed"],
+              "locked_texts": len(lock["texts"]), "lockfile": str(home / "corpus" / "sources.lock.yaml")})
+        return
+    pack = DomainPack(home / "domains" / "classics")
+    if action == "ingest":
+        store = CorpusStore(db, create=True)
+        t0 = time.time()
+        report = ingest_kanripo(store, catalog, sources_dir, pack.variants.normalize_text, pack.variants.fingerprint, only=only, log=print,
+                                dynasty_of=pack.periods.dynasty_of)
+        store.optimize()
+        report["seconds"] = round(time.time() - t0, 1)
+        (data / "corpus").mkdir(parents=True, exist_ok=True)
+        (data / "corpus" / "ingest-kanripo.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
+        books = report["books"]
+        _out({"store": str(db), "books": len(books), "passages": sum(b["passages"] for b in books.values()),
+              "characters": sum(b["characters"] for b in books.values()), "missing": report["missing"],
+              "note_order_warnings": report["note_order_warnings"], "seconds": report["seconds"]})
+        return
+    store = CorpusStore(db)
+    if action == "reindex":
+        n = store.reindex(pack.variants.normalize_text, pack.variants.fingerprint, progress=lambda k: print(f"  {k} passages"))
+        store.optimize()
+        _out({"reindexed": n, "normalizer": pack.variants.fingerprint})
+        return
+    corpus = StoreCorpus(store, pack.variants.normalize_text, fingerprint=pack.variants.fingerprint)
+    stats = corpus.stats(pack.periods)
+    layers = dict(store.db.execute("SELECT layer, COUNT(*) FROM passages GROUP BY layer ORDER BY COUNT(*) DESC LIMIT 40").fetchall())
+    kinds = dict(store.db.execute("SELECT kind, COUNT(*) FROM passages GROUP BY kind").fetchall())
+    size = db.stat().st_size
+    _out({"store": str(db), "size_mb": round(size / 1e6, 1), "books": stats["books"], "passages": stats["passages"],
+          "characters": stats["characters"], "by_period": stats["by_period"], "kinds": kinds, "layers": layers,
+          "sources": stats["sources"], "index_current": stats["index_current"],
+          "normalizer": {"store": store.meta("normalizer"), "domain": pack.variants.fingerprint}})
 
 
 def _mesh_call(harness: Any, tool: str, **arguments: Any) -> Any:
@@ -88,6 +161,38 @@ def _mesh_call(harness: Any, tool: str, **arguments: Any) -> Any:
     if not outcome.ok:
         raise SystemExit(outcome.error)
     return outcome.result
+
+
+def cmd_lexicon(args: argparse.Namespace) -> None:
+    """Harvest candidate formula and drug names from the corpus store into domains/classics/lexicon-harvested/."""
+    import yaml
+
+    from .plugins.classics.domain import DomainPack
+    from .plugins.classics.harvest import Harvester, to_yaml_entries
+    from .plugins.classics.store import CorpusStore, StoreCorpus
+
+    home, data = _corpus_paths(args)
+    pack = DomainPack(home / "domains" / "classics")
+    known = {pack.variants.normalize_text(s) for s in pack.lexicon._by_surface}
+    store = CorpusStore(_store_path(args, data))
+    corpus = StoreCorpus(store, pack.variants.normalize_text)
+    harvester = Harvester(pack.variants.normalize_text, known)
+    n = 0
+    for p in corpus.iter_passages():
+        book = corpus.books.get(p.book_id)
+        if book is None:
+            continue
+        harvester.passage(p.id, p.book_id, book.category, p.text, p.locator.section, corpus.year(p), p.kind)
+        n += 1
+    formulas, herbs = harvester.select(min_books=args.min_books, min_count=args.min_count)
+    f_yaml, h_yaml = to_yaml_entries(formulas, herbs)
+    out = home / "domains" / "classics" / "lexicon-harvested"
+    out.mkdir(parents=True, exist_ok=True)
+    for name, payload in (("formulas.yaml", f_yaml), ("herbs.yaml", h_yaml)):
+        (out / name).write_text("# Candidate terms harvested from the corpus store — NOT curated. See plugins/classics/harvest.py.\n"
+                                + yaml.safe_dump(payload, allow_unicode=True, sort_keys=False, width=200), encoding="utf-8")
+    _out({"passages_scanned": n, "formulas": len(f_yaml["entries"]), "herbs": len(h_yaml["entries"]),
+          "herb_aliases": sum(len(e.get("synonyms", [])) for e in h_yaml["entries"]), "output": str(out)})
 
 
 def cmd_search(args: argparse.Namespace) -> None:
@@ -337,7 +442,16 @@ def build_parser() -> argparse.ArgumentParser:
     add("info", cmd_info, "describe the harness (plugins, capabilities, agents, providers)")
     add("profiles", cmd_profiles, "list profiles", profile=False)
     add("agents", cmd_agents, "list agent specs and their current routes")
-    add("corpus", cmd_corpus, "list the corpus")
+    sp = add("corpus", cmd_corpus, "list the corpus, or fetch / ingest / status / reindex the full-corpus store")
+    sp.add_argument("action", nargs="?", default="list", choices=["list", "fetch", "ingest", "status", "reindex"])
+    sp.add_argument("source", nargs="?", help="source to fetch or ingest (kanripo)")
+    sp.add_argument("--only", help="comma-separated text ids (e.g. KR3e0001,KR3e0013) or book ids")
+    sp.add_argument("--db", help="corpus store path (default: <data>/corpus/tcm.sqlite)")
+    sp = add("lexicon", cmd_lexicon, "harvest candidate formula / drug names from the corpus store", profile=False)
+    sp.add_argument("action", choices=["harvest"])
+    sp.add_argument("--db", help="corpus store path (default: <data>/corpus/tcm.sqlite)")
+    sp.add_argument("--min-books", type=int, default=2)
+    sp.add_argument("--min-count", type=int, default=3)
     sp = add("search", cmd_search, "philology-aware temporal GraphRAG search")
     sp.add_argument("query")
     sp.add_argument("-k", type=int, default=8)

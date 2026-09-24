@@ -20,6 +20,8 @@ from ..classics.corpus import Corpus
 from ..classics.domain import DomainPack
 from ..classics.reuse import TextReuseDetector, strip_punct
 
+PAIRWISE_LIMIT = 400  # above this many passages, reuse candidates come from shared shingles
+PARALLEL_LIMIT = 40  # index hits examined per quoted fragment (large corpora)
 DETECTOR = "lineage@0.1"
 _CN_DIGITS = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
 _UNIT_WEIGHT = {"斤": 16.0, "两": 1.0, "钱": 0.1, "分": 0.01, "铢": 1 / 24}
@@ -131,16 +133,28 @@ class LineageBuilder:
         )
 
     # ---------------------------------------------------------- citations
+    def _parallel_candidates(self, fragments: list[str], exclude: str) -> list[Passage]:
+        """Passages that may contain a quoted fragment: all of them for a small corpus, index hits otherwise."""
+        if not getattr(self.corpus, "large", False):
+            return [o for o in self.corpus.passages() if o.id != exclude]
+        ids: list[str] = []
+        for f in fragments:
+            windows = [f] if len(f) <= 12 else [f[i: i + 8] for i in range(0, len(f) - 7, 6)]
+            for w in windows:
+                ids.extend(self.corpus.contains(w, verify=False, limit=PARALLEL_LIMIT))
+        ids = [i for i in dict.fromkeys(ids) if i != exclude]
+        return self.corpus.passages_by_id(ids)
+
     def citation_edges(self, passages: Iterable[Passage]) -> list[LineageEdge]:
         edges: list[LineageEdge] = []
-        all_passages = self.corpus.passages()
+        large = getattr(self.corpus, "large", False)
         for p in passages:
             for mention in self.citations.extract(p):
                 fragments = [f for f in re.split(r"[，。；：、]", self.pack.variants.normalize_text(mention.quote)) if len(f) >= 3]
+                if large:
+                    fragments = [w for f in fragments for w in ([f] if len(f) <= 12 else [f[i: i + 8] for i in range(0, len(f) - 7, 6)])]
                 parallels = []
-                for other in all_passages:
-                    if other.id == p.id:
-                        continue
+                for other in self._parallel_candidates(fragments, p.id):
                     norm_other, _ = strip_punct(self.pack.variants.normalize_text(other.text))
                     hits = [f for f in fragments if f in norm_other]
                     if hits:
@@ -174,10 +188,35 @@ class LineageBuilder:
         return edges
 
     # --------------------------------------------------------------- reuse
+    def _candidate_pairs(self, ps: list[Passage]) -> Iterable[tuple[Passage, Passage]]:
+        """All pairs for a small scope; for a large one, pairs sharing at least two distinctive 5-character
+        shingles (masked and variant-normalised), which every transcription or close rephrasing does."""
+        if len(ps) <= PAIRWISE_LIMIT:
+            yield from combinations(ps, 2)
+            return
+        index: dict[str, list[int]] = {}
+        for i, p in enumerate(ps):
+            clean, _ = strip_punct(self.pack.variants.normalize_text(p.text))
+            masked = self.reuse._masked(clean)
+            for sh in {masked[j: j + 5] for j in range(len(masked) - 4)}:
+                if "□" not in sh:
+                    index.setdefault(sh, []).append(i)
+        counts: dict[tuple[int, int], int] = {}
+        cap = max(8, len(ps) // 50)  # boilerplate shared by very many passages proves nothing
+        for members in index.values():
+            if len(members) < 2 or len(members) > cap:
+                continue
+            for x, y in combinations(members, 2):
+                if ps[x].book_id != ps[y].book_id:
+                    counts[(x, y)] = counts.get((x, y), 0) + 1
+        for (x, y), n in sorted(counts.items()):
+            if n >= 2:
+                yield ps[x], ps[y]
+
     def reuse_edges(self, passages: Iterable[Passage]) -> list[LineageEdge]:
         ps = [p for p in passages if p.kind != "formula"]
         edges: list[LineageEdge] = []
-        for a, b in combinations(ps, 2):
+        for a, b in self._candidate_pairs(ps):
             if a.book_id == b.book_id:
                 continue
             ra, rb = self._range(a), self._range(b)
@@ -373,7 +412,9 @@ class LineageBuilder:
                 if idx < 0:
                     continue
                 window = norm[max(0, idx - 12): idx + len(marker) + 12]
-                for school, book_id in canon.items():
+                for school, canon_id in canon.items():
+                    witnesses = self.corpus.witnesses(canon_id) if hasattr(self.corpus, "witnesses") else []
+                    book_id = witnesses[0] if witnesses else canon_id
                     if school in window and book_id != p.book_id:
                         kind = "book" if book_id in self.corpus.books else "external"  # absent works stay traceable
                         edges.append(self._edge("opposes", p.id, book_id, "passage", kind, confidence=0.6,

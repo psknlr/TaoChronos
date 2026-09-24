@@ -116,6 +116,21 @@ def contradiction_context(pack: Any, corpus: Any, philology: Any, resolutions: d
     )
 
 
+GENERIC_AUTHORS = {"佚名", "不详", "无名氏", "阙名", "佚", "?"}
+
+
+def _author_key(author: str) -> str | None:
+    """Clustering key of an author string: the person, or the tradition a pseudepigraph is ascribed to
+    (佚名（托名黄帝、岐伯） → 黄帝、岐伯); plain anonymity is no key at all."""
+    import re
+
+    m = re.search(r"托名([^）)]+)", author)
+    if m:
+        return "托名:" + m.group(1).strip()
+    key = author.split("（")[0].split(" ")[0].replace("旧题", "").strip()
+    return None if not key or key in GENERIC_AUTHORS else key
+
+
 def author_clusters(corpus: Any, lineage: list | None = None) -> Callable[[str], str]:
     """Books sharing an author or linked by transcription are not independent witnesses."""
     parent: dict[str, str] = {b: b for b in corpus.books}
@@ -132,9 +147,18 @@ def author_clusters(corpus: Any, lineage: list | None = None) -> Callable[[str],
             parent[max(ra, rb)] = min(ra, rb)
 
     by_author: dict[str, str] = {}
+    by_work: dict[str, str] = {}
     for book in corpus.books.values():
+        work = getattr(book, "work", None)
+        if work:
+            if work in by_work:
+                union(by_work[work], book.id)  # two witnesses of one work are one source
+            else:
+                by_work[work] = book.id
         for author in book.authors:
-            key = author.split("（")[0].split(" ")[0]
+            key = _author_key(author)
+            if not key:
+                continue  # anonymous works are not thereby one another's witnesses
             if key in by_author:
                 union(by_author[key], book.id)
             else:

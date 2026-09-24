@@ -6,6 +6,7 @@ data (``domains/classics/*.yaml``) — not inside agent prompts.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -81,6 +82,13 @@ class Periods:
                 return p.id
         return self.analysis[0].id if year < self.analysis[0].start else self.analysis[-1].id
 
+    def dynasty_of(self, year: float | None) -> str | None:
+        """The dynasty containing a year (the later one where dynasties overlap, e.g. 南宋 over 金)."""
+        if year is None:
+            return None
+        hits = [d for d in self.dynasties if d["start"] <= year <= d["end"]]
+        return max(hits, key=lambda d: d["start"])["name"] if hits else None
+
     def label(self, period_id: str) -> str:
         for p in self.analysis:
             if p.id == period_id:
@@ -143,10 +151,54 @@ class Normalization:
         return {"start": self.start, "end": self.end, "from": self.source, "to": self.target, "kind": self.kind}
 
 
+class ScriptTable:
+    """Length-preserving script normalisation: traditional → simplified (OpenCC data) and ancient variant
+    forms → standard forms (Unihan + curated).  Applied for matching only; systematic, so individual
+    conversions are not recorded (curated philological variants are)."""
+
+    def __init__(self, root: Path | None = None) -> None:
+        mapping: dict[str, str] = {}
+        self.sources: dict[str, int] = {}
+        if root is not None and root.exists():
+            for name in ("ancient_variants.tsv", "t2s.tsv"):
+                path = root / name
+                if not path.exists():
+                    continue
+                n = 0
+                for line in path.read_text(encoding="utf-8").splitlines():
+                    if not line or line.startswith("#"):
+                        continue
+                    cols = line.split("\t")
+                    if len(cols) >= 2 and len(cols[0]) == 1 and len(cols[1]) == 1 and cols[0] != cols[1]:
+                        mapping.setdefault(cols[0], cols[1])
+                        n += 1
+                self.sources[name] = n
+        self.map = self._closure(mapping)
+        digest = hashlib.sha1("".join(f"{k}{v}" for k, v in sorted(self.map.items())).encode("utf-8")).hexdigest()
+        self.fingerprint = digest[:12]
+
+    @staticmethod
+    def _closure(mapping: dict[str, str]) -> dict[str, str]:
+        """Follow chains (a→b, b→c ⇒ a→c) so that normalisation is idempotent; cycles are dropped."""
+        out: dict[str, str] = {}
+        for src in mapping:
+            seen = {src}
+            cur = mapping[src]
+            while cur in mapping and cur not in seen:
+                seen.add(cur)
+                cur = mapping[cur]
+            if cur != src and cur not in seen - {cur}:
+                out[src] = cur
+        return {k: v for k, v in out.items() if k != v}
+
+    def __len__(self) -> int:
+        return len(self.map)
+
+
 class VariantTable:
     """Length-preserving normalisation so offsets into the original text stay valid."""
 
-    def __init__(self, data: dict[str, Any]) -> None:
+    def __init__(self, data: dict[str, Any], script: ScriptTable | None = None) -> None:
         self.chars: dict[str, tuple[str, str]] = {}
         for src, spec in (data.get("char_variants") or {}).items():
             to = spec["to"] if isinstance(spec, dict) else spec
@@ -160,6 +212,23 @@ class VariantTable:
         self.words.sort(key=lambda w: -len(w["from"]))
         self.witness_weights: dict[str, float] = dict(data.get("witness_weights") or {})
         self.uncertain_mass: dict[str, float] = dict(data.get("uncertain_mass") or {})
+        self.script = script or ScriptTable(None)
+        # curated variants first, then script conversion of whatever they produce
+        combined: dict[str, str] = {}
+        for ch, (to, _) in self.chars.items():
+            combined[ch] = self.script.map.get(to, to)
+        for ch, to in self.script.map.items():
+            combined.setdefault(ch, to)
+        self._table = str.maketrans({k: v for k, v in combined.items() if k != v})
+        self._script_table = str.maketrans(self.script.map)
+        for w in self.words:  # express word variants in character-normalised form
+            src, dst = w["from"].translate(self._table), w["to"].translate(self._table)
+            if len(src) == len(dst):
+                w["from"], w["to"] = src, dst
+        self._cache: dict[str, str] = {}
+        self.fingerprint = hashlib.sha1(
+            (self.script.fingerprint + repr(sorted(combined.items())) + repr([(w["from"], w["to"]) for w in self.words])).encode("utf-8")
+        ).hexdigest()[:12]
 
     def normalize(self, text: str) -> tuple[str, list[Normalization]]:
         chars = list(text)
@@ -169,7 +238,7 @@ class VariantTable:
                 to, note = self.chars[ch]
                 chars[i] = to
                 applied.append(Normalization(i, i + 1, ch, to, "variant_char", note))
-        out = "".join(chars)
+        out = "".join(chars).translate(self._script_table)
         for w in self.words:
             start = 0
             while True:
@@ -183,7 +252,17 @@ class VariantTable:
         return out, applied
 
     def normalize_text(self, text: str) -> str:
-        return self.normalize(text)[0]
+        cached = self._cache.get(text)
+        if cached is not None:
+            return cached
+        out = text.translate(self._table)
+        for w in self.words:
+            if w["from"] in out:
+                out = out.replace(w["from"], w["to"])
+        if len(self._cache) > 200_000:
+            self._cache.clear()
+        self._cache[text] = out
+        return out
 
 
 # --------------------------------------------------------------------------- lexicon
@@ -234,9 +313,12 @@ class Mention:
 
 
 class Lexicon:
-    def __init__(self, files: Iterable[Path]) -> None:
+    def __init__(self, files: Iterable[Path], normalize: Any = None, extra_files: Iterable[Path] = ()) -> None:
         self.entries: dict[str, LexEntry] = {}
         self._by_surface: dict[str, list[tuple[LexEntry, str | None]]] = {}
+        self._normalize = normalize
+        self.harvested = 0
+        self.skipped_extra = 0
         for path in files:
             data = _load(path)
             blocks = data if isinstance(data, list) else [data]
@@ -244,6 +326,22 @@ class Lexicon:
                 default_cat = block["category"]
                 for raw in block.get("entries", []):
                     self._add(self._parse(raw, default_cat))
+        # extra (harvested) vocabularies never override or shadow a curated term
+        curated = set(self._by_surface)
+        for path in extra_files:
+            data = _load(path)
+            for block in data if isinstance(data, list) else [data]:
+                default_cat = block["category"]
+                for raw in block.get("entries", []):
+                    entry = self._parse(raw, default_cat)
+                    forms = {entry.term, *entry.aliases, *entry.synonyms}
+                    if normalize is not None:
+                        forms |= {normalize(f) for f in forms}
+                    if entry.term_id in self.entries or forms & curated:
+                        self.skipped_extra += 1
+                        continue
+                    self._add(entry)
+                    self.harvested += 1
         for q in PULSE_QUALITIES:
             self._add(LexEntry(term_id=f"pulse:{q}", term=f"脉{q}", category="pulse"))
         self.max_len = max(len(s) for s in self._by_surface)
@@ -290,9 +388,15 @@ class Lexicon:
         self.entries[entry.term_id] = entry
         for surface in entry.surfaces():
             kind = entry.synonyms.get(surface)
-            bucket = self._by_surface.setdefault(surface, [])
-            if all(e.term_id != entry.term_id for e, _ in bucket):
-                bucket.append((entry, kind))
+            forms = [surface]
+            if self._normalize is not None:
+                norm = self._normalize(surface)
+                if norm != surface and len(norm) == len(surface):
+                    forms.append(norm)  # text is matched after normalisation, so index the normalised form too
+            for form in forms:
+                bucket = self._by_surface.setdefault(form, [])
+                if all(e.term_id != entry.term_id for e, _ in bucket):
+                    bucket.append((entry, kind))
 
     # ---------------------------------------------------------------- lookup
     def entry(self, term_id: str) -> LexEntry | None:
@@ -463,11 +567,15 @@ def map_relation(hist_category: str, scope: str, modern_category: str) -> tuple[
 class DomainPack:
     """Everything under ``domains/<name>/``."""
 
-    def __init__(self, root: str | Path) -> None:
+    def __init__(self, root: str | Path, extra_lexicons: Iterable[str] = ()) -> None:
         self.root = Path(root)
+        self.extra_lexicons = list(extra_lexicons)
         self.periods = Periods(_load(self.root / "periods.yaml"))
-        self.variants = VariantTable(_load(self.root / "variants.yaml"))
-        self.lexicon = Lexicon(sorted((self.root / "lexicon").glob("*.yaml")))
+        self.script = ScriptTable(self.root / "script")
+        self.variants = VariantTable(_load(self.root / "variants.yaml"), self.script)
+        extra = [p for d in self.extra_lexicons for p in sorted((self.root / d).glob("*.yaml"))]
+        self.lexicon = Lexicon(sorted((self.root / "lexicon").glob("*.yaml")), normalize=self.variants.normalize_text,
+                               extra_files=extra)
         self.terminology = Terminology(_load(self.root / "terminology.yaml"), _load(self.root / "modern_concepts.yaml"))
         self.ontology = _load(self.root / "ontology.yaml")
         self.citations = _load(self.root / "citations.yaml")

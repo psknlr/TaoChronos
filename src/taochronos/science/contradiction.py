@@ -195,6 +195,9 @@ def classify(a: Claim, b: Claim, ctx: ContradictionContext) -> dict:
         if inner is None:
             return {"label": "unrelated", "type": "none"}
         span = inner["span"]
+        if "machine-segmented" in a.tags:
+            return {"label": "apparent", "type": "segmentation", "subject": inner["pathogenesis"], "axis": "cold_heat",
+                    "explanations": ["白文机器断句：方药与病机可能出自相邻条文，单条主张内的寒热不一致需人工断句核对"]}
         contested = ctx.contested_fn(a, span[0], span[1])
         return {
             "label": "apparent" if contested else "contradiction",
@@ -249,6 +252,12 @@ def classify(a: Claim, b: Claim, ctx: ContradictionContext) -> dict:
             return {"label": "unrelated", "type": "differential", "subject": subject, "axis": x.key,
                     "explanations": ["辨证分治：不同表现用不同方药，属鉴别而非矛盾"],
                     "evidence": {"a": [x.term, x.value], "b": [y.term, y.value]}}
+    if x.key.startswith("finding:") and ("machine-segmented" in a.tags or "machine-segmented" in b.tags):
+        # in unpunctuated text a claim may absorb a neighbouring clause (an adjacent 条文 with the opposite finding):
+        # finding-level oppositions read through machine segmentation are not evidence of a disagreement
+        explanations.insert(0, "白文机器断句：主张范围可能并入相邻条文，症状层面的对立需人工断句核对")
+        return {"label": "apparent", "type": "segmentation", "subject": subject, "axis": x.key, "explanations": explanations,
+                "evidence": {"a": [x.term, x.value], "b": [y.term, y.value]}}
     ca, cb = _conditions(a), _conditions(b)
     if ca ^ cb:
         diff = sorted(ca ^ cb)

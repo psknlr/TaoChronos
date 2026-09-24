@@ -42,6 +42,15 @@ expert annotations before drawing conclusions about a real corpus.
 | source_rediscovery | 3/3 re-inferred with consistent date bounds |
 | ablations | earliest accuracy: all 1.0 · no sense route 0.67 · BM25 only 0.67; contradiction: no sense resolution 0.83 · no philology 0.92; 1 hypothesis would pass G5 only by counting dependent books; Context OS −94% tokens; without the Skeptic 1 rejected hypothesis survives and no revisions happen |
 
+## Full corpus
+
+The suites above run on the demo corpus, whose gold they were built against. On the full corpus
+(`--profile full-corpus`) the same machinery runs end to end — e.g. the 消渴 question: a frame of 2,400 of 32,736
+matching passages (84 books, six periods), 2,444 claims, 95 evidence and 41 counter-evidence records and 22
+hypotheses in about a minute offline — and `tests/test_corpus_store.py` checks the parser, the store, verbatim
+provenance of claims read from unpunctuated text and a research run over a store. Gold for the full corpus
+(punctuation, claims, dating of layers) is future work.
+
 ## Baselines
 
 The time machine's link-level table compares Adamic–Adar with resource allocation, common neighbours,

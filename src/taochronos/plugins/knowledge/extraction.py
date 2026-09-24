@@ -24,6 +24,7 @@ Rules (see docs/discovery.md for examples):
 
 from __future__ import annotations
 
+import dataclasses
 import re
 from dataclasses import dataclass, field
 from typing import Iterable
@@ -34,8 +35,10 @@ from ...protocol.confidence import ConfidenceVector
 from ...protocol.documents import Passage
 from ...protocol.outputs import PhilologyAssessment
 from ..classics.domain import PULSE_QUALITIES, DomainPack, LexEntry, Mention
+from ..classics.segment import SEGMENTER_VERSION, Segmenter, is_unpunctuated
 
 EXTRACTOR_VERSION = "lexicon-rules@0.1"
+SEGMENTED_DISCOUNT = 0.9  # claims read through machine segmentation are less certain than on punctuated text
 SENT_END = "。；！？"
 NEG_PREFIXES = ("不能", "不甚", "反不", "不", "无", "非", "未", "勿", "莫")
 NUM = "[一二三四五六七八九十百千半]+"
@@ -99,9 +102,42 @@ class ClaimExtractor:
     def __init__(self, pack: DomainPack) -> None:
         self.pack = pack
         self.lex = pack.lexicon
+        self.segmenter = Segmenter(pack.lexicon)
 
     # ================================================================== API
     def extract(self, passage: Passage, assessment: PhilologyAssessment | None = None) -> list[Claim]:
+        if passage.punctuation == "none" or is_unpunctuated(passage.text):
+            return self._extract_segmented(passage, assessment)
+        return self._extract(passage, assessment)
+
+    def _extract_segmented(self, passage: Passage, assessment: PhilologyAssessment | None) -> list[Claim]:
+        """Unpunctuated text (白文): extract from a machine-segmented *view* and map every span back to the
+        source, so quotes and argument spans stay verbatim in the original text."""
+        view = self.segmenter.view(self.pack.variants.normalize_text(passage.text))
+        shadow = dataclasses.replace(passage, text=view.text, punctuation="machine", variants=[])
+        out: list[Claim] = []
+        for claim in self._extract(shadow, None):
+            start, end = view.to_source(claim.start, claim.end)
+            if end <= start:
+                continue
+            args = []
+            for a in claim.arguments:
+                if a.start is not None and a.end is not None:
+                    a.start, a.end = view.to_source(a.start, a.end)
+                args.append(a)
+            key_args = sorted(f"{a.role.value}:{a.key}:{a.start}:{int(a.negated)}" for a in args)
+            claim.id = stable_id("clm", passage.id, claim.relation.value, start, end, key_args)
+            claim.start, claim.end, claim.quote = start, end, passage.text[start:end]
+            claim.extraction.method = "lexicon-rule+machine-segmentation"
+            claim.extraction.model = f"{EXTRACTOR_VERSION}+{SEGMENTER_VERSION}"
+            claim.extraction.confidence = round(claim.extraction.confidence * SEGMENTED_DISCOUNT, 4)
+            claim.confidence = self._confidence(claim, passage, assessment)
+            if "machine-segmented" not in claim.tags:
+                claim.tags.append("machine-segmented")
+            out.append(claim)
+        return out
+
+    def _extract(self, passage: Passage, assessment: PhilologyAssessment | None = None) -> list[Claim]:
         ctx = self._context(passage)
         if passage.kind == "materia_medica":
             self._rule_herb(ctx)
