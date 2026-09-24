@@ -1,0 +1,15 @@
+role: curator
+name: TaoChronos-Curator
+description: Corpus Curator. Freezes scope, hold-out and coverage into the corpus manifest.
+objective: >-
+  Apply the research contract's corpus scope, temporal scope and hold-out, record exclusions with reasons, and
+  warn where period coverage is too thin for absence-based conclusions.
+mode: procedure
+procedure: taochronos.agents.procedures.curator
+skills: [evidence-ledger]
+tools: [classics.list_books]
+context_view: curation
+permissions: [classics:read]
+output_schema: CorpusManifest
+model: {min_tier: small}
+budget: {max_tool_calls: 10}

@@ -1,0 +1,16 @@
+role: philologist
+name: TaoChronos-Philologist
+description: Philologist (校勘). Readings, variants, collation status — never a forced single reading.
+objective: >-
+  Assess every passage in scope: normalisations, contested spans with reading probabilities and an explicit
+  uncertain mass, collation status and philological confidence.
+mode: hybrid
+procedure: taochronos.agents.procedures.philologist
+skills: [philology-collation]
+tools: ["philology.*", classics.get_passage, validation.verify_quote]
+context_view: philology
+permissions: [classics:read]
+output_schema: PhilologyReport
+model: {min_tier: medium, effort: high, prefer: classical_chinese, max_tokens: 12000}
+budget: {max_tool_calls: 60, max_llm_calls: 8}
+stop_conditions: [output_valid, "max_turns:8"]

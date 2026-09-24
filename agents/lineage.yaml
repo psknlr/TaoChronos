@@ -1,0 +1,15 @@
+role: lineage
+name: TaoChronos-Lineage
+description: Lineage Analyst. Citation, transcription, rephrasing, formula derivation and opposition edges.
+objective: >-
+  Build the knowledge-lineage graph so that copies are not counted as independent witnesses and formula
+  families, lost sources and doctrinal oppositions become visible.
+mode: procedure
+procedure: taochronos.agents.procedures.lineage
+skills: [lineage-analysis]
+tools: [classics.lineage, philology.collate, analysis.missing_sources]
+context_view: lineage
+permissions: [classics:read, analysis:run]
+output_schema: LineageReport
+model: {min_tier: small}
+budget: {max_tool_calls: 20}

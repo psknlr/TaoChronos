@@ -28,6 +28,8 @@ class Profile:
     retrieval: dict[str, Any] = field(default_factory=dict)
     context: dict[str, Any] = field(default_factory=dict)
     discovery: dict[str, Any] = field(default_factory=dict)
+    policy: dict[str, Any] = field(default_factory=dict)
+    evals: dict[str, Any] = field(default_factory=dict)
     source: str | None = None
 
     def raw(self) -> dict[str, Any]:

@@ -4,7 +4,7 @@ The protocol layer depends on nothing else in the package (see
 ``architecture-policy.yaml``).
 """
 
-from .artifacts import ARTIFACT_KINDS, Artifact
+from .artifacts import ARTIFACT_KINDS, OPERATIONAL_ARTIFACT_KINDS, Artifact
 from .base import Model, canonical_json, content_hash, from_dict, sha256_hex, stable_id, to_jsonable
 from .claims import (
     CONDITION_ROLES,

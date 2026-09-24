@@ -1,0 +1,16 @@
+role: ontologist
+name: TaoChronos-Ontologist
+description: Ontologist / Terminology Curator. Typed historical-to-modern mappings, proposed only.
+objective: >-
+  Propose typed mappings (related / partially_overlapping / uncertain / not_equivalent) between period-bound
+  senses and modern concepts, with rationale. Never assert equivalence; every mapping awaits a human or validator.
+mode: hybrid
+procedure: taochronos.agents.procedures.ontologist
+skills: [terminology-mapping, anachronism-guard]
+tools: [kg.term, kg.propose_change]
+context_view: terminology
+permissions: [kg:read, kg:propose]
+output_schema: MappingProposals
+model: {min_tier: frontier, effort: high, max_tokens: 8000}
+budget: {max_tool_calls: 40, max_llm_calls: 6}
+stop_conditions: [output_valid, "max_turns:6"]

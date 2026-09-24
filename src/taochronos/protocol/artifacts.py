@@ -19,7 +19,11 @@ ARTIFACT_KINDS = (
     "figure",
     "manuscript",
     "workspace",
+    "trace",
 )
+
+# artifacts that record *how* a run went (telemetry), not *what* it found; excluded from the scientific state hash
+OPERATIONAL_ARTIFACT_KINDS = ("trace", "workspace")
 
 
 @dataclass(kw_only=True)

@@ -1,0 +1,15 @@
+role: evolution
+name: TaoChronos-Evolution
+description: Evolution Analyst. Concept timelines and formula family trees.
+objective: >-
+  Turn concept-drift and formula-evolution observations into structured timelines and family trees with
+  narratives that point back to observations and claims.
+mode: procedure
+procedure: taochronos.agents.procedures.evolution
+skills: [discovery-engines]
+tools: [analysis.concept_drift, analysis.formula_evolution, analysis.temporal_profile]
+context_view: evolution
+permissions: [analysis:run]
+output_schema: AnalysisSet
+model: {min_tier: small}
+budget: {max_tool_calls: 20}

@@ -1,0 +1,28 @@
+# Shared bundle for every TaoChronos profile. Offline (deterministic procedures) by default:
+# switch intelligence on with a profile such as `claude`, or `--provider` on the CLI.
+name: base
+description: Shared plugin bundle (classics domain, knowledge, retrieval, models, sandbox, subagents, storage).
+bundles:
+  - {plugin: taochronos.plugins.classics, config: {domain: domains/classics, corpus: corpus/demo}}
+  - {plugin: taochronos.plugins.knowledge}
+  - {plugin: taochronos.plugins.retrieval}
+  - {plugin: taochronos.plugins.models.offline}
+  - {plugin: taochronos.plugins.models.anthropic_provider}
+  - {plugin: taochronos.plugins.models.openai_compat}
+  - {plugin: taochronos.plugins.sandbox}
+  - {plugin: taochronos.plugins.subagents}
+  - {plugin: taochronos.plugins.storage, config: {event_store: sqlite}}
+agents: ["*"]
+skills: ["*"]
+tracks: [D1, D2, D3, D4, D5]
+routing: {default_provider: offline}
+hooks: [provenance_validator, anachronism_guard, publish_guard]
+gates: {min_independent_sources: 2, sense_threshold: 0.6}
+budget: {max_tool_calls: 6000, max_agents: 200}
+stop: {max_rounds: 2}
+context: {max_tokens: 24000, max_parallel_agents: 1}
+discovery:
+  pivot_year: 960
+  max_hypotheses: 14
+  weights: {E: 0.25, N: 0.2, R: 0.2, T: 0.15, F: 0.1, A: 0.1}
+retrieval: {modern_evidence: corpus/modern/evidence.yaml}

@@ -1,0 +1,16 @@
+role: modern_evidence
+name: TaoChronos-ModernEvidence
+description: Modern Evidence Analyst. The only door between the historical and biomedical spaces (Gate G8).
+objective: >-
+  Attach modern literature to hypotheses as context only, and open typed cross-space bridge hypotheses that
+  must pass Gate G8; a modern finding never validates an ancient text, nor the reverse.
+mode: hybrid
+procedure: taochronos.agents.procedures.modern_evidence
+skills: [terminology-mapping, anachronism-guard]
+tools: [literature.modern_evidence, kg.term]
+context_view: modern
+permissions: [literature:read, kg:read]
+output_schema: ModernEvidenceSet
+model: {min_tier: frontier, effort: high, max_tokens: 8000}
+budget: {max_tool_calls: 30, max_llm_calls: 6}
+stop_conditions: [output_valid, "max_turns:6"]

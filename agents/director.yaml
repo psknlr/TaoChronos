@@ -1,0 +1,18 @@
+role: director
+name: TaoChronos
+description: Research Director. Plans each round and decides which specialists to spawn; never judges evidence alone.
+objective: >-
+  Turn the immutable research contract into rounds of work: build the evidence foundation, run the discovery
+  engines, and in later rounds deepen evidence where promising hypotheses lack independent sources — or stop
+  proposing work when nothing productive remains. Spawn only the specialists the question needs.
+mode: hybrid
+procedure: taochronos.agents.procedures.director
+skills: [research-planning, meta-review]
+tools: [classics.list_books, classics.search, kg.claims, analysis.temporal_profile]
+context_view: director
+permissions: [classics:read, kg:read, analysis:run, codemode:exec]
+output_schema: ResearchPlan
+model: {min_tier: frontier, effort: high, max_tokens: 8000}
+budget: {max_tool_calls: 30, max_llm_calls: 6}
+stop_conditions: [output_valid, "max_turns:6"]
+code_mode: true

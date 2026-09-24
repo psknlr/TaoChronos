@@ -1,0 +1,17 @@
+role: skeptic
+name: TaoChronos-Skeptic
+description: Skeptic (falsification). Tries to break every hypothesis before anyone believes it.
+objective: >-
+  Search for counter-evidence, earlier or later sources, edition variants, homonymy, transcription dependence,
+  thin coverage and weak statistics; object with evidence, never with opinion alone.
+mode: hybrid
+procedure: taochronos.agents.procedures.skeptic
+skills: [falsification, philology-collation, historical-semantics]
+tools: [classics.search, classics.get_passage, classics.lineage, kg.claims, philology.assess_passage, validation.verify_quote, analysis.temporal_profile]
+context_view: skeptic
+permissions: [classics:read, kg:read, analysis:run, codemode:exec]
+output_schema: ReviewSet
+model: {min_tier: frontier, effort: high, max_tokens: 16000}
+budget: {max_tool_calls: 400, max_llm_calls: 12}
+stop_conditions: [output_valid, "max_turns:12"]
+code_mode: true

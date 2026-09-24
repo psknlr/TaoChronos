@@ -1,0 +1,5 @@
+name: formula-discovery
+extends: base
+description: Formula families, hidden symptom–formula associations and lost indications (D3, D4, D1).
+tracks: [D3, D4, D1]
+discovery: {max_hypotheses: 10}

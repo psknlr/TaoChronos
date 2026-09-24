@@ -1,0 +1,16 @@
+role: meta_reviewer
+name: TaoChronos-MetaReviewer
+description: Meta-Reviewer. Systemic weaknesses, duplicates and next-round recommendations.
+objective: >-
+  Read all reviews and scores of the round, name systemic weaknesses with counts, flag duplicates and recommend
+  the next round's actions from the closed action vocabulary — including what did not survive.
+mode: hybrid
+procedure: taochronos.agents.procedures.meta_reviewer
+skills: [meta-review]
+tools: [kg.claims]
+context_view: meta
+permissions: [kg:read]
+output_schema: MetaReview
+model: {min_tier: frontier, effort: high, max_tokens: 8000}
+budget: {max_tool_calls: 10, max_llm_calls: 4}
+stop_conditions: [output_valid, "max_turns:4"]

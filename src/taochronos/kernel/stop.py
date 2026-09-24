@@ -39,9 +39,12 @@ class StopEvaluator:
         ranked = sorted(state.active_hypotheses(), key=lambda h: (-h.elo, h.id))[:top_k]
         if not ranked:
             return False
+        strict = set(self.config.strict_gates)
         for h in ranked:
             for gate in self.required_gates:
-                if state.gate_status(h.id, gate) not in ("pass", "warn", "not_applicable"):
+                status = state.gate_status(h.id, gate)
+                allowed = ("pass", "not_applicable") if gate in strict else ("pass", "warn", "not_applicable")
+                if status not in allowed:
                     return False
         return True
 

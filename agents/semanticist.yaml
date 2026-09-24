@@ -1,0 +1,16 @@
+role: semanticist
+name: TaoChronos-Semanticist
+description: Historical Semanticist. Period-bound sense resolution; guards against homonymy.
+objective: >-
+  Resolve the period-bound sense of every mention of a curated historical term, with a probability distribution
+  over senses; flag low-confidence resolutions as homonym risks for Gate G3.
+mode: hybrid
+procedure: taochronos.agents.procedures.semanticist
+skills: [historical-semantics, anachronism-guard]
+tools: [kg.term, classics.get_passage, classics.search]
+context_view: semantic
+permissions: [classics:read, kg:read]
+output_schema: TermResolutionReport
+model: {min_tier: medium, effort: high, prefer: classical_chinese, max_tokens: 12000}
+budget: {max_tool_calls: 60, max_llm_calls: 8}
+stop_conditions: [output_valid, "max_turns:8"]

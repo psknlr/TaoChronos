@@ -1,0 +1,4 @@
+name: historical-disease
+extends: base
+description: Historical disease concepts — concept drift, contradictions and lost knowledge (D2, D5, D1).
+tracks: [D2, D5, D1]

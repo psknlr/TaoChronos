@@ -1,0 +1,29 @@
+# TaoChronos architecture policy — enforced by `taochronos governance` (and CI).
+#
+# Deterministic Harness, Stochastic Intelligence: the kernel is a control plane that names no model
+# vendor, no database product and no classic text; everything domain- or vendor-specific is a plugin.
+version: 1
+layers:
+  protocol:     {paths: [src/taochronos/protocol], may_import: []}
+  capabilities: {paths: [src/taochronos/capabilities], may_import: [protocol]}
+  kernel:       {paths: [src/taochronos/kernel], may_import: [protocol]}
+  science:      {paths: [src/taochronos/science], may_import: [protocol]}
+  verification: {paths: [src/taochronos/verification], may_import: [protocol, kernel]}
+  tools:        {paths: [src/taochronos/tools], may_import: [protocol, kernel, science, verification]}
+  plugins:      {paths: [src/taochronos/plugins], may_import: [protocol, capabilities, kernel, science, verification, tools, plugins]}
+  agents:       {paths: [src/taochronos/agents], may_import: [protocol, capabilities, kernel, science, verification, tools, agents]}
+  engine:       {paths: [src/taochronos/engine], may_import: [protocol, capabilities, kernel, science, verification, tools, agents, engine]}
+  evals:        {paths: [src/taochronos/evals], may_import: ["*"]}
+  app:          {paths: [src/taochronos/cli.py, src/taochronos/bootstrap.py, src/taochronos/config.py, src/taochronos/governance.py, src/taochronos/workspace], may_import: ["*"]}
+# the kernel must stay vendor-, product- and corpus-neutral
+kernel_forbidden_terms: [anthropic, openai, claude, gpt-, deepseek, gemini, neo4j, 伤寒论, 黄帝内经, 神农本草经, 金匮, shanghanlun, suwen]
+# vendor SDKs may only be imported by model-provider plugins
+vendor_sdks: [anthropic, openai]
+vendor_sdk_allowed_in: [src/taochronos/plugins/models]
+# agents act through capabilities and tools, never by importing concrete plugins
+agents_may_not_import: [taochronos.plugins]
+# hard invariants checked against the agent specs
+agent_rules:
+  forbid_commit_permissions: true
+  require_output_schema: true
+  director_name: TaoChronos

@@ -141,6 +141,8 @@ class Hypothesis(Model):
     generation: int = 0
     parent_id: str | None = None
     revision_note: str = ""
+    # scope qualifiers added by revision, e.g. {"scope": "surveyed_corpus", "sense": "消渴#病·三消", "reading": "base"}
+    qualifiers: dict = field_dict()
     branch: str | None = None
     space: KnowledgeSpace = KnowledgeSpace.COMPUTATIONAL_HYPOTHESIS
     generated_by: str = ""

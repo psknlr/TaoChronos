@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .artifacts import Artifact
+from .artifacts import OPERATIONAL_ARTIFACT_KINDS, Artifact
 from .base import Model, content_hash, field_dict, field_list
 from .claims import Claim
 from .documents import YearRange
@@ -43,6 +43,8 @@ class StopConfig(Model):
     stop_on_validation: bool = True
     require_contradictions_addressed: bool = False
     expert_intervention_on_critical: bool = True
+    # gates that must *pass* (not merely warn) before validation can stop the research
+    strict_gates: list[str] = field(default_factory=lambda: ["G4", "G5", "G6"])
 
 
 @dataclass(kw_only=True)
@@ -265,6 +267,7 @@ class ResearchObject(Model):
         for task in state["task_graph"].values():
             if task.get("status") == "running":  # an interrupted attempt is not scientific state
                 task["status"] = "pending"
+        state["artifacts"] = {k: v for k, v in state["artifacts"].items() if v.get("kind") not in OPERATIONAL_ARTIFACT_KINDS}
         return state
 
     def state_hash(self) -> str:

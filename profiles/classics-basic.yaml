@@ -1,0 +1,6 @@
+name: classics-basic
+extends: base
+description: Evidence foundation plus contradiction analysis (D5) in one round — the smallest useful research run.
+agents: [director, curator, philologist, semanticist, extractor, lineage, evidence, pattern_miner, statistician, hypothesis, skeptic, meta_reviewer]
+tracks: [D5]
+stop: {max_rounds: 1}

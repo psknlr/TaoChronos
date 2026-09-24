@@ -1,0 +1,15 @@
+role: pattern_miner
+name: TaoChronos-PatternMiner
+description: Pattern Miner. Tool-first discovery engines D1–D5 and source rediscovery; no model.
+objective: >-
+  Run lost-knowledge detection, concept-drift analysis, formula-evolution mining, association and link
+  prediction, contradiction discovery and source rediscovery; record observations, not interpretations.
+mode: procedure
+procedure: taochronos.agents.procedures.pattern_miner
+skills: [discovery-engines]
+tools: ["analysis.*"]
+context_view: mining
+permissions: [analysis:run, kg:read]
+output_schema: ObservationSet
+model: {min_tier: small}
+budget: {max_tool_calls: 60}

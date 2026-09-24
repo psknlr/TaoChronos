@@ -253,10 +253,16 @@ def _rules(ctx: ToolContext, a: dict) -> Any:
                              min_confidence=float(a.get("min_confidence", 0.5)))
 
 
+GRAPH_RELATIONS = (ClaimRelation.INDICATED_FOR, ClaimRelation.HERB_INDICATION, ClaimRelation.COMPOSED_OF)
+
+
 def _graph(ctx: ToolContext, before: float | None = None, after: float | None = None) -> CooccurrenceGraph:
+    """Clique expansion of *positive* hyperedges only: a contraindication is not an association."""
     year = claim_year_fn(ctx.cap("corpus"))
     edges = []
     for c in claims_in_scope(ctx):
+        if c.relation not in GRAPH_RELATIONS:
+            continue
         y = year(c)
         if before is not None and (y is None or y >= before):
             continue
