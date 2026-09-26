@@ -204,8 +204,129 @@ def reading(r: dict[str, Any]) -> list[str]:
     return out
 
 
+# ------------------------------------------------------------------ 版本谱系
+KINDS = {"substitution": "异文", "omission": "脱", "addition": "衍", "transposition": "倒", "mixed": "复合", "orthographic": "用字"}
+
+
+def _witness_table(r: dict[str, Any]) -> list[str]:
+    out = ["| 本 | 书名 | 来源 | 年代 | 覆盖 | 缺文字数 | 增出字数 | 独异 |" + (" 避讳下限 |" if any("edition_floor" in w for w in r.get("witnesses", [])) else ""),
+           "|---|---|---|---|---|---|---|---|" + ("---|" if any("edition_floor" in w for w in r.get("witnesses", [])) else "")]
+    for w in r.get("witnesses", []):
+        floor = f" {int(w['edition_floor'])} |" if w.get("edition_floor") is not None else (" |" if "edition_floor" in w else "")
+        out.append(f"| {w['id']}{'（底本）' if w['id'] == r.get('base') else ''} | {w.get('title', '')} `{w.get('book_id') or ''}` | "
+                   f"{w.get('source', '')} | {_years(w)} | {w.get('coverage', 0):.0%} | {w.get('lacuna_chars', 0)} | "
+                   f"{w.get('structural_chars', 0)} | {w.get('singular_readings', 0)} |{floor}")
+    return out
+
+
+def _units(r: dict[str, Any], n: int = 30) -> list[str]:
+    out = ["| 位置 | 类型 | 底本 | 异文（本） |", "|---|---|---|---|"]
+    for u in [u for u in r.get("units", []) if not u.get("structural") and u.get("kind") != "orthographic"][:n]:
+        readings = "；".join(f"「{x['text'] or '（无）'}」{''.join(x['witnesses'])}" for x in u["readings"][1:])
+        out.append(f"| {_q(u.get('locator', ''), 24)} | {KINDS.get(u['kind'], u['kind'])} | {_q(u.get('context', ''), 30)} | {readings} |")
+    return out
+
+
+def variants(r: dict[str, Any]) -> list[str]:
+    s = r.get("summary", {})
+    kinds = "，".join(f"{KINDS.get(k, k)} {v}" for k, v in (s.get("by_kind") or {}).items())
+    out = [f"# 版本谱系·异文：{r.get('work', '')}", "",
+           f"底本 {r.get('base')}（坐标系，不代表其读法为是）{r.get('base_characters', 0)} 字；异文单位 {s.get('units', 0)}（{kinds}）；"
+           f"计入谱系的实质异文 {s.get('substantive', 0)}，每千字 {s.get('per_1000')}；结构性差异（长段增删）{s.get('structural', 0)}。", ""]
+    out += _witness_table(r)
+    if r.get("excluded"):
+        out += ["", "未参校（与底本重合过少）：" + "、".join(f"{x['title']}（{x['siglum']}）" for x in r["excluded"])]
+    if r.get("relations"):
+        out += ["", "见证关系：" + "；".join(f"{k} {v}" for k, v in r["relations"].items())]
+    if r.get("frequent_substitutions"):
+        out += ["", "## 高频单字异文（用字习惯候选，复核后可列入 collation.yaml）", ""]
+        for x in r["frequent_substitutions"][:12]:
+            out.append(f"- {x['characters']}：{x['units']} 处，如 {'；'.join(_q(c, 24) for c in x['contexts'])}")
+    out += ["", "## 异文（前 30 条）", ""] + _units(r)
+    return out
+
+
+def stemma(r: dict[str, Any]) -> list[str]:
+    out = variants(r)
+    out[0] = f"# 版本谱系：{r.get('work', '')}"
+    if r.get("ascii"):
+        out += ["", "## 谱系图（邻接法，" + ("以 " + r["root_basis"] if r.get("root_basis") else "") + "定根）", "", "```", r["ascii"], "```",
+                "", f"Newick：`{r.get('newick', '')}`"]
+    if r.get("groups"):
+        out += ["", "## 共同异文分组（候选的共同创新）", "", "| 本 | 支持度 | 例 |", "|---|---|---|"]
+        for g in r["groups"][:12]:
+            out.append(f"| {''.join(g['witnesses'])} | {g['support']} | {', '.join(g['examples'][:2])} |")
+    if r.get("patterns"):
+        out += ["", "## 一致模式（所有本都存的异文单位）", ""] + [f"- {p['pattern']}：{p['units']} 处（权重 {p['weight']}）" for p in r["patterns"][:8]]
+    if r.get("contamination"):
+        out += ["", "## 交叉传抄（contamination）", ""]
+        for c in r["contamination"]:
+            out.append(f"- {c['witness']} 兼抄 {c['source']}：跨支共同异文支持度 {c['support']}，占其分组证据 {c['share']:.0%}")
+    if r.get("conflicts"):
+        out += ["", "方向未定的冲突：" + "；".join(f"{''.join(c['witnesses'])}（{c['support']}）" for c in r["conflicts"])]
+    if r.get("note"):
+        out += ["", f"> {r['note']}"]
+    return out
+
+
+def edition(r: dict[str, Any]) -> list[str]:
+    out = [f"# 版本概况：{r.get('work', '')} · {r.get('book')}（{r.get('siglum')}）", "",
+           f"独异 {r.get('singular_readings', 0)} 处（每千字 {r.get('singular_per_1000')}）；增出（结构性）{r.get('structural_chars', 0)} 字。", "",
+           "| 他本 | 书名 | 每千字差异 |", "|---|---|---|"]
+    out += [f"| {a['siglum']} | {a['title']} | {a['differences_per_1000']} |" for a in r.get("agreement", [])]
+    if r.get("lacunae"):
+        out += ["", "缺文：" + "；".join(f"{x['locator']}（{x['end'] - x['start']} 字）" for x in r["lacunae"][:10])]
+    return out
+
+
+# ------------------------------------------------------------------ 语义复用与思想传播
+def reuse(r: dict[str, Any]) -> list[str]:
+    if "label" in r and "hits" not in r:  # one pair
+        f = r.get("features", {})
+        return [f"# 语义复用：{r['label_zh']}（{r['label']}）", "", f"规则：{r['rule']}（置信 {r['confidence']}，{r.get('citation') or ''}）", "",
+                *[f"- {x}" for x in r.get("reasons", [])], "", f"复用段：{_q(r.get('where', {}).get('text', ''), 120)}", "",
+                "| 特征 | 值 |", "|---|---|", *[f"| {k} | {v} |" for k, v in f.items()]]
+    s = r.get("summary", {})
+    out = [f"# 语义复用：{_q(r.get('query', ''), 40)}", "",
+           f"候选：字面 {r['candidates']['wording']}，概念共现 {r['candidates']['concepts']}，审读 {r['candidates']['examined']}；"
+           f"判定复用 {s.get('reuses', 0)} 处（{s.get('works', 0)} 部著作），其中仅由概念检索召回 {s.get('found_by_concepts_only', 0)} 处。", "",
+           "类型：" + "，".join(f"{k} {v}" for k, v in (s.get("by_label_zh") or {}).items()), "",
+           "| 时期 | 类型 | 引法 | 出处 | 复用段 | 依据 |", "|---|---|---|---|---|---|"]
+    for h in r.get("hits", [])[:60]:
+        out.append(f"| {h.get('period') or ''} | {h['label_zh']} | {h.get('citation', '')} | {h.get('locator', '')}（{_years(h)}） | "
+                   f"{_q(h.get('quote', ''), 50)} | {h['rule']} |")
+    if s.get("first_of_each_type"):
+        out += ["", "## 各类型最早见", ""]
+        for k, w in s["first_of_each_type"].items():
+            out.append(f"- {k}：{w['locator']}（{_years(w)}）> {_q(w.get('quote', ''), 60)}")
+    out += ["", f"> {r.get('note', '')}"]
+    return out
+
+
+def transmission(r: dict[str, Any]) -> list[str]:
+    out = [f"# 思想传播：{r.get('title', '')}", "", f"底本 {'+'.join(r.get('base', []))}，抽取 {len(r.get('clauses', []))} 条经文，"
+           f"类型化复用边 {r.get('edges', 0)} 条；同书他本：" + "、".join(f"{k}（{v}）" for k, v in list((r.get("same_work_witnesses") or {}).items())[:6]), "",
+           "## 各时期复用方式", "", "| 时期 | 边 | 保留原文 | 改写 | 驳议 |", "|---|---|---|---|---|"]
+    for p in r.get("periods", []):
+        out.append(f"| {p['period']} | {p['edges']} | {p['retained']:.0%} | {p['transformed']:.0%} | {p['disputed']:.0%} |")
+    out += ["", "## 承用最多的著作", "", "| 著作 | 年代 | 经文数 | 主要方式 | 类型分布 |", "|---|---|---|---|---|"]
+    for w in r.get("works", [])[:30]:
+        labels = "，".join(f"{k} {v}" for k, v in list(w["labels"].items())[:4])
+        out.append(f"| {w['title']} | {int(w['year']) if w.get('year') is not None else ''} | {w['clauses']} | {w['dominant_zh']} | {labels} |")
+    if r.get("channels"):
+        out += ["", "## 传播途径（后世文字更近于中间著作而非原书）", ""]
+        for c in r["channels"][:15]:
+            out.append(f"- {c['via_title']} → {c['title']}：{c['clauses']} 条经文，相似度高出 {c['closer_by']}")
+    if r.get("first_of_each_type"):
+        out += ["", "## 各类型最早见", ""] + [f"- {k}：{w['title']}（{int(w['year']) if w.get('year') is not None else ''}）`{w.get('passage_id')}`"
+                                          for k, w in r["first_of_each_type"].items()]
+    out += ["", f"> {r.get('note', '')}"]
+    return out
+
+
 PAGES = {"concordance": concordance, "formula": formula, "herb": herb, "term": term, "taboo": taboo, "citations": citations,
-         "cards": cards, "reading": reading}
+         "cards": cards, "reading": reading, "variants": variants, "stemma": stemma, "edition": edition, "reuse": reuse,
+         "transmission": transmission}
 
 
 def markdown(kind: str, result: dict[str, Any], signature: dict[str, Any], notice: str = "") -> str:

@@ -1,4 +1,4 @@
-"""TaoChronos-Eval for computational philology: collation and stemma on artificial traditions.
+"""TaoChronos-Eval for computational philology: collation and stemma on artificial traditions; reuse types.
 
 A real text (the demo corpus, normalised) is copied down a known stemma — two branches, three generations, one
 witness contaminated from the other branch — with every copy adding known changes (substitutions, omissions,
@@ -29,7 +29,9 @@ from ..plugins.classics.collation import (
     robinson_foulds,
     splits,
 )
-from .base import EvalContext, SuiteResult
+from ..plugins.classics.intertext import IntertextAnalyzer
+from ..science.semantic_reuse import LABELS, MODES
+from .base import EvalContext, SuiteResult, accuracy, confusion, macro_f1, prf
 
 POOL = "之而也其于以者所则乃又亦若故夫盖此是"
 SWAP = "寒热虚实表里上下左右大小多少先后"
@@ -138,4 +140,47 @@ def collation(ctx: EvalContext) -> SuiteResult:
         "on the uncontaminated witnesses (a contaminated one has no single place in a tree)"])
 
 
-__all__ = ["collation"]
+def reuse(ctx: EvalContext) -> SuiteResult:
+    """ReuseEval: the reuse type of labelled pairs (gold/reuse.yaml), whether a pair is reuse at all, and — end to
+    end on the demo corpus — whether ``study.reuse`` finds the lineage gold's transcriptions and rephrasings."""
+    h = ctx.default
+    an = IntertextAnalyzer(h.pack, h.corpus)
+    pairs: list[tuple[str, str]] = []
+    details: list[dict[str, Any]] = []
+    for g in ctx.gold("reuse").get("pairs", []):
+        r = an.label(g["source"], g["target"])
+        pairs.append((g["label"], r["label"]))
+        f = r["features"]
+        details.append({"id": g["id"], "gold": g["label"], "predicted": r["label"], "correct": g["label"] == r["label"],
+                        "rule": r["rule"], "basis": g.get("basis"),
+                        "features": {k: f[k] for k in ("cov_source", "cov_target", "concept_cov", "concept_prec",
+                                                       "specificity", "distinctive", "length_ratio", "formulaic_share")}})
+    is_reuse = lambda label: MODES.get(label, "none") != "none"  # noqa: E731
+    tp = sum(1 for g, p in pairs if is_reuse(g) and is_reuse(p))
+    fp = sum(1 for g, p in pairs if not is_reuse(g) and is_reuse(p))
+    fn = sum(1 for g, p in pairs if is_reuse(g) and not is_reuse(p))
+    by_mode = accuracy([(MODES[g], MODES[p]) for g, p in pairs])
+    # end to end: candidates and labels over the demo corpus
+    study = h.capabilities.get("study")
+    found = []
+    for e in ctx.gold("lineage").get("positive", []):
+        if e["relation"] not in ("transcribes", "rephrases"):
+            continue
+        res = study.reuse(passage_id=e["target"])
+        hit = next((x for x in res["hits"] if x["passage_id"] == e["source"]), None)
+        found.append({"relation": e["relation"], "source": e["target"], "reuser": e["source"],
+                      "found": hit is not None, "label": hit["label"] if hit else None,
+                      "found_by": hit["found_by"] if hit else []})
+    metrics = {"pairs": len(pairs), "accuracy": accuracy(pairs), "macro_f1": macro_f1(pairs), "mode_accuracy": by_mode,
+               "reuse_detection": prf(tp, fp, fn),
+               "per_label": {k: {"gold": sum(1 for g, _ in pairs if g == k),
+                                 "correct": sum(1 for g, p in pairs if g == k == p)} for k in LABELS},
+               "pipeline_recall": round(sum(1 for x in found if x["found"]) / len(found), 4) if found else None,
+               "confusion": confusion(pairs)}
+    return SuiteResult("reuse", metrics, details + [{"pipeline": x} for x in found], notes=[
+        "author-constructed pairs (gold/reuse.yaml): a development set for the transparent rules, not an independent "
+        "benchmark; mode = retained / transformed / disputed / none; pipeline_recall = lineage gold transcriptions "
+        "and rephrasings that study.reuse finds in the demo corpus"])
+
+
+__all__ = ["collation", "reuse"]

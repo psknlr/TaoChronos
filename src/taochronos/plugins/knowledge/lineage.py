@@ -241,6 +241,7 @@ class LineageBuilder:
                         "longest_block": match.longest_block,
                         "containment": match.containment,
                         "weighted_bigram_overlap": match.weighted_overlap,
+                        **({"reuse_type": match.reuse_type, "reuse": match.reuse} if match.reuse_type else {}),
                     },
                     source_passage=later.id,
                     target_passage=earlier.id,

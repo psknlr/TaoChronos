@@ -703,7 +703,8 @@ def cmd_eval(args: argparse.Namespace) -> None:
     _out(summary_table(results))
 
 
-STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset")
+STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
+         "variants", "stemma", "edition", "tei", "reuse", "transmission")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -722,10 +723,37 @@ def cmd_study(args: argparse.Namespace) -> None:
     needs = {"formula": "a formula name", "herb": "a drug name", "term": "a term", "reading": "a topic", "metrology": "a dose"}
     if what in needs and not target:
         raise SystemExit(f"taochronos study {what}: give {needs[what]}")
-    if what == "concordance" and not (target or args.passage):
-        raise SystemExit("taochronos study concordance: give a text or --passage <id>")
+    if what in ("concordance", "reuse") and not (target or args.passage):
+        raise SystemExit(f"taochronos study {what}: give a text or --passage <id>")
+    if what in ("stemma", "edition", "tei", "transmission") and not (target or args.books):
+        raise SystemExit(f"taochronos study {what}: give a work (key, title or book id) or --books")
     notice = ""
-    if what == "concordance":
+    collation = {k: v for k, v in (("books", args.books), ("base", args.base), ("chapter", args.chapter)) if v}
+    if args.max_chars:
+        collation["max_chars"] = args.max_chars
+    if what == "variants":
+        res = study.variants(None if args.passage else target, text=target if args.text_mode else None,
+                             passage_id=args.passage, **({} if args.passage or args.text_mode else collation))
+    elif what == "stemma":
+        res = study.stemma(target, root_at=args.root_at, **collation)
+    elif what == "edition":
+        res = study.edition(target, **collation)
+    elif what == "tei":
+        text = study.tei(target, **collation)
+        if args.output:
+            Path(args.output).write_text(text, encoding="utf-8")
+            _out(f"wrote {args.output}")
+        else:
+            _out(text)
+        return
+    elif what == "reuse":
+        if args.against or args.against_passage:
+            res = study.reuse_pair(target, args.against, source_id=args.passage, target_id=args.against_passage)
+        else:
+            res = study.reuse(target, args.passage, semantic=not args.no_semantic, limit=args.limit or 300)
+    elif what == "transmission":
+        res = study.transmission(target, clauses=args.clauses)
+    elif what == "concordance":
         res = study.concordance(target, args.passage, min_coverage=args.min_coverage, limit=args.limit or 300)
     elif what == "formula":
         res = study.formula(target, other_names=not args.no_other_names)
@@ -871,7 +899,8 @@ def build_parser() -> argparse.ArgumentParser:
         if name == "export":
             sp.add_argument("--format", default="json", choices=["json", "cypher", "graphml", "prov"])
             sp.add_argument("-o", "--output")
-    sp = sub.add_parser("study", help="治学: 经文互见·集注, 方源考, 药性源流, 术语源流, 避讳断代, 引书网络, 学习卡片, 阅读门径, 研究数据集")
+    sp = sub.add_parser("study", help="治学: 经文互见·集注, 方源考, 药性源流, 术语源流, 避讳断代, 引书网络, 学习卡片, 阅读门径, 研究数据集, "
+                                      "版本谱系 (variants/stemma/edition/tei), 语义复用 (reuse), 思想传播 (transmission)")
     sp.set_defaults(fn=cmd_study)
     sp.add_argument("what", choices=STUDY)
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
@@ -890,6 +919,16 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--year", type=float, help="metrology: the year whose measures to read the dose in")
     sp.add_argument("--limit", type=int)
     sp.add_argument("--anki", help="cards: also write an Anki import file (TSV)")
+    sp.add_argument("--books", action="append", help="variants/stemma/edition/tei: a witness book id (repeatable; a+b joins volumes)")
+    sp.add_argument("--base", help="variants/stemma: the base witness (book id or siglum; default: the one the others carry most)")
+    sp.add_argument("--chapter", help="variants/stemma: collate only locators matching this pattern (e.g. 辨太阳病)")
+    sp.add_argument("--max-chars", type=int, help="variants/stemma: longest base to collate (default 60000)")
+    sp.add_argument("--root-at", help="stemma: root the tree at this witness (default: midpoint)")
+    sp.add_argument("--text-mode", action="store_true", help="variants: the target is a passage text, collate its copies and quotations")
+    sp.add_argument("--against", help="reuse: the type of reuse of the text in this other text")
+    sp.add_argument("--against-passage", help="reuse: … in this passage")
+    sp.add_argument("--no-semantic", action="store_true", help="reuse: shared wording only (no concept co-occurrence)")
+    sp.add_argument("--clauses", type=int, default=40, help="transmission: clauses of the work to trace")
     sp.add_argument("--json", action="store_true", help="print the full result as JSON")
     sp.add_argument("-o", "--output", help="write to this file (dataset: this directory)")
     sp = add("codemode", cmd_codemode, "run a Research Code Mode program against the SDK")

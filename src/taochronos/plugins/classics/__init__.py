@@ -8,6 +8,7 @@ from typing import Any
 from .citations import CitationExtractor, CitationMention
 from .corpus import Corpus, ExternalWork
 from .domain import DomainPack, Lexicon, LexEntry, Mention, Periods, Terminology, VariantTable
+from .intertext import IntertextAnalyzer
 from .philology import PhilologyService
 from .reuse import ReuseMatch, TextReuseDetector, strip_punct
 from .segment import Segmenter, SegmentedView, is_unpunctuated
@@ -41,6 +42,7 @@ def register(registry: Any, config: dict[str, Any], context: Any) -> None:
     registry.register("philology", "classics", PhilologyService(pack, corpus), default=True)
     registry.register("citations", "classics", CitationExtractor(pack, corpus), default=True)
     detector = TextReuseDetector(pack)
+    detector.intertext = IntertextAnalyzer(pack, corpus)
     if getattr(corpus, "large", False):
         detector.use_corpus_statistics(corpus)  # bigram document frequencies from the full-text index, on demand
     else:
@@ -55,6 +57,7 @@ __all__ = [
     "Corpus",
     "DomainPack",
     "ExternalWork",
+    "IntertextAnalyzer",
     "LexEntry",
     "Lexicon",
     "Mention",

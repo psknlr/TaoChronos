@@ -425,6 +425,38 @@ def _study_reading(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(_study(ctx).reading(a["topic"]), int(a.get("items", 10)))
 
 
+def _collation_kw(a: dict[str, Any]) -> dict[str, Any]:
+    kw = {k: a[k] for k in ("books", "base", "chapter") if a.get(k)}
+    if a.get("max_chars"):
+        kw["max_chars"] = int(a["max_chars"])
+    return kw
+
+
+def _study_variants(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).variants(a.get("work"), text=a.get("text"), passage_id=a.get("passage_id"), **_collation_kw(a))
+    return _brief(res, int(a.get("items", 20)))
+
+
+def _study_stemma(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).stemma(a.get("work"), root_at=a.get("root_at"), **_collation_kw(a))
+    return _brief({k: v for k, v in res.items() if k != "units"}, int(a.get("items", 20)), chars=1600)
+
+
+def _study_reuse(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    study = _study(ctx)
+    if a.get("target") or a.get("target_id"):
+        return _brief(study.reuse_pair(a.get("text"), a.get("target"), source_id=a.get("passage_id"),
+                                       target_id=a.get("target_id")), int(a.get("items", 20)))
+    res = study.reuse(a.get("text"), a.get("passage_id"), semantic=bool(a.get("semantic", True)),
+                      max_candidates=int(a.get("max_candidates", 800)), limit=int(a.get("limit", 200)))
+    return _brief(res, int(a.get("items", 20)))
+
+
+def _study_transmission(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).transmission(a["work"], clauses=int(a.get("clauses", 30)), max_candidates=int(a.get("max_candidates", 400)))
+    return _brief(res, int(a.get("items", 20)))
+
+
 def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
     reg = ToolRegistry()
     specs = [
@@ -510,6 +542,31 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
         ToolSpec("study.reading", "阅读门径: the works to read on a topic — first attestations, the densest treatments by period, "
                  "monographs, case records, Republican syntheses — each with the reason.",
                  obj({"topic": S, "items": I}, ["topic"]), _study_reading, family="study", permission="classics:read"),
+        ToolSpec("study.variants", "版本谱系·异文: collate the witnesses of a work (or a passage's copies and quotations with text / passage_id): "
+                 "variant units (substitution, omission, addition, transposition; orthographic ones apart), lacunae, "
+                 "frequent substitutions (spelling conventions to review).",
+                 obj({"work": S, "text": S, "passage_id": S, "books": {"type": "array", "items": S}, "base": S, "chapter": S,
+                      "max_chars": I, "items": I}), _study_variants, family="study", permission="classics:read", expensive=True,
+                 returns="witnesses with coverage, lacunae and singular readings; summary by kind; units"),
+        ToolSpec("study.stemma", "版本谱系·谱系图: distances between the witnesses, a neighbour-joining stemma (Newick and a tree), groups "
+                 "of shared readings, agreement patterns, contamination (which witness also copied another branch), "
+                 "each witness's taboo-based edition date floor.",
+                 obj({"work": S, "books": {"type": "array", "items": S}, "base": S, "chapter": S, "max_chars": I, "root_at": S,
+                      "items": I}), _study_stemma, family="study", permission="classics:read", expensive=True,
+                 returns="distances, tree, newick, ascii, groups, patterns, contamination, conflicts"),
+        ToolSpec("study.reuse", "语义复用: how later books reuse a passage — candidates from shared wording and co-occurring concepts, "
+                 "each typed by transparent rules (直接引用 near_verbatim 节略 撮要 转述 解释性改写 引而驳之 套语相似) with its "
+                 "features; with target / target_id, the type of one pair.  Candidates prove nothing; the rule and features "
+                 "are given with every label.",
+                 obj({"text": S, "passage_id": S, "target": S, "target_id": S, "semantic": {"type": "boolean"},
+                      "max_candidates": I, "limit": I, "items": I}), _study_reuse, family="study", permission="classics:read",
+                 expensive=True, returns="hits (label, rule, features, citation 明引/暗引, relation, direction), summary by label and period"),
+        ToolSpec("study.transmission", "思想传播: a work's reception — its clauses' typed reuse in later works, the balance of retained / "
+                 "transformed / disputed reuse by period, and the channels (later works that follow an intermediate work's "
+                 "wording rather than the source's).",
+                 obj({"work": S, "clauses": I, "max_candidates": I, "items": I}, ["work"]), _study_transmission,
+                 family="study", permission="classics:read", expensive=True,
+                 returns="works with their reuse types, periods, channels, first work of each type"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

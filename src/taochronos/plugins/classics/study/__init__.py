@@ -7,6 +7,8 @@ data made of *witnesses* — verbatim quotes with book, date, locator and licenc
 concordance        经文互见·集注: where a passage recurs (other copies, quotations, restatements), with a 校勘记
 variants / stemma  版本谱系: multi-witness collation of a work (or of a passage's copies and quotations), variant units,
 edition            distances, a neighbour-joining stemma, shared-reading groups, contamination; one edition's profile
+reuse              语义复用: a passage's reuses across the corpus, typed (直接引用 … 转述, 解释性改写, 引而驳之, 套语相似)
+transmission       思想传播: a work's reception — which later works carry it and how, by period, and through which works
 formula            方源考: every written-out composition of a formula; original and current versions, 加减,
                    同名异方, 同方异名, dose ratios, doses in the measures of their time, 方歌
 herb               药性源流: 性味, 毒性, 归经, 升降浮沉, 主治 of a drug, book by book; the first statement of each
@@ -29,6 +31,7 @@ from .concordance import Concordance
 from .dataset import tables as dataset_tables
 from .formulas import FormulaStudy
 from .herbs import HerbStudy
+from .intertext import IntertextStudy
 from .learning import Learning, anki_tsv
 from .network import CitationNetwork
 from .stemma import StemmaStudy
@@ -49,6 +52,7 @@ class StudyService(StudyBase):
         self._network = CitationNetwork(self)
         self._learning = Learning(self, self._formulas, self._herbs, self._terms, self._network)
         self._stemma = StemmaStudy(self)
+        self._intertext = IntertextStudy(self, self._concordance, self._stemma)
 
     @property
     def metrology(self) -> Any:
@@ -112,6 +116,19 @@ class StudyService(StudyBase):
 
     def tei(self, work: str | None = None, **kw: Any) -> str:
         return self._stemma.tei(work, **kw)
+
+    def reuse(self, text: str | None = None, passage_id: str | None = None, **kw: Any) -> dict[str, Any]:
+        """Typed reuses of a passage across the corpus (semantic reuse, two stages: candidates, then rules)."""
+        return self._intertext.reuse(text, passage_id, **kw)
+
+    def reuse_pair(self, source: str | None = None, target: str | None = None, *, source_id: str | None = None,
+                   target_id: str | None = None) -> dict[str, Any]:
+        """The reuse type of one passage in another, with its features and the rule that fired."""
+        return self._intertext.compare(source or "", target or "", source_id=source_id, target_id=target_id)
+
+    def transmission(self, work: str, **kw: Any) -> dict[str, Any]:
+        """A work's reception: typed reuse of its clauses in later works, by period, with the channels."""
+        return self._intertext.transmission(work, cache_dir=self.cache_dir(), **kw)
 
     def _edition_floors(self, out: dict[str, Any]) -> None:
         """Each witness's lower date bound from its taboo characters (a witness in volumes: the latest)."""
