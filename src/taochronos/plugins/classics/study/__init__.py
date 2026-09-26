@@ -14,6 +14,8 @@ authorship         (cited works, late vocabulary, taboo); Burrows' Delta against
 cases              医案轨迹: case records read visit by visit (findings, diagnosis, principle, formula, 加减, doses,
 trajectories       response, outcome); the sequences, transitions and outcome associations common to many cases
 argument           医理论证: a passage's reasoning as a graph of marked steps; a work's way of reasoning, compared
+senses             语义演变: a term's senses by period, the date its meaning shifted, candidate senses the curation lacks
+fragments          佚书辑佚: a lost work's fragments gathered from the books that quote it, merged and ordered by volume
 formula            方源考: every written-out composition of a formula; original and current versions, 加减,
                    同名异方, 同方异名, dose ratios, doses in the measures of their time, 方歌
 herb               药性源流: 性味, 毒性, 归经, 升降浮沉, 主治 of a drug, book by book; the first statement of each
@@ -38,7 +40,9 @@ from .cases import CaseStudy
 from .concordance import Concordance
 from .dataset import tables as dataset_tables
 from .formulas import FormulaStudy
+from .fragments import FragmentStudy
 from .herbs import HerbStudy
+from .senses import SenseStudy
 from .intertext import IntertextStudy
 from .learning import Learning, anki_tsv
 from .network import CitationNetwork
@@ -65,6 +69,8 @@ class StudyService(StudyBase):
         self._strata = StratigraphyStudy(self, self._stemma, self._taboo)
         self._cases = CaseStudy(self)
         self._argument = ArgumentStudy(self, self._stemma)
+        self._senses = SenseStudy(self)
+        self._fragments = FragmentStudy(self)
 
     @property
     def metrology(self) -> Any:
@@ -175,6 +181,23 @@ class StudyService(StudyBase):
             out.pop("_counts", None)
             return out
         return self._argument.graph(text, passage_id)
+
+    def senses(self, term: str, **kw: Any) -> dict[str, Any]:
+        """A term's senses by period, the change point of their shares, candidate senses and the neighbourhood."""
+        return self._senses.run(term, **kw)
+
+    def fragments(self, work: str, *, exclude_books: list[str] | None = None, verify_against: list[str] | None = None,
+                  **kw: Any) -> dict[str, Any]:
+        """A lost work's fragments from the books that quote it; with ``verify_against`` (a surviving text's book
+        ids), how much of the reconstruction is in it and how much of it is recovered."""
+        if verify_against == ["*"]:  # the surviving work itself: all its witnesses
+            verify_against = [b for ids in self._stemma.witness_sets(work) for b in ids]
+        out = self._fragments.run(work, exclude_books=(exclude_books or []) + (verify_against or []), **kw)
+        if verify_against:
+            out["verification"] = self._fragments.verify(out, verify_against)
+        for f in out["fragments"]:
+            f.pop("_han", None)
+        return out
 
     def _edition_floors(self, out: dict[str, Any]) -> None:
         """Each witness's lower date bound from its taboo characters (a witness in volumes: the latest)."""

@@ -33,6 +33,7 @@ from ..plugins.classics.collation import (
     splits,
 )
 from ..plugins.classics.intertext import IntertextAnalyzer
+from ..science import sense_evolution as sensevo
 from ..science import stratigraphy as strata
 from ..science.semantic_reuse import LABELS, MODES
 from .base import EvalContext, SuiteResult, accuracy, confusion, macro_f1, prf
@@ -398,4 +399,121 @@ def argument(ctx: EvalContext) -> SuiteResult:
     return SuiteResult("argument", metrics, details, notes=notes)
 
 
-__all__ = ["argument", "cases", "collation", "reuse", "stratigraphy"]
+VOCAB_A = ["口渴", "引饮", "身热", "脉浮", "发汗", "烦满"]
+VOCAB_B = ["多饮", "尿多", "肾虚", "消瘦", "肾气", "下焦"]
+VOCAB_C = ["痈疽", "饮酒", "尿甜", "肥甘", "疮疡", "嗜酒"]  # a sense no curation names
+FILLER = ["其人", "日久", "不已", "或曰", "治之", "当以", "此病", "亦有", "兼见", "至于", "所以", "病者", "由是", "诸家"]
+
+
+def _sense_trial(seed: int, n: int = 600, turn: float = 1000.0, hidden_from: float = 1300.0) -> dict[str, Any]:
+    rng = random.Random(seed)
+    contexts, truth = [], []
+    for _ in range(n):
+        year = rng.uniform(0, 2000)
+        if year >= hidden_from and rng.random() < 0.3:
+            sense, vocab = "C", VOCAB_C
+        else:
+            sense = "B" if rng.random() < (0.75 if year >= turn else 0.15) else "A"
+            vocab = VOCAB_B if sense == "B" else VOCAB_A
+        words = rng.sample(vocab, 2) + rng.sample(FILLER, 4)
+        rng.shuffle(words)
+        contexts.append({"text": "".join(words), "tokens": words, "year": year})
+        truth.append(sense)
+    return {"contexts": contexts, "truth": truth}
+
+
+def senses(ctx: EvalContext) -> SuiteResult:
+    """SenseEvolutionEval: synthetic occurrences of a term whose second sense takes over at a known date and whose
+    third sense, named by no curation, appears later — the change point, the labelling and the discovery of the
+    hidden sense; on the demo corpus, the curated exemplars of 消渴 labelled as curated."""
+    curated = [{"id": "A", "cues": VOCAB_A[:4], "anti_cues": []}, {"id": "B", "cues": VOCAB_B[:4], "anti_cues": []}]
+    agg: dict[str, list[float]] = {k: [] for k in ("change_year_error", "change_detected", "labelling_accuracy",
+                                                   "hidden_sense_found", "hidden_sense_precision")}
+    details = []
+    seeds = (1, 2, 3) if ctx.quick else (1, 2, 3, 4, 5)
+    for seed in seeds:
+        t = _sense_trial(seed)
+        occ, truth = t["contexts"], t["truth"]
+        labels = sensevo.assign(occ, curated)
+        known = [(lab, tr) for lab, tr in zip(labels, truth) if tr in ("A", "B")]
+        agg["labelling_accuracy"].append(sum(1 for lab, tr in known if lab == tr) / len(known))
+        dated = [(o["year"], lab) for o, lab in zip(occ, labels) if lab]
+        cp = sensevo.change_point([y for y, _ in dated], [lab for _, lab in dated], permutations=99)
+        agg["change_detected"].append(1.0 if cp and cp["p"] < 0.05 else 0.0)
+        agg["change_year_error"].append(abs(cp["year"] - 1000.0) if cp else 1000.0)
+        found = sensevo.discover(occ, labels, k=2)
+        best = max(found, key=lambda c: sum(1 for d in c["distinctive"][:5] if d["token"] in VOCAB_C), default=None)
+        hits = sum(1 for d in (best["distinctive"][:5] if best else []) if d["token"] in VOCAB_C)
+        agg["hidden_sense_found"].append(1.0 if hits >= 3 else 0.0)
+        agg["hidden_sense_precision"].append(hits / 5)
+        details.append({"seed": seed, "change": cp["year"] if cp else None, "p": cp["p"] if cp else None,
+                        "candidates": [[d["token"] for d in c["distinctive"][:5]] for c in found]})
+    metrics: dict[str, Any] = {k: round(sum(v) / len(v), 4) for k, v in agg.items()}
+    demo = ctx.default.capabilities.get("study").senses("消渴")
+    metrics["exemplars"] = f"{demo['exemplar_check']['agree']}/{demo['exemplar_check']['checked']}"
+    details.append({"exemplars": demo["exemplar_check"]["items"]})
+    return SuiteResult("senses", metrics, details, notes=[
+        "synthetic occurrences (600 per trial): sense B's share rises from 15% to 75% in the year 1000, a sense C that "
+        "no cue names appears from 1300 (30%); change_year_error in years; hidden_sense_found = a candidate cluster with "
+        "3 of its top 5 words from C; exemplars: the curated exemplar passages of 消渴 in the demo corpus labelled with "
+        "their curated sense"])
+
+
+def fragments(ctx: EvalContext) -> SuiteResult:
+    """FragmentEval: a lost work reconstructed from the books that quote it — on a constructed corpus whose lost
+    text is known (gold/fragments: attributions with source notes and 又, a competing source, packed quotations, a
+    late paraphrase), and, with the full corpus, 千金要方 and 肘后备急方 (which survive) reconstructed from quotation."""
+    from ..plugins.classics import Corpus
+    from ..plugins.classics.study import StudyService
+
+    h = ctx.default
+    corpus = Corpus.load(ctx.home / "evals" / "gold" / "fragments")
+    corpus.normalize = h.pack.variants.normalize_text
+    study = StudyService(h.pack, corpus)
+    res = study.fragments("集古方", verify_against=["jigu"])
+    lost = {p.id: (han_only(h.pack.variants.normalize_text(p.text))[0], p.locator.volume) for p in corpus.passages(book_ids=["jigu"])}
+    decoys = ("杏仁", "齿痛", "饱食", "半夏、陈皮")  # the words of other sources' entries
+    leaks = sum(1 for f in res["fragments"] if any(d in f["text"] for d in decoys))
+    vol_ok = vol_n = 0
+    for f in res["fragments"]:
+        if f["volume"] is None:
+            continue
+        han = han_only(h.pack.variants.normalize_text(f["text"]))[0]
+        best = max(lost.values(), key=lambda v: len(_trigrams(han) & _trigrams(v[0])))
+        vol_n += 1
+        vol_ok += f["volume"] == _volume_number(best[1])
+    metrics: dict[str, Any] = {
+        "fragments": res["count"], "precision": res["verification"]["precision"], "coverage": res["verification"]["coverage"],
+        "decoy_leaks": leaks, "volume_accuracy": round(vol_ok / vol_n, 4) if vol_n else None,
+        "merged": sum(1 for f in res["fragments"] if len(f["witnesses"]) > 1)}
+    details = [{"fragment": f["text"][:40], "volume": f["volume"], "witnesses": [w["passage_id"] for w in f["witnesses"]]}
+               for f in res["fragments"]]
+    notes = ["constructed corpus (gold/fragments): precision = fragments whose 6-grams are at least 30% in the held-out "
+             "lost text; decoy_leaks = fragments carrying another source's words; volume_accuracy = source-note volumes "
+             "matching the lost text's volume"]
+    big = None if ctx.quick else ctx.corpus_harness()
+    if big is not None:
+        st = big.capabilities.get("study")
+        qj = st.fragments("千金要方", verify_against=["*"])["verification"]
+        zh = st.fragments("肘后备急方", verify_against=["*"])["verification"]
+        metrics["real"] = {"qianjin_precision": qj["precision"], "qianjin_coverage": qj["coverage"],
+                           "qianjin_best_quoting_books": [(b["book"], b["precision"]) for b in qj["by_quoting_book"][:3]],
+                           "zhouhou_not_in_extant": round(1 - zh["precision"], 4) if zh["precision"] is not None else None}
+        notes.append("real: 千金要方 and 肘后备急方 reconstructed from the books that quote them and checked against their "
+                     "surviving witnesses; the extant 肘后 is a reworked remnant, so most quotations of it are not in it — "
+                     "candidate lost text (佚文), which is what 辑佚 recovers")
+    return SuiteResult("fragments", metrics, details, notes=notes)
+
+
+def _trigrams(s: str) -> set[str]:
+    return {s[i: i + 3] for i in range(len(s) - 2)}
+
+
+def _volume_number(label: str | None) -> int | None:
+    from ..plugins.classics.study.fragments import cn_number
+
+    m = re.search(r"[一二三四五六七八九十百]+", label or "")
+    return cn_number(m.group(0)) if m else None
+
+
+__all__ = ["argument", "cases", "collation", "fragments", "reuse", "senses", "stratigraphy"]

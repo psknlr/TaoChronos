@@ -491,6 +491,15 @@ def _study_argument(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(res, int(a.get("items", 15)))
 
 
+def _study_senses(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).senses(a["term"], per_period=int(a.get("per_period", 250))), int(a.get("items", 12)))
+
+
+def _study_fragments(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).fragments(a["work"], verify_against=["*"] if a.get("verify") else None)
+    return _brief(res, int(a.get("items", 20)))
+
+
 def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
     reg = ToolRegistry()
     specs = [
@@ -631,6 +640,16 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "reasoning (relations per 1 000 clauses, concept triples, chains); with work and against, two works compared.",
                  obj({"text": S, "passage_id": S, "work": S, "against": S, "items": I}), _study_argument, family="study",
                  permission="classics:read", expensive=True, returns="clauses and edges; or a profile; or a comparison"),
+        ToolSpec("study.senses", "语义演变: a term's curated senses by period (from their cue words), the date the sense shares shifted "
+                 "(permutation test), candidate senses the curation lacks (clusters of unlabelled contexts, for a person to "
+                 "read), and the term's context neighbourhood period by period.",
+                 obj({"term": S, "per_period": I, "items": I}, ["term"]), _study_senses, family="study", permission="classics:read",
+                 expensive=True, returns="series, change point, candidate senses, neighbourhood, exemplar check"),
+        ToolSpec("study.fragments", "佚书辑佚: a lost work's fragments gathered from the books that quote it (entries opened by its "
+                 "name and closed by 出第N卷 notes, 又 continuations, inline 《…》云), merged across quoting books and ordered by "
+                 "volume; with verify, checked against the work's surviving witnesses (and each quoting book's reliability).",
+                 obj({"work": S, "verify": {"type": "boolean"}, "items": I}, ["work"]), _study_fragments, family="study",
+                 permission="classics:read", expensive=True, returns="fragments with volume, topic and witnesses; verification"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

@@ -705,7 +705,7 @@ def cmd_eval(args: argparse.Namespace) -> None:
 
 STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
          "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship", "cases",
-         "trajectories", "argument")
+         "trajectories", "argument", "senses", "fragments")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -773,6 +773,14 @@ def cmd_study(args: argparse.Namespace) -> None:
             res = study.argument(target, args.passage)
         else:
             raise SystemExit("taochronos study argument: give a text, --passage <id>, --work <work> [--against-work <work>]")
+    elif what == "senses":
+        if not target:
+            raise SystemExit("taochronos study senses: give a term (e.g. 消渴)")
+        res = study.senses(target)
+    elif what == "fragments":
+        if not target:
+            raise SystemExit("taochronos study fragments: give a lost work (e.g. 小品方)")
+        res = study.fragments(target, verify_against=["*"] if args.verify else None)
     elif what == "authorship":
         if not (target or args.book):
             raise SystemExit("taochronos study authorship: give a text or --book <id> [--chapter <篇名>]")
@@ -926,7 +934,8 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("-o", "--output")
     sp = sub.add_parser("study", help="治学: 经文互见·集注, 方源考, 药性源流, 术语源流, 避讳断代, 引书网络, 学习卡片, 阅读门径, 研究数据集, "
                                       "版本谱系 (variants/stemma/edition/tei), 语义复用 (reuse), 思想传播 (transmission), "
-                                      "文本地层 (layers/dating/authorship), 医案轨迹 (cases/trajectories), 医理论证 (argument)")
+                                      "文本地层 (layers/dating/authorship), 医案轨迹 (cases/trajectories), 医理论证 (argument), "
+                                      "语义演变 (senses), 佚书辑佚 (fragments)")
     sp.set_defaults(fn=cmd_study)
     sp.add_argument("what", choices=STUDY)
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
@@ -959,6 +968,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--features", choices=["frequent", "function"], default="frequent",
                     help="layers: the 100 most frequent characters, or function characters only (less sensitive to topic)")
     sp.add_argument("--chapter-name", help="authorship: one chapter (篇) of --book")
+    sp.add_argument("--verify", action="store_true", help="fragments: check the reconstruction against the work's surviving witnesses")
     sp.add_argument("--work", help="argument: the way of reasoning of a work")
     sp.add_argument("--against-work", help="argument: … compared with another work")
     sp.add_argument("--candidate", action="append", help="authorship: a candidate work or book id (repeatable)")

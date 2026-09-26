@@ -436,10 +436,58 @@ def argument(r: dict[str, Any]) -> list[str]:
     return out
 
 
+# ------------------------------------------------------------------ 语义演变 · 佚书辑佚
+def senses(r: dict[str, Any]) -> list[str]:
+    out = [f"# 语义演变：{r['term']}", "", f"{r['occurrences']} 处用例（按时期抽样），{r['assigned']} 处由义项线索判定。", ""]
+    if r.get("senses"):
+        out += ["## 义项", ""] + [f"- **{s['label']}**（{s['id']}）：{s.get('gloss', '')}" for s in r["senses"]] + [""]
+    names = [s["id"] for s in r.get("senses", [])] + ["unassigned"]
+    out += ["| 时期 | 用例 | " + " | ".join(n.split("#")[-1] for n in names) + " |", "|---|---|" + "---|" * len(names)]
+    for row in r.get("series", []):
+        out.append(f"| {row['period']} | {row['occurrences']} | " + " | ".join(f"{row['shares'].get(n, 0):.0%}" for n in names) + " |")
+    if r.get("change_points"):
+        out += ["", "## 转变点（二分切分，逐段置换检验）", ""]
+        for cp in r["change_points"]:
+            short = lambda d: "，".join(f"{k.split('#')[-1]} {v}" for k, v in d.items())  # noqa: E731
+            out.append(f"- 约 {int(cp['year'])} 年（p={cp['p']}）：之前 {short(cp['before'])}；之后 {short(cp['after'])}")
+    if r.get("candidate_senses"):
+        out += ["", "## 候选新义（未被现有义项覆盖的用例聚类，须人工判读）", ""]
+        for c in r["candidate_senses"]:
+            words = "、".join(d["token"] for d in c["distinctive"][:8])
+            ex = c["examples"][0]["context"] if c["examples"] else ""
+            out.append(f"- {c['size']} 例（{c['span'][0] if c['span'] else ''}–{c['span'][1] if c['span'] else ''}）：{words}　例：{_q(ex, 40)}")
+    if r.get("neighbourhood"):
+        out += ["", "## 语境邻域的变化", ""] + [f"- {n['period']}（{n['contexts']}）：{'、'.join(n['frequent'][:8])}"
+                                          + (f"；与前期重合 {n['overlap_with_previous']:.0%}" if n["overlap_with_previous"] is not None else "")
+                                          for n in r["neighbourhood"]]
+    ex = r.get("exemplar_check") or {}
+    if ex.get("checked"):
+        out += ["", f"义项范例核对：{ex['agree']}/{ex['checked']} 与所定义项一致。"]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+def fragments(r: dict[str, Any]) -> list[str]:
+    out = [f"# 佚书辑佚：{r['work']}", "", f"引称：{'、'.join(r.get('forms', []))}；{r['quotations']} 处引文，合并为 {r['count']} 条佚文，"
+           f"{r['characters']} 字；引用之书：" + "、".join(f"{k}（{v}）" for k, v in list(r.get("quoted_in", {}).items())[:8]), ""]
+    if r.get("by_volume"):
+        out += ["按原书卷次（据“出第N卷”）：" + "，".join(f"卷{k} {v} 条" for k, v in r["by_volume"].items()), ""]
+    v = r.get("verification")
+    if v:
+        out += [f"与现存本核对：{v['verified']}/{v['fragments']} 条见于现存本（{v['precision']:.0%}），覆盖现存本 {v['coverage']:.1%}。", ""]
+        if v.get("by_quoting_book"):
+            out += ["| 引用之书 | 佚文 | 见于现存本 |", "|---|---|---|"] + [f"| {b['book']} | {b['fragments']} | {b['precision']:.0%} |"
+                                                               for b in v["by_quoting_book"][:12]] + [""]
+    out += ["| 卷 | 篇目（引用处） | 佚文 | 出处 |", "|---|---|---|---|"]
+    for f in r.get("fragments", [])[:80]:
+        wit = "；".join(w["locator"] for w in f["witnesses"][:2])
+        out.append(f"| {f['volume'] or ''} | {_q(f.get('topic', ''), 16)} | {_q(f['text'], 50)} | {_q(wit, 40)} |")
+    return out + ["", f"> {r.get('note', '')}"]
+
+
 PAGES = {"concordance": concordance, "formula": formula, "herb": herb, "term": term, "taboo": taboo, "citations": citations,
          "cards": cards, "reading": reading, "variants": variants, "stemma": stemma, "edition": edition, "reuse": reuse,
          "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship, "cases": cases,
-         "trajectories": trajectories, "argument": argument}
+         "trajectories": trajectories, "argument": argument, "senses": senses, "fragments": fragments}
 
 
 def markdown(kind: str, result: dict[str, Any], signature: dict[str, Any], notice: str = "") -> str:
