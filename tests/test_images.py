@@ -199,19 +199,25 @@ def test_loc_keeps_medical_items_by_subject_or_title():
     assert recs[0].manifest == "https://www.loc.gov/item/1/manifest.json" and recs[0].kind == "刊"
 
 NDL_RSS = """<rss><channel>
-<item><title>傷寒論</title><dc:creator>張機</dc:creator><dcterms:issued>1790</dcterms:issued>
-<rdfs:seeAlso rdf:resource="https://dl.ndl.go.jp/pid/2536123"/></item>
-<item><title>傷寒論講義</title><dcterms:issued>1790</dcterms:issued><rdfs:seeAlso rdf:resource="https://dl.ndl.go.jp/pid/999"/></item>
-<item><title>傷寒論</title><dcterms:issued>1925</dcterms:issued><rdfs:seeAlso rdf:resource="https://dl.ndl.go.jp/pid/888"/></item>
-<item><title>傷寒論</title><dcterms:issued>1800</dcterms:issued></item>
+<item><title>傷寒論10卷</title><dc:title>傷寒論10卷</dc:title><dc:creator>張機</dc:creator><dcterms:issued>寛文8</dcterms:issued>
+<dc:date>1668</dc:date><dc:description>刊本</dc:description><rdfs:seeAlso rdf:resource="https://dl.ndl.go.jp/pid/2536123"/></item>
+<item><dc:title>傷寒論講義</dc:title><dc:date>1790</dc:date><rdfs:seeAlso rdf:resource="https://dl.ndl.go.jp/pid/999"/></item>
+<item><dc:title>傷寒論</dc:title><dc:date>1925</dc:date><rdfs:seeAlso rdf:resource="https://dl.ndl.go.jp/pid/888"/></item>
+<item><dc:title>傷寒論</dc:title><dc:date>1800</dc:date><rdfs:seeAlso rdf:resource="https://ci.nii.ac.jp/ncid/BA1"/></item>
 </channel></rss>"""
 
 
-def test_ndl_keeps_the_same_title_digitised_before_1912(normalize):
-    fetch = FakeFetch({}, default=lambda url: NDL_RSS)
-    [rec] = images.harvest_ndl(fetch, ["伤寒论"], normalize=normalize, log=lambda m: None)
-    assert (rec.id, rec.title, rec.authors, rec.years) == ("ndl:2536123", "傷寒論", "張機", "1790")
-    assert rec.manifest == "https://dl.ndl.go.jp/api/iiif/2536123/manifest.json"
+def test_ndl_keeps_the_digitised_items_of_the_title_before_1912(normalize):
+    calls = []
+
+    def answer(url: str):  # an overload answer first, then the page
+        calls.append(url)
+        return '<?xml version="1.0"?><error><code>429</code></error>' if len(calls) == 1 else NDL_RSS
+
+    [rec] = images.harvest_ndl(FakeFetch({}, default=answer), ["伤寒论"], normalize=normalize, backoff=0, log=lambda m: None)
+    assert (rec.id, rec.title, rec.authors, rec.date, rec.years, rec.kind) == ("ndl:2536123", "傷寒論10卷", "張機", "寛文8", "1668", "刊")
+    assert rec.manifest == "https://dl.ndl.go.jp/api/iiif/2536123/manifest.json" and len(calls) == 2
+    assert "until=1911" in calls[0] and "mediatype" not in calls[0]
 
 
 def test_titles_link_records_to_works(normalize):
@@ -230,7 +236,7 @@ def test_titles_link_records_to_works(normalize):
     assert images.link(recs, index, normalize) == 4
     assert [(r.work, r.book, r.match) for r in recs] == [
         ("shanghanlun", "kr_shl", "without-print-prefix"), ("lingshu", "jc_lingshu", "without-volumes"),  # 霊 folded to 靈
-        ("shanghanlun", "kr_shl", "exact"), ("", "", ""), ("nanjing", "jc_nanjing", "exact"),
+        ("shanghanlun", "kr_shl", "exact·alias"), ("", "", ""), ("nanjing", "jc_nanjing", "exact"),
         ("", "", ""), ("", "", "")]  # a two-character title links only as written, whole
 
 

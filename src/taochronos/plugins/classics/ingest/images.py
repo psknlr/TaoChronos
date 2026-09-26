@@ -502,29 +502,52 @@ def harvest_waseda(fetch: Fetcher, cls: str = "ya09", *, log: Log = print) -> li
 NDL_SEARCH = "https://ndlsearch.ndl.go.jp/api/opensearch"
 
 
-def harvest_ndl(fetch: Fetcher, titles: Iterable[str], *, normalize: Callable[[str], str] = lambda x: x, until: int = 1912,
-                log: Log = print) -> list[Record]:
-    """The digitised pre-1912 items NDL Search finds for each title (the same title, in any script)."""
+def _ndl_page(fetch: Fetcher, url: str, backoff: float, log: Log) -> str:
+    """A search page; NDL answers an overload with an error body (429), which is fetched again after a pause."""
+    text = fetch.get(url) or ""
+    for attempt in range(3):
+        if "<error>" not in text[:300]:
+            return text
+        time.sleep(backoff * (attempt + 1))
+        text = fetch.get(url, refresh=True) or ""
+    log(f"  ndl: gave up on {url}")
+    return ""
+
+
+def harvest_ndl(fetch: Fetcher, titles: Iterable[str], *, normalize: Callable[[str], str] = lambda x: x, until: int = 1911,
+                backoff: float = 10.0, log: Log = print) -> list[Record]:
+    """The items of the NDL デジタルコレクション among the pre-1912 publications NDL Search finds for each title (its
+    results unite many libraries' catalogues: only the items with a digital collection id are kept), whose title is
+    the title looked up — as written, or without volume counts."""
     out: dict[str, Record] = {}
     for title in titles:
-        text = fetch.get(f"{NDL_SEARCH}?{urllib.parse.urlencode({'title': title, 'cnt': '20', 'mediatype': '1'})}") or ""
+        wanted = normalize(_plain(title))
+        text = _ndl_page(fetch, f"{NDL_SEARCH}?{urllib.parse.urlencode({'title': title, 'until': str(until), 'cnt': '200'})}",
+                         backoff, log)
         for item in re.findall(r"<item>(.*?)</item>", text, re.S):
+            pids = re.findall(r"https?://dl\.ndl\.go\.jp/(?:pid/|info:ndljp/pid/)(\d+)", item)
+            if not pids:
+                continue
+
             def g(tag: str) -> list[str]:
                 return [html.unescape(x).strip() for x in re.findall(rf"<{tag}[^>]*>(.*?)</{tag}>", item, re.S)]
 
-            pids = re.findall(r"https?://dl\.ndl\.go\.jp/(?:pid/|info:ndljp/pid/)(\d+)", item)
-            issued = " ".join(g("dcterms:issued") + g("dc:date"))
-            years = _years(issued)
-            if not pids or not years or int(years.split("-")[0]) >= until:
+            name = (g("dc:title") or g("title") or [""])[0]
+            if wanted not in {k for k, _ in title_keys(name, normalize)}:
                 continue
-            name = (g("title") or [""])[0]
-            if normalize(_loose(name)) != normalize(_loose(title)):
+            issued = (g("dcterms:issued") or g("dc:date") or [""])[0]
+            years = _years(" ".join(g("dcterms:issued") + g("dc:date")))
+            if not years or int(years.split("-")[0]) > until:
                 continue
+            notes = g("dc:description")
             pid = pids[0]
             out.setdefault(pid, Record(
                 id=f"ndl:{pid}", source="ndl", holder="国立国会図書館", collection="NDLデジタルコレクション", title=name,
-                authors="；".join(g("dc:creator")), date=issued, years=years, manifest=f"https://dl.ndl.go.jp/api/iiif/{pid}/manifest.json",
-                page=f"https://dl.ndl.go.jp/pid/{pid}", rights="NDL デジタルコレクション（保護期間満了資料はインターネット公開）"))
+                authors="；".join(g("dc:creator")), date=issued, years=years,
+                kind="写" if any("写本" in n or "寫本" in n for n in notes) else ("刊" if any("刊本" in n for n in notes) else ""),
+                manifest=f"https://dl.ndl.go.jp/api/iiif/{pid}/manifest.json", page=f"https://dl.ndl.go.jp/pid/{pid}",
+                rights="NDL デジタルコレクション（保護期間満了のインターネット公開資料は自由に利用可）",
+                notes="；".join(n for n in notes if n and len(n) < 80)[:200]))
     log(f"  ndl: {len(out)} records")
     return list(out.values())
 
@@ -572,25 +595,30 @@ def title_keys(title: str, normalize: Callable[[str], str]) -> list[tuple[str, s
     return out
 
 
-def work_index(books: Iterable[dict[str, Any]], normalize: Callable[[str], str]) -> dict[str, tuple[str, str]]:
-    """normalised title or alias → (work, book id), from book records (titles of two characters or more)."""
-    index: dict[str, tuple[str, str]] = {}
-    for b in sorted(books, key=lambda b: b["id"]):
-        for t in [b.get("title", ""), *(b.get("aliases") or [])]:
-            key = normalize(_plain(re.sub(r"[（(].*?[）)]", "", t)))
-            if len(key) >= 2:
-                index.setdefault(key, (b.get("work") or b["id"], b["id"]))
+def work_index(books: Iterable[dict[str, Any]], normalize: Callable[[str], str]) -> dict[str, tuple[str, str, bool]]:
+    """normalised title or alias → (work, book id, by an alias), from book records (titles of two characters or more);
+    a book's own title wins over another book's alias, and among books of one title the most trusted source's
+    (``_rank``, lowest first) stands for the work."""
+    index: dict[str, tuple[str, str, bool]] = {}
+    books = sorted(books, key=lambda b: (b.get("_rank", 99), b["id"]))
+    for alias in (False, True):
+        for b in books:
+            for t in (b.get("aliases") or []) if alias else [b.get("title", "")]:
+                key = normalize(_plain(re.sub(r"[（(].*?[）)]", "", t)))
+                if len(key) >= 2:
+                    index.setdefault(key, (b.get("work") or b["id"], b["id"], alias))
     return index
 
 
-def link(records: list[Record], index: dict[str, tuple[str, str]], normalize: Callable[[str], str]) -> int:
-    """Link each record to a work by its title; a two-character title (難経, 醫説) only as written, whole."""
+def link(records: list[Record], index: dict[str, tuple[str, str, bool]], normalize: Callable[[str], str]) -> int:
+    """Link each record to a work by its title; a two-character title (難経, 醫説) only as written, whole.  A link
+    through an alias (针经 is also a name of the 灵枢) is marked `·alias`: the likeliest to need checking."""
     n = 0
     for rec in records:
         for key, how in title_keys(rec.title, normalize):
             if key in index and (len(key) >= 3 or how == "exact"):
-                rec.work, rec.book = index[key]
-                rec.match = how
+                rec.work, rec.book, alias = index[key]
+                rec.match = how + ("·alias" if alias else "")
                 n += 1
                 break
     return n

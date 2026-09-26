@@ -290,7 +290,7 @@ recorded.
 | Staatsbibliothek zu Berlin · Sammlung Unschuld | K10plus SRU (MARCXML, shelfmarks `Slg. Unschuld …`), joined with the provenance dataset of the Hamburg FDR (Staack 2025, CC BY 4.0: when and where each manuscript was acquired) | the collection's manuscripts and prints; the digitised ones with their manifest | Public Domain Mark 1.0 |
 | Library of Congress · Chinese Rare Books | loc.gov JSON API | the medical items: by subject, or by a medical title where the record has none | online reading for education and research; no reuse rights granted (digitised with the National Central Library, Taipei) |
 | 早稲田大学 古典籍総合データベース | the class list and item pages | class ヤ09 (医学): title, author, imprint, call number, keywords | the library's terms; no IIIF manifest published |
-| NDL デジタルコレクション | NDL Search OpenSearch | the digitised items before 1912 whose title is the title of a pre-1912 work of the store (queried in traditional characters) | out-of-copyright items are public on the internet |
+| NDL デジタルコレクション | NDL Search OpenSearch (publications to 1911) | the titles of the store's pre-1912 works, queried in traditional characters; of the results — NDL Search unites many libraries' catalogues — the items of the Digital Collection whose title is the title looked up | out-of-copyright items are public on the internet |
 
 **Dates.** A western year where the record gives one; else a Japanese era with its year (享和１ → 1801; an era alone,
 〔寛永〕, gives its span; the table runs from 天正 to 昭和); else a Chinese reign era through the domain's era table
@@ -300,9 +300,11 @@ The date statement is kept as the catalogue gives it.
 **Links.** A record's title is compared with the titles and aliases of the store's books in normalised form, after
 folding 新字体 to 旧字体 (霊→靈, 医→醫, 薬→藥 …): as written (`exact`); without volume counts, parentheses and
 what follows a separator (`without-volumes`); without the print prefixes of Japanese and late imperial editions
-(新刊, 重刻, 和刻, 増補, 図像, 頭書, 標註 …, `without-print-prefix`). A two-character title (難経, 醫説) links only as
-written. A link is a candidate for a person to check; commentaries on a classic (傷寒論講義, 金匱述義) are works of
-their own and stay unlinked.
+(新刊, 重刻, 和刻, 増補, 増訂, 図像, 頭書, 標註 …, `without-print-prefix`). A two-character title (難経, 醫説) links
+only as written. A book's own title wins over another book's alias, and a link made through an alias is marked
+`·alias` (针经 is also a name of the 灵枢 — and the title of a chapter of the 太平圣惠方): these are the first to check.
+Among books of one title, the most trusted source's stands for the work. A link is a candidate for a person to check;
+commentaries on a classic (傷寒論講義, 金匱述義) are works of their own and stay unlinked.
 
 `taochronos study witnesses <work>` (tool `study.witnesses`) lists a work's text witnesses in the store — edition,
 year, holder, source, licence, passages, and whether its passages link their page images — and its image witnesses by
@@ -314,13 +316,14 @@ year, with holder, shelfmark, how the link was made and the terms, and the count
 | NIJL · 研医会図書館 | 663 | 663 | 46 | 31 |
 | NIJL · 慶應義塾大学 富士川文庫 | 866 | 866 | 24 | 18 |
 | NIJL · 京都大学 富士川文庫 | 4,443 | 4,443 | 132 | 78 |
-| NIJL · 東京大学総合図書館（V, T81；含鶚軒文庫） | 819 | 819 | 38 | 19 |
+| NIJL · 東京大学総合図書館（V, T81；含鶚軒文庫） | 819 | 819 | 40 | 20 |
 | NIJL · 東京大学医学図書館 | 62 | 62 | 0 | 0 |
 | NIJL · 九州大学医学図書館 | 946 | 946 | 21 | 19 |
 | NIJL · 東北大学医学分館 | 68 | 68 | 0 | 0 |
 | Staatsbibliothek zu Berlin · Sammlung Unschuld | 1,044 | 905 | 69 | 40 |
-| Library of Congress · Chinese Rare Books | 17 | 17 | 12 | 10 |
-| **all** | **8,928** | **8,789** | **342** | **141** |
+| Library of Congress · Chinese Rare Books | 66 | 66 | 29 | 23 |
+| 早稲田大学 · ヤ09 | 661 | 0 | 85 | 65 |
+| **all** | **9,638** | **8,838** | **446** | **168** |
 <!-- /image-counts -->
 
 ### Sources surveyed for this release

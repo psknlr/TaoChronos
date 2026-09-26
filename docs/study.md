@@ -319,12 +319,12 @@ transcribed from). The **image witnesses** come from the catalog harvested by `t
 digitised copies in NIJL's holders (研医会, 慶應 and 京都 富士川文庫, 東京大学 incl. the 鶚軒文庫, 九州, 東北), the
 Staatsbibliothek zu Berlin (Sammlung Unschuld), the Library of Congress, 早稲田 and NDL — each with its date, print or
 manuscript, shelfmark, IIIF manifest and terms of use, linked to the work by its title (`match`: exact, without volume
-counts, without a print prefix). A link by title is a candidate; the record's page is there to check it. No image is
+counts, without a print prefix; `·alias` when the title is another name of the work, the links to check first). A link by title is a candidate; the record's page is there to check it. No image is
 downloaded: the manifest is the address from which a IIIF viewer loads the pages, and from which a future image layer
 (page-level OCR, the collation of a print against its image) can fetch them.
 
 <!-- witness-example -->
-**Example (full corpus).** `study witnesses 伤寒论`: 10 transcriptions in the store — the 四库 注解伤寒论 (汪济川本, 1545), the 東亜医学協会 text and CMETA's two copies of the 赵开美本 (the 台北故宫 print of 1599 and the 安政 reprint of 1856), CMETA's 康平本 (the 1854 copy at Berlin) and 康治本 (1857), and the 笈成 transcriptions; 3 of them link every passage to the image of its page. And 21 digitised copies in libraries (21 with a IIIF manifest), dated 1668—1848 where the record gives a year — 東京大学総合図書館（医学・本草類，含鶚軒文庫） 9，京都大学附属図書館（富士川文庫） 5，研医会図書館 4，九州大学附属図書館（医学図書館） 2，慶應義塾大学信濃町メディアセンター（富士川文庫） 1; among them 家刻傷寒論、訂字標註傷寒論, linked through their print prefix.
+**Example (full corpus).** `study witnesses 伤寒论`: 10 transcriptions in the store — the 四库 注解伤寒论 (汪济川本, 1545), the 東亜医学協会 text and CMETA's two copies of the 赵开美本 (the 台北故宫 print of 1599 and the 安政 reprint of 1856), CMETA's 康平本 (the 1854 copy at Berlin) and 康治本 (1857), and the 笈成 transcriptions; 3 of them link every passage to the image of its page. And 28 digitised copies in libraries (21 with a IIIF manifest), dated 1668—1856 where the record gives a year — 東京大学総合図書館（医学・本草類，含鶚軒文庫） 9，早稲田大学図書館 7，京都大学附属図書館（富士川文庫） 5，研医会図書館 4，九州大学附属図書館（医学図書館） 2，慶應義塾大学信濃町メディアセンター（富士川文庫） 1; among them 家刻傷寒論、校正傷寒論、訂字標註傷寒論, linked through their print prefix.
 <!-- /witness-example -->
 
 ## 语义复用与思想传播 (reuse and transmission)

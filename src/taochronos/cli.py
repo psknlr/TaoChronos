@@ -141,6 +141,7 @@ def _corpus_images(args: argparse.Namespace, home: Path, data: Path, db: Path) -
     from .plugins.classics.chronology import Chronology
     from .plugins.classics.domain import DomainPack
     from .plugins.classics.ingest import images
+    from .plugins.classics.ingest.collections import RANK
     from .plugins.classics.store import CorpusStore
 
     wanted = args.source or "all"
@@ -150,7 +151,8 @@ def _corpus_images(args: argparse.Namespace, home: Path, data: Path, db: Path) -
     pack = DomainPack(home / "domains" / "classics")
     normalize = pack.variants.normalize_text
     chronology = Chronology(home / "domains" / "classics" / "eras.yaml", normalize)
-    books = [json.loads(raw) for (raw,) in CorpusStore(db).db.execute("SELECT data FROM books")] if db.exists() else []
+    books = [{**json.loads(raw), "_rank": RANK.get(src, 99)}
+             for raw, src in CorpusStore(db).db.execute("SELECT data, source FROM books")] if db.exists() else []
     index = images.work_index(books, normalize)
     freq: dict[str, int] = {}
     if db.exists():  # character frequencies of the traditional-script texts, to choose among traditional forms
