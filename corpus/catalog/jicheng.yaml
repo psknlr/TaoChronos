@@ -3708,13 +3708,13 @@ books:
   - 200
   - 500
   dating: curated
-  category: 方书
+  category: 本草
   jicheng_category: 方劑
   work: mingyi_bielu
   attribution: compiled
   modern: false
   status: ingest
-  notes_text: 今人辑校本；辑者“〔附〕”标记移入元数据
+  notes_text: 今人辑校本（笈成列于方剂类）；辑者“〔附〕”标记移入元数据
   apparatus:
   - pattern: 〔附〕
 - code: D002

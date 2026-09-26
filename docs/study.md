@@ -479,7 +479,7 @@ so `--verify` measures the gathering against it: 90 of the 132 (68 %) are in it,
 of the 辑校本 comes from the 医心方, which the corpus lacks, and from the 尊经阁 manuscript of 卷一. Verification on the
 千金要方: 32 % of the fragments
 attributed to it are in its surviving text (幼幼新书 0.83, 外台秘要 0.55, 医心方 0.36 — compilers quote with different
-freedom), and they cover 12 % of it. For the 肘后备急方, 87.5 % of its quotations are *not* in the extant 肘后 — a reworked
+freedom), and they cover 12 % of it. For the 肘后备急方, 87.6 % of its quotations are *not* in the extant 肘后 — a reworked
 remnant (葛洪 → 陶弘景 → 杨用道's 附广). They are candidate lost text, which is what 辑佚 recovers.
 
 ## Data files

@@ -239,7 +239,9 @@ parsers:
 Layers are dated by who wrote them, and where two cannot be told apart, by the later: 1950 on belongs to no
 analysis period (the dynasty label is 当代), so the editors' notes never count as evidence for the Qing or the
 Republic.  A paragraph of old text resumed after a commentary without a marker is dated with the commentary —
-later, never earlier.
+later, never earlier.  The reconstructions put the lost works back at their own dates: `study herb 石膏` finds the
+甘 of 石膏 first in the 名医别录 (200–500), `study fragments 小品方 --verify` measures what it gathers against the
+辑校本.
 
 <!-- kept-editions -->
 | Book | Old text (years, passages) | Layers of later commentators and editors (years, passages) | Pieces in metadata | Treatment |
