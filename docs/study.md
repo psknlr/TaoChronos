@@ -24,6 +24,15 @@ the way the 考据 tradition answers them: from the texts, witness by witness.
 | `study argument` | 医理论证 — how does this passage, or this work, reason? | clauses with their concepts and typed edges (condition, consequence, cause, inference, contrast, analogy, rebuttal, definition, treatment …); a work's profile; two works compared |
 | `study senses` | 语义演变 — what did this term mean, and when did its meaning shift? | sense shares by period, change points, candidate senses the curation lacks, the term's neighbourhood by period, a check against the curated exemplars |
 | `study fragments` | 佚书辑佚 — what survives of a lost work in the books that quote it? | fragments ordered by the volume the source notes give, each with its quoting witnesses and parallels; the method verified on works that survive |
+| `study punctuate` | 句读 — where do the marks of this 白文 go? | the text with marks only (every character kept), each mark's probability, doubtful places; a punctuated input compared with its editors |
+| `study clause` | 条文结构 — what are the parts of this clause? | pieces with their roles (前提 病 症 脉 证 治则 禁忌 方 组成 煎制 服法 加减 预后) and the terms they name; a work's forms |
+| `study glosses` | 训诂 — how did the commentators gloss this word? | glosses (…者…也, 貌, 音, 反切, 读为, 当作, 一作) by commentator and date, the readings and who gave each first; a commentary's glossary |
+| `study commentaries` | 集注 — what did each commentator say on this clause, and how do they relate? | the commentaries aligned to the clause in date order; 照录 承袭 同解 增益 异解, explicit 驳 and 从, consensus and singular readings |
+| `study disputes` | 争议 — who rejected whose view on this? | named views rejected or endorsed, about a term or of a physician, with the reporting work; who rejects whom corpus-wide |
+| `study pairs` · `network` | 配伍与方证网络 — which drugs go together, and which formulas answer which findings? | drug pairs against chance (lift, PMI, NPMI, Fisher + BH), a drug's partners by period, the groups of drugs; a formula's findings and drugs, a finding's formulas |
+| `study schools` | 学派 — what sets a school apart, whom did it cite and dispute? | its members and works; the words and formulas it uses more than the other authors of its time; homophily, citing and cited schools, rejections; the school-by-school matrix |
+| `study names` | 名称 — what was this drug or formula called, when? | each name's works by period and century, the first to write it, when the preferred name changes, passages equating names, names the lexicon lacks |
+| `study chain` | 传播链 — through which earlier witness did each later copy or quotation come? | the passage's dated witnesses as a tree by shared innovations, each edge with its evidence and margin |
 
 Every result is made of **witnesses**: a verbatim quote with its passage id, locator (《书》卷·篇·节), the book's date
 and period, the text layer (正文, 注, 序跋 …), and the source and licence of the transcription. Every statement can be
@@ -60,6 +69,19 @@ taochronos study trajectories 咳嗽
 taochronos study argument --work 伤寒论 --against-work 温热论       # or a text, or --passage <id>
 taochronos study senses 消渴
 taochronos study fragments 小品方                                  # --verify: test the method on a surviving work
+
+# 任务规格 v1.0 (docs/tasks.md)
+taochronos study punctuate "太陽病頭痛發熱汗出惡風桂枝湯主之"        # or --passage <id> · --input <file>
+taochronos study clause "太阳病，头痛，发热，汗出，恶风，桂枝汤主之。"  # or --work 伤寒论
+taochronos study glosses 几几                                      # or --book <id>: a commentary's glossary
+taochronos study commentaries "太阳之为病，脉浮，头项强痛而恶寒。"
+taochronos study disputes 相火                                     # --person 丹溪 · nothing: who rejects whom
+taochronos study pairs 桂枝 --period 宋金元                         # nothing: the strongest pairs and the groups
+taochronos study network 桂枝汤                                     # a finding (脉浮) gives its formulas
+taochronos study schools 温病 --probe 营分 --probe 膜原              # nothing: every school and the matrix
+taochronos study names 山药
+taochronos study chain "病人脏无他病，时发热自汗出而不愈者，此卫气不和也。先其时发汗则愈，宜桂枝汤。"
+taochronos schema --study chain                                    # the output schemas of docs/tasks.md
 ```
 
 The CLI uses the `full-corpus` profile when the corpus store exists (otherwise the demo corpus). The same functions
@@ -88,8 +110,9 @@ pass no gates.
 ## 经文互见·集注 (concordance)
 
 **Method.** The query is normalised (variant characters, script) and cut into overlapping 4-character probes; the
-eight rarest probes (by index frequency) retrieve candidate passages, and a candidate must contain at least two of
-them. Each candidate is aligned with the query (`difflib`), cropped to the densest aligned block, and scored by
+twelve rarest probes (by index frequency), the rarest probe of each segment of the query's own punctuation (the index
+does not cross a mark, and one variant character — 藏 for 脏 — must not hide a witness from every probe) and the five
+rarest of all segment probes retrieve candidate passages; a candidate must contain at least two of them. Each candidate is aligned with the query (`difflib`), cropped to the densest aligned block, and scored by
 *coverage* — the share of the query it carries. Witnesses with coverage ≥ `min_coverage` (0.6) are kept and labelled:
 
 - **同书异本** — another copy of the base work (the work of the query passage, or of the earliest witness with
@@ -482,20 +505,130 @@ attributed to it are in its surviving text (幼幼新书 0.83, 外台秘要 0.55
 freedom), and they cover 12 % of it. For the 肘后备急方, 87.6 % of its quotations are *not* in the extant 肘后 — a reworked
 remnant (葛洪 → 陶弘景 → 杨用道's 附广). They are candidate lost text, which is what 辑佚 recovers.
 
+## 任务规格 v1.0 — the capabilities added with docs/tasks.md
+
+The [task specification](tasks.md) maps the 27 tasks of the roadmap onto TaoChronos; the capabilities below were
+added with it. Each is a study function, a tool (`study.*`), a CLI command, an evaluation suite and a JSON Schema of
+its output (`taochronos schema --study`, checked by the tests against real results).
+
+### 句读 (punctuate)
+
+A discriminative model learned from the store's editorially punctuated texts decides, at every gap between two
+characters, whether a mark goes there and which (，。；：、？！ and the openings and closings of quotations and notes).
+Its features are character n-grams around the gap and the lexicon's terms; the thresholds are set on development
+works. The output inserts marks and **never changes a character** (`preserved` is checked on every input). A punctuated
+input is stripped, punctuated again and compared with its editors. The model lives in the local cache only (it is
+derived from texts licensed for local research). Held out of training: boundary F1 0.767 on 55 works (rules 0.235),
+0.780 on four Siku 白文 works against their 笈成 punctuation (rules 0.303).
+
+### 条文结构 (clause)
+
+A clause is cut at its marks (白文 first punctuated by the model) and each piece takes the first role of
+`clause.yaml` that applies — processing, preparation and 加减 before the drugs they name — or a role from the lexicon
+categories it names; the drugs with their doses, the findings, pulses, diseases and formulas are listed. With
+`--work`, the clauses of a work's main text are profiled by the forms they take. Limits: one role per piece (a piece
+that names a pattern from a pulse gets the first rule's); 40 % of the pieces of the fullest 伤寒论 witness are read by
+no rule (the 平脉法 dialogues, numbering, notes).
+
+### 训诂 (glosses)
+
+The glosses of a word in the set forms of `exegesis.yaml` (…者…也, …貌, 音, 反切, 读为, 当作, 一作, 通), whose head is
+the word itself (项背强几几者 glosses 几几); glosses on the letter (音, 反切, 当作, 一作) are read in the characters as
+written — the normaliser would read 痓当作痉 as 痉当作痉. Each gloss carries its commentator (the text layer, else the
+book's authors) and date; one work's transcriptions count once; readings are grouped with who gave each first.
+
+### 集注与注家比较 (commentaries)
+
+The clause is found in the commentaries on its classic in the four layouts of the literature (the commentary as the row
+after the clause, in rows of its own layer, run on in the paragraph, as bracketed notes after the clause); the
+commentary unit after it is cut and dated. Wording is compared with the quoted classic masked out: 照录 (≥ 60 % shared),
+承袭 (≥ 30 %, or a run of 14 characters), 自录 (the same person); the concepts each unit adds beyond the clause's own give
+同解 (Jaccard ≥ 0.5), 增益 (a superset) and 异解 (Jaccard ≤ 0.1); named predecessors followed by 非也, 误矣, 当从 … give
+驳 and 从. A quotation of the clause in another work is kept apart from a commentary. 太阳之为病: 25 commentaries from
+1144 on; 张卿子 照录 成无己, 喻昌 承袭 方有执; the consensus concept 表, first brought by 成无己.
+
+### 争议 (disputes)
+
+Wherever a physician of `physicians.yaml` is named with a citing word, the sentence after the reported view is read for
+a stance (`exegesis.yaml`): direct speech must close before the verdict, a hypothetical is not a verdict, a double
+negation (鲜不, 无不) affirms, a verdict after another name belongs to that name, a later layer's rejection is dated with
+its layer, and a work reporting another's rejection (A 书 records that B rejected C) is credited as the reporter. 张介宾
+is the physician who rejects 丹溪 most; 景岳 on 丹溪's 相火 is reported in the 吴医汇讲 and the 医述.
+
+### 异文分级 (variant impact)
+
+Every reading of a variant unit is classed, first rule that applies (`collation/impact.py`): orthographic 0.05 ·
+lacuna 0.30 · long structural 0.60 · **dose** 1.0 (a numeral or measure that is part of a dose or a frequency, not of 半表
+半里 or 十枣汤) · **negation or modal** 0.95 · order 0.35 · **drug or formula** 0.90 and **clinical term** 0.80 (read in the
+unit's context) · structural 0.60 · function words 0.20 · lexical 0.50. `study variants` orders its review queue by the
+score — for experts to look at doses and negations first, never to decide which witness is right.
+
+### 配伍与方证网络 (pairs, network)
+
+One cached pass over the store reads every written-out composition (after a formula's name, drugs grouped by family:
+桂枝/桂心/肉桂 → 桂) and every treatment sentence (…主之, 宜…汤: the findings, pulses, patterns and diseases before the
+formula); one work's transcriptions count once. Pairs: support, confidence both ways, lift, PMI, NPMI (the ranking, so
+that rare drugs do not come first), a one-sided Fisher test with Benjamini–Hochberg; a drug's partners and triples by
+period; the communities of the significant pairs are the groups of drugs that hold together (六味, 四物, 攻逐, 破血, 理气,
+消导 …). Network: a formula's findings by lift against how often each finding is named, its drugs; a finding's formulas.
+A finding named before a formula is not proof that the formula treats it: each link carries examples.
+
+### 学派 (schools)
+
+The schools and memberships of `schools.yaml` and `physicians.yaml` (the 中医各家学说 groupings). A school's works —
+members' works through traditional or compiled attributions, one transcription each, its own layers only (later notes
+and modern apparatus left out), witnesses of one work edited by different physicians counted apart, up to 30 000
+characters taken evenly — are compared with the other works written within sixty years of any of them (a work printed
+long after its author, like 脉因证治, is dated within its author's life). Each physician counts once (a member's works
+share one unit, so do another author's) and the other works are reweighed to the school's forms (论著, 医案, 方书, 本草,
+歌赋), so that case-record prose is compared with case records. Words of two to four characters used by at least a
+quarter of the school's physicians are ranked by the z of the log-odds of their rates with an informative Dirichlet
+prior (Monroe, Colaresi & Quinn 2008) and significant when it passes Benjamini–Hochberg and more of the school's
+physicians use the word (share test); particles, doses and physicians' names are left out; each word is typed (a word,
+a drug, a formula name, making and taking) and quoted. Formulas (from the compositions and treatment sentences) are
+ranked the same way; citations give homophily (the share of the school's citations to its own members against the
+other works'), the schools it cites and that cite it, rejections both ways, and citations between members.
+Limits: a commentary carries its classic's words; one- or two-member schools have little power; a school is a
+historian's grouping and a word used more is not a doctrine until its passages are read.
+
+### 名称 (names)
+
+For the names the lexicon records for an entry, the works writing each name period by period and by century (a work
+counts once; a name written only inside a longer one — 山药 in 干山药 — is left to the longer); the first works to write
+each; the preferred name of each century and where it changes (a one-century blip between agreeing neighbours is read as
+theirs); passages equating two names (A，一名B; A即B; 俗名); and names the punctuated texts give after 一名, 又名, 俗呼,
+今名 that the lexicon lacks — candidates for curation. 山药: 薯蓣 until the 1000s, 山药 from the 1100s (宋英宗's taboo);
+玄参 gives way to 元参 in the 1700s (康熙) and returns after 1900; 山芋 is a name the lexicon lacked.
+
+### 传播链 (chain)
+
+The dated witnesses of a passage (from the concordance, coverage ≥ 0.8) are ordered into a tree by shared innovations
+(the principle of textual criticism that only shared changes show descent): a reading none of the earliest-dated
+witnesses has is an innovation (the earliest are all the source — the 宋本 writes one clause twice, 属桂枝汤 and 宜桂枝汤);
+a witness hangs from the earlier witness whose innovations it shares most, less half of that witness's innovations it
+lacks; with none shared, from the source (directly or through a lost intermediary). Spelling equivalents of
+`collation.yaml` are not innovations — copyists regularise them independently — and function-word changes weigh half.
+Each edge carries its shared readings, its score and its margin over the next candidate (under one reading:
+uncertain). On artificial traditions the parent is right 1.0 (0.94 when every copy also regularises spellings on its
+own, against 0.87 for the most similar earlier witness).
+
 ## Data files
 
 | File | Content |
 |---|---|
 | `domains/classics/taboo.yaml` | taboo rules: ruler, start year, character, spellings (pairs or formula suffixes), note |
 | `domains/classics/metrology.yaml` | units and their ratios; per period the 两 in grams and the 升 in ml (ranges), the value of 分, sources; the notice |
-| `domains/classics/physicians.yaml` | ~70 physicians: names, 本草 short names, dynasty, life or active years, school |
+| `domains/classics/physicians.yaml` | 104 physicians: names, 本草 short names, dynasty, life or active years, school (学派), branch within it, field (学科) |
+| `domains/classics/schools.yaml` | the schools of the 各家学说 textbooks: label, source (the authority not counted as a member), founder, parent school, branches, note |
 | `domains/classics/drug_families.yaml` | drugs compared as one in compositions (桂, 地黄, 芍药, 术, 甘草, 附子, 山药, …) |
 | `corpus/catalog/external-works.yaml` | works known through citations, including lost works known only through them |
 | `domains/classics/collation.yaml` | orthographic equivalences for collation (沉/沈, 藏/脏, 鞕/硬, 耆/芪 …): variants in the apparatus, never grouping evidence; graphic confusions (已/巳/己) deliberately left out |
 | `domains/classics/intertext.yaml` | citation, dialogue, refutation and explanation markers, and the stock phrases of the genre (以水七升，煮取三升，去滓 …) |
 | `domains/classics/cases.yaml` | case and visit openers, day markers, sections that file no cases, pulse and tongue patterns, principles, changes, doses, words of response |
 | `domains/classics/argument.yaml` | discourse markers of reasoning by relation (lead / tail, direction), the markers that split a clause (则, 故) and their exceptions |
-| `<data>/corpus/study-cache/` | the entry-heading index, the citation network and transmission results, keyed by a digest of the store, the normaliser and the book records |
+| `domains/classics/clause.yaml` | the roles of a clause (condition, disease, findings, pulse, pattern, principle, contraindication, formula, composition, preparation, administration, modification, prognosis) as patterns tried in order |
+| `domains/classics/exegesis.yaml` | the concepts commentators explain the classics with (forms, group), the words of stance towards another commentator, the forms of a gloss |
+| `<data>/corpus/study-cache/` | the entry-heading index, the citation network and transmission results, the 句读 model, the harvested formula compositions and the school comparisons, keyed by a digest of the store, the normaliser, the book records and the data files they read |
 
 ## Limitations
 
@@ -528,3 +661,17 @@ remnant (葛洪 → 陶弘景 → 杨用道's 附广). They are candidate lost t
   meanings, until a person reads the examples.
 - 佚书辑佚: attribution conventions differ between compilers, and a compiler may paraphrase; the per-book precision
   of the verification is the measure of how much to trust a fragment.
+- 句读: editors punctuate differently (a 、 against a ，, a quotation opened or not), so a disagreement with one edition
+  is not always an error; the model is learned from the texts the store holds and stays in the local cache.
+- 条文结构 and 训诂: the roles and gloss forms are patterns; a piece takes one role, and a gloss in a form not listed is
+  not found.
+- 集注 and 争议: a commentary is found only where it follows the clause in one of the four layouts; a stance is read only
+  where a named physician of `physicians.yaml` is cited with a citing word, so the silent disagreements of a
+  commentator who names no one are not counted.
+- 配伍与方证网络: compositions and treatment sentences are read with patterns and the lexicon; a formula named in a
+  sentence with findings is linked to them, which is co-occurrence, not efficacy.
+- 学派: the groupings are the textbooks'; a distinctive word is a question for the reader, and small schools have
+  little power.
+- 名称: only the names the lexicon records are counted; the candidate names from 一名 and 俗名 need curation.
+- 传播链: the tree is a hypothesis from shared readings; convergent changes by independent copyists can make a false
+  edge, which is why each edge carries its margin and its readings.

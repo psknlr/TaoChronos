@@ -391,3 +391,45 @@ def test_names_and_chain_through_tools_and_cli(harness, capsys, tmp_path):
     assert capsys.readouterr().out.startswith("# 名称：山药")
     assert main(["--data", str(tmp_path), "study", "chain", "太阳病，发热，汗出，恶风，脉缓者，名为中风。"]) == 0
     assert capsys.readouterr().out.startswith("# 传播链：")
+
+
+# ------------------------------------------------------------------ the output schemas of docs/tasks.md
+def test_results_match_the_schemas_of_the_task_specification(pack, study, commentary_study, school_study, harness):
+    from taochronos.protocol.schema import validate
+    from taochronos.plugins.classics.study.schemas import STUDY_SCHEMAS
+
+    pid = next(iter(harness.corpus.passages())).id
+
+    def tool(name: str, args: dict):
+        out = harness.scheduler.execute(ToolCall(name, args), actor=Actor.kernel())
+        assert out.ok, out.error
+        return out.result
+
+    results = {
+        "normalize": tool("philology.normalize", {"text": "太陽病，發熱汗出"}),
+        "punctuate": study.punctuate("太阳病头痛发热汗出恶风桂枝汤主之"),
+        "clause": study.clause("太阳病，头痛，发热，汗出，恶风，桂枝汤主之。"),
+        "claims": tool("kg.extract_claims", {"passage_id": pid}),
+        "names": study.names("山药"),
+        "glosses": commentary_study.glosses("几几"),
+        "concordance": commentary_study.concordance("太阳之为病，脉浮，头项强痛而恶寒。"),
+        "variants": commentary_study.variants("shanghanlun"),
+        "reuse": commentary_study.reuse("太阳之为病，脉浮，头项强痛而恶寒。"),
+        "chain": commentary_study.chain("太阳之为病，脉浮，头项强痛而恶寒。"),
+        "transmission": commentary_study.transmission("shanghanlun", clauses=3),
+        "commentaries": commentary_study.commentaries("太阳之为病，脉浮，头项强痛而恶寒。"),
+        "stemma": commentary_study.stemma("shanghanlun"),
+        "provenance": tool("validation.provenance_chain", {"object_id": pid}),
+        "verify_quote": tool("validation.verify_quote", {"quote": "消渴"}),
+        "network": study.network("桂枝汤"),
+        "pairs": study.pairs("桂枝", min_support=1),
+        "formula": study.formula("桂枝汤"),
+        "term": study.term("消渴"),
+        "senses": study.senses("消渴"),
+        "schools": school_study.schools("温病"),
+        "disputes": commentary_study.disputes(),
+        "search": tool("classics.search", {"query": "消渴", "k": 3}),
+    }
+    assert set(results) == set(STUDY_SCHEMAS)
+    for name, result in results.items():
+        assert not validate(result, STUDY_SCHEMAS[name]), (name, validate(result, STUDY_SCHEMAS[name])[:5])

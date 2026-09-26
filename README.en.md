@@ -3,7 +3,7 @@
 **A provenance-grounded research harness for the Chinese medical classics — for scholars, students and discovery.**
 *面向中医古籍的可溯源知识发现与治学系统*
 
-[中文 README](README.md) · [Study layer](docs/study.md) · [Architecture](docs/architecture.md) · [Agents](docs/agents.md) ·
+[中文 README](README.md) · [Study layer](docs/study.md) · [Task specification](docs/tasks.md) · [Architecture](docs/architecture.md) · [Agents](docs/agents.md) ·
 [Discovery](docs/discovery.md) · [Evaluation](docs/evals.md) · [Data](docs/data.md) · [Roadmap](docs/roadmap.md) · [ADRs](docs/adr/)
 
 TaoChronos turns 966 Chinese medical classics (about 123 million characters in 2.05 million passages) into a corpus
@@ -22,6 +22,13 @@ that can be searched, dated and cited, and offers two layers on top of it:
   graphs**, **sense evolution** (dated shifts and candidate senses) and **lost-work reconstruction** (辑佚). The seven
   are deterministic capabilities in the tool mesh, called by the existing agents — no agent was added — and what
   proposes never proves: every label carries the rule that fired and the values it read.
+- **Task specification v1.0** ([docs/tasks.md](docs/tasks.md), in Chinese) sets out the 27 tasks of a roadmap for
+  computational philology and knowledge discovery on the Chinese medical classics (L0 digitisation → L1 句读 and
+  structure → L2 semantic knowledge → L3 digital 考据 → L4 knowledge discovery → L5 research agent), each as input,
+  output JSON Schema, tools and agents, method, evaluation, gold set and human review, and fills the gaps: **句读**
+  (punctuation that never changes a character), **clause structure**, **glosses (训诂)**, **commentaries compared**,
+  **disputes**, **variant impact**, **drug pairs**, **the formula–finding network**, **schools**, **names** and
+  **transmission chains**.
 - **Research** turns a question into a replayable, auditable, falsifiable process: the research director
   **TaoChronos** dispatches 16 specialist agents — research contract → evidence foundation → pattern mining →
   hypotheses → falsification → gates G0–G8 → expert review.
@@ -62,17 +69,19 @@ and decide.
 | For | Capability | Entry point |
 |---|---|---|
 | **Philologists** | concordance with a 校勘记 (other copies / quotations / restatements; 异文, 脱, 衍, 倒); taboo dating of editions; citation network and reception histories | `study concordance` · `study taboo` · `study citations` |
-| **Historians of formulas, materia medica and medicine** | formula provenance (original and current compositions, 加减, 同名异方, 同方异名, dose ratios, doses in the measures of their period, indications, verses); drug-property histories (flavour, toxicity, 归经, 升降浮沉 — first statements and changes); term histories (shares by period with intervals, trend test, first attestations, collocates, senses) | `study formula` · `study herb` · `study term` |
+| **句读 and 训诂** | punctuation of 白文 learned from the editors' punctuated texts (marks inserted, every character kept); the parts of a clause (condition, disease, findings, pulse, pattern, principle, contraindication, formula, composition, preparation, administration, modification, prognosis); the glosses of a word in the commentators' set forms (…者…也, 貌, 音, 反切, 读为, 当作, 一作, 通), with who gave each first | `study punctuate` · `study clause` · `study glosses` |
+| **Commentators and schools** | the commentaries on a clause aligned and compared (照录, 承袭, 同解, 增益, 异解, 驳, 从); disputes (who rejects whom, on what, and who reports it); schools (the words, drugs, formulas and citations a school uses more than the other works of its time); names (a drug's names, the change of its preferred name, names the lexicon lacks) | `study commentaries` · `study disputes` · `study schools` · `study names` |
+| **Historians of formulas, materia medica and medicine** | formula provenance (original and current compositions, 加减, 同名异方, 同方异名, dose ratios, doses in the measures of their period, indications, verses); drug-property histories (flavour, toxicity, 归经, 升降浮沉 — first statements and changes); term histories (shares by period with intervals, trend test, first attestations, collocates, senses); drug pairs (NPMI, Fisher with Benjamini–Hochberg, groups of drugs) and the formula–finding network | `study formula` · `study herb` · `study term` · `study pairs` · `study network` |
 | **Researchers who need data** | open tables with provenance, dates and licences (Frictionless data packages) for statistics and visualisation | `study dataset` |
 | **Students** | cloze cards for 方证, compositions (with verses), drug properties and key passages, exported to Anki; reading paths from the source classics to the Republican syntheses | `study cards` · `study reading` |
-| **Textual critics** | multi-witness collation into variant units (异文, 脱, 衍, 倒, lacunae, structural differences, orthographic variants), a neighbour-joining stemma, groups of shared readings and contamination, one witness against the others, a TEI apparatus; a work's witnesses — the transcriptions in the store with their editions, holders and page images, and the prints and manuscripts digitised by libraries with shelfmarks, IIIF manifests and terms | `study variants` · `study stemma` · `study edition` · `study tei` · `study witnesses` |
+| **Textual critics** | multi-witness collation into variant units (异文, 脱, 衍, 倒, lacunae, structural differences, orthographic variants) graded by impact (doses, negations, drugs first), a neighbour-joining stemma, groups of shared readings and contamination, one witness against the others, a TEI apparatus; the transmission chain of a passage (shared innovations); a work's witnesses — the transcriptions in the store with their editions, holders and page images, and the prints and manuscripts digitised by libraries with shelfmarks, IIIF manifests and terms | `study variants` · `study stemma` · `study edition` · `study tei` · `study witnesses` · `study chain` |
 | **Intellectual historians** | what later books did with a passage (直接引用, 近似转录, 节略, 撮要, 转述, 解释性改写, 引而驳之, 套语相似), each with its rule and values; a work's reception by period and its channels | `study reuse` · `study transmission` |
 | **Dating and authorship** | style layers of a work's chapters (permutation-tested), change points and outlying chapters; cited works, late vocabulary and taboo per chapter; Burrows' Delta attribution | `study layers` · `study dating` · `study authorship` |
 | **Historians of clinical practice** | case records read visit by visit (findings, diagnosis, principle, formula and doses, changes, doses taken, response, outcome); treatment sequences, transitions and associations with outcome (never evidence of efficacy) | `study cases` · `study trajectories` |
 | **Readers of medical reasoning and language** | argument graphs (condition, inference, cause, contrast, analogy, rebuttal, definition, treatment) and the comparison of two works' ways of reasoning; sense shares by period, change points and candidate senses | `study argument` · `study senses` |
 | **Reconstruction of lost works** | fragments gathered from the books that quote a lost work, ordered by the volumes the source notes give; the method verified on surviving works, with a reliability per quoting book | `study fragments` |
 | **Knowledge discovery** | multi-agent research: lost knowledge, concept drift, formula evolution, hidden associations, contradictions, lost sources; verbatim evidence, falsification, gates, expert review | `research` · `report` · `workspace` · `review` |
-| **Developers** | plugin kernel, capability registry, a tool mesh of 48 tools, agents as YAML specs, event sourcing and replay, evaluation and architecture governance | `agents` · `eval` · `governance` |
+| **Developers** | plugin kernel, capability registry, a tool mesh of 58 tools, agents as YAML specs, event sourcing and replay, evaluation and architecture governance; the JSON Schemas of the tasks' outputs | `agents` · `eval` · `governance` · `schema --study` |
 
 ## 2. Quick start
 
@@ -251,6 +260,31 @@ The examples of both tables were computed on the 926 works of the 2.0 store; the
 release (CMETA, the 東亜医学協会, 医方类聚, 辅行诀 …) change some counts slightly, and the stemma row has been recomputed on
 the current store.
 
+### Task specification v1.0: from 句读 to schools
+
+[docs/tasks.md](docs/tasks.md) writes each of the roadmap's 27 tasks as `Task ID → input → output JSON Schema →
+tool / agent → method → benchmark → metric → gold → human review`, and marks what is done (●), partly done (◐) or not
+done (○: layout and OCR). The eleven capabilities that were missing follow the three rules of deep discovery 2.0: study
+functions and tools (`study.*`) called by the existing agents, each with an eval suite and a JSON Schema of its output
+(`taochronos schema --study`), checked by the tests against real results.
+
+| Capability | What it does | Full-corpus example (machine reading, with quotes to check) |
+|---|---|---|
+| **句读** `study punctuate` | a discriminative model learned from the store's punctuated texts decides at every gap whether a mark goes there and which; **marks are inserted, no character changes** (checked on every output); punctuated input is stripped and compared with its editors; the model stays in the local cache | 55 held-out works (104 k characters): boundary F1 0.767 (rules 0.235), mark types 0.805; 4 Siku 白文 works against their 笈成 punctuation 0.780 (rules 0.303); characters preserved 1.0 |
+| **Clause structure** `study clause` | a clause cut at its marks, each piece given a role (condition, disease, findings, pulse, pattern, principle, contraindication, formula, composition, preparation, administration, modification, prognosis), its drugs with doses, findings, pulses, diseases and formulas listed; `--work` profiles a work's clauses | 87 gold pieces: accuracy 0.977, macro-F1 0.917; 40 % of the pieces of the fullest 伤寒论 witness are read by no rule (平脉法 dialogues, numbering, notes) — reported as such |
+| **Glosses** `study glosses` | the glosses of a word in the set forms (…者…也, …貌, 音, 反切, 读为, 当作, 一作, 通) whose head is the word itself; glosses on the letter read in the characters as written; readings grouped with who gave each first | 几几: 5 glosses, 4 readings, the first 成无己's 伸颈之貌 |
+| **Commentaries** `study commentaries` | the clause found in the commentaries in four layouts and the commentary cut, attributed and dated; wording compared with the classic masked out (照录, 承袭, 自录), concepts added compared (同解, 增益, 异解), stated rejections and endorsements read (驳, 从); quotations elsewhere kept apart | 太阳之为病: 25 commentaries from 1144 on, the known commentators 11/11; 张卿子 照录 成无己, 喻昌 承袭 方有执; the consensus concept 表, first brought by 成无己 |
+| **Disputes** `study disputes` | where a physician is named with a citing word, the stance after the reported view: quoted speech closes first, a hypothetical is no verdict, a double negation affirms, a verdict after another name is that name's; a work reporting another's rejection is credited as reporter | 张介宾 rejects 丹溪 most; 丹溪 rejected 32 times, endorsed 11 times; 景岳 on 丹溪's 相火 reported in the 吴医汇讲 and the 医述; 越人's 左肾右命门 repeatedly rejected |
+| **Variant impact** `study variants` | each reading classed, first rule that applies: dose 1.0 (not 半表半里 or 十枣汤), negation or modal 0.95, drug or formula 0.90, clinical term 0.80 … orthographic 0.05; the review queue ordered by it — **for experts to read doses and negations first, never to decide which witness is right** | the 伤寒论's 288 variant units, the top ten of the queue all high-impact; 30 gold readings, accuracy 0.967 |
+| **Drug pairs** `study pairs` | one cached pass reads every written-out composition (drugs by family, one work counted once); support, confidence both ways, lift, NPMI, Fisher with Benjamini–Hochberg; a drug's partners, triples and periods; communities of the significant pairs as groups of drugs | 66 196 compositions; 7/7 textbook pairs significant (桂枝—芍药 in 2 527, lift 2.05; 麻黄—杏仁 5.08; 柴胡—黄芩 3.34 …); groups recovering 六味, 四物, 攻逐, 破血, 理气, 消导 |
+| **Formula–finding network** `study network` | the findings, pulses, patterns and diseases named before a formula in treatment sentences (…主之, 宜…汤), by lift; a formula's findings and drugs, a finding's formulas — **co-occurrence, not efficacy** | 桂枝汤: 汗出, 发热, 脉浮, 恶寒, 太阳病; 麻黄汤: 脉浮, 无汗, 伤寒, 喘; 黄芪桂枝五物汤—血痹, 炙甘草汤—脉结, 乌梅丸—吐蛔 |
+| **Schools** `study schools` | the textbooks' groupings (`schools.yaml`) as a convention to test: a school's works against the other works of their time (sixty years), one unit per physician, reweighed to the school's forms; log-odds with an informative Dirichlet prior (Monroe et al. 2008) + BH + a share test; formulas, homophily of citations, schools cited and citing, rejections | the textbooks' 44 doctrines: used more by their school 0.727, most by it 0.636; 温补: 命门 (z 7.6), 先天, 六味丸, 八味丸; 温病: 膜原, 战汗, 伏邪, 达原饮, citing each other 4.05 times as often as their contemporaries; the 儒门事亲 writes 汗下吐 (44 passages), hardly 汗吐下 (1); 丹溪's books write 补阴 (47) more than 滋阴 (6) |
+| **Names** `study names` | the works writing each name of an entry by period and century (a name inside a longer one counted apart), the first to write it, the preferred name per century and where it changes (a one-century blip read as its neighbours), passages equating names, names the lexicon lacks | 山药: 薯蓣 until the 1000s, 山药 from the 1100s (the taboo of 宋英宗); 玄参 yields to 元参 in the 1700s (康熙) and returns after 1900; 山芋, a name the lexicon lacked, in 6 works |
+| **Transmission chain** `study chain` | the dated witnesses of a passage ordered into a tree by shared innovations (Lachmann): the readings of the earliest witnesses are the source's; each later witness hangs from the earlier witness whose innovations it shares most; spelling equivalents are not innovations, function words weigh half; each edge carries its readings and margin (uncertain under one) | two 伤寒论 clauses, 60 dated witnesses each, 10 and 8 reached through intermediaries (脉经 → 千金翼方, 尚论篇 → 张氏医通 → 伤寒溯源集 → 伤寒大白); artificial traditions: parent accuracy 1.0 (0.941 with convergent spellings, baseline 0.868) |
+
+The examples of this table were computed on the current store (966 works) by the full evaluation; see
+[docs/tasks.md](docs/tasks.md).
+
 The study layer is part of research too: under `full-corpus`, **TaoChronos-Scholar** traces the focus formulas, drugs
 and terms through the whole store in round 0, and the dossiers become the report's appendix "源流考证 · Sources
 Dossier" (descriptions of texts, not hypotheses; no gates).
@@ -384,7 +418,7 @@ vLLM/Ollama), external command subagents and Research Code Mode are supported to
 
 ## 8. Evaluation and quality
 
-`taochronos eval` runs on the demo corpus (~2 min; with the corpus store, the deep-discovery suites also check the real corpus). The gold sets were built by the authors for the demo corpus and used
+`taochronos eval` runs on the demo corpus; with the corpus store, the deep-discovery and task-specification suites also check the real corpus (~7 min for all suites once the caches are built). The gold sets were built by the authors for the demo corpus and used
 during development: **regression tests, not an unbiased benchmark** (see [evals/gold/README.md](evals/gold/README.md)).
 
 | Suite | Result |
@@ -408,12 +442,23 @@ during development: **regression tests, not an unbiased benchmark** (see [evals/
 | Argument | development set edge F1 1.0; real: JSD 0.020 between two transcriptions of one work, 0.091 against another |
 | Senses | planted sense shift: change year within 2.3 years, labelling 0.93, hidden sense found 1.0; curated exemplars 6/8 |
 | Fragments | constructed corpus: precision 0.86, coverage 1.0, no other source's words taken in; real: 千金 0.32 / 0.12, 肘后 87.6 % not in the extant text |
+| Punctuation | real: 55 held-out works boundary F1 0.767 (rules 0.235), mark types 0.805; Siku 白文 0.780 (rules 0.303); characters preserved 1.0 |
+| Clause | 16 clauses, 87 pieces: accuracy 0.977, macro-F1 0.92; real: 40 % of the fullest 伤寒论 witness read by no rule |
+| Glosses | 16 sentences: accuracy 1.0, P/R 1.0; real: 成无己's 伸颈之貌 the first gloss of 几几 |
+| Commentaries | a constructed commentary tradition in four layouts: units F1 1.0, text F1 0.81, relations F1 1.0; real: 25 commentaries on 太阳之为病, known commentators 11/11, known relations 2/2 |
+| Disputes | 22 development sentences: accuracy 0.86 (reject P 1.0 · R 0.78; endorse P 0.8 · R 1.0); real: known controversies 3/3 |
+| Variant impact | 30 readings: accuracy 0.97, high impact P 1.0 · R 0.94; real: the top ten of the 伤寒论's queue all high-impact |
+| Pairs | 600 synthetic compositions: planted pairs top-3 1.0, false significant 0.0; real: 7/7 textbook pairs significant with lift > 1.5 |
+| Schools | a synthetic school: planted words top-2 and significant, common words not listed; real: doctrine recall 0.73, attribution 0.64 (44) |
+| Names | synthetic works: switch interval, nested names, equations, candidate names right; real: the dated taboo renames 2/2 (薯蓣→山药, 玄参→元参) |
+| Chain | 6 artificial traditions of 12 witnesses: parent accuracy 1.0 (most-similar baseline 0.97); with convergent spellings 0.94 (baseline 0.87) |
 
-The deep-discovery development sets were written with their rules: they show intended behaviour, not generalisation.
-Expert gold on the full corpus is on the roadmap.
+The development sets of deep discovery and of the task specification were written with their rules: they show
+intended behaviour, not generalisation. Expert gold on the full corpus is on the roadmap; the benchmark table of
+[docs/tasks.md](docs/tasks.md) lists each task's metric and gold.
 
-Plus 159 unit and integration tests (`pytest`, with format samples of every source and a synthetic corpus for the
-study layer, `tests/fixtures/study`) and the architecture governance check (`taochronos governance`: layering,
+Plus 188 unit and integration tests (`pytest`, with format samples of every source, a synthetic corpus for the
+study layer, `tests/fixtures/study`, and a contract test that checks real results against the JSON Schemas of the tasks) and the architecture governance check (`taochronos governance`: layering,
 kernel neutrality, model-SDK isolation, agent rules). CI runs governance, tests, the quick evaluation and the demo
 research on Python 3.11 and 3.12.
 
@@ -425,7 +470,7 @@ kernel        event sourcing, transactions, replay, scheduler, policy, hooks, bu
 capabilities  provider-neutral interfaces (LLM …)
 science       D1–D5 engines, statistics, scoring, gates, provenance; reuse rules, strata, trajectories, argument graphs, sense evolution
 verification  verbatim checks and provenance chains
-tools         the tool mesh: philology · retrieval · knowledge · analytics · study · literature · validation (48 tools)
+tools         the tool mesh: philology · retrieval · knowledge · analytics · study · literature · validation (58 tools)
 plugins       classics (corpus, store, domain pack, philology, collation, citations, text reuse, study) · knowledge · retrieval · models · sandbox · storage …
 agents        AgentSpecs, routing, the LLM loop, deterministic procedures, Code Mode, subagents
 engine        the research engine (operational and scientific loops, branches, tournament, report)
@@ -445,7 +490,8 @@ skills/                    SKILL.md packs (incl. source-criticism, the study met
 profiles/                  full-discovery, full-corpus, classics-basic, formula-discovery, historical-disease, claude
 domains/classics/          periods, variants, lexicons, senses, modern concepts, ontology, citations, known findings,
                            and the study data: taboo.yaml, metrology.yaml, physicians.yaml, drug_families.yaml,
-                           collation.yaml, intertext.yaml, cases.yaml, argument.yaml
+                           collation.yaml, intertext.yaml, cases.yaml, argument.yaml,
+                           schools.yaml (schools), clause.yaml (clause roles), exegesis.yaml (commentators' concepts, stances, gloss forms)
 domains/classics/script/   script and variant normalisation (OpenCC / Unihan / curated)
 domains/classics/lexicon-harvested/  candidate formula and drug names harvested from the corpus (full-corpus only)
 corpus/                    the demo corpus (unverified), modern evidence summaries, catalogues (catalog/) and source locks
@@ -453,9 +499,10 @@ evals/gold/                gold sets
 src/taochronos/            protocol/ kernel/ capabilities/ science/ verification/ tools/ plugins/ agents/ engine/ evals/ workspace/
   plugins/classics/study/  the study layer: concordance · formulas · herbs · terms · taboo · network · metrology · learning · dataset · render
                            deep discovery: stemma · intertext · stratigraphy · cases · argument · senses · fragments
-  plugins/classics/collation/  computational collation: anchored alignment · variant units · stemma and contamination · TEI
-tests/                     159 tests (fixtures/: source format samples and the study corpus)
-docs/                      study, architecture, agents, discovery, evaluation, data, ADRs, roadmap
+                           task specification: punctuation · clause · glosses · commentary · disputes · pairs · schools · names · chain · schemas
+  plugins/classics/collation/  computational collation: anchored alignment · variant units · variant impact · stemma and contamination · TEI
+tests/                     188 tests (fixtures/: source format samples and the study corpus)
+docs/                      study, task specification, architecture, agents, discovery, evaluation, data, ADRs, roadmap
 ```
 
 ## 11. Data and licences
@@ -473,13 +520,16 @@ docs/                      study, architecture, agents, discovery, evaluation, d
   downloaded**, and each record carries its holder's terms (研医会 CC BY-NC 4.0, Keio CC BY-NC-SA 4.0, Berlin PDM 1.0,
   the Library of Congress online reading only …).
 - Datasets and reports contain short quotes (≤ 120 characters) with their sources, never the texts.
-- Caches (entry headings, citation network, transmission results) live in `<data>/corpus/study-cache/`, keyed by a digest of the store,
-  the normaliser and the book records; they are rebuilt when the corpus changes.
+- Caches (entry headings, citation network, transmission results, the 句读 model, the corpus-wide pass over compositions
+  and treatment sentences, school comparisons) live in `<data>/corpus/study-cache/`, keyed by a digest of the store,
+  the normaliser, the book records and the data files they read; they are rebuilt when the corpus changes. The 句读
+  model is learned from punctuated texts licensed for local research only: it stays in the local cache and is never
+  committed or distributed.
 
 ## 12. Limitations
 
 - The corpus is not collated by this project: the Siku texts carry Qing deletions and taboo changes and are segmented
-  by rule; 笈成 transcriptions vary in quality; dating without curation relies on book metadata and signed prefaces,
+  by rule for search and extraction (`study punctuate` punctuates them with a learned model, inserting marks only); 笈成 transcriptions vary in quality; dating without curation relies on book metadata and signed prefaces,
   and undatable works can only be dated "Qing or earlier".
 - The study layer and the extractors are rule-based machine reading: compositions, drug entries and properties are
   read with patterns and a lexicon, so a missing name leaves a composition incomplete; single-witness groups (孤例) and
@@ -498,6 +548,13 @@ docs/                      study, architecture, agents, discovery, evaluation, d
   neither style nor dating evidence alone proves an addition. The case parser follows the layouts it was written
   for; only explicit markers make argument edges; candidate senses are clusters of words until a person reads them;
   a fragment is as reliable as its quoting book's verified precision.
+- The capabilities of the task specification have their limits too: punctuation measures agreement with one editor
+  (editors differ); a clause piece takes one role, and 40 % of the 伤寒论's pieces are read by no rule; commentaries
+  are found only in the four layouts, stances only where a physician is named, so unnamed disagreement is not counted;
+  formula–finding links are co-occurrence, not efficacy; schools are historians' groupings, a word used more is not a
+  doctrine until its passages are read, and small schools have little power; names counts the lexicon's names only; a
+  transmission chain is a hypothesis from shared readings, and independent identical changes can make a false edge,
+  which is why each edge carries its readings and margin.
 - Image witnesses are linked to works by title: a commentary or another work of the same title cannot be told apart
   by the title, so links are for a person to check; only records are harvested, and a record's date is the
   catalogue's (a Japanese era alone gives its span).
@@ -505,13 +562,15 @@ docs/                      study, architecture, agents, discovery, evaluation, d
 
 ## 13. Roadmap and citation
 
-See [docs/roadmap.md](docs/roadmap.md): expert-built lexicons, senses and gold sets; gold sets for formula parsing and
-property extraction and for the deep-discovery capabilities on the full corpus; collation of whole works and a
-variant-reading dataset; a corpus-wide reuse graph; schools, regions and diffusion networks; dose-aware formula
-phenotypes; the historical identity of drugs; acupuncture and non-drug therapies; illustrations and their lineage; a
-missingness-aware Bayesian D1; temporal hypergraph embeddings (for candidate generation only); contextual historical
-NER and entity linking; page images and OCR; a segmentation model for unpunctuated text; more model providers and a
-human-in-the-loop review interface.
+See [docs/roadmap.md](docs/roadmap.md), and the tasks not yet done in [docs/tasks.md](docs/tasks.md): expert-built
+lexicons, senses and gold sets; gold sets for formula parsing and property extraction and for the capabilities of deep
+discovery and of the task specification on the full corpus; collation of whole works and a variant-reading dataset; a
+corpus-wide reuse graph; regions (physicians' native places, places of practice and printing, T27) and schools and
+drug pairs compared by region; dose-aware formula phenotypes; the historical identity of drugs; acupuncture and
+non-drug therapies; illustrations and their lineage; a missingness-aware Bayesian D1; temporal hypergraph embeddings
+(for candidate generation only); contextual historical NER and entity linking (T7); translation into modern Chinese
+kept apart from the text and its glosses (T10); layout analysis and OCR of page images (T1, T2); more model providers
+and a human-in-the-loop review interface.
 
 When citing TaoChronos, cite the sources of the corpus you used (Kanseki Repository, 笈成, McGill University Library,
 數位中醫校書郎 CMETA, 東亜医学協会, Wikisource …) with their licences, and the corpus signature (given by `study dataset` and in every Discovery Report):

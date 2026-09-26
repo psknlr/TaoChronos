@@ -70,6 +70,21 @@ need.
 
 The Lineage Analyst gets the reuse types through the lineage edges themselves.
 
+**任务规格 v1.0 tools, no new roles.** The capabilities added with the [task specification](tasks.md) (句读, 条文结构,
+训诂, 集注与注家比较, 争议, 配伍, 方证网络, 学派, 名称, 传播链) are tools on the agents whose work they serve, in the same
+way; [tasks.md](tasks.md#l5-research-agent) maps the roadmap's eight domain agents and four research-grade agents onto
+these roles.
+
+| Agent | Tools added |
+|---|---|
+| Philologist | `study.punctuate`, `study.clause`, `study.glosses`, `study.commentaries` |
+| Extractor | `study.clause` |
+| Skeptic | `study.disputes` |
+| Semanticist | `study.glosses`, `study.names` |
+| Scholar | `study.commentaries`, `study.disputes`, `study.network`, `study.schools`, `study.names` |
+| Pattern Miner | `study.pairs`, `study.network` |
+| Lineage Analyst | `study.schools`, `study.chain` |
+
 ## One output contract, two producers
 
 Every role module implements `draft(ctx)` (the deterministic procedure), `instructions(ctx)` (the brief a

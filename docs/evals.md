@@ -1,7 +1,7 @@
 # TaoChronos-Eval
 
 ```bash
-taochronos eval                  # all suites (~2 min with the corpus store: the 2.0 suites also check the real corpus)
+taochronos eval                  # all suites (~7 min with the corpus store, caches built: the 2.0 and task suites also check the real corpus)
 taochronos eval --quick          # fast subset
 taochronos eval claims temporal -o results.json
 ```
@@ -31,6 +31,16 @@ expert annotations before drawing conclusions about a real corpus.
 | `argument` | Are the steps of reasoning found and typed? | labelled and unlabelled edge P/R/F1 · clause segmentation · same-work vs other-work divergence |
 | `senses` | Is a planted shift of senses dated, and a sense no cue names found? | change-year error · detection · labelling accuracy · hidden sense found · curated exemplars |
 | `fragments` | Is a lost text rebuilt from its quotations without taking in other sources' words? | precision · coverage · decoy leaks · volume accuracy · real verification (千金, 肘后) |
+| `punctuation` | Are the marks of 白文 placed where editors place them, with every character kept? | boundary / sentence F1 · mark-type accuracy · preservation rate · rule baseline · held-out works · Siku 白文 |
+| `commentaries` | Are the commentaries on a clause found in every layout, attributed and compared? | unit P/R/F1 · text F1 · relation F1 · quotation recall · real: known commentators and relations |
+| `disputes` | Are named views read as rejected or endorsed, and quoted words kept apart? | accuracy · reject / endorse P/R/F1 · real: known controversies |
+| `variant_impact` | Is each variant reading classed by what it changes (dose, negation, drug, finding …)? | accuracy · macro-F1 · high-impact P/R/F1 · real: the review queue of the 伤寒论 |
+| `clause` | Are the parts of a clause (condition … prognosis) found? | piece accuracy · macro-F1 · per-role F1 · segmentation · real: forms of the 伤寒论 |
+| `glosses` | Are the glosses of a word found, and only of that word? | accuracy · P/R/F1 · real: the first gloss of 几几 |
+| `pairs` | Do planted drug pairs come first, and do few chance pairs pass Benjamini–Hochberg? | planted top-3 · false significant · real: textbook pairs · 方证 links of 桂枝汤 and 麻黄汤 |
+| `schools` | Are a school's planted words found, and do the textbooks' doctrines come out as its own? | planted top-2 and significant · common words listed · citation shares · real: doctrine recall and attribution |
+| `names` | Is the change of a drug's preferred name dated, and its names equated and completed? | switch interval · nested names apart · equations · candidates · real: dated taboo renames |
+| `chain` | Does each witness of a passage hang from the witness it was copied from? | witnesses found · parent accuracy against the most-similar baseline, with and without convergent spellings |
 
 ## Current results (demo corpus)
 
@@ -66,6 +76,25 @@ real-corpus parts run when the corpus store exists and are skipped with `--quick
 | argument | 18 author-constructed passages (`gold/argument.yaml`); the 脉经's two transcriptions against 温病条辨 | edges F1 1.0 on the development set · real: JSD 0.020 between the transcriptions of one work, 0.091 against another |
 | senses | synthetic occurrences: one sense rises from 15 % to 75 % in the year 1000, an uncued sense appears from 1300 | change year within 2.3 years; detected 1.0; labelling 0.93; the uncued sense found 1.0 (precision 1.0); curated exemplars of 消渴 6/8 |
 | fragments | a constructed lost work (集古方, held out) quoted by four books in the manners of the 外台秘要, the 医心方, the 证类本草 and a late paraphrase, beside other sources (`gold/fragments/`); the real 千金 and 肘后 | precision 0.86 · coverage 1.0 · no other source's words taken in · volumes 1.0 · real: 千金 precision 0.32 · coverage 0.12; 0.876 of the 肘后's quotations not in the extant text |
+
+## The task specification (docs/tasks.md)
+
+The ten suites of the capabilities added with the [task specification](tasks.md) (T4–T6, T10, T13, T15–T17,
+T20–T21, T25–T26 and T9/T24) follow the same rule — synthetic data where the answer can be constructed, a development
+set where rules need examples, the literature's own results on the real corpus:
+
+| Suite | Data | Result |
+|---|---|---|
+| punctuation | the store's punctuated texts; 55 works held out of training (104 k characters); 4 Siku 白文 works against their 笈成 punctuation | held-out boundary F1 0.767 (P 0.725 · R 0.814; rules 0.235), typed sentence F1 0.543, mark types 0.805; 白文 boundary F1 0.780 (rules 0.303); characters preserved 1.0 |
+| commentaries | a constructed classic with commentaries in four layouts (`gold/commentaries/`); the real 太阳之为病 | units F1 1.0 · text F1 0.81 · relations F1 1.0 · quotations 1.0 · real: 25 commentaries, known commentators 11/11, 张卿子 照录 成无己 and 喻昌 承袭 方有执 found |
+| disputes | 22 author-constructed sentences (`gold/disputes.yaml`) | accuracy 0.86 · reject P 1.0 R 0.78 · endorse P 0.8 R 1.0 · real: 3/3 known controversies (景岳 on 丹溪's 相火, 越人's 左肾右命门 …) |
+| variant_impact | 30 readings (`gold/variant_impact.yaml`) | accuracy 0.97 · macro-F1 0.97 · high impact P 1.0 R 0.94 · real: the 伤寒论's 288 units, the top 10 of its review queue all high-impact |
+| clause | 16 clauses of the 伤寒论 and 金匮 (`gold/clause.yaml`) | pieces 0.977 · macro-F1 0.92 · real: 40 % of the pieces of the fullest 伤寒论 witness read by no rule (平脉法 dialogues, numbering, notes) |
+| glosses | 16 sentences (`gold/glosses.yaml`) | accuracy 1.0 · P/R 1.0 · real: 成无己's 伸颈之貌 the first gloss of 几几 |
+| pairs | 600 synthetic compositions with three planted pairs; the store's 66 196 compositions | planted top-3 1.0 · false significant 0.0 · real: 7/7 textbook pairs significant with lift > 1.5 (桂枝—芍药 2527 compositions, lift 2.05; 麻黄—杏仁 5.08 …) |
+| schools | 5 synthetic 温病 physicians and 16 other authors; the store's schools with the textbooks' doctrines (`gold/schools.yaml`, 44) | planted words top-2 and significant, no common word listed · real: doctrine recall 0.73 (z ≥ 1.96), attribution 0.64 |
+| names | 20 synthetic works (薯蓣 → 山药); the dated taboo renames (`gold/names.yaml`) | switch interval, nested names, equation, candidate 山芋 all right · real: 2/2 (薯蓣→山药 in 1000–1200, 玄参→元参 in 1600–1800) |
+| chain | 6 artificial traditions of 12 witnesses; with each copy regularising spellings on its own | parent accuracy 1.0 (most-similar baseline 0.97); with convergent spellings 0.94 (baseline 0.87); witnesses found 0.96–1.0 |
 
 These numbers describe the rules on the data they were written for. They are not benchmarks. Expert-annotated gold
 on the full corpus (a collated chapter with its stemma, typed reuses, segmented case records, argument graphs, dated

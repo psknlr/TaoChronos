@@ -728,6 +728,12 @@ def cmd_schema(args: argparse.Namespace) -> None:
 
     if args.outputs:
         _out(OUTPUT_SCHEMAS)
+    elif args.study:
+        from .plugins.classics.study.schemas import STUDY_SCHEMAS
+
+        if args.study != "all" and args.study not in STUDY_SCHEMAS:
+            raise SystemExit(f"no schema for {args.study!r}; available: {', '.join(STUDY_SCHEMAS)}, all")
+        _out(STUDY_SCHEMAS if args.study == "all" else {args.study: STUDY_SCHEMAS[args.study]})
     else:
         _out(bundle_schema(list(PROTOCOL_TYPES)))
 
@@ -1077,6 +1083,8 @@ def build_parser() -> argparse.ArgumentParser:
     add("sdk", cmd_sdk, "print the Research SDK reference (Code Mode)")
     sp = add("schema", cmd_schema, "print JSON Schemas of the protocol (or agent outputs)", profile=False)
     sp.add_argument("--outputs", action="store_true")
+    sp.add_argument("--study", nargs="?", const="all",
+                    help="the output schemas of the tasks of docs/tasks.md (one by name, e.g. punctuate; or all)")
     add("governance", cmd_governance, "check the architecture policy", profile=False)
     sp = add("eval", cmd_eval, "run TaoChronos-Eval suites", profile=False)
     sp.add_argument("suites", nargs="*")

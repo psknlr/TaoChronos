@@ -17,8 +17,9 @@
 - Expert review of the undated 笈成 books and of the dates taken from prefaces (`dating` in
   `corpus/catalog/jicheng.yaml`); layer rules for more annotated 笈成 texts (most commentaries are still `mixed`);
   the 6 disagreements between the curated Kanripo catalog and KR-Catalog (`review` in `kr-catalog-kr3e.yaml`).
-- Use the 笈成 punctuation of the 78 works that are also in the Siku (126 笈成 transcriptions) to evaluate and train the
-  segmentation of 白文.
+- 句读 of 白文 (done: `study punctuate`, learned from the store's punctuated texts, evaluated on held-out works and on
+  4 Siku works against their 笈成 punctuation): extend the 白文 evaluation to all 78 works shared by the Siku and 笈成
+  (126 笈成 transcriptions), and review where the editors of two punctuated transcriptions disagree.
 - Collation of the works present in several transcriptions (`study stemma`), work by work, with the frequent
   substitutions reviewed into `collation.yaml` (e.g. 证类 大观本 vs 政和本).
 - Expert review of the harvested formula and drug names; separation of 本经 and 别录 layers.
@@ -46,8 +47,10 @@
 - Collation at the scale of whole works: the variant units of every work with several witnesses, as a variant
   dataset; stemmata compared with the editorial histories of the literature.
 - Transmission for every major work, and a corpus-wide reuse graph (who took up whom, how, and through which channels).
-- 学派 · 地域 · 传播网络: schools, regions and the diffusion of doctrines, from citations, physicians' lineages, places
-  in prefaces and case records, and typed reuse.
+- 学派 · 地域 · 传播网络: schools (done: `study schools`, the textbooks' groupings tested against the texts) and the
+  transmission of a passage (done: `study chain`); still to do, regions (T27): physicians' native places and places of
+  practice, places of printing (the place names of signed prefaces, 河間劉完素, 雲間李豫亨), normalised, so that the
+  vocabulary and formula statistics of `study schools` and `study pairs` can be compared by region.
 - 方剂表型: dose-aware formula similarity (ratios and preparation, 同药异量: 桂枝加桂汤 vs 桂枝汤), formula phenotypes
   from indications and case-record use.
 - 药物基原: the historical identity of drugs (one name, several plants; one plant, several names) from descriptions,
@@ -61,8 +64,21 @@
 - Contextual historical NER and entity linking (people, books, places, drugs, formulas in context), with the lexicon
   and the catalog as the targets.
 
+**任务规格 v1.0 (docs/tasks.md) — what remains**
+- T1 版面理解 and T2 OCR / HTR: reading order, 双行小注 and marginalia on page images over the IIIF manifests of the image
+  witnesses (the catalogs are the interface; no image is downloaded now), with a character error rate against the
+  transcriptions already in the store.
+- T7 contextual NER: entities read in context (people, books, places, drugs, formulas), beyond the lexicon's surface
+  forms, with an entity-level F1 on an expert gold.
+- T10 白话翻译: a language model's translation stored apart from the text and from the glosses it rests on (a
+  translation is never the text), with the glosses of `study glosses` as its evidence.
+- T21 配伍: frequent subgraphs, drug embeddings and Bayesian association, compared against the present NPMI / Fisher
+  rankings; T22 方剂演化: an expert gold of formula lineages.
+- Expert gold for the capabilities of the specification: clause roles, commentary relations and stances, the
+  doctrines of each school (beyond the 44 of the textbooks), preferred names by period, the transmission of passages
+  whose history the literature has established.
+
 **Discovery**
-- A learned punctuation / segmentation model for 白文, evaluated against punctuated editions (笈成).
 - Learned extractors (distant supervision from rule claims + expert corrections), evaluated by ClaimEval.
 - Better lineage: rarity-weighted herb overlap and explicit textual statements of derivation, to separate
   convergent composition from inheritance.
