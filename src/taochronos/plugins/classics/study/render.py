@@ -646,11 +646,52 @@ def disputes(r: dict[str, Any]) -> list[str]:
     return out + ["", f"> {r.get('note', '')}"]
 
 
+def clause(r: dict[str, Any]) -> list[str]:
+    if "forms" in r:  # a work's profile
+        out = [f"# 条文结构：{r['work']}", "", f"读 {r['clauses']} 条（主文）。", "", "| 结构 | 条数 | 占比 | 例 |", "|---|---|---|---|"]
+        out += [f"| {f['form']} | {f['clauses']} | {f['share']:.1%} | `{f['example']}` |" for f in r["forms"]]
+        out += ["", "各部分出现次数：" + "，".join(f"{k} {v}" for k, v in r["roles"].items())]
+        return out
+    out = [f"# 条文结构：{_q(r.get('text', ''), 40)}", ""]
+    if r.get("passage"):
+        out += ["**原文**：" + _cite(r["passage"], 80), ""]
+    out += [f"结构：{r.get('form', '')}" + ("（白文，先经句读模型断句）" if r.get("punctuated_by_model") else ""), "",
+            "| 片段 | 部分 | 所含 | 依据 |", "|---|---|---|---|"]
+    for x in r.get("pieces", []):
+        terms = "、".join(t["term"] for t in x["terms"][:6])
+        out.append(f"| {_q(x['text'], 30)} | {x['label']} | {terms} | {_q(x['rule'], 30)} |")
+    named = [f"{label}：{'、'.join(r[key])}" for key, label in (("diseases", "病"), ("findings", "症"), ("pulse", "脉"),
+                                                               ("formulas", "方")) if r.get(key)]
+    if named:
+        out += [""] + ["；".join(named)]
+    if r.get("drugs"):
+        out += ["", "组成：" + "；".join(d["text"] for d in r["drugs"])]
+    if r.get("out_of_order"):
+        out += ["", "次序与常例不同：" + "，".join(r["out_of_order"])]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+def glosses(r: dict[str, Any]) -> list[str]:
+    what = r.get("term") or f"《{r.get('book')}》"
+    out = [f"# 训诂：{what}", "", f"训释 {r.get('count', 0)} 条；形式：" + "，".join(f"{k} {v}" for k, v in (r.get("kinds") or {}).items()), ""]
+    kinds = {"meaning": "释义", "sound": "注音", "text": "校字"}
+    if r.get("readings"):
+        out += ["## 诸家之说（同字面者合并）", "", "| 类 | 训释 | 次数 | 首见 | 年代 | 从之者 |", "|---|---|---|---|---|---|"]
+        for x in r["readings"][:40]:
+            out.append(f"| {kinds.get(x['type'], x['type'])} | {_q(x['gloss'], 30)} | {x['count']} | {x['first']['by']}《{_q(x['first']['title'], 14)}》 | "
+                       f"{_years(x['first'])} | {_q('、'.join(x['by'][1:]), 30)} |")
+    if r.get("glosses"):
+        out += ["", "## 训释原句", ""]
+        out += [f"- {_years(g)} {g['by']}〔{g['kind']}〕{g['head']}：{_q(g['gloss'], 30)}　「{_q(g['sentence'], 40)}」 `{g['passage_id']}`"
+                for g in r["glosses"][:40]]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
 PAGES = {"concordance": concordance, "formula": formula, "herb": herb, "term": term, "taboo": taboo, "citations": citations,
          "cards": cards, "reading": reading, "variants": variants, "stemma": stemma, "edition": edition, "reuse": reuse,
          "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship, "cases": cases,
          "trajectories": trajectories, "argument": argument, "senses": senses, "fragments": fragments, "witnesses": witnesses,
-         "punctuate": punctuate, "commentaries": commentaries, "disputes": disputes}
+         "punctuate": punctuate, "commentaries": commentaries, "disputes": disputes, "clause": clause, "glosses": glosses}
 
 
 def markdown(kind: str, result: dict[str, Any], signature: dict[str, Any], notice: str = "") -> str:

@@ -1,0 +1,114 @@
+# 条文结构 — the parts of a clause of the classics (伤寒论, 金匮要略 and the formularies and commentaries written on
+# their model), for `study clause`.  A clause is cut at its punctuation (白文 is punctuated first by the 句读 model);
+# each piece takes the first role whose rule applies, in the order below, and the lexicon names what it contains.
+# Patterns are regular expressions over the normalised text (simplified characters).  Review and extend them here.
+#
+#   condition        若 / 设 / 凡 / 假令, the day of illness, what was done before (发汗后, 医反下之)
+#   disease          the disease the clause is about (太阳病, 少阴病, 伤寒, 中风, 湿家)
+#   findings         symptoms and signs (the lexicon: symptom, sign, tongue)
+#   pulse            脉…
+#   pattern          what the findings are named (名为中风, 此为结胸, 属太阴, …者，…也)
+#   principle        what is to be done (当先解表, 可发汗, 急当救里, 宜温之)
+#   contraindication what must not be done (不可发汗, 慎不可下, 禁…, 忌…)
+#   formula          the formula given (…汤主之, 宜…汤, 与…汤, …汤方)
+#   composition      the drugs and their doses (桂枝三两, 芍药三两)
+#   preparation      how it is made (以水七升，煮取三升，去滓, 为末, 蜜丸)
+#   administration   how it is taken (温服一升, 日三服, 覆取微似汗)
+#   modification     加减 (若渴者，去半夏，加栝楼根; 一方)
+#   prognosis        how it ends (欲愈, 自愈, 难治, 死, 为逆)
+roles:
+  composition:
+    - "^(?:去皮尖?|去节|去心|去芦|去毛|去核|去子|去皮脐|炙|炮|擘|切|碎|洗|熬|绵裹|酒洗|酒浸|生用|破八片|炮去皮)+$"
+  modification:
+    - "^(?:若|如)[^，。；]{0,12}(?:者)?[，,]?(?:去|加|更加|倍)"
+    - "^(?:去|加|倍)(?!滓|皮|节|心|芦|毛|核|子|足|翅|土|白|沫|上沫|尖)[一-鿿]{1,4}(?:[一二三四五六七八九十半]+[两钱分铢升合枚]|$|[，。；])"
+    - "^一方"
+    - "加减"
+  preparation:
+    - "以水[一二三四五六七八九十百半]+[升斗合]"
+    - "以(?:清浆|甘澜|潦)?水"
+    - "(?:煮|煎)取[一二三四五六七八九十半]+[升合]"
+    - "去滓"
+    - "内诸药"
+    - "先煮"
+    - "[右上][一二三四五六七八九十]+味"
+    - "(?:捣|杵)(?:筛|罗)"
+    - "为(?:细|粗)?末"
+    - "(?:炼)?蜜(?:和|为)?丸"
+    - "如(?:梧桐|梧|桐|小豆|弹)子大"
+    - "㕮咀"
+    - "水煎"
+  administration:
+    - "(?:温|顿|分温|分再|冷)服"
+    - "日[一二三四五](?:夜[一二])?服"
+    - "每服"
+    - "服[一二三四五六七八九十半]*[升合丸匕]"
+    - "啜(?:热)?(?:稀)?粥"
+    - "覆取(?:微)?(?:似)?汗"
+    - "(?:空心|食前|食后)"
+    - "(?:温酒|米饮|白汤)(?:送)?下"
+    - "(?:得|若)?(?:一服)?(?:汗出|利)(?:则)?止(?:后服)?"
+    - "(?:不)?必尽剂"
+    - "适寒温"
+    - "服已须臾|须臾"
+    - "以助药力"
+    - "(?:停|止)后服"
+    - "(?:若|如)?不(?:汗|差|愈)[，,]?(?:更|再|后)服"
+  contraindication:
+    - "(?:慎)?不可(?:发汗|汗|下|吐|与|服|攻|灸|火|针|发其汗|攻其表|更)"
+    - "^(?:禁|忌|勿|毋|不得)"
+    - "禁(?:汗|下|吐|服|食)"
+    - "忌[一-鿿]{1,6}"
+  formula:
+    - "主之$"
+    - "(?:宜|与|可与|宜服|服|属)[一-鿿]{1,10}(?:汤|丸|散|饮|膏|丹)"
+    - "(?:汤|丸|散|饮|膏|丹)方$"
+    - "(?:汤|丸|散|饮|膏|丹)(?:证|主之)"
+  prognosis:
+    - "欲(?:愈|解)(?![外表肌])"
+    - "(?:自|必|乃|即)愈"
+    - "(?:难|不可|不)治"
+    - "(?:必|者)?死"
+    - "为(?:逆|顺)"
+    - "(?:其|病)?(?:可|易)治"
+    - "解也$"
+  principle:
+    - "^(?:当|宜|可|急|先|乃可|方可|法当|治宜|治当|须)(?!与)[一-鿿]{0,6}(?:汗|下|吐|温|清|补|解|和|救|攻|利|散|发|灸|刺)"
+    - "(?:当|宜|可)(?:发汗|下之|吐之|温之|和之|清之|补之|解表|攻里|救里|救表)"
+    - "欲解(?:外|表|肌)"
+  pattern:
+    - "^(?:名为|名曰|是为|此为|此名|谓之|命曰|此属|属)[一-鿿]"
+    - "^此(?:以|由|因|乃)"
+    - "^(?:令|使)[一-鿿]{1,4}(?:微|虚|衰|盛|实|竭|绝|结)"
+    - "^[一-鿿]{1,3}(?:则|为)(?:热|寒|虚|实|风|湿|水|痰|饮|逆|顺|表|里)$"
+    - "(?:为|属)[一-鿿]{1,6}(?:证|病|也)$"
+    - "(?:此|是)(?:为|名)"
+    - "[一-鿿]{1,6}(?:故也|之故)$"
+    - "(?:表|外|里)证(?:未|不|仍|已)?(?:解|罢|在|去)"
+  condition:
+    - "^(?:若|设|凡|假令|假如|倘|苟|其人|病人|患者)"
+    - "^(?:伤寒|中风|太阳病|阳明病|少阳病|太阴病|少阴病|厥阴病)?[一二三四五六七八九十]+日"
+    - "(?:汗|下|吐|发汗|下之|吐之|温针|火)(?:后|已)"
+    - "^医(?:反|复|以)"
+    - "^(?:不|未|反)(?:发汗|汗|下|吐)"
+    - "得之[一二三四五六七八九十]+日"
+  disease:
+    - "^(?:太阳|阳明|少阳|太阴|少阴|厥阴)(?:中风|伤寒)?病?$"
+    - "^(?:伤寒|中风|温病|风温|湿家|风家|淋家|疮家|衄家|亡血家|汗家|中暍|太阳中暍|太阳中风|太阳伤寒)$"
+    - "^[一-鿿]{1,4}病$"
+  findings:
+    - "^(?:其)?(?:身|体|头|项|背|腰|腹|少腹|小腹|胸|心下|心中|胁|手足|四肢|口|舌|咽|目|面|鼻)[一-鿿]{0,3}(?:痛|疼|重|满|冷|热|肿|痒|强|急|烦|干|燥|赤|黄|痞|硬|厥|逆冷|拘急|不仁)"
+  pulse:
+    - "^(?:其)?脉"
+    - "寸口脉|趺阳脉|少阴脉"
+# roles read from the lexicon when no pattern decides: a piece naming findings, a pulse, a pattern
+lexicon:
+  findings: [symptom, sign, tongue, condition]
+  pulse: [pulse]
+  pattern: [pattern, pathogenesis]
+  principle: [treatment_principle, treatment_method]
+  disease: [disease]
+# the order in which a clause usually runs (the first form of 条文 in the 伤寒论); a clause whose parts run in another
+# order is not wrong, it is noted
+order: [condition, disease, findings, pulse, pattern, contraindication, principle, formula, composition, preparation,
+        administration, modification, prognosis]

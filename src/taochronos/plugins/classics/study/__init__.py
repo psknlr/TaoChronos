@@ -21,6 +21,8 @@ punctuate          句读: marks for 白文 from a model learned on the store's 
                    measured against the editors on held-out works
 commentaries       集注: a clause's commentaries aligned, attributed, dated and compared (驳 从 引, 照录 承袭, 同解 增益 异解)
 disputes           争议: named views rejected or endorsed — about a term, of a physician, or who rejects whom corpus-wide
+clause             条文结构: a clause's parts (condition … formula, composition, preparation … prognosis); a work's forms
+glosses            训诂: a word's glosses (…者…也, 貌, 音, 反切, 当作, 一作) by commentator and period; a book's glossary
 formula            方源考: every written-out composition of a formula; original and current versions, 加减,
                    同名异方, 同方异名, dose ratios, doses in the measures of their time, 方歌
 herb               药性源流: 性味, 毒性, 归经, 升降浮沉, 主治 of a drug, book by book; the first statement of each
@@ -42,12 +44,14 @@ from ..domain import DomainPack
 from .argument import ArgumentStudy
 from .base import StudyBase
 from .cases import CaseStudy
+from .clause import ClauseStructure
 from .commentary import CommentaryStudy
 from .concordance import Concordance
 from .dataset import tables as dataset_tables
 from .disputes import DisputeStudy
 from .formulas import FormulaStudy
 from .fragments import FragmentStudy
+from .glosses import GlossStudy
 from .herbs import HerbStudy
 from .senses import SenseStudy
 from .intertext import IntertextStudy
@@ -84,6 +88,8 @@ class StudyService(StudyBase):
         self._punct = PunctuationStudy(self)
         self._commentary = CommentaryStudy(self, self._concordance)
         self._disputes = DisputeStudy(self, self._commentary, self._network)
+        self._clause = ClauseStructure(self, self._punct)
+        self._glosses = GlossStudy(self, self._commentary)
 
     @property
     def metrology(self) -> Any:
@@ -231,6 +237,20 @@ class StudyService(StudyBase):
         """争议: named views rejected (or endorsed) in the literature — about a term, of a person, or, with neither,
         who rejects whom across the corpus."""
         return self._disputes.run(term, person=person, **kw)
+
+    def clause(self, text: str | None = None, passage_id: str | None = None, *, work: str | None = None,
+               **kw: Any) -> dict[str, Any]:
+        """条文结构: the parts of a clause (condition, disease, findings, pulse, pattern, principle, formula, composition,
+        preparation, administration, modification, contraindication, prognosis); with ``work``, the forms its
+        clauses take."""
+        if work:
+            return self._clause.profile(work, **kw)
+        return self._clause.run(text, passage_id)
+
+    def glosses(self, term: str | None = None, *, book: str | None = None, **kw: Any) -> dict[str, Any]:
+        """训诂: the glosses of a word (…者…也, …貌, 音, 反切, 读为, 当作, 一作) by who gave them and when; with
+        ``book``, the glossary of a commentary."""
+        return self._glosses.run(term, book=book, **kw)
 
     def _edition_floors(self, out: dict[str, Any]) -> None:
         """Each witness's lower date bound from its taboo characters (a witness in volumes: the latest)."""

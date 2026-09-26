@@ -174,3 +174,41 @@ def test_commentaries_and_disputes_through_tools_and_cli(harness, capsys, tmp_pa
     assert out.ok and "commentaries" in out.result
     assert main(["--data", str(tmp_path), "study", "disputes", "--person", "丹溪"]) == 0
     assert capsys.readouterr().out.startswith("# 争议：丹溪")
+
+
+# ------------------------------------------------------------------ 条文结构 (T6), 训诂 (T10)
+def test_clause_parts_in_order(study):
+    r = study.clause("伤寒二三日，心中悸而烦者，小建中汤主之。")
+    assert [x["role"] for x in r["pieces"]] == ["condition", "findings", "formula"] and r["form"] == "前提→症→方"
+    r = study.clause("右五味，以水七升，煮取三升，去滓，温服一升。若渴者，去半夏，加栝楼根四两。")
+    assert [x["role"] for x in r["pieces"]] == ["preparation", "preparation", "preparation", "preparation", "administration",
+                                               "condition", "modification", "modification"]
+    r = study.clause("桂枝三两，去皮，芍药三两。")
+    assert [x["role"] for x in r["pieces"]] == ["composition", "composition", "composition"]  # 去皮 is the drug's processing
+    assert r["drugs"] and r["out_of_order"] == []
+
+
+def test_clause_reads_bai_wen_through_the_punctuation_model(study):
+    r = study.clause("太阳病发热汗出恶风脉缓者名为中风")
+    assert r["punctuated_by_model"] and r["pieces"][0]["role"] == "disease"
+    assert "".join(ch for x in r["pieces"] for ch in x["text"] if ch not in "，。；：、") == "太阳病发热汗出恶风脉缓者名为中风"
+
+
+def test_glosses_are_of_the_word_not_of_a_clause_ending_in_it(study):
+    find = study._glosses.find
+    normalize = study.normalize
+
+    def gloss(text: str) -> list[tuple[str, str, str]]:
+        return [(g["kind"], g["head"], g["gloss"]) for g in find(normalize(text), text)]
+
+    assert ("者也", "几几", "伸颈之貌") in gloss("几几者，伸颈之貌也。")
+    assert ("反切", "强", "群养") in gloss("强，群养切。") and not any(k == "反切" for k, _, _ in gloss("痉，脊强反折。"))
+    assert ("校改", "痓", "痉") in gloss("痓当作痉，传写之误也。")  # read as written: the normaliser takes both for 痉
+    assert ("者也", "濈濈然", "连绵") in gloss("濈濈然者，程氏云：「连绵也。」")
+
+
+def test_clause_and_glosses_through_tools_and_cli(harness, capsys, tmp_path):
+    out = harness.scheduler.execute(ToolCall("study.clause", {"text": "少阴病，脉沉者，急温之，宜四逆汤。"}), actor=Actor.kernel())
+    assert out.ok and out.result["form"] == "病→脉→治则→方"
+    assert main(["--data", str(tmp_path), "study", "glosses", "消渴"]) == 0
+    assert capsys.readouterr().out.startswith("# 训诂：消渴")

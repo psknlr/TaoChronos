@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import json
 import math
 import pickle
 import random
@@ -673,8 +674,7 @@ class PunctuationStudy:
         cache = None
         store = getattr(self.b.corpus, "store", None)
         if store is not None:
-            sig = self.b.signature()
-            cache = Path(store.path).parent / "study-cache" / f"punct-{sig['corpus_digest']}.pkl.gz"
+            cache = Path(store.path).parent / "study-cache" / f"punct-{self.cache_key()}.pkl.gz"
             if not rebuild and cache.exists():
                 loaded = PunctuationModel.load(cache, self.b.pack.lexicon)
                 if loaded is not None:
@@ -691,8 +691,19 @@ class PunctuationStudy:
                                     "rules": baiwen["rules"], "typed": baiwen.get("typed")}
         if cache is not None:
             model.save(cache)
+            for old in cache.parent.glob("punct-*.pkl.gz"):  # models of an earlier state of the store
+                if old != cache:
+                    old.unlink(missing_ok=True)
         self._model = model
         return model
+
+    def cache_key(self) -> str:
+        """What the model depends on: the texts (books, passages, the normaliser) and the works held out — not the
+        dates of the books, so re-dating a book does not retrain it."""
+        sig = self.b.signature()
+        works = sorted((bid, getattr(b, "work", None) or "") for bid, b in self.b.corpus.books.items())
+        raw = json.dumps([sig["books"], sig["passages"], sig["normalizer"], works, MODEL_VERSION], ensure_ascii=False)
+        return hashlib.sha1(raw.encode()).hexdigest()[:12]
 
     def run(self, text: str | None = None, passage_id: str | None = None, *, compare: bool = True) -> dict[str, Any]:
         """Punctuate a text (or a passage).  A text that is already punctuated is stripped of its marks and punctuated

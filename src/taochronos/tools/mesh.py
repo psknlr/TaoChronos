@@ -523,6 +523,14 @@ def _study_disputes(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(_study(ctx).disputes(a.get("term"), person=a.get("person")), int(a.get("items", 15)))
 
 
+def _study_clause(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).clause(a.get("text"), a.get("passage_id"), work=a.get("work")), int(a.get("items", 30)))
+
+
+def _study_glosses(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).glosses(a.get("term"), book=a.get("book")), int(a.get("items", 15)))
+
+
 def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
     reg = ToolRegistry()
     specs = [
@@ -697,6 +705,17 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "find counter-evidence and the history of a controversy.",
                  obj({"term": S, "person": S, "items": I}), _study_disputes, family="study", permission="classics:read",
                  expensive=True, returns="disputes with sentences, who rejects whom, endorsements"),
+        ToolSpec("study.clause", "条文结构: cut a clause (text or passage; 白文 is punctuated first) into its parts — condition, "
+                 "disease, findings, pulse, pattern, principle, contraindication, formula, composition, preparation, "
+                 "administration, modification, prognosis — with the findings, pulse, formulas and drugs it names; with "
+                 "work, the forms a work's clauses take (e.g. 病→症→方).",
+                 obj({"text": S, "passage_id": S, "work": S, "items": I}), _study_clause, family="study",
+                 permission="classics:read", returns="pieces with roles, the form, the named terms"),
+        ToolSpec("study.glosses", "训诂: the glosses of a word in the commentaries (…者…也, …貌, 犹, 谓, 音, 反切, 读为, 当作, 一作), "
+                 "grouped into readings with who first gave each and who repeated it, by period; with book, the glossary "
+                 "of a commentary. Emendations are read on the characters as written.",
+                 obj({"term": S, "book": S, "items": I}), _study_glosses, family="study", permission="classics:read",
+                 expensive=True, returns="glosses with commentator and date, readings, kinds by period"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

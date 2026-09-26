@@ -754,7 +754,8 @@ def cmd_eval(args: argparse.Namespace) -> None:
 
 STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
          "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship", "cases",
-         "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate", "commentaries", "disputes")
+         "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate", "commentaries", "disputes",
+         "clause", "glosses")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -851,6 +852,14 @@ def cmd_study(args: argparse.Namespace) -> None:
         res = study.commentaries(target, args.passage)
     elif what == "disputes":
         res = study.disputes(target, person=args.person)
+    elif what == "clause":
+        if not (target or args.passage or args.work):
+            raise SystemExit("taochronos study clause: give a clause, --passage <id> or --work <work>")
+        res = study.clause(target, args.passage, work=args.work)
+    elif what == "glosses":
+        if not (target or args.book):
+            raise SystemExit("taochronos study glosses: give a word (e.g. 几几) or --book <id> (its glossary)")
+        res = study.glosses(target, book=args.book)
     elif what == "concordance":
         res = study.concordance(target, args.passage, min_coverage=args.min_coverage, limit=args.limit or 300)
     elif what == "formula":
@@ -1005,7 +1014,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("study", help="治学: 经文互见·集注, 方源考, 药性源流, 术语源流, 避讳断代, 引书网络, 学习卡片, 阅读门径, 研究数据集, "
                                       "版本谱系 (variants/stemma/edition/tei), 语义复用 (reuse), 思想传播 (transmission), "
                                       "文本地层 (layers/dating/authorship), 医案轨迹 (cases/trajectories), 医理论证 (argument), "
-                                      "语义演变 (senses), 佚书辑佚 (fragments), 句读 (punctuate), 集注 (commentaries), 争议 (disputes)")
+                                      "语义演变 (senses), 佚书辑佚 (fragments), 句读 (punctuate), 集注 (commentaries), 争议 (disputes), "
+                                      "条文结构 (clause), 训诂 (glosses)")
     sp.set_defaults(fn=cmd_study)
     sp.add_argument("what", choices=STUDY)
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
@@ -1018,7 +1028,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--no-other-names", action="store_true", help="formula: skip the search for 同方异名")
     sp.add_argument("--min-chars", type=int, default=20000, help="taboo survey: smallest book to judge")
     sp.add_argument("--top", type=int, default=12, help="citations: works and physicians per period")
-    sp.add_argument("--book", help="cards: 方证 cards from this book (e.g. 伤寒论)")
+    sp.add_argument("--book", help="cards: 方证 cards from this book (e.g. 伤寒论); glosses: a book's glossary")
     sp.add_argument("--formula", action="append", help="cards/dataset: a formula (repeatable)")
     sp.add_argument("--herb", action="append", help="cards/dataset: a drug (repeatable)")
     sp.add_argument("--term", help="cards/dataset: a term")
@@ -1041,7 +1051,7 @@ def build_parser() -> argparse.ArgumentParser:
                     help="layers: the 100 most frequent characters, or function characters only (less sensitive to topic)")
     sp.add_argument("--chapter-name", help="authorship: one chapter (篇) of --book")
     sp.add_argument("--verify", action="store_true", help="fragments: check the reconstruction against the work's surviving witnesses")
-    sp.add_argument("--work", help="argument: the way of reasoning of a work")
+    sp.add_argument("--work", help="argument: the way of reasoning of a work; clause: the forms of a work's clauses")
     sp.add_argument("--against-work", help="argument: … compared with another work")
     sp.add_argument("--candidate", action="append", help="authorship: a candidate work or book id (repeatable)")
     sp.add_argument("--json", action="store_true", help="print the full result as JSON")

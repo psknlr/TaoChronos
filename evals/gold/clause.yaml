@@ -1,0 +1,35 @@
+# ClauseEval — clauses of the 伤寒论 and 金匮要略 (public-domain classics, 宋本 wording simplified) cut into their
+# pieces with the role each piece plays (CC0 annotation by the author, following clause.yaml's definitions).
+clauses:
+  - text: 太阳病，发热，汗出，恶风，脉缓者，名为中风。
+    roles: [disease, findings, findings, findings, pulse, pattern]
+  - text: 太阳病，或已发热，或未发热，必恶寒，体痛，呕逆，脉阴阳俱紧者，名为伤寒。
+    roles: [disease, findings, findings, findings, findings, findings, pulse, pattern]
+  - text: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之。
+    roles: [disease, findings, findings, findings, findings, formula]
+  - text: 伤寒二三日，心中悸而烦者，小建中汤主之。
+    roles: [condition, findings, formula]
+  - text: 发汗后，身疼痛，脉沉迟者，桂枝加芍药生姜各一两人参三两新加汤主之。
+    roles: [condition, findings, pulse, formula]
+  - text: 少阴病，脉沉者，急温之，宜四逆汤。
+    roles: [disease, pulse, principle, formula]
+  - text: 太阳病，外证未解，不可下也，下之为逆。欲解外者，宜桂枝汤。
+    roles: [disease, pattern, contraindication, prognosis, principle, formula]
+  - text: 右五味，㕮咀三味，以水七升，微火煮取三升，去滓，适寒温，服一升。
+    roles: [preparation, preparation, preparation, preparation, preparation, administration, administration]
+  - text: 服已须臾，啜热稀粥一升余，以助药力。
+    roles: [administration, administration, administration]
+  - text: 若渴者，去半夏，加人参合前成四两半、栝楼根四两。
+    roles: [condition, modification, modification, modification]
+  - text: 桂枝三两，芍药三两，甘草二两，生姜三两，大枣十二枚。
+    roles: [composition, composition, composition, composition, composition]
+  - text: 伤寒，脉浮紧，不发汗，因致衄者，麻黄汤主之。
+    roles: [disease, pulse, condition, findings, formula]
+  - text: 少阴病，恶寒，身蜷而利，手足逆冷者，不治。
+    roles: [disease, findings, findings, findings, prognosis]
+  - text: 阳明病，脉迟，虽汗出不恶寒者，其身必重，短气，腹满而喘，有潮热者，此外欲解，可攻里也。
+    roles: [disease, pulse, findings, findings, findings, findings, findings, prognosis, principle]
+  - text: 病人脉数，数为热，当消谷引食，而反吐者，此以发汗，令阳气微，膈气虚，脉乃数也。
+    roles: [condition, pattern, findings, findings, pattern, pattern, pattern, pattern]
+  - text: 湿家之为病，一身尽疼，发热，身色如熏黄也。
+    roles: [disease, findings, findings, findings]

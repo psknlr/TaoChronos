@@ -743,6 +743,85 @@ def variant_impact(ctx: EvalContext) -> SuiteResult:
     return SuiteResult("variant_impact", metrics, details, notes=notes)
 
 
+def clause(ctx: EvalContext) -> SuiteResult:
+    """ClauseEval (条文结构): clauses of the 伤寒论 and 金匮要略 cut into pieces, each annotated with its role
+    (gold/clause.yaml) — piece role accuracy and per-role precision/recall; with the full corpus, the forms of the
+    伤寒论's clauses and the share of its pieces that no rule reads (其他)."""
+    from ..plugins.classics.study import StudyService
+
+    h = ctx.default
+    study = StudyService(h.pack, h.corpus)
+    gold = ctx.gold("clause")["clauses"]
+    pairs: list[tuple[str, str]] = []
+    details = []
+    split_ok = 0
+    for c in gold:
+        res = study.clause(c["text"])
+        got = [x["role"] for x in res["pieces"]]
+        split_ok += len(got) == len(c["roles"])
+        for want, have, piece in zip(c["roles"], got, res["pieces"]):
+            pairs.append((want, have))
+            if want != have:
+                details.append({"piece": piece["text"], "expected": want, "got": have, "rule": piece["rule"]})
+    roles = sorted({w for w, _ in pairs})
+    per_role = {r: prf(sum(1 for w, g in pairs if w == r and g == r), sum(1 for w, g in pairs if g == r and w != r),
+                       sum(1 for w, g in pairs if w == r and g != r))["f1"] for r in roles}
+    metrics: dict[str, Any] = {"piece_accuracy": accuracy(pairs), "macro_f1": macro_f1(pairs),
+                               "segmentation": round(split_ok / len(gold), 4), "pieces": len(pairs), "per_role_f1": per_role}
+    notes = ["gold/clause.yaml: sixteen clauses of the 伤寒论 and 金匮要略 (public domain), roles annotated by the author "
+             "following clause.yaml's definitions"]
+    big = None if ctx.quick else ctx.corpus_harness()
+    if big is not None:
+        prof = big.capabilities.get("study").clause(work="shanghanlun", passages=800)
+        total = sum(prof["roles"].values()) or 1
+        metrics["real"] = {"clauses": prof["clauses"], "other_share": round(prof["roles"].get("其他", 0) / total, 4),
+                           "top_forms": [f["form"] for f in prof["forms"][:5]]}
+        notes.append("real: the main text of the 伤寒论's fullest witness; other_share = pieces no rule reads (dialogues "
+                     "of 平脉法, numbering, notes)")
+    return SuiteResult("clause", metrics, details, notes=notes)
+
+
+def glosses(ctx: EvalContext) -> SuiteResult:
+    """GlossEval (训诂): sentences in the forms of the commentaries with the gloss they give the term, and traps (a
+    clause ending in the term, 反折 that is not a 反切) (gold/glosses.yaml); with the full corpus, whether the glosses
+    of 几几 known from the commentaries are found (成无己's 伸颈之貌 first)."""
+    from ..plugins.classics.study import StudyService
+
+    h = ctx.default
+    study = StudyService(h.pack, h.corpus)
+    finder = study._glosses
+    cases = ctx.gold("glosses")["cases"]
+    tp = fp = fn = correct = 0
+    details = []
+    for c in cases:
+        norm, term = h.pack.variants.normalize_text(c["text"]), h.pack.variants.normalize_text(c["term"])
+        found = [g for g in finder.find(norm, c["text"]) if h.pack.variants.normalize_text(g["head"]) == term
+                 or (h.pack.variants.normalize_text(g["head"]).endswith(term) and len(g["head"]) - len(term) <= 1)]
+        got = (found[0]["gloss"], found[0]["kind"]) if found else ("", "none")
+        want = (c["gloss"], c["kind"])
+        correct += got == want
+        if want[1] != "none" and got == want:
+            tp += 1
+        elif got[1] != "none":
+            fp += 1
+            fn += want[1] != "none"
+        elif want[1] != "none":
+            fn += 1
+        if got != want:
+            details.append({"text": c["text"], "expected": want, "got": got})
+    metrics: dict[str, Any] = {"accuracy": round(correct / len(cases), 4), "glosses": prf(tp, fp, fn), "cases": len(cases)}
+    notes = ["gold/glosses.yaml: glosses in the set forms and traps; a gloss counts when its words and its kind are right"]
+    big = None if ctx.quick else ctx.corpus_harness()
+    if big is not None:
+        res = big.capabilities.get("study").glosses("几几")
+        readings = {r["gloss"]: r for r in res["readings"]}
+        first = readings.get("伸颈之貌", {}).get("first", {})
+        metrics["real"] = {"glosses": res["count"], "readings": len(res["readings"]),
+                           "成无己_伸颈之貌_first": first.get("by") == "成无己"}
+        notes.append("real: the glosses of 几几 in the store; 成无己's 伸颈之貌 (1144) is the earliest known")
+    return SuiteResult("glosses", metrics, details, notes=notes)
+
+
 def _trigrams(s: str) -> set[str]:
     return {s[i: i + 3] for i in range(len(s) - 2)}
 
@@ -754,5 +833,5 @@ def _volume_number(label: str | None) -> int | None:
     return cn_number(m.group(0)) if m else None
 
 
-__all__ = ["argument", "cases", "collation", "commentaries", "disputes", "fragments", "punctuation", "reuse", "senses",
-           "stratigraphy", "variant_impact"]
+__all__ = ["argument", "cases", "clause", "collation", "commentaries", "disputes", "fragments", "glosses", "punctuation",
+           "reuse", "senses", "stratigraphy", "variant_impact"]

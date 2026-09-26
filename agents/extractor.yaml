@@ -7,7 +7,7 @@ objective: >-
 mode: hybrid
 procedure: taochronos.agents.procedures.extractor
 skills: [claim-extraction]
-tools: [kg.extract_claims, kg.term, classics.get_passage, validation.verify_quote]
+tools: [kg.extract_claims, kg.term, classics.get_passage, validation.verify_quote, study.clause]
 context_view: extraction
 permissions: [classics:read, kg:read]
 output_schema: ClaimSet

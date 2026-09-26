@@ -7,7 +7,7 @@ objective: >-
 mode: hybrid
 procedure: taochronos.agents.procedures.semanticist
 skills: [historical-semantics, anachronism-guard]
-tools: [kg.term, classics.get_passage, classics.search, study.term, study.senses]
+tools: [kg.term, classics.get_passage, classics.search, study.term, study.senses, study.glosses]
 context_view: semantic
 permissions: [classics:read, kg:read]
 output_schema: TermResolutionReport
