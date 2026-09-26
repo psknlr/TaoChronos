@@ -212,3 +212,38 @@ def test_clause_and_glosses_through_tools_and_cli(harness, capsys, tmp_path):
     assert out.ok and out.result["form"] == "病→脉→治则→方"
     assert main(["--data", str(tmp_path), "study", "glosses", "消渴"]) == 0
     assert capsys.readouterr().out.startswith("# 训诂：消渴")
+
+
+# ------------------------------------------------------------------ 方证网络 (T20), 配伍 (T21)
+def test_pair_statistics_find_planted_pairs():
+    from taochronos.plugins.classics.study.pairs import PairsStudy
+
+    rng = random.Random(3)
+    herbs = [f"h{k:02d}" for k in range(20)]
+    transactions = []
+    for _ in range(400):
+        t = set(rng.sample(herbs, 4))
+        if "h00" in t or "h01" in t:
+            t |= {"h00", "h01"}  # always together
+        transactions.append(t)
+    table = PairsStudy.pair_table(transactions, min_support=5)
+    top = table[0]
+    assert (top["a"], top["b"]) == ("h00", "h01") and top["significant"] and top["conf_ab"] == 1.0
+    assert sum(r["significant"] for r in table[1:]) <= 2  # chance pairs rarely pass Benjamini–Hochberg
+
+
+def test_harvest_reads_compositions_and_treatment_sentences(study):
+    built = study._pairs.h.build(None)
+    guizhi = [c for c in built["compositions"] if c[1] == "formula:桂枝汤"]
+    assert guizhi and {"family:桂", "family:芍药", "family:甘草"} <= set(guizhi[0][2])
+    net = study.network("桂枝汤")
+    assert net["kind"] == "formula" and {"桂", "芍药"} <= {d["drug"] for d in net["drugs"]}
+    res = study.pairs("桂枝", min_support=1)
+    assert res["key"] == "family:桂" and any(p["with"] == "芍药" for p in res["partners"])
+
+
+def test_pairs_and_network_through_tools_and_cli(harness, capsys, tmp_path):
+    out = harness.scheduler.execute(ToolCall("study.network", {"target": "桂枝汤"}), actor=Actor.kernel())
+    assert out.ok and out.result["kind"] == "formula"
+    assert main(["--data", str(tmp_path), "study", "pairs", "甘草"]) == 0
+    assert capsys.readouterr().out.startswith("# 配伍：甘草")

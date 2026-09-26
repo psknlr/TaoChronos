@@ -220,6 +220,32 @@ def test_ndl_keeps_the_digitised_items_of_the_title_before_1912(normalize):
     assert "until=1911" in calls[0] and "mediatype" not in calls[0]
 
 
+def test_ndl_reads_every_page_meiji_abbreviations_and_dynasties(normalize):
+    first = """<rss><channel><openSearch:totalResults>250</openSearch:totalResults>
+<item><dc:title>本草綱目</dc:title><dcterms:issued>明5-8</dcterms:issued><dc:date>1000</dc:date>
+<rdfs:seeAlso rdf:resource="https://dl.ndl.go.jp/pid/1"/></item></channel></rss>"""
+    second = """<rss><channel><openSearch:totalResults>250</openSearch:totalResults>
+<item><dc:title>本草綱目</dc:title><dcterms:issued>清刊</dcterms:issued><dc:date>1000</dc:date>
+<rdfs:seeAlso rdf:resource="https://dl.ndl.go.jp/pid/2"/></item>
+<item><dc:title>本草綱目</dc:title><dc:date>1000</dc:date><rdfs:seeAlso rdf:resource="https://dl.ndl.go.jp/pid/3"/></item>
+</channel></rss>"""
+    fetch = FakeFetch({}, default=lambda url: second if "idx=201" in url else first)
+    recs = images.harvest_ndl(fetch, ["本草綱目"], normalize=normalize, backoff=0, log=lambda m: None)
+    # 明5-8 is 明治5–8, not the Ming; 清刊 gives the dynasty's span; an item dated only 1000 (NDL's placeholder) is left out
+    assert [(r.id, r.years, r.kind) for r in recs] == [("ndl:1", "1872-1875", ""), ("ndl:2", "1644-1911", "刊")]
+    assert len(fetch.asked) == 2 and "idx=201" in fetch.asked[1]  # 250 results: a second page from the 201st
+    assert images._years("昭2") == "1927" and images._years("大正5") == "1916" and images._years("明刊") == ""
+    assert images._dynasty_years("明刊本") == "1368-1644" and images._dynasty_years("明5-8") == ""
+
+
+def test_a_family_in_the_title_keeps_a_record_from_another_familys_book(normalize):
+    index = images.work_index([{"id": "jc_neike", "title": "内科摘要", "work": "neike"}], normalize)
+    recs = [Record(id="a", source="s", holder="h", title="内科摘要(華氏)"), Record(id="b", source="s", holder="h", title="内科摘要(薛氏)"),
+            Record(id="c", source="s", holder="h", title="内科摘要 2巻")]
+    assert images.link(recs, index, normalize, {"jc_neike": ["薛己"]}) == 2
+    assert [r.book for r in recs] == ["", "jc_neike", "jc_neike"]  # 華氏's 内科摘要 is not 薛己's
+
+
 def test_titles_link_records_to_works(normalize):
     books = [{"id": "kr_shl", "title": "傷寒論", "work": "shanghanlun", "aliases": ["傷寒卒病論"]},
              {"id": "jc_lingshu", "title": "灵枢经", "work": "lingshu"}, {"id": "jc_nanjing", "title": "难经", "work": "nanjing"},

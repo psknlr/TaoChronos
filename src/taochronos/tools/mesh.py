@@ -531,6 +531,14 @@ def _study_glosses(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(_study(ctx).glosses(a.get("term"), book=a.get("book")), int(a.get("items", 15)))
 
 
+def _study_pairs(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).pairs(a.get("herb"), period=a.get("period")), int(a.get("items", 20)))
+
+
+def _study_network(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).network(a.get("target")), int(a.get("items", 20)))
+
+
 def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
     reg = ToolRegistry()
     specs = [
@@ -716,6 +724,17 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "of a commentary. Emendations are read on the characters as written.",
                  obj({"term": S, "book": S, "items": I}), _study_glosses, family="study", permission="classics:read",
                  expensive=True, returns="glosses with commentator and date, readings, kinds by period"),
+        ToolSpec("study.pairs", "配伍规律: drug pairs prescribed together against chance across the written-out compositions of "
+                 "the corpus (per work): support, confidence, lift, PMI, one-sided Fisher test with Benjamini–Hochberg; "
+                 "with herb, its partners, triples and its share of compositions by period; without, the strongest pairs "
+                 "and the groups of drugs that hold together; period restricts to one period.",
+                 obj({"herb": S, "period": S, "items": I}), _study_pairs, family="study", permission="classics:read",
+                 expensive=True, returns="pairs with statistics, partners, triples, periods, groups"),
+        ToolSpec("study.network", "方证网络: from the treatment sentences of the corpus (…主之, 宜…汤) — a formula's findings "
+                 "(lift against how often each finding is named) and its drugs, a finding's formulas, or the strongest "
+                 "formula–finding links.",
+                 obj({"target": S, "items": I}), _study_network, family="study", permission="classics:read",
+                 expensive=True, returns="findings or formulas with support, share and lift; drugs; periods"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

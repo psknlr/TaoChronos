@@ -166,7 +166,7 @@ def _corpus_images(args: argparse.Namespace, home: Path, data: Path, db: Path) -
     summary = {}
     for source in sources:
         records = images.SOURCES[source](fetch, print, titles, normalize)
-        linked = images.link(records, index, normalize)
+        linked = images.link(records, index, normalize, {b["id"]: list(b.get("authors") or []) for b in books})
         if args.enrich:
             for rec in records:
                 if rec.source.startswith("nijl:") and (rec.work or args.enrich == "all"):
@@ -755,7 +755,7 @@ def cmd_eval(args: argparse.Namespace) -> None:
 STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
          "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship", "cases",
          "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate", "commentaries", "disputes",
-         "clause", "glosses")
+         "clause", "glosses", "pairs", "network")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -852,6 +852,10 @@ def cmd_study(args: argparse.Namespace) -> None:
         res = study.commentaries(target, args.passage)
     elif what == "disputes":
         res = study.disputes(target, person=args.person)
+    elif what == "pairs":
+        res = study.pairs(target, period=args.period)
+    elif what == "network":
+        res = study.network(target)
     elif what == "clause":
         if not (target or args.passage or args.work):
             raise SystemExit("taochronos study clause: give a clause, --passage <id> or --work <work>")
@@ -1015,7 +1019,7 @@ def build_parser() -> argparse.ArgumentParser:
                                       "版本谱系 (variants/stemma/edition/tei), 语义复用 (reuse), 思想传播 (transmission), "
                                       "文本地层 (layers/dating/authorship), 医案轨迹 (cases/trajectories), 医理论证 (argument), "
                                       "语义演变 (senses), 佚书辑佚 (fragments), 句读 (punctuate), 集注 (commentaries), 争议 (disputes), "
-                                      "条文结构 (clause), 训诂 (glosses)")
+                                      "条文结构 (clause), 训诂 (glosses), 配伍 (pairs), 方证网络 (network)")
     sp.set_defaults(fn=cmd_study)
     sp.add_argument("what", choices=STUDY)
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
@@ -1024,6 +1028,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--passage", help="concordance/reuse/argument/punctuate: a passage id instead of a text")
     sp.add_argument("--input", help="punctuate: read the text from this file")
     sp.add_argument("--person", help="disputes: the physician whose views are disputed (e.g. 丹溪)")
+    sp.add_argument("--period", help="pairs: only the compositions of this period (e.g. 宋金元)")
     sp.add_argument("--min-coverage", type=float, default=0.6, help="concordance: share of the text a witness must carry")
     sp.add_argument("--no-other-names", action="store_true", help="formula: skip the search for 同方异名")
     sp.add_argument("--min-chars", type=int, default=20000, help="taboo survey: smallest book to judge")

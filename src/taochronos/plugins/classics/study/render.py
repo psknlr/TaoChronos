@@ -687,11 +687,57 @@ def glosses(r: dict[str, Any]) -> list[str]:
     return out + ["", f"> {r.get('note', '')}"]
 
 
+def pairs(r: dict[str, Any]) -> list[str]:
+    what = r.get("herb") or "全库"
+    out = [f"# 配伍：{what}" + (f"（{r['period']}）" if r.get("period") else ""), "",
+           f"组成 {r.get('compositions', 0)} 首（同一著作的各本只计一次）；同方至少 {r.get('min_support')} 次的药对中显著者 "
+           f"{r.get('significant', 0)} 对，另有 {r.get('not_significant', 0)} 对未达显著。", ""]
+    if r.get("partners"):
+        drug = r.get("herb")
+        out += [f"| 相配之药 | 同方次数 | 用{drug}时同用 | 用此药时有{drug} | 提升度 | NPMI | 显著 |", "|---|---|---|---|---|---|---|"]
+        out += [f"| {x['with']} | {x['support']} | {x['p_with_given_drug']:.0%} | {x['p_drug_given_with']:.0%} | {x['lift']} | "
+                f"{x['npmi']} | {'是' if x['significant'] else ''} |" for x in r["partners"][:30]]
+        if r.get("triples"):
+            out += ["", "三药同用：" + "；".join(f"{'、'.join(t['with'])}（{t['support']}，{t['share']:.0%}）" for t in r["triples"][:10])]
+        if r.get("by_period"):
+            out += ["", "按时期（含此药的组成占比）：" + "，".join(f"{x['period']} {x['share']:.0%}（{x['with']}/{x['compositions']}）"
+                                                    for x in r["by_period"])]
+    else:
+        out += ["| 药对 | 同方次数 | 提升度 | NPMI | p |", "|---|---|---|---|---|"]
+        out += [f"| {x['a_name']}—{x['b_name']} | {x['support']} | {x['lift']} | {x['npmi']} | {x['p']} |" for x in r.get("pairs", [])[:40]]
+        if r.get("groups"):
+            out += ["", "## 常相配伍的药群（显著药对图的社区）", ""] + [f"- {'、'.join(g['drugs'])}" for g in r["groups"]]
+        if r.get("top_by_support"):
+            out += ["", "最常同用：" + "；".join(f"{x['pair']}（{x['support']}）" for x in r["top_by_support"][:12])]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+def network(r: dict[str, Any]) -> list[str]:
+    if r.get("target") is None:
+        out = [f"# 方证网络：全库", "", f"治疗语句 {r['indications']} 条、组成 {r['compositions']} 首。", "",
+               "| 方 | 症 | 次数 | 提升度 | NPMI |", "|---|---|---|---|---|"]
+        out += [f"| {x['formula']} | {x['finding']} | {x['support']} | {x['lift']} | {x['npmi']} |" for x in r["links"][:40]]
+        return out + ["", f"> {r.get('note', '')}"]
+    out = [f"# 方证网络：{r['target']}", "", f"治疗语句 {r['indications']} 条。", ""]
+    if r.get("findings") is not None:
+        out += ["| 主治所见 | 类 | 次数 | 占比 | 提升度 |", "|---|---|---|---|---|"]
+        out += [f"| {x['finding']} | {x['category']} | {x['support']} | {x['share']:.0%} | {x['lift']} |" for x in r["findings"][:30]]
+        if r.get("drugs"):
+            out += ["", f"组成（{r['compositions']} 首）：" + "，".join(f"{d['drug']} {d['share']:.0%}" for d in r["drugs"])]
+    else:
+        out += ["| 方 | 次数 | 占比 | 提升度 |", "|---|---|---|---|"]
+        out += [f"| {x['formula']} | {x['support']} | {x['share']:.0%} | {x['lift']} |" for x in r.get("formulas", [])[:30]]
+    if r.get("by_period"):
+        out += ["", "按时期：" + "，".join(f"{k} {v}" for k, v in r["by_period"].items())]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
 PAGES = {"concordance": concordance, "formula": formula, "herb": herb, "term": term, "taboo": taboo, "citations": citations,
          "cards": cards, "reading": reading, "variants": variants, "stemma": stemma, "edition": edition, "reuse": reuse,
          "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship, "cases": cases,
          "trajectories": trajectories, "argument": argument, "senses": senses, "fragments": fragments, "witnesses": witnesses,
-         "punctuate": punctuate, "commentaries": commentaries, "disputes": disputes, "clause": clause, "glosses": glosses}
+         "punctuate": punctuate, "commentaries": commentaries, "disputes": disputes, "clause": clause, "glosses": glosses,
+         "pairs": pairs, "network": network}
 
 
 def markdown(kind: str, result: dict[str, Any], signature: dict[str, Any], notice: str = "") -> str:

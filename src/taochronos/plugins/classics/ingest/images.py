@@ -123,6 +123,10 @@ def _span(ys: list[int]) -> str:
     return "" if not ys else (str(ys[0]) if min(ys) == max(ys) else f"{min(ys)}-{max(ys)}")
 
 
+_JP_ABBR_ERAS = {"明": "明治", "大": "大正", "昭": "昭和"}
+_JP_ABBR = re.compile(r"(?<![㐀-鿿])(明|大|昭)(\d{1,2})(?:-(\d{1,2}))?(?!\d)")
+
+
 def _years(text: str) -> str:
     """The years a date statement gives: western years (1682 · 1821-1850), else a Japanese era with its year
     (享和１ → 1801; an era alone, 〔寛永〕, gives its span), else a period word (［江戸中期］ → 1709-1789).  Chinese
@@ -133,6 +137,10 @@ def _years(text: str) -> str:
         return _span(ys)
     for era, num in _JP_ERA.findall(t.translate(_JP_FORMS)):
         ys += [JP_ERAS[era] + (1 if num == "元" else int(num)) - 1] if num else [JP_ERAS[era], _JP_END[era]]
+    if ys:
+        return _span(ys)
+    for era, a, b in _JP_ABBR.findall(t):  # NDL's 明5-8: 明治5–8 (not the Ming)
+        ys += [JP_ERAS[_JP_ABBR_ERAS[era]] + int(x) - 1 for x in (a, b) if x]
     if ys:
         return _span(ys)
     return next((f"{a}-{b}" for word, a, b in JP_PERIODS if word in t), "")
@@ -516,16 +524,28 @@ def _ndl_page(fetch: Fetcher, url: str, backoff: float, log: Log) -> str:
     return ""
 
 
+DYNASTY_YEARS = (("清", "1644-1911"), ("明", "1368-1644"), ("元", "1271-1368"), ("宋", "960-1279"))
+
+
+def _dynasty_years(issued: str) -> str:
+    """The span of a Chinese dynasty an undated item is described by (清刊, 明刊 — not 明5, which is 明治5)."""
+    return next((span for word, span in DYNASTY_YEARS
+                 if re.search(rf"{word}(?=刊|写|寫|抄|鈔|版|代|末|初|中|$)", issued or "")), "")
+
+
 def harvest_ndl(fetch: Fetcher, titles: Iterable[str], *, normalize: Callable[[str], str] = lambda x: x, until: int = 1911,
-                backoff: float = 10.0, log: Log = print) -> list[Record]:
+                backoff: float = 10.0, max_results: int = 2000, log: Log = print) -> list[Record]:
     """The items of the NDL デジタルコレクション among the pre-1912 publications NDL Search finds for each title (its
     results unite many libraries' catalogues: only the items with a digital collection id are kept), whose title is
     the title looked up — as written, or without volume counts."""
     out: dict[str, Record] = {}
     for title in titles:
         wanted = normalize(_plain(title))
-        text = _ndl_page(fetch, f"{NDL_SEARCH}?{urllib.parse.urlencode({'title': title, 'until': str(until), 'cnt': '200'})}",
-                         backoff, log)
+        query = {"title": title, "until": str(until), "cnt": "200"}
+        text = _ndl_page(fetch, f"{NDL_SEARCH}?{urllib.parse.urlencode(query)}", backoff, log)
+        total = int((re.search(r"<openSearch:totalResults>(\d+)", text) or [0, "0"])[1])
+        for start in range(201, min(total, max_results) + 1, 200):  # the results past the first page (本草綱目: 1 536)
+            text += _ndl_page(fetch, f"{NDL_SEARCH}?{urllib.parse.urlencode({**query, 'idx': str(start)})}", backoff, log)
         for item in re.findall(r"<item>(.*?)</item>", text, re.S):
             pids = re.findall(r"https?://dl\.ndl\.go\.jp/(?:pid/|info:ndljp/pid/)(\d+)", item)
             if not pids:
@@ -538,7 +558,8 @@ def harvest_ndl(fetch: Fetcher, titles: Iterable[str], *, normalize: Callable[[s
             if wanted not in {k for k, _ in title_keys(name, normalize)}:
                 continue
             issued = (g("dcterms:issued") or g("dc:date") or [""])[0]
-            years = _years(" ".join(g("dcterms:issued") + g("dc:date")))
+            dates = [d for d in g("dc:date") if d.strip() != "1000"]  # NDL's placeholder for an undated item
+            years = _years(" ".join(g("dcterms:issued") + dates)) or _dynasty_years(issued)
             if not years or int(years.split("-")[0]) > until:
                 continue
             notes = g("dc:description")
@@ -546,7 +567,8 @@ def harvest_ndl(fetch: Fetcher, titles: Iterable[str], *, normalize: Callable[[s
             out.setdefault(pid, Record(
                 id=f"ndl:{pid}", source="ndl", holder="国立国会図書館", collection="NDLデジタルコレクション", title=name,
                 authors="；".join(g("dc:creator")), date=issued, years=years,
-                kind="写" if any("写本" in n or "寫本" in n for n in notes) else ("刊" if any("刊本" in n for n in notes) else ""),
+                kind=("写" if any("写本" in n or "寫本" in n for n in notes) or re.search(r"[写寫](?:本)?$", issued)
+                      else ("刊" if any("刊本" in n for n in notes) or "刊" in issued else "")),
                 manifest=f"https://dl.ndl.go.jp/api/iiif/{pid}/manifest.json", page=f"https://dl.ndl.go.jp/pid/{pid}",
                 rights="NDL デジタルコレクション（保護期間満了のインターネット公開資料は自由に利用可）",
                 notes="；".join(n for n in notes if n and len(n) < 80)[:200]))
@@ -612,13 +634,20 @@ def work_index(books: Iterable[dict[str, Any]], normalize: Callable[[str], str])
     return index
 
 
-def link(records: list[Record], index: dict[str, tuple[str, str, bool]], normalize: Callable[[str], str]) -> int:
+def link(records: list[Record], index: dict[str, tuple[str, str, bool]], normalize: Callable[[str], str],
+         authors: dict[str, list[str]] | None = None) -> int:
     """Link each record to a work by its title; a two-character title (難経, 醫説) only as written, whole.  A link
-    through an alias (针经 is also a name of the 灵枢) is marked `·alias`: the likeliest to need checking."""
+    through an alias (针经 is also a name of the 灵枢) is marked `·alias`: the likeliest to need checking.  A title
+    that names its author's family in brackets (内科摘要(華氏)) is not linked to a book by an author of another
+    family (薛己's 内科摘要)."""
     n = 0
     for rec in records:
+        family = re.search(r"[（(]([\u3400-\u9fff]{1,2})氏[）)]", rec.title or "")
         for key, how in title_keys(rec.title, normalize):
             if key in index and (len(key) >= 3 or how == "exact"):
+                names = (authors or {}).get(index[key][1]) or []
+                if family and names and not any(normalize(a).startswith(normalize(family.group(1))) for a in names):
+                    break
                 rec.work, rec.book, alias = index[key]
                 rec.match = how + ("·alias" if alias else "")
                 n += 1

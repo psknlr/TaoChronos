@@ -152,7 +152,7 @@ taochronos governance              # architecture policy check
 | TCM-Ancient-Books / tcmoc | undeclared, local research only | **8** / 0 works | mostly simplified copies of 笈成 texts, deduplicated work by work |
 | Hugging Face classical-tcm-canon | proprietary-commercial, local research only, never redistributed | **1 work** | 张志聪's 伤寒论宗印·集注 |
 | KR-Catalog (Kanripo catalogue) | CC BY-SA 4.0 | catalogue | roles and dates of 132 persons responsible for the Siku works |
-| Image witnesses: NIJL (研医会; the 富士川文庫 of Keio and Kyoto; the University of Tokyo incl. the 鶚軒文庫; Kyushu; Tohoku), Staatsbibliothek zu Berlin (Sammlung Unschuld), Library of Congress (Chinese Rare Books), Waseda (NDL: harvester ready, catalog to be built) | per record, as each holder states | **9,638 records** (446 linked to 168 works) | records only — title, date, print or manuscript, holder, shelfmark, IIIF manifest, terms — linked to the works of the store by title; no image downloaded |
+| Image witnesses: NIJL (研医会; the 富士川文庫 of Keio and Kyoto; the University of Tokyo incl. the 鶚軒文庫; Kyushu; Tohoku), Staatsbibliothek zu Berlin (Sammlung Unschuld), Library of Congress (Chinese Rare Books), Waseda, the NDL Digital Collections | per record, as each holder states | **10,001 records** (787 linked to 179 works) | records only — title, date, print or manuscript, holder, shelfmark, IIIF manifest, terms — linked to the works of the store by title; no image downloaded |
 
 In all **966 works, ~123 million characters, 2.05 million passages**.
 

@@ -822,6 +822,65 @@ def glosses(ctx: EvalContext) -> SuiteResult:
     return SuiteResult("glosses", metrics, details, notes=notes)
 
 
+def pairs(ctx: EvalContext) -> SuiteResult:
+    """PairEval (配伍规律, 方证网络): the pair statistics on synthetic compositions whose pairs are planted — the planted
+    pairs must rank first and few others pass the Benjamini–Hochberg control; the harvest of compositions and
+    treatment sentences on the demo corpus (桂枝汤: its drugs and its findings); with the full corpus, pairs known to
+    every student of the formularies, and the findings of 桂枝汤 and 麻黄汤."""
+    from ..plugins.classics.study import StudyService
+    from ..plugins.classics.study.pairs import PairsStudy
+
+    rng = random.Random(17)
+    herbs = [f"h{k:02d}" for k in range(30)]
+    planted = [("h00", "h01"), ("h02", "h03"), ("h04", "h05")]
+    transactions: list[set[str]] = []
+    for _ in range(600):
+        t = set(rng.sample(herbs, rng.randint(3, 6)))
+        for a, b in planted:  # a planted pair: where one is, the other nearly always is
+            if (a in t or b in t) and rng.random() < 0.9:
+                t |= {a, b}
+        transactions.append(t)
+    table = PairsStudy.pair_table(transactions, min_support=5)
+    sig = [r for r in table if r["significant"]]
+    top = {(r["a"], r["b"]) for r in sorted(sig, key=lambda r: -r["pmi"])[:3]}
+    others = [r for r in table if (r["a"], r["b"]) not in planted]
+    metrics: dict[str, Any] = {"synthetic": {"planted_top3": len(top & set(planted)) / 3,
+                                             "false_significant": round(sum(r["significant"] for r in others) / max(1, len(others)), 4),
+                                             "pairs_tested": len(table)}}
+    h = ctx.default
+    study = StudyService(h.pack, h.corpus)
+    built = study._pairs.h.build(None)
+    gz = study.network("桂枝汤")
+    metrics["demo"] = {"compositions": len(built["compositions"]), "indications": len(built["indications"]),
+                       "桂枝汤_drugs": sorted(d["drug"] for d in gz.get("drugs", [])),
+                       "桂枝汤_findings": sorted(f["finding"] for f in gz.get("findings", []))}
+    notes = ["synthetic: 600 compositions of 30 drugs with three planted pairs; false_significant = share of the other "
+             "pairs passing Benjamini–Hochberg at q=0.05",
+             "demo: compositions after a formula's name and treatment sentences (…主之) read from the demo corpus"]
+    big = None if ctx.quick else ctx.corpus_harness()
+    details: list[dict[str, Any]] = []
+    if big is not None:
+        st = big.capabilities.get("study")
+        known = [("桂枝", "芍药"), ("麻黄", "杏仁"), ("柴胡", "黄芩"), ("半夏", "生姜"), ("大黄", "芒硝"), ("附子", "干姜"), ("当归", "川芎")]
+        found = 0
+        for a, b in known:
+            res = st.pairs(a)
+            key_b = st._pairs._key_of(b)
+            row = next((x for x in res["partners"] if x["key"] == key_b), None)
+            ok = bool(row and row["significant"] and row["lift"] > 1.5)
+            found += ok
+            details.append({"pair": f"{a}—{b}", "found": ok, **({k: row[k] for k in ("support", "lift", "pmi")} if row else {})})
+        whole = st.pairs()
+        gz, mh = st.network("桂枝汤"), st.network("麻黄汤")
+        metrics["real"] = {"compositions": whole["compositions"], "significant_pairs": len(whole["pairs"]),
+                           "known_pairs_found": f"{found}/{len(known)}",
+                           "桂枝汤_top_findings": [f["finding"] for f in gz["findings"][:5]],
+                           "麻黄汤_top_findings": [f["finding"] for f in mh["findings"][:5]]}
+        notes.append("real: pairs of the classical formularies (桂枝—芍药, 麻黄—杏仁 …) counted per work across the store; "
+                     "found = significant with lift above 1.5")
+    return SuiteResult("pairs", metrics, details, notes=notes)
+
+
 def _trigrams(s: str) -> set[str]:
     return {s[i: i + 3] for i in range(len(s) - 2)}
 
@@ -833,5 +892,5 @@ def _volume_number(label: str | None) -> int | None:
     return cn_number(m.group(0)) if m else None
 
 
-__all__ = ["argument", "cases", "clause", "collation", "commentaries", "disputes", "fragments", "glosses", "punctuation",
-           "reuse", "senses", "stratigraphy", "variant_impact"]
+__all__ = ["argument", "cases", "clause", "collation", "commentaries", "disputes", "fragments", "glosses", "pairs",
+           "punctuation", "reuse", "senses", "stratigraphy", "variant_impact"]

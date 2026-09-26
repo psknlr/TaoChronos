@@ -8,7 +8,8 @@ objective: >-
 mode: procedure
 procedure: taochronos.agents.procedures.scholar
 skills: [source-criticism]
-tools: [study.formula, study.herb, study.term, study.senses, study.concordance, study.taboo, study.metrology, study.commentaries, study.disputes]
+tools: [study.formula, study.herb, study.term, study.senses, study.concordance, study.taboo, study.metrology, study.commentaries, study.disputes,
+        study.network]
 context_view: sources
 permissions: [classics:read]
 output_schema: SourcesDossier

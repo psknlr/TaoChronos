@@ -23,6 +23,8 @@ commentaries       集注: a clause's commentaries aligned, attributed, dated an
 disputes           争议: named views rejected or endorsed — about a term, of a physician, or who rejects whom corpus-wide
 clause             条文结构: a clause's parts (condition … formula, composition, preparation … prognosis); a work's forms
 glosses            训诂: a word's glosses (…者…也, 貌, 音, 反切, 当作, 一作) by commentator and period; a book's glossary
+pairs / network    配伍 and 方证网络: drugs prescribed together against chance (lift, PMI, Fisher + BH, groups, periods);
+                   a formula's findings and drugs, a finding's formulas
 formula            方源考: every written-out composition of a formula; original and current versions, 加减,
                    同名异方, 同方异名, dose ratios, doses in the measures of their time, 方歌
 herb               药性源流: 性味, 毒性, 归经, 升降浮沉, 主治 of a drug, book by book; the first statement of each
@@ -57,6 +59,7 @@ from .senses import SenseStudy
 from .intertext import IntertextStudy
 from .learning import Learning, anki_tsv
 from .network import CitationNetwork
+from .pairs import FormulaHarvest, PairsStudy
 from .punctuation import PunctuationStudy
 from .stemma import StemmaStudy
 from .stratigraphy import StratigraphyStudy
@@ -90,6 +93,7 @@ class StudyService(StudyBase):
         self._disputes = DisputeStudy(self, self._commentary, self._network)
         self._clause = ClauseStructure(self, self._punct)
         self._glosses = GlossStudy(self, self._commentary)
+        self._pairs = PairsStudy(self, FormulaHarvest(self, self._formulas))
 
     @property
     def metrology(self) -> Any:
@@ -251,6 +255,15 @@ class StudyService(StudyBase):
         """训诂: the glosses of a word (…者…也, …貌, 音, 反切, 读为, 当作, 一作) by who gave them and when; with
         ``book``, the glossary of a commentary."""
         return self._glosses.run(term, book=book, **kw)
+
+    def pairs(self, herb: str | None = None, **kw: Any) -> dict[str, Any]:
+        """配伍: drug pairs prescribed together against chance (support, confidence, lift, PMI, Fisher + BH), the
+        partners of one drug and their periods, the groups of drugs that hold together."""
+        return self._pairs.pairs(herb, **kw)
+
+    def network(self, target: str | None = None, **kw: Any) -> dict[str, Any]:
+        """方证网络: a formula's findings and drugs, a finding's formulas, or the strongest formula–finding links."""
+        return self._pairs.network(target, **kw)
 
     def _edition_floors(self, out: dict[str, Any]) -> None:
         """Each witness's lower date bound from its taboo characters (a witness in volumes: the latest)."""
