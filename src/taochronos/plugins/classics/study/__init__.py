@@ -5,6 +5,8 @@ data made of *witnesses* — verbatim quotes with book, date, locator and licenc
 
 =================  ==========================================================================================
 concordance        经文互见·集注: where a passage recurs (other copies, quotations, restatements), with a 校勘记
+variants / stemma  版本谱系: multi-witness collation of a work (or of a passage's copies and quotations), variant units,
+edition            distances, a neighbour-joining stemma, shared-reading groups, contamination; one edition's profile
 formula            方源考: every written-out composition of a formula; original and current versions, 加减,
                    同名异方, 同方异名, dose ratios, doses in the measures of their time, 方歌
 herb               药性源流: 性味, 毒性, 归经, 升降浮沉, 主治 of a drug, book by book; the first statement of each
@@ -29,6 +31,7 @@ from .formulas import FormulaStudy
 from .herbs import HerbStudy
 from .learning import Learning, anki_tsv
 from .network import CitationNetwork
+from .stemma import StemmaStudy
 from .taboo import TabooStudy
 from .terms import TermStudy
 
@@ -45,6 +48,7 @@ class StudyService(StudyBase):
         self._terms = TermStudy(self)
         self._network = CitationNetwork(self)
         self._learning = Learning(self, self._formulas, self._herbs, self._terms, self._network)
+        self._stemma = StemmaStudy(self)
 
     @property
     def metrology(self) -> Any:
@@ -87,6 +91,35 @@ class StudyService(StudyBase):
         if term:
             cards += self._learning.term_cards(term)
         return {"cards": cards, "anki_tsv": anki_tsv(cards), "count": len(cards)}
+
+    # ------------------------------------------------------------ computational philology
+    def variants(self, work: str | None = None, *, text: str | None = None, passage_id: str | None = None,
+                 **kw: Any) -> dict[str, Any]:
+        """The apparatus of a work's witnesses — or, with ``text`` / ``passage_id``, of a passage's copies and
+        quotations across the corpus."""
+        if text or passage_id:
+            return self._stemma.passage(text, passage_id, concordance=self._concordance,
+                                        **{k: v for k, v in kw.items() if k in ("min_coverage", "max_witnesses")})
+        return self._stemma.variants(work, **kw)
+
+    def stemma(self, work: str | None = None, **kw: Any) -> dict[str, Any]:
+        out = self._stemma.stemma(work, **kw)
+        self._edition_floors(out)
+        return out
+
+    def edition(self, book: str, **kw: Any) -> dict[str, Any]:
+        return self._stemma.edition(book, **kw)
+
+    def tei(self, work: str | None = None, **kw: Any) -> str:
+        return self._stemma.tei(work, **kw)
+
+    def _edition_floors(self, out: dict[str, Any]) -> None:
+        """Each witness's lower date bound from its taboo characters (a witness in volumes: the latest)."""
+        for w in out.get("witnesses", []):
+            floors = [self._taboo.profile(bid).get("edition_floor") for bid in (w.get("book_id") or "").split("+")
+                      if bid in self.corpus.books]
+            floors = [f for f in floors if f is not None]
+            w["edition_floor"] = max(floors) if floors else None
 
     def reading(self, topic: str) -> dict[str, Any]:
         return self._learning.reading_path(topic)

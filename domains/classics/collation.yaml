@@ -1,0 +1,76 @@
+# Collation equivalences (校勘用字对应): characters that transcriptions write differently for the same word — 异体字,
+# 古今字, 通用字, and graphs that copyists and editors habitually exchange — but that the search normaliser keeps
+# apart because they are also distinct words elsewhere (沈 is a surname, 藏 also means "to store", 王 "king").
+#
+# In a collation, a variant unit whose readings differ only by these is *orthographic*: listed in the apparatus with
+# a low weight, never used to group witnesses or to build the stemma (the stemma should follow substantive readings,
+# not each transcription's spelling habits).  `taochronos study variants <work>` reports the most frequent
+# single-character substitutions between the witnesses — candidates to review and add here.
+#
+# Graphic confusions (已/巳/己, 毋/母, 灸/炙) are *not* listed: they are copying errors, and errors shared by several
+# witnesses are exactly the evidence of common descent.
+equivalents:
+  - [沉, 沈]          # 沈脉 = 沉脉
+  - [脏, 藏, 臟]      # 五藏 = 五脏
+  - [腑, 府]          # 六府 = 六腑
+  - [旺, 王]          # 四季脾王
+  - [诀, 决, 訣]      # 脉诀 / 脉决
+  - [驶, 駛, 駃, 𫘝]   # 小駃於遲
+  - [歧, 岐]          # 岐伯
+  - [篇, 萹]
+  - [被, 𬒳]
+  - [咳, 欬]
+  - [硬, 鞕]          # 心下鞕
+  - [涩, 濇, 澀]
+  - [软, 耎, 輭, 軟]
+  - [暖, 煖]
+  - [檗, 蘗]          # 黄蘗 / 黄檗
+  - [芪, 耆]          # 黄耆 / 黄芪
+  - [仁, 人]          # 桃人 / 桃仁, 杏人 / 杏仁
+  - [疏, 疎]
+  - [粗, 麤]
+  - [蛔, 蚘, 蜖, 痐]
+  - [膈, 鬲]
+  - [痰, 淡]          # 淡饮 = 痰饮
+  - [肢, 支]          # 四支 = 四肢
+  - [蚤, 早]
+  - [内, 纳, 納]      # 内（纳）药
+  - [蒌, 蔞, 楼, 樓]  # 栝楼 / 栝蒌
+  - [栝, 瓜]          # 栝楼 / 瓜蒌
+  - [着, 著]
+  - [采, 採]
+  - [升, 昇]
+  - [泄, 洩]
+  - [症, 证, 證]      # 症 is the later graph of 证 in 病证
+  # found by the frequent-substitution report on the 脉经, 伤寒论 and 金匮 witnesses (reviewed)
+  - [胸, 匈]          # 古今字
+  - [瘥, 差]          # 古今字
+  - [焦, 膲]          # 三膲 = 三焦
+  - [挟, 侠]          # 通假
+  - [苔, 胎]          # 舌胎 = 舌苔
+  - [营, 荣]          # 荣卫 / 营卫
+  - [脘, 管]          # 胃管 = 胃脘
+  - [太, 大]          # 大阳 = 太阳
+  - [少, 小]          # 小腹 / 少腹
+  - [伍, 五]          # 大写数字
+  - [壹, 一]
+  - [覆, 复]
+  - [踡, 蜷]
+  - [初, 𥘉]          # 异体
+  - [欲, 𣣔]          # 异体
+  - [圆, 丸]          # 宋讳（钦宗）：各本通改，属版本用字习惯，另见避讳断代
+  - [泻, 写]          # 补写 = 补泻（古今字）
+  - [旁, 傍]
+  - [奈, 柰]          # 柰何 = 奈何
+  - [硝, 消]          # 芒消 = 芒硝
+  - [蔹, 敛]          # 白敛 = 白蔹
+  - [锐, 兑]          # 兑骨 = 锐骨
+  - [脐, 齐]
+  - [尻, 凥]
+  - [颊, 頬]
+  - [跷, 蹻, 𫏋]
+  - [已, 以]          # 已上 = 以上（通用）
+  - [上, 右]          # 右X味 → 上X味：竖排改横排的整理体例
+  - [刺, 剌]          # 录文字形混用
+  - [间, 闲]          # 繁简转换所致（閒）
+  - [厚, 浓]          # 厚朴 → 浓朴：繁简转换所致（濃/厚）

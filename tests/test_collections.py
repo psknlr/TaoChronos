@@ -5,6 +5,7 @@ the Hugging Face dataset — and the KR-Catalog: readers, the admission policy (
 from __future__ import annotations
 
 import random
+import shutil
 from pathlib import Path
 
 import pytest
@@ -64,8 +65,12 @@ def test_mcgill_pages_are_chained_cleaned_and_joined():
     assert formula.text == "完帶湯（白朮一兩）山藥一兩" and formula.page == "卷一 1b"
 
 
-def test_tab_file_gb18030_metadata_unwrapping_and_modern_paratext():
-    doc = textsets.read_tab_file(FIX / "tab" / "001-测试方书.txt", "tcm-ancient-books")
+def test_tab_file_gb18030_metadata_unwrapping_and_modern_paratext(tmp_path):
+    # the collections name their files in Chinese; the fixture is stored under an ASCII name (archives and some
+    # file systems mangle non-ASCII names) and copied to its real name here
+    path = tmp_path / "001-测试方书.txt"
+    shutil.copyfile(FIX / "tab" / "001-ceshi-fangshu.txt", path)
+    doc = textsets.read_tab_file(path, "tcm-ancient-books")
     assert doc.title == "测试方书" and doc.authors == ["张三"] and doc.meta["年份"] == "公元1600年"
     assert doc.chartype == "simplified"
     text = doc.text()
