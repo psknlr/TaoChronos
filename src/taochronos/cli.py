@@ -754,7 +754,7 @@ def cmd_eval(args: argparse.Namespace) -> None:
 
 STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
          "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship", "cases",
-         "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate")
+         "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate", "commentaries", "disputes")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -845,6 +845,12 @@ def cmd_study(args: argparse.Namespace) -> None:
         if not (target or args.passage):
             raise SystemExit("taochronos study punctuate: give a text, --input <file> or --passage <id>")
         res = study.punctuate(target, args.passage)
+    elif what == "commentaries":
+        if not (target or args.passage):
+            raise SystemExit("taochronos study commentaries: give a clause or --passage <id>")
+        res = study.commentaries(target, args.passage)
+    elif what == "disputes":
+        res = study.disputes(target, person=args.person)
     elif what == "concordance":
         res = study.concordance(target, args.passage, min_coverage=args.min_coverage, limit=args.limit or 300)
     elif what == "formula":
@@ -999,7 +1005,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("study", help="治学: 经文互见·集注, 方源考, 药性源流, 术语源流, 避讳断代, 引书网络, 学习卡片, 阅读门径, 研究数据集, "
                                       "版本谱系 (variants/stemma/edition/tei), 语义复用 (reuse), 思想传播 (transmission), "
                                       "文本地层 (layers/dating/authorship), 医案轨迹 (cases/trajectories), 医理论证 (argument), "
-                                      "语义演变 (senses), 佚书辑佚 (fragments), 句读 (punctuate)")
+                                      "语义演变 (senses), 佚书辑佚 (fragments), 句读 (punctuate), 集注 (commentaries), 争议 (disputes)")
     sp.set_defaults(fn=cmd_study)
     sp.add_argument("what", choices=STUDY)
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
@@ -1007,6 +1013,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--provider", help=argparse.SUPPRESS)
     sp.add_argument("--passage", help="concordance/reuse/argument/punctuate: a passage id instead of a text")
     sp.add_argument("--input", help="punctuate: read the text from this file")
+    sp.add_argument("--person", help="disputes: the physician whose views are disputed (e.g. 丹溪)")
     sp.add_argument("--min-coverage", type=float, default=0.6, help="concordance: share of the text a witness must carry")
     sp.add_argument("--no-other-names", action="store_true", help="formula: skip the search for 同方异名")
     sp.add_argument("--min-chars", type=int, default=20000, help="taboo survey: smallest book to judge")

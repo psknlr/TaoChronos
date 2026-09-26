@@ -17,6 +17,8 @@ import re
 from collections import Counter
 from typing import Any
 
+import yaml
+
 from ..plugins.classics.collation import (
     WitnessText,
     align,
@@ -584,6 +586,163 @@ def punctuation(ctx: EvalContext) -> SuiteResult:
     return SuiteResult("punctuation", metrics, details, notes=notes)
 
 
+def commentaries(ctx: EvalContext) -> SuiteResult:
+    """CommentaryEval (集注对齐与注家比较): a constructed classic and its commentaries in four layouts (gold/commentaries)
+    — the commentaries found for each clause (precision, recall), the text taken as each commentary against the gold
+    (character F1), the explicit and wording relations between them, and the quotations kept apart; with the full
+    corpus, the commentaries on 太阳之为病 against the commentators known to be in the store and two relations known
+    from the literature (张卿子 reprints 成无己's notes; 喻昌 took over 方有执's wording)."""
+    from ..plugins.classics import Corpus
+    from ..plugins.classics.study import StudyService
+
+    h = ctx.default
+    root = ctx.home / "evals" / "gold" / "commentaries"
+    corpus = Corpus.load(root)
+    corpus.normalize = h.pack.variants.normalize_text
+    study = StudyService(h.pack, corpus)
+    gold = yaml.safe_load((root / "gold.yaml").read_text(encoding="utf-8"))["clauses"]
+    tp = fp = fn = rtp = rfp = rfn = qtp = qfn = 0
+    f1s: list[float] = []
+    details: list[dict[str, Any]] = []
+    for g in gold:
+        res = study.commentaries(g["clause"])
+        found = {u["book_id"]: u for u in res["commentaries"]}
+        want = g["commentaries"]
+        tp += len(set(found) & set(want))
+        fp += len(set(found) - set(want))
+        fn += len(set(want) - set(found))
+        for bid in set(found) & set(want):
+            got = han_only(h.pack.variants.normalize_text(found[bid]["text"]))[0]
+            f1s.append(_char_f1(got, h.pack.variants.normalize_text(want[bid]), g["clause"], h.pack.variants.normalize_text))
+        ids = {u["id"]: u["book_id"] for u in res["commentaries"]}
+        rels = {(ids[r["from"]], ids[r["to"]], r["type"]) for r in res["relations"] if r["type"] in ("驳", "从", "引", "照录", "承袭")}
+        want_rels = {(r["from"], r["to"], r["type"]) for r in g.get("relations") or []}
+        rtp += len(rels & want_rels)
+        rfp += len(rels - want_rels)
+        rfn += len(want_rels - rels)
+        quoted = {q["passage_id"] for q in res["quotations"]}
+        qtp += len(quoted & set(g.get("quotations") or []))
+        qfn += len(set(g.get("quotations") or []) - quoted)
+        details.append({"clause": g["clause"], "found": sorted(found), "missed": sorted(set(want) - set(found)),
+                        "extra": sorted(set(found) - set(want)), "relations": sorted(rels)})
+    metrics: dict[str, Any] = {"units": prf(tp, fp, fn), "text_f1": round(sum(f1s) / len(f1s), 4) if f1s else None,
+                               "relations": prf(rtp, rfp, rfn),
+                               "quotations_recall": round(qtp / (qtp + qfn), 4) if qtp + qfn else None}
+    notes = ["constructed corpus (gold/commentaries): four layouts — the row after the clause, rows of a layer of their "
+             "own, run on in the clause's paragraph, 白文 with notes after each clause; text_f1 = character F1 of the text "
+             "taken as a commentary (the lemma's own characters left out) against the gold commentary"]
+    big = None if ctx.quick else ctx.corpus_harness()
+    if big is not None:
+        st = big.capabilities.get("study")
+        res = st.commentaries("太阳之为病，脉浮，头项强痛而恶寒。")
+        known = ["成无己", "方有执", "张卿子", "喻昌", "汪琥", "张志聪", "张璐", "钱潢", "尤怡", "吴谦", "柯琴"]
+        got = {u["commentator"] for u in res["commentaries"]}
+        rels = {(r["from_commentator"], r["to_commentator"], r["type"]) for r in res["relations"]}
+        expected = [("张卿子", "成无己", "照录"), ("喻昌", "方有执", "承袭")]
+        metrics["real"] = {"commentaries": res["count"], "known_commentators_found": f"{sum(k in got for k in known)}/{len(known)}",
+                           "known_relations_found": f"{sum(e in rels for e in expected)}/{len(expected)}",
+                           "quotations": res["quotation_count"]}
+        notes.append("real: the commentaries on 伤寒论 太阳之为病 in the store; the known commentators are those whose "
+                     "commentaries on the clause the store holds; the relations are documented in the literature")
+    return SuiteResult("commentaries", metrics, details, notes=notes)
+
+
+def _char_f1(got: str, want: str, clause: str, normalize: Any) -> float:
+    """Character-overlap F1 of an extracted commentary against the gold (bag of characters; the clause left out)."""
+    rest = Counter(got)
+    for ch in han_only(normalize(clause))[0]:
+        if rest[ch]:
+            rest[ch] -= 1
+    gold = Counter(han_only(want)[0])
+    common = sum((rest & gold).values())
+    if not common:
+        return 0.0
+    prec, rec = common / sum(rest.values()), common / sum(gold.values())
+    return round(2 * prec * rec / (prec + rec), 4)
+
+
+def disputes(ctx: EvalContext) -> SuiteResult:
+    """DisputeEval (争议): the stance a sentence takes towards the physician it names, on constructed sentences with
+    the hard cases kept (gold/disputes.yaml: a verdict belonging to the quoted words, a hypothetical, a rejection of
+    others, a denial of the marker, a dispute without a reporting word); with the full corpus, whether three
+    controversies known from the literature are found (景岳 against 丹溪 on 相火, 越人's 左肾右命门 rejected, 张介宾
+    the one who rejects 丹溪 most)."""
+    from ..plugins.classics.study import StudyService
+
+    h = ctx.default
+    study = StudyService(h.pack, h.corpus)
+    people = study._commentary.people
+    gold = ctx.gold("disputes")["cases"]
+    pairs: list[tuple[str, str]] = []
+    details = []
+    for c in gold:
+        found = [x for x in people.cited(h.pack.variants.normalize_text(c["text"])) if x["person"] == c["person"]]
+        got = (found[0]["stance"] if found else None) or "none"
+        if c.get("by") and found and found[0].get("reported_by") != c["by"]:
+            got = f"{got}(by?)"
+        pairs.append((c["stance"], got))
+        if got != c["stance"]:
+            details.append({"text": c["text"], "expected": c["stance"], "got": got, "why": c.get("why", "")})
+
+    def pr(label: str) -> dict[str, float | None]:
+        t = sum(1 for g, p in pairs if g == label and p == label)
+        return prf(t, sum(1 for g, p in pairs if p == label and g != label), sum(1 for g, p in pairs if g == label and p != label))
+
+    metrics: dict[str, Any] = {"accuracy": accuracy(pairs), "reject": pr("reject"), "endorse": pr("endorse"), "cases": len(pairs)}
+    notes = ["constructed sentences (gold/disputes.yaml) with known hard cases; the misses listed in the details are "
+             "the limits of a marker-and-name reading"]
+    big = None if ctx.quick else ctx.corpus_harness()
+    if big is not None:
+        st = big.capabilities.get("study")
+        fire = st.disputes("相火")
+        ming = st.disputes("命门")
+        dan = st.disputes(person="丹溪")
+        checks = {
+            "景岳驳丹溪（相火）": any(d["by"] == "张介宾" and d["target"] == "朱震亨" for d in fire["disputes"]),
+            "驳越人左肾右命门": any(d["target"] == "扁鹊" for d in ming["disputes"]),
+            "驳丹溪最多者为张介宾": bool(dan["who_rejects_whom"]) and dan["who_rejects_whom"][0]["by"] == "张介宾",
+        }
+        metrics["real"] = {"known_controversies_found": f"{sum(checks.values())}/{len(checks)}",
+                           "丹溪_rejections": dan["counts"].get("reject", 0), "丹溪_endorsements": dan["counts"].get("endorse", 0)}
+        details.append({"real_checks": checks})
+        notes.append("real: controversies documented in the history of medicine, looked for in the store")
+    return SuiteResult("disputes", metrics, details, notes=notes)
+
+
+def variant_impact(ctx: EvalContext) -> SuiteResult:
+    """ImpactEval (异文分级): the class of a variant reading — dose, negation, prescription, clinical, structural,
+    lexical, order, lacuna, function, orthographic — on constructed pairs with their contexts (gold/variant_impact.yaml),
+    including the traps of a numeral inside a word (半表半里, 合病, 十枣汤); with the full corpus, the classes of the
+    variants of 伤寒论's 太阳篇 between two transcriptions, and whether the review queue puts doses first."""
+    from ..plugins.classics.collation.impact import classify
+
+    h = ctx.default
+    cases = ctx.gold("variant_impact")["cases"]
+    pairs = []
+    details = []
+    for c in cases:
+        got = classify(c["lemma"], c["reading"], c["context"], h.pack.lexicon, normalize=h.pack.variants.normalize_text)["impact"]
+        pairs.append((c["expect"], got))
+        if got != c["expect"]:
+            details.append({"lemma": c["lemma"], "reading": c["reading"], "context": c["context"], "expected": c["expect"], "got": got})
+    high = {"dose", "negation", "prescription", "clinical"}
+    hp = [(g in high, p in high) for g, p in pairs]
+    tp = sum(1 for g, p in hp if g and p)
+    metrics: dict[str, Any] = {"accuracy": accuracy(pairs), "macro_f1": macro_f1(pairs), "cases": len(pairs),
+                               "high_impact": prf(tp, sum(1 for g, p in hp if p and not g), sum(1 for g, p in hp if g and not p))}
+    notes = ["constructed pairs (gold/variant_impact.yaml); high_impact = dose, negation, prescription or clinical — "
+             "the variants a physician should see first"]
+    big = None if ctx.quick else ctx.corpus_harness()
+    if big is not None:
+        st = big.capabilities.get("study")
+        res = st.variants(books=["jc_b000", "cm_shanghan_npm"], chapter="辨太阳病", max_chars=12000)
+        queue = res.get("review_queue") or []
+        metrics["real"] = {"units": res["summary"]["units"], "by_impact": res.get("by_impact"),
+                           "queue_top10_high": sum(1 for q in queue[:10] if q["impact"] in high)}
+        notes.append("real: 伤寒论 太阳篇, the 笈成 宋本 against CMETA's 台北故宫 宋本 (12 000 characters)")
+    return SuiteResult("variant_impact", metrics, details, notes=notes)
+
+
 def _trigrams(s: str) -> set[str]:
     return {s[i: i + 3] for i in range(len(s) - 2)}
 
@@ -595,4 +754,5 @@ def _volume_number(label: str | None) -> int | None:
     return cn_number(m.group(0)) if m else None
 
 
-__all__ = ["argument", "cases", "collation", "fragments", "punctuation", "reuse", "senses", "stratigraphy"]
+__all__ = ["argument", "cases", "collation", "commentaries", "disputes", "fragments", "punctuation", "reuse", "senses",
+           "stratigraphy", "variant_impact"]

@@ -1,0 +1,13 @@
+- book: shl
+  passages:
+    - {id: shl.001, locator: {chapter: 辨太阳病脉证并治}, text: 太阳之为病，脉浮，头项强痛而恶寒。}
+    - {id: shl.002, locator: {chapter: 辨太阳病脉证并治}, text: 太阳病，发热，汗出，恶风，脉缓者，名为中风。}
+    - {id: shl.003, locator: {chapter: 辨太阳病脉证并治}, text: 太阳病，或已发热，或未发热，必恶寒，体痛，呕逆，脉阴阳俱紧者，名为伤寒。}
+    - {id: shl.004, locator: {chapter: 辨太阳病脉证并治}, text: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之。}
+    - {id: shl.005, locator: {chapter: 辨太阳病脉证并治}, text: 太阳病，项背强几几，反汗出恶风者，桂枝加葛根汤主之。}
+- book: shl_b
+  passages:
+    - {id: shl_b.001, locator: {chapter: 太阳篇}, text: 太阳之为病，脉浮，头项强痛而恶寒。}
+    - {id: shl_b.002, locator: {chapter: 太阳篇}, text: 太阳病，发热，汗出，恶风，脉缓者，名为中风。}
+    - {id: shl_b.003, locator: {chapter: 太阳篇}, text: 太阳病，或已发热，或未发热，必恶寒，体痛，呕逆，脉阴阳俱紧者，名为伤寒。}
+    - {id: shl_b.004, locator: {chapter: 太阳篇}, text: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之。}

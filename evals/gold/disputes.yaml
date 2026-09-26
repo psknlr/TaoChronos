@@ -1,0 +1,27 @@
+# DisputeEval — the stance a sentence takes towards the physician it names (CC0, author-constructed from the forms of
+# the literature; not quotations).  reject / endorse / none; `by` when the sentence reports someone else's rejection.
+# The hard cases are kept on purpose: a verdict that belongs to the quoted words, a hypothetical, a rejection of
+# others, a denial of the marker, a dispute conducted without a reporting word.
+cases:
+  - {text: 丹溪谓阳常有余，阴常不足，此说非也。, person: zhu_zhenheng, stance: reject}
+  - {text: 丹溪曰：气无补法，世俗之误也。, person: zhu_zhenheng, stance: none, why: the verdict is 丹溪's own}
+  - {text: 丹溪曰：「诸痛不可补气。」此言未当也。, person: zhu_zhenheng, stance: reject}
+  - {text: 东垣谓脾胃虚则九窍不通，诚是。, person: li_gao, stance: endorse}
+  - {text: 景岳之说，鲜不误矣。, person: zhang_jiebin, stance: reject}
+  - {text: 丹溪所谓阴字有虚之义，若作阴冷看，其误甚矣。, person: zhu_zhenheng, stance: none, why: a hypothetical misreading}
+  - {text: 喻嘉言谓内经独无伤于燥之条，殊不知六气各有所伤。, person: yu_chang, stance: reject}
+  - {text: 越人谓左为肾，右为命门，非也。, person: bianque, stance: reject}
+  - {text: 丹溪论阳有余阴不足，景岳驳之。, person: zhu_zhenheng, stance: reject, by: zhang_jiebin}
+  - {text: 东垣云：「内伤脾胃，百病由生。」由是观之，近世之医皆以攻伐为事，是未达也。, person: li_gao, stance: none, why: the rejection is of 近世之医}
+  - {text: 丹溪谓属金而有水与火，良不谬也。, person: zhu_zhenheng, stance: none, why: 不谬 denies the marker}
+  - {text: 河间之论甚妙，但未详其治法耳。, person: liu_wansu, stance: endorse}
+  - {text: 成氏注云：风则伤卫，寒则伤营。, person: cheng_wuji, stance: none}
+  - {text: 王冰之注，于理未当。, person: wang_bing, stance: reject}
+  - {text: 东垣之法，最得经旨。, person: li_gao, stance: endorse}
+  - {text: 丹溪曰：吃病气自下冲上，属火之象，古方悉以胃弱言之，殊不知胃弱者阴弱也。, person: zhu_zhenheng, stance: none, why: 丹溪 rejecting 古方}
+  - {text: 景岳谓阳非有余，此论甚精。, person: zhang_jiebin, stance: endorse}
+  - {text: 叔和编次，错乱经文，不可从也。, person: wang_shuhe, stance: reject, why: no reporting word — a known miss}
+  - {text: 丹溪谓数千年得经意者，河间一人耳。, person: zhu_zhenheng, stance: none, why: 丹溪 praising 河间 — a known false approval}
+  - {text: 仲景曰：病发热头痛，脉反沉，若不瘥，身体疼痛，当救其里。, person: zhang_ji, stance: none}
+  - {text: 方中行之说为是，喻氏袭之而不言所出，非也。, person: yu_chang, stance: reject}
+  - {text: 时珍曰：此药性温，陶氏谓其寒，误矣。, person: li_shizhen, stance: none, why: 时珍 rejecting 陶氏}

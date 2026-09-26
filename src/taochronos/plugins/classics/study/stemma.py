@@ -37,6 +37,7 @@ from ..collation import (
     project,
     root,
 )
+from ..collation.impact import SCORES, review_queue, unit_impact
 from .base import StudyBase, dated
 
 SIGLA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -235,6 +236,10 @@ class StemmaStudy:
         structural = {s: p.structural for s, p in c["projections"].items()}
         singular = Counter(r.witnesses[0] for u in textual if counts(u) and _present(u) >= 3 for r in u.readings
                            if len(r.witnesses) == 1)
+        unit_dicts = [u.to_dict() for u in units]
+        for d in unit_dicts:  # 异文分级: what each variant would change for a reader who acts on it
+            d["impact"] = {k: v for k, v in unit_impact(d, self.b.pack.lexicon, self.b.normalize).items() if k != "readings"}
+        by_impact = Counter(d["impact"]["impact"] for d in unit_dicts if not d.get("structural"))
         return {
             "work": witnesses[0].title, "base": c["base_siglum"], "base_characters": n,
             "witnesses": [w.to_dict() | {"lacuna_chars": lacunae.get(w.id, 0), "structural_chars": structural.get(w.id, 0),
@@ -245,7 +250,9 @@ class StemmaStudy:
                         "per_1000": round(1000 * sum(1 for u in textual if counts(u)) / n, 2) if n else None},
             "frequent_substitutions": [{"characters": "/".join(pair), "units": k, "contexts": where[pair]}
                                        for pair, k in subs.most_common(20) if k >= 3],
-            "units": [u.to_dict() for u in units],
+            "by_impact": {k: by_impact[k] for k in SCORES if by_impact.get(k)},
+            "review_queue": review_queue(unit_dicts),
+            "units": unit_dicts,
         }
 
     def stemma(self, work: str | None = None, *, root_at: str | None = None, **kw: Any) -> dict[str, Any]:

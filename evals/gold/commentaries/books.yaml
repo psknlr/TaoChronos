@@ -1,0 +1,23 @@
+# CommentaryEval corpus — a classic and its commentaries, constructed for the test (CC0).  Four clauses of a 伤寒论
+# are commented on in four layouts found in the literature: 成无己-like, the commentary as the row after the clause;
+# 方有执-like, the commentary in rows of its own layer (Kanripo style); 喻昌-like, run on in the clause's paragraph
+# (taking over a predecessor's wording once, rejecting a named predecessor once); 柯琴-like, 白文 with bracketed notes
+# after each clause, several clauses to a paragraph (approving a named predecessor once).  A compilation quotes a
+# clause inside its own text (a quotation, not a commentary) and a second witness of the classic has no commentary.
+# 注解伤寒论, like its transcriptions in the store, keeps clauses and commentary in one unseparated layer.
+# The texts imitate the genre; they are not the commentators' words and must never be cited as theirs.
+defaults:
+  source: &src
+    origin: TaoChronos test fixture (synthetic)
+    license: CC0-1.0
+    acquisition: written for CommentaryEval
+    transcription: synthetic
+    verified: false
+books:
+  - {id: shl, title: 伤寒论, authors: [张机], dynasty: 东汉, composition: [200, 219], category: 伤寒, work: shanghanlun, source: *src}
+  - {id: shl_b, title: 伤寒论（别本）, authors: [张机], dynasty: 东汉, composition: [200, 219], category: 伤寒, work: shanghanlun, source: *src}
+  - {id: chengzhu, title: 注解伤寒论, authors: [成无己], dynasty: 金, composition: [1144, 1144], category: 伤寒, work: shanghanlun, source: *src}
+  - {id: fangzhu, title: 伤寒论条辨, authors: [方有执], dynasty: 明, composition: [1592, 1592], category: 伤寒, work: tiaobian, source: *src}
+  - {id: yuzhu, title: 尚论篇, authors: [喻昌], dynasty: 清, composition: [1648, 1648], category: 伤寒, work: shanglun, source: *src}
+  - {id: kezhu, title: 伤寒论注, authors: [柯琴], dynasty: 清, composition: [1669, 1669], category: 伤寒, work: lunzhu, source: *src}
+  - {id: huizuan, title: 医学汇纂, authors: [佚名], dynasty: 清, composition: [1700, 1700], category: 综合, source: *src}

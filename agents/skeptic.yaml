@@ -8,7 +8,7 @@ mode: hybrid
 procedure: taochronos.agents.procedures.skeptic
 skills: [falsification, philology-collation, historical-semantics]
 tools: [classics.search, classics.get_passage, classics.lineage, kg.claims, philology.assess_passage, validation.verify_quote, analysis.temporal_profile,
-        study.reuse, study.dating, study.argument]
+        study.reuse, study.dating, study.argument, study.disputes]
 context_view: skeptic
 permissions: [classics:read, kg:read, analysis:run, codemode:exec]
 output_schema: ReviewSet

@@ -2,7 +2,7 @@
 
 Suites: philology · claims · provenance · hallucination · contradiction · lineage · temporal ·
 anachronism · recovery · time_machine · source_rediscovery · ablations · collation · reuse · stratigraphy · cases · argument · senses · fragments ·
-punctuation.  Gold sets live in
+punctuation · commentaries · disputes · variant_impact.  Gold sets live in
 ``evals/gold`` (author-constructed for the demo corpus; see its README).
 """
 
@@ -16,7 +16,8 @@ from .ablations import ablations
 from .base import EvalContext, SuiteResult
 from .rediscovery import source_rediscovery, time_machine
 from .suites import anachronism, claims, contradiction, hallucination, lineage, philology, provenance, recovery, temporal
-from .textual import argument, cases, collation, fragments, punctuation, reuse, senses, stratigraphy
+from .textual import (argument, cases, collation, commentaries, disputes, fragments, punctuation, reuse, senses, stratigraphy,
+                      variant_impact)
 
 SUITES: dict[str, Callable[[EvalContext], SuiteResult]] = {
     "philology": philology,
@@ -39,9 +40,13 @@ SUITES: dict[str, Callable[[EvalContext], SuiteResult]] = {
     "senses": senses,
     "fragments": fragments,
     "punctuation": punctuation,
+    "commentaries": commentaries,
+    "disputes": disputes,
+    "variant_impact": variant_impact,
 }
 QUICK = ("philology", "claims", "hallucination", "contradiction", "lineage", "temporal", "anachronism", "source_rediscovery",
-         "collation", "reuse", "stratigraphy", "cases", "argument", "senses", "fragments", "punctuation")
+         "collation", "reuse", "stratigraphy", "cases", "argument", "senses", "fragments", "punctuation", "commentaries",
+         "disputes", "variant_impact")
 
 
 def run_suites(names: list[str] | None = None, *, home: Any = None, data_dir: Any = None, quick: bool = False) -> dict[str, Any]:

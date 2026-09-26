@@ -445,18 +445,19 @@ books:
   aliases:
   - 素問識
   authors:
-  - 丹波元珍
+  - 丹波元简
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: undated
+  - 1806
+  - 1806
+  dating: curated
   category: 医经
   jicheng_category: 內經、難經
   work: jc:素问识
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“丹波元珍”，据自序署“文化三年丙寅……丹波元简廉夫”改
 - code: A100
   id: jc_a100
   file: A/A100.txt
@@ -531,18 +532,19 @@ books:
   aliases:
   - 靈樞識
   authors:
-  - 丹波元珍
+  - 丹波元简
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: undated
+  - 1781
+  - 1826
+  dating: author:丹波元简
   category: 医经
   jicheng_category: 內經、難經
   work: jc:灵枢识
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“丹波元珍”，与《素问识》同出丹波元简（待核）
 - code: A200
   id: jc_a200
   file: A/A200.txt
@@ -1561,15 +1563,16 @@ books:
   - 柯琴
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: western
+  - 1669
+  - 1669
+  dating: curated
   category: 伤寒
   jicheng_category: 傷寒
   work: jc:伤寒论注
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 柯琴自序“题时己酉初夏”，通行作康熙八年（1669）
 - code: B017
   id: jc_b017
   file: B/B017.txt
@@ -1780,7 +1783,7 @@ books:
   aliases:
   - 傷寒大白
   authors:
-  - 高世栻
+  - 秦之桢
   dynasty: 清
   composition:
   - 1714
@@ -1793,6 +1796,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“高世栻”，据陈懋宽序（“云间秦子皇士之书”“著书之秦子……见架头有《伤寒大白》”）改为秦之桢
 - code: B024
   id: jc_b024
   file: B/B024.txt
@@ -1873,7 +1877,8 @@ books:
   title: 伤寒论辩证广注
   aliases:
   - 傷寒論辯證廣注
-  authors: []
+  authors:
+  - 汪琥
   dynasty: 清
   composition:
   - 1680
@@ -1886,6 +1891,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 据自序（“长洲汪琥苓友自序”）补作者
 - code: B027
   id: jc_b027
   file: B/B027.txt
@@ -1893,18 +1899,19 @@ books:
   aliases:
   - 傷寒論輯義
   authors:
-  - 丹波元珍
+  - 丹波元简
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: undated
+  - 1801
+  - 1801
+  dating: curated
   category: 伤寒
   jicheng_category: 傷寒
   work: jc:伤寒论辑义
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“丹波元珍”，据序署“享和纪元……丹波元简廉夫”改
 - code: B028
   id: jc_b028
   file: B/B028.txt
@@ -2012,15 +2019,16 @@ books:
   - 柯琴
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: western
+  - 1674
+  - 1674
+  dating: curated
   category: 伤寒
   jicheng_category: 傷寒
   work: jc:伤寒论翼
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 柯琴序“甲寅春”，通行作康熙十三年（1674）
 - code: B034
   id: jc_b034
   file: B/B034.txt
@@ -2031,15 +2039,16 @@ books:
   - 柯琴
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: western
+  - 1674
+  - 1674
+  dating: curated
   category: 伤寒
   jicheng_category: 傷寒
   work: jc:伤寒附翼
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 与《伤寒论翼》同时（待核）
 - code: B035
   id: jc_b035
   file: B/B035.txt
@@ -2067,18 +2076,19 @@ books:
   aliases:
   - 中寒論辯證廣注
   authors:
-  - 丹波元胤
+  - 汪琥
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: undated
+  - 1684
+  - 1686
+  dating: curated
   category: 伤寒
   jicheng_category: 傷寒
   work: jc:中寒论辩证广注
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“丹波元胤”，据凡例（“仆注此书始于康熙甲子……终于丙寅”“（琥）按”）改为汪琥
 - code: B037
   id: jc_b037
   file: B/B037.txt
@@ -2169,15 +2179,16 @@ books:
   - 柯琴
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: dynasty
+  - 1669
+  - 1674
+  dating: curated
   category: 伤寒
   jicheng_category: 傷寒
   work: jc:伤寒来苏集
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 柯琴《伤寒论注》（1669）、《伤寒论翼》（1674）、《伤寒附翼》合编
 - code: B042
   id: jc_b042
   file: B/B042.txt
@@ -2408,18 +2419,20 @@ books:
   title: 金匮玉函要略述义
   aliases:
   - 金匱玉函要略述義
-  authors: []
+  authors:
+  - 丹波元坚
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: undated
+  - 1842
+  - 1842
+  dating: curated
   category: 杂病
   jicheng_category: 金匱
   work: jc:金匮玉函要略述义
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 日本丹波元坚撰，天保十三年（1842）（待核）
 - code: B106
   id: jc_b106
   file: B/B106.txt
@@ -2505,18 +2518,20 @@ books:
   title: 曹氏伤寒金匮发微合刊
   aliases:
   - 曹氏傷寒金匱發微合刊
-  authors: []
-  dynasty: 清
+  authors:
+  - 曹家达
+  dynasty: 民国
   composition:
-  - 1644
-  - 1911
-  dating: undated
-  category: 杂病
+  - 1931
+  - 1936
+  dating: curated
+  category: 近代
   jicheng_category: 金匱
   work: jc:曹氏伤寒金匮发微合刊
   attribution: traditional
-  modern: false
+  modern: true
   status: ingest
+  notes_text: 曹颖甫（家达）《伤寒发微》（1931）与《金匮发微》（1936）合刊；笈成原列清代（待核）
 - code: C000
   id: jc_c000
   file: C/C000.txt
@@ -15581,7 +15596,8 @@ books:
   title: 圆运动的古中医学
   aliases:
   - 圓運動的古中醫學
-  authors: []
+  authors:
+  - 彭子益
   dynasty: 民国
   composition:
   - 1939

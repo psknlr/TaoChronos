@@ -511,6 +511,18 @@ def _study_punctuate(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(res, int(a.get("items", 12)), chars=int(a.get("chars", 1200)))
 
 
+def _study_commentaries(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).commentaries(a.get("text"), a.get("passage_id"))
+    for u in res.get("commentaries", []):
+        for key in ("concepts", "lemma", "text"):
+            u.pop(key, None)
+    return _brief(res, int(a.get("items", 15)))
+
+
+def _study_disputes(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).disputes(a.get("term"), person=a.get("person")), int(a.get("items", 15)))
+
+
 def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
     reg = ToolRegistry()
     specs = [
@@ -672,6 +684,19 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "held-out scores (whole works kept out of training) come with every result.",
                  obj({"text": S, "passage_id": S, "items": I, "chars": I}), _study_punctuate, family="study",
                  permission="classics:read", expensive=True, returns="punctuated text, preservation, review gaps, scores"),
+        ToolSpec("study.commentaries", "集注对齐与注家比较: the commentaries on a clause (text or passage) across the commentary "
+                 "literature — each aligned to the clause (rows after it, run-on text, bracketed notes, anchored rows), "
+                 "attributed, dated; compared pairwise: explicit (驳 rejects / 从 endorses / 引 cites a named predecessor), "
+                 "wording (照录, 承袭, 自录), content (增益, 同解, 异解 from the concepts each adds); consensus, singular "
+                 "readings and who first brought each concept.",
+                 obj({"text": S, "passage_id": S, "items": I}), _study_commentaries, family="study",
+                 permission="classics:read", expensive=True, returns="commentaries, relations, consensus, first readings"),
+        ToolSpec("study.disputes", "争议挖掘: named views rejected or endorsed in the literature (a physician named with a "
+                 "reporting word, then a rejection word such as 非也, 谬矣, 殊不知, 此说非 in that or the next sentence) — "
+                 "about a term (相火), of a person (丹溪), or, with neither, who rejects whom across the corpus. Use it to "
+                 "find counter-evidence and the history of a controversy.",
+                 obj({"term": S, "person": S, "items": I}), _study_disputes, family="study", permission="classics:read",
+                 expensive=True, returns="disputes with sentences, who rejects whom, endorsements"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

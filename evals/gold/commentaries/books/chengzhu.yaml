@@ -1,0 +1,12 @@
+- book: chengzhu
+  defaults: {kind: text}
+  passages:
+    - {id: chengzhu.001, locator: {volume: 卷二}, tags: ["layer:成无己注解本（原文与注未标注区分）"], text: 太阳之为病，脉浮，头项强痛而恶寒。}
+    - {id: chengzhu.002, locator: {volume: 卷二}, tags: ["layer:成无己注解本（原文与注未标注区分）"], text: 经曰：尺寸俱浮者，太阳受病。太阳主表，为诸阳主气。脉浮，头项强痛而恶寒者，太阳表病也。}
+    - {id: chengzhu.003, locator: {volume: 卷二}, tags: ["layer:成无己注解本（原文与注未标注区分）"], text: 太阳病，发热，汗出，恶风，脉缓者，名为中风。}
+    - {id: chengzhu.004, locator: {volume: 卷二}, tags: ["layer:成无己注解本（原文与注未标注区分）"], text: 风，阳也；寒，阴也。风则伤卫，发热汗出恶风者，卫中风也，卫气不固，故汗出而脉缓。}
+    - {id: chengzhu.005, locator: {volume: 卷二}, tags: ["layer:成无己注解本（原文与注未标注区分）"], text: 太阳病，或已发热，或未发热，必恶寒，体痛，呕逆，脉阴阳俱紧者，名为伤寒。}
+    - {id: chengzhu.006, locator: {volume: 卷二}, tags: ["layer:成无己注解本（原文与注未标注区分）"], text: 寒则伤营，营伤则无汗而体痛，寒邪在表，故脉阴阳俱紧。}
+    - {id: chengzhu.007, locator: {volume: 卷二}, tags: ["layer:成无己注解本（原文与注未标注区分）"], text: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之。}
+    - {id: chengzhu.008, locator: {volume: 卷二}, tags: ["layer:成无己注解本（原文与注未标注区分）"], text: 头痛发热汗出恶风，中风之证具，与桂枝汤解肌，以散风邪。}
+    - {id: chengzhu.009, locator: {volume: 卷二}, tags: ["layer:成无己注解本（原文与注未标注区分）"], text: 太阳病，项背强几几，反汗出恶风者，桂枝加葛根汤主之。}

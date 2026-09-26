@@ -19,6 +19,8 @@ senses             语义演变: a term's senses by period, the date its meaning
 fragments          佚书辑佚: a lost work's fragments gathered from the books that quote it, merged and ordered by volume
 punctuate          句读: marks for 白文 from a model learned on the store's punctuated texts (characters never change),
                    measured against the editors on held-out works
+commentaries       集注: a clause's commentaries aligned, attributed, dated and compared (驳 从 引, 照录 承袭, 同解 增益 异解)
+disputes           争议: named views rejected or endorsed — about a term, of a physician, or who rejects whom corpus-wide
 formula            方源考: every written-out composition of a formula; original and current versions, 加减,
                    同名异方, 同方异名, dose ratios, doses in the measures of their time, 方歌
 herb               药性源流: 性味, 毒性, 归经, 升降浮沉, 主治 of a drug, book by book; the first statement of each
@@ -40,8 +42,10 @@ from ..domain import DomainPack
 from .argument import ArgumentStudy
 from .base import StudyBase
 from .cases import CaseStudy
+from .commentary import CommentaryStudy
 from .concordance import Concordance
 from .dataset import tables as dataset_tables
+from .disputes import DisputeStudy
 from .formulas import FormulaStudy
 from .fragments import FragmentStudy
 from .herbs import HerbStudy
@@ -78,6 +82,8 @@ class StudyService(StudyBase):
         self._fragments = FragmentStudy(self)
         self._witnesses = WitnessStudy(self, self._stemma)
         self._punct = PunctuationStudy(self)
+        self._commentary = CommentaryStudy(self, self._concordance)
+        self._disputes = DisputeStudy(self, self._commentary, self._network)
 
     @property
     def metrology(self) -> Any:
@@ -214,6 +220,17 @@ class StudyService(StudyBase):
         """句读: a text (or a passage) punctuated by the model learned from the store's punctuated texts — marks
         only, every character kept; a punctuated input is stripped, punctuated again and compared with its editors."""
         return self._punct.run(text, passage_id, **kw)
+
+    def commentaries(self, text: str | None = None, passage_id: str | None = None, **kw: Any) -> dict[str, Any]:
+        """集注: the commentaries on a clause across the commentary literature — aligned to the clause, attributed,
+        dated and compared (explicit rejection and approval of named predecessors, shared wording, the concepts each
+        reading adds, consensus and singular readings)."""
+        return self._commentary.run(text, passage_id, **kw)
+
+    def disputes(self, term: str | None = None, *, person: str | None = None, **kw: Any) -> dict[str, Any]:
+        """争议: named views rejected (or endorsed) in the literature — about a term, of a person, or, with neither,
+        who rejects whom across the corpus."""
+        return self._disputes.run(term, person=person, **kw)
 
     def _edition_floors(self, out: dict[str, Any]) -> None:
         """Each witness's lower date bound from its taboo characters (a witness in volumes: the latest)."""

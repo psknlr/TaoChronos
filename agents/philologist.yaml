@@ -8,7 +8,7 @@ mode: hybrid
 procedure: taochronos.agents.procedures.philologist
 skills: [philology-collation]
 tools: ["philology.*", classics.get_passage, validation.verify_quote, study.variants, study.stemma, study.layers,
-        study.dating, study.authorship, study.witnesses, study.punctuate]
+        study.dating, study.authorship, study.witnesses, study.punctuate, study.commentaries]
 context_view: philology
 permissions: [classics:read]
 output_schema: PhilologyReport

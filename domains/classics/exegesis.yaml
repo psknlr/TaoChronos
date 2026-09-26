@@ -1,0 +1,155 @@
+# 解经之学 — the vocabulary commentators explain the classics with, the words that mark their stance towards another
+# commentator, and the forms of a gloss.  Used by `study commentaries` (集注对齐与注家比较), `study disputes` (争议)
+# and `study glosses` (训诂).  Curated from the commentary literature for comparison, not expert-reviewed: extend and
+# correct it here.  All forms are matched on the normalised text (simplified characters; 荣 and 营 both kept).
+#
+# concepts: `id` is what the comparison counts; `forms` are the written forms that mark it (single characters are
+# avoided — 表 alone is in 表里, 表证, 发表 …); `group` sorts the page.
+
+concepts:
+  # 六经
+  - {id: 太阳, group: 六经, forms: [太阳, 巨阳, 太阳经, 足太阳]}
+  - {id: 阳明, group: 六经, forms: [阳明, 阳明经, 足阳明]}
+  - {id: 少阳, group: 六经, forms: [少阳, 少阳经, 足少阳]}
+  - {id: 太阴, group: 六经, forms: [太阴, 太阴经, 足太阴]}
+  - {id: 少阴, group: 六经, forms: [少阴, 少阴经, 足少阴]}
+  - {id: 厥阴, group: 六经, forms: [厥阴, 厥阴经, 足厥阴]}
+  - {id: 六经, group: 六经, forms: [六经, 三阳, 三阴, 三阳经, 三阴经]}
+  # 脏腑经络
+  - {id: 膀胱, group: 脏腑经络, forms: [膀胱, 膀胱经, 太阳膀胱]}
+  - {id: 小肠, group: 脏腑经络, forms: [小肠]}
+  - {id: 胃腑, group: 脏腑经络, forms: [胃腑, 胃家, 胃中, 胃经, 阳明胃]}
+  - {id: 大肠, group: 脏腑经络, forms: [大肠]}
+  - {id: 胆腑, group: 脏腑经络, forms: [胆经, 胆腑, 少阳胆]}
+  - {id: 三焦, group: 脏腑经络, forms: [三焦, 上焦, 中焦, 下焦]}
+  - {id: 心主, group: 脏腑经络, forms: [心主, 心包, 包络]}
+  - {id: 五脏, group: 脏腑经络, forms: [五脏, 脏腑, 六腑]}
+  - {id: 肾, group: 脏腑经络, forms: [肾经, 肾脏, 肾气, 肾水, 肾阳, 肾阴]}
+  - {id: 脾, group: 脏腑经络, forms: [脾经, 脾脏, 脾气, 脾土, 脾阳, 脾胃]}
+  - {id: 肺, group: 脏腑经络, forms: [肺经, 肺脏, 肺气, 肺金]}
+  - {id: 肝, group: 脏腑经络, forms: [肝经, 肝脏, 肝气, 肝木, 肝胆]}
+  - {id: 心, group: 脏腑经络, forms: [心经, 心脏, 心火, 心阳, 心气]}
+  - {id: 命门, group: 脏腑经络, forms: [命门]}
+  - {id: 经络, group: 脏腑经络, forms: [经络, 经脉, 经气, 络脉, 经隧, 经俞]}
+  - {id: 头项, group: 脏腑经络, forms: [风府, 巅顶, 脑后]}
+  # 表里
+  - {id: 表, group: 表里, forms: [在表, 主表, 表证, 表邪, 表病, 表虚, 表实, 解表, 发表, 攻表, 肌表, 表气, 表阳, 皮毛, 皮肤, 肌腠, 腠理, 皮肤之表]}
+  - {id: 里, group: 表里, forms: [在里, 入里, 里证, 里实, 里虚, 里热, 里寒, 传里, 攻里, 里气]}
+  - {id: 半表半里, group: 表里, forms: [半表半里, 表里之间, 表里之分界]}
+  - {id: 肌肉, group: 表里, forms: [肌肉, 解肌, 肌肤]}
+  # 营卫气血
+  - {id: 营, group: 营卫气血, forms: [营气, 荣气, 营血, 荣血, 营分, 伤营, 伤荣, 营弱, 荣弱, 营中, 荣中]}
+  - {id: 卫, group: 营卫气血, forms: [卫气, 卫分, 卫强, 卫实, 伤卫, 卫阳, 卫中, 卫外]}
+  - {id: 营卫, group: 营卫气血, forms: [营卫, 荣卫]}
+  - {id: 阳气, group: 营卫气血, forms: [阳气, 真阳, 元阳, 虚阳, 孤阳, 阳虚, 阳衰, 阳微, 阳盛, 阳亢]}
+  - {id: 阴气, group: 营卫气血, forms: [阴气, 真阴, 元阴, 阴虚, 阴衰, 阴盛, 阴液]}
+  - {id: 亡阳, group: 营卫气血, forms: [亡阳, 阳脱]}
+  - {id: 亡阴, group: 营卫气血, forms: [亡阴, 阴竭]}
+  - {id: 胃气, group: 营卫气血, forms: [胃气, 谷气, 中气]}
+  - {id: 正气, group: 营卫气血, forms: [正气, 元气, 真气]}
+  - {id: 邪气, group: 营卫气血, forms: [邪气, 外邪, 客邪]}
+  - {id: 津液, group: 营卫气血, forms: [津液, 亡津液, 津伤, 汗液]}
+  - {id: 气血, group: 营卫气血, forms: [气血, 血分, 气分, 血脉]}
+  # 六气与病因
+  - {id: 风邪, group: 六气, forms: [风邪, 伤风, 风伤, 感风, 风寒, 风热, 风湿, 风气]}
+  - {id: 寒邪, group: 六气, forms: [寒邪, 伤寒, 寒伤, 感寒, 寒气, 阴寒, 寒水]}
+  - {id: 暑邪, group: 六气, forms: [暑邪, 伤暑, 暑热, 暑湿, 中暑]}
+  - {id: 湿邪, group: 六气, forms: [湿邪, 伤湿, 湿热, 寒湿, 湿气, 水湿]}
+  - {id: 燥邪, group: 六气, forms: [燥邪, 燥热, 燥气, 燥屎]}
+  - {id: 火热, group: 六气, forms: [火邪, 热邪, 邪热, 郁热, 实热, 虚热, 火热, 蕴热, 伏热]}
+  - {id: 相火, group: 六气, forms: [相火, 龙雷之火, 龙火, 雷火]}
+  - {id: 君火, group: 六气, forms: [君火]}
+  - {id: 六气, group: 六气, forms: [六气, 六淫, 风寒暑湿燥火]}
+  # 传变
+  - {id: 传经, group: 传变, forms: [传经, 传变, 循经, 再经, 过经, 越经, 传入]}
+  - {id: 直中, group: 传变, forms: [直中]}
+  - {id: 合病, group: 传变, forms: [合病]}
+  - {id: 并病, group: 传变, forms: [并病]}
+  - {id: 两感, group: 传变, forms: [两感]}
+  - {id: 坏病, group: 传变, forms: [坏病, 误治, 误汗, 误下, 误吐]}
+  - {id: 经证腑证, group: 传变, forms: [经证, 腑证, 入腑, 在经, 在腑, 经病, 腑病]}
+  - {id: 蓄水蓄血, group: 传变, forms: [蓄水, 蓄血]}
+  - {id: 结胸, group: 传变, forms: [结胸]}
+  - {id: 痞证, group: 传变, forms: [痞证, 心下痞, 痞满]}
+  - {id: 欲解时, group: 传变, forms: [欲解时, 自愈, 欲愈]}
+  # 学说
+  - {id: 风伤卫寒伤营, group: 学说, forms: [风伤卫, 寒伤营, 寒伤荣, 风寒两伤, 营卫俱伤, 荣卫俱伤, 三纲]}
+  - {id: 开阖枢, group: 学说, forms: [开阖枢, 太阳为开, 阳明为阖, 少阳为枢, 太阴为开, 厥阴为阖, 少阴为枢, 为开, 为阖, 为枢]}
+  - {id: 标本中气, group: 学说, forms: [标本, 中见, 中气之化, 从本, 从标, 本气, 标气, 标本中气]}
+  - {id: 气化, group: 学说, forms: [气化, 化气, 司化]}
+  - {id: 寒水之经, group: 学说, forms: [寒水之经, 寒水之腑, 太阳寒水, 寒水主]}
+  - {id: 诸阳主气, group: 学说, forms: [诸阳主气, 诸阳之属, 诸阳之会]}
+  - {id: 五行, group: 学说, forms: [五行, 水火, 木土, 金水, 水火既济, 生克, 相生, 相克, 乘侮]}
+  - {id: 阴阳, group: 学说, forms: [阴阳, 阴阳之气, 阴阳相, 阴阳俱]}
+  - {id: 天人, group: 学说, forms: [天地, 岁运, 司天, 在泉, 运气, 天气, 地气]}
+  # 治法
+  - {id: 汗法, group: 治法, forms: [发汗, 汗之, 汗法, 汗解, 取汗, 解肌, 发表]}
+  - {id: 吐法, group: 治法, forms: [吐之, 涌吐, 吐法, 催吐]}
+  - {id: 下法, group: 治法, forms: [下之, 攻下, 泻下, 下法, 通下, 急下]}
+  - {id: 和法, group: 治法, forms: [和解, 和之, 和法, 调和]}
+  - {id: 温法, group: 治法, forms: [温之, 温里, 温中, 温经, 回阳, 温阳, 扶阳]}
+  - {id: 清法, group: 治法, forms: [清热, 清之, 泻热, 清法]}
+  - {id: 补法, group: 治法, forms: [补之, 补虚, 补益, 滋阴, 养阴, 补阳, 温补]}
+  - {id: 禁忌, group: 治法, forms: [不可汗, 不可下, 不可吐, 禁汗, 禁下, 忌汗, 忌下, 不可发汗]}
+
+# the stance of a commentator towards a named predecessor, read in the sentence after the name (or in the next one).
+# After a direct quotation (曰, 云) the words that follow are the quoted physician's own — 丹溪曰：气无补法，世俗之误也
+# is 丹溪 rejecting the vulgar, not a rejection of 丹溪 — so there a marker counts only after the closing quotation mark
+# or in a phrase that refers back to the quoted view (`refer`: 此说非也, 其言谬矣); after an indirect report (谓, 以为,
+# 之说) it counts anywhere in the two sentences, except in a hypothetical (若作阴冷看，误矣 rejects a misreading).
+stance:
+  refer: "(?:此|其|是|斯|彼|前|上|二|两)(?:说|言|论|语|法|注|解|议|辨|义)"
+  # the author turning on others than the named one (近世之医 … 是未达): a marker after them is not about the name
+  others: "世医|时医|俗医|庸医|今人|近世|后人|后世|世人|时人|俗工|俗子|今之医|近之医|或者|或人|诸家|诸注|前人|古人|昔人|旧说|古方|古法|方书|诸方|诸书"
+  # markers that are someone's act (景岳驳之): a name just before them is the one who rejects, not the author
+  acts: "驳之|(?:辨|正)其(?:非|误|谬|失)|非之|斥之|讥之|訾之"
+  hypothetical: "(?:若|如|倘|或|苟)[^。；]{0,12}$"
+  reject:
+    - "非也"
+    - "非是"
+    - "(?:大|甚)?(?:谬|误)(?:矣|也|甚|哉)"
+    - "(?:此|其|是|斯)(?:说|论|言|解|注)[^，。；]{0,4}(?:非(?:也|矣|是|理|[，。；])|谬|误|不然|未必|不足)"
+    - "不然(?:也|矣)"
+    - "未必(?:然|是)"
+    - "恐非"
+    - "殊非"
+    - "殊不知"
+    - "岂知"
+    - "不可从"
+    - "不足(?:信|据|凭|取|法)"
+    - "未(?:达|当|妥|确)"
+    - "牵强"
+    - "附会"
+    - "臆(?:说|断|度)"
+    - "失之(?:远|甚|矣)"
+    - "非[^，。；]{1,8}之(?:旨|意)"
+    - "何其[^，。；]{0,6}(?:谬|误|陋)"
+    - "驳之"
+    - "(?:辨|正)其(?:非|误|谬|失)"
+  endorse:
+    - "(?:甚|极|诚|良|最|深)是"
+    - "(?:最|深|独)得"
+    - "可从(?:也|矣|[。，；])"
+    - "确(?:论|解)"
+    - "(?:精|至|允)当"
+    - "甚(?:确|精|善|妙)"
+    - "(?:至|名)论"
+    - "卓(?:识|见)"
+    - "知言"
+    - "得(?:其|经)(?:旨|要|意)"
+  # words after a name that report a view (the name + one of these is a citation of that commentator)
+  report: "(?:氏)?(?:曰|云|谓|言|论(?![中内])|注|解|释|以为|所谓|所云|所言|所论|所注|之说|之论|之注|之言|之解|之法|有云|有言|亦云|亦谓|独谓|乃谓|则谓|又谓|又云)"
+
+# the forms of a gloss (训诂): what a commentator says a word or phrase means
+glosses:
+  - {kind: 者也, pattern: "(?P<head>[一-鿿]{1,6})者[，,]?(?P<gloss>[^，。；]{1,24})也"}
+  - {kind: 谓, pattern: "(?P<head>[一-鿿]{1,6})[，,]?(?:谓|言)(?P<gloss>[^，。；]{2,24})(?:也)?[，。；]"}
+  - {kind: 犹, pattern: "(?P<head>[一-鿿]{1,4})[，,]?犹(?:言)?(?P<gloss>[^，。；]{1,16})也"}
+  - {kind: 即, pattern: "(?P<head>[一-鿿]{1,4})[，,]?即(?P<gloss>[^，。；]{1,12})也"}
+  - {kind: 貌, pattern: "(?P<head>[一-鿿]{1,4})[，,]?(?P<gloss>[^，。；]{1,12}貌)(?:也)?"}
+  - {kind: 音, pattern: "(?P<head>[一-鿿])[，,]?音(?P<gloss>[一-鿿]{1,2})"}
+  - {kind: 反切, pattern: "(?P<head>[一-鿿])[，,]?(?P<gloss>[一-鿿]{2})(?:切|反)"}
+  - {kind: 读为, pattern: "(?P<head>[一-鿿]{1,2})[，,]?(?:读为|读若|读曰|读作|当读)(?P<gloss>[一-鿿]{1,3})"}
+  - {kind: 通, pattern: "(?P<head>[一-鿿])(?:与|同|通)(?P<gloss>[一-鿿])(?:同|通)"}
+  - {kind: 异文, pattern: "(?P<head>[一-鿿]{1,4})[，,]?(?:一作|一云|又作|或作|别本作)(?P<gloss>[一-鿿]{1,6})"}
+  - {kind: 校改, pattern: "(?P<head>[一-鿿]{1,4})[，,]?(?:当作|疑作|疑是|当是|疑为)(?P<gloss>[一-鿿]{1,6})"}

@@ -47,7 +47,8 @@ def concordance(r: dict[str, Any]) -> list[str]:
         out += ["", "## 校勘记", ""]
         for a in r["apparatus"][:40]:
             wits = "、".join(a.get("witnesses", [])[:6]) + (f" 等 {len(a['witnesses'])} 本" if len(a.get("witnesses", [])) > 6 else "")
-            out.append(f"- 〔{a.get('kind')}〕底本「{a.get('base', '')}」，{wits}作「{a.get('reading', '')}」")
+            level = f"〈{a['label']}〉" if a.get("label") else ""
+            out.append(f"- 〔{a.get('kind')}〕{level}底本「{a.get('base', '')}」，{wits}作「{a.get('reading', '')}」")
     return out
 
 
@@ -242,6 +243,17 @@ def variants(r: dict[str, Any]) -> list[str]:
         out += ["", "## 高频单字异文（用字习惯候选，复核后可列入 collation.yaml）", ""]
         for x in r["frequent_substitutions"][:12]:
             out.append(f"- {x['characters']}：{x['units']} 处，如 {'；'.join(_q(c, 24) for c in x['contexts'])}")
+    if r.get("by_impact"):
+        from ..collation.impact import LABELS
+
+        out += ["", "异文分级：" + "，".join(f"{LABELS.get(k, k)} {v}" for k, v in r["by_impact"].items())]
+    if r.get("review_queue"):
+        out += ["", "## 复核队列（按影响排序：剂量、否定·情态、方药、证候在前）", "", "| 分级 | 位置 | 底本 | 异文（本） | 依据 |",
+                "|---|---|---|---|---|"]
+        for q in r["review_queue"][:30]:
+            readings = "；".join(f"「{x['text'] or '（无）'}」{''.join(x['witnesses'])}" for x in q["readings"])
+            out.append(f"| {q['label']} {q['score']:.2f} | {_q(q.get('locator', ''), 20)} | {_q(q.get('context', ''), 26)} | {readings} | "
+                       f"{_q(q['reason'], 30)} |")
     out += ["", "## 异文（前 30 条）", ""] + _units(r)
     return out
 
@@ -551,11 +563,94 @@ def punctuate(r: dict[str, Any]) -> list[str]:
     return out
 
 
+RELATION_LABELS = {"驳": "驳（明引而驳之）", "从": "从（明引而赞同）", "引": "引（明引）", "照录": "照录（整段相同）",
+                   "承袭": "承袭（沿用前注文字）", "自录": "自录（同一注家重出）", "增益": "增益（涵盖前注概念并有新增）",
+                   "同解": "同解（新增概念大体相同）", "异解": "异解（新增概念几无重合）"}
+
+
+def commentaries(r: dict[str, Any]) -> list[str]:
+    units = r.get("commentaries") or []
+    dated_units = [u["years"] for u in units if u.get("years")]
+    span = f"{int(min(y[0] for y in dated_units))}—{int(max(y[1] for y in dated_units))}" if dated_units else "年代未定"
+    out = [f"# 集注：{_q(r.get('clause', ''), 40)}", "",
+           f"注家 {r.get('count', 0)} 家（{span}）；另有 {r.get('quotation_count', 0)} 处引文（条文见于他书行文中，非注文之首）。"
+           f"条文自身概念：{'、'.join(r.get('concepts_in_clause') or []) or '—'}。", "",
+           "| 编号 | 年代 | 注家 | 书 | 注文位置 | 新增的诠释概念 | 注文（节录） |", "|---|---|---|---|---|---|---|"]
+    layout = {"row": "条后另行", "run_on": "条下接写", "inline": "条中夹注", "anchored": "附于条下"}
+    for u in units:
+        where = "、".join(dict.fromkeys(layout.get(k, k) for k in u.get("layout", [])))
+        out.append(f"| {u['id']} | {_years(u)} | {u['commentator']} | 《{_cell(u['title'], 20)}》 | {where} | "
+                   f"{_cell('、'.join(u.get('reading') or []), 40)} | {_q(u.get('quote', ''), 60)} |")
+    rels = r.get("relations") or []
+    if rels:
+        out += ["", "## 注家之间", ""]
+        for kind, label in RELATION_LABELS.items():
+            group = [x for x in rels if x["type"] == kind]
+            if not group:
+                continue
+            out.append(f"**{label}**")
+            for x in group[:12]:
+                extra = ""
+                if x.get("evidence"):
+                    extra = f"：「{_q(x['evidence'], 50)}」"
+                elif x.get("share") is not None:
+                    extra = f"（共有文字 {x['share']:.0%}，最长连续 {x.get('longest_run', 0)} 字）"
+                elif x.get("shared"):
+                    extra = f"（共有：{'、'.join(x['shared'][:8])}）"
+                elif x.get("a_only") is not None:
+                    extra = f"（前者：{'、'.join(x['a_only'][:5])}；后者：{'、'.join(x['b_only'][:5])}）"
+                out.append(f"- {x['from']} {x['from_commentator']} → {x['to']} {x['to_commentator']}{extra}")
+            out.append("")
+    if r.get("consensus"):
+        out += ["## 共识（半数以上注家新增的概念）", ""] + [f"- {c['concept']}（{c['group']}）：{c['commentaries']} 家" for c in r["consensus"]] + [""]
+    if r.get("first_readings"):
+        out += ["## 诠释的源头（首见于哪家注，后来多少家沿用）", "", "| 概念 | 类 | 首见 | 年代 | 后来沿用 |", "|---|---|---|---|---|"]
+        out += [f"| {f['concept']} | {f['group']} | {f['commentary']} {f['commentator']} | {_years(f)} | {f['followed_by']} |"
+                for f in r["first_readings"][:20]]
+    if r.get("unique"):
+        by: dict[str, list[str]] = {}
+        for x in r["unique"]:
+            by.setdefault(f"{x['commentary']} {x['commentator']}", []).append(x["concept"])
+        out += ["", "## 独见（仅一家新增的概念）", ""] + [f"- {k}：{'、'.join(v[:10])}" for k, v in list(by.items())[:20]]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+def disputes(r: dict[str, Any]) -> list[str]:
+    if r.get("term") is None and r.get("person") is None:
+        out = ["# 争议：全库谁驳谁", "", f"扫描 {r.get('passages_scanned') or 0} 段（引书网络）。", "",
+               "| 驳者 | 被驳者 | 驳 | 从 | 引 | 例句 |", "|---|---|---|---|---|---|"]
+        for x in r.get("who_rejects_whom", [])[:40]:
+            ex = x["examples"][0]["sentence"] if x.get("examples") else ""
+            out.append(f"| {x['by']} | {x['target']} | {x['rejections']} | {x['approvals']} | {x['citations']} | {_q(ex, 50)} |")
+        if r.get("most_disputed"):
+            out += ["", "## 最常被驳的医家", ""] + [f"- {x['target']}：被驳 {x['rejections']} 次（被引 {x['citations']} 次）"
+                                                   for x in r["most_disputed"][:20]]
+        return out + ["", f"> {r.get('note', '')}"]
+    what = "、".join(x for x in (r.get("term"), r.get("person")) if x)
+    counts = r.get("counts") or {}
+    out = [f"# 争议：{what}", "", f"读 {r.get('passages_scanned', 0)} 段；具名引述 {counts.get('cite', 0)} 处未表态，"
+           f"驳 {counts.get('reject', 0)} 处，从 {counts.get('endorse', 0)} 处。", "",
+           "| 年代 | 驳者 | 被驳者 | 标记 | 语句 | 出处 |", "|---|---|---|---|---|---|"]
+    for d in r.get("disputes", [])[:60]:
+        by = d["by"] + (f"（见《{d['reported_in']}》）" if d.get("reported_in") else "")
+        out.append(f"| {_years(d)} | {by} | {d['target']} | {d['marker']} | {_q(d['sentence'], 60)} | {_q(d['locator'], 30)} |")
+    if r.get("who_rejects_whom"):
+        out += ["", "## 谁驳谁", ""] + [f"- {x['by']} → {x['target']}：{x['count']} 处" for x in r["who_rejects_whom"][:20]]
+    if r.get("endorsements"):
+        out += ["", "## 赞同", ""] + [f"- {_years(d)} {d['by']} → {d['target']}（{d['marker']}）：{_q(d['sentence'], 60)}"
+                                      for d in r["endorsements"][:20]]
+    if r.get("about"):
+        out += ["", "争议所涉概念：" + "、".join(f"{a['concept']}（{a['count']}）" for a in r["about"][:15])]
+    if r.get("later_layers"):
+        out += ["", f"另有 {len(r['later_layers'])} 处出现在被引者生前的书中（未分离的后人注文），未计入。"]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
 PAGES = {"concordance": concordance, "formula": formula, "herb": herb, "term": term, "taboo": taboo, "citations": citations,
          "cards": cards, "reading": reading, "variants": variants, "stemma": stemma, "edition": edition, "reuse": reuse,
          "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship, "cases": cases,
          "trajectories": trajectories, "argument": argument, "senses": senses, "fragments": fragments, "witnesses": witnesses,
-         "punctuate": punctuate}
+         "punctuate": punctuate, "commentaries": commentaries, "disputes": disputes}
 
 
 def markdown(kind: str, result: dict[str, Any], signature: dict[str, Any], notice: str = "") -> str:

@@ -116,3 +116,61 @@ def test_punctuate_through_the_tool_and_the_cli(harness, capsys, tmp_path):
     assert main(["--data", str(tmp_path), "study", "punctuate", "太阳病发热汗出恶风脉缓者名为中风"]) == 0
     page = capsys.readouterr().out
     assert page.startswith("# 句读：") and "原字保留：是" in page
+
+
+# ------------------------------------------------------------------ 集注对齐与注家比较 (T16–T17), 争议 (T26)
+@pytest.fixture(scope="module")
+def commentary_study(pack) -> StudyService:
+    corpus = Corpus.load(HOME / "evals" / "gold" / "commentaries")
+    corpus.normalize = pack.variants.normalize_text
+    return StudyService(pack, corpus)
+
+
+def test_commentaries_are_aligned_in_every_layout(commentary_study):
+    r = commentary_study.commentaries("太阳之为病，脉浮，头项强痛而恶寒。")
+    layouts = {u["book_id"]: u["layout"] for u in r["commentaries"]}
+    assert layouts == {"chengzhu": ["row"], "fangzhu": ["row"], "yuzhu": ["run_on"], "kezhu": ["run_on"]}
+    assert [u["commentator"] for u in r["commentaries"]] == ["成无己", "方有执", "喻昌", "柯琴"]  # in date order
+    assert [q["passage_id"] for q in r["quotations"]] == ["huizuan.001"]  # quoted inside a compilation's own text
+    yu = next(u for u in r["commentaries"] if u["book_id"] == "yuzhu")
+    assert "中风" not in yu["text"]  # the next clause, with its own commentary, is not this clause's commentary
+    assert {"六经", "膀胱", "营卫"} <= set(yu["reading"])
+    rel = {(x["from_commentator"], x["to_commentator"], x["type"]) for x in r["relations"]}
+    assert ("喻昌", "方有执", "承袭") in rel  # shared wording beyond the clause itself
+    assert r["consensus"] and r["consensus"][0]["concept"] == "表"
+
+
+def test_commentaries_read_explicit_rejection_and_approval(commentary_study):
+    r = commentary_study.commentaries("太阳病，发热，汗出，恶风，脉缓者，名为中风。")
+    rel = {(x["from_commentator"], x["to_commentator"], x["type"]) for x in r["relations"]}
+    assert ("喻昌", "成无己", "驳") in rel and ("柯琴", "喻昌", "从") in rel
+    ke = next(u for u in r["commentaries"] if u["book_id"] == "kezhu")
+    assert ke["text"].startswith("（喻氏之说甚是")  # the note after the second clause of a 白文 paragraph
+
+
+def test_disputes_keep_the_quoted_words_apart(commentary_study):
+    people = commentary_study._commentary.people
+    normalize = commentary_study.normalize
+
+    def stance(text: str) -> tuple[str | None, str | None]:
+        found = people.cited(normalize(text))
+        return (found[0]["stance"], found[0].get("reported_by")) if found else (None, None)
+
+    assert stance("丹溪谓阳常有余，阴常不足，此说非也。") == ("reject", None)
+    assert stance("丹溪曰：气无补法，世俗之误也。") == (None, None)  # 丹溪's own verdict on others
+    assert stance("丹溪曰：「诸痛不可补气。」此言未当也。") == ("reject", None)
+    assert stance("丹溪所谓阴字有虚之义，若作阴冷看，其误甚矣。") == (None, None)  # a hypothetical misreading
+    assert stance("丹溪谓属金而有水与火，良不谬也。") == (None, None)  # the marker denied
+    assert stance("景岳之说，鲜不误矣。") == ("reject", None)  # … and affirmed
+    assert stance("丹溪论阳有余阴不足，景岳驳之。") == ("reject", "zhang_jiebin")  # a rejection reported
+    assert stance("河间之论甚妙，但未详其治法耳。") == ("endorse", None)
+
+
+def test_commentaries_and_disputes_through_tools_and_cli(harness, capsys, tmp_path):
+    out = harness.scheduler.execute(ToolCall("study.disputes", {"person": "丹溪"}), actor=Actor.kernel())
+    assert out.ok and "who_rejects_whom" in out.result
+    out = harness.scheduler.execute(ToolCall("study.commentaries", {"text": "太阳之为病，脉浮，头项强痛而恶寒。"}),
+                                    actor=Actor.kernel())
+    assert out.ok and "commentaries" in out.result
+    assert main(["--data", str(tmp_path), "study", "disputes", "--person", "丹溪"]) == 0
+    assert capsys.readouterr().out.startswith("# 争议：丹溪")

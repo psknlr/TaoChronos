@@ -35,7 +35,7 @@ persons:
   - {id: tang_shenwei, name: 唐慎微, names: [唐慎微], bencao: [慎微], dynasty: 北宋, active: [1082, 1108], school: 本草}
   - {id: kou_zongshi, name: 寇宗奭, names: [寇宗奭], bencao: [宗奭], dynasty: 北宋, active: [1111, 1117], school: 本草}
   - {id: xu_shuwei, name: 许叔微, names: [许叔微, 许学士, 许知可], dynasty: 宋, life: [1079, 1154], school: 伤寒}
-  - {id: cheng_wuji, name: 成无己, names: [成无己], dynasty: 金, life: [1063, 1156], school: 伤寒}
+  - {id: cheng_wuji, name: 成无己, names: [成无己, 成氏, 成注], dynasty: 金, life: [1063, 1156], school: 伤寒}
   - {id: chen_yan, name: 陈言, names: [陈言, 陈无择, 无择], dynasty: 南宋, active: [1161, 1174]}
   - {id: liu_wansu, name: 刘完素, names: [刘完素, 刘河间, 河间, 刘守真, 守真], dynasty: 金, life: [1110, 1200], school: 河间}
   - {id: zhang_yuansu, name: 张元素, names: [张元素, 张洁古, 洁古], bencao: [元素], dynasty: 金, active: [1151, 1234], school: 易水}
@@ -49,30 +49,52 @@ persons:
   - {id: hua_shou, name: 滑寿, names: [滑寿, 滑伯仁, 伯仁, 撄宁生], dynasty: 元, life: [1304, 1386], school: 医经}
   - {id: dai_sigong, name: 戴思恭, names: [戴思恭, 戴原礼, 原礼], dynasty: 明, life: [1324, 1405], school: 滋阴}
   - {id: wang_lü, name: 王履, names: [王履, 王安道, 安道], dynasty: 明, life: [1332, 1391]}
+  - {id: tao_hua, name: 陶华, names: [陶华, 陶节庵, 节庵], dynasty: 明, active: [1445, 1445], school: 伤寒}
   - {id: yu_tuan, name: 虞抟, names: [虞抟, 虞天民, 天民], dynasty: 明, life: [1438, 1517]}
   - {id: wang_ji, name: 汪机, names: [汪机, 汪石山, 石山], bencao: [机], dynasty: 明, life: [1463, 1539]}
   - {id: xue_ji, name: 薛己, names: [薛己, 薛立斋, 立斋], dynasty: 明, life: [1487, 1559]}
   - {id: chen_jiamo, name: 陈嘉谟, names: [陈嘉谟], bencao: [嘉谟], dynasty: 明, life: [1486, 1570], school: 本草}
   - {id: li_shizhen, name: 李时珍, names: [李时珍, 时珍, 李濒湖, 濒湖], dynasty: 明, life: [1518, 1593], school: 本草}
   - {id: wang_kentang, name: 王肯堂, names: [王肯堂, 王宇泰, 宇泰], dynasty: 明, life: [1549, 1613]}
+  - {id: fang_youzhi, name: 方有执, names: [方有执, 方中行, 中行, 方氏], dynasty: 明, active: [1582, 1593], school: 伤寒}
   - {id: miao_xiyong, name: 缪希雍, names: [缪希雍, 缪仲淳, 仲淳], dynasty: 明, life: [1546, 1627], school: 本草}
   - {id: zhang_jiebin, name: 张介宾, names: [张介宾, 张景岳, 景岳], dynasty: 明, life: [1563, 1640], school: 温补}
   - {id: wu_youxing, name: 吴有性, names: [吴有性, 吴又可, 又可], dynasty: 明, life: [1582, 1652], school: 温病}
   - {id: li_zhongzi, name: 李中梓, names: [李中梓, 李士材, 士材], dynasty: 明, life: [1588, 1655]}
+  - {id: zhang_suichen, name: 张遂辰, names: [张遂辰, 张卿子, 卿子], dynasty: 明末清初, active: [1624, 1644], school: 伤寒}
   - {id: yu_chang, name: 喻昌, names: [喻昌, 喻嘉言, 嘉言, 喻氏], dynasty: 明末清初, life: [1585, 1664], school: 伤寒}
   - {id: zhang_zhicong, name: 张志聪, names: [张志聪, 张隐庵, 隐庵], dynasty: 清, life: [1616, 1674], school: 伤寒}
   - {id: zhang_lu, name: 张璐, names: [张璐, 张路玉, 张石顽, 石顽], dynasty: 清, life: [1617, 1699]}
   - {id: wang_ang, name: 汪昂, names: [汪昂, 汪讱庵, 讱庵], dynasty: 清, life: [1615, 1695], school: 本草}
-  - {id: ke_qin, name: 柯琴, names: [柯琴, 柯韵伯, 韵伯, 柯氏], dynasty: 清, life: [1662, 1735], school: 伤寒}
+  - {id: cheng_yingmao, name: 程应旄, names: [程应旄, 程郊倩, 郊倩], dynasty: 清, active: [1670, 1670], school: 伤寒}
+  - {id: xu_bin, name: 徐彬, names: [徐彬, 徐忠可, 忠可], dynasty: 清, active: [1671, 1671], school: 伤寒}
+  - {id: zhou_yangjun, name: 周扬俊, names: [周扬俊, 周禹载, 禹载], dynasty: 清, active: [1677, 1687], school: 伤寒}
+  - {id: wang_hu, name: 汪琥, names: [汪琥, 汪苓友, 苓友], dynasty: 清, active: [1680, 1680], school: 伤寒}
+  - {id: gao_shishi, name: 高世栻, names: [高世栻, 高士宗, 士宗], dynasty: 清, active: [1683, 1699], school: 伤寒}
+  - {id: shen_mingzong, name: 沈明宗, names: [沈明宗, 沈目南, 目南], dynasty: 清, active: [1693, 1693], school: 伤寒}
+  - {id: qin_zhizhen, name: 秦之桢, names: [秦之桢, 秦皇士, 皇士], dynasty: 清, active: [1706, 1714]}
+  - {id: qian_huang, name: 钱潢, names: [钱潢, 钱天来, 天来], dynasty: 清, active: [1707, 1707], school: 伤寒}
+  - {id: ke_qin, name: 柯琴, names: [柯琴, 柯韵伯, 韵伯, 柯氏], dynasty: 清, active: [1669, 1674], school: 伤寒}
   - {id: ye_gui, name: 叶桂, names: [叶桂, 叶天士, 天士, 叶香岩, 香岩], dynasty: 清, life: [1667, 1746], school: 温病}
   - {id: xue_xue, name: 薛雪, names: [薛雪, 薛生白, 生白, 一瓢], dynasty: 清, life: [1681, 1770], school: 温病}
+  - {id: wei_litong, name: 魏荔彤, names: [魏荔彤, 魏念庭, 念庭], dynasty: 清, active: [1720, 1724], school: 伤寒}
   - {id: you_yi, name: 尤怡, names: [尤怡, 尤在泾, 在泾], dynasty: 清, active: [1700, 1749], school: 伤寒}
   - {id: xu_dachun, name: 徐大椿, names: [徐大椿, 徐灵胎, 灵胎, 洄溪], dynasty: 清, life: [1693, 1771]}
   - {id: huang_yuanyu, name: 黄元御, names: [黄元御, 黄坤载, 坤载], dynasty: 清, life: [1705, 1758]}
+  - {id: yoshimasu_todo, name: 吉益东洞, names: [吉益东洞, 吉益为则, 东洞], dynasty: 日本江户, life: [1702, 1773], school: 古方派}
+  - {id: shu_zhao, name: 舒诏, names: [舒诏, 舒驰远, 驰远], dynasty: 清, active: [1739, 1770], school: 伤寒}
+  - {id: wu_yiluo, name: 吴仪洛, names: [吴仪洛, 吴遵程, 遵程], dynasty: 清, active: [1757, 1766], school: 本草}
   - {id: wu_qian, name: 吴谦, names: [吴谦], dynasty: 清, active: [1736, 1742]}
   - {id: chen_nianzu, name: 陈念祖, names: [陈念祖, 陈修园, 修园], dynasty: 清, life: [1753, 1823], school: 伤寒}
+  - {id: tamba_motoyasu, name: 丹波元简, names: [丹波元简, 丹波廉夫, 廉夫, 多纪元简], dynasty: 日本江户, life: [1755, 1810], school: 伤寒}
+  - {id: tamba_mototaka, name: 丹波元坚, names: [丹波元坚, 丹波茝庭, 茝庭, 多纪元坚], dynasty: 日本江户, life: [1795, 1857], school: 伤寒}
   - {id: wu_tang, name: 吴瑭, names: [吴瑭, 吴鞠通, 鞠通], dynasty: 清, life: [1758, 1836], school: 温病}
   - {id: wang_qingren, name: 王清任, names: [王清任, 王勋臣, 勋臣], dynasty: 清, life: [1768, 1831]}
+  - {id: zhang_nan, name: 章楠, names: [章楠, 章虚谷, 虚谷], dynasty: 清, active: [1825, 1835], school: 温病}
   - {id: wang_shixiong, name: 王士雄, names: [王士雄, 王孟英, 孟英], dynasty: 清, life: [1808, 1868], school: 温病}
+  - {id: lü_zhenming, name: 吕震名, names: [吕震名, 吕搽村, 搽村], dynasty: 清, active: [1850, 1850], school: 伤寒}
+  - {id: zheng_shouquan, name: 郑寿全, names: [郑寿全, 郑钦安, 钦安], dynasty: 清, life: [1824, 1911], school: 伤寒}
   - {id: lei_feng, name: 雷丰, names: [雷丰, 雷少逸, 少逸], dynasty: 清, life: [1833, 1888], school: 温病}
   - {id: tang_zonghai, name: 唐宗海, names: [唐宗海, 唐容川, 容川], dynasty: 清, life: [1846, 1897]}
+  - {id: cao_jiada, name: 曹家达, names: [曹家达, 曹颖甫, 颖甫], dynasty: 民国, life: [1868, 1937], school: 伤寒}
+  - {id: yumoto_kyushin, name: 汤本求真, names: [汤本求真], dynasty: 日本近代, life: [1876, 1941], school: 古方派}

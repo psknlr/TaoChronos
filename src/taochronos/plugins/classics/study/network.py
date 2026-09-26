@@ -106,6 +106,10 @@ class CitationNetwork:
         bencao_books = {bk.id for bk in self.b.corpus.books.values() if bk.category == "本草" or "本草" in bk.title}
         books: dict[str, Counter] = defaultdict(Counter)
         persons: dict[str, Counter] = defaultdict(Counter)
+        rejects: dict[str, Counter] = defaultdict(Counter)  # the citations that reject the named view (争议)
+        endorses: dict[str, Counter] = defaultdict(Counter)
+        reject_examples: dict[str, list[str]] = defaultdict(list)
+        stance = self._stance_reader()
         unresolved: Counter = Counter()
         examples: dict[str, str] = {}
         passages = 0
@@ -129,23 +133,50 @@ class CitationNetwork:
                 for target, w in self._witnessed(self._generic(m.group(1) or m.group(2))).items():
                     books[key_bp][f"book:{target}"] += w
             ntext = norm(text)
-            found = [m.group(1) for m in self._loose.finditer(ntext)] + [m.group(1) for m in self._strict.finditer(ntext)]
+            found = list(self._loose.finditer(ntext)) + list(self._strict.finditer(ntext))
             if book_id in bencao_books:
-                found += [m.group(1) for m in self._bencao.finditer(ntext)]
-            for name in found:
-                person = self._alias.get(name)
+                found += list(self._bencao.finditer(ntext))
+            for m in found:
+                person = self._alias.get(m.group(1))
                 if person and person not in own.get(book_id, ()):  # 时珍曰 in the 本草纲目 is the author speaking
                     persons[key_bp][person] += 1
                     examples.setdefault(f"person:{person}", pid)
+                    kind = stance(ntext, m)
+                    if kind == "reject":
+                        rejects[key_bp][person] += 1
+                        if len(reject_examples[f"{book_id}|{person}"]) < 5:
+                            reject_examples[f"{book_id}|{person}"].append(pid)
+                    elif kind == "endorse":
+                        endorses[key_bp][person] += 1
         built = {"key": key, "passages": passages,
                  "books": {b: {t: round(n, 3) for t, n in c.items()} for b, c in books.items()},
                  "persons": {b: dict(c) for b, c in persons.items()},
+                 "rejects": {b: dict(c) for b, c in rejects.items()}, "endorses": {b: dict(c) for b, c in endorses.items()},
+                 "reject_examples": dict(reject_examples),
                  "unresolved": dict(unresolved.most_common(300)), "examples": examples}
         if cache is not None:
             Path(cache).mkdir(parents=True, exist_ok=True)
             (Path(cache) / f"citations-{key}.json").write_text(json.dumps(built, ensure_ascii=False), encoding="utf-8")
         self._built = built
         return built
+
+    def _stance_reader(self) -> Any:
+        """The stance of the sentence after a named, reported view (``exegesis.yaml``): reject, endorse or None."""
+        from .commentary import Exegesis
+
+        ex = Exegesis(self.b)
+        names = re.compile("|".join(map(re.escape, sorted((k for k in self._alias if len(k) >= 2), key=len, reverse=True))) or "(?!)")
+
+        def read(ntext: str, m: re.Match[str]) -> str | None:
+            verb = ntext[m.end(1): m.end()]
+            rest = ntext[m.end(): m.end() + 160]
+            ends = [e.end() for e in re.finditer(r"[。？！]", rest)]
+            window = rest[: ends[1] if len(ends) > 1 else (ends[0] if ends else len(rest))]
+            kind, _, _ = ex.stance(window, direct=verb.endswith(("曰", "云")) or ntext[m.end(): m.end() + 1] in ("曰", "云"),
+                                   names=names)
+            return kind
+
+        return read
 
     def _authors_as_persons(self, book_id: str) -> set[str]:
         book = self.b.corpus.books.get(book_id)
@@ -167,7 +198,8 @@ class CitationNetwork:
     def _cache_key(self) -> str:
         sig = self.b.signature()
         parts = [sig["corpus_digest"], json.dumps(self.persons, ensure_ascii=False, sort_keys=True),
-                 json.dumps(self.b.pack.citations, ensure_ascii=False, sort_keys=True), "v3"]
+                 json.dumps(self.b.pack.citations, ensure_ascii=False, sort_keys=True),
+                 json.dumps(self.b.data("exegesis.yaml").get("stance"), ensure_ascii=False, sort_keys=True), "v4"]
         return hashlib.sha1("|".join(parts).encode("utf-8")).hexdigest()[:12]
 
     # ------------------------------------------------------------ views
