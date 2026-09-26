@@ -158,7 +158,7 @@ class ScriptTable:
 
     # curated / Unihan variants first, then the 笈成 viewer's variant groups, then OpenCC; the first mapping of a
     # character wins
-    FILES = ("ancient_variants.tsv", "jicheng_variants.tsv", "t2s.tsv")
+    FILES = ("ancient_variants.tsv", "jicheng_variants.tsv", "cmeta_variants.tsv", "t2s.tsv")
 
     def __init__(self, root: Path | None = None, files: Iterable[str] | None = None) -> None:
         mapping: dict[str, str] = {}

@@ -104,6 +104,8 @@ def _corpus_admin(args: argparse.Namespace, action: str) -> None:
     db = _store_path(args, data)
     from .plugins.classics.ingest.collections import COLLECTIONS, RANK
 
+    if action == "images":
+        return _corpus_images(args, home, data, db)
     source = args.source or "kanripo"
     only = [x for x in (args.only or "").split(",") if x] or None
     known = ("kanripo", "kr-catalog", "jicheng", *COLLECTIONS)
@@ -132,6 +134,51 @@ def _corpus_admin(args: argparse.Namespace, action: str) -> None:
 
         n = CorpusStore(db).set_external(load_external_works(home / "corpus" / "catalog" / "external-works.yaml"))
         print(f"  external works registered: {n}")
+
+
+def _corpus_images(args: argparse.Namespace, home: Path, data: Path, db: Path) -> None:
+    """Harvest the records of digitised copies (image witnesses) and link them to the works of the store."""
+    from .plugins.classics.chronology import Chronology
+    from .plugins.classics.domain import DomainPack
+    from .plugins.classics.ingest import images
+    from .plugins.classics.store import CorpusStore
+
+    wanted = args.source or "all"
+    sources = list(images.SOURCES) if wanted == "all" else [s for s in images.SOURCES if s == wanted or s.startswith(wanted + ":")]
+    if not sources:
+        raise SystemExit(f"unknown image source {wanted!r}; available: {', '.join(images.SOURCES)}, all")
+    pack = DomainPack(home / "domains" / "classics")
+    normalize = pack.variants.normalize_text
+    chronology = Chronology(home / "domains" / "classics" / "eras.yaml", normalize)
+    books = [json.loads(raw) for (raw,) in CorpusStore(db).db.execute("SELECT data FROM books")] if db.exists() else []
+    index = images.work_index(books, normalize)
+    freq: dict[str, int] = {}
+    if db.exists():  # character frequencies of the traditional-script texts, to choose among traditional forms
+        for (text,) in CorpusStore(db).db.execute("SELECT text FROM passages WHERE book_id IN (SELECT id FROM books WHERE "
+                                                  "source='kanripo') AND rowid % 25 = 0"):
+            for ch in text:
+                freq[ch] = freq.get(ch, 0) + 1
+    titles = images.query_titles(books, home / "domains" / "classics" / "script" / "t2s.tsv", freq)
+    fetch = images.Fetcher(data / "sources" / "images" / "cache", pause=float(args.pause or 1.0), log=print)
+    out_dir = home / "corpus" / "catalog" / "images"
+    summary = {}
+    for source in sources:
+        records = images.SOURCES[source](fetch, print, titles, normalize)
+        linked = images.link(records, index, normalize)
+        if args.enrich:
+            for rec in records:
+                if rec.source.startswith("nijl:") and (rec.work or args.enrich == "all"):
+                    images.nijl_enrich(fetch, rec)
+        for rec in records:  # dates in a Chinese reign era (唐本: 嘉慶5, 萬暦29)
+            if rec.date and not rec.years:
+                rec.years = images.chinese_years(rec.date, chronology)
+        images.write_csv(out_dir / images.file_name(source), records)
+        summary[source] = {"records": len(records), "linked": linked,
+                           "works": len({r.work for r in records if r.work}),
+                           "with_manifest": sum(1 for r in records if r.manifest)}
+    _out({"catalog": str(out_dir), "sources": summary,
+          "note": "records only (no images downloaded); links by title — check `match` (exact / without-volumes / "
+                  "without-print-prefix) before relying on one"})
 
 
 def _corpus_admin_kanripo(args: argparse.Namespace, action: str, home: Path, data: Path, db: Path, only: list[str] | None) -> None:
@@ -705,7 +752,7 @@ def cmd_eval(args: argparse.Namespace) -> None:
 
 STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
          "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship", "cases",
-         "trajectories", "argument", "senses", "fragments")
+         "trajectories", "argument", "senses", "fragments", "witnesses")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -777,6 +824,10 @@ def cmd_study(args: argparse.Namespace) -> None:
         if not target:
             raise SystemExit("taochronos study senses: give a term (e.g. 消渴)")
         res = study.senses(target)
+    elif what == "witnesses":
+        if not (target or args.books):
+            raise SystemExit("taochronos study witnesses: give a work (key, title or book id) or --books")
+        res = study.witnesses(target, books=args.books)
     elif what == "fragments":
         if not target:
             raise SystemExit("taochronos study fragments: give a lost work (e.g. 小品方)")
@@ -860,9 +911,11 @@ def build_parser() -> argparse.ArgumentParser:
     add("profiles", cmd_profiles, "list profiles", profile=False)
     add("agents", cmd_agents, "list agent specs and their current routes")
     sp = add("corpus", cmd_corpus, "list the corpus, or fetch / unpack / catalog / ingest / status / reindex the full-corpus store")
-    sp.add_argument("action", nargs="?", default="list", choices=["list", "fetch", "unpack", "catalog", "ingest", "status", "reindex"])
-    sp.add_argument("source", nargs="?", help="source: kanripo, kr-catalog, jicheng (user-supplied archive), mcgill, wikisource, "
-                                             "tcm-ancient-books, tcmoc, hf-tcm-canon, or all (ingest)")
+    sp.add_argument("action", nargs="?", default="list",
+                    choices=["list", "fetch", "unpack", "catalog", "ingest", "status", "reindex", "images"])
+    sp.add_argument("source", nargs="?", help="source: kanripo, kr-catalog, jicheng (user-supplied archive), mcgill, cmeta, aeam, "
+                                             "wikisource, tcm-ancient-books, tcmoc, hf-tcm-canon, or all (ingest); for images: "
+                                             "nijl, nijl:knik …, sbb:unschuld, loc:chinese-rare-books, waseda:ya09, ndl, or all")
     sp.add_argument("paths", nargs="*", help="archive volumes for `unpack jicheng` (jc_1_4_8_all.7z.001 …)")
     sp.add_argument("--root", help="unpacked 笈成 directory (default: the one under <data>/sources/jicheng)")
     sp.add_argument("--changed", action="store_true",
@@ -870,6 +923,9 @@ def build_parser() -> argparse.ArgumentParser:
                          "records; ingest kanripo: rewrite the book records only (catalog or KR-Catalog changes)")
     sp.add_argument("--only", help="comma-separated text ids (e.g. KR3e0001,KR3e0013) or book ids")
     sp.add_argument("--db", help="corpus store path (default: <data>/corpus/tcm.sqlite)")
+    sp.add_argument("--enrich", nargs="?", const="linked", choices=["linked", "all"],
+                    help="images: read the IIIF manifests of NIJL records for author and date (linked records, or all)")
+    sp.add_argument("--pause", type=float, help="images: seconds between requests (default 1)")
     sp = add("lexicon", cmd_lexicon, "harvest candidate formula / drug names from the corpus store", profile=False)
     sp.add_argument("action", choices=["harvest"])
     sp.add_argument("--db", help="corpus store path (default: <data>/corpus/tcm.sqlite)")

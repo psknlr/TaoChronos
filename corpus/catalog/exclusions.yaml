@@ -89,6 +89,9 @@ sources:
     醫理真傳: {exclude: 现代校注本, note: 据唐步祺《郑钦安医书阐释》（1996）录入，含阐释}
     婦人壽草: {exclude: 现代校注本, note: 今人据1986年日文校订本汉译（香月牛山原著1720年代）}
 
+  cmeta:
+    shanghan_guilin: {exclude: 当代出版物, note: 桂林古本伤寒杂病论，1980年米伯让补刻勘误印行本（他源同书已作同判）}
+
 # Titles excluded wherever they appear (normalised title keys), for the collections that copy one another.
 titles:
   思考中医: 当代出版物

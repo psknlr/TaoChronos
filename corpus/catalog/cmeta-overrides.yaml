@@ -1,0 +1,123 @@
+# Curated records of the CMETA editions (keyed by the site's book id; see plugins/classics/ingest/cmeta.py).
+# Every edition is a witness of a work already in the corpus: `work` joins it to the other transcriptions, the date of
+# the work stays the work's (composition), the edition's own year goes to `edition_year`.  素问's notes take their dated
+# layers as in the Kanripo and 笈成 copies (王冰注 762, 新校正 1068, the 运气七篇 added by 王冰).
+
+shanghan_zhao_kaimei:
+  title: 伤寒论（宋本·安政本）
+  work: shanghanlun
+  authors: [张机]
+  dynasty: 东汉
+  composition: [200, 219]
+  category: 伤寒
+  edition: 日本安政三年（1856）覆刻明万历赵开美本（台北故宫博物院藏，故观003364—003367）
+  edition_year: [1856, 1856]
+  holding: 國立故宮博物院
+  notes_text: 赵开美本（宋本）系统之日本覆刻本；CMETA 据故宫藏本影像逐页精校
+
+shanghan_npm:
+  title: 伤寒论（宋本·台北故宫）
+  work: shanghanlun
+  authors: [张机]
+  dynasty: 东汉
+  composition: [200, 219]
+  category: 伤寒
+  edition: 明万历二十七年（1599）赵开美刊《仲景全书》本（台北故宫博物院藏，平图011603—011607）
+  edition_year: [1599, 1599]
+  holding: 國立故宮博物院
+  notes_text: 赵开美本原刻；CMETA 据故宫藏本影像逐页精校
+
+shanghan_kangzhi:
+  title: 伤寒论（康治本）
+  work: shanghanlun
+  authors: [张机]
+  dynasty: 东汉
+  composition: [200, 219]
+  category: 伤寒
+  edition: 日本安政四年（1857）京都书林刻本（题康治二年〔1143〕沙门了纯写本）
+  edition_year: [1857, 1857]
+  notes_text: 日本传本，篇幅远较宋本为短；所题康治年间写本的来源与年代学界有争议；此为安政四年刻本，按其刻年记版本年代
+
+kanhei_shanghan_vision_ocr:
+  title: 伤寒论（康平本）
+  work: shanghanlun
+  authors: [张机]
+  dynasty: 东汉
+  composition: [200, 219]
+  category: 伤寒
+  edition: 1854年再抄本（柏林国家图书馆藏，题康平三年〔1060〕丹波雅忠写本）
+  edition_year: [1854, 1854]
+  holding: Staatsbibliothek zu Berlin
+  notes_text: 日本传本；所题康平年间写本的来源与年代学界有争议；此为1854年再抄本，按抄年记版本年代
+
+jingui_wuqian:
+  title: 金匮要略方（吴迁本）
+  work: jinkui
+  authors: [张机]
+  dynasty: 东汉
+  composition: [200, 219]
+  category: 杂病
+  edition: 明洪武二十八年（1395）吴迁抄本（上海图书馆藏）
+  edition_year: [1395, 1395]
+  holding: 上海圖書館
+
+jingui_dengzhen:
+  title: 新编金匮方论（邓珍本）
+  work: jinkui
+  authors: [张机]
+  dynasty: 东汉
+  composition: [200, 219]
+  category: 杂病
+  edition: 元邓珍刻本（北京大学图书馆藏；据《中华再造善本》影印本录文）
+  edition_year: [1340, 1340]
+  holding: 北京大學圖書館
+  notes_text: 邓珍序题后至元庚辰（1340），按序年记版本年代
+
+gujin_yian_an:
+  title: 古今医案按（会文堂石印本）
+  work: jc:古今医案按
+  authors: [俞震]
+  dynasty: 清
+  composition: [1778, 1778]
+  category: 医案
+  edition: 民国元年（1912）上海会文堂粹记石印本（光绪九年〔1883〕李龄寿重校本系统）
+  edition_year: [1912, 1912]
+
+mingyi_leian:
+  title: 名医类案（知不足斋·藏修堂本）
+  work: mingyi_leian
+  authors: [江瓘, 江应宿]
+  dynasty: 明
+  composition: [1549, 1591]
+  category: 医案
+  edition: 清同治十年（1871）藏修堂重刻知不足斋本（乾隆三十五年〔1770〕鲍廷博刊、魏之琇重校本系统）
+  edition_year: [1871, 1871]
+  notes_text: 知不足斋本经魏之琇重校增补，增补与原书相混未分层
+
+suwen_gucongde:
+  title: 重广补注黄帝内经素问（顾从德本）
+  work: suwen
+  authors: [佚名（托名黄帝、岐伯）]
+  dynasty: 战国—西汉
+  composition: [-300, 25]
+  attribution: pseudepigraphic
+  category: 医经
+  edition: 明嘉靖二十九年（1550）顾从德覆宋刊本（台北故宫博物院藏，故善007799—007808）
+  edition_year: [1550, 1550]
+  holding: 國立故宮博物院
+  notes: {layer: 王冰注, year: [762, 762], attribution: 唐·王冰次注}
+  markers: [{prefix: 新校正云, layer: 新校正, year: [1068, 1068], attribution: 宋·林亿、孙奇、高保衡等}]
+  chapter_layers: [{pattern: "天元紀大論|五運行大論|六微[旨㫖]大論|氣交變大論|五常政大論|六元正紀大論|至[真眞]要大論",
+                    layer: 运气七篇（王冰补入）, year: [762, 762], attribution: 王冰次注时补入，来源与年代存疑（一说为《阴阳大论》）}]
+  notes_text: 运气七篇按王冰补入之年保守断代；王冰注、新校正按其年代分层
+
+lingshu_sibucongkan:
+  title: 黄帝素问灵枢经（赵府居敬堂本）
+  work: lingshu
+  authors: [佚名（托名黄帝、岐伯）]
+  dynasty: 战国—西汉
+  composition: [-300, 25]
+  attribution: pseudepigraphic
+  category: 医经
+  edition: 《四部丛刊》景印明赵府居敬堂刊本；CMETA 据维基文库文字对影像修订
+  edition_year: [1560, 1570]

@@ -17,6 +17,7 @@ the way the 考据 tradition answers them: from the texts, witness by witness.
 | `study dataset` | 研究数据集 — the results as tables for analysis | a Frictionless tabular data package (CSV + `datapackage.json`) with provenance and licences |
 | `study metrology` | 历代度量衡 — how much is 三两 in the Han? | the dose read in the measures of a year (a historical reading, never dosage guidance) |
 | `study variants` · `stemma` · `edition` · `tei` | 版本谱系 — how do the transcriptions of a work differ, and how are they related? | variant units (异文 / 脱 / 衍 / 倒 / 缺文 / 结构性增删 / 异体), a stemma with the groups of shared readings and contamination, one witness against the others, a TEI P5 apparatus |
+| `study witnesses` | 版本与影像见证 — which editions of this work can I read, and where can I see its prints and manuscripts? | the transcriptions in the store (edition, year, holder, source, licence, page images); the digitised copies in libraries (holder, shelfmark, IIIF manifest, terms), linked by title |
 | `study reuse` · `transmission` | 语义复用与思想传播 — what did later books do with this passage, and how was this work taken up? | typed reuses (直接引用 / 近似转录 / 节略 / 撮要 / 转述 / 解释性改写 / 引而驳之 / 套语相似) with the rule that fired and the values it read; a work's reception by period, and its channels |
 | `study layers` · `dating` · `authorship` | 文本地层 — which chapters of a classic belong together, and when can each have been written? | style layers with membership probabilities and a permutation test, change points, outlying chapters; cited works, late vocabulary and taboo per chapter; Burrows' Delta to candidate works |
 | `study cases` · `trajectories` | 医案轨迹 — what did physicians do, visit after visit? | case records as visits (findings, diagnosis, principle, formula, drugs and doses, changes, response, outcome); sequential patterns, transitions, associations with outcome |
@@ -48,6 +49,7 @@ taochronos study stemma 伤寒论                                     # --books 
 taochronos study variants 伤寒论 --chapter 辨太阳病 --json
 taochronos study variants "太陽之為病，脈浮，頭項強痛而惡寒" --text-mode   # a passage's copies and quotations
 taochronos study tei 伤寒论 -o shanghan.tei.xml
+taochronos study witnesses 伤寒论                                  # transcriptions and image witnesses (records only)
 taochronos study reuse "太陽之為病，脈浮，頭項強痛而惡寒"           # or --passage <id>; --against "<text>" for one pair
 taochronos study transmission 伤寒论 --clauses 40
 taochronos study layers 素问 --k 2                                 # --features function
@@ -233,10 +235,10 @@ word changed its meaning, and what survives of the books that were lost. Three r
 ([ADR 0005](adr/0005-deep-discovery-capabilities.md)):
 
 - **Capabilities, not agents.** Each is a deterministic function of the study service, a tool of the tool mesh
-  (`study.variants`, `study.stemma`, `study.reuse`, `study.transmission`, `study.layers`, `study.dating`,
-  `study.authorship`, `study.cases`, `study.trajectories`, `study.argument`, `study.senses`, `study.fragments` —
-  permission `classics:read`) and a CLI command. The existing agents call them: the Philologist (collation, layers,
-  dating, authorship), the Skeptic (reuse, dating, argument), the Evidence agent (cases, trajectories, argument), the
+  (`study.variants`, `study.stemma`, `study.witnesses`, `study.reuse`, `study.transmission`, `study.layers`,
+  `study.dating`, `study.authorship`, `study.cases`, `study.trajectories`, `study.argument`, `study.senses`,
+  `study.fragments` — permission `classics:read`) and a CLI command. The existing agents call them: the Philologist
+  (collation, witnesses, layers, dating, authorship), the Skeptic (reuse, dating, argument), the Evidence agent (cases, trajectories, argument), the
   Semanticist (terms, senses) and the Scholar, whose term dossiers now carry 语义演变. No agent was added.
 - **Candidates are not proof.** Whatever proposes with high recall — character probes, co-occurring concepts,
   clusters, an encoder's similarity — only proposes. Transparent rules over measured features decide, and every label
@@ -245,6 +247,9 @@ word changed its meaning, and what survives of the books that were lost. Three r
 - **Measured before trusted.** Each capability has an eval suite ([evals.md](evals.md)): synthetic data with a known
   answer where one can be built, a development set where the rules need examples, and a check on the real corpus
   against what the literature holds.
+
+The examples below were computed on the store of the 2.0 release (926 books); those of 版本谱系 and 版本与影像见证 on the
+current store (944 books, with the CMETA and 東亜医学協会 witnesses).
 
 ## 版本谱系 (collation and stemma)
 
@@ -281,13 +286,46 @@ frequent single-character substitutions are listed as candidates for `collation.
 witness against the others (agreement with each, singular readings, lacunae, additions); `tei` writes the apparatus in
 TEI P5 parallel segmentation (`<app><lem/><rdg wit="…"/></app>`).
 
-**Example (full corpus).** 伤寒论, five witnesses: A 伤寒论(宋本), B 伤寒论 (笈成; two thirds of the text survive in it),
-C 注解伤寒论 (笈成), D 张卿子伤寒论, E 注解伤寒论 (四库). Base A; 1 769 variant units, 1 625 of them substantive (49.9 per
-1 000 characters). The tree is ((A, B), (D, (C, E))) — the plain texts against the 成无己 commentary tradition — with the
-groups AB (support 635.5), CE (146.5) and CD (115.5). The tree cannot hold both CE and CD: D is flagged as
-contaminated from C (0.76 of its group support conflicts with the tree), and D–E remains a conflict of undetermined
-direction — hypotheses for a person to examine in the units listed. One witness writes 井 for 甘 49 times: a
-transcription habit to check, not a variant.
+**Example (full corpus).** 伤寒论, nine witnesses — the two 笈成 texts (F 伤寒论(宋本), G 伤寒论), three transcriptions of
+the 赵开美本 (D the 台北故宫 copy of 1599 and E the Japanese 安政 reprint of 1856, both from CMETA's page-by-page
+collation, and A the 東亜医学協会 text), B the 康平本 (CMETA), H 注解伤寒论 (笈成), I 张卿子伤寒论 and J 注解伤寒论 (四库); the
+康治本 (fifty formulas) shares too little text to be placed (overlap 0.034) and is set aside. Base G; 2 055 variant units,
+1 682 of them substantive (78.2 per 1 000 characters; 373 orthographic). The tree is ((I, (H, J)), (B, ((F, G), (A, (D,
+E))))): the 成无己 commentary tradition against the plain texts; among these the 康平本 on a long branch of its own, and
+the three 赵开美本 transcriptions together (group ADE, support 38) apart from the 笈成 pair. Groups: HIJ 472, BHIJ 118 (the
+康平本 shares readings with the commentary tradition), HI 78.5, HJ 72.5, ADE 38; I is flagged as contaminated from H
+(0.29 of its group support). One difference is editorial practice, not transmission: in the 宋本 as printed (D, E) a
+prescription follows its clause with no name line (「……可與麻黄杏仁甘草石膏湯。方二十六。」 then the composition); the
+笈成 text and the 東亜医学協会 text supply the name (「麻黄杏仁甘草石膏湯方」), the latter marking it ※ as an editors'
+addition. The per-chapter lists of the 宋本 (第二十六。（四味。）) are in D and E only. Five orthographic habits of the
+prints found among the frequent substitutions (发/発, 去/厺, 草/屮, 枣/栆, 俱/倶) were added to `collation.yaml`.
+
+金匮, six witnesses — the two 笈成 texts (D, E), the 邓珍本 in CMETA's collation (B) and in the 東亜医学協会 text (A), the
+吴迁本 (C, CMETA, a 1395 manuscript copy of a Song print rediscovered in 2007) and the 四库 text (F): 4 234 units. The tree
+is (F, (C, (B, (A, (D, E))))); the 吴迁本 and the 四库 text stand apart, yet share 362 units of support (CF), and the
+四库 text is flagged as contaminated from the 邓珍本 (0.51) — consistent with its descent from the Ming prints of the
+邓珍本 system, a hypothesis to examine in the units listed; the two transcriptions of the 邓珍本 group (AB 44.5).
+
+## 版本与影像见证 (witnesses)
+
+`study witnesses <work>` ([ADR 0006](adr/0006-witnesses-and-image-records.md)) answers the first question of any
+textual study — what witnesses are there? — for the
+transcriptions in the store and for the prints and manuscripts that libraries have digitised. The **text witnesses**
+are the work's books in the store, each with its edition, year and holder (from the source catalogs: CMETA's
+赵开美本 at the 台北故宫, shelfmarks 平图011603—011607, printed 1599), its source and licence, its passages, and whether
+its passages link the image of their page (CMETA's editions do: a passage's `locator.image_uri` opens the page it was
+transcribed from). The **image witnesses** come from the catalog harvested by `taochronos corpus images`
+(`corpus/catalog/images/*.csv`, [data.md](data.md#image-witnesses-pluginsclassicsingestimagespy-corpuscatalogimages)):
+digitised copies in NIJL's holders (研医会, 慶應 and 京都 富士川文庫, 東京大学 incl. the 鶚軒文庫, 九州, 東北), the
+Staatsbibliothek zu Berlin (Sammlung Unschuld), the Library of Congress, 早稲田 and NDL — each with its date, print or
+manuscript, shelfmark, IIIF manifest and terms of use, linked to the work by its title (`match`: exact, without volume
+counts, without a print prefix). A link by title is a candidate; the record's page is there to check it. No image is
+downloaded: the manifest is the address from which a IIIF viewer loads the pages, and from which a future image layer
+(page-level OCR, the collation of a print against its image) can fetch them.
+
+<!-- witness-example -->
+**Example (full corpus).** `study witnesses 伤寒论`: 10 transcriptions in the store — the 四库 注解伤寒论 (汪济川本, 1545), the 東亜医学協会 text and CMETA's two copies of the 赵开美本 (the 台北故宫 print of 1599 and the 安政 reprint of 1856), CMETA's 康平本 (the 1854 copy at Berlin) and 康治本 (1857), and the 笈成 transcriptions; 3 of them link every passage to the image of its page. And 21 digitised copies in libraries (21 with a IIIF manifest), dated 1668—1848 where the record gives a year — 東京大学総合図書館（医学・本草類，含鶚軒文庫） 9，京都大学附属図書館（富士川文庫） 5，研医会図書館 4，九州大学附属図書館（医学図書館） 2，慶應義塾大学信濃町メディアセンター（富士川文庫） 1; among them 家刻傷寒論、訂字標註傷寒論, linked through their print prefix.
+<!-- /witness-example -->
 
 ## 语义复用与思想传播 (reuse and transmission)
 
@@ -465,8 +503,13 @@ remnant (葛洪 → 陶弘景 → 杨用道's 附广). They are candidate lost t
 - Metrology values and taboo start years are scholarly positions with sources; they can be disputed and edited.
 - Taboo evidence and dating by terminus ante quem are conservative, not proof.
 - 版本谱系: the base is a coordinate system; readings are grouped by normalised text, so orthographic habits not yet
-  in `collation.yaml` still count as substantive until reviewed. A stemma from five transcriptions is a hypothesis
-  about their relations, and contamination flags ask for a person to examine the units listed.
+  in `collation.yaml` still count as substantive until reviewed. A stemma of transcriptions is a hypothesis about
+  their relations, and contamination flags ask for a person to examine the units listed. Transcriptions differ in
+  editorial practice as well as in their exemplars (names supplied for prescriptions, notes kept inline or apart,
+  lists of contents): such differences are structural, and are read in the units before they are read as descent.
+- 版本与影像见证: image witnesses are linked by title only; commentaries and works of the same title are separate works
+  that the title cannot tell apart, and a record's date is the catalogue's (a Japanese era alone gives its span). The
+  NIJL records are enriched from their manifests only when linked (`--enrich all` for every record).
 - 语义复用: the thresholds were set on a development set of 33 author-constructed pairs; concepts come from the
   lexicon, so a reuse through words the lexicon lacks is found only by its wording. Direction is by date: pairs whose
   dates overlap are reported as undetermined.

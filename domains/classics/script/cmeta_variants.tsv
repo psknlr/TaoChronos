@@ -1,0 +1,40 @@
+# Rare variant graphs kept by the CMETA editions (數位中醫校書郎, collated against the images), each mapped to the
+# standard character the other transcriptions of the same work write in its place.  Derived by aligning every CMETA
+# edition with a transcription of its work in the store (宋本伤寒论, 金匮, 素问, 灵枢, 名医类案, 古今医案按) and kept
+# where all aligned occurrences (at least two) agree; reviewed.  Graphs that the corpus also uses as words of their
+# own (㕮 in 㕮咀, 𫈟, 𫏋 …) are not mapped.
+# columns: variant, normalised form, source, aligned occurrences
+𤍠	熱	cmeta:alignment	616/616
+𫞓	歲	cmeta:alignment	160/160
+𠉀	候	cmeta:alignment	179/180
+𭛁	發	cmeta:alignment	83/83
+𱽚	藥	cmeta:alignment	73/73
+𣴎	承	cmeta:alignment	44/44
+𢙣	惡	cmeta:alignment	31/31
+𦝫	腰	cmeta:alignment	22/22
+𢘆	恆	cmeta:alignment	14/14
+㝠	冥	cmeta:alignment	12/12
+𠤎	七	cmeta:alignment	10/10
+𤻊	頹	cmeta:alignment	9/9
+𨵿	關	cmeta:alignment	9/9
+𡁲	嚏	cmeta:alignment	7/7
+𡨚	冤	cmeta:alignment	7/7
+㢮	弛	cmeta:alignment	6/6
+𭐢	夏	cmeta:alignment	6/6
+𬃷	棗	cmeta:alignment	6/6
+㚈	升	cmeta:alignment	6/6
+𤸇	癃	cmeta:alignment	5/5
+𦛗	膂	cmeta:alignment	4/4
+𡵯	步	cmeta:alignment	4/4
+㝷	尋	cmeta:alignment	3/3
+𫎓	貯	cmeta:alignment	3/3
+𫎇	蒙	cmeta:alignment	3/3
+㿾	寧	cmeta:alignment	3/3
+㳒	法	cmeta:alignment	2/2
+𭼠	瘧	cmeta:alignment	2/2
+𥚹	褊	cmeta:alignment	2/2
+𩛿	餳	cmeta:alignment	2/2
+𠋫	候	cmeta:alignment	2/2
+𡨋	冥	cmeta:alignment	2/2
+𭔃	寄	cmeta:alignment	2/2
+𧰼	象	cmeta:alignment	2/2

@@ -5,6 +5,7 @@ data made of *witnesses* — verbatim quotes with book, date, locator and licenc
 
 =================  ==========================================================================================
 concordance        经文互见·集注: where a passage recurs (other copies, quotations, restatements), with a 校勘记
+witnesses          版本与影像见证: a work's transcriptions in the store and its digitised copies in libraries (IIIF records)
 variants / stemma  版本谱系: multi-witness collation of a work (or of a passage's copies and quotations), variant units,
 edition            distances, a neighbour-joining stemma, shared-reading groups, contamination; one edition's profile
 reuse              语义复用: a passage's reuses across the corpus, typed (直接引用 … 转述, 解释性改写, 引而驳之, 套语相似)
@@ -50,6 +51,7 @@ from .stemma import StemmaStudy
 from .stratigraphy import StratigraphyStudy
 from .taboo import TabooStudy
 from .terms import TermStudy
+from .witnesses import WitnessStudy
 
 
 class StudyService(StudyBase):
@@ -71,6 +73,7 @@ class StudyService(StudyBase):
         self._argument = ArgumentStudy(self, self._stemma)
         self._senses = SenseStudy(self)
         self._fragments = FragmentStudy(self)
+        self._witnesses = WitnessStudy(self, self._stemma)
 
     @property
     def metrology(self) -> Any:
@@ -131,6 +134,10 @@ class StudyService(StudyBase):
 
     def edition(self, book: str, **kw: Any) -> dict[str, Any]:
         return self._stemma.edition(book, **kw)
+
+    def witnesses(self, work: str, **kw: Any) -> dict[str, Any]:
+        """Every witness of a work: its transcriptions in the store and the digitised copies in libraries (IIIF)."""
+        return self._witnesses.run(work, **kw)
 
     def tei(self, work: str | None = None, **kw: Any) -> str:
         return self._stemma.tei(work, **kw)

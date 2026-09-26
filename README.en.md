@@ -6,7 +6,7 @@
 [中文 README](README.md) · [Study layer](docs/study.md) · [Architecture](docs/architecture.md) · [Agents](docs/agents.md) ·
 [Discovery](docs/discovery.md) · [Evaluation](docs/evals.md) · [Data](docs/data.md) · [Roadmap](docs/roadmap.md) · [ADRs](docs/adr/)
 
-TaoChronos turns 926 Chinese medical classics (about 119 million characters in 1.98 million passages) into a corpus
+TaoChronos turns 944 Chinese medical classics (about 121 million characters in 2.03 million passages) into a corpus
 that can be searched, dated and cited, and offers two layers on top of it:
 
 - **Study (治学)** answers the questions scholars and students ask of the literature every day, the way the 考据
@@ -30,8 +30,8 @@ Both layers share one rule: **every statement rests on verbatim witnesses** (boo
 text layer, source and licence of the transcription). Rule-based reading is labelled as machine reading; people check
 and decide.
 
-> ⚠️ The corpus consists of transcriptions from several sources (Siku, 笈成, McGill rare books, Wikisource, web
-> text sets), **none collated by this project**; `corpus/demo` holds unverified excerpts for demonstrating the method.
+> ⚠️ The corpus consists of transcriptions from several sources (Siku, 笈成, McGill rare books, CMETA, the 東亜医学協会,
+> Wikisource, web text sets), **none collated by this project**; `corpus/demo` holds unverified excerpts for demonstrating the method.
 > Contemporary publications, works of contemporary physicians and modern annotated editions are left out. All outputs
 > are textual research and computational inference — not medical conclusions or clinical advice. Doses read in
 > historical measures are scholarly estimates of historical measures, **never dosage guidance**.
@@ -64,14 +64,14 @@ and decide.
 | **Historians of formulas, materia medica and medicine** | formula provenance (original and current compositions, 加减, 同名异方, 同方异名, dose ratios, doses in the measures of their period, indications, verses); drug-property histories (flavour, toxicity, 归经, 升降浮沉 — first statements and changes); term histories (shares by period with intervals, trend test, first attestations, collocates, senses) | `study formula` · `study herb` · `study term` |
 | **Researchers who need data** | open tables with provenance, dates and licences (Frictionless data packages) for statistics and visualisation | `study dataset` |
 | **Students** | cloze cards for 方证, compositions (with verses), drug properties and key passages, exported to Anki; reading paths from the source classics to the Republican syntheses | `study cards` · `study reading` |
-| **Textual critics** | multi-witness collation into variant units (异文, 脱, 衍, 倒, lacunae, structural differences, orthographic variants), a neighbour-joining stemma, groups of shared readings and contamination, one witness against the others, a TEI apparatus | `study variants` · `study stemma` · `study edition` · `study tei` |
+| **Textual critics** | multi-witness collation into variant units (异文, 脱, 衍, 倒, lacunae, structural differences, orthographic variants), a neighbour-joining stemma, groups of shared readings and contamination, one witness against the others, a TEI apparatus; a work's witnesses — the transcriptions in the store with their editions, holders and page images, and the prints and manuscripts digitised by libraries with shelfmarks, IIIF manifests and terms | `study variants` · `study stemma` · `study edition` · `study tei` · `study witnesses` |
 | **Intellectual historians** | what later books did with a passage (直接引用, 近似转录, 节略, 撮要, 转述, 解释性改写, 引而驳之, 套语相似), each with its rule and values; a work's reception by period and its channels | `study reuse` · `study transmission` |
 | **Dating and authorship** | style layers of a work's chapters (permutation-tested), change points and outlying chapters; cited works, late vocabulary and taboo per chapter; Burrows' Delta attribution | `study layers` · `study dating` · `study authorship` |
 | **Historians of clinical practice** | case records read visit by visit (findings, diagnosis, principle, formula and doses, changes, doses taken, response, outcome); treatment sequences, transitions and associations with outcome (never evidence of efficacy) | `study cases` · `study trajectories` |
 | **Readers of medical reasoning and language** | argument graphs (condition, inference, cause, contrast, analogy, rebuttal, definition, treatment) and the comparison of two works' ways of reasoning; sense shares by period, change points and candidate senses | `study argument` · `study senses` |
 | **Reconstruction of lost works** | fragments gathered from the books that quote a lost work, ordered by the volumes the source notes give; the method verified on surviving works, with a reliability per quoting book | `study fragments` |
 | **Knowledge discovery** | multi-agent research: lost knowledge, concept drift, formula evolution, hidden associations, contradictions, lost sources; verbatim evidence, falsification, gates, expert review | `research` · `report` · `workspace` · `review` |
-| **Developers** | plugin kernel, capability registry, a tool mesh of 47 tools, agents as YAML specs, event sourcing and replay, evaluation and architecture governance | `agents` · `eval` · `governance` |
+| **Developers** | plugin kernel, capability registry, a tool mesh of 48 tools, agents as YAML specs, event sourcing and replay, evaluation and architecture governance | `agents` · `eval` · `governance` |
 
 ## 2. Quick start
 
@@ -88,6 +88,8 @@ The full corpus (texts never enter git; fetching, cataloguing and ingestion are 
 taochronos corpus fetch kanripo && taochronos corpus ingest kanripo     # the 100 medical works of the Siku quanshu
 taochronos corpus unpack jicheng jc_1_4_8_all.7z.001 jc_1_4_8_all.7z.002 jc_1_4_8_all.7z.003
 taochronos corpus catalog jicheng && taochronos corpus ingest jicheng    # the 笈成 collection (user-supplied)
+taochronos corpus fetch cmeta && taochronos corpus catalog cmeta && taochronos corpus ingest cmeta   # CMETA's collated editions
+taochronos corpus images all --enrich                                    # image witnesses: library records and IIIF manifests (metadata only)
 taochronos corpus status
 ```
 
@@ -112,6 +114,7 @@ Deep discovery 2.0:
 ```bash
 taochronos study stemma 伤寒论                                      # variant units, the stemma, groups, contamination
 taochronos study tei 伤寒论 -o shanghan.tei.xml                     # a TEI P5 apparatus
+taochronos study witnesses 伤寒论                                   # the transcriptions and the digitised prints and manuscripts
 taochronos study reuse "太陽之為病，脈浮，頭項強痛而惡寒"            # typed reuses of a passage across the corpus
 taochronos study transmission 伤寒论                                # a work's reception by period, and its channels
 taochronos study layers 素问                                        # style layers, change points, outlying chapters
@@ -142,19 +145,23 @@ taochronos governance              # architecture policy check
 | Kanseki Repository KR3e, *Siku quanshu* medical works | CC BY-SA 4.0 | **100 works**, 25.7 M characters | unpunctuated Siku / Sibu congkan texts; a curated catalogue with authors, dates, schools, editions and layer dating |
 | 笈成 (JiCheng) v1.4.8 | user-supplied, local research only | **797 works** (857 less 60), ~92.3 M characters | punctuated by its editors; headings, prescription blocks, commentaries, collation remarks and missing characters parsed from the markup |
 | McGill University Library rare gynaecology books | public domain | **5 works** | Qing prints and manuscripts, unpunctuated |
-| Wikisource Category:中醫 (from the Wikimedia dumps) | CC BY-SA 4.0 | **15 works** (new of 625) | 天回医简, 五十二病方, three Republican "ancient" editions of the 伤寒杂病论, 东医宝鉴 … |
+| 數位中醫校書郎 CMETA (collated editions) | CC BY 4.0 (the collation); texts public domain | **10 works**, 1.37 M characters | collated page by page against the images: 伤寒论 (赵开美本: the 台北故宫 copy and the 安政 reprint; 康平本; 康治本), 金匮 (吴迁本, 邓珍本), 素问 (顾从德本), 灵枢 (赵府居敬堂本), 古今医案按, 名医类案; passages carry their page and, where the site shows the images to guests, the page image |
+| 東亜医学協会 · 医学古典テキスト | © the association, local research only | **7 works**, 0.32 M characters | 素问, 灵枢, 难经, 伤寒论, 金匮要略, 神农本草经, 扁鹊仓公列传, each from a named base edition |
+| Wikisource Category:中醫 and Category:醫書 (from the Wikimedia dumps) | CC BY-SA 4.0 | **16 works** (new of 627) | 天回医简, 五十二病方, three Republican "ancient" editions of the 伤寒杂病论, 东医宝鉴, the Korean 医方类聚 (1445) … |
 | TCM-Ancient-Books / tcmoc | undeclared, local research only | **8** / 0 works | mostly simplified copies of 笈成 texts, deduplicated work by work |
 | Hugging Face classical-tcm-canon | proprietary-commercial, local research only, never redistributed | **1 work** | 张志聪's 伤寒论宗印·集注 |
 | KR-Catalog (Kanripo catalogue) | CC BY-SA 4.0 | catalogue | roles and dates of 132 persons responsible for the Siku works |
+| Image witnesses: NIJL (研医会; the 富士川文庫 of Keio and Kyoto; the University of Tokyo incl. the 鶚軒文庫; Kyushu; Tohoku), Staatsbibliothek zu Berlin (Sammlung Unschuld), Library of Congress (Chinese Rare Books), Waseda, NDL | per record, as each holder states | **8,928 records** (342 linked to 141 works) | records only — title, date, print or manuscript, holder, shelfmark, IIIF manifest, terms — linked to the works of the store by title; no image downloaded |
 
-In all **926 works, ~119 million characters, 1.98 million passages**.
+In all **944 works, ~121 million characters, 2.03 million passages**.
 
 - **Admission**: historical texts only. Contemporary publications, contemporary physicians' works and modern annotated
   editions (including modern reconstructions of lost books) are excluded after review (`corpus/catalog/exclusions.yaml`,
   automatic screening for the rest); Republican works (1912–1949) stay as historical sources.
-- **Deduplication**: sources are ranked by reliability (Siku → 笈成 → McGill → Wikisource → web sets); each candidate is
-  compared with what is already in by 12-character shingles of normalised text, and copies are recorded with the book
-  they duplicate and the overlap.
+- **Deduplication**: sources are ranked by reliability (Siku → 笈成 → McGill → CMETA → 東亜医学協会 → Wikisource → web
+  sets); each candidate is compared with what is already in by 12-character shingles of normalised text, and copies are
+  recorded with the book they duplicate and the overlap; McGill's, CMETA's and the 東亜医学協会's texts are independent
+  witnesses, whose closest books are recorded but never judged.
 - **Dating**: curated overrides → the Siku catalogue → western years, reign eras and dynasties in the book metadata →
   signed prefaces → other transcriptions of the work → the author's other works; commentaries, editorial notes, added
   chapters and appended prescriptions are dated as layers of their own (王冰注 762, 新校正 1068, the layers of the 证类本草 …);
@@ -221,13 +228,16 @@ literature itself ([docs/study.md](docs/study.md#深层发现-20--the-structure-
 
 | Capability | What it does | Full-corpus example (machine reading, with quotes to check) |
 |---|---|---|
-| **Stemma** `study variants` · `stemma` · `edition` · `tei` | anchored alignment of whole works; edits merged into variant units (omissions of 40+ characters are lacunae, not disagreement; long additions such as commentary are structural and never group witnesses); a neighbour-joining tree; minority readings shared by several witnesses group them (agreement in error), and groups the tree cannot hold flag contamination; the base is a coordinate system, not a judgement | 伤寒论, five witnesses (the Song edition, a 笈成 copy, two 注解伤寒论, 张卿子本): 1 769 variant units; tree ((Song, 笈成), (张卿子, (the two 注解))) — the plain texts against the 成无己 commentary tradition; 张卿子本 flagged as contaminated from one 注解 (share 0.76), for a person to examine |
+| **Stemma** `study variants` · `stemma` · `edition` · `tei` · `witnesses` | anchored alignment of whole works; edits merged into variant units (omissions of 40+ characters are lacunae, not disagreement; long additions such as commentary are structural and never group witnesses); a neighbour-joining tree; minority readings shared by several witnesses group them (agreement in error), and groups the tree cannot hold flag contamination; the base is a coordinate system, not a judgement; `witnesses` lists the transcriptions and the digitised prints and manuscripts | 伤寒论, nine witnesses (two 笈成 texts; three transcriptions of the 赵开美本 — CMETA's 台北故宫 copy and 安政 reprint, the 東亜医学協会 text —; the 康平本; two 注解伤寒论; 张卿子本; the 康治本, fifty formulas, overlaps 0.034 and is set aside): 2 055 variant units; tree ((张卿子, (the two 注解)), (康平本, ((the 笈成 pair), (東亜医学協会, (故宫, 安政))))) — the 成无己 commentary tradition against the plain texts, the 康平本 on a long branch, the three 赵开美本 transcriptions together (38 shared readings); the 康平本 shares 118 units with the commentary tradition; 张卿子本 flagged as contaminated from one 注解 (share 0.29). The 宋本 as printed gives no name line before a prescription (「……可與麻黄杏仁甘草石膏湯。方二十六。」, then the composition); 笈成 and the 東亜医学協会 supply one (the latter marks it ※) — editorial practice, not descent |
 | **Reuse and transmission** `study reuse` · `transmission` | two stages: probes and co-occurring concepts propose candidates; rules over coverage, runs, rarity-weighted content, specificity (an E-value), order, length ratio, stock phrasing and citation / refutation / explanation markers decide one of eight types and 明引 / 暗引; a work's reception by period (retained, transformed, disputed) and its channels | 「太阳之为病……」: 446 candidates in 4 s — 66 直接引用, 12 近似转录, 19 节略, 96 转述, 32 解释性改写; 111 found only through their concepts. 局方发挥 quotes 「阴平阳秘」 to refute it (未必); 医学正传 (岂可) and 证治准绳 (误矣) refute 「邪之所凑」. The retained share of the 伤寒论's reuse rises from 53 % (Wei–Jin) to 76 % (Ming) and 90 % (Republic); channels such as 脉经 → 千金翼方 |
 | **Strata** `study layers` · `dating` · `authorship` | chapters profiled by the √-frequencies of their most frequent characters, split by k-means and tested by permutation, with membership probabilities; change points by scan statistic and binary segmentation (BH); outlying chapters by Burrows' Delta; per chapter the works cited in the main text, late vocabulary (first used elsewhere 300+ years later, z-scored within the work) and taboo | 素问: the minor layer holds **all seven 运气 chapters** (and four others), marked by 化↑ 火↑ 太↑ 脉↓, p = 0.025; the strongest change point at 65 \| 66 and another at 74 \| 75 — where the seven begin and end (both p = 0.005; weaker ones elsewhere); late vocabulary flags 至真要大论 (z = 4.26), 五常政大论, 六元正纪大论. In the 伤寒论, 辨脉法 and 平脉法 are nearest the 脉经 (the 王叔和 tradition) |
 | **Case records** `study cases` · `trajectories` | cases and visits cut sentence by sentence (二诊, 又, dates, 次日, 前方加减); per visit the findings, diagnosis, principle, formula and doses, changes, doses taken and response; PrefixSpan patterns, transitions, Fisher + BH associations with outcome — **records written and selected by physicians: never evidence of efficacy** | 吴鞠通医案, two transcriptions read independently: 285 / 290 cases (counts agree 0.98, outcomes 0.92); 续名医类案 3 246 cases (151 deaths); 咳嗽 818 cases; 中风 287, with sequences such as 苦寒 → 下法 and 益气 → 地黄饮 |
 | **Argument** `study argument` | clauses (split before an inner 则 / 故) linked by typed, directed edges from a marker table: condition, consequence, cause / effect, inference, support, contrast, analogy, rebuttal, definition, treatment; only explicit markers; a work's profile and two works compared (JSD, log-odds) | 伤寒论 vs 温热论: JSD 0.063 over relations; the 伤寒论 defines and infers, the 温热论 argues by analogy (7.76 per 1 000 clauses against none) and rebuttal, with more conditions and treatments |
 | **Senses** `study senses` | occurrences sampled by period and labelled by curated cues and anti-cues; unlabelled contexts clustered into **candidate senses** (distinctive words and examples, for a person to name); recursive change points of the sense shares (permutation tests); the term's neighbourhood period by period | 消渴: change points near 166 (p = 0.025), 388 (0.005) and 1603 (0.005); the symptom sense falls from 21 % to 0–6 % and returns to 11–13 % in the Qing and the Republic |
 | **Lost works** `study fragments` | 外台-style attributions (小品论曰 … （出第十卷中千金同）), 又 continuations, 《…》云; text up to the source note or the next source; volumes and parallels kept, repeats merged, ordered by volume; quoting books older than the work excluded; verified on surviving works, with a reliability per quoting book | 小品方: 226 fragments from 386 quotations. Verification on the 千金要方: 0.32 of its fragments in the surviving text (幼幼新书 0.83, 外台 0.55, 医心方 0.36), covering 12 %; 87.5 % of the 肘后备急方's quotations are not in the extant, reworked 肘后 — candidate lost text |
+
+The examples of both tables were computed on the 926 works of the 2.0 store; the 18 transcriptions added in this
+release (CMETA, the 東亜医学協会, 医方类聚) change some counts slightly, and the stemma row has been recomputed on 944.
 
 The study layer is part of research too: under `full-corpus`, **TaoChronos-Scholar** traces the focus formulas, drugs
 and terms through the whole store in round 0, and the dossiers become the report's appendix "源流考证 · Sources
@@ -319,7 +329,10 @@ human expert can declare equivalence.
 - *Schools and transmission*: `study citations` for each period's authorities; `study citations 李杲` for the reception
   of 东垣's teaching.
 - *A work's witnesses*: `study stemma 伤寒论` → variant units, the stemma, groups of shared readings and contamination;
-  `study tei` for a TEI apparatus, `study edition <book_id>` for one witness against the others.
+  `study tei` for a TEI apparatus, `study edition <book_id>` for one witness against the others; `study witnesses 伤寒论`
+  for the transcriptions (edition, year, holder, source, licence — CMETA's passages open the page they were read from)
+  and the digitised prints and manuscripts in libraries (date, print or manuscript, holder, shelfmark, IIIF manifest,
+  terms), in date order.
 - *A passage's reception*: `study reuse <passage>` → each later use typed with its rule (who copied, cut, explained
   or refuted it); `study transmission 伤寒论` for the retained, transformed and disputed shares by period and the channels.
 - *How a classic was composed*: `study layers 素问` read with `study dating 素问` — style says that chapters differ,
@@ -400,7 +413,7 @@ kernel        event sourcing, transactions, replay, scheduler, policy, hooks, bu
 capabilities  provider-neutral interfaces (LLM …)
 science       D1–D5 engines, statistics, scoring, gates, provenance; reuse rules, strata, trajectories, argument graphs, sense evolution
 verification  verbatim checks and provenance chains
-tools         the tool mesh: philology · retrieval · knowledge · analytics · study · literature · validation (47 tools)
+tools         the tool mesh: philology · retrieval · knowledge · analytics · study · literature · validation (48 tools)
 plugins       classics (corpus, store, domain pack, philology, collation, citations, text reuse, study) · knowledge · retrieval · models · sandbox · storage …
 agents        AgentSpecs, routing, the LLM loop, deterministic procedures, Code Mode, subagents
 engine        the research engine (operational and scientific loops, branches, tournament, report)
@@ -429,7 +442,7 @@ src/taochronos/            protocol/ kernel/ capabilities/ science/ verification
   plugins/classics/study/  the study layer: concordance · formulas · herbs · terms · taboo · network · metrology · learning · dataset · render
                            deep discovery: stemma · intertext · stratigraphy · cases · argument · senses · fragments
   plugins/classics/collation/  computational collation: anchored alignment · variant units · stemma and contamination · TEI
-tests/                     143 tests (fixtures/: source format samples and the study corpus)
+tests/                     159 tests (fixtures/: source format samples and the study corpus)
 docs/                      study, architecture, agents, discovery, evaluation, data, ADRs, roadmap
 ```
 
@@ -438,10 +451,15 @@ docs/                      study, architecture, agents, discovery, evaluation, d
 - **The repository holds catalogues, lock files, domain data and code only**; transcriptions stay in the local data
   directory (`.taochronos/`, git-ignored) and are rebuilt reproducibly by `corpus fetch / unpack / ingest`.
 - Licences are recorded per work in the catalogues and the store and travel with every witness: Kanripo and
-  Wikisource CC BY-SA 4.0; McGill public domain; 笈成 supplied by the user — the classical texts are in the public
+  Wikisource CC BY-SA 4.0; McGill public domain; CMETA's collation and editing CC BY 4.0 (attribution: 數位中醫校書郎
+  CMETA), the texts public domain; the 東亜医学協会's transcriptions © the association, non-commercial personal use
+  only and no redistribution — local research only; 笈成 supplied by the user — the classical texts are in the public
   domain, the punctuation and editing belong to the 笈成 editors, local research only; the web text sets declare no
   licence, local research only; Hugging Face classical-tcm-canon declares proprietary-commercial terms — local
   research only, never redistributed.
+- Image witnesses are catalogued as records only (title, date, holder, shelfmark, IIIF manifest, terms); **no image is
+  downloaded**, and each record carries its holder's terms (研医会 CC BY-NC 4.0, Keio CC BY-NC-SA 4.0, Berlin PDM 1.0,
+  the Library of Congress online reading only …).
 - Datasets and reports contain short quotes (≤ 120 characters) with their sources, never the texts.
 - Caches (entry headings, citation network, transmission results) live in `<data>/corpus/study-cache/`, keyed by a digest of the store,
   the normaliser and the book records; they are rebuilt when the corpus changes.
@@ -468,6 +486,9 @@ docs/                      study, architecture, agents, discovery, evaluation, d
   neither style nor dating evidence alone proves an addition. The case parser follows the layouts it was written
   for; only explicit markers make argument edges; candidate senses are clusters of words until a person reads them;
   a fragment is as reliable as its quoting book's verified precision.
+- Image witnesses are linked to works by title: a commentary or another work of the same title cannot be told apart
+  by the title, so links are for a person to check; only records are harvested, and a record's date is the
+  catalogue's (a Japanese era alone gives its span).
 - The system gives no medical advice; any research result is a lead until an expert (Gate G7) has reviewed it.
 
 ## 13. Roadmap and citation
@@ -481,7 +502,7 @@ NER and entity linking; page images and OCR; a segmentation model for unpunctuat
 human-in-the-loop review interface.
 
 When citing TaoChronos, cite the sources of the corpus you used (Kanseki Repository, 笈成, McGill University Library,
-Wikisource …) with their licences, and the corpus signature (given by `study dataset` and in every Discovery Report):
+數位中醫校書郎 CMETA, 東亜医学協会, Wikisource …) with their licences, and the corpus signature (given by `study dataset` and in every Discovery Report):
 
 ```
 TaoChronos: a provenance-grounded research harness for the Chinese medical classics.

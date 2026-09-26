@@ -15,6 +15,7 @@ keywords = ["traditional-chinese-medicine", "digital-humanities", "multi-agent",
 anthropic = ["anthropic>=1.0"]
 dev = ["pytest>=8"]
 parquet = ["pyarrow>=14"]  # `corpus catalog|ingest hf-tcm-canon` reads the Hugging Face Parquet file
+pdf = ["pypdf>=4"]  # `corpus catalog|ingest aeam` reads the 東亜医学協会 PDF texts
 
 [project.scripts]
 taochronos = "taochronos.cli:main"

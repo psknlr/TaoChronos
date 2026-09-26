@@ -1,9 +1,10 @@
 """维基文库 (zh.wikisource.org) from the Wikimedia dumps, without the API (which rate-limits shared addresses).
 
-``fetch`` finds the members of a category and its subcategories in the ``linktarget`` and ``categorylinks``
-tables, adds every subpage of each member work (``本草綱目/序例上``) from the multistream index, and downloads
-only the bz2 streams that hold those pages (HTTP Range requests on the multistream dump) — about 200 MB for
-Category:中醫 instead of the 7.9 GB dump.  The pages are kept as ``pages.jsonl`` (title, id, revision, wikitext).
+``fetch`` finds the members of the categories (中醫, and 醫書 for the medical books filed outside its tree) and
+their subcategories in the ``linktarget`` and ``categorylinks`` tables, adds every subpage of each member work
+(``本草綱目/序例上``) from the multistream index, and downloads only the bz2 streams that hold those pages (HTTP Range
+requests on the multistream dump) — about 200 MB instead of the 7.9 GB dump.  The pages are kept as
+``pages.jsonl`` (title, id, revision, wikitext); a new selection fetches only the pages not yet downloaded.
 
 ``read`` turns each work (main page + subpages, in the order the main page links them) into a document:
 headers give title, author, dynasty and year; ``{{*|…}}`` and ``<small>`` notes become （…）; ``{{參|原|讀}}``
@@ -27,12 +28,15 @@ from typing import Any, Callable, Iterator
 from .documents import Block, Document, chartype, strip_modern_paratext
 
 SOURCE = {
-    "id": "wikisource", "name": "维基文库（zh.wikisource.org）· Category:中醫", "url": "https://zh.wikisource.org/wiki/Category:中醫",
+    "id": "wikisource", "name": "维基文库（zh.wikisource.org）· Category:中醫、Category:醫書",
+    "url": "https://zh.wikisource.org/wiki/Category:中醫",
     "license": "CC BY-SA 4.0（维基文库录文与标点；古籍原文属公有领域）",
     "transcription": "维基文库志愿者录入与标点，部分页面为网络本批量导入（简体），未经本项目校勘",
     "acquisition": "Wikimedia dump (multistream, range requests)", "edition_name": "维基文库本",
 }
 DUMPS = "https://dumps.wikimedia.org/zhwikisource/latest/"
+# Category:中醫 and its tree; Category:醫書 files a few medical books (醫方類聚, 鄕藥集成方 …) outside it
+CATEGORIES = ("中醫", "醫書")
 _NS_SKIP = ("Author:", "Index:", "Template:", "Category:", "Page:", "Wikisource:", "File:", "Help:", "Portal:", "Module:",
             "Translation:", "Transwiki:", "MediaWiki:", "Special:")
 Log = Callable[[str], None]
@@ -57,8 +61,10 @@ def _unesc(b: bytes) -> str:
     return re.sub(rb"\\(.)", rb"\1", b).decode("utf-8", "replace")
 
 
-def category_members(dump: Path, category: str, log: Log = print) -> tuple[list[tuple[str, int, int]], dict[str, list[str]]]:
-    """(title, page id, stream offset) of the pages in ``category`` and its subcategories; the subcategory tree."""
+def category_members(dump: Path, category: str | tuple[str, ...] | list[str], log: Log = print
+                     ) -> tuple[list[tuple[str, int, int]], dict[str, list[str]]]:
+    """(title, page id, stream offset) of the pages in the categories and their subcategories; the subcategory tree."""
+    categories = [category] if isinstance(category, str) else list(category)
     lt_re = re.compile(rb"\((\d+),(-?\d+),'((?:[^'\\]|\\.)*)'\)")
     cats: dict[int, str] = {}
     with gzip.open(dump / "zhwikisource-latest-linktarget.sql.gz", "rb") as f:
@@ -78,8 +84,8 @@ def category_members(dump: Path, category: str, log: Log = print) -> tuple[list[
                     frm, typ, tgt = int(m.group(1)), m.group(2), int(m.group(3))
                     (subcats if typ == b"subcat" else pages_of).setdefault(tgt, []).append(frm)
     index = read_index(dump)
-    root = by_title[category]
-    seen, queue, tree = {root}, [root], {}
+    roots = [by_title[c] for c in categories if c in by_title]
+    seen, queue, tree = set(roots), list(roots), {}
     while queue:
         t = queue.pop()
         for child in subcats.get(t, []):
@@ -91,7 +97,7 @@ def category_members(dump: Path, category: str, log: Log = print) -> tuple[list[
                 seen.add(lt)
                 queue.append(lt)
     members = sorted({(index[p][1], p, index[p][0]) for t in seen for p in pages_of.get(t, []) if p in index})
-    log(f"  {category}: {len(seen)} categories, {len(members)} member pages")
+    log(f"  {'、'.join(categories)}: {len(seen)} categories, {len(members)} member pages")
     return members, tree
 
 
@@ -119,19 +125,39 @@ def _dump_meta(dump: Path) -> dict[str, Any]:
     return out
 
 
-def fetch(dest: str | Path, category: str = "中醫", log: Log = print, refresh: bool = False) -> dict[str, Any]:
-    """Download the dump tables, select the category's works and their subpages, fetch their streams and write
+def _selected(dest: Path) -> list[str] | None:
+    path = dest / "members.json"
+    if not path.exists() or not (dest / "pages.jsonl").exists():
+        return None
+    info = json.loads(path.read_text(encoding="utf-8"))
+    return list(info.get("categories") or [info["category"]])
+
+
+def fetch(dest: str | Path, categories: str | tuple[str, ...] | list[str] = CATEGORIES, log: Log = print,
+          refresh: bool = False) -> dict[str, Any]:
+    """Download the dump tables, select the categories' works and their subpages, fetch their streams and write
     ``pages.jsonl`` and ``members.json``; returns facts for the lockfile.  An existing download is kept unless
-    ``refresh``."""
+    ``refresh``; a new selection of categories fetches only the pages not downloaded yet (from the same dump)."""
     dest = Path(dest)
     dump = dest / "dump"
-    if refresh or not (dest / "pages.jsonl").exists() or not (dest / "members.json").exists():
+    cats = [categories] if isinstance(categories, str) else list(categories)
+    if refresh or _selected(dest) != cats:
         dump.mkdir(parents=True, exist_ok=True)
+        kept: dict[int, dict[str, Any]] = {}
+        if not refresh and (dest / "pages.jsonl").exists():
+            recorded = (json.loads((dest / "members.json").read_text(encoding="utf-8")).get("dump") or {}).get(
+                "zhwikisource-latest-pages-articles-multistream.xml.bz2", {}).get("last_modified")
+            current = _dump_meta(dump)["zhwikisource-latest-pages-articles-multistream.xml.bz2"]["last_modified"]
+            if recorded and current != recorded:
+                raise SystemExit(f"the Wikisource dump changed ({recorded} → {current}): the stream offsets of the local index "
+                                 "no longer hold; fetch again from the new dump (refresh)")
+            with open(dest / "pages.jsonl", encoding="utf-8") as f:
+                kept = {pg["id"]: pg for pg in map(json.loads, f)}
         for name in _DUMP_TABLES:
             if refresh and (dump / name).exists():
                 (dump / name).unlink()
             _download(name, dump, log)
-        members, tree = category_members(dump, category, log)
+        members, tree = category_members(dump, cats, log)
         index = read_index(dump)
         works = {t for t, _, _ in members if not t.startswith(_NS_SKIP)}
         wanted: dict[int, str] = {p: t for t, p, _ in members if t in works}
@@ -142,9 +168,9 @@ def fetch(dest: str | Path, category: str = "中醫", log: Log = print, refresh:
                     wanted[pid] = title
                     break
         offsets = sorted({off for off, _ in index.values()})
-        need = sorted({index[p][0] for p in wanted})
+        pages: dict[int, dict[str, Any]] = {p: kept[p] for p in wanted if p in kept}
+        need = sorted({index[p][0] for p in wanted if p not in pages})
         url = DUMPS + "zhwikisource-latest-pages-articles-multistream.xml.bz2"
-        pages: dict[int, dict[str, Any]] = {}
         fetched = 0
         for off in need:
             i = bisect.bisect_right(offsets, off)
@@ -164,9 +190,10 @@ def fetch(dest: str | Path, category: str = "中醫", log: Log = print, refresh:
             for pid in sorted(pages):
                 f.write(json.dumps(pages[pid], ensure_ascii=False) + "\n")
         with open(dest / "members.json", "w", encoding="utf-8") as f:
-            json.dump({"category": category, "tree": tree, "works": sorted(works), "streams": len(need), "stream_bytes": fetched},
+            json.dump({"category": cats[0], "categories": cats, "tree": tree, "works": sorted(works), "streams": len(need),
+                       "stream_bytes": fetched, **({"dump": _dump_meta(dump)} if not refresh and kept else {})},
                       f, ensure_ascii=False, indent=1)
-        log(f"  {len(pages)} pages from {len(need)} streams ({fetched} bytes)")
+        log(f"  {len(pages)} pages ({len(kept)} kept, {len(need)} streams fetched, {fetched} bytes)")
     info = json.loads((dest / "members.json").read_text(encoding="utf-8"))
     if "dump" not in info:
         info["dump"] = _dump_meta(dump)
@@ -177,7 +204,8 @@ def fetch(dest: str | Path, category: str = "中醫", log: Log = print, refresh:
             n += 1
             ts = json.loads(line).get("ts") or ""
             latest = max(latest, ts)
-    return {"category": info["category"], "subcategories": info.get("tree", {}), "works": len(info["works"]), "pages": n,
+    return {"category": info["category"], "categories": info.get("categories") or [info["category"]],
+            "subcategories": info.get("tree", {}), "works": len(info["works"]), "pages": n,
             "latest_revision": latest or None, "dump": info["dump"]}
 
 
@@ -442,7 +470,8 @@ def read(dest: str | Path) -> list[Document]:
                 linked.append(full)
         order = linked + sorted((c for c in children if c not in linked), key=_natural)
         main_text = main["text"]
-        if children:  # the main page lists the subpages: that list is a table of contents
+        if children or re.search(r"^\s*[*#]+\s*\[\[/", main["text"], re.M):  # the main page lists its subpages (written or
+            # not yet): that list is a table of contents
             main_text = "\n".join(l for l in main_text.split("\n") if not _TOC_LINE.match(l))
         blocks = wikitext_blocks(main_text, page=None)
         revs = [main["rev"]]

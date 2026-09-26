@@ -100,7 +100,7 @@ the CLI (`taochronos study …`), the `study.*` tools on the existing agents and
 
 ## Tools and the scheduler
 
-The **Tool Mesh** (`tools/mesh.py`) exposes 47 tools in seven families (philology, retrieval, knowledge,
+The **Tool Mesh** (`tools/mesh.py`) exposes 48 tools in seven families (philology, retrieval, knowledge,
 analytics, study, literature, validation) plus `research.run_code` (Code Mode). Every call passes the same
 gauntlet — permission → argument schema → budget → `BeforeToolCall` hooks → execution → events →
 `AfterToolCall` hooks — whether a model or a deterministic procedure makes it. Consecutive

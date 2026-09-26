@@ -34,6 +34,7 @@ class Block:
     text: str
     level: int = 0
     page: str | None = None  # a physical page (McGill 10a) or a source subpage (Wikisource 卷一)
+    image: str | None = None  # the image of that page, where the source publishes one (CMETA)
 
 
 @dataclass
@@ -242,7 +243,8 @@ def build_document_catalog(docs: Iterable[Document], source: dict[str, Any], *, 
                 entry[k] = getattr(doc, k)
         if doc.meta.get("notes"):
             entry["notes_text"] = doc.meta["notes"]
-        for k in ("mixed", "cites_work", "notes_text", "quality"):
+        for k in ("mixed", "cites_work", "notes_text", "quality", "edition", "edition_year", "holding", "notes", "markers",
+                  "chapter_layers"):
             if k in ov:
                 entry[k] = ov[k]
         status = "ingest"
@@ -310,6 +312,28 @@ def _slug(code: str) -> str:
     return (s[:24] + "_" if s else "") + hashlib.sha1(code.encode("utf-8")).hexdigest()[:10]
 
 
+def note_segments(text: str) -> list[tuple[str, str]]:
+    """(``text`` | ``note``, piece) in reading order: the notes are the outermost （…） of the text, given without
+    their brackets (a note may hold brackets of its own)."""
+    out: list[tuple[str, str]] = []
+    depth, start = 0, 0
+    for i, ch in enumerate(text):
+        if ch == "（":
+            if depth == 0:
+                if i > start:
+                    out.append(("text", text[start:i]))
+                start = i + 1
+            depth += 1
+        elif ch == "）" and depth:
+            depth -= 1
+            if depth == 0:
+                out.append(("note", text[start:i]))
+                start = i + 1
+    if start < len(text):
+        out.append(("note" if depth else "text", text[start:]))
+    return [(k, p) for k, p in out if p.strip(FULL_SPACE + " ")]
+
+
 def document_rows(doc: Document, entry: dict[str, Any], *, chronology: Any = None, dynasty_of: Any = None,
                   report: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """Passages of an admitted document, dated by its catalog entry (paratext by its own signature)."""
@@ -325,6 +349,21 @@ def document_rows(doc: Document, entry: dict[str, Any], *, chronology: Any = Non
     dropping: int | None = None
     seq = 0
     layers: dict[str, int] = {}
+    notes_spec = entry.get("notes")
+    markers = list(entry.get("markers") or [])
+    chapter_layers = list(entry.get("chapter_layers") or [])
+
+    def split_markers(note: str) -> list[tuple[str, list[int], str | None, str]]:
+        """A note in its layer, cut where a marker (新校正云) hands it to another."""
+        cuts = sorted((m.start(), mk) for mk in markers for m in re.finditer(mk["prefix"], note))
+        out, pos, cur = [], 0, notes_spec
+        for at, mk in cuts:
+            if at > pos:
+                out.append((cur["layer"], list(cur["year"]), cur.get("attribution"), note[pos:at]))
+            pos, cur = at, mk
+        if pos < len(note):
+            out.append((cur["layer"], list(cur["year"]), cur.get("attribution"), note[pos:]))
+        return out
 
     def temporal(year_range: list[int], layer: str, citation: list[int] | None) -> dict[str, Any]:
         mid = (year_range[0] + year_range[1]) / 2
@@ -355,32 +394,54 @@ def document_rows(doc: Document, entry: dict[str, Any], *, chronology: Any = Non
         if not text:
             continue
         kind = "toc" if toc else ("preface" if front else ("formula" if b.kind == "formula" else "text"))
+        path = [heads[k] for k in sorted(heads)]
+        attribution = None
         if front:
             layer, years, citation = "卷首（序跋凡例等，年代未定，按下限计）", [front_year, front_year], None
         elif mixed:
             layer, years, citation = mixed["layer"], list(mixed["year"]), list(cites) if cites else list(comp)
         else:
             layer, years, citation = "正文", list(comp), None
-        path = [heads[k] for k in sorted(heads)]
+            added = next((c for c in chapter_layers if any(re.search(c["pattern"], h) for h in path)), None)
+            if added is not None:  # a chapter added by a later hand (素问's 运气七篇, by 王冰)
+                layer, years, attribution = added["layer"], list(added["year"]), added.get("attribution")
         volume = path[0] if len(path) > 2 else None
         rest = path[1:] if len(path) > 2 else path
         loc = {"volume": volume, "chapter": rest[0] if rest else None, "section": " · ".join(rest[1:]) or None,
                "precision": "exact"}
         if b.page:
             loc["page"] = b.page
-        for s0, e0 in split_long(text):
-            chunk = text[s0:e0]
-            if not chunk.strip(FULL_SPACE + " "):
-                continue
-            t = temporal(years, layer, citation)
-            rows.append({
-                "id": f"{book_id}.{seq:05d}", "book_id": book_id, "edition_id": edition_id, "seq": seq, "kind": kind,
-                "layer": layer, "year": (years[0] + years[1]) / 2, "y_start": years[0], "y_end": years[1], "locator": loc,
-                "temporal": t, "text": chunk, "punctuation": doc.punctuation,
-                "extra": {"layer": layer, **({"chartype": doc.chartype} if doc.chartype != "traditional" else {})},
-            })
-            layers[layer] = layers.get(layer, 0) + 1
-            seq += 1
+        if b.image:
+            loc["image_uri"] = b.image
+        # notes in （…） take their own dated layer when the catalog gives one (王冰注, split at 新校正云 …)
+        pieces = [(layer, years, attribution, text)] if front or mixed or not notes_spec else [
+            (lay, yrs, att, piece) for piece_kind, piece in note_segments(text)
+            for lay, yrs, att, piece in ([(layer, years, attribution, piece)] if piece_kind == "text" else split_markers(piece))]
+        if len(pieces) > 1:  # the stop left after a note (…五行（注）。) closes the text before the note
+            merged: list[tuple[str, list[int], str | None, str]] = []
+            for piece in pieces:
+                if merged and not han(piece[3]):
+                    j = next((k for k in range(len(merged) - 1, -1, -1) if merged[k][0] == layer), len(merged) - 1)
+                    merged[j] = (*merged[j][:3], merged[j][3] + piece[3].strip(FULL_SPACE + " "))
+                else:
+                    merged.append(piece)
+            pieces = merged
+        for layer_i, years_i, attribution_i, piece_text in pieces:
+            piece_text = piece_text.strip(FULL_SPACE + " ")
+            for s0, e0 in split_long(piece_text):
+                chunk = piece_text[s0:e0]
+                if not chunk.strip(FULL_SPACE + " "):
+                    continue
+                t = temporal(years_i, layer_i, citation)
+                rows.append({
+                    "id": f"{book_id}.{seq:05d}", "book_id": book_id, "edition_id": edition_id, "seq": seq, "kind": kind,
+                    "layer": layer_i, "year": (years_i[0] + years_i[1]) / 2, "y_start": years_i[0], "y_end": years_i[1],
+                    "locator": loc, "temporal": t, "text": chunk, "punctuation": doc.punctuation,
+                    "extra": {"layer": layer_i, **({"attribution": attribution_i} if attribution_i else {}),
+                              **({"chartype": doc.chartype} if doc.chartype != "traditional" else {})},
+                })
+                layers[layer_i] = layers.get(layer_i, 0) + 1
+                seq += 1
     signed = date_signed_prefaces(rows, chronology, dynasty_of, entry.get("dynasty", ""), layers) if chronology is not None else 0
     if report is not None:
         report.update({"passages": len(rows), "signed_prefaces": signed, "layers": {k: v for k, v in layers.items() if v}})
@@ -402,13 +463,19 @@ def document_book_record(entry: dict[str, Any], source: dict[str, Any], version:
                                   + (f"（{entry['dating_note']}）" if entry.get("dating_note") else "")) if x)
     quality = float(entry.get("quality", 0.5 if entry.get("chartype") == "simplified" else 0.7))
     layers = [{"kind": "mixed", **entry["mixed"]}] if entry.get("mixed") else []
+    if entry.get("notes"):
+        layers.append({"kind": "notes", **entry["notes"]})
+    layers += [{"kind": "marker", **m} for m in entry.get("markers") or []]
+    layers += [{"kind": "chapter_layers", **c} for c in entry.get("chapter_layers") or []]
     return {
         "id": entry["id"], "title": entry["title"], "aliases": entry.get("aliases", []), "authors": entry.get("authors", []),
         "dynasty": entry.get("dynasty", ""), "category": entry.get("category", ""), "composition": entry["composition"],
         "author_life": None, "dating_basis": "composition", "attribution": entry.get("attribution", "traditional"),
         "school": None, "work": entry.get("work"),
         "editions": [{"id": f"{entry['id']}@{source['id']}", "name": source.get("edition_name", source.get("name", "")) +
-                      (f"（{entry['edition']}）" if entry.get("edition") else ""), "year": None, "quality": quality}],
+                      (f"（{entry['edition']}）" if entry.get("edition") else ""),
+                      "year": list(entry["edition_year"]) if entry.get("edition_year") else None, "quality": quality,
+                      **({"holding_institution": entry["holding"]} if entry.get("holding") else {})}],
         "source": {"origin": source.get("name", ""), "license": licence, "acquisition": source.get("acquisition", "") + (f" {version}" if version else ""),
                    "url": entry.get("url") or source.get("url"), "transcription": source.get("transcription", ""), "verified": False},
         "notes": notes, "layers": layers, "source_id": source["id"], "source_ref": entry.get("ref") or entry["code"],

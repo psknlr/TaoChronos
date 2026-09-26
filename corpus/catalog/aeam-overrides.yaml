@@ -1,0 +1,81 @@
+# Curated records of the 東亜医学協会 texts (keyed by PDF stem; see plugins/classics/ingest/aeam.py).  Each text is a
+# transcription of a named base edition: `work` joins it to the other witnesses, `edition_year` dates the base.
+
+somon:
+  title: 素问（东亚医学协会本·顾从德本）
+  work: suwen
+  authors: [佚名（托名黄帝、岐伯）]
+  dynasty: 战国—西汉
+  composition: [-300, 25]
+  attribution: pseudepigraphic
+  category: 医经
+  edition: 底本明嘉靖二十九年（1550）顾从德本（日本经络学会影印本，1992）；白文，不含王冰注
+  edition_year: [1550, 1550]
+  chapter_layers: [{pattern: "天元紀大論|天元纪大论|五運行大論|六微[旨㫖]大論|氣交變大論|五常政大論|六元正紀大論|至[真眞]要大論",
+                    layer: 运气七篇（王冰补入）, year: [762, 762], attribution: 王冰次注时补入，来源与年代存疑（一说为《阴阳大论》）}]
+
+reisu:
+  title: 灵枢（东亚医学协会本·明无名氏本）
+  work: lingshu
+  authors: [佚名（托名黄帝、岐伯）]
+  dynasty: 战国—西汉
+  composition: [-300, 25]
+  attribution: pseudepigraphic
+  category: 医经
+  edition: 底本明无名氏刊本（日本经络学会影印本，1992；内藤湖南旧藏）
+  edition_year: [1368, 1644]
+
+nangyo:
+  title: 难经（东亚医学协会本）
+  work: nanjing
+  authors: [秦越人（旧题）]
+  dynasty: 东汉
+  composition: [0, 200]
+  attribution: pseudepigraphic
+  category: 医经
+  edition: 底本多纪元胤《黄帝八十一难经疏证》所载经文（国立国会图书馆藏，东方出版《难经古注集成》影印）
+  edition_year: [1789, 1827]
+  notes_text: 版本年代按多纪元胤生卒计（疏证成书年待核）
+
+shanghanlun:
+  title: 伤寒论（东亚医学协会本·赵开美本）
+  work: shanghanlun
+  authors: [张机]
+  dynasty: 东汉
+  composition: [200, 219]
+  category: 伤寒
+  edition: 底本明万历二十七年（1599）赵开美本（燎原书店影印本，1988）
+  edition_year: [1599, 1599]
+
+jinguiyaolue:
+  title: 金匮要略（东亚医学协会本·邓珍本）
+  work: jinkui
+  authors: [张机]
+  dynasty: 东汉
+  composition: [200, 219]
+  category: 杂病
+  edition: 底本元邓珍本（燎原书店影印本，1988）
+  edition_year: [1340, 1340]
+
+shennongbencaojing:
+  title: 神农本草经（森立之校正本）
+  work: shennong
+  authors: [佚名（托名神农）]
+  dynasty: 东汉
+  composition: [25, 220]
+  attribution: compiled
+  category: 本草
+  edition: 底本日本嘉永七年（1854）森立之校正本
+  edition_year: [1854, 1854]
+  notes_text: 森立之辑本（据《证类本草》等所载白字辑出，江户时代），与清人辑本（孙星衍等）并为本经辑本；原文年代按本经计
+
+henjyaku:
+  title: 扁鹊仓公列传
+  work: shiji_bianque_canggong
+  authors: [司马迁]
+  dynasty: 西汉
+  composition: [-104, -91]
+  category: 医史
+  edition: 《史记》卷一百五；底本日本嘉永二年（1849）影宋本（东方出版《东洋医学善本丛书》第五期，1992）
+  edition_year: [1849, 1849]
+  notes_text: 仓公传所载淳于意“诊籍”二十五则，为现存最早的病案记录

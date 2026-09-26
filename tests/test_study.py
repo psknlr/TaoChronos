@@ -164,6 +164,28 @@ def test_markdown_pages_carry_sources_and_notices(study):
         assert markdown(kind, result, study.signature()).startswith("# ")
 
 
+def test_witnesses_list_the_transcriptions_and_the_digitised_copies(study, tmp_path):
+    from taochronos.plugins.classics.ingest.images import Record, write_csv
+    from taochronos.plugins.classics.study.witnesses import WitnessStudy
+
+    write_csv(tmp_path / "a.csv", [
+        Record(id="nijl:1", source="nijl:knik", holder="研医会図書館", title="新刊傷寒論", years="1801", kind="刊",
+               manifest="https://example.org/1/manifest", page="https://example.org/1", rights="CC BY-NC 4.0", work="shanghanlun",
+               book="shl", match="without-print-prefix"),
+        Record(id="sbb:2", source="sbb:unschuld", holder="Staatsbibliothek zu Berlin", title="傷寒論（写本）", years="1790",
+               book="shl_b", match="without-volumes"),
+        Record(id="loc:3", source="loc:chinese-rare-books", holder="Library of Congress", title="本草綱目", work="bencao")])
+    r = WitnessStudy(study, study._stemma, catalog_dir=tmp_path).run("伤寒论")
+    assert r["work_key"] == "shanghanlun" and sorted(t["books"][0] for t in r["text_witnesses"]) == ["shl", "shl_b"]
+    assert [w["id"] for w in r["image_witnesses"]] == ["sbb:2", "nijl:1"]  # by year; linked by work or by book
+    assert (r["image_count"], r["with_manifest"]) == (2, 1)
+    assert r["holders"] == {"Staatsbibliothek zu Berlin": 1, "研医会図書館": 1}
+    page = markdown("witnesses", r, study.signature())
+    assert page.startswith("# 版本与影像见证") and "[新刊傷寒論](https://example.org/1)" in page and "without-print-prefix" in page
+    empty = WitnessStudy(study, study._stemma, catalog_dir=tmp_path / "none").run("伤寒论")
+    assert empty["image_witnesses"] == [] and len(empty["text_witnesses"]) == 2  # no catalog: the transcriptions only
+
+
 # ------------------------------------------------------------------ tools, CLI, agent
 def test_study_tools_through_the_scheduler(harness):
     call = lambda tool, **a: harness.scheduler.execute(ToolCall(tool, a), actor=Actor.kernel())  # noqa: E731

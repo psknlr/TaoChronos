@@ -41,7 +41,7 @@ from .base import StudyBase, dated
 
 SIGLA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 SOURCE_NAMES = {"kanripo": "四库", "jicheng": "笈成", "wikisource": "维基文库", "mcgill": "McGill", "tcm-ancient-books": "TCM-AB",
-                "tcmoc": "tcmoc", "hf-tcm-canon": "HF", "demo": "演示"}
+                "tcmoc": "tcmoc", "hf-tcm-canon": "HF", "cmeta": "CMETA", "aeam": "东亚医学协会", "demo": "演示"}
 _NOTE = re.compile(r"（[^（）]*）|\([^()]*\)|〔[^〔〕]*〕|【[^【】]*】|\[[^\[\]]*\]")
 _VOLUME = re.compile(r"[（(](?:[上中下]|[一二三四五六七八九十]+)[）)]$")
 _FRONT_LAYER = re.compile(r"^(?:卷首|序跋)")

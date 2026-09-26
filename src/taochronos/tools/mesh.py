@@ -500,6 +500,10 @@ def _study_fragments(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(res, int(a.get("items", 20)))
 
 
+def _study_witnesses(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).witnesses(a["work"]), int(a.get("items", 20)))
+
+
 def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
     reg = ToolRegistry()
     specs = [
@@ -645,6 +649,11 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "read), and the term's context neighbourhood period by period.",
                  obj({"term": S, "per_period": I, "items": I}, ["term"]), _study_senses, family="study", permission="classics:read",
                  expensive=True, returns="series, change point, candidate senses, neighbourhood, exemplar check"),
+        ToolSpec("study.witnesses", "版本与影像见证: every witness of a work — its transcriptions in the store (edition, date, holder, "
+                 "licence, whether passages link their page image) and the digitised copies in libraries (NIJL, Berlin, LoC, "
+                 "早稲田, NDL: holder, date, shelfmark, IIIF manifest, terms of use), linked by title (check `match`).",
+                 obj({"work": S, "items": I}, ["work"]), _study_witnesses, family="study", permission="classics:read",
+                 returns="text witnesses; image witnesses with manifests and rights"),
         ToolSpec("study.fragments", "佚书辑佚: a lost work's fragments gathered from the books that quote it (entries opened by its "
                  "name and closed by 出第N卷 notes, 又 continuations, inline 《…》云), merged across quoting books and ordered by "
                  "volume; with verify, checked against the work's surviving witnesses (and each quoting book's reliability).",

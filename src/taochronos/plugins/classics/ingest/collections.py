@@ -2,8 +2,9 @@
 texts are judged against the store.
 
 Sources rank in the order their texts are trusted as witnesses — curated editions first (Kanripo, 笈成), then
-independent transcriptions of prints (McGill), the volunteers' transcriptions on Wikisource, and last the web
-copies (TCM-Ancient-Books, tcmoc, the Hugging Face dataset).  A collection's texts are compared only with the
+independent transcriptions of prints (McGill; CMETA's editions collated page by page against their images; the
+東亜医学協会's texts of named base editions), the volunteers' transcriptions on Wikisource, and last the web copies
+(TCM-Ancient-Books, tcmoc, the Hugging Face dataset).  A collection's texts are compared only with the
 books of higher-ranked sources and with each other, so a catalog comes out the same whatever order the sources
 are ingested in.
 """
@@ -18,13 +19,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from . import mcgill, textsets, wikisource
+from . import aeam, cmeta, mcgill, textsets, wikisource
 from .documents import Document
 from .fetch import _clone
 
 Log = Callable[[str], None]
 
-RANK = {"kanripo": 0, "jicheng": 1, "mcgill": 2, "wikisource": 3, "tcm-ancient-books": 4, "tcmoc": 5, "hf-tcm-canon": 6}
+RANK = {"kanripo": 0, "jicheng": 1, "mcgill": 2, "cmeta": 3, "aeam": 4, "wikisource": 5, "tcm-ancient-books": 6, "tcmoc": 7,
+        "hf-tcm-canon": 8}
 
 
 @dataclass(frozen=True)
@@ -109,6 +111,10 @@ def _ws_fetch(root: Path, log: Log) -> dict[str, Any]:
 COLLECTIONS: dict[str, Collection] = {c.id: c for c in (
     Collection(mcgill.SOURCE, "mg", "mcgill/gynaecology", _git(mcgill.SOURCE["url"], "xml-files/*.xml"), mcgill.read,
                duplicate=None, same_work=None, derivative=False),
+    # editions collated page by page against their images: independent witnesses, never copies (matches recorded only)
+    Collection(cmeta.SOURCE, "cm", "cmeta", cmeta.fetch, cmeta.read, duplicate=None, same_work=None, derivative=False),
+    # a scholarly society's transcriptions of named base editions: independent witnesses too
+    Collection(aeam.SOURCE, "ae", "aeam", aeam.fetch, aeam.read, duplicate=None, same_work=None, derivative=False),
     # most pages are web copies (zysj.com.cn / 中医瑰宝苑), many converted back to traditional characters ({{s2t}})
     Collection(wikisource.SOURCE, "ws", "wikisource", _ws_fetch, wikisource.read, duplicate=0.85, same_work=0.4, derivative=True),
     Collection(textsets.TAB_SOURCE, "tab", "tcm-ancient-books/repo", _git(textsets.TAB_SOURCE["url"], "*.txt"), textsets.read_tab,

@@ -734,7 +734,7 @@ mcgill:
   bytes: 2782659
   locked: '2026-09-26'
 wikisource:
-  name: 维基文库（zh.wikisource.org）· Category:中醫
+  name: 维基文库（zh.wikisource.org）· Category:中醫、Category:醫書
   license: CC BY-SA 4.0（维基文库录文与标点；古籍原文属公有领域）
   url: https://zh.wikisource.org/wiki/Category:中醫
   catalog: wikisource.yaml
@@ -751,8 +751,8 @@ wikisource:
     - 李杲
     傷寒雜病論:
     - 傷寒雜病論注疏
-  works: 641
-  pages: 1924
+  works: 644
+  pages: 1938
   latest_revision: '2026-08-27T10:08:30Z'
   dump:
     zhwikisource-latest-pages-articles-multistream-index.txt.bz2:
@@ -768,6 +768,9 @@ wikisource:
       bytes: 7889421692
       last_modified: Tue, 01 Sep 2026 14:24:25 GMT
   locked: '2026-09-26'
+  categories:
+  - 中醫
+  - 醫書
 tcm-ancient-books:
   name: TCM-Ancient-Books（中医药古籍文本，GitHub xiaopangxia）
   license: 未声明授权（古籍原文属公有领域；多为笈成整理本的简体转换本，经“中医世家”网站流传）；仅供本地研究使用
@@ -804,4 +807,104 @@ hf-tcm-canon:
     README.md:
       bytes: 4179
       sha256: 407dc9098a1b61096f49a1832b7cf9a48d458e1b0ffa86dcbb9335ea20c35571
+  locked: '2026-09-26'
+cmeta:
+  name: 數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）
+  license: CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）
+  url: https://cmeta.lctseng.csie.org/
+  catalog: https://cmeta.lctseng.csie.org/library/catalog.json
+  catalog_sha256: 708fb554b790b16cf27f24a1514f1de4c48253c9a469aaefe34867a3401a897f
+  editions: 11
+  texts:
+    shanghan_zhao_kaimei:
+      file: texts/傷寒論明趙開美本_校訂重切.md
+      bytes: 279842
+      sha256: c671dcbc0e726c51cc46c2ce4e56fdd91e8ec84d6712d4f2176e39490f5e900b
+    shanghan_npm:
+      file: texts/宋本傷寒論(臺北故宮藏本)_校訂重切.md
+      bytes: 295324
+      sha256: 0d18169b3d9e3717766fe2759805a5f888a24641a4f2135c0edd8aeba1987024
+    shanghan_kangzhi:
+      file: texts/康治本傷寒論_校訂重切.md
+      bytes: 34144
+      sha256: 3b87eb639289ec94ef8a2067189a03411f06a1937223cc69d4516032c77afa4e
+    kanhei_shanghan_vision_ocr:
+      file: texts/古本康平傷寒論_校訂重切.md
+      bytes: 105331
+      sha256: b1c3cbce6acbecc04fa1e5e2794057b51f4e8828a9d134731f621660e6969e60
+    shanghan_guilin:
+      file: texts/桂林古本傷寒雜病論_校訂重切.md
+      bytes: 262039
+      sha256: 1b13030c63e4e4d0ce2fab09f7239f63e9bb2a9fd6c42abf57eb15a0380664f0
+    jingui_wuqian:
+      file: texts/吳遷本金匱要略_校訂重切.md
+      bytes: 135695
+      sha256: 679ed0e8df6ef5144866d93b76cc91f53ebc2444fb11bb59dbc242a1d3596249
+    jingui_dengzhen:
+      file: texts/鄧珍本金匱_校訂重切.md
+      bytes: 139817
+      sha256: 1a5ce1cfac78b8cdb7a79dee812d0037187da1ed678b328159e96d5ba89581d8
+    gujin_yian_an:
+      file: texts/古今醫案按_校訂重切.md
+      bytes: 878190
+      sha256: 18c3758321f8f25e9d7a051e487647637f923abb53966d5008406e3129409930
+    mingyi_leian:
+      file: texts/名醫類案_校訂重切.md
+      bytes: 1140276
+      sha256: 7cd2a62fee203ba1277be5e68644990724cb15377d54a2742e510c0a2c17ba73
+    suwen_gucongde:
+      file: texts/重廣補注黃帝內經素問_校訂重切.md
+      bytes: 1077058
+      sha256: a5dd710685103c5f965f603e1a07d61b9b72c83e688aeccffe0d7326853bda68
+    lingshu_sibucongkan:
+      file: texts/黃帝素問靈樞經_校訂重切.md
+      bytes: 254819
+      sha256: 73bce3676b60d530b6a9eec2153ed88cea3123c789fee64b9950ee4b73fa9951
+  guest_images:
+  - gujin_yian_an
+  - kanhei_shanghan_vision_ocr
+  - lingshu_sibucongkan
+  - mingyi_leian
+  - nanjing_jizhu_keian
+  - shanghan_npm
+  - shanghan_zhao_kaimei
+  - suwen_gucongde
+  fetched: '2026-09-26'
+  locked: '2026-09-26'
+aeam:
+  name: 東亜医学協会 · 医学古典テキスト（The Association of East-Asian Medicine）
+  license: © 東亜医学協会：限非营利的个人保存与使用，未经许可不得转载、再分发（https://aeam.jp/terms/）；古籍原文属公有领域；仅供本地研究
+  url: https://aeam.jp/koten/
+  catalog: aeam.yaml
+  page: https://aeam.jp/koten/
+  files:
+    henjyaku:
+      url: https://aeam.jp/wp/wp-content/uploads/2024/03/henjyaku.pdf
+      bytes: 473115
+      sha256: a4cfa20ea1c159047626f248f47533a805b152339bd786407fdd8583fc1755bc
+    jinguiyaolue:
+      url: https://aeam.jp/wp/wp-content/uploads/2024/03/jinguiyaolue.pdf
+      bytes: 846058
+      sha256: b5245b57a1d2e4b3105533efc23072504b9cfdb1ff352b8638e0c02986524329
+    nangyo:
+      url: https://aeam.jp/wp/wp-content/uploads/2024/03/nangyo.pdf
+      bytes: 450977
+      sha256: 700574908000e7c550f973fd9648e7fb17df404860d7019cc58749e9bf9a1188
+    reisu:
+      url: https://aeam.jp/wp/wp-content/uploads/2024/03/reisu.pdf
+      bytes: 1225490
+      sha256: 97df9d08f4d4104e95fa4150fe2a76decc1d2106c695da73da036556f1b8e015
+    shanghanlun:
+      url: https://aeam.jp/wp/wp-content/uploads/2024/03/shanghanlun.pdf
+      bytes: 848662
+      sha256: d7df9f10f50dcb42dcd99a7e311732cc9d44e0964eb83633b2486ba59c6b4199
+    shennongbencaojing:
+      url: https://aeam.jp/wp/wp-content/uploads/2024/03/shennongbencaojing.pdf
+      bytes: 545451
+      sha256: e9031da5799a003f0eb3a4f01bc4b09deed3868918e6bf3213c8d744c151f0f2
+    somon:
+      url: https://aeam.jp/wp/wp-content/uploads/2024/03/somon.pdf
+      bytes: 1476341
+      sha256: fa4daf15037122d275779933fc0d435024ae07451b031f296dfb57f525a7f1d7
+  fetched: '2026-09-26'
   locked: '2026-09-26'

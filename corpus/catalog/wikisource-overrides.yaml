@@ -35,3 +35,11 @@
   dynasty: 元
   category: 本草
   notes_text: 南宋陈元靓编类书《事林广记》续集卷十“医学类”（药忌、炮制），据元至顺间刊本系统，按元刊年代断代
+
+醫方類聚:  # in Category:醫書, outside the 中醫 tree
+  title: 医方类聚
+  authors: [金礼蒙, 柳诚源, 闵普和]
+  dynasty: 朝鲜
+  composition: [1443, 1445]
+  category: 方书
+  notes_text: 朝鲜世宗（李祹）命金礼蒙、柳诚源、闵普和等据中国医书一百五十余种分门类编，1445年编成，1477年活字初刊；维基文库仅录凡例、引用诸书及部分卷次；所引宋元明医书原文可资辑佚与校勘

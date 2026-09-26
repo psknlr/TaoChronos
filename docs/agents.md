@@ -62,7 +62,7 @@ need.
 
 | Agent | Tools added |
 |---|---|
-| Philologist | `study.variants`, `study.stemma`, `study.layers`, `study.dating`, `study.authorship` |
+| Philologist | `study.variants`, `study.stemma`, `study.witnesses`, `study.layers`, `study.dating`, `study.authorship` |
 | Skeptic | `study.reuse`, `study.dating`, `study.argument` |
 | Evidence | `study.cases`, `study.trajectories`, `study.argument` |
 | Semanticist | `study.term`, `study.senses` |

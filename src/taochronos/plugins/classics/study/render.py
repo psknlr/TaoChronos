@@ -466,6 +466,29 @@ def senses(r: dict[str, Any]) -> list[str]:
     return out + ["", f"> {r.get('note', '')}"]
 
 
+def _cell(text: Any, n: int = 40) -> str:
+    t = str(text or "").replace("|", "／").replace("\n", " ")
+    return t if len(t) <= n else t[: n - 1] + "…"
+
+
+def witnesses(r: dict[str, Any]) -> list[str]:
+    out = [f"# 版本与影像见证：{r['work']}", "", f"库中录本 {len(r['text_witnesses'])} 种；影像见证 {r['image_count']} 件"
+           f"（含 IIIF 清单 {r['with_manifest']} 件）", "", "## 库中录本", "", "| 录本 | 版本 | 版本年代 | 藏所 | 来源 | 段落 | 页面影像 |",
+           "|---|---|---|---|---|---|---|"]
+    for t in r["text_witnesses"]:
+        yrs = "–".join(str(y) for y in dict.fromkeys(t["edition_years"] or [])) or "?"
+        out.append(f"| 《{t['title']}》 | {_cell(t['edition'], 60)} | {yrs} | {t.get('holding') or ''} | {t['source']} | "
+                   f"{t['passages'] or ''} | {'有' if t['page_images'] else ''} |")
+    if r["image_witnesses"]:
+        out += ["", "## 影像见证（按标题关联，须核对）", "", "| 题名 | 年代 | 刊/写 | 藏所 | 索书号 | 关联方式 | 授权 |", "|---|---|---|---|---|---|---|"]
+        for w in r["image_witnesses"][:80]:
+            link = f"[{_cell(w['title'], 30)}]({w['page']})" if w.get("page") else _cell(w["title"], 30)
+            out.append(f"| {link} | {w.get('years') or _cell(w.get('date', ''), 20)} | {w.get('kind', '')} | {_cell(w['holder'], 30)} | "
+                       f"{_cell(w.get('shelfmark', ''), 24)} | {w.get('match', '')} | {_cell(w.get('rights', ''), 30)} |")
+        out += ["", "各藏所件数：" + "，".join(f"{k} {v}" for k, v in r["holders"].items())]
+    return out + ["", f"> {r['note']}"]
+
+
 def fragments(r: dict[str, Any]) -> list[str]:
     out = [f"# 佚书辑佚：{r['work']}", "", f"引称：{'、'.join(r.get('forms', []))}；{r['quotations']} 处引文，合并为 {r['count']} 条佚文，"
            f"{r['characters']} 字；引用之书：" + "、".join(f"{k}（{v}）" for k, v in list(r.get("quoted_in", {}).items())[:8]), ""]
@@ -487,7 +510,7 @@ def fragments(r: dict[str, Any]) -> list[str]:
 PAGES = {"concordance": concordance, "formula": formula, "herb": herb, "term": term, "taboo": taboo, "citations": citations,
          "cards": cards, "reading": reading, "variants": variants, "stemma": stemma, "edition": edition, "reuse": reuse,
          "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship, "cases": cases,
-         "trajectories": trajectories, "argument": argument, "senses": senses, "fragments": fragments}
+         "trajectories": trajectories, "argument": argument, "senses": senses, "fragments": fragments, "witnesses": witnesses}
 
 
 def markdown(kind: str, result: dict[str, Any], signature: dict[str, Any], notice: str = "") -> str:
