@@ -7,7 +7,7 @@ objective: >-
 mode: procedure
 procedure: taochronos.agents.procedures.lineage
 skills: [lineage-analysis]
-tools: [classics.lineage, philology.collate, analysis.missing_sources]
+tools: [classics.lineage, philology.collate, analysis.missing_sources, study.schools, study.chain]
 context_view: lineage
 permissions: [classics:read, analysis:run]
 output_schema: LineageReport

@@ -582,13 +582,6 @@ entries:
 - term: 术
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 山蓟
-    kind: alias
-    note: 本草“一名”
-  - surface: 山连
-    kind: alias
-    note: 本草“一名”
   origin_record: 本经
   evidence:
     count: 13
@@ -4156,10 +4149,6 @@ entries:
 - term: 萆
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 赤节
-    kind: alias
-    note: 本草“一名”
   evidence:
     count: 7
     books: 7
@@ -4797,13 +4786,6 @@ entries:
 - term: 本
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 地新
-    kind: alias
-    note: 本草“一名”
-  - surface: 鬼卿
-    kind: alias
-    note: 本草“一名”
   evidence:
     count: 6
     books: 6
@@ -5182,10 +5164,6 @@ entries:
 - term: 芋
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 土芝
-    kind: alias
-    note: 本草“一名”
   origin_record: 别录
   evidence:
     count: 6
@@ -5707,25 +5685,6 @@ entries:
 - term: 黄
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 戴椹
-    kind: alias
-    note: 本草“一名”
-  - surface: 戴糁
-    kind: alias
-    note: 本草“一名”
-  - surface: 独椹
-    kind: alias
-    note: 本草“一名”
-  - surface: 百本
-    kind: alias
-    note: 本草“一名”
-  - surface: 芰草
-    kind: alias
-    note: 本草“一名”
-  - surface: 蜀脂
-    kind: alias
-    note: 本草“一名”
   evidence:
     count: 6
     books: 6
@@ -5842,10 +5801,6 @@ entries:
 - term: 发
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 血余
-    kind: alias
-    note: 本草“一名”
   evidence:
     count: 5
     books: 5
@@ -8021,25 +7976,6 @@ entries:
 - term: 石
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 固羊石
-    kind: alias
-    note: 本草“一名”
-  - surface: 太白石
-    kind: alias
-    note: 本草“一名”
-  - surface: 泽乳
-    kind: alias
-    note: 本草“一名”
-  - surface: 立制石
-    kind: alias
-    note: 本草“一名”
-  - surface: 青分石
-    kind: alias
-    note: 本草“一名”
-  - surface: 鼠乡
-    kind: alias
-    note: 本草“一名”
   evidence:
     count: 4
     books: 3
@@ -8313,13 +8249,6 @@ entries:
 - term: 芎
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 胡穷
-    kind: alias
-    note: 本草“一名”
-  - surface: 香果
-    kind: alias
-    note: 本草“一名”
   evidence:
     count: 4
     books: 4
@@ -8624,10 +8553,6 @@ entries:
 - term: 蓄
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 篇竹
-    kind: alias
-    note: 本草“一名”
   evidence:
     count: 4
     books: 4
@@ -8735,13 +8660,6 @@ entries:
 - term: 虫
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 土鳖
-    kind: alias
-    note: 本草“一名”
-  - surface: 地鳖
-    kind: alias
-    note: 本草“一名”
   evidence:
     count: 4
     books: 4
@@ -11571,10 +11489,6 @@ entries:
 - term: 蛙
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 长股
-    kind: alias
-    note: 本草“一名”
   origin_record: 别录
   evidence:
     count: 3
@@ -16328,10 +16242,6 @@ entries:
 - term: 白
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 芳香
-    kind: alias
-    note: 本草“一名”
   evidence:
     count: 2
     books: 2
@@ -18370,13 +18280,6 @@ entries:
 - term: 蓬
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 复盆
-    kind: alias
-    note: 本草“一名”
-  - surface: 覆盆
-    kind: alias
-    note: 本草“一名”
   evidence:
     count: 2
     books: 2
@@ -18822,16 +18725,6 @@ entries:
 - term: 蜡
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 樗蒲鱼
-    kind: alias
-    note: 本草“一名”
-  - surface: 水毋
-    kind: alias
-    note: 本草“一名”
-  - surface: 水母
-    kind: alias
-    note: 本草“一名”
   evidence:
     count: 2
     books: 2
@@ -21880,13 +21773,6 @@ entries:
 - term: 别
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 别枝
-    kind: alias
-    note: 本草“一名”
-  - surface: 别骑
-    kind: alias
-    note: 本草“一名”
   evidence:
     count: 1
     books: 1
@@ -22534,15 +22420,6 @@ entries:
       materia-entry: 1
     first_year: 1506.0
     first_passage: jc_c012.00815
-- term: 大抵
-  kind: harvested
-  evidence:
-    count: 1
-    books: 1
-    patterns:
-      materia-entry: 1
-    first_year: 1694.0
-    first_passage: jc_c018.00805
 - term: 大红虾
   kind: harvested
   evidence:
@@ -23645,10 +23522,6 @@ entries:
 - term: 斑
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 斑鸠
-    kind: alias
-    note: 本草“一名”
   evidence:
     count: 1
     books: 1
@@ -28906,10 +28779,6 @@ entries:
 - term: 蒴
   kind: harvested
   weak: true
-  synonyms:
-  - surface: 堇草
-    kind: alias
-    note: 本草“一名”
   evidence:
     count: 1
     books: 1

@@ -247,3 +247,147 @@ def test_pairs_and_network_through_tools_and_cli(harness, capsys, tmp_path):
     assert out.ok and out.result["kind"] == "formula"
     assert main(["--data", str(tmp_path), "study", "pairs", "甘草"]) == 0
     assert capsys.readouterr().out.startswith("# 配伍：甘草")
+
+
+# ------------------------------------------------------------------ 学派 (T25)
+def _school_corpus(root: Path) -> Path:
+    """Four 温病 physicians of physicians.yaml and twelve other authors of their time: the school's works write 营分 in
+    several phrases, the others once; all write the same findings; the school's works quote 叶天士, the others 丹溪."""
+    import yaml
+
+    rng = random.Random(7)
+    school = [("wy", "温疫论", "吴有性", 1642), ("wr", "温热论", "叶桂", 1746), ("tb", "温病条辨", "吴瑭", 1798),
+              ("sr", "湿热病篇", "薛雪", 1750)]
+    others = [(f"o{k}", f"医书第{'一二三四五六七八九十'[k % 10]}{k}", f"某{'甲乙丙丁戊己庚辛壬癸子丑'[k]}", 1650 + 13 * k) for k in range(12)]
+    common = ["发热", "恶寒", "脉浮", "头痛", "汗出", "口渴", "咳嗽", "心烦", "腹满", "下利", "身重", "脉数"]
+    src = {"origin": "TaoChronos test fixture (synthetic)", "license": "CC0-1.0", "acquisition": "written for the test"}
+    (root / "books").mkdir(parents=True, exist_ok=True)
+    meta: dict = {"books": []}
+    for bid, title, author, year in school + others:
+        own = bid in {s[0] for s in school}
+        meta["books"].append({"id": bid, "title": title, "authors": [author], "dynasty": "清", "composition": [year, year],
+                              "category": "温病" if own else "综合", "source": src})
+        passages = []
+        for i in range(30):
+            words = rng.sample(common, 4)
+            if own and i % 2 == 0:
+                words += [rng.choice(["热入营分", "营分受热", "邪在营分", "营分有热"]), rng.choice(["卫分之邪", "邪在卫分"])]
+            if bid == "o3" and i == 0:
+                words.append("营分")
+            text = "，".join(words) + "。"
+            if i == 5:
+                text += "叶天士曰：温邪上受，首先犯肺。" if own else "丹溪曰：阳常有余，阴常不足。"
+            passages.append({"id": f"{bid}.{i:03d}", "text": text})
+        (root / "books" / f"{bid}.yaml").write_text(
+            yaml.safe_dump([{"book": bid, "defaults": {"kind": "text"}, "passages": passages}], allow_unicode=True), encoding="utf-8")
+    (root / "books.yaml").write_text(yaml.safe_dump(meta, allow_unicode=True), encoding="utf-8")
+    return root
+
+
+@pytest.fixture(scope="module")
+def school_study(pack, tmp_path_factory) -> StudyService:
+    corpus = Corpus.load(_school_corpus(tmp_path_factory.mktemp("schools")))
+    corpus.normalize = pack.variants.normalize_text
+    return StudyService(pack, corpus)
+
+
+def test_school_words_are_those_its_physicians_write_more(school_study):
+    r = school_study.schools("温病学派")
+    assert r["school"] == "温病" and r["works"] == 4 and r["comparison"]["units"] == 4
+    words = [w["item"] for w in r["vocabulary"]]
+    assert words[:2] in (["营分", "卫分"], ["卫分", "营分"]) and all(w["significant"] for w in r["vocabulary"][:2])
+    assert not {"发热", "脉浮", "天士", "叶天士"} & set(words)  # shared by all; a physician's name goes to the citations
+    top = r["vocabulary"][0]
+    assert top["share"] == 1.0 and top["other_share"] < 0.1 and top["example"]["book_id"] in {"wy", "wr", "tb", "sr"}
+    homophily = r["citations"]["homophily"]  # the school quotes its own, the others never do
+    assert homophily["own_share"] == 1.0 and homophily["other_share"] == 0.0 and homophily["ratio"] is None
+    assert [m["name"] for m in r["members"] if m["works"]] == ["吴有性", "叶桂", "薛雪", "吴瑭"]
+
+
+def test_school_membership_and_weights(school_study):
+    sc = school_study._schools
+    assert sc.resolve("温疫") == "温病·温疫" and sc.resolve("错简重订") == "伤寒·错简重订" and sc.resolve("丹溪学派") == "丹溪"
+    own, other = sc.group_works("温病"), sc.comparison("温病")
+    w = sc.weights("温病", own, other)
+    assert w["units"] == 4 and not w["by_works"] and abs(sum(w["own"].values()) - 4) < 1e-9
+    assert abs(sum(w["other"].values()) - 12) < 1e-9  # twelve other authors, one unit each
+    assert not sc.wordlike("之邪") and not sc.wordlike("三两") and not sc.wordlike("天士") and sc.wordlike("营分")
+
+
+def test_schools_through_tools_and_cli(harness, school_study, capsys, tmp_path):
+    out = harness.scheduler.execute(ToolCall("study.schools", {"school": "温病"}), actor=Actor.kernel())
+    assert out.ok
+    survey = school_study.schools()
+    assert any(s["school"] == "温病" and s["works"] == 4 for s in survey["schools"])
+    assert main(["--data", str(tmp_path), "study", "schools", "温病"]) == 0
+    assert capsys.readouterr().out.startswith("# 学派：温病学派")
+
+
+# ------------------------------------------------------------------ 名称 (T9, T24), 传播链 (T15)
+def _write_corpus(root: Path, books: list[tuple[str, str, str, int, str, list[str]]]) -> Path:
+    """books: (id, title, author, year, category, passages) → a corpus directory."""
+    import yaml
+
+    src = {"origin": "TaoChronos test fixture (synthetic)", "license": "CC0-1.0", "acquisition": "written for the test"}
+    (root / "books").mkdir(parents=True, exist_ok=True)
+    meta = {"books": [{"id": b, "title": t, "authors": [a], "dynasty": "", "composition": [y, y], "category": c, "source": src}
+                      for b, t, a, y, c, _ in books]}
+    for b, _, _, _, _, texts in books:
+        passages = [{"id": f"{b}.{i:03d}", "text": text} for i, text in enumerate(texts)]
+        (root / "books" / f"{b}.yaml").write_text(
+            yaml.safe_dump([{"book": b, "defaults": {"kind": "text"}, "passages": passages}], allow_unicode=True), encoding="utf-8")
+    (root / "books.yaml").write_text(yaml.safe_dump(meta, allow_unicode=True), encoding="utf-8")
+    return root
+
+
+def test_names_follow_薯蓣_giving_way_to_山药(pack, tmp_path):
+    books = [(f"e{k}", f"古方{k}", f"甲{k}", y, "方书", ["薯蓣丸，治虚劳。薯蓣三两。"]) for k, y in enumerate([520, 540, 560, 620, 640, 660])]
+    books += [(f"l{k}", f"后方{k}", f"乙{k}", y, "方书", ["山药丸，治虚劳。山药三两。"]) for k, y in enumerate([1120, 1140, 1160, 1220, 1240, 1260])]
+    books += [("gan", "炮制书", "丙", 1250, "本草", ["干山药，蒸之。"]),
+              ("eq", "本草释名", "丁", 1300, "本草", ["山药，一名薯蓣，一名山芋。"]),
+              ("eq2", "本草便览", "戊", 1400, "本草", ["薯蓣，一名山芋，俗呼山药。"])]
+    corpus = Corpus.load(_write_corpus(tmp_path / "names", books))
+    corpus.normalize = pack.variants.normalize_text
+    r = StudyService(pack, corpus).names("山药")
+    rows = {n["name"]: n for n in r["names"]}
+    assert rows["山药"]["works"] == 8 and rows["干山药"]["works"] == 1  # 干山药 is its own name, not 山药's
+    assert rows["薯蓣"]["kind"] == "避讳改名" and rows["薯蓣"]["first"][0]["years"] == [520, 520]
+    assert [(s["from"], s["to"]) for s in r["switches"]] == [("薯蓣", "山药")] and r["switches"][0]["between"] == [600, 1200]
+    assert any(set(e["names"]) == {"山药", "薯蓣"} for e in r["equations"])
+    assert [c["name"] for c in r["candidates"]] == ["山芋"]  # the name the lexicon lacks
+
+
+def test_chain_follows_shared_changes(pack, tmp_path):
+    base = "太阳病，头痛发热，身疼腰痛，骨节疼痛，恶风无汗而喘者，麻黄汤主之。"
+
+    def change(text: str, old: str, new: str) -> str:
+        assert old in text
+        return text.replace(old, new, 1)
+
+    a = change(base, "头痛", "头项强痛")
+    b = change(a, "腰痛", "腰脊痛")
+    c = change(base, "恶风", "恶寒")
+    d = change(b, "而喘", "而咳喘")
+    e = change(c, "骨节", "百节")
+    texts = {"r": (200, base), "a": (500, a), "b": (800, b), "c": (900, c), "d": (1000, d), "e": (1100, e), "f": (1200, base)}
+    books = [(k, f"书{k}", f"某{k}", y, "伤寒", [t]) for k, (y, t) in texts.items()]
+    corpus = Corpus.load(_write_corpus(tmp_path / "chain", books))
+    corpus.normalize = pack.variants.normalize_text
+    r = StudyService(pack, corpus).chain(base)
+    parent = {e["to"].split(".")[0]: e["from"].split(".")[0] for e in r["edges"]}
+    assert r["root"]["book_id"] == "r"
+    assert parent == {"a": "r", "b": "a", "c": "r", "d": "b", "e": "c", "f": "r"}
+    edge = next(x for x in r["edges"] if x["to"].startswith("d"))
+    assert {s["reading"] for s in edge["shared"]} >= {"项强", "脊"} and edge["basis"] == "shared readings"
+    assert r["summary"]["depth"] == 3
+
+
+def test_names_and_chain_through_tools_and_cli(harness, capsys, tmp_path):
+    out = harness.scheduler.execute(ToolCall("study.names", {"term": "山药"}), actor=Actor.kernel())
+    assert out.ok
+    out = harness.scheduler.execute(ToolCall("study.chain", {"text": "太阳病，发热，汗出，恶风，脉缓者，名为中风。"}), actor=Actor.kernel())
+    assert out.ok
+    assert main(["--data", str(tmp_path), "study", "names", "山药"]) == 0
+    assert capsys.readouterr().out.startswith("# 名称：山药")
+    assert main(["--data", str(tmp_path), "study", "chain", "太阳病，发热，汗出，恶风，脉缓者，名为中风。"]) == 0
+    assert capsys.readouterr().out.startswith("# 传播链：")

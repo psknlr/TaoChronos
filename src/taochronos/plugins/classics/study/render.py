@@ -732,12 +732,159 @@ def network(r: dict[str, Any]) -> list[str]:
     return out + ["", f"> {r.get('note', '')}"]
 
 
+def chain(r: dict[str, Any]) -> list[str]:
+    out = [f"# 传播链：{_q(r.get('query', ''), 40)}", ""]
+    if not r.get("nodes"):
+        return out + [r.get("note", "")]
+    s = r["summary"]
+    root = r["root"]
+    out += [f"见证 {s['witnesses']} 处（未定年代者 {r['undated']} 处不计；最早一期 {r.get('source_witnesses', 1)} 处，其异文皆视为原有）；"
+            f"经中间见证者 {s['through_intermediaries']} 处，"
+            f"其中难定 {s['uncertain']} 处；最深 {s['depth']} 层。", "",
+            f"最早：{root['locator']}（{_years(root)}）`{root['passage_id']}`", f"  > {_q(root['quote'], 100)}", ""]
+    titles = {n["passage_id"]: n for n in r["nodes"]}
+    children: dict[str, list[dict[str, Any]]] = {}
+    for e in r["edges"]:
+        children.setdefault(e["from"], []).append(e)
+
+    def walk(pid: str, level: int) -> None:
+        for e in children.get(pid, []):
+            n = titles[e["to"]]
+            why = ("承其异文 " + "、".join(f"{x['root'] or '∅'}→{x['reading'] or '∅'}" for x in e["shared"][:4])) if e["shared"] else "无共同异文"
+            flags = ("，难定" if e["uncertain"] else "") + ("，年代相交" if e["dates_overlap"] else "")
+            out.append(f"{'  ' * level}- 《{n['title']}》（{_years(n)}，{n['relation']}）`{n['passage_id']}`：{why}{flags}")
+            walk(e["to"], level + 1)
+
+    out.append(f"- 《{root['title']}》（{_years(root)}）")
+    walk(root["passage_id"], 1)
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+def names(r: dict[str, Any]) -> list[str]:
+    out = [f"# 名称：{r['term']}", ""]
+    if not r.get("names"):
+        return out + ["（词表无此条，或各名皆未见于语料）"]
+    out += ["| 名 | 类 | 段 | 著作 | 最早见于 |", "|---|---|---|---|---|"]
+    for n in r["names"]:
+        first = "；".join(f"《{w['title']}》（{_years(w)}）" for w in n["first"][:2])
+        out.append(f"| {n['name']} | {n['kind']} | {n['passages']} | {n['works']} | {first} |")
+    notes = [f"{n['name']}：{n['note']}" for n in r["names"] if n.get("note")]
+    if notes:
+        out += [""] + [f"- {x}" for x in notes]
+    if r.get("skipped"):
+        out += ["", "未计：" + "、".join(f"{s['name']}（{s['why']}）" for s in r["skipped"])]
+    names_ = [n["name"] for n in r["names"]]
+    out += ["", "## 各期写作各名的著作占比", "", "| 时期 | 著作 | " + " | ".join(names_) + " | 通行 |", "|---|---|" + "---|" * len(names_) + "---|"]
+    for p in r["periods"]:
+        out.append(f"| {p['period']} | {p['works']} | " + " | ".join(f"{p['shares'].get(n, 0):.0%}" if n in p["shares"] else "" for n in names_)
+                   + f" | {p['preferred'] or ''} |")
+    if r.get("switches"):
+        out += ["", "通行之名的更替（按 %d 年分段，前后段各至少三部著作）：" % r["bin_years"]
+                + "；".join(f"{s['between'][0]}–{s['between'][1]} 年间 {s['from']}→{s['to']}" + ("（末段）" if s.get("last_bin") else "")
+                           for s in r["switches"])]
+    if r.get("equations"):
+        out += ["", "## 书中以二名相释", ""] + [f"- {'＝'.join(e['names'])}：{_cite(e['witness'], 60)}" for e in r["equations"]]
+    if r.get("candidates"):
+        out += ["", "## 词表未收之名（候选，待核）", ""]
+        out += [f"- **{c['name']}**（{c['passages']} 段，{c['works']} 部）：{_cite(c['first'], 60)}" for c in r["candidates"]]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+def _dates(d: Any) -> str:
+    return f"{d[0]}–{d[1]}" if d else "生卒未详"
+
+
+def _share_row(x: dict[str, Any], name: str | None = None) -> str:
+    return (f"| {name or x['item']} | {x['share']:.0%} | {x['other_share']:.0%} | {x['z']} | {x['share_z']} | "
+            f"{'是' if x.get('significant') else ''} |")
+
+
+def schools(r: dict[str, Any]) -> list[str]:
+    if "schools" in r:  # the survey
+        out = ["# 学派：总览", "", "| 学派 | 医家（有书） | 著作 | 年代 | 对照（医家单位） | 特征词（前八） | 偏用之方（前四） | 引本派医家 |",
+               "|---|---|---|---|---|---|---|---|"]
+        for s in r["schools"]:
+            span = f"{int(s['span'][0])}–{int(s['span'][1])}" if s.get("span") else ""
+            homo = (s.get("homophily") or {})
+            out.append(f"| {s['label']} | {s['members']}（{s['members_with_works']}） | {s['works']} | {span} | {s.get('other_units', '')} | "
+                       f"{'、'.join(w['item'] for w in s.get('words', [])[:8])} | {'、'.join(f['name'] for f in s.get('formulas', [])[:4])} | "
+                       f"{homo.get('ratio') if homo.get('ratio') is not None else ''} |")
+        m = r.get("matrix") or {}
+        if m.get("rows"):
+            cols = list(m.get("columns", {}))
+            out += ["", "## 学派之间的引用（行：引者所属学派；格：次数，括号内为相对全体的倍数）", "",
+                    "| 引者＼被引 | " + " | ".join(cols) + " |", "|---|" + "---|" * len(cols)]
+            for row in m["rows"]:
+                cells = [f"{row['to'][c]['citations']}（{row['to'][c]['ratio']}）" if c in row["to"] else "" for c in cols]
+                out.append(f"| {row['school']} | " + " | ".join(cells) + " |")
+            rej = [f"{row['school']}→" + "、".join(f"{k} {v}" for k, v in row["rejects"].items()) for row in m["rows"] if row.get("rejects")]
+            if rej:
+                out += ["", "驳斥（引而驳之的次数）：" + "；".join(rej)]
+        return out + ["", f"> {r.get('note', '')}"]
+    out = [f"# 学派：{r['label']}", ""]
+    if r.get("note"):
+        out += [f"{r['note']}", ""]
+    lead = []
+    if r.get("founder"):
+        lead.append(f"开创者 {r['founder']['name']}（{_dates(r['founder']['dates'])}）")
+    if r.get("source"):
+        lead.append("所宗 " + "、".join(p["name"] for p in r["source"]))
+    if r.get("parent"):
+        lead.append(f"源出 {r['parent']}")
+    if lead:
+        out += ["；".join(lead), ""]
+    out += ["## 医家与著作", ""]
+    for m in r.get("members", []):
+        works = "、".join(f"《{w['title']}》（{_years(w)}）" for w in m["works"]) or "（库中无其著作）"
+        out.append(f"- {m['name']}（{_dates(m['dates'])}{'，' + m['branch'] if m.get('branch') else ''}）：{works}")
+    cmp_ = r.get("comparison")
+    if not cmp_:
+        return out + ["", f"> {r.get('note_method', '')}"]
+    out += ["", f"对照：同时代（各书前后 {cmp_['window']} 年）他人著作 {cmp_['works']} 部，折合 {cmp_['other_units']} 位作者；本派 {cmp_['units']} 位"
+            + ("（仅一位医家，按著作计）" if cmp_.get("by_works") else "") + f"；每部至多读 {cmp_['cap']} 字。"
+            f"本派体裁：{'、'.join(f'{k} {v:.0%}' for k, v in cmp_['forms'].items())}（对照按此加权）。", ""]
+    head = ["| 词 | 本派医家用之 | 他人用之 | 用频 z | 用者 z | 显著 |", "|---|---|---|---|---|---|"]
+    out += ["## 特征词（本派用得更多、用的人更多）", ""] + head
+    out += [_share_row(x) for x in r.get("vocabulary", [])[:40]]
+    examples = [x for x in r.get("vocabulary", []) if x.get("example")][:8]
+    if examples:
+        out += ["", "例句：", ""] + [f"- **{x['item']}** {_cite(x['example'], 90)}" for x in examples]
+    for key, title in (("drugs", "偏用之药（行文中）"), ("formula_words", "行文中的方名"), ("serving", "煎服用语")):
+        if r.get(key):
+            out += ["", f"{title}：" + "、".join(f"{x['item']}{'' if x.get('significant') else '（未显著）'}" for x in r[key][:20])]
+    if r.get("formulas"):
+        out += ["", "## 偏用之方（写出组成或治疗语句中所用）", "", "| 方 | 本派 | 他人 | 用频 z | 用者 z | 显著 |", "|---|---|---|---|---|---|"]
+        out += [_share_row(x, x["name"]) for x in r["formulas"][:20]]
+    if r.get("probes"):
+        out += ["", "指定词：" + "；".join(f"{x['item']} 本派 {x['share']:.0%} / 他人 {x['other_share']:.0%}（用频 z {x['z']}）" for x in r["probes"])]
+    c = r.get("citations") or {}
+    if c:
+        h = c.get("homophily") or {}
+        out += ["", "## 引用", "", f"本派著作所引医家中本派医家占 {h.get('own_share', 0) or 0:.1%}，他人著作中占 {h.get('other_share', 0) or 0:.1%}"
+                + (f"（{h['ratio']} 倍）" if h.get("ratio") else "") + "。", ""]
+        if c.get("cited"):
+            out += ["多引之医家：" + "、".join(f"{x['name']}（{'/'.join(x['school']) or x.get('field') or '无派属'}，z {x['z']}）"
+                                          for x in c["cited"][:15] if x.get("significant"))]
+        if c.get("cites_schools"):
+            out += ["", "所引医家的学派：" + "，".join(f"{k} {v}" for k, v in c["cites_schools"].items())]
+        if c.get("cited_by_schools"):
+            out += ["", "引本派医家者的学派：" + "，".join(f"{k} {v}" for k, v in c["cited_by_schools"].items())]
+        if c.get("lineage"):
+            out += ["", "派内相引：" + "；".join(f"{x['from']}→{x['to']} {x['citations']}" for x in c["lineage"][:12])]
+        if c.get("rejects_schools"):
+            out += ["", "本派所驳医家的学派：" + "，".join(f"{k} {v}" for k, v in c["rejects_schools"].items())]
+        if c.get("rejected_by"):
+            out += ["", "驳本派医家者：" + "；".join(f"《{x['title']}》（{_years(x)}）驳{'、'.join(x['rejected'])} {x['rejections']} 次"
+                                               for x in c["rejected_by"][:10])]
+    return out + ["", f"> {r.get('note_method', '')}"]
+
+
 PAGES = {"concordance": concordance, "formula": formula, "herb": herb, "term": term, "taboo": taboo, "citations": citations,
          "cards": cards, "reading": reading, "variants": variants, "stemma": stemma, "edition": edition, "reuse": reuse,
          "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship, "cases": cases,
          "trajectories": trajectories, "argument": argument, "senses": senses, "fragments": fragments, "witnesses": witnesses,
          "punctuate": punctuate, "commentaries": commentaries, "disputes": disputes, "clause": clause, "glosses": glosses,
-         "pairs": pairs, "network": network}
+         "pairs": pairs, "network": network, "schools": schools, "names": names, "chain": chain}
 
 
 def markdown(kind: str, result: dict[str, Any], signature: dict[str, Any], notice: str = "") -> str:

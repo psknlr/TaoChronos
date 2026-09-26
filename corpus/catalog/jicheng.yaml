@@ -346,7 +346,7 @@ books:
   - 素問病機氣宜保命集
   - 金·劉完素著·素問病機氣宜保命集
   authors:
-  - 河间刘完素
+  - 刘完素
   dynasty: 金
   composition:
   - 1186
@@ -359,6 +359,7 @@ books:
   modern: false
   status: ingest
   kanripo: KR3e0050
+  notes_text: 笈成题“河间刘完素”（河间为籍贯）；自序署“河間劉完素守真述”
 - code: A010
   id: jc_a010
   file: A/A010.txt
@@ -657,12 +658,12 @@ books:
   - 素問靈樞類纂約注
   - 素問靈樞類纂約註
   authors:
-  - 汪琥辨
+  - 汪昂
   dynasty: 清
   composition:
   - 1689
   - 1689
-  dating: preface
+  dating: preface:author
   dating_note: 時康熙己巳夏日　汪昂題於延禧堂
   category: 医经
   jicheng_category: 內經、難經
@@ -670,6 +671,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“汪琥辨”，据序署“時康熙己巳夏日　汪昂題於延禧堂”及“汪昂識”改为汪昂
 - code: A300
   id: jc_a300
   file: A/A300.txt
@@ -3000,9 +3002,10 @@ books:
   category: 本草
   jicheng_category: 本草
   work: jc:本草经解
-  attribution: traditional
+  attribution: disputed
   modern: false
   status: ingest
+  notes_text: 序称叶桂所撰（“葉君天士……撰述頗多。本草經解其一也”）；一说为姚球所撰而托名叶桂
 - code: C021
   id: jc_c021
   file: C/C021.txt
@@ -3048,8 +3051,8 @@ books:
   title: 本草崇原
   aliases: []
   authors:
-  - 著者张志聪殁而书未成
-  - 后由弟子高世栻续成
+  - 张志聪
+  - 高世栻
   dynasty: 清
   composition:
   - 1674
@@ -3061,6 +3064,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 张志聪著而未竟，弟子高世栻续成
 - code: C025
   id: jc_c025
   file: C/C025.txt
@@ -4434,9 +4438,10 @@ books:
   category: 方书
   jicheng_category: 方劑
   work: jc:种福堂公选良方
-  attribution: traditional
+  attribution: compiled
   modern: false
   status: ingest
+  notes_text: 华岫云据叶桂遗方辑录，乾隆四十年（1775）杜玉林序
 - code: D034
   id: jc_d034
   file: D/D034.txt
@@ -5376,8 +5381,8 @@ books:
   - 叶桂
   dynasty: 清
   composition:
-  - 1704
-  - 1795
+  - 1726
+  - 1766
   dating: author:叶桂
   category: 温病
   jicheng_category: 溫病
@@ -5456,18 +5461,19 @@ books:
   aliases:
   - 廣瘟疫論
   authors:
-  - 吴又可
-  dynasty: 明
+  - 戴天章
+  dynasty: 清
   composition:
-  - 1641
-  - 1641
-  dating: western
+  - 1675
+  - 1722
+  dating: curated
   category: 温病
   jicheng_category: 溫病
-  work: jc:广瘟疫论
+  work: jc:广温疫论
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“吴又可”；自识署“上元戴天章麟郊甫識於存存書屋”，孙嗣琦跋（1782）称“先大父……《廣瘟疫論》”，据改为戴天章；年代取作者生年内（原书未署年）
 - code: E006
   id: jc_e006
   file: E/E006.txt
@@ -5723,8 +5729,8 @@ books:
   - 叶桂
   dynasty: 清
   composition:
-  - 1704
-  - 1795
+  - 1726
+  - 1766
   dating: author:叶桂
   category: 温病
   jicheng_category: 溫病
@@ -5782,15 +5788,16 @@ books:
   - 戴天章
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: dynasty
+  - 1675
+  - 1722
+  dating: curated
   category: 温病
   jicheng_category: 溫病
   work: jc:广温疫论
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 与E005同书（广瘟疫论）；年代取作者生年内（原书未署年）
 - code: E020
   id: jc_e020
   file: E/E020.txt
@@ -6386,9 +6393,10 @@ books:
   category: 内科
   jicheng_category: 雜病
   work: jc:活法机要
-  attribution: traditional
+  attribution: disputed
   modern: false
   status: ingest
+  notes_text: 卷首题“丹溪朱震亨著”；书中引“方在寶鑑泄痢條下”（罗天益《卫生宝鉴》），泄痢诸方同《保命集》，旧题朱震亨，一说出李杲或张元素之门
 - code: F027
   id: jc_f027
   file: F/F027.txt
@@ -9217,7 +9225,7 @@ books:
   aliases:
   - 傷科補要
   authors:
-  - 钱潢
+  - 钱秀昌
   dynasty: 清
   composition:
   - 1808
@@ -9229,6 +9237,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“钱潢”（钱天来，康熙时人）；《伤科补要》为钱秀昌（松溪）撰，嘉庆十三年（1808）
 - code: K000
   id: jc_k000
   file: K/K000.txt
@@ -10009,10 +10018,7 @@ books:
   aliases:
   - 目經大成
   authors:
-  - 黄庭镜草成此书
-  - 此后四易其稿
-  - 但未付梓
-  - 弟子邓学礼得悉此书后于嘉庆十年刊行
+  - 黄庭镜
   dynasty: 清
   composition:
   - 1741
@@ -10024,6 +10030,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 据“濉川不塵子黃庭鏡自序”
 - code: L005
   id: jc_l005
   file: L/L005.txt
@@ -10147,7 +10154,7 @@ books:
   aliases:
   - 尤氏喉科秘書
   authors:
-  - 王士雄
+  - 梁溪尤氏
   dynasty: 清
   composition:
   - 1781
@@ -10160,6 +10167,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“王士雄”（1808年生，不能作1781年之书）；乾隆辛丑（1781）序称“得是編於梁溪尤氏”，旧题尤乘撰
 - code: L101
   id: jc_l101
   file: L/L101.txt
@@ -10736,18 +10744,20 @@ books:
   aliases:
   - 症因脈治
   authors:
-  - 朱丹溪
-  dynasty: 元
+  - 秦昌遇
+  - 秦之桢
+  dynasty: 明末清初
   composition:
-  - 1279
-  - 1368
-  dating: western
+  - 1641
+  - 1706
+  dating: curated
   category: 诊法
   jicheng_category: 診法
   work: jc:症因脉治
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“朱丹溪”；秦景明（昌遇）序（崇禎辛巳，1641）称“敢竊丹溪之余語，匯成一卷，改名《症因脈治》”，其侄孙秦之桢纂成（康熙四十五年，1706）
 - code: M108
   id: jc_m108
   file: M/M108.txt
@@ -13207,7 +13217,8 @@ books:
   aliases:
   - 醫效秘傳
   authors:
-  - 叶桂述吴金寿
+  - 叶桂
+  - 吴金寿
   dynasty: 清
   composition:
   - 1831
@@ -13216,9 +13227,10 @@ books:
   category: 综合
   jicheng_category: 綜合
   work: jc:医效秘传
-  attribution: traditional
+  attribution: compiled
   modern: false
   status: ingest
+  notes_text: 卷首题“古吳　葉桂天士　述　後學　吳金壽子音　校”；吴金寿据叶桂之说整理，1831年为整理之年
 - code: O017
   id: jc_o017
   file: O/O017.txt
@@ -13757,9 +13769,10 @@ books:
   category: 综合
   jicheng_category: 綜合
   work: jc:脉因证治
-  attribution: traditional
+  attribution: compiled
   modern: false
   status: ingest
+  notes_text: 旧题朱震亨撰；缪遵义序（乾隆乙未，1775）称“丹溪著作，類出門人記載”，1775年为刊行之年
 - code: O044
   id: jc_o044
   file: O/O044.txt
@@ -14082,7 +14095,7 @@ books:
   aliases:
   - 醫學正傳
   authors:
-  - 虞传
+  - 虞抟
   dynasty: 明
   composition:
   - 1515
@@ -14094,6 +14107,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“虞传”，据序署“花溪恆德老人虞摶序”改为虞抟
 - code: O057
   id: jc_o057
   file: O/O057.txt
@@ -15221,18 +15235,19 @@ books:
   - 元·朱震亨著·醫學發明
   - 醫學發明
   authors:
-  - 朱震亨
-  dynasty: 元
+  - 李杲
+  dynasty: 金
   composition:
-  - 1327
-  - 1368
-  dating: author:朱震亨
+  - 1231
+  - 1251
+  dating: curated
   category: 综合
   jicheng_category: 綜合
   work: jc:医学发明
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成本卷首题“丹溪朱震亨著”；书中屡引“潔古云”“潔古曰”，论阴火上冲、升阳，即李杲《医学发明》（收入《东垣十书》），据改
 - code: O110
   id: jc_o110
   file: O/O110.txt
@@ -15412,7 +15427,7 @@ books:
   - 推篷寤語
   - 推逢寤語
   authors:
-  - 云间李豫亨元荐
+  - 李豫亨
   dynasty: 明
   composition:
   - 1570
@@ -15425,6 +15440,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 据序署“時隆慶庚午四月既望雲間李豫亨元薦甫”
 - code: O119
   id: jc_o119
   file: O/O119.txt

@@ -755,7 +755,7 @@ def cmd_eval(args: argparse.Namespace) -> None:
 STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
          "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship", "cases",
          "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate", "commentaries", "disputes",
-         "clause", "glosses", "pairs", "network")
+         "clause", "glosses", "pairs", "network", "schools", "names", "chain")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -856,6 +856,16 @@ def cmd_study(args: argparse.Namespace) -> None:
         res = study.pairs(target, period=args.period)
     elif what == "network":
         res = study.network(target)
+    elif what == "chain":
+        if not (target or args.passage):
+            raise SystemExit("taochronos study chain: give a text or --passage <id>")
+        res = study.chain(target, args.passage)
+    elif what == "names":
+        if not target:
+            raise SystemExit("taochronos study names: give a drug, formula or disease (e.g. 山药)")
+        res = study.names(target)
+    elif what == "schools":
+        res = study.schools(target, probes=args.probe or (), top=args.limit or 40)
     elif what == "clause":
         if not (target or args.passage or args.work):
             raise SystemExit("taochronos study clause: give a clause, --passage <id> or --work <work>")
@@ -1025,10 +1035,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
     sp.add_argument("--profile", help="default: full-corpus when the corpus store exists, else full-discovery (demo corpus)")
     sp.add_argument("--provider", help=argparse.SUPPRESS)
-    sp.add_argument("--passage", help="concordance/reuse/argument/punctuate: a passage id instead of a text")
+    sp.add_argument("--passage", help="concordance/reuse/argument/punctuate/chain: a passage id instead of a text")
     sp.add_argument("--input", help="punctuate: read the text from this file")
     sp.add_argument("--person", help="disputes: the physician whose views are disputed (e.g. 丹溪)")
     sp.add_argument("--period", help="pairs: only the compositions of this period (e.g. 宋金元)")
+    sp.add_argument("--probe", action="append", help="schools: also report this word for the school (repeatable, e.g. 相火)")
     sp.add_argument("--min-coverage", type=float, default=0.6, help="concordance: share of the text a witness must carry")
     sp.add_argument("--no-other-names", action="store_true", help="formula: skip the search for 同方异名")
     sp.add_argument("--min-chars", type=int, default=20000, help="taboo survey: smallest book to judge")

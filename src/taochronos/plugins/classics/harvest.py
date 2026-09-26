@@ -48,8 +48,14 @@ class Candidate:
             self.first_year, self.first_passage = year, passage
 
 
+# the drug, not a paste: 生石膏, 煨石膏 (石膏 ends like a 膏 formula); a 本草 annotation read as a heading (唐本注石膏)
+DRUG_NOT_PASTE = re.compile(r"^(?:生|熟|煨|煅|软|白|甘|龙|寒水)?石膏$|本注")
+# words that open a 本草 sentence as a drug's name would (大抵…)
+NOT_DRUGS = {"大抵", "大凡", "大率", "大约", "大略", "大都", "大概", "凡此", "若夫", "至于", "所谓"}
+
+
 def _ok_name(name: str) -> bool:
-    if not (2 <= len(name) <= 9) or name[0] in BAD_START:
+    if not (2 <= len(name) <= 9) or name[0] in BAD_START or DRUG_NOT_PASTE.search(name):
         return False
     if re.search(r"[一二三四五六七八九十百]+[丸圆丹]$", name) and len(name) <= 5:
         return False  # 饮下三十丸, 至四十丸: a dose, not a name
@@ -63,7 +69,7 @@ DISEASE_TAIL = re.compile(r"(痰饮|悬饮|支饮|溢饮|留饮|伏饮|停饮|�
 
 
 def _ok_drug(name: str) -> bool:
-    if not (1 <= len(name) <= 5) or name[0] in BAD_START or any(ch in "味气曰云之也者其释色" for ch in name):
+    if not (1 <= len(name) <= 5) or name[0] in BAD_START or any(ch in "味气曰云之也者其释色" for ch in name) or name in NOT_DRUGS:
         return False
     return sum(ch in INDICATION_CHARS for ch in name) < 2  # 润肌肤皮毛, 风鼠瘘痈肿: an indication, not a drug
 
@@ -167,7 +173,8 @@ def to_yaml_entries(formulas: list[Candidate], herbs: list[Candidate]) -> tuple[
         entry: dict[str, Any] = {"term": c.term, "kind": "harvested"}
         if len(c.term) == 1:
             entry["weak"] = True  # single-character drug names (栗, 芥) are ambiguous in running text
-        if c.aliases:
+        # a one-character name is a truncated one (白 of 白芷): its 一名 (芳香) would be read as that drug in running text
+        if c.aliases and len(c.term) > 1:
             entry["synonyms"] = [{"surface": a, "kind": "alias", "note": "本草“一名”"} for a in sorted(c.aliases)]
         if c.origin:
             entry["origin_record"] = c.origin

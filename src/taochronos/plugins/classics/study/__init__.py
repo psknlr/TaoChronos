@@ -9,6 +9,7 @@ witnesses          版本与影像见证: a work's transcriptions in the store a
 variants / stemma  版本谱系: multi-witness collation of a work (or of a passage's copies and quotations), variant units,
 edition            distances, a neighbour-joining stemma, shared-reading groups, contamination; one edition's profile
 reuse              语义复用: a passage's reuses across the corpus, typed (直接引用 … 转述, 解释性改写, 引而驳之, 套语相似)
+chain              传播链: one passage's witnesses as a tree — each from the earlier witness whose changes it shares
 transmission       思想传播: a work's reception — which later works carry it and how, by period, and through which works
 layers / dating    文本地层: style layers of a work's chapters, change points, outlying chapters; dating evidence per chapter
 authorship         (cited works, late vocabulary, taboo); Burrows' Delta against candidate authors
@@ -25,6 +26,10 @@ clause             条文结构: a clause's parts (condition … formula, compos
 glosses            训诂: a word's glosses (…者…也, 貌, 音, 反切, 当作, 一作) by commentator and period; a book's glossary
 pairs / network    配伍 and 方证网络: drugs prescribed together against chance (lift, PMI, Fisher + BH, groups, periods);
                    a formula's findings and drugs, a finding's formulas
+names              名称: the names of a drug, formula or disease through time (薯蓣→山药, 玄参→元参), where texts
+                   equate them, and the names the punctuated texts give that the lexicon lacks
+schools            学派: a school's words and formulas against the other works of its time, whom it cites and rejects,
+                   who rejects it; without a school, every school and the school-by-school citation matrix
 formula            方源考: every written-out composition of a formula; original and current versions, 加减,
                    同名异方, 同方异名, dose ratios, doses in the measures of their time, 方歌
 herb               药性源流: 性味, 毒性, 归经, 升降浮沉, 主治 of a drug, book by book; the first statement of each
@@ -46,6 +51,7 @@ from ..domain import DomainPack
 from .argument import ArgumentStudy
 from .base import StudyBase
 from .cases import CaseStudy
+from .chain import ChainStudy
 from .clause import ClauseStructure
 from .commentary import CommentaryStudy
 from .concordance import Concordance
@@ -58,9 +64,11 @@ from .herbs import HerbStudy
 from .senses import SenseStudy
 from .intertext import IntertextStudy
 from .learning import Learning, anki_tsv
+from .names import NameStudy
 from .network import CitationNetwork
 from .pairs import FormulaHarvest, PairsStudy
 from .punctuation import PunctuationStudy
+from .schools import SchoolStudy
 from .stemma import StemmaStudy
 from .stratigraphy import StratigraphyStudy
 from .taboo import TabooStudy
@@ -94,6 +102,9 @@ class StudyService(StudyBase):
         self._clause = ClauseStructure(self, self._punct)
         self._glosses = GlossStudy(self, self._commentary)
         self._pairs = PairsStudy(self, FormulaHarvest(self, self._formulas))
+        self._schools = SchoolStudy(self, self._network, self._pairs.h)
+        self._names = NameStudy(self)
+        self._chain = ChainStudy(self, self._concordance)
 
     @property
     def metrology(self) -> Any:
@@ -264,6 +275,21 @@ class StudyService(StudyBase):
     def network(self, target: str | None = None, **kw: Any) -> dict[str, Any]:
         """方证网络: a formula's findings and drugs, a finding's formulas, or the strongest formula–finding links."""
         return self._pairs.network(target, **kw)
+
+    def schools(self, school: str | None = None, **kw: Any) -> dict[str, Any]:
+        """学派: what a school's works share against the other works of their time (words, formulas), whom they cite,
+        whom they reject and who rejects them; without a school, every school and the school-by-school matrices."""
+        return self._schools.run(school, cache=self.cache_dir(), **kw)
+
+    def chain(self, text: str | None = None, passage_id: str | None = None, **kw: Any) -> dict[str, Any]:
+        """传播链: a passage's witnesses ordered into a tree — each hangs from the earlier witness whose changes it shares
+        most (shared innovations), else from the earliest; with the evidence and the margin of each edge."""
+        return self._chain.run(text, passage_id, **kw)
+
+    def names(self, term: str, **kw: Any) -> dict[str, Any]:
+        """名称: the names of a drug, formula or disease through time — the works writing each name period by period,
+        the first to write it, when the preferred name changes, where texts equate two names, names the lexicon lacks."""
+        return self._names.run(term, **kw)
 
     def _edition_floors(self, out: dict[str, Any]) -> None:
         """Each witness's lower date bound from its taboo characters (a witness in volumes: the latest)."""

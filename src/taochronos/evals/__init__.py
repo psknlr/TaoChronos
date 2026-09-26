@@ -16,8 +16,8 @@ from .ablations import ablations
 from .base import EvalContext, SuiteResult
 from .rediscovery import source_rediscovery, time_machine
 from .suites import anachronism, claims, contradiction, hallucination, lineage, philology, provenance, recovery, temporal
-from .textual import (argument, cases, clause, collation, commentaries, disputes, fragments, glosses, pairs, punctuation,
-                      reuse, senses, stratigraphy, variant_impact)
+from .textual import (argument, cases, chain, clause, collation, commentaries, disputes, fragments, glosses, names, pairs,
+                      punctuation, reuse, schools, senses, stratigraphy, variant_impact)
 
 SUITES: dict[str, Callable[[EvalContext], SuiteResult]] = {
     "philology": philology,
@@ -46,10 +46,13 @@ SUITES: dict[str, Callable[[EvalContext], SuiteResult]] = {
     "clause": clause,
     "glosses": glosses,
     "pairs": pairs,
+    "schools": schools,
+    "names": names,
+    "chain": chain,
 }
 QUICK = ("philology", "claims", "hallucination", "contradiction", "lineage", "temporal", "anachronism", "source_rediscovery",
          "collation", "reuse", "stratigraphy", "cases", "argument", "senses", "fragments", "punctuation", "commentaries",
-         "disputes", "variant_impact", "clause", "glosses", "pairs")
+         "disputes", "variant_impact", "clause", "glosses", "pairs", "schools", "names", "chain")
 
 
 def run_suites(names: list[str] | None = None, *, home: Any = None, data_dir: Any = None, quick: bool = False) -> dict[str, Any]:

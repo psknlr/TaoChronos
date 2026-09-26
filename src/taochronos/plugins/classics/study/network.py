@@ -157,6 +157,9 @@ class CitationNetwork:
         if cache is not None:
             Path(cache).mkdir(parents=True, exist_ok=True)
             (Path(cache) / f"citations-{key}.json").write_text(json.dumps(built, ensure_ascii=False), encoding="utf-8")
+            for old in Path(cache).glob("citations-*.json"):  # earlier scans of the corpus
+                if old.name != f"citations-{key}.json":
+                    old.unlink()
         self._built = built
         return built
 
@@ -182,10 +185,19 @@ class CitationNetwork:
         book = self.b.corpus.books.get(book_id)
         out = set()
         for author in (book.authors if book else []):
-            person = self._alias.get(self.b.normalize(re.sub(r"[（(].*?[）)]|等$|^旧题", "", author).strip()))
+            person = self.person_of_author(author)
             if person:
                 out.add(person)
         return out
+
+    def persons_of_book(self, book_id: str) -> set[str]:
+        """The physicians of ``physicians.yaml`` among a book's authors."""
+        return self._authors_as_persons(book_id)
+
+    def person_of_author(self, author: str) -> str | None:
+        """The physician an author string names: 刘完素（一说张元素） → 刘完素, 吴谦 等 → 吴谦, 汪琥辨 → 汪琥."""
+        name = self.b.normalize(re.sub(r"[（(].*?[）)]|等$|^旧题|^舊題", "", author).strip())
+        return self._alias.get(name) or self._alias.get(re.sub(r"(?:编次|撰次|校正|校注|重订|撰|著|编|辑|注|校|订|述|纂|集|辨|评|补)+$", "", name))
 
     def _witnessed(self, candidates: dict[str, float]) -> dict[str, float]:
         out: dict[str, float] = {}
@@ -197,7 +209,10 @@ class CitationNetwork:
 
     def _cache_key(self) -> str:
         sig = self.b.signature()
-        parts = [sig["corpus_digest"], json.dumps(self.persons, ensure_ascii=False, sort_keys=True),
+        # what the scan reads: the names (not the schools or dates, which only the views use) and the books' authors
+        names = {k: [p.get("names"), p.get("bencao")] for k, p in self.persons.items()}
+        authors = sorted((b.id, list(b.authors)) for b in self.b.corpus.books.values())
+        parts = [sig["corpus_digest"], json.dumps(names, ensure_ascii=False, sort_keys=True), json.dumps(authors, ensure_ascii=False),
                  json.dumps(self.b.pack.citations, ensure_ascii=False, sort_keys=True),
                  json.dumps(self.b.data("exegesis.yaml").get("stance"), ensure_ascii=False, sort_keys=True), "v4"]
         return hashlib.sha1("|".join(parts).encode("utf-8")).hexdigest()[:12]
@@ -370,7 +385,7 @@ class CitationNetwork:
             if book is None:
                 continue
             for author in book.authors:
-                src = self._alias.get(norm(re.sub(r"[（(].*?[）)]|等$|旧题", "", author)))
+                src = self.person_of_author(author)
                 if not src:
                     continue
                 for person, n in people.items():

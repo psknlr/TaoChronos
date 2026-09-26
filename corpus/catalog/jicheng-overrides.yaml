@@ -361,3 +361,21 @@ N087:
   apparatus:
     - {pattern: '[0-9０-９]+(?:[.．][0-9０-９]+)?克'}
   drop_sections: ['^序$', '^校勘記$']
+# authors read from the texts where the 笈成 metadata gives a phrase or a wrong name
+A009a: {authors: [刘完素], notes_text: 笈成题“河间刘完素”（河间为籍贯）；自序署“河間劉完素守真述”}
+A205: {authors: [汪昂], notes_text: 笈成题“汪琥辨”，据序署“時康熙己巳夏日　汪昂題於延禧堂”及“汪昂識”改为汪昂}
+C024: {authors: [张志聪, 高世栻], notes_text: 张志聪著而未竟，弟子高世栻续成}
+L004: {authors: [黄庭镜], notes_text: 据“濉川不塵子黃庭鏡自序”}
+O016: {authors: [叶桂, 吴金寿], attribution: compiled, notes_text: 卷首题“古吳　葉桂天士　述　後學　吳金壽子音　校”；吴金寿据叶桂之说整理，1831年为整理之年}
+O056: {authors: [虞抟], notes_text: 笈成题“虞传”，据序署“花溪恆德老人虞摶序”改为虞抟}
+O118: {authors: [李豫亨], notes_text: 据序署“時隆慶庚午四月既望雲間李豫亨元薦甫”}
+C020: {attribution: disputed, notes_text: 序称叶桂所撰（“葉君天士……撰述頗多。本草經解其一也”）；一说为姚球所撰而托名叶桂}
+D033: {attribution: compiled, notes_text: 华岫云据叶桂遗方辑录，乾隆四十年（1775）杜玉林序}
+E005: {authors: [戴天章], dynasty: 清, composition: [1675, 1722], work: jc:广温疫论, notes_text: 笈成题“吴又可”；自识署“上元戴天章麟郊甫識於存存書屋”，孙嗣琦跋（1782）称“先大父……《廣瘟疫論》”，据改为戴天章；年代取作者生年内（原书未署年）}
+E019: {composition: [1675, 1722], notes_text: 与E005同书（广瘟疫论）；年代取作者生年内（原书未署年）}
+M107: {authors: [秦昌遇, 秦之桢], dynasty: 明末清初, composition: [1641, 1706], notes_text: 笈成题“朱丹溪”；秦景明（昌遇）序（崇禎辛巳，1641）称“敢竊丹溪之余語，匯成一卷，改名《症因脈治》”，其侄孙秦之桢纂成（康熙四十五年，1706）}
+O109: {authors: [李杲], dynasty: 金, composition: [1231, 1251], notes_text: 笈成本卷首题“丹溪朱震亨著”；书中屡引“潔古云”“潔古曰”，论阴火上冲、升阳，即李杲《医学发明》（收入《东垣十书》），据改}
+F026: {attribution: disputed, notes_text: 卷首题“丹溪朱震亨著”；书中引“方在寶鑑泄痢條下”（罗天益《卫生宝鉴》），泄痢诸方同《保命集》，旧题朱震亨，一说出李杲或张元素之门}
+J017: {authors: [钱秀昌], notes_text: 笈成题“钱潢”（钱天来，康熙时人）；《伤科补要》为钱秀昌（松溪）撰，嘉庆十三年（1808）}
+L100: {authors: [梁溪尤氏], notes_text: 笈成题“王士雄”（1808年生，不能作1781年之书）；乾隆辛丑（1781）序称“得是編於梁溪尤氏”，旧题尤乘撰}
+O043: {attribution: compiled, notes_text: 旧题朱震亨撰；缪遵义序（乾隆乙未，1775）称“丹溪著作，類出門人記載”，1775年为刊行之年}

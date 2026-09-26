@@ -48,14 +48,16 @@ class Concordance:
         return list(dict.fromkeys(probes))
 
     @staticmethod
-    def _segment_probes(norm: str) -> list[str]:
-        """Probes inside the query's own punctuation (太阳病，发热，汗出 …): the index does not cross a mark, so a clause
-        of short segments is found in punctuated witnesses only through probes that stay within one segment."""
-        out: list[str] = []
-        for seg in re.split(r"[^\u3400-\u9fff\U00020000-\U0003134f〇〓]+", norm):
-            if len(seg) >= 3:
-                out += [seg[i: i + PROBE] for i in range(0, max(1, len(seg) - PROBE + 1))]
-        return list(dict.fromkeys(out))
+    def _segment_groups(norm: str) -> list[list[str]]:
+        """The probes of each segment of the query's own punctuation (太阳病，发热，汗出 …): the index does not cross a
+        mark, so a clause of short segments is found in punctuated witnesses only through probes that stay within one
+        segment."""
+        return [list(dict.fromkeys(seg[i: i + PROBE] for i in range(0, max(1, len(seg) - PROBE + 1))))
+                for seg in re.split(r"[^\u3400-\u9fff\U00020000-\U0003134f〇〓]+", norm) if len(seg) >= 3]
+
+    @classmethod
+    def _segment_probes(cls, norm: str) -> list[str]:
+        return list(dict.fromkeys(p for group in cls._segment_groups(norm) for p in group))
 
     def _candidates(self, han: str, exclude: str | None, max_candidates: int, norm: str = "") -> tuple[list[str], list[str]]:
         corpus = self.b.corpus
@@ -63,14 +65,20 @@ class Concordance:
         hits: dict[str, int] = defaultdict(int)
         used: list[tuple[int, str]] = []
         inner: list[tuple[int, str]] = []
-        segs = [x for x in self._segment_probes(norm) if len(x) < len(han)] if norm else []
+        groups = [[x for x in g if len(x) < len(han)] for g in self._segment_groups(norm)] if norm else []
+        segs = [x for g in groups for x in g]
+        counts: dict[str, int] = {}
         for probe in dict.fromkeys(self._probes(han) + segs):
-            n = corpus.count(probe) if large else len(self.b.find(probe))
+            n = counts[probe] = corpus.count(probe) if large else len(self.b.find(probe))
             if 0 < n <= MAX_PROBE_HITS:
                 (inner if probe in segs else used).append((n, probe))
         used.sort()
         inner.sort()
-        used = used[:8] + inner[:5]  # the rarest probes carry the evidence (and some that 白文 does not need)
+        # the rarest probe of each segment, so that one variant character (藏 for 脏) or one mark more in a witness does
+        # not hide it from every probe; then the rarest of all
+        each = sorted(min((counts[x], x) for x in g if 0 < counts.get(x, 0) <= MAX_PROBE_HITS) for g in groups
+                      if any(0 < counts.get(x, 0) <= MAX_PROBE_HITS for x in g))
+        used = used[:12] + list(dict.fromkeys(each[:8] + inner[:5]))
         for _, probe in used:
             ids = corpus.contains(probe, verify=False) if large else self.b.find(probe)
             for pid in ids:

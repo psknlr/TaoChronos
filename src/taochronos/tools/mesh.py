@@ -539,6 +539,20 @@ def _study_network(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(_study(ctx).network(a.get("target")), int(a.get("items", 20)))
 
 
+def _study_chain(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).chain(a.get("text"), a.get("passage_id")), int(a.get("items", 30)))
+
+
+def _study_names(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).names(a["term"]), int(a.get("items", 20)))
+
+
+def _study_schools(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    probes = a.get("probes") or []
+    return _brief(_study(ctx).schools(a.get("school"), probes=[probes] if isinstance(probes, str) else probes),
+                  int(a.get("items", 20)))
+
+
 def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
     reg = ToolRegistry()
     specs = [
@@ -735,6 +749,25 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "formula–finding links.",
                  obj({"target": S, "items": I}), _study_network, family="study", permission="classics:read",
                  expensive=True, returns="findings or formulas with support, share and lift; drugs; periods"),
+        ToolSpec("study.chain", "传播链: a passage's dated witnesses (copies, quotations, restatements) ordered into a tree by shared "
+                 "innovations — each hangs from the earlier witness whose variant readings it shares most (less that one's "
+                 "readings it lacks), else from the earliest; each edge with its shared readings, score and margin.",
+                 obj({"text": S, "passage_id": S, "items": I}), _study_chain, family="study", permission="classics:read",
+                 expensive=True, returns="nodes with dates and relations, edges with evidence and margin, root, summary"),
+        ToolSpec("study.names", "名称: the names the lexicon records for a drug, formula or disease (本名, 异名, taboo renames, "
+                 "part and preparation names) through time — works writing each name by period and by century, the first "
+                 "to write it, when the preferred name changes (薯蓣→山药, 玄参→元参), passages equating two names, and "
+                 "names the punctuated texts give after 一名/又名/俗呼 that the lexicon lacks (candidates to curate).",
+                 obj({"term": S, "items": I}, ["term"]), _study_names, family="study", permission="classics:read",
+                 expensive=True, returns="names with counts and first witnesses, shares by period, switches, equations, candidates"),
+        ToolSpec("study.schools", "学派: a school's physicians and works (schools.yaml, physicians.yaml), the words and formulas "
+                 "they use more than the other authors of their time (each physician counted once, the others reweighed to "
+                 "the school's forms; rate z with an informative Dirichlet prior, share z, Benjamini–Hochberg), whom they "
+                 "cite (homophily against the others), whom they reject and who rejects them; without a school, every "
+                 "school and the school-by-school citation matrix; probes: words to report for the school.",
+                 obj({"school": S, "probes": {"type": "array", "items": S}, "items": I}), _study_schools, family="study",
+                 permission="classics:read", expensive=True,
+                 returns="members and works, distinctive words, formulas, citations, homophily, rejections, lineage"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

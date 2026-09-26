@@ -881,6 +881,261 @@ def pairs(ctx: EvalContext) -> SuiteResult:
     return SuiteResult("pairs", metrics, details, notes=notes)
 
 
+def _school_corpus(root: Any, seed: int = 11) -> Any:
+    """Five 温病 physicians of physicians.yaml and sixteen other authors of their time, synthetic: the school's works
+    write 营分 and 伏气 in several phrases and 达原 in one, the others now and then; all write the same findings; the
+    school's works quote 叶天士, the others 丹溪 (and one of them 叶天士)."""
+    from pathlib import Path
+
+    rng = random.Random(seed)
+    root = Path(root)
+    school = [("wy", "温疫论", "吴有性", 1642), ("dt", "广瘟疫论", "戴天章", 1700), ("wr", "温热论", "叶桂", 1746),
+              ("tb", "温病条辨", "吴瑭", 1798), ("sr", "湿热病篇", "薛雪", 1750)]
+    others = [(f"o{k:02d}", f"医书第{k}", f"某氏{k}", 1650 + 10 * k) for k in range(16)]
+    common = ["发热", "恶寒", "脉浮", "头痛", "汗出", "口渴", "咳嗽", "心烦", "腹满", "下利", "身重", "脉数", "神昏", "谵语"]
+    planted = {"营分": ["热入营分", "营分受热", "邪在营分", "营分有热"], "伏气": ["伏气为病", "伏气发温", "冬伤伏气", "伏气内发"]}
+    src = {"origin": "TaoChronos eval fixture (synthetic)", "license": "CC0-1.0", "acquisition": "written for SchoolEval"}
+    (root / "books").mkdir(parents=True, exist_ok=True)
+    meta: dict[str, Any] = {"books": []}
+    for bid, title, author, year in school + others:
+        own = bid in {s[0] for s in school}
+        meta["books"].append({"id": bid, "title": title, "authors": [author], "dynasty": "清", "composition": [year, year],
+                              "category": "温病" if own else "综合", "source": src})
+        passages = []
+        for i in range(40):
+            words = rng.sample(common, 4)
+            if own and i % 2 == 0:
+                words += [rng.choice(forms) for forms in planted.values()]
+            elif not own and rng.random() < 0.03:
+                words.append(rng.choice(sum(planted.values(), [])))
+            text = "，".join(words) + "。"
+            if own and i % 10 == 3:
+                text += "宜达原饮。"
+            if i == 5:
+                text += "叶天士曰：温邪上受，首先犯肺。" if own or bid == "o07" else "丹溪曰：阳常有余，阴常不足。"
+            passages.append({"id": f"{bid}.{i:03d}", "text": text})
+        (root / "books" / f"{bid}.yaml").write_text(
+            yaml.safe_dump([{"book": bid, "defaults": {"kind": "text"}, "passages": passages}], allow_unicode=True), encoding="utf-8")
+    (root / "books.yaml").write_text(yaml.safe_dump(meta, allow_unicode=True), encoding="utf-8")
+    return root
+
+
+def schools(ctx: EvalContext) -> SuiteResult:
+    """SchoolEval (学派): the words of a school against the other authors of its time — on a synthetic corpus whose
+    school words are planted (营分 and 伏气 in several phrases, 达原饮 in one), the planted words must lead the list and
+    significant, the findings every author writes must not be listed, and the school must cite its own more; with the
+    full corpus, the doctrines the textbooks give each school (gold/schools.yaml) must be used more by its physicians
+    (rate z ≥ 1.96), and a doctrine shared by schools should be used most by the school it is given to."""
+    import tempfile
+
+    from ..plugins.classics import Corpus
+    from ..plugins.classics.study import StudyService
+
+    h = ctx.default
+    with tempfile.TemporaryDirectory() as tmp:
+        corpus = Corpus.load(_school_corpus(tmp))
+        corpus.normalize = h.pack.variants.normalize_text
+        res = StudyService(h.pack, corpus).schools("温病")
+    words = [w["item"] for w in res["vocabulary"]]
+    sig = [w["item"] for w in res["vocabulary"] if w["significant"]]
+    common = {"发热", "恶寒", "脉浮", "头痛", "汗出", "口渴", "咳嗽", "心烦", "腹满", "下利", "身重", "脉数", "神昏", "谵语"}
+    homophily = res["citations"]["homophily"]
+    metrics: dict[str, Any] = {"synthetic": {
+        "planted_top2": len({"营分", "伏气"} & set(words[:2])) / 2, "planted_significant": len({"营分", "伏气"} & set(sig)) / 2,
+        "达原饮_found": any("达原" in w for w in words), "common_words_listed": len(common & set(sig)),
+        "own_citation_share": homophily["own_share"], "other_citation_share": homophily["other_share"]}}
+    notes = ["synthetic: 5 温病 physicians and 16 other authors (1650–1800); planted words in several phrases (so the "
+             "word, not one phrase, must be found); common_words_listed = findings every author writes found significant"]
+    details: list[dict[str, Any]] = []
+    big = None if ctx.quick else ctx.corpus_harness()
+    if big is not None:
+        gold = ctx.gold("schools")["doctrines"]
+        probes = list(dict.fromkeys(t for terms in gold.values() for t in terms))
+        survey = big.capabilities.get("study").schools(probes=probes)
+        z = {row["school"]: {p["item"]: p["z"] for p in row.get("probes", [])} for row in survey["schools"]}
+        found = attributed = total = 0
+        for school, terms in gold.items():
+            for term in terms:
+                key = big.pack.variants.normalize_text(term)
+                zs = {s: z[s].get(key) for s in gold if z.get(s, {}).get(key) is not None}
+                mine = zs.get(school)
+                best = max(zs, key=lambda s: zs[s]) if zs else None
+                total += 1
+                found += bool(mine is not None and mine >= 1.96)
+                attributed += best == school
+                details.append({"school": school, "term": term, "z": mine, "best_school": best, "z_by_school": zs})
+        rows = {row["school"]: row for row in survey["schools"]}
+        metrics["real"] = {"doctrine_recall": round(found / max(1, total), 3), "doctrine_attribution": round(attributed / max(1, total), 3),
+                           "doctrines": total,
+                           "homophily": {s: rows[s]["homophily"]["ratio"] for s in gold if s in rows and rows[s].get("homophily")}}
+        notes.append("real: every school against the other authors of its time; recall = doctrines with rate z ≥ 1.96 for "
+                     "their school; attribution = doctrines whose highest z is their school's (schools share doctrines: 脾胃 "
+                     "易水/温补, 相火 丹溪/温补, 命门 温补/河间)")
+    return SuiteResult("schools", metrics, details, notes=notes)
+
+
+def _write_corpus(root: Any, books: list[tuple[str, str, str, int, str, list[str]]], origin: str) -> Any:
+    """books: (id, title, author, year, category, passage texts) → a corpus directory (synthetic, CC0)."""
+    from pathlib import Path
+
+    root = Path(root)
+    src = {"origin": origin, "license": "CC0-1.0", "acquisition": "synthetic, written for the eval"}
+    (root / "books").mkdir(parents=True, exist_ok=True)
+    meta = {"books": [{"id": b, "title": ti, "authors": [a], "dynasty": "", "composition": [y, y], "category": c, "source": src}
+                      for b, ti, a, y, c, _ in books]}
+    for b, _, _, _, _, texts in books:
+        passages = [{"id": f"{b}.{i:03d}", "text": x} for i, x in enumerate(texts)]
+        (root / "books" / f"{b}.yaml").write_text(
+            yaml.safe_dump([{"book": b, "defaults": {"kind": "text"}, "passages": passages}], allow_unicode=True), encoding="utf-8")
+    (root / "books.yaml").write_text(yaml.safe_dump(meta, allow_unicode=True), encoding="utf-8")
+    return root
+
+
+def names(ctx: EvalContext) -> SuiteResult:
+    """NameEval (名称): the names of an entry through time — on a synthetic corpus where 薯蓣 gives way to 山药
+    between the 7th and the 12th century, with a longer name (干山药) that must not count for 山药, a passage equating
+    the names and a name the lexicon lacks (山芋); with the full corpus, the taboo renames whose dates history records
+    (gold/names.yaml: 薯蓣→山药 under 宋英宗, 玄参→元参 under 康熙) must change where history puts them."""
+    import tempfile
+
+    from ..plugins.classics import Corpus
+    from ..plugins.classics.study import StudyService
+
+    h = ctx.default
+    rng = random.Random(5)
+    books = [(f"e{k}", f"古方{k}", f"甲{k}", rng.randint(450, 690), "方书", ["薯蓣丸，治虚劳。薯蓣三两。"]) for k in range(8)]
+    books += [(f"l{k}", f"后方{k}", f"乙{k}", rng.randint(1110, 1390), "方书", ["山药丸，治虚劳。山药三两。"]) for k in range(8)]
+    books += [("x", "唐人方", "丙", 690, "方书", ["山药一两。"]), ("gan", "炮制书", "丁", 1250, "本草", ["干山药，蒸之。"]),
+              ("eq", "本草释名", "戊", 1300, "本草", ["山药，一名薯蓣，一名山芋。"]),
+              ("eq2", "本草便览", "己", 1400, "本草", ["薯蓣，一名山芋，俗呼山药。"])]
+    with tempfile.TemporaryDirectory() as tmp:
+        corpus = Corpus.load(_write_corpus(tmp, books, "TaoChronos eval fixture (synthetic)"))
+        corpus.normalize = h.pack.variants.normalize_text
+        r = StudyService(h.pack, corpus).names("山药")
+    rows = {n["name"]: n for n in r["names"]}
+    sw = [(s["from"], s["to"], s["between"]) for s in r["switches"]]
+    metrics: dict[str, Any] = {"synthetic": {
+        "switch": sw, "switch_right": sw == [("薯蓣", "山药", sw[0][2])] and sw[0][2][0] >= 400 and sw[0][2][1] <= 1400 if sw else False,
+        "nested_kept_apart": rows.get("干山药", {}).get("works") == 1 and rows.get("山药", {}).get("works") == 11,
+        "equation_found": any(set(e["names"]) == {"山药", "薯蓣"} for e in r["equations"]),
+        "candidates": [c["name"] for c in r["candidates"]]}}
+    notes = ["synthetic: 8 works write 薯蓣 (450–690), 8 write 山药 (1110–1390), one Tang work already 山药 (a blip), 干山药 "
+             "once, two passages equate the names and give 山芋"]
+    details: list[dict[str, Any]] = []
+    big = None if ctx.quick else ctx.corpus_harness()
+    if big is not None:
+        st = big.capabilities.get("study")
+        ok = 0
+        gold = ctx.gold("names")["changes"]
+        for g in gold:
+            res = st.names(g["term"])
+            hit = [s for s in res["switches"] if s["from"] == g["from"] and s["to"] == g["to"]
+                   and s["between"][0] <= g["by"][1] and s["between"][1] >= g["by"][0]]
+            ok += bool(hit)
+            details.append({"term": g["term"], "expected": f"{g['from']}→{g['to']} {g['by']}", "found": bool(hit),
+                            "switches": res["switches"], "candidates": [c["name"] for c in res["candidates"]][:6]})
+        metrics["real"] = {"dated_renames_found": f"{ok}/{len(gold)}"}
+        notes.append("real: a rename is found when the store's preferred name changes from the old to the new within the "
+                     "reigns' range (100-year bins with three works or more on each side)")
+    return SuiteResult("names", metrics, details, notes=notes)
+
+
+CONTENT = "寒热虚实表里气血阴阳风湿燥火肝心脾肺肾胃胆痛满胀呕利渴烦"
+
+
+# spellings copyists change independently of one another (pairs of collation.yaml): an edition that regularises its
+# characters shares them with every other that does, whatever it was copied from
+TRIVIAL = [("沉", "沈"), ("涩", "濇"), ("肢", "支"), ("膈", "鬲"), ("痰", "淡"), ("硬", "鞕"), ("咳", "欬"), ("藏", "脏")]
+
+
+def _chain_tradition(rng: random.Random, base: str, n: int, trivial: float = 0.0) -> tuple[list[tuple[str, int, str]], dict[str, str]]:
+    """An artificial tradition of one passage: witnesses w1…wn after the source w0, each copying an earlier one (dates
+    rising) and adding one content change (sometimes two) at places no ancestor changed; with ``trivial``, a copy also
+    changes each spelling of TRIVIAL with that probability, independently of its model."""
+    from ..plugins.classics.collation.variant_graph import FUNCTION_WORDS
+
+    protected = {i for old, _ in TRIVIAL for m in [base.find(old)] if m >= 0 for i in range(m, m + len(old))}
+    slots = [i for i, ch in enumerate(base) if "\u4e00" <= ch <= "\u9fff" and ch not in FUNCTION_WORDS and i not in protected]
+    texts, used, parent = {"w0": base}, {"w0": set()}, {}
+    wits = [("w0", 200, base)]
+    for k in range(1, n + 1):
+        par = rng.choice([w for w, _, _ in wits])
+        free = [i for i in slots if i not in used[par]]
+        places = rng.sample(free, 1 if rng.random() < 0.7 else 2)
+        chars = list(texts[par])
+        for i in places:
+            chars[i] = rng.choice([c for c in CONTENT if c != chars[i]])
+        text = "".join(chars)
+        for old, new in TRIVIAL:  # each spelling regularised (or not) independently of the model
+            if rng.random() < trivial:
+                text = text.replace(old, new, 1) if old in text else text.replace(new, old, 1)
+        wid = f"w{k}"
+        texts[wid], used[wid], parent[wid] = text, used[par] | set(places), par
+        wits.append((wid, 200 + 90 * k, text))
+    return wits, parent
+
+
+def _chain_trial(ctx: EvalContext, base: str, trivial: float, seeds: int = 6) -> dict[str, Any]:
+    import difflib
+    import tempfile
+
+    from ..plugins.classics import Corpus
+    from ..plugins.classics.study import StudyService
+
+    h = ctx.default
+    right = base_right = judged = found_n = total = 0
+    for seed in range(seeds):
+        rng = random.Random(seed)
+        wits, parent = _chain_tradition(rng, base, 12, trivial)
+        with tempfile.TemporaryDirectory() as tmp:
+            corpus = Corpus.load(_write_corpus(tmp, [(w, f"书{w}", f"某{w}", y, "伤寒", [x]) for w, y, x in wits],
+                                                   "TaoChronos eval fixture (synthetic)"))
+            corpus.normalize = h.pack.variants.normalize_text
+            r = StudyService(h.pack, corpus).chain(base)
+        found = {e["to"].split(".")[0]: e["from"].split(".")[0] for e in r["edges"]}
+        present = set(found) | {"w0"}
+        texts = {w: x for w, _, x in wits}
+        order = [w for w, _, _ in wits]
+        for w, p in parent.items():
+            total += 1
+            found_n += w in found
+            if w not in found or p not in present:
+                continue  # a witness the concordance missed, or whose model it missed, cannot be judged
+            judged += 1
+            right += found[w] == p
+            earlier = [u for u in order[: order.index(w)] if u in present]
+            sim = max(earlier, key=lambda u: (difflib.SequenceMatcher(None, texts[u], texts[w], autojunk=False).ratio(), u))
+            base_right += sim == p
+    return {"witnesses_found": round(found_n / total, 3), "judged": judged, "parent_accuracy": round(right / max(1, judged), 3),
+            "baseline_most_similar": round(base_right / max(1, judged), 3)}
+
+
+def chain(ctx: EvalContext) -> SuiteResult:
+    """ChainEval (传播链): artificial traditions of one passage (a source and twelve later witnesses, each copying an
+    earlier one and adding content changes) — the chain must name each witness's model; against the baseline of the
+    most similar earlier witness, which a copy of a copy defeats.  With the full corpus, the chains of two clauses of
+    the 伤寒论 (reported, no gold)."""
+    base = ("太阳病，头痛发热，身疼腰痛，骨节疼痛，恶风无汗而喘者，麻黄汤主之。脉沉而涩，四肢厥冷，膈上有痰，"
+            "心下硬，咳而微喘，五藏不和者，小青龙汤主之。")
+    metrics: dict[str, Any] = {}
+    for label, trivial in (("synthetic", 0.0), ("synthetic_convergent", 0.3)):
+        metrics[label] = _chain_trial(ctx, base, trivial)
+    notes = ["synthetic: 6 traditions × 12 witnesses of an 80-character passage; each copies an earlier witness at random "
+             "and adds one content change (30%: two); convergent: each copy also flips each of eight spellings of "
+             "collation.yaml (沉/沈, 涩/濇, 肢/支, 膈/鬲, 痰/淡, 硬/鞕, 咳/欬, 藏/脏) with p=0.3, independently of its model; "
+             "judged = found witnesses whose model was found too; baseline = the most similar earlier witness among those found"]
+    details: list[dict[str, Any]] = []
+    big = None if ctx.quick else ctx.corpus_harness()
+    if big is not None:
+        st = big.capabilities.get("study")
+        for q in ("太阳病，发热，汗出，恶风，脉缓者，名为中风。", "病人脏无他病，时发热自汗出而不愈者，此卫气不和也。先其时发汗则愈，宜桂枝汤。"):
+            res = st.chain(q)
+            details.append({"clause": q, **res["summary"], "source_witnesses": res.get("source_witnesses"),
+                            "via": [f"{e['from_title']}→{e['to_title']}" for e in res["edges"] if e["basis"] == "shared readings"][:10]})
+        notes.append("real: two clauses of the 伤寒论 traced through the store (witnesses, intermediaries, depth) — no gold")
+    return SuiteResult("chain", metrics, details, notes=notes)
+
+
 def _trigrams(s: str) -> set[str]:
     return {s[i: i + 3] for i in range(len(s) - 2)}
 
