@@ -371,9 +371,43 @@ def authorship(r: dict[str, Any]) -> list[str]:
     return out + ["", f"> {r.get('note', '')}"]
 
 
+# ------------------------------------------------------------------ 医案轨迹
+OUTCOMES = {"improved": "好转/愈", "unchanged": "未效", "worse": "加重", "died": "死亡", "": "未记", "unrecorded": "未记"}
+
+
+def cases(r: dict[str, Any]) -> list[str]:
+    out = [f"# 医案：{r.get('book') or r.get('disease') or ''}", "", f"{r.get('count', 0)} 案；转归："
+           + "，".join(f"{OUTCOMES.get(k, k)} {v}" for k, v in (r.get("outcomes") or {}).items()), "",
+           "| 案 | 病家 | 诊次 | 转归 | 首诊脉 | 方 | 首诊 |", "|---|---|---|---|---|---|---|"]
+    for c in r.get("cases", [])[:60]:
+        v0 = c["visits"][0] if c["visits"] else {}
+        pat = "".join(str(x) for x in (c["patient"].get("name", ""), c["patient"].get("age", ""))) or c.get("opener", "")
+        forms = "、".join(dict.fromkeys(f for v in c["visits"] for f in v["formulas"]))
+        out.append(f"| {c.get('section', '')} | {pat} | {len(c['visits'])} | {OUTCOMES.get(c.get('outcome', ''), '')} | "
+                   f"{'、'.join(v0.get('findings', {}).get('pulse', [])[:2])} | {_q(forms, 30)} | {_q(v0.get('quote', ''), 40)} |")
+    return out
+
+
+def trajectories(r: dict[str, Any]) -> list[str]:
+    out = [f"# 医案轨迹：{r.get('disease') or r.get('book') or ''}", "",
+           f"{r.get('cases', 0)} 案，{r.get('visits', 0)} 诊次；转归：" + "，".join(f"{OUTCOMES.get(k, k)} {v}" for k, v in (r.get("outcomes") or {}).items()),
+           "", "来源：" + "、".join(f"{b['title']}（{b['cases']}）" for b in r.get("books", [])[:10]), "",
+           "## 常见序列（跨诊次，按医案数）", ""]
+    out += [f"- {' → '.join(p['pattern'])}：{p['cases']} 案" for p in r.get("patterns", [])[:15]]
+    changes = [t for t in r.get("transitions", []) if not t["same"]]
+    out += ["", "## 诊次间的变化（下一诊出现的概率及提升度）", "", "| 本诊 | 下一诊 | 次数 | P | 提升度 |", "|---|---|---|---|---|"]
+    out += [f"| {t['from']} | {t['to']} | {t['count']} | {t['p']} | {t['lift']} |" for t in changes[:15]]
+    out += ["", "## 与“好转”相关的选择（记录中的关联，非疗效证据）", "", "| 项 | 医案 | 好转率 | 其余医案 | 方向 | p | 显著(BH) |",
+            "|---|---|---|---|---|---|---|"]
+    out += [f"| {a['item']} | {a['cases']} | {a['rate']:.0%} | {a['rate_without']:.0%} | {a['direction']} | {a['p']} | "
+            f"{'是' if a['significant'] else ''} |" for a in r.get("associations", [])[:15]]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
 PAGES = {"concordance": concordance, "formula": formula, "herb": herb, "term": term, "taboo": taboo, "citations": citations,
          "cards": cards, "reading": reading, "variants": variants, "stemma": stemma, "edition": edition, "reuse": reuse,
-         "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship}
+         "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship, "cases": cases,
+         "trajectories": trajectories}
 
 
 def markdown(kind: str, result: dict[str, Any], signature: dict[str, Any], notice: str = "") -> str:

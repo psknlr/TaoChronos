@@ -472,6 +472,16 @@ def _study_authorship(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(res, int(a.get("items", 20)))
 
 
+def _study_cases(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).cases(a.get("book"), disease=a.get("disease"), limit=int(a.get("limit", 40)))
+    return _brief(res, int(a.get("items", 12)))
+
+
+def _study_trajectories(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).trajectories(a.get("disease"), book=a.get("book"), limit=int(a.get("limit", 600)))
+    return _brief({k: v for k, v in res.items() if k != "examples"}, int(a.get("items", 15)))
+
+
 def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
     reg = ToolRegistry()
     specs = [
@@ -597,6 +607,16 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  obj({"text": S, "book": S, "chapter": S, "candidates": {"type": "array", "items": S}, "items": I}),
                  _study_authorship, family="study", permission="classics:read", expensive=True,
                  returns="candidates ranked by delta with the margin to the next"),
+        ToolSpec("study.cases", "医案: case records read visit by visit — findings (symptoms, pulse, tongue), diagnosis, principle, "
+                 "formula and drugs with doses, 加减 against the last prescription, doses taken, response, outcome — of one "
+                 "book or filed under a disease across the case collections.",
+                 obj({"book": S, "disease": S, "limit": I, "items": I}), _study_cases, family="study", permission="classics:read",
+                 expensive=True, returns="cases with patient, visits and outcome; outcome counts"),
+        ToolSpec("study.trajectories", "医案轨迹: across case records of a disease (or a book), the sequences of principles, formulas "
+                 "and added drugs common to many cases, what the next visit holds given this one, and the choices associated "
+                 "with recovery in the record (associations in a selected record, never evidence of efficacy).",
+                 obj({"disease": S, "book": S, "limit": I, "items": I}), _study_trajectories, family="study",
+                 permission="classics:read", expensive=True, returns="patterns, transitions, outcome associations"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

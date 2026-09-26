@@ -1,0 +1,63 @@
+# CaseEval — case records annotated case by case and visit by visit (study cases, plugins/classics/study/cases.py).
+#
+# Constructed for the test, in the two manners of the literature: records of successive visits under a heading
+# (吴鞠通医案, 张聿青医案, 临证指南医案) and narrative cases (孙文垣医案, 名医类案).  The annotation says what a careful
+# reader takes from each record: the cases, the visits, and per visit the pulse, the formulas, what was added to or
+# taken from the last prescription, the doses taken, the principle named and the response; per case the patient
+# and the outcome.  Field values are compared as sets of normalised strings (a predicted value counts when it
+# contains the gold value, e.g. 脉浮数 for 浮数, or the other way round).  Every scored field of a visit is annotated
+# in full — a field left out is empty.  The response of a visit is the response to its treatment, wherever the
+# record reports it (热已减 at the next visit answers this visit's prescription).
+books:
+  - id: visits
+    heading: 风温
+    passages:
+      - "王　十岁　风温发热，咳嗽，脉浮数，舌苔薄白。治宜辛凉解表，银翘散主之。连翘（三钱）　金银花（三钱）　薄荷（一钱）　桔梗（二钱）"
+      - "初三日　热已减，咳尚甚，脉数。即于前方内去薄荷，加杏仁（三钱）　贝母（二钱）。服二帖。"
+      - "初五日　咳大减，知饥，脉静。与沙参麦冬汤。"
+      - "李　四十岁　湿温身热不扬，脉濡缓，舌苔白腻。法当芳香化湿，藿朴夏苓汤主之。"
+      - "二诊　热退，脉和，仍用前方去厚朴。服三剂而愈。"
+      - "某氏　痢下赤白，腹痛，脉弦数。用白头翁汤加黄芩。服二剂，痛不减，更甚。"
+      - "次日　下利转剧，神昏，脉细欲绝，与独参汤，不应，遂死。"
+  - id: narrative
+    heading: 医案
+    passages:
+      - "一妇人年四十，患泄泻，脉沉迟，四肢厥冷。予以附子理中汤，连进三帖，泻止而安。"
+      - "张孝廉，患疟，寒热往来，脉弦。用小柴胡汤，服二剂，热退。越三日复发，加常山，又二剂而愈。"
+      - "某，咳嗽吐血，脉虚数。治以养阴清肺，用百合固金汤，服之罔效，病势危笃。"
+cases:
+  - book: visits
+    patient: {name: 王, age: 十}
+    outcome: improved
+    visits:
+      - {pulse: [浮数], formulas: [银翘散], principles: [辛凉解表], response: improved}
+      - {pulse: [数], added: [杏仁, 贝母], removed: [薄荷], doses: 服二帖, response: improved}
+      - {pulse: [静], formulas: [沙参麦冬汤]}
+  - book: visits
+    patient: {name: 李, age: 四十}
+    outcome: improved
+    visits:
+      - {pulse: [濡缓], formulas: [藿朴夏苓汤], principles: [芳香化湿], response: improved}
+      - {pulse: [和], removed: [厚朴], doses: 服三剂, response: improved}
+  - book: visits
+    patient: {name: 某, sex: female}
+    outcome: died
+    visits:
+      - {pulse: [弦数], formulas: [白头翁汤], added: [黄芩], doses: 服二剂, response: worse}
+      - {pulse: [细], formulas: [独参汤], response: died}
+  - book: narrative
+    patient: {sex: female, age: 四十}
+    outcome: improved
+    visits:
+      - {pulse: [沉迟], formulas: [附子理中汤], doses: 连进三帖, response: improved}
+  - book: narrative
+    patient: {sex: male}
+    outcome: improved
+    visits:
+      - {pulse: [弦], formulas: [小柴胡汤], doses: 服二剂, response: improved}
+      - {added: [常山], response: improved}
+  - book: narrative
+    patient: {name: 某}
+    outcome: worse
+    visits:
+      - {pulse: [虚数], formulas: [百合固金汤], principles: [养阴清肺], response: worse}

@@ -11,6 +11,8 @@ reuse              语义复用: a passage's reuses across the corpus, typed (�
 transmission       思想传播: a work's reception — which later works carry it and how, by period, and through which works
 layers / dating    文本地层: style layers of a work's chapters, change points, outlying chapters; dating evidence per chapter
 authorship         (cited works, late vocabulary, taboo); Burrows' Delta against candidate authors
+cases              医案轨迹: case records read visit by visit (findings, diagnosis, principle, formula, 加减, doses,
+trajectories       response, outcome); the sequences, transitions and outcome associations common to many cases
 formula            方源考: every written-out composition of a formula; original and current versions, 加减,
                    同名异方, 同方异名, dose ratios, doses in the measures of their time, 方歌
 herb               药性源流: 性味, 毒性, 归经, 升降浮沉, 主治 of a drug, book by book; the first statement of each
@@ -25,10 +27,12 @@ dataset            研究数据集: the results as tables with provenance, for a
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any
 
 from ..domain import DomainPack
 from .base import StudyBase
+from .cases import CaseStudy
 from .concordance import Concordance
 from .dataset import tables as dataset_tables
 from .formulas import FormulaStudy
@@ -57,6 +61,7 @@ class StudyService(StudyBase):
         self._stemma = StemmaStudy(self)
         self._intertext = IntertextStudy(self, self._concordance, self._stemma)
         self._strata = StratigraphyStudy(self, self._stemma, self._taboo)
+        self._cases = CaseStudy(self)
 
     @property
     def metrology(self) -> Any:
@@ -145,6 +150,17 @@ class StudyService(StudyBase):
     def authorship(self, text: str | None = None, **kw: Any) -> dict[str, Any]:
         """Burrows' Delta of a text (or a book, or one of its chapters) against candidate works."""
         return self._strata.authorship(text, **kw)
+
+    def cases(self, book: str | None = None, *, disease: str | None = None, books: list[str] | None = None,
+              limit: int = 200) -> dict[str, Any]:
+        """Case records read visit by visit — of one book, or filed under a disease across the case collections."""
+        records = self._cases.cases(book, disease=disease, books=books, limit=limit)
+        return {"book": book, "disease": disease, "count": len(records), "cases": [r.to_dict() for r in records],
+                "outcomes": dict(Counter(r.outcome or "unrecorded" for r in records))}
+
+    def trajectories(self, disease: str | None = None, **kw: Any) -> dict[str, Any]:
+        """Sequences, transitions and outcome associations of treatment across case records."""
+        return self._cases.trajectories(disease, **kw)
 
     def _edition_floors(self, out: dict[str, Any]) -> None:
         """Each witness's lower date bound from its taboo characters (a witness in volumes: the latest)."""

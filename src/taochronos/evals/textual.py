@@ -14,6 +14,7 @@ from __future__ import annotations
 import bisect
 import random
 import re
+from collections import Counter
 from typing import Any
 
 from ..plugins.classics.collation import (
@@ -285,4 +286,80 @@ def stratigraphy(ctx: EvalContext) -> SuiteResult:
     return SuiteResult("stratigraphy", metrics, details, notes=notes)
 
 
-__all__ = ["collation", "reuse", "stratigraphy"]
+CASE_FIELDS = ("pulse", "formulas", "added", "removed", "principles", "doses")
+
+
+def _visit_values(v: Any, field: str) -> list[str]:
+    if field == "pulse":
+        return list(v.findings.get("pulse", []))
+    if field == "doses":
+        return [v.doses] if v.doses else []
+    return list(getattr(v, field))
+
+
+def _match(a: str, b: str) -> bool:
+    return bool(a) and bool(b) and (a in b or b in a)
+
+
+def cases(ctx: EvalContext) -> SuiteResult:
+    """CaseEval: constructed case records (gold/cases.yaml) cut into cases and visits and read field by field."""
+    h = ctx.default
+    study = h.capabilities.get("study")
+    gold = ctx.gold("cases")
+    predicted: dict[str, list[Any]] = {}
+    for book in gold.get("books", []):
+        rows = [(f"{book['id']}.{i}", book["heading"], text) for i, text in enumerate(book["passages"])]
+        predicted[book["id"]] = study._cases.parse_rows(rows, book["id"])
+    by_book: dict[str, list[dict[str, Any]]] = {}
+    for g in gold.get("cases", []):
+        by_book.setdefault(g["book"], []).append(g)
+    counts = {f: [0, 0, 0] for f in CASE_FIELDS}  # tp, fp, fn
+    visit_ok = response_ok = response_n = outcome_ok = patient_ok = patient_n = 0
+    details = []
+    for bid, gcases in by_book.items():
+        pcases = predicted.get(bid, [])
+        details.append({"book": bid, "gold_cases": len(gcases), "predicted_cases": len(pcases)})
+        for g, p in zip(gcases, pcases):
+            visit_ok += len(g["visits"]) == len(p.visits)
+            outcome_ok += (g.get("outcome") or "") == p.outcome
+            for k, val in (g.get("patient") or {}).items():
+                patient_n += 1
+                patient_ok += _match(str(val), p.patient.get(k, ""))
+            for gv, pv in zip(g["visits"], p.visits):
+                for f in CASE_FIELDS:
+                    gvals = [str(x) for x in (gv.get(f) if isinstance(gv.get(f), list) else ([gv[f]] if gv.get(f) else []))]
+                    pvals = _visit_values(pv, f)
+                    counts[f][0] += sum(1 for x in gvals if any(_match(x, y) for y in pvals))
+                    counts[f][2] += sum(1 for x in gvals if not any(_match(x, y) for y in pvals))
+                    counts[f][1] += sum(1 for y in pvals if not any(_match(x, y) for x in gvals))
+                response_n += 1
+                response_ok += (gv.get("response") or "") == pv.response
+            details.append({"book": bid, "patient": p.patient, "visits": [len(g["visits"]), len(p.visits)],
+                            "outcome": [g.get("outcome"), p.outcome],
+                            "responses": [[gv.get("response") or "" for gv in g["visits"]], [pv.response for pv in p.visits]]})
+    n_cases = sum(len(v) for v in by_book.values())
+    metrics: dict[str, Any] = {
+        "cases": n_cases,
+        "case_segmentation": round(sum(1 for d in details if "gold_cases" in d and d["gold_cases"] == d["predicted_cases"]) /
+                                   max(1, len(by_book)), 4),
+        "visit_segmentation": round(visit_ok / n_cases, 4) if n_cases else None,
+        "response_accuracy": round(response_ok / response_n, 4) if response_n else None,
+        "outcome_accuracy": round(outcome_ok / n_cases, 4) if n_cases else None,
+        "patient_accuracy": round(patient_ok / patient_n, 4) if patient_n else None,
+        "fields": {f: prf(*c) for f, c in counts.items()},
+    }
+    notes = ["constructed records in the two manners of the literature (successive visits under a heading; narratives), a "
+             "development set written with the rules: it shows what they are meant to do, not how they generalise; case "
+             "segmentation = books whose number of cases is right; fields compared as sets, one value containing the other"]
+    corpus = None if ctx.quick else ctx.corpus_harness()
+    if corpus is not None:  # two independent transcriptions of one case collection should be read alike
+        cs = corpus.capabilities.get("study")._cases
+        a, b = cs.parse("jc_n003"), cs.parse("jc_n003a")
+        oa, ob = Counter(c.outcome or "-" for c in a), Counter(c.outcome or "-" for c in b)
+        metrics["real"] = {"wu_jutong_cases": [len(a), len(b)], "case_count_agreement": round(min(len(a), len(b)) / max(len(a), len(b)), 4),
+                           "outcome_agreement": round(sum(min(oa[k], ob[k]) for k in oa) / max(len(a), len(b)), 4)}
+        notes.append("real: the two transcriptions of 吴鞠通医案 in the corpus (笈成 jc_n003, jc_n003a), read independently")
+    return SuiteResult("cases", metrics, details, notes=notes)
+
+
+__all__ = ["cases", "collation", "reuse", "stratigraphy"]

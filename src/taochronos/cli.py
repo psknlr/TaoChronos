@@ -704,7 +704,8 @@ def cmd_eval(args: argparse.Namespace) -> None:
 
 
 STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
-         "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship")
+         "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship", "cases",
+         "trajectories")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -757,6 +758,14 @@ def cmd_study(args: argparse.Namespace) -> None:
         res = study.layers(target, books=args.books, k=args.k, features=args.features)
     elif what == "dating":
         res = study.dating(target, books=args.books)
+    elif what == "cases":
+        if not (target or args.book):
+            raise SystemExit("taochronos study cases: give a disease (e.g. 风温) or --book <id>")
+        res = study.cases(args.book, disease=None if args.book else target, limit=args.limit or 200)
+    elif what == "trajectories":
+        if not (target or args.book):
+            raise SystemExit("taochronos study trajectories: give a disease (e.g. 咳嗽) or --book <id>")
+        res = study.trajectories(None if args.book else target, book=args.book, limit=args.limit or 1000)
     elif what == "authorship":
         if not (target or args.book):
             raise SystemExit("taochronos study authorship: give a text or --book <id> [--chapter <篇名>]")
@@ -910,7 +919,7 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("-o", "--output")
     sp = sub.add_parser("study", help="治学: 经文互见·集注, 方源考, 药性源流, 术语源流, 避讳断代, 引书网络, 学习卡片, 阅读门径, 研究数据集, "
                                       "版本谱系 (variants/stemma/edition/tei), 语义复用 (reuse), 思想传播 (transmission), "
-                                      "文本地层 (layers/dating/authorship)")
+                                      "文本地层 (layers/dating/authorship), 医案轨迹 (cases/trajectories)")
     sp.set_defaults(fn=cmd_study)
     sp.add_argument("what", choices=STUDY)
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
