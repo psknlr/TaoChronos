@@ -13,6 +13,7 @@ layers / dating    文本地层: style layers of a work's chapters, change point
 authorship         (cited works, late vocabulary, taboo); Burrows' Delta against candidate authors
 cases              医案轨迹: case records read visit by visit (findings, diagnosis, principle, formula, 加减, doses,
 trajectories       response, outcome); the sequences, transitions and outcome associations common to many cases
+argument           医理论证: a passage's reasoning as a graph of marked steps; a work's way of reasoning, compared
 formula            方源考: every written-out composition of a formula; original and current versions, 加减,
                    同名异方, 同方异名, dose ratios, doses in the measures of their time, 方歌
 herb               药性源流: 性味, 毒性, 归经, 升降浮沉, 主治 of a drug, book by book; the first statement of each
@@ -31,6 +32,7 @@ from collections import Counter
 from typing import Any
 
 from ..domain import DomainPack
+from .argument import ArgumentStudy
 from .base import StudyBase
 from .cases import CaseStudy
 from .concordance import Concordance
@@ -62,6 +64,7 @@ class StudyService(StudyBase):
         self._intertext = IntertextStudy(self, self._concordance, self._stemma)
         self._strata = StratigraphyStudy(self, self._stemma, self._taboo)
         self._cases = CaseStudy(self)
+        self._argument = ArgumentStudy(self, self._stemma)
 
     @property
     def metrology(self) -> Any:
@@ -161,6 +164,17 @@ class StudyService(StudyBase):
     def trajectories(self, disease: str | None = None, **kw: Any) -> dict[str, Any]:
         """Sequences, transitions and outcome associations of treatment across case records."""
         return self._cases.trajectories(disease, **kw)
+
+    def argument(self, text: str | None = None, passage_id: str | None = None, *, work: str | None = None,
+                 against: str | None = None, **kw: Any) -> dict[str, Any]:
+        """A passage's argument graph; a work's way of reasoning (``work``); two works compared (``work``, ``against``)."""
+        if work and against:
+            return self._argument.compare(work, against, **kw)
+        if work:
+            out = self._argument.profile(work, **kw)
+            out.pop("_counts", None)
+            return out
+        return self._argument.graph(text, passage_id)
 
     def _edition_floors(self, out: dict[str, Any]) -> None:
         """Each witness's lower date bound from its taboo characters (a witness in volumes: the latest)."""

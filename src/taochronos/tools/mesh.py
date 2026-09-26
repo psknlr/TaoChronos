@@ -482,6 +482,15 @@ def _study_trajectories(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief({k: v for k, v in res.items() if k != "examples"}, int(a.get("items", 15)))
 
 
+def _study_argument(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    study = _study(ctx)
+    if a.get("work"):
+        res = study.argument(work=a["work"], against=a.get("against"))
+    else:
+        res = study.argument(a.get("text"), a.get("passage_id"))
+    return _brief(res, int(a.get("items", 15)))
+
+
 def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
     reg = ToolRegistry()
     specs = [
@@ -617,6 +626,11 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "with recovery in the record (associations in a selected record, never evidence of efficacy).",
                  obj({"disease": S, "book": S, "limit": I, "items": I}), _study_trajectories, family="study",
                  permission="classics:read", expensive=True, returns="patterns, transitions, outcome associations"),
+        ToolSpec("study.argument", "医理论证: the reasoning of a passage as a graph of clauses (with their concepts) and the steps its "
+                 "discourse markers state (条件, 则, 故, 因, 所致, 主之, 界说, 转折, 取象比类, 驳斥, 盖); with work, a work's way of "
+                 "reasoning (relations per 1 000 clauses, concept triples, chains); with work and against, two works compared.",
+                 obj({"text": S, "passage_id": S, "work": S, "against": S, "items": I}), _study_argument, family="study",
+                 permission="classics:read", expensive=True, returns="clauses and edges; or a profile; or a comparison"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

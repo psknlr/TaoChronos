@@ -362,4 +362,40 @@ def cases(ctx: EvalContext) -> SuiteResult:
     return SuiteResult("cases", metrics, details, notes=notes)
 
 
-__all__ = ["cases", "collation", "reuse", "stratigraphy"]
+def argument(ctx: EvalContext) -> SuiteResult:
+    """ArgumentEval: the steps of reasoning of annotated passages (gold/argument.yaml); with the full corpus, whether
+    two transcriptions of one work reason alike (and unlike another work)."""
+    h = ctx.default
+    study = h.capabilities.get("study")
+    tp = fp = fn = utp = ufp = ufn = seg = 0
+    details = []
+    passages = ctx.gold("argument").get("passages", [])
+    for g in passages:
+        r = study.argument(g["text"])
+        pred = {(e["source"], e["target"], e["relation"]) for e in r["edges"]}
+        gold = {tuple(e) for e in g["edges"]}
+        tp, fp, fn = tp + len(pred & gold), fp + len(pred - gold), fn + len(gold - pred)
+        up, ug = {(s_, t) for s_, t, _ in pred}, {(s_, t) for s_, t, _ in gold}
+        utp, ufp, ufn = utp + len(up & ug), ufp + len(up - ug), ufn + len(ug - up)
+        seg += len(r["clauses"]) == g["clauses"]
+        details.append({"text": g["text"][:30], "gold": sorted(map(list, gold)), "predicted": sorted(map(list, pred))})
+    metrics: dict[str, Any] = {"passages": len(passages), "edges": prf(tp, fp, fn), "unlabelled": prf(utp, ufp, ufn),
+                               "clause_segmentation": round(seg / len(passages), 4) if passages else None}
+    notes = ["author-constructed passages (a development set written with the marker table): labelled edges = source, "
+             "target and relation all right; unlabelled = the step found, its type aside"]
+    corpus = None if ctx.quick else ctx.corpus_harness()
+    if corpus is not None:
+        arg = corpus.capabilities.get("study")._argument
+        from ..science.argumentation import compare as compare_profiles
+
+        a, b, c = (arg.profile(books=[x], passages=400) for x in ("jc_m100", "jc_m100a", "jc_e004"))
+        same = compare_profiles(a["_counts"], b["_counts"])
+        other = compare_profiles(a["_counts"], c["_counts"])
+        metrics["real"] = {"same_work_jsd": same["relations_jsd"], "other_work_jsd": other["relations_jsd"],
+                           "same_work_closer": same["relations_jsd"] < other["relations_jsd"]}
+        notes.append(f"real: the relations of the two transcriptions of 脉经 (jc_m100, jc_m100a) against "
+                     f"{c['work']} (jc_e004)")
+    return SuiteResult("argument", metrics, details, notes=notes)
+
+
+__all__ = ["argument", "cases", "collation", "reuse", "stratigraphy"]

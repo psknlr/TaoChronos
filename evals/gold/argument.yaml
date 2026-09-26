@@ -1,0 +1,61 @@
+# ArgumentEval — passages with the steps of reasoning their discourse markers state (science/argumentation.py).
+#
+# Author-constructed from short excerpts of pre-1900 classics and sentences written in their manner.  Conventions
+# (those of the argument graphs): clauses are cut at ，；：。！？ and before an inner 则 / 故; an edge is annotated only
+# where a marker states the step; edges are [source clause, target clause, relation]; a clause ending in 者 is a
+# condition when its sentence draws a consequence or prescribes, else a topic the next clause defines.
+passages:
+  - text: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之。
+    clauses: 6
+    edges: [[4, 5, treatment]]
+  - text: 若脉浮，小便不利，微热消渴者，五苓散主之。
+    clauses: 4
+    edges: [[0, 3, condition], [2, 3, treatment]]
+  - text: 阳胜则热，阴胜则寒。
+    clauses: 4
+    edges: [[0, 1, consequence], [2, 3, consequence]]
+  - text: 所以然者，以其人本虚，是以发汗后，胃中干燥，故令大便硬也。
+    clauses: 5
+    edges: [[1, 0, support], [1, 2, inference], [3, 4, inference]]
+  - text: 夫中风者，外感风邪，内伤正气，犹树之根本先伤，而后风得以摧折之也。
+    clauses: 5
+    edges: [[1, 0, define], [3, 2, analogy], [3, 4, consequence]]
+  - text: 诸风掉眩，皆属于肝。
+    clauses: 2
+    edges: []
+  - text: 脉浮者，病在表，可发汗，宜麻黄汤。
+    clauses: 4
+    edges: [[0, 3, condition], [2, 3, treatment]]
+  - text: 腹满时痛，此太阴病也，寒湿所致。
+    clauses: 3
+    edges: [[2, 1, effect]]
+  - text: 夫邪之所凑，其气必虚。
+    clauses: 2
+    edges: []
+  - text: 或谓邪之所凑，其气必虚，殊不知实邪亦能凑之，非尽虚也。
+    clauses: 4
+    edges: [[2, 1, rebut], [3, 2, rebut]]
+  - text: 肺为娇脏，不耐寒热，故邪易伤之。
+    clauses: 3
+    edges: [[1, 2, inference]]
+  - text: 痞满燥实俱见者，然后可下，宜大承气汤。
+    clauses: 3
+    edges: [[0, 1, consequence], [1, 2, treatment]]
+  - text: 虽有表证，然里证急，当先救里。
+    clauses: 3
+    edges: [[0, 1, contrast], [1, 2, treatment]]
+  - text: 人之气血，犹天地之阴阳也。
+    clauses: 2
+    edges: [[1, 0, analogy]]
+  - text: 因于寒，欲如运枢。
+    clauses: 2
+    edges: [[0, 1, cause]]
+  - text: 发热恶寒者，发于阳也；无热恶寒者，发于阴也。
+    clauses: 4
+    edges: [[1, 0, define], [3, 2, define]]
+  - text: 夫五脏六腑皆令人咳，非独肺也。
+    clauses: 2
+    edges: [[0, 1, contrast]]
+  - text: 脾虚则湿盛，湿盛则泄泻，故治泄必先健脾。
+    clauses: 5
+    edges: [[0, 1, consequence], [2, 3, consequence], [3, 4, inference]]

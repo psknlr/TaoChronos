@@ -404,10 +404,42 @@ def trajectories(r: dict[str, Any]) -> list[str]:
     return out + ["", f"> {r.get('note', '')}"]
 
 
+# ------------------------------------------------------------------ 医理论证
+RELATIONS = {"condition": "条件", "consequence": "推论（则）", "inference": "推断（故）", "cause": "病因", "effect": "归因（所致）",
+             "treatment": "施治", "define": "界说", "contrast": "转折", "analogy": "取象比类", "rebut": "驳斥", "support": "说理（盖）"}
+
+
+def argument(r: dict[str, Any]) -> list[str]:
+    if "comparison" in r:
+        a, b, c = r["a"], r["b"], r["comparison"]
+        out = [f"# 医理论证比较：{a['work']} ｜ {b['work']}", "", f"关系分布的 JS 散度 {c['relations_jsd']}，概念三元组 {c['triples_jsd']}。", "",
+               "| 关系 | " + a["work"] + "（每千句） | " + b["work"] + "（每千句） |", "|---|---|---|"]
+        for rel in RELATIONS:
+            if rel in a["per_1000_clauses"] or rel in b["per_1000_clauses"]:
+                out.append(f"| {RELATIONS[rel]} | {a['per_1000_clauses'].get(rel, 0)} | {b['per_1000_clauses'].get(rel, 0)} |")
+        out += ["", "## 各自的特征（log-odds z，正值偏向前者）", ""] + [f"- {RELATIONS.get(x['item'], x['item'])}：z={x['z']}" for x in c["relations"][:8]]
+        out += [f"- {' → '.join(x['item'])}：z={x['z']}" for x in c["triples"][:8]]
+        return out + ["", f"> {r.get('note', '')}"]
+    if "per_1000_clauses" in r:
+        out = [f"# 医理论证：{r['work']}", "", f"{r['passages']} 段，{r['clauses']} 句，{r['edges']} 条论证关系。", "",
+               "| 关系 | 每千句 | 例 |", "|---|---|---|"]
+        for rel, v in r["per_1000_clauses"].items():
+            ex = (r["examples"].get(rel) or [{}])[0]
+            out.append(f"| {RELATIONS.get(rel, rel)} | {v} | {_q(ex.get('from', ''), 16)} →（{ex.get('marker', '')}）{_q(ex.get('to', ''), 16)} |")
+        out += ["", "## 概念之间的论证（类别 —关系→ 类别）", ""] + [f"- {t['from']} —{RELATIONS.get(t['relation'], t['relation'])}→ {t['to']}：{t['count']}"
+                                                         for t in r["triples"][:15] if t["from"] != "—" or t["to"] != "—"]
+        out += ["", "## 论证链", ""] + [f"- {' → '.join(RELATIONS.get(x, x) for x in ch['chain'])}：{ch['count']}" for ch in r["chains"][:10]]
+        return out + ["", f"> {r.get('note', '')}"]
+    out = [f"# 医理论证：{_q(r.get('text', ''), 40)}", "", "| # | 句 | 概念 |", "|---|---|---|"]
+    out += [f"| {i} | {c['text']} | {'、'.join(f'{t}（{k}）' for t, k in c['concepts'])} |" for i, c in enumerate(r.get("clauses", []))]
+    out += ["", "## 论证关系", ""] + [f"- {e['source']} —{RELATIONS.get(e['relation'], e['relation'])}（{e['marker']}）→ {e['target']}" for e in r.get("edges", [])]
+    return out
+
+
 PAGES = {"concordance": concordance, "formula": formula, "herb": herb, "term": term, "taboo": taboo, "citations": citations,
          "cards": cards, "reading": reading, "variants": variants, "stemma": stemma, "edition": edition, "reuse": reuse,
          "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship, "cases": cases,
-         "trajectories": trajectories}
+         "trajectories": trajectories, "argument": argument}
 
 
 def markdown(kind: str, result: dict[str, Any], signature: dict[str, Any], notice: str = "") -> str:
