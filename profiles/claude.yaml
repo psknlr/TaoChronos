@@ -1,0 +1,13 @@
+# Judgement roles run on Claude (director, philologist, semanticist, extractor, ontologist, evidence,
+# hypothesis, skeptic, modern evidence, meta-review); tool-first roles stay deterministic.
+# Requires `pip install taochronos[anthropic]` and ANTHROPIC_API_KEY (or another SDK credential).
+name: claude
+extends: full-discovery
+description: Full discovery with Claude as the reasoning model (Opus 5 frontier, Sonnet 5 medium, Haiku 4.5 small).
+routing:
+  default_provider: anthropic
+  diversity: {skeptic: hypothesis}
+models:
+  anthropic: {fallbacks: true}
+budget: {max_llm_calls: 300, max_cost_usd: 25.0}
+context: {max_parallel_agents: 1}

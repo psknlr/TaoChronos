@@ -1,0 +1,200 @@
+book: shanghanlun
+edition: shanghanlun@songben
+defaults:
+  locator: {precision: exact}
+passages:
+  - id: shanghanlun.c001
+    locator: {chapter: 辨太阳病脉证并治上, section: 第1条}
+    text: 太阳之为病，脉浮，头项强痛而恶寒。
+    tags: [太阳病, 伤寒]
+
+  - id: shanghanlun.c002
+    locator: {chapter: 辨太阳病脉证并治上, section: 第2条}
+    text: 太阳病，发热，汗出，恶风，脉缓者，名为中风。
+    tags: [太阳病, 中风, 风, track:A]
+
+  - id: shanghanlun.c003
+    locator: {chapter: 辨太阳病脉证并治上, section: 第3条}
+    text: 太阳病，或已发热，或未发热，必恶寒，体痛，呕逆，脉阴阳俱紧者，名为伤寒。
+    tags: [太阳病, 伤寒]
+
+  - id: shanghanlun.c006
+    locator: {chapter: 辨太阳病脉证并治上, section: 第6条}
+    text: 太阳病，发热而渴，不恶寒者为温病。若发汗已，身灼热者，名风温。
+    tags: [温病, track:A]
+
+  - id: shanghanlun.c012
+    locator: {chapter: 辨太阳病脉证并治上, section: 第12条}
+    text: 太阳中风，阳浮而阴弱，阳浮者，热自发；阴弱者，汗自出。啬啬恶寒，淅淅恶风，翕翕发热，鼻鸣干呕者，桂枝汤主之。
+    tags: [太阳病, 中风, 桂枝汤]
+
+  - id: shanghanlun.f.guizhi
+    locator: {chapter: 辨太阳病脉证并治上, section: 桂枝汤方}
+    kind: formula
+    text: 桂枝三两（去皮），芍药三两，甘草二两（炙），生姜三两（切），大枣十二枚（擘）。
+    tags: [方剂, 桂枝汤, track:B]
+
+  - id: shanghanlun.c013
+    locator: {chapter: 辨太阳病脉证并治上, section: 第13条}
+    text: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之。
+    tags: [太阳病, 桂枝汤]
+
+  - id: shanghanlun.c026
+    locator: {chapter: 辨太阳病脉证并治上, section: 第26条}
+    text: 服桂枝汤，大汗出后，大烦渴不解，脉洪大者，白虎加人参汤主之。
+    tags: [白虎汤, 消渴]
+
+  - id: shanghanlun.c031
+    locator: {chapter: 辨太阳病脉证并治中, section: 第31条}
+    text: 太阳病，项背强几几，无汗，恶风，葛根汤主之。
+    tags: [太阳病]
+
+  - id: shanghanlun.c035
+    locator: {chapter: 辨太阳病脉证并治中, section: 第35条}
+    text: 太阳病，头痛发热，身疼腰痛，骨节疼痛，恶风，无汗而喘者，麻黄汤主之。
+    tags: [太阳病, 伤寒, 麻黄汤]
+
+  - id: shanghanlun.f.mahuang
+    locator: {chapter: 辨太阳病脉证并治中, section: 麻黄汤方}
+    kind: formula
+    text: 麻黄三两（去节），桂枝二两（去皮），甘草一两（炙），杏仁七十个（去皮尖）。
+    tags: [方剂, 麻黄汤, track:B]
+
+  - id: shanghanlun.c038
+    locator: {chapter: 辨太阳病脉证并治中, section: 第38条}
+    text: 太阳中风，脉浮紧，发热恶寒，身疼痛，不汗出而烦躁者，大青龙汤主之。若脉微弱，汗出恶风者，不可服之。服之则厥逆，筋惕肉瞤，此为逆也。
+    tags: [太阳病, 禁忌]
+
+  - id: shanghanlun.c040
+    locator: {chapter: 辨太阳病脉证并治中, section: 第40条}
+    text: 伤寒表不解，心下有水气，干呕，发热而欬，或渴，或利，或噎，或小便不利、少腹满，或喘者，小青龙汤主之。
+    tags: [伤寒, 饮]
+
+  - id: shanghanlun.c063
+    locator: {chapter: 辨太阳病脉证并治中, section: 第63条}
+    text: 发汗后，不可更行桂枝汤，汗出而喘，无大热者，可与麻黄杏仁甘草石膏汤。
+    tags: [禁忌, 麻黄汤, track:B]
+
+  - id: shanghanlun.c071
+    locator: {chapter: 辨太阳病脉证并治中, section: 第71条}
+    text: 太阳病，发汗后，大汗出，胃中干，烦躁不得眠，欲得饮水者，少少与饮之，令胃气和则愈。若脉浮，小便不利，微热消渴者，五苓散主之。
+    tags: [消渴, 五苓散, track:C]
+
+  - id: shanghanlun.f.wuling
+    locator: {chapter: 辨太阳病脉证并治中, section: 五苓散方}
+    kind: formula
+    text: 猪苓十八铢（去皮），泽泻一两六铢，白术十八铢，茯苓十八铢，桂枝半两（去皮）。
+    tags: [方剂, 五苓散]
+
+  - id: shanghanlun.c096
+    locator: {chapter: 辨太阳病脉证并治中, section: 第96条}
+    text: 伤寒五六日，中风，往来寒热，胸胁苦满，嘿嘿不欲饮食，心烦喜呕，或胸中烦而不呕，或渴，或腹中痛，或胁下痞鞕，或心下悸、小便不利，或不渴、身有微热，或欬者，小柴胡汤主之。
+    tags: [少阳, 小柴胡汤]
+
+  - id: shanghanlun.f.xiaochaihu
+    locator: {chapter: 辨太阳病脉证并治中, section: 小柴胡汤方}
+    kind: formula
+    text: 柴胡半斤，黄芩三两，人参三两，半夏半升（洗），甘草（炙）、生姜各三两（切），大枣十二枚（擘）。
+    tags: [方剂, 小柴胡汤, track:B]
+
+  - id: shanghanlun.c124
+    locator: {chapter: 辨太阳病脉证并治中, section: 第124条}
+    text: 太阳病六七日，表证仍在，脉微而沉，反不结胸，其人发狂者，以热在下焦，少腹当鞕满，小便自利者，下血乃愈。所以然者，以太阳随经，瘀热在里故也。抵当汤主之。
+    tags: [瘀, 蓄血, track:A]
+
+  - id: shanghanlun.c176
+    locator: {chapter: 辨太阳病脉证并治下, section: 第176条}
+    text: 伤寒脉浮滑，此以表有热，里有寒，白虎汤主之。
+    tags: [白虎汤, 异文, 校勘]
+    variants:
+      - base: 表有热，里有寒
+        reading: 表有寒，里有热
+        witness: 宋本林亿等按语（“必表里字差矣”）
+        witness_type: commentator
+        kind: transposition
+        note: 林亿等据“热结在里，表里俱热者，白虎汤主之”等条，认为“表”“里”二字互讹。
+      - base: 里有寒
+        reading: 里有热
+        witness: 后世注家校改（出处待核）
+        witness_type: commentator
+        kind: emendation
+        note: 注家多据白虎汤清热之义，认为“寒”当作“热”，或作“邪”解。
+
+  - id: shanghanlun.f.baihu
+    locator: {chapter: 辨太阳病脉证并治下, section: 白虎汤方}
+    kind: formula
+    text: 知母六两，石膏一斤（碎），甘草二两（炙），粳米六合。
+    tags: [方剂, 白虎汤]
+
+  - id: shanghanlun.c180
+    locator: {chapter: 辨阳明病脉证并治, section: 第180条}
+    text: 阳明之为病，胃家实是也。
+    tags: [阳明病]
+
+  - id: shanghanlun.c220
+    locator: {chapter: 辨阳明病脉证并治, section: 第220条}
+    text: 二阳并病，太阳证罢，但发潮热，手足漐漐汗出，大便难而谵语者，下之则愈，宜大承气汤。
+    tags: [阳明病, 下法]
+
+  - id: shanghanlun.c236
+    locator: {chapter: 辨阳明病脉证并治, section: 第236条}
+    text: 阳明病，发热汗出者，此为热越，不能发黄也。但头汗出，身无汗，剂颈而还，小便不利，渴引水浆者，此为瘀热在里，身必发黄，茵陈蒿汤主之。
+    tags: [湿热, 发黄, 瘀, track:A]
+
+  - id: shanghanlun.f.yinchenhao
+    locator: {chapter: 辨阳明病脉证并治, section: 茵陈蒿汤方}
+    kind: formula
+    text: 茵陈蒿六两，栀子十四枚（擘），大黄二两（去皮）。
+    tags: [方剂, 发黄]
+
+  - id: shanghanlun.c263
+    locator: {chapter: 辨少阳病脉证并治, section: 第263条}
+    text: 少阳之为病，口苦，咽干，目眩也。
+    tags: [少阳]
+
+  - id: shanghanlun.c273
+    locator: {chapter: 辨太阴病脉证并治, section: 第273条}
+    text: 太阴之为病，腹满而吐，食不下，自利益甚，时腹自痛。若下之，必胸下结鞕。
+    tags: [太阴]
+
+  - id: shanghanlun.c281
+    locator: {chapter: 辨少阴病脉证并治, section: 第281条}
+    text: 少阴之为病，脉微细，但欲寐也。
+    tags: [少阴]
+
+  - id: shanghanlun.c301
+    locator: {chapter: 辨少阴病脉证并治, section: 第301条}
+    text: 少阴病，始得之，反发热，脉沉者，麻黄细辛附子汤主之。
+    tags: [少阴]
+
+  - id: shanghanlun.c323
+    locator: {chapter: 辨少阴病脉证并治, section: 第323条}
+    text: 少阴病，脉沉者，急温之，宜四逆汤。
+    tags: [少阴, 温法]
+
+  - id: shanghanlun.f.sini
+    locator: {chapter: 辨少阴病脉证并治, section: 四逆汤方}
+    kind: formula
+    text: 甘草二两（炙），干姜一两半，附子一枚（生用，去皮，破八片）。
+    tags: [方剂, 四逆汤]
+
+  - id: shanghanlun.c326
+    locator: {chapter: 辨厥阴病脉证并治, section: 第326条}
+    text: 厥阴之为病，消渴，气上撞心，心中疼热，饥而不欲食，食则吐蛔。下之利不止。
+    tags: [厥阴, 消渴, track:C]
+
+  - id: shanghanlun.c382
+    locator: {chapter: 辨霍乱病脉证并治, section: 第382条}
+    text: 问曰：病有霍乱者何？答曰：呕吐而利，此名霍乱。
+    tags: [霍乱]
+
+  - id: shanghanlun.c386
+    locator: {chapter: 辨霍乱病脉证并治, section: 第386条}
+    text: 霍乱，头痛发热，身疼痛，热多欲饮水者，五苓散主之；寒多不用水者，理中丸主之。
+    tags: [霍乱, 五苓散, 理中丸]
+
+  - id: shanghanlun.f.lizhong
+    locator: {chapter: 辨霍乱病脉证并治, section: 理中丸方}
+    kind: formula
+    text: 人参、干姜、甘草（炙）、白术各三两。
+    tags: [方剂, 理中丸, track:B]

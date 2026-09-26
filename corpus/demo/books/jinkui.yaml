@@ -1,0 +1,74 @@
+book: jinkui
+edition: jinkui@dengzhen
+passages:
+  - id: jinkui.01.zhiweibing
+    locator: {chapter: 脏腑经络先后病脉证第一}
+    text: 问曰：上工治未病，何也？师曰：夫治未病者，见肝之病，知肝传脾，当先实脾。
+    tags: [治未病, 治则]
+
+  - id: jinkui.02.shibi
+    locator: {chapter: 痉湿暍病脉证治第二}
+    text: 太阳病，关节疼痛而烦，脉沉而细者，此名湿痹。湿痹之候，小便不利，大便反快，但当利其小便。
+    tags: [湿, 痹, track:A]
+
+  - id: jinkui.02.shijia
+    locator: {chapter: 痉湿暍病脉证治第二}
+    text: 湿家之为病，一身尽疼，发热，身色如熏黄也。
+    tags: [湿, 湿热, 发黄, track:A]
+
+  - id: jinkui.05.zhongfeng
+    locator: {chapter: 中风历节病脉证并治第五}
+    text: 夫风之为病，当半身不遂，或但臂不遂者，此为痹。脉微而数，中风使然。
+    tags: [中风, 风, 痹, track:A]
+
+  - id: jinkui.06.xuebi
+    locator: {chapter: 血痹虚劳病脉证并治第六}
+    text: 血痹阴阳俱微，寸口关上微，尺中小紧，外证身体不仁，如风痹状，黄耆桂枝五物汤主之。
+    tags: [痹, 血痹]
+
+  - id: jinkui.06.xulao
+    locator: {chapter: 血痹虚劳病脉证并治第六}
+    text: 虚劳腰痛，少腹拘急，小便不利者，八味肾气丸主之。
+    tags: [虚劳, 肾气丸, track:B]
+
+  - id: jinkui.09.xiongbi
+    locator: {chapter: 胸痹心痛短气病脉证治第九}
+    text: 胸痹之病，喘息欬唾，胸背痛，短气，寸口脉沉而迟，关上小紧数，栝楼薤白白酒汤主之。
+    tags: [胸痹]
+
+  - id: jinkui.12.tanyin1
+    locator: {chapter: 痰饮咳嗽病脉证并治第十二}
+    text: 病痰饮者，当以温药和之。
+    tags: [痰, 痰饮, track:A]
+
+  - id: jinkui.12.tanyin2
+    locator: {chapter: 痰饮咳嗽病脉证并治第十二}
+    text: 心下有痰饮，胸胁支满，目眩，苓桂术甘汤主之。
+    tags: [痰, 痰饮, track:A]
+
+  - id: jinkui.13.xiaoke1
+    locator: {chapter: 消渴小便不利淋病脉证并治第十三}
+    text: 男子消渴，小便反多，以饮一斗，小便一斗，肾气丸主之。
+    tags: [消渴, 肾气丸, track:C, track:B]
+
+  - id: jinkui.13.xiaoke2
+    locator: {chapter: 消渴小便不利淋病脉证并治第十三}
+    text: 渴欲饮水，口干舌燥者，白虎加人参汤主之。
+    tags: [消渴, 白虎汤, track:C]
+
+  - id: jinkui.18.changyong1
+    locator: {chapter: 疮痈肠痈浸淫病脉证并治第十八}
+    text: 肠痈之为病，其身甲错，腹皮急，按之濡，如肿状，腹无积聚，身无热，脉数，此为腹内有痈脓，薏苡附子败酱散主之。
+    tags: [疮疡, 肠痈, track:C]
+
+  - id: jinkui.18.changyong2
+    locator: {chapter: 疮痈肠痈浸淫病脉证并治第十八}
+    text: 肠痈者，少腹肿痞，按之即痛如淋，小便自调，时时发热，自汗出，复恶寒。其脉迟紧者，脓未成，可下之，当有血。脉洪数者，脓已成，不可下也。大黄牡丹汤主之。
+    tags: [疮疡, 肠痈, track:C]
+
+  - id: jinkui.22.f.shenqi
+    locator: {chapter: 妇人杂病脉证并治第二十二, section: 肾气丸方}
+    kind: formula
+    text: 干地黄八两，薯蓣四两，山茱萸四两，泽泻三两，茯苓三两，牡丹皮三两，桂枝、附子（炮）各一两。
+    tags: [方剂, 肾气丸, 避讳, track:B]
+    notes: “薯蓣”即后世“山药”（避讳改名，见术语库），名称差异是方剂源流识别的典型障碍。

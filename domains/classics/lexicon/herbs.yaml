@@ -1,0 +1,122 @@
+# Materia medica (药物). `synonyms` carry a kind: taboo_rename (避讳改名),
+# part_name, processing_variant, abbreviation, variety, alias. Normalisation
+# maps every synonym to the canonical herb but keeps the surface form and the
+# synonym kind on the claim argument, so the skeptic can inspect the risk.
+category: herb
+entries:
+  - {term: 桂枝, aliases: []}
+  - {term: 肉桂, aliases: [], related: [桂枝]}
+  - {term: 芍药, synonyms: [{surface: 白芍, kind: variety}, {surface: 赤芍, kind: variety}]}
+  - {term: 甘草, synonyms: [{surface: 炙甘草, kind: processing_variant}, {surface: 生甘草, kind: processing_variant}]}
+  - {term: 生姜, aliases: []}
+  - {term: 大枣, aliases: []}
+  - {term: 麻黄, aliases: []}
+  - {term: 杏仁, aliases: []}
+  - {term: 石膏, aliases: []}
+  - {term: 知母, aliases: []}
+  - {term: 粳米, aliases: []}
+  - {term: 饴糖, synonyms: [{surface: 胶饴, kind: alias}]}
+  - {term: 人参, aliases: []}
+  - {term: 猪苓, aliases: []}
+  - {term: 泽泻, aliases: []}
+  - {term: 白术, aliases: []}
+  - {term: 茯苓, synonyms: [{surface: 白茯苓, kind: variety}]}
+  - {term: 柴胡, aliases: []}
+  - {term: 黄芩, aliases: []}
+  - {term: 半夏, synonyms: [{surface: 半夏曲, kind: processing_variant}]}
+  - {term: 干姜, aliases: []}
+  - {term: 附子, synonyms: [{surface: 制附子, kind: processing_variant}]}
+  - {term: 细辛, aliases: []}
+  - {term: 葛根, aliases: []}
+  - {term: 大黄, aliases: []}
+  - {term: 厚朴, aliases: []}
+  - {term: 枳实, aliases: []}
+  - {term: 枳壳, aliases: [], related: [枳实]}
+  - {term: 茵陈蒿, aliases: [茵陈]}
+  - {term: 栀子, aliases: []}
+  - term: 地黄
+    synonyms:
+      - {surface: 干地黄, kind: processing_variant}
+      - {surface: 生地黄, kind: processing_variant}
+      - {surface: 熟地黄, kind: processing_variant}
+      - {surface: 生地, kind: processing_variant}
+      - {surface: 熟地, kind: processing_variant}
+      - {surface: 大怀熟地, kind: processing_variant}
+  - term: 山药
+    synonyms:
+      - {surface: 薯蓣, kind: taboo_rename, note: 本名薯蓣；避唐代宗李豫讳改“薯药”，又避宋英宗赵曙讳改“山药”}
+      - {surface: 薯药, kind: taboo_rename, note: 避唐代宗李豫讳，薯蓣改称薯药}
+      - {surface: 署豫, kind: alias, note: 《本经》孙星衍辑本据《御览》作署豫}
+      - {surface: 署预, kind: alias}
+      - {surface: 干山药, kind: processing_variant}
+  - term: 山茱萸
+    synonyms:
+      - {surface: 山萸肉, kind: part_name}
+      - {surface: 萸肉, kind: abbreviation}
+      - {surface: 山茱萸肉, kind: part_name}
+  - {term: 牡丹皮, aliases: [丹皮]}
+  - {term: 黄芪, aliases: [黄耆]}
+  - term: 当归
+    synonyms:
+      - {surface: 归尾, kind: part_name}
+      - {surface: 当归身, kind: part_name}
+  - term: 川芎
+    synonyms:
+      - {surface: 抚芎, kind: variety}
+  - {term: 桃仁, aliases: []}
+  - {term: 红花, aliases: []}
+  - {term: 牛膝, synonyms: [{surface: 川牛膝, kind: variety}]}
+  - {term: 桔梗, synonyms: [{surface: 苦桔梗, kind: alias}, {surface: 苦梗, kind: abbreviation}]}
+  - {term: 薄荷, aliases: []}
+  - {term: 竹叶, synonyms: [{surface: 竹叶心, kind: part_name}]}
+  - {term: 荆芥, synonyms: [{surface: 芥穗, kind: abbreviation}, {surface: 荆芥穗, kind: part_name}]}
+  - {term: 淡豆豉, aliases: []}
+  - {term: 牛蒡子, aliases: []}
+  - {term: 连翘, aliases: []}
+  - term: 金银花
+    synonyms:
+      - {surface: 银花, kind: abbreviation}
+      - {surface: 忍冬, kind: part_name, note: 忍冬为原植物名（茎叶及花），李时珍谓“茎叶及花，功用皆同”}
+  - {term: 滑石, synonyms: [{surface: 飞滑石, kind: processing_variant}]}
+  - {term: 通草, synonyms: [{surface: 白通草, kind: alias}]}
+  - {term: 白豆蔻, synonyms: [{surface: 白蔻仁, kind: part_name}]}
+  - {term: 薏苡仁, synonyms: [{surface: 生薏仁, kind: processing_variant}, {surface: 薏苡, kind: abbreviation}]}
+  - {term: 犀角, aliases: []}
+  - {term: 玄参, synonyms: [{surface: 元参, kind: taboo_rename, note: 清人避康熙帝玄烨讳改“玄”为“元”}]}
+  - {term: 麦冬, aliases: [麦门冬]}
+  - {term: 丹参, aliases: []}
+  - {term: 黄连, aliases: []}
+  - {term: 地龙, aliases: []}
+  - {term: 槟榔, aliases: []}
+  - {term: 草果, synonyms: [{surface: 草果仁, kind: part_name}]}
+  - {term: 苍术, aliases: []}
+  - {term: 香附, aliases: []}
+  - {term: 神曲, aliases: []}
+  - {term: 枸杞子, aliases: [枸杞]}
+  - {term: 菟丝子, aliases: []}
+  - {term: 鹿角胶, synonyms: [{surface: 鹿胶, kind: abbreviation}]}
+  - {term: 龟板胶, synonyms: [{surface: 龟胶, kind: abbreviation}]}
+  - {term: 杜仲, aliases: []}
+  - {term: 升麻, aliases: []}
+  - term: 陈皮
+    synonyms:
+      - {surface: 橘皮, kind: alias}
+      - {surface: 橘红, kind: part_name}
+  - {term: 白芷, aliases: []}
+  - {term: 紫苏, aliases: []}
+  - {term: 大腹皮, aliases: []}
+  - {term: 藿香, aliases: []}
+  - {term: 野菊花, aliases: []}
+  - {term: 蒲公英, aliases: []}
+  - {term: 紫花地丁, aliases: []}
+  - {term: 天葵子, aliases: [紫背天葵子]}
+  - {term: 穿山甲, synonyms: [{surface: 山甲, kind: abbreviation}]}
+  - {term: 皂角刺, synonyms: [{surface: 皂角针, kind: alias}]}
+  - {term: 败酱, aliases: [败酱草]}
+  - {term: 栝楼根, synonyms: [{surface: 天花粉, kind: alias}]}
+  - {term: 栝楼实, aliases: [栝楼]}
+  - {term: 薤白, aliases: []}
+  - term: 青蒿
+    synonyms:
+      - {surface: 草蒿, kind: alias, note: 《神农本草经》“草蒿……一名青蒿”；与黄花蒿（Artemisia annua）的对应存在同名异物风险}
+  - {term: 兰, aliases: [兰草], weak: true}

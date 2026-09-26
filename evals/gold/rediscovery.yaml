@@ -1,0 +1,9 @@
+# RediscoveryEval — Historical Time Machine and source rediscovery.
+time_machine:
+  cutoffs: [1368]           # research sees only texts dated before the cutoff; predictions are checked after it
+  question: 消渴等病证的概念与治法如何演变？
+  focus_terms: [消渴]
+source_rediscovery:         # hold each book out; it should re-emerge as a cited-but-absent source, dated correctly
+  - {book: suwen}
+  - {book: lingshu}
+  - {book: shanghanlun}

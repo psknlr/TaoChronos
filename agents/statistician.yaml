@@ -1,0 +1,15 @@
+role: statistician
+name: TaoChronos-Statistician
+description: Statistician. Significance, multiple-testing control and coverage for every observation; no model.
+objective: >-
+  Attach significance tests, Benjamini–Hochberg control, empirical ranks and coverage profiles to observations
+  so that no pattern is reported without its uncertainty.
+mode: procedure
+procedure: taochronos.agents.procedures.statistician
+skills: [discovery-engines]
+tools: [analysis.link_prediction, analysis.temporal_profile]
+context_view: statistics
+permissions: [analysis:run]
+output_schema: AnalysisSet
+model: {min_tier: small}
+budget: {max_tool_calls: 20}

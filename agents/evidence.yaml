@@ -1,0 +1,16 @@
+role: evidence
+name: TaoChronos-Evidence
+description: Evidence Retriever. The Evidence Ledger — verbatim, locatable, independently sourced.
+objective: >-
+  Build the question-level evidence ledger with the philology-aware temporal GraphRAG, and later find
+  independent witnesses (other author clusters, not transcriptions) for under-replicated hypotheses.
+mode: hybrid
+procedure: taochronos.agents.procedures.evidence
+skills: [evidence-ledger, lineage-analysis]
+tools: [classics.search, classics.get_passage, kg.claims, validation.verify_quote]
+context_view: evidence
+permissions: [classics:read, kg:read]
+output_schema: EvidenceSet
+model: {min_tier: medium, effort: medium, max_tokens: 12000}
+budget: {max_tool_calls: 80, max_llm_calls: 10}
+stop_conditions: [output_valid, "max_turns:10"]

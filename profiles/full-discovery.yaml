@@ -1,0 +1,5 @@
+name: full-discovery
+extends: base
+description: All discovery tracks D1–D5 with source rediscovery; runs every planned deepening round (up to two discovery rounds) unless evidence saturates.
+tracks: [D1, D2, D3, D4, D5]
+stop: {max_rounds: 2, stop_on_validation: false}

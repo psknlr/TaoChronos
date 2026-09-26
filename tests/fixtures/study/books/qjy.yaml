@@ -1,0 +1,6 @@
+- book: qjy
+  passages:
+    - {id: qjy.1, locator: {chapter: 卷九, section: 太阳病用桂枝汤法}, text: 论曰：《伤寒论》曰：太阳病，头痛，发热，汗出，恶风，桂枝汤主之。仲景曰：桂枝本为解肌。}
+    - {id: qjy.2, locator: {chapter: 卷九, section: 桂枝汤}, text: 桂枝汤　桂枝　芍药　生姜各三两　甘草二两，炙　大枣十二枚，擘　右五味，以水七升，煮取三升，去滓，服一升。}
+    - {id: qjy.3, locator: {chapter: 卷十, section: 疗伤寒方}, text: 疗伤寒头痛方。凡病者，疗之以汗；不瘥，疗之以下；又不瘥，疗之以和；虚者疗之以补。}
+    - {id: qjy.4, locator: {chapter: 卷十, section: 小柴胡汤}, text: 小柴胡汤　柴胡八两　黄芩　人参　甘草　生姜各三两　半夏半升　大枣十二枚　右七味，以水一斗二升，煮取六升，去滓，服一升。}

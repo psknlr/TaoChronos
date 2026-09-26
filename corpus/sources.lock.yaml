@@ -1,0 +1,807 @@
+# Sources ingested into the TaoChronos corpus store (written by `taochronos corpus fetch` / `corpus unpack`).
+# The texts live in the data directory, not in git; this file pins exactly what was ingested.
+kanripo:
+  name: 漢籍リポジトリ Kanseki Repository（Christian Wittern 等）
+  license: CC BY-SA 4.0
+  license_url: https://creativecommons.org/licenses/by-sa/4.0/
+  catalog: kanripo-kr3e.yaml
+  locked: '2026-09-24'
+  texts:
+    KR3e0001:
+      book: suwen_wangbing
+      repo: https://github.com/kanripo/kr3e0001
+      commit: 410edb6c543a29f684c75b3ac3b0e6df21d26f7e
+      commit_date: '2016-02-05'
+      files: 25
+      bytes: 910508
+    KR3e0002:
+      book: lingshu_shisong
+      repo: https://github.com/kanripo/kr3e0002
+      commit: 74a4d80991ba0287caae0d820a88a4835d2004e7
+      commit_date: '2016-02-05'
+      files: 13
+      bytes: 238055
+    KR3e0003:
+      book: nanjing_jizhu
+      repo: https://github.com/kanripo/kr3e0003
+      commit: 1aefb52dd048b5b8cde2f3a03cb1a45b6bad52b4
+      commit_date: '2016-02-05'
+      files: 7
+      bytes: 209723
+    KR3e0004:
+      book: nanjing_benyi
+      repo: https://github.com/kanripo/kr3e0004
+      commit: 3868a3b1db3274e93e8f92d97829045bfb1f9e09
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 150387
+    KR3e0005:
+      book: zhenjiu_jiayi
+      repo: https://github.com/kanripo/kr3e0005
+      commit: 92447bed6e9fbbef81d350291e800089be1774f8
+      commit_date: '2016-02-05'
+      files: 13
+      bytes: 409341
+    KR3e0006:
+      book: jinkui_lunzhu
+      repo: https://github.com/kanripo/kr3e0006
+      commit: cd6f0fd8874e698bed6ccfdc66c02df9eecc1d70
+      commit_date: '2016-02-05'
+      files: 25
+      bytes: 386600
+    KR3e0007:
+      book: jinkui_yaolue
+      repo: https://github.com/kanripo/kr3e0007
+      commit: 13a628810e717623f1120fb2562af022f012ee90
+      commit_date: '2016-02-05'
+      files: 4
+      bytes: 139923
+    KR3e0008:
+      book: zhujie_shanghanlun
+      repo: https://github.com/kanripo/kr3e0008
+      commit: 8683621a8fcea7434d08c220109de949ee1591fd
+      commit_date: '2016-02-05'
+      files: 11
+      bytes: 325611
+    KR3e0009:
+      book: maijing
+      repo: https://github.com/kanripo/kr3e0009
+      commit: 57decb7a790c8f54ae57b0e01f75de67df6bf244
+      commit_date: '2016-02-05'
+      files: 11
+      bytes: 258190
+    KR3e0010:
+      book: zhouhou_beiji
+      repo: https://github.com/kanripo/kr3e0010
+      commit: 13d6a09e2f8dde8959bf1bddb19bf51cec5efccc
+      commit_date: '2016-02-05'
+      files: 9
+      bytes: 286065
+    KR3e0011:
+      book: chushi_yishu
+      repo: https://github.com/kanripo/kr3e0011
+      commit: ef96ec27ef31b6067e2ab8a0cf9c04249de485df
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 14244
+    KR3e0012:
+      book: zhubing_yuanhou
+      repo: https://github.com/kanripo/kr3e0012
+      commit: 5b1f8c58ebbd10fb1aace74c70a64a68d7ae5fb5
+      commit_date: '2019-03-29'
+      files: 51
+      bytes: 643472
+    KR3e0013:
+      book: qianjin_yaofang
+      repo: https://github.com/kanripo/kr3e0013
+      commit: 1836ff82d31d18d8671974710fc4dc330a651183
+      commit_date: '2016-02-05'
+      files: 95
+      bytes: 1691289
+    KR3e0014:
+      book: yinhai_jingwei
+      repo: https://github.com/kanripo/kr3e0014
+      commit: 71b34e2feaac2129e702c5322631b8f1c9199cd2
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 181668
+    KR3e0015:
+      book: waitai_miyao
+      repo: https://github.com/kanripo/kr3e0015
+      commit: 427ec452f3f82b4355502f25a6b565bd5f7354a7
+      commit_date: '2016-02-05'
+      files: 45
+      bytes: 2565511
+    KR3e0016:
+      book: luxin_jing
+      repo: https://github.com/kanripo/kr3e0016
+      commit: 922b38a4ef54e3139702ae985508316e88716fcb
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 23286
+    KR3e0017:
+      book: tongren_zhenjiujing
+      repo: https://github.com/kanripo/kr3e0017
+      commit: 1c1e148de0bbb8f8fb8e9606b8e06a7091786155
+      commit_date: '2016-02-05'
+      files: 8
+      bytes: 54252
+    KR3e0018:
+      book: mingtang_jiujing
+      repo: https://github.com/kanripo/kr3e0018
+      commit: fd65d20d2382fb31f0277eb6ecc1cb14aabdfb44
+      commit_date: '2016-02-05'
+      files: 9
+      bytes: 77821
+    KR3e0019:
+      book: boji_fang
+      repo: https://github.com/kanripo/kr3e0019
+      commit: a0f00327a4ee59baa261ba1b5763133821b06095
+      commit_date: '2016-02-05'
+      files: 6
+      bytes: 230647
+    KR3e0020:
+      book: susheng_liangfang
+      repo: https://github.com/kanripo/kr3e0020
+      commit: 9f2742e7b8ecd3c72ba0da46f6dd69d2cb2bcdef
+      commit_date: '2016-02-05'
+      files: 9
+      bytes: 124714
+    KR3e0021:
+      book: shouqin_yanglao
+      repo: https://github.com/kanripo/kr3e0021
+      commit: b37f121fc0bc0d7a22587f162d52e664a32bd241
+      commit_date: '2016-02-05'
+      files: 5
+      bytes: 249718
+    KR3e0022:
+      book: jiaoqi_zhifa
+      repo: https://github.com/kanripo/kr3e0022
+      commit: c97ecce83fac915b64ebc68b3bbedb81ab244471
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 40810
+    KR3e0023:
+      book: lvshe_beiyao
+      repo: https://github.com/kanripo/kr3e0023
+      commit: f3cf794b4c8f6d680fc03459cec4fd2c7cbf56d1
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 19671
+    KR3e0024:
+      book: suwen_yunqi_lunao
+      repo: https://github.com/kanripo/kr3e0024
+      commit: 66922357200d5b9f51dd3c472ed9f9bf2e05b5e5
+      commit_date: '2016-02-05'
+      files: 5
+      bytes: 134075
+    KR3e0025:
+      book: shanghan_weizhi
+      repo: https://github.com/kanripo/kr3e0025
+      commit: e9398491a9d5b15980a1d59477919181ac3bc4a0
+      commit_date: '2016-02-05'
+      files: 4
+      bytes: 65900
+    KR3e0026:
+      book: shanghan_zongbing
+      repo: https://github.com/kanripo/kr3e0026
+      commit: 6a7470bde98e8ae3fa5fec021dd448e5b98ac8ea
+      commit_date: '2016-02-05'
+      files: 9
+      bytes: 170569
+    KR3e0027:
+      book: shengji_zonglu_zuanyao
+      repo: https://github.com/kanripo/kr3e0027
+      commit: dba883fcd7e4106f1d28a5fe08938ebfdc1c7055
+      commit_date: '2016-02-05'
+      files: 27
+      bytes: 930666
+    KR3e0028:
+      book: zhenglei_bencao
+      repo: https://github.com/kanripo/kr3e0028
+      commit: 131ecf5292418b22719c25f83a042da5f94edd13
+      commit_date: '2016-02-05'
+      files: 31
+      bytes: 2296695
+    KR3e0029:
+      book: zhenghe_bencao
+      repo: https://github.com/kanripo/kr3e0029
+      commit: 0510400a68c16a3f7822bebceddd4f2e5e0f8926
+      commit_date: '2016-02-05'
+      files: 31
+      bytes: 1891330
+    KR3e0030:
+      book: quansheng_zhimi
+      repo: https://github.com/kanripo/kr3e0030
+      commit: e7c94f558dbcc920ffa099bc8da026c102f513c3
+      commit_date: '2016-02-05'
+      files: 4
+      bytes: 61185
+    KR3e0031:
+      book: xiaoer_weisheng_zongwei
+      repo: https://github.com/kanripo/kr3e0031
+      commit: 7950f0b4ba250a8a505824ccc0e5b25310e2aa83
+      commit_date: '2016-02-05'
+      files: 21
+      bytes: 584509
+    KR3e0032:
+      book: puji_benshi
+      repo: https://github.com/kanripo/kr3e0032
+      commit: 272cbb5dc111ff3985b723551f7a4a9feadd36b5
+      commit_date: '2016-02-05'
+      files: 11
+      bytes: 168410
+    KR3e0033:
+      book: hejiju_fang
+      repo: https://github.com/kanripo/kr3e0033
+      commit: 617aa603d320bab84646c1d0a5c4dfcd90413888
+      commit_date: '2019-03-29'
+      files: 14
+      bytes: 574915
+    KR3e0034:
+      book: chuanxin_shiyong
+      repo: https://github.com/kanripo/kr3e0034
+      commit: 8484eb7ddd2139065ca24336d316c84d921dd432
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 124478
+    KR3e0035:
+      book: weiji_baoshu
+      repo: https://github.com/kanripo/kr3e0035
+      commit: 6cb75a1318bae590354df36cceb19d74fcbf05c8
+      commit_date: '2016-02-05'
+      files: 4
+      bytes: 35865
+    KR3e0036:
+      book: yishuo
+      repo: https://github.com/kanripo/kr3e0036
+      commit: 0f3d779cadc8f22688defab984a087169a9eae03
+      commit_date: '2016-02-05'
+      files: 11
+      bytes: 412327
+    KR3e0037:
+      book: zhenjiu_zisheng
+      repo: https://github.com/kanripo/kr3e0037
+      commit: 4aa847e6228f4d9e15db50ce9372a303278a7895
+      commit_date: '2016-02-05'
+      files: 8
+      bytes: 402855
+    KR3e0038:
+      book: furen_daquan
+      repo: https://github.com/kanripo/kr3e0038
+      commit: baca0c6b052285eab2e3370a204096a69659fd8a
+      commit_date: '2016-02-05'
+      files: 29
+      bytes: 690287
+    KR3e0039:
+      book: taiyiju_chengwen
+      repo: https://github.com/kanripo/kr3e0039
+      commit: 7fe790f65bb02668d08d6463f38783342cbcaecc
+      commit_date: '2016-02-05'
+      files: 10
+      bytes: 228763
+    KR3e0040:
+      book: chanyu_baoqing
+      repo: https://github.com/kanripo/kr3e0040
+      commit: 3fd856c2d67a5916f7c1497aee358a6c270cec66
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 58355
+    KR3e0041:
+      book: sanyin_fang
+      repo: https://github.com/kanripo/kr3e0041
+      commit: da18ff22ac997b5e45b12196e85fa38cb0602105
+      commit_date: '2016-02-05'
+      files: 19
+      bytes: 520806
+    KR3e0042:
+      book: jiyan_beiju
+      repo: https://github.com/kanripo/kr3e0042
+      commit: e67b2c8d22ed741a98e565e911d4a9aabcd44ac0
+      commit_date: '2016-02-05'
+      files: 2
+      bytes: 31185
+    KR3e0043:
+      book: jisheng_fang
+      repo: https://github.com/kanripo/kr3e0043
+      commit: c4b76ee4eb7c1d237f447923057a94fd0ceb58e5
+      commit_date: '2016-02-05'
+      files: 7
+      bytes: 108812
+    KR3e0044:
+      book: chanbao_zhufang
+      repo: https://github.com/kanripo/kr3e0044
+      commit: 8ffd1359474640e30e6aadfa1555f01e3de412bd
+      commit_date: '2016-02-05'
+      files: 1
+      bytes: 31308
+    KR3e0045:
+      book: renzhai_zhizhi
+      repo: https://github.com/kanripo/kr3e0045
+      commit: d8a36bbf2fd30f8fa2b4a79f07a9b5357ab79229
+      commit_date: '2019-03-29'
+      files: 34
+      bytes: 1258311
+    KR3e0046:
+      book: jijiu_xianfang
+      repo: https://github.com/kanripo/kr3e0046
+      commit: bee72a30f7fe805b08390bcbb18be01350a14a4d
+      commit_date: '2016-02-05'
+      files: 7
+      bytes: 59863
+    KR3e0047:
+      book: yuanbingshi
+      repo: https://github.com/kanripo/kr3e0047
+      commit: ef2396e5ab0ebcfa0af12837b19f67a08d50a539
+      commit_date: '2016-02-05'
+      files: 2
+      bytes: 85586
+    KR3e0048:
+      book: xuanming_lunfang
+      repo: https://github.com/kanripo/kr3e0048
+      commit: 3a02454c3a3e87350d247d27d9de9c1946aeffcd
+      commit_date: '2016-02-05'
+      files: 16
+      bytes: 188782
+    KR3e0049:
+      book: shanghan_zhige
+      repo: https://github.com/kanripo/kr3e0049
+      commit: ad864d9506d01c8a0c3713f86772414f7c37db53
+      commit_date: '2019-03-29'
+      files: 6
+      bytes: 153163
+    KR3e0050:
+      book: baoming_ji
+      repo: https://github.com/kanripo/kr3e0050
+      commit: 7bbcaa77ec04047c4d46066d5bfac5e83b30fb4d
+      commit_date: '2016-02-05'
+      files: 4
+      bytes: 188840
+    KR3e0051:
+      book: rumen_shiqin
+      repo: https://github.com/kanripo/kr3e0051
+      commit: fb6edefd53163c062a0566f5ea6684ffa2f8f9d4
+      commit_date: '2016-02-05'
+      files: 16
+      bytes: 490977
+    KR3e0052:
+      book: neiwaishang_bianhuo
+      repo: https://github.com/kanripo/kr3e0052
+      commit: 08e76b46f09e15b4c35daab581ff30397dafafbd
+      commit_date: '2016-02-05'
+      files: 4
+      bytes: 70602
+    KR3e0053:
+      book: piweilun
+      repo: https://github.com/kanripo/kr3e0053
+      commit: 30c39239906ee35ae1f7c49c80f98f1f5a69dfa4
+      commit_date: '2016-02-05'
+      files: 4
+      bytes: 129159
+    KR3e0054:
+      book: lanshi_micang
+      repo: https://github.com/kanripo/kr3e0054
+      commit: a82cc393f577de26b19715a46400b66a6f82cf63
+      commit_date: '2016-02-05'
+      files: 4
+      bytes: 189980
+    KR3e0055:
+      book: cishi_nanzhi
+      repo: https://github.com/kanripo/kr3e0055
+      commit: 87ba83bedc5bf1a09890e2830e52cd2a93885a53
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 100913
+    KR3e0056:
+      book: yilei_yuanrong
+      repo: https://github.com/kanripo/kr3e0056
+      commit: d6db131ae57ee6862dd84171e556d156127b6f5d
+      commit_date: '2016-02-05'
+      files: 13
+      bytes: 495965
+    KR3e0057:
+      book: tangye_bencao
+      repo: https://github.com/kanripo/kr3e0057
+      commit: 620255a0f0dc91b5ec6215a14427dddbc9ccfe3d
+      commit_date: '2016-02-05'
+      files: 4
+      bytes: 164835
+    KR3e0058:
+      book: ruizhutang
+      repo: https://github.com/kanripo/kr3e0058
+      commit: 38e3f9e65b936d5a140f660caf06f28e4ec6e569
+      commit_date: '2016-02-05'
+      files: 8
+      bytes: 78045
+    KR3e0059:
+      book: shiyi_dexiao
+      repo: https://github.com/kanripo/kr3e0059
+      commit: 8dd1174fe95b9050021cb44e3172f25d8f680a28
+      commit_date: '2016-02-05'
+      files: 21
+      bytes: 1114533
+    KR3e0060:
+      book: gezhi_yulun
+      repo: https://github.com/kanripo/kr3e0060
+      commit: 135c8b38b098304c462b7827fe0455842aa0baaf
+      commit_date: '2016-02-05'
+      files: 2
+      bytes: 76633
+    KR3e0061:
+      book: jufang_fahui
+      repo: https://github.com/kanripo/kr3e0061
+      commit: f54d3e90140d255d4af345c3f521694efc380f70
+      commit_date: '2016-02-05'
+      files: 2
+      bytes: 44649
+    KR3e0062:
+      book: jinkui_gouxuan
+      repo: https://github.com/kanripo/kr3e0062
+      commit: ac1d9072f4a3f2cffb690ceb1055227cffda454d
+      commit_date: '2016-02-05'
+      files: 4
+      bytes: 94824
+    KR3e0063:
+      book: yulong_jing
+      repo: https://github.com/kanripo/kr3e0063
+      commit: f5a06f7a934c3afbb355f30384df52da2d0a2311
+      commit_date: '2016-02-05'
+      files: 1
+      bytes: 75453
+    KR3e0064:
+      book: waike_jingyi
+      repo: https://github.com/kanripo/kr3e0064
+      commit: b551d77d36b851cc4ebf7df25549b06efaf42277
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 114542
+    KR3e0065:
+      book: maijue_kanwu
+      repo: https://github.com/kanripo/kr3e0065
+      commit: 68461a5886d4cdd9d377fb7e0be5b682c5cd1c09
+      commit_date: '2016-02-05'
+      files: 4
+      bytes: 157461
+    KR3e0066:
+      book: yijing_suhui
+      repo: https://github.com/kanripo/kr3e0066
+      commit: 1f8097806368b8b28982318e7f32d9215f260090
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 95055
+    KR3e0067:
+      book: puji_fang
+      repo: https://github.com/kanripo/kr3e0067
+      commit: 7d6a66d0fe94e9197c8634bca5a1c8b837aeee7e
+      commit_date: '2016-02-05'
+      files: 428
+      bytes: 23556780
+    KR3e0068:
+      book: yuji_weiyi
+      repo: https://github.com/kanripo/kr3e0068
+      commit: f406683d1915251cfb986595f8860c96d7b1e772
+      commit_date: '2016-02-05'
+      files: 51
+      bytes: 1026520
+    KR3e0069:
+      book: renduan_lu
+      repo: https://github.com/kanripo/kr3e0069
+      commit: 13d111f573be0b71b12e0c410807620aebe40164
+      commit_date: '2016-02-05'
+      files: 17
+      bytes: 558412
+    KR3e0070:
+      book: xueshi_yian
+      repo: https://github.com/kanripo/kr3e0070
+      commit: 051f31b57f1d75235813ede19ab715293d124598
+      commit_date: '2016-02-05'
+      files: 78
+      bytes: 2986890
+    KR3e0071:
+      book: tuiqiu_shiyi
+      repo: https://github.com/kanripo/kr3e0071
+      commit: 17ed85fba0bb3ef83e1a8a17ad28c0e308541bed
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 80585
+    KR3e0072:
+      book: zhenjiu_wendui
+      repo: https://github.com/kanripo/kr3e0072
+      commit: a2c8367624888f3b2a02ccfe2f84af13bc8848b8
+      commit_date: '2016-02-05'
+      files: 4
+      bytes: 148120
+    KR3e0073:
+      book: waike_lili
+      repo: https://github.com/kanripo/kr3e0073
+      commit: b056eee005d420152ff3d09a8f03f4b82129c84e
+      commit_date: '2016-02-05'
+      files: 9
+      bytes: 409184
+    KR3e0074:
+      book: shishan_yian
+      repo: https://github.com/kanripo/kr3e0074
+      commit: cd6a0074beae547c53339a913505b75585410cbb
+      commit_date: '2016-02-05'
+      files: 5
+      bytes: 174775
+    KR3e0075:
+      book: mingyi_leian
+      repo: https://github.com/kanripo/kr3e0075
+      commit: 65c9674c2703f87b676a01e40e089a83c618d048
+      commit_date: '2016-02-05'
+      files: 14
+      bytes: 1048749
+    KR3e0076:
+      book: chishui_xuanzhu
+      repo: https://github.com/kanripo/kr3e0076
+      commit: b7a69bf760c3d00072e5b35f07d1f5c8c0c9d7e7
+      commit_date: '2016-02-05'
+      files: 31
+      bytes: 1995192
+    KR3e0077:
+      book: yizhi_xuyu
+      repo: https://github.com/kanripo/kr3e0077
+      commit: 8ea8c7c6703bb500db122b819a07dbda6d7af18b
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 194718
+    KR3e0078:
+      book: zhengzhi_zhunsheng
+      repo: https://github.com/kanripo/kr3e0078
+      commit: 121d5d43940aa1010bdcb9e31c6e0a3cff44179a
+      commit_date: '2016-02-05'
+      files: 121
+      bytes: 7110363
+    KR3e0079:
+      book: bencao_gangmu_skqs
+      repo: https://github.com/kanripo/kr3e0079
+      commit: 7bb110cbd8a38987165736f028d01301c560e8a9
+      commit_date: '2016-02-05'
+      files: 123
+      bytes: 5120683
+    KR3e0080:
+      book: qijing_bamai_kao
+      repo: https://github.com/kanripo/kr3e0080
+      commit: 5a8fdae6d7d7c229ba33a65df516d1813bac8edd
+      commit_date: '2016-02-05'
+      files: 1
+      bytes: 43647
+    KR3e0081:
+      book: binhu_maixue
+      repo: https://github.com/kanripo/kr3e0081
+      commit: 6976e150bd6109de23221c95ba85dbc4617a9dab
+      commit_date: '2016-02-05'
+      files: 1
+      bytes: 43837
+    KR3e0082:
+      book: shanghanlun_tiaobian
+      repo: https://github.com/kanripo/kr3e0082
+      commit: 6a16a64c2a5c0f4dbd8c71307d3f5c81861ea755
+      commit_date: '2016-02-05'
+      files: 12
+      bytes: 401417
+    KR3e0083:
+      book: xianxingzhai_biji
+      repo: https://github.com/kanripo/kr3e0083
+      commit: d8f1116143e13da7697bfe64a41924bab911700e
+      commit_date: '2016-02-05'
+      files: 5
+      bytes: 285821
+    KR3e0084:
+      book: bencao_jingshu
+      repo: https://github.com/kanripo/kr3e0084
+      commit: 53fef2a65a32b599d2521c4bb1e53358f4ea19df
+      commit_date: '2016-02-05'
+      files: 31
+      bytes: 1086720
+    KR3e0085:
+      book: leijing
+      repo: https://github.com/kanripo/kr3e0085
+      commit: a42f26b662d3973433b11efd45edeea08776011c
+      commit_date: '2019-03-29'
+      files: 48
+      bytes: 2567094
+    KR3e0086:
+      book: jingyue_quanshu_skqs
+      repo: https://github.com/kanripo/kr3e0086
+      commit: 16e9b585de51c9395c610262d86d9eb71cc0b7fb
+      commit_date: '2016-02-05'
+      files: 65
+      bytes: 3201250
+    KR3e0087:
+      book: wenyilun_skqs
+      repo: https://github.com/kanripo/kr3e0087
+      commit: b7f79163f7e42b4301d2fce59b3cd0a7a29f8423
+      commit_date: '2016-02-05'
+      files: 4
+      bytes: 119029
+    KR3e0088:
+      book: jienuelun_shu
+      repo: https://github.com/kanripo/kr3e0088
+      commit: 3ebfb78902337fd17feb65cc770cf5aee4387316
+      commit_date: '2016-02-05'
+      files: 2
+      bytes: 68632
+    KR3e0089:
+      book: bencao_chengya
+      repo: https://github.com/kanripo/kr3e0089
+      commit: 2523c0105162c820fdbeaa6df3ef89efac88be0c
+      commit_date: '2016-02-05'
+      files: 11
+      bytes: 670004
+    KR3e0090:
+      book: yizong_jinjian
+      repo: https://github.com/kanripo/kr3e0090
+      commit: 968c812d7b099e5b5393394097064d23f12b42ae
+      commit_date: '2016-02-05'
+      files: 91
+      bytes: 6762050
+    KR3e0091:
+      book: shanglun_pian
+      repo: https://github.com/kanripo/kr3e0091
+      commit: 0af44ad1bfbaaa832c4f2cd4af107f4e9b4bcc19
+      commit_date: '2016-02-05'
+      files: 9
+      bytes: 522502
+    KR3e0092:
+      book: yimen_falv
+      repo: https://github.com/kanripo/kr3e0092
+      commit: e57ed2e373abbbce4906789a14244e59118dc4cf
+      commit_date: '2019-03-29'
+      files: 17
+      bytes: 837207
+    KR3e0093:
+      book: shanghan_shejian
+      repo: https://github.com/kanripo/kr3e0093
+      commit: 655bff12b90d5ec97d9bdc7bd6123d3786f1dda0
+      commit_date: '2016-02-05'
+      files: 2
+      bytes: 8173
+    KR3e0094:
+      book: shanghan_jianzheng
+      repo: https://github.com/kanripo/kr3e0094
+      commit: b47f9269284f3aee8bd2a1c1dd7d1fbae1596a78
+      commit_date: '2016-02-05'
+      files: 2
+      bytes: 92829
+    KR3e0095:
+      book: jiangxueyuan_fangxuan
+      repo: https://github.com/kanripo/kr3e0095
+      commit: 04ad9f284bb740aec84f43f345731963a28d20c9
+      commit_date: '2016-02-05'
+      files: 18
+      bytes: 314314
+    KR3e0096:
+      book: xu_mingyi_leian
+      repo: https://github.com/kanripo/kr3e0096
+      commit: c2a5a840685320b3d36dd5d5fb31722e736912ed
+      commit_date: '2016-02-05'
+      files: 61
+      bytes: 2276786
+    KR3e0097:
+      book: lantai_guifan
+      repo: https://github.com/kanripo/kr3e0097
+      commit: 4c75ec76e4f43cd7eaf09d044d71fae398775246
+      commit_date: '2016-02-05'
+      files: 9
+      bytes: 404320
+    KR3e0098:
+      book: bencao_baizhonglu
+      repo: https://github.com/kanripo/kr3e0098
+      commit: 0b5f01bf69331c057f95c97e4caf5902158da4d2
+      commit_date: '2016-02-05'
+      files: 1
+      bytes: 66260
+    KR3e0099:
+      book: shanghan_leifang
+      repo: https://github.com/kanripo/kr3e0099
+      commit: fcee8f1ad8c2799af58f1942e1a2d8b7d489f078
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 125814
+    KR3e0100:
+      book: yixue_yuanliu
+      repo: https://github.com/kanripo/kr3e0100
+      commit: 43bc8efff322211ffc143a9095061648516625e4
+      commit_date: '2016-02-05'
+      files: 3
+      bytes: 136492
+jicheng:
+  name: 笈成檢閱系統資料（笈成中医古籍整理本）
+  program: 笈成檢閱系統v1.4.8
+  version: v1.4.8
+  license: 古籍原文属公有领域；标点、校勘与整理成果归笈成整理者；当代著作与现代整理本不入库，仅供本地研究使用。检阅程序：授權任何人使用與散布（© 2009-2013 Danny）
+  url: https://jicheng.tw/
+  catalog: jicheng.yaml
+  archive: jc_1_4_8_all.7z
+  sha256: f6d8ed8d5c9c808a4a7e3a6bccfe5a4b87c0e4d38c6b260bcf56f04a2003398e
+  bytes: 317302916
+  volumes: 3
+  files: 858
+  latest_file_date: '2015-06-07'
+  tree_sha256: 6085c8e92e0e0b73a9879684e4dd4d1ba2694e0f10dd05e2b3277e828f1113df
+  locked: '2026-09-24'
+mcgill:
+  name: McGill University Library · Gynaecology in Traditional Chinese Medicine（麦吉尔大学图书馆善本中医妇科文献）
+  license: Public Domain Mark 1.0（公有领域；使用时请注明 McGill University Library）
+  url: https://github.com/mcgill-digital/gynaecology_in_chinese_medicine
+  catalog: mcgill.yaml
+  repo: https://github.com/mcgill-digital/gynaecology_in_chinese_medicine
+  commit: c514056565a3b4863d5af7b81bb1b97c739dd8e7
+  commit_date: '2020-08-19'
+  files: 1586
+  bytes: 2782659
+  locked: '2026-09-26'
+wikisource:
+  name: 维基文库（zh.wikisource.org）· Category:中醫
+  license: CC BY-SA 4.0（维基文库录文与标点；古籍原文属公有领域）
+  url: https://zh.wikisource.org/wiki/Category:中醫
+  catalog: wikisource.yaml
+  category: 中醫
+  subcategories:
+    中醫:
+    - 傷寒雜病論
+    - 醫家
+    - 本草
+    - 景岳全書
+    - 溫病學派
+    - 敦煌藥方
+    醫家:
+    - 李杲
+    傷寒雜病論:
+    - 傷寒雜病論注疏
+  works: 641
+  pages: 1924
+  latest_revision: '2026-08-27T10:08:30Z'
+  dump:
+    zhwikisource-latest-pages-articles-multistream-index.txt.bz2:
+      bytes: 62835312
+      last_modified: Tue, 01 Sep 2026 14:24:25 GMT
+    zhwikisource-latest-linktarget.sql.gz:
+      bytes: 71342115
+      last_modified: Tue, 01 Sep 2026 10:51:42 GMT
+    zhwikisource-latest-categorylinks.sql.gz:
+      bytes: 275051302
+      last_modified: Tue, 01 Sep 2026 10:50:47 GMT
+    zhwikisource-latest-pages-articles-multistream.xml.bz2:
+      bytes: 7889421692
+      last_modified: Tue, 01 Sep 2026 14:24:25 GMT
+  locked: '2026-09-26'
+tcm-ancient-books:
+  name: TCM-Ancient-Books（中医药古籍文本，GitHub xiaopangxia）
+  license: 未声明授权（古籍原文属公有领域；多为笈成整理本的简体转换本，经“中医世家”网站流传）；仅供本地研究使用
+  url: https://github.com/xiaopangxia/TCM-Ancient-Books
+  catalog: tcm-ancient-books.yaml
+  repo: https://github.com/xiaopangxia/TCM-Ancient-Books
+  commit: db0155dc7c42b9c6b3736896661f317c7110038f
+  commit_date: '2021-05-06'
+  files: 701
+  bytes: 171510796
+  locked: '2026-09-26'
+tcmoc:
+  name: 中医开源医典 tcmoc（GitHub lab99x）
+  license: 未声明授权（据 TCM-Ancient-Books 整理，古籍原文属公有领域）；仅供本地研究使用
+  url: https://github.com/lab99x/tcmoc
+  catalog: tcmoc.yaml
+  repo: https://github.com/lab99x/tcmoc
+  commit: b56eb4a6ba92a863833af2062a2013a4b8777d5c
+  commit_date: '2023-03-20'
+  files: 701
+  bytes: 252165062
+  locked: '2026-09-26'
+hf-tcm-canon:
+  name: Classical Chinese Medicine Canon（Hugging Face wangekxy/classical-tcm-canon）
+  license: '数据集卡片声明 license: other（proprietary-commercial），同时称所收为公有领域古籍的忠实录文；仅供本地研究使用，不再分发'
+  url: https://huggingface.co/datasets/wangekxy/classical-tcm-canon
+  catalog: hf-tcm-canon.yaml
+  dataset: https://huggingface.co/datasets/wangekxy/classical-tcm-canon
+  revision: b0d3f91b90554350363e1dd86fba30f0f5d8abfd
+  files:
+    classical-tcm-canon.parquet:
+      bytes: 15408332
+      sha256: 3d10ae7434acf9910e337b57381d40bafd99c6518fb215e31432aa99bf37bae9
+    README.md:
+      bytes: 4179
+      sha256: 407dc9098a1b61096f49a1832b7cf9a48d458e1b0ffa86dcbb9335ea20c35571
+  locked: '2026-09-26'

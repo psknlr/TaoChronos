@@ -1,0 +1,4 @@
+- book: tt
+  passages:
+    - {id: tt.1, locator: {chapter: 发表之剂, section: 桂枝汤}, text: 桂枝汤治太阳风，芍药甘草姜枣同。桂麻相合名各半，太阳如疟此为功。}
+    - {id: tt.2, locator: {chapter: 和解之剂, section: 小柴胡汤}, text: 小柴胡汤和解供，半夏人参甘草从。更用黄芩加姜枣，少阳百病此为宗。}

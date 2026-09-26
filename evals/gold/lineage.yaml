@@ -1,0 +1,20 @@
+# LineageEval — edges a historian would accept (positive) or reject (negative).
+# Predicted edges not listed here are unjudged (reported, not scored).
+positive:
+  - {relation: formula_derived_from, source: formula:六味地黄丸, target: formula:肾气丸}
+  - {relation: formula_derived_from, source: formula:左归丸, target: formula:六味地黄丸}
+  - {relation: formula_derived_from, source: formula:右归丸, target: formula:肾气丸}
+  - {relation: formula_derived_from, source: formula:四君子汤, target: formula:理中丸}
+  - {relation: formula_derived_from, source: formula:白虎加人参汤, target: formula:白虎汤}
+  - {relation: cites, source: waitai.11.gujin, target: gujin_luyan}
+  - {relation: cites, source: wenyilun.yuanbing, target: lingshu}
+  - {relation: cites, source: piwei.rezhong, target: suwen}
+  - {relation: transcribes, source: yizong_jinjian.yongju, target: waike_zhengzong.yuanwei}
+  - {relation: rephrases, source: jinkui.01.zhiweibing, target: nanjing.077}
+  - {relation: rephrases, source: zhubing.01.fengshibi, target: suwen.043}
+  - {relation: inherits, source: wenbing_tiaobian.x.xijiao, target: qianjin.12.xijiao}
+  - {relation: opposes, source: wenyilun.chuqi, target: shanghanlun}
+  - {relation: opposes, source: yilin_gaicuo.bansui, target: jinkui}          # 王清任 against the 中风 doctrine
+negative:
+  - {relation: formula_derived_from, source: formula:逍遥散, target: formula:苓桂术甘汤, note: 逍遥散 is conventionally traced to 四逆散}
+  - {relation: formula_derived_from, source: formula:补阳还五汤, target: formula:透脓散, note: shared 黄芪/当归/川芎 is convergent}

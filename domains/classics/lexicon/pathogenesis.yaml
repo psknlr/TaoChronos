@@ -1,0 +1,57 @@
+# Etiology (病因) and pathogenesis (病机). `polarity` feeds contradiction
+# detection; `origin` distinguishes external (外感) from internal (内伤) causes.
+category: pathogenesis
+entries:
+  - {term: 风, category: etiology, aliases: [风气, 风邪], origin: external, weak: true}
+  - {term: 寒, category: etiology, aliases: [寒气, 寒邪, 伤于寒], polarity: {cold_heat: -1}, origin: external, weak: true}
+  - {term: 暑, category: etiology, aliases: [伤于暑], polarity: {cold_heat: 1}, origin: external, weak: true}
+  - {term: 湿, category: etiology, aliases: [湿气, 湿邪, 伤于湿, 湿胜], origin: external, weak: true}
+  - {term: 燥, category: etiology, polarity: {cold_heat: 0.5}, origin: external, weak: true}
+  - {term: 火, category: etiology, polarity: {cold_heat: 1}, weak: true}
+  - {term: 热, category: etiology, aliases: [热气, 热邪, 邪热, 结热, 热胜], polarity: {cold_heat: 1}, weak: true}
+  - {term: 湿热, components: [湿, 热], polarity: {cold_heat: 1}}
+  - {term: 瘀热, aliases: [瘀热在里], components: [瘀血, 热], polarity: {cold_heat: 1, exterior_interior: 1}}
+  - {term: 温邪, components: [热], polarity: {cold_heat: 1}, origin: external}
+  - {term: 火毒, aliases: [热毒], polarity: {cold_heat: 1}}
+  - {term: 异气, category: etiology, aliases: [戾气, 杂气, 疠气, 一种异气], origin: external}
+  - {term: 邪气, category: etiology, aliases: [邪], weak: true}
+  - {term: 六淫, category: etiology, origin: external}
+  - {term: 八风, category: etiology, origin: external}
+  - {term: 七情, category: etiology, origin: internal}
+  - {term: 六欲, category: etiology, origin: internal}
+  - {term: 饮酒, category: etiology, aliases: [积久饮酒], polarity: {cold_heat: 1}, origin: internal}
+  - {term: 肥甘, category: etiology, aliases: [肥美, 数食甘美, 多肥, 膏粱], origin: internal}
+  - {term: 服石, category: etiology, aliases: [五石, 五石诸丸散, 石势], polarity: {cold_heat: 1}, origin: internal}
+  - {term: 房室, category: etiology, origin: internal}
+  - {term: 咸食, category: etiology, origin: internal}
+  - {term: 劳倦, category: etiology, aliases: [劳役, 饮食劳倦, 劳者], origin: internal}
+  - {term: 生冷, category: etiology, aliases: [食生冷], polarity: {cold_heat: -1}, origin: internal}
+  - {term: 痰, aliases: []}
+  - {term: 饮, aliases: [水气, 水饮], weak: true}
+  - {term: 瘀血, aliases: [瘀, 内余瘀血, 有瘀血]}
+  - {term: 郁, aliases: [怫郁, 六郁, 诸郁]}
+  - {term: 血泣, aliases: [血凝, 气血凝]}
+  - {term: 经络阻隔, aliases: []}
+  - {term: 营气不从, aliases: []}
+  - {term: 元气亏损, aliases: [亏损元气, 元气不能充, 元气亦不能充], polarity: {deficiency_excess: -1}, origin: internal}
+  - {term: 脾胃气伤, aliases: [脾胃之气既伤, 内伤脾胃, 损其脾胃], polarity: {deficiency_excess: -1}, origin: internal}
+  - {term: 精气夺, polarity: {deficiency_excess: -1}}
+  - {term: 邪气盛, polarity: {deficiency_excess: 1}}
+  - {term: 下焦虚热, polarity: {cold_heat: 1, deficiency_excess: -1}}
+  - {term: 内热, polarity: {cold_heat: 1}}
+  - {term: 表热, aliases: [表有热], polarity: {cold_heat: 1, exterior_interior: -1}}
+  - {term: 表寒, aliases: [表有寒], polarity: {cold_heat: -1, exterior_interior: -1}}
+  - {term: 里热, aliases: [里有热], polarity: {cold_heat: 1, exterior_interior: 1}}
+  - {term: 里寒, aliases: [里有寒], polarity: {cold_heat: -1, exterior_interior: 1}}
+  - {term: 热在下焦, polarity: {cold_heat: 1}}
+  - {term: 胃中干, polarity: {cold_heat: 1}}
+  - {term: 阳微, polarity: {deficiency_excess: -1}}
+  - {term: 阳浮而阴弱, aliases: []}
+  - {term: 阴阳俱微, polarity: {deficiency_excess: -1}}
+  - {term: 耗血动血, polarity: {cold_heat: 1}}
+  - {term: 六腑不和, aliases: []}
+  - {term: 五脏不调, aliases: []}
+  - {term: 五脏柔弱, aliases: [五脏皆柔弱], polarity: {deficiency_excess: -1}, origin: internal}
+  - {term: 肝传脾, aliases: [知肝传脾, 肝当传之与脾]}
+  - {term: 五气之溢, aliases: []}
+  - {term: 热越, polarity: {cold_heat: 1}}

@@ -1,0 +1,16 @@
+role: extractor
+name: TaoChronos-Extractor
+description: Claim Extractor. Passages to claim hyperedges with verbatim spans.
+objective: >-
+  Extract claims — what a text asserts, as a hyperedge of findings, conditions, mechanisms and interventions —
+  with verbatim quotes and argument spans; every claim must pass the provenance validator.
+mode: hybrid
+procedure: taochronos.agents.procedures.extractor
+skills: [claim-extraction]
+tools: [kg.extract_claims, kg.term, classics.get_passage, validation.verify_quote]
+context_view: extraction
+permissions: [classics:read, kg:read]
+output_schema: ClaimSet
+model: {min_tier: medium, effort: medium, prefer: classical_chinese, max_tokens: 12000}
+budget: {max_tool_calls: 80, max_llm_calls: 10}
+stop_conditions: [output_valid, "max_turns:10"]

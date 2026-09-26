@@ -1,0 +1,27 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: pip install -e ".[dev,anthropic]"
+      - name: Architecture governance
+        run: taochronos governance
+      - name: Tests
+        run: pytest
+      - name: Quick evaluation
+        run: taochronos eval --quick
+      - name: Demo research run
+        run: taochronos --data "$RUNNER_TEMP/taochronos" demo --session ci

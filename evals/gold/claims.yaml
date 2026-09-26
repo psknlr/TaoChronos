@@ -1,0 +1,95 @@
+# ClaimEval — complete claim sets for selected passages (author annotation, see README).
+# A gold claim matches an extracted claim when the relation is equal, every `terms` id is among the
+# extracted (non-negated) arguments and every `negated` id is among the extracted negated arguments.
+# Extracted claims in these passages that match no gold claim count as false positives.
+passages:
+  - passage: shanghanlun.c013
+    claims:
+      - {relation: indicated_for, terms: [formula:桂枝汤, disease:太阳病, symptom:头痛, symptom:发热, symptom:汗出, symptom:恶风]}
+  - passage: shanghanlun.c035
+    claims:
+      - {relation: indicated_for, terms: [formula:麻黄汤, symptom:头痛, symptom:发热, symptom:恶风, symptom:无汗, symptom:喘]}
+  - passage: shanghanlun.c002
+    claims:
+      - {relation: defines, terms: [disease:中风, disease:太阳病, symptom:发热, symptom:汗出, symptom:恶风, pulse:缓]}
+  - passage: shanghanlun.c038
+    claims:
+      - {relation: indicated_for, terms: [formula:大青龙汤, pulse:浮, pulse:紧, symptom:发热, symptom:恶寒, symptom:身疼痛, symptom:烦躁]}
+      - {relation: contraindicated, terms: [formula:大青龙汤, symptom:汗出, symptom:恶风]}
+  - passage: shanghanlun.c063
+    claims:
+      - {relation: contraindicated, terms: [formula:桂枝汤, condition:发汗后]}
+      - {relation: indicated_for, terms: [formula:麻黄杏仁甘草石膏汤, symptom:汗出, symptom:喘]}
+  - passage: shanghanlun.c071
+    claims:
+      - {relation: prognosis, terms: [disease:太阳病, condition:发汗后]}   # 少少与饮之，令胃气和则愈
+      - {relation: indicated_for, terms: [formula:五苓散, pulse:浮, symptom:小便不利, symptom:微热, disease:消渴]}
+  - passage: shanghanlun.c386
+    claims:
+      - {relation: indicated_for, terms: [formula:五苓散, disease:霍乱, symptom:渴]}   # 热多欲饮水者
+      - {relation: indicated_for, terms: [formula:理中丸, disease:霍乱]}              # 寒多不用水者
+  - passage: jinkui.13.xiaoke1
+    claims:
+      - {relation: indicated_for, terms: [formula:肾气丸, disease:消渴, symptom:小便多]}
+  - passage: jinkui.12.tanyin1
+    claims:
+      - {relation: treatment_principle, terms: [disease:痰饮]}
+  - passage: jinkui.02.shibi
+    claims:
+      - {relation: defines, terms: [disease:湿痹, disease:太阳病, pulse:沉, pulse:细]}
+      - {relation: defines, terms: [disease:湿痹, symptom:小便不利]}                 # 湿痹之候，小便不利，大便反快
+      - {relation: treatment_principle, terms: [disease:湿痹, treatment_principle:利小便]}
+  - passage: suwen.074.bingji
+    claims:
+      - {relation: pathogenesis, terms: [etiology:风, organ:肝]}
+      - {relation: pathogenesis, terms: [etiology:寒, organ:肾]}
+      - {relation: pathogenesis, terms: [organ:肺]}
+      - {relation: pathogenesis, terms: [etiology:湿, organ:脾]}
+      - {relation: pathogenesis, terms: [etiology:火]}
+      - {relation: pathogenesis, terms: [organ:心]}
+  - passage: suwen.005.siji
+    claims:
+      - {relation: causes, terms: [etiology:寒, disease:温病]}
+      - {relation: causes, terms: [etiology:风, disease:飧泄]}
+      - {relation: causes, terms: [etiology:暑, disease:疟]}
+      - {relation: causes, terms: [etiology:湿, symptom:咳]}
+  - passage: wenyilun.xu
+    claims:
+      - {relation: causes, terms: [disease:温疫, etiology:异气], negated: [etiology:风, etiology:寒, etiology:暑, etiology:湿]}
+  - passage: zhubing.05.xiaoke
+    claims:
+      - {relation: defines, terms: [disease:消渴, symptom:小便多]}
+      - {relation: causes, terms: [disease:消渴, etiology:服石]}
+  - passage: suwen.047
+    claims:
+      - {relation: indicated_for, terms: [disease:脾瘅]}          # 治之以兰
+      - {relation: transforms_to, terms: [disease:脾瘅, disease:消渴]}
+      - {relation: causes, terms: [etiology:肥甘]}
+  - passage: qianjin.21.yong
+    claims:
+      - {relation: complication, terms: [disease:消渴, disease:痈疽]}
+  - passage: danxi.xiaoke
+    claims:
+      - {relation: treatment_principle, terms: [disease:消渴, treatment_principle:养肺, treatment_principle:降火, treatment_principle:生血]}
+  - passage: yilin_gaicuo.bansui
+    claims:
+      - {relation: pathogenesis, terms: [symptom:半身不遂, pathogenesis:元气亏损]}
+  - passage: shennong.huangqi
+    claims:
+      - {relation: herb_indication, terms: [herb:黄芪, disease:痈疽]}
+  - passage: shennong.zhimu
+    claims:
+      - {relation: herb_indication, terms: [herb:知母, disease:消渴]}
+  - passage: jinkui.22.f.shenqi
+    claims:
+      - {relation: composed_of, terms: [formula:肾气丸, herb:地黄, herb:山药, herb:山茱萸, herb:泽泻, herb:茯苓, herb:牡丹皮, herb:桂枝, herb:附子]}
+  - passage: wenbing_tiaobian.s04
+    claims:
+      - {relation: indicated_for, terms: [formula:桂枝汤, disease:风温, symptom:恶风寒]}
+      - {relation: indicated_for, terms: [formula:银翘散, symptom:渴], negated: []}
+  - passage: danxi.tan
+    claims:
+      - {relation: theory, terms: [pathogenesis:痰]}
+  - passage: jingyue.tan
+    claims:
+      - {relation: theory, terms: [pathogenesis:痰, concept:津液]}

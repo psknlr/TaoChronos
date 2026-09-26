@@ -1,0 +1,374 @@
+# Historical Semantic Layer: period-bound senses of historical terms.
+#   category: symptom | sign | disease | disease_class | pattern | pathology | etiology | organ | herb
+#   scope:    descriptive (purely descriptive clinical term) | specific (a defined entity)
+#             | broad (umbrella category) | framework (theory-bound) | sparse (too few attestations)
+#   cues / anti_cues: context words favouring / disfavouring the sense (used for sense resolution)
+#   candidates: modern concepts that MAY be relevant; the relation is decided by the ontologist,
+#               never assumed ("消渴 = 糖尿病" is exactly what this layer prevents).
+# Senses are author-curated for the demo and require expert review.
+terms:
+  - id: 消渴
+    category: disease
+    related: [消瘅, 脾瘅, 消中, 肾消, 三消]
+    notes: 历史名称，不可直接等同于现代糖尿病。
+    senses:
+      - id: 消渴#症状
+        label: 症状：渴饮而渴不解
+        gloss: 外感热病或杂病过程中口渴引饮而渴不解的症状
+        category: symptom
+        scope: descriptive
+        period: [-300, 400]
+        cues: [小便不利, 微热, 脉浮, 厥阴, 气上撞心, 心中疼热, 发汗, 五苓散, 身热, 烦满]
+        anti_cues: [小便多, 三消, 消中, 肾消]
+        exemplars: [shanghanlun.c071, shanghanlun.c326]
+        candidates: [modern:polydipsia, modern:diabetes_mellitus]
+      - id: 消渴#病·多饮多尿
+        label: 病名：以多饮、多尿为主症的消渴病
+        gloss: 渴而多饮、小便反多的独立病名
+        category: disease
+        scope: specific
+        period: [150, 1911]
+        cues: [小便多, 多饮, 渴, 肾气丸, 男子, 五石, 服石, 下焦虚热, 肾, 转为消渴, 肥甘, 内热]
+        exemplars: [jinkui.13.xiaoke1, zhubing.05.xiaoke, suwen.047]
+        candidates: [modern:diabetes_mellitus, modern:diabetes_insipidus]
+      - id: 消渴#病·三消
+        label: 病名：三消体系（消渴 / 消中 / 肾消；上消 / 中消 / 下消）
+        gloss: 按饮、食、溲区分的三消分类，唐以后逐渐成型，兼论尿甜、饮酒致病与痈疽并发
+        category: disease
+        scope: specific
+        period: [600, 1911]
+        cues: [三消, 消中, 肾消, 上消, 中消, 下消, 尿甜, 饮酒, 痈疽, 痈, 养肺, 降火, 生血, 房室, 咸食]
+        exemplars: [waitai.11.gujin, danxi.xiaoke, jingyue.sanxiao, qianjin.21.yong]
+        candidates: [modern:diabetes_mellitus]
+
+  - id: 消瘅
+    category: disease
+    related: [消渴]
+    senses:
+      - id: 消瘅#病
+        label: 病名：消瘅（五脏柔弱者易病）
+        gloss: 《灵枢》所载与体质柔弱相关的消瘅，与后世消渴的关系尚待考订
+        category: disease
+        scope: sparse
+        period: [-300, 220]
+        exemplars: [lingshu.046]
+        candidates: [modern:diabetes_mellitus]
+
+  - id: 脾瘅
+    category: disease
+    related: [消渴]
+    senses:
+      - id: 脾瘅#病
+        label: 病名：脾瘅（口甘，肥美所发，可转为消渴）
+        gloss: 过食肥甘致口甘、内热、中满，可转为消渴
+        category: disease
+        scope: sparse
+        period: [-300, 220]
+        exemplars: [suwen.047]
+        candidates: [modern:metabolic_syndrome]
+
+  - id: 中风
+    category: disease
+    notes: 同名异义：《伤寒论》的“中风”是外感表证，后世“中风”多指卒中。
+    senses:
+      - id: 中风#外感
+        label: 证名：外感风邪之表证（太阳中风）
+        gloss: 发热、汗出、恶风、脉缓的太阳表证
+        category: pattern
+        scope: framework
+        period: [-300, 1000]
+        cues: [太阳, 太阳病, 发热, 汗出, 恶风, 脉缓, 桂枝汤, 伤寒, 寒热, 头痛, 大青龙汤, 阳浮而阴弱]
+        anti_cues: [半身不遂, 臂不遂, 口眼歪斜]
+        exemplars: [shanghanlun.c002, shanghanlun.c012, shennong.mahuang]
+        candidates: [modern:stroke]
+      - id: 中风#卒中
+        label: 病名：卒中（半身不遂、口眼歪斜）
+        gloss: 以半身不遂、口眼歪斜、语言謇涩为主的内科急症
+        category: disease
+        scope: specific
+        period: [150, 1911]
+        cues: [半身不遂, 臂不遂, 口眼歪斜, 语言謇涩, 不遂, 痹, 元气亏损]
+        exemplars: [jinkui.05.zhongfeng]
+        candidates: [modern:stroke]
+
+  - id: 伤寒
+    category: disease
+    notes: 广义伤寒为外感热病总称，狭义伤寒为太阳伤寒；均非现代“肠伤寒”。
+    senses:
+      - id: 伤寒#广义
+        label: 病类：一切外感热病的总称（广义伤寒）
+        gloss: “今夫热病者，皆伤寒之类也”
+        category: disease_class
+        scope: broad
+        period: [-300, 1911]
+        cues: [热病, 伤寒之类, 病热, 温病, 两感]
+        exemplars: [suwen.031]
+        candidates: [modern:typhoid]
+      - id: 伤寒#狭义
+        label: 证名：太阳伤寒（恶寒、体痛、脉阴阳俱紧）
+        gloss: 恶寒、体痛、呕逆、脉紧、无汗的太阳表实证
+        category: pattern
+        scope: framework
+        period: [-300, 1911]
+        cues: [恶寒, 身疼痛, 呕逆, 脉紧, 无汗, 麻黄汤, 表不解, 太阳病, 表证]
+        exemplars: [shanghanlun.c003, shanghanlun.c035]
+        candidates: [modern:typhoid]
+
+  - id: 温病
+    category: disease
+    senses:
+      - id: 温病#伏气
+        label: 病类：伏气温病（冬伤于寒，春必温病）
+        gloss: 以季节伏邪解释的春季温热病
+        category: disease_class
+        scope: framework
+        period: [-300, 1911]
+        cues: [冬, 春, 寒, 藏于精, 伏邪]
+        exemplars: [suwen.005.siji, suwen.003.siji, suwen.004.jing]
+      - id: 温病#太阳
+        label: 证名：太阳病中发热而渴、不恶寒者
+        gloss: 《伤寒论》框架内的温病
+        category: pattern
+        scope: framework
+        period: [-300, 1911]
+        cues: [太阳病, 发热, 渴, 不恶寒, 风温]
+        exemplars: [shanghanlun.c006]
+      - id: 温病#温病学派
+        label: 病类：温病学派的温热类疾病总称
+        gloss: 风温、温热、温疫、湿温等，以卫气营血、三焦辨证
+        category: disease_class
+        scope: broad
+        period: [1640, 1911]
+        cues: [风温, 湿温, 温疫, 暑温, 冬温, 温热, 初起, 银翘散, 桂枝汤, 卫分, 营分, 上焦]
+        exemplars: [wenbing_tiaobian.s01, wenbing_tiaobian.s04]
+
+  - id: 温疫
+    category: disease
+    broader: [温病]
+    senses:
+      - id: 温疫#疫病
+        label: 病类：具传染性、流行性的温病（异气所感）
+        gloss: 吴又可以“异气”自口鼻而入解释的疫病
+        category: disease_class
+        scope: broad
+        period: [1600, 1911]
+        cues: [异气, 口鼻, 膜原, 达原饮, 憎寒]
+        exemplars: [wenyilun.xu, wenyilun.yuanbing]
+        candidates: [modern:epidemic_infection]
+
+  - id: 痹
+    category: disease
+    senses:
+      - id: 痹#风寒湿痹
+        label: 病名：风寒湿三气杂至所致的痹证
+        gloss: 以肢体关节疼痛为主的痹病
+        category: disease
+        scope: specific
+        period: [-300, 1911]
+        cues: [风, 寒, 湿, 三气, 关节, 骨节疼痛, 行痹, 痛痹, 著痹, 肌肉酸痛]
+        exemplars: [suwen.043, zhubing.01.fengshibi, jinkui.02.shibi]
+        candidates: [modern:arthritis]
+      - id: 痹#麻木不遂
+        label: 症状：肢体麻木不仁或不遂
+        gloss: 《金匮》“但臂不遂者，此为痹”之痹
+        category: symptom
+        scope: descriptive
+        period: [150, 700]
+        cues: [臂不遂, 不仁, 半身不遂, 中风]
+        exemplars: [jinkui.05.zhongfeng]
+        candidates: [modern:hemiplegia]
+
+  - id: 痰
+    category: pathology
+    senses:
+      - id: 痰#痰饮
+        label: 病理：痰饮（水饮停聚）
+        gloss: 《金匮》痰饮（早期或作“淡饮”），以温药和之
+        category: pathology
+        scope: framework
+        period: [150, 1911]
+        cues: [饮, 痰饮, 温药和之, 胸胁苦满, 目眩, 心下, 苓桂术甘汤, 二陈汤]
+        exemplars: [jinkui.12.tanyin1, jinkui.12.tanyin2, hejiju.erchen]
+        candidates: [modern:sputum]
+      - id: 痰#百病之源
+        label: 病理：广义之痰（百病多兼痰）
+        gloss: 金元以后扩展为可随气升降、无处不到的致病因素
+        category: pathology
+        scope: broad
+        period: [1300, 1911]
+        cues: [百病, 兼痰, 随气升降]
+        exemplars: [danxi.tan]
+        candidates: [modern:sputum]
+      - id: 痰#津液所化
+        label: 病理：痰为津液、水谷所化
+        gloss: 张介宾从津液代谢解释痰的来源
+        category: pathology
+        scope: framework
+        period: [1500, 1911]
+        cues: [津液, 水谷]
+        exemplars: [jingyue.tan]
+        candidates: [modern:sputum]
+
+  - id: 湿
+    category: etiology
+    senses:
+      - id: 湿#外湿
+        label: 病因：外感湿邪（六淫之一）
+        category: etiology
+        scope: framework
+        period: [-300, 1911]
+        cues: [因于湿, 伤于湿, 风, 寒, 三气, 秋, 首如裹, 头重, 关节疼痛]
+        exemplars: [suwen.003.shi, suwen.043]
+      - id: 湿#内湿
+        label: 病机：脾失健运之内湿
+        category: pathology
+        scope: framework
+        period: [-300, 1911]
+        cues: [脾, 肿满, 诸湿, 身肿]
+        exemplars: [suwen.074.bingji]
+      - id: 湿#温病湿邪
+        label: 病因：温病学派所论湿邪（湿温、湿热）
+        category: etiology
+        scope: framework
+        period: [1640, 1911]
+        cues: [湿温, 湿邪, 吴地, 阳微, 三仁汤, 胸闷, 不饥, 午后身热, 湿热]
+        exemplars: [wenrelun.4, wenbing_tiaobian.s43]
+
+  - id: 风
+    category: etiology
+    senses:
+      - id: 风#外风
+        label: 病因：外感风邪
+        category: etiology
+        scope: framework
+        period: [-300, 1911]
+        cues: [伤于风, 恶风, 中风, 八风, 寒, 湿, 三气, 太阳病]
+        exemplars: [suwen.003.siji, shanghanlun.c002]
+      - id: 风#内风
+        label: 病机：肝风内动
+        category: pathology
+        scope: framework
+        period: [100, 1911]
+        cues: [掉眩, 肝, 诸风]
+        exemplars: [suwen.074.bingji]
+      - id: 风#卒中之风
+        label: 病因/病名：中风卒中之“风”
+        category: disease
+        scope: framework
+        period: [150, 1911]
+        cues: [半身不遂, 不遂, 痹, 脉微而数]
+        exemplars: [jinkui.05.zhongfeng]
+
+  - id: 瘀血
+    category: pathology
+    senses:
+      - id: 瘀血#蓄血
+        label: 病理：热与血结之蓄血
+        category: pathology
+        scope: framework
+        period: [150, 1911]
+        cues: [蓄血, 下焦, 发狂, 少腹满, 下血, 瘀热, 抵当汤]
+        exemplars: [shanghanlun.c124, qianjin.12.xijiao]
+        candidates: [modern:thrombosis]
+      - id: 瘀血#离经之血
+        label: 病理：出血后内留之瘀血
+        category: pathology
+        scope: framework
+        period: [600, 1911]
+        cues: [吐血, 鼻衄, 大便黑, 漱口不欲咽, 犀角地黄汤]
+        exemplars: [qianjin.12.xijiao, wenbing_tiaobian.x.xijiao]
+        candidates: [modern:thrombosis]
+      - id: 瘀血#气血论
+        label: 病理：王清任气血论中的血瘀
+        category: pathology
+        scope: framework
+        period: [1800, 1911]
+        cues: [气血, 元气, 血府, 逐瘀, 桃仁, 红花]
+        exemplars: [yilin_gaicuo.xuefu, yilin_gaicuo.qixue]
+        candidates: [modern:thrombosis]
+
+  - id: 郁
+    category: pathology
+    senses:
+      - id: 郁#六郁
+        label: 病理：气血怫郁（气、血、湿、痰、热、食六郁）
+        category: pathology
+        scope: framework
+        period: [1300, 1911]
+        cues: [怫郁, 气血, 诸病, 越鞠丸, 解郁]
+        exemplars: [danxi.liuyu]
+        candidates: [modern:depression]
+
+  - id: 疟
+    category: disease
+    senses:
+      - id: 疟#寒热休作
+        label: 病名：寒热往来、休作有时之疟
+        category: disease
+        scope: specific
+        period: [-300, 1911]
+        cues: [寒热, 间日, 痎疟, 诸疟, 邪气, 瘴]
+        exemplars: [suwen.035, zhouhou.qinghao]
+        candidates: [modern:malaria]
+
+  - id: 霍乱
+    category: disease
+    senses:
+      - id: 霍乱#吐利
+        label: 病名：呕吐而利的急性吐泻病
+        gloss: 《伤寒论》“呕吐而利，此名霍乱”，范围远大于现代霍乱弧菌感染
+        category: disease
+        scope: broad
+        period: [-300, 1911]
+        cues: [呕吐, 下利, 头痛, 发热, 五苓散, 理中丸]
+        exemplars: [shanghanlun.c382, shanghanlun.c386]
+        candidates: [modern:cholera]
+
+  - id: 肠痈
+    category: disease
+    senses:
+      - {id: 肠痈#病, label: 病名：腹内痈脓, category: disease, scope: specific, period: [150, 1911], exemplars: [jinkui.18.changyong1, jinkui.18.changyong2], candidates: [modern:appendicitis]}
+  - id: 胸痹
+    category: disease
+    senses:
+      - {id: 胸痹#病, label: 病名：胸痹（喘息咳唾、胸背痛、短气）, category: disease, scope: specific, period: [150, 1911], exemplars: [jinkui.09.xiongbi], candidates: [modern:angina]}
+  - id: 痈
+    category: disease
+    senses:
+      - {id: 痈#病, label: 病名：痈（局部红肿化脓之疮）, category: disease, scope: specific, period: [-300, 1911], exemplars: [zhubing.32.yong, lingshu.081], candidates: [modern:abscess]}
+  - id: 疔
+    category: disease
+    senses:
+      - {id: 疔#病, label: 病名：疔疮, category: disease, scope: specific, period: [-300, 1911], exemplars: [suwen.003.ding, yizong_jinjian.wuwei], candidates: [modern:furuncle]}
+  - id: 瘰疬
+    category: disease
+    senses:
+      - {id: 瘰疬#病, label: 病名：瘰疬, category: disease, scope: specific, period: [25, 1911], exemplars: [shennong.lianqiao], candidates: [modern:scrofula]}
+  - id: 虚劳
+    category: disease
+    senses:
+      - {id: 虚劳#病, label: 病类：虚劳（诸虚不足之总称）, category: disease, scope: broad, period: [150, 1911], exemplars: [jinkui.06.xulao], candidates: [modern:tuberculosis]}
+  - id: 半身不遂
+    category: symptom
+    senses:
+      - {id: 半身不遂#症状, label: 症状：半侧肢体不能随意运动, category: symptom, scope: descriptive, period: [150, 1911], exemplars: [jinkui.05.zhongfeng, yilin_gaicuo.buyang], candidates: [modern:hemiplegia]}
+  - id: 失音
+    category: symptom
+    senses:
+      - {id: 失音#症状, label: 症状：失音, category: symptom, scope: descriptive, period: [600, 1911], exemplars: [xiaoer.dihuang], candidates: [modern:aphonia]}
+  - id: 身黄
+    category: sign
+    senses:
+      - {id: 身黄#体征, label: 体征：身目发黄, category: sign, scope: descriptive, period: [-300, 1911], exemplars: [shanghanlun.c236, jinkui.02.shijia], candidates: [modern:jaundice]}
+  - id: 心
+    category: organ
+    senses:
+      - {id: 心#脏象, label: 脏象：心（主血脉、藏神）, category: organ, scope: framework, period: [-300, 1911], exemplars: [suwen.074.bingji], candidates: [modern:heart]}
+  - id: 肾
+    category: organ
+    senses:
+      - {id: 肾#脏象, label: 脏象：肾（藏精、主水）, category: organ, scope: framework, period: [-300, 1911], exemplars: [zhubing.05.xiaoke], candidates: [modern:kidney]}
+  - id: 青蒿
+    category: herb
+    senses:
+      - {id: 青蒿#药, label: 药名：青蒿（草蒿）, category: herb, scope: specific, period: [25, 1911], exemplars: [shennong.caohao, zhouhou.qinghao], candidates: [modern:artemisia_annua]}

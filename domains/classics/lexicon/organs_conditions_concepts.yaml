@@ -1,0 +1,56 @@
+# Visceral systems / locations (脏象不等于解剖器官), conditions and theory concepts.
+- category: organ
+  entries:
+    - {term: 肝, weak: true}
+    - {term: 心, weak: true}
+    - {term: 脾, aliases: [脾气], weak: true}
+    - {term: 肺, weak: true}
+    - {term: 肾, aliases: [肾中], weak: true}
+    - {term: 胃, weak: true}
+    - {term: 胆, weak: true}
+    - {term: 三焦, aliases: []}
+    - {term: 上焦, aliases: []}
+    - {term: 中焦, aliases: [中脘]}
+    - {term: 下焦, aliases: []}
+    - {term: 心包, aliases: [手厥阴]}
+    - {term: 膜原, aliases: [横连膜原]}
+    - {term: 经络, aliases: []}
+    - {term: 脏腑, aliases: [五脏, 六腑]}
+    - {term: 骨髓, aliases: []}
+    - {term: 大骨节, aliases: [大骨节间]}
+    - {term: 伏脊, aliases: [伏脊之内]}
+    - {term: 半表半里, aliases: [表里之分界]}
+
+- category: condition
+  entries:
+    - {term: 春, kind: season, weak: true}
+    - {term: 夏, kind: season, weak: true}
+    - {term: 秋, kind: season, weak: true}
+    - {term: 冬, kind: season, weak: true}
+    - {term: 长夏, kind: season}
+    - {term: 深秋, kind: season}
+    - {term: 冬日, kind: season}
+    - {term: 男子, kind: sex}
+    - {term: 妇人, kind: sex}
+    - {term: 小儿, kind: age}
+    - {term: 年衰, kind: age}
+    - {term: 吴地, kind: region, aliases: [吾吴]}
+    - {term: 初起, kind: stage, aliases: [始得之, 初得之]}
+    - {term: 发汗后, kind: stage, aliases: [发汗已, 大汗出后]}
+    - {term: 卫分, kind: stage, aliases: [在卫]}
+    - {term: 气分, kind: stage, aliases: [到气]}
+    - {term: 营分, kind: stage, aliases: [入营]}
+    - {term: 血分, kind: stage, aliases: [入血]}
+    - {term: 太阳证罢, kind: stage}
+
+- category: concept
+  entries:
+    - {term: 阴阳, aliases: []}
+    - {term: 元气, aliases: []}
+    - {term: 精, aliases: [精者, 藏于精], weak: true}
+    - {term: 气血, aliases: [气血冲和, 明白气血]}
+    - {term: 营卫, aliases: [荣卫, 营卫气血]}
+    - {term: 胃气, aliases: [胃气和]}
+    - {term: 津液, aliases: [人之津液]}
+    - {term: 水谷, aliases: []}
+    - {term: 百病, aliases: [诸病, 万病]}

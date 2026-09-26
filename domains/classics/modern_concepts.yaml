@@ -1,0 +1,29 @@
+# Modern concepts (Modern TCM / Biomedical spaces). Labels only — no claim that
+# any historical term maps onto them. Mappings are proposed by the ontologist,
+# typed by MappingRelation, and require approval.
+concepts:
+  - {id: modern:diabetes_mellitus, label: 糖尿病（Diabetes mellitus）, category: disease, space: biomedical}
+  - {id: modern:diabetes_insipidus, label: 尿崩症（Diabetes insipidus）, category: disease, space: biomedical}
+  - {id: modern:metabolic_syndrome, label: 代谢综合征（Metabolic syndrome）, category: disease, space: biomedical}
+  - {id: modern:polydipsia, label: 烦渴多饮（Polydipsia）, category: symptom, space: biomedical}
+  - {id: modern:stroke, label: 脑卒中（Stroke）, category: disease, space: biomedical}
+  - {id: modern:hemiplegia, label: 偏瘫（Hemiplegia）, category: symptom, space: biomedical}
+  - {id: modern:typhoid, label: 肠伤寒（Typhoid fever）, category: disease, space: biomedical}
+  - {id: modern:cholera, label: 霍乱（Cholera）, category: disease, space: biomedical}
+  - {id: modern:malaria, label: 疟疾（Malaria）, category: disease, space: biomedical}
+  - {id: modern:arthritis, label: 关节炎（Arthritis）, category: disease, space: biomedical}
+  - {id: modern:angina, label: 心绞痛（Angina pectoris）, category: disease, space: biomedical}
+  - {id: modern:appendicitis, label: 阑尾炎（Appendicitis）, category: disease, space: biomedical}
+  - {id: modern:epidemic_infection, label: 流行性传染病（Epidemic infectious disease）, category: disease_class, space: biomedical}
+  - {id: modern:abscess, label: 脓肿（Abscess）, category: disease, space: biomedical}
+  - {id: modern:furuncle, label: 疖肿（Furuncle）, category: disease, space: biomedical}
+  - {id: modern:jaundice, label: 黄疸（Jaundice）, category: sign, space: biomedical}
+  - {id: modern:scrofula, label: 颈淋巴结结核（Scrofula）, category: disease, space: biomedical}
+  - {id: modern:tuberculosis, label: 结核病（Tuberculosis）, category: disease, space: biomedical}
+  - {id: modern:thrombosis, label: 血栓形成（Thrombosis）, category: pathology, space: biomedical}
+  - {id: modern:depression, label: 抑郁障碍（Depressive disorder）, category: disease, space: biomedical}
+  - {id: modern:aphonia, label: 失音（Aphonia）, category: symptom, space: biomedical}
+  - {id: modern:sputum, label: 痰液（Sputum）, category: substance, space: biomedical}
+  - {id: modern:heart, label: 心脏（Heart, anatomical organ）, category: organ, space: biomedical}
+  - {id: modern:kidney, label: 肾脏（Kidney, anatomical organ）, category: organ, space: biomedical}
+  - {id: modern:artemisia_annua, label: 黄花蒿（Artemisia annua L.）, category: species, space: biomedical}

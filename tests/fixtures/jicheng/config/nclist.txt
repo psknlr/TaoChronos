@@ -1,0 +1,3 @@
+/* code	unicode	common	ids	note */
+abq		鼠	日/用	鼠之異體
+xyz	2318E	鼠	日/(鼡-(学-冖-子))	鼠之異體

@@ -1,0 +1,20 @@
+- book: lingshu
+  edition: lingshu@shisong
+  passages:
+    - id: lingshu.046
+      locator: {chapter: 五变第四十六}
+      text: 五藏皆柔弱者，善病消瘅。
+      tags: [消渴, 消瘅, track:C]
+
+    - id: lingshu.081
+      locator: {chapter: 痈疽第八十一}
+      text: 寒邪客于经络之中则血泣，血泣则不通，不通则卫气归之，不得复反，故痈肿。寒气化为热，热胜则腐肉，肉腐则为脓。
+      tags: [疮疡, 痈疽, track:C]
+
+- book: nanjing
+  edition: nanjing@tongxing
+  passages:
+    - id: nanjing.077
+      locator: {chapter: 七十七难}
+      text: 经言上工治未病，中工治已病者，何谓也？然：所谓治未病者，见肝之病，则知肝当传之与脾，故先实其脾气，无令得受肝之邪，故曰治未病焉。
+      tags: [治未病, 治则]

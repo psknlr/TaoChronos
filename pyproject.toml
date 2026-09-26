@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "taochronos"
+version = "0.1.0"
+description = "TaoChronos: a provenance-grounded, evidence-native research harness for knowledge discovery from ancient Chinese medical classics"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["PyYAML>=6.0"]
+keywords = ["traditional-chinese-medicine", "digital-humanities", "multi-agent", "knowledge-discovery", "provenance", "hypergraph"]
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=1.0"]
+dev = ["pytest>=8"]
+parquet = ["pyarrow>=14"]  # `corpus catalog|ingest hf-tcm-canon` reads the Hugging Face Parquet file
+
+[project.scripts]
+taochronos = "taochronos.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -1,0 +1,13 @@
+# Test catalog for the Kanripo parser / corpus store tests (synthetic texts in the Kanripo format).
+source: {id: kanripo, name: 汉籍仓库格式测试样例, url: https://www.kanripo.org/, license: CC BY-SA 4.0, repo: "https://github.com/kanripo/{kr_lower}",
+         acquisition: test fixture, transcription: synthetic, verified: false}
+editions:
+  WYG: {name: 文渊阁四库全书本, year: [1773, 1782], quality: 0.6}
+  SBCK: {name: 四部丛刊影印本, year: [1919, 1936], quality: 0.7}
+books:
+  - {kr: KR3eT001, id: ceshi_fangshu, title: 测试方书, aliases: [測試方書], work: ceshi_fangshu, authors: [张某], dynasty: 东汉,
+     composition: [200, 219], category: 方书, markers: [{prefix: "一本作", layer: 校语, year: [1066, 1066], attribution: 宋臣}]}
+  - {kr: KR3eT002, id: ceshi_neijing, title: 测试内经, aliases: [測試內經], work: ceshi_neijing, authors: [佚名（托名黄帝、岐伯）], dynasty: 战国—西汉,
+     composition: [-300, 25], attribution: pseudepigraphic, category: 医经, edition: {base: SBCK, name: 测试影印本, year: [1550, 1550]},
+     note_order: BA, notes: {layer: 王冰注, year: [762, 762], attribution: 唐·王冰},
+     markers: [{prefix: 新校正云, layer: 新校正, year: [1068, 1068], attribution: 宋·林亿等}]}

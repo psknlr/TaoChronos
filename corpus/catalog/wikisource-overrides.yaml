@@ -1,0 +1,37 @@
+# Corrections to the Wikisource catalog (keyed by page title; see plugins/classics/ingest/wikisource.py).
+# Works whose own header gives no usable date, and the "ancient recensions" of the 傷寒雜病論 that first appeared
+# in print in the Republican era — dated by their appearance, never by the date they claim.
+
+天回醫簡:
+  composition: [-206, -87]
+  dynasty: 西汉
+  category: 医经
+  notes_text: 成都天回镇老官山汉墓出土医简（2012—2013年发掘），据整理者释文录入；墓葬约当西汉景帝、武帝之时，学者多认为出自扁鹊（“敝昔”）一派
+
+傷寒雜病論 (長沙古本):
+  force_ingest: true  # a distinct recension, not a copy of the 宋本
+  title: 伤寒杂病论（长沙古本）
+  composition: [1932, 1934]
+  attribution: pseudepigraphic
+  notes_text: 所谓“长沙古本”，民国时随刘世祯《伤寒杂病论义疏》问世，真伪有争议；按问世年代断代
+
+傷寒雜病論 (康平古本):
+  force_ingest: true  # a distinct recension, not a copy of the 宋本
+  title: 伤寒杂病论（康平本）
+  composition: [1937, 1947]
+  attribution: pseudepigraphic
+  notes_text: 所谓“康平本”，日本抄本，1937年大塚敬节校刊、1940年代传入中国，所称康平年间（1058—1065）抄写之说未能证实；按刊行年代断代
+
+傷寒雜病論白雲閣藏本:
+  force_ingest: true  # a distinct recension, not a copy of the 宋本
+  title: 伤寒杂病论（白云阁藏本）
+  composition: [1939, 1939]
+  attribution: pseudepigraphic
+  notes_text: 1939年白云阁刊本（维基文库录入时参校1948年会通本、1960年桂林本），与“桂林古本”同源，真伪有争议；按刊行年代断代
+
+事林廣記/續集/卷10:
+  title: 事林广记·续集·卷十（医学类）
+  composition: [1330, 1333]
+  dynasty: 元
+  category: 本草
+  notes_text: 南宋陈元靓编类书《事林广记》续集卷十“医学类”（药忌、炮制），据元至顺间刊本系统，按元刊年代断代

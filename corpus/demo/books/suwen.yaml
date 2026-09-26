@@ -1,0 +1,79 @@
+book: suwen
+edition: suwen@wangbing
+passages:
+  - id: suwen.003.shi
+    locator: {chapter: 生气通天论篇第三}
+    text: 因于湿，首如裹，湿热不攘，大筋緛短，小筋弛长，緛短为拘，弛长为痿。
+    tags: [湿, 湿热, track:A]
+
+  - id: suwen.003.yong
+    locator: {chapter: 生气通天论篇第三}
+    text: 营气不从，逆于肉理，乃生痈肿。
+    tags: [疮疡, track:C]
+
+  - id: suwen.003.ding
+    locator: {chapter: 生气通天论篇第三}
+    text: 高梁之变，足生大丁，受如持虚。
+    tags: [疮疡, 饮食, track:C]
+    notes: “高梁”通“膏粱”（通假，见 variants.yaml 的词级异文）。
+
+  - id: suwen.003.siji
+    locator: {chapter: 生气通天论篇第三}
+    text: 是以春伤于风，邪气留连，乃为洞泄。夏伤于暑，秋为痎疟。秋伤于湿，上逆而咳，发为痿厥。冬伤于寒，春必温病。
+    tags: [温病, 伏邪, 疟, track:A]
+
+  - id: suwen.004.jing
+    locator: {chapter: 金匮真言论篇第四}
+    text: 夫精者，身之本也。故藏于精者，春不病温。
+    tags: [温病, 伏邪, track:A]
+
+  - id: suwen.005.ben
+    locator: {chapter: 阴阳应象大论篇第五}
+    text: 阴阳者，天地之道也，万物之纲纪，变化之父母，生杀之本始，神明之府也，治病必求于本。
+    tags: [阴阳, 治则]
+
+  - id: suwen.005.siji
+    locator: {chapter: 阴阳应象大论篇第五}
+    text: 冬伤于寒，春必温病；春伤于风，夏生飧泄；夏伤于暑，秋必痎疟；秋伤于湿，冬生咳嗽。
+    tags: [温病, 伏邪, track:A]
+
+  - id: suwen.028
+    locator: {chapter: 通评虚实论篇第二十八}
+    text: 邪气盛则实，精气夺则虚。
+    tags: [虚实]
+
+  - id: suwen.031
+    locator: {chapter: 热论篇第三十一}
+    text: 今夫热病者，皆伤寒之类也。……人之伤于寒也，则为病热，热虽甚不死；其两感于寒而病者，必不免于死。
+    abridged: true
+    tags: [伤寒, 热病, track:A]
+
+  - id: suwen.035
+    locator: {chapter: 疟论篇第三十五}
+    text: 其间日发者，由邪气内薄于五藏，横连募原也，其道远，其气深，其行迟，不能与卫气俱行，不得皆出，故间日乃作也。
+    tags: [疟, 膜原, track:A]
+    notes: “募原”与《温疫论》的“膜原”为词级异文（通假）。
+
+  - id: suwen.043
+    locator: {chapter: 痹论篇第四十三}
+    text: 风寒湿三气杂至，合而为痹也。其风气胜者为行痹，寒气胜者为痛痹，湿气胜者为著痹也。
+    tags: [痹, 湿, 风, track:C]
+
+  - id: suwen.047
+    locator: {chapter: 奇病论篇第四十七}
+    text: 帝曰：有病口甘者，病名为何？何以得之？岐伯曰：此五气之溢也，名曰脾瘅。夫五味入口，藏于胃，脾为之行其精气，津液在脾，故令人口甘也；此肥美之所发也，此人必数食甘美而多肥也，肥者令人内热，甘者令人中满，故其气上溢，转为消渴。治之以兰，除陈气也。
+    tags: [消渴, 脾瘅, 饮食, track:C]
+
+  - id: suwen.074.bingji
+    locator: {chapter: 至真要大论篇第七十四}
+    temporal: {t_composition: [100, 762]}
+    text: 诸风掉眩，皆属于肝。诸寒收引，皆属于肾。诸气膹郁，皆属于肺。诸湿肿满，皆属于脾。诸热瞀瘛，皆属于火。诸痛痒疮，皆属于心。
+    tags: [病机, 湿, 风, 疮疡, track:A]
+    notes: 运气七篇之一，一般认为系王冰补入，成书年代有争议（此处 t_composition 取 100–762 的宽区间）。
+
+  - id: suwen.074.zhize
+    locator: {chapter: 至真要大论篇第七十四}
+    temporal: {t_composition: [100, 762]}
+    text: 寒者热之，热者寒之，微者逆之，甚者从之，坚者削之，客者除之，劳者温之，结者散之，留者攻之，燥者濡之，急者缓之，散者收之，损者温之，逸者行之，惊者平之。
+    tags: [治则, track:A]
+    notes: 运气七篇之一，成书年代有争议。

@@ -1,0 +1,19 @@
+# Citation resolution. Explicit markers such as 《书名》 or “经曰” are resolved
+# to corpus books, known external (lost) works, or ambiguous candidate sets.
+generic_references:
+  经:
+    note: 金元以后医家“经曰/经云”多指《内经》，但亦可指《难经》《神农本草经》
+    candidates: {suwen: 0.6, lingshu: 0.2, nanjing: 0.15, shennong: 0.05}
+  经言:
+    note: 《难经》“经言”多指《内经》
+    candidates: {suwen: 0.5, lingshu: 0.5}
+  针经:
+    note: 《针经》一般认为即今本《灵枢》
+    candidates: {lingshu: 1.0}
+  和剂方:
+    note: 《太平惠民和剂局方》的简称
+    candidates: {hejiju: 1.0}
+patterns:
+  - {regex: "《([^》]{1,12})》", kind: title}
+  - {regex: "(经)(曰|云)", kind: generic}
+  - {regex: "(经言)", kind: generic}

@@ -1,0 +1,5 @@
+- book: yz
+  passages:
+    - {id: yz.1, locator: {chapter: 杂病心法, section: 消渴}, text: 消渴者，饮水多而小便多也。上消属肺，中消属胃，下消属肾。元参、麦冬主之。}
+    - {id: yz.2, locator: {chapter: 杂病心法, section: 消渴}, text: 仲景曰：男子消渴，小便反多，肾气丸主之。元参清热，元参滋阴。}
+    - {id: yz.3, locator: {chapter: 伤寒心法, section: 太阳}, text: 太阳病，头痛，发热，汗出，恶风，宜桂枝汤。}

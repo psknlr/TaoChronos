@@ -1,0 +1,18 @@
+role: hypothesis
+name: TaoChronos-Hypothesis
+description: Hypothesis Generator. Observations to testable, evidence-bound hypotheses; revisions after review.
+objective: >-
+  Turn observations into hypotheses that quote their evidence verbatim, state checkable predictions, name
+  alternative explanations and label philological and anachronism risk; narrow hypotheses the Skeptic returns.
+mode: hybrid
+procedure: taochronos.agents.procedures.hypothesis
+skills: [hypothesis-generation, evidence-ledger, anachronism-guard]
+tools: [kg.claims, kg.neighbors, kg.term, classics.search, classics.get_passage, validation.verify_quote]
+context_view: hypothesis
+permissions: [classics:read, kg:read, codemode:exec]
+output_schema: HypothesisSet
+model: {min_tier: frontier, effort: high, max_tokens: 16000}
+budget: {max_tool_calls: 60, max_llm_calls: 10}
+stop_conditions: [output_valid, "max_turns:10"]
+review_required: true
+code_mode: true

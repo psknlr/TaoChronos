@@ -1,0 +1,106 @@
+# What the corpus leaves out (see plugins/classics/ingest/policy.py), reviewed book by book.
+#
+#   当代出版物        — works first written or compiled after 1949 (modern textbooks, dictionaries, compilations)
+#   当代名医著作      — writings and case records of physicians of the People's Republic era
+#   现代校注本        — modern annotated / translated editions, and modern reconstructions of lost works (辑校本)
+#
+# Republican-era works (1912–1949) are historical sources and stay (category 近代); their modern editors'
+# paratext (内容提要, 整理说明, 点校说明 …) is dropped at ingest.  An automatic screen (years after 1940, modern
+# units and institutions, annotation apparatus, numbered footnotes, a modern editor's source references in a
+# reconstructed lost work) flags the rest; `keep: true` overrules it where it is wrong.  Excluded books are
+# recorded in the generated catalogs with their reason and never enter the corpus store.
+
+sources:
+  jicheng:
+    # --- 当代出版物
+    R000: {exclude: 当代出版物, note: 中医名词术语大辞典}
+    R001: {exclude: 当代出版物, note: 中草药学（现代教材）}
+    R002: {exclude: 当代出版物, note: 中医方剂名称由来（现代读物，剂量折算为克）}
+    R003: {exclude: 当代出版物, note: 内科宝典（现代临床手册）}
+    D077: {exclude: 当代出版物, note: 古代房中秘方（现代汇编）}
+    K017: {exclude: 当代出版物, note: 子午流注说难（1956）}
+    K201: {exclude: 当代出版物, note: 中国民间刺血术}
+    L010: {exclude: 当代出版物, note: 中医眼科备读}
+    O114: {exclude: 当代出版物, note: 澄空民间中医学精髓论}
+    O116: {exclude: 当代出版物, note: 黄帝内经十二经脉秘与应用（今人著）}
+    O124: {exclude: 当代出版物, note: 复泰草堂医论选（2006，民间中医网）}
+    O126: {exclude: 当代出版物, note: 虚损病类钩沉（任继学）}
+    O129: {exclude: 当代出版物, note: 给初学中医的十封信}
+    C052: {exclude: 当代出版物, note: 服食导饵（现代营养学读物）}
+    G046: {exclude: 当代出版物, note: 女科宝鉴（中西医临床参考书，含西医疗法）}
+    N071: {exclude: 当代出版物, note: 名师垂教（1980年代医学院师生病例讨论）}
+    N084: {exclude: 当代出版物, note: 近现代名医验案类编（现代汇编）}
+    N088: {exclude: 当代出版物, note: 章次公医案中附子的应用（今人论文）}
+    F027: {exclude: 当代出版物, note: 辅行诀脏腑用药法要（1974年后始据抄本整理刊行，来历存疑）}
+    # --- 当代名医著作
+    B043: {exclude: 当代名医著作, note: 程门雪（1902—1972）伤寒辨要笺记}
+    G045: {exclude: 当代名医著作, note: 程门雪遗稿}
+    M116: {exclude: 当代名医著作, note: 脉学阐微（邢锡波）}
+    N062: {exclude: 当代名医著作, note: 干祖望医案}
+    N072: {exclude: 当代名医著作, note: 陈友芝医案}
+    N073: {exclude: 当代名医著作, note: 范中林六经辨证医案}
+    N075: {exclude: 当代名医著作, note: 吴佩衡医案}
+    N076: {exclude: 当代名医著作, note: 姚贞白医案}
+    N077: {exclude: 当代名医著作, note: 医学经验录·医案（熊惠生，文中记1965年事）}
+    N080: {exclude: 当代名医著作, note: 章次公医案}
+    N082: {exclude: 当代名医著作, note: 赵绍琴临证验案精选}
+    N083: {exclude: 当代名医著作, note: 戴丽三医疗经验选}
+    N085: {exclude: 当代名医著作, note: 三十年临证经验集}
+    N089: {exclude: 当代名医著作, note: 何世英医案}
+    N090: {exclude: 当代名医著作, note: 余无言医案（余无言 1900—1963）}
+    O125: {exclude: 当代名医著作, note: 中医临证经验与方法（朱进忠）}
+    P0600: {exclude: 当代名医著作, note: 名老中医之路}
+    P0601: {exclude: 当代名医著作, note: 名老中医之路}
+    P0602: {exclude: 当代名医著作, note: 名老中医之路}
+    P0700: {exclude: 当代名医著作, note: 名老中医经验集}
+    P0701: {exclude: 当代名医著作, note: 名老中医经验集}
+    P0702: {exclude: 当代名医著作, note: 名老中医经验集}
+    P0703: {exclude: 当代名医著作, note: 名老中医经验集}
+    P0704: {exclude: 当代名医著作, note: 名老中医经验集}
+    # --- 现代校注本 (annotated, translated, reconstructed)
+    F006: {exclude: 现代校注本, note: 傅青主男科重编考释（今人考释）}
+    B017: {exclude: 现代校注本, note: 重订通俗伤寒论（徐荣斋1950年代重订本，夹“荣斋按”近百条）}
+    B044: {exclude: 现代校注本, note: 伤寒恒论（唐步祺阐释本，郑论与阐释交错）}
+    E008: {exclude: 现代校注本, note: 六因条辨（带现代注释）}
+    H031: {exclude: 现代校注本, note: 万氏秘传片玉心书（带现代校注）}
+    N066: {exclude: 现代校注本, note: 许氏医案（网络重校本，夹注今人按语）}
+    N087: {exclude: 现代校注本, note: 湖岳村叟医案（今人整理本，剂量改为克）}
+    C000a: {exclude: 现代校注本, note: 神农本草经复古辑本（民国以后辑本）}
+    C001: {exclude: 现代校注本, note: 吴普本草（现代辑校本，附《御览》出处与今人按语）}
+    C002: {exclude: 现代校注本, note: 本草经集注（现代辑校本）}
+    C003: {exclude: 现代校注本, note: 新修本草（现代辑复本）}
+    C004: {exclude: 现代校注本, note: 食疗本草（现代辑本，条下注〔證〕等出处）}
+    C005: {exclude: 现代校注本, note: 海药本草（现代辑校本，条下注《大观》《政和》页码）}
+    C006: {exclude: 现代校注本, note: 本草图经（现代辑校本）}
+    D001: {exclude: 现代校注本, note: 名医别录（现代辑校本，附《本经》原文）}
+    D053: {exclude: 现代校注本, note: 集验方（现代辑校本，方下注《外台》出处）}
+    D058: {exclude: 现代校注本, note: 小品方（现代辑校本）}
+    # --- flagged by the screen, but historical: keep
+    G043: {keep: true, note: 校注妇人良方为明·薛己校注（1547），非现代校注本}
+    O042: {keep: true, note: 校注医醇剩义无现代注释}
+    N063: {keep: true, note: 经方实验录（曹颖甫、姜佐景，1937），民国著作}
+    O106: {keep: true, note: 皇汉医学（汤本求真1927，1930年中译），民国译本}
+    O122: {keep: true, note: 士谔医话（陆士谔，1944年卒），民国著作；今人内容提要不入库}
+    O123: {keep: true, note: 止园医话（罗止园，1930年代），民国著作；今人内容提要不入库}
+
+  wikisource:
+    通俗傷寒論: {exclude: 现代校注本, note: 页面实为徐荣斋《重订通俗伤寒论》（1950年代）}
+    脈訣闡微: {exclude: 当代名医著作, note: 页面后半为邢锡波《脉学阐微》（陈士铎《脉诀阐微》另有笈成本）}
+    醫理真傳: {exclude: 现代校注本, note: 据唐步祺《郑钦安医书阐释》（1996）录入，含阐释}
+    婦人壽草: {exclude: 现代校注本, note: 今人据1986年日文校订本汉译（香月牛山原著1720年代）}
+
+# Titles excluded wherever they appear (normalised title keys), for the collections that copy one another.
+titles:
+  思考中医: 当代出版物
+  中医之钥: 当代出版物
+  李翰卿: 当代名医著作
+  李培生老中医经验集: 当代名医著作
+  重订通俗伤寒论: 现代校注本
+  黄帝内经十二经脉秘与应用: 当代出版物
+  桂林古本伤寒杂病论: 当代出版物
+  伤寒杂病论桂林古本: 当代出版物
+  名老中医之路: 当代名医著作
+  名老中医经验集: 当代名医著作
+  余无言: 当代名医著作            # 余无言（1900—1963）医案
+  热病衡正: 当代出版物            # 柴中元著，1984 年序
+  脉诀阐微脉学阐微: 当代名医著作  # 与邢锡波《脉学阐微》合为一文件（《脉诀阐微》另有笈成本）

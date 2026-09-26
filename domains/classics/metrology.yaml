@@ -1,0 +1,92 @@
+# 历代度量衡 — historical metrology for reading the doses of the classics.
+#
+# The gram and millilitre values are ranges from the scholarship on excavated weights and measures; they differ
+# between studies and are given to read and compare historical texts. They are not dosage guidance.
+
+notice: 以下为历史计量换算的学术估值（各家考证不一），仅用于阅读与比较古籍剂量，不构成任何用药剂量建议。
+
+# units → value in 两 (weights) or 升 (volumes); 分 changed meaning over time (see `fen`)
+weight_units: {斤: 16, 两: 1, 铢: 0.041667, 钱: 0.1, 厘: 0.001}
+volume_units: {斛: 100, 斗: 10, 升: 1, 合: 0.1, 勺: 0.01}
+count_units: [枚, 个, 片, 茎, 握, 把, 条, 具, 只, 粒, 颗, 瓣, 段, 节]
+nonstandard: [方寸匕, 钱匕, 刀圭, 一字, 鸡子大, 弹丸大, 梧子大, 梧桐子大, 小豆大, 麻子大, 如指大]
+
+periods:
+  - id: qin_han
+    label: 秦汉
+    start: -221
+    end: 220
+    liang_g: [13.8, 15.6]
+    sheng_ml: [198, 200]
+    fen: 0.25
+    sources:
+      - 吴承洛《中国度量衡史》（1937）：东汉一斤约222.7克（一两约13.9克）
+      - 东汉光和二年大司农铜权：一斤约250克（一两约15.6克；柯雪帆等，1983）
+      - 东汉铜量实测：一升约200毫升
+    note: 一斤十六两，一两二十四铢；汉代医方“分”多作份数解
+
+  - id: wei_jin_nanbei
+    label: 魏晋南北朝
+    start: 220
+    end: 581
+    liang_g: [13.8, 15.6]
+    sheng_ml: [198, 200]
+    fen: 0.25
+    sources:
+      - 陶弘景《本草经集注》序例：“古秤惟有铢两而无分名，今则以十黍为一铢，六铢为一分，四分成一两，十六两为一斤”
+    note: 医方沿用古秤；陶弘景定六铢为一分、四分为一两
+
+  - id: sui_tang
+    label: 隋唐五代
+    start: 581
+    end: 960
+    liang_g: [13.8, 15.6]
+    sheng_ml: [198, 200]
+    fen: 0.25
+    sources:
+      - 《唐六典》：“凡积秬黍为度量权衡者，调钟律、测晷景、合汤药及冠冕之制则用之，内外官司悉用大者”（合药用小制）
+    note: 大小制并行，大两约为小两三倍；合汤药用小制，与汉制相当
+
+  - id: song_jin_yuan
+    label: 宋金元
+    start: 960
+    end: 1368
+    liang_g: [37.3, 41.3]
+    sheng_ml: null
+    fen: 0.01
+    sources:
+      - 吴承洛《中国度量衡史》：宋元一斤约596.8克（一两约37.3克）；宋代权衡实物多在一两40克上下
+    note: 一两十钱，一钱十分；宋人多用煮散，每服数钱
+
+  - id: ming
+    label: 明
+    start: 1368
+    end: 1644
+    liang_g: [36.9, 37.3]
+    sheng_ml: null
+    fen: 0.01
+    sources:
+      - 吴承洛《中国度量衡史》：明一斤约596.8克（一两约37.3克）
+    note: 一两十钱，一钱十分
+
+  - id: qing
+    label: 清
+    start: 1644
+    end: 1912
+    liang_g: [37.3, 37.3]
+    sheng_ml: null
+    fen: 0.01
+    sources:
+      - 清库平两约37.3克（光绪三十四年定库平一两为37.301克）
+    note: 一两十钱，一钱十分
+
+  - id: minguo
+    label: 民国
+    start: 1912
+    end: 1950
+    liang_g: [31.25, 37.3]
+    sheng_ml: null
+    fen: 0.01
+    sources:
+      - 1929年《度量衡法》市制：一市斤500克、十六两制下一两31.25克；旧库平两约37.3克并行
+    note: 新旧制并行；1979年起中药处方一钱通行折为3克（参考）

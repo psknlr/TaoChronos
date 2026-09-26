@@ -1,0 +1,46 @@
+# Formulas (方剂). `nature` is a curated reference label (thermal direction:
+# +1 warm/hot, -1 cool/cold, 0 balanced) used by contradiction detection; it is
+# domain background, not corpus evidence. `name_herbs` lists herbs that the
+# formula NAME itself enumerates (composition inferred from name, low confidence).
+category: formula
+entries:
+  - {term: 桂枝汤, nature: 1}
+  - {term: 麻黄汤, nature: 1}
+  - {term: 葛根汤, nature: 1}
+  - {term: 大青龙汤, nature: 1}
+  - {term: 小青龙汤, nature: 1}
+  - {term: 麻黄杏仁甘草石膏汤, aliases: [麻杏石甘汤], nature: -1, name_herbs: [麻黄, 杏仁, 甘草, 石膏], name_complete: true}
+  - {term: 五苓散, nature: 1}
+  - {term: 小柴胡汤, nature: 0}
+  - {term: 抵当汤, nature: 0}
+  - {term: 白虎汤, nature: -1}
+  - {term: 白虎加人参汤, nature: -1}
+  - {term: 大承气汤, nature: -1}
+  - {term: 茵陈蒿汤, nature: -1}
+  - {term: 麻黄细辛附子汤, nature: 1, name_herbs: [麻黄, 细辛, 附子], name_complete: true}
+  - {term: 四逆汤, nature: 1}
+  - {term: 理中丸, aliases: [理中汤], nature: 1}
+  - {term: 黄芪桂枝五物汤, aliases: [黄耆桂枝五物汤], nature: 1, name_herbs: [黄芪, 桂枝], name_complete: false}
+  - {term: 肾气丸, aliases: [八味肾气丸, 金匮肾气丸, 八味丸], nature: 1}
+  - {term: 栝楼薤白白酒汤, nature: 1, name_herbs: [栝楼实, 薤白], name_complete: false}
+  - {term: 苓桂术甘汤, aliases: [茯苓桂枝白术甘草汤], nature: 1, name_herbs: [茯苓, 桂枝, 白术, 甘草], name_complete: true}
+  - {term: 薏苡附子败酱散, nature: 0, name_herbs: [薏苡仁, 附子, 败酱], name_complete: true}
+  - {term: 大黄牡丹汤, nature: -1, name_herbs: [大黄, 牡丹皮], name_complete: false}
+  - {term: 犀角地黄汤, nature: -1}
+  - {term: 四君子汤, nature: 1}
+  - {term: 二陈汤, nature: 1}
+  - {term: 逍遥散, nature: 0}
+  - {term: 藿香正气散, nature: 1}
+  - {term: 六味地黄丸, aliases: [地黄丸, 六味丸], nature: 0}
+  - {term: 补中益气汤, nature: 1}
+  - {term: 越鞠丸, aliases: [芎术丸], nature: 0}
+  - {term: 透脓散, nature: 1}
+  - {term: 左归丸, nature: 0}
+  - {term: 右归丸, nature: 1}
+  - {term: 达原饮, nature: 0}
+  - {term: 五味消毒饮, nature: -1}
+  - {term: 银翘散, nature: -1}
+  - {term: 清营汤, nature: -1}
+  - {term: 三仁汤, nature: 0}
+  - {term: 血府逐瘀汤, nature: 0}
+  - {term: 补阳还五汤, nature: 1}

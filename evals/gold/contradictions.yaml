@@ -1,0 +1,17 @@
+# ContradictionEval — passage pairs with the relation a careful reader would assign.
+#   contradiction: a real doctrinal conflict · conditional: reconciled by conditions (劳倦, 体质, 时令…)
+#   apparent: philological (variant) or semantic (same name, different sense) — not a doctrinal conflict
+#   support: the same doctrine · unrelated: no conflict (hard negatives)
+pairs:
+  - {a: shanghanlun.c176, b: shanghanlun.c176, label: apparent, note: 表里字差 — 白虎汤 cannot treat 里寒}
+  - {a: zhubing.05.xiaoke, b: shanghanlun.c071, label: apparent, note: 消渴 as a disease vs as a symptom}
+  - {a: jinkui.13.xiaoke1, b: shanghanlun.c071, label: apparent, note: 消渴·小便反多 (disease) vs 消渴·小便不利 (symptom)}
+  - {a: jinkui.05.zhongfeng, b: yilin_gaicuo.bansui, label: contradiction, note: 半身不遂 from 风 vs from 元气亏损}
+  - {a: suwen.005.siji, b: wenyilun.xu, label: contradiction, note: 温病 from 冬伤于寒 vs 温疫 from 异气}
+  - {a: suwen.074.zhize, b: piwei.rezhong, label: conditional, note: 热者寒之 vs 温能除大热 (劳倦)}
+  - {a: suwen.043, b: zhubing.01.fengshibi, label: support, note: 风寒湿三气杂至合而为痹}
+  - {a: jinkui.01.zhiweibing, b: nanjing.077, label: support, note: 治未病：见肝之病，知肝传脾}
+  - {a: waike_zhengzong.yuanwei, b: yizong_jinjian.yongju, label: support, note: transcription}
+  - {a: shanghanlun.c013, b: shanghanlun.c035, label: unrelated, note: different presentations, different formulas}
+  - {a: jingyue.tan, b: danxi.tan, label: unrelated, note: different aspects of 痰}
+  - {a: shanghanlun.c002, b: shanghanlun.c003, label: unrelated, note: 中风 and 伤寒 defined side by side}

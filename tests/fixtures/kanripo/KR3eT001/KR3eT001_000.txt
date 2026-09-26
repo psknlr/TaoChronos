@@ -1,0 +1,10 @@
+# -*- mode: mandoku-view; -*-
+#+TITLE: 測試方書
+#+PROPERTY: ID KR3eT001
+#+PROPERTY: BASEEDITION WYG
+#+PROPERTY: JUAN 提要
+<pb:KR3eT001_WYG_000-1a>¶
+欽定四庫全書¶
+　　提要¶
+　　　　臣等謹案測試方書一卷舊題張某撰其書論消¶
+　　　　渇之治頗詳乾隆四十六年九月恭校上¶

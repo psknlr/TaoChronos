@@ -1,0 +1,12 @@
+# Corrections to the TCM-Ancient-Books catalog (keyed by file name without .txt).  The same codes are used by
+# tcmoc, which copies these files (see tcmoc-overrides.yaml).
+
+615-外经微言:
+  authors: [陈士铎]
+  notes_text: 题“岐伯天师传、陈士铎述”，实为陈士铎所撰；按作者他书年代断代
+
+631-医法圆通:
+  authors: [郑寿全]
+  composition: [1874, 1874]
+  dynasty: 清
+  notes_text: 郑寿全（钦安）撰，同治十三年（1874）刊

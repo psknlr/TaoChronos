@@ -1,0 +1,38 @@
+# Treatment principles (治则) and methods (治法). `nature` is the thermal
+# direction of the intervention: +1 warming/heating, -1 cooling/clearing.
+category: treatment_principle
+entries:
+  - {term: 治未病, aliases: [上工治未病]}
+  - {term: 治病求本, aliases: [治病必求于本]}
+  - {term: 实脾, aliases: [先实脾, 当先实脾, 先实其脾气]}
+  - {term: 温药和之, aliases: [以温药和之, 当以温药和之], nature: 1}
+  - {term: 利小便, aliases: [利其小便, 但当利其小便]}
+  - {term: 甘温除热, aliases: [], nature: 1}
+  - {term: 甘寒泻火, aliases: [甘寒以泻其火], nature: -1}
+  - {term: 辛甘温, aliases: [辛甘温之剂], nature: 1}
+  - {term: 补中, aliases: [补其中]}
+  - {term: 升阳, aliases: [升其阳]}
+  - {term: 苦寒, aliases: [苦寒之药], nature: -1}
+  - {term: 辛凉, aliases: [辛凉平剂], nature: -1}
+  - {term: 养肺, aliases: []}
+  - {term: 降火, aliases: [], nature: -1}
+  - {term: 生血, aliases: []}
+  - {term: 清气, aliases: [才可清气], nature: -1}
+  - {term: 透热转气, aliases: [], nature: -1}
+  - {term: 凉血散血, aliases: [], nature: -1}
+  - {term: 阴中求阳, aliases: [于阴中求阳]}
+  - {term: 阳中求阴, aliases: [于阳中求阴]}
+  - {term: 除陈气, aliases: []}
+  - {term: 消瘀血, aliases: []}
+  - {term: 解郁, aliases: [解诸郁]}
+  - {term: 排脓, aliases: [排脓止痛]}
+  - {term: 补虚, aliases: [补不足, 补虚安中]}
+  - {term: 益气, aliases: []}
+  - {term: 上焦宜轻, aliases: [治上焦如羽]}
+  - {term: 中焦宜平, aliases: [治中焦如衡]}
+  - {term: 下焦宜重, aliases: [治下焦如权]}
+  - {term: 发汗, category: treatment_method, aliases: [发表出汗, 汗之, 强发其汗, 发其汗, 发表], nature: 1}
+  - {term: 下法, category: treatment_method, aliases: [下之, 可下之, 可下]}
+  - {term: 温法, category: treatment_method, aliases: [温之, 急温之], nature: 1}
+  - {term: 润法, category: treatment_method, aliases: [润之]}
+  - {term: 清法, category: treatment_method, aliases: [清之], nature: -1}

@@ -1,0 +1,40 @@
+# "Existing understanding" used by the novelty check. A hypothesis that merely
+# restates a textbook finding is a (valuable) rediscovery, not a novel finding.
+# Author-curated summaries of widely taught positions; not exhaustive.
+findings:
+  - id: known.liuwei_from_shenqi
+    statement: 六味地黄丸（钱乙地黄丸）系由《金匮》肾气丸去桂枝、附子而成。
+    terms: [六味地黄丸, 肾气丸, 桂枝, 附子, 地黄, 山药, 山茱萸]
+  - id: known.zuogui_yougui
+    statement: 张介宾左归丸、右归丸由六味地黄丸、肾气丸化裁而来，去“三泻”而纯补。
+    terms: [左归丸, 右归丸, 六味地黄丸, 肾气丸, 泽泻, 茯苓, 牡丹皮]
+  - id: known.sanxiao
+    statement: 消渴后世分上消、中消、下消（三消），分属肺、胃、肾。
+    terms: [消渴, 三消, 上消, 中消, 下消, 消中, 肾消]
+  - id: known.xiaoke_yongju
+    statement: 消渴日久易并发痈疽。
+    terms: [消渴, 痈疽, 痈]
+  - id: known.wenbing_school
+    statement: 明清温病学派突破“伤寒”框架，建立卫气营血与三焦辨证。
+    terms: [温病, 伤寒, 卫分, 气分, 营分, 血分, 三焦]
+  - id: known.liqi_yiqi
+    statement: 吴又可提出温疫由“异气”（戾气）自口鼻而入，伏于膜原。
+    terms: [温疫, 异气, 膜原]
+  - id: known.ganwen_chure
+    statement: 李杲提出“甘温除热”，以补中益气汤治气虚发热。
+    terms: [甘温除热, 补中益气汤, 发热, 脾胃气伤]
+  - id: known.bansui_qixu
+    statement: 王清任认为半身不遂本于元气亏损、气虚血瘀，创补阳还五汤。
+    terms: [半身不遂, 元气亏损, 补阳还五汤, 瘀血]
+  - id: known.tan_baibing
+    statement: 朱丹溪强调“百病多兼痰”，痰的概念由痰饮扩展为广义致病因素。
+    terms: [痰, 痰饮, 百病]
+  - id: known.bi_fenghanshi
+    statement: 痹证由风寒湿三气杂至而成，分行痹、痛痹、著痹。
+    terms: [痹, 风, 寒, 湿, 行痹, 痛痹, 著痹]
+  - id: known.jinyinhua_chuang
+    statement: 金银花（忍冬）后世以清热解毒、治疮痈为要药（李时珍已指出古今用法之变）。
+    terms: [金银花, 疮, 痈, 忍冬]
+  - id: known.qinghao_nue
+    statement: 《肘后备急方》以青蒿绞汁治疟，被视为青蒿素研究的文献线索。
+    terms: [青蒿, 疟]

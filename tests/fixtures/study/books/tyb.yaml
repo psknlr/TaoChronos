@@ -1,0 +1,6 @@
+- book: tyb
+  defaults: {kind: materia_medica}
+  passages:
+    - {id: tyb.fuzi, locator: {volume: 卷三, section: 附子}, text: 附子，气热，味大辛。纯阳。辛甘温，大热，有大毒。入手少阳三焦、命门之剂。}
+    - {id: tyb.chaihu, locator: {volume: 卷三, section: 柴胡}, text: 柴胡，气平，味苦。升也，阴中之阳。入足少阳经、厥阴经。}
+    - {id: tyb.shanyao, locator: {volume: 卷三, section: 山药}, text: 山药，气温，味甘平，无毒。入手太阴经。}
