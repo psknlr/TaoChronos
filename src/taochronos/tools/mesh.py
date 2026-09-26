@@ -457,6 +457,21 @@ def _study_transmission(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(res, int(a.get("items", 20)))
 
 
+def _study_layers(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).layers(a.get("work"), books=a.get("books"), k=int(a.get("k", 2)), features=a.get("features", "frequent"))
+    return _brief({k: v for k, v in res.items() if k not in ("segments", "feature_names")}, int(a.get("items", 20)))
+
+
+def _study_dating(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).dating(a.get("work"), books=a.get("books"))
+    return _brief({k: v for k, v in res.items() if k != "chapters"}, int(a.get("items", 20)))
+
+
+def _study_authorship(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).authorship(a.get("text"), book=a.get("book"), chapter=a.get("chapter"), candidates=a.get("candidates"))
+    return _brief(res, int(a.get("items", 20)))
+
+
 def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
     reg = ToolRegistry()
     specs = [
@@ -567,6 +582,21 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  obj({"work": S, "clauses": I, "max_candidates": I, "items": I}, ["work"]), _study_transmission,
                  family="study", permission="classics:read", expensive=True,
                  returns="works with their reuse types, periods, channels, first work of each type"),
+        ToolSpec("study.layers", "文本地层: style layers of a work's chapters (most frequent characters, or function characters), "
+                 "the split tested by permutation, membership probabilities, layer boundaries and change points in reading "
+                 "order, chapters that stand apart (Burrows' Delta).  Style shows that chapters differ, not when or by whom.",
+                 obj({"work": S, "books": {"type": "array", "items": S}, "k": I, "features": S, "items": I}), _study_layers,
+                 family="study", permission="classics:read", expensive=True,
+                 returns="layers with chapters and distinctive features, boundaries, change points, outliers"),
+        ToolSpec("study.dating", "断代证据: chapter by chapter, the works cited in the main text (terminus post quem), vocabulary the "
+                 "rest of the corpus attests only long after the work's date (where unusually frequent), the taboo "
+                 "characters of the witness (its edition).",
+                 obj({"work": S, "books": {"type": "array", "items": S}, "items": I}), _study_dating, family="study",
+                 permission="classics:read", expensive=True, returns="chapters later than the nominal date with their evidence"),
+        ToolSpec("study.authorship", "作者归属: Burrows' Delta of a text (or a book, or one of its chapters) against candidate works.",
+                 obj({"text": S, "book": S, "chapter": S, "candidates": {"type": "array", "items": S}, "items": I}),
+                 _study_authorship, family="study", permission="classics:read", expensive=True,
+                 returns="candidates ranked by delta with the margin to the next"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

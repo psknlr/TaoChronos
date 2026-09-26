@@ -35,6 +35,7 @@ class EvalContext:
         self.quick = quick
         self._default: Harness | None = None
         self._pipeline: tuple[Harness, Any] | None = None
+        self._corpus: Harness | None | bool = False
 
     # ------------------------------------------------------------- harnesses
     def harness(self, profile: str = "full-discovery", **kw: Any) -> Harness:
@@ -47,6 +48,19 @@ class EvalContext:
         if self._default is None:
             self._default = self.harness()
         return self._default
+
+    def corpus_harness(self) -> Harness | None:
+        """A harness on the full corpus when its store exists (in the data directory given, or the default one) —
+        the real-corpus parts of some suites; None otherwise, and those parts are skipped."""
+        if self._corpus is False:
+            from ..config import data_dir as default_data_dir
+
+            self._corpus = None
+            for data in (self.data_dir, default_data_dir(self.home)):
+                if (Path(data) / "corpus" / "tcm.sqlite").exists():
+                    self._corpus = Harness.from_profile("full-corpus", home=self.home, data_dir=data, store=MemoryEventStore())
+                    break
+        return self._corpus  # type: ignore[return-value]
 
     def gold(self, name: str) -> dict[str, Any]:
         path = self.home / "evals" / "gold" / f"{name}.yaml"

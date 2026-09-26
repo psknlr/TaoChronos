@@ -102,6 +102,18 @@ class StemmaStudy:
                 out += [[b] for b in ids]
         return sorted(out, key=lambda ids: ids[0])
 
+    def base_witness(self, work: str | None = None, books: list[str] | None = None) -> list[str]:
+        """The book ids of the witness most of whose text the other witnesses carry (a plain text rather than a
+        commentary that embeds it; among near-equals the longest) — the base of collation and stratigraphy."""
+        sets = self.witness_sets(work, books)
+        if len(sets) == 1:
+            return sets[0]
+        texts = {i: self._witness_text("X", ids).text for i, ids in enumerate(sets[: len(SIGLA)])}
+        texts = {i: t for i, t in texts.items() if len(t) >= 20} or {0: ""}
+        if len(texts) == 1:
+            return sets[next(iter(texts))]
+        return sets[_choose_base(texts)]
+
     def _rows(self, book_id: str, chapter: re.Pattern[str] | None = None) -> list[tuple[str, str, str, str]]:
         store = getattr(self.b.corpus, "store", None)
         out: list[tuple[str, str, str, str]] = []
@@ -157,17 +169,14 @@ class StemmaStudy:
         texts = {s: t for s, t in texts.items() if len(t.text) >= 20}
         if len(texts) < 2:
             raise ValueError("fewer than two witnesses with text to collate")
-        # the base: a named witness, else the one most of whose text the others carry
+        # the base: a named witness, else the plain text of the whole work (see _choose_base)
         shingles = {s: _shingles(t.text) for s, t in texts.items()}
-        carried = {s: sum(len(shingles[s] & shingles[o]) / max(1, len(shingles[s])) for o in texts if o != s) / (len(texts) - 1)
-                   for s in texts}
         if base:
             base_sig = next((s for s, ids in ids_of.items() if base in ids or base == s), None)
             if base_sig is None or base_sig not in texts:
                 raise ValueError(f"the base {base!r} is not one of the witnesses")
         else:
-            top = max(carried.values())
-            base_sig = max((s for s in texts if carried[s] >= top - 0.05), key=lambda s: (len(texts[s].text), -ord(s[0])))
+            base_sig = _choose_base({s: t.text for s, t in texts.items()}, shingles)
         base_text = self._witness_text(base_sig, ids_of[base_sig], pattern) if pattern else texts[base_sig]
         if len(base_text.text) > max_chars:
             base_text = _truncate(base_text, max_chars)
@@ -350,6 +359,26 @@ class StemmaStudy:
     def tei(self, work: str | None = None, **kw: Any) -> str:
         c = self.collate(work, **kw)
         return apparatus(c["base"], c["units"], c["witnesses"], title=f"{c['witnesses'][0].title}：计算校勘")
+
+
+def _choose_base(texts: dict[Any, str], shingles: dict[Any, set[str]] | None = None) -> Any:
+    """The witness that is the plain text of the whole work.  Excerpts are set aside first — a witness that carries
+    less than half as much of the others' text as the fullest one does (补养宣导法 beside 诸病源候论, a partial
+    transcription) — then the one most of whose text the others carry wins (a plain text, not a commentary that
+    embeds it); among near-equals, the longest."""
+    sh = shingles or {k: _shingles(t) for k, t in texts.items()}
+    keys = list(texts)
+    if len(keys) == 1:
+        return keys[0]
+
+    def share(a: Any, b: Any) -> float:  # the part of a's text that b carries
+        return len(sh[a] & sh[b]) / max(1, len(sh[a]))
+
+    carried = {k: sum(share(k, o) for o in keys if o != k) / (len(keys) - 1) for k in keys}
+    covers = {k: sum(share(o, k) for o in keys if o != k) / (len(keys) - 1) for k in keys}
+    whole = [k for k in keys if covers[k] >= 0.5 * max(covers.values())]
+    top = max(carried[k] for k in whole)
+    return max((k for k in whole if carried[k] >= top - 0.02), key=lambda k: (len(texts[k]), str(k)))
 
 
 def _present(u: VariantUnit) -> int:

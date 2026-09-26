@@ -1,7 +1,7 @@
 """TaoChronos-Eval: does the harness do what it claims?
 
 Suites: philology · claims · provenance · hallucination · contradiction · lineage · temporal ·
-anachronism · recovery · time_machine · source_rediscovery · ablations · collation · reuse.  Gold sets live in
+anachronism · recovery · time_machine · source_rediscovery · ablations · collation · reuse · stratigraphy.  Gold sets live in
 ``evals/gold`` (author-constructed for the demo corpus; see its README).
 """
 
@@ -15,7 +15,7 @@ from .ablations import ablations
 from .base import EvalContext, SuiteResult
 from .rediscovery import source_rediscovery, time_machine
 from .suites import anachronism, claims, contradiction, hallucination, lineage, philology, provenance, recovery, temporal
-from .textual import collation, reuse
+from .textual import collation, reuse, stratigraphy
 
 SUITES: dict[str, Callable[[EvalContext], SuiteResult]] = {
     "philology": philology,
@@ -32,9 +32,10 @@ SUITES: dict[str, Callable[[EvalContext], SuiteResult]] = {
     "ablations": ablations,
     "collation": collation,
     "reuse": reuse,
+    "stratigraphy": stratigraphy,
 }
 QUICK = ("philology", "claims", "hallucination", "contradiction", "lineage", "temporal", "anachronism", "source_rediscovery",
-         "collation", "reuse")
+         "collation", "reuse", "stratigraphy")
 
 
 def run_suites(names: list[str] | None = None, *, home: Any = None, data_dir: Any = None, quick: bool = False) -> dict[str, Any]:

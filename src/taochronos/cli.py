@@ -704,7 +704,7 @@ def cmd_eval(args: argparse.Namespace) -> None:
 
 
 STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
-         "variants", "stemma", "edition", "tei", "reuse", "transmission")
+         "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -725,7 +725,7 @@ def cmd_study(args: argparse.Namespace) -> None:
         raise SystemExit(f"taochronos study {what}: give {needs[what]}")
     if what in ("concordance", "reuse") and not (target or args.passage):
         raise SystemExit(f"taochronos study {what}: give a text or --passage <id>")
-    if what in ("stemma", "edition", "tei", "transmission") and not (target or args.books):
+    if what in ("stemma", "edition", "tei", "transmission", "layers", "dating") and not (target or args.books):
         raise SystemExit(f"taochronos study {what}: give a work (key, title or book id) or --books")
     notice = ""
     collation = {k: v for k, v in (("books", args.books), ("base", args.base), ("chapter", args.chapter)) if v}
@@ -753,6 +753,15 @@ def cmd_study(args: argparse.Namespace) -> None:
             res = study.reuse(target, args.passage, semantic=not args.no_semantic, limit=args.limit or 300)
     elif what == "transmission":
         res = study.transmission(target, clauses=args.clauses)
+    elif what == "layers":
+        res = study.layers(target, books=args.books, k=args.k, features=args.features)
+    elif what == "dating":
+        res = study.dating(target, books=args.books)
+    elif what == "authorship":
+        if not (target or args.book):
+            raise SystemExit("taochronos study authorship: give a text or --book <id> [--chapter <篇名>]")
+        res = study.authorship(None if args.book else target, book=args.book, chapter=args.chapter_name,
+                               candidates=args.candidate or None)
     elif what == "concordance":
         res = study.concordance(target, args.passage, min_coverage=args.min_coverage, limit=args.limit or 300)
     elif what == "formula":
@@ -900,7 +909,8 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--format", default="json", choices=["json", "cypher", "graphml", "prov"])
             sp.add_argument("-o", "--output")
     sp = sub.add_parser("study", help="治学: 经文互见·集注, 方源考, 药性源流, 术语源流, 避讳断代, 引书网络, 学习卡片, 阅读门径, 研究数据集, "
-                                      "版本谱系 (variants/stemma/edition/tei), 语义复用 (reuse), 思想传播 (transmission)")
+                                      "版本谱系 (variants/stemma/edition/tei), 语义复用 (reuse), 思想传播 (transmission), "
+                                      "文本地层 (layers/dating/authorship)")
     sp.set_defaults(fn=cmd_study)
     sp.add_argument("what", choices=STUDY)
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
@@ -929,6 +939,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--against-passage", help="reuse: … in this passage")
     sp.add_argument("--no-semantic", action="store_true", help="reuse: shared wording only (no concept co-occurrence)")
     sp.add_argument("--clauses", type=int, default=40, help="transmission: clauses of the work to trace")
+    sp.add_argument("--k", type=int, default=2, help="layers: number of layers to test")
+    sp.add_argument("--features", choices=["frequent", "function"], default="frequent",
+                    help="layers: the 100 most frequent characters, or function characters only (less sensitive to topic)")
+    sp.add_argument("--chapter-name", help="authorship: one chapter (篇) of --book")
+    sp.add_argument("--candidate", action="append", help="authorship: a candidate work or book id (repeatable)")
     sp.add_argument("--json", action="store_true", help="print the full result as JSON")
     sp.add_argument("-o", "--output", help="write to this file (dataset: this directory)")
     sp = add("codemode", cmd_codemode, "run a Research Code Mode program against the SDK")

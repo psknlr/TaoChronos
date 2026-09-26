@@ -1,4 +1,5 @@
-"""TaoChronos-Eval for computational philology: collation and stemma on artificial traditions; reuse types.
+"""TaoChronos-Eval for computational philology: collation and stemma on artificial traditions; reuse types;
+stratigraphy on restyled composites (and, when the full corpus is present, on the 素问 and the 伤寒论).
 
 A real text (the demo corpus, normalised) is copied down a known stemma — two branches, three generations, one
 witness contaminated from the other branch — with every copy adding known changes (substitutions, omissions,
@@ -12,6 +13,7 @@ from __future__ import annotations
 
 import bisect
 import random
+import re
 from typing import Any
 
 from ..plugins.classics.collation import (
@@ -30,6 +32,7 @@ from ..plugins.classics.collation import (
     splits,
 )
 from ..plugins.classics.intertext import IntertextAnalyzer
+from ..science import stratigraphy as strata
 from ..science.semantic_reuse import LABELS, MODES
 from .base import EvalContext, SuiteResult, accuracy, confusion, macro_f1, prf
 
@@ -183,4 +186,103 @@ def reuse(ctx: EvalContext) -> SuiteResult:
         "and rephrasings that study.reuse finds in the demo corpus"])
 
 
-__all__ = ["collation", "reuse"]
+# a later author's habits: function characters exchanged for others of the same use (也→矣, 而→则 …)
+RESTYLE = {"也": "矣耳", "而": "则乃", "于": "乎诸", "其": "厥彼", "者": "所", "以": "用因", "则": "即便", "若": "如倘",
+           "此": "是斯", "之": "诸", "故": "是", "乃": "即"}
+YUNQI = ("天元纪", "五运行", "六微旨", "气交变", "五常政", "六元正纪", "至真要")
+
+
+def _composite(clauses: list[str], seed: int, chunk: int, rate: float, length: int = 16000
+               ) -> tuple[list[str], list[int], list[int]]:
+    """A text of ``length`` characters drawn clause by clause from the corpus, in chunks; blocks of chunks are rewritten
+    with a second author's function characters, so the layers differ in style only (their content is drawn from the
+    same clauses, at random)."""
+    rng = random.Random(seed)
+    stream: list[str] = []
+    while sum(map(len, stream)) < length:
+        stream.append(rng.choice(clauses))
+    text = "".join(stream)
+    chunks = [text[i: i + chunk] for i in range(0, len(text) - chunk + 1, chunk)]
+    truth, bounds = [], []
+    layer, left = 0, rng.randint(4, 8)
+    for i, c in enumerate(chunks):
+        if left == 0:
+            layer, left = 1 - layer, rng.randint(4, 8)
+            bounds.append(i)
+        left -= 1
+        truth.append(layer)
+        if layer == 1:
+            chunks[i] = "".join(rng.choice(RESTYLE[ch]) if ch in RESTYLE and rng.random() < rate else ch for ch in c)
+    return chunks, truth, bounds
+
+
+def stratigraphy(ctx: EvalContext) -> SuiteResult:
+    """StratigraphyEval: layers and change points on composites whose layers differ only in function-character habits,
+    attribution of held-out chunks; with the full corpus, the 运气七篇 of the 素问 (layer, change points, late
+    vocabulary) and the chapters of the 伤寒论 ascribed to 王叔和 (辨脉法, 平脉法: nearest 脉经)."""
+    h = ctx.default
+    normalize = h.pack.variants.normalize_text
+    clauses = [c for p in h.corpus.passages() for c in (han_only(x)[0] for x in re.split(r"[。；！？]", normalize(p.text))) if len(c) >= 4]
+    agg: dict[str, list[float]] = {k: [] for k in ("layer_accuracy", "split_supported", "change_point_recall",
+                                                   "change_point_precision", "boundary_recall", "boundary_precision",
+                                                   "attribution_accuracy")}
+    details: list[dict[str, Any]] = []
+    seeds = (1, 2, 3) if ctx.quick else (1, 2, 3, 4, 5)
+    for seed in seeds:
+        chunks, truth, bounds = _composite(clauses, seed, 400, 0.5)
+        whole = strata.profile("".join(chunks), strata.FUNCTION_CHARS)
+        names = [f for f, v in zip(strata.FUNCTION_CHARS, whole) if v >= 1.0]
+        z, _, _ = strata.zscores([strata.profile(c, names, root=True) for c in chunks])
+        res = strata.layers(z, [float(len(c)) for c in chunks], k=2)
+        acc = sum(1 for a, b in zip(res["labels"], truth) if a == b) / len(truth)
+        found = [c["at"] for c in strata.change_points(z, window=4)]
+        hit = sum(1 for b in bounds if any(abs(b - f) <= 1 for f in found))
+        good = sum(1 for f in found if any(abs(b - f) <= 1 for b in bounds))
+        runs = strata.boundaries(res["labels"])
+        agg["boundary_recall"].append(sum(1 for b in bounds if any(abs(b - f) <= 1 for f in runs)) / len(bounds) if bounds else 1.0)
+        agg["boundary_precision"].append(sum(1 for f in runs if any(abs(b - f) <= 1 for b in bounds)) / len(runs) if runs else 1.0)
+        # attribution: profiles from the even chunks of each layer, the odd ones attributed
+        pools = {lab: "".join(c for i, (c, t) in enumerate(zip(chunks, truth)) if t == lab and i % 2 == 0) for lab in (0, 1)}
+        cands = {f"L{lab}": strata.profile(t, names) for lab, t in pools.items()}
+        tests = [(c, t) for i, (c, t) in enumerate(zip(chunks, truth)) if i % 2 == 1]
+        right = sum(1 for c, t in tests if strata.attribute(strata.profile(c, names), cands)[0]["candidate"] == f"L{t}")
+        agg["layer_accuracy"].append(max(acc, 1 - acc))
+        agg["split_supported"].append(1.0 if res["supported"] else 0.0)
+        agg["change_point_recall"].append(hit / len(bounds) if bounds else 1.0)
+        agg["change_point_precision"].append(good / len(found) if found else 1.0)
+        agg["attribution_accuracy"].append(right / len(tests) if tests else 0.0)
+        details.append({"seed": seed, "chunks": len(chunks), "boundaries": bounds, "change_points": found, "layer_runs": runs,
+                        "p": res["p"]})
+    metrics: dict[str, Any] = {k: round(sum(v) / len(v), 4) for k, v in agg.items()}
+    metrics["composites"] = len(seeds)
+    notes = ["composites: 16 000 characters drawn clause by clause from the demo corpus, in 400-character chunks, "
+             "blocks of 4–8 chunks rewritten with a second author's function characters (half of them), so the layers "
+             "differ in style only; function-character profiles; a change point counts within one chunk of a boundary"]
+    corpus = None if ctx.quick else ctx.corpus_harness()
+    if corpus is not None:
+        study = corpus.capabilities.get("study")
+        lay = study.layers("素问")
+        minor = {c["chapter"] for c in lay["chapters"] if c["layer"] != 0}
+        yq = [c["chapter"] for c in lay["chapters"] if any(k in normalize(c["chapter"]) for k in YUNQI)]
+        in_minor = [c for c in yq if c in minor]
+        cps = [(normalize(c["before"]), normalize(c["after"])) for c in lay["change_points"]]
+        edges = sum(1 for before, after in (("标本病传论", "天元纪大论"), ("至真要大论", "著至教论"))
+                    if any(before in b and after in a for b, a in cps))
+        dat = study.dating("素问")
+        late = [r["chapter"] for r in dat["later_than_nominal"]]
+        auth = {ch: study.authorship(book="jc_b000", chapter=ch, candidates=["脉经", "金匮要略", "针灸甲乙经", "千金翼方",
+                                                                             "外台秘要", "肘后备急方"])["candidates"][0]["candidate"]
+                for ch in ("辨脈法", "平脈法")}
+        metrics["real"] = {"yunqi_in_minor_layer": f"{len(in_minor)}/{len(yq)}",
+                           "yunqi_share_of_minor_layer": round(len(in_minor) / len(minor), 3) if minor else None,
+                           "yunqi_boundaries_found": f"{edges}/2",
+                           "late_vocabulary_chapters_yunqi": f"{sum(1 for c in late if any(k in normalize(c) for k in YUNQI))}/{len(late)}",
+                           "shuhe_chapters_nearest_maijing": f"{sum(1 for v in auth.values() if v == '脉经')}/{len(auth)}"}
+        details.append({"real": {"minor_layer": sorted(minor), "change_points": lay["change_points"], "late": late,
+                                 "authorship": auth}})
+        notes.append("real: the 素问 (四库 witness) — the 运气七篇 are held to be a later addition; the 伤寒论's 辨脉法 and "
+                     "平脉法 are ascribed to 王叔和 (compared with 脉经 and other early works)")
+    return SuiteResult("stratigraphy", metrics, details, notes=notes)
+
+
+__all__ = ["collation", "reuse", "stratigraphy"]

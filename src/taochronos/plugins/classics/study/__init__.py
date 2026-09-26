@@ -9,6 +9,8 @@ variants / stemma  版本谱系: multi-witness collation of a work (or of a pass
 edition            distances, a neighbour-joining stemma, shared-reading groups, contamination; one edition's profile
 reuse              语义复用: a passage's reuses across the corpus, typed (直接引用 … 转述, 解释性改写, 引而驳之, 套语相似)
 transmission       思想传播: a work's reception — which later works carry it and how, by period, and through which works
+layers / dating    文本地层: style layers of a work's chapters, change points, outlying chapters; dating evidence per chapter
+authorship         (cited works, late vocabulary, taboo); Burrows' Delta against candidate authors
 formula            方源考: every written-out composition of a formula; original and current versions, 加减,
                    同名异方, 同方异名, dose ratios, doses in the measures of their time, 方歌
 herb               药性源流: 性味, 毒性, 归经, 升降浮沉, 主治 of a drug, book by book; the first statement of each
@@ -35,6 +37,7 @@ from .intertext import IntertextStudy
 from .learning import Learning, anki_tsv
 from .network import CitationNetwork
 from .stemma import StemmaStudy
+from .stratigraphy import StratigraphyStudy
 from .taboo import TabooStudy
 from .terms import TermStudy
 
@@ -53,6 +56,7 @@ class StudyService(StudyBase):
         self._learning = Learning(self, self._formulas, self._herbs, self._terms, self._network)
         self._stemma = StemmaStudy(self)
         self._intertext = IntertextStudy(self, self._concordance, self._stemma)
+        self._strata = StratigraphyStudy(self, self._stemma, self._taboo)
 
     @property
     def metrology(self) -> Any:
@@ -129,6 +133,18 @@ class StudyService(StudyBase):
     def transmission(self, work: str, **kw: Any) -> dict[str, Any]:
         """A work's reception: typed reuse of its clauses in later works, by period, with the channels."""
         return self._intertext.transmission(work, cache_dir=self.cache_dir(), **kw)
+
+    def layers(self, work: str | None = None, **kw: Any) -> dict[str, Any]:
+        """Style layers of a work's chapters, change points and outlying chapters."""
+        return self._strata.layers(work, **kw)
+
+    def dating(self, work: str | None = None, **kw: Any) -> dict[str, Any]:
+        """Dating evidence chapter by chapter: cited works, late vocabulary, taboo characters of the witness."""
+        return self._strata.dating(work, **kw)
+
+    def authorship(self, text: str | None = None, **kw: Any) -> dict[str, Any]:
+        """Burrows' Delta of a text (or a book, or one of its chapters) against candidate works."""
+        return self._strata.authorship(text, **kw)
 
     def _edition_floors(self, out: dict[str, Any]) -> None:
         """Each witness's lower date bound from its taboo characters (a witness in volumes: the latest)."""

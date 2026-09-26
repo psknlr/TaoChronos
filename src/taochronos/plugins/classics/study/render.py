@@ -324,9 +324,56 @@ def transmission(r: dict[str, Any]) -> list[str]:
     return out
 
 
+# ------------------------------------------------------------------ 文本地层
+def layers(r: dict[str, Any]) -> list[str]:
+    verdict = (f"分层成立（置换检验 p={r['p']}，解释方差 {r['r2']:.1%}，打乱特征后 {r['null_r2']:.1%}）" if r.get("supported")
+               else f"分层证据不足（p={r.get('p')}）")
+    out = [f"# 文本地层：{r.get('work', '')}", "", f"底本 {'+'.join(r.get('witness', []))}；特征 {r.get('features')}；"
+           f"{r.get('k')} 层：{verdict}。", "", "| 层 | 字数 | 占比 | 篇 | 区别性特征 |", "|---|---|---|---|---|"]
+    for L in r.get("layers", []):
+        feats = "，".join(f"{d['feature']}{'↑' if d['direction'] == 'more' else '↓'}" for d in L.get("distinctive", []))
+        out.append(f"| {L['layer']} | {L['chars']} | {L['share']:.0%} | {_q('、'.join(L['chapters']), 120)} | {feats} |")
+    if r.get("layer_boundaries"):
+        out += ["", "## 层间分界（阅读顺序）", ""] + [f"- {b['before']} ｜ {b['after']}（{b['from_layer']}→{b['to_layer']}）"
+                                              for b in r["layer_boundaries"]]
+    if r.get("change_points"):
+        out += ["", "## 文体突变点（置换检验）", ""] + [f"- {c['before']} ｜ {c['after']}：p={c['p']}（{c.get('method', '')}）"
+                                               for c in r["change_points"]]
+    if r.get("outliers"):
+        out += ["", "## 离群篇章（与全书其余部分的 Delta）", ""] + [f"- {c['chapter']}：z={c['z']}，属第 {c['layer']} 层"
+                                                        for c in r["outliers"][:12]]
+    out += ["", f"> {r.get('note', '')}"]
+    return out
+
+
+def dating(r: dict[str, Any]) -> list[str]:
+    nom = r.get("nominal") or []
+    out = [f"# 断代证据：{r.get('work', '')}", "", f"底本 {'+'.join(r.get('witness', []))}；著录年代 "
+           f"{f'{int(nom[0])}–{int(nom[1])}' if nom else '未定'}；晚出用语判据：他书始见晚于著录下限 {int(r.get('margin', 0))} 年。", ""]
+    for e in r.get("witness_evidence", []):
+        out.append(f"- 版本：{e['what']}，不早于 {int(e['after'])} 年")
+    out += ["", "## 可能晚于著录年代的篇章", "", "| 篇 | 引书下限 | 晚出用语下限 | 晚出用语 |", "|---|---|---|---|"]
+    for x in r.get("later_than_nominal", []):
+        out.append(f"| {x['chapter']} | {int(x['after']) if x.get('after') is not None else ''} | "
+                   f"{int(x['vocabulary_after']) if x.get('vocabulary_after') is not None else ''} | {'、'.join(x['terms'])} |")
+    cited = [(c["chapter"], e) for c in r.get("chapters", []) for e in c.get("evidence", []) if e["kind"] == "citation"]
+    if cited:
+        out += ["", "## 正文引书", ""] + [f"- {ch}：{e['what']} → {e['target']}（{int(e['after'])}）" for ch, e in cited[:30]]
+    out += ["", f"> {r.get('note', '')}"]
+    return out
+
+
+def authorship(r: dict[str, Any]) -> list[str]:
+    out = [f"# 作者归属：{r.get('text', '')}", "", f"{r.get('characters', 0)} 字，以虚字频率计 Burrows' Delta（越小越近）。", "",
+           "| 候选 | Delta | 与下一名之差 | 候选字数 |", "|---|---|---|---|"]
+    out += [f"| {c['candidate']} | {c['delta']} | {c['margin'] if c['margin'] is not None else ''} | {c.get('characters', '')} |"
+            for c in r.get("candidates", [])]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
 PAGES = {"concordance": concordance, "formula": formula, "herb": herb, "term": term, "taboo": taboo, "citations": citations,
          "cards": cards, "reading": reading, "variants": variants, "stemma": stemma, "edition": edition, "reuse": reuse,
-         "transmission": transmission}
+         "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship}
 
 
 def markdown(kind: str, result: dict[str, Any], signature: dict[str, Any], notice: str = "") -> str:
