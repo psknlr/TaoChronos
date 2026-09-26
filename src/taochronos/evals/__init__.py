@@ -1,7 +1,8 @@
 """TaoChronos-Eval: does the harness do what it claims?
 
 Suites: philology · claims · provenance · hallucination · contradiction · lineage · temporal ·
-anachronism · recovery · time_machine · source_rediscovery · ablations · collation · reuse · stratigraphy · cases · argument · senses · fragments.  Gold sets live in
+anachronism · recovery · time_machine · source_rediscovery · ablations · collation · reuse · stratigraphy · cases · argument · senses · fragments ·
+punctuation.  Gold sets live in
 ``evals/gold`` (author-constructed for the demo corpus; see its README).
 """
 
@@ -15,7 +16,7 @@ from .ablations import ablations
 from .base import EvalContext, SuiteResult
 from .rediscovery import source_rediscovery, time_machine
 from .suites import anachronism, claims, contradiction, hallucination, lineage, philology, provenance, recovery, temporal
-from .textual import argument, cases, collation, fragments, reuse, senses, stratigraphy
+from .textual import argument, cases, collation, fragments, punctuation, reuse, senses, stratigraphy
 
 SUITES: dict[str, Callable[[EvalContext], SuiteResult]] = {
     "philology": philology,
@@ -37,9 +38,10 @@ SUITES: dict[str, Callable[[EvalContext], SuiteResult]] = {
     "argument": argument,
     "senses": senses,
     "fragments": fragments,
+    "punctuation": punctuation,
 }
 QUICK = ("philology", "claims", "hallucination", "contradiction", "lineage", "temporal", "anachronism", "source_rediscovery",
-         "collation", "reuse", "stratigraphy", "cases", "argument", "senses", "fragments")
+         "collation", "reuse", "stratigraphy", "cases", "argument", "senses", "fragments", "punctuation")
 
 
 def run_suites(names: list[str] | None = None, *, home: Any = None, data_dir: Any = None, quick: bool = False) -> dict[str, Any]:

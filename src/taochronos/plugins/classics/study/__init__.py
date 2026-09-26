@@ -17,6 +17,8 @@ trajectories       response, outcome); the sequences, transitions and outcome as
 argument           医理论证: a passage's reasoning as a graph of marked steps; a work's way of reasoning, compared
 senses             语义演变: a term's senses by period, the date its meaning shifted, candidate senses the curation lacks
 fragments          佚书辑佚: a lost work's fragments gathered from the books that quote it, merged and ordered by volume
+punctuate          句读: marks for 白文 from a model learned on the store's punctuated texts (characters never change),
+                   measured against the editors on held-out works
 formula            方源考: every written-out composition of a formula; original and current versions, 加减,
                    同名异方, 同方异名, dose ratios, doses in the measures of their time, 方歌
 herb               药性源流: 性味, 毒性, 归经, 升降浮沉, 主治 of a drug, book by book; the first statement of each
@@ -47,6 +49,7 @@ from .senses import SenseStudy
 from .intertext import IntertextStudy
 from .learning import Learning, anki_tsv
 from .network import CitationNetwork
+from .punctuation import PunctuationStudy
 from .stemma import StemmaStudy
 from .stratigraphy import StratigraphyStudy
 from .taboo import TabooStudy
@@ -74,6 +77,7 @@ class StudyService(StudyBase):
         self._senses = SenseStudy(self)
         self._fragments = FragmentStudy(self)
         self._witnesses = WitnessStudy(self, self._stemma)
+        self._punct = PunctuationStudy(self)
 
     @property
     def metrology(self) -> Any:
@@ -205,6 +209,11 @@ class StudyService(StudyBase):
         for f in out["fragments"]:
             f.pop("_han", None)
         return out
+
+    def punctuate(self, text: str | None = None, passage_id: str | None = None, **kw: Any) -> dict[str, Any]:
+        """句读: a text (or a passage) punctuated by the model learned from the store's punctuated texts — marks
+        only, every character kept; a punctuated input is stripped, punctuated again and compared with its editors."""
+        return self._punct.run(text, passage_id, **kw)
 
     def _edition_floors(self, out: dict[str, Any]) -> None:
         """Each witness's lower date bound from its taboo characters (a witness in volumes: the latest)."""

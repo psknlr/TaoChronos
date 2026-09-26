@@ -507,10 +507,55 @@ def fragments(r: dict[str, Any]) -> list[str]:
     return out + ["", f"> {r.get('note', '')}"]
 
 
+def _scores(label: str, sc: dict[str, Any] | None) -> str:
+    if not sc:
+        return f"| {label} | — | — | — | — | — |"
+    return (f"| {label} | {sc['boundary_p']:.1%} | {sc['boundary_r']:.1%} | {sc['boundary_f1']:.1%} | {sc['sentence_f1']:.1%} | "
+            f"{sc['mark_type_accuracy']:.1%} |")
+
+
+def punctuate(r: dict[str, Any]) -> list[str]:
+    head = r.get("unpunctuated") or r.get("input") or ""
+    out = [f"# 句读：{_q(head, 30)}", ""]
+    if r.get("passage"):
+        out += ["**原文**：" + _cite(r["passage"], 80), ""]
+    out += ["## 机器句读", "", "> " + (r.get("punctuated") or "").replace("\n", "\n> "), "",
+            f"插入标点 {r.get('inserted', 0)} 处；原字保留：{'是（只插入标点，未改动任何字符）' if r.get('preserved') else '否——请报告此错误'}。"]
+    review = r.get("review") or []
+    if review:
+        doubtful = [x for x in review if x["kind"] == "doubtful"]
+        possible = [x for x in review if x["kind"] == "possible"]
+        out += ["", f"## 待复核（接近判定阈值：{len(doubtful)} 处断得勉强，{len(possible)} 处几乎要断）", "",
+                "| 位置 | 类型 | 标点 | 概率 | 上下文（▲ 为断点） |", "|---|---|---|---|---|"]
+        for x in review[:40]:
+            out.append(f"| {x['at']} | {'断得勉强' if x['kind'] == 'doubtful' else '可能漏断'} | {x['mark']} | {x['p']:.2f} | {_q(x.get('context', ''), 40)} |")
+    head_row = ["| | 断点精确率 | 断点召回率 | 断点 F1 | 句末 F1 | 标点类型准确率 |", "|---|---|---|---|---|---|"]
+    if r.get("against_editors"):
+        out += ["", "## 与编者句读对照（输入原有标点：去掉后重断，再与原标点比较）", ""] + head_row
+        out += [_scores("本模型", r["against_editors"]), _scores("规则基线", r.get("baseline_rules"))]
+    m = r.get("measured")
+    if m:
+        out += ["", f"## 模型的留出评测（{m['works']} 部著作、{m['books']} 种录本、{m['characters']:,} 字，训练时整部留出）", ""] + head_row
+        out += [_scores("本模型", m["model"]), _scores("规则基线", m["rules"]),
+                _scores("本模型（兼用句、读两类标点的文本）", (m.get("typed") or {}).get("model")),
+                "", f"保字率 {m.get('preservation_rate', 0):.0%}（去标点重断后逐字核对）。"]
+    bw = r.get("measured_baiwen")
+    if bw:
+        out += ["", f"## 真实白文上的评测（{len(bw['works'])} 部留出著作的四库白文，与其点校本的标点经对齐比较）", ""] + head_row
+        out += [_scores("本模型", bw["model"]), _scores("规则基线", bw["rules"])]
+    info = r.get("model") or {}
+    out += ["", f"模型 {info.get('version', '')}：训练 {info.get('passages', 0):,} 段 / {info.get('characters', 0):,} 字；"
+            f"断点阈值 {info.get('threshold')}，句末阈值 {info.get('threshold_sentence')}。", "", f"> {r.get('method', '')}"]
+    if r.get("note"):
+        out.append(f"> {r['note']}")
+    return out
+
+
 PAGES = {"concordance": concordance, "formula": formula, "herb": herb, "term": term, "taboo": taboo, "citations": citations,
          "cards": cards, "reading": reading, "variants": variants, "stemma": stemma, "edition": edition, "reuse": reuse,
          "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship, "cases": cases,
-         "trajectories": trajectories, "argument": argument, "senses": senses, "fragments": fragments, "witnesses": witnesses}
+         "trajectories": trajectories, "argument": argument, "senses": senses, "fragments": fragments, "witnesses": witnesses,
+         "punctuate": punctuate}
 
 
 def markdown(kind: str, result: dict[str, Any], signature: dict[str, Any], notice: str = "") -> str:

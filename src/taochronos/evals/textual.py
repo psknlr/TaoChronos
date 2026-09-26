@@ -505,6 +505,85 @@ def fragments(ctx: EvalContext) -> SuiteResult:
     return SuiteResult("fragments", metrics, details, notes=notes)
 
 
+def punctuation(ctx: EvalContext) -> SuiteResult:
+    """PunctuationEval (句读): the punctuated texts are the gold — their marks are stripped and the model's gaps scored
+    against the editors' (boundary P/R/F1, sentence F1, the kind of mark), beside the rule segmenter.  On the demo
+    corpus, works held out in four folds; with the full corpus, the store's model (whole works held out of training)
+    on a sample of the held-out works, and on real 白文 — the 四库 transcriptions of held-out works, scored against
+    the editors' marks carried over from their punctuated transcriptions by alignment.  The character preservation
+    rate is the share of punctuated outputs whose characters are exactly the input's."""
+    from ..plugins.classics.segment import Segmenter, is_unpunctuated
+    from ..plugins.classics.study.punctuation import (PunctuationModel, gaps, model_labels, rule_labels, score,
+                                                        strip_marks)
+
+    h = ctx.default
+    normalize = h.pack.variants.normalize_text
+    books = h.corpus.books
+    unit = lambda p: books[p.book_id].work or p.book_id  # noqa: E731
+    passages = [p for p in h.corpus.passages() if p.kind in ("text", "formula", "materia_medica") and not is_unpunctuated(p.text)]
+    works = sorted({unit(p) for p in passages})
+    seg = Segmenter(h.pack.lexicon)
+    gold: list[int] = []
+    pred: list[int] = []
+    rules: list[int] = []
+    preserved = checked = 0
+    folds = 4
+    for f in range(folds):
+        test = {w for k, w in enumerate(works) if k % folds == f}
+        model = PunctuationModel().train([normalize(p.text) for p in passages if unit(p) not in test], lexicon=h.pack.lexicon)
+        for p in passages:
+            if unit(p) not in test:
+                continue
+            chars, labels = gaps(normalize(p.text))
+            if len(chars) < 2:
+                continue
+            gold += labels
+            pred += model_labels(model, chars)
+            rules += rule_labels(seg, chars)
+            preserved += int(model.punctuate(strip_marks(p.text), normalize)["preserved"])
+            checked += 1
+    sm, sr = score(gold, pred), score(gold, rules)
+    metrics: dict[str, Any] = {
+        "boundary_f1": sm["boundary_f1"], "boundary_p": sm["boundary_p"], "boundary_r": sm["boundary_r"],
+        "sentence_f1": sm["sentence_f1"], "mark_type_accuracy": sm["mark_type_accuracy"],
+        "rules_boundary_f1": sr["boundary_f1"], "rules_sentence_f1": sr["sentence_f1"],
+        "preservation_rate": round(preserved / checked, 4) if checked else None, "gaps": sm["gaps"]}
+    notes = [f"demo corpus: {len(works)} works in {folds} folds, each punctuated by a model trained on the other folds "
+             "(a few thousand characters of training text: the scores show the method works, not how well it works)"]
+    details: list[dict[str, Any]] = []
+    big = None if ctx.quick else ctx.corpus_harness()
+    if big is not None:
+        st = big.capabilities.get("study")
+        model = st._punct.model()
+        held = st._punct.evaluate(model)
+        typed = held["typed"]
+        baiwen = st._punct.against_baiwen(model)
+        metrics["real"] = {
+            "works": held["works"], "books": held["books"], "characters": held["characters"],
+            "boundary_f1": held["model"]["boundary_f1"], "boundary_p": held["model"]["boundary_p"],
+            "boundary_r": held["model"]["boundary_r"], "sentence_f1_typed": typed["model"]["sentence_f1"],
+            "mark_type_accuracy_typed": typed["model"]["mark_type_accuracy"],
+            "rules_boundary_f1": held["rules"]["boundary_f1"], "rules_sentence_f1_typed": typed["rules"]["sentence_f1"],
+            "preservation_rate": held["preservation_rate"], "training_characters": model.info.get("characters")}
+        if baiwen.get("model"):
+            typed_b = baiwen.get("typed") or {}
+            metrics["baiwen"] = {"works": len(baiwen["works"]), "skipped": len(baiwen["skipped"]), "gaps": baiwen["model"]["gaps"],
+                                 "boundary_f1": baiwen["model"]["boundary_f1"], "boundary_p": baiwen["model"]["boundary_p"],
+                                 "boundary_r": baiwen["model"]["boundary_r"], "rules_boundary_f1": baiwen["rules"]["boundary_f1"],
+                                 "sentence_f1_typed": (typed_b.get("model") or {}).get("sentence_f1"),
+                                 "rules_sentence_f1_typed": (typed_b.get("rules") or {}).get("sentence_f1")}
+            details += [{"work": w["work"], "baiwen": w["baiwen"], "punctuated": w["punctuated"], "aligned": w["aligned"],
+                         "boundary_f1": w["model"]["boundary_f1"], "rules_boundary_f1": w["rules"]["boundary_f1"],
+                         "sentence_f1": w["model"]["sentence_f1"] if w["tells_sentences"] else None}
+                        for w in baiwen["works"]] + [{"skipped": x} for x in baiwen["skipped"]]
+        notes.append("real: the store's model, trained on the punctuated main text of the works not held out (every "
+                     "transcription of a held-out work is out); scored on a sample of the held-out works' passages. "
+                     "sentence F1 and mark type on the texts whose editors use both sentence and clause marks")
+        notes.append("baiwen: the 四库 白文 of held-out works punctuated by the model and scored against the editors' marks of "
+                     "their punctuated transcriptions, carried over by alignment (gaps inside aligned runs)")
+    return SuiteResult("punctuation", metrics, details, notes=notes)
+
+
 def _trigrams(s: str) -> set[str]:
     return {s[i: i + 3] for i in range(len(s) - 2)}
 
@@ -516,4 +595,4 @@ def _volume_number(label: str | None) -> int | None:
     return cn_number(m.group(0)) if m else None
 
 
-__all__ = ["argument", "cases", "collation", "fragments", "reuse", "senses", "stratigraphy"]
+__all__ = ["argument", "cases", "collation", "fragments", "punctuation", "reuse", "senses", "stratigraphy"]

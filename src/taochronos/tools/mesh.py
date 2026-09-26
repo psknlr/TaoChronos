@@ -504,6 +504,13 @@ def _study_witnesses(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(_study(ctx).witnesses(a["work"]), int(a.get("items", 20)))
 
 
+def _study_punctuate(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).punctuate(a.get("text"), a.get("passage_id"))
+    res.pop("marks", None)
+    res["model"] = {k: v for k, v in res.get("model", {}).items() if k != "held_out"}
+    return _brief(res, int(a.get("items", 12)), chars=int(a.get("chars", 1200)))
+
+
 def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
     reg = ToolRegistry()
     specs = [
@@ -659,6 +666,12 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "volume; with verify, checked against the work's surviving witnesses (and each quoting book's reliability).",
                  obj({"work": S, "verify": {"type": "boolean"}, "items": I}, ["work"]), _study_fragments, family="study",
                  permission="classics:read", expensive=True, returns="fragments with volume, topic and witnesses; verification"),
+        ToolSpec("study.punctuate", "句读: punctuate 白文 (a text or a passage) with the model learned from the store's punctuated "
+                 "texts — marks are only inserted, every character is kept (checked); gaps near the cut are listed for "
+                 "review; a punctuated input is stripped, punctuated again and scored against its editors. The model's "
+                 "held-out scores (whole works kept out of training) come with every result.",
+                 obj({"text": S, "passage_id": S, "items": I, "chars": I}), _study_punctuate, family="study",
+                 permission="classics:read", expensive=True, returns="punctuated text, preservation, review gaps, scores"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",
