@@ -75,12 +75,14 @@ class Periods:
         )
 
     def period_of(self, year: float | None) -> str | None:
-        if year is None:
+        """The analysis period of a year; years before the first period count in it, years after the last (the
+        modern apparatus of kept editions, 1950 on) belong to none."""
+        if year is None or year >= self.analysis[-1].end:
             return None
         for p in self.analysis:
             if p.contains(year):
                 return p.id
-        return self.analysis[0].id if year < self.analysis[0].start else self.analysis[-1].id
+        return self.analysis[0].id
 
     def dynasty_of(self, year: float | None) -> str | None:
         """The dynasty containing a year (the later one where dynasties overlap, e.g. 南宋 over 金)."""

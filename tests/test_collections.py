@@ -195,6 +195,31 @@ def test_note_layers_markers_added_chapters_and_page_images():
     assert rows[0]["locator"]["page"] == "3" and rows[0]["locator"]["image_uri"] == image
     assert rows[1]["extra"]["attribution"] == "唐·王冰次注" and "image_uri" not in rows[4]["locator"]
 
+
+def test_modern_apparatus_of_a_kept_document():
+    """唐步祺's 【阐释】 runs on until the next question or heading; an inline 荣斋按 note becomes commentary of its
+    layer; converted doses go to the metadata; the modern preface is dropped; an added section has its own layer."""
+    doc = Document(source="wikisource", code="測試", title="測試真傳", blocks=[
+        Block("heading", "火神立名之本（代序）", level=2), Block("para", "今人代序。"),
+        Block("heading", "卷二", level=2), Block("para", "问曰：头面畏寒者，何故？"), Block("para", "答曰：阳虚也。"),
+        Block("para", "【阐释】此答直断阳虚。"), Block("para", "笔者用建中汤。"), Block("para", "问曰：畏寒与恶风有别否？"),
+        Block("para", "熟地6克，山药15克。（荣斋按：此方为补肾之剂）"),
+        Block("heading", "新增一节", level=2), Block("para", "新增之文。")])
+    layer = lambda name, y: {"layer": name, "year": y}  # noqa: E731
+    entry = {"id": "ws_test", "composition": [1869, 1869], "dynasty": "清",
+             "paragraphs": [{"pattern": "^(?:问曰|答曰)", "block": True},
+                            {"pattern": "^【阐释】", **layer("今人阐释", [1987, 1996]), "block": True}],
+             "apparatus": [{"pattern": r"\d+克"}, {"pattern": "（荣斋按[：:][^（）]*）", **layer("今人按", [1955, 1956])}],
+             "drop_sections": ["^火神立名之本"], "heading_layers": [{"pattern": "^新增一节$", **layer("今人新增", [1955, 1956])}]}
+    rows = document_rows(doc, entry)
+    assert [(r["layer"], r["kind"], r["text"]) for r in rows] == [
+        ("正文", "text", "问曰：头面畏寒者，何故？"), ("正文", "text", "答曰：阳虚也。"),
+        ("今人阐释", "commentary", "【阐释】此答直断阳虚。"), ("今人阐释", "commentary", "笔者用建中汤。"),
+        ("正文", "text", "问曰：畏寒与恶风有别否？"), ("正文", "text", "熟地，山药。"),
+        ("今人按", "commentary", "（荣斋按：此方为补肾之剂）"), ("今人新增", "text", "新增之文。")]
+    assert rows[5]["extra"]["apparatus"] == ["6克", "15克"] and rows[6]["extra"]["anchor"] == rows[5]["id"]
+    assert rows[2]["y_start"] == 1987 and rows[0]["y_start"] == 1869
+
 # ------------------------------------------------------------------ policy
 def test_screen_excludes_contemporary_works_physicians_and_modern_editions():
     assert screen("某书", "文", [1956, 1956]).reason == CONTEMPORARY
@@ -211,7 +236,9 @@ def test_screen_excludes_contemporary_works_physicians_and_modern_editions():
 def test_reviewed_exclusions_by_code_and_by_title():
     assert EXCLUSIONS.decision("jicheng", "R000", "中医名词术语大辞典") == (CONTEMPORARY, False)
     assert EXCLUSIONS.decision("jicheng", "G045", "程门雪遗稿") == (CONTEMPORARY_PHYSICIAN, False)
-    assert EXCLUSIONS.decision("jicheng", "C004", "食疗本草") == (MODERN_EDITION, False)
+    # modern editions reviewed again and kept: their apparatus is separated at ingest (see test_modern_apparatus_*)
+    assert EXCLUSIONS.decision("jicheng", "C004", "食疗本草") == (None, True)
+    assert EXCLUSIONS.decision("hf-tcm-canon", "canon-伤寒论-0075", "重订通俗伤寒论") == (None, True)
     assert EXCLUSIONS.decision("jicheng", "G043", "校注妇人良方") == (None, True)  # 薛己 1547, not a modern edition
     assert EXCLUSIONS.decision("tcm-ancient-books", "123-思考中医", "思考中医") == (CONTEMPORARY, False)
     assert EXCLUSIONS.decision("wikisource", "傷寒論", "伤寒论") == (None, False)

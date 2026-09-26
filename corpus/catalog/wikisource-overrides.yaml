@@ -46,3 +46,33 @@
   composition: [1443, 1445]
   category: 方书
   notes_text: 朝鲜世宗（李祹）命金礼蒙、柳诚源、闵普和等据中国医书一百五十余种分门类编，1445年编成，1477年活字初刊；维基文库仅录凡例、引用诸书及部分卷次；所引宋元明医书原文可资辑佚与校勘
+
+# --- Modern editions kept at the user's request (see exclusions.yaml and plugins/classics/ingest/apparatus.py): the old
+# text is the main layer, the modern editor's work a layer of its own; copies of kept 笈成 books carry that book's work,
+# so the catalog recognises them as copies.
+醫理真傳:
+  title: 医理真传
+  authors: [郑寿全]
+  dynasty: 清
+  composition: [1869, 1869]
+  notes_text: 郑钦安原著（同治己巳，1869）；据唐步祺《郑钦安医书阐释》（巴蜀书社1996）中的《医理真传》录入：唐氏【阐释】及其后未标记的段落（至下一问答、方名或标题）单列为层；电子版序、代序、今人序与前言不入库；原文中（　）〔　〕为唐氏校记，照录
+  paragraphs:
+    - {pattern: '^(?:□|问曰|答曰|或问|用药意解|[^\s，。（]{2,12}(?:汤|散|丸|饮|丹|膏|方)$)', block: true}
+    - {pattern: '^【阐释】', layer: 唐步祺阐释, year: [1987, 1996], attribution: 唐步祺《医理真传阐释》（巴蜀书社）, block: true}
+  drop_sections: ['^火神立名之本', '^序$']
+
+婦人壽草:
+  title: 妇人寿草
+  authors: [香月牛山]
+  dynasty: 日本
+  composition: [1726, 1726]
+  category: 妇科
+  mixed: {layer: 今人汉译（据1986年小野正弘校订日文本）, year: [1986, 2010], attribution: 维基文库“一步两搭桥”整理汉译，后四卷删}
+  cites_work: [1726, 1726]
+  notes_text: 香月牛山撰于享保十一年（1726）；今人据1986年燎原书店小野正弘校订的日文铅字本汉译，文句为今人译文，整书按译文断代（在分析分期之外）
+
+通俗傷寒論:
+  work: jc:重订通俗伤寒论  # 页面实为徐荣斋重订本，即笈成 B017
+
+男科重編考釋:
+  work: jc:傅青主男科重编考释  # 即笈成 F006

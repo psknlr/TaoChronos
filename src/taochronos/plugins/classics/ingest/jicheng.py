@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any, Iterator
 
 from ..segment import split_long
+from .apparatus import ApparatusRule, Attacher, ParagraphRule, ParagraphState, cut
 from .kanripo import LayerSpec
 
 BLOCK_TAGS = ("p", "box", "zb", "sb", "jb", "dzb", "dsb", "djb", "wj", "book")
@@ -178,14 +179,18 @@ class Segment:
 
 
 class Inline:
-    """Render inline markup into layered segments (``main`` text, ``z`` 注, ``s`` 疏, ``drop``)."""
+    """Render inline markup into layered segments (``main`` text, ``z`` 注, ``s`` 疏, ``drop``).  The file name of a
+    figure (``[i]九宮八風圖\\pt1a1.bmp[/i]``) is recorded here and leaves the text once it is cut into passages
+    (:func:`unimaged`) — after, so that the cuts, and the passage ids, stay what they were; its caption stays."""
 
     TAG = re.compile(r"\[\[|\]\]|\[(/?)([a-z]+\d?)(?:\|[^\]]*)?\]")
+    IMAGE = re.compile(r"\\[A-Za-z0-9_.\-]+\.(?:bmp|jpe?g|gif|png|tiff?)", re.I)
 
     def __init__(self, nc: dict[str, NcEntry]) -> None:
         self.nc = nc
         self.gaiji: list[str] = []
         self.numbers: list[str] = []
+        self.images: list[str] = []
         self.unknown_tags: set[str] = set()
 
     def char(self, code: str) -> str:
@@ -213,6 +218,8 @@ class Inline:
         def emit(s: str) -> None:
             if not s:
                 return
+            if "\\" in s:
+                self.images.extend(m.group(0)[1:] for m in self.IMAGE.finditer(s))
             if "id" in stack:  # numbering added by later editors: kept for the locator, never in the text
                 self.numbers.append(s)
                 return
@@ -253,6 +260,11 @@ class Inline:
             self.unknown_tags.add(tag)
         emit(text[pos:])
         return out
+
+
+def unimaged(text: str) -> str:
+    """A passage without the file names of its figures (their captions stay)."""
+    return Inline.IMAGE.sub("", text) if "\\" in text else text
 
 
 # ------------------------------------------------------------------ blocks
@@ -378,6 +390,12 @@ class JichengSpec:
     section_layers: list[tuple[str, LayerSpec]] = field(default_factory=list)
     front_matter: LayerSpec | None = None  # paratext dating (undetermined, never earlier than the work)
     main_layer: str = "正文"
+    # the modern apparatus of a kept edition (see .apparatus)
+    paragraphs: list[ParagraphRule] = field(default_factory=list)
+    apparatus: list[ApparatusRule] = field(default_factory=list)
+    drop_sections: list[str] = field(default_factory=list)
+    heading_layers: list[tuple[re.Pattern[str], LayerSpec]] = field(default_factory=list)
+    own_sections: list[str] = field(default_factory=list)  # 序錄 … that are the author's own text, not paratext
 
 
 def _t(spec: JichengSpec, layer: LayerSpec | None, citation: tuple[int, int] | None, dynasty_of: Any) -> dict[str, Any]:
@@ -492,18 +510,21 @@ class JichengParser:
         front = False
         toc = False
         dropping: int | None = None  # level of a modern editor's section being skipped
+        state = ParagraphState(spec.paragraphs)
+        scoped: tuple[int, LayerSpec] | None = None  # a heading whose section is a later addition
+        attacher = Attacher()
         for block in blocks(body):
             inline = Inline(self.nc)
             if block.kind == "heading":
                 self.report["headings"] += 1
                 title_markup = block.text.split("|")[0] if not block.text.startswith("|") else block.text[1:]
                 segs = inline.render(title_markup)
-                title = "".join(s.text for s in segs if s.layer == "main").strip(FULL_SPACE + " ")
+                title = unimaged("".join(s.text for s in segs if s.layer == "main")).strip(FULL_SPACE + " ")
                 if not title:
                     continue
                 if dropping is not None and block.level <= dropping:
                     dropping = None
-                if MODERN_PARATEXT.match(title):
+                if MODERN_PARATEXT.match(title) or any(re.search(p, title) for p in spec.drop_sections):
                     dropping = block.level
                     self.report["modern_paratext"] = self.report.get("modern_paratext", 0) + 1
                     continue
@@ -512,8 +533,15 @@ class JichengParser:
                 for lvl in [k for k in heads if k >= block.level]:
                     del heads[lvl]
                 heads[block.level] = title
+                state.heading()
+                if scoped is not None and block.level <= scoped[0]:
+                    scoped = None
+                added = next((lay for pat, lay in spec.heading_layers if pat.search(title)), None)
+                if added is not None:
+                    scoped = (block.level, added)
                 # paratext: under a 序 / 跋 / 凡例 / 目錄 heading (at any enclosing level)
-                front = any(FRONT.search(h) and len(h) <= 20 for lvl, h in heads.items() if lvl <= 3)
+                front = any(FRONT.search(h) and len(h) <= 20 and not any(re.search(p, h) for p in spec.own_sections)
+                            for lvl, h in heads.items() if lvl <= 3)
                 toc = any(TOC.match(h) for h in heads.values())
                 if block.level <= min(heads):
                     chapter_layer = next((lay for pat, lay in spec.chapter_layers if re.search(pat, title)), None)
@@ -527,7 +555,7 @@ class JichengParser:
                 for seg in segs:
                     if seg.layer in ("z", "s") and seg.text.strip():
                         default = spec.z_layer if seg.layer == "z" else spec.s_layer
-                        for lay, body_text in self.split_note(seg.text, default):
+                        for lay, body_text in self.split_note(unimaged(seg.text), default):
                             if lay is not None and body_text.strip():
                                 self._row(rows, seq, "commentary", lay, body_text.strip(), self._loc(heads, None),
                                           {"on_heading": title})
@@ -540,10 +568,19 @@ class JichengParser:
             self.report["gaiji"] += len(inline.gaiji)
             self.report["unknown_tags"] = sorted(set(self.report["unknown_tags"]) | inline.unknown_tags)
             number = inline.numbers[0].strip(" .、．") if inline.numbers else None
+            rule = state.classify(block.text)
+            if rule is not None and rule.drop:  # a line of apparatus: into the metadata of its passage
+                plain = unimaged("".join(seg.text for seg in segs if seg.layer == "main")).strip(FULL_SPACE + " \n")
+                attacher.add(rows, [plain] if plain else [], self._loc(heads, None, number))
+                self.report["apparatus"] = self.report.get("apparatus", 0) + 1
+                continue
+            ruled = rule.layer if rule is not None else None  # the layer a paragraph rule gives (modern commentary …)
             kind = "toc" if toc else ("preface" if front else ("formula" if block.kind == "box" else "text"))
-            layer: LayerSpec | None = section_layer or chapter_layer
+            layer: LayerSpec | None = ruled or (scoped[1] if scoped else None) or section_layer or chapter_layer
             citation: tuple[int, int] | None = None
-            if front:
+            if ruled is not None:
+                kind = "toc" if toc else "commentary"
+            elif front:
                 layer = spec.front_matter
             elif spec.mixed is not None and layer is None:
                 layer, citation = spec.mixed, spec.cites or spec.composition
@@ -575,6 +612,12 @@ class JichengParser:
             if block.kind == "box":  # name, ingredients and preparation are separate lines of a prescription
                 joined = re.sub(r"\s*\n+\s*", FULL_SPACE, joined.strip())
             text = re.sub(r"\n+", "", joined).strip(FULL_SPACE + " \n")
+            dropped: list[str] = []
+            if spec.apparatus:
+                text, moved, dropped = cut(text, spec.apparatus)
+                commentary.extend(moved)
+                text = text.strip(FULL_SPACE + " ")
+                self.report["apparatus"] = self.report.get("apparatus", 0) + len(moved) + len(dropped)
             section = None
             if block.kind == "box":
                 bm = re.search(r"\[b\](.*?)\[/b\]", block.text)
@@ -588,21 +631,28 @@ class JichengParser:
                 extra["number"] = number
             if block.uncollated:
                 extra["collation_status"] = "unverified"
+            if inline.images:
+                extra["images"] = list(inline.images)
             first_id = None
+            before = len(rows)
             if text and text.strip("（）" + FULL_SPACE):
                 for s0, e0 in split_long(text):
                     chunk = text[s0:e0]
                     if chunk.strip("（）" + FULL_SPACE + " "):
-                        self._row(rows, seq, kind, layer, chunk, loc, extra, citation)
+                        self._row(rows, seq, kind, layer, unimaged(chunk) or "〔圖〕", loc, extra, citation)
                         first_id = first_id or rows[-1]["id"]
                         seq += 1
+            if len(rows) > before:
+                attacher.attach(rows[before], dropped)
+            else:
+                attacher.add(rows, dropped, loc)
             grouped: dict[str, tuple[LayerSpec, list[str]]] = {}
             for lay, body_text in commentary:
                 grouped.setdefault(lay.name, (lay, []))[1].append(body_text)
             for name, (lay, bodies) in grouped.items():
                 ctext = FULL_SPACE.join(bodies)
                 for s0, e0 in split_long(ctext):
-                    self._row(rows, seq, "commentary", lay, ctext[s0:e0], loc, {"anchor": first_id})
+                    self._row(rows, seq, "commentary", lay, unimaged(ctext[s0:e0]) or "〔圖〕", loc, {"anchor": first_id})
                     seq += 1
         if self.chronology is not None:
             self.date_prefaces(rows)

@@ -210,3 +210,66 @@ def test_book_block_closed_after_the_text_ends_at_the_first_tag():
     assert strip_book_block(raw).strip() == "<目錄>\n<篇名>正文\n內容：\n人身之脈 本乎榮衛"
     closed = "[book]\n書名：甲\n[/book]\n<篇名>乙"
     assert read_book_block(closed) == {"書名": "甲"} and strip_book_block(closed) == "\n<篇名>乙"
+
+
+def test_modern_apparatus_rules_separate_an_editors_work(tmp_path, pack, chron):
+    """A kept modern edition: the old text stays the main layer; the editor's commentary is a dated layer (a block
+    running on over unmarked paragraphs, one continued only while its modern punctuation lasts, one up to its
+    closing bracket), source lines and sigla go to the passage's metadata, the editor's own sections are dropped
+    and a section the editor added is a layer of its own; figure file names leave the text."""
+    text = "\n".join([
+        "[book]", "書名：測試恆論", "[/book]", "",
+        "[h2]凡例[/h2]", "今人凡例。", "",
+        "[h2]卷一[/h2]", "[h3]太陽篇[/h3]",
+        "[b]一、太陽之為病，脈浮。[/b][z]浮，輕按即得。[/z]原文1", "",
+        "【鄭論】　按此言太陽。", "",
+        "【闡釋】　本節為提綱。", "",
+        "闡釋續文，今人所述。", "",
+        "【鄭論】　又按。", "",
+        "[h3]丹砂[/h3]", "[u]《御覽》卷九百八十五[/u]", "",
+        "神農：甘。〔證〕", "",
+        "[i]九宮圖\\pt1a1.bmp[/i]", "",
+        "(1)某字原作某。", "",
+        "【榮齋按】今人按，某某。", "",
+        "續按，某某。", "",
+        "古文續。", "",
+        "〔補文開始", "",
+        "補文之中", "",
+        "補文結束〕", "",
+        "古文又續。", "",
+        "[h3]新增一節[/h3]", "（新增）", "", "新增之文。", ""])
+    path = tmp_path / "T901.txt"
+    path.write_text(text, encoding="utf-8")
+    modern = lambda name, y: {"layer": name, "year": y}  # noqa: E731
+    entry = {"id": "jc_t901", "code": "T901", "composition": [1894, 1894], "dynasty": "清",
+             "z_layer": modern("今人注", [1993, 1996]),
+             "paragraphs": [{"pattern": r"^(?:\[b\])?[一二三四五六七八九十百]+、|^【鄭論】", "block": True},
+                            {"pattern": "^【闡釋】", **modern("今人阐释", [1993, 1996]), "block": True},
+                            {"pattern": "^【榮齋按】", **modern("今人按", [1955, 1956]), "block": True, "while": "[，：]"},
+                            {"pattern": "^〔[^〕]*$", **modern("今人补入", [1950, 2010]), "block": True, "until": "〕"},
+                            {"pattern": r"^\[u\]《", "drop": True},
+                            {"pattern": r"^\(\d+\)", **modern("今人注释", [1950, 2010])}],
+             "apparatus": [{"pattern": r"原文\d+"}, {"pattern": "〔證〕"}, {"pattern": r"^\(\d+\)"}],
+             "drop_sections": ["^凡例$"],
+             "heading_layers": [{"pattern": "^新增一節$", **modern("今人新增", [1955, 1956])}]}
+    parser = JichengParser(jicheng_spec(entry), {}, pack.periods.dynasty_of, chron)
+    rows = parser.parse(path)
+    by = {r["text"]: r for r in rows}
+    assert not any("凡例" in r["text"] for r in rows)
+    first = by["一、太陽之為病，脈浮。"]
+    assert first["layer"] == "正文" and first["y_start"] == 1894 and first["extra"]["apparatus"] == ["原文1"]
+    note = next(r for r in rows if r["layer"] == "今人注")
+    assert note["kind"] == "commentary" and note["extra"]["anchor"] == first["id"] and note["temporal"]["dynasty"] == "当代"
+    assert by["【鄭論】　按此言太陽。"]["layer"] == by["【鄭論】　又按。"]["layer"] == "正文"
+    assert by["【闡釋】　本節為提綱。"]["layer"] == by["闡釋續文，今人所述。"]["layer"] == "今人阐释"
+    assert by["闡釋續文，今人所述。"]["kind"] == "commentary"
+    # a source line under a heading goes to the entry after it, a siglum closing a fragment to that fragment
+    assert by["神農：甘。"]["extra"]["apparatus"] == ["《御覽》卷九百八十五", "〔證〕"]
+    assert by["九宮圖"]["extra"]["images"] == ["pt1a1.bmp"]
+    assert by["某字原作某。"]["layer"] == "今人注释" and by["某字原作某。"]["extra"]["apparatus"] == ["(1)"]
+    assert by["【榮齋按】今人按，某某。"]["layer"] == by["續按，某某。"]["layer"] == "今人按"
+    assert by["古文續。"]["layer"] == "正文"  # no modern punctuation: the 1955 note has ended
+    assert {by[t]["layer"] for t in ("〔補文開始", "補文之中", "補文結束〕")} == {"今人补入"}
+    assert by["古文又續。"]["layer"] == "正文"
+    assert by["新增之文。"]["layer"] == by["（新增）"]["layer"] == "今人新增"
+    assert parser.report["modern_paratext"] == 1

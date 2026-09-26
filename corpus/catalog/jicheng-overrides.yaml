@@ -66,11 +66,23 @@ C000: {composition: [25, 220], dynasty: 东汉, attribution: compiled, work: she
 C000a: {composition: [25, 220], dynasty: 东汉, attribution: compiled, work: shennong, category: 本草, authors: [佚名（托名神农）], modern: false,
         notes_text: 民国辑本（辑本为民国时整理，原文年代按本经计）}
 C000b: {composition: [25, 220], dynasty: 东汉, attribution: compiled, work: shennong, category: 本草, authors: [佚名（托名神农）], notes_text: 孙星衍辑本摘录}
-C001: {composition: [220, 265], dynasty: 三国·魏, attribution: compiled, work: wupu_bencao, authors: [吴普], notes_text: 清人自《太平御览》等辑出}
-C002: {composition: [480, 500], dynasty: 南朝·梁, attribution: compiled, work: bencao_jizhu, authors: [陶弘景], notes_text: 辑本；本经、别录与陶注未分}
-C003: {composition: [659, 659], work: xinxiu_bencao, authors: [苏敬 等]}
-C004: {composition: [701, 741], work: shiliao_bencao, authors: [孟诜, 张鼎]}
-C005: {composition: [907, 925], work: haiyao_bencao, authors: [李珣]}
+C001: {composition: [220, 265], dynasty: 三国·魏, attribution: compiled, work: wupu_bencao, authors: [吴普],
+       notes_text: 今人辑校本（自《太平御览》等辑出）；辑者所注出处移入元数据，辑者按语单列为层,
+       paragraphs: [{pattern: '^\[u\]《', drop: true},
+                    {pattern: '^\[u\]按[：:]', layer: 今人辑校按语, year: [1950, 2010], attribution: 今人辑校者（笈成未署名）}]}
+C002: {composition: [480, 500], dynasty: 南朝·梁, attribution: compiled, work: bencao_jizhu, authors: [陶弘景],
+       notes_text: 今人辑校本；本经、别录与陶注未分；辑者所注《新修》《大观》《政和》出处移入元数据,
+       own_sections: ['^序錄[上下]$'],
+       apparatus: [{pattern: '（(?:(?:敦煌(?:卷子)?本)?《(?:新修|大觀|政和|證類|千金|千金翼|外台|外臺|醫心方|御覽|綱目|嘉祐|開寶|圖經)》[^（）《》]{0,16}[，、；]?)+）'},
+                   {pattern: '(?:大觀》)?(?:[一二三四五六七八九十百○〇]+頁，)?卷[一二三四五六七八九十百廿○〇]+，《政和》[一二三四五六七八九十百○〇、]*頁?）?'},
+                   {pattern: '（?(?:(?:敦煌(?:卷子)?本)?《(?:新修|大觀|政和)》(?:第?[一二三四五六七八九十百廿○〇、]+[卷頁]?|卷[一二三四五六七八九十百廿○〇]*)?[，、；]?)+）?'}]}
+C003: {composition: [659, 659], work: xinxiu_bencao, authors: [苏敬 等], notes_text: 今人辑复本（据残卷与《证类本草》等辑复）；〔谨案〕为原书唐臣按语，诸药“本经/别录”性味标注为辑者据朱墨书所作}
+C004: {composition: [701, 741], work: shiliao_bencao, authors: [孟诜, 张鼎],
+       notes_text: 今人辑本；辑者所注出处代号（〔證〕证类本草、〔嘉〕嘉祐本草、〔心〕医心方、〔卷〕敦煌残卷等）移入元数据,
+       apparatus: [{pattern: '〔[證嘉心卷補余遺‧·]{1,5}〕'}]}
+C005: {composition: [907, 925], work: haiyao_bencao, authors: [李珣],
+       notes_text: 今人辑校本；辑者所注《大观》《政和》《纲目》页码移入元数据,
+       apparatus: [{pattern: '（[^（）]{0,8}《[^》（）]{1,10}》[^（）]*頁[^（）]*）'}, {pattern: '（《[^》（）]{1,10}》[^（）]*$'}]}
 C006: {composition: [1061, 1062], work: bencao_tujing, authors: [苏颂], attribution: compiled}
 C007: {composition: [1116, 1116], work: bencao_yanyi, authors: [寇宗奭]}
 C008: {composition: [1289, 1308], work: tangye_bencao}
@@ -78,7 +90,8 @@ C050: {composition: [1082, 1108], work: zhenglei, attribution: compiled, mixed: 
 C100: {composition: [420, 479], attribution: compiled, work: leigong_paozhi, authors: [雷敩], notes_text: 辑本}
 
 D000: {composition: [-300, -168], dynasty: 战国—西汉, work: wushier_bingfang, category: 方书, notes_text: 马王堆帛书}
-D001: {composition: [200, 500], attribution: compiled, work: mingyi_bielu, authors: [佚名], notes_text: 辑本}
+D001: {composition: [200, 500], attribution: compiled, work: mingyi_bielu, authors: [佚名], notes_text: 今人辑校本；辑者“〔附〕”标记移入元数据,
+       apparatus: [{pattern: '〔附〕'}]}
 D002: {composition: [682, 682], work: qianjin_yifang, authors: [孙思邈]}
 D002a: {composition: [682, 682], work: qianjin_yifang, authors: [孙思邈]}
 D004: {composition: [752, 752], work: waitai, authors: [王焘]}
@@ -103,8 +116,11 @@ D026: {composition: [306, 363], work: zhouhou, attribution: compiled, mixed: {la
 D027: {composition: [1132, 1150], work: benshi_fang}
 D028: {composition: [1253, 1253], work: jisheng}
 D052: {composition: [1900, 1920], attribution: pseudepigraphic, notes_text: 托名华佗，近代始出（待核）}
-D053: {composition: [557, 581], attribution: compiled, work: jiyan_fang, authors: [姚僧垣], notes_text: 辑本}
-D058: {composition: [454, 473], attribution: compiled, work: xiaopin_fang, authors: [陈延之], notes_text: 辑本}
+D053: {composition: [557, 581], dynasty: 北周, attribution: compiled, work: jiyan_fang, authors: [姚僧垣],
+       notes_text: 笈成元数据题洪氏、宋（与《洪氏集验方》相混，误）；今人辑校本；辑者所注出处（《外台》《医心方》《肘后方》卷次等）移入元数据,
+       apparatus: [{pattern: '（《[^》（）]{1,14}》(?:卷[^（）]{0,6})?）|（《[^》（）]*卷[^》（）]*》）'},
+                   {pattern: '（《[^》（）]{1,14}》卷[一二三四五六七八九十百○〇]*'}]}
+D058: {composition: [454, 473], attribution: compiled, work: xiaopin_fang, authors: [陈延之], notes_text: 今人辑校本（卷一据日本尊经阁藏残卷，余卷自《外台》《医心方》等辑出）；书中无辑者按语}
 D074: {composition: [1347, 1350], work: jufang_fahui}
 D077: {modern: true}
 
@@ -247,7 +263,13 @@ I003: {composition: [1498, 1498], authors: [周文采], dynasty: 明,
 C011: {composition: [1505, 1505], authors: [刘文泰 等], dynasty: 明, notes_text: 笈成元数据题王好古、元代（误）；弘治十八年刘文泰等奉敕撰}
 N008: {composition: [1670, 1670], authors: [张志聪], dynasty: 清, notes_text: 书中仅见乾隆己丑王琦刻序；张志聪原书约成于康熙九年（待核）}
 C040: {composition: [1368, 1644], attribution: pseudepigraphic, notes_text: 旧题李杲撰，实为明人辑补（待核）}
-F006: {modern: true, composition: [1949, 2010], notes_text: 今人重编考释（书中所存清人序不代表成书年代）}
+F006: {composition: [1821, 1863], dynasty: 清, attribution: pseudepigraphic, authors: [傅山（旧题）], category: 内科, modern: false,
+       notes_text: 旧题傅山撰《男科》，道光初年已有抄本，同治二年（1863）王道平刻；今人重编考释本：据《石室秘录》等补入之文（〔　〕内）与考释按语单列为层,
+       paragraphs: [{pattern: '^按[：:]', layer: 今人考释, year: [1950, 2010], attribution: 今人重编考释者（笈成未署名）},
+                    {pattern: '〔[^〔〕]*$', layer: 今人补入（据《石室秘录》等）, year: [1950, 2010], attribution: 今人重编考释者补入, block: true, until: '〕'}],
+       apparatus: [{pattern: '（以下據[^（）]*補）[：:]?', layer: 今人考释, year: [1950, 2010], attribution: 今人重编考释者（笈成未署名）},
+                   {pattern: '（按[：:][^（）]*）', layer: 今人考释, year: [1950, 2010], attribution: 今人重编考释者（笈成未署名）},
+                   {pattern: '〔[^〔〕]*〕', layer: 今人补入（据《石室秘录》等）, year: [1950, 2010], attribution: 今人重编考释者补入}]}
 N063: {modern: true, composition: [1937, 1937], authors: [曹颖甫, 姜佐景], notes_text: 曹颖甫医案，姜佐景编按，1937 年刊}
 G003: {composition: [1220, 1220], authors: [齐仲甫], dynasty: 南宋, work: nuke_baiwen, notes_text: 笈成元数据年份作 420—479（刘宋，误）；齐仲甫撰于嘉定十三年}
 H000: {composition: [1119, 1119], authors: [钱乙], dynasty: 北宋, notes_text: 笈成元数据年份作 1032（钱乙生年，误）；钱乙著，阎孝忠编集，宣和元年（1119）成书}
@@ -266,3 +288,63 @@ G039: {composition: [1620, 1620], authors: [武之望], dynasty: 明, work: jiyi
 G039a: {composition: [1620, 1620], authors: [武之望], dynasty: 明, work: jiyin_gangmu}
 N006: {composition: [1617, 1617], authors: [赵献可], dynasty: 明, notes_text: 笈成元数据年份作 1687（清刻本）；赵献可《医贯》成于万历四十五年}
 
+# --- Modern editions kept at the user's request (see exclusions.yaml): the old text stays the main layer, dated as the
+# book; the editors' work is a layer of its own (dated by the edition; 1950 on falls outside the analysis periods) or,
+# for source references, sigla and converted doses, the passage's metadata (extra.apparatus).  See
+# plugins/classics/ingest/apparatus.py for the rules.
+K017: {composition: [1956, 1956], dynasty: 当代, authors: [吴棹仙], category: 针灸, modern: true,
+       notes_text: 吴棹仙著，1956年成书；当代著作，经审定保留，全书在分析分期（止于民国）之外}
+B017:
+  composition: [1776, 1776]
+  authors: [俞根初]
+  category: 伤寒
+  notes_text: 俞根初原著（乾隆间，何秀山序1776）；何秀山按、何廉臣勘（1916年起）、曹炳章按（1930年代）与徐荣斋重订按语（1955）各为一层，按语后未标记的段落随其按语直至下一标记或标题；徐荣斋新增诸节（标“新增”）整节单列
+  paragraphs:
+    - {pattern: '^(?:\[[a-z]+\])*(?:【[^】]{1,3}】)?【?榮齋按', layer: 徐荣斋按, year: [1955, 1956], attribution: 徐荣斋《重订通俗伤寒论》（1956年上海卫生出版社）, block: true, while: '[，：；「」]'}
+    - {pattern: '^(?:\[[a-z]+\])*【?又按】?[^\n]*[，：；「」]', layer: 徐荣斋按, year: [1955, 1956], attribution: 徐荣斋《重订通俗伤寒论》（1956年上海卫生出版社）, block: true, while: '[，：；「」]'}
+    - {pattern: '^(?:\[[a-z]+\])*【秀[按接]】', layer: 何秀山按, year: [1776, 1795], attribution: 清·何秀山, block: true}
+    - {pattern: '^(?:\[[a-z]+\])*(?:【(?:廉勘|兼勘|幼廉注)】|廉勘[：:])', layer: 何廉臣勘, year: [1916, 1929], attribution: 何廉臣《增订通俗伤寒论》（1916年起连载）, block: true}
+    - {pattern: '^(?:\[[a-z]+\])*【炳章', layer: 曹炳章按, year: [1929, 1934], attribution: 曹炳章（续成何廉臣增订本）, block: true}
+    - {pattern: '^(?:\[[a-z]+\])*【(?:因|證|脈|治|舌色|脈象|面色|神色|症狀|治法|加減法)】|^俞氏加減法|^[^\s　。，]{2,14}(?:湯|散|丸|飲|丹|煎|膏)　[^　。]{2,12}法　(?!秀山)|^(?:太陽|陽明|少陽|太陰|少陰|厥陰)(?:標|本|中見|兼)證', block: true}
+  apparatus:
+    - {pattern: '（榮齋按[：:。][^（）]*(?:（[^（）]*）[^（）]*)*）', layer: 徐荣斋按, year: [1955, 1956], attribution: 徐荣斋《重订通俗伤寒论》（1956年上海卫生出版社）}
+    - {pattern: '[（「]榮齋按[：:。].*$', layer: 徐荣斋按, year: [1955, 1956], attribution: 徐荣斋《重订通俗伤寒论》（1956年上海卫生出版社）}
+    - {pattern: '（廉按[^（）]*）', layer: 何廉臣勘, year: [1916, 1929], attribution: 何廉臣《增订通俗伤寒论》（1916年起连载）}
+  heading_layers:
+    - {pattern: '^第二節‧六經病理$|^第三節‧脈理新解$|^第一節‧病中調護法$', layer: 徐荣斋重订新增, year: [1955, 1956], attribution: 徐荣斋重订时新增（节首标“新增”）}
+B044:
+  composition: [1894, 1894]
+  dynasty: 清
+  authors: [郑寿全]
+  category: 伤寒
+  notes_text: 郑钦安原著（光绪二十年，1894）；据唐步祺《郑钦安医书阐释》（巴蜀书社1996）录入：唐氏阐释、补出的方剂与方解、注释单列为层，所附“原文N”条号移入元数据，今人附录、凡例、编后记不入库；条文中（　）〔　〕为唐氏校记，照录
+  z_layer: {layer: 唐步祺注释, year: [1993, 1996], attribution: 唐步祺《伤寒恒论阐释》}
+  paragraphs:
+    - {pattern: '^(?:\[b\])?[一二三四五六七八九十百]+、|^【鄭論】|^\*|^\[b\](?:問曰|或問|答曰|答云)', block: true}
+    - {pattern: '^【闡釋】|^【方解|^\[b\][^\[]{1,14}方\[/b\]', layer: 唐步祺阐释, year: [1993, 1996], attribution: 唐步祺《伤寒恒论阐释》（阐释、补方与方解）, block: true}
+  apparatus:
+    - {pattern: '原文\d+(?:（序號為[^）]*）)?'}
+  drop_sections: ['^張仲景原序', '^凡例$', '^一百一十三方總目$', '^附錄$', '^編後記$']
+E008: {authors: [陆廷珍],
+       notes_text: 今人整理本；整理者的编号注释单列为层，正文中的注码移入元数据,
+       paragraphs: [{pattern: '^[（(][0-9０-９]{1,3}[）)]', layer: 今人注释, year: [1950, 2010], attribution: 今人整理者（笈成未署名）}],
+       apparatus: [{pattern: '[（(][0-9０-９]{1,3}[）)]'}]}
+H031: {notes_text: 今人校注本；校注（多为与山东泰安李雨霑、方悦父刻本的异文）单列为层，其中“原书注”仍归正文；正文中的注码移入元数据,
+       paragraphs: [{pattern: '^(?:注[：:])?[（(][0-9０-９lIｌＩ]{1,3}[）)]原書注'},
+                    {pattern: '^(?:注[：:])?[（(][0-9０-９lIｌＩ]{1,3}[）)]', layer: 今人校注, year: [1950, 2010], attribution: 今人校注者（笈成未署名）}],
+       apparatus: [{pattern: '^注[：:](?=[（(])'}, {pattern: '[（(][0-9０-９lIｌＩ]{1,3}[）)]'}]}
+N066: {notes_text: 网络重校本（伤寒论坛网友据中医瑰宝苑本重校句读文字）；重校者前言不入库,
+       drop_sections: ['^重校許氏醫案$']}
+N087:
+  composition: [1935, 1935]
+  dynasty: 民国
+  authors: [翟竹亭]
+  category: 医案
+  modern: true
+  notes_text: 翟竹亭医案，孟氏跋署乙亥（1935）；1963年张会友校勘（改正字句、理论与引文）、1984年整理（剂量折算为克，中肯的眉批移为按语、另补加按语）；署名的“馨山按”按原书眉批计，其余按语与整理者补加者无从区分，按1984年计；折算的克数移出正文存于元数据，1963年校勘记与1965年序不入库
+  paragraphs:
+    - {pattern: '^(?:\[b\])?馨山按[：:]', layer: 原书眉批（馨山按）, year: [1935, 1935], attribution: 原书眉批，1984年整理者移作按语}
+    - {pattern: '^(?:\[b\])?按[：:]', layer: 整理者按语（含移入的原书眉批）, year: [1984, 1984], attribution: 1984年整理者补加之按语与移入的原书眉批，二者未能分离，按整理年代计}
+  apparatus:
+    - {pattern: '[0-9０-９]+(?:[.．][0-9０-９]+)?克'}
+  drop_sections: ['^序$', '^校勘記$']

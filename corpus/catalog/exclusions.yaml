@@ -14,6 +14,13 @@
 # the 辅行诀脏腑用药法要 (brought out 1918–1974), like the Republican 长沙古本 and 康平本 — are not modern publications:
 # they are kept (`keep: true`, or `keep` for a title) as sources of the time they appeared, dated by their
 # appearance and marked pseudepigraphic or disputed in the source overrides, never by the date they claim.
+#
+# Modern editions of old books (辑校本 of lost works, annotated and 阐释 editions) and one contemporary work were
+# reviewed again and kept on request (`keep: true`, the note says how): the old text stays the main layer, dated as
+# the book; the editors' commentary becomes a layer of its own, dated by the edition, and their source references,
+# sigla, note calls and converted doses leave the text for the passage's metadata (rules in jicheng-overrides.yaml
+# and wikisource-overrides.yaml, see plugins/classics/ingest/apparatus.py).  What is dated 1950 or later belongs to no
+# analysis period.
 
 sources:
   jicheng:
@@ -23,7 +30,6 @@ sources:
     R002: {exclude: 当代出版物, note: 中医方剂名称由来（现代读物，剂量折算为克）}
     R003: {exclude: 当代出版物, note: 内科宝典（现代临床手册）}
     D077: {exclude: 当代出版物, note: 古代房中秘方（现代汇编）}
-    K017: {exclude: 当代出版物, note: 子午流注说难（1956）}
     K201: {exclude: 当代出版物, note: 中国民间刺血术}
     L010: {exclude: 当代出版物, note: 中医眼科备读}
     O114: {exclude: 当代出版物, note: 澄空民间中医学精髓论}
@@ -62,24 +68,27 @@ sources:
     P0702: {exclude: 当代名医著作, note: 名老中医经验集}
     P0703: {exclude: 当代名医著作, note: 名老中医经验集}
     P0704: {exclude: 当代名医著作, note: 名老中医经验集}
-    # --- 现代校注本 (annotated, translated, reconstructed)
-    F006: {exclude: 现代校注本, note: 傅青主男科重编考释（今人考释）}
-    B017: {exclude: 现代校注本, note: 重订通俗伤寒论（徐荣斋1950年代重订本，夹“荣斋按”近百条）}
-    B044: {exclude: 现代校注本, note: 伤寒恒论（唐步祺阐释本，郑论与阐释交错）}
-    E008: {exclude: 现代校注本, note: 六因条辨（带现代注释）}
-    H031: {exclude: 现代校注本, note: 万氏秘传片玉心书（带现代校注）}
-    N066: {exclude: 现代校注本, note: 许氏医案（网络重校本，夹注今人按语）}
-    N087: {exclude: 现代校注本, note: 湖岳村叟医案（今人整理本，剂量改为克）}
-    C000a: {exclude: 现代校注本, note: 神农本草经复古辑本（民国以后辑本）}
-    C001: {exclude: 现代校注本, note: 吴普本草（现代辑校本，附《御览》出处与今人按语）}
-    C002: {exclude: 现代校注本, note: 本草经集注（现代辑校本）}
-    C003: {exclude: 现代校注本, note: 新修本草（现代辑复本）}
-    C004: {exclude: 现代校注本, note: 食疗本草（现代辑本，条下注〔證〕等出处）}
-    C005: {exclude: 现代校注本, note: 海药本草（现代辑校本，条下注《大观》《政和》页码）}
-    C006: {exclude: 现代校注本, note: 本草图经（现代辑校本）}
-    D001: {exclude: 现代校注本, note: 名医别录（现代辑校本，附《本经》原文）}
-    D053: {exclude: 现代校注本, note: 集验方（现代辑校本，方下注《外台》出处）}
-    D058: {exclude: 现代校注本, note: 小品方（现代辑校本）}
+    # --- 现代校注本 (annotated, translated, reconstructed): all reviewed again and kept at the user's request — the old
+    #     text is the main layer, the editors' work a dated layer of its own or metadata (rules in jicheng-overrides.yaml,
+    #     see plugins/classics/ingest/apparatus.py); the automatic screen still flags such editions elsewhere
+    K017: {keep: true, note: 子午流注说难（吴棹仙1956）：当代著作，按成书年代1956断代，在分析分期之外}
+    C000a: {keep: true, note: 神农本草经复古辑本（民国辑本，无辑者按语）}
+    C001: {keep: true, note: 吴普本草（今人辑校本）：《御览》等出处移入元数据，今人按语单列为层}
+    C002: {keep: true, note: 本草经集注（今人辑校本）：《新修》《大观》《政和》出处移入元数据}
+    C003: {keep: true, note: 新修本草（今人辑复本）：无今人按语}
+    C004: {keep: true, note: 食疗本草（今人辑本）：〔證〕〔嘉〕等出处代号移入元数据}
+    C005: {keep: true, note: 海药本草（今人辑校本）：《大观》《政和》《纲目》页码移入元数据}
+    C006: {keep: true, note: 本草图经（今人辑校本）：插图文件名移出正文}
+    D001: {keep: true, note: 名医别录（今人辑校本）：〔附〕标记移入元数据}
+    D053: {keep: true, note: 集验方（今人辑校本）：《外台》等出处移入元数据}
+    D058: {keep: true, note: 小品方（今人辑校本）：无辑者按语}
+    B017: {keep: true, note: 重订通俗伤寒论：俞根初原文为正文，何秀山、何廉臣、曹炳章、徐荣斋各层按语单列}
+    B044: {keep: true, note: 伤寒恒论：郑钦安原文为正文，唐步祺阐释、补方、注释单列}
+    E008: {keep: true, note: 六因条辨：今人注释单列，注码移入元数据}
+    H031: {keep: true, note: 万氏秘传片玉心书：今人校注单列，注码移入元数据}
+    N066: {keep: true, note: 许氏医案（网络重校本）：重校者前言不入库}
+    N087: {keep: true, note: 湖岳村叟医案（1935）：折算的克数移入元数据，整理者按语按1984年单列，1960年代校勘记与序不入库}
+    F006: {keep: true, note: 傅青主男科重编考释：男科原文为正文，今人补入之文与考释单列}
     # --- flagged by the screen, but historical: keep
     G043: {keep: true, note: 校注妇人良方为明·薛己校注（1547），非现代校注本}
     O042: {keep: true, note: 校注医醇剩义无现代注释}
@@ -89,10 +98,10 @@ sources:
     O123: {keep: true, note: 止园医话（罗止园，1930年代），民国著作；今人内容提要不入库}
 
   wikisource:
-    通俗傷寒論: {exclude: 现代校注本, note: 页面实为徐荣斋《重订通俗伤寒论》（1950年代）}
+    通俗傷寒論: {keep: true, note: 页面实为徐荣斋《重订通俗伤寒论》（1950年代），与笈成本同书，按其层次规则处理}
     脈訣闡微: {exclude: 当代名医著作, note: 页面后半为邢锡波《脉学阐微》（陈士铎《脉诀阐微》另有笈成本）}
-    醫理真傳: {exclude: 现代校注本, note: 据唐步祺《郑钦安医书阐释》（1996）录入，含阐释}
-    婦人壽草: {exclude: 现代校注本, note: 今人据1986年日文校订本汉译（香月牛山原著1720年代）}
+    醫理真傳: {keep: true, note: 据唐步祺《郑钦安医书阐释》（1996）录入：郑钦安原文为正文，唐氏阐释单列为层}
+    婦人壽草: {keep: true, note: 今人据1986年日文校订本汉译（香月牛山原著1726）：整书按今人译文断代，在分析分期之外}
 
   cmeta:
     shanghan_guilin: {keep: true, note: 桂林古本伤寒杂病论（白云阁藏本系，1939年首刊），1980年米伯让补刻勘误印行本；按问世年代断代}
@@ -103,7 +112,7 @@ titles:
   中医之钥: 当代出版物
   李翰卿: 当代名医著作
   李培生老中医经验集: 当代名医著作
-  重订通俗伤寒论: 现代校注本
+  重订通俗伤寒论: keep          # 徐荣斋重订本：按层次规则处理（见 jicheng-overrides.yaml B017）
   黄帝内经十二经脉秘与应用: 当代出版物
   桂林古本伤寒杂病论: keep        # 近世问世的托古传本：保留，按问世年代断代（见文件头）
   伤寒杂病论桂林古本: keep

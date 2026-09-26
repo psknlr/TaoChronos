@@ -28,6 +28,7 @@ dynasties:
   - {name: 明, start: 1368, end: 1644}
   - {name: 清, start: 1644, end: 1912}
   - {name: 民国, start: 1912, end: 1950}
+  - {name: 当代, start: 1950, end: 2100}   # dates the modern apparatus of kept editions; no analysis period
 
 # Expressions used in research questions (宋代以前, 明清, 唐以后…).
 expressions:
