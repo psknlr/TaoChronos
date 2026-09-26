@@ -9,6 +9,11 @@
 # units and institutions, annotation apparatus, numbered footnotes, a modern editor's source references in a
 # reconstructed lost work) flags the rest; `keep: true` overrules it where it is wrong.  Excluded books are
 # recorded in the generated catalogs with their reason and never enter the corpus store.
+#
+# Texts that surfaced in modern times under an ancient name — the 桂林古本 伤寒杂病论 (白云阁藏本 1939, 桂林本 1960),
+# the 辅行诀脏腑用药法要 (brought out 1918–1974), like the Republican 长沙古本 and 康平本 — are not modern publications:
+# they are kept (`keep: true`, or `keep` for a title) as sources of the time they appeared, dated by their
+# appearance and marked pseudepigraphic or disputed in the source overrides, never by the date they claim.
 
 sources:
   jicheng:
@@ -31,7 +36,7 @@ sources:
     N071: {exclude: 当代出版物, note: 名师垂教（1980年代医学院师生病例讨论）}
     N084: {exclude: 当代出版物, note: 近现代名医验案类编（现代汇编）}
     N088: {exclude: 当代出版物, note: 章次公医案中附子的应用（今人论文）}
-    F027: {exclude: 当代出版物, note: 辅行诀脏腑用药法要（1974年后始据抄本整理刊行，来历存疑）}
+    F027: {keep: true, note: 辅行诀脏腑用药法要：托名陶弘景，据称1918年购得敦煌卷子（已毁），1974年前后始由张大昌等传抄问世，真伪有争议；按传出年代断代}
     # --- 当代名医著作
     B043: {exclude: 当代名医著作, note: 程门雪（1902—1972）伤寒辨要笺记}
     G045: {exclude: 当代名医著作, note: 程门雪遗稿}
@@ -90,7 +95,7 @@ sources:
     婦人壽草: {exclude: 现代校注本, note: 今人据1986年日文校订本汉译（香月牛山原著1720年代）}
 
   cmeta:
-    shanghan_guilin: {exclude: 当代出版物, note: 桂林古本伤寒杂病论，1980年米伯让补刻勘误印行本（他源同书已作同判）}
+    shanghan_guilin: {keep: true, note: 桂林古本伤寒杂病论（白云阁藏本系，1939年首刊），1980年米伯让补刻勘误印行本；按问世年代断代}
 
 # Titles excluded wherever they appear (normalised title keys), for the collections that copy one another.
 titles:
@@ -100,8 +105,8 @@ titles:
   李培生老中医经验集: 当代名医著作
   重订通俗伤寒论: 现代校注本
   黄帝内经十二经脉秘与应用: 当代出版物
-  桂林古本伤寒杂病论: 当代出版物
-  伤寒杂病论桂林古本: 当代出版物
+  桂林古本伤寒杂病论: keep        # 近世问世的托古传本：保留，按问世年代断代（见文件头）
+  伤寒杂病论桂林古本: keep
   名老中医之路: 当代名医著作
   名老中医经验集: 当代名医著作
   余无言: 当代名医著作            # 余无言（1900—1963）医案

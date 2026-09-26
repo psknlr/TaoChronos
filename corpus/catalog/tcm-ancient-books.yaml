@@ -234,7 +234,7 @@ books:
     reverse: 0.9103
   - book: tangye_bencao
     containment: 0.637
-    reverse: 0.6765
+    reverse: 0.6775
   - book: jc_c050
     containment: 0.1152
     reverse: 0.007
@@ -386,7 +386,7 @@ books:
   closest:
   - book: bencao_gangmu_skqs
     containment: 0.6816
-    reverse: 0.641
+    reverse: 0.6409
   - book: jc_p0200
     containment: 0.5595
     reverse: 0.9802
@@ -697,12 +697,12 @@ books:
   - book: jc_c023
     containment: 0.9332
     reverse: 0.9462
-  - book: jc_o075a
-    containment: 0.0074
-    reverse: 0.0017
   - book: jc_c019
     containment: 0.0074
     reverse: 0.0107
+  - book: jc_o075a
+    containment: 0.0074
+    reverse: 0.0017
   duplicate_of: jc_c023
   status: duplicate
 - code: 024-本草崇原
@@ -731,7 +731,7 @@ books:
     reverse: 0.9482
   - book: bencao_gangmu_skqs
     containment: 0.0638
-    reverse: 0.0033
+    reverse: 0.0032
   - book: jc_p0200
     containment: 0.0415
     reverse: 0.0039
@@ -824,7 +824,7 @@ books:
     reverse: 0.9707
   - book: bencao_gangmu_skqs
     containment: 0.0763
-    reverse: 0.0163
+    reverse: 0.0162
   - book: jc_p0200
     containment: 0.0537
     reverse: 0.0213
@@ -1252,7 +1252,7 @@ books:
     reverse: 0.772
   - book: xianxingzhai_biji
     containment: 0.5833
-    reverse: 0.1716
+    reverse: 0.1717
   - book: jc_c050
     containment: 0.1187
     reverse: 0.0042
@@ -1543,7 +1543,7 @@ books:
     reverse: 0.92
   - book: jc_d002a
     containment: 0.472
-    reverse: 0.462
+    reverse: 0.4622
   - book: jc_c050
     containment: 0.0688
     reverse: 0.0298
@@ -1572,12 +1572,12 @@ books:
   - book: jc_d003
     containment: 0.6032
     reverse: 0.6032
-  - book: jc_p0801
-    containment: 0.0159
-    reverse: 0.0001
   - book: jc_o082
     containment: 0.0159
     reverse: 0.0
+  - book: jc_p0801
+    containment: 0.0159
+    reverse: 0.0001
   duplicate_of: jc_d003
   status: duplicate
 - code: 053-外台秘要
@@ -1605,7 +1605,7 @@ books:
     reverse: 0.9708
   - book: jc_d004a
     containment: 0.6813
-    reverse: 0.5967
+    reverse: 0.597
   - book: waitai_miyao
     containment: 0.6615
     reverse: 0.623
@@ -1792,10 +1792,10 @@ books:
     reverse: 0.9263
   - book: jc_d010a
     containment: 0.5071
-    reverse: 0.4731
+    reverse: 0.4735
   - book: hejiju_fang
     containment: 0.4535
-    reverse: 0.3957
+    reverse: 0.3962
   duplicate_of: jc_d010
   status: duplicate
 - code: 060-圣济总录
@@ -2008,8 +2008,8 @@ books:
     containment: 0.9662
     reverse: 0.9828
   - book: quansheng_zhimi
-    containment: 0.4901
-    reverse: 0.6468
+    containment: 0.493
+    reverse: 0.6481
   - book: puji_fang
     containment: 0.0451
     reverse: 0.0002
@@ -2286,7 +2286,7 @@ books:
     reverse: 0.9761
   - book: zhouhou_beiji
     containment: 0.6813
-    reverse: 0.7142
+    reverse: 0.7131
   - book: jc_c050
     containment: 0.182
     reverse: 0.0218
@@ -2351,7 +2351,7 @@ books:
     reverse: 0.0019
   - book: jisheng_fang
     containment: 0.1683
-    reverse: 0.3333
+    reverse: 0.3346
   duplicate_of: jc_d028
   status: duplicate
 - code: 078-药征续编
@@ -2411,9 +2411,9 @@ books:
   - book: puji_fang
     containment: 0.0175
     reverse: 0.0003
-  - book: jc_o044
+  - book: jc_o044a
     containment: 0.0155
-    reverse: 0.0115
+    reverse: 0.0122
   duplicate_of: jc_d030
   status: duplicate
 - code: 080-中医之钥
@@ -2589,9 +2589,9 @@ books:
   - book: jc_d046
     containment: 0.0404
     reverse: 0.001
-  - book: jc_d048
+  - book: jc_f101
     containment: 0.0051
-    reverse: 0.0013
+    reverse: 0.0006
   duplicate_of: jc_d035
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -2992,7 +2992,7 @@ books:
   - book: jc_a203
     containment: 0.0127
     reverse: 0.0009
-  - book: jc_o046a
+  - book: rumen_shiqin
     containment: 0.0063
     reverse: 0.0004
   duplicate_of: jc_d047
@@ -3030,27 +3030,37 @@ books:
   status: duplicate
 - code: 100-桂林古本伤寒杂病论
   id: tab_100_c4c4e251d0
-  title: 桂林古本伤寒杂病论
-  aliases: []
-  authors: []
-  dynasty: 清
+  title: 伤寒杂病论（桂林古本）
+  aliases:
+  - 桂林古本伤寒杂病论
+  authors:
+  - 张仲景
+  dynasty: 民国
   composition:
-  - 1894
-  - 1894
-  dating: preface
-  dating_note: 生其勉之。 光绪二十年岁次甲午三月桂林左盛德序伤寒杂病论卷第一平脉法第一
-  category: 伤寒
-  work: tab:桂林古本伤寒杂病论
-  attribution: traditional
-  modern: false
+  - 1939
+  - 1960
+  dating: curated
+  category: 近代
+  work: ws:伤寒杂病论
+  attribution: pseudepigraphic
+  modern: true
   chartype: simplified
   punctuation: editorial
   characters: 85139
   ref: 100-桂林古本伤寒杂病论.txt
-  excluded_reason: 当代出版物
-  screen:
-    curated: true
-  status: excluded
+  notes_text: 所谓“桂林古本”：据称张仲景第四十六世孙张绍祖家藏第十二稿，光绪二十年（1894）左盛德授罗哲初；黄竹斋1934年抄录，1939年白云阁刊行，1960年罗继寿献出其父抄本由广西人民出版社出版；真伪有争议，按问世年代断代（网络录本，所据为1939年白云阁本抑或1960年桂林本未详）
+  closest:
+  - book: ws_0649304bb5
+    containment: 0.9673
+    reverse: 0.9776
+  - book: cm_shanghan_guilin
+    containment: 0.7044
+    reverse: 0.7336
+  - book: cm_shanghan_zhao_kaimei
+    containment: 0.254
+    reverse: 0.3053
+  duplicate_of: ws_0649304bb5
+  status: duplicate
 - code: 101-药性切用
   id: tab_101_7e79329b4f
   title: 药性切用
@@ -3073,12 +3083,12 @@ books:
   - book: jc_d050
     containment: 0.6587
     reverse: 0.7146
-  - book: jc_o075a
-    containment: 0.0022
-    reverse: 0.0001
   - book: jc_c019
     containment: 0.0022
     reverse: 0.0004
+  - book: jc_o075a
+    containment: 0.0022
+    reverse: 0.0001
   duplicate_of: jc_d050
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -3693,9 +3703,9 @@ books:
   - book: jc_o071
     containment: 0.009
     reverse: 0.0025
-  - book: jc_o052
+  - book: jc_b035
     containment: 0.0054
-    reverse: 0.0002
+    reverse: 0.0017
   duplicate_of: jc_d071
   status: duplicate
 - code: 123-女科切要
@@ -3872,7 +3882,7 @@ books:
     reverse: 0.9204
   - book: furen_daquan
     containment: 0.623
-    reverse: 0.6393
+    reverse: 0.6397
   - book: puji_fang
     containment: 0.2724
     reverse: 0.0083
@@ -3962,12 +3972,12 @@ books:
   - book: jc_h034
     containment: 0.969
     reverse: 0.9796
-  - book: jc_p0104
-    containment: 0.1361
-    reverse: 0.0249
   - book: jc_h007
     containment: 0.1361
     reverse: 0.0248
+  - book: jc_p0104
+    containment: 0.1361
+    reverse: 0.0249
   duplicate_of: jc_h034
   status: duplicate
 - code: 132-女科证治准绳
@@ -4009,8 +4019,8 @@ books:
   - 钱乙
   dynasty: 宋
   composition:
-  - 1032
-  - 1032
+  - 1119
+  - 1119
   dating: jicheng:H000
   category: 儿科
   work: jc:小儿药证直诀
@@ -4147,7 +4157,7 @@ books:
   - book: jc_h004
     containment: 0.9722
     reverse: 0.9785
-  - book: jc_p0104
+  - book: jc_h007
     containment: 0.013
     reverse: 0.0029
   - book: zhengzhi_zhunsheng
@@ -4306,9 +4316,9 @@ books:
   - book: jc_g036
     containment: 0.0276
     reverse: 0.003
-  - book: jc_d025
+  - book: jc_d025a
     containment: 0.0069
-    reverse: 0.0002
+    reverse: 0.0001
   duplicate_of: jc_g010
   status: duplicate
 - code: 143-女科折衷纂要
@@ -4364,12 +4374,12 @@ books:
   - book: jc_g012
     containment: 0.9573
     reverse: 0.9451
-  - book: jc_a402
+  - book: zhenjiu_jiayi
     containment: 0.0043
-    reverse: 0.0001
-  - book: jc_a011
+    reverse: 0.0005
+  - book: furen_daquan
     containment: 0.0043
-    reverse: 0.0002
+    reverse: 0.0003
   duplicate_of: jc_g012
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -4522,7 +4532,7 @@ books:
     reverse: 0.9101
   - book: jc_g017a
     containment: 0.6497
-    reverse: 0.7201
+    reverse: 0.7192
   - book: jc_o067
     containment: 0.1063
     reverse: 0.0133
@@ -4547,16 +4557,16 @@ books:
   characters: 64804
   ref: 150-女科精要.txt
   closest:
-  - book: jc_o067
-    containment: 0.9685
-    reverse: 0.0635
   - book: jc_g018
     containment: 0.9685
     reverse: 0.9705
+  - book: jc_o067
+    containment: 0.9685
+    reverse: 0.0635
   - book: jc_g017
     containment: 0.197
     reverse: 0.1125
-  duplicate_of: jc_o067
+  duplicate_of: jc_g018
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
 - code: 151-女科撮要
@@ -4645,8 +4655,8 @@ books:
     reverse: 0.9844
   - book: xiaoer_weisheng_zongwei
     containment: 0.6202
-    reverse: 0.6206
-  - book: jc_p0104
+    reverse: 0.6211
+  - book: jc_h007
     containment: 0.0147
     reverse: 0.005
   duplicate_of: jc_h009
@@ -4737,7 +4747,7 @@ books:
     containment: 0.9763
     reverse: 0.9832
   - book: puji_fang
-    containment: 0.1102
+    containment: 0.1103
     reverse: 0.0117
   - book: jc_p0104
     containment: 0.065
@@ -5013,12 +5023,12 @@ books:
   - book: jc_g021
     containment: 0.84
     reverse: 0.8988
-  - book: ws_0649304bb5
+  - book: maijing
     containment: 0.0036
-    reverse: 0.0009
-  - book: jc_o069
+    reverse: 0.0008
+  - book: lantai_guifan
     containment: 0.0036
-    reverse: 0.0001
+    reverse: 0.0005
   duplicate_of: jc_g021
   status: duplicate
 - code: 166-儿科醒
@@ -5047,7 +5057,7 @@ books:
   - book: jc_o108
     containment: 0.0832
     reverse: 0.0026
-  - book: jingyue_quanshu_skqs
+  - book: jc_o108a
     containment: 0.0704
     reverse: 0.0022
   duplicate_of: jc_h020
@@ -5077,9 +5087,9 @@ books:
   - book: jc_h032
     containment: 0.0074
     reverse: 0.0022
-  - book: jingyue_quanshu_skqs
+  - book: jc_h020
     containment: 0.0025
-    reverse: 0.0001
+    reverse: 0.0022
   duplicate_of: jc_h021
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -5109,9 +5119,9 @@ books:
   - book: xueshi_yian
     containment: 0.7582
     reverse: 0.2333
-  - book: jc_p0104
+  - book: jc_h007
     containment: 0.2601
-    reverse: 0.136
+    reverse: 0.1358
   duplicate_of: jc_h022
   status: duplicate
 - code: 169-活幼口议
@@ -5355,9 +5365,9 @@ books:
   - book: jc_o025
     containment: 0.0086
     reverse: 0.0004
-  - book: jc_p0000
+  - book: jc_p0001a
     containment: 0.0043
-    reverse: 0.0001
+    reverse: 0.0003
   duplicate_of: jc_g028
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -5469,12 +5479,12 @@ books:
   - book: jc_g031
     containment: 1.0
     reverse: 0.985
-  - book: jc_g039
-    containment: 0.0382
-    reverse: 0.0013
   - book: mg_chongding_jiyin_gangmu
     containment: 0.0382
     reverse: 0.0014
+  - book: jc_g039
+    containment: 0.0382
+    reverse: 0.0013
   duplicate_of: jc_g031
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -5530,12 +5540,12 @@ books:
   - book: jc_h024
     containment: 0.9486
     reverse: 0.9595
-  - book: jc_p0103
+  - book: jc_h007
     containment: 0.0057
-    reverse: 0.0002
-  - book: jc_o047
+    reverse: 0.0001
+  - book: jc_g043
     containment: 0.0057
-    reverse: 0.0003
+    reverse: 0.0004
   duplicate_of: jc_h024
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -5593,10 +5603,10 @@ books:
   - book: jc_i203
     containment: 0.9189
     reverse: 0.9497
-  - book: jingyue_quanshu_skqs
+  - book: jc_o108a
     containment: 0.027
     reverse: 0.0003
-  - book: jc_o108a
+  - book: jingyue_quanshu_skqs
     containment: 0.027
     reverse: 0.0003
   duplicate_of: jc_i203
@@ -5685,12 +5695,12 @@ books:
   - book: jc_g033
     containment: 0.9148
     reverse: 0.9423
+  - book: jc_o062
+    containment: 0.0067
+    reverse: 0.0044
   - book: jc_o065
     containment: 0.0067
     reverse: 0.0023
-  - book: jc_o071
-    containment: 0.0067
-    reverse: 0.0015
   duplicate_of: jc_g033
   status: duplicate
 - code: 188-慈幼便览
@@ -5780,9 +5790,9 @@ books:
   - book: jc_d021
     containment: 0.0076
     reverse: 0.0002
-  - book: hejiju_fang
+  - book: jc_p0402
     containment: 0.0038
-    reverse: 0.0004
+    reverse: 0.0002
   duplicate_of: jc_h027
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -6084,7 +6094,7 @@ books:
     reverse: 0.0145
   - book: jc_g017a
     containment: 0.0487
-    reverse: 0.0136
+    reverse: 0.0135
   duplicate_of: jc_g038
   status: duplicate
 - code: 201-鬻婴提要说
@@ -6265,9 +6275,9 @@ books:
   - book: shouqin_yanglao
     containment: 0.5047
     reverse: 0.1842
-  - book: jc_o082
-    containment: 0.0657
-    reverse: 0.0013
+  - book: ws_e965e3774c
+    containment: 0.0775
+    reverse: 0.0083
   duplicate_of: jc_o102
   status: duplicate
 - code: 207-医门法律
@@ -6294,8 +6304,8 @@ books:
     containment: 0.9804
     reverse: 0.9857
   - book: yimen_falv
-    containment: 0.8115
-    reverse: 0.6071
+    containment: 0.8121
+    reverse: 0.6074
   - book: jc_o069
     containment: 0.1025
     reverse: 0.0291
@@ -6513,9 +6523,9 @@ books:
   - book: jc_d046
     containment: 0.6463
     reverse: 0.0127
-  - book: jc_d063
+  - book: jc_d033
     containment: 0.0061
-    reverse: 0.0013
+    reverse: 0.0012
   duplicate_of: jc_j002
   status: duplicate
 - code: 215-杂病广要
@@ -6739,12 +6749,12 @@ books:
   - book: jc_j007
     containment: 0.9822
     reverse: 0.984
-  - book: jc_o037
-    containment: 0.0053
-    reverse: 0.0007
   - book: yuji_weiyi
     containment: 0.0053
     reverse: 0.0006
+  - book: jc_o037
+    containment: 0.0053
+    reverse: 0.0007
   duplicate_of: jc_j007
   status: duplicate
 - code: 223-疡医大全
@@ -6888,9 +6898,9 @@ books:
   - book: puji_fang
     containment: 0.0671
     reverse: 0.0003
-  - book: jc_o052
+  - book: jc_b036
     containment: 0.0563
-    reverse: 0.0016
+    reverse: 0.0354
   duplicate_of: jc_f007
   status: duplicate
 - code: 228-发背对口治诀论
@@ -7067,9 +7077,9 @@ books:
   - book: xueshi_yian
     containment: 0.8536
     reverse: 0.0343
-  - book: mingyi_leian
-    containment: 0.3256
-    reverse: 0.0313
+  - book: cm_mingyi_leian
+    containment: 0.3276
+    reverse: 0.0311
   duplicate_of: jc_f010
   status: duplicate
 - code: 234-少林真传伤科秘方
@@ -7192,8 +7202,8 @@ books:
     containment: 0.708
     reverse: 0.1136
   - book: yizong_jinjian
-    containment: 0.7034
-    reverse: 0.1117
+    containment: 0.7038
+    reverse: 0.1118
   duplicate_of: jc_p0012
   status: duplicate
 - code: 238-外科方外奇方
@@ -7776,9 +7786,9 @@ books:
   - book: puji_fang
     containment: 0.0154
     reverse: 0.0001
-  - book: jc_a000
+  - book: suwen_wangbing
     containment: 0.0069
-    reverse: 0.0021
+    reverse: 0.0008
   duplicate_of: jc_a006
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -7835,12 +7845,12 @@ books:
   - book: jc_i016
     containment: 0.9291
     reverse: 0.9557
-  - book: jc_p0801
-    containment: 0.0962
-    reverse: 0.0035
   - book: jc_o082
     containment: 0.0962
     reverse: 0.0018
+  - book: jc_p0801
+    containment: 0.0962
+    reverse: 0.0035
   duplicate_of: jc_i016
   status: duplicate
 - code: 259-秘传刘伯温家藏接骨金疮禁方
@@ -7981,9 +7991,9 @@ books:
   - book: jc_d046
     containment: 0.6444
     reverse: 0.0277
-  - book: zhengzhi_zhunsheng
+  - book: xueshi_yian
     containment: 0.0028
-    reverse: 0.0
+    reverse: 0.0001
   duplicate_of: jc_j014
   status: duplicate
 - code: 264-理虚元鉴
@@ -8072,9 +8082,9 @@ books:
   - book: jc_o098
     containment: 0.0184
     reverse: 0.0009
-  - book: maijue_kanwu
+  - book: jc_m111
     containment: 0.0138
-    reverse: 0.0042
+    reverse: 0.0041
   duplicate_of: jc_m103
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -8400,7 +8410,7 @@ books:
   ref: 277-医略.txt
   closest:
   - book: jingyue_quanshu_skqs
-    containment: 0.0683
+    containment: 0.0693
     reverse: 0.0046
   - book: jc_o108a
     containment: 0.0653
@@ -8794,7 +8804,7 @@ books:
   - book: jc_o108
     containment: 0.0223
     reverse: 0.0019
-  - book: jingyue_quanshu_skqs
+  - book: jc_o108a
     containment: 0.0215
     reverse: 0.0018
   duplicate_of: jc_i018
@@ -9043,7 +9053,7 @@ books:
     reverse: 0.9559
   - book: jc_k003a
     containment: 0.7356
-    reverse: 0.6134
+    reverse: 0.6137
   - book: jc_k001
     containment: 0.295
     reverse: 0.1356
@@ -9073,7 +9083,7 @@ books:
     reverse: 0.9688
   - book: jc_k003a
     containment: 0.1674
-    reverse: 0.3073
+    reverse: 0.3074
   - book: jc_k003
     containment: 0.1341
     reverse: 0.3039
@@ -9105,7 +9115,7 @@ books:
     reverse: 0.9654
   - book: leijing
     containment: 0.1531
-    reverse: 0.0329
+    reverse: 0.0328
   - book: jc_a402
     containment: 0.1339
     reverse: 0.0344
@@ -9136,10 +9146,10 @@ books:
     reverse: 0.9807
   - book: zhenjiu_jiayi
     containment: 0.7601
-    reverse: 0.7104
+    reverse: 0.7101
   - book: jc_k000a
     containment: 0.6368
-    reverse: 0.6173
+    reverse: 0.617
   duplicate_of: jc_k000
   status: duplicate
 - code: 302-针经节要
@@ -9281,7 +9291,7 @@ books:
     containment: 0.8693
     reverse: 0.9106
   - book: yizong_jinjian
-    containment: 0.744
+    containment: 0.7453
     reverse: 0.0369
   - book: jc_p0000
     containment: 0.7
@@ -9311,12 +9321,12 @@ books:
   - book: jc_l009
     containment: 0.9137
     reverse: 0.9375
-  - book: jc_l003a
-    containment: 0.0406
-    reverse: 0.0041
   - book: jc_l003
     containment: 0.0406
     reverse: 0.0041
+  - book: zhengzhi_zhunsheng
+    containment: 0.0406
+    reverse: 0.0002
   duplicate_of: jc_l009
   status: duplicate
 - code: 308-口齿类要
@@ -9458,12 +9468,12 @@ books:
   - book: jc_l101
     containment: 0.9322
     reverse: 0.9706
-  - book: jc_l112
-    containment: 0.0056
-    reverse: 0.0034
   - book: jc_l100
     containment: 0.0056
     reverse: 0.0063
+  - book: jc_l112
+    containment: 0.0056
+    reverse: 0.0034
   duplicate_of: jc_l101
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -9493,9 +9503,9 @@ books:
   - book: jc_o014
     containment: 0.0061
     reverse: 0.0012
-  - book: jc_o014a
+  - book: yixue_yuanliu
     containment: 0.0061
-    reverse: 0.0011
+    reverse: 0.0012
   duplicate_of: jc_l102
   status: duplicate
 - code: 314-白喉条辨
@@ -9521,12 +9531,12 @@ books:
   - book: jc_l103
     containment: 0.9268
     reverse: 0.9091
-  - book: jc_a004a
+  - book: jc_p0403
     containment: 0.0195
-    reverse: 0.0037
-  - book: jc_a011
+    reverse: 0.0006
+  - book: jc_a010
     containment: 0.0195
-    reverse: 0.0007
+    reverse: 0.0006
   duplicate_of: jc_l103
   status: duplicate
 - code: 315-银海指南
@@ -9643,10 +9653,10 @@ books:
   - book: jc_f018
     containment: 1.0
     reverse: 1.0
-  - book: jc_h007
+  - book: jc_p0104
     containment: 0.0175
     reverse: 0.0001
-  - book: jc_p0104
+  - book: jc_h007
     containment: 0.0175
     reverse: 0.0001
   duplicate_of: jc_f018
@@ -9757,9 +9767,9 @@ books:
   - book: jc_l100
     containment: 0.0103
     reverse: 0.0189
-  - book: yizong_jinjian
+  - book: jc_i102
     containment: 0.0068
-    reverse: 0.0001
+    reverse: 0.0002
   duplicate_of: jc_l112
   status: duplicate
 - code: 323-重楼玉钥
@@ -10069,7 +10079,7 @@ books:
     reverse: 0.1327
   - book: leijing
     containment: 0.139
-    reverse: 0.0185
+    reverse: 0.0184
   duplicate_of: jc_k005
   status: duplicate
 - code: 333-针灸资生经
@@ -10097,7 +10107,7 @@ books:
     reverse: 0.9622
   - book: zhenjiu_zisheng
     containment: 0.7208
-    reverse: 0.6958
+    reverse: 0.6971
   - book: jc_p0506
     containment: 0.2293
     reverse: 0.0883
@@ -10219,7 +10229,7 @@ books:
     reverse: 0.9716
   - book: jc_o007a
     containment: 0.7938
-    reverse: 0.1576
+    reverse: 0.1575
   - book: jc_i302
     containment: 0.0168
     reverse: 0.1034
@@ -10250,9 +10260,9 @@ books:
   - book: jc_d046
     containment: 0.3036
     reverse: 0.0101
-  - book: yinhai_jingwei
+  - book: jc_l000
     containment: 0.0071
-    reverse: 0.0025
+    reverse: 0.0024
   duplicate_of: jc_l006
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -10342,7 +10352,7 @@ books:
   - book: jc_o108
     containment: 0.0609
     reverse: 0.0011
-  - book: jingyue_quanshu_skqs
+  - book: jc_o108a
     containment: 0.0573
     reverse: 0.0011
   duplicate_of: jc_l105
@@ -10465,9 +10475,9 @@ books:
   - book: jc_k001
     containment: 0.0067
     reverse: 0.0006
-  - book: jc_i005
+  - book: jc_i005a
     containment: 0.0067
-    reverse: 0.001
+    reverse: 0.0009
   duplicate_of: jc_l109
   status: duplicate
 - code: 346-黄帝明堂灸经
@@ -10800,12 +10810,12 @@ books:
   - book: jc_o013
     containment: 0.963
     reverse: 0.9774
-  - book: jc_p0801
-    containment: 0.1111
-    reverse: 0.0028
   - book: jc_o082
     containment: 0.1111
     reverse: 0.0014
+  - book: jc_p0801
+    containment: 0.1111
+    reverse: 0.0028
   duplicate_of: jc_o013
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -10863,7 +10873,7 @@ books:
     reverse: 0.7135
   - book: mingtang_jiujing
     containment: 0.4131
-    reverse: 0.3816
+    reverse: 0.3826
   - book: jc_p0506
     containment: 0.1254
     reverse: 0.0103
@@ -10895,9 +10905,9 @@ books:
   - book: jc_o118
     containment: 0.0283
     reverse: 0.2216
-  - book: jc_p0801
+  - book: jc_o082
     containment: 0.0062
-    reverse: 0.0008
+    reverse: 0.0004
   duplicate_of: jc_n001
   status: duplicate
 - code: 360-徐批叶天士晚年方案真本
@@ -10985,12 +10995,12 @@ books:
   - book: jc_n004
     containment: 0.963
     reverse: 0.9685
+  - book: cm_gujin_yian_an
+    containment: 0.0135
+    reverse: 0.0044
   - book: jc_n029
     containment: 0.0128
     reverse: 0.0507
-  - book: jc_n007
-    containment: 0.0121
-    reverse: 0.004
   duplicate_of: jc_n004
   status: duplicate
 - code: 363-柳洲医话
@@ -11078,12 +11088,12 @@ books:
   - book: jc_n007
     containment: 0.9724
     reverse: 0.9782
-  - book: mingyi_leian
-    containment: 0.1819
-    reverse: 0.143
-  - book: jc_n058
-    containment: 0.0603
-    reverse: 0.0182
+  - book: cm_gujin_yian_an
+    containment: 0.9062
+    reverse: 0.8864
+  - book: cm_mingyi_leian
+    containment: 0.1838
+    reverse: 0.1425
   duplicate_of: jc_n007
   status: duplicate
 - code: 366-侣山堂类辩
@@ -11202,12 +11212,12 @@ books:
   - book: jc_n011
     containment: 0.9345
     reverse: 0.9401
-  - book: jc_o044
-    containment: 0.0281
-    reverse: 0.0165
   - book: jc_o044a
     containment: 0.0281
     reverse: 0.0175
+  - book: jc_o044
+    containment: 0.0281
+    reverse: 0.0165
   duplicate_of: jc_n011
   status: duplicate
 - code: 370-医经溯洄集
@@ -11327,9 +11337,9 @@ books:
   - book: jc_o075a
     containment: 0.0034
     reverse: 0.0003
-  - book: jc_n009a
+  - book: jc_n081
     containment: 0.002
-    reverse: 0.0008
+    reverse: 0.0026
   duplicate_of: jc_n015
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -11389,9 +11399,9 @@ books:
   - book: mingyi_leian
     containment: 0.0583
     reverse: 0.0011
-  - book: zhengzhi_zhunsheng
-    containment: 0.0194
-    reverse: 0.0001
+  - book: cm_mingyi_leian
+    containment: 0.0583
+    reverse: 0.0011
   duplicate_of: jc_n017
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -11417,12 +11427,12 @@ books:
   - book: jc_n018
     containment: 0.9524
     reverse: 0.9489
-  - book: jc_n001
-    containment: 0.0037
-    reverse: 0.0007
   - book: jc_n032
     containment: 0.0037
     reverse: 0.0006
+  - book: jc_n001
+    containment: 0.0037
+    reverse: 0.0007
   duplicate_of: jc_n018
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -11687,12 +11697,12 @@ books:
   - book: jc_n027
     containment: 0.9861
     reverse: 0.9852
+  - book: cm_mingyi_leian
+    containment: 0.1191
+    reverse: 0.0236
   - book: mingyi_leian
     containment: 0.1173
     reverse: 0.0235
-  - book: jc_n007
-    containment: 0.0711
-    reverse: 0.0183
   duplicate_of: jc_n027
   status: duplicate
 - code: 386-知医必辨
@@ -11892,12 +11902,12 @@ books:
   - book: jc_n034
     containment: 0.9257
     reverse: 0.9373
-  - book: waitai_miyao
-    containment: 0.0062
-    reverse: 0.0005
   - book: jc_d004a
     containment: 0.0062
     reverse: 0.0004
+  - book: waitai_miyao
+    containment: 0.0062
+    reverse: 0.0005
   duplicate_of: jc_n034
   status: duplicate
 - code: 393-重订灵兰要览
@@ -11984,12 +11994,12 @@ books:
   - book: jc_n037
     containment: 0.8398
     reverse: 0.8669
-  - book: jc_o103
+  - book: jc_c021
     containment: 0.0039
-    reverse: 0.0015
-  - book: jc_m102
+    reverse: 0.0004
+  - book: jc_c018
     containment: 0.0039
-    reverse: 0.0032
+    reverse: 0.0005
   duplicate_of: jc_n037
   status: duplicate
 - code: 396-孙文垣医案
@@ -12102,12 +12112,12 @@ books:
   - book: jc_n041
     containment: 0.9836
     reverse: 0.9831
-  - book: zhengzhi_zhunsheng
-    containment: 0.0008
-    reverse: 0.0001
   - book: jc_d021
     containment: 0.0008
     reverse: 0.0003
+  - book: zhengzhi_zhunsheng
+    containment: 0.0008
+    reverse: 0.0001
   duplicate_of: jc_n041
   status: duplicate
 - code: 400-张畹香医案
@@ -12158,9 +12168,9 @@ books:
   - book: jc_n043
     containment: 0.9437
     reverse: 0.9437
-  - book: jc_p0800
+  - book: yuji_weiyi
     containment: 0.0047
-    reverse: 0.0001
+    reverse: 0.0002
   - book: jc_p0102
     containment: 0.0047
     reverse: 0.0002
@@ -12308,8 +12318,8 @@ books:
     containment: 0.0847
     reverse: 0.0081
   - book: leijing
-    containment: 0.0789
-    reverse: 0.0063
+    containment: 0.0808
+    reverse: 0.0065
   duplicate_of: jc_n048
   status: duplicate
 - code: 407-对山医话
@@ -12369,9 +12379,9 @@ books:
   - book: jc_o067
     containment: 0.0724
     reverse: 0.0015
-  - book: jc_a402
+  - book: leijing
     containment: 0.0362
-    reverse: 0.001
+    reverse: 0.0009
   duplicate_of: jc_n050
   status: duplicate
 - code: 409-丛桂草堂医案
@@ -12606,8 +12616,8 @@ books:
     containment: 0.9731
     reverse: 0.9767
   - book: xu_mingyi_leian
-    containment: 0.5861
-    reverse: 0.6944
+    containment: 0.5862
+    reverse: 0.6946
   - book: xueshi_yian
     containment: 0.0454
     reverse: 0.0496
@@ -12639,7 +12649,7 @@ books:
   - book: jc_o108a
     containment: 0.025
     reverse: 0.0033
-  - book: jc_o108
+  - book: jingyue_quanshu_skqs
     containment: 0.0239
     reverse: 0.0032
   duplicate_of: jc_n059
@@ -12763,9 +12773,9 @@ books:
   - book: jc_a306
     containment: 0.682
     reverse: 0.2629
-  - book: nanjing_benyi
+  - book: jc_a300
     containment: 0.6151
-    reverse: 0.2065
+    reverse: 0.7462
   duplicate_of: jc_a304
   status: duplicate
 - code: 422-内经博议
@@ -12888,8 +12898,8 @@ books:
     containment: 0.7059
     reverse: 0.2604
   - book: leijing
-    containment: 0.6364
-    reverse: 0.1961
+    containment: 0.6369
+    reverse: 0.1962
   duplicate_of: jc_a401
   status: duplicate
 - code: 426-素问玄机原病式
@@ -12916,11 +12926,11 @@ books:
     containment: 0.9853
     reverse: 0.9835
   - book: yuanbingshi
-    containment: 0.733
-    reverse: 0.7773
+    containment: 0.7348
+    reverse: 0.7793
   - book: jc_a008a
     containment: 0.6667
-    reverse: 0.7974
+    reverse: 0.7991
   duplicate_of: jc_a008
   status: duplicate
 - code: 427-类经
@@ -12947,11 +12957,11 @@ books:
     containment: 0.9825
     reverse: 0.9869
   - book: leijing
-    containment: 0.8486
-    reverse: 0.712
+    containment: 0.849
+    reverse: 0.7119
   - book: jc_a402a
-    containment: 0.7224
-    reverse: 0.7236
+    containment: 0.7225
+    reverse: 0.7234
   duplicate_of: jc_a402
   status: duplicate
 - code: 428-类经图翼
@@ -13012,8 +13022,8 @@ books:
     containment: 0.2032
     reverse: 0.0211
   - book: leijing
-    containment: 0.1826
-    reverse: 0.0158
+    containment: 0.1844
+    reverse: 0.016
   duplicate_of: jc_a200
   status: duplicate
 - code: 430-黄帝内经素问集注
@@ -13042,9 +13052,9 @@ books:
   - book: jc_a000
     containment: 0.1642
     reverse: 0.5324
-  - book: jc_a010
-    containment: 0.1436
-    reverse: 0.1412
+  - book: ae_somon
+    containment: 0.1457
+    reverse: 0.5346
   duplicate_of: jc_a003
   status: duplicate
 - code: 431-黄帝内经灵枢集注
@@ -13073,9 +13083,9 @@ books:
   - book: jc_a202
     containment: 0.2195
     reverse: 0.601
-  - book: jc_a100
-    containment: 0.1863
-    reverse: 0.5936
+  - book: ae_reisu
+    containment: 0.2026
+    reverse: 0.634
   duplicate_of: jc_a101
   status: duplicate
 - code: 432-素问病机气宜保命集
@@ -13189,9 +13199,9 @@ books:
   - book: jc_a000
     containment: 0.1795
     reverse: 0.593
-  - book: jc_a003
-    containment: 0.1414
-    reverse: 0.1442
+  - book: ae_somon
+    containment: 0.1492
+    reverse: 0.5579
   duplicate_of: jc_a010
   status: duplicate
 - code: 436-素问经注节解
@@ -13248,12 +13258,12 @@ books:
   - book: jc_a000
     containment: 0.9826
     reverse: 0.9846
+  - book: ae_somon
+    containment: 0.7226
+    reverse: 0.8197
   - book: jc_a010
     containment: 0.5913
     reverse: 0.1797
-  - book: suwen_wangbing
-    containment: 0.5841
-    reverse: 0.2187
   duplicate_of: jc_a000
   status: duplicate
 - code: 438-黄帝内经素问校义
@@ -13282,7 +13292,7 @@ books:
   - book: suwen_wangbing
     containment: 0.0439
     reverse: 0.0017
-  - book: jc_a402
+  - book: jc_a402a
     containment: 0.039
     reverse: 0.0007
   duplicate_of: jc_a012
@@ -13372,12 +13382,12 @@ books:
   - book: jc_a202
     containment: 0.9724
     reverse: 0.9745
+  - book: ae_reisu
+    containment: 0.6238
+    reverse: 0.7142
   - book: jc_a101
     containment: 0.6004
     reverse: 0.2195
-  - book: jc_a100
-    containment: 0.5714
-    reverse: 0.6661
   duplicate_of: jc_a202
   status: duplicate
 - code: 442-内经药瀹
@@ -13406,9 +13416,9 @@ books:
   - book: jc_a003
     containment: 0.1101
     reverse: 0.0374
-  - book: jc_a402
-    containment: 0.1017
-    reverse: 0.0203
+  - book: cm_suwen_gucongde
+    containment: 0.1045
+    reverse: 0.0419
   duplicate_of: jc_a203
   status: duplicate
 - code: 443-医效秘传
@@ -13465,12 +13475,12 @@ books:
   - book: jc_a013
     containment: 0.9941
     reverse: 0.9927
+  - book: cm_suwen_gucongde
+    containment: 0.2398
+    reverse: 0.0979
   - book: suwen_wangbing
     containment: 0.2124
     reverse: 0.0891
-  - book: jc_a001
-    containment: 0.1959
-    reverse: 0.0763
   duplicate_of: jc_a013
   status: duplicate
 - code: 445-灵素节注类编
@@ -13499,8 +13509,8 @@ books:
     containment: 0.1508
     reverse: 0.0558
   - book: leijing
-    containment: 0.1425
-    reverse: 0.0441
+    containment: 0.143
+    reverse: 0.0442
   duplicate_of: jc_a204
   status: duplicate
 - code: 446-古本难经阐注
@@ -13559,7 +13569,7 @@ books:
     reverse: 0.9833
   - book: nanjing_benyi
     containment: 0.1503
-    reverse: 0.2669
+    reverse: 0.2672
   - book: jc_a306
     containment: 0.1472
     reverse: 0.3
@@ -13657,7 +13667,7 @@ books:
     reverse: 0.0778
   - book: nanjing_benyi
     containment: 0.1343
-    reverse: 0.1096
+    reverse: 0.1097
   duplicate_of: jc_a302
   status: duplicate
 - code: 451-黄帝内经素问遗篇
@@ -13858,16 +13868,16 @@ books:
   characters: 35705
   ref: 457-伤寒论.txt
   closest:
-  - book: jc_b000
-    containment: 0.5718
-    reverse: 0.3829
-  - book: jc_b000a
-    containment: 0.5718
-    reverse: 0.5887
-  - book: jc_b027
-    containment: 0.5117
-    reverse: 0.0532
-  duplicate_of: jc_b000
+  - book: cm_shanghan_zhao_kaimei
+    containment: 0.6945
+    reverse: 0.283
+  - book: cm_shanghan_npm
+    containment: 0.6893
+    reverse: 0.2708
+  - book: ae_shanghanlun
+    containment: 0.611
+    reverse: 0.3333
+  duplicate_of: cm_shanghan_zhao_kaimei
   status: duplicate
 - code: 458-伤寒捷诀
   id: tab_458_bc72dd5113
@@ -14082,9 +14092,9 @@ books:
   - book: jc_b004
     containment: 0.141
     reverse: 0.0611
-  - book: jc_o052
+  - book: jc_p0101
     containment: 0.1218
-    reverse: 0.0012
+    reverse: 0.0039
   duplicate_of: jc_b006
   status: duplicate
 - code: 465-伤寒明理论
@@ -14141,12 +14151,12 @@ books:
   - book: jc_b008
     containment: 0.9799
     reverse: 0.9828
-  - book: puji_fang
+  - book: cm_shanghan_npm
+    containment: 0.1307
+    reverse: 0.2338
+  - book: cm_shanghan_zhao_kaimei
     containment: 0.1301
-    reverse: 0.0022
-  - book: zhengzhi_zhunsheng
-    containment: 0.1255
-    reverse: 0.0067
+    reverse: 0.2415
   duplicate_of: jc_b008
   status: duplicate
 - code: 467-伤寒寻源
@@ -14204,10 +14214,10 @@ books:
     reverse: 0.9661
   - book: jc_b010a
     containment: 0.783
-    reverse: 0.7718
+    reverse: 0.7732
   - book: shanghan_zhige
     containment: 0.7288
-    reverse: 0.5644
+    reverse: 0.5652
   duplicate_of: jc_b010
   status: duplicate
 - code: 469-伤寒标本心法类萃
@@ -14238,7 +14248,7 @@ books:
     reverse: 0.5305
   - book: shanghan_zhige
     containment: 0.4293
-    reverse: 0.1148
+    reverse: 0.115
   duplicate_of: jc_b011
   status: duplicate
 - code: 470-伤寒六书
@@ -14296,8 +14306,8 @@ books:
     containment: 0.9887
     reverse: 0.9909
   - book: shanghanlun_tiaobian
-    containment: 0.7666
-    reverse: 0.8054
+    containment: 0.767
+    reverse: 0.8058
   - book: jc_b013a
     containment: 0.7297
     reverse: 0.8241
@@ -14354,16 +14364,16 @@ books:
   characters: 295158
   ref: 473-伤寒证治准绳.txt
   closest:
-  - book: jc_p0101
-    containment: 0.9816
-    reverse: 0.9842
   - book: jc_b015
     containment: 0.9816
     reverse: 0.9848
+  - book: jc_p0101
+    containment: 0.9816
+    reverse: 0.9842
   - book: zhengzhi_zhunsheng
     containment: 0.7831
     reverse: 0.1176
-  duplicate_of: jc_p0101
+  duplicate_of: jc_b015
   status: duplicate
 - code: 474-伤寒论注
   id: tab_474_5fc6dcf029
@@ -14510,7 +14520,7 @@ books:
     reverse: 0.0809
   - book: shanglun_pian
     containment: 0.1763
-    reverse: 0.1113
+    reverse: 0.1114
   duplicate_of: jc_b020
   status: duplicate
 - code: 479-伤寒贯珠集
@@ -15155,12 +15165,12 @@ books:
   - book: jc_b100
     containment: 0.6496
     reverse: 0.6298
-  - book: jc_b100a
-    containment: 0.5276
-    reverse: 0.6306
-  - book: jc_b106
-    containment: 0.5197
-    reverse: 0.0811
+  - book: cm_jingui_dengzhen
+    containment: 0.6358
+    reverse: 0.6094
+  - book: ae_jinguiyaolue
+    containment: 0.5906
+    reverse: 0.611
   duplicate_of: jc_b100
   status: duplicate
 - code: 500-金匮要略心典
@@ -15312,10 +15322,10 @@ books:
     reverse: 0.9771
   - book: jc_m100a
     containment: 0.7884
-    reverse: 0.7708
+    reverse: 0.7714
   - book: maijing
     containment: 0.7352
-    reverse: 0.7442
+    reverse: 0.7436
   duplicate_of: jc_m100
   status: duplicate
 - code: 505-诊家枢要
@@ -15341,12 +15351,12 @@ books:
   - book: jc_m001
     containment: 0.9683
     reverse: 0.9786
-  - book: xueshi_yian
-    containment: 0.2963
-    reverse: 0.0043
   - book: jc_o039
     containment: 0.2963
     reverse: 0.0368
+  - book: xueshi_yian
+    containment: 0.2963
+    reverse: 0.0043
   duplicate_of: jc_m001
   status: duplicate
 - code: 506-濒湖脉学
@@ -15371,13 +15381,13 @@ books:
   closest:
   - book: jc_m101
     containment: 0.9606
-    reverse: 0.9683
+    reverse: 0.9606
   - book: binhu_maixue
     containment: 0.8346
     reverse: 0.5824
   - book: jc_q011
     containment: 0.5433
-    reverse: 0.8415
+    reverse: 0.8313
   duplicate_of: jc_m101
   status: duplicate
 - code: 507-诊家正眼
@@ -15590,7 +15600,7 @@ books:
     reverse: 0.9682
   - book: maijue_kanwu
     containment: 0.7487
-    reverse: 0.779
+    reverse: 0.7801
   - book: jc_o108a
     containment: 0.047
     reverse: 0.0024
@@ -16172,11 +16182,11 @@ books:
     containment: 0.9076
     reverse: 0.9424
   - book: qianjin_yaofang
-    containment: 0.4805
-    reverse: 0.4708
+    containment: 0.4809
+    reverse: 0.4711
   - book: jc_d025a
-    containment: 0.3795
-    reverse: 0.3576
+    containment: 0.3798
+    reverse: 0.3579
   duplicate_of: jc_d025
   status: duplicate
 - code: 533-食疗方
@@ -16230,12 +16240,12 @@ books:
   - book: jc_o019
     containment: 0.9585
     reverse: 0.9637
+  - book: cm_gujin_yian_an
+    containment: 0.0072
+    reverse: 0.0009
   - book: jc_p0403
     containment: 0.0072
     reverse: 0.0006
-  - book: jc_n007
-    containment: 0.0054
-    reverse: 0.0007
   duplicate_of: jc_o019
   status: duplicate
 - code: 535-西池集
@@ -16286,7 +16296,7 @@ books:
   - book: jc_o021
     containment: 0.9788
     reverse: 0.9823
-  - book: jc_a402
+  - book: leijing
     containment: 0.0035
     reverse: 0.0001
   - book: jc_a402a
@@ -16317,12 +16327,12 @@ books:
   - book: jc_e014
     containment: 0.9466
     reverse: 0.9568
-  - book: jc_a402
-    containment: 0.0413
-    reverse: 0.0054
   - book: leijing
     containment: 0.0413
     reverse: 0.0045
+  - book: jc_a402
+    containment: 0.0413
+    reverse: 0.0054
   duplicate_of: jc_e014
   status: duplicate
 - code: 538-寿世传真
@@ -16351,7 +16361,7 @@ books:
   - book: jc_o026
     containment: 0.0307
     reverse: 0.0273
-  - book: jc_o108a
+  - book: jc_o108
     containment: 0.0041
     reverse: 0.0001
   duplicate_of: jc_o022
@@ -16775,12 +16785,12 @@ books:
   - book: jc_o030
     containment: 0.9837
     reverse: 0.9891
+  - book: jc_a008
+    containment: 0.0054
+    reverse: 0.0018
   - book: jc_p0800
     containment: 0.0054
     reverse: 0.0001
-  - book: jc_n012
-    containment: 0.0054
-    reverse: 0.0018
   duplicate_of: jc_o030
   status: duplicate
 - code: 553-寿世青编
@@ -17024,8 +17034,8 @@ books:
     containment: 0.9302
     reverse: 0.959
   - book: yuji_weiyi
-    containment: 0.7765
-    reverse: 0.7952
+    containment: 0.7767
+    reverse: 0.7948
   - book: jc_o082
     containment: 0.1234
     reverse: 0.0275
@@ -17120,8 +17130,8 @@ books:
     containment: 0.7753
     reverse: 0.7514
   - book: cishi_nanzhi
-    containment: 0.6966
-    reverse: 0.7308
+    containment: 0.6985
+    reverse: 0.7314
   duplicate_of: jc_o040
   status: duplicate
 - code: 564-金匮钩玄
@@ -17334,7 +17344,7 @@ books:
     reverse: 0.981
   - book: jc_o044a
     containment: 0.6001
-    reverse: 0.6431
+    reverse: 0.6424
   - book: renzhai_zhizhi
     containment: 0.0976
     reverse: 0.0377
@@ -17368,7 +17378,7 @@ books:
     reverse: 0.6192
   - book: zhubing_yuanhou
     containment: 0.5788
-    reverse: 0.59
+    reverse: 0.5902
   duplicate_of: jc_o045
   status: duplicate
 - code: 572-儒门事亲
@@ -17395,11 +17405,11 @@ books:
     containment: 0.9031
     reverse: 0.9302
   - book: rumen_shiqin
-    containment: 0.7101
-    reverse: 0.7255
+    containment: 0.7109
+    reverse: 0.7254
   - book: jc_o046a
-    containment: 0.7055
-    reverse: 0.7126
+    containment: 0.7059
+    reverse: 0.7121
   duplicate_of: jc_o046
   status: duplicate
 - code: 573-古今医鉴
@@ -17458,10 +17468,10 @@ books:
     reverse: 0.8967
   - book: yishuo
     containment: 0.6381
-    reverse: 0.678
-  - book: mingyi_leian
-    containment: 0.1386
-    reverse: 0.0528
+    reverse: 0.6784
+  - book: cm_mingyi_leian
+    containment: 0.142
+    reverse: 0.0534
   duplicate_of: jc_o048
   status: duplicate
 - code: 575-医宗金鉴
@@ -17488,8 +17498,8 @@ books:
     containment: 0.9277
     reverse: 0.9549
   - book: yizong_jinjian
-    containment: 0.7654
-    reverse: 0.78
+    containment: 0.7655
+    reverse: 0.7802
   - book: jc_p0001a
     containment: 0.23
     reverse: 0.9366
@@ -17644,9 +17654,9 @@ books:
   - book: jc_o052
     containment: 0.2312
     reverse: 0.0029
-  - book: zhengzhi_zhunsheng
+  - book: puji_fang
     containment: 0.1859
-    reverse: 0.0011
+    reverse: 0.0004
   duplicate_of: jc_o053
   status: duplicate
 - code: 581-兰室秘藏
@@ -18257,10 +18267,10 @@ books:
   - book: jc_o070
     containment: 0.9723
     reverse: 0.9865
-  - book: jc_o063a
+  - book: jc_o063
     containment: 0.0024
     reverse: 0.0003
-  - book: jc_o063
+  - book: jc_o063a
     containment: 0.0024
     reverse: 0.0003
   duplicate_of: jc_o070
@@ -18321,7 +18331,7 @@ books:
     reverse: 0.9509
   - book: jc_o072a
     containment: 0.6442
-    reverse: 0.8336
+    reverse: 0.8331
   - book: jc_o075
     containment: 0.0139
     reverse: 0.0071
@@ -18414,7 +18424,7 @@ books:
     reverse: 0.9705
   - book: jc_o075a
     containment: 0.8613
-    reverse: 0.4821
+    reverse: 0.482
   - book: jc_f004
     containment: 0.0469
     reverse: 0.04
@@ -18727,9 +18737,9 @@ books:
   - book: suwen_wangbing
     containment: 0.0138
     reverse: 0.0029
-  - book: jc_a001
-    containment: 0.0129
-    reverse: 0.0025
+  - book: ae_somon
+    containment: 0.0138
+    reverse: 0.0087
   status: ingest
 - code: 616-洗冤集录
   id: tab_616_08104e31ab
@@ -18848,9 +18858,9 @@ books:
   - book: yizong_jinjian
     containment: 0.0219
     reverse: 0.002
-  - book: jc_p0003a
+  - book: jc_p0000
     containment: 0.0204
-    reverse: 0.0248
+    reverse: 0.0019
   status: ingest
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
 - code: 620-推求师意
@@ -19208,15 +19218,15 @@ books:
   ref: 631-医法圆通.txt
   notes_text: 郑寿全（钦安）撰，同治十三年（1874）刊
   closest:
-  - book: zhengzhi_zhunsheng
-    containment: 0.0021
-    reverse: 0.0001
   - book: jc_b003a
     containment: 0.0021
     reverse: 0.0021
-  - book: jc_o052
+  - book: zhengzhi_zhunsheng
     containment: 0.0021
-    reverse: 0.0002
+    reverse: 0.0001
+  - book: cm_shanghan_guilin
+    containment: 0.0021
+    reverse: 0.0028
   status: ingest
 - code: 632-证治准绳·类方
   id: tab_632_e100945d1a
@@ -19397,8 +19407,8 @@ books:
     containment: 0.9643
     reverse: 0.9752
   - book: jingyue_quanshu_skqs
-    containment: 0.7985
-    reverse: 0.8043
+    containment: 0.7987
+    reverse: 0.8044
   - book: jc_o108a
     containment: 0.7938
     reverse: 0.8124
@@ -19491,9 +19501,9 @@ books:
   - book: jc_o108
     containment: 0.3758
     reverse: 0.0081
-  - book: jc_g026
+  - book: jingyue_quanshu_skqs
     containment: 0.3696
-    reverse: 0.1006
+    reverse: 0.008
   duplicate_of: jc_o095
   status: duplicate
 - code: 641-医理真传
@@ -19641,7 +19651,7 @@ books:
     reverse: 0.5532
   - book: zhenghe_bencao
     containment: 0.5008
-    reverse: 0.5736
+    reverse: 0.5738
   duplicate_of: jc_c050
   status: duplicate
 - code: 646-伤寒心法要诀
@@ -19873,10 +19883,18 @@ books:
   punctuation: editorial
   characters: 8618
   ref: 653-辅行诀脏腑用药法要.txt
-  excluded_reason: 当代出版物
-  screen:
-    curated: true
-  status: excluded
+  closest:
+  - book: jc_f027
+    containment: 0.9429
+    reverse: 0.9802
+  - book: jc_p0002
+    containment: 0.0095
+    reverse: 0.0005
+  - book: jc_p0000
+    containment: 0.0095
+    reverse: 0.0001
+  duplicate_of: jc_f027
+  status: duplicate
 - code: 654-伤寒辨要笺记
   id: tab_654_d927121e23
   title: 伤寒辨要笺记
@@ -20116,10 +20134,10 @@ books:
   - book: jc_n064
     containment: 0.9732
     reverse: 0.9801
-  - book: jc_d004
+  - book: jc_d004a
     containment: 0.0014
     reverse: 0.0001
-  - book: waitai_miyao
+  - book: jc_d004
     containment: 0.0014
     reverse: 0.0001
   duplicate_of: jc_n064
@@ -20283,16 +20301,16 @@ books:
   characters: 7444
   ref: 668-玉台新案.txt
   closest:
-  - book: jc_n070
-    containment: 0.9512
-    reverse: 0.959
   - book: jc_o103
     containment: 0.9512
     reverse: 0.1721
-  - book: jc_g039
+  - book: jc_n070
+    containment: 0.9512
+    reverse: 0.959
+  - book: jc_p0103a
     containment: 0.0081
-    reverse: 0.0003
-  duplicate_of: jc_n070
+    reverse: 0.0002
+  duplicate_of: jc_o103
   status: duplicate
 - code: 669-名师垂教
   id: tab_669_df441e0b7e
@@ -20415,12 +20433,12 @@ books:
   - book: jc_n074
     containment: 0.9898
     reverse: 0.9864
-  - book: jc_c011
+  - book: jc_a013
     containment: 0.0034
-    reverse: 0.0001
-  - book: jc_a001
+    reverse: 0.0005
+  - book: jc_o068
     containment: 0.0034
-    reverse: 0.0002
+    reverse: 0.0003
   duplicate_of: jc_n074
   status: duplicate
   notes_text: 成书年代无从考定，按清代（1644—1911）保守计
@@ -20771,7 +20789,7 @@ books:
   - book: jc_o052
     containment: 0.0015
     reverse: 0.0001
-  - book: jc_k000
+  - book: zhenjiu_jiayi
     containment: 0.0008
     reverse: 0.0005
   duplicate_of: jc_k022
@@ -20907,12 +20925,12 @@ books:
   - book: jc_o117
     containment: 0.9705
     reverse: 0.9887
-  - book: jc_p0003a
-    containment: 0.0258
-    reverse: 0.0062
   - book: jc_p0000
     containment: 0.0258
     reverse: 0.0005
+  - book: jc_p0003a
+    containment: 0.0258
+    reverse: 0.0062
   duplicate_of: jc_o117
   status: duplicate
 - code: 693-景景医话
@@ -21034,9 +21052,9 @@ books:
   - book: jc_c046
     containment: 0.0215
     reverse: 0.0049
-  - book: jc_o075a
+  - book: lantai_guifan
     containment: 0.008
-    reverse: 0.0008
+    reverse: 0.0069
   duplicate_of: jc_o122
   status: duplicate
 - code: 697-止园医话

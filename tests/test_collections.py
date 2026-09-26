@@ -215,6 +215,10 @@ def test_reviewed_exclusions_by_code_and_by_title():
     assert EXCLUSIONS.decision("jicheng", "G043", "校注妇人良方") == (None, True)  # 薛己 1547, not a modern edition
     assert EXCLUSIONS.decision("tcm-ancient-books", "123-思考中医", "思考中医") == (CONTEMPORARY, False)
     assert EXCLUSIONS.decision("wikisource", "傷寒論", "伤寒论") == (None, False)
+    # a text that surfaced in modern times under an ancient name is kept wherever it appears, dated by its appearance
+    assert EXCLUSIONS.decision("tcmoc", "100-桂林古本伤寒杂病论", "桂林古本伤寒杂病论") == (None, True)
+    assert EXCLUSIONS.decision("cmeta", "shanghan_guilin", "伤寒杂病论") == (None, True)
+    assert EXCLUSIONS.decision("jicheng", "F027", "辅行诀脏腑用药法要") == (None, True)
 
 
 def test_modern_paratext_credits_and_page_numbers_are_stripped():

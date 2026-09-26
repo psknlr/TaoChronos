@@ -1,8 +1,8 @@
 # Roadmap
 
 **Data**
-- Connected: Kanripo KR3e (100) and its catalogue, 笈成 (797 of 857), McGill (5), CMETA (10 collated editions of 11
-  open), the 東亜医学協会 (7), Wikisource Category:中醫 and 醫書 (16 new of 627, from the dumps), TCM-Ancient-Books (8
+- Connected: Kanripo KR3e (100) and its catalogue, 笈成 (798 of 857), McGill (5), CMETA (the 11 collated editions it
+  opens), the 東亜医学協会 (7), Wikisource Category:中醫 and 醫書 (16 new of 627, from the dumps), TCM-Ancient-Books (8
   new of 701), tcmoc (a copy), classical-tcm-canon (1 new of 115); contemporary works and modern editions left out
   (`corpus/catalog/exclusions.yaml`). Image witnesses: the records of the digitised prints and manuscripts at NIJL's
   medical holders, Berlin (Sammlung Unschuld), the Library of Congress and Waseda (`corpus/catalog/images/`); the NDL

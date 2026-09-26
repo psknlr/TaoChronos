@@ -76,8 +76,9 @@ class WitnessStudy:
         images = [r for r in self.image_rows() if r.get("work") == key or r.get("book") in ids]
         images.sort(key=_year_key)
         holders = Counter(r.get("holder", "") for r in images)
+        name = key.split(":", 1)[1] if ":" in key else (first.title if first else work)  # ws:伤寒杂病论 → 伤寒杂病论
         return {
-            "work": first.title if first else work, "work_key": key, "text_witnesses": texts,
+            "work": name, "work_key": key, "text_witnesses": texts,
             "image_witnesses": images[:limit], "image_count": len(images), "holders": dict(holders.most_common()),
             "with_manifest": sum(1 for r in images if r.get("manifest")),
             "note": "text witnesses: the work's transcriptions in the store (page_images: its passages link their page "

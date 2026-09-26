@@ -9,3 +9,13 @@
   composition: [1874, 1874]
   dynasty: 清
   notes_text: 郑寿全（钦安）撰，同治十三年（1874）刊
+
+100-桂林古本伤寒杂病论:  # kept: see exclusions.yaml (a copy of the 桂林古本; the edition it follows is not stated)
+  title: 伤寒杂病论（桂林古本）
+  work: ws:伤寒杂病论
+  authors: [张仲景]
+  dynasty: 民国
+  composition: [1939, 1960]
+  attribution: pseudepigraphic
+  category: 近代
+  notes_text: 所谓“桂林古本”：据称张仲景第四十六世孙张绍祖家藏第十二稿，光绪二十年（1894）左盛德授罗哲初；黄竹斋1934年抄录，1939年白云阁刊行，1960年罗继寿献出其父抄本由广西人民出版社出版；真伪有争议，按问世年代断代（网络录本，所据为1939年白云阁本抑或1960年桂林本未详）

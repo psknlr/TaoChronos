@@ -241,27 +241,38 @@ books:
   title: 伤寒杂病论（桂林古本）
   aliases:
   - 傷寒雜病論（桂林古本）
-  authors: []
-  dynasty: 清
+  authors:
+  - 张仲景
+  dynasty: 民国
   composition:
-  - 1894
-  - 1894
-  dating: preface
-  dating_note: 羅生其勉之。光緒二十年歲次甲午春三月桂林左盛德序
-  category: 伤寒
-  work: cm:伤寒杂病论
-  attribution: traditional
-  modern: false
+  - 1939
+  - 1939
+  dating: curated
+  category: 近代
+  work: ws:伤寒杂病论
+  attribution: pseudepigraphic
+  modern: true
   chartype: traditional
   punctuation: editorial
   characters: 83243
   url: https://cmeta.lctseng.csie.org/prototype/
   ref: texts/桂林古本傷寒雜病論_校訂重切.md
-  notes_text: 版本源流與典藏：清光緒二十年（1894）左盛德授白雲閣藏本，1934年黃竹齋抄錄羅哲初珍藏本，1980年陝西中醫藥研究院米伯讓補刻勘誤印行。 收錄與授權狀態：本站僅收錄古籍本文純文字。
-  excluded_reason: 当代出版物
-  screen:
-    curated: true
-  status: excluded
+  notes_text: 所谓“桂林古本”：据称张仲景第四十六世孙张绍祖家藏第十二稿，光绪二十年（1894）左盛德授罗哲初；黄竹斋1934年抄录，1939年白云阁刊行，1960年罗继寿献出其父抄本由广西人民出版社出版；真伪有争议，按问世年代断代
+  edition: 1980年陕西中医药研究院米伯让补刻勘误印行本（据1939年白云阁刻版）
+  edition_year:
+  - 1980
+  - 1980
+  closest:
+  - book: jc_b000
+    containment: 0.2796
+    reverse: 0.5332
+  - book: cm_shanghan_zhao_kaimei
+    containment: 0.2686
+    reverse: 0.3094
+  - book: cm_shanghan_npm
+    containment: 0.2612
+    reverse: 0.2911
+  status: ingest
 - code: shanghan_kangzhi
   id: cm_shanghan_kangzhi
   title: 伤寒论（康治本）
@@ -289,15 +300,15 @@ books:
   - 1857
   - 1857
   closest:
-  - book: cm_shanghan_npm
-    containment: 0.175
-    reverse: 0.0215
   - book: cm_shanghan_zhao_kaimei
     containment: 0.175
     reverse: 0.0222
-  - book: yizong_jinjian
-    containment: 0.15
-    reverse: 0.0012
+  - book: cm_shanghan_npm
+    containment: 0.175
+    reverse: 0.0215
+  - book: cm_shanghan_guilin
+    containment: 0.1583
+    reverse: 0.0174
   status: ingest
 - code: shanghan_npm
   id: cm_shanghan_npm

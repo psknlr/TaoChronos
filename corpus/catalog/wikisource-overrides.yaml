@@ -9,6 +9,7 @@
   notes_text: 成都天回镇老官山汉墓出土医简（2012—2013年发掘），据整理者释文录入；墓葬约当西汉景帝、武帝之时，学者多认为出自扁鹊（“敝昔”）一派
 
 傷寒雜病論 (長沙古本):
+  dynasty: 民国
   force_ingest: true  # a distinct recension, not a copy of the 宋本
   title: 伤寒杂病论（长沙古本）
   composition: [1932, 1934]
@@ -16,6 +17,7 @@
   notes_text: 所谓“长沙古本”，民国时随刘世祯《伤寒杂病论义疏》问世，真伪有争议；按问世年代断代
 
 傷寒雜病論 (康平古本):
+  dynasty: 民国
   force_ingest: true  # a distinct recension, not a copy of the 宋本
   title: 伤寒杂病论（康平本）
   composition: [1937, 1947]
@@ -23,6 +25,7 @@
   notes_text: 所谓“康平本”，日本抄本，1937年大塚敬节校刊、1940年代传入中国，所称康平年间（1058—1065）抄写之说未能证实；按刊行年代断代
 
 傷寒雜病論白雲閣藏本:
+  dynasty: 民国
   force_ingest: true  # a distinct recension, not a copy of the 宋本
   title: 伤寒杂病论（白云阁藏本）
   composition: [1939, 1939]

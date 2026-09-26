@@ -6271,10 +6271,7 @@ books:
   work: jc:辅行诀脏腑用药法要
   attribution: disputed
   modern: true
-  status: excluded
-  excluded_reason: 当代出版物
-  screen:
-    curated: true
+  status: ingest
   notes_text: 托名陶弘景之敦煌卷子抄本，原卷已佚，20世纪由张大昌等传出，真伪有争议
   mixed:
     layer: 近代传抄本（真伪有争议）

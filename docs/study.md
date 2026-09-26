@@ -249,7 +249,7 @@ word changed its meaning, and what survives of the books that were lost. Three r
   against what the literature holds.
 
 The examples below were computed on the store of the 2.0 release (926 books); those of 版本谱系 and 版本与影像见证 on the
-current store (944 books, with the CMETA and 東亜医学協会 witnesses).
+current store (with the CMETA and 東亜医学協会 witnesses).
 
 ## 版本谱系 (collation and stemma)
 

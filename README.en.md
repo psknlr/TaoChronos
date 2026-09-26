@@ -6,7 +6,7 @@
 [中文 README](README.md) · [Study layer](docs/study.md) · [Architecture](docs/architecture.md) · [Agents](docs/agents.md) ·
 [Discovery](docs/discovery.md) · [Evaluation](docs/evals.md) · [Data](docs/data.md) · [Roadmap](docs/roadmap.md) · [ADRs](docs/adr/)
 
-TaoChronos turns 944 Chinese medical classics (about 121 million characters in 2.03 million passages) into a corpus
+TaoChronos turns 946 Chinese medical classics (about 121 million characters in 2.03 million passages) into a corpus
 that can be searched, dated and cited, and offers two layers on top of it:
 
 - **Study (治学)** answers the questions scholars and students ask of the literature every day, the way the 考据
@@ -143,9 +143,9 @@ taochronos governance              # architecture policy check
 | Source | Licence | Ingested | Notes |
 |---|---|---|---|
 | Kanseki Repository KR3e, *Siku quanshu* medical works | CC BY-SA 4.0 | **100 works**, 25.7 M characters | unpunctuated Siku / Sibu congkan texts; a curated catalogue with authors, dates, schools, editions and layer dating |
-| 笈成 (JiCheng) v1.4.8 | user-supplied, local research only | **797 works** (857 less 60), ~92.3 M characters | punctuated by its editors; headings, prescription blocks, commentaries, collation remarks and missing characters parsed from the markup |
+| 笈成 (JiCheng) v1.4.8 | user-supplied, local research only | **798 works** (857 less 59), ~92.3 M characters | punctuated by its editors; headings, prescription blocks, commentaries, collation remarks and missing characters parsed from the markup |
 | McGill University Library rare gynaecology books | public domain | **5 works** | Qing prints and manuscripts, unpunctuated |
-| 數位中醫校書郎 CMETA (collated editions) | CC BY 4.0 (the collation); texts public domain | **10 works**, 1.37 M characters | collated page by page against the images: 伤寒论 (赵开美本: the 台北故宫 copy and the 安政 reprint; 康平本; 康治本), 金匮 (吴迁本, 邓珍本), 素问 (顾从德本), 灵枢 (赵府居敬堂本), 古今医案按, 名医类案; passages carry their page and, where the site shows the images to guests, the page image |
+| 數位中醫校書郎 CMETA (collated editions) | CC BY 4.0 (the collation); texts public domain | **11 works**, 1.45 M characters | collated page by page against the images: 伤寒论 (赵开美本: the 台北故宫 copy and the 安政 reprint; 康平本; 康治本), 金匮 (吴迁本, 邓珍本), 素问 (顾从德本), 灵枢 (赵府居敬堂本), 古今医案按, 名医类案, and the 桂林古本 伤寒杂病论 (米伯让's 1980 printing from the 白云阁 blocks, dated by its appearance, 1939); passages carry their page and, where the site shows the images to guests, the page image |
 | 東亜医学協会 · 医学古典テキスト | © the association, local research only | **7 works**, 0.32 M characters | 素问, 灵枢, 难经, 伤寒论, 金匮要略, 神农本草经, 扁鹊仓公列传, each from a named base edition |
 | Wikisource Category:中醫 and Category:醫書 (from the Wikimedia dumps) | CC BY-SA 4.0 | **16 works** (new of 627) | 天回医简, 五十二病方, three Republican "ancient" editions of the 伤寒杂病论, 东医宝鉴, the Korean 医方类聚 (1445) … |
 | TCM-Ancient-Books / tcmoc | undeclared, local research only | **8** / 0 works | mostly simplified copies of 笈成 texts, deduplicated work by work |
@@ -153,11 +153,14 @@ taochronos governance              # architecture policy check
 | KR-Catalog (Kanripo catalogue) | CC BY-SA 4.0 | catalogue | roles and dates of 132 persons responsible for the Siku works |
 | Image witnesses: NIJL (研医会; the 富士川文庫 of Keio and Kyoto; the University of Tokyo incl. the 鶚軒文庫; Kyushu; Tohoku), Staatsbibliothek zu Berlin (Sammlung Unschuld), Library of Congress (Chinese Rare Books), Waseda (NDL: harvester ready, catalog to be built) | per record, as each holder states | **9,638 records** (446 linked to 168 works) | records only — title, date, print or manuscript, holder, shelfmark, IIIF manifest, terms — linked to the works of the store by title; no image downloaded |
 
-In all **944 works, ~121 million characters, 2.03 million passages**.
+In all **946 works, ~121 million characters, 2.03 million passages**.
 
 - **Admission**: historical texts only. Contemporary publications, contemporary physicians' works and modern annotated
   editions (including modern reconstructions of lost books) are excluded after review (`corpus/catalog/exclusions.yaml`,
-  automatic screening for the rest); Republican works (1912–1949) stay as historical sources.
+  automatic screening for the rest); Republican works (1912–1949) stay as historical sources. Texts that surfaced in
+  modern times under an ancient name (the 桂林古本 伤寒杂病论, the 辅行诀脏腑用药法要, like the Republican 长沙古本 and
+  康平本) are not treated as modern publications: they are kept as sources of the time they appeared, dated by their
+  appearance and marked pseudepigraphic or disputed — never dated by the age they claim.
 - **Deduplication**: sources are ranked by reliability (Siku → 笈成 → McGill → CMETA → 東亜医学協会 → Wikisource → web
   sets); each candidate is compared with what is already in by 12-character shingles of normalised text, and copies are
   recorded with the book they duplicate and the overlap; McGill's, CMETA's and the 東亜医学協会's texts are independent
@@ -236,8 +239,9 @@ literature itself ([docs/study.md](docs/study.md#深层发现-20--the-structure-
 | **Senses** `study senses` | occurrences sampled by period and labelled by curated cues and anti-cues; unlabelled contexts clustered into **candidate senses** (distinctive words and examples, for a person to name); recursive change points of the sense shares (permutation tests); the term's neighbourhood period by period | 消渴: change points near 166 (p = 0.025), 388 (0.005) and 1603 (0.005); the symptom sense falls from 21 % to 0–6 % and returns to 11–13 % in the Qing and the Republic |
 | **Lost works** `study fragments` | 外台-style attributions (小品论曰 … （出第十卷中千金同）), 又 continuations, 《…》云; text up to the source note or the next source; volumes and parallels kept, repeats merged, ordered by volume; quoting books older than the work excluded; verified on surviving works, with a reliability per quoting book | 小品方: 226 fragments from 386 quotations. Verification on the 千金要方: 0.32 of its fragments in the surviving text (幼幼新书 0.83, 外台 0.55, 医心方 0.36), covering 12 %; 87.5 % of the 肘后备急方's quotations are not in the extant, reworked 肘后 — candidate lost text |
 
-The examples of both tables were computed on the 926 works of the 2.0 store; the 18 transcriptions added in this
-release (CMETA, the 東亜医学協会, 医方类聚) change some counts slightly, and the stemma row has been recomputed on 944.
+The examples of both tables were computed on the 926 works of the 2.0 store; the 20 transcriptions added in this
+release (CMETA, the 東亜医学協会, 医方类聚, 辅行诀 …) change some counts slightly, and the stemma row has been recomputed on
+the current store.
 
 The study layer is part of research too: under `full-corpus`, **TaoChronos-Scholar** traces the focus formulas, drugs
 and terms through the whole store in round 0, and the dossiers become the report's appendix "源流考证 · Sources

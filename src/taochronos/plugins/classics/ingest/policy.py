@@ -88,7 +88,8 @@ def screen(title: str, text: str, composition: list[int] | tuple[int, int] | Non
 
 class Exclusions:
     """``corpus/catalog/exclusions.yaml``: reviewed decisions by source and code (``exclude`` with a reason, or
-    ``keep`` to overrule the automatic screen), and titles excluded wherever they appear."""
+    ``keep`` to overrule the automatic screen), and titles excluded (a reason) or kept (``keep``) wherever they
+    appear."""
 
     def __init__(self, path: str | Path | None) -> None:
         data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) if path and Path(path).exists() else {}
@@ -105,7 +106,7 @@ class Exclusions:
             return None, True
         for t, reason in self.titles.items():
             if title_key and t == title_key:
-                return reason, False
+                return (None, True) if reason == "keep" else (reason, False)
         return None, False
 
 

@@ -78,10 +78,10 @@ historical evidence.
 | Source | Scope | Licence | Connector |
 |---|---|---|---|
 | 漢籍リポジトリ Kanseki Repository, `KR3e` | 《四库全书·子部·医家类》, all 100 works (文渊阁本 WYG; seven in 四部丛刊 SBCK) — 25.7M characters | CC BY-SA 4.0 | `taochronos corpus fetch|ingest kanripo` |
-| 笈成 (JiCheng), data of the 笈成檢閱系統 v1.4.8 (user-supplied archive `jc_1_4_8_all.7z`, 3 volumes) | 857 punctuated texts: 内经难经, 伤寒, 金匮, 本草, 方剂, 温病, 各科, 医案, 综合, 丛书, 歌赋; 797 stored (60 contemporary works and modern editions left out) — 92M characters, 1.61M passages | originals public domain; punctuation and collation by the 笈成 volunteers — local research use | `taochronos corpus unpack|catalog|ingest jicheng` |
+| 笈成 (JiCheng), data of the 笈成檢閱系統 v1.4.8 (user-supplied archive `jc_1_4_8_all.7z`, 3 volumes) | 857 punctuated texts: 内经难经, 伤寒, 金匮, 本草, 方剂, 温病, 各科, 医案, 综合, 丛书, 歌赋; 798 stored (59 contemporary works and modern editions left out) — 92M characters, 1.61M passages | originals public domain; punctuation and collation by the 笈成 volunteers — local research use | `taochronos corpus unpack|catalog|ingest jicheng` |
 | Kanripo catalogue (KR-Catalog), `KR/KR3e.txt` | the 100 KR3e entries: responsible persons with roles (撰, 次注, 校正 …) and dates, Siku volume and page, extent | CC BY-SA 4.0 | `taochronos corpus fetch|catalog kr-catalog` (merged into the Kanripo records) |
 | McGill University Library, *Gynaecology in Traditional Chinese Medicine* (GitHub `mcgill-digital/gynaecology_in_chinese_medicine`) | 5 Qing prints and a manuscript (傅青主女科, 重订济阴纲目, 保生碎事, 女科辑要, 珍存秘方), page by page, unpunctuated — 366k characters | Public Domain Mark 1.0 | `taochronos corpus fetch|catalog|ingest mcgill` |
-| 數位中醫校書郎 CMETA (`cmeta.lctseng.csie.org`) | the editions the site has collated in full against their page images (精校) and opens to every visitor: 伤寒论 (赵开美本: 台北故宫本 and 安政覆刻本; 康平本; 康治本), 金匮 (吴迁本, 邓珍本), 素问 (顾从德本), 灵枢 (赵府居敬堂本), 古今医案按, 名医类案 — 11 read, 10 stored (桂林古本 left out) — 1.37M characters, 25,463 passages, located by page and, where the site shows the images to guests, linked to the page image | CC BY 4.0 for the site's collation and editing (attribution: 數位中醫校書郎 CMETA); the texts public domain; images per holder (故宫 Open Data, SBB PDM 1.0, Commons) | `taochronos corpus fetch|catalog|ingest cmeta` |
+| 數位中醫校書郎 CMETA (`cmeta.lctseng.csie.org`) | the editions the site has collated in full against their page images (精校) and opens to every visitor: 伤寒论 (赵开美本: 台北故宫本 and 安政覆刻本; 康平本; 康治本), 金匮 (吴迁本, 邓珍本), 素问 (顾从德本), 灵枢 (赵府居敬堂本), 古今医案按, 名医类案, and the 桂林古本 伤寒杂病论 (kept as a recension that surfaced in modern times, dated 1939) — 11 read and stored — 1.45M characters, 27,710 passages, located by page and, where the site shows the images to guests, linked to the page image | CC BY 4.0 for the site's collation and editing (attribution: 數位中醫校書郎 CMETA); the texts public domain; images per holder (故宫 Open Data, SBB PDM 1.0, Commons) | `taochronos corpus fetch|catalog|ingest cmeta` |
 | 東亜医学協会 · 医学古典テキスト (`aeam.jp/koten`) | 7 PDF texts of named base editions: 素問 (顾从德本), 霊枢 (明无名氏本), 難経, 傷寒論 (赵开美本), 金匱要略 (邓珍本), 神農本草経 (森立之), 扁鵲倉公列伝 — 317k characters, 12,212 passages | © 東亜医学協会: saving and use for non-commercial personal purposes only, no redistribution — local research use only | `taochronos corpus fetch|catalog|ingest aeam` (needs the `pdf` extra: pypdf) |
 | 维基文库 zh.wikisource, `Category:中醫` and its subcategories, and `Category:醫書` (from the Wikimedia dumps) | 627 works read, 16 stored after deduplication — 613k characters (the Korean 医方类聚, 1445, comes from 醫書) | CC BY-SA 4.0 (the originals public domain) | `taochronos corpus fetch|catalog|ingest wikisource` |
 | TCM-Ancient-Books (GitHub `xiaopangxia/TCM-Ancient-Books`) | 701 texts read, 8 stored — 369k characters | no licence stated — local research use | `taochronos corpus fetch|catalog|ingest tcm-ancient-books` |
@@ -204,7 +204,14 @@ contemporary physician (经验集, 老中医, 验案精选, 临证经验 …); a
 (19[4-9]x, 克, 毫升, 医院, 出版社, 教授, 维生素 …); annotation apparatus (【注释】【语译】【按语】 …); numbered
 footnotes; a modern editor's source marks in a lost work. Every excluded text is catalogued with its class and the
 evidence; a copy of an excluded 笈成 book in another collection inherits the decision, as does a kept one (薛己's
-校注妇人良方, 1547, is not a modern edition). In the 笈成 collection: 19 当代出版物, 24 当代名医著作, 17 现代校注本.
+校注妇人良方, 1547, is not a modern edition). In the 笈成 collection: 18 当代出版物, 24 当代名医著作, 17 现代校注本.
+
+Texts that surfaced in modern times under an ancient name are not modern publications in this sense: the 桂林古本 伤寒杂病论
+(白云阁藏本, printed 1939; the 桂林本, 1960), the 辅行诀脏腑用药法要 (brought out between 1918 and 1974), like the
+Republican 长沙古本 and 康平本, are kept (`keep`, also for a title wherever it appears) as sources of the time they
+appeared: dated by their appearance, marked pseudepigraphic or disputed, never dated by the age they claim. The
+copies of each in the web collections are catalogued as copies of the stored witness (the 白云阁藏本 on Wikisource,
+笈成 F027).
 
 ### The other collections (`plugins/classics/ingest/documents.py`)
 
@@ -248,12 +255,12 @@ three closest books.
 | Source | Read | Stored | Copies | Left out | Skipped |
 |---|---|---|---|---|---|
 | mcgill | 5 | 5 | 0 | 0 | 0 |
-| cmeta | 11 | 10 | 0 | 1 | 0 |
+| cmeta | 11 | 11 | 0 | 0 | 0 |
 | aeam | 7 | 7 | 0 | 0 | 0 |
-| wikisource | 627 | 16 | 591 | 19 | 1 |
-| tcm-ancient-books | 701 | 8 | 647 | 45 | 1 |
-| tcmoc | 701 | 0 | 655 | 45 | 1 |
-| hf-tcm-canon | 115 | 1 | 110 | 4 | 0 |
+| wikisource | 627 | 16 | 592 | 18 | 1 |
+| tcm-ancient-books | 701 | 8 | 649 | 43 | 1 |
+| tcmoc | 701 | 0 | 657 | 43 | 1 |
+| hf-tcm-canon | 115 | 1 | 112 | 2 | 0 |
 
 Curated dates (`*-overrides.yaml`): 傅青主女科 by its first print (1827; 旧题傅山); 重订济阴纲目 as 武之望 (1620)
 with 汪淇's interleaved annotation (1665) as a mixed layer; 天回医简 (Western Han slips excavated 2012–2013); the
@@ -262,8 +269,8 @@ never by the date they claim; 事林广记 续集卷十 by the Yuan print (1330�
 Joseon (1443–1445). CMETA's and the 東亜医学協会's texts are catalogued as editions of their works (`work: shanghanlun`,
 `suwen` …), each with the print it transcribes, its year and its holder (赵开美本 1599, 台北故宫 平图011603—011607;
 顾从德本 1550; 邓珍本 1340; 吴迁本 1395 …); CMETA's 素问 keeps 王冰's notes (762) and the 新校正 (1068) as dated layers
-and the 运气七篇 as the chapters 王冰 added, like the Kanripo copy. The 桂林古本 is left out as a 1980 publication, as
-it is in the other sources.
+and the 运气七篇 as the chapters 王冰 added, like the Kanripo copy. CMETA's 桂林古本 — 米伯让's corrected 1980 printing
+from the 1939 白云阁 blocks — joins the modern-surfaced recensions of the 伤寒杂病论 (work `ws:伤寒杂病论`), dated 1939.
 
 The CMETA and 東亜医学協会 texts reproduce the orthography of their prints (𤍠 for 熱, 𫞓 for 歲, 厺 for 去, 㕮咀 …):
 `script/cmeta_variants.tsv` maps the rare forms found by aligning the CMETA editions with the other witnesses of the
@@ -331,7 +338,7 @@ year, with holder, shelfmark, how the link was made and the terms, and the count
 | Resource | Outcome |
 |---|---|
 | Kanseki Repository KR3e, 笈成, McGill (gynaecology collection), Wikisource, TCM-Ancient-Books, tcmoc, classical-tcm-canon | already in the store. Wikisource: the categories 本草 and 醫家 lie inside the 中醫 tree, 傷寒 does not exist and 針灸 adds no work; 醫書 adds 医方类聚 (with a copy of a 笈成 book and an empty page) |
-| 數位中醫校書郎 CMETA | 10 editions stored: the 精校 texts the site opens to every visitor; texts still being collated, allow-listed texts and the excavated texts (modern transcriptions) are not taken |
+| 數位中醫校書郎 CMETA | 11 editions stored: the 精校 texts the site opens to every visitor (the 桂林古本 among them, kept as a modern-surfaced recension); texts still being collated, allow-listed texts and the excavated texts (modern transcriptions) are not taken |
 | 東亜医学協会 医学古典テキスト | 7 texts stored, local research use only |
 | ctext.org | not harvested: the site restricts automated bulk download |
 | 東京大学 鶚軒文庫 | the portal's search refuses automated requests; the collection is harvested through NIJL (東京大学総合図書館, classes V and T81) |

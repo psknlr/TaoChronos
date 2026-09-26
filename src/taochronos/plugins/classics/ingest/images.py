@@ -504,10 +504,11 @@ NDL_SEARCH = "https://ndlsearch.ndl.go.jp/api/opensearch"
 
 
 def _ndl_page(fetch: Fetcher, url: str, backoff: float, log: Log) -> str:
-    """A search page; NDL answers an overload with an error body (429), which is fetched again after a pause."""
+    """A search page.  NDL answers an overload with an error body or an HTTP 429: the page is fetched again after a
+    growing pause; a page given up on is logged (it is not cached, so the next run tries it again)."""
     text = fetch.get(url) or ""
-    for attempt in range(3):
-        if "<error>" not in text[:300]:
+    for attempt in range(4):
+        if text and "<error>" not in text[:300]:
             return text
         time.sleep(backoff * (attempt + 1))
         text = fetch.get(url, refresh=True) or ""

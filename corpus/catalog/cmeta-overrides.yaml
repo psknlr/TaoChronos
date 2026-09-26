@@ -121,3 +121,15 @@ lingshu_sibucongkan:
   category: 医经
   edition: 《四部丛刊》景印明赵府居敬堂刊本；CMETA 据维基文库文字对影像修订
   edition_year: [1560, 1570]
+
+shanghan_guilin:  # kept: a recension that surfaced in modern times under an ancient name (see exclusions.yaml)
+  title: 伤寒杂病论（桂林古本）
+  work: ws:伤寒杂病论
+  authors: [张仲景]
+  dynasty: 民国
+  composition: [1939, 1939]
+  attribution: pseudepigraphic
+  category: 近代
+  edition: 1980年陕西中医药研究院米伯让补刻勘误印行本（据1939年白云阁刻版）
+  edition_year: [1980, 1980]
+  notes_text: 所谓“桂林古本”：据称张仲景第四十六世孙张绍祖家藏第十二稿，光绪二十年（1894）左盛德授罗哲初；黄竹斋1934年抄录，1939年白云阁刊行，1960年罗继寿献出其父抄本由广西人民出版社出版；真伪有争议，按问世年代断代
