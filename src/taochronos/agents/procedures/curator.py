@@ -129,8 +129,11 @@ def draft_large(ctx: Any) -> dict[str, Any]:
     books, excluded = _books(goal, corpus, set(cfg.get("exclude_categories", [])))
     allowed_books = set(books)
     after = before = None
+    latest = cfg.get("latest_year")  # without a period of its own, a question reads nothing from this year on
     if goal.temporal_scope is not None:
         after, before = goal.temporal_scope.start, goal.temporal_scope.end + 1
+    elif latest is not None:
+        before = int(latest)
     terms, surfaces = frame_surfaces(ctx)
     score: dict[str, float] = {}
     matched_by: dict[str, set[str]] = {}
@@ -170,6 +173,8 @@ def draft_large(ctx: Any) -> dict[str, Any]:
             continue
         year = corpus.year(p, basis)
         if goal.temporal_scope is not None and (year is None or not goal.temporal_scope.contains(year)):
+            continue
+        if goal.temporal_scope is None and latest is not None and year is not None and year >= int(latest):
             continue
         if goal.holdout_after is not None and (year is None or year >= goal.holdout_after):
             holdout.append(pid)
@@ -213,13 +218,16 @@ def draft_large(ctx: Any) -> dict[str, Any]:
         warnings.append(f"{unverified} of {len(books)} books are unverified transcriptions (G1/G2 will warn)")
     if holdout:
         warnings.append(f"{len(holdout)} matching passage(s) dated ≥ {goal.holdout_after} are held out")
+    if goal.temporal_scope is None and latest is not None:
+        warnings.append(f"evidence read up to {int(latest)} (the question names no period): the modern editors' layers and "
+                        "contemporary works after it are no evidence for historical questions")
     books_in = sorted({passages[pid].book_id for pid in keep})
     frame = {
         "strategy": "full-text index: question terms, their variants, related terms and sense cues; one hop to co-mentioned formulas/herbs; stratified by period",
         "terms": terms, "surfaces": {t: f[:40] for t, f in surfaces.items()}, "expansion": expansion,
         "matched": len(keep_pool), "kept": len(keep), "per_period_floor": floor, "max_passages": max_passages,
         "available_by_period": {k: len(v) for k, v in sorted(by_period.items())}, "excluded_kinds": sorted(exclude_kinds),
-        "corpus_passages": len(corpus),
+        "corpus_passages": len(corpus), "latest_year": int(latest) if latest is not None and goal.temporal_scope is None else None,
     }
     return {"book_ids": books_in, "passage_ids": keep, "excluded": {k: v for k, v in excluded.items()},
             "coverage": coverage, "holdout_passage_ids": sorted(holdout), "time_basis": basis, "warnings": warnings, "frame": frame}

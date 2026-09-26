@@ -30,16 +30,16 @@ books:
   ref: canon-伤寒论-0000
   notes_text: 伤寒论；scan_original；foundational PD work (伤寒论), edition unattributed；validated_multisource
   closest:
-  - book: jc_p0101
-    containment: 0.9816
-    reverse: 0.9842
   - book: jc_b015
     containment: 0.9816
     reverse: 0.9848
+  - book: jc_p0101
+    containment: 0.9816
+    reverse: 0.9842
   - book: zhengzhi_zhunsheng
     containment: 0.7831
     reverse: 0.1176
-  duplicate_of: jc_p0101
+  duplicate_of: jc_b015
   status: duplicate
 - code: canon-伤寒论-0001
   id: hf_canon_0001
@@ -131,7 +131,7 @@ books:
   - book: jc_b027
     containment: 0.0857
     reverse: 0.0798
-  - book: jc_p0101
+  - book: jc_b015
     containment: 0.0773
     reverse: 0.0538
   duplicate_of: jc_b026
@@ -227,7 +227,7 @@ books:
   - book: zhengzhi_zhunsheng
     containment: 0.0444
     reverse: 0.0022
-  - book: jc_p0101
+  - book: jc_b015
     containment: 0.0438
     reverse: 0.0148
   duplicate_of: jc_b023
@@ -256,9 +256,9 @@ books:
   - book: jc_b035
     containment: 0.9643
     reverse: 0.9726
-  - book: jc_b041
-    containment: 0.0159
-    reverse: 0.0183
+  - book: jc_b017
+    containment: 0.03
+    reverse: 0.0108
   - book: jc_b016
     containment: 0.0159
     reverse: 0.0182
@@ -513,10 +513,10 @@ books:
   - book: jc_b019
     containment: 0.8937
     reverse: 0.9055
-  - book: jc_p0101
+  - book: jc_b015
     containment: 0.0555
     reverse: 0.0095
-  - book: jc_b015
+  - book: jc_p0101
     containment: 0.0555
     reverse: 0.0095
   duplicate_of: jc_b019
@@ -866,7 +866,7 @@ books:
   - book: xueshi_yian
     containment: 0.0915
     reverse: 0.0022
-  - book: jc_p0101
+  - book: jc_b015
     containment: 0.0568
     reverse: 0.0037
   duplicate_of: jc_b031
@@ -930,9 +930,9 @@ books:
   - book: jc_n059
     containment: 0.1345
     reverse: 0.0203
-  - book: puji_fang
-    containment: 0.0034
-    reverse: 0.0
+  - book: jc_b017
+    containment: 0.0103
+    reverse: 0.0006
   duplicate_of: jc_b030
   status: duplicate
 - code: canon-伤寒论-0031
@@ -1026,9 +1026,9 @@ books:
   - book: jc_b004
     containment: 0.141
     reverse: 0.0611
-  - book: jc_o052
+  - book: jc_b015
     containment: 0.1218
-    reverse: 0.0012
+    reverse: 0.0039
   duplicate_of: jc_b006
   status: duplicate
 - code: canon-伤寒论-0034
@@ -1147,10 +1147,18 @@ books:
   characters: 355435
   ref: canon-伤寒论-0075
   notes_text: '伤寒论；scan_original；医藏: 清 author, PD；single_source'
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
-  status: excluded
+  closest:
+  - book: jc_b017
+    containment: 0.9699
+    reverse: 0.9679
+  - book: jc_o071
+    containment: 0.0273
+    reverse: 0.068
+  - book: jc_o128
+    containment: 0.024
+    reverse: 0.0777
+  duplicate_of: jc_b017
+  status: duplicate
 - code: canon-伤寒论-0076
   id: hf_canon_0076
   title: 订正仲景全书伤寒论注
@@ -1303,12 +1311,12 @@ books:
   - book: jc_b039
     containment: 0.977
     reverse: 0.9817
-  - book: jc_p0101
-    containment: 0.1303
-    reverse: 0.1174
   - book: jc_b015
     containment: 0.1303
     reverse: 0.1175
+  - book: jc_p0101
+    containment: 0.1303
+    reverse: 0.1174
   duplicate_of: jc_b039
   status: duplicate
 - code: canon-伤寒论-0081
@@ -1367,9 +1375,9 @@ books:
   - book: jc_b040
     containment: 0.8571
     reverse: 0.9
-  - book: jc_p0800
+  - book: jc_n012
     containment: 0.0476
-    reverse: 0.0001
+    reverse: 0.0018
   - book: jc_o082
     containment: 0.0476
     reverse: 0.0
@@ -2074,12 +2082,12 @@ books:
   - book: jc_e007
     containment: 0.9761
     reverse: 0.9834
+  - book: jc_b017
+    containment: 0.0627
+    reverse: 0.024
   - book: jc_e015
     containment: 0.0584
     reverse: 0.0892
-  - book: jc_e019
-    containment: 0.0292
-    reverse: 0.0965
   duplicate_of: jc_e007
   status: duplicate
 - code: canon-温热温疫-0120
@@ -2715,9 +2723,9 @@ books:
   - book: jc_a306
     containment: 0.682
     reverse: 0.2629
-  - book: nanjing_benyi
+  - book: jc_a300
     containment: 0.6151
-    reverse: 0.2068
+    reverse: 0.7462
   duplicate_of: jc_a304
   status: duplicate
 - code: canon-难经-0070
@@ -3505,9 +3513,9 @@ books:
   - book: suwen_wangbing
     containment: 0.0439
     reverse: 0.0017
-  - book: leijing
+  - book: cm_suwen_gucongde
     containment: 0.039
-    reverse: 0.0006
+    reverse: 0.0015
   duplicate_of: jc_a012
   status: duplicate
 - code: canon-黄帝内经素问-0096

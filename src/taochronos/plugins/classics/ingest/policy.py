@@ -10,7 +10,9 @@ Three kinds of text are excluded from every source (the user's criteria):
 
 Republican-era works (1912–1949) are historical sources and stay (category 近代); so do Qing reconstructions
 (孙星衍's 本经).  Decisions come from the curated list (``corpus/catalog/exclusions.yaml`` and the per-source
-override files) first, then from the automatic screen below; both record their reason in the catalogs.
+override files) first, then from the automatic screen below; both record their reason in the catalogs.  A review
+may keep a modern edition (``keep``): it then enters the store with its editors' work separated from the old text
+by the rules of its catalog entry (:mod:`.apparatus`, ADR 0007).
 """
 
 from __future__ import annotations

@@ -473,7 +473,11 @@ then measures two things. The first is the share of fragments found in the survi
 overall and per quoting book: this says how far each compiler can be trusted. The second is how much of the work is
 recovered.
 
-**Example (full corpus).** 小品方: 226 fragments from 386 quotations. Verification on the 千金要方: 32 % of the fragments
+**Example (full corpus).** 小品方: 132 fragments from 190 quotations (外台秘要 in two transcriptions, 妇人大全良方, 千金 …).
+Its modern 辑校本 is in the store now (a layer-separated modern edition, [ADR 0007](adr/0007-modern-apparatus-as-layers.md)),
+so `--verify` measures the gathering against it: 90 of the 132 (68 %) are in it, and they cover 10 % of it — the rest
+of the 辑校本 comes from the 医心方, which the corpus lacks, and from the 尊经阁 manuscript of 卷一. Verification on the
+千金要方: 32 % of the fragments
 attributed to it are in its surviving text (幼幼新书 0.83, 外台秘要 0.55, 医心方 0.36 — compilers quote with different
 freedom), and they cover 12 % of it. For the 肘后备急方, 87.5 % of its quotations are *not* in the extant 肘后 — a reworked
 remnant (葛洪 → 陶弘景 → 杨用道's 附广). They are candidate lost text, which is what 辑佚 recovers.
@@ -486,7 +490,7 @@ remnant (葛洪 → 陶弘景 → 杨用道's 附广). They are candidate lost t
 | `domains/classics/metrology.yaml` | units and their ratios; per period the 两 in grams and the 升 in ml (ranges), the value of 分, sources; the notice |
 | `domains/classics/physicians.yaml` | ~70 physicians: names, 本草 short names, dynasty, life or active years, school |
 | `domains/classics/drug_families.yaml` | drugs compared as one in compositions (桂, 地黄, 芍药, 术, 甘草, 附子, 山药, …) |
-| `corpus/catalog/external-works.yaml` | works known through citations, including lost works whose modern reconstructions are excluded |
+| `corpus/catalog/external-works.yaml` | works known through citations, including lost works known only through them |
 | `domains/classics/collation.yaml` | orthographic equivalences for collation (沉/沈, 藏/脏, 鞕/硬, 耆/芪 …): variants in the apparatus, never grouping evidence; graphic confusions (已/巳/己) deliberately left out |
 | `domains/classics/intertext.yaml` | citation, dialogue, refutation and explanation markers, and the stock phrases of the genre (以水七升，煮取三升，去滓 …) |
 | `domains/classics/cases.yaml` | case and visit openers, day markers, sections that file no cases, pulse and tongue patterns, principles, changes, doses, words of response |

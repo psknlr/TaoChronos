@@ -81,6 +81,9 @@ def test_dated_statements_resolve_reused_eras_and_miswritten_years(chron):
     assert [y for y, _, _ in chron.statements("時康熙歲次甲午夏")] == [1714]
     assert [y for y, _, _ in chron.statements("永樂四年丙戍歲秋八月")] == [1406]  # 丙戍 for 丙戌: the number wins
     assert [y for y, _, _ in chron.statements("中華民國十三年八月")] == [1924]
+    # a western year spelt out after 西元 / 公元 in a signature (何廉臣's 後序 of 1916)
+    assert list(chron.statements("西元一九一六年丙辰四月望")) == [(1916, 0, 7)]
+    assert [y for y, _, _ in chron.statements("時在公元1956年六月")] == [1956]
 
 
 def test_preface_signatures_date_books(chron):

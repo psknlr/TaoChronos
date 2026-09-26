@@ -78,12 +78,12 @@ historical evidence.
 | Source | Scope | Licence | Connector |
 |---|---|---|---|
 | 漢籍リポジトリ Kanseki Repository, `KR3e` | 《四库全书·子部·医家类》, all 100 works (文渊阁本 WYG; seven in 四部丛刊 SBCK) — 25.7M characters | CC BY-SA 4.0 | `taochronos corpus fetch|ingest kanripo` |
-| 笈成 (JiCheng), data of the 笈成檢閱系統 v1.4.8 (user-supplied archive `jc_1_4_8_all.7z`, 3 volumes) | 857 punctuated texts: 内经难经, 伤寒, 金匮, 本草, 方剂, 温病, 各科, 医案, 综合, 丛书, 歌赋; 798 stored (59 contemporary works and modern editions left out) — 92M characters, 1.61M passages | originals public domain; punctuation and collation by the 笈成 volunteers — local research use | `taochronos corpus unpack|catalog|ingest jicheng` |
+| 笈成 (JiCheng), data of the 笈成檢閱系統 v1.4.8 (user-supplied archive `jc_1_4_8_all.7z`, 3 volumes) | 857 punctuated texts: 内经难经, 伤寒, 金匮, 本草, 方剂, 温病, 各科, 医案, 综合, 丛书, 歌赋; 816 stored (41 contemporary works and physicians' writings left out; the 17 modern editions and 子午流注说难 kept with their editors' work separated, below) — 93.6M characters, 1.63M passages | originals public domain; punctuation and collation by the 笈成 volunteers — local research use | `taochronos corpus unpack|catalog|ingest jicheng` |
 | Kanripo catalogue (KR-Catalog), `KR/KR3e.txt` | the 100 KR3e entries: responsible persons with roles (撰, 次注, 校正 …) and dates, Siku volume and page, extent | CC BY-SA 4.0 | `taochronos corpus fetch|catalog kr-catalog` (merged into the Kanripo records) |
 | McGill University Library, *Gynaecology in Traditional Chinese Medicine* (GitHub `mcgill-digital/gynaecology_in_chinese_medicine`) | 5 Qing prints and a manuscript (傅青主女科, 重订济阴纲目, 保生碎事, 女科辑要, 珍存秘方), page by page, unpunctuated — 366k characters | Public Domain Mark 1.0 | `taochronos corpus fetch|catalog|ingest mcgill` |
 | 數位中醫校書郎 CMETA (`cmeta.lctseng.csie.org`) | the editions the site has collated in full against their page images (精校) and opens to every visitor: 伤寒论 (赵开美本: 台北故宫本 and 安政覆刻本; 康平本; 康治本), 金匮 (吴迁本, 邓珍本), 素问 (顾从德本), 灵枢 (赵府居敬堂本), 古今医案按, 名医类案, and the 桂林古本 伤寒杂病论 (kept as a recension that surfaced in modern times, dated 1939) — 11 read and stored — 1.45M characters, 27,710 passages, located by page and, where the site shows the images to guests, linked to the page image | CC BY 4.0 for the site's collation and editing (attribution: 數位中醫校書郎 CMETA); the texts public domain; images per holder (故宫 Open Data, SBB PDM 1.0, Commons) | `taochronos corpus fetch|catalog|ingest cmeta` |
 | 東亜医学協会 · 医学古典テキスト (`aeam.jp/koten`) | 7 PDF texts of named base editions: 素問 (顾从德本), 霊枢 (明无名氏本), 難経, 傷寒論 (赵开美本), 金匱要略 (邓珍本), 神農本草経 (森立之), 扁鵲倉公列伝 — 317k characters, 12,212 passages | © 東亜医学協会: saving and use for non-commercial personal purposes only, no redistribution — local research use only | `taochronos corpus fetch|catalog|ingest aeam` (needs the `pdf` extra: pypdf) |
-| 维基文库 zh.wikisource, `Category:中醫` and its subcategories, and `Category:醫書` (from the Wikimedia dumps) | 627 works read, 16 stored after deduplication — 613k characters (the Korean 医方类聚, 1445, comes from 醫書) | CC BY-SA 4.0 (the originals public domain) | `taochronos corpus fetch|catalog|ingest wikisource` |
+| 维基文库 zh.wikisource, `Category:中醫` and its subcategories, and `Category:醫書` (from the Wikimedia dumps) | 627 works read, 18 stored after deduplication — 737k characters (the Korean 医方类聚, 1445, comes from 醫書; 医理真传 and 妇人寿草 are kept with their modern layers) | CC BY-SA 4.0 (the originals public domain) | `taochronos corpus fetch|catalog|ingest wikisource` |
 | TCM-Ancient-Books (GitHub `xiaopangxia/TCM-Ancient-Books`) | 701 texts read, 8 stored — 369k characters | no licence stated — local research use | `taochronos corpus fetch|catalog|ingest tcm-ancient-books` |
 | tcmoc (GitHub `lab99x/tcmoc`) | 701 texts read (a copy of the previous), none stored | no licence stated — local research use | `taochronos corpus fetch|catalog|ingest tcmoc` |
 | classical-tcm-canon (Hugging Face `wangekxy/classical-tcm-canon`) | 115 records read, 1 stored — 305k characters | dataset card: `license: other` (proprietary-commercial), texts declared public domain — local research use only, never redistributed | `taochronos corpus fetch|catalog|ingest hf-tcm-canon` (needs the `parquet` extra: pyarrow) |
@@ -159,6 +159,7 @@ point, common form and ideographic description) and `config/synonyms.txt` (the v
 | `[box]` | an appended prescription block → passage of kind `formula`, section = its `[b]` name |
 | `[z]` `[s]` (`[zb]` `[sb]`) | 注 / 疏: inline as （…）, or a dated commentary layer when the catalog gives one (`z_layer`, `s_layer`, `markers`) |
 | `[dz]` `[ds]`, `[l]`, `[b]` `[i]` `[u]` | the author's own full-size notes, small characters (doses), formatting: kept in the text |
+| `[i]caption\file.bmp[/i]` | a figure: the caption stays in the text, the file name goes to `extra.images` (removed after the text is cut into passages, so passage ids do not move) |
 | `[j]` `[dj]` (`[jb]` `[djb]`) | the transcribers' collation remarks: never in the reading text |
 | `[id]` | numbering added by later editors (宋本条文 numbers): locator only (`第N条`) |
 | `[c]code[/c]` | the character from `nclist.txt`, or 〓 with code, description and common form kept in the passage metadata |
@@ -186,14 +187,16 @@ point, common form and ideographic description) and `config/synonyms.txt` (the v
 Paratext is dated on its own: a preface whose closing line is dated takes that year (layer 序跋（按落款年代）);
 undated 序 / 跋 / 凡例 / 目录 are placed at the end of the imperial era (1911) unless the book is later; what a modern
 editor wrote (内容提要, 整理说明, 点校说明, 概述, 前言, 电子版序 …) is dropped. Republican works (category 近代,
-1912–1949) are kept as historical sources; works after 1949 and modern editions are left out (below). Non-medical
-texts (非医籍, e.g. 易经) are ingested but left out of research by the `full-corpus` profile
-(`discovery.scope.exclude_categories`) unless a research contract names its categories. A `[book]` block whose
+1912–1949) are kept as historical sources; works after 1949 and modern editions are left out (below), unless a review
+kept them with their editors' work separated. Non-medical texts (非医籍, e.g. 易经) are ingested but left out of
+research by the `full-corpus` profile (`discovery.scope.exclude_categories`) unless a research contract names its
+categories, and a question that names no period reads nothing dated from 1950 on (`discovery.scope.latest_year`: the
+modern editors' layers and 子午流注说难). Signed prefaces take their year, 1950 and later included. A `[book]` block whose
 closing mark was put after the whole text (M106 脉诀) ends at the first tag line.
 
 ### What the corpus leaves out (`corpus/catalog/exclusions.yaml`)
 
-Three classes of text never enter the store: **当代出版物** (written or compiled after 1949: dictionaries, textbooks,
+Three classes of text are left out unless a review keeps them (below): **当代出版物** (written or compiled after 1949: dictionaries, textbooks,
 modern compilations and readers), **当代名医著作** (works and case records of physicians of the PRC era) and
 **现代校注本** (modern annotated, translated or explicated editions, and modern reconstructions — 辑校本 — of lost
 works, whose text interleaves the editor's source marks). `exclusions.yaml` records the reviewed decisions per source
@@ -204,7 +207,8 @@ contemporary physician (经验集, 老中医, 验案精选, 临证经验 …); a
 (19[4-9]x, 克, 毫升, 医院, 出版社, 教授, 维生素 …); annotation apparatus (【注释】【语译】【按语】 …); numbered
 footnotes; a modern editor's source marks in a lost work. Every excluded text is catalogued with its class and the
 evidence; a copy of an excluded 笈成 book in another collection inherits the decision, as does a kept one (薛己's
-校注妇人良方, 1547, is not a modern edition). In the 笈成 collection: 18 当代出版物, 24 当代名医著作, 17 现代校注本.
+校注妇人良方, 1547, is not a modern edition). In the 笈成 collection 41 files are left out, 17 当代出版物 and 24
+当代名医著作; its 17 现代校注本 and one 当代出版物 (子午流注说难) were reviewed again and kept (below).
 
 Texts that surfaced in modern times under an ancient name are not modern publications in this sense: the 桂林古本 伤寒杂病论
 (白云阁藏本, printed 1939; the 桂林本, 1960), the 辅行诀脏腑用药法要 (brought out between 1918 and 1974), like the
@@ -212,6 +216,57 @@ Republican 长沙古本 and 康平本, are kept (`keep`, also for a title wherev
 appeared: dated by their appearance, marked pseudepigraphic or disputed, never dated by the age they claim. The
 copies of each in the web collections are catalogued as copies of the stored witness (the 白云阁藏本 on Wikisource,
 笈成 F027).
+
+### Modern editions kept, their editors' work separated (`plugins/classics/ingest/apparatus.py`, [ADR 0007](adr/0007-modern-apparatus-as-layers.md))
+
+The modern editions reviewed as 现代校注本 — the 辑校本 of ten lost works and nine old books in annotated,
+explicated or translated editions — and one contemporary work, 吴棹仙's 子午流注说难 (1956), were reviewed again and kept
+at the user's request.  The old text is the main layer, dated as the book; what the editors added is separated by
+rules of the catalog entry (`jicheng-overrides.yaml`, `wikisource-overrides.yaml`), shared by the 笈成 and document
+parsers:
+
+- `paragraphs` — a marked paragraph (【闡釋】, 【榮齋按】, 【廉勘】, a numbered note) takes a dated layer, alone or as a
+  block that runs on over the unmarked paragraphs after it until another rule matches or a heading comes; a block
+  may run only while a condition holds (徐荣斋's modern punctuation, among older layers punctuated with 。 alone) or up
+  to a closing bracket (an insertion 〔…〕 over several paragraphs); a rule without a layer switches back to the old
+  text (the next 条文, 【鄭論】, 问曰); `drop` moves a whole line (a source reference under a heading) into the
+  metadata of its entry;
+- `apparatus` — inline pieces leave the text: with a layer they become commentary anchored to the passage, otherwise
+  they are kept in its metadata (`extra.apparatus`: source references, sigla, note calls, doses converted to grams);
+- `drop_sections` (an editor's 凡例 or 校勘记), `heading_layers` (sections an editor added) and `own_sections` (a 序錄
+  that is the author's own text, dated with the book rather than as front matter).
+
+Layers are dated by who wrote them, and where two cannot be told apart, by the later: 1950 on belongs to no
+analysis period (the dynasty label is 当代), so the editors' notes never count as evidence for the Qing or the
+Republic.  A paragraph of old text resumed after a commentary without a marker is dated with the commentary —
+later, never earlier.
+
+<!-- kept-editions -->
+| Book | Old text (years, passages) | Layers of later commentators and editors (years, passages) | Pieces in metadata | Treatment |
+|---|---|---|---|---|
+| 吴普本草 | 220—265（218 段） | 今人辑校按语（1950—2010，21 段） | 210 | 辑者所注出处（《御览》卷次）入元数据；辑者按语单列 |
+| 本草经集注 | 480—500（1975 段） | — | 636 | 辑者所注《新修》《大观》《政和》出处入元数据；陶弘景序录按本书断代 |
+| 新修本草 | 659（3530 段） | — | — | 无今人按语 |
+| 食疗本草 | 701—741（1043 段） | — | 988 | 〔證〕〔嘉〕〔心〕〔卷〕等出处代号入元数据 |
+| 海药本草 | 907—925（142 段） | — | 131 | 《大观》《政和》《纲目》页码入元数据 |
+| 本草图经 | 1061—1062（725 段） | — | — | 插图文件名移出正文 |
+| 名医别录 | 200—500（1285 段） | — | 8 | 〔附〕标记入元数据 |
+| 集验方 | 557—581（1701 段） | — | 775 | 《外台》《医心方》等出处入元数据 |
+| 小品方 | 454—473（1931 段） | — | — | 无辑者按语 |
+| 神农本草经（复古辑本） | 25—220（361 段） | — | — | 民国辑本，无辑者按语 |
+| 重订通俗伤寒论 | 1776（1253 段） | 何秀山按（1776—1795，482 段）；何廉臣勘（1916—1929，670 段）；曹炳章按（1929—1934，78 段）；徐荣斋按（1955—1956，218 段）；徐荣斋重订新增（1955—1956，36 段） | — | 何秀山按、何廉臣勘、曹炳章按、徐荣斋按各为一层（按语后未标记的段落随其按语）；徐荣斋新增三节整节单列 |
+| 伤寒恒论 | 1894（763 段） | 唐步祺注释（1993—1996，179 段）；唐步祺阐释（1993—1996，928 段） | 359 | 唐步祺阐释、补出的方剂与方解、注释单列；“原文N”条号入元数据；今人附录、凡例、编后记不入库 |
+| 医理真传 | 1869（615 段） | 唐步祺阐释（1987—1996，205 段） | 13 | 唐步祺【阐释】单列；电子版序、代序、今人序与前言不入库 |
+| 六因条辨 | 1644—1911（444 段） | 今人注释（1950—2010，18 段） | 94 | 今人编号注释单列，注码入元数据 |
+| 万氏秘传片玉心书 | 1644—1911（1039 段） | 今人校注（1950—2010，113 段） | 309 | 今人校注单列（“原书注”仍归正文），注码入元数据 |
+| 许氏医案 | 1644—1911（46 段） | — | — | 网络重校者前言不入库；重校的句读与文字无从分离 |
+| 湖岳村叟医案 | 1935（924 段） | 原书眉批（馨山按）（1935，13 段）；整理者按语（含移入的原书眉批）（1984，204 段） | 2325 | 折算的克数入元数据；“馨山按”按1935年、其余按语按1984年单列；1963年校勘记与1965年序不入库 |
+| 妇人寿草 | 1726（whole text a translation） | 今人汉译（据1986年小野正弘校订日文本）（1986—2010，183 段） | — | 整书为今人汉译，按译文断代 |
+| 傅青主男科重编考释 | 1821—1863（922 段） | 今人考释（1950—2010，5 段）；今人补入（据《石室秘录》等）（1950—2010，116 段） | — | 今人据《石室秘录》等补入之文（〔　〕）与考释按语单列 |
+| 子午流注说难 | 1956（891 段） | — | — | 当代著作（1956），整书在分析分期之外 |
+
+In all 20 books: 19,808 passages of old text, 3,469 of commentary and editorial layers, 5,848 pieces of apparatus in the passages' metadata.
+<!-- /kept-editions -->
 
 ### The other collections (`plugins/classics/ingest/documents.py`)
 
@@ -257,10 +312,10 @@ three closest books.
 | mcgill | 5 | 5 | 0 | 0 | 0 |
 | cmeta | 11 | 11 | 0 | 0 | 0 |
 | aeam | 7 | 7 | 0 | 0 | 0 |
-| wikisource | 627 | 16 | 592 | 18 | 1 |
-| tcm-ancient-books | 701 | 8 | 649 | 43 | 1 |
-| tcmoc | 701 | 0 | 657 | 43 | 1 |
-| hf-tcm-canon | 115 | 1 | 112 | 2 | 0 |
+| wikisource | 627 | 18 | 606 | 2 | 1 |
+| tcm-ancient-books | 701 | 8 | 666 | 26 | 1 |
+| tcmoc | 701 | 0 | 674 | 26 | 1 |
+| hf-tcm-canon | 115 | 1 | 113 | 1 | 0 |
 
 Curated dates (`*-overrides.yaml`): 傅青主女科 by its first print (1827; 旧题傅山); 重订济阴纲目 as 武之望 (1620)
 with 汪淇's interleaved annotation (1665) as a mixed layer; 天回医简 (Western Han slips excavated 2012–2013); the

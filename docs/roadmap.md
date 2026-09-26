@@ -1,10 +1,10 @@
 # Roadmap
 
 **Data**
-- Connected: Kanripo KR3e (100) and its catalogue, 笈成 (798 of 857), McGill (5), CMETA (the 11 collated editions it
-  opens), the 東亜医学協会 (7), Wikisource Category:中醫 and 醫書 (16 new of 627, from the dumps), TCM-Ancient-Books (8
-  new of 701), tcmoc (a copy), classical-tcm-canon (1 new of 115); contemporary works and modern editions left out
-  (`corpus/catalog/exclusions.yaml`). Image witnesses: the records of the digitised prints and manuscripts at NIJL's
+- Connected: Kanripo KR3e (100) and its catalogue, 笈成 (816 of 857), McGill (5), CMETA (the 11 collated editions it
+  opens), the 東亜医学協会 (7), Wikisource Category:中醫 and 醫書 (18 new of 627, from the dumps), TCM-Ancient-Books (8
+  new of 701), tcmoc (a copy), classical-tcm-canon (1 new of 115); contemporary works left out
+  (`corpus/catalog/exclusions.yaml`), the modern editions kept with their editors' work separated (ADR 0007). Image witnesses: the records of the digitised prints and manuscripts at NIJL's
   medical holders, Berlin (Sammlung Unschuld), the Library of Congress and Waseda (`corpus/catalog/images/`); the NDL
   catalog (`corpus images ndl`, about three hours at NDL's rate limits) is still to be built.
 - CMETA's texts still being collated (粗校, 待校) when the site opens them; its 難經集注 and further editions as they
@@ -41,7 +41,8 @@
 **深层发现 2.0 (next)**
 - Expert gold for the 2.0 capabilities on the full corpus: a collated chapter with its stemma, typed reuse pairs
   drawn from the corpus, segmented case records from several collections, argument graphs, dated sense shifts,
-  fragments checked against modern 辑佚 editions (used for evaluation only; the editions stay excluded from the store).
+  fragments checked against the modern 辑佚 editions now in the store (their editors' apparatus in metadata, ADR 0007)
+  as a gold standard of what a recovery should find.
 - Collation at the scale of whole works: the variant units of every work with several witnesses, as a variant
   dataset; stemmata compared with the editorial histories of the literature.
 - Transmission for every major work, and a corpus-wide reuse graph (who took up whom, how, and through which channels).

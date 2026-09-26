@@ -59,6 +59,9 @@
   paragraphs:
     - {pattern: '^(?:□|问曰|答曰|或问|用药意解|[^\s，。（]{2,12}(?:汤|散|丸|饮|丹|膏|方)$)', block: true}
     - {pattern: '^【阐释】', layer: 唐步祺阐释, year: [1987, 1996], attribution: 唐步祺《医理真传阐释》（巴蜀书社）, block: true}
+  apparatus:  # the editors' collation notes: （（“挈”：原书为“絜”）） and the like
+    - {pattern: '（（“[^”]{1,8}”[：:]原书[为作]“[^”]{1,8}”））|\[“[^”]{1,8}”[：:]原书[为作]“[^”]{1,8}”\]'}
+    - {pattern: '（（[^（）]*(?:编者|郑氏原文)[^（）]*））'}
   drop_sections: ['^火神立名之本', '^序$']
 
 婦人壽草:

@@ -166,10 +166,28 @@ def test_harvester_finds_prescription_headings(corpus, pack):
 
 
 # ------------------------------------------------------------------ research over a store
-def test_research_over_a_corpus_store(store_path, tmp_path):
+def test_research_over_a_corpus_store(store_path, tmp_path, pack):
+    # a modern editor's note on 消渴 (dated 1950—2010): no evidence for a question that names no period
+    local = tmp_path / "tcm.sqlite"
+    shutil.copy(store_path, local)
+    store = CorpusStore(local)
+    store.put_book({"id": "modern_note", "title": "今人按语", "aliases": [], "authors": [], "dynasty": "当代", "category": "内科",
+                    "composition": [1950, 2010], "author_life": None, "dating_basis": "composition", "attribution": "traditional",
+                    "school": None, "work": "modern_note", "editions": [{"id": "modern_note@test", "name": "测试", "year": None, "quality": 0.5}],
+                    "source": {"origin": "test", "license": "CC BY-SA 4.0", "acquisition": "test", "url": None, "transcription": "",
+                               "verified": False}, "notes": "", "layers": [], "source_id": "test", "source_ref": "modern_note"},
+                   source="test")
+    store.add_passages([{"id": "modern_note.00000", "book_id": "modern_note", "edition_id": "modern_note@test", "seq": 0,
+                         "kind": "commentary", "layer": "今人按", "year": 1980.0, "y_start": 1950, "y_end": 2010,
+                         "locator": {"volume": None, "chapter": "按", "section": None, "precision": "exact"},
+                         "temporal": {"dynasty": "当代", "t_author": None, "t_composition": [1950, 2010], "t_edition": None, "t_citation": None},
+                         "text": "今人按：消渴即今之糖尿病，消渴之病多由胰岛所致。", "punctuation": "editorial", "extra": {"layer": "今人按"}}],
+                       pack.variants.normalize_text)
+    store.commit()
+    store.close()
     harness = Harness.from_profile("full-corpus", home=HOME, data_dir=tmp_path, store=MemoryEventStore(),
                                    overrides={"bundles": [
-                                       {"plugin": "taochronos.plugins.classics", "config": {"domain": "domains/classics", "store": str(store_path)}},
+                                       {"plugin": "taochronos.plugins.classics", "config": {"domain": "domains/classics", "store": str(local)}},
                                        {"plugin": "taochronos.plugins.knowledge"}, {"plugin": "taochronos.plugins.retrieval"},
                                        {"plugin": "taochronos.plugins.models.offline"}, {"plugin": "taochronos.plugins.sandbox"},
                                        {"plugin": "taochronos.plugins.subagents"}]})
@@ -180,6 +198,7 @@ def test_research_over_a_corpus_store(store_path, tmp_path):
     engine.run(session)
     state = session.state
     assert state.corpus.frame["terms"] == ["disease:消渴"] and state.corpus.frame["matched"] >= 3
+    assert state.corpus.frame["latest_year"] == 1950 and "modern_note.00000" not in state.corpus.passage_ids
     assert state.claims and all(verify_claim(c, harness.corpus, harness.pack.variants.normalize_text) == [] for c in state.claims.values())
     report = next(a for a in state.artifacts.values() if a.kind == "discovery_report" and a.media_type == "text/markdown")
     text = (tmp_path / "artifacts" / report.path).read_text(encoding="utf-8")

@@ -436,7 +436,7 @@ def date_signed_prefaces(rows: list[dict[str, Any]], chronology: Any, dynasty_of
             year = None
             norm = chronology.normalize(r["text"])
             for y, start, end in chronology.statements(r["text"]):
-                if len(norm) - start <= 90 and _SIGN.search(norm[end:end + 16]) and -300 <= y <= 1949:
+                if len(norm) - start <= 90 and _SIGN.search(norm[end:end + 16]) and -300 <= y <= 2030:
                     year = y
             if year is None:
                 continue

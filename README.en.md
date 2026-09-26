@@ -6,7 +6,7 @@
 [中文 README](README.md) · [Study layer](docs/study.md) · [Architecture](docs/architecture.md) · [Agents](docs/agents.md) ·
 [Discovery](docs/discovery.md) · [Evaluation](docs/evals.md) · [Data](docs/data.md) · [Roadmap](docs/roadmap.md) · [ADRs](docs/adr/)
 
-TaoChronos turns 946 Chinese medical classics (about 121 million characters in 2.03 million passages) into a corpus
+TaoChronos turns 966 Chinese medical classics (about 123 million characters in 2.05 million passages) into a corpus
 that can be searched, dated and cited, and offers two layers on top of it:
 
 - **Study (治学)** answers the questions scholars and students ask of the literature every day, the way the 考据
@@ -32,7 +32,8 @@ and decide.
 
 > ⚠️ The corpus consists of transcriptions from several sources (Siku, 笈成, McGill rare books, CMETA, the 東亜医学協会,
 > Wikisource, web text sets), **none collated by this project**; `corpus/demo` holds unverified excerpts for demonstrating the method.
-> Contemporary publications, works of contemporary physicians and modern annotated editions are left out. All outputs
+> Contemporary publications and works of contemporary physicians are left out; in the modern editions kept, the editors'
+> work is a layer of its own or metadata. All outputs
 > are textual research and computational inference — not medical conclusions or clinical advice. Doses read in
 > historical measures are scholarly estimates of historical measures, **never dosage guidance**.
 
@@ -143,21 +144,27 @@ taochronos governance              # architecture policy check
 | Source | Licence | Ingested | Notes |
 |---|---|---|---|
 | Kanseki Repository KR3e, *Siku quanshu* medical works | CC BY-SA 4.0 | **100 works**, 25.7 M characters | unpunctuated Siku / Sibu congkan texts; a curated catalogue with authors, dates, schools, editions and layer dating |
-| 笈成 (JiCheng) v1.4.8 | user-supplied, local research only | **798 works** (857 less 59), ~92.3 M characters | punctuated by its editors; headings, prescription blocks, commentaries, collation remarks and missing characters parsed from the markup |
+| 笈成 (JiCheng) v1.4.8 | user-supplied, local research only | **816 works** (857 less 41), ~93.6 M characters | punctuated by its editors; headings, prescription blocks, commentaries, collation remarks and missing characters parsed from the markup |
 | McGill University Library rare gynaecology books | public domain | **5 works** | Qing prints and manuscripts, unpunctuated |
 | 數位中醫校書郎 CMETA (collated editions) | CC BY 4.0 (the collation); texts public domain | **11 works**, 1.45 M characters | collated page by page against the images: 伤寒论 (赵开美本: the 台北故宫 copy and the 安政 reprint; 康平本; 康治本), 金匮 (吴迁本, 邓珍本), 素问 (顾从德本), 灵枢 (赵府居敬堂本), 古今医案按, 名医类案, and the 桂林古本 伤寒杂病论 (米伯让's 1980 printing from the 白云阁 blocks, dated by its appearance, 1939); passages carry their page and, where the site shows the images to guests, the page image |
 | 東亜医学協会 · 医学古典テキスト | © the association, local research only | **7 works**, 0.32 M characters | 素问, 灵枢, 难经, 伤寒论, 金匮要略, 神农本草经, 扁鹊仓公列传, each from a named base edition |
-| Wikisource Category:中醫 and Category:醫書 (from the Wikimedia dumps) | CC BY-SA 4.0 | **16 works** (new of 627) | 天回医简, 五十二病方, three Republican "ancient" editions of the 伤寒杂病论, 东医宝鉴, the Korean 医方类聚 (1445) … |
+| Wikisource Category:中醫 and Category:醫書 (from the Wikimedia dumps) | CC BY-SA 4.0 | **18 works** (new of 627) | 天回医简, 五十二病方, three Republican "ancient" editions of the 伤寒杂病论, 东医宝鉴, the Korean 医方类聚 (1445), 医理真传 (唐步祺's explicated edition, his commentary a layer of its own) … |
 | TCM-Ancient-Books / tcmoc | undeclared, local research only | **8** / 0 works | mostly simplified copies of 笈成 texts, deduplicated work by work |
 | Hugging Face classical-tcm-canon | proprietary-commercial, local research only, never redistributed | **1 work** | 张志聪's 伤寒论宗印·集注 |
 | KR-Catalog (Kanripo catalogue) | CC BY-SA 4.0 | catalogue | roles and dates of 132 persons responsible for the Siku works |
 | Image witnesses: NIJL (研医会; the 富士川文庫 of Keio and Kyoto; the University of Tokyo incl. the 鶚軒文庫; Kyushu; Tohoku), Staatsbibliothek zu Berlin (Sammlung Unschuld), Library of Congress (Chinese Rare Books), Waseda (NDL: harvester ready, catalog to be built) | per record, as each holder states | **9,638 records** (446 linked to 168 works) | records only — title, date, print or manuscript, holder, shelfmark, IIIF manifest, terms — linked to the works of the store by title; no image downloaded |
 
-In all **946 works, ~121 million characters, 2.03 million passages**.
+In all **966 works, ~123 million characters, 2.05 million passages**.
 
-- **Admission**: historical texts only. Contemporary publications, contemporary physicians' works and modern annotated
-  editions (including modern reconstructions of lost books) are excluded after review (`corpus/catalog/exclusions.yaml`,
-  automatic screening for the rest); Republican works (1912–1949) stay as historical sources. Texts that surfaced in
+- **Admission**: historical texts only. Contemporary publications and contemporary physicians' works are excluded after
+  review (`corpus/catalog/exclusions.yaml`, automatic screening for the rest); Republican works (1912–1949) stay as
+  historical sources. The modern editions were reviewed again and kept — the reconstructions of ten lost books (吴普本草,
+  本草经集注, 新修本草, 食疗本草, 海药本草, 本草图经, 名医别录, 集验方, 小品方, a 神农本草经) and nine old books in annotated,
+  explicated or translated editions (重订通俗伤寒论, 伤寒恒论, 医理真传, 六因条辨, 万氏秘传片玉心书, 许氏医案, 湖岳村叟医案,
+  妇人寿草, 傅青主男科重编考释) — with 吴棹仙's 子午流注说难 (1956): the old text is the main layer, dated as the book; the
+  editors' notes, commentary and insertions are layers of their own, dated by the edition; their source references,
+  sigla, note calls and converted doses leave the text for the passage's metadata
+  ([ADR 0007](docs/adr/0007-modern-apparatus-as-layers.md)). Texts that surfaced in
   modern times under an ancient name (the 桂林古本 伤寒杂病论, the 辅行诀脏腑用药法要, like the Republican 长沙古本 and
   康平本) are not treated as modern publications: they are kept as sources of the time they appeared, dated by their
   appearance and marked pseudepigraphic or disputed — never dated by the age they claim.
@@ -168,7 +175,8 @@ In all **946 works, ~121 million characters, 2.03 million passages**.
 - **Dating**: curated overrides → the Siku catalogue → western years, reign eras and dynasties in the book metadata →
   signed prefaces → other transcriptions of the work → the author's other works; commentaries, editorial notes, added
   chapters and appended prescriptions are dated as layers of their own (王冰注 762, 新校正 1068, the layers of the 证类本草 …);
-  inseparable layers are dated by the latest. Undatable works count as Qing, never earlier.
+  inseparable layers are dated by the latest. Undatable works count as Qing, never earlier. Layers from 1950 on (the
+  editors' work, contemporary writings) carry the dynasty label 当代 and belong to no analysis period.
 - **Normalisation for matching only**: OpenCC script conversion + Unihan variants + curated medical variants, length-
   preserving; the text is never altered. Unpunctuated Siku text is read through a machine-segmented view whose spans
   map back to the source.
