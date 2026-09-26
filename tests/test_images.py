@@ -100,7 +100,8 @@ def test_nijl_enrich_reads_the_record_api_first():
              "manifest": "https://kokusho.nijl.ac.jp/biblio/100452159/manifest", "licensetext1": "All-Rights-Reserved",
              "doi": "https://doi.org/10.20730/100452159"}
     kyoto_manifest = "https://rmda.kulib.kyoto-u.ac.jp/iiif/metadata_manifest/RB00001275/manifest.json"
-    kyoto = {"bid": 100317231, "author": ["（清）／周／士称 撰"], "kansha": "刊", "manifest": kyoto_manifest,
+    kyoto = {"bid": 100317231, "work": [{"name": "嬰児論", "author": [{"aid": 1, "name": "周／士称（Shuu Shishou） 撰"}]}],
+             "kansha": "刊", "manifest": kyoto_manifest,
              "chuki": ["〈注〉寛政９跋，所蔵者作成画像のＩＩＩＦ連携。"], "doi": "https://doi.org/10.20730/100317231"}
     fetch = FakeFetch({images.NIJL_API + "100452159": json.dumps(tokyo, ensure_ascii=False),
                        images.NIJL_API + "100317231": json.dumps(kyoto, ensure_ascii=False),
@@ -115,6 +116,7 @@ def test_nijl_enrich_reads_the_record_api_first():
                  manifest=images.NIJL + "biblio/100317231/manifest")
     images.nijl_enrich(fetch, rec)
     assert (rec.manifest, rec.date, rec.years) == (kyoto_manifest, "寛政９跋", "1797")  # a dated colophon, no imprint
+    assert rec.authors == "周／士称（Shuu Shishou） 撰"  # the copy names none: the work's author
     assert rec.rights == "自由利用（京都大学貴重資料デジタルアーカイブ）"  # the holder's manifest states the terms
 
 def test_imprint_dates_western_japanese_and_chinese_eras(normalize):

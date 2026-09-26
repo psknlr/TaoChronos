@@ -400,7 +400,7 @@ during development: **regression tests, not an unbiased benchmark** (see [evals/
 The deep-discovery development sets were written with their rules: they show intended behaviour, not generalisation.
 Expert gold on the full corpus is on the roadmap.
 
-Plus 143 unit and integration tests (`pytest`, with format samples of every source and a synthetic corpus for the
+Plus 159 unit and integration tests (`pytest`, with format samples of every source and a synthetic corpus for the
 study layer, `tests/fixtures/study`) and the architecture governance check (`taochronos governance`: layering,
 kernel neutrality, model-SDK isolation, agent rules). CI runs governance, tests, the quick evaluation and the demo
 research on Python 3.11 and 3.12.

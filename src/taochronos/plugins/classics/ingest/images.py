@@ -278,6 +278,9 @@ def nijl_enrich(fetch: Fetcher, rec: Record) -> None:
         _enrich_from_manifest(fetch, rec)
         return
     authors = [a.strip() for a in data.get("author") or [] if isinstance(a, str) and a.strip()]
+    if not authors:  # the copy names none: the authors of the work it holds
+        authors = [str(a.get("name") or "").strip() for w in data.get("work") or [] if isinstance(w, dict)
+                   for a in w.get("author") or [] if isinstance(a, dict) and a.get("name")]
     rec.authors = "；".join(authors) or rec.authors
     notes = [n.strip() for n in data.get("chuki") or [] if isinstance(n, str) and n.strip()]
     imprint = [x.strip() for x in data.get("bpublish") or [] if isinstance(x, str) and x.strip()]
