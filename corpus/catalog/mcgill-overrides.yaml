@@ -1,0 +1,36 @@
+# Corrections to the McGill catalog (keyed by document code; see plugins/classics/ingest/mcgill.py).
+# The McGill page headers give the author and the date of the print that was transcribed, not the date of the work.
+
+fuqingzhu_nuke:
+  composition: [1827, 1827]
+  dynasty: 清
+  attribution: pseudepigraphic
+  notes_text: 旧题傅山撰；道光七年（1827）始有刊本，按初刊年断代；此为同治八年（1869）刻本
+
+chongding_jiyin_gangmu:
+  authors: [武之望, 汪淇]
+  composition: [1620, 1620]
+  dynasty: 明
+  work: jiyin_gangmu
+  mixed: {layer: 汪淇笺释重订（与正文相混）, year: [1665, 1665], attribution: 清·汪淇}
+  cites_work: [1620, 1620]
+  notes_text: 武之望《济阴纲目》（1620）经汪淇笺释重订（康熙四年，1665），笺释与正文相混，全书按重订年代计、引用年代记原书；此为雍正六年（1728）刻本
+
+baosheng_suishi:
+  authors: [汪淇]
+  composition: [1665, 1665]
+  dynasty: 清
+  category: 妇科
+  notes_text: 附刻于汪淇重订《济阴纲目》之后（麦吉尔著录作武之望）；按重订年代计；此为雍正六年（1728）刻本
+
+nuke_jiyao:
+  composition: [1850, 1850]
+  dynasty: 清
+  work: jc:沈氏女科辑要
+  notes_text: 沈又彭原著，王士雄加按（“雄按”）刊行（1850），按王刊年代断代；此为同治元年（1862）刻本
+
+zhencun_mifang:
+  composition: [1870, 1920]
+  dynasty: 清
+  category: 妇科
+  notes_text: 抄本，麦吉尔著录为十九世纪晚期或二十世纪早期

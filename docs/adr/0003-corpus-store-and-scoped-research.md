@@ -48,3 +48,25 @@ metadata, then **dated prefaces** (reign-era signatures parsed with an era table
 the author's other works. What cannot be dated is placed in the Qing and says so — the policy stays "never date a
 witness earlier than the evidence allows". Works present in both sources share a `work` id, so Gate G5 counts
 them once. Modern works and non-medical texts are stored but excluded from research by profile.
+
+## Addendum — admission and deduplication across collections
+
+Adding the web collections (Wikisource, TCM-Ancient-Books, tcmoc, a Hugging Face dataset) and the McGill prints
+raised two questions the first two sources did not.
+
+**Admission.** The corpus is a corpus of historical sources. Contemporary publications (after 1949), works of
+contemporary physicians and modern annotated, translated or reconstructed editions are left out at catalog time —
+reviewed decisions in `corpus/catalog/exclusions.yaml`, an automatic screen for the rest — and recorded with their
+reason; they never enter the store. Republican works (1912–1949) stay, as the 近代 category and the 民国 period.
+Modern editors' paratext is dropped from admitted books. This replaces the earlier choice of storing modern works
+and hiding them by profile.
+
+**Duplicates.** Most web texts are copies of the 笈成 transcriptions, often converted to simplified characters and
+back. Ingesting a copy adds no witness and inflates every frequency, so each text is compared with the store on
+sampled shingles of its normalised Han characters before ingestion. Sources are ranked by trust and a source is
+compared only with higher-ranked ones (and itself), which makes the catalogs independent of ingestion order.
+Overlap cannot tell two editions from two transcriptions of one edition (Siku and 笈成 witnesses of one work overlap
+by 0.5–0.93), so the looser thresholds apply only to sources known to copy others; independent transcriptions of
+prints (McGill) are never judged, only matched. Every judgement is catalogued with the book duplicated and the
+overlap, and can be overruled per text.
+

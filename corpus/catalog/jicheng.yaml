@@ -4,7 +4,7 @@ source:
   id: jicheng
   name: 笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料
   url: https://jicheng.tw/
-  license: 使用者提供之笈成整理本：古籍原文属公有领域，校点与整理成果归笈成整理者；现代著作可能仍受著作权保护，仅供本地研究使用
+  license: 使用者提供之笈成整理本：古籍原文属公有领域，校点与整理成果归笈成整理者；当代著作与现代整理本不入库，仅供本地研究使用
   transcription: 笈成志愿者录入、校对并加新式标点（各书“品质”见 [book] 信息）；未经本项目逐字核对
 books:
 - code: A000
@@ -25,6 +25,7 @@ books:
   work: suwen
   attribution: pseudepigraphic
   modern: false
+  status: ingest
   kanripo: KR3e0001
   notes_text: 王冰次注本系统之白文（不含注）
   chapter_layers:
@@ -52,6 +53,7 @@ books:
   work: suwen_yipian
   attribution: pseudepigraphic
   modern: false
+  status: ingest
   notes_text: 刺法论、本病论二遗篇，宋人所托（待核）
 - code: A001
   id: jc_a001
@@ -71,6 +73,7 @@ books:
   work: suwen
   attribution: pseudepigraphic
   modern: false
+  status: ingest
   kanripo: KR3e0001
   quality: 0.89
   edition: 宋‧林億　高保衡　孫奇校正
@@ -119,6 +122,7 @@ books:
   work: taisu
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 杨上善撰注，隋末至唐高宗间（待核）
   mixed:
     layer: 太素（类编内经原文与杨上善注）
@@ -146,6 +150,7 @@ books:
   work: jc:黄帝内经素问集注
   attribution: traditional
   modern: false
+  status: ingest
   mixed:
     layer: 素问集注（原文与张志聪等注）
     year:
@@ -172,6 +177,7 @@ books:
   work: jc:素问要旨论
   attribution: traditional
   modern: false
+  status: ingest
   edition: 《河間醫集》，人民衛生出版社
 - code: A004a
   id: jc_a004a
@@ -191,6 +197,7 @@ books:
   work: jc:素问要旨论
   attribution: traditional
   modern: false
+  status: ingest
 - code: A005
   id: jc_a005
   file: A/A005.txt
@@ -209,6 +216,7 @@ books:
   work: xuanming
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0048
   edition: 《河間醫集》，人民衛生出版社
 - code: A005a
@@ -229,6 +237,7 @@ books:
   work: xuanming
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0048
 - code: A006
   id: jc_a006
@@ -247,6 +256,7 @@ books:
   work: jc:订正太素脉秘诀
   attribution: traditional
   modern: false
+  status: ingest
 - code: A007
   id: jc_a007
   file: A/A007.txt
@@ -265,6 +275,7 @@ books:
   work: jc:素问六气玄珠密语
   attribution: pseudepigraphic
   modern: false
+  status: ingest
   notes_text: 旧题王冰撰，一般认为宋人所托（待核）
 - code: A008
   id: jc_a008
@@ -284,6 +295,7 @@ books:
   work: yuanbingshi
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0047
 - code: A008a
   id: jc_a008a
@@ -304,6 +316,7 @@ books:
   work: yuanbingshi
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0047
 - code: A009
   id: jc_a009
@@ -323,6 +336,7 @@ books:
   work: baoming_ji
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0050
 - code: A009a
   id: jc_a009a
@@ -343,6 +357,7 @@ books:
   work: baoming_ji
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0050
 - code: A010
   id: jc_a010
@@ -363,6 +378,7 @@ books:
   work: jc:黄帝素问直解
   attribution: traditional
   modern: false
+  status: ingest
 - code: A011
   id: jc_a011
   file: A/A011.txt
@@ -382,6 +398,7 @@ books:
   work: jc:素问经注节解
   attribution: traditional
   modern: false
+  status: ingest
 - code: A012
   id: jc_a012
   file: A/A012.txt
@@ -401,6 +418,7 @@ books:
   work: jc:黄帝内经素问校义
   attribution: traditional
   modern: false
+  status: ingest
 - code: A013
   id: jc_a013
   file: A/A013.txt
@@ -419,6 +437,7 @@ books:
   work: jc:读素问钞
   attribution: traditional
   modern: false
+  status: ingest
 - code: A014
   id: jc_a014
   file: A/A014.txt
@@ -437,6 +456,7 @@ books:
   work: jc:素问识
   attribution: traditional
   modern: false
+  status: ingest
 - code: A100
   id: jc_a100
   file: A/A100.txt
@@ -456,6 +476,7 @@ books:
   work: lingshu
   attribution: pseudepigraphic
   modern: false
+  status: ingest
   edition: 《河間醫集》，人民衛生出版社
 - code: A101
   id: jc_a101
@@ -475,6 +496,7 @@ books:
   work: jc:黄帝内经灵枢集注
   attribution: traditional
   modern: false
+  status: ingest
   mixed:
     layer: 灵枢集注（原文与张志聪等注）
     year:
@@ -501,6 +523,7 @@ books:
   work: jc:灵枢经脉翼
   attribution: traditional
   modern: false
+  status: ingest
 - code: A103
   id: jc_a103
   file: A/A103.txt
@@ -519,6 +542,7 @@ books:
   work: jc:灵枢识
   attribution: traditional
   modern: false
+  status: ingest
 - code: A200
   id: jc_a200
   file: A/A200.txt
@@ -537,6 +561,7 @@ books:
   work: jc:内经知要
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 笈成元数据作 1264 年（误）；李中梓撰于崇祯十五年，乾隆甲申薛雪重校
   mixed:
     layer: 内经知要（李中梓原书与薛雪重校）
@@ -564,6 +589,7 @@ books:
   work: jc:内经博议
   attribution: traditional
   modern: false
+  status: ingest
 - code: A202
   id: jc_a202
   file: A/A202.txt
@@ -582,6 +608,7 @@ books:
   work: jc:内经评文
   attribution: traditional
   modern: false
+  status: ingest
 - code: A203
   id: jc_a203
   file: A/A203.txt
@@ -600,6 +627,7 @@ books:
   work: jc:内经药瀹
   attribution: traditional
   modern: false
+  status: ingest
 - code: A204
   id: jc_a204
   file: A/A204.txt
@@ -618,6 +646,7 @@ books:
   work: jc:灵素节注类编
   attribution: traditional
   modern: false
+  status: ingest
 - code: A205
   id: jc_a205
   file: A/A205.txt
@@ -638,6 +667,7 @@ books:
   work: jc:素问灵枢类纂约注
   attribution: traditional
   modern: false
+  status: ingest
 - code: A300
   id: jc_a300
   file: A/A300.txt
@@ -657,6 +687,7 @@ books:
   work: nanjing
   attribution: pseudepigraphic
   modern: false
+  status: ingest
   kanripo: KR3e0003
   quality: 0.9
   edition: 《難經校注》，人民衛生出版社，1991。
@@ -679,6 +710,7 @@ books:
   work: nanjing
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0003
   mixed:
     layer: 难经集注（原文与诸家注未分）
@@ -706,6 +738,7 @@ books:
   work: jc:难经经释
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.8
   notes_text: 原檔品質佳
   mixed:
@@ -734,6 +767,7 @@ books:
   work: jc:古本难经阐注
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.8
   notes_text: 原檔品質佳
   mixed:
@@ -762,6 +796,7 @@ books:
   work: jc:古本难经阐注
   attribution: traditional
   modern: false
+  status: ingest
   mixed:
     layer: 古本难经阐注（原文与丁锦注）
     year:
@@ -788,6 +823,7 @@ books:
   work: jc:难经正义
   attribution: traditional
   modern: false
+  status: ingest
   mixed:
     layer: 难经正义（原文与叶霖注）
     year:
@@ -813,6 +849,7 @@ books:
   work: jc:难经古义
   attribution: traditional
   modern: false
+  status: ingest
 - code: A306
   id: jc_a306
   file: A/A306.txt
@@ -831,6 +868,7 @@ books:
   work: nanjing_benyi
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0004
   mixed:
     layer: 滑寿本义（引难经原文与注）
@@ -858,6 +896,7 @@ books:
   work: jc:医经读
   attribution: traditional
   modern: false
+  status: ingest
 - code: A401
   id: jc_a401
   file: A/A401.txt
@@ -876,6 +915,7 @@ books:
   work: jc:医经原旨
   attribution: traditional
   modern: false
+  status: ingest
 - code: A402
   id: jc_a402
   file: A/A402.txt
@@ -894,6 +934,7 @@ books:
   work: leijing
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0085
   mixed:
     layer: 类经（类分内经原文与张注）
@@ -922,6 +963,7 @@ books:
   work: leijing
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0085
   mixed:
     layer: 类经（类分内经原文与张注）
@@ -950,6 +992,7 @@ books:
   work: leijing
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0085
   mixed:
     layer: 类经（类分内经原文与张注）
@@ -977,6 +1020,7 @@ books:
   work: leijing_tuyi
   attribution: traditional
   modern: false
+  status: ingest
 - code: A500
   id: jc_a500
   file: A/A500.txt
@@ -994,6 +1038,7 @@ books:
   work: mawangdui
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 马王堆汉墓帛书（墓葬年代前168年）
 - code: B000
   id: jc_b000
@@ -1014,6 +1059,7 @@ books:
   work: shanghanlun
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.75
   edition: 晉·王叔和編次，宋·林億校正，明·趙開美校刻，沈琳同校；知音五版《傷寒論》
   notes_text: 宋本（赵开美本）系统；參書校對過；現代編號版本可參[[[[book:傷寒論_條文版:]]]]
@@ -1036,6 +1082,7 @@ books:
   work: shanghanlun
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.75
   edition: 晉·王叔和編次，宋·林億校正，明·趙開美校刻，沈琳同校；知音五版《傷寒論》
   notes_text: 宋本条文版（条文编号为今人所加，不计入原文）；此本依[[[[book:傷寒論_宋本:]]]]版本加入現代編號，並刪去未列入編號的篇章
@@ -1057,6 +1104,7 @@ books:
   work: shanghanlun
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0008
   mixed:
     layer: 成无己注解本（原文与注未标注区分）
@@ -1084,6 +1132,7 @@ books:
   work: shanghan_zongbing
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0026
 - code: B002a
   id: jc_b002a
@@ -1104,6 +1153,7 @@ books:
   work: shanghan_zongbing
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0026
 - code: B003
   id: jc_b003
@@ -1123,6 +1173,7 @@ books:
   work: jc:类证活人书
   attribution: traditional
   modern: false
+  status: ingest
 - code: B003a
   id: jc_b003a
   file: B/B003a.txt
@@ -1142,6 +1193,7 @@ books:
   work: jc:类证活人书
   attribution: traditional
   modern: false
+  status: ingest
 - code: B004
   id: jc_b004
   file: B/B004.txt
@@ -1160,6 +1212,7 @@ books:
   work: jc:伤寒九十论
   attribution: traditional
   modern: false
+  status: ingest
 - code: B005
   id: jc_b005
   file: B/B005.txt
@@ -1178,6 +1231,7 @@ books:
   work: jc:伤寒百证歌
   attribution: traditional
   modern: false
+  status: ingest
 - code: B006
   id: jc_b006
   file: B/B006.txt
@@ -1196,6 +1250,7 @@ books:
   work: jc:伤寒发微论
   attribution: traditional
   modern: false
+  status: ingest
 - code: B007
   id: jc_b007
   file: B/B007.txt
@@ -1214,6 +1269,7 @@ books:
   work: jc:伤寒明理论
   attribution: traditional
   modern: false
+  status: ingest
 - code: B007a
   id: jc_b007a
   file: B/B007a.txt
@@ -1233,6 +1289,7 @@ books:
   work: jc:伤寒明理论
   attribution: traditional
   modern: false
+  status: ingest
 - code: B008
   id: jc_b008
   file: B/B008.txt
@@ -1251,6 +1308,7 @@ books:
   work: jc:仲景伤寒补亡论
   attribution: traditional
   modern: false
+  status: ingest
 - code: B009
   id: jc_b009
   file: B/B009.txt
@@ -1270,6 +1328,7 @@ books:
   work: jc:伤寒寻源
   attribution: traditional
   modern: false
+  status: ingest
 - code: B010
   id: jc_b010
   file: B/B010.txt
@@ -1287,6 +1346,7 @@ books:
   work: shanghan_zhige
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0049
 - code: B010a
   id: jc_b010a
@@ -1307,6 +1367,7 @@ books:
   work: shanghan_zhige
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0049
 - code: B011
   id: jc_b011
@@ -1326,6 +1387,7 @@ books:
   work: jc:伤寒标本心法类萃
   attribution: traditional
   modern: false
+  status: ingest
 - code: B011a
   id: jc_b011a
   file: B/B011a.txt
@@ -1345,6 +1407,7 @@ books:
   work: jc:伤寒标本心法类萃
   attribution: traditional
   modern: false
+  status: ingest
 - code: B012
   id: jc_b012
   file: B/B012.txt
@@ -1363,6 +1426,7 @@ books:
   work: jc:河间伤寒心要
   attribution: traditional
   modern: false
+  status: ingest
 - code: B012a
   id: jc_b012a
   file: B/B012a.txt
@@ -1382,6 +1446,7 @@ books:
   work: jc:伤寒心要
   attribution: traditional
   modern: false
+  status: ingest
 - code: B013
   id: jc_b013
   file: B/B013.txt
@@ -1400,6 +1465,7 @@ books:
   work: shanghan_tiaobian
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0082
   mixed:
     layer: 方有执条辨（重订伤寒论原文与注）
@@ -1428,6 +1494,7 @@ books:
   work: shanghan_tiaobian
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0082
   mixed:
     layer: 方有执条辨（重订伤寒论原文与注）
@@ -1455,6 +1522,7 @@ books:
   work: shanghanlun
   attribution: traditional
   modern: false
+  status: ingest
   mixed:
     layer: 张卿子伤寒论（成注本与张注）
     year:
@@ -1482,6 +1550,7 @@ books:
   work: jc:伤寒证治准绳
   attribution: traditional
   modern: false
+  status: ingest
 - code: B016
   id: jc_b016
   file: B/B016.txt
@@ -1500,6 +1569,7 @@ books:
   work: jc:伤寒论注
   attribution: traditional
   modern: false
+  status: ingest
 - code: B017
   id: jc_b017
   file: B/B017.txt
@@ -1520,6 +1590,10 @@ books:
   work: jc:重订通俗伤寒论
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
 - code: B018
   id: jc_b018
   file: B/B018.txt
@@ -1539,6 +1613,7 @@ books:
   work: jc:伤寒溯源集
   attribution: traditional
   modern: false
+  status: ingest
 - code: B019
   id: jc_b019
   file: B/B019.txt
@@ -1558,6 +1633,7 @@ books:
   work: jc:伤寒括要
   attribution: traditional
   modern: false
+  status: ingest
 - code: B020
   id: jc_b020
   file: B/B020.txt
@@ -1576,6 +1652,7 @@ books:
   work: jc:伤寒缵论
   attribution: traditional
   modern: false
+  status: ingest
 - code: B021
   id: jc_b021
   file: B/B021.txt
@@ -1594,6 +1671,7 @@ books:
   work: jc:伤寒贯珠集
   attribution: traditional
   modern: false
+  status: ingest
 - code: B021a
   id: jc_b021a
   file: B/B021a.txt
@@ -1613,6 +1691,7 @@ books:
   work: jc:伤寒贯珠集
   attribution: traditional
   modern: false
+  status: ingest
 - code: B022
   id: jc_b022
   file: B/B022.txt
@@ -1631,6 +1710,7 @@ books:
   work: jc:伤寒法祖
   attribution: traditional
   modern: false
+  status: ingest
 - code: B023
   id: jc_b023
   file: B/B023.txt
@@ -1650,6 +1730,7 @@ books:
   work: jc:伤寒大白
   attribution: traditional
   modern: false
+  status: ingest
 - code: B024
   id: jc_b024
   file: B/B024.txt
@@ -1668,6 +1749,7 @@ books:
   work: jc:伤寒悬解
   attribution: traditional
   modern: false
+  status: ingest
 - code: B025
   id: jc_b025
   file: B/B025.txt
@@ -1686,6 +1768,7 @@ books:
   work: shanghan_leifang
   attribution: traditional
   modern: false
+  status: ingest
   mixed:
     layer: 徐大椿类方
     year:
@@ -1713,6 +1796,7 @@ books:
   work: shanghan_leifang
   attribution: traditional
   modern: false
+  status: ingest
   mixed:
     layer: 徐大椿类方
     year:
@@ -1739,6 +1823,7 @@ books:
   work: jc:伤寒论辩证广注
   attribution: traditional
   modern: false
+  status: ingest
 - code: B027
   id: jc_b027
   file: B/B027.txt
@@ -1757,6 +1842,7 @@ books:
   work: jc:伤寒论辑义
   attribution: traditional
   modern: false
+  status: ingest
 - code: B028
   id: jc_b028
   file: B/B028.txt
@@ -1776,6 +1862,7 @@ books:
   work: jc:伤寒医诀串解
   attribution: traditional
   modern: false
+  status: ingest
 - code: B029
   id: jc_b029
   file: B/B029.txt
@@ -1794,6 +1881,7 @@ books:
   work: jc:伤寒审证表
   attribution: traditional
   modern: false
+  status: ingest
 - code: B030
   id: jc_b030
   file: B/B030.txt
@@ -1812,6 +1900,7 @@ books:
   work: jc:伤寒补例
   attribution: traditional
   modern: false
+  status: ingest
 - code: B031
   id: jc_b031
   file: B/B031.txt
@@ -1830,6 +1919,7 @@ books:
   work: jc:敖氏伤寒金镜录
   attribution: traditional
   modern: false
+  status: ingest
 - code: B032
   id: jc_b032
   file: B/B032.txt
@@ -1848,6 +1938,7 @@ books:
   work: shanghan_shejian
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0093
 - code: B033
   id: jc_b033
@@ -1867,6 +1958,7 @@ books:
   work: jc:伤寒论翼
   attribution: traditional
   modern: false
+  status: ingest
 - code: B034
   id: jc_b034
   file: B/B034.txt
@@ -1885,6 +1977,7 @@ books:
   work: jc:伤寒附翼
   attribution: traditional
   modern: false
+  status: ingest
 - code: B035
   id: jc_b035
   file: B/B035.txt
@@ -1904,6 +1997,7 @@ books:
   work: jc:伤寒指掌
   attribution: traditional
   modern: false
+  status: ingest
 - code: B036
   id: jc_b036
   file: B/B036.txt
@@ -1922,6 +2016,7 @@ books:
   work: jc:中寒论辩证广注
   attribution: traditional
   modern: false
+  status: ingest
 - code: B037
   id: jc_b037
   file: B/B037.txt
@@ -1941,6 +2036,7 @@ books:
   work: jc:伤寒六书
   attribution: traditional
   modern: false
+  status: ingest
 - code: B038
   id: jc_b038
   file: B/B038.txt
@@ -1959,6 +2055,7 @@ books:
   work: jc:刘河间伤寒医鉴
   attribution: traditional
   modern: false
+  status: ingest
 - code: B039
   id: jc_b039
   file: B/B039.txt
@@ -1978,6 +2075,7 @@ books:
   work: jc:伤寒论纲目
   attribution: traditional
   modern: false
+  status: ingest
 - code: B040
   id: jc_b040
   file: B/B040.txt
@@ -1997,6 +2095,7 @@ books:
   work: jc:伤寒心镜别集
   attribution: traditional
   modern: false
+  status: ingest
 - code: B041
   id: jc_b041
   file: B/B041.txt
@@ -2016,6 +2115,7 @@ books:
   work: jc:伤寒来苏集
   attribution: traditional
   modern: false
+  status: ingest
 - code: B042
   id: jc_b042
   file: B/B042.txt
@@ -2035,6 +2135,7 @@ books:
   work: jc:伤寒捷诀
   attribution: traditional
   modern: false
+  status: ingest
 - code: B043
   id: jc_b043
   file: B/B043.txt
@@ -2053,6 +2154,10 @@ books:
   work: jc:伤寒辨要笺记
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: B044
   id: jc_b044
   file: B/B044.txt
@@ -2071,6 +2176,10 @@ books:
   work: jc:伤寒恒论
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
 - code: B100
   id: jc_b100
   file: B/B100.txt
@@ -2089,6 +2198,7 @@ books:
   work: jinkui
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0007
   quality: 0.75
   edition: 知音五版《金匱要略》
@@ -2118,6 +2228,7 @@ books:
   work: jinkui
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0007
   quality: 0.75
   edition: 知音五版《金匱要略》
@@ -2146,6 +2257,7 @@ books:
   work: jc:金匮翼
   attribution: traditional
   modern: false
+  status: ingest
 - code: B102
   id: jc_b102
   file: B/B102.txt
@@ -2164,6 +2276,7 @@ books:
   work: jc:金匮要略浅注
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.5
 - code: B103
   id: jc_b103
@@ -2184,6 +2297,7 @@ books:
   work: jc:金匮要略心典
   attribution: traditional
   modern: false
+  status: ingest
 - code: B104
   id: jc_b104
   file: B/B104.txt
@@ -2203,6 +2317,7 @@ books:
   work: jc:金匮玉函经二注
   attribution: traditional
   modern: false
+  status: ingest
 - code: B105
   id: jc_b105
   file: B/B105.txt
@@ -2220,6 +2335,7 @@ books:
   work: jc:金匮玉函要略述义
   attribution: traditional
   modern: false
+  status: ingest
 - code: B106
   id: jc_b106
   file: B/B106.txt
@@ -2238,6 +2354,7 @@ books:
   work: jc:金匮玉函要略辑义
   attribution: traditional
   modern: false
+  status: ingest
 - code: B107
   id: jc_b107
   file: B/B107.txt
@@ -2256,6 +2373,7 @@ books:
   work: jc:高注金匮要略
   attribution: traditional
   modern: false
+  status: ingest
 - code: B108
   id: jc_b108
   file: B/B108.txt
@@ -2274,6 +2392,7 @@ books:
   work: jinkui_gouxuan
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0062
 - code: B108a
   id: jc_b108a
@@ -2294,6 +2413,7 @@ books:
   work: jinkui_gouxuan
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0062
 - code: B200
   id: jc_b200
@@ -2312,6 +2432,7 @@ books:
   work: jc:曹氏伤寒金匮发微合刊
   attribution: traditional
   modern: false
+  status: ingest
 - code: C000
   id: jc_c000
   file: C/C000.txt
@@ -2330,6 +2451,7 @@ books:
   work: shennong
   attribution: compiled
   modern: false
+  status: ingest
   notes_text: 清人辑本（据证类本草等所载白字辑出）；原文年代按本经计
 - code: C000a
   id: jc_c000a
@@ -2350,6 +2472,10 @@ books:
   work: shennong
   attribution: compiled
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
   notes_text: 民国辑本（辑本为民国时整理，原文年代按本经计）
 - code: C000b
   id: jc_c000b
@@ -2370,6 +2496,7 @@ books:
   work: shennong
   attribution: compiled
   modern: false
+  status: ingest
   notes_text: 孙星衍辑本摘录
 - code: C000c
   id: jc_c000c
@@ -2388,6 +2515,7 @@ books:
   work: jc:神农本草经并注
   attribution: traditional
   modern: false
+  status: ingest
 - code: C001
   id: jc_c001
   file: C/C001.txt
@@ -2406,6 +2534,10 @@ books:
   work: wupu_bencao
   attribution: compiled
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
   notes_text: 清人自《太平御览》等辑出
 - code: C002
   id: jc_c002
@@ -2425,6 +2557,10 @@ books:
   work: bencao_jizhu
   attribution: compiled
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
   notes_text: 辑本；本经、别录与陶注未分
 - code: C003
   id: jc_c003
@@ -2443,6 +2579,10 @@ books:
   work: xinxiu_bencao
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
 - code: C004
   id: jc_c004
   file: C/C004.txt
@@ -2462,6 +2602,10 @@ books:
   work: shiliao_bencao
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
 - code: C005
   id: jc_c005
   file: C/C005.txt
@@ -2480,6 +2624,10 @@ books:
   work: haiyao_bencao
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
 - code: C006
   id: jc_c006
   file: C/C006.txt
@@ -2498,6 +2646,10 @@ books:
   work: bencao_tujing
   attribution: compiled
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
 - code: C007
   id: jc_c007
   file: C/C007.txt
@@ -2516,6 +2668,7 @@ books:
   work: bencao_yanyi
   attribution: traditional
   modern: false
+  status: ingest
 - code: C008
   id: jc_c008
   file: C/C008.txt
@@ -2534,6 +2687,7 @@ books:
   work: tangye_bencao
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0057
 - code: C010
   id: jc_c010
@@ -2552,6 +2706,7 @@ books:
   work: jc:滇南本草
   attribution: traditional
   modern: false
+  status: ingest
 - code: C011
   id: jc_c011
   file: C/C011.txt
@@ -2570,6 +2725,7 @@ books:
   work: jc:本草品汇精要
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 笈成元数据题王好古、元代（误）；弘治十八年刘文泰等奉敕撰
 - code: C012
   id: jc_c012
@@ -2588,6 +2744,7 @@ books:
   work: jc:本草蒙筌
   attribution: traditional
   modern: false
+  status: ingest
 - code: C014
   id: jc_c014
   file: C/C014.txt
@@ -2605,6 +2762,7 @@ books:
   work: bencao_chengya
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0089
 - code: C015
   id: jc_c015
@@ -2624,6 +2782,7 @@ books:
   work: jc:本草征要
   attribution: traditional
   modern: false
+  status: ingest
 - code: C016
   id: jc_c016
   file: C/C016.txt
@@ -2642,6 +2801,7 @@ books:
   work: jc:本草易读
   attribution: traditional
   modern: false
+  status: ingest
 - code: C017
   id: jc_c017
   file: C/C017.txt
@@ -2661,6 +2821,7 @@ books:
   work: jc:本草新编
   attribution: traditional
   modern: false
+  status: ingest
 - code: C018
   id: jc_c018
   file: C/C018.txt
@@ -2680,6 +2841,7 @@ books:
   work: jc:本草备要
   attribution: traditional
   modern: false
+  status: ingest
 - code: C018a
   id: jc_c018a
   file: C/C018a.txt
@@ -2699,6 +2861,7 @@ books:
   work: jc:本草备要
   attribution: traditional
   modern: false
+  status: ingest
 - code: C019
   id: jc_c019
   file: C/C019.txt
@@ -2718,6 +2881,7 @@ books:
   work: jc:本经逢原
   attribution: traditional
   modern: false
+  status: ingest
 - code: C020
   id: jc_c020
   file: C/C020.txt
@@ -2737,6 +2901,7 @@ books:
   work: jc:本草经解
   attribution: traditional
   modern: false
+  status: ingest
 - code: C021
   id: jc_c021
   file: C/C021.txt
@@ -2756,6 +2921,7 @@ books:
   work: jc:本草从新
   attribution: traditional
   modern: false
+  status: ingest
 - code: C023
   id: jc_c023
   file: C/C023.txt
@@ -2774,6 +2940,7 @@ books:
   work: jc:本草纲目拾遗
   attribution: traditional
   modern: false
+  status: ingest
 - code: C024
   id: jc_c024
   file: C/C024.txt
@@ -2792,6 +2959,7 @@ books:
   work: jc:本草崇原
   attribution: traditional
   modern: false
+  status: ingest
 - code: C025
   id: jc_c025
   file: C/C025.txt
@@ -2809,6 +2977,7 @@ books:
   work: bencao_qiuzhen
   attribution: traditional
   modern: false
+  status: ingest
 - code: C025a
   id: jc_c025a
   file: C/C025a.txt
@@ -2827,6 +2996,7 @@ books:
   work: bencao_qiuzhen
   attribution: traditional
   modern: false
+  status: ingest
 - code: C026
   id: jc_c026
   file: C/C026.txt
@@ -2846,6 +3016,7 @@ books:
   work: jc:神农本草经读
   attribution: traditional
   modern: false
+  status: ingest
 - code: C027
   id: jc_c027
   file: C/C027.txt
@@ -2865,6 +3036,7 @@ books:
   work: jc:本草述钩元
   attribution: traditional
   modern: false
+  status: ingest
 - code: C028
   id: jc_c028
   file: C/C028.txt
@@ -2884,6 +3056,7 @@ books:
   work: jc:食鉴本草
   attribution: traditional
   modern: false
+  status: ingest
 - code: C029
   id: jc_c029
   file: C/C029.txt
@@ -2902,6 +3075,7 @@ books:
   work: jc:药性歌括四百味
   attribution: traditional
   modern: false
+  status: ingest
 - code: C030
   id: jc_c030
   file: C/C030.txt
@@ -2920,6 +3094,7 @@ books:
   work: jc:本草纲目别名录
   attribution: traditional
   modern: false
+  status: ingest
 - code: C031
   id: jc_c031
   file: C/C031.txt
@@ -2939,6 +3114,7 @@ books:
   work: jc:本草便读
   attribution: traditional
   modern: false
+  status: ingest
 - code: C032
   id: jc_c032
   file: C/C032.txt
@@ -2957,6 +3133,7 @@ books:
   work: jc:本草撮要
   attribution: traditional
   modern: false
+  status: ingest
 - code: C034
   id: jc_c034
   file: C/C034.txt
@@ -2975,6 +3152,7 @@ books:
   work: jc:神农本草经赞
   attribution: traditional
   modern: false
+  status: ingest
 - code: C035
   id: jc_c035
   file: C/C035.txt
@@ -2994,6 +3172,7 @@ books:
   work: jc:本草择要纲目
   attribution: traditional
   modern: false
+  status: ingest
 - code: C036
   id: jc_c036
   file: C/C036.txt
@@ -3012,6 +3191,7 @@ books:
   work: jc:得配本草
   attribution: traditional
   modern: false
+  status: ingest
 - code: C037
   id: jc_c037
   file: C/C037.txt
@@ -3029,6 +3209,7 @@ books:
   work: jc:本草害利
   attribution: traditional
   modern: false
+  status: ingest
 - code: C038
   id: jc_c038
   file: C/C038.txt
@@ -3047,6 +3228,7 @@ books:
   work: jc:本草分经
   attribution: traditional
   modern: false
+  status: ingest
 - code: C039
   id: jc_c039
   file: C/C039.txt
@@ -3064,6 +3246,7 @@ books:
   work: jc:要药分剂
   attribution: traditional
   modern: false
+  status: ingest
 - code: C040
   id: jc_c040
   file: C/C040.txt
@@ -3082,6 +3265,7 @@ books:
   work: jc:珍珠囊补遗药性赋
   attribution: pseudepigraphic
   modern: false
+  status: ingest
   notes_text: 旧题李杲撰，实为明人辑补（待核）
 - code: C041
   id: jc_c041
@@ -3102,6 +3286,7 @@ books:
   work: jc:药鉴
   attribution: traditional
   modern: false
+  status: ingest
 - code: C042
   id: jc_c042
   file: C/C042.txt
@@ -3120,6 +3305,7 @@ books:
   work: jc:药征
   attribution: traditional
   modern: false
+  status: ingest
 - code: C043
   id: jc_c043
   file: C/C043.txt
@@ -3138,6 +3324,7 @@ books:
   work: jc:药征续编
   attribution: traditional
   modern: false
+  status: ingest
 - code: C044
   id: jc_c044
   file: C/C044.txt
@@ -3156,6 +3343,7 @@ books:
   work: bencao_baizhonglu
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0098
   quality: 0.8
 - code: C045
@@ -3177,6 +3365,7 @@ books:
   work: jc:本草思辨录
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.8
 - code: C046
   id: jc_c046
@@ -3197,6 +3386,7 @@ books:
   work: jc:本经疏证
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.7
   notes_text: 部分參書校對過
 - code: C047
@@ -3218,6 +3408,7 @@ books:
   work: jc:饮膳正要
   attribution: traditional
   modern: false
+  status: ingest
 - code: C049
   id: jc_c049
   file: C/C049.txt
@@ -3235,6 +3426,7 @@ books:
   work: jc:千金食治
   attribution: traditional
   modern: false
+  status: ingest
 - code: C050
   id: jc_c050
   file: C/C050.txt
@@ -3253,6 +3445,7 @@ books:
   work: zhenglei
   attribution: compiled
   modern: false
+  status: ingest
   kanripo: KR3e0028
   mixed:
     layer: 证类本草（各层未标注区分）
@@ -3281,6 +3474,7 @@ books:
   work: jc:民间药性赋
   attribution: traditional
   modern: false
+  status: ingest
 - code: C052
   id: jc_c052
   file: C/C052.txt
@@ -3298,6 +3492,10 @@ books:
   work: jc:服食导饵
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: C100
   id: jc_c100
   file: C/C100.txt
@@ -3316,6 +3514,7 @@ books:
   work: leigong_paozhi
   attribution: compiled
   modern: false
+  status: ingest
   notes_text: 辑本
 - code: C101
   id: jc_c101
@@ -3334,6 +3533,7 @@ books:
   work: jc:炮炙全书
   attribution: traditional
   modern: false
+  status: ingest
 - code: C102
   id: jc_c102
   file: C/C102.txt
@@ -3351,6 +3551,7 @@ books:
   work: jc:炮炙大法
   attribution: traditional
   modern: false
+  status: ingest
 - code: C103
   id: jc_c103
   file: C/C103.txt
@@ -3369,6 +3570,7 @@ books:
   work: jc:雷公炮制药性解
   attribution: traditional
   modern: false
+  status: ingest
 - code: C104
   id: jc_c104
   file: C/C104.txt
@@ -3388,6 +3590,7 @@ books:
   work: jc:濒湖炮炙法
   attribution: traditional
   modern: false
+  status: ingest
 - code: D000
   id: jc_d000
   file: D/D000.txt
@@ -3404,6 +3607,7 @@ books:
   work: wushier_bingfang
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 马王堆帛书
 - code: D001
   id: jc_d001
@@ -3423,6 +3627,10 @@ books:
   work: mingyi_bielu
   attribution: compiled
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
   notes_text: 辑本
 - code: D002
   id: jc_d002
@@ -3441,6 +3649,7 @@ books:
   work: qianjin_yifang
   attribution: traditional
   modern: false
+  status: ingest
 - code: D002a
   id: jc_d002a
   file: D/D002a.txt
@@ -3459,6 +3668,7 @@ books:
   work: qianjin_yifang
   attribution: traditional
   modern: false
+  status: ingest
 - code: D003
   id: jc_d003
   file: D/D003.txt
@@ -3477,6 +3687,7 @@ books:
   work: jc:孙真人海上方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D004
   id: jc_d004
   file: D/D004.txt
@@ -3495,6 +3706,7 @@ books:
   work: waitai
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0015
 - code: D004a
   id: jc_d004a
@@ -3515,6 +3727,7 @@ books:
   work: waitai
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0015
 - code: D005
   id: jc_d005
@@ -3534,6 +3747,7 @@ books:
   work: yixinfang
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 日本平安时代医书，大量引录中国佚籍
 - code: D007
   id: jc_d007
@@ -3553,6 +3767,7 @@ books:
   work: susheng_liangfang
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0020
 - code: D008
   id: jc_d008
@@ -3572,6 +3787,7 @@ books:
   work: boji_fang
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0019
 - code: D009
   id: jc_d009
@@ -3591,6 +3807,7 @@ books:
   work: jc:史载之方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D010
   id: jc_d010
   file: D/D010.txt
@@ -3609,6 +3826,7 @@ books:
   work: hejiju
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0033
   section_layers:
   - pattern: 紹興續添
@@ -3650,6 +3868,7 @@ books:
   work: hejiju
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0033
   section_layers:
   - pattern: 紹興續添
@@ -3690,6 +3909,7 @@ books:
   work: jc:鸡峰普济方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D013
   id: jc_d013
   file: D/D013.txt
@@ -3708,6 +3928,7 @@ books:
   work: jc:洪氏集验方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D014
   id: jc_d014
   file: D/D014.txt
@@ -3727,6 +3948,7 @@ books:
   work: jc:杨氏家藏方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D015
   id: jc_d015
   file: D/D015.txt
@@ -3745,6 +3967,7 @@ books:
   work: jc:千金宝要
   attribution: traditional
   modern: false
+  status: ingest
 - code: D016
   id: jc_d016
   file: D/D016.txt
@@ -3764,6 +3987,7 @@ books:
   work: jc:卫生易简方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D017
   id: jc_d017
   file: D/D017.txt
@@ -3781,6 +4005,7 @@ books:
   work: quansheng_zhimi
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0030
 - code: D018
   id: jc_d018
@@ -3800,6 +4025,7 @@ books:
   work: renzhai_zhizhi
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0045
 - code: D019
   id: jc_d019
@@ -3819,6 +4045,7 @@ books:
   work: ruizhutang
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0058
 - code: D020
   id: jc_d020
@@ -3838,6 +4065,7 @@ books:
   work: shiyi_dexiao
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0059
 - code: D021
   id: jc_d021
@@ -3856,6 +4084,7 @@ books:
   work: jc:奇效良方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D022
   id: jc_d022
   file: D/D022.txt
@@ -3874,6 +4103,7 @@ books:
   work: jc:医方集宜
   attribution: traditional
   modern: false
+  status: ingest
 - code: D023
   id: jc_d023
   file: D/D023.txt
@@ -3892,6 +4122,7 @@ books:
   work: jc:医方考
   attribution: traditional
   modern: false
+  status: ingest
 - code: D024
   id: jc_d024
   file: D/D024.txt
@@ -3909,6 +4140,7 @@ books:
   work: jc:增广和剂局方药性总论
   attribution: traditional
   modern: false
+  status: ingest
 - code: D025
   id: jc_d025
   file: D/D025.txt
@@ -3927,6 +4159,7 @@ books:
   work: qianjin
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0013
 - code: D025a
   id: jc_d025a
@@ -3947,6 +4180,7 @@ books:
   work: qianjin
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0013
 - code: D026
   id: jc_d026
@@ -3966,6 +4200,7 @@ books:
   work: zhouhou
   attribution: compiled
   modern: false
+  status: ingest
   kanripo: KR3e0010
   mixed:
     layer: 葛洪原著与陶弘景增补（未能分离）
@@ -4000,6 +4235,7 @@ books:
   work: benshi_fang
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0032
 - code: D028
   id: jc_d028
@@ -4019,6 +4255,7 @@ books:
   work: jisheng
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0043
 - code: D030
   id: jc_d030
@@ -4039,6 +4276,7 @@ books:
   work: jc:仁术便览
   attribution: traditional
   modern: false
+  status: ingest
 - code: D031
   id: jc_d031
   file: D/D031.txt
@@ -4057,6 +4295,7 @@ books:
   work: jc:祖剂
   attribution: traditional
   modern: false
+  status: ingest
 - code: D032
   id: jc_d032
   file: D/D032.txt
@@ -4076,6 +4315,7 @@ books:
   work: jc:古今名医方论
   attribution: traditional
   modern: false
+  status: ingest
 - code: D033
   id: jc_d033
   file: D/D033.txt
@@ -4096,6 +4336,7 @@ books:
   work: jc:种福堂公选良方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D034
   id: jc_d034
   file: D/D034.txt
@@ -4114,6 +4355,7 @@ books:
   work: jc:汤头歌诀
   attribution: traditional
   modern: false
+  status: ingest
 - code: D035
   id: jc_d035
   file: D/D035.txt
@@ -4130,6 +4372,7 @@ books:
   work: jc:急救便方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D036
   id: jc_d036
   file: D/D036.txt
@@ -4149,6 +4392,7 @@ books:
   work: jc:奇方类编
   attribution: traditional
   modern: false
+  status: ingest
 - code: D037
   id: jc_d037
   file: D/D037.txt
@@ -4167,6 +4411,7 @@ books:
   work: jiangxueyuan
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0095
 - code: D038
   id: jc_d038
@@ -4186,6 +4431,7 @@ books:
   work: jc:医方论
   attribution: traditional
   modern: false
+  status: ingest
 - code: D039
   id: jc_d039
   file: D/D039.txt
@@ -4204,6 +4450,7 @@ books:
   work: jc:串雅内外编
   attribution: traditional
   modern: false
+  status: ingest
 - code: D040
   id: jc_d040
   file: D/D040.txt
@@ -4221,6 +4468,7 @@ books:
   work: jc:成方切用
   attribution: traditional
   modern: false
+  status: ingest
 - code: D041
   id: jc_d041
   file: D/D041.txt
@@ -4240,6 +4488,7 @@ books:
   work: jc:时方妙用
   attribution: traditional
   modern: false
+  status: ingest
 - code: D042
   id: jc_d042
   file: D/D042.txt
@@ -4258,6 +4507,7 @@ books:
   work: jc:时方歌括
   attribution: traditional
   modern: false
+  status: ingest
 - code: D043
   id: jc_d043
   file: D/D043.txt
@@ -4276,6 +4526,7 @@ books:
   work: jc:长沙方歌括
   attribution: traditional
   modern: false
+  status: ingest
 - code: D044
   id: jc_d044
   file: D/D044.txt
@@ -4295,6 +4546,7 @@ books:
   work: jc:金匮方歌括
   attribution: traditional
   modern: false
+  status: ingest
 - code: D045
   id: jc_d045
   file: D/D045.txt
@@ -4313,6 +4565,7 @@ books:
   work: jc:医方证治汇编歌诀
   attribution: traditional
   modern: false
+  status: ingest
 - code: D046
   id: jc_d046
   file: D/D046.txt
@@ -4332,6 +4585,7 @@ books:
   work: jc:验方新编
   attribution: traditional
   modern: false
+  status: ingest
 - code: D047
   id: jc_d047
   file: D/D047.txt
@@ -4350,6 +4604,7 @@ books:
   work: jc:十剂表
   attribution: traditional
   modern: false
+  status: ingest
 - code: D048
   id: jc_d048
   file: D/D048.txt
@@ -4369,6 +4624,7 @@ books:
   work: jc:经验丹方汇编
   attribution: traditional
   modern: false
+  status: ingest
 - code: D049
   id: jc_d049
   file: D/D049.txt
@@ -4387,6 +4643,7 @@ books:
   work: jc:方症会要
   attribution: traditional
   modern: false
+  status: ingest
 - code: D050
   id: jc_d050
   file: D/D050.txt
@@ -4404,6 +4661,7 @@ books:
   work: jc:药性切用
   attribution: traditional
   modern: false
+  status: ingest
 - code: D051
   id: jc_d051
   file: D/D051.txt
@@ -4422,6 +4680,7 @@ books:
   work: jc:退思集类方歌注
   attribution: traditional
   modern: false
+  status: ingest
 - code: D052
   id: jc_d052
   file: D/D052.txt
@@ -4440,6 +4699,7 @@ books:
   work: jc:华佗神方
   attribution: pseudepigraphic
   modern: false
+  status: ingest
   notes_text: 托名华佗，近代始出（待核）
 - code: D053
   id: jc_d053
@@ -4459,6 +4719,10 @@ books:
   work: jiyan_fang
   attribution: compiled
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
   notes_text: 辑本
 - code: D054
   id: jc_d054
@@ -4479,6 +4743,7 @@ books:
   work: jc:大小诸证方论
   attribution: traditional
   modern: false
+  status: ingest
 - code: D055
   id: jc_d055
   file: D/D055.txt
@@ -4497,6 +4762,7 @@ books:
   work: jc:奇效简便良方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D056
   id: jc_d056
   file: D/D056.txt
@@ -4515,6 +4781,7 @@ books:
   work: jc:神仙济世良方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D057
   id: jc_d057
   file: D/D057.txt
@@ -4534,6 +4801,7 @@ books:
   work: jc:是斋百一选方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D058
   id: jc_d058
   file: D/D058.txt
@@ -4551,6 +4819,10 @@ books:
   work: xiaopin_fang
   attribution: compiled
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
   notes_text: 辑本
 - code: D059
   id: jc_d059
@@ -4571,6 +4843,7 @@ books:
   work: jc:惠直堂经验方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D060
   id: jc_d060
   file: D/D060.txt
@@ -4590,6 +4863,7 @@ books:
   work: jc:绛囊撮要
   attribution: traditional
   modern: false
+  status: ingest
 - code: D061
   id: jc_d061
   file: D/D061.txt
@@ -4609,6 +4883,7 @@ books:
   work: jc:经验奇方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D062
   id: jc_d062
   file: D/D062.txt
@@ -4628,6 +4903,7 @@ books:
   work: jc:古方汇精
   attribution: traditional
   modern: false
+  status: ingest
 - code: D063
   id: jc_d063
   file: D/D063.txt
@@ -4647,6 +4923,7 @@ books:
   work: jc:外治寿世方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D064
   id: jc_d064
   file: D/D064.txt
@@ -4665,6 +4942,7 @@ books:
   work: jc:文堂集验方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D065
   id: jc_d065
   file: D/D065.txt
@@ -4682,6 +4960,7 @@ books:
   work: jc:回生集
   attribution: traditional
   modern: false
+  status: ingest
 - code: D066
   id: jc_d066
   file: D/D066.txt
@@ -4695,11 +4974,12 @@ books:
   - 1938
   - 1938
   dating: western
-  category: 现代
+  category: 近代
   jicheng_category: 方劑
   work: jc:本草简要方
   attribution: traditional
   modern: true
+  status: ingest
 - code: D067
   id: jc_d067
   file: D/D067.txt
@@ -4718,6 +4998,7 @@ books:
   work: jc:增订医方歌诀
   attribution: traditional
   modern: false
+  status: ingest
 - code: D068
   id: jc_d068
   file: D/D068.txt
@@ -4735,6 +5016,7 @@ books:
   work: jc:济世神验良方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D069
   id: jc_d069
   file: D/D069.txt
@@ -4752,6 +5034,7 @@ books:
   work: jc:太医院秘藏膏丹丸散方剂
   attribution: traditional
   modern: false
+  status: ingest
 - code: D070
   id: jc_d070
   file: D/D070.txt
@@ -4770,6 +5053,7 @@ books:
   work: jc:医方歌括
   attribution: traditional
   modern: false
+  status: ingest
 - code: D071
   id: jc_d071
   file: D/D071.txt
@@ -4789,6 +5073,7 @@ books:
   work: jc:医方简义
   attribution: traditional
   modern: false
+  status: ingest
 - code: D072
   id: jc_d072
   file: D/D072.txt
@@ -4807,6 +5092,7 @@ books:
   work: jc:增订十药神书
   attribution: traditional
   modern: false
+  status: ingest
 - code: D073
   id: jc_d073
   file: D/D073.txt
@@ -4824,6 +5110,7 @@ books:
   work: jc:食疗方
   attribution: traditional
   modern: false
+  status: ingest
 - code: D074
   id: jc_d074
   file: D/D074.txt
@@ -4843,6 +5130,7 @@ books:
   work: jufang_fahui
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0061
 - code: D075
   id: jc_d075
@@ -4862,6 +5150,7 @@ books:
   work: jc:医方集解
   attribution: traditional
   modern: false
+  status: ingest
 - code: D075a
   id: jc_d075a
   file: D/D075a.txt
@@ -4880,6 +5169,7 @@ books:
   work: jc:医方集解
   attribution: traditional
   modern: false
+  status: ingest
 - code: D076
   id: jc_d076
   file: D/D076.txt
@@ -4897,22 +5187,27 @@ books:
   work: jc:类证普济本事方续集
   attribution: traditional
   modern: false
+  status: ingest
 - code: D077
   id: jc_d077
   file: D/D077.txt
   title: 古代房中秘方
   aliases: []
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 方劑
   work: jc:古代房中秘方
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: D078
   id: jc_d078
   file: D/D078.txt
@@ -4932,6 +5227,7 @@ books:
   work: jc:鲁府禁方
   attribution: traditional
   modern: false
+  status: ingest
 - code: E001
   id: jc_e001
   file: E/E001.txt
@@ -4950,6 +5246,7 @@ books:
   work: wenyilun
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0087
 - code: E001a
   id: jc_e001a
@@ -4970,6 +5267,7 @@ books:
   work: wenyilun
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0087
 - code: E002
   id: jc_e002
@@ -4989,6 +5287,7 @@ books:
   work: jc:温热论
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.8
   edition: 華岫雲本
   notes_text: 校對過
@@ -5010,6 +5309,7 @@ books:
   work: jc:湿热病篇
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.75
   notes_text: 校對過
 - code: E004
@@ -5030,6 +5330,7 @@ books:
   work: wenbing_tiaobian
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 吴瑭自序作于嘉庆三年，嘉庆十八年刊
 - code: E004a
   id: jc_e004a
@@ -5050,6 +5351,7 @@ books:
   work: wenbing_tiaobian
   attribution: traditional
   modern: false
+  status: ingest
 - code: E005
   id: jc_e005
   file: E/E005.txt
@@ -5068,6 +5370,7 @@ books:
   work: jc:广瘟疫论
   attribution: traditional
   modern: false
+  status: ingest
 - code: E006
   id: jc_e006
   file: E/E006.txt
@@ -5087,6 +5390,7 @@ books:
   work: jc:温热经纬
   attribution: traditional
   modern: false
+  status: ingest
 - code: E007
   id: jc_e007
   file: E/E007.txt
@@ -5105,6 +5409,7 @@ books:
   work: jc:重订广温热论
   attribution: traditional
   modern: false
+  status: ingest
 - code: E008
   id: jc_e008
   file: E/E008.txt
@@ -5123,6 +5428,10 @@ books:
   work: jc:六因条辨
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
 - code: E009
   id: jc_e009
   file: E/E009.txt
@@ -5141,6 +5450,7 @@ books:
   work: jc:增订叶评伤暑全书
   attribution: traditional
   modern: false
+  status: ingest
 - code: E010
   id: jc_e010
   file: E/E010.txt
@@ -5160,6 +5470,7 @@ books:
   work: jc:温热暑疫全书
   attribution: traditional
   modern: false
+  status: ingest
 - code: E011
   id: jc_e011
   file: E/E011.txt
@@ -5178,6 +5489,7 @@ books:
   work: jc:温热逢源
   attribution: traditional
   modern: false
+  status: ingest
 - code: E011a
   id: jc_e011a
   file: E/E011a.txt
@@ -5197,6 +5509,7 @@ books:
   work: jc:温热逢源
   attribution: traditional
   modern: false
+  status: ingest
 - code: E012
   id: jc_e012
   file: E/E012.txt
@@ -5215,6 +5528,7 @@ books:
   work: jc:时病论
   attribution: traditional
   modern: false
+  status: ingest
 - code: E012a
   id: jc_e012a
   file: E/E012a.txt
@@ -5234,6 +5548,7 @@ books:
   work: jc:时病论
   attribution: traditional
   modern: false
+  status: ingest
 - code: E013
   id: jc_e013
   file: E/E013.txt
@@ -5253,6 +5568,7 @@ books:
   work: jc:温病指南
   attribution: traditional
   modern: false
+  status: ingest
 - code: E014
   id: jc_e014
   file: E/E014.txt
@@ -5272,6 +5588,7 @@ books:
   work: jc:松峰说疫
   attribution: traditional
   modern: false
+  status: ingest
 - code: E015
   id: jc_e015
   file: E/E015.txt
@@ -5280,17 +5597,18 @@ books:
   - 溫病正宗
   authors:
   - 王德宣
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1935
   - 1935
   dating: preface
   dating_note: 民國二十四年乙亥秋月
-  category: 现代
+  category: 近代
   jicheng_category: 溫病
   work: jc:温病正宗
   attribution: traditional
   modern: true
+  status: ingest
 - code: E016
   id: jc_e016
   file: E/E016.txt
@@ -5309,6 +5627,7 @@ books:
   work: jc:温热论
   attribution: traditional
   modern: false
+  status: ingest
 - code: E017
   id: jc_e017
   file: E/E017.txt
@@ -5327,6 +5646,7 @@ books:
   work: jc:三时伏气外感篇
   attribution: traditional
   modern: false
+  status: ingest
 - code: E018
   id: jc_e018
   file: E/E018.txt
@@ -5346,6 +5666,7 @@ books:
   work: jc:外感温热篇
   attribution: traditional
   modern: false
+  status: ingest
 - code: E019
   id: jc_e019
   file: E/E019.txt
@@ -5365,6 +5686,7 @@ books:
   work: jc:广温疫论
   attribution: traditional
   modern: false
+  status: ingest
 - code: E020
   id: jc_e020
   file: E/E020.txt
@@ -5383,6 +5705,7 @@ books:
   work: jc:疫疹一得
   attribution: traditional
   modern: false
+  status: ingest
 - code: F000
   id: jc_f000
   file: F/F000.txt
@@ -5401,6 +5724,7 @@ books:
   work: jiaoqi_zhifa
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0022
 - code: F002
   id: jc_f002
@@ -5420,6 +5744,7 @@ books:
   work: jc:血证论
   attribution: traditional
   modern: false
+  status: ingest
 - code: F002a
   id: jc_f002a
   file: F/F002a.txt
@@ -5439,6 +5764,7 @@ books:
   work: jc:血证论
   attribution: traditional
   modern: false
+  status: ingest
 - code: F004
   id: jc_f004
   file: F/F004.txt
@@ -5457,6 +5783,7 @@ books:
   work: jc:杂病广要
   attribution: traditional
   modern: false
+  status: ingest
 - code: F005
   id: jc_f005
   file: F/F005.txt
@@ -5474,6 +5801,7 @@ books:
   work: jc:风劳臌膈四大证治
   attribution: traditional
   modern: false
+  status: ingest
 - code: F006
   id: jc_f006
   file: F/F006.txt
@@ -5486,11 +5814,15 @@ books:
   - 1949
   - 2010
   dating: curated
-  category: 现代
+  category: 近代
   jicheng_category: 雜病
   work: jc:傅青主男科重编考释
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
   notes_text: 今人重编考释（书中所存清人序不代表成书年代）
 - code: F007
   id: jc_f007
@@ -5510,6 +5842,7 @@ books:
   work: jc:阴证略例
   attribution: traditional
   modern: false
+  status: ingest
 - code: F008
   id: jc_f008
   file: F/F008.txt
@@ -5529,6 +5862,7 @@ books:
   work: jc:中风论
   attribution: traditional
   modern: false
+  status: ingest
 - code: F009
   id: jc_f009
   file: F/F009.txt
@@ -5547,6 +5881,7 @@ books:
   work: neiwaishang
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0052
 - code: F009a
   id: jc_f009a
@@ -5567,6 +5902,7 @@ books:
   work: neiwaishang
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0052
 - code: F010
   id: jc_f010
@@ -5586,6 +5922,7 @@ books:
   work: jc:内科摘要
   attribution: traditional
   modern: false
+  status: ingest
 - code: F011
   id: jc_f011
   file: F/F011.txt
@@ -5603,6 +5940,7 @@ books:
   work: jc:何氏虚劳心传
   attribution: traditional
   modern: false
+  status: ingest
 - code: F012
   id: jc_f012
   file: F/F012.txt
@@ -5621,6 +5959,7 @@ books:
   work: jc:理虚元鉴
   attribution: traditional
   modern: false
+  status: ingest
 - code: F013
   id: jc_f013
   file: F/F013.txt
@@ -5639,6 +5978,7 @@ books:
   work: jc:虚损启微
   attribution: traditional
   modern: false
+  status: ingest
 - code: F014
   id: jc_f014
   file: F/F014.txt
@@ -5657,6 +5997,7 @@ books:
   work: jc:慎柔五书
   attribution: traditional
   modern: false
+  status: ingest
 - code: F015
   id: jc_f015
   file: F/F015.txt
@@ -5675,6 +6016,7 @@ books:
   work: jc:痰火点雪
   attribution: traditional
   modern: false
+  status: ingest
 - code: F016
   id: jc_f016
   file: F/F016.txt
@@ -5694,6 +6036,7 @@ books:
   work: jc:疯门全书
   attribution: traditional
   modern: false
+  status: ingest
 - code: F017
   id: jc_f017
   file: F/F017.txt
@@ -5712,6 +6055,7 @@ books:
   work: jc:痰疠法门
   attribution: traditional
   modern: false
+  status: ingest
 - code: F018
   id: jc_f018
   file: F/F018.txt
@@ -5730,6 +6074,7 @@ books:
   work: jc:走马急疳真方
   attribution: traditional
   modern: false
+  status: ingest
 - code: F019
   id: jc_f019
   file: F/F019.txt
@@ -5749,6 +6094,7 @@ books:
   work: jc:随息居重订霍乱论
   attribution: traditional
   modern: false
+  status: ingest
 - code: F020
   id: jc_f020
   file: F/F020.txt
@@ -5768,6 +6114,7 @@ books:
   work: jc:瘴疟指南
   attribution: traditional
   modern: false
+  status: ingest
 - code: F021
   id: jc_f021
   file: F/F021.txt
@@ -5786,6 +6133,7 @@ books:
   work: jc:杂病治例
   attribution: traditional
   modern: false
+  status: ingest
 - code: F022
   id: jc_f022
   file: F/F022.txt
@@ -5805,6 +6153,7 @@ books:
   work: jc:秘传证治要诀及类方
   attribution: traditional
   modern: false
+  status: ingest
 - code: F023
   id: jc_f023
   file: F/F023.txt
@@ -5822,6 +6171,7 @@ books:
   work: jc:三消论
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 旧题刘完素（待核）
 - code: F024
   id: jc_f024
@@ -5841,6 +6191,7 @@ books:
   work: piwei
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0053
 - code: F024a
   id: jc_f024a
@@ -5861,6 +6212,7 @@ books:
   work: piwei
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0053
 - code: F025
   id: jc_f025
@@ -5880,6 +6232,7 @@ books:
   work: jc:杂症会心录
   attribution: traditional
   modern: false
+  status: ingest
 - code: F026
   id: jc_f026
   file: F/F026.txt
@@ -5899,6 +6252,7 @@ books:
   work: jc:活法机要
   attribution: traditional
   modern: false
+  status: ingest
 - code: F027
   id: jc_f027
   file: F/F027.txt
@@ -5912,11 +6266,15 @@ books:
   - 1918
   - 1974
   dating: curated
-  category: 现代
+  category: 近代
   jicheng_category: 雜病
   work: jc:辅行诀脏腑用药法要
   attribution: disputed
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
   notes_text: 托名陶弘景之敦煌卷子抄本，原卷已佚，20世纪由张大昌等传出，真伪有争议
   mixed:
     layer: 近代传抄本（真伪有争议）
@@ -5943,6 +6301,7 @@ books:
   work: jc:七十二症辨治方法
   attribution: traditional
   modern: false
+  status: ingest
 - code: F100
   id: jc_f100
   file: F/F100.txt
@@ -5960,6 +6319,7 @@ books:
   work: jc:急救良方
   attribution: traditional
   modern: false
+  status: ingest
 - code: F101
   id: jc_f101
   file: F/F101.txt
@@ -5978,6 +6338,7 @@ books:
   work: jc:急救广生集
   attribution: traditional
   modern: false
+  status: ingest
 - code: G000
   id: jc_g000
   file: G/G000.txt
@@ -5996,6 +6357,7 @@ books:
   work: jc:女科切要
   attribution: traditional
   modern: false
+  status: ingest
 - code: G000a
   id: jc_g000a
   file: G/G000a.txt
@@ -6014,6 +6376,7 @@ books:
   work: jc:女科切要
   attribution: traditional
   modern: false
+  status: ingest
 - code: G001
   id: jc_g001
   file: G/G001.txt
@@ -6032,6 +6395,7 @@ books:
   work: jc:傅青主女科歌括
   attribution: traditional
   modern: false
+  status: ingest
 - code: G002
   id: jc_g002
   file: G/G002.txt
@@ -6050,6 +6414,7 @@ books:
   work: jc:产宝
   attribution: traditional
   modern: false
+  status: ingest
 - code: G003
   id: jc_g003
   file: G/G003.txt
@@ -6068,6 +6433,7 @@ books:
   work: nuke_baiwen
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 笈成元数据年份作 420—479（刘宋，误）；齐仲甫撰于嘉定十三年
 - code: G003a
   id: jc_g003a
@@ -6088,6 +6454,7 @@ books:
   work: nuke_baiwen
   attribution: traditional
   modern: false
+  status: ingest
 - code: G004
   id: jc_g004
   file: G/G004.txt
@@ -6105,6 +6472,7 @@ books:
   work: jc:钱氏秘传产科方书名试验录
   attribution: traditional
   modern: false
+  status: ingest
 - code: G005
   id: jc_g005
   file: G/G005.txt
@@ -6123,6 +6491,7 @@ books:
   work: furen_daquan
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0038
 - code: G006
   id: jc_g006
@@ -6143,6 +6512,7 @@ books:
   work: jc:沈氏女科辑要
   attribution: traditional
   modern: false
+  status: ingest
 - code: G007
   id: jc_g007
   file: G/G007.txt
@@ -6161,6 +6531,7 @@ books:
   work: jc:济生集
   attribution: traditional
   modern: false
+  status: ingest
 - code: G010
   id: jc_g010
   file: G/G010.txt
@@ -6178,6 +6549,7 @@ books:
   work: jc:女科旨要
   attribution: traditional
   modern: false
+  status: ingest
 - code: G011
   id: jc_g011
   file: G/G011.txt
@@ -6195,6 +6567,7 @@ books:
   work: jc:女科折衷纂要
   attribution: traditional
   modern: false
+  status: ingest
 - code: G012
   id: jc_g012
   file: G/G012.txt
@@ -6211,6 +6584,7 @@ books:
   work: jc:女科指要
   attribution: traditional
   modern: false
+  status: ingest
 - code: G013
   id: jc_g013
   file: G/G013.txt
@@ -6227,6 +6601,7 @@ books:
   work: jc:女科指掌
   attribution: traditional
   modern: false
+  status: ingest
 - code: G014
   id: jc_g014
   file: G/G014.txt
@@ -6244,6 +6619,7 @@ books:
   work: jc:女科要旨
   attribution: traditional
   modern: false
+  status: ingest
 - code: G015
   id: jc_g015
   file: G/G015.txt
@@ -6261,6 +6637,7 @@ books:
   work: jc:女科秘旨
   attribution: traditional
   modern: false
+  status: ingest
 - code: G016
   id: jc_g016
   file: G/G016.txt
@@ -6277,6 +6654,7 @@ books:
   work: jc:女科秘要
   attribution: traditional
   modern: false
+  status: ingest
 - code: G017
   id: jc_g017
   file: G/G017.txt
@@ -6296,6 +6674,7 @@ books:
   work: jc:女科经纶
   attribution: traditional
   modern: false
+  status: ingest
 - code: G017a
   id: jc_g017a
   file: G/G017a.txt
@@ -6315,6 +6694,7 @@ books:
   work: jc:女科经纶
   attribution: traditional
   modern: false
+  status: ingest
 - code: G018
   id: jc_g018
   file: G/G018.txt
@@ -6331,6 +6711,7 @@ books:
   work: jc:女科精要
   attribution: traditional
   modern: false
+  status: ingest
 - code: G019
   id: jc_g019
   file: G/G019.txt
@@ -6349,6 +6730,7 @@ books:
   work: jc:女科撮要
   attribution: traditional
   modern: false
+  status: ingest
 - code: G020
   id: jc_g020
   file: G/G020.txt
@@ -6367,23 +6749,25 @@ books:
   work: jc:内府秘传经验女科
   attribution: traditional
   modern: false
+  status: ingest
 - code: G021
   id: jc_g021
   file: G/G021.txt
   title: 竹泉生女科集要
   aliases: []
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1931
   - 1931
   dating: preface
   dating_note: 中華民國二十年九月一日武進張贊臣識於上海醫界春秋社
-  category: 现代
+  category: 近代
   jicheng_category: 婦產
   work: jc:竹泉生女科集要
   attribution: traditional
   modern: true
+  status: ingest
 - code: G022
   id: jc_g022
   file: G/G022.txt
@@ -6403,6 +6787,7 @@ books:
   work: jc:胎产心法
   attribution: traditional
   modern: false
+  status: ingest
 - code: G023
   id: jc_g023
   file: G/G023.txt
@@ -6422,6 +6807,7 @@ books:
   work: jc:胎产指南
   attribution: traditional
   modern: false
+  status: ingest
 - code: G023a
   id: jc_g023a
   file: G/G023a.txt
@@ -6441,6 +6827,7 @@ books:
   work: jc:胎产指南
   attribution: traditional
   modern: false
+  status: ingest
 - code: G024
   id: jc_g024
   file: G/G024.txt
@@ -6459,6 +6846,7 @@ books:
   work: jc:胎产秘书
   attribution: traditional
   modern: false
+  status: ingest
 - code: G025
   id: jc_g025
   file: G/G025.txt
@@ -6476,6 +6864,7 @@ books:
   work: jc:家传女科经验摘奇
   attribution: traditional
   modern: false
+  status: ingest
 - code: G026
   id: jc_g026
   file: G/G026.txt
@@ -6494,6 +6883,7 @@ books:
   work: jc:妇人规
   attribution: traditional
   modern: false
+  status: ingest
 - code: G027
   id: jc_g027
   file: G/G027.txt
@@ -6512,6 +6902,7 @@ books:
   work: jc:达生编
   attribution: traditional
   modern: false
+  status: ingest
 - code: G028
   id: jc_g028
   file: G/G028.txt
@@ -6529,6 +6920,7 @@ books:
   work: jc:妇科秘方
   attribution: traditional
   modern: false
+  status: ingest
 - code: G029
   id: jc_g029
   file: G/G029.txt
@@ -6546,6 +6938,7 @@ books:
   work: jc:妇科秘书
   attribution: traditional
   modern: false
+  status: ingest
 - code: G030
   id: jc_g030
   file: G/G030.txt
@@ -6563,6 +6956,7 @@ books:
   work: jc:妇科问答
   attribution: traditional
   modern: false
+  status: ingest
 - code: G031
   id: jc_g031
   file: G/G031.txt
@@ -6580,6 +6974,7 @@ books:
   work: jc:张氏妇科
   attribution: traditional
   modern: false
+  status: ingest
 - code: G032
   id: jc_g032
   file: G/G032.txt
@@ -6598,6 +6993,7 @@ books:
   work: jc:产鉴
   attribution: traditional
   modern: false
+  status: ingest
 - code: G033
   id: jc_g033
   file: G/G033.txt
@@ -6605,17 +7001,18 @@ books:
   aliases:
   - 評注產科心法
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1923
   - 1923
   dating: preface
   dating_note: 民國十二年夏六月邗江漱石生徐召南伯英識於拯黎
-  category: 现代
+  category: 近代
   jicheng_category: 婦產
   work: jc:评注产科心法
   attribution: traditional
   modern: true
+  status: ingest
 - code: G034
   id: jc_g034
   file: G/G034.txt
@@ -6634,6 +7031,7 @@ books:
   work: jc:产后十八论
   attribution: traditional
   modern: false
+  status: ingest
 - code: G035
   id: jc_g035
   file: G/G035.txt
@@ -6652,6 +7050,7 @@ books:
   work: jc:盘珠集胎产症治
   attribution: traditional
   modern: false
+  status: ingest
 - code: G035a
   id: jc_g035a
   file: G/G035a.txt
@@ -6671,6 +7070,7 @@ books:
   work: jc:盘珠集胎产症治
   attribution: traditional
   modern: false
+  status: ingest
 - code: G036
   id: jc_g036
   file: G/G036.txt
@@ -6689,6 +7089,7 @@ books:
   work: jc:竹林女科证治
   attribution: traditional
   modern: false
+  status: ingest
 - code: G037
   id: jc_g037
   file: G/G037.txt
@@ -6707,6 +7108,7 @@ books:
   work: jc:卫生家宝产科备要
   attribution: traditional
   modern: false
+  status: ingest
 - code: G038
   id: jc_g038
   file: G/G038.txt
@@ -6725,6 +7127,7 @@ books:
   work: jc:邯郸遗稿
   attribution: traditional
   modern: false
+  status: ingest
 - code: G039
   id: jc_g039
   file: G/G039.txt
@@ -6743,6 +7146,7 @@ books:
   work: jiyin_gangmu
   attribution: traditional
   modern: false
+  status: ingest
 - code: G039a
   id: jc_g039a
   file: G/G039a.txt
@@ -6762,6 +7166,7 @@ books:
   work: jiyin_gangmu
   attribution: traditional
   modern: false
+  status: ingest
 - code: G040
   id: jc_g040
   file: G/G040.txt
@@ -6781,6 +7186,7 @@ books:
   work: jc:妇科玉尺
   attribution: traditional
   modern: false
+  status: ingest
 - code: G041
   id: jc_g041
   file: G/G041.txt
@@ -6800,6 +7206,7 @@ books:
   work: jc:重订产孕集
   attribution: traditional
   modern: false
+  status: ingest
 - code: G042
   id: jc_g042
   file: G/G042.txt
@@ -6819,6 +7226,7 @@ books:
   work: jc:经效产宝
   attribution: traditional
   modern: false
+  status: ingest
 - code: G043
   id: jc_g043
   file: G/G043.txt
@@ -6838,6 +7246,7 @@ books:
   work: jc:校注妇人良方
   attribution: traditional
   modern: false
+  status: ingest
 - code: G044
   id: jc_g044
   file: G/G044.txt
@@ -6856,6 +7265,7 @@ books:
   work: jc:傅青主女科
   attribution: traditional
   modern: false
+  status: ingest
 - code: G044a
   id: jc_g044a
   file: G/G044a.txt
@@ -6872,6 +7282,7 @@ books:
   work: jc:傅青主女科
   attribution: traditional
   modern: false
+  status: ingest
 - code: G045
   id: jc_g045
   file: G/G045.txt
@@ -6880,16 +7291,20 @@ books:
   - 程門雪遺稿
   authors:
   - 程门雪
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 婦產
   work: jc:程门雪遗稿
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: G046
   id: jc_g046
   file: G/G046.txt
@@ -6907,6 +7322,10 @@ books:
   work: jc:女科宝鉴
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: G047
   id: jc_g047
   file: G/G047.txt
@@ -6924,6 +7343,7 @@ books:
   work: jc:竹林寺女科秘方
   attribution: traditional
   modern: false
+  status: ingest
   edition: 四明周岐隱重訂版
 - code: H000
   id: jc_h000
@@ -6943,6 +7363,7 @@ books:
   work: jc:小儿药证直诀
   attribution: traditional
   modern: false
+  status: ingest
 - code: H000a
   id: jc_h000a
   file: H/H000a.txt
@@ -6962,6 +7383,7 @@ books:
   work: jc:小儿药证直诀
   attribution: traditional
   modern: false
+  status: ingest
 - code: H001
   id: jc_h001
   file: H/H001.txt
@@ -6980,6 +7402,7 @@ books:
   work: jc:幼科切要
   attribution: traditional
   modern: false
+  status: ingest
 - code: H002
   id: jc_h002
   file: H/H002.txt
@@ -6998,6 +7421,7 @@ books:
   work: jc:婴儿论
   attribution: traditional
   modern: false
+  status: ingest
 - code: H003
   id: jc_h003
   file: H/H003.txt
@@ -7017,6 +7441,7 @@ books:
   work: jc:活幼心书
   attribution: traditional
   modern: false
+  status: ingest
 - code: H004
   id: jc_h004
   file: H/H004.txt
@@ -7034,6 +7459,7 @@ books:
   work: jc:儿科要略
   attribution: traditional
   modern: false
+  status: ingest
 - code: H005
   id: jc_h005
   file: H/H005.txt
@@ -7047,11 +7473,12 @@ books:
   - 1930
   - 1930
   dating: western
-  category: 现代
+  category: 近代
   jicheng_category: 兒科
   work: jc:儿科萃精
   attribution: traditional
   modern: true
+  status: ingest
 - code: H006
   id: jc_h006
   file: H/H006.txt
@@ -7070,6 +7497,7 @@ books:
   work: jc:小儿推拿广意
   attribution: traditional
   modern: false
+  status: ingest
 - code: H007
   id: jc_h007
   file: H/H007.txt
@@ -7089,6 +7517,7 @@ books:
   work: jc:幼科证治准绳
   attribution: traditional
   modern: false
+  status: ingest
 - code: H008
   id: jc_h008
   file: H/H008.txt
@@ -7107,6 +7536,7 @@ books:
   work: jc:小儿痘疹方论
   attribution: traditional
   modern: false
+  status: ingest
 - code: H009
   id: jc_h009
   file: H/H009.txt
@@ -7124,6 +7554,7 @@ books:
   work: xiaoer_weisheng
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0031
 - code: H010
   id: jc_h010
@@ -7142,6 +7573,7 @@ books:
   work: jc:幼幼集成
   attribution: traditional
   modern: false
+  status: ingest
 - code: H011
   id: jc_h011
   file: H/H011.txt
@@ -7160,6 +7592,7 @@ books:
   work: jc:幼幼新书
   attribution: traditional
   modern: false
+  status: ingest
 - code: H013
   id: jc_h013
   file: H/H013.txt
@@ -7177,6 +7610,7 @@ books:
   work: jc:幼科折衷
   attribution: traditional
   modern: false
+  status: ingest
 - code: H014
   id: jc_h014
   file: H/H014.txt
@@ -7193,6 +7627,7 @@ books:
   work: jc:幼科指南
   attribution: traditional
   modern: false
+  status: ingest
 - code: H015
   id: jc_h015
   file: H/H015.txt
@@ -7211,6 +7646,7 @@ books:
   work: jc:幼科推拿秘书
   attribution: traditional
   modern: false
+  status: ingest
 - code: H016
   id: jc_h016
   file: H/H016.txt
@@ -7229,6 +7665,7 @@ books:
   work: jc:幼科发挥
   attribution: traditional
   modern: false
+  status: ingest
 - code: H017
   id: jc_h017
   file: H/H017.txt
@@ -7246,6 +7683,7 @@ books:
   work: jc:幼科概论
   attribution: traditional
   modern: false
+  status: ingest
 - code: H018
   id: jc_h018
   file: H/H018.txt
@@ -7265,6 +7703,7 @@ books:
   work: jc:幼科类萃
   attribution: traditional
   modern: false
+  status: ingest
 - code: H019
   id: jc_h019
   file: H/H019.txt
@@ -7283,6 +7722,7 @@ books:
   work: jc:幼科铁镜
   attribution: traditional
   modern: false
+  status: ingest
 - code: H020
   id: jc_h020
   file: H/H020.txt
@@ -7301,6 +7741,7 @@ books:
   work: jc:儿科醒
   attribution: traditional
   modern: false
+  status: ingest
 - code: H021
   id: jc_h021
   file: H/H021.txt
@@ -7318,6 +7759,7 @@ books:
   work: jc:保幼新编
   attribution: traditional
   modern: false
+  status: ingest
 - code: H022
   id: jc_h022
   file: H/H022.txt
@@ -7337,6 +7779,7 @@ books:
   work: jc:保婴撮要
   attribution: traditional
   modern: false
+  status: ingest
 - code: H023
   id: jc_h023
   file: H/H023.txt
@@ -7355,6 +7798,7 @@ books:
   work: jc:活幼口议
   attribution: traditional
   modern: false
+  status: ingest
 - code: H024
   id: jc_h024
   file: H/H024.txt
@@ -7372,6 +7816,7 @@ books:
   work: jc:陈氏幼科秘诀
   attribution: traditional
   modern: false
+  status: ingest
 - code: H025
   id: jc_h025
   file: H/H025.txt
@@ -7389,6 +7834,7 @@ books:
   work: jc:慈幼便览
   attribution: traditional
   modern: false
+  status: ingest
 - code: H026
   id: jc_h026
   file: H/H026.txt
@@ -7407,6 +7853,7 @@ books:
   work: jc:慈幼新书
   attribution: traditional
   modern: false
+  status: ingest
 - code: H027
   id: jc_h027
   file: H/H027.txt
@@ -7424,6 +7871,7 @@ books:
   work: jc:毓麟验方
   attribution: traditional
   modern: false
+  status: ingest
 - code: H028
   id: jc_h028
   file: H/H028.txt
@@ -7442,6 +7890,7 @@ books:
   work: jc:鬻婴提要说
   attribution: traditional
   modern: false
+  status: ingest
 - code: H029
   id: jc_h029
   file: H/H029.txt
@@ -7459,6 +7908,7 @@ books:
   work: luxin_jing
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0016
 - code: H030
   id: jc_h030
@@ -7478,6 +7928,7 @@ books:
   work: jc:婴童类萃
   attribution: traditional
   modern: false
+  status: ingest
 - code: H031
   id: jc_h031
   file: H/H031.txt
@@ -7496,6 +7947,10 @@ books:
   work: jc:万氏秘传片玉心书
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
 - code: H032
   id: jc_h032
   file: H/H032.txt
@@ -7515,6 +7970,7 @@ books:
   work: jc:幼科释谜
   attribution: traditional
   modern: false
+  status: ingest
 - code: H033
   id: jc_h033
   file: H/H033.txt
@@ -7533,6 +7989,7 @@ books:
   work: jc:幼科种痘心法要旨
   attribution: traditional
   modern: false
+  status: ingest
 - code: H034
   id: jc_h034
   file: H/H034.txt
@@ -7552,6 +8009,7 @@ books:
   work: jc:婴童百问
   attribution: traditional
   modern: false
+  status: ingest
 - code: I000
   id: jc_i000
   file: I/I000.txt
@@ -7570,6 +8028,7 @@ books:
   work: waike_jingyi
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0064
 - code: I001
   id: jc_i001
@@ -7589,6 +8048,7 @@ books:
   work: jc:立斋外科发挥
   attribution: traditional
   modern: false
+  status: ingest
 - code: I002
   id: jc_i002
   file: I/I002.txt
@@ -7608,6 +8068,7 @@ books:
   work: jc:外科枢要
   attribution: traditional
   modern: false
+  status: ingest
 - code: I003
   id: jc_i003
   file: I/I003.txt
@@ -7626,6 +8087,7 @@ books:
   work: jc:外科集验方
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 笈成元数据题赵宜真、洪武戊午（即《仙传外科集验方》）；本书序署良医副周文采、弘治戊午，按序（待核）
 - code: I004
   id: jc_i004
@@ -7644,6 +8106,7 @@ books:
   work: jc:外科大成
   attribution: traditional
   modern: false
+  status: ingest
 - code: I004a
   id: jc_i004a
   file: I/I004a.txt
@@ -7663,6 +8126,7 @@ books:
   work: jc:外科大成
   attribution: traditional
   modern: false
+  status: ingest
 - code: I005
   id: jc_i005
   file: I/I005.txt
@@ -7680,6 +8144,7 @@ books:
   work: jc:外科正宗
   attribution: traditional
   modern: false
+  status: ingest
 - code: I005a
   id: jc_i005a
   file: I/I005a.txt
@@ -7698,6 +8163,7 @@ books:
   work: jc:外科正宗
   attribution: traditional
   modern: false
+  status: ingest
 - code: I006
   id: jc_i006
   file: I/I006.txt
@@ -7714,6 +8180,7 @@ books:
   work: jc:外科十三方考
   attribution: traditional
   modern: false
+  status: ingest
 - code: I007
   id: jc_i007
   file: I/I007.txt
@@ -7731,23 +8198,25 @@ books:
   work: jc:外科十法
   attribution: traditional
   modern: false
+  status: ingest
 - code: I008
   id: jc_i008
   file: I/I008.txt
   title: 外科方外奇方
   aliases: []
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1936
   - 1936
   dating: preface
   dating_note: 民國二十五年四月下浣。杭州沈仲圭敘於糧道山。
-  category: 现代
+  category: 近代
   jicheng_category: 外科
   work: jc:外科方外奇方
   attribution: traditional
   modern: true
+  status: ingest
 - code: I009
   id: jc_i009
   file: I/I009.txt
@@ -7765,6 +8234,7 @@ books:
   work: jc:外科全生集
   attribution: traditional
   modern: false
+  status: ingest
 - code: I010
   id: jc_i010
   file: I/I010.txt
@@ -7783,6 +8253,7 @@ books:
   work: jc:外科启玄
   attribution: traditional
   modern: false
+  status: ingest
 - code: I011
   id: jc_i011
   file: I/I011.txt
@@ -7800,6 +8271,7 @@ books:
   work: waike_lili
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0073
 - code: I012
   id: jc_i012
@@ -7814,11 +8286,12 @@ books:
   - 1912
   - 1949
   dating: western
-  category: 现代
+  category: 近代
   jicheng_category: 外科
   work: jc:外科传薪集
   attribution: traditional
   modern: true
+  status: ingest
 - code: I013
   id: jc_i013
   file: I/I013.txt
@@ -7836,6 +8309,7 @@ books:
   work: jc:外科精要
   attribution: traditional
   modern: false
+  status: ingest
 - code: I014
   id: jc_i014
   file: I/I014.txt
@@ -7854,6 +8328,7 @@ books:
   work: jc:外科选要
   attribution: traditional
   modern: false
+  status: ingest
 - code: I015
   id: jc_i015
   file: I/I015.txt
@@ -7873,6 +8348,7 @@ books:
   work: jc:外科医镜
   attribution: traditional
   modern: false
+  status: ingest
 - code: I016
   id: jc_i016
   file: I/I016.txt
@@ -7891,6 +8367,7 @@ books:
   work: jc:秘传外科方
   attribution: traditional
   modern: false
+  status: ingest
 - code: I017
   id: jc_i017
   file: I/I017.txt
@@ -7909,6 +8386,7 @@ books:
   work: jc:仙传外科集验方
   attribution: traditional
   modern: false
+  status: ingest
 - code: I018
   id: jc_i018
   file: I/I018.txt
@@ -7927,6 +8405,7 @@ books:
   work: jc:外科证治全书
   attribution: traditional
   modern: false
+  status: ingest
 - code: I019
   id: jc_i019
   file: I/I019.txt
@@ -7944,6 +8423,7 @@ books:
   work: jc:万氏秘传外科心法
   attribution: traditional
   modern: false
+  status: ingest
 - code: I101
   id: jc_i101
   file: I/I101.txt
@@ -7963,6 +8443,7 @@ books:
   work: jc:疡科心得集
   attribution: traditional
   modern: false
+  status: ingest
 - code: I102
   id: jc_i102
   file: I/I102.txt
@@ -7982,6 +8463,7 @@ books:
   work: jc:疡医大全
   attribution: traditional
   modern: false
+  status: ingest
 - code: I103
   id: jc_i103
   file: I/I103.txt
@@ -8000,6 +8482,7 @@ books:
   work: jc:疡科捷径
   attribution: traditional
   modern: false
+  status: ingest
 - code: I104
   id: jc_i104
   file: I/I104.txt
@@ -8019,6 +8502,7 @@ books:
   work: jc:疠疡机要
   attribution: traditional
   modern: false
+  status: ingest
 - code: I105
   id: jc_i105
   file: I/I105.txt
@@ -8032,11 +8516,12 @@ books:
   - 1912
   - 1912
   dating: western
-  category: 现代
+  category: 近代
   jicheng_category: 外科
   work: jc:疡科纲要
   attribution: traditional
   modern: true
+  status: ingest
 - code: I200
   id: jc_i200
   file: I/I200.txt
@@ -8055,6 +8540,7 @@ books:
   work: jc:专治麻痧初编
   attribution: traditional
   modern: false
+  status: ingest
 - code: I201
   id: jc_i201
   file: I/I201.txt
@@ -8074,6 +8560,7 @@ books:
   work: jc:痧疹辑要
   attribution: traditional
   modern: false
+  status: ingest
 - code: I202
   id: jc_i202
   file: I/I202.txt
@@ -8092,6 +8579,7 @@ books:
   work: jc:麻科活人全书
   attribution: traditional
   modern: false
+  status: ingest
 - code: I203
   id: jc_i203
   file: I/I203.txt
@@ -8110,6 +8598,7 @@ books:
   work: jc:麻疹备要方论
   attribution: traditional
   modern: false
+  status: ingest
 - code: I204
   id: jc_i204
   file: I/I204.txt
@@ -8128,6 +8617,7 @@ books:
   work: jc:麻疹阐注
   attribution: traditional
   modern: false
+  status: ingest
 - code: I205
   id: jc_i205
   file: I/I205.txt
@@ -8145,6 +8635,7 @@ books:
   work: jc:经验麻科
   attribution: traditional
   modern: false
+  status: ingest
 - code: I207
   id: jc_i207
   file: I/I207.txt
@@ -8163,6 +8654,7 @@ books:
   work: jiyan_beiju
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0042
 - code: I208
   id: jc_i208
@@ -8183,6 +8675,7 @@ books:
   work: jc:痧胀玉衡
   attribution: traditional
   modern: false
+  status: ingest
 - code: I300
   id: jc_i300
   file: I/I300.txt
@@ -8201,6 +8694,7 @@ books:
   work: jc:刘涓子鬼遗方
   attribution: traditional
   modern: false
+  status: ingest
 - code: I301
   id: jc_i301
   file: I/I301.txt
@@ -8219,6 +8713,7 @@ books:
   work: jc:原要论
   attribution: traditional
   modern: false
+  status: ingest
 - code: I302
   id: jc_i302
   file: I/I302.txt
@@ -8237,6 +8732,7 @@ books:
   work: jc:发背对口治诀论
   attribution: traditional
   modern: false
+  status: ingest
 - code: I303
   id: jc_i303
   file: I/I303.txt
@@ -8255,6 +8751,7 @@ books:
   work: jc:青囊秘诀
   attribution: traditional
   modern: false
+  status: ingest
 - code: J000
   id: jc_j000
   file: J/J000.txt
@@ -8273,6 +8770,7 @@ books:
   work: jc:仙授理伤续断秘方
   attribution: traditional
   modern: false
+  status: ingest
 - code: J001
   id: jc_j001
   file: J/J001.txt
@@ -8291,6 +8789,7 @@ books:
   work: jc:正体类要
   attribution: traditional
   modern: false
+  status: ingest
 - code: J002
   id: jc_j002
   file: J/J002.txt
@@ -8309,6 +8808,7 @@ books:
   work: jc:跌损妙方
   attribution: traditional
   modern: false
+  status: ingest
 - code: J003
   id: jc_j003
   file: J/J003.txt
@@ -8326,6 +8826,7 @@ books:
   work: jc:江氏伤科学
   attribution: traditional
   modern: false
+  status: ingest
 - code: J004
   id: jc_j004
   file: J/J004.txt
@@ -8344,6 +8845,7 @@ books:
   work: jc:伤科大成
   attribution: traditional
   modern: false
+  status: ingest
 - code: J004a
   id: jc_j004a
   file: J/J004a.txt
@@ -8361,6 +8863,7 @@ books:
   work: jc:伤科大成
   attribution: traditional
   modern: false
+  status: ingest
 - code: J005
   id: jc_j005
   file: J/J005.txt
@@ -8377,6 +8880,7 @@ books:
   work: jc:跌打秘方
   attribution: traditional
   modern: false
+  status: ingest
 - code: J006
   id: jc_j006
   file: J/J006.txt
@@ -8395,6 +8899,7 @@ books:
   work: jc:跌打损伤方
   attribution: traditional
   modern: false
+  status: ingest
 - code: J007
   id: jc_j007
   file: J/J007.txt
@@ -8414,6 +8919,7 @@ books:
   work: jc:跌打损伤回生集
   attribution: traditional
   modern: false
+  status: ingest
 - code: J008
   id: jc_j008
   file: J/J008.txt
@@ -8431,6 +8937,7 @@ books:
   work: jc:少林真传伤科秘方
   attribution: traditional
   modern: false
+  status: ingest
 - code: J010
   id: jc_j010
   file: J/J010.txt
@@ -8448,6 +8955,7 @@ books:
   work: jc:金疮秘传禁方
   attribution: traditional
   modern: false
+  status: ingest
 - code: J011
   id: jc_j011
   file: J/J011.txt
@@ -8465,6 +8973,7 @@ books:
   work: jc:金疮跌打接骨药性秘书
   attribution: traditional
   modern: false
+  status: ingest
 - code: J012
   id: jc_j012
   file: J/J012.txt
@@ -8483,6 +8992,7 @@ books:
   work: jc:秘传刘伯温家藏接骨金疮禁方
   attribution: traditional
   modern: false
+  status: ingest
 - code: J013
   id: jc_j013
   file: J/J013.txt
@@ -8499,6 +9009,7 @@ books:
   work: jc:接骨手法
   attribution: traditional
   modern: false
+  status: ingest
 - code: J014
   id: jc_j014
   file: J/J014.txt
@@ -8517,6 +9028,7 @@ books:
   work: jc:救伤秘旨
   attribution: traditional
   modern: false
+  status: ingest
 - code: J015
   id: jc_j015
   file: J/J015.txt
@@ -8535,6 +9047,7 @@ books:
   work: jc:伤科方书
   attribution: traditional
   modern: false
+  status: ingest
 - code: J016
   id: jc_j016
   file: J/J016.txt
@@ -8553,6 +9066,7 @@ books:
   work: jc:伤科汇纂
   attribution: traditional
   modern: false
+  status: ingest
 - code: J017
   id: jc_j017
   file: J/J017.txt
@@ -8571,6 +9085,7 @@ books:
   work: jc:伤科补要
   attribution: traditional
   modern: false
+  status: ingest
 - code: K000
   id: jc_k000
   file: K/K000.txt
@@ -8589,6 +9104,7 @@ books:
   work: jiayi
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0005
 - code: K000a
   id: jc_k000a
@@ -8609,6 +9125,7 @@ books:
   work: jiayi
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0005
 - code: K001
   id: jc_k001
@@ -8627,6 +9144,7 @@ books:
   work: jc:针灸大成
   attribution: traditional
   modern: false
+  status: ingest
 - code: K002
   id: jc_k002
   file: K/K002.txt
@@ -8646,6 +9164,7 @@ books:
   work: jc:神应经
   attribution: traditional
   modern: false
+  status: ingest
 - code: K003
   id: jc_k003
   file: K/K003.txt
@@ -8664,6 +9183,7 @@ books:
   work: jc:针灸聚英
   attribution: traditional
   modern: false
+  status: ingest
 - code: K003a
   id: jc_k003a
   file: K/K003a.txt
@@ -8683,6 +9203,7 @@ books:
   work: jc:针灸聚英
   attribution: traditional
   modern: false
+  status: ingest
 - code: K004
   id: jc_k004
   file: K/K004.txt
@@ -8701,6 +9222,7 @@ books:
   work: zhenjiu_wendui
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0072
   quality: 0.0
 - code: K004a
@@ -8722,6 +9244,7 @@ books:
   work: zhenjiu_wendui
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0072
 - code: K005
   id: jc_k005
@@ -8741,6 +9264,7 @@ books:
   work: jc:针灸集成
   attribution: traditional
   modern: false
+  status: ingest
 - code: K006
   id: jc_k006
   file: K/K006.txt
@@ -8759,6 +9283,7 @@ books:
   work: jc:针灸大全
   attribution: traditional
   modern: false
+  status: ingest
 - code: K007
   id: jc_k007
   file: K/K007.txt
@@ -8777,6 +9302,7 @@ books:
   work: jc:针灸易学
   attribution: traditional
   modern: false
+  status: ingest
 - code: K008
   id: jc_k008
   file: K/K008.txt
@@ -8796,6 +9322,7 @@ books:
   work: jc:针灸逢源
   attribution: traditional
   modern: false
+  status: ingest
 - code: K009
   id: jc_k009
   file: K/K009.txt
@@ -8814,6 +9341,7 @@ books:
   work: jc:针经节要
   attribution: traditional
   modern: false
+  status: ingest
 - code: K010
   id: jc_k010
   file: K/K010.txt
@@ -8821,17 +9349,18 @@ books:
   aliases:
   - 金針秘傳
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1937
   - 1937
   dating: preface
   dating_note: 中華民國二十六年一月弟子趙痴佛謹書於山東高等法院
-  category: 现代
+  category: 近代
   jicheng_category: 針灸
   work: jc:金针秘传
   attribution: traditional
   modern: true
+  status: ingest
 - code: K011
   id: jc_k011
   file: K/K011.txt
@@ -8849,6 +9378,7 @@ books:
   work: jc:针灸神书
   attribution: traditional
   modern: false
+  status: ingest
 - code: K012
   id: jc_k012
   file: K/K012.txt
@@ -8867,6 +9397,7 @@ books:
   work: jc:针灸素难要旨
   attribution: traditional
   modern: false
+  status: ingest
 - code: K013
   id: jc_k013
   file: K/K013.txt
@@ -8885,6 +9416,7 @@ books:
   work: zhenjiu_zisheng
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0037
 - code: K014
   id: jc_k014
@@ -8904,6 +9436,7 @@ books:
   work: yulong_jing
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0063
 - code: K015
   id: jc_k015
@@ -8923,6 +9456,7 @@ books:
   work: jc:杨敬斋针灸全书
   attribution: traditional
   modern: false
+  status: ingest
 - code: K016
   id: jc_k016
   file: K/K016.txt
@@ -8942,6 +9476,7 @@ books:
   work: jc:子午流注针经
   attribution: traditional
   modern: false
+  status: ingest
 - code: K017
   id: jc_k017
   file: K/K017.txt
@@ -8955,11 +9490,15 @@ books:
   - 1956
   - 1956
   dating: western
-  category: 现代
+  category: 近代
   jicheng_category: 針灸
   work: jc:子午流注说难
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: K018
   id: jc_k018
   file: K/K018.txt
@@ -8978,6 +9517,7 @@ books:
   work: jc:针经指南
   attribution: traditional
   modern: false
+  status: ingest
 - code: K019
   id: jc_k019
   file: K/K019.txt
@@ -8995,6 +9535,7 @@ books:
   work: zhubing
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 摘自《诸病源候论》
 - code: K020
   id: jc_k020
@@ -9002,17 +9543,18 @@ books:
   title: 推拿抉微
   aliases: []
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1928
   - 1928
   dating: preface
   dating_note: 民國十七年戊辰河南信陽塗蔚生序於汴垣醫室
-  category: 现代
+  category: 近代
   jicheng_category: 針灸
   work: jc:推拿抉微
   attribution: traditional
   modern: true
+  status: ingest
 - code: K021
   id: jc_k021
   file: K/K021.txt
@@ -9032,6 +9574,7 @@ books:
   work: jc:针灸节要
   attribution: traditional
   modern: false
+  status: ingest
 - code: K022
   id: jc_k022
   file: K/K022.txt
@@ -9049,6 +9592,7 @@ books:
   work: jc:经穴秘密
   attribution: traditional
   modern: false
+  status: ingest
 - code: K023
   id: jc_k023
   file: K/K023.txt
@@ -9067,6 +9611,7 @@ books:
   work: jc:百家针灸歌赋［举拙修订版］
   attribution: traditional
   modern: false
+  status: ingest
 - code: K100
   id: jc_k100
   file: K/K100.txt
@@ -9085,6 +9630,7 @@ books:
   work: jc:灸法秘传
   attribution: traditional
   modern: false
+  status: ingest
 - code: K101
   id: jc_k101
   file: K/K101.txt
@@ -9103,6 +9649,7 @@ books:
   work: jc:神灸经纶
   attribution: traditional
   modern: false
+  status: ingest
 - code: K102
   id: jc_k102
   file: K/K102.txt
@@ -9120,6 +9667,7 @@ books:
   work: mingtang_jiujing
   attribution: traditional
   modern: false
+  status: ingest
 - code: K103
   id: jc_k103
   file: K/K103.txt
@@ -9137,6 +9685,7 @@ books:
   work: mingtang_jiujing
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0018
 - code: K104
   id: jc_k104
@@ -9155,6 +9704,7 @@ books:
   work: jc:宋本备急灸法
   attribution: traditional
   modern: false
+  status: ingest
 - code: K105
   id: jc_k105
   file: K/K105.txt
@@ -9172,6 +9722,7 @@ books:
   work: jc:炙膏肓腧穴法
   attribution: traditional
   modern: false
+  status: ingest
 - code: K200
   id: jc_k200
   file: K/K200.txt
@@ -9190,6 +9741,7 @@ books:
   work: jc:厘正按摩要术
   attribution: traditional
   modern: false
+  status: ingest
 - code: K201
   id: jc_k201
   file: K/K201.txt
@@ -9198,16 +9750,20 @@ books:
   - 中國民間刺血術（節選）
   authors:
   - 刘少林刘光瑞
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 針灸
   work: jc:中国民间刺血术
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: L000
   id: jc_l000
   file: L/L000.txt
@@ -9226,6 +9782,7 @@ books:
   work: yinhai_jingwei
   attribution: pseudepigraphic
   modern: false
+  status: ingest
   kanripo: KR3e0014
 - code: L001
   id: jc_l001
@@ -9244,6 +9801,7 @@ books:
   work: jc:眼科秘诀
   attribution: traditional
   modern: false
+  status: ingest
 - code: L002
   id: jc_l002
   file: L/L002.txt
@@ -9263,6 +9821,7 @@ books:
   work: jc:银海指南
   attribution: traditional
   modern: false
+  status: ingest
 - code: L003
   id: jc_l003
   file: L/L003.txt
@@ -9281,6 +9840,7 @@ books:
   work: shenshi_yaohan
   attribution: traditional
   modern: false
+  status: ingest
 - code: L003a
   id: jc_l003a
   file: L/L003a.txt
@@ -9300,6 +9860,7 @@ books:
   work: shenshi_yaohan
   attribution: traditional
   modern: false
+  status: ingest
 - code: L004
   id: jc_l004
   file: L/L004.txt
@@ -9321,6 +9882,7 @@ books:
   work: jc:目经大成
   attribution: traditional
   modern: false
+  status: ingest
 - code: L005
   id: jc_l005
   file: L/L005.txt
@@ -9338,6 +9900,7 @@ books:
   work: jc:明目至宝
   attribution: traditional
   modern: false
+  status: ingest
 - code: L006
   id: jc_l006
   file: L/L006.txt
@@ -9355,6 +9918,7 @@ books:
   work: jc:异授眼科
   attribution: traditional
   modern: false
+  status: ingest
 - code: L007
   id: jc_l007
   file: L/L007.txt
@@ -9373,6 +9937,7 @@ books:
   work: jc:眼科阐微
   attribution: traditional
   modern: false
+  status: ingest
 - code: L008
   id: jc_l008
   file: L/L008.txt
@@ -9390,6 +9955,7 @@ books:
   work: jc:秘传眼科龙木论
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 年代待核
 - code: L009
   id: jc_l009
@@ -9410,6 +9976,7 @@ books:
   work: jc:一草亭目科全书
   attribution: traditional
   modern: false
+  status: ingest
 - code: L010
   id: jc_l010
   file: L/L010.txt
@@ -9418,16 +9985,20 @@ books:
   - 中醫眼科備讀
   authors:
   - 聂天祥
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 眼科
   work: jc:中医眼科备读
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: L100
   id: jc_l100
   file: L/L100.txt
@@ -9447,6 +10018,7 @@ books:
   work: jc:尤氏喉科秘书
   attribution: traditional
   modern: false
+  status: ingest
 - code: L101
   id: jc_l101
   file: L/L101.txt
@@ -9463,6 +10035,7 @@ books:
   work: jc:尤氏喉症指南
   attribution: traditional
   modern: false
+  status: ingest
 - code: L102
   id: jc_l102
   file: L/L102.txt
@@ -9480,6 +10053,7 @@ books:
   work: jc:白喉全生集
   attribution: traditional
   modern: false
+  status: ingest
 - code: L103
   id: jc_l103
   file: L/L103.txt
@@ -9499,6 +10073,7 @@ books:
   work: jc:白喉条辨
   attribution: traditional
   modern: false
+  status: ingest
 - code: L104
   id: jc_l104
   file: L/L104.txt
@@ -9515,6 +10090,7 @@ books:
   work: jc:咽喉秘集
   attribution: traditional
   modern: false
+  status: ingest
 - code: L105
   id: jc_l105
   file: L/L105.txt
@@ -9532,6 +10108,7 @@ books:
   work: jc:喉舌备要秘旨
   attribution: traditional
   modern: false
+  status: ingest
 - code: L106
   id: jc_l106
   file: L/L106.txt
@@ -9549,6 +10126,7 @@ books:
   work: jc:喉科指掌
   attribution: traditional
   modern: false
+  status: ingest
 - code: L107
   id: jc_l107
   file: L/L107.txt
@@ -9566,6 +10144,7 @@ books:
   work: jc:喉科秘诀
   attribution: traditional
   modern: false
+  status: ingest
 - code: L108
   id: jc_l108
   file: L/L108.txt
@@ -9584,6 +10163,7 @@ books:
   work: jc:喉科集腋
   attribution: traditional
   modern: false
+  status: ingest
 - code: L109
   id: jc_l109
   file: L/L109.txt
@@ -9601,6 +10181,7 @@ books:
   work: jc:焦氏喉科枕秘
   attribution: traditional
   modern: false
+  status: ingest
 - code: L110
   id: jc_l110
   file: L/L110.txt
@@ -9619,6 +10200,7 @@ books:
   work: jc:包氏喉证家宝
   attribution: traditional
   modern: false
+  status: ingest
 - code: L111
   id: jc_l111
   file: L/L111.txt
@@ -9638,6 +10220,7 @@ books:
   work: jc:咽喉脉证通论
   attribution: traditional
   modern: false
+  status: ingest
 - code: L112
   id: jc_l112
   file: L/L112.txt
@@ -9645,17 +10228,18 @@ books:
   aliases:
   - 重訂囊秘喉書
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1915
   - 1915
   dating: preface
   dating_note: 民國四年乙卯八月海虞張諤汝偉書於壽石居南窗下
-  category: 现代
+  category: 近代
   jicheng_category: 五官科
   work: jc:重订囊秘喉书
   attribution: traditional
   modern: true
+  status: ingest
 - code: L113
   id: jc_l113
   file: L/L113.txt
@@ -9674,6 +10258,7 @@ books:
   work: jc:重楼玉钥
   attribution: traditional
   modern: false
+  status: ingest
 - code: L114
   id: jc_l114
   file: L/L114.txt
@@ -9692,6 +10277,7 @@ books:
   work: jc:重楼玉钥续编
   attribution: traditional
   modern: false
+  status: ingest
 - code: L200
   id: jc_l200
   file: L/L200.txt
@@ -9710,6 +10296,7 @@ books:
   work: jc:口齿类要
   attribution: traditional
   modern: false
+  status: ingest
 - code: M000
   id: jc_m000
   file: M/M000.txt
@@ -9728,6 +10315,7 @@ books:
   work: jc:重订诊家直诀
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.8
   edition: 京寧科技書店，中醫珍本圖書集成。
   notes_text: 已全校對一次
@@ -9749,6 +10337,7 @@ books:
   work: jc:诊家枢要
   attribution: traditional
   modern: false
+  status: ingest
 - code: M002
   id: jc_m002
   file: M/M002.txt
@@ -9767,6 +10356,7 @@ books:
   work: jc:诊家正眼
   attribution: traditional
   modern: false
+  status: ingest
 - code: M003
   id: jc_m003
   file: M/M003.txt
@@ -9785,6 +10375,7 @@ books:
   work: jc:四诊抉微
   attribution: traditional
   modern: false
+  status: ingest
 - code: M004
   id: jc_m004
   file: M/M004.txt
@@ -9803,6 +10394,7 @@ books:
   work: jc:形色外诊简摩
   attribution: traditional
   modern: false
+  status: ingest
 - code: M005
   id: jc_m005
   file: M/M005.txt
@@ -9821,6 +10413,7 @@ books:
   work: jc:诊宗三昧
   attribution: traditional
   modern: false
+  status: ingest
 - code: M006
   id: jc_m006
   file: M/M006.txt
@@ -9838,6 +10431,7 @@ books:
   work: jc:察病指南
   attribution: traditional
   modern: false
+  status: ingest
 - code: M100
   id: jc_m100
   file: M/M100.txt
@@ -9856,6 +10450,7 @@ books:
   work: maijing
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0009
 - code: M100a
   id: jc_m100a
@@ -9876,6 +10471,7 @@ books:
   work: maijing
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0009
 - code: M101
   id: jc_m101
@@ -9895,6 +10491,7 @@ books:
   work: binhu_maixue
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0081
 - code: M102
   id: jc_m102
@@ -9915,6 +10512,7 @@ books:
   work: jc:脉确
   attribution: traditional
   modern: false
+  status: ingest
 - code: M103
   id: jc_m103
   file: M/M103.txt
@@ -9932,6 +10530,7 @@ books:
   work: jc:诊脉三十二辨
   attribution: traditional
   modern: false
+  status: ingest
 - code: M104
   id: jc_m104
   file: M/M104.txt
@@ -9950,6 +10549,7 @@ books:
   work: jc:脉诀乳海
   attribution: traditional
   modern: false
+  status: ingest
 - code: M105
   id: jc_m105
   file: M/M105.txt
@@ -9967,6 +10567,7 @@ books:
   work: jc:脉诀考证
   attribution: traditional
   modern: false
+  status: ingest
 - code: M106
   id: jc_m106
   file: M/M106.txt
@@ -9977,15 +10578,16 @@ books:
   - 崔嘉彦
   dynasty: 宋
   composition:
-  - 900
-  - 1100
-  dating: curated
+  - 1189
+  - 1189
+  dating: western
   category: 诊法
   jicheng_category: 診法
   work: jc:脉诀
-  attribution: pseudepigraphic
+  attribution: traditional
   modern: false
-  notes_text: 旧题王叔和，一般认为五代高阳生所托（待核）
+  status: ingest
+  notes_text: 崔嘉彦《脉诀》（又称《紫虚脉诀》《崔氏脉诀》，四言歌诀），非旧题王叔和之七言《脉诀》
 - code: M107
   id: jc_m107
   file: M/M107.txt
@@ -10004,6 +10606,7 @@ books:
   work: jc:症因脉治
   attribution: traditional
   modern: false
+  status: ingest
 - code: M108
   id: jc_m108
   file: M/M108.txt
@@ -10022,6 +10625,7 @@ books:
   work: jc:脉症治方
   attribution: traditional
   modern: false
+  status: ingest
 - code: M109
   id: jc_m109
   file: M/M109.txt
@@ -10040,6 +10644,7 @@ books:
   work: jc:三指禅
   attribution: traditional
   modern: false
+  status: ingest
 - code: M110
   id: jc_m110
   file: M/M110.txt
@@ -10057,6 +10662,7 @@ books:
   work: jc:脉理求真
   attribution: traditional
   modern: false
+  status: ingest
 - code: M111
   id: jc_m111
   file: M/M111.txt
@@ -10074,6 +10680,7 @@ books:
   work: maijue_kanwu
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0065
 - code: M112
   id: jc_m112
@@ -10092,6 +10699,7 @@ books:
   work: jc:脉诀汇辨
   attribution: traditional
   modern: false
+  status: ingest
 - code: M113
   id: jc_m113
   file: M/M113.txt
@@ -10109,6 +10717,7 @@ books:
   work: jc:脉象统类
   attribution: traditional
   modern: false
+  status: ingest
 - code: M114
   id: jc_m114
   file: M/M114.txt
@@ -10128,6 +10737,7 @@ books:
   work: jc:脉诀指掌病式图说
   attribution: traditional
   modern: false
+  status: ingest
 - code: M115
   id: jc_m115
   file: M/M115.txt
@@ -10147,6 +10757,7 @@ books:
   work: jc:脉诀阐微
   attribution: traditional
   modern: false
+  status: ingest
 - code: M116
   id: jc_m116
   file: M/M116.txt
@@ -10165,6 +10776,10 @@ books:
   work: jc:脉学阐微
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: M200
   id: jc_m200
   file: M/M200.txt
@@ -10183,6 +10798,7 @@ books:
   work: jc:望诊遵经
   attribution: traditional
   modern: false
+  status: ingest
 - code: M201
   id: jc_m201
   file: M/M201.txt
@@ -10196,11 +10812,12 @@ books:
   - 1917
   - 1917
   dating: western
-  category: 现代
+  category: 近代
   jicheng_category: 診法
   work: jc:临症验舌法
   attribution: traditional
   modern: true
+  status: ingest
 - code: M202
   id: jc_m202
   file: M/M202.txt
@@ -10218,6 +10835,7 @@ books:
   work: jc:察舌辨症新法
   attribution: traditional
   modern: false
+  status: ingest
 - code: N000
   id: jc_n000
   file: N/N000.txt
@@ -10237,6 +10855,7 @@ books:
   work: jc:医门补要
   attribution: traditional
   modern: false
+  status: ingest
 - code: N001
   id: jc_n001
   file: N/N001.txt
@@ -10255,6 +10874,7 @@ books:
   work: jc:友渔斋医话
   attribution: traditional
   modern: false
+  status: ingest
 - code: N002
   id: jc_n002
   file: N/N002.txt
@@ -10274,6 +10894,7 @@ books:
   work: jc:徐批叶天士晚年方案真本
   attribution: traditional
   modern: false
+  status: ingest
 - code: N003
   id: jc_n003
   file: N/N003.txt
@@ -10292,6 +10913,7 @@ books:
   work: jc:吴鞠通医案
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 吴瑭医案，辑于其晚年（待核）
 - code: N003a
   id: jc_n003a
@@ -10312,6 +10934,7 @@ books:
   work: jc:吴鞠通医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N004
   id: jc_n004
   file: N/N004.txt
@@ -10331,6 +10954,7 @@ books:
   work: jc:冷庐医话
   attribution: traditional
   modern: false
+  status: ingest
 - code: N005
   id: jc_n005
   file: N/N005.txt
@@ -10350,6 +10974,7 @@ books:
   work: jc:柳洲医话
   attribution: traditional
   modern: false
+  status: ingest
 - code: N006
   id: jc_n006
   file: N/N006.txt
@@ -10368,6 +10993,7 @@ books:
   work: jc:医贯
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 笈成元数据年份作 1687（清刻本）；赵献可《医贯》成于万历四十五年
 - code: N007
   id: jc_n007
@@ -10387,6 +11013,7 @@ books:
   work: jc:古今医案按
   attribution: traditional
   modern: false
+  status: ingest
 - code: N008
   id: jc_n008
   file: N/N008.txt
@@ -10405,6 +11032,7 @@ books:
   work: jc:侣山堂类辩
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 书中仅见乾隆己丑王琦刻序；张志聪原书约成于康熙九年（待核）
 - code: N009
   id: jc_n009
@@ -10424,6 +11052,7 @@ books:
   work: jc:临证指南医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N009a
   id: jc_n009a
   file: N/N009a.txt
@@ -10443,6 +11072,7 @@ books:
   work: jc:临证指南医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N010
   id: jc_n010
   file: N/N010.txt
@@ -10462,6 +11092,7 @@ books:
   work: jc:存存斋医话稿
   attribution: traditional
   modern: false
+  status: ingest
 - code: N011
   id: jc_n011
   file: N/N011.txt
@@ -10479,6 +11110,7 @@ books:
   work: jc:丹溪治法心要
   attribution: traditional
   modern: false
+  status: ingest
 - code: N012
   id: jc_n012
   file: N/N012.txt
@@ -10497,6 +11129,7 @@ books:
   work: yijing_suhui
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0066
 - code: N013
   id: jc_n013
@@ -10515,6 +11148,7 @@ books:
   work: jc:叶天士医案精华
   attribution: traditional
   modern: false
+  status: ingest
 - code: N014
   id: jc_n014
   file: N/N014.txt
@@ -10532,6 +11166,7 @@ books:
   work: jc:一得集
   attribution: traditional
   modern: false
+  status: ingest
 - code: N015
   id: jc_n015
   file: N/N015.txt
@@ -10539,16 +11174,17 @@ books:
   aliases:
   - 丁甘仁醫案
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:丁甘仁医案
   attribution: traditional
   modern: true
+  status: ingest
 - code: N016
   id: jc_n016
   file: N/N016.txt
@@ -10567,6 +11203,7 @@ books:
   work: jc:三家医案合刻
   attribution: traditional
   modern: false
+  status: ingest
 - code: N017
   id: jc_n017
   file: N/N017.txt
@@ -10584,6 +11221,7 @@ books:
   work: jc:上池杂说
   attribution: traditional
   modern: false
+  status: ingest
 - code: N018
   id: jc_n018
   file: N/N018.txt
@@ -10601,6 +11239,7 @@ books:
   work: jc:也是山人医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N019
   id: jc_n019
   file: N/N019.txt
@@ -10620,6 +11259,7 @@ books:
   work: jc:客尘医话
   attribution: traditional
   modern: false
+  status: ingest
 - code: N020
   id: jc_n020
   file: N/N020.txt
@@ -10638,6 +11278,7 @@ books:
   work: jc:王氏医案绎注
   attribution: traditional
   modern: false
+  status: ingest
 - code: N021
   id: jc_n021
   file: N/N021.txt
@@ -10656,6 +11297,7 @@ books:
   work: jc:市隐庐医学杂著
   attribution: traditional
   modern: false
+  status: ingest
 - code: N022
   id: jc_n022
   file: N/N022.txt
@@ -10675,6 +11317,7 @@ books:
   work: jc:未刻本叶氏医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N023
   id: jc_n023
   file: N/N023.txt
@@ -10693,6 +11336,7 @@ books:
   work: jc:先哲医话
   attribution: traditional
   modern: false
+  status: ingest
 - code: N024
   id: jc_n024
   file: N/N024.txt
@@ -10711,6 +11355,7 @@ books:
   work: jc:回春录
   attribution: traditional
   modern: false
+  status: ingest
 - code: N025
   id: jc_n025
   file: N/N025.txt
@@ -10728,6 +11373,7 @@ books:
   work: jc:何澹安医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N026
   id: jc_n026
   file: N/N026.txt
@@ -10747,6 +11393,7 @@ books:
   work: jc:吴医汇讲
   attribution: traditional
   modern: false
+  status: ingest
 - code: N027
   id: jc_n027
   file: N/N027.txt
@@ -10765,6 +11412,7 @@ books:
   work: jc:奇症汇
   attribution: traditional
   modern: false
+  status: ingest
 - code: N028
   id: jc_n028
   file: N/N028.txt
@@ -10784,6 +11432,7 @@ books:
   work: jc:知医必辨
   attribution: traditional
   modern: false
+  status: ingest
 - code: N029
   id: jc_n029
   file: N/N029.txt
@@ -10802,6 +11451,7 @@ books:
   work: jc:肯堂医论
   attribution: traditional
   modern: false
+  status: ingest
 - code: N030
   id: jc_n030
   file: N/N030.txt
@@ -10820,6 +11470,7 @@ books:
   work: jc:花韵楼医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N031
   id: jc_n031
   file: N/N031.txt
@@ -10838,6 +11489,7 @@ books:
   work: jc:证治心传
   attribution: traditional
   modern: false
+  status: ingest
 - code: N032
   id: jc_n032
   file: N/N032.txt
@@ -10856,6 +11508,7 @@ books:
   work: jc:柳选四家医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N033
   id: jc_n033
   file: N/N033.txt
@@ -10874,6 +11527,7 @@ books:
   work: jc:眉寿堂方案选存
   attribution: traditional
   modern: false
+  status: ingest
 - code: N034
   id: jc_n034
   file: N/N034.txt
@@ -10892,6 +11546,7 @@ books:
   work: jc:研经言
   attribution: traditional
   modern: false
+  status: ingest
 - code: N035
   id: jc_n035
   file: N/N035.txt
@@ -10909,6 +11564,7 @@ books:
   work: jc:重订灵兰要览
   attribution: traditional
   modern: false
+  status: ingest
 - code: N036
   id: jc_n036
   file: N/N036.txt
@@ -10927,6 +11583,7 @@ books:
   work: jc:重庆堂随笔
   attribution: traditional
   modern: false
+  status: ingest
 - code: N037
   id: jc_n037
   file: N/N037.txt
@@ -10945,6 +11602,7 @@ books:
   work: jc:凌临灵方
   attribution: traditional
   modern: false
+  status: ingest
 - code: N038
   id: jc_n038
   file: N/N038.txt
@@ -10964,6 +11622,7 @@ books:
   work: jc:孙文垣医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N039
   id: jc_n039
   file: N/N039.txt
@@ -10981,6 +11640,7 @@ books:
   work: jc:塘医话
   attribution: traditional
   modern: false
+  status: ingest
 - code: N040
   id: jc_n040
   file: N/N040.txt
@@ -10999,6 +11659,7 @@ books:
   work: jc:马培之医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N041
   id: jc_n041
   file: N/N041.txt
@@ -11017,6 +11678,7 @@ books:
   work: jc:张聿青医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N042
   id: jc_n042
   file: N/N042.txt
@@ -11035,6 +11697,7 @@ books:
   work: jc:张畹香医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N043
   id: jc_n043
   file: N/N043.txt
@@ -11053,6 +11716,7 @@ books:
   work: jc:曹仁伯医案论
   attribution: traditional
   modern: false
+  status: ingest
 - code: N045
   id: jc_n045
   file: N/N045.txt
@@ -11070,6 +11734,7 @@ books:
   work: jc:寓意草
   attribution: traditional
   modern: false
+  status: ingest
 - code: N046
   id: jc_n046
   file: N/N046.txt
@@ -11089,6 +11754,7 @@ books:
   work: jc:程杏轩医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N047
   id: jc_n047
   file: N/N047.txt
@@ -11107,6 +11773,7 @@ books:
   work: jc:慎疾刍言
   attribution: traditional
   modern: false
+  status: ingest
 - code: N048
   id: jc_n048
   file: N/N048.txt
@@ -11125,6 +11792,7 @@ books:
   work: jc:叶选医衡
   attribution: traditional
   modern: false
+  status: ingest
 - code: N049
   id: jc_n049
   file: N/N049.txt
@@ -11143,6 +11811,7 @@ books:
   work: jc:对山医话
   attribution: traditional
   modern: false
+  status: ingest
 - code: N050
   id: jc_n050
   file: N/N050.txt
@@ -11162,6 +11831,7 @@ books:
   work: jc:质疑录
   attribution: traditional
   modern: false
+  status: ingest
 - code: N051
   id: jc_n051
   file: N/N051.txt
@@ -11180,6 +11850,7 @@ books:
   work: jc:丛桂草堂医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N052
   id: jc_n052
   file: N/N052.txt
@@ -11198,6 +11869,7 @@ books:
   work: jc:归砚录
   attribution: traditional
   modern: false
+  status: ingest
 - code: N053
   id: jc_n053
   file: N/N053.txt
@@ -11216,6 +11888,7 @@ books:
   work: jc:医原
   attribution: traditional
   modern: false
+  status: ingest
 - code: N054
   id: jc_n054
   file: N/N054.txt
@@ -11234,6 +11907,7 @@ books:
   work: jc:医暇卮言
   attribution: traditional
   modern: false
+  status: ingest
 - code: N055
   id: jc_n055
   file: N/N055.txt
@@ -11252,6 +11926,7 @@ books:
   work: jc:医学课儿策
   attribution: traditional
   modern: false
+  status: ingest
 - code: N056
   id: jc_n056
   file: N/N056.txt
@@ -11270,6 +11945,7 @@ books:
   work: jc:医学读书记
   attribution: traditional
   modern: false
+  status: ingest
 - code: N057
   id: jc_n057
   file: N/N057.txt
@@ -11287,6 +11963,7 @@ books:
   work: jc:医医医
   attribution: traditional
   modern: false
+  status: ingest
 - code: N058
   id: jc_n058
   file: N/N058.txt
@@ -11305,6 +11982,7 @@ books:
   work: xu_mingyi_leian
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0096
 - code: N059
   id: jc_n059
@@ -11325,6 +12003,7 @@ books:
   work: jc:读医随笔
   attribution: traditional
   modern: false
+  status: ingest
 - code: N060
   id: jc_n060
   file: N/N060.txt
@@ -11343,6 +12022,7 @@ books:
   work: jc:王旭高临证医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N061
   id: jc_n061
   file: N/N061.txt
@@ -11361,6 +12041,7 @@ books:
   work: jc:邵兰荪医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N062
   id: jc_n062
   file: N/N062.txt
@@ -11368,16 +12049,20 @@ books:
   aliases:
   - 干祖望醫案
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:干祖望医案
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
   edition: 選集整理單篇文章而成
 - code: N063
   id: jc_n063
@@ -11393,11 +12078,12 @@ books:
   - 1937
   - 1937
   dating: curated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:经方实验录
   attribution: traditional
   modern: true
+  status: ingest
   quality: 0.68
   edition: 《經方實驗錄》，姜佐景編著，文光圖書，87年11月。紙本內容較網路流傳之電子檔（下稱舊版）增加許多，亦有多處修改。
   notes_text: 曹颖甫医案，姜佐景编按，1937 年刊；原檔品質可，部分已校
@@ -11418,6 +12104,7 @@ books:
   work: jc:仿寓意草
   attribution: traditional
   modern: false
+  status: ingest
 - code: N065
   id: jc_n065
   file: N/N065.txt
@@ -11437,6 +12124,7 @@ books:
   work: jc:洄溪医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N066
   id: jc_n066
   file: N/N066.txt
@@ -11454,6 +12142,10 @@ books:
   work: jc:许氏医案
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
 - code: N066a
   id: jc_n066a
   file: N/N066a.txt
@@ -11471,6 +12163,7 @@ books:
   work: jc:许氏医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N067
   id: jc_n067
   file: N/N067.txt
@@ -11488,6 +12181,7 @@ books:
   work: jc:医病简要
   attribution: traditional
   modern: false
+  status: ingest
 - code: N068
   id: jc_n068
   file: N/N068.txt
@@ -11507,6 +12201,7 @@ books:
   work: jc:一瓢医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N069
   id: jc_n069
   file: N/N069.txt
@@ -11525,6 +12220,7 @@ books:
   work: jc:医验随笔
   attribution: traditional
   modern: false
+  status: ingest
 - code: N070
   id: jc_n070
   file: N/N070.txt
@@ -11544,6 +12240,7 @@ books:
   work: jc:玉台新案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N071
   id: jc_n071
   file: N/N071.txt
@@ -11561,6 +12258,10 @@ books:
   work: jc:名师垂教
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: N072
   id: jc_n072
   file: N/N072.txt
@@ -11579,6 +12280,10 @@ books:
   work: jc:陈友芝医案
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: N073
   id: jc_n073
   file: N/N073.txt
@@ -11586,16 +12291,20 @@ books:
   aliases:
   - 范中林六經辨證醫案
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:范中林六经辨证医案
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: N074
   id: jc_n074
   file: N/N074.txt
@@ -11613,6 +12322,7 @@ books:
   work: jc:旧德堂医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N075
   id: jc_n075
   file: N/N075.txt
@@ -11620,16 +12330,20 @@ books:
   aliases:
   - 吳佩衡醫案
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:吴佩衡医案
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: N076
   id: jc_n076
   file: N/N076.txt
@@ -11637,16 +12351,20 @@ books:
   aliases:
   - 姚貞白醫案
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:姚贞白医案
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: N077
   id: jc_n077
   file: N/N077.txt
@@ -11665,6 +12383,10 @@ books:
   work: jc:医学经验录·医案
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: N078
   id: jc_n078
   file: N/N078.txt
@@ -11682,6 +12404,7 @@ books:
   work: jc:诊余举隅录
   attribution: traditional
   modern: false
+  status: ingest
 - code: N079
   id: jc_n079
   file: N/N079.txt
@@ -11699,6 +12422,7 @@ books:
   work: jc:醉花窗医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N080
   id: jc_n080
   file: N/N080.txt
@@ -11710,13 +12434,17 @@ books:
   dynasty: 清末民初
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:章次公医案
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: N081
   id: jc_n081
   file: N/N081.txt
@@ -11734,6 +12462,7 @@ books:
   work: jc:增补评注柳选医案
   attribution: traditional
   modern: false
+  status: ingest
 - code: N082
   id: jc_n082
   file: N/N082.txt
@@ -11741,16 +12470,20 @@ books:
   aliases:
   - 趙紹琴臨證驗案精選
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:赵绍琴临证验案精选
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: N083
   id: jc_n083
   file: N/N083.txt
@@ -11758,16 +12491,20 @@ books:
   aliases:
   - 戴麗三醫療經驗選
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:戴丽三医疗经验选
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: N084
   id: jc_n084
   file: N/N084.txt
@@ -11775,16 +12512,20 @@ books:
   aliases:
   - 近現代名醫驗案類編
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:近现代名医验案类编
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: N085
   id: jc_n085
   file: N/N085.txt
@@ -11793,16 +12534,20 @@ books:
   - 三十年臨證經驗集
   authors:
   - 邹孟城
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:三十年临证经验集
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: N086
   id: jc_n086
   file: N/N086.txt
@@ -11810,16 +12555,17 @@ books:
   aliases:
   - 景景醫話
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:景景医话
   attribution: traditional
   modern: true
+  status: ingest
 - code: N087
   id: jc_n087
   file: N/N087.txt
@@ -11837,6 +12583,10 @@ books:
   work: jc:湖岳村叟医案
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 现代校注本
+  screen:
+    curated: true
 - code: N088
   id: jc_n088
   file: N/N088.txt
@@ -11845,16 +12595,20 @@ books:
   - 章次公醫案中附子的應用
   authors:
   - 王少华
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:章次公医案中附子的应用
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: N089
   id: jc_n089
   file: N/N089.txt
@@ -11862,16 +12616,20 @@ books:
   aliases:
   - 何世英醫案
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:何世英医案
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: N090
   id: jc_n090
   file: N/N090.txt
@@ -11879,16 +12637,20 @@ books:
   aliases:
   - 余無言醫案
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 醫案
   work: jc:余无言医案
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: O000
   id: jc_o000
   file: O/O000.txt
@@ -11907,6 +12669,7 @@ books:
   work: yimen_falv
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0092
 - code: O001
   id: jc_o001
@@ -11927,6 +12690,7 @@ books:
   work: jc:医林改错
   attribution: traditional
   modern: false
+  status: ingest
 - code: O001a
   id: jc_o001a
   file: O/O001a.txt
@@ -11946,6 +12710,7 @@ books:
   work: jc:医林改错
   attribution: traditional
   modern: false
+  status: ingest
 - code: O002
   id: jc_o002
   file: O/O002.txt
@@ -11965,6 +12730,7 @@ books:
   work: jc:医学从众录
   attribution: traditional
   modern: false
+  status: ingest
 - code: O003
   id: jc_o003
   file: O/O003.txt
@@ -11984,6 +12750,7 @@ books:
   work: jc:笔花医镜
   attribution: traditional
   modern: false
+  status: ingest
 - code: O004
   id: jc_o004
   file: O/O004.txt
@@ -12002,6 +12769,7 @@ books:
   work: jc:证治汇补
   attribution: traditional
   modern: false
+  status: ingest
 - code: O005
   id: jc_o005
   file: O/O005.txt
@@ -12020,6 +12788,7 @@ books:
   work: shisijing_fahui
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 笈成元数据作 1314 年；滑寿自序署至正元年（1341）
 - code: O005a
   id: jc_o005a
@@ -12040,6 +12809,7 @@ books:
   work: shisijing_fahui
   attribution: traditional
   modern: false
+  status: ingest
 - code: O006
   id: jc_o006
   file: O/O006.txt
@@ -12058,6 +12828,7 @@ books:
   work: jc:原机启微
   attribution: traditional
   modern: false
+  status: ingest
 - code: O007
   id: jc_o007
   file: O/O007.txt
@@ -12076,6 +12847,7 @@ books:
   work: jc:理瀹骈文
   attribution: traditional
   modern: false
+  status: ingest
 - code: O007a
   id: jc_o007a
   file: O/O007a.txt
@@ -12098,6 +12870,7 @@ books:
   work: jc:理瀹骈文
   attribution: traditional
   modern: false
+  status: ingest
 - code: O008
   id: jc_o008
   file: O/O008.txt
@@ -12115,6 +12888,7 @@ books:
   work: jc:经穴汇解
   attribution: traditional
   modern: false
+  status: ingest
 - code: O009
   id: jc_o009
   file: O/O009.txt
@@ -12134,6 +12908,7 @@ books:
   work: jc:经络全书
   attribution: traditional
   modern: false
+  status: ingest
 - code: O010
   id: jc_o010
   file: O/O010.txt
@@ -12152,6 +12927,7 @@ books:
   work: jc:经络考
   attribution: traditional
   modern: false
+  status: ingest
 - code: O011
   id: jc_o011
   file: O/O011.txt
@@ -12170,6 +12946,7 @@ books:
   work: jc:经络汇编
   attribution: traditional
   modern: false
+  status: ingest
 - code: O012
   id: jc_o012
   file: O/O012.txt
@@ -12187,6 +12964,7 @@ books:
   work: jc:凌门传授铜人指穴
   attribution: traditional
   modern: false
+  status: ingest
 - code: O013
   id: jc_o013
   file: O/O013.txt
@@ -12204,6 +12982,7 @@ books:
   work: jc:广嗣要语
   attribution: traditional
   modern: false
+  status: ingest
 - code: O014
   id: jc_o014
   file: O/O014.txt
@@ -12222,6 +13001,7 @@ books:
   work: yixue_yuanliu
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0100
 - code: O014a
   id: jc_o014a
@@ -12241,6 +13021,7 @@ books:
   work: yixue_yuanliu
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0100
 - code: O015
   id: jc_o015
@@ -12260,6 +13041,7 @@ books:
   work: jc:中西汇通医经精义
   attribution: traditional
   modern: false
+  status: ingest
 - code: O016
   id: jc_o016
   file: O/O016.txt
@@ -12278,6 +13060,7 @@ books:
   work: jc:医效秘传
   attribution: traditional
   modern: false
+  status: ingest
 - code: O017
   id: jc_o017
   file: O/O017.txt
@@ -12296,6 +13079,7 @@ books:
   work: jc:医灯续焰
   attribution: traditional
   modern: false
+  status: ingest
 - code: O018
   id: jc_o018
   file: O/O018.txt
@@ -12315,6 +13099,7 @@ books:
   work: jc:女丹合编选注
   attribution: traditional
   modern: false
+  status: ingest
 - code: O019
   id: jc_o019
   file: O/O019.txt
@@ -12333,6 +13118,7 @@ books:
   work: jc:心医集
   attribution: traditional
   modern: false
+  status: ingest
 - code: O020
   id: jc_o020
   file: O/O020.txt
@@ -12349,6 +13135,7 @@ books:
   work: jc:西池集
   attribution: traditional
   modern: false
+  status: ingest
 - code: O021
   id: jc_o021
   file: O/O021.txt
@@ -12367,6 +13154,7 @@ books:
   work: jc:性命要旨
   attribution: traditional
   modern: false
+  status: ingest
 - code: O022
   id: jc_o022
   file: O/O022.txt
@@ -12385,6 +13173,7 @@ books:
   work: jc:寿世传真
   attribution: traditional
   modern: false
+  status: ingest
 - code: O023
   id: jc_o023
   file: O/O023.txt
@@ -12403,6 +13192,7 @@ books:
   work: jc:陆地仙经
   attribution: traditional
   modern: false
+  status: ingest
 - code: O024
   id: jc_o024
   file: O/O024.txt
@@ -12421,6 +13211,7 @@ books:
   work: jc:宁坤秘笈
   attribution: traditional
   modern: false
+  status: ingest
 - code: O025
   id: jc_o025
   file: O/O025.txt
@@ -12439,6 +13230,7 @@ books:
   work: jc:寿世保元
   attribution: traditional
   modern: false
+  status: ingest
 - code: O026
   id: jc_o026
   file: O/O026.txt
@@ -12457,6 +13249,7 @@ books:
   work: jc:达摩洗髓易筋经
   attribution: traditional
   modern: false
+  status: ingest
 - code: O027
   id: jc_o027
   file: O/O027.txt
@@ -12475,6 +13268,7 @@ books:
   work: jc:养生秘旨
   attribution: traditional
   modern: false
+  status: ingest
 - code: O028
   id: jc_o028
   file: O/O028.txt
@@ -12493,6 +13287,7 @@ books:
   work: jc:养生导引法
   attribution: traditional
   modern: false
+  status: ingest
 - code: O029
   id: jc_o029
   file: O/O029.txt
@@ -12511,6 +13306,7 @@ books:
   work: jc:养生导引秘籍
   attribution: traditional
   modern: false
+  status: ingest
 - code: O030
   id: jc_o030
   file: O/O030.txt
@@ -12529,6 +13325,7 @@ books:
   work: jc:修昆仑证验
   attribution: traditional
   modern: false
+  status: ingest
 - code: O031
   id: jc_o031
   file: O/O031.txt
@@ -12547,6 +13344,7 @@ books:
   work: jc:寿世青编
   attribution: traditional
   modern: false
+  status: ingest
 - code: O032
   id: jc_o032
   file: O/O032.txt
@@ -12566,6 +13364,7 @@ books:
   work: jc:养生类要
   attribution: traditional
   modern: false
+  status: ingest
 - code: O033
   id: jc_o033
   file: O/O033.txt
@@ -12584,6 +13383,7 @@ books:
   work: jc:饮食须知
   attribution: traditional
   modern: false
+  status: ingest
 - code: O034
   id: jc_o034
   file: O/O034.txt
@@ -12602,6 +13402,7 @@ books:
   work: jc:华氏中藏经
   attribution: pseudepigraphic
   modern: false
+  status: ingest
   notes_text: 旧题华佗，一般认为宋代成书（待核）
 - code: O035
   id: jc_o035
@@ -12621,6 +13422,7 @@ books:
   work: sanyin
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0041
 - code: O036
   id: jc_o036
@@ -12640,6 +13442,7 @@ books:
   work: jc:扁鹊心书
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 窦材辑（托名扁鹊）
 - code: O037
   id: jc_o037
@@ -12659,6 +13462,7 @@ books:
   work: yuji_weiyi
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0068
 - code: O038
   id: jc_o038
@@ -12679,6 +13483,7 @@ books:
   work: jc:明医指掌
   attribution: traditional
   modern: false
+  status: ingest
 - code: O039
   id: jc_o039
   file: O/O039.txt
@@ -12697,6 +13502,7 @@ books:
   work: jc:明医杂著
   attribution: traditional
   modern: false
+  status: ingest
 - code: O040
   id: jc_o040
   file: O/O040.txt
@@ -12715,6 +13521,7 @@ books:
   work: cishi_nanzhi
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0055
 - code: O040a
   id: jc_o040a
@@ -12735,6 +13542,7 @@ books:
   work: cishi_nanzhi
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0055
 - code: O041
   id: jc_o041
@@ -12754,6 +13562,7 @@ books:
   work: jc:卫生宝鉴
   attribution: traditional
   modern: false
+  status: ingest
 - code: O042
   id: jc_o042
   file: O/O042.txt
@@ -12772,6 +13581,7 @@ books:
   work: jc:校注医醇剩义
   attribution: traditional
   modern: false
+  status: ingest
 - code: O043
   id: jc_o043
   file: O/O043.txt
@@ -12791,6 +13601,7 @@ books:
   work: jc:脉因证治
   attribution: traditional
   modern: false
+  status: ingest
 - code: O044
   id: jc_o044
   file: O/O044.txt
@@ -12809,6 +13620,7 @@ books:
   work: jc:丹溪心法
   attribution: traditional
   modern: false
+  status: ingest
 - code: O044a
   id: jc_o044a
   file: O/O044a.txt
@@ -12827,6 +13639,7 @@ books:
   work: jc:丹溪心法
   attribution: traditional
   modern: false
+  status: ingest
 - code: O045
   id: jc_o045
   file: O/O045.txt
@@ -12845,6 +13658,7 @@ books:
   work: zhubing
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0012
 - code: O045a
   id: jc_o045a
@@ -12865,6 +13679,7 @@ books:
   work: zhubing
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0012
 - code: O046
   id: jc_o046
@@ -12884,6 +13699,7 @@ books:
   work: rumen_shiqin
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0051
 - code: O046a
   id: jc_o046a
@@ -12904,6 +13720,7 @@ books:
   work: rumen_shiqin
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0051
 - code: O047
   id: jc_o047
@@ -12923,6 +13740,7 @@ books:
   work: jc:古今医鉴
   attribution: traditional
   modern: false
+  status: ingest
 - code: O048
   id: jc_o048
   file: O/O048.txt
@@ -12941,6 +13759,7 @@ books:
   work: yishuo
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0036
 - code: O049
   id: jc_o049
@@ -12960,6 +13779,7 @@ books:
   work: jc:医经国小
   attribution: traditional
   modern: false
+  status: ingest
 - code: O050
   id: jc_o050
   file: O/O050.txt
@@ -12978,6 +13798,7 @@ books:
   work: jc:医学入门
   attribution: traditional
   modern: false
+  status: ingest
 - code: O051
   id: jc_o051
   file: O/O051.txt
@@ -12996,6 +13817,7 @@ books:
   work: jc:医学启源
   attribution: traditional
   modern: false
+  status: ingest
 - code: O052
   id: jc_o052
   file: O/O052.txt
@@ -13014,6 +13836,7 @@ books:
   work: jc:医学纲目
   attribution: traditional
   modern: false
+  status: ingest
 - code: O053
   id: jc_o053
   file: O/O053.txt
@@ -13032,6 +13855,7 @@ books:
   work: yilei_yuanrong
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0056
 - code: O054
   id: jc_o054
@@ -13051,6 +13875,7 @@ books:
   work: lanshi
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0054
 - code: O054a
   id: jc_o054a
@@ -13071,6 +13896,7 @@ books:
   work: lanshi
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0054
 - code: O055
   id: jc_o055
@@ -13090,6 +13916,7 @@ books:
   work: jc:韩氏医通
   attribution: traditional
   modern: false
+  status: ingest
 - code: O056
   id: jc_o056
   file: O/O056.txt
@@ -13108,6 +13935,7 @@ books:
   work: jc:医学正传
   attribution: traditional
   modern: false
+  status: ingest
 - code: O057
   id: jc_o057
   file: O/O057.txt
@@ -13126,6 +13954,7 @@ books:
   work: weiji_baoshu
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0035
 - code: O058
   id: jc_o058
@@ -13146,6 +13975,7 @@ books:
   work: jc:石室秘录
   attribution: traditional
   modern: false
+  status: ingest
 - code: O059
   id: jc_o059
   file: O/O059.txt
@@ -13164,6 +13994,7 @@ books:
   work: jc:丹溪手镜
   attribution: traditional
   modern: false
+  status: ingest
 - code: O060
   id: jc_o060
   file: O/O060.txt
@@ -13183,6 +14014,7 @@ books:
   work: jc:古今名医汇粹
   attribution: traditional
   modern: false
+  status: ingest
 - code: O061
   id: jc_o061
   file: O/O061.txt
@@ -13201,6 +14033,7 @@ books:
   work: jc:轩岐救正论
   attribution: traditional
   modern: false
+  status: ingest
 - code: O062
   id: jc_o062
   file: O/O062.txt
@@ -13220,6 +14053,7 @@ books:
   work: jc:医学三字经
   attribution: traditional
   modern: false
+  status: ingest
 - code: O063
   id: jc_o063
   file: O/O063.txt
@@ -13239,6 +14073,7 @@ books:
   work: jc:辨证录
   attribution: traditional
   modern: false
+  status: ingest
 - code: O063a
   id: jc_o063a
   file: O/O063a.txt
@@ -13258,6 +14093,7 @@ books:
   work: jc:辨证录
   attribution: traditional
   modern: false
+  status: ingest
 - code: O064
   id: jc_o064
   file: O/O064.txt
@@ -13276,6 +14112,7 @@ books:
   work: jc:医学指归
   attribution: traditional
   modern: false
+  status: ingest
 - code: O065
   id: jc_o065
   file: O/O065.txt
@@ -13294,6 +14131,7 @@ books:
   work: jc:医学实在易
   attribution: traditional
   modern: false
+  status: ingest
 - code: O066
   id: jc_o066
   file: O/O066.txt
@@ -13312,6 +14150,7 @@ books:
   work: jc:医学摘粹
   attribution: traditional
   modern: false
+  status: ingest
 - code: O067
   id: jc_o067
   file: O/O067.txt
@@ -13331,6 +14170,7 @@ books:
   work: jc:冯氏锦囊秘录
   attribution: traditional
   modern: false
+  status: ingest
 - code: O068
   id: jc_o068
   file: O/O068.txt
@@ -13349,6 +14189,7 @@ books:
   work: jc:简明医彀
   attribution: traditional
   modern: false
+  status: ingest
 - code: O069
   id: jc_o069
   file: O/O069.txt
@@ -13367,6 +14208,7 @@ books:
   work: jc:医述
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 笈成元数据作元代 1314 年（误）；程杏轩《医述》成于道光六年
 - code: O070
   id: jc_o070
@@ -13385,6 +14227,7 @@ books:
   work: jc:辨症玉函
   attribution: traditional
   modern: false
+  status: ingest
 - code: O071
   id: jc_o071
   file: O/O071.txt
@@ -13404,6 +14247,7 @@ books:
   work: jc:医学心悟
   attribution: traditional
   modern: false
+  status: ingest
 - code: O072
   id: jc_o072
   file: O/O072.txt
@@ -13423,6 +14267,7 @@ books:
   work: jc:类证治裁
   attribution: traditional
   modern: false
+  status: ingest
 - code: O072a
   id: jc_o072a
   file: O/O072a.txt
@@ -13442,6 +14287,7 @@ books:
   work: jc:类证治裁
   attribution: traditional
   modern: false
+  status: ingest
 - code: O073
   id: jc_o073
   file: O/O073.txt
@@ -13460,6 +14306,7 @@ books:
   work: jc:医碥
   attribution: traditional
   modern: false
+  status: ingest
 - code: O074
   id: jc_o074
   file: O/O074.txt
@@ -13479,6 +14326,7 @@ books:
   work: jc:医学真传
   attribution: traditional
   modern: false
+  status: ingest
 - code: O075
   id: jc_o075
   file: O/O075.txt
@@ -13497,6 +14345,7 @@ books:
   work: jc:张氏医通
   attribution: traditional
   modern: false
+  status: ingest
 - code: O075a
   id: jc_o075a
   file: O/O075a.txt
@@ -13517,6 +14366,7 @@ books:
   work: jc:张氏医通
   attribution: traditional
   modern: false
+  status: ingest
 - code: O076
   id: jc_o076
   file: O/O076.txt
@@ -13535,6 +14385,7 @@ books:
   work: jc:中国医籍考
   attribution: traditional
   modern: false
+  status: ingest
 - code: O077
   id: jc_o077
   file: O/O077.txt
@@ -13552,6 +14403,7 @@ books:
   work: jc:丹台玉案
   attribution: traditional
   modern: false
+  status: ingest
 - code: O078
   id: jc_o078
   file: O/O078.txt
@@ -13571,6 +14423,7 @@ books:
   work: jc:古今医彻
   attribution: traditional
   modern: false
+  status: ingest
 - code: O079
   id: jc_o079
   file: O/O079.txt
@@ -13589,6 +14442,7 @@ books:
   work: jc:药症忌宜
   attribution: traditional
   modern: false
+  status: ingest
 - code: O080
   id: jc_o080
   file: O/O080.txt
@@ -13607,6 +14461,7 @@ books:
   work: jc:四圣心源
   attribution: traditional
   modern: false
+  status: ingest
 - code: O081
   id: jc_o081
   file: O/O081.txt
@@ -13625,6 +14480,7 @@ books:
   work: jc:洗冤集录
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 宋慈《洗冤集录》
 - code: O082
   id: jc_o082
@@ -13644,6 +14500,7 @@ books:
   work: jc:古今医统大全
   attribution: traditional
   modern: false
+  status: ingest
 - code: O083
   id: jc_o083
   file: O/O083.txt
@@ -13661,6 +14518,7 @@ books:
   work: gezhi_yulun
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0060
 - code: O083a
   id: jc_o083a
@@ -13681,6 +14539,7 @@ books:
   work: gezhi_yulun
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0060
 - code: O084
   id: jc_o084
@@ -13700,6 +14559,7 @@ books:
   work: jc:御药院方
   attribution: traditional
   modern: false
+  status: ingest
 - code: O085
   id: jc_o085
   file: O/O085.txt
@@ -13718,6 +14578,7 @@ books:
   work: tuiqiu_shiyi
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0071
 - code: O086
   id: jc_o086
@@ -13737,6 +14598,7 @@ books:
   work: chushi_yishu
   attribution: disputed
   modern: false
+  status: ingest
   kanripo: KR3e0011
   mixed:
     layer: 南宋始出之本
@@ -13764,6 +14626,7 @@ books:
   work: jc:诸病主病诗
   attribution: traditional
   modern: false
+  status: ingest
 - code: O088
   id: jc_o088
   file: O/O088.txt
@@ -13783,6 +14646,7 @@ books:
   work: yizhi_xuyu
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0077
 - code: O089
   id: jc_o089
@@ -13803,6 +14667,7 @@ books:
   work: jc:医宗己任编
   attribution: traditional
   modern: false
+  status: ingest
 - code: O090
   id: jc_o090
   file: O/O090.txt
@@ -13822,6 +14687,7 @@ books:
   work: jc:医学妙谛
   attribution: traditional
   modern: false
+  status: ingest
 - code: O091
   id: jc_o091
   file: O/O091.txt
@@ -13839,6 +14705,7 @@ books:
   work: jc:医学见能
   attribution: traditional
   modern: false
+  status: ingest
 - code: O092
   id: jc_o092
   file: O/O092.txt
@@ -13858,6 +14725,7 @@ books:
   work: jc:顾松园医镜
   attribution: traditional
   modern: false
+  status: ingest
 - code: O093
   id: jc_o093
   file: O/O093.txt
@@ -13877,6 +14745,7 @@ books:
   work: jc:医医小草
   attribution: traditional
   modern: false
+  status: ingest
 - code: O094
   id: jc_o094
   file: O/O094.txt
@@ -13896,6 +14765,7 @@ books:
   work: jc:医学传灯
   attribution: traditional
   modern: false
+  status: ingest
 - code: O095
   id: jc_o095
   file: O/O095.txt
@@ -13912,6 +14782,7 @@ books:
   work: jc:宜麟策
   attribution: traditional
   modern: false
+  status: ingest
 - code: O096
   id: jc_o096
   file: O/O096.txt
@@ -13931,6 +14802,7 @@ books:
   work: jc:松崖医径
   attribution: traditional
   modern: false
+  status: ingest
 - code: O097
   id: jc_o097
   file: O/O097.txt
@@ -13949,6 +14821,7 @@ books:
   work: jc:万病回春
   attribution: traditional
   modern: false
+  status: ingest
 - code: O098
   id: jc_o098
   file: O/O098.txt
@@ -13968,6 +14841,7 @@ books:
   work: jc:罗氏会约医镜
   attribution: traditional
   modern: false
+  status: ingest
 - code: O099
   id: jc_o099
   file: O/O099.txt
@@ -13986,6 +14860,7 @@ books:
   work: jc:续医说
   attribution: traditional
   modern: false
+  status: ingest
 - code: O100
   id: jc_o100
   file: O/O100.txt
@@ -14003,6 +14878,7 @@ books:
   work: jc:杨成博先生遗留穴道秘书
   attribution: traditional
   modern: false
+  status: ingest
 - code: O101
   id: jc_o101
   file: O/O101.txt
@@ -14021,6 +14897,7 @@ books:
   work: jc:解围元薮
   attribution: traditional
   modern: false
+  status: ingest
 - code: O102
   id: jc_o102
   file: O/O102.txt
@@ -14039,6 +14916,7 @@ books:
   work: shouqin_yanglao
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0021
 - code: O103
   id: jc_o103
@@ -14057,6 +14935,7 @@ books:
   work: jc:医学举要
   attribution: traditional
   modern: false
+  status: ingest
 - code: O104
   id: jc_o104
   file: O/O104.txt
@@ -14074,6 +14953,7 @@ books:
   work: jc:周慎斋遗书
   attribution: traditional
   modern: false
+  status: ingest
 - code: O105
   id: jc_o105
   file: O/O105.txt
@@ -14092,6 +14972,7 @@ books:
   work: qijing_bamai_kao
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0080
 - code: O106
   id: jc_o106
@@ -14101,16 +14982,17 @@ books:
   - 皇漢醫學
   authors:
   - 汤本求真
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1927
   - 1927
   dating: western
-  category: 现代
+  category: 近代
   jicheng_category: 綜合
   work: jc:皇汉医学
   attribution: traditional
   modern: true
+  status: ingest
   quality: 0.7
   notes_text: 原檔品質可，部分校對過
 - code: O107
@@ -14124,13 +15006,14 @@ books:
   dynasty: 清
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: modern
-  category: 现代
+  category: 近代
   jicheng_category: 綜合
   work: jc:医学衷中参西录
   attribution: traditional
   modern: true
+  status: ingest
 - code: O108
   id: jc_o108
   file: O/O108.txt
@@ -14149,6 +15032,7 @@ books:
   work: jingyue
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0086
 - code: O108a
   id: jc_o108a
@@ -14169,6 +15053,7 @@ books:
   work: jingyue
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0086
 - code: O109
   id: jc_o109
@@ -14189,6 +15074,7 @@ books:
   work: jc:医学发明
   attribution: traditional
   modern: false
+  status: ingest
 - code: O110
   id: jc_o110
   file: O/O110.txt
@@ -14208,6 +15094,7 @@ books:
   work: shanglun
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0091
   mixed:
     layer: 喻昌尚论（重编伤寒论原文与注）
@@ -14236,6 +15123,7 @@ books:
   work: jc:尚论后篇
   attribution: traditional
   modern: false
+  status: ingest
 - code: O112
   id: jc_o112
   file: O/O112.txt
@@ -14255,6 +15143,7 @@ books:
   work: jc:沈氏尊生书
   attribution: traditional
   modern: false
+  status: ingest
 - code: O113
   id: jc_o113
   file: O/O113.txt
@@ -14273,6 +15162,7 @@ books:
   work: jc:评琴书屋医略
   attribution: traditional
   modern: false
+  status: ingest
 - code: O114
   id: jc_o114
   file: O/O114.txt
@@ -14281,16 +15171,20 @@ books:
   - 澄空民間中醫學精髓論
   authors:
   - 刘文澄
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 綜合
   work: jc:澄空民间中医学精髓论
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: O115
   id: jc_o115
   file: O/O115.txt
@@ -14311,6 +15205,7 @@ books:
   work: jc:医学传心录
   attribution: traditional
   modern: false
+  status: ingest
 - code: O116
   id: jc_o116
   file: O/O116.txt
@@ -14319,16 +15214,20 @@ books:
   - 黃帝內經十二經脈秘與應用
   authors:
   - 祝华英
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 綜合
   work: jc:黄帝内经十二经脉秘与应用
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: O117
   id: jc_o117
   file: O/O117.txt
@@ -14346,6 +15245,7 @@ books:
   work: jc:鲙残篇
   attribution: traditional
   modern: false
+  status: ingest
 - code: O118
   id: jc_o118
   file: O/O118.txt
@@ -14366,6 +15266,7 @@ books:
   work: jc:推篷寤语
   attribution: traditional
   modern: false
+  status: ingest
 - code: O119
   id: jc_o119
   file: O/O119.txt
@@ -14384,6 +15285,7 @@ books:
   work: jc:医林琐语
   attribution: traditional
   modern: false
+  status: ingest
 - code: O120
   id: jc_o120
   file: O/O120.txt
@@ -14402,6 +15304,7 @@ books:
   work: jc:医中一得
   attribution: traditional
   modern: false
+  status: ingest
 - code: O121
   id: jc_o121
   file: O/O121.txt
@@ -14419,6 +15322,7 @@ books:
   work: jc:医医十病
   attribution: traditional
   modern: false
+  status: ingest
 - code: O122
   id: jc_o122
   file: O/O122.txt
@@ -14428,16 +15332,17 @@ books:
   authors:
   - 陆士谔
   - 王君慧
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 綜合
   work: jc:士谔医话
   attribution: traditional
   modern: true
+  status: ingest
 - code: O123
   id: jc_o123
   file: O/O123.txt
@@ -14448,16 +15353,17 @@ books:
   - 罗止园
   - 张绍舜
   - 郭柳霞
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 綜合
   work: jc:止园医话
   attribution: traditional
   modern: true
+  status: ingest
   quality: 0.72
 - code: O124
   id: jc_o124
@@ -14477,6 +15383,10 @@ books:
   work: jc:复泰草堂医论选
   attribution: traditional
   modern: false
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: O125
   id: jc_o125
   file: O/O125.txt
@@ -14485,16 +15395,20 @@ books:
   - 中醫臨證經驗與方法
   authors:
   - 朱进忠
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 綜合
   work: jc:中医临证经验与方法
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
   quality: 0.7
 - code: O126
   id: jc_o126
@@ -14504,16 +15418,20 @@ books:
   - 虛損病類鉤沉
   authors:
   - 任继学
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 綜合
   work: jc:虚损病类钩沉
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: O127
   id: jc_o127
   file: O/O127.txt
@@ -14521,17 +15439,18 @@ books:
   aliases:
   - 圓運動的古中醫學
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1939
   - 1939
   dating: preface
   dating_note: 中華民國二十八年己卯冬月
-  category: 现代
+  category: 近代
   jicheng_category: 綜合
   work: jc:圆运动的古中医学
   attribution: traditional
   modern: true
+  status: ingest
 - code: O128
   id: jc_o128
   file: O/O128.txt
@@ -14550,6 +15469,7 @@ books:
   work: jc:医学集成
   attribution: traditional
   modern: false
+  status: ingest
 - code: O129
   id: jc_o129
   file: O/O129.txt
@@ -14558,16 +15478,20 @@ books:
   - 給初學中醫的十封信
   authors:
   - 李蔚普
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 綜合
   work: jc:给初学中医的十封信
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: P0000
   id: jc_p0000
   file: P/P0000.txt
@@ -14587,6 +15511,7 @@ books:
   work: yizong_jinjian
   attribution: traditional
   modern: false
+  status: ingest
   mixed:
     layer: 医宗金鉴（订正仲景全书原文与注）
     year:
@@ -14614,6 +15539,7 @@ books:
   work: yizong_jinjian
   attribution: traditional
   modern: false
+  status: ingest
   mixed:
     layer: 医宗金鉴（订正仲景全书原文与注）
     year:
@@ -14641,6 +15567,7 @@ books:
   work: yizong_jinjian
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0090
   mixed:
     layer: 医宗金鉴（订正仲景全书原文与注）
@@ -14668,6 +15595,7 @@ books:
   work: yizong_jinjian
   attribution: traditional
   modern: false
+  status: ingest
   mixed:
     layer: 医宗金鉴（订正仲景全书原文与注）
     year:
@@ -14695,6 +15623,7 @@ books:
   work: yizong_jinjian
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0090
   mixed:
     layer: 医宗金鉴（订正仲景全书原文与注）
@@ -14723,6 +15652,7 @@ books:
   work: yzjj_mingyi_fanglun
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0003a
   id: jc_p0003a
   file: P/P0003a.txt
@@ -14742,6 +15672,7 @@ books:
   work: yzjj_mingyi_fanglun
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0004
   id: jc_p0004
   file: P/P0004.txt
@@ -14761,6 +15692,7 @@ books:
   work: yzjj_sizhen
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0005
   id: jc_p0005
   file: P/P0005.txt
@@ -14780,6 +15712,7 @@ books:
   work: yzjj_yunqi
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0006
   id: jc_p0006
   file: P/P0006.txt
@@ -14799,6 +15732,7 @@ books:
   work: yzjj_shanghan_yaojue
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0007
   id: jc_p0007
   file: P/P0007.txt
@@ -14818,6 +15752,7 @@ books:
   work: yzjj_zabing
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0007a
   id: jc_p0007a
   file: P/P0007a.txt
@@ -14837,6 +15772,7 @@ books:
   work: yzjj_zabing
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0008
   id: jc_p0008
   file: P/P0008.txt
@@ -14856,6 +15792,7 @@ books:
   work: yzjj_fuke
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0008a
   id: jc_p0008a
   file: P/P0008a.txt
@@ -14875,6 +15812,7 @@ books:
   work: yzjj_fuke
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0009
   id: jc_p0009
   file: P/P0009.txt
@@ -14894,6 +15832,7 @@ books:
   work: yzjj_youke
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0009a
   id: jc_p0009a
   file: P/P0009a.txt
@@ -14913,6 +15852,7 @@ books:
   work: yzjj_youke
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0010
   id: jc_p0010
   file: P/P0010.txt
@@ -14932,6 +15872,7 @@ books:
   work: yzjj_yanke
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0010a
   id: jc_p0010a
   file: P/P0010a.txt
@@ -14951,6 +15892,7 @@ books:
   work: yzjj_yanke
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0011
   id: jc_p0011
   file: P/P0011.txt
@@ -14970,6 +15912,7 @@ books:
   work: yzjj_douzhen
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0011a
   id: jc_p0011a
   file: P/P0011a.txt
@@ -14989,6 +15932,7 @@ books:
   work: yzjj_douzhen
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0012
   id: jc_p0012
   file: P/P0012.txt
@@ -15008,6 +15952,7 @@ books:
   work: yzjj_waike
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0013
   id: jc_p0013
   file: P/P0013.txt
@@ -15027,6 +15972,7 @@ books:
   work: yzjj_cijiu
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0013a
   id: jc_p0013a
   file: P/P0013a.txt
@@ -15046,6 +15992,7 @@ books:
   work: yzjj_cijiu
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0014
   id: jc_p0014
   file: P/P0014.txt
@@ -15065,6 +16012,7 @@ books:
   work: yzjj_zhenggu
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0014a
   id: jc_p0014a
   file: P/P0014a.txt
@@ -15082,6 +16030,7 @@ books:
   work: yzjj_zhenggu
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0100
   id: jc_p0100
   file: P/P0100.txt
@@ -15100,6 +16049,7 @@ books:
   work: zzzs_leifang
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0101
   id: jc_p0101
   file: P/P0101.txt
@@ -15118,6 +16068,7 @@ books:
   work: zzzs_shanghan
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0102
   id: jc_p0102
   file: P/P0102.txt
@@ -15136,6 +16087,7 @@ books:
   work: zzzs_zabing
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0103
   id: jc_p0103
   file: P/P0103.txt
@@ -15154,6 +16106,7 @@ books:
   work: zzzs_nuke
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0103a
   id: jc_p0103a
   file: P/P0103a.txt
@@ -15173,6 +16126,7 @@ books:
   work: zzzs_nuke
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0104
   id: jc_p0104
   file: P/P0104.txt
@@ -15191,6 +16145,7 @@ books:
   work: zzzs_youke
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0105
   id: jc_p0105
   file: P/P0105.txt
@@ -15209,6 +16164,7 @@ books:
   work: zzzs_yangyi
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0200
   id: jc_p0200
   file: P/P0200.txt
@@ -15227,6 +16183,7 @@ books:
   work: bencao_gangmu
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0079
 - code: P0201
   id: jc_p0201
@@ -15246,6 +16203,7 @@ books:
   work: bencao_gangmu
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0079
 - code: P0300
   id: jc_p0300
@@ -15265,6 +16223,7 @@ books:
   work: taiping_shenghui
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0301
   id: jc_p0301
   file: P/P0301.txt
@@ -15283,6 +16242,7 @@ books:
   work: taiping_shenghui
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0400
   id: jc_p0400
   file: P/P0400.txt
@@ -15301,6 +16261,7 @@ books:
   work: shengji_zonglu
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0027
 - code: P0401
   id: jc_p0401
@@ -15320,6 +16281,7 @@ books:
   work: shengji_zonglu
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0027
 - code: P0402
   id: jc_p0402
@@ -15339,6 +16301,7 @@ books:
   work: shengji_zonglu
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0027
 - code: P0403
   id: jc_p0403
@@ -15358,6 +16321,7 @@ books:
   work: shengji_zonglu
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0027
 - code: P0500
   id: jc_p0500
@@ -15378,6 +16342,7 @@ books:
   work: puji_fang
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0067
 - code: P0501
   id: jc_p0501
@@ -15397,6 +16362,7 @@ books:
   work: puji_fang
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0067
 - code: P0502
   id: jc_p0502
@@ -15416,6 +16382,7 @@ books:
   work: puji_fang
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0067
 - code: P0503
   id: jc_p0503
@@ -15435,6 +16402,7 @@ books:
   work: puji_fang
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0067
 - code: P0504
   id: jc_p0504
@@ -15454,6 +16422,7 @@ books:
   work: puji_fang
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0067
 - code: P0505
   id: jc_p0505
@@ -15473,6 +16442,7 @@ books:
   work: puji_fang
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0067
 - code: P0506
   id: jc_p0506
@@ -15492,6 +16462,7 @@ books:
   work: puji_fang
   attribution: traditional
   modern: false
+  status: ingest
   kanripo: KR3e0067
 - code: P0600
   id: jc_p0600
@@ -15500,16 +16471,20 @@ books:
   aliases:
   - 名老中醫之路(一)
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 叢書
   work: jc:名老中医之路
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
   edition: 《名老中醫之路》，周鳳梧、張奇文、叢林主編，山東科學技術出版，一九八三年。
 - code: P0601
   id: jc_p0601
@@ -15518,16 +16493,20 @@ books:
   aliases:
   - 名老中醫之路(二)
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 叢書
   work: jc:名老中医之路
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
   edition: 《名老中醫之路》，周鳳梧、張奇文、叢林主編，山東科學技術出版，一九八三年。
 - code: P0602
   id: jc_p0602
@@ -15536,16 +16515,20 @@ books:
   aliases:
   - 名老中醫之路(三)
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 叢書
   work: jc:名老中医之路
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
   edition: 《名老中醫之路》，周鳳梧、張奇文、叢林主編，山東科學技術出版，一九八三年。
 - code: P0700
   id: jc_p0700
@@ -15555,16 +16538,20 @@ books:
   - 名老中醫經驗集(一)
   - 名老中醫經驗集卷一
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 叢書
   work: jc:名老中医经验集卷一
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: P0701
   id: jc_p0701
   file: P/P0701.txt
@@ -15573,16 +16560,20 @@ books:
   - 名老中醫經驗集(二)
   - 名老中醫經驗集卷二
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 叢書
   work: jc:名老中医经验集卷二
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: P0702
   id: jc_p0702
   file: P/P0702.txt
@@ -15591,16 +16582,20 @@ books:
   - 名老中醫經驗集(三)
   - 名老中醫經驗集卷三
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 叢書
   work: jc:名老中医经验集卷三
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: P0703
   id: jc_p0703
   file: P/P0703.txt
@@ -15609,16 +16604,20 @@ books:
   - 名老中醫經驗集(四)
   - 名老中醫經驗集卷四
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 叢書
   work: jc:名老中医经验集卷四
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: P0704
   id: jc_p0704
   file: P/P0704.txt
@@ -15627,16 +16626,20 @@ books:
   - 名老中醫經驗集(五)
   - 名老中醫經驗集卷五
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 叢書
   work: jc:名老中医经验集卷五
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代名医著作
+  screen:
+    curated: true
 - code: P0800
   id: jc_p0800
   file: P/P0800.txt
@@ -15655,6 +16658,7 @@ books:
   work: gujin_yitong
   attribution: traditional
   modern: false
+  status: ingest
 - code: P0801
   id: jc_p0801
   file: P/P0801.txt
@@ -15673,6 +16677,7 @@ books:
   work: gujin_yitong
   attribution: traditional
   modern: false
+  status: ingest
 - code: Q000
   id: jc_q000
   file: Q/Q000.txt
@@ -15690,6 +16695,7 @@ books:
   work: jc:十四经穴歌诀
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.85
 - code: Q001
   id: jc_q001
@@ -15708,6 +16714,7 @@ books:
   work: jc:十四经穴歌诀
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.9
 - code: Q002
   id: jc_q002
@@ -15727,6 +16734,7 @@ books:
   work: jc:大医精诚
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.9
 - code: Q003
   id: jc_q003
@@ -15746,6 +16754,7 @@ books:
   work: jc:五输穴即景诗
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.8
 - code: Q004
   id: jc_q004
@@ -15765,6 +16774,7 @@ books:
   work: jc:玉龙歌
   attribution: traditional
   modern: false
+  status: ingest
 - code: Q005
   id: jc_q005
   file: Q/Q005.txt
@@ -15782,6 +16792,7 @@ books:
   work: jc:百证赋
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.9
 - code: Q006
   id: jc_q006
@@ -15800,6 +16811,7 @@ books:
   work: jc:肘后歌
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.9
 - code: Q007
   id: jc_q007
@@ -15818,6 +16830,7 @@ books:
   work: jc:席弘赋
   attribution: traditional
   modern: false
+  status: ingest
 - code: Q008
   id: jc_q008
   file: Q/Q008.txt
@@ -15835,6 +16848,7 @@ books:
   work: jc:胜玉歌
   attribution: traditional
   modern: false
+  status: ingest
 - code: Q009
   id: jc_q009
   file: Q/Q009.txt
@@ -15852,6 +16866,7 @@ books:
   work: jc:标幽赋
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.9
   edition: 知音五版《針灸學》
 - code: Q010
@@ -15871,6 +16886,7 @@ books:
   work: jc:十二经补泻温凉引经药歌
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.75
 - code: Q011
   id: jc_q011
@@ -15889,6 +16905,7 @@ books:
   work: jc:濒湖脉学脉诀
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.89
 - code: Q012
   id: jc_q012
@@ -15907,6 +16924,7 @@ books:
   work: jc:通玄指要赋
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.9
   edition: 知音五版《針灸學》
 - code: Q013
@@ -15926,6 +16944,7 @@ books:
   work: jc:金针赋
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.9
   edition: 知音五版《針灸學》
 - code: R000
@@ -15935,16 +16954,20 @@ books:
   aliases:
   - 中醫名詞術語大辭典
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 資料庫
   work: jc:中医名词术语大辞典
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
   quality: 0.7
 - code: R001
   id: jc_r001
@@ -15953,16 +16976,20 @@ books:
   aliases:
   - 中草藥學
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 資料庫
   work: jc:中草药学
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
 - code: R002
   id: jc_r002
   file: R/R002.txt
@@ -15970,16 +16997,20 @@ books:
   aliases:
   - 中醫方劑名稱由來
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 資料庫
   work: jc:中医方剂名称由来
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
   quality: 0.7
 - code: R003
   id: jc_r003
@@ -15988,16 +17019,20 @@ books:
   aliases:
   - 內科寶典
   authors: []
-  dynasty: ''
+  dynasty: 民国
   composition:
   - 1912
-  - 2010
+  - 1949
   dating: undated
-  category: 现代
+  category: 近代
   jicheng_category: 資料庫
   work: jc:内科宝典
   attribution: traditional
   modern: true
+  status: excluded
+  excluded_reason: 当代出版物
+  screen:
+    curated: true
   quality: 0.7
 - code: Z000
   id: jc_z000
@@ -16017,6 +17052,7 @@ books:
   work: jc:易经
   attribution: traditional
   modern: false
+  status: ingest
   quality: 0.8
   notes_text: 《易经》，非医籍，默认不进入研究范围；原檔品質可
 - code: C033
@@ -16037,6 +17073,7 @@ books:
   work: jc:本草问答
   attribution: traditional
   modern: false
+  status: ingest
   notes_text: 未列入檔案表
 missing: []
 metadata_conflicts:

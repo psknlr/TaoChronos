@@ -74,14 +74,25 @@ historical evidence.
 | Source | Scope | Licence | Connector |
 |---|---|---|---|
 | 漢籍リポジトリ Kanseki Repository, `KR3e` | 《四库全书·子部·医家类》, all 100 works (文渊阁本 WYG; seven in 四部丛刊 SBCK) — 25.7M characters | CC BY-SA 4.0 | `taochronos corpus fetch|ingest kanripo` |
-| 笈成 (JiCheng), data of the 笈成檢閱系統 v1.4.8 (user-supplied archive `jc_1_4_8_all.7z`, 3 volumes) | 857 punctuated texts: 内经难经, 伤寒, 金匮, 本草, 方剂, 温病, 各科, 医案, 综合, 丛书, 歌赋, a few modern works — 101M characters, 1.69M passages | originals public domain; punctuation and collation by the 笈成 volunteers; modern works possibly in copyright — local research use | `taochronos corpus unpack|catalog|ingest jicheng` |
+| 笈成 (JiCheng), data of the 笈成檢閱系統 v1.4.8 (user-supplied archive `jc_1_4_8_all.7z`, 3 volumes) | 857 punctuated texts: 内经难经, 伤寒, 金匮, 本草, 方剂, 温病, 各科, 医案, 综合, 丛书, 歌赋; 797 stored (60 contemporary works and modern editions left out) — 92M characters, 1.61M passages | originals public domain; punctuation and collation by the 笈成 volunteers — local research use | `taochronos corpus unpack|catalog|ingest jicheng` |
+| Kanripo catalogue (KR-Catalog), `KR/KR3e.txt` | the 100 KR3e entries: responsible persons with roles (撰, 次注, 校正 …) and dates, Siku volume and page, extent | CC BY-SA 4.0 | `taochronos corpus fetch|catalog kr-catalog` (merged into the Kanripo records) |
+| McGill University Library, *Gynaecology in Traditional Chinese Medicine* (GitHub `mcgill-digital/gynaecology_in_chinese_medicine`) | 5 Qing prints and a manuscript (傅青主女科, 重订济阴纲目, 保生碎事, 女科辑要, 珍存秘方), page by page, unpunctuated — 366k characters | Public Domain Mark 1.0 | `taochronos corpus fetch|catalog|ingest mcgill` |
+| 维基文库 zh.wikisource, `Category:中醫` and subcategories (from the Wikimedia dumps) | 625 works read, 15 stored after deduplication — 343k characters | CC BY-SA 4.0 (the originals public domain) | `taochronos corpus fetch|catalog|ingest wikisource` |
+| TCM-Ancient-Books (GitHub `xiaopangxia/TCM-Ancient-Books`) | 701 texts read, 8 stored — 369k characters | no licence stated — local research use | `taochronos corpus fetch|catalog|ingest tcm-ancient-books` |
+| tcmoc (GitHub `lab99x/tcmoc`) | 701 texts read (a copy of the previous), none stored | no licence stated — local research use | `taochronos corpus fetch|catalog|ingest tcmoc` |
+| classical-tcm-canon (Hugging Face `wangekxy/classical-tcm-canon`) | 115 records read, 1 stored — 305k characters | dataset card: `license: other` (proprietary-commercial), texts declared public domain — local research use only, never redistributed | `taochronos corpus fetch|catalog|ingest hf-tcm-canon` (needs the `parquet` extra: pyarrow) |
 
 ```bash
 taochronos corpus fetch kanripo            # shallow clones into <data>/sources/kanripo, one repository at a time
 taochronos corpus ingest kanripo           # (re)build <data>/corpus/tcm.sqlite; --only KR3e0001,KR3e0013 for some books
 taochronos corpus unpack jicheng jc_1_4_8_all.7z.001 jc_1_4_8_all.7z.002 jc_1_4_8_all.7z.003   # join, check, extract, lock
 taochronos corpus catalog jicheng          # corpus/catalog/jicheng.yaml + script/jicheng_variants.tsv (then `corpus reindex`)
-taochronos corpus ingest jicheng           # add the 857 texts to the same store (--only B000,D025 for some books)
+taochronos corpus ingest jicheng           # add the admitted texts to the same store (--only B000,D025 for some books)
+taochronos corpus fetch kr-catalog         # the Kanripo catalogue; `corpus catalog kr-catalog` → kr-catalog-kr3e.yaml
+taochronos corpus ingest kanripo --changed # rewrite the Kanripo book records only (e.g. after the KR-Catalog step)
+taochronos corpus fetch mcgill             # likewise wikisource, tcm-ancient-books, tcmoc, hf-tcm-canon: fetch and lock
+taochronos corpus catalog mcgill           # dates, admission and duplicate status → corpus/catalog/mcgill.yaml
+taochronos corpus ingest mcgill            # only the admitted texts; copies and left-out texts are removed from the store
 taochronos corpus status                   # counts by period, kind and layer; whether the index matches the variant table
 taochronos corpus reindex                  # rebuild the full-text index after changing domains/classics/script or variants.yaml
 taochronos lexicon harvest                 # candidate formula and drug names → domains/classics/lexicon-harvested/
@@ -89,8 +100,9 @@ taochronos research "…" --profile full-corpus
 ```
 
 `corpus/sources.lock.yaml` pins every text (repository, commit, files, bytes, licence; for 笈成 the archive's
-sha256, the number of text files and a digest over their paths and hashes); the texts themselves are never
-committed.
+sha256, the number of text files and a digest over their paths and hashes; for Wikisource the dump files'
+sizes and dates and the latest revision; for Hugging Face the dataset revision and each file's sha256); the texts
+themselves are never committed.
 
 ### Catalog and dating (`corpus/catalog/kanripo-kr3e.yaml`)
 
@@ -162,9 +174,83 @@ point, common form and ideographic description) and `config/synonyms.txt` (the v
    and in the report disclaimer.
 
 Paratext is dated on its own: a preface whose closing line is dated takes that year (layer 序跋（按落款年代）);
-undated 序 / 跋 / 凡例 / 目录 are placed at the end of the imperial era (1911) unless the book is later. Twentieth-
-century works (category 现代) and non-medical texts (非医籍, e.g. 易经) are ingested but left out of research by the
-`full-corpus` profile (`discovery.scope.exclude_categories`) unless a research contract names its categories.
+undated 序 / 跋 / 凡例 / 目录 are placed at the end of the imperial era (1911) unless the book is later; what a modern
+editor wrote (内容提要, 整理说明, 点校说明, 概述, 前言, 电子版序 …) is dropped. Republican works (category 近代,
+1912–1949) are kept as historical sources; works after 1949 and modern editions are left out (below). Non-medical
+texts (非医籍, e.g. 易经) are ingested but left out of research by the `full-corpus` profile
+(`discovery.scope.exclude_categories`) unless a research contract names its categories. A `[book]` block whose
+closing mark was put after the whole text (M106 脉诀) ends at the first tag line.
+
+### What the corpus leaves out (`corpus/catalog/exclusions.yaml`)
+
+Three classes of text never enter the store: **当代出版物** (written or compiled after 1949: dictionaries, textbooks,
+modern compilations and readers), **当代名医著作** (works and case records of physicians of the PRC era) and
+**现代校注本** (modern annotated, translated or explicated editions, and modern reconstructions — 辑校本 — of lost
+works, whose text interleaves the editor's source marks). `exclusions.yaml` records the reviewed decisions per source
+and code (`exclude: <class>` or `keep: true`) and titles excluded wherever they appear (for the collections that copy
+one another). `plugins/classics/ingest/policy.py` screens the rest, in order: a reviewed decision; a composition
+date from 1949; a title marking a modern edition (校注, 校释, 语译, 今译, 白话, 译注, 新解, 考释, 讲义, 教材, 辞典 …) or a
+contemporary physician (经验集, 老中医, 验案精选, 临证经验 …); a density of modern years, units and institutions
+(19[4-9]x, 克, 毫升, 医院, 出版社, 教授, 维生素 …); annotation apparatus (【注释】【语译】【按语】 …); numbered
+footnotes; a modern editor's source marks in a lost work. Every excluded text is catalogued with its class and the
+evidence; a copy of an excluded 笈成 book in another collection inherits the decision, as does a kept one (薛己's
+校注妇人良方, 1547, is not a modern edition). In the 笈成 collection: 19 当代出版物, 24 当代名医著作, 17 现代校注本.
+
+### The other collections (`plugins/classics/ingest/documents.py`)
+
+McGill, Wikisource, TCM-Ancient-Books, tcmoc and the Hugging Face dataset share one path: a reader turns the source
+into documents (title, metadata as given, headings and paragraphs), `corpus catalog <source>` dates, screens and
+deduplicates them into `corpus/catalog/<source>.yaml` (corrections in `<source>-overrides.yaml`: composition,
+authors, work, mixed layers, `force_ingest`), and `corpus ingest <source>` stores the admitted ones.
+
+| Reader | Format | Treatment |
+|---|---|---|
+| `mcgill.py` | one XML file per page, characters spaced out, `<sf>` small characters, `<formula>`, `<marginalia>`, `<cf>` entities, the transcribers' `[x]`, `{妊}`, `穴[允]`, `<?>` | pages chained through their `next` links; a paragraph running over a page break joined at its first page (`locator.page` = 卷 + 葉); small characters and marginalia → （…）; formulas → `formula` passages; illegible → 〓; unpunctuated (`punctuation: none`) |
+| `wikisource.py` | wikitext of each work's main page and subpages | `{{*|…}}`, `<small>`, 小字 → （…）; `{{參|原|讀}}` keeps the original graph; `{{?}}`, `{{PUA}}` → 〓; `-{…}-` conversion keeps the traditional form; header, quality, navigation, image and category templates, references, tables' attributes and the main page's list of subpages dropped; subpages in the order the main page links them, each a heading with `locator.page`; pages pasted from the 中医世家 files read like them |
+| `textsets.py` | TCM-Ancient-Books / tcmoc text files (GB18030 or UTF-8; `<篇名>`, `<目录>`, 书名/作者/朝代/年份, `内容：` wrapped at ~50 characters), tcmoc Markdown with YAML front matter, the Hugging Face Parquet file | fixed-width wrapping undone; the title from 书名, the first `<篇名>` or the file name (《…》); the Siku copies' 醫家類 suffix removed |
+
+Dating follows the 笈成 order (override → the same work's Kanripo or 笈成 date → the document's metadata and dated
+prefaces → sibling copies, the author's other works → undated, placed in the Qing). A subject category is taken
+from the same work in the curated catalogs, otherwise guessed from the title. Documents under 300 characters (hub
+pages, stubs) are skipped.
+
+**Duplicate detection** (`plugins/classics/ingest/dedupe.py`). Texts are compared on their normalised Han characters:
+a 12-character shingle is sampled where it starts at an anchor character (one code point in eight, by a
+multiplicative hash) and its CRC32 is 0 mod 8 — about one position in 64, the same positions in every copy. The
+*containment* of a candidate in a stored book is the share of its shingles the book also has (the *reverse*
+containment the share of the book's). The index of the store is cached in `<data>/corpus/sketch.pkl` and brought
+up to date book by book. Sources rank Kanripo → 笈成 → McGill → Wikisource → TCM-Ancient-Books → tcmoc → Hugging
+Face; a source is compared with the books of higher-ranked sources and, as they are admitted, with its own, so a
+catalog does not depend on ingestion order. A candidate is a copy at containment ≥ 0.85 in one book or ≥ 0.9 in its
+ten best matches together; for web copies (and simplified texts), converted characters lose shingles, so ≥ 0.4 in a
+book of the same work (by title or `work`) or with reverse ≥ 0.4, and ≥ 0.5 in any one book, suffice. McGill's
+prints are independent witnesses: their best matches are recorded, never judged (`duplicate: null`). Within a
+source, traditional texts are judged before simplified, punctuated before bare, complete before partial.
+Calibration: Siku and 笈成 witnesses of the same work overlap by 0.5–0.93 (median 0.67), so overlap alone cannot
+separate two editions from two transcriptions of one — which is why the lower thresholds apply only to sources
+known to copy others. Every copy is catalogued with `duplicate_of` and its three closest books.
+
+| Source | Read | Stored | Copies | Left out | Skipped |
+|---|---|---|---|---|---|
+| mcgill | 5 | 5 | 0 | 0 | 0 |
+| wikisource | 625 | 15 | 590 | 19 | 1 |
+| tcm-ancient-books | 701 | 8 | 647 | 45 | 1 |
+| tcmoc | 701 | 0 | 655 | 45 | 1 |
+| hf-tcm-canon | 115 | 1 | 110 | 4 | 0 |
+
+Curated dates (`*-overrides.yaml`): 傅青主女科 by its first print (1827; 旧题傅山); 重订济阴纲目 as 武之望 (1620)
+with 汪淇's interleaved annotation (1665) as a mixed layer; 天回医简 (Western Han slips excavated 2012–2013); the
+Republican "ancient recensions" of the 伤寒杂病论 (长沙 1932–1934, 康平 1937–1947, 白云阁 1939) by their appearance,
+never by the date they claim; 事林广记 续集卷十 by the Yuan print (1330–1333).
+
+### The Kanripo catalogue (`corpus/catalog/kr-catalog-kr3e.yaml`)
+
+`corpus catalog kr-catalog` parses `KR/KR3e.txt` of the KR-Catalog (org-mode: `SOURCE` — the Siku volume and page —,
+`EXTENT`, `_RESP`, and under 人物 each person's dynasty, role and dates such as `fl. 762`, `1518 - 1593`,
+`12th cent`) and writes the 100 entries with a review list: curated entries whose authors the catalogue does not
+name, or whose date lies well outside the dates it gives for that author (6, e.g. 陈言 given as fl. 1500–1540 for the
+三因方 of 1174 — the catalogue is wrong there). `corpus ingest kanripo` adds the persons (`responsibility`) and the
+Siku location to each book record and a 责任者 line to its notes; the curated dates are never changed.
 
 **Variants.** `corpus catalog jicheng` turns the viewer's variant groups into
 `domains/classics/script/jicheng_variants.tsv`: a rare form (outside GB 2312) maps to the group's only common form;

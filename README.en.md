@@ -11,9 +11,11 @@ mining, statistics, hypotheses, falsification, meta-review…). Every conclusion
 mechanically verified textual evidence** and pass the epistemic gates G0–G8; a human expert has the last word.
 
 > ⚠️ `corpus/demo` is an **unverified transcription** of short excerpts assembled to demonstrate the method; the
-> full corpus (the 100 medical works of the Siku quanshu, Kanseki Repository transcriptions, CC BY-SA 4.0; 857
-> texts of the user-supplied 笈成 collection) has not been collated by this project either. All outputs are
-> **computational hypotheses** — not medical conclusions and not clinical advice.
+> full corpus (the 100 medical works of the Siku quanshu, Kanseki Repository transcriptions, CC BY-SA 4.0; 797
+> texts of the user-supplied 笈成 collection; 29 more from McGill, Wikisource and web collections after
+> deduplication) has not been collated by this project either. Contemporary publications, works of
+> contemporary physicians and modern annotated editions are left out. All outputs are **computational
+> hypotheses** — not medical conclusions and not clinical advice.
 
 ## Principles
 
@@ -85,13 +87,13 @@ taochronos research "消渴的概念如何随时代演变？" --profile full-cor
   (recorded in the manifest); absence and later-attestation checks run against the **whole store** (respecting
   hold-outs and exclusions), so sampling never manufactures an absence.
 
-### The 笈成 (JiCheng) collection — 857 punctuated texts
+### The 笈成 (JiCheng) collection — 797 punctuated texts
 
 The data of the 笈成檢閱系統 v1.4.8 (a user-supplied archive, `jc_1_4_8_all.7z` in three volumes) goes into the
 same store: classics, 伤寒/金匮, materia medica, formularies, warm diseases, the clinical specialties,
-acupuncture, diagnosis, case records and compendia — about **101 million characters in 1.69 million
-passages**, all punctuated by the collection's editors. Together with the Siku texts: **957 books, about
-127 million characters in 2.05 million passages** (a 2.2 GB SQLite store).
+acupuncture, diagnosis, case records and compendia. Of its 857 texts, 60 contemporary works and modern editions
+are left out; **797 texts, about 92 million characters in 1.61 million passages** are stored, all punctuated by
+the collection's editors.
 
 ```bash
 taochronos corpus unpack jicheng jc_1_4_8_all.7z.001 jc_1_4_8_all.7z.002 jc_1_4_8_all.7z.003  # join, check, extract, lock
@@ -110,8 +112,58 @@ taochronos corpus ingest jicheng    # about 5 minutes
   earlier. A preface with a dated closing line is dated by it; other paratext is placed at 1911.
 - **Variants**: rare forms from the viewer's variant table map to their group's only common form; the sections
   of easily misjudged characters and one-to-many simplifications are not merged.
-- **Scope**: modern works (56, category 现代) and non-medical texts are stored but left out of research unless a
-  research contract names its categories.
+- **Scope**: Republican-era works (category 近代, 1912–1949) are historical sources and stay; non-medical texts
+  are stored but left out of research unless a research contract names its categories.
+
+### What the corpus leaves out
+
+The corpus holds historical sources only. `corpus/catalog/exclusions.yaml` records every reviewed decision, and
+an automatic screen (`plugins/classics/ingest/policy.py`) flags the rest:
+
+| Class | Meaning | Examples |
+|---|---|---|
+| 当代出版物 contemporary publications | written or compiled after 1949 | dictionaries, textbooks, 《思考中医》, modern compilations |
+| 当代名医著作 contemporary physicians | works and case records of physicians of the PRC era | 程门雪, 邢锡波, 赵绍琴, 《名老中医之路》 |
+| 现代校注本 modern editions | modern annotated, translated or explicated editions; modern reconstructions of lost works | 徐荣斋's 重订通俗伤寒论, 唐步祺's 阐释, the 辑复本 of 新修本草, 小品方 … |
+
+The screen reads titles (校注, 语译, 经验集, 验案精选 …), years after 1940, modern units and institutions (克, 毫升,
+医院, 出版社 …), annotation apparatus (【注释】【语译】), numbered footnotes and a modern editor's source marks in
+reconstructions; `keep: true` overrules it (薛己's 校注妇人良方 of 1547). Modern editors' paratext (内容提要,
+整理说明, 点校说明, 电子版序) and website credits never enter the text. In the 笈成 collection 60 texts are left out
+(19 / 24 / 17); copies of the same work in other collections inherit the decision.
+
+### More collections, deduplicated
+
+```bash
+taochronos corpus fetch|catalog kr-catalog                # Kanripo catalogue KR3e: persons, roles, dates, Siku volume/page
+taochronos corpus fetch|catalog|ingest mcgill             # McGill Library, Gynaecology in Chinese Medicine (public domain)
+taochronos corpus fetch|catalog|ingest wikisource         # zh.wikisource Category:中醫, from the Wikimedia dumps (no API)
+taochronos corpus fetch|catalog|ingest tcm-ancient-books  # github.com/xiaopangxia/TCM-Ancient-Books
+taochronos corpus fetch|catalog|ingest tcmoc              # github.com/lab99x/tcmoc
+taochronos corpus fetch|catalog|ingest hf-tcm-canon       # huggingface.co/datasets/wangekxy/classical-tcm-canon
+```
+
+These collections copy one another (mostly the 笈成 texts converted to simplified characters), so every text is
+compared with the store before ingestion: a content-defined sample of 12-character shingles of the normalised
+Han text gives the share of a candidate found in each stored book. Sources rank by trust (Siku → 笈成 → McGill →
+Wikisource → web collections) and each is compared only with higher-ranked sources and itself, so catalogs do
+not depend on ingestion order. Web copies are duplicates at 0.85 containment in one book or 0.9 in the ten best
+together; simplified copies lose characters in conversion, so 0.4 suffices for the same work and 0.5 for any
+one book. The McGill prints are independent witnesses: their overlap is recorded, never judged.
+
+| Source | Read | Ingested | Copies | Left out |
+|---|---|---|---|---|
+| McGill, Gynaecology in Chinese Medicine (public domain) | 5 | **5** (Qing prints and a manuscript, unpunctuated; 366k characters) | 0 | 0 |
+| Wikisource Category:中醫 (CC BY-SA 4.0) | 625 | **15** (天回医简, 五十二病方, three Republican "ancient recensions" of the 伤寒杂病论, 东医宝鉴 …; 343k) | 590 | 19 |
+| TCM-Ancient-Books | 701 | **8** (医略, 医源, 灵药秘方, 外经微言, 医法圆通, 眼科奇书 …; 369k) | 647 | 45 |
+| tcmoc | 701 | 0 (all copies of the previous) | 655 | 45 |
+| classical-tcm-canon (Hugging Face) | 115 | **1** (张志聪's 伤寒论宗印 / 集注; 305k) | 110 | 4 |
+
+In all: **926 books, about 119 million characters in 1.98 million passages** (a 2.2 GB SQLite store). The
+Kanripo catalogue adds the roles and dates of 132 persons to the Siku records and lists 6 disagreements with
+this project's catalog for review. The Wikisource "ancient recensions" (长沙, 康平, 白云阁) are dated by their
+appearance in the Republican era; the Hugging Face dataset card declares a proprietary-commercial licence, so
+it is used for local research only and never redistributed.
 
 ## Anatomy of a run
 
@@ -162,10 +214,12 @@ used during development: read the numbers as **regression tests of intended beha
 ## Limitations
 
 The demo corpus is tiny (23 books, 131 excerpts) and unverified; evaluation numbers are illustrative. The full
-corpus consists of uncollated transcriptions of the Siku (with its Qing-era alterations and taboo substitutions)
-and of the 笈成 collection (volunteer transcriptions of varying quality; their dates come from the collection's own
-metadata and dated prefaces where no curated date exists, and 149 books could not be dated beyond "Qing or
-earlier"); segmentation of unpunctuated text is rule-based and can merge adjacent clauses; harvested names are
-candidates for expert review. The rule extractor and curated lexicons were written for the demo. Composition similarity alone cannot separate derivation from
+corpus consists of uncollated transcriptions of the Siku (with its Qing-era alterations and taboo substitutions),
+of the 笈成 collection (volunteer transcriptions of varying quality; their dates come from the collection's own
+metadata and dated prefaces where no curated date exists, and the undatable are placed at "Qing or earlier") and
+of a few other collections; segmentation of unpunctuated text is rule-based and can merge adjacent clauses;
+harvested names are candidates for expert review. Deduplication judges by textual overlap, and the line between
+two transcriptions of one edition and two editions is not sharp (Siku and 笈成 witnesses of one work overlap by
+0.5–0.93); every copy is recorded in its source's catalog with the book it duplicates, and can be overruled. The rule extractor and curated lexicons were written for the demo. Composition similarity alone cannot separate derivation from
 convergence. Link-level time-machine evaluation needs a large corpus. TaoChronos gives no medical advice;
 every result is a research lead until an expert (Gate G7) reviews it.

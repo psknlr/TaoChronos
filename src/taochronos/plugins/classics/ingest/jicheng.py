@@ -27,6 +27,9 @@ from ..segment import split_long
 from .kanripo import LayerSpec
 
 BLOCK_TAGS = ("p", "box", "zb", "sb", "jb", "dzb", "dsb", "djb", "wj", "book")
+# sections written by the modern editors of a Republican-era text: never part of the historical corpus
+MODERN_PARATEXT = re.compile(r"^(內容提要|内容提要|整理說明|整理说明|點校說明|点校说明|校點說明|校点说明|校注說明|校注说明|出版說明|出版说明|"
+                             r"編輯說明|编辑说明|電子版序|电子版序|編者按|编者按|作者簡介|作者简介|醫家小傳|医家小传|概述|前言)$")
 FRONT = re.compile(r"(序|跋|凡例|題辭|题辞|題詞|题词|弁言|引言|小引|自敘|自叙|提要|例言|讀法|读法|校記|校记|後記|后记|刊誤|目錄|目录|總目|总目|附記|附记|說明|说明)")
 TOC = re.compile(r"^(目錄|目录|總目|总目|目次)")
 FULL_SPACE = "　"
@@ -113,12 +116,34 @@ def read_filelist(root: Path) -> list[ListEntry]:
     return out
 
 
-def read_book_block(text: str) -> dict[str, str]:
-    m = re.search(r"\[book\](.*?)\[/book\]", text, re.S)
-    out: dict[str, str] = {}
+def _book_block(raw: str) -> tuple[int, int, str] | None:
+    """(start, end, metadata) of the ``[book]`` block.  It ends at ``[/book]`` — or, where the closing mark was
+    put after the whole text (M106 《脈訣》), at the first tag line of the text."""
+    m = re.search(r"\[book\]", raw)
     if not m:
+        return None
+    close = raw.find("[/book]", m.end())
+    tag = re.search(r"^\s*<", raw[m.end():], re.M)
+    if close >= 0 and (tag is None or m.end() + tag.start() > close):
+        return m.start(), close + len("[/book]"), raw[m.end():close]
+    stop = m.end() + tag.start() if tag else len(raw)
+    return m.start(), stop, raw[m.end():stop]
+
+
+def strip_book_block(raw: str) -> str:
+    span = _book_block(raw)
+    if span is None:
+        return raw
+    rest = raw[span[1]:]
+    return raw[:span[0]] + (rest.replace("[/book]", "", 1) if "[/book]" in rest else rest)
+
+
+def read_book_block(text: str) -> dict[str, str]:
+    span = _book_block(text)
+    out: dict[str, str] = {}
+    if span is None:
         return out
-    for line in m.group(1).strip().splitlines():
+    for line in span[2].strip().splitlines():
         if "：" in line:
             k, v = line.split("：", 1)
             out.setdefault(k.strip(), v.strip())
@@ -367,6 +392,49 @@ def _t(spec: JichengSpec, layer: LayerSpec | None, citation: tuple[int, int] | N
 SIGNED_PREFACE = "序跋（按落款年代）"
 
 
+def date_signed_prefaces(rows: list[dict[str, Any]], chronology: Any, dynasty_of: Any, fallback_dynasty: str,
+                         layers: dict[str, int] | None = None) -> int:
+    """A preface or postface whose closing line is dated (「康熙甲戌歲陽月……汪昂書」) takes that year — the date of
+    the paratext itself, which may be earlier than the book as transmitted (an older preface kept in a later
+    recension) or later (a reprint's preface).  Returns the number of signed prefaces."""
+    groups: list[list[dict[str, Any]]] = []
+    prev: tuple | None = None
+    for r in rows:
+        if r["kind"] != "preface":
+            prev = None
+            continue
+        key = (r["locator"].get("volume"), r["locator"].get("chapter"), r["locator"].get("section"))
+        if key != prev:
+            groups.append([])
+            prev = key
+        groups[-1].append(r)
+    signed = 0
+    for group in groups:
+        # several prefaces may share a heading: each run of rows ending in a signed line takes its date; rows
+        # after the last signature (credits, notes) keep the undetermined front-matter date
+        run: list[dict[str, Any]] = []
+        for r in group:
+            run.append(r)
+            year = None
+            norm = chronology.normalize(r["text"])
+            for y, start, end in chronology.statements(r["text"]):
+                if len(norm) - start <= 90 and _SIGN.search(norm[end:end + 16]) and -300 <= y <= 1949:
+                    year = y
+            if year is None:
+                continue
+            signed += 1
+            dyn = (dynasty_of(year) if dynasty_of else None) or fallback_dynasty
+            for x in run:
+                if layers is not None:
+                    layers[x["layer"]] = layers.get(x["layer"], 0) - 1
+                    layers[SIGNED_PREFACE] = layers.get(SIGNED_PREFACE, 0) + 1
+                x.update(layer=SIGNED_PREFACE, year=float(year), y_start=year, y_end=year)
+                x["temporal"] = {**x["temporal"], "dynasty": dyn, "t_composition": [year, year]}
+                x["extra"] = {**x["extra"], "layer": SIGNED_PREFACE}
+            run = []
+    return signed
+
+
 class JichengParser:
     def __init__(self, spec: JichengSpec, nc: dict[str, NcEntry], dynasty_of: Any = None, chronology: Any = None) -> None:
         self.spec = spec
@@ -377,43 +445,8 @@ class JichengParser:
                                         "dropped_collation": 0, "layers": {}, "unknown_tags": [], "signed_prefaces": 0}
 
     def date_prefaces(self, rows: list[dict[str, Any]]) -> None:
-        """A preface or postface whose closing line is dated (「康熙甲戌歲陽月……汪昂書」) takes that year — the
-        date of the paratext itself, which may be earlier than the book as transmitted (an older preface kept
-        in a later recension) or later (a reprint's preface)."""
-        chron = self.chronology
-        groups: list[list[dict[str, Any]]] = []
-        prev: tuple | None = None
-        for r in rows:
-            if r["kind"] != "preface":
-                prev = None
-                continue
-            key = (r["locator"].get("volume"), r["locator"].get("chapter"), r["locator"].get("section"))
-            if key != prev:
-                groups.append([])
-                prev = key
-            groups[-1].append(r)
-        for group in groups:
-            # several prefaces may share a heading: each run of rows ending in a signed line takes its date;
-            # rows after the last signature (credits, notes) keep the undetermined front-matter date
-            run: list[dict[str, Any]] = []
-            for r in group:
-                run.append(r)
-                year = None
-                norm = chron.normalize(r["text"])
-                for y, start, end in chron.statements(r["text"]):
-                    if len(norm) - start <= 90 and _SIGN.search(norm[end:end + 16]) and -300 <= y <= 1949:
-                        year = y
-                if year is None:
-                    continue
-                self.report["signed_prefaces"] += 1
-                dyn = (self.dynasty_of(year) if self.dynasty_of else None) or self.spec.dynasty
-                for x in run:
-                    self.report["layers"][x["layer"]] -= 1
-                    self.report["layers"][SIGNED_PREFACE] = self.report["layers"].get(SIGNED_PREFACE, 0) + 1
-                    x.update(layer=SIGNED_PREFACE, year=float(year), y_start=year, y_end=year)
-                    x["temporal"] = {**x["temporal"], "dynasty": dyn, "t_composition": [year, year]}
-                    x["extra"] = {**x["extra"], "layer": SIGNED_PREFACE}
-                run = []
+        self.report["signed_prefaces"] += date_signed_prefaces(rows, self.chronology, self.dynasty_of, self.spec.dynasty,
+                                                               self.report["layers"])
         self.report["layers"] = {k: v for k, v in self.report["layers"].items() if v}
 
     def split_note(self, note: str, default: LayerSpec | None) -> list[tuple[LayerSpec | None, str]]:
@@ -450,7 +483,7 @@ class JichengParser:
     def parse(self, path: Path, start_seq: int = 0) -> list[dict[str, Any]]:
         spec = self.spec
         raw = path.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
-        body = re.sub(r"\[book\].*?\[/book\]", "", raw, count=1, flags=re.S)
+        body = strip_book_block(raw)
         rows: list[dict[str, Any]] = []
         seq = start_seq
         heads: dict[int, str] = {}
@@ -458,6 +491,7 @@ class JichengParser:
         section_layer: LayerSpec | None = None
         front = False
         toc = False
+        dropping: int | None = None  # level of a modern editor's section being skipped
         for block in blocks(body):
             inline = Inline(self.nc)
             if block.kind == "heading":
@@ -466,6 +500,14 @@ class JichengParser:
                 segs = inline.render(title_markup)
                 title = "".join(s.text for s in segs if s.layer == "main").strip(FULL_SPACE + " ")
                 if not title:
+                    continue
+                if dropping is not None and block.level <= dropping:
+                    dropping = None
+                if MODERN_PARATEXT.match(title):
+                    dropping = block.level
+                    self.report["modern_paratext"] = self.report.get("modern_paratext", 0) + 1
+                    continue
+                if dropping is not None:
                     continue
                 for lvl in [k for k in heads if k >= block.level]:
                     del heads[lvl]
@@ -490,6 +532,8 @@ class JichengParser:
                                 self._row(rows, seq, "commentary", lay, body_text.strip(), self._loc(heads, None),
                                           {"on_heading": title})
                                 seq += 1
+                continue
+            if dropping is not None:
                 continue
             self.report["paragraphs"] += 1
             segs = inline.render(block.text)

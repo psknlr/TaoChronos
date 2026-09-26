@@ -711,7 +711,7 @@ jicheng:
   name: 笈成檢閱系統資料（笈成中医古籍整理本）
   program: 笈成檢閱系統v1.4.8
   version: v1.4.8
-  license: 古籍原文属公有领域；标点、校勘与整理成果归笈成整理者；现代著作可能仍受著作权保护，仅供本地研究使用。检阅程序：授權任何人使用與散布（© 2009-2013 Danny）
+  license: 古籍原文属公有领域；标点、校勘与整理成果归笈成整理者；当代著作与现代整理本不入库，仅供本地研究使用。检阅程序：授權任何人使用與散布（© 2009-2013 Danny）
   url: https://jicheng.tw/
   catalog: jicheng.yaml
   archive: jc_1_4_8_all.7z
@@ -722,3 +722,86 @@ jicheng:
   latest_file_date: '2015-06-07'
   tree_sha256: 6085c8e92e0e0b73a9879684e4dd4d1ba2694e0f10dd05e2b3277e828f1113df
   locked: '2026-09-24'
+mcgill:
+  name: McGill University Library · Gynaecology in Traditional Chinese Medicine（麦吉尔大学图书馆善本中医妇科文献）
+  license: Public Domain Mark 1.0（公有领域；使用时请注明 McGill University Library）
+  url: https://github.com/mcgill-digital/gynaecology_in_chinese_medicine
+  catalog: mcgill.yaml
+  repo: https://github.com/mcgill-digital/gynaecology_in_chinese_medicine
+  commit: c514056565a3b4863d5af7b81bb1b97c739dd8e7
+  commit_date: '2020-08-19'
+  files: 1586
+  bytes: 2782659
+  locked: '2026-09-26'
+wikisource:
+  name: 维基文库（zh.wikisource.org）· Category:中醫
+  license: CC BY-SA 4.0（维基文库录文与标点；古籍原文属公有领域）
+  url: https://zh.wikisource.org/wiki/Category:中醫
+  catalog: wikisource.yaml
+  category: 中醫
+  subcategories:
+    中醫:
+    - 傷寒雜病論
+    - 醫家
+    - 本草
+    - 景岳全書
+    - 溫病學派
+    - 敦煌藥方
+    醫家:
+    - 李杲
+    傷寒雜病論:
+    - 傷寒雜病論注疏
+  works: 641
+  pages: 1924
+  latest_revision: '2026-08-27T10:08:30Z'
+  dump:
+    zhwikisource-latest-pages-articles-multistream-index.txt.bz2:
+      bytes: 62835312
+      last_modified: Tue, 01 Sep 2026 14:24:25 GMT
+    zhwikisource-latest-linktarget.sql.gz:
+      bytes: 71342115
+      last_modified: Tue, 01 Sep 2026 10:51:42 GMT
+    zhwikisource-latest-categorylinks.sql.gz:
+      bytes: 275051302
+      last_modified: Tue, 01 Sep 2026 10:50:47 GMT
+    zhwikisource-latest-pages-articles-multistream.xml.bz2:
+      bytes: 7889421692
+      last_modified: Tue, 01 Sep 2026 14:24:25 GMT
+  locked: '2026-09-26'
+tcm-ancient-books:
+  name: TCM-Ancient-Books（中医药古籍文本，GitHub xiaopangxia）
+  license: 未声明授权（古籍原文属公有领域；多为笈成整理本的简体转换本，经“中医世家”网站流传）；仅供本地研究使用
+  url: https://github.com/xiaopangxia/TCM-Ancient-Books
+  catalog: tcm-ancient-books.yaml
+  repo: https://github.com/xiaopangxia/TCM-Ancient-Books
+  commit: db0155dc7c42b9c6b3736896661f317c7110038f
+  commit_date: '2021-05-06'
+  files: 701
+  bytes: 171510796
+  locked: '2026-09-26'
+tcmoc:
+  name: 中医开源医典 tcmoc（GitHub lab99x）
+  license: 未声明授权（据 TCM-Ancient-Books 整理，古籍原文属公有领域）；仅供本地研究使用
+  url: https://github.com/lab99x/tcmoc
+  catalog: tcmoc.yaml
+  repo: https://github.com/lab99x/tcmoc
+  commit: b56eb4a6ba92a863833af2062a2013a4b8777d5c
+  commit_date: '2023-03-20'
+  files: 701
+  bytes: 252165062
+  locked: '2026-09-26'
+hf-tcm-canon:
+  name: Classical Chinese Medicine Canon（Hugging Face wangekxy/classical-tcm-canon）
+  license: '数据集卡片声明 license: other（proprietary-commercial），同时称所收为公有领域古籍的忠实录文；仅供本地研究使用，不再分发'
+  url: https://huggingface.co/datasets/wangekxy/classical-tcm-canon
+  catalog: hf-tcm-canon.yaml
+  dataset: https://huggingface.co/datasets/wangekxy/classical-tcm-canon
+  revision: b0d3f91b90554350363e1dd86fba30f0f5d8abfd
+  files:
+    classical-tcm-canon.parquet:
+      bytes: 15408332
+      sha256: 3d10ae7434acf9910e337b57381d40bafd99c6518fb215e31432aa99bf37bae9
+    README.md:
+      bytes: 4179
+      sha256: 407dc9098a1b61096f49a1832b7cf9a48d458e1b0ffa86dcbb9335ea20c35571
+  locked: '2026-09-26'

@@ -7,6 +7,7 @@ analysis_periods:
   - {id: song_jin_yuan, label: 宋金元, start: 960, end: 1368}
   - {id: ming, label: 明, start: 1368, end: 1644}
   - {id: qing, label: 清, start: 1644, end: 1912}
+  - {id: minguo, label: 民国, start: 1912, end: 1950}
 
 dynasties:
   - {name: 战国, start: -475, end: -221}
@@ -26,6 +27,7 @@ dynasties:
   - {name: 元, start: 1271, end: 1368}
   - {name: 明, start: 1368, end: 1644}
   - {name: 清, start: 1644, end: 1912}
+  - {name: 民国, start: 1912, end: 1950}
 
 # Expressions used in research questions (宋代以前, 明清, 唐以后…).
 expressions:
@@ -56,3 +58,5 @@ expressions:
   清: [1644, 1912]
   清代: [1644, 1912]
   明清: [1368, 1912]
+  民国: [1912, 1949]
+  近代: [1840, 1949]

@@ -130,7 +130,7 @@ L010: {modern: true}
 M100: {composition: [265, 290], work: maijing, authors: [王叔和]}
 M100a: {composition: [265, 290], work: maijing, authors: [王叔和]}
 M101: {composition: [1564, 1564], work: binhu_maixue}
-M106: {composition: [900, 1100], attribution: pseudepigraphic, notes_text: 旧题王叔和，一般认为五代高阳生所托（待核）}
+M106: {notes_text: 崔嘉彦《脉诀》（又称《紫虚脉诀》《崔氏脉诀》，四言歌诀），非旧题王叔和之七言《脉诀》}
 M111: {composition: [1330, 1370], work: maijue_kanwu}
 
 O034: {composition: [900, 1279], attribution: pseudepigraphic, notes_text: 旧题华佗，一般认为宋代成书（待核）}

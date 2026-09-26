@@ -129,7 +129,8 @@ def test_catalog_dates_and_classifies_books(catalog):
     assert b901["category"] == "伤寒" and b901["work"] == "shanghan_test" and b901["quality"] == 0.9
     assert b901["composition"] == [1714, 1714] and b901["dating"] == "preface:author"  # 張某's own dated preface
     assert d901["composition"] == [1786, 1786] and d901["dating"] == "preface:author"
-    assert r901["modern"] and r901["category"] == "现代"
+    # 朝代：現代 — a contemporary work: catalogued with its reason, never ingested
+    assert r901["status"] == "excluded" and r901["excluded_reason"] == "当代出版物"
     assert c901["composition"] == [1590, 1590] and c901["dating"] == "kanripo:KR3eT999" and c901["work"] == "bencao_test"
 
 
@@ -159,12 +160,13 @@ def test_ingest_into_the_store_and_search(tmp_path, catalog, pack, chron):
     store = CorpusStore(tmp_path / "tcm.sqlite", create=True)
     report = ingest_jicheng(store, catalog, ROOT, pack.variants.normalize_text, pack.variants.fingerprint, log=lambda m: None,
                             dynasty_of=pack.periods.dynasty_of, version="v1.4.8", chronology=chron)
-    assert set(report["books"]) == {"jc_a901", "jc_b901", "jc_d901", "jc_r901", "jc_c901"} and not report["unknown_tags"]
+    assert set(report["books"]) == {"jc_a901", "jc_b901", "jc_d901", "jc_c901"} and not report["unknown_tags"]
+    assert report["excluded"] == {"R901": "当代出版物"}
     store.optimize()
     corpus = StoreCorpus(store, pack.variants.normalize_text, fingerprint=pack.variants.fingerprint)
     book = corpus.books["jc_b901"]
     assert book.source.url == "https://jicheng.tw/" and book.source.license and not book.source.verified
-    assert "（本书为现代著作）" in corpus.books["jc_r901"].source.license
+    assert "jc_r901" not in corpus.books
     hits = corpus.contains("桂枝汤")
     assert hits and all(pid.startswith("jc_b901.") for pid in hits)
     assert corpus.contains("栝楼根")  # traditional 栝樓根 found through normalisation
@@ -179,7 +181,7 @@ def test_ingest_into_the_store_and_search(tmp_path, catalog, pack, chron):
     # catalog edits that leave dates and layers alone only refresh the book records
     again = ingest_jicheng(store, catalog, ROOT, pack.variants.normalize_text, pack.variants.fingerprint, log=lambda m: None,
                            dynasty_of=pack.periods.dynasty_of, chronology=chron, changed_only=True)
-    assert again["records_only"] == 5 and not again["books"]
+    assert again["records_only"] == 4 and not again["books"]
 
 
 # ------------------------------------------------------------------ archive
@@ -198,3 +200,13 @@ def test_unpack_joins_split_volumes(tmp_path):
     assert (tmp_path / "out" / "demo" / "data" / "a.txt").read_text(encoding="utf-8") == "太陽病" * 400
     with pytest.raises(ValueError):
         unpack_archive(volumes[:-1], tmp_path / "bad", log=lambda m: None)  # .001 missing
+
+
+def test_book_block_closed_after_the_text_ends_at_the_first_tag():
+    from taochronos.plugins.classics.ingest.jicheng import read_book_block, strip_book_block
+
+    raw = "[book]\n書名：脈訣\n作者：崔嘉彥\n\n<目錄>\n<篇名>正文\n內容：\n人身之脈 本乎榮衛\n[/book]\n"
+    assert read_book_block(raw) == {"書名": "脈訣", "作者": "崔嘉彥"}
+    assert strip_book_block(raw).strip() == "<目錄>\n<篇名>正文\n內容：\n人身之脈 本乎榮衛"
+    closed = "[book]\n書名：甲\n[/book]\n<篇名>乙"
+    assert read_book_block(closed) == {"書名": "甲"} and strip_book_block(closed) == "\n<篇名>乙"

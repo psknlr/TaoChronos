@@ -102,16 +102,28 @@ def _corpus_admin(args: argparse.Namespace, action: str) -> None:
     """fetch / unpack / catalog / ingest / status / reindex — build and maintain the full-corpus store."""
     home, data = _corpus_paths(args)
     db = _store_path(args, data)
+    from .plugins.classics.ingest.collections import COLLECTIONS, RANK
+
     source = args.source or "kanripo"
     only = [x for x in (args.only or "").split(",") if x] or None
-    if action in ("fetch", "ingest", "unpack", "catalog") and source not in ("kanripo", "jicheng", "all"):
-        raise SystemExit(f"unknown source {source!r}; available: kanripo, jicheng")
-    if source == "jicheng" or (source == "all" and action == "ingest"):
-        if source == "all":
-            _corpus_admin_kanripo(args, "ingest", home, data, db, only)
+    known = ("kanripo", "kr-catalog", "jicheng", *COLLECTIONS)
+    if action in ("fetch", "ingest", "unpack", "catalog") and source not in (*known, "all"):
+        raise SystemExit(f"unknown source {source!r}; available: {', '.join(known)}, all")
+    if source == "all" and action == "ingest":  # every source, in rank order, from the committed catalogs
+        _corpus_admin_kanripo(args, "ingest", home, data, db, only)
+        _corpus_admin_jicheng(args, "ingest", home, data, db, only)
+        for sid in sorted(COLLECTIONS, key=RANK.__getitem__):
+            if (data / "sources" / COLLECTIONS[sid].subdir).exists():
+                _corpus_admin_collection(args, "ingest", home, data, db, only, COLLECTIONS[sid])
+    elif source == "jicheng":
         _corpus_admin_jicheng(args, action, home, data, db, only)
+    elif source in COLLECTIONS:
+        _corpus_admin_collection(args, action, home, data, db, only, COLLECTIONS[source])
+    elif source == "kr-catalog":
+        _corpus_admin_krcatalog(args, action, home, data)
     elif action in ("unpack", "catalog"):
-        raise SystemExit(f"`corpus {action}` applies to the jicheng source (Kanripo texts are fetched and catalogued by hand)")
+        raise SystemExit(f"`corpus {action}` does not apply to {source} (Kanripo texts are catalogued by hand; "
+                         "`corpus catalog kr-catalog` adds the Kanripo catalogue's responsibility data)")
     else:
         _corpus_admin_kanripo(args, action, home, data, db, only)
     if action == "ingest":  # the registry of cited works outside the corpus travels with the store
@@ -124,6 +136,8 @@ def _corpus_admin(args: argparse.Namespace, action: str) -> None:
 
 def _corpus_admin_kanripo(args: argparse.Namespace, action: str, home: Path, data: Path, db: Path, only: list[str] | None) -> None:
     import time
+
+    import yaml
 
     from .plugins.classics.domain import DomainPack
     from .plugins.classics.ingest import ingest_kanripo, load_catalog
@@ -142,15 +156,27 @@ def _corpus_admin_kanripo(args: argparse.Namespace, action: str, home: Path, dat
     if action == "ingest":
         store = CorpusStore(db, create=True)
         t0 = time.time()
+        kr_path = home / "corpus" / "catalog" / "kr-catalog-kr3e.yaml"
+        kr_catalog = (yaml.safe_load(kr_path.read_text(encoding="utf-8")) or {}).get("texts") if kr_path.exists() else None
+        records_only = bool(getattr(args, "changed", False))
         report = ingest_kanripo(store, catalog, sources_dir, pack.variants.normalize_text, pack.variants.fingerprint, only=only, log=print,
-                                dynasty_of=pack.periods.dynasty_of)
-        store.optimize()
+                                dynasty_of=pack.periods.dynasty_of, kr_catalog=kr_catalog, records_only=records_only)
+        if not records_only:
+            store.optimize()
         report["seconds"] = round(time.time() - t0, 1)
         (data / "corpus").mkdir(parents=True, exist_ok=True)
-        (data / "corpus" / "ingest-kanripo.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
+        report_path = data / "corpus" / "ingest-kanripo.json"
+        if (only or records_only) and report_path.exists():  # a partial run updates the full report
+            full = json.loads(report_path.read_text(encoding="utf-8"))
+            for bid, info in report["books"].items():
+                full["books"][bid] = {**full["books"].get(bid, {}), **info}
+            report_path.write_text(json.dumps(full, ensure_ascii=False, indent=1), encoding="utf-8")
+        else:
+            report_path.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
         books = report["books"]
-        _out({"store": str(db), "books": len(books), "passages": sum(b["passages"] for b in books.values()),
-              "characters": sum(b["characters"] for b in books.values()), "missing": report["missing"],
+        _out({"store": str(db), "books": len(books), "passages": sum(b.get("passages", 0) for b in books.values()),
+              "characters": sum(b.get("characters", 0) for b in books.values()), "records_only": records_only,
+              "responsibility_from_kr_catalog": bool(kr_catalog), "missing": report["missing"],
               "note_order_warnings": report["note_order_warnings"], "seconds": report["seconds"]})
         return
     store = CorpusStore(db)
@@ -193,6 +219,7 @@ def _corpus_admin_jicheng(args: argparse.Namespace, action: str, home: Path, dat
     from .plugins.classics.ingest import build_jicheng_catalog, ingest_jicheng, jicheng_variant_rows, load_catalog
     from .plugins.classics.ingest.fetch import tree_facts, unpack_archive, write_archive_lock
     from .plugins.classics.ingest.jicheng import read_synonym_groups
+    from .plugins.classics.ingest.policy import Exclusions
     from .plugins.classics.store import CorpusStore
 
     lock_path = home / "corpus" / "sources.lock.yaml"
@@ -207,7 +234,7 @@ def _corpus_admin_jicheng(args: argparse.Namespace, action: str, home: Path, dat
         root = _jicheng_root(data)
         m = re.search(r"v(\d+(?:\.\d+)+)", root.name)
         facts = {"name": "笈成檢閱系統資料（笈成中医古籍整理本）", "program": root.name, "version": m.group(0) if m else None,
-                 "license": "古籍原文属公有领域；标点、校勘与整理成果归笈成整理者；现代著作可能仍受著作权保护，仅供本地研究使用。"
+                 "license": "古籍原文属公有领域；标点、校勘与整理成果归笈成整理者；当代著作与现代整理本不入库，仅供本地研究使用。"
                             "检阅程序：授權任何人使用與散布（© 2009-2013 Danny）",
                  "url": "https://jicheng.tw/", "catalog": catalog_path.name, **facts, **tree_facts(root)}
         write_archive_lock(lock_path, "jicheng", facts)
@@ -219,7 +246,9 @@ def _corpus_admin_jicheng(args: argparse.Namespace, action: str, home: Path, dat
         chronology = Chronology(home / "domains" / "classics" / "eras.yaml", pack.variants.normalize_text)
         kanripo = load_catalog(home / "corpus" / "catalog" / "kanripo-kr3e.yaml")
         overrides = yaml.safe_load((home / "corpus" / "catalog" / "jicheng-overrides.yaml").read_text(encoding="utf-8")) or {}
-        cat = build_jicheng_catalog(root, pack.variants.normalize_text, chronology, kanripo, overrides, pack.periods.dynasty_of)
+        exclusions = Exclusions(home / "corpus" / "catalog" / "exclusions.yaml")
+        cat = build_jicheng_catalog(root, pack.variants.normalize_text, chronology, kanripo, overrides, pack.periods.dynasty_of,
+                                    exclusions=exclusions)
         header = ("# GENERATED by `taochronos corpus catalog jicheng` from each book's [book] block, the Kanripo catalog and\n"
                   "# jicheng-overrides.yaml — do not edit here: put corrections in jicheng-overrides.yaml and regenerate.\n")
         catalog_path.write_text(header + yaml.safe_dump(cat, allow_unicode=True, sort_keys=False, width=160), encoding="utf-8")
@@ -237,8 +266,12 @@ def _corpus_admin_jicheng(args: argparse.Namespace, action: str, home: Path, dat
         dating: dict[str, int] = {}
         for b in cat["books"]:
             dating[b["dating"].split(":")[0]] = dating.get(b["dating"].split(":")[0], 0) + 1
+        excluded: dict[str, int] = {}
+        for b in cat["books"]:
+            if b.get("status") == "excluded":
+                excluded[b["excluded_reason"]] = excluded.get(b["excluded_reason"], 0) + 1
         summary = {"catalog": str(catalog_path), "books": len(cat["books"]), "missing": cat["missing"], "dating": dating,
-                   "modern": sum(1 for b in cat["books"] if b.get("modern")), "variant_rows": len(rows),
+                   "modern": sum(1 for b in cat["books"] if b.get("modern")), "excluded": excluded, "variant_rows": len(rows),
                    "metadata_conflicts": cat["metadata_conflicts"]}
         if action == "catalog":
             _out({**summary, "note": "the normaliser changed if variant_rows changed: run `taochronos corpus reindex`"})
@@ -271,6 +304,144 @@ def _corpus_admin_jicheng(args: argparse.Namespace, action: str, home: Path, dat
     _out({"store": str(db), "books": len(books), "passages": sum(b["passages"] for b in books.values()),
           "characters": sum(b["characters"] for b in books.values()), "records_only": report["records_only"],
           "missing": report["missing"], "unknown_tags": report["unknown_tags"], "seconds": report["seconds"]})
+
+
+def _corpus_admin_collection(args: argparse.Namespace, action: str, home: Path, data: Path, db: Path, only: list[str] | None,
+                             col: Any) -> None:
+    """A collection read through the common document path: fetch → catalog (dates, admission, duplicates) → ingest."""
+    import time
+    from collections import Counter
+
+    import yaml
+
+    from .plugins.classics.chronology import Chronology
+    from .plugins.classics.domain import DomainPack
+    from .plugins.classics.ingest import load_catalog
+    from .plugins.classics.ingest.collections import RANK
+    from .plugins.classics.ingest.dedupe import load_sketch
+    from .plugins.classics.ingest.documents import build_document_catalog, ingest_documents
+    from .plugins.classics.ingest.fetch import write_archive_lock
+    from .plugins.classics.ingest.policy import Exclusions
+    from .plugins.classics.store import CorpusStore
+
+    root = data / "sources" / col.subdir
+    lock_path = home / "corpus" / "sources.lock.yaml"
+    catalog_dir = home / "corpus" / "catalog"
+    catalog_path = catalog_dir / f"{col.id}.yaml"
+    if action == "unpack":
+        raise SystemExit(f"{col.id} is fetched, not unpacked: `taochronos corpus fetch {col.id}`")
+    if action == "fetch":
+        facts = col.fetch(root, print)
+        entry = write_archive_lock(lock_path, col.id, {"name": col.source["name"], "license": col.source["license"],
+                                                        "url": col.source["url"], "catalog": catalog_path.name, **facts})
+        _out({"source": col.id, "path": str(root), **{k: v for k, v in entry.items() if k not in ("subcategories", "dump")},
+              "lockfile": str(lock_path)})
+        return
+    if not root.exists():
+        raise SystemExit(f"{col.id} is not in {root}: run `taochronos corpus fetch {col.id}` first")
+    if action not in ("catalog", "ingest"):
+        raise SystemExit(f"`corpus {action}` is store-wide: run it without a source")
+    pack = DomainPack(home / "domains" / "classics")
+    normalize = pack.variants.normalize_text
+    chronology = Chronology(home / "domains" / "classics" / "eras.yaml", normalize)
+    t0 = time.time()
+    docs = col.read(root)
+    print(f"  read {len(docs)} documents from {root} ({time.time() - t0:.0f}s)")
+    store = CorpusStore(db, create=True)
+    if store.meta("normalizer") not in (None, pack.variants.fingerprint):
+        raise SystemExit("the store was indexed with another normaliser: run `taochronos corpus reindex` first")
+    if action == "catalog":
+        overrides_path = catalog_dir / f"{col.id}-overrides.yaml"
+        overrides = (yaml.safe_load(overrides_path.read_text(encoding="utf-8")) or {}) if overrides_path.exists() else {}
+        sketch = load_sketch(store, normalize, data / "corpus" / "sketch.pkl", pack.variants.fingerprint, log=print)
+        book_work, book_source = {}, {}
+        for bid, src, raw in store.db.execute("SELECT id, source, data FROM books"):
+            book_work[bid] = json.loads(raw).get("work") or bid
+            book_source[bid] = src
+        ignore = {b for b, src in book_source.items() if RANK.get(src, 99) >= col.rank}
+        cat = build_document_catalog(
+            docs, col.source, normalize=normalize, chronology=chronology,
+            kanripo=load_catalog(catalog_dir / "kanripo-kr3e.yaml"), jicheng=load_catalog(catalog_dir / "jicheng.yaml"),
+            overrides=overrides, exclusions=Exclusions(catalog_dir / "exclusions.yaml"), sketch=sketch,
+            dynasty_of=pack.periods.dynasty_of, prefix=col.prefix, duplicate=col.duplicate, same_work=col.same_work,
+            derivative=col.derivative, book_work=book_work, ignore=ignore)
+        cat["source"] = {k: v for k, v in col.source.items()}
+        header = (f"# GENERATED by `taochronos corpus catalog {col.id}` — dates, admission (exclusions.yaml, policy.py) and\n"
+                  f"# duplicate status against the store; corrections go in {col.id}-overrides.yaml, then regenerate.\n")
+        catalog_path.write_text(header + yaml.safe_dump(cat, allow_unicode=True, sort_keys=False, width=160), encoding="utf-8")
+        books = cat["books"]
+        status = Counter(b["status"] for b in books)
+        dup_of = Counter(book_source.get(b["duplicate_of"], col.id) for b in books if b["status"] == "duplicate")
+        admitted = [b for b in books if b["status"] == "ingest"]
+        _out({"catalog": str(catalog_path), "documents": len(books), "status": dict(status),
+              "excluded": dict(Counter(b["excluded_reason"] for b in books if b["status"] == "excluded")),
+              "duplicates_of": dict(dup_of), "admitted_characters": sum(b["characters"] for b in admitted),
+              "admitted_dating": dict(Counter(b["dating"].split(":")[0] for b in admitted)),
+              "admitted_chartype": dict(Counter(b["chartype"] for b in admitted)),
+              "seconds": round(time.time() - t0, 1)})
+        return
+    if not catalog_path.exists():
+        raise SystemExit(f"no catalog for {col.id}: run `taochronos corpus catalog {col.id}` first")
+    catalog = load_catalog(catalog_path)
+    lock = ((yaml.safe_load(lock_path.read_text(encoding="utf-8")) or {}).get(col.id) or {}) if lock_path.exists() else {}
+    version = lock.get("commit") or lock.get("revision") or lock.get("latest_revision")
+    report = ingest_documents(store, catalog, docs, normalize, pack.variants.fingerprint, chronology=chronology,
+                              dynasty_of=pack.periods.dynasty_of, version=str(version)[:12] if version else None, only=only, log=print)
+    store.optimize()
+    report["seconds"] = round(time.time() - t0, 1)
+    (data / "corpus").mkdir(parents=True, exist_ok=True)
+    (data / "corpus" / f"ingest-{col.id}.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
+    books = report["books"]
+    _out({"store": str(db), "source": col.id, "books": len(books), "passages": sum(b["passages"] for b in books.values()),
+          "characters": sum(b["characters"] for b in books.values()), "excluded": len(report["excluded"]),
+          "duplicates": len(report["duplicates"]), "seconds": report["seconds"]})
+
+
+def _corpus_admin_krcatalog(args: argparse.Namespace, action: str, home: Path, data: Path) -> None:
+    """The Kanripo catalogue (KR-Catalog, KR/KR3e.txt): responsible persons, their roles and dates, and the Siku
+    volume and page of each text, merged into the Kanripo book records at ingest."""
+    import yaml
+
+    from .plugins.classics.ingest import load_catalog
+    from .plugins.classics.ingest.collections import git_facts
+    from .plugins.classics.ingest.fetch import _clone, write_archive_lock
+    from .plugins.classics.ingest.krcatalog import KR_CATALOG_URL, cross_check, read_kr_catalog
+
+    root = data / "sources" / "kanripo-catalog" / "kr-catalog"
+    lock_path = home / "corpus" / "sources.lock.yaml"
+    out_path = home / "corpus" / "catalog" / "kr-catalog-kr3e.yaml"
+    if action == "fetch":
+        if not (root / ".git").exists():
+            root.parent.mkdir(parents=True, exist_ok=True)
+            ok, err = _clone(KR_CATALOG_URL, root)
+            if not ok:
+                raise SystemExit(f"git clone {KR_CATALOG_URL} failed: {err}")
+        facts = git_facts(root, KR_CATALOG_URL, "KR/*.txt")
+        entry = write_archive_lock(lock_path, "kr-catalog", {"name": "Kanripo 目録（KR-Catalog）", "license": "CC BY-SA 4.0",
+                                                             "url": KR_CATALOG_URL, "file": "KR/KR3e.txt",
+                                                             "catalog": out_path.name, **facts})
+        _out({"source": "kr-catalog", "path": str(root), **entry})
+        return
+    if action != "catalog":
+        raise SystemExit("kr-catalog supports `corpus fetch kr-catalog` and `corpus catalog kr-catalog`; "
+                         "its data enters the store with `corpus ingest kanripo`")
+    if not (root / "KR" / "KR3e.txt").exists():
+        raise SystemExit(f"KR/KR3e.txt is not in {root}: run `taochronos corpus fetch kr-catalog` first")
+    entries = read_kr_catalog(root / "KR" / "KR3e.txt")
+    kanripo = load_catalog(home / "corpus" / "catalog" / "kanripo-kr3e.yaml")
+    wanted = {b["kr"] for b in kanripo["books"]}
+    texts = {k: v for k, v in entries.items() if k in wanted}
+    from .plugins.classics.domain import DomainPack
+
+    checks = cross_check(texts, kanripo, DomainPack(home / "domains" / "classics").variants.normalize_text)
+    header = ("# GENERATED by `taochronos corpus catalog kr-catalog` from KR-Catalog KR/KR3e.txt (Kanripo, CC BY-SA 4.0):\n"
+              "# the responsible persons of each text with their roles and dates, and the Siku edition's volume and page.\n"
+              "# Merged into the Kanripo book records at `corpus ingest kanripo`; the curated dates in kanripo-kr3e.yaml stay.\n")
+    out_path.write_text(header + yaml.safe_dump({"source": "https://github.com/kanripo/KR-Catalog/blob/master/KR/KR3e.txt",
+                                                 "texts": texts, "review": checks}, allow_unicode=True, sort_keys=False, width=160),
+                        encoding="utf-8")
+    _out({"catalog": str(out_path), "texts": len(texts), "in_kr3e": len(entries),
+          "persons": sum(len(t.get("persons", [])) for t in texts.values()), "review": len(checks)})
 
 
 def _mesh_call(harness: Any, tool: str, **arguments: Any) -> Any:
@@ -564,11 +735,13 @@ def build_parser() -> argparse.ArgumentParser:
     add("agents", cmd_agents, "list agent specs and their current routes")
     sp = add("corpus", cmd_corpus, "list the corpus, or fetch / unpack / catalog / ingest / status / reindex the full-corpus store")
     sp.add_argument("action", nargs="?", default="list", choices=["list", "fetch", "unpack", "catalog", "ingest", "status", "reindex"])
-    sp.add_argument("source", nargs="?", help="source: kanripo (fetched from GitHub), jicheng (user-supplied archive) or all")
+    sp.add_argument("source", nargs="?", help="source: kanripo, kr-catalog, jicheng (user-supplied archive), mcgill, wikisource, "
+                                             "tcm-ancient-books, tcmoc, hf-tcm-canon, or all (ingest)")
     sp.add_argument("paths", nargs="*", help="archive volumes for `unpack jicheng` (jc_1_4_8_all.7z.001 …)")
     sp.add_argument("--root", help="unpacked 笈成 directory (default: the one under <data>/sources/jicheng)")
     sp.add_argument("--changed", action="store_true",
-                    help="ingest jicheng: re-parse only books whose dates or layers changed in the catalog; refresh the other records")
+                    help="ingest jicheng: re-parse only books whose dates or layers changed in the catalog, refresh the other "
+                         "records; ingest kanripo: rewrite the book records only (catalog or KR-Catalog changes)")
     sp.add_argument("--only", help="comma-separated text ids (e.g. KR3e0001,KR3e0013) or book ids")
     sp.add_argument("--db", help="corpus store path (default: <data>/corpus/tcm.sqlite)")
     sp = add("lexicon", cmd_lexicon, "harvest candidate formula / drug names from the corpus store", profile=False)

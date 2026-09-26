@@ -1,0 +1,7 @@
+# Corrections to the Hugging Face classical-tcm-canon catalog (keyed by record id).
+
+canon-伤寒论-0084:
+  composition: [1683, 1683]
+  dynasty: 清
+  work: hf:伤寒论集注
+  notes_text: 此条合收张志聪《伤寒论宗印》（1663）与《伤寒论集注》（张志聪撰、高世栻续成，1683 刊）；按较晚者断代

@@ -76,8 +76,11 @@ def book_spec(entry: dict[str, Any], catalog: dict[str, Any]) -> BookSpec:
 
 
 def book_record(entry: dict[str, Any], catalog: dict[str, Any], *, original_title: str | None = None,
-                commit: str | None = None) -> dict[str, Any]:
+                commit: str | None = None, kr_catalog: dict[str, Any] | None = None) -> dict[str, Any]:
+    from .krcatalog import record_extras
+
     src = catalog.get("source") or {}
+    extras = record_extras(kr_catalog)
     ed = entry.get("edition") or {}
     base = ed.get("base", "WYG")
     base_info = (catalog.get("editions") or {}).get(base, {})
@@ -116,10 +119,11 @@ def book_record(entry: dict[str, Any], catalog: dict[str, Any], *, original_titl
             "acquisition": f"{src.get('acquisition', '')}" + (f"; commit {commit}" if commit else ""),
             "url": url or src.get("url"), "transcription": src.get("transcription", ""), "verified": bool(src.get("verified", False)),
         },
-        "notes": entry.get("notes_text", ""),
+        "notes": "；".join(x for x in (entry.get("notes_text", ""), extras.pop("responsibility_note", "")) if x),
         "layers": layers,
         "source_id": src.get("id"),
         "source_ref": entry.get("kr"),
+        **extras,
     }
 
 
@@ -153,13 +157,31 @@ class BigramModel:
 
 def ingest_kanripo(store: CorpusStore, catalog: dict[str, Any], sources: Path, normalize: Callable[[str], str],
                    fingerprint: str, *, only: Iterable[str] | None = None, log: Log = print,
-                   dynasty_of: Callable[[float], str | None] | None = None) -> dict[str, Any]:
+                   dynasty_of: Callable[[float], str | None] | None = None, kr_catalog: dict[str, Any] | None = None,
+                   records_only: bool = False) -> dict[str, Any]:
+    """Parse and store the catalogued Kanripo texts; ``kr_catalog`` (the KR-Catalog entries by KR id) adds the
+    responsible persons to the book records; ``records_only`` rewrites the book records of stored books only."""
     from . import kanripo as _kanripo
 
     _kanripo.DYNASTY_OF = dynasty_of
+    kr_catalog = kr_catalog or {}
     wanted = {x.lower() for x in only} if only else None
     entries = [e for e in catalog["books"] if wanted is None or e["kr"].lower() in wanted or e["id"].lower() in wanted]
     report: dict[str, Any] = {"source": "kanripo", "books": {}, "missing": [], "note_order_warnings": []}
+    if records_only:
+        stored = {b for (b,) in store.db.execute("SELECT id FROM books WHERE source='kanripo'")}
+        for e in entries:
+            repo = sources / e["kr"]
+            if e["id"] not in stored or not repo.exists():
+                report["missing"].append(e["kr"])
+                continue
+            first = next(iter(sorted(repo.glob(f"{e['kr']}_*.txt"))), None)
+            title = read_file(first).props.get("TITLE") if first else None
+            store.put_book(book_record(e, catalog, original_title=title, commit=git_head(repo), kr_catalog=kr_catalog.get(e["kr"])),
+                           source="kanripo")
+            report["books"][e["id"]] = {"kr": e["kr"], "record_only": True}
+        store.commit()
+        return report
     bigram = BigramModel()
     parsed: dict[str, list[KanripoFile]] = {}
     for e in entries:
@@ -184,7 +206,8 @@ def ingest_kanripo(store: CorpusStore, catalog: dict[str, Any], sources: Path, n
         title = next((f.props.get("TITLE") for f in parsed[e["kr"]] if f.props.get("TITLE")), None)
         commit = git_head(repo)
         store.delete_book(spec.book_id, normalize)
-        store.put_book(book_record(e, catalog, original_title=title, commit=commit), source="kanripo")
+        store.put_book(book_record(e, catalog, original_title=title, commit=commit, kr_catalog=kr_catalog.get(e["kr"])),
+                       source="kanripo")
         store.add_passages(rows, normalize)
         store.commit()
         chars = sum(len(r["text"]) for r in rows)
@@ -210,7 +233,7 @@ JC_SOURCE = {
     "id": "jicheng",
     "name": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
     "url": "https://jicheng.tw/",
-    "license": "使用者提供之笈成整理本：古籍原文属公有领域，校点与整理成果归笈成整理者；现代著作可能仍受著作权保护，仅供本地研究使用",
+    "license": "使用者提供之笈成整理本：古籍原文属公有领域，校点与整理成果归笈成整理者；当代著作与现代整理本不入库，仅供本地研究使用",
     "transcription": "笈成志愿者录入、校对并加新式标点（各书“品质”见 [book] 信息）；未经本项目逐字核对",
 }
 FRONT_MATTER_UPPER = 1911  # paratext of undetermined date is placed at the end of the imperial era (never earlier)
@@ -258,9 +281,12 @@ def _date_from_prefaces(rng: tuple[int, int] | None, how: str, sigs: list[tuple[
 
 
 def build_jicheng_catalog(root: Path, normalize: Callable[[str], str], chronology: Any, kanripo: dict[str, Any] | None,
-                          overrides: dict[str, Any], dynasty_of: Callable[[float], str | None] | None = None) -> dict[str, Any]:
-    """Catalogue every book of the collection: its own [book] metadata, curated overrides, Kanripo dates."""
-    from .jicheng import preface_dates, read_book_block, read_filelist
+                          overrides: dict[str, Any], dynasty_of: Callable[[float], str | None] | None = None,
+                          exclusions: Any = None) -> dict[str, Any]:
+    """Catalogue every book of the collection: its own [book] metadata, curated overrides, Kanripo dates, and the
+    admission screen (contemporary works and modern editions are catalogued as excluded, with their reason)."""
+    from .jicheng import preface_dates, read_book_block, read_filelist, strip_book_block
+    from .policy import screen
 
     index: dict[str, dict[str, Any]] = {}
     for e in (kanripo or {}).get("books", []):
@@ -306,13 +332,15 @@ def build_jicheng_catalog(root: Path, normalize: Callable[[str], str], chronolog
         modern = bool(ov["modern"]) if "modern" in ov else ((comp is not None and comp[0] >= 1912) or any(
             x in (meta.get("朝代") or "") for x in ("民國", "民国", "現代", "现代", "近代")))
         if comp is None:
-            comp, dating = ([1912, 2010] if modern else [1644, 1911]), "undated"
-        elif modern and "composition" not in ov and comp[0] < 1912:  # a modern work carrying an old preface
-            comp, dating, dating_note = [1912, 2010], "modern", None
+            comp, dating = ([1912, 1949] if modern else [1644, 1911]), "undated"
+        elif modern and "composition" not in ov and comp[0] < 1912:  # a Republican-era work carrying an old preface
+            comp, dating, dating_note = [1912, 1949], "modern", None
+        curated, keep = exclusions.decision("jicheng", le.code, key) if exclusions is not None else (None, False)
+        verdict = screen(orig_title, strip_book_block(text), comp, curated=curated, keep=keep)
         mid = (comp[0] + comp[1]) / 2
         dynasty = ov.get("dynasty") or (normalize(dyn_meta) if dyn_meta and not re.search(r"\d|西元|公元", dyn_meta) else None) \
             or (dynasty_of(mid) if dynasty_of else "") or ""
-        category = ov.get("category") or ("现代" if modern else JC_CATEGORY.get(le.category, le.category))
+        category = ov.get("category") or ("近代" if modern else JC_CATEGORY.get(le.category, le.category))
         quality = None
         if meta.get("品質"):
             qm = re.match(r"(\d+)%", meta["品質"])
@@ -325,7 +353,11 @@ def build_jicheng_catalog(root: Path, normalize: Callable[[str], str], chronolog
             "category": category, "jicheng_category": le.category,
             "work": ov.get("work") or (kr.get("work") if kr else None) or f"jc:{key}",
             "attribution": ov.get("attribution", "traditional"), "modern": modern,
+            "status": "excluded" if verdict.reason else "ingest",
         }
+        if verdict.reason:
+            entry["excluded_reason"] = verdict.reason
+            entry["screen"] = {k: v for k, v in verdict.evidence.items() if v and k != "curated"} or {"curated": True}
         if kr is not None:
             entry["kanripo"] = kr["kr"]
         if quality is not None:
@@ -427,7 +459,7 @@ def jicheng_book_record(entry: dict[str, Any], catalog: dict[str, Any], version:
     src = catalog.get("source") or JC_SOURCE
     licence = src.get("license", "")
     if entry.get("modern"):
-        licence += "（本书为现代著作）"
+        licence += "（本书为近代著作）"
     layers = []
     for key in ("z_layer", "s_layer", "mixed"):
         if entry.get(key):
@@ -439,7 +471,7 @@ def jicheng_book_record(entry: dict[str, Any], catalog: dict[str, Any], version:
             layers.append({"kind": key, **c})
     basis = str(entry.get("dating") or "")
     how = {"curated": "编目人工考定", "western": "笈成书目所载公元年", "era": "笈成书目所载年号", "dynasty": "笈成书目所载朝代",
-           "preface": "序跋落款", "preface:author": "作者自序落款", "modern": "现代著作", "undated": UNDATED_NOTE}.get(basis)
+           "preface": "序跋落款", "preface:author": "作者自序落款", "modern": "近代著作（1912—1949）", "undated": UNDATED_NOTE}.get(basis)
     if how is None and basis.startswith("kanripo:"):
         how = f"同书四库本（{basis.split(':', 1)[1]}）编目年代"
     elif how is None and basis.startswith("author:"):
@@ -473,8 +505,15 @@ def ingest_jicheng(store: CorpusStore, catalog: dict[str, Any], root: Path, norm
     wanted = {x.lower() for x in only} if only else None
     report: dict[str, Any] = {"source": "jicheng", "books": {}, "missing": [], "unknown_tags": {}, "records_only": 0}
     stored = {bid: json.loads(data) for bid, data in store.db.execute("SELECT id, data FROM books WHERE source='jicheng'")}
+    report["excluded"] = {}
     for entry in catalog["books"]:
         if wanted is not None and entry["code"].lower() not in wanted and entry["id"] not in wanted:
+            continue
+        if entry.get("status") == "excluded":  # contemporary works and modern editions never enter the store
+            if entry["id"] in stored:
+                store.delete_book(entry["id"], normalize)
+                store.commit()
+            report["excluded"][entry["code"]] = entry.get("excluded_reason")
             continue
         path = root / "data" / entry["file"]
         if not path.exists():

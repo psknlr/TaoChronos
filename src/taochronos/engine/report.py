@@ -37,7 +37,7 @@ def disclaimer(corpus: Any) -> str:
     """What the evidence rests on: the demo corpus, or the licensed sources of a full corpus store."""
     if not getattr(corpus, "large", False):
         return DISCLAIMER
-    licences = sorted({b.source.license.removesuffix("（本书为现代著作）") for b in corpus.books.values() if b.source.license})
+    licences = sorted({b.source.license.removesuffix("（本书为近代著作）") for b in corpus.books.values() if b.source.license})
     origins = sorted({b.source.origin for b in corpus.books.values() if b.source.origin})
     verified = sum(1 for b in corpus.books.values() if b.source.verified)
     sources = set(getattr(corpus, "sources", {}).values())

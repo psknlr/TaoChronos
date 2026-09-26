@@ -1,0 +1,47 @@
+#-*- mode: org; -*-
+** KR3e ZB3e 醫家類
+*** KR3eT001 黃帝內經素問-唐-王冰
+:PROPERTIES:
+:KR_ID: KR3eT001
+:SOURCE:   四庫全書 文淵閣版, V733.1, p1
+:EXTENT: 24 卷
+:BOOK:   14
+:_RESP:    （唐）王冰,（宋）林億
+:END:
+**** 人物
+***** 王冰
+     :PROPERTIES:
+     :DYNASTY:  唐
+     :FUNCTION: 次注
+     :DATES:    fl. 762
+     :END:
+
+***** 林億
+     :PROPERTIES:
+     :DYNASTY:  宋
+     :FUNCTION: 校正
+     :END:
+
+**** 版本
+***** WYG
+**** (附)釋文
+     :PROPERTIES:
+     :TYPE:   appendix
+     :EXTENT:   卷
+     :END:
+
+*** KR3eT002 三因極一病證方論-宋-陳言
+:PROPERTIES:
+:KR_ID: KR3eT002
+:EXTENT: 18 卷
+:_RESP:    （宋）陳言
+:END:
+**** 人物
+***** 陳言
+     :PROPERTIES:
+     :DYNASTY:  宋
+     :FUNCTION: 撰
+     :DATES:    fl. 1500 - 1540
+     :END:
+**** 版本
+***** WYG
