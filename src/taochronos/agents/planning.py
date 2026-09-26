@@ -23,6 +23,7 @@ KIND_ROLE: dict[str, str] = {
     "validate_claims": "validator",
     "map_terminology": "ontologist",
     "build_lineage": "lineage",
+    "trace_sources": "scholar",
     "gather_evidence": "evidence",
     "mine_patterns": "pattern_miner",
     "test_statistics": "statistician",
@@ -49,6 +50,7 @@ DEPENDS_ON: dict[str, tuple[str, ...]] = {
     "validate_claims": ("extract_claims",),
     "map_terminology": ("resolve_terms",),
     "build_lineage": ("extract_claims",),
+    "trace_sources": ("resolve_terms",),
     "gather_evidence": ("extract_claims", "build_lineage", "validate_claims"),
     "mine_patterns": (),
     "test_statistics": ("mine_patterns",),
@@ -68,7 +70,7 @@ ORDER = {kind: i for i, kind in enumerate(DEPENDS_ON)}
 ORDER["plan"] = -1
 
 FOUNDATION_KINDS = ("scope_corpus", "assess_philology", "resolve_terms", "extract_claims", "validate_claims",
-                    "map_terminology", "build_lineage", "gather_evidence")
+                    "map_terminology", "build_lineage", "trace_sources", "gather_evidence")
 DISCOVERY_KINDS = ("mine_patterns", "test_statistics", "trace_evolution", "generate_hypotheses", "falsify",
                    "modern_evidence", "revise_hypotheses", "falsify_revisions", "validate", "score", "meta_review")
 MANDATORY_AFTER_HYPOTHESES = ("falsify", "validate", "score")

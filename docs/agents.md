@@ -40,12 +40,19 @@ needs; the engine then spawns one agent instance per task (`agent:<role>@<task>`
 | pattern_miner | TaoChronos-PatternMiner | procedure | ObservationSet |
 | statistician | TaoChronos-Statistician | procedure | AnalysisSet |
 | evolution | TaoChronos-Evolution | procedure | AnalysisSet |
+| scholar | TaoChronos-Scholar | procedure | SourcesDossier |
 | hypothesis | TaoChronos-Hypothesis | hybrid | HypothesisSet / RevisionSet |
 | skeptic | TaoChronos-Skeptic | hybrid | ReviewSet |
 | modern_evidence | TaoChronos-ModernEvidence | hybrid | ModernEvidenceSet |
 | meta_reviewer | TaoChronos-MetaReviewer | hybrid | MetaReview |
 
 Validators (`validate_claims`, `validate`, `score`) are harness code running as `validator:gates`, not agents.
+
+**TaoChronos-Scholar** (治学) traces the focus formulas, drugs and terms through the *whole* store with the study
+tools (`study.formula`, `study.herb`, `study.term`) and records one dossier per target — a headline, key findings and
+the verbatim witnesses they rest on. The Director adds its task (`trace_sources`, after `resolve_terms`) to round 0
+when the profile sets `discovery.sources_dossier` (as `full-corpus` does); the dossiers become the appendix
+“源流考证” of the Discovery Report. They describe texts and pass no gates (see [study.md](study.md)).
 
 ## One output contract, two producers
 

@@ -107,7 +107,7 @@ class ToolContext:
             return self.session.emit(type_, payload, actor=self.actor.id, task_id=self.task_id, generated=generated or [])
         return None
 
-    def call(self, name: str, **arguments: Any) -> Any:
+    def call(self, name: str, /, **arguments: Any) -> Any:
         """Nested tool call through the same scheduler (permissions and hooks still apply)."""
         outcome = self.scheduler.execute(
             ToolCall(name, arguments), actor=self.actor, session=self.session, task_id=self.task_id, budget=self.budget, tx=self.tx

@@ -137,12 +137,12 @@ class AgentContext:
         return factory(self.state)
 
     # --------------------------------------------------------------- tools
-    def try_tool(self, name: str, **arguments: Any) -> ToolOutcome:
+    def try_tool(self, name: str, /, **arguments: Any) -> ToolOutcome:
         self.usage["tool_calls"] += 1
         return self.runtime.scheduler.execute(ToolCall(name, arguments), actor=self.actor, session=self.session,
                                               task_id=self.task.id, budget=self.budget, tx=self.tx)
 
-    def tool(self, name: str, **arguments: Any) -> Any:
+    def tool(self, name: str, /, **arguments: Any) -> Any:
         outcome = self.try_tool(name, **arguments)
         if not outcome.ok:
             raise ToolError(f"{name}: {outcome.error}")

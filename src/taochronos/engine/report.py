@@ -236,6 +236,21 @@ def build(harness: Any, state: Any, session_id: str) -> tuple[DiscoveryReport, s
             lines.append(f"- `{h.id}` {h.statement[:70]}… — " + ("；".join(f"{o.check}: {o.detail[:60]}" for o in reasons) or h.status))
     add("12. 建议人工核验 · Recommended Human Verification", lines, recs)
 
+    # appendix ----------------------------------------------------- sources (治学)
+    dossiers = sorted((a for a in state.analyses.values() if a.get("kind") == "sources_dossier"), key=lambda a: a["analysis_id"])
+    if dossiers:
+        lines = ["由 TaoChronos-Scholar 在全部语料上逐字检得：这是文本源流的描述，不是假说，不经门控；剂量折算为历史计量的学术估值，"
+                 "不构成用药建议。", ""]
+        for a in dossiers:
+            r = a.get("result", {})
+            kind = {"formula": "方源考", "herb": "药性源流", "term": "术语源流"}.get(r.get("kind"), r.get("kind"))
+            lines.append(f"**{r.get('target')}**（{kind}）：{r.get('headline', '')}")
+            lines += [f"- {x}" for x in r.get("lines", [])]
+            for w in r.get("witnesses", []):
+                lines.append(f"  - {w.get('role', '')}：{w.get('locator', '')} `{w['passage_id']}`「{w.get('quote', '')[:80]}」")
+            lines.append("")
+        add("附录 · 源流考证 · Sources Dossier", lines, [a["analysis_id"] for a in dossiers])
+
     # appendix ----------------------------------------------------- trace
     stop = state.stop or {}
     metrics = scientific_metrics(state)

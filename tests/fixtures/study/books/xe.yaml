@@ -1,0 +1,5 @@
+- book: xe
+  passages:
+    - {id: xe.1, locator: {chapter: 卷下·诸方, section: 地黄丸}, text: 治肾怯失音，囟开不合，神不足，目中白睛多，面色㿠白等方。}
+    - {id: xe.2, locator: {chapter: 卷下·诸方, section: 地黄丸}, text: 熟地黄八钱　山萸肉　干山药各四钱　泽泻　牡丹皮　白茯苓去皮，各三钱}
+    - {id: xe.3, locator: {chapter: 卷下·诸方, section: 地黄丸}, text: 上为末，炼蜜丸，如梧子大，空心，温水化下三丸。}

@@ -74,6 +74,9 @@ def draft(ctx: Any) -> dict[str, Any]:
         if _mapping_relevant(ctx, focus):
             tasks.append({"kind": "map_terminology", "inputs": {"terms": focus},
                           "reason": "focus terms have modern candidates: propose typed (never '=') mappings"})
+        if (ctx.config or {}).get("sources_dossier") and focus:
+            tasks.append({"kind": "trace_sources", "inputs": {"terms": focus},
+                          "reason": "the textual history of the focus terms over the whole corpus (方源考 / 药性源流 / 术语源流)"})
         rationale = f"Foundation round for “{goal.question if goal else ''}”; focus terms: {', '.join(surface(t) for t in focus) or '—'}."
         return {"rationale": rationale, "focus": [surface(t) for t in focus], "tasks": tasks}
 

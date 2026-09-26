@@ -255,6 +255,7 @@ VIEWS: dict[str, Callable[[ViewInput], list[ContextSection]]] = {
     "mining": view_default,
     "statistics": view_default,
     "evolution": view_default,
+    "sources": view_default,
     "hypothesis": view_hypothesis,
     "skeptic": view_skeptic,
     "modern": view_evidence,

@@ -7353,17 +7353,18 @@ books:
   - 小兒藥證直訣
   authors:
   - 钱乙
-  dynasty: 宋
+  dynasty: 北宋
   composition:
-  - 1032
-  - 1032
-  dating: western
+  - 1119
+  - 1119
+  dating: curated
   category: 儿科
   jicheng_category: 兒科
   work: jc:小儿药证直诀
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成元数据年份作 1032（钱乙生年，误）；钱乙著，阎孝忠编集，宣和元年（1119）成书
 - code: H000a
   id: jc_h000a
   file: H/H000a.txt
@@ -7375,8 +7376,8 @@ books:
   - 钱乙
   dynasty: 宋
   composition:
-  - 1032
-  - 1032
+  - 1119
+  - 1119
   dating: work:H000
   category: 儿科
   jicheng_category: 兒科

@@ -1,0 +1,26 @@
+# 药名同类 — drugs that the classics name in several ways, compared as one when two compositions are matched.
+#
+# 桂枝、桂心、肉桂 were not distinguished as they are today (仲景方 “桂枝” is written 桂心 or 肉桂 in later copies);
+# 白术 and 苍术 were one 术 before 陶弘景; 干地黄 became 熟地黄 in later versions of 肾气丸.  Matching compositions by family
+# lets these witnesses count as one tradition; the study outputs always show the names each witness actually uses.
+# Drugs whose parts or preparations have distinct uses in the tradition (生姜/干姜, 枳实/枳壳, 茯苓/茯神) stay apart.
+
+families:
+  桂: [桂, 桂枝, 桂心, 肉桂, 官桂, 牡桂, 菌桂, 辣桂]
+  地黄: [地黄, 干地黄, 生地黄, 熟地黄, 生地, 熟地, 干地, 生干地黄, 熟干地黄]
+  芍药: [芍药, 白芍, 白芍药, 赤芍, 赤芍药]
+  术: [术, 白术, 苍术]
+  甘草: [甘草, 炙甘草, 生甘草, 粉甘草]
+  附子: [附子, 炮附子, 生附子, 熟附子, 黑附子]
+  山药: [山药, 薯蓣, 怀山药, 淮山药]
+  山茱萸: [山茱萸, 山萸肉, 萸肉, 山萸]
+  牡丹皮: [牡丹皮, 丹皮, 牡丹]
+  半夏: [半夏, 法半夏, 姜半夏, 制半夏]
+  大枣: [大枣, 红枣]
+  茯苓: [茯苓, 白茯苓, 赤茯苓]
+  当归: [当归, 当归身, 归身, 当归尾, 归尾]
+  黄芪: [黄芪, 炙黄芪]
+  陈皮: [陈皮, 橘皮, 广陈皮]
+  川芎: [川芎, 芎䓖, 芎藭]
+  葛根: [葛根, 粉葛]
+  泽泻: [泽泻]

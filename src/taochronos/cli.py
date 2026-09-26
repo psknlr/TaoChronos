@@ -703,6 +703,71 @@ def cmd_eval(args: argparse.Namespace) -> None:
     _out(summary_table(results))
 
 
+STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset")
+
+
+def cmd_study(args: argparse.Namespace) -> None:
+    """治学 — study functions over the classics (docs/study.md): Markdown by default, ``--json`` for the full result."""
+    import re
+
+    from .plugins.classics.study.dataset import write_datapackage
+    from .plugins.classics.study.render import markdown
+
+    _, data = _corpus_paths(args)
+    if not args.profile:
+        args.profile = "full-corpus" if (data / "corpus" / "tcm.sqlite").exists() else "full-discovery"
+    harness = _harness(args)
+    study = harness.capabilities.get("study")
+    what, target = args.what, " ".join(args.target).strip() or None
+    needs = {"formula": "a formula name", "herb": "a drug name", "term": "a term", "reading": "a topic", "metrology": "a dose"}
+    if what in needs and not target:
+        raise SystemExit(f"taochronos study {what}: give {needs[what]}")
+    if what == "concordance" and not (target or args.passage):
+        raise SystemExit("taochronos study concordance: give a text or --passage <id>")
+    notice = ""
+    if what == "concordance":
+        res = study.concordance(target, args.passage, min_coverage=args.min_coverage, limit=args.limit or 300)
+    elif what == "formula":
+        res = study.formula(target, other_names=not args.no_other_names)
+        notice = res.get("metrology_notice", "")
+    elif what == "herb":
+        res = study.herb(target)
+    elif what == "term":
+        res = study.term(target)
+    elif what == "taboo":
+        res = study.taboo(target) if target else study.taboo(min_chars=args.min_chars)
+    elif what == "citations":
+        res = study.citations(target) if target else study.citations(top=args.top)
+    elif what == "cards":
+        res = study.cards(book=args.book, formulas=args.formula or [], herbs=args.herb or [], term=args.term, limit=args.limit or 60)
+        if args.anki:
+            Path(args.anki).write_text(res["anki_tsv"], encoding="utf-8")
+    elif what == "reading":
+        res = study.reading(target)
+    elif what == "metrology":
+        reading = study.metrology.convert(target, args.year)
+        res = {"dose": target, "year": args.year, "parsed": study.metrology.parse(target), "reading": reading, "notice": study.metrology.notice}
+        if not args.json:
+            _out(f"{target}（{args.year if args.year is not None else '年代未定'}）→ {(reading or {}).get('text') or '无法折算'}\n> {res['notice']}")
+            return
+    else:  # dataset
+        res = study.dataset(formulas=args.formula or [], herbs=args.herb or [], terms=([args.term] if args.term else []) + list(args.target),
+                            citations=args.citations)
+        slug = re.sub(r"[^\w一-鿿]+", "-", "-".join((args.formula or []) + (args.herb or []) + ([args.term] if args.term else []) + list(args.target)) or "citations").strip("-")
+        out_dir = Path(args.output) if args.output else data / "study" / "datasets" / slug
+        pkg = write_datapackage(out_dir, res["tables"], name=f"taochronos-{slug}".lower(), title=f"TaoChronos 治学数据集：{slug}",
+                                signature=res["signature"], licenses=res["licenses"], notice=res["notice"])
+        _out({"path": str(out_dir), "resources": {r["name"]: r["rows"] for r in pkg["resources"]}, "licenses": res["licenses"]})
+        return
+    text = json.dumps(res, ensure_ascii=False, indent=1, default=str) if args.json else markdown(what, res, study.signature(), notice)
+    if args.output:
+        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.output).write_text(text, encoding="utf-8")
+        _out(f"wrote {args.output}")
+    else:
+        _out(text)
+
+
 def cmd_demo(args: argparse.Namespace) -> None:
     args.question = args.question or "消渴的概念如何随时代演变？宋代以前治疗消渴的哪些知识后来被遗忘？"
     args.focus = args.focus or "消渴"
@@ -806,6 +871,27 @@ def build_parser() -> argparse.ArgumentParser:
         if name == "export":
             sp.add_argument("--format", default="json", choices=["json", "cypher", "graphml", "prov"])
             sp.add_argument("-o", "--output")
+    sp = sub.add_parser("study", help="治学: 经文互见·集注, 方源考, 药性源流, 术语源流, 避讳断代, 引书网络, 学习卡片, 阅读门径, 研究数据集")
+    sp.set_defaults(fn=cmd_study)
+    sp.add_argument("what", choices=STUDY)
+    sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
+    sp.add_argument("--profile", help="default: full-corpus when the corpus store exists, else full-discovery (demo corpus)")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    sp.add_argument("--passage", help="concordance: a passage id instead of a text")
+    sp.add_argument("--min-coverage", type=float, default=0.6, help="concordance: share of the text a witness must carry")
+    sp.add_argument("--no-other-names", action="store_true", help="formula: skip the search for 同方异名")
+    sp.add_argument("--min-chars", type=int, default=20000, help="taboo survey: smallest book to judge")
+    sp.add_argument("--top", type=int, default=12, help="citations: works and physicians per period")
+    sp.add_argument("--book", help="cards: 方证 cards from this book (e.g. 伤寒论)")
+    sp.add_argument("--formula", action="append", help="cards/dataset: a formula (repeatable)")
+    sp.add_argument("--herb", action="append", help="cards/dataset: a drug (repeatable)")
+    sp.add_argument("--term", help="cards/dataset: a term")
+    sp.add_argument("--citations", action="store_true", help="dataset: include the citation network")
+    sp.add_argument("--year", type=float, help="metrology: the year whose measures to read the dose in")
+    sp.add_argument("--limit", type=int)
+    sp.add_argument("--anki", help="cards: also write an Anki import file (TSV)")
+    sp.add_argument("--json", action="store_true", help="print the full result as JSON")
+    sp.add_argument("-o", "--output", help="write to this file (dataset: this directory)")
     sp = add("codemode", cmd_codemode, "run a Research Code Mode program against the SDK")
     sp.add_argument("file", nargs="?")
     add("sdk", cmd_sdk, "print the Research SDK reference (Code Mode)")

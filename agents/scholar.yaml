@@ -1,0 +1,16 @@
+role: scholar
+name: TaoChronos-Scholar
+description: Source Scholar (治学). The textual history of the focus formulas, drugs and terms over the whole corpus.
+objective: >-
+  For each focus term, establish from verbatim witnesses where it first appears, how a formula's composition, a
+  drug's properties or a term's currency change by period, and which works carry it — so that hypotheses are read
+  against the textual history of the whole corpus, not only the sampling frame.
+mode: procedure
+procedure: taochronos.agents.procedures.scholar
+skills: [source-criticism]
+tools: [study.formula, study.herb, study.term, study.concordance, study.taboo, study.metrology]
+context_view: sources
+permissions: [classics:read]
+output_schema: SourcesDossier
+model: {min_tier: small}
+budget: {max_tool_calls: 24}

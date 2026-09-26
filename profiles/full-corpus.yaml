@@ -26,3 +26,6 @@ discovery:
     # non-medical texts, unless the contract names categories; works after 1949 and modern editions never enter the
     # store (corpus/catalog/exclusions.yaml), Republican works (近代, 1912–1949) are historical sources and stay
     exclude_categories: [现代, 非医籍]
+  # TaoChronos-Scholar traces the focus terms through the whole store (方源考 / 药性源流 / 术语源流) in round 0; the
+  # dossiers are printed as an appendix of the report ("源流考证")
+  sources_dossier: {max_targets: 6}

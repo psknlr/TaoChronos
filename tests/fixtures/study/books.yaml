@@ -1,0 +1,21 @@
+# Synthetic test corpus for the study layer (tests/test_study.py): short passages modelled on the wording of
+# public-domain classics, arranged so that every study function has something to find — two copies of one work, a
+# quotation, compositions in several periods, a formula printed only as the heading of its entry (笈成 style), verses,
+# taboo spellings and named citations.  Not a transcription of any edition; never cite it.
+defaults:
+  source: &src
+    origin: TaoChronos test fixture (synthetic)
+    license: CC0-1.0
+    acquisition: written for the test suite
+    transcription: synthetic
+    verified: false
+books:
+  - {id: shl, title: 伤寒论, aliases: [伤寒卒病论], authors: [张机（仲景）], dynasty: 东汉, composition: [200, 219], category: 伤寒, work: shanghanlun, source: *src}
+  - {id: shl_b, title: 伤寒论（别本）, authors: [张机（仲景）], dynasty: 东汉, composition: [200, 219], category: 伤寒, work: shanghanlun, source: *src}
+  - {id: bj, title: 神农本草经, aliases: [本经], authors: [佚名], dynasty: 东汉, composition: [25, 220], category: 本草, source: *src}
+  - {id: qjy, title: 千金翼方, authors: [孙思邈], dynasty: 唐, composition: [682, 682], category: 方书, source: *src}
+  - {id: jf, title: 太平惠民和剂局方, aliases: [局方], authors: [太平惠民和剂局], dynasty: 宋, composition: [1107, 1151], category: 方书, source: *src}
+  - {id: xe, title: 小儿药证直诀, authors: [钱乙], dynasty: 宋, composition: [1119, 1119], category: 儿科, source: *src}
+  - {id: tyb, title: 汤液本草, authors: [王好古], dynasty: 元, composition: [1289, 1308], category: 本草, source: *src}
+  - {id: tt, title: 汤头歌诀, authors: [汪昂], dynasty: 清, composition: [1694, 1694], category: 方书, source: *src}
+  - {id: yz, title: 医宗金鉴, authors: [吴谦等], dynasty: 清, composition: [1742, 1742], category: 综合, source: *src}

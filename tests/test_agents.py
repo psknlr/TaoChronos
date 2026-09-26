@@ -16,7 +16,7 @@ def test_director_is_named_taochronos_and_all_specs_validate(harness):
     specs = load_specs(HOME / "agents")
     assert specs["director"].name == "TaoChronos"
     assert all(s.name.startswith("TaoChronos") for s in specs.values())
-    assert len(specs) == 15
+    assert len(specs) == 16
     for spec in specs.values():
         assert not validate_spec(spec, policy=PolicyEngine(), tools=harness.tools, skills=harness.skills)
 

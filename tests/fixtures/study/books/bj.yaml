@@ -1,0 +1,6 @@
+- book: bj
+  defaults: {kind: materia_medica}
+  passages:
+    - {id: bj.fuzi, locator: {volume: 下经, section: 附子}, text: 附子，味辛，温。主风寒咳逆邪气，温中，金疮，破癥坚积聚，血瘕，寒湿，踒躄拘挛，膝痛不能行步。}
+    - {id: bj.chaihu, locator: {volume: 上经, section: 柴胡}, text: 柴胡，味苦，平。主心腹，去肠胃中结气，饮食积聚，寒热邪气，推陈致新。}
+    - {id: bj.shuyu, locator: {volume: 上经, section: 署豫}, text: 署豫，味甘，温。主伤中，补虚羸，除寒热邪气，补中，益气力，长肌肉。}

@@ -69,7 +69,7 @@ hypothesis in isolation (independent witnesses, re-review, narrowing) and merges
 ## Capabilities, plugins, profiles
 
 Business code asks the **CapabilityRegistry** for a capability (`corpus`, `domain`, `philology`,
-`extractor`, `lineage`, `knowledge`, `retriever`, `llm`, `sandbox`, `subagent`, `event_store`,
+`extractor`, `lineage`, `knowledge`, `retriever`, `study`, `llm`, `sandbox`, `subagent`, `event_store`,
 `graph_export`…) and never imports a provider. Plugins are Python modules with a
 `register(registry, config, context)` function, loaded from a **profile** (`profiles/*.yaml`):
 
@@ -88,10 +88,15 @@ The `corpus` capability has two implementations behind one interface: the in-mem
 corpora switch retrieval, curation, lineage and falsification to index-backed candidates (see
 [ADR 0003](adr/0003-corpus-store-and-scoped-research.md)).
 
+The `study` capability (`plugins/classics/study`, [ADR 0004](adr/0004-study-layer.md)) holds the 治学 functions —
+concordance, formula provenance, materia-medica and term histories, taboo dating, citations, learning cards, reading
+paths, datasets — used by the CLI (`taochronos study …`), the `study.*` tools and TaoChronos-Scholar
+([study.md](study.md)).
+
 ## Tools and the scheduler
 
-The **Tool Mesh** (`tools/mesh.py`) exposes 26 tools in six families (philology, retrieval, knowledge,
-analytics, literature, validation) plus `research.run_code` (Code Mode). Every call passes the same
+The **Tool Mesh** (`tools/mesh.py`) exposes 35 tools in seven families (philology, retrieval, knowledge,
+analytics, study, literature, validation) plus `research.run_code` (Code Mode). Every call passes the same
 gauntlet — permission → argument schema → budget → `BeforeToolCall` hooks → execution → events →
 `AfterToolCall` hooks — whether a model or a deterministic procedure makes it. Consecutive
 `parallel_safe` calls run concurrently; `exclusive` calls are barriers.

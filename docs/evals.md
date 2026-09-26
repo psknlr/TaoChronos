@@ -51,6 +51,19 @@ hypotheses in about a minute offline — and `tests/test_corpus_store.py` checks
 provenance of claims read from unpunctuated text and a research run over a store. Gold for the full corpus
 (punctuation, claims, dating of layers) is future work.
 
+## Study layer
+
+The 治学 functions ([study.md](study.md)) are checked by `tests/test_study.py` on a synthetic corpus written for the
+purpose (`tests/fixtures/study`: two copies of one work, a quotation, compositions in several periods, an entry headed
+by its formula's name, bracket-less preparation notes with a shared dose, verses, taboo spellings and named
+citations): the relation and apparatus of the concordance, the original / current / single-witness groups and the dose
+readings of formula provenance, first statements of drug properties, shares and intervals of term histories, taboo
+verdicts and edition bounds, citation resolution, cards, reading paths, the data package, the tools, the CLI and the
+Scholar's dossiers in a research run. On the full corpus the functions were checked against known results of the
+literature (the 小儿药证直诀 origin of 六味地黄丸, the 金匮 崔氏八味丸 for 肾气丸, 黄龙汤 as another name of 小柴胡汤, the Song
+丸 → 圆 taboo in the 千金 books); a gold set of expert-checked witnesses for formula parsing and property extraction is
+on the roadmap.
+
 ## Baselines
 
 The time machine's link-level table compares Adamic–Adar with resource allocation, common neighbours,

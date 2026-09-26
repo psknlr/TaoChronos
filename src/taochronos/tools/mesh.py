@@ -359,6 +359,72 @@ def _gates(ctx: ToolContext, a: dict) -> Any:
     return [to_jsonable(r) for r in results]
 
 
+# ------------------------------------------------------------------ study (治学)
+def _study(ctx: ToolContext) -> Any:
+    try:
+        return ctx.cap("study")
+    except KeyError as exc:  # pragma: no cover - every classics bundle registers it
+        raise KeyError("no 'study' capability is registered (the classics plugin provides it)") from exc
+
+
+def _brief(value: Any, items: int = 12, chars: int = 240) -> Any:
+    """Keep tool results small for agent context: long lists are cut (with the count left out), long strings shortened,
+    bulky keys (member lists, Anki text, per-field quotes) dropped.  The full results are in the CLI and the datasets."""
+    if isinstance(value, dict):
+        return {k: _brief(v, items, chars) for k, v in value.items() if k not in ("member_ids", "anki_tsv", "quotes")}
+    if isinstance(value, list):
+        out = [_brief(v, items, chars) for v in value[:items]]
+        return out + ([{"omitted": len(value) - items}] if len(value) > items else [])
+    if isinstance(value, str) and len(value) > chars:
+        return value[:chars] + "…"
+    return value
+
+
+def _study_concordance(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).concordance(a.get("text"), a.get("passage_id"), min_coverage=float(a.get("min_coverage", 0.6)),
+                                  limit=int(a.get("limit", 120)))
+    return _brief(res, int(a.get("items", 20)))
+
+
+def _study_formula(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).formula(a["name"], other_names=bool(a.get("other_names", True))), int(a.get("items", 12)))
+
+
+def _study_herb(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).herb(a["name"]), int(a.get("items", 16)))
+
+
+def _study_term(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).term(a["term"], sample_per_period=int(a.get("sample_per_period", 200))), int(a.get("items", 12)))
+
+
+def _study_taboo(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    study = _study(ctx)
+    res = study.taboo(a["book_id"]) if a.get("book_id") else study.taboo(min_chars=int(a.get("min_chars", 20000)))
+    return _brief(res, int(a.get("items", 20)))
+
+
+def _study_citations(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).citations(a.get("target"), **({} if a.get("target") else {"top": int(a.get("top", 12))})),
+                  int(a.get("items", 12)))
+
+
+def _study_metrology(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    m = _study(ctx).metrology
+    return {"dose": a["dose"], "year": a.get("year"), "parsed": m.parse(a["dose"]), "reading": m.convert(a["dose"], a.get("year")),
+            "notice": m.notice}
+
+
+def _study_cards(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).cards(book=a.get("book"), formulas=list(a.get("formulas") or []), herbs=list(a.get("herbs") or []),
+                            term=a.get("term"), limit=int(a.get("limit", 30)))
+    return _brief(res, int(a.get("items", 40)))
+
+
+def _study_reading(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).reading(a["topic"]), int(a.get("items", 10)))
+
+
 def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
     reg = ToolRegistry()
     specs = [
@@ -414,6 +480,36 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  obj({"term": S}, ["term"]), _temporal_profile, family="analytics", permission="analysis:run"),
         ToolSpec("literature.modern_evidence", "Modern evidence records (Biomedical Space) for a concept or term.",
                  obj({"concept_id": S, "term": S}), _modern_evidence, family="literature", permission="literature:read"),
+        ToolSpec("study.concordance", "经文互见·集注: where a passage (or a text) recurs in the corpus — other copies of its work (同书异本), "
+                 "quotations (引文) and restatements (互见) — in date order, with a collation apparatus (异文/脱/衍/倒) by witness.",
+                 obj({"text": S, "passage_id": S, "min_coverage": N, "limit": I, "items": I}), _study_concordance,
+                 family="study", permission="classics:read", expensive=True,
+                 returns="base witness, hits (relation, coverage, locator, quote), apparatus, summary by period"),
+        ToolSpec("study.formula", "方源考: every written-out composition of a formula in date order; 原方 (earliest) and 通行方 (most witnessed), "
+                 "加减化裁, 同名异方, 同方异名, dose ratios, doses read in the measures of their period (not dosage guidance), 方歌.",
+                 obj({"name": S, "other_names": {"type": "boolean"}, "items": I}, ["name"]), _study_formula,
+                 family="study", permission="classics:read", returns="groups, earliest witness, indications, modifications, ratios, songs"),
+        ToolSpec("study.herb", "药性源流: flavour, nature, toxicity, channels (归经), direction and indications of a drug, work by work, "
+                 "with the first statement of each value.",
+                 obj({"name": S, "items": I}, ["name"]), _study_herb, family="study", permission="classics:read",
+                 returns="entries with locators and quotes, firsts, periods"),
+        ToolSpec("study.term", "术语源流: share of passages using a term by period (Wilson intervals, trend test), first attestations, "
+                 "collocates by period, where to read, and period-bound senses with candidate (never equivalent) modern concepts.",
+                 obj({"term": S, "sample_per_period": I, "items": I}, ["term"]), _study_term, family="study", permission="classics:read"),
+        ToolSpec("study.taboo", "避讳断代: taboo characters a book avoids and the edition date they imply (one book), or a survey of the store.",
+                 obj({"book_id": S, "min_chars": I, "items": I}), _study_taboo, family="study", permission="classics:read"),
+        ToolSpec("study.citations", "引书与引人: works and physicians each period cites (self-citation and copies excluded), their lineage; "
+                 "with a target, the reception of one work or physician by period.",
+                 obj({"target": S, "top": I, "items": I}), _study_citations, family="study", permission="classics:read", expensive=True),
+        ToolSpec("study.metrology", "历代度量衡: read a written dose (三两, 半升, 方寸匕) in the measures of a year — a historical reading, "
+                 "never dosage guidance.",
+                 obj({"dose": S, "year": N}, ["dose"]), _study_metrology, family="study", permission="classics:read"),
+        ToolSpec("study.cards", "学习卡片: cloze cards (方证, 组成, 药性, 经文) made from the verbatim classics, each with its source.",
+                 obj({"book": S, "formulas": {"type": "array", "items": S}, "herbs": {"type": "array", "items": S}, "term": S,
+                      "limit": I, "items": I}), _study_cards, family="study", permission="classics:read"),
+        ToolSpec("study.reading", "阅读门径: the works to read on a topic — first attestations, the densest treatments by period, "
+                 "monographs, case records, Republican syntheses — each with the reason.",
+                 obj({"topic": S, "items": I}, ["topic"]), _study_reading, family="study", permission="classics:read"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

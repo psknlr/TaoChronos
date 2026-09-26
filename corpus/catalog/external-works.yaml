@@ -26,8 +26,23 @@ works:
   - {id: jiayou_bencao, title: 嘉祐本草, aliases: [嘉祐, 嘉祐補註本草, 嘉祐补注本草, 補註本草], dynasty: 北宋, composition: [1057, 1061], status: lost}
   - {id: tujing_bencao, title: 本草图经, aliases: [图经, 圖經, 图经本草, 圖經本草, 本草圖經], authors: [苏颂], dynasty: 北宋, composition: [1061, 1062], status: lost}
   - {id: shu_bencao, title: 蜀本草, aliases: [蜀本, 重广英公本草], authors: [韩保昇], dynasty: 后蜀, composition: [938, 965], status: lost}
+  # --- lost works whose modern reconstructions (辑校本) are excluded from the corpus (exclusions.yaml): known here
+  #     through the quotations of later books, which is what a citation of them is
+  - {id: mingyi_bielu, title: 名医别录, aliases: [别录, 別錄, 名醫別錄, 名医别录], dynasty: 汉末至魏晋, composition: [200, 500], status: lost}
+  - {id: bencaojing_jizhu, title: 本草经集注, aliases: [本草經集注, 陶隐居本草, 陶隱居本草], authors: [陶弘景], dynasty: 南朝梁, composition: [480, 500], status: lost, notes: 有敦煌吐鲁番残卷}
+  - {id: xinxiu_bencao, title: 新修本草, aliases: [唐本草, 唐本, 英公唐本草, 唐新修本草], authors: [苏敬], dynasty: 唐, composition: [659, 659], status: lost, notes: 有日本传抄残卷}
+  - {id: xiaopin_fang, title: 小品方, aliases: [小品, 經方小品, 经方小品], authors: [陈延之], dynasty: 南朝宋齐, composition: [454, 473], status: lost}
+  - {id: jiyan_fang, title: 集验方, aliases: [集驗方, 集验, 集驗], authors: [姚僧垣], dynasty: 北周, composition: [557, 581], status: lost}
+  - {id: wupu_bencao, title: 吴普本草, aliases: [吳普本草, 吴普, 吳普], authors: [吴普], dynasty: 三国魏, composition: [220, 265], status: lost}
+  - {id: shiliao_bencao, title: 食疗本草, aliases: [食療本草, 食疗, 食療], authors: [孟诜, 张鼎], dynasty: 唐, composition: [701, 741], status: lost, notes: 有敦煌残卷}
+  - {id: haiyao_bencao, title: 海药本草, aliases: [海藥本草, 海药, 海藥], authors: [李珣], dynasty: 五代前蜀, composition: [907, 925], status: lost}
+  - {id: chan_jing, title: 产经, aliases: [產經], dynasty: 隋唐, composition: [550, 700], status: lost, notes: 《医心方》等引，撰者与年代待核}
+  - {id: zimu_milu, title: 子母秘录, aliases: [子母祕錄, 子母秘錄], dynasty: 唐, composition: [618, 907], status: lost, notes: 撰者与年代待核}
+  - {id: yingru_fang, title: 婴孺方, aliases: [婴孺, 嬰孺, 嬰孺方], dynasty: 唐, composition: [618, 907], status: lost, notes: 撰者与年代待核}
+  - {id: jishi_jiachuan, title: 吉氏家传, aliases: [吉氏家傳], dynasty: 宋, composition: [960, 1150], status: lost, notes: 《幼幼新书》等引，年代待核}
   - {id: yangsheng_lun_jikang, title: 养生论, aliases: [養生論], authors: [嵇康], dynasty: 魏, composition: [250, 262], status: extant, notes: 嵇康文，见《嵇中散集》《文选》}
   # --- extant non-medical works (类书, 字书, 经史子集, 道书) often cited by physicians
+  - {id: guangya, title: 广雅, aliases: [廣雅], authors: [张揖], dynasty: 三国魏, composition: [227, 232], status: extant}
   - {id: taiping_yulan, title: 太平御览, aliases: [御览, 御覽, 太平御覽], authors: [李昉 等], dynasty: 北宋, composition: [977, 983], status: extant}
   - {id: yiwen_leiju, title: 艺文类聚, aliases: [类聚, 類聚, 藝文類聚], authors: [欧阳询 等], dynasty: 唐, composition: [622, 624], status: extant}
   - {id: shiming, title: 释名, aliases: [釋名], authors: [刘熙], dynasty: 东汉, composition: [180, 220], status: extant}

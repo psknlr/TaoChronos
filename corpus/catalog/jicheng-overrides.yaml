@@ -250,6 +250,7 @@ C040: {composition: [1368, 1644], attribution: pseudepigraphic, notes_text: 旧�
 F006: {modern: true, composition: [1949, 2010], notes_text: 今人重编考释（书中所存清人序不代表成书年代）}
 N063: {modern: true, composition: [1937, 1937], authors: [曹颖甫, 姜佐景], notes_text: 曹颖甫医案，姜佐景编按，1937 年刊}
 G003: {composition: [1220, 1220], authors: [齐仲甫], dynasty: 南宋, work: nuke_baiwen, notes_text: 笈成元数据年份作 420—479（刘宋，误）；齐仲甫撰于嘉定十三年}
+H000: {composition: [1119, 1119], authors: [钱乙], dynasty: 北宋, notes_text: 笈成元数据年份作 1032（钱乙生年，误）；钱乙著，阎孝忠编集，宣和元年（1119）成书}
 G003a: {composition: [1220, 1220], authors: [齐仲甫], dynasty: 南宋, work: nuke_baiwen}
 O005: {composition: [1341, 1341], authors: [滑寿], dynasty: 元, work: shisijing_fahui, notes_text: 笈成元数据作 1314 年；滑寿自序署至正元年（1341）}
 O005a: {composition: [1341, 1341], authors: [滑寿], dynasty: 元, work: shisijing_fahui}

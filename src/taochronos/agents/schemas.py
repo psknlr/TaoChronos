@@ -106,6 +106,12 @@ OUTPUT_SCHEMAS: dict[str, dict[str, Any]] = {
         "links": arr(obj({"hypothesis_id": S, "record_id": S, "concept_id": S, "relation": S, "note": S}, ["record_id"])),
         "bridges": arr({"type": "object"}),
     }, ["links"]),
+    "SourcesDossier": obj({
+        "dossiers": arr(obj({"target": S, "term_id": {"anyOf": [S, {"type": "null"}]}, "kind": {"type": "string", "enum": ["formula", "herb", "term"]},
+                             "headline": S, "lines": STRS,
+                             "witnesses": arr(obj({"passage_id": S, "locator": S, "quote": S, "role": S}, ["passage_id", "quote"]))},
+                            ["target", "kind", "headline", "witnesses"])),
+    }, ["dossiers"]),
     "MetaReview": obj({
         "summary": S,
         "systemic_issues": arr(obj({"check": S, "count": I, "note": S}, ["check"])),

@@ -1,162 +1,171 @@
 # TaoChronos
 
-**面向中医古籍的可溯源多智能体知识发现系统**
-*A provenance-grounded, evidence-native research harness for knowledge discovery in Chinese medical classics.*
+**面向中医古籍的可溯源知识发现与治学系统**
+*A provenance-grounded research harness for the Chinese medical classics — for scholars, students and discovery.*
 
-[English README](README.en.md) · [架构](docs/architecture.md) · [智能体](docs/agents.md) · [发现引擎](docs/discovery.md) · [评测](docs/evals.md) · [数据格式](docs/data.md) · [路线图](docs/roadmap.md)
+[English README](README.en.md) · [治学](docs/study.md) · [架构](docs/architecture.md) · [智能体](docs/agents.md) ·
+[发现引擎](docs/discovery.md) · [评测](docs/evals.md) · [数据格式](docs/data.md) · [路线图](docs/roadmap.md) · [ADR](docs/adr/)
 
-TaoChronos 把一次古籍研究变成一个**可重放、可审计、可证伪**的过程：研究问题被写成不可变的研究契约，
-由研究主管智能体 **TaoChronos** 按需调度专科智能体（校勘、训诂、抽取、谱系、证据、模式挖掘、统计、
-假说、质疑、元评审……），每一个结论都必须落到**逐字可核的原文证据**上，并经过认识论门控 G0–G8，
-最后由人类专家定夺。
+TaoChronos 把 926 部中医古籍（约 1.19 亿字、198 万段）整理成一个**可检索、可断代、可溯源**的语料库，并在其上提供两层能力：
 
-> ⚠️ `corpus/demo` 是为演示方法而整理的**未经核验的节录**；全量语料（《四库全书·子部·医家类》100 部，
-> 汉籍仓库录文，CC BY-SA 4.0；笈成整理本 797 部，使用者提供；麦吉尔大学、维基文库与网络文本集去重后新增
-> 29 部）同样**未经本项目逐字校勘**。当代出版物、当代名医著作与现代校注本不入库。所有输出都是
-> **计算推断**（Computational Hypothesis Space），不是医学结论，也不是临床建议。
+- **治学**：按考据传统回答学者与学生天天要问的问题——这段经文还见于哪些书、各本异文如何（经文互见·集注）；
+  一首方的原方是什么、后世如何加减（方源考）；一味药的性味归经何时出现（药性源流）；一个术语何时盛衰、所指为何（术语源流）；
+  这个本子是哪个朝代的刻本（避讳断代）；各时代引谁的书、宗谁的说（引书与引人）；以及学习卡片、阅读门径与研究数据集。
+- **研究**：由研究主管智能体 **TaoChronos** 调度 16 个专科智能体，把一个研究问题变成**可重放、可审计、可证伪**的过程：
+  研究契约 → 证据基础 → 模式挖掘 → 假说 → 证伪 → 门控 G0–G8 → 专家核验。
+
+两层共享同一原则：**每一个结论都落到逐字可核的原文见证上**（书、卷篇节、年代、层次、录文来源与授权），规则抽取标明为机器阅读，
+由人去核对与定夺。
+
+> ⚠️ 语料为各来源的录文（四库本、笈成整理本、麦吉尔善本、维基文库与网络文本集），**均未经本项目逐字校勘**；`corpus/demo`
+> 是为演示方法整理的未经核验的节录。当代出版物、当代名医著作与现代校注本不入库。所有输出都是**文献研究与计算推断**，
+> 不是医学结论，也不是临床建议；历代剂量的折算只是历史计量的学术估值，**不构成任何用药剂量建议**。
 
 ---
 
-## 设计原则
+## 目录
 
-| 原则 | 在代码中的体现 |
-|---|---|
-| **Deterministic Harness, Stochastic Intelligence** | 内核（事件溯源、事务、门控、停止条件）完全确定；模型只在需要判断的角色中出现，且其输出必须通过模式校验与逐字核验 |
-| **Everything is a Plugin, not Everything is an Agent** | 语料、领域包、检索、模型、沙箱、存储都是插件；模式挖掘与统计是工具优先的确定性过程，不需要模型 |
-| **Claims, not facts** | 主张（claim）是“某书某版某处这样说”的超边，而非脱离语境的医学事实 |
-| **No forced single reading** | 有异文之处保留各读法的概率和“不确定”质量（≥0.05） |
-| **No medical anachronism** | 历史术语与现代概念之间只能是带类型的映射（related / partially_overlapping / uncertain / not_equivalent）；只有人类专家能认定“等价” |
-| **Propose, don't commit** | 智能体只能提议修改规范知识（术语、本体、金标准、领域记忆）；校验器或人类决定 |
-| **Evidence-first** | 没有逐字证据的假说不会被写入；伪造或改写的引文会被机械核验拦截 |
-| **The harness decides when to stop** | 证据饱和、无新来源、门控通过、预算耗尽或需要专家介入——由内核判断，而不是模型宣称“完成了” |
+1. [它能做什么](#一它能做什么)
+2. [快速开始](#二快速开始)
+3. [语料](#三语料)
+4. [治学：结合古籍特性的深度挖掘](#四治学结合古籍特性的深度挖掘)
+5. [研究：多智能体知识发现](#五研究多智能体知识发现)
+6. [使用场景](#六使用场景)
+7. [模型与部署](#七模型与部署)
+8. [评测与质量保证](#八评测与质量保证)
+9. [架构](#九架构)
+10. [目录结构](#十目录结构)
+11. [数据与授权](#十一数据与授权)
+12. [局限](#十二局限)
+13. [路线图与引用](#十三路线图与引用)
 
-## 快速开始
+---
+
+## 一、它能做什么
+
+| 面向 | 能力 | 入口 |
+|---|---|---|
+| **文献学研究者** | 经文互见与集注式校勘记（同书异本 / 引文 / 互见；异文、脱、衍、倒）；避讳断代；引书与引人网络、接受史 | `study concordance` · `study taboo` · `study citations` |
+| **方剂学、本草学、医史研究者** | 方源考（原方、通行方、加减化裁、同名异方、同方异名、配伍比例、历代计量折算、历代主治、方歌）；药性源流（性味、毒性、归经、升降浮沉的首见与演变）；术语源流（分期频率与区间、趋势检验、首见、搭配、义项） | `study formula` · `study herb` · `study term` |
+| **需要数据的研究者** | 带出处、年代与授权的开放数据表（Frictionless 数据包），可直接做统计与可视化 | `study dataset` |
+| **学生与自学者** | 方证填空卡、组成卡（附方歌）、药性卡、经文卡，导出 Anki；按“源头经典 → 历代发挥 → 专书 → 医案 → 近代”的阅读门径 | `study cards` · `study reading` |
+| **知识发现** | 多智能体研究：失传知识、概念演变、方剂演化、隐性关联、矛盾发现、佚书线索；逐字证据、证伪、门控、专家核验 | `research` · `report` · `workspace` · `review` |
+| **开发者** | 插件化内核、能力注册、工具网格（35 个工具）、智能体配置（YAML）、事件溯源与重放、评测与架构治理 | `agents` · `eval` · `governance` |
+
+## 二、快速开始
 
 ```bash
 pip install -e ".[dev]"            # Python ≥ 3.11；数据与配置位于仓库根目录（或设置 TAOCHRONOS_HOME）
-taochronos demo                    # 离线运行“消渴”示例研究（确定性过程，约 4 秒）
-taochronos agents                  # 查看 15 个智能体及其当前路由
-taochronos search "膜原最早见于何书"
-taochronos research "中风的病因学说如何演变？" --focus 中风 --tracks D2,D5 --forbid "中风=脑卒中"
-taochronos report <session>        # 12 节发现报告（Markdown）
+taochronos demo                    # 离线运行“消渴”示例研究（确定性过程，约 4 秒，演示语料）
+taochronos study formula 六味地黄丸 # 治学：方源考（没有全量语料时在演示语料上运行）
+taochronos agents                  # 16 个智能体及其当前路由
+```
+
+接入全量语料（原文不进入 git；各来源的抓取、编目、入库都可复现，见[第三节](#三语料)）：
+
+```bash
+taochronos corpus fetch kanripo && taochronos corpus ingest kanripo     # 四库全书·医家类 100 部
+taochronos corpus unpack jicheng jc_1_4_8_all.7z.001 jc_1_4_8_all.7z.002 jc_1_4_8_all.7z.003
+taochronos corpus catalog jicheng && taochronos corpus ingest jicheng    # 笈成整理本（使用者提供）
+taochronos corpus status                                                 # 书数、段数、字数、分期与分层统计
+```
+
+治学（有全量语料时自动使用 `full-corpus` 画像；默认输出 Markdown，`--json` 输出完整结果，`-o` 写文件）：
+
+```bash
+taochronos study concordance "太陽之為病，脈浮，頭項強痛而惡寒"    # 经文互见·集注
+taochronos study formula 小柴胡汤                                   # 方源考
+taochronos study herb 柴胡                                          # 药性源流
+taochronos study term 温病                                          # 术语源流
+taochronos study taboo                                              # 避讳断代（全库概览；或给出书的 id）
+taochronos study citations 张仲景                                   # 引用接受史（不给对象则输出引书网络）
+taochronos study cards --book 伤寒论 --formula 桂枝汤 --herb 柴胡 --anki cards.tsv
+taochronos study reading 温病                                       # 阅读门径
+taochronos study dataset --formula 桂枝汤 --herb 柴胡 --term 温病 --citations -o datasets/guizhi
+taochronos study metrology 三两 --year 200                          # 约41.4–46.8克（秦汉制）——历史计量，不是用药建议
+```
+
+研究：
+
+```bash
+taochronos research "肾气丸的组成与主治如何随时代演变？" --profile full-corpus --focus 肾气丸,六味地黄丸 --forbid 消渴=糖尿病
+taochronos report <session>        # 12 节发现报告（full-corpus 画像另附“源流考证”）
 taochronos workspace <session>     # 离线 HTML 发现工作台
 taochronos review <session> <hypothesis> --approve --expert 张三   # Gate G7：只有人能通过
-taochronos eval                    # TaoChronos-Eval 全部评测
+taochronos eval                    # TaoChronos-Eval 全部评测（约半分钟）
 taochronos governance              # 架构策略检查
 ```
 
-使用 Claude 作为推理模型（判断型角色走模型，工具型角色仍为确定性过程）：
+## 三、语料
 
-```bash
-pip install -e ".[anthropic]"
-export ANTHROPIC_API_KEY=...
-taochronos demo --profile claude   # Opus 5（前沿层）/ Sonnet 5（中层）/ Haiku 4.5（小层）
-```
+| 来源 | 授权 | 入库 | 说明 |
+|---|---|---|---|
+| 汉籍仓库 KR3e《四库全书·子部·医家类》 | CC BY-SA 4.0 | **100 部**，2566 万字 | 文渊阁四库本 / 四部丛刊本白文；逐部书目含作者、成书年、学派、版本与分层断代 |
+| 笈成《笈成檢閱系統》v1.4.8 | 使用者提供，仅本地研究 | **797 部**（857 部剔除 60 部），约 9230 万字 | 整理者新式标点；标题、方剂块、注疏、校记、缺字按标记解析 |
+| 麦吉尔大学图书馆善本妇科文献 | 公有领域 | **5 部** | 清刻本与抄本，白文 |
+| 维基文库 Category:中醫（经 Wikimedia 转储） | CC BY-SA 4.0 | **15 部**（625 部中去重后新增） | 天回医简、五十二病方、民国三种“古本”伤寒杂病论、东医宝鉴等 |
+| TCM-Ancient-Books / tcmoc | 未声明，仅本地研究 | **8 部** / 0 部 | 多为笈成本的简体转换副本，逐部去重 |
+| Hugging Face classical-tcm-canon | proprietary-commercial，仅本地研究、不再分发 | **1 部** | 张志聪伤寒论宗印·集注 |
+| 汉籍仓库目录 KR-Catalog | CC BY-SA 4.0 | 书目 | 为四库 100 部补上 132 位责任者的职能与生卒 |
 
-Claude 提供者默认开启服务端拒答回退（`fallbacks="default"`，适用于 Opus 5）；若模型拒答、输出无法通过
-模式校验或预算耗尽，该任务会回退到确定性过程，并把回退记录为一条 Decision。也支持 OpenAI 兼容端点
-（DeepSeek、Grok、Gemini、本地 vLLM/Ollama）与外部命令子智能体，见 [docs/agents.md](docs/agents.md)。
+合计 **926 部、约 1.19 亿字、198 万段**。
 
-## 全量古籍语料
+- **准入**：语料只收历史文献。当代出版物、当代名医著作、现代校注本（含亡佚古书的现代辑复本）逐部人工复核后剔除
+  （`corpus/catalog/exclusions.yaml`，自动筛查补其余）；民国著作（1912—1949）作为历史文献保留。
+- **去重**：来源按可信度排序（四库 → 笈成 → 麦吉尔 → 维基文库 → 网络文本集），每部候选书以规范化汉字的 12 字片段与已收书比对，
+  重合度达阈值即判为副本、逐部记录所重复的书与重合度。
+- **断代**：人工覆盖表 → 四库书目 → 书籍信息的公元年、年号与朝代 → 序跋落款 → 同一著作其他录本 → 同一作者其他著作；
+  注疏、新校正、后补篇章、附方按层单独断代（王冰注 762、新校正 1068、证类本草各家注……），不能分离的按最晚一层保守断代。
+  无从考定者按清代计，绝不提前。
+- **规范化只用于匹配**：OpenCC 繁简 + Unihan 异体 + 医籍语境人工校订（䜴→豉、茰→萸、㪚→散……），长度不变、原文永不改动；
+  四库白文在带虚拟标点的“视图”上抽取，每个引文映射回原文。
+- **检索**：SQLite 语料库 + 双字 FTS5 全文索引，任意长度的词、短语与邻近查询；研究时按问题分期分层抽样，否证检查则查询整个语料库。
 
-演示语料之外，TaoChronos 接入了汉籍仓库（Kanseki Repository）**KR3e 医家类**——即《四库全书·子部·医家类》
-全部 **100 部**医籍：约 **2566 万字、35.4 万段**。原文不进入 git；抓取、入库、索引都可复现：
+详见 [docs/data.md](docs/data.md) 与 [ADR 0003](docs/adr/0003-corpus-store-and-scoped-research.md)。
 
-```bash
-taochronos corpus fetch kanripo     # 逐个浅克隆 100 个文本仓库到数据目录，写 corpus/sources.lock.yaml（提交号、授权、体量）
-taochronos corpus ingest kanripo    # 解析 → 分层断代 → SQLite 语料库 + 全文索引（约 3 分钟）
-taochronos corpus status            # 书数、段数、字数、分期、分层统计；索引是否与当前异体表一致
-taochronos lexicon harvest          # 从全量语料采集候选方名（~12000）与药名（~3000，含“一名”异名与纲目首见出处）
-taochronos research "消渴的概念如何随时代演变？" --profile full-corpus --focus 消渴 --forbid 消渴=糖尿病
-```
+## 四、治学：结合古籍特性的深度挖掘
 
-- **逐部书目**（`corpus/catalog/kanripo-kr3e.yaml`）：作者、朝代、成书年、类别、学派、版本，以及**分层断代**——
-  王冰注（762）、新校正（1068）、运气七篇（王冰补入，762）、证类本草的陶注/唐本注/开宝/嘉祐/图经/衍义各层、
-  四库提要（按“乾隆 N 年”解析）、卷首序目（按版本）。层次无法可靠分离的传本，一律按最晚一层保守断代，
-  并把所传的早期文本年代记为 `t_citation`。
-- **繁简与古籍异体归一**（`domains/classics/script/`）：OpenCC 繁简表 + Unihan 异体 + 按医籍语境人工校订
-  （䜴→豉、䓤→葱、茰→萸、㪚→散、讝→谵、痟→消……），只用于匹配，原文永不改动。
-- **白文机器断句**：四库本无标点，抽取器在带虚拟标点的“视图”上工作，再把每个引文与论元位置映射回原文，
-  逐字溯源不断链；断句所致的症状对立只记为“表面矛盾”，不生成假说。
-- **规模化研究**：Curator 用全文索引按问题词、异名、相关词与义项线索召回候选，按时期分层抽样成可审计的
-  抽样框架（记录在语料清单里）；而“后世是否再出现”“失传”之类的否证检查由 Skeptic 直接查询**整个语料库**
-  （同时遵守时间留出与书目排除），不受抽样影响。
+治学层（`plugins/classics/study`，[docs/study.md](docs/study.md)，[ADR 0004](docs/adr/0004-study-layer.md)）是一组确定性的函数，
+回答文献研究与学习中的具体问题。它们的结果都由**见证**构成——逐字引文 + 段落编号 + 《书》卷·篇·节 + 年代与时期 + 文本层次 +
+录文来源与授权——每一句结论都能回查原文。
 
-### 笈成中医古籍整理本（857 部）
+### 古籍的特性与相应的处理
 
-使用者提供的《笈成檢閱系統》v1.4.8 资料（`jc_1_4_8_all.7z`，分 3 卷）也接入同一个语料库：内经难经、伤寒金匮、
-本草、方剂、温病、内外妇儿各科、针灸、诊法、医案、综合与丛书，共 857 部，剔除当代与现代整理之作 60 部后
-入库 **797 部、约 9230 万字、160 万段**，都有整理者的新式标点。
+| 古籍特性 | 治学层的处理 |
+|---|---|
+| 一书多本、后书转引、不注出处的沿袭 | 经文互见区分**同书异本 / 引文 / 互见**，并为高覆盖的见证出**校勘记**（异文、脱、衍、倒，逐条列出见证） |
+| 避讳改字改名 | 薯蓣→薯药（唐代宗）→山药（宋英宗）、玄参→元参、丸→圆（宋钦宗）等全部写法都检索；避讳用字反过来给出**版本年代下限** |
+| 同名异方、同方异名 | 方剂按药味组成分组：同名而组成不同的分开，组成相同而名称不同的按药味检出 |
+| 笈成本把方名、药名印为条目标题 | 全库“条目标题”索引（缓存）找到正文中不出现名称的条目，并跨段读取主治、组成与服法 |
+| 历代度量衡不同 | 剂量按见证本身年代的计量折算（秦汉一两约 13.8–15.6 克，宋以后约 37–41 克；“分”在 960 年前后含义不同）；配伍比例与计量无关 |
+| 学说有时代性 | 归经、升降浮沉是金元学说，本经无载是应然而非缺失；给出每一性能的**首见**及其年代 |
+| 断代不确定、注疏晚于正文 | “最早”按**可能的最晚年代**（terminus ante quem）排序，只知朝代的书不会排在有确年的书之前；早于被引者的引用（注本中随正文断代的后人按语）另计 |
+| 各时代存世文献多寡悬殊 | 术语频率比较“含该词段落 / 该期全部段落”，给 95% Wilson 区间与 Cochran–Armitage 趋势检验，不比较绝对数 |
+| 方剂靠歌诀传习 | 在歌诀类书中找五言、七言、点到方名并念出药味（含“姜”“芍”“茱”“薯”之类省称）的**方歌**，逐行分段的歌诀自动拼合 |
 
-```bash
-taochronos corpus unpack jicheng jc_1_4_8_all.7z.001 jc_1_4_8_all.7z.002 jc_1_4_8_all.7z.003  # 合并分卷、校验、解压、写入锁定文件
-taochronos corpus catalog jicheng   # 生成逐部书目与异体字表（覆盖表 corpus/catalog/jicheng-overrides.yaml 人工校订）
-taochronos corpus reindex           # 异体字表变动后重建索引
-taochronos corpus ingest jicheng    # 入库（约 5 分钟）
-```
+### 九个功能与全量语料上的实例
 
-- **标记解析**：`[h1]`–`[h6]` 标题入定位（卷/篇/节），`[box]` 方剂块单独成段（kind=formula），`[z]/[s]` 注疏
-  按书目分层或以（…）内联，`[j]` 校记与 `[id]` 后人编号不进正文（编号保留为“第 N 条”定位），`[c]` 缺字按
-  缺字表还原为 Unicode，无法还原的记为 〓 并保留组字式。
-- **断代**：人工覆盖表 → 四库书目中同一著作的年代 → 书籍信息中的公元年、年号（「明‧洪武戊午年」）与朝代
-  （二者矛盾时以序跋落款所在范围为准，否则取较晚者）→ **序跋落款年代**（「康熙甲戌歲陽月……汪昂書」，
-  作者自序优先）→ 同一著作的其他录本 → 同一作者其他著作 ±20 年；实在无从考定的 149 部按清代保守计，
-  绝不提前。有落款的序跋单独按落款年代断代，无落款的序跋凡例按 1911 年计。
-- **异体字**：笈成异体字表中的罕见异体（非 GB 2312 字）归并到组内唯一的通用字；“易誤判字”“一對多簡化字”
-  两节（原表注明“意義往往不同”）不合并。
-- **研究范围**：民国著作（类别“近代”，1912—1949）作为历史文献保留；非医籍（易经等）入库但默认不进入研究，
-  除非研究契约显式指定类别。
-
-### 剔除范围：当代出版物、当代名医著作、现代校注本
-
-语料只收历史文献。`corpus/catalog/exclusions.yaml` 逐部记录人工复核的决定，自动筛查（`policy.py`）补其余：
-
-| 类别 | 含义 | 例 |
+| 功能 | 做什么 | 全量语料实例（均为机器阅读，附原文可核） |
 |---|---|---|
-| 当代出版物 | 1949 年以后成书或编纂 | 辞典、教材、《思考中医》《中医之钥》、今人汇编与读物 |
-| 当代名医著作 | 当代医家的著作与医案 | 程门雪、邢锡波、赵绍琴、《名老中医之路》《名老中医经验集》 |
-| 现代校注本 | 今人校注、译注、阐释本，以及亡佚古书的现代辑校本 | 徐荣斋《重订通俗伤寒论》、唐步祺阐释本、《新修本草》《小品方》等辑复本 |
+| **经文互见·集注** `study concordance` | 一段经文在全库的所有见证，按年代排列；同书异本 / 引文 / 互见；校勘记 | 「太阳之为病，脉浮，头项强痛而恶寒」：46 部著作 113 处见证（8 处他本、10 处引文、95 处互见），《千金翼方》无“脉浮”；「上古之人……食饮有节」：47 处见证，其中 32 处为引文，“食饮→饮食”之倒见于 8 本 |
+| **方源考** `study formula` | 全部写出组成的条文；原方、通行方、加减化裁、同名异方、孤例；同方异名；配伍比例；当时计量折算；历代主治；加减用法；方歌 | 六味地黄丸：84 部著作 266 条组成，原方·通行方（69 条见证）出《小儿药证直诀》地黄丸（1119），地黄 8：山茱萸 4：山药 4：泽泻 3：牡丹皮 3：茯苓 3；而“地黄丸”之名最早属《千金要方》的另一首方（同名异方）。小柴胡汤：原方出宋本《伤寒论》，同方异名有黄龙汤、柴胡汤，方歌见《汤头歌诀》《长沙方歌括》 |
+| **药性源流** `study herb` | 每部本草的性味、毒性、归经、升降浮沉、主治与异名；各性能首见 | 柴胡：30 部本草著作，本经“味苦平无毒”，归经“足少阳”首见《汤液本草》（1289–1308）；山药：本经作“署豫”，证类作“薯蓣”，汤液作“山药”（归手太阴） |
+| **术语源流** `study term` | 分期频率（每万段）与区间、趋势检验、各书首见、各期搭配、论述最密之书、历史义项与现代候选概念 | 温病：5795 段，明代每万段 15、清代 39、民国 252（z = +29.6）；消渴：汉代每万段 66、明代 38（z = −8.3），搭配由“小便不利”转向“消中”“多饮” |
+| **避讳断代** `study taboo` | 每条讳例的本字与讳改用字计数、判定（避讳 / 未避 / 兼用），版本年代下限；全库概览 | 20 万字以上的 138 部著作中，8 部的传本晚于成书：千金二书“丸→圆”（钦宗 1126 以后的宋刻），外台、圣惠“玄”讳（1012 以后），本草品汇精要“玄→元”（清抄），女科证治准绳“宁→甯”（道光以后） |
+| **引书与引人** `study citations` | 各期所引著作与医家（排除自引、同书他本、作者自称）；医家引称链；某书某人的接受史 | 明代最常引朱震亨（2820）、张机（2103）、李杲（1621），清代张机（3499）；宋金元日华子（1876）居首（证类本草所引）；张仲景的接受始见于《针灸甲乙经》《脉经》 |
+| **学习卡片** `study cards` | 方证填空、组成（附方歌）、药性（本经与后世）、经文填空；Anki 导出 | 「太阳病，头痛，发热，汗出，恶风，〔　　〕主之。」→ 桂枝汤（《伤寒论》第 13 条） |
+| **阅读门径** `study reading` | 源头经典 → 历代发挥 → 专书 → 临证医案 → 近代汇通，每部书注明理由 | 温病：素问、灵枢、难经、伤寒论、甲乙经 → 医经溯洄集、尚论后篇、温热逢源 → 温病条辨 → 医案 → 止园医话 |
+| **研究数据集** `study dataset` | 组成见证、药味剂量（含当时计量折算）、本草条目、术语分期、引用边五张表 + `datapackage.json` | 每行带段落编号、出处、年代与授权；**只导出短引文（≤120 字），不导出原文** |
 
-自动筛查看书名（校注、语译、今译、经验集、验案精选……）、1940 年以后的年份、现代单位与机构（克、毫升、医院、
-出版社……）、注释体例（【注释】【语译】）、编号脚注，以及辑本中今人所加的出处标记；`keep: true` 可推翻误判
-（如明·薛己《校注妇人良方》）。今人所写的内容提要、整理说明、点校说明、电子版序与网站署名一律不进正文。
-笈成本剔除 60 部（当代出版物 19、当代名医著作 24、现代校注本 17）；同一著作在其他来源中的副本沿用同一判定。
+治学层同样是研究流程的一部分：`full-corpus` 画像下，**TaoChronos-Scholar** 在第 0 轮对焦点方剂、药物与术语做源流考证，
+结果作为发现报告的附录“源流考证”（描述文本，不是假说，不经门控）。
 
-### 更多来源与去重
-
-```bash
-taochronos corpus fetch|catalog kr-catalog    # 汉籍仓库目录 KR3e：责任者、职能（撰/注/校正）、生卒与四库册页
-taochronos corpus fetch|catalog|ingest mcgill # 麦吉尔大学图书馆善本妇科文献（公有领域）
-taochronos corpus fetch|catalog|ingest wikisource         # 维基文库 Category:中醫（经 Wikimedia 转储，不走 API）
-taochronos corpus fetch|catalog|ingest tcm-ancient-books  # GitHub xiaopangxia/TCM-Ancient-Books
-taochronos corpus fetch|catalog|ingest tcmoc              # GitHub lab99x/tcmoc
-taochronos corpus fetch|catalog|ingest hf-tcm-canon       # Hugging Face wangekxy/classical-tcm-canon
-```
-
-这些集合大量互相转抄（多为笈成本的简体转换本），所以入库前逐部与语料库比对：取规范化汉字的 12 字片段
-（按内容定锚抽样，约 1/64），计算“候选文本有多少落在某部已收书里”。来源按可信度排序（四库 → 笈成 → 麦吉尔 →
-维基文库 → 网络文本集），每个来源只与排在它前面的来源及自身比对，结果与入库先后无关。
-网络副本的判定阈值：与单部书重合 ≥ 0.85，或前十部合计 ≥ 0.9；简体副本因转换丢字，同一著作 ≥ 0.4、
-任一部书 ≥ 0.5 即视为副本。麦吉尔抄刻本是独立版本，只记录相似度、不判重复。
-
-| 来源 | 读入 | 新增入库 | 副本 | 剔除 |
-|---|---|---|---|---|
-| 麦吉尔大学善本妇科文献（公有领域） | 5 | **5**（清刻本与抄本，白文，36.6 万字） | 0 | 0 |
-| 维基文库 Category:中醫（CC BY-SA 4.0） | 625 | **15**（天回医简、五十二病方、民国三种“古本”伤寒杂病论、东医宝鉴等，34 万字） | 590 | 19 |
-| TCM-Ancient-Books | 701 | **8**（医略、医源、灵药秘方、外经微言、医法圆通、眼科奇书等，37 万字） | 647 | 45 |
-| tcmoc | 701 | 0（全为上一来源的副本） | 655 | 45 |
-| classical-tcm-canon（Hugging Face） | 115 | **1**（张志聪伤寒论宗印·集注，31 万字） | 110 | 4 |
-
-全部合计 **926 部、约 1.19 亿字、198 万段**。汉籍仓库目录（KR-Catalog）为四库 100 部补上 132 位责任者的
-职能与生卒，并列出 6 处与本项目书目不一致之处待核（如陈言生卒）。维基文库的“古本”伤寒杂病论（长沙、康平、
-白云阁）按民国问世年代断代；Hugging Face 数据集卡片声明为 proprietary-commercial，只作本地研究、不再分发。
-
-## 一次研究如何运行
+## 五、研究：多智能体知识发现
 
 ```
 研究契约 GoalSpec（不可变：问题、焦点术语、轨道、时间范围与留出、禁止假设、必需门控）
    │
-   ├─ 第 0 轮 · 证据基础   TaoChronos 规划 → 语料圈定 → 校勘 → 义项消歧 → 主张抽取(+G0–G4) → 谱系 → 证据账本 → 术语映射(仅提议)
+   ├─ 第 0 轮 · 证据基础   TaoChronos 规划 → 语料圈定 → 校勘 → 义项消歧 → 主张抽取(+G0–G4) → 谱系 → 源流考证 → 证据账本 → 术语映射(仅提议)
    ├─ 第 1 轮 · 发现       模式挖掘 D1–D5 → 统计检验 → 演化图谱 → 假说生成 → 证伪 → 修订 → 再证伪
    │                       → 跨空间桥接(G8) → 门控 G0–G8 → 评分与 Elo 锦标赛 → 元评审
    └─ 第 2+ 轮 · 深化      按元评审建议：为缺乏独立来源的假说寻找证据、敏感性分析……或停止
@@ -172,7 +181,8 @@ taochronos corpus fetch|catalog|ingest hf-tcm-canon       # Hugging Face wangekx
 | TaoChronos-Semanticist | 历史语义：时代义项消歧、同名异义风险 | hybrid |
 | TaoChronos-Extractor | 主张超边抽取（逐字跨度） | hybrid |
 | TaoChronos-Ontologist | 带类型的古今映射（仅提议） | hybrid |
-| TaoChronos-Lineage | 引用/转录/改写/化裁/反驳谱系 | procedure |
+| TaoChronos-Lineage | 引用 / 转录 / 改写 / 化裁 / 反驳谱系 | procedure |
+| **TaoChronos-Scholar** | 治学：焦点术语在全库的源流考证（方源考 / 药性源流 / 术语源流） | procedure |
 | TaoChronos-Evidence | 证据账本；为假说寻找独立见证 | hybrid |
 | TaoChronos-PatternMiner | D1–D5 与佚书线索（工具优先） | procedure |
 | TaoChronos-Statistician | 显著性、BH 校正、经验排名、覆盖度 | procedure |
@@ -182,25 +192,75 @@ taochronos corpus fetch|catalog|ingest hf-tcm-canon       # Hugging Face wangekx
 | TaoChronos-ModernEvidence | 现代证据只作背景；跨空间桥接假说须过 G8 | hybrid |
 | TaoChronos-MetaReviewer | 系统性问题与下一轮建议 | hybrid |
 
-## 发现轨道
+**发现轨道**
 
 | 轨道 | 做什么 | 演示语料中的例子（均为待专家核验的计算推断） |
 |---|---|---|
 | D1 失传知识 | 在分界年之前出现、之后消失而概念仍在使用的关联；文本自述的用法变迁 | 《本草纲目》自述忍冬“昔人…后世…”用法之变 |
-| D2 概念演变 | 各时期语境分布的 JSD、置换检验、主导义项 | 消渴：隋唐“多饮多尿之病”→宋金元“三消体系”（样本少，标为探索性） |
+| D2 概念演变 | 各时期语境分布的 JSD、置换检验、主导义项 | 消渴：隋唐“多饮多尿之病”→宋金元“三消体系” |
 | D3 方剂演化 | 化裁谱系、稳定核心、加减、避讳改名 | 肾气丸→六味地黄丸→左/右归丸，核心 地黄·山茱萸·山药；薯蓣→山药 |
 | D4 隐性关联 | 关联规则（Fisher + BH）、Adamic–Adar 链接预测 | 大便黑 ⇒ 犀角地黄汤；“渴⇢桂枝汤”被质疑者以《伤寒论》第 26 条鉴别否决 |
 | D5 矛盾发现 | 矛盾 / 条件性 / 表面（异文、同名异义）/ 支持 | 半身不遂：《金匮》风 vs《医林改错》元气亏损；第 176 条“表里字差” |
 | 佚书线索 | 被引用却不在语料中的著作及其年代下限 | 《古今录验方》：见引于《外台秘要》，成书早于约 752 年 |
 
-每个假说都经过：逐字证据 → 质疑者检查 → 必要时收窄修订（范围、义项、读法、探索性……）→ 门控 G0–G8 →
-发现分数 `D = w1·E + w2·N + w3·R + w4·T + w5·F − w6·A`（始终与分量一起报告）→ 置信向量（文本、训诂、
-语义、抽取、跨源、时间、统计、现代映射——现代生物医学有效性默认 **unknown**）。
+**证据、门控与置信度**：每个假说都经过逐字证据 → 质疑者检查 → 必要时收窄修订（范围、义项、读法、探索性）→ 门控 G0–G8
+（来源、逐字、校勘、义项、抽取、独立来源、时间、专家、现代证据）→ 发现分数 `D = w1·E + w2·N + w3·R + w4·T + w5·F − w6·A`
+（始终与分量一起报告）→ 置信向量（文本、训诂、语义、抽取、跨源、时间、统计、现代映射；现代生物医学有效性默认 **unknown**）。
+历史术语与现代概念之间只能是带类型的映射（related / partially_overlapping / uncertain / not_equivalent），只有人类专家能认定“等价”。
 
-## 评测（TaoChronos-Eval）
+### 设计原则
 
-`taochronos eval` 在演示语料上运行（约 45 秒）。金标准由作者为演示语料构建并在开发中使用，
-**只作回归测试，不是无偏基准**（见 [evals/gold/README.md](evals/gold/README.md)）。
+| 原则 | 在代码中的体现 |
+|---|---|
+| **Deterministic Harness, Stochastic Intelligence** | 内核（事件溯源、事务、门控、停止条件）完全确定；模型只在需要判断的角色中出现，其输出必须通过模式校验与逐字核验 |
+| **Everything is a Plugin** | 语料、领域包、检索、治学、模型、沙箱、存储都是插件；模式挖掘、统计与治学是工具优先的确定性过程 |
+| **Claims, not facts** | 主张是“某书某版某处这样说”的超边，而非脱离语境的医学事实 |
+| **No forced single reading** | 有异文之处保留各读法的概率和“不确定”质量 |
+| **No medical anachronism** | 古今概念只有带类型的映射；“等价”只能由专家认定 |
+| **Propose, don't commit** | 智能体只能提议修改规范知识；校验器或人类决定 |
+| **Evidence-first** | 没有逐字证据的结论不会写入；伪造或改写的引文被机械核验拦截 |
+| **The harness decides when to stop** | 证据饱和、无新来源、门控通过、预算耗尽或需专家介入——由内核判断 |
+
+## 六、使用场景
+
+**研究者**
+
+- *一首方的源流*：`study formula 肾气丸` → 原方（《金匮要略》崔氏八味丸）、通行方、同方异名（桂附地黄丸/汤）、各本剂量比例、
+  历代主治与加减；`--json` 或 `study dataset --formula 肾气丸` 得到逐条见证表，做进一步统计。
+- *一味药的性能演变*：`study herb 附子` → 本经“温、有毒”，《证类本草》“大毒”，《汤液本草》“大热、阳中之阳”，
+  归经之说在所收本草中首见于清初《本草择要纲目》（手少阳、足少阴、三焦、命门）——每一变化都给出首见之书、年代与原文。
+- *一个概念的历史语义*：`study term 中风` → 分期频率与趋势、各期搭配（明代语境中“半身不遂”“拘急”突出）、历史义项；
+  再以 `research … --focus 中风 --forbid 中风=脑卒中` 做可证伪的概念演变研究。
+- *一部书的版本*：`study taboo <book_id>` → 讳例计数与版本年代下限；与 `study concordance` 的同书异本比对互为印证。
+- *学术传承*：`study citations` 看各期宗主；`study citations 李杲` 看东垣学说的接受史。
+- *可复现发表*：数据包带语料指纹（书数、段数、来源、规范化版本、目录摘要），同一语料上重算结果一致。
+
+**学生与自学者**
+
+- `study cards --book 伤寒论 --anki shl.tsv`：伤寒论全部“……者，某方主之”的方证填空卡，导入 Anki 间隔复习；
+- `study cards --formula 桂枝汤 --formula 小柴胡汤`：组成、剂量、炮制、煎服法，附方歌；
+- `study cards --herb 柴胡 --herb 附子`：本经与后世本草的性味归经对照；
+- `study reading 温病`：从素问、伤寒到温病条辨的阅读门径，每部书写明为什么读；
+- `study concordance`：读到一句经文，看它在历代被谁引用、怎样改写。
+
+## 七、模型与部署
+
+默认完全离线：所有智能体都有确定性过程（procedure），治学层不需要模型。判断型角色可以走模型：
+
+```bash
+pip install -e ".[anthropic]"
+export ANTHROPIC_API_KEY=...
+taochronos demo --profile claude   # Opus 5（前沿层）/ Sonnet 5（中层）/ Haiku 4.5（小层）
+```
+
+Claude 提供者默认开启服务端拒答回退（`fallbacks="default"`，适用于 Opus 5）；若模型拒答、输出无法通过模式校验或预算耗尽，
+该任务回退到确定性过程，并把回退记录为一条 Decision。也支持 OpenAI 兼容端点（DeepSeek、Grok、Gemini、本地 vLLM/Ollama）、
+外部命令子智能体与 Research Code Mode，见 [docs/agents.md](docs/agents.md)。
+
+## 八、评测与质量保证
+
+`taochronos eval` 在演示语料上运行（约半分钟）。金标准由作者为演示语料构建并在开发中使用，**只作回归测试，不是无偏基准**
+（见 [evals/gold/README.md](evals/gold/README.md)）。
 
 | 套件 | 结果 |
 |---|---|
@@ -213,37 +273,83 @@ taochronos corpus fetch|catalog|ingest hf-tcm-canon       # Hugging Face wangekx
 | Temporal | 时代约束 6/6、最早出处 6/6、时代泄漏 0 |
 | Anachronism | 10/10 陈述、8/8 映射；智能体断言“等价”被拦截 |
 | Recovery | 4/4 崩溃点恢复后科学状态哈希一致；并行 = 串行；重放一致 |
-| Time Machine（1368） | 可判定预测 2/3 成立（左/右归丸去“三泻”，使“核心保留”预测失败）；零泄漏 |
+| Time Machine（1368） | 可判定预测 2/3 成立；零泄漏 |
 | Source rediscovery | 素问/灵枢/伤寒论逐一留出后 3/3 被重新推断，年代下限一致 |
 | Ablations | 去义项路由：最早出处 0.67；去义项消歧：矛盾 0.83；Context OS 令上下文 −94%；关闭质疑者：1 个伪假说存活 |
 
-## 目录
+另有 111 个单元与集成测试（`pytest`，含各来源格式样例与一个为治学层编写的合成语料 `tests/fixtures/study`），
+以及架构治理检查（`taochronos governance`：分层依赖、内核中立、模型 SDK 隔离、智能体规则）。CI 在 Python 3.11/3.12 上运行治理、测试、
+快速评测与演示研究。
+
+## 九、架构
+
+```
+protocol      协议与数据模型（段落、主张、证据、假说、事件、输出模式）
+kernel        事件溯源、事务、重放、调度、策略、钩子、预算、上下文 OS、记忆、停止条件、可观测性
+capabilities  与提供者无关的接口（LLM 等）
+science       D1–D5 发现引擎、统计、评分、门控、溯源
+verification  逐字核验与溯源链
+tools         工具网格：philology · retrieval · knowledge · analytics · study · literature · validation（35 个工具）
+plugins       classics（语料、语料库、领域包、校勘、引用、文本复用、治学）· knowledge · retrieval · models · sandbox · storage …
+agents        AgentSpec、路由、LLM 循环、确定性过程、Code Mode、子智能体
+engine        研究引擎（操作循环与科学循环、分支、锦标赛、报告）
+```
+
+业务代码只向**能力注册表**请求能力（`corpus`、`domain`、`philology`、`lineage`、`retriever`、`study`、`llm`……），从不直接导入提供者；
+插件由画像（`profiles/*.yaml`）装配。工具不导入插件，智能体只通过能力与工具行动——这些都由 `taochronos governance` 强制检查。
+详见 [docs/architecture.md](docs/architecture.md)。
+
+## 十、目录结构
 
 ```
 architecture-policy.yaml   架构策略（分层、内核中立、SDK 隔离、智能体规则）
-agents/                    15 个 AgentSpec（YAML）
-skills/                    SKILL.md 能力包
-profiles/                  配置画像：full-discovery、classics-basic、formula-discovery、historical-disease、claude
-domains/classics/          领域包：时期、异体字、词表、历史义项、现代概念、本体、引用、既有认识
-corpus/                    演示语料（未经核验）、现代证据摘要、全量书目 catalog/ 与来源锁定 sources.lock.yaml
+agents/                    16 个 AgentSpec（YAML）
+skills/                    SKILL.md 能力包（含 source-criticism 治学方法）
+profiles/                  配置画像：full-discovery、full-corpus、classics-basic、formula-discovery、historical-disease、claude
+domains/classics/          领域包：时期、异体字、词表、历史义项、现代概念、本体、引用、既有认识，
+                           以及治学数据 taboo.yaml（避讳）、metrology.yaml（度量衡）、physicians.yaml（医家）、drug_families.yaml（药物归类）
 domains/classics/script/   繁简与古籍异体归一表（OpenCC / Unihan / 人工校订）
 domains/classics/lexicon-harvested/  从全量语料采集的候选方名、药名（仅 full-corpus 画像加载）
+corpus/                    演示语料（未经核验）、现代证据摘要、全量书目 catalog/ 与来源锁定 sources.lock.yaml
 evals/gold/                评测金标准
-src/taochronos/
-  protocol/  kernel/  capabilities/  science/  verification/  tools/  plugins/  agents/  engine/  evals/  workspace/
-tests/                     96 个测试（含汉籍仓库、笈成、麦吉尔、维基文库、网络文本集与 KR 目录的格式样例 fixtures/）
-docs/                      架构、智能体、发现、评测、数据、ADR、路线图
+src/taochronos/            protocol/ kernel/ capabilities/ science/ verification/ tools/ plugins/ agents/ engine/ evals/ workspace/
+  plugins/classics/study/  治学层：concordance · formulas · herbs · terms · taboo · network · metrology · learning · dataset · render
+tests/                     111 个测试（fixtures/ 含各来源格式样例与治学合成语料）
+docs/                      治学、架构、智能体、发现、评测、数据、ADR、路线图
 ```
 
-## 局限
+## 十一、数据与授权
 
-- 演示语料很小（23 部书、131 段节录），且为未经核验的整理本；评测数值只具说明意义。
-- 全量语料为汉籍仓库录文（文渊阁四库本 / 四部丛刊本）、笈成整理本与少量其他来源，均未经本项目校勘；四库本有
-  清人删改与避讳改字，白文断句为规则式，长段内可能把相邻条文并入同一主张；笈成本为志愿者录入，品质不一，断代
-  在无人工考定时依据其书籍信息与序跋落款，无从考定者只能保守定为“清代或更早”；采集的方名、药名是候选，需专家审定。
-- 去重按文本重合度判定，同一版本的两个录本与不同版本之间的界线并不绝对（四库本与笈成本同书的重合度在
-  0.5—0.93 之间）；被判为副本的书在各来源书目中逐部记录其所重复的书与重合度，可以人工改判。
-- 规则抽取器与领域词表为演示而编写，覆盖有限；真实研究需要专家构建的词表、义项与金标准。
-- 组成相似度不足以区分真正的化裁与趋同组方（见 Lineage 评测中的两条伪谱系）。
-- Time Machine 与链接预测需要大规模语料才有统计意义；当前只验证流程。
-- 系统不提供医学建议；任何结论在专家（Gate G7）核验前都只是研究线索。
+- **仓库只提交书目、锁定文件、领域数据与代码**；原文录文只存放在本地数据目录（`.taochronos/`，已 gitignore），由 `corpus fetch / unpack /
+  ingest` 可复现地生成。
+- 各来源授权逐部记录在书目与语料库中，并随每条见证输出：汉籍仓库与维基文库为 CC BY-SA 4.0；麦吉尔善本为公有领域；
+  笈成整理本由使用者提供，古籍原文属公有领域，校点与整理成果归笈成整理者，仅供本地研究；网络文本集未声明授权，仅供本地研究；
+  Hugging Face classical-tcm-canon 声明为 proprietary-commercial，只作本地研究、不再分发。
+- 研究数据集与报告只包含短引文（≤120 字）与出处，不包含原文。
+- 缓存（条目标题索引、引用网络）位于 `<data>/corpus/study-cache/`，以语料库、规范化表与书目的摘要为键，语料变化后自动失效。
+
+## 十二、局限
+
+- 语料未经本项目逐字校勘：四库本有清人删改与避讳改字，白文断句为规则式；笈成本为志愿者录入，品质不一；断代在无人工考定时
+  依据书籍信息与序跋落款，无从考定者只能保守定为“清代或更早”。
+- 治学层与抽取器是规则式的机器阅读：方剂组成、本草条目与性能靠模式与词表读取，词表缺漏会使组成不全；只有一条见证的
+  “孤例”与不常见的版式需要人工核对。所有输出都附原文，便于核查。
+- 注本中未分层的后人按语随正文断代：早于被引者的引用会被识别并另计，但与正文同期或更早的引文（如孙星衍辑本《本经》按语引《说文》）
+  仍计入正文时期。
+- 度量衡数值、讳例起始年与医家生卒是有出处的学术观点，可能有争议，均为可审阅的 YAML；避讳证据只说明版本年代下限，属提示性证据。
+- 去重按文本重合度判定，同一版本的两个录本与不同版本之间的界线并不绝对；被判为副本的书逐部记录，可以人工改判。
+- 演示语料很小（23 部书、131 段节录），评测数值只具说明意义；Time Machine 与链接预测需要大规模语料才有统计意义。
+- 系统不提供医学建议；任何研究结论在专家（Gate G7）核验前都只是研究线索。
+
+## 十三、路线图与引用
+
+路线图见 [docs/roadmap.md](docs/roadmap.md)：专家审定的词表、义项与金标准，治学层的组成解析与性能抽取金标准，页面图像与 OCR，
+白文断句模型，跨本校勘与异文数据集，更多模型提供者与人机协同评审界面。
+
+引用本项目时，请同时引用所用语料的来源（汉籍仓库、笈成、麦吉尔大学图书馆、维基文库等）及其授权，并注明语料指纹
+（`study dataset` 与发现报告中给出）：
+
+```
+TaoChronos: a provenance-grounded research harness for the Chinese medical classics.
+https://github.com/psknlr/TaoChronos
+```

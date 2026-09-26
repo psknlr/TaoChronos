@@ -12,6 +12,7 @@ from .philology import PhilologyService
 from .reuse import ReuseMatch, TextReuseDetector, strip_punct
 from .segment import Segmenter, SegmentedView, is_unpunctuated
 from .store import CorpusStore, StoreCorpus
+from .study import StudyService
 
 
 def _store_path(value: str, context: Any) -> Path:
@@ -45,6 +46,7 @@ def register(registry: Any, config: dict[str, Any], context: Any) -> None:
     else:
         detector.fit(corpus.passages())
     registry.register("reuse", "classics", detector, default=True)
+    registry.register("study", "classics", StudyService(pack, corpus), default=True)
 
 
 __all__ = [
@@ -63,6 +65,7 @@ __all__ = [
     "Segmenter",
     "SegmentedView",
     "StoreCorpus",
+    "StudyService",
     "is_unpunctuated",
     "Terminology",
     "TextReuseDetector",

@@ -15,6 +15,7 @@ entries:
   - {term: 石膏, aliases: []}
   - {term: 知母, aliases: []}
   - {term: 粳米, aliases: []}
+  - {term: 饴糖, synonyms: [{surface: 胶饴, kind: alias}]}
   - {term: 人参, aliases: []}
   - {term: 猪苓, aliases: []}
   - {term: 泽泻, aliases: []}
@@ -44,10 +45,14 @@ entries:
   - term: 山药
     synonyms:
       - {surface: 薯蓣, kind: taboo_rename, note: 本名薯蓣；避唐代宗李豫讳改“薯药”，又避宋英宗赵曙讳改“山药”}
+      - {surface: 薯药, kind: taboo_rename, note: 避唐代宗李豫讳，薯蓣改称薯药}
+      - {surface: 署豫, kind: alias, note: 《本经》孙星衍辑本据《御览》作署豫}
+      - {surface: 署预, kind: alias}
       - {surface: 干山药, kind: processing_variant}
   - term: 山茱萸
     synonyms:
       - {surface: 山萸肉, kind: part_name}
+      - {surface: 萸肉, kind: abbreviation}
       - {surface: 山茱萸肉, kind: part_name}
   - {term: 牡丹皮, aliases: [丹皮]}
   - {term: 黄芪, aliases: [黄耆]}

@@ -18,6 +18,17 @@
 - Expert-built lexicon, sense inventory, variant tables and gold sets (replace the author-constructed demo gold).
 - Edition-level collation across witnesses, with automatic variant discovery.
 
+**治学 (study layer)**
+- Expert review of the curated study data: taboo start years and spellings (`taboo.yaml`), period measures
+  (`metrology.yaml`), physicians' names and dates (`physicians.yaml`), drug families (`drug_families.yaml`).
+- A gold set for formula parsing and grouping (原方 / 通行方 / 同名异方 / 同方异名) and for drug-property extraction, from
+  expert-checked witnesses; precision and recall in TaoChronos-Eval.
+- Wider drug coverage in compositions (regional and rare names), dose-aware grouping (同药异量: 桂枝加桂汤 vs 桂枝汤).
+- Layer-aware citation dating for annotated classics whose notes are not yet separated (孙星衍's 本经 notes).
+- More learning material: 方歌 alignment with their formulas across verse books, 经文背诵 by chapter, spaced-repetition
+  exports beyond Anki.
+- Concordance at scale: all-pairs 互见 detection for a work (a 校勘 table per chapter), and a variant-reading dataset.
+
 **Discovery**
 - A learned punctuation / segmentation model for 白文, evaluated against punctuated editions (笈成).
 - Learned extractors (distant supervision from rule claims + expert corrections), evaluated by ClaimEval.

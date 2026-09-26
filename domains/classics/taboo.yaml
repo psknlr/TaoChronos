@@ -1,0 +1,107 @@
+# 避讳改字 — taboo substitutions that date an edition or a transcription.
+#
+# A witness that systematically writes the substitute (元参 for 玄参, 陶宏景 for 陶弘景, X圆 for X丸) was produced
+# or last edited after the taboo came into force; the substitution dates the *edition*, not the composition.  Several
+# dynasties avoided the same character (玄: 宋 1012 and 清 1662), so a substitution names every rule that explains it.
+# `pairs` are compounds that are diagnostic in medical texts (original, substitute); `formula_suffix` rules compare
+# formula names in the lexicon ending in one character or the other.  Counts are made on the verbatim text.
+
+rules:
+  - id: han_wendi_heng
+    dynasty: 汉
+    ruler: 汉文帝（刘恒）
+    from: -179
+    char: 恒
+    substitutes: [常]
+    pairs: [[恒山, 常山]]
+    note: 汉避文帝讳改“恒”为“常”，药名恒山遂作常山；宋真宗（赵恒）时再避
+
+  - id: tang_gaozong_zhi
+    dynasty: 唐
+    ruler: 唐高宗（李治）
+    from: 650
+    char: 治
+    substitutes: [疗, 理, 主]
+    pairs: [[主治, 主疗], [治之, 疗之], [所治, 所疗], [治法, 疗法]]
+    note: 唐人避高宗讳，医书多以“疗”代“治”（《外台秘要》“疗……方”）
+
+  - id: tang_daizong_yu
+    dynasty: 唐
+    ruler: 唐代宗（李豫）
+    from: 762
+    char: 豫/蓣
+    substitutes: [药]
+    pairs: [[薯蓣, 薯药]]
+    note: 避代宗讳，薯蓣改称薯药
+
+  - id: song_shengzu_xuan
+    dynasty: 宋
+    ruler: 宋圣祖（赵玄朗，真宗所尊始祖）
+    from: 1012
+    char: 玄
+    substitutes: [元, 真, 延]
+    pairs: [[玄参, 元参], [玄胡索, 延胡索], [玄武, 真武], [玄明粉, 元明粉]]
+    note: 大中祥符五年（1012）起避“玄”；玄胡索改延胡索即其遗迹
+
+  - id: song_zhenzong_heng
+    dynasty: 宋
+    ruler: 宋真宗（赵恒）
+    from: 997
+    char: 恒
+    substitutes: [常]
+    pairs: [[恒山, 常山]]
+    note: 同汉文帝讳
+
+  - id: song_yingzong_shu
+    dynasty: 宋
+    ruler: 宋英宗（赵曙）
+    from: 1063
+    char: 曙/署/薯
+    substitutes: [山]
+    pairs: [[薯蓣, 山药], [薯药, 山药], [署预, 山药]]
+    note: 避英宗讳，薯药（薯蓣）改称山药，后世沿用
+
+  - id: song_qinzong_huan
+    dynasty: 宋
+    ruler: 宋钦宗（赵桓）
+    from: 1126
+    char: 桓/丸
+    substitutes: [圆, 元]
+    formula_suffix: [丸, 圆]
+    note: “丸”与“桓”音近，宋人改“丸”为“圆”（《太平惠民和剂局方》诸“圆”）
+
+  - id: qing_kangxi_xuan
+    dynasty: 清
+    ruler: 清圣祖康熙（玄烨）
+    from: 1662
+    char: 玄
+    substitutes: [元]
+    pairs: [[玄参, 元参], [玄明粉, 元明粉], [玄胡, 元胡], [玄府, 元府], [玄武, 元武], [玄机, 元机]]
+    note: 清人避“玄”作“元”（或缺末笔）；元参、元明粉、元胡等名由此通行
+
+  - id: qing_yongzheng_confucius
+    dynasty: 清
+    ruler: 圣讳（孔丘，雍正三年诏避）
+    from: 1725
+    char: 丘
+    substitutes: [邱]
+    pairs: [[丘墟, 邱墟], [商丘, 商邱], [丘陵, 邱陵]]
+    note: 雍正三年（1725）起避孔子名，“丘”改作“邱”（穴名丘墟作邱墟）
+
+  - id: qing_qianlong_hong
+    dynasty: 清
+    ruler: 清高宗乾隆（弘历）
+    from: 1736
+    char: 弘
+    substitutes: [宏]
+    pairs: [[陶弘景, 陶宏景], [弘景, 宏景], [弘治, 宏治]]
+    note: 避“弘”作“宏”：四库本陶弘景多作陶宏景，明孝宗年号弘治作宏治
+
+  - id: qing_daoguang_ning
+    dynasty: 清
+    ruler: 清宣宗道光（旻宁）
+    from: 1821
+    char: 寧
+    substitutes: [甯]
+    pairs: [[安寧, 安甯], [寧心, 甯心], [不寧, 不甯]]
+    note: 道光以后避“寧”作“甯”（繁体录文方可见）

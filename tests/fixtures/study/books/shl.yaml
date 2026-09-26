@@ -1,0 +1,11 @@
+- book: shl
+  passages:
+    - {id: shl.12, locator: {chapter: 辨太阳病脉证并治上, section: 第12条}, text: 太阳中风，阳浮而阴弱，啬啬恶寒，淅淅恶风，翕翕发热，鼻鸣干呕者，桂枝汤主之。}
+    - {id: shl.12f, locator: {chapter: 辨太阳病脉证并治上, section: 桂枝汤方}, text: 桂枝汤方　桂枝三两，去皮　芍药三两　甘草二两，炙　生姜三两，切　大枣十二枚，擘　右五味，㕮咀三味，以水七升，微火煮取三升，去滓，适寒温，服一升。}
+    - {id: shl.13, locator: {chapter: 辨太阳病脉证并治上, section: 第13条}, text: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之。}
+    - {id: shl.96, locator: {chapter: 辨太阳病脉证并治中, section: 第96条}, text: 伤寒五六日，中风，往来寒热，胸胁苦满，嘿嘿不欲饮食，心烦喜呕，小柴胡汤主之。}
+    - {id: shl.96f, locator: {chapter: 辨太阳病脉证并治中, section: 小柴胡汤方}, text: 小柴胡汤方　柴胡半斤　黄芩三两　人参三两　半夏半升，洗　甘草炙　生姜切，各三两　大枣十二枚，擘　右七味，以水一斗二升，煮取六升，去滓，再煎取三升，温服一升，日三服。}
+    - {id: shl.71, locator: {chapter: 辨太阳病脉证并治中, section: 第71条}, text: 若脉浮，小便不利，微热消渴者，五苓散主之。}
+- book: shl_b
+  passages:
+    - {id: shl_b.13, locator: {chapter: 太阳篇, section: 第13条}, text: 太阳病，头痛发热，汗出恶风者，桂枝汤主之。}

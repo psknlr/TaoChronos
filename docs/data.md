@@ -59,6 +59,10 @@ historical evidence.
 | `ontology.yaml` | entity types, category → claim role, claim relations, treatment verbs, opposition markers, school canons, opposite findings |
 | `citations.yaml` | citation patterns and generic references (经曰 → candidate books with weights) |
 | `known_findings.yaml` | curated existing understanding used by the novelty check (a restated textbook finding is a rediscovery) |
+| `taboo.yaml` | taboo rules for 避讳断代: ruler, the year the taboo starts, the character, the spellings it forces (`pairs` such as 薯蓣/山药, or `formula_suffix` 丸/圆), a note |
+| `metrology.yaml` | historical measures for reading doses: unit ratios (斤/两/铢/钱/分/厘, 斛/斗/升/合, counts, 方寸匕 …) and per period the 两 in grams and the 升 in ml (ranges, with sources), the value of 分; the notice that these are historical readings, never dosage guidance |
+| `physicians.yaml` | ~70 physicians for the citation network: name, other names (仲景, 东垣 …), 本草 short names (恭, 颂, 藏器 …), dynasty, life or active years, school |
+| `drug_families.yaml` | drugs compared as one in formula compositions (桂枝/桂心/肉桂 → 桂; 山药/薯蓣; 陈皮/橘皮 …) |
 
 ## Adding a real corpus
 
