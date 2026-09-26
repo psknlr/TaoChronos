@@ -90,12 +90,17 @@ corpora switch retrieval, curation, lineage and falsification to index-backed ca
 
 The `study` capability (`plugins/classics/study`, [ADR 0004](adr/0004-study-layer.md)) holds the 治学 functions —
 concordance, formula provenance, materia-medica and term histories, taboo dating, citations, learning cards, reading
-paths, datasets — used by the CLI (`taochronos study …`), the `study.*` tools and TaoChronos-Scholar
-([study.md](study.md)).
+paths, datasets — and the deep-discovery capabilities of 2.0: collation and stemma (with the
+`plugins/classics/collation` package: anchored alignment, variant units, stemma, TEI), semantic reuse and
+transmission, textual strata, case records and trajectories, argument graphs, sense evolution and lost-work
+reconstruction. Their methods that read no text live in `science/` (`semantic_reuse`, `stratigraphy`, `trajectories`,
+`argumentation`, `sense_evolution`), and case records have a protocol type (`protocol/cases.py`). All of it is used by
+the CLI (`taochronos study …`), the `study.*` tools on the existing agents and TaoChronos-Scholar ([study.md](study.md),
+[ADR 0005](adr/0005-deep-discovery-capabilities.md)).
 
 ## Tools and the scheduler
 
-The **Tool Mesh** (`tools/mesh.py`) exposes 35 tools in seven families (philology, retrieval, knowledge,
+The **Tool Mesh** (`tools/mesh.py`) exposes 47 tools in seven families (philology, retrieval, knowledge,
 analytics, study, literature, validation) plus `research.run_code` (Code Mode). Every call passes the same
 gauntlet — permission → argument schema → budget → `BeforeToolCall` hooks → execution → events →
 `AfterToolCall` hooks — whether a model or a deterministic procedure makes it. Consecutive

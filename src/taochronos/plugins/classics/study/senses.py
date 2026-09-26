@@ -60,13 +60,14 @@ class SenseStudy:
                 if at < 0:
                     continue
                 text = norm[max(0, at - window): at + window + 2]
+                quote = p.text[max(0, at - window): at + window + 2]  # the same window, verbatim (normalising keeps lengths)
                 han, _ = han_only(text)
                 concepts = [m.entry.term for m in self.b.pack.lexicon.match(han, include_weak=False)
                             if len(m.surface) >= 2 and m.surface not in own]
                 grams = [han[i: i + 2] for i in range(len(han) - 1)
                          if not set(han[i: i + 2]) & _FUNCTION and han[i: i + 2] not in own and not any(han[i: i + 2] in f for f in own)]
                 out.append({"passage_id": p.id, "book_id": p.book_id, "year": self.b.year(p), "period": per.label,
-                            "text": text, "tokens": concepts + grams})
+                            "text": text, "quote": quote, "tokens": concepts + grams})
         return out
 
     def run(self, term: str, *, per_period: int = 300, window: int = 12, k: int = 3) -> dict[str, Any]:
@@ -90,8 +91,8 @@ class SenseStudy:
             members = cand.pop("members")
             years = sorted(occ[m]["year"] for m in members if occ[m]["year"] is not None)
             cand["span"] = [years[0], years[-1]] if years else None
-            cand["examples"] = [{"passage_id": occ[m]["passage_id"], "period": occ[m]["period"], "context": occ[m]["text"]}
-                                for m in members[:4]]
+            cand["examples"] = [{"passage_id": occ[m]["passage_id"], "period": occ[m]["period"], "context": occ[m]["text"],
+                                 "quote": occ[m]["quote"]} for m in members[:4]]
         tokens_by_period: dict[str, list[list[str]]] = defaultdict(list)
         for o in occ:
             tokens_by_period[o["period"]].append(o["tokens"])

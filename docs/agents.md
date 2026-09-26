@@ -49,10 +49,26 @@ needs; the engine then spawns one agent instance per task (`agent:<role>@<task>`
 Validators (`validate_claims`, `validate`, `score`) are harness code running as `validator:gates`, not agents.
 
 **TaoChronos-Scholar** (治学) traces the focus formulas, drugs and terms through the *whole* store with the study
-tools (`study.formula`, `study.herb`, `study.term`) and records one dossier per target — a headline, key findings and
-the verbatim witnesses they rest on. The Director adds its task (`trace_sources`, after `resolve_terms`) to round 0
+tools (`study.formula`, `study.herb`, `study.term`, and `study.senses` for terms: where the meaning shifted, and a
+candidate sense the curation lacks) and records one dossier per target — a headline, key findings and the verbatim
+witnesses they rest on. The Director adds its task (`trace_sources`, after `resolve_terms`) to round 0
 when the profile sets `discovery.sources_dossier` (as `full-corpus` does); the dossiers become the appendix
 “源流考证” of the Discovery Report. They describe texts and pass no gates (see [study.md](study.md)).
+
+**深层发现 2.0 tools, no new roles.** The deep-discovery capabilities
+([study.md](study.md#深层发现-20--the-structure-of-the-literature), [ADR 0005](adr/0005-deep-discovery-capabilities.md))
+are tools on the agents whose work they serve. The model of a hybrid agent may call them; procedures call what they
+need.
+
+| Agent | Tools added |
+|---|---|
+| Philologist | `study.variants`, `study.stemma`, `study.layers`, `study.dating`, `study.authorship` |
+| Skeptic | `study.reuse`, `study.dating`, `study.argument` |
+| Evidence | `study.cases`, `study.trajectories`, `study.argument` |
+| Semanticist | `study.term`, `study.senses` |
+| Scholar | `study.senses` (in its procedure) |
+
+The Lineage Analyst gets the reuse types through the lineage edges themselves.
 
 ## One output contract, two producers
 

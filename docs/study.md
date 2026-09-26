@@ -16,6 +16,13 @@ the way the 考据 tradition answers them: from the texts, witness by witness.
 | `study reading` | 阅读门径 — what should I read on this topic, and in what order? | source classics, the densest works by period, monographs, case records, Republican syntheses |
 | `study dataset` | 研究数据集 — the results as tables for analysis | a Frictionless tabular data package (CSV + `datapackage.json`) with provenance and licences |
 | `study metrology` | 历代度量衡 — how much is 三两 in the Han? | the dose read in the measures of a year (a historical reading, never dosage guidance) |
+| `study variants` · `stemma` · `edition` · `tei` | 版本谱系 — how do the transcriptions of a work differ, and how are they related? | variant units (异文 / 脱 / 衍 / 倒 / 缺文 / 结构性增删 / 异体), a stemma with the groups of shared readings and contamination, one witness against the others, a TEI P5 apparatus |
+| `study reuse` · `transmission` | 语义复用与思想传播 — what did later books do with this passage, and how was this work taken up? | typed reuses (直接引用 / 近似转录 / 节略 / 撮要 / 转述 / 解释性改写 / 引而驳之 / 套语相似) with the rule that fired and the values it read; a work's reception by period, and its channels |
+| `study layers` · `dating` · `authorship` | 文本地层 — which chapters of a classic belong together, and when can each have been written? | style layers with membership probabilities and a permutation test, change points, outlying chapters; cited works, late vocabulary and taboo per chapter; Burrows' Delta to candidate works |
+| `study cases` · `trajectories` | 医案轨迹 — what did physicians do, visit after visit? | case records as visits (findings, diagnosis, principle, formula, drugs and doses, changes, response, outcome); sequential patterns, transitions, associations with outcome |
+| `study argument` | 医理论证 — how does this passage, or this work, reason? | clauses with their concepts and typed edges (condition, consequence, cause, inference, contrast, analogy, rebuttal, definition, treatment …); a work's profile; two works compared |
+| `study senses` | 语义演变 — what did this term mean, and when did its meaning shift? | sense shares by period, change points, candidate senses the curation lacks, the term's neighbourhood by period, a check against the curated exemplars |
+| `study fragments` | 佚书辑佚 — what survives of a lost work in the books that quote it? | fragments ordered by the volume the source notes give, each with its quoting witnesses and parallels; the method verified on works that survive |
 
 Every result is made of **witnesses**: a verbatim quote with its passage id, locator (《书》卷·篇·节), the book's date
 and period, the text layer (正文, 注, 序跋 …), and the source and licence of the transcription. Every statement can be
@@ -35,6 +42,22 @@ taochronos study cards --book 伤寒论 --formula 桂枝汤 --herb 柴胡 --term
 taochronos study reading 温病
 taochronos study dataset --formula 桂枝汤 --herb 柴胡 --term 温病 --citations -o datasets/guizhi
 taochronos study metrology 三两 --year 200
+
+# 深层发现 2.0
+taochronos study stemma 伤寒论                                     # --books <id> --books <id>+<id> · --chapter 辨太阳病
+taochronos study variants 伤寒论 --chapter 辨太阳病 --json
+taochronos study variants "太陽之為病，脈浮，頭項強痛而惡寒" --text-mode   # a passage's copies and quotations
+taochronos study tei 伤寒论 -o shanghan.tei.xml
+taochronos study reuse "太陽之為病，脈浮，頭項強痛而惡寒"           # or --passage <id>; --against "<text>" for one pair
+taochronos study transmission 伤寒论 --clauses 40
+taochronos study layers 素问 --k 2                                 # --features function
+taochronos study dating 素问
+taochronos study authorship --book 伤寒论 --chapter-name 辨脉法 --candidate 脉经 --candidate 金匮要略
+taochronos study cases 风温                                        # or --book <id>
+taochronos study trajectories 咳嗽
+taochronos study argument --work 伤寒论 --against-work 温热论       # or a text, or --passage <id>
+taochronos study senses 消渴
+taochronos study fragments 小品方                                  # --verify: test the method on a surviving work
 ```
 
 The CLI uses the `full-corpus` profile when the corpus store exists (otherwise the demo corpus). The same functions
@@ -201,6 +224,221 @@ the dose read in its period's measures), `herb_entries.csv`, `term_periods.csv`,
 locators, so every row can be traced back. **Only short quotes (≤ 120 characters) are exported, never the texts**; the
 licences of some transcriptions allow local research use only.
 
+## 深层发现 2.0 — the structure of the literature
+
+The functions above answer questions about one formula, drug or term. The seven below read the structure of the
+literature itself: how the witnesses of a work descend from one another, what later books did with a passage, which
+parts of a classic were written when, how physicians treated patients visit after visit, how a text argues, when a
+word changed its meaning, and what survives of the books that were lost. Three rules hold for all of them
+([ADR 0005](adr/0005-deep-discovery-capabilities.md)):
+
+- **Capabilities, not agents.** Each is a deterministic function of the study service, a tool of the tool mesh
+  (`study.variants`, `study.stemma`, `study.reuse`, `study.transmission`, `study.layers`, `study.dating`,
+  `study.authorship`, `study.cases`, `study.trajectories`, `study.argument`, `study.senses`, `study.fragments` —
+  permission `classics:read`) and a CLI command. The existing agents call them: the Philologist (collation, layers,
+  dating, authorship), the Skeptic (reuse, dating, argument), the Evidence agent (cases, trajectories, argument), the
+  Semanticist (terms, senses) and the Scholar, whose term dossiers now carry 语义演变. No agent was added.
+- **Candidates are not proof.** Whatever proposes with high recall — character probes, co-occurring concepts,
+  clusters, an encoder's similarity — only proposes. Transparent rules over measured features decide, and every label
+  carries the rule that fired and the values it read. An encoder's similarity is reported beside the features; no rule
+  reads it.
+- **Measured before trusted.** Each capability has an eval suite ([evals.md](evals.md)): synthetic data with a known
+  answer where one can be built, a development set where the rules need examples, and a check on the real corpus
+  against what the literature holds.
+
+## 版本谱系 (collation and stemma)
+
+**Witnesses.** The transcriptions of a work in the store (a witness split over volumes is joined in volume order:
+`--books a+b`), or any books given with `--books`. Only the main text is collated: prefaces, tables of contents,
+separated commentary layers and bracketed notes are left out. For a passage (`--text-mode`, `--passage`) the witnesses
+are its copies and quotations, from the concordance.
+
+**Base.** A coordinate system, not a claim about the right reading: by default the witness most of whose text the
+others carry. Excerpts — witnesses carrying less than half of what the fullest one carries — are set aside first, so a
+selection or a commentary that embeds the text does not become the base.
+
+**Alignment.** Whole books are aligned by anchors: k-grams occurring exactly once in each text are paired, the longest
+chain of pairs increasing in both texts (patience sorting) is kept, and the gaps are aligned again with shorter
+anchors, then with `difflib`. Each witness's edits are projected onto the base's coordinates.
+
+**Variant units.** The edits of all witnesses are merged into units — the smallest stretches of the base containing
+every overlapping edit — and each witness's reading of a unit is the stretch aligned to it. Where the changes of
+several witnesses meet in one unit (C 人 · EFG 若之 · DH 人之), the unit is split into columns by aligning its readings to
+a centre, so that one witness's substitution does not merge with another's addition. Kinds: substitution (异文),
+omission (脱), addition (衍), transposition (倒: an omission and an addition of the same ≤ 6 characters close by are one
+move, 呕逆 → 逆呕), orthographic (readings that differ only by the equivalences of `collation.yaml`: 沉/沈, 藏/脏, 鞕/硬 …),
+**lacunae** (omissions of 40 characters or more: missing text, not disagreement) and **structural** differences (added
+commentary, different passages: listed, never used to group witnesses).
+
+**Stemma.** The distance of two witnesses is their weighted disagreement in the units both carry, per 1 000 characters
+of base text both carry (function-word variants weigh half, orthographic ones nothing). Neighbour-joining gives the
+tree, rooted at the midpoint of its longest path (or `--root-at`); internal nodes are hypothetical exemplars (α, β …).
+**Groups**: a minority reading shared by two or more witnesses is a candidate shared innovation (agreement in error).
+Groups the tree holds support it; groups it cannot hold point to **contamination** — a witness whose shared readings
+keep grouping it with a witness outside its clade (at least 0.2 of its group support, with a minimum support that grows
+with the number of units), the direction read from which of the two carries the other's private readings. The most
+frequent single-character substitutions are listed as candidates for `collation.yaml`. `edition <book>` sets one
+witness against the others (agreement with each, singular readings, lacunae, additions); `tei` writes the apparatus in
+TEI P5 parallel segmentation (`<app><lem/><rdg wit="…"/></app>`).
+
+**Example (full corpus).** 伤寒论, five witnesses: A 伤寒论(宋本), B 伤寒论 (笈成; two thirds of the text survive in it),
+C 注解伤寒论 (笈成), D 张卿子伤寒论, E 注解伤寒论 (四库). Base A; 1 769 variant units, 1 625 of them substantive (49.9 per
+1 000 characters). The tree is ((A, B), (D, (C, E))) — the plain texts against the 成无己 commentary tradition — with the
+groups AB (support 635.5), CE (146.5) and CD (115.5). The tree cannot hold both CE and CD: D is flagged as
+contaminated from C (0.76 of its group support conflicts with the tree), and D–E remains a conflict of undetermined
+direction — hypotheses for a person to examine in the units listed. One witness writes 井 for 甘 49 times: a
+transcription habit to check, not a variant.
+
+## 语义复用与思想传播 (reuse and transmission)
+
+**Two stages.** Candidates come from anything with high recall — the concordance's rare character probes (shared
+wording) and the passage's rarest concepts found close together in another passage, in any of their written forms
+(shared content). They prove nothing. The label is decided by transparent rules (`science.semantic_reuse`) over
+features of the aligned pair:
+
+| Feature | What it measures |
+|---|---|
+| `cov_source` · `cov_target` | the share of the source's wording found in the target, and of the target that is the source's wording |
+| `longest_block` · `mean_block` | the longest run of shared characters, and the mean run |
+| `concept_cov` · `concept_prec` | the source's content (its concepts, and content bigrams outside them) that the target expresses, weighted by rarity; the share of the target's content that comes from the source |
+| `specificity` · `distinctive` | Σ credit × idf − log N — an E-value in nats: is what the two share rarer than chance among N passages? — and the credit of the source's most distinctive concepts. Genre concepts (太阳病, 脉浮, 恶寒) co-occur everywhere and prove nothing |
+| `order` · `length_ratio` | the order concordance of the shared items; the target's length over the source's |
+| `formulaic_share` | the share of the shared wording that is stock phrasing (以水七升，煮取三升，去滓 …: `intertext.yaml`) |
+| `attribution` · `opposition` · `interpretation` | citation markers (《…》曰, 仲景云), refutation markers (非也, 岂, 殊不知, 未必, 误矣 …) and explanation markers around the span |
+| `similarity` | the cosine of a TF-IDF encoder over concepts and bigrams — **reported, read by no rule** |
+
+The later passage may be long (a commentary, a chapter of a compendium), so the reused span is located first: the
+densest stretch of shared wording — then of shared concepts — no longer than three times the source; interlinear notes
+are left out. The rules, in order: stock phrasing (套语相似) → unrelated or not specific (uncertain) → refutation
+(引而驳之) → nearly all the wording both ways (直接引用) → most of the wording at a similar length (近似转录) → the source's
+own words, fewer of them (节略) → half the wording or more, reworded (转述) → much shorter, with its content (撮要) →
+content restated with explanation (解释性改写) → content in other words and in the same order (转述) → uncertain. Each
+label carries its mode (retained / transformed / disputed), whether the citation is acknowledged (明引 / 暗引), the rule,
+the values it read and a confidence from the margins. The thresholds are one table (`THRESHOLDS`) and can be
+overridden.
+
+**Transmission.** `transmission <work>` traces clauses spread evenly over the work's base witness (its earliest dated
+transcription; 40 by default) through the corpus, keeps the later reuses and aggregates them: which works carry how
+much of the work and how, the balance of retained, transformed and disputed reuse per period, and the **channels** — a
+later work whose wording of a clause follows an intermediate work more closely than the source (counted once per clause
+and work).
+
+**Example (full corpus).** 「太陽之為病，脈浮，頭項強痛而惡寒」: 446 candidates examined in 4 s — 66 直接引用, 12 近似转录,
+19 节略, 96 转述, 32 解释性改写; 111 of the reuses were reached only through their concepts, not their wording. The 局方发挥
+quotes 「阴平阳秘」 in order to refute it (未必); the 医学正传 (岂可) and the 证治准绳 (误矣) do the same with 「邪之所凑」. The
+reception of the 伤寒论 (12 clauses): the share of retained reuse rises from 53 % (魏晋) to 59 % (宋金元), 76 % (明), 73 %
+(清) and 90 % (民国); the channels include 脉经 → 千金翼方 and 类证活人书 → 仲景伤寒补亡论 / 医学纲目.
+
+## 文本地层 (stratigraphy)
+
+**Layers.** The base witness is cut into chapters (long chapters into parts of about 800 characters; notes left out).
+Each segment is profiled by the square root of the per-1 000 frequency of the work's 100 most frequent characters
+(`--features function`: the function characters only — less sensitive to topic, but weaker), z-scored. k-means
+(k-means++ starts, ten seeded restarts) splits the segments into `--k` layers with membership probabilities; the split
+is tested against profiles whose features are shuffled across segments (R² against the null, a permutation p-value).
+**Change points** in reading order: a local scan statistic tested by permutation and corrected for the places tried
+(Benjamini–Hochberg), and binary segmentation; **layer boundaries** are where the layer changes for at least two
+segments. **Outliers**: each chapter's Burrows' Delta from the rest of the work, as a z-score.
+
+**Dating.** Chapter by chapter: the works cited in the main text (citations inside notes belong to the annotator) — a
+terminus post quem when the cited work is dated; **late vocabulary** — lexicon terms that no other work uses until at
+least 300 years after the work's date and that at least three later works use, as a rate per chapter z-scored within
+the work (a thin early corpus makes some words of every early chapter look late; a later layer has many more); and the
+taboo characters of the witness, which date its edition, not its composition.
+
+**Authorship.** Burrows' Delta over the function characters between a text — or a book, or one of its chapters
+(`--chapter-name`) — and candidate works (`--candidate`; by default the dated works of its category).
+
+**Example (full corpus).** 素问, two layers: the minor layer holds all seven 运气 chapters (天元纪大论 … 至真要大论) with
+阴阳应象大论, 阴阳离合论, 血气形志 and 气府论; it uses more 化, 火 and 太 and less 脉; the split is supported (p = 0.025).
+The strongest change point falls at 65 | 66, where the 运气七篇 begin, and another at 74 | 75, where they end (both
+p = 0.005); binary segmentation finds weaker ones elsewhere too (27 | 28, 49 | 52, and inside the 运气 chapters).
+Late vocabulary singles out
+至真要大论 (z = 4.26), 五常政大论 and 六元正纪大论. In the 伤寒论, 辨脉法 and 平脉法 are nearest the 脉经 — the tradition
+ascribes them to 王叔和 — while the 六经 chapters are nearest the 金匮要略 and 伤寒例 the 甲乙经. Style says *that* chapters
+differ, the dating evidence *when* they can have been written; neither alone proves an addition.
+
+## 医案轨迹 (case records)
+
+**Reading.** The case collections — one transcription per work, the fullest, so that no case is counted twice — are
+read sentence by sentence. A case opens where a patient is named at the head of a sentence (王　十岁 · 某氏 · 一妇人年四十 ·
+喻嘉言治石开晓，), after a date if one comes first (癸亥七月廿五日，伊，二十四岁), outside biographies and prefaces. A visit
+opens at 二诊 / 复诊 / 又, at a date or a day marker heading a clause (十四日, 次日, 越三日), or at 前方加… heading a passage.
+From each visit: the findings (the lexicon's symptoms and signs; a pulse only with a pulse quality; the tongue), the
+diagnosis (diseases, patterns), the principle of treatment (explicit constructions only: 治宜…, 法当…, 用…法), the formula
+(read from its context: 用/与/投…汤, …主之) and the drugs with their doses, the drugs added and removed (加… / 去…, not
+去皮 or 去节), the number of doses (连进三帖) and the response (愈, 大减, 热退, 如故, 加剧, 遂死 … — in context; words of
+response before a visit's own prescription answer the previous visit). The outcome is the last response recorded.
+Every field keeps its passage id. The rules and vocabularies are in `cases.yaml`.
+
+**Trajectories.** Each case becomes a sequence of visits, each a set of items (`principle:清热`, `formula:银翘散`,
+`added:麦冬`, `finding:脉数`): sequential patterns across visits (PrefixSpan; support = cases), transitions from one visit
+to the next (changes first, then continuations; lift over the next visit's baseline), and associations with the
+outcome (one-sided Fisher tests, Benjamini–Hochberg). **Case records were written by their physicians and selected for
+publication: these are associations in a biased record, never evidence of efficacy.**
+
+**Example (full corpus).** 吴鞠通医案: 285 and 290 cases in its two transcriptions, read independently (case counts agree
+to 0.98, outcomes to 0.92). 续名医类案: 3 246 cases, 151 of them ending in death. 咳嗽: 818 cases across the collections;
+中风: 287, with sequences such as 苦寒 → 下法 and 益气 → 地黄饮.
+
+## 医理论证 (argument graphs)
+
+A passage is cut into clauses at punctuation and before an inner 则 or 故 (阳胜则热 → 阳胜 · 则热; not inside 法则, 否则 …);
+each clause is a node with the concepts the lexicon finds in it, by category. The discourse markers of `argument.yaml`
+give typed, directed edges: condition (若, 凡, …者), consequence (则, 必, 然后), cause (因, 由) and effect (…所致, 使然),
+inference (故, 是以, 所以), support (盖, …故也), contrast (然, 但, 虽, 非独), analogy (犹, 譬), rebuttal (非…也, 岂, 殊不知,
+谬矣), definition (…者，…也, 名曰) and treatment (…主之, 宜). One edge per pair of clauses, the most specific relation
+kept; edges stay within a sentence, except inference and support (故 or 盖 opening a sentence reaches back); a clause
+ending in 者 is a condition when its sentence goes on to a consequence or a prescription, otherwise a topic that the
+next clause defines; 所以然者 announces a reason. **Only explicit markers are used: an unmarked step of reasoning is not
+guessed.**
+
+A work's profile counts the relations per 1 000 clauses, the categories of concept each relation links (symptom
+—treatment→ formula; etiology —cause→ symptom) and the chains of steps (condition → consequence → treatment). Two works
+are compared by the Jensen–Shannon divergence of these distributions and by log-odds z-scores with an informative prior.
+
+**Example (full corpus).** 伤寒论 against 温热论: JSD 0.063 over the relations. The 伤寒论 favours definition and
+inference; the 温热论 favours analogy (7.76 per 1 000 clauses, against none) and rebuttal, with more conditions and
+treatments — it teaches by likeness and correction, where the 伤寒论 defines and infers.
+
+## 语义演变 2.0 (senses)
+
+Occurrences of the term, in all its written forms, are sampled period by period (up to 300 per period) and read in a
+window of twelve characters on each side: the lexicon's concepts and the content bigrams there. The curated senses of
+`terminology.yaml` label the contexts their cues fit (cue hits minus twice the anti-cue hits; a tie stays unlabelled).
+The contexts no sense fits are clustered (spherical k-means over TF-IDF vectors); a cluster of at least five contexts
+with vocabulary of its own is a **candidate sense** the curation lacks, shown with its distinctive words and examples
+for a person to read and name. The shares of the senses by period give the series; **change points** are the dates
+that split the labelled occurrences into the most different sense distributions (n₁n₂/n × Jensen–Shannon, permutation
+test), sought again before and after each (up to three). The term's neighbourhood — its most characteristic context
+words in each period — is compared from period to period (Jaccard overlap). The curated exemplar passages check the
+labelling.
+
+**Example (full corpus).** 消渴: change points near 166 (p = 0.025), 388 (p = 0.005) and 1603 (p = 0.005); the symptom
+sense falls from 21 % of the labelled uses to 0–6 %, and returns to 11–13 % in the Qing and the Republic.
+
+## 佚书辑佚 (lost works)
+
+Lost works survive in quotation. The 外台秘要 opens its entries with their source (小品论曰, 《深师》疗…, 千金…; 又 for "the
+same source again") and closes them with a note on where the source had it (（出第十卷中千金同）: volume ten, the same
+text in the 千金); the 医心方 and later compilations cite in the same way, and any book may quote 《小品方》云…. `fragments
+<work>` finds these attributions under the work's title and aliases and takes the attributed text up to the source
+note, or up to the next attribution to another source. It keeps the note's volume and parallels, follows 又 only after
+a noted head or when it is marked 又云 / 又曰, and drops fragments under twelve characters. The same fragment quoted in
+several books is merged (3-gram overlap), and the fragments are ordered by the volume the notes give, then by where
+they are quoted. Quoting books dated before the work are set aside, and every fragment keeps its witnesses.
+
+**Verification.** A method that gathers lost text cannot be checked on lost text, so it is checked on works that
+survive. `--verify` rebuilds a surviving work from the books that quote it, with its own transcriptions excluded. It
+then measures two things. The first is the share of fragments found in the surviving text (6-grams, at least 30 %),
+overall and per quoting book: this says how far each compiler can be trusted. The second is how much of the work is
+recovered.
+
+**Example (full corpus).** 小品方: 226 fragments from 386 quotations. Verification on the 千金要方: 32 % of the fragments
+attributed to it are in its surviving text (幼幼新书 0.83, 外台秘要 0.55, 医心方 0.36 — compilers quote with different
+freedom), and they cover 12 % of it. For the 肘后备急方, 87.5 % of its quotations are *not* in the extant 肘后 — a reworked
+remnant (葛洪 → 陶弘景 → 杨用道's 附广). They are candidate lost text, which is what 辑佚 recovers.
+
 ## Data files
 
 | File | Content |
@@ -210,7 +448,11 @@ licences of some transcriptions allow local research use only.
 | `domains/classics/physicians.yaml` | ~70 physicians: names, 本草 short names, dynasty, life or active years, school |
 | `domains/classics/drug_families.yaml` | drugs compared as one in compositions (桂, 地黄, 芍药, 术, 甘草, 附子, 山药, …) |
 | `corpus/catalog/external-works.yaml` | works known through citations, including lost works whose modern reconstructions are excluded |
-| `<data>/corpus/study-cache/` | the entry-heading index and the citation network, keyed by a digest of the store, the normaliser and the book records |
+| `domains/classics/collation.yaml` | orthographic equivalences for collation (沉/沈, 藏/脏, 鞕/硬, 耆/芪 …): variants in the apparatus, never grouping evidence; graphic confusions (已/巳/己) deliberately left out |
+| `domains/classics/intertext.yaml` | citation, dialogue, refutation and explanation markers, and the stock phrases of the genre (以水七升，煮取三升，去滓 …) |
+| `domains/classics/cases.yaml` | case and visit openers, day markers, sections that file no cases, pulse and tongue patterns, principles, changes, doses, words of response |
+| `domains/classics/argument.yaml` | discourse markers of reasoning by relation (lead / tail, direction), the markers that split a clause (则, 故) and their exceptions |
+| `<data>/corpus/study-cache/` | the entry-heading index, the citation network and transmission results, keyed by a digest of the store, the normaliser and the book records |
 
 ## Limitations
 
@@ -222,3 +464,19 @@ licences of some transcriptions allow local research use only.
   notes in the 本经 still count as Han citations of the 说文.
 - Metrology values and taboo start years are scholarly positions with sources; they can be disputed and edited.
 - Taboo evidence and dating by terminus ante quem are conservative, not proof.
+- 版本谱系: the base is a coordinate system; readings are grouped by normalised text, so orthographic habits not yet
+  in `collation.yaml` still count as substantive until reviewed. A stemma from five transcriptions is a hypothesis
+  about their relations, and contamination flags ask for a person to examine the units listed.
+- 语义复用: the thresholds were set on a development set of 33 author-constructed pairs; concepts come from the
+  lexicon, so a reuse through words the lexicon lacks is found only by its wording. Direction is by date: pairs whose
+  dates overlap are reported as undetermined.
+- 文本地层: style separates chapters by topic as well as by author (运气 chapters are about 运气); the dating evidence
+  depends on the dates of the catalog and on how thin the early corpus is. Neither proves an addition alone.
+- 医案轨迹: the parser follows the manners of the collections it was written for (visits under a heading, narratives);
+  other layouts can merge or split cases. Outcomes are what the physician recorded.
+- 医理论证: only explicit markers make edges, so terse texts look less argued than they are; the counts compare
+  manners of writing as much as ways of reasoning.
+- 语义演变: senses are only as good as their curated cues; candidate senses are clusters of context words, not
+  meanings, until a person reads the examples.
+- 佚书辑佚: attribution conventions differ between compilers, and a compiler may paraphrase; the per-book precision
+  of the verification is the measure of how much to trust a fragment.

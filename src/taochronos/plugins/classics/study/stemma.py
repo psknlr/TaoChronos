@@ -126,7 +126,7 @@ class StemmaStudy:
                     continue
                 d = json.loads(loc)
                 label = "·".join(x for x in (d.get("volume"), d.get("chapter"), d.get("section")) if x)
-                if chapter is not None and not chapter.search(label):
+                if chapter is not None and not chapter.search(self.b.normalize(label)):
                     continue
                 out.append((pid, label, layer or "", mask_notes(text)))
         else:
@@ -134,7 +134,7 @@ class StemmaStudy:
                 if p.kind in _EXCLUDED_KINDS:
                     continue
                 label = self.b.locator(p)
-                if chapter is not None and not chapter.search(label):
+                if chapter is not None and not chapter.search(self.b.normalize(label)):
                     continue
                 out.append((p.id, label, "", mask_notes(p.text)))
         return out
@@ -159,7 +159,7 @@ class StemmaStudy:
     def collate(self, work: str | None = None, *, books: list[str] | None = None, base: str | None = None,
                 chapter: str | None = None, max_chars: int = 60000, min_coverage: float = 0.2) -> dict[str, Any]:
         sets = self.witness_sets(work, books)
-        pattern = re.compile(chapter) if chapter else None
+        pattern = re.compile(self.b.normalize(chapter)) if chapter else None  # either script: 辨太阳病 finds 辨太陽病
         texts: dict[str, WitnessText] = {}
         ids_of: dict[str, list[str]] = {}
         for k, ids in enumerate(sets[: len(SIGLA)]):

@@ -5,6 +5,7 @@ fixture corpus."""
 from __future__ import annotations
 
 import random
+import re
 from pathlib import Path
 
 import pytest
@@ -88,3 +89,13 @@ def test_chapter_units_and_study_functions(study):
     assert dating["nominal"] == [200, 219] and len(dating["chapters"]) == 2
     who = study.authorship("太阳病，头痛发热，汗出恶风，桂枝汤主之。" * 14, candidates=["shl", "qjy", "jf"], min_chars=40)
     assert {c["candidate"] for c in who["candidates"]} <= {"伤寒论", "千金翼方", "太平惠民和剂局方"} and who["candidates"]
+
+
+def test_chapter_filters_read_either_script(study):
+    """A chapter asked for in one script finds it written in the other (辨脉法 · 辨脈法), in stratigraphy and collation."""
+    names = list("之其者也而")
+    simple = study._strata._profile_of(["shl"], names, "辨太阳病脉证并治上")[1]
+    assert simple > 0 and study._strata._profile_of(["shl"], names, "辨太陽病脈證并治上")[1] == simple
+    norm = study._stemma.b.normalize  # collate compiles the normalised pattern and matches normalised locators
+    rows = study._stemma._rows("shl", re.compile(norm("辨太阳病脉证并治上")))
+    assert rows and study._stemma._rows("shl", re.compile(norm("辨太陽病脈證并治上"))) == rows

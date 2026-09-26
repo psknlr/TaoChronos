@@ -7,7 +7,7 @@ objective: >-
 mode: hybrid
 procedure: taochronos.agents.procedures.evidence
 skills: [evidence-ledger, lineage-analysis]
-tools: [classics.search, classics.get_passage, kg.claims, validation.verify_quote]
+tools: [classics.search, classics.get_passage, kg.claims, validation.verify_quote, study.cases, study.trajectories, study.argument]
 context_view: evidence
 permissions: [classics:read, kg:read]
 output_schema: EvidenceSet

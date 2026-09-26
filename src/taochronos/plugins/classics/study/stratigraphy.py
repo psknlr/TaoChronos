@@ -31,7 +31,7 @@ from ....science.stratigraphy import (
     zscores,
 )
 from ..citations import CitationExtractor
-from .base import StudyBase, dated, han_only
+from .base import StudyBase, han_only
 from .stemma import _EXCLUDED_KINDS, _FRONT_LAYER, mask_notes
 
 
@@ -255,7 +255,8 @@ class StratigraphyStudy:
 
     # ------------------------------------------------------------ authorship
     def _profile_of(self, ids: list[str], names: list[str], chapter: str | None = None) -> tuple[list[float], int]:
-        text = "".join(c["text"] for c in self.chapters(ids) if chapter is None or chapter in c["chapter"])
+        want = self.b.normalize(chapter) if chapter else None  # either script: 辨脉法 finds 辨脈法
+        text = "".join(c["text"] for c in self.chapters(ids) if want is None or want in self.b.normalize(c["chapter"]))
         return profile(text, names), len(text)
 
     def authorship(self, text: str | None = None, *, book: str | None = None, chapter: str | None = None,

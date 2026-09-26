@@ -57,6 +57,26 @@ linked by transcription or rephrasing count as support.
 **Source rediscovery.** Explicit citations and oppositions naming works absent from the corpus become
 candidates for lost or held-out sources, with a date bound (earlier than the earliest citer).
 
+## Deep discovery 2.0: the structure of the literature
+
+The engines above work on claims. Seven study capabilities read the structure of the literature that the claims come
+from ([study.md](study.md#深层发现-20--the-structure-of-the-literature), [ADR 0005](adr/0005-deep-discovery-capabilities.md)).
+They are tools of the existing agents, not new agents. Each one sharpens a question the engines ask:
+
+| Capability | What it adds to discovery |
+|---|---|
+| 版本谱系 `study.variants` · `study.stemma` | Which witnesses of a work are copies of which. Independence in G5 counts clusters of dependent witnesses; a stemma shows which transcriptions share an exemplar, and a reading found in one branch only is a variant of transmission, not a second testimony. |
+| 语义复用 `study.reuse` · `study.transmission` | *How* a later passage depends on an earlier one. Every lineage edge (`transcribes`, `rephrases`) carries its reuse type (直接引用, 节略, 转述, 解释性改写 …) and the rule that fired. A passage quoted in order to refute it (引而驳之) is opposition, not support. The Skeptic can ask whether ten supporting passages are ten reuses of one. |
+| 文本地层 `study.layers` · `study.dating` · `study.authorship` | Whether a passage belongs to the layer a claim's date assumes. Evidence from the 运气七篇 is held to date from 王冰's edition, not from the Han; the Skeptic and the Philologist can check a chapter's style layer, cited works, late vocabulary and taboo floor before a claim is dated by its book. |
+| 医案轨迹 `study.cases` · `study.trajectories` | Practice beside doctrine: what physicians prescribed, changed and recorded as the outcome, visit by visit. These are associations in a selected record, so the Evidence agent cites them as case evidence, never as efficacy. |
+| 医理论证 `study.argument` | Whether a passage asserts, infers, conditions or rebuts. A clause under 非…也 or 殊不知 is a rejected view; a consequence under 若…则 holds only under its condition — the line D5 draws between a contradiction and a conditional statement. |
+| 语义演变 `study.senses` | D2 at the level of senses: sense shares by period, dated change points and candidate senses the curation lacks. The Scholar's dossier for a focus term reports them, and the Semanticist can check a resolution against them. |
+| 佚书辑佚 `study.fragments` | Source rediscovery infers that a lost source existed and dates it; 辑佚 recovers what it said, from the books that quote it, with a precision for each compiler measured on works that survive. |
+
+What proposes is never what proves. Candidates come from probes, co-occurring concepts, clusters or an encoder, and
+transparent rules over measured features decide, each label carrying its rule and values. The seven eval suites
+measure each capability ([evals.md](evals.md#深层发现-20)).
+
 ## Hypotheses
 
 The Hypothesis agent turns observations into hypotheses with: a statement (in the computational-hypothesis

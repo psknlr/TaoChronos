@@ -454,7 +454,7 @@ def senses(r: dict[str, Any]) -> list[str]:
         out += ["", "## 候选新义（未被现有义项覆盖的用例聚类，须人工判读）", ""]
         for c in r["candidate_senses"]:
             words = "、".join(d["token"] for d in c["distinctive"][:8])
-            ex = c["examples"][0]["context"] if c["examples"] else ""
+            ex = (c["examples"][0].get("quote") or c["examples"][0]["context"]) if c["examples"] else ""
             out.append(f"- {c['size']} 例（{c['span'][0] if c['span'] else ''}–{c['span'][1] if c['span'] else ''}）：{words}　例：{_q(ex, 40)}")
     if r.get("neighbourhood"):
         out += ["", "## 语境邻域的变化", ""] + [f"- {n['period']}（{n['contexts']}）：{'、'.join(n['frequent'][:8])}"
