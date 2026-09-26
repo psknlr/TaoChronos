@@ -87,7 +87,7 @@ historical evidence.
 | TCM-Ancient-Books (GitHub `xiaopangxia/TCM-Ancient-Books`) | 701 texts read, 8 stored — 369k characters | no licence stated — local research use | `taochronos corpus fetch|catalog|ingest tcm-ancient-books` |
 | tcmoc (GitHub `lab99x/tcmoc`) | 701 texts read (a copy of the previous), none stored | no licence stated — local research use | `taochronos corpus fetch|catalog|ingest tcmoc` |
 | classical-tcm-canon (Hugging Face `wangekxy/classical-tcm-canon`) | 115 records read, 1 stored — 305k characters | dataset card: `license: other` (proprietary-commercial), texts declared public domain — local research use only, never redistributed | `taochronos corpus fetch|catalog|ingest hf-tcm-canon` (needs the `parquet` extra: pyarrow) |
-| Image witnesses (影像见证): NIJL 国書データベース, Staatsbibliothek zu Berlin (Sammlung Unschuld), Library of Congress (Chinese Rare Books), 早稲田大学 古典籍総合データベース, NDL デジタルコレクション | the *records* of digitised prints and manuscripts — title, author, date, print or manuscript, holder, shelfmark, IIIF manifest, terms of use — linked to the works of the store by title; no image is downloaded (see *Image witnesses* below) | the records: each catalogue's terms; the images: each holder's licence, per record | `taochronos corpus images [source] [--enrich]` → `corpus/catalog/images/*.csv` |
+| Image witnesses (影像见证): NIJL 国書データベース, Staatsbibliothek zu Berlin (Sammlung Unschuld), Library of Congress (Chinese Rare Books), 早稲田大学 古典籍総合データベース (NDL デジタルコレクション: harvester ready, catalog not yet built) | the *records* of digitised prints and manuscripts — title, author, date, print or manuscript, holder, shelfmark, IIIF manifest, terms of use — linked to the works of the store by title; no image is downloaded (see *Image witnesses* below) | the records: each catalogue's terms; the images: each holder's licence, per record | `taochronos corpus images [source] [--enrich]` → `corpus/catalog/images/*.csv` |
 
 ```bash
 taochronos corpus fetch kanripo            # shallow clones into <data>/sources/kanripo, one repository at a time
@@ -290,7 +290,7 @@ recorded.
 | Staatsbibliothek zu Berlin · Sammlung Unschuld | K10plus SRU (MARCXML, shelfmarks `Slg. Unschuld …`), joined with the provenance dataset of the Hamburg FDR (Staack 2025, CC BY 4.0: when and where each manuscript was acquired) | the collection's manuscripts and prints; the digitised ones with their manifest | Public Domain Mark 1.0 |
 | Library of Congress · Chinese Rare Books | loc.gov JSON API | the medical items: by subject, or by a medical title where the record has none | online reading for education and research; no reuse rights granted (digitised with the National Central Library, Taipei) |
 | 早稲田大学 古典籍総合データベース | the class list and item pages | class ヤ09 (医学): title, author, imprint, call number, keywords | the library's terms; no IIIF manifest published |
-| NDL デジタルコレクション | NDL Search OpenSearch (publications to 1911) | the titles of the store's pre-1912 works, queried in traditional characters; of the results — NDL Search unites many libraries' catalogues — the items of the Digital Collection whose title is the title looked up | out-of-copyright items are public on the internet |
+| NDL デジタルコレクション | NDL Search OpenSearch (publications to 1911) | the titles of the store's pre-1912 works, queried in traditional characters; of the results — NDL Search unites many libraries' catalogues — the items of the Digital Collection whose title is the title looked up | out-of-copyright items are public on the internet. The harvester is ready, the catalog not yet built: NDL Search answers slowly and limits concurrent requests, so the 920 titles take about three hours (`corpus images ndl`) |
 
 **Dates.** A western year where the record gives one; else a Japanese era with its year (享和１ → 1801; an era alone,
 〔寛永〕, gives its span; the table runs from 天正 to 昭和); else a Chinese reign era through the domain's era table
@@ -339,7 +339,7 @@ year, with holder, shelfmark, how the link was made and the terms, and the count
 | Staatsbibliothek zu Berlin, Sammlung Unschuld, with the provenance CSV | image witnesses |
 | Library of Congress, Chinese Rare Books | image witnesses |
 | 早稲田大学 古典籍総合データベース | image witnesses (no IIIF manifests) |
-| NDL デジタルコレクション | image witnesses (looked up by the store's titles) |
+| NDL デジタルコレクション | harvester ready (`corpus images ndl`: the store's titles among publications to 1911, the Digital Collection's items kept); the catalog is not built yet — about three hours at NDL's rate limits |
 | 国立公文書館 デジタルアーカイブ | reachable, but no interface for records in bulk: reference only |
 | 北里大学 東洋医学総合研究所 医史学研究部 | research pages without a catalogue interface: reference only |
 | Internet Archive | its Chinese-medicine items are almost all modern books in the lending library: not harvested |

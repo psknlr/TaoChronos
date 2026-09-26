@@ -317,7 +317,8 @@ its passages link the image of their page (CMETA's editions do: a passage's `loc
 transcribed from). The **image witnesses** come from the catalog harvested by `taochronos corpus images`
 (`corpus/catalog/images/*.csv`, [data.md](data.md#image-witnesses-pluginsclassicsingestimagespy-corpuscatalogimages)):
 digitised copies in NIJL's holders (研医会, 慶應 and 京都 富士川文庫, 東京大学 incl. the 鶚軒文庫, 九州, 東北), the
-Staatsbibliothek zu Berlin (Sammlung Unschuld), the Library of Congress, 早稲田 and NDL — each with its date, print or
+Staatsbibliothek zu Berlin (Sammlung Unschuld), the Library of Congress and 早稲田 (NDL's harvester is ready, its catalog
+not yet built) — each with its date, print or
 manuscript, shelfmark, IIIF manifest and terms of use, linked to the work by its title (`match`: exact, without volume
 counts, without a print prefix; `·alias` when the title is another name of the work, the links to check first). A link by title is a candidate; the record's page is there to check it. No image is
 downloaded: the manifest is the address from which a IIIF viewer loads the pages, and from which a future image layer

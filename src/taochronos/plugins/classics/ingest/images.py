@@ -16,7 +16,8 @@ Sources, each through the interface its holder publishes:
   the digitised copies' manifests, joined with the acquisition data of the Hamburg provenance dataset (CC BY 4.0).
 * **Library of Congress · Chinese Rare Books**: the collection's medical items (loc.gov JSON API).
 * **早稲田大学 古典籍総合データベース**: the medical class (ヤ09), item by item.
-* **NDL デジタルコレクション**: the works of the corpus looked up by title in NDL Search (pre-1912 digitised items).
+* **NDL デジタルコレクション**: the works of the corpus looked up by title in NDL Search (pre-1912 digitised items;
+  NDL Search answers slowly and limits concurrent requests — the store's titles take about three hours).
 
 Records are written as CSV (``corpus/catalog/images/<source>.csv``) and read back by the study layer.  Every request
 is paced; responses are cached under ``<data>/sources/images``.

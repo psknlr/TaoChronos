@@ -5,7 +5,8 @@
   open), the 東亜医学協会 (7), Wikisource Category:中醫 and 醫書 (16 new of 627, from the dumps), TCM-Ancient-Books (8
   new of 701), tcmoc (a copy), classical-tcm-canon (1 new of 115); contemporary works and modern editions left out
   (`corpus/catalog/exclusions.yaml`). Image witnesses: the records of the digitised prints and manuscripts at NIJL's
-  medical holders, Berlin (Sammlung Unschuld), the Library of Congress, Waseda and NDL (`corpus/catalog/images/`).
+  medical holders, Berlin (Sammlung Unschuld), the Library of Congress and Waseda (`corpus/catalog/images/`); the NDL
+  catalog (`corpus images ndl`, about three hours at NDL's rate limits) is still to be built.
 - CMETA's texts still being collated (粗校, 待校) when the site opens them; its 難經集注 and further editions as they
   are completed. The Biodiversity Heritage Library (with an API key) and the 中国中医古籍数字资源库 when reachable;
   国立公文書館 (内閣文庫) records by hand. `corpus images --enrich all` for the dates and authors of every NIJL record,
