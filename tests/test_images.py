@@ -174,12 +174,14 @@ def test_unschuld_records_join_the_provenance_data():
 def test_loc_keeps_medical_items_by_subject_or_title():
     results = {"results": [{"id": "https://www.loc.gov/item/1/", "title": "Shi yi de xiao fang"},
                            {"id": "https://www.loc.gov/item/2/", "title": "Huang niu jing"},
-                           {"id": "https://www.loc.gov/item/3/", "title": "Ben cao"}], "pagination": {"next": None}}
+                           {"id": "https://www.loc.gov/item/3/", "title": "Ben cao"},
+                           {"id": "https://www.loc.gov/item/4/", "title": "Yao shi jing"}], "pagination": {"next": None}}
     items = {
         "1": {"other_title": ["世醫得效方 : 二十卷 /"], "date": "1345", "created_published": ["元刻本"],
               "rights": ["<p>The Library of Congress obtained permission … National Central Library of Taiwan.</p>"],
               "iiif_manifest_url": "https://www.loc.gov/item/1/manifest.json"},  # no subject heading: the title tells
         "2": {"other_title": ["新刊圖像黃牛經全書"], "subject_headings": [], "rights": []},  # cattle, not medicine
+        "4": {"other_title": ["藥師琉璃光如來本願功德經"], "subject_headings": ["Zi bu--Shi jia lei 子部--釋家類"]},  # a sutra
         "3": {"other_title": ["本草綱目"], "subject_headings": ["Materia medica--China"], "date": "1603",
               "rights": ["<p>The Library of Congress is unaware of any copyright or other restrictions in the World Digital "
                          "Library Collection.</p>"]},

@@ -430,6 +430,9 @@ def harvest_loc(fetch: Fetcher, *, log: Log = print) -> list[Record]:
         subjects = " ".join(item.get("subject_headings") or r.get("subject") or [])
         others = item.get("other_title") or []
         title = next((t for t in others if re.search(r"[㐀-鿿]", t)), "") or r.get("title", "")
+        classes = re.findall(r"Zi bu--([A-Za-z ]+?) lei", subjects)  # 四部 class: 醫家類 / 醫書類, not 釋家類 …
+        if classes and not any(c.lower().startswith(("yi jia", "yi shu")) for c in classes):
+            continue
         if not (_LOC_SUBJECT.search(subjects) or _MEDICAL_TITLE.search(title)):
             continue
         rights = re.sub(r"\s+", " ", " ".join(html.unescape(re.sub(r"<[^>]+>", " ", x)) for x in (item.get("rights") or []))).strip()
@@ -541,7 +544,7 @@ SHINJITAI = str.maketrans({"霊": "靈", "験": "驗", "薬": "藥", "気": "氣
                            "摂": "攝", "続": "續", "権": "權", "観": "觀", "嘱": "囑", "弾": "彈", "転": "轉", "宝": "寶",
                            "実": "實", "来": "來", "両": "兩", "満": "滿", "静": "靜", "痩": "瘦", "湿": "濕", "胆": "膽",
                            "脈": "脈", "臓": "臟", "囲": "圍", "肃": "肅", "浄": "淨", "犠": "犧", "鉱": "鑛", "枢": "樞"})
-_EDITION_PREFIX = re.compile(r"^(?:新刊|新鐫|新鍥|新刻|新校|新編|新版|重刊|重刻|重鐫|重訂|重校|校正|校刻|官板|官刻|京板|和刻|翻刻|覆刻|家刻|袖珍|"
+_EDITION_PREFIX = re.compile(r"^(?:新刊|新鐫|新鍥|新刻|新校|新編|新版|重刊|重刻|重鐫|重訂|重校|增訂|増訂|校正|校刻|官板|官刻|京板|和刻|翻刻|覆刻|家刻|袖珍|"
                              r"繡像|圖像|図像|繪圖|絵図|増補|增補|新増|新增|鼇頭|鰲頭|頭書|首書|標注|標註|補註|訂字|訓点|訓點|改正)+")
 _VOLUMES = re.compile(r"[（(].*?[）)]|[.．]\s*[巻卷].*$|\s*[0-9０-９一二三四五六七八九十百]+\s*[巻卷冊册].*$|[\s　:：/／].*$")
 
