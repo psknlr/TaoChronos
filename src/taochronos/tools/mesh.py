@@ -578,6 +578,25 @@ def _vision_compare(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return res
 
 
+def _bridge_phenotype(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = ctx.cap("bridge").phenotype(a.get("text"), passage_id=a.get("passage_id"))
+    res.pop("text", None)
+    return _brief(res, int(a.get("items", 30)), chars=400)
+
+
+def _bridge_map(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = ctx.cap("bridge").map(a.get("text"), passage_id=a.get("passage_id"), top=int(a.get("top", 5)))
+    packet = res.pop("packet")
+    res["findings"] = [{k: f[k] for k in ("id", "surface", "label", "relation", "negated", "optional", "conditional", "status")}
+                       | {"hpo": (f["hpo"] or {}).get("label")} for f in packet["findings"]]
+    res["source"] = packet.get("source")
+    return _brief(res, int(a.get("items", 12)), chars=600)
+
+
+def _bridge_reverse(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(ctx.cap("bridge").reverse(a["disease"], limit=int(a.get("limit", 15))), int(a.get("items", 15)), chars=400)
+
+
 def _study_schools(ctx: ToolContext, a: dict[str, Any]) -> Any:
     probes = a.get("probes") or []
     return _brief(_study(ctx).schools(a.get("school"), probes=[probes] if isinstance(probes, str) else probes),
@@ -830,6 +849,23 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "commonest substitutions and each difference in context.",
                  obj({"text": S, "passage_id": S, "reference": S, "items": I}, ["text"]), _vision_compare, family="philology",
                  permission="classics:read", returns="CER, variant-only differences, confusions, differences, the passage"),
+        ToolSpec("bridge.phenotype", "古代表型包 (AMBE S10): the findings a passage states — each with its HPO projection and "
+                 "relation type (EXACT, CLOSE, PARTIAL_OVERLAP, NO_MODERN_EQUIVALENT …), negated / optional / conditional / "
+                 "after treatment, its modifiers — and the historical names it uses with the sense its context selects.",
+                 obj({"text": S, "passage_id": S, "items": I}), _bridge_phenotype, family="bridge",
+                 permission="classics:read", returns="findings, implied findings, terms with senses and homonym warnings"),
+        ToolSpec("bridge.map", "古今映射 (AMBE S11–S12): a passage's findings scored against modern disease profiles (HPO, "
+                 "ICD-10), explainably — matched and missing typical findings, conflicts, required findings — with a "
+                 "qualitative level (high / moderate / low / insufficient, never a probability), what would tell the "
+                 "candidates apart, how its historical names relate to them, and a statement that passes the presentism "
+                 "guard.  Phenotypic similarity, not retrospective diagnosis.",
+                 obj({"text": S, "passage_id": S, "top": I, "items": I}), _bridge_map, family="bridge",
+                 permission="classics:read", expensive=True, returns="candidates with levels, discriminators, term relations, statement"),
+        ToolSpec("bridge.reverse", "今病溯古 (AMBE): from a modern disease (id, name or ICD-10 code) to the ancient written forms "
+                 "of its findings, the passages that describe several of them together (with a required finding), and the "
+                 "historical names those passages use — candidates for historical study, not equivalents.",
+                 obj({"disease": S, "limit": I, "items": I}, ["disease"]), _bridge_reverse, family="bridge",
+                 permission="classics:read", expensive=True, returns="forms, passages with levels, names by period"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

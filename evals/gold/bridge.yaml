@@ -1,0 +1,73 @@
+# BridgeEval (AMBE): the AncientPhenotypePacket, and the mapping of canonical descriptions to modern disease profiles.
+#
+# phenotypes — constructed sentences in the forms of the classics (dev: written while the reader was built): the findings
+#   a reader should state, as phenotype ids of domains/bridge/phenotypes.yaml; "!" marks a negated finding, "?" an
+#   optional or conditional one (read, but kept apart from the presenting picture).
+# heldout — passages of the full corpus drawn at random (seed 20260927) from 65 clinical works and annotated from the
+#   text alone before the reader was run on them; ids only (the texts stay in the local store).  Findings the map has no
+#   phenotype for (胁痛, 齿痛, 肢寒) are not annotated.
+# mapping — canonical descriptions (dev) and the profile a clinician-historian would name first among the phenotypic
+#   resemblances (`top`: must be first; `top3`: among the first three), or none above low (`max_level`).  These test the
+#   construct, not a diagnosis: no gold standard of historical descriptions with known modern diagnoses exists.
+phenotypes:
+  - {text: 男子消渴，小便反多，以饮一斗，小便一斗。, findings: [thirst_drinking, urine_increased]}
+  - {text: 太阳病，发热而渴，不恶寒者，为温病。, findings: [fever, thirst_drinking, "!chills"]}
+  - {text: 伤寒，脉浮，自汗出，小便数，心烦，微恶寒，脚挛急。, findings: [pulse_other, sweating, urine_frequent, irritability, chills, cramp]}
+  - {text: 少阴之为病，脉微细，但欲寐也。, findings: [pulse_faint, somnolence]}
+  - {text: 阳明病，谵语，有潮热，反不能食者，胃中必有燥屎五六枚也。, findings: [delirium, fever_tidal, anorexia]}
+  - {text: 呕而发热者，小柴胡汤主之。, findings: [vomiting, fever]}
+  - {text: 下利，腹胀满，身体疼痛者，先温其里。, findings: [diarrhea, abdominal_distension, body_ache]}
+  - {text: 咳而上气，喉中水鸡声，射干麻黄汤主之。, findings: [cough, dyspnea, wheeze]}
+  - {text: 病人胸满，唇痿舌青，口燥，但欲漱水不欲咽，无寒热，脉微大来迟，腹不满，其人言我满，为有瘀血。,
+     findings: [chest_oppression, dry_mouth, "!fever", pulse_other, "!abdominal_distension"]}
+  - {text: 诸肢节疼痛，身体尪羸，脚肿如脱，头眩短气，温温欲吐，桂枝芍药知母汤主之。,
+     findings: [joint_pain, joint_swelling, vertigo, dyspnea, nausea]}
+  - {text: 或渴，或利，或噎，或小便不利、少腹满，或喘者，小青龙汤主之。,
+     findings: ["?thirst_drinking", "?diarrhea", "?dysphagia", "?urine_scanty", "?abdominal_distension", "?dyspnea"]}
+  - {text: 太阳病，项背强几几，无汗恶风，葛根汤主之。, findings: [neck_stiff, no_sweat, aversion_wind]}
+  - {text: 夫病疟，寒热往来，发作有时，头痛如破，渴欲饮水。, findings: [fever_alternating, headache, thirst_drinking]}
+  - {text: 下利脓血，里急后重，腹痛，身热。, findings: [dysentery_stool, tenesmus, abdominal_pain, fever]}
+  - {text: 半身不遂，口眼㖞斜，语言謇涩，口角流涎，大便干燥，小便频数，遗尿不禁。,
+     findings: [hemiplegia, facial_palsy, speech_impaired, drooling, constipation, urine_frequent, urine_incontinent]}
+  - {text: 利小便，通利水道。, findings: []}
+  - {text: 汗出而解，不能发黄。, findings: ["!jaundice"]}
+  - {text: 虚劳里急，悸，衄，腹中痛，梦失精，四肢酸疼，手足烦热，咽干口燥。,
+     findings: [palpitation, epistaxis, abdominal_pain, dry_mouth]}
+  - {text: 妇人经水不通，少腹满痛，小便自利。, findings: [amenorrhea, abdominal_distension]}
+  - {text: 心中烦，不得卧。, findings: [irritability, insomnia]}
+
+heldout:
+  - {passage: jc_b015.01997, findings: [pulse_other, pulse_slow, aversion_wind, anorexia, jaundice, neck_stiff, urine_scanty]}
+  - {passage: jc_o046.00373, findings: [back_pain, limb_numb, chills]}
+  - {passage: jc_n009.02565, findings: [rash, abdominal_pain]}
+  - {passage: jc_p0001a.00174, findings: [sweating, dyspnea]}
+  - {passage: jc_p0004.00263, findings: [cough, pulse_other, dyspnea]}
+  - {passage: jc_o046a.00553, findings: [jaundice, dry_mouth, epistaxis, throat_swelling, chills]}
+  - {passage: jc_p0002a.00941, findings: [urine_painful, "?urine_blood"]}
+  - {passage: jc_p0014.00708, findings: [constipation, "?abdominal_pain"]}
+  - {passage: jc_o044.01941, findings: [urine_painful, urinary_retention, chills]}
+  - {passage: jingyue_quanshu_skqs.042.06091, findings: [rash, irritability, abdominal_pain, dyspnea]}
+  - {passage: yizong_jinjian.040.18981, findings: [epistaxis, purpura, gum_bleeding, urine_blood, rectal_bleeding]}
+  - {passage: jc_p0013.00769, findings: [trismus, hemiplegia, thirst_drinking]}
+
+mapping:
+  - {text: 男子消渴，小便反多，以饮一斗，小便一斗，肾气丸主之。, top3: [diabetes_mellitus, diabetes_insipidus], max_level: moderate}
+  - {text: 三消之病，上消者，大渴引饮；中消者，多食善饥，不为肌肉，而日加削瘦；下消者，小便如膏，或小便甜。, top: diabetes_mellitus}
+  - {text: 胸痹之病，喘息咳唾，胸背痛，短气。, top: angina_pectoris}
+  - {text: 肠痈者，少腹肿痞，按之即痛，时时发热，自汗出，复恶寒，脓已成。, top: appendicitis}
+  - {text: 疟，往来寒热，发作有时，头痛，汗出，渴欲饮水。, top: malaria}
+  - {text: 下利脓血，里急后重，腹痛，发热。, top: shigellosis}
+  - {text: 吐利交作，转筋，脉微欲绝，目眶陷，手指螺瘪。, top: cholera}
+  - {text: 半身不遂，口眼㖞斜，语言謇涩，口角流涎。, top: ischemic_stroke}
+  - {text: 卒倒，不省人事，口吐涎沫，四肢抽搐，醒后如常。, top: epilepsy}
+  - {text: 身目俱黄，小便如皂荚汁，不欲饮食，倦怠乏力。, top: viral_hepatitis}
+  - {text: 咳嗽，咯血，潮热，盗汗，形瘦。, top: pulmonary_tuberculosis}
+  - {text: 喘息，喉中水鸡声，发作有时。, top: asthma}
+  - {text: 痄腮，发热，耳下肿。, top: mumps}
+  - {text: 咳唾脓血，吐如米粥，浊唾腥臭，胸痛。, top: lung_abscess}
+  - {text: 身肿，面浮，小便不利，小便多沫。, top: nephrotic_syndrome}
+  - {text: 骨节疼痛，关节肿大，屈伸不利，经年不愈。, top3: [rheumatoid_arthritis]}
+  - {text: 头痛，项强，发热，呕吐，角弓反张。, top3: [meningitis]}
+  - {text: 口噤不开，角弓反张，转筋，因破伤而得。, top: tetanus}
+  - {text: 太阳病，发热，汗出，恶风，脉缓。, max_level: low}
+  - {text: 脉浮紧，舌白，恶风。, max_level: insufficient}

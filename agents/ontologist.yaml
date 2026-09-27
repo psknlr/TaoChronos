@@ -7,9 +7,9 @@ objective: >-
 mode: hybrid
 procedure: taochronos.agents.procedures.ontologist
 skills: [terminology-mapping, anachronism-guard]
-tools: [kg.term, kg.propose_change]
+tools: [kg.term, kg.propose_change, bridge.phenotype, bridge.map, bridge.reverse]
 context_view: terminology
-permissions: [kg:read, kg:propose]
+permissions: [kg:read, kg:propose, classics:read]
 output_schema: MappingProposals
 model: {min_tier: frontier, effort: high, max_tokens: 8000}
 budget: {max_tool_calls: 40, max_llm_calls: 6}

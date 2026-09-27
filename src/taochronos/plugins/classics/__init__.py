@@ -53,6 +53,10 @@ def register(registry: Any, config: dict[str, Any], context: Any) -> None:
     from .vision.service import VisionService
 
     registry.register("vision", "classics", VisionService(study), default=True)
+    from .bridge.service import BridgeService
+
+    bridge_root = config.get("bridge_domain")
+    registry.register("bridge", "classics", BridgeService(study, home / bridge_root if bridge_root else None), default=True)
 
 
 __all__ = [

@@ -1,0 +1,895 @@
+# 现代疾病表型谱 — screening profiles of modern diseases over HPO terms: the modern end of the Ancient–Modern Bridge.
+#
+# A profile lists the observable findings of a disease in three tiers (typical: cardinal, most patients; frequent: many;
+# occasional: some), the findings that argue against it, and what a modern diagnosis needs that no ancient text can show
+# (`confirm`: laboratory or imaging findings, `tests`), and the findings without one of which a resemblance stays low
+# (`required`: any one of them — plague without buboes, mumps without swollen parotids).  The bridge scores an ancient description against these profiles
+# and reports how far its findings are *compatible* with each disease — a qualitative level, never a probability that the
+# patient of the text "had" the disease (no calibration data exist for that; see docs/bridge.md).
+#
+# The profiles are curated from standard clinical descriptions for research screening, not diagnosis; they need clinical
+# review before any use beyond that.  HPO identifiers and labels checked against hp/releases/2026-09-01; ICD-10 codes
+# from the WHO 2019 edition.  `concept` links a profile to the modern concepts of ../classics/modern_concepts.yaml (the
+# candidates the curated senses of historical terms name).
+release: {hpo: hp/releases/2026-09-01, icd10: WHO ICD-10 2019}
+weights: {typical: 1.0, frequent: 0.6, occasional: 0.3, against: 0.8}
+course_terms:
+  acute: {id: "HP:0011009", label: Acute}
+  chronic: {id: "HP:0011010", label: Chronic}
+  episodic: {id: "HP:0025303", label: Episodic}
+  recurrent: {id: "HP:0031796", label: Recurrent}
+onset_terms:
+  child: {id: "HP:0011463", label: Childhood onset}
+  adult: {id: "HP:0003581", label: Adult onset}
+  elderly: {id: "HP:0003584", label: Late onset}
+
+diseases:
+  # metabolic and endocrine
+  - id: diabetes_mellitus
+    label: 糖尿病
+    en: Diabetes mellitus
+    icd10: E10-E14
+    concept: modern:diabetes_mellitus
+    system: metabolic
+    course: chronic
+    onset: [child, adult, elderly]
+    typical: {"HP:0001959": Polydipsia, "HP:0000103": Polyuria, "HP:0002591": Polyphagia, "HP:0001824": Weight loss}
+    required: {"HP:0000103": Polyuria, "HP:0001959": Polydipsia, "HP:0003076": Glycosuria}
+    frequent: {"HP:0003076": Glycosuria, "HP:0012378": Fatigue, "HP:0000017": Nocturia, "HP:0100515": Pollakisuria, "HP:0000622": Blurred vision,
+               "HP:0000989": Pruritus, "HP:0000217": Xerostomia}
+    occasional: {"HP:0003401": Paresthesia, "HP:0033748": Hypoesthesia, "HP:0025615": Abscess, "HP:0100758": Gangrene, "HP:0031967": Cloudy urine,
+                 "HP:0001259": Coma}
+    against: {"HP:0100520": Oliguria}
+    confirm: {"HP:0003074": Hyperglycemia, "HP:0001993": Ketoacidosis}
+    tests: 空腹血糖、糖化血红蛋白、口服葡萄糖耐量试验
+  - id: diabetes_insipidus
+    label: 尿崩症
+    en: Diabetes insipidus
+    icd10: E23.2
+    concept: modern:diabetes_insipidus
+    system: endocrine
+    course: chronic
+    onset: [child, adult]
+    typical: {"HP:0000103": Polyuria, "HP:0001959": Polydipsia}
+    required: {"HP:0000103": Polyuria}
+    frequent: {"HP:0000017": Nocturia, "HP:0001944": Dehydration, "HP:0012378": Fatigue}
+    occasional: {"HP:0001824": Weight loss, "HP:0002315": Headache, "HP:0000805": Enuresis}
+    against: {"HP:0003076": Glycosuria}
+    confirm: {"HP:0003228": Hypernatremia}
+    tests: 尿渗透压、禁水—加压素试验
+  - id: hyperthyroidism
+    label: 甲状腺功能亢进症
+    en: Hyperthyroidism
+    icd10: E05
+    system: endocrine
+    course: chronic
+    onset: [adult]
+    typical: {"HP:0001824": Weight loss, "HP:0001962": Palpitations, "HP:0002046": Heat intolerance, "HP:0000975": Hyperhidrosis, "HP:0000853": Goiter}
+    required: {"HP:0000853": Goiter, "HP:0002046": Heat intolerance, "HP:0000520": Proptosis, "HP:0001962": Palpitations}
+    frequent: {"HP:0001649": Tachycardia, "HP:0001337": Tremor, "HP:0002591": Polyphagia, "HP:0000737": Irritability, "HP:0000739": Anxiety,
+               "HP:0100785": Insomnia, "HP:0012378": Fatigue, "HP:0000520": Proptosis, "HP:0002014": Diarrhea, "HP:0001324": Muscle weakness}
+    occasional: {"HP:0011675": Arrhythmia, "HP:0000876": Oligomenorrhea, "HP:0002094": Dyspnea}
+    against: {"HP:6000855": Cold intolerance, "HP:0001662": Bradycardia, "HP:0004324": Increased body weight}
+    tests: 甲状腺功能（TSH、游离T4）
+  - id: hypothyroidism
+    label: 甲状腺功能减退症
+    en: Hypothyroidism
+    icd10: E03
+    system: endocrine
+    course: chronic
+    onset: [adult, elderly]
+    typical: {"HP:0012378": Fatigue, "HP:6000855": Cold intolerance, "HP:0004324": Increased body weight, "HP:0002019": Constipation}
+    required: {"HP:6000855": Cold intolerance, "HP:0012378": Fatigue}
+    frequent: {"HP:0000958": Dry skin, "HP:0001262": Excessive daytime somnolence, "HP:0001609": Hoarse voice, "HP:0000282": Facial edema,
+               "HP:0001662": Bradycardia, "HP:0002354": Memory impairment, "HP:0000716": Depression, "HP:0001596": Alopecia}
+    occasional: {"HP:0000853": Goiter, "HP:0000132": Menorrhagia, "HP:0003326": Myalgia}
+    against: {"HP:0002046": Heat intolerance, "HP:0001824": Weight loss, "HP:0001649": Tachycardia}
+    tests: 甲状腺功能（TSH、游离T4）
+  - id: beriberi
+    label: 维生素B1缺乏病（脚气病）
+    en: Beriberi
+    icd10: E51.1
+    system: nutritional
+    course: chronic
+    onset: [child, adult]
+    typical: {"HP:0010741": Pedal edema, "HP:0003401": Paresthesia, "HP:0001324": Muscle weakness}
+    required: {"HP:0010741": Pedal edema, "HP:0003401": Paresthesia, "HP:0001324": Muscle weakness}
+    frequent: {"HP:0000969": Edema, "HP:0002094": Dyspnea, "HP:0001962": Palpitations, "HP:0033748": Hypoesthesia, "HP:0009763": Limb pain,
+               "HP:0012378": Fatigue, "HP:0001649": Tachycardia}
+    occasional: {"HP:0004396": Poor appetite, "HP:0012764": Orthopnea, "HP:0001289": Confusion}
+    tests: 血硫胺素水平、补充后的反应
+    note: 唐宋医书之"脚气"（脚弱、肿满、冲心）与之表型多有重合；现代口语之"脚气"则指足癣
+  - id: tinea_pedis
+    label: 足癣
+    en: Tinea pedis
+    icd10: B35.3
+    system: skin
+    course: chronic
+    onset: [adult]
+    typical: {"HP:0000989": Pruritus, "HP:0040189": Scaling skin}
+    required: {"HP:0000989": Pruritus, "HP:0040189": Scaling skin}
+    frequent: {"HP:0200037": Skin vesicle, "HP:0010783": Erythema}
+    occasional: {"HP:0200042": Skin ulcer}
+    against: {"HP:0010741": Pedal edema, "HP:0003401": Paresthesia, "HP:0001324": Muscle weakness}
+    tests: 皮屑真菌镜检
+  - id: vitamin_a_deficiency
+    label: 维生素A缺乏（夜盲）
+    en: Vitamin A deficiency with night blindness
+    icd10: E50.5
+    system: nutritional
+    course: chronic
+    onset: [child, adult]
+    typical: {"HP:0000662": Nyctalopia}
+    required: {"HP:0000662": Nyctalopia}
+    frequent: {"HP:0001097": Keratoconjunctivitis sicca, "HP:0000958": Dry skin}
+    occasional: {"HP:0001508": Failure to thrive, "HP:0000505": Visual impairment}
+    tests: 血清视黄醇
+  # respiratory and tuberculous
+  - id: pulmonary_tuberculosis
+    label: 肺结核
+    en: Pulmonary tuberculosis
+    icd10: A15-A16
+    concept: modern:tuberculosis
+    system: respiratory
+    course: chronic
+    onset: [child, adult, elderly]
+    typical: {"HP:0012735": Cough, "HP:0001824": Weight loss, "HP:0030166": Night sweats, "HP:0001945": Fever, "HP:0002105": Hemoptysis}
+    required: {"HP:0012735": Cough, "HP:0002105": Hemoptysis}
+    frequent: {"HP:0001954": Recurrent fever, "HP:0031245": Productive cough, "HP:0012378": Fatigue, "HP:0004396": Poor appetite, "HP:0100749": Chest pain}
+    occasional: {"HP:0002094": Dyspnea, "HP:0001609": Hoarse voice, "HP:0025289": Cervical lymphadenopathy, "HP:0000141": Amenorrhea}
+    tests: 痰涂片与培养、胸部影像、结核菌素试验或γ干扰素释放试验
+    note: 古之"痨瘵""肺痨""传尸"部分描述与之表型相近，但也包括其他消耗性疾病
+  - id: tuberculous_lymphadenitis
+    label: 淋巴结结核
+    en: Tuberculous lymphadenitis
+    icd10: A18.2
+    concept: modern:scrofula
+    system: lymphatic
+    course: chronic
+    onset: [child, adult]
+    typical: {"HP:0025289": Cervical lymphadenopathy}
+    required: {"HP:0025289": Cervical lymphadenopathy}
+    frequent: {"HP:0001945": Fever, "HP:0030166": Night sweats, "HP:0001824": Weight loss, "HP:0012378": Fatigue}
+    occasional: {"HP:0200042": Skin ulcer, "HP:0025615": Abscess, "HP:0012735": Cough}
+    tests: 淋巴结活检与培养
+  - id: pneumonia
+    label: 肺炎
+    en: Pneumonia
+    icd10: J18
+    system: respiratory
+    course: acute
+    onset: [child, adult, elderly]
+    typical: {"HP:0001945": Fever, "HP:0012735": Cough, "HP:0002094": Dyspnea, "HP:0031245": Productive cough}
+    required: {"HP:0012735": Cough}
+    frequent: {"HP:0025143": Chills, "HP:0100749": Chest pain, "HP:0001649": Tachycardia, "HP:0012378": Fatigue, "HP:0033834": Malaise}
+    occasional: {"HP:0002105": Hemoptysis, "HP:0001289": Confusion, "HP:0000961": Cyanosis, "HP:0002315": Headache, "HP:0002013": Vomiting,
+                 "HP:0003326": Myalgia}
+    tests: 胸部影像、血常规、病原学检查
+  - id: lung_abscess
+    label: 肺脓肿
+    en: Lung abscess
+    icd10: J85
+    system: respiratory
+    course: acute
+    onset: [adult]
+    typical: {"HP:0001945": Fever, "HP:0031245": Productive cough, "HP:0034777": Purulent sputum}
+    required: {"HP:0034777": Purulent sputum}
+    frequent: {"HP:0025143": Chills, "HP:0002105": Hemoptysis, "HP:0100749": Chest pain, "HP:0100812": Halitosis, "HP:0001824": Weight loss}
+    occasional: {"HP:0002094": Dyspnea, "HP:0012378": Fatigue}
+    tests: 胸部影像（空洞伴液平）、痰培养
+    note: 《金匮》"肺痈"（咳唾脓血、吐如米粥）与之表型相近
+  - id: bronchiectasis
+    label: 支气管扩张症
+    en: Bronchiectasis
+    icd10: J47
+    system: respiratory
+    course: chronic
+    onset: [child, adult]
+    typical: {"HP:0031245": Productive cough, "HP:0033709": Increased sputum production}
+    required: {"HP:0031245": Productive cough, "HP:0033709": Increased sputum production}
+    frequent: {"HP:0002105": Hemoptysis, "HP:0002094": Dyspnea, "HP:0034777": Purulent sputum, "HP:0001954": Recurrent fever}
+    occasional: {"HP:0030828": Wheezing, "HP:0012378": Fatigue, "HP:0001824": Weight loss}
+    tests: 高分辨率胸部CT
+  - id: asthma
+    label: 支气管哮喘
+    en: Asthma
+    icd10: J45
+    system: respiratory
+    course: episodic
+    onset: [child, adult]
+    typical: {"HP:0030828": Wheezing, "HP:0002094": Dyspnea, "HP:0012735": Cough}
+    required: {"HP:0030828": Wheezing}
+    frequent: {"HP:0012764": Orthopnea, "HP:0031245": Productive cough}
+    occasional: {"HP:0000961": Cyanosis, "HP:0001649": Tachycardia}
+    against: {"HP:0001945": Fever}
+    tests: 肺功能（可逆性气流受限）
+    note: 古之"哮病"（喉中水鸡声）与之表型相近
+  - id: copd
+    label: 慢性阻塞性肺疾病
+    en: Chronic obstructive pulmonary disease
+    icd10: J44
+    system: respiratory
+    course: chronic
+    onset: [adult, elderly]
+    typical: {"HP:0002094": Dyspnea, "HP:0012735": Cough, "HP:0031245": Productive cough}
+    required: {"HP:0002094": Dyspnea, "HP:0012735": Cough}
+    frequent: {"HP:0030828": Wheezing, "HP:0012378": Fatigue, "HP:0033709": Increased sputum production, "HP:0000961": Cyanosis, "HP:0012764": Orthopnea}
+    occasional: {"HP:0001824": Weight loss, "HP:0000969": Edema}
+    tests: 肺功能
+    note: 《金匮》"肺胀"（咳而上气，其人喘，目如脱状）与之表型部分相近
+  - id: influenza
+    label: 流行性感冒
+    en: Influenza
+    icd10: J10-J11
+    system: respiratory
+    course: acute
+    onset: [child, adult, elderly]
+    typical: {"HP:0001945": Fever, "HP:0002315": Headache, "HP:0003326": Myalgia, "HP:0012735": Cough}
+    required: {"HP:0001945": Fever}
+    frequent: {"HP:0025143": Chills, "HP:0012378": Fatigue, "HP:0033050": Pharyngalgia, "HP:0033834": Malaise, "HP:0004396": Poor appetite,
+               "HP:0031417": Rhinorrhea}
+    occasional: {"HP:0002013": Vomiting, "HP:0002014": Diarrhea, "HP:0002094": Dyspnea, "HP:0002829": Arthralgia}
+    tests: 流感病毒抗原或核酸检测
+  # intestinal and fevers
+  - id: typhoid
+    label: 伤寒（肠伤寒）
+    en: Typhoid fever
+    icd10: A01.0
+    concept: modern:typhoid
+    system: infectious
+    course: acute
+    onset: [child, adult]
+    typical: {"HP:0001945": Fever, "HP:0002315": Headache, "HP:0002027": Abdominal pain}
+    required: {"HP:0001945": Fever}
+    frequent: {"HP:0033834": Malaise, "HP:0002019": Constipation, "HP:0002014": Diarrhea, "HP:0004396": Poor appetite, "HP:0001662": Bradycardia, "HP:0012733": Macule,
+               "HP:0001744": Splenomegaly, "HP:0002240": Hepatomegaly, "HP:0012735": Cough, "HP:0012378": Fatigue, "HP:0003270": Abdominal distention,
+               "HP:0031258": Delirium}
+    occasional: {"HP:0002573": Hematochezia, "HP:0002249": Melena, "HP:0000421": Epistaxis, "HP:0001289": Confusion, "HP:0001259": Coma}
+    tests: 血培养、骨髓培养
+  - id: cholera
+    label: 霍乱
+    en: Cholera
+    icd10: A00
+    concept: modern:cholera
+    system: infectious
+    course: acute
+    onset: [child, adult, elderly]
+    typical: {"HP:0002014": Diarrhea, "HP:0002013": Vomiting, "HP:0001944": Dehydration}
+    required: {"HP:0002014": Diarrhea}
+    frequent: {"HP:0003394": Muscle spasm, "HP:0001959": Polydipsia, "HP:0100520": Oliguria, "HP:0032553": Weak pulse, "HP:0002615": Hypotension,
+               "HP:0001649": Tachycardia, "HP:6000303": Decreased skin turgor}
+    occasional: {"HP:0100519": Anuria, "HP:0000961": Cyanosis, "HP:0001289": Confusion, "HP:0001259": Coma, "HP:0002027": Abdominal pain}
+    against: {"HP:0025085": Bloody diarrhea, "HP:0012702": Tenesmus}
+    tests: 粪便霍乱弧菌培养或快速检测
+    note: 真性霍乱（霍乱弧菌）一般认为1817年后传入中国；此前古籍之"霍乱"泛指"呕吐而利"的急性吐泻病
+  - id: gastroenteritis
+    label: 感染性胃肠炎
+    en: Infectious gastroenteritis
+    icd10: A09
+    system: digestive
+    course: acute
+    onset: [child, adult, elderly]
+    typical: {"HP:0002014": Diarrhea, "HP:0002013": Vomiting, "HP:0002027": Abdominal pain}
+    required: {"HP:0002014": Diarrhea, "HP:0002013": Vomiting}
+    frequent: {"HP:0002018": Nausea, "HP:0001945": Fever, "HP:0004396": Poor appetite, "HP:0001944": Dehydration}
+    occasional: {"HP:0002315": Headache, "HP:0003326": Myalgia, "HP:0003394": Muscle spasm, "HP:0025085": Bloody diarrhea}
+    tests: 粪便常规与病原学检查
+  - id: shigellosis
+    label: 细菌性痢疾
+    en: Shigellosis
+    icd10: A03
+    system: digestive
+    course: acute
+    onset: [child, adult]
+    typical: {"HP:0025085": Bloody diarrhea, "HP:0012702": Tenesmus, "HP:0002027": Abdominal pain, "HP:0002014": Diarrhea}
+    required: {"HP:0025085": Bloody diarrhea, "HP:0012702": Tenesmus}
+    frequent: {"HP:0001945": Fever, "HP:6000686": Mucus in stool, "HP:0002018": Nausea, "HP:0002013": Vomiting, "HP:0004396": Poor appetite}
+    occasional: {"HP:0001250": Seizure, "HP:0001944": Dehydration, "HP:0031258": Delirium}
+    tests: 粪便培养
+  - id: amoebic_dysentery
+    label: 阿米巴痢疾
+    en: Amoebic dysentery
+    icd10: A06.0
+    system: digestive
+    course: chronic
+    onset: [child, adult]
+    typical: {"HP:0025085": Bloody diarrhea, "HP:0002027": Abdominal pain, "HP:0002014": Diarrhea}
+    required: {"HP:0025085": Bloody diarrhea}
+    frequent: {"HP:0012702": Tenesmus, "HP:6000686": Mucus in stool, "HP:0001824": Weight loss}
+    occasional: {"HP:0001945": Fever, "HP:0002240": Hepatomegaly, "HP:0003270": Abdominal distention}
+    tests: 粪便镜检（溶组织内阿米巴）
+  - id: malaria
+    label: 疟疾
+    en: Malaria
+    icd10: B50-B54
+    concept: modern:malaria
+    system: infectious
+    course: episodic
+    onset: [child, adult, elderly]
+    typical: {"HP:0032323": Periodic fever, "HP:0025143": Chills, "HP:0001945": Fever, "HP:0000975": Hyperhidrosis}
+    required: {"HP:0032323": Periodic fever, "HP:0001954": Recurrent fever}
+    frequent: {"HP:0002315": Headache, "HP:0001744": Splenomegaly, "HP:0000980": Pallor, "HP:0002018": Nausea, "HP:0002013": Vomiting,
+               "HP:0003326": Myalgia, "HP:0012378": Fatigue, "HP:0025145": Rigors, "HP:0001954": Recurrent fever}
+    occasional: {"HP:0000952": Jaundice, "HP:0031258": Delirium, "HP:0001259": Coma, "HP:0001250": Seizure, "HP:0002240": Hepatomegaly,
+                 "HP:0002014": Diarrhea, "HP:0040319": Dark urine}
+    confirm: {"HP:0001903": Anemia}
+    tests: 血涂片疟原虫镜检、快速抗原检测
+    note: 古之"疟"以寒热休作为主，亦含疟疾以外的周期性发热病
+  # eruptive and childhood infections
+  - id: measles
+    label: 麻疹
+    en: Measles
+    icd10: B05
+    system: infectious
+    course: acute
+    onset: [child]
+    typical: {"HP:0001945": Fever, "HP:0000988": Skin rash, "HP:0012735": Cough, "HP:0000509": Conjunctivitis}
+    required: {"HP:0000988": Skin rash}
+    frequent: {"HP:0000613": Photophobia, "HP:0031417": Rhinorrhea, "HP:0002014": Diarrhea, "HP:0004396": Poor appetite, "HP:0033834": Malaise,
+               "HP:0012733": Macule, "HP:0200034": Papule}
+    occasional: {"HP:0002094": Dyspnea, "HP:0001250": Seizure, "HP:0031258": Delirium, "HP:0001259": Coma, "HP:0010280": Stomatitis}
+    against: {"HP:0200039": Pustule, "HP:0200037": Skin vesicle}
+    tests: 麻疹病毒IgM或核酸
+  - id: smallpox
+    label: 天花
+    en: Smallpox
+    icd10: B03
+    system: infectious
+    course: acute
+    onset: [child, adult]
+    typical: {"HP:0001945": Fever, "HP:0200039": Pustule, "HP:0000988": Skin rash, "HP:0003418": Back pain, "HP:0002315": Headache}
+    required: {"HP:0200039": Pustule, "HP:0200037": Skin vesicle, "HP:0200034": Papule, "HP:0000988": Skin rash}
+    frequent: {"HP:0002013": Vomiting, "HP:0033834": Malaise, "HP:0003326": Myalgia, "HP:0200034": Papule, "HP:0200037": Skin vesicle, "HP:0012733": Macule}
+    occasional: {"HP:0031258": Delirium, "HP:0001892": Abnormal bleeding}
+    tests: 已于1980年宣布根除；仅具历史流行病学意义
+  - id: varicella
+    label: 水痘
+    en: Varicella
+    icd10: B01
+    system: infectious
+    course: acute
+    onset: [child]
+    typical: {"HP:0200037": Skin vesicle, "HP:0000989": Pruritus, "HP:0001945": Fever}
+    required: {"HP:0200037": Skin vesicle}
+    frequent: {"HP:0200034": Papule, "HP:0200039": Pustule, "HP:0012733": Macule, "HP:0033834": Malaise, "HP:0002315": Headache}
+    occasional: {"HP:0004396": Poor appetite}
+    tests: 临床诊断、病毒核酸
+  - id: scarlet_fever
+    label: 猩红热
+    en: Scarlet fever
+    icd10: A38
+    system: infectious
+    course: acute
+    onset: [child]
+    typical: {"HP:0001945": Fever, "HP:0000988": Skin rash, "HP:0033050": Pharyngalgia, "HP:0031042": Strawberry tongue}
+    required: {"HP:0000988": Skin rash}
+    frequent: {"HP:0010783": Erythema, "HP:0025439": Pharyngitis, "HP:0025289": Cervical lymphadenopathy, "HP:0002315": Headache, "HP:0002013": Vomiting}
+    occasional: {"HP:0002027": Abdominal pain, "HP:0040189": Scaling skin}
+    tests: 咽拭子A组链球菌检测
+    note: 清代"烂喉痧（丹痧）"与之表型相近
+  - id: diphtheria
+    label: 白喉
+    en: Diphtheria
+    icd10: A36
+    system: infectious
+    course: acute
+    onset: [child]
+    typical: {"HP:0033050": Pharyngalgia, "HP:0001945": Fever, "HP:0002015": Dysphagia, "HP:0025439": Pharyngitis}
+    required: {"HP:0033050": Pharyngalgia, "HP:0025439": Pharyngitis}
+    frequent: {"HP:0001609": Hoarse voice, "HP:0025289": Cervical lymphadenopathy, "HP:0033834": Malaise, "HP:0002094": Dyspnea}
+    occasional: {"HP:0011675": Arrhythmia, "HP:0003470": Paralysis}
+    tests: 咽拭子白喉棒状杆菌培养
+  - id: mumps
+    label: 流行性腮腺炎
+    en: Mumps
+    icd10: B26
+    system: infectious
+    course: acute
+    onset: [child]
+    typical: {"HP:0011850": Parotitis, "HP:0001945": Fever}
+    required: {"HP:0011850": Parotitis}
+    frequent: {"HP:0002315": Headache, "HP:0033834": Malaise, "HP:0004396": Poor appetite, "HP:0030766": Ear pain}
+    occasional: {"HP:0002027": Abdominal pain, "HP:0002013": Vomiting, "HP:0025258": Stiff neck, "HP:0000365": Hearing impairment}
+    tests: 腮腺炎病毒IgM或核酸
+  - id: pertussis
+    label: 百日咳
+    en: Pertussis
+    icd10: A37
+    system: respiratory
+    course: acute
+    onset: [child]
+    typical: {"HP:0012735": Cough, "HP:0002013": Vomiting}
+    required: {"HP:0012735": Cough}
+    frequent: {"HP:0000961": Cyanosis, "HP:0002104": Apnea, "HP:0000421": Epistaxis}
+    occasional: {"HP:0001250": Seizure, "HP:0001945": Fever}
+    tests: 鼻咽拭子百日咳鲍特菌核酸或培养
+    note: 古之"顿咳""鹭鸶咳"与之表型相近
+  - id: tetanus
+    label: 破伤风
+    en: Tetanus
+    icd10: A35
+    system: infectious
+    course: acute
+    onset: [child, adult]
+    typical: {"HP:0000211": Trismus, "HP:0003394": Muscle spasm, "HP:0002179": Opisthotonus}
+    required: {"HP:0000211": Trismus, "HP:0003394": Muscle spasm, "HP:0002179": Opisthotonus}
+    frequent: {"HP:0025258": Stiff neck, "HP:0002015": Dysphagia, "HP:0000975": Hyperhidrosis, "HP:0001250": Seizure}
+    occasional: {"HP:0001945": Fever, "HP:0001649": Tachycardia, "HP:0002104": Apnea}
+    tests: 临床诊断（外伤史）
+  - id: meningitis
+    label: 脑膜炎
+    en: Meningitis
+    icd10: G00-G03
+    system: neurological
+    course: acute
+    onset: [child, adult]
+    typical: {"HP:0001945": Fever, "HP:0002315": Headache, "HP:0025258": Stiff neck}
+    required: {"HP:0025258": Stiff neck, "HP:0031179": Nuchal rigidity}
+    frequent: {"HP:0002013": Vomiting, "HP:0000613": Photophobia, "HP:0001289": Confusion, "HP:0031179": Nuchal rigidity, "HP:0001250": Seizure}
+    occasional: {"HP:0001259": Coma, "HP:0000988": Skin rash, "HP:0000967": Petechiae, "HP:0000979": Purpura, "HP:0002179": Opisthotonus}
+    tests: 脑脊液检查
+  - id: plague
+    label: 鼠疫
+    en: Plague
+    icd10: A20
+    system: infectious
+    course: acute
+    onset: [child, adult, elderly]
+    typical: {"HP:0001945": Fever, "HP:0002716": Lymphadenopathy, "HP:0025143": Chills, "HP:0002315": Headache}
+    required: {"HP:0002716": Lymphadenopathy}
+    frequent: {"HP:0033834": Malaise, "HP:0003326": Myalgia, "HP:0002013": Vomiting, "HP:0031258": Delirium, "HP:0002105": Hemoptysis, "HP:0012735": Cough}
+    occasional: {"HP:0001259": Coma, "HP:0000979": Purpura, "HP:0100758": Gangrene, "HP:0031273": Shock}
+    tests: 淋巴结穿刺液或血培养鼠疫耶尔森菌
+    note: 清末"鼠疫""疙瘩瘟"之记载与之表型相近
+  - id: schistosomiasis
+    label: 血吸虫病
+    en: Schistosomiasis
+    icd10: B65
+    system: infectious
+    course: chronic
+    onset: [child, adult]
+    typical: {"HP:0001433": Hepatosplenomegaly, "HP:0001541": Ascites}
+    required: {"HP:0001433": Hepatosplenomegaly, "HP:0001541": Ascites}
+    frequent: {"HP:0002014": Diarrhea, "HP:0025085": Bloody diarrhea, "HP:0002027": Abdominal pain, "HP:0001824": Weight loss, "HP:0012378": Fatigue,
+               "HP:0003270": Abdominal distention}
+    occasional: {"HP:0001945": Fever, "HP:0002248": Hematemesis}
+    tests: 粪便虫卵、血清学检查
+    note: 古之"蛊胀""水蛊"部分描述与晚期血吸虫病表型相近
+  - id: leprosy
+    label: 麻风
+    en: Leprosy
+    icd10: A30
+    system: infectious
+    course: chronic
+    onset: [child, adult]
+    typical: {"HP:0033748": Hypoesthesia, "HP:0000988": Skin rash, "HP:0200036": Skin nodule}
+    required: {"HP:0033748": Hypoesthesia, "HP:0200036": Skin nodule}
+    frequent: {"HP:0045075": Sparse eyebrow, "HP:0001596": Alopecia, "HP:0200042": Skin ulcer, "HP:0003401": Paresthesia, "HP:0001324": Muscle weakness}
+    occasional: {"HP:0001742": Nasal congestion, "HP:0000421": Epistaxis, "HP:0100758": Gangrene}
+    tests: 皮肤涂片抗酸杆菌、活检
+    note: 古之"疠风""大风""癞"部分描述与之表型相近
+  - id: scabies
+    label: 疥疮
+    en: Scabies
+    icd10: B86
+    system: skin
+    course: chronic
+    onset: [child, adult]
+    typical: {"HP:0000989": Pruritus, "HP:0200034": Papule}
+    required: {"HP:0000989": Pruritus}
+    frequent: {"HP:0000988": Skin rash, "HP:0200037": Skin vesicle}
+    occasional: {"HP:0200039": Pustule, "HP:0000964": Eczematoid dermatitis}
+    tests: 皮屑镜检疥螨
+  - id: urticaria
+    label: 荨麻疹
+    en: Urticaria
+    icd10: L50
+    system: skin
+    course: episodic
+    onset: [child, adult]
+    typical: {"HP:0001025": Urticaria, "HP:0000989": Pruritus}
+    required: {"HP:0001025": Urticaria}
+    frequent: {"HP:0010783": Erythema}
+    occasional: {"HP:0000282": Facial edema, "HP:0002094": Dyspnea}
+    tests: 临床诊断
+  # liver and digestion
+  - id: viral_hepatitis
+    label: 病毒性肝炎
+    en: Viral hepatitis
+    icd10: B15-B19
+    system: hepatic
+    course: acute
+    onset: [child, adult]
+    typical: {"HP:0000952": Jaundice, "HP:0012378": Fatigue, "HP:0004396": Poor appetite}
+    required: {"HP:0000952": Jaundice}
+    frequent: {"HP:0002018": Nausea, "HP:0002027": Abdominal pain, "HP:0040319": Dark urine, "HP:0001945": Fever, "HP:0002240": Hepatomegaly,
+               "HP:0002013": Vomiting, "HP:0033834": Malaise}
+    occasional: {"HP:0000989": Pruritus, "HP:0002829": Arthralgia, "HP:0000988": Skin rash}
+    tests: 肝功能、肝炎病毒标志物
+  - id: cholecystitis
+    label: 胆囊炎
+    en: Cholecystitis
+    icd10: K81
+    system: hepatic
+    course: acute
+    onset: [adult]
+    typical: {"HP:0002027": Abdominal pain, "HP:0001945": Fever, "HP:0002018": Nausea, "HP:0002013": Vomiting}
+    required: {"HP:0002027": Abdominal pain}
+    frequent: {"HP:0000952": Jaundice, "HP:0025143": Chills, "HP:0004396": Poor appetite}
+    occasional: {"HP:0040319": Dark urine}
+    tests: 腹部超声
+  - id: cirrhosis
+    label: 肝硬化
+    en: Cirrhosis of liver
+    icd10: K74
+    system: hepatic
+    course: chronic
+    onset: [adult, elderly]
+    typical: {"HP:0001541": Ascites, "HP:0000952": Jaundice, "HP:0003270": Abdominal distention, "HP:0012378": Fatigue}
+    required: {"HP:0001541": Ascites, "HP:0000952": Jaundice}
+    frequent: {"HP:0001824": Weight loss, "HP:0001744": Splenomegaly, "HP:0000969": Edema, "HP:0002248": Hematemesis, "HP:0002249": Melena,
+               "HP:0000421": Epistaxis, "HP:0000225": Gingival bleeding, "HP:0004396": Poor appetite, "HP:0000989": Pruritus}
+    occasional: {"HP:0001289": Confusion, "HP:0001259": Coma, "HP:0000953": Hyperpigmentation of the skin}
+    confirm: {"HP:0002040": Esophageal varix, "HP:0002480": Hepatic encephalopathy}
+    tests: 肝功能、腹部超声或弹性成像
+  - id: peptic_ulcer
+    label: 消化性溃疡
+    en: Peptic ulcer
+    icd10: K25-K27
+    system: digestive
+    course: chronic
+    onset: [adult]
+    typical: {"HP:0410019": Epigastric pain}
+    required: {"HP:0410019": Epigastric pain}
+    frequent: {"HP:0002020": Gastroesophageal reflux, "HP:0002018": Nausea, "HP:0002013": Vomiting, "HP:0003270": Abdominal distention, "HP:0004396": Poor appetite}
+    occasional: {"HP:0002248": Hematemesis, "HP:0002249": Melena, "HP:0001824": Weight loss}
+    tests: 胃镜、幽门螺杆菌检测
+  - id: gerd
+    label: 胃食管反流病
+    en: Gastroesophageal reflux disease
+    icd10: K21
+    system: digestive
+    course: chronic
+    onset: [adult]
+    typical: {"HP:0002020": Gastroesophageal reflux}
+    required: {"HP:0002020": Gastroesophageal reflux}
+    frequent: {"HP:0410019": Epigastric pain, "HP:0002018": Nausea, "HP:0012735": Cough, "HP:0001609": Hoarse voice, "HP:0002015": Dysphagia}
+    occasional: {"HP:0100749": Chest pain, "HP:0002013": Vomiting}
+    tests: 胃镜、食管pH监测
+  - id: esophageal_cancer
+    label: 食管癌
+    en: Esophageal cancer
+    icd10: C15
+    system: digestive
+    course: chronic
+    onset: [adult, elderly]
+    typical: {"HP:0002015": Dysphagia, "HP:0001824": Weight loss}
+    required: {"HP:0002015": Dysphagia}
+    frequent: {"HP:0002013": Vomiting, "HP:0100749": Chest pain, "HP:0004396": Poor appetite, "HP:0001609": Hoarse voice, "HP:0004326": Cachexia}
+    occasional: {"HP:0012735": Cough, "HP:0002248": Hematemesis, "HP:0002249": Melena}
+    tests: 胃镜活检
+    note: 古之"噎膈"部分描述与之表型相近
+  - id: achalasia
+    label: 贲门失弛缓症
+    en: Achalasia
+    icd10: K22.0
+    system: digestive
+    course: chronic
+    onset: [adult]
+    typical: {"HP:0002015": Dysphagia, "HP:0002013": Vomiting}
+    required: {"HP:0002015": Dysphagia}
+    frequent: {"HP:0100749": Chest pain, "HP:0001824": Weight loss}
+    occasional: {"HP:0012735": Cough}
+    tests: 食管测压、食管钡餐
+  - id: appendicitis
+    label: 阑尾炎
+    en: Appendicitis
+    icd10: K35
+    concept: modern:appendicitis
+    system: digestive
+    course: acute
+    onset: [child, adult]
+    typical: {"HP:0002027": Abdominal pain, "HP:0001945": Fever}
+    required: {"HP:0002027": Abdominal pain}
+    frequent: {"HP:0002018": Nausea, "HP:0002013": Vomiting, "HP:0004396": Poor appetite, "HP:0025143": Chills}
+    occasional: {"HP:0031500": Abdominal mass, "HP:0025615": Abscess, "HP:0002014": Diarrhea, "HP:0002019": Constipation, "HP:0000975": Hyperhidrosis}
+    tests: 腹部超声或CT、血常规
+    note: 《金匮》"肠痈"（少腹肿痞，按之即痛）与之表型相近
+  # kidney and urinary
+  - id: nephrotic_syndrome
+    label: 肾病综合征
+    en: Nephrotic syndrome
+    icd10: N04
+    system: renal
+    course: chronic
+    onset: [child, adult]
+    typical: {"HP:0000969": Edema, "HP:0031504": Foamy urine}
+    required: {"HP:0000969": Edema}
+    frequent: {"HP:0100539": Periorbital edema, "HP:0000282": Facial edema, "HP:0001541": Ascites, "HP:0100520": Oliguria, "HP:0012378": Fatigue,
+               "HP:0007430": Generalized edema}
+    occasional: {"HP:0002202": Pleural effusion, "HP:0004396": Poor appetite, "HP:0002094": Dyspnea}
+    confirm: {"HP:0000093": Proteinuria, "HP:0003073": Hypoalbuminemia}
+    tests: 24小时尿蛋白定量、血白蛋白
+  - id: acute_glomerulonephritis
+    label: 急性肾小球肾炎
+    en: Acute nephritic syndrome
+    icd10: N00
+    system: renal
+    course: acute
+    onset: [child]
+    typical: {"HP:0000969": Edema, "HP:0000790": Hematuria, "HP:0100520": Oliguria}
+    required: {"HP:0000790": Hematuria}
+    frequent: {"HP:0000282": Facial edema, "HP:0040319": Dark urine, "HP:0002315": Headache, "HP:0012378": Fatigue}
+    occasional: {"HP:0002094": Dyspnea, "HP:0001250": Seizure, "HP:0002013": Vomiting}
+    confirm: {"HP:0000822": Hypertension, "HP:0000093": Proteinuria}
+    tests: 尿常规、补体、抗链球菌溶血素O
+  - id: urinary_tract_infection
+    label: 尿路感染
+    en: Urinary tract infection
+    icd10: N39.0
+    system: urinary
+    course: acute
+    onset: [child, adult, elderly]
+    typical: {"HP:0100518": Dysuria, "HP:0100515": Pollakisuria, "HP:0000012": Urinary urgency}
+    required: {"HP:0100518": Dysuria, "HP:0100515": Pollakisuria, "HP:0000012": Urinary urgency}
+    frequent: {"HP:0000790": Hematuria, "HP:0031967": Cloudy urine, "HP:0034267": Pelvic pain, "HP:0001945": Fever, "HP:0003419": Low back pain}
+    occasional: {"HP:0025143": Chills, "HP:0002013": Vomiting, "HP:0000020": Urinary incontinence}
+    tests: 尿常规、尿培养
+  - id: urolithiasis
+    label: 尿路结石
+    en: Urolithiasis
+    icd10: N20-N21
+    system: urinary
+    course: episodic
+    onset: [adult]
+    typical: {"HP:0000787": Kidney stone, "HP:0030157": Flank pain, "HP:0000790": Hematuria}
+    required: {"HP:0000787": Kidney stone, "HP:0030157": Flank pain, "HP:0000790": Hematuria}
+    frequent: {"HP:0100518": Dysuria, "HP:0002018": Nausea, "HP:0002013": Vomiting, "HP:0003419": Low back pain, "HP:0100515": Pollakisuria}
+    occasional: {"HP:0000016": Urinary retention, "HP:0001945": Fever}
+    tests: 泌尿系超声或CT
+  - id: prostatic_hyperplasia
+    label: 良性前列腺增生
+    en: Benign prostatic hyperplasia
+    icd10: N40
+    system: urinary
+    course: chronic
+    onset: [elderly]
+    sex: male
+    typical: {"HP:0000017": Nocturia, "HP:0100515": Pollakisuria}
+    required: {"HP:0000017": Nocturia, "HP:0100515": Pollakisuria, "HP:0000016": Urinary retention}
+    frequent: {"HP:0000016": Urinary retention, "HP:0000012": Urinary urgency}
+    occasional: {"HP:0000790": Hematuria, "HP:0000020": Urinary incontinence}
+    tests: 前列腺超声、尿流率
+  # joints
+  - id: rheumatoid_arthritis
+    label: 类风湿关节炎
+    en: Rheumatoid arthritis
+    icd10: M05-M06
+    concept: modern:arthritis
+    system: musculoskeletal
+    course: chronic
+    onset: [adult]
+    typical: {"HP:0002829": Arthralgia, "HP:0001386": Joint swelling, "HP:0001387": Joint stiffness}
+    required: {"HP:0002829": Arthralgia, "HP:0001386": Joint swelling}
+    frequent: {"HP:0012378": Fatigue, "HP:0034392": Joint contracture, "HP:0200036": Skin nodule}
+    occasional: {"HP:0001945": Fever, "HP:0001824": Weight loss, "HP:0001324": Muscle weakness}
+    tests: 类风湿因子、抗CCP抗体、关节影像
+  - id: osteoarthritis
+    label: 骨关节炎
+    en: Osteoarthritis
+    icd10: M15-M19
+    concept: modern:arthritis
+    system: musculoskeletal
+    course: chronic
+    onset: [elderly]
+    typical: {"HP:0002829": Arthralgia, "HP:0001387": Joint stiffness}
+    required: {"HP:0002829": Arthralgia}
+    frequent: {"HP:0001386": Joint swelling}
+    occasional: {"HP:0009763": Limb pain, "HP:0003419": Low back pain, "HP:0034392": Joint contracture}
+    against: {"HP:0001945": Fever}
+    tests: 关节影像
+  - id: gout
+    label: 痛风
+    en: Gout
+    icd10: M10
+    concept: modern:arthritis
+    system: musculoskeletal
+    course: episodic
+    onset: [adult]
+    typical: {"HP:0002829": Arthralgia, "HP:0001386": Joint swelling, "HP:0001854": Podagra, "HP:0010783": Erythema}
+    required: {"HP:0002829": Arthralgia, "HP:0001854": Podagra}
+    frequent: {"HP:0200036": Skin nodule, "HP:0001945": Fever}
+    occasional: {"HP:0000787": Kidney stone, "HP:0034392": Joint contracture}
+    tests: 血尿酸、关节液尿酸盐结晶
+  - id: rheumatic_fever
+    label: 风湿热
+    en: Rheumatic fever
+    icd10: I00-I02
+    concept: modern:arthritis
+    system: musculoskeletal
+    course: acute
+    onset: [child]
+    typical: {"HP:0002829": Arthralgia, "HP:0001945": Fever, "HP:0001386": Joint swelling}
+    required: {"HP:0002829": Arthralgia}
+    frequent: {"HP:0001962": Palpitations, "HP:0001649": Tachycardia, "HP:0000988": Skin rash, "HP:0200036": Skin nodule}
+    occasional: {"HP:0002072": Chorea, "HP:0002094": Dyspnea, "HP:0000421": Epistaxis, "HP:0100749": Chest pain}
+    tests: 抗链球菌溶血素O、心电图、超声心动图
+  # brain, heart and blood
+  - id: ischemic_stroke
+    label: 缺血性脑卒中
+    en: Ischaemic stroke
+    icd10: I63
+    concept: modern:stroke
+    system: neurological
+    course: acute
+    onset: [adult, elderly]
+    typical: {"HP:0002301": Hemiplegia, "HP:0010628": Facial palsy, "HP:0001260": Dysarthria}
+    required: {"HP:0002301": Hemiplegia, "HP:0010628": Facial palsy, "HP:0001260": Dysarthria, "HP:0001269": Hemiparesis, "HP:0002381": Aphasia}
+    frequent: {"HP:0002381": Aphasia, "HP:0033748": Hypoesthesia, "HP:0001269": Hemiparesis, "HP:0002321": Vertigo, "HP:0001289": Confusion,
+               "HP:0002015": Dysphagia}
+    occasional: {"HP:0002315": Headache, "HP:0001259": Coma, "HP:0001250": Seizure, "HP:0000020": Urinary incontinence, "HP:0000505": Visual impairment,
+                 "HP:0002307": Drooling}
+    tests: 头颅CT或MRI
+  - id: intracerebral_hemorrhage
+    label: 脑出血
+    en: Intracerebral haemorrhage
+    icd10: I61
+    concept: modern:stroke
+    system: neurological
+    course: acute
+    onset: [adult, elderly]
+    typical: {"HP:0002301": Hemiplegia, "HP:0002315": Headache, "HP:0001259": Coma}
+    required: {"HP:0002301": Hemiplegia, "HP:0001259": Coma}
+    frequent: {"HP:0002013": Vomiting, "HP:0010628": Facial palsy, "HP:0001260": Dysarthria, "HP:0007185": Loss of consciousness, "HP:0002381": Aphasia}
+    occasional: {"HP:0001250": Seizure, "HP:0025258": Stiff neck, "HP:0000020": Urinary incontinence}
+    confirm: {"HP:0000822": Hypertension}
+    tests: 头颅CT
+  - id: angina_pectoris
+    label: 心绞痛
+    en: Angina pectoris
+    icd10: I20
+    concept: modern:angina
+    system: cardiovascular
+    course: episodic
+    onset: [adult, elderly]
+    typical: {"HP:0100749": Chest pain, "HP:0002094": Dyspnea}
+    required: {"HP:0100749": Chest pain}
+    frequent: {"HP:0001962": Palpitations, "HP:0000975": Hyperhidrosis, "HP:0012378": Fatigue}
+    occasional: {"HP:0002018": Nausea, "HP:0410019": Epigastric pain, "HP:0001279": Syncope}
+    against: {"HP:0001945": Fever}
+    tests: 心电图、负荷试验、冠状动脉造影
+    note: 《金匮》"胸痹"（喘息咳唾、胸背痛、短气）与之表型部分相近
+  - id: myocardial_infarction
+    label: 急性心肌梗死
+    en: Acute myocardial infarction
+    icd10: I21
+    system: cardiovascular
+    course: acute
+    onset: [adult, elderly]
+    typical: {"HP:0100749": Chest pain, "HP:0000975": Hyperhidrosis, "HP:0002094": Dyspnea}
+    required: {"HP:0100749": Chest pain}
+    frequent: {"HP:0002018": Nausea, "HP:0002013": Vomiting, "HP:0001962": Palpitations, "HP:0000739": Anxiety, "HP:0000980": Pallor,
+               "HP:0011675": Arrhythmia, "HP:0000961": Cyanosis}
+    occasional: {"HP:0001279": Syncope, "HP:0001259": Coma, "HP:0410019": Epigastric pain, "HP:0002615": Hypotension, "HP:0031273": Shock}
+    tests: 心电图、心肌肌钙蛋白
+    note: 《灵枢》"真心痛，手足青至节，心痛甚，旦发夕死"与之表型相近
+  - id: heart_failure
+    label: 心力衰竭
+    en: Heart failure
+    icd10: I50
+    system: cardiovascular
+    course: chronic
+    onset: [adult, elderly]
+    typical: {"HP:0002094": Dyspnea, "HP:0000969": Edema, "HP:0012378": Fatigue, "HP:0012764": Orthopnea}
+    required: {"HP:0002094": Dyspnea, "HP:0000969": Edema, "HP:0012764": Orthopnea}
+    frequent: {"HP:0001962": Palpitations, "HP:0012735": Cough, "HP:0000017": Nocturia, "HP:0001541": Ascites, "HP:0010741": Pedal edema,
+               "HP:0002240": Hepatomegaly, "HP:0000961": Cyanosis, "HP:0100520": Oliguria, "HP:0001649": Tachycardia, "HP:0011675": Arrhythmia}
+    occasional: {"HP:0004396": Poor appetite, "HP:0003270": Abdominal distention, "HP:0001289": Confusion, "HP:0004326": Cachexia,
+                 "HP:0002202": Pleural effusion}
+    tests: 利钠肽、超声心动图
+  - id: anemia
+    label: 贫血
+    en: Anaemia
+    icd10: D64.9
+    system: blood
+    course: chronic
+    onset: [child, adult, elderly]
+    typical: {"HP:0000980": Pallor, "HP:0012378": Fatigue}
+    required: {"HP:0000980": Pallor}
+    frequent: {"HP:0001962": Palpitations, "HP:0002094": Dyspnea, "HP:0002321": Vertigo, "HP:0000360": Tinnitus, "HP:0001649": Tachycardia}
+    occasional: {"HP:0002315": Headache, "HP:0001279": Syncope, "HP:0000206": Glossitis, "HP:0000141": Amenorrhea}
+    confirm: {"HP:0001903": Anemia}
+    tests: 血常规
+  - id: epilepsy
+    label: 癫痫
+    en: Epilepsy
+    icd10: G40
+    system: neurological
+    course: episodic
+    onset: [child, adult]
+    typical: {"HP:0001250": Seizure, "HP:0007185": Loss of consciousness}
+    required: {"HP:0001250": Seizure}
+    frequent: {"HP:0002307": Drooling, "HP:0003394": Muscle spasm, "HP:0000020": Urinary incontinence}
+    occasional: {"HP:0001289": Confusion, "HP:0000738": Hallucinations, "HP:0002179": Opisthotonus}
+    against: {"HP:0001945": Fever}
+    tests: 脑电图
+    note: 古之"痫"（卒倒、口吐涎沫、抽搐、醒后如常）与之表型相近
+  - id: febrile_seizure
+    label: 热性惊厥
+    en: Febrile seizure
+    icd10: R56.0
+    system: neurological
+    course: acute
+    onset: [child]
+    typical: {"HP:0001250": Seizure, "HP:0001945": Fever}
+    required: {"HP:0001250": Seizure}
+    frequent: {"HP:0007185": Loss of consciousness}
+    occasional: {"HP:0002013": Vomiting, "HP:0002179": Opisthotonus}
+    tests: 排除中枢神经系统感染
+    note: 古之"急惊风"部分描述与之表型相近
+  - id: migraine
+    label: 偏头痛
+    en: Migraine
+    icd10: G43
+    system: neurological
+    course: episodic
+    onset: [child, adult]
+    typical: {"HP:0002315": Headache, "HP:0002018": Nausea, "HP:0002013": Vomiting}
+    required: {"HP:0002315": Headache}
+    frequent: {"HP:0000613": Photophobia, "HP:0002321": Vertigo}
+    occasional: {"HP:0000622": Blurred vision, "HP:0003401": Paresthesia}
+    against: {"HP:0001945": Fever}
+    tests: 临床诊断
+  - id: depression
+    label: 抑郁障碍
+    en: Depressive disorder
+    icd10: F32-F33
+    concept: modern:depression
+    system: psychiatric
+    course: chronic
+    onset: [adult, elderly]
+    typical: {"HP:0000716": Depression, "HP:0100785": Insomnia, "HP:0012378": Fatigue}
+    required: {"HP:0000716": Depression}
+    frequent: {"HP:0004396": Poor appetite, "HP:0001824": Weight loss, "HP:0000739": Anxiety, "HP:0002354": Memory impairment, "HP:0000737": Irritability}
+    occasional: {"HP:0004324": Increased body weight, "HP:0001262": Excessive daytime somnolence, "HP:0001962": Palpitations}
+    tests: 精神科评估与量表
+  - id: heat_stroke
+    label: 热射病（中暑）
+    en: Heat stroke
+    icd10: T67.0
+    system: general
+    course: acute
+    onset: [child, adult, elderly]
+    typical: {"HP:0001945": Fever, "HP:0001289": Confusion, "HP:0001259": Coma}
+    required: {"HP:0001945": Fever}
+    frequent: {"HP:0001250": Seizure, "HP:0001649": Tachycardia, "HP:0002013": Vomiting, "HP:0002315": Headache}
+    occasional: {"HP:0031258": Delirium, "HP:0001279": Syncope, "HP:0100520": Oliguria, "HP:0000970": Anhidrosis, "HP:0000975": Hyperhidrosis}
+    tests: 核心体温、暴露史
+  - id: lymphatic_filariasis
+    label: 淋巴丝虫病
+    en: Lymphatic filariasis
+    icd10: B74
+    system: lymphatic
+    course: chronic
+    onset: [adult]
+    typical: {"HP:0001004": Lymphedema}
+    required: {"HP:0001004": Lymphedema}
+    frequent: {"HP:0000034": Hydrocele testis, "HP:0031967": Cloudy urine, "HP:0002716": Lymphadenopathy, "HP:0001954": Recurrent fever}
+    occasional: {"HP:0010783": Erythema}
+    tests: 夜间血涂片微丝蚴、抗原检测
+    note: 古之"大脚风"与部分"膏淋"描述与之表型相近
+
+# ancient names that coincide with, or have been taken for, a modern disease name: a warning wherever the name appears
+homonyms:
+  - {term: 伤寒, diseases: [typhoid], note: 广义伤寒为外感热病总称，狭义伤寒为太阳表实证；与现代"伤寒"（伤寒沙门菌感染）同名异义}
+  - {term: 中风, diseases: [ischemic_stroke, intracerebral_hemorrhage], note: 《伤寒论》之"中风"为外感表证；卒中义的"中风"见于《金匮》及后世}
+  - {term: 霍乱, diseases: [cholera], note: 古籍"霍乱"泛指呕吐而利的急性吐泻病；真性霍乱一般认为1817年后传入中国}
+  - {term: 痛风, diseases: [gout], note: 朱丹溪之"痛风"泛指四肢百节走痛（痹证），与现代痛风（尿酸盐沉积）同名异义}
+  - {term: 脚气, diseases: [beriberi, tinea_pedis], note: 唐宋医书之"脚气"指脚弱、肿满、冲心之病；现代口语"脚气"指足癣}
+  - {term: 消渴, diseases: [diabetes_mellitus, diabetes_insipidus], note: 消渴既作症状（口渴引饮）也作病名；"消渴=糖尿病"是不可接受的等同}
+  - {term: 疟, diseases: [malaria], note: 古之"疟"以寒热休作为主，亦含疟疾以外的周期性发热病}
+  - {term: 胸痹, diseases: [angina_pectoris], note: 胸痹以喘息咳唾、胸背痛、短气为主，范围不限于心绞痛}
+  - {term: 肠痈, diseases: [appendicitis], note: 肠痈为腹内痈脓，不限于阑尾炎}
+  - {term: 痫, diseases: [epilepsy], note: 古之"痫"兼含小儿惊风等}
+  - {term: 瘰疬, diseases: [tuberculous_lymphadenitis], note: 瘰疬为颈腋结核累累之病，不限于淋巴结结核}
+  - {term: 虚劳, diseases: [pulmonary_tuberculosis], note: 虚劳为诸虚不足之总称，远大于肺结核}

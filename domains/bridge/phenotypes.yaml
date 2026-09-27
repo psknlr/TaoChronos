@@ -1,0 +1,306 @@
+# 古籍原子表型 — the atomic clinical findings of the classics, the written forms that name them, and their projection
+# into the Human Phenotype Ontology (the Ancient–Modern Bridge, plugins/classics/bridge).
+#
+# A phenotype here is a finding as the texts state it (渴欲饮水, 小便反多, 消瘦), not a diagnosis.  Its projection says how
+# far it overlaps a modern phenotype term, with a relation type — never an equation of an ancient disease with a modern
+# one (see ../classics/presentism.yaml):
+#
+#   EXACT                     the same observable (吐血 → Hematemesis)
+#   CLOSE                     nearly the same, the ancient term a little wider or narrower in use (渴欲饮水 → Polydipsia)
+#   BROADER / NARROWER        the ancient finding is wider / narrower than the HPO term (目赤 is wider than Conjunctivitis)
+#   PARTIAL_OVERLAP           they share part of their extension (小便不利: scanty *or* difficult urination → Oliguria)
+#   CONTEXT_DEPENDENT         the projection depends on the passage (目如脱状: the eyes of a man gasping for breath)
+#   HISTORICAL_SEMANTIC_SHIFT the written form meant something else in the period of the text (哕: hiccup before the Song)
+#   NO_MODERN_EQUIVALENT      a finding of TCM's own (脉浮, 舌白, 恶风): kept as a TCM phenotype, not projected
+#
+# HPO identifiers and labels were checked against the HPO release named below (hp/releases/2026-09-01):
+# `taochronos bridge verify` checks them again against a local hp.obo.  HPO is © the Jackson Laboratory and the Monarch
+# Initiative, used under its terms (hpo.jax.org); only identifiers and labels are kept here.
+#
+#   surfaces           written forms, longest matched first, on the normalised text; a form preceded by a negator is
+#                      negated (see `negation`); a one-character form is read only at a clause boundary
+#   surface_relations  a written form whose relation differs from the phenotype's
+#   (a form listed under two phenotypes gives both: 寒热 is chills and fever, 咳唾脓血 hemoptysis and purulent sputum)
+#   system             for grouping
+hpo_release: hp/releases/2026-09-01
+
+phenotypes:
+  # metabolism, thirst and urine
+  - {id: thirst_drinking, label: 口渴引饮, surfaces: [渴欲饮水, 渴欲饮, 欲饮水, 欲得饮水, 渴引水浆, 渴饮, 引饮, 大渴, 烦渴, 口渴, 饮一斗, 多饮, 饮水多, 消渴, 渴], system: metabolic,
+     hpo: {id: "HP:0001959", label: Polydipsia, relation: CLOSE}, surface_relations: {消渴: CONTEXT_DEPENDENT}}
+  - {id: urine_increased, label: 小便多, surfaces: [小便反多, 小便一斗, 小便多, 溲多, 尿多, 饮一溲一, 饮一溲二], system: urinary,
+     hpo: {id: "HP:0000103", label: Polyuria, relation: CLOSE}}
+  - {id: urine_frequent, label: 小便频数, surfaces: [小便频数, 小便数, 小便频, 溲数], system: urinary,
+     hpo: {id: "HP:0100515", label: Pollakisuria, relation: CLOSE}}
+  - {id: nocturia, label: 夜尿多, surfaces: [夜尿多, 夜间尿多, 夜尿, 夜溲], system: urinary, hpo: {id: "HP:0000017", label: Nocturia, relation: CLOSE}}
+  - {id: urine_sweet, label: 尿甜, surfaces: [尿甜, 小便甜, 小便甘, 似麸片甜], system: metabolic,
+     hpo: {id: "HP:0003076", label: Glycosuria, relation: PARTIAL_OVERLAP, note: 尝尿之甜，非化验所见的尿糖}}
+  - {id: urine_cloudy, label: 小便浑浊, surfaces: [小便如膏, 小便浑浊, 小便如米泔, 溺浊, 膏淋, 似有油], system: urinary,
+     hpo: {id: "HP:0031967", label: Cloudy urine, relation: CLOSE}}
+  - {id: urine_dark, label: 小便黄赤, surfaces: [小便如皂荚汁, 小便黄赤, 小便赤, 小便黄, 溺赤, 尿赤], system: urinary,
+     hpo: {id: "HP:0040319", label: Dark urine, relation: PARTIAL_OVERLAP}}
+  - {id: urine_scanty, label: 小便不利, surfaces: [小便不利, 小便少, 小便短, 溲少], system: urinary,
+     hpo: {id: "HP:0100520", label: Oliguria, relation: PARTIAL_OVERLAP, note: 不利兼指少与难}}
+  - {id: urinary_retention, label: 癃闭, surfaces: [癃闭, 小便不通, 溺闭, 小便闭], system: urinary,
+     hpo: {id: "HP:0000016", label: Urinary retention, relation: PARTIAL_OVERLAP}, surface_relations: {小便不通: CONTEXT_DEPENDENT}}
+  - {id: urgency, label: 小便急, surfaces: [急欲小便, 小便急, 尿急, 溺急], system: urinary, hpo: {id: "HP:0000012", label: Urinary urgency, relation: CLOSE}}
+  - {id: urine_painful, label: 小便涩痛, surfaces: [小便涩痛, 小便痛, 溺痛, 淋沥, 淋], system: urinary,
+     hpo: {id: "HP:0100518", label: Dysuria, relation: CLOSE}}
+  - {id: urine_stones, label: 石淋, surfaces: [石淋, 砂淋, 沙石淋, 小便如粟状, 溺出砂石], system: urinary,
+     hpo: {id: "HP:0000787", label: Kidney stone, relation: PARTIAL_OVERLAP, note: 石淋所出之石可来自肾或膀胱}}
+  - {id: urine_blood, label: 尿血, surfaces: [尿血, 溺血, 小便血], system: urinary, hpo: {id: "HP:0000790", label: Hematuria, relation: EXACT}}
+  - {id: urine_incontinent, label: 遗尿, surfaces: [遗尿不禁, 遗尿, 小便失禁, 小便自遗], system: urinary,
+     hpo: {id: "HP:0000020", label: Urinary incontinence, relation: CLOSE}}
+  - {id: hunger_increased, label: 消谷善饥, surfaces: [消谷善饥, 多食善饥, 善饥, 多食, 食多, 能食而瘦, 吃食多], system: metabolic,
+     hpo: {id: "HP:0002591", label: Polyphagia, relation: CLOSE}}
+  - {id: emaciation, label: 消瘦, surfaces: [不为肌肉, 日加削瘦, 削瘦, 消瘦, 羸瘦, 形瘦, 肌肉消, 瘦削, 大肉脱, 瘦], system: general,
+     hpo: {id: "HP:0001824", label: Weight loss, relation: CLOSE}}
+  - {id: fatigue, label: 倦怠乏力, surfaces: [倦怠, 乏力, 神疲, 少气懒言, 困倦, 身重], system: general,
+     hpo: {id: "HP:0012378", label: Fatigue, relation: PARTIAL_OVERLAP}}
+  # heat, cold and sweat
+  - {id: fever, label: 发热, surfaces: [发热, 身热, 壮热, 大热, 灼热, 翕翕发热, 寒热, 热], system: general, hpo: {id: "HP:0001945", label: Fever, relation: CLOSE}}
+  - {id: fever_tidal, label: 潮热, surfaces: [日晡所发潮热, 潮热, 日晡潮热, 午后身热], system: general,
+     hpo: {id: "HP:0001954", label: Recurrent fever, relation: PARTIAL_OVERLAP, note: 定时而发之热}}
+  - {id: fever_alternating, label: 往来寒热, surfaces: [往来寒热, 寒热往来, 寒热休作, 间日而作, 间日, 发作有时], system: general,
+     hpo: {id: "HP:0032323", label: Periodic fever, relation: PARTIAL_OVERLAP}}
+  - {id: chills, label: 恶寒, surfaces: [恶寒, 憎寒, 寒战, 振寒, 啬啬恶寒, 洒淅恶寒, 寒热], system: general,
+     hpo: {id: "HP:0025143", label: Chills, relation: CLOSE}}
+  - {id: cold_intolerance, label: 畏寒, surfaces: [畏寒, 畏冷, 恶冷, 怕冷], system: general,
+     hpo: {id: "HP:6000855", label: Cold intolerance, relation: PARTIAL_OVERLAP}}
+  - {id: heat_intolerance, label: 恶热, surfaces: [恶热], system: general,
+     hpo: {id: "HP:0002046", label: Heat intolerance, relation: PARTIAL_OVERLAP, note: 阳明病之恶热是热病之症}}
+  - {id: hot_palms, label: 手足烦热, surfaces: [手足烦热, 五心烦热, 手足心热], system: general, hpo: null, relation: NO_MODERN_EQUIVALENT}
+  - {id: aversion_wind, label: 恶风, surfaces: [恶风, 淅淅恶风], system: general, hpo: null, relation: NO_MODERN_EQUIVALENT}
+  - {id: sweating, label: 汗出, surfaces: [汗出, 自汗出, 自汗, 多汗, 大汗出, 大汗, 汗多], system: general,
+     hpo: {id: "HP:0000975", label: Hyperhidrosis, relation: PARTIAL_OVERLAP, note: 汗出在外感病中是症而非多汗病}}
+  - {id: night_sweats, label: 盗汗, surfaces: [盗汗, 寝汗], system: general, hpo: {id: "HP:0030166", label: Night sweats, relation: EXACT}}
+  - {id: no_sweat, label: 无汗, surfaces: [无汗, 不汗出, 汗不出], system: general,
+     hpo: {id: "HP:0000970", label: Anhidrosis, relation: PARTIAL_OVERLAP, note: 表闭之无汗，非汗腺之无汗症}}
+  # head, senses, mind
+  - {id: headache, label: 头痛, surfaces: [头痛, 头项强痛, 头疼, 头痛如破], system: neurological, hpo: {id: "HP:0002315", label: Headache, relation: EXACT}}
+  - {id: neck_stiff, label: 项强, surfaces: [项背强几几, 项背强, 项强, 头项强, 颈项强急], system: musculoskeletal,
+     hpo: {id: "HP:0025258", label: Stiff neck, relation: CLOSE}}
+  - {id: vertigo, label: 眩晕, surfaces: [头眩, 目眩, 眩晕, 眩冒, 眩], system: neurological, hpo: {id: "HP:0002321", label: Vertigo, relation: PARTIAL_OVERLAP}}
+  - {id: tinnitus, label: 耳鸣, surfaces: [耳鸣], system: ear, hpo: {id: "HP:0000360", label: Tinnitus, relation: EXACT}}
+  - {id: deafness, label: 耳聋, surfaces: [耳聋, 耳无闻], system: ear, hpo: {id: "HP:0000365", label: Hearing impairment, relation: CLOSE}}
+  - {id: insomnia, label: 不得眠, surfaces: [不得眠, 不寐, 不眠, 烦不得眠, 夜不能寐], system: neurological,
+     hpo: {id: "HP:0100785", label: Insomnia, relation: CLOSE}}
+  - {id: orthopnea, label: 不得卧, surfaces: [倚息不得卧, 但坐不得卧, 不得平卧], system: respiratory,
+     hpo: {id: "HP:0012764", label: Orthopnea, relation: CLOSE}}
+  - {id: somnolence, label: 但欲寐, surfaces: [但欲寐, 嗜卧, 多眠, 欲寐], system: neurological,
+     hpo: {id: "HP:0001262", label: Excessive daytime somnolence, relation: PARTIAL_OVERLAP}}
+  - {id: delirium, label: 谵语, surfaces: [谵语, 狂言, 独语如见鬼状, 郑声], system: neurological,
+     hpo: {id: "HP:0031258", label: Delirium, relation: PARTIAL_OVERLAP}}
+  - {id: coma, label: 神昏, surfaces: [神昏, 昏迷], system: neurological,
+     hpo: {id: "HP:0001259", label: Coma, relation: PARTIAL_OVERLAP}}
+  - {id: unconscious, label: 不省人事, surfaces: [不省人事, 人事不省, 昏不知人, 不识人, 不知人], system: neurological,
+     hpo: {id: "HP:0007185", label: Loss of consciousness, relation: CLOSE}}
+  - {id: confusion, label: 神志不清, surfaces: [神识昏蒙, 神志不清, 神识不清, 昏蒙], system: neurological,
+     hpo: {id: "HP:0001289", label: Confusion, relation: CLOSE}}
+  - {id: syncope, label: 昏厥, surfaces: [昏厥, 暴厥, 卒倒, 猝倒, 昏仆, 卒仆], system: neurological,
+     hpo: {id: "HP:0001279", label: Syncope, relation: PARTIAL_OVERLAP, note: 卒倒亦见于痫与中风}}
+  - {id: irritability, label: 烦躁, surfaces: [烦躁, 心烦, 躁扰, 烦], system: psychiatric, hpo: {id: "HP:0000737", label: Irritability, relation: PARTIAL_OVERLAP}}
+  - {id: psychosis, label: 发狂, surfaces: [发狂, 如狂, 癫狂, 登高而歌, 弃衣而走], system: psychiatric,
+     hpo: {id: "HP:0000709", label: Psychosis, relation: PARTIAL_OVERLAP}}
+  - {id: low_mood, label: 郁郁不乐, surfaces: [悲伤欲哭, 郁郁不乐, 善悲, 嘿嘿, 默默], system: psychiatric,
+     hpo: {id: "HP:0000716", label: Depression, relation: PARTIAL_OVERLAP}, surface_relations: {嘿嘿: CONTEXT_DEPENDENT, 默默: CONTEXT_DEPENDENT}}
+  - {id: fearfulness, label: 惊恐, surfaces: [如人将捕之, 善恐, 惊恐, 惕惕], system: psychiatric, hpo: {id: "HP:0000739", label: Anxiety, relation: PARTIAL_OVERLAP}}
+  - {id: forgetfulness, label: 健忘, surfaces: [健忘, 善忘, 喜忘], system: neurological, hpo: {id: "HP:0002354", label: Memory impairment, relation: CLOSE}}
+  - {id: dementia, label: 痴呆, surfaces: [痴呆, 呆病], system: neurological, hpo: {id: "HP:0000726", label: Dementia, relation: PARTIAL_OVERLAP}}
+  - {id: hemiplegia, label: 半身不遂, surfaces: [半身不遂, 偏枯, 偏废, 手足不遂, 臂不遂], system: neurological,
+     hpo: {id: "HP:0002301", label: Hemiplegia, relation: CLOSE}, surface_relations: {臂不遂: NARROWER}}
+  - {id: facial_palsy, label: 口眼㖞斜, surfaces: [口眼㖞斜, 口眼歪斜, 口喎, 口眼喎斜, 口歪], system: neurological,
+     hpo: {id: "HP:0010628", label: Facial palsy, relation: CLOSE}}
+  - {id: speech_impaired, label: 语言謇涩, surfaces: [语言謇涩, 舌强不语, 謇涩, 不能言], system: neurological,
+     hpo: {id: "HP:0001260", label: Dysarthria, relation: PARTIAL_OVERLAP}}
+  - {id: convulsion, label: 抽搐, surfaces: [抽搐, 瘛疭, 四肢抽掣, 惊厥, 手足搐搦], system: neurological,
+     hpo: {id: "HP:0001250", label: Seizure, relation: PARTIAL_OVERLAP}}
+  - {id: opisthotonus, label: 角弓反张, surfaces: [角弓反张, 背反张], system: neurological, hpo: {id: "HP:0002179", label: Opisthotonus, relation: EXACT}}
+  - {id: trismus, label: 口噤, surfaces: [口噤不开, 口噤, 牙关紧闭, 牙关紧急], system: neurological, hpo: {id: "HP:0000211", label: Trismus, relation: CLOSE}}
+  - {id: drooling, label: 口吐涎沫, surfaces: [口吐涎沫, 口吐白沫, 口角流涎, 口流涎, 流涎], system: neurological,
+     hpo: {id: "HP:0002307", label: Drooling, relation: PARTIAL_OVERLAP}}
+  - {id: tremor, label: 颤振, surfaces: [振振欲擗地, 身瞤动, 筋惕肉瞤, 颤振, 手颤, 振掉], system: neurological,
+     hpo: {id: "HP:0001337", label: Tremor, relation: PARTIAL_OVERLAP, note: 瞤动兼指肌肉跳动}}
+  - {id: muscle_weakness, label: 痿, surfaces: [痿躄, 痿弱, 四肢不举, 痿软, 足痿, 痿], system: neurological,
+     hpo: {id: "HP:0001324", label: Muscle weakness, relation: PARTIAL_OVERLAP}}
+  - {id: paresthesia, label: 肢麻, surfaces: [手足麻, 四肢麻, 肢体麻, 如虫行, 蚁行], system: neurological,
+     hpo: {id: "HP:0003401", label: Paresthesia, relation: PARTIAL_OVERLAP}}
+  - {id: limb_numb, label: 不仁, surfaces: [肌肤不仁, 身体不仁, 麻木, 不仁], system: neurological, hpo: {id: "HP:0033748", label: Hypoesthesia, relation: PARTIAL_OVERLAP}}
+  # eyes, ears, mouth, throat
+  - {id: red_eye, label: 目赤, surfaces: [目赤肿痛, 两目红赤, 目赤, 目红], system: eye, hpo: {id: "HP:0000509", label: Conjunctivitis, relation: BROADER}}
+  - {id: photophobia, label: 羞明, surfaces: [羞明, 畏光, 怕光], system: eye, hpo: {id: "HP:0000613", label: Photophobia, relation: CLOSE}}
+  - {id: blurred_vision, label: 目昏, surfaces: [视物昏花, 视物不清, 目视不明, 目不明, 目昏], system: eye, hpo: {id: "HP:0000622", label: Blurred vision, relation: CLOSE}}
+  - {id: night_blindness, label: 雀目, surfaces: [雀目, 夜盲, 至晚不见, 鸡盲], system: eye, hpo: {id: "HP:0000662", label: Nyctalopia, relation: EXACT}}
+  - {id: cataract, label: 内障, surfaces: [圆翳内障, 睛珠混浊, 内障], system: eye,
+     hpo: {id: "HP:0000518", label: Cataract, relation: PARTIAL_OVERLAP, note: 内障兼含青盲等}, surface_relations: {圆翳内障: CLOSE}}
+  - {id: proptosis, label: 目突, surfaces: [目睛突出, 目突, 眼突, 目如脱状], system: eye,
+     hpo: {id: "HP:0000520", label: Proptosis, relation: CLOSE}, surface_relations: {目如脱状: CONTEXT_DEPENDENT}}
+  - {id: parotid_swelling, label: 痄腮, surfaces: [痄腮, 腮肿, 颐肿, 耳下肿], system: ent, hpo: {id: "HP:0011850", label: Parotitis, relation: CLOSE}}
+  - {id: dry_mouth, label: 口干, surfaces: [口干舌燥, 口干, 口燥, 咽干, 舌燥], system: digestive, hpo: {id: "HP:0000217", label: Xerostomia, relation: PARTIAL_OVERLAP}}
+  - {id: bitter_taste, label: 口苦, surfaces: [口苦], system: digestive,
+     hpo: {id: "HP:0000223", label: Abnormality of taste sensation, relation: BROADER}}
+  - {id: sweet_taste, label: 口甘, surfaces: [口甘, 口甜], system: digestive,
+     hpo: {id: "HP:0000223", label: Abnormality of taste sensation, relation: BROADER}}
+  - {id: oral_ulcer, label: 口疮, surfaces: [口舌生疮, 口疮, 口糜], system: digestive, hpo: {id: "HP:0000155", label: Oral ulcer, relation: CLOSE}}
+  - {id: gum_bleeding, label: 齿衄, surfaces: [齿龈出血, 齿衄, 牙宣], system: digestive, hpo: {id: "HP:0000225", label: Gingival bleeding, relation: CLOSE}}
+  - {id: sore_throat, label: 咽痛, surfaces: [咽喉肿痛, 咽喉痛, 咽痛, 喉痛], system: ent, hpo: {id: "HP:0033050", label: Pharyngalgia, relation: CLOSE}}
+  - {id: throat_swelling, label: 喉痹, surfaces: [咽喉肿痛, 咽喉红肿, 咽喉肿, 喉痹, 乳蛾], system: ent,
+     hpo: {id: "HP:0025439", label: Pharyngitis, relation: PARTIAL_OVERLAP}}
+  - {id: strawberry_tongue, label: 舌如杨梅, surfaces: [舌如杨梅, 杨梅舌, 状如杨梅], system: tongue,
+     hpo: {id: "HP:0031042", label: Strawberry tongue, relation: CLOSE}}
+  - {id: hoarse_voice, label: 声嘶, surfaces: [声音嘶哑, 声嘶, 声哑, 喑哑], system: ent, hpo: {id: "HP:0001609", label: Hoarse voice, relation: CLOSE}}
+  - {id: voice_loss, label: 失音, surfaces: [失音, 暴喑, 喑], system: ent, hpo: {id: "HP:0001686", label: Loss of voice, relation: PARTIAL_OVERLAP}}
+  - {id: epistaxis, label: 衄, surfaces: [鼻衄, 衄血, 衄], system: ent, hpo: {id: "HP:0000421", label: Epistaxis, relation: EXACT}}
+  # respiration, heart, chest
+  - {id: cough, label: 咳, surfaces: [咳嗽, 咳逆, 咳唾, 咳], system: respiratory, hpo: {id: "HP:0012735", label: Cough, relation: CLOSE}}
+  - {id: paroxysmal_cough, label: 顿咳, surfaces: [顿咳, 顿嗽, 鹭鸶咳, 连声咳], system: respiratory,
+     hpo: {id: "HP:0012735", label: Cough, relation: NARROWER, note: 阵发连声之咳，窄于一般之咳}}
+  - {id: sputum, label: 咳痰, surfaces: [咳吐痰涎, 咳唾涎沫, 咳痰, 吐痰], system: respiratory,
+     hpo: {id: "HP:0031245", label: Productive cough, relation: CLOSE}}
+  - {id: copious_sputum, label: 痰多, surfaces: [痰涎壅盛, 痰多, 多唾, 唾多], system: respiratory,
+     hpo: {id: "HP:0033709", label: Increased sputum production, relation: CLOSE}}
+  - {id: purulent_sputum, label: 吐脓, surfaces: [咳唾脓血, 浊唾腥臭, 吐如米粥, 咳吐脓, 吐脓], system: respiratory,
+     hpo: {id: "HP:0034777", label: Purulent sputum, relation: CLOSE}}
+  - {id: dyspnea, label: 喘, surfaces: [喘息, 喘满, 短气, 上气, 少气, 喘], system: respiratory, hpo: {id: "HP:0002094", label: Dyspnea, relation: CLOSE}}
+  - {id: hemoptysis, label: 咳血, surfaces: [咳唾脓血, 咳血, 咯血, 唾血], system: respiratory, hpo: {id: "HP:0002105", label: Hemoptysis, relation: CLOSE}}
+  - {id: wheeze, label: 喉中水鸡声, surfaces: [喉中水鸡声, 喉中如水鸡声, 哮鸣], system: respiratory, hpo: {id: "HP:0030828", label: Wheezing, relation: CLOSE}}
+  - {id: chest_pain, label: 胸痛, surfaces: [胸背痛, 胸痛, 心痛彻背, 背痛彻心, 心痛, 胸痹痛], system: cardiovascular, hpo: {id: "HP:0100749", label: Chest pain, relation: CLOSE}}
+  - {id: chest_oppression, label: 胸闷, surfaces: [胸闷, 胸满, 胸中窒], system: cardiovascular, hpo: null, relation: NO_MODERN_EQUIVALENT}
+  - {id: hypochondrium_fullness, label: 胸胁苦满, surfaces: [胸胁苦满, 胁下痞鞕, 胁下痞硬, 胸胁满], system: digestive, hpo: null, relation: NO_MODERN_EQUIVALENT}
+  - {id: palpitation, label: 心悸, surfaces: [心下悸, 心动悸, 心悸, 惊悸, 怔忡, 悸], system: cardiovascular, hpo: {id: "HP:0001962", label: Palpitations, relation: CLOSE}}
+  - {id: cyanosis, label: 唇青, surfaces: [手足青至节, 唇口青, 爪甲青, 手足青, 唇青, 面青], system: cardiovascular,
+     hpo: {id: "HP:0000961", label: Cyanosis, relation: PARTIAL_OVERLAP}}
+  - {id: pallor, label: 面白, surfaces: [面色㿠白, 面色苍白, 面色白, 面白, 唇淡], system: general, hpo: {id: "HP:0000980", label: Pallor, relation: CLOSE}}
+  - {id: dark_complexion, label: 面色黧黑, surfaces: [面色黧黑, 黧黑, 额上黑, 面黑], system: skin,
+     hpo: {id: "HP:0000953", label: Hyperpigmentation of the skin, relation: PARTIAL_OVERLAP}}
+  # digestion
+  - {id: vomiting, label: 呕吐, surfaces: [呕吐, 吐逆, 呕逆, 喜呕, 呕, 吐], system: digestive, hpo: {id: "HP:0002013", label: Vomiting, relation: CLOSE}}
+  - {id: regurgitation, label: 胃反, surfaces: [朝食暮吐, 暮食朝吐, 胃反, 反胃], system: digestive,
+     hpo: {id: "HP:0002013", label: Vomiting, relation: NARROWER, note: 食久乃吐、宿谷不化}}
+  - {id: retching, label: 干呕, surfaces: [干呕], system: digestive, hpo: {id: "HP:6001526", label: Retching, relation: CLOSE}}
+  - {id: hiccup, label: 呃逆, surfaces: [呃逆, 呃忒, 哕逆, 哕], system: digestive, hpo: {id: "HP:0100247", label: Recurrent singultus, relation: CLOSE},
+     surface_relations: {哕: HISTORICAL_SEMANTIC_SHIFT}, note: 宋以前医书之"哕"多指呃逆（《景岳全书》：哕者，呃逆也），后世亦有释为干呕者}
+  - {id: nausea, label: 恶心, surfaces: [恶心, 欲呕, 温温欲吐], system: digestive, hpo: {id: "HP:0002018", label: Nausea, relation: CLOSE}}
+  - {id: acid_reflux, label: 吞酸, surfaces: [吞酸, 吐酸, 泛酸], system: digestive, hpo: {id: "HP:0002020", label: Gastroesophageal reflux, relation: PARTIAL_OVERLAP}}
+  - {id: dysphagia, label: 噎膈, surfaces: [食不得下, 饮食不下, 噎膈, 膈噎, 噎塞, 噎], system: digestive, hpo: {id: "HP:0002015", label: Dysphagia, relation: CLOSE}}
+  - {id: diarrhea, label: 下利, surfaces: [下利清谷, 下利, 泄泻, 泄利, 溏泄, 洞泄, 飧泄, 自利, 利], system: digestive, hpo: {id: "HP:0002014", label: Diarrhea, relation: CLOSE}}
+  - {id: dysentery_stool, label: 下利脓血, surfaces: [下利脓血, 便脓血, 痢下赤白, 下痢赤白], system: digestive,
+     hpo: {id: "HP:0025085", label: Bloody diarrhea, relation: CLOSE}}
+  - {id: tenesmus, label: 里急后重, surfaces: [里急后重], system: digestive, hpo: {id: "HP:0012702", label: Tenesmus, relation: EXACT}}
+  - {id: constipation, label: 大便难, surfaces: [大便干燥, 大便难, 大便硬, 大便鞕, 不大便, 大便秘结, 大便不通], system: digestive, hpo: {id: "HP:0002019", label: Constipation, relation: CLOSE}}
+  - {id: abdominal_pain, label: 腹痛, surfaces: [腹中痛, 腹痛, 少腹痛, 绕脐痛, 腹中坚痛, 心腹冷痛, 按之即痛, 按之则痛, 按之痛], system: digestive,
+     hpo: {id: "HP:0002027", label: Abdominal pain, relation: CLOSE}, surface_relations: {按之即痛: PARTIAL_OVERLAP, 按之则痛: PARTIAL_OVERLAP, 按之痛: PARTIAL_OVERLAP}}
+  - {id: epigastric_pain, label: 胃脘痛, surfaces: [胃脘痛, 心下痛, 心下急痛, 心中疼热], system: digestive, hpo: {id: "HP:0410019", label: Epigastric pain, relation: CLOSE}}
+  - {id: abdominal_distension, label: 腹满, surfaces: [腹胀满, 腹满, 腹胀, 中满, 少腹满], system: digestive, hpo: {id: "HP:0003270", label: Abdominal distention, relation: CLOSE}}
+  - {id: abdominal_mass, label: 腹中积块, surfaces: [少腹肿痞, 腹中有块, 积聚, 癥瘕, 癥坚], system: digestive,
+     hpo: {id: "HP:0031500", label: Abdominal mass, relation: PARTIAL_OVERLAP}}
+  - {id: hypochondrium_mass, label: 胁下痞块, surfaces: [胁下痞块, 胁下有块, 胁下积块, 胁下癖块], system: digestive,
+     hpo: {id: "HP:0001433", label: Hepatosplenomegaly, relation: PARTIAL_OVERLAP, note: 胁下之块可为肝大或脾大}}
+  - {id: splenic_mass, label: 疟母, surfaces: [疟母], system: digestive, hpo: {id: "HP:0001744", label: Splenomegaly, relation: PARTIAL_OVERLAP, note: 疟久结于胁下之癥瘕}}
+  - {id: anorexia, label: 不欲食, surfaces: [不欲饮食, 不欲食, 饥而不欲食, 不能食, 食不下, 纳呆, 不思饮食, 不饥], system: digestive, hpo: {id: "HP:0004396", label: Poor appetite, relation: CLOSE}}
+  - {id: hematemesis, label: 吐血, surfaces: [吐血, 呕血], system: digestive, hpo: {id: "HP:0002248", label: Hematemesis, relation: EXACT}}
+  - {id: melena, label: 便黑, surfaces: [大便黑, 便黑, 远血], system: digestive, hpo: {id: "HP:0002249", label: Melena, relation: CLOSE}}
+  - {id: rectal_bleeding, label: 便血, surfaces: [便血, 下血, 肠风下血, 近血], system: digestive, hpo: {id: "HP:0002573", label: Hematochezia, relation: PARTIAL_OVERLAP}}
+  - {id: jaundice, label: 身黄, surfaces: [身目俱黄, 面目俱黄, 身色如熏黄, 身黄, 目黄, 发黄, 黄疸], system: hepatic, hpo: {id: "HP:0000952", label: Jaundice, relation: CLOSE}}
+  - {id: ascites, label: 腹大如鼓, surfaces: [腹大如鼓, 单腹胀, 腹大], system: hepatic, hpo: {id: "HP:0001541", label: Ascites, relation: PARTIAL_OVERLAP}}
+  - {id: rectal_prolapse, label: 脱肛, surfaces: [脱肛, 肛门脱出], system: digestive, hpo: {id: "HP:0002035", label: Rectal prolapse, relation: CLOSE}}
+  - {id: hemorrhoids, label: 痔, surfaces: [痔疮, 五痔, 痔], system: digestive,
+     hpo: {id: "HP:0032551", label: Hemorrhoids, relation: PARTIAL_OVERLAP, note: 古之痔兼指肛瘘等肛门诸病}}
+  # skin, swelling, joints, limbs
+  - {id: edema, label: 水肿, surfaces: [遍身虚肿, 肢体浮肿, 身肿, 面浮, 浮肿, 水肿, 阴肿, 肿], system: general, hpo: {id: "HP:0000969", label: Edema, relation: CLOSE}}
+  - {id: foot_edema, label: 跗肿, surfaces: [两脚肿, 脚肿, 足肿, 跗肿, 胫肿], system: general, hpo: {id: "HP:0010741", label: Pedal edema, relation: CLOSE}}
+  - {id: foamy_urine, label: 小便多沫, surfaces: [小便多沫, 尿有泡沫, 溲如沫], system: urinary, hpo: {id: "HP:0031504", label: Foamy urine, relation: CLOSE}}
+  - {id: dehydration_signs, label: 螺瘪, surfaces: [手指螺瘪, 螺瘪, 目眶陷, 眼眶凹陷], system: general,
+     hpo: {id: "HP:0001944", label: Dehydration, relation: PARTIAL_OVERLAP, note: 清代"瘪螺痧"之指螺干瘪}}
+  - {id: rash, label: 发斑, surfaces: [发斑, 斑疹, 疹, 斑], system: skin, hpo: {id: "HP:0000988", label: Skin rash, relation: PARTIAL_OVERLAP}}
+  - {id: purpura, label: 紫斑, surfaces: [紫斑, 肌衄, 斑色紫], system: skin, hpo: {id: "HP:0000979", label: Purpura, relation: CLOSE}}
+  - {id: vesicles, label: 水疱, surfaces: [水疱, 水泡, 疱疹], system: skin, hpo: {id: "HP:0200037", label: Skin vesicle, relation: CLOSE}}
+  - {id: pustules, label: 痘疮, surfaces: [痘疮, 豆疮, 脓疱, 天行发斑疮], system: skin, hpo: {id: "HP:0200039", label: Pustule, relation: PARTIAL_OVERLAP}}
+  - {id: wheals, label: 瘾疹, surfaces: [瘾疹, 隐疹, 风疹块, 风团], system: skin, hpo: {id: "HP:0001025", label: Urticaria, relation: CLOSE}}
+  - {id: itch, label: 瘙痒, surfaces: [瘙痒, 身痒, 痒], system: skin, hpo: {id: "HP:0000989", label: Pruritus, relation: CLOSE}}
+  - {id: weeping_sores, label: 湿疮, surfaces: [浸淫疮, 湿疮], system: skin, hpo: {id: "HP:0000964", label: Eczematoid dermatitis, relation: PARTIAL_OVERLAP}}
+  - {id: red_swelling, label: 红肿, surfaces: [焮红, 红肿, 赤肿], system: skin, hpo: {id: "HP:0010783", label: Erythema, relation: PARTIAL_OVERLAP}}
+  - {id: suppuration, label: 成脓, surfaces: [痈脓, 脓已成, 脓成, 化脓, 有脓, 发痈疽, 痈疽, 大痈], system: skin, hpo: {id: "HP:0025615", label: Abscess, relation: PARTIAL_OVERLAP}}
+  - {id: ulceration, label: 疮疡, surfaces: [久败疮, 疮疡, 溃烂, 溃疡], system: skin, hpo: {id: "HP:0200042", label: Skin ulcer, relation: PARTIAL_OVERLAP}}
+  - {id: gangrene, label: 脱疽, surfaces: [脱疽, 脱痈, 趾节脱落], system: skin, hpo: {id: "HP:0100758", label: Gangrene, relation: PARTIAL_OVERLAP}}
+  - {id: scaly_skin, label: 肌肤甲错, surfaces: [肌肤甲错, 其身甲错, 甲错, 皮肤皲裂], system: skin,
+     hpo: {id: "HP:0040189", label: Scaling skin, relation: PARTIAL_OVERLAP}}
+  - {id: papules, label: 疹如粟, surfaces: [疹如粟, 粟疹, 丘疹], system: skin, hpo: {id: "HP:0200034", label: Papule, relation: CLOSE}}
+  - {id: nodules, label: 痰核, surfaces: [皮下结核, 痰核, 结节], system: skin, hpo: {id: "HP:0200036", label: Skin nodule, relation: PARTIAL_OVERLAP}}
+  - {id: obesity, label: 肥胖, surfaces: [形体肥胖, 肥胖, 肥盛, 形盛], system: general,
+     hpo: {id: "HP:0004324", label: Increased body weight, relation: PARTIAL_OVERLAP, note: 古之"肥人"多指体质}}
+  - {id: hair_loss, label: 发落, surfaces: [须发脱落, 眉发脱落, 脱发, 发落, 发堕], system: skin, hpo: {id: "HP:0001596", label: Alopecia, relation: CLOSE}}
+  - {id: eyebrow_loss, label: 眉落, surfaces: [眉落, 眉毛脱落], system: skin, hpo: {id: "HP:0045075", label: Sparse eyebrow, relation: PARTIAL_OVERLAP}}
+  - {id: body_ache, label: 身疼, surfaces: [身疼痛, 身体疼痛, 一身尽疼, 身疼, 身痛, 体痛], system: musculoskeletal,
+     hpo: {id: "HP:0003326", label: Myalgia, relation: PARTIAL_OVERLAP}}
+  - {id: limb_pain, label: 四肢疼痛, surfaces: [四肢烦疼, 四肢疼痛, 手足疼痛], system: musculoskeletal, hpo: {id: "HP:0009763", label: Limb pain, relation: CLOSE}}
+  - {id: joint_pain, label: 骨节疼痛, surfaces: [骨节疼痛, 骨节烦疼, 历节痛, 肢节疼痛, 关节痛, 百节疼痛, 诸肢节疼痛], system: musculoskeletal,
+     hpo: {id: "HP:0002829", label: Arthralgia, relation: CLOSE}}
+  - {id: toe_pain, label: 足大趾肿痛, surfaces: [足大趾肿痛, 足大指肿痛, 大趾痛], system: musculoskeletal,
+     hpo: {id: "HP:0001854", label: Podagra, relation: CLOSE}}
+  - {id: joint_swelling, label: 关节肿大, surfaces: [脚肿如脱, 肿大如脱, 关节肿大, 节肿], system: musculoskeletal, hpo: {id: "HP:0001386", label: Joint swelling, relation: CLOSE}}
+  - {id: joint_stiffness, label: 屈伸不利, surfaces: [屈伸不利, 不可屈伸, 不能屈伸], system: musculoskeletal, hpo: {id: "HP:0001387", label: Joint stiffness, relation: PARTIAL_OVERLAP}}
+  - {id: cramp, label: 转筋, surfaces: [转筋, 筋挛, 脚挛急, 拘急], system: musculoskeletal,
+     hpo: {id: "HP:0003394", label: Muscle spasm, relation: CLOSE}, surface_relations: {拘急: PARTIAL_OVERLAP}}
+  - {id: back_pain, label: 腰痛, surfaces: [腰脊痛, 腰痛, 腰背痛], system: musculoskeletal, hpo: {id: "HP:0003419", label: Low back pain, relation: CLOSE}}
+  - {id: neck_nodes, label: 瘰疬, surfaces: [瘰疬, 马刀侠瘿, 鼠瘘], system: lymphatic, hpo: {id: "HP:0025289", label: Cervical lymphadenopathy, relation: PARTIAL_OVERLAP}}
+  - {id: swollen_nodes, label: 核肿, surfaces: [恶核, 核肿, 疙瘩], system: lymphatic, hpo: {id: "HP:0002716", label: Lymphadenopathy, relation: PARTIAL_OVERLAP}}
+  - {id: goiter, label: 瘿, surfaces: [颈瘿, 瘿瘤, 瘿], system: endocrine, hpo: {id: "HP:0000853", label: Goiter, relation: PARTIAL_OVERLAP}}
+  - {id: leg_elephant, label: 大脚风, surfaces: [大脚风, 象皮腿, 腿肿如象], system: lymphatic, hpo: {id: "HP:0001004", label: Lymphedema, relation: PARTIAL_OVERLAP}}
+  - {id: hernia, label: 狐疝, surfaces: [阴狐疝, 狐疝, 疝气, 小肠气], system: digestive,
+     hpo: {id: "HP:0000023", label: Inguinal hernia, relation: PARTIAL_OVERLAP}, surface_relations: {狐疝: CLOSE, 阴狐疝: CLOSE}}
+  # women and children
+  - {id: amenorrhea, label: 经闭, surfaces: [经闭, 月事不来, 经水不通, 经水断绝], system: gynecological, hpo: {id: "HP:0000141", label: Amenorrhea, relation: CLOSE}}
+  - {id: oligomenorrhea, label: 月经后期, surfaces: [月经后期, 经水后期, 经迟], system: gynecological, hpo: {id: "HP:0000876", label: Oligomenorrhea, relation: PARTIAL_OVERLAP}}
+  - {id: menorrhagia, label: 崩漏, surfaces: [崩漏, 崩中, 漏下, 经水过多], system: gynecological, hpo: {id: "HP:0000132", label: Menorrhagia, relation: PARTIAL_OVERLAP}}
+  - {id: dysmenorrhea, label: 经行腹痛, surfaces: [经行腹痛, 痛经], system: gynecological, hpo: {id: "HP:0100607", label: Dysmenorrhea, relation: CLOSE}}
+  - {id: infertility, label: 不孕, surfaces: [不孕, 无子, 绝产], system: gynecological, hpo: {id: "HP:0000789", label: Infertility, relation: CLOSE}}
+  - {id: miscarriage, label: 堕胎, surfaces: [半产, 小产, 堕胎, 胎堕, 滑胎], system: gynecological,
+     hpo: {id: "HP:0005268", label: Miscarriage, relation: CLOSE}, surface_relations: {滑胎: NARROWER}}
+  - {id: uterine_prolapse, label: 阴挺, surfaces: [阴挺下脱, 阴挺, 阴脱], system: gynecological, hpo: {id: "HP:0000139", label: Uterine prolapse, relation: CLOSE}}
+  - {id: breast_abscess, label: 乳痈, surfaces: [乳痈, 乳房红肿, 乳房肿痛], system: gynecological, hpo: {id: "HP:0040407", label: Mastitis, relation: CLOSE}}
+  - {id: breast_pain, label: 乳房胀痛, surfaces: [乳房胀痛, 乳房痛, 乳胀], system: gynecological, hpo: {id: "HP:0034265", label: Mastalgia, relation: CLOSE}}
+  - {id: failure_to_thrive, label: 疳, surfaces: [疳积, 疳疾], system: pediatric, hpo: {id: "HP:0001508", label: Failure to thrive, relation: PARTIAL_OVERLAP}}
+  - {id: late_walking, label: 行迟, surfaces: [行迟], system: pediatric, hpo: {id: "HP:0031936", label: Delayed ability to walk, relation: CLOSE}}
+  - {id: open_fontanelle, label: 解颅, surfaces: [囟开不合, 解颅, 囟门不合], system: pediatric,
+     hpo: {id: "HP:0000238", label: Hydrocephalus, relation: PARTIAL_OVERLAP, note: 囟开不合兼见于佝偻病}}
+  # pulse (a few overlap the modern pulse; most are TCM's own)
+  - {id: pulse_rapid, label: 脉数, surfaces: [脉数, 脉疾], system: pulse, hpo: {id: "HP:0001649", label: Tachycardia, relation: PARTIAL_OVERLAP, note: 数为一息六至以上}}
+  - {id: pulse_slow, label: 脉迟, surfaces: [脉迟], system: pulse, hpo: {id: "HP:0001662", label: Bradycardia, relation: PARTIAL_OVERLAP}}
+  - {id: pulse_irregular, label: 脉结代, surfaces: [脉结代, 脉结, 脉代, 脉促], system: pulse, hpo: {id: "HP:0011675", label: Arrhythmia, relation: PARTIAL_OVERLAP}}
+  - {id: pulse_faint, label: 脉微欲绝, surfaces: [脉微欲绝, 脉微细, 脉不出], system: pulse, hpo: {id: "HP:0032553", label: Weak pulse, relation: CLOSE}}
+  - {id: pulse_other, label: 脉象（浮沉弦滑涩等）, surfaces: [脉阴阳俱紧, 脉浮, 脉沉, 脉弦, 脉滑, 脉涩, 脉紧, 脉缓, 脉洪, 脉细, 脉微, 脉濡, 脉弱, 脉大, 脉虚, 脉实], system: pulse,
+     hpo: null, relation: NO_MODERN_EQUIVALENT}
+  - {id: tongue, label: 舌象, surfaces: [舌上白苔, 舌白, 舌赤, 舌绛, 苔黄, 苔白, 苔腻, 舌焦], system: tongue, hpo: null, relation: NO_MODERN_EQUIVALENT}
+
+# a written form read two ways: the reading whose cues are in the same sentence wins; with no cue, or a tie, the default
+# is taken and the finding is marked for review (a model adjudicates it when one is configured)
+ambiguous:
+  - {surface: 不得卧, default: insomnia, readings: {orthopnea: [喘, 咳, 倚息, 短气, 上气, 坐, 肿, 水], insomnia: [烦, 眠, 寐, 心中, 虚]}}
+
+# phrases in which no finding is read: a treatment, a resolution, a normal function, a theory word
+blocked: [小便自利, 小便利, 小便自调, 小便清, 利小便, 通利, 清利, 利水, 下利止, 利止, 利不止, 汗出而解, 汗出则愈, 汗出愈, 得汗, 汗之,
+          吐之, 下之, 可吐, 可下, 可汗, 渴止, 呕止, 热退, 热除, 身凉, 发汗, 解表, 表热, 里热, 热中, 热气, 热结, 热越, 邪热, 瘀热,
+          热入, 热多, 寒多, 热之, 如淋, 热病, 病热, 实热, 虚热, 内热, 肿毒, 消肿, 利湿]
+
+# modifiers read in the words around a finding (the clause it stands in)
+modifiers:
+  severity: {大: severe, 甚: severe, 剧: severe, 极: severe, 微: mild, 少: mild, 稍: mild}
+  frequency: {时时: intermittent, 发作有时: periodic, 日再发: frequent, 间日: periodic, 频频: frequent}
+  timing: {日晡: afternoon, 夜: night, 昼: day, 旦: morning, 暮: evening, 午后: afternoon, 食后: after_meals, 食前: before_meals}
+  course: {久: chronic, 数年: chronic, 经年: chronic, 积经年岁: chronic, 暴: acute, 卒: acute, 猝: acute, 新: acute, 初起: onset, 始得之: onset, 反复: recurrent}
+
+# the course a passage implies by its frame: an acute febrile disease counted in days, a chronic one in years
+course_patterns:
+  acute: ["[一二三四五六七八九十]{1,3}日", 太阳病, 阳明病, 少阳病, 太阴病, 少阴病, 厥阴病, 伤寒, 温病, 温疫, 时行, 天行, 疫]
+  chronic: ["[一二三四五六七八九十数]{1,3}年", 经年, 积年, 久病, 虚劳, 痼疾]
+
+# a negator before a finding (modifiers such as 大 甚 may stand between): 不渴, 无大热, 不能发黄, 身无汗
+negation: "(?:不|无|未|非|勿|莫|弗|毋|不能|未尝|未曾)[大甚太复再得曾能]?$"
+
+# clause openers that make a finding optional (或) or conditional (若); these count for less
+optional: [或]
+conditional: [若, 设, 假令, 倘, 如其]
+
+# the population a passage speaks of
+population: {男子: male, 丈夫: male, 妇人: female, 女子: female, 妊娠: female, 产后: female, 小儿: child, 婴儿: child, 老人: elderly, 年老: elderly}

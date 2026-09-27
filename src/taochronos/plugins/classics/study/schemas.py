@@ -39,6 +39,17 @@ WITNESS = obj({"passage_id": S, "book_id": S, "title": S, "work": NS, "authors":
 SHARE_ROW = obj({"item": S, "units": N, "share": N, "other_units": N, "other_share": N, "share_z": N, "z": N, "p": N,
                  "significant": B, "occurrences": arr(N)}, ["item", "share", "other_share", "z", "significant"])
 
+BRIDGE_RELATIONS = ["EXACT", "CLOSE", "BROADER", "NARROWER", "PARTIAL_OVERLAP", "PHENOTYPIC_SIMILARITY", "CONTEXT_DEPENDENT",
+                    "HISTORICAL_SEMANTIC_SHIFT", "NO_MODERN_EQUIVALENT", "UNCERTAIN"]
+BRIDGE_LEVELS = ["high", "moderate", "low", "insufficient"]
+BRIDGE_FINDING = obj({
+    "id": S, "phenotype": S, "label": S, "surface": S, "span": arr(I), "clause": S, "system": S,
+    "hpo": {"anyOf": [obj({"id": S, "label": S, "relation": S}, ["id", "label", "relation"]), {"type": "null"}]},
+    "relation": {"enum": BRIDGE_RELATIONS}, "negated": B, "optional": B, "conditional": B,
+    "status": {"enum": ["presenting", "after_treatment", "rejected", "implied"]}, "weight": N, "modifiers": {"type": "object"},
+    "review": B, "source": S},
+    ["id", "phenotype", "surface", "span", "hpo", "relation", "negated", "optional", "conditional", "status", "weight", "source"])
+
 STUDY_SCHEMAS: dict[str, dict[str, Any]] = {
     # T3 异体字 / 通假 — the normalised text, the original never altered
     "normalize": obj({"normalized": S, "normalizations": arr(obj({"from": S, "to": S, "kind": S}))}, ["normalized", "normalizations"]),
@@ -246,6 +257,40 @@ STUDY_SCHEMAS: dict[str, dict[str, Any]] = {
     "search": obj({"query": {"type": "object"},
                    "hits": arr(obj({"passage_id": S, "book_id": S, "title": S, "year": NN, "locator": S, "text": S, "score": N},
                                    ["passage_id", "book_id", "locator", "text"]))}, ["hits"]),
+    # AMBE 古今桥接 (S10–S12): the AncientPhenotypePacket, the mapping to modern disease profiles, the way back
+    "phenotype_packet": obj({
+        "normalized": S, "kind": {"enum": ["description", "indication"]}, "year": NN,
+        "findings": arr(BRIDGE_FINDING), "implied": arr(BRIDGE_FINDING),
+        "terms": arr(obj({"id": S, "term": S, "sense": NS, "sense_label": NS, "p": NN, "candidates": STRS, "diseases": STRS,
+                          "homonym": obj({"diseases": STRS, "note": S})}, ["id", "term"])),
+        "context": obj({"course": STRS, "population": STRS}, ["course", "population"]),
+        "counts": obj({"findings": I, "projected": I, "negated": I, "tcm_only": I, "uncertain": I, "implied": I})},
+        ["normalized", "kind", "findings", "implied", "terms", "context", "counts"]),
+    "bridge_map": obj({
+        "candidates": arr(obj({
+            "id": S, "rank": I, "disease": S, "label": S, "en": S, "icd10": S, "level": {"enum": BRIDGE_LEVELS},
+            "fit": N, "coverage": N, "precision": N, "penalty": N, "evidence_mass": N,
+            "matched": arr(obj({"feature": S, "feature_label": S, "tier": {"enum": ["typical", "frequent", "occasional"]},
+                                "degree": N, "via": S, "surface": S, "relation": S, "hierarchy": S},
+                               ["feature", "tier", "degree", "via", "relation"])),
+            "missing_typical": arr(obj({"feature": S, "label": S, "surfaces": STRS}, ["feature", "label"])),
+            "conflicts": arr(obj({"kind": {"enum": ["against", "denied_typical"]}, "feature": S, "via": S}, ["kind", "feature", "via"])),
+            "required_met": B, "caps": STRS, "relation": {"enum": ["PHENOTYPIC_SIMILARITY", "UNCERTAIN"]},
+            "calibrated": {"enum": [False]}},
+            ["id", "rank", "disease", "level", "fit", "matched", "missing_typical", "conflicts", "required_met", "relation", "calibrated"])),
+        "discriminators": arr({"type": "object"}),
+        "terms": arr(obj({"id": S, "term": S, "sense": NS, "relations": arr(obj({
+            "disease": S, "label": S, "relation": {"enum": BRIDGE_RELATIONS}, "why": STRS}, ["disease", "relation", "why"]))},
+            ["id", "term", "relations"])),
+        "statement": S, "calibration": S, "guard": arr({"type": "object"}), "ontology": {"type": "object"}},
+        ["candidates", "discriminators", "terms", "statement", "calibration", "guard"]),
+    "bridge_reverse": obj({
+        "disease": obj({"id": S, "label": S, "icd10": S}, ["id", "label"]), "forms": {"type": "object"}, "unobservable": STRS,
+        "passages": arr(obj({"passage_id": S, "level": {"enum": BRIDGE_LEVELS}, "fit": N,
+                             "matched": arr(obj({"surface": S, "feature": S, "tier": S})), "terms": STRS},
+                            ["passage_id", "level", "fit", "matched"])),
+        "names": arr(obj({"term": S, "passages": I, "periods": {"type": "object"}}, ["term", "passages"])), "note": S},
+        ["disease", "forms", "passages", "names", "note"]),
 }
 
 __all__ = ["STUDY_SCHEMAS", "WITNESS"]

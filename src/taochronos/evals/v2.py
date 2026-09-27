@@ -336,3 +336,126 @@ def layout(ctx: EvalContext) -> SuiteResult:
 
 
 __all__ = ["entities", "eval_judge", "layout", "places", "translation"]
+
+
+def _finding_sets(packet: dict[str, Any]) -> tuple[set[str], set[str], set[str]]:
+    """(presenting, negated, optional or conditional) phenotype ids of a packet."""
+    pres, neg, opt = set(), set(), set()
+    for f in packet["findings"]:
+        if f["status"] != "presenting":
+            continue
+        if f["optional"] or f["conditional"]:
+            opt.add(f["phenotype"])
+        elif f["negated"]:
+            neg.add(f["phenotype"])
+        else:
+            pres.add(f["phenotype"])
+    # a finding the text states plainly somewhere is presenting, whatever else it says of it elsewhere
+    return pres, neg - pres, opt - pres - neg
+
+
+def _gold_sets(rows: list[str]) -> tuple[set[str], set[str], set[str]]:
+    pres = {r for r in rows if r[0] not in "!?"}
+    return pres, {r[1:] for r in rows if r.startswith("!")}, {r[1:] for r in rows if r.startswith("?")}
+
+
+def _prf(tp: int, fp: int, fn: int) -> dict[str, float]:
+    p = tp / (tp + fp) if tp + fp else 1.0
+    r = tp / (tp + fn) if tp + fn else 1.0
+    return {"precision": round(p, 3), "recall": round(r, 3), "f1": round(2 * p * r / (p + r), 3) if p + r else 0.0}
+
+
+def _score_packets(cases: list[tuple[str, dict[str, Any], list[str]]], details: list[dict[str, Any]]) -> dict[str, Any]:
+    tp = fp = fn = 0
+    bound_ok = bound_n = 0
+    for name, packet, gold in cases:
+        got_p, got_n, got_o = _finding_sets(packet)
+        want_p, want_n, want_o = _gold_sets(gold)
+        got_all, want_all = got_p | got_n | got_o, want_p | want_n | want_o
+        tp += len(got_all & want_all)
+        fp += len(got_all - want_all)
+        fn += len(want_all - got_all)
+        for pid in got_all & want_all:  # was the finding bounded right (negated, optional or conditional, presenting)?
+            bound_n += 1
+            bound_ok += ((pid in got_n) == (pid in want_n)) and ((pid in got_o) == (pid in want_o))
+        if got_all != want_all or got_n != want_n or got_o != want_o:
+            details.append({"case": name, "missing": sorted(want_all - got_all), "extra": sorted(got_all - want_all),
+                            "negated": {"got": sorted(got_n), "want": sorted(want_n)},
+                            "optional": {"got": sorted(got_o), "want": sorted(want_o)}})
+    return {**_prf(tp, fp, fn), "bounds_accuracy": round(bound_ok / bound_n, 3) if bound_n else None, "cases": len(cases)}
+
+
+def bridge(ctx: EvalContext) -> SuiteResult:
+    """BridgeEval (AMBE): the AncientPhenotypePacket against gold findings (dev sentences; with the full corpus, a
+    held-out sample annotated blind), and the mapping of canonical descriptions to the profile a clinician-historian
+    names first (top-1, top-3), negative cases that must stay low, every statement through the presentism guard, and
+    every HPO identifier present in the closure's release.  With TAOCHRONOS_EVAL_LLM, the model phase runs too."""
+    h = ctx.default
+    b = h.capabilities.get("bridge")
+    gold = ctx.gold("bridge")
+    details: list[dict[str, Any]] = []
+    judge = eval_judge(ctx, h)
+    b.study.judge = None
+    dev = [(row["text"], b.phenotype(row["text"]), row["findings"]) for row in gold["phenotypes"]]
+    metrics: dict[str, Any] = {"phenotypes": _score_packets(dev, details)}
+    order = ["insufficient", "low", "moderate", "high"]
+    top1 = top3 = pos = neg_ok = neg = guard_ok = 0
+    levels: dict[str, int] = {}
+    for row in gold["mapping"]:
+        r = b.map(row["text"])
+        cands = r["candidates"]
+        guard_ok += not r["guard"]
+        lead = cands[0] if cands else None
+        if lead:
+            levels[lead["level"]] = levels.get(lead["level"], 0) + 1
+        want = [row["top"]] if "top" in row else row.get("top3", [])
+        if want:
+            pos += 1
+            ids = [c["disease"] for c in cands]
+            hit1 = bool(ids) and ids[0] == want[0] if "top" in row else bool(ids) and ids[0] in want
+            hit3 = all(w in ids[:3] for w in want) if "top3" in row else want[0] in ids[:3]
+            top1 += hit1
+            top3 += hit3
+            if not hit1 or not hit3:
+                details.append({"case": row["text"], "want": want, "got": [(c["disease"], c["level"]) for c in cands[:3]]})
+        if "max_level" in row:
+            neg += 1
+            worst = max((order.index(c["level"]) for c in cands), default=0)
+            ok = worst <= order.index(row["max_level"])
+            neg_ok += ok
+            if not ok:
+                details.append({"case": row["text"], "max_level": row["max_level"], "got": [(c["disease"], c["level"]) for c in cands[:3]]})
+    metrics["mapping"] = {"top1": round(top1 / pos, 3) if pos else None, "top3": round(top3 / pos, 3) if pos else None,
+                          "cases": pos, "caps_respected": f"{neg_ok}/{neg}", "guard_clean": f"{guard_ok}/{len(gold['mapping'])}",
+                          "lead_levels": levels}
+    data = b.data
+    metrics["ontology"] = {"hpo_terms": len(data.hpo_ids()), "phenotypes": len(data.phenotypes), "profiles": len(data.diseases),
+                           "hierarchy_release": data.closure_release, "release": data.hpo_release,
+                           "closure_terms": len(data.ancestors)}
+    notes = ["phenotypes and mapping: dev cases written while the reader was built (gold/bridge.yaml); levels are not "
+             "calibrated and the mapping cases test the construct, not a diagnosis"]
+    big = None if ctx.quick else ctx.corpus_harness()
+    if big is not None:
+        bb = big.capabilities.get("bridge")
+        bb.study.judge = None
+        rows = []
+        for row in gold["heldout"]:
+            try:
+                rows.append((row["passage"], bb.phenotype(passage_id=row["passage"]), row["findings"]))
+            except ValueError:
+                continue
+        held: list[dict[str, Any]] = []
+        metrics["heldout"] = _score_packets(rows, held)
+        details += [{"heldout": True, **d} for d in held]
+        notes.append("heldout: 12 passages drawn at random from 65 clinical works of the full corpus and annotated from the "
+                     "text before the reader ran on them (no forms added after)")
+    if judge is not None:
+        b.study.judge = judge
+        try:
+            model = [(row["text"], b.phenotype(row["text"]), row["findings"]) for row in gold["phenotypes"]]
+            metrics["phenotypes_with_model"] = _score_packets(model, [])
+            metrics["judge"] = judge.report()
+        finally:
+            b.study.judge = None
+    return SuiteResult("bridge", metrics, details, notes=notes)
+

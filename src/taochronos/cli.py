@@ -1061,6 +1061,51 @@ def cmd_vision(args: argparse.Namespace) -> None:
         raise SystemExit(str(exc)) from exc
 
 
+def cmd_bridge(args: argparse.Namespace) -> None:
+    """古今桥接 (AMBE): an ancient passage's findings → HPO → modern disease profiles, explainably; and back."""
+    from .plugins.classics.bridge import render_map, render_reverse
+
+    if not args.profile:
+        _, data = _corpus_paths(args)
+        args.profile = "full-corpus" if (data / "corpus" / "tcm.sqlite").exists() else "full-discovery"
+    harness = _harness(args)
+    study = harness.capabilities.get("study")
+    bridge = harness.capabilities.get("bridge")
+    if args.action == "diseases":
+        rows = bridge.diseases()
+        _out(rows if args.json else "\n".join(f"- {d['id']}：{d['label']}（{d['en']}，ICD-10 {d['icd10']}）典型：{'、'.join(d['typical'])}"
+                                               for d in rows))
+        return
+    if args.action == "verify":
+        _, data = _corpus_paths(args)
+        obo = Path(args.obo) if args.obo else data / "ontology" / "hp.obo"
+        if not obo.exists():
+            raise SystemExit(f"no HPO release at {obo}: download hp.obo (https://hpo.jax.org) and give --obo")
+        _out(bridge.verify(obo, write=args.write))
+        return
+    if args.action == "reverse":
+        if not args.target:
+            raise SystemExit("taochronos bridge reverse <disease id, name or ICD-10 code>")
+        try:
+            r = bridge.reverse(args.target, limit=args.limit)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+        _out(r if args.json else render_reverse(r))
+        return
+    text = Path(args.target).read_text(encoding="utf-8") if args.target and Path(args.target).exists() else args.target
+    if not text and not args.passage:
+        raise SystemExit(f"taochronos bridge {args.action} <text or file> | --passage ID")
+    study.judge = _judge(args, harness)
+    try:
+        if args.action == "phenotype":
+            _out(bridge.phenotype(text, passage_id=args.passage))
+            return
+        r = bridge.map(text, passage_id=args.passage, top=args.top, systems=args.system)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    _out(r if args.json else render_map(r))
+
+
 def _has_module(name: str) -> bool:
     import importlib.util
 
@@ -1100,6 +1145,22 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--page", type=int, help="fetch: the page (1-based) of the manifest")
     sp.add_argument("--width", type=int, default=1600, help="fetch: the width of the image to request")
     sp.add_argument("--hint", help="read: a hint for the model (the work, the chapter)")
+    sp.add_argument("--json", action="store_true")
+    sp.add_argument("--profile", help="default: full-corpus when the corpus store exists")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    _llm_args(sp)
+    sp = sub.add_parser("bridge", help="古今桥接 (AMBE): an ancient passage's findings mapped to HPO and scored against modern "
+                                       "disease profiles (qualitative levels, not probabilities), a modern disease traced back "
+                                       "to the passages and names, the HPO identifiers verified")
+    sp.set_defaults(fn=cmd_bridge)
+    sp.add_argument("action", choices=["phenotype", "map", "reverse", "diseases", "verify"])
+    sp.add_argument("target", nargs="?", help="phenotype / map: a text or file; reverse: a disease id, name or ICD-10 code")
+    sp.add_argument("--passage", help="phenotype / map: a passage id instead of a text")
+    sp.add_argument("--top", type=int, default=5, help="map: how many candidates")
+    sp.add_argument("--system", action="append", help="map: only profiles of this organ system (repeatable)")
+    sp.add_argument("--limit", type=int, default=20, help="reverse: how many passages")
+    sp.add_argument("--obo", help="verify: a local hp.obo (default: <data>/ontology/hp.obo)")
+    sp.add_argument("--write", action="store_true", help="verify: rewrite domains/bridge/hpo_closure.yaml from the release")
     sp.add_argument("--json", action="store_true")
     sp.add_argument("--profile", help="default: full-corpus when the corpus store exists")
     sp.add_argument("--provider", help=argparse.SUPPRESS)

@@ -436,6 +436,9 @@ def test_results_match_the_schemas_of_the_task_specification(pack, study, commen
         "schools": school_study.schools("温病"),
         "disputes": commentary_study.disputes(),
         "search": tool("classics.search", {"query": "消渴", "k": 3}),
+        "phenotype_packet": harness.capabilities.get("bridge").phenotype("男子消渴，小便反多，以饮一斗，小便一斗。"),
+        "bridge_map": harness.capabilities.get("bridge").map(passage_id="jinkui.13.xiaoke1"),
+        "bridge_reverse": harness.capabilities.get("bridge").reverse("diabetes_mellitus", limit=3),
     }
     assert set(results) == set(STUDY_SCHEMAS)
     for name, result in results.items():
