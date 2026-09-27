@@ -13,6 +13,7 @@ import hashlib
 import json
 import types
 import typing
+from collections.abc import Mapping
 from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
 T = TypeVar("T", bound="Model")
@@ -24,7 +25,7 @@ def to_jsonable(obj: Any) -> Any:
         return {f.name: to_jsonable(getattr(obj, f.name)) for f in dataclasses.fields(obj)}
     if isinstance(obj, enum.Enum):
         return obj.value
-    if isinstance(obj, dict):
+    if isinstance(obj, Mapping):  # dicts, and the read-only views agents see
         return {str(k): to_jsonable(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
         return [to_jsonable(v) for v in obj]

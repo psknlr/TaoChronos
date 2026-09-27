@@ -7,12 +7,19 @@ contradict “lost” knowledge · text-level co-mentions that contradict “hid
 associations · earlier attestation for testimony · weak formula lineages ·
 overlap with known findings.
 
-The verdict is harness policy, not model opinion: any unresolved critical
-objection rejects; unresolved major objections send a first-generation
-hypothesis back for revision; a revision resolves an objection only through
-the matching qualifier (scope, sense, reading, status, tradition, level).
-A model may add objections, but a critical objection without verifiable
-counter-evidence is downgraded to major — the Skeptic is evidence-bound too.
+The verdict is harness policy, not model opinion: any open critical
+objection rejects; open major objections send a first-generation hypothesis
+back for revision.
+
+The Skeptic *raises* objections; it never closes one.  An objection moves
+raised → resolution_proposed → closed, and only a validator (re-running the
+check, or verifying a narrowing or new evidence) or an expert (interpretive
+objections only) closes it (``ObjectionClosed``).  So a revision that carries the
+matching qualifier (scope, sense, reading, status, tradition, level) *proposes*
+the resolution; the validator verifies it.  A model may add objections — a
+critical one without verifiable counter-evidence is downgraded to major, the
+Skeptic is evidence-bound too — and may propose resolutions, but it can neither
+drop, soften nor close an objection the deterministic checks raised.
 """
 
 from __future__ import annotations
@@ -24,17 +31,13 @@ from ...protocol.base import stable_id
 from ...protocol.claims import ClaimRelation, Role
 from ...protocol.events import EventType
 from ...protocol.evidence import Stance
-from ...protocol.hypothesis import HypothesisReview, Objection
+from ...protocol.hypothesis import NARROWING_AXIS, HypothesisReview, Objection, objection_kind
 from ...science.scoring import novelty
 from .common import cluster_fn, co_mentions, evidence_record, late_passage_count, locate, related_terms, scope_passages, surface, year_fn
 
 OUTPUT = "ReviewSet"
 MAX_REVISIONS = 1
-QUALIFIER_FOR = {
-    "sample_size": "scope", "single_source": "scope", "homonym": "sense", "edition_variant": "reading",
-    "statistical": "status", "transcription_dependence": "tradition", "earliest_source": "level", "counterexample": "level",
-    "partial_persistence": "level", "hub_driven": "status",
-}
+QUALIFIER_FOR = NARROWING_AXIS
 LOCAL_KINDS = ("lost_source", "historical_testimony", "contradiction", "renaming")
 MIN_LATE_PASSAGES = 20
 
@@ -44,8 +47,9 @@ def instructions(ctx: Any) -> str:
             "counterexamples, edition variants inside the quoted evidence, homonymy, transcription dependence between "
             "witnesses, thin corpus coverage and weak statistics. Every objection needs a check name, a severity "
             "(critical / major / minor / info) and a detail; a critical objection must quote counter-evidence verbatim "
-            "(passage_id + quote) or it will be downgraded. Mark an objection resolved only if the hypothesis's "
-            "qualifiers already address it.")
+            "(passage_id + quote) or it will be downgraded. You may propose a resolution for an objection (resolution + basis: "
+            "qualifier | new_evidence | rationale) — a validator or an expert decides whether it closes; you cannot close, "
+            "drop or soften an objection the deterministic checks raised.")
 
 
 def _degrees(ctx: Any) -> dict[str, int]:
@@ -177,7 +181,7 @@ def _review(ctx: Any, h: Any) -> dict[str, Any]:
         if early:
             uses = "、".join(sorted({a.surface for c in early for a in c.arguments if a.role not in (Role.HERB, Role.NATURE, Role.FLAVOR)})[:6])
             objections.append(_obj(h, "earliest_source", "info", f"更早文献确有该药的其他主治记载（{uses}），与“昔人”用法的证词相互印证",
-                                   resolved=True, resolution="corroborating earlier attestation"))
+                                   status="noted", resolution="corroborating earlier attestation"))
         else:
             objections.append(_obj(h, "earliest_source", "major", "语料中找不到早期用法的独立记载，证词无法佐证"))
     elif h.kind == "concept_drift":
@@ -248,7 +252,7 @@ def _review(ctx: Any, h: Any) -> dict[str, Any]:
     score, rationale = novelty(h.terms, ctx.cap("domain").known_findings)
     if score <= 0.5:
         objections.append(_obj(h, "known_finding", "info", f"与既有认识高度重叠（{rationale}），更可能是再发现而非新发现",
-                               resolved=True, resolution="affects novelty, not validity"))
+                               status="noted", resolution="affects novelty, not validity"))
     return {"hypothesis_id": h.id, "checks_run": checks, "objections": objections}
 
 
@@ -262,8 +266,12 @@ def draft(ctx: Any) -> dict[str, Any]:
     return {"reviews": reviews}
 
 
+def _open(o: dict[str, Any]) -> bool:
+    return o.get("status", "raised") not in ("closed", "noted") and not o.get("resolved")
+
+
 def verdict(objections: list[dict[str, Any]], h: Any) -> str:
-    open_ = [o for o in objections if not o.get("resolved")]
+    open_ = [o for o in objections if _open(o)]
     critical = [o for o in open_ if o["severity"] == "critical"]
     if critical:
         revisable = all(o["check"] == "edition_variant" for o in critical) and h.generation < MAX_REVISIONS
@@ -288,25 +296,57 @@ def _counter_records(ctx: Any, h: Any, raw: dict[str, Any]) -> list[Any]:
     return records
 
 
+def _proposal(raw: dict[str, Any], by: str) -> dict[str, Any]:
+    """What a model (or the revision's qualifier) offers as a resolution — a proposal, never a closure."""
+    basis = raw.get("basis") if raw.get("basis") in ("qualifier", "new_evidence", "rationale") else "rationale"
+    return {"basis": basis, "rationale": str(raw.get("resolution") or raw.get("rationale") or ""),
+            "evidence_ids": list(raw.get("evidence_ids") or []), "qualifier": raw.get("qualifier"), "proposed_by": by}
+
+
+def merge_reviews(base: dict[str, Any], model: dict[str, Any], by: str) -> list[dict[str, Any]]:
+    """The deterministic objections are authoritative: a model's copy of one (same check and detail) cannot change
+    its severity, detail or status — a claim that it is resolved becomes a *proposal*.  Objections the model adds are
+    kept (evidence-bound downgrading happens at commit)."""
+    out: list[dict[str, Any]] = []
+    theirs = {(o.get("check"), o.get("detail")): o for o in model.get("objections", []) if isinstance(o, dict)}
+    for o in base.get("objections", []):
+        mine = dict(o)
+        echo = theirs.pop((o.get("check"), o.get("detail")), None)
+        if echo is not None and (echo.get("resolved") or echo.get("resolution")) and mine.get("status", "raised") == "raised":
+            mine["status"] = "resolution_proposed"
+            mine["proposal"] = _proposal(echo, by)
+        out.append(mine)
+    for o in theirs.values():  # new objections from the model
+        added = {k: o[k] for k in ("check", "severity", "detail", "counter_evidence", "passage_ids") if k in o}
+        if o.get("resolved") or o.get("resolution"):
+            added["status"] = "resolution_proposed"
+            added["proposal"] = _proposal(o, by)
+        out.append(added)
+    return out
+
+
 def commit(ctx: Any, output: dict[str, Any]) -> str:
     state = ctx.state
     counts = {"survives": 0, "revise": 0, "reject": 0}
-    # a model may add objections, but it cannot skip a review: missing ones come from the deterministic checks
-    items = {r["hypothesis_id"]: r for r in (ctx.draft or {}).get("reviews", [])}
-    if output is not ctx.draft:
-        for r in output.get("reviews", []):
-            base = items.get(r.get("hypothesis_id"), {})
-            merged = {**base, **r}
-            seen = {(o["check"], o["detail"]) for o in r.get("objections", [])}
-            merged["objections"] = list(r.get("objections", [])) + [
-                o for o in base.get("objections", []) if (o["check"], o["detail"]) not in seen and o["severity"] in ("critical", "major")]
-            items[r.get("hypothesis_id")] = merged
+    # a model may add objections and propose resolutions, but it cannot skip a review, drop an objection, soften it or
+    # close it: the deterministic checks are the base, and closure is a validator's or an expert's act
+    base_items = {r["hypothesis_id"]: r for r in (ctx.draft or {}).get("reviews", [])}
+    model_items = {r.get("hypothesis_id"): r for r in output.get("reviews", [])} if output is not ctx.draft else {}
+    by = f"{ctx.actor.id}:{ctx.route.model}" if model_items else ctx.actor.id
+    items: dict[str, dict[str, Any]] = {}
+    for hid in sorted(set(base_items) | set(model_items)):
+        if not hid:
+            continue
+        base = base_items.get(hid, {"hypothesis_id": hid, "objections": [], "checks_run": []})
+        model = model_items.get(hid, {})
+        objections = merge_reviews(base, model, by) if model else [dict(o) for o in base.get("objections", [])]
+        items[hid] = {**base, "summary": model.get("summary") or base.get("summary", ""), "objections": objections,
+                      "checks_run": sorted(set(base.get("checks_run", [])) | set(model.get("checks_run", [])))}
     for item in [items[k] for k in sorted(items)]:
         h = state.hypotheses.get(item.get("hypothesis_id", ""))
         if h is None:
             continue
         objections: list[Objection] = []
-        counter_ids: list[str] = []
         all_counter = []
         checked = []
         for raw in item.get("objections", []):
@@ -314,18 +354,23 @@ def commit(ctx: Any, output: dict[str, Any]) -> str:
             severity = raw["severity"]
             if severity == "critical" and raw["check"] not in ("provenance", "anachronism", "edition_variant") and not records:
                 severity = "major"  # evidence-bound skepticism
-            resolved = bool(raw.get("resolved", False))
-            resolution = raw.get("resolution", "")
+            status = raw.get("status", "raised")
+            if severity == "info" and status == "raised":
+                status = "noted"  # information, not an objection: it never blocks and needs no closure
+            proposal = dict(raw.get("proposal") or {})
             key = QUALIFIER_FOR.get(raw["check"])
-            if not resolved and key and key in h.qualifiers and severity != "critical":
-                resolved, resolution = True, f"addressed by revision: {key}={h.qualifiers[key]}"
+            if status == "raised" and key and key in h.qualifiers and severity != "critical":
+                # the revision narrowed the claim along this objection's axis: propose it; a validator verifies it
+                status = "resolution_proposed"
+                proposal = {"basis": "qualifier", "qualifier": {key: h.qualifiers[key]}, "proposed_by": ctx.actor.id,
+                            "rationale": f"narrowed by revision: {key}={h.qualifiers[key]}", "evidence_ids": []}
             oid = stable_id("obj", h.id, raw["check"], raw["detail"])
             objections.append(Objection(id=oid, check=raw["check"], severity=severity, detail=raw["detail"],
                                         evidence_ids=[r.id for r in records], passage_ids=list(raw.get("passage_ids", [])),
-                                        resolved=resolved, resolution=resolution))
+                                        resolved=False, resolution=raw.get("resolution", "") if status == "noted" else "",
+                                        kind=objection_kind(raw["check"]), status=status, proposal=proposal))
             all_counter += records
-            counter_ids += [r.id for r in records]
-            checked.append({**raw, "severity": severity, "resolved": resolved})
+            checked.append({**raw, "severity": severity, "status": status, "resolved": False})
         final = verdict(checked, h)
         if all_counter:
             unique = list({r.id: r for r in all_counter}.values())
@@ -337,7 +382,8 @@ def commit(ctx: Any, output: dict[str, Any]) -> str:
             reviewer=ctx.actor.id,
             verdict=final,
             objections=objections,
-            summary=item.get("summary") or f"{final}: " + "; ".join(f"{o.severity}/{o.check}{'✓' if o.resolved else ''}" for o in objections),
+            summary=item.get("summary") or f"{final}: " + "; ".join(
+                f"{o.severity}/{o.check}{'?' if o.status == 'resolution_proposed' else ''}" for o in objections if o.status != "noted"),
             round=ctx.task.round,
             checks_run=list(item.get("checks_run", [])),
         )

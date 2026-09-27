@@ -118,6 +118,8 @@ def commit(ctx: Any, output: dict[str, Any]) -> str:
             rejections.append({"claim_id": claim.id, "reason": f"{verdict.hook}: {verdict.reason}", "passage_id": claim.passage_id,
                                "quote": claim.quote})
             continue
+        if isinstance(verdict.subject, Claim) and verdict.subject.id == claim.id:
+            claim = verdict.subject  # validators may attach their readings (support, statement frame)
         accepted.append(claim.to_dict())
     if accepted:
         ctx.emit(EventType.CLAIM_EXTRACTED, {"claims": accepted}, generated=[c["id"] for c in accepted])

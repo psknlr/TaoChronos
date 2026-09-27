@@ -23,6 +23,7 @@ from ..kernel.hooks import HookContext, HookPoint
 from ..kernel.memory import MemoryLayer
 from ..kernel.observability import research_metrics
 from ..kernel.policy import Actor
+from ..kernel.reducer import InvalidEvent
 from ..kernel.session import Session
 from ..kernel.stop import RoundStats, StopDecision, StopEvaluator
 from ..kernel.store import SimulatedCrash
@@ -31,10 +32,10 @@ from ..protocol.events import EventType
 from ..protocol.research import Decision, GoalSpec, TaskNode
 from ..verification.hooks import anachronism_guard
 from .report import publish_report
-from .validation import VALIDATOR, score_hypotheses, validate_claims, validate_hypotheses
+from .validation import VALIDATOR, adjudicate_objections, score_hypotheses, validate_claims, validate_hypotheses
 
 TERMINAL = ("done", "failed", "skipped")
-ALWAYS_RUN = {"validate_claims", "validate", "score", "meta_review"}
+ALWAYS_RUN = {"validate_claims", "adjudicate_objections", "validate", "score", "meta_review"}
 FINAL = ("completed", "stopped", "awaiting_expert", "budget_exhausted", "max_rounds")
 
 
@@ -109,6 +110,7 @@ class ResearchEngine:
                 continue
             stats = self._round_stats(state, r)
             session.emit(EventType.ROUND_COMPLETED, {"round": r, **stats})
+            self._verify_integrity(session)
             session.checkpoint()
             self._after_round(session, r, evaluator, budget, closed=False)
         return self._result(session)
@@ -133,6 +135,19 @@ class ResearchEngine:
             self._finish(session, decision)
         elif self._open_round(state) == r:
             self._begin_round(session, r + 1)
+
+    @staticmethod
+    def _verify_integrity(session: Session) -> None:
+        """The log is the truth: if the live state differs from a replay of the log (something changed the state
+        without an event), the live state is rebuilt from the log and the incident is recorded."""
+        report = session.verify()
+        if report["consistent"]:
+            return
+        session.restore()
+        session.emit(EventType.DECISION_RECORDED, {"decisions": [Decision(
+            id=stable_id("dec", "integrity", session.seq), kind="integrity_restored",
+            summary="live state differed from the event log; rebuilt from the log",
+            rationale=f"live {report['live_hash'][:12]} ≠ replayed {report['replayed_hash'][:12]}", made_by="kernel").to_dict()]})
 
     def _begin_round(self, session: Session, r: int) -> None:
         session.emit(EventType.ROUND_STARTED, {"round": r})
@@ -186,7 +201,11 @@ class ResearchEngine:
             futures = [pool.submit(self.runtime.run_task, session, t, budget=budget, defer_commit=True) for t in agent_tasks]
             results = [f.result() for f in futures]
         for result in results:  # agent_tasks are already in scheduling order
-            result.commit()
+            try:
+                result.commit()
+            except InvalidEvent as exc:  # the whole batch is refused and nothing of it is written; the task failed
+                session.emit(EventType.TASK_FAILED, {"task_id": result.task_id, "error": f"commit refused: {exc}"[:500]},
+                             task_id=result.task_id)
 
     def run_task(self, session: Session, task: TaskNode, budget: Budget) -> TaskResult:
         if task.role in KERNEL_ROLES:
@@ -194,12 +213,14 @@ class ResearchEngine:
         return self.runtime.run_task(session, task, budget=budget)
 
     def _run_kernel(self, session: Session, task: TaskNode) -> TaskResult:
-        session.emit(EventType.TASK_STARTED, {"task_id": task.id, "agent_id": VALIDATOR.id}, actor=VALIDATOR.id, task_id=task.id)
-        tx = session.transaction(VALIDATOR.id, task.id)
+        session.emit(EventType.TASK_STARTED, {"task_id": task.id, "agent_id": VALIDATOR.id}, actor=VALIDATOR, task_id=task.id)
+        tx = session.transaction(VALIDATOR, task.id)
         try:
             state = session.state
             if task.kind == "validate_claims":
                 summary = validate_claims(self.h, state, tx)
+            elif task.kind == "adjudicate_objections":
+                summary = adjudicate_objections(self.h, state, tx)
             elif task.kind == "validate":
                 summary = validate_hypotheses(self.h, state, tx)
             elif task.kind == "score":
@@ -214,7 +235,7 @@ class ResearchEngine:
         except Exception as exc:
             tx.abort()
             error = f"{type(exc).__name__}: {exc}"
-            session.emit(EventType.TASK_FAILED, {"task_id": task.id, "error": error[:500]}, actor=VALIDATOR.id, task_id=task.id)
+            session.emit(EventType.TASK_FAILED, {"task_id": task.id, "error": error[:500]}, actor=VALIDATOR, task_id=task.id)
             return TaskResult(task.id, task.role, VALIDATOR.id, "failed", error=error)
 
     # ================================================================ rounds
@@ -296,12 +317,12 @@ class ResearchEngine:
         """Gate G7: only a human expert can approve or reject a hypothesis."""
         actor = Actor.human(expert)
         etype = EventType.EXPERT_APPROVED if approve else EventType.EXPERT_REJECTED
-        session.emit(etype, {"hypothesis_id": hypothesis_id, "note": note}, actor=actor.id)
+        session.emit(etype, {"hypothesis_id": hypothesis_id, "note": note}, actor=actor)
 
     def decide_change(self, session: Session, change_id: str, *, approve: bool, actor: Actor, note: str = "") -> None:
         """Canonical knowledge changes are decided by validators or humans; approved ones enter M3 domain memory."""
         etype = EventType.CHANGE_APPROVED if approve else EventType.CHANGE_REJECTED
-        session.emit(etype, {"change_id": change_id, "note": note}, actor=actor.id)
+        session.emit(etype, {"change_id": change_id, "note": note}, actor=actor)
         change = session.state.changes[change_id]
         if approve:
             summary = _change_summary(change)
@@ -309,11 +330,11 @@ class ResearchEngine:
                                          terms=[str(v) for k, v in change.payload.items() if k in ("sense_id", "concept_id")],
                                          provenance={"change_id": change.id, "session": session.id})
             self.h.memory.commit(item.id, actor=actor)
-            session.emit(EventType.MEMORY_WRITTEN, {"memory_id": item.id, "layer": "M3", "change_id": change.id}, actor=actor.id)
+            session.emit(EventType.MEMORY_WRITTEN, {"memory_id": item.id, "layer": "M3", "change_id": change.id}, actor=actor)
 
     def steer(self, session: Session, *, expert: str, note: str, focus: list[str] | None = None) -> None:
         """Human steering is recorded (it never edits the immutable contract)."""
-        session.emit(EventType.EXPERT_STEERED, {"note": note, "focus": focus or []}, actor=Actor.human(expert).id)
+        session.emit(EventType.EXPERT_STEERED, {"note": note, "focus": focus or []}, actor=Actor.human(expert))
 
 
 def _change_summary(change: Any) -> str:

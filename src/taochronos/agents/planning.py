@@ -33,6 +33,7 @@ KIND_ROLE: dict[str, str] = {
     "modern_evidence": "modern_evidence",
     "revise_hypotheses": "hypothesis",
     "falsify_revisions": "skeptic",
+    "adjudicate_objections": "validator",
     "validate": "validator",
     "score": "validator",
     "meta_review": "meta_reviewer",
@@ -60,7 +61,8 @@ DEPENDS_ON: dict[str, tuple[str, ...]] = {
     "modern_evidence": ("generate_hypotheses",),
     "revise_hypotheses": ("falsify",),
     "falsify_revisions": ("revise_hypotheses",),
-    "validate": ("falsify", "falsify_revisions", "modern_evidence", "gather_evidence"),
+    "adjudicate_objections": ("falsify", "falsify_revisions", "modern_evidence", "gather_evidence"),
+    "validate": ("adjudicate_objections", "falsify", "falsify_revisions", "modern_evidence", "gather_evidence"),
     "score": ("validate",),
     "meta_review": ("score",),
 }
@@ -72,7 +74,8 @@ ORDER["plan"] = -1
 FOUNDATION_KINDS = ("scope_corpus", "assess_philology", "resolve_terms", "extract_claims", "validate_claims",
                     "map_terminology", "build_lineage", "trace_sources", "gather_evidence")
 DISCOVERY_KINDS = ("mine_patterns", "test_statistics", "trace_evolution", "generate_hypotheses", "falsify",
-                   "modern_evidence", "revise_hypotheses", "falsify_revisions", "validate", "score", "meta_review")
+                   "modern_evidence", "revise_hypotheses", "falsify_revisions", "adjudicate_objections", "validate", "score",
+                   "meta_review")
 MANDATORY_AFTER_HYPOTHESES = ("falsify", "validate", "score")
 TOUCHES_HYPOTHESES = frozenset({"generate_hypotheses", "revise_hypotheses", "falsify", "falsify_revisions", "gather_evidence",
                                 "modern_evidence"})
@@ -109,6 +112,9 @@ def wire(round_: int, items: list[dict[str, Any]], *, review_roles: set[str] | N
         seen.setdefault("falsify_revisions", {"kind": "falsify_revisions", "reason": "revisions are re-reviewed (harness policy)"})
     if "extract_claims" in seen:
         seen.setdefault("validate_claims", {"kind": "validate_claims", "reason": "claims pass gates G0–G4 (harness policy)"})
+    if "validate" in seen:
+        seen.setdefault("adjudicate_objections", {"kind": "adjudicate_objections",
+                                                  "reason": "objections are closed only by a validator's re-run or an expert (harness policy)"})
     plan_id = task_id(round_, "plan")
     nodes = []
     for kind in sorted(seen, key=lambda k: ORDER.get(k, 99)):

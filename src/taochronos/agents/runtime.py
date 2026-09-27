@@ -21,6 +21,8 @@ from ..kernel.budget import Budget, BudgetExceeded
 from ..kernel.context import ContextManager
 from ..kernel.hooks import HookContext, HookPoint, HookRegistry, HookResult
 from ..kernel.policy import Actor, PolicyEngine
+from ..kernel.reducer import InvalidEvent
+from ..kernel.session import kernel_session
 from ..kernel.store import SimulatedCrash
 from ..kernel.tools import ToolCall, ToolOutcome, ToolRegistry, ToolScheduler, ToolSpec
 from ..protocol.base import stable_id
@@ -223,6 +225,7 @@ class AgentRuntime:
 
     # ------------------------------------------------------------------ run
     def run_task(self, session: Any, task: TaskNode, *, budget: Budget | None = None, defer_commit: bool = False) -> TaskResult:
+        session = kernel_session(session)  # the runtime is kernel code, also when an agent spawns a subtask
         spec = self.spec(task.role)
         module = load_procedure(spec.procedure) if spec.procedure else None
         actor = spec.actor(task.id)
@@ -239,8 +242,9 @@ class AgentRuntime:
                                  provider=route.provider, parent=task.inputs.get("parent_agent"))
         session.emit(EventType.AGENT_SPAWNED, {"agent": instance.to_dict()}, task_id=task.id)
         session.emit(EventType.MODEL_ROUTED, {"agent_id": actor.id, "route": route.to_dict()}, task_id=task.id)
-        tx = session.transaction(actor.id, task.id)
-        ctx = AgentContext(self, session, task, spec, route, actor, tx, agent_budget)
+        tx = session.transaction(actor, task.id)
+        # the agent sees the session through a view bound to its own identity: state read-only, events as itself
+        ctx = AgentContext(self, session.view(actor), task, spec, route, actor, tx, agent_budget)
         try:
             if module is None:
                 raise AgentError(f"{spec.role} has no procedure module")

@@ -38,8 +38,42 @@ class Prediction(Model):
     period: YearRange | None = None
 
 
+# Objections a validator can re-run mechanically.  They close only when the re-run passes — never on a model's say-so,
+# and not by an expert either: a quote that is not in the text does not become one by agreement.
+HARD_CHECKS = frozenset({
+    "provenance",  # a quote is not verbatim at its locator
+    "semantic_support",  # the quoted words do not bear the stated relation
+    "anachronism",  # the statement equates a historical concept with a modern category / breaks the contract
+    "scope",  # evidence from outside the research scope (hold-out, confirmation-only, expert-only material)
+    "version_mismatch",  # the evidence's edition is not the one the claim names
+    "data_scope",  # a data-use restriction (licence, withheld material) is violated
+    "object_signature",  # an object's id does not match its content
+    "contraindication",  # the corpus states the opposite (a contraindication for the claimed indication)
+    "taxonomy",  # the association is already implied by the term hierarchy
+    "differential",  # the same passage assigns the finding to a rival
+})
+OBJECTION_STATUSES = ("raised", "resolution_proposed", "closed", "noted")
+# the qualifier a revision adds to narrow its claim along an interpretive objection's axis
+NARROWING_AXIS = {
+    "sample_size": "scope", "single_source": "scope", "homonym": "sense", "edition_variant": "reading",
+    "statistical": "status", "transcription_dependence": "tradition", "earliest_source": "level", "counterexample": "level",
+    "partial_persistence": "level", "hub_driven": "status",
+}
+CLOSURE_METHODS = ("validator_rerun", "new_evidence", "scope_restriction", "expert")
+
+
+def objection_kind(check: str) -> str:
+    return "hard" if check in HARD_CHECKS else "interpretive"
+
+
 @dataclass(kw_only=True)
 class Objection(Model):
+    """One objection and where it stands: raised → resolution_proposed → closed (info-level notes are "noted").
+
+    Who may move it: an agent raises it and may propose a resolution (a qualifier that narrows the claim, new evidence,
+    or a rationale); a validator closes it by re-running the check (hard objections: only that way) or by verifying the
+    new evidence or the narrowing; an expert may close an interpretive one.  ``resolved`` is true only once closed."""
+
     id: str
     check: str  # earlier_source | counterexample | edition_variant | homonym | transcription_dependence | …
     severity: str  # critical | major | minor | info
@@ -48,6 +82,19 @@ class Objection(Model):
     passage_ids: list[str] = field_list()
     resolved: bool = False
     resolution: str = ""
+    kind: str = ""  # hard | interpretive (empty: by the check)
+    status: str = "raised"
+    proposal: dict = field_dict()  # {basis: qualifier|new_evidence|rationale, rationale, evidence_ids, qualifier, proposed_by}
+    closed_by: str = ""
+    closure: str = ""  # validator_rerun | new_evidence | scope_restriction | expert
+
+    @property
+    def hard(self) -> bool:
+        return (self.kind or objection_kind(self.check)) == "hard"
+
+    @property
+    def is_open(self) -> bool:
+        return not self.resolved and self.status != "noted"
 
 
 SCORE_DIMENSIONS = (
@@ -109,7 +156,10 @@ class HypothesisReview(Model):
     checks_run: list[str] = field_list()
 
     def unresolved(self, *severities: str) -> list[Objection]:
-        return [o for o in self.objections if not o.resolved and (not severities or o.severity in severities)]
+        return [o for o in self.objections if o.is_open and (not severities or o.severity in severities)]
+
+    def objection(self, objection_id: str) -> Objection | None:
+        return next((o for o in self.objections if o.id == objection_id), None)
 
 
 @dataclass(kw_only=True)
@@ -147,3 +197,20 @@ class Hypothesis(Model):
     space: KnowledgeSpace = KnowledgeSpace.COMPUTATIONAL_HYPOTHESIS
     generated_by: str = ""
     round: int = 0
+    # a revision says what kind it is: "restricting" (narrows scope, sense, reading or level — the evidence that bore
+    # the parent still bears it) or "substantive" (a different claim: a new hypothesis that must earn its own support)
+    revision_kind: str = ""
+    changed_fields: list[str] = field_list()
+    invalidated: list[str] = field_list()  # validations of the parent that do not carry over (gates, reviews)
+    confirmation: dict = field_dict()  # the re-test of its predictions on material withheld from exploration
+    warrant_id: str | None = None
+
+    def version(self) -> str:
+        """The content a validation is bound to: a gate or review computed on an earlier version does not count."""
+        from .base import content_hash
+
+        return content_hash({
+            "statement": self.statement, "kind": self.kind, "terms": self.terms, "qualifiers": self.qualifiers,
+            "supporting": sorted(self.supporting_evidence), "contradictory": sorted(self.contradictory_evidence),
+            "space": self.space.value,
+        })[:16]

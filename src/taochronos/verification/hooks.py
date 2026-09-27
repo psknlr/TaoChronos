@@ -11,6 +11,8 @@ from ..protocol.claims import Claim
 from ..protocol.concepts import KnowledgeSpace, MappingRelation
 from ..protocol.hypothesis import Hypothesis
 from .provenance import verify_claim
+from .scope import scope_argument_guard, scope_result_firewall
+from .support import assess_support
 
 EQUATING = re.compile(r"(即|就是|等同于|等于|=|即为|相当于)")
 
@@ -24,6 +26,35 @@ def provenance_validator(corpus: Any, normalize: Any):
         if problems:
             return HookResult(allow=False, reason="provenance: " + "; ".join(problems[:3]))
         return HookResult()
+
+    return hook
+
+
+def semantic_support_validator(corpus: Any, normalize: Any):
+    """BeforeClaimCommit: the quoted words must bear the claim.  A claim its quote contradicts (a true quote with a
+    false relation) is refused; every committed claim carries its support reading and its statement frame (speaker,
+    stance, conditions, negations, time), so later steps can tell an endorsed statement from a reported or rejected one."""
+    def hook(ctx: HookContext) -> HookResult:
+        claim = ctx.subject
+        if not isinstance(claim, Claim) or not corpus.has_passage(claim.passage_id):
+            return HookResult()
+        passage = corpus.passage(claim.passage_id)
+        a = assess_support(claim, passage.text, normalize)
+        if a.verdict == "contradicts":
+            return HookResult(allow=False, reason=f"semantic support: {a.explanation}")
+        frame = a.frame
+        modality = claim.modality
+        if modality == "assertive" and frame.get("modality") in ("conditional", "hedged"):
+            modality = frame["modality"]
+        framed = claim.replace(
+            support={"verdict": a.verdict, "cues": [c.get("cue") for c in a.cues][:6], "explanation": a.explanation},
+            speaker=claim.speaker or frame.get("speaker", ""), quoted_from=claim.quoted_from or frame.get("quoted_from", ""),
+            stance=claim.stance or frame.get("stance", ""), conditions=claim.conditions or list(frame.get("conditions", [])),
+            negation_scope=claim.negation_scope or list(frame.get("negation_scope", [])),
+            temporal_scope=claim.temporal_scope or list(frame.get("temporal_scope", [])),
+            textual_context=claim.textual_context or frame.get("context", ""), modality=modality,
+        )
+        return HookResult(subject=framed, annotations={"support": a.verdict})
 
     return hook
 
@@ -81,12 +112,18 @@ def publish_guard(require_evidence_for: tuple[str, ...] = ("discovery_report", "
 
 def install_default_hooks(hooks: HookRegistry, *, corpus: Any, pack: Any, forbidden: list[str] | None = None,
                           enabled: list[str] | None = None) -> list[str]:
-    names = enabled or ["provenance_validator", "anachronism_guard", "publish_guard"]
-    installed = []
+    names = enabled or ["provenance_validator", "semantic_support", "anachronism_guard", "publish_guard"]
+    # the research scope is not optional: a profile may switch validators off (ablations), never the hold-out
+    hooks.register(HookPoint.BEFORE_TOOL_CALL, "scope_guard", scope_argument_guard, 5)
+    hooks.register(HookPoint.AFTER_TOOL_CALL, "scope_firewall", scope_result_firewall, 5)
+    installed = ["scope_guard", "scope_firewall"]
     modern_labels = [c.label for c in pack.terminology.concepts.values()]
     if "provenance_validator" in names:
         hooks.register(HookPoint.BEFORE_CLAIM_COMMIT, "provenance_validator", provenance_validator(corpus, pack.variants.normalize_text), 10)
         installed.append("provenance_validator")
+    if "semantic_support" in names:
+        hooks.register(HookPoint.BEFORE_CLAIM_COMMIT, "semantic_support", semantic_support_validator(corpus, pack.variants.normalize_text), 15)
+        installed.append("semantic_support")
     if "anachronism_guard" in names:
         guard = anachronism_guard(modern_labels, forbidden)
         hooks.register(HookPoint.BEFORE_CLAIM_COMMIT, "anachronism_guard", guard, 20)

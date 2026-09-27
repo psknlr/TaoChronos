@@ -48,3 +48,6 @@ class EvidenceRecord(Model):
     temporal: TemporalContext | None = None
     confidence: ConfidenceVector = field(default_factory=ConfidenceVector)
     note: str = ""
+    # modern evidence only: the study design and population, so a gate can tell what level a record can carry
+    evidence_type: str | None = None  # meta_analysis | rct | cohort | case_control | case_series | animal | cell | in_silico | review | …
+    population: str | None = None  # human | animal | cell | computational

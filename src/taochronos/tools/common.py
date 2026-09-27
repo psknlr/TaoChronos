@@ -8,14 +8,14 @@ from ..kernel.tools import ToolContext
 from ..protocol.base import to_jsonable
 from ..protocol.claims import Claim
 from ..protocol.documents import Passage
+from ..verification.scope import context_scope
 
 
 def scope_ids(ctx: ToolContext) -> set[str] | None:
-    """Passage ids the current session may see (corpus manifest minus hold-outs); None = everything."""
-    session = ctx.session
-    if session is None or session.state.corpus is None:
-        return None
-    return set(session.state.corpus.passage_ids)
+    """Passage ids the caller may see in the current session (its reading scope: an agent sees the exploration
+    material; withheld sets are for validators and humans); None = everything."""
+    scope = context_scope(ctx)
+    return None if scope is None or scope.allowed is None else set(scope.allowed)
 
 
 def scope_passages(ctx: ToolContext) -> list[Passage]:

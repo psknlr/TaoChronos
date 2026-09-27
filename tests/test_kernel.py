@@ -62,10 +62,13 @@ def test_only_humans_approve_and_agents_cannot_decide_changes():
                                                    "rationale": "", "proposer": "agent:ontologist"}})
     with pytest.raises(InvalidEvent):
         s.emit(EventType.CHANGE_APPROVED, {"change_id": "chg_1"}, actor="agent:ontologist@r0")
-    s.emit(EventType.CHANGE_APPROVED, {"change_id": "chg_1"}, actor="human:expert")
+    # a string that merely says "human" is not a human: authority comes from the identity object
+    with pytest.raises(InvalidEvent):
+        s.emit(EventType.CHANGE_APPROVED, {"change_id": "chg_1"}, actor="human:expert")
+    s.emit(EventType.CHANGE_APPROVED, {"change_id": "chg_1"}, actor=Actor.human("expert"))
     assert s.state.changes["chg_1"].status == "approved"
     with pytest.raises(InvalidEvent):
-        s.emit(EventType.EXPERT_APPROVED, {"hypothesis_id": "h"}, actor="validator:gates")
+        s.emit(EventType.EXPERT_APPROVED, {"hypothesis_id": "h"}, actor=Actor.validator("gates"))
 
 
 def test_transactions_are_atomic_and_torn_writes_are_recovered():

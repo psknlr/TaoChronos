@@ -81,6 +81,7 @@ def _modern_record(ctx: Any, rec: dict[str, Any], hypothesis_id: str) -> Evidenc
         quote=statement, start=0, end=len(statement), agent=ctx.actor.id, retrieval_method="literature:curated",
         hypothesis_id=hypothesis_id, stance=Stance.CONTEXT, evidence_domain=domain,
         confidence=ConfidenceVector(modern_mapping=None), note=f"{rec.get('source', '')} — {rec.get('note', '')}".strip(" —"),
+        evidence_type=rec.get("evidence_type"), population=rec.get("population"),
     )
 
 

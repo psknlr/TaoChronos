@@ -22,6 +22,8 @@ def _heading(passage: Any) -> str:
 def verify_claim(claim: Claim, corpus: Any, normalize: Callable[[str], str]) -> list[str]:
     """Return a list of provenance problems (empty = verified)."""
     problems: list[str] = []
+    if not claim.quote:
+        return [f"claim {claim.id} has an empty quote"]
     if not corpus.has_passage(claim.passage_id):
         return [f"unknown passage {claim.passage_id}"]
     passage = corpus.passage(claim.passage_id)
@@ -50,11 +52,17 @@ def verify_claim(claim: Claim, corpus: Any, normalize: Callable[[str], str]) -> 
 
 
 def verify_evidence(record: EvidenceRecord, corpus: Any) -> list[str]:
+    """Quote authenticity and locator consistency of one evidence record: a non-empty quote, a span inside the passage
+    (0 ≤ start < end ≤ len), and the quote verbatim at that span."""
+    if not record.quote:
+        return [f"evidence {record.id} has an empty quote"]
     if not corpus.has_passage(record.passage_id):
         return [f"unknown passage {record.passage_id}"]
     passage = corpus.passage(record.passage_id)
     if passage.book_id != record.book_id:
         return [f"book mismatch for evidence {record.id}"]
+    if not (0 <= record.start < record.end <= len(passage.text)):
+        return [f"span {record.start}:{record.end} outside passage (len {len(passage.text)})"]
     if passage.text[record.start: record.end] != record.quote:
         return ["evidence quote is not verbatim at the stated span"]
     return []

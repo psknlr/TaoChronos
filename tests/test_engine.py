@@ -23,8 +23,10 @@ def test_research_run_invariants(research):
     assert revised and all(state.hypotheses[x.parent_id].status == "superseded" for x in revised)
     assert any(x.status == "rejected" for x in state.hypotheses.values())
     for hid in (x.id for x in state.active_hypotheses()):
-        assert {"G0", "G4", "G5", "G6", "G7", "G8"} <= set(state.gates[hid])
-        assert state.gates[hid]["G7"].status == "pending"  # no machine ever passes the expert gate
+        assert {"G0", "G4", "G5", "G6", "G8"} <= set(state.gates[hid])
+        # no machine ever writes the expert gate: G7 exists only once a human decided, and here none did
+        assert "G7" not in state.gates[hid] and state.gate_status(hid, "G7") == "pending"
+        assert all(r.subject_version == state.hypotheses[hid].version() for g, r in state.gates[hid].items() if g != "G7")
     kinds = {a.kind for a in state.artifacts.values()}
     assert {"discovery_report", "evidence_table", "knowledge_graph", "trace"} <= kinds
 

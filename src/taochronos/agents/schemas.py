@@ -98,7 +98,11 @@ OUTPUT_SCHEMAS: dict[str, dict[str, Any]] = {
             "summary": S,
             "checks_run": STRS,
             "objections": arr(obj({"check": S, "severity": {"type": "string", "enum": ["critical", "major", "minor", "info"]},
-                                   "detail": S, "counter_evidence": arr(QUOTE), "passage_ids": STRS, "resolved": B, "resolution": S},
+                                   "detail": S, "counter_evidence": arr(QUOTE), "passage_ids": STRS,
+                                   # a model can only *propose* a resolution; "resolved" is read as a proposal too
+                                   "resolved": B, "resolution": S,
+                                   "basis": {"type": "string", "enum": ["qualifier", "new_evidence", "rationale"]},
+                                   "evidence_ids": STRS},
                                   ["check", "severity", "detail"])),
         }, ["hypothesis_id", "verdict", "objections"])),
     }, ["reviews"]),

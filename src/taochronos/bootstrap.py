@@ -34,6 +34,7 @@ from .tools.adapters import author_clusters
 from .tools.mesh import build_tool_registry
 from .verification.gates import GateEvaluator
 from .verification.hooks import install_default_hooks
+from .verification.scope import capability_views
 
 MODEL_PLUGIN_KEYS = {
     "taochronos.plugins.models.anthropic_provider": "anthropic",
@@ -91,7 +92,10 @@ class Harness:
         self.installed_hooks = install_default_hooks(self.hooks, corpus=self.corpus, pack=self.pack,
                                                      enabled=list(profile.hooks) or None)
         self.tools: ToolRegistry = build_tool_registry()
-        self.codemode = codemode_tool(self.tools)
+        sandbox_cfg = next((dict(b.get("config") or {}) for b in profile.bundles if b.get("plugin") == "taochronos.plugins.sandbox"), {})
+        # model-written Code Mode programs run isolated unless a profile explicitly trusts its models to run in-process
+        self.codemode = codemode_tool(self.tools, isolation=str(sandbox_cfg.get("codemode_isolation", "namespace")),
+                                      workspace_root=data_dir / "sessions")
         self.tools.register(self.codemode)
         self.modern_evidence = self._load_modern_evidence()
         gate_cfg = profile.gates
@@ -105,7 +109,8 @@ class Harness:
         self.gates = gates
         self.scheduler = ToolScheduler(self.tools, self.policy, self.hooks, self.capabilities,
                                        max_workers=int(profile.context.get("max_workers", 4)),
-                                       services={"gates": gates, "modern_evidence": self.modern_evidence})
+                                       services={"gates": gates, "modern_evidence": self.modern_evidence},
+                                       views=capability_views())
         self.skills = SkillLibrary.load(home / "skills")
         self.specs = self._load_specs()
         self.router = CognitiveRouter(self.capabilities, routing=profile.routing)

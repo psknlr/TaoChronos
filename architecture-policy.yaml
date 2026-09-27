@@ -22,6 +22,11 @@ vendor_sdks: [anthropic, openai, litellm]
 vendor_sdk_allowed_in: [src/taochronos/plugins/models]
 # agents act through capabilities and tools, never by importing concrete plugins
 agents_may_not_import: [taochronos.plugins]
+# authority comes from identity objects (kernel/authority.py): only the kernel, the engine and the app mint privileged
+# ones; agent procedures, tools and plugins act under the identity they are handed and never reach behind a session view
+identity_rules:
+  no_privileged_identities_in: [src/taochronos/agents, src/taochronos/tools, src/taochronos/plugins]
+  session_internals_allowed_in: [src/taochronos/agents/runtime.py]
 # hard invariants checked against the agent specs
 agent_rules:
   forbid_commit_permissions: true
