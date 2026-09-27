@@ -55,13 +55,15 @@ Both layers share one rule: **every statement rests on verbatim witnesses** (boo
 text layer, source and licence of the transcription). Rule-based reading is labelled as machine reading; people check
 and decide.
 
-> 💬 **Web chat**: open **<https://psknlr.github.io/TaoChronos/>**, paste your own model API key in the settings
-> (default **MiniMax (mainland) · MiniMax-M3**; DeepSeek, Qwen, Kimi, GLM, Doubao, SiliconFlow, OpenRouter, Poe, LiteLLM,
-> Claude and others are listed) and hold a multi-turn conversation as in ChatGPT or Claude.  The model answers through all
+> 💬 **Web chat · Tao-R1**: open **<https://psknlr.github.io/TaoChronos/>** and talk with **Tao-R1**, TaoChronos's research
+> model for the classics.  Paste your own API key for the underlying model in the settings (default **MiniMax (mainland) ·
+> MiniMax-M3**; DeepSeek, Qwen, Kimi, GLM, Doubao, SiliconFlow, OpenRouter, Poe, LiteLLM, Claude and others are listed) and
+> hold a multi-turn conversation as in ChatGPT or Claude.  The model answers through all
 > 72 of TaoChronos's tools, and the page checks every `[[passage_id]]` it cites word for word (✓ matches the passage ·
 > ≠ misquoted · ✕ no such passage); evidence, research runs and a tool console (any tool, no model needed) sit in the
-> side panel.  The page runs TaoChronos itself in the browser with Pyodide (demonstration corpus), or connects to
-> `taochronos serve` on your machine for the full corpus.  See [docs/web.md](docs/web.md).
+> side panel.  The page runs TaoChronos itself in the browser with Pyodide (demonstration corpus); for **all the books**, build
+> the full corpus and run `taochronos serve`, then connect under Settings → 运行环境 in one step (the browser remembers it; a
+> server on another machine is reached with its access token).  See [docs/web.md](docs/web.md#接入全部古籍).
 
 > ⚠️ The corpus consists of transcriptions from several sources (Siku, 笈成, McGill rare books, CMETA, the 東亜医学協会,
 > Wikisource, web text sets), **none collated by this project**; `corpus/demo` holds unverified excerpts for demonstrating the method.
@@ -117,13 +119,14 @@ and decide.
 
 ## 2. Quick start
 
-**Web**: open <https://psknlr.github.io/TaoChronos/> (runs in the browser, demonstration corpus), or on your machine
-with the full corpus:
+**Web**: open <https://psknlr.github.io/TaoChronos/> (runs in the browser, demonstration corpus), or bring in all the books
+(the full corpus, built as below):
 
 ```bash
 pip install -e .
-taochronos serve                   # http://localhost:8765 — web chat + the full corpus (when built) + the model proxy
+taochronos serve                   # http://localhost:8765 — web chat + the full corpus (when built) + the model proxy; connect under 设置 → 运行环境
 taochronos serve --env-keys        # model keys from this machine's environment (MINIMAX_API_KEY …), none typed in the page
+taochronos serve --host 0.0.0.0    # for other machines: prints an access token and the address carrying it (or --token / TAOCHRONOS_TOKEN)
 taochronos web build -o _site      # the static site (GitHub Pages deploys it from .github/workflows/pages.yml)
 ```
 
@@ -520,13 +523,17 @@ workflow commands take `--llm platform:model` (with `--llm-max-calls`, `--llm-ma
 schema-validated (one repair turn) and logged without their prompts; results record whether the rule, the model or both
 decided each item.  External command subagents and Research Code Mode: [docs/agents.md](docs/agents.md).
 
-**Web chat** ([docs/web.md](docs/web.md), [ADR 0011](docs/adr/0011-web-client.md)): the conversation runs in the browser
-with your own key, straight to the provider (MiniMax allows the page's origin) or through `taochronos serve`; TaoChronos
-executes the tools in the browser (Pyodide, demonstration corpus) or on your machine (full corpus).  The model acts as an
+**Web chat · Tao-R1** ([docs/web.md](docs/web.md), [ADR 0011](docs/adr/0011-web-client.md)): the assistant is Tao-R1 —
+TaoChronos's tools and evidence discipline over the underlying model you choose, which the page and the instructions name.
+The conversation runs in the browser with your own key, straight to the provider (MiniMax allows the page's origin) or
+through `taochronos serve`; TaoChronos executes the tools in the browser (Pyodide, demonstration corpus) or under
+`taochronos serve` (the full corpus, all the books; the browser remembers the server).  The model acts as an
 agent with read and analysis permissions only, sees fifteen common tools directly and the rest through a catalog;
 MiniMax-M3's `reasoning_details` and tool calls are replayed verbatim turn after turn, and Claude is called through the
-official SDK (adaptive thinking, server-side refusal fallbacks).  The local server binds to 127.0.0.1, answers only this
-machine's pages, the published client and named origins, and forwards model requests only to the listed providers.
+official SDK (adaptive thinking, server-side refusal fallbacks).  The local server binds to 127.0.0.1 by default, answers
+only this machine's pages, its own pages, the published client and named origins, and forwards model requests only to the
+listed providers; bound to any other address it requires an access token.  All the books (about 2.2 GB, under their
+sources' licences) are not published with the site: they reach it through the server.
 
 ## 8. Evaluation and quality
 

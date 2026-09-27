@@ -25,7 +25,7 @@ from ..kernel.policy import Actor
 from ..kernel.tools import ToolCall
 from ..protocol.base import to_jsonable
 from .catalog import CODE_MODE, ENGINE_TOOLS, META_TOOLS, NEVER, catalog_view, family_counts, llm_tools, offered
-from .prompt import STARTERS, system_prompt
+from .prompt import ASSISTANT_NAME, STARTERS, system_prompt
 from .results import citations, compact, for_interface, summarize
 
 CHAT_PERMISSIONS = frozenset({"classics:read", "kg:read", "analysis:run", "literature:read", "validation:run"})
@@ -100,6 +100,7 @@ class ChatRuntime:
                            "by_period": stats.get("by_period", {}), "large": large, "demo": not large},
                 "tools": {"offered": len(offered(self.h.tools, code_mode=self.code_mode)) + len(ENGINE_TOOLS),
                           "families": family_counts(self.h.tools, code_mode=self.code_mode)},
+                "assistant_name": ASSISTANT_NAME,
                 "engine_model": f"{judge['provider']}:{judge.get('model', '')}" if judge.get("provider") else None,
                 "code_mode": self.code_mode,
                 "starters": STARTERS,

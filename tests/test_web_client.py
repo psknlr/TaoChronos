@@ -21,6 +21,7 @@ import assert from "node:assert/strict";
 import { Accum, splitThink } from "./js/llm/openai.js";
 import { answerDangling, buildHistory } from "./js/agent.js";
 import { extractCitations } from "./js/markdown.js";
+import { count } from "./js/util.js";
 
 // streams: increments and MiniMax's cumulative chunks read alike
 const inc = new Accum(); for (const t of ["桂", "枝", "汤主之。"]) inc.push(t);
@@ -59,6 +60,10 @@ assert.equal(da[1].content[0].tool_use_id, "t1");
 // citations pair with the quotation just before them, never across lines
 assert.deepEqual(extractCitations("- 「甲乙」[[a.1]]\n- 无引文[[b.2]]\n\n「丙」[[c.3]][[d.4]] `[[e.5]]`"), [
   { pid: "a.1", quote: "甲乙" }, { pid: "b.2", quote: null }, { pid: "c.3", quote: "丙" }, { pid: "d.4", quote: "丙" }]);
+
+// the corpus in 万 and 亿, as the page shows it
+assert.deepEqual([count(2053597, "段"), count(122841774, "字"), count(966, "部书"), count(12345), count(null, "段")],
+  ["205 万段", "1.2 亿字", "966 部书", "1.2 万", "? 段"]);
 console.log("ok");
 """
 
@@ -124,6 +129,9 @@ def test_a_conversation_in_the_browser(tmp_path):
             cites = page.eval_on_selector_all(".md .cite", "els => els.map(e => [e.dataset.pid, e.className])")
             assert cites == [["shanghanlun.c013", "cite ok"], ["shanghanlun.c012", "cite warn"], ["fake.999", "cite bad"],
                              ["shanghanlun.c013", "cite ok"]]  # the last quoted in the traditional script
+            assert page.inner_text("#model-chip .nm") == "Tao-R1" and "MiniMax-M3" in page.get_attribute("#model-chip", "title")
+            assert page.inner_text(".msg.assistant .meta").startswith("Tao-R1 · ")
+            assert page.get_attribute(".msg.assistant .meta", "title") == "底层模型 MiniMax-M3"
             page.click(".steps .head")  # the finished steps are folded
             assert "classics.search" in page.inner_text(".steps .list")
             assert "繁简" in page.eval_on_selector_all(".md .cite.ok", "els => els[1].title")
@@ -136,6 +144,7 @@ def test_a_conversation_in_the_browser(tmp_path):
             first, second = mock.requests[0]["body"], mock.requests[1]["body"]
             assert first["max_completion_tokens"] and first["reasoning_split"] is True and first["tools"]
             assert first["messages"][0]["role"] == "system" and "[[passage_id]]" in first["messages"][0]["content"]
+            assert first["messages"][0]["content"].startswith("你是 Tao-R1") and "底层语言模型：MiniMax-M3" in first["messages"][0]["content"]
             replay = second["messages"][2]
             assert replay["tool_calls"][0]["function"] == {"name": "classics__search", "arguments": '{"query": "桂枝汤 主之", "k": 3}'}
             assert replay["reasoning_details"][0]["text"] == "用户问桂枝汤的主治，先检索原文。"
@@ -215,3 +224,70 @@ def test_claude_through_the_official_sdk(tmp_path):
         srv.shutdown()
         srv.server_close()
         mock.shutdown()
+
+
+def test_a_published_page_connects_to_a_server_and_remembers_it(tmp_path):
+    """The page served elsewhere (as on GitHub Pages) connects to `taochronos serve` in one step and, in auto mode, uses
+    it again on the next visit; a server other machines can reach takes its token from the address, and without it
+    says what is missing."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    import functools
+    from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+
+    class Static(SimpleHTTPRequestHandler):
+        def log_message(self, *args) -> None:
+            pass
+
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    api = ChatServer(("127.0.0.1", 0), rt, web_root=ROOT / "web", home=ROOT)
+    locked = ChatServer(("127.0.0.1", 0), rt, web_root=ROOT / "web", home=ROOT, token="t0ken")
+    pages = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Static, directory=str(ROOT / "web")))  # no runtime files
+    for s in (api, locked, pages):
+        threading.Thread(target=s.serve_forever, daemon=True).start()
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            page = browser.new_context(viewport={"width": 1280, "height": 860}).new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{pages.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.bad", timeout=30000)  # no browser runtime here, no server known
+            page.click(".hero-action")
+            page.fill(".connect-row input[type=url]", f"http://127.0.0.1:{api.server_address[1]}/")
+            page.click(".connect-row .btn")
+            page.wait_for_function("document.querySelector('.settings-pane .notice')?.textContent.includes('当前：本地服务')", timeout=30000)
+            assert "尚未构建全量语料" in page.inner_text(".connect .notice.warn")  # this server has only the demonstration corpus
+            page.click(".modal-foot .btn:not(.secondary)")
+            assert "本地服务" in page.inner_text(".runtime-pill") and "演示语料" in page.inner_text(".runtime-pill")
+            assert page.inner_text("#hint") == "Tao-R1 · 本地服务 · 演示语料"
+            page.reload()  # auto mode: the server this browser worked with, first
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            assert page.inner_text(".runtime-pill").startswith("本地服务")
+            assert json.loads(page.evaluate("localStorage.getItem('tc.settings')"))["runtime"] == "auto"
+
+            page = browser.new_context(viewport={"width": 1280, "height": 860}).new_page()
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{locked.server_address[1]}/#token=t0ken")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            assert "token" not in page.url
+            assert json.loads(page.evaluate("localStorage.getItem('tc.settings')"))["serverToken"] == "t0ken"
+            page = browser.new_context(viewport={"width": 1280, "height": 860}).new_page()
+            page.goto(f"http://127.0.0.1:{locked.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.bad", timeout=30000)
+            assert "访问令牌" in page.inner_text(".hero .status")
+            assert not errors, errors
+            browser.close()
+    finally:
+        for s in (api, locked, pages):
+            s.shutdown()
+            s.server_close()

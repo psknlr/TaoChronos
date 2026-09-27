@@ -30,6 +30,38 @@ def scope_passages(ctx: ToolContext) -> list[Passage]:
     return [p for p in corpus.passages() if allowed is None or p.id in allowed]
 
 
+TERM_PASSAGES = 400
+
+
+def whole_store(ctx: ToolContext) -> bool:
+    """A large corpus read outside any research scope (a conversation, a command): the whole store is the scope."""
+    session = ctx.session
+    return (getattr(ctx.cap("corpus"), "large", False) and scope_ids(ctx) is None
+            and not (session is not None and session.state.claims))
+
+
+def term_passages(ctx: ToolContext, term_ids: list[str], *, after: float | None = None, before: float | None = None,
+                  limit: int = TERM_PASSAGES) -> list[str]:
+    """The passages of the whole store that write a term (any of its written forms of two characters or more; a single
+    character is a word as often as a term), spread evenly over time when there are more than ``limit`` per term.
+    They join the working set, so the analyses that read it see them too."""
+    corpus, lex = ctx.cap("corpus"), ctx.cap("domain").lexicon
+    ids: list[str] = []
+    for tid in term_ids:
+        entry = lex.entry(tid)
+        found: list[str] = []
+        for form in (entry.surfaces() if entry else [tid.split(":", 1)[-1]]):
+            if len(form) >= 2:
+                found += corpus.contains(form, after=after, before=before, verify=False)
+        found = list(dict.fromkeys(found))
+        if len(found) > limit:  # an even spread over the (year, id) order the index returns
+            found = [found[round(i * (len(found) - 1) / (limit - 1))] for i in range(limit)]
+        ids += found
+    ids = list(dict.fromkeys(ids))
+    ctx.cap("knowledge").touch(ids)
+    return ids
+
+
 def claims_in_scope(ctx: ToolContext) -> list[Claim]:
     """Session claims (the blackboard) when present; the corpus-wide index otherwise."""
     session = ctx.session

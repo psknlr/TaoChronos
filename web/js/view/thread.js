@@ -1,6 +1,7 @@
 // The conversation: user turns, assistant turns (thinking, tool steps, the answer), citation chips and actions.
 
 import { renderMarkdown } from "../markdown.js";
+import { ASSISTANT } from "../providers.js";
 import { fmtMs, h, icon, passageLabel, prettyJSON, replace, truncate } from "../util.js";
 
 export const FAMILY = {
@@ -27,9 +28,12 @@ export const displayName = (name) => ENGINE_NAMES[name] || name.replace(/__/g, "
 
 /** The whole thread, or the hero when the conversation is empty. */
 export function renderThread(root, conv, ctx) {
+  const settled = Boolean(root.querySelector(":scope > .hero"));
   root.replaceChildren();
   if (!conv || !conv.messages.length) {
-    root.append(hero(ctx));
+    const node = hero(ctx);
+    if (settled) node.classList.add("settled");
+    root.append(node);
     return;
   }
   conv.messages.forEach((m, k) => root.append(messageNode(m, ctx, k === conv.messages.length - 1)));
@@ -38,18 +42,26 @@ export function renderThread(root, conv, ctx) {
 function hero(ctx) {
   const info = ctx.runtimeInfo;
   const st = ctx.runtimeState || {};
-  const status = st.status === "ready" && info
-    ? `${info.runtime === "server" ? "本地服务" : "浏览器内运行"} · ${info.corpus?.demo ? "演示语料" : "全量语料"} ${info.corpus?.books ?? "?"} 部书 · ${info.corpus?.passages ?? "?"} 段 · ${info.tools?.offered ?? "?"} 项工具`
-    : st.status === "error" ? `运行环境未就绪：${truncate(st.message || "", 60)}` : `正在准备运行环境… ${st.progress ? Math.round(st.progress) + "%" : ""}`;
+  const ready = st.status === "ready" && info;
+  const status = ready ? `${ctx.runtimeLabel} · ${ctx.describeRuntime(info, " · ")}`
+    : st.status === "error" ? `运行环境未就绪：${truncate(st.message || "", 60)}` : `${st.message || "正在准备运行环境"}… ${st.progress ? Math.round(st.progress) + "%" : ""}`;
+  const action = ready && info.corpus?.demo
+    ? h("button.hero-action", { type: "button", on: { click: ctx.onOpenRuntime } }, icon("book", "sm"),
+      h("span", h("b", "接入全部古籍"), "此处是演示语料；连接 taochronos serve 即用全量语料"), icon("chev", "sm"))
+    : st.status === "error"
+      ? h("button.hero-action", { type: "button", on: { click: ctx.onOpenRuntime } }, icon("server", "sm"), h("span", h("b", "设置运行环境")), icon("chev", "sm"))
+      : null;
   return h("div.hero",
     h("img.seal", { src: "assets/logo.svg", alt: "" }),
+    h("div.model-badge", h("b", ASSISTANT), h("span", "中医古籍研究模型")),
     h("h1", "问古籍，得原文"),
     h("p.sub", "每一条引文都可溯源、可逐字核对"),
-    h("div.status", h("span.dot", { class: st.status === "ready" ? "" : "busy" }), status),
+    h("div.status", h("span.dot", { class: st.status === "ready" ? "" : st.status === "error" ? "bad" : "busy" }), status),
+    action,
     h("div.starters", (info?.starters || DEFAULT_STARTERS).map((s) =>
       h("button.starter", { type: "button", on: { click: () => ctx.onStarter(s.prompt) } }, h("b", s.title), s.prompt))),
     ctx.needsKey
-      ? h("p.keyhint", "开始前请先", h("button", { type: "button", on: { click: ctx.onOpenSettings } }, "配置模型 API"),
+      ? h("p.keyhint", "开始前请先为 ", ASSISTANT, " ", h("button", { type: "button", on: { click: ctx.onOpenSettings } }, "配置底层模型的 API"),
         "（默认 MiniMax-M3）。也可以不配置模型，直接在右侧“工具台”使用全部功能。")
       : h("p.keyhint", "Enter 发送 · Shift+Enter 换行 · ", h("kbd", "Ctrl"), " ", h("kbd", "K"), " 新对话"),
   );
@@ -86,7 +98,7 @@ function userNode(m, ctx, last) {
 function assistantNode(m, ctx, last) {
   const el = h("div.msg.assistant", { dataset: { id: m.id }, class: last ? "last" : "" });
   const body = h("div.body");
-  el.append(h("img.avatar", { src: "assets/logo.svg", alt: "TaoChronos" }), body);
+  el.append(h("img.avatar", { src: "assets/logo.svg", alt: ASSISTANT }), body);
   fillAssistant(body, m, ctx, last);
   return el;
 }
@@ -115,12 +127,12 @@ export function fillAssistant(body, m, ctx, last) {
   if (!live) {
     const bar = verifyBar(m, ctx, renderedCites(body));
     if (bar) body.append(bar);
-    const meta = [m.model, m.rounds > 1 ? `${m.rounds} 轮` : null, m.toolCount ? `${m.toolCount} 次工具调用` : null,
+    const meta = [ASSISTANT, m.rounds > 1 ? `${m.rounds} 轮` : null, m.toolCount ? `${m.toolCount} 次工具调用` : null,
       m.ms ? fmtMs(m.ms) : null, m.usage?.output ? `${m.usage.input || 0}→${m.usage.output} tokens` : null].filter(Boolean).join(" · ");
     body.append(h("div.actions",
       h("button.icon-btn", { type: "button", title: "复制回答", "aria-label": "复制回答", on: { click: () => ctx.onCopy(answerText(m)) } }, icon("copy", "sm")),
       last && !ctx.running ? h("button.icon-btn", { type: "button", title: "重新生成", "aria-label": "重新生成", on: { click: () => ctx.onRegenerate(m.id) } }, icon("redo", "sm")) : null,
-      h("span.meta", meta)));
+      h("span.meta", { title: m.model ? `底层模型 ${m.model}` : null }, meta)));
   }
 }
 

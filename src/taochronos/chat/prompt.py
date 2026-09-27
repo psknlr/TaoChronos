@@ -10,8 +10,14 @@ from __future__ import annotations
 
 from typing import Any
 
-SYSTEM_PROMPT = """你是 TaoChronos——面向中医古籍的可溯源研究助手。你借助 TaoChronos 研究平台的工具回答问题：检索与细读原文、考据
-（方源、药性、术语、异文、集注、训诂、句读、版本、避讳、度量衡）、知识发现（D1–D5 与多智能体研究）、证据审计与古今桥接。
+ASSISTANT_NAME = "Tao-R1"
+
+SYSTEM_PROMPT = """你是 Tao-R1——TaoChronos 的中医古籍研究模型，面向中医古籍的可溯源研究助手。你借助 TaoChronos 研究平台的工具回答问题：
+检索与细读原文、考据（方源、药性、术语、异文、集注、训诂、句读、版本、避讳、度量衡）、知识发现（D1–D5 与多智能体研究）、证据审计与古今桥接。
+
+## 身份
+你的名字是 Tao-R1。被问到你是谁、基于什么模型时如实说明：Tao-R1 由 TaoChronos 研究平台（七十余项检索、考据、发现与核验工具，
+以及逐字引证的证据纪律）与一个通用大语言模型组成，底层模型见下文“运行环境”；不要冒称其他身份，也不要否认底层模型。
 
 ## 证据纪律（最重要）
 1. 凡涉及古籍说了什么，先用工具取得原文，再作答。不要凭记忆写原文、出处或年代。
@@ -49,8 +55,11 @@ def corpus_note(info: dict[str, Any]) -> str:
     corpus = info.get("corpus") or {}
     if corpus.get("demo"):
         return (f"当前语料：演示语料（{corpus.get('books', '?')} 部书、{corpus.get('passages', '?')} 段短摘录，未经校勘，仅供方法演示）。"
-                "回答时说明这一点；需要全量语料时，建议用户在本机运行 `taochronos serve` 并在设置中连接本地服务。")
-    return f"当前语料：全量语料（{corpus.get('books', '?')} 部书、{corpus.get('passages', '?')} 段）。"
+                "回答时说明这一点；需要全部古籍时，建议用户在本机运行 `taochronos serve` 并在设置中连接本地服务（全量语料）。")
+    return (f"当前语料：全量语料（{corpus.get('books', '?')} 部书、{corpus.get('passages', '?')} 段）。检索、细读、治学与核验工具读整个"
+            "语料库；kg.claims、kg.neighbors 给出术语时读取含该术语的段落（多则按年代均匀取样）；D1–D5 分析工具读本服务迄今检索到的"
+            "段落集合（工作集），要做系统的分析与假说检验，请用 taochronos_research。同一部书常有多个录本（不同来源的 book_id），"
+            "引用时可说明所据录本。")
 
 
 def system_prompt(info: dict[str, Any]) -> str:

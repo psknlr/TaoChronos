@@ -1,7 +1,7 @@
 // Settings: the model (provider, key, model name, thinking, route), where TaoChronos runs, standing instructions,
 // the conversations' data, and what this page is.
 
-import { allProviders, DEFAULTS, providerById } from "../providers.js";
+import { allProviders, ASSISTANT, DEFAULTS, providerById } from "../providers.js";
 import { h, icon, replace } from "../util.js";
 
 const SECTIONS = [
@@ -86,8 +86,9 @@ function modelPane(d, S, ctx, redraw) {
     result.textContent = r.message;
   });
   return [
-    h("h3", "模型"),
-    h("p.lead", "TaoChronos 的工具在本机或浏览器里运行；对话由你选择的模型完成，使用你自己的 API Key。默认 MiniMax 国内站的 MiniMax-M3。"),
+    h("h3", `${ASSISTANT} 的底层模型`),
+    h("p.lead", `${ASSISTANT} 是 TaoChronos 的中医古籍研究模型：TaoChronos 研究平台（七十余项检索、考据、发现与核验工具，引文逐字核对）`,
+      "加上你在这里选择的语言模型——它理解问题、调用工具、组织回答，使用你自己的 API Key。默认 MiniMax 国内站的 MiniMax-M3。"),
     h("div.form-grid",
       h("div.field", h("span.lb", "服务商"), grid, p.note ? h("div.help", p.note) : null),
       h("div.field", h("label", "模型"), model, list, h("div.help", (p.examples || []).length ? `常用：${p.examples.join("、")}` : "填写服务商提供的模型名")),
@@ -106,37 +107,63 @@ function modelPane(d, S, ctx, redraw) {
 }
 
 // ------------------------------------------------------------------ runtime
-function runtimePane(d, S, ctx) {
+const DOC_FULL = "https://github.com/psknlr/TaoChronos/blob/main/docs/web.md#接入全部古籍";
+
+function runtimePane(d, S, ctx, redraw) {
   const info = S.runtimeInfo;
-  const url = h("input", { type: "url", value: d.serverUrl });
+  const url = h("input", { type: "url", value: d.serverUrl, placeholder: DEFAULTS.serverUrl, "aria-label": "服务地址" });
   url.addEventListener("input", () => { d.serverUrl = url.value.trim() || DEFAULTS.serverUrl; });
+  const token = h("input", { type: "password", value: d.serverToken || "", placeholder: "本机服务不需要", autocomplete: "off", spellcheck: false, "aria-label": "访问令牌" });
+  token.addEventListener("input", () => { d.serverToken = token.value.trim(); });
   const result = h("div.test-result");
-  const test = h("button.btn.secondary", { type: "button" }, icon("server", "sm"), "连接测试");
-  test.addEventListener("click", async () => {
-    test.disabled = true;
+  const connect = h("button.btn", { type: "button" }, icon("server", "sm"), "连接");
+  connect.addEventListener("click", async () => {
+    connect.disabled = true;
     result.className = "test-result";
     result.textContent = "正在连接…";
-    const r = await ctx.testServer(d.serverUrl);
-    test.disabled = false;
-    result.className = `test-result ${r.ok ? "ok" : "err"}`;
+    const r = await ctx.connectServer(d);
+    connect.disabled = false;
+    if (r.ok) { redraw(); return; } // the pane shows the new state
+    result.className = "test-result err";
     result.textContent = r.message;
+    if (r.tokenRequired) token.focus();
   });
   const steps = h("input", { type: "number", min: 1, max: 60, value: d.maxSteps });
   steps.addEventListener("input", () => { d.maxSteps = Number(steps.value) || DEFAULTS.maxSteps; });
   const chars = h("input", { type: "number", min: 2000, max: 200000, step: 1000, value: d.resultChars });
   chars.addEventListener("input", () => { d.resultChars = Number(chars.value) || DEFAULTS.resultChars; });
+  const full = info && !info.corpus?.demo;
+  const where = info ? `${S.runtime?.label || ""}${S.runtime?.url ? ` ${S.runtime.url.replace(/^https?:\/\//, "")}` : ""}` : "";
   return [
     h("h3", "运行环境"),
-    h("p.lead", "TaoChronos 可以在浏览器里运行（Pyodide，演示语料，开箱即用），也可以连接你本机的 TaoChronos 服务（全量语料）。"),
+    h("p.lead", "TaoChronos 可以在浏览器里运行（Pyodide，演示语料：约二十部古籍的短摘录，开箱即用），也可以连接 taochronos serve——",
+      "在你的电脑或服务器上运行，读全部古籍（全量语料）。"),
+    info ? h(`div.notice${full ? ".ok" : ""}`, icon(full ? "check" : "info"), h("div.grow",
+      h("b", `当前：${where}`), ` · ${ctx.describeRuntime(info)} · 画像 ${info.profile}`,
+      info.engine_model ? ` · 研究引擎模型 ${info.engine_model}` : " · 研究引擎：规则（确定性）",
+      info.load_ms ? ` · 载入 ${Math.round(info.load_ms / 100) / 10} 秒` : "")) : null,
+    h("section.connect",
+      h("h4", icon("book", "sm"), full ? "全量语料已接入" : "接入全部古籍"),
+      info && S.runtime?.kind === "server" && info.corpus?.demo
+        ? h("div.notice.warn", icon("warn"), h("div.grow", "已连接的服务还在用演示语料：它所在的机器尚未构建全量语料。按",
+          h("a", { href: DOC_FULL, target: "_blank", rel: "noopener" }, "说明"), "构建后重启 taochronos serve 即可。"))
+        : null,
+      h("ol.steps-list",
+        h("li", "在本机构建全量语料（一次；步骤见", h("a", { href: DOC_FULL, target: "_blank", rel: "noopener" }, "说明「接入全部古籍」"), "），然后启动服务：",
+          h("pre.json", "pip install -e .\ntaochronos serve            # http://localhost:8765\ntaochronos serve --env-keys # 模型密钥也可用本机环境变量")),
+        h("li", "连接它。这个浏览器会记住：以后打开本页，服务在运行就自动用全量语料，没运行就用浏览器内的演示语料。",
+          h("div.connect-row", url, token, connect), result)),
+      h("details.more",
+        h("summary", "在另一台机器上运行（服务器、工作站）"),
+        h("div.help",
+          h("pre.json", "taochronos serve --host 0.0.0.0\n# 启动时打印访问令牌，以及带令牌的地址 http://主机:8765/#token=…"),
+          h("p", "最简单的是直接打开它打印的地址：服务自带同一个网页，令牌随地址带入。也可以在上面填地址和令牌。"),
+          h("p", "本页经 HTTPS 打开（如 GitHub Pages）时，浏览器只允许它连接本机或 https:// 地址：请为服务配置 HTTPS（反向代理），或直接打开服务自己的网页。"),
+          h("p", "令牌也可以用 --token 或环境变量 TAOCHRONOS_TOKEN 指定；令牌只随请求发往该服务。")))),
     h("div.form-grid",
       h("div.field", h("span.lb", "在哪里运行"),
-        seg([["auto", "自动"], ["browser", "浏览器内（演示语料）"], ["server", "本地服务（全量语料）"]], d.runtime, (v) => { d.runtime = v; })),
-      h("div.field", h("label", "本地服务地址"), h("div.inline", url, test), result,
-        h("div.help", "在 TaoChronos 目录中运行下面的命令，然后在这里连接（或直接打开它给出的地址）："),
-        h("pre.json", "pip install -e .\ntaochronos serve            # http://localhost:8765\ntaochronos serve --env-keys # 使用本机环境变量中的模型密钥")),
-      info ? h("div.notice", icon("info"), h("div.grow",
-        `当前：${info.runtime === "server" ? "本地服务" : "浏览器内"} · 画像 ${info.profile} · ${info.corpus?.demo ? "演示语料" : "全量语料"} ${info.corpus?.books} 部书、${info.corpus?.passages} 段 · ${info.tools?.offered} 项工具` +
-        (info.engine_model ? ` · 研究引擎模型 ${info.engine_model}` : " · 研究引擎：规则（确定性）") + (info.load_ms ? ` · 载入 ${Math.round(info.load_ms / 100) / 10} 秒` : ""))) : null,
+        seg([["auto", "自动"], ["browser", "浏览器内（演示语料）"], ["server", "指定的服务（全量语料）"]], d.runtime, (v) => { d.runtime = v; }),
+        h("div.help", "自动：本页由服务打开时用该服务；否则先试这个浏览器连接过的服务，不在就在浏览器内运行。")),
       h("div.field", h("span.lb", "提供给模型的工具"),
         seg([["core", "精选 + 目录（推荐）"], ["all", "全部工具"]], d.toolMode, (v) => { d.toolMode = v; }),
         h("div.help", "精选：直接提供十几个最常用的工具，其余通过 taochronos_catalog / taochronos_call 按需查用，节省上下文。全部：七十余个工具全部直接提供。")),
@@ -188,16 +215,17 @@ function dataPane(d, S, ctx) {
 function aboutPane(d, S) {
   const info = S.runtimeInfo;
   return [
-    h("h3", "关于 TaoChronos"),
-    h("p.lead", "面向中医古籍的可溯源知识发现与治学系统。确定性的研究平台（检索、考据、发现、核验）负责取证与计算；你选择的模型负责理解问题、调用工具、组织回答。"),
+    h("h3", `关于 ${ASSISTANT} 与 TaoChronos`),
+    h("p.lead", `${ASSISTANT} 是 TaoChronos 的中医古籍研究模型。TaoChronos 是面向中医古籍的可溯源知识发现与治学系统：确定性的研究平台（检索、考据、发现、核验）`,
+      "负责取证与计算；你选择的底层语言模型负责理解问题、调用工具、组织回答。"),
     h("div.form-grid",
       h("div.notice", icon("info"), h("div.grow",
         h("div", h("b", "证据纪律："), "回答中的古籍原文应来自工具结果，并以 [[段落号]] 标注出处；页面会把每条引文与原文逐字核对。"),
         h("div", h("b", "非医疗建议："), "本系统不提供诊断、处方或剂量建议；历代度量衡换算只是历史读法。计算得到的关联与假说须经专家核验。"),
-        h("div", h("b", "语料："), "浏览器内运行的是演示语料（约二十部古籍的短摘录，未经校勘，仅供方法演示）；全量语料需在本机构建并通过 taochronos serve 连接。"),
+        h("div", h("b", "语料："), "浏览器内运行的是演示语料（约二十部古籍的短摘录，未经校勘，仅供方法演示）；全部古籍（全量语料）在本机构建，经 taochronos serve 接入（设置 → 运行环境）。"),
         h("div", h("b", "隐私："), "对话与密钥只保存在本浏览器；模型请求直接发往你选择的服务，或经你本机的服务转发。"))),
       h("div.muted", { style: { fontSize: "13px", lineHeight: "1.8" } },
-        `版本 ${info?.version || "?"} · 运行环境 ${info?.runtime === "server" ? "本地服务" : "浏览器（Pyodide）"} · `,
+        `${ASSISTANT} · TaoChronos ${info?.version || "?"} · 运行环境 ${info?.runtime === "server" ? S.runtime?.label || "服务" : "浏览器（Pyodide）"} · `,
         h("a", { href: "https://github.com/psknlr/TaoChronos", target: "_blank", rel: "noopener" }, "GitHub 仓库"), " · ",
         h("a", { href: "https://github.com/psknlr/TaoChronos/blob/main/docs/web.md", target: "_blank", rel: "noopener" }, "网页端说明"))),
   ];

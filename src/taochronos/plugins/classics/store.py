@@ -463,6 +463,13 @@ class StoreCorpus:
         with self.store.lock:
             return self.store.db.execute(f"SELECT COUNT(*) FROM passages p WHERE p.kind != 'toc'{where}", params).fetchone()[0]
 
+    def book_counts(self) -> dict[str, int]:
+        """Passages per book, for every book of the view, in one query."""
+        extra, params = self._book_filter()
+        with self.store.lock:
+            return dict(self.store.db.execute(f"SELECT p.book_id, COUNT(*) FROM passages p WHERE 1{extra} GROUP BY p.book_id",
+                                              params).fetchall())
+
     def book_passage_count(self, book_id: str) -> int:
         extra, params = self._book_filter()
         with self.store.lock:
@@ -618,6 +625,17 @@ class StoreCorpus:
                     break
             hits = out
         return hits[:limit] if limit else hits
+
+    def contains_all(self, surfaces: Iterable[str], *, limit: int | None = None) -> list[str]:
+        """Ids of passages whose index holds every one of the surfaces (one FTS AND query), in (year, id) order.
+        Unverified: the index reads runs between marks, so this finds candidates for a check against the text."""
+        parts = [q for q in (fts_phrase(self.normalize(s)) for s in surfaces if s) if q]
+        if not parts:
+            return []
+        where, params = self._where()
+        rows = sorted(self._match(" AND ".join(dict.fromkeys(parts)), where, params, None, False), key=lambda r: (r[2], r[0]))
+        ids = [pid for pid, _, _ in rows]
+        return ids[:limit] if limit else ids
 
     def count(self, surface: str, *, after: float | None = None, before: float | None = None) -> int:
         query = fts_phrase(self.normalize(surface))

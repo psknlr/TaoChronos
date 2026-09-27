@@ -10,16 +10,20 @@ It serves the web client (``web/``) and a small JSON API over :class:`~taochrono
   The key travels with the request and is never stored or logged; with ``--env-keys`` a request without one gets the
   provider's key from this machine's environment.
 
-Only this machine's pages, the published client (``https://psknlr.github.io``) and origins named with
-``--allow-origin`` may call the API (CORS, Private Network Access); the Host header must name this machine, so a
-rebound DNS name cannot reach it.  It binds to 127.0.0.1 unless told otherwise.
+Only this machine's pages, the server's own pages, the published client (``https://psknlr.github.io``) and origins
+named with ``--allow-origin`` may call the API (CORS, Private Network Access); the Host header must name this machine,
+so a rebound DNS name cannot reach it.  It binds to 127.0.0.1 unless told otherwise; bound to another address it
+requires an access token (``--token``, else one is generated and printed), carried by every API request as
+``X-TC-Token`` — the page takes it from its address (``#token=…``) once.
 """
 
 from __future__ import annotations
 
+import hmac
 import json
 import mimetypes
 import os
+import secrets
 import sys
 import threading
 import urllib.error
@@ -36,7 +40,7 @@ ENV_KEY = "tc-env-key"  # what the client sends as a key when it relies on --env
 LOCAL_NAMES = {"localhost", "127.0.0.1", "::1", "[::1]"}
 FORWARD = ("content-type", "accept", "authorization", "x-api-key", "anthropic-version", "anthropic-beta",
            "anthropic-dangerous-direct-browser-access", "http-referer", "x-title", "x-stainless-retry-count")
-ALLOW_HEADERS = "content-type, authorization, x-api-key, x-tc-target, anthropic-version, anthropic-beta, " \
+ALLOW_HEADERS = "content-type, authorization, x-api-key, x-tc-target, x-tc-token, anthropic-version, anthropic-beta, " \
                 "anthropic-dangerous-direct-browser-access, http-referer, x-title, x-stainless-arch, x-stainless-lang, " \
                 "x-stainless-os, x-stainless-package-version, x-stainless-runtime, x-stainless-runtime-version, " \
                 "x-stainless-retry-count, x-stainless-timeout"
@@ -52,9 +56,11 @@ class ChatServer(ThreadingHTTPServer):
     allow_reuse_address = True
 
     def __init__(self, address: tuple[str, int], runtime: Any, *, web_root: Path | None, origins: list[str] | None = None,
-                 env_keys: bool = False, proxy: bool = True, home: Path | None = None, quiet: bool = True) -> None:
+                 env_keys: bool = False, proxy: bool = True, home: Path | None = None, quiet: bool = True,
+                 token: str | None = None) -> None:
         super().__init__(address, Handler)
         self.runtime = runtime
+        self.token = token or None
         self.web_root = web_root.resolve() if web_root else None
         self.origins = {o.rstrip("/") for o in (origins or [])} | {PAGES_ORIGIN}
         self.env_keys = env_keys
@@ -65,13 +71,19 @@ class ChatServer(ThreadingHTTPServer):
         self._runtime_files: dict[str, bytes] = {}
         self._lock = threading.Lock()
 
-    def origin_allowed(self, origin: str | None) -> bool:
+    def origin_allowed(self, origin: str | None, host: str | None = None) -> bool:
         if not origin:
             return True  # not a browser page (curl, the page's own origin on a same-origin GET)
         if "*" in self.origins or origin.rstrip("/") in self.origins:
             return True
         parts = urlsplit(origin)
-        return parts.scheme in ("http", "https") and (parts.hostname or "") in LOCAL_NAMES
+        if parts.scheme not in ("http", "https"):
+            return False
+        # this machine's pages, and the server's own pages wherever it is reached (a LAN address, a domain)
+        return (parts.hostname or "") in LOCAL_NAMES or bool(host and parts.netloc.lower() == host.strip().lower())
+
+    def token_ok(self, given: str | None) -> bool:
+        return self.token is None or hmac.compare_digest((given or "").encode(), self.token.encode())
 
     def runtime_file(self, name: str) -> bytes | None:
         """The in-browser runtime's files when the client is served from here and was not built (``taochronos web
@@ -105,7 +117,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _cors(self) -> None:
         origin = self.headers.get("Origin")
-        if origin and self.server.origin_allowed(origin):
+        if origin and self.server.origin_allowed(origin, self.headers.get("Host")):
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Vary", "Origin")
             self.send_header("Access-Control-Expose-Headers", "content-type, x-request-id")
@@ -134,14 +146,17 @@ class Handler(BaseHTTPRequestHandler):
         if not self._host_ok():
             self._json({"error": "this server answers only to this machine's host names"}, 421)
             return True
-        if not self.server.origin_allowed(self.headers.get("Origin")):
+        if not self.server.origin_allowed(self.headers.get("Origin"), self.headers.get("Host")):
             self._json({"error": f"origin {self.headers.get('Origin')} is not allowed (start with --allow-origin)"}, 403)
+            return True
+        if not self.server.token_ok(self.headers.get("X-TC-Token")):
+            self._json({"error": "this server needs its access token (设置 → 运行环境 → 访问令牌)", "token_required": True}, 401)
             return True
         return False
 
     # ------------------------------------------------------------------ verbs
     def do_OPTIONS(self) -> None:  # CORS / Private Network Access preflight
-        self.send_response(204 if self.server.origin_allowed(self.headers.get("Origin")) else 403)
+        self.send_response(204 if self.server.origin_allowed(self.headers.get("Origin"), self.headers.get("Host")) else 403)
         self._cors()
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", ALLOW_HEADERS)
@@ -287,21 +302,48 @@ def web_root(home: Path | None) -> Path | None:
     return None
 
 
+def lan_address() -> str | None:
+    """This machine's address on its network, for the page other machines open (a UDP socket is routed, nothing is sent)."""
+    import socket
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("192.0.2.1", 9))  # TEST-NET-1
+            address = sock.getsockname()[0]
+    except OSError:
+        return None
+    return None if address.startswith("127.") or address == "0.0.0.0" else address
+
+
+def access_token(host: str, token: str | None) -> str | None:
+    """The token every API request must carry: the one given, else — for a server other machines can reach — a new one."""
+    if token:
+        return token
+    return None if host in ("127.0.0.1", "localhost", "::1") else secrets.token_urlsafe(18)
+
+
 def serve(runtime: Any, *, host: str = "127.0.0.1", port: int = 8765, web: Path | None = None, origins: list[str] | None = None,
-          env_keys: bool = False, proxy: bool = True, open_browser: bool = False, quiet: bool = True) -> None:
+          env_keys: bool = False, proxy: bool = True, open_browser: bool = False, quiet: bool = True,
+          token: str | None = None) -> None:
     home = Path(runtime.h.home)
     root = web or web_root(home)
+    token = access_token(host, token)  # reachable from other machines: never without a token
+    info = runtime.info()  # counted before the first request, which then answers at once
     server = ChatServer((host, port), runtime, web_root=root, origins=origins, env_keys=env_keys, proxy=proxy, home=home,
-                        quiet=quiet)
+                        quiet=quiet, token=token)
     shown = "localhost" if host in ("127.0.0.1", "0.0.0.0", "::") else host
     url = f"http://{shown}:{server.server_address[1]}/"
-    info = runtime.info()
+    open_url = f"{url}#token={token}" if token else url
     print(f"TaoChronos {info['version']} · {info['profile']} · {info['corpus']['books']} 部书 · {info['corpus']['passages']} 段 · "
           f"{info['tools']['offered']} 个工具", file=sys.stderr)
-    print(f"web client: {url}" + ("" if root else "  (no web/ directory found: API only)"), file=sys.stderr)
-    print(f"published client: {PAGES_ORIGIN}/TaoChronos/ → 设置 → 运行环境 → 本地服务 {url.rstrip('/')}", file=sys.stderr)
+    print(f"web client: {open_url}" + ("" if root else "  (no web/ directory found: API only)"), file=sys.stderr)
+    if host in ("0.0.0.0", "::") and (lan := lan_address()):
+        print(f"other machines: http://{lan}:{server.server_address[1]}/#token={token}", file=sys.stderr)
+    if token:
+        print(f"access token (访问令牌): {token}  — every API request must carry it (X-TC-Token)", file=sys.stderr)
+    print(f"published client: {PAGES_ORIGIN}/TaoChronos/ → 设置 → 运行环境 → 接入全部古籍 → 连接 {url.rstrip('/')}", file=sys.stderr)
     if open_browser:
-        threading.Timer(0.6, lambda: __import__("webbrowser").open(url)).start()
+        threading.Timer(0.6, lambda: __import__("webbrowser").open(open_url)).start()
     try:
         server.serve_forever(poll_interval=0.3)
     except KeyboardInterrupt:
@@ -310,4 +352,4 @@ def serve(runtime: Any, *, host: str = "127.0.0.1", port: int = 8765, web: Path 
         server.server_close()
 
 
-__all__ = ["ENV_KEY", "ChatServer", "PAGES_ORIGIN", "serve", "web_root"]
+__all__ = ["ENV_KEY", "ChatServer", "PAGES_ORIGIN", "access_token", "lan_address", "serve", "web_root"]

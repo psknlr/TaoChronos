@@ -1327,7 +1327,8 @@ def cmd_serve(args: argparse.Namespace) -> None:
     except ValueError as exc:
         raise SystemExit(str(exc)) from exc
     serve(runtime, host=args.host, port=args.port, web=Path(args.web) if args.web else None, origins=args.allow_origin,
-          env_keys=args.env_keys, proxy=not args.no_proxy, open_browser=args.open, quiet=not args.verbose)
+          env_keys=args.env_keys, proxy=not args.no_proxy, open_browser=args.open, quiet=not args.verbose,
+          token=args.token or os.environ.get("TAOCHRONOS_TOKEN"))
 
 
 def cmd_web(args: argparse.Namespace) -> None:
@@ -1623,7 +1624,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp = add("serve", cmd_serve, "网页对话: serve the web chat client and its API (full corpus when built) on this machine",
              profile=False)
     sp.add_argument("--profile", help="default: full-corpus when the store exists, else full-discovery (demo corpus)")
-    sp.add_argument("--host", default="127.0.0.1")
+    sp.add_argument("--host", default="127.0.0.1", help="0.0.0.0 to serve other machines (an access token is then "
+                                                         "required: --token, $TAOCHRONOS_TOKEN, or one generated)")
+    sp.add_argument("--token", help="the access token every API request must carry (default: none on 127.0.0.1)")
     sp.add_argument("--port", type=int, default=8765)
     sp.add_argument("--llm", help="provider:model for the research engine's judgement roles (e.g. minimax:MiniMax-M3); "
                                   "the chat model itself is chosen in the web client")

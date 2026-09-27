@@ -74,7 +74,9 @@ def _rpc(method, params):
 async function init({ base }) {
   const t0 = performance.now();
   progress(5, "读取运行清单");
-  const manifest = await (await fetch(new URL("runtime/manifest.json", base), { cache: "no-cache" })).json();
+  const got = await fetch(new URL("runtime/manifest.json", base), { cache: "no-cache" });
+  if (!got.ok) throw new Error(`这里没有浏览器内运行环境（runtime/manifest.json：HTTP ${got.status}）：请用 taochronos web build 构建站点，或连接 taochronos serve`);
+  const manifest = await got.json();
   progress(12, "载入 Python 运行时（首次约 10 MB）");
   py = await loadPython(base, manifest);
   progress(45, "载入 PyYAML 与 SQLite");

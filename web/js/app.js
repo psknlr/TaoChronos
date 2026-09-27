@@ -4,12 +4,12 @@ import { buildHistory, formatOf, runTurn, toolDefs } from "./agent.js";
 import { streamClaude } from "./llm/anthropic.js";
 import { streamChat } from "./llm/openai.js";
 import { extractCitations, renderMarkdown } from "./markdown.js";
-import { activeProvider, allProviders, loadProviders, loadSettings, providerInitial, saveSettings } from "./providers.js";
-import { BrowserRuntime, sameOriginServer, ServerRuntime } from "./runtime.js";
+import { activeProvider, allProviders, ASSISTANT, loadProviders, loadSettings, saveSettings } from "./providers.js";
+import { BrowserRuntime, probeServer, sameOriginServer, ServerRuntime } from "./runtime.js";
 import * as store from "./store.js";
 import {
-  $, bare, copyText, dateGroup, debounce, download, fmtMs, h, icon, passageLabel, replace, storage, throttleFrame, toast, truncate, uid,
-  yearLabel,
+  $, bare, copyText, count, dateGroup, debounce, download, fmtMs, h, icon, passageLabel, replace, storage, throttleFrame, toast, truncate,
+  uid, yearLabel,
 } from "./util.js";
 import { renderDrawer, reportNode } from "./view/drawer.js";
 import { openSettings } from "./view/settings.js";
@@ -19,6 +19,7 @@ import { answerText, fillAssistant, renderedCites, renderThread, toolFamily, ver
 const S = {
   settings: loadSettings(),
   runtime: null,
+  here: null,              // the TaoChronos server that served this page, if one did
   runtimeInfo: null,
   runtimeState: { status: "idle", progress: 0, message: "" },
   catalogs: {},
@@ -47,18 +48,32 @@ const el = {
 const mobile = () => matchMedia("(max-width: 980px)").matches;
 
 // ------------------------------------------------------------------ runtime
+// Auto: the server that served this page; else the server this browser last worked with (the full corpus), when it
+// answers; else TaoChronos in this browser (the demonstration corpus).
+const KNOWN_SERVER = "tc.server";
+
 async function chooseRuntime() {
-  const pref = S.settings.runtime;
-  if (pref === "server") return new ServerRuntime(S.settings.serverUrl);
+  const { runtime: pref, serverUrl, serverToken: token } = S.settings;
+  if (pref === "server") return new ServerRuntime(serverUrl, token);
   if (pref === "browser") return new BrowserRuntime();
-  const here = await sameOriginServer();
-  return here ? new ServerRuntime(here) : new BrowserRuntime();
+  S.here = await sameOriginServer(token);
+  if (S.here) return new ServerRuntime(S.here, token);
+  const known = storage.get(KNOWN_SERVER, null);
+  if (known) {
+    S.runtimeState = { status: "loading", progress: 12, message: `寻找 TaoChronos 服务 ${known.replace(/^https?:\/\//, "")}` };
+    renderPill();
+    if (await probeServer(known, token)) return new ServerRuntime(known, token);
+  }
+  return new BrowserRuntime();
 }
 
 let runtimeSwitch = null;
-function switchRuntime() {
+/** Use `ready` (a runtime already connected) or choose one; the previous runtime is stopped. */
+function switchRuntime(ready = null) {
   runtimeSwitch = (async () => {
-    S.runtime = await chooseRuntime();
+    const rt = ready || (await chooseRuntime());
+    if (S.runtime && S.runtime !== rt) S.runtime.stop?.();
+    S.runtime = rt;
     S.runtimeInfo = null;
     S.catalogs = {};
     S.catalogAll = null;
@@ -66,13 +81,17 @@ function switchRuntime() {
     S.verify.clear();
     folds.clear();
     foldsNow.clear();
-    S.runtime.onStatus((st) => {
+    rt.onStatus((st) => {
+      if (S.runtime !== rt) return;
       S.runtimeState = st;
       renderPill();
+      renderComposerHint();
       if (!S.conv?.messages.length) renderMain();
     });
-    S.runtime.start().then((info) => {
+    rt.start().then((info) => {
+      if (S.runtime !== rt) return;
       S.runtimeInfo = info;
+      if (rt.kind === "server") storage.set(KNOWN_SERVER, rt.url); // auto mode tries it first from now on
       renderPill();
       renderComposerHint();
       if (!S.conv?.messages.length) renderMain();
@@ -80,6 +99,12 @@ function switchRuntime() {
     }).catch(() => { /* shown in the pill */ });
   })();
   return runtimeSwitch;
+}
+
+/** "全量语料 966 部书、205 万段、1.2 亿字 · 88 项工具" */
+function describeRuntime(info, sep = "、") {
+  const c = info?.corpus || {};
+  return `${c.demo ? "演示语料" : "全量语料"} ${[count(c.books, "部书"), count(c.passages, "段"), c.characters ? count(c.characters, "字") : null].filter(Boolean).join(sep)} · ${info?.tools?.offered ?? "?"} 项工具`;
 }
 
 async function ensureRuntime() {
@@ -101,10 +126,11 @@ async function getCatalog(mode) {
   return S.catalogs[mode];
 }
 
-function routeFor() {
-  const r = S.settings.route;
-  const serverUrl = S.runtime?.kind === "server" ? S.runtime.url : S.settings.serverUrl;
-  if (r === "proxy" || (r === "auto" && S.runtime?.kind === "server")) return { kind: "proxy", serverUrl };
+function routeFor(settings = S.settings) {
+  const server = S.runtime?.kind === "server" ? S.runtime : null;
+  if (settings.route === "proxy" || (settings.route === "auto" && server)) {
+    return { kind: "proxy", serverUrl: server ? server.url : settings.serverUrl, token: server ? server.token : settings.serverToken || "" };
+  }
   return { kind: "direct" };
 }
 
@@ -114,10 +140,12 @@ function needsKey() {
   return !(routeFor().kind === "proxy" && S.runtimeInfo?.env_keys);
 }
 
-function systemPrompt() {
+/** The runtime's standing instructions (they end with 运行环境), the model underneath, and the user's own instructions. */
+function systemPrompt(provider) {
   const base = S.runtimeInfo?.system_prompt || "";
+  const model = provider?.model ? `\n底层语言模型：${provider.model}（${provider.label}）。` : "";
   const extra = (S.settings.instructions || "").trim();
-  return extra ? `${base}\n\n## 用户的附加指令\n${extra}` : base;
+  return `${base}${model}${extra ? `\n\n## 用户的附加指令\n${extra}` : ""}`;
 }
 
 // ------------------------------------------------------------------ passages and citations
@@ -337,7 +365,7 @@ async function send(text, images = []) {
   if (needsKey()) {
     el.input.value = text;
     autosize();
-    toast("请先配置模型的 API Key（默认 MiniMax-M3）");
+    toast(`请先为 ${ASSISTANT} 配置底层模型的 API Key（默认 MiniMax-M3）`);
     openSettings(S, settingsCtx, "model");
     return;
   }
@@ -379,7 +407,7 @@ async function runAssistant(conv, msg) {
     const user = conv.messages[idx - 1];
     const history = buildHistory(conv.messages.slice(0, idx - 1), provider);
     const result = await runTurn({
-      provider, settings: S.settings, route: routeFor(), runtime, tools: toolDefs(catalog), system: systemPrompt(),
+      provider, settings: S.settings, route: routeFor(), runtime, tools: toolDefs(catalog), system: systemPrompt(provider),
       history, user, signal: controller.signal, hooks: makeHooks(conv, msg), sink,
     });
     msg.rounds = result.rounds;
@@ -675,6 +703,9 @@ const threadCtx = {
     send(prompt);
   },
   onOpenSettings: () => openSettings(S, settingsCtx, "model"),
+  onOpenRuntime: () => openSettings(S, settingsCtx, "runtime"),
+  describeRuntime,
+  get runtimeLabel() { return S.runtime?.label || "运行环境"; },
   onCopy: (text) => copyText(text).then((ok) => toast(ok ? "已复制" : "复制失败")),
   onEdit(id) { S.ui.editing = id; renderMain(); },
   onEditCancel() { S.ui.editing = null; renderMain(); },
@@ -738,10 +769,11 @@ function renderTopbar() {
   const p = activeProvider(S.settings);
   const warn = needsKey();
   el.modelChip.classList.toggle("warn", warn);
-  replace(el.modelChip, h("span.pv", providerInitial(p)), h("span.nm", p.model || "选择模型"), warn ? h("span.muted", { style: { fontSize: "12px" } }, "未配置") : null, icon("chevdown", "sm"));
-  el.modelChip.title = `${p.label} · ${p.model}${warn ? "（未配置 API Key）" : ""}`;
+  replace(el.modelChip, h("img.seal", { src: "assets/logo.svg", alt: "" }), h("span.nm", ASSISTANT), warn ? h("span.tag", "未配置") : null, icon("chevdown", "sm"));
+  el.modelChip.title = `${ASSISTANT} · 底层模型 ${p.model || "未选"}（${p.label}）${warn ? " · 尚未配置 API Key" : ""}`;
+  el.modelChip.setAttribute("aria-label", `${ASSISTANT} 的模型设置`);
   el.title.textContent = S.conv?.title || "";
-  document.title = S.conv?.title ? `${S.conv.title} · TaoChronos` : "TaoChronos · 中医古籍研究助手";
+  document.title = S.conv?.title ? `${S.conv.title} · ${ASSISTANT}` : `${ASSISTANT} · TaoChronos 中医古籍研究`;
 }
 
 function renderSidebar() {
@@ -812,15 +844,16 @@ function rename(c, item) {
 function renderPill() {
   const st = S.runtimeState || {};
   const info = S.runtimeInfo;
-  const kind = S.runtime?.kind === "server" ? "本地服务" : "浏览器内";
+  const kind = S.runtime?.label || "运行环境";
   const dot = st.status === "ready" ? "ok" : st.status === "error" ? "bad" : "busy";
-  const detail = st.status === "ready" && info
-    ? `${info.corpus?.demo ? "演示语料" : "全量语料"} · ${info.corpus?.books} 部书 · ${info.corpus?.passages} 段 · ${info.tools?.offered} 项工具`
+  const ready = st.status === "ready" && info;
+  const detail = ready ? describeRuntime(info, " · ")
     : st.status === "error" ? truncate(st.message || "出错", 40) : (st.message || "准备中…");
   el.pill.replaceChildren(h("span.dot", { class: dot }),
     h("span.rt", h("b", `${kind}${st.status === "ready" ? "" : st.status === "error" ? " · 未就绪" : " · 载入中"}`), h("span", detail),
+      ready && info.corpus?.demo ? h("span.cta", "接入全部古籍 →") : null,
       st.status === "loading" ? h("div.progress", h("i", { style: { width: `${Math.max(4, st.progress || 0)}%` } })) : null));
-  el.pill.title = st.status === "error" ? st.message : "运行环境设置";
+  el.pill.title = st.status === "error" ? st.message : ready && info.corpus?.demo ? "接入全部古籍：连接 taochronos serve（全量语料）" : "运行环境设置";
 }
 
 function renderComposer() {
@@ -838,7 +871,8 @@ function renderComposer() {
 function renderComposerHint() {
   const p = activeProvider(S.settings);
   const info = S.runtimeInfo;
-  el.hint.textContent = `${p.model || "未选模型"} · ${S.runtime?.kind === "server" ? "本地服务" : "浏览器内"}${info ? ` · ${info.corpus?.demo ? "演示语料" : "全量语料"}` : ""}`;
+  el.hint.textContent = `${ASSISTANT} · ${S.runtime?.label || "运行环境"}${info ? ` · ${info.corpus?.demo ? "演示语料" : "全量语料"}` : ""}`;
+  el.hint.title = `底层模型 ${p.model || "未选"}（${p.label}）`;
 }
 
 function renderAttachments() {
@@ -925,7 +959,7 @@ const settingsCtx = {
     S.settings = draft;
     saveSettings(draft);
     applyTheme();
-    if (before.runtime !== draft.runtime || before.serverUrl !== draft.serverUrl) switchRuntime();
+    if (before.runtime !== draft.runtime || before.serverUrl !== draft.serverUrl || before.serverToken !== draft.serverToken) switchRuntime();
     if (before.verifyQuotes !== draft.verifyQuotes) S.verify.clear();
     renderAll();
     toast("设置已保存");
@@ -935,8 +969,7 @@ const settingsCtx = {
     if (!p.apiKey && !p.key_optional && !(draft.route === "proxy" && S.runtimeInfo?.env_keys)) return { ok: false, message: "请先填写 API Key" };
     const started = Date.now();
     const settings = { ...draft, maxTokens: 400, thinking: false };
-    const route = draft.route === "proxy" || (draft.route === "auto" && S.runtime?.kind === "server")
-      ? { kind: "proxy", serverUrl: S.runtime?.kind === "server" ? S.runtime.url : draft.serverUrl } : { kind: "direct" };
+    const route = routeFor(draft);
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 45000);
     try {
@@ -951,15 +984,27 @@ const settingsCtx = {
       clearTimeout(timer);
     }
   },
-  async testServer(url) {
+  /** Connect to a TaoChronos server and use it now; this browser remembers it (auto mode tries it first). */
+  async connectServer(draft) {
+    const rt = new ServerRuntime((draft.serverUrl || "").trim() || "http://localhost:8765", (draft.serverToken || "").trim());
     try {
-      const rt = new ServerRuntime(url);
       const info = await rt.start();
-      return { ok: true, message: `已连接：${info.profile} · ${info.corpus?.demo ? "演示语料" : "全量语料"} ${info.corpus?.books} 部书、${info.corpus?.passages} 段 · ${info.tools?.offered} 项工具${info.env_keys ? " · 可使用本机密钥" : ""}` };
+      draft.serverUrl = rt.url;
+      draft.serverToken = rt.token;
+      // a page served by another server would keep choosing that one in auto mode: name this one
+      if (draft.runtime !== "server") draft.runtime = S.here && S.here.replace(/\/+$/, "") !== rt.url ? "server" : "auto";
+      S.settings = { ...S.settings, serverUrl: rt.url, serverToken: rt.token, runtime: draft.runtime };
+      saveSettings(S.settings);
+      storage.set(KNOWN_SERVER, rt.url);
+      await switchRuntime(rt);
+      S.runtimeInfo = info;
+      renderAll();
+      return { ok: true, message: `已接入${rt.label} ${rt.url.replace(/^https?:\/\//, "")}：${describeRuntime(info)}${info.env_keys ? " · 可使用服务端环境变量中的模型密钥" : ""}` };
     } catch (err) {
-      return { ok: false, message: err.message };
+      return { ok: false, message: err.message, tokenRequired: Boolean(err.tokenRequired) };
     }
   },
+  describeRuntime,
   exportAll() {
     download(`TaoChronos-对话-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ app: "TaoChronos", version: 1, exported: new Date().toISOString(), conversations: S.list }, null, 1), "application/json");
   },
@@ -999,13 +1044,14 @@ const settingsCtx = {
 };
 
 function exportMarkdown(conv) {
-  const lines = [`# ${conv.title}`, "", `> 导出自 TaoChronos · ${new Date(conv.updated).toLocaleString("zh-CN")}`, ""];
+  const lines = [`# ${conv.title}`, "", `> 导出自 ${ASSISTANT}（TaoChronos）· ${new Date(conv.updated).toLocaleString("zh-CN")}`, ""];
   for (const m of conv.messages) {
     if (m.role === "user") lines.push("## 问", "", m.text, "");
     else {
       const tools = (m.segments || []).flatMap((s) => s.calls || []).map((c) => `\`${c.name}\``);
-      lines.push("## 答", "");
-      if (tools.length) lines.push(`*工具：${[...new Set(tools)].join("、")}*`, "");
+      lines.push(`## ${ASSISTANT}`, "");
+      const about = [m.model ? `底层模型 ${m.model}` : null, tools.length ? `工具 ${[...new Set(tools)].join("、")}` : null].filter(Boolean);
+      if (about.length) lines.push(`*${about.join("；")}*`, "");
       lines.push(answerText(m) || "（无回答）", "");
     }
   }
@@ -1104,7 +1150,17 @@ function wireChrome() {
 }
 
 // ------------------------------------------------------------------ start
+/** A server started beyond this machine prints its address with the access token: #token=… (taken once, then removed). */
+function takeToken() {
+  const m = /^#(?:.*&)?token=([^&]+)/.exec(location.hash);
+  if (!m) return;
+  S.settings.serverToken = decodeURIComponent(m[1]);
+  saveSettings(S.settings);
+  history.replaceState(null, "", location.pathname + location.search);
+}
+
 async function main() {
+  takeToken();
   if (document.documentElement.classList.contains("pre-collapsed")) el.app.classList.add("sidebar-collapsed");
   applyTheme();
   wireChrome();

@@ -8,6 +8,7 @@ as the data allow, and each level reports whether it is available.
 
 from __future__ import annotations
 
+import re
 from typing import Any, Callable
 
 from ..protocol.claims import Claim
@@ -68,17 +69,48 @@ def verify_evidence(record: EvidenceRecord, corpus: Any) -> list[str]:
     return []
 
 
+HAN_RUN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U0003134f]{2,}")
+QUOTE_CANDIDATES = 500
+
+
+def _large_candidates(corpus: Any, quote: str) -> list[str]:
+    """Passages that may hold a quote, from the full-text index (every candidate is verified by the caller).  The index
+    reads runs of characters between marks, so a punctuated quote is looked up as written and by its own runs, all of
+    them at once; one that neither locates (it may run across the witness's own marks) by its 3-grams, ranked."""
+    ids = corpus.contains(quote[:24], verify=False, limit=QUOTE_CANDIDATES)  # witnesses punctuated as the quote is
+    runs = sorted(dict.fromkeys(HAN_RUN.findall(quote)), key=len, reverse=True)[:8]
+    every = getattr(corpus, "contains_all", None)
+    if len(runs) > 1 and every:  # and those punctuated otherwise, or not at all
+        ids = list(dict.fromkeys(ids + every([run[:24] for run in runs], limit=QUOTE_CANDIDATES)))
+    if ids:
+        return ids
+    search = getattr(corpus, "search", None)
+    chars = "".join(ch for ch in quote if ch.isalnum())
+    if not search or len(chars) < 4:
+        return []
+    grams = list(dict.fromkeys(chars[i: i + 3] for i in range(len(chars) - 2)))[:40]
+    return [pid for pid, _ in search(grams, limit=QUOTE_CANDIDATES // 2)]
+
+
+def _bare(text: str) -> tuple[str, list[int]]:
+    """The characters of a text without punctuation and spacing, with each one's offset in the text."""
+    keep = [(i, ch) for i, ch in enumerate(text) if ch.isalnum()]
+    return "".join(ch for _, ch in keep), [i for i, _ in keep]
+
+
 def find_quote(corpus: Any, quote: str, normalize: Callable[[str], str], passage_id: str | None = None) -> list[tuple[str, int, int]]:
-    """Locate a quote verbatim (or after variant normalisation) — used to catch fabricated citations."""
+    """Locate a quote verbatim, else after variant normalisation, else ignoring punctuation and spacing (a quotation
+    punctuated otherwise than its witness, or quoting 白文) — used to catch fabricated citations.  A changed or missing
+    character is never accepted."""
     if passage_id and corpus.has_passage(passage_id):
         targets = [corpus.passage(passage_id)]
     elif getattr(corpus, "large", False):
-        # index lookup; a long quote is checked through its first 24 characters, then verified in full below
-        targets = corpus.passages_by_id(corpus.contains(quote[:24], verify=False, limit=500))
+        targets = corpus.passages_by_id(_large_candidates(corpus, quote))
     else:
         targets = corpus.passages()
     hits = []
     nq = normalize(quote)
+    bq = _bare(nq)[0]
     for p in targets:
         idx = p.text.find(quote)
         if idx >= 0:
@@ -87,6 +119,12 @@ def find_quote(corpus: Any, quote: str, normalize: Callable[[str], str], passage
         idx = normalize(p.text).find(nq)
         if idx >= 0:
             hits.append((p.id, idx, idx + len(quote)))
+            continue
+        if len(bq) >= 4:
+            flat, offsets = _bare(normalize(p.text))
+            idx = flat.find(bq)
+            if idx >= 0 and len(flat) == len(_bare(p.text)[0]):
+                hits.append((p.id, offsets[idx], offsets[idx + len(bq) - 1] + 1))
     return hits
 
 

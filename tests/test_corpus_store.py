@@ -146,6 +146,48 @@ def test_store_round_trip_and_search(corpus, pack):
     assert corpus.stats(pack.periods)["index_current"] is True
 
 
+def test_a_quotation_is_found_however_it_is_punctuated(corpus, pack):
+    n = pack.variants.normalize_text
+    main = corpus.passage("ceshi_neijing.001.00000").text
+    at = main.index("治之以蘭除陳氣也")
+    # a reader's punctuation over a 白文 witness, in either script
+    assert find_quote(corpus, "治之以蘭，除陳氣也。", n) == [("ceshi_neijing.001.00000", at, at + 8)]
+    assert find_quote(corpus, "治之以兰，除陈气也", n) == [("ceshi_neijing.001.00000", at, at + 8)]
+    # a quotation that runs across the witness's own marks, located in the witness's text
+    dosage = corpus.passage("ceshi_fangshu.001.00003").text
+    [(pid, start, end)] = find_quote(corpus, "猪苓十八銖，澤瀉一兩六銖", n)
+    assert pid == "ceshi_fangshu.001.00003" and dosage[start:end] == "猪苓（十八銖）\u3000\u3000澤瀉（一兩六銖"
+    # a changed or a missing character is never accepted
+    assert find_quote(corpus, "治之以蘭，除舊氣也", n) == []
+    assert find_quote(corpus, "治之以蘭，除氣也", n) == []
+
+
+def test_outside_a_session_the_tools_read_the_whole_store(store_path, tmp_path):
+    from taochronos.chat import ChatRuntime
+
+    local = tmp_path / "tcm.sqlite"
+    shutil.copy(store_path, local)
+    harness = Harness.from_profile("full-corpus", home=HOME, data_dir=tmp_path, store=MemoryEventStore(),
+                                   overrides={"bundles": [
+                                       {"plugin": "taochronos.plugins.classics", "config": {"domain": "domains/classics", "store": str(local)}},
+                                       {"plugin": "taochronos.plugins.knowledge"}, {"plugin": "taochronos.plugins.retrieval"},
+                                       {"plugin": "taochronos.plugins.models.offline"}]})
+    rt = ChatRuntime(harness, kind="test")
+    # every book of the store, before anything has been read; filtered by author, dynasty, category
+    books = rt.call("classics.list_books", {})["result"]
+    assert {b["book_id"]: b["passages"] for b in books} == {"ceshi_fangshu": 5, "ceshi_neijing": 3}
+    assert [b["book_id"] for b in rt.call("classics.list_books", {"query": "张某"})["result"]] == ["ceshi_fangshu"]
+    assert [b["book_id"] for b in rt.call("classics.list_books", {"category": "医经"})["result"]] == ["ceshi_neijing"]
+    assert len(rt.call("classics.list_books", {"limit": 1})["result"]) == 1
+    # claims and neighbours of a term: read from the passages that write it, not from what happens to have been read
+    claims = rt.call("kg.claims", {"terms": ["消渴"]})["result"]
+    assert claims and all("disease:消渴" in {a["term"] for a in c["arguments"]} for c in claims)
+    assert {c["passage_id"] for c in claims} <= set(corpus_ids := harness.corpus.contains("消渴")) and corpus_ids
+    assert not rt.call("kg.claims", {"terms": ["消渴"], "before": -1000})["result"]
+    neighbours = rt.call("kg.neighbors", {"term": "消渴"})["result"]
+    assert "formula:肾气丸" in str(neighbours)
+
+
 def test_reingest_is_idempotent(store_path, pack, catalog, tmp_path):
     copy = tmp_path / "copy.sqlite"
     shutil.copy(store_path, copy)

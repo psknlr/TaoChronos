@@ -134,9 +134,11 @@ DAG and runs it through the tool scheduler as those agents, with every call an a
 
 ## The web client
 
-`web/` is a conversation in the browser: the page runs the agent loop with the user's own model, and the tools run in
-`taochronos.chat.ChatRuntime` — in the browser under Pyodide (demonstration corpus) or on the user's machine under
-`taochronos serve` (full corpus).  The chat model acts as an agent-principal actor with read and analysis permissions,
+`web/` is a conversation in the browser with **Tao-R1** (TaoChronos over the model the user chose): the page runs the
+agent loop with the user's own model, and the tools run in `taochronos.chat.ChatRuntime` — in the browser under Pyodide
+(demonstration corpus) or under `taochronos serve` (full corpus; the browser remembers the server, and a server bound
+beyond this machine requires an access token).  Outside a research run the tools read the whole store
+(`tools.common.whole_store`, `term_passages`).  The chat model acts as an agent-principal actor with read and analysis permissions,
 so every call goes through the scheduler like any agent's; it never holds `kg:propose`, and Code Mode only by the server's
 `--code-mode`.  The page checks every `[[passage_id]]` the model writes against the corpus (the quotation before it,
 directly or after normalisation; the passage's existence; whether a tool returned it).  See [web.md](web.md) and

@@ -59,8 +59,11 @@ function errorMessage(status, body) {
 /** Where a request goes: straight to the provider, or through the local server's proxy. */
 export function endpoint(url, route) {
   if (!route || route.kind !== "proxy") return { url, headers: {} };
-  return { url: `${route.serverUrl.replace(/\/+$/, "")}/api/llm`, headers: { "X-TC-Target": url } };
+  return { url: `${route.serverUrl.replace(/\/+$/, "")}/api/llm`, headers: { "X-TC-Target": url, ...proxyHeaders(route) } };
 }
+
+/** What the server's proxy needs besides the target: its access token, when it has one. */
+export const proxyHeaders = (route) => (route?.kind === "proxy" && route.token ? { "X-TC-Token": route.token } : {});
 
 /**
  * Stream one completion.  Returns {message, text, thinking, toolCalls, finishReason, usage}; calls onEvent with
@@ -92,7 +95,7 @@ export async function streamChat({ provider, messages, tools, settings, route, s
     if (err.name === "AbortError") throw err;
     throw new ProviderError(
       route?.kind === "proxy"
-        ? `无法连接本地服务 ${route.serverUrl}：请先运行 taochronos serve`
+        ? `无法连接 TaoChronos 服务 ${route.serverUrl}：请确认 taochronos serve 正在运行`
         : `无法连接 ${new URL(url).host}：网络不通，或该服务不允许浏览器直接访问（CORS）。可在设置中改为“经本地服务转发”。`,
       { retryable: true });
   }

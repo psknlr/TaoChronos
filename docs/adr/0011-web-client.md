@@ -46,16 +46,33 @@ whether they arrive as increments or, as MiniMax's own examples read them, cumul
 official SDK with adaptive thinking and server-side refusal fallbacks, and no tool runs after a refusal or a `max_tokens`
 cut.
 
-**The local server is narrow.**  It binds to 127.0.0.1, answers only this machine's pages, the published client and
-named origins (CORS with Private Network Access), checks the Host header against DNS rebinding, and forwards model
-requests only to the hosts of the listed providers, keys passing through unstored and unlogged.
+**The local server is narrow.**  It binds to 127.0.0.1, answers only this machine's pages, its own pages, the published
+client and named origins (CORS with Private Network Access), checks the Host header against DNS rebinding, and forwards
+model requests only to the hosts of the listed providers, keys passing through unstored and unlogged.  Bound to any
+other address it never runs without an access token (given, or generated and printed with the page's address); every
+API request, the proxy's included, carries it, and it is compared in constant time.  A rebound name that passes the
+Host check on a server bound to every address still lacks the token.
+
+**All the books reach the page through the server, which the browser remembers.**  The full corpus (about 2.2 GB, under
+its sources' licences, some not redistributable) cannot be published with the site.  The page connects to
+`taochronos serve` in one step and remembers it; in automatic mode it uses the server that served it, else the server
+it last worked with if that answers within a moment, else the browser runtime — so with the server running the page
+opens on the full corpus, and it always says which corpus it is on.  Outside a research run the tools read the whole
+store: every book is listed, a term's claims are read from the passages that write it (spread over time), a quotation
+is found in every witness whatever its punctuation.  The session-scoped analyses keep reading their working set.
+
+**The assistant is named Tao-R1.**  The name stands for TaoChronos over the model the user chose, and the page and the
+instructions keep both visible: Tao-R1 on the page, the underlying model beside it and in the instructions, and the model
+told to name both when asked and to claim no other identity.
 
 ## Consequences
 
 * The page works with no installation: open it, paste a key, ask.  Every tool also runs by hand in the tool console,
   so the functions are usable without any model.
 * In the browser the corpus is the demonstration corpus.  The page, the model's instructions and the documentation say
-  so; research on the full corpus goes through the local server.
+  so, and the page offers the connection to all the books; research on the full corpus goes through the server.
+* A server reachable from other machines is a deliberate step with a token; the published page reaches one only over
+  HTTPS (or the server's own page is used).
 * A citation the model invents is visible as such, and a misquotation is marked — the discipline the research engine
   applies to its own evidence now applies to a conversation.  The check is literal (after normalisation): an honest
   abridgement reads as a mismatch and sends the reader to the passage.

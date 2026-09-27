@@ -70,6 +70,15 @@ def test_the_system_prompt_carries_the_evidence_discipline_and_the_corpus(rt):
         assert must in prompt
 
 
+def test_the_assistant_is_tao_r1_over_the_model_the_user_chose(rt):
+    info = rt.info()
+    assert info["assistant_name"] == "Tao-R1"
+    prompt = info["system_prompt"]
+    assert prompt.startswith("你是 Tao-R1") and "底层模型" in prompt and prompt.rstrip().endswith("连接本地服务（全量语料）。")
+    books = next(t for t in rt.catalog("all")["tools"] if t["tool"] == "classics.list_books")
+    assert set(books["parameters"]["properties"]) == {"query", "dynasty", "category", "limit"}
+
+
 # ------------------------------------------------------------------ results
 def test_compact_keeps_the_shape_and_fits_the_budget():
     big = {"hits": [{"passage_id": f"b.{i}", "text": "字" * 500} for i in range(300)], "note": "n"}
@@ -167,6 +176,39 @@ def test_the_server_admits_only_this_machine_and_the_published_client(server):
     assert resp.status == 421
     resp, raw = request(server, "POST", "/api/llm", b"{}", {"X-TC-Target": "https://evil.example/v1/chat/completions"})
     assert resp.status == 403 and b"listed providers" in raw
+
+
+def test_the_server_answers_its_own_pages_wherever_it_is_reached(server):
+    assert server.origin_allowed("http://192.168.1.5:8765", "192.168.1.5:8765")  # its own page, on a LAN address
+    assert not server.origin_allowed("http://192.168.1.5:8765", "192.168.1.6:8765")
+    assert not server.origin_allowed("https://evil.example", "192.168.1.5:8765")
+
+
+def test_a_server_other_machines_can_reach_needs_its_token(rt):
+    from taochronos.chat.server import ChatServer, access_token
+
+    assert access_token("127.0.0.1", None) is None and access_token("0.0.0.0", "given") == "given"
+    one, two = access_token("0.0.0.0", None), access_token("192.168.1.5", None)
+    assert one and two and one != two and len(one) >= 20
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=ROOT / "web", home=ROOT, token="t0ken")
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        resp, raw = request(srv, "GET", "/api/info")
+        assert resp.status == 401 and json.loads(raw)["token_required"]
+        resp, _ = request(srv, "GET", "/api/info", headers={"X-TC-Token": "t0ke"})
+        assert resp.status == 401
+        resp, raw = request(srv, "GET", "/api/info", headers={"X-TC-Token": "t0ken"})
+        assert resp.status == 200 and json.loads(raw)["assistant_name"] == "Tao-R1"
+        resp, _ = request(srv, "POST", "/api/llm", b"{}", {"X-TC-Target": "https://api.minimaxi.com/v1/chat/completions"})
+        assert resp.status == 401  # the model proxy as well
+        resp, raw = request(srv, "GET", "/")  # the page is not secret: it asks for the token
+        assert resp.status == 200 and b"Tao-R1" in raw
+        resp, _ = request(srv, "OPTIONS", "/api/info", headers={"Origin": "https://psknlr.github.io", "Access-Control-Request-Method": "GET",
+                                                               "Access-Control-Request-Headers": "x-tc-token"})
+        assert resp.status == 204 and "x-tc-token" in resp.getheader("Access-Control-Allow-Headers")
+    finally:
+        srv.shutdown()
+        srv.server_close()
 
 
 def test_research_runs_in_the_background_and_is_polled(server):

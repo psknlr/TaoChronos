@@ -111,6 +111,14 @@ export function fmtMs(ms) {
   return `${Math.floor(ms / 60000)} 分 ${Math.round((ms % 60000) / 1000)} 秒`;
 }
 
+/** A count with its unit, large ones in 万 and 亿: count(2053597, "段") → "205 万段". */
+export function count(n, unit = "") {
+  if (n === null || n === undefined || n === "" || Number.isNaN(Number(n))) return `? ${unit}`.trim();
+  n = Number(n);
+  const [v, big] = n >= 1e8 ? [n / 1e8, "亿"] : n >= 1e4 ? [n / 1e4, "万"] : [n, ""];
+  return `${big ? Number(v.toFixed(v >= 100 ? 0 : 1)) : n} ${big}${unit}`.trim();
+}
+
 export function dateGroup(ts) {
   const d = new Date(ts), now = new Date();
   const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();

@@ -28,7 +28,8 @@ from ..science import (
 from ..science.temporal import coverage
 from ..verification.provenance import find_quote, provenance_chain
 from .adapters import SenseOracle, author_clusters, binner, claim_year_fn, contradiction_context
-from .common import claim_card, claims_in_scope, lineage_in_scope, passage_card, scope_ids, scope_passages
+from .common import (claim_card, claims_in_scope, lineage_in_scope, passage_card, scope_ids, scope_passages, term_passages,
+                     whole_store)
 
 S = {"type": "string"}
 I = {"type": "integer"}
@@ -102,14 +103,24 @@ def _get_passage(ctx: ToolContext, a: dict) -> Any:
 
 def _list_books(ctx: ToolContext, a: dict) -> Any:
     corpus = ctx.cap("corpus")
-    counts = Counter(p.book_id for p in scope_passages(ctx))
+    if whole_store(ctx):  # every book of the store, not only those of the passages read so far
+        counts = corpus.book_counts() if hasattr(corpus, "book_counts") else {b: corpus.book_passage_count(b) for b in corpus.books}
+    else:
+        counts = Counter(p.book_id for p in scope_passages(ctx))
+    query, dynasty, category = (a.get("query") or "").strip(), (a.get("dynasty") or "").strip(), (a.get("category") or "").strip()
     out = []
     for book in corpus.books.values():
-        if counts.get(book.id):
-            out.append({"book_id": book.id, "title": book.title, "dynasty": book.dynasty,
-                        "composition": book.composition.label() if book.composition else None,
-                        "category": book.category, "attribution": book.attribution, "passages": counts[book.id]})
-    return sorted(out, key=lambda b: (b["composition"] or "", b["book_id"]))
+        if not counts.get(book.id):
+            continue
+        if query and not any(query in x for x in (book.title, book.id, *book.aliases, *book.authors)):
+            continue
+        if (dynasty and dynasty not in (book.dynasty or "")) or (category and category not in (book.category or "")):
+            continue
+        out.append({"book_id": book.id, "title": book.title, "authors": book.authors[:3], "dynasty": book.dynasty,
+                    "composition": book.composition.label() if book.composition else None,
+                    "category": book.category, "attribution": book.attribution, "passages": counts[book.id]})
+    out.sort(key=lambda b: (b["composition"] or "", b["book_id"]))
+    return out[: int(a["limit"])] if a.get("limit") else out
 
 
 def _lineage(ctx: ToolContext, a: dict) -> Any:
@@ -136,8 +147,12 @@ def _claims(ctx: ToolContext, a: dict) -> Any:
     wanted = [t if ":" in t else (lex.canonical(t) or t) for t in a.get("terms", [])]
     relation = a.get("relation")
     year = claim_year_fn(ctx.cap("corpus"))
+    if wanted and whole_store(ctx):  # the whole store: the claims of the passages that write the terms
+        source = ctx.cap("knowledge").claims_for(term_passages(ctx, wanted, after=a.get("after"), before=a.get("before")))
+    else:
+        source = claims_in_scope(ctx)
     out = []
-    for c in claims_in_scope(ctx):
+    for c in source:
         members = {x.term_id for x in c.arguments if x.term_id}
         if wanted and not set(wanted) & members:
             continue
@@ -157,7 +172,8 @@ def _neighbors(ctx: ToolContext, a: dict) -> Any:
     lex = ctx.cap("domain").lexicon
     term = a["term"] if ":" in a["term"] else (lex.canonical(a["term"]) or a["term"])
     counts: Counter = Counter()
-    for c in claims_in_scope(ctx):
+    source = ctx.cap("knowledge").claims_for(term_passages(ctx, [term])) if whole_store(ctx) else claims_in_scope(ctx)
+    for c in source:
         members = [x.term_id for x in c.arguments if x.term_id and not x.negated]
         if term in members:
             counts.update(m for m in members if m != term)
@@ -654,13 +670,16 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  _search, family="retrieval", permission="classics:read", returns="hits with passage ids, periods, routes and matched surfaces"),
         ToolSpec("classics.get_passage", "Full passage with locator, variants, temporal context and notes.",
                  obj({"passage_id": S}, ["passage_id"]), _get_passage, family="retrieval", permission="classics:read"),
-        ToolSpec("classics.list_books", "Books in research scope with dates, attribution and passage counts.",
-                 obj({}), _list_books, family="retrieval", permission="classics:read"),
+        ToolSpec("classics.list_books", "Books in research scope (outside a session: every book of the corpus) with dates, "
+                 "attribution and passage counts; filter by title/author words, dynasty or category.",
+                 obj({"query": S, "dynasty": S, "category": S, "limit": I}), _list_books, family="retrieval",
+                 permission="classics:read"),
         ToolSpec("classics.lineage", "Knowledge-lineage edges (cites / transcribes / rephrases / opposes / formula_derived_from / inherits).",
                  obj({"subject": S, "limit": I}), _lineage, family="retrieval", permission="classics:read"),
         ToolSpec("kg.extract_claims", "Extract hyperedge claims from a passage (lexicon + pattern rules); returns candidates, commits nothing.",
                  obj({"passage_id": S}, ["passage_id"]), _extract, family="knowledge", permission="kg:read"),
-        ToolSpec("kg.claims", "Query committed claims by terms, relation and period.",
+        ToolSpec("kg.claims", "Query claims by terms, relation and period (in a session: its committed claims; on the whole "
+                 "store: the claims read from the passages that write the terms, spread over time).",
                  obj({"terms": {"type": "array", "items": S}, "relation": S, "after": N, "before": N, "limit": I}),
                  _claims, family="knowledge", permission="kg:read"),
         ToolSpec("kg.neighbors", "Terms co-occurring with a term inside claim hyperedges.",

@@ -6,7 +6,7 @@
 // replayed verbatim so thinking blocks round-trip.  Through the local server the SDK talks to its proxy, which forwards
 // to api.anthropic.com.
 
-import { ProviderError } from "./openai.js";
+import { ProviderError, proxyHeaders } from "./openai.js";
 
 const SDK_URL = "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm";
 const FALLBACK_BETA = "server-side-fallback-2026-07-01";
@@ -31,7 +31,7 @@ export async function streamClaude({ provider, system, messages, tools, settings
   const client = new Anthropic({
     apiKey: provider.apiKey || (viaProxy ? "tc-env-key" : ""),
     baseURL: viaProxy ? `${route.serverUrl.replace(/\/+$/, "")}/api/llm` : base,
-    defaultHeaders: viaProxy ? { "X-TC-Target": base } : undefined,
+    defaultHeaders: viaProxy ? { "X-TC-Target": base, ...proxyHeaders(route) } : undefined,
     dangerouslyAllowBrowser: true,
     maxRetries: 2,
   });

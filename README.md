@@ -36,11 +36,13 @@ TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一
 两层共享同一原则：**每一个结论都落到逐字可核的原文见证上**（书、卷篇节、年代、层次、录文来源与授权），规则抽取标明为机器阅读，
 由人去核对与定夺。
 
-> 💬 **网页对话**：打开 **<https://psknlr.github.io/TaoChronos/>**，在设置里填入自己的模型 API Key（默认 **MiniMax 国内站 · MiniMax-M3**，
-> 另有 DeepSeek、通义、Kimi、智谱、豆包、硅基流动、OpenRouter、Poe、LiteLLM、Claude 等十余家），即可像使用 ChatGPT / Claude 一样多轮对话。
+> 💬 **网页对话 · Tao-R1**：打开 **<https://psknlr.github.io/TaoChronos/>**，与 **Tao-R1**（TaoChronos 的中医古籍研究模型）多轮对话。在设置里填入
+> 自己的底层模型 API Key（默认 **MiniMax 国内站 · MiniMax-M3**，另有 DeepSeek、通义、Kimi、智谱、豆包、硅基流动、OpenRouter、Poe、LiteLLM、
+> Claude 等十余家），即可像使用 ChatGPT / Claude 一样对话。
 > 模型通过 TaoChronos 的全部 72 项工具检索与考据，回答里的每条引文 `[[段落号]]` 都由页面**逐字核对**（✓ 与原文一致 · ≠ 引文不符 ·
 > ✕ 查无此段）；证据、研究（多智能体发现）与工具台（无需模型、直接运行任一工具）在侧栏。页面在浏览器里用 Pyodide 运行 TaoChronos
-> 本身（演示语料），也可以连接本机的 `taochronos serve` 使用全量语料。见[网页端说明](docs/web.md)。
+> 本身（演示语料）；**接入全部古籍**：本机构建全量语料后运行 `taochronos serve`，在“设置 → 运行环境”一键连接（浏览器会记住，此后打开
+> 即用全量语料；另一台机器上的服务凭访问令牌连接）。见[网页端说明](docs/web.md#接入全部古籍)。
 
 > ⚠️ 语料为各来源的录文（四库本、笈成整理本、麦吉尔善本、CMETA 精校本、东亚医学协会本、维基文库与网络文本集），**均未经本项目逐字校勘**；`corpus/demo`
 > 是为演示方法整理的未经核验的节录。当代出版物与当代名医著作不入库；保留的现代校注本，今人整理成分单列为层或移入元数据。所有输出都是**文献研究与计算推断**，
@@ -93,12 +95,13 @@ TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一
 
 ## 二、快速开始
 
-**网页**：直接打开 <https://psknlr.github.io/TaoChronos/>（浏览器内运行，演示语料）；或在本机连接全量语料：
+**网页**：直接打开 <https://psknlr.github.io/TaoChronos/>（浏览器内运行，演示语料）；或接入全部古籍（全量语料，构建见下文）：
 
 ```bash
 pip install -e .
-taochronos serve                   # http://localhost:8765 ：网页对话 + 全量语料（已构建时）+ 模型转发
+taochronos serve                   # http://localhost:8765 ：网页对话 + 全量语料（已构建时）+ 模型转发；网页“设置 → 运行环境 → 连接”
 taochronos serve --env-keys        # 模型密钥从本机环境变量读取（MINIMAX_API_KEY …），网页里不必填写
+taochronos serve --host 0.0.0.0    # 供其他机器使用：启动时打印访问令牌与带令牌的地址（--token 或 TAOCHRONOS_TOKEN 可指定）
 taochronos web build -o _site      # 构建静态站点（GitHub Pages 由 .github/workflows/pages.yml 自动部署）
 ```
 
@@ -449,10 +452,12 @@ Poe（`poe`，`POE_API_KEY`，以机器人名为模型名）、LiteLLM（`litell
 复核模型一并配好。模型调用逐次缓存、计入预算、按 JSON 模式校验（一次修复机会）、记日志（不记提示词）；结果标明每项由规则、模型
 还是二者共同决定。外部命令子智能体与 Research Code Mode 见 [docs/agents.md](docs/agents.md)。
 
-**网页对话**（[docs/web.md](docs/web.md)、[ADR 0011](docs/adr/0011-web-client.md)）：对话在浏览器里进行，模型用你自己的密钥直接调用（MiniMax 允许
-网页跨域访问），或经本机 `taochronos serve` 转发；TaoChronos 在浏览器内（Pyodide，演示语料）或本机服务（全量语料）执行工具。模型以
+**网页对话 · Tao-R1**（[docs/web.md](docs/web.md)、[ADR 0011](docs/adr/0011-web-client.md)）：助手名为 Tao-R1——TaoChronos 的工具与证据纪律加上你选择的
+底层模型（界面与指令中都标明底层模型）。对话在浏览器里进行，模型用你自己的密钥直接调用（MiniMax 允许网页跨域访问），或经 `taochronos serve` 转发；
+TaoChronos 在浏览器内（Pyodide，演示语料）或 `taochronos serve`（全量语料，全部古籍；浏览器记住连接过的服务）执行工具。模型以
 “智能体”身份只获读与分析权限，默认直接看到 15 个常用工具、经目录按需调用其余工具；MiniMax-M3 的 `reasoning_details` 与工具调用逐轮原样回传，
-Claude 经官方 SDK 调用（自适应思考、服务端拒答回退）。本机服务只绑定 127.0.0.1，只接受本机页面、已发布的网页与指定来源，只向列出的模型平台转发。
+Claude 经官方 SDK 调用（自适应思考、服务端拒答回退）。本机服务默认只绑定 127.0.0.1，只接受本机页面、服务自己的网页、已发布的网页与指定来源，
+只向列出的模型平台转发；绑定到其他地址时必须凭访问令牌访问。全部古籍（约 2.2 GB，各来源授权不一）不随网站发布，经服务接入。
 
 ## 八、评测与质量保证
 

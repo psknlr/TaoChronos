@@ -1,8 +1,9 @@
 # 网页对话 — the web client
 
-A conversation with a model of your choice that answers from the classics through TaoChronos's tools, with every
-quotation checked against its source.  Published at **https://psknlr.github.io/TaoChronos/**; the same page is served
-by `taochronos serve` on your own machine.
+**Tao-R1**, TaoChronos's research model for the classics: a model of your choice that answers from the classics through
+TaoChronos's tools, with every quotation checked against its source.  Published at
+**https://psknlr.github.io/TaoChronos/**; the same page is served by `taochronos serve`, which brings all the books of
+the full corpus into it ([接入全部古籍](#接入全部古籍)).
 
 ```
             browser                                         your machine (optional)
@@ -24,9 +25,63 @@ run in one of two places, with the same Python module (`taochronos.chat`) behind
 | Runtime | Where | Corpus | Start |
 |---|---|---|---|
 | **浏览器内** (in the browser) | Pyodide (CPython on WebAssembly) in a Web Worker | the demonstration corpus: short excerpts of 23 works, unverified | nothing: the page loads it (about 14 MB, cached) |
-| **本地服务** (local server) | `taochronos serve` on your machine | the full corpus you built (`corpus ingest …`), else the demonstration corpus | `pip install -e . && taochronos serve` |
+| **本地服务 / 远程服务** (a TaoChronos server) | `taochronos serve` on your machine, or on another one with a token | the full corpus you built (`corpus ingest …`; this project's build: 966 books, 2.05 million passages, 123 million characters), else the demonstration corpus | `pip install -e . && taochronos serve` |
 
 The full corpus is never part of the site: it is built from its sources on your machine, under their licences.
+
+## Tao-R1
+
+The assistant is called **Tao-R1** everywhere on the page — the model chip, each answer, the composer, exports.  Tao-R1
+is TaoChronos (the tools, the evidence discipline, the quotation checks) over a general language model chosen under
+**设置 → 模型** (default MiniMax-M3); that underlying model is named in the chip's tooltip, under each answer's line and in
+the settings.  The standing instructions give the model the name and tell it to be plain about what it is: asked what it
+is built on, it names TaoChronos and the underlying model (the page adds `底层语言模型：<model>（<provider>）` to the
+instructions' 运行环境 section), and it claims no other identity.  `/api/info` reports the name as `assistant_name`.
+
+## 接入全部古籍
+
+The published site runs the demonstration corpus in the browser.  All the books — the full corpus — cannot be put on
+the site: the store is about 2.2 GB (a published GitHub Pages site may be no larger than 1 GB; git refuses files over 100 MB), its sources come under
+their own licences (some, such as 笈成, are provided by the user and may not be redistributed), and the project keeps no
+bulk texts in git.  So the full corpus reaches the page through `taochronos serve`, wherever it runs:
+
+1. **Build the corpus once** on the machine that will serve it — the commands under “接入全量语料” in the
+   [README](../README.md#二快速开始) (`taochronos corpus fetch … && taochronos corpus ingest …`; `corpus status` counts
+   what is in).
+2. **Start the server**: `taochronos serve`.  It finds the store and uses the `full-corpus` profile; it counts the corpus
+   before it answers, so the page connects at once.
+3. **Connect**: on the page, **设置 → 运行环境 → 接入全部古籍 → 连接** (the address is `http://localhost:8765` by
+   default).  Or open `http://localhost:8765` itself: the server serves the same page, already connected.
+
+The browser remembers the server it connected to.  In **自动** mode the page uses, in order: the server that served it;
+the server this browser last worked with, if it answers within a moment; TaoChronos in the browser.  So with the server
+running, the page opens on the full corpus; without it, on the demonstration corpus, and it says which (the side
+panel's status, the composer, the opening screen's “接入全部古籍”).  **指定的服务** always uses the server and reports
+it when it is down; **浏览器内** never looks for one.
+
+**On another machine** (a workstation, a server):
+
+```bash
+taochronos serve --host 0.0.0.0             # prints an access token and the address with it: http://host:8765/#token=…
+taochronos serve --host 0.0.0.0 --token …   # or choose the token (also $TAOCHRONOS_TOKEN)
+```
+
+A server bound beyond 127.0.0.1 never runs without a token: every API request, the model proxy's included, must carry
+it (`X-TC-Token`), compared in constant time.  Opening the printed address gives the page the token (the page keeps it
+and removes it from the address); or enter the address and token under **设置 → 运行环境**.  The published page, served
+over HTTPS, may reach `http://localhost` but not plain `http://` on another machine (mixed content): put the server
+behind HTTPS (a reverse proxy), or use the server's own page.
+
+**What the tools read on the full corpus.**  Outside a research run the scope is the whole store: `classics.search`,
+`classics.get_passage`, the study, philology and validation tools read all of it; `classics.list_books` lists every
+book (filter by words of the title or author, dynasty, category); `kg.claims` and `kg.neighbors` read the claims of the
+passages that write the term (every written form of two characters or more; at most 400 passages per term, spread
+evenly over time); the D1–D5 analyses read the working set — the passages the server has read so far — and
+`taochronos_research` runs a whole study over its own scoped corpus.  A book often has several witnesses from different
+sources (different `book_id`s); the model is told to say which one it quotes.  `validation.verify_quote` finds a
+quotation in every witness whatever its punctuation: as written, by its runs of characters between marks, or — when it
+runs across a witness's own marks — by its 3-grams, each candidate then checked character by character (a changed or
+missing character is never accepted).
 
 ## Using it
 
@@ -113,9 +168,10 @@ Endpoints: `GET /api/info`, `GET /api/catalog?mode=core|all`, `POST /api/call {n
 `GET /api/passage?id=`, `POST /api/research` → `{job}`, `GET /api/research/<job>` (progress: round, claims, hypotheses;
 then the outcome), `GET /api/session/<id>?what=summary|report|hypothesis|evidence`, `POST /api/llm` (model proxy).
 
-It binds to 127.0.0.1.  Only this machine's pages, the published client (`https://psknlr.github.io`) and origins named
-with `--allow-origin` may call it (CORS, with Private Network Access headers so the HTTPS page may reach it — the
-browser may ask for permission); the Host header must name this machine, so a rebound DNS name cannot reach it.  The
+It binds to 127.0.0.1.  Only this machine's pages, the server's own pages, the published client
+(`https://psknlr.github.io`) and origins named with `--allow-origin` may call it (CORS, with Private Network Access
+headers so the HTTPS page may reach it — the browser may ask for permission); the Host header must name this machine,
+so a rebound DNS name cannot reach it.  Bound to any other address it requires its access token (above).  The
 proxy forwards only to the hosts of the listed providers and streams the answer back; keys pass through and are never
 stored or logged, and requests are not logged at all unless `--verbose` (paths only).  Research runs one at a time in a
 background thread (a run installs its contract's guards harness-wide).  When the page is served from here and the site
@@ -143,15 +199,21 @@ site works under `/TaoChronos/`.
 ## Tests
 
 `tests/test_chat.py` — the catalog (what is offered, what never is, valid names and schemas), calls by either name,
-failures as results, meta-tools, the system prompt, trimming and citations, research runs and their sessions, the V2
-workflow, every server endpoint, CORS and Private Network Access, the origin and host checks, the proxy (streaming,
-allow-list, the SDK path form, `--env-keys`), background research, the site build.  `tests/test_web_client.py` — the
+failures as results, meta-tools, the system prompt and the Tao-R1 identity, trimming and citations, research runs and
+their sessions, the V2 workflow, every server endpoint, CORS and Private Network Access, the origin and host checks
+(the server's own pages on any address), the access token (refused without it, the proxy too; generated for any address
+but loopback), the proxy (streaming, allow-list, the SDK path form, `--env-keys`), background research, the site build.
+`tests/test_corpus_store.py` — on a store: a quotation found whatever its punctuation and in either script, across a
+witness's own marks, never with a changed or missing character; outside a session `classics.list_books` lists every
+book with its filters and `kg.claims` / `kg.neighbors` read the passages that write the term.  `tests/test_web_client.py` — the
 client's logic under Node (cumulative and incremental streams, history rules, dangling tool calls, citation pairing) and
 the page in Chromium against scripted providers (`tests/web_mock.py`): a MiniMax-style stream (cumulative
 `reasoning_details` and content, streamed tool arguments) and a Claude stream through the real SDK, checking the
 requests (`reasoning_split`, `max_completion_tokens`, `reasoning_details` and thinking signatures replayed, fallbacks),
-the three chip states, the highlighted passage and persistence across a reload.  The browser tests are skipped where
-Playwright or Chromium is missing.
+the chip states, the highlighted passage, Tao-R1 in the chip and under the answer, and persistence across a reload; and
+a page served elsewhere (as on GitHub Pages) connecting to a server in one step, using it again after a reload, and a
+token taken from the address (and its absence reported).  The browser tests are skipped where Playwright or Chromium is
+missing.
 
 ## Limits
 
@@ -161,7 +223,7 @@ Playwright or Chromium is missing.
 * Quotation checks compare characters after removing punctuation and spacing, then after the harness's normalisation
   (`philology.normalize`); a quotation that abridges the passage (「……」 dropped words) reads as a mismatch, by design:
   the reader is sent to the passage.  Checks run against the corpus the page is connected to: a passage id from the full
-  corpus reads as "no such passage" in the browser.
+  corpus reads as "no such passage" in the browser — reconnect the server and the check runs again.
 * Research in the browser runs the deterministic procedures (no model inside the harness); on the local server
   `--llm` gives its judgement roles a model.
 * A provider that does not allow browser requests needs the local server's proxy.

@@ -3,6 +3,9 @@
 
 import { storage } from "./util.js";
 
+/** The name the assistant goes by: TaoChronos's tools and evidence discipline over the model chosen below. */
+export const ASSISTANT = "Tao-R1";
+
 const FALLBACK = [{
   id: "minimax", label: "MiniMax（国内站）", format: "openai", base_url: "https://api.minimax.cn/v1", key_env: "MINIMAX_API_KEY",
   key_optional: false, max_tokens_param: "max_completion_tokens", extra_body: { reasoning_split: true },
@@ -21,6 +24,7 @@ export const DEFAULTS = {
   route: "auto",           // auto | direct | proxy (through the local server)
   runtime: "auto",         // auto | browser | server
   serverUrl: "http://localhost:8765",
+  serverToken: "",         // the access token of a server reachable from other machines (taochronos serve --host …)
   toolMode: "core",        // core (a dozen tools + catalog/call) | all (every tool directly)
   maxSteps: 16,
   resultChars: 16000,
@@ -63,9 +67,4 @@ export function activeProvider(settings) {
     baseUrl: (settings.baseUrls[p.id] || p.base_url || "").replace(/\/+$/, ""),
     apiKey: settings.keys[p.id] || "",
   };
-}
-
-export function providerInitial(p) {
-  const s = (p?.label || p?.id || "?").replace(/[（(].*$/, "").trim();
-  return /^[A-Za-z]/.test(s) ? s.slice(0, 1).toUpperCase() : s.slice(0, 1);
 }
