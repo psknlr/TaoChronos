@@ -34,6 +34,10 @@ def _harness(args: argparse.Namespace, **kw: Any) -> Any:
             harness.use_llm(args.llm)
         except ValueError as exc:
             raise SystemExit(str(exc)) from exc
+    if getattr(args, "record_llm", None):
+        harness.runtime.recording = (args.record_llm, "record")
+    elif getattr(args, "replay_llm", None):
+        harness.runtime.recording = (args.replay_llm, "replay")
     return harness
 
 
@@ -57,6 +61,8 @@ def _llm_args(sp: argparse.ArgumentParser) -> None:
     sp.add_argument("--llm-max-calls", type=int, help="most model calls for this command (default 200)")
     sp.add_argument("--llm-max-cost", type=float, help="most model cost in USD for this command (default 5)")
     sp.add_argument("--llm-refresh", action="store_true", help="ask again instead of reading cached answers")
+    sp.add_argument("--record-llm", metavar="DIR", help="save every agent model response under DIR (for an exact replay)")
+    sp.add_argument("--replay-llm", metavar="DIR", help="replay saved model responses from DIR; never call a model")
 
 
 def _session(args: argparse.Namespace) -> tuple[Any, Any, Any]:
@@ -621,6 +627,37 @@ def cmd_research(args: argparse.Namespace) -> None:
           "stop": result.stop.get("reasons", []), "report": str(harness.artifacts.path_of(report)) if report else None,
           "metrics": {k: result.metrics[k] for k in ("claims", "evidence_count", "counter_evidence", "observations",
                                                       "hypotheses", "hypothesis_survival", "agents_spawned", "llm_calls", "cost_usd")}})
+
+
+def cmd_retract(args: argparse.Namespace) -> None:
+    from .kernel.policy import Actor
+
+    harness, engine, session = _session(args)
+    out = engine.retract(session, reason=args.reason, actor=Actor.human(args.expert), evidence_ids=args.evidence or [],
+                         passage_id=args.passage)
+    _out(out)
+
+
+def cmd_task(args: argparse.Namespace) -> None:
+    from .kernel.policy import Actor
+
+    harness, engine, session = _session(args)
+    if args.cancel == args.retry:
+        raise SystemExit("choose one of --cancel / --retry")
+    if args.cancel:
+        engine.cancel(session, args.task_id, reason=args.reason or "cancelled", actor=Actor.human(args.expert))
+        _out({"cancelled": args.task_id})
+    else:
+        new = engine.retry(session, args.task_id)
+        _out({"retried": args.task_id, "as": new, "status": session.state.task_graph[new].status,
+              "acceptance": (session.state.acceptance or {}).get("status")})
+
+
+def cmd_objection(args: argparse.Namespace) -> None:
+    harness, engine, session = _session(args)
+    engine.close_objection(session, args.hypothesis, args.objection, expert=args.expert, note=args.note)
+    engine.reevaluate(session, reason=f"objection {args.objection} closed by {args.expert}")
+    _out({"closed": args.objection, "acceptance": (session.state.acceptance or {}).get("status")})
 
 
 def _latest(state: Any, kind: str, filename: str) -> Any:
@@ -1427,6 +1464,25 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--max-rounds", type=int)
             sp.add_argument("--books", help="restrict the corpus to these book ids")
             sp.add_argument("--no-workspace", action="store_true")
+    sp = add("retract", cmd_retract, "retract evidence (records or a whole passage); validators and the contract re-run")
+    sp.add_argument("session")
+    sp.add_argument("--evidence", action="append", help="evidence id (repeatable)")
+    sp.add_argument("--passage", help="retract every evidence record on this passage")
+    sp.add_argument("--reason", required=True)
+    sp.add_argument("--expert", required=True, help="who retracts (a human expert)")
+    sp = add("task", cmd_task, "cancel a pending task or retry a failed one")
+    sp.add_argument("session")
+    sp.add_argument("task_id")
+    sp.add_argument("--cancel", action="store_true")
+    sp.add_argument("--retry", action="store_true")
+    sp.add_argument("--reason", default="")
+    sp.add_argument("--expert", default="operator")
+    sp = add("objection", cmd_objection, "an expert closes an interpretive objection (hard ones close only by a validator's re-run)")
+    sp.add_argument("session")
+    sp.add_argument("hypothesis")
+    sp.add_argument("objection")
+    sp.add_argument("--expert", required=True)
+    sp.add_argument("--note", required=True)
     for name, fn, help_ in (("resume", cmd_resume, "resume a session after a crash or interruption"),
                             ("report", cmd_report, "print the Discovery Report"), ("trace", cmd_trace, "agent tree / research tree"),
                             ("metrics", cmd_metrics, "research metrics"), ("events", cmd_events, "list events"),

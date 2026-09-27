@@ -103,11 +103,29 @@ class ResearchEngine:
             self.h.hooks.register(point, "anachronism_guard", guard, 20)
 
     # ================================================================ main loop
+    @staticmethod
+    def spent(state: Any) -> dict[str, float]:
+        """What the log says was spent: settled usage, plus reservations never settled (a crash mid-call — counted as
+        spent, conservatively), plus tool calls and agents.  A resumed session starts its budget from here."""
+        m = state.metrics
+        used = {"llm_calls": float(m.get("llm_calls", 0)), "tokens": float(m.get("input_tokens", 0) + m.get("output_tokens", 0)),
+                "cost_usd": float(m.get("cost_usd", 0.0)), "tool_calls": float(m.get("tool_calls", 0)),
+                "agents": float(m.get("agents_spawned", 0))}
+        for entry in (m.get("budget_ledger") or {}).values():
+            if entry.get("status") == "reserved":
+                est = entry.get("estimate") or {}
+                used["llm_calls"] += 1
+                used["tokens"] += float(est.get("tokens", 0))
+                used["cost_usd"] += float(est.get("cost_usd", 0.0))
+        return used
+
     def run(self, session: Session, *, budget: Budget | None = None) -> RunResult:
         state = session.state
         if state.goal is None:
             raise ValueError("session has no research contract")
-        budget = budget or self.h.new_budget()
+        if budget is None:
+            budget = self.h.new_budget()
+            budget.seed(**self.spent(state))  # a resumed run does not get its budget back
         evaluator = StopEvaluator(state.goal.stop, list(state.goal.required_validation))
         while state.status not in FINAL:
             self._drain(session, budget)
@@ -352,6 +370,77 @@ class ResearchEngine:
     def steer(self, session: Session, *, expert: str, note: str, focus: list[str] | None = None) -> None:
         """Human steering is recorded (it never edits the immutable contract)."""
         session.emit(EventType.EXPERT_STEERED, {"note": note, "focus": focus or []}, actor=Actor.human(expert))
+
+    def close_objection(self, session: Session, hypothesis_id: str, objection_id: str, *, expert: str, note: str) -> None:
+        """An expert closes an interpretive objection (hard ones close only by a validator's passing re-run)."""
+        reviews = session.state.reviews_for(hypothesis_id)
+        review = next((r for r in sorted(reviews, key=lambda r: (r.round, r.id), reverse=True) if r.objection(objection_id)), None)
+        if review is None:
+            raise KeyError(f"no objection {objection_id} on {hypothesis_id}")
+        session.emit(EventType.OBJECTION_CLOSED, {"hypothesis_id": hypothesis_id, "review_id": review.id, "objection_id": objection_id,
+                                                  "method": "expert", "resolution": note}, actor=Actor.human(expert))
+
+    # ================================================================ retraction, cancel, retry
+    def retract(self, session: Session, *, reason: str, actor: Actor, evidence_ids: list[str] | None = None,
+                passage_id: str | None = None, reevaluate: bool = True) -> dict[str, Any]:
+        """Retract evidence — named records, or every record on a passage (a witness found to be a later interpolation,
+        a misread, a misattribution).  Everything computed on it is invalidated by the reducer (hypotheses lose it,
+        their gates are void, objections closed with it re-open); then the hypotheses are re-validated, re-scored and
+        the contract re-evaluated, so no report can present what rested on it."""
+        ids = list(evidence_ids or [])
+        if passage_id:
+            ids += [e.id for e in session.state.evidence.values() if e.passage_id == passage_id]
+        ids = sorted({e for e in ids if e in session.state.evidence and e not in session.state.retractions})
+        if not ids:
+            return {"retracted": 0}
+        session.emit(EventType.EVIDENCE_RETRACTED, {"evidence_ids": ids, "reason": reason}, actor=actor)
+        touched = sorted({h for e in ids for h in session.state.retractions[e]["hypotheses"]})
+        if reevaluate:
+            self.reevaluate(session, reason=f"evidence retracted: {reason}")
+        return {"retracted": len(ids), "hypotheses": touched, "acceptance": (session.state.acceptance or {}).get("status")}
+
+    def reevaluate(self, session: Session, *, reason: str = "") -> None:
+        """Re-run the validators on the state as it is (objections, gates, confirmation, warrants and scores, contract)."""
+        for kind, fn in (("adjudicate_objections", adjudicate_objections), ("validate", validate_hypotheses),
+                         ("confirm", confirm_hypotheses)):
+            tx = session.transaction(VALIDATOR, f"reevaluate.{kind}")
+            fn(self.h, session.state, tx)
+            tx.commit()
+        tx = session.transaction(VALIDATOR, "reevaluate.score")
+        score_hypotheses(self.h, session.state, tx, session.state.round)
+        tx.commit()
+        evaluation = evaluate_contract(session.state, execution=(session.state.stop or {}).get("status", session.state.status))
+        session.emit(EventType.CONTRACT_EVALUATED, {"evaluation": evaluation.to_dict()}, actor=CONTRACT_JUDGE)
+        if reason:
+            session.emit(EventType.DECISION_RECORDED, {"decisions": [Decision(
+                id=stable_id("dec", "reevaluate", session.seq), kind="reevaluated", summary="validators re-run and contract re-evaluated",
+                rationale=reason, made_by="kernel").to_dict()]})
+
+    def cancel(self, session: Session, task_id: str, *, reason: str, actor: Actor) -> None:
+        """Cancel a pending task (recorded; its dependents are skipped by the scheduler as for any task not done)."""
+        task = session.state.task_graph.get(task_id)
+        if task is None or task.status not in ("pending", "running"):
+            raise ValueError(f"task {task_id} is not pending")
+        session.emit(EventType.TASK_SKIPPED, {"task_id": task_id, "reason": f"cancelled by {actor.id}: {reason}"}, actor=actor
+                     if actor.principal != "human" else None)
+
+    def retry(self, session: Session, task_id: str, *, run: bool = True) -> str:
+        """Plan a failed or skipped task again (a new node with the same kind, role, inputs and dependencies) and, by
+        default, run it — and, for a research already finished, re-run the validators and the contract after it."""
+        task = session.state.task_graph.get(task_id)
+        if task is None or task.status not in ("failed", "skipped"):
+            raise ValueError(f"task {task_id} has not failed")
+        n = sum(1 for t in session.state.task_graph if t.startswith(task_id + ".retry")) + 1
+        node = task.replace(id=f"{task_id}.retry{n}", status="pending", summary="", outputs=[],
+                            inputs={**task.inputs, "retry_of": task_id})
+        session.emit(EventType.TASK_PLANNED, {"tasks": [node.to_dict()]})
+        if run:
+            budget = self.h.new_budget()
+            budget.seed(**self.spent(session.state))
+            self._drain(session, budget)
+            if session.state.status in FINAL:
+                self.reevaluate(session, reason=f"retried {task_id}")
+        return node.id
 
 
 def _change_summary(change: Any) -> str:

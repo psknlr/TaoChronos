@@ -96,15 +96,19 @@ def draft(ctx: Any) -> dict[str, Any]:
         return {"rationale": f"Discovery round {r}: mine, hypothesise, falsify, revise, validate, score.",
                 "focus": [surface(t) for t in focus], "tasks": tasks}
 
-    # deepening rounds: act on the meta-review, never repeat work that cannot change the outcome
+    # deepening rounds: act on the meta-review and on the rivals the warrants leave open — each action bound to the
+    # hypothesis and the rival it can tell apart, what it expects, which result favours which, its cost and when to stop
     meta = _latest_meta(ctx)
     recs = meta.get("recommendations", [])
-    replicate = sorted({rec["target"] for rec in recs if rec.get("action") == "gather_evidence" and rec.get("target") in ctx.state.hypotheses})
+    actions = discriminating_actions(ctx)
+    replicate = sorted({rec["target"] for rec in recs if rec.get("action") == "gather_evidence" and rec.get("target") in ctx.state.hypotheses}
+                       | {a["hypothesis_id"] for a in actions if a["action"] == "gather_evidence"})
     revise = sorted(h.id for h in ctx.state.hypotheses.values() if h.status == "needs_revision")
     sensitivity = [rec for rec in recs if rec.get("action") == "sensitivity"]
     if replicate:
-        tasks.append({"kind": "gather_evidence", "inputs": {"hypothesis_ids": replicate},
-                      "reason": f"{len(replicate)} hypotheses lack independent sources (G5)"})
+        tasks.append({"kind": "gather_evidence", "inputs": {"hypothesis_ids": replicate,
+                                                            "discriminating": [a for a in actions if a["action"] == "gather_evidence"]},
+                      "reason": f"{len(replicate)} hypotheses lack independent sources (G5) or leave a source-bias rival open"})
     if revise:
         tasks.append({"kind": "revise_hypotheses", "inputs": {"hypothesis_ids": revise},
                       "reason": f"{len(revise)} hypotheses await revision"})
@@ -122,6 +126,35 @@ def draft(ctx: Any) -> dict[str, Any]:
     else:
         rationale = f"Round {r}: no recommendation can change the result (no replication gaps, revisions or sensitivity analyses pending)."
     return {"rationale": rationale, "focus": [surface(t) for t in focus], "tasks": tasks}
+
+
+# rivals that a search for further witnesses can decide
+SOURCE_RIVALS = {"survival_bias", "single_case", "quotation_duplication"}
+
+
+def discriminating_actions(ctx: Any) -> list[dict[str, Any]]:
+    """Plan actions that can tell a hypothesis from a rival its warrant leaves open — never an action that cannot change
+    which of them is favoured.  Each action names the hypothesis and the rival, what it expects to find, which outcome
+    favours which explanation, what it costs and when it stops."""
+    out = []
+    for h in sorted(ctx.state.hypotheses.values(), key=lambda x: x.id):
+        if h.status not in ("survived", "proposed", "needs_revision") or not h.warrant_id:
+            continue
+        w = ctx.state.warrants.get(h.warrant_id) or {}
+        if w.get("hypothesis_version") != h.version():
+            continue
+        for rival in w.get("competing", []):
+            if rival.get("status") == "open" and rival.get("id") in SOURCE_RIVALS:
+                out.append({
+                    "hypothesis_id": h.id, "rival": rival["id"], "action": "gather_evidence",
+                    "expected": "a verbatim attestation from a source family not yet among the witnesses",
+                    "if_found": "favours the hypothesis: the rival (support confined to one family or one copied passage) is excluded",
+                    "if_not_found": "favours the rival: after a search of the whole scope the support stays in one family",
+                    "cost": "one targeted evidence task within the round's tool budget",
+                    "stop": "a second independent family attests it, or the search finds no further witness",
+                })
+                break
+    return out
 
 
 def commit(ctx: Any, output: dict[str, Any]) -> str:
