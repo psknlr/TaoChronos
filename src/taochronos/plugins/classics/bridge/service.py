@@ -42,7 +42,7 @@ class BridgeService:
             raise ValueError(f"no passage {passage_id!r}")
         p = found[0]
         w = self.study.witness(p, width=30)
-        src = {k: w.get(k) for k in ("passage_id", "book_id", "title", "locator", "period", "years", "layer")}
+        src = {k: w.get(k) for k in ("passage_id", "book_id", "title", "work", "locator", "period", "years", "layer")}
         return p.text, self.study.year(p), src
 
     def phenotype(self, text: str | None = None, *, passage_id: str | None = None, review: bool = True) -> dict[str, Any]:
@@ -191,6 +191,7 @@ def render_map(r: dict[str, Any]) -> str:
     for f in p["findings"]:
         state = "、".join(x for x, on in (("否定", f["negated"]), ("或然", f["optional"]), ("假设", f["conditional"]),
                                           ("待审", f["review"]), ("治后", f["status"] == "after_treatment"),
+                                          ("预后", f["status"] == "prognosis"),
                                           ("剔除", f["status"] == "rejected")) if on) or "—"
         hpo = f"{f['hpo']['label']} ({f['hpo']['id']})" if f["hpo"] else "—"
         lines.append(f"| {f['id']} | {f['surface']} | {f['label']} | {hpo} | {f['relation']} | {state} |")

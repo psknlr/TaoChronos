@@ -64,14 +64,22 @@
 - Contextual historical NER and entity linking (people, books, places, drugs, formulas in context), with the lexicon
   and the catalog as the targets.
 
+**V2 (docs/v2.md) — done:** rules screen, a model judges (LiteLLM, MiniMax mainland, Poe and the mainland platforms);
+T1 layout and a model's reading of page images, T2 OCR comparison with the store, T7 contextual NER (24 types), T10
+five-layer text and grounded translation, T27 places; the Ancient–Modern Bridge (HPO, 64 profiles, levels, reverse
+mapping); the six-layer Evidence Graph; the Evidence Audit; modern evidence typed by design with the cross-level guard;
+real-world data through validated study specs over OMOP; fifteen skill manifests, four core agents, a workflow compiler
+and a resumable executor (`taochronos ask`).
+
+**V2 — what remains**
+- Real page images with a layout gold (T1), an OCR engine's confidence into G1 (T2).
+- The bridge's written-form map from its held-out misses and a larger held-out sample; clinical review of the 64 profiles;
+  ISPO, Mondo, SNOMED CT and LOINC mappings as data; profiles for more diseases.
+- An expert gold for the audit on real answers; PubMed typing checked against full texts on a sample.
+- The RWD path on a real OMOP database with adjustment (propensity scores) behind the same validated spec.
+- A model-planned workflow evaluated against the rules' plans on a larger question set.
+
 **任务规格 v1.0 (docs/tasks.md) — what remains**
-- T1 版面理解 and T2 OCR / HTR: reading order, 双行小注 and marginalia on page images over the IIIF manifests of the image
-  witnesses (the catalogs are the interface; no image is downloaded now), with a character error rate against the
-  transcriptions already in the store.
-- T7 contextual NER: entities read in context (people, books, places, drugs, formulas), beyond the lexicon's surface
-  forms, with an entity-level F1 on an expert gold.
-- T10 白话翻译: a language model's translation stored apart from the text and from the glosses it rests on (a
-  translation is never the text), with the glosses of `study glosses` as its evidence.
 - T21 配伍: frequent subgraphs, drug embeddings and Bayesian association, compared against the present NPMI / Fisher
   rankings; T22 方剂演化: an expert gold of formula lineages.
 - Expert gold for the capabilities of the specification: clause roles, commentary relations and stances, the

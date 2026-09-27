@@ -51,16 +51,16 @@ Benchmark → Metric（当前值）→ Gold dataset → 人工复核 → 状态�
 
 | Task | 名称 | 层 | 状态 | 入口（CLI `taochronos …` / Tool） | Agent | 评测 suite | 主要指标（当前） |
 |---|---|---|---|---|---|---|---|
-| T1 | 版面理解 / 阅读顺序 | L0 | ○ | 影像见证记录：`study witnesses`、`corpus images` | — | — | — |
-| T2 | OCR / HTR | L0 | ○ | 录入本入库；康平本 OCR 文本作为见证 | — | — | — |
+| T1 | 版面理解 / 阅读顺序 | L0 | ● | `vision layout`（ALTO / hOCR / PAGE / PaddleOCR / 词元）· `vision read`（多模态模型识读）· `vision fetch`（IIIF 单页） | philologist · curator | layout | 60 页合成版面：阅读顺序全对 0.983、CER 0.0005、小注 F1 0.999；四种格式读出一致 |
+| T2 | OCR / HTR | L0 | ◐ | `vision compare`（任何 OCR 文本对库中录入本：CER、异体归一后 CER、易混字）；识别本身交给外部引擎或多模态模型 | philologist | layout（compare） | 12/12 单字错误检出并定位 |
 | T3 | 异体 · 古今 · 通假 · 避讳字 | L0 | ● | `philology.normalize` · `study taboo` · `collation.yaml` | philologist | philology · hallucination | 用例通过率 1.0；异体引文可接受 |
 | T4 | 自动断句 | L1 | ● | `study punctuate` / `study.punctuate` | philologist | punctuation | 全库留出 boundary F1 0.767（规则 0.235）；白文 0.780 |
 | T5 | 自动标点 + 原字保持 | L1 | ● | 同上 | philologist | punctuation | 原字保持率 1.0；标点类型准确率 0.805 |
 | T6 | 篇章 · 条文结构 | L1 | ● | `study clause` / `study.clause` | philologist · extractor | clause | 片段角色准确率 0.977，macro-F1 0.917 |
-| T7 | 中医专用 NER | L2 | ◐ | 词表匹配（15 类，1.5 万条含收获词表）· `kg.extract_claims` 的论元 | extractor | claims（论元） | 未单列实体 F1 |
+| T7 | 中医专用 NER | L2 | ● | `study entities` / `study.entities`（24 类；规则筛选 + 模型复核歧义与漏读） | extractor · philologist · semanticist | entities | 开发集 F1 0.991；留出 25 句 F1 0.776 |
 | T8 | 关系抽取 | L2 | ● | `kg.extract_claims` | extractor | claims | P 0.976 · R 0.952 · F1 0.964 |
 | T9 | 术语标准化 / Entity Linking | L2 | ● | `kg.term` · `study names` / `study.names` | semanticist · ontologist | names · anachronism | 构造例全对；全库避讳改名 2/2 |
-| T10 | 训诂 / 古文释义 | L2 | ◐ | `study glosses` / `study.glosses`（训诂层；白话翻译未做） | philologist · semanticist | glosses | 准确率 1.0，P/R 1.0 |
+| T10 | 训诂 / 古文释义 | L2 | ● | `study glosses` · `study translate`（五层：原文 / 规范 / 句读 / 释义 / 今译；今译须引所用训释并过以今律古护栏） | philologist · semanticist · scholar | glosses · translation | 训诂准确率 1.0；护栏 24/24；原文层不变 24/24 |
 | T11 | 跨版本条文对齐 | L3 | ● | `study concordance` / `study.concordance` | scholar | commentaries · reuse | 引文召回 1.0；管线召回 1.0 |
 | T12 | 异文自动发现 | L3 | ● | `study variants` / `study.variants` | philologist | collation | 异文单位 R 0.998 · P 0.999 |
 | T13 | 异文重要性（Variant Impact Score） | L3 | ● | `study variants`（`impact`、`review_queue`） | philologist | variant_impact | 准确率 0.967；高影响 P 1.0 R 0.941 |
@@ -77,22 +77,23 @@ Benchmark → Metric（当前值）→ Gold dataset → 人工复核 → 状态�
 | T24 | 概念语义演化 | L4 | ● | `study senses` · `study names` · `analysis.concept_drift` | semanticist · evolution | senses · names | 隐藏义项发现 1.0 |
 | T25 | 医家 / 流派 | L4 | ● | `study schools` / `study.schools` · `study citations` | lineage · scholar | schools | 教材学说召回 0.727，归属 0.636（44 项） |
 | T26 | 理论争议发现 | L4 | ● | `study disputes` · `analysis.contradictions` | skeptic | disputes · contradiction | 矛盾分类准确率 1.0 |
-| T27 | 时间 × 人物 × 地域 | L4 | ◐ | 时间、人物已贯通；地域未做 | — | — | — |
+| T27 | 时间 × 人物 × 地域 | L4 | ● | `study places` / `study.places`（地名表 175 处、医家籍贯、序跋落款、地域×时期统计 + BH 校正、GeoJSON） | lineage · scholar | places | 落款与籍贯陈述 P/R 1.0（20 例）；全库 761 部中 291 部定位 |
 
 ## L0 古籍数字化
 
-### T1 版面理解 / 阅读顺序 ○
+### T1 版面理解 / 阅读顺序 ●
 
-- **现状。** TaoChronos 从录入本（笈成、Kanripo、CMETA、東亜医学協会、Wikisource 等）起步，不处理页面图像。录入本
-  已经带着版面的结果：双行小注成为 `（…）`，眉批、按语、校语成为有年代的文本层（`layer`），方剂条目成为
-  `formula` 段，Kanripo 的 locator 给到页与行，CMETA 的段落链接到页面影像。
-- **接口。** 影像见证目录（`corpus/catalog/images/`：NIJL、柏林 Unschuld、美国国会图书馆、早稻田、NDL，一万余条
-  记录，其中七百余条链接到库中著作）给出每部书的 IIIF manifest；`study witnesses <work>` 列出一部著作的录入本与影像
-  本。版面模型（Page → MainText / InterlinearCommentary / MarginalNote / Header / Formula / Illustration）只需把结果写成
-  带 `layer` 与 `locator.page` 的段落，即可进入后续全部任务。
-- **缺什么。** 版面检测模型与阅读顺序模型；以带版面标注的页面作 gold（笈成录入本可作为“正文/注”对照）。
+- **输入。** 一页 OCR 引擎的输出（ALTO、hOCR、PAGE XML、PaddleOCR 结果或 `{text, bbox}` 词元，格式自动识别），或
+  一张页面影像（交多模态模型识读）；IIIF manifest 的单页由 `vision fetch` 按需取回（一次一页，条款随图记录，图不入库）。
+- **输出。** `layout`（PageGraph）：`blocks[{id, kind（main / commentary / header / page_number / margin / title）, text,
+  box, order, parts, rule}]`、`reading_order`、`text`（小注在（）中）、`apparatus`（版心、书眉）、`orientation`、`char_size`。
+- **算法。** 竖排自右而左：以 p90 字宽估正文字径；双行小注按左右两半配对、右半先读，跨列续接；版心、书眉、页脚按位置分出；
+  逐字输出的引擎先按 x 中心聚类成列再按间隙切分。
+- **Benchmark。** layout 套件：60 页合成版面（含噪声、逐字输出）阅读顺序全对 0.983、CER 0.0005、块类型 0.98、小注 F1 0.999；
+  ALTO / hOCR / PAGE / PaddleOCR 四种读法结果一致。
+- **缺什么。** 真实页面的版面金标准（笈成录入本可作“正文 / 注”对照）；插图、表格与朱批的识别。
 
-### T2 OCR / HTR ○
+### T2 OCR / HTR ◐
 
 - **现状。** 未做识别；已入库的 OCR 文本（如康平本）作为普通见证参与校勘，其错字在 `study variants` 中表现为异文。
 - **接口。** 评测指标 CER、罕用字召回、阅读顺序准确率可直接用录入本对照 IIIF 页面计算（`study witnesses` 给出二者
@@ -148,15 +149,18 @@ Benchmark → Metric（当前值）→ Gold dataset → 人工复核 → 状态�
 
 ## L2 语义知识
 
-### T7 中医古籍专用 NER ◐
+### T7 中医古籍专用 NER ●
 
-- **现状。** 实体识别由词表完成：15 类（病、证、症、体征、脉、舌、病因、病机、治则、治法、方、药、脏腑、概念、状况），
-  精选词表约 500 条，另有从全库收获的方名 1.2 万、药名 2900（`lexicon-harvested/`，标明“候选，未经专家审定”）；
-  医家（104 人，`physicians.yaml`）、书名（书目与 `external-works.yaml`）、朝代与年号（`eras.yaml`）另有专表。
-  实体随关系抽取输出（T8 的论元），也用于条文结构、方证网络、配伍等。
-- **缺什么。** 上下文相关的 NER（同形异义：“风”作病因或作风证）、未收词的发现（`study names` 的候选别名是其中一种）；
-  单列的实体级 gold 与 F1。
-- **人工复核。** 收获词表的每条带证据（次数、书数、首见段落），专家据此升格为精选词表。
+- **输入。** 一段文字或段落 id（`study entities`）。
+- **输出。** `entities`：`[{id, start, end, text, type（24 类：Disease Syndrome Symptom Sign Pulse Tongue Etiology Pathogenesis
+  Theory Treatment Formula Herb Dose Preparation Contraindication Nature Physician Commentator Book Edition School Place
+  Location Time）, label, ref, source, rule, ambiguous, alternatives, negated, extraction（rule / model）, decided_by}]`。
+- **算法。** 规则筛选：词表、医家、书目、地名、朝代年号与模式（剂量、炮制、脉象、舌象）给出候选，最长覆盖优先，
+  上下文规则定同形异义（“风”作病因或风证），否定词标出“不恶寒”；然后**模型复核**：歧义项由模型在候选中裁决、
+  并可补读规则漏掉的实体——补读须是原文的精确片段、类型须在表内，否则丢弃。
+- **Benchmark。** entities 套件：开发集 41 句 160 实体 F1 0.991；**留出集** 25 句 117 实体（写完规则后标注）F1 0.776
+  （首测 0.757，修正两处处理链缺陷后 0.776；未为留出内容增加规则）。
+- **Gold。** `evals/gold/ner.yaml`、`evals/gold/ner_heldout.yaml`。
 
 ### T8 关系抽取 ●
 
@@ -187,7 +191,7 @@ Benchmark → Metric（当前值）→ Gold dataset → 人工复核 → 状态�
 - **举例（全库）。** 山药：隋唐以前通行“薯蓣”，1000–1200 年间让位于“山药”；玄参：1700 年代“元参”占上风，民国复归
   “玄参”（避讳解除）；“薯蕷，俗名山藥”（《珍珠囊补遗药性赋》）为互释之证；词表未收的“山芋”见于《本经》森立之本等 6 部书。
 
-### T10 古文释义 / 训诂 ◐
+### T10 古文释义 / 训诂 ●
 
 - **输入。** 一个字词（`study glosses 几几`）或一部注本（`--book`，其训诂表）。
 - **输出。** `glosses`：`glosses[{kind（…者…也 / 貌 / 音 / 反切 / 读为 / 当作 / 一作 / 通）, head, gloss, by（注家）,
@@ -202,6 +206,9 @@ Benchmark → Metric（当前值）→ Gold dataset → 人工复核 → 状态�
   且须把译文与训诂证据、原文分开存放（译文不是原文）。现有的是证据层：诸家怎样训释这个词。
 
 ## L3 数字考据
+- **今译（五层文本）。** `study translate`：原文（永不改动）→ 规范（异体归一）→ 句读（编者标点或句读模型）→ 释义（叠词与术语
+  的注家训释及首出者，按年代与语境选择策展义项）→ 今译（有模型复核时生成：须引所用训释，须过以今律古护栏——不得把古病名
+  写成现代病名）。translation 套件：护栏判例 24/24，原文层不变 24/24，叠词皆由其注家训释 3/3。
 
 ### T11 跨版本条文对齐 ●
 
@@ -397,12 +404,16 @@ Benchmark → Metric（当前值）→ Gold dataset → 人工复核 → 状态�
 - **Benchmark / Metric。** disputes 套件（见 T17）；contradiction 套件：准确率 1.0，macro-F1 1.0（12 对）。
 - **举例（全库）。** 张介宾是驳丹溪最多者；景岳驳丹溪“相火”（见《吴医汇讲》《医述》转述）；越人“左肾右命门”屡被驳。
 
-### T27 时间 × 人物 × 地域 ◐
+### T27 时间 × 人物 × 地域 ●
 
-- **现状。** 时间贯通全部任务（成书年代、文本层年代、时期、年号、避讳下限）；人物贯通引用、注家、学派（104 位医家
-  带生卒或活动年）；地域未建模。
-- **缺什么。** 医家籍贯与行医地、刊刻地（序跋落款中的地名，如“河間劉完素”“雲間李豫亨”“吳趨繆遵義”）的抽取与
-  地名规范；之后“江南湿热理论为何兴起”类问题可以把学派词汇、方剂偏好按地域分层比较（T25、T21 的统计原样适用）。
+- **输入。** 一个地名（`study places 江南`）、一个术语（`--term 湿温`）、一个学派（`--school 温病`）或一位医家（`--person`）。
+- **输出。** `places`：医家籍贯与行医地、著作的刊刻 / 撰著地（作者籍贯与序跋落款两路）、地域 × 时期的术语或学派份额（两比例
+  z 检验 + Benjamini–Hochberg 校正）、GeoJSON。
+- **算法。** 地名表（`places.yaml`，175 处，县→府 `in` 链接、异名 `same_as`、歧义标注）；序跋落款须“地名 + 人名 + 序识书题跋”
+  且动词在句末，排除“诸…及…”并列与他人之名；传记中“X 人”的籍贯陈述。
+- **Benchmark。** places 套件：落款 15 例、籍贯陈述 5 例 P/R 1.0；104 位医家中 84.6% 有地点；全库 761 部中 291 部定位
+  （作者 223、落款 68），策展籍贯与文中陈述一致 4/4。
+- **例（全库）。** 清代江南著作用“湿温”者 49%，他区 26%（z 2.52，q 0.108）——校正后不显著，如实报告。
 
 ## L5 Research Agent
 
@@ -448,7 +459,7 @@ Extractor）→ 语文学评估（Philologist）→ 源流考证（Scholar：全
 |---|---|---|
 | 原文精确检索 + provenance | ● | `classics.search`（全文、规范化、异体扩展、时间过滤）· 见证对象 · `verify_quote` |
 | 自动句读 | ● | T4–T5 `study punctuate` |
-| 中医实体识别 | ◐ | T7 词表匹配（缺上下文 NER 与实体级 gold） |
+| 中医实体识别 | ● | T7 `study entities`（24 类，规则 + 模型复核；留出 F1 0.776） |
 | 实体关系抽取 | ● | T8 `kg.extract_claims` |
 | 术语/别名规范化 | ● | T9 `kg.term` · `study names` |
 | 跨版本条文对齐 | ● | T11 `study concordance` |
@@ -457,9 +468,9 @@ Extractor）→ 语文学评估（Philologist）→ 源流考证（Scholar：全
 | 注家对齐 | ● | T16 `study commentaries` |
 | 注家观点比较 | ● | T17 `study commentaries` · `study disputes` |
 | 方—证—症—药知识图谱 | ● | T20–T21 `study network` · `study pairs` · 知识超图 |
-| 所有结论回溯至原文/版本/页码 | ● | T19（至页；像素待 T1/T2） |
+| 所有结论回溯至原文/版本/页码 | ● | T19（至页；版面块与框见 T1） |
 
-第二阶段各项（谱系、概念演化、流派、方剂演化、时空、争议、假说）除“地域”外均已实现（T18、T22–T26、L5）。
+第二阶段各项（谱系、概念演化、流派、方剂演化、时空、争议、假说）均已实现（T18、T22–T27、L5）。
 
 ## TCM Ancient Book Agent Benchmark
 
@@ -467,7 +478,7 @@ Extractor）→ 语文学评估（Philologist）→ 源流考证（Scholar：全
 
 | 能力 | 指标 | TaoChronos-Eval suite | 当前值 |
 |---|---|---|---|
-| OCR | CER / 字准确率 | — | 未做（T2） |
+| OCR | CER / 字准确率 | layout（compare） | 对库中录入本核对：单字错误 12/12 检出（识别交外部引擎） |
 | 句读 | Boundary F1 | punctuation | 全库留出 0.767（规则 0.235）；白文 0.780（规则 0.303） |
 | 标点 | Punctuation F1 / 类型准确率 | punctuation | 带类型句末 F1 0.543；类型准确率 0.805 |
 | 原文保护 | Character Preservation | punctuation | 1.0 |
@@ -489,6 +500,32 @@ Extractor）→ 语文学评估（Philologist）→ 源流考证（Scholar：全
 | Grounding | Evidence Faithfulness | hallucination · provenance | 原文召回 1.0 |
 | 历时分析 | 变化年份误差 · 专家评价 | senses · names | 2.28 年；专家评价待做 |
 | 假说发现 | Novelty + Evidence Support | time_machine · source_rediscovery | 以 1368 为界的时间机器：可检预测准确率 0.667，证据泄漏 0；来源重现 recall@3 1.0 |
+
+## V2：技能与任务的对应
+
+V2（[v2.md](v2.md)）把上面的能力组织成 15 项技能（`skills/manifests/`），由 4 个核心智能体持有，按问题编译成工作流执行
+（`taochronos ask`）：
+
+| 技能 | 任务 | 工具 | 模型 |
+|---|---|---|---|
+| S01 来源与版本 | T19 · 检索 | `classics.search` | 不需要 |
+| S02 影像与版面 | T1 · T2 | `vision.layout`（`vision read` 需多模态模型） | 可选 |
+| S03 句读·训诂 | T4 · T5 · T10 | `study.translate` · `study.glosses` | 可选 |
+| S04 条文结构 | T6 | `study.clause` | 不需要 |
+| S05 校勘 | T11 · T12 | `study.concordance` | 不需要 |
+| S06 互文与传承 | T14 · T15 | `study.reuse` | 不需要 |
+| S07 知识抽取 | T7 · T8 | `study.entities` · `kg.extract_claims` | 可选 |
+| S08 名称规范 | T9 | `study.names` | 不需要 |
+| S09 源流演变 | T23 · T24 | `study.term` · `study.senses` | 不需要 |
+| S10 古代表型化 | （新） | `bridge.phenotype` | 可选 |
+| S11 本体桥接 | （新） | `bridge.map` | 不需要 |
+| S12 古今映射 | （新） | `bridge.map` · `bridge.reverse` | 可选 |
+| S13 现代证据 | （新） | `modern.search` | 不需要 |
+| S14 真实世界验证 | （新） | `rwd.ask` | 可选 |
+| S15 证据审计 | T19 · 以今律古 | `audit.claim` · `graph.evidence` | 可选 |
+
+新增评测：bridge（开发集 F1 0.985；全库留出 12 段 F1 0.822）、audit（19 条结论全对）、modern（研究类型 10/10、跨层防护 7/7）、
+workflow（8/8 问题编译正确；工作区可续跑）。
 
 ## 文献
 

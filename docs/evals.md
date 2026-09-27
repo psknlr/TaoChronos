@@ -100,6 +100,25 @@ These numbers describe the rules on the data they were written for. They are not
 on the full corpus (a collated chapter with its stemma, typed reuses, segmented case records, argument graphs, dated
 sense shifts) is on the roadmap.
 
+## V2: rules first, a model second (docs/v2.md)
+
+The suites of the V2 capabilities.  The model phases run too when `TAOCHRONOS_EVAL_LLM=provider:model` is set
+(e.g. `minimax:MiniMax-M2.7`); the numbers below are the rules'.
+
+| Suite | Data | Result |
+|---|---|---|
+| entities (T7) | 41 dev sentences, 160 entities (`gold/ner.yaml`); **25 held-out sentences**, 117 entities, annotated after the rules were written (`gold/ner_heldout.yaml`) | dev F1 0.991 · **held-out F1 0.776** (P 0.783 · R 0.769) |
+| places (T27) | 15 signatures and 5 statements of native place in the forms of real prefaces and biographies, with traps (`gold/places.yaml`); the full corpus | P/R 1.0 · 84.6 % of physicians placed · real: 291 of 761 works placed, curated places confirmed 4/4, 湿温 in 清 江南 49 % vs 26 % (q 0.108, not significant) |
+| translation (T10) | 24 presentism cases (equations, retrospective diagnoses, modern names a translation adds, comparisons that must pass); the demo corpus | guard 24/24 · original layer unchanged 24/24 · doublets glossed by their commentators 3/3 |
+| layout (T1–T2) | 60 synthetic pages (vertical, 双行小注, 版心, 书眉; noisy and character-level variants); four OCR formats; 12 OCR texts with one error each | reading order exact 0.983 · CER 0.0005 · notes F1 0.999 · formats identical · errors located 12/12 |
+| bridge (AMBE) | 20 dev sentences; **12 held-out passages** drawn at random from 65 clinical works of the full corpus, annotated before the reader ran on them; 18 canonical descriptions and 2 negatives (`gold/bridge.yaml`) | dev F1 0.985 · **held-out P 0.938 · R 0.732 · F1 0.822**, bounds 1.0 · mapping top-1 1.0, caps 3/3, guard 20/20 · 213 HPO ids valid in hp/releases/2026-09-01 |
+| audit (S15) | 19 claims of every kind and 3 safety texts (`gold/audit.yaml`) | verdicts 1.0 · kinds 1.0 · false SUPPORTED 0 · safety 3/3 |
+| modern (S13–S14) | 10 records to type, 7 claim/evidence pairs for the cross-level guard, the synthetic OMOP database (`gold/modern.yaml`) | typing 10/10 · guard 7/7 · RWD: SQL checks pass, planted association recovered, bad SQL refused |
+| workflow (V2) | the registry; 8 questions with the skills they need and must not call (`gold/workflow.yaml`); one end-to-end run | registry valid · plans 8/8 · a rerun reads every step from its workspace |
+
+The held-out sets (NER, bridge) were annotated before the rules ran on them; the forms they miss were not added after
+scoring, so their numbers are the estimate of generalisation.  Everything else is dev: what the rules are meant to do.
+
 ## Full corpus
 
 The suites above run on the demo corpus, whose gold they were built against. On the full corpus

@@ -3,8 +3,8 @@
 **A provenance-grounded research harness for the Chinese medical classics — for scholars, students and discovery.**
 *面向中医古籍的可溯源知识发现与治学系统*
 
-[中文 README](README.md) · [Study layer](docs/study.md) · [Task specification](docs/tasks.md) · [Architecture](docs/architecture.md) · [Agents](docs/agents.md) ·
-[Discovery](docs/discovery.md) · [Evaluation](docs/evals.md) · [Data](docs/data.md) · [Roadmap](docs/roadmap.md) · [ADRs](docs/adr/)
+[中文 README](README.md) · [V2](docs/v2.md) · [Ancient–modern bridge](docs/bridge.md) · [Models](docs/models.md) · [Study layer](docs/study.md) · [Task specification](docs/tasks.md) ·
+[Architecture](docs/architecture.md) · [Agents](docs/agents.md) · [Discovery](docs/discovery.md) · [Evaluation](docs/evals.md) · [Data](docs/data.md) · [Roadmap](docs/roadmap.md) · [ADRs](docs/adr/)
 
 TaoChronos turns 966 Chinese medical classics (about 123 million characters in 2.05 million passages) into a corpus
 that can be searched, dated and cited, and offers two layers on top of it:
@@ -29,6 +29,18 @@ that can be searched, dated and cited, and offers two layers on top of it:
   (punctuation that never changes a character), **clause structure**, **glosses (训诂)**, **commentaries compared**,
   **disputes**, **variant impact**, **drug pairs**, **the formula–finding network**, **schools**, **names** and
   **transmission chains**.
+- **V2: verifiable discovery and ancient–modern translation** ([docs/v2.md](docs/v2.md)). **Rules screen, a model
+  judges**: every capability runs on rules; a model (LiteLLM, MiniMax's mainland platform, Poe, DeepSeek, Qwen, Kimi,
+  GLM, Doubao, Claude …) adjudicates only what the rules leave uncertain, adds what they missed as exact spans of the
+  text, writes cited summaries, and in several places may lower a result but never raise it.  On top: layout and page
+  reading (T1–T2), contextual NER in 24 types (T7), a five-layer text with grounded translation (T10), places (T27); the
+  **Ancient–Modern Bridge** (ancient phenotypes → HPO with typed relations → 64 modern disease profiles, qualitative
+  levels, never probabilities — **phenotypic similarity, not retrospective diagnosis** — and back from a modern disease);
+  a **six-layer evidence graph** whose every edge says who asserts it; an **evidence audit** (claims decomposed and
+  checked by kind, five verdicts); **modern evidence** typed by design and population (animal work and network
+  pharmacology never count as efficacy in people) and **real-world data** (question → study spec → a checked OMOP query;
+  a model never writes SQL); **fifteen skill manifests, four core agents, a workflow compiler and a resumable
+  executor** (`taochronos ask "…"`).
 - **Research** turns a question into a replayable, auditable, falsifiable process: the research director
   **TaoChronos** dispatches 16 specialist agents — research contract → evidence foundation → pattern mining →
   hypotheses → falsification → gates G0–G8 → expert review.
@@ -80,8 +92,13 @@ and decide.
 | **Historians of clinical practice** | case records read visit by visit (findings, diagnosis, principle, formula and doses, changes, doses taken, response, outcome); treatment sequences, transitions and associations with outcome (never evidence of efficacy) | `study cases` · `study trajectories` |
 | **Readers of medical reasoning and language** | argument graphs (condition, inference, cause, contrast, analogy, rebuttal, definition, treatment) and the comparison of two works' ways of reasoning; sense shares by period, change points and candidate senses | `study argument` · `study senses` |
 | **Reconstruction of lost works** | fragments gathered from the books that quote a lost work, ordered by the volumes the source notes give; the method verified on surviving works, with a reliability per quoting book | `study fragments` |
+| **Ask (V2)** | a question compiled into a workflow of skills (S01 sources → … → S15 audit), run by four core agents under their own permissions, every step an artifact of a resumable workspace, every statement of the answer audited | `ask` · `skills` |
+| **Ancient–modern translation** | the AncientPhenotypePacket (negated, optional, conditional, after treatment, prognosis, modifiers, course, population, historical names with their senses); HPO projections with relation types; modern profiles with qualitative levels, discriminators and name relations; from a modern disease back to the passages | `bridge phenotype` · `bridge map` · `bridge reverse` · `bridge verify` |
+| **Audit and evidence graph** | claims decomposed and checked by kind (verbatim quotes, glosses, presentism, evidence level, inference leaps, clinical advice); the six-layer evidence graph and lineage | `audit` · `graph` |
+| **Modern evidence and real-world data** | PubMed typed by design and population, the cross-level guard, safety warnings; real-world questions as validated study specs over OMOP | `modern search` · `modern safety` · `rwd ask` · `rwd synth` |
+| **Layout, entities, translation, places** | vertical reading order and 双行小注, a multimodal reading, OCR checked against the store; entities in context; five-layer translation; native places, signed prefaces, regional statistics | `vision` · `study entities` · `study translate` · `study places` |
 | **Knowledge discovery** | multi-agent research: lost knowledge, concept drift, formula evolution, hidden associations, contradictions, lost sources; verbatim evidence, falsification, gates, expert review | `research` · `report` · `workspace` · `review` |
-| **Developers** | plugin kernel, capability registry, a tool mesh of 58 tools, agents as YAML specs, event sourcing and replay, evaluation and architecture governance; the JSON Schemas of the tasks' outputs | `agents` · `eval` · `governance` · `schema --study` |
+| **Developers** | plugin kernel, capability registry, a tool mesh of 72 tools, agents as YAML specs, event sourcing and replay, evaluation and architecture governance; the JSON Schemas of the tasks' outputs | `agents` · `eval` · `governance` · `schema --study` |
 
 ## 2. Quick start
 
@@ -135,6 +152,21 @@ taochronos study trajectories 咳嗽                                  # sequence
 taochronos study argument --work 伤寒论 --against-work 温热论        # two ways of reasoning (or a text / --passage)
 taochronos study senses 消渴                                        # senses by period, change points, candidate senses
 taochronos study fragments 小品方                                   # 辑佚 (--verify: test the method on a surviving work)
+```
+
+V2 (rules first; a model reviews when `--llm` is given):
+
+```bash
+taochronos ask "消渴的概念如何随时代演变？与现代糖尿病有何异同？"          # compile → run → an audited answer (resumable workspace)
+taochronos ask "…" --plan-only                                           # the compiled DAG of skills
+taochronos bridge map --passage jinkui.13.xiaoke1                        # candidates, levels, discriminators, name relations
+taochronos bridge reverse E11                                            # from a modern disease to passages and names, by period
+taochronos audit "《金匮要略》载「男子消渴，小便反多」，所以肾气丸可以治疗糖尿病。"   # SUPPORTED quote + an inference leap
+taochronos graph --passage jinkui.13.xiaoke1 --graphml xiaoke.graphml    # the six-layer evidence graph
+taochronos modern search 黄连 --disease diabetes_mellitus --online       # PubMed typed by design (and population)
+taochronos rwd ask "2型糖尿病患者中，使用黄连素与糖尿病肾病的关系"         # real-world data (a synthetic OMOP database by default)
+taochronos study entities --input clause.txt --llm minimax:MiniMax-M2.7  # NER: rules, then MiniMax (mainland) reviews
+taochronos llm presets                                                   # the platforms and their key variables
 ```
 
 Research:
@@ -413,8 +445,16 @@ taochronos demo --profile claude   # Opus 5 (frontier) / Sonnet 5 (medium) / Hai
 
 The Claude provider enables server-side refusal fallbacks by default (`fallbacks="default"`, for Opus 5); if a model
 refuses, returns output that fails schema validation, or exhausts its budget, the task falls back to the deterministic
-procedure and the fallback is recorded as a Decision. OpenAI-compatible endpoints (DeepSeek, Grok, Gemini, local
-vLLM/Ollama), external command subagents and Research Code Mode are supported too — see [docs/agents.md](docs/agents.md).
+procedure and the fallback is recorded as a Decision.
+
+**Mainland and multi-platform models** ([docs/models.md](docs/models.md)): MiniMax (`minimax`, mainland
+`api.minimax.cn`, `MINIMAX_API_KEY`; and `minimax-global`), Poe (`poe`, `POE_API_KEY`, bot names as models), LiteLLM (the
+`litellm` package with `<provider>/<model>`, or `litellm-proxy`), DeepSeek, Qwen (DashScope), Kimi (Moonshot), GLM
+(Zhipu), Doubao (Volcengine Ark), SiliconFlow, OpenRouter, local vLLM/Ollama.  The study, bridge, audit, vision and
+workflow commands take `--llm platform:model` (with `--llm-max-calls`, `--llm-max-cost`, `--llm-refresh`); the profiles
+`minimax`, `poe` and `litellm` configure the reasoning models and the judge together.  Judge calls are cached, budgeted,
+schema-validated (one repair turn) and logged without their prompts; results record whether the rule, the model or both
+decided each item.  External command subagents and Research Code Mode: [docs/agents.md](docs/agents.md).
 
 ## 8. Evaluation and quality
 
@@ -453,11 +493,24 @@ during development: **regression tests, not an unbiased benchmark** (see [evals/
 | Names | synthetic works: switch interval, nested names, equations, candidate names right; real: the dated taboo renames 2/2 (薯蓣→山药, 玄参→元参) |
 | Chain | 6 artificial traditions of 12 witnesses: parent accuracy 1.0 (most-similar baseline 0.97); with convergent spellings 0.94 (baseline 0.87) |
 
+The V2 suites ([docs/evals.md](docs/evals.md)):
+
+| Suite | Result |
+|---|---|
+| Entities (T7) | dev F1 0.991; **held-out 25 sentences F1 0.776** |
+| Places (T27) | signatures and native-place statements P/R 1.0; 291 of 761 works placed on the full corpus, curated places confirmed 4/4 |
+| Translation (T10) | presentism guard 24/24; original layer unchanged 24/24 |
+| Layout (T1–T2) | 60 synthetic pages: exact reading order 0.983, CER 0.0005, notes F1 0.999; four OCR formats identical; OCR errors located 12/12 |
+| Bridge (AMBE) | dev F1 0.985; **12 held-out passages of the full corpus, annotated before the reader ran: P 0.938 · R 0.732 · F1 0.822**; mapping top-1 1.0; caps 3/3; guard 20/20; 213 HPO ids valid |
+| Audit (S15) | 19 claims: verdicts and kinds 1.0, false SUPPORTED 0; safety 3/3 |
+| Modern (S13–S14) | typing 10/10; cross-level guard 7/7; RWD: SQL checks pass, planted association recovered, bad SQL refused |
+| Workflow (V2) | registry valid; 8/8 questions compile to the skills they need; a rerun reads every step from its workspace |
+
 The development sets of deep discovery and of the task specification were written with their rules: they show
 intended behaviour, not generalisation. Expert gold on the full corpus is on the roadmap; the benchmark table of
 [docs/tasks.md](docs/tasks.md) lists each task's metric and gold.
 
-Plus 188 unit and integration tests (`pytest`, with format samples of every source, a synthetic corpus for the
+Plus 247 unit and integration tests (`pytest`, with format samples of every source, a synthetic corpus for the
 study layer, `tests/fixtures/study`, and a contract test that checks real results against the JSON Schemas of the tasks) and the architecture governance check (`taochronos governance`: layering,
 kernel neutrality, model-SDK isolation, agent rules). CI runs governance, tests, the quick evaluation and the demo
 research on Python 3.11 and 3.12.
@@ -469,11 +522,11 @@ protocol      data models (passages, claims, evidence, hypotheses, events, outpu
 kernel        event sourcing, transactions, replay, scheduler, policy, hooks, budgets, Context OS, memory, stop, observability
 capabilities  provider-neutral interfaces (LLM …)
 science       D1–D5 engines, statistics, scoring, gates, provenance; reuse rules, strata, trajectories, argument graphs, sense evolution
-verification  verbatim checks and provenance chains
-tools         the tool mesh: philology · retrieval · knowledge · analytics · study · literature · validation (58 tools)
-plugins       classics (corpus, store, domain pack, philology, collation, citations, text reuse, study) · knowledge · retrieval · models · sandbox · storage …
+verification  verbatim checks and provenance chains; the presentism guard; the evidence graph and the evidence audit (V2)
+tools         the tool mesh: philology · retrieval · knowledge · analytics · study · bridge · literature · validation (72 tools)
+plugins       classics (corpus, store, domain pack, philology, collation, citations, text reuse, study, vision, bridge, audit) · modern (evidence, real-world data) · knowledge · retrieval · models · sandbox · storage …
 agents        AgentSpecs, routing, the LLM loop, deterministic procedures, Code Mode, subagents
-engine        the research engine (operational and scientific loops, branches, tournament, report)
+engine        the research engine (operational and scientific loops, branches, tournament, report); the V2 workflow compiler and executor
 ```
 
 Code asks the **capability registry** for capabilities (`corpus`, `domain`, `philology`, `lineage`, `retriever`,
@@ -485,14 +538,16 @@ plugin, and agents act only through capabilities and tools — enforced by `taoc
 
 ```
 architecture-policy.yaml   layering, kernel neutrality, SDK isolation, agent rules
-agents/                    16 AgentSpecs (YAML)
-skills/                    SKILL.md packs (incl. source-criticism, the study method)
-profiles/                  full-discovery, full-corpus, classics-basic, formula-discovery, historical-disease, claude
+agents/                    16 AgentSpecs (YAML); agents/core/: the four V2 core agents
+skills/                    SKILL.md packs (incl. source-criticism, the study method); skills/manifests/: the fifteen V2 skills (S01–S15)
+profiles/                  full-discovery, full-corpus, classics-basic, formula-discovery, historical-disease, claude, minimax, poe, litellm
 domains/classics/          periods, variants, lexicons, senses, modern concepts, ontology, citations, known findings,
                            and the study data: taboo.yaml, metrology.yaml, physicians.yaml, drug_families.yaml,
                            collation.yaml, intertext.yaml, cases.yaml, argument.yaml,
                            schools.yaml (schools), clause.yaml (clause roles), exegesis.yaml (commentators' concepts, stances, gloss forms)
 domains/classics/script/   script and variant normalisation (OpenCC / Unihan / curated)
+domains/bridge/            the bridge: 168 ancient phenotypes (forms, HPO projections, relation types), 64 disease profiles (ICD-10), homonyms, the HPO hierarchy used
+domains/modern/            modern evidence: the crosswalk for queries, the safety table
 domains/classics/lexicon-harvested/  candidate formula and drug names harvested from the corpus (full-corpus only)
 corpus/                    the demo corpus (unverified), modern evidence summaries, catalogues (catalog/) and source locks
 evals/gold/                gold sets
@@ -501,7 +556,7 @@ src/taochronos/            protocol/ kernel/ capabilities/ science/ verification
                            deep discovery: stemma · intertext · stratigraphy · cases · argument · senses · fragments
                            task specification: punctuation · clause · glosses · commentary · disputes · pairs · schools · names · chain · schemas
   plugins/classics/collation/  computational collation: anchored alignment · variant units · variant impact · stemma and contamination · TEI
-tests/                     188 tests (fixtures/: source format samples and the study corpus)
+tests/                     247 tests (fixtures/: source format samples and the study corpus)
 docs/                      study, task specification, architecture, agents, discovery, evaluation, data, ADRs, roadmap
 ```
 
@@ -558,6 +613,13 @@ docs/                      study, task specification, architecture, agents, disc
 - Image witnesses are linked to works by title: a commentary or another work of the same title cannot be told apart
   by the title, so links are for a person to check; only records are harvested, and a record's date is the
   catalogue's (a Japanese era alone gives its span).
+- V2: a bridge level is a rule's qualitative grade — **not calibrated, not a probability** — and states phenotypic
+  similarity, never a retrospective diagnosis; the 64 profiles and the homonym notes were curated for research screening
+  and need clinical and historical review; the ancient-form map recalls 0.73 on held-out text, the bridge's main limit
+  (the reason for a model's recall pass); the audit checks what can be checked mechanically (quotes, glosses, levels,
+  evidence types, leaps), not a historian's argument; PubMed types are read from indexing and should be checked against
+  full texts on a sample; the real-world-data path is a guarded compiler, and on synthetic people it tests the compiler,
+  not a finding.
 - The system gives no medical advice; any research result is a lead until an expert (Gate G7) has reviewed it.
 
 ## 13. Roadmap and citation
@@ -568,9 +630,9 @@ discovery and of the task specification on the full corpus; collation of whole w
 corpus-wide reuse graph; regions (physicians' native places, places of practice and printing, T27) and schools and
 drug pairs compared by region; dose-aware formula phenotypes; the historical identity of drugs; acupuncture and
 non-drug therapies; illustrations and their lineage; a missingness-aware Bayesian D1; temporal hypergraph embeddings
-(for candidate generation only); contextual historical NER and entity linking (T7); translation into modern Chinese
-kept apart from the text and its glosses (T10); layout analysis and OCR of page images (T1, T2); more model providers
-and a human-in-the-loop review interface.
+(for candidate generation only); for V2, a layout gold on real pages, a larger held-out sample and wider form map for
+the bridge, clinical review of the profiles and more ontologies (ISPO, Mondo, SNOMED CT, LOINC), an expert gold for the
+audit, adjusted analyses on a real OMOP database, and a human-in-the-loop review interface.
 
 When citing TaoChronos, cite the sources of the corpus you used (Kanseki Repository, 笈成, McGill University Library,
 數位中醫校書郎 CMETA, 東亜医学協会, Wikisource …) with their licences, and the corpus signature (given by `study dataset` and in every Discovery Report):

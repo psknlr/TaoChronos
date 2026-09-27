@@ -46,7 +46,7 @@ BRIDGE_FINDING = obj({
     "id": S, "phenotype": S, "label": S, "surface": S, "span": arr(I), "clause": S, "system": S,
     "hpo": {"anyOf": [obj({"id": S, "label": S, "relation": S}, ["id", "label", "relation"]), {"type": "null"}]},
     "relation": {"enum": BRIDGE_RELATIONS}, "negated": B, "optional": B, "conditional": B,
-    "status": {"enum": ["presenting", "after_treatment", "rejected", "implied"]}, "weight": N, "modifiers": {"type": "object"},
+    "status": {"enum": ["presenting", "after_treatment", "prognosis", "rejected", "implied"]}, "weight": N, "modifiers": {"type": "object"},
     "review": B, "source": S},
     ["id", "phenotype", "surface", "span", "hpo", "relation", "negated", "optional", "conditional", "status", "weight", "source"])
 

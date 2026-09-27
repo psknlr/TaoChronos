@@ -35,7 +35,10 @@ BOUNDARY_AFTER = set("者而不甚止已也矣则或，。；、：？！ 【】
 CAUSE_AFTER = set("迫蓄入结郁盛伤在毒邪")
 NEGATORS_INFIX = "不无"
 AFTER_TREATMENT = ("服之", "服汤", "服已", "得汤", "饮已", "药后", "服后", "服药")
-INDICATION = re.compile(r"^[^，。：:]{1,8}，味[^，。]{1,4}[，。]|^[^，。：:]{2,12}(?:汤|散|丸|饮|丹|膏)[：:，,][^。]{0,6}治|主治")
+INDICATION = re.compile(r"^[^，。：:]{1,8}，味[^，。]{1,4}[，。]|^[^。]{0,12}味[甘苦辛酸咸淡涩][^。]{0,4}[平温寒凉热]|"
+                        r"^[^，。：:]{2,12}(?:汤|散|丸|饮|丹|膏)[：:，,][^。]{0,6}治|主治")
+# a finding the text gives as what the illness will become, not as what the patient has (故其气上溢，转为消渴)
+PROGNOSIS = re.compile(r"(?:转为|变为|传为|转成|变成|发为|久则|将为|恐成|遂成|乃成)$")
 TERM_CATEGORIES = ("disease", "symptom", "sign", "pattern", "disease_class")
 MARKS = re.compile(r"[，。、；：？！,.;:?!\s]")
 
@@ -228,6 +231,8 @@ class PacketReader:
                     mods[group] = value
                     break
         status = "after_treatment" if clause["after"] else "presenting"
+        if status == "presenting" and PROGNOSIS.search(norm[max(clause["start"], i - 3): i]):
+            status = "prognosis"
         weight = 1.0
         if clause["conditional"]:
             weight = 0.4

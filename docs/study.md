@@ -33,6 +33,13 @@ the way the 考据 tradition answers them: from the texts, witness by witness.
 | `study schools` | 学派 — what sets a school apart, whom did it cite and dispute? | its members and works; the words and formulas it uses more than the other authors of its time; homophily, citing and cited schools, rejections; the school-by-school matrix |
 | `study names` | 名称 — what was this drug or formula called, when? | each name's works by period and century, the first to write it, when the preferred name changes, passages equating names, names the lexicon lacks |
 | `study chain` | 传播链 — through which earlier witness did each later copy or quotation come? | the passage's dated witnesses as a tree by shared innovations, each edge with its evidence and margin |
+| `study entities` | 实体识别 (T7) — what does this passage name? | entities in 24 types (disease, syndrome, symptom, pulse, tongue, formula, herb, dose, preparation, physician, commentator, book, place, time …) with their references, ambiguity and negation; a model, when configured, types the ambiguous and adds the missed as exact spans |
+| `study translate` | 释义与今译 (T10) — what does this passage say, layer by layer? | the original (never changed), normalised, punctuated, interpreted (glosses with who first gave them, the sense the date and context favour) and, with a model, a modern Chinese translation that cites its glosses and passes the presentism guard |
+| `study places` | 地域 (T27) — where did physicians come from and books appear, and does a term or a school lead in a region? | native places and places of writing (author and signed prefaces), a place's physicians and works, region × period shares of a term or a school with z tests and Benjamini–Hochberg, GeoJSON |
+
+Page images and OCR output (T1–T2) are read by `taochronos vision` (layout, a model's reading, comparison with the
+store); descriptions are carried across to modern medicine by `taochronos bridge` ([bridge.md](bridge.md)); a claim is
+checked by `taochronos audit` ([v2.md](v2.md)).
 
 Every result is made of **witnesses**: a verbatim quote with its passage id, locator (《书》卷·篇·节), the book's date
 and period, the text layer (正文, 注, 序跋 …), and the source and licence of the transcription. Every statement can be

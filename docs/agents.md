@@ -128,8 +128,24 @@ with the validation errors; `max_tokens` truncation is retried) → `commit`.
 |---|---|
 | `models.offline` | deterministic procedures; the default |
 | `models.anthropic_provider` | official `anthropic` SDK; `claude-opus-5` (frontier), `claude-sonnet-5` (medium), `claude-haiku-4-5` (small); adaptive thinking and `output_config.effort` where supported; server-side refusal fallbacks (`fallbacks="default"`) on Opus 5; refusals are checked before content; assistant turns (including thinking blocks) are replayed verbatim |
-| `models.openai_compat` | OpenAI-compatible chat completions (OpenAI, DeepSeek, Grok, Gemini's compatibility endpoint, local vLLM/Ollama); model names come only from configuration |
+| `models.openai_compat` | OpenAI-compatible chat completions with presets for MiniMax (mainland `api.minimax.cn` and global), Poe, DeepSeek, Qwen (DashScope), Kimi (Moonshot), GLM (Zhipu), Doubao (Volcengine Ark), SiliconFlow, OpenRouter, OpenAI, Gemini, Grok, a LiteLLM proxy and local vLLM/Ollama; MiniMax reasoning split off, Poe without `response_format`, `Retry-After` respected; images for vision models; model names come only from configuration |
+| `models.litellm_provider` | the `litellm` package: any back end by `<provider>/<model>` (`pip install -e ".[litellm]"`) |
 | `models.scripted` | replays queued responses; used by tests |
+
+## V2 core agents
+
+Four core agents (`agents/core/*.yaml`) own the fifteen skills of V2 ([v2.md](v2.md)); each acts with its own permissions
+(the kernel's policy checks every tool call a skill makes) and delegates to the specialist roles above.
+
+| Core agent | Skills | Delegates to | Permissions |
+|---|---|---|---|
+| Research Orchestrator | plan, synthesize | director, meta_reviewer | classics:read, kg:read, analysis:run |
+| Classical TCM Scholar | S01–S09 (sources, vision, philology, structure, collation, intertext, extraction, names, evolution) | curator, philologist, extractor, semanticist, lineage, scholar, evolution | classics:read, kg:read |
+| Translational Medicine Agent | S10–S14 (phenotypes, ontology bridge, clinical mapping, modern evidence, real-world data) | ontologist, modern_evidence, hypothesis | classics:read, kg:read, literature:read |
+| Evidence & Critic Agent | S15 (audit, evidence graph) | evidence, skeptic, statistician | classics:read, kg:read, literature:read, validation:run |
+
+The specialists gained the V2 tools: `bridge.*` (ontologist, modern_evidence, semanticist), `audit.claim` and
+`graph.evidence` (skeptic, meta_reviewer, evidence), `modern.search`, `modern.safety`, `rwd.ask` (modern_evidence).
 
 ## Subagents
 

@@ -106,6 +106,7 @@ def score(data: BridgeData, packet: dict[str, Any], d: Disease, obs: list[dict[s
     fit = max(0.0, (coverage + precision) / 2 * compat - penalty)
     # what the thresholds count: solid matches (not through a broader finding), distinct findings
     solid = [m for m in matched.values() if m["degree"] >= 0.25 and m["hierarchy"] != "finding broader"]
+    only_implied = bool(solid) and all(m["implied"] for m in solid)
     n_typ = len({m["feature"] for m in solid if m["tier"] == "typical"})
     n_all = len({m["via"] for m in solid})
     mass = sum(max(m["idf"] * m["degree"] for m in solid if m["via"] == v) for v in {m["via"] for m in solid})
@@ -117,7 +118,7 @@ def score(data: BridgeData, packet: dict[str, Any], d: Disease, obs: list[dict[s
         "compatibility": {"factor": round(compat, 2), "notes": notes},
         "matched": sorted(matched.values(), key=lambda m: (TIERS.index(m["tier"]), -m["degree"])),
         "typical_matched": n_typ, "typical_total": len(typical), "features_matched": n_all,
-        "evidence_mass": round(mass, 3), "implied_support": any(m["implied"] for m in solid),
+        "evidence_mass": round(mass, 3), "implied_support": any(m["implied"] for m in solid), "only_implied": only_implied,
         "required_met": not d.required or any(m["feature"] in d.required for m in solid),
         "required": list(d.required.values()),
         "missing_typical": missing, "conflicts": conflicts,
@@ -172,6 +173,9 @@ def capped(r: dict[str, Any], packet: dict[str, Any], n_proj: int) -> tuple[Stre
     if not r["required_met"] and lv in (Strength.HIGH, Strength.MODERATE):
         lv = Strength.LOW
         caps.append("without " + " / ".join(r["required"]) + " the resemblance stays low")
+    if r.get("only_implied") and lv in (Strength.HIGH, Strength.MODERATE):
+        lv = Strength.LOW
+        caps.append("rests only on what a historical name implies: the passage states none of these findings")
     if r["implied_support"] and lv == Strength.HIGH:
         lv = Strength.MODERATE
         caps.append("rests in part on what a historical name implies by its curated sense, not on stated findings")
@@ -304,7 +308,7 @@ def statement(packet: dict[str, Any], cands: list[dict[str, Any]], where: str = 
 
 # ---------------------------------------------------------------- reverse mapping
 def reverse(data: BridgeData, d: Disease, *, find: Callable[[str], list[str]], read_passage: Callable[[str], dict[str, Any] | None],
-            limit: int = 20, per_surface: int = 60, min_features: int = 2) -> dict[str, Any]:
+            limit: int = 20, per_surface: int = 60, min_features: int = 2, indications: bool = False) -> dict[str, Any]:
     """From a modern disease to the passages whose findings resemble it, and the historical names they use."""
     forms: dict[str, list[dict[str, Any]]] = {}
     for h, (tier, label) in d.features().items():
@@ -325,6 +329,8 @@ def reverse(data: BridgeData, d: Disease, *, find: Callable[[str], list[str]], r
         if info is None:
             continue
         packet = info["packet"]
+        if packet.get("kind") == "indication" and not indications:  # a drug's indications are not a described picture
+            continue
         obs = observed(data, packet)
         c = score(data, packet, d, obs)
         if c["features_matched"] < min_features or c["typical_matched"] < 1 or not c["required_met"]:
@@ -337,7 +343,18 @@ def reverse(data: BridgeData, d: Disease, *, find: Callable[[str], list[str]], r
             "conflicts": len(c["conflicts"]), "terms": [t["term"] for t in packet.get("terms", [])],
             "witness": info.get("witness"), "year": packet.get("year"), "period": info.get("period")})
     rows.sort(key=lambda r: (-STRENGTH_ORDER.index(Strength(r["level"])), -r["fit"], r["passage_id"]))
-    rows = rows[:limit]
+    # one row per work and finding set: the editions of a work repeat its passage
+    seen: dict[tuple[str, tuple[str, ...]], dict[str, Any]] = {}
+    unique = []
+    for r in rows:
+        w = r.get("witness") or {}
+        key = (w.get("work") or w.get("book_id") or r["passage_id"], tuple(sorted({m["feature"] for m in r["matched"]})))
+        if key in seen:
+            seen[key]["editions"] = seen[key].get("editions", 1) + 1
+            continue
+        seen[key] = r
+        unique.append(r)
+    rows = unique[:limit]
     names: dict[str, Counter[str]] = defaultdict(Counter)
     for r in rows:
         for t in r["terms"]:

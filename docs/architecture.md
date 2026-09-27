@@ -98,6 +98,16 @@ reconstruction. Their methods that read no text live in `science/` (`semantic_re
 the CLI (`taochronos study …`), the `study.*` tools on the existing agents and TaoChronos-Scholar ([study.md](study.md),
 [ADR 0005](adr/0005-deep-discovery-capabilities.md)).
 
+V2 ([v2.md](v2.md), [ADR 0008](adr/0008-v2-rules-first-verifiable-translation.md)) adds five capabilities and a
+runtime.  `vision` (layout and reading of page images), `bridge` (the Ancient–Modern Bridge, [bridge.md](bridge.md))
+and `audit` (the evidence audit and evidence graph over the corpus, the bridge and modern evidence) are registered by the
+classics bundle; `modern` (PubMed typed by design, the safety table) and `rwd` (study specs over OMOP) by the new
+`plugins/modern` bundle.  Their checks that read no corpus live in `verification/` (`audit.py`, `evidence_graph.py`,
+`presentism.py`) and their shared types in `protocol/` (`bridge.py`, `assertions.py`, `modern.py`).  The judge
+(`capabilities/judge.py`) is the one place a model enters these functions: it is handed to a capability (`study.judge`),
+never imported by it.  `engine/workflow.py` loads the skill manifests and the core agents, compiles a question into a
+DAG and runs it through the tool scheduler as those agents, with every call an artifact of a resumable workspace.
+
 ## Tools and the scheduler
 
 The **Tool Mesh** (`tools/mesh.py`) exposes 58 tools in seven families (philology, retrieval, knowledge,

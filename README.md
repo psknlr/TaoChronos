@@ -3,8 +3,8 @@
 **面向中医古籍的可溯源知识发现与治学系统**
 *A provenance-grounded research harness for the Chinese medical classics — for scholars, students and discovery.*
 
-[English README](README.en.md) · [治学](docs/study.md) · [任务规格](docs/tasks.md) · [架构](docs/architecture.md) · [智能体](docs/agents.md) ·
-[发现引擎](docs/discovery.md) · [评测](docs/evals.md) · [数据格式](docs/data.md) · [路线图](docs/roadmap.md) · [ADR](docs/adr/)
+[English README](README.en.md) · [V2](docs/v2.md) · [古今桥接](docs/bridge.md) · [模型接入](docs/models.md) · [治学](docs/study.md) · [任务规格](docs/tasks.md) ·
+[架构](docs/architecture.md) · [智能体](docs/agents.md) · [发现引擎](docs/discovery.md) · [评测](docs/evals.md) · [数据格式](docs/data.md) · [路线图](docs/roadmap.md) · [ADR](docs/adr/)
 
 TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一个**可检索、可断代、可溯源**的语料库，并在其上提供两层能力：
 
@@ -19,6 +19,13 @@ TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一
   与篇章 → L2 语义知识 → L3 数字考据 → L4 知识发现 → L5 研究智能体）逐项落到输入、输出 JSON Schema、工具与智能体、算法、评测、
   金标准与人工复核，并补齐所缺：**句读**（原字不改）、**条文结构**、**训诂**、**集注与注家比较**、**争议**、**异文分级**、**配伍**、
   **方证网络**、**学派**、**名称**、**传播链**。
+- **V2：可验证的知识发现与古今转译**（[docs/v2.md](docs/v2.md)）：**规则先筛、模型复核**——每项能力先由规则完成，模型（LiteLLM、
+  MiniMax 国内站、Poe、DeepSeek、通义、Kimi、智谱、豆包、Claude……）只裁决规则拿不准的项、补读规则漏掉的片段（须为原文精确片段）、
+  写带引证的综述，并且在若干处**只能调低、不能调高**。在此之上：版面理解与识读（T1–T2）、中医实体识别（T7，24 类）、五层今译（T10）、
+  地域（T27）；**古今桥接引擎**（古代表型 → HPO 类型化投射 → 64 种现代疾病谱，定性强度而非概率，**表型相似而非回溯诊断**，
+  亦可由今病溯古）；**六层证据图谱**（每条边标明由谁断言）；**证据审计**（逐条拆解、按类核查、五级结论）；**现代证据**（PubMed 按
+  研究设计与对象分级，动物与网络药理不可充当人体疗效）与**真实世界数据**（问题 → 研究规格 → 校验过的 OMOP 查询，模型从不写 SQL）；
+  **15 项技能清单、4 个核心智能体、工作流编译与可续跑执行**（`taochronos ask "问题"`）。
 - **研究**：由研究主管智能体 **TaoChronos** 调度 16 个专科智能体，把一个研究问题变成**可重放、可审计、可证伪**的过程：
   研究契约 → 证据基础 → 模式挖掘 → 假说 → 证伪 → 门控 G0–G8 → 专家核验。
 
@@ -65,8 +72,13 @@ TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一
 | **临床文献研究** | 医案逐诊结构化（四诊、辨证、治法、方药剂量、加减、服药数、转归）；诊疗序列模式、诊次转移、与转归的关联（非疗效证据） | `study cases` · `study trajectories` |
 | **医理与词义** | 论证图（条件、推断、因果、转折、取象比类、驳斥、界说、主治）与两书论证方式比较；义项分期、变点与候选新义 | `study argument` · `study senses` |
 | **辑佚** | 从引书中辑出佚书条文，按出处注的卷次排序、合并重出；先在存世书上验证方法，给出各引书的可信度 | `study fragments` |
+| **一问到底（V2）** | 问题编译为技能工作流（S01 来源 → … → S15 审计），四个核心智能体按各自权限执行，每步产物落入可续跑的工作区，答案的每条陈述都经审计 | `ask` · `skills` |
+| **古今转译** | 古代表型包（否定、或然、假设、治后、预后、修饰、病程、人群、历史名称的义项）；HPO 投射与关系类型；现代疾病谱的定性强度、鉴别所需与古今名称关系；由今病溯古 | `bridge phenotype` · `bridge map` · `bridge reverse` · `bridge verify` |
+| **证据审计与图谱** | 论断拆解为原子论断，逐条按类核查（原文逐字、训释出处、以今律古、证据层级、推论跳跃、临床建议）；六层证据图谱与溯源路径 | `audit` · `graph` |
+| **现代证据与真实世界** | PubMed 记录按设计与对象分级、跨层防护、安全提示；真实世界问题 → 研究规格 → 只读参数化 OMOP 查询 | `modern search` · `modern safety` · `rwd ask` · `rwd synth` |
+| **版面、实体、今译、地域** | 竖排阅读顺序与双行小注、多模态识读、OCR 对库核对；24 类语境实体；五层今译；医家籍贯、序跋落款与地域统计 | `vision` · `study entities` · `study translate` · `study places` |
 | **知识发现** | 多智能体研究：失传知识、概念演变、方剂演化、隐性关联、矛盾发现、佚书线索；逐字证据、证伪、门控、专家核验 | `research` · `report` · `workspace` · `review` |
-| **开发者** | 插件化内核、能力注册、工具网格（58 个工具）、智能体配置（YAML）、事件溯源与重放、评测与架构治理；各任务输出的 JSON Schema | `agents` · `eval` · `governance` · `schema --study` |
+| **开发者** | 插件化内核、能力注册、工具网格（72 个工具）、智能体配置（YAML）、事件溯源与重放、评测与架构治理；各任务输出的 JSON Schema | `agents` · `eval` · `governance` · `schema --study` |
 
 ## 二、快速开始
 
@@ -119,6 +131,21 @@ taochronos study trajectories 咳嗽                                  # 诊疗�
 taochronos study argument --work 伤寒论 --against-work 温热论        # 论证方式比较（或给一段文字 / --passage）
 taochronos study senses 消渴                                        # 义项演变、变点、候选新义
 taochronos study fragments 小品方                                   # 佚书辑佚（--verify：在存世书上验证方法）
+```
+
+V2（规则先筛、模型复核；`--llm` 不给时只用规则）：
+
+```bash
+taochronos ask "消渴的概念如何随时代演变？与现代糖尿病有何异同？"          # 编译工作流 → 执行 → 审计过的答案（工作区可续跑）
+taochronos ask "…" --plan-only                                           # 只看编译出的技能 DAG
+taochronos bridge map --passage jinkui.13.xiaoke1                        # 古今映射：候选、强度、鉴别所需、古今名称关系
+taochronos bridge reverse E11                                            # 由今病溯古：古籍写法、相似描述、所用名称（按时期）
+taochronos audit "《金匮要略》载「男子消渴，小便反多」，所以肾气丸可以治疗糖尿病。"   # 证据审计：SUPPORTED + 推论跳跃
+taochronos graph --passage jinkui.13.xiaoke1 --graphml xiaoke.graphml    # 六层证据图谱
+taochronos modern search 黄连 --disease diabetes_mellitus --online       # 现代证据按研究设计分级（PubMed）
+taochronos rwd ask "2型糖尿病患者中，使用黄连素与糖尿病肾病的关系"         # 真实世界数据（默认在合成 OMOP 库上演示）
+taochronos study entities --input 条文.txt --llm minimax:MiniMax-M2.7    # 实体识别：规则 + 模型复核（MiniMax 国内站）
+taochronos llm presets                                                   # 可用的模型平台与密钥变量
 ```
 
 研究：
@@ -366,8 +393,14 @@ taochronos demo --profile claude   # Opus 5（前沿层）/ Sonnet 5（中层）
 ```
 
 Claude 提供者默认开启服务端拒答回退（`fallbacks="default"`，适用于 Opus 5）；若模型拒答、输出无法通过模式校验或预算耗尽，
-该任务回退到确定性过程，并把回退记录为一条 Decision。也支持 OpenAI 兼容端点（DeepSeek、Grok、Gemini、本地 vLLM/Ollama）、
-外部命令子智能体与 Research Code Mode，见 [docs/agents.md](docs/agents.md)。
+该任务回退到确定性过程，并把回退记录为一条 Decision。
+
+**国内与多平台接入**（详见 [docs/models.md](docs/models.md)）：MiniMax 国内站（`minimax`，`api.minimax.cn`，`MINIMAX_API_KEY`）与国际站、
+Poe（`poe`，`POE_API_KEY`，以机器人名为模型名）、LiteLLM（`litellm` 包，`<provider>/<model>`；或 `litellm-proxy`）、DeepSeek、通义
+（DashScope）、Kimi（Moonshot）、智谱 GLM、豆包（火山方舟）、硅基流动、OpenRouter、本地 vLLM/Ollama。治学、桥接、审计、识读与工作流
+命令都接受 `--llm 平台:模型`（及 `--llm-max-calls`、`--llm-max-cost`、`--llm-refresh`）；画像 `minimax`、`poe`、`litellm` 把推理模型与
+复核模型一并配好。模型调用逐次缓存、计入预算、按 JSON 模式校验（一次修复机会）、记日志（不记提示词）；结果标明每项由规则、模型
+还是二者共同决定。外部命令子智能体与 Research Code Mode 见 [docs/agents.md](docs/agents.md)。
 
 ## 八、评测与质量保证
 
@@ -406,9 +439,22 @@ Claude 提供者默认开启服务端拒答回退（`fallbacks="default"`，适�
 | Names | 合成语料：更替区间、嵌套名、互释、候选异名全对；真实：避讳改名更替 2/2（薯蓣→山药、玄参→元参） |
 | Chain | 6 组×12 见证的人工传承：父本准确率 1.0（最相似基线 0.97）；抄手各自规范化用字时 0.94（基线 0.87） |
 
+V2 的套件（[docs/evals.md](docs/evals.md)）：
+
+| 套件 | 结果 |
+|---|---|
+| Entities（T7） | 开发集 F1 0.991；**留出 25 句 F1 0.776** |
+| Places（T27） | 落款与籍贯陈述 P/R 1.0；全库 761 部中 291 部定位，策展籍贯与文中陈述一致 4/4 |
+| Translation（T10） | 以今律古护栏 24/24；原文层不变 24/24 |
+| Layout（T1–T2） | 60 页合成版面阅读顺序全对 0.983、CER 0.0005、小注 F1 0.999；四种 OCR 格式一致；OCR 错字 12/12 定位 |
+| Bridge（古今桥接） | 开发集 F1 0.985；**全库随机留出 12 段（先标注后运行）P 0.938 · R 0.732 · F1 0.822**；映射 top-1 1.0；强度上限 3/3；护栏 20/20；HPO 213 个标识全部有效 |
+| Audit（证据审计） | 19 条论断结论全对、类别全对，误判 SUPPORTED 0；安全提示 3/3 |
+| Modern（现代证据与真实世界） | 研究类型 10/10；跨层防护 7/7；真实世界：SQL 校验通过、植入关联找回、违规 SQL 拒绝 |
+| Workflow（V2 运行时） | 注册表有效；8/8 问题编译出所需技能；重跑全部读自工作区 |
+
 深层发现 2.0 与任务规格的开发集与规则一起写成，数值说明规则“打算做什么”，不代表泛化能力；全量语料上的专家金标准列入路线图。各项任务的评测、指标与金标准见 [docs/tasks.md](docs/tasks.md) 的 Benchmark 表。
 
-另有 188 个单元与集成测试（`pytest`，含各来源格式样例、一个为治学层编写的合成语料 `tests/fixtures/study`，以及用真实结果逐项校验各任务输出 JSON Schema 的契约测试），
+另有 247 个单元与集成测试（`pytest`，含各来源格式样例、一个为治学层编写的合成语料 `tests/fixtures/study`，以及用真实结果逐项校验各任务输出 JSON Schema 的契约测试），
 以及架构治理检查（`taochronos governance`：分层依赖、内核中立、模型 SDK 隔离、智能体规则）。CI 在 Python 3.11/3.12 上运行治理、测试、
 快速评测与演示研究。
 
@@ -419,11 +465,11 @@ protocol      协议与数据模型（段落、主张、证据、假说、事件
 kernel        事件溯源、事务、重放、调度、策略、钩子、预算、上下文 OS、记忆、停止条件、可观测性
 capabilities  与提供者无关的接口（LLM 等）
 science       D1–D5 发现引擎、统计、评分、门控、溯源；语义复用规则、文本地层、诊疗轨迹、论证图、语义演变
-verification  逐字核验与溯源链
-tools         工具网格：philology · retrieval · knowledge · analytics · study · literature · validation（58 个工具）
-plugins       classics（语料、语料库、领域包、校勘、计算校勘、引用、文本复用、治学）· knowledge · retrieval · models · sandbox · storage …
+verification  逐字核验与溯源链；以今律古护栏；证据图谱与证据审计（V2）
+tools         工具网格：philology · retrieval · knowledge · analytics · study · bridge · literature · validation（72 个工具）
+plugins       classics（语料、语料库、领域包、校勘、计算校勘、引用、文本复用、治学、版面、古今桥接、审计）· modern（现代证据、真实世界）· knowledge · retrieval · models · sandbox · storage …
 agents        AgentSpec、路由、LLM 循环、确定性过程、Code Mode、子智能体
-engine        研究引擎（操作循环与科学循环、分支、锦标赛、报告）
+engine        研究引擎（操作循环与科学循环、分支、锦标赛、报告）；V2 工作流编译与执行（engine/workflow.py）
 ```
 
 业务代码只向**能力注册表**请求能力（`corpus`、`domain`、`philology`、`lineage`、`retriever`、`study`、`llm`……），从不直接导入提供者；
@@ -434,14 +480,16 @@ engine        研究引擎（操作循环与科学循环、分支、锦标赛、
 
 ```
 architecture-policy.yaml   架构策略（分层、内核中立、SDK 隔离、智能体规则）
-agents/                    16 个 AgentSpec（YAML）
-skills/                    SKILL.md 能力包（含 source-criticism 治学方法）
-profiles/                  配置画像：full-discovery、full-corpus、classics-basic、formula-discovery、historical-disease、claude
+agents/                    16 个 AgentSpec（YAML）；agents/core/ 四个 V2 核心智能体
+skills/                    SKILL.md 能力包（含 source-criticism 治学方法）；skills/manifests/ 十五项 V2 技能清单（S01–S15）
+profiles/                  配置画像：full-discovery、full-corpus、classics-basic、formula-discovery、historical-disease、claude、minimax、poe、litellm
 domains/classics/          领域包：时期、异体字、词表、历史义项、现代概念、本体、引用、既有认识，
                            以及治学数据 taboo.yaml（避讳）、metrology.yaml（度量衡）、physicians.yaml（医家）、drug_families.yaml（药物归类），
                            与深层发现数据 collation.yaml（校勘异体）、intertext.yaml（引用、驳斥、解释标记与套语）、cases.yaml（医案）、argument.yaml（论证标记），
                            任务规格数据 schools.yaml（学派）、clause.yaml（条文角色）、exegesis.yaml（注家概念、立场与训诂格式）
 domains/classics/script/   繁简与古籍异体归一表（OpenCC / Unihan / 人工校订）
+domains/bridge/            古今桥接：168 个古代表型（写法、HPO 投射与关系类型）、64 种现代疾病谱（ICD-10）、同名异义表、HPO 层级
+domains/modern/            现代证据：中英对照（检索用）、安全提示（有毒药物）
 domains/classics/lexicon-harvested/  从全量语料采集的候选方名、药名（仅 full-corpus 画像加载）
 corpus/                    演示语料（未经核验）、现代证据摘要、全量书目 catalog/ 与来源锁定 sources.lock.yaml
 evals/gold/                评测金标准
@@ -450,7 +498,7 @@ src/taochronos/            protocol/ kernel/ capabilities/ science/ verification
                            深层发现：stemma · intertext · stratigraphy · cases · argument · senses · fragments
                            任务规格：punctuation · clause · glosses · commentary · disputes · pairs · schools · names · chain · schemas
   plugins/classics/collation/  计算校勘：锚点对齐 · 异文单元 · 异文分级 · 谱系与污染 · TEI
-tests/                     188 个测试（fixtures/ 含各来源格式样例与治学合成语料）
+tests/                     247 个测试（fixtures/ 含各来源格式样例与治学合成语料）
 docs/                      治学、任务规格、架构、智能体、发现、评测、数据、ADR、路线图
 ```
 
@@ -490,6 +538,10 @@ docs/                      治学、任务规格、架构、智能体、发现�
   假设，抄手各自独立的相同改动可能造成假边，故每条边附共享异文与边际。
 - 影像见证按题名关联到库中著作：注释书与同名异书单凭题名无法区分，关联要人去核对；只收书目元数据，不下载影像，
   年代以各馆著录为准（只有年号的按该年号的起讫计）。
+- V2 的边界：古今桥接的强度是规则给出的定性等级，**未经校准、不是概率**，只说表型相似、不作回溯诊断；64 种疾病谱与同名异义说明为
+  研究筛查而编，需临床与医史专家审定；古代表型的写法表在留出集上召回 0.73，是桥接的主要局限（模型补读即为此设）；审计只核查
+  机器能核查的部分（原文、训释、强度、证据类型、推论跳跃），不评判史家的论证；PubMed 的研究类型据索引而定，须抽样核对全文；
+  真实世界数据只是带防护的编译器，在合成数据上的结果只检验编译，不是发现。
 - 系统不提供医学建议；任何研究结论在专家（Gate G7）核验前都只是研究线索。
 
 ## 十三、路线图与引用
@@ -497,8 +549,8 @@ docs/                      治学、任务规格、架构、智能体、发现�
 路线图见 [docs/roadmap.md](docs/roadmap.md)，任务规格中未完成的项见 [docs/tasks.md](docs/tasks.md)：专家审定的词表、义项与金标准，
 治学层的组成解析与性能抽取金标准，深层发现 2.0 与任务规格各能力的全量语料金标准，全书规模的校勘与异文数据集、全库复用图；
 地域（医家籍贯、行医地与刊刻地，T27）与按地域比较的学派与配伍，剂量感知的方剂表型，药物基原的历史认定，针灸与非药物疗法，
-图像与插图谱系，缺失感知的贝叶斯失传知识检测，时序超图嵌入（只作候选生成），语境化的历史实体识别与链接（T7），与原文、
-训诂证据分开存放的白话翻译（T10）；页面图像的版面理解与 OCR（T1、T2），更多模型提供者与人机协同评审界面。
+图像与插图谱系，缺失感知的贝叶斯失传知识检测，时序超图嵌入（只作候选生成）；V2 的后续：真实页面的版面金标准，桥接写法表与更大的
+留出集、疾病谱的临床审定与更多本体（ISPO、Mondo、SNOMED CT、LOINC），审计的专家金标准，真实 OMOP 库上的调整分析，人机协同评审界面。
 
 引用本项目时，请同时引用所用语料的来源（汉籍仓库、笈成、麦吉尔大学图书馆、數位中醫校書郎 CMETA、东亚医学协会、维基文库等）及其授权，并注明语料指纹
 （`study dataset` 与发现报告中给出）：
