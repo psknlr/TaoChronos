@@ -1106,6 +1106,112 @@ def cmd_bridge(args: argparse.Namespace) -> None:
     _out(r if args.json else render_map(r))
 
 
+def _default_profile(args: argparse.Namespace) -> None:
+    if not getattr(args, "profile", None):
+        _, data = _corpus_paths(args)
+        args.profile = "full-corpus" if (data / "corpus" / "tcm.sqlite").exists() else "full-discovery"
+
+
+def cmd_audit(args: argparse.Namespace) -> None:
+    """证据审计 (S15): a claim decomposed into atomic claims, each checked against the witnesses, the bridge, modern
+    evidence and the presentism guard; five verdicts; a model may lower them, never raise."""
+    _default_profile(args)
+    harness = _harness(args)
+    text = Path(args.claim).read_text(encoding="utf-8") if Path(args.claim).exists() else args.claim
+    if args.online:
+        harness.capabilities.get("modern").online = True
+    harness.capabilities.get("study").judge = _judge(args, harness)
+    r = harness.capabilities.get("audit").audit(text, modern=not args.no_modern)
+    if args.json:
+        _out(r)
+        return
+    lines = [f"# 证据审计：{r['verdict']}", "", f"> {text[:300]}", ""]
+    for c in r["claims"]:
+        lines.append(f"- **{c['id']}**（{c['kind']}）{c['verdict']}：{c['text']}")
+        for ch in c["checks"]:
+            mark = {True: "✓", False: "✗", None: "·"}[ch["ok"]]
+            lines.append(f"  - {mark} {ch['check']}" + (f"：{ch['detail']}" if ch.get("detail") else ""))
+        for con in c.get("concerns", []):
+            lines.append(f"  - 模型意见：{con}")
+    if r["safety"]:
+        lines += ["", "## 安全提示", ""] + [f"- {s['material']}（{s['found']}）：{s['risk']}" for s in r["safety"]]
+    lines += ["", f"*{r['note']}*"]
+    _out("\n".join(lines))
+
+
+def cmd_graph(args: argparse.Namespace) -> None:
+    """证据图谱: the six-layer evidence graph of a bridge mapping (a passage or a text), a claim's audit, modern studies."""
+    _default_profile(args)
+    harness = _harness(args)
+    if args.online:
+        harness.capabilities.get("modern").online = True
+    text = args.text
+    if not (args.passage or text or args.claim or args.modern):
+        raise SystemExit("taochronos graph --passage ID | --text TEXT | --claim CLAIM | --modern DRUG")
+    g = harness.capabilities.get("audit").graph(passage_id=args.passage, text=text, claim=args.claim, modern=args.modern)
+    if args.graphml:
+        Path(args.graphml).write_text(g.to_graphml(), encoding="utf-8")
+    out = g.to_dict()
+    if args.node:
+        out = {"node": args.node, "lineage": g.lineage(args.node)}
+    _out(out if args.json or args.node else {"stats": out["stats"], "unsupported": g.unsupported()[:20],
+                                             **({"graphml": args.graphml} if args.graphml else {})})
+
+
+def cmd_modern(args: argparse.Namespace) -> None:
+    """现代证据 (S13): PubMed records on a drug or formula (and a disease), typed by design and population, with the
+    evidence hierarchy, the cross-level guard for a claim, and the safety table."""
+    _default_profile(args)
+    harness = _harness(args)
+    modern = harness.capabilities.get("modern")
+    modern.online = bool(args.online) or modern.online
+    if args.action == "safety":
+        _out(modern.safety(args.subject))
+        return
+    r = modern.search(args.subject, args.disease, design=args.design, limit=args.limit)
+    if args.claim:
+        r["guard"] = modern.guard(args.claim, r["records"])
+    if args.json:
+        _out(r)
+        return
+    lines = [f"# 现代证据：{args.subject}" + (f" × {args.disease}" if args.disease else ""), "", f"query: `{r['query']}`（{r['source']}）", ""]
+    if r["errors"]:
+        lines += [f"- 错误：{e}" for e in r["errors"]] + [""]
+    s = r["summary"]
+    lines.append("按类型：" + "、".join(f"{k} {v}" for k, v in s["by_type"].items()) + f"；可承载人体疗效论断者 {s['can_carry_efficacy']}")
+    lines += [""] + [f"- [{x['evidence_type']}/{x['population']}] {x['title'][:100]}（{x.get('year') or ''}）{x.get('url') or ''}"
+                     for x in r["records"]]
+    if r.get("guard"):
+        g = r["guard"]
+        lines += ["", f"论断层级：{g['claim_level']}；可承载的记录 {g['carrying']} 条"]
+    if r["safety"]:
+        lines += ["", "安全提示：" + "；".join(f"{x['material']}：{x['risk']}" for x in r["safety"])]
+    _out("\n".join(lines))
+
+
+def cmd_rwd(args: argparse.Namespace) -> None:
+    """真实世界数据 (S14): a question → a study spec (rules, or a model that never writes SQL) → a checked query on an
+    OMOP database (read-only); `synth` writes a synthetic OMOP database for trying it."""
+    from .plugins.modern import rwd
+
+    if args.action == "synth":
+        if not args.target:
+            raise SystemExit("taochronos rwd synth <out.sqlite>")
+        _out(rwd.synthesize(args.target, persons=args.persons))
+        return
+    _default_profile(args)
+    harness = _harness(args)
+    service = harness.capabilities.get("rwd")
+    if args.action == "spec":
+        _out(service.spec(args.target, args.db, judge=_judge(args, harness)))
+        return
+    if args.action == "run":
+        spec = rwd.load_spec(args.target) if Path(args.target).exists() else json.loads(args.target)
+        _out(service.run(spec, args.db))
+        return
+    _out(service.ask(args.target, args.db, judge=_judge(args, harness)))
+
+
 def _has_module(name: str) -> bool:
     import importlib.util
 
@@ -1163,6 +1269,51 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--write", action="store_true", help="verify: rewrite domains/bridge/hpo_closure.yaml from the release")
     sp.add_argument("--json", action="store_true")
     sp.add_argument("--profile", help="default: full-corpus when the corpus store exists")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    _llm_args(sp)
+    sp = sub.add_parser("audit", help="证据审计 (S15): a claim checked atom by atom against the witnesses, the bridge, modern "
+                                      "evidence and the presentism guard (SUPPORTED … UNSUPPORTED)")
+    sp.set_defaults(fn=cmd_audit)
+    sp.add_argument("claim", help="the claim (a text or a file)")
+    sp.add_argument("--online", action="store_true", help="consult PubMed for the modern parts")
+    sp.add_argument("--no-modern", action="store_true", help="do not consult modern evidence at all")
+    sp.add_argument("--json", action="store_true")
+    sp.add_argument("--profile")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    _llm_args(sp)
+    sp = sub.add_parser("graph", help="证据图谱: the six-layer evidence graph (source → historical → TCM → mapping → modern → "
+                                      "evidence) of a mapping, an audit or modern studies; JSON or GraphML")
+    sp.set_defaults(fn=cmd_graph)
+    sp.add_argument("--passage")
+    sp.add_argument("--text")
+    sp.add_argument("--claim")
+    sp.add_argument("--modern", help="a drug or formula whose modern studies to add")
+    sp.add_argument("--node", help="the lineage of one node back to the witnesses")
+    sp.add_argument("--graphml", help="write GraphML to this file")
+    sp.add_argument("--online", action="store_true")
+    sp.add_argument("--json", action="store_true")
+    sp.add_argument("--profile")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    sp = sub.add_parser("modern", help="现代证据 (S13): PubMed typed by design and population, the evidence hierarchy, the "
+                                       "cross-level guard, the safety table")
+    sp.set_defaults(fn=cmd_modern)
+    sp.add_argument("action", choices=["search", "safety"])
+    sp.add_argument("subject", help="search: a drug or formula (黄连, 葛根芩连汤, berberine); safety: a text")
+    sp.add_argument("--disease", help="a disease (a bridge profile id, Chinese or English name)")
+    sp.add_argument("--design", help="rct | review | human | a PubMed filter")
+    sp.add_argument("--claim", help="a claim to put through the cross-level guard against the records found")
+    sp.add_argument("--limit", type=int, default=20)
+    sp.add_argument("--online", action="store_true", help="query PubMed (otherwise the cache and the curated records)")
+    sp.add_argument("--json", action="store_true")
+    sp.add_argument("--profile")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    sp = sub.add_parser("rwd", help="真实世界数据 (S14): question → study spec → checked OMOP query (never model-written SQL)")
+    sp.set_defaults(fn=cmd_rwd)
+    sp.add_argument("action", choices=["ask", "spec", "run", "synth"])
+    sp.add_argument("target", nargs="?", help="ask / spec: a question; run: a spec file or JSON; synth: the output database")
+    sp.add_argument("--db", help="an OMOP CDM SQLite database (default: a synthetic one in the data directory)")
+    sp.add_argument("--persons", type=int, default=3000, help="synth: how many synthetic persons")
+    sp.add_argument("--profile")
     sp.add_argument("--provider", help=argparse.SUPPRESS)
     _llm_args(sp)
     sp = add("corpus", cmd_corpus, "list the corpus, or fetch / unpack / catalog / ingest / status / reindex the full-corpus store")

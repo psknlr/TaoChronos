@@ -1,0 +1,52 @@
+# 中英对照 — the names a PubMed query needs for the Chinese names of drugs, formulas and constituents (S13).
+#
+# A query is built from these (and from the English names of the bridge's disease profiles); a name missing here is
+# searched as given.  Latin binomials follow the Chinese Pharmacopoeia's botanical sources; where a Chinese drug name has
+# several sources (黄连: three Coptis species) the genus is used.  Constituents are the ones modern work names most.
+drugs:
+  黄连: {en: [Coptis, berberine], note: 小檗碱（berberine）为主要生物碱}
+  黄芩: {en: [Scutellaria baicalensis, baicalin]}
+  黄芪: {en: [Astragalus membranaceus, astragaloside]}
+  人参: {en: [Panax ginseng, ginsenoside]}
+  丹参: {en: [Salvia miltiorrhiza, tanshinone]}
+  葛根: {en: [Pueraria lobata, puerarin]}
+  青蒿: {en: [Artemisia annua, artemisinin], note: 古之青蒿与黄花蒿的品种对应须本草考证}
+  茵陈: {en: [Artemisia capillaris]}
+  大黄: {en: [Rheum, rhubarb, emodin]}
+  甘草: {en: [Glycyrrhiza, licorice, glycyrrhizin]}
+  桂枝: {en: [Cinnamomum cassia, cinnamon]}
+  麻黄: {en: [Ephedra, ephedrine]}
+  附子: {en: [Aconitum carmichaelii, aconite]}
+  知母: {en: [Anemarrhena asphodeloides]}
+  天花粉: {en: [Trichosanthes kirilowii]}
+  栝楼根: {en: [Trichosanthes kirilowii]}
+  地黄: {en: [Rehmannia glutinosa]}
+  山药: {en: [Dioscorea opposita]}
+  薯蓣: {en: [Dioscorea opposita]}
+  山茱萸: {en: [Cornus officinalis]}
+  茯苓: {en: [Poria cocos]}
+  泽泻: {en: [Alisma orientale]}
+  牡丹皮: {en: [Paeonia suffruticosa, paeonol]}
+  石膏: {en: [gypsum]}
+  柴胡: {en: [Bupleurum, saikosaponin]}
+  半夏: {en: [Pinellia ternata]}
+  当归: {en: [Angelica sinensis]}
+  川芎: {en: [Ligusticum chuanxiong]}
+  三七: {en: [Panax notoginseng]}
+  金银花: {en: [Lonicera japonica]}
+  连翘: {en: [Forsythia suspensa]}
+  板蓝根: {en: [Isatis indigotica]}
+  五味子: {en: [Schisandra chinensis]}
+  枸杞子: {en: [Lycium barbarum]}
+  雷公藤: {en: [Tripterygium wilfordii, triptolide]}
+formulas:
+  肾气丸: {en: [Shenqi Wan, Jinkui Shenqi, "Rehmannia Eight"]}
+  葛根芩连汤: {en: [Gegen Qinlian decoction]}
+  小柴胡汤: {en: [Xiao Chaihu Tang, Minor Bupleurum decoction]}
+  桂枝汤: {en: [Guizhi Tang, Cinnamon Twig decoction]}
+  麻黄汤: {en: [Mahuang Tang, Ephedra decoction]}
+  白虎加人参汤: {en: [Baihu Jia Renshen Tang]}
+  补阳还五汤: {en: [Buyang Huanwu decoction]}
+  五苓散: {en: [Wuling San, Wuling powder]}
+  六味地黄丸: {en: [Liuwei Dihuang]}
+  青蒿鳖甲汤: {en: [Qinghao Biejia]}

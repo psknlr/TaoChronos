@@ -57,6 +57,9 @@ def register(registry: Any, config: dict[str, Any], context: Any) -> None:
 
     bridge_root = config.get("bridge_domain")
     registry.register("bridge", "classics", BridgeService(study, home / bridge_root if bridge_root else None), default=True)
+    from .audit import AuditService
+
+    registry.register("audit", "classics", AuditService(study, registry), default=True)
 
 
 __all__ = [

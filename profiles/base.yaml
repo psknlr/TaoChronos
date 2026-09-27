@@ -12,6 +12,7 @@ bundles:
   - {plugin: taochronos.plugins.models.litellm_provider}
   - {plugin: taochronos.plugins.sandbox}
   - {plugin: taochronos.plugins.subagents}
+  - {plugin: taochronos.plugins.modern, config: {domain: domains/modern, curated: corpus/modern/evidence.yaml, online: false}}
   - {plugin: taochronos.plugins.storage, config: {event_store: sqlite}}
 agents: ["*"]
 skills: ["*"]

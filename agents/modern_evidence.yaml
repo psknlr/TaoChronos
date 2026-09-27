@@ -7,7 +7,7 @@ objective: >-
 mode: hybrid
 procedure: taochronos.agents.procedures.modern_evidence
 skills: [terminology-mapping, anachronism-guard]
-tools: [literature.modern_evidence, kg.term, bridge.map, bridge.reverse]
+tools: [literature.modern_evidence, kg.term, bridge.map, bridge.reverse, modern.search, modern.safety, rwd.ask]
 context_view: modern
 permissions: [literature:read, kg:read, classics:read]
 output_schema: ModernEvidenceSet

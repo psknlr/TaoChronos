@@ -597,6 +597,35 @@ def _bridge_reverse(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(ctx.cap("bridge").reverse(a["disease"], limit=int(a.get("limit", 15))), int(a.get("items", 15)), chars=400)
 
 
+def _audit_claim(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(ctx.cap("audit").audit(a["claim"], modern=bool(a.get("modern", True))), int(a.get("items", 12)), chars=500)
+
+
+def _graph_evidence(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    g = ctx.cap("audit").graph(passage_id=a.get("passage_id"), text=a.get("text"), claim=a.get("claim"))
+    out: dict[str, Any] = {"stats": g.stats(), "unsupported": g.unsupported()[:10]}
+    if a.get("node"):
+        out["lineage"] = g.lineage(a["node"])[:5]
+    return out
+
+
+def _modern_search(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = ctx.cap("modern").search(a["subject"], a.get("disease"), design=a.get("design"), limit=int(a.get("limit", 15)))
+    if a.get("claim"):
+        res["guard"] = ctx.cap("modern").guard(a["claim"], res["records"])
+    return _brief(res, int(a.get("items", 15)), chars=300)
+
+
+def _modern_safety(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return ctx.cap("modern").safety(a["text"])
+
+
+def _rwd_ask(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = ctx.cap("rwd").ask(a["question"])  # the default (synthetic) database: agents never point at a real one
+    res.pop("sql", None)
+    return res
+
+
 def _study_schools(ctx: ToolContext, a: dict[str, Any]) -> Any:
     probes = a.get("probes") or []
     return _brief(_study(ctx).schools(a.get("school"), probes=[probes] if isinstance(probes, str) else probes),
@@ -866,6 +895,32 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "historical names those passages use — candidates for historical study, not equivalents.",
                  obj({"disease": S, "limit": I, "items": I}, ["disease"]), _bridge_reverse, family="bridge",
                  permission="classics:read", expensive=True, returns="forms, passages with levels, names by period"),
+        ToolSpec("audit.claim", "证据审计 (S15): a claim decomposed into atomic claims, each checked by what it asserts — a "
+                 "historical claim against the witness (every quote verbatim), an interpretation against a cited gloss, a "
+                 "mapping against the presentism guard and the bridge, a modern claim against typed modern evidence (the "
+                 "cross-level guard), an inference for its leap; clinical advice is refused.  Verdicts: SUPPORTED, "
+                 "PARTIALLY_SUPPORTED, CONTESTED, INSUFFICIENT_EVIDENCE, UNSUPPORTED.",
+                 obj({"claim": S, "modern": {"type": "boolean"}, "items": I}, ["claim"]), _audit_claim, family="validation",
+                 permission="classics:read", expensive=True, returns="verdict, atomic claims with checks, safety flags"),
+        ToolSpec("graph.evidence", "证据图谱: the six-layer evidence graph (source → historical → TCM semantic → mapping → modern → "
+                 "evidence) of a passage's mapping or a claim's audit, every edge with its assertion type; the lineage of a "
+                 "node back to the witnesses; the inferred edges with no path to a source.",
+                 obj({"passage_id": S, "text": S, "claim": S, "node": S}), _graph_evidence, family="validation",
+                 permission="classics:read", expensive=True, returns="stats by layer and assertion type, unsupported edges, lineage"),
+        ToolSpec("modern.search", "现代证据 (S13): modern studies of a drug or formula (and a disease), typed by design and "
+                 "population (RCT, cohort, animal, cell, network pharmacology …), summed up by level; with a claim, which "
+                 "records can carry it (the cross-level guard).  PubMed when the capability is online, else the cache and "
+                 "the curated records.",
+                 obj({"subject": S, "disease": S, "design": S, "claim": S, "limit": I, "items": I}, ["subject"]), _modern_search,
+                 family="literature", permission="literature:read", expensive=True, returns="records by type, summary, guard, safety"),
+        ToolSpec("modern.safety", "安全提示: the toxic materials a text names (aconite, aristolochic acid, mercury, arsenic …) — "
+                 "warnings only, never advice.", obj({"text": S}, ["text"]), _modern_safety, family="literature",
+                 permission="literature:read", returns="materials with their documented risks"),
+        ToolSpec("rwd.ask", "真实世界数据 (S14): a question as a study spec over the synthetic OMOP database (exposure, outcome, "
+                 "population, windows), compiled into a checked, parameterised, read-only query; counts, risks and a crude "
+                 "risk ratio with caveats.  A model never writes the SQL.",
+                 obj({"question": S}, ["question"]), _rwd_ask, family="literature", permission="literature:read",
+                 expensive=True, returns="the spec, arms, risk ratio, caveats"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",
