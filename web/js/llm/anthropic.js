@@ -31,7 +31,7 @@ export async function streamClaude({ provider, system, messages, tools, settings
   const client = new Anthropic({
     apiKey: provider.apiKey || (viaProxy ? "tc-env-key" : ""),
     baseURL: viaProxy ? `${route.serverUrl.replace(/\/+$/, "")}/api/llm` : base,
-    defaultHeaders: viaProxy ? { "X-TC-Target": base, ...proxyHeaders(route) } : undefined,
+    defaultHeaders: { ...(provider.headers || {}), ...(viaProxy ? { "X-TC-Target": base, ...proxyHeaders(route) } : {}) },
     dangerouslyAllowBrowser: true,
     maxRetries: 2,
   });

@@ -4,7 +4,8 @@ import { buildHistory, formatOf, runTurn, toolDefs } from "./agent.js";
 import { streamClaude } from "./llm/anthropic.js";
 import { streamChat } from "./llm/openai.js";
 import { extractCitations, renderMarkdown } from "./markdown.js";
-import { activeProvider, allProviders, ASSISTANT, loadProviders, loadSettings, saveSettings } from "./providers.js";
+import { AGENT, MODEL as ASSISTANT, PUBLISHER, PUBLISHER_EN } from "./brand.js";
+import { activeProvider, allProviders, loadProviders, loadSettings, saveSettings } from "./providers.js";
 import { BrowserRuntime, probeServer, sameOriginServer, ServerRuntime } from "./runtime.js";
 import * as store from "./store.js";
 import {
@@ -101,10 +102,13 @@ function switchRuntime(ready = null) {
   return runtimeSwitch;
 }
 
+const corpusLabel = (c) => c?.label || (c?.demo ? "演示语料" : "全量语料");
+
 /** "全量语料 966 部书、205 万段、1.2 亿字 · 88 项工具" */
 function describeRuntime(info, sep = "、") {
   const c = info?.corpus || {};
-  return `${c.demo ? "演示语料" : "全量语料"} ${[count(c.books, "部书"), count(c.passages, "段"), c.characters ? count(c.characters, "字") : null].filter(Boolean).join(sep)} · ${info?.tools?.offered ?? "?"} 项工具`;
+  const books = c.kind === "canon" && c.canon?.held ? `${c.canon.held} 部要籍` : count(c.books, "部书");
+  return `${corpusLabel(c)} ${[books, count(c.passages, "段"), c.characters ? count(c.characters, "字") : null].filter(Boolean).join(sep)} · ${info?.tools?.offered ?? "?"} 项工具`;
 }
 
 async function ensureRuntime() {
@@ -128,7 +132,8 @@ async function getCatalog(mode) {
 
 function routeFor(settings = S.settings) {
   const server = S.runtime?.kind === "server" ? S.runtime : null;
-  if (settings.route === "proxy" || (settings.route === "auto" && server)) {
+  const custom = activeProvider(settings).custom; // a hand-set endpoint goes direct unless told otherwise (the proxy lists hosts)
+  if (settings.route === "proxy" || (settings.route === "auto" && server && !custom)) {
     return { kind: "proxy", serverUrl: server ? server.url : settings.serverUrl, token: server ? server.token : settings.serverToken || "" };
   }
   return { kind: "direct" };
@@ -773,7 +778,7 @@ function renderTopbar() {
   el.modelChip.title = `${ASSISTANT} · 底层模型 ${p.model || "未选"}（${p.label}）${warn ? " · 尚未配置 API Key" : ""}`;
   el.modelChip.setAttribute("aria-label", `${ASSISTANT} 的模型设置`);
   el.title.textContent = S.conv?.title || "";
-  document.title = S.conv?.title ? `${S.conv.title} · ${ASSISTANT}` : `${ASSISTANT} · TaoChronos 中医古籍研究`;
+  document.title = S.conv?.title ? `${S.conv.title} · ${AGENT}` : `${AGENT} · 中医古籍研究智能体`;
 }
 
 function renderSidebar() {
@@ -871,7 +876,7 @@ function renderComposer() {
 function renderComposerHint() {
   const p = activeProvider(S.settings);
   const info = S.runtimeInfo;
-  el.hint.textContent = `${ASSISTANT} · ${S.runtime?.label || "运行环境"}${info ? ` · ${info.corpus?.demo ? "演示语料" : "全量语料"}` : ""}`;
+  el.hint.textContent = `${ASSISTANT} · ${S.runtime?.label || "运行环境"}${info ? ` · ${corpusLabel(info.corpus)}` : ""}`;
   el.hint.title = `底层模型 ${p.model || "未选"}（${p.label}）`;
 }
 
@@ -1044,12 +1049,12 @@ const settingsCtx = {
 };
 
 function exportMarkdown(conv) {
-  const lines = [`# ${conv.title}`, "", `> 导出自 ${ASSISTANT}（TaoChronos）· ${new Date(conv.updated).toLocaleString("zh-CN")}`, ""];
+  const lines = [`# ${conv.title}`, "", `> 导出自${AGENT}（${ASSISTANT}）· ${PUBLISHER}（${PUBLISHER_EN}）· ${new Date(conv.updated).toLocaleString("zh-CN")}`, ""];
   for (const m of conv.messages) {
     if (m.role === "user") lines.push("## 问", "", m.text, "");
     else {
       const tools = (m.segments || []).flatMap((s) => s.calls || []).map((c) => `\`${c.name}\``);
-      lines.push(`## ${ASSISTANT}`, "");
+      lines.push(`## ${AGENT}`, "");
       const about = [m.model ? `底层模型 ${m.model}` : null, tools.length ? `工具 ${[...new Set(tools)].join("、")}` : null].filter(Boolean);
       if (about.length) lines.push(`*${about.join("；")}*`, "");
       lines.push(answerText(m) || "（无回答）", "");
@@ -1165,7 +1170,7 @@ async function main() {
   applyTheme();
   wireChrome();
   await loadProviders();
-  if (!allProviders().some((p) => p.id === S.settings.provider)) S.settings.provider = allProviders()[0].id;
+  if (!allProviders(S.settings).some((p) => p.id === S.settings.provider)) S.settings.provider = allProviders(S.settings)[0].id;
   S.list = await store.listConversations().catch(() => []);
   const m = /^#\/c\/(.+)$/.exec(location.hash);
   S.conv = m ? S.list.find((c) => c.id === m[1]) || null : null;

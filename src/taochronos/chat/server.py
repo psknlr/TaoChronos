@@ -57,7 +57,7 @@ class ChatServer(ThreadingHTTPServer):
 
     def __init__(self, address: tuple[str, int], runtime: Any, *, web_root: Path | None, origins: list[str] | None = None,
                  env_keys: bool = False, proxy: bool = True, home: Path | None = None, quiet: bool = True,
-                 token: str | None = None) -> None:
+                 token: str | None = None, allow_hosts: list[str] | None = None) -> None:
         super().__init__(address, Handler)
         self.runtime = runtime
         self.token = token or None
@@ -65,7 +65,7 @@ class ChatServer(ThreadingHTTPServer):
         self.origins = {o.rstrip("/") for o in (origins or [])} | {PAGES_ORIGIN}
         self.env_keys = env_keys
         self.proxy = proxy
-        self.proxy_hosts = proxy_hosts()
+        self.proxy_hosts = proxy_hosts() | {allowed_host(h) for h in allow_hosts or ()}
         self.home = home
         self.quiet = quiet
         self._runtime_files: dict[str, bytes] = {}
@@ -302,6 +302,15 @@ def web_root(home: Path | None) -> Path | None:
     return None
 
 
+def allowed_host(value: str) -> tuple[str, str, int]:
+    """``--allow-host`` → (scheme, host, port): ``api.example.com`` (https), ``https://api.example.com:8443``,
+    ``http://10.0.0.5:8000`` — a model endpoint set by hand in the page that the proxy may forward to."""
+    parts = urlsplit(value if "://" in value else f"https://{value}")
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise ValueError(f"--allow-host: not a host or URL: {value!r}")
+    return parts.scheme, parts.hostname, parts.port or (443 if parts.scheme == "https" else 80)
+
+
 def lan_address() -> str | None:
     """This machine's address on its network, for the page other machines open (a UDP socket is routed, nothing is sent)."""
     import socket
@@ -324,13 +333,13 @@ def access_token(host: str, token: str | None) -> str | None:
 
 def serve(runtime: Any, *, host: str = "127.0.0.1", port: int = 8765, web: Path | None = None, origins: list[str] | None = None,
           env_keys: bool = False, proxy: bool = True, open_browser: bool = False, quiet: bool = True,
-          token: str | None = None) -> None:
+          token: str | None = None, allow_hosts: list[str] | None = None) -> None:
     home = Path(runtime.h.home)
     root = web or web_root(home)
     token = access_token(host, token)  # reachable from other machines: never without a token
     info = runtime.info()  # counted before the first request, which then answers at once
     server = ChatServer((host, port), runtime, web_root=root, origins=origins, env_keys=env_keys, proxy=proxy, home=home,
-                        quiet=quiet, token=token)
+                        quiet=quiet, token=token, allow_hosts=allow_hosts)
     shown = "localhost" if host in ("127.0.0.1", "0.0.0.0", "::") else host
     url = f"http://{shown}:{server.server_address[1]}/"
     open_url = f"{url}#token={token}" if token else url
@@ -352,4 +361,4 @@ def serve(runtime: Any, *, host: str = "127.0.0.1", port: int = 8765, web: Path 
         server.server_close()
 
 
-__all__ = ["ENV_KEY", "ChatServer", "PAGES_ORIGIN", "access_token", "lan_address", "serve", "web_root"]
+__all__ = ["ENV_KEY", "ChatServer", "PAGES_ORIGIN", "access_token", "allowed_host", "lan_address", "serve", "web_root"]

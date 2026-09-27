@@ -56,6 +56,7 @@ from typing import Any
 from ..domain import DomainPack
 from .argument import ArgumentStudy
 from .base import StudyBase
+from .canon import CanonStudy
 from .cases import CaseStudy
 from .chain import ChainStudy
 from .clause import ClauseStructure
@@ -115,6 +116,7 @@ class StudyService(StudyBase):
         self._pairs = PairsStudy(self, FormulaHarvest(self, self._formulas))
         self._schools = SchoolStudy(self, self._network, self._pairs.h)
         self._names = NameStudy(self)
+        self._canon = CanonStudy(self, self._network)
         self._chain = ChainStudy(self, self._concordance)
         self._entities = EntityRecognizer(self)
         self._places = PlaceStudy(self, self._network)
@@ -150,6 +152,14 @@ class StudyService(StudyBase):
         out = self._network.summary(self.cache_dir(), **kw)
         out["lineage"] = self._network.lineage(self.cache_dir())
         return out
+
+    def canon(self, query: str | None = None, **kw: Any) -> dict[str, Any]:
+        """要籍: the works of the ranked list (corpus/catalog/canon.yaml), each marked with whether this corpus holds it."""
+        return self._canon.lookup(query or "", **kw)
+
+    def canon_rank(self, top: int = 350) -> dict[str, Any]:
+        """Rank the works of this corpus by how they are cited (for ``study canon --write-catalog``)."""
+        return self._canon.rank(top, self.cache_dir())
 
     def cards(self, *, book: str | None = None, formulas: list[str] = (), herbs: list[str] = (), term: str | None = None,
               limit: int = 60) -> dict[str, Any]:

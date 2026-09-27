@@ -70,11 +70,14 @@ def test_the_system_prompt_carries_the_evidence_discipline_and_the_corpus(rt):
         assert must in prompt
 
 
-def test_the_assistant_is_tao_r1_over_the_model_the_user_chose(rt):
+def test_the_assistant_is_daonaijiu_with_the_model_tao_r1_published_by_impf_ai(rt):
     info = rt.info()
-    assert info["assistant_name"] == "Tao-R1"
+    assert (info["agent_name"], info["assistant_name"]) == ("道乃久", "Tao-R1")
+    assert info["publisher"] == "医哲未来人工智能研究院（IMPF-AI）"
     prompt = info["system_prompt"]
-    assert prompt.startswith("你是 Tao-R1") and "底层模型" in prompt and prompt.rstrip().endswith("连接本地服务（全量语料）。")
+    assert prompt.startswith("你是道乃久（TaoChronos）") and "医哲未来人工智能研究院（IMPF-AI）发布" in prompt and "Tao-R1" in prompt
+    assert "不要否认底层模型" in prompt and prompt.rstrip().endswith("连接本地服务（全量语料）。")
+    assert info["corpus"]["kind"] == "demo" and info["corpus"]["canon"]["listed"] == 350
     books = next(t for t in rt.catalog("all")["tools"] if t["tool"] == "classics.list_books")
     assert set(books["parameters"]["properties"]) == {"query", "dynasty", "category", "limit"}
 
@@ -178,6 +181,20 @@ def test_the_server_admits_only_this_machine_and_the_published_client(server):
     assert resp.status == 403 and b"listed providers" in raw
 
 
+def test_the_proxy_reaches_a_hand_set_endpoint_only_when_allowed(rt):
+    from taochronos.chat.server import ChatServer, allowed_host
+
+    assert allowed_host("api.example.com") == ("https", "api.example.com", 443)
+    assert allowed_host("http://10.0.0.5:8000/v1") == ("http", "10.0.0.5", 8000)
+    with pytest.raises(ValueError):
+        allowed_host("ftp://x")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=None, home=ROOT, allow_hosts=["https://gw.example.com:8443"])
+    try:
+        assert ("https", "gw.example.com", 8443) in srv.proxy_hosts and ("https", "api.minimax.cn", 443) in srv.proxy_hosts
+    finally:
+        srv.server_close()
+
+
 def test_the_server_answers_its_own_pages_wherever_it_is_reached(server):
     assert server.origin_allowed("http://192.168.1.5:8765", "192.168.1.5:8765")  # its own page, on a LAN address
     assert not server.origin_allowed("http://192.168.1.5:8765", "192.168.1.6:8765")
@@ -269,5 +286,8 @@ def test_the_site_build_is_deterministic_and_complete(tmp_path):
         assert (site / rel).is_file(), rel
     manifest = json.loads((site / "runtime" / "manifest.json").read_text())
     assert manifest["pyodide_base"].startswith("https://cdn.jsdelivr.net/pyodide/") and info["files"] == manifest["files"]
+    if (ROOT / "corpus" / "web" / "passages.jsonl.gz").is_file():  # the 要籍语料: a store without its index, gzipped
+        corpus = manifest["files"]["corpus.sqlite.gz"]
+        assert corpus["profile"] == "web-canon" and corpus["bytes"] == (site / "runtime" / "corpus.sqlite.gz").stat().st_size
     html = (site / "index.html").read_text(encoding="utf-8")
     assert not re.search(r'(src|href)="/', html)  # every path is relative: the site lives under /TaoChronos/

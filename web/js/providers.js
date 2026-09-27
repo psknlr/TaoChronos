@@ -3,8 +3,6 @@
 
 import { storage } from "./util.js";
 
-/** The name the assistant goes by: TaoChronos's tools and evidence discipline over the model chosen below. */
-export const ASSISTANT = "Tao-R1";
 
 const FALLBACK = [{
   id: "minimax", label: "MiniMax（国内站）", format: "openai", base_url: "https://api.minimax.cn/v1", key_env: "MINIMAX_API_KEY",
@@ -31,6 +29,7 @@ export const DEFAULTS = {
   instructions: "",
   theme: "system",
   verifyQuotes: true,
+  customProviders: [],     // endpoints set by hand: {id, label, format, base_url, full_url, model, headers, extra_body, max_tokens_param, reasoning, vision}
 };
 
 let providers = FALLBACK;
@@ -46,12 +45,30 @@ export async function loadProviders() {
   return providers;
 }
 
-export const allProviders = () => providers;
-export const providerById = (id) => providers.find((p) => p.id === id) || providers[0];
+/** An endpoint the user set by hand, as a provider the page can call. */
+export function customPreset(c) {
+  const anthropic = c.format === "anthropic";
+  return {
+    id: c.id, label: c.label || "自定义 API", format: anthropic ? "anthropic" : "openai", base_url: c.base_url || "",
+    full_url: Boolean(c.full_url) && !anthropic, key_optional: true, max_tokens_param: c.max_tokens_param || "max_tokens",
+    extra_body: c.extra_body || {}, headers: c.headers || {}, examples: c.model ? [c.model] : [], default_model: c.model || "",
+    reasoning: anthropic ? "thinking" : c.reasoning || null, vision: Boolean(c.vision), stream_usage: c.stream_usage !== false,
+    custom: true, note: "",
+  };
+}
+
+export function newCustomProvider(n = 1) {
+  return { id: `custom-${Date.now().toString(36)}`, label: `我的 API ${n}`, format: "openai", base_url: "", full_url: false, model: "",
+    headers: {}, extra_body: {}, max_tokens_param: "max_tokens", reasoning: null, vision: false };
+}
+
+export const allProviders = (settings) => [...providers, ...(settings?.customProviders || []).map(customPreset)];
+export const providerById = (id, settings) => allProviders(settings).find((p) => p.id === id) || providers[0];
 
 export function loadSettings() {
   const saved = storage.get("tc.settings", {}) || {};
-  return { ...DEFAULTS, ...saved, models: { ...(saved.models || {}) }, baseUrls: { ...(saved.baseUrls || {}) }, keys: { ...(saved.keys || {}) } };
+  return { ...DEFAULTS, ...saved, models: { ...(saved.models || {}) }, baseUrls: { ...(saved.baseUrls || {}) }, keys: { ...(saved.keys || {}) },
+    customProviders: Array.isArray(saved.customProviders) ? saved.customProviders.map((c) => ({ ...c })) : [] };
 }
 
 export function saveSettings(settings) {
@@ -60,11 +77,11 @@ export function saveSettings(settings) {
 
 /** The provider as configured now: preset + the user's model, base URL and key. */
 export function activeProvider(settings) {
-  const p = providerById(settings.provider);
+  const p = providerById(settings.provider, settings);
   return {
     ...p,
-    model: settings.models[p.id] || p.default_model || (p.examples || [])[0] || "",
-    baseUrl: (settings.baseUrls[p.id] || p.base_url || "").replace(/\/+$/, ""),
+    model: (p.custom ? p.default_model : settings.models[p.id] || p.default_model) || (p.examples || [])[0] || "",
+    baseUrl: ((p.custom ? p.base_url : settings.baseUrls[p.id] || p.base_url) || "").trim().replace(/\/+$/, ""),
     apiKey: settings.keys[p.id] || "",
   };
 }

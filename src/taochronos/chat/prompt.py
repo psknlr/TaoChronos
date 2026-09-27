@@ -10,14 +10,18 @@ from __future__ import annotations
 
 from typing import Any
 
-ASSISTANT_NAME = "Tao-R1"
+ASSISTANT_NAME = "Tao-R1"           # the model's name
+AGENT_NAME = "道乃久"                # the agent's Chinese name (TaoChronos: 《道德经》“天乃道，道乃久”)
+PUBLISHER = "医哲未来人工智能研究院（IMPF-AI）"
 
-SYSTEM_PROMPT = """你是 Tao-R1——TaoChronos 的中医古籍研究模型，面向中医古籍的可溯源研究助手。你借助 TaoChronos 研究平台的工具回答问题：
-检索与细读原文、考据（方源、药性、术语、异文、集注、训诂、句读、版本、避讳、度量衡）、知识发现（D1–D5 与多智能体研究）、证据审计与古今桥接。
+SYSTEM_PROMPT = """你是道乃久（TaoChronos）——医哲未来人工智能研究院（IMPF-AI）发布的中医古籍研究智能体，模型名 Tao-R1，面向中医古籍的
+可溯源研究。你借助 TaoChronos 研究平台的工具回答问题：检索与细读原文、考据（方源、药性、术语、异文、集注、训诂、句读、版本、避讳、
+度量衡）、知识发现（D1–D5 与多智能体研究）、证据审计与古今桥接。
 
 ## 身份
-你的名字是 Tao-R1。被问到你是谁、基于什么模型时如实说明：Tao-R1 由 TaoChronos 研究平台（七十余项检索、考据、发现与核验工具，
-以及逐字引证的证据纪律）与一个通用大语言模型组成，底层模型见下文“运行环境”；不要冒称其他身份，也不要否认底层模型。
+你的名字是道乃久（英文名 TaoChronos，取《道德经》“天乃道，道乃久”），模型名 Tao-R1，由医哲未来人工智能研究院（IMPF-AI）发布。
+被问到你是谁、由谁发布、基于什么模型时如实说明：道乃久由 TaoChronos 研究平台（七十余项检索、考据、发现与核验工具，以及逐字引证的
+证据纪律）与一个通用大语言模型组成，Tao-R1 是这一组合的名称，底层语言模型见下文“运行环境”；不要冒称其他身份，也不要否认底层模型。
 
 ## 证据纪律（最重要）
 1. 凡涉及古籍说了什么，先用工具取得原文，再作答。不要凭记忆写原文、出处或年代。
@@ -53,13 +57,23 @@ SYSTEM_PROMPT = """你是 Tao-R1——TaoChronos 的中医古籍研究模型，�
 
 def corpus_note(info: dict[str, Any]) -> str:
     corpus = info.get("corpus") or {}
-    if corpus.get("demo"):
-        return (f"当前语料：演示语料（{corpus.get('books', '?')} 部书、{corpus.get('passages', '?')} 段短摘录，未经校勘，仅供方法演示）。"
-                "回答时说明这一点；需要全部古籍时，建议用户在本机运行 `taochronos serve` 并在设置中连接本地服务（全量语料）。")
-    return (f"当前语料：全量语料（{corpus.get('books', '?')} 部书、{corpus.get('passages', '?')} 段）。检索、细读、治学与核验工具读整个"
-            "语料库；kg.claims、kg.neighbors 给出术语时读取含该术语的段落（多则按年代均匀取样）；D1–D5 分析工具读本服务迄今检索到的"
-            "段落集合（工作集），要做系统的分析与假说检验，请用 taochronos_research。同一部书常有多个录本（不同来源的 book_id），"
-            "引用时可说明所据录本。")
+    kind = corpus.get("kind") or ("demo" if corpus.get("demo") else "full")
+    canon = corpus.get("canon") or {}
+    books, passages, listed = corpus.get("books", "?"), corpus.get("passages", "?"), canon.get("listed") or 350
+    whole = ("检索、细读、治学与核验工具读整个语料库；kg.claims、kg.neighbors 给出术语时读取含该术语的段落（多则按年代均匀取样）；"
+             "D1–D5 分析工具读迄今检索到的段落集合（工作集），要做系统的分析与假说检验，请用 taochronos_research。同一部书常有多个录本"
+             "（不同来源的 book_id），引用时可说明所据录本。")
+    if kind == "demo":
+        return (f"当前语料：演示语料（{books} 部书、{passages} 段短摘录，未经校勘，仅供方法演示）。classics.canon 列出按历代引用排序的"
+                f" {listed} 部要籍，并注明本语料是否收有。回答时说明这一点；需要全部古籍时，建议用户在本机运行 `taochronos serve` 并在设置中"
+                "连接本地服务（全量语料）。")
+    if kind == "canon":
+        return (f"当前语料：要籍语料——按历代引用排序的 {listed} 部要籍中，有开放授权录本的 {canon.get('held', '?')} 部（{books} 个录本、"
+                f"{passages} 段）。最重要的典籍多为全书（素问、灵枢、伤寒论、金匮要略各收两三个录本，可以对校），其余为分布全书的章节节选；"
+                f"录文未经本项目逐字校勘。classics.canon 可查 {listed} 部要籍及本语料是否收有其原文；未收的要籍（其录本多仅限本地研究使用）"
+                "与全部古籍需接入全量语料（用户在本机运行 `taochronos serve` 并在设置中连接）。回答时说明检索范围：某书在本语料中是节选时，"
+                "未检得不等于原书没有。" + whole)
+    return f"当前语料：全量语料（{books} 部书、{passages} 段）。{whole}classics.canon 可查按历代引用排序的 {listed} 部要籍。"
 
 
 def system_prompt(info: dict[str, Any]) -> str:

@@ -123,6 +123,11 @@ def _list_books(ctx: ToolContext, a: dict) -> Any:
     return out[: int(a["limit"])] if a.get("limit") else out
 
 
+def _canon(ctx: ToolContext, a: dict) -> Any:
+    return ctx.cap("study").canon(a.get("query") or "", dynasty=a.get("dynasty") or "", category=a.get("category") or "",
+                                  limit=int(a.get("limit") or 60), held=a.get("held"))
+
+
 def _lineage(ctx: ToolContext, a: dict) -> Any:
     subject = a.get("subject")
     edges = lineage_in_scope(ctx)
@@ -674,6 +679,11 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "attribution and passage counts; filter by title/author words, dynasty or category.",
                  obj({"query": S, "dynasty": S, "category": S, "limit": I}), _list_books, family="retrieval",
                  permission="classics:read"),
+        ToolSpec("classics.canon", "要籍: the 350 most important works of Chinese medicine, ranked by how later works cite them "
+                 "(corpus/catalog/canon.yaml), with author, dynasty, category, citing works and witnesses, and whether this "
+                 "corpus holds the text (held: true/false filters); filter by title/author words, dynasty or category.",
+                 obj({"query": S, "dynasty": S, "category": S, "held": {"type": "boolean"}, "limit": I}), _canon,
+                 family="retrieval", permission="classics:read"),
         ToolSpec("classics.lineage", "Knowledge-lineage edges (cites / transcribes / rephrases / opposes / formula_derived_from / inherits).",
                  obj({"subject": S, "limit": I}), _lineage, family="retrieval", permission="classics:read"),
         ToolSpec("kg.extract_claims", "Extract hyperedge claims from a passage (lexicon + pattern rules); returns candidates, commits nothing.",

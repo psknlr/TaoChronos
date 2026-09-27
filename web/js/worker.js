@@ -1,6 +1,8 @@
-// The in-browser runtime: Pyodide (CPython compiled to WebAssembly) running the TaoChronos package on the
-// demonstration corpus, inside a module worker so the page never blocks.  Messages: {id, method, params} →
-// {id, result} | {id, error}; progress while loading: {type: "progress", progress, message}.
+// The in-browser runtime: Pyodide (CPython compiled to WebAssembly) running the TaoChronos package on the 要籍语料 —
+// the openly licensed texts of the ranked works, shipped as a store without its full-text index, indexed here on the
+// first visit and kept (Cache API) — or, on a site built without it, the demonstration corpus.  It runs inside a
+// module worker so the page never blocks.  Messages: {id, method, params} → {id, result} | {id, error}; progress while
+// loading: {type: "progress", progress, message}.
 
 const CDN = "https://cdn.jsdelivr.net/pyodide/v0.28.2/full/";
 let py = null;
@@ -30,6 +32,69 @@ async function bytes(url, sha) {
   return buf;
 }
 
+const CORPUS = "/home/pyodide/data/corpus/tcm.sqlite";
+const mb = (n) => (n / 1048576).toFixed(1);
+
+async function openCache() {
+  try { return self.caches ? await caches.open("taochronos-runtime") : null; } catch { return null; }
+}
+
+async function download(url, total, onBytes) {
+  const r = await fetch(url, { cache: "no-cache" });
+  if (!r.ok) throw new Error(`下载 ${url} 失败（HTTP ${r.status}）`);
+  if (!r.body) return new Uint8Array(await r.arrayBuffer());
+  const reader = r.body.getReader();
+  const chunks = [];
+  let got = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    got += value.length;
+    onBytes?.(got, total || got);
+  }
+  const out = new Uint8Array(got);
+  let at = 0;
+  for (const c of chunks) { out.set(c, at); at += c.length; }
+  return out;
+}
+
+async function gunzip(buf) {
+  const stream = new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/** The 要籍语料 at CORPUS: the indexed store kept from an earlier visit, else downloaded, unpacked and indexed now. */
+async function loadCorpus(base, meta) {
+  const url = new URL("runtime/corpus.sqlite.gz", base).href;
+  const key = `${url}#indexed-${meta.sha256}`;
+  const cache = await openCache();
+  py.FS.mkdirTree("/home/pyodide/data/corpus");
+  const hit = cache ? await cache.match(key).catch(() => null) : null;
+  if (hit) {
+    progress(72, "载入要籍语料");
+    py.FS.writeFile(CORPUS, new Uint8Array(await hit.arrayBuffer()));
+    return;
+  }
+  const gz = await download(url, meta.bytes, (got, total) => progress(62 + 10 * got / total, `下载要籍语料 ${mb(got)} / ${mb(total)} MB（仅首次）`));
+  py.FS.writeFile(CORPUS, await gunzip(gz));
+  progress(74, "为要籍语料建立全文索引（仅首次）");
+  py.globals.set("_index_progress", (done, total) => progress(74 + 12 * done / total, `建立全文索引 ${Math.round(100 * done / total)}%（仅首次）`));
+  py.runPython(`
+from pathlib import Path
+from taochronos.plugins.classics.domain import DomainPack
+from taochronos.plugins.classics.webcorpus import index_store
+index_store(Path("${CORPUS}"), DomainPack(Path("/home/pyodide/taochronos/domains/classics")).variants.normalize_text,
+            progress=lambda done, total: _index_progress(done, total))
+`);
+  if (cache) {
+    try {
+      for (const old of await cache.keys()) if (old.url.startsWith(url + "#")) await cache.delete(old);
+      await cache.put(key, new Response(py.FS.readFile(CORPUS)));
+    } catch { /* storage full or unavailable: indexed again next time */ }
+  }
+}
+
 async function loadPython(base, manifest) {
   const wanted = new URL(manifest.pyodide_base || CDN, base).href;
   const bases = wanted === CDN ? [CDN] : [wanted, CDN];
@@ -51,7 +116,7 @@ os.environ["TAOCHRONOS_HOME"] = "/home/pyodide/taochronos"
 os.environ["TAOCHRONOS_DATA"] = "/home/pyodide/data"
 os.environ["TAOCHRONOS_CACHE"] = "off"
 from taochronos.chat import ChatRuntime
-_rt = ChatRuntime.create("full-discovery", kind="browser", ephemeral=True, data_dir="/home/pyodide/data")
+_rt = ChatRuntime.create(_profile, kind="browser", ephemeral=True, data_dir="/home/pyodide/data")
 
 def _rpc(method, params):
     p = json.loads(params or "{}")
@@ -81,7 +146,7 @@ async function init({ base }) {
   py = await loadPython(base, manifest);
   progress(45, "载入 PyYAML 与 SQLite");
   await py.loadPackage(["pyyaml", "sqlite3"], { messageCallback: () => {}, errorCallback: () => {} });
-  progress(60, "载入 TaoChronos 与演示语料");
+  progress(56, "载入 TaoChronos");
   const files = manifest.files || {};
   const [pkg, home] = await Promise.all([
     bytes(new URL("runtime/taochronos.zip", base).href, files["taochronos.zip"]?.sha256),
@@ -92,7 +157,10 @@ async function init({ base }) {
   py.FS.mkdirTree("/home/pyodide/taochronos");
   py.FS.mkdirTree("/home/pyodide/data");
   py.unpackArchive(home, "zip", { extractDir: "/home/pyodide/taochronos" });
-  progress(80, "建立索引与工具网格");
+  const corpus = files["corpus.sqlite.gz"];
+  if (corpus) await loadCorpus(base, corpus);
+  py.globals.set("_profile", corpus ? corpus.profile || "web-canon" : "full-discovery");
+  progress(88, "建立工具网格");
   py.runPython(BOOT);
   rpc = py.globals.get("_rpc");
   const info = JSON.parse(rpc("info", "{}"));

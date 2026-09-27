@@ -169,8 +169,8 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .app.sidebar-collapsed .sidebar { border-right-color: transparent; }
 .brand { display: flex; align-items: center; gap: 10px; padding: 14px 14px 10px 16px; min-width: var(--sidebar-w); }
 .brand img { width: 30px; height: 30px; border-radius: 8px; box-shadow: var(--shadow-sm); }
-.brand .name { font-weight: 650; letter-spacing: .01em; line-height: 1.15; }
-.brand .name small { display: block; font-weight: 400; font-size: 11.5px; color: var(--ink-3); letter-spacing: .04em; }
+.brand .name { font-family: var(--font-serif); font-weight: 700; font-size: 17px; letter-spacing: .16em; line-height: 1.2; }
+.brand .name small { display: block; font-family: var(--font-sans); font-weight: 450; font-size: 11px; color: var(--ink-3); letter-spacing: .06em; margin-top: 1px; }
 .brand .spacer { flex: 1; }
 .side-actions { padding: 4px 12px 8px; display: grid; gap: 8px; min-width: var(--sidebar-w); }
 .new-chat {
@@ -281,12 +281,12 @@ kbd { font: 11px var(--font-mono); color: var(--ink-3); border: 1px solid var(--
 }
 .hero .seal { width: 64px; height: 64px; border-radius: 16px; box-shadow: var(--shadow); animation: rise .6s var(--ease) both; }
 .hero .model-badge {
-  display: inline-flex; align-items: baseline; gap: 8px; margin-top: 16px; padding: 3px 12px 3px 11px;
+  display: inline-flex; align-items: baseline; gap: 8px; margin: 10px 0 12px; padding: 3px 12px 3px 11px;
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius: 999px; background: var(--surface);
-  font-size: 12px; color: var(--ink-3); letter-spacing: .08em; animation: rise .6s .03s var(--ease) both;
+  font-size: 12px; color: var(--ink-3); letter-spacing: .08em; animation: rise .6s .08s var(--ease) both;
 }
 .hero .model-badge b { font-family: var(--font-serif); font-size: 13.5px; font-weight: 700; color: var(--accent); letter-spacing: .04em; }
-.hero h1 { font-family: var(--font-serif); font-weight: 600; font-size: clamp(27px, 4.2vw, 36px); letter-spacing: .12em; margin: 14px 0 4px; animation: rise .6s .05s var(--ease) both; }
+.hero h1 { font-family: var(--font-serif); font-weight: 700; font-size: clamp(32px, 5vw, 44px); letter-spacing: .32em; text-indent: .32em; margin: 18px 0 0; line-height: 1.2; animation: rise .6s .05s var(--ease) both; }
 .hero .sub { color: var(--ink-3); margin: 0 0 14px; letter-spacing: .06em; animation: rise .6s .1s var(--ease) both; }
 .hero .status { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-3); border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; background: var(--surface); animation: rise .6s .15s var(--ease) both; }
 .hero .status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--jade); }
@@ -312,6 +312,7 @@ kbd { font: 11px var(--font-mono); color: var(--ink-3); border: 1px solid var(--
 .starter:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow); color: var(--ink); }
 .starter b { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--accent); letter-spacing: .08em; margin-bottom: 4px; }
 .hero .keyhint { margin-top: 20px; font-size: 12.5px; color: var(--ink-3); animation: rise .6s .25s var(--ease) both; }
+.hero .publisher { margin: 10px 0 0; font-size: 12px; color: var(--ink-3); letter-spacing: .08em; opacity: .85; animation: rise .6s .3s var(--ease) both; }
 .hero .keyhint button { border: 0; background: none; color: var(--accent); padding: 0; }
 
 /* ------------------------------------------------------------------ messages */
@@ -611,6 +612,14 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(2px); }
 .provider-opt:hover { border-color: var(--line-2); }
 .provider-opt.on { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .provider-opt small { display: block; font-size: 11px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.provider-opt .lbl { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.provider-opt .tag { font-size: 10.5px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 0 6px; flex: none; }
+.provider-opt.add { border-style: dashed; color: var(--accent); }
+.provider-opt.add:hover { border-color: var(--accent); }
+.custom-api { display: grid; gap: 10px; border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line)); border-radius: 14px; padding: 12px 14px; background: var(--paper); }
+.custom-api .more summary { cursor: pointer; font-size: 13px; color: var(--ink-2); }
+.custom-api textarea.mono { font: 12.5px/1.5 var(--font-mono); }
+.field .help.err { color: var(--danger); }
 .notice.ok { border-color: color-mix(in srgb, var(--jade) 38%, transparent); background: var(--jade-soft); color: var(--ink-2); }
 .notice.ok > .icon { color: var(--jade); }
 .notice b { color: var(--ink); }

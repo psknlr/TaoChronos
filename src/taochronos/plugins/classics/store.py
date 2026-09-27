@@ -200,7 +200,8 @@ class CorpusStore:
         self.db.execute("DELETE FROM claim_cache WHERE passage_id LIKE ?", (book_id + ".%",))
         return len(rows)
 
-    def add_passages(self, rows: Iterable[dict[str, Any]], normalize: Callable[[str], str]) -> int:
+    def add_passages(self, rows: Iterable[dict[str, Any]], normalize: Callable[[str], str], *, index: bool = True) -> int:
+        """Insert passages; with ``index`` (the default) also their full-text index entries."""
         n = 0
         cur = self.db.cursor()
         for r in rows:
@@ -211,7 +212,8 @@ class CorpusStore:
                  r.get("y_start"), r.get("y_end"), _dump(r["locator"]), _dump(r["temporal"]), r["text"], r.get("punctuation", "none"),
                  _dump(r.get("extra") or {})),
             )
-            cur.execute("INSERT INTO grams(rowid, g) VALUES (?, ?)", (cur.lastrowid, grams(normalize(r["text"]))))
+            if index:
+                cur.execute("INSERT INTO grams(rowid, g) VALUES (?, ?)", (cur.lastrowid, grams(normalize(r["text"]))))
             n += 1
         return n
 
@@ -254,6 +256,7 @@ class StoreCorpus:
         self.root = root
         self.exclude_books = set(exclude_books)
         self.fingerprint_ok = fingerprint is None or self.store.meta("normalizer") in (None, fingerprint)
+        self.edition = self.store.meta("edition") or "full"  # "web": the 要籍语料 the published site carries
         self.books: dict[str, Book] = {}
         self.sources: dict[str, str] = {}
         for bid, source, data in self.store.db.execute("SELECT id, source, data FROM books ORDER BY id"):

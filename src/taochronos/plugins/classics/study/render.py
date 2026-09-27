@@ -991,7 +991,20 @@ def schools(r: dict[str, Any]) -> list[str]:
     return out + ["", f"> {r.get('note_method', '')}"]
 
 
-PAGES = {"concordance": concordance, "formula": formula, "herb": herb, "term": term, "taboo": taboo, "citations": citations,
+def canon(r: dict[str, Any]) -> list[str]:
+    if "path" in r:
+        return ["# 要籍书目", "", f"写入 {r['path']}：{r['works']} 部，其中 {r['open']} 部有开放授权的录本（可随网站发布）。"]
+    lines = ["# 要籍书目（按历代引用排序）", "", f"共 {r['listed']} 部；当前语料收有其中 {r['held_here']} 部；本次列出 {len(r['works'])} 部。",
+             "", f"> {r['method']}", "", "| 序 | 书名 | 作者 | 朝代 | 类别 | 被引（部） | 见证本 | 四库 | 本语料 |",
+             "|---|---|---|---|---|---|---|---|---|"]
+    for w in r["works"]:
+        lines.append(f"| {w['rank']} | {w['title']} | {'、'.join(w.get('authors') or [])} | {w.get('dynasty') or ''} | "
+                     f"{w.get('category') or ''} | {w.get('cited_by')} | {w.get('witnesses')} | {'✓' if w.get('siku') else ''} | "
+                     f"{'✓' if w.get('in_this_corpus') else ''} |")
+    return lines
+
+
+PAGES = {"canon": canon, "concordance": concordance, "formula": formula, "herb": herb, "term": term, "taboo": taboo, "citations": citations,
          "cards": cards, "reading": reading, "variants": variants, "stemma": stemma, "edition": edition, "reuse": reuse,
          "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship, "cases": cases,
          "trajectories": trajectories, "argument": argument, "senses": senses, "fragments": fragments, "witnesses": witnesses,

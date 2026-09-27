@@ -70,7 +70,8 @@ export const proxyHeaders = (route) => (route?.kind === "proxy" && route.token ?
  * {type: "text" | "thinking" | "tool", ...} as the answer arrives.
  */
 export async function streamChat({ provider, messages, tools, settings, route, signal, onEvent = () => {} }) {
-  const url = `${provider.baseUrl}/chat/completions`;
+  const url = provider.full_url ? provider.baseUrl : `${provider.baseUrl}/chat/completions`;
+  if (!/^https?:\/\//.test(url)) throw new ProviderError(`接口地址无效：${url || "（未填写）"}`);
   const body = { model: provider.model, messages, stream: true };
   if (tools && tools.length) {
     body.tools = tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } }));
@@ -86,6 +87,7 @@ export async function streamChat({ provider, messages, tools, settings, route, s
   const headers = { "Content-Type": "application/json", Accept: "text/event-stream", ...target.headers };
   if (provider.apiKey) headers.Authorization = `Bearer ${provider.apiKey}`;
   else if (route?.kind === "proxy") headers.Authorization = "Bearer tc-env-key";
+  Object.assign(headers, provider.headers || {}); // a hand-set endpoint's own headers (api-key: …, a gateway's routing header)
   if (provider.id === "openrouter") { headers["HTTP-Referer"] = location.origin; headers["X-Title"] = "TaoChronos"; }
 
   let resp;

@@ -234,6 +234,26 @@ annotates — is set aside and reported. The network is built once (about half a
 Song–Jin–Yuan 日华子 (1 876, through the 证类本草), 张机, 陶弘景. The reception of 张仲景 begins with the 针灸甲乙经 and
 the 脉经; the lineage lists who cites whom (唐慎微 → 日华子, 李时珍 → 苏颂 …).
 
+《本经》 is read as the 神农本草经 (`citations.yaml`), not as the Qing 本经逢原 whose title begins with it: a title's prefix is
+not taken for an abbreviation where the tradition has its own.
+
+## 要籍 (canon)
+
+`taochronos study canon --write-catalog` ranks the works of the corpus by the citation network above and writes the first
+350 to `corpus/catalog/canon.yaml` (metadata only).  For each work: **influence**, the distinct works that cite it (a citing
+work older than it by more than 30 years is a misresolved title and is not counted); **breadth**, the periods in which it
+is cited; **volume**, its citations in all; **transmission**, its witnesses in the corpus; **siku**, whether the 四库全书
+editors took it into 子部·医家类.  score = 10·log₂(1+influence) + 2·breadth + 2·log₂(1+volume) + 3·log₂(1+witnesses) +
+6·siku; ties fall to the earlier work; non-medical and post-1949 works are not ranked.  Each entry also records its
+sources and whether one of its witnesses is under an open licence — the web client's corpus is made of those
+([web.md](web.md#要籍语料--the-browsers-corpus)).  `taochronos study canon [words]` and the tool `classics.canon` list the
+works (filter by title or author, dynasty, category; `held: true/false`) and say whether the current corpus holds each.
+
+**Result (full corpus, 759 works ranked).** 1 黄帝内经素问 (cited by 365 works), 2 灵枢, 3 金匮要略, 4 难经, 5 伤寒论,
+6 神农本草经, 7 千金要方, 8 脉经, 9 甲乙经, 10 外台秘要, … 14 本草纲目, 17 医宗金鉴, … 39 温疫论; every one of the 350 is
+cited by at least two later works; 137 are Qing, 73 Ming.  It reads what this corpus quotes: late works have had less time
+to be cited, and works known only through quotations (佚书) are not in it.
+
 ## 学习 (learning)
 
 - **方证 cards** from a book: every clause that prescribes a formula (…者，桂枝汤主之 / 宜… / 可与…), with the formula

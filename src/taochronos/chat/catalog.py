@@ -28,7 +28,7 @@ FAMILIES: dict[str, dict[str, str]] = {
 
 # offered directly in ``core`` mode: the questions a conversation asks most
 CORE = [
-    "classics.search", "classics.get_passage", "classics.list_books",
+    "classics.search", "classics.get_passage", "classics.list_books", "classics.canon",
     "kg.term", "kg.claims",
     "study.formula", "study.herb", "study.term", "study.concordance", "study.commentaries", "study.translate",
     "study.network",

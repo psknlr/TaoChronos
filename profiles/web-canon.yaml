@@ -1,0 +1,18 @@
+# 要籍语料 — the corpus of the published site: the openly licensed texts of the ranked works (corpus/web, packed by
+# `taochronos web pack`, built into a store by `taochronos web build`, indexed by the browser on first use).  Like
+# full-corpus, without the lexicon harvested from the full corpus (it names what this corpus mostly does not hold).
+name: web-canon
+extends: full-corpus
+description: 要籍语料 — the openly licensed texts of the ranked works (the published site's corpus), as a store.
+bundles:
+  - {plugin: taochronos.plugins.classics, config: {domain: domains/classics, store: corpus/tcm.sqlite}}
+  - {plugin: taochronos.plugins.knowledge}
+  - {plugin: taochronos.plugins.retrieval}
+  - {plugin: taochronos.plugins.models.offline}
+  - {plugin: taochronos.plugins.models.anthropic_provider}
+  - {plugin: taochronos.plugins.models.openai_compat}
+  - {plugin: taochronos.plugins.models.litellm_provider}
+  - {plugin: taochronos.plugins.sandbox}
+  - {plugin: taochronos.plugins.subagents}
+  - {plugin: taochronos.plugins.modern, config: {domain: domains/modern, curated: corpus/modern/evidence.yaml, online: false}}
+  - {plugin: taochronos.plugins.storage, config: {event_store: sqlite}}

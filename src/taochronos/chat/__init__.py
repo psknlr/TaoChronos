@@ -25,9 +25,11 @@ from ..kernel.policy import Actor
 from ..kernel.tools import ToolCall
 from ..protocol.base import to_jsonable
 from .catalog import CODE_MODE, ENGINE_TOOLS, META_TOOLS, NEVER, catalog_view, family_counts, llm_tools, offered
-from .prompt import ASSISTANT_NAME, STARTERS, system_prompt
+from .prompt import AGENT_NAME as AGENT_NAME_ZH
+from .prompt import ASSISTANT_NAME, PUBLISHER, STARTERS, system_prompt
 from .results import citations, compact, for_interface, summarize
 
+CORPUS_LABELS = {"demo": "演示语料", "canon": "要籍语料", "full": "全量语料"}
 CHAT_PERMISSIONS = frozenset({"classics:read", "kg:read", "analysis:run", "literature:read", "validation:run"})
 ENGINE_NAMES = {t["name"] for t in ENGINE_TOOLS} | {t["name"] for t in META_TOOLS}
 MAX_ROUNDS = 6
@@ -90,6 +92,9 @@ class ChatRuntime:
             corpus = self.h.corpus
             stats = corpus.stats(self.h.pack.periods)
             large = bool(getattr(corpus, "large", False))
+            kind = ("canon" if getattr(corpus, "edition", "full") == "web" else "full") if large else "demo"
+            study = self.h.capabilities.get("study")
+            canon = study.canon(limit=1) if study is not None and hasattr(study, "canon") else {"listed": 0, "held_here": 0}
             judge = dict(self.h.profile.judge or {})
             info: dict[str, Any] = {
                 "name": AGENT_NAME,
@@ -97,10 +102,11 @@ class ChatRuntime:
                 "runtime": self.kind,
                 "profile": self.h.profile.name,
                 "corpus": {"books": stats.get("books"), "passages": stats.get("passages"), "characters": stats.get("characters"),
-                           "by_period": stats.get("by_period", {}), "large": large, "demo": not large},
+                           "by_period": stats.get("by_period", {}), "large": large, "demo": kind != "full", "kind": kind,
+                           "label": CORPUS_LABELS[kind], "canon": {"listed": canon["listed"], "held": canon["held_here"]}},
                 "tools": {"offered": len(offered(self.h.tools, code_mode=self.code_mode)) + len(ENGINE_TOOLS),
                           "families": family_counts(self.h.tools, code_mode=self.code_mode)},
-                "assistant_name": ASSISTANT_NAME,
+                "assistant_name": ASSISTANT_NAME, "agent_name": AGENT_NAME_ZH, "publisher": PUBLISHER,
                 "engine_model": f"{judge['provider']}:{judge.get('model', '')}" if judge.get("provider") else None,
                 "code_mode": self.code_mode,
                 "starters": STARTERS,

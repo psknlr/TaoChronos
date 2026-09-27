@@ -1,6 +1,7 @@
-# TaoChronos
+# TaoChronos · 道乃久
 
 **A provenance-grounded research harness for the Chinese medical classics — for scholars, students and discovery.**
+The agent **道乃久** (Dào nǎi jiǔ; model **Tao-R1**) is **published by 医哲未来人工智能研究院 (IMPF-AI)**.
 *面向中医古籍的可溯源知识发现与治学系统*
 
 **[Use it online · web chat](https://psknlr.github.io/TaoChronos/)** · [中文 README](README.md) · [Web client](docs/web.md) · [V2](docs/v2.md) · [Ancient–modern bridge](docs/bridge.md) · [Models](docs/models.md) · [Study layer](docs/study.md) · [Task specification](docs/tasks.md) ·
@@ -55,15 +56,18 @@ Both layers share one rule: **every statement rests on verbatim witnesses** (boo
 text layer, source and licence of the transcription). Rule-based reading is labelled as machine reading; people check
 and decide.
 
-> 💬 **Web chat · Tao-R1**: open **<https://psknlr.github.io/TaoChronos/>** and talk with **Tao-R1**, TaoChronos's research
-> model for the classics.  Paste your own API key for the underlying model in the settings (default **MiniMax (mainland) ·
-> MiniMax-M3**; DeepSeek, Qwen, Kimi, GLM, Doubao, SiliconFlow, OpenRouter, Poe, LiteLLM, Claude and others are listed) and
-> hold a multi-turn conversation as in ChatGPT or Claude.  The model answers through all
-> 72 of TaoChronos's tools, and the page checks every `[[passage_id]]` it cites word for word (✓ matches the passage ·
-> ≠ misquoted · ✕ no such passage); evidence, research runs and a tool console (any tool, no model needed) sit in the
-> side panel.  The page runs TaoChronos itself in the browser with Pyodide (demonstration corpus); for **all the books**, build
-> the full corpus and run `taochronos serve`, then connect under Settings → 运行环境 in one step (the browser remembers it; a
-> server on another machine is reached with its access token).  See [docs/web.md](docs/web.md#接入全部古籍).
+> 💬 **Web chat · 道乃久**: open **<https://psknlr.github.io/TaoChronos/>** and talk with **道乃久** (TaoChronos; model Tao-R1;
+> published by IMPF-AI).  Choose the underlying model and paste your own API key in the settings (default **MiniMax
+> (mainland) · MiniMax-M3**; DeepSeek, Qwen, Kimi, GLM, Doubao, SiliconFlow, OpenRouter, Poe, LiteLLM, Claude and others are
+> listed; any other endpoint can be set by hand under **自定义 API** — address, model, key, headers) and hold a multi-turn
+> conversation as in ChatGPT or Claude.  The model answers through all 73 of TaoChronos's tools, and the page checks every
+> `[[passage_id]]` it cites word for word (✓ matches the passage · ≠ misquoted · ✕ no such passage); evidence, research runs
+> and a tool console (any tool, no model needed) sit in the side panel.  In the browser TaoChronos runs with Pyodide on the
+> **要籍语料**: of the **350 key works** ranked by how the tradition cited them ([list](corpus/catalog/canon.yaml)), the 108 with
+> an openly licensed witness (114 witnesses, 3.8 million characters; the 素问, 灵枢, 伤寒论 and 金匮 with two or three
+> witnesses to collate; CC BY-SA 4.0, [sources](corpus/web/ATTRIBUTION.md)).  For **all the books**, build the full corpus and
+> run `taochronos serve`, then connect under Settings → 运行环境 in one step (the browser remembers it; a server on another
+> machine is reached with its access token).  See [docs/web.md](docs/web.md).
 
 > ⚠️ The corpus consists of transcriptions from several sources (Siku, 笈成, McGill rare books, CMETA, the 東亜医学協会,
 > Wikisource, web text sets), **none collated by this project**; `corpus/demo` holds unverified excerpts for demonstrating the method.
@@ -115,7 +119,7 @@ and decide.
 | **Layout, entities, translation, places** | vertical reading order and 双行小注, a multimodal reading, OCR checked against the store; entities in context; five-layer translation; native places, signed prefaces, regional statistics | `vision` · `study entities` · `study translate` · `study places` |
 | **Knowledge discovery** | multi-agent research: lost knowledge, concept drift, formula evolution, hidden associations, contradictions, lost sources; verbatim evidence, falsification, gates, expert review | `research` · `report` · `workspace` · `review` |
 | **Everyone (web)** | a ChatGPT/Claude-style multi-turn chat: a model of your choice (MiniMax-M3 by default) answers through every tool, quotations checked word for word, sources one click away (horizontal or vertical reading); a research panel and a tool console; conversations kept in your browser, exportable | [web](https://psknlr.github.io/TaoChronos/) · `serve` · `web build` |
-| **Developers** | plugin kernel, capability registry, a tool mesh of 72 tools, agents as YAML specs, event sourcing and replay, evaluation and architecture governance; the JSON Schemas of the tasks' outputs | `agents` · `eval` · `governance` · `schema --study` |
+| **Developers** | plugin kernel, capability registry, a tool mesh of 73 tools, agents as YAML specs, event sourcing and replay, evaluation and architecture governance; the JSON Schemas of the tasks' outputs | `agents` · `eval` · `governance` · `schema --study` |
 
 ## 2. Quick start
 
@@ -255,6 +259,22 @@ In all **966 works, ~123 million characters, 2.05 million passages**.
   samples a period-stratified frame, falsification queries the whole store.
 
 See [docs/data.md](docs/data.md) and [ADR 0003](docs/adr/0003-corpus-store-and-scoped-research.md).
+
+### The 350 key works, and the corpus of the web client
+
+- **要籍** (`taochronos study canon --write-catalog` → [`corpus/catalog/canon.yaml`](corpus/catalog/canon.yaml), metadata only):
+  the 759 medical works ranked by the citation network of the whole store; the first 350 are listed.  score =
+  10·log₂(1 + distinct works citing it, not older than it) + 2·periods citing it + 2·log₂(1 + citations) +
+  3·log₂(1 + witnesses) + 6·in the 四库全书.  The 素问, 灵枢, 金匮, 难经, 伤寒论, 神农本草经, 千金要方, 脉经, 甲乙经 and
+  外台秘要 lead; each of the 350 is cited by at least two later works.  It reads what this corpus quotes — late works have had
+  less time to be cited, lost works are not in it.  The `classics.canon` tool queries the list in any corpus and says
+  whether the current one holds each work's text.
+- **要籍语料** (`taochronos web pack` → [`corpus/web/`](corpus/web/ATTRIBUTION.md)): the **108 of the 350 with an openly licensed
+  witness** (114 witnesses, 60 000 passages, 3.8 million characters): up to three witnesses for the first ten (CMETA's
+  collated editions first, then the most complete), whole within 250 000 characters; the others by rank within 50 000 /
+  25 000 / 12 000 characters, as whole chapters spread through the book; passage ids as in the full corpus.  The witnesses
+  of the other 242 are mostly for local research only and are not published.  The site ships the store without its
+  full-text index (about 8 MB); the browser builds the index once (about ten seconds) and keeps it.
 
 ## 4. Study: mining the classics on their own terms
 
@@ -523,12 +543,13 @@ workflow commands take `--llm platform:model` (with `--llm-max-calls`, `--llm-ma
 schema-validated (one repair turn) and logged without their prompts; results record whether the rule, the model or both
 decided each item.  External command subagents and Research Code Mode: [docs/agents.md](docs/agents.md).
 
-**Web chat · Tao-R1** ([docs/web.md](docs/web.md), [ADR 0011](docs/adr/0011-web-client.md)): the assistant is Tao-R1 —
-TaoChronos's tools and evidence discipline over the underlying model you choose, which the page and the instructions name.
-The conversation runs in the browser with your own key, straight to the provider (MiniMax allows the page's origin) or
-through `taochronos serve`; TaoChronos executes the tools in the browser (Pyodide, demonstration corpus) or under
+**Web chat · 道乃久** ([docs/web.md](docs/web.md), [ADR 0011](docs/adr/0011-web-client.md)): the agent 道乃久 (TaoChronos;
+model Tao-R1), published by IMPF-AI — TaoChronos's tools and evidence discipline over the underlying model you choose, which
+the page and the instructions name (an endpoint not in the list can be set by hand).  The conversation runs in the browser
+with your own key, straight to the provider (MiniMax allows the page's origin) or through `taochronos serve`; TaoChronos
+executes the tools in the browser (Pyodide, the 要籍语料: the open texts of 108 of the 350 key works) or under
 `taochronos serve` (the full corpus, all the books; the browser remembers the server).  The model acts as an
-agent with read and analysis permissions only, sees fifteen common tools directly and the rest through a catalog;
+agent with read and analysis permissions only, sees sixteen common tools directly and the rest through a catalog;
 MiniMax-M3's `reasoning_details` and tool calls are replayed verbatim turn after turn, and Claude is called through the
 official SDK (adaptive thinking, server-side refusal fallbacks).  The local server binds to 127.0.0.1 by default, answers
 only this machine's pages, its own pages, the published client and named origins, and forwards model requests only to the
@@ -614,7 +635,7 @@ kernel        event sourcing, transactions, replay, scheduler, policy, hooks, bu
 capabilities  provider-neutral interfaces (LLM …)
 science       D1–D5 engines, statistics, scoring, gates, provenance; reuse rules, strata, trajectories, argument graphs, sense evolution
 verification  verbatim checks and provenance chains; the presentism guard; the evidence graph and the evidence audit (V2)
-tools         the tool mesh: philology · retrieval · knowledge · analytics · study · bridge · literature · validation (72 tools)
+tools         the tool mesh: philology · retrieval · knowledge · analytics · study · bridge · literature · validation (73 tools)
 plugins       classics (corpus, store, domain pack, philology, collation, citations, text reuse, study, vision, bridge, audit) · modern (evidence, real-world data) · knowledge · retrieval · models · sandbox · storage …
 agents        AgentSpecs, routing, the LLM loop, deterministic procedures, Code Mode, subagents
 engine        the research engine (operational and scientific loops, branches, tournament, report); the V2 workflow compiler and executor
@@ -664,7 +685,11 @@ docs/                      study, task specification, architecture, agents, disc
 ## 11. Data and licences
 
 - **The repository holds catalogues, lock files, domain data and code only**; transcriptions stay in the local data
-  directory (`.taochronos/`, git-ignored) and are rebuilt reproducibly by `corpus fetch / unpack / ingest`.
+  directory (`.taochronos/`, git-ignored) and are rebuilt reproducibly by `corpus fetch / unpack / ingest`.  The one
+  exception is the web client's **要籍语料** (`corpus/web/`): the witnesses of the ranked works from openly licensed sources
+  (Kanripo and Wikisource CC BY-SA 4.0, CMETA CC BY 4.0, McGill public domain), written by `taochronos web pack` and
+  published as a whole under CC BY-SA 4.0 with per-text attribution ([ATTRIBUTION.md](corpus/web/ATTRIBUTION.md)); nothing
+  from a source kept to local research (笈成, 東亜医学協会, the web collections, Hugging Face) is in it.
 - Licences are recorded per work in the catalogues and the store and travel with every witness: Kanripo and
   Wikisource CC BY-SA 4.0; McGill public domain; CMETA's collation and editing CC BY 4.0 (attribution: 數位中醫校書郎
   CMETA), the texts public domain; the 東亜医学協会's transcriptions © the association, non-commercial personal use

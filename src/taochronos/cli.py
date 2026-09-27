@@ -832,7 +832,7 @@ def cmd_eval(args: argparse.Namespace) -> None:
     _out(summary_table(results))
 
 
-STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
+STUDY = ("canon", "concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
          "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship", "cases",
          "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate", "commentaries", "disputes",
          "clause", "glosses", "pairs", "network", "schools", "names", "chain", "entities", "places", "translate", "cruxes")
@@ -996,6 +996,14 @@ def cmd_study(args: argparse.Namespace) -> None:
         res = study.taboo(target) if target else study.taboo(min_chars=args.min_chars)
     elif what == "citations":
         res = study.citations(target) if target else study.citations(top=args.top)
+    elif what == "canon":
+        if args.write_catalog:
+            from .plugins.classics.study.canon import write_catalog
+
+            ranking = study.canon_rank(top=args.limit or 350)
+            res = write_catalog(study._canon.path, ranking)
+        else:
+            res = study.canon(target, limit=args.limit or 60)
     elif what == "cards":
         res = study.cards(book=args.book, formulas=args.formula or [], herbs=args.herb or [], term=args.term, limit=args.limit or 60)
         if args.anki:
@@ -1328,16 +1336,31 @@ def cmd_serve(args: argparse.Namespace) -> None:
         raise SystemExit(str(exc)) from exc
     serve(runtime, host=args.host, port=args.port, web=Path(args.web) if args.web else None, origins=args.allow_origin,
           env_keys=args.env_keys, proxy=not args.no_proxy, open_browser=args.open, quiet=not args.verbose,
-          token=args.token or os.environ.get("TAOCHRONOS_TOKEN"))
+          token=args.token or os.environ.get("TAOCHRONOS_TOKEN"), allow_hosts=args.allow_host)
 
 
 def cmd_web(args: argparse.Namespace) -> None:
-    """Build the web client as a static site (GitHub Pages): client, in-browser runtime, providers, Pyodide."""
+    """The web client as a static site (GitHub Pages): ``build`` — client, in-browser runtime, providers, Pyodide and
+    the 要籍语料; ``pack`` — write that corpus (corpus/web) from the full corpus store and corpus/catalog/canon.yaml."""
     from .chat.build import build_site
     from .config import find_home
 
     home = find_home(args.home)
-    info = build_site(Path(args.output), home=home, web=Path(args.web) if args.web else None, pyodide=args.pyodide)
+    if args.action == "pack":
+        import sqlite3
+
+        from .plugins.classics.webcorpus import export_pack
+
+        _, data = _corpus_paths(args)
+        db_path = data / "corpus" / "tcm.sqlite"
+        if not db_path.exists():
+            raise SystemExit(f"no full corpus store at {db_path}: the pack is written from it (taochronos corpus ingest …)")
+        works = (load_yaml(home / "corpus" / "catalog" / "canon.yaml") or {}).get("works") or []
+        if not works:
+            raise SystemExit("no corpus/catalog/canon.yaml: run taochronos study canon --write-catalog first")
+        _out(export_pack(sqlite3.connect(f"file:{db_path}?mode=ro", uri=True), works, Path(args.output or home / "corpus" / "web")))
+        return
+    info = build_site(Path(args.output or "_site"), home=home, web=Path(args.web) if args.web else None, pyodide=args.pyodide)
     _out(info)
 
 
@@ -1561,7 +1584,7 @@ def build_parser() -> argparse.ArgumentParser:
         if name == "export":
             sp.add_argument("--format", default="json", choices=["json", "cypher", "graphml", "prov"])
             sp.add_argument("-o", "--output")
-    sp = sub.add_parser("study", help="治学: 经文互见·集注, 方源考, 药性源流, 术语源流, 避讳断代, 引书网络, 学习卡片, 阅读门径, 研究数据集, "
+    sp = sub.add_parser("study", help="治学: 要籍 (canon), 经文互见·集注, 方源考, 药性源流, 术语源流, 避讳断代, 引书网络, 学习卡片, 阅读门径, 研究数据集, "
                                       "版本谱系 (variants/stemma/edition/tei), 语义复用 (reuse), 思想传播 (transmission), "
                                       "文本地层 (layers/dating/authorship), 医案轨迹 (cases/trajectories), 医理论证 (argument), "
                                       "语义演变 (senses), 佚书辑佚 (fragments), 句读 (punctuate), 集注 (commentaries), 争议 (disputes), "
@@ -1609,6 +1632,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--work", help="argument: the way of reasoning of a work; clause: the forms of a work's clauses; "
                                    "cruxes: the works (comma-separated) whose cruxes to harvest")
     sp.add_argument("--write-registry", action="store_true", help="cruxes: write the harvest to domains/classics/cruxes.yaml")
+    sp.add_argument("--write-catalog", action="store_true", help="canon: rank the works of the full corpus by how they are cited "
+                                                                  "and write the list (--limit, default 350) to corpus/catalog/canon.yaml")
     sp.add_argument("--against-work", help="argument: … compared with another work")
     sp.add_argument("--candidate", action="append", help="authorship: a candidate work or book id (repeatable)")
     sp.add_argument("--json", action="store_true", help="print the full result as JSON")
@@ -1635,13 +1660,16 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--env-keys", action="store_true", help="the model proxy adds this machine's provider keys "
                                                             "(MINIMAX_API_KEY …) to requests that carry none")
     sp.add_argument("--no-proxy", action="store_true", help="turn the model proxy off")
+    sp.add_argument("--allow-host", action="append", help="a model endpoint set by hand in the page (自定义 API) that the proxy may "
+                                                          "forward to: api.example.com, https://host:8443, http://10.0.0.5:8000 (repeatable)")
     sp.add_argument("--code-mode", action="store_true", help="let the chat model run Code Mode programs (research.run_code)")
     sp.add_argument("--web", help="serve the client from this directory (default: <home>/web)")
     sp.add_argument("--open", action="store_true", help="open the client in a browser")
     sp.add_argument("--verbose", action="store_true", help="log requests (paths only)")
-    sp = add("web", cmd_web, "build the web chat client as a static site (GitHub Pages)", profile=False)
-    sp.add_argument("action", choices=["build"])
-    sp.add_argument("-o", "--output", default="_site")
+    sp = add("web", cmd_web, "the web chat client: build the static site (GitHub Pages); pack the 要籍语料 it carries", profile=False)
+    sp.add_argument("action", choices=["build", "pack"])
+    sp.add_argument("-o", "--output", help="build: the site directory (default _site); pack: the pack directory (default corpus/web)")
+    sp.add_argument("--data", help="pack: the data directory holding the full corpus store")
     sp.add_argument("--web", help="the client's sources (default: <home>/web)")
     sp.add_argument("--pyodide", choices=["self", "cdn"], default="self",
                     help="self: put the pinned Pyodide files in the site (default); cdn: load them from jsDelivr")

@@ -122,6 +122,8 @@ def test_a_conversation_in_the_browser(tmp_path):
             page.on("pageerror", lambda e: errors.append(str(e)))
             page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
             page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            assert page.title() == "道乃久 · 中医古籍研究智能体" and page.inner_text(".hero h1") == "道乃久"
+            assert page.inner_text(".hero .publisher") == "医哲未来人工智能研究院（IMPF-AI）发布"
             page.fill("#input", "桂枝汤主治什么？请给出原文。")
             page.keyboard.press("Enter")
             page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
@@ -144,7 +146,7 @@ def test_a_conversation_in_the_browser(tmp_path):
             first, second = mock.requests[0]["body"], mock.requests[1]["body"]
             assert first["max_completion_tokens"] and first["reasoning_split"] is True and first["tools"]
             assert first["messages"][0]["role"] == "system" and "[[passage_id]]" in first["messages"][0]["content"]
-            assert first["messages"][0]["content"].startswith("你是 Tao-R1") and "底层语言模型：MiniMax-M3" in first["messages"][0]["content"]
+            assert first["messages"][0]["content"].startswith("你是道乃久") and "底层语言模型：MiniMax-M3" in first["messages"][0]["content"]
             replay = second["messages"][2]
             assert replay["tool_calls"][0]["function"] == {"name": "classics__search", "arguments": '{"query": "桂枝汤 主之", "k": 3}'}
             assert replay["reasoning_details"][0]["text"] == "用户问桂枝汤的主治，先检索原文。"
@@ -291,3 +293,110 @@ def test_a_published_page_connects_to_a_server_and_remembers_it(tmp_path):
         for s in (api, locked, pages):
             s.shutdown()
             s.server_close()
+
+
+def test_an_api_set_by_hand(tmp_path):
+    """设置 → 模型 → 自定义 API: any OpenAI-compatible endpoint with its own address, model, key and headers."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import MockProvider
+
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=ROOT / "web", home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    mock = MockProvider().start()
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            page = browser.new_context(viewport={"width": 1280, "height": 860}).new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            page.click("#model-chip")
+            page.click(".provider-opt.add")
+            page.fill(".custom-api input[type=text] >> nth=0", "我的网关")
+            page.fill(".custom-api input[type=url]", mock.base_url)
+            page.fill(".custom-api input[placeholder^='服务要求的模型名']", "my-model")
+            page.click(".custom-api details summary")
+            page.fill(".custom-api textarea >> nth=0", '{"X-Gateway": "tc-test"}')
+            page.fill(".custom-api textarea >> nth=1", "{not json")
+            assert "JSON 有误" in page.inner_text(".custom-api")  # a malformed field is shown, not taken
+            page.fill(".custom-api textarea >> nth=1", '{"top_k": 20}')
+            page.fill(".settings-pane input[type=password]", "sk-custom")
+            page.click(".modal-foot .btn:not(.secondary)")
+            assert "my-model（我的网关）" in page.get_attribute("#model-chip", "title")
+            page.fill("#input", "桂枝汤主治什么？")
+            page.keyboard.press("Enter")
+            page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
+            req = mock.requests[0]
+            assert req["path"] == "/v1/chat/completions" and req["body"]["model"] == "my-model" and req["body"]["top_k"] == 20
+            assert req["headers"]["Authorization"] == "Bearer sk-custom" and req["headers"]["X-Gateway"] == "tc-test"
+            assert "底层语言模型：my-model（我的网关）" in req["body"]["messages"][0]["content"]
+            saved = json.loads(page.evaluate("localStorage.getItem('tc.settings')"))
+            assert saved["provider"].startswith("custom-") and saved["customProviders"][0]["headers"] == {"X-Gateway": "tc-test"}
+            assert not errors, errors
+            browser.close()
+    finally:
+        srv.shutdown()
+        srv.server_close()
+        mock.shutdown()
+
+
+@pytest.mark.skipif(not os.environ.get("TAOCHRONOS_PYODIDE_E2E"), reason="set TAOCHRONOS_PYODIDE_E2E=1: builds the site with Pyodide")
+def test_the_published_site_runs_on_the_canon_corpus_in_the_browser(tmp_path):
+    """The built site in Chromium: Pyodide starts, the 要籍语料 is downloaded, indexed once and kept, a turn cites it."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    import functools
+    import time
+    from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+    from playwright.sync_api import sync_playwright
+
+    from taochronos.chat.build import build_site
+    from web_mock import MockProvider
+
+    build_site(tmp_path / "site", home=ROOT)
+
+    class Static(SimpleHTTPRequestHandler):
+        extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".mjs": "text/javascript", ".js": "text/javascript",
+                          ".wasm": "application/wasm"}
+
+        def log_message(self, *args) -> None:
+            pass
+
+    site = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Static, directory=str(tmp_path / "site")))
+    threading.Thread(target=site.serve_forever, daemon=True).start()
+    mock = MockProvider().start()
+    settings = {"provider": "minimax", "baseUrls": {"minimax": mock.base_url}, "keys": {"minimax": "k"}, "route": "direct",
+                "runtime": "browser"}
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            ctx = browser.new_context(viewport={"width": 1280, "height": 860})
+            ctx.add_init_script(f"localStorage.setItem('tc.settings', {json.dumps(json.dumps(settings))});")
+            page = ctx.new_page()
+            page.goto(f"http://127.0.0.1:{site.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=240000)
+            assert "要籍语料" in page.inner_text(".runtime-pill")
+            t0 = time.time()
+            page.reload()  # the indexed store is kept: no download, no indexing
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=120000)
+            assert time.time() - t0 < 60
+            page.fill("#input", "桂枝汤主治什么？")
+            page.keyboard.press("Enter")
+            page.wait_for_selector(".msg.assistant .verify-bar", timeout=120000)
+            browser.close()
+    finally:
+        site.shutdown()
+        mock.shutdown()

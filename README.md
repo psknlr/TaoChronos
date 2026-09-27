@@ -1,6 +1,6 @@
-# TaoChronos
+# TaoChronos · 道乃久
 
-**面向中医古籍的可溯源知识发现与治学系统**
+**面向中医古籍的可溯源知识发现与治学系统** · 智能体**道乃久**（模型 **Tao-R1**），**医哲未来人工智能研究院（IMPF-AI）发布**
 *A provenance-grounded research harness for the Chinese medical classics — for scholars, students and discovery.*
 
 **[在线使用 · 网页对话](https://psknlr.github.io/TaoChronos/)** · [English README](README.en.md) · [网页端](docs/web.md) · [V2](docs/v2.md) · [古今桥接](docs/bridge.md) · [模型接入](docs/models.md) · [治学](docs/study.md) · [任务规格](docs/tasks.md) ·
@@ -36,13 +36,15 @@ TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一
 两层共享同一原则：**每一个结论都落到逐字可核的原文见证上**（书、卷篇节、年代、层次、录文来源与授权），规则抽取标明为机器阅读，
 由人去核对与定夺。
 
-> 💬 **网页对话 · Tao-R1**：打开 **<https://psknlr.github.io/TaoChronos/>**，与 **Tao-R1**（TaoChronos 的中医古籍研究模型）多轮对话。在设置里填入
-> 自己的底层模型 API Key（默认 **MiniMax 国内站 · MiniMax-M3**，另有 DeepSeek、通义、Kimi、智谱、豆包、硅基流动、OpenRouter、Poe、LiteLLM、
-> Claude 等十余家），即可像使用 ChatGPT / Claude 一样对话。
-> 模型通过 TaoChronos 的全部 72 项工具检索与考据，回答里的每条引文 `[[段落号]]` 都由页面**逐字核对**（✓ 与原文一致 · ≠ 引文不符 ·
-> ✕ 查无此段）；证据、研究（多智能体发现）与工具台（无需模型、直接运行任一工具）在侧栏。页面在浏览器里用 Pyodide 运行 TaoChronos
-> 本身（演示语料）；**接入全部古籍**：本机构建全量语料后运行 `taochronos serve`，在“设置 → 运行环境”一键连接（浏览器会记住，此后打开
-> 即用全量语料；另一台机器上的服务凭访问令牌连接）。见[网页端说明](docs/web.md#接入全部古籍)。
+> 💬 **网页对话 · 道乃久**：打开 **<https://psknlr.github.io/TaoChronos/>**，与**道乃久**（TaoChronos，模型 Tao-R1，医哲未来人工智能研究院
+> IMPF-AI 发布）多轮对话。在设置里选择底层模型并填入自己的 API Key（默认 **MiniMax 国内站 · MiniMax-M3**，另有 DeepSeek、通义、Kimi、智谱、
+> 豆包、硅基流动、OpenRouter、Poe、LiteLLM、Claude 等十余家；列表之外的服务点“**自定义 API**”手动设置地址、模型、密钥与请求头），即可像使用
+> ChatGPT / Claude 一样对话。模型通过 TaoChronos 的全部 73 项工具检索与考据，回答里的每条引文 `[[段落号]]` 都由页面**逐字核对**（✓ 与原文
+> 一致 · ≠ 引文不符 · ✕ 查无此段）；证据、研究（多智能体发现）与工具台（无需模型、直接运行任一工具）在侧栏。
+> 页面在浏览器里用 Pyodide 运行 TaoChronos，语料为**要籍语料**：按历代引用排序的 **350 部要籍**（[书目](corpus/catalog/canon.yaml)）中
+> 有开放授权录本的 108 部原文（114 个录本、约 378 万字；素问、灵枢、伤寒、金匮等收两三个录本可对校；CC BY-SA 4.0，
+> [来源与授权](corpus/web/ATTRIBUTION.md)）；**接入全部古籍**：本机构建全量语料后运行 `taochronos serve`，在“设置 → 运行环境”一键连接
+> （浏览器会记住；另一台机器上的服务凭访问令牌连接）。见[网页端说明](docs/web.md)。
 
 > ⚠️ 语料为各来源的录文（四库本、笈成整理本、麦吉尔善本、CMETA 精校本、东亚医学协会本、维基文库与网络文本集），**均未经本项目逐字校勘**；`corpus/demo`
 > 是为演示方法整理的未经核验的节录。当代出版物与当代名医著作不入库；保留的现代校注本，今人整理成分单列为层或移入元数据。所有输出都是**文献研究与计算推断**，
@@ -91,7 +93,7 @@ TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一
 | **版面、实体、今译、地域** | 竖排阅读顺序与双行小注、多模态识读、OCR 对库核对；24 类语境实体；五层今译；医家籍贯、序跋落款与地域统计 | `vision` · `study entities` · `study translate` · `study places` |
 | **知识发现** | 多智能体研究：失传知识、概念演变、方剂演化、隐性关联、矛盾发现、佚书线索；逐字证据、证伪、门控、专家核验 | `research` · `report` · `workspace` · `review` |
 | **所有人（网页）** | 类 ChatGPT / Claude 的多轮对话：自选模型（默认 MiniMax-M3）调用全部工具作答，引文逐字核对、出处一点即读（横排 / 竖排）；研究面板与工具台；对话存于本机浏览器，可导出 | [网页](https://psknlr.github.io/TaoChronos/) · `serve` · `web build` |
-| **开发者** | 插件化内核、能力注册、工具网格（72 个工具）、智能体配置（YAML）、事件溯源与重放、评测与架构治理；各任务输出的 JSON Schema | `agents` · `eval` · `governance` · `schema --study` |
+| **开发者** | 插件化内核、能力注册、工具网格（73 个工具）、智能体配置（YAML）、事件溯源与重放、评测与架构治理；各任务输出的 JSON Schema | `agents` · `eval` · `governance` · `schema --study` |
 
 ## 二、快速开始
 
@@ -220,6 +222,18 @@ taochronos governance              # 架构策略检查
 - **检索**：SQLite 语料库 + 双字 FTS5 全文索引，任意长度的词、短语与邻近查询；研究时按问题分期分层抽样，否证检查则查询整个语料库。
 
 详见 [docs/data.md](docs/data.md) 与 [ADR 0003](docs/adr/0003-corpus-store-and-scoped-research.md)。
+
+### 要籍 350 与网页端的要籍语料
+
+- **要籍书目**（`taochronos study canon --write-catalog` → [`corpus/catalog/canon.yaml`](corpus/catalog/canon.yaml)，只含书目，不含原文）：
+  以全库引书网络衡量 759 部医籍的影响，取前 350 部。得分 = 10·log₂(1+引用它的不同著作数，不计早于它者) + 2·被引的分期数 +
+  2·log₂(1+被引总次数) + 3·log₂(1+库中录本数) + 6·四库收录。前列为素问、灵枢、金匮、难经、伤寒论、神农本草经、千金要方、脉经、
+  甲乙经、外台秘要；350 部都至少被两部后世著作引用。这是本语料“引了什么”的读法，不是对传统的裁决：晚出之书被引机会少，佚书不在其中。
+  `classics.canon` 工具在任何语料上查询这份书目，并注明当前语料是否收有其原文。
+- **要籍语料**（`taochronos web pack` → [`corpus/web/`](corpus/web/ATTRIBUTION.md)）：350 部要籍中**有开放授权录本的 108 部**
+  （114 个录本、6.0 万段、约 378 万字）：首十部各取至多三个录本（CMETA 精校本优先，其次最完整者），25 万字以内收全书；其余按名次取
+  5 万 / 2.5 万 / 1.2 万字，超出时按章节均匀节选全书，段落号与全量语料一致。其余 242 部要籍的录本多仅限本地研究使用，不随网站发布。
+  网站携带不含全文索引的语料库（约 8 MB），浏览器首次打开时自建索引（约十秒）并保存，此后直接载入。
 
 ## 四、治学：结合古籍特性的深度挖掘
 
@@ -452,10 +466,11 @@ Poe（`poe`，`POE_API_KEY`，以机器人名为模型名）、LiteLLM（`litell
 复核模型一并配好。模型调用逐次缓存、计入预算、按 JSON 模式校验（一次修复机会）、记日志（不记提示词）；结果标明每项由规则、模型
 还是二者共同决定。外部命令子智能体与 Research Code Mode 见 [docs/agents.md](docs/agents.md)。
 
-**网页对话 · Tao-R1**（[docs/web.md](docs/web.md)、[ADR 0011](docs/adr/0011-web-client.md)）：助手名为 Tao-R1——TaoChronos 的工具与证据纪律加上你选择的
-底层模型（界面与指令中都标明底层模型）。对话在浏览器里进行，模型用你自己的密钥直接调用（MiniMax 允许网页跨域访问），或经 `taochronos serve` 转发；
-TaoChronos 在浏览器内（Pyodide，演示语料）或 `taochronos serve`（全量语料，全部古籍；浏览器记住连接过的服务）执行工具。模型以
-“智能体”身份只获读与分析权限，默认直接看到 15 个常用工具、经目录按需调用其余工具；MiniMax-M3 的 `reasoning_details` 与工具调用逐轮原样回传，
+**网页对话 · 道乃久**（[docs/web.md](docs/web.md)、[ADR 0011](docs/adr/0011-web-client.md)）：智能体道乃久（TaoChronos，模型 Tao-R1），由医哲未来
+人工智能研究院（IMPF-AI）发布——TaoChronos 的工具与证据纪律加上你选择的底层模型（界面与指令中都标明底层模型；列表之外的服务可在“自定义 API”
+中手动设置）。对话在浏览器里进行，模型用你自己的密钥直接调用（MiniMax 允许网页跨域访问），或经 `taochronos serve` 转发；TaoChronos 在浏览器内
+（Pyodide，要籍语料：350 部要籍中开放授权的 108 部原文）或 `taochronos serve`（全量语料，全部古籍；浏览器记住连接过的服务）执行工具。模型以
+“智能体”身份只获读与分析权限，默认直接看到 16 个常用工具、经目录按需调用其余工具；MiniMax-M3 的 `reasoning_details` 与工具调用逐轮原样回传，
 Claude 经官方 SDK 调用（自适应思考、服务端拒答回退）。本机服务默认只绑定 127.0.0.1，只接受本机页面、服务自己的网页、已发布的网页与指定来源，
 只向列出的模型平台转发；绑定到其他地址时必须凭访问令牌访问。全部古籍（约 2.2 GB，各来源授权不一）不随网站发布，经服务接入。
 
@@ -533,7 +548,7 @@ kernel        事件溯源、事务、重放、调度、策略、钩子、预算
 capabilities  与提供者无关的接口（LLM 等）
 science       D1–D5 发现引擎、统计、评分、门控、溯源；语义复用规则、文本地层、诊疗轨迹、论证图、语义演变
 verification  逐字核验与溯源链；以今律古护栏；证据图谱与证据审计（V2）
-tools         工具网格：philology · retrieval · knowledge · analytics · study · bridge · literature · validation（72 个工具）
+tools         工具网格：philology · retrieval · knowledge · analytics · study · bridge · literature · validation（73 个工具）
 plugins       classics（语料、语料库、领域包、校勘、计算校勘、引用、文本复用、治学、版面、古今桥接、审计）· modern（现代证据、真实世界）· knowledge · retrieval · models · sandbox · storage …
 agents        AgentSpec、路由、LLM 循环、确定性过程、Code Mode、子智能体
 engine        研究引擎（操作循环与科学循环、分支、锦标赛、报告）；V2 工作流编译与执行（engine/workflow.py）
@@ -578,7 +593,9 @@ docs/                      治学、任务规格、架构、智能体、发现�
 ## 十一、数据与授权
 
 - **仓库只提交书目、锁定文件、领域数据与代码**；原文录文只存放在本地数据目录（`.taochronos/`，已 gitignore），由 `corpus fetch / unpack /
-  ingest` 可复现地生成。
+  ingest` 可复现地生成。唯一的例外是网页端的**要籍语料**（`corpus/web/`）：要籍书目中来源为开放授权（汉籍仓库、维基文库 CC BY-SA 4.0，
+  CMETA CC BY 4.0，麦吉尔公有领域）的录本，由 `taochronos web pack` 从全量语料生成，整包以 CC BY-SA 4.0 发布，逐部署名见
+  [ATTRIBUTION.md](corpus/web/ATTRIBUTION.md)；授权仅限本地研究的来源（笈成、东亚医学协会、网络文本集、Hugging Face）一字不收。
 - 各来源授权逐部记录在书目与语料库中，并随每条见证输出：汉籍仓库与维基文库为 CC BY-SA 4.0；麦吉尔善本为公有领域；
   CMETA 的校订与编辑成果为 CC BY 4.0（须标示“數位中醫校書郎 CMETA”），底本文字属公有领域；东亚医学协会录文 © 该会，
   仅限非营利的个人保存与使用、不得转载再分发，本项目只作本地研究；

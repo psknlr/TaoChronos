@@ -1,7 +1,7 @@
 {
-  "name": "TaoChronos · 中医古籍研究助手",
-  "short_name": "TaoChronos",
-  "description": "可溯源的中医古籍研究对话：检索原文、考据源流、发现与核验。",
+  "name": "道乃久 · 中医古籍研究智能体",
+  "short_name": "道乃久",
+  "description": "道乃久（TaoChronos · Tao-R1）：医哲未来人工智能研究院（IMPF-AI）发布的中医古籍研究智能体。",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

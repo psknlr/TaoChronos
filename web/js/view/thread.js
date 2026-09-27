@@ -1,7 +1,7 @@
 // The conversation: user turns, assistant turns (thinking, tool steps, the answer), citation chips and actions.
 
 import { renderMarkdown } from "../markdown.js";
-import { ASSISTANT } from "../providers.js";
+import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY } from "../brand.js";
 import { fmtMs, h, icon, passageLabel, prettyJSON, replace, truncate } from "../util.js";
 
 export const FAMILY = {
@@ -47,15 +47,17 @@ function hero(ctx) {
     : st.status === "error" ? `运行环境未就绪：${truncate(st.message || "", 60)}` : `${st.message || "正在准备运行环境"}… ${st.progress ? Math.round(st.progress) + "%" : ""}`;
   const action = ready && info.corpus?.demo
     ? h("button.hero-action", { type: "button", on: { click: ctx.onOpenRuntime } }, icon("book", "sm"),
-      h("span", h("b", "接入全部古籍"), "此处是演示语料；连接 taochronos serve 即用全量语料"), icon("chev", "sm"))
+      h("span", h("b", "接入全部古籍"), info.corpus?.kind === "canon"
+        ? `此处是要籍语料（${info.corpus?.canon?.held ?? "?"} 部要籍的开放授权原文）；连接 taochronos serve 即用全部古籍`
+        : "此处是演示语料；连接 taochronos serve 即用全量语料"), icon("chev", "sm"))
     : st.status === "error"
       ? h("button.hero-action", { type: "button", on: { click: ctx.onOpenRuntime } }, icon("server", "sm"), h("span", h("b", "设置运行环境")), icon("chev", "sm"))
       : null;
   return h("div.hero",
     h("img.seal", { src: "assets/logo.svg", alt: "" }),
-    h("div.model-badge", h("b", ASSISTANT), h("span", "中医古籍研究模型")),
-    h("h1", "问古籍，得原文"),
-    h("p.sub", "每一条引文都可溯源、可逐字核对"),
+    h("h1", AGENT),
+    h("div.model-badge", h("b", ASSISTANT), h("span", `${AGENT_EN} · 中医古籍研究智能体`)),
+    h("p.sub", "问古籍，得原文——每一条引文都可溯源、可逐字核对"),
     h("div.status", h("span.dot", { class: st.status === "ready" ? "" : st.status === "error" ? "bad" : "busy" }), status),
     action,
     h("div.starters", (info?.starters || DEFAULT_STARTERS).map((s) =>
@@ -64,6 +66,7 @@ function hero(ctx) {
       ? h("p.keyhint", "开始前请先为 ", ASSISTANT, " ", h("button", { type: "button", on: { click: ctx.onOpenSettings } }, "配置底层模型的 API"),
         "（默认 MiniMax-M3）。也可以不配置模型，直接在右侧“工具台”使用全部功能。")
       : h("p.keyhint", "Enter 发送 · Shift+Enter 换行 · ", h("kbd", "Ctrl"), " ", h("kbd", "K"), " 新对话"),
+    h("p.publisher", PUBLISHED_BY),
   );
 }
 
@@ -98,7 +101,7 @@ function userNode(m, ctx, last) {
 function assistantNode(m, ctx, last) {
   const el = h("div.msg.assistant", { dataset: { id: m.id }, class: last ? "last" : "" });
   const body = h("div.body");
-  el.append(h("img.avatar", { src: "assets/logo.svg", alt: ASSISTANT }), body);
+  el.append(h("img.avatar", { src: "assets/logo.svg", alt: AGENT }), body);
   fillAssistant(body, m, ctx, last);
   return el;
 }

@@ -27,7 +27,7 @@ deterministic archives and, by default, a pinned Pyodide, so it depends on no ot
 
 **The chat model is an agent, not a user.**  It acts as an agent-principal actor with read and analysis permissions;
 every call passes the scheduler (permission, schema, hooks, receipts).  It is never offered `kg.propose_change`, and
-Code Mode only when the local server is started with `--code-mode`.  By default it sees fifteen tools and reaches the
+Code Mode only when the local server is started with `--code-mode`.  By default it sees sixteen tools and reaches the
 other fifty-odd through a catalog and a generic call, which keeps its context small; results are trimmed evenly to a
 budget, earlier turns' results further.  A research run is one tool call; on the server it runs in a background thread
 (one at a time — a run installs its contract's guards harness-wide) and the page polls its progress.
@@ -61,16 +61,33 @@ opens on the full corpus, and it always says which corpus it is on.  Outside a r
 store: every book is listed, a term's claims are read from the passages that write it (spread over time), a quotation
 is found in every witness whatever its punctuation.  The session-scoped analyses keep reading their working set.
 
-**The assistant is named Tao-R1.**  The name stands for TaoChronos over the model the user chose, and the page and the
-instructions keep both visible: Tao-R1 on the page, the underlying model beside it and in the instructions, and the model
-told to name both when asked and to claim no other identity.
+**The agent is 道乃久, its model Tao-R1, its publisher IMPF-AI.**  道乃久 (TaoChronos) is published by 医哲未来人工智能研究院
+(IMPF-AI); Tao-R1 names TaoChronos over the model the user chose.  The page and the instructions keep everything visible:
+道乃久 and the publisher on the page, Tao-R1 on the model chip, the underlying model beside it and in the instructions, and
+the model told to name them when asked and to claim no other identity.
+
+**In the browser, the openly licensed texts of the key works.**  The works of the full corpus are ranked by the citation
+network of the whole store (``study canon``: distinct later works citing it, periods, citations, witnesses, 四库); the first
+350 are a published list with metadata only.  Of these, the 108 that have a witness under an open licence (汉籍仓库, 维基文库,
+CMETA, McGill) are packed (``web pack``) — whole for the first classics, with up to three witnesses to collate, otherwise
+chapters spread through the book, 3.8 million characters — and committed as ``corpus/web`` under CC BY-SA 4.0 with per-text
+attribution: the one set of texts in the repository, because it is what the published site carries.  Nothing from a source
+kept to local research is in it.  The site ships the pack as a store without its full-text index (8 MB instead of 20); the
+browser indexes it once and keeps it.  The passage ids are those of the full corpus, so a citation means the same passage
+in the browser and on the server.
+
+**Models the user names.**  Besides the listed providers, the page calls any endpoint set by hand (OpenAI-compatible or
+Anthropic Messages; address, model, key, headers, body parameters), directly; the server's proxy forwards to one only when
+its operator allows the host (``--allow-host``).
 
 ## Consequences
 
 * The page works with no installation: open it, paste a key, ask.  Every tool also runs by hand in the tool console,
   so the functions are usable without any model.
-* In the browser the corpus is the demonstration corpus.  The page, the model's instructions and the documentation say
-  so, and the page offers the connection to all the books; research on the full corpus goes through the server.
+* In the browser the corpus is the 要籍语料 — a third of the key works, many in chapters.  The page, the model's
+  instructions and the documentation say so, ``classics.canon`` tells what it lacks, and the page offers the connection
+  to all the books; research on the full corpus goes through the server.
+* The first visit costs about 22 MB and ten seconds of indexing; later visits open from the browser's cache.
 * A server reachable from other machines is a deliberate step with a token; the published page reaches one only over
   HTTPS (or the server's own page is used).
 * A citation the model invents is visible as such, and a misquotation is marked — the discipline the research engine

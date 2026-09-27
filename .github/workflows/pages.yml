@@ -13,6 +13,7 @@ on:
       - "corpus/demo/**"
       - "corpus/catalog/**"
       - "corpus/modern/**"
+      - "corpus/web/**"
       - "agents/**"
       - "skills/**"
       - "evals/gold/**"
@@ -49,8 +50,27 @@ jobs:
           assert out["ok"] and out["citations"], out
           print(rt.info()["corpus"], len(rt.catalog("all")["tools"]), "tools")
           EOF
-      - name: Build the site (client, in-browser runtime, providers, pinned Pyodide)
+      - name: Build the site (client, in-browser runtime, 要籍语料, providers, pinned Pyodide)
         run: taochronos web build -o _site
+      - name: Check the 要籍语料 the site ships, as the browser will read it
+        run: |
+          python - <<'EOF'
+          import gzip, json, pathlib, tempfile
+          from taochronos.chat import ChatRuntime
+          from taochronos.plugins.classics.domain import DomainPack
+          from taochronos.plugins.classics.webcorpus import index_store
+          site = pathlib.Path("_site/runtime")
+          meta = json.loads((site / "manifest.json").read_text())["files"]["corpus.sqlite.gz"]
+          data = pathlib.Path(tempfile.mkdtemp())
+          (data / "corpus").mkdir()
+          db = data / "corpus" / "tcm.sqlite"
+          db.write_bytes(gzip.decompress((site / "corpus.sqlite.gz").read_bytes()))
+          assert index_store(db, DomainPack(pathlib.Path("domains/classics")).variants.normalize_text) == meta["passages"]
+          rt = ChatRuntime.create("web-canon", kind="ci", ephemeral=True, data_dir=data)
+          out = rt.call("classics.search", {"query": "桂枝汤", "k": 2})
+          assert out["ok"] and out["citations"], out
+          print(rt.info()["corpus"]["label"], rt.info()["corpus"]["canon"], meta["bytes"], "bytes")
+          EOF
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
