@@ -598,6 +598,14 @@ def cmd_research(args: argparse.Namespace) -> None:
         fields["stop"] = {"max_rounds": args.max_rounds}
     if args.books:
         fields["corpus"] = {"books": [b for b in args.books.split(",") if b]}
+    if getattr(args, "confirm", None):
+        from .protocol.contract import ConfirmationSpec
+
+        fields["confirmation"] = ConfirmationSpec(fraction=float(args.confirm))
+    if getattr(args, "require_confirmation", False):
+        from .protocol.contract import AcceptanceSpec
+
+        fields["acceptance"] = AcceptanceSpec(confirmation_required=True)
     goal = harness.make_goal(args.question, **fields)
     session = engine.start(goal, session_id=args.session)
     print(f"{AGENT_NAME} · session {session.id} · profile {harness.profile.name}", file=sys.stderr)
@@ -608,7 +616,8 @@ def cmd_research(args: argparse.Namespace) -> None:
         ws = publish_workspace(harness, session)
         print(f"workspace: {harness.artifacts.path_of(ws)}", file=sys.stderr)
     report = _latest(session.state, "discovery_report", "report.md")
-    _out({"session": result.session_id, "status": result.status, "rounds": result.rounds,
+    _out({"session": result.session_id, "status": result.status, "acceptance": result.verdict,
+          "acceptance_reasons": result.acceptance.get("reasons", []), "rounds": result.rounds,
           "stop": result.stop.get("reasons", []), "report": str(harness.artifacts.path_of(report)) if report else None,
           "metrics": {k: result.metrics[k] for k in ("claims", "evidence_count", "counter_evidence", "observations",
                                                       "hypotheses", "hypothesis_survival", "agents_spawned", "llm_calls", "cost_usd")}})
@@ -1412,6 +1421,9 @@ def build_parser() -> argparse.ArgumentParser:
         if name == "research":
             sp.add_argument("--tracks", help="comma-separated tracks, e.g. D1,D2,D5")
             sp.add_argument("--holdout-after", type=int, help="hide texts dated ≥ this year (Historical Time Machine)")
+            sp.add_argument("--confirm", type=float, metavar="FRACTION",
+                            help="keep back this fraction of source families (per period) to confirm what exploration finds")
+            sp.add_argument("--require-confirmation", action="store_true", help="accept only hypotheses confirmed on the withheld material")
             sp.add_argument("--max-rounds", type=int)
             sp.add_argument("--books", help="restrict the corpus to these book ids")
             sp.add_argument("--no-workspace", action="store_true")

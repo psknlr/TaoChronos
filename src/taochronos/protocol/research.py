@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from .artifacts import OPERATIONAL_ARTIFACT_KINDS, Artifact
 from .base import Model, content_hash, field_dict, field_list
 from .claims import Claim
+from .contract import AcceptanceSpec, ConfirmationSpec, default_outputs
 from .documents import YearRange
 from .evidence import EvidenceRecord
 from .hypothesis import Hypothesis, HypothesisReview, Observation
@@ -74,6 +75,11 @@ class GoalSpec(Model):
     stop: StopConfig = field(default_factory=StopConfig)
     profile: str = "full-discovery"
     language: str = "zh"
+    # the executable part of the contract (protocol/contract.py): acceptance judged by validators and experts, the
+    # outputs a research must deliver, and material kept back to confirm what exploration found
+    acceptance: AcceptanceSpec = field(default_factory=AcceptanceSpec)
+    required_outputs: list[str] = field(default_factory=default_outputs)
+    confirmation: ConfirmationSpec | None = None
 
     def digest(self) -> str:
         return content_hash(self)

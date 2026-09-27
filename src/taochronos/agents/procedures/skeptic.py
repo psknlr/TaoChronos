@@ -154,6 +154,10 @@ def _review(ctx: Any, h: Any) -> dict[str, Any]:
         p_abs = stats.get("p_absence")
         if isinstance(p_abs, (int, float)) and p_abs >= 0.05:
             objections.append(_obj(h, "statistical", "major", f"按早期关联率推算，后世未见共现的概率为 {p_abs}，缺失并不显著"))
+        lofo = (stats.get("sensitivity") or {}).get("leave_one_family_out_p_absence") or {}
+        if isinstance(p_abs, (int, float)) and p_abs < 0.05 and isinstance(lofo.get("max"), (int, float)) and lofo["max"] >= 0.05:
+            objections.append(_obj(h, "transcription_dependence", "major",
+                                   f"缺失的显著性依赖单一来源家族：逐一剔除早期来源家族后 p 最高为 {lofo['max']}（{lofo.get('clusters')} 个家族）"))
         head = surface(data["right"])[-1:]
         year = year_fn(ctx)
         later = [c for c in state.claims.values() if (year(c) or 0) >= pivot and data["left"] in _terms(c)]

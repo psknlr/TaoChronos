@@ -88,8 +88,10 @@ OUTPUT_SCHEMAS: dict[str, dict[str, Any]] = {
         }, ["statement", "kind", "observation_ids", "support"])),
     }, ["hypotheses"]),
     "RevisionSet": obj({
+        # a revision that changes terms or kind is substantive: a new claim, which must cite its own support
         "revisions": arr(obj({"parent_id": S, "statement": S, "revision_note": S, "qualifiers": {"type": "object"},
-                              "alternative_explanations": STRS, "testable_prediction": S}, ["parent_id", "statement", "revision_note"])),
+                              "alternative_explanations": STRS, "testable_prediction": S, "terms": STRS, "kind": S,
+                              "support": arr(QUOTE)}, ["parent_id", "statement", "revision_note"])),
     }, ["revisions"]),
     "ReviewSet": obj({
         "reviews": arr(obj({

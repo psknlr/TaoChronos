@@ -35,6 +35,7 @@ KIND_ROLE: dict[str, str] = {
     "falsify_revisions": "skeptic",
     "adjudicate_objections": "validator",
     "validate": "validator",
+    "confirm": "validator",
     "score": "validator",
     "meta_review": "meta_reviewer",
 }
@@ -63,7 +64,8 @@ DEPENDS_ON: dict[str, tuple[str, ...]] = {
     "falsify_revisions": ("revise_hypotheses",),
     "adjudicate_objections": ("falsify", "falsify_revisions", "modern_evidence", "gather_evidence"),
     "validate": ("adjudicate_objections", "falsify", "falsify_revisions", "modern_evidence", "gather_evidence"),
-    "score": ("validate",),
+    "confirm": ("validate",),
+    "score": ("validate", "confirm"),
     "meta_review": ("score",),
 }
 
@@ -74,8 +76,8 @@ ORDER["plan"] = -1
 FOUNDATION_KINDS = ("scope_corpus", "assess_philology", "resolve_terms", "extract_claims", "validate_claims",
                     "map_terminology", "build_lineage", "trace_sources", "gather_evidence")
 DISCOVERY_KINDS = ("mine_patterns", "test_statistics", "trace_evolution", "generate_hypotheses", "falsify",
-                   "modern_evidence", "revise_hypotheses", "falsify_revisions", "adjudicate_objections", "validate", "score",
-                   "meta_review")
+                   "modern_evidence", "revise_hypotheses", "falsify_revisions", "adjudicate_objections", "validate", "confirm",
+                   "score", "meta_review")
 MANDATORY_AFTER_HYPOTHESES = ("falsify", "validate", "score")
 TOUCHES_HYPOTHESES = frozenset({"generate_hypotheses", "revise_hypotheses", "falsify", "falsify_revisions", "gather_evidence",
                                 "modern_evidence"})
@@ -115,6 +117,7 @@ def wire(round_: int, items: list[dict[str, Any]], *, review_roles: set[str] | N
     if "validate" in seen:
         seen.setdefault("adjudicate_objections", {"kind": "adjudicate_objections",
                                                   "reason": "objections are closed only by a validator's re-run or an expert (harness policy)"})
+        seen.setdefault("confirm", {"kind": "confirm", "reason": "predictions re-tested on withheld material when the contract keeps some (harness policy)"})
     plan_id = task_id(round_, "plan")
     nodes = []
     for kind in sorted(seen, key=lambda k: ORDER.get(k, 99)):

@@ -204,6 +204,10 @@ class Hypothesis(Model):
     invalidated: list[str] = field_list()  # validations of the parent that do not carry over (gates, reviews)
     confirmation: dict = field_dict()  # the re-test of its predictions on material withheld from exploration
     warrant_id: str | None = None
+    # the statistics of its observations as a record (method, null hypothesis, effect and interval, n, source families,
+    # correction, sensitivity) — never folded into a "confidence" such as 1 − p
+    statistics: dict = field_dict()
+    novelty_profile: dict = field_dict()  # novelty by scope: curated known findings, the corpus, literature (unassessed)
 
     def version(self) -> str:
         """The content a validation is bound to: a gate or review computed on an earlier version does not count."""

@@ -9,8 +9,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from ...protocol.base import stable_id
 from ...protocol.events import EventType
 from ...protocol.research import CorpusManifest
+from ...tools.adapters import author_clusters
 from .common import focus_term_ids, related_terms, surface, surfaces_of
 
 OUTPUT = "CorpusManifest"
@@ -233,19 +235,62 @@ def draft_large(ctx: Any) -> dict[str, Any]:
             "coverage": coverage, "holdout_passage_ids": sorted(holdout), "time_basis": basis, "warnings": warnings, "frame": frame}
 
 
-def commit(ctx: Any, output: dict[str, Any]) -> str:
+def confirmation_split(ctx: Any, keep: list[str]) -> tuple[list[str], list[str]]:
+    """Keep back whole source families (or books) as confirmation material, a fraction of them in every period, so
+    exploration and confirmation are independent witnesses of the same era.  Deterministic by the contract's seed."""
+    spec = ctx.goal.confirmation if ctx.goal is not None else None
+    if spec is None or not keep:
+        return keep, []
     corpus = ctx.cap("corpus")
-    valid = [pid for pid in output["passage_ids"] if corpus.has_passage(pid)]
-    holdout = set(output.get("holdout_passage_ids", []))
+    pack = ctx.cap("domain")
+    cluster = author_clusters(corpus) if spec.unit == "family" else (lambda b: b)
+    unit_of = {pid: cluster(corpus.passage(pid).book_id) for pid in keep}
+    by_period: dict[str, set[str]] = {}
+    for pid in keep:
+        by_period.setdefault(pack.periods.period_of(corpus.year(corpus.passage(pid))) or "?", set()).add(unit_of[pid])
+    held: set[str] = set()
+    for period, units in sorted(by_period.items()):
+        if len(units) < 2:
+            continue  # a period with one family keeps it for exploration
+        ranked = sorted(units, key=lambda u: stable_id("confirm", spec.seed, u))
+        take = max(1, int(round(spec.fraction * len(units))))
+        held.update(ranked[: min(take, len(units) - 1)])
+    confirmation = [pid for pid in keep if unit_of[pid] in held]
+    return [pid for pid in keep if unit_of[pid] not in held], confirmation
+
+
+def commit(ctx: Any, output: dict[str, Any]) -> str:
+    """The withheld sets come from the contract (the deterministic draft), never from a model's output: a model may
+    narrow the exploration material, not widen it, and nothing withheld before is released."""
+    corpus = ctx.cap("corpus")
+    base = ctx.draft if ctx.draft is not None else draft(ctx)  # the contract's own reading, whatever the model said
+    allowed = set(base["passage_ids"])
+    valid = [pid for pid in output["passage_ids"] if pid in allowed and corpus.has_passage(pid)]
+    holdout = set(base.get("holdout_passage_ids", []))
+    previous = ctx.state.corpus
+    keep, confirmation = confirmation_split(ctx, [pid for pid in valid if pid not in holdout])
+    expert_only: set[str] = set()
+    if previous is not None:
+        holdout |= set(previous.holdout_passage_ids)
+        confirmation = sorted(set(confirmation) | set(previous.confirmation_passage_ids))
+        expert_only |= set(previous.expert_only_passage_ids)
+    withheld = holdout | set(confirmation) | expert_only
+    keep = [pid for pid in keep if pid not in withheld]
+    warnings = list(output.get("warnings", []))
+    if confirmation:
+        warnings.append(f"{len(confirmation)} passage(s) from whole source families kept back for confirmation")
     manifest = CorpusManifest(
-        book_ids=sorted({corpus.passage(pid).book_id for pid in valid}),
-        passage_ids=[pid for pid in valid if pid not in holdout],
+        book_ids=sorted({corpus.passage(pid).book_id for pid in keep}),
+        passage_ids=keep,
         excluded=dict(output.get("excluded", {})),
         coverage=dict(output.get("coverage", {})),
         holdout_passage_ids=sorted(holdout),
         time_basis=output.get("time_basis", "composition"),
-        warnings=list(output.get("warnings", [])),
+        warnings=warnings,
         frame=dict(output.get("frame") or {}),
+        confirmation_passage_ids=sorted(confirmation),
+        expert_only_passage_ids=sorted(expert_only),
     )
     ctx.emit(EventType.CORPUS_SCOPED, {"manifest": manifest.to_dict()})
-    return f"{len(manifest.book_ids)} books, {len(manifest.passage_ids)} passages in scope, {len(manifest.holdout_passage_ids)} held out"
+    return (f"{len(manifest.book_ids)} books, {len(manifest.passage_ids)} passages in scope, {len(manifest.holdout_passage_ids)} held out"
+            + (f", {len(confirmation)} kept for confirmation" if confirmation else ""))

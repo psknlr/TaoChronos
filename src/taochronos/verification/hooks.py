@@ -101,10 +101,29 @@ def anachronism_guard(modern_labels: list[str], forbidden: list[str] | None = No
 
 
 def publish_guard(require_evidence_for: tuple[str, ...] = ("discovery_report", "hypothesis_report", "evidence_table")):
+    """BeforeArtifactPublish: a report that is not a draft must cite evidence, every object it references must exist
+    (and evidence must not be retracted), and every hypothesis it presents must have been judged by the contract on
+    the version it now has — a report cannot present a hypothesis whose gates ran on an earlier version."""
     def hook(ctx: HookContext) -> HookResult:
         artifact = ctx.subject
-        if isinstance(artifact, Artifact) and artifact.kind in require_evidence_for and artifact.status != "draft" and not artifact.evidence_refs:
+        if not isinstance(artifact, Artifact) or artifact.kind not in require_evidence_for or artifact.status == "draft":
+            return HookResult()
+        if not artifact.evidence_refs:
             return HookResult(allow=False, reason=f"{artifact.kind} must cite evidence (Evidence-first); publish as draft instead")
+        state = getattr(ctx.session, "state", None)
+        if state is None:
+            return HookResult()
+        missing = [e for e in artifact.evidence_refs if e not in state.evidence] + [h for h in artifact.hypothesis_refs if h not in state.hypotheses]
+        retracted = [e for e in artifact.evidence_refs if e in (getattr(state, "retractions", {}) or {})]
+        if missing or retracted:
+            return HookResult(allow=False, reason=f"{artifact.kind} references {'missing ' + ', '.join(missing[:3]) if missing else ''}"
+                                                   f"{'retracted ' + ', '.join(retracted[:3]) if retracted else ''}")
+        judged = (getattr(state, "acceptance", None) or {}).get("versions", {})
+        if artifact.kind == "discovery_report" and artifact.hypothesis_refs:
+            stale = [h for h in artifact.hypothesis_refs if judged.get(h) != state.hypotheses[h].version()]
+            if stale:
+                return HookResult(allow=False, reason=f"{len(stale)} presented hypothesis(es) were not judged by the contract on their "
+                                                       f"current version (e.g. {stale[0]}); evaluate the contract first")
         return HookResult()
 
     return hook

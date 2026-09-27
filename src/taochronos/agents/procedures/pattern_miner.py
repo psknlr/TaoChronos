@@ -153,14 +153,15 @@ def _d2(ctx: Any, focus: set[str]) -> list[Observation]:
             kind="concept_drift",
             title=f"「{surface(term)}」的概念演变（{_label(ctx, shift['from'])}→{_label(ctx, shift['to'])}）",
             summary=(f"「{surface(term)}」在 {len(res['periods'])} 个时期中的主导义项：{senses}。"
-                     f"相邻时期最大语境差异 JSD={shift['jsd']}（置换检验 p={shift['p_value']}）；"
+                     f"相邻时期最大语境差异 JSD={shift['jsd']}（对全部 {len(res['jsd_series'])} 个时期边界取最大值的置换检验 "
+                     f"p={shift['p_value']}；只检验所选边界的朴素 p={shift.get('p_value_naive')}）；"
                      f"新增语境：{'、'.join(surface(t) for t, _ in res['gained'][:4]) or '—'}；"
                      f"消失语境：{'、'.join(surface(t) for t, _ in res['lost'][:4]) or '—'}。"),
             detector="concept_drift@0.1",
             data={k: res[k] for k in ("term", "family", "periods", "occurrences", "books", "jsd_series", "max_shift", "first_last",
                                       "gained", "lost", "dominant_sense", "sense_changes")},
-            statistics={"jsd": shift["jsd"], "p_value": shift["p_value"], "first_last_p": res["first_last"]["p_value"],
-                        "occurrences": res["occurrences"]},
+            statistics={"jsd": shift["jsd"], "p_value": shift["p_value"], "p_value_naive": shift.get("p_value_naive"),
+                        "test": shift.get("test"), "first_last_p": res["first_last"]["p_value"], "occurrences": res["occurrences"]},
             claim_ids=res["claim_ids"][:40],
             passage_ids=res["passage_ids"][:40],
             terms=[res["term"]],

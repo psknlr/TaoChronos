@@ -221,12 +221,16 @@ class ScopedKnowledge:
 _WRAPPERS = {"corpus": ScopedCorpusView, "retriever": ScopedRetriever, "knowledge": ScopedKnowledge}
 
 
-def scoped_capability(name: str, value: Any, ctx: Any) -> Any:
-    """The capability a tool call sees: wrapped in the caller's scope when the session has one."""
+def scoped_capability(name: str, value: Any, ctx: Any, *, frame: bool = True) -> Any:
+    """The capability a caller sees: wrapped in the caller's scope when the session has one.  Tools see the frame
+    (the manifest's exploration passages); agent procedures (``frame=False``) may query the whole store — absence and
+    later-attestation checks need it — but withheld material is removed for them just the same."""
     wrapper = _WRAPPERS.get(name)
     if wrapper is None:
         return value
     scope = context_scope(ctx)
+    if scope is not None and not frame:
+        scope = ReadingScope(None, scope.withheld)
     if scope is None or (scope.allowed is None and not scope.withheld):
         return value
     return wrapper(value, scope)

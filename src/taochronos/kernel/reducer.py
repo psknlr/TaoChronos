@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Callable, Iterable
 
 from ..protocol.artifacts import Artifact
-from ..protocol.base import stable_id
+from ..protocol.base import content_hash, stable_id
 from ..protocol.claims import Claim
 from ..protocol.confidence import ConfidenceVector
 from ..protocol.events import Event, EventType
@@ -142,7 +142,7 @@ class Reducer:
             if "goal" not in p:
                 raise InvalidEvent("ResearchCreated requires a goal")
             declared = p.get("goal_digest")
-            if declared and GoalSpec.from_dict(p["goal"]).digest() != declared:
+            if declared and content_hash(p["goal"]) != declared:
                 raise InvalidEvent("goal digest mismatch: GoalSpec was altered")
         elif "goal" in p:
             raise InvalidEvent("GoalSpec is immutable: only ResearchCreated may carry a goal")
@@ -257,7 +257,8 @@ class Reducer:
         if s.goal is not None:
             raise InvalidEvent("GoalSpec is immutable: the session already has a goal contract")
         s.goal = GoalSpec.from_dict(e.payload["goal"])
-        s.goal_digest = s.goal.digest()
+        # the digest of the contract as written (fields added to GoalSpec later must not change an old contract's digest)
+        s.goal_digest = content_hash(e.payload["goal"])
         declared = e.payload.get("goal_digest")
         if declared and declared != s.goal_digest:
             raise InvalidEvent("goal digest mismatch: GoalSpec was altered")
@@ -491,6 +492,8 @@ class Reducer:
         if "novelty" in e.payload:
             h.novelty = e.payload["novelty"]
             h.novelty_rationale = e.payload.get("novelty_rationale", h.novelty_rationale)
+        if "novelty_profile" in e.payload:
+            h.novelty_profile = dict(e.payload["novelty_profile"])
 
     def _hypothesis_ranked(self, s: ResearchObject, e: Event) -> None:
         for hid, elo in e.payload["elo"].items():

@@ -13,7 +13,7 @@ from collections import Counter
 from typing import Callable
 
 from ..protocol.claims import Claim, Role
-from .stats import context_jsd, jensen_shannon, normalize, permutation_test
+from .stats import context_jsd, jensen_shannon, max_statistic_permutation, normalize, permutation_test
 from .temporal import PeriodBinner
 
 CONTEXT_ROLES = (
@@ -72,7 +72,10 @@ def concept_drift(
     for a, b in zip(periods, periods[1:]):
         series.append({"from": a, "to": b, "jsd": round(jensen_shannon(profiles[a], profiles[b]), 4)})
     shift = max(series, key=lambda s: (s["jsd"], s["to"]))
-    observed, p_value = permutation_test(samples[shift["from"]], samples[shift["to"]], context_jsd, n=n_permutations, seed=seed)
+    # the boundary was chosen because it is the largest: test the maximum over all boundaries (selection-aware), and keep
+    # the pairwise test of the chosen boundary only as the naive reference it is
+    _, _, p_value, _ = max_statistic_permutation([samples[p] for p in periods], context_jsd, n=n_permutations, seed=seed)
+    observed, p_naive = permutation_test(samples[shift["from"]], samples[shift["to"]], context_jsd, n=n_permutations, seed=seed)
     first, last = periods[0], periods[-1]
     fl_obs, fl_p = permutation_test(samples[first], samples[last], context_jsd, n=n_permutations, seed=seed + 1)
     pf, pl = normalize(profiles[first]), normalize(profiles[last])
@@ -92,7 +95,8 @@ def concept_drift(
         "books": {p: sorted(books[p]) for p in periods},
         "profiles": {p: profiles[p].most_common(top) for p in periods},
         "jsd_series": series,
-        "max_shift": {**shift, "observed": round(observed, 4), "p_value": round(p_value, 4)},
+        "max_shift": {**shift, "observed": round(observed, 4), "p_value": round(p_value, 4), "p_value_naive": round(p_naive, 4),
+                      "test": f"max-statistic permutation over {len(series)} period boundaries (selection-aware)"},
         "first_last": {"from": first, "to": last, "jsd": round(fl_obs, 4), "p_value": round(fl_p, 4)},
         "gained": [(t, round(v, 4)) for t, v in gained],
         "lost": [(t, round(v, 4)) for t, v in lost],

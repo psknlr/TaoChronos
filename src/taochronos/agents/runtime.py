@@ -29,6 +29,7 @@ from ..protocol.base import stable_id
 from ..protocol.events import EventType
 from ..protocol.research import AgentInstance, Decision, TaskNode
 from ..protocol.schema import validate
+from ..verification.scope import scoped_capability
 from .context_views import ViewInput, build_sections
 from .prompts import output_instructions, system_prompt
 from .router import CognitiveRouter, RouteDecision
@@ -127,7 +128,8 @@ class AgentContext:
         return self.runtime.scheduler.services
 
     def cap(self, capability: str, name: str | None = None) -> Any:
-        return self.runtime.capabilities.get(capability, name)
+        """A capability as this agent may see it: withheld material (hold-out, confirmation, expert-only) is not in it."""
+        return scoped_capability(capability, self.runtime.capabilities.get(capability, name), self, frame=False)
 
     def has_cap(self, capability: str, name: str | None = None) -> bool:
         return self.runtime.capabilities.has(capability, name)

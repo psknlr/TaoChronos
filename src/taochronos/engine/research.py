@@ -31,11 +31,15 @@ from ..protocol.base import stable_id
 from ..protocol.events import EventType
 from ..protocol.research import Decision, GoalSpec, TaskNode
 from ..verification.hooks import anachronism_guard
+from ..verification.contract import evaluate_contract
+from .confirmation import confirm_hypotheses
+from .manifest import run_manifest
 from .report import publish_report
 from .validation import VALIDATOR, adjudicate_objections, score_hypotheses, validate_claims, validate_hypotheses
 
 TERMINAL = ("done", "failed", "skipped")
-ALWAYS_RUN = {"validate_claims", "adjudicate_objections", "validate", "score", "meta_review"}
+CONTRACT_JUDGE = Actor.validator("contract")
+ALWAYS_RUN = {"validate_claims", "adjudicate_objections", "validate", "confirm", "score", "meta_review"}
 FINAL = ("completed", "stopped", "awaiting_expert", "budget_exhausted", "max_rounds")
 
 
@@ -47,6 +51,11 @@ class RunResult:
     stop: dict[str, Any] = field(default_factory=dict)
     metrics: dict[str, Any] = field(default_factory=dict)
     artifacts: list[str] = field(default_factory=list)
+    acceptance: dict[str, Any] = field(default_factory=dict)  # the contract's verdict: execution is not acceptance
+
+    @property
+    def verdict(self) -> str:
+        return self.acceptance.get("status", "execution_finished")
 
 
 class ResearchEngine:
@@ -59,6 +68,7 @@ class ResearchEngine:
         session = Session.create(self.h.store, session_id)
         self._install_goal_hooks(goal)
         session.emit(EventType.RESEARCH_CREATED, {"goal": goal.to_dict(), "goal_digest": goal.digest(), "profile": self.h.profile.name})
+        session.emit(EventType.RUN_MANIFEST_RECORDED, {"manifest": run_manifest(self.h, session, phase="start")})
         session.emit(EventType.PROFILE_LOADED, {
             "profile": self.h.profile.name,
             "plugins": list(self.h.capabilities.loaded_plugins),
@@ -223,6 +233,8 @@ class ResearchEngine:
                 summary = adjudicate_objections(self.h, state, tx)
             elif task.kind == "validate":
                 summary = validate_hypotheses(self.h, state, tx)
+            elif task.kind == "confirm":
+                summary = confirm_hypotheses(self.h, state, tx)
             elif task.kind == "score":
                 summary = score_hypotheses(self.h, state, tx, task.round)
             else:
@@ -260,6 +272,10 @@ class ResearchEngine:
     def _finish(self, session: Session, decision: StopDecision) -> None:
         session.emit(EventType.STOP_CONDITION_MET, {"status": decision.status, "reasons": decision.reasons,
                                                     "signals": _jsonable(decision.signals)})
+        # execution is not acceptance: record what was used, then let a validator judge the research against its contract
+        session.emit(EventType.RUN_MANIFEST_RECORDED, {"manifest": run_manifest(self.h, session, phase="end")})
+        evaluation = evaluate_contract(session.state, execution=decision.status)
+        session.emit(EventType.CONTRACT_EVALUATED, {"evaluation": evaluation.to_dict()}, actor=CONTRACT_JUDGE)
         try:
             publish_report(self.h, session)
         except Exception as exc:  # a report failure must not lose the research
@@ -273,7 +289,8 @@ class ResearchEngine:
     def _result(self, session: Session) -> RunResult:
         state = session.state
         return RunResult(session_id=session.id, status=state.status, rounds=state.round, stop=dict(state.stop or {}),
-                         metrics=research_metrics(state), artifacts=sorted(state.artifacts))
+                         metrics=research_metrics(state), artifacts=sorted(state.artifacts),
+                         acceptance=dict(state.acceptance or {}))
 
     # ================================================================ branches
     def branch(self, session: Session, hypothesis_id: str, *, purpose: str = "", merge: bool = True) -> tuple[Session, dict[str, Any]]:

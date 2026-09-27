@@ -15,10 +15,11 @@ from ..protocol.confidence import ConfidenceVector
 from ..protocol.events import EventType
 from ..protocol.evidence import Stance
 from ..protocol.hypothesis import NARROWING_AXIS, ScoreCard
-from ..science.scoring import discovery_score, elo_tournament, novelty
+from ..science.scoring import discovery_score, novelty, novelty_profile, pairwise_tournament
 from ..tools.adapters import author_clusters
 from ..verification.provenance import verify_evidence
 from ..verification.scope import scope_for
+from .warrants import build_warrants
 
 VALIDATOR = Actor.validator("gates")
 ANACHRONISM = {"low": 0.1, "medium": 0.5, "high": 0.9, "unknown": 0.5}
@@ -224,23 +225,49 @@ def score_card(h: Any, state: Any, known: list[dict]) -> tuple[ScoreCard, dict[s
     return card, components, confidence, nov, rationale
 
 
+def _features(h: Any, w: Any) -> dict[str, float]:
+    """What the explanatory comparison reads from a warrant — all of it checkable in the report."""
+    active = sum(1 for d in w.defeaters if d["status"] == "active" and d["severity"] in ("critical", "major"))
+    conf = (h.confirmation or {}).get("status")
+    return {"defeaters": active, "confirmation": {"confirmed": 1, "refuted": -1}.get(conf, 0), "families": len(w.scope.get("families", [])),
+            "rivals": sum(c.status == "excluded" for c in w.competing) - sum(c.status in ("open", "unaddressed") for c in w.competing),
+            "assumptions": len(w.assumptions)}
+
+
 def score_hypotheses(harness: Any, state: Any, tx: Any, round_: int) -> str:
+    warrants = {w.hypothesis_id: w for w in build_warrants(harness, state)}
+    if warrants:
+        tx.emit(EventType.WARRANT_RECORDED, {"warrants": [w.to_dict() for w in warrants.values()]},
+                generated=[w.id for w in warrants.values()])
     known = harness.pack.known_findings
     weights = (harness.profile.discovery or {}).get("weights")
     active = sorted((h for h in state.hypotheses.values() if h.status not in ("superseded",)), key=lambda h: h.id)
-    strength: dict[str, float] = {}
+    features: dict[str, dict[str, float]] = {}
     for h in active:
         card, components, confidence, nov, rationale = score_card(h, state, known)
         d = discovery_score(components, weights)
+        stated = _stated_in_corpus(state, h)
+        profile = novelty_profile(h.terms, known, stated_in_corpus=stated)
         tx.emit(EventType.HYPOTHESIS_SCORED, {"hypothesis_id": h.id, "scores": card.to_dict(), "discovery_score": d,
                                               "components": components, "confidence": confidence.to_dict(), "novelty": nov,
-                                              "novelty_rationale": rationale})
-        if h.status not in ("rejected", "expert_rejected"):
-            strength[h.id] = card.weighted()
-    if len(strength) >= 2:
-        elo, matches = elo_tournament(strength, rounds=3, seed=round_, start={hid: state.hypotheses[hid].elo for hid in strength})
-        tx.emit(EventType.HYPOTHESIS_RANKED, {"elo": elo, "matches": matches[:200], "round": round_})
-    return f"{len(active)} hypotheses scored; {len(strength)} in the tournament"
+                                              "novelty_rationale": rationale, "novelty_profile": profile})
+        if h.status not in ("rejected", "expert_rejected") and h.id in warrants:
+            features[h.id] = _features(h, warrants[h.id])
+    if len(features) >= 2:
+        elo, matches = pairwise_tournament(features, rounds=3, seed=round_, start={hid: state.hypotheses[hid].elo for hid in features})
+        tx.emit(EventType.HYPOTHESIS_RANKED, {"elo": elo, "matches": matches[:200], "round": round_,
+                                              "meaning": "exploration priority from pairwise explanatory comparison; not credibility"})
+    return f"{len(active)} hypotheses scored; {len(features)} compared for exploration priority"
+
+
+def _stated_in_corpus(state: Any, h: Any) -> bool | None:
+    """For associations: does a claim of the research scope state the two terms together (then it is not a hidden link)?"""
+    if h.kind not in ("hidden_association", "association_rule", "cross_space_bridge"):
+        return None
+    terms = set(h.terms[:2])
+    if len(terms) < 2:
+        return None
+    return any(terms <= {a.term_id for a in c.arguments if a.term_id and not a.negated} for c in state.claims.values())
 
 
 def counter_evidence(state: Any, hid: str) -> list[Any]:

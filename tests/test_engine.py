@@ -51,7 +51,8 @@ def test_report_sections(research):
 
     report, md, _ = build(h, session.state, session.id)
     titles = [s.title for s in report.sections]
-    assert len(titles) == 13 and titles[0].startswith("1. 研究问题") and titles[11].startswith("12. 建议人工核验")
+    assert len(titles) == 14 and titles[0].startswith("1. 研究问题") and titles[12].startswith("12. 建议人工核验")
+    assert titles[1].startswith("研究合同评估")  # the verdict comes right after the question: execution is not acceptance
     assert "消渴=糖尿病" in md and "不构成医学结论" in md
 
 
