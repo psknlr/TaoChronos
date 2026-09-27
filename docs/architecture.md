@@ -47,7 +47,10 @@ Agents act through a `SessionView` bound to their identity and read a frozen `St
 and the app mint privileged identities (checked by `taochronos governance`).
 
 State is `reduce(events)`. `taochronos replay` rebuilds it from the log and compares it with the live
-projection and every checkpoint.
+projection and every checkpoint.  During a run the same comparison is incremental (`Session.verify_incremental`): a
+replay kept beside the live state is advanced by the events appended since the last check, its hash is reused until it
+moves, a checkpoint right after a consistent check records that check's hash, and any restore drops the kept replay —
+the live state itself is always hashed afresh, so a change behind the log is still found.
 
 ### Transactions and crash recovery
 
@@ -62,8 +65,9 @@ scientific).
 
 ### Deterministic scientific state
 
-`ResearchObject.state_hash()` hashes only the *scientific* fields. Operational telemetry — agent
-instances, attempt counters, token usage, the run trace artifact — is excluded, so:
+`ResearchObject.state_hash()` hashes only the *scientific* fields — and serialises only them, in one walk, with the
+cyclic collector paused while the tree is built. Operational telemetry — agent instances, attempt counters, token usage,
+the run trace artifact — is excluded, so:
 
 - two runs of the same contract produce the same hash;
 - a run that crashed and resumed produces the same hash as an uninterrupted one;
@@ -98,7 +102,15 @@ agent specs (validated) → router → runtime → store → artifacts.
 The `corpus` capability has two implementations behind one interface: the in-memory YAML corpus (demo) and
 `StoreCorpus`, a lazy view of the SQLite corpus store with a full-text index (the `full-corpus` profile); large
 corpora switch retrieval, curation, lineage and falsification to index-backed candidates (see
-[ADR 0003](adr/0003-corpus-store-and-scoped-research.md)).
+[ADR 0003](adr/0003-corpus-store-and-scoped-research.md)).  `corpus.on_side(cutoff, "before" | "after")` is the time
+machine's view: only the passages whose whole date range lies on that side exist — every read path is bounded in SQL,
+the full-text search and the study layer's own queries of the store (`row_filter`) included — so a harness built on the
+past view cannot read a later text
+([ADR 0010](adr/0010-speed-cruxes-and-research-value.md)).
+
+Every YAML file the harness reads is parsed once per content (`protocol/yamlio.py`): the parsed value is kept under the
+SHA-256 of the file's bytes in `$TAOCHRONOS_CACHE` (`off` disables it; else the XDG cache), so an edited file is simply
+another key and a stale entry cannot be read.
 
 The `study` capability (`plugins/classics/study`, [ADR 0004](adr/0004-study-layer.md)) holds the 治学 functions —
 concordance, formula provenance, materia-medica and term histories, taboo dating, citations, learning cards, reading
@@ -145,7 +157,19 @@ relation: the nearest cue governs each intervention (「不可发汗，宜桂枝
 and a recommendation (「汗之则神昏」 / 「汗之则愈」), an intervention named by 之 is read through its pronoun, and every
 argument is read with its negation (「非风、非寒…乃异气所感」 does not support "风 causes 温疫").  The statement frame
 records who says it (a report governs until the author answers it), the stance — asserted, reported, rejected — the
-conditions (若…者, 凡…, the 「…者，X主之」 clause), negations and time.  A contradicted claim is refused at commit.
+conditions (若…者, 凡…, the 「…者，X主之」 clause), negations and time.  A contradicted claim is refused at commit.  A cue
+reaches only to the next 「……者，」 condition, and the reading consults the registry of textual cruxes
+(`domains/classics/cruxes.yaml`, harvested from the commentaries by `taochronos study cruxes`): a claim whose literal
+wording would support it but rests on words the commentators judged transposed, miswritten, interpolated or lost reads
+*ambiguous*, with the crux and its commentators as cues.
+
+**Arguments from silence are tested against what the scope states.**  A lost association (D1) and a hidden one (D4)
+are claims about the literature, not about the passages a session read: the Skeptic searches the whole scope — the
+store within the contract's window, for a large corpus — for claims that *state* the association (every written form
+of both terms, the extractor deciding, supported quotes only).  "No longer stated" is a universal negative: one verified
+statement after the pivot refutes a loss (`restated_after`, critical — the objection says when every later statement
+is of one source family, which a separate argument about transcription would have to take up), and any statement
+refutes a hidden association (`attested`).  Both are hard objections: a narrowing of the wording cannot close them.
 
 Epistemic gates G0–G8 promote knowledge step by step: G0 source · G1 transcription/OCR · G2 philology ·
 G3 semantics · G4 claim (layers: authenticity, locator, support, scope) · G5 independent replication

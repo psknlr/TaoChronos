@@ -23,7 +23,7 @@ import re
 from collections import Counter, defaultdict
 from typing import Any
 
-from .base import StudyBase, dated
+from .base import StudyBase, dated, row_filter
 
 _EQUATE = r"(?:一名|又名|亦名|俗名|俗呼|俗谓之|今名|今呼|古名|又称|或作|一作|即是|即)"
 _EDGE = set("之乎者也矣焉而以于其与则乃且亦所此是故曰云谓又即皆为若或凡但一及")
@@ -45,11 +45,12 @@ class NameStudy:
         out: dict[str, tuple[str, float | None, str]] = {}
         store = getattr(self.b.corpus, "store", None)
         if store is not None:
+            extra, params = row_filter(self.b.corpus)
             for i in range(0, len(ids), 900):
                 chunk = ids[i: i + 900]
                 with store.lock:
-                    rows = store.db.execute(f"SELECT id, book_id, year, text FROM passages WHERE id IN ({','.join('?' * len(chunk))})",
-                                            chunk).fetchall()
+                    rows = store.db.execute(f"SELECT id, book_id, year, text FROM passages WHERE id IN ({','.join('?' * len(chunk))}){extra}",
+                                            [*chunk, *params]).fetchall()
                 out.update({pid: (bid, year, text) for pid, bid, year, text in rows})
             return out
         for p in self.b.passages(ids):

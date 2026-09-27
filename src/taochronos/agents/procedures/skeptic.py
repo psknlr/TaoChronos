@@ -4,8 +4,11 @@ Checks: provenance of every quote · anachronism · contested readings in the
 evidence (edition variants) · homonymy · transcription dependence · single
 source · corpus coverage (sample size) · statistics · later co-mentions that
 contradict “lost” knowledge · text-level co-mentions that contradict “hidden”
-associations · earlier attestation for testimony · weak formula lineages ·
-overlap with known findings.
+associations · explicit statements of the association anywhere in the scope,
+beyond the passages the session read (``restated_after`` for a lost one after
+its pivot, ``attested`` for a hidden one: hard objections, with the statements
+as counter-evidence) · earlier attestation for testimony · weak formula
+lineages · overlap with known findings.
 
 The verdict is harness policy, not model opinion: any open critical
 objection rejects; open major objections send a first-generation hypothesis
@@ -33,13 +36,17 @@ from ...protocol.events import EventType
 from ...protocol.evidence import Stance
 from ...protocol.hypothesis import NARROWING_AXIS, HypothesisReview, Objection, objection_kind
 from ...science.scoring import novelty
-from .common import cluster_fn, co_mentions, evidence_record, late_passage_count, locate, related_terms, scope_passages, surface, year_fn
+from .common import (cluster_fn, co_mentions, evidence_record, late_passage_count, locate, related_terms, restatements, scope_passages,
+                     surface, year_fn)
 
 OUTPUT = "ReviewSet"
 MAX_REVISIONS = 1
 QUALIFIER_FOR = NARROWING_AXIS
 LOCAL_KINDS = ("lost_source", "historical_testimony", "contradiction", "renaming")
 MIN_LATE_PASSAGES = 20
+POSITIVE = (ClaimRelation.INDICATED_FOR, ClaimRelation.HERB_INDICATION, ClaimRelation.COMPOSED_OF)
+UNIT_RELATIONS = {"indication": (ClaimRelation.INDICATED_FOR, ClaimRelation.HERB_INDICATION),
+                  "etiology": (ClaimRelation.CAUSES, ClaimRelation.PATHOGENESIS)}
 
 
 def instructions(ctx: Any) -> str:
@@ -174,6 +181,18 @@ def _review(ctx: Any, h: Any) -> dict[str, Any]:
             objections.append(_obj(h, "earliest_source", "major",
                                    f"{int(pivot)} 年后仍有 {len(hits)} 处文本同时提及二者（如 {hits[0][0]}），失传结论需限定为“不再形成明确记载”",
                                    counter=hits[:3]))
+        # an argument from silence is tested against what the whole scope *states*, not against the session's sample
+        stated = restatements(ctx, data["left"], data["right"], after=pivot,
+                              relations=UNIT_RELATIONS.get(data.get("kind"), UNIT_RELATIONS["indication"]))
+        if stated:  # "no longer stated" is a universal negative: one verified statement refutes it, copied or not
+            later_books = sorted({c.book_id for c in stated})
+            families = sorted({cluster(b) for b in later_books})
+            first = stated[0]
+            objections.append(_obj(h, "restated_after", "critical",
+                                   f"{int(pivot)} 年后仍有 {len(later_books)} 部书（{len(families)} 个来源家族）明确陈述二者的关联"
+                                   f"（如 {first.passage_id}「{first.quote[:40]}」），“后世不再出现”不成立"
+                                   + ("" if len(families) >= 2 else "；若这些后世来源只是转录早期文本，可改为“仅见于转录”另行论证"),
+                                   counter=[(c.passage_id, c.start, c.end) for c in stated[:3]], method="falsification:restatement"))
     elif h.kind == "historical_testimony":
         checks.append("earliest_source")
         herb = data.get("herb")
@@ -239,6 +258,13 @@ def _review(ctx: Any, h: Any) -> dict[str, Any]:
         if hits:
             objections.append(_obj(h, "counterexample", "major",
                                    f"二者已在 {len(hits)} 处文本中共现（如 {hits[0][0]}），并非完全隐性的关联", counter=hits[:3]))
+        stated = restatements(ctx, left, right, relations=POSITIVE)  # beyond the session's sample: is it written somewhere?
+        if stated:
+            first = stated[0]
+            objections.append(_obj(h, "attested", "critical",
+                                   f"二者的关联已有明确记载（{len({c.book_id for c in stated})} 部书，如 {first.passage_id}"
+                                   f"「{first.quote[:40]}」）：这是会话未读到的已知关联，不是隐性关联",
+                                   counter=[(c.passage_id, c.start, c.end) for c in stated[:3]], method="falsification:restatement"))
         if isinstance(stats.get("empirical_p"), (int, float)) and stats["empirical_p"] > 0.1:
             objections.append(_obj(h, "statistical", "minor", f"链接得分在候选对中的经验排名 p={stats['empirical_p']}"))
     elif h.kind == "formula_evolution":
@@ -290,8 +316,8 @@ def _counter_records(ctx: Any, h: Any, raw: dict[str, Any]) -> list[Any]:
     records = []
     for item in raw.get("counter", []) or []:
         pid, start, end = item
-        records.append(evidence_record(ctx, pid, start, end, method="falsification:co_mention", stance=Stance.CONTRADICTS,
-                                       hypothesis_id=h.id, note=raw["check"], textual=0.5))
+        records.append(evidence_record(ctx, pid, start, end, method=raw.get("method", "falsification:co_mention"),
+                                       stance=Stance.CONTRADICTS, hypothesis_id=h.id, note=raw["check"], textual=0.5))
     for q in raw.get("counter_evidence", []) or []:
         span = locate(ctx, q.get("passage_id", ""), q.get("quote", ""))
         if span is not None:

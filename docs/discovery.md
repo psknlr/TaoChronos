@@ -92,14 +92,19 @@ terms, their aliases and variants, related terms and the cues of their historica
 formulas and drugs most co-mentioned with them — stratified by period (a floor per period, then relevance) and
 recorded in the manifest (`frame`). The reading agents work inside the frame. Absence and later-attestation
 checks do not: the Skeptic's co-mention and late-passage counts query the **whole store** within the contract's
-window (temporal scope, hold-out, excluded books), so sampling can never manufacture an absence.
+window (temporal scope, hold-out, excluded books).  Co-mentions were not enough: the research-value benchmark found
+associations called lost that later books still *state*, and links called hidden that earlier books had written
+([ADR 0010](adr/0010-speed-cruxes-and-research-value.md)).  So the Skeptic also searches the whole window for claims
+that state the association — every written form of both terms, one-character ones included, the extractor deciding and
+the quote supporting — and one such statement after the pivot refutes a loss, any one refutes a hidden link.
 
 ### Falsification
 
 The Skeptic runs, per kind: provenance of every quote · anachronism · contested readings inside the evidence
 · homonymy · transcription dependence · single source · corpus coverage · statistics after correction ·
-later co-mentions and partial persistence (lost knowledge) · contraindications, taxonomic implication,
-differential diagnosis and text-level co-mentions (hidden associations) · earlier attestation (testimony) ·
+later co-mentions, partial persistence and explicit later statements — `restated_after`, hard (lost knowledge) ·
+contraindications, taxonomic implication, differential diagnosis, text-level co-mentions and explicit statements
+anywhere in the scope — `attested`, hard (hidden associations) · earlier attestation (testimony) ·
 lineage strength (formula families) · overlap with existing understanding (novelty, not validity).
 
 Verdicts are harness policy: an unresolved critical objection rejects; unresolved major objections send a

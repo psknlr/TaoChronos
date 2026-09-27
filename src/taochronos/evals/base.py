@@ -35,6 +35,7 @@ class EvalContext:
         self._default: Harness | None = None
         self._pipeline: tuple[Harness, Any] | None = None
         self._corpus: Harness | None | bool = False
+        self._corpus_data: Path | None = None
 
     # ------------------------------------------------------------- harnesses
     def harness(self, profile: str = "full-discovery", **kw: Any) -> Harness:
@@ -58,8 +59,17 @@ class EvalContext:
             for data in (self.data_dir, default_data_dir(self.home)):
                 if (Path(data) / "corpus" / "tcm.sqlite").exists():
                     self._corpus = Harness.from_profile("full-corpus", home=self.home, data_dir=data, store=MemoryEventStore())
+                    self._corpus_data = Path(data)
                     break
         return self._corpus  # type: ignore[return-value]
+
+    def corpus_view_harness(self, corpus: Any) -> Harness:
+        """A fresh full-corpus harness reading a view of the store (``StoreCorpus.on_side`` …) in place of all of it:
+        its retrieval, knowledge and study layers see only what the view holds."""
+        if self.corpus_harness() is None:
+            raise RuntimeError("no full-corpus store")
+        return Harness.from_profile("full-corpus", home=self.home, data_dir=self._corpus_data, store=MemoryEventStore(),
+                                    corpus=corpus)
 
     def gold(self, name: str) -> dict[str, Any]:
         path = self.home / "evals" / "gold" / f"{name}.yaml"

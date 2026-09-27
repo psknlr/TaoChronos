@@ -47,7 +47,9 @@ that can be searched, dated and cited, and offers two layers on top of it:
   done has only finished executing — whether the research is accepted is a validator's verdict, criterion by criterion
   (`research_accepted` / `needs_expert` / `inconclusive` / `budget_exhausted`).  A true quote is not a true reading
   (every claim must be *stated* by its quote), a model's proposal is not a verdict, and an internal score is not
-  external evidence ([ADR 0009](docs/adr/0009-boundaries-contract-and-evaluation-layers.md)).
+  external evidence ([ADR 0009](docs/adr/0009-boundaries-contract-and-evaluation-layers.md)); arguments from silence
+  ("lost", "hidden") are tested against what the whole scope states, and research value is measured blind on the full
+  corpus against baselines ([ADR 0010](docs/adr/0010-speed-cruxes-and-research-value.md)).
 
 Both layers share one rule: **every statement rests on verbatim witnesses** (book, volume·chapter·section, date,
 text layer, source and licence of the transcription). Rule-based reading is labelled as machine reading; people check
@@ -388,7 +390,15 @@ human expert can declare equivalence.
   an intervention named by 之 is read through its pronoun, and every argument is read with its negation (「非风、非寒…乃
   异气所感」 does not support "风 causes 温疫").  The statement's frame records who says it (after 或曰……余曰非也 the words are
   the author's), the stance (asserted / reported / rejected), the conditions (若…者, 凡…, the 「…者，X主之」 clause),
-  negations and time.  A claim its quote contradicts is refused.
+  negations and time.  A claim its quote contradicts is refused.  A claim that rests on words the commentators
+  doubted — a textual crux (公案) from the registry harvested from the commentaries in the store (伤寒论 85, 金匮要略 42:
+  transpositions, emendations, interpolations, omissions, doubts) — reads *ambiguous*, with the crux and who doubted it.
+- **An absence in a sample is not an absence in the literature** ([ADR 0010](docs/adr/0010-speed-cruxes-and-research-value.md)).
+  A lost association (D1) and a hidden one (D4) are claims about the literature: the Skeptic searches the whole scope —
+  the store within the contract's window, for a large corpus — for claims that *state* the association (one-character
+  forms included, the extractor deciding, supported quotes only).  One verified statement after the pivot refutes a
+  loss (`restated_after`); any statement refutes a hidden link (`attested`); both are hard objections no rewording
+  closes.
 - **A proposal is not a verdict.**  Every event carries the principal of its emitter (kernel › human › validator ›
   agent), set by the session from an identity object; only an expert sets G7; objections are a state machine (raised →
   resolution proposed → closed) in which a model only proposes and a hard objection closes only by a validator's
@@ -491,18 +501,21 @@ decided each item.  External command subagents and Research Code Mode: [docs/age
 
 ## 8. Evaluation and quality
 
-`taochronos eval` runs on the demo corpus; with the corpus store, the deep-discovery and task-specification suites also check the real corpus (~7 min for all suites once the caches are built). The gold sets were built by the authors for the demo corpus and used
+`taochronos eval` runs on the demo corpus; with the corpus store, the deep-discovery and task-specification suites also check the real corpus and the research-value layer runs blind on it (~18 min for all suites once the caches are built, ~11 of them research value). The gold sets were built by the authors for the demo corpus and used
 during development: **regression tests, not an unbiased benchmark** (see [evals/gold/README.md](evals/gold/README.md)).
 
-The evaluation has three layers ([ADR 0009](docs/adr/0009-boundaries-contract-and-evaluation-layers.md)):
-**invariants** (the harness's boundaries as probes run on the harness under evaluation), **hard interpretive cases**
-(verbatim quotes that can still be read wrongly, scored per class with the *unsafe* errors counted apart, on dev and
-held-out splits) and **research value** (every other suite, the ablations and the baselines).
+The evaluation has three layers ([ADR 0009](docs/adr/0009-boundaries-contract-and-evaluation-layers.md),
+[ADR 0010](docs/adr/0010-speed-cruxes-and-research-value.md)): **invariants** (the harness's boundaries as probes run on
+the harness under evaluation), **hard interpretive cases** (verbatim quotes that can still be read wrongly, scored per
+class with the *unsafe* errors counted apart, on dev and held-out splits) and **research value** (`research_value`: the
+full corpus split at a cutoff year, against popularity and chance — with every other suite, the ablations and the
+baselines).
 
 | Suite | Result |
 |---|---|
 | Invariants | 19/19 hold (the audit's P01–P10 and nine boundaries added with them); each of six boundaries removed on purpose (scope guard, result firewall, semantic support, reducer authority, evidence bounds, publish guard) breaks its invariant |
-| Interpretive | 92 cases in seven classes (inverted relations, a prohibition beside a prescription, consequences, reported and rejected views, omitted conditions, mixed witnesses, disputed dates): **held-out 73/76 (0.961)**, 2 unsafe — both textual cruxes (「不可下也。大黄牡丹汤主之」, 「表有热，里有寒，白虎汤主之」); first blind round held-out 43/53 (0.811) |
+| Interpretive | 107 cases in eight classes (inverted relations, a prohibition beside a prescription, consequences, reported and rejected views, omitted conditions, mixed witnesses, disputed dates, textual cruxes): **held-out 82/84 (0.976)**, dev 23/23; 2 unsafe (大黄牡丹汤 and 里水: cruxes the harvest does not find, reported and not patched); first blind round 43/53 (0.811); round 3 (before the crux registry) 7/10 with 3 unsafe, round 4 (written after it, before it ran) 5/5 |
+| Research value (full corpus) | **Link anticipation** at 1127 and 1368 (189 topic–cutoff pairs, 29 467 candidates, base rate 4.5 %): Adamic–Adar, which D4 ranks by, **precision@10 0.168** (popularity 0.134, chance 0.054), mean average precision 0.199 / 0.143 / 0.092; better than popularity on 149 topics, worse on 39 (sign test p = 2.4 × 10⁻¹⁶), at both cutoffs.  **End to end** (the pipeline on the text before 1368; leakage 0): 10 of 25 held-out predictions held; the new absence checks rejected 4 (2 false losses, 2 links written before the cutoff) and no discovery; surviving discoveries 7/23 → **7/19**.  The verdict is modest: the ranking is well above its baselines; the hypotheses, one by one, hold about half the time and association rules rarely |
 | Philology | 7/7: no forced reading, uncertainty mass kept, normalised matching |
 | Claims | P 1.0 · R 0.976 · F1 0.988 (a general prognosis rule: 则愈 / 自愈 / 欲解 / 可治 … / 者死 / 难治 / 不治; before it F1 0.964 and prognosis recall 0; this gold is dev); 100 % of extracted claims verbatim |
 | Provenance | claims and evidence 100 % verbatim; mean provenance chain 7.8 levels (page/line/region/image honestly unavailable: no page images) |
@@ -550,7 +563,7 @@ The development sets of deep discovery and of the task specification were writte
 intended behaviour, not generalisation. Expert gold on the full corpus is on the roadmap; the benchmark table of
 [docs/tasks.md](docs/tasks.md) lists each task's metric and gold.
 
-Plus 312 unit and integration tests (`pytest`, with format samples of every source, a synthetic corpus for the
+Plus 332 unit and integration tests (`pytest`, with format samples of every source, a synthetic corpus for the
 study layer, `tests/fixtures/study`, a contract test that checks real results against the JSON Schemas of the tasks, the
 audit's P01–P10 as regression tests in `tests/test_boundaries.py`, and `test_contract.py`, `test_statistics.py`,
 `test_longrun.py` and `test_eval_layers.py`) and the architecture governance check (`taochronos governance`: layering,
@@ -576,8 +589,12 @@ Code asks the **capability registry** for capabilities (`corpus`, `domain`, `phi
 plugin, agents act only through capabilities and tools, and agents, tools and plugins mint no privileged identity —
 enforced by `taochronos governance`. Every event carries its emitter's principal, checked by the reducer against
 `kernel/authority.py`; a transaction is validated as a whole before it is applied and persisted only after, with the
-state restored from the log on failure; every round checks the live state against a replay of the log. See
-[docs/architecture.md](docs/architecture.md) and [ADR 0009](docs/adr/0009-boundaries-contract-and-evaluation-layers.md).
+state restored from the log on failure; every round checks the live state against a replay of the log (incrementally:
+a kept replay advanced by the new events, the live state hashed afresh). YAML is parsed once per content; a full-corpus
+harness builds in 0.64 s instead of 9.2 s, and a full-corpus research run takes 95 s instead of 152 s (integrity checks
+7.0 s instead of 44.5 s). See [docs/architecture.md](docs/architecture.md),
+[ADR 0009](docs/adr/0009-boundaries-contract-and-evaluation-layers.md) and
+[ADR 0010](docs/adr/0010-speed-cruxes-and-research-value.md).
 
 ## 10. Repository layout
 
@@ -601,7 +618,7 @@ src/taochronos/            protocol/ kernel/ capabilities/ science/ verification
                            deep discovery: stemma · intertext · stratigraphy · cases · argument · senses · fragments
                            task specification: punctuation · clause · glosses · commentary · disputes · pairs · schools · names · chain · schemas
   plugins/classics/collation/  computational collation: anchored alignment · variant units · variant impact · stemma and contamination · TEI
-tests/                     247 tests (fixtures/: source format samples and the study corpus)
+tests/                     332 tests (fixtures/: source format samples and the study corpus)
 docs/                      study, task specification, architecture, agents, discovery, evaluation, data, ADRs, roadmap
 ```
 
@@ -667,9 +684,13 @@ docs/                      study, task specification, architecture, agents, disc
   not a finding.
 - The boundaries have limits of their own: a tool-level hold-out (the confirmation tier) is not a blind prediction; the
   namespace tier is not VM-grade isolation; the contract's verdicts and levels are ordinal labels, **not calibrated
-  probabilities**; the semantic-support reading is a rule-based second reader that cannot see a textual crux (倒装, a
-  suspected error) — the two unsafe held-out errors of the interpretive layer are of that kind, reported and not
-  patched; the interpretive gold is author-annotated.
+  probabilities**; the semantic-support reading is a rule-based second reader that sees a textual crux only when the
+  commentators state it in words the harvest reads (大黄牡丹汤 and 里水 escape it: the two unsafe held-out errors of the
+  interpretive layer, reported and not patched); the interpretive gold is author-annotated.
+- The research-value layer measures anticipation, not influence (a link comes true when later books write it, whoever
+  found it first); both sides are read by the rule extractor; the full-text index ranks with whole-store statistics (no
+  passage of the other side is read); the end-to-end part has 39 judged predictions and wide intervals; lost
+  associations have no baseline yet; whole-store checks do not yet leave out a confirmation family's other passages.
 - The system gives no medical advice; any research result is a lead until an expert (Gate G7) has reviewed it.
 
 ## 13. Roadmap and citation

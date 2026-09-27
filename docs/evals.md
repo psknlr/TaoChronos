@@ -1,7 +1,7 @@
 # TaoChronos-Eval
 
 ```bash
-taochronos eval                  # all suites (~7 min with the corpus store, caches built: the 2.0 and task suites also check the real corpus)
+taochronos eval                  # all suites (~18 min with the corpus store, caches built: the 2.0 and task suites also check the real corpus; research_value alone ~11)
 taochronos eval --quick          # fast subset
 taochronos eval claims temporal -o results.json
 ```
@@ -16,12 +16,15 @@ The suites form three layers ([ADR 0009](adr/0009-boundaries-contract-and-evalua
    evaluation: a profile that drops a validator, or a plugin that leaks a result, shows up as a broken invariant.
 2. **Hard interpretive cases** (`interpretive`) — verbatim quotes that can still be read wrongly, scored per class with
    the *unsafe* errors (those that would let a false claim through) counted apart, on a dev and a held-out split.
-3. **Research value** — every other suite, and the ablations and baselines.
+3. **Research value** (`research_value`) — does what the system proposes from the past anticipate what later physicians
+   wrote?  A blind temporal benchmark on the full corpus against baselines ([ADR 0010](adr/0010-speed-cruxes-and-research-value.md)),
+   with the time machine, source rediscovery, the ablations and every other suite.
 
 | Suite | Question | Metrics |
 |---|---|---|
 | `invariants` | Do the harness's boundaries hold — scope on every read path, semantic support at commit, objections a model cannot close, AfterToolCall denials, isolation of model code, atomic batches, G7 for experts only, evidence bounds, G8 by stance and level, read-only agent views, integrity, retraction, publication on current versions, acceptance ≠ execution? | held / exercised / broken |
-| `interpretive` | Are true quotes read right where the reading is hard — inverted relations, a prohibition beside a prescription, consequences, reported and rejected views, omitted conditions, mixed witnesses, disputed dates? | accuracy and unsafe errors, per class and per split (dev / held-out) |
+| `interpretive` | Are true quotes read right where the reading is hard — inverted relations, a prohibition beside a prescription, consequences, reported and rejected views, omitted conditions, mixed witnesses, disputed dates, textual cruxes? | accuracy and unsafe errors, per class and per split (dev / held-out) |
+| `research_value` | On the full corpus split at a cutoff year: do the graph rankings D4 uses anticipate the remedies later books link to a disease, better than popularity and chance?  Do the pipeline's own predictions, made on the past alone, come true? | hits and precision@k, mean average precision, paired sign tests over topics; predictions held (strict / loose), per split and review status; leakage |
 | `philology` | Are contested readings kept with probabilities and an uncertain mass? Are variant spellings normalised for matching? | pass rate |
 | `claims` | Does extraction find the right hyperedges (relation + key arguments + negations)? | precision · recall · F1 · recall by relation · provenance pass rate |
 | `provenance` | Are all committed claims and evidence verbatim? How deep is the Claim → Pixel chain? | verbatim rates · chain depth · level availability |
@@ -57,7 +60,7 @@ The suites form three layers ([ADR 0009](adr/0009-boundaries-contract-and-evalua
 | Suite | Result |
 |---|---|
 | invariants | 19/19 held (P01–P10 and nine boundaries added with them); each of six boundaries removed on purpose (scope guard, result firewall, semantic support hook, reducer authority, evidence bounds, publish guard) breaks its invariant |
-| interpretive | held-out 73/76 (0.961), 2 unsafe — both textual cruxes (公案); dev 16/16. First blind round: held-out 43/53 (0.811), 4 unsafe; see below |
+| interpretive | held-out 82/84 (0.976), 2 unsafe (大黄牡丹汤 read as an indication; 里水, a crux the harvest does not find); dev 23/23. First blind round 43/53 (0.811); round 3, before the crux registry, 7/10 with 3 unsafe cruxes; see below |
 | philology | 7/7 |
 | claims | P 1.0 · R 0.976 · F1 0.988 (miss: the second 湿痹 sign definition). Before the general PROGNOSIS rule (则愈 / 自愈 / 欲解 / 可治 … / 者死 / 难治 / 不治 …): P 0.976 · R 0.952 · F1 0.964, prognosis recall 0 — this gold is dev |
 | provenance | 100% verbatim claims and evidence; mean chain depth 7.8; page/line/region/image unavailable (no images in the demo) |
@@ -88,7 +91,7 @@ invariant broken, the boundary restored, the invariant held again:
 | evidence bound checks | I13: five empty or out-of-bounds records verified |
 | publish guard | I18: a report published on hypothesis versions the contract never judged |
 
-**Hard interpretive cases** (`gold/interpretive.yaml`, 92 cases in seven classes).  Every quote is verbatim — passages
+**Hard interpretive cases** (`gold/interpretive.yaml`, 107 cases in eight classes).  Every quote is verbatim — passages
 of the demo corpus, or excerpts of the full corpus given with their book — and every case has one reading that is
 right.  The harness reads each with the readers of a research run: the support reading and the statement frame
 (`verification/support.py`), the quote locator, the corpus's date ranges.  *Unsafe* errors are counted apart: a
@@ -102,17 +105,74 @@ The split was fixed before the suite first ran, and the rounds are reported as t
 | 1, blind | 60 written together (7 dev: the cases of changes already made — argument negation, the straddling cutoff — and their controls; 53 held out) | held-out 43/53 (0.811), 4 unsafe: a 或曰 view the author answers kept as the report (3), 「《古今录验》论：」 not read as a citation, 「…者，X主之」 conditions without 若/凡 dropped (2), a formula named by 之 unreadable (2), 「未有不成」 not causal, the 大黄牡丹汤 crux |
 | changes | general, not per case: a report governs until the author answers it (余曰 / 答曰 / 曰不然 / 是又不然); a book cited by title and colon is a report; a 者-clause followed in its sentence by an action or a consequence is a condition (a definition is not); an intervention named by 之 is read through its pronoun (不可与之 forbids, 服之则厥逆 warns, 宜服之 prescribes); 未有不 is a causal cue | the 9 round-1 cases that prompted them moved to dev |
 | 2, blind | 32 new held-out cases written after round 1 and before the changes ran | 30/32 (0.938), 1 unsafe |
-| now | 16 dev · 76 held-out | dev 16/16 · held-out 73/76 (0.961), 2 unsafe |
+| 3, blind | 10 new held-out cases (7 textual cruxes — a new class — and 3 of the other classes), written before any crux machinery | 7/10, 3 unsafe: cruxes read as plain indications |
+| changes | a registry of textual cruxes harvested from the commentaries in the store (`study cruxes`, [study.md](study.md#校勘疑义-cruxes)) — rules for the markers of transposition, emendation, interpolation, omission and doubt, not entries for the cases — consulted by the support reading; cue windows that stop at the next 「……者，」 condition | the 5 round-3 cruxes inspected while the harvest was built, and 2 earlier cases whose output was inspected, moved to dev |
+| 4, blind | 5 new held-out cases written after the changes and before they ran on them: two cruxes (§63 麻杏石甘汤 「汗出而喘」, 牡疟 蜀漆散) and three controls | 5/5 — both cruxes read *ambiguous*, the controls still *supports* |
+| now | 23 dev · 84 held-out | dev 23/23 · held-out 82/84 (0.976), 2 unsafe |
 
 By class (all cases): negation scope, consequence, reported view, omitted condition, mixed witnesses and disputed dates
-1.0; relation inversion 0.82.  The three held-out misses are reported, not patched:
+1.0; relation inversion 0.94; textual crux 0.92.  The two held-out misses are reported, not patched:
 
-* **Textual cruxes (公案), unsafe:** 「脉洪数者，脓已成，不可下也。大黄牡丹汤主之」 (read by most commentators as an
-  inversion) and 「此以表有热，里有寒，白虎汤主之」 (里有寒 long suspected an error) read as plain indications.  The
-  reader has no way to know a crux; a curated registry of cruxes consulted by the support reading is the direction,
-  measured on new held-out cases.
-* **A cue across a clause:** 「大便微硬者，可与大承气汤，不硬者，不可与之」 — the prohibition that governs the next clause is
-  read as bearing on 大承气汤 too, so the indication comes out *ambiguous* (a safe miss: the claim waits for an expert).
+* **大黄牡丹汤** (relation inversion, unsafe): 「脉洪数者，脓已成，不可下也。大黄牡丹汤主之」 — most commentators read the
+  formula as belonging before 不可下; they say so in words the harvest's markers do not catch, so no crux is registered.
+* **里水** (textual crux, unsafe): the doubt on 里水 in the 越婢加术汤 clause is not stated in a form the harvest reads.
+  Earlier misses are now caught: 「此以表有热，里有寒，白虎汤主之」 reads *ambiguous* through the registry (郭雍, 王肯堂,
+  周扬俊 and 程文囿 doubt the clause), and 「大便微硬者，可与大承气汤，不硬者，不可与之」 reads *supports*, the prohibition no longer reaching
+  back across its own 「……者，」 condition.
+
+## Research value (full corpus)
+
+`taochronos eval research_value` (about 11 minutes; skipped with `--quick` and without the corpus store).  At a cutoff
+the store splits into the past — passages whose whole date range lies before it — and the future, the passages wholly
+after it; a passage that may have been written on either side is in neither (`corpus.on_side`, bounded in SQL on every
+read path).  The rules are in `evals/gold/research_value.yaml`, written before the first run; one change since, recorded
+there: weak lexicon entries (254 harvested one-character "drugs" — 药, 补, 白, 按 …) are no candidates.
+
+**Link anticipation** — cutoffs 1127 and 1368; every disease and symptom of the lexicon with 150–6000 past and at least
+300 future passages (230 topic–cutoff pairs read, 189 with a link that came true); the candidates are the formulas and
+drugs of a topic's past graph not linked to it (29 467), and one comes true when future claims of two books link it to
+the topic (1 314, a base rate of 4.5 %):
+
+| ranker | precision@10 | precision@20 | mean average precision |
+|---|---|---|---|
+| Adamic–Adar (D4) | **0.168** [0.152, 0.185] | 0.131 [0.120, 0.142] | **0.199** [0.175, 0.222] |
+| common neighbours | 0.170 [0.154, 0.188] | 0.133 [0.123, 0.145] | 0.208 [0.185, 0.232] |
+| resource allocation | 0.149 [0.134, 0.166] | 0.118 [0.108, 0.129] | 0.175 [0.154, 0.197] |
+| popularity | 0.134 [0.119, 0.150] | 0.101 [0.092, 0.111] | 0.143 [0.126, 0.161] |
+| chance (20 draws) | 0.054 | 0.055 | 0.092 |
+
+Adamic–Adar against popularity: 149 topics better, 39 worse, 1 tie (sign test p = 2.4 × 10⁻¹⁶); 73/21 at 1127 and 76/18 at
+1368.  Popularity against chance: 116/73 (p = 0.002).  Examples of anticipated links: 消渴 ⇢ 猪苓汤 and 葛根 (before 1127
+and before 1368), 胸痹 ⇢ 栝楼实, 霍乱 ⇢ 干姜, 头痛 ⇢ 黄芩, 人参, 半夏.  The first run, with the weak entries still among the
+candidates, gave the same order (0.162 / 0.130 / 0.054).  Common neighbours is marginally ahead of Adamic–Adar inside
+the intervals; D4 was not switched on this evidence.
+
+**End to end** — the pipeline run on the past view at 1368 (rules only, about a minute a topic); each structured
+prediction is judged by future claims (strict: the association's own relation and a supporting quote; the loose reading
+of the first runs gave the same verdicts here).  Topics: dev 消渴, 中风 (inspected case by case while the checks below
+were built — they were the first held-out pair); held-out 胸痹, 霍乱, 虚劳, 痰饮 (written before those checks; only
+aggregates of their first run were looked at).  No passage outside the past view was read (leakage 0).
+
+| held-out (25 predictions) | before | after |
+|---|---|---|
+| lost associations stay absent (D1) | 4/9 | 4/9 — the 2 rejected were both wrong; 4/7 of those surviving hold |
+| association rules hold | 1/7 | 1/7 |
+| hidden associations come true (D4) | 4/8, of which 2 new — the other 2 already written before the cutoff | the 2 already written are rejected (`attested`) |
+| surviving predictions that are discoveries (true and new) | 7/23 = 0.30 [0.16, 0.51] | **7/19 = 0.37** [0.19, 0.59] |
+| discoveries rejected by review | 1 (by an earlier check) | 1 (the same) |
+
+On the dev topics the surviving discoveries went from 1/12 to 1/8; every lost association predicted for 消渴 and 中风 was
+contradicted by later books, and both hidden associations that came true (喘 ⇢ 五苓散, 头痛 ⇢ 承气汤) had been written
+before 1368 in books the session had not read.  What the dev runs showed, and what changed
+([ADR 0010](adr/0010-speed-cruxes-and-research-value.md)): arguments from silence were tested against co-mentions, a
+narrowing to 「不再形成明确记载」 closed the objection unchecked, one-character forms (喘, 寒) were left out of the search,
+and the pathogenesis rule read 「寒润五脏治消渴…热毒所生也」 as 寒 causing 消渴.  Now the Skeptic looks for explicit,
+supported statements of the association in the whole scope — `restated_after` refutes a loss, `attested` a hidden
+link, both hard objections — and 「…所生」 is read where it is said.
+
+The layer's verdict is modest: the ranking D4 rests on anticipates later links well above popularity and chance; the
+pipeline's hypotheses, judged one by one, hold about as often as not, and association rules rarely.  The numbers are
+small and their intervals wide; a baseline for lost associations is still missing.
 
 ## 深层发现 2.0
 
@@ -200,7 +260,7 @@ on the roadmap.
 
 The time machine's link-level table compares Adamic–Adar with resource allocation, common neighbours,
 popularity and random rankings. On the demo corpus only one link appears for the first time after 1368,
-so the table documents the protocol, not a result; it becomes meaningful on a large corpus.
+so the table documents the protocol, not a result; on the full corpus it is `research_value` (above).
 
 ## Adding gold
 

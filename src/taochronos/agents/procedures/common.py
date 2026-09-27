@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Iterable
 
 from ...protocol.base import stable_id
 from ...protocol.claims import Claim
@@ -241,6 +241,55 @@ def _segmented_sentences(ctx: Any, norm: str) -> list[tuple[int, str]]:
                     out.append((a, norm[a:b]))
             start = i + 1
     return out or [(0, norm)]
+
+
+def restatements(ctx: Any, left: str, right: str, *, relations: Iterable[Any], after: float | None = None,
+                 before: float | None = None, limit: int = 1500) -> list[Claim]:
+    """Claims that *state* an association of two terms anywhere in the research scope — the frame of a small corpus,
+    the whole store within the contract's window for a large one — not only in the passages the session has read.
+    An argument from silence (a lost association, a hidden one) is tested against these, not against co-mentions: the
+    candidates are the passages carrying some written form of both terms, one-character forms included (the extractor,
+    not the index, decides what a passage states), and a claim counts only when it has both terms, one of the given
+    relations and a quote that supports it (the semantic support reading)."""
+    from ...verification.support import assess_support
+
+    corpus = ctx.cap("corpus")
+    pack = ctx.cap("domain")
+    normalize = pack.variants.normalize_text
+    lo, hi, excluded = research_window(ctx)
+    after = lo if after is None else (after if lo is None else max(after, lo))
+    before = hi if before is None else (before if hi is None else min(before, hi))
+    forms = {t: [normalize(f) for f in surfaces_of(ctx, t)] for t in (left, right)}
+    if whole_corpus(ctx):
+        found = []
+        for t in (left, right):
+            ids: set[str] = set()
+            for f in forms[t]:
+                ids.update(corpus.contains(f, after=after, before=before, verify=False))
+            found.append(ids)
+        ids = sorted(found[0] & found[1])
+        if len(ids) > limit:  # a fixed sample, the same on every run
+            ids = sorted(sorted(ids, key=lambda pid: stable_id("restate", pid))[:limit])
+        passages = [p for p in corpus.passages_by_id(ids) if p.book_id not in excluded and p.kind != "toc"]
+    else:
+        passages = []
+        for p in scope_passages(ctx):
+            y = corpus.year(p)
+            if (after is not None and (y is None or y < after)) or (before is not None and (y is None or y >= before)):
+                continue
+            norm = normalize(p.text)
+            if all(any(f in norm for f in forms[t]) for t in (left, right)):
+                passages.append(p)
+    wanted = set(relations)
+    text = {p.id: p.text for p in passages}
+    cruxes = getattr(pack, "cruxes", None)
+    out = []
+    for c in ctx.cap("knowledge").claims_for(list(text)):
+        members = {a.term_id for a in c.arguments if a.term_id and not a.negated and not a.qualifiers.get("outcome")}
+        if c.relation in wanted and {left, right} <= members \
+                and assess_support(c, text[c.passage_id], normalize, cruxes).verdict == "supports":
+            out.append(c)
+    return sorted(out, key=lambda c: (corpus.year(corpus.passage(c.passage_id)) or 0, c.passage_id, c.start))
 
 
 def late_passage_count(ctx: Any, pivot: float) -> int:

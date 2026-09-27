@@ -258,6 +258,18 @@ class Corpus:
         drop = set(book_ids)
         return self.subset(pid for pid, p in self._passages.items() if p.book_id not in drop)
 
+    def on_side(self, cutoff: float, side: str) -> "Corpus":
+        """The passages whose whole date range lies ``before`` a cutoff, or ``after`` it (``StoreCorpus.on_side``);
+        an undated passage counts as before, as in the time machine."""
+        if side not in ("before", "after"):
+            raise ValueError(f"side must be 'before' or 'after', not {side!r}")
+
+        def where(p: Passage) -> str:
+            rng = self.year_range(p)
+            return "before" if rng is None else rng.side_of(cutoff)
+
+        return self.subset(pid for pid, p in self._passages.items() if where(p) == side)
+
     def witnesses(self, target: str) -> list[str]:
         """Books that transmit ``target`` — the book itself, or every witness of the work of that id
         (a generic reference to 《伤寒论》 resolves to 注解伤寒论 when only that witness is ingested)."""

@@ -213,9 +213,11 @@ class StudyBase:
         store = getattr(self.corpus, "store", None)
         if store is not None and book_ids:
             marks = ",".join("?" * len(book_ids))
+            extra, params = row_filter(self.corpus)
             with store.lock:
                 for pid, bid, seq, loc in store.db.execute(
-                        f"SELECT id, book_id, seq, locator FROM passages WHERE book_id IN ({marks}) AND kind != 'toc'", book_ids):
+                        f"SELECT id, book_id, seq, locator FROM passages WHERE book_id IN ({marks}) AND kind != 'toc'{extra}",
+                        [*book_ids, *params]):
                     rows.append((pid, bid, seq, json.loads(loc)))
         elif book_ids:
             for i, p in enumerate(self.corpus.passages(book_ids=book_ids)):
@@ -254,11 +256,12 @@ class StudyBase:
         marks = ",".join("?" * len(keys))
         rows = db.execute(f"SELECT raw, book_id, first_seq, last_seq FROM entries WHERE head IN ({marks}) "
                           f"ORDER BY book_id, first_seq LIMIT ?", (*keys, limit)).fetchall()
+        extra, params = row_filter(self.corpus)  # the index covers the store; a view keeps its own passages
         with store.lock:
             for raw, book_id, first, last in rows:
                 ids = [r[0] for r in store.db.execute(
-                    "SELECT id FROM passages WHERE book_id=? AND seq BETWEEN ? AND ? AND kind != 'toc' ORDER BY seq LIMIT ?",
-                    (book_id, first, last, span))]
+                    f"SELECT id FROM passages WHERE book_id=? AND seq BETWEEN ? AND ? AND kind != 'toc'{extra} ORDER BY seq LIMIT ?",
+                    (book_id, first, last, *params, span))]
                 out.append((raw, ids))  # type: ignore[arg-type]
         return [(raw, self.passages(ids)) for raw, ids in out]
 
@@ -324,8 +327,9 @@ class StudyBase:
                 row = store.db.execute("SELECT seq FROM passages WHERE id=?", (p.id,)).fetchone()
                 if row is None:
                     return []
+                extra, params = row_filter(self.corpus)
                 ids = [r[0] for r in store.db.execute(
-                    "SELECT id FROM passages WHERE book_id=? AND seq>? ORDER BY seq LIMIT ?", (p.book_id, row[0], n))]
+                    f"SELECT id FROM passages WHERE book_id=? AND seq>?{extra} ORDER BY seq LIMIT ?", (p.book_id, row[0], *params, n))]
             return self.passages(ids)
         order = [q for q in self.corpus.passages(book_ids=[p.book_id])]
         ids = [q.id for q in order]
@@ -354,9 +358,10 @@ class StudyBase:
     def book_texts(self, book_id: str) -> Iterable[str]:
         store = getattr(self.corpus, "store", None)
         if store is not None:
+            extra, params = row_filter(self.corpus)
             with store.lock:
-                rows = store.db.execute("SELECT text FROM passages WHERE book_id=? AND kind != 'toc' ORDER BY seq",
-                                        (book_id,)).fetchall()
+                rows = store.db.execute(f"SELECT text FROM passages WHERE book_id=? AND kind != 'toc'{extra} ORDER BY seq",
+                                        (book_id, *params)).fetchall()
             return [r[0] for r in rows]
         return [p.text for p in self.corpus.passages(book_ids=[book_id]) if p.kind != "toc"]
 
@@ -369,10 +374,11 @@ class StudyBase:
         store = getattr(self.corpus, "store", None)
         excluded = getattr(self.corpus, "exclude_books", set())
         if store is not None:
+            extra, params = row_filter(self.corpus)
             with store.lock:
                 rows = store.db.execute(
-                    "SELECT book_id, year, COUNT(*), SUM(LENGTH(text)) FROM passages WHERE kind != 'toc' "
-                    "GROUP BY book_id, year").fetchall()
+                    f"SELECT book_id, year, COUNT(*), SUM(LENGTH(text)) FROM passages WHERE kind != 'toc'{extra} "
+                    "GROUP BY book_id, year", params).fetchall()
             for book_id, year, n, chars in rows:
                 if book_id in excluded or book_id not in self.corpus.books:
                     continue
@@ -404,6 +410,13 @@ class StudyBase:
                               .encode()).hexdigest()[:12]
         return {"books": books, "passages": passages, "sources": sources, "normalizer": normalizer,
                 "store": str(getattr(store, "path", "")) if store is not None else "demo", "corpus_digest": digest}
+
+
+def row_filter(corpus: Any, alias: str = "") -> tuple[str, list[Any]]:
+    """The conditions a store corpus — or a view of it: excluded books, a time machine's bounds — puts on every
+    ``passages`` row, for the study layer's own queries of the store (none for an in-memory corpus)."""
+    fn = getattr(corpus, "row_filter", None)
+    return fn(alias) if callable(fn) else ("", [])
 
 
 def dated(years: Any) -> tuple[float, float]:

@@ -91,7 +91,8 @@ and a resumable executor (`taochronos ask`).
 - Better lineage: rarity-weighted herb overlap and explicit textual statements of derivation, to separate
   convergent composition from inheritance.
 - Dose- and preparation-aware formula comparison.
-- Time-machine evaluation on a large corpus (link-level hits@k against the baselines).
+- ~~Time-machine evaluation on a large corpus (link-level hits@k against the baselines)~~ — done: `research_value`
+  ([ADR 0010](adr/0010-speed-cruxes-and-research-value.md)).
 
 **Harness — done with the architecture audit ([ADR 0009](adr/0009-boundaries-contract-and-evaluation-layers.md))**:
 authority by principal on every event; atomic, pre-validated batches with restore; reading scopes as views with a result
@@ -100,12 +101,19 @@ namespace tier for model code; the executable contract with acceptance statuses,
 material; selection-aware statistics; the budget ledger, paging, record/replay, retraction, cancel and retry, run
 manifests and tool receipts; discriminating actions; the invariant and interpretive evaluation layers.
 
+**Harness — done with [ADR 0010](adr/0010-speed-cruxes-and-research-value.md)**: YAML parsed once per content, the lean
+state hash and incremental integrity checks; the registry of textual cruxes harvested from the commentaries and read by
+the support reading; clause-bounded cue windows; time-machine views of the store; the research-value layer on the full
+corpus (link anticipation against popularity and chance; the pipeline end to end on the past, dev and held-out);
+arguments from silence tested against what the whole scope states.
+
 **Harness — next**
-- A registry of textual cruxes (公案: 倒装, suspected errors such as 「里有寒」), consulted by the support reading so that a
-  claim resting on one is *ambiguous*; measured on new held-out interpretive cases.
-- Clause-bounded cue windows in the support reading (a prohibition of the next 者-clause must not govern this one).
-- The research-value layer against baselines on the full corpus: blind predictions with the confirmation tier withheld
-  by family and period, compared with co-occurrence and popularity baselines.
+- Research value: a baseline for lost associations (how often an early-only association of the frame stays absent), a
+  third cutoff to decide between Adamic–Adar and common neighbours, more held-out end-to-end topics, and association
+  rules that hold (they rarely do: replication across source families before a rule is proposed).
+- Whole-store checks that also leave out the other passages of a confirmation family (today only the withheld passages
+  themselves are left out).
+- Cruxes the harvest misses (the 大黄牡丹汤 inversion, 里水): markers of reordering stated as a reading, not as 当在.
 - Calibration of acceptance levels against expert verdicts once expert reviews accumulate (they are ordinal labels
   now, not probabilities).
 - A container sandbox provider (VM-grade isolation) behind the same tier interface.

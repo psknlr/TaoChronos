@@ -1,0 +1,50 @@
+# Research value — evaluation layer 3 (src/taochronos/evals/research_value.py).
+#
+# A blind temporal benchmark on the full corpus: at a cutoff year the store splits into the past (passages whose whole
+# date range lies before it) and the future (passages wholly after it); a passage that may have been written on either
+# side is in neither.  What the system proposes from the past is checked against what the future wrote.
+#
+# The rules below were written before the benchmark was first run; the topics follow from them, not from a choice.
+# Changing a rule after seeing results would turn the benchmark into a development set: a change is recorded here
+# with its reason, and the results before it are kept in docs/evals.md.
+
+cutoffs: [1127, 1368]   # the Southern Song begins; the Ming begins
+
+topics:
+  categories: [disease, symptom]   # every such term of the lexicon (weak terms excepted)
+  min_past: 150      # past passages that name the topic
+  max_past: 6000     # the past is read whole — a link's novelty is judged against all of it — so it must stay readable
+  min_future: 300    # future passages that name the topic
+  future_cap: 6000   # future passages read per topic: a fixed sample (by passage-id hash) beyond that
+
+candidates:         # the formulas and drugs of the topic's past graph not linked to it
+  weak: false        # changed after the first run (2026-09-27): the lexicon's weak entries — 254 harvested one-character
+                     # "drugs" such as 药, 补, 白, 按 — are as often words as drugs and were leaving noise among the
+                     # candidates; the first run's results (all rankers alike) are kept in docs/evals.md
+
+truth:
+  min_books: 2       # a candidate comes true when future claims of at least two books link it to the topic
+
+ks: [10, 20]
+random_seeds: 20
+
+end_to_end:          # the research pipeline itself, run on the past alone
+  cutoff: 1368
+  # A prediction is judged by future claims.  strict (reported first, since 2026-09-27): a claim of the association's
+  # own relation (causal for an etiology, indication otherwise; the positive relations for a link) whose quote
+  # supports it.  loose (the first runs' reading, kept beside it): any claim naming both terms (any positive one for a
+  # link) — it counted misreadings such as 「寒，润五脏，治消渴…」 read as 寒 causing 消渴.
+  # dev: runs inspected case by case while the absence checks of 2026-09-27 were built (they were the first held-out
+  # pair; their first results are kept in docs/evals.md).  heldout: written before those checks, and before their own
+  # first run; only aggregate results of that run were looked at before the checks were measured on them.
+  topics:
+    - {term: 消渴, split: dev, question: 消渴的认识与治疗在明代以前如何演变？有哪些尚未见于直接记载、但可由已知知识推出的治疗关联？,
+       forbidden_assumptions: [消渴=糖尿病]}
+    - {term: 中风, split: dev, question: 中风的认识与治疗在明代以前如何演变？有哪些尚未见于直接记载、但可由已知知识推出的治疗关联？,
+       forbidden_assumptions: [中风=脑卒中]}
+    - {term: 胸痹, split: heldout, question: 胸痹的认识与治疗在明代以前如何演变？有哪些尚未见于直接记载、但可由已知知识推出的治疗关联？,
+       forbidden_assumptions: [胸痹=冠心病]}
+    - {term: 霍乱, split: heldout, question: 霍乱的认识与治疗在明代以前如何演变？有哪些尚未见于直接记载、但可由已知知识推出的治疗关联？,
+       forbidden_assumptions: [霍乱=霍乱弧菌感染]}
+    - {term: 虚劳, split: heldout, question: 虚劳的认识与治疗在明代以前如何演变？有哪些尚未见于直接记载、但可由已知知识推出的治疗关联？}
+    - {term: 痰饮, split: heldout, question: 痰饮的认识与治疗在明代以前如何演变？有哪些尚未见于直接记载、但可由已知知识推出的治疗关联？}

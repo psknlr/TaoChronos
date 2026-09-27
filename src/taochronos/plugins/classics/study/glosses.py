@@ -20,7 +20,7 @@ import re
 from collections import Counter, defaultdict
 from typing import Any
 
-from .base import StudyBase, dated
+from .base import StudyBase, dated, row_filter
 
 SOUND = {"音", "反切", "读为"}
 TEXT = {"异文", "校改"}
@@ -123,8 +123,9 @@ class GlossStudy:
 
     def _book_ids(self, book: str) -> list[str]:
         store = self.b.corpus.store
+        extra, params = row_filter(self.b.corpus)
         with store.lock:
-            return [r[0] for r in store.db.execute("SELECT id FROM passages WHERE book_id=? ORDER BY rid", (book,))]
+            return [r[0] for r in store.db.execute(f"SELECT id FROM passages WHERE book_id=?{extra} ORDER BY rid", (book, *params))]
 
     @staticmethod
     def _one_per_work(records: list[dict[str, Any]]) -> list[dict[str, Any]]:

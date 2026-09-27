@@ -51,6 +51,8 @@ HARD_CHECKS = frozenset({
     "contraindication",  # the corpus states the opposite (a contraindication for the claimed indication)
     "taxonomy",  # the association is already implied by the term hierarchy
     "differential",  # the same passage assigns the finding to a rival
+    "restated_after",  # the literature after the pivot, beyond what the session read, states the association called lost
+    "attested",  # the literature in scope, beyond what the session read, states the association called hidden
 })
 OBJECTION_STATUSES = ("raised", "resolution_proposed", "closed", "noted")
 # the qualifier a revision adds to narrow its claim along an interpretive objection's axis

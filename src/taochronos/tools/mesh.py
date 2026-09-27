@@ -276,9 +276,15 @@ def _graph(ctx: ToolContext, before: float | None = None, after: float | None = 
 
 def _link_prediction(ctx: ToolContext, a: dict) -> Any:
     g = _graph(ctx, before=a.get("before"))
-    return link_prediction(g, left=_prefix_filter(a.get("left", ["symptom:", "disease:", "pattern:"])),
-                           right=_prefix_filter(a.get("right", ["formula:", "herb:"])), method=a.get("method", "adamic_adar"),
-                           k=int(a.get("k", 20)), seed=int(a.get("seed", 0)))
+    lexicon = ctx.cap("domain").lexicon
+    right = _prefix_filter(a.get("right", ["formula:", "herb:"]))
+
+    def candidate(t: str) -> bool:  # a weak lexicon entry (a harvested one-character "drug": 药, 补, 白) is not proposed
+        entry = lexicon.entry(t)
+        return right(t) and not (entry is not None and entry.weak)
+
+    return link_prediction(g, left=_prefix_filter(a.get("left", ["symptom:", "disease:", "pattern:"])), right=candidate,
+                           method=a.get("method", "adamic_adar"), k=int(a.get("k", 20)), seed=int(a.get("seed", 0)))
 
 
 def _communities(ctx: ToolContext, a: dict) -> Any:

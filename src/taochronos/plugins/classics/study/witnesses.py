@@ -15,7 +15,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from .base import StudyBase
+from .base import StudyBase, row_filter
 from .stemma import SOURCE_NAMES
 
 
@@ -49,9 +49,10 @@ class WitnessStudy:
         images = False
         store = getattr(corpus, "store", None)
         if store is not None:
+            extra, params = row_filter(corpus)
             with store.lock:
-                row = store.db.execute("SELECT locator FROM passages WHERE book_id=? AND locator LIKE '%image_uri%' LIMIT 1",
-                                       (ids[0],)).fetchone()
+                row = store.db.execute(f"SELECT locator FROM passages WHERE book_id=? AND locator LIKE '%image_uri%'{extra} LIMIT 1",
+                                       (ids[0], *params)).fetchone()
             images = row is not None
         elif first is not None:
             images = bool(first.locator.image_uri)

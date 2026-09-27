@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from ....science.stats import benjamini_hochberg
-from .base import StudyBase, dated, normal_sf
+from .base import StudyBase, dated, normal_sf, row_filter
 
 VERSION = "schools@2"
 ATTRIBUTIONS = ("traditional", "compiled")
@@ -192,8 +192,9 @@ class SchoolStudy:
         store = getattr(self.b.corpus, "store", None)
         if store is not None:
             with store.lock:
-                rows = store.db.execute("SELECT book_id, year, SUM(LENGTH(text)) FROM passages WHERE kind != 'toc' "
-                                        "GROUP BY book_id, year").fetchall()
+                extra, params = row_filter(self.b.corpus)
+                rows = store.db.execute(f"SELECT book_id, year, SUM(LENGTH(text)) FROM passages WHERE kind != 'toc'{extra} "
+                                        "GROUP BY book_id, year", params).fetchall()
             for bid, year, n in rows:
                 sizes[bid][year] = sizes[bid].get(year, 0) + (n or 0)
         else:
@@ -256,15 +257,17 @@ class SchoolStudy:
         store = getattr(self.b.corpus, "store", None)
         if store is not None:
             with store.lock:
-                rows = store.db.execute("SELECT id, year, LENGTH(text) FROM passages WHERE book_id=? AND kind != 'toc' "
-                                        "ORDER BY seq", (bid,)).fetchall()
+                extra, params = row_filter(self.b.corpus)
+                rows = store.db.execute(f"SELECT id, year, LENGTH(text) FROM passages WHERE book_id=? AND kind != 'toc'{extra} "
+                                        "ORDER BY seq", (bid, *params)).fetchall()
             ids = self._evenly([(pid, n) for pid, y, n in rows if y is None or lo <= y <= hi], cap)
             texts: list[str] = []
             for i in range(0, len(ids), 900):
                 chunk = ids[i: i + 900]
                 with store.lock:
-                    got = dict(store.db.execute(f"SELECT id, text FROM passages WHERE id IN ({','.join('?' * len(chunk))})",
-                                                chunk).fetchall())
+                    extra, params = row_filter(self.b.corpus)
+                    got = dict(store.db.execute(f"SELECT id, text FROM passages WHERE id IN ({','.join('?' * len(chunk))}){extra}",
+                                                [*chunk, *params]).fetchall())
                 texts += [got[x] for x in chunk if x in got]
         else:
             ps = [p for p in self.b.corpus.passages(book_ids=[bid]) if p.kind != "toc"

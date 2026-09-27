@@ -38,7 +38,7 @@ from ...protocol.outputs import PhilologyAssessment
 from ..classics.domain import PULSE_QUALITIES, DomainPack, LexEntry, Mention
 from ..classics.segment import SEGMENTER_VERSION, Segmenter, is_unpunctuated
 
-EXTRACTOR_VERSION = "lexicon-rules@0.2"
+EXTRACTOR_VERSION = "lexicon-rules@0.3"
 SEGMENTED_DISCOUNT = 0.9  # claims read through machine segmentation are less certain than on punctuated text
 SENT_END = "。；！？"
 NEG_PREFIXES = ("不能", "不甚", "反不", "不", "无", "非", "未", "勿", "莫")
@@ -77,6 +77,24 @@ class _Sentence:
     start: int
     end: int  # exclusive, excluding the terminator
     text: str
+
+
+CLAUSE_MARKS = "，；：,;:"
+LOCAL = 12  # characters: how far a statement reaches in a clause the segmenter left unmarked
+
+
+def _clause_start(norm: str, pos: int, floor: int) -> int:
+    """Where the clause holding ``pos`` begins (after the last ，；： before it), not before ``floor``."""
+    for i in range(pos - 1, floor - 1, -1):
+        if norm[i] in CLAUSE_MARKS:
+            return i + 1
+    return floor
+
+
+def _local_clause(norm: str, pos: int, floor: int) -> int:
+    """The start of the clause holding ``pos``, but no further back than ``LOCAL`` characters: a clause the segmenter
+    left unmarked (白文) reaches only the words next to the position."""
+    return max(_clause_start(norm, pos, floor), pos - LOCAL, floor)
 
 
 @dataclass
@@ -730,11 +748,18 @@ class ClaimExtractor:
             self._new(ctx, ClaimRelation.PATHOGENESIS, args, m.start(), m.end(), "PATHO")
         for s in ctx.sentences:
             text = s.text
-            if re.search(r"所生|乃生|足生|本源|所由生|生焉|多生于|原是.{1,4}生", text):
-                subject = ctx.mentions_in(s.start, s.end, "disease", "symptom", "concept")
+            cue = re.search(r"所生|乃生|足生|本源|所由生|生焉|多生于|原是.{1,4}生", text)
+            if cue:
+                # a pathogenesis is stated locally — its cause in the cue's clause or the one before (「亏损元气，是其本源」),
+                # what it produces up to one clause further back (「半身不遂，亏损元气，是其本源」) — not across a drug
+                # entry's list of actions (「寒润五脏治消渴…热毒所生也」: 寒 is the drug's nature, 消渴 what it treats)
+                own = _local_clause(norm, s.start + cue.start(), s.start)
+                lead = _local_clause(norm, own - 1, s.start) if own > s.start and norm[own - 1] in CLAUSE_MARKS else own
+                head = _local_clause(norm, lead - 1, s.start) if lead > s.start and norm[lead - 1] in CLAUSE_MARKS else lead
+                subject = ctx.mentions_in(head, s.end, "disease", "symptom", "concept")
                 baibing = [x for x in subject if x.term_id == "concept:百病"]
                 subject = baibing or subject
-                causes = ctx.mentions_in(s.start, s.end, "pathogenesis", "etiology", include_weak=True)
+                causes = ctx.mentions_in(lead, s.end, "pathogenesis", "etiology", include_weak=True)
                 if subject and causes:
                     args = [self._arg(ctx, subject[0])] + [self._arg(ctx, c) for c in causes if c.term_id != subject[0].term_id]
                     self._new(ctx, ClaimRelation.PATHOGENESIS, args, s.start, s.end, "PATHO")

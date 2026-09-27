@@ -33,6 +33,7 @@ from typing import Any, Iterable
 
 from ..collation import align, matched
 from ..segment import Segmenter, is_unpunctuated
+from .base import row_filter
 
 MODEL_VERSION = "judou-ngram@1"
 MAJOR = "。；？！"
@@ -474,6 +475,9 @@ class PunctuationStudy:
         if books is not None:
             where += f" AND book_id IN ({','.join('?' * len(books))})"
             args = list(books)
+        extra, bound = row_filter(self.b.corpus)  # a view of the store trains and tests on its own passages only
+        where += extra
+        args += bound
         last = 0
         while True:
             with store.lock:
@@ -490,9 +494,10 @@ class PunctuationStudy:
         over all its books (about ``max_chars`` characters), else the corpus's passages."""
         store = getattr(self.b.corpus, "store", None)
         if store is not None:
+            extra, params = row_filter(self.b.corpus)
             with store.lock:
                 total = store.db.execute("SELECT sum(length(text)) FROM passages WHERE punctuation='editorial' AND "
-                                         "layer='正文' AND kind IN ('text','formula')").fetchone()[0] or 1
+                                         f"layer='正文' AND kind IN ('text','formula'){extra}", params).fetchone()[0] or 1
             share = min(1.0, 1.3 * max_chars / total)
             rng = random.Random(seed)
             for bid, text in self._store_rows():
@@ -565,9 +570,10 @@ class PunctuationStudy:
         store = getattr(self.b.corpus, "store", None)
         if store is None:
             return {"works": [], "skipped": [], "note": "no 白文 witnesses in this corpus"}
+        extra, params = row_filter(self.b.corpus)
         with store.lock:
-            counts = store.db.execute("SELECT book_id, punctuation = 'editorial', count(*) FROM passages WHERE layer='正文' "
-                                      "GROUP BY book_id, punctuation = 'editorial'").fetchall()
+            counts = store.db.execute(f"SELECT book_id, punctuation = 'editorial', count(*) FROM passages WHERE layer='正文'{extra} "
+                                      "GROUP BY book_id, punctuation = 'editorial'", params).fetchall()
         plain: dict[str, list[str]] = {}
         marked: dict[str, list[str]] = {}
         for bid, editorial, n in counts:
@@ -698,9 +704,10 @@ class PunctuationStudy:
                                     "rules": baiwen["rules"], "typed": baiwen.get("typed")}
         if cache is not None:
             model.save(cache)
-            for old in cache.parent.glob("punct-*.pkl.gz"):  # models of an earlier state of the store
-                if old != cache:
-                    old.unlink(missing_ok=True)
+            if not row_filter(self.b.corpus)[0]:  # a view of the store never prunes the models of the whole store
+                for old in cache.parent.glob("punct-*.pkl.gz"):  # models of an earlier state of the store
+                    if old != cache:
+                        old.unlink(missing_ok=True)
         self._model = model
         return model
 
