@@ -176,7 +176,7 @@ cases:
   - {id: r2ri03, class: relation_inversion, split: heldout, round: 2, book: 伤寒论类方（徐灵胎）,
      text: 陽明病，潮熱，大便微硬者，可與大承氣湯，不硬者，不可與之。, quote: 不硬者，不可與之,
      relation: indicated_for, arguments: [{role: formula, surface: 大承氣湯, referent: true}], expect: {verdict: contradicts}}
-  - {id: r2ri04, class: relation_inversion, split: heldout, round: 2, book: 伤寒论类方（徐灵胎）,
+  - {id: r2ri04, class: relation_inversion, split: dev, was: heldout, round: 2, book: 伤寒论类方（徐灵胎）,
      text: 陽明病，潮熱，大便微硬者，可與大承氣湯，不硬者，不可與之。, quote: 大便微硬者，可與大承氣湯,
      relation: indicated_for, arguments: [[formula, 大承氣湯]], expect: {verdict: supports}}
   - {id: r2ri05, class: relation_inversion, split: heldout, round: 2, book: 金匮要略论注（徐彬）,
@@ -188,7 +188,7 @@ cases:
   - {id: r2ri07, class: relation_inversion, split: heldout, round: 2, book: 寿亲养老新书（陈直）,
      text: 凡人疾病未有不因八邪而感所謂八邪者風寒暑濕饑飽勞逸也, quote: 凡人疾病未有不因八邪而感,
      relation: causes, arguments: [[etiology, 八邪], [disease, 疾病]], expect: {verdict: supports}}
-  - {id: r2ri08, class: relation_inversion, split: heldout, round: 2, book: 伤寒论（宋本，第176条）,
+  - {id: r2ri08, class: relation_inversion, split: dev, was: heldout, round: 2, book: 伤寒论（宋本，第176条）,
      text: 傷寒，脈浮滑，此以表有熱，裏有寒，白虎湯主之。, quote: 傷寒，脈浮滑，此以表有熱，裏有寒，白虎湯主之,
      relation: indicated_for, arguments: [[formula, 白虎湯], [pathogenesis, 裏有寒]], expect: {verdict: ambiguous},
      note: "「里有寒」而用白虎汤，历代注家多疑其误（或作里有热）——字面是公案，不能读成确定的适应证"}
@@ -212,3 +212,59 @@ cases:
   - {id: r2dd03, class: date_dispute, split: heldout, round: 2, cutoff: [nanjing.077, 100], expect: {side: straddling}}
   - {id: r2dd04, class: date_dispute, split: heldout, round: 2, cutoff: [wenyilun.xu, 1368], expect: {side: after}}
   - {id: r2dd05, class: date_dispute, split: heldout, round: 2, basis: bencao_gangmu.rendong, expect: {range: [1552, 1578]}}
+
+  # ================================================================== round 3 — written before the crux registry and the
+  # clause-bounded cue windows existed; held out from both.  textual_crux: a clause commentators judge corrupt,
+  # transposed or wrongly worded; a claim resting on the literal reading is not supported (ambiguous) — its controls,
+  # clauses no commentator doubts, must stay supported.
+  - {id: r3tc01, class: textual_crux, split: dev, was: heldout, round: 3, book: 伤寒论（宋本，第41条）,
+     text: 傷寒心下有水氣，欬而微喘，發熱不渴。服湯已，渴者，此寒去欲解也。小青龍湯主之。,
+     quote: 服湯已，渴者，此寒去欲解也。小青龍湯主之,
+     relation: indicated_for, arguments: [[formula, 小青龍湯], [symptom, 渴]], expect: {verdict: ambiguous},
+     note: "「小青龙汤主之」历代注家多以为当在「发热不渴」之下（倒装）"}
+  - {id: r3tc02, class: textual_crux, split: dev, was: heldout, round: 3, book: 伤寒论（宋本，第28条）,
+     text: 服桂枝湯，或下之，仍頭項強痛，翕翕發熱，無汗，心下滿微痛，小便不利者，桂枝去桂加茯苓白朮湯主之。,
+     quote: 仍頭項強痛，翕翕發熱，無汗，心下滿微痛，小便不利者，桂枝去桂加茯苓白朮湯主之,
+     relation: indicated_for, arguments: [[formula, 桂枝去桂加茯苓白朮湯], [symptom, 小便不利]], expect: {verdict: ambiguous},
+     note: "去桂抑或去芍，注家争议"}
+  - {id: r3tc03, class: textual_crux, split: heldout, round: 3, book: 金匮要略（邓珍本）,
+     text: 裏水者，一身面目黄腫，其脉沈，小便不利，故令病水，假如小便自利，此亡津液，故令渇也，越婢加朮湯主之。,
+     quote: 裏水者，一身面目黄腫，其脉沈，小便不利，故令病水，假如小便自利，此亡津液，故令渇也，越婢加朮湯主之,
+     relation: indicated_for, arguments: [[formula, 越婢加朮湯], [symptom, 小便不利]], expect: {verdict: ambiguous},
+     note: "「里水」之「里」，注家有当作「皮」之说"}
+  - {id: r3tc04, class: textual_crux, split: dev, was: heldout, round: 3, book: 伤寒论（宋本，第350条）,
+     text: 傷寒，脈滑而厥者，裏有熱，白虎湯主之。, quote: 傷寒，脈滑而厥者，裏有熱，白虎湯主之,
+     relation: indicated_for, arguments: [[formula, 白虎湯], [pulse, 滑]], expect: {verdict: supports}, note: "control: no crux"}
+  - {id: r3tc05, class: textual_crux, split: dev, was: heldout, round: 3, passage: shanghanlun.c035,
+     quote: 太阳病，头痛发热，身疼腰痛，骨节疼痛，恶风，无汗而喘者，麻黄汤主之,
+     relation: indicated_for, arguments: [[formula, 麻黄汤], [symptom, 喘]], expect: {verdict: supports}, note: "control: no crux"}
+  - {id: r3tc06, class: textual_crux, split: heldout, round: 3, passage: jinkui.13.xiaoke1, quote: 男子消渴，小便反多，以饮一斗，小便一斗，肾气丸主之,
+     relation: indicated_for, arguments: [[formula, 肾气丸], [disease, 消渴]], expect: {verdict: supports}, note: "control: no crux"}
+  - {id: r3tc07, class: textual_crux, split: dev, was: heldout, round: 3, passage: shanghanlun.c038,
+     quote: 太阳中风，脉浮紧，发热恶寒，身疼痛，不汗出而烦躁者，大青龙汤主之,
+     relation: indicated_for, arguments: [[formula, 大青龙汤], [symptom, 烦躁]], expect: {verdict: supports}, note: "control: no crux"}
+  - {id: r3ns01, class: negation_scope, split: heldout, round: 3, book: 伤寒论类方（徐灵胎）所引,
+     text: 桂枝湯條曰：上衝者，可與桂枝湯，若不上衝者，不可與之。, quote: 上衝者，可與桂枝湯,
+     relation: indicated_for, arguments: [[formula, 桂枝湯]], expect: {verdict: supports},
+     note: "control: the prohibition of the next 者-clause does not bear on this one"}
+  - {id: r3rv01, class: reported_view, split: heldout, round: 3, book: 格致余论（朱震亨）,
+     text: 或曰如子之言殆將絶而不與於汝安乎予曰君子愛人以徳小人愛人以姑息, quote: 君子愛人以徳, expect: {stance: asserted}}
+  - {id: r3oc01, class: omitted_condition, split: heldout, round: 3, passage: shanghanlun.c038, quote: 大青龙汤主之, expect: {condition: 烦躁}}
+
+  # ================================================================== round 4 — written after the crux harvester was built on
+  # the clauses of r2ri08 and r3tc01–r3tc05 (moved to dev: their clauses were inspected), and before it ran on these.
+  - {id: r4tc01, class: textual_crux, split: heldout, round: 4, book: 伤寒论（宋本，第63条）,
+     text: 發汗後，不可更行桂枝湯，汗出而喘，無大熱者，可與麻黃杏仁甘草石膏湯。, quote: 汗出而喘，無大熱者，可與麻黃杏仁甘草石膏湯,
+     relation: indicated_for, arguments: [[formula, 麻黃杏仁甘草石膏湯], [symptom, 汗出]], expect: {verdict: ambiguous},
+     note: "注家有「汗出」当作「无汗」、「无大热」当作「大热」之说"}
+  - {id: r4tc02, class: textual_crux, split: heldout, round: 4, book: 金匮要略（邓珍本）,
+     text: 瘧多寒者，名曰牡瘧，蜀漆散主之。, quote: 瘧多寒者，名曰牡瘧，蜀漆散主之,
+     relation: indicated_for, arguments: [[formula, 蜀漆散], [disease, 牡瘧]], expect: {verdict: ambiguous},
+     note: "牡疟抑或牝疟，注家之争"}
+  - {id: r4tc03, class: textual_crux, split: heldout, round: 4, book: 伤寒论（宋本，第64条）,
+     text: 發汗過多，其人叉手自冒心，心下悸，欲得按者，桂枝甘草湯主之。, quote: 發汗過多，其人叉手自冒心，心下悸，欲得按者，桂枝甘草湯主之,
+     relation: indicated_for, arguments: [[formula, 桂枝甘草湯], [symptom, 心下悸]], expect: {verdict: supports}, note: "control"}
+  - {id: r4tc04, class: textual_crux, split: heldout, round: 4, passage: shanghanlun.c013, quote: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之,
+     relation: indicated_for, arguments: [[formula, 桂枝汤], [symptom, 头痛]], expect: {verdict: supports}, note: "control"}
+  - {id: r4tc05, class: textual_crux, split: heldout, round: 4, passage: shanghanlun.c071, quote: 若脉浮，小便不利，微热消渴者，五苓散主之,
+     relation: indicated_for, arguments: [[formula, 五苓散], [symptom, 小便不利]], expect: {verdict: supports}, note: "control"}

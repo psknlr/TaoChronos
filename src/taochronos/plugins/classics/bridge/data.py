@@ -19,6 +19,7 @@ from typing import Any
 import yaml
 
 from ....protocol.bridge import RELATION_WEIGHT, BridgeRelation
+from ....protocol.yamlio import load_yaml
 
 TIERS = ("typical", "frequent", "occasional")
 
@@ -295,7 +296,7 @@ def write_closure(data: BridgeData, obo: dict[str, Any]) -> Path:
 
 
 def _load(path: Path) -> dict[str, Any]:
-    return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return load_yaml(path) or {}
 
 
 __all__ = ["BridgeData", "Disease", "Phenotype", "TIERS", "ancestors_of", "closure", "read_obo", "verify", "write_closure"]

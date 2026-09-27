@@ -53,8 +53,8 @@ def test_the_interpretive_suite_scores_per_class_and_split(ectx):
     m = result.metrics
     assert m["gold_errors"] == [] and m["dev"]["accuracy"] == 1.0  # the dev cases are the regression tests of the rules
     assert set(m["accuracy_by_class"]) == {"relation_inversion", "negation_scope", "consequence", "reported_view",
-                                           "omitted_condition", "witness_mixing", "date_dispute"}
-    assert m["heldout"]["n"] >= 70 and m["heldout"]["unsafe"] <= 2  # the two textual cruxes (公案) are reported, not hidden
+                                           "omitted_condition", "witness_mixing", "date_dispute", "textual_crux"}
+    assert m["heldout"]["n"] >= 80 and m["heldout"]["unsafe"] <= 2  # cruxes no commentary in the store flags are reported, not hidden
 
 
 # ------------------------------------------------------------------ the readings measured

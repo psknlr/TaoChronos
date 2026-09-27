@@ -24,9 +24,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from ..kernel import Actor, ToolCall
+from ..protocol.yamlio import load_yaml
 
 REQUIRED_SKILLS = ("S01", "S15")
 INTENTS: dict[str, tuple[str, ...]] = {
@@ -85,7 +84,7 @@ class CoreAgent:
 def load_manifests(root: str | Path) -> dict[str, SkillManifest]:
     out: dict[str, SkillManifest] = {}
     for path in sorted(Path(root).glob("S*.yaml")):
-        d = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        d = load_yaml(path) or {}
         m = SkillManifest(id=d["id"], key=d["key"], name=d["name"], version=str(d["version"]), owner=d["owner"],
                           description=d.get("description", ""), inputs=list(d.get("inputs", [])), outputs=list(d.get("outputs", [])),
                           dependencies=list(d.get("dependencies", [])), requires_llm=d.get("requires_llm", "none"),
@@ -99,7 +98,7 @@ def load_manifests(root: str | Path) -> dict[str, SkillManifest]:
 def load_core_agents(root: str | Path) -> dict[str, CoreAgent]:
     out: dict[str, CoreAgent] = {}
     for path in sorted(Path(root).glob("*.yaml")):
-        d = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        d = load_yaml(path) or {}
         out[d["id"]] = CoreAgent(id=d["id"], name=d["name"], description=str(d.get("description", "")).strip(),
                                  skills=list(d.get("skills", [])), delegates=list(d.get("delegates", [])),
                                  permissions=list(d.get("permissions", [])), outputs=list(d.get("outputs", [])),

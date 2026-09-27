@@ -24,8 +24,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any
 
-import yaml
-
+from ....protocol.yamlio import loads_yaml
 from .base import StudyBase
 
 HAN = re.compile(r"[㐀-鿿\U00020000-\U0002ffff]")
@@ -446,7 +445,7 @@ def _harvested_terms(path: Any) -> tuple[str | None, list[str]]:
     terms = re.findall(r"^- term:\s*(\S+)\s*$", text, re.M)
     if cat and terms:
         return cat.group(1), [t.strip("'\"") for t in terms]
-    data = yaml.safe_load(text) or {}
+    data = loads_yaml(text) or {}
     return data.get("category"), [(e["term"] if isinstance(e, dict) else str(e)) for e in data.get("entries", [])]
 
 

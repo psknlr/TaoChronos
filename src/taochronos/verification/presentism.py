@@ -18,6 +18,7 @@ from __future__ import annotations
 import re
 from dataclasses import asdict, dataclass
 from typing import Any, Iterable
+from ..protocol.yamlio import load_yaml
 
 SENTENCE = re.compile(r"[^。；！？!?;\n]+[。；！？!?;]?")
 
@@ -110,10 +111,8 @@ class PresentismGuard:
 
 def guard_from_pack(pack: Any) -> PresentismGuard:
     """The guardrail of a domain pack: its presentism.yaml and its modern-concept labels."""
-    import yaml
-
     path = pack.root / "presentism.yaml"
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) if path.exists() else {}
+    data = load_yaml(path) if path.exists() else {}
     labels = [c.label for c in getattr(getattr(pack, "terminology", None), "concepts", {}).values()]
     return PresentismGuard(data or {}, labels)
 

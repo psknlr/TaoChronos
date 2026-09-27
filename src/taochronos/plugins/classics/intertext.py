@@ -15,8 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
-
+from ...protocol.yamlio import load_yaml
 from ...science.semantic_reuse import ReuseFeatures, SparseEncoder, classify, order_concordance, weighted_coverage
 from .domain import DomainPack
 
@@ -61,7 +60,7 @@ class IntertextAnalyzer:
         self.normalize = pack.variants.normalize_text
         if data is None:
             path = Path(pack.root) / "intertext.yaml"
-            data = yaml.safe_load(path.read_text(encoding="utf-8")) if path.exists() else {}
+            data = load_yaml(path) if path.exists() else {}
         n = self.normalize
         self.citation = [re.compile(f"(?:{n(p)})[：:，,]?[“「『]?$") for p in data.get("citation", [])]
         self.dialogue = [re.compile(n(p)) for p in data.get("dialogue", [])]

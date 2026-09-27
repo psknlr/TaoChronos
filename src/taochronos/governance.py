@@ -14,9 +14,8 @@ import re
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from .config import find_home
+from .protocol.yamlio import load_yaml
 
 PACKAGE = "taochronos"
 
@@ -62,7 +61,7 @@ def _layer_of(module: str, layers: dict[str, list[str]]) -> str | None:
 
 def check(home: Path | None = None) -> dict[str, Any]:
     home = Path(home) if home else find_home()
-    policy = yaml.safe_load((home / "architecture-policy.yaml").read_text(encoding="utf-8"))
+    policy = load_yaml(home / "architecture-policy.yaml")
     src = home / "src"
     layers: dict[str, list[str]] = {}
     allowed: dict[str, list[str]] = {}

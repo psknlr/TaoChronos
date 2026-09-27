@@ -60,6 +60,7 @@ from .cases import CaseStudy
 from .chain import ChainStudy
 from .clause import ClauseStructure
 from .commentary import CommentaryStudy
+from .cruxes import CruxStudy
 from .concordance import Concordance
 from .dataset import tables as dataset_tables
 from .disputes import DisputeStudy
@@ -107,6 +108,7 @@ class StudyService(StudyBase):
         self._witnesses = WitnessStudy(self, self._stemma)
         self._punct = PunctuationStudy(self)
         self._commentary = CommentaryStudy(self, self._concordance)
+        self._cruxes = CruxStudy(self, self._commentary)
         self._disputes = DisputeStudy(self, self._commentary, self._network)
         self._clause = ClauseStructure(self, self._punct)
         self._glosses = GlossStudy(self, self._commentary)
@@ -259,6 +261,14 @@ class StudyService(StudyBase):
         dated and compared (explicit rejection and approval of named predecessors, shared wording, the concepts each
         reading adds, consensus and singular readings)."""
         return self._commentary.run(text, passage_id, **kw)
+
+    def cruxes(self, text: str | None = None, passage_id: str | None = None, *, work: str | None = None,
+               limit: int | None = None) -> dict[str, Any]:
+        """校勘疑义: what the commentators say is wrong with the words of a clause (transposed, miswritten, added,
+        lost) — for one clause, or, with ``work``, the registry of cruxes over every clause of its base witness."""
+        if work:
+            return self._cruxes.harvest(work, limit=limit)
+        return self._cruxes.clause(text, passage_id)
 
     def disputes(self, term: str | None = None, *, person: str | None = None, **kw: Any) -> dict[str, Any]:
         """争议: named views rejected (or endorsed) in the literature — about a term, of a person, or, with neither,

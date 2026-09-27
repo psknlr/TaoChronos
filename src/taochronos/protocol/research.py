@@ -10,7 +10,7 @@ from typing import Any
 from dataclasses import dataclass, field
 
 from .artifacts import OPERATIONAL_ARTIFACT_KINDS, Artifact
-from .base import Model, content_hash, field_dict, field_list
+from .base import Model, canonical_dumps, content_hash, field_dict, field_list, gc_paused, sha256_hex, to_jsonable
 from .claims import Claim
 from .contract import AcceptanceSpec, ConfirmationSpec, default_outputs
 from .documents import YearRange
@@ -290,11 +290,12 @@ class ResearchObject(Model):
     run_manifest: dict | None = None  # reproducibility record (operational: not part of the scientific hash)
 
     def scientific_state(self) -> dict:
-        data = self.to_dict()
-        state = {k: data[k] for k in SCIENTIFIC_FIELDS}
+        # only these fields are serialised: the agents, metrics and manifest are operational and would be dropped
+        state = {k: to_jsonable(getattr(self, k)) for k in SCIENTIFIC_FIELDS}
         for k in OPTIONAL_SCIENTIFIC_FIELDS:  # hashed once used, so older sessions keep their hashes
-            if data.get(k):
-                state[k] = data[k]
+            value = getattr(self, k)
+            if value:
+                state[k] = to_jsonable(value)
         for task in state["task_graph"].values():
             if task.get("status") == "running":  # an interrupted attempt is not scientific state
                 task["status"] = "pending"
@@ -302,7 +303,9 @@ class ResearchObject(Model):
         return state
 
     def state_hash(self) -> str:
-        return content_hash(self.scientific_state())
+        """``content_hash(self.scientific_state())``, computed without a second walk over the serialised tree."""
+        with gc_paused():
+            return sha256_hex(canonical_dumps(self.scientific_state()))
 
     # --- convenience queries used by agents and reports -------------------
     def reviews_for(self, hypothesis_id: str) -> list[HypothesisReview]:

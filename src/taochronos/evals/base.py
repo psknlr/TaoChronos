@@ -8,11 +8,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from ..bootstrap import Harness
 from ..config import find_home
 from ..kernel.store import MemoryEventStore
+from ..protocol.yamlio import load_yaml
 
 DEFAULT_QUESTION = "消渴的概念如何随时代演变？宋代以前治疗消渴的哪些知识后来被遗忘？"
 
@@ -64,7 +63,7 @@ class EvalContext:
 
     def gold(self, name: str) -> dict[str, Any]:
         path = self.home / "evals" / "gold" / f"{name}.yaml"
-        return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        return load_yaml(path) or {}
 
     def run(self, harness: Harness, question: str = DEFAULT_QUESTION, session_id: str = "eval", **fields: Any) -> Any:
         engine = harness.engine()

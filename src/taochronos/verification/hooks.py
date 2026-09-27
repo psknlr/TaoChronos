@@ -30,7 +30,7 @@ def provenance_validator(corpus: Any, normalize: Any):
     return hook
 
 
-def semantic_support_validator(corpus: Any, normalize: Any):
+def semantic_support_validator(corpus: Any, normalize: Any, cruxes: Any = None):
     """BeforeClaimCommit: the quoted words must bear the claim.  A claim its quote contradicts (a true quote with a
     false relation) is refused; every committed claim carries its support reading and its statement frame (speaker,
     stance, conditions, negations, time), so later steps can tell an endorsed statement from a reported or rejected one."""
@@ -39,7 +39,7 @@ def semantic_support_validator(corpus: Any, normalize: Any):
         if not isinstance(claim, Claim) or not corpus.has_passage(claim.passage_id):
             return HookResult()
         passage = corpus.passage(claim.passage_id)
-        a = assess_support(claim, passage.text, normalize)
+        a = assess_support(claim, passage.text, normalize, cruxes)
         if a.verdict == "contradicts":
             return HookResult(allow=False, reason=f"semantic support: {a.explanation}")
         frame = a.frame
@@ -141,7 +141,8 @@ def install_default_hooks(hooks: HookRegistry, *, corpus: Any, pack: Any, forbid
         hooks.register(HookPoint.BEFORE_CLAIM_COMMIT, "provenance_validator", provenance_validator(corpus, pack.variants.normalize_text), 10)
         installed.append("provenance_validator")
     if "semantic_support" in names:
-        hooks.register(HookPoint.BEFORE_CLAIM_COMMIT, "semantic_support", semantic_support_validator(corpus, pack.variants.normalize_text), 15)
+        hooks.register(HookPoint.BEFORE_CLAIM_COMMIT, "semantic_support",
+                       semantic_support_validator(corpus, pack.variants.normalize_text, getattr(pack, "cruxes", None)), 15)
         installed.append("semantic_support")
     if "anachronism_guard" in names:
         guard = anachronism_guard(modern_labels, forbidden)

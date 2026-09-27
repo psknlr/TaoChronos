@@ -10,8 +10,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from .agents.context_views import VIEWS
 from .agents.router import CognitiveRouter
 from .agents.runtime import AgentRuntime
@@ -30,6 +28,7 @@ from .kernel.registry import CapabilityRegistry
 from .kernel.store import EventStore, MemoryEventStore
 from .kernel.tools import ToolRegistry, ToolScheduler
 from .plugins.sandbox.codemode import codemode_tool
+from .protocol.yamlio import load_yaml
 from .tools.adapters import author_clusters
 from .tools.mesh import build_tool_registry
 from .verification.gates import GateEvaluator
@@ -166,7 +165,7 @@ class Harness:
         path = self.home / rel
         if not path.exists():
             return []
-        return list((yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("records", []))
+        return list((load_yaml(path) or {}).get("records", []))
 
     def _load_specs(self) -> dict[str, AgentSpec]:
         specs = load_specs(self.home / "agents")

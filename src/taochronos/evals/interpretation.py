@@ -23,7 +23,7 @@ from ..verification.provenance import find_quote
 from ..verification.support import assess_support, statement_frame
 from .base import EvalContext, SuiteResult
 
-SUPPORT_CLASSES = ("relation_inversion", "negation_scope", "consequence")
+SUPPORT_CLASSES = ("relation_inversion", "negation_scope", "consequence", "textual_crux")
 
 
 class CaseError(ValueError):
@@ -68,7 +68,7 @@ def _claim(h: Any, case: dict[str, Any], text: str, pid: str) -> Claim:
 
 def _support_case(h: Any, case: dict[str, Any]) -> tuple[Any, bool, bool]:
     pid, text = _text(h, case)
-    got = assess_support(_claim(h, case, text, pid), text, h.pack.variants.normalize_text).verdict
+    got = assess_support(_claim(h, case, text, pid), text, h.pack.variants.normalize_text, getattr(h.pack, "cruxes", None)).verdict
     want = case["expect"]["verdict"]
     return got, got == want, got == "supports" and want != "supports"
 
@@ -124,6 +124,7 @@ def _date_case(h: Any, case: dict[str, Any]) -> tuple[Any, bool, bool]:
 
 
 READERS = {"relation_inversion": _support_case, "negation_scope": _support_case, "consequence": _support_case,
+           "textual_crux": _support_case,
            "reported_view": _stance_case, "omitted_condition": _condition_case, "witness_mixing": _witness_case,
            "date_dispute": _date_case}
 

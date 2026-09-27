@@ -35,6 +35,7 @@ from ..plugins.classics.collation import (
     splits,
 )
 from ..plugins.classics.intertext import IntertextAnalyzer
+from ..protocol.yamlio import load_yaml
 from ..science import sense_evolution as sensevo
 from ..science import stratigraphy as strata
 from ..science.semantic_reuse import LABELS, MODES
@@ -600,7 +601,7 @@ def commentaries(ctx: EvalContext) -> SuiteResult:
     corpus = Corpus.load(root)
     corpus.normalize = h.pack.variants.normalize_text
     study = StudyService(h.pack, corpus)
-    gold = yaml.safe_load((root / "gold.yaml").read_text(encoding="utf-8"))["clauses"]
+    gold = load_yaml(root / "gold.yaml")["clauses"]
     tp = fp = fn = rtp = rfp = rfn = qtp = qfn = 0
     f1s: list[float] = []
     details: list[dict[str, Any]] = []

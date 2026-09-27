@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
+from ..protocol.yamlio import loads_yaml
 
 
 @dataclass
@@ -34,7 +34,7 @@ def parse_skill(text: str, path: str = "") -> Skill:
     body = text
     if text.startswith("---"):
         _, header, body = text.split("---", 2)
-        meta = yaml.safe_load(header) or {}
+        meta = loads_yaml(header) or {}
     name = meta.get("name") or Path(path).parent.name
     if not name:
         raise ValueError(f"skill at {path or '?'} has no name")

@@ -19,6 +19,8 @@ from typing import Any, Callable, Iterable
 
 import yaml
 
+from ....protocol.yamlio import load_yaml
+
 Log = Callable[[str], None]
 
 
@@ -72,7 +74,7 @@ def write_lock(lock_path: Path, source: str, catalog: dict[str, Any], sources_di
     """Record the fetched state of a source in the lockfile (other sources are left untouched)."""
     lock: dict[str, Any] = {}
     if lock_path.exists():
-        lock = yaml.safe_load(lock_path.read_text(encoding="utf-8")) or {}
+        lock = load_yaml(lock_path) or {}
     src = catalog.get("source") or {}
     texts: dict[str, Any] = {}
     for entry in catalog["books"]:
@@ -165,7 +167,7 @@ def write_archive_lock(lock_path: Path, source: str, facts: dict[str, Any]) -> d
     """Record a user-supplied archive source in the lockfile (other sources are left untouched)."""
     lock: dict[str, Any] = {}
     if lock_path.exists():
-        lock = yaml.safe_load(lock_path.read_text(encoding="utf-8")) or {}
+        lock = load_yaml(lock_path) or {}
     lock[source] = {**(lock.get(source) or {}), **facts, "locked": _dt.date.today().isoformat()}
     header = ("# Sources ingested into the TaoChronos corpus store (written by `taochronos corpus fetch` / `corpus unpack`).\n"
               "# The texts live in the data directory, not in git; this file pins exactly what was ingested.\n")

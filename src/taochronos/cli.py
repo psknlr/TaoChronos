@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from . import AGENT_NAME, __version__
+from .protocol.yamlio import load_yaml
 
 
 def _out(obj: Any) -> None:
@@ -221,8 +222,6 @@ def _corpus_images(args: argparse.Namespace, home: Path, data: Path, db: Path) -
 def _corpus_admin_kanripo(args: argparse.Namespace, action: str, home: Path, data: Path, db: Path, only: list[str] | None) -> None:
     import time
 
-    import yaml
-
     from .plugins.classics.domain import DomainPack
     from .plugins.classics.ingest import ingest_kanripo, load_catalog
     from .plugins.classics.ingest.fetch import fetch_kanripo, write_lock
@@ -241,7 +240,7 @@ def _corpus_admin_kanripo(args: argparse.Namespace, action: str, home: Path, dat
         store = CorpusStore(db, create=True)
         t0 = time.time()
         kr_path = home / "corpus" / "catalog" / "kr-catalog-kr3e.yaml"
-        kr_catalog = (yaml.safe_load(kr_path.read_text(encoding="utf-8")) or {}).get("texts") if kr_path.exists() else None
+        kr_catalog = (load_yaml(kr_path) or {}).get("texts") if kr_path.exists() else None
         records_only = bool(getattr(args, "changed", False))
         report = ingest_kanripo(store, catalog, sources_dir, pack.variants.normalize_text, pack.variants.fingerprint, only=only, log=print,
                                 dynasty_of=pack.periods.dynasty_of, kr_catalog=kr_catalog, records_only=records_only)
@@ -329,7 +328,7 @@ def _corpus_admin_jicheng(args: argparse.Namespace, action: str, home: Path, dat
     if action == "catalog" or (action == "ingest" and not catalog_path.exists()):
         chronology = Chronology(home / "domains" / "classics" / "eras.yaml", pack.variants.normalize_text)
         kanripo = load_catalog(home / "corpus" / "catalog" / "kanripo-kr3e.yaml")
-        overrides = yaml.safe_load((home / "corpus" / "catalog" / "jicheng-overrides.yaml").read_text(encoding="utf-8")) or {}
+        overrides = load_yaml(home / "corpus" / "catalog" / "jicheng-overrides.yaml") or {}
         exclusions = Exclusions(home / "corpus" / "catalog" / "exclusions.yaml")
         cat = build_jicheng_catalog(root, pack.variants.normalize_text, chronology, kanripo, overrides, pack.periods.dynasty_of,
                                     exclusions=exclusions)
@@ -364,7 +363,7 @@ def _corpus_admin_jicheng(args: argparse.Namespace, action: str, home: Path, dat
     catalog = load_catalog(catalog_path)
     if action != "ingest":
         raise SystemExit(f"`corpus {action}` is store-wide: run it without a source")
-    lock = (yaml.safe_load(lock_path.read_text(encoding="utf-8")) or {}).get("jicheng", {}) if lock_path.exists() else {}
+    lock = (load_yaml(lock_path) or {}).get("jicheng", {}) if lock_path.exists() else {}
     store = CorpusStore(db, create=True)
     if store.meta("normalizer") not in (None, pack.variants.fingerprint):
         raise SystemExit("the store was indexed with another normaliser: run `taochronos corpus reindex` first, then ingest")
@@ -436,7 +435,7 @@ def _corpus_admin_collection(args: argparse.Namespace, action: str, home: Path, 
         raise SystemExit("the store was indexed with another normaliser: run `taochronos corpus reindex` first")
     if action == "catalog":
         overrides_path = catalog_dir / f"{col.id}-overrides.yaml"
-        overrides = (yaml.safe_load(overrides_path.read_text(encoding="utf-8")) or {}) if overrides_path.exists() else {}
+        overrides = (load_yaml(overrides_path) or {}) if overrides_path.exists() else {}
         sketch = load_sketch(store, normalize, data / "corpus" / "sketch.pkl", pack.variants.fingerprint, log=print)
         book_work, book_source = {}, {}
         for bid, src, raw in store.db.execute("SELECT id, source, data FROM books"):
@@ -467,7 +466,7 @@ def _corpus_admin_collection(args: argparse.Namespace, action: str, home: Path, 
     if not catalog_path.exists():
         raise SystemExit(f"no catalog for {col.id}: run `taochronos corpus catalog {col.id}` first")
     catalog = load_catalog(catalog_path)
-    lock = ((yaml.safe_load(lock_path.read_text(encoding="utf-8")) or {}).get(col.id) or {}) if lock_path.exists() else {}
+    lock = ((load_yaml(lock_path) or {}).get(col.id) or {}) if lock_path.exists() else {}
     version = lock.get("commit") or lock.get("revision") or lock.get("latest_revision")
     report = ingest_documents(store, catalog, docs, normalize, pack.variants.fingerprint, chronology=chronology,
                               dynasty_of=pack.periods.dynasty_of, version=str(version)[:12] if version else None, only=only, log=print)
@@ -836,7 +835,7 @@ def cmd_eval(args: argparse.Namespace) -> None:
 STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
          "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship", "cases",
          "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate", "commentaries", "disputes",
-         "clause", "glosses", "pairs", "network", "schools", "names", "chain", "entities", "places", "translate")
+         "clause", "glosses", "pairs", "network", "schools", "names", "chain", "entities", "places", "translate", "cruxes")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -932,6 +931,19 @@ def cmd_study(args: argparse.Namespace) -> None:
         if not (target or args.passage):
             raise SystemExit("taochronos study commentaries: give a clause or --passage <id>")
         res = study.commentaries(target, args.passage)
+    elif what == "cruxes":
+        if args.work:
+            from .plugins.classics.study.cruxes import write_registry
+
+            harvests = [study.cruxes(work=w.strip()) for w in args.work.split(",") if w.strip()]
+            res = {"works": [{k: h[k] for k in ("work", "base_witness", "clauses")} | {"cruxes": len(h["cruxes"])} for h in harvests],
+                   "cruxes": [c for h in harvests for c in h["cruxes"]]}
+            if args.write_registry:
+                res["written"] = write_registry(harness.pack.root / "cruxes.yaml", harvests)
+        elif target or args.passage:
+            res = study.cruxes(target, args.passage)
+        else:
+            raise SystemExit("taochronos study cruxes: give a clause, --passage <id>, or --work <work>[,<work>] (--write-registry)")
     elif what == "disputes":
         res = study.disputes(target, person=args.person)
     elif what == "pairs":
@@ -1567,7 +1579,9 @@ def build_parser() -> argparse.ArgumentParser:
                     help="layers: the 100 most frequent characters, or function characters only (less sensitive to topic)")
     sp.add_argument("--chapter-name", help="authorship: one chapter (篇) of --book")
     sp.add_argument("--verify", action="store_true", help="fragments: check the reconstruction against the work's surviving witnesses")
-    sp.add_argument("--work", help="argument: the way of reasoning of a work; clause: the forms of a work's clauses")
+    sp.add_argument("--work", help="argument: the way of reasoning of a work; clause: the forms of a work's clauses; "
+                                   "cruxes: the works (comma-separated) whose cruxes to harvest")
+    sp.add_argument("--write-registry", action="store_true", help="cruxes: write the harvest to domains/classics/cruxes.yaml")
     sp.add_argument("--against-work", help="argument: … compared with another work")
     sp.add_argument("--candidate", action="append", help="authorship: a candidate work or book id (repeatable)")
     sp.add_argument("--json", action="store_true", help="print the full result as JSON")

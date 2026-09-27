@@ -12,8 +12,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
-import yaml
-
 from ...protocol.concepts import (
     ConceptMapping,
     HistoricalTerm,
@@ -26,6 +24,8 @@ from ...protocol.concepts import (
 )
 from ...protocol.base import stable_id
 from ...protocol.documents import YearRange
+from ...protocol.yamlio import load_yaml
+from .cruxes import load_cruxes
 
 CATEGORY_PRIORITY = [
     "formula",
@@ -48,7 +48,7 @@ PULSE_QUALITIES = "浮沉迟数滑涩弦紧缓洪大微细弱濡虚实小芤结�
 
 
 def _load(path: Path) -> Any:
-    return yaml.safe_load(path.read_text(encoding="utf-8"))
+    return load_yaml(path)
 
 
 # --------------------------------------------------------------------------- periods
@@ -588,6 +588,8 @@ class DomainPack:
         self.known_findings = _load(self.root / "known_findings.yaml").get("findings", [])
         self.treatment_verbs: dict[str, float] = {k: float(v) for k, v in self.ontology.get("treatment_verbs", {}).items()}
         self.opposition_markers: list[str] = list(self.ontology.get("opposition_markers", []))
+        # the textual cruxes its commentators found (校勘疑义), consulted by the support reading
+        self.cruxes = load_cruxes(self.root / "cruxes.yaml", self.variants.normalize_text)
 
     def role_of(self, category: str) -> str:
         return self.ontology["categories"].get(category, {}).get("role", category)

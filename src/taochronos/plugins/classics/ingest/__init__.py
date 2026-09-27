@@ -15,8 +15,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-import yaml
-
+from ....protocol.yamlio import load_yaml
 from ..store import CorpusStore
 from .kanripo import BookSpec, KanripoFile, KanripoParser, LayerSpec, read_file
 
@@ -24,7 +23,7 @@ Log = Callable[[str], None]
 
 
 def load_catalog(path: str | Path) -> dict[str, Any]:
-    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    data = load_yaml(Path(path))
     data["_path"] = str(path)
     return data
 
@@ -32,7 +31,7 @@ def load_catalog(path: str | Path) -> dict[str, Any]:
 def load_external_works(path: str | Path) -> list[dict[str, Any]]:
     """``corpus/catalog/external-works.yaml``: works cited in the corpus but not in it (lost, or extant elsewhere)."""
     p = Path(path)
-    return list((yaml.safe_load(p.read_text(encoding="utf-8")) or {}).get("works") or []) if p.exists() else []
+    return list((load_yaml(p) or {}).get("works") or []) if p.exists() else []
 
 
 def _range(v: Any) -> tuple[int, int] | None:

@@ -49,6 +49,9 @@ CONTRA_PRONOUN = re.compile(r"(?:不可(?:与|服|用)之|勿(?:与|服)之|不�
 CONTRA_SELF = re.compile(r"^(?:不可|不宜|不得|勿|禁|忌|慎勿|莫)")  # the negation inside the argument (「不可下也」)
 ADVERSE = re.compile(r"(?:若|误|妄|反|更|复)$")  # 若下之，必胸下结鞕: what the intervention causes
 ADVERSE_AFTER = re.compile(r"^[之者]?[，,]?(?:则|必|即|便|遂|反)")
+# a cue belongs to its own clause: 「大便微硬者，可与大承气汤，不硬者，不可与之」 — the prohibition governs the next
+# 者-clause, not the formula before it
+NEXT_CONDITION = re.compile(r"[，,；;][^，,。；;]{1,10}者[，,]")
 # 「汗之则神昏」「下之则洞泄」 warn; 「汗之则愈」 recommends: the consequence decides
 CONSEQUENCE = re.compile(r"^[之者]?[，,]?(?:则|必|即|便|遂|而)")
 GOOD_OUTCOME = re.compile(r"^[之者]?[，,]?(?:则|必|即|便|遂|而)[^。；，]{0,3}?(?:愈|解|安|瘥|已|自止|和|平|汗出而解)")
@@ -130,6 +133,9 @@ def _intervention_reading(norm: str, start: int, end: int, lo: int, hi: int) -> 
     s_lo, s_hi = _sentence_bounds(norm, start)
     b0 = max(s_lo, start - 8)
     before, after = norm[b0: start], norm[end: min(max(s_hi, hi), end + 12)]
+    nxt = NEXT_CONDITION.search(after)
+    if nxt:
+        after = after[: nxt.start()]
     cues: list[dict[str, Any]] = []
 
     def add(kind: str, m: re.Match[str] | None, offset: int, reads: str, distance: int) -> None:
@@ -147,6 +153,9 @@ def _intervention_reading(norm: str, start: int, end: int, lo: int, hi: int) -> 
     if ADVERSE.search(before) and ADVERSE_AFTER.search(after):
         add("warning", ADVERSE.search(before), b0, "contraindicated", 0)
     tail = norm[end - 1: end + 12] if norm[end - 1: end] == "之" else after  # 「汗之」: the consequence follows the 之
+    nxt = NEXT_CONDITION.search(tail)
+    if nxt:
+        tail = tail[: nxt.start()]
     add("warning", BAD_OUTCOME.search(tail), end, "contraindicated", 0)
     add("outcome", GOOD_OUTCOME.search(tail), end, "indicated", 0)
     # a pronoun cue refers back only within the claim's own quote (a later 「…汤主之」 belongs to that formula)
@@ -246,8 +255,29 @@ def negation_disagreements(claim: Claim, norm: str) -> list[dict[str, Any]]:
     return out
 
 
-def assess_support(claim: Claim, text: str, normalize: Callable[[str], str] | None = None) -> SupportAssessment:
-    """Read the claim's quote in its passage for the words that state the claim's relation."""
+def assess_support(claim: Claim, text: str, normalize: Callable[[str], str] | None = None, cruxes: Any = None) -> SupportAssessment:
+    """Read the claim's quote in its passage for the words that state the claim's relation — and, given a registry of
+    textual cruxes, whether the words it rests on are words the commentators doubt: a claim the literal wording would
+    support, on a clause judged transposed, miswritten, interpolated or lacunose, is *ambiguous* (the reading waits for
+    an expert), never *supported*."""
+    reading = _assess(claim, text, normalize)
+    if cruxes is None or reading.verdict != "supports":
+        return reading
+    norm = normalize(text) if normalize else text
+    spans = [(a.start, a.end) for a in claim.arguments if a.start is not None and a.end is not None]
+    hits = cruxes.overlapping(norm, max(0, claim.start), min(len(norm), claim.end), spans)
+    if not hits:
+        return reading
+    who = "、".join(dict.fromkeys(p for h in hits for p in h["by"] if p))[:60] or "注家"
+    words = next((h["target"] for h in hits if h.get("target")), None)
+    kinds = "/".join(dict.fromkeys(k for h in hits for k in h["kinds"]))
+    cues = reading.cues + [{"cue": words or "(全条)", "kind": "crux", "reads": kinds, "crux": h["id"], "by": h["by"]} for h in hits]
+    return SupportAssessment(verdict="ambiguous", relation=reading.relation, cues=cues, frame=reading.frame,
+                             explanation=f"the literal wording would support it, but {who} doubt "
+                                         f"{'「' + words + '」' if words else 'this clause'} ({kinds}): a textual crux")
+
+
+def _assess(claim: Claim, text: str, normalize: Callable[[str], str] | None = None) -> SupportAssessment:
     norm = normalize(text) if normalize else text
     lo, hi = max(0, claim.start), min(len(norm), claim.end)
     relation = claim.relation
@@ -316,8 +346,8 @@ def assess_support(claim: Claim, text: str, normalize: Callable[[str], str] | No
     return result("insufficient", [], f"no word in the quote states a {relation.value} relation")
 
 
-def support_layers(claim: Claim, text: str, normalize: Callable[[str], str] | None = None) -> dict[str, Any]:
+def support_layers(claim: Claim, text: str, normalize: Callable[[str], str] | None = None, cruxes: Any = None) -> dict[str, Any]:
     """The G4 layers that concern meaning: semantic support and the statement's scope."""
-    a = assess_support(claim, text, normalize)
+    a = assess_support(claim, text, normalize, cruxes)
     return {"support": a.verdict, "support_explanation": a.explanation, "cues": [c.get("cue") for c in a.cues][:6],
             "scope": {k: a.frame.get(k) for k in ("speaker", "quoted_from", "stance", "modality", "conditions", "temporal_scope")}}

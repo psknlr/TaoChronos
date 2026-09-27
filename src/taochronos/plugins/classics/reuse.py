@@ -88,8 +88,15 @@ class TextReuseDetector:
         return re.sub(r"主之|宜", lambda mt: "□" * len(mt.group(0)), masked)
 
     def _formulaic(self, block: str) -> bool:
+        """A block that is (nearly) only a formula name — a formula term inside it at least its length less three —
+        or only prescription formulae.  The terms that can qualify are substrings of the block, so the block's own
+        substrings are looked up, not every term of the lexicon."""
         stripped = re.sub(r"(主之|宜|可与|汤|丸|散|饮)", "", block)
-        return any(term in block and len(term) >= len(block) - 3 for term in self._formula_terms) or len(stripped) < 3
+        if len(stripped) < 3:
+            return True
+        n = len(block)
+        return any(block[i: i + size] in self._formula_terms
+                   for size in range(max(1, n - 3), n + 1) for i in range(n - size + 1))
 
     def compare(self, a: Passage, b: Passage) -> ReuseMatch | None:
         """Compare two passages; ``a`` is treated as the later witness when dates differ."""

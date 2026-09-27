@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
+from ....protocol.yamlio import load_yaml
 
 CONTEMPORARY = "当代出版物"
 CONTEMPORARY_PHYSICIAN = "当代名医著作"
@@ -94,7 +94,7 @@ class Exclusions:
     appear."""
 
     def __init__(self, path: str | Path | None) -> None:
-        data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) if path and Path(path).exists() else {}
+        data = load_yaml(path) if path and Path(path).exists() else {}
         data = data or {}
         self.by_source: dict[str, dict[str, dict[str, Any]]] = {k: dict(v or {}) for k, v in (data.get("sources") or {}).items()}
         self.titles: dict[str, str] = dict(data.get("titles") or {})

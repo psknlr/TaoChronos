@@ -28,12 +28,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from ..capabilities.llm import TIERS
 from ..kernel.budget import BudgetLimits
 from ..kernel.policy import Actor, PolicyEngine
 from ..kernel.tools import ToolRegistry
+from ..protocol.yamlio import load_yaml
 from .schemas import OUTPUT_SCHEMAS
 from .skills import SkillLibrary
 
@@ -121,7 +120,7 @@ class AgentSpec:
 def load_specs(directory: str | Path) -> dict[str, AgentSpec]:
     specs: dict[str, AgentSpec] = {}
     for path in sorted(Path(directory).glob("*.yaml")):
-        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        data = load_yaml(path) or {}
         spec = AgentSpec.from_dict(data, str(path))
         if spec.role in specs:
             raise SpecError(f"duplicate agent role {spec.role!r} ({path} and {specs[spec.role].source})")

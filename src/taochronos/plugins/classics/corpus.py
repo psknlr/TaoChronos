@@ -6,8 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
-import yaml
-
 from ...protocol.documents import (
     Book,
     CollationStatus,
@@ -20,6 +18,7 @@ from ...protocol.documents import (
     VariantReading,
     YearRange,
 )
+from ...protocol.yamlio import load_yaml
 
 
 @dataclass
@@ -73,7 +72,7 @@ class Corpus:
     @classmethod
     def load(cls, root: str | Path) -> "Corpus":
         root = Path(root)
-        meta = yaml.safe_load((root / "books.yaml").read_text(encoding="utf-8"))
+        meta = load_yaml(root / "books.yaml")
         books: dict[str, Book] = {}
         for raw in meta["books"]:
             editions = [
@@ -120,7 +119,7 @@ class Corpus:
         }
         passages: dict[str, Passage] = {}
         for path in sorted((root / "books").glob("*.yaml")):
-            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+            data = load_yaml(path)
             for block in data if isinstance(data, list) else [data]:
                 for p in cls._parse_block(block, books):
                     if p.id in passages:

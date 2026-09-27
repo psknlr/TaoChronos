@@ -16,9 +16,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Callable
 
-import yaml
-
 from ...protocol.modern import EVIDENCE_RANK, ClaimLevel, EvidenceType, ModernRecord, Population, cross_level
+from ...protocol.yamlio import load_yaml
 from .evidence_types import type_record
 from .pubmed import PubMed, PubMedError
 
@@ -180,7 +179,7 @@ def summarize(records: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _load(path: Path) -> dict[str, Any]:
-    return (yaml.safe_load(path.read_text(encoding="utf-8")) or {}) if path.exists() else {}
+    return (load_yaml(path) or {}) if path.exists() else {}
 
 
 __all__ = ["ModernEvidence", "summarize"]

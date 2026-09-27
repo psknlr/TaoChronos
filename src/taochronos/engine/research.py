@@ -167,8 +167,9 @@ class ResearchEngine:
     @staticmethod
     def _verify_integrity(session: Session) -> None:
         """The log is the truth: if the live state differs from a replay of the log (something changed the state
-        without an event), the live state is rebuilt from the log and the incident is recorded."""
-        report = session.verify()
+        without an event), the live state is rebuilt from the log and the incident is recorded.  The replay is kept
+        between rounds and advanced by the new events (Session.verify_incremental)."""
+        report = session.verify_incremental()
         if report["consistent"]:
             return
         session.restore()

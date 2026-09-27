@@ -166,6 +166,12 @@ class Session:
         self.recovery: RecoveryReport | None = None
         # identities seen in this session (for audit); authority always comes from the object handed to emit
         self.identities: dict[str, Actor] = {KERNEL_ACTOR.id: KERNEL_ACTOR}
+        # a replay of the log kept beside the live state, advanced by new events at each integrity check
+        self._shadow: ResearchObject | None = None
+        self._shadow_seq = 0
+        self._shadow_mismatches: list[int] = []
+        self._shadow_hash: tuple[int, str] | None = None  # (seq, hash) of the replay, reused until it advances
+        self._verified: tuple[int, str] | None = None  # (seq, hash) of the live state last found to agree with the log
 
     # ---------------------------------------------------------------- factory
     @classmethod
@@ -360,11 +366,15 @@ class Session:
                 self.reducer.apply(rebuilt, event)
             self.state.__dict__.update(rebuilt.__dict__)
             self.seq = kept[-1].seq if kept else 0
+            self._shadow = self._shadow_hash = self._verified = None  # the log may have been cut: replay it afresh
 
     # ------------------------------------------------------------- durability
     def checkpoint(self) -> Event:
+        """Record the hash of the state at this point of the log.  Right after an integrity check found the live state
+        in agreement with the log, that check's hash is the hash here, and it is not computed a second time."""
         with self.lock:
-            state_hash = self.state.state_hash()
+            verified = self._verified
+            state_hash = verified[1] if verified and verified[0] == self.seq else self.state.state_hash()
         return self.emit(EventType.CHECKPOINT_CREATED, {"state_hash": state_hash, "at_seq": self.seq})
 
     def events(self, from_seq: int = 1, to_seq: int | None = None) -> list[Event]:
@@ -372,6 +382,32 @@ class Session:
 
     def replay(self, to_seq: int | None = None) -> ResearchObject:
         return self.reducer.replay(self.id, self.store.read(self.id, 1, to_seq))
+
+    def verify_incremental(self) -> dict[str, Any]:
+        """The same comparison as :meth:`verify` — the live state against a replay of the log, and every checkpoint
+        against the replay at its point — with the replay kept between checks and advanced by the events appended
+        since the last one, so a check costs the new events and two hashes, not the whole log each round."""
+        with self.lock:
+            if self._shadow is None or self._shadow_seq > self.seq:  # first check, or the log was cut back
+                self._shadow, self._shadow_seq, self._shadow_mismatches = ResearchObject(session_id=self.id), 0, []
+                self._shadow_hash = None
+            shadow = self._shadow
+
+            def replayed_hash() -> str:  # the replay changes only by events: its hash holds until the next one
+                if self._shadow_hash is None or self._shadow_hash[0] != self._shadow_seq:
+                    self._shadow_hash = (self._shadow_seq, shadow.state_hash())
+                return self._shadow_hash[1]
+
+            for event in self.store.read(self.id, self._shadow_seq + 1):
+                if event.type == EventType.CHECKPOINT_CREATED.value and event.payload.get("state_hash") != replayed_hash():
+                    self._shadow_mismatches.append(event.seq)
+                self.reducer.apply(shadow, event)
+                self._shadow_seq = event.seq
+            live, replayed = self.state.state_hash(), replayed_hash()  # the live state is always hashed afresh
+            consistent = not self._shadow_mismatches and replayed == live
+            self._verified = (self.seq, live) if consistent else None
+            return {"session_id": self.id, "events": self.seq, "checkpoint_mismatches": list(self._shadow_mismatches),
+                    "replayed_hash": replayed, "live_hash": live, "consistent": consistent, "incremental": True}
 
     def verify(self) -> dict[str, Any]:
         """Rebuild state from the log and compare with the live projection and all checkpoints."""
@@ -386,14 +422,15 @@ class Session:
             self.reducer.apply(rebuilt, event)
         with self.lock:
             live = self.state.state_hash()
+        replayed = rebuilt.state_hash()
         return {
             "session_id": self.id,
             "events": self.seq,
             "checkpoints": checkpoints,
             "checkpoint_mismatches": mismatches,
-            "replayed_hash": rebuilt.state_hash(),
+            "replayed_hash": replayed,
             "live_hash": live,
-            "consistent": not mismatches and rebuilt.state_hash() == live,
+            "consistent": not mismatches and replayed == live,
         }
 
     def fork(

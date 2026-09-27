@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 from typing import Callable, Iterator
 
-import yaml
+from ...protocol.yamlio import load_yaml
 
 STEMS = "甲乙丙丁戊己庚辛壬癸"
 BRANCHES = "子丑寅卯辰巳午未申酉戌亥"
@@ -56,7 +56,7 @@ def ganzhi_year(stem_branch: str, start: int, end: int) -> int | None:
 
 class Chronology:
     def __init__(self, path: str | Path, normalize: Callable[[str], str] | None = None) -> None:
-        data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+        data = load_yaml(path)
         self.normalize = normalize or (lambda t: t)
         n = self.normalize
         self.eras = {n(k): (int(v[0]), int(v[1])) for k, v in (data.get("eras") or {}).items()}

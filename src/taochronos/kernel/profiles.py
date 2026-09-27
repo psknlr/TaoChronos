@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
+from ..protocol.yamlio import load_yaml
 
 
 @dataclass
@@ -67,7 +67,7 @@ def load_profile_dict(name_or_path: str, search_dirs: list[Path], _seen: tuple[s
     path = _find(name_or_path, search_dirs)
     if str(path) in _seen:
         raise ValueError(f"profile inheritance cycle: {' -> '.join(_seen + (str(path),))}")
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    data = load_yaml(path) or {}
     data.setdefault("name", path.stem)
     data["source"] = str(path)
     parent = data.get("extends")

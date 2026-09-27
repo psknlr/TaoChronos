@@ -20,9 +20,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator
 
-import yaml
-
 from ....protocol.documents import Passage
+from ....protocol.yamlio import load_yaml
 from ..domain import DomainPack
 
 PUNCT = set("，。；：、？！“”‘’（）《》〈〉…—·‧「」『』【】〔〕［］｛｝ 　\n\t,.;:!?()[]{}<>\"'")
@@ -418,7 +417,7 @@ def dated(years: Any) -> tuple[float, float]:
 @lru_cache(maxsize=16)
 def _load_yaml(path: str) -> dict[str, Any]:
     p = Path(path)
-    return (yaml.safe_load(p.read_text(encoding="utf-8")) or {}) if p.exists() else {}
+    return (load_yaml(p) or {}) if p.exists() else {}
 
 
 __all__ = ["PUNCT", "Period", "StudyBase", "dated", "han_only", "normal_sf", "snippet", "trend_test", "wilson"]

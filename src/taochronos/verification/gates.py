@@ -114,7 +114,8 @@ class GateEvaluator:
         locator = [p for p in problems if p not in authenticity]
         layers: dict = {"authenticity": "fail" if authenticity else "pass", "locator": "fail" if locator else "pass"}
         if self.corpus.has_passage(claim.passage_id) and not authenticity:
-            layers.update(support_layers(claim, self.corpus.passage(claim.passage_id).text, self.normalize))
+            layers.update(support_layers(claim, self.corpus.passage(claim.passage_id).text, self.normalize,
+                                         getattr(self.pack, "cruxes", None)))
         support = layers.get("support", "unchecked")
         stance = (layers.get("scope") or {}).get("stance", "")
         if problems or support == "contradicts":
