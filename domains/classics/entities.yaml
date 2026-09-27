@@ -1,0 +1,157 @@
+# 实体 — the entity types of the medical classics (T7) and how each is found before any model is asked
+# (`study entities`, plugins/classics/study/entities.py).
+#
+# Sources, in this order: the lexicon (lexicon/*.yaml, and the harvested names as candidates), physicians.yaml,
+# schools.yaml, places.yaml, eras.yaml, and the patterns below.  Where two candidates overlap the longer wins (伤寒论 is
+# a Book, not the Disease 伤寒 followed by 论); of two of one length, the type listed first in `types` wins.  A candidate
+# marked ambiguous (a surface of two types, an herb name that is also a common word, a place that is also a person) is
+# kept with its alternatives — for a person, or the model (`--llm`), to decide.
+#
+# Annotation conventions the gold set (evals/gold/ner.yaml) follows:
+#   * spans are flat and maximal: 麻黄杏仁甘草石膏汤 is one Formula (the drugs of its name are not entities of their own),
+#     头项强痛 one Symptom, 脉阴阳俱紧 one Pulse;
+#   * a negated finding is an entity with `negated: true` (不渴, 无汗, 不恶寒): negation is an attribute, not another type;
+#   * Dose is the number with its unit (三两, 各一两, 半升, 十二枚, 等分); Preparation the making and taking of a remedy
+#     (去皮, 炙, 以水七升, 煮取三升, 去滓, 温服一升, 为末, 蜜丸);
+#   * Time is a date (建安十年, 康熙戊申), a dynasty (东汉, 宋代) or the course of an illness (一日, 二三日, 日晡所).
+
+types:
+  Book:             {label: 书名}
+  Formula:          {label: 方剂, lexicon: [formula]}
+  Herb:             {label: 药物, lexicon: [herb]}
+  Commentator:      {label: 注家}
+  Physician:        {label: 医家}
+  School:           {label: 学派}
+  Place:            {label: 地名}
+  Disease:          {label: 病名, lexicon: [disease]}
+  Syndrome:         {label: 证候, lexicon: [pattern]}
+  Pulse:            {label: 脉象, lexicon: [pulse]}
+  Tongue:           {label: 舌象, lexicon: [tongue]}
+  Symptom:          {label: 症状, lexicon: [symptom]}
+  Sign:             {label: 体征, lexicon: [sign]}
+  Pathogenesis:     {label: 病机, lexicon: [pathogenesis]}
+  Etiology:         {label: 病因, lexicon: [etiology]}
+  Treatment:        {label: 治法, lexicon: [treatment_principle, treatment_method]}
+  Theory:           {label: 学说, lexicon: [concept]}
+  Location:         {label: 病位, lexicon: [organ]}
+  Nature:           {label: 病性}
+  Dose:             {label: 剂量}
+  Preparation:      {label: 炮制煎服}
+  Contraindication: {label: 禁忌}
+  Edition:          {label: 版本}
+  Time:             {label: 时间}
+
+# lexicon categories that are not entity types of their own: `condition` holds seasons (Time), the 卫气营血 levels
+# (Location) and descriptors of the patient (not entities)
+condition_types:
+  春: Time
+  夏: Time
+  秋: Time
+  冬: Time
+  长夏: Time
+  深秋: Time
+  冬日: Time
+  卫分: Location
+  气分: Location
+  营分: Location
+  血分: Location
+
+# single-character causes are entities only in a causal frame (伤于风, 中寒, 感受湿邪, 风寒)
+etiology_frame:
+  before: "(?:伤于|中于|感于|感受|外感|冒|受|中|因|感|伤|为)$"
+  after: "^(?:邪|毒|气|淫|袭|伤|中|胜)"
+
+# the 学说 of the literature (theory and its constructs), beyond the lexicon's `concept` entries
+theory: [阴阳, 五行, 火热, 六经, 六经辨证, 卫气营血, 三焦辨证, 五运六气, 运气, 相火, 君火, 命门, 营卫, 气化, 标本, 升降浮沉,
+         归经, 引经, 四气五味, 七情, 君臣佐使, 阴火, 伏气, 伏邪, 天人相应, 阳常有余阴常不足, 阳常有余, 阴常不足,
+         脾胃论, 元气, 真阴, 真阳, 元阳, 先天, 后天, 亢则害承乃制]
+
+# 病性: the nature of a disorder, where the lexicon does not already type the word
+nature: [虚寒, 实热, 虚热, 实寒, 寒热错杂, 阴盛, 阳盛, 阴虚, 阳虚, 阴阳两虚, 气血两虚, 上实下虚, 上热下寒, 真寒假热,
+         真热假寒, 表里俱虚, 表实, 表虚, 里实, 里虚]
+
+# 病位 beyond the lexicon's organs: the body and the levels of illness, standalone (a part inside a symptom — 头痛 — is not)
+location: [表, 里, 半表半里, 心下, 胸中, 腹中, 胁下, 少腹, 小腹, 胸胁, 头项, 四肢, 肌肤, 皮毛, 肌肉, 筋骨, 骨节, 膀胱, 小肠,
+           大肠, 胞宫, 血室, 胃中, 胃家, 经络, 在经, 在腑, 在脏, 上焦, 中焦, 下焦]
+
+# herb names that are also common words: an herb only in a composition (a dose or another herb beside it)
+ambiguous_herbs: [当归, 远志, 独活, 续断, 防风, 知母, 通草, 泽泻, 使君子, 王不留行, 白头翁, 益母, 决明, 细辛, 甘遂, 防己,
+                  将军, 百合, 合欢, 忍冬, 天冬, 麦冬, 升麻, 独行, 大戟, 常山, 贯众, 狼毒, 水蛭]
+
+# editions and witnesses named in apparatus and commentary
+editions: [宋本, 宋刻, 宋版, 宋板, 元本, 元刻, 明本, 明刻, 刻本, 抄本, 钞本, 写本, 石印本, 影印本, 活字本, 坊本, 旧本, 今本,
+           别本, 一本, 古本, 善本, 通行本, 俗本, 赵开美本, 康平本, 康治本, 桂林古本, 医统本, 成本, 金匮玉函经本, 千金本,
+           外台本, 脉经本]
+ambiguous_editions: [成本, 一本, 古本]
+
+# dynasties written with two or more characters (a single character — 宋 金 元 明 清 — is a dynasty only before
+# 时 代 朝 初 末 人 季 世, see `dynasty_single`)
+dynasties: [西汉, 东汉, 后汉, 三国, 西晋, 东晋, 南北朝, 南朝, 北朝, 五代, 北宋, 南宋, 金元, 宋元, 明清, 民国, 汉代, 唐代,
+            宋代, 元代, 明代, 清代, 汉唐, 唐宋, 隋唐, 秦汉, 魏晋, 先秦, 上古, 中古]
+dynasty_single: [夏, 商, 周, 秦, 汉, 魏, 晋, 隋, 唐, 宋, 辽, 金, 元, 明, 清]
+dynasty_after: "(?:时|代|朝|初|末|人|季|世|以前|以后|以来)"
+
+# patterns (regular expressions over the normalised text)
+patterns:
+  Dose:
+    - "各?(?:[一二三四五六七八九十百千半两]+|数|少许)(?:两|钱|分|铢|升|合|斗|枚|个|斤|片|茎|握|把|粒|丸|撮|钱匕|方寸匕|刀圭|盏|碗|杯|匙|钱半)(?:半)?"
+    - "各?等分"
+  Preparation:
+    - "以(?:清浆|甘澜|潦|流|东流|井华|泉)?水[一二三四五六七八九十百半]+[升斗合]"
+    - "(?:微火|文火|武火)?(?:煮|煎)取[一二三四五六七八九十半]+[升合]"
+    - "去滓"
+    - "内诸药"
+    - "(?:先|后)(?:煮|下|煎)[一-鿿]{0,2}"
+    - "(?:捣|杵)(?:筛|罗|末)"
+    - "为(?:细|粗)?末"
+    - "(?:炼)?蜜(?:和|为)?丸"
+    - "如(?:梧桐|梧|桐|小豆|弹|鸡子)子?大"
+    - "㕮咀"
+    - "(?:温|顿|分温|分再|冷|热)服(?:[一二三四五六七八九十半]+[升合丸])?"
+    - "日[一二三四五](?:夜[一二])?服"
+    - "(?:每|再)服(?:[一二三四五六七八九十半]+[升合丸钱])?"
+    - "服[一二三四五六七八九十半]+[升合丸钱匕]"
+    - "啜(?:热)?(?:稀)?粥"
+    - "覆取(?:微)?(?:似)?汗"
+    - "(?:空心|食前|食后)服?"
+    - "(?:温酒|米饮|白汤|酒)(?:送|调)?下"
+    - "适寒温"
+  Preparation_in_composition:  # processing words, only right after a drug or a dose
+    - "(?:去皮尖|去皮|去节|去心|去芦|去毛|去核|去子|去皮脐|炮去皮|破八片|绵裹|酒洗|酒浸|酒炒|盐水炒|姜汁炒|生用|炙|炮|擘|切|碎|洗|熬|研|煨|焙)"
+  Contraindication:
+    - "(?:慎)?不可(?:发汗|汗|下|吐|与|服|攻|灸|火|针|发其汗|攻其表|更)(?:之)?"
+    - "禁(?:汗|下|吐|服|食|用)[一-鿿]{0,4}"
+    - "忌(?:食|服|用)?[一-鿿]{1,4}"
+    - "(?:孕妇|妊娠)(?:忌|禁|勿|不可)(?:服|用)"
+  Etiology:
+    - "[风寒暑湿燥火热](?:之)?(?:邪|毒)"
+  Pulse:
+    - "(?:寸口|趺阳|少阴|关上|尺中|寸|关|尺)?脉(?:[阴阳寸关尺]{1,2}|关上|尺中|寸口)?(?:俱|皆)?(?:[浮沉迟数滑涩弦紧缓洪大微细弱濡虚实小芤结代促长短革牢散动伏疾]{1,4})(?:而[浮沉迟数滑涩弦紧缓洪大微细弱濡虚实小芤结代促长短]{1,2})?"
+  Tongue:
+    - "舌(?:上|苔|胎|质)?(?:白|黄|黑|灰|赤|红|绛|紫|淡|干|燥|滑|腻|光|胖|裂|卷|强|短)[白黄黑灰赤红绛紫淡干燥滑腻光胖裂苔胎]{0,4}"
+    - "(?:苔|胎)(?:白|黄|黑|灰|腻|滑|厚|薄|燥)[白黄黑灰腻滑厚薄燥]{0,3}"
+  Symptom:
+    - "(?:其)?(?:身|体|头|项|背|腰|腹|少腹|小腹|胸|心下|心中|胁|胁下|手足|四肢|口|舌|咽|咽喉|目|面|鼻|骨节|关节|肢节)(?:疼痛|烦疼|烦痛|疼|痛|重|满|冷|热|肿|痒|强|急|烦|干|燥|赤|黄|痞|痞硬|硬满|厥|逆冷|厥冷|厥寒|拘急|不仁|悸)"
+    - "(?:小便|大便)(?:不利|自利|数|难|硬|溏|秘|闭|黄|赤|清|白|少|多|不通|不禁|自调)"
+    - "(?:不|无|未)(?:汗|渴|呕|欲食|能食|得卧|得眠|大便|恶寒|恶风|发热)"
+    - "(?:呕逆|心悸|心下痞|胸满|烦渴|口渴|自汗|身热不扬|身热|咽痛|头眩|身疼|体痛|项强|但热不寒|寒热往来|口渴引饮)"
+  Sign:
+    - "按之(?:濡|痛|硬|石硬|坚|软|不痛|益痛|则痛|如石|有声|应手|没指)"
+  Treatment:  # the methods of treatment, one or two joined (滋阴降火, 清热解毒)
+    - "(?:滋阴|养阴|益气|补气|补血|养血|清热|泻火|降火|解表|发汗|攻下|温中|温阳|回阳|和解|化痰|利水|活血|化瘀|理气|行气|疏肝|健脾|补肾|安神|止血|止咳|平喘|固涩|解毒|凉血|透疹|散寒|祛风|除湿|燥湿|消食|导滞|软坚|散结|开窍|息风|潜阳)(?:滋阴|养阴|益气|补气|补血|养血|清热|泻火|降火|解表|发汗|攻下|温中|温阳|回阳|和解|化痰|利水|活血|化瘀|理气|行气|疏肝|健脾|补肾|安神|止血|止咳|平喘|固涩|解毒|凉血|透疹|散寒|祛风|除湿|燥湿|消食|导滞|软坚|散结|开窍|息风|潜阳)?"
+  Time:
+    - "(?<![一二三四五六七八九十])[一二三四五六七八九十]{1,3}日(?![一-鿿]{0,1}服)"
+    - "日晡所?"
+    - "(?:平旦|夜半|日中|黄昏|鸡鸣|人定|日西)"
+    - "[甲乙丙丁戊己庚辛壬癸][子丑寅卯辰巳午未申酉戌亥](?:年|岁|春|夏|秋|冬)"
+  Book:
+    - "《[^《》]{1,30}》"
+  Formula:  # a name ending in 汤 散 丸 饮 膏 丹 煎 before 主之 / 方 / 证, or after 宜 与 服 用
+    - "(?<=宜|与|服|用|属|以)[一-鿿]{1,8}?(?:汤|散|丸|饮|膏|丹|煎)(?=主之|方|证|[，。；]|$)"
+    - "[一-鿿]{1,8}?(?:汤|散|丸|饮|膏|丹)(?=主之)"
+
+# stop characters a guessed name (Formula, Herb before a dose) never starts with
+name_stop: "以之者则而其若主宜与服用可属又更再亦并及和又先后乃即遂更再各每一二三四五六七八九十半"
+
+# words that follow a physician's name when he comments: the physician is then a Commentator
+commentator_after: "^(?:注|注云|注曰|释|释曰|笺|解|批|按|疏)"

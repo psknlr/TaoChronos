@@ -106,6 +106,8 @@ class StudyBase:
         self._entries_db: sqlite3.Connection | None = None
         self._entries_mem: dict[str, list[tuple[str, str, list[str]]]] | None = None
         self._entries_lock = threading.Lock()
+        # the model that reviews what the rules leave uncertain (capabilities/judge.py); None: rules only
+        self.judge: Any = None
 
     # ------------------------------------------------------------ data files
     def data(self, name: str) -> dict[str, Any]:

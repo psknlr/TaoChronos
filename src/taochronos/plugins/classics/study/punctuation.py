@@ -306,12 +306,14 @@ class PunctuationModel:
         return [(i, self.mark_for(chars, i, pm), round(pb, 3))
                 for i, (pb, pm) in enumerate(self.probabilities(chars), start=1) if pb >= self.threshold]
 
-    def punctuate(self, text: str, normalize: Any = None, *, margin: float = 0.08) -> dict[str, Any]:
+    def punctuate(self, text: str, normalize: Any = None, *, margin: float = 0.08,
+                  overrides: dict[int, str | None] | None = None) -> dict[str, Any]:
         """Marks for the gaps between the Han characters of a text, read on the normalised characters the model was
         counted on.  Bracketed notes are punctuated on their own (the main text reads across them); a mark that falls
         before an opening quote goes in front of it, one after a note behind its closing bracket; existing marks are
         kept and nothing else changes.  Gaps near the cut are listed for review: marks put with little margin
-        (``doubtful``) and marks almost put (``possible``)."""
+        (``doubtful``) and marks almost put (``possible``).  ``overrides`` (text index → mark, or None) replace the
+        model's decision at those gaps — a reviewer's (or a language model's) marks, still only marks."""
         in_note = [False] * len(text)
         notes = [(m.start(), m.end()) for m in NOTE.finditer(text)]
         for s, e in notes:
@@ -336,6 +338,11 @@ class PunctuationModel:
                         review.append({"at": pos[k], "kind": "doubtful", "mark": mark, "p": round(pb, 3)})
                 elif pb >= self.threshold - margin:
                     review.append({"at": pos[k], "kind": "possible", "mark": mark, "p": round(pb, 3)})
+        for at, mark in (overrides or {}).items():
+            if mark is None:
+                decided.pop(at, None)
+            elif mark in MARKS and 0 < at < len(text):
+                decided[at] = (mark, decided.get(at, (mark, 1.0))[1])
         out: list[tuple[str, bool]] = []  # (character, inserted)
         inserted: list[dict[str, Any]] = []
         for i, ch in enumerate(text):
@@ -723,6 +730,16 @@ class PunctuationStudy:
         # a punctuated input loses its marks (not its notes) and is punctuated again; 白文 is punctuated as it is
         base = strip_marks(text) if already else text
         marked = model.punctuate(base, self.b.normalize)
+        review = None
+        if self.b.judge is not None:
+            from .review import review_punctuation
+
+            overrides, summary, decisions = review_punctuation(self.b.judge, base, marked)
+            model_text = marked["text"]
+            if overrides:
+                marked = model.punctuate(base, self.b.normalize, overrides=overrides)
+            review = {"summary": summary, "decisions": decisions[:200], "model_only": model_text[:4000],
+                      "judge": self.b.judge.label}
         info = {k: v for k, v in model.info.items() if k != "weights"}
         out: dict[str, Any] = {
             "input": text[:4000], "unpunctuated": base[:4000], "punctuated": marked["text"], "preserved": marked["preserved"],
@@ -731,10 +748,16 @@ class PunctuationStudy:
             "method": "character n-gram views of each gap (log-odds from the store's punctuated texts), weighed by "
                       "logistic regression; marks are only inserted — every character is kept",
         }
+        if review is not None:
+            out["llm_review"] = review
         if passage is not None:
             out["passage"] = self.b.witness(passage)
         if already and compare:
             out["against_editors"] = score(gold, model_labels(model, chars))
+            if review is not None:
+                final_chars, final = gaps(self.b.normalize(marked["text"]))
+                if final_chars == chars:
+                    out["against_editors_reviewed"] = score(gold, final)
             out["baseline_rules"] = score(gold, rule_labels(Segmenter(self.b.pack.lexicon), chars))
             out["note"] = "the input was punctuated: its marks were stripped, the text punctuated again and the two compared"
         return out

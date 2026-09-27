@@ -790,6 +790,34 @@ def names(r: dict[str, Any]) -> list[str]:
     return out + ["", f"> {r.get('note', '')}"]
 
 
+def entities(r: dict[str, Any]) -> list[str]:
+    text = r["text"]
+    out = ["# 实体识别", "", f"> {text[:300]}{'…' if len(text) > 300 else ''}", ""]
+    if r.get("passage"):
+        out += [_cite(r["passage"], 0), ""]
+    ents = r.get("entities", [])
+    if not ents:
+        return out + ["（未识别出实体）"]
+    marked, last = [], 0
+    for e in ents:
+        marked.append(text[last:e["start"]])
+        marked.append(f"【{text[e['start']:e['end']]}｜{e['label']}】")
+        last = e["end"]
+    marked.append(text[last:])
+    out += ["".join(marked)[:1500], ""]
+    out += ["| 类型 | 实体 |", "|---|---|"]
+    by: dict[str, list[str]] = {}
+    for e in ents:
+        flag = ("¬" if e.get("negated") else "") + ("?" if e.get("ambiguous") else "") + ("⚙" if e.get("extraction") == "model" else "")
+        by.setdefault(f"{e['label']} {e['type']}", []).append(e["text"] + flag)
+    out += [f"| {k} | {'、'.join(v)} |" for k, v in by.items()]
+    ambiguous = [e for e in ents if e.get("ambiguous")]
+    if ambiguous:
+        out += ["", "待定（多义）：" + "；".join(f"{e['text']}（{e['type']} / {'、'.join(e.get('alternatives', []))}）" for e in ambiguous[:30])]
+    out += ["", "¬ 否定　? 多义待定　⚙ 模型补充"]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
 def _dates(d: Any) -> str:
     return f"{d[0]}–{d[1]}" if d else "生卒未详"
 
@@ -884,11 +912,42 @@ PAGES = {"concordance": concordance, "formula": formula, "herb": herb, "term": t
          "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship, "cases": cases,
          "trajectories": trajectories, "argument": argument, "senses": senses, "fragments": fragments, "witnesses": witnesses,
          "punctuate": punctuate, "commentaries": commentaries, "disputes": disputes, "clause": clause, "glosses": glosses,
-         "pairs": pairs, "network": network, "schools": schools, "names": names, "chain": chain}
+         "pairs": pairs, "network": network, "schools": schools, "names": names, "chain": chain, "entities": entities}
+
+
+def _model_sections(result: dict[str, Any]) -> list[str]:
+    """What the model added after the rules: its review of uncertain decisions and its cited summary."""
+    lines: list[str] = []
+    review = result.get("llm_review")
+    if review:
+        s = review.get("summary", {})
+        lines += ["", f"## 模型复核 · model review ({review.get('judge')})", "",
+                  f"The rules decided every item; the model was asked about {s.get('asked', 0)} uncertain ones and answered "
+                  f"{s.get('answered', 0)}: it agreed with the rules on {s.get('agreed', 0)} and changed {s.get('changed', 0)}"
+                  + (f" (agreement {s['agreement']:.0%})" if s.get("agreement") is not None else "")
+                  + (f"; {s['invalid']} answers failed the checks and were dropped" if s.get("invalid") else "")
+                  + (f"; {s['note']}" if s.get("note") else "") + "."]
+        changed = [d for d in review.get("decisions", []) if d.get("decided_by") == "model"][:30]
+        if changed:
+            lines += ["", "| where | rule | model | reason |", "|---|---|---|---|"]
+            for d in changed:
+                where = d.get("context") or d.get("sentence") or d.get("id", "")
+                lines.append(f"| {str(where)[:60]} | {d.get('rule')} | {d.get('model')} | {str(d.get('reason', ''))[:80]} |")
+    summary = result.get("llm_summary")
+    if summary and summary.get("ok"):
+        lines += ["", f"## 模型综述 · model summary ({summary.get('judge')})", "",
+                  "Written by the model from the results above; every sentence cites them and quotes were checked "
+                  "against what it cites.", ""]
+        lines += [f"- {x['text']} ({', '.join(x['cites'])})" for x in summary["sentences"]]
+        if summary.get("evidence"):
+            lines += ["", "Cited: " + "; ".join(f"{e['id']} {e['source']}" for e in summary["evidence"])]
+        if summary.get("dropped"):
+            lines += ["", f"{len(summary['dropped'])} sentence(s) dropped for failing the citation checks."]
+    return lines
 
 
 def markdown(kind: str, result: dict[str, Any], signature: dict[str, Any], notice: str = "") -> str:
-    lines = PAGES[kind](result)
+    lines = PAGES[kind](result) + _model_sections(result)
     return "\n".join(lines + footer(signature, notice, MACHINE)) + "\n"
 
 

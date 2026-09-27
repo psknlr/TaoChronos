@@ -30,6 +30,7 @@ class Profile:
     discovery: dict[str, Any] = field(default_factory=dict)
     policy: dict[str, Any] = field(default_factory=dict)
     evals: dict[str, Any] = field(default_factory=dict)
+    judge: dict[str, Any] = field(default_factory=dict)  # the model that reviews rule decisions (provider, model, budget)
     source: str | None = None
 
     def raw(self) -> dict[str, Any]:

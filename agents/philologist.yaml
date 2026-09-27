@@ -9,7 +9,7 @@ procedure: taochronos.agents.procedures.philologist
 skills: [philology-collation]
 tools: ["philology.*", classics.get_passage, validation.verify_quote, study.variants, study.stemma, study.layers,
         study.dating, study.authorship, study.witnesses, study.punctuate, study.commentaries,
-        study.glosses, study.clause]
+        study.glosses, study.clause, study.entities]
 context_view: philology
 permissions: [classics:read]
 output_schema: PhilologyReport

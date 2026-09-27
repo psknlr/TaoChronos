@@ -9,6 +9,7 @@ bundles:
   - {plugin: taochronos.plugins.models.offline}
   - {plugin: taochronos.plugins.models.anthropic_provider}
   - {plugin: taochronos.plugins.models.openai_compat}
+  - {plugin: taochronos.plugins.models.litellm_provider}
   - {plugin: taochronos.plugins.sandbox}
   - {plugin: taochronos.plugins.subagents}
   - {plugin: taochronos.plugins.storage, config: {event_store: sqlite}}

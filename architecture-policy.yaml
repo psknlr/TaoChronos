@@ -18,7 +18,7 @@ layers:
 # the kernel must stay vendor-, product- and corpus-neutral
 kernel_forbidden_terms: [anthropic, openai, claude, gpt-, deepseek, gemini, neo4j, 伤寒论, 黄帝内经, 神农本草经, 金匮, shanghanlun, suwen]
 # vendor SDKs may only be imported by model-provider plugins
-vendor_sdks: [anthropic, openai]
+vendor_sdks: [anthropic, openai, litellm]
 vendor_sdk_allowed_in: [src/taochronos/plugins/models]
 # agents act through capabilities and tools, never by importing concrete plugins
 agents_may_not_import: [taochronos.plugins]

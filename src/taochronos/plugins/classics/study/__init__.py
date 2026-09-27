@@ -26,6 +26,8 @@ clause             条文结构: a clause's parts (condition … formula, compos
 glosses            训诂: a word's glosses (…者…也, 貌, 音, 反切, 当作, 一作) by commentator and period; a book's glossary
 pairs / network    配伍 and 方证网络: drugs prescribed together against chance (lift, PMI, Fisher + BH, groups, periods);
                    a formula's findings and drugs, a finding's formulas
+entities           实体识别: the entities of a text in context (24 types: 病 证 症 脉 舌 方 药 剂量 炮制 禁忌 医家 注家
+                   学派 学说 书 版本 地 时 …), rules first, ambiguous ones typed by the model with --llm
 names              名称: the names of a drug, formula or disease through time (薯蓣→山药, 玄参→元参), where texts
                    equate them, and the names the punctuated texts give that the lexicon lacks
 schools            学派: a school's words and formulas against the other works of its time, whom it cites and rejects,
@@ -57,6 +59,7 @@ from .commentary import CommentaryStudy
 from .concordance import Concordance
 from .dataset import tables as dataset_tables
 from .disputes import DisputeStudy
+from .entities import EntityRecognizer
 from .formulas import FormulaStudy
 from .fragments import FragmentStudy
 from .glosses import GlossStudy
@@ -105,6 +108,7 @@ class StudyService(StudyBase):
         self._schools = SchoolStudy(self, self._network, self._pairs.h)
         self._names = NameStudy(self)
         self._chain = ChainStudy(self, self._concordance)
+        self._entities = EntityRecognizer(self)
 
     @property
     def metrology(self) -> Any:
@@ -285,6 +289,13 @@ class StudyService(StudyBase):
         """传播链: a passage's witnesses ordered into a tree — each hangs from the earlier witness whose changes it shares
         most (shared innovations), else from the earliest; with the evidence and the margin of each edge."""
         return self._chain.run(text, passage_id, **kw)
+
+    def entities(self, text: str | None = None, passage_id: str | None = None, **kw: Any) -> dict[str, Any]:
+        """实体识别: the entities of a text in context — disease, pattern, finding, pulse, tongue, cause, mechanism,
+        treatment, formula, drug, dose, preparation, contraindication, physician, commentator, school, theory, book,
+        edition, place, time — by lexicon, lists and patterns, the ambiguous ones kept with their alternatives (and
+        typed by the model with ``--llm``, which also lists what the rules missed)."""
+        return self._entities.run(text, passage_id, **kw)
 
     def names(self, term: str, **kw: Any) -> dict[str, Any]:
         """名称: the names of a drug, formula or disease through time — the works writing each name period by period,

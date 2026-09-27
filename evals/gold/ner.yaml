@@ -1,0 +1,139 @@
+# Gold entities for `study entities` (T7): sentences of the classics (short quotations, public domain) and sentences
+# written for the test, annotated by the authors of TaoChronos following the conventions of
+# domains/classics/entities.yaml (flat, maximal spans; negation as an attribute; Dose = number and unit; Preparation =
+# making and taking).  Author-constructed and used during development: a regression set, not an expert benchmark.
+#
+# Each entity is [text, type]; a text that occurs twice in a sentence is listed once per occurrence, in order.
+# Sentences whose entities no rule can reach (a disease name read as a finding, a treatment the lexicon lacks) are kept
+# on purpose: they are what the model's review is for.
+
+sentences:
+  - text: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之。
+    source: 伤寒论
+    entities: [[太阳病, Disease], [头痛, Symptom], [发热, Symptom], [汗出, Symptom], [恶风, Symptom], [桂枝汤, Formula]]
+  - text: 太阳之为病，脉浮，头项强痛而恶寒。
+    source: 伤寒论
+    entities: [[太阳之为病, Disease], [脉浮, Pulse], [头项强痛, Symptom], [恶寒, Symptom]]
+  - text: 太阳病，发热，汗出，恶风，脉缓者，名为中风。
+    source: 伤寒论
+    entities: [[太阳病, Disease], [发热, Symptom], [汗出, Symptom], [恶风, Symptom], [脉缓, Pulse], [中风, Disease]]
+  - text: 太阳病，或已发热，或未发热，必恶寒，体痛，呕逆，脉阴阳俱紧者，名为伤寒。
+    source: 伤寒论
+    entities: [[太阳病, Disease], [发热, Symptom], [未发热, Symptom], [恶寒, Symptom], [体痛, Symptom], [呕逆, Symptom],
+               [脉阴阳俱紧, Pulse], [伤寒, Disease]]
+  - text: 伤寒二三日，心中悸而烦者，小建中汤主之。
+    source: 伤寒论
+    entities: [[伤寒, Disease], [二三日, Time], [心中悸, Symptom], [烦, Symptom], [小建中汤, Formula]]
+  - text: 桂枝三两（去皮） 芍药三两 甘草二两（炙） 生姜三两（切） 大枣十二枚（擘）
+    source: 伤寒论·桂枝汤方
+    entities: [[桂枝, Herb], [三两, Dose], [去皮, Preparation], [芍药, Herb], [三两, Dose], [甘草, Herb], [二两, Dose],
+               [炙, Preparation], [生姜, Herb], [三两, Dose], [切, Preparation], [大枣, Herb], [十二枚, Dose], [擘, Preparation]]
+  - text: 右五味，㕮咀三味，以水七升，微火煮取三升，去滓，适寒温，服一升。
+    source: 伤寒论·桂枝汤方
+    entities: [[㕮咀, Preparation], [以水七升, Preparation], [微火煮取三升, Preparation], [去滓, Preparation], [适寒温, Preparation],
+               [服一升, Preparation]]
+  - text: 厥阴之为病，消渴，气上撞心，心中疼热，饥而不欲食，食则吐蛔，下之利不止。
+    source: 伤寒论
+    entities: [[厥阴之为病, Disease], [消渴, Symptom], [气上撞心, Symptom], [心中疼热, Symptom], [饥而不欲食, Symptom],
+               [吐蛔, Symptom], [下之, Treatment], [利不止, Symptom]]
+  - text: 成无己注曰：此太阳中风也。
+    source: constructed
+    entities: [[成无己, Commentator], [太阳中风, Syndrome]]
+  - text: 喻昌《尚论篇》驳之。
+    source: constructed
+    entities: [[喻昌, Physician], [尚论篇, Book]]
+  - text: 新安汪机撰于嘉靖十年。
+    source: constructed
+    entities: [[新安, Place], [汪机, Physician], [嘉靖十年, Time]]
+  - text: 丹溪谓阳常有余，阴常不足，景岳非之。
+    source: constructed
+    entities: [[丹溪, Physician], [阳常有余, Theory], [阴常不足, Theory], [景岳, Physician]]
+  - text: 长沙方以桂枝汤为群方之冠。
+    source: constructed
+    entities: [[长沙, Physician], [桂枝汤, Formula]]
+  - text: 舌上白苔滑者，不可攻也。
+    source: 伤寒论
+    entities: [[舌上白苔滑, Tongue], [不可攻, Contraindication]]
+  - text: 病人不渴，无汗，不恶寒。
+    source: constructed
+    entities: [[不渴, Symptom], [无汗, Symptom], [不恶寒, Symptom]]
+  - text: 当归四两，远志一两。其人当归于正。
+    source: constructed (the second 当归 is a verb phrase, not a drug)
+    entities: [[当归, Herb], [四两, Dose], [远志, Herb], [一两, Dose]]
+  - text: 温病学派以叶桂为宗，吴门医家多宗之。
+    source: constructed
+    entities: [[温病学派, School], [叶桂, Physician], [吴门, Place]]
+  - text: 李杲，真定人，著《脾胃论》，倡甘温除热之法。
+    source: constructed
+    entities: [[李杲, Physician], [真定, Place], [脾胃论, Book], [甘温除热, Treatment]]
+  - text: 金元之际，河间刘完素倡火热之论。
+    source: constructed
+    entities: [[金元, Time], [河间, Place], [刘完素, Physician], [火热, Theory]]
+  - text: 湿热为病，身热不扬，胸闷，舌苔白腻，脉濡。
+    source: constructed
+    entities: [[湿热, Pathogenesis], [身热不扬, Symptom], [胸闷, Symptom], [舌苔白腻, Tongue], [脉濡, Pulse]]
+  - text: 伤于风者，上先受之。
+    source: 素问
+    entities: [[风, Etiology]]
+  - text: 感受湿邪，身重而痛。
+    source: constructed
+    entities: [[湿邪, Etiology], [身重, Symptom]]
+  - text: 此药有毒，孕妇忌服。
+    source: constructed
+    entities: [[孕妇忌服, Contraindication]]
+  - text: 忌生冷、油腻。
+    source: constructed
+    entities: [[忌生冷, Contraindication]]
+  - text: 为末，炼蜜为丸，如梧桐子大，每服三十丸，空心温酒送下。
+    source: constructed
+    entities: [[为末, Preparation], [炼蜜为丸, Preparation], [如梧桐子大, Preparation], [每服三十丸, Preparation], [空心, Preparation],
+               [温酒送下, Preparation]]
+  - text: 宋本作「桂枝」，成本作「桂心」。
+    source: constructed
+    entities: [[宋本, Edition], [桂枝, Herb], [成本, Edition], [桂心, Herb]]
+  - text: 一本作「茯苓」。
+    source: constructed
+    entities: [[一本, Edition], [茯苓, Herb]]
+  - text: 至道光二十年，王士雄避乱于钱塘。
+    source: constructed
+    entities: [[道光二十年, Time], [王士雄, Physician], [钱塘, Place]]
+  - text: 明代以后，命门之说盛行于江南。
+    source: constructed
+    entities: [[明代, Time], [命门, Theory], [江南, Place]]
+  - text: 日晡所发潮热，不恶寒。
+    source: 伤寒论
+    entities: [[日晡所, Time], [发潮热, Symptom], [不恶寒, Symptom]]
+  - text: 心下痞，按之濡，其脉关上浮者，大黄黄连泻心汤主之。
+    source: 伤寒论
+    entities: [[心下痞, Symptom], [按之濡, Sign], [脉关上浮, Pulse], [大黄黄连泻心汤, Formula]]
+  - text: 用小柴胡汤加减，去半夏，加栝楼根。
+    source: constructed
+    entities: [[小柴胡汤, Formula], [半夏, Herb], [栝楼根, Herb]]
+  - text: 此属阴虚，治宜滋阴降火。
+    source: constructed
+    entities: [[阴虚, Nature], [滋阴降火, Treatment]]
+  - text: 邪在半表半里，当和解之。
+    source: constructed
+    entities: [[半表半里, Location], [和解, Treatment]]
+  - text: 寸口脉浮而紧，浮则为风，紧则为寒。
+    source: 伤寒论·辨脉法
+    entities: [[寸口脉浮而紧, Pulse], [风, Etiology], [寒, Etiology]]
+  - text: 《伤寒论》宋本凡十卷。
+    source: constructed
+    entities: [[伤寒论, Book], [宋本, Edition]]
+  - text: 张仲景，南阳人，东汉建安中为长沙太守。
+    source: constructed
+    entities: [[张仲景, Physician], [南阳, Place], [东汉, Time], [建安中, Time], [长沙, Place]]
+  - text: 吴鞠通著《温病条辨》。
+    source: constructed
+    entities: [[吴鞠通, Physician], [温病条辨, Book]]
+  - text: 白虎汤方：知母六两，石膏一斤（碎），甘草二两（炙），粳米六合。
+    source: 伤寒论
+    entities: [[白虎汤, Formula], [知母, Herb], [六两, Dose], [石膏, Herb], [一斤, Dose], [碎, Preparation], [甘草, Herb], [二两, Dose],
+               [炙, Preparation], [粳米, Herb], [六合, Dose]]
+  - text: 李时珍，蕲州人，撰《本草纲目》。
+    source: constructed
+    entities: [[李时珍, Physician], [蕲州, Place], [本草纲目, Book]]
+  - text: 薛生白著《湿热条辨》。
+    source: constructed
+    entities: [[薛生白, Physician], [湿热条辨, Book]]

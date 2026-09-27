@@ -38,6 +38,7 @@ from .verification.hooks import install_default_hooks
 MODEL_PLUGIN_KEYS = {
     "taochronos.plugins.models.anthropic_provider": "anthropic",
     "taochronos.plugins.models.openai_compat": "openai_compat",
+    "taochronos.plugins.models.litellm_provider": "litellm",
     "taochronos.plugins.models.offline": "offline",
     "taochronos.plugins.models.scripted": "scripted",
 }
@@ -118,6 +119,12 @@ class Harness:
         )
         self.store = store if store is not None else self._open_store()
         self.artifacts = ArtifactManager(data_dir / "artifacts", self.hooks)
+        # a profile that names a judge has the study layer's uncertain decisions reviewed by it — when it is reachable
+        if (profile.judge or {}).get("provider") and self.capabilities.has("study"):
+            try:
+                self.capabilities.get("study").judge = self.judge("auto")
+            except ValueError:
+                pass  # no key or no model: the rules decide alone
 
     # ----------------------------------------------------------------- factory
     @classmethod
@@ -200,6 +207,84 @@ class Harness:
         from .engine.research import ResearchEngine
 
         return ResearchEngine(self)
+
+    # ------------------------------------------------------------------ judge
+    def llm_provider(self, name: str) -> Any:
+        """A registered LLM provider, or one made on the fly from an OpenAI-compatible preset (minimax, poe, qwen …)."""
+        if self.capabilities.has("llm", name):
+            return self.capabilities.get("llm", name)
+        from .plugins.models.openai_compat import PRESETS, OpenAICompatibleProvider
+
+        if name not in PRESETS:
+            known = sorted(set(self.capabilities.names("llm")) | set(PRESETS))
+            raise ValueError(f"unknown LLM provider {name!r}; known: {', '.join(known)}")
+        provider = OpenAICompatibleProvider(name, {"preset": name})
+        self.capabilities.register("llm", name, provider)
+        return provider
+
+    def use_llm(self, spec: str, *, tier: str = "frontier", classical_chinese: float = 0.7) -> tuple[str, str]:
+        """One model for everything a model does in this run (``--llm provider:model``): the judgement roles of research
+        are routed to it and it reviews rule decisions.  Returns (provider, model)."""
+        name, _, model = spec.partition(":")
+        provider = self.llm_provider(name)
+        if model and hasattr(provider, "add_model"):
+            provider.add_model(model, tier=tier, classical_chinese=classical_chinese)
+        elif not model:
+            models = [m for m in provider.models() if not m.deterministic]
+            if not models:
+                raise ValueError(f"name a model: --llm {name}:<model>")
+            model = models[0].name
+        self.profile.routing = {**(self.profile.routing or {}), "default_provider": name}
+        self.router.routing = self.profile.routing
+        self.profile.judge = {**(self.profile.judge or {}), "provider": name, "model": model, "tier": tier}
+        return name, model
+
+    def judge(self, spec: str | None = None, *, refresh: bool = False, max_calls: int | None = None,
+              max_cost_usd: float | None = None) -> Any:
+        """The model that reviews rule decisions: ``provider:model``, ``provider`` (its first model), ``auto`` (the
+        profile's ``judge``, else the best available model), or None for rules only."""
+        from datetime import date
+
+        from .capabilities.judge import Judge, JudgeBudget
+
+        cfg = dict(self.profile.judge or {})
+        spec = spec or cfg.get("spec")
+        if not spec or spec in ("none", "off", "rules"):
+            return None
+        if spec == "auto":
+            if cfg.get("provider"):
+                spec = f"{cfg['provider']}:{cfg['model']}" if cfg.get("model") else cfg["provider"]
+            else:
+                from .capabilities.llm import TIER_RANK
+
+                pool = [(p, m) for p, m in self.router.candidates() if TIER_RANK.get(m.tier, 0) >= TIER_RANK["medium"]]
+                if not pool:
+                    raise ValueError("no LLM provider is available for --llm auto: configure one (see `taochronos llm presets`)")
+                pool.sort(key=lambda pm: (-pm[1].classical_chinese, TIER_RANK.get(pm[1].tier, 0), pm[1].input_cost_per_mtok))
+                spec = f"{pool[0][0]}:{pool[0][1].name}"
+        name, _, model = spec.partition(":")
+        provider = self.llm_provider(name)
+        if model:
+            add = getattr(provider, "add_model", None)
+            if add is not None:
+                add(model, tier=cfg.get("tier", "medium"), classical_chinese=float(cfg.get("classical_chinese", 0.5)))
+            elif model not in {m.name for m in provider.models()}:
+                raise ValueError(f"{name} does not offer {model!r}")
+        else:
+            models = [m for m in provider.models() if not m.deterministic]
+            if not models:
+                examples = getattr(provider, "examples", [])
+                hint = f" (e.g. {name}:{examples[0]})" if examples else ""
+                raise ValueError(f"name a model for {name}: --llm {name}:<model>{hint}")
+            model = models[0].name
+        if not provider.available():
+            env = getattr(provider, "api_key_env", None)
+            raise ValueError(f"{name} is not available" + (f": set {env}" if env else ""))
+        budget = JudgeBudget(max_calls=int(max_calls or cfg.get("max_calls", 200)),
+                             max_cost_usd=float(max_cost_usd or cfg.get("max_cost_usd", 5.0)))
+        return Judge(provider, model, cache_dir=self.data_dir / "llm-cache", budget=budget, refresh=refresh,
+                     log_path=self.data_dir / "llm-log" / f"{date.today().isoformat()}.jsonl",
+                     temperature=cfg.get("temperature", 0.0))
 
     def describe(self) -> dict[str, Any]:
         return {

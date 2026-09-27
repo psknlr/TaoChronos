@@ -1,0 +1,20 @@
+# The full corpus with MiniMax models (the mainland platform, platform.minimax.cn): the judgement roles of research run
+# on them, and the judge reviews what the rules could not settle.  Set MINIMAX_API_KEY; outside mainland China set
+# MINIMAX_BASE_URL=https://api.minimax.io/v1 (or use `preset: minimax-global`).  Model names change: check them in the
+# console, and set input/output prices (per million tokens) to have costs counted against the budget.
+name: minimax
+extends: full-corpus
+description: Full-corpus research and study with MiniMax models (mainland platform) as the reasoning models and the judge.
+routing:
+  default_provider: minimax
+models:
+  openai_compat:
+    providers:
+      minimax:
+        preset: minimax
+        models:
+          - {name: MiniMax-M3, tier: frontier, context_window: 1000000, classical_chinese: 0.8, reasoning: true}
+          - {name: MiniMax-M2.7, tier: medium, classical_chinese: 0.75, reasoning: true}
+          - {name: MiniMax-M2.7-highspeed, tier: small, classical_chinese: 0.7}
+judge: {provider: minimax, model: MiniMax-M2.7, max_calls: 300, max_cost_usd: 5.0}
+budget: {max_llm_calls: 300, max_cost_usd: 10.0}

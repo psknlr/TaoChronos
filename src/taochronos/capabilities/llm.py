@@ -29,12 +29,26 @@ class ToolResultBlock:
 
 
 @dataclass
+class ImageBlock:
+    """An image for a multimodal model: raw bytes and their media type (image/png, image/jpeg …)."""
+
+    data: bytes
+    media_type: str = "image/png"
+
+    def data_url(self) -> str:
+        import base64
+
+        return f"data:{self.media_type};base64," + base64.b64encode(self.data).decode("ascii")
+
+
+@dataclass
 class Message:
     role: str  # user | assistant
     text: str = ""
     tool_uses: list[ToolUse] = field(default_factory=list)
     tool_results: list[ToolResultBlock] = field(default_factory=list)
     raw: Any = None  # provider-native content to replay unchanged (e.g. thinking blocks)
+    images: list[ImageBlock] = field(default_factory=list)  # user turns only
 
 
 @dataclass
@@ -53,6 +67,8 @@ class LLMRequest:
     max_tokens: int = 16000
     effort: str | None = None  # low | medium | high | xhigh | max
     metadata: dict[str, Any] = field(default_factory=dict)
+    temperature: float | None = None  # None: the provider's default
+    json: bool = False  # ask for one JSON object (response_format where the endpoint supports it)
 
 
 @dataclass

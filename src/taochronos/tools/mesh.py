@@ -547,6 +547,15 @@ def _study_names(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(_study(ctx).names(a["term"]), int(a.get("items", 20)))
 
 
+def _study_entities(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).entities(a.get("text"), a.get("passage_id"))
+    for e in res.get("entities", []):
+        for key in ("start", "end", "rule", "label"):
+            e.pop(key, None)
+    res.pop("types", None)
+    return _brief(res, int(a.get("items", 60)))
+
+
 def _study_schools(ctx: ToolContext, a: dict[str, Any]) -> Any:
     probes = a.get("probes") or []
     return _brief(_study(ctx).schools(a.get("school"), probes=[probes] if isinstance(probes, str) else probes),
@@ -768,6 +777,13 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  obj({"school": S, "probes": {"type": "array", "items": S}, "items": I}), _study_schools, family="study",
                  permission="classics:read", expensive=True,
                  returns="members and works, distinctive words, formulas, citations, homophily, rejections, lineage"),
+        ToolSpec("study.entities", "实体识别 (T7): the entities of a text or passage in context — Disease, Syndrome, Symptom, Sign, "
+                 "Pulse, Tongue, Etiology, Pathogenesis, Location, Nature, Treatment, Formula, Herb, Dose, Preparation, "
+                 "Contraindication, Physician, Commentator, School, Theory, Book, Edition, Place, Time — from the lexicon, "
+                 "physicians, schools, places, eras and patterns; negated findings flagged; ambiguous spans kept with their "
+                 "alternatives (typed by the model when one reviews the study layer).",
+                 obj({"text": S, "passage_id": S, "items": I}), _study_entities, family="study", permission="classics:read",
+                 returns="entities with type, reference, source, ambiguity and negation; counts by type"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

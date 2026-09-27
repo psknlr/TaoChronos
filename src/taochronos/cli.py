@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -26,8 +27,36 @@ def _harness(args: argparse.Namespace, **kw: Any) -> Any:
         overrides["routing"] = {"default_provider": args.provider}
     if getattr(args, "parallel", None):
         overrides["context"] = {"max_parallel_agents": args.parallel}
-    return Harness.from_profile(getattr(args, "profile", None) or "full-discovery", home=args.home, data_dir=args.data,
-                                overrides=overrides or None, **kw)
+    harness = Harness.from_profile(getattr(args, "profile", None) or "full-discovery", home=args.home, data_dir=args.data,
+                                   overrides=overrides or None, **kw)
+    if getattr(args, "llm", None) and args.llm not in ("auto", "none", "off", "rules"):
+        try:
+            harness.use_llm(args.llm)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+    return harness
+
+
+def _judge(args: argparse.Namespace, harness: Any) -> Any:
+    """The model that reviews rule decisions for this command (``--llm``), or None: rules only."""
+    spec = getattr(args, "llm", None)
+    if not spec and not (harness.profile.judge or {}).get("provider"):
+        return None
+    try:
+        return harness.judge("auto" if spec in (None, "auto") else ("none" if spec in ("none", "off", "rules") else spec),
+                             refresh=getattr(args, "llm_refresh", False), max_calls=getattr(args, "llm_max_calls", None),
+                             max_cost_usd=getattr(args, "llm_max_cost", None))
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+
+
+def _llm_args(sp: argparse.ArgumentParser) -> None:
+    sp.add_argument("--llm", help="rules screen, a model reviews: provider:model (minimax:MiniMax-M2.7, poe:claude-sonnet-4.6, "
+                                  "litellm:deepseek/deepseek-chat, anthropic:claude-opus-5 …), auto (the profile's judge), "
+                                  "or none; see `taochronos llm presets`")
+    sp.add_argument("--llm-max-calls", type=int, help="most model calls for this command (default 200)")
+    sp.add_argument("--llm-max-cost", type=float, help="most model cost in USD for this command (default 5)")
+    sp.add_argument("--llm-refresh", action="store_true", help="ask again instead of reading cached answers")
 
 
 def _session(args: argparse.Namespace) -> tuple[Any, Any, Any]:
@@ -761,7 +790,7 @@ def cmd_eval(args: argparse.Namespace) -> None:
 STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
          "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship", "cases",
          "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate", "commentaries", "disputes",
-         "clause", "glosses", "pairs", "network", "schools", "names", "chain")
+         "clause", "glosses", "pairs", "network", "schools", "names", "chain", "entities")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -776,6 +805,7 @@ def cmd_study(args: argparse.Namespace) -> None:
         args.profile = "full-corpus" if (data / "corpus" / "tcm.sqlite").exists() else "full-discovery"
     harness = _harness(args)
     study = harness.capabilities.get("study")
+    study.judge = _judge(args, harness)
     what, target = args.what, " ".join(args.target).strip() or None
     needs = {"formula": "a formula name", "herb": "a drug name", "term": "a term", "reading": "a topic", "metrology": "a dose"}
     if what in needs and not target:
@@ -866,6 +896,11 @@ def cmd_study(args: argparse.Namespace) -> None:
         if not (target or args.passage):
             raise SystemExit("taochronos study chain: give a text or --passage <id>")
         res = study.chain(target, args.passage)
+    elif what == "entities":
+        text = Path(args.input).read_text(encoding="utf-8") if args.input else target
+        if not (text or args.passage):
+            raise SystemExit("taochronos study entities: give a text, --input <file> or --passage <id>")
+        res = study.entities(text, args.passage)
     elif what == "names":
         if not target:
             raise SystemExit("taochronos study names: give a drug, formula or disease (e.g. 山药)")
@@ -934,6 +969,50 @@ def cmd_demo(args: argparse.Namespace) -> None:
     cmd_research(args)
 
 
+def cmd_llm(args: argparse.Namespace) -> None:
+    """Model providers: which are configured and reachable, the presets, and a one-call test."""
+    from .plugins.models.openai_compat import PRESETS
+
+    if args.action == "presets":
+        rows = []
+        for name, p in PRESETS.items():
+            key = p.get("api_key_env")
+            rows.append({"preset": name, "base_url": p["base_url"], "key": key, "key_set": bool(key and os.environ.get(key)),
+                         "examples": p.get("examples", [])})
+        _out({"presets": rows, "litellm": {"package": _has_module("litellm"),
+                                           "use": "--llm litellm:<provider>/<model> (package) or a proxy base_url in a profile"},
+              "usage": "taochronos llm test minimax:MiniMax-M2.7 · taochronos study punctuate --llm poe:claude-sonnet-4.6 …"})
+        return
+    harness = _harness(args)
+    if args.action == "list":
+        rows = []
+        for name in harness.capabilities.names("llm"):
+            prov = harness.capabilities.get("llm", name)
+            rows.append({"provider": name, "available": prov.available(), "deterministic": getattr(prov, "deterministic", False),
+                         "key": getattr(prov, "api_key_env", None),
+                         "models": [{"name": m.name, "tier": m.tier, "classical_chinese": m.classical_chinese} for m in prov.models()]})
+        _out({"providers": rows, "judge": harness.profile.judge or None})
+        return
+    # test: one small structured call
+    if not args.spec:
+        raise SystemExit("taochronos llm test <provider:model>, e.g. minimax:MiniMax-M2.7")
+    try:
+        judge = harness.judge(args.spec, refresh=True)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    res = judge.ask("llm.test", "You answer in JSON.", "「太阳之为病，脉浮，头项强痛而恶寒。」这句话里提到了哪一种脉象？"
+                    "Answer as {\"pulse\": \"…\"}.", schema={"type": "object", "required": ["pulse"],
+                                                          "properties": {"pulse": {"type": "string"}}})
+    _out({"judge": judge.label, "ok": res.ok, "answer": res.data, "error": res.error, "latency_ms": res.latency_ms,
+          "tokens": {"input": res.input_tokens, "output": res.output_tokens}, "cost_usd": round(res.cost_usd, 6)})
+
+
+def _has_module(name: str) -> bool:
+    import importlib.util
+
+    return importlib.util.find_spec(name) is not None
+
+
 # ------------------------------------------------------------------ parser
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="taochronos", description=f"{AGENT_NAME}: evidence-native knowledge discovery in Chinese medical classics")
@@ -952,6 +1031,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     add("info", cmd_info, "describe the harness (plugins, capabilities, agents, providers)")
     add("profiles", cmd_profiles, "list profiles", profile=False)
+    sp = add("llm", cmd_llm, "model providers: list the configured ones, show the presets, or test one with a single call")
+    sp.add_argument("action", choices=["list", "presets", "test"])
+    sp.add_argument("spec", nargs="?", help="test: provider:model (minimax:MiniMax-M2.7, poe:claude-sonnet-4.6, litellm:deepseek/deepseek-chat …)")
     add("agents", cmd_agents, "list agent specs and their current routes")
     sp = add("corpus", cmd_corpus, "list the corpus, or fetch / unpack / catalog / ingest / status / reindex the full-corpus store")
     sp.add_argument("action", nargs="?", default="list",
@@ -986,6 +1068,7 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--forbid", action="append", help="forbidden assumption (repeatable), e.g. 消渴=糖尿病")
         sp.add_argument("--parallel", type=int, help="run up to N independent agents concurrently")
         sp.add_argument("--session", help="session id")
+        _llm_args(sp)
         if name == "research":
             sp.add_argument("--tracks", help="comma-separated tracks, e.g. D1,D2,D5")
             sp.add_argument("--holdout-after", type=int, help="hide texts dated ≥ this year (Historical Time Machine)")
@@ -1035,14 +1118,15 @@ def build_parser() -> argparse.ArgumentParser:
                                       "版本谱系 (variants/stemma/edition/tei), 语义复用 (reuse), 思想传播 (transmission), "
                                       "文本地层 (layers/dating/authorship), 医案轨迹 (cases/trajectories), 医理论证 (argument), "
                                       "语义演变 (senses), 佚书辑佚 (fragments), 句读 (punctuate), 集注 (commentaries), 争议 (disputes), "
-                                      "条文结构 (clause), 训诂 (glosses), 配伍 (pairs), 方证网络 (network)")
+                                      "条文结构 (clause), 训诂 (glosses), 配伍 (pairs), 方证网络 (network), 学派 (schools), 名称 (names), "
+                                      "传播链 (chain), 实体识别 (entities)")
     sp.set_defaults(fn=cmd_study)
     sp.add_argument("what", choices=STUDY)
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
     sp.add_argument("--profile", help="default: full-corpus when the corpus store exists, else full-discovery (demo corpus)")
     sp.add_argument("--provider", help=argparse.SUPPRESS)
     sp.add_argument("--passage", help="concordance/reuse/argument/punctuate/chain: a passage id instead of a text")
-    sp.add_argument("--input", help="punctuate: read the text from this file")
+    sp.add_argument("--input", help="punctuate/entities: read the text from this file")
     sp.add_argument("--person", help="disputes: the physician whose views are disputed (e.g. 丹溪)")
     sp.add_argument("--period", help="pairs: only the compositions of this period (e.g. 宋金元)")
     sp.add_argument("--probe", action="append", help="schools: also report this word for the school (repeatable, e.g. 相火)")
@@ -1078,6 +1162,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--candidate", action="append", help="authorship: a candidate work or book id (repeatable)")
     sp.add_argument("--json", action="store_true", help="print the full result as JSON")
     sp.add_argument("-o", "--output", help="write to this file (dataset: this directory)")
+    _llm_args(sp)
     sp = add("codemode", cmd_codemode, "run a Research Code Mode program against the SDK")
     sp.add_argument("file", nargs="?")
     add("sdk", cmd_sdk, "print the Research SDK reference (Code Mode)")

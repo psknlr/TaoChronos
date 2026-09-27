@@ -411,6 +411,7 @@ def test_results_match_the_schemas_of_the_task_specification(pack, study, commen
         "clause": study.clause("太阳病，头痛，发热，汗出，恶风，桂枝汤主之。"),
         "claims": tool("kg.extract_claims", {"passage_id": pid}),
         "names": study.names("山药"),
+        "entities": study.entities("成无己注曰：太阳病，脉浮，不恶寒，桂枝汤主之。桂枝三两（去皮）。"),
         "glosses": commentary_study.glosses("几几"),
         "concordance": commentary_study.concordance("太阳之为病，脉浮，头项强痛而恶寒。"),
         "variants": commentary_study.variants("shanghanlun"),
@@ -433,3 +434,55 @@ def test_results_match_the_schemas_of_the_task_specification(pack, study, commen
     assert set(results) == set(STUDY_SCHEMAS)
     for name, result in results.items():
         assert not validate(result, STUDY_SCHEMAS[name]), (name, validate(result, STUDY_SCHEMAS[name])[:5])
+
+
+# ------------------------------------------------------------------ 实体识别 (T7)
+def test_entities_in_context(study):
+    r = study.entities("成无己注曰：太阳病，脉阴阳俱紧，不恶寒，桂枝汤主之。桂枝三两（去皮）。河间刘完素，长沙方，当归于正。")
+    got = {(e["text"], e["type"]) for e in r["entities"]}
+    assert {("成无己", "Commentator"), ("太阳病", "Disease"), ("脉阴阳俱紧", "Pulse"), ("不恶寒", "Symptom"),
+            ("桂枝汤", "Formula"), ("桂枝", "Herb"), ("三两", "Dose"), ("去皮", "Preparation"), ("河间", "Place"),
+            ("刘完素", "Physician"), ("长沙", "Physician")} <= got
+    negated = [e for e in r["entities"] if e.get("negated")]
+    assert [e["text"] for e in negated] == ["不恶寒"]
+    danggui = [e for e in r["entities"] if e["text"] == "当归"]
+    assert danggui and danggui[0]["ambiguous"] and "none" in danggui[0]["alternatives"]  # a verb, not the drug, here
+    assert all(r["text"][e["start"]:e["end"]] == e["text"] for e in r["entities"])
+
+
+def test_entities_the_model_types_the_ambiguous_and_adds_what_rules_missed(study):
+    import json
+
+    from taochronos.capabilities.judge import Judge
+    from taochronos.capabilities.llm import LLMResponse, Usage
+    from taochronos.plugins.models.scripted import ScriptedProvider
+
+    def answer(request):
+        text = request.messages[0].text
+        if text.startswith("原文："):
+            body = {"entities": [{"text": "默默不欲饮食", "type": "Symptom"}, {"text": "不在此句", "type": "Symptom"}]}
+        else:
+            rows = json.loads(text.split("：\n", 1)[1].split("\n\nReturn only")[0])
+            body = {"decisions": [{"id": r["id"], "label": "none" if "【当归】于" in r["context"] else r["rule_type"]} for r in rows]}
+        return LLMResponse(text=json.dumps(body, ensure_ascii=False), tool_uses=[], stop_reason="end_turn", usage=Usage(1, 1), model="m")
+
+    study.judge = Judge(ScriptedProvider([answer] * 10), "m")
+    try:
+        r = study.entities("胸胁苦满，默默不欲饮食。其人当归于正。")
+    finally:
+        study.judge = None
+    texts = {e["text"]: e for e in r["entities"]}
+    assert "当归" not in texts  # the model said: not an entity here
+    added = texts["默默不欲饮食"]
+    assert added["extraction"] == "model" and r["text"][added["start"]:added["end"]] == "默默不欲饮食"
+    assert "不欲饮食" not in texts and added["replaces"]  # the model's longer span took the place of the rule's
+    assert r["llm_review"]["added"] == 1 and r["llm_review"]["summary"]["changed"] == 1
+    assert any("不在此句" in f for f in r["llm_review"]["recall_failures"])  # a span not in the text is dropped
+
+
+def test_entities_through_the_tool_and_the_cli(harness, capsys, tmp_path):
+    out = harness.scheduler.execute(ToolCall("study.entities", {"text": "太阳病，发热，桂枝汤主之。"}), actor=Actor.kernel())
+    assert out.ok and {e["type"] for e in out.result["entities"]} >= {"Disease", "Symptom", "Formula"}
+    assert main(["--data", str(tmp_path), "study", "entities", "太阳病，发热，桂枝汤主之。"]) == 0
+    page = capsys.readouterr().out
+    assert page.startswith("# 实体识别") and "【桂枝汤｜方剂】" in page

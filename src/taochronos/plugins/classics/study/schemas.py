@@ -76,6 +76,14 @@ STUDY_SCHEMAS: dict[str, dict[str, Any]] = {
         "equations": arr(obj({"names": STRS, "year": NN, "witness": WITNESS}, ["names", "witness"])),
         "candidates": arr(obj({"name": S, "passages": I, "works": I, "first": WITNESS}, ["name", "passages", "works", "first"]))},
         ["term", "names", "periods", "switches", "equations", "candidates"]),
+    # T7 实体识别
+    "entities": obj({
+        "text": S, "types": STRS,
+        "entities": arr(obj({"id": S, "start": I, "end": I, "text": S, "type": S, "label": S, "ref": NS, "source": S, "rule": S,
+                             "ambiguous": B, "alternatives": STRS, "negated": B, "extraction": {"enum": ["rule", "model"]},
+                             "decided_by": S}, ["id", "start", "end", "text", "type", "source", "ambiguous", "extraction"])),
+        "counts": {"type": "object"}, "ambiguous": I, "llm_review": {"type": "object"}},
+        ["text", "entities", "counts"]),
     # T10 训诂
     "glosses": obj({
         "term": NS, "book": NS, "count": I,

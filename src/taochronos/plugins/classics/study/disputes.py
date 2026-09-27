@@ -94,6 +94,12 @@ class DisputeStudy:
         records.sort(key=lambda r: (dated(r["years"]), r["book_id"], r["passage_id"]))
         later = [r for r in records if r["later_layer"]]  # a physician named before he lived: a later layer's note
         records = [r for r in records if not r["later_layer"]]
+        review = None
+        if self.b.judge is not None and records:
+            from .review import review_disputes
+
+            summary, rows = review_disputes(self.b.judge, records)
+            review = {"summary": summary, "decisions": rows[:200], "judge": self.b.judge.label}
         rejects = [r for r in records if r["stance"] == "reject"]
         pairs: Counter = Counter((r["by"], r["target"]) for r in rejects)
         by_period: dict[str, Counter] = defaultdict(Counter)
@@ -109,6 +115,7 @@ class DisputeStudy:
             "by_period": {k: dict(v) for k, v in by_period.items()},
             "about": [{"concept": c, "count": n} for c, n in about.most_common(20)],
             "later_layers": later[:40],
+            **({"llm_review": review} if review is not None else {}),
             "note": "a dispute is a named, reported view followed by a rejection word in the same or the next sentence; "
                     "read each sentence — a marker can belong to the quoted text, and disputes without names are missed",
         }

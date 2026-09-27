@@ -471,7 +471,7 @@ class CommentaryStudy:
         for u in units:
             u.pop("_han", None)
             u.pop("_masked", None)
-        return {
+        out = {
             "clause": conc["query"], "normalized": clause, "base_work": base_work, "concepts_in_clause": sorted(in_clause),
             "commentaries": units, "count": n, "relations": relations, "consensus": consensus, "unique": unique[:80],
             "first_readings": sorted(first.values(), key=lambda r: (-r["followed_by"], r["commentary"]))[:60],
@@ -479,6 +479,13 @@ class CommentaryStudy:
             "note": "relations of content (同解, 增益, 异解) and wording (照录, 承袭) are computed, not read: check the quotes; "
                     "驳 and 从 need a named predecessor and a marker word in the sentence after the name",
         }
+        if self.b.judge is not None and units:
+            from .review import summarize_commentaries
+
+            summary = summarize_commentaries(self.b.judge, out)
+            if summary is not None:
+                out["llm_summary"] = summary
+        return out
 
     def _one_per_commentary(self, units: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Transcriptions of one commentary (several copies of 伤寒论条辨) are one commentary.  The copy that stands for
