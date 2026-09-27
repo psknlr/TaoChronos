@@ -5,7 +5,8 @@ full-corpus harness spent 26 of its 29 seconds in the YAML scanner.  Every YAML 
 :func:`loads_yaml`, which key the parsed value by the SHA-256 of the bytes and keep it in a local cache — so an edited
 file is simply another key, and a stale entry can never be read.  The cache lives in ``$TAOCHRONOS_CACHE`` (``off``
 turns it off), else ``$XDG_CACHE_HOME/taochronos``, else ``~/.cache/taochronos``; it holds only values this module
-parsed, as pickled plain data, and it is safe to delete at any time.  The C loader is used when PyYAML has one.
+parsed, as pickled plain data, and it is safe to delete at any time.  The C loader is used when PyYAML has one; a
+document an older libyaml refuses is read by the Python loader (both give the same value wherever both read it).
 """
 
 from __future__ import annotations
@@ -36,7 +37,13 @@ def cache_dir() -> Path | None:
 
 
 def _parse(raw: bytes) -> Any:
-    return yaml.load(raw.decode("utf-8"), Loader=_LOADER)  # noqa: S506 — a safe loader (CSafeLoader or SafeLoader)
+    text = raw.decode("utf-8")
+    if _LOADER is not yaml.SafeLoader:
+        try:
+            return yaml.load(text, Loader=_LOADER)  # noqa: S506 — CSafeLoader, a safe loader
+        except yaml.YAMLError:
+            pass  # an older libyaml refuses plain scalars the Python loader reads (``[modern:x]`` in a flow sequence)
+    return yaml.load(text, Loader=yaml.SafeLoader)  # noqa: S506
 
 
 def _cached(raw: bytes) -> Any:

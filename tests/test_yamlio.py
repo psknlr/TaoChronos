@@ -31,6 +31,19 @@ def test_a_damaged_entry_is_parsed_again_and_the_cache_can_be_switched_off(tmp_p
     assert yamlio.cache_dir() is None and yamlio.load_yaml(f) == {"k": "v"}
 
 
+def test_a_document_the_c_loader_refuses_is_read_by_the_python_loader(tmp_path, monkeypatch):
+    import yaml
+
+    class Refusing(yaml.SafeLoader):  # stands in for an older libyaml's CSafeLoader
+        def __init__(self, stream):
+            raise yaml.scanner.ScannerError("while scanning a plain scalar", None, "found unexpected ':'", None)
+
+    monkeypatch.setenv("TAOCHRONOS_CACHE", "off")
+    monkeypatch.setattr(yamlio, "_LOADER", Refusing)
+    assert yamlio.loads_yaml("candidates: [modern:polydipsia, modern:diabetes_mellitus]\n") == {
+        "candidates": ["modern:polydipsia", "modern:diabetes_mellitus"]}
+
+
 def test_the_fast_serialiser_writes_what_the_general_one_did(research):
     """to_jsonable's fast paths (exact types first, field names cached per type) change nothing it produces."""
     import dataclasses
