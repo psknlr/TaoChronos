@@ -20,7 +20,7 @@ from ...protocol.confidence import ConfidenceVector
 from ...protocol.documents import YearRange
 from ...protocol.events import EventType
 from ...protocol.evidence import EvidenceRecord, Stance
-from ...protocol.hypothesis import Hypothesis, Prediction
+from ...protocol.hypothesis import NARROWING_AXIS, Hypothesis, Prediction
 from .common import cluster_fn, evidence_from_claim, evidence_record, locate, surface, year_fn
 
 OUTPUT = "HypothesisSet"
@@ -399,17 +399,28 @@ def _confidence(ctx: Any, records: list[EvidenceRecord], obs: list[Any]) -> Conf
     need = ctx.goal.required_evidence.min_independent_sources if ctx.goal else 2
     clusters = {cluster(r.book_id) for r in records}
     base = ConfidenceVector.mean([r.confidence for r in records])
-    stats = [o.statistics for o in obs]
-    p_values = [s.get("p_value") or s.get("p_absence") or s.get("empirical_p") for s in stats]
-    p_values = [p for p in p_values if isinstance(p, (int, float))]
-    statistical = round(max(0.0, 1.0 - min(p_values)), 4) if p_values else None
     dated = [r for r in records if r.temporal and r.temporal.effective() is not None]
+    # no "statistical confidence": 1 − p is not the probability that a hypothesis is true.  The statistics travel as a
+    # record on the hypothesis (``statistics``: method, null, effect and interval, n, source families, correction).
     return ConfidenceVector(
         textual=base.textual, philological=base.philological, semantic=base.semantic, extraction=base.extraction,
         cross_source=round(min(1.0, len(clusters) / max(1, need)), 4),
         temporal=round(len(dated) / len(records), 4) if records else None,
-        statistical=statistical, modern_mapping=None,
+        statistical=None, modern_mapping=None,
     )
+
+
+STATISTIC_KEYS = ("method", "null", "effect", "interval", "p_value", "p_absence", "empirical_p", "p_value_naive", "bh_significant",
+                  "fdr", "n", "clusters", "correction", "sensitivity", "absence", "test")
+
+
+def statistics_record(observations: list[Any]) -> dict[str, Any]:
+    """The statistical record a hypothesis inherits from its observations (the first that has one)."""
+    for o in observations:
+        rec = {k: o.statistics[k] for k in STATISTIC_KEYS if k in o.statistics}
+        if rec:
+            return {"observation": o.id, **rec}
+    return {}
 
 
 def _commit_generate(ctx: Any, output: dict[str, Any]) -> str:
@@ -465,6 +476,7 @@ def _commit_generate(ctx: Any, output: dict[str, Any]) -> str:
             testable_prediction=item.get("testable_prediction", ""),
             predictions=predictions,
             confidence=_confidence(ctx, records, [state.observations[o] for o in obs_ids]),
+            statistics=statistics_record([state.observations[o] for o in obs_ids]),
             space=KnowledgeSpace(item.get("space") or KnowledgeSpace.COMPUTATIONAL_HYPOTHESIS.value),
             generated_by=ctx.actor.id,
             round=ctx.task.round,
@@ -483,7 +495,26 @@ def _commit_generate(ctx: Any, output: dict[str, Any]) -> str:
     return f"{len(made)} hypotheses (" + ", ".join(f"{k}×{v}" for k, v in sorted(kinds.items())) + f"); {dropped} dropped"
 
 
+RESTRICTING_AXES = frozenset(NARROWING_AXIS.values())
+
+
+def revision_kind(parent: Any, statement: str, terms: list[str], kind: str, qualifiers: dict[str, Any]) -> tuple[str, list[str]]:
+    """A revision is *restricting* when it keeps the claim (kind, terms) and only narrows it along known axes (scope,
+    sense, reading, status, tradition, level): the evidence that bore the parent still bears it.  Anything else — other
+    terms, another kind, a qualifier on an axis that is not a narrowing — is *substantive*: a new claim that must earn its
+    own support.  Returns (kind, changed fields)."""
+    changed = [f for f, a, b in (("statement", parent.statement, statement), ("terms", sorted(parent.terms), sorted(terms)),
+                                 ("kind", parent.kind, kind), ("qualifiers", parent.qualifiers, qualifiers)) if a != b]
+    narrowing = set(qualifiers) <= RESTRICTING_AXES and all(parent.qualifiers.get(k) in (None, v) for k, v in qualifiers.items())
+    substantive = "terms" in changed or "kind" in changed or not narrowing or ("statement" in changed and "qualifiers" not in changed)
+    return ("substantive" if substantive else "restricting"), changed
+
+
 def _commit_revise(ctx: Any, output: dict[str, Any]) -> str:
+    """Revisions are typed.  A restricting revision narrows the parent and keeps its evidence; a substantive one is a new
+    hypothesis: it keeps no evidence, verdict or gate of the parent and must cite its own support.  Either way the
+    parent's gates and reviews do not carry over (they were computed on another version), and the child's id is derived
+    from its content — the statement included — so two different revisions never share an id."""
     state = ctx.state
     made, dropped = 0, 0
     for item in output.get("revisions", []):
@@ -492,9 +523,24 @@ def _commit_revise(ctx: Any, output: dict[str, Any]) -> str:
             dropped += 1
             continue
         qualifiers = {k: v for k, v in (item.get("qualifiers") or {}).items() if v is not None}
+        terms = list(item.get("terms") or parent.terms)
+        kind_, changed = revision_kind(parent, item["statement"], terms, item.get("kind") or parent.kind, qualifiers)
+        support = list(parent.supporting_evidence) if kind_ == "restricting" else []
+        if kind_ == "substantive":
+            records = []
+            for s_ in item.get("support", []) or []:
+                span = locate(ctx, s_.get("passage_id", ""), s_.get("quote", ""))
+                if span is not None:
+                    records.append(evidence_record(ctx, s_["passage_id"], span[0], span[1], method="revision:citation",
+                                                   stance=Stance.SUPPORTS, hypothesis_id=None))
+            if not records:
+                dropped += 1  # a new claim without its own verified support is not committed (evidence-first)
+                continue
+        child_id = stable_id("hyp", parent.id, "rev", parent.generation + 1, qualifiers, item["statement"], sorted(terms))
         child = parent.replace(
-            id=stable_id("hyp", parent.id, "rev", parent.generation + 1, qualifiers),
+            id=child_id,
             statement=item["statement"],
+            terms=terms,
             status="proposed",
             generation=parent.generation + 1,
             parent_id=parent.id,
@@ -502,14 +548,22 @@ def _commit_revise(ctx: Any, output: dict[str, Any]) -> str:
             qualifiers=qualifiers,
             alternative_explanations=list(item.get("alternative_explanations") or parent.alternative_explanations),
             testable_prediction=item.get("testable_prediction") or parent.testable_prediction,
-            scores=None, discovery_score=None, discovery_components={}, elo=parent.elo,
+            supporting_evidence=support, contradictory_evidence=list(parent.contradictory_evidence) if kind_ == "restricting" else [],
+            scores=None, discovery_score=None, discovery_components={}, elo=parent.elo, warrant_id=None, confirmation={},
+            revision_kind=kind_, changed_fields=changed,
+            invalidated=[f"gates of {parent.id}", f"reviews of {parent.id}"] + ([f"evidence of {parent.id}"] if kind_ == "substantive" else []),
             generated_by=ctx.actor.id, round=ctx.task.round,
         )
+        if kind_ == "substantive":
+            records = [r.replace(id=stable_id("evd", "revision", child_id, r.passage_id, r.start, r.end), hypothesis_id=child_id) for r in records]
+            child = child.replace(supporting_evidence=[r.id for r in records], generation=0)
         verdict = ctx.hook(HookPoint.AFTER_HYPOTHESIS, child, subject_id=child.id)
         if not verdict.allow:
             dropped += 1
             continue
         ctx.emit(EventType.HYPOTHESIS_REVISED, {"hypothesis": child.to_dict()}, generated=[child.id], used=[parent.id])
+        if kind_ == "substantive":
+            ctx.emit(EventType.EVIDENCE_RETRIEVED, {"records": [r.to_dict() for r in records]}, generated=[r.id for r in records])
         made += 1
     return f"{made} hypotheses revised; {dropped} revisions dropped"
 

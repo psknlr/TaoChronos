@@ -1,0 +1,4 @@
+- book: kezhu
+  passages:
+    - {id: kezhu.001, locator: {volume: 卷一}, punctuation: none, text: 太阳之为病脉浮头项强痛而恶寒（六经各立病机一条太阳主表故表证表脉独太阳得其全）太阳病发热汗出恶风脉缓者名为中风（喻氏之说甚是风寒皆伤营卫而卫先受之）}
+    - {id: kezhu.002, locator: {volume: 卷一}, punctuation: none, text: 太阳病或已发热或未发热必恶寒体痛呕逆脉阴阳俱紧者名为伤寒（寒邪伤营营血凝滞故体痛而脉紧）太阳病头痛发热汗出恶风桂枝汤主之}

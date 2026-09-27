@@ -1,0 +1,16 @@
+id: S02
+key: document_vision
+name: 影像与版面 Document Vision
+version: 1.0.0
+owner: classical_scholar
+description: Read a page image or an OCR engine's output into a PageGraph (reading order, 双行小注, 版心, 书眉) and compare the text with the store.
+inputs: [page]
+outputs: [page_graph]
+dependencies: []
+requires_llm: optional
+deterministic_steps: [layout from boxes (vertical, right to left), double-line notes paired, apparatus set apart, CER against the store]
+llm_steps: [a multimodal model's transcription, checked for added punctuation and compared with the store]
+calls:
+  - {tool: vision.layout, args: {path: "{page}"}, when: page}
+validators: [the model's reading is compared, never taken as a transcription]
+evaluation: {suites: [layout]}

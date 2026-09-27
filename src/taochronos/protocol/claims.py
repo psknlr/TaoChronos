@@ -103,6 +103,16 @@ class Claim(Model):
     confidence: ConfidenceVector = field(default_factory=ConfidenceVector)
     status: str = "extracted"
     tags: list[str] = field_list()
+    # the statement's frame, read from the text (verification/support.py): who says it, whether the author endorses
+    # it, under which conditions, negations and time — so 「某家以为……然余不取」 is not filed as the author's own view
+    speaker: str = ""  # author | a quoted book or person | unnamed other (或曰)
+    quoted_from: str = ""
+    stance: str = ""  # asserted | reported | rejected
+    conditions: list[str] = field_list()
+    negation_scope: list[dict] = field_list()
+    temporal_scope: list[str] = field_list()
+    textual_context: str = ""  # textual | clinical
+    support: dict = field_dict()  # {verdict: supports|contradicts|insufficient|ambiguous, cues, explanation}
 
     def args(self, *roles: Role) -> list[ClaimArgument]:
         return [a for a in self.arguments if not roles or a.role in roles]

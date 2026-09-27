@@ -1,0 +1,14 @@
+{
+  "name": "道乃久 · 中医古籍研究智能体",
+  "short_name": "道乃久",
+  "description": "道乃久（TaoChronos · Tao-R1）：医哲未来人工智能研究院（IMPF-AI）发布的中医古籍研究智能体。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f2e9",
+  "theme_color": "#b3372b",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "assets/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

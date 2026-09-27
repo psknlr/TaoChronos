@@ -14,20 +14,25 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from ..capabilities.llm import LLMError, LLMRequest, Message, ToolResultBlock, ToolSchema
+from ..capabilities.recording import RecordingProvider
 from ..kernel.budget import Budget, BudgetExceeded
 from ..kernel.context import ContextManager
 from ..kernel.hooks import HookContext, HookPoint, HookRegistry, HookResult
 from ..kernel.policy import Actor, PolicyEngine
+from ..kernel.session import kernel_session
 from ..kernel.store import SimulatedCrash
 from ..kernel.tools import ToolCall, ToolOutcome, ToolRegistry, ToolScheduler, ToolSpec
 from ..protocol.base import stable_id
 from ..protocol.events import EventType
 from ..protocol.research import AgentInstance, Decision, TaskNode
 from ..protocol.schema import validate
+from ..verification.scope import scoped_capability
 from .context_views import ViewInput, build_sections
+from .paging import PAGE_SCHEMA, PAGE_TOOL, ResultPager, compile_messages
 from .prompts import output_instructions, system_prompt
 from .router import CognitiveRouter, RouteDecision
 from .schemas import output_schema
@@ -125,7 +130,8 @@ class AgentContext:
         return self.runtime.scheduler.services
 
     def cap(self, capability: str, name: str | None = None) -> Any:
-        return self.runtime.capabilities.get(capability, name)
+        """A capability as this agent may see it: withheld material (hold-out, confirmation, expert-only) is not in it."""
+        return scoped_capability(capability, self.runtime.capabilities.get(capability, name), self, frame=False)
 
     def has_cap(self, capability: str, name: str | None = None) -> bool:
         return self.runtime.capabilities.has(capability, name)
@@ -214,6 +220,7 @@ class AgentRuntime:
         self.subagents = subagents or {}
         self.config = config or {}
         self.codemode = codemode
+        self.recording: tuple[str, str] | None = None  # (directory, record | replay) for model responses
 
     def spec(self, role: str) -> AgentSpec:
         try:
@@ -223,6 +230,7 @@ class AgentRuntime:
 
     # ------------------------------------------------------------------ run
     def run_task(self, session: Any, task: TaskNode, *, budget: Budget | None = None, defer_commit: bool = False) -> TaskResult:
+        session = kernel_session(session)  # the runtime is kernel code, also when an agent spawns a subtask
         spec = self.spec(task.role)
         module = load_procedure(spec.procedure) if spec.procedure else None
         actor = spec.actor(task.id)
@@ -239,8 +247,9 @@ class AgentRuntime:
                                  provider=route.provider, parent=task.inputs.get("parent_agent"))
         session.emit(EventType.AGENT_SPAWNED, {"agent": instance.to_dict()}, task_id=task.id)
         session.emit(EventType.MODEL_ROUTED, {"agent_id": actor.id, "route": route.to_dict()}, task_id=task.id)
-        tx = session.transaction(actor.id, task.id)
-        ctx = AgentContext(self, session, task, spec, route, actor, tx, agent_budget)
+        tx = session.transaction(actor, task.id)
+        # the agent sees the session through a view bound to its own identity: state read-only, events as itself
+        ctx = AgentContext(self, session.view(actor), task, spec, route, actor, tx, agent_budget)
         try:
             if module is None:
                 raise AgentError(f"{spec.role} has no procedure module")
@@ -317,26 +326,59 @@ class AgentRuntime:
                             output_instructions(name, schema, draft)])
         return system, user, schema
 
+    def provider(self, name: str) -> Any:
+        """The LLM provider for a route — behind the recorder when this run records or replays model responses."""
+        provider = self.capabilities.get("llm", name)
+        if self.recording is not None:
+            root, mode = self.recording
+            provider = RecordingProvider(provider, Path(root) / name, mode)
+        return provider
+
+    def _estimate(self, provider: Any, model: str, request: LLMRequest) -> dict[str, float]:
+        """What to hold before a call: the prompt as sent plus the full output allowance, at the model's prices."""
+        from ..kernel.context import estimate_tokens
+
+        prompt = estimate_tokens(request.system) + sum(estimate_tokens(m.text) + sum(estimate_tokens(r.content) for r in m.tool_results)
+                                                       for m in request.messages)
+        info = next((m for m in provider.models() if m.name == model), None)
+        cost = ((prompt * info.input_cost_per_mtok + request.max_tokens * info.output_cost_per_mtok) / 1_000_000) if info else 0.0
+        return {"tokens": float(prompt + request.max_tokens), "cost_usd": round(cost, 6)}
+
     def _llm_loop(self, ctx: AgentContext, module: Any) -> dict[str, Any]:
         spec, route = ctx.spec, ctx.route
-        provider = self.capabilities.get("llm", route.provider)
+        provider = self.provider(route.provider)
+        kernel = kernel_session(ctx.session)
         tool_specs = [self.tools.get(n) for n in spec.tool_names(self.tools)]
         if spec.code_mode and self.codemode is not None:
             tool_specs.append(self.codemode)
         exposed = {t.llm_name: t for t in tool_specs}
-        schemas = [ToolSchema(t.llm_name, t.to_llm_schema()["description"], t.input_schema) for t in tool_specs]
+        schemas = [ToolSchema(t.llm_name, t.to_llm_schema()["description"], t.input_schema) for t in tool_specs] + [PAGE_SCHEMA]
         system, user, schema = self._prompt(ctx, module)
         messages = [Message("user", user)]
+        pager = ResultPager(int(self.config.get("page_chars", 6000)))
         for turn in range(spec.max_turns):
-            request = LLMRequest(model=route.model, system=system, messages=messages, tools=schemas,
+            # the context is compiled for every turn: recent exchanges whole, older tool results reduced to page handles
+            request = LLMRequest(model=route.model, system=system, messages=compile_messages(messages), tools=schemas,
                                  max_tokens=int(spec.model.get("max_tokens", 16000)), effort=route.effort,
                                  metadata={"agent": ctx.actor.id, "task": ctx.task.id, "turn": turn})
             verdict = ctx.hook(HookPoint.BEFORE_LLM_CALL, request, {"spec": spec, "route": route}, subject_id=ctx.task.id)
             if not verdict.allow:
                 raise AgentError(f"LLM call blocked by {verdict.hook}: {verdict.reason}")
-            ctx.budget.charge(llm_calls=1)
-            response = provider.complete(request)
+            estimate = self._estimate(provider, route.model, request)
+            reservation = ctx.budget.reserve(llm_calls=1, tokens=estimate["tokens"], cost_usd=estimate["cost_usd"])
+            kernel.emit(EventType.BUDGET_RESERVED, {"reservation_id": reservation, "agent_id": ctx.actor.id, "turn": turn,
+                                                    "estimate": estimate}, task_id=ctx.task.id)
+            try:
+                response = provider.complete(request)
+            except BaseException:
+                ctx.budget.release(reservation)
+                kernel.emit(EventType.BUDGET_SETTLED, {"reservation_id": reservation, "outcome": "failed", "actual": {}}, task_id=ctx.task.id)
+                raise
             u = response.usage
+            ctx.budget.settle(reservation, llm_calls=1, tokens=u.input_tokens + u.output_tokens, cost_usd=u.cost_usd)
+            kernel.emit(EventType.BUDGET_SETTLED, {"reservation_id": reservation, "outcome": "ok",
+                                                   "actual": {"llm_calls": 1, "tokens": u.input_tokens + u.output_tokens,
+                                                              "cost_usd": round(u.cost_usd, 6)}}, task_id=ctx.task.id)
             ctx.usage["llm_calls"] += 1
             ctx.usage["input_tokens"] += u.input_tokens
             ctx.usage["output_tokens"] += u.output_tokens
@@ -345,7 +387,6 @@ class AgentRuntime:
                                                     "model": response.model or route.model, "turn": turn,
                                                     "stop_reason": response.stop_reason, "usage": u.to_dict(),
                                                     "note": response.note}, actor=ctx.actor.id, task_id=ctx.task.id)
-            ctx.budget.charge(tokens=u.input_tokens + u.output_tokens, cost_usd=u.cost_usd)
             if response.stop_reason == "refusal":
                 raise AgentRefused(f"model declined the request ({response.note or 'refusal'})")
             messages.append(Message("assistant", text=response.text, tool_uses=list(response.tool_uses), raw=response.raw))
@@ -353,6 +394,10 @@ class AgentRuntime:
                 results: list[ToolResultBlock] = []
                 calls, slots = [], []
                 for use in response.tool_uses:
+                    if use.name == PAGE_TOOL:
+                        content, is_error = pager.page(dict(use.input or {}))
+                        results.append(ToolResultBlock(use.id, content, is_error))
+                        continue
                     spec_ = exposed.get(use.name)
                     if spec_ is None:
                         results.append(ToolResultBlock(use.id, f"ERROR: tool {use.name} is not available to {spec.name}", True))
@@ -363,7 +408,8 @@ class AgentRuntime:
                                                         budget=ctx.budget, tx=ctx.tx) if calls else []
                 ctx.usage["tool_calls"] += len(calls)
                 for use_id, outcome in zip(slots, outcomes):
-                    results.append(ToolResultBlock(use_id, outcome.as_text(), not outcome.ok))
+                    results.append(ToolResultBlock(use_id, pager.render(use_id, outcome.name, outcome.ok, outcome.result, outcome.error),
+                                                   not outcome.ok))
                 order = {u.id: i for i, u in enumerate(response.tool_uses)}
                 results.sort(key=lambda r: order.get(r.tool_use_id, 0))
                 messages.append(Message("user", tool_results=results))

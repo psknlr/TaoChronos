@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 from typing import Callable, Iterator
 
-import yaml
+from ...protocol.yamlio import load_yaml
 
 STEMS = "甲乙丙丁戊己庚辛壬癸"
 BRANCHES = "子丑寅卯辰巳午未申酉戌亥"
@@ -56,7 +56,7 @@ def ganzhi_year(stem_branch: str, start: int, end: int) -> int | None:
 
 class Chronology:
     def __init__(self, path: str | Path, normalize: Callable[[str], str] | None = None) -> None:
-        data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+        data = load_yaml(path)
         self.normalize = normalize or (lambda t: t)
         n = self.normalize
         self.eras = {n(k): (int(v[0]), int(v[1])) for k, v in (data.get("eras") or {}).items()}
@@ -99,10 +99,17 @@ class Chronology:
             return (start, min(end, start + 5))
         return (start, end)
 
+    _WESTERN_STMT = re.compile(r"(?:西元|公元|西曆|西历)\s*([〇○零一二三四五六七八九]{4}|[0-9０-９]{4})\s*年")
+    _DIGITS = str.maketrans("〇○零一二三四五六七八九０１２３４５６７８９", "000123456789" "0123456789")
+
     def statements(self, text: str) -> Iterator[tuple[int, int, int]]:
         """Era-dated statements naming one year — 康熙五十三年, 乾隆丙午, 至元三年丁丑 — as (year, start, end), with
-        offsets into the normalised text (normalisation preserves length, so they hold for the original too)."""
-        for m in self._stmt_re.finditer(self.normalize(text)):
+        offsets into the normalised text (normalisation preserves length, so they hold for the original too); and
+        western years a signature spells out after 西元 or 公元 (西元一九一六年丙辰四月望)."""
+        norm = self.normalize(text)
+        for m in self._WESTERN_STMT.finditer(norm):
+            yield int(m.group(1).translate(self._DIGITS)), m.start(), m.end()
+        for m in self._stmt_re.finditer(norm):
             era = m.group(1)
             ranges = [self.eras[era], *self.alternates.get(era, [])]
             num = cn_int(m.group(2)) if m.group(2) else None

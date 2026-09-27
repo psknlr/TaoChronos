@@ -28,7 +28,8 @@ from ..science import (
 from ..science.temporal import coverage
 from ..verification.provenance import find_quote, provenance_chain
 from .adapters import SenseOracle, author_clusters, binner, claim_year_fn, contradiction_context
-from .common import claim_card, claims_in_scope, lineage_in_scope, passage_card, scope_ids, scope_passages
+from .common import (claim_card, claims_in_scope, lineage_in_scope, passage_card, scope_ids, scope_passages, term_passages,
+                     whole_store)
 
 S = {"type": "string"}
 I = {"type": "integer"}
@@ -102,14 +103,29 @@ def _get_passage(ctx: ToolContext, a: dict) -> Any:
 
 def _list_books(ctx: ToolContext, a: dict) -> Any:
     corpus = ctx.cap("corpus")
-    counts = Counter(p.book_id for p in scope_passages(ctx))
+    if whole_store(ctx):  # every book of the store, not only those of the passages read so far
+        counts = corpus.book_counts() if hasattr(corpus, "book_counts") else {b: corpus.book_passage_count(b) for b in corpus.books}
+    else:
+        counts = Counter(p.book_id for p in scope_passages(ctx))
+    query, dynasty, category = (a.get("query") or "").strip(), (a.get("dynasty") or "").strip(), (a.get("category") or "").strip()
     out = []
     for book in corpus.books.values():
-        if counts.get(book.id):
-            out.append({"book_id": book.id, "title": book.title, "dynasty": book.dynasty,
-                        "composition": book.composition.label() if book.composition else None,
-                        "category": book.category, "attribution": book.attribution, "passages": counts[book.id]})
-    return sorted(out, key=lambda b: (b["composition"] or "", b["book_id"]))
+        if not counts.get(book.id):
+            continue
+        if query and not any(query in x for x in (book.title, book.id, *book.aliases, *book.authors)):
+            continue
+        if (dynasty and dynasty not in (book.dynasty or "")) or (category and category not in (book.category or "")):
+            continue
+        out.append({"book_id": book.id, "title": book.title, "authors": book.authors[:3], "dynasty": book.dynasty,
+                    "composition": book.composition.label() if book.composition else None,
+                    "category": book.category, "attribution": book.attribution, "passages": counts[book.id]})
+    out.sort(key=lambda b: (b["composition"] or "", b["book_id"]))
+    return out[: int(a["limit"])] if a.get("limit") else out
+
+
+def _canon(ctx: ToolContext, a: dict) -> Any:
+    return ctx.cap("study").canon(a.get("query") or "", dynasty=a.get("dynasty") or "", category=a.get("category") or "",
+                                  limit=int(a.get("limit") or 60), held=a.get("held"))
 
 
 def _lineage(ctx: ToolContext, a: dict) -> Any:
@@ -136,8 +152,12 @@ def _claims(ctx: ToolContext, a: dict) -> Any:
     wanted = [t if ":" in t else (lex.canonical(t) or t) for t in a.get("terms", [])]
     relation = a.get("relation")
     year = claim_year_fn(ctx.cap("corpus"))
+    if wanted and whole_store(ctx):  # the whole store: the claims of the passages that write the terms
+        source = ctx.cap("knowledge").claims_for(term_passages(ctx, wanted, after=a.get("after"), before=a.get("before")))
+    else:
+        source = claims_in_scope(ctx)
     out = []
-    for c in claims_in_scope(ctx):
+    for c in source:
         members = {x.term_id for x in c.arguments if x.term_id}
         if wanted and not set(wanted) & members:
             continue
@@ -157,7 +177,8 @@ def _neighbors(ctx: ToolContext, a: dict) -> Any:
     lex = ctx.cap("domain").lexicon
     term = a["term"] if ":" in a["term"] else (lex.canonical(a["term"]) or a["term"])
     counts: Counter = Counter()
-    for c in claims_in_scope(ctx):
+    source = ctx.cap("knowledge").claims_for(term_passages(ctx, [term])) if whole_store(ctx) else claims_in_scope(ctx)
+    for c in source:
         members = [x.term_id for x in c.arguments if x.term_id and not x.negated]
         if term in members:
             counts.update(m for m in members if m != term)
@@ -276,9 +297,15 @@ def _graph(ctx: ToolContext, before: float | None = None, after: float | None = 
 
 def _link_prediction(ctx: ToolContext, a: dict) -> Any:
     g = _graph(ctx, before=a.get("before"))
-    return link_prediction(g, left=_prefix_filter(a.get("left", ["symptom:", "disease:", "pattern:"])),
-                           right=_prefix_filter(a.get("right", ["formula:", "herb:"])), method=a.get("method", "adamic_adar"),
-                           k=int(a.get("k", 20)), seed=int(a.get("seed", 0)))
+    lexicon = ctx.cap("domain").lexicon
+    right = _prefix_filter(a.get("right", ["formula:", "herb:"]))
+
+    def candidate(t: str) -> bool:  # a weak lexicon entry (a harvested one-character "drug": 药, 补, 白) is not proposed
+        entry = lexicon.entry(t)
+        return right(t) and not (entry is not None and entry.weak)
+
+    return link_prediction(g, left=_prefix_filter(a.get("left", ["symptom:", "disease:", "pattern:"])), right=candidate,
+                           method=a.get("method", "adamic_adar"), k=int(a.get("k", 20)), seed=int(a.get("seed", 0)))
 
 
 def _communities(ctx: ToolContext, a: dict) -> Any:
@@ -425,6 +452,213 @@ def _study_reading(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(_study(ctx).reading(a["topic"]), int(a.get("items", 10)))
 
 
+def _collation_kw(a: dict[str, Any]) -> dict[str, Any]:
+    kw = {k: a[k] for k in ("books", "base", "chapter") if a.get(k)}
+    if a.get("max_chars"):
+        kw["max_chars"] = int(a["max_chars"])
+    return kw
+
+
+def _study_variants(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).variants(a.get("work"), text=a.get("text"), passage_id=a.get("passage_id"), **_collation_kw(a))
+    return _brief(res, int(a.get("items", 20)))
+
+
+def _study_stemma(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).stemma(a.get("work"), root_at=a.get("root_at"), **_collation_kw(a))
+    return _brief({k: v for k, v in res.items() if k != "units"}, int(a.get("items", 20)), chars=1600)
+
+
+def _study_reuse(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    study = _study(ctx)
+    if a.get("target") or a.get("target_id"):
+        return _brief(study.reuse_pair(a.get("text"), a.get("target"), source_id=a.get("passage_id"),
+                                       target_id=a.get("target_id")), int(a.get("items", 20)))
+    res = study.reuse(a.get("text"), a.get("passage_id"), semantic=bool(a.get("semantic", True)),
+                      max_candidates=int(a.get("max_candidates", 800)), limit=int(a.get("limit", 200)))
+    return _brief(res, int(a.get("items", 20)))
+
+
+def _study_transmission(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).transmission(a["work"], clauses=int(a.get("clauses", 30)), max_candidates=int(a.get("max_candidates", 400)))
+    return _brief(res, int(a.get("items", 20)))
+
+
+def _study_layers(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).layers(a.get("work"), books=a.get("books"), k=int(a.get("k", 2)), features=a.get("features", "frequent"))
+    return _brief({k: v for k, v in res.items() if k not in ("segments", "feature_names")}, int(a.get("items", 20)))
+
+
+def _study_dating(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).dating(a.get("work"), books=a.get("books"))
+    return _brief({k: v for k, v in res.items() if k != "chapters"}, int(a.get("items", 20)))
+
+
+def _study_authorship(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).authorship(a.get("text"), book=a.get("book"), chapter=a.get("chapter"), candidates=a.get("candidates"))
+    return _brief(res, int(a.get("items", 20)))
+
+
+def _study_cases(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).cases(a.get("book"), disease=a.get("disease"), limit=int(a.get("limit", 40)))
+    return _brief(res, int(a.get("items", 12)))
+
+
+def _study_trajectories(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).trajectories(a.get("disease"), book=a.get("book"), limit=int(a.get("limit", 600)))
+    return _brief({k: v for k, v in res.items() if k != "examples"}, int(a.get("items", 15)))
+
+
+def _study_argument(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    study = _study(ctx)
+    if a.get("work"):
+        res = study.argument(work=a["work"], against=a.get("against"))
+    else:
+        res = study.argument(a.get("text"), a.get("passage_id"))
+    return _brief(res, int(a.get("items", 15)))
+
+
+def _study_senses(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).senses(a["term"], per_period=int(a.get("per_period", 250))), int(a.get("items", 12)))
+
+
+def _study_fragments(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).fragments(a["work"], verify_against=["*"] if a.get("verify") else None)
+    return _brief(res, int(a.get("items", 20)))
+
+
+def _study_witnesses(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).witnesses(a["work"]), int(a.get("items", 20)))
+
+
+def _study_punctuate(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).punctuate(a.get("text"), a.get("passage_id"))
+    res.pop("marks", None)
+    res["model"] = {k: v for k, v in res.get("model", {}).items() if k != "held_out"}
+    return _brief(res, int(a.get("items", 12)), chars=int(a.get("chars", 1200)))
+
+
+def _study_commentaries(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).commentaries(a.get("text"), a.get("passage_id"))
+    for u in res.get("commentaries", []):
+        for key in ("concepts", "lemma", "text"):
+            u.pop(key, None)
+    return _brief(res, int(a.get("items", 15)))
+
+
+def _study_disputes(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).disputes(a.get("term"), person=a.get("person")), int(a.get("items", 15)))
+
+
+def _study_clause(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).clause(a.get("text"), a.get("passage_id"), work=a.get("work")), int(a.get("items", 30)))
+
+
+def _study_glosses(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).glosses(a.get("term"), book=a.get("book")), int(a.get("items", 15)))
+
+
+def _study_pairs(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).pairs(a.get("herb"), period=a.get("period")), int(a.get("items", 20)))
+
+
+def _study_network(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).network(a.get("target")), int(a.get("items", 20)))
+
+
+def _study_chain(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).chain(a.get("text"), a.get("passage_id")), int(a.get("items", 30)))
+
+
+def _study_names(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).names(a["term"]), int(a.get("items", 20)))
+
+
+def _study_entities(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).entities(a.get("text"), a.get("passage_id"))
+    for e in res.get("entities", []):
+        for key in ("start", "end", "rule", "label"):
+            e.pop(key, None)
+    res.pop("types", None)
+    return _brief(res, int(a.get("items", 60)))
+
+
+def _study_places(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).places(a.get("place"), term=a.get("term"), school=a.get("school"), person=a.get("person"))
+    res.pop("geojson", None)
+    return _brief(res, int(a.get("items", 25)))
+
+
+def _study_translate(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).translate(a.get("text"), a.get("passage_id"))
+    res.pop("normalized_changes", None)
+    return _brief(res, int(a.get("items", 12)), chars=int(a.get("chars", 1500)))
+
+
+def _vision_layout(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return ctx.cap("vision").layout(a.get("tokens"), path=a.get("path"), fmt=a.get("format"))
+
+
+def _vision_compare(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = ctx.cap("vision").compare(a["text"], passage_id=a.get("passage_id"), reference=a.get("reference"))
+    res["differences"] = res.get("differences", [])[:int(a.get("items", 30))]
+    return res
+
+
+def _bridge_phenotype(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = ctx.cap("bridge").phenotype(a.get("text"), passage_id=a.get("passage_id"))
+    res.pop("text", None)
+    return _brief(res, int(a.get("items", 30)), chars=400)
+
+
+def _bridge_map(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = ctx.cap("bridge").map(a.get("text"), passage_id=a.get("passage_id"), top=int(a.get("top", 5)))
+    packet = res.pop("packet")
+    res["findings"] = [{k: f[k] for k in ("id", "surface", "label", "relation", "negated", "optional", "conditional", "status")}
+                       | {"hpo": (f["hpo"] or {}).get("label")} for f in packet["findings"]]
+    res["source"] = packet.get("source")
+    return _brief(res, int(a.get("items", 12)), chars=600)
+
+
+def _bridge_reverse(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(ctx.cap("bridge").reverse(a["disease"], limit=int(a.get("limit", 15))), int(a.get("items", 15)), chars=400)
+
+
+def _audit_claim(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(ctx.cap("audit").audit(a["claim"], modern=bool(a.get("modern", True))), int(a.get("items", 12)), chars=500)
+
+
+def _graph_evidence(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    g = ctx.cap("audit").graph(passage_id=a.get("passage_id"), text=a.get("text"), claim=a.get("claim"))
+    out: dict[str, Any] = {"stats": g.stats(), "unsupported": g.unsupported()[:10]}
+    if a.get("node"):
+        out["lineage"] = g.lineage(a["node"])[:5]
+    return out
+
+
+def _modern_search(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = ctx.cap("modern").search(a["subject"], a.get("disease"), design=a.get("design"), limit=int(a.get("limit", 15)))
+    if a.get("claim"):
+        res["guard"] = ctx.cap("modern").guard(a["claim"], res["records"])
+    return _brief(res, int(a.get("items", 15)), chars=300)
+
+
+def _modern_safety(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return ctx.cap("modern").safety(a["text"])
+
+
+def _rwd_ask(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = ctx.cap("rwd").ask(a["question"])  # the default (synthetic) database: agents never point at a real one
+    res.pop("sql", None)
+    return res
+
+
+def _study_schools(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    probes = a.get("probes") or []
+    return _brief(_study(ctx).schools(a.get("school"), probes=[probes] if isinstance(probes, str) else probes),
+                  int(a.get("items", 20)))
+
+
 def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
     reg = ToolRegistry()
     specs = [
@@ -441,13 +675,21 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  _search, family="retrieval", permission="classics:read", returns="hits with passage ids, periods, routes and matched surfaces"),
         ToolSpec("classics.get_passage", "Full passage with locator, variants, temporal context and notes.",
                  obj({"passage_id": S}, ["passage_id"]), _get_passage, family="retrieval", permission="classics:read"),
-        ToolSpec("classics.list_books", "Books in research scope with dates, attribution and passage counts.",
-                 obj({}), _list_books, family="retrieval", permission="classics:read"),
+        ToolSpec("classics.list_books", "Books in research scope (outside a session: every book of the corpus) with dates, "
+                 "attribution and passage counts; filter by title/author words, dynasty or category.",
+                 obj({"query": S, "dynasty": S, "category": S, "limit": I}), _list_books, family="retrieval",
+                 permission="classics:read"),
+        ToolSpec("classics.canon", "要籍: the 350 most important works of Chinese medicine, ranked by how later works cite them "
+                 "(corpus/catalog/canon.yaml), with author, dynasty, category, citing works and witnesses, and whether this "
+                 "corpus holds the text (held: true/false filters); filter by title/author words, dynasty or category.",
+                 obj({"query": S, "dynasty": S, "category": S, "held": {"type": "boolean"}, "limit": I}), _canon,
+                 family="retrieval", permission="classics:read"),
         ToolSpec("classics.lineage", "Knowledge-lineage edges (cites / transcribes / rephrases / opposes / formula_derived_from / inherits).",
                  obj({"subject": S, "limit": I}), _lineage, family="retrieval", permission="classics:read"),
         ToolSpec("kg.extract_claims", "Extract hyperedge claims from a passage (lexicon + pattern rules); returns candidates, commits nothing.",
                  obj({"passage_id": S}, ["passage_id"]), _extract, family="knowledge", permission="kg:read"),
-        ToolSpec("kg.claims", "Query committed claims by terms, relation and period.",
+        ToolSpec("kg.claims", "Query claims by terms, relation and period (in a session: its committed claims; on the whole "
+                 "store: the claims read from the passages that write the terms, spread over time).",
                  obj({"terms": {"type": "array", "items": S}, "relation": S, "after": N, "before": N, "limit": I}),
                  _claims, family="knowledge", permission="kg:read"),
         ToolSpec("kg.neighbors", "Terms co-occurring with a term inside claim hyperedges.",
@@ -510,6 +752,210 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
         ToolSpec("study.reading", "阅读门径: the works to read on a topic — first attestations, the densest treatments by period, "
                  "monographs, case records, Republican syntheses — each with the reason.",
                  obj({"topic": S, "items": I}, ["topic"]), _study_reading, family="study", permission="classics:read"),
+        ToolSpec("study.variants", "版本谱系·异文: collate the witnesses of a work (or a passage's copies and quotations with text / passage_id): "
+                 "variant units (substitution, omission, addition, transposition; orthographic ones apart), lacunae, "
+                 "frequent substitutions (spelling conventions to review).",
+                 obj({"work": S, "text": S, "passage_id": S, "books": {"type": "array", "items": S}, "base": S, "chapter": S,
+                      "max_chars": I, "items": I}), _study_variants, family="study", permission="classics:read", expensive=True,
+                 returns="witnesses with coverage, lacunae and singular readings; summary by kind; units"),
+        ToolSpec("study.stemma", "版本谱系·谱系图: distances between the witnesses, a neighbour-joining stemma (Newick and a tree), groups "
+                 "of shared readings, agreement patterns, contamination (which witness also copied another branch), "
+                 "each witness's taboo-based edition date floor.",
+                 obj({"work": S, "books": {"type": "array", "items": S}, "base": S, "chapter": S, "max_chars": I, "root_at": S,
+                      "items": I}), _study_stemma, family="study", permission="classics:read", expensive=True,
+                 returns="distances, tree, newick, ascii, groups, patterns, contamination, conflicts"),
+        ToolSpec("study.reuse", "语义复用: how later books reuse a passage — candidates from shared wording and co-occurring concepts, "
+                 "each typed by transparent rules (直接引用 near_verbatim 节略 撮要 转述 解释性改写 引而驳之 套语相似) with its "
+                 "features; with target / target_id, the type of one pair.  Candidates prove nothing; the rule and features "
+                 "are given with every label.",
+                 obj({"text": S, "passage_id": S, "target": S, "target_id": S, "semantic": {"type": "boolean"},
+                      "max_candidates": I, "limit": I, "items": I}), _study_reuse, family="study", permission="classics:read",
+                 expensive=True, returns="hits (label, rule, features, citation 明引/暗引, relation, direction), summary by label and period"),
+        ToolSpec("study.transmission", "思想传播: a work's reception — its clauses' typed reuse in later works, the balance of retained / "
+                 "transformed / disputed reuse by period, and the channels (later works that follow an intermediate work's "
+                 "wording rather than the source's).",
+                 obj({"work": S, "clauses": I, "max_candidates": I, "items": I}, ["work"]), _study_transmission,
+                 family="study", permission="classics:read", expensive=True,
+                 returns="works with their reuse types, periods, channels, first work of each type"),
+        ToolSpec("study.layers", "文本地层: style layers of a work's chapters (most frequent characters, or function characters), "
+                 "the split tested by permutation, membership probabilities, layer boundaries and change points in reading "
+                 "order, chapters that stand apart (Burrows' Delta).  Style shows that chapters differ, not when or by whom.",
+                 obj({"work": S, "books": {"type": "array", "items": S}, "k": I, "features": S, "items": I}), _study_layers,
+                 family="study", permission="classics:read", expensive=True,
+                 returns="layers with chapters and distinctive features, boundaries, change points, outliers"),
+        ToolSpec("study.dating", "断代证据: chapter by chapter, the works cited in the main text (terminus post quem), vocabulary the "
+                 "rest of the corpus attests only long after the work's date (where unusually frequent), the taboo "
+                 "characters of the witness (its edition).",
+                 obj({"work": S, "books": {"type": "array", "items": S}, "items": I}), _study_dating, family="study",
+                 permission="classics:read", expensive=True, returns="chapters later than the nominal date with their evidence"),
+        ToolSpec("study.authorship", "作者归属: Burrows' Delta of a text (or a book, or one of its chapters) against candidate works.",
+                 obj({"text": S, "book": S, "chapter": S, "candidates": {"type": "array", "items": S}, "items": I}),
+                 _study_authorship, family="study", permission="classics:read", expensive=True,
+                 returns="candidates ranked by delta with the margin to the next"),
+        ToolSpec("study.cases", "医案: case records read visit by visit — findings (symptoms, pulse, tongue), diagnosis, principle, "
+                 "formula and drugs with doses, 加减 against the last prescription, doses taken, response, outcome — of one "
+                 "book or filed under a disease across the case collections.",
+                 obj({"book": S, "disease": S, "limit": I, "items": I}), _study_cases, family="study", permission="classics:read",
+                 expensive=True, returns="cases with patient, visits and outcome; outcome counts"),
+        ToolSpec("study.trajectories", "医案轨迹: across case records of a disease (or a book), the sequences of principles, formulas "
+                 "and added drugs common to many cases, what the next visit holds given this one, and the choices associated "
+                 "with recovery in the record (associations in a selected record, never evidence of efficacy).",
+                 obj({"disease": S, "book": S, "limit": I, "items": I}), _study_trajectories, family="study",
+                 permission="classics:read", expensive=True, returns="patterns, transitions, outcome associations"),
+        ToolSpec("study.argument", "医理论证: the reasoning of a passage as a graph of clauses (with their concepts) and the steps its "
+                 "discourse markers state (条件, 则, 故, 因, 所致, 主之, 界说, 转折, 取象比类, 驳斥, 盖); with work, a work's way of "
+                 "reasoning (relations per 1 000 clauses, concept triples, chains); with work and against, two works compared.",
+                 obj({"text": S, "passage_id": S, "work": S, "against": S, "items": I}), _study_argument, family="study",
+                 permission="classics:read", expensive=True, returns="clauses and edges; or a profile; or a comparison"),
+        ToolSpec("study.senses", "语义演变: a term's curated senses by period (from their cue words), the date the sense shares shifted "
+                 "(permutation test), candidate senses the curation lacks (clusters of unlabelled contexts, for a person to "
+                 "read), and the term's context neighbourhood period by period.",
+                 obj({"term": S, "per_period": I, "items": I}, ["term"]), _study_senses, family="study", permission="classics:read",
+                 expensive=True, returns="series, change point, candidate senses, neighbourhood, exemplar check"),
+        ToolSpec("study.witnesses", "版本与影像见证: every witness of a work — its transcriptions in the store (edition, date, holder, "
+                 "licence, whether passages link their page image) and the digitised copies in libraries (NIJL, Berlin, LoC, "
+                 "早稲田, NDL: holder, date, shelfmark, IIIF manifest, terms of use), linked by title (check `match`).",
+                 obj({"work": S, "items": I}, ["work"]), _study_witnesses, family="study", permission="classics:read",
+                 returns="text witnesses; image witnesses with manifests and rights"),
+        ToolSpec("study.fragments", "佚书辑佚: a lost work's fragments gathered from the books that quote it (entries opened by its "
+                 "name and closed by 出第N卷 notes, 又 continuations, inline 《…》云), merged across quoting books and ordered by "
+                 "volume; with verify, checked against the work's surviving witnesses (and each quoting book's reliability).",
+                 obj({"work": S, "verify": {"type": "boolean"}, "items": I}, ["work"]), _study_fragments, family="study",
+                 permission="classics:read", expensive=True, returns="fragments with volume, topic and witnesses; verification"),
+        ToolSpec("study.punctuate", "句读: punctuate 白文 (a text or a passage) with the model learned from the store's punctuated "
+                 "texts — marks are only inserted, every character is kept (checked); gaps near the cut are listed for "
+                 "review; a punctuated input is stripped, punctuated again and scored against its editors. The model's "
+                 "held-out scores (whole works kept out of training) come with every result.",
+                 obj({"text": S, "passage_id": S, "items": I, "chars": I}), _study_punctuate, family="study",
+                 permission="classics:read", expensive=True, returns="punctuated text, preservation, review gaps, scores"),
+        ToolSpec("study.commentaries", "集注对齐与注家比较: the commentaries on a clause (text or passage) across the commentary "
+                 "literature — each aligned to the clause (rows after it, run-on text, bracketed notes, anchored rows), "
+                 "attributed, dated; compared pairwise: explicit (驳 rejects / 从 endorses / 引 cites a named predecessor), "
+                 "wording (照录, 承袭, 自录), content (增益, 同解, 异解 from the concepts each adds); consensus, singular "
+                 "readings and who first brought each concept.",
+                 obj({"text": S, "passage_id": S, "items": I}), _study_commentaries, family="study",
+                 permission="classics:read", expensive=True, returns="commentaries, relations, consensus, first readings"),
+        ToolSpec("study.disputes", "争议挖掘: named views rejected or endorsed in the literature (a physician named with a "
+                 "reporting word, then a rejection word such as 非也, 谬矣, 殊不知, 此说非 in that or the next sentence) — "
+                 "about a term (相火), of a person (丹溪), or, with neither, who rejects whom across the corpus. Use it to "
+                 "find counter-evidence and the history of a controversy.",
+                 obj({"term": S, "person": S, "items": I}), _study_disputes, family="study", permission="classics:read",
+                 expensive=True, returns="disputes with sentences, who rejects whom, endorsements"),
+        ToolSpec("study.clause", "条文结构: cut a clause (text or passage; 白文 is punctuated first) into its parts — condition, "
+                 "disease, findings, pulse, pattern, principle, contraindication, formula, composition, preparation, "
+                 "administration, modification, prognosis — with the findings, pulse, formulas and drugs it names; with "
+                 "work, the forms a work's clauses take (e.g. 病→症→方).",
+                 obj({"text": S, "passage_id": S, "work": S, "items": I}), _study_clause, family="study",
+                 permission="classics:read", returns="pieces with roles, the form, the named terms"),
+        ToolSpec("study.glosses", "训诂: the glosses of a word in the commentaries (…者…也, …貌, 犹, 谓, 音, 反切, 读为, 当作, 一作), "
+                 "grouped into readings with who first gave each and who repeated it, by period; with book, the glossary "
+                 "of a commentary. Emendations are read on the characters as written.",
+                 obj({"term": S, "book": S, "items": I}), _study_glosses, family="study", permission="classics:read",
+                 expensive=True, returns="glosses with commentator and date, readings, kinds by period"),
+        ToolSpec("study.pairs", "配伍规律: drug pairs prescribed together against chance across the written-out compositions of "
+                 "the corpus (per work): support, confidence, lift, PMI, one-sided Fisher test with Benjamini–Hochberg; "
+                 "with herb, its partners, triples and its share of compositions by period; without, the strongest pairs "
+                 "and the groups of drugs that hold together; period restricts to one period.",
+                 obj({"herb": S, "period": S, "items": I}), _study_pairs, family="study", permission="classics:read",
+                 expensive=True, returns="pairs with statistics, partners, triples, periods, groups"),
+        ToolSpec("study.network", "方证网络: from the treatment sentences of the corpus (…主之, 宜…汤) — a formula's findings "
+                 "(lift against how often each finding is named) and its drugs, a finding's formulas, or the strongest "
+                 "formula–finding links.",
+                 obj({"target": S, "items": I}), _study_network, family="study", permission="classics:read",
+                 expensive=True, returns="findings or formulas with support, share and lift; drugs; periods"),
+        ToolSpec("study.chain", "传播链: a passage's dated witnesses (copies, quotations, restatements) ordered into a tree by shared "
+                 "innovations — each hangs from the earlier witness whose variant readings it shares most (less that one's "
+                 "readings it lacks), else from the earliest; each edge with its shared readings, score and margin.",
+                 obj({"text": S, "passage_id": S, "items": I}), _study_chain, family="study", permission="classics:read",
+                 expensive=True, returns="nodes with dates and relations, edges with evidence and margin, root, summary"),
+        ToolSpec("study.names", "名称: the names the lexicon records for a drug, formula or disease (本名, 异名, taboo renames, "
+                 "part and preparation names) through time — works writing each name by period and by century, the first "
+                 "to write it, when the preferred name changes (薯蓣→山药, 玄参→元参), passages equating two names, and "
+                 "names the punctuated texts give after 一名/又名/俗呼 that the lexicon lacks (candidates to curate).",
+                 obj({"term": S, "items": I}, ["term"]), _study_names, family="study", permission="classics:read",
+                 expensive=True, returns="names with counts and first witnesses, shares by period, switches, equations, candidates"),
+        ToolSpec("study.schools", "学派: a school's physicians and works (schools.yaml, physicians.yaml), the words and formulas "
+                 "they use more than the other authors of their time (each physician counted once, the others reweighed to "
+                 "the school's forms; rate z with an informative Dirichlet prior, share z, Benjamini–Hochberg), whom they "
+                 "cite (homophily against the others), whom they reject and who rejects them; without a school, every "
+                 "school and the school-by-school citation matrix; probes: words to report for the school.",
+                 obj({"school": S, "probes": {"type": "array", "items": S}, "items": I}), _study_schools, family="study",
+                 permission="classics:read", expensive=True,
+                 returns="members and works, distinctive words, formulas, citations, homophily, rejections, lineage"),
+        ToolSpec("study.entities", "实体识别 (T7): the entities of a text or passage in context — Disease, Syndrome, Symptom, Sign, "
+                 "Pulse, Tongue, Etiology, Pathogenesis, Location, Nature, Treatment, Formula, Herb, Dose, Preparation, "
+                 "Contraindication, Physician, Commentator, School, Theory, Book, Edition, Place, Time — from the lexicon, "
+                 "physicians, schools, places, eras and patterns; negated findings flagged; ambiguous spans kept with their "
+                 "alternatives (typed by the model when one reviews the study layer).",
+                 obj({"text": S, "passage_id": S, "items": I}), _study_entities, family="study", permission="classics:read",
+                 returns="entities with type, reference, source, ambiguity and negation; counts by type"),
+        ToolSpec("study.places", "地域 (T27, time × person × place): physicians and works by region and period (native places "
+                 "from physicians.yaml, places signed in prefaces and colophons); with person, a physician's place as curated, "
+                 "stated (「…，真定人」) and signed; with school, where its physicians came from; with term, the share of each "
+                 "region's works using the term against the other regions', period by period (z, BH); with place, its "
+                 "physicians and works.",
+                 obj({"place": S, "term": S, "school": S, "person": S, "items": I}), _study_places, family="study",
+                 permission="classics:read", expensive=True, returns="rows by region and period, people and works with places"),
+        ToolSpec("study.translate", "释义与今译 (T10): a text in five layers — original (never changed), normalised, punctuated "
+                 "(the editors' marks, or the 句读 model's), interpreted (for its doublets and terms: the commentators' "
+                 "glosses with who first gave them, and the curated historical sense its date and context favour) and, "
+                 "when a model reviews the study layer, a modern Chinese translation that cites the glosses it uses and "
+                 "passes the presentism guardrail.",
+                 obj({"text": S, "passage_id": S, "items": I, "chars": I}), _study_translate, family="study",
+                 permission="classics:read", expensive=True, returns="the five layers; glosses and senses; a checked translation"),
+        ToolSpec("vision.layout", "版面理解 (T1): the layout and reading order of a page from an OCR engine's boxes (a file in "
+                 "ALTO, hOCR, PAGE, PaddleOCR or token JSON, or tokens {text, bbox}) — vertical columns right to left, "
+                 "双行小注 read right half first, 版心 and 书眉 set apart — as a PageGraph with the running text.",
+                 obj({"path": S, "format": S, "tokens": {"type": "array"}}), _vision_layout, family="philology",
+                 permission="classics:read", returns="blocks with kind, box and order; the running text; the apparatus"),
+        ToolSpec("vision.compare", "OCR 核对 (T2): an OCR text against the transcription of the store it reads (found by probes, "
+                 "or a passage given) or a reference: character error rate, after normalising variants too, the engine's "
+                 "commonest substitutions and each difference in context.",
+                 obj({"text": S, "passage_id": S, "reference": S, "items": I}, ["text"]), _vision_compare, family="philology",
+                 permission="classics:read", returns="CER, variant-only differences, confusions, differences, the passage"),
+        ToolSpec("bridge.phenotype", "古代表型包 (AMBE S10): the findings a passage states — each with its HPO projection and "
+                 "relation type (EXACT, CLOSE, PARTIAL_OVERLAP, NO_MODERN_EQUIVALENT …), negated / optional / conditional / "
+                 "after treatment, its modifiers — and the historical names it uses with the sense its context selects.",
+                 obj({"text": S, "passage_id": S, "items": I}), _bridge_phenotype, family="bridge",
+                 permission="classics:read", returns="findings, implied findings, terms with senses and homonym warnings"),
+        ToolSpec("bridge.map", "古今映射 (AMBE S11–S12): a passage's findings scored against modern disease profiles (HPO, "
+                 "ICD-10), explainably — matched and missing typical findings, conflicts, required findings — with a "
+                 "qualitative level (high / moderate / low / insufficient, never a probability), what would tell the "
+                 "candidates apart, how its historical names relate to them, and a statement that passes the presentism "
+                 "guard.  Phenotypic similarity, not retrospective diagnosis.",
+                 obj({"text": S, "passage_id": S, "top": I, "items": I}), _bridge_map, family="bridge",
+                 permission="classics:read", expensive=True, returns="candidates with levels, discriminators, term relations, statement"),
+        ToolSpec("bridge.reverse", "今病溯古 (AMBE): from a modern disease (id, name or ICD-10 code) to the ancient written forms "
+                 "of its findings, the passages that describe several of them together (with a required finding), and the "
+                 "historical names those passages use — candidates for historical study, not equivalents.",
+                 obj({"disease": S, "limit": I, "items": I}, ["disease"]), _bridge_reverse, family="bridge",
+                 permission="classics:read", expensive=True, returns="forms, passages with levels, names by period"),
+        ToolSpec("audit.claim", "证据审计 (S15): a claim decomposed into atomic claims, each checked by what it asserts — a "
+                 "historical claim against the witness (every quote verbatim), an interpretation against a cited gloss, a "
+                 "mapping against the presentism guard and the bridge, a modern claim against typed modern evidence (the "
+                 "cross-level guard), an inference for its leap; clinical advice is refused.  Verdicts: SUPPORTED, "
+                 "PARTIALLY_SUPPORTED, CONTESTED, INSUFFICIENT_EVIDENCE, UNSUPPORTED.",
+                 obj({"claim": S, "modern": {"type": "boolean"}, "items": I}, ["claim"]), _audit_claim, family="validation",
+                 permission="classics:read", expensive=True, returns="verdict, atomic claims with checks, safety flags"),
+        ToolSpec("graph.evidence", "证据图谱: the six-layer evidence graph (source → historical → TCM semantic → mapping → modern → "
+                 "evidence) of a passage's mapping or a claim's audit, every edge with its assertion type; the lineage of a "
+                 "node back to the witnesses; the inferred edges with no path to a source.",
+                 obj({"passage_id": S, "text": S, "claim": S, "node": S}), _graph_evidence, family="validation",
+                 permission="classics:read", expensive=True, returns="stats by layer and assertion type, unsupported edges, lineage"),
+        ToolSpec("modern.search", "现代证据 (S13): modern studies of a drug or formula (and a disease), typed by design and "
+                 "population (RCT, cohort, animal, cell, network pharmacology …), summed up by level; with a claim, which "
+                 "records can carry it (the cross-level guard).  PubMed when the capability is online, else the cache and "
+                 "the curated records.",
+                 obj({"subject": S, "disease": S, "design": S, "claim": S, "limit": I, "items": I}, ["subject"]), _modern_search,
+                 family="literature", permission="literature:read", expensive=True, returns="records by type, summary, guard, safety"),
+        ToolSpec("modern.safety", "安全提示: the toxic materials a text names (aconite, aristolochic acid, mercury, arsenic …) — "
+                 "warnings only, never advice.", obj({"text": S}, ["text"]), _modern_safety, family="literature",
+                 permission="literature:read", returns="materials with their documented risks"),
+        ToolSpec("rwd.ask", "真实世界数据 (S14): a question as a study spec over the synthetic OMOP database (exposure, outcome, "
+                 "population, windows), compiled into a checked, parameterised, read-only query; counts, risks and a crude "
+                 "risk ratio with caveats.  A model never writes the SQL.",
+                 obj({"question": S}, ["question"]), _rwd_ask, family="literature", permission="literature:read",
+                 expensive=True, returns="the spec, arms, risk ratio, caveats"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

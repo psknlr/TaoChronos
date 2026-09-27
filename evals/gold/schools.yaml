@@ -1,0 +1,14 @@
+# SchoolEval — the doctrines the 中医各家学说 textbooks name as each school's own, chosen from the textbooks (not from
+# the study's output) and not given to the study: `study schools` must find each used more (rate z ≥ 1.96) by the
+# school's physicians than by the other authors of their time, and — where schools share a word (脾胃 is 易水's and
+# 温补's, 相火 丹溪's and 温补's) — the school the textbooks give it to should use it most.  Two to four characters each
+# (the study's words); single-character doctrines (郁, 痰, 火) cannot be asked this way.
+doctrines:
+  温病: [卫分, 营分, 血分, 温邪, 湿热, 膜原, 伏气, 三焦]
+  易水: [脾胃, 元气, 阴火, 升阳, 归经, 引经]
+  丹溪: [相火, 阴虚, 滋阴, 降火, 六郁, 阳有余]
+  温补: [命门, 真阴, 元阳, 真阳, 温补, 先天]
+  河间: [火热, 玄府, 六气, 怫郁, 寒凉, 亢则害]
+  攻邪: [汗吐下, 吐法, 攻邪, 邪去]
+  伤寒: [六经, 传经, 合病, 并病, 太阳病]
+  汇通: [西医, 中西, 西人]

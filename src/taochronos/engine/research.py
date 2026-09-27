@@ -23,6 +23,7 @@ from ..kernel.hooks import HookContext, HookPoint
 from ..kernel.memory import MemoryLayer
 from ..kernel.observability import research_metrics
 from ..kernel.policy import Actor
+from ..kernel.reducer import InvalidEvent
 from ..kernel.session import Session
 from ..kernel.stop import RoundStats, StopDecision, StopEvaluator
 from ..kernel.store import SimulatedCrash
@@ -30,11 +31,15 @@ from ..protocol.base import stable_id
 from ..protocol.events import EventType
 from ..protocol.research import Decision, GoalSpec, TaskNode
 from ..verification.hooks import anachronism_guard
+from ..verification.contract import evaluate_contract
+from .confirmation import confirm_hypotheses
+from .manifest import run_manifest
 from .report import publish_report
-from .validation import VALIDATOR, score_hypotheses, validate_claims, validate_hypotheses
+from .validation import VALIDATOR, adjudicate_objections, score_hypotheses, validate_claims, validate_hypotheses
 
 TERMINAL = ("done", "failed", "skipped")
-ALWAYS_RUN = {"validate_claims", "validate", "score", "meta_review"}
+CONTRACT_JUDGE = Actor.validator("contract")
+ALWAYS_RUN = {"validate_claims", "adjudicate_objections", "validate", "confirm", "score", "meta_review"}
 FINAL = ("completed", "stopped", "awaiting_expert", "budget_exhausted", "max_rounds")
 
 
@@ -46,6 +51,11 @@ class RunResult:
     stop: dict[str, Any] = field(default_factory=dict)
     metrics: dict[str, Any] = field(default_factory=dict)
     artifacts: list[str] = field(default_factory=list)
+    acceptance: dict[str, Any] = field(default_factory=dict)  # the contract's verdict: execution is not acceptance
+
+    @property
+    def verdict(self) -> str:
+        return self.acceptance.get("status", "execution_finished")
 
 
 class ResearchEngine:
@@ -58,6 +68,7 @@ class ResearchEngine:
         session = Session.create(self.h.store, session_id)
         self._install_goal_hooks(goal)
         session.emit(EventType.RESEARCH_CREATED, {"goal": goal.to_dict(), "goal_digest": goal.digest(), "profile": self.h.profile.name})
+        session.emit(EventType.RUN_MANIFEST_RECORDED, {"manifest": run_manifest(self.h, session, phase="start")})
         session.emit(EventType.PROFILE_LOADED, {
             "profile": self.h.profile.name,
             "plugins": list(self.h.capabilities.loaded_plugins),
@@ -92,11 +103,29 @@ class ResearchEngine:
             self.h.hooks.register(point, "anachronism_guard", guard, 20)
 
     # ================================================================ main loop
+    @staticmethod
+    def spent(state: Any) -> dict[str, float]:
+        """What the log says was spent: settled usage, plus reservations never settled (a crash mid-call — counted as
+        spent, conservatively), plus tool calls and agents.  A resumed session starts its budget from here."""
+        m = state.metrics
+        used = {"llm_calls": float(m.get("llm_calls", 0)), "tokens": float(m.get("input_tokens", 0) + m.get("output_tokens", 0)),
+                "cost_usd": float(m.get("cost_usd", 0.0)), "tool_calls": float(m.get("tool_calls", 0)),
+                "agents": float(m.get("agents_spawned", 0))}
+        for entry in (m.get("budget_ledger") or {}).values():
+            if entry.get("status") == "reserved":
+                est = entry.get("estimate") or {}
+                used["llm_calls"] += 1
+                used["tokens"] += float(est.get("tokens", 0))
+                used["cost_usd"] += float(est.get("cost_usd", 0.0))
+        return used
+
     def run(self, session: Session, *, budget: Budget | None = None) -> RunResult:
         state = session.state
         if state.goal is None:
             raise ValueError("session has no research contract")
-        budget = budget or self.h.new_budget()
+        if budget is None:
+            budget = self.h.new_budget()
+            budget.seed(**self.spent(state))  # a resumed run does not get its budget back
         evaluator = StopEvaluator(state.goal.stop, list(state.goal.required_validation))
         while state.status not in FINAL:
             self._drain(session, budget)
@@ -109,6 +138,7 @@ class ResearchEngine:
                 continue
             stats = self._round_stats(state, r)
             session.emit(EventType.ROUND_COMPLETED, {"round": r, **stats})
+            self._verify_integrity(session)
             session.checkpoint()
             self._after_round(session, r, evaluator, budget, closed=False)
         return self._result(session)
@@ -133,6 +163,20 @@ class ResearchEngine:
             self._finish(session, decision)
         elif self._open_round(state) == r:
             self._begin_round(session, r + 1)
+
+    @staticmethod
+    def _verify_integrity(session: Session) -> None:
+        """The log is the truth: if the live state differs from a replay of the log (something changed the state
+        without an event), the live state is rebuilt from the log and the incident is recorded.  The replay is kept
+        between rounds and advanced by the new events (Session.verify_incremental)."""
+        report = session.verify_incremental()
+        if report["consistent"]:
+            return
+        session.restore()
+        session.emit(EventType.DECISION_RECORDED, {"decisions": [Decision(
+            id=stable_id("dec", "integrity", session.seq), kind="integrity_restored",
+            summary="live state differed from the event log; rebuilt from the log",
+            rationale=f"live {report['live_hash'][:12]} ≠ replayed {report['replayed_hash'][:12]}", made_by="kernel").to_dict()]})
 
     def _begin_round(self, session: Session, r: int) -> None:
         session.emit(EventType.ROUND_STARTED, {"round": r})
@@ -186,7 +230,11 @@ class ResearchEngine:
             futures = [pool.submit(self.runtime.run_task, session, t, budget=budget, defer_commit=True) for t in agent_tasks]
             results = [f.result() for f in futures]
         for result in results:  # agent_tasks are already in scheduling order
-            result.commit()
+            try:
+                result.commit()
+            except InvalidEvent as exc:  # the whole batch is refused and nothing of it is written; the task failed
+                session.emit(EventType.TASK_FAILED, {"task_id": result.task_id, "error": f"commit refused: {exc}"[:500]},
+                             task_id=result.task_id)
 
     def run_task(self, session: Session, task: TaskNode, budget: Budget) -> TaskResult:
         if task.role in KERNEL_ROLES:
@@ -194,14 +242,18 @@ class ResearchEngine:
         return self.runtime.run_task(session, task, budget=budget)
 
     def _run_kernel(self, session: Session, task: TaskNode) -> TaskResult:
-        session.emit(EventType.TASK_STARTED, {"task_id": task.id, "agent_id": VALIDATOR.id}, actor=VALIDATOR.id, task_id=task.id)
-        tx = session.transaction(VALIDATOR.id, task.id)
+        session.emit(EventType.TASK_STARTED, {"task_id": task.id, "agent_id": VALIDATOR.id}, actor=VALIDATOR, task_id=task.id)
+        tx = session.transaction(VALIDATOR, task.id)
         try:
             state = session.state
             if task.kind == "validate_claims":
                 summary = validate_claims(self.h, state, tx)
+            elif task.kind == "adjudicate_objections":
+                summary = adjudicate_objections(self.h, state, tx)
             elif task.kind == "validate":
                 summary = validate_hypotheses(self.h, state, tx)
+            elif task.kind == "confirm":
+                summary = confirm_hypotheses(self.h, state, tx)
             elif task.kind == "score":
                 summary = score_hypotheses(self.h, state, tx, task.round)
             else:
@@ -214,7 +266,7 @@ class ResearchEngine:
         except Exception as exc:
             tx.abort()
             error = f"{type(exc).__name__}: {exc}"
-            session.emit(EventType.TASK_FAILED, {"task_id": task.id, "error": error[:500]}, actor=VALIDATOR.id, task_id=task.id)
+            session.emit(EventType.TASK_FAILED, {"task_id": task.id, "error": error[:500]}, actor=VALIDATOR, task_id=task.id)
             return TaskResult(task.id, task.role, VALIDATOR.id, "failed", error=error)
 
     # ================================================================ rounds
@@ -239,6 +291,10 @@ class ResearchEngine:
     def _finish(self, session: Session, decision: StopDecision) -> None:
         session.emit(EventType.STOP_CONDITION_MET, {"status": decision.status, "reasons": decision.reasons,
                                                     "signals": _jsonable(decision.signals)})
+        # execution is not acceptance: record what was used, then let a validator judge the research against its contract
+        session.emit(EventType.RUN_MANIFEST_RECORDED, {"manifest": run_manifest(self.h, session, phase="end")})
+        evaluation = evaluate_contract(session.state, execution=decision.status)
+        session.emit(EventType.CONTRACT_EVALUATED, {"evaluation": evaluation.to_dict()}, actor=CONTRACT_JUDGE)
         try:
             publish_report(self.h, session)
         except Exception as exc:  # a report failure must not lose the research
@@ -252,7 +308,8 @@ class ResearchEngine:
     def _result(self, session: Session) -> RunResult:
         state = session.state
         return RunResult(session_id=session.id, status=state.status, rounds=state.round, stop=dict(state.stop or {}),
-                         metrics=research_metrics(state), artifacts=sorted(state.artifacts))
+                         metrics=research_metrics(state), artifacts=sorted(state.artifacts),
+                         acceptance=dict(state.acceptance or {}))
 
     # ================================================================ branches
     def branch(self, session: Session, hypothesis_id: str, *, purpose: str = "", merge: bool = True) -> tuple[Session, dict[str, Any]]:
@@ -296,12 +353,12 @@ class ResearchEngine:
         """Gate G7: only a human expert can approve or reject a hypothesis."""
         actor = Actor.human(expert)
         etype = EventType.EXPERT_APPROVED if approve else EventType.EXPERT_REJECTED
-        session.emit(etype, {"hypothesis_id": hypothesis_id, "note": note}, actor=actor.id)
+        session.emit(etype, {"hypothesis_id": hypothesis_id, "note": note}, actor=actor)
 
     def decide_change(self, session: Session, change_id: str, *, approve: bool, actor: Actor, note: str = "") -> None:
         """Canonical knowledge changes are decided by validators or humans; approved ones enter M3 domain memory."""
         etype = EventType.CHANGE_APPROVED if approve else EventType.CHANGE_REJECTED
-        session.emit(etype, {"change_id": change_id, "note": note}, actor=actor.id)
+        session.emit(etype, {"change_id": change_id, "note": note}, actor=actor)
         change = session.state.changes[change_id]
         if approve:
             summary = _change_summary(change)
@@ -309,11 +366,82 @@ class ResearchEngine:
                                          terms=[str(v) for k, v in change.payload.items() if k in ("sense_id", "concept_id")],
                                          provenance={"change_id": change.id, "session": session.id})
             self.h.memory.commit(item.id, actor=actor)
-            session.emit(EventType.MEMORY_WRITTEN, {"memory_id": item.id, "layer": "M3", "change_id": change.id}, actor=actor.id)
+            session.emit(EventType.MEMORY_WRITTEN, {"memory_id": item.id, "layer": "M3", "change_id": change.id}, actor=actor)
 
     def steer(self, session: Session, *, expert: str, note: str, focus: list[str] | None = None) -> None:
         """Human steering is recorded (it never edits the immutable contract)."""
-        session.emit(EventType.EXPERT_STEERED, {"note": note, "focus": focus or []}, actor=Actor.human(expert).id)
+        session.emit(EventType.EXPERT_STEERED, {"note": note, "focus": focus or []}, actor=Actor.human(expert))
+
+    def close_objection(self, session: Session, hypothesis_id: str, objection_id: str, *, expert: str, note: str) -> None:
+        """An expert closes an interpretive objection (hard ones close only by a validator's passing re-run)."""
+        reviews = session.state.reviews_for(hypothesis_id)
+        review = next((r for r in sorted(reviews, key=lambda r: (r.round, r.id), reverse=True) if r.objection(objection_id)), None)
+        if review is None:
+            raise KeyError(f"no objection {objection_id} on {hypothesis_id}")
+        session.emit(EventType.OBJECTION_CLOSED, {"hypothesis_id": hypothesis_id, "review_id": review.id, "objection_id": objection_id,
+                                                  "method": "expert", "resolution": note}, actor=Actor.human(expert))
+
+    # ================================================================ retraction, cancel, retry
+    def retract(self, session: Session, *, reason: str, actor: Actor, evidence_ids: list[str] | None = None,
+                passage_id: str | None = None, reevaluate: bool = True) -> dict[str, Any]:
+        """Retract evidence — named records, or every record on a passage (a witness found to be a later interpolation,
+        a misread, a misattribution).  Everything computed on it is invalidated by the reducer (hypotheses lose it,
+        their gates are void, objections closed with it re-open); then the hypotheses are re-validated, re-scored and
+        the contract re-evaluated, so no report can present what rested on it."""
+        ids = list(evidence_ids or [])
+        if passage_id:
+            ids += [e.id for e in session.state.evidence.values() if e.passage_id == passage_id]
+        ids = sorted({e for e in ids if e in session.state.evidence and e not in session.state.retractions})
+        if not ids:
+            return {"retracted": 0}
+        session.emit(EventType.EVIDENCE_RETRACTED, {"evidence_ids": ids, "reason": reason}, actor=actor)
+        touched = sorted({h for e in ids for h in session.state.retractions[e]["hypotheses"]})
+        if reevaluate:
+            self.reevaluate(session, reason=f"evidence retracted: {reason}")
+        return {"retracted": len(ids), "hypotheses": touched, "acceptance": (session.state.acceptance or {}).get("status")}
+
+    def reevaluate(self, session: Session, *, reason: str = "") -> None:
+        """Re-run the validators on the state as it is (objections, gates, confirmation, warrants and scores, contract)."""
+        for kind, fn in (("adjudicate_objections", adjudicate_objections), ("validate", validate_hypotheses),
+                         ("confirm", confirm_hypotheses)):
+            tx = session.transaction(VALIDATOR, f"reevaluate.{kind}")
+            fn(self.h, session.state, tx)
+            tx.commit()
+        tx = session.transaction(VALIDATOR, "reevaluate.score")
+        score_hypotheses(self.h, session.state, tx, session.state.round)
+        tx.commit()
+        evaluation = evaluate_contract(session.state, execution=(session.state.stop or {}).get("status", session.state.status))
+        session.emit(EventType.CONTRACT_EVALUATED, {"evaluation": evaluation.to_dict()}, actor=CONTRACT_JUDGE)
+        if reason:
+            session.emit(EventType.DECISION_RECORDED, {"decisions": [Decision(
+                id=stable_id("dec", "reevaluate", session.seq), kind="reevaluated", summary="validators re-run and contract re-evaluated",
+                rationale=reason, made_by="kernel").to_dict()]})
+
+    def cancel(self, session: Session, task_id: str, *, reason: str, actor: Actor) -> None:
+        """Cancel a pending task (recorded; its dependents are skipped by the scheduler as for any task not done)."""
+        task = session.state.task_graph.get(task_id)
+        if task is None or task.status not in ("pending", "running"):
+            raise ValueError(f"task {task_id} is not pending")
+        session.emit(EventType.TASK_SKIPPED, {"task_id": task_id, "reason": f"cancelled by {actor.id}: {reason}"}, actor=actor
+                     if actor.principal != "human" else None)
+
+    def retry(self, session: Session, task_id: str, *, run: bool = True) -> str:
+        """Plan a failed or skipped task again (a new node with the same kind, role, inputs and dependencies) and, by
+        default, run it — and, for a research already finished, re-run the validators and the contract after it."""
+        task = session.state.task_graph.get(task_id)
+        if task is None or task.status not in ("failed", "skipped"):
+            raise ValueError(f"task {task_id} has not failed")
+        n = sum(1 for t in session.state.task_graph if t.startswith(task_id + ".retry")) + 1
+        node = task.replace(id=f"{task_id}.retry{n}", status="pending", summary="", outputs=[],
+                            inputs={**task.inputs, "retry_of": task_id})
+        session.emit(EventType.TASK_PLANNED, {"tasks": [node.to_dict()]})
+        if run:
+            budget = self.h.new_budget()
+            budget.seed(**self.spent(session.state))
+            self._drain(session, budget)
+            if session.state.status in FINAL:
+                self.reevaluate(session, reason=f"retried {task_id}")
+        return node.id
 
 
 def _change_summary(change: Any) -> str:

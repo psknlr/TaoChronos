@@ -122,9 +122,8 @@ class SketchIndex:
                 counts[owner] += 1
         for b in skip:
             counts.pop(b, None)
-        out = [Match(b, round(n / len(grams), 4), round(n / max(1, self.books.get(b, 1)), 4), n)
-               for b, n in counts.most_common(top)]
-        return out
+        ranked = sorted(counts.items(), key=lambda bn: (-bn[1], bn[0]))[:top]  # ties: the main file before its "a" copy
+        return [Match(b, round(n / len(grams), 4), round(n / max(1, self.books.get(b, 1)), 4), n) for b, n in ranked]
 
     def union_containment(self, grams: set[int], book_ids: Iterable[str]) -> float:
         """Share of the candidate found in any of the given books (a compilation of several stored texts)."""

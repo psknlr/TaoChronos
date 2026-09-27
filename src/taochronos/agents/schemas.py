@@ -88,8 +88,10 @@ OUTPUT_SCHEMAS: dict[str, dict[str, Any]] = {
         }, ["statement", "kind", "observation_ids", "support"])),
     }, ["hypotheses"]),
     "RevisionSet": obj({
+        # a revision that changes terms or kind is substantive: a new claim, which must cite its own support
         "revisions": arr(obj({"parent_id": S, "statement": S, "revision_note": S, "qualifiers": {"type": "object"},
-                              "alternative_explanations": STRS, "testable_prediction": S}, ["parent_id", "statement", "revision_note"])),
+                              "alternative_explanations": STRS, "testable_prediction": S, "terms": STRS, "kind": S,
+                              "support": arr(QUOTE)}, ["parent_id", "statement", "revision_note"])),
     }, ["revisions"]),
     "ReviewSet": obj({
         "reviews": arr(obj({
@@ -98,7 +100,11 @@ OUTPUT_SCHEMAS: dict[str, dict[str, Any]] = {
             "summary": S,
             "checks_run": STRS,
             "objections": arr(obj({"check": S, "severity": {"type": "string", "enum": ["critical", "major", "minor", "info"]},
-                                   "detail": S, "counter_evidence": arr(QUOTE), "passage_ids": STRS, "resolved": B, "resolution": S},
+                                   "detail": S, "counter_evidence": arr(QUOTE), "passage_ids": STRS,
+                                   # a model can only *propose* a resolution; "resolved" is read as a proposal too
+                                   "resolved": B, "resolution": S,
+                                   "basis": {"type": "string", "enum": ["qualifier", "new_evidence", "rationale"]},
+                                   "evidence_ids": STRS},
                                   ["check", "severity", "detail"])),
         }, ["hypothesis_id", "verdict", "objections"])),
     }, ["reviews"]),

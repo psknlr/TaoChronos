@@ -14,14 +14,19 @@ layers:
   agents:       {paths: [src/taochronos/agents], may_import: [protocol, capabilities, kernel, science, verification, tools, agents]}
   engine:       {paths: [src/taochronos/engine], may_import: [protocol, capabilities, kernel, science, verification, tools, agents, engine]}
   evals:        {paths: [src/taochronos/evals], may_import: ["*"]}
-  app:          {paths: [src/taochronos/__init__.py, src/taochronos/__main__.py, src/taochronos/cli.py, src/taochronos/bootstrap.py, src/taochronos/config.py, src/taochronos/governance.py, src/taochronos/workspace], may_import: ["*"]}
+  app:          {paths: [src/taochronos/__init__.py, src/taochronos/__main__.py, src/taochronos/cli.py, src/taochronos/bootstrap.py, src/taochronos/config.py, src/taochronos/governance.py, src/taochronos/workspace, src/taochronos/chat], may_import: ["*"]}
 # the kernel must stay vendor-, product- and corpus-neutral
 kernel_forbidden_terms: [anthropic, openai, claude, gpt-, deepseek, gemini, neo4j, 伤寒论, 黄帝内经, 神农本草经, 金匮, shanghanlun, suwen]
 # vendor SDKs may only be imported by model-provider plugins
-vendor_sdks: [anthropic, openai]
+vendor_sdks: [anthropic, openai, litellm]
 vendor_sdk_allowed_in: [src/taochronos/plugins/models]
 # agents act through capabilities and tools, never by importing concrete plugins
 agents_may_not_import: [taochronos.plugins]
+# authority comes from identity objects (kernel/authority.py): only the kernel, the engine and the app mint privileged
+# ones; agent procedures, tools and plugins act under the identity they are handed and never reach behind a session view
+identity_rules:
+  no_privileged_identities_in: [src/taochronos/agents, src/taochronos/tools, src/taochronos/plugins]
+  session_internals_allowed_in: [src/taochronos/agents/runtime.py]
 # hard invariants checked against the agent specs
 agent_rules:
   forbid_commit_permissions: true

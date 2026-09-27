@@ -18,6 +18,8 @@ class EventType(str, Enum):
     STOP_CONDITION_MET = "StopConditionMet"
     RESEARCH_COMPLETED = "ResearchCompleted"
     RESEARCH_STOPPED = "ResearchStopped"
+    CONTRACT_EVALUATED = "ContractEvaluated"
+    RUN_MANIFEST_RECORDED = "RunManifestRecorded"
     # task graph / agents (operational)
     TASK_PLANNED = "TaskPlanned"
     TASK_STARTED = "TaskStarted"
@@ -33,16 +35,20 @@ class EventType(str, Enum):
     TOOL_DENIED = "ToolDenied"
     HOOK_BLOCKED = "HookBlocked"
     BUDGET_EXCEEDED = "BudgetExceeded"
+    BUDGET_RESERVED = "BudgetReserved"
+    BUDGET_SETTLED = "BudgetSettled"
     # knowledge
     PASSAGE_ASSESSED = "PassageAssessed"
     TERM_RESOLVED = "TermResolved"
     EVIDENCE_RETRIEVED = "EvidenceRetrieved"
+    EVIDENCE_RETRACTED = "EvidenceRetracted"
     CLAIM_EXTRACTED = "ClaimExtracted"
     CLAIM_REJECTED = "ClaimRejected"
     LINEAGE_DETECTED = "LineageDetected"
     CONTRADICTION_FOUND = "ContradictionFound"
     OBSERVATION_RECORDED = "ObservationRecorded"
     ANALYSIS_RECORDED = "AnalysisRecorded"
+    WARRANT_RECORDED = "WarrantRecorded"
     # hypotheses
     HYPOTHESIS_GENERATED = "HypothesisGenerated"
     COUNTER_EVIDENCE_FOUND = "CounterEvidenceFound"
@@ -51,7 +57,10 @@ class EventType(str, Enum):
     HYPOTHESIS_REJECTED = "HypothesisRejected"
     HYPOTHESIS_SCORED = "HypothesisScored"
     HYPOTHESIS_RANKED = "HypothesisRanked"
+    HYPOTHESIS_CONFIRMED = "HypothesisConfirmed"
     GATE_EVALUATED = "GateEvaluated"
+    OBJECTION_RESOLUTION_PROPOSED = "ObjectionResolutionProposed"
+    OBJECTION_CLOSED = "ObjectionClosed"
     # governance
     CHANGE_PROPOSED = "ChangeProposed"
     CHANGE_APPROVED = "ChangeApproved"
@@ -81,6 +90,9 @@ OPERATIONAL_EVENTS = frozenset(
         EventType.TOOL_DENIED.value,
         EventType.HOOK_BLOCKED.value,
         EventType.BUDGET_EXCEEDED.value,
+        EventType.BUDGET_RESERVED.value,
+        EventType.BUDGET_SETTLED.value,
+        EventType.RUN_MANIFEST_RECORDED.value,
         EventType.CHECKPOINT_CREATED.value,
         EventType.TRANSACTION_COMMITTED.value,
     }
@@ -94,6 +106,7 @@ class Event(Model):
     type: str
     actor: str
     payload: dict = field_dict()
+    principal: str = ""  # resolved by the session from the emitting identity — never supplied by the emitter
     task_id: str | None = None
     tx: str | None = None
     parent_seq: int | None = None

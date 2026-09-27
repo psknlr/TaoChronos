@@ -1,0 +1,6 @@
+# NameEval — names that changed at a date history records (避讳改名): where the preferred name of the store's works
+# changes (100-year bins, three works or more on each side), the change must fall in the range given.  The dates are
+# the emperors' reigns, not the corpus's.
+changes:
+  - {term: 山药, from: 薯蓣, to: 山药, by: [1000, 1200], note: 宋英宗赵曙（1063–1067 在位）讳“曙”，薯蓣改称山药（唐避代宗讳已作薯药）}
+  - {term: 玄参, from: 玄参, to: 元参, by: [1650, 1800], note: 清康熙帝玄烨（1662–1722 在位）讳“玄”，玄参作元参}

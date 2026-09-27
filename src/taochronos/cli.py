@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
 from . import AGENT_NAME, __version__
+from .protocol.yamlio import load_yaml
 
 
 def _out(obj: Any) -> None:
@@ -26,8 +28,42 @@ def _harness(args: argparse.Namespace, **kw: Any) -> Any:
         overrides["routing"] = {"default_provider": args.provider}
     if getattr(args, "parallel", None):
         overrides["context"] = {"max_parallel_agents": args.parallel}
-    return Harness.from_profile(getattr(args, "profile", None) or "full-discovery", home=args.home, data_dir=args.data,
-                                overrides=overrides or None, **kw)
+    harness = Harness.from_profile(getattr(args, "profile", None) or "full-discovery", home=args.home, data_dir=args.data,
+                                   overrides=overrides or None, **kw)
+    if getattr(args, "llm", None) and args.llm not in ("auto", "none", "off", "rules"):
+        try:
+            harness.use_llm(args.llm)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+    if getattr(args, "record_llm", None):
+        harness.runtime.recording = (args.record_llm, "record")
+    elif getattr(args, "replay_llm", None):
+        harness.runtime.recording = (args.replay_llm, "replay")
+    return harness
+
+
+def _judge(args: argparse.Namespace, harness: Any) -> Any:
+    """The model that reviews rule decisions for this command (``--llm``), or None: rules only."""
+    spec = getattr(args, "llm", None)
+    if not spec and not (harness.profile.judge or {}).get("provider"):
+        return None
+    try:
+        return harness.judge("auto" if spec in (None, "auto") else ("none" if spec in ("none", "off", "rules") else spec),
+                             refresh=getattr(args, "llm_refresh", False), max_calls=getattr(args, "llm_max_calls", None),
+                             max_cost_usd=getattr(args, "llm_max_cost", None))
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+
+
+def _llm_args(sp: argparse.ArgumentParser) -> None:
+    sp.add_argument("--llm", help="rules screen, a model reviews: provider:model (minimax:MiniMax-M2.7, poe:claude-sonnet-4.6, "
+                                  "litellm:deepseek/deepseek-chat, anthropic:claude-opus-5 …), auto (the profile's judge), "
+                                  "or none; see `taochronos llm presets`")
+    sp.add_argument("--llm-max-calls", type=int, help="most model calls for this command (default 200)")
+    sp.add_argument("--llm-max-cost", type=float, help="most model cost in USD for this command (default 5)")
+    sp.add_argument("--llm-refresh", action="store_true", help="ask again instead of reading cached answers")
+    sp.add_argument("--record-llm", metavar="DIR", help="save every agent model response under DIR (for an exact replay)")
+    sp.add_argument("--replay-llm", metavar="DIR", help="replay saved model responses from DIR; never call a model")
 
 
 def _session(args: argparse.Namespace) -> tuple[Any, Any, Any]:
@@ -104,6 +140,8 @@ def _corpus_admin(args: argparse.Namespace, action: str) -> None:
     db = _store_path(args, data)
     from .plugins.classics.ingest.collections import COLLECTIONS, RANK
 
+    if action == "images":
+        return _corpus_images(args, home, data, db)
     source = args.source or "kanripo"
     only = [x for x in (args.only or "").split(",") if x] or None
     known = ("kanripo", "kr-catalog", "jicheng", *COLLECTIONS)
@@ -134,10 +172,55 @@ def _corpus_admin(args: argparse.Namespace, action: str) -> None:
         print(f"  external works registered: {n}")
 
 
+def _corpus_images(args: argparse.Namespace, home: Path, data: Path, db: Path) -> None:
+    """Harvest the records of digitised copies (image witnesses) and link them to the works of the store."""
+    from .plugins.classics.chronology import Chronology
+    from .plugins.classics.domain import DomainPack
+    from .plugins.classics.ingest import images
+    from .plugins.classics.ingest.collections import RANK
+    from .plugins.classics.store import CorpusStore
+
+    wanted = args.source or "all"
+    sources = list(images.SOURCES) if wanted == "all" else [s for s in images.SOURCES if s == wanted or s.startswith(wanted + ":")]
+    if not sources:
+        raise SystemExit(f"unknown image source {wanted!r}; available: {', '.join(images.SOURCES)}, all")
+    pack = DomainPack(home / "domains" / "classics")
+    normalize = pack.variants.normalize_text
+    chronology = Chronology(home / "domains" / "classics" / "eras.yaml", normalize)
+    books = [{**json.loads(raw), "_rank": RANK.get(src, 99)}
+             for raw, src in CorpusStore(db).db.execute("SELECT data, source FROM books")] if db.exists() else []
+    index = images.work_index(books, normalize)
+    freq: dict[str, int] = {}
+    if db.exists():  # character frequencies of the traditional-script texts, to choose among traditional forms
+        for (text,) in CorpusStore(db).db.execute("SELECT text FROM passages WHERE book_id IN (SELECT id FROM books WHERE "
+                                                  "source='kanripo') AND rowid % 25 = 0"):
+            for ch in text:
+                freq[ch] = freq.get(ch, 0) + 1
+    titles = images.query_titles(books, home / "domains" / "classics" / "script" / "t2s.tsv", freq)
+    fetch = images.Fetcher(data / "sources" / "images" / "cache", pause=float(args.pause or 1.0), log=print)
+    out_dir = home / "corpus" / "catalog" / "images"
+    summary = {}
+    for source in sources:
+        records = images.SOURCES[source](fetch, print, titles, normalize)
+        linked = images.link(records, index, normalize, {b["id"]: list(b.get("authors") or []) for b in books})
+        if args.enrich:
+            for rec in records:
+                if rec.source.startswith("nijl:") and (rec.work or args.enrich == "all"):
+                    images.nijl_enrich(fetch, rec)
+        for rec in records:  # dates in a Chinese reign era (唐本: 嘉慶5, 萬暦29)
+            if rec.date and not rec.years:
+                rec.years = images.chinese_years(rec.date, chronology)
+        images.write_csv(out_dir / images.file_name(source), records)
+        summary[source] = {"records": len(records), "linked": linked,
+                           "works": len({r.work for r in records if r.work}),
+                           "with_manifest": sum(1 for r in records if r.manifest)}
+    _out({"catalog": str(out_dir), "sources": summary,
+          "note": "records only (no images downloaded); links by title — check `match` (exact / without-volumes / "
+                  "without-print-prefix) before relying on one"})
+
+
 def _corpus_admin_kanripo(args: argparse.Namespace, action: str, home: Path, data: Path, db: Path, only: list[str] | None) -> None:
     import time
-
-    import yaml
 
     from .plugins.classics.domain import DomainPack
     from .plugins.classics.ingest import ingest_kanripo, load_catalog
@@ -157,7 +240,7 @@ def _corpus_admin_kanripo(args: argparse.Namespace, action: str, home: Path, dat
         store = CorpusStore(db, create=True)
         t0 = time.time()
         kr_path = home / "corpus" / "catalog" / "kr-catalog-kr3e.yaml"
-        kr_catalog = (yaml.safe_load(kr_path.read_text(encoding="utf-8")) or {}).get("texts") if kr_path.exists() else None
+        kr_catalog = (load_yaml(kr_path) or {}).get("texts") if kr_path.exists() else None
         records_only = bool(getattr(args, "changed", False))
         report = ingest_kanripo(store, catalog, sources_dir, pack.variants.normalize_text, pack.variants.fingerprint, only=only, log=print,
                                 dynasty_of=pack.periods.dynasty_of, kr_catalog=kr_catalog, records_only=records_only)
@@ -245,7 +328,7 @@ def _corpus_admin_jicheng(args: argparse.Namespace, action: str, home: Path, dat
     if action == "catalog" or (action == "ingest" and not catalog_path.exists()):
         chronology = Chronology(home / "domains" / "classics" / "eras.yaml", pack.variants.normalize_text)
         kanripo = load_catalog(home / "corpus" / "catalog" / "kanripo-kr3e.yaml")
-        overrides = yaml.safe_load((home / "corpus" / "catalog" / "jicheng-overrides.yaml").read_text(encoding="utf-8")) or {}
+        overrides = load_yaml(home / "corpus" / "catalog" / "jicheng-overrides.yaml") or {}
         exclusions = Exclusions(home / "corpus" / "catalog" / "exclusions.yaml")
         cat = build_jicheng_catalog(root, pack.variants.normalize_text, chronology, kanripo, overrides, pack.periods.dynasty_of,
                                     exclusions=exclusions)
@@ -280,7 +363,7 @@ def _corpus_admin_jicheng(args: argparse.Namespace, action: str, home: Path, dat
     catalog = load_catalog(catalog_path)
     if action != "ingest":
         raise SystemExit(f"`corpus {action}` is store-wide: run it without a source")
-    lock = (yaml.safe_load(lock_path.read_text(encoding="utf-8")) or {}).get("jicheng", {}) if lock_path.exists() else {}
+    lock = (load_yaml(lock_path) or {}).get("jicheng", {}) if lock_path.exists() else {}
     store = CorpusStore(db, create=True)
     if store.meta("normalizer") not in (None, pack.variants.fingerprint):
         raise SystemExit("the store was indexed with another normaliser: run `taochronos corpus reindex` first, then ingest")
@@ -352,7 +435,7 @@ def _corpus_admin_collection(args: argparse.Namespace, action: str, home: Path, 
         raise SystemExit("the store was indexed with another normaliser: run `taochronos corpus reindex` first")
     if action == "catalog":
         overrides_path = catalog_dir / f"{col.id}-overrides.yaml"
-        overrides = (yaml.safe_load(overrides_path.read_text(encoding="utf-8")) or {}) if overrides_path.exists() else {}
+        overrides = (load_yaml(overrides_path) or {}) if overrides_path.exists() else {}
         sketch = load_sketch(store, normalize, data / "corpus" / "sketch.pkl", pack.variants.fingerprint, log=print)
         book_work, book_source = {}, {}
         for bid, src, raw in store.db.execute("SELECT id, source, data FROM books"):
@@ -383,7 +466,7 @@ def _corpus_admin_collection(args: argparse.Namespace, action: str, home: Path, 
     if not catalog_path.exists():
         raise SystemExit(f"no catalog for {col.id}: run `taochronos corpus catalog {col.id}` first")
     catalog = load_catalog(catalog_path)
-    lock = ((yaml.safe_load(lock_path.read_text(encoding="utf-8")) or {}).get(col.id) or {}) if lock_path.exists() else {}
+    lock = ((load_yaml(lock_path) or {}).get(col.id) or {}) if lock_path.exists() else {}
     version = lock.get("commit") or lock.get("revision") or lock.get("latest_revision")
     report = ingest_documents(store, catalog, docs, normalize, pack.variants.fingerprint, chronology=chronology,
                               dynasty_of=pack.periods.dynasty_of, version=str(version)[:12] if version else None, only=only, log=print)
@@ -520,6 +603,14 @@ def cmd_research(args: argparse.Namespace) -> None:
         fields["stop"] = {"max_rounds": args.max_rounds}
     if args.books:
         fields["corpus"] = {"books": [b for b in args.books.split(",") if b]}
+    if getattr(args, "confirm", None):
+        from .protocol.contract import ConfirmationSpec
+
+        fields["confirmation"] = ConfirmationSpec(fraction=float(args.confirm))
+    if getattr(args, "require_confirmation", False):
+        from .protocol.contract import AcceptanceSpec
+
+        fields["acceptance"] = AcceptanceSpec(confirmation_required=True)
     goal = harness.make_goal(args.question, **fields)
     session = engine.start(goal, session_id=args.session)
     print(f"{AGENT_NAME} · session {session.id} · profile {harness.profile.name}", file=sys.stderr)
@@ -530,10 +621,42 @@ def cmd_research(args: argparse.Namespace) -> None:
         ws = publish_workspace(harness, session)
         print(f"workspace: {harness.artifacts.path_of(ws)}", file=sys.stderr)
     report = _latest(session.state, "discovery_report", "report.md")
-    _out({"session": result.session_id, "status": result.status, "rounds": result.rounds,
+    _out({"session": result.session_id, "status": result.status, "acceptance": result.verdict,
+          "acceptance_reasons": result.acceptance.get("reasons", []), "rounds": result.rounds,
           "stop": result.stop.get("reasons", []), "report": str(harness.artifacts.path_of(report)) if report else None,
           "metrics": {k: result.metrics[k] for k in ("claims", "evidence_count", "counter_evidence", "observations",
                                                       "hypotheses", "hypothesis_survival", "agents_spawned", "llm_calls", "cost_usd")}})
+
+
+def cmd_retract(args: argparse.Namespace) -> None:
+    from .kernel.policy import Actor
+
+    harness, engine, session = _session(args)
+    out = engine.retract(session, reason=args.reason, actor=Actor.human(args.expert), evidence_ids=args.evidence or [],
+                         passage_id=args.passage)
+    _out(out)
+
+
+def cmd_task(args: argparse.Namespace) -> None:
+    from .kernel.policy import Actor
+
+    harness, engine, session = _session(args)
+    if args.cancel == args.retry:
+        raise SystemExit("choose one of --cancel / --retry")
+    if args.cancel:
+        engine.cancel(session, args.task_id, reason=args.reason or "cancelled", actor=Actor.human(args.expert))
+        _out({"cancelled": args.task_id})
+    else:
+        new = engine.retry(session, args.task_id)
+        _out({"retried": args.task_id, "as": new, "status": session.state.task_graph[new].status,
+              "acceptance": (session.state.acceptance or {}).get("status")})
+
+
+def cmd_objection(args: argparse.Namespace) -> None:
+    harness, engine, session = _session(args)
+    engine.close_objection(session, args.hypothesis, args.objection, expert=args.expert, note=args.note)
+    engine.reevaluate(session, reason=f"objection {args.objection} closed by {args.expert}")
+    _out({"closed": args.objection, "acceptance": (session.state.acceptance or {}).get("status")})
 
 
 def _latest(state: Any, kind: str, filename: str) -> Any:
@@ -679,6 +802,12 @@ def cmd_schema(args: argparse.Namespace) -> None:
 
     if args.outputs:
         _out(OUTPUT_SCHEMAS)
+    elif args.study:
+        from .plugins.classics.study.schemas import STUDY_SCHEMAS
+
+        if args.study != "all" and args.study not in STUDY_SCHEMAS:
+            raise SystemExit(f"no schema for {args.study!r}; available: {', '.join(STUDY_SCHEMAS)}, all")
+        _out(STUDY_SCHEMAS if args.study == "all" else {args.study: STUDY_SCHEMAS[args.study]})
     else:
         _out(bundle_schema(list(PROTOCOL_TYPES)))
 
@@ -703,7 +832,10 @@ def cmd_eval(args: argparse.Namespace) -> None:
     _out(summary_table(results))
 
 
-STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset")
+STUDY = ("canon", "concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
+         "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship", "cases",
+         "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate", "commentaries", "disputes",
+         "clause", "glosses", "pairs", "network", "schools", "names", "chain", "entities", "places", "translate", "cruxes")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -718,14 +850,140 @@ def cmd_study(args: argparse.Namespace) -> None:
         args.profile = "full-corpus" if (data / "corpus" / "tcm.sqlite").exists() else "full-discovery"
     harness = _harness(args)
     study = harness.capabilities.get("study")
+    study.judge = _judge(args, harness)
     what, target = args.what, " ".join(args.target).strip() or None
     needs = {"formula": "a formula name", "herb": "a drug name", "term": "a term", "reading": "a topic", "metrology": "a dose"}
     if what in needs and not target:
         raise SystemExit(f"taochronos study {what}: give {needs[what]}")
-    if what == "concordance" and not (target or args.passage):
-        raise SystemExit("taochronos study concordance: give a text or --passage <id>")
+    if what in ("concordance", "reuse") and not (target or args.passage):
+        raise SystemExit(f"taochronos study {what}: give a text or --passage <id>")
+    if what in ("stemma", "edition", "tei", "transmission", "layers", "dating") and not (target or args.books):
+        raise SystemExit(f"taochronos study {what}: give a work (key, title or book id) or --books")
     notice = ""
-    if what == "concordance":
+    collation = {k: v for k, v in (("books", args.books), ("base", args.base), ("chapter", args.chapter)) if v}
+    if args.max_chars:
+        collation["max_chars"] = args.max_chars
+    if what == "variants":
+        res = study.variants(None if args.passage else target, text=target if args.text_mode else None,
+                             passage_id=args.passage, **({} if args.passage or args.text_mode else collation))
+    elif what == "stemma":
+        res = study.stemma(target, root_at=args.root_at, **collation)
+    elif what == "edition":
+        res = study.edition(target, **collation)
+    elif what == "tei":
+        text = study.tei(target, **collation)
+        if args.output:
+            Path(args.output).write_text(text, encoding="utf-8")
+            _out(f"wrote {args.output}")
+        else:
+            _out(text)
+        return
+    elif what == "reuse":
+        if args.against or args.against_passage:
+            res = study.reuse_pair(target, args.against, source_id=args.passage, target_id=args.against_passage)
+        else:
+            res = study.reuse(target, args.passage, semantic=not args.no_semantic, limit=args.limit or 300)
+    elif what == "transmission":
+        res = study.transmission(target, clauses=args.clauses)
+    elif what == "layers":
+        res = study.layers(target, books=args.books, k=args.k, features=args.features)
+    elif what == "dating":
+        res = study.dating(target, books=args.books)
+    elif what == "cases":
+        if not (target or args.book):
+            raise SystemExit("taochronos study cases: give a disease (e.g. 风温) or --book <id>")
+        res = study.cases(args.book, disease=None if args.book else target, limit=args.limit or 200)
+    elif what == "trajectories":
+        if not (target or args.book):
+            raise SystemExit("taochronos study trajectories: give a disease (e.g. 咳嗽) or --book <id>")
+        res = study.trajectories(None if args.book else target, book=args.book, limit=args.limit or 1000)
+    elif what == "argument":
+        if args.work:
+            res = study.argument(work=args.work, against=args.against_work)
+        elif target or args.passage:
+            res = study.argument(target, args.passage)
+        else:
+            raise SystemExit("taochronos study argument: give a text, --passage <id>, --work <work> [--against-work <work>]")
+    elif what == "senses":
+        if not target:
+            raise SystemExit("taochronos study senses: give a term (e.g. 消渴)")
+        res = study.senses(target)
+    elif what == "witnesses":
+        if not (target or args.books):
+            raise SystemExit("taochronos study witnesses: give a work (key, title or book id) or --books")
+        res = study.witnesses(target, books=args.books)
+    elif what == "fragments":
+        if not target:
+            raise SystemExit("taochronos study fragments: give a lost work (e.g. 小品方)")
+        res = study.fragments(target, verify_against=["*"] if args.verify else None)
+    elif what == "authorship":
+        if not (target or args.book):
+            raise SystemExit("taochronos study authorship: give a text or --book <id> [--chapter <篇名>]")
+        res = study.authorship(None if args.book else target, book=args.book, chapter=args.chapter_name,
+                               candidates=args.candidate or None)
+    elif what == "punctuate":
+        if args.input:
+            target = Path(args.input).read_text(encoding="utf-8")
+        if not (target or args.passage):
+            raise SystemExit("taochronos study punctuate: give a text, --input <file> or --passage <id>")
+        res = study.punctuate(target, args.passage)
+    elif what == "commentaries":
+        if not (target or args.passage):
+            raise SystemExit("taochronos study commentaries: give a clause or --passage <id>")
+        res = study.commentaries(target, args.passage)
+    elif what == "cruxes":
+        if args.work:
+            from .plugins.classics.study.cruxes import write_registry
+
+            harvests = [study.cruxes(work=w.strip()) for w in args.work.split(",") if w.strip()]
+            res = {"works": [{k: h[k] for k in ("work", "base_witness", "clauses")} | {"cruxes": len(h["cruxes"])} for h in harvests],
+                   "cruxes": [c for h in harvests for c in h["cruxes"]]}
+            if args.write_registry:
+                res["written"] = write_registry(harness.pack.root / "cruxes.yaml", harvests)
+        elif target or args.passage:
+            res = study.cruxes(target, args.passage)
+        else:
+            raise SystemExit("taochronos study cruxes: give a clause, --passage <id>, or --work <work>[,<work>] (--write-registry)")
+    elif what == "disputes":
+        res = study.disputes(target, person=args.person)
+    elif what == "pairs":
+        res = study.pairs(target, period=args.period)
+    elif what == "network":
+        res = study.network(target)
+    elif what == "chain":
+        if not (target or args.passage):
+            raise SystemExit("taochronos study chain: give a text or --passage <id>")
+        res = study.chain(target, args.passage)
+    elif what == "places":
+        res = study.places(target, term=args.term, school=args.school, person=args.person)
+        if args.geojson and res.get("geojson"):
+            Path(args.geojson).write_text(json.dumps(res["geojson"], ensure_ascii=False, indent=1), encoding="utf-8")
+            notice = f"GeoJSON written to {args.geojson}"
+    elif what == "translate":
+        text = Path(args.input).read_text(encoding="utf-8") if args.input else target
+        if not (text or args.passage):
+            raise SystemExit("taochronos study translate: give a text, --input <file> or --passage <id>")
+        res = study.translate(text, args.passage)
+    elif what == "entities":
+        text = Path(args.input).read_text(encoding="utf-8") if args.input else target
+        if not (text or args.passage):
+            raise SystemExit("taochronos study entities: give a text, --input <file> or --passage <id>")
+        res = study.entities(text, args.passage)
+    elif what == "names":
+        if not target:
+            raise SystemExit("taochronos study names: give a drug, formula or disease (e.g. 山药)")
+        res = study.names(target)
+    elif what == "schools":
+        res = study.schools(target, probes=args.probe or (), top=args.limit or 40)
+    elif what == "clause":
+        if not (target or args.passage or args.work):
+            raise SystemExit("taochronos study clause: give a clause, --passage <id> or --work <work>")
+        res = study.clause(target, args.passage, work=args.work)
+    elif what == "glosses":
+        if not (target or args.book):
+            raise SystemExit("taochronos study glosses: give a word (e.g. 几几) or --book <id> (its glossary)")
+        res = study.glosses(target, book=args.book)
+    elif what == "concordance":
         res = study.concordance(target, args.passage, min_coverage=args.min_coverage, limit=args.limit or 300)
     elif what == "formula":
         res = study.formula(target, other_names=not args.no_other_names)
@@ -738,6 +996,14 @@ def cmd_study(args: argparse.Namespace) -> None:
         res = study.taboo(target) if target else study.taboo(min_chars=args.min_chars)
     elif what == "citations":
         res = study.citations(target) if target else study.citations(top=args.top)
+    elif what == "canon":
+        if args.write_catalog:
+            from .plugins.classics.study.canon import write_catalog
+
+            ranking = study.canon_rank(top=args.limit or 350)
+            res = write_catalog(study._canon.path, ranking)
+        else:
+            res = study.canon(target, limit=args.limit or 60)
     elif what == "cards":
         res = study.cards(book=args.book, formulas=args.formula or [], herbs=args.herb or [], term=args.term, limit=args.limit or 60)
         if args.anki:
@@ -779,6 +1045,331 @@ def cmd_demo(args: argparse.Namespace) -> None:
     cmd_research(args)
 
 
+def cmd_llm(args: argparse.Namespace) -> None:
+    """Model providers: which are configured and reachable, the presets, and a one-call test."""
+    from .plugins.models.openai_compat import PRESETS
+
+    if args.action == "presets":
+        rows = []
+        for name, p in PRESETS.items():
+            key = p.get("api_key_env")
+            rows.append({"preset": name, "base_url": p["base_url"], "key": key, "key_set": bool(key and os.environ.get(key)),
+                         "examples": p.get("examples", [])})
+        _out({"presets": rows, "litellm": {"package": _has_module("litellm"),
+                                           "use": "--llm litellm:<provider>/<model> (package) or a proxy base_url in a profile"},
+              "usage": "taochronos llm test minimax:MiniMax-M2.7 · taochronos study punctuate --llm poe:claude-sonnet-4.6 …"})
+        return
+    harness = _harness(args)
+    if args.action == "list":
+        rows = []
+        for name in harness.capabilities.names("llm"):
+            prov = harness.capabilities.get("llm", name)
+            rows.append({"provider": name, "available": prov.available(), "deterministic": getattr(prov, "deterministic", False),
+                         "key": getattr(prov, "api_key_env", None),
+                         "models": [{"name": m.name, "tier": m.tier, "classical_chinese": m.classical_chinese} for m in prov.models()]})
+        _out({"providers": rows, "judge": harness.profile.judge or None})
+        return
+    # test: one small structured call
+    if not args.spec:
+        raise SystemExit("taochronos llm test <provider:model>, e.g. minimax:MiniMax-M2.7")
+    try:
+        judge = harness.judge(args.spec, refresh=True)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    res = judge.ask("llm.test", "You answer in JSON.", "「太阳之为病，脉浮，头项强痛而恶寒。」这句话里提到了哪一种脉象？"
+                    "Answer as {\"pulse\": \"…\"}.", schema={"type": "object", "required": ["pulse"],
+                                                          "properties": {"pulse": {"type": "string"}}})
+    _out({"judge": judge.label, "ok": res.ok, "answer": res.data, "error": res.error, "latency_ms": res.latency_ms,
+          "tokens": {"input": res.input_tokens, "output": res.output_tokens}, "cost_usd": round(res.cost_usd, 6)})
+
+
+def cmd_vision(args: argparse.Namespace) -> None:
+    """版面理解与 OCR (T1–T2): the layout of an OCR engine's page, a vision model's reading, a comparison with the store."""
+    from .plugins.classics.vision import iiif
+
+    if args.action == "fetch":
+        if not args.target or not args.page:
+            raise SystemExit("taochronos vision fetch <manifest url or file> --page N")
+        _, data = _corpus_paths(args)
+        _out(iiif.fetch_page(args.target, args.page, data / "images" / "pages", width=args.width))
+        return
+    if not args.profile:
+        _, data = _corpus_paths(args)
+        args.profile = "full-corpus" if (data / "corpus" / "tcm.sqlite").exists() else "full-discovery"
+    harness = _harness(args)
+    study = harness.capabilities.get("study")
+    vision = harness.capabilities.get("vision")
+    if args.action == "layout":
+        g = vision.layout(path=args.target, fmt=args.format)
+        if args.json:
+            _out(g)
+            return
+        lines = [f"# 版面：{args.target}", "", f"{g['orientation']}，主文字径 {g['char_size']}；{'；'.join(g['notes'])}", "",
+                 "## 正文（阅读顺序，小注在（）中）", "", g["text"], ""]
+        if g["apparatus"]:
+            lines += ["## 版心、书眉", ""] + [f"- {a['kind']}：{a['text']}" for a in g["apparatus"]]
+        _out("\n".join(lines))
+        return
+    if args.action == "read":
+        study.judge = _judge(args, harness)
+        try:
+            _out(vision.read(args.target, hint=args.hint or ""))
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+        return
+    text = Path(args.target).read_text(encoding="utf-8") if args.target and Path(args.target).exists() else args.target
+    if not text:
+        raise SystemExit("taochronos vision compare <OCR text or file> [--passage ID] [--reference FILE]")
+    ref = Path(args.reference).read_text(encoding="utf-8") if args.reference else None
+    try:
+        _out(vision.compare(text, passage_id=args.passage, reference=ref))
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+
+
+def cmd_bridge(args: argparse.Namespace) -> None:
+    """古今桥接 (AMBE): an ancient passage's findings → HPO → modern disease profiles, explainably; and back."""
+    from .plugins.classics.bridge import render_map, render_reverse
+
+    if not args.profile:
+        _, data = _corpus_paths(args)
+        args.profile = "full-corpus" if (data / "corpus" / "tcm.sqlite").exists() else "full-discovery"
+    harness = _harness(args)
+    study = harness.capabilities.get("study")
+    bridge = harness.capabilities.get("bridge")
+    if args.action == "diseases":
+        rows = bridge.diseases()
+        _out(rows if args.json else "\n".join(f"- {d['id']}：{d['label']}（{d['en']}，ICD-10 {d['icd10']}）典型：{'、'.join(d['typical'])}"
+                                               for d in rows))
+        return
+    if args.action == "verify":
+        _, data = _corpus_paths(args)
+        obo = Path(args.obo) if args.obo else data / "ontology" / "hp.obo"
+        if not obo.exists():
+            raise SystemExit(f"no HPO release at {obo}: download hp.obo (https://hpo.jax.org) and give --obo")
+        _out(bridge.verify(obo, write=args.write))
+        return
+    if args.action == "reverse":
+        if not args.target:
+            raise SystemExit("taochronos bridge reverse <disease id, name or ICD-10 code>")
+        try:
+            r = bridge.reverse(args.target, limit=args.limit)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+        _out(r if args.json else render_reverse(r))
+        return
+    text = Path(args.target).read_text(encoding="utf-8") if args.target and Path(args.target).exists() else args.target
+    if not text and not args.passage:
+        raise SystemExit(f"taochronos bridge {args.action} <text or file> | --passage ID")
+    study.judge = _judge(args, harness)
+    try:
+        if args.action == "phenotype":
+            _out(bridge.phenotype(text, passage_id=args.passage))
+            return
+        r = bridge.map(text, passage_id=args.passage, top=args.top, systems=args.system)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    _out(r if args.json else render_map(r))
+
+
+def _default_profile(args: argparse.Namespace) -> None:
+    if not getattr(args, "profile", None):
+        _, data = _corpus_paths(args)
+        args.profile = "full-corpus" if (data / "corpus" / "tcm.sqlite").exists() else "full-discovery"
+
+
+def cmd_audit(args: argparse.Namespace) -> None:
+    """证据审计 (S15): a claim decomposed into atomic claims, each checked against the witnesses, the bridge, modern
+    evidence and the presentism guard; five verdicts; a model may lower them, never raise."""
+    _default_profile(args)
+    harness = _harness(args)
+    text = Path(args.claim).read_text(encoding="utf-8") if Path(args.claim).exists() else args.claim
+    if args.online:
+        harness.capabilities.get("modern").online = True
+    harness.capabilities.get("study").judge = _judge(args, harness)
+    r = harness.capabilities.get("audit").audit(text, modern=not args.no_modern)
+    if args.json:
+        _out(r)
+        return
+    lines = [f"# 证据审计：{r['verdict']}", "", f"> {text[:300]}", ""]
+    for c in r["claims"]:
+        lines.append(f"- **{c['id']}**（{c['kind']}）{c['verdict']}：{c['text']}")
+        for ch in c["checks"]:
+            mark = {True: "✓", False: "✗", None: "·"}[ch["ok"]]
+            lines.append(f"  - {mark} {ch['check']}" + (f"：{ch['detail']}" if ch.get("detail") else ""))
+        for con in c.get("concerns", []):
+            lines.append(f"  - 模型意见：{con}")
+    if r["safety"]:
+        lines += ["", "## 安全提示", ""] + [f"- {s['material']}（{s['found']}）：{s['risk']}" for s in r["safety"]]
+    lines += ["", f"*{r['note']}*"]
+    _out("\n".join(lines))
+
+
+def cmd_graph(args: argparse.Namespace) -> None:
+    """证据图谱: the six-layer evidence graph of a bridge mapping (a passage or a text), a claim's audit, modern studies."""
+    _default_profile(args)
+    harness = _harness(args)
+    if args.online:
+        harness.capabilities.get("modern").online = True
+    text = args.text
+    if not (args.passage or text or args.claim or args.modern):
+        raise SystemExit("taochronos graph --passage ID | --text TEXT | --claim CLAIM | --modern DRUG")
+    g = harness.capabilities.get("audit").graph(passage_id=args.passage, text=text, claim=args.claim, modern=args.modern)
+    if args.graphml:
+        Path(args.graphml).write_text(g.to_graphml(), encoding="utf-8")
+    out = g.to_dict()
+    if args.node:
+        out = {"node": args.node, "lineage": g.lineage(args.node)}
+    _out(out if args.json or args.node else {"stats": out["stats"], "unsupported": g.unsupported()[:20],
+                                             **({"graphml": args.graphml} if args.graphml else {})})
+
+
+def cmd_modern(args: argparse.Namespace) -> None:
+    """现代证据 (S13): PubMed records on a drug or formula (and a disease), typed by design and population, with the
+    evidence hierarchy, the cross-level guard for a claim, and the safety table."""
+    _default_profile(args)
+    harness = _harness(args)
+    modern = harness.capabilities.get("modern")
+    modern.online = bool(args.online) or modern.online
+    if args.action == "safety":
+        _out(modern.safety(args.subject))
+        return
+    r = modern.search(args.subject, args.disease, design=args.design, limit=args.limit)
+    if args.claim:
+        r["guard"] = modern.guard(args.claim, r["records"])
+    if args.json:
+        _out(r)
+        return
+    lines = [f"# 现代证据：{args.subject}" + (f" × {args.disease}" if args.disease else ""), "", f"query: `{r['query']}`（{r['source']}）", ""]
+    if r["errors"]:
+        lines += [f"- 错误：{e}" for e in r["errors"]] + [""]
+    s = r["summary"]
+    lines.append("按类型：" + "、".join(f"{k} {v}" for k, v in s["by_type"].items()) + f"；可承载人体疗效论断者 {s['can_carry_efficacy']}")
+    lines += [""] + [f"- [{x['evidence_type']}/{x['population']}] {x['title'][:100]}（{x.get('year') or ''}）{x.get('url') or ''}"
+                     for x in r["records"]]
+    if r.get("guard"):
+        g = r["guard"]
+        lines += ["", f"论断层级：{g['claim_level']}；可承载的记录 {g['carrying']} 条"]
+    if r["safety"]:
+        lines += ["", "安全提示：" + "；".join(f"{x['material']}：{x['risk']}" for x in r["safety"])]
+    _out("\n".join(lines))
+
+
+def cmd_rwd(args: argparse.Namespace) -> None:
+    """真实世界数据 (S14): a question → a study spec (rules, or a model that never writes SQL) → a checked query on an
+    OMOP database (read-only); `synth` writes a synthetic OMOP database for trying it."""
+    from .plugins.modern import rwd
+
+    if args.action == "synth":
+        if not args.target:
+            raise SystemExit("taochronos rwd synth <out.sqlite>")
+        _out(rwd.synthesize(args.target, persons=args.persons))
+        return
+    _default_profile(args)
+    harness = _harness(args)
+    service = harness.capabilities.get("rwd")
+    if args.action == "spec":
+        _out(service.spec(args.target, args.db, judge=_judge(args, harness)))
+        return
+    if args.action == "run":
+        spec = rwd.load_spec(args.target) if Path(args.target).exists() else json.loads(args.target)
+        _out(service.run(spec, args.db))
+        return
+    _out(service.ask(args.target, args.db, judge=_judge(args, harness)))
+
+
+def cmd_ask(args: argparse.Namespace) -> None:
+    """V2: a question compiled into a workflow of skills (S01–S15) owned by four core agents, run as a DAG with every step
+    an artifact in the run's workspace (resumable), and answered with statements the critic audits."""
+    from .engine.workflow import ask
+
+    _default_profile(args)
+    harness = _harness(args)
+    if args.online:
+        harness.capabilities.get("modern").online = True
+    judge = _judge(args, harness)
+    harness.capabilities.get("study").judge = judge
+    r = ask(harness, args.question, page=args.page, judge=judge, run_id=args.run, resume=not args.fresh, plan_only=args.plan_only)
+    if args.plan_only:
+        _out(r["plan"])
+        return
+    _out({k: r[k] for k in ("run", "workspace", "plan", "steps")} if args.json else r["report"])
+
+
+def cmd_skills(args: argparse.Namespace) -> None:
+    """The skill manifests (S01–S15) and the core agents, checked against the tool registry."""
+    from .engine.workflow import load_core_agents, load_manifests, validate_registry
+
+    harness = _harness(args)
+    skills = load_manifests(harness.home / "skills" / "manifests")
+    agents = load_core_agents(harness.home / "agents" / "core")
+    errors = validate_registry(skills, agents, harness.scheduler.registry, set(harness.specs))
+    if args.json:
+        _out({"skills": [m.to_dict() for m in skills.values()], "agents": [a.__dict__ for a in agents.values()], "errors": errors})
+        return
+    lines = ["# 技能与核心智能体", ""]
+    for a in agents.values():
+        lines.append(f"## {a.name}（{a.id}）")
+        lines.append(a.description)
+        for sid in a.skills:
+            m = skills.get(sid)
+            if m:
+                tools = "、".join(dict.fromkeys(c["tool"] for c in m.calls))
+                lines.append(f"- {m.id} {m.name} v{m.version}：LLM {m.requires_llm}；依赖 {m.dependencies or '—'}；工具 {tools}")
+        lines.append(f"- 委派：{'、'.join(a.delegates)}；权限：{'、'.join(a.permissions)}")
+        lines.append("")
+    lines.append("注册检查：" + ("通过" if not errors else "；".join(errors)))
+    _out("\n".join(lines))
+
+
+def cmd_serve(args: argparse.Namespace) -> None:
+    """The web client's local server: the chat runtime over the full corpus (or the demonstration corpus when no store
+    has been built), the client itself and a model proxy restricted to the listed providers."""
+    from .chat import ChatRuntime
+    from .chat.server import serve
+
+    _default_profile(args)
+    try:
+        runtime = ChatRuntime.create(args.profile, home=args.home, data_dir=args.data, llm=args.llm, kind="server",
+                                     code_mode=args.code_mode)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    serve(runtime, host=args.host, port=args.port, web=Path(args.web) if args.web else None, origins=args.allow_origin,
+          env_keys=args.env_keys, proxy=not args.no_proxy, open_browser=args.open, quiet=not args.verbose,
+          token=args.token or os.environ.get("TAOCHRONOS_TOKEN"), allow_hosts=args.allow_host)
+
+
+def cmd_web(args: argparse.Namespace) -> None:
+    """The web client as a static site (GitHub Pages): ``build`` — client, in-browser runtime, providers, Pyodide and
+    the 要籍语料; ``pack`` — write that corpus (corpus/web) from the full corpus store and corpus/catalog/canon.yaml."""
+    from .chat.build import build_site
+    from .config import find_home
+
+    home = find_home(args.home)
+    if args.action == "pack":
+        import sqlite3
+
+        from .plugins.classics.webcorpus import export_pack
+
+        _, data = _corpus_paths(args)
+        db_path = data / "corpus" / "tcm.sqlite"
+        if not db_path.exists():
+            raise SystemExit(f"no full corpus store at {db_path}: the pack is written from it (taochronos corpus ingest …)")
+        works = (load_yaml(home / "corpus" / "catalog" / "canon.yaml") or {}).get("works") or []
+        if not works:
+            raise SystemExit("no corpus/catalog/canon.yaml: run taochronos study canon --write-catalog first")
+        _out(export_pack(sqlite3.connect(f"file:{db_path}?mode=ro", uri=True), works, Path(args.output or home / "corpus" / "web")))
+        return
+    info = build_site(Path(args.output or "_site"), home=home, web=Path(args.web) if args.web else None, pyodide=args.pyodide)
+    _out(info)
+
+
+def _has_module(name: str) -> bool:
+    import importlib.util
+
+    return importlib.util.find_spec(name) is not None
+
+
 # ------------------------------------------------------------------ parser
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="taochronos", description=f"{AGENT_NAME}: evidence-native knowledge discovery in Chinese medical classics")
@@ -797,11 +1388,107 @@ def build_parser() -> argparse.ArgumentParser:
 
     add("info", cmd_info, "describe the harness (plugins, capabilities, agents, providers)")
     add("profiles", cmd_profiles, "list profiles", profile=False)
+    sp = add("llm", cmd_llm, "model providers: list the configured ones, show the presets, or test one with a single call")
+    sp.add_argument("action", choices=["list", "presets", "test"])
+    sp.add_argument("spec", nargs="?", help="test: provider:model (minimax:MiniMax-M2.7, poe:claude-sonnet-4.6, litellm:deepseek/deepseek-chat …)")
     add("agents", cmd_agents, "list agent specs and their current routes")
+    sp = sub.add_parser("vision", help="版面与 OCR: layout of an OCR engine's page (alto, hocr, page, paddle, tokens), a vision "
+                                       "model's reading of an image, the comparison of an OCR text with the store, IIIF pages")
+    sp.set_defaults(fn=cmd_vision)
+    sp.add_argument("action", choices=["layout", "read", "compare", "fetch"])
+    sp.add_argument("target", nargs="?", help="layout: an OCR file; read: an image; compare: an OCR text or file; fetch: a manifest")
+    sp.add_argument("--format", choices=["alto", "hocr", "page", "paddle", "tokens"], help="layout: the OCR format (default: guessed)")
+    sp.add_argument("--passage", help="compare: the passage the OCR text transcribes (default: found by probes)")
+    sp.add_argument("--reference", help="compare: a reference text file instead of the store")
+    sp.add_argument("--page", type=int, help="fetch: the page (1-based) of the manifest")
+    sp.add_argument("--width", type=int, default=1600, help="fetch: the width of the image to request")
+    sp.add_argument("--hint", help="read: a hint for the model (the work, the chapter)")
+    sp.add_argument("--json", action="store_true")
+    sp.add_argument("--profile", help="default: full-corpus when the corpus store exists")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    _llm_args(sp)
+    sp = sub.add_parser("bridge", help="古今桥接 (AMBE): an ancient passage's findings mapped to HPO and scored against modern "
+                                       "disease profiles (qualitative levels, not probabilities), a modern disease traced back "
+                                       "to the passages and names, the HPO identifiers verified")
+    sp.set_defaults(fn=cmd_bridge)
+    sp.add_argument("action", choices=["phenotype", "map", "reverse", "diseases", "verify"])
+    sp.add_argument("target", nargs="?", help="phenotype / map: a text or file; reverse: a disease id, name or ICD-10 code")
+    sp.add_argument("--passage", help="phenotype / map: a passage id instead of a text")
+    sp.add_argument("--top", type=int, default=5, help="map: how many candidates")
+    sp.add_argument("--system", action="append", help="map: only profiles of this organ system (repeatable)")
+    sp.add_argument("--limit", type=int, default=20, help="reverse: how many passages")
+    sp.add_argument("--obo", help="verify: a local hp.obo (default: <data>/ontology/hp.obo)")
+    sp.add_argument("--write", action="store_true", help="verify: rewrite domains/bridge/hpo_closure.yaml from the release")
+    sp.add_argument("--json", action="store_true")
+    sp.add_argument("--profile", help="default: full-corpus when the corpus store exists")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    _llm_args(sp)
+    sp = sub.add_parser("ask", help="V2: a question → a workflow of skills S01–S15 (four core agents) → an answer whose "
+                                    "statements are audited; every step an artifact in a resumable workspace")
+    sp.set_defaults(fn=cmd_ask)
+    sp.add_argument("question")
+    sp.add_argument("--page", help="a page image or OCR output for S02")
+    sp.add_argument("--plan-only", action="store_true", help="show the compiled workflow without running it")
+    sp.add_argument("--run", help="the run id (default: from the question and plan; the same question resumes)")
+    sp.add_argument("--fresh", action="store_true", help="redo every step instead of reading the workspace")
+    sp.add_argument("--online", action="store_true", help="consult PubMed in S13")
+    sp.add_argument("--json", action="store_true")
+    sp.add_argument("--profile")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    _llm_args(sp)
+    sp = add("skills", cmd_skills, "the skill manifests S01–S15 and the four core agents, checked against the tool registry")
+    sp.add_argument("--json", action="store_true")
+    sp = sub.add_parser("audit", help="证据审计 (S15): a claim checked atom by atom against the witnesses, the bridge, modern "
+                                      "evidence and the presentism guard (SUPPORTED … UNSUPPORTED)")
+    sp.set_defaults(fn=cmd_audit)
+    sp.add_argument("claim", help="the claim (a text or a file)")
+    sp.add_argument("--online", action="store_true", help="consult PubMed for the modern parts")
+    sp.add_argument("--no-modern", action="store_true", help="do not consult modern evidence at all")
+    sp.add_argument("--json", action="store_true")
+    sp.add_argument("--profile")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    _llm_args(sp)
+    sp = sub.add_parser("graph", help="证据图谱: the six-layer evidence graph (source → historical → TCM → mapping → modern → "
+                                      "evidence) of a mapping, an audit or modern studies; JSON or GraphML")
+    sp.set_defaults(fn=cmd_graph)
+    sp.add_argument("--passage")
+    sp.add_argument("--text")
+    sp.add_argument("--claim")
+    sp.add_argument("--modern", help="a drug or formula whose modern studies to add")
+    sp.add_argument("--node", help="the lineage of one node back to the witnesses")
+    sp.add_argument("--graphml", help="write GraphML to this file")
+    sp.add_argument("--online", action="store_true")
+    sp.add_argument("--json", action="store_true")
+    sp.add_argument("--profile")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    sp = sub.add_parser("modern", help="现代证据 (S13): PubMed typed by design and population, the evidence hierarchy, the "
+                                       "cross-level guard, the safety table")
+    sp.set_defaults(fn=cmd_modern)
+    sp.add_argument("action", choices=["search", "safety"])
+    sp.add_argument("subject", help="search: a drug or formula (黄连, 葛根芩连汤, berberine); safety: a text")
+    sp.add_argument("--disease", help="a disease (a bridge profile id, Chinese or English name)")
+    sp.add_argument("--design", help="rct | review | human | a PubMed filter")
+    sp.add_argument("--claim", help="a claim to put through the cross-level guard against the records found")
+    sp.add_argument("--limit", type=int, default=20)
+    sp.add_argument("--online", action="store_true", help="query PubMed (otherwise the cache and the curated records)")
+    sp.add_argument("--json", action="store_true")
+    sp.add_argument("--profile")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    sp = sub.add_parser("rwd", help="真实世界数据 (S14): question → study spec → checked OMOP query (never model-written SQL)")
+    sp.set_defaults(fn=cmd_rwd)
+    sp.add_argument("action", choices=["ask", "spec", "run", "synth"])
+    sp.add_argument("target", nargs="?", help="ask / spec: a question; run: a spec file or JSON; synth: the output database")
+    sp.add_argument("--db", help="an OMOP CDM SQLite database (default: a synthetic one in the data directory)")
+    sp.add_argument("--persons", type=int, default=3000, help="synth: how many synthetic persons")
+    sp.add_argument("--profile")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    _llm_args(sp)
     sp = add("corpus", cmd_corpus, "list the corpus, or fetch / unpack / catalog / ingest / status / reindex the full-corpus store")
-    sp.add_argument("action", nargs="?", default="list", choices=["list", "fetch", "unpack", "catalog", "ingest", "status", "reindex"])
-    sp.add_argument("source", nargs="?", help="source: kanripo, kr-catalog, jicheng (user-supplied archive), mcgill, wikisource, "
-                                             "tcm-ancient-books, tcmoc, hf-tcm-canon, or all (ingest)")
+    sp.add_argument("action", nargs="?", default="list",
+                    choices=["list", "fetch", "unpack", "catalog", "ingest", "status", "reindex", "images"])
+    sp.add_argument("source", nargs="?", help="source: kanripo, kr-catalog, jicheng (user-supplied archive), mcgill, cmeta, aeam, "
+                                             "wikisource, tcm-ancient-books, tcmoc, hf-tcm-canon, or all (ingest); for images: "
+                                             "nijl, nijl:knik …, sbb:unschuld, loc:chinese-rare-books, waseda:ya09, ndl, or all")
     sp.add_argument("paths", nargs="*", help="archive volumes for `unpack jicheng` (jc_1_4_8_all.7z.001 …)")
     sp.add_argument("--root", help="unpacked 笈成 directory (default: the one under <data>/sources/jicheng)")
     sp.add_argument("--changed", action="store_true",
@@ -809,6 +1496,9 @@ def build_parser() -> argparse.ArgumentParser:
                          "records; ingest kanripo: rewrite the book records only (catalog or KR-Catalog changes)")
     sp.add_argument("--only", help="comma-separated text ids (e.g. KR3e0001,KR3e0013) or book ids")
     sp.add_argument("--db", help="corpus store path (default: <data>/corpus/tcm.sqlite)")
+    sp.add_argument("--enrich", nargs="?", const="linked", choices=["linked", "all"],
+                    help="images: read the IIIF manifests of NIJL records for author and date (linked records, or all)")
+    sp.add_argument("--pause", type=float, help="images: seconds between requests (default 1)")
     sp = add("lexicon", cmd_lexicon, "harvest candidate formula / drug names from the corpus store", profile=False)
     sp.add_argument("action", choices=["harvest"])
     sp.add_argument("--db", help="corpus store path (default: <data>/corpus/tcm.sqlite)")
@@ -826,12 +1516,35 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--forbid", action="append", help="forbidden assumption (repeatable), e.g. 消渴=糖尿病")
         sp.add_argument("--parallel", type=int, help="run up to N independent agents concurrently")
         sp.add_argument("--session", help="session id")
+        _llm_args(sp)
         if name == "research":
             sp.add_argument("--tracks", help="comma-separated tracks, e.g. D1,D2,D5")
             sp.add_argument("--holdout-after", type=int, help="hide texts dated ≥ this year (Historical Time Machine)")
+            sp.add_argument("--confirm", type=float, metavar="FRACTION",
+                            help="keep back this fraction of source families (per period) to confirm what exploration finds")
+            sp.add_argument("--require-confirmation", action="store_true", help="accept only hypotheses confirmed on the withheld material")
             sp.add_argument("--max-rounds", type=int)
             sp.add_argument("--books", help="restrict the corpus to these book ids")
             sp.add_argument("--no-workspace", action="store_true")
+    sp = add("retract", cmd_retract, "retract evidence (records or a whole passage); validators and the contract re-run")
+    sp.add_argument("session")
+    sp.add_argument("--evidence", action="append", help="evidence id (repeatable)")
+    sp.add_argument("--passage", help="retract every evidence record on this passage")
+    sp.add_argument("--reason", required=True)
+    sp.add_argument("--expert", required=True, help="who retracts (a human expert)")
+    sp = add("task", cmd_task, "cancel a pending task or retry a failed one")
+    sp.add_argument("session")
+    sp.add_argument("task_id")
+    sp.add_argument("--cancel", action="store_true")
+    sp.add_argument("--retry", action="store_true")
+    sp.add_argument("--reason", default="")
+    sp.add_argument("--expert", default="operator")
+    sp = add("objection", cmd_objection, "an expert closes an interpretive objection (hard ones close only by a validator's re-run)")
+    sp.add_argument("session")
+    sp.add_argument("hypothesis")
+    sp.add_argument("objection")
+    sp.add_argument("--expert", required=True)
+    sp.add_argument("--note", required=True)
     for name, fn, help_ in (("resume", cmd_resume, "resume a session after a crash or interruption"),
                             ("report", cmd_report, "print the Discovery Report"), ("trace", cmd_trace, "agent tree / research tree"),
                             ("metrics", cmd_metrics, "research metrics"), ("events", cmd_events, "list events"),
@@ -871,32 +1584,95 @@ def build_parser() -> argparse.ArgumentParser:
         if name == "export":
             sp.add_argument("--format", default="json", choices=["json", "cypher", "graphml", "prov"])
             sp.add_argument("-o", "--output")
-    sp = sub.add_parser("study", help="治学: 经文互见·集注, 方源考, 药性源流, 术语源流, 避讳断代, 引书网络, 学习卡片, 阅读门径, 研究数据集")
+    sp = sub.add_parser("study", help="治学: 要籍 (canon), 经文互见·集注, 方源考, 药性源流, 术语源流, 避讳断代, 引书网络, 学习卡片, 阅读门径, 研究数据集, "
+                                      "版本谱系 (variants/stemma/edition/tei), 语义复用 (reuse), 思想传播 (transmission), "
+                                      "文本地层 (layers/dating/authorship), 医案轨迹 (cases/trajectories), 医理论证 (argument), "
+                                      "语义演变 (senses), 佚书辑佚 (fragments), 句读 (punctuate), 集注 (commentaries), 争议 (disputes), "
+                                      "条文结构 (clause), 训诂 (glosses), 配伍 (pairs), 方证网络 (network), 学派 (schools), 名称 (names), "
+                                      "传播链 (chain), 实体识别 (entities), 地域 (places), 释义与今译 (translate)")
     sp.set_defaults(fn=cmd_study)
     sp.add_argument("what", choices=STUDY)
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
     sp.add_argument("--profile", help="default: full-corpus when the corpus store exists, else full-discovery (demo corpus)")
     sp.add_argument("--provider", help=argparse.SUPPRESS)
-    sp.add_argument("--passage", help="concordance: a passage id instead of a text")
+    sp.add_argument("--passage", help="concordance/reuse/argument/punctuate/chain: a passage id instead of a text")
+    sp.add_argument("--input", help="punctuate/entities/translate: read the text from this file")
+    sp.add_argument("--person", help="disputes: the physician whose views are disputed (e.g. 丹溪); places: a physician")
+    sp.add_argument("--school", help="places: where a school's physicians came from (e.g. 温病)")
+    sp.add_argument("--geojson", help="places: also write the map points (GeoJSON) to this file")
+    sp.add_argument("--period", help="pairs: only the compositions of this period (e.g. 宋金元)")
+    sp.add_argument("--probe", action="append", help="schools: also report this word for the school (repeatable, e.g. 相火)")
     sp.add_argument("--min-coverage", type=float, default=0.6, help="concordance: share of the text a witness must carry")
     sp.add_argument("--no-other-names", action="store_true", help="formula: skip the search for 同方异名")
     sp.add_argument("--min-chars", type=int, default=20000, help="taboo survey: smallest book to judge")
     sp.add_argument("--top", type=int, default=12, help="citations: works and physicians per period")
-    sp.add_argument("--book", help="cards: 方证 cards from this book (e.g. 伤寒论)")
+    sp.add_argument("--book", help="cards: 方证 cards from this book (e.g. 伤寒论); glosses: a book's glossary")
     sp.add_argument("--formula", action="append", help="cards/dataset: a formula (repeatable)")
     sp.add_argument("--herb", action="append", help="cards/dataset: a drug (repeatable)")
-    sp.add_argument("--term", help="cards/dataset: a term")
+    sp.add_argument("--term", help="cards/dataset: a term; places: a term's use by region and period")
     sp.add_argument("--citations", action="store_true", help="dataset: include the citation network")
     sp.add_argument("--year", type=float, help="metrology: the year whose measures to read the dose in")
     sp.add_argument("--limit", type=int)
     sp.add_argument("--anki", help="cards: also write an Anki import file (TSV)")
+    sp.add_argument("--books", action="append", help="variants/stemma/edition/tei: a witness book id (repeatable; a+b joins volumes)")
+    sp.add_argument("--base", help="variants/stemma: the base witness (book id or siglum; default: the one the others carry most)")
+    sp.add_argument("--chapter", help="variants/stemma: collate only locators matching this pattern (e.g. 辨太阳病)")
+    sp.add_argument("--max-chars", type=int, help="variants/stemma: longest base to collate (default 60000)")
+    sp.add_argument("--root-at", help="stemma: root the tree at this witness (default: midpoint)")
+    sp.add_argument("--text-mode", action="store_true", help="variants: the target is a passage text, collate its copies and quotations")
+    sp.add_argument("--against", help="reuse: the type of reuse of the text in this other text")
+    sp.add_argument("--against-passage", help="reuse: … in this passage")
+    sp.add_argument("--no-semantic", action="store_true", help="reuse: shared wording only (no concept co-occurrence)")
+    sp.add_argument("--clauses", type=int, default=40, help="transmission: clauses of the work to trace")
+    sp.add_argument("--k", type=int, default=2, help="layers: number of layers to test")
+    sp.add_argument("--features", choices=["frequent", "function"], default="frequent",
+                    help="layers: the 100 most frequent characters, or function characters only (less sensitive to topic)")
+    sp.add_argument("--chapter-name", help="authorship: one chapter (篇) of --book")
+    sp.add_argument("--verify", action="store_true", help="fragments: check the reconstruction against the work's surviving witnesses")
+    sp.add_argument("--work", help="argument: the way of reasoning of a work; clause: the forms of a work's clauses; "
+                                   "cruxes: the works (comma-separated) whose cruxes to harvest")
+    sp.add_argument("--write-registry", action="store_true", help="cruxes: write the harvest to domains/classics/cruxes.yaml")
+    sp.add_argument("--write-catalog", action="store_true", help="canon: rank the works of the full corpus by how they are cited "
+                                                                  "and write the list (--limit, default 350) to corpus/catalog/canon.yaml")
+    sp.add_argument("--against-work", help="argument: … compared with another work")
+    sp.add_argument("--candidate", action="append", help="authorship: a candidate work or book id (repeatable)")
     sp.add_argument("--json", action="store_true", help="print the full result as JSON")
     sp.add_argument("-o", "--output", help="write to this file (dataset: this directory)")
+    _llm_args(sp)
     sp = add("codemode", cmd_codemode, "run a Research Code Mode program against the SDK")
     sp.add_argument("file", nargs="?")
     add("sdk", cmd_sdk, "print the Research SDK reference (Code Mode)")
     sp = add("schema", cmd_schema, "print JSON Schemas of the protocol (or agent outputs)", profile=False)
     sp.add_argument("--outputs", action="store_true")
+    sp.add_argument("--study", nargs="?", const="all",
+                    help="the output schemas of the tasks of docs/tasks.md (one by name, e.g. punctuate; or all)")
+    sp = add("serve", cmd_serve, "网页对话: serve the web chat client and its API (full corpus when built) on this machine",
+             profile=False)
+    sp.add_argument("--profile", help="default: full-corpus when the store exists, else full-discovery (demo corpus)")
+    sp.add_argument("--host", default="127.0.0.1", help="0.0.0.0 to serve other machines (an access token is then "
+                                                         "required: --token, $TAOCHRONOS_TOKEN, or one generated)")
+    sp.add_argument("--token", help="the access token every API request must carry (default: none on 127.0.0.1)")
+    sp.add_argument("--port", type=int, default=8765)
+    sp.add_argument("--llm", help="provider:model for the research engine's judgement roles (e.g. minimax:MiniMax-M3); "
+                                  "the chat model itself is chosen in the web client")
+    sp.add_argument("--allow-origin", action="append", help="another origin allowed to call the API (repeatable; "
+                                                            "this machine's pages and the published client always are)")
+    sp.add_argument("--env-keys", action="store_true", help="the model proxy adds this machine's provider keys "
+                                                            "(MINIMAX_API_KEY …) to requests that carry none")
+    sp.add_argument("--no-proxy", action="store_true", help="turn the model proxy off")
+    sp.add_argument("--allow-host", action="append", help="a model endpoint set by hand in the page (自定义 API) that the proxy may "
+                                                          "forward to: api.example.com, https://host:8443, http://10.0.0.5:8000 (repeatable)")
+    sp.add_argument("--code-mode", action="store_true", help="let the chat model run Code Mode programs (research.run_code)")
+    sp.add_argument("--web", help="serve the client from this directory (default: <home>/web)")
+    sp.add_argument("--open", action="store_true", help="open the client in a browser")
+    sp.add_argument("--verbose", action="store_true", help="log requests (paths only)")
+    sp = add("web", cmd_web, "the web chat client: build the static site (GitHub Pages); pack the 要籍语料 it carries", profile=False)
+    sp.add_argument("action", choices=["build", "pack"])
+    sp.add_argument("-o", "--output", help="build: the site directory (default _site); pack: the pack directory (default corpus/web)")
+    sp.add_argument("--data", help="pack: the data directory holding the full corpus store")
+    sp.add_argument("--web", help="the client's sources (default: <home>/web)")
+    sp.add_argument("--pyodide", choices=["self", "cdn"], default="self",
+                    help="self: put the pinned Pyodide files in the site (default); cdn: load them from jsDelivr")
     add("governance", cmd_governance, "check the architecture policy", profile=False)
     sp = add("eval", cmd_eval, "run TaoChronos-Eval suites", profile=False)
     sp.add_argument("suites", nargs="*")

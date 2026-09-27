@@ -18,8 +18,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-import yaml
-
+from ....protocol.yamlio import loads_yaml
 from .documents import Block, Document, chartype, strip_modern_paratext
 
 TAB_SOURCE = {
@@ -141,7 +140,7 @@ def read_markdown_file(path: Path, source: str) -> Document:
     meta: dict[str, Any] = {}
     m = re.match(r"^---\n(.*?)\n---\n", text, re.S)
     if m:
-        meta = yaml.safe_load(m.group(1)) or {}
+        meta = loads_yaml(m.group(1)) or {}
         text = text[m.end():]
     blocks: list[Block] = []
     for para in re.split(r"\n\s*\n", text):

@@ -1,0 +1,8518 @@
+[
+ {
+  "data": {
+   "aliases": [
+    "素問（顧從德本）"
+   ],
+   "attribution": "pseudepigraphic",
+   "author_life": null,
+   "authors": [
+    "佚名（托名黄帝、岐伯）"
+   ],
+   "category": "医经",
+   "chartype": "traditional",
+   "composition": [
+    -300,
+    25
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "战国—西汉",
+   "editions": [
+    {
+     "holding_institution": "國立故宮博物院",
+     "id": "cm_suwen_gucongde@cmeta",
+     "name": "CMETA 精校本（明嘉靖二十九年（1550）顾从德覆宋刊本（台北故宫博物院藏，故善007799—007808））",
+     "quality": 0.7,
+     "year": [
+      1550,
+      1550
+     ]
+    }
+   ],
+   "id": "cm_suwen_gucongde",
+   "layers": [
+    {
+     "attribution": "唐·王冰次注",
+     "kind": "notes",
+     "layer": "王冰注",
+     "year": [
+      762,
+      762
+     ]
+    },
+    {
+     "attribution": "宋·林亿、孙奇、高保衡等",
+     "kind": "marker",
+     "layer": "新校正",
+     "prefix": "新校正云",
+     "year": [
+      1068,
+      1068
+     ]
+    },
+    {
+     "attribution": "王冰次注时补入，来源与年代存疑（一说为《阴阳大论》）",
+     "kind": "chapter_layers",
+     "layer": "运气七篇（王冰补入）",
+     "pattern": "天元紀大論|五運行大論|六微[旨㫖]大論|氣交變大論|五常政大論|六元正紀大論|至[真眞]要大論",
+     "year": [
+      762,
+      762
+     ]
+    }
+   ],
+   "modern": false,
+   "notes": "运气七篇按王冰补入之年保守断代；王冰注、新校正按其年代分层；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "HTTPS（library/catalog.json、texts/*.md、meta/*.json；僅取站方對所有訪客開放之精校本）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+    "origin": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "transcription": "CMETA 據善本影像逐頁精校（精校級）之純文字，按影像頁界重切；有新式標點",
+    "url": "https://cmeta.lctseng.csie.org/prototype/",
+    "verified": false
+   },
+   "source_id": "cmeta",
+   "source_ref": "texts/重廣補注黃帝內經素問_校訂重切.md",
+   "title": "重广补注黄帝内经素问（顾从德本）",
+   "work": "suwen"
+  },
+  "excerpt": {
+   "chars": 339993,
+   "kept_chars": 339993,
+   "kept_units": 25,
+   "units": 25,
+   "whole": true
+  },
+  "id": "cm_suwen_gucongde",
+  "rank": 1,
+  "source": "cmeta",
+  "witness": 1,
+  "work": "suwen"
+ },
+ {
+  "data": {
+   "aliases": [
+    "黄帝内经素问",
+    "素问",
+    "黄帝素问",
+    "内经",
+    "素問",
+    "重廣補注黄帝内經素問"
+   ],
+   "attribution": "pseudepigraphic",
+   "author_life": null,
+   "authors": [
+    "佚名（托名黄帝、岐伯）"
+   ],
+   "category": "医经",
+   "composition": [
+    -300,
+    25
+   ],
+   "dating_basis": "composition",
+   "dynasty": "战国—西汉",
+   "editions": [
+    {
+     "id": "suwen_wangbing@SBCK",
+     "name": "四部丛刊影印明顾从德翻宋本",
+     "quality": 0.7,
+     "year": [
+      1550,
+      1550
+     ]
+    }
+   ],
+   "id": "suwen_wangbing",
+   "kr_catalog": {
+    "extent": "24 卷",
+    "responsibility": "（唐）王冰,（宋）林億",
+    "siku": "四庫全書 文淵閣版, V733.1, p1"
+   },
+   "layers": [
+    {
+     "attribution": "唐·王冰次注",
+     "kind": "notes",
+     "layer": "王冰注",
+     "year": [
+      762,
+      762
+     ]
+    },
+    {
+     "attribution": "宋·林亿、孙奇、高保衡等",
+     "kind": "marker",
+     "layer": "新校正",
+     "prefix": "新校正云",
+     "year": [
+      1068,
+      1068
+     ]
+    },
+    {
+     "attribution": "王冰次注时补入，来源与年代存疑（一说为《阴阳大论》）",
+     "kind": "chapter_layers",
+     "layer": "运气七篇（王冰补入）",
+     "pattern": "天元紀大論|五運行大論|六微[旨㫖]大論|氣交變大論|五常政大論|六元正紀大論|至[真眞]要大論",
+     "year": [
+      762,
+      762
+     ]
+    }
+   ],
+   "notes": "运气七篇按王冰补入之年保守断代；刺法论、本病论两篇亡佚（遗篇为宋人伪托，本本未收）；责任者（Kanripo 目录）：唐·王冰次注（fl. 762）、宋·林億校正",
+   "responsibility": [
+    {
+     "dates": "fl. 762",
+     "dynasty": "唐",
+     "name": "王冰",
+     "role": "次注"
+    },
+    {
+     "dynasty": "宋",
+     "name": "林億",
+     "role": "校正"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 410edb6c543a29f684c75b3ac3b0e6df21d26f7e",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0001",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0001",
+   "title": "重广补注黄帝内经素问",
+   "work": "suwen"
+  },
+  "excerpt": {
+   "chars": 280625,
+   "kept_chars": 88971,
+   "kept_units": 27,
+   "units": 94,
+   "whole": false
+  },
+  "id": "suwen_wangbing",
+  "rank": 1,
+  "source": "kanripo",
+  "witness": 2,
+  "work": "suwen"
+ },
+ {
+  "data": {
+   "aliases": [
+    "靈樞（四部叢刊景印明趙府居敬堂本）"
+   ],
+   "attribution": "pseudepigraphic",
+   "author_life": null,
+   "authors": [
+    "佚名（托名黄帝、岐伯）"
+   ],
+   "category": "医经",
+   "chartype": "traditional",
+   "composition": [
+    -300,
+    25
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "战国—西汉",
+   "editions": [
+    {
+     "id": "cm_lingshu_sibucongkan@cmeta",
+     "name": "CMETA 精校本（《四部丛刊》景印明赵府居敬堂刊本；CMETA 据维基文库文字对影像修订）",
+     "quality": 0.7,
+     "year": [
+      1560,
+      1570
+     ]
+    }
+   ],
+   "id": "cm_lingshu_sibucongkan",
+   "layers": [],
+   "modern": false,
+   "notes": "版本源流與典藏：《黃帝素問靈樞經》十二卷，《四部叢刊初編》景印上海涵芬樓藏明趙府居敬堂刊本（上海商務印書館，1919），全四冊。影像取自維基共享資源（Wikimedia Commons），頁對齊文字修訂自中文維基文庫。 收錄與授權狀態：本站收錄原書影像與純文字。影像屬公有領域（Public Domain）。；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "HTTPS（library/catalog.json、texts/*.md、meta/*.json；僅取站方對所有訪客開放之精校本）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+    "origin": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "transcription": "CMETA 據善本影像逐頁精校（精校級）之純文字，按影像頁界重切；有新式標點",
+    "url": "https://cmeta.lctseng.csie.org/prototype/",
+    "verified": false
+   },
+   "source_id": "cmeta",
+   "source_ref": "texts/黃帝素問靈樞經_校訂重切.md",
+   "title": "黄帝素问灵枢经（赵府居敬堂本）",
+   "work": "lingshu"
+  },
+  "excerpt": {
+   "chars": 79448,
+   "kept_chars": 79448,
+   "kept_units": 13,
+   "units": 13,
+   "whole": true
+  },
+  "id": "cm_lingshu_sibucongkan",
+  "rank": 2,
+  "source": "cmeta",
+  "witness": 1,
+  "work": "lingshu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "灵枢经",
+    "灵枢",
+    "针经",
+    "九卷",
+    "靈樞經",
+    "靈樞",
+    "黄帝素問靈樞經"
+   ],
+   "attribution": "pseudepigraphic",
+   "author_life": null,
+   "authors": [
+    "佚名（托名黄帝、岐伯）"
+   ],
+   "category": "医经",
+   "composition": [
+    -300,
+    25
+   ],
+   "dating_basis": "composition",
+   "dynasty": "战国—西汉",
+   "editions": [
+    {
+     "id": "lingshu_shisong@SBCK",
+     "name": "四部丛刊影印明赵府居敬堂本（史崧校正本系统）",
+     "quality": 0.7,
+     "year": [
+      1560,
+      1570
+     ]
+    }
+   ],
+   "id": "lingshu_shisong",
+   "kr_catalog": {
+    "extent": "12 卷",
+    "responsibility": "（唐）王冰,（宋）史崧",
+    "siku": "四庫全書 文淵閣版, V733.2, p317"
+   },
+   "layers": [
+    {
+     "attribution": "宋·史崧",
+     "kind": "notes",
+     "layer": "史崧音释",
+     "year": [
+      1155,
+      1155
+     ]
+    }
+   ],
+   "notes": "今本出南宋史崧家藏本（1155）；责任者（Kanripo 目录）：唐·王冰注（fl. 762）、宋·史崧校正",
+   "responsibility": [
+    {
+     "dates": "fl. 762",
+     "dynasty": "唐",
+     "name": "王冰",
+     "role": "注"
+    },
+    {
+     "dynasty": "宋",
+     "name": "史崧",
+     "role": "校正"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 74a4d80991ba0287caae0d820a88a4835d2004e7",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0002",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0002",
+   "title": "黄帝素问灵枢经",
+   "work": "lingshu"
+  },
+  "excerpt": {
+   "chars": 66942,
+   "kept_chars": 66942,
+   "kept_units": 84,
+   "units": 84,
+   "whole": true
+  },
+  "id": "lingshu_shisong",
+  "rank": 2,
+  "source": "kanripo",
+  "witness": 2,
+  "work": "lingshu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "金匱要略方（吳遷本）"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "张机"
+   ],
+   "category": "杂病",
+   "chartype": "traditional",
+   "composition": [
+    200,
+    219
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "东汉",
+   "editions": [
+    {
+     "holding_institution": "上海圖書館",
+     "id": "cm_jingui_wuqian@cmeta",
+     "name": "CMETA 精校本（明洪武二十八年（1395）吴迁抄本（上海图书馆藏））",
+     "quality": 0.7,
+     "year": [
+      1395,
+      1395
+     ]
+    }
+   ],
+   "id": "cm_jingui_wuqian",
+   "layers": [],
+   "modern": false,
+   "notes": "版本源流與典藏：明洪武二十八年（1395）抄本，明吳遷跋。實體典藏於上海圖書館（古籍聯合目錄著錄）。 收錄與授權狀態：本站僅收錄古籍本文純文字。原書實體影像版權依原典藏機構規定。；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "HTTPS（library/catalog.json、texts/*.md、meta/*.json；僅取站方對所有訪客開放之精校本）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+    "origin": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "transcription": "CMETA 據善本影像逐頁精校（精校級）之純文字，按影像頁界重切；有新式標點",
+    "url": "https://cmeta.lctseng.csie.org/prototype/",
+    "verified": false
+   },
+   "source_id": "cmeta",
+   "source_ref": "texts/吳遷本金匱要略_校訂重切.md",
+   "title": "金匮要略方（吴迁本）",
+   "work": "jinkui"
+  },
+  "excerpt": {
+   "chars": 40410,
+   "kept_chars": 40410,
+   "kept_units": 5,
+   "units": 5,
+   "whole": true
+  },
+  "id": "cm_jingui_wuqian",
+  "rank": 3,
+  "source": "cmeta",
+  "witness": 1,
+  "work": "jinkui"
+ },
+ {
+  "data": {
+   "aliases": [
+    "新編金匱方論（鄧珍本）"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "张机"
+   ],
+   "category": "杂病",
+   "chartype": "traditional",
+   "composition": [
+    200,
+    219
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "东汉",
+   "editions": [
+    {
+     "holding_institution": "北京大學圖書館",
+     "id": "cm_jingui_dengzhen@cmeta",
+     "name": "CMETA 精校本（元邓珍刻本（北京大学图书馆藏；据《中华再造善本》影印本录文））",
+     "quality": 0.7,
+     "year": [
+      1340,
+      1340
+     ]
+    }
+   ],
+   "id": "cm_jingui_dengzhen",
+   "layers": [],
+   "modern": false,
+   "notes": "邓珍序题后至元庚辰（1340），按序年记版本年代；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "HTTPS（library/catalog.json、texts/*.md、meta/*.json；僅取站方對所有訪客開放之精校本）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+    "origin": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "transcription": "CMETA 據善本影像逐頁精校（精校級）之純文字，按影像頁界重切；有新式標點",
+    "url": "https://cmeta.lctseng.csie.org/prototype/",
+    "verified": false
+   },
+   "source_id": "cmeta",
+   "source_ref": "texts/鄧珍本金匱_校訂重切.md",
+   "title": "新编金匮方论（邓珍本）",
+   "work": "jinkui"
+  },
+  "excerpt": {
+   "chars": 39128,
+   "kept_chars": 39128,
+   "kept_units": 4,
+   "units": 4,
+   "whole": true
+  },
+  "id": "cm_jingui_dengzhen",
+  "rank": 3,
+  "source": "cmeta",
+  "witness": 2,
+  "work": "jinkui"
+ },
+ {
+  "data": {
+   "aliases": [
+    "金匮要略方论",
+    "金匮要略",
+    "金匮",
+    "金匮方",
+    "新編金匱要畧方論",
+    "金匱要略"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "张机"
+   ],
+   "category": "杂病",
+   "composition": [
+    200,
+    219
+   ],
+   "dating_basis": "composition",
+   "dynasty": "东汉",
+   "editions": [
+    {
+     "id": "jinkui_yaolue@SBCK",
+     "name": "四部丛刊影印明刊本（宋林亿等校定本系统，1066）",
+     "quality": 0.7,
+     "year": [
+      1522,
+      1566
+     ]
+    }
+   ],
+   "id": "jinkui_yaolue",
+   "kr_catalog": {
+    "extent": "三卷",
+    "responsibility": "（漢）張機,（晉）王叔和,（宋）林億"
+   },
+   "layers": [],
+   "notes": "今本为北宋校正医书局据王洙所得蠹简整理（1066）；剂量、炮制等小字注保留于正文层；责任者（Kanripo 目录）：漢·張機述、晉·王叔和編、宋·林億等詮次",
+   "responsibility": [
+    {
+     "dynasty": "漢",
+     "name": "張機",
+     "role": "述"
+    },
+    {
+     "dynasty": "晉",
+     "name": "王叔和",
+     "role": "編"
+    },
+    {
+     "dynasty": "宋",
+     "name": "林億",
+     "role": "等詮次"
+    }
+   ],
+   "school": "仲景学说",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 13a628810e717623f1120fb2562af022f012ee90",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0007",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0007",
+   "title": "新编金匮要略方论",
+   "work": "jinkui"
+  },
+  "excerpt": {
+   "chars": 29557,
+   "kept_chars": 29557,
+   "kept_units": 76,
+   "units": 76,
+   "whole": true
+  },
+  "id": "jinkui_yaolue",
+  "rank": 3,
+  "source": "kanripo",
+  "witness": 3,
+  "work": "jinkui"
+ },
+ {
+  "data": {
+   "aliases": [
+    "难经集注",
+    "八十一难经",
+    "难经",
+    "難經",
+    "王翰林集註黃帝八十一難經五卷"
+   ],
+   "attribution": "pseudepigraphic",
+   "author_life": null,
+   "authors": [
+    "旧题秦越人"
+   ],
+   "category": "医经",
+   "composition": [
+    0,
+    200
+   ],
+   "dating_basis": "composition",
+   "dynasty": "东汉",
+   "editions": [
+    {
+     "id": "nanjing_jizhu@SBCK",
+     "name": "四部丛刊影印日本庆安五年刊本",
+     "quality": 0.7,
+     "year": [
+      1652,
+      1652
+     ]
+    }
+   ],
+   "id": "nanjing_jizhu",
+   "kr_catalog": {
+    "extent": "五卷",
+    "responsibility": "（明）王九思"
+   },
+   "layers": [
+    {
+     "attribution": "诸家注",
+     "kind": "notes",
+     "layer": "集注（吕广、杨玄操、丁德用、虞庶、杨康侯）",
+     "year": [
+      1100,
+      1100
+     ]
+    },
+    {
+     "attribution": "三国至北宋诸家注，按最晚一家保守断代",
+     "kind": "indented_commentary",
+     "layer": "集注（吕广、杨玄操、丁德用、虞庶、杨康侯）",
+     "year": [
+      1100,
+      1100
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：明·王九思集注",
+   "responsibility": [
+    {
+     "dynasty": "明",
+     "name": "王九思",
+     "role": "集注"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 1aefb52dd048b5b8cde2f3a03cb1a45b6bad52b4",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0003",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0003",
+   "title": "王翰林集注黄帝八十一难经",
+   "work": "nanjing"
+  },
+  "excerpt": {
+   "chars": 58940,
+   "kept_chars": 58940,
+   "kept_units": 20,
+   "units": 20,
+   "whole": true
+  },
+  "id": "nanjing_jizhu",
+  "rank": 4,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "nanjing"
+ },
+ {
+  "data": {
+   "aliases": [
+    "傷寒論（宋本．臺北故宮）"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "张机"
+   ],
+   "category": "伤寒",
+   "chartype": "traditional",
+   "composition": [
+    200,
+    219
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "东汉",
+   "editions": [
+    {
+     "holding_institution": "國立故宮博物院",
+     "id": "cm_shanghan_npm@cmeta",
+     "name": "CMETA 精校本（明万历二十七年（1599）赵开美刊《仲景全书》本（台北故宫博物院藏，平图011603—011607））",
+     "quality": 0.7,
+     "year": [
+      1599,
+      1599
+     ]
+    }
+   ],
+   "id": "cm_shanghan_npm",
+   "layers": [],
+   "modern": false,
+   "notes": "赵开美本原刻；CMETA 据故宫藏本影像逐页精校；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "HTTPS（library/catalog.json、texts/*.md、meta/*.json；僅取站方對所有訪客開放之精校本）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+    "origin": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "transcription": "CMETA 據善本影像逐頁精校（精校級）之純文字，按影像頁界重切；有新式標點",
+    "url": "https://cmeta.lctseng.csie.org/prototype/",
+    "verified": false
+   },
+   "source_id": "cmeta",
+   "source_ref": "texts/宋本傷寒論(臺北故宮藏本)_校訂重切.md",
+   "title": "伤寒论（宋本·台北故宫）",
+   "work": "shanghanlun"
+  },
+  "excerpt": {
+   "chars": 88746,
+   "kept_chars": 88746,
+   "kept_units": 12,
+   "units": 12,
+   "whole": true
+  },
+  "id": "cm_shanghan_npm",
+  "rank": 5,
+  "source": "cmeta",
+  "witness": 1,
+  "work": "shanghanlun"
+ },
+ {
+  "data": {
+   "aliases": [
+    "傷寒論（宋本．安政本）"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "张机"
+   ],
+   "category": "伤寒",
+   "chartype": "traditional",
+   "composition": [
+    200,
+    219
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "东汉",
+   "editions": [
+    {
+     "holding_institution": "國立故宮博物院",
+     "id": "cm_shanghan_zhao_kaimei@cmeta",
+     "name": "CMETA 精校本（日本安政三年（1856）覆刻明万历赵开美本（台北故宫博物院藏，故观003364—003367））",
+     "quality": 0.7,
+     "year": [
+      1856,
+      1856
+     ]
+    }
+   ],
+   "id": "cm_shanghan_zhao_kaimei",
+   "layers": [],
+   "modern": false,
+   "notes": "赵开美本（宋本）系统之日本覆刻本；CMETA 据故宫藏本影像逐页精校；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "HTTPS（library/catalog.json、texts/*.md、meta/*.json；僅取站方對所有訪客開放之精校本）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+    "origin": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "transcription": "CMETA 據善本影像逐頁精校（精校級）之純文字，按影像頁界重切；有新式標點",
+    "url": "https://cmeta.lctseng.csie.org/prototype/",
+    "verified": false
+   },
+   "source_id": "cmeta",
+   "source_ref": "texts/傷寒論明趙開美本_校訂重切.md",
+   "title": "伤寒论（宋本·安政本）",
+   "work": "shanghanlun"
+  },
+  "excerpt": {
+   "chars": 84805,
+   "kept_chars": 84805,
+   "kept_units": 11,
+   "units": 11,
+   "whole": true
+  },
+  "id": "cm_shanghan_zhao_kaimei",
+  "rank": 5,
+  "source": "cmeta",
+  "witness": 2,
+  "work": "shanghanlun"
+ },
+ {
+  "data": {
+   "aliases": [
+    "傷寒論（康平本）"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "张机"
+   ],
+   "category": "伤寒",
+   "chartype": "traditional",
+   "composition": [
+    200,
+    219
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "东汉",
+   "editions": [
+    {
+     "holding_institution": "Staatsbibliothek zu Berlin",
+     "id": "cm_kanhei_shanghan_vision_ocr@cmeta",
+     "name": "CMETA 精校本（1854年再抄本（柏林国家图书馆藏，题康平三年〔1060〕丹波雅忠写本））",
+     "quality": 0.7,
+     "year": [
+      1854,
+      1854
+     ]
+    }
+   ],
+   "id": "cm_kanhei_shanghan_vision_ocr",
+   "layers": [],
+   "modern": false,
+   "notes": "日本传本；所题康平年间写本的来源与年代学界有争议；此为1854年再抄本，按抄年记版本年代；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "HTTPS（library/catalog.json、texts/*.md、meta/*.json；僅取站方對所有訪客開放之精校本）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+    "origin": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "transcription": "CMETA 據善本影像逐頁精校（精校級）之純文字，按影像頁界重切；有新式標點",
+    "url": "https://cmeta.lctseng.csie.org/prototype/",
+    "verified": false
+   },
+   "source_id": "cmeta",
+   "source_ref": "texts/古本康平傷寒論_校訂重切.md",
+   "title": "伤寒论（康平本）",
+   "work": "shanghanlun"
+  },
+  "excerpt": {
+   "chars": 31866,
+   "kept_chars": 31866,
+   "kept_units": 4,
+   "units": 4,
+   "whole": true
+  },
+  "id": "cm_kanhei_shanghan_vision_ocr",
+  "rank": 5,
+  "source": "cmeta",
+  "witness": 3,
+  "work": "shanghanlun"
+ },
+ {
+  "data": {
+   "aliases": [
+    "神農本草經"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [],
+   "category": "本草",
+   "chartype": "traditional",
+   "composition": [
+    25,
+    220
+   ],
+   "dating": "jicheng:C000",
+   "dating_basis": "composition",
+   "dynasty": "东汉",
+   "editions": [
+    {
+     "id": "ws_36bca7b992@wikisource",
+     "name": "维基文库本",
+     "quality": 0.7,
+     "year": null
+    }
+   ],
+   "id": "ws_36bca7b992",
+   "layers": [],
+   "modern": false,
+   "notes": "另見《神農本草經 (孫星衍)》；断代依据：同书笈成本（C000）编目年代",
+   "school": null,
+   "source": {
+    "acquisition": "Wikimedia dump (multistream, range requests) 2026-08-27T1",
+    "license": "CC BY-SA 4.0（维基文库录文与标点；古籍原文属公有领域）",
+    "origin": "维基文库（zh.wikisource.org）· Category:中醫、Category:醫書",
+    "transcription": "维基文库志愿者录入与标点，部分页面为网络本批量导入（简体），未经本项目校勘",
+    "url": "https://zh.wikisource.org/wiki/神農本草經",
+    "verified": false
+   },
+   "source_id": "wikisource",
+   "source_ref": "page 56728 rev 2490492",
+   "title": "神农本草经",
+   "work": "shennong"
+  },
+  "excerpt": {
+   "chars": 17651,
+   "kept_chars": 17651,
+   "kept_units": 3,
+   "units": 3,
+   "whole": true
+  },
+  "id": "ws_36bca7b992",
+  "rank": 6,
+  "source": "wikisource",
+  "witness": 1,
+  "work": "shennong"
+ },
+ {
+  "data": {
+   "aliases": [
+    "千金要方",
+    "千金方",
+    "千金",
+    "備急千金要方"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "孙思邈"
+   ],
+   "category": "方书",
+   "composition": [
+    650,
+    659
+   ],
+   "dating_basis": "composition",
+   "dynasty": "唐",
+   "editions": [
+    {
+     "id": "qianjin_yaofang@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "qianjin_yaofang",
+   "kr_catalog": {
+    "extent": "93 卷",
+    "responsibility": "（唐）孫思邈,（宋）高保衡,（宋）林億",
+    "siku": "四庫全書 文淵閣版, V735.1, p1"
+   },
+   "layers": [
+    {
+     "attribution": "宋·林亿等",
+     "kind": "marker",
+     "layer": "宋臣校语",
+     "prefix": "臣億等|臣等謹按",
+     "year": [
+      1066,
+      1066
+     ]
+    }
+   ],
+   "notes": "剂量、炮制等小字注保留于正文层；标明“臣亿等”者为宋臣校语，另层断代；责任者（Kanripo 目录）：唐·孫思邈撰（581 - 682）、宋·高保衡校正、宋·林億校正",
+   "responsibility": [
+    {
+     "dates": "581 - 682",
+     "dynasty": "唐",
+     "name": "孫思邈",
+     "role": "撰"
+    },
+    {
+     "dynasty": "宋",
+     "name": "高保衡",
+     "role": "校正"
+    },
+    {
+     "dynasty": "宋",
+     "name": "林億",
+     "role": "校正"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 1836ff82d31d18d8671974710fc4dc330a651183",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0013",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0013",
+   "title": "备急千金要方",
+   "work": "qianjin"
+  },
+  "excerpt": {
+   "chars": 484201,
+   "kept_chars": 349356,
+   "kept_units": 197,
+   "units": 252,
+   "whole": false
+  },
+  "id": "qianjin_yaofang",
+  "rank": 7,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "qianjin"
+ },
+ {
+  "data": {
+   "aliases": [
+    "王叔和脉经",
+    "新刊王氏脉经",
+    "脈經",
+    "新刊王氏脈經"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "王叔和"
+   ],
+   "category": "诊法",
+   "composition": [
+    265,
+    290
+   ],
+   "dating_basis": "composition",
+   "dynasty": "西晋",
+   "editions": [
+    {
+     "id": "maijing@SBCK",
+     "name": "四部丛刊影印元广勤书堂本",
+     "quality": 0.7,
+     "year": [
+      1330,
+      1330
+     ]
+    }
+   ],
+   "id": "maijing",
+   "kr_catalog": {
+    "extent": "十卷",
+    "responsibility": "（晉）王叔和"
+   },
+   "layers": [
+    {
+     "attribution": "宋·林亿等",
+     "kind": "marker",
+     "layer": "宋臣校语",
+     "prefix": "臣億等|臣等謹按",
+     "year": [
+      1068,
+      1068
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：晉·王叔和撰",
+   "responsibility": [
+    {
+     "dynasty": "晉",
+     "name": "王叔和",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 57decb7a790c8f54ae57b0e01f75de67df6bf244",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0009",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0009",
+   "title": "脉经",
+   "work": "maijing"
+  },
+  "excerpt": {
+   "chars": 72394,
+   "kept_chars": 72394,
+   "kept_units": 168,
+   "units": 168,
+   "whole": true
+  },
+  "id": "maijing",
+  "rank": 8,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "maijing"
+ },
+ {
+  "data": {
+   "aliases": [
+    "甲乙经",
+    "黄帝三部针灸甲乙经",
+    "甲乙",
+    "鍼灸甲乙經"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "皇甫谧"
+   ],
+   "category": "针灸",
+   "composition": [
+    256,
+    282
+   ],
+   "dating_basis": "composition",
+   "dynasty": "西晋",
+   "editions": [
+    {
+     "id": "zhenjiu_jiayi@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "zhenjiu_jiayi",
+   "kr_catalog": {
+    "extent": "12 卷",
+    "responsibility": "（晉）皇甫謐,（宋）高保衡,（宋）林億",
+    "siku": "四庫全書 文淵閣版, V733.4, p509"
+   },
+   "layers": [],
+   "notes": "双行小注多为宋臣校语（《素问》作…），保留于正文层；责任者（Kanripo 目录）：晉·皇甫謐撰（215 - 282）、宋·高保衡校注、宋·林億校注",
+   "responsibility": [
+    {
+     "dates": "215 - 282",
+     "dynasty": "晉",
+     "name": "皇甫謐",
+     "role": "撰"
+    },
+    {
+     "dynasty": "宋",
+     "name": "高保衡",
+     "role": "校注"
+    },
+    {
+     "dynasty": "宋",
+     "name": "林億",
+     "role": "校注"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 92447bed6e9fbbef81d350291e800089be1774f8",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0005",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0005",
+   "title": "针灸甲乙经",
+   "work": "jiayi"
+  },
+  "excerpt": {
+   "chars": 122168,
+   "kept_chars": 122168,
+   "kept_units": 101,
+   "units": 101,
+   "whole": true
+  },
+  "id": "zhenjiu_jiayi",
+  "rank": 9,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "jiayi"
+ },
+ {
+  "data": {
+   "aliases": [
+    "外台秘要",
+    "外台",
+    "外臺秘要",
+    "外臺祕要方"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "王焘"
+   ],
+   "category": "方书",
+   "composition": [
+    752,
+    752
+   ],
+   "dating_basis": "composition",
+   "dynasty": "唐",
+   "editions": [
+    {
+     "id": "waitai_miyao@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "waitai_miyao",
+   "kr_catalog": {
+    "extent": "40 卷",
+    "responsibility": "（唐）王燾,（宋）林億,（宋）孫兆",
+    "siku": "四庫全書 文淵閣版, V736.1, p1 - V737.1"
+   },
+   "layers": [
+    {
+     "attribution": "宋·林亿、孙兆等",
+     "kind": "marker",
+     "layer": "宋臣校语",
+     "prefix": "臣億等|臣等謹按",
+     "year": [
+      1069,
+      1069
+     ]
+    }
+   ],
+   "notes": "小字注保留于正文层；标明“臣亿等”者为宋臣校语，另层断代；责任者（Kanripo 目录）：唐·王燾撰（fl. 752）、宋·林億校正、宋·孫兆校正",
+   "responsibility": [
+    {
+     "dates": "fl. 752",
+     "dynasty": "唐",
+     "name": "王燾",
+     "role": "撰"
+    },
+    {
+     "dynasty": "宋",
+     "name": "林億",
+     "role": "校正"
+    },
+    {
+     "dynasty": "宋",
+     "name": "孫兆",
+     "role": "校正"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 427ec452f3f82b4355502f25a6b565bd5f7354a7",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0015",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0015",
+   "title": "外台秘要方",
+   "work": "waitai"
+  },
+  "excerpt": {
+   "chars": 725793,
+   "kept_chars": 349856,
+   "kept_units": 678,
+   "units": 1429,
+   "whole": false
+  },
+  "id": "waitai_miyao",
+  "rank": 10,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "waitai"
+ },
+ {
+  "data": {
+   "aliases": [
+    "肘后方",
+    "肘后",
+    "肘後備急方",
+    "补阙肘后百一方",
+    "葛氏方"
+   ],
+   "attribution": "compiled",
+   "author_life": null,
+   "authors": [
+    "葛洪",
+    "陶弘景",
+    "杨用道"
+   ],
+   "category": "方书",
+   "composition": [
+    306,
+    363
+   ],
+   "dating_basis": "composition",
+   "dynasty": "东晋",
+   "editions": [
+    {
+     "id": "zhouhou_beiji@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "zhouhou_beiji",
+   "kr_catalog": {
+    "extent": "8 卷",
+    "responsibility": "（晉）葛洪,（梁）陶弘景,（金）楊用道",
+    "siku": "四庫全書 文淵閣版, V734.3, p365"
+   },
+   "layers": [
+    {
+     "kind": "mixed",
+     "layer": "葛洪原著与陶弘景增补（未能分离）",
+     "year": [
+      500,
+      500
+     ]
+    },
+    {
+     "attribution": "金·杨用道《附广肘后方》",
+     "kind": "section_layers",
+     "layer": "杨用道附广",
+     "pattern": "附方",
+     "year": [
+      1144,
+      1144
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：晉·葛洪撰（ca. 250 - ca. 330）、梁·陶弘景補、金·楊用道補",
+   "responsibility": [
+    {
+     "dates": "ca. 250 - ca. 330",
+     "dynasty": "晉",
+     "name": "葛洪",
+     "role": "撰"
+    },
+    {
+     "dynasty": "梁",
+     "name": "陶弘景",
+     "role": "補"
+    },
+    {
+     "dynasty": "金",
+     "name": "楊用道",
+     "role": "補"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 13d6a09e2f8dde8959bf1bddb19bf51cec5efccc",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0010",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0010",
+   "title": "肘后备急方",
+   "work": "zhouhou"
+  },
+  "excerpt": {
+   "chars": 78605,
+   "kept_chars": 47902,
+   "kept_units": 65,
+   "units": 87,
+   "whole": false
+  },
+  "id": "zhouhou_beiji",
+  "rank": 11,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "zhouhou"
+ },
+ {
+  "data": {
+   "aliases": [
+    "和剂局方",
+    "局方",
+    "太平惠民和劑局方"
+   ],
+   "attribution": "compiled",
+   "author_life": null,
+   "authors": [
+    "陈师文",
+    "裴宗元",
+    "陈承"
+   ],
+   "category": "方书",
+   "composition": [
+    1107,
+    1110
+   ],
+   "dating_basis": "composition",
+   "dynasty": "宋",
+   "editions": [
+    {
+     "id": "hejiju_fang@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "hejiju_fang",
+   "kr_catalog": {
+    "extent": "10 卷",
+    "responsibility": "（宋）陳師文",
+    "siku": "四庫全書 文淵閣版, V741.4, p469"
+   },
+   "layers": [
+    {
+     "kind": "section_layers",
+     "layer": "绍兴续添方",
+     "pattern": "紹興續添",
+     "year": [
+      1151,
+      1151
+     ]
+    },
+    {
+     "kind": "section_layers",
+     "layer": "宝庆新增方",
+     "pattern": "寶慶新增",
+     "year": [
+      1225,
+      1227
+     ]
+    },
+    {
+     "kind": "section_layers",
+     "layer": "淳祐新添方",
+     "pattern": "淳祐新添",
+     "year": [
+      1241,
+      1252
+     ]
+    },
+    {
+     "kind": "section_layers",
+     "layer": "吴直阁增诸家名方",
+     "pattern": "吳直閣增諸家名方|吴直阁增诸家名方",
+     "year": [
+      1230,
+      1252
+     ]
+    }
+   ],
+   "notes": "大观间陈师文等校订；南宋各朝续有增添，已按分节断代（待核）；责任者（Kanripo 目录）：宋·陳師文奉敕撰",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "陳師文",
+     "role": "奉敕撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 617aa603d320bab84646c1d0a5c4dfcd90413888",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0033",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0033",
+   "title": "太平惠民和剂局方",
+   "work": "hejiju"
+  },
+  "excerpt": {
+   "chars": 169028,
+   "kept_chars": 49246,
+   "kept_units": 16,
+   "units": 67,
+   "whole": false
+  },
+  "id": "hejiju_fang",
+  "rank": 12,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "hejiju"
+ },
+ {
+  "data": {
+   "aliases": [
+    "诸病源候论",
+    "巢氏病源",
+    "病源",
+    "巢氏诸病源候论",
+    "諸病源候論",
+    "巢氏諸病源候總論"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "巢元方"
+   ],
+   "category": "病源",
+   "composition": [
+    610,
+    610
+   ],
+   "dating_basis": "composition",
+   "dynasty": "隋",
+   "editions": [
+    {
+     "id": "zhubing_yuanhou@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "zhubing_yuanhou",
+   "kr_catalog": {
+    "extent": "50 卷",
+    "responsibility": "（隋）巢元方",
+    "siku": "四庫全書 文淵閣版, V734.5, p549"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：隋·巢元方奉敕撰",
+   "responsibility": [
+    {
+     "dynasty": "隋",
+     "name": "巢元方",
+     "role": "奉敕撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 5b1f8c58ebbd10fb1aace74c70a64a68d7ae5fb5",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0012",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0012",
+   "title": "诸病源候总论",
+   "work": "zhubing"
+  },
+  "excerpt": {
+   "chars": 165097,
+   "kept_chars": 49989,
+   "kept_units": 536,
+   "units": 1746,
+   "whole": false
+  },
+  "id": "zhubing_yuanhou",
+  "rank": 13,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "zhubing"
+ },
+ {
+  "data": {
+   "aliases": [
+    "纲目",
+    "本草綱目"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "李时珍"
+   ],
+   "category": "本草",
+   "composition": [
+    1552,
+    1578
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "bencao_gangmu_skqs@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "bencao_gangmu_skqs",
+   "kr_catalog": {
+    "extent": "52 卷",
+    "responsibility": "（明）李時珍",
+    "siku": "四庫全書 文淵閣版, V772.1, p1 - V774.1"
+   },
+   "layers": [],
+   "notes": "1593年金陵初刻；书中大量引录前代本草，均按本书成书年断代；责任者（Kanripo 目录）：明·李時珍撰（1518 - 1593）",
+   "responsibility": [
+    {
+     "dates": "1518 - 1593",
+     "dynasty": "明",
+     "name": "李時珍",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 7bb110cbd8a38987165736f028d01301c560e8a9",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0079",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0079",
+   "title": "本草纲目",
+   "work": "bencao_gangmu"
+  },
+  "excerpt": {
+   "chars": 1536254,
+   "kept_chars": 49643,
+   "kept_units": 15,
+   "units": 436,
+   "whole": false
+  },
+  "id": "bencao_gangmu_skqs",
+  "rank": 14,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "bencao_gangmu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "聖濟總錄纂要",
+    "圣济总录"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "程林"
+   ],
+   "category": "方书",
+   "composition": [
+    1111,
+    1117
+   ],
+   "dating_basis": "composition",
+   "dynasty": "清（原书北宋）",
+   "editions": [
+    {
+     "id": "shengji_zonglu_zuanyao@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "shengji_zonglu_zuanyao",
+   "kr_catalog": {
+    "extent": "26 卷",
+    "responsibility": "（宋）徽宗,（清）程林",
+    "siku": "四庫全書 文淵閣版, V739.1, p1"
+   },
+   "layers": [
+    {
+     "kind": "mixed",
+     "layer": "程林纂要（节录圣济总录）",
+     "year": [
+      1681,
+      1681
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：宋·徽宗敕編（1082 - 1135）、清·程林刪定",
+   "responsibility": [
+    {
+     "dates": "1082 - 1135",
+     "dynasty": "宋",
+     "name": "徽宗",
+     "role": "敕編"
+    },
+    {
+     "dynasty": "清",
+     "name": "程林",
+     "role": "刪定"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit dba883fcd7e4106f1d28a5fe08938ebfdc1c7055",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0027",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0027",
+   "title": "圣济总录纂要",
+   "work": "shengji_zonglu"
+  },
+  "excerpt": {
+   "chars": 267447,
+   "kept_chars": 49958,
+   "kept_units": 105,
+   "units": 688,
+   "whole": false
+  },
+  "id": "shengji_zonglu_zuanyao",
+  "rank": 15,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "shengji_zonglu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "三因方",
+    "三因极一病源论粹",
+    "三因極一病證方論",
+    "三因極一病証方論"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "陈言"
+   ],
+   "category": "方书",
+   "composition": [
+    1174,
+    1174
+   ],
+   "dating_basis": "composition",
+   "dynasty": "南宋",
+   "editions": [
+    {
+     "id": "sanyin_fang@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "sanyin_fang",
+   "kr_catalog": {
+    "extent": "18 卷",
+    "responsibility": "（宋）陳言",
+    "siku": "四庫全書 文淵閣版, V743.3, p149"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·陳言撰（fl. 1500 - 1540）",
+   "responsibility": [
+    {
+     "dates": "fl. 1500 - 1540",
+     "dynasty": "宋",
+     "name": "陳言",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit da18ff22ac997b5e45b12196e85fa38cb0602105",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0041",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0041",
+   "title": "三因极一病证方论",
+   "work": "sanyin"
+  },
+  "excerpt": {
+   "chars": 149074,
+   "kept_chars": 49902,
+   "kept_units": 76,
+   "units": 276,
+   "whole": false
+  },
+  "id": "sanyin_fang",
+  "rank": 16,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "sanyin"
+ },
+ {
+  "data": {
+   "aliases": [
+    "医宗金鉴",
+    "醫宗金鑑",
+    "御纂醫宗金鑑"
+   ],
+   "attribution": "compiled",
+   "author_life": null,
+   "authors": [
+    "吴谦 等"
+   ],
+   "category": "综合",
+   "composition": [
+    1742,
+    1742
+   ],
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "yizong_jinjian@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "yizong_jinjian",
+   "kr_catalog": {
+    "extent": "90 卷",
+    "responsibility": "（清）吳謙,（清）劉裕鐸",
+    "siku": "四庫全書 文淵閣版, V780.1, p1 - V782.1"
+   },
+   "layers": [
+    {
+     "kind": "mixed",
+     "layer": "医宗金鉴（含订正仲景全书原文与注）",
+     "year": [
+      1742,
+      1742
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：清·吳謙奉敕撰、清·劉裕鐸奉敕撰",
+   "responsibility": [
+    {
+     "dynasty": "清",
+     "name": "吳謙",
+     "role": "奉敕撰"
+    },
+    {
+     "dynasty": "清",
+     "name": "劉裕鐸",
+     "role": "奉敕撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 968c812d7b099e5b5393394097064d23f12b42ae",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0090",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0090",
+   "title": "御纂医宗金鉴",
+   "work": "yizong_jinjian"
+  },
+  "excerpt": {
+   "chars": 1772047,
+   "kept_chars": 49985,
+   "kept_units": 59,
+   "units": 2557,
+   "whole": false
+  },
+  "id": "yizong_jinjian",
+  "rank": 17,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "yizong_jinjian"
+ },
+ {
+  "data": {
+   "aliases": [
+    "普济本事方",
+    "本事方",
+    "類證普濟本事方"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "许叔微"
+   ],
+   "category": "方书",
+   "composition": [
+    1132,
+    1150
+   ],
+   "dating_basis": "composition",
+   "dynasty": "南宋",
+   "editions": [
+    {
+     "id": "puji_benshi@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "puji_benshi",
+   "kr_catalog": {
+    "extent": "10 卷",
+    "responsibility": "（宋）許叔微",
+    "siku": "四庫全書 文淵閣版, V741.3, p375"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·許叔微撰",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "許叔微",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 272cbb5dc111ff3985b723551f7a4a9feadd36b5",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0032",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0032",
+   "title": "类证普济本事方",
+   "work": "benshi_fang"
+  },
+  "excerpt": {
+   "chars": 47388,
+   "kept_chars": 47388,
+   "kept_units": 27,
+   "units": 27,
+   "whole": true
+  },
+  "id": "puji_benshi",
+  "rank": 19,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "benshi_fang"
+ },
+ {
+  "data": {
+   "aliases": [
+    "严氏济生方",
+    "濟生方"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "严用和"
+   ],
+   "category": "方书",
+   "composition": [
+    1253,
+    1253
+   ],
+   "dating_basis": "composition",
+   "dynasty": "南宋",
+   "editions": [
+    {
+     "id": "jisheng_fang@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "jisheng_fang",
+   "kr_catalog": {
+    "extent": "8 卷",
+    "responsibility": "（宋）嚴用和",
+    "siku": "四庫全書 文淵閣版, V743.5, p449"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·嚴用和撰（13th cent）",
+   "responsibility": [
+    {
+     "dates": "13th cent",
+     "dynasty": "宋",
+     "name": "嚴用和",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit c4b76ee4eb7c1d237f447923057a94fd0ceb58e5",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0043",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0043",
+   "title": "济生方",
+   "work": "jisheng"
+  },
+  "excerpt": {
+   "chars": 32222,
+   "kept_chars": 32222,
+   "kept_units": 39,
+   "units": 39,
+   "whole": true
+  },
+  "id": "jisheng_fang",
+  "rank": 21,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "jisheng"
+ },
+ {
+  "data": {
+   "aliases": [
+    "保命集",
+    "病机气宜保命集",
+    "病機氣宜保命集"
+   ],
+   "attribution": "disputed",
+   "author_life": null,
+   "authors": [
+    "刘完素（一说张元素）"
+   ],
+   "category": "综合",
+   "composition": [
+    1186,
+    1186
+   ],
+   "dating_basis": "composition",
+   "dynasty": "金",
+   "editions": [
+    {
+     "id": "baoming_ji@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "baoming_ji",
+   "kr_catalog": {
+    "extent": "3 卷",
+    "responsibility": "（金）張元素",
+    "siku": "四庫全書 文淵閣版, V745.1, p1"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：金·張元素撰",
+   "responsibility": [
+    {
+     "dynasty": "金",
+     "name": "張元素",
+     "role": "撰"
+    }
+   ],
+   "school": "河间学派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 7bbcaa77ec04047c4d46066d5bfac5e83b30fb4d",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0050",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0050",
+   "title": "素问病机气宜保命集",
+   "work": "baoming_ji"
+  },
+  "excerpt": {
+   "chars": 55562,
+   "kept_chars": 49937,
+   "kept_units": 37,
+   "units": 49,
+   "whole": false
+  },
+  "id": "baoming_ji",
+  "rank": 23,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "baoming_ji"
+ },
+ {
+  "data": {
+   "aliases": [
+    "原病式",
+    "素問玄機原病式"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "刘完素"
+   ],
+   "category": "医论",
+   "composition": [
+    1152,
+    1186
+   ],
+   "dating_basis": "composition",
+   "dynasty": "金",
+   "editions": [
+    {
+     "id": "yuanbingshi@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "yuanbingshi",
+   "kr_catalog": {
+    "extent": "1 卷",
+    "responsibility": "（金）劉完素",
+    "siku": "四庫全書 文淵閣版, V744.3, p703"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：金·劉完素撰（fl. 1186）",
+   "responsibility": [
+    {
+     "dates": "fl. 1186",
+     "dynasty": "金",
+     "name": "劉完素",
+     "role": "撰"
+    }
+   ],
+   "school": "河间学派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit ef2396e5ab0ebcfa0af12837b19f67a08d50a539",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0047",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0047",
+   "title": "素问玄机原病式",
+   "work": "yuanbingshi"
+  },
+  "excerpt": {
+   "chars": 24331,
+   "kept_chars": 24331,
+   "kept_units": 7,
+   "units": 7,
+   "whole": true
+  },
+  "id": "yuanbingshi",
+  "rank": 25,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "yuanbingshi"
+ },
+ {
+  "data": {
+   "aliases": [
+    "仁斋直指方",
+    "仁齋直指方論",
+    "仁斋直指方论",
+    "仁齋直指"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "杨士瀛"
+   ],
+   "category": "综合",
+   "composition": [
+    1264,
+    1264
+   ],
+   "dating_basis": "composition",
+   "dynasty": "南宋",
+   "editions": [
+    {
+     "id": "renzhai_zhizhi@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "renzhai_zhizhi",
+   "kr_catalog": {
+    "extent": "26 卷",
+    "responsibility": "（宋）楊士瀛,（明）朱崇正",
+    "siku": "四庫全書 文淵閣版, V744.1, p1"
+   },
+   "layers": [
+    {
+     "attribution": "明·朱崇正",
+     "kind": "section_layers",
+     "layer": "朱崇正附遗",
+     "pattern": "附遺|附遗",
+     "year": [
+      1550,
+      1550
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：宋·楊士瀛撰、明·朱崇正附遺",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "楊士瀛",
+     "role": "撰"
+    },
+    {
+     "dynasty": "明",
+     "name": "朱崇正",
+     "role": "附遺"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit d8a36bbf2fd30f8fa2b4a79f07a9b5357ab79229",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0045",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0045",
+   "title": "仁斋直指",
+   "work": "renzhai_zhizhi"
+  },
+  "excerpt": {
+   "chars": 345274,
+   "kept_chars": 49916,
+   "kept_units": 124,
+   "units": 1118,
+   "whole": false
+  },
+  "id": "renzhai_zhizhi",
+  "rank": 26,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "renzhai_zhizhi"
+ },
+ {
+  "data": {
+   "aliases": [
+    "妇人良方",
+    "婦人大全良方"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "陈自明"
+   ],
+   "category": "妇科",
+   "composition": [
+    1237,
+    1237
+   ],
+   "dating_basis": "composition",
+   "dynasty": "南宋",
+   "editions": [
+    {
+     "id": "furen_daquan@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "furen_daquan",
+   "kr_catalog": {
+    "extent": "24 卷",
+    "responsibility": "（宋）陳自明",
+    "siku": "四庫全書 文淵閣版, V742.3, p435"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·陳自明撰",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "陳自明",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit baca0c6b052285eab2e3370a204096a69659fd8a",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0038",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0038",
+   "title": "妇人大全良方",
+   "work": "furen_daquan"
+  },
+  "excerpt": {
+   "chars": 193588,
+   "kept_chars": 49776,
+   "kept_units": 82,
+   "units": 326,
+   "whole": false
+  },
+  "id": "furen_daquan",
+  "rank": 27,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "furen_daquan"
+ },
+ {
+  "data": {
+   "aliases": [
+    "宣明论方",
+    "宣明论",
+    "宣明方論"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "刘完素"
+   ],
+   "category": "方书",
+   "composition": [
+    1172,
+    1172
+   ],
+   "dating_basis": "composition",
+   "dynasty": "金",
+   "editions": [
+    {
+     "id": "xuanming_lunfang@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "xuanming_lunfang",
+   "kr_catalog": {
+    "extent": "15 卷",
+    "responsibility": "（金）劉完素",
+    "siku": "四庫全書 文淵閣版, V744.4, p745"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：金·劉完素撰（fl. 1186）",
+   "responsibility": [
+    {
+     "dates": "fl. 1186",
+     "dynasty": "金",
+     "name": "劉完素",
+     "role": "撰"
+    }
+   ],
+   "school": "河间学派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 3a02454c3a3e87350d247d27d9de9c1946aeffcd",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0048",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0048",
+   "title": "黄帝素问宣明论方",
+   "work": "xuanming"
+  },
+  "excerpt": {
+   "chars": 54626,
+   "kept_chars": 49479,
+   "kept_units": 27,
+   "units": 29,
+   "whole": false
+  },
+  "id": "xuanming_lunfang",
+  "rank": 28,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "xuanming"
+ },
+ {
+  "data": {
+   "aliases": [
+    "脾胃論"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "李杲"
+   ],
+   "category": "综合",
+   "composition": [
+    1249,
+    1249
+   ],
+   "dating_basis": "composition",
+   "dynasty": "金",
+   "editions": [
+    {
+     "id": "piweilun@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "piweilun",
+   "kr_catalog": {
+    "extent": "3 卷",
+    "responsibility": "（元）李杲",
+    "siku": "四庫全書 文淵閣版, V745.4, p401"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·李杲撰（1180 - 1251）",
+   "responsibility": [
+    {
+     "dates": "1180 - 1251",
+     "dynasty": "元",
+     "name": "李杲",
+     "role": "撰"
+    }
+   ],
+   "school": "补土派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 30c39239906ee35ae1f7c49c80f98f1f5a69dfa4",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0053",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0053",
+   "title": "脾胃论",
+   "work": "piwei"
+  },
+  "excerpt": {
+   "chars": 37024,
+   "kept_chars": 37024,
+   "kept_units": 23,
+   "units": 23,
+   "whole": true
+  },
+  "id": "piweilun",
+  "rank": 30,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "piwei"
+ },
+ {
+  "data": {
+   "aliases": [
+    "儒門事親"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "张从正"
+   ],
+   "category": "综合",
+   "composition": [
+    1217,
+    1228
+   ],
+   "dating_basis": "composition",
+   "dynasty": "金",
+   "editions": [
+    {
+     "id": "rumen_shiqin@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "rumen_shiqin",
+   "kr_catalog": {
+    "extent": "15 卷",
+    "responsibility": "（金）張從正",
+    "siku": "四庫全書 文淵閣版, V745.2, p99"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：金·張從正撰（fl. 1217 - 1231）",
+   "responsibility": [
+    {
+     "dates": "fl. 1217 - 1231",
+     "dynasty": "金",
+     "name": "張從正",
+     "role": "撰"
+    }
+   ],
+   "school": "攻邪派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit fb6edefd53163c062a0566f5ea6684ffa2f8f9d4",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0051",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0051",
+   "title": "儒门事亲",
+   "work": "rumen_shiqin"
+  },
+  "excerpt": {
+   "chars": 138129,
+   "kept_chars": 49521,
+   "kept_units": 140,
+   "units": 418,
+   "whole": false
+  },
+  "id": "rumen_shiqin",
+  "rank": 32,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "rumen_shiqin"
+ },
+ {
+  "data": {
+   "aliases": [
+    "六科证治准绳",
+    "證治準繩"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "王肯堂"
+   ],
+   "category": "综合",
+   "composition": [
+    1602,
+    1608
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "zhengzhi_zhunsheng@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "zhengzhi_zhunsheng",
+   "kr_catalog": {
+    "extent": "120 卷",
+    "responsibility": "（明）王肯堂",
+    "siku": "四庫全書 文淵閣版, V767.1, p1 - V771.1"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：明·王肯堂撰",
+   "responsibility": [
+    {
+     "dynasty": "明",
+     "name": "王肯堂",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 121d5d43940aa1010bdcb9e31c6e0a3cff44179a",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0078",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0078",
+   "title": "证治准绳",
+   "work": "zhengzhi_zhunsheng"
+  },
+  "excerpt": {
+   "chars": 2127367,
+   "kept_chars": 49030,
+   "kept_units": 37,
+   "units": 1124,
+   "whole": false
+  },
+  "id": "zhengzhi_zhunsheng",
+  "rank": 34,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "zhengzhi_zhunsheng"
+ },
+ {
+  "data": {
+   "aliases": [
+    "醫壘元戎"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "王好古"
+   ],
+   "category": "伤寒",
+   "composition": [
+    1297,
+    1297
+   ],
+   "dating_basis": "composition",
+   "dynasty": "元",
+   "editions": [
+    {
+     "id": "yilei_yuanrong@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "yilei_yuanrong",
+   "kr_catalog": {
+    "extent": "12 卷",
+    "responsibility": "（元）王好古",
+    "siku": "四庫全書 文淵閣版, V745.7, p631"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·王好古撰（fl. 1297）",
+   "responsibility": [
+    {
+     "dates": "fl. 1297",
+     "dynasty": "元",
+     "name": "王好古",
+     "role": "撰"
+    }
+   ],
+   "school": "易水学派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit d6db131ae57ee6862dd84171e556d156127b6f5d",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0056",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0056",
+   "title": "医垒元戎",
+   "work": "yilei_yuanrong"
+  },
+  "excerpt": {
+   "chars": 143380,
+   "kept_chars": 49096,
+   "kept_units": 14,
+   "units": 54,
+   "whole": false
+  },
+  "id": "yilei_yuanrong",
+  "rank": 35,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "yilei_yuanrong"
+ },
+ {
+  "data": {
+   "aliases": [
+    "景嶽全書",
+    "景岳全書"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "张介宾"
+   ],
+   "category": "综合",
+   "composition": [
+    1624,
+    1640
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "jingyue_quanshu_skqs@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "jingyue_quanshu_skqs",
+   "kr_catalog": {
+    "extent": "64 卷",
+    "responsibility": "（明）張介賓",
+    "siku": "四庫全書 文淵閣版, V777.1, p1 - V778.1"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：明·張介賓撰",
+   "responsibility": [
+    {
+     "dynasty": "明",
+     "name": "張介賓",
+     "role": "撰"
+    }
+   ],
+   "school": "温补派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 16e9b585de51c9395c610262d86d9eb71cc0b7fb",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0086",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0086",
+   "title": "景岳全书",
+   "work": "jingyue"
+  },
+  "excerpt": {
+   "chars": 926620,
+   "kept_chars": 48782,
+   "kept_units": 29,
+   "units": 558,
+   "whole": false
+  },
+  "id": "jingyue_quanshu_skqs",
+  "rank": 36,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "jingyue"
+ },
+ {
+  "data": {
+   "aliases": [
+    "西方子明堂灸经",
+    "明堂灸經"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "西方子"
+   ],
+   "category": "针灸",
+   "composition": [
+    1100,
+    1300
+   ],
+   "dating_basis": "composition",
+   "dynasty": "宋元",
+   "editions": [
+    {
+     "id": "mingtang_jiujing@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "mingtang_jiujing",
+   "kr_catalog": {
+    "extent": "8 卷",
+    "responsibility": "（）西方子",
+    "siku": "四庫全書 文淵閣版, V738.3, p51"
+   },
+   "layers": [],
+   "notes": "年代待核；责任者（Kanripo 目录）：·西方子撰",
+   "responsibility": [
+    {
+     "name": "西方子",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit fd65d20d2382fb31f0277eb6ecc1cb14aabdfb44",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0018",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0018",
+   "title": "明堂灸经",
+   "work": "mingtang_jiujing"
+  },
+  "excerpt": {
+   "chars": 21018,
+   "kept_chars": 21018,
+   "kept_units": 39,
+   "units": 39,
+   "whole": true
+  },
+  "id": "mingtang_jiujing",
+  "rank": 37,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "mingtang_jiujing"
+ },
+ {
+  "data": {
+   "aliases": [
+    "温疫论",
+    "瘟疫論",
+    "溫疫論"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "吴有性"
+   ],
+   "category": "温病",
+   "composition": [
+    1642,
+    1642
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "wenyilun_skqs@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "wenyilun_skqs",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（明）吳有性",
+    "siku": "四庫全書 文淵閣版, V779.1, p1"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：明·吳有性撰",
+   "responsibility": [
+    {
+     "dynasty": "明",
+     "name": "吳有性",
+     "role": "撰"
+    }
+   ],
+   "school": "温疫学派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit b7f79163f7e42b4301d2fce59b3cd0a7a29f8423",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0087",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0087",
+   "title": "瘟疫论",
+   "work": "wenyilun"
+  },
+  "excerpt": {
+   "chars": 34309,
+   "kept_chars": 34309,
+   "kept_units": 82,
+   "units": 82,
+   "whole": true
+  },
+  "id": "wenyilun_skqs",
+  "rank": 39,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "wenyilun"
+ },
+ {
+  "data": {
+   "aliases": [
+    "玉機微義"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "徐彦纯",
+    "刘纯"
+   ],
+   "category": "综合",
+   "composition": [
+    1396,
+    1396
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "yuji_weiyi@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "yuji_weiyi",
+   "kr_catalog": {
+    "extent": "50 卷",
+    "responsibility": "（明）徐用誠,（明）劉純續",
+    "siku": "四庫全書 文淵閣版, V762.1, p1"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：明·徐用誠原輯、明·劉純續增",
+   "responsibility": [
+    {
+     "dynasty": "明",
+     "name": "徐用誠",
+     "role": "原輯"
+    },
+    {
+     "dynasty": "明",
+     "name": "劉純續",
+     "role": "增"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit f406683d1915251cfb986595f8860c96d7b1e772",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0068",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0068",
+   "title": "玉机微义",
+   "work": "yuji_weiyi"
+  },
+  "excerpt": {
+   "chars": 285202,
+   "kept_chars": 24943,
+   "kept_units": 80,
+   "units": 814,
+   "whole": false
+  },
+  "id": "yuji_weiyi",
+  "rank": 42,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "yuji_weiyi"
+ },
+ {
+  "data": {
+   "aliases": [
+    "经史证类备急本草",
+    "大观本草",
+    "證類本草",
+    "证类"
+   ],
+   "attribution": "compiled",
+   "author_life": null,
+   "authors": [
+    "唐慎微",
+    "艾晟"
+   ],
+   "category": "本草",
+   "composition": [
+    1082,
+    1108
+   ],
+   "dating_basis": "composition",
+   "dynasty": "北宋",
+   "editions": [
+    {
+     "id": "zhenglei_bencao@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "zhenglei_bencao",
+   "kr_catalog": {
+    "extent": "30 卷",
+    "responsibility": "（宋）唐愼微,（宋）曹孝忠,（宋）寇宗奭",
+    "siku": "四庫全書 文淵閣版, V740.1, p1"
+   },
+   "layers": [
+    {
+     "attribution": "未标明出处之注按成书年保守断代",
+     "kind": "notes",
+     "layer": "唐慎微等续增注文",
+     "year": [
+      1108,
+      1108
+     ]
+    },
+    {
+     "kind": "mixed",
+     "layer": "本经·别录大字正文（黑白字未能区分）",
+     "year": [
+      500,
+      500
+     ]
+    },
+    {
+     "kind": "marker",
+     "layer": "陶弘景注",
+     "prefix": "陶隱居云",
+     "year": [
+      500,
+      500
+     ]
+    },
+    {
+     "kind": "marker",
+     "layer": "唐本注",
+     "prefix": "唐本注云",
+     "year": [
+      659,
+      659
+     ]
+    },
+    {
+     "kind": "marker",
+     "layer": "唐本注",
+     "prefix": "唐本注",
+     "year": [
+      659,
+      659
+     ]
+    },
+    {
+     "kind": "marker",
+     "layer": "开宝注",
+     "prefix": "今按|今注|今詳",
+     "year": [
+      974,
+      974
+     ]
+    },
+    {
+     "kind": "marker",
+     "layer": "嘉祐注",
+     "prefix": "臣禹錫等謹按",
+     "year": [
+      1061,
+      1061
+     ]
+    },
+    {
+     "kind": "marker",
+     "layer": "图经",
+     "prefix": "圖經曰",
+     "year": [
+      1061,
+      1061
+     ]
+    },
+    {
+     "kind": "marker",
+     "layer": "本草衍义",
+     "prefix": "衍義曰",
+     "year": [
+      1116,
+      1116
+     ]
+    },
+    {
+     "kind": "marker",
+     "layer": "雷公炮炙论",
+     "prefix": "雷公云",
+     "year": [
+      479,
+      479
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：宋·唐愼微撰（fl. 1086 - 1108）、宋·曹孝忠校、宋·寇宗奭衍義",
+   "responsibility": [
+    {
+     "dates": "fl. 1086 - 1108",
+     "dynasty": "宋",
+     "name": "唐愼微",
+     "role": "撰"
+    },
+    {
+     "dynasty": "宋",
+     "name": "曹孝忠",
+     "role": "校"
+    },
+    {
+     "dynasty": "宋",
+     "name": "寇宗奭",
+     "role": "衍義"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 131ecf5292418b22719c25f83a042da5f94edd13",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0028",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0028",
+   "title": "证类本草",
+   "work": "zhenglei"
+  },
+  "excerpt": {
+   "chars": 667131,
+   "kept_chars": 24234,
+   "kept_units": 12,
+   "units": 389,
+   "whole": false
+  },
+  "id": "zhenglei_bencao",
+  "rank": 43,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "zhenglei"
+ },
+ {
+  "data": {
+   "aliases": [],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "王贶"
+   ],
+   "category": "方书",
+   "composition": [
+    1125,
+    1125
+   ],
+   "dating_basis": "composition",
+   "dynasty": "北宋",
+   "editions": [
+    {
+     "id": "quansheng_zhimi@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "quansheng_zhimi",
+   "kr_catalog": {
+    "extent": "4 卷",
+    "responsibility": "（宋）王貺",
+    "siku": "四庫全書 文淵閣版, V741.1, p1"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·王貺撰（12th cent）",
+   "responsibility": [
+    {
+     "dates": "12th cent",
+     "dynasty": "宋",
+     "name": "王貺",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit e7c94f558dbcc920ffa099bc8da026c102f513c3",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0030",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0030",
+   "title": "全生指迷方",
+   "work": "quansheng_zhimi"
+  },
+  "excerpt": {
+   "chars": 17598,
+   "kept_chars": 17598,
+   "kept_units": 31,
+   "units": 31,
+   "whole": true
+  },
+  "id": "quansheng_zhimi",
+  "rank": 45,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "quansheng_zhimi"
+ },
+ {
+  "data": {
+   "aliases": [
+    "普濟方"
+   ],
+   "attribution": "compiled",
+   "author_life": null,
+   "authors": [
+    "朱橚",
+    "滕硕",
+    "刘醇"
+   ],
+   "category": "方书",
+   "composition": [
+    1390,
+    1406
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "puji_fang@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "puji_fang",
+   "kr_catalog": {
+    "extent": "426 卷",
+    "responsibility": "（明）朱橚",
+    "siku": "四庫全書 文淵閣版, V747.1, p1 - V761.1"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：明·朱橚撰（1361 - 1425）",
+   "responsibility": [
+    {
+     "dates": "1361 - 1425",
+     "dynasty": "明",
+     "name": "朱橚",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 7d6a66d0fe94e9197c8634bca5a1c8b837aeee7e",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0067",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0067",
+   "title": "普济方",
+   "work": "puji_fang"
+  },
+  "excerpt": {
+   "chars": 6981573,
+   "kept_chars": 24952,
+   "kept_units": 14,
+   "units": 4387,
+   "whole": false
+  },
+  "id": "puji_fang",
+  "rank": 46,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "puji_fang"
+ },
+ {
+  "data": {
+   "aliases": [
+    "瑞竹堂經驗方"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "沙图穆苏"
+   ],
+   "category": "方书",
+   "composition": [
+    1326,
+    1326
+   ],
+   "dating_basis": "composition",
+   "dynasty": "元",
+   "editions": [
+    {
+     "id": "ruizhutang@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "ruizhutang",
+   "kr_catalog": {
+    "extent": "5 卷",
+    "responsibility": "（元）沙圖穆蘇",
+    "siku": "四庫全書 文淵閣版, V746.1, p1"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·沙圖穆蘇撰",
+   "responsibility": [
+    {
+     "dynasty": "元",
+     "name": "沙圖穆蘇",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 38e3f9e65b936d5a140f660caf06f28e4ec6e569",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0058",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0058",
+   "title": "瑞竹堂经验方",
+   "work": "ruizhutang"
+  },
+  "excerpt": {
+   "chars": 22165,
+   "kept_chars": 22165,
+   "kept_units": 46,
+   "units": 46,
+   "whole": true
+  },
+  "id": "ruizhutang",
+  "rank": 47,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "ruizhutang"
+ },
+ {
+  "data": {
+   "aliases": [
+    "顱顖經"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "佚名"
+   ],
+   "category": "儿科",
+   "composition": [
+    900,
+    1100
+   ],
+   "dating_basis": "composition",
+   "dynasty": "唐末宋初",
+   "editions": [
+    {
+     "id": "luxin_jing@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "luxin_jing",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（宋）闕名",
+    "siku": "四庫全書 文淵閣版, V738.1, p1"
+   },
+   "layers": [],
+   "notes": "自《永乐大典》辑出；责任者（Kanripo 目录）：宋·闕名撰",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "闕名",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 922b38a4ef54e3139702ae985508316e88716fcb",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0016",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0016",
+   "title": "颅囟经",
+   "work": "luxin_jing"
+  },
+  "excerpt": {
+   "chars": 6461,
+   "kept_chars": 6461,
+   "kept_units": 10,
+   "units": 10,
+   "whole": true
+  },
+  "id": "luxin_jing",
+  "rank": 49,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "luxin_jing"
+ },
+ {
+  "data": {
+   "aliases": [
+    "世醫得效方",
+    "得效方"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "危亦林"
+   ],
+   "category": "方书",
+   "composition": [
+    1328,
+    1345
+   ],
+   "dating_basis": "composition",
+   "dynasty": "元",
+   "editions": [
+    {
+     "id": "shiyi_dexiao@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "shiyi_dexiao",
+   "kr_catalog": {
+    "extent": "20 卷",
+    "responsibility": "（元）危亦林",
+    "siku": "四庫全書 文淵閣版, V746.2, p43"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·危亦林撰",
+   "responsibility": [
+    {
+     "dynasty": "元",
+     "name": "危亦林",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 8dd1174fe95b9050021cb44e3172f25d8f680a28",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0059",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0059",
+   "title": "世医得效方",
+   "work": "shiyi_dexiao"
+  },
+  "excerpt": {
+   "chars": 326703,
+   "kept_chars": 24743,
+   "kept_units": 22,
+   "units": 386,
+   "whole": false
+  },
+  "id": "shiyi_dexiao",
+  "rank": 50,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "shiyi_dexiao"
+ },
+ {
+  "data": {
+   "aliases": [
+    "此事難知"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "王好古"
+   ],
+   "category": "医论",
+   "composition": [
+    1308,
+    1308
+   ],
+   "dating_basis": "composition",
+   "dynasty": "元",
+   "editions": [
+    {
+     "id": "cishi_nanzhi@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "cishi_nanzhi",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（元）王好古",
+    "siku": "四庫全書 文淵閣版, V745.6, p573"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·王好古撰（fl. 1297）",
+   "responsibility": [
+    {
+     "dates": "fl. 1297",
+     "dynasty": "元",
+     "name": "王好古",
+     "role": "撰"
+    }
+   ],
+   "school": "易水学派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 87ba83bedc5bf1a09890e2830e52cd2a93885a53",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0055",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0055",
+   "title": "此事难知",
+   "work": "cishi_nanzhi"
+  },
+  "excerpt": {
+   "chars": 28054,
+   "kept_chars": 24793,
+   "kept_units": 110,
+   "units": 129,
+   "whole": false
+  },
+  "id": "cishi_nanzhi",
+  "rank": 51,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "cishi_nanzhi"
+ },
+ {
+  "data": {
+   "aliases": [
+    "類經"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "张介宾"
+   ],
+   "category": "医经",
+   "composition": [
+    1624,
+    1624
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "leijing@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "leijing",
+   "kr_catalog": {
+    "extent": "32 卷",
+    "responsibility": "（明）張介賓",
+    "siku": "四庫全書 文淵閣版, V776.1, p1"
+   },
+   "layers": [
+    {
+     "kind": "mixed",
+     "layer": "类经（类分内经原文与张注）",
+     "year": [
+      1624,
+      1624
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：明·張介賓撰",
+   "responsibility": [
+    {
+     "dynasty": "明",
+     "name": "張介賓",
+     "role": "撰"
+    }
+   ],
+   "school": "温补派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit a42f26b662d3973433b11efd45edeea08776011c",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0085",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0085",
+   "title": "类经",
+   "work": "leijing"
+  },
+  "excerpt": {
+   "chars": 778813,
+   "kept_chars": 24966,
+   "kept_units": 19,
+   "units": 765,
+   "whole": false
+  },
+  "id": "leijing",
+  "rank": 52,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "leijing"
+ },
+ {
+  "data": {
+   "aliases": [
+    "醫說"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "张杲"
+   ],
+   "category": "医史",
+   "composition": [
+    1189,
+    1224
+   ],
+   "dating_basis": "composition",
+   "dynasty": "南宋",
+   "editions": [
+    {
+     "id": "yishuo@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "yishuo",
+   "kr_catalog": {
+    "extent": "10 卷",
+    "responsibility": "（宋）張杲",
+    "siku": "四庫全書 文淵閣版, V742.1, p1"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·張杲撰",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "張杲",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 0f3d779cadc8f22688defab984a087169a9eae03",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0036",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0036",
+   "title": "医说",
+   "work": "yishuo"
+  },
+  "excerpt": {
+   "chars": 107762,
+   "kept_chars": 24790,
+   "kept_units": 157,
+   "units": 861,
+   "whole": false
+  },
+  "id": "yishuo",
+  "rank": 53,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "yishuo"
+ },
+ {
+  "data": {
+   "aliases": [
+    "王氏博济方",
+    "博濟方"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "王衮"
+   ],
+   "category": "方书",
+   "composition": [
+    1047,
+    1047
+   ],
+   "dating_basis": "composition",
+   "dynasty": "北宋",
+   "editions": [
+    {
+     "id": "boji_fang@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "boji_fang",
+   "kr_catalog": {
+    "extent": "5 卷",
+    "responsibility": "（宋）王袞",
+    "siku": "四庫全書 文淵閣版, V738.4, p97"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·王袞撰（d. 1078）",
+   "responsibility": [
+    {
+     "dates": "d. 1078",
+     "dynasty": "宋",
+     "name": "王袞",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit a0f00327a4ee59baa261ba1b5763133821b06095",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0019",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0019",
+   "title": "博济方",
+   "work": "boji_fang"
+  },
+  "excerpt": {
+   "chars": 64495,
+   "kept_chars": 24844,
+   "kept_units": 26,
+   "units": 50,
+   "whole": false
+  },
+  "id": "boji_fang",
+  "rank": 54,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "boji_fang"
+ },
+ {
+  "data": {
+   "aliases": [
+    "内外伤辨",
+    "內外傷辨惑論",
+    "內外傷寒辯惑論"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "李杲"
+   ],
+   "category": "综合",
+   "composition": [
+    1247,
+    1247
+   ],
+   "dating_basis": "composition",
+   "dynasty": "金",
+   "editions": [
+    {
+     "id": "neiwaishang_bianhuo@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "neiwaishang_bianhuo",
+   "kr_catalog": {
+    "extent": "3 卷",
+    "responsibility": "（元）李杲",
+    "siku": "四庫全書 文淵閣版, V745.3, p363"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·李杲撰（1180 - 1251）",
+   "responsibility": [
+    {
+     "dates": "1180 - 1251",
+     "dynasty": "元",
+     "name": "李杲",
+     "role": "撰"
+    }
+   ],
+   "school": "补土派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 08e76b46f09e15b4c35daab581ff30397dafafbd",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0052",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0052",
+   "title": "内外伤辨惑论",
+   "work": "neiwaishang"
+  },
+  "excerpt": {
+   "chars": 20241,
+   "kept_chars": 20241,
+   "kept_units": 24,
+   "units": 24,
+   "whole": true
+  },
+  "id": "neiwaishang_bianhuo",
+  "rank": 56,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "neiwaishang"
+ },
+ {
+  "data": {
+   "aliases": [
+    "格致餘論"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "朱震亨"
+   ],
+   "category": "医论",
+   "composition": [
+    1347,
+    1347
+   ],
+   "dating_basis": "composition",
+   "dynasty": "元",
+   "editions": [
+    {
+     "id": "gezhi_yulun@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "gezhi_yulun",
+   "kr_catalog": {
+    "extent": "1 卷",
+    "responsibility": "（元）朱震亨",
+    "siku": "四庫全書 文淵閣版, V746.3, p637"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·朱震亨撰（1281 - 1358）",
+   "responsibility": [
+    {
+     "dates": "1281 - 1358",
+     "dynasty": "元",
+     "name": "朱震亨",
+     "role": "撰"
+    }
+   ],
+   "school": "滋阴派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 135c8b38b098304c462b7827fe0455842aa0baaf",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0060",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0060",
+   "title": "格致余论",
+   "work": "gezhi_yulun"
+  },
+  "excerpt": {
+   "chars": 22449,
+   "kept_chars": 22449,
+   "kept_units": 15,
+   "units": 15,
+   "whole": true
+  },
+  "id": "gezhi_yulun",
+  "rank": 57,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "gezhi_yulun"
+ },
+ {
+  "data": {
+   "aliases": [
+    "褚氏遺書"
+   ],
+   "attribution": "disputed",
+   "author_life": null,
+   "authors": [
+    "旧题褚澄"
+   ],
+   "category": "医论",
+   "composition": [
+    479,
+    502
+   ],
+   "dating_basis": "composition",
+   "dynasty": "南齐（宋代始出）",
+   "editions": [
+    {
+     "id": "chushi_yishu@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "chushi_yishu",
+   "kr_catalog": {
+    "extent": "1 卷",
+    "responsibility": "（南齊）褚澄",
+    "siku": "四庫全書 文淵閣版, V734.4, p541"
+   },
+   "layers": [
+    {
+     "kind": "mixed",
+     "layer": "南宋始出之本",
+     "year": [
+      1201,
+      1201
+     ]
+    }
+   ],
+   "notes": "宋嘉泰间刊行，真伪存疑；责任者（Kanripo 目录）：南齊·褚澄撰",
+   "responsibility": [
+    {
+     "dynasty": "南齊",
+     "name": "褚澄",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit ef96ec27ef31b6067e2ab8a0cf9c04249de485df",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0011",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0011",
+   "title": "褚氏遗书",
+   "work": "chushi_yishu"
+  },
+  "excerpt": {
+   "chars": 3895,
+   "kept_chars": 3895,
+   "kept_units": 15,
+   "units": 15,
+   "whole": true
+  },
+  "id": "chushi_yishu",
+  "rank": 58,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "chushi_yishu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "湯液本草"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "王好古"
+   ],
+   "category": "本草",
+   "composition": [
+    1289,
+    1308
+   ],
+   "dating_basis": "composition",
+   "dynasty": "元",
+   "editions": [
+    {
+     "id": "tangye_bencao@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "tangye_bencao",
+   "kr_catalog": {
+    "extent": "3 卷",
+    "responsibility": "（元）王好古",
+    "siku": "四庫全書 文淵閣版, V745.8, p909"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·王好古撰（fl. 1297）",
+   "responsibility": [
+    {
+     "dates": "fl. 1297",
+     "dynasty": "元",
+     "name": "王好古",
+     "role": "撰"
+    }
+   ],
+   "school": "易水学派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 620255a0f0dc91b5ec6215a14427dddbc9ccfe3d",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0057",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0057",
+   "title": "汤液本草",
+   "work": "tangye_bencao"
+  },
+  "excerpt": {
+   "chars": 43931,
+   "kept_chars": 24824,
+   "kept_units": 43,
+   "units": 75,
+   "whole": false
+  },
+  "id": "tangye_bencao",
+  "rank": 59,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "tangye_bencao"
+ },
+ {
+  "data": {
+   "aliases": [
+    "局方發揮"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "朱震亨"
+   ],
+   "category": "医论",
+   "composition": [
+    1347,
+    1350
+   ],
+   "dating_basis": "composition",
+   "dynasty": "元",
+   "editions": [
+    {
+     "id": "jufang_fahui@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "jufang_fahui",
+   "kr_catalog": {
+    "extent": "1 卷",
+    "responsibility": "（元）朱震亨",
+    "siku": "四庫全書 文淵閣版, V746.4, p675"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·朱震亨撰（1281 - 1358）",
+   "responsibility": [
+    {
+     "dates": "1281 - 1358",
+     "dynasty": "元",
+     "name": "朱震亨",
+     "role": "撰"
+    }
+   ],
+   "school": "滋阴派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit f54d3e90140d255d4af345c3f521694efc380f70",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0061",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0061",
+   "title": "局方发挥",
+   "work": "jufang_fahui"
+  },
+  "excerpt": {
+   "chars": 12991,
+   "kept_chars": 12991,
+   "kept_units": 6,
+   "units": 6,
+   "whole": true
+  },
+  "id": "jufang_fahui",
+  "rank": 62,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "jufang_fahui"
+ },
+ {
+  "data": {
+   "aliases": [
+    "蘭室祕藏"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "李杲",
+    "罗天益"
+   ],
+   "category": "综合",
+   "composition": [
+    1249,
+    1276
+   ],
+   "dating_basis": "composition",
+   "dynasty": "金元",
+   "editions": [
+    {
+     "id": "lanshi_micang@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "lanshi_micang",
+   "kr_catalog": {
+    "extent": "3 卷",
+    "responsibility": "（元）李杲",
+    "siku": "四庫全書 文淵閣版, V745.5, p469"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·李杲撰（1180 - 1251）",
+   "responsibility": [
+    {
+     "dates": "1180 - 1251",
+     "dynasty": "元",
+     "name": "李杲",
+     "role": "撰"
+    }
+   ],
+   "school": "补土派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit a82cc393f577de26b19715a46400b66a6f82cf63",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0054",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0054",
+   "title": "兰室秘藏",
+   "work": "lanshi"
+  },
+  "excerpt": {
+   "chars": 54970,
+   "kept_chars": 24928,
+   "kept_units": 19,
+   "units": 35,
+   "whole": false
+  },
+  "id": "lanshi_micang",
+  "rank": 64,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "lanshi"
+ },
+ {
+  "data": {
+   "aliases": [
+    "苏沈内翰良方",
+    "蘇沈良方"
+   ],
+   "attribution": "compiled",
+   "author_life": null,
+   "authors": [
+    "苏轼",
+    "沈括"
+   ],
+   "category": "方书",
+   "composition": [
+    1075,
+    1101
+   ],
+   "dating_basis": "composition",
+   "dynasty": "北宋",
+   "editions": [
+    {
+     "id": "susheng_liangfang@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "susheng_liangfang",
+   "kr_catalog": {
+    "extent": "8 卷",
+    "responsibility": "（宋）蘇軾,（宋）沈括",
+    "siku": "四庫全書 文淵閣版, V738.5, p217"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·蘇軾撰（1036 - 1101）、宋·沈括撰",
+   "responsibility": [
+    {
+     "dates": "1036 - 1101",
+     "dynasty": "宋",
+     "name": "蘇軾",
+     "role": "撰"
+    },
+    {
+     "dynasty": "宋",
+     "name": "沈括",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 9f2742e7b8ecd3c72ba0da46f6dd69d2cb2bcdef",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0020",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0020",
+   "title": "苏沈良方",
+   "work": "susheng_liangfang"
+  },
+  "excerpt": {
+   "chars": 33885,
+   "kept_chars": 21913,
+   "kept_units": 16,
+   "units": 25,
+   "whole": false
+  },
+  "id": "susheng_liangfang",
+  "rank": 66,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "susheng_liangfang"
+ },
+ {
+  "data": {
+   "aliases": [
+    "醫門法律"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "喻昌"
+   ],
+   "category": "综合",
+   "composition": [
+    1658,
+    1658
+   ],
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "yimen_falv@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "yimen_falv",
+   "kr_catalog": {
+    "extent": "12 卷",
+    "responsibility": "（清）喻昌",
+    "siku": "四庫全書 文淵閣版, V783.2, p271"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：清·喻昌撰（b. 1585）",
+   "responsibility": [
+    {
+     "dates": "b. 1585",
+     "dynasty": "清",
+     "name": "喻昌",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit e57ed2e373abbbce4906789a14244e59118dc4cf",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0092",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0092",
+   "title": "医门法律",
+   "work": "yimen_falv"
+  },
+  "excerpt": {
+   "chars": 241480,
+   "kept_chars": 24989,
+   "kept_units": 15,
+   "units": 172,
+   "whole": false
+  },
+  "id": "yimen_falv",
+  "rank": 70,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "yimen_falv"
+ },
+ {
+  "data": {
+   "aliases": [
+    "鍼灸資生經",
+    "资生经"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "王执中"
+   ],
+   "category": "针灸",
+   "composition": [
+    1220,
+    1220
+   ],
+   "dating_basis": "composition",
+   "dynasty": "南宋",
+   "editions": [
+    {
+     "id": "zhenjiu_zisheng@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "zhenjiu_zisheng",
+   "kr_catalog": {
+    "extent": "7 卷",
+    "responsibility": "（宋）王執中",
+    "siku": "四庫全書 文淵閣版, V742.2, p229"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·王執中撰",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "王執中",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 4aa847e6228f4d9e15db50ce9372a303278a7895",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0037",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0037",
+   "title": "针灸资生经",
+   "work": "zhenjiu_zisheng"
+  },
+  "excerpt": {
+   "chars": 123448,
+   "kept_chars": 24981,
+   "kept_units": 18,
+   "units": 97,
+   "whole": false
+  },
+  "id": "zhenjiu_zisheng",
+  "rank": 71,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "zhenjiu_zisheng"
+ },
+ {
+  "data": {
+   "aliases": [
+    "重訂濟陰綱目"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "武之望",
+    "汪淇"
+   ],
+   "category": "妇科",
+   "chartype": "traditional",
+   "composition": [
+    1620,
+    1620
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "mg_chongding_jiyin_gangmu@mcgill",
+     "name": "麦吉尔大学图书馆藏本（清雍正六年, 1728）",
+     "quality": 0.7,
+     "year": null
+    }
+   ],
+   "id": "mg_chongding_jiyin_gangmu",
+   "layers": [
+    {
+     "attribution": "清·汪淇",
+     "kind": "mixed",
+     "layer": "汪淇笺释重订（与正文相混）",
+     "year": [
+      1665,
+      1665
+     ]
+    }
+   ],
+   "modern": false,
+   "notes": "武之望《济阴纲目》（1620）经汪淇笺释重订（康熙四年，1665），笺释与正文相混，全书按重订年代计、引用年代记原书；此为雍正六年（1728）刻本；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "git clone c514056565a3",
+    "license": "Public Domain Mark 1.0（公有领域；使用时请注明 McGill University Library）",
+    "origin": "McGill University Library · Gynaecology in Traditional Chinese Medicine（麦吉尔大学图书馆善本中医妇科文献）",
+    "transcription": "麦吉尔大学图书馆据馆藏清刻本与抄本逐页录文（2000年代），无标点",
+    "url": "https://github.com/mcgill-digital/gynaecology_in_chinese_medicine",
+    "verified": false
+   },
+   "source_id": "mcgill",
+   "source_ref": "xml-files/jiyingkangmu*",
+   "title": "重订济阴纲目",
+   "work": "jiyin_gangmu"
+  },
+  "excerpt": {
+   "chars": 259049,
+   "kept_chars": 24497,
+   "kept_units": 9,
+   "units": 89,
+   "whole": false
+  },
+  "id": "mg_chongding_jiyin_gangmu",
+  "rank": 74,
+  "source": "mcgill",
+  "witness": 1,
+  "work": "jiyin_gangmu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "名醫類案（知不足齋．藏脩堂本）"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "江瓘",
+    "江应宿"
+   ],
+   "category": "医案",
+   "chartype": "traditional",
+   "composition": [
+    1549,
+    1591
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "cm_mingyi_leian@cmeta",
+     "name": "CMETA 精校本（清同治十年（1871）藏修堂重刻知不足斋本（乾隆三十五年〔1770〕鲍廷博刊、魏之琇重校本系统））",
+     "quality": 0.7,
+     "year": [
+      1871,
+      1871
+     ]
+    }
+   ],
+   "id": "cm_mingyi_leian",
+   "layers": [],
+   "modern": false,
+   "notes": "知不足斋本经魏之琇重校增补，增补与原书相混未分层；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "HTTPS（library/catalog.json、texts/*.md、meta/*.json；僅取站方對所有訪客開放之精校本）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+    "origin": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "transcription": "CMETA 據善本影像逐頁精校（精校級）之純文字，按影像頁界重切；有新式標點",
+    "url": "https://cmeta.lctseng.csie.org/prototype/",
+    "verified": false
+   },
+   "source_id": "cmeta",
+   "source_ref": "texts/名醫類案_校訂重切.md",
+   "title": "名医类案（知不足斋·藏修堂本）",
+   "work": "mingyi_leian"
+  },
+  "excerpt": {
+   "chars": 366289,
+   "kept_chars": 24889,
+   "kept_units": 7,
+   "units": 118,
+   "whole": false
+  },
+  "id": "cm_mingyi_leian",
+  "rank": 75,
+  "source": "cmeta",
+  "witness": 1,
+  "work": "mingyi_leian"
+ },
+ {
+  "data": {
+   "aliases": [
+    "伤寒直格",
+    "傷寒直格方"
+   ],
+   "attribution": "disputed",
+   "author_life": null,
+   "authors": [
+    "旧题刘完素",
+    "葛雍"
+   ],
+   "category": "伤寒",
+   "composition": [
+    1160,
+    1200
+   ],
+   "dating_basis": "composition",
+   "dynasty": "金元",
+   "editions": [
+    {
+     "id": "shanghan_zhige@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "shanghan_zhige",
+   "kr_catalog": {
+    "extent": "3 卷",
+    "responsibility": "（金）劉完素",
+    "siku": "四庫全書 文淵閣版, V744.5, p847"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：金·劉完素撰（fl. 1186）",
+   "responsibility": [
+    {
+     "dates": "fl. 1186",
+     "dynasty": "金",
+     "name": "劉完素",
+     "role": "撰"
+    }
+   ],
+   "school": "河间学派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit ad864d9506d01c8a0c3713f86772414f7c37db53",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0049",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0049",
+   "title": "伤寒直格方",
+   "work": "shanghan_zhige"
+  },
+  "excerpt": {
+   "chars": 42627,
+   "kept_chars": 24526,
+   "kept_units": 68,
+   "units": 127,
+   "whole": false
+  },
+  "id": "shanghan_zhige",
+  "rank": 76,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "shanghan_zhige"
+ },
+ {
+  "data": {
+   "aliases": [
+    "赤水玄珠全集",
+    "赤水元珠"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "孙一奎"
+   ],
+   "category": "综合",
+   "composition": [
+    1584,
+    1584
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "chishui_xuanzhu@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "chishui_xuanzhu",
+   "kr_catalog": {
+    "extent": "30 卷",
+    "responsibility": "（明）孫一奎",
+    "siku": "四庫全書 文淵閣版, V766.1, p1"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：明·孫一奎撰",
+   "responsibility": [
+    {
+     "dynasty": "明",
+     "name": "孫一奎",
+     "role": "撰"
+    }
+   ],
+   "school": "温补派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit b7a69bf760c3d00072e5b35f07d1f5c8c0c9d7e7",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0076",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0076",
+   "title": "赤水玄珠",
+   "work": "chishui_xuanzhu"
+  },
+  "excerpt": {
+   "chars": 569674,
+   "kept_chars": 24427,
+   "kept_units": 19,
+   "units": 855,
+   "whole": false
+  },
+  "id": "chishui_xuanzhu",
+  "rank": 80,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "chishui_xuanzhu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "尚論篇",
+    "尚论张仲景伤寒论重编三百九十七法"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "喻昌"
+   ],
+   "category": "伤寒",
+   "composition": [
+    1648,
+    1648
+   ],
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "shanglun_pian@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "shanglun_pian",
+   "kr_catalog": {
+    "extent": "4 卷",
+    "responsibility": "（清）喻昌",
+    "siku": "四庫全書 文淵閣版, V783.1, p1"
+   },
+   "layers": [
+    {
+     "kind": "mixed",
+     "layer": "喻昌尚论（重编伤寒论原文与注）",
+     "year": [
+      1648,
+      1648
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：清·喻昌撰（b. 1585）",
+   "responsibility": [
+    {
+     "dates": "b. 1585",
+     "dynasty": "清",
+     "name": "喻昌",
+     "role": "撰"
+    }
+   ],
+   "school": "错简重订派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 0af44ad1bfbaaa832c4f2cd4af107f4e9b4bcc19",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0091",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0091",
+   "title": "尚论篇",
+   "work": "shanglun"
+  },
+  "excerpt": {
+   "chars": 145285,
+   "kept_chars": 24987,
+   "kept_units": 21,
+   "units": 108,
+   "whole": false
+  },
+  "id": "shanglun_pian",
+  "rank": 89,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "shanglun"
+ },
+ {
+  "data": {
+   "aliases": [
+    "傷寒論條辨"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "方有执"
+   ],
+   "category": "伤寒",
+   "composition": [
+    1582,
+    1592
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "shanghanlun_tiaobian@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "shanghanlun_tiaobian",
+   "kr_catalog": {
+    "extent": "8 卷",
+    "responsibility": "（明）方有執",
+    "siku": "四庫全書 文淵閣版, V775.1, p1"
+   },
+   "layers": [
+    {
+     "attribution": "明·方有执",
+     "kind": "indented_commentary",
+     "layer": "方有执注",
+     "year": [
+      1592,
+      1592
+     ]
+    },
+    {
+     "kind": "mixed",
+     "layer": "方有执条辨（重订伤寒论原文与注）",
+     "year": [
+      1592,
+      1592
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：明·方有執撰",
+   "responsibility": [
+    {
+     "dynasty": "明",
+     "name": "方有執",
+     "role": "撰"
+    }
+   ],
+   "school": "错简重订派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 6a16a64c2a5c0f4dbd8c71307d3f5c81861ea755",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0082",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0082",
+   "title": "伤寒论条辨",
+   "work": "shanghan_tiaobian"
+  },
+  "excerpt": {
+   "chars": 118885,
+   "kept_chars": 24609,
+   "kept_units": 12,
+   "units": 50,
+   "whole": false
+  },
+  "id": "shanghanlun_tiaobian",
+  "rank": 91,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "shanghan_tiaobian"
+ },
+ {
+  "data": {
+   "aliases": [
+    "醫經溯洄集"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "王履"
+   ],
+   "category": "医论",
+   "composition": [
+    1368,
+    1368
+   ],
+   "dating_basis": "composition",
+   "dynasty": "元明",
+   "editions": [
+    {
+     "id": "yijing_suhui@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "yijing_suhui",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（元）王履",
+    "siku": "四庫全書 文淵閣版, V746.9, p937"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·王履撰（b. 1332）",
+   "responsibility": [
+    {
+     "dates": "b. 1332",
+     "dynasty": "元",
+     "name": "王履",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 1f8097806368b8b28982318e7f32d9215f260090",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0066",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0066",
+   "title": "医经溯洄集",
+   "work": "yijing_suhui"
+  },
+  "excerpt": {
+   "chars": 27528,
+   "kept_chars": 24166,
+   "kept_units": 10,
+   "units": 11,
+   "whole": false
+  },
+  "id": "yijing_suhui",
+  "rank": 92,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "yijing_suhui"
+ },
+ {
+  "data": {
+   "aliases": [
+    "外科精義"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "齐德之"
+   ],
+   "category": "外科",
+   "composition": [
+    1335,
+    1335
+   ],
+   "dating_basis": "composition",
+   "dynasty": "元",
+   "editions": [
+    {
+     "id": "waike_jingyi@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "waike_jingyi",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（元）齊德之",
+    "siku": "四庫全書 文淵閣版, V746.7, p799"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·齊德之撰",
+   "responsibility": [
+    {
+     "dynasty": "元",
+     "name": "齊德之",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit b551d77d36b851cc4ebf7df25549b06efaf42277",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0064",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0064",
+   "title": "外科精义",
+   "work": "waike_jingyi"
+  },
+  "excerpt": {
+   "chars": 32788,
+   "kept_chars": 23785,
+   "kept_units": 35,
+   "units": 45,
+   "whole": false
+  },
+  "id": "waike_jingyi",
+  "rank": 94,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "waike_jingyi"
+ },
+ {
+  "data": {
+   "aliases": [
+    "先醒齋廣筆記",
+    "先醒斋医学广笔记"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "缪希雍"
+   ],
+   "category": "综合",
+   "composition": [
+    1613,
+    1622
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "xianxingzhai_biji@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "xianxingzhai_biji",
+   "kr_catalog": {
+    "extent": "4 卷",
+    "responsibility": "（明）繆希雍",
+    "siku": "四庫全書 文淵閣版, V775.2, p159"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：明·繆希雍撰（d. 1627）",
+   "responsibility": [
+    {
+     "dates": "d. 1627",
+     "dynasty": "明",
+     "name": "繆希雍",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit d8f1116143e13da7697bfe64a41924bab911700e",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0083",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0083",
+   "title": "先醒斋广笔记",
+   "work": "xianxingzhai"
+  },
+  "excerpt": {
+   "chars": 87026,
+   "kept_chars": 24903,
+   "kept_units": 36,
+   "units": 121,
+   "whole": false
+  },
+  "id": "xianxingzhai_biji",
+  "rank": 95,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "xianxingzhai"
+ },
+ {
+  "data": {
+   "aliases": [
+    "养老奉亲书",
+    "壽親養老新書"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "陈直",
+    "邹铉"
+   ],
+   "category": "养生",
+   "composition": [
+    1080,
+    1085
+   ],
+   "dating_basis": "composition",
+   "dynasty": "宋元",
+   "editions": [
+    {
+     "id": "shouqin_yanglao@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "shouqin_yanglao",
+   "kr_catalog": {
+    "extent": "4 卷",
+    "responsibility": "（宋）陳直,（元）鄒鉉",
+    "siku": "四庫全書 文淵閣版, V738.6, p283"
+   },
+   "layers": [
+    {
+     "kind": "mixed",
+     "layer": "陈直原书与邹铉续增（未分）",
+     "year": [
+      1307,
+      1307
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：宋·陳直撰（11th cent）、元·鄒鉉續編",
+   "responsibility": [
+    {
+     "dates": "11th cent",
+     "dynasty": "宋",
+     "name": "陳直",
+     "role": "撰"
+    },
+    {
+     "dynasty": "元",
+     "name": "鄒鉉",
+     "role": "續編"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit b37f121fc0bc0d7a22587f162d52e664a32bd241",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0021",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0021",
+   "title": "寿亲养老新书",
+   "work": "shouqin_yanglao"
+  },
+  "excerpt": {
+   "chars": 70921,
+   "kept_chars": 24935,
+   "kept_units": 50,
+   "units": 198,
+   "whole": false
+  },
+  "id": "shouqin_yanglao",
+  "rank": 100,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "shouqin_yanglao"
+ },
+ {
+  "data": {
+   "aliases": [
+    "本草经疏",
+    "神農本草經疏"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "缪希雍"
+   ],
+   "category": "本草",
+   "composition": [
+    1625,
+    1625
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "bencao_jingshu@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "bencao_jingshu",
+   "kr_catalog": {
+    "extent": "30 卷",
+    "responsibility": "（明）繆希雍",
+    "siku": "四庫全書 文淵閣版, V775.3, p287"
+   },
+   "layers": [
+    {
+     "attribution": "明·缪希雍",
+     "kind": "indented_commentary",
+     "layer": "缪希雍疏",
+     "year": [
+      1625,
+      1625
+     ]
+    },
+    {
+     "kind": "mixed",
+     "layer": "缪希雍经疏（引本经·别录原文与疏）",
+     "year": [
+      1625,
+      1625
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：明·繆希雍撰（d. 1627）",
+   "responsibility": [
+    {
+     "dates": "d. 1627",
+     "dynasty": "明",
+     "name": "繆希雍",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 53fef2a65a32b599d2521c4bb1e53358f4ea19df",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0084",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0084",
+   "title": "神农本草经疏",
+   "work": "bencao_jingshu"
+  },
+  "excerpt": {
+   "chars": 302885,
+   "kept_chars": 24937,
+   "kept_units": 66,
+   "units": 924,
+   "whole": false
+  },
+  "id": "bencao_jingshu",
+  "rank": 103,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "bencao_jingshu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "傷寒總病論"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "庞安时"
+   ],
+   "category": "伤寒",
+   "composition": [
+    1100,
+    1100
+   ],
+   "dating_basis": "composition",
+   "dynasty": "北宋",
+   "editions": [
+    {
+     "id": "shanghan_zongbing@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "shanghan_zongbing",
+   "kr_catalog": {
+    "extent": "6 卷",
+    "responsibility": "（宋）龐安時",
+    "siku": "四庫全書 文淵閣版, V738.11, p575"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·龐安時撰（1042 - 1096）",
+   "responsibility": [
+    {
+     "dates": "1042 - 1096",
+     "dynasty": "宋",
+     "name": "龐安時",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 6a7470bde98e8ae3fa5fec021dd448e5b98ac8ea",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0026",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0026",
+   "title": "伤寒总病论",
+   "work": "shanghan_zongbing"
+  },
+  "excerpt": {
+   "chars": 49772,
+   "kept_chars": 23535,
+   "kept_units": 30,
+   "units": 60,
+   "whole": false
+  },
+  "id": "shanghan_zongbing",
+  "rank": 106,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "shanghan_zongbing"
+ },
+ {
+  "data": {
+   "aliases": [
+    "醫旨緒餘"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "孙一奎"
+   ],
+   "category": "医论",
+   "composition": [
+    1573,
+    1573
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "yizhi_xuyu@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "yizhi_xuyu",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（明）孫一奎",
+    "siku": "四庫全書 文淵閣版, V766.2, p1079"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：明·孫一奎撰",
+   "responsibility": [
+    {
+     "dynasty": "明",
+     "name": "孫一奎",
+     "role": "撰"
+    }
+   ],
+   "school": "温补派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 8ea8c7c6703bb500db122b819a07dbda6d7af18b",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0077",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0077",
+   "title": "医旨绪余",
+   "work": "yizhi_xuyu"
+  },
+  "excerpt": {
+   "chars": 54923,
+   "kept_chars": 24465,
+   "kept_units": 52,
+   "units": 77,
+   "whole": false
+  },
+  "id": "yizhi_xuyu",
+  "rank": 108,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "yizhi_xuyu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "薛氏醫案"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "薛己",
+    "薛铠"
+   ],
+   "category": "综合",
+   "composition": [
+    1529,
+    1600
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "xueshi_yian@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "xueshi_yian",
+   "kr_catalog": {
+    "extent": "77 卷",
+    "responsibility": "（明）薛己",
+    "siku": "四庫全書 文淵閣版, V763.1, p1 - V764.1"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：明·薛己撰",
+   "responsibility": [
+    {
+     "dynasty": "明",
+     "name": "薛己",
+     "role": "撰"
+    }
+   ],
+   "school": "温补派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 051f31b57f1d75235813ede19ab715293d124598",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0070",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0070",
+   "title": "薛氏医案",
+   "work": "xueshi_yian"
+  },
+  "excerpt": {
+   "chars": 858451,
+   "kept_chars": 24894,
+   "kept_units": 27,
+   "units": 1361,
+   "whole": false
+  },
+  "id": "xueshi_yian",
+  "rank": 112,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "xueshi_yian"
+ },
+ {
+  "data": {
+   "aliases": [
+    "傷寒類方"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "徐大椿"
+   ],
+   "category": "伤寒",
+   "composition": [
+    1759,
+    1759
+   ],
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "shanghan_leifang@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "shanghan_leifang",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（清）徐大椿",
+    "siku": "四庫全書 文淵閣版, V785.4, p581"
+   },
+   "layers": [
+    {
+     "kind": "mixed",
+     "layer": "徐大椿类方（类编伤寒论方证与按）",
+     "year": [
+      1759,
+      1759
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：清·徐大椿撰（1693 - 1771）",
+   "responsibility": [
+    {
+     "dates": "1693 - 1771",
+     "dynasty": "清",
+     "name": "徐大椿",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit fcee8f1ad8c2799af58f1942e1a2d8b7d489f078",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0099",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0099",
+   "title": "伤寒类方",
+   "work": "shanghan_leifang"
+  },
+  "excerpt": {
+   "chars": 37091,
+   "kept_chars": 23106,
+   "kept_units": 9,
+   "units": 16,
+   "whole": false
+  },
+  "id": "shanghan_leifang",
+  "rank": 116,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "shanghan_leifang"
+ },
+ {
+  "data": {
+   "aliases": [
+    "脈訣刊誤"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "戴启宗"
+   ],
+   "category": "诊法",
+   "composition": [
+    1330,
+    1370
+   ],
+   "dating_basis": "composition",
+   "dynasty": "元",
+   "editions": [
+    {
+     "id": "maijue_kanwu@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "maijue_kanwu",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（元）戴啟宗",
+    "siku": "四庫全書 文淵閣版, V746.8, p863"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·戴啟宗撰（14th cent）",
+   "responsibility": [
+    {
+     "dates": "14th cent",
+     "dynasty": "元",
+     "name": "戴啟宗",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 68461a5886d4cdd9d377fb7e0be5b682c5cd1c09",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0065",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0065",
+   "title": "脉诀刊误",
+   "work": "maijue_kanwu"
+  },
+  "excerpt": {
+   "chars": 45349,
+   "kept_chars": 22288,
+   "kept_units": 36,
+   "units": 60,
+   "whole": false
+  },
+  "id": "maijue_kanwu",
+  "rank": 117,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "maijue_kanwu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "醫學源流論"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "徐大椿"
+   ],
+   "category": "医论",
+   "composition": [
+    1757,
+    1757
+   ],
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "yixue_yuanliu@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "yixue_yuanliu",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（清）徐大椿",
+    "siku": "四庫全書 文淵閣版, V785.5, p639"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：清·徐大椿撰（1693 - 1771）",
+   "responsibility": [
+    {
+     "dates": "1693 - 1771",
+     "dynasty": "清",
+     "name": "徐大椿",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 43bc8efff322211ffc143a9095061648516625e4",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0100",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0100",
+   "title": "医学源流论",
+   "work": "yixue_yuanliu"
+  },
+  "excerpt": {
+   "chars": 39922,
+   "kept_chars": 21124,
+   "kept_units": 9,
+   "units": 15,
+   "whole": false
+  },
+  "id": "yixue_yuanliu",
+  "rank": 119,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "yixue_yuanliu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "蘭臺軌範"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "徐大椿"
+   ],
+   "category": "综合",
+   "composition": [
+    1764,
+    1764
+   ],
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "lantai_guifan@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "lantai_guifan",
+   "kr_catalog": {
+    "extent": "8 卷",
+    "responsibility": "（清）徐大椿",
+    "siku": "四庫全書 文淵閣版, V785.2, p343"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：清·徐大椿撰（1693 - 1771）",
+   "responsibility": [
+    {
+     "dates": "1693 - 1771",
+     "dynasty": "清",
+     "name": "徐大椿",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 4c75ec76e4f43cd7eaf09d044d71fae398775246",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0097",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0097",
+   "title": "兰台轨范",
+   "work": "lantai_guifan"
+  },
+  "excerpt": {
+   "chars": 120950,
+   "kept_chars": 24374,
+   "kept_units": 30,
+   "units": 128,
+   "whole": false
+  },
+  "id": "lantai_guifan",
+  "rank": 120,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "lantai_guifan"
+ },
+ {
+  "data": {
+   "aliases": [
+    "傷寒舌鑑"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "张登"
+   ],
+   "category": "诊法",
+   "composition": [
+    1668,
+    1668
+   ],
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "shanghan_shejian@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "shanghan_shejian",
+   "kr_catalog": {
+    "extent": "1 卷",
+    "responsibility": "（清）張登",
+    "siku": "四庫全書 文淵閣版, V783.3, p699"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：清·張登撰",
+   "responsibility": [
+    {
+     "dynasty": "清",
+     "name": "張登",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 655bff12b90d5ec97d9bdc7bd6123d3786f1dda0",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0093",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0093",
+   "title": "伤寒舌鉴",
+   "work": "shanghan_shejian"
+  },
+  "excerpt": {
+   "chars": 1468,
+   "kept_chars": 1468,
+   "kept_units": 3,
+   "units": 3,
+   "whole": true
+  },
+  "id": "shanghan_shejian",
+  "rank": 128,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "shanghan_shejian"
+ },
+ {
+  "data": {
+   "aliases": [
+    "小兒衞生總微論方",
+    "卫生总微",
+    "小兒衛生總微論方"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "佚名"
+   ],
+   "category": "儿科",
+   "composition": [
+    1156,
+    1156
+   ],
+   "dating_basis": "composition",
+   "dynasty": "南宋",
+   "editions": [
+    {
+     "id": "xiaoer_weisheng_zongwei@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "xiaoer_weisheng_zongwei",
+   "kr_catalog": {
+    "extent": "20 卷",
+    "responsibility": "（）闕名,（宋）何大任",
+    "siku": "四庫全書 文淵閣版, V741.2, p49"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：·闕名撰、宋·何大任校訂",
+   "responsibility": [
+    {
+     "name": "闕名",
+     "role": "撰"
+    },
+    {
+     "dynasty": "宋",
+     "name": "何大任",
+     "role": "校訂"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 7950f0b4ba250a8a505824ccc0e5b25310e2aa83",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0031",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0031",
+   "title": "小儿卫生总微论方",
+   "work": "xiaoer_weisheng"
+  },
+  "excerpt": {
+   "chars": 169498,
+   "kept_chars": 11533,
+   "kept_units": 10,
+   "units": 113,
+   "whole": false
+  },
+  "id": "xiaoer_weisheng_zongwei",
+  "rank": 132,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "xiaoer_weisheng"
+ },
+ {
+  "data": {
+   "aliases": [
+    "絳雪園古方選註"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "王子接"
+   ],
+   "category": "方书",
+   "composition": [
+    1732,
+    1732
+   ],
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "jiangxueyuan_fangxuan@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "jiangxueyuan_fangxuan",
+   "kr_catalog": {
+    "extent": "16 卷",
+    "responsibility": "（清）王子接",
+    "siku": "四庫全書 文淵閣版, V783.5, p779"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：清·王子接撰",
+   "responsibility": [
+    {
+     "dynasty": "清",
+     "name": "王子接",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 04ad9f284bb740aec84f43f345731963a28d20c9",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0095",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0095",
+   "title": "绛雪园古方选注",
+   "work": "jiangxueyuan"
+  },
+  "excerpt": {
+   "chars": 93328,
+   "kept_chars": 10960,
+   "kept_units": 8,
+   "units": 57,
+   "whole": false
+  },
+  "id": "jiangxueyuan_fangxuan",
+  "rank": 133,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "jiangxueyuan"
+ },
+ {
+  "data": {
+   "aliases": [
+    "銅人鍼灸經"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "佚名"
+   ],
+   "category": "针灸",
+   "composition": [
+    1000,
+    1127
+   ],
+   "dating_basis": "composition",
+   "dynasty": "宋",
+   "editions": [
+    {
+     "id": "tongren_zhenjiujing@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "tongren_zhenjiujing",
+   "kr_catalog": {
+    "extent": "7 卷",
+    "responsibility": "（宋）闕名",
+    "siku": "四庫全書 文淵閣版, V738.2, p15"
+   },
+   "layers": [],
+   "notes": "年代待核；责任者（Kanripo 目录）：宋·闕名撰",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "闕名",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 1c1e148de0bbb8f8fb8e9606b8e06a7091786155",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0017",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0017",
+   "title": "铜人针灸经",
+   "work": "tongren_zhenjiujing"
+  },
+  "excerpt": {
+   "chars": 14434,
+   "kept_chars": 10344,
+   "kept_units": 15,
+   "units": 18,
+   "whole": false
+  },
+  "id": "tongren_zhenjiujing",
+  "rank": 135,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "tongren_zhenjiujing"
+ },
+ {
+  "data": {
+   "aliases": [
+    "續名醫類案"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "魏之琇"
+   ],
+   "category": "医案",
+   "composition": [
+    1770,
+    1770
+   ],
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "xu_mingyi_leian@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "xu_mingyi_leian",
+   "kr_catalog": {
+    "extent": "60 卷",
+    "responsibility": "（清）魏之琇",
+    "siku": "四庫全書 文淵閣版, V784.1, p1 - V785.1"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：清·魏之琇撰（d. 1772）",
+   "responsibility": [
+    {
+     "dates": "d. 1772",
+     "dynasty": "清",
+     "name": "魏之琇",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit c2a5a840685320b3d36dd5d5fb31722e736912ed",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0096",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0096",
+   "title": "续名医类案",
+   "work": "xu_mingyi_leian"
+  },
+  "excerpt": {
+   "chars": 647268,
+   "kept_chars": 11915,
+   "kept_units": 13,
+   "units": 485,
+   "whole": false
+  },
+  "id": "xu_mingyi_leian",
+  "rank": 138,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "xu_mingyi_leian"
+ },
+ {
+  "data": {
+   "aliases": [
+    "金匱鈎玄",
+    "金匱鉤玄"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "朱震亨",
+    "戴原礼"
+   ],
+   "category": "综合",
+   "composition": [
+    1340,
+    1400
+   ],
+   "dating_basis": "composition",
+   "dynasty": "元明",
+   "editions": [
+    {
+     "id": "jinkui_gouxuan@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "jinkui_gouxuan",
+   "kr_catalog": {
+    "extent": "3 卷",
+    "responsibility": "（元）朱震亨,（明）戴原禮",
+    "siku": "四庫全書 文淵閣版, V746.5, p697"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·朱震亨撰（1281 - 1358）、明·戴原禮校補",
+   "responsibility": [
+    {
+     "dates": "1281 - 1358",
+     "dynasty": "元",
+     "name": "朱震亨",
+     "role": "撰"
+    },
+    {
+     "dynasty": "明",
+     "name": "戴原禮",
+     "role": "校補"
+    }
+   ],
+   "school": "滋阴派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit ac1d9072f4a3f2cffb690ceb1055227cffda454d",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0062",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0062",
+   "title": "金匮钩玄",
+   "work": "jinkui_gouxuan"
+  },
+  "excerpt": {
+   "chars": 24542,
+   "kept_chars": 11240,
+   "kept_units": 51,
+   "units": 111,
+   "whole": false
+  },
+  "id": "jinkui_gouxuan",
+  "rank": 139,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "jinkui_gouxuan"
+ },
+ {
+  "data": {
+   "aliases": [
+    "腳氣治法總要"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "董汲"
+   ],
+   "category": "内科",
+   "composition": [
+    1093,
+    1093
+   ],
+   "dating_basis": "composition",
+   "dynasty": "北宋",
+   "editions": [
+    {
+     "id": "jiaoqi_zhifa@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "jiaoqi_zhifa",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（宋）董汲",
+    "siku": "四庫全書 文淵閣版, V738.7, p417"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·董汲撰",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "董汲",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit c97ecce83fac915b64ebc68b3bbedb81ab244471",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0022",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0022",
+   "title": "脚气治法总要",
+   "work": "jiaoqi_zhifa"
+  },
+  "excerpt": {
+   "chars": 11643,
+   "kept_chars": 11643,
+   "kept_units": 8,
+   "units": 8,
+   "whole": true
+  },
+  "id": "jiaoqi_zhifa",
+  "rank": 151,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "jiaoqi_zhifa"
+ },
+ {
+  "data": {
+   "aliases": [
+    "推求師意"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "戴思恭",
+    "汪机"
+   ],
+   "category": "医论",
+   "composition": [
+    1380,
+    1405
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "tuiqiu_shiyi@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "tuiqiu_shiyi",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（明）戴原禮",
+    "siku": "四庫全書 文淵閣版, V765.1, p1"
+   },
+   "layers": [
+    {
+     "kind": "mixed",
+     "layer": "戴思恭原撰、汪机编录（未分）",
+     "year": [
+      1534,
+      1534
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：明·戴原禮撰（d. 1403）",
+   "responsibility": [
+    {
+     "dates": "d. 1403",
+     "dynasty": "明",
+     "name": "戴原禮",
+     "role": "撰"
+    }
+   ],
+   "school": "滋阴派",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 17ed85fba0bb3ef83e1a8a17ad28c0e308541bed",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0071",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0071",
+   "title": "推求师意",
+   "work": "tuiqiu_shiyi"
+  },
+  "excerpt": {
+   "chars": 22786,
+   "kept_chars": 11582,
+   "kept_units": 8,
+   "units": 14,
+   "whole": false
+  },
+  "id": "tuiqiu_shiyi",
+  "rank": 154,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "tuiqiu_shiyi"
+ },
+ {
+  "data": {
+   "aliases": [
+    "傷寒微旨論"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "韩祗和"
+   ],
+   "category": "伤寒",
+   "composition": [
+    1086,
+    1086
+   ],
+   "dating_basis": "composition",
+   "dynasty": "北宋",
+   "editions": [
+    {
+     "id": "shanghan_weizhi@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "shanghan_weizhi",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（宋）韓祗和",
+    "siku": "四庫全書 文淵閣版, V738.10, p541"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·韓祗和撰（fl. 1086）",
+   "responsibility": [
+    {
+     "dates": "fl. 1086",
+     "dynasty": "宋",
+     "name": "韓祗和",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit e9398491a9d5b15980a1d59477919181ac3bc4a0",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0025",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0025",
+   "title": "伤寒微旨论",
+   "work": "shanghan_weizhi"
+  },
+  "excerpt": {
+   "chars": 18845,
+   "kept_chars": 11862,
+   "kept_units": 7,
+   "units": 12,
+   "whole": false
+  },
+  "id": "shanghan_weizhi",
+  "rank": 159,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "shanghan_weizhi"
+ },
+ {
+  "data": {
+   "aliases": [
+    "古今醫案按（會文堂石印本）"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "俞震"
+   ],
+   "category": "医案",
+   "chartype": "traditional",
+   "composition": [
+    1778,
+    1778
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "cm_gujin_yian_an@cmeta",
+     "name": "CMETA 精校本（民国元年（1912）上海会文堂粹记石印本（光绪九年〔1883〕李龄寿重校本系统））",
+     "quality": 0.7,
+     "year": [
+      1912,
+      1912
+     ]
+    }
+   ],
+   "id": "cm_gujin_yian_an",
+   "layers": [],
+   "modern": false,
+   "notes": "版本源流與典藏：《古今醫案按》清·俞震纂輯，成書於乾隆四十三年（1778）。本站收錄者為民國元年（1912）上海會文堂粹記石印本，卷端題「嘉善俞震東扶纂輯 吳江李齡壽辛垞重較輯」，屬光緒九年（1883）李齡壽重刊系統。影像取自維基共享資源（Wikimedia Commons），原掃描出自雲南中醫藥大學古籍數字圖書館。 收錄與授權狀態：本站收錄原書影像與純文字。影像屬公有領域（Public Domain）。；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "HTTPS（library/catalog.json、texts/*.md、meta/*.json；僅取站方對所有訪客開放之精校本）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+    "origin": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "transcription": "CMETA 據善本影像逐頁精校（精校級）之純文字，按影像頁界重切；有新式標點",
+    "url": "https://cmeta.lctseng.csie.org/prototype/",
+    "verified": false
+   },
+   "source_id": "cmeta",
+   "source_ref": "texts/古今醫案按_校訂重切.md",
+   "title": "古今医案按（会文堂石印本）",
+   "work": "jc:古今医案按"
+  },
+  "excerpt": {
+   "chars": 284390,
+   "kept_chars": 11051,
+   "kept_units": 7,
+   "units": 140,
+   "whole": false
+  },
+  "id": "cm_gujin_yian_an",
+  "rank": 160,
+  "source": "cmeta",
+  "witness": 1,
+  "work": "jc:古今医案按"
+ },
+ {
+  "data": {
+   "aliases": [],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "汪机"
+   ],
+   "category": "外科",
+   "composition": [
+    1531,
+    1531
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "waike_lili@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "waike_lili",
+   "kr_catalog": {
+    "extent": "7 卷",
+    "responsibility": "（明）汪機",
+    "siku": "四庫全書 文淵閣版, V765.3, p111"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：明·汪機撰（fl. 1495 - 1534）",
+   "responsibility": [
+    {
+     "dates": "fl. 1495 - 1534",
+     "dynasty": "明",
+     "name": "汪機",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit b056eee005d420152ff3d09a8f03f4b82129c84e",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0073",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0073",
+   "title": "外科理例",
+   "work": "waike_lili"
+  },
+  "excerpt": {
+   "chars": 118172,
+   "kept_chars": 11879,
+   "kept_units": 13,
+   "units": 179,
+   "whole": false
+  },
+  "id": "waike_lili",
+  "rank": 164,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "waike_lili"
+ },
+ {
+  "data": {
+   "aliases": [
+    "傳信適用方"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "吴彦夔"
+   ],
+   "category": "方书",
+   "composition": [
+    1180,
+    1180
+   ],
+   "dating_basis": "composition",
+   "dynasty": "南宋",
+   "editions": [
+    {
+     "id": "chuanxin_shiyong@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "chuanxin_shiyong",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（宋）吳彥夔",
+    "siku": "四庫全書 文淵閣版, V741.5, p745"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·吳彥夔撰",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "吳彥夔",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 8484eb7ddd2139065ca24336d316c84d921dd432",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0034",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0034",
+   "title": "传信适用方",
+   "work": "chuanxin_shiyong"
+  },
+  "excerpt": {
+   "chars": 35749,
+   "kept_chars": 11996,
+   "kept_units": 24,
+   "units": 77,
+   "whole": false
+  },
+  "id": "chuanxin_shiyong",
+  "rank": 168,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "chuanxin_shiyong"
+ },
+ {
+  "data": {
+   "aliases": [
+    "玉龙经",
+    "扁鵲神應鍼灸玉龍經"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "王国瑞"
+   ],
+   "category": "针灸",
+   "composition": [
+    1329,
+    1329
+   ],
+   "dating_basis": "composition",
+   "dynasty": "元",
+   "editions": [
+    {
+     "id": "yulong_jing@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "yulong_jing",
+   "kr_catalog": {
+    "extent": "1 卷",
+    "responsibility": "（元）王國瑞",
+    "siku": "四庫全書 文淵閣版, V746.6, p755"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：元·王國瑞撰",
+   "responsibility": [
+    {
+     "dynasty": "元",
+     "name": "王國瑞",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit f5a06f7a934c3afbb355f30384df52da2d0a2311",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0063",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0063",
+   "title": "扁鹊神应针灸玉龙经",
+   "work": "yulong_jing"
+  },
+  "excerpt": {
+   "chars": 20308,
+   "kept_chars": 11998,
+   "kept_units": 88,
+   "units": 142,
+   "whole": false
+  },
+  "id": "yulong_jing",
+  "rank": 172,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "yulong_jing"
+ },
+ {
+  "data": {
+   "aliases": [
+    "難經本義"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "滑寿"
+   ],
+   "category": "医经",
+   "composition": [
+    1361,
+    1361
+   ],
+   "dating_basis": "composition",
+   "dynasty": "元",
+   "editions": [
+    {
+     "id": "nanjing_benyi@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "nanjing_benyi",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（周）秦越人,（元）滑壽",
+    "siku": "四庫全書 文淵閣版, V733.3, p429"
+   },
+   "layers": [
+    {
+     "attribution": "元·滑寿",
+     "kind": "indented_commentary",
+     "layer": "滑寿注",
+     "year": [
+      1361,
+      1361
+     ]
+    },
+    {
+     "kind": "mixed",
+     "layer": "滑寿本义（引难经原文与注）",
+     "year": [
+      1361,
+      1361
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：周·秦越人撰、元·滑壽注",
+   "responsibility": [
+    {
+     "dynasty": "周",
+     "name": "秦越人",
+     "role": "撰"
+    },
+    {
+     "dynasty": "元",
+     "name": "滑壽",
+     "role": "注"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 3868a3b1db3274e93e8f92d97829045bfb1f9e09",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0004",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0004",
+   "title": "难经本义",
+   "work": "nanjing_benyi"
+  },
+  "excerpt": {
+   "chars": 42968,
+   "kept_chars": 11857,
+   "kept_units": 8,
+   "units": 29,
+   "whole": false
+  },
+  "id": "nanjing_benyi",
+  "rank": 173,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "nanjing_benyi"
+ },
+ {
+  "data": {
+   "aliases": [
+    "石山醫案"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "汪机",
+    "陈桷"
+   ],
+   "category": "医案",
+   "composition": [
+    1531,
+    1531
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "shishan_yian@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "shishan_yian",
+   "kr_catalog": {
+    "extent": "3 卷",
+    "responsibility": "（明）陳桷",
+    "siku": "四庫全書 文淵閣版, V765.4, p325"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：明·陳桷編",
+   "responsibility": [
+    {
+     "dynasty": "明",
+     "name": "陳桷",
+     "role": "編"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit cd6a0074beae547c53339a913505b75585410cbb",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0074",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0074",
+   "title": "石山医案",
+   "work": "shishan_yian"
+  },
+  "excerpt": {
+   "chars": 50204,
+   "kept_chars": 10279,
+   "kept_units": 14,
+   "units": 47,
+   "whole": false
+  },
+  "id": "shishan_yian",
+  "rank": 176,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "shishan_yian"
+ },
+ {
+  "data": {
+   "aliases": [
+    "東醫寶鑒"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "许浚"
+   ],
+   "category": "综合",
+   "chartype": "traditional",
+   "composition": [
+    1611,
+    1611
+   ],
+   "dating": "preface",
+   "dating_basis": "composition",
+   "dynasty": "朝鲜",
+   "editions": [
+    {
+     "id": "ws_f0edcf313b@wikisource",
+     "name": "维基文库本",
+     "quality": 0.7,
+     "year": null
+    }
+   ],
+   "id": "ws_f0edcf313b",
+   "layers": [],
+   "modern": false,
+   "notes": "断代依据：序跋落款（萬曆三十九年辛亥孟夏，崇祿大夫行吏曹判書兼弘文館大提學藝文館大提）",
+   "school": null,
+   "source": {
+    "acquisition": "Wikimedia dump (multistream, range requests) 2026-08-27T1",
+    "license": "CC BY-SA 4.0（维基文库录文与标点；古籍原文属公有领域）",
+    "origin": "维基文库（zh.wikisource.org）· Category:中醫、Category:醫書",
+    "transcription": "维基文库志愿者录入与标点，部分页面为网络本批量导入（简体），未经本项目校勘",
+    "url": "https://zh.wikisource.org/wiki/東醫寶鑒",
+    "verified": false
+   },
+   "source_id": "wikisource",
+   "source_ref": "page 505382 rev 2245890 (+5 subpages)",
+   "title": "东医宝鉴",
+   "work": "ws:东医宝鉴"
+  },
+  "excerpt": {
+   "chars": 25563,
+   "kept_chars": 11816,
+   "kept_units": 9,
+   "units": 17,
+   "whole": false
+  },
+  "id": "ws_f0edcf313b",
+  "rank": 177,
+  "source": "wikisource",
+  "witness": 1,
+  "work": "ws:东医宝鉴"
+ },
+ {
+  "data": {
+   "aliases": [
+    "衞濟寶書",
+    "衛濟寶書"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "东轩居士"
+   ],
+   "category": "外科",
+   "composition": [
+    1170,
+    1170
+   ],
+   "dating_basis": "composition",
+   "dynasty": "南宋",
+   "editions": [
+    {
+     "id": "weiji_baoshu@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "weiji_baoshu",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（宋）東軒居士",
+    "siku": "四庫全書 文淵閣版, V741.6, p813"
+   },
+   "layers": [],
+   "notes": "年代待核；责任者（Kanripo 目录）：宋·東軒居士撰",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "東軒居士",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 6cb75a1318bae590354df36cceb19d74fcbf05c8",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0035",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0035",
+   "title": "卫济宝书",
+   "work": "weiji_baoshu"
+  },
+  "excerpt": {
+   "chars": 10254,
+   "kept_chars": 10254,
+   "kept_units": 12,
+   "units": 12,
+   "whole": true
+  },
+  "id": "weiji_baoshu",
+  "rank": 186,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "weiji_baoshu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "湯頭歌訣"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "汪昂"
+   ],
+   "category": "方书",
+   "chartype": "traditional",
+   "composition": [
+    1662,
+    1714
+   ],
+   "dating": "jicheng:D034",
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "ws_f0f5addb51@wikisource",
+     "name": "维基文库本",
+     "quality": 0.7,
+     "year": null
+    }
+   ],
+   "id": "ws_f0f5addb51",
+   "layers": [],
+   "modern": false,
+   "notes": "断代依据：同书笈成本（D034）编目年代",
+   "school": null,
+   "source": {
+    "acquisition": "Wikimedia dump (multistream, range requests) 2026-08-27T1",
+    "license": "CC BY-SA 4.0（维基文库录文与标点；古籍原文属公有领域）",
+    "origin": "维基文库（zh.wikisource.org）· Category:中醫、Category:醫書",
+    "transcription": "维基文库志愿者录入与标点，部分页面为网络本批量导入（简体），未经本项目校勘",
+    "url": "https://zh.wikisource.org/wiki/湯頭歌訣",
+    "verified": false
+   },
+   "source_id": "wikisource",
+   "source_ref": "page 166120 rev 2392808 (+16 subpages)",
+   "title": "汤头歌诀",
+   "work": "jc:汤头歌诀"
+  },
+  "excerpt": {
+   "chars": 19688,
+   "kept_chars": 11371,
+   "kept_units": 12,
+   "units": 17,
+   "whole": false
+  },
+  "id": "ws_f0f5addb51",
+  "rank": 190,
+  "source": "wikisource",
+  "witness": 1,
+  "work": "jc:汤头歌诀"
+ },
+ {
+  "data": {
+   "aliases": [
+    "銀海精微"
+   ],
+   "attribution": "pseudepigraphic",
+   "author_life": null,
+   "authors": [
+    "旧题孙思邈"
+   ],
+   "category": "眼科",
+   "composition": [
+    1127,
+    1644
+   ],
+   "dating_basis": "composition",
+   "dynasty": "宋元—明（托名唐）",
+   "editions": [
+    {
+     "id": "yinhai_jingwei@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "yinhai_jingwei",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（唐）孫思邈",
+    "siku": "四庫全書 文淵閣版, V735.2, p945"
+   },
+   "layers": [],
+   "notes": "成书年代待核；责任者（Kanripo 目录）：唐·孫思邈撰（581 - 682）",
+   "responsibility": [
+    {
+     "dates": "581 - 682",
+     "dynasty": "唐",
+     "name": "孫思邈",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 71b34e2feaac2129e702c5322631b8f1c9199cd2",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0014",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0014",
+   "title": "银海精微",
+   "work": "yinhai_jingwei"
+  },
+  "excerpt": {
+   "chars": 49620,
+   "kept_chars": 11947,
+   "kept_units": 10,
+   "units": 95,
+   "whole": false
+  },
+  "id": "yinhai_jingwei",
+  "rank": 192,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "yinhai_jingwei"
+ },
+ {
+  "data": {
+   "aliases": [],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "佚名"
+   ],
+   "category": "方书",
+   "composition": [
+    1100,
+    1368
+   ],
+   "dating_basis": "composition",
+   "dynasty": "宋元",
+   "editions": [
+    {
+     "id": "jijiu_xianfang@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "jijiu_xianfang",
+   "kr_catalog": {
+    "extent": "6 卷",
+    "responsibility": "（）闕名",
+    "siku": "四庫全書 文淵閣版, V744.2, p665"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：·闕名撰",
+   "responsibility": [
+    {
+     "name": "闕名",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit bee72a30f7fe805b08390bcbb18be01350a14a4d",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0046",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0046",
+   "title": "急救仙方",
+   "work": "jijiu_xianfang"
+  },
+  "excerpt": {
+   "chars": 16176,
+   "kept_chars": 11621,
+   "kept_units": 36,
+   "units": 43,
+   "whole": false
+  },
+  "id": "jijiu_xianfang",
+  "rank": 193,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "jijiu_xianfang"
+ },
+ {
+  "data": {
+   "aliases": [
+    "事林廣記/續集/卷10"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [],
+   "category": "本草",
+   "chartype": "traditional",
+   "composition": [
+    1330,
+    1333
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "元",
+   "editions": [
+    {
+     "id": "ws_10_d8b12ca2f1@wikisource",
+     "name": "维基文库本",
+     "quality": 0.7,
+     "year": null
+    }
+   ],
+   "id": "ws_10_d8b12ca2f1",
+   "layers": [],
+   "modern": false,
+   "notes": "南宋陈元靓编类书《事林广记》续集卷十“医学类”（药忌、炮制），据元至顺间刊本系统，按元刊年代断代；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "Wikimedia dump (multistream, range requests) 2026-08-27T1",
+    "license": "CC BY-SA 4.0（维基文库录文与标点；古籍原文属公有领域）",
+    "origin": "维基文库（zh.wikisource.org）· Category:中醫、Category:醫書",
+    "transcription": "维基文库志愿者录入与标点，部分页面为网络本批量导入（简体），未经本项目校勘",
+    "url": "https://zh.wikisource.org/wiki/事林廣記/續集/卷10",
+    "verified": false
+   },
+   "source_id": "wikisource",
+   "source_ref": "page 33973 rev 2610441",
+   "title": "事林广记·续集·卷十（医学类）",
+   "work": "ws:事林广记/续集/卷10"
+  },
+  "excerpt": {
+   "chars": 6706,
+   "kept_chars": 6706,
+   "kept_units": 4,
+   "units": 4,
+   "whole": true
+  },
+  "id": "ws_10_d8b12ca2f1",
+  "rank": 194,
+  "source": "wikisource",
+  "witness": 1,
+  "work": "ws:事林广记/续集/卷10"
+ },
+ {
+  "data": {
+   "aliases": [
+    "本草乘雅"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "卢之颐"
+   ],
+   "category": "本草",
+   "composition": [
+    1647,
+    1647
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明清",
+   "editions": [
+    {
+     "id": "bencao_chengya@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "bencao_chengya",
+   "kr_catalog": {
+    "extent": "10 卷",
+    "responsibility": "（明）廬之頤",
+    "siku": "四庫全書 文淵閣版, V779.3, p97"
+   },
+   "layers": [
+    {
+     "kind": "mixed",
+     "layer": "卢之颐乘雅（引本经原文与核、参）",
+     "year": [
+      1647,
+      1647
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：明·廬之頤撰",
+   "responsibility": [
+    {
+     "dynasty": "明",
+     "name": "廬之頤",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 2523c0105162c820fdbeaa6df3ef89efac88be0c",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0089",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0089",
+   "title": "本草乘雅半偈",
+   "work": "bencao_chengya"
+  },
+  "excerpt": {
+   "chars": 189303,
+   "kept_chars": 11403,
+   "kept_units": 9,
+   "units": 127,
+   "whole": false
+  },
+  "id": "bencao_chengya",
+  "rank": 202,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "bencao_chengya"
+ },
+ {
+  "data": {
+   "aliases": [
+    "傷寒雜病論（桂林古本）"
+   ],
+   "attribution": "pseudepigraphic",
+   "author_life": null,
+   "authors": [
+    "张仲景"
+   ],
+   "category": "近代",
+   "chartype": "traditional",
+   "composition": [
+    1939,
+    1939
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "民国",
+   "editions": [
+    {
+     "id": "cm_shanghan_guilin@cmeta",
+     "name": "CMETA 精校本（1980年陕西中医药研究院米伯让补刻勘误印行本（据1939年白云阁刻版））",
+     "quality": 0.7,
+     "year": [
+      1980,
+      1980
+     ]
+    }
+   ],
+   "id": "cm_shanghan_guilin",
+   "layers": [],
+   "modern": true,
+   "notes": "所谓“桂林古本”：据称张仲景第四十六世孙张绍祖家藏第十二稿，光绪二十年（1894）左盛德授罗哲初；黄竹斋1934年抄录，1939年白云阁刊行，1960年罗继寿献出其父抄本由广西人民出版社出版；真伪有争议，按问世年代断代；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "HTTPS（library/catalog.json、texts/*.md、meta/*.json；僅取站方對所有訪客開放之精校本）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+    "origin": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "transcription": "CMETA 據善本影像逐頁精校（精校級）之純文字，按影像頁界重切；有新式標點",
+    "url": "https://cmeta.lctseng.csie.org/prototype/",
+    "verified": false
+   },
+   "source_id": "cmeta",
+   "source_ref": "texts/桂林古本傷寒雜病論_校訂重切.md",
+   "title": "伤寒杂病论（桂林古本）",
+   "work": "ws:伤寒杂病论"
+  },
+  "excerpt": {
+   "chars": 79578,
+   "kept_chars": 11554,
+   "kept_units": 6,
+   "units": 42,
+   "whole": false
+  },
+  "id": "cm_shanghan_guilin",
+  "rank": 212,
+  "source": "cmeta",
+  "witness": 1,
+  "work": "ws:伤寒杂病论"
+ },
+ {
+  "data": {
+   "aliases": [
+    "神農本草經百種錄",
+    "本草百种录"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "徐大椿"
+   ],
+   "category": "本草",
+   "composition": [
+    1736,
+    1736
+   ],
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "bencao_baizhonglu@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "bencao_baizhonglu",
+   "kr_catalog": {
+    "extent": "1 卷",
+    "responsibility": "（清）徐大椿",
+    "siku": "四庫全書 文淵閣版, V785.3, p557"
+   },
+   "layers": [
+    {
+     "kind": "mixed",
+     "layer": "徐大椿百种录（引本经原文与释）",
+     "year": [
+      1736,
+      1736
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：清·徐大椿撰（1693 - 1771）",
+   "responsibility": [
+    {
+     "dates": "1693 - 1771",
+     "dynasty": "清",
+     "name": "徐大椿",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 0b5f01bf69331c057f95c97e4caf5902158da4d2",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0098",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0098",
+   "title": "神农本草经百种录",
+   "work": "bencao_baizhonglu"
+  },
+  "excerpt": {
+   "chars": 20360,
+   "kept_chars": 11213,
+   "kept_units": 8,
+   "units": 16,
+   "whole": false
+  },
+  "id": "bencao_baizhonglu",
+  "rank": 214,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "bencao_baizhonglu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "產育寶慶集"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "李师圣",
+    "郭稽中"
+   ],
+   "category": "妇科",
+   "composition": [
+    1100,
+    1150
+   ],
+   "dating_basis": "composition",
+   "dynasty": "宋",
+   "editions": [
+    {
+     "id": "chanyu_baoqing@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "chanyu_baoqing",
+   "kr_catalog": {
+    "extent": "2 卷",
+    "responsibility": "（宋）陳師聖,（宋）郭稽中",
+    "siku": "四庫全書 文淵閣版, V743.2, p117"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·陳師聖編、宋·郭稽中編",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "陳師聖",
+     "role": "編"
+    },
+    {
+     "dynasty": "宋",
+     "name": "郭稽中",
+     "role": "編"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 3fd856c2d67a5916f7c1497aee358a6c270cec66",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0040",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0040",
+   "title": "产育宝庆集",
+   "work": "chanyu_baoqing"
+  },
+  "excerpt": {
+   "chars": 16756,
+   "kept_chars": 11190,
+   "kept_units": 10,
+   "units": 15,
+   "whole": false
+  },
+  "id": "chanyu_baoqing",
+  "rank": 231,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "chanyu_baoqing"
+ },
+ {
+  "data": {
+   "aliases": [
+    "仁端錄"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "徐谦"
+   ],
+   "category": "儿科",
+   "composition": [
+    1500,
+    1644
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "renduan_lu@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "renduan_lu",
+   "kr_catalog": {
+    "extent": "16 卷",
+    "responsibility": "（明）徐謙,（明）陳葵",
+    "siku": "四庫全書 文淵閣版, V762.2, p571"
+   },
+   "layers": [],
+   "notes": "痘疹专书；年代待核；责任者（Kanripo 目录）：明·徐謙撰、明·陳葵刪定",
+   "responsibility": [
+    {
+     "dynasty": "明",
+     "name": "徐謙",
+     "role": "撰"
+    },
+    {
+     "dynasty": "明",
+     "name": "陳葵",
+     "role": "刪定"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 13d111f573be0b71b12e0c410807620aebe40164",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0069",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0069",
+   "title": "仁端录",
+   "work": "renduan_lu"
+  },
+  "excerpt": {
+   "chars": 162672,
+   "kept_chars": 11778,
+   "kept_units": 23,
+   "units": 367,
+   "whole": false
+  },
+  "id": "renduan_lu",
+  "rank": 275,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "renduan_lu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "女科輯要"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "沈又彭"
+   ],
+   "category": "妇科",
+   "chartype": "traditional",
+   "composition": [
+    1850,
+    1850
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "mg_nuke_jiyao@mcgill",
+     "name": "麦吉尔大学图书馆藏本（同治一年, 1862）",
+     "quality": 0.7,
+     "year": null
+    }
+   ],
+   "id": "mg_nuke_jiyao",
+   "layers": [],
+   "modern": false,
+   "notes": "沈又彭原著，王士雄加按（“雄按”）刊行（1850），按王刊年代断代；此为同治元年（1862）刻本；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "git clone c514056565a3",
+    "license": "Public Domain Mark 1.0（公有领域；使用时请注明 McGill University Library）",
+    "origin": "McGill University Library · Gynaecology in Traditional Chinese Medicine（麦吉尔大学图书馆善本中医妇科文献）",
+    "transcription": "麦吉尔大学图书馆据馆藏清刻本与抄本逐页录文（2000年代），无标点",
+    "url": "https://github.com/mcgill-digital/gynaecology_in_chinese_medicine",
+    "verified": false
+   },
+   "source_id": "mcgill",
+   "source_ref": "xml-files/Nukejiyao*",
+   "title": "女科辑要",
+   "work": "jc:沈氏女科辑要"
+  },
+  "excerpt": {
+   "chars": 44382,
+   "kept_chars": 11215,
+   "kept_units": 7,
+   "units": 23,
+   "whole": false
+  },
+  "id": "mg_nuke_jiyao",
+  "rank": 277,
+  "source": "mcgill",
+  "witness": 1,
+  "work": "jc:沈氏女科辑要"
+ },
+ {
+  "data": {
+   "aliases": [
+    "瀕湖脈學"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "李时珍"
+   ],
+   "category": "诊法",
+   "composition": [
+    1564,
+    1564
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "binhu_maixue@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "binhu_maixue",
+   "kr_catalog": {
+    "extent": "1 卷",
+    "responsibility": "（明）李時珍",
+    "siku": "四庫全書 文淵閣版, V774.3, p571"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：明·李時珍撰（1518 - 1593）",
+   "responsibility": [
+    {
+     "dates": "1518 - 1593",
+     "dynasty": "明",
+     "name": "李時珍",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 6976e150bd6109de23221c95ba85dbc4617a9dab",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0081",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0081",
+   "title": "濒湖脉学",
+   "work": "binhu_maixue"
+  },
+  "excerpt": {
+   "chars": 13126,
+   "kept_chars": 10746,
+   "kept_units": 9,
+   "units": 11,
+   "whole": false
+  },
+  "id": "binhu_maixue",
+  "rank": 278,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "binhu_maixue"
+ },
+ {
+  "data": {
+   "aliases": [
+    "旅舍備要方"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "董汲"
+   ],
+   "category": "方书",
+   "composition": [
+    1086,
+    1086
+   ],
+   "dating_basis": "composition",
+   "dynasty": "北宋",
+   "editions": [
+    {
+     "id": "lvshe_beiyao@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "lvshe_beiyao",
+   "kr_catalog": {
+    "extent": "1 卷",
+    "responsibility": "（宋）董汲",
+    "siku": "四庫全書 文淵閣版, V738.8, p439"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·董汲撰",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "董汲",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit f3cf794b4c8f6d680fc03459cec4fd2c7cbf56d1",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0023",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0023",
+   "title": "旅舍备要方",
+   "work": "lvshe_beiyao"
+  },
+  "excerpt": {
+   "chars": 5295,
+   "kept_chars": 5295,
+   "kept_units": 20,
+   "units": 20,
+   "whole": true
+  },
+  "id": "lvshe_beiyao",
+  "rank": 286,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "lvshe_beiyao"
+ },
+ {
+  "data": {
+   "aliases": [
+    "太醫局諸科程文格"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "何大任"
+   ],
+   "category": "医政",
+   "composition": [
+    1212,
+    1212
+   ],
+   "dating_basis": "composition",
+   "dynasty": "南宋",
+   "editions": [
+    {
+     "id": "taiyiju_chengwen@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "taiyiju_chengwen",
+   "kr_catalog": {
+    "extent": "9 卷",
+    "responsibility": "（宋）何大任",
+    "siku": "四庫全書 文淵閣版, V743.1, p1"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·何大任編",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "何大任",
+     "role": "編"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 7fe790f65bb02668d08d6463f38783342cbcaecc",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0039",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0039",
+   "title": "太医局诸科程文格",
+   "work": "taiyiju_chengwen"
+  },
+  "excerpt": {
+   "chars": 67335,
+   "kept_chars": 11422,
+   "kept_units": 13,
+   "units": 103,
+   "whole": false
+  },
+  "id": "taiyiju_chengwen",
+  "rank": 300,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "taiyiju_chengwen"
+ },
+ {
+  "data": {
+   "aliases": [],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "汪淇"
+   ],
+   "category": "妇科",
+   "chartype": "traditional",
+   "composition": [
+    1665,
+    1665
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "mg_baosheng_suishi@mcgill",
+     "name": "麦吉尔大学图书馆藏本（清雍正六年 1728）",
+     "quality": 0.7,
+     "year": null
+    }
+   ],
+   "id": "mg_baosheng_suishi",
+   "layers": [],
+   "modern": false,
+   "notes": "附刻于汪淇重订《济阴纲目》之后（麦吉尔著录作武之望）；按重订年代计；此为雍正六年（1728）刻本；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "git clone c514056565a3",
+    "license": "Public Domain Mark 1.0（公有领域；使用时请注明 McGill University Library）",
+    "origin": "McGill University Library · Gynaecology in Traditional Chinese Medicine（麦吉尔大学图书馆善本中医妇科文献）",
+    "transcription": "麦吉尔大学图书馆据馆藏清刻本与抄本逐页录文（2000年代），无标点",
+    "url": "https://github.com/mcgill-digital/gynaecology_in_chinese_medicine",
+    "verified": false
+   },
+   "source_id": "mcgill",
+   "source_ref": "xml-files/bao_sheng_sui_shi*",
+   "title": "保生碎事",
+   "work": "mg:保生碎事"
+  },
+  "excerpt": {
+   "chars": 4236,
+   "kept_chars": 4236,
+   "kept_units": 2,
+   "units": 2,
+   "whole": true
+  },
+  "id": "mg_baosheng_suishi",
+  "rank": 302,
+  "source": "mcgill",
+  "witness": 1,
+  "work": "mg:保生碎事"
+ },
+ {
+  "data": {
+   "aliases": [
+    "奇經八脈考"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "李时珍"
+   ],
+   "category": "针灸",
+   "composition": [
+    1572,
+    1572
+   ],
+   "dating_basis": "composition",
+   "dynasty": "明",
+   "editions": [
+    {
+     "id": "qijing_bamai_kao@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "qijing_bamai_kao",
+   "kr_catalog": {
+    "extent": "1 卷",
+    "responsibility": "（明）李時珍",
+    "siku": "四庫全書 文淵閣版, V774.2, p549"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：明·李時珍撰（1518 - 1593）",
+   "responsibility": [
+    {
+     "dates": "1518 - 1593",
+     "dynasty": "明",
+     "name": "李時珍",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 5a8fdae6d7d7c229ba33a65df516d1813bac8edd",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0080",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0080",
+   "title": "奇经八脉考",
+   "work": "qijing_bamai_kao"
+  },
+  "excerpt": {
+   "chars": 12930,
+   "kept_chars": 11899,
+   "kept_units": 18,
+   "units": 21,
+   "whole": false
+  },
+  "id": "qijing_bamai_kao",
+  "rank": 303,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "qijing_bamai_kao"
+ },
+ {
+  "data": {
+   "aliases": [
+    "醫理真傳"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "郑寿全"
+   ],
+   "category": "综合",
+   "chartype": "simplified",
+   "composition": [
+    1869,
+    1869
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "ws_e5903d4bcc@wikisource",
+     "name": "维基文库本",
+     "quality": 0.5,
+     "year": null
+    }
+   ],
+   "id": "ws_e5903d4bcc",
+   "layers": [
+    {
+     "attribution": "唐步祺《医理真传阐释》（巴蜀书社）",
+     "block": true,
+     "kind": "paragraphs",
+     "layer": "唐步祺阐释",
+     "pattern": "^【阐释】",
+     "year": [
+      1987,
+      1996
+     ]
+    },
+    {
+     "kind": "apparatus",
+     "layer": "（移入元数据）",
+     "pattern": "（（“[^”]{1,8}”[：:]原书[为作]“[^”]{1,8}”））|\\[“[^”]{1,8}”[：:]原书[为作]“[^”]{1,8}”\\]"
+    },
+    {
+     "kind": "apparatus",
+     "layer": "（移入元数据）",
+     "pattern": "（（[^（）]*(?:编者|郑氏原文)[^（）]*））"
+    },
+    {
+     "kind": "drop_sections",
+     "patterns": [
+      "^火神立名之本",
+      "^序$"
+     ]
+    }
+   ],
+   "modern": false,
+   "notes": "郑钦安原著（同治己巳，1869）；据唐步祺《郑钦安医书阐释》（巴蜀书社1996）中的《医理真传》录入：唐氏【阐释】及其后未标记的段落（至下一问答、方名或标题）单列为层；电子版序、代序、今人序与前言不入库；原文中（　）〔　〕为唐氏校记，照录；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "Wikimedia dump (multistream, range requests) 2026-08-27T1",
+    "license": "CC BY-SA 4.0（维基文库录文与标点；古籍原文属公有领域）",
+    "origin": "维基文库（zh.wikisource.org）· Category:中醫、Category:醫書",
+    "transcription": "维基文库志愿者录入与标点，部分页面为网络本批量导入（简体），未经本项目校勘",
+    "url": "https://zh.wikisource.org/wiki/醫理真傳",
+    "verified": false
+   },
+   "source_id": "wikisource",
+   "source_ref": "page 770127 rev 2610992",
+   "title": "医理真传",
+   "work": "ws:医理真传"
+  },
+  "excerpt": {
+   "chars": 112281,
+   "kept_chars": 11844,
+   "kept_units": 9,
+   "units": 57,
+   "whole": false
+  },
+  "id": "ws_e5903d4bcc",
+  "rank": 314,
+  "source": "wikisource",
+  "witness": 1,
+  "work": "ws:医理真传"
+ },
+ {
+  "data": {
+   "aliases": [
+    "傷寒兼證析義"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "张倬"
+   ],
+   "category": "伤寒",
+   "composition": [
+    1667,
+    1667
+   ],
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "shanghan_jianzheng@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "shanghan_jianzheng",
+   "kr_catalog": {
+    "extent": "1 卷",
+    "responsibility": "（清）張倬",
+    "siku": "四庫全書 文淵閣版, V783.4, p735"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：清·張倬撰",
+   "responsibility": [
+    {
+     "dynasty": "清",
+     "name": "張倬",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit b47f9269284f3aee8bd2a1c1dd7d1fbae1596a78",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0094",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0094",
+   "title": "伤寒兼证析义",
+   "work": "shanghan_jianzheng"
+  },
+  "excerpt": {
+   "chars": 26795,
+   "kept_chars": 11454,
+   "kept_units": 8,
+   "units": 16,
+   "whole": false
+  },
+  "id": "shanghan_jianzheng",
+  "rank": 315,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "shanghan_jianzheng"
+ },
+ {
+  "data": {
+   "aliases": [
+    "金匱要畧論註",
+    "金匮论注",
+    "金匱要略論註"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "徐彬"
+   ],
+   "category": "杂病",
+   "composition": [
+    1671,
+    1671
+   ],
+   "dating_basis": "composition",
+   "dynasty": "清",
+   "editions": [
+    {
+     "id": "jinkui_lunzhu@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "jinkui_lunzhu",
+   "kr_catalog": {
+    "extent": "24 卷",
+    "responsibility": "（漢）張機,（清）徐彬",
+    "siku": "四庫全書 文淵閣版, V734.1, p1"
+   },
+   "layers": [
+    {
+     "attribution": "清·徐彬",
+     "kind": "indented_commentary",
+     "layer": "徐彬注",
+     "year": [
+      1671,
+      1671
+     ]
+    },
+    {
+     "kind": "mixed",
+     "layer": "徐彬论注（引金匮原文与注）",
+     "year": [
+      1671,
+      1671
+     ]
+    }
+   ],
+   "notes": "责任者（Kanripo 目录）：漢·張機撰（fl. 168 - 196）、清·徐彬註",
+   "responsibility": [
+    {
+     "dates": "fl. 168 - 196",
+     "dynasty": "漢",
+     "name": "張機",
+     "role": "撰"
+    },
+    {
+     "dynasty": "清",
+     "name": "徐彬",
+     "role": "註"
+    }
+   ],
+   "school": "仲景学说",
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit cd6f0fd8874e698bed6ccfdc66c02df9eecc1d70",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0006",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0006",
+   "title": "金匮要略论注",
+   "work": "jinkui_lunzhu"
+  },
+  "excerpt": {
+   "chars": 108467,
+   "kept_chars": 11734,
+   "kept_units": 9,
+   "units": 66,
+   "whole": false
+  },
+  "id": "jinkui_lunzhu",
+  "rank": 316,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "jinkui_lunzhu"
+ },
+ {
+  "data": {
+   "aliases": [
+    "运气论奥",
+    "素問入式運氣論奧"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "刘温舒"
+   ],
+   "category": "运气",
+   "composition": [
+    1099,
+    1099
+   ],
+   "dating_basis": "composition",
+   "dynasty": "北宋",
+   "editions": [
+    {
+     "id": "suwen_yunqi_lunao@WYG",
+     "name": "文渊阁四库全书本",
+     "quality": 0.6,
+     "year": [
+      1773,
+      1782
+     ]
+    }
+   ],
+   "id": "suwen_yunqi_lunao",
+   "kr_catalog": {
+    "extent": "3 卷",
+    "responsibility": "（宋）劉溫舒",
+    "siku": "四庫全書 文淵閣版, V738.9, p451"
+   },
+   "layers": [],
+   "notes": "责任者（Kanripo 目录）：宋·劉溫舒撰",
+   "responsibility": [
+    {
+     "dynasty": "宋",
+     "name": "劉溫舒",
+     "role": "撰"
+    }
+   ],
+   "school": null,
+   "source": {
+    "acquisition": "shallow git clone of each text repository; the commit is recorded in corpus/sources.lock.yaml; commit 66922357200d5b9f51dd3c472ed9f9bf2e05b5e5",
+    "license": "CC BY-SA 4.0",
+    "origin": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "transcription": "汉籍仓库据文渊阁四库全书（WYG）或四部丛刊（SBCK）影印本录入，字形已按 normlist 规范化；未经本项目逐字校勘",
+    "url": "https://github.com/kanripo/kr3e0024",
+    "verified": false
+   },
+   "source_id": "kanripo",
+   "source_ref": "KR3e0024",
+   "title": "素问入式运气论奥",
+   "work": "yunqi_lunao"
+  },
+  "excerpt": {
+   "chars": 37214,
+   "kept_chars": 11489,
+   "kept_units": 18,
+   "units": 47,
+   "whole": false
+  },
+  "id": "suwen_yunqi_lunao",
+  "rank": 317,
+  "source": "kanripo",
+  "witness": 1,
+  "work": "yunqi_lunao"
+ },
+ {
+  "data": {
+   "aliases": [
+    "攝生總要"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "洪基"
+   ],
+   "category": "综合",
+   "chartype": "simplified",
+   "composition": [
+    1638,
+    1638
+   ],
+   "dating": "western",
+   "dating_basis": "composition",
+   "dynasty": "明朝",
+   "editions": [
+    {
+     "id": "ws_05e1ac6c6d@wikisource",
+     "name": "维基文库本",
+     "quality": 0.5,
+     "year": null
+    }
+   ],
+   "id": "ws_05e1ac6c6d",
+   "layers": [],
+   "modern": false,
+   "notes": "《摄生总要》，九卷。明洪基撰辑于1638年（崇祯十一年）。洪基，字九有，明未安徽新安县人。生平不详。《摄生总要》包括《摄生秘剖》四卷、《摄生种子秘剖》二卷、《种子方剖》一卷、《房术奇书》二卷。《摄生秘剖》，亦称《胞与堂丸散谱》，系洪氏业儒之暇，旁搜医典，博览三世四家之书；榜门兑换奇方，折节辱教于高人异士，从20年所得上万种方剂中，筛选出切用有效的80种，取名为《丸散谱》。剂型包括丸、散、膏、酒，广；断代依据：书目所载公元年",
+   "school": null,
+   "source": {
+    "acquisition": "Wikimedia dump (multistream, range requests) 2026-08-27T1",
+    "license": "CC BY-SA 4.0（维基文库录文与标点；古籍原文属公有领域）",
+    "origin": "维基文库（zh.wikisource.org）· Category:中醫、Category:醫書",
+    "transcription": "维基文库志愿者录入与标点，部分页面为网络本批量导入（简体），未经本项目校勘",
+    "url": "https://zh.wikisource.org/wiki/攝生總要",
+    "verified": false
+   },
+   "source_id": "wikisource",
+   "source_ref": "page 108266 rev 2630525",
+   "title": "摄生总要",
+   "work": "ws:摄生总要"
+  },
+  "excerpt": {
+   "chars": 59935,
+   "kept_chars": 11599,
+   "kept_units": 8,
+   "units": 34,
+   "whole": false
+  },
+  "id": "ws_05e1ac6c6d",
+  "rank": 328,
+  "source": "wikisource",
+  "witness": 1,
+  "work": "ws:摄生总要"
+ },
+ {
+  "data": {
+   "aliases": [
+    "傷寒雜病論義疏"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "刘世祯"
+   ],
+   "category": "近代",
+   "chartype": "traditional",
+   "composition": [
+    1934,
+    1934
+   ],
+   "dating": "preface:author",
+   "dating_basis": "composition",
+   "dynasty": "民国",
+   "editions": [
+    {
+     "id": "ws_abfd7a1046@wikisource",
+     "name": "维基文库本",
+     "quality": 0.7,
+     "year": null
+    }
+   ],
+   "id": "ws_abfd7a1046",
+   "layers": [],
+   "modern": true,
+   "notes": "民國 劉世禎昆湘、劉瑞瀜仲邁 著；断代依据：作者自序落款（民國二十三年甲戌秋月瀏陽劉世禎昆湘甫序於六石山房）",
+   "school": null,
+   "source": {
+    "acquisition": "Wikimedia dump (multistream, range requests) 2026-08-27T1",
+    "license": "CC BY-SA 4.0（维基文库录文与标点；古籍原文属公有领域）",
+    "origin": "维基文库（zh.wikisource.org）· Category:中醫、Category:醫書",
+    "transcription": "维基文库志愿者录入与标点，部分页面为网络本批量导入（简体），未经本项目校勘",
+    "url": "https://zh.wikisource.org/wiki/傷寒雜病論義疏",
+    "verified": false
+   },
+   "source_id": "wikisource",
+   "source_ref": "page 25240 rev 308195 (+3 subpages)",
+   "title": "伤寒杂病论义疏",
+   "work": "ws:伤寒杂病论义疏"
+  },
+  "excerpt": {
+   "chars": 7275,
+   "kept_chars": 7275,
+   "kept_units": 4,
+   "units": 4,
+   "whole": true
+  },
+  "id": "ws_abfd7a1046",
+  "rank": 332,
+  "source": "wikisource",
+  "witness": 1,
+  "work": "ws:伤寒杂病论义疏"
+ },
+ {
+  "data": {
+   "aliases": [
+    "醫方類聚"
+   ],
+   "attribution": "traditional",
+   "author_life": null,
+   "authors": [
+    "金礼蒙",
+    "柳诚源",
+    "闵普和"
+   ],
+   "category": "方书",
+   "chartype": "traditional",
+   "composition": [
+    1443,
+    1445
+   ],
+   "dating": "curated",
+   "dating_basis": "composition",
+   "dynasty": "朝鲜",
+   "editions": [
+    {
+     "id": "ws_e965e3774c@wikisource",
+     "name": "维基文库本",
+     "quality": 0.7,
+     "year": null
+    }
+   ],
+   "id": "ws_e965e3774c",
+   "layers": [],
+   "modern": false,
+   "notes": "朝鲜世宗（李祹）命金礼蒙、柳诚源、闵普和等据中国医书一百五十余种分门类编，1445年编成，1477年活字初刊；维基文库仅录凡例、引用诸书及部分卷次；所引宋元明医书原文可资辑佚与校勘；断代依据：编目人工考定",
+   "school": null,
+   "source": {
+    "acquisition": "Wikimedia dump (multistream, range requests) 2026-08-27T1",
+    "license": "CC BY-SA 4.0（维基文库录文与标点；古籍原文属公有领域）",
+    "origin": "维基文库（zh.wikisource.org）· Category:中醫、Category:醫書",
+    "transcription": "维基文库志愿者录入与标点，部分页面为网络本批量导入（简体），未经本项目校勘",
+    "url": "https://zh.wikisource.org/wiki/醫方類聚",
+    "verified": false
+   },
+   "source_id": "wikisource",
+   "source_ref": "page 1091845 rev 2403579 (+11 subpages)",
+   "title": "医方类聚",
+   "work": "ws:医方类聚"
+  },
+  "excerpt": {
+   "chars": 269969,
+   "kept_chars": 11977,
+   "kept_units": 15,
+   "units": 243,
+   "whole": false
+  },
+  "id": "ws_e965e3774c",
+  "rank": 339,
+  "source": "wikisource",
+  "witness": 1,
+  "work": "ws:医方类聚"
+ }
+]

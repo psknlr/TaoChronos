@@ -1,0 +1,17 @@
+id: S15
+key: evidence_audit
+name: 证据审计 Evidence Audit
+version: 1.0.0
+owner: critic
+description: Every statement of the answer decomposed and checked by what it asserts (witness, gloss, mapping, modern evidence, inference, clinical advice), with a verdict; the evidence graph of the answer.
+inputs: [statements, passages]
+outputs: [audit, graph]
+dependencies: []
+requires_llm: optional
+deterministic_steps: [decomposition at inference connectives, checks by claim kind, verdict aggregation, the six-layer evidence graph]
+llm_steps: [a critic that may lower a verdict, never raise it]
+calls:
+  - {tool: audit.claim, for_each: statements, limit: 12, args: {claim: "{statement}"}}
+  - {tool: graph.evidence, for_each: passages, limit: 1, args: {passage_id: "{passage_id}"}}
+validators: [a verdict is never raised by a model, clinical advice is always refused]
+evaluation: {suites: [audit]}

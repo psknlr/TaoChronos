@@ -9,6 +9,8 @@ records:
       WHO recommends artemisinin-based combination therapies (ACTs) as first-line
       treatment for uncomplicated Plasmodium falciparum malaria.
     evidence_domain: modern_clinical
+    evidence_type: guideline
+    population: human
     source: "World Health Organization. WHO guidelines for malaria (current edition)."
     note: Summary statement for demonstration; the guideline text is authoritative.
     related_terms: [青蒿, 疟]
@@ -21,6 +23,8 @@ records:
       for her discoveries concerning a novel therapy against malaria (artemisinin,
       isolated from Artemisia annua L.).
     evidence_domain: pharmacology
+    evidence_type: expert_opinion
+    population: unknown
     source: "NobelPrize.org. The Nobel Prize in Physiology or Medicine 2015."
     note: Botanical identity of historical 青蒿 versus Artemisia annua (黄花蒿) must be handled as a separate mapping.
     related_terms: [青蒿, 疟]

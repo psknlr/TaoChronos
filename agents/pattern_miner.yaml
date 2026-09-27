@@ -7,9 +7,9 @@ objective: >-
 mode: procedure
 procedure: taochronos.agents.procedures.pattern_miner
 skills: [discovery-engines]
-tools: ["analysis.*"]
+tools: ["analysis.*", study.pairs, study.network]
 context_view: mining
-permissions: [analysis:run, kg:read]
+permissions: [analysis:run, kg:read, classics:read]
 output_schema: ObservationSet
 model: {min_tier: small}
 budget: {max_tool_calls: 60}

@@ -1,0 +1,16 @@
+id: S14
+key: rwd_validation
+name: 真实世界验证 RWD Validation
+version: 1.0.0
+owner: translational
+description: A question about real-world data as a structured study spec over an OMOP database, compiled into a checked read-only query; counts, risks, a crude risk ratio and its caveats.
+inputs: [question]
+outputs: [rwd_result]
+dependencies: []
+requires_llm: optional
+deterministic_steps: [names resolved in the database's vocabulary, spec validation, fixed parameterised SQL, SQL checks, read-only execution]
+llm_steps: [a proposed spec (never SQL), validated before use]
+calls:
+  - {tool: rwd.ask, args: {question: "{question}"}}
+validators: [no model-written SQL, only OMOP tables, every value bound, synthetic data declared]
+evaluation: {suites: [modern]}

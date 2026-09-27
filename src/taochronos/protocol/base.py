@@ -9,22 +9,51 @@ from __future__ import annotations
 
 import dataclasses
 import enum
+import gc
 import hashlib
 import json
 import types
 import typing
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
 T = TypeVar("T", bound="Model")
 
 
+_FIELD_NAMES: dict[type, tuple[str, ...] | None] = {}
+
+
+def _field_names(cls: type) -> tuple[str, ...] | None:
+    """The field names of a dataclass type (None for any other type), looked up once per type."""
+    try:
+        return _FIELD_NAMES[cls]
+    except KeyError:
+        names = tuple(f.name for f in dataclasses.fields(cls)) if dataclasses.is_dataclass(cls) else None
+        _FIELD_NAMES[cls] = names
+        return names
+
+
 def to_jsonable(obj: Any) -> Any:
-    """Recursively convert dataclasses / enums / containers into JSON-ready values."""
-    if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
-        return {f.name: to_jsonable(getattr(obj, f.name)) for f in dataclasses.fields(obj)}
+    """Recursively convert dataclasses / enums / containers into JSON-ready values.
+
+    The exact built-in types come first and a dataclass's field names are looked up once per type: the state hash
+    serialises every object of the research each round, and this function is what it spends its time in."""
+    t = type(obj)
+    if t is str or t is int or t is bool or obj is None:
+        return obj
+    if t is float:
+        return None if obj != obj else obj  # NaN is not valid JSON
+    if t is dict:
+        return {(k if type(k) is str else str(k)): to_jsonable(v) for k, v in obj.items()}
+    if t is list or t is tuple:
+        return [to_jsonable(v) for v in obj]
+    names = _field_names(t)
+    if names is not None:
+        return {n: to_jsonable(getattr(obj, n)) for n in names}
     if isinstance(obj, enum.Enum):
         return obj.value
-    if isinstance(obj, dict):
+    if isinstance(obj, Mapping):  # dicts, and the read-only views agents see
         return {str(k): to_jsonable(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
         return [to_jsonable(v) for v in obj]
@@ -37,7 +66,26 @@ def to_jsonable(obj: Any) -> Any:
 
 def canonical_json(obj: Any) -> str:
     """Byte-stable JSON used for hashing and ids."""
-    return json.dumps(to_jsonable(obj), sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return canonical_dumps(to_jsonable(obj))
+
+
+def canonical_dumps(tree: Any) -> str:
+    """:func:`canonical_json` of a tree that is already plain JSON (what :func:`to_jsonable` returns): the same text,
+    without walking the tree a second time."""
+    return json.dumps(tree, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+
+
+@contextmanager
+def gc_paused() -> Iterator[None]:
+    """Pause the cyclic garbage collector while a large acyclic tree is built and dropped: the collections that mass
+    allocation triggers find nothing to free.  It is re-enabled on exit if it was enabled on entry."""
+    enabled = gc.isenabled()
+    gc.disable()
+    try:
+        yield
+    finally:
+        if enabled:
+            gc.enable()
 
 
 def sha256_hex(text: str) -> str:

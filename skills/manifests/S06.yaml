@@ -1,0 +1,16 @@
+id: S06
+key: intertext
+name: 互文与传承 Intertext
+version: 1.0.0
+owner: classical_scholar
+description: Quotations, restatements and paraphrases of a passage across the corpus, and the chain of transmission they form.
+inputs: [passages]
+outputs: [reuse, chain]
+dependencies: [S01]
+requires_llm: none
+deterministic_steps: [verbatim and semantic reuse, direction by date, transmission chain]
+llm_steps: []
+calls:
+  - {tool: study.reuse, for_each: passages, limit: 1, args: {passage_id: "{passage_id}"}}
+validators: [a reuse link needs aligned text, direction needs dates]
+evaluation: {suites: [reuse, chain]}

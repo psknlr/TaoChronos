@@ -8,7 +8,7 @@ from __future__ import annotations
 import math
 import random
 from collections import Counter
-from typing import Callable, Hashable, Iterable, Sequence
+from typing import Any, Callable, Hashable, Iterable, Sequence
 
 
 def rng(seed: int = 0) -> random.Random:
@@ -130,3 +130,63 @@ def benjamini_hochberg(pvalues: dict[Hashable, float], q: float = 0.1) -> dict[H
             cutoff = i
     keep = {k for k, _ in items[:cutoff]}
     return {k: k in keep for k in pvalues}
+
+
+def max_statistic_permutation(
+    groups: Sequence[Sequence[Sequence[Hashable]]],
+    statistic: Callable[[Sequence[Sequence[Hashable]], Sequence[Sequence[Hashable]]], float],
+    *,
+    n: int = 499,
+    seed: int = 0,
+) -> tuple[float, int, float, list[float]]:
+    """Selection-aware test of the largest difference between *adjacent* groups (e.g. periods).
+
+    Picking the boundary with the largest statistic and then testing only that pair overstates significance (the
+    boundary was chosen *because* it was largest).  Here the null is the maximum over every adjacent boundary of the
+    statistic when the group labels are permuted (group sizes kept): p = P(max_perm ≥ observed max).
+    Returns (observed max, index of its boundary, p-value, the observed series)."""
+    sizes = [len(g) for g in groups]
+    series = [statistic(groups[i], groups[i + 1]) for i in range(len(groups) - 1)]
+    if not series:
+        return 0.0, -1, 1.0, []
+    observed = max(series)
+    where = max(range(len(series)), key=lambda i: (series[i], i))
+    pooled = [s for g in groups for s in g]
+    r = rng(seed)
+    extreme = 0
+    for _ in range(n):
+        r.shuffle(pooled)
+        cuts, start = [], 0
+        for size in sizes:
+            cuts.append(pooled[start: start + size])
+            start += size
+        if max(statistic(cuts[i], cuts[i + 1]) for i in range(len(cuts) - 1)) >= observed - 1e-12:
+            extreme += 1
+    return observed, where, (extreme + 1) / (n + 1), series
+
+
+def leave_one_cluster_out(items_by_cluster: dict[Hashable, Sequence], fn: Callable[[list], float]) -> dict[str, Any]:
+    """Recompute a statistic with each source family (cluster) left out in turn: how much the result rests on one
+    family.  Returns the full value, the per-family values and the range."""
+    everything = [x for items in items_by_cluster.values() for x in items]
+    full = fn(everything)
+    per = {str(k): fn([x for c, items in items_by_cluster.items() if c != k for x in items]) for k in items_by_cluster}
+    values = list(per.values())
+    return {"full": full, "without": per, "min": min(values) if values else full, "max": max(values) if values else full,
+            "clusters": len(items_by_cluster)}
+
+
+def cluster_bootstrap(items_by_cluster: dict[Hashable, Sequence], fn: Callable[[list], float], *, n: int = 499, alpha: float = 0.05,
+                      seed: int = 0) -> tuple[float, float]:
+    """Bootstrap interval that resamples whole source families (clusters), not single passages: dependent witnesses
+    of one family are drawn together, so the interval reflects how many independent families there are."""
+    clusters = list(items_by_cluster)
+    if not clusters:
+        return 0.0, 0.0
+    r = rng(seed)
+    stats = []
+    for _ in range(n):
+        drawn = [x for _c in range(len(clusters)) for x in items_by_cluster[r.choice(clusters)]]
+        stats.append(fn(drawn))
+    stats.sort()
+    return stats[int((alpha / 2) * n)], stats[min(n - 1, int((1 - alpha / 2) * n))]

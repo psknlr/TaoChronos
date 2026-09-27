@@ -14,9 +14,8 @@ import re
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from .config import find_home
+from .protocol.yamlio import load_yaml
 
 PACKAGE = "taochronos"
 
@@ -62,7 +61,7 @@ def _layer_of(module: str, layers: dict[str, list[str]]) -> str | None:
 
 def check(home: Path | None = None) -> dict[str, Any]:
     home = Path(home) if home else find_home()
-    policy = yaml.safe_load((home / "architecture-policy.yaml").read_text(encoding="utf-8"))
+    policy = load_yaml(home / "architecture-policy.yaml")
     src = home / "src"
     layers: dict[str, list[str]] = {}
     allowed: dict[str, list[str]] = {}
@@ -104,9 +103,35 @@ def check(home: Path | None = None) -> dict[str, Any]:
             for m in pattern.finditer(text):
                 line = text.count("\n", 0, m.start()) + 1
                 violations.append({"rule": "kernel_forbidden_term", "file": str(path.relative_to(home)), "line": line, "detail": term})
+    violations += _check_identities(home, src, policy)
     violations += _check_agents(home, policy)
     return {"policy": str(home / "architecture-policy.yaml"), "files_checked": len(files), "violations": violations,
-            "rules": ["layering", "kernel_forbidden_term", "vendor_sdk", "agents_import_plugins", "agent_specs"]}
+            "rules": ["layering", "kernel_forbidden_term", "vendor_sdk", "agents_import_plugins", "privileged_identity",
+                      "session_internals", "agent_specs"]}
+
+
+PRIVILEGED = re.compile(r"Actor\.(?:human|validator|kernel)\(|principal\s*=\s*[\"'](?:human|validator|kernel)[\"']|KERNEL_ACTOR")
+INTERNALS = re.compile(r"\._session\b|\bkernel_session\(")
+
+
+def _check_identities(home: Path, src: Path, policy: dict[str, Any]) -> list[dict[str, Any]]:
+    """Authority comes from identity objects, so only the kernel, the engine and the app may make privileged ones — agent
+    procedures, tools and plugins act under the identity they are given; and nothing outside the kernel reaches
+    behind a session view (the runtime, which runs agents, is the one allowed exception)."""
+    out: list[dict[str, Any]] = []
+    rules = policy.get("identity_rules", {})
+    guarded = rules.get("no_privileged_identities_in", ["src/taochronos/agents", "src/taochronos/tools", "src/taochronos/plugins"])
+    internals_ok = set(rules.get("session_internals_allowed_in", ["src/taochronos/agents/runtime.py"]))
+    for base in guarded:
+        for path in sorted((home / base).rglob("*.py")):
+            rel = str(path.relative_to(home))
+            text = path.read_text(encoding="utf-8")
+            for m in PRIVILEGED.finditer(text):
+                out.append({"rule": "privileged_identity", "file": rel, "line": text.count("\n", 0, m.start()) + 1, "detail": m.group(0)})
+            if rel not in internals_ok:
+                for m in INTERNALS.finditer(text):
+                    out.append({"rule": "session_internals", "file": rel, "line": text.count("\n", 0, m.start()) + 1, "detail": m.group(0)})
+    return out
 
 
 def _check_agents(home: Path, policy: dict[str, Any]) -> list[dict[str, Any]]:

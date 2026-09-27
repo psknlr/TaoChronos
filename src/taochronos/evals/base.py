@@ -8,11 +8,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from ..bootstrap import Harness
 from ..config import find_home
 from ..kernel.store import MemoryEventStore
+from ..protocol.yamlio import load_yaml
 
 DEFAULT_QUESTION = "消渴的概念如何随时代演变？宋代以前治疗消渴的哪些知识后来被遗忘？"
 
@@ -35,6 +34,8 @@ class EvalContext:
         self.quick = quick
         self._default: Harness | None = None
         self._pipeline: tuple[Harness, Any] | None = None
+        self._corpus: Harness | None | bool = False
+        self._corpus_data: Path | None = None
 
     # ------------------------------------------------------------- harnesses
     def harness(self, profile: str = "full-discovery", **kw: Any) -> Harness:
@@ -48,9 +49,31 @@ class EvalContext:
             self._default = self.harness()
         return self._default
 
+    def corpus_harness(self) -> Harness | None:
+        """A harness on the full corpus when its store exists (in the data directory given, or the default one) —
+        the real-corpus parts of some suites; None otherwise, and those parts are skipped."""
+        if self._corpus is False:
+            from ..config import data_dir as default_data_dir
+
+            self._corpus = None
+            for data in (self.data_dir, default_data_dir(self.home)):
+                if (Path(data) / "corpus" / "tcm.sqlite").exists():
+                    self._corpus = Harness.from_profile("full-corpus", home=self.home, data_dir=data, store=MemoryEventStore())
+                    self._corpus_data = Path(data)
+                    break
+        return self._corpus  # type: ignore[return-value]
+
+    def corpus_view_harness(self, corpus: Any) -> Harness:
+        """A fresh full-corpus harness reading a view of the store (``StoreCorpus.on_side`` …) in place of all of it:
+        its retrieval, knowledge and study layers see only what the view holds."""
+        if self.corpus_harness() is None:
+            raise RuntimeError("no full-corpus store")
+        return Harness.from_profile("full-corpus", home=self.home, data_dir=self._corpus_data, store=MemoryEventStore(),
+                                    corpus=corpus)
+
     def gold(self, name: str) -> dict[str, Any]:
         path = self.home / "evals" / "gold" / f"{name}.yaml"
-        return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        return load_yaml(path) or {}
 
     def run(self, harness: Harness, question: str = DEFAULT_QUESTION, session_id: str = "eval", **fields: Any) -> Any:
         engine = harness.engine()

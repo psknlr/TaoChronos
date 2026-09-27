@@ -1,8 +1,8 @@
 """The Discovery Report: research question → … → recommended human verification.
 
-Twelve sections in a fixed order, every claim tied to evidence ids and every
-score shown with its components.  What did not survive is reported as
-clearly as what did.  Published as versioned artifacts (Markdown + JSON), with
+Twelve numbered sections in a fixed order, the contract's evaluation right after the question, and the
+appendices (sources dossier, research tree); every claim tied to evidence ids and every score shown with its
+components.  What did not survive is reported as clearly as what did.  Published as versioned artifacts (Markdown + JSON), with
 the evidence table and knowledge graph beside them.
 """
 
@@ -31,6 +31,17 @@ KIND_ZH = {"lost_knowledge": "失传知识", "historical_testimony": "文本证�
 DISCLAIMER = ("演示语料为未经核验的整理本（仅供方法演示）；本报告中的所有假说均为计算推断（Computational Hypothesis Space），"
               "不构成医学结论，需经专家核验（Gate G7）后方可视为研究发现。")
 HYPOTHESIS_NOTE = "本报告中的所有假说均为计算推断（Computational Hypothesis Space），不构成医学结论，需经专家核验（Gate G7）后方可视为研究发现。"
+
+
+ACCEPTANCE_ZH = {"research_accepted": "研究被接受", "needs_expert": "需专家判定", "inconclusive": "不确定（正式结论）",
+                 "budget_exhausted": "预算耗尽", "execution_finished": "已执行、未评估"}
+HYP_ACCEPTANCE_ZH = {"accepted": "接受", "needs_expert": "需专家", "inconclusive": "不确定", "rejected": "已否证"}
+INFERENCE_ZH = {"absence": "默证（后世不再记载）", "testimony": "证词", "statistical_comparison": "统计比较", "statistical_association": "统计关联",
+                "abduction": "溯因", "lineage": "谱系", "comparison": "比较", "analogy": "类比"}
+STRENGTH_ZH = {"robust": "稳健", "supported": "有支持", "consistent_with": "仅相容"}
+RIVAL_ZH = {"excluded": "［已排除］", "open": "［未排除］", "unaddressed": "［未处理］", "not_applicable": "［不适用］"}
+CLOSURE_ZH = {"validator_rerun": "验证器复核通过", "new_evidence": "新证据经验证", "scope_restriction": "修订收窄经验证", "expert": "专家判定"}
+CONFIRM_ZH = {"confirmed": "预测在留存材料中成立", "refuted": "预测在留存材料中不成立", "untestable": "留存材料无法判定"}
 
 
 def disclaimer(corpus: Any) -> str:
@@ -99,6 +110,29 @@ def build(harness: Any, state: Any, session_id: str) -> tuple[DiscoveryReport, s
     lines.append(f"- 研究契约摘要（不可变）：`{state.goal_digest[:16]}`")
     add("1. 研究问题 · Research Question", lines)
 
+    # 1b ---------------------------------------------------------- contract evaluation (execution is not acceptance)
+    acc = state.acceptance or {}
+    lines = [f"**研究结论：{ACCEPTANCE_ZH.get(acc.get('status', ''), acc.get('status', '未评估'))}**（执行状态：{acc.get('execution', state.status)}）", ""]
+    lines += [f"- {r}" for r in acc.get("reasons", [])]
+    outputs = acc.get("outputs") or {}
+    if outputs:
+        lines.append("- 必需产出：" + "，".join(f"{k} {'✓' if v else '✗'}" for k, v in outputs.items()))
+    if acc.get("human_criteria"):
+        lines.append("- 仅能由人判定的合同条款：" + "；".join(acc["human_criteria"]))
+    judged = {j["hypothesis_id"]: j for j in acc.get("hypotheses", [])}
+    if judged:
+        lines += ["", "| 假说 | 结论 | 未满足的条款 |", "|---|---|---|"]
+        for i, h in enumerate(top, 1):
+            j = judged.get(h.id)
+            if j is None:
+                continue
+            missing = [f"{c['id']}（{c['observed'][:40]}）" for c in j["criteria"] if c["status"] != "pass"]
+            lines.append(f"| H{i} | {HYP_ACCEPTANCE_ZH.get(j['status'], j['status'])} | {'；'.join(missing) or '—'} |")
+    lines.append("")
+    lines.append("研究结论由验证器按研究合同判定：任务执行完毕不等于研究被接受；“需专家”表示机器可检条款已满足、仍待专家（G7）判断；"
+                 "“不确定”是正式结论，不是失败。")
+    add("研究合同评估 · Contract Evaluation", lines, list(judged))
+
     # 2 ----------------------------------------------------------- existing understanding
     focus_labels = {t.split(":", 1)[-1] for t in goal.focus_terms}
     for h in top:
@@ -152,10 +186,30 @@ def build(harness: Any, state: Any, session_id: str) -> tuple[DiscoveryReport, s
         comp = h.discovery_components or {}
         comp_s = " ".join(f"{k}={comp[k]:.2f}" for k in ("E", "N", "R", "T", "F", "A") if k in comp)
         lines.append(f"**H{i} `{h.id}`**（{KIND_ZH.get(h.kind, h.kind)} · {STATUS_ZH.get(h.status, h.status)} · 第 {h.generation} 代 · "
-                     f"Elo {h.elo:.0f}）")
+                     f"探索优先级 {h.elo:.0f}）")
         lines.append(f"> {h.statement}")
-        lines.append(f"- 发现分数 D = {h.discovery_score if h.discovery_score is not None else '—'}（{comp_s}）")
+        lines.append(f"- 发现分数 D = {h.discovery_score if h.discovery_score is not None else '—'}（{comp_s}；启发式排序，不是可信度）")
         lines.append(f"- 门控：{_gates(state, h.id)}")
+        w = state.warrants.get(h.warrant_id or "") if h.warrant_id else None
+        if w:
+            rivals = [c for c in w.get("competing", []) if c.get("status") in ("open", "unaddressed")]
+            lines.append(f"- 推理依据：{INFERENCE_ZH.get(w['inference'], w['inference'])} · 强度 {STRENGTH_ZH.get(w['strength'], w['strength'])}"
+                         + (f" · 未排除的替代解释：{'、'.join(c['label'] for c in rivals)}" if rivals else " · 替代解释均已排除"))
+        if h.confirmation:
+            lines.append(f"- 留存材料确认：{CONFIRM_ZH.get(h.confirmation.get('status'), h.confirmation.get('status'))}"
+                         f"（{h.confirmation.get('passages')} 段留存文本）")
+        st = h.statistics or {}
+        if st.get("method"):
+            effect = "，".join(f"{k}={v}" for k, v in (st.get("effect") or {}).items())
+            p_ = next((f"{k}={st[k]}" for k in ("p_value", "p_absence", "empirical_p") if isinstance(st.get(k), (int, float))), "")
+            lines.append(f"- 统计：{st['method']}；原假设：{st.get('null', '—')}；效应 {effect or '—'}；{p_}"
+                         f"；来源家族 {st.get('clusters', '—')}；校正：{st.get('correction', '—')}")
+            absence = st.get("absence") or {}
+            if absence:
+                lines.append(f"- 缺失的陈述层级：第 {absence.get('level')} 层 — {absence.get('statement')}；{absence.get('not_asserted', '')}")
+        if h.novelty_profile:
+            lines.append(f"- 新颖性：{h.novelty_profile.get('statement')}（文献检索：{(h.novelty_profile.get('literature') or {}).get('status', '未评估')}；"
+                         "从不声称“首次发现”）")
         if h.qualifiers:
             lines.append(f"- 修订限定：{json.dumps(h.qualifiers, ensure_ascii=False)}；{h.revision_note}")
         if h.testable_prediction:
@@ -188,7 +242,12 @@ def build(harness: Any, state: Any, session_id: str) -> tuple[DiscoveryReport, s
             continue
         lines.append(f"**H{i}**")
         for o in objections:
-            lines.append(f"- [{o.severity}/{o.check}]{'（已由修订解决）' if o.resolved else ''} {o.detail}")
+            state_note = ""
+            if o.resolved:
+                state_note = f"（已关闭：{CLOSURE_ZH.get(o.closure, o.closure)}）"
+            elif o.status == "resolution_proposed":
+                state_note = f"（已提出解决方案，待验证器或专家裁决：{(o.proposal or {}).get('basis', '')}）"
+            lines.append(f"- [{o.severity}/{o.check}{'·硬' if o.hard else ''}]{state_note} {o.detail}")
         for e in counter[:4]:
             lines.append(f"- 反证：{_cite(corpus, e)}")
     add("9. 反证 · Counterevidence", lines)
@@ -196,7 +255,13 @@ def build(harness: Any, state: Any, session_id: str) -> tuple[DiscoveryReport, s
     # 10 ---------------------------------------------------------- alternatives
     lines = []
     for i, h in enumerate(top[:10], 1):
-        if h.alternative_explanations:
+        w = state.warrants.get(h.warrant_id or "") if h.warrant_id else None
+        if w and w.get("competing"):
+            lines.append(f"**H{i}**（{w['discovery_type']}）")
+            for c in w["competing"]:
+                lines.append(f"- {RIVAL_ZH.get(c['status'], c['status'])} {c['label']}：{c.get('basis', '')}"
+                             + (f"；判别检验：{c['test']}" if c.get("status") in ("open", "unaddressed") and c.get("test") else ""))
+        elif h.alternative_explanations:
             lines.append(f"**H{i}**：" + "；".join(h.alternative_explanations))
     add("10. 替代解释 · Alternative Explanations", lines)
 
@@ -270,7 +335,8 @@ def build(harness: Any, state: Any, session_id: str) -> tuple[DiscoveryReport, s
         evidence_refs=evidence_refs,
     )
     status = (state.stop or {}).get("status", state.status)
-    md = [f"# {report.title}", "", f"> 会话 `{session_id}` · 画像 `{state.profile}` · 状态 {status} · 轮次 {state.round}", "",
+    verdict = ACCEPTANCE_ZH.get((state.acceptance or {}).get("status", ""), "未评估")
+    md = [f"# {report.title}", "", f"> 会话 `{session_id}` · 画像 `{state.profile}` · 执行 {status} · 研究结论 {verdict} · 轮次 {state.round}", "",
           f"> {disclaimer(corpus)}", ""]
     for s in sections:
         md += [f"## {s.title}", "", s.body, ""]
@@ -280,6 +346,8 @@ def build(harness: Any, state: Any, session_id: str) -> tuple[DiscoveryReport, s
         "rejected": [to_jsonable(h) for h in failed],
         "metrics": metrics,
         "stop": {k: v for k, v in stop.items() if k != "signals"},
+        "acceptance": dict(state.acceptance or {}),
+        "warrants": [state.warrants[h.warrant_id] for h in top if h.warrant_id in state.warrants],
         "novelty_reference": [novelty(h.terms, pack.known_findings)[1] for h in top],
     }
     return report, "\n".join(md), payload
@@ -314,7 +382,8 @@ def publish_report(harness: Any, session: Any) -> list[Any]:
                       hypothesis_refs=report.ranked_hypotheses, parent_artifacts=[main.id], status=status)
     table = arts.publish(session, kind="evidence_table", title="Evidence Ledger", content=evidence_table(harness, state),
                          filename="evidence.csv", media_type="text/csv", generator="kernel:report",
-                         evidence_refs=sorted(state.evidence), status="published" if state.evidence else "draft")
+                         evidence_refs=sorted(e for e in state.evidence if e not in state.retractions),
+                         status="published" if state.evidence else "draft")
     export = harness.capabilities.get("graph_export", "json")
     graph = arts.publish(session, kind="knowledge_graph", title="Claim Hypergraph",
                          content=json.dumps(export(list(state.claims.values()), list(state.lineage.values()), corpus_books(harness)),

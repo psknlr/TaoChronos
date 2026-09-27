@@ -4,7 +4,7 @@ source:
   id: jicheng
   name: 笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料
   url: https://jicheng.tw/
-  license: 使用者提供之笈成整理本：古籍原文属公有领域，校点与整理成果归笈成整理者；当代著作与现代整理本不入库，仅供本地研究使用
+  license: 使用者提供之笈成整理本：古籍原文属公有领域，校点与整理成果归笈成整理者；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据），仅供本地研究使用
   transcription: 笈成志愿者录入、校对并加新式标点（各书“品质”见 [book] 信息）；未经本项目逐字核对
 books:
 - code: A000
@@ -346,7 +346,7 @@ books:
   - 素問病機氣宜保命集
   - 金·劉完素著·素問病機氣宜保命集
   authors:
-  - 河间刘完素
+  - 刘完素
   dynasty: 金
   composition:
   - 1186
@@ -359,6 +359,7 @@ books:
   modern: false
   status: ingest
   kanripo: KR3e0050
+  notes_text: 笈成题“河间刘完素”（河间为籍贯）；自序署“河間劉完素守真述”
 - code: A010
   id: jc_a010
   file: A/A010.txt
@@ -445,18 +446,19 @@ books:
   aliases:
   - 素問識
   authors:
-  - 丹波元珍
+  - 丹波元简
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: undated
+  - 1806
+  - 1806
+  dating: curated
   category: 医经
   jicheng_category: 內經、難經
   work: jc:素问识
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“丹波元珍”，据自序署“文化三年丙寅……丹波元简廉夫”改
 - code: A100
   id: jc_a100
   file: A/A100.txt
@@ -531,18 +533,19 @@ books:
   aliases:
   - 靈樞識
   authors:
-  - 丹波元珍
+  - 丹波元简
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: undated
+  - 1781
+  - 1826
+  dating: author:丹波元简
   category: 医经
   jicheng_category: 內經、難經
   work: jc:灵枢识
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“丹波元珍”，与《素问识》同出丹波元简（待核）
 - code: A200
   id: jc_a200
   file: A/A200.txt
@@ -655,12 +658,12 @@ books:
   - 素問靈樞類纂約注
   - 素問靈樞類纂約註
   authors:
-  - 汪琥辨
+  - 汪昂
   dynasty: 清
   composition:
   - 1689
   - 1689
-  dating: preface
+  dating: preface:author
   dating_note: 時康熙己巳夏日　汪昂題於延禧堂
   category: 医经
   jicheng_category: 內經、難經
@@ -668,6 +671,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“汪琥辨”，据序署“時康熙己巳夏日　汪昂題於延禧堂”及“汪昂識”改为汪昂
 - code: A300
   id: jc_a300
   file: A/A300.txt
@@ -1561,15 +1565,16 @@ books:
   - 柯琴
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: western
+  - 1669
+  - 1669
+  dating: curated
   category: 伤寒
   jicheng_category: 傷寒
   work: jc:伤寒论注
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 柯琴自序“题时己酉初夏”，通行作康熙八年（1669）
 - code: B017
   id: jc_b017
   file: B/B017.txt
@@ -1577,23 +1582,85 @@ books:
   aliases:
   - 重訂通俗傷寒論
   authors:
-  - 俞根
-  - 近代徐荣斋
+  - 俞根初
   dynasty: 清
   composition:
   - 1776
   - 1776
-  dating: preface
-  dating_note: 乾隆四十一年乙未三月望　何秀山識於安昌鎮之碧山書屋
+  dating: curated
   category: 伤寒
   jicheng_category: 傷寒
   work: jc:重订通俗伤寒论
   attribution: traditional
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
+  status: ingest
+  notes_text: 俞根初原著（乾隆间，何秀山序1776）；何秀山按、何廉臣勘（1916年起）、曹炳章按（1930年代）与徐荣斋重订按语（1955）各为一层，按语后未标记的段落随其按语直至下一标记或标题；徐荣斋新增诸节（标“新增”）整节单列
+  paragraphs:
+  - pattern: ^(?:\[[a-z]+\])*(?:【[^】]{1,3}】)?【?榮齋按
+    layer: 徐荣斋按
+    year:
+    - 1955
+    - 1956
+    attribution: 徐荣斋《重订通俗伤寒论》（1956年上海卫生出版社）
+    block: true
+    while: '[，：；「」]'
+  - pattern: ^(?:\[[a-z]+\])*【?又按】?[^\n]*[，：；「」]
+    layer: 徐荣斋按
+    year:
+    - 1955
+    - 1956
+    attribution: 徐荣斋《重订通俗伤寒论》（1956年上海卫生出版社）
+    block: true
+    while: '[，：；「」]'
+  - pattern: ^(?:\[[a-z]+\])*【秀[按接]】
+    layer: 何秀山按
+    year:
+    - 1776
+    - 1795
+    attribution: 清·何秀山
+    block: true
+  - pattern: ^(?:\[[a-z]+\])*(?:【(?:廉勘|兼勘|幼廉注)】|廉勘[：:])
+    layer: 何廉臣勘
+    year:
+    - 1916
+    - 1929
+    attribution: 何廉臣《增订通俗伤寒论》（1916年起连载）
+    block: true
+  - pattern: ^(?:\[[a-z]+\])*【炳章
+    layer: 曹炳章按
+    year:
+    - 1929
+    - 1934
+    attribution: 曹炳章（续成何廉臣增订本）
+    block: true
+  - pattern: ^(?:\[[a-z]+\])*【(?:因|證|脈|治|舌色|脈象|面色|神色|症狀|治法|加減法)】|^俞氏加減法|^[^\s　。，]{2,14}(?:湯|散|丸|飲|丹|煎|膏)　[^　。]{2,12}法　(?!秀山)|^(?:太陽|陽明|少陽|太陰|少陰|厥陰)(?:標|本|中見|兼)證
+    block: true
+  apparatus:
+  - pattern: （榮齋按[：:。][^（）]*(?:（[^（）]*）[^（）]*)*）
+    layer: 徐荣斋按
+    year:
+    - 1955
+    - 1956
+    attribution: 徐荣斋《重订通俗伤寒论》（1956年上海卫生出版社）
+  - pattern: '[（「]榮齋按[：:。].*$'
+    layer: 徐荣斋按
+    year:
+    - 1955
+    - 1956
+    attribution: 徐荣斋《重订通俗伤寒论》（1956年上海卫生出版社）
+  - pattern: （廉按[^（）]*）
+    layer: 何廉臣勘
+    year:
+    - 1916
+    - 1929
+    attribution: 何廉臣《增订通俗伤寒论》（1916年起连载）
+  heading_layers:
+  - pattern: ^第二節‧六經病理$|^第三節‧脈理新解$|^第一節‧病中調護法$
+    layer: 徐荣斋重订新增
+    year:
+    - 1955
+    - 1956
+    attribution: 徐荣斋重订时新增（节首标“新增”）
 - code: B018
   id: jc_b018
   file: B/B018.txt
@@ -1718,7 +1785,7 @@ books:
   aliases:
   - 傷寒大白
   authors:
-  - 高世栻
+  - 秦之桢
   dynasty: 清
   composition:
   - 1714
@@ -1731,6 +1798,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“高世栻”，据陈懋宽序（“云间秦子皇士之书”“著书之秦子……见架头有《伤寒大白》”）改为秦之桢
 - code: B024
   id: jc_b024
   file: B/B024.txt
@@ -1811,7 +1879,8 @@ books:
   title: 伤寒论辩证广注
   aliases:
   - 傷寒論辯證廣注
-  authors: []
+  authors:
+  - 汪琥
   dynasty: 清
   composition:
   - 1680
@@ -1824,6 +1893,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 据自序（“长洲汪琥苓友自序”）补作者
 - code: B027
   id: jc_b027
   file: B/B027.txt
@@ -1831,18 +1901,19 @@ books:
   aliases:
   - 傷寒論輯義
   authors:
-  - 丹波元珍
+  - 丹波元简
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: undated
+  - 1801
+  - 1801
+  dating: curated
   category: 伤寒
   jicheng_category: 傷寒
   work: jc:伤寒论辑义
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“丹波元珍”，据序署“享和纪元……丹波元简廉夫”改
 - code: B028
   id: jc_b028
   file: B/B028.txt
@@ -1950,15 +2021,16 @@ books:
   - 柯琴
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: western
+  - 1674
+  - 1674
+  dating: curated
   category: 伤寒
   jicheng_category: 傷寒
   work: jc:伤寒论翼
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 柯琴序“甲寅春”，通行作康熙十三年（1674）
 - code: B034
   id: jc_b034
   file: B/B034.txt
@@ -1969,15 +2041,16 @@ books:
   - 柯琴
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: western
+  - 1674
+  - 1674
+  dating: curated
   category: 伤寒
   jicheng_category: 傷寒
   work: jc:伤寒附翼
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 与《伤寒论翼》同时（待核）
 - code: B035
   id: jc_b035
   file: B/B035.txt
@@ -2005,18 +2078,19 @@ books:
   aliases:
   - 中寒論辯證廣注
   authors:
-  - 丹波元胤
+  - 汪琥
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: undated
+  - 1684
+  - 1686
+  dating: curated
   category: 伤寒
   jicheng_category: 傷寒
   work: jc:中寒论辩证广注
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“丹波元胤”，据凡例（“仆注此书始于康熙甲子……终于丙寅”“（琥）按”）改为汪琥
 - code: B037
   id: jc_b037
   file: B/B037.txt
@@ -2107,15 +2181,16 @@ books:
   - 柯琴
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: dynasty
+  - 1669
+  - 1674
+  dating: curated
   category: 伤寒
   jicheng_category: 傷寒
   work: jc:伤寒来苏集
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 柯琴《伤寒论注》（1669）、《伤寒论翼》（1674）、《伤寒附翼》合编
 - code: B042
   id: jc_b042
   file: B/B042.txt
@@ -2164,22 +2239,44 @@ books:
   title: 伤寒恒论
   aliases:
   - 傷寒恆論
-  authors: []
+  authors:
+  - 郑寿全
   dynasty: 清
   composition:
   - 1894
   - 1894
-  dating: preface
-  dating_note: 大清光緒二十年孟冬月上浣臨邛鄭壽全欽安序
+  dating: curated
   category: 伤寒
   jicheng_category: 傷寒
   work: jc:伤寒恒论
   attribution: traditional
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
+  status: ingest
+  notes_text: 郑钦安原著（光绪二十年，1894）；据唐步祺《郑钦安医书阐释》（巴蜀书社1996）录入：唐氏阐释、补出的方剂与方解、注释单列为层，所附“原文N”条号移入元数据，今人附录、凡例、编后记不入库；条文中（　）〔　〕为唐氏校记，照录
+  z_layer:
+    layer: 唐步祺注释
+    year:
+    - 1993
+    - 1996
+    attribution: 唐步祺《伤寒恒论阐释》
+  paragraphs:
+  - pattern: ^(?:\[b\])?[一二三四五六七八九十百]+、|^【鄭論】|^\*|^\[b\](?:問曰|或問|答曰|答云)
+    block: true
+  - pattern: ^【闡釋】|^【方解|^\[b\][^\[]{1,14}方\[/b\]
+    layer: 唐步祺阐释
+    year:
+    - 1993
+    - 1996
+    attribution: 唐步祺《伤寒恒论阐释》（阐释、补方与方解）
+    block: true
+  apparatus:
+  - pattern: 原文\d+(?:（序號為[^）]*）)?
+  drop_sections:
+  - ^張仲景原序
+  - ^凡例$
+  - ^一百一十三方總目$
+  - ^附錄$
+  - ^編後記$
 - code: B100
   id: jc_b100
   file: B/B100.txt
@@ -2324,18 +2421,20 @@ books:
   title: 金匮玉函要略述义
   aliases:
   - 金匱玉函要略述義
-  authors: []
+  authors:
+  - 丹波元坚
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: undated
+  - 1842
+  - 1842
+  dating: curated
   category: 杂病
   jicheng_category: 金匱
   work: jc:金匮玉函要略述义
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 日本丹波元坚撰，天保十三年（1842）（待核）
 - code: B106
   id: jc_b106
   file: B/B106.txt
@@ -2421,18 +2520,20 @@ books:
   title: 曹氏伤寒金匮发微合刊
   aliases:
   - 曹氏傷寒金匱發微合刊
-  authors: []
-  dynasty: 清
+  authors:
+  - 曹家达
+  dynasty: 民国
   composition:
-  - 1644
-  - 1911
-  dating: undated
-  category: 杂病
+  - 1931
+  - 1936
+  dating: curated
+  category: 近代
   jicheng_category: 金匱
   work: jc:曹氏伤寒金匮发微合刊
   attribution: traditional
-  modern: false
+  modern: true
   status: ingest
+  notes_text: 曹颖甫（家达）《伤寒发微》（1931）与《金匮发微》（1936）合刊；笈成原列清代（待核）
 - code: C000
   id: jc_c000
   file: C/C000.txt
@@ -2472,10 +2573,7 @@ books:
   work: shennong
   attribution: compiled
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
+  status: ingest
   notes_text: 民国辑本（辑本为民国时整理，原文年代按本经计）
 - code: C000b
   id: jc_c000b
@@ -2534,11 +2632,17 @@ books:
   work: wupu_bencao
   attribution: compiled
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
-  notes_text: 清人自《太平御览》等辑出
+  status: ingest
+  notes_text: 今人辑校本（自《太平御览》等辑出）；辑者所注出处移入元数据，辑者按语单列为层
+  paragraphs:
+  - pattern: ^\[u\]《
+    drop: true
+  - pattern: ^\[u\]按[：:]
+    layer: 今人辑校按语
+    year:
+    - 1950
+    - 2010
+    attribution: 今人辑校者（笈成未署名）
 - code: C002
   id: jc_c002
   file: C/C002.txt
@@ -2557,11 +2661,14 @@ books:
   work: bencao_jizhu
   attribution: compiled
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
-  notes_text: 辑本；本经、别录与陶注未分
+  status: ingest
+  notes_text: 今人辑校本；本经、别录与陶注未分；辑者所注《新修》《大观》《政和》出处移入元数据
+  apparatus:
+  - pattern: （(?:(?:敦煌(?:卷子)?本)?《(?:新修|大觀|政和|證類|千金|千金翼|外台|外臺|醫心方|御覽|綱目|嘉祐|開寶|圖經)》[^（）《》]{0,16}[，、；]?)+）
+  - pattern: (?:大觀》)?(?:[一二三四五六七八九十百○〇]+頁，)?卷[一二三四五六七八九十百廿○〇]+，《政和》[一二三四五六七八九十百○〇、]*頁?）?
+  - pattern: （?(?:(?:敦煌(?:卷子)?本)?《(?:新修|大觀|政和)》(?:第?[一二三四五六七八九十百廿○〇、]+[卷頁]?|卷[一二三四五六七八九十百廿○〇]*)?[，、；]?)+）?
+  own_sections:
+  - ^序錄[上下]$
 - code: C003
   id: jc_c003
   file: C/C003.txt
@@ -2579,10 +2686,8 @@ books:
   work: xinxiu_bencao
   attribution: traditional
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
+  status: ingest
+  notes_text: 今人辑复本（据残卷与《证类本草》等辑复）；〔谨案〕为原书唐臣按语，诸药“本经/别录”性味标注为辑者据朱墨书所作
 - code: C004
   id: jc_c004
   file: C/C004.txt
@@ -2602,10 +2707,10 @@ books:
   work: shiliao_bencao
   attribution: traditional
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
+  status: ingest
+  notes_text: 今人辑本；辑者所注出处代号（〔證〕证类本草、〔嘉〕嘉祐本草、〔心〕医心方、〔卷〕敦煌残卷等）移入元数据
+  apparatus:
+  - pattern: 〔[證嘉心卷補余遺‧·]{1,5}〕
 - code: C005
   id: jc_c005
   file: C/C005.txt
@@ -2624,10 +2729,11 @@ books:
   work: haiyao_bencao
   attribution: traditional
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
+  status: ingest
+  notes_text: 今人辑校本；辑者所注《大观》《政和》《纲目》页码移入元数据
+  apparatus:
+  - pattern: （[^（）]{0,8}《[^》（）]{1,10}》[^（）]*頁[^（）]*）
+  - pattern: （《[^》（）]{1,10}》[^（）]*$
 - code: C006
   id: jc_c006
   file: C/C006.txt
@@ -2646,10 +2752,7 @@ books:
   work: bencao_tujing
   attribution: compiled
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
+  status: ingest
 - code: C007
   id: jc_c007
   file: C/C007.txt
@@ -2899,9 +3002,10 @@ books:
   category: 本草
   jicheng_category: 本草
   work: jc:本草经解
-  attribution: traditional
+  attribution: disputed
   modern: false
   status: ingest
+  notes_text: 序称叶桂所撰（“葉君天士……撰述頗多。本草經解其一也”）；一说为姚球所撰而托名叶桂
 - code: C021
   id: jc_c021
   file: C/C021.txt
@@ -2947,8 +3051,8 @@ books:
   title: 本草崇原
   aliases: []
   authors:
-  - 著者张志聪殁而书未成
-  - 后由弟子高世栻续成
+  - 张志聪
+  - 高世栻
   dynasty: 清
   composition:
   - 1674
@@ -2960,6 +3064,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 张志聪著而未竟，弟子高世栻续成
 - code: C025
   id: jc_c025
   file: C/C025.txt
@@ -3622,16 +3727,15 @@ books:
   - 200
   - 500
   dating: curated
-  category: 方书
+  category: 本草
   jicheng_category: 方劑
   work: mingyi_bielu
   attribution: compiled
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
-  notes_text: 辑本
+  status: ingest
+  notes_text: 今人辑校本（笈成列于方剂类）；辑者“〔附〕”标记移入元数据
+  apparatus:
+  - pattern: 〔附〕
 - code: D002
   id: jc_d002
   file: D/D002.txt
@@ -4334,9 +4438,10 @@ books:
   category: 方书
   jicheng_category: 方劑
   work: jc:种福堂公选良方
-  attribution: traditional
+  attribution: compiled
   modern: false
   status: ingest
+  notes_text: 华岫云据叶桂遗方辑录，乾隆四十年（1775）杜玉林序
 - code: D034
   id: jc_d034
   file: D/D034.txt
@@ -4709,7 +4814,7 @@ books:
   - 集驗方
   authors:
   - 姚僧垣
-  dynasty: 宋
+  dynasty: 北周
   composition:
   - 557
   - 581
@@ -4719,11 +4824,11 @@ books:
   work: jiyan_fang
   attribution: compiled
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
-  notes_text: 辑本
+  status: ingest
+  notes_text: 笈成元数据题洪氏、宋（与《洪氏集验方》相混，误）；今人辑校本；辑者所注出处（《外台》《医心方》《肘后方》卷次等）移入元数据
+  apparatus:
+  - pattern: （《[^》（）]{1,14}》(?:卷[^（）]{0,6})?）|（《[^》（）]*卷[^》（）]*》）
+  - pattern: （《[^》（）]{1,14}》卷[一二三四五六七八九十百○〇]*
 - code: D054
   id: jc_d054
   file: D/D054.txt
@@ -4819,11 +4924,8 @@ books:
   work: xiaopin_fang
   attribution: compiled
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
-  notes_text: 辑本
+  status: ingest
+  notes_text: 今人辑校本（卷一据日本尊经阁藏残卷，余卷自《外台》《医心方》等辑出）；书中无辑者按语
 - code: D059
   id: jc_d059
   file: D/D059.txt
@@ -5279,8 +5381,8 @@ books:
   - 叶桂
   dynasty: 清
   composition:
-  - 1704
-  - 1795
+  - 1726
+  - 1766
   dating: author:叶桂
   category: 温病
   jicheng_category: 溫病
@@ -5359,18 +5461,19 @@ books:
   aliases:
   - 廣瘟疫論
   authors:
-  - 吴又可
-  dynasty: 明
+  - 戴天章
+  dynasty: 清
   composition:
-  - 1641
-  - 1641
-  dating: western
+  - 1675
+  - 1722
+  dating: curated
   category: 温病
   jicheng_category: 溫病
-  work: jc:广瘟疫论
+  work: jc:广温疫论
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“吴又可”；自识署“上元戴天章麟郊甫識於存存書屋”，孙嗣琦跋（1782）称“先大父……《廣瘟疫論》”，据改为戴天章；年代取作者生年内（原书未署年）
 - code: E006
   id: jc_e006
   file: E/E006.txt
@@ -5417,7 +5520,7 @@ books:
   aliases:
   - 六因條辨
   authors:
-  - 陆子贤
+  - 陆廷珍
   dynasty: 清
   composition:
   - 1644
@@ -5428,10 +5531,17 @@ books:
   work: jc:六因条辨
   attribution: traditional
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
+  status: ingest
+  notes_text: 今人整理本；整理者的编号注释单列为层，正文中的注码移入元数据
+  paragraphs:
+  - pattern: ^[（(][0-9０-９]{1,3}[）)]
+    layer: 今人注释
+    year:
+    - 1950
+    - 2010
+    attribution: 今人整理者（笈成未署名）
+  apparatus:
+  - pattern: '[（(][0-9０-９]{1,3}[）)]'
 - code: E009
   id: jc_e009
   file: E/E009.txt
@@ -5619,8 +5729,8 @@ books:
   - 叶桂
   dynasty: 清
   composition:
-  - 1704
-  - 1795
+  - 1726
+  - 1766
   dating: author:叶桂
   category: 温病
   jicheng_category: 溫病
@@ -5678,15 +5788,16 @@ books:
   - 戴天章
   dynasty: 清
   composition:
-  - 1644
-  - 1911
-  dating: dynasty
+  - 1675
+  - 1722
+  dating: curated
   category: 温病
   jicheng_category: 溫病
   work: jc:广温疫论
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 与E005同书（广瘟疫论）；年代取作者生年内（原书未署年）
 - code: E020
   id: jc_e020
   file: E/E020.txt
@@ -5808,22 +5919,54 @@ books:
   title: 傅青主男科重编考释
   aliases:
   - 傅青主男科重編考釋
-  authors: []
-  dynasty: ''
+  authors:
+  - 傅山（旧题）
+  dynasty: 清
   composition:
-  - 1949
-  - 2010
+  - 1821
+  - 1863
   dating: curated
-  category: 近代
+  category: 内科
   jicheng_category: 雜病
   work: jc:傅青主男科重编考释
-  attribution: traditional
-  modern: true
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
-  notes_text: 今人重编考释（书中所存清人序不代表成书年代）
+  attribution: pseudepigraphic
+  modern: false
+  status: ingest
+  notes_text: 旧题傅山撰《男科》，道光初年已有抄本，同治二年（1863）王道平刻；今人重编考释本：据《石室秘录》等补入之文（〔　〕内）与考释按语单列为层
+  paragraphs:
+  - pattern: ^按[：:]
+    layer: 今人考释
+    year:
+    - 1950
+    - 2010
+    attribution: 今人重编考释者（笈成未署名）
+  - pattern: 〔[^〔〕]*$
+    layer: 今人补入（据《石室秘录》等）
+    year:
+    - 1950
+    - 2010
+    attribution: 今人重编考释者补入
+    block: true
+    until: 〕
+  apparatus:
+  - pattern: （以下據[^（）]*補）[：:]?
+    layer: 今人考释
+    year:
+    - 1950
+    - 2010
+    attribution: 今人重编考释者（笈成未署名）
+  - pattern: （按[：:][^（）]*）
+    layer: 今人考释
+    year:
+    - 1950
+    - 2010
+    attribution: 今人重编考释者（笈成未署名）
+  - pattern: 〔[^〔〕]*〕
+    layer: 今人补入（据《石室秘录》等）
+    year:
+    - 1950
+    - 2010
+    attribution: 今人重编考释者补入
 - code: F007
   id: jc_f007
   file: F/F007.txt
@@ -6250,9 +6393,10 @@ books:
   category: 内科
   jicheng_category: 雜病
   work: jc:活法机要
-  attribution: traditional
+  attribution: disputed
   modern: false
   status: ingest
+  notes_text: 卷首题“丹溪朱震亨著”；书中引“方在寶鑑泄痢條下”（罗天益《卫生宝鉴》），泄痢诸方同《保命集》，旧题朱震亨，一说出李杲或张元素之门
 - code: F027
   id: jc_f027
   file: F/F027.txt
@@ -6271,10 +6415,7 @@ books:
   work: jc:辅行诀脏腑用药法要
   attribution: disputed
   modern: true
-  status: excluded
-  excluded_reason: 当代出版物
-  screen:
-    curated: true
+  status: ingest
   notes_text: 托名陶弘景之敦煌卷子抄本，原卷已佚，20世纪由张大昌等传出，真伪有争议
   mixed:
     layer: 近代传抄本（真伪有争议）
@@ -7948,10 +8089,19 @@ books:
   work: jc:万氏秘传片玉心书
   attribution: traditional
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
+  status: ingest
+  notes_text: 今人校注本；校注（多为与山东泰安李雨霑、方悦父刻本的异文）单列为层，其中“原书注”仍归正文；正文中的注码移入元数据
+  paragraphs:
+  - pattern: ^(?:注[：:])?[（(][0-9０-９lIｌＩ]{1,3}[）)]原書注
+  - pattern: ^(?:注[：:])?[（(][0-9０-９lIｌＩ]{1,3}[）)]
+    layer: 今人校注
+    year:
+    - 1950
+    - 2010
+    attribution: 今人校注者（笈成未署名）
+  apparatus:
+  - pattern: ^注[：:](?=[（(])
+  - pattern: '[（(][0-9０-９lIｌＩ]{1,3}[）)]'
 - code: H032
   id: jc_h032
   file: H/H032.txt
@@ -9075,7 +9225,7 @@ books:
   aliases:
   - 傷科補要
   authors:
-  - 钱潢
+  - 钱秀昌
   dynasty: 清
   composition:
   - 1808
@@ -9087,6 +9237,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“钱潢”（钱天来，康熙时人）；《伤科补要》为钱秀昌（松溪）撰，嘉庆十三年（1808）
 - code: K000
   id: jc_k000
   file: K/K000.txt
@@ -9486,20 +9637,18 @@ books:
   - 子午流注說難
   authors:
   - 吴棹仙
-  dynasty: 近代
+  dynasty: 当代
   composition:
   - 1956
   - 1956
-  dating: western
-  category: 近代
+  dating: curated
+  category: 针灸
   jicheng_category: 針灸
   work: jc:子午流注说难
   attribution: traditional
   modern: true
-  status: excluded
-  excluded_reason: 当代出版物
-  screen:
-    curated: true
+  status: ingest
+  notes_text: 吴棹仙著，1956年成书；当代著作，经审定保留，全书在分析分期（止于民国）之外
 - code: K018
   id: jc_k018
   file: K/K018.txt
@@ -9869,10 +10018,7 @@ books:
   aliases:
   - 目經大成
   authors:
-  - 黄庭镜草成此书
-  - 此后四易其稿
-  - 但未付梓
-  - 弟子邓学礼得悉此书后于嘉庆十年刊行
+  - 黄庭镜
   dynasty: 清
   composition:
   - 1741
@@ -9884,6 +10030,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 据“濉川不塵子黃庭鏡自序”
 - code: L005
   id: jc_l005
   file: L/L005.txt
@@ -10007,7 +10154,7 @@ books:
   aliases:
   - 尤氏喉科秘書
   authors:
-  - 王士雄
+  - 梁溪尤氏
   dynasty: 清
   composition:
   - 1781
@@ -10020,6 +10167,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“王士雄”（1808年生，不能作1781年之书）；乾隆辛丑（1781）序称“得是編於梁溪尤氏”，旧题尤乘撰
 - code: L101
   id: jc_l101
   file: L/L101.txt
@@ -10596,18 +10744,20 @@ books:
   aliases:
   - 症因脈治
   authors:
-  - 朱丹溪
-  dynasty: 元
+  - 秦昌遇
+  - 秦之桢
+  dynasty: 明末清初
   composition:
-  - 1279
-  - 1368
-  dating: western
+  - 1641
+  - 1706
+  dating: curated
   category: 诊法
   jicheng_category: 診法
   work: jc:症因脉治
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“朱丹溪”；秦景明（昌遇）序（崇禎辛巳，1641）称“敢竊丹溪之余語，匯成一卷，改名《症因脈治》”，其侄孙秦之桢纂成（康熙四十五年，1706）
 - code: M108
   id: jc_m108
   file: M/M108.txt
@@ -12143,10 +12293,10 @@ books:
   work: jc:许氏医案
   attribution: traditional
   modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
+  status: ingest
+  notes_text: 网络重校本（伤寒论坛网友据中医瑰宝苑本重校句读文字）；重校者前言不入库
+  drop_sections:
+  - ^重校許氏醫案$
 - code: N066a
   id: jc_n066a
   file: N/N066a.txt
@@ -12573,21 +12723,38 @@ books:
   title: 湖岳村叟医案
   aliases:
   - 湖岳村叟醫案
-  authors: []
-  dynasty: 清
+  authors:
+  - 翟竹亭
+  dynasty: 民国
   composition:
-  - 1644
-  - 1911
-  dating: undated
+  - 1935
+  - 1935
+  dating: curated
   category: 医案
   jicheng_category: 醫案
   work: jc:湖岳村叟医案
   attribution: traditional
-  modern: false
-  status: excluded
-  excluded_reason: 现代校注本
-  screen:
-    curated: true
+  modern: true
+  status: ingest
+  notes_text: 翟竹亭医案，孟氏跋署乙亥（1935）；1963年张会友校勘（改正字句、理论与引文）、1984年整理（剂量折算为克，中肯的眉批移为按语、另补加按语）；署名的“馨山按”按原书眉批计，其余按语与整理者补加者无从区分，按1984年计；折算的克数移出正文存于元数据，1963年校勘记与1965年序不入库
+  paragraphs:
+  - pattern: ^(?:\[b\])?馨山按[：:]
+    layer: 原书眉批（馨山按）
+    year:
+    - 1935
+    - 1935
+    attribution: 原书眉批，1984年整理者移作按语
+  - pattern: ^(?:\[b\])?按[：:]
+    layer: 整理者按语（含移入的原书眉批）
+    year:
+    - 1984
+    - 1984
+    attribution: 1984年整理者补加之按语与移入的原书眉批，二者未能分离，按整理年代计
+  apparatus:
+  - pattern: '[0-9０-９]+(?:[.．][0-9０-９]+)?克'
+  drop_sections:
+  - ^序$
+  - ^校勘記$
 - code: N088
   id: jc_n088
   file: N/N088.txt
@@ -13050,7 +13217,8 @@ books:
   aliases:
   - 醫效秘傳
   authors:
-  - 叶桂述吴金寿
+  - 叶桂
+  - 吴金寿
   dynasty: 清
   composition:
   - 1831
@@ -13059,9 +13227,10 @@ books:
   category: 综合
   jicheng_category: 綜合
   work: jc:医效秘传
-  attribution: traditional
+  attribution: compiled
   modern: false
   status: ingest
+  notes_text: 卷首题“古吳　葉桂天士　述　後學　吳金壽子音　校”；吴金寿据叶桂之说整理，1831年为整理之年
 - code: O017
   id: jc_o017
   file: O/O017.txt
@@ -13600,9 +13769,10 @@ books:
   category: 综合
   jicheng_category: 綜合
   work: jc:脉因证治
-  attribution: traditional
+  attribution: compiled
   modern: false
   status: ingest
+  notes_text: 旧题朱震亨撰；缪遵义序（乾隆乙未，1775）称“丹溪著作，類出門人記載”，1775年为刊行之年
 - code: O044
   id: jc_o044
   file: O/O044.txt
@@ -13925,7 +14095,7 @@ books:
   aliases:
   - 醫學正傳
   authors:
-  - 虞传
+  - 虞抟
   dynasty: 明
   composition:
   - 1515
@@ -13937,6 +14107,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成题“虞传”，据序署“花溪恆德老人虞摶序”改为虞抟
 - code: O057
   id: jc_o057
   file: O/O057.txt
@@ -15064,18 +15235,19 @@ books:
   - 元·朱震亨著·醫學發明
   - 醫學發明
   authors:
-  - 朱震亨
-  dynasty: 元
+  - 李杲
+  dynasty: 金
   composition:
-  - 1327
-  - 1368
-  dating: author:朱震亨
+  - 1231
+  - 1251
+  dating: curated
   category: 综合
   jicheng_category: 綜合
   work: jc:医学发明
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 笈成本卷首题“丹溪朱震亨著”；书中屡引“潔古云”“潔古曰”，论阴火上冲、升阳，即李杲《医学发明》（收入《东垣十书》），据改
 - code: O110
   id: jc_o110
   file: O/O110.txt
@@ -15255,7 +15427,7 @@ books:
   - 推篷寤語
   - 推逢寤語
   authors:
-  - 云间李豫亨元荐
+  - 李豫亨
   dynasty: 明
   composition:
   - 1570
@@ -15268,6 +15440,7 @@ books:
   attribution: traditional
   modern: false
   status: ingest
+  notes_text: 据序署“時隆慶庚午四月既望雲間李豫亨元薦甫”
 - code: O119
   id: jc_o119
   file: O/O119.txt
@@ -15439,7 +15612,8 @@ books:
   title: 圆运动的古中医学
   aliases:
   - 圓運動的古中醫學
-  authors: []
+  authors:
+  - 彭子益
   dynasty: 民国
   composition:
   - 1939

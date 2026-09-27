@@ -1,0 +1,17 @@
+id: S03
+key: philology
+name: 句读·训诂 Philology
+version: 1.0.0
+owner: classical_scholar
+description: Punctuation of unpunctuated text, the glosses of the commentators on the question's terms, and a five-layer reading of the key passage.
+inputs: [passages, terms]
+outputs: [readings, glosses]
+dependencies: [S01]
+requires_llm: optional
+deterministic_steps: [句读 by the punctuation model, glosses with who first gave them, curated senses by date and context]
+llm_steps: [review of uncertain breaks, a modern Chinese translation that cites its glosses and passes the presentism guard]
+calls:
+  - {tool: study.translate, for_each: passages, limit: 1, args: {passage_id: "{passage_id}"}}
+  - {tool: study.glosses, for_each: terms, limit: 2, args: {term: "{term}"}}
+validators: [the original layer is never changed, a translation cites glosses, presentism guard]
+evaluation: {suites: [punctuation, glosses, translation]}

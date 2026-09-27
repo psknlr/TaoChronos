@@ -1,0 +1,185 @@
+# ReuseEval — reuse pairs labelled with their reuse type (science/semantic_reuse.py).
+#
+# Author-constructed.  `attested` pairs follow a reuse found in the corpus (the wording of the later text is
+# shortened or normalised to simplified characters); `constructed` pairs were written for the test in the manner of
+# the literature.  Every text is a short excerpt (≤ 120 characters) of a pre-1900 public-domain work or a sentence
+# written for this file.  The labels were set before the rules were run; pairs whose features turned out to sit on
+# a rule's boundary were kept and are reported as errors rather than relabelled.
+#
+# labels: verbatim_quote 直接引用 · near_verbatim 近似转录 · abridgement 节略 · summary 撮要 · paraphrase 转述 ·
+#         reinterpretation 解释性改写 · oppositional_reuse 引而驳之 · formulaic_similarity 套语相似 · uncertain 待定
+pairs:
+  # ------------------------------------------------------------------ 直接引用
+  - id: vq-jingyue
+    label: verbatim_quote
+    basis: attested
+    source: 太阳之为病，脉浮，头项强痛而恶寒。
+    target: 经曰：太阳之为病，脉浮，头项强痛而恶寒。此言太阳经脉起于目内眦，上额交巅，还出别下项。
+  - id: vq-neijing
+    label: verbatim_quote
+    basis: attested
+    source: 邪之所凑，其气必虚。
+    target: 《内经》曰：邪之所凑，其气必虚。故治病者当先顾其正气。
+  - id: vq-notes
+    label: verbatim_quote
+    basis: attested
+    source: 阴平阳秘，精神乃治；阴阳离决，精气乃绝。
+    target: 阴平阳秘，精神乃治，（阴气和平，阳气闭密，则精神日益治也。）阴阳离决，精气乃绝。
+  - id: vq-zhengqi
+    label: verbatim_quote
+    basis: constructed
+    source: 正气存内，邪不可干。
+    target: 《素问》云：正气存内，邪不可干。是以善治者先扶其正。
+  # ------------------------------------------------------------------ 近似转录
+  - id: nv-guizhi
+    label: near_verbatim
+    basis: attested
+    source: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之。
+    target: 太阳病，头痛发热，汗出恶风者，宜桂枝汤。
+  - id: nv-taiyang
+    label: near_verbatim
+    basis: attested
+    source: 太阳之为病，脉浮，头项强痛而恶寒。
+    target: 太阳病，脉浮，头项强痛而恶寒。
+  - id: nv-yangbi
+    label: near_verbatim
+    basis: attested
+    source: 阴平阳秘，精神乃治；阴阳离决，精气乃绝。
+    target: 阴平阳闭，精神乃治；阴阳离决，精气乃绝。
+  - id: nv-weibing
+    label: near_verbatim
+    basis: constructed
+    source: 夫治未病者，见肝之病，知肝传脾，当先实脾。
+    target: 治未病者，见肝之病，知肝当传脾，当先实脾。
+  # ------------------------------------------------------------------ 节略
+  - id: ab-rebing
+    label: abridgement
+    basis: constructed
+    source: 伤寒一日，巨阳受之，故头项痛，腰脊强。二日阳明受之，阳明主肉，其脉侠鼻络于目，故身热目疼而鼻干，不得卧也。
+    target: 伤寒一日，巨阳受之。二日阳明受之，故身热目疼而鼻干。
+  - id: ab-lemma
+    label: abridgement
+    basis: attested
+    source: 太阳之为病，脉浮，头项强痛而恶寒。
+    target: 太阳之为病脉浮，谓邪在表也。
+  - id: ab-shanggu
+    label: abridgement
+    basis: constructed
+    source: 上古之人，其知道者，法于阴阳，和于术数，食饮有节，起居有常，不妄作劳。
+    target: 上古之人，法于阴阳，和于术数，食饮有节，起居有常。
+  - id: ab-dadu
+    label: abridgement
+    basis: constructed
+    source: 大毒治病，十去其六；常毒治病，十去其七；小毒治病，十去其八；无毒治病，十去其九。
+    target: 大毒治病，十去其六；无毒治病，十去其九。
+  # ------------------------------------------------------------------ 撮要
+  - id: su-liujing
+    label: summary
+    basis: constructed
+    source: 伤寒一日，巨阳受之，故头项痛，腰脊强。二日阳明受之，阳明主肉，其脉侠鼻络于目，故身热目疼而鼻干，不得卧也。三日少阳受之，少阳主胆，其脉循胁络于耳，故胸胁痛而耳聋。
+    target: 一日太阳头项痛，二日阳明目疼鼻干，三日少阳胁痛耳聋。
+  - id: su-ke
+    label: summary
+    basis: constructed
+    source: 五脏六腑皆令人咳，非独肺也。皮毛者，肺之合也，皮毛先受邪气，邪气以从其合也。其寒饮食入胃，从肺脉上至于肺则肺寒，肺寒则外内合邪，因而客之，则为肺咳。
+    target: 咳不独在肺，五脏六腑皆令人咳，外受邪气，内伤寒饮，合邪客肺而成咳。
+  - id: su-sanxiao
+    label: summary
+    basis: constructed
+    source: 渴而多饮为上消，肺热也；消谷善饥为中消，胃热也；渴而便数有膏为下消，肾虚也。
+    target: 三消者，肺热胃热肾虚也。
+  # ------------------------------------------------------------------ 转述
+  - id: pa-zhongjing
+    label: paraphrase
+    basis: constructed
+    source: 太阳之为病，脉浮，头项强痛而恶寒。
+    target: 仲景言太阳受邪，见脉浮而项背强痛者，以恶寒为常。
+  - id: pa-huoren
+    label: paraphrase
+    basis: attested
+    source: 太阳之为病，脉浮，头项强痛而恶寒。
+    target: 太阳病者，脉浮头项强痛，发热而恶寒。
+  - id: pa-yangqi
+    label: paraphrase
+    basis: constructed
+    source: 阳气者，若天与日，失其所则折寿而不彰。
+    target: 人之阳气，如天之有日，失其所在，则折其寿而不能彰明。
+  - id: pa-sanyin
+    label: paraphrase
+    basis: attested
+    source: 太阳之为病，脉浮，头项强痛而恶寒。
+    target: 太阳膀胱经伤寒，头项强，腰脊痛，无汗恶寒，其脉浮。
+  # ------------------------------------------------------------------ 解释性改写
+  - id: re-yangbi
+    label: reinterpretation
+    basis: constructed
+    source: 阴平阳秘，精神乃治；阴阳离决，精气乃绝。
+    target: 所谓阴平阳秘者，盖言阴气平和，阳气固密，则精神内守而治；若阴阳相离而决，则精气竭绝，此生死之大纲也。
+  - id: re-hanshou
+    label: reinterpretation
+    basis: constructed
+    source: 诸寒收引，皆属于肾。
+    target: 寒邪内盛，筋脉拘急而收引者，盖肾主寒水，是以其病皆当责之于肾也。
+  - id: re-weijia
+    label: reinterpretation
+    basis: constructed
+    source: 阳明之为病，胃家实是也。
+    target: 阳明病者，邪入于胃，燥屎内结，其实在胃家，所以谓之胃家实也。
+  # ------------------------------------------------------------------ 引而驳之
+  - id: op-xuxie
+    label: oppositional_reuse
+    basis: constructed
+    source: 夫邪之所凑，其气必虚。
+    target: 或谓邪之所凑，其气必虚，殊不知实邪亦能凑之，非尽虚也。
+  - id: op-danxi
+    label: oppositional_reuse
+    basis: constructed
+    source: 阴平阳秘，精神乃治。
+    target: 经谓阴平阳秘，精神乃治，然阳常有余，阴常不足，人身未必平秘也。
+  - id: op-chuanjing
+    label: oppositional_reuse
+    basis: constructed
+    source: 伤寒一日太阳，二日阳明，三日少阳。
+    target: 世言伤寒一日太阳，二日阳明，三日少阳，此说非也，传经岂可拘以日数。
+  - id: op-fuhan
+    label: oppositional_reuse
+    basis: constructed
+    source: 冬伤于寒，春必温病。
+    target: 冬伤于寒，春必病温，其说不可从，温病有不因伏寒者。
+  # ------------------------------------------------------------------ 套语相似 (no reuse: the genre's formulae)
+  - id: fo-jianfa
+    label: formulaic_similarity
+    basis: attested
+    source: 桂枝三两，去皮，芍药三两，甘草二两，炙，生姜三两，切，大枣十二枚，擘。右五味，以水七升，煮取三升，去滓，温服一升。
+    target: 麻黄三两，去节，杏仁七十个，去皮尖。右四味，以水九升，先煮麻黄，减二升，去上沫，内诸药，煮取三升，去滓，温服一升。
+  - id: fo-wanfa
+    label: formulaic_similarity
+    basis: constructed
+    source: 右为细末，炼蜜为丸，如梧桐子大，每服三十丸，空心温酒下。
+    target: 上为末，炼蜜丸，如梧子大，每服五十丸，食前米饮下。
+  - id: fo-fufa
+    label: formulaic_similarity
+    basis: constructed
+    source: 右三味，以水一斗，煮取三升，去滓，分温三服。
+    target: 右六味，以水八升，煮取三升，去滓，温服一升，日三服。
+  # ------------------------------------------------------------------ 待定 (shared genre concepts or a shared frame, no reuse)
+  - id: un-maijing
+    label: uncertain
+    basis: attested
+    source: 太阳之为病，脉浮，头项强痛而恶寒。
+    target: 太阳病外证未解，其脉浮弱，当以汗解，宜桂枝汤。阳明病脉迟，汗出多，微恶寒者，表未解也。
+  - id: un-bingji
+    label: uncertain
+    basis: attested
+    source: 诸风掉眩，皆属于肝。
+    target: 诸湿肿满，皆属于脾。
+  - id: un-xiaoke
+    label: uncertain
+    basis: constructed
+    source: 消渴，小便多，饮水多，身体消瘦。
+    target: 伤寒发热，小便不利，渴欲饮水，水入则吐。
+  - id: un-bencao
+    label: uncertain
+    basis: attested
+    source: 黄连味苦寒，主热气，目痛，眦伤泣出，明目。
+    target: 黄芩味苦平，主诸热黄疸，肠澼泄利，逐水。

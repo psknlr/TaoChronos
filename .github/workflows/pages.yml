@@ -1,0 +1,87 @@
+name: pages
+
+# The web client on GitHub Pages: https://psknlr.github.io/TaoChronos/
+# One-time setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "src/**"
+      - "profiles/**"
+      - "domains/**"
+      - "corpus/demo/**"
+      - "corpus/catalog/**"
+      - "corpus/modern/**"
+      - "corpus/web/**"
+      - "agents/**"
+      - "skills/**"
+      - "evals/gold/**"
+      - "architecture-policy.yaml"
+      - "pyproject.toml"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: Check the chat runtime the site ships
+        run: |
+          python - <<'EOF'
+          from taochronos.chat import ChatRuntime
+          rt = ChatRuntime.create("full-discovery", kind="ci", ephemeral=True)
+          out = rt.call("classics.search", {"query": "桂枝汤", "k": 2})
+          assert out["ok"] and out["citations"], out
+          print(rt.info()["corpus"], len(rt.catalog("all")["tools"]), "tools")
+          EOF
+      - name: Build the site (client, in-browser runtime, 要籍语料, providers, pinned Pyodide)
+        run: taochronos web build -o _site
+      - name: Check the 要籍语料 the site ships, as the browser will read it
+        run: |
+          python - <<'EOF'
+          import gzip, json, pathlib, tempfile
+          from taochronos.chat import ChatRuntime
+          from taochronos.plugins.classics.domain import DomainPack
+          from taochronos.plugins.classics.webcorpus import index_store
+          site = pathlib.Path("_site/runtime")
+          meta = json.loads((site / "manifest.json").read_text())["files"]["corpus.sqlite.gz"]
+          data = pathlib.Path(tempfile.mkdtemp())
+          (data / "corpus").mkdir()
+          db = data / "corpus" / "tcm.sqlite"
+          db.write_bytes(gzip.decompress((site / "corpus.sqlite.gz").read_bytes()))
+          assert index_store(db, DomainPack(pathlib.Path("domains/classics")).variants.normalize_text) == meta["passages"]
+          rt = ChatRuntime.create("web-canon", kind="ci", ephemeral=True, data_dir=data)
+          out = rt.call("classics.search", {"query": "桂枝汤", "k": 2})
+          assert out["ok"] and out["citations"], out
+          print(rt.info()["corpus"]["label"], rt.info()["corpus"]["canon"], meta["bytes"], "bytes")
+          EOF
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

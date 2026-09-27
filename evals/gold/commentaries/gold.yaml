@@ -1,0 +1,36 @@
+# What CommentaryEval expects of the corpus in this folder (CC0): for each clause, the commentaries (book → the
+# gold commentary text, marks and brackets aside), the explicit and wording relations between them, and the
+# quotations that are not commentaries.
+clauses:
+  - clause: 太阳之为病，脉浮，头项强痛而恶寒。
+    commentaries:
+      chengzhu: 经曰尺寸俱浮者太阳受病太阳主表为诸阳主气脉浮头项强痛而恶寒者太阳表病也
+      fangzhu: 太阳者膀胱经也乃六经之首主皮肤而统营卫所以为受病之始也
+      yuzhu: 此揭太阳病之总脉总证也太阳膀胱经乃六经之首主皮肤而统营卫所以为受病之始
+      kezhu: 六经各立病机一条太阳主表故表证表脉独太阳得其全
+    relations:
+      - {from: yuzhu, to: fangzhu, type: 承袭}
+    quotations: [huizuan.001]
+  - clause: 太阳病，发热，汗出，恶风，脉缓者，名为中风。
+    commentaries:
+      chengzhu: 风阳也寒阴也风则伤卫发热汗出恶风者卫中风也卫气不固故汗出而脉缓
+      fangzhu: 风之为风其性属阳其中人也从卫而入卫气道也风邪客之故汗出
+      yuzhu: 成氏谓风则伤卫此说非也风寒皆伤营卫但有轻重之分耳
+      kezhu: 喻氏之说甚是风寒皆伤营卫而卫先受之
+    relations:
+      - {from: yuzhu, to: chengzhu, type: 驳}
+      - {from: kezhu, to: yuzhu, type: 从}
+    quotations: [huizuan.002]
+  - clause: 太阳病，或已发热，或未发热，必恶寒，体痛，呕逆，脉阴阳俱紧者，名为伤寒。
+    commentaries:
+      chengzhu: 寒则伤营营伤则无汗而体痛寒邪在表故脉阴阳俱紧
+      fangzhu: 寒为阴邪伤于营营血道也营血凝涩故体痛
+      yuzhu: 寒伤营血血脉凝泣故脉阴阳俱紧而体痛也
+      kezhu: 寒邪伤营营血凝滞故体痛而脉紧
+    relations: []
+    quotations: []
+  - clause: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之。
+    commentaries:
+      chengzhu: 头痛发热汗出恶风中风之证具与桂枝汤解肌以散风邪
+    relations: []
+    quotations: []

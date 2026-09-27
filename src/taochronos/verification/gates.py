@@ -15,6 +15,9 @@ from ..protocol.evidence import EvidenceRecord, Stance
 from ..protocol.hypothesis import Hypothesis
 from ..protocol.research import GateResult, ResearchObject
 from .provenance import verify_claim, verify_evidence
+from .support import support_layers
+
+PRECLINICAL = frozenset({"animal", "cell", "in_silico", "in_vitro", "computational", "network_pharmacology", "docking"})
 
 _RANK = {"fail": 0, "pending": 1, "warn": 2, "pass": 3, "not_applicable": 4}
 GATE_NAMES = {
@@ -103,10 +106,27 @@ class GateEvaluator:
         return GateResult(gate="G3", subject_id=claim.id, status="pass", score=1.0, details="term senses resolved")
 
     def g4(self, claim: Claim) -> GateResult:
+        """G4 in layers: the quote is authentic (verbatim, non-empty, inside the passage); its locator and argument spans
+        are consistent; the quoted words **bear the claim** (semantic support, read independently of the extractor); and
+        the statement's scope (speaker, stance, conditions) is recorded.  A true quote with a false relation fails."""
         problems = verify_claim(claim, self.corpus, self.normalize)
-        if problems:
-            return GateResult(gate="G4", subject_id=claim.id, status="fail", score=0.0, details="; ".join(problems[:3]))
-        return GateResult(gate="G4", subject_id=claim.id, status="pass", score=1.0, details="verbatim quote and argument spans verified")
+        authenticity = [p for p in problems if "quote" in p or "span" in p and "argument" not in p]
+        locator = [p for p in problems if p not in authenticity]
+        layers: dict = {"authenticity": "fail" if authenticity else "pass", "locator": "fail" if locator else "pass"}
+        if self.corpus.has_passage(claim.passage_id) and not authenticity:
+            layers.update(support_layers(claim, self.corpus.passage(claim.passage_id).text, self.normalize,
+                                         getattr(self.pack, "cruxes", None)))
+        support = layers.get("support", "unchecked")
+        stance = (layers.get("scope") or {}).get("stance", "")
+        if problems or support == "contradicts":
+            why = "; ".join(problems[:3]) or f"semantic support: {layers.get('support_explanation', '')}"
+            return GateResult(gate="G4", subject_id=claim.id, status="fail", score=0.0, details=why, layers=layers)
+        if support in ("insufficient", "ambiguous") or stance == "rejected":
+            why = (f"verbatim, but the quote {'is a view the author rejects' if stance == 'rejected' else 'does not clearly state the relation'}"
+                   f" ({layers.get('support_explanation', '')})")
+            return GateResult(gate="G4", subject_id=claim.id, status="warn", score=0.5, details=why, layers=layers)
+        return GateResult(gate="G4", subject_id=claim.id, status="pass", score=1.0,
+                          details="verbatim quote, consistent spans, and the quote states the relation", layers=layers)
 
     def evaluate_claim(self, claim: Claim) -> list[GateResult]:
         return [
@@ -160,15 +180,41 @@ class GateEvaluator:
         results.append(g6)
         g7 = state.gates.get(h.id, {}).get("G7") or GateResult(gate="G7", subject_id=h.id, status="pending", details="awaiting expert review")
         results.append(g7)
-        modern = [e for e in state.evidence.values() if e.hypothesis_id == h.id and e.evidence_domain in MODERN_EVIDENCE_DOMAINS]
-        if h.space in (KnowledgeSpace.BIOMEDICAL, KnowledgeSpace.MODERN_TCM):
-            g8 = GateResult(gate="G8", subject_id=h.id, status="pass" if modern else "fail",
-                            details=f"{len(modern)} modern evidence record(s)" if modern else "cross-space claim without modern evidence")
-        else:
-            g8 = GateResult(gate="G8", subject_id=h.id, status="not_applicable",
-                            details="historical-text hypothesis: modern validity not asserted")
-        results.append(g8)
+        results.append(self.g8(h, state))
         return results
+
+    # -------------------------------------------------------------- modern
+    @staticmethod
+    def g8(h: Hypothesis, state: ResearchObject) -> GateResult:
+        """G8 in layers: whether modern evidence *exists*, which way it points (*stance*) and at what *level* it was
+        obtained.  A record that contradicts the claim fails it; context is not support; preclinical work (animal, cell,
+        computational) never carries a claim about people.  A historical–modern bridge (Modern-TCM space) claims only a
+        typed association clue, which context records can carry; a biomedical claim needs support in people."""
+        if h.space not in (KnowledgeSpace.BIOMEDICAL, KnowledgeSpace.MODERN_TCM):
+            return GateResult(gate="G8", subject_id=h.id, status="not_applicable",
+                              details="historical-text hypothesis: modern validity not asserted")
+        retracted = getattr(state, "retractions", {}) or {}
+        modern = [e for e in state.evidence.values() if e.hypothesis_id == h.id and e.evidence_domain in MODERN_EVIDENCE_DOMAINS
+                  and e.id not in retracted]
+        by_stance = {k: [e for e in modern if e.stance == k] for k in (Stance.SUPPORTS, Stance.CONTRADICTS, Stance.CONTEXT, Stance.NEUTRAL)}
+        human = [e for e in by_stance[Stance.SUPPORTS] if (e.population or "human") == "human"
+                 and (e.evidence_type or "") not in PRECLINICAL]
+        layers = {"exists": len(modern), "supports": len(by_stance[Stance.SUPPORTS]), "contradicts": len(by_stance[Stance.CONTRADICTS]),
+                  "context": len(by_stance[Stance.CONTEXT]) + len(by_stance[Stance.NEUTRAL]), "human_support": len(human),
+                  "levels": sorted({e.evidence_type or "unknown" for e in modern})}
+        if not modern:
+            return GateResult(gate="G8", subject_id=h.id, status="fail", details="cross-space claim without modern evidence", layers=layers)
+        if by_stance[Stance.CONTRADICTS]:
+            return GateResult(gate="G8", subject_id=h.id, status="fail", layers=layers,
+                              details=f"{len(by_stance[Stance.CONTRADICTS])} modern record(s) contradict the claim")
+        if h.space == KnowledgeSpace.MODERN_TCM:
+            return GateResult(gate="G8", subject_id=h.id, status="pass", layers=layers,
+                              details=f"{len(modern)} modern record(s) as context for a typed historical–modern association (not validation)")
+        if human:
+            return GateResult(gate="G8", subject_id=h.id, status="pass", layers=layers,
+                              details=f"{len(human)} record(s) in people support the claim")
+        what = "only preclinical support" if by_stance[Stance.SUPPORTS] else "modern records are context, not support"
+        return GateResult(gate="G8", subject_id=h.id, status="warn", layers=layers, details=f"{what}: a claim about people is not carried")
 
 
 def contradicting(state: ResearchObject, hypothesis_id: str) -> list[EvidenceRecord]:

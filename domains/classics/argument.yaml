@@ -1,0 +1,52 @@
+# Discourse markers of medical reasoning (医理论证), for the argument graphs of science/argumentation.py.
+#
+# A passage is cut into clauses at ，。；：！？; a clause's markers say how it stands to its neighbours.  ``lead``
+# markers open a clause, ``tail`` markers close it.  ``direction`` says which way the edge runs: ``from_previous``
+# (the previous clause supports/causes/conditions this one), ``to_previous`` (this clause bears on the previous one),
+# ``to_next`` (this clause bears on the next one).  Regular expressions over the normalised text.  Review and extend.
+relations:
+  inference:     # 故 / 是以 / 所以: the previous clauses are the grounds of this conclusion
+    lead: ["故", "是以", "是故", "所以", "因此", "因而", "于是", "乃知", "可知", "是知", "此其", "斯"]
+    direction: from_previous
+  cause:         # 因 / 由 / 缘: this clause is the cause of the next (因寒而痛); 所致 / 使然 closes an effect
+    lead: ["因", "由", "缘", "为其", "盖因", "皆因", "良由", "推其"]
+    direction: to_next
+  condition:     # 若 / 凡 / 苟: a condition whose consequence follows (then marked by 则, or by a treatment)
+    lead: ["若", "倘", "苟", "凡", "设", "假令", "如其", "其有"]
+    tail: ["者"]
+    direction: to_next
+  consequence:   # 则 / 即 / 必: the consequence of the previous clause
+    lead: ["则", "即", "必", "便", "乃", "然后", "而后", "乃可", "方可"]
+    direction: from_previous
+  contrast:      # 然 / 但 / 虽 / 惟: this clause qualifies or opposes the previous one
+    lead: ["然", "但", "而反", "虽", "惟", "唯", "独", "第", "乃若", "至若", "至于", "反", "非独", "非但", "非特", "不独", "不但", "不惟"]
+    direction: from_previous
+  analogy:       # 犹 / 譬 / 如…然: this clause likens the previous to something known
+    lead: ["犹", "譬如", "譬之", "譬", "比如", "若夫", "如同", "亦犹"]
+    tail: ["之类", "一般"]
+    direction: to_previous
+  rebut:         # 非…也 / 岂 / 不然 / 殊不知: this clause rejects the previous one
+    lead: ["非", "岂", "不然", "殊不知", "何必", "未必", "安得", "焉能", "乌可"]
+    tail: ["非也", "谬矣", "误矣", "非是"]
+    direction: to_previous
+  effect:        # 寒气所致 / 使然 / 之故也: this clause names what caused the previous one
+    tail: ["所致", "使然", "之故也", "之故", "故也"]
+    direction: to_previous
+  define:        # 名为 / 名曰 / 谓之: this clause names what the previous clauses describe
+    lead: ["名为", "名曰", "谓之", "是为", "此为", "是名", "命曰", "此名"]
+    direction: from_previous
+  support:       # 盖 / 以其 / 由于: this clause gives the reason for the previous one (所以然者 announces it)
+    lead: ["盖", "以其", "由于", "缘于", "诚以", "良以", "所以然者", "何以然", "何以故", "何者", "何以言之"]
+    direction: to_previous
+  treatment:     # …主之 / 宜… / 当…: this clause prescribes for the previous (condition, findings or pattern)
+    lead: ["宜", "当", "治宜", "治当", "法当", "法宜", "须", "急", "可与", "与"]
+    tail: ["主之", "治之", "宜之", "与之"]
+    direction: from_previous
+# markers that also work inside a clause (阳胜则热, …故令大便硬): the clause is cut before them when both sides have
+# text, except where they are part of a word (法则, 否则 …)
+inner_markers: ["则", "故"]
+inner_exceptions: ["法则", "规则", "准则", "原则", "守则", "细则", "总则", "否则", "然则", "实则", "是故", "缘故", "何故", "之故", "事故", "故事", "故人", "故乡", "物故", "故意", "故知"]
+# a definition within one clause: A 者，B 也 (the second clause defines the first)
+definition:
+  tail_of_term: "者$"
+  tail_of_gloss: "(?:是)?也$"

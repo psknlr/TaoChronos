@@ -59,7 +59,9 @@ contemporary physicians and modern annotated, translated or reconstructed editio
 reviewed decisions in `corpus/catalog/exclusions.yaml`, an automatic screen for the rest — and recorded with their
 reason; they never enter the store. Republican works (1912–1949) stay, as the 近代 category and the 民国 period.
 Modern editors' paratext is dropped from admitted books. This replaces the earlier choice of storing modern works
-and hiding them by profile.
+and hiding them by profile. *(Amended by [ADR 0007](0007-modern-apparatus-as-layers.md): modern editions kept on
+review enter the store with their editors' work as dated layers or metadata; research reads nothing from 1950 on
+unless a question names its period.)*
 
 **Duplicates.** Most web texts are copies of the 笈成 transcriptions, often converted to simplified characters and
 back. Ingesting a copy adds no witness and inflates every frequency, so each text is compared with the store on

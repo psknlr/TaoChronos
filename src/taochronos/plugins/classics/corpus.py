@@ -6,8 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
-import yaml
-
 from ...protocol.documents import (
     Book,
     CollationStatus,
@@ -20,6 +18,7 @@ from ...protocol.documents import (
     VariantReading,
     YearRange,
 )
+from ...protocol.yamlio import load_yaml
 
 
 @dataclass
@@ -73,7 +72,7 @@ class Corpus:
     @classmethod
     def load(cls, root: str | Path) -> "Corpus":
         root = Path(root)
-        meta = yaml.safe_load((root / "books.yaml").read_text(encoding="utf-8"))
+        meta = load_yaml(root / "books.yaml")
         books: dict[str, Book] = {}
         for raw in meta["books"]:
             editions = [
@@ -120,7 +119,7 @@ class Corpus:
         }
         passages: dict[str, Passage] = {}
         for path in sorted((root / "books").glob("*.yaml")):
-            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+            data = load_yaml(path)
             for block in data if isinstance(data, list) else [data]:
                 for p in cls._parse_block(block, books):
                     if p.id in passages:
@@ -258,6 +257,18 @@ class Corpus:
     def without_books(self, book_ids: Iterable[str]) -> "Corpus":
         drop = set(book_ids)
         return self.subset(pid for pid, p in self._passages.items() if p.book_id not in drop)
+
+    def on_side(self, cutoff: float, side: str) -> "Corpus":
+        """The passages whose whole date range lies ``before`` a cutoff, or ``after`` it (``StoreCorpus.on_side``);
+        an undated passage counts as before, as in the time machine."""
+        if side not in ("before", "after"):
+            raise ValueError(f"side must be 'before' or 'after', not {side!r}")
+
+        def where(p: Passage) -> str:
+            rng = self.year_range(p)
+            return "before" if rng is None else rng.side_of(cutoff)
+
+        return self.subset(pid for pid, p in self._passages.items() if where(p) == side)
 
     def witnesses(self, target: str) -> list[str]:
         """Books that transmit ``target`` — the book itself, or every witness of the work of that id

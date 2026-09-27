@@ -200,7 +200,8 @@ class CorpusStore:
         self.db.execute("DELETE FROM claim_cache WHERE passage_id LIKE ?", (book_id + ".%",))
         return len(rows)
 
-    def add_passages(self, rows: Iterable[dict[str, Any]], normalize: Callable[[str], str]) -> int:
+    def add_passages(self, rows: Iterable[dict[str, Any]], normalize: Callable[[str], str], *, index: bool = True) -> int:
+        """Insert passages; with ``index`` (the default) also their full-text index entries."""
         n = 0
         cur = self.db.cursor()
         for r in rows:
@@ -211,7 +212,8 @@ class CorpusStore:
                  r.get("y_start"), r.get("y_end"), _dump(r["locator"]), _dump(r["temporal"]), r["text"], r.get("punctuation", "none"),
                  _dump(r.get("extra") or {})),
             )
-            cur.execute("INSERT INTO grams(rowid, g) VALUES (?, ?)", (cur.lastrowid, grams(normalize(r["text"]))))
+            if index:
+                cur.execute("INSERT INTO grams(rowid, g) VALUES (?, ?)", (cur.lastrowid, grams(normalize(r["text"]))))
             n += 1
         return n
 
@@ -254,6 +256,7 @@ class StoreCorpus:
         self.root = root
         self.exclude_books = set(exclude_books)
         self.fingerprint_ok = fingerprint is None or self.store.meta("normalizer") in (None, fingerprint)
+        self.edition = self.store.meta("edition") or "full"  # "web": the 要籍语料 the published site carries
         self.books: dict[str, Book] = {}
         self.sources: dict[str, str] = {}
         for bid, source, data in self.store.db.execute("SELECT id, source, data FROM books ORDER BY id"):
@@ -274,13 +277,28 @@ class StoreCorpus:
         self._lock = threading.RLock()
         self._count: int | None = None
         self._chapters: dict[str, str] | None = None
+        self.bounds: tuple[tuple[str, float], ...] = ()  # (side, cutoff) of a time-machine view (on_side)
+        self._book_spans: dict[str, tuple[int, int]] | None = None
 
     # ------------------------------------------------------------ plumbing
-    def _book_filter(self) -> tuple[str, list[str]]:
-        if not self.exclude_books:
-            return "", []
-        marks = ",".join("?" * len(self.exclude_books))
-        return f" AND p.book_id NOT IN ({marks})", sorted(self.exclude_books)
+    def _book_filter(self) -> tuple[str, list[Any]]:
+        """The SQL condition (on ``passages p``) every read path applies: excluded books, and a view's time bounds."""
+        return self.row_filter("p")
+
+    def row_filter(self, alias: str = "p") -> tuple[str, list[Any]]:
+        """`` AND …`` conditions (with their parameters) that keep a ``passages`` row inside this corpus — its excluded
+        books and a view's time bounds — for code that queries the store directly (the study layer), so that it sees
+        what the corpus interface sees.  ``alias`` is the table's alias in the query ("" for none)."""
+        col = f"{alias}." if alias else ""
+        clauses: list[str] = []
+        params: list[Any] = []
+        if self.exclude_books:
+            clauses.append(f"{col}book_id NOT IN ({','.join('?' * len(self.exclude_books))})")
+            params.extend(sorted(self.exclude_books))
+        for side, cutoff in self.bounds:
+            clauses.append(f"{col}y_end < ?" if side == "before" else f"{col}y_start >= ?")
+            params.append(cutoff)
+        return "".join(f" AND {c}" for c in clauses), params
 
     def _row_to_passage(self, row: tuple) -> Passage:
         pid, book_id, edition_id, kind, locator, temporal, text, punctuation, extra = row
@@ -316,11 +334,13 @@ class StoreCorpus:
                     out[pid] = p
                 else:
                     missing.append(pid)
+        extra, params = self._book_filter() if self.bounds else ("", [])
         for i in range(0, len(missing), 500):
             chunk = missing[i: i + 500]
             marks = ",".join("?" * len(chunk))
             with self.store.lock:
-                rows = self.store.db.execute(f"SELECT {self._COLS} FROM passages p WHERE p.id IN ({marks})", chunk).fetchall()
+                rows = self.store.db.execute(f"SELECT {self._COLS} FROM passages p WHERE p.id IN ({marks}){extra}",
+                                             [*chunk, *params]).fetchall()
             for row in rows:
                 if row[1] in self.exclude_books:
                     continue
@@ -350,9 +370,10 @@ class StoreCorpus:
     def has_passage(self, passage_id: str) -> bool:
         if passage_id in self._cache:
             return True
+        extra, params = self._book_filter()
         with self.store.lock:
-            row = self.store.db.execute("SELECT book_id FROM passages WHERE id=?", (passage_id,)).fetchone()
-        return row is not None and row[0] not in self.exclude_books
+            row = self.store.db.execute(f"SELECT 1 FROM passages p WHERE p.id=?{extra}", [passage_id, *params]).fetchone()
+        return row is not None
 
     def passage_ids(self) -> list[str]:
         extra, params = self._book_filter()
@@ -445,9 +466,17 @@ class StoreCorpus:
         with self.store.lock:
             return self.store.db.execute(f"SELECT COUNT(*) FROM passages p WHERE p.kind != 'toc'{where}", params).fetchone()[0]
 
-    def book_passage_count(self, book_id: str) -> int:
+    def book_counts(self) -> dict[str, int]:
+        """Passages per book, for every book of the view, in one query."""
+        extra, params = self._book_filter()
         with self.store.lock:
-            return self.store.db.execute("SELECT COUNT(*) FROM passages WHERE book_id=?", (book_id,)).fetchone()[0]
+            return dict(self.store.db.execute(f"SELECT p.book_id, COUNT(*) FROM passages p WHERE 1{extra} GROUP BY p.book_id",
+                                              params).fetchall())
+
+    def book_passage_count(self, book_id: str) -> int:
+        extra, params = self._book_filter()
+        with self.store.lock:
+            return self.store.db.execute(f"SELECT COUNT(*) FROM passages p WHERE p.book_id=?{extra}", [book_id, *params]).fetchone()[0]
 
     def subset(self, passage_ids: Iterable[str]) -> Corpus:
         ps = {p.id: p for p in self.passages_by_id(passage_ids)}
@@ -455,12 +484,44 @@ class StoreCorpus:
         return Corpus(books, ps, self.external, self.root)
 
     def without_books(self, book_ids: Iterable[str]) -> "StoreCorpus":
-        view = StoreCorpus.__new__(StoreCorpus)
-        view.__dict__.update(self.__dict__)
+        view = self._view()
         view.exclude_books = self.exclude_books | set(book_ids)
         view.books = {k: v for k, v in self.books.items() if k not in view.exclude_books}
+        return view
+
+    def on_side(self, cutoff: float, side: str) -> "StoreCorpus":
+        """The corpus as the time machine sees it: only the passages whose whole date range lies ``before`` a cutoff
+        year — or ``after`` it, from it on — exist (``YearRange.side_of`` of each passage's own range, so a later
+        layer of an earlier book is on its own side).  A passage that may have been written on either side is in
+        neither.  Every read path is bounded — fetch by id, lists, counts, full-text search, and the study layer's own
+        queries of the store through ``row_filter`` — and a book with no passage on that side leaves ``books``.  The shared full-text index still ranks with statistics of the whole
+        store (BM25 weights, bigram document frequencies): no passage of the other side is read, returned or cited,
+        but term frequencies are not re-estimated for the view."""
+        if side not in ("before", "after"):
+            raise ValueError(f"side must be 'before' or 'after', not {side!r}")
+        spans = self.book_spans()
+        view = self._view()
+        view.bounds = (*self.bounds, (side, float(cutoff)))
+        keep = (lambda span: span[1] < cutoff) if side == "before" else (lambda span: span[0] >= cutoff)
+        view.books = {k: v for k, v in self.books.items() if k in spans and keep(spans[k])}
+        return view
+
+    def book_spans(self) -> dict[str, tuple[int, int]]:
+        """Book id → (the latest start, the earliest end) of its passages' date ranges: a book has a passage wholly
+        before a cutoff when the earliest end is before it, and one wholly after when the latest start is not."""
+        if self._book_spans is None:
+            with self.store.lock:
+                rows = self.store.db.execute("SELECT book_id, MAX(y_start), MIN(y_end) FROM passages GROUP BY book_id").fetchall()
+            self._book_spans = {bid: (hi_start, lo_end) for bid, hi_start, lo_end in rows if hi_start is not None and lo_end is not None}
+        return self._book_spans
+
+    def _view(self) -> "StoreCorpus":
+        view = StoreCorpus.__new__(StoreCorpus)
+        view.__dict__.update(self.__dict__)
         view._cache = OrderedDict()
+        view._lock = threading.RLock()
         view._count = None
+        view._chapters = None
         return view
 
     def witnesses(self, target: str) -> list[str]:
@@ -492,11 +553,12 @@ class StoreCorpus:
             out: dict[str, str] = {}
             books = sorted((b for b in self.books.values() if getattr(b, "work", None) in self.CHAPTER_WORKS),
                            key=lambda b: (b.composition.start if b.composition else 0, b.id))
+            extra, params = self._book_filter()
             with self.store.lock:
                 for book in books:
                     rows = self.store.db.execute(
-                        "SELECT DISTINCT json_extract(locator, '$.volume'), json_extract(locator, '$.chapter'), "
-                        "json_extract(locator, '$.section') FROM passages WHERE book_id=?", (book.id,)).fetchall()
+                        "SELECT DISTINCT json_extract(p.locator, '$.volume'), json_extract(p.locator, '$.chapter'), "
+                        f"json_extract(p.locator, '$.section') FROM passages p WHERE p.book_id=?{extra}", [book.id, *params]).fetchall()
                     for raw in (x for row in rows for x in row if x):
                         m = self._CHAPTER.match(raw.strip())
                         if m:
@@ -566,6 +628,17 @@ class StoreCorpus:
                     break
             hits = out
         return hits[:limit] if limit else hits
+
+    def contains_all(self, surfaces: Iterable[str], *, limit: int | None = None) -> list[str]:
+        """Ids of passages whose index holds every one of the surfaces (one FTS AND query), in (year, id) order.
+        Unverified: the index reads runs between marks, so this finds candidates for a check against the text."""
+        parts = [q for q in (fts_phrase(self.normalize(s)) for s in surfaces if s) if q]
+        if not parts:
+            return []
+        where, params = self._where()
+        rows = sorted(self._match(" AND ".join(dict.fromkeys(parts)), where, params, None, False), key=lambda r: (r[2], r[0]))
+        ids = [pid for pid, _, _ in rows]
+        return ids[:limit] if limit else ids
 
     def count(self, surface: str, *, after: float | None = None, before: float | None = None) -> int:
         query = fts_phrase(self.normalize(surface))

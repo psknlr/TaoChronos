@@ -7,6 +7,8 @@ study outputs are made of witnesses, so every statement can be checked against t
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+
 import hashlib
 import json
 import math
@@ -16,11 +18,10 @@ import threading
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Callable, Iterable
-
-import yaml
+from typing import Any, Callable, Iterable, Iterator
 
 from ....protocol.documents import Passage
+from ....protocol.yamlio import load_yaml
 from ..domain import DomainPack
 
 PUNCT = set("，。；：、？！“”‘’（）《》〈〉…—·‧「」『』【】〔〕［］｛｝ 　\n\t,.;:!?()[]{}<>\"'")
@@ -106,6 +107,18 @@ class StudyBase:
         self._entries_db: sqlite3.Connection | None = None
         self._entries_mem: dict[str, list[tuple[str, str, list[str]]]] | None = None
         self._entries_lock = threading.Lock()
+        # the model that reviews what the rules leave uncertain (capabilities/judge.py); None: rules only
+        self.judge: Any = None
+
+    @contextmanager
+    def rules_only(self) -> Iterator[None]:
+        """The steps of a function whose own model phase comes later run on the rules alone (one model call per question,
+        not one per sub-step)."""
+        judge, self.judge = self.judge, None
+        try:
+            yield
+        finally:
+            self.judge = judge
 
     # ------------------------------------------------------------ data files
     def data(self, name: str) -> dict[str, Any]:
@@ -200,9 +213,11 @@ class StudyBase:
         store = getattr(self.corpus, "store", None)
         if store is not None and book_ids:
             marks = ",".join("?" * len(book_ids))
+            extra, params = row_filter(self.corpus)
             with store.lock:
                 for pid, bid, seq, loc in store.db.execute(
-                        f"SELECT id, book_id, seq, locator FROM passages WHERE book_id IN ({marks}) AND kind != 'toc'", book_ids):
+                        f"SELECT id, book_id, seq, locator FROM passages WHERE book_id IN ({marks}) AND kind != 'toc'{extra}",
+                        [*book_ids, *params]):
                     rows.append((pid, bid, seq, json.loads(loc)))
         elif book_ids:
             for i, p in enumerate(self.corpus.passages(book_ids=book_ids)):
@@ -241,11 +256,12 @@ class StudyBase:
         marks = ",".join("?" * len(keys))
         rows = db.execute(f"SELECT raw, book_id, first_seq, last_seq FROM entries WHERE head IN ({marks}) "
                           f"ORDER BY book_id, first_seq LIMIT ?", (*keys, limit)).fetchall()
+        extra, params = row_filter(self.corpus)  # the index covers the store; a view keeps its own passages
         with store.lock:
             for raw, book_id, first, last in rows:
                 ids = [r[0] for r in store.db.execute(
-                    "SELECT id FROM passages WHERE book_id=? AND seq BETWEEN ? AND ? AND kind != 'toc' ORDER BY seq LIMIT ?",
-                    (book_id, first, last, span))]
+                    f"SELECT id FROM passages WHERE book_id=? AND seq BETWEEN ? AND ? AND kind != 'toc'{extra} ORDER BY seq LIMIT ?",
+                    (book_id, first, last, *params, span))]
                 out.append((raw, ids))  # type: ignore[arg-type]
         return [(raw, self.passages(ids)) for raw, ids in out]
 
@@ -311,8 +327,9 @@ class StudyBase:
                 row = store.db.execute("SELECT seq FROM passages WHERE id=?", (p.id,)).fetchone()
                 if row is None:
                     return []
+                extra, params = row_filter(self.corpus)
                 ids = [r[0] for r in store.db.execute(
-                    "SELECT id FROM passages WHERE book_id=? AND seq>? ORDER BY seq LIMIT ?", (p.book_id, row[0], n))]
+                    f"SELECT id FROM passages WHERE book_id=? AND seq>?{extra} ORDER BY seq LIMIT ?", (p.book_id, row[0], *params, n))]
             return self.passages(ids)
         order = [q for q in self.corpus.passages(book_ids=[p.book_id])]
         ids = [q.id for q in order]
@@ -341,9 +358,10 @@ class StudyBase:
     def book_texts(self, book_id: str) -> Iterable[str]:
         store = getattr(self.corpus, "store", None)
         if store is not None:
+            extra, params = row_filter(self.corpus)
             with store.lock:
-                rows = store.db.execute("SELECT text FROM passages WHERE book_id=? AND kind != 'toc' ORDER BY seq",
-                                        (book_id,)).fetchall()
+                rows = store.db.execute(f"SELECT text FROM passages WHERE book_id=? AND kind != 'toc'{extra} ORDER BY seq",
+                                        (book_id, *params)).fetchall()
             return [r[0] for r in rows]
         return [p.text for p in self.corpus.passages(book_ids=[book_id]) if p.kind != "toc"]
 
@@ -356,10 +374,11 @@ class StudyBase:
         store = getattr(self.corpus, "store", None)
         excluded = getattr(self.corpus, "exclude_books", set())
         if store is not None:
+            extra, params = row_filter(self.corpus)
             with store.lock:
                 rows = store.db.execute(
-                    "SELECT book_id, year, COUNT(*), SUM(LENGTH(text)) FROM passages WHERE kind != 'toc' "
-                    "GROUP BY book_id, year").fetchall()
+                    f"SELECT book_id, year, COUNT(*), SUM(LENGTH(text)) FROM passages WHERE kind != 'toc'{extra} "
+                    "GROUP BY book_id, year", params).fetchall()
             for book_id, year, n, chars in rows:
                 if book_id in excluded or book_id not in self.corpus.books:
                     continue
@@ -393,6 +412,13 @@ class StudyBase:
                 "store": str(getattr(store, "path", "")) if store is not None else "demo", "corpus_digest": digest}
 
 
+def row_filter(corpus: Any, alias: str = "") -> tuple[str, list[Any]]:
+    """The conditions a store corpus — or a view of it: excluded books, a time machine's bounds — puts on every
+    ``passages`` row, for the study layer's own queries of the store (none for an in-memory corpus)."""
+    fn = getattr(corpus, "row_filter", None)
+    return fn(alias) if callable(fn) else ("", [])
+
+
 def dated(years: Any) -> tuple[float, float]:
     """Sort key for "earliest": the latest date a witness can have (terminus ante quem), then its earliest — so a book
     dated only by its dynasty (宋, 960–1279) does not come before one dated to a reign (1107–1151)."""
@@ -404,7 +430,7 @@ def dated(years: Any) -> tuple[float, float]:
 @lru_cache(maxsize=16)
 def _load_yaml(path: str) -> dict[str, Any]:
     p = Path(path)
-    return (yaml.safe_load(p.read_text(encoding="utf-8")) or {}) if p.exists() else {}
+    return (load_yaml(p) or {}) if p.exists() else {}
 
 
 __all__ = ["PUNCT", "Period", "StudyBase", "dated", "han_only", "normal_sf", "snippet", "trend_test", "wilson"]

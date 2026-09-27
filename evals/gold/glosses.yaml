@@ -1,0 +1,20 @@
+# GlossEval — sentences in the forms of the commentaries, with the gloss a reader takes from them for the term
+# (CC0, author-constructed on the patterns of the literature).  An empty gloss: the sentence glosses nothing of the
+# term (a clause ending in it, 反折 that is not a 反切).
+cases:
+  - {text: 几几者，伸颈之貌也。, term: 几几, gloss: 伸颈之貌, kind: 者也}
+  - {text: 濈然，汗出貌。, term: 濈然, gloss: 汗出貌, kind: 貌}
+  - {text: 强，群养切。, term: 强, gloss: 群养, kind: 反切}
+  - {text: 痓音炽，又作痉。, term: 痓, gloss: 炽, kind: 音}
+  - {text: 痓当作痉，传写之误也。, term: 痓, gloss: 痉, kind: 校改}
+  - {text: 谵，一作谰。, term: 谵, gloss: 谰, kind: 异文}
+  - {text: 郁冒，犹言昏冒也。, term: 郁冒, gloss: 昏冒, kind: 犹}
+  - {text: 翕翕，谓发热之轻也。, term: 翕翕, gloss: 发热之轻, kind: 谓}
+  - {text: 啬啬者，不足也。, term: 啬啬, gloss: 不足, kind: 者也}
+  - {text: 濈濈然者，程氏云：「连绵也。」, term: 濈然, gloss: 连绵, kind: 者也}
+  - {text: 而反汗出濈濈然者，是转属阳明也。, term: 濈然, gloss: "", kind: none, why: a clause ending in the term}
+  - {text: 痉，脊强反折，瘛疭。, term: 痉, gloss: "", kind: none, why: 反折 is not a 反切}
+  - {text: 项背强几几，反汗出恶风者，桂枝加葛根汤主之。, term: 几几, gloss: "", kind: none}
+  - {text: 恶，影固切，下皆仿此。, term: 恶, gloss: 影固, kind: 反切}
+  - {text: 振振，动摇貌。, term: 振振, gloss: 动摇貌, kind: 貌}
+  - {text: 淅淅者，洒淅恶寒也。, term: 淅淅, gloss: 洒淅恶寒, kind: 者也}

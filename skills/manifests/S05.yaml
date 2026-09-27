@@ -1,0 +1,16 @@
+id: S05
+key: collation
+name: 校勘 Collation
+version: 1.0.0
+owner: classical_scholar
+description: Where a passage recurs in other witnesses, with a collation apparatus (异文, 脱, 衍, 倒) by witness and date.
+inputs: [passages]
+outputs: [apparatus]
+dependencies: [S01]
+requires_llm: none
+deterministic_steps: [concordance over the store, alignment, variant classes, readings by witness]
+llm_steps: []
+calls:
+  - {tool: study.concordance, for_each: passages, limit: 1, args: {passage_id: "{passage_id}"}}
+validators: [each variant is a located reading of a named witness]
+evaluation: {suites: [collation, variant_impact]}

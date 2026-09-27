@@ -12,8 +12,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
-import yaml
-
 from ...protocol.concepts import (
     ConceptMapping,
     HistoricalTerm,
@@ -26,6 +24,8 @@ from ...protocol.concepts import (
 )
 from ...protocol.base import stable_id
 from ...protocol.documents import YearRange
+from ...protocol.yamlio import load_yaml
+from .cruxes import load_cruxes
 
 CATEGORY_PRIORITY = [
     "formula",
@@ -48,7 +48,7 @@ PULSE_QUALITIES = "浮沉迟数滑涩弦紧缓洪大微细弱濡虚实小芤结�
 
 
 def _load(path: Path) -> Any:
-    return yaml.safe_load(path.read_text(encoding="utf-8"))
+    return load_yaml(path)
 
 
 # --------------------------------------------------------------------------- periods
@@ -75,12 +75,14 @@ class Periods:
         )
 
     def period_of(self, year: float | None) -> str | None:
-        if year is None:
+        """The analysis period of a year; years before the first period count in it, years after the last (the
+        modern apparatus of kept editions, 1950 on) belong to none."""
+        if year is None or year >= self.analysis[-1].end:
             return None
         for p in self.analysis:
             if p.contains(year):
                 return p.id
-        return self.analysis[0].id if year < self.analysis[0].start else self.analysis[-1].id
+        return self.analysis[0].id
 
     def dynasty_of(self, year: float | None) -> str | None:
         """The dynasty containing a year (the later one where dynasties overlap, e.g. 南宋 over 金)."""
@@ -158,7 +160,7 @@ class ScriptTable:
 
     # curated / Unihan variants first, then the 笈成 viewer's variant groups, then OpenCC; the first mapping of a
     # character wins
-    FILES = ("ancient_variants.tsv", "jicheng_variants.tsv", "t2s.tsv")
+    FILES = ("ancient_variants.tsv", "jicheng_variants.tsv", "cmeta_variants.tsv", "t2s.tsv")
 
     def __init__(self, root: Path | None = None, files: Iterable[str] | None = None) -> None:
         mapping: dict[str, str] = {}
@@ -586,6 +588,8 @@ class DomainPack:
         self.known_findings = _load(self.root / "known_findings.yaml").get("findings", [])
         self.treatment_verbs: dict[str, float] = {k: float(v) for k, v in self.ontology.get("treatment_verbs", {}).items()}
         self.opposition_markers: list[str] = list(self.ontology.get("opposition_markers", []))
+        # the textual cruxes its commentators found (校勘疑义), consulted by the support reading
+        self.cruxes = load_cruxes(self.root / "cruxes.yaml", self.variants.normalize_text)
 
     def role_of(self, category: str) -> str:
         return self.ontology["categories"].get(category, {}).get("role", category)

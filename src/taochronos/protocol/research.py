@@ -10,8 +10,9 @@ from typing import Any
 from dataclasses import dataclass, field
 
 from .artifacts import OPERATIONAL_ARTIFACT_KINDS, Artifact
-from .base import Model, content_hash, field_dict, field_list
+from .base import Model, canonical_dumps, content_hash, field_dict, field_list, gc_paused, sha256_hex, to_jsonable
 from .claims import Claim
+from .contract import AcceptanceSpec, ConfirmationSpec, default_outputs
 from .documents import YearRange
 from .evidence import EvidenceRecord
 from .hypothesis import Hypothesis, HypothesisReview, Observation
@@ -74,6 +75,11 @@ class GoalSpec(Model):
     stop: StopConfig = field(default_factory=StopConfig)
     profile: str = "full-discovery"
     language: str = "zh"
+    # the executable part of the contract (protocol/contract.py): acceptance judged by validators and experts, the
+    # outputs a research must deliver, and material kept back to confirm what exploration found
+    acceptance: AcceptanceSpec = field(default_factory=AcceptanceSpec)
+    required_outputs: list[str] = field(default_factory=default_outputs)
+    confirmation: ConfirmationSpec | None = None
 
     def digest(self) -> str:
         return content_hash(self)
@@ -108,6 +114,11 @@ class AgentInstance(Model):
 
 @dataclass(kw_only=True)
 class CorpusManifest(Model):
+    """What a research may see.  ``passage_ids`` is the exploration material; three sets are withheld from it:
+    the hold-out (after the contract's hold-out year — a time machine), the confirmation set (material kept back to
+    re-test hypotheses found on the exploration set; only validators read it, during confirmation) and expert-only
+    material (seen by humans).  The kernel keeps withheld material withheld for the whole session."""
+
     book_ids: list[str]
     passage_ids: list[str]
     excluded: dict[str, str] = field_dict()
@@ -116,6 +127,11 @@ class CorpusManifest(Model):
     time_basis: str = "composition"
     warnings: list[str] = field_list()
     frame: dict[str, Any] = field_dict()  # sampling frame of a relevance-scoped manifest (large corpora)
+    confirmation_passage_ids: list[str] = field_list()
+    expert_only_passage_ids: list[str] = field_list()
+
+    def withheld(self) -> set[str]:
+        return set(self.holdout_passage_ids) | set(self.confirmation_passage_ids) | set(self.expert_only_passage_ids)
 
 
 @dataclass(kw_only=True)
@@ -160,6 +176,10 @@ class GateResult(Model):
     status: str  # pass | warn | fail | pending | not_applicable
     score: float | None = None
     details: str = ""
+    # the layers a gate is made of (e.g. G4: quote authenticity, locator, semantic support, scope) and the version of
+    # the subject it was computed on — a result for an earlier version does not count for the current one
+    layers: dict = field_dict()
+    subject_version: str = ""
 
 
 @dataclass(kw_only=True)
@@ -229,6 +249,7 @@ SCIENTIFIC_FIELDS = (
     "rounds",
     "stop",
 )
+OPTIONAL_SCIENTIFIC_FIELDS = ("warrants", "acceptance", "retractions")
 
 
 @dataclass(kw_only=True)
@@ -262,10 +283,19 @@ class ResearchObject(Model):
     rounds: dict[str, dict] = field_dict()
     stop: dict | None = None
     metrics: dict = field_dict()
+    # the executable contract and what follows from it
+    warrants: dict[str, dict] = field_dict()
+    acceptance: dict | None = None  # the latest ContractEvaluation
+    retractions: dict[str, dict] = field_dict()  # evidence id → why and what it invalidated
+    run_manifest: dict | None = None  # reproducibility record (operational: not part of the scientific hash)
 
     def scientific_state(self) -> dict:
-        data = self.to_dict()
-        state = {k: data[k] for k in SCIENTIFIC_FIELDS}
+        # only these fields are serialised: the agents, metrics and manifest are operational and would be dropped
+        state = {k: to_jsonable(getattr(self, k)) for k in SCIENTIFIC_FIELDS}
+        for k in OPTIONAL_SCIENTIFIC_FIELDS:  # hashed once used, so older sessions keep their hashes
+            value = getattr(self, k)
+            if value:
+                state[k] = to_jsonable(value)
         for task in state["task_graph"].values():
             if task.get("status") == "running":  # an interrupted attempt is not scientific state
                 task["status"] = "pending"
@@ -273,7 +303,9 @@ class ResearchObject(Model):
         return state
 
     def state_hash(self) -> str:
-        return content_hash(self.scientific_state())
+        """``content_hash(self.scientific_state())``, computed without a second walk over the serialised tree."""
+        with gc_paused():
+            return sha256_hex(canonical_dumps(self.scientific_state()))
 
     # --- convenience queries used by agents and reports -------------------
     def reviews_for(self, hypothesis_id: str) -> list[HypothesisReview]:

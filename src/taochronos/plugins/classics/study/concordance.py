@@ -19,6 +19,7 @@ import re
 from collections import defaultdict
 from typing import Any
 
+from ..collation.impact import classify
 from .base import StudyBase, dated, han_only
 
 PROBE = 4
@@ -46,17 +47,38 @@ class Concordance:
             probes.append(han[-PROBE:])
         return list(dict.fromkeys(probes))
 
-    def _candidates(self, han: str, exclude: str | None, max_candidates: int) -> tuple[list[str], list[str]]:
+    @staticmethod
+    def _segment_groups(norm: str) -> list[list[str]]:
+        """The probes of each segment of the query's own punctuation (太阳病，发热，汗出 …): the index does not cross a
+        mark, so a clause of short segments is found in punctuated witnesses only through probes that stay within one
+        segment."""
+        return [list(dict.fromkeys(seg[i: i + PROBE] for i in range(0, max(1, len(seg) - PROBE + 1))))
+                for seg in re.split(r"[^\u3400-\u9fff\U00020000-\U0003134f〇〓]+", norm) if len(seg) >= 3]
+
+    @classmethod
+    def _segment_probes(cls, norm: str) -> list[str]:
+        return list(dict.fromkeys(p for group in cls._segment_groups(norm) for p in group))
+
+    def _candidates(self, han: str, exclude: str | None, max_candidates: int, norm: str = "") -> tuple[list[str], list[str]]:
         corpus = self.b.corpus
         large = getattr(corpus, "large", False)
         hits: dict[str, int] = defaultdict(int)
         used: list[tuple[int, str]] = []
-        for probe in self._probes(han):
-            n = corpus.count(probe) if large else len(self.b.find(probe))
+        inner: list[tuple[int, str]] = []
+        groups = [[x for x in g if len(x) < len(han)] for g in self._segment_groups(norm)] if norm else []
+        segs = [x for g in groups for x in g]
+        counts: dict[str, int] = {}
+        for probe in dict.fromkeys(self._probes(han) + segs):
+            n = counts[probe] = corpus.count(probe) if large else len(self.b.find(probe))
             if 0 < n <= MAX_PROBE_HITS:
-                used.append((n, probe))
+                (inner if probe in segs else used).append((n, probe))
         used.sort()
-        used = used[:8]  # the rarest probes carry the evidence
+        inner.sort()
+        # the rarest probe of each segment, so that one variant character (藏 for 脏) or one mark more in a witness does
+        # not hide it from every probe; then the rarest of all
+        each = sorted(min((counts[x], x) for x in g if 0 < counts.get(x, 0) <= MAX_PROBE_HITS) for g in groups
+                      if any(0 < counts.get(x, 0) <= MAX_PROBE_HITS for x in g))
+        used = used[:12] + list(dict.fromkeys(each[:8] + inner[:5]))
         for _, probe in used:
             ids = corpus.contains(probe, verify=False) if large else self.b.find(probe)
             for pid in ids:
@@ -107,7 +129,7 @@ class Concordance:
         if len(q) < 4:
             raise ValueError("the passage to trace needs at least four characters")
         q = q[:400]
-        candidates, probes = self._candidates(q, passage_id, max_candidates)
+        candidates, probes = self._candidates(q, passage_id, max_candidates, norm)
         hits: list[dict[str, Any]] = []
         for p in b.passages(candidates):
             pn = b.normalize(p.text)
@@ -147,13 +169,16 @@ class Concordance:
             base = dict(full[0]) if full else {"quote": raw}
             base_text = full[0]["aligned"] if full else q
         apparatus = self._apparatus(base_text, hits, base)
+        for a in apparatus:  # 异文分级
+            a.update(classify(a["base"], a["reading"], a["context"].replace(a["base"], "〔" + a["base"] + "〕", 1)
+                              if a["base"] else a["context"], b.pack.lexicon, kind="transposition" if a["kind"] == "倒" else None))
         works = {w["work"] or w["book_id"] for w in hits}
         periods: dict[str, int] = defaultdict(int)
         for w in hits:
             periods[w["period"] or "未定"] += 1
         return {
             "query": raw[:400], "normalized": q, "probes": probes, "candidates": len(candidates),
-            "base": base, "hits": hits, "apparatus": apparatus,
+            "base": base, "base_work": base_work, "hits": hits, "apparatus": apparatus,
             "summary": {"witnesses": len(hits), "books": len({w['book_id'] for w in hits}), "works": len(works),
                         "earliest": hits[0] if hits else None, "by_period": dict(periods),
                         "by_relation": {k: sum(1 for w in hits if w["relation"] == k) for k in ("同书异本", "引文", "互见")}},

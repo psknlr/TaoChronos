@@ -5,6 +5,37 @@ data made of *witnesses* — verbatim quotes with book, date, locator and licenc
 
 =================  ==========================================================================================
 concordance        经文互见·集注: where a passage recurs (other copies, quotations, restatements), with a 校勘记
+witnesses          版本与影像见证: a work's transcriptions in the store and its digitised copies in libraries (IIIF records)
+variants / stemma  版本谱系: multi-witness collation of a work (or of a passage's copies and quotations), variant units,
+edition            distances, a neighbour-joining stemma, shared-reading groups, contamination; one edition's profile
+reuse              语义复用: a passage's reuses across the corpus, typed (直接引用 … 转述, 解释性改写, 引而驳之, 套语相似)
+chain              传播链: one passage's witnesses as a tree — each from the earlier witness whose changes it shares
+transmission       思想传播: a work's reception — which later works carry it and how, by period, and through which works
+layers / dating    文本地层: style layers of a work's chapters, change points, outlying chapters; dating evidence per chapter
+authorship         (cited works, late vocabulary, taboo); Burrows' Delta against candidate authors
+cases              医案轨迹: case records read visit by visit (findings, diagnosis, principle, formula, 加减, doses,
+trajectories       response, outcome); the sequences, transitions and outcome associations common to many cases
+argument           医理论证: a passage's reasoning as a graph of marked steps; a work's way of reasoning, compared
+senses             语义演变: a term's senses by period, the date its meaning shifted, candidate senses the curation lacks
+fragments          佚书辑佚: a lost work's fragments gathered from the books that quote it, merged and ordered by volume
+punctuate          句读: marks for 白文 from a model learned on the store's punctuated texts (characters never change),
+                   measured against the editors on held-out works
+commentaries       集注: a clause's commentaries aligned, attributed, dated and compared (驳 从 引, 照录 承袭, 同解 增益 异解)
+disputes           争议: named views rejected or endorsed — about a term, of a physician, or who rejects whom corpus-wide
+clause             条文结构: a clause's parts (condition … formula, composition, preparation … prognosis); a work's forms
+glosses            训诂: a word's glosses (…者…也, 貌, 音, 反切, 当作, 一作) by commentator and period; a book's glossary
+pairs / network    配伍 and 方证网络: drugs prescribed together against chance (lift, PMI, Fisher + BH, groups, periods);
+                   a formula's findings and drugs, a finding's formulas
+entities           实体识别: the entities of a text in context (24 types: 病 证 症 脉 舌 方 药 剂量 炮制 禁忌 医家 注家
+                   学派 学说 书 版本 地 时 …), rules first, ambiguous ones typed by the model with --llm
+translate          释义与今译: original, normalised, punctuated, interpreted (glosses, historical senses) and — with a
+                   model — translated layers; the original never changes, the translation cites its glosses
+places             地域: where physicians came from and works were signed; a school's places; a term's use by region
+                   and period (two-proportion z, BH); GeoJSON points for maps
+names              名称: the names of a drug, formula or disease through time (薯蓣→山药, 玄参→元参), where texts
+                   equate them, and the names the punctuated texts give that the lexicon lacks
+schools            学派: a school's words and formulas against the other works of its time, whom it cites and rejects,
+                   who rejects it; without a school, every school and the school-by-school citation matrix
 formula            方源考: every written-out composition of a formula; original and current versions, 加减,
                    同名异方, 同方异名, dose ratios, doses in the measures of their time, 方歌
 herb               药性源流: 性味, 毒性, 归经, 升降浮沉, 主治 of a drug, book by book; the first statement of each
@@ -19,18 +50,41 @@ dataset            研究数据集: the results as tables with provenance, for a
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any
 
 from ..domain import DomainPack
+from .argument import ArgumentStudy
 from .base import StudyBase
+from .canon import CanonStudy
+from .cases import CaseStudy
+from .chain import ChainStudy
+from .clause import ClauseStructure
+from .commentary import CommentaryStudy
+from .cruxes import CruxStudy
 from .concordance import Concordance
 from .dataset import tables as dataset_tables
+from .disputes import DisputeStudy
+from .entities import EntityRecognizer
 from .formulas import FormulaStudy
+from .fragments import FragmentStudy
+from .glosses import GlossStudy
 from .herbs import HerbStudy
+from .senses import SenseStudy
+from .intertext import IntertextStudy
 from .learning import Learning, anki_tsv
+from .names import NameStudy
 from .network import CitationNetwork
+from .pairs import FormulaHarvest, PairsStudy
+from .places import PlaceStudy
+from .punctuation import PunctuationStudy
+from .schools import SchoolStudy
+from .stemma import StemmaStudy
+from .stratigraphy import StratigraphyStudy
 from .taboo import TabooStudy
 from .terms import TermStudy
+from .translate import TranslationStudy
+from .witnesses import WitnessStudy
 
 
 class StudyService(StudyBase):
@@ -45,6 +99,28 @@ class StudyService(StudyBase):
         self._terms = TermStudy(self)
         self._network = CitationNetwork(self)
         self._learning = Learning(self, self._formulas, self._herbs, self._terms, self._network)
+        self._stemma = StemmaStudy(self)
+        self._intertext = IntertextStudy(self, self._concordance, self._stemma)
+        self._strata = StratigraphyStudy(self, self._stemma, self._taboo)
+        self._cases = CaseStudy(self)
+        self._argument = ArgumentStudy(self, self._stemma)
+        self._senses = SenseStudy(self)
+        self._fragments = FragmentStudy(self)
+        self._witnesses = WitnessStudy(self, self._stemma)
+        self._punct = PunctuationStudy(self)
+        self._commentary = CommentaryStudy(self, self._concordance)
+        self._cruxes = CruxStudy(self, self._commentary)
+        self._disputes = DisputeStudy(self, self._commentary, self._network)
+        self._clause = ClauseStructure(self, self._punct)
+        self._glosses = GlossStudy(self, self._commentary)
+        self._pairs = PairsStudy(self, FormulaHarvest(self, self._formulas))
+        self._schools = SchoolStudy(self, self._network, self._pairs.h)
+        self._names = NameStudy(self)
+        self._canon = CanonStudy(self, self._network)
+        self._chain = ChainStudy(self, self._concordance)
+        self._entities = EntityRecognizer(self)
+        self._places = PlaceStudy(self, self._network)
+        self._translate = TranslationStudy(self, self._punct, self._glosses, self._entities)
 
     @property
     def metrology(self) -> Any:
@@ -77,6 +153,14 @@ class StudyService(StudyBase):
         out["lineage"] = self._network.lineage(self.cache_dir())
         return out
 
+    def canon(self, query: str | None = None, **kw: Any) -> dict[str, Any]:
+        """要籍: the works of the ranked list (corpus/catalog/canon.yaml), each marked with whether this corpus holds it."""
+        return self._canon.lookup(query or "", **kw)
+
+    def canon_rank(self, top: int = 350) -> dict[str, Any]:
+        """Rank the works of this corpus by how they are cited (for ``study canon --write-catalog``)."""
+        return self._canon.rank(top, self.cache_dir())
+
     def cards(self, *, book: str | None = None, formulas: list[str] = (), herbs: list[str] = (), term: str | None = None,
               limit: int = 60) -> dict[str, Any]:
         cards: list[dict[str, Any]] = []
@@ -87,6 +171,183 @@ class StudyService(StudyBase):
         if term:
             cards += self._learning.term_cards(term)
         return {"cards": cards, "anki_tsv": anki_tsv(cards), "count": len(cards)}
+
+    # ------------------------------------------------------------ computational philology
+    def variants(self, work: str | None = None, *, text: str | None = None, passage_id: str | None = None,
+                 **kw: Any) -> dict[str, Any]:
+        """The apparatus of a work's witnesses — or, with ``text`` / ``passage_id``, of a passage's copies and
+        quotations across the corpus."""
+        if text or passage_id:
+            return self._stemma.passage(text, passage_id, concordance=self._concordance,
+                                        **{k: v for k, v in kw.items() if k in ("min_coverage", "max_witnesses")})
+        return self._stemma.variants(work, **kw)
+
+    def stemma(self, work: str | None = None, **kw: Any) -> dict[str, Any]:
+        out = self._stemma.stemma(work, **kw)
+        self._edition_floors(out)
+        return out
+
+    def edition(self, book: str, **kw: Any) -> dict[str, Any]:
+        return self._stemma.edition(book, **kw)
+
+    def witnesses(self, work: str, **kw: Any) -> dict[str, Any]:
+        """Every witness of a work: its transcriptions in the store and the digitised copies in libraries (IIIF)."""
+        return self._witnesses.run(work, **kw)
+
+    def tei(self, work: str | None = None, **kw: Any) -> str:
+        return self._stemma.tei(work, **kw)
+
+    def reuse(self, text: str | None = None, passage_id: str | None = None, **kw: Any) -> dict[str, Any]:
+        """Typed reuses of a passage across the corpus (semantic reuse, two stages: candidates, then rules)."""
+        return self._intertext.reuse(text, passage_id, **kw)
+
+    def reuse_pair(self, source: str | None = None, target: str | None = None, *, source_id: str | None = None,
+                   target_id: str | None = None) -> dict[str, Any]:
+        """The reuse type of one passage in another, with its features and the rule that fired."""
+        return self._intertext.compare(source or "", target or "", source_id=source_id, target_id=target_id)
+
+    def transmission(self, work: str, **kw: Any) -> dict[str, Any]:
+        """A work's reception: typed reuse of its clauses in later works, by period, with the channels."""
+        return self._intertext.transmission(work, cache_dir=self.cache_dir(), **kw)
+
+    def layers(self, work: str | None = None, **kw: Any) -> dict[str, Any]:
+        """Style layers of a work's chapters, change points and outlying chapters."""
+        return self._strata.layers(work, **kw)
+
+    def dating(self, work: str | None = None, **kw: Any) -> dict[str, Any]:
+        """Dating evidence chapter by chapter: cited works, late vocabulary, taboo characters of the witness."""
+        return self._strata.dating(work, **kw)
+
+    def authorship(self, text: str | None = None, **kw: Any) -> dict[str, Any]:
+        """Burrows' Delta of a text (or a book, or one of its chapters) against candidate works."""
+        return self._strata.authorship(text, **kw)
+
+    def cases(self, book: str | None = None, *, disease: str | None = None, books: list[str] | None = None,
+              limit: int = 200) -> dict[str, Any]:
+        """Case records read visit by visit — of one book, or filed under a disease across the case collections."""
+        records = self._cases.cases(book, disease=disease, books=books, limit=limit)
+        return {"book": book, "disease": disease, "count": len(records), "cases": [r.to_dict() for r in records],
+                "outcomes": dict(Counter(r.outcome or "unrecorded" for r in records))}
+
+    def trajectories(self, disease: str | None = None, **kw: Any) -> dict[str, Any]:
+        """Sequences, transitions and outcome associations of treatment across case records."""
+        return self._cases.trajectories(disease, **kw)
+
+    def argument(self, text: str | None = None, passage_id: str | None = None, *, work: str | None = None,
+                 against: str | None = None, **kw: Any) -> dict[str, Any]:
+        """A passage's argument graph; a work's way of reasoning (``work``); two works compared (``work``, ``against``)."""
+        if work and against:
+            return self._argument.compare(work, against, **kw)
+        if work:
+            out = self._argument.profile(work, **kw)
+            out.pop("_counts", None)
+            return out
+        return self._argument.graph(text, passage_id)
+
+    def senses(self, term: str, **kw: Any) -> dict[str, Any]:
+        """A term's senses by period, the change point of their shares, candidate senses and the neighbourhood."""
+        return self._senses.run(term, **kw)
+
+    def fragments(self, work: str, *, exclude_books: list[str] | None = None, verify_against: list[str] | None = None,
+                  **kw: Any) -> dict[str, Any]:
+        """A lost work's fragments from the books that quote it; with ``verify_against`` (a surviving text's book
+        ids), how much of the reconstruction is in it and how much of it is recovered."""
+        if verify_against == ["*"]:  # the surviving work itself: all its witnesses
+            verify_against = [b for ids in self._stemma.witness_sets(work) for b in ids]
+        out = self._fragments.run(work, exclude_books=(exclude_books or []) + (verify_against or []), **kw)
+        if verify_against:
+            out["verification"] = self._fragments.verify(out, verify_against)
+        for f in out["fragments"]:
+            f.pop("_han", None)
+        return out
+
+    def punctuate(self, text: str | None = None, passage_id: str | None = None, **kw: Any) -> dict[str, Any]:
+        """句读: a text (or a passage) punctuated by the model learned from the store's punctuated texts — marks
+        only, every character kept; a punctuated input is stripped, punctuated again and compared with its editors."""
+        return self._punct.run(text, passage_id, **kw)
+
+    def commentaries(self, text: str | None = None, passage_id: str | None = None, **kw: Any) -> dict[str, Any]:
+        """集注: the commentaries on a clause across the commentary literature — aligned to the clause, attributed,
+        dated and compared (explicit rejection and approval of named predecessors, shared wording, the concepts each
+        reading adds, consensus and singular readings)."""
+        return self._commentary.run(text, passage_id, **kw)
+
+    def cruxes(self, text: str | None = None, passage_id: str | None = None, *, work: str | None = None,
+               limit: int | None = None) -> dict[str, Any]:
+        """校勘疑义: what the commentators say is wrong with the words of a clause (transposed, miswritten, added,
+        lost) — for one clause, or, with ``work``, the registry of cruxes over every clause of its base witness."""
+        if work:
+            return self._cruxes.harvest(work, limit=limit)
+        return self._cruxes.clause(text, passage_id)
+
+    def disputes(self, term: str | None = None, *, person: str | None = None, **kw: Any) -> dict[str, Any]:
+        """争议: named views rejected (or endorsed) in the literature — about a term, of a person, or, with neither,
+        who rejects whom across the corpus."""
+        return self._disputes.run(term, person=person, **kw)
+
+    def clause(self, text: str | None = None, passage_id: str | None = None, *, work: str | None = None,
+               **kw: Any) -> dict[str, Any]:
+        """条文结构: the parts of a clause (condition, disease, findings, pulse, pattern, principle, formula, composition,
+        preparation, administration, modification, contraindication, prognosis); with ``work``, the forms its
+        clauses take."""
+        if work:
+            return self._clause.profile(work, **kw)
+        return self._clause.run(text, passage_id)
+
+    def glosses(self, term: str | None = None, *, book: str | None = None, **kw: Any) -> dict[str, Any]:
+        """训诂: the glosses of a word (…者…也, …貌, 音, 反切, 读为, 当作, 一作) by who gave them and when; with
+        ``book``, the glossary of a commentary."""
+        return self._glosses.run(term, book=book, **kw)
+
+    def pairs(self, herb: str | None = None, **kw: Any) -> dict[str, Any]:
+        """配伍: drug pairs prescribed together against chance (support, confidence, lift, PMI, Fisher + BH), the
+        partners of one drug and their periods, the groups of drugs that hold together."""
+        return self._pairs.pairs(herb, **kw)
+
+    def network(self, target: str | None = None, **kw: Any) -> dict[str, Any]:
+        """方证网络: a formula's findings and drugs, a finding's formulas, or the strongest formula–finding links."""
+        return self._pairs.network(target, **kw)
+
+    def schools(self, school: str | None = None, **kw: Any) -> dict[str, Any]:
+        """学派: what a school's works share against the other works of their time (words, formulas), whom they cite,
+        whom they reject and who rejects them; without a school, every school and the school-by-school matrices."""
+        return self._schools.run(school, cache=self.cache_dir(), **kw)
+
+    def chain(self, text: str | None = None, passage_id: str | None = None, **kw: Any) -> dict[str, Any]:
+        """传播链: a passage's witnesses ordered into a tree — each hangs from the earlier witness whose changes it shares
+        most (shared innovations), else from the earliest; with the evidence and the margin of each edge."""
+        return self._chain.run(text, passage_id, **kw)
+
+    def entities(self, text: str | None = None, passage_id: str | None = None, **kw: Any) -> dict[str, Any]:
+        """实体识别: the entities of a text in context — disease, pattern, finding, pulse, tongue, cause, mechanism,
+        treatment, formula, drug, dose, preparation, contraindication, physician, commentator, school, theory, book,
+        edition, place, time — by lexicon, lists and patterns, the ambiguous ones kept with their alternatives (and
+        typed by the model with ``--llm``, which also lists what the rules missed)."""
+        return self._entities.run(text, passage_id, **kw)
+
+    def translate(self, text: str | None = None, passage_id: str | None = None, **kw: Any) -> dict[str, Any]:
+        """释义与今译: a text in five layers — original (never changed), normalised, punctuated, interpreted (the
+        commentators' glosses and the curated historical senses), and, with a model, a translation that cites the
+        glosses it relies on and passes the presentism guardrail."""
+        return self._translate.run(text, passage_id, **kw)
+
+    def places(self, target: str | None = None, **kw: Any) -> dict[str, Any]:
+        """地域 (time × person × place): physicians and works by region and period; a person's place (curated, stated,
+        signed); a school's places; a term's use by region, period by period; one place's physicians and works."""
+        return self._places.run(target, **kw)
+
+    def names(self, term: str, **kw: Any) -> dict[str, Any]:
+        """名称: the names of a drug, formula or disease through time — the works writing each name period by period,
+        the first to write it, when the preferred name changes, where texts equate two names, names the lexicon lacks."""
+        return self._names.run(term, **kw)
+
+    def _edition_floors(self, out: dict[str, Any]) -> None:
+        """Each witness's lower date bound from its taboo characters (a witness in volumes: the latest)."""
+        for w in out.get("witnesses", []):
+            floors = [self._taboo.profile(bid).get("edition_floor") for bid in (w.get("book_id") or "").split("+")
+                      if bid in self.corpus.books]
+            floors = [f for f in floors if f is not None]
+            w["edition_floor"] = max(floors) if floors else None
 
     def reading(self, topic: str) -> dict[str, Any]:
         return self._learning.reading_path(topic)

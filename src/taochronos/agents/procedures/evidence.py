@@ -163,7 +163,34 @@ def commit(ctx: Any, output: dict[str, Any]) -> str:
     records = [accepted[k] for k in sorted(accepted)]
     if records:
         ctx.emit(EventType.EVIDENCE_RETRIEVED, {"records": records}, generated=[r["id"] for r in records])
+    proposals = _propose_closures(ctx, records)
     targeted = sum(1 for r in records if r.get("hypothesis_id"))
     books = len({r["book_id"] for r in records})
     note = f"; {'; '.join(ctx.notes[:3])}" if ctx.notes else ""
-    return f"{len(records)} evidence records from {books} books ({targeted} hypothesis-linked); {rejected} rejected{note}"
+    return (f"{len(records)} evidence records from {books} books ({targeted} hypothesis-linked); {rejected} rejected"
+            + (f"; {proposals} objection(s) proposed for closure with the new evidence" if proposals else "") + note)
+
+
+SOURCE_CHECKS = ("single_source", "transcription_dependence")
+
+
+def _propose_closures(ctx: Any, records: list[dict[str, Any]]) -> int:
+    """New supporting witnesses may answer an objection about independent sources.  The agent only *proposes* that
+    (basis: new evidence); a validator re-runs the check with the evidence and closes the objection only if it passes."""
+    new_by_h: dict[str, list[str]] = {}
+    for r in records:
+        if r.get("hypothesis_id") and r.get("stance") == Stance.SUPPORTS.value:
+            new_by_h.setdefault(r["hypothesis_id"], []).append(r["id"])
+    n = 0
+    for hid, ids in sorted(new_by_h.items()):
+        reviews = ctx.state.reviews_for(hid)
+        if not reviews:
+            continue
+        latest = max(reviews, key=lambda rv: (rv.round, rv.id))
+        for o in latest.objections:
+            if o.status == "raised" and o.check in SOURCE_CHECKS:
+                ctx.emit(EventType.OBJECTION_RESOLUTION_PROPOSED, {
+                    "hypothesis_id": hid, "review_id": latest.id, "objection_id": o.id, "basis": "new_evidence",
+                    "evidence_ids": ids, "rationale": f"{len(ids)} new supporting record(s) from further witnesses"})
+                n += 1
+    return n

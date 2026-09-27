@@ -13,6 +13,9 @@ generic_references:
   和剂方:
     note: 《太平惠民和剂局方》的简称
     candidates: {hejiju: 1.0}
+  本经:
+    note: 《本经》指《神农本草经》（不是清代张璐的《本经逢原》：书名的前缀不作简称）
+    candidates: {shennong: 1.0}
 patterns:
   - {regex: "《([^》]{1,12})》", kind: title}
   - {regex: "(经)(曰|云)", kind: generic}

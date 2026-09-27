@@ -1,0 +1,10 @@
+# WorkflowEval (V2 runtime): the skills a question must call for, and the ones it must not (dev cases).
+questions:
+  - {q: 消渴的概念如何随时代演变？与现代糖尿病有何异同？, need: [S01, S09, S10, S11, S12, S15], absent: [S14]}
+  - {q: 2型糖尿病患者中，使用黄连素与糖尿病肾病的关系, need: [S01, S10, S12, S13, S14, S15], absent: [S05]}
+  - {q: 桂枝汤条文的版本异文, need: [S01, S04, S05, S15], absent: [S10, S13]}
+  - {q: 「几几」何意？注家如何训诂？, need: [S01, S03, S15], absent: [S12]}
+  - {q: 肾气丸在历代医书中的引用与流传, need: [S01, S06, S09, S15], absent: [S14]}
+  - {q: 山药与薯蓣的异名与避讳, need: [S01, S08, S15], absent: [S12]}
+  - {q: 黄连治消渴的古籍记载与现代研究证据, need: [S01, S10, S12, S13, S15], absent: [S14]}
+  - {q: 《金匮要略》肠痈与现代阑尾炎的对应, need: [S01, S10, S11, S12, S15], absent: [S14]}

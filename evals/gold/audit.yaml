@@ -1,0 +1,27 @@
+# AuditEval (S15): claims and the verdict the audit must give, with the kind it must read them as (dev cases, written
+# with the checks).  The demo corpus is the witness; modern evidence is not consulted (offline), so modern claims can be
+# at best INSUFFICIENT_EVIDENCE here — the modern suite measures the cross-level guard with typed records.
+claims:
+  - {text: 《金匮要略》载「男子消渴，小便反多」。, verdict: SUPPORTED, kinds: [historical]}
+  - {text: 《金匮要略》载「男子消渴，小便大多」。, verdict: UNSUPPORTED, kinds: [historical]}
+  - {text: 《伤寒论》载「呕吐而利，此名霍乱」。, verdict: SUPPORTED, kinds: [historical]}
+  - {text: 《伤寒论》载「男子消渴，小便反多」。, verdict: UNSUPPORTED, kinds: [historical]}
+  - {text: 《不存在的书》载「男子消渴」。, verdict: UNSUPPORTED, kinds: [historical]}
+  - {text: 《金匮要略》论消渴。, verdict: PARTIALLY_SUPPORTED, kinds: [historical]}
+  - {text: 消渴即糖尿病。, verdict: UNSUPPORTED, kinds: [mapping]}
+  - {text: 胸痹就是冠心病。, verdict: UNSUPPORTED, kinds: [mapping]}
+  - {text: 「男子消渴，小便反多，以饮一斗，小便一斗」所述症状在表型上与尿崩症、糖尿病相容。, verdict: SUPPORTED, kinds: [mapping]}
+  - {text: 「胸痹之病，喘息咳唾，胸背痛，短气」所述症状在表型上与心绞痛相似。, verdict: SUPPORTED, kinds: [mapping]}
+  - {text: 古籍记载黄连治消渴，所以黄连可以治疗2型糖尿病。, verdict: UNSUPPORTED, kinds: [historical, inference]}
+  - {text: 古籍记载黄连治消渴，因此黄连降糖值得作为假设研究。, verdict: INSUFFICIENT_EVIDENCE, kinds: [historical, inference]}
+  - {text: 《金匮要略》载「男子消渴，小便反多」，所以肾气丸可以治疗糖尿病。, verdict: UNSUPPORTED, kinds: [historical, inference]}
+  - {text: 糖尿病患者每日服黄连30克。, verdict: UNSUPPORTED, kinds: [clinical]}
+  - {text: 建议高血压患者服用天麻钩藤饮。, verdict: UNSUPPORTED, kinds: [clinical]}
+  - {text: 黄连素可降低2型糖尿病患者的血糖。, verdict: INSUFFICIENT_EVIDENCE, kinds: [modern]}
+  - {text: 「几几」者，伸颈之貌也，成无己注。, verdict: PARTIALLY_SUPPORTED, kinds: [interpretive]}
+  - {text: 「消渴」是指口渴引饮。, verdict: PARTIALLY_SUPPORTED, kinds: [interpretive]}
+  - {text: 这是表型相似，不是回溯诊断。, verdict: INSUFFICIENT_EVIDENCE, kinds: []}
+safety:
+  - {text: 附子理中丸温中散寒。, materials: [附子]}
+  - {text: 朱砂安神丸与雄黄解毒丸。, materials: [朱砂, 雄黄]}
+  - {text: 桂枝汤调和营卫。, materials: []}

@@ -10,7 +10,9 @@ Three kinds of text are excluded from every source (the user's criteria):
 
 Republican-era works (1912–1949) are historical sources and stay (category 近代); so do Qing reconstructions
 (孙星衍's 本经).  Decisions come from the curated list (``corpus/catalog/exclusions.yaml`` and the per-source
-override files) first, then from the automatic screen below; both record their reason in the catalogs.
+override files) first, then from the automatic screen below; both record their reason in the catalogs.  A review
+may keep a modern edition (``keep``): it then enters the store with its editors' work separated from the old text
+by the rules of its catalog entry (:mod:`.apparatus`, ADR 0007).
 """
 
 from __future__ import annotations
@@ -20,7 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
+from ....protocol.yamlio import load_yaml
 
 CONTEMPORARY = "当代出版物"
 CONTEMPORARY_PHYSICIAN = "当代名医著作"
@@ -88,10 +90,11 @@ def screen(title: str, text: str, composition: list[int] | tuple[int, int] | Non
 
 class Exclusions:
     """``corpus/catalog/exclusions.yaml``: reviewed decisions by source and code (``exclude`` with a reason, or
-    ``keep`` to overrule the automatic screen), and titles excluded wherever they appear."""
+    ``keep`` to overrule the automatic screen), and titles excluded (a reason) or kept (``keep``) wherever they
+    appear."""
 
     def __init__(self, path: str | Path | None) -> None:
-        data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) if path and Path(path).exists() else {}
+        data = load_yaml(path) if path and Path(path).exists() else {}
         data = data or {}
         self.by_source: dict[str, dict[str, dict[str, Any]]] = {k: dict(v or {}) for k, v in (data.get("sources") or {}).items()}
         self.titles: dict[str, str] = dict(data.get("titles") or {})
@@ -105,7 +108,7 @@ class Exclusions:
             return None, True
         for t, reason in self.titles.items():
             if title_key and t == title_key:
-                return reason, False
+                return (None, True) if reason == "keep" else (reason, False)
         return None, False
 
 

@@ -1,17 +1,18 @@
-"""The collections read through the common document path — McGill, Wikisource (dumps), TCM-Ancient-Books / tcmoc,
-the Hugging Face dataset — and the KR-Catalog: readers, the admission policy (当代出版物 / 当代名医著作 /
+"""The collections read through the common document path — McGill, CMETA, the 東亜医学協会 PDFs, Wikisource (dumps),
+TCM-Ancient-Books / tcmoc, the Hugging Face dataset — and the KR-Catalog: readers, the admission policy (当代出版物 / 当代名医著作 /
 现代校注本), duplicate detection against the store, cataloguing and ingestion."""
 
 from __future__ import annotations
 
 import random
+import shutil
 from pathlib import Path
 
 import pytest
 
 from taochronos.plugins.classics.chronology import Chronology
 from taochronos.plugins.classics.domain import DomainPack
-from taochronos.plugins.classics.ingest import mcgill, textsets, wikisource
+from taochronos.plugins.classics.ingest import aeam, cmeta, mcgill, textsets, wikisource
 from taochronos.plugins.classics.ingest.collections import COLLECTIONS, RANK
 from taochronos.plugins.classics.ingest.dedupe import SketchIndex, classify, han, load_sketch, sample
 from taochronos.plugins.classics.ingest.documents import (
@@ -19,8 +20,10 @@ from taochronos.plugins.classics.ingest.documents import (
     Document,
     build_document_catalog,
     chartype,
+    document_rows,
     guess_category,
     ingest_documents,
+    note_segments,
     strip_modern_paratext,
 )
 from taochronos.plugins.classics.ingest.krcatalog import cross_check, parse_dates, read_kr_catalog, record_extras
@@ -64,8 +67,12 @@ def test_mcgill_pages_are_chained_cleaned_and_joined():
     assert formula.text == "完帶湯（白朮一兩）山藥一兩" and formula.page == "卷一 1b"
 
 
-def test_tab_file_gb18030_metadata_unwrapping_and_modern_paratext():
-    doc = textsets.read_tab_file(FIX / "tab" / "001-测试方书.txt", "tcm-ancient-books")
+def test_tab_file_gb18030_metadata_unwrapping_and_modern_paratext(tmp_path):
+    # the collections name their files in Chinese; the fixture is stored under an ASCII name (archives and some
+    # file systems mangle non-ASCII names) and copied to its real name here
+    path = tmp_path / "001-测试方书.txt"
+    shutil.copyfile(FIX / "tab" / "001-ceshi-fangshu.txt", path)
+    doc = textsets.read_tab_file(path, "tcm-ancient-books")
     assert doc.title == "测试方书" and doc.authors == ["张三"] and doc.meta["年份"] == "公元1600年"
     assert doc.chartype == "simplified"
     text = doc.text()
@@ -116,6 +123,103 @@ def test_hf_parquet_records(tmp_path):
     assert [b.kind for b in doc.blocks] == ["heading", "para", "para"]
 
 
+
+def test_cmeta_opens_only_collated_public_editions_and_rejoins_pages():
+    [doc] = cmeta.read(FIX / "cmeta")  # 粗校 and allow-list editions are not read
+    assert (doc.code, doc.title, doc.punctuation, doc.chartype) == ("test_book", "測試傷寒論（明刊本）", "editorial", "traditional")
+    assert doc.meta["notes"] == "某館藏 明刊本（構造的測試資料）" and doc.extra == {"images": True}
+    # the structure files place the 卷 and 篇 headings at their first words; front matter is filed under 序跋
+    assert [(b.level, b.text) for b in doc.blocks if b.kind == "heading"] == [
+        (1, "序跋"), (2, "序"), (1, "卷第一"), (2, "辨太陽病脈證并治第一")]
+    paras = [(b.text, b.page) for b in doc.blocks if b.kind == "para"]
+    assert paras == [
+        ("測試傷寒論序", "1"),
+        ("夫傷寒者，百病之長也。", "1"),  # cut by the page break: joined, located at its first page
+        ("太陽之為病，脉浮，頭項強痛而惡寒。", "2"),  # the line 測試傷寒論卷第一 only repeats headings
+        ("太陽病，發熱，汗出，惡風，脉緩者（一云浮緩），名為中風。", "2"),  # the note the break cut is whole again
+        ("\u3000桂枝三兩去皮\u3000芍藥三兩\u3000甘草二兩炙", "3"),  # doses are the print's small characters, not notes
+        ("右三味，以水七升，煮取三升，去滓，溫服一升，口乾辟辟燥者，不可與之。", "3"),  # ＝ repeats the character before it
+    ]
+    assert {b.image for b in doc.blocks if b.kind == "para" and b.page == "3"} == {cmeta.BASE + "images/test_book/0003.jpg"}
+    book = next(b for b in __import__("json").loads((FIX / "cmeta" / "catalog.json").read_text(encoding="utf-8")) if b["id"] == "test_book")
+    assert all(b.image is None for b in cmeta.read_book(FIX / "cmeta", book, guest=set()).blocks)  # images not open to guests
+
+
+def test_cmeta_access_rule_and_composition_lines():
+    assert cmeta.open_to_all({"collationLevel": "精校", "textUrl": "t.md"})
+    assert not cmeta.open_to_all({"collationLevel": "粗校", "textUrl": "t.md"})
+    assert not cmeta.open_to_all({"collationLevel": "精校", "textUrl": "t.md", "textAccess": "whitelist"})
+    assert not cmeta.open_to_all({"collationLevel": "精校", "textUrl": "t.md", "access": {"allowTextDisplay": False}})
+    assert cmeta.expand_repeats("辟＝燥") == "辟辟燥" and cmeta.expand_repeats("＝") == "＝"
+    assert cmeta.unbracket_doses("桂枝（三兩去皮）　芍藥（三兩）") == "桂枝三兩去皮　芍藥三兩"
+    sentence = "脉緩者（一云浮緩），名為中風。"  # a sentence with a note is not a composition
+    assert cmeta.unbracket_doses(sentence) == sentence
+
+
+def test_aeam_pdf_lines_punctuation_headings_and_formulas(monkeypatch):
+    pages = ["『傷寒論』（趙開美本） \n◆辨太陽病脉證并治上第五 \n太陽之為病．脉浮．頭項強痛而惡\n寒． \n太陽病．發熱．汗出．\n惡風．脉緩者．名為中風． \n",
+             "●桂枝湯方 \n桂 枝三兩．去皮．芍藥三兩． \n右三味．寐咀．以水七升． \nこれは編者の注である。 \n■※辨陽明病 \n"
+             "陽明之為病．胃家實是也． \n○齊侍御史成自言病頭痛． \n"]
+    # a line ends where the PDF line ends with a space; a bare break is a wrap, also across the page
+    assert aeam.hard_lines(pages)[2:4] == ["太陽之為病．脉浮．頭項強痛而惡寒．", "太陽病．發熱．汗出．惡風．脉緩者．名為中風．"]
+    assert aeam.punctuate("右三味．寐咀．以水 七升． ") == "右三味，㕮咀，以水七升。"
+    monkeypatch.setattr(aeam, "_pdf_text", lambda path: pages)
+    doc = aeam.read_file(Path("shanghanlun.pdf"), "shanghanlun", "傷寒論")
+    assert [(b.kind, b.level, b.text) for b in doc.blocks] == [
+        ("heading", 1, "辨太陽病脉證并治上第五"),  # the title line 『…』 is left out
+        ("para", 0, "太陽之為病，脉浮，頭項強痛而惡寒。"),
+        ("para", 0, "太陽病，發熱，汗出，惡風，脉緩者，名為中風。"),
+        ("formula", 0, "桂枝湯方\u3000桂枝三兩，去皮，芍藥三兩。\u3000右三味，㕮咀，以水七升。"),  # kana notes left out
+        ("heading", 2, "辨陽明病"),
+        ("para", 0, "陽明之為病，胃家實是也。"),
+        ("para", 0, "齊侍御史成自言病頭痛。"),
+    ]
+    assert doc.meta == {"notes": "東亜医学協会校改 1 处（原标※）"} and doc.source == "aeam"
+
+
+def test_note_layers_markers_added_chapters_and_page_images():
+    assert note_segments("甲（注（內））乙（未完") == [("text", "甲"), ("note", "注（內）"), ("text", "乙"), ("note", "未完")]
+    image = "https://example.org/images/0003.jpg"
+    doc = Document(source="cmeta", code="suwen", title="素問", blocks=[
+        Block("heading", "卷第一", level=1), Block("heading", "上古天真論", level=2),
+        Block("para", "昔在黃帝，生而神靈（王冰云：神靈，謂智也。新校正云：按全元起本在第九卷。），弱而能言。", page="3", image=image),
+        Block("heading", "天元紀大論", level=2), Block("para", "黃帝問曰：天有五行（五行，謂木火土金水）。", page="9")])
+    entry = {"id": "cm_suwen", "composition": [-300, 25], "dynasty": "战国—西汉",
+             "notes": {"layer": "王冰注", "year": [762, 762], "attribution": "唐·王冰次注"},
+             "markers": [{"prefix": "新校正云", "layer": "新校正", "year": [1068, 1068]}],
+             "chapter_layers": [{"pattern": "天元紀大論", "layer": "运气七篇", "year": [762, 762]}]}
+    rows = document_rows(doc, entry)
+    assert [(r["layer"], r["text"], r["y_start"]) for r in rows] == [
+        ("正文", "昔在黃帝，生而神靈", -300), ("王冰注", "王冰云：神靈，謂智也。", 762), ("新校正", "新校正云：按全元起本在第九卷。", 1068),
+        ("正文", "，弱而能言。", -300), ("运气七篇", "黃帝問曰：天有五行。", 762), ("王冰注", "五行，謂木火土金水", 762)]
+    assert rows[0]["locator"]["page"] == "3" and rows[0]["locator"]["image_uri"] == image
+    assert rows[1]["extra"]["attribution"] == "唐·王冰次注" and "image_uri" not in rows[4]["locator"]
+
+
+def test_modern_apparatus_of_a_kept_document():
+    """唐步祺's 【阐释】 runs on until the next question or heading; an inline 荣斋按 note becomes commentary of its
+    layer; converted doses go to the metadata; the modern preface is dropped; an added section has its own layer."""
+    doc = Document(source="wikisource", code="測試", title="測試真傳", blocks=[
+        Block("heading", "火神立名之本（代序）", level=2), Block("para", "今人代序。"),
+        Block("heading", "卷二", level=2), Block("para", "问曰：头面畏寒者，何故？"), Block("para", "答曰：阳虚也。"),
+        Block("para", "【阐释】此答直断阳虚。"), Block("para", "笔者用建中汤。"), Block("para", "问曰：畏寒与恶风有别否？"),
+        Block("para", "熟地6克，山药15克。（荣斋按：此方为补肾之剂）"),
+        Block("heading", "新增一节", level=2), Block("para", "新增之文。")])
+    layer = lambda name, y: {"layer": name, "year": y}  # noqa: E731
+    entry = {"id": "ws_test", "composition": [1869, 1869], "dynasty": "清",
+             "paragraphs": [{"pattern": "^(?:问曰|答曰)", "block": True},
+                            {"pattern": "^【阐释】", **layer("今人阐释", [1987, 1996]), "block": True}],
+             "apparatus": [{"pattern": r"\d+克"}, {"pattern": "（荣斋按[：:][^（）]*）", **layer("今人按", [1955, 1956])}],
+             "drop_sections": ["^火神立名之本"], "heading_layers": [{"pattern": "^新增一节$", **layer("今人新增", [1955, 1956])}]}
+    rows = document_rows(doc, entry)
+    assert [(r["layer"], r["kind"], r["text"]) for r in rows] == [
+        ("正文", "text", "问曰：头面畏寒者，何故？"), ("正文", "text", "答曰：阳虚也。"),
+        ("今人阐释", "commentary", "【阐释】此答直断阳虚。"), ("今人阐释", "commentary", "笔者用建中汤。"),
+        ("正文", "text", "问曰：畏寒与恶风有别否？"), ("正文", "text", "熟地，山药。"),
+        ("今人按", "commentary", "（荣斋按：此方为补肾之剂）"), ("今人新增", "text", "新增之文。")]
+    assert rows[5]["extra"]["apparatus"] == ["6克", "15克"] and rows[6]["extra"]["anchor"] == rows[5]["id"]
+    assert rows[2]["y_start"] == 1987 and rows[0]["y_start"] == 1869
+
 # ------------------------------------------------------------------ policy
 def test_screen_excludes_contemporary_works_physicians_and_modern_editions():
     assert screen("某书", "文", [1956, 1956]).reason == CONTEMPORARY
@@ -132,10 +236,16 @@ def test_screen_excludes_contemporary_works_physicians_and_modern_editions():
 def test_reviewed_exclusions_by_code_and_by_title():
     assert EXCLUSIONS.decision("jicheng", "R000", "中医名词术语大辞典") == (CONTEMPORARY, False)
     assert EXCLUSIONS.decision("jicheng", "G045", "程门雪遗稿") == (CONTEMPORARY_PHYSICIAN, False)
-    assert EXCLUSIONS.decision("jicheng", "C004", "食疗本草") == (MODERN_EDITION, False)
+    # modern editions reviewed again and kept: their apparatus is separated at ingest (see test_modern_apparatus_*)
+    assert EXCLUSIONS.decision("jicheng", "C004", "食疗本草") == (None, True)
+    assert EXCLUSIONS.decision("hf-tcm-canon", "canon-伤寒论-0075", "重订通俗伤寒论") == (None, True)
     assert EXCLUSIONS.decision("jicheng", "G043", "校注妇人良方") == (None, True)  # 薛己 1547, not a modern edition
     assert EXCLUSIONS.decision("tcm-ancient-books", "123-思考中医", "思考中医") == (CONTEMPORARY, False)
     assert EXCLUSIONS.decision("wikisource", "傷寒論", "伤寒论") == (None, False)
+    # a text that surfaced in modern times under an ancient name is kept wherever it appears, dated by its appearance
+    assert EXCLUSIONS.decision("tcmoc", "100-桂林古本伤寒杂病论", "桂林古本伤寒杂病论") == (None, True)
+    assert EXCLUSIONS.decision("cmeta", "shanghan_guilin", "伤寒杂病论") == (None, True)
+    assert EXCLUSIONS.decision("jicheng", "F027", "辅行诀脏腑用药法要") == (None, True)
 
 
 def test_modern_paratext_credits_and_page_numbers_are_stripped():
@@ -327,6 +437,7 @@ def test_kr_catalog_persons_roles_dates_and_review():
 
 
 def test_collections_registry_ranks():
-    assert list(sorted(COLLECTIONS, key=RANK.__getitem__)) == ["mcgill", "wikisource", "tcm-ancient-books", "tcmoc", "hf-tcm-canon"]
-    assert COLLECTIONS["mcgill"].duplicate is None and COLLECTIONS["tcmoc"].derivative
-    assert {c.prefix for c in COLLECTIONS.values()} == {"mg", "ws", "tab", "oc", "hf"}
+    assert list(sorted(COLLECTIONS, key=RANK.__getitem__)) == ["mcgill", "cmeta", "aeam", "wikisource", "tcm-ancient-books", "tcmoc",
+                                                               "hf-tcm-canon"]
+    assert COLLECTIONS["mcgill"].duplicate is None and COLLECTIONS["cmeta"].duplicate is None and COLLECTIONS["tcmoc"].derivative
+    assert {c.prefix for c in COLLECTIONS.values()} == {"mg", "cm", "ae", "ws", "tab", "oc", "hf"}

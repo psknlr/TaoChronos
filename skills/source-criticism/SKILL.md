@@ -1,7 +1,7 @@
 ---
 name: source-criticism
 description: Trace a formula, drug or term through the classics (方源考 / 药性源流 / 术语源流) with verbatim, dated witnesses.
-tools: [study.formula, study.herb, study.term, study.concordance, study.taboo, study.metrology]
+tools: [study.formula, study.herb, study.term, study.senses, study.concordance, study.taboo, study.metrology]
 applies_to: [scholar, evidence, skeptic]
 tags: [治学, 源流, 考据]
 ---
@@ -18,6 +18,8 @@ tags: [治学, 源流, 考据]
    Jin–Yuan doctrines, their absence from the 本经 is expected, not a gap.
 5. **Terms.** Compare shares of passages per period (Wilson intervals), not raw counts; test the trend; read the first
    attestations and the densest works; senses are period-bound and modern concepts are candidates, never equivalents.
+   The sense history (`study.senses`) dates where the shares of the curated senses shift and gathers the uses no
+   curated sense fits into candidate senses — for a person to read and name.
 6. **Recurrence.** Concordance separates other copies of the same work (同书异本), explicit quotations (引文) and
    restatements (互见); the apparatus lists 异文/脱/衍/倒 by witness.
 

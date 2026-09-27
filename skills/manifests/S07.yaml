@@ -1,0 +1,17 @@
+id: S07
+key: knowledge_extraction
+name: 知识抽取 Knowledge Extraction
+version: 1.0.0
+owner: classical_scholar
+description: Entities (formulas, drugs, findings, people, places …) and the claims a passage makes, as typed hyperedges with their quotes.
+inputs: [passages]
+outputs: [entities, claims]
+dependencies: [S01]
+requires_llm: optional
+deterministic_steps: [lexicon and pattern candidates, context rules, claim hyperedges]
+llm_steps: [typing of ambiguous spans, recall of missed spans (validated as exact spans)]
+calls:
+  - {tool: study.entities, for_each: passages, limit: 3, args: {passage_id: "{passage_id}"}}
+  - {tool: kg.extract_claims, for_each: passages, limit: 3, args: {passage_id: "{passage_id}"}}
+validators: [every entity is a span of the text, every claim carries its quote]
+evaluation: {suites: [entities, claims]}

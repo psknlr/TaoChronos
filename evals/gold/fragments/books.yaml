@@ -1,0 +1,18 @@
+# FragmentEval corpus — a lost work and the books that quote it, constructed for the test (CC0).  集古方 (jigu) is
+# "lost": its text is held out and used only to check the reconstruction.  The quoting books follow the conventions of
+# the literature: 类聚秘要 (like 外台秘要) opens entries with the source and closes them with （出第N卷中…）, 又 for the
+# same source again; 医林类纂 (like 医心方) packs several sources in one passage (《集古方》云…又云…《养生要集》云…);
+# 本草附方 (like 证类本草) lists recipes of several sources (集古方治…肘后方治…); 医学杂纂 is late and paraphrases.
+defaults:
+  source: &src
+    origin: TaoChronos test fixture (synthetic)
+    license: CC0-1.0
+    acquisition: written for FragmentEval
+    transcription: synthetic
+    verified: false
+books:
+  - {id: jigu, title: 集古方, aliases: [集古], authors: [佚名], dynasty: 南北朝, composition: [450, 500], category: 方书, source: *src}
+  - {id: leiju, title: 类聚秘要, authors: [佚名], dynasty: 唐, composition: [750, 752], category: 方书, source: *src}
+  - {id: yilin, title: 医林类纂, authors: [佚名], dynasty: 日本平安, composition: [984, 984], category: 方书, source: *src}
+  - {id: fufang, title: 本草附方, authors: [佚名], dynasty: 宋, composition: [1100, 1108], category: 本草, source: *src}
+  - {id: zazuan, title: 医学杂纂, authors: [佚名], dynasty: 明, composition: [1600, 1600], category: 综合, source: *src}

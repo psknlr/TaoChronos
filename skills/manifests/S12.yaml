@@ -1,0 +1,17 @@
+id: S12
+key: clinical_mapping
+name: 古今映射 Clinical Mapping
+version: 1.0.0
+owner: translational
+description: The modern disease profiles a description resembles, with matched and missing findings, conflicts, required findings, a qualitative level (never a probability), discriminators; and from a modern disease back to the passages.
+inputs: [passages, diseases]
+outputs: [candidates, reverse]
+dependencies: [S11]
+requires_llm: optional
+deterministic_steps: [coverage, precision, conflicts, compatibility, evidence mass, level caps, discriminators]
+llm_steps: [a review that may lower a level, never raise it; a cited summary through the presentism guard]
+calls:
+  - {tool: bridge.map, for_each: passages, limit: 3, args: {passage_id: "{passage_id}", top: 5}}
+  - {tool: bridge.reverse, for_each: diseases, limit: 1, args: {disease: "{disease}", limit: 10}}
+validators: [levels are not calibrated and are said to be so, statements pass the presentism guard]
+evaluation: {suites: [bridge], metrics: [mapping.top1, mapping.caps_respected]}

@@ -1,0 +1,33 @@
+# ImpactEval — variant readings of the medical classics and the class a reader who acts on them would give them (CC0,
+# author-constructed on the patterns of real collations; contexts in the base's characters, 〔lemma〕 marked).
+cases:
+  - {lemma: 三, reading: 二, context: 桂枝〔三〕两去皮, expect: dose}
+  - {lemma: 半升, reading: 一升, context: 芒硝〔半升〕大黄四两, expect: dose}
+  - {lemma: 三, reading: 再, context: 分温〔三〕服, expect: dose}
+  - {lemma: 十二枚, reading: 十枚, context: 大枣〔十二枚〕擘, expect: dose}
+  - {lemma: 七, reading: 五, context: 以水〔七〕升, expect: dose}
+  - {lemma: "", reading: 不, context: 汗出者〔〕可发汗, expect: negation}
+  - {lemma: 可, reading: 不可, context: 脉浮者〔可〕发汗, expect: negation}
+  - {lemma: 宜, reading: 忌, context: 〔宜〕桂枝汤, expect: negation}
+  - {lemma: 无, reading: 有, context: 〔无〕汗而喘, expect: negation}
+  - {lemma: 桂枝, reading: 麻黄, context: 〔桂枝〕汤主之, expect: prescription}
+  - {lemma: 芍药, reading: 赤芍, context: 桂枝〔芍药〕甘草, expect: prescription}
+  - {lemma: 大柴胡汤, reading: 小柴胡汤, context: 与〔大柴胡汤〕下之, expect: prescription}
+  - {lemma: 浮, reading: 沉, context: 脉〔浮〕紧, expect: clinical}
+  - {lemma: 热, reading: 寒, context: 发〔热〕恶寒, expect: clinical}
+  - {lemma: 渴, reading: 呕, context: 心烦而〔渴〕, expect: clinical}
+  - {lemma: 中风, reading: 伤寒, context: 名为〔中风〕, expect: clinical}
+  - {lemma: 而, reading: 之, context: 汗出〔而〕恶风, expect: function}
+  - {lemma: 也, reading: "", context: 太阳表病〔也〕, expect: function}
+  - {lemma: 者, reading: "", context: 脉缓〔者〕名为中风, expect: function}
+  - {lemma: 食饮, reading: 饮食, context: 〔食饮〕不下, expect: order}
+  - {lemma: 头项, reading: 项头, context: 〔头项〕强痛, expect: order}
+  - {lemma: 痛, reading: □, context: 头项强〔痛〕而恶寒, expect: lacuna}
+  - {lemma: 所以为受病之始也, reading: "", context: 统营卫〔所以为受病之始也〕, expect: structural}
+  - {lemma: "", reading: 一云脉浮而紧, context: 名为伤寒〔〕, expect: structural}
+  - {lemma: 半, reading: "", context: 邪在〔半〕表半里, expect: lexical, why: 半 is part of 半表半里, not a dose}
+  - {lemma: 合, reading: 并, context: 太阳阳明〔合〕病, expect: lexical, why: 合 is 合病, not a measure}
+  - {lemma: 寸, reading: 尺, context: 〔寸〕口脉浮, expect: lexical, why: a pulse position, not a measure (not in the lexicon)}
+  - {lemma: 故, reading: 是故, context: 〔故〕不愈也, expect: function}
+  - {lemma: 经, reading: 论, context: 〔经〕曰, expect: lexical}
+  - {lemma: 十, reading: 大, context: 〔十〕枣汤主之, expect: prescription, why: 十枣汤 and 大枣, not a dose}

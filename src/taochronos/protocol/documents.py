@@ -38,6 +38,24 @@ class YearRange(Model):
     def strictly_before(self, other: "YearRange") -> bool:
         return self.end < other.start
 
+    def order(self, other: "YearRange") -> str:
+        """``before`` / ``after`` when the ranges do not overlap, ``undetermined`` when they do: the midpoints of two
+        disputed dates never order them (素问·至真要大论, 100–762, is not "before" 诸病源候论, 610)."""
+        if self.strictly_before(other):
+            return "before"
+        if other.strictly_before(self):
+            return "after"
+        return "undetermined"
+
+    def side_of(self, cutoff: float) -> str:
+        """Where the range lies with respect to a cutoff year: wholly ``before`` it, wholly ``after`` (from it on), or
+        ``straddling`` — a text that may have been written on either side belongs to neither."""
+        if self.end < cutoff:
+            return "before"
+        if self.start >= cutoff:
+            return "after"
+        return "straddling"
+
     def label(self) -> str:
         def fmt(y: int) -> str:
             return f"前{-y}" if y < 0 else str(y)

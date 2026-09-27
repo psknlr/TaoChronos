@@ -7,9 +7,9 @@ objective: >-
 mode: hybrid
 procedure: taochronos.agents.procedures.modern_evidence
 skills: [terminology-mapping, anachronism-guard]
-tools: [literature.modern_evidence, kg.term]
+tools: [literature.modern_evidence, kg.term, bridge.map, bridge.reverse, modern.search, modern.safety, rwd.ask]
 context_view: modern
-permissions: [literature:read, kg:read]
+permissions: [literature:read, kg:read, classics:read]
 output_schema: ModernEvidenceSet
 model: {min_tier: frontier, effort: high, max_tokens: 8000}
 budget: {max_tool_calls: 30, max_llm_calls: 6}

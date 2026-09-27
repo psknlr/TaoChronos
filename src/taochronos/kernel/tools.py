@@ -2,12 +2,27 @@
 
 Consecutive ``parallel_safe`` calls run concurrently; an ``exclusive`` (or
 non-parallel-safe) call forms a barrier and runs alone.  Every call passes the
-same gauntlet: permission → budget → BeforeToolCall hooks → execution → events
-→ AfterToolCall hooks.
+same gauntlet, in two separate layers:
+
+* **authorisation, before it runs** — permission → argument schema → budget →
+  BeforeToolCall hooks (e.g. the scope guard: no argument may name withheld
+  material);
+* **result control, after it ran** — AfterToolCall hooks may redact a result or
+  withhold it.  A withheld result is *not returned*: the call fails, the result
+  is quarantined (only its hash is kept) and a HookBlocked event says why.
+
+Every call leaves a receipt on its ToolResult event: the tool and its version,
+hashes of the arguments and of the result, the duration and whether the result
+was quarantined — enough to check that a replay read the same things.
+
+A tool sees capabilities through ``ctx.cap``, which applies the scheduler's
+capability views (the session's reading scope, for instance): a tool cannot
+forget to apply the scope, because it never holds the unscoped capability.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -37,6 +52,7 @@ class ToolSpec:
     irreversible: bool = False
     cost: float = 0.0
     returns: str = ""
+    version: str = "1"
 
     @property
     def llm_name(self) -> str:
@@ -75,6 +91,8 @@ class ToolOutcome:
     result: Any = None
     error: str | None = None
     duration_ms: float = 0.0
+    quarantine: dict[str, Any] | None = None  # a result withheld by a post-execution check: {hook, reason, result_sha256}
+    receipt: dict[str, Any] = field(default_factory=dict)
 
     def as_text(self, limit: int = 12000) -> str:
         if not self.ok:
@@ -97,7 +115,9 @@ class ToolContext:
     tx: Any = None  # the calling agent's transaction, if any
 
     def cap(self, capability: str, name: str | None = None) -> Any:
-        return self.capabilities.get(capability, name)
+        value = self.capabilities.get(capability, name)
+        view = self.scheduler.views.get(capability) if self.scheduler is not None else None
+        return view(value, self) if view is not None else value
 
     def emit(self, type_: Any, payload: dict[str, Any], *, generated: list[str] | None = None) -> Any:
         """Write tools emit through the agent transaction when there is one (atomic with the task)."""
@@ -158,6 +178,7 @@ class ToolScheduler:
         capabilities: Any,
         max_workers: int = 4,
         services: dict[str, Any] | None = None,
+        views: dict[str, Callable[[Any, "ToolContext"], Any]] | None = None,
     ) -> None:
         self.registry = registry
         self.policy = policy
@@ -165,6 +186,8 @@ class ToolScheduler:
         self.capabilities = capabilities
         self.max_workers = max_workers
         self.services = services or {}
+        # capability name → view(capability, ctx): what a tool call sees of that capability (e.g. the reading scope)
+        self.views = dict(views or {})
 
     # ------------------------------------------------------------- planning
     def plan_batches(self, calls: list[ToolCall]) -> list[list[int]]:
@@ -274,6 +297,32 @@ class ToolScheduler:
         except Exception as exc:  # tool failures are data, not crashes
             outcome = ToolOutcome(call_id, spec.name, False, error=f"{type(exc).__name__}: {exc}")
         outcome.duration_ms = round((time.perf_counter() - started) * 1000, 2)
+        # result control: a post-execution check can redact the outcome or withhold it — a withheld result never
+        # reaches the caller
+        after = self.hooks.run(
+            HookContext(HookPoint.AFTER_TOOL_CALL, subject=outcome, actor=actor, session=session,
+                        data={"tool": spec, "arguments": arguments})
+        )
+        if not after.allow:
+            withheld = outcome.result
+            outcome = ToolOutcome(call_id, spec.name, False, error=f"result withheld by hook {after.hook}: {after.reason}",
+                                  duration_ms=outcome.duration_ms,
+                                  quarantine={"hook": after.hook, "reason": after.reason, "result_sha256": digest(withheld)})
+            emit(EventType.HOOK_BLOCKED, {"hook": after.hook, "point": "AfterToolCall", "reason": after.reason, "tool": spec.name,
+                                          "call_id": call_id})
+        elif isinstance(after.subject, ToolOutcome) and after.subject is not outcome:
+            outcome = after.subject
+        outcome.receipt = {
+            "tool": spec.name,
+            "version": spec.version,
+            "actor": actor.id,
+            "principal": actor.principal,
+            "arguments_sha256": digest(arguments),
+            "result_sha256": digest(outcome.result) if outcome.ok else None,
+            "ok": outcome.ok,
+            "quarantined": outcome.quarantine is not None,
+            "duration_ms": outcome.duration_ms,
+        }
         emit(
             EventType.TOOL_RESULT,
             {
@@ -282,12 +331,16 @@ class ToolScheduler:
                 "ok": outcome.ok,
                 "duration_ms": outcome.duration_ms,
                 "summary": _summary(outcome),
+                "receipt": outcome.receipt,
             },
         )
-        self.hooks.run(
-            HookContext(HookPoint.AFTER_TOOL_CALL, subject=outcome, actor=actor, session=session, data={"tool": spec})
-        )
         return outcome
+
+
+def digest(value: Any) -> str:
+    """A stable hash of a (JSON-like) value: arguments and results are identified by it in receipts."""
+    text = json.dumps(to_jsonable(value), ensure_ascii=False, sort_keys=True, default=str)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:24]
 
 
 def _preview(arguments: dict[str, Any], limit: int = 400) -> dict[str, Any]:

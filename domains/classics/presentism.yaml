@@ -1,0 +1,48 @@
+# 以今律古 — the presentism guardrail: modern biomedical names, the ancient terms they are most often equated with, and
+# the words that make an equation or a retrospective diagnosis.  Used by verification/presentism.py for translations
+# (T10), claims and reports (the Evidence Audit of V2), and the Ancient–Modern Bridge.
+#
+# A historical description is not a retrospective diagnosis: 消渴 in the 金匮要略 is not diabetes mellitus, 胸痹 is not
+# coronary heart disease.  A modern name may be *compared* with an ancient description — in a sentence that says how
+# far they overlap — never *equated* with it.  Terms that are both ancient and modern (霍乱, 黄疸, 中风, 伤寒, 痢疾, 痛风,
+# 癫痫, 痴呆, 哮喘) are not in `modern_terms`: the classics use them in their own senses.
+
+modern_terms: [糖尿病, 尿崩症, 高血压, 低血压, 冠心病, 冠状动脉, 心绞痛, 心肌梗死, 心肌梗塞, 心力衰竭, 心衰, 心律失常, 脑卒中,
+               脑梗死, 脑梗塞, 脑出血, 脑血栓, 肺结核, 结核病, 结核杆菌, 肺炎, 支气管炎, 慢阻肺, 肝炎, 肝硬化, 肾炎, 肾病综合征,
+               肾衰竭, 尿毒症, 类风湿关节炎, 类风湿, 骨关节炎, 关节炎, 甲状腺, 甲亢, 贫血, 白血病, 癌症, 恶性肿瘤, 肿瘤, 病毒,
+               细菌, 感染, 炎症, 免疫, 抑郁症, 焦虑症, 精神分裂, 帕金森, 阿尔茨海默, 高脂血症, 血糖, 血脂, 胰岛素, 抗生素,
+               激素, 维生素, 流感, 艾滋病, 疟原虫, 阑尾炎, 胆囊炎, 胃炎, 胃溃疡, 肠炎, 结肠炎, 腮腺炎, 百日咳, 猩红热, 麻疹病毒,
+               子宫肌瘤, 乳腺增生, 更年期综合征, 神经衰弱, 植物神经, 自主神经, 代谢综合征, 动脉硬化, 血栓, 心脏病, 肾脏病]
+
+# ancient term → modern names it is often equated with (the equation is what the guardrail stops, not the comparison)
+equated:
+  消渴: [糖尿病, 尿崩症]
+  消瘅: [糖尿病]
+  胸痹: [冠心病, 心绞痛]
+  真心痛: [心肌梗死, 心肌梗塞]
+  中风: [脑卒中, 脑梗死, 脑出血]
+  肺痨: [肺结核, 结核病]
+  痨瘵: [肺结核, 结核病]
+  虚劳: [贫血, 肺结核]
+  痹: [关节炎, 类风湿关节炎]
+  历节: [类风湿关节炎, 关节炎]
+  眩晕: [高血压]
+  水肿: [肾炎, 肾病综合征, 心力衰竭]
+  黄疸: [肝炎]
+  肠痈: [阑尾炎]
+  痄腮: [腮腺炎]
+  瘿: [甲状腺, 甲亢]
+  郁证: [抑郁症]
+  癥瘕: [肿瘤, 子宫肌瘤]
+  温病: [感染, 病毒]
+  伤寒: [肠伤寒]
+
+# words that equate two things, or make a retrospective diagnosis of an ancient description
+equating: [即是, 即为, 就是, 也就是, 相当于, 等于, 等同于, 乃是, 实为, 实即, 正是, 便是, 即现代, 即今之, 属于现代, 就是现代,
+           指的是, 所指即, 即]
+retrospective: [已经描述了, 已描述了, 最早记载了, 最早记载, 最早记录了, 首次描述了, 首次描述, 早已认识到, 早已发现, 早于西方, 发现了,
+                诊断为, 实为今之, 相当于今之]
+# a sentence that compares and bounds a comparison is allowed
+hedges: [相似, 类似, 近似, 部分, 相近, 有所重叠, 重叠, 并非, 不等于, 不能等同, 不宜等同, 未必, 可能, 或许, 候选, 一一对应]
+
+hedge_template: "「{ancient}」的描述与现代{modern}的部分表现相似，但古今概念并非一一对应，不宜径行等同。"

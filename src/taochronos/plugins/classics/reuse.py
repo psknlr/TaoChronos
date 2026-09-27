@@ -41,6 +41,8 @@ class ReuseMatch:
     direction_certain: bool = True
     quote_source: str = ""
     quote_target: str = ""
+    reuse_type: str = ""  # semantic reuse type of the later passage's use of the earlier (science.semantic_reuse)
+    reuse: dict = field(default_factory=dict)  # its label, rule, confidence and citation (明引 / 暗引)
 
 
 class TextReuseDetector:
@@ -52,6 +54,7 @@ class TextReuseDetector:
         self._formula_terms = {e.term for e in pack.lexicon.by_category("formula")}
         self._corpus = None  # large corpora: document frequencies come from the full-text index on demand
         self._n = 0
+        self.intertext = None  # an IntertextAnalyzer: types each match (直接引用, 转述, 引而驳之 …)
 
     def fit(self, passages: list[Passage]) -> None:
         df: Counter = Counter()
@@ -85,8 +88,15 @@ class TextReuseDetector:
         return re.sub(r"主之|宜", lambda mt: "□" * len(mt.group(0)), masked)
 
     def _formulaic(self, block: str) -> bool:
+        """A block that is (nearly) only a formula name — a formula term inside it at least its length less three —
+        or only prescription formulae.  The terms that can qualify are substrings of the block, so the block's own
+        substrings are looked up, not every term of the lexicon."""
         stripped = re.sub(r"(主之|宜|可与|汤|丸|散|饮)", "", block)
-        return any(term in block and len(term) >= len(block) - 3 for term in self._formula_terms) or len(stripped) < 3
+        if len(stripped) < 3:
+            return True
+        n = len(block)
+        return any(block[i: i + size] in self._formula_terms
+                   for size in range(max(1, n - 3), n + 1) for i in range(n - size + 1))
 
     def compare(self, a: Passage, b: Passage) -> ReuseMatch | None:
         """Compare two passages; ``a`` is treated as the later witness when dates differ."""
@@ -122,6 +132,10 @@ class TextReuseDetector:
         if not blocks and not (weighted >= self.min_weighted_overlap and len(distinctive) >= 4 and len(shorter) >= 8):
             return None
         relation = "transcribes" if containment >= 0.85 else "rephrases"
+        typed: dict = {}
+        if self.intertext is not None:  # b is the earlier passage, a the later one
+            r = self.intertext.label(b.text, a.text)
+            typed = {k: r[k] for k in ("label", "label_zh", "mode", "rule", "confidence", "citation")}
         return ReuseMatch(
             source=a.id,
             target=b.id,
@@ -132,4 +146,6 @@ class TextReuseDetector:
             weighted_overlap=round(weighted, 4),
             quote_source=blocks[0]["text"] if blocks else "",
             quote_target=blocks[0]["text"] if blocks else "",
+            reuse_type=typed.get("label", ""),
+            reuse=typed,
         )

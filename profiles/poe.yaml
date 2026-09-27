@@ -1,0 +1,22 @@
+# The full corpus with models reached through Poe (https://api.poe.com/v1, POE_API_KEY from poe.com/api/keys).  Poe
+# model names are its bot names (`curl https://api.poe.com/v1/models` lists them); edit the list below to the ones your
+# plan offers.  Poe bills in points: costs stay 0 here unless you set prices, so the budget counts calls.
+name: poe
+extends: full-corpus
+description: Full-corpus research and study with models reached through Poe as the reasoning models and the judge.
+routing:
+  default_provider: poe
+  diversity: {skeptic: hypothesis}
+models:
+  openai_compat:
+    providers:
+      poe:
+        preset: poe
+        models:
+          - {name: claude-opus-4.8, tier: frontier, classical_chinese: 0.8, reasoning: true}
+          - {name: gpt-5.4, tier: frontier, classical_chinese: 0.75, reasoning: true}
+          - {name: claude-sonnet-4.6, tier: medium, classical_chinese: 0.75}
+          - {name: qwen3-max-n, tier: medium, classical_chinese: 0.8}
+          - {name: claude-haiku-4.5, tier: small, classical_chinese: 0.6}
+judge: {provider: poe, model: claude-sonnet-4.6, max_calls: 300}
+budget: {max_llm_calls: 300}

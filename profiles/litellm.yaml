@@ -1,0 +1,18 @@
+# The full corpus through LiteLLM: either the `litellm` package (pip install taochronos[litellm]; model names are
+# LiteLLM's `<provider>/<model>` strings and each back end reads its own key variable, e.g. MINIMAX_API_KEY,
+# DEEPSEEK_API_KEY, DASHSCOPE_API_KEY) or a LiteLLM proxy (uncomment base_url; LITELLM_API_KEY if the proxy has a
+# master key).  Edit the model list to the back ends you use.
+name: litellm
+extends: full-corpus
+description: Full-corpus research and study with any back end LiteLLM reaches (package or proxy) as the reasoning models and the judge.
+routing:
+  default_provider: litellm
+models:
+  litellm:
+    # base_url: http://localhost:4000/v1
+    models:
+      - {name: deepseek/deepseek-reasoner, tier: frontier, classical_chinese: 0.8, reasoning: true}
+      - {name: dashscope/qwen-max, tier: medium, classical_chinese: 0.8}
+      - {name: deepseek/deepseek-chat, tier: small, classical_chinese: 0.75}
+judge: {provider: litellm, model: dashscope/qwen-max, max_calls: 300, max_cost_usd: 5.0}
+budget: {max_llm_calls: 300, max_cost_usd: 10.0}

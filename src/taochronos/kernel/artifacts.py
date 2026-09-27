@@ -11,6 +11,9 @@ from ..protocol.artifacts import Artifact
 from ..protocol.base import stable_id
 from ..protocol.events import EventType
 from .hooks import HookContext, HookPoint, HookRegistry
+from .policy import Actor
+
+PUBLISHER = Actor.validator("publisher")
 
 _SAFE = re.compile(r"[^A-Za-z0-9_.-]+")
 
@@ -43,7 +46,11 @@ class ArtifactManager:
         parent_artifacts: list[str] | None = None,
         status: str = "published",
         tx: Any = None,
+        publisher: Actor | None = None,
     ) -> Artifact:
+        """Write a versioned artifact and record it.  Publication is a validator's act (the authority table): the event
+        is emitted under ``publisher`` (a validator identity by default); ``generator`` names what produced the file."""
+        publisher = publisher or PUBLISHER
         data = content.encode("utf-8") if isinstance(content, str) else content
         version = self._next_version(session, kind, title)
         rel = Path(session.id) / _SAFE.sub("_", kind) / f"v{version}" / _SAFE.sub("_", filename)
@@ -68,6 +75,7 @@ class ArtifactManager:
             session.emit(
                 EventType.HOOK_BLOCKED,
                 {"hook": verdict.hook, "point": "BeforeArtifactPublish", "reason": verdict.reason, "artifact": artifact.id},
+                actor=publisher,
             )
             raise ArtifactBlocked(verdict.reason)
         if isinstance(verdict.subject, Artifact):
@@ -79,7 +87,7 @@ class ArtifactManager:
         if tx is not None:
             tx.emit(EventType.ARTIFACT_PUBLISHED, payload, generated=[artifact.id])
         else:
-            session.emit(EventType.ARTIFACT_PUBLISHED, payload, actor=generator, generated=[artifact.id])
+            session.emit(EventType.ARTIFACT_PUBLISHED, payload, actor=publisher, generated=[artifact.id])
         return artifact
 
     def path_of(self, artifact: Artifact) -> Path:

@@ -11,6 +11,7 @@
 from .llm import (
     TIER_RANK,
     TIERS,
+    ImageBlock,
     LLMError,
     LLMProvider,
     LLMRequest,
@@ -24,6 +25,7 @@ from .llm import (
 )
 
 __all__ = [
+    "ImageBlock",
     "LLMError",
     "LLMProvider",
     "LLMRequest",

@@ -1,0 +1,16 @@
+id: S11
+key: ontology_bridge
+name: 本体桥接 Ontology Bridge
+version: 1.0.0
+owner: translational
+description: Each finding projected into HPO with a relation type (EXACT … NO_MODERN_EQUIVALENT) and the ontology release; each historical name related to the modern concepts its curated sense names.
+inputs: [passages]
+outputs: [projections, term_relations]
+dependencies: [S10]
+requires_llm: none
+deterministic_steps: [curated projections with relation types, HPO hierarchy among the terms used, term relations by sense and homonym table]
+llm_steps: []
+calls:
+  - {tool: bridge.map, for_each: passages, limit: 3, args: {passage_id: "{passage_id}", top: 5}}
+validators: [every HPO identifier present in the named release (bridge verify)]
+evaluation: {suites: [bridge], metrics: [ontology.hpo_terms]}

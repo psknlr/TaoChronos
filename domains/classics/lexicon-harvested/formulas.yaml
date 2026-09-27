@@ -8871,17 +8871,6 @@ entries:
       heading: 1
     first_year: 985.0
     first_passage: jc_p0300.03387
-- term: 生石膏
-  kind: harvested
-  evidence:
-    count: 18
-    books: 13
-    patterns:
-      block: 15
-      heading: 1
-      zhuzhi: 2
-    first_year: 1644.0
-    first_passage: jc_n060.00754
 - term: 白头翁加甘草阿胶汤
   kind: harvested
   evidence:
@@ -18071,15 +18060,6 @@ entries:
       heading: 2
     first_year: 654.5
     first_passage: jc_d025.08793
-- term: 软石膏
-  kind: harvested
-  evidence:
-    count: 9
-    books: 8
-    patterns:
-      block: 9
-    first_year: 1347.0
-    first_passage: jc_o044.04195
 - term: 软金丹
   kind: harvested
   evidence:
@@ -41403,16 +41383,6 @@ entries:
       zhuzhi: 1
     first_year: 1515.0
     first_passage: jc_o056.04842
-- term: 龙石膏
-  kind: harvested
-  evidence:
-    count: 4
-    books: 4
-    patterns:
-      block: 2
-      heading: 2
-    first_year: 500.0
-    first_passage: zhenglei_bencao.030.16396
 - term: 龙脑安神丸
   kind: harvested
   evidence:
@@ -49817,15 +49787,6 @@ entries:
       heading: 2
     first_year: 1172.0
     first_passage: jc_a005.00812
-- term: 煨石膏
-  kind: harvested
-  evidence:
-    count: 3
-    books: 1
-    patterns:
-      block: 3
-    first_year: 1777.5
-    first_passage: jc_n041.03244
 - term: 煨肾散
   kind: harvested
   evidence:
@@ -49836,15 +49797,6 @@ entries:
       heading: 1
     first_year: 1323.5
     first_passage: jc_o084.01160
-- term: 熟石膏
-  kind: harvested
-  evidence:
-    count: 3
-    books: 2
-    patterns:
-      block: 3
-    first_year: 1748.0
-    first_passage: jc_i202.01052
 - term: 熨痛膏
   kind: harvested
   evidence:
@@ -50329,16 +50281,6 @@ entries:
       heading: 1
     first_year: 1237.0
     first_passage: jc_g005.04615
-- term: 甘石膏
-  kind: harvested
-  evidence:
-    count: 3
-    books: 3
-    patterns:
-      block: 1
-      heading: 2
-    first_year: 1047.0
-    first_passage: boji_fang.003.00247
 - term: 甘草石膏汤
   kind: harvested
   evidence:
@@ -62436,15 +62378,6 @@ entries:
       heading: 1
     first_year: 1734.0
     first_passage: jc_d059.00812
-- term: 唐本注石膏
-  kind: harvested
-  evidence:
-    count: 2
-    books: 2
-    patterns:
-      block: 2
-    first_year: 659.0
-    first_passage: zhenghe_bencao.004.03518
 - term: 商陆汤
   kind: harvested
   evidence:
@@ -105225,15 +105158,6 @@ entries:
       heading: 1
     first_year: 654.5
     first_passage: jc_d025.03222
-- term: 白石膏
-  kind: harvested
-  evidence:
-    count: 1
-    books: 1
-    patterns:
-      heading: 1
-    first_year: 1598.0
-    first_passage: jc_c041.00221
 - term: 白矾半夏散
   kind: harvested
   evidence:

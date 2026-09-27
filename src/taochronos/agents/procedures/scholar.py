@@ -1,10 +1,11 @@
 """TaoChronos-Scholar (治学): the textual history of the focus terms, read from the whole corpus.
 
 For each focus formula, drug or term the Scholar calls the study tools — 方源考 (``study.formula``), 药性源流
-(``study.herb``), 术语源流 (``study.term``) — and keeps a dossier of verbatim witnesses: where the name first appears,
-the original and the most-witnessed compositions, the first statement of each property, the periods in which a term
-rises or falls.  Dossiers are recorded as analyses and printed as an appendix of the Discovery Report.  They describe
-the texts; they are not hypotheses and pass no gates.
+(``study.herb``), 术语源流 (``study.term``) and 语义演变 (``study.senses``) — and keeps a dossier of verbatim witnesses:
+where the name first appears, the original and the most-witnessed compositions, the first statement of each property,
+the periods in which a term rises or falls, where its senses shift and which of its uses no curated sense covers.
+Dossiers are recorded as analyses and printed as an appendix of the Discovery Report.  They describe the texts; they
+are not hypotheses and pass no gates.
 """
 
 from __future__ import annotations
@@ -108,6 +109,24 @@ def _term(name: str, r: dict[str, Any]) -> dict[str, Any]:
     return {"headline": headline, "lines": lines, "witnesses": witnesses}
 
 
+def _senses(r: dict[str, Any]) -> dict[str, Any]:
+    """Lines and witnesses from 语义演变: the sense shares where they shift, and a candidate sense the curation lacks."""
+    lines = []
+    for cp in [c for c in r.get("change_points", []) if isinstance(c, dict) and "year" in c][:3]:
+        before = "、".join(f"{k.split('#')[-1]} {v}" for k, v in list((cp.get("before") or {}).items())[:3])
+        after = "、".join(f"{k.split('#')[-1]} {v}" for k, v in list((cp.get("after") or {}).items())[:3])
+        lines.append(f"义项转变约 {int(cp['year'])} 年（p={cp['p']}）：之前 {before}；之后 {after}")
+    witnesses = []
+    cands = [c for c in r.get("candidate_senses", []) if isinstance(c, dict) and c.get("examples")]
+    if cands:
+        words = "、".join(d["token"] for d in cands[0].get("distinctive", [])[:6] if isinstance(d, dict))
+        lines.append(f"候选新义（{cands[0].get('size')} 例，待人工判读）：{words}")
+        ex = cands[0]["examples"][0]
+        witnesses.append({"passage_id": ex.get("passage_id"), "locator": ex.get("period", ""),
+                          "quote": (ex.get("quote") or ex.get("context", ""))[:200], "role": "候选新义例"})
+    return {"lines": lines, "witnesses": witnesses}
+
+
 def draft(ctx: Any) -> dict[str, Any]:
     dossiers = []
     for name, tid, kind in _targets(ctx):
@@ -117,6 +136,12 @@ def draft(ctx: Any) -> dict[str, Any]:
         if not outcome.ok:
             continue
         dossier = build(name, outcome.result)
+        if kind == "term":  # 语义演变: where the meaning shifted, and what the curated senses miss
+            senses = ctx.try_tool("study.senses", term=name)
+            if senses.ok:
+                extra = _senses(senses.result)
+                dossier["lines"] = list(dossier["lines"]) + extra["lines"]
+                dossier["witnesses"] = list(dossier["witnesses"]) + extra["witnesses"]
         dossiers.append({"target": name, "term_id": tid, "kind": kind, **dossier})
     return {"dossiers": dossiers}
 

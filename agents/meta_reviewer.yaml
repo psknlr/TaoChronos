@@ -7,9 +7,9 @@ objective: >-
 mode: hybrid
 procedure: taochronos.agents.procedures.meta_reviewer
 skills: [meta-review]
-tools: [kg.claims]
+tools: [kg.claims, audit.claim]
 context_view: meta
-permissions: [kg:read]
+permissions: [kg:read, classics:read]
 output_schema: MetaReview
 model: {min_tier: frontier, effort: high, max_tokens: 8000}
 budget: {max_tool_calls: 10, max_llm_calls: 4}

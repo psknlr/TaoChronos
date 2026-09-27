@@ -1,0 +1,12 @@
+id: critic
+name: 证据与批评 Evidence & Critic Agent
+description: >-
+  Audits every statement of an answer against the witnesses, the glosses, the bridge, modern evidence and the
+  presentism guard, gives each a verdict, builds the evidence graph, and may only lower what others claim.
+skills: [S15]
+delegates: [evidence, skeptic, statistician]
+permissions: [classics:read, kg:read, literature:read, validation:run]
+outputs: [audit, graph]
+rules:
+  - a verdict is never raised by a model
+  - SUPPORTED means the checks this system can run pass, not that the claim is true

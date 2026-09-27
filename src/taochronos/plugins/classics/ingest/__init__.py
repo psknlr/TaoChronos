@@ -15,8 +15,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-import yaml
-
+from ....protocol.yamlio import load_yaml
 from ..store import CorpusStore
 from .kanripo import BookSpec, KanripoFile, KanripoParser, LayerSpec, read_file
 
@@ -24,7 +23,7 @@ Log = Callable[[str], None]
 
 
 def load_catalog(path: str | Path) -> dict[str, Any]:
-    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    data = load_yaml(Path(path))
     data["_path"] = str(path)
     return data
 
@@ -32,7 +31,7 @@ def load_catalog(path: str | Path) -> dict[str, Any]:
 def load_external_works(path: str | Path) -> list[dict[str, Any]]:
     """``corpus/catalog/external-works.yaml``: works cited in the corpus but not in it (lost, or extant elsewhere)."""
     p = Path(path)
-    return list((yaml.safe_load(p.read_text(encoding="utf-8")) or {}).get("works") or []) if p.exists() else []
+    return list((load_yaml(p) or {}).get("works") or []) if p.exists() else []
 
 
 def _range(v: Any) -> tuple[int, int] | None:
@@ -233,10 +232,12 @@ JC_SOURCE = {
     "id": "jicheng",
     "name": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
     "url": "https://jicheng.tw/",
-    "license": "使用者提供之笈成整理本：古籍原文属公有领域，校点与整理成果归笈成整理者；当代著作与现代整理本不入库，仅供本地研究使用",
+    "license": "使用者提供之笈成整理本：古籍原文属公有领域，校点与整理成果归笈成整理者；当代著作与现代整理本除经审定保留者外不入库"
+               "（保留者的今人整理成分单列为层或移入元数据），仅供本地研究使用",
     "transcription": "笈成志愿者录入、校对并加新式标点（各书“品质”见 [book] 信息）；未经本项目逐字核对",
 }
 FRONT_MATTER_UPPER = 1911  # paratext of undetermined date is placed at the end of the imperial era (never earlier)
+APPARATUS_KEYS = ("paragraphs", "apparatus", "drop_sections", "heading_layers", "own_sections")  # a kept edition's modern apparatus
 UNDATED_NOTE = "成书年代无从考定，按清代（1644—1911）保守计"
 
 
@@ -368,7 +369,7 @@ def build_jicheng_catalog(root: Path, normalize: Callable[[str], str], chronolog
         notes = "；".join(x for x in (ov.get("notes_text"), le.remark, meta.get("備考")) if x)
         if notes:
             entry["notes_text"] = notes
-        for k in ("z_layer", "s_layer", "markers", "mixed", "cites_work", "chapter_layers", "section_layers"):
+        for k in ("z_layer", "s_layer", "markers", "mixed", "cites_work", "chapter_layers", "section_layers", *APPARATUS_KEYS):
             if k in ov:
                 entry[k] = ov[k]
         books.append(entry)
@@ -435,6 +436,7 @@ def _narrow_by_author(books: list[dict[str, Any]], kanripo: list[dict[str, Any]]
 
 
 def jicheng_spec(entry: dict[str, Any]) -> Any:
+    from .apparatus import apparatus_rules, heading_rules, paragraph_rules
     from .jicheng import JichengSpec
 
     comp = _range(entry["composition"]) or (0, 0)
@@ -452,14 +454,19 @@ def jicheng_spec(entry: dict[str, Any]) -> Any:
         chapter_layers=[(c["pattern"], _layer(c)) for c in entry.get("chapter_layers") or []],  # type: ignore[misc]
         section_layers=[(c["pattern"], _layer(c)) for c in entry.get("section_layers") or []],  # type: ignore[misc]
         front_matter=LayerSpec("卷首（序跋凡例等，年代未定，按下限计）", (max(comp[1], FRONT_MATTER_UPPER), max(comp[1], FRONT_MATTER_UPPER)), ""),
+        paragraphs=paragraph_rules(entry.get("paragraphs")), apparatus=apparatus_rules(entry.get("apparatus")),
+        drop_sections=list(entry.get("drop_sections") or []), heading_layers=heading_rules(entry.get("heading_layers")),
+        own_sections=list(entry.get("own_sections") or []),
     )
 
 
 def jicheng_book_record(entry: dict[str, Any], catalog: dict[str, Any], version: str | None = None) -> dict[str, Any]:
+    from .apparatus import describe
+
     src = catalog.get("source") or JC_SOURCE
     licence = src.get("license", "")
     if entry.get("modern"):
-        licence += "（本书为近代著作）"
+        licence += "（本书为当代著作，或仍在版权期内）" if entry["composition"][0] >= 1950 else "（本书为近代著作）"
     layers = []
     for key in ("z_layer", "s_layer", "mixed"):
         if entry.get(key):
@@ -469,6 +476,7 @@ def jicheng_book_record(entry: dict[str, Any], catalog: dict[str, Any], version:
     for key in ("chapter_layers", "section_layers"):
         for c in entry.get(key) or []:
             layers.append({"kind": key, **c})
+    layers += describe(entry)
     basis = str(entry.get("dating") or "")
     how = {"curated": "编目人工考定", "western": "笈成书目所载公元年", "era": "笈成书目所载年号", "dynasty": "笈成书目所载朝代",
            "preface": "序跋落款", "preface:author": "作者自序落款", "modern": "近代著作（1912—1949）", "undated": UNDATED_NOTE}.get(basis)

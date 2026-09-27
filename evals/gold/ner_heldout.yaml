@@ -1,0 +1,61 @@
+# Held-out gold entities for `study entities` (T7): annotated by the authors of TaoChronos, following the conventions of
+# domains/classics/entities.yaml, *before* the recognizer was run on them, and not used to tune it since (the rules were
+# developed on evals/gold/ner.yaml).  Its score is the fairer estimate of the rules; still author-annotated, not expert.
+#
+# Each entity is [text, type]; a text that occurs twice in a sentence is listed once per occurrence, in order.
+
+sentences:
+  - text: 少阴之为病，脉微细，但欲寐也。
+    entities: [[少阴之为病, Disease], [脉微细, Pulse], [但欲寐, Symptom]]
+  - text: 伤寒五六日，中风，往来寒热，胸胁苦满，默默不欲饮食，心烦喜呕，小柴胡汤主之。
+    entities: [[伤寒, Disease], [五六日, Time], [中风, Disease], [往来寒热, Symptom], [胸胁苦满, Symptom], [默默不欲饮食, Symptom],
+               [心烦喜呕, Symptom], [小柴胡汤, Formula]]
+  - text: 阳明病，发热汗多者，急下之，宜大承气汤。
+    entities: [[阳明病, Disease], [发热, Symptom], [汗多, Symptom], [急下之, Treatment], [大承气汤, Formula]]
+  - text: 麻黄三两（去节） 桂枝二两（去皮） 甘草一两（炙） 杏仁七十个（去皮尖）
+    entities: [[麻黄, Herb], [三两, Dose], [去节, Preparation], [桂枝, Herb], [二两, Dose], [去皮, Preparation], [甘草, Herb],
+               [一两, Dose], [炙, Preparation], [杏仁, Herb], [七十个, Dose], [去皮尖, Preparation]]
+  - text: 上四味，以水九升，先煮麻黄，减二升，去上沫，内诸药，煮取二升半，去滓，温服八合。
+    entities: [[以水九升, Preparation], [先煮, Preparation], [麻黄, Herb], [减二升, Preparation], [去上沫, Preparation],
+               [内诸药, Preparation], [煮取二升半, Preparation], [去滓, Preparation], [温服八合, Preparation]]
+  - text: 叶天士《温热论》云：温邪上受，首先犯肺，逆传心包。
+    entities: [[叶天士, Physician], [温热论, Book], [温邪, Pathogenesis], [肺, Location], [心包, Location]]
+  - text: 王孟英曰：霍乱转筋，由于湿热。
+    entities: [[王孟英, Physician], [霍乱, Disease], [转筋, Symptom], [湿热, Pathogenesis]]
+  - text: 东垣《脾胃论》立补中益气汤，以升阳益气。
+    entities: [[东垣, Physician], [脾胃论, Book], [补中益气汤, Formula], [升阳益气, Treatment]]
+  - text: 康熙十八年，钱塘张志聪集注《黄帝内经素问》。
+    entities: [[康熙十八年, Time], [钱塘, Place], [张志聪, Commentator], [黄帝内经素问, Book]]
+  - text: 小便不利，渴欲饮水，水入则吐者，名曰水逆，五苓散主之。
+    entities: [[小便不利, Symptom], [渴欲饮水, Symptom], [水入则吐, Symptom], [水逆, Syndrome], [五苓散, Formula]]
+  - text: 脉沉而迟，手足厥冷者，属少阴，宜四逆汤。
+    entities: [[脉沉而迟, Pulse], [手足厥冷, Symptom], [少阴, Location], [四逆汤, Formula]]
+  - text: 妇人经水不利，少腹满痛，抵当汤主之。
+    entities: [[经水不利, Symptom], [少腹满痛, Symptom], [抵当汤, Formula]]
+  - text: 此方出《千金要方》，宋本作「芍药二两」。
+    entities: [[千金要方, Book], [宋本, Edition], [芍药, Herb], [二两, Dose]]
+  - text: 李东垣，真定人，金元四大家之一。
+    entities: [[李东垣, Physician], [真定, Place]]
+  - text: 其人素体阴虚，复感风热之邪，发热咽痛。
+    entities: [[阴虚, Nature], [风热之邪, Etiology], [发热, Symptom], [咽痛, Symptom]]
+  - text: 附子一枚（炮，去皮，破八片），干姜一两半。
+    entities: [[附子, Herb], [一枚, Dose], [炮, Preparation], [去皮, Preparation], [破八片, Preparation], [干姜, Herb], [一两半, Dose]]
+  - text: 凡服桂枝汤吐者，其后必吐脓血也。
+    entities: [[桂枝汤, Formula], [吐, Symptom], [吐脓血, Symptom]]
+  - text: 服药后啜热稀粥一升余，以助药力。
+    entities: [[啜热稀粥, Preparation], [一升余, Dose], [以助药力, Preparation]]
+  - text: 喻嘉言《医门法律》以秋燥为论。
+    entities: [[喻嘉言, Physician], [医门法律, Book], [秋燥, Disease]]
+  - text: 光绪二年春，余客沪上。
+    entities: [[光绪二年, Time], [春, Time], [沪上, Place]]
+  - text: 大黄四两（酒洗），厚朴半斤（炙，去皮），枳实五枚（炙），芒硝三合。
+    entities: [[大黄, Herb], [四两, Dose], [酒洗, Preparation], [厚朴, Herb], [半斤, Dose], [炙, Preparation], [去皮, Preparation],
+               [枳实, Herb], [五枚, Dose], [炙, Preparation], [芒硝, Herb], [三合, Dose]]
+  - text: 喘家作，桂枝汤加厚朴杏子佳。
+    entities: [[喘家, Syndrome], [桂枝汤加厚朴杏子, Formula]]
+  - text: 忌食猪肉、冷水。
+    entities: [[忌食猪肉, Contraindication]]
+  - text: 薛己，吴县人，明代温补学派之先驱。
+    entities: [[薛己, Physician], [吴县, Place], [明代, Time], [温补学派, School]]
+  - text: 舌绛而干，神昏谵语。
+    entities: [[舌绛而干, Tongue], [神昏, Symptom], [谵语, Symptom]]

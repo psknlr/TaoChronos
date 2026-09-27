@@ -1,0 +1,79 @@
+# Discourse markers and stock phrasing for the semantic-reuse rules (science/semantic_reuse.py).
+#
+# The rules label a (source, target) pair from its alignment and concepts; the markers below say what the target does
+# with the source — cites it (明引), refutes it (引而驳之) or explains it (解释性改写) — and the stock phrases are
+# the genre's formulae (方后煎服法, 主治套语): shared wording made of them is not reuse.  All patterns are regular
+# expressions over the normalised text (simplified forms, punctuation kept).  Review and extend them here.
+
+# an explicit attribution just before the reused words
+citation:
+  - "《[^》]{1,14}》(?:又|亦)?(?:云|曰|言|称|谓|有云|载)?"
+  - "(?:经|论|书|方|注|传|古人|前人|先哲|先贤|昔人|古云|先师|或人)(?:又|亦)?(?:曰|云|言|谓)"
+  - "[一-鿿]{1,3}(?:先生|氏)?(?:曰|云|言|谓|有言|有云|所谓)"
+  - "所谓"
+# speakers inside the classics' dialogues: their 曰 does not quote another text
+dialogue:
+  - "(?:问|答|或|师|对|帝|黄帝|岐伯|伯高|少俞|少师|雷公|鬼臾区|扁鹊)(?:又|复)?(?:曰|云)$"
+# refutation: the target quotes or restates the source in order to reject it
+opposition:
+  - "非也"
+  - "不然"
+  - "谬(?:矣|也|甚)?"
+  - "误(?:矣|也|甚)"
+  - "岂(?:可|有|非|知|其)"
+  - "未必"
+  - "非是"
+  - "殊不知"
+  - "不可从"
+  - "不足信"
+  - "恐非"
+  - "失之"
+  - "未达"
+  - "昧于"
+  - "此说非"
+  - "非[^，。；]{1,8}之旨"
+  - "何其[^，。；]{0,6}(?:谬|误|陋)"
+# explanation: the target restates the source while saying what it means
+interpretation:
+  - "谓"
+  - "盖"
+  - "所以"
+  - "是以"
+  - "此言"
+  - "此谓"
+  - "犹言"
+  - "言其"
+  - "乃[^，。；]{1,10}之(?:义|意)"
+  - "即[^，。；]{1,8}也"
+  - "者[^，。；]{1,12}也"
+  - "之义"
+  - "之意"
+  - "故曰"
+  - "何也"
+  - "何者"
+# the genre's stock phrasing: 煎服法, 丸散制法, 服法 and the 主之 of the indications
+stock_phrases:
+  - "以水[一二三四五六七八九十百半]+[升斗合]"
+  - "(?:煮|煎)取[一二三四五六七八九十半]+[升合]"
+  - "去滓"
+  - "内诸药"
+  - "温服[一二三四五六七八九十半]*[升合]?"
+  - "分温[一二三四五]服"
+  - "日[一二三四五](?:夜[一二])?服"
+  - "[右上][一二三四五六七八九十]+味"
+  - "上件(?:药)?"
+  - "右件(?:药)?"
+  - "(?:捣|杵)(?:筛|罗)?为(?:细|粗)?末"
+  - "为(?:细|粗)?末"
+  - "(?:炼)?蜜(?:和|为)?丸"
+  - "如(?:梧桐|梧|桐|小豆|弹)子大"
+  - "每服[一二三四五六七八九十百半]+[丸钱匕枚]"
+  - "空心"
+  - "食(?:前|后)"
+  - "(?:温酒|米饮|白汤|温水)(?:送)?下"
+  - "㕮咀"
+  - "水煎服"
+  - "各等分"
+  - "细切"
+  - "主之"
+  - "宜[^，。；]{2,6}(?:汤|丸|散|饮)"

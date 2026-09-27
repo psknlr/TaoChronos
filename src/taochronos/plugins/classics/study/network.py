@@ -106,6 +106,10 @@ class CitationNetwork:
         bencao_books = {bk.id for bk in self.b.corpus.books.values() if bk.category == "本草" or "本草" in bk.title}
         books: dict[str, Counter] = defaultdict(Counter)
         persons: dict[str, Counter] = defaultdict(Counter)
+        rejects: dict[str, Counter] = defaultdict(Counter)  # the citations that reject the named view (争议)
+        endorses: dict[str, Counter] = defaultdict(Counter)
+        reject_examples: dict[str, list[str]] = defaultdict(list)
+        stance = self._stance_reader()
         unresolved: Counter = Counter()
         examples: dict[str, str] = {}
         passages = 0
@@ -129,32 +133,71 @@ class CitationNetwork:
                 for target, w in self._witnessed(self._generic(m.group(1) or m.group(2))).items():
                     books[key_bp][f"book:{target}"] += w
             ntext = norm(text)
-            found = [m.group(1) for m in self._loose.finditer(ntext)] + [m.group(1) for m in self._strict.finditer(ntext)]
+            found = list(self._loose.finditer(ntext)) + list(self._strict.finditer(ntext))
             if book_id in bencao_books:
-                found += [m.group(1) for m in self._bencao.finditer(ntext)]
-            for name in found:
-                person = self._alias.get(name)
+                found += list(self._bencao.finditer(ntext))
+            for m in found:
+                person = self._alias.get(m.group(1))
                 if person and person not in own.get(book_id, ()):  # 时珍曰 in the 本草纲目 is the author speaking
                     persons[key_bp][person] += 1
                     examples.setdefault(f"person:{person}", pid)
+                    kind = stance(ntext, m)
+                    if kind == "reject":
+                        rejects[key_bp][person] += 1
+                        if len(reject_examples[f"{book_id}|{person}"]) < 5:
+                            reject_examples[f"{book_id}|{person}"].append(pid)
+                    elif kind == "endorse":
+                        endorses[key_bp][person] += 1
         built = {"key": key, "passages": passages,
                  "books": {b: {t: round(n, 3) for t, n in c.items()} for b, c in books.items()},
                  "persons": {b: dict(c) for b, c in persons.items()},
+                 "rejects": {b: dict(c) for b, c in rejects.items()}, "endorses": {b: dict(c) for b, c in endorses.items()},
+                 "reject_examples": dict(reject_examples),
                  "unresolved": dict(unresolved.most_common(300)), "examples": examples}
         if cache is not None:
             Path(cache).mkdir(parents=True, exist_ok=True)
             (Path(cache) / f"citations-{key}.json").write_text(json.dumps(built, ensure_ascii=False), encoding="utf-8")
+            for old in Path(cache).glob("citations-*.json"):  # earlier scans of the corpus
+                if old.name != f"citations-{key}.json":
+                    old.unlink()
         self._built = built
         return built
+
+    def _stance_reader(self) -> Any:
+        """The stance of the sentence after a named, reported view (``exegesis.yaml``): reject, endorse or None."""
+        from .commentary import Exegesis
+
+        ex = Exegesis(self.b)
+        names = re.compile("|".join(map(re.escape, sorted((k for k in self._alias if len(k) >= 2), key=len, reverse=True))) or "(?!)")
+
+        def read(ntext: str, m: re.Match[str]) -> str | None:
+            verb = ntext[m.end(1): m.end()]
+            rest = ntext[m.end(): m.end() + 160]
+            ends = [e.end() for e in re.finditer(r"[。？！]", rest)]
+            window = rest[: ends[1] if len(ends) > 1 else (ends[0] if ends else len(rest))]
+            kind, _, _ = ex.stance(window, direct=verb.endswith(("曰", "云")) or ntext[m.end(): m.end() + 1] in ("曰", "云"),
+                                   names=names)
+            return kind
+
+        return read
 
     def _authors_as_persons(self, book_id: str) -> set[str]:
         book = self.b.corpus.books.get(book_id)
         out = set()
         for author in (book.authors if book else []):
-            person = self._alias.get(self.b.normalize(re.sub(r"[（(].*?[）)]|等$|^旧题", "", author).strip()))
+            person = self.person_of_author(author)
             if person:
                 out.add(person)
         return out
+
+    def persons_of_book(self, book_id: str) -> set[str]:
+        """The physicians of ``physicians.yaml`` among a book's authors."""
+        return self._authors_as_persons(book_id)
+
+    def person_of_author(self, author: str) -> str | None:
+        """The physician an author string names: 刘完素（一说张元素） → 刘完素, 吴谦 等 → 吴谦, 汪琥辨 → 汪琥."""
+        name = self.b.normalize(re.sub(r"[（(].*?[）)]|等$|^旧题|^舊題", "", author).strip())
+        return self._alias.get(name) or self._alias.get(re.sub(r"(?:编次|撰次|校正|校注|重订|撰|著|编|辑|注|校|订|述|纂|集|辨|评|补)+$", "", name))
 
     def _witnessed(self, candidates: dict[str, float]) -> dict[str, float]:
         out: dict[str, float] = {}
@@ -166,8 +209,12 @@ class CitationNetwork:
 
     def _cache_key(self) -> str:
         sig = self.b.signature()
-        parts = [sig["corpus_digest"], json.dumps(self.persons, ensure_ascii=False, sort_keys=True),
-                 json.dumps(self.b.pack.citations, ensure_ascii=False, sort_keys=True), "v3"]
+        # what the scan reads: the names (not the schools or dates, which only the views use) and the books' authors
+        names = {k: [p.get("names"), p.get("bencao")] for k, p in self.persons.items()}
+        authors = sorted((b.id, list(b.authors)) for b in self.b.corpus.books.values())
+        parts = [sig["corpus_digest"], json.dumps(names, ensure_ascii=False, sort_keys=True), json.dumps(authors, ensure_ascii=False),
+                 json.dumps(self.b.pack.citations, ensure_ascii=False, sort_keys=True),
+                 json.dumps(self.b.data("exegesis.yaml").get("stance"), ensure_ascii=False, sort_keys=True), "v4"]
         return hashlib.sha1("|".join(parts).encode("utf-8")).hexdigest()[:12]
 
     # ------------------------------------------------------------ views
@@ -338,7 +385,7 @@ class CitationNetwork:
             if book is None:
                 continue
             for author in book.authors:
-                src = self._alias.get(norm(re.sub(r"[（(].*?[）)]|等$|旧题", "", author)))
+                src = self.person_of_author(author)
                 if not src:
                     continue
                 for person, n in people.items():

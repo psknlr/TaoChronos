@@ -1,0 +1,9 @@
+[
+ {"id": "test_book", "title": "測試傷寒論（明刊本）", "citationTitle": "測試傷寒論", "textUrl": "texts/test_book.md",
+  "collationLevel": "精校", "textAccess": "public", "access": {"allowTextDisplay": true},
+  "editionStructure": {"metaDir": "meta/test_book", "editionId": "ed1"},
+  "imageDir": "../images/test_book", "imageCount": 3, "imagePad": 4, "imageExt": "jpg",
+  "source": "某館藏  明刊本（構造的測試資料）"},
+ {"id": "draft_book", "title": "粗校之書", "textUrl": "texts/draft_book.md", "collationLevel": "粗校", "textAccess": "public"},
+ {"id": "listed_book", "title": "白名單之書", "textUrl": "texts/listed_book.md", "collationLevel": "精校", "textAccess": "whitelist"}
+]

@@ -1,0 +1,59 @@
+# 学派 — the schools of Chinese medicine as the 中医各家学说 textbooks group the physicians of physicians.yaml (whose
+# `school` counts a physician in one, `branch` in a branch of it).  A school is a later historian's grouping: 金元四大家
+# is a Ming phrase and most school names are twentieth-century; membership is a convention `study schools` tests
+# against the texts (what the members' works share against the other works of their time, whom they cite, whom they
+# dispute), not a fact the texts state.
+#
+#   label     the name in the textbooks
+#   source    the authority the school forms around, not counted among its members (张仲景 for the 伤寒学派)
+#   founder   the member it starts from
+#   parent    the school it grew out of, as the textbooks tell it
+#   branches  its branches, each with what sets it apart
+#   note      what the textbooks say sets it apart (for the reader: the study does not read it)
+schools:
+  伤寒:
+    label: 伤寒学派
+    source: [zhang_ji]
+    note: 研究、注释与发挥张仲景《伤寒论》的医家；宋金以后注家辈出，明清分为错简重订、维护旧论、辨证论治诸派
+    branches:
+      错简重订: 以为《伤寒论》经王叔和编次而有错简，重订其篇次（方有执、喻昌及其从者）
+      维护旧论: 维护王叔和编次、成无己注本的旧貌（张遂辰、张志聪、陈念祖等）
+      辨证论治: 不拘编次，以方、以法或分经类证而重辨证论治（柯琴、徐大椿、尤怡、钱潢等）
+  河间:
+    label: 河间学派
+    founder: liu_wansu
+    note: 刘完素倡火热论，以六气皆从火化，治多寒凉；张从正、朱震亨之学皆与之有渊源
+  攻邪:
+    label: 攻邪学派
+    parent: 河间
+    founder: zhang_congzheng
+    note: 张从正以病由邪生，主汗、吐、下三法攻邪，邪去则正安
+  易水:
+    label: 易水学派
+    founder: zhang_yuansu
+    note: 张元素倡脏腑辨证、药物归经与引经；李杲创脾胃论（补土），王好古论阴证，罗天益承之
+  丹溪:
+    label: 丹溪学派
+    parent: 河间
+    founder: zhu_zhenheng
+    note: 朱震亨倡相火论与“阳常有余、阴常不足”，重滋阴降火，杂病主气血痰郁；戴思恭、王履、王纶、虞抟、汪机等承之
+  温补:
+    label: 温补学派
+    parent: 易水
+    founder: xue_ji
+    note: 薛己、孙一奎、赵献可、张介宾、李中梓重脾肾与命门，主温养补虚，力辨寒凉攻伐之弊
+  温病:
+    label: 温病学派
+    note: 吴有性论温疫之气自口鼻而入、伏于膜原；叶桂、薛雪、吴瑭、王士雄等创卫气营血与三焦辨证，别温病于伤寒
+    branches:
+      温疫: 以温疫（疫气、戾气）为论（吴有性、戴天章、余霖）
+  汇通:
+    label: 中西汇通学派
+    note: 清末民初以西医学说汇通、印证中医理论的医家（唐宗海、张锡纯）
+  古方派:
+    label: 古方派（日本）
+    source: [zhang_ji]
+    note: 江户以来尊张仲景方、重腹诊与方证相对的日本医家（吉益东洞、汤本求真）
+  考证:
+    label: 考证学派（日本）
+    note: 江户后期以考据校勘治医籍的日本医家（丹波元简、丹波元坚）

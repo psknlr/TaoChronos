@@ -2,7 +2,9 @@
 
 The reducer is the *only* code path that mutates a ResearchObject.  It is
 deterministic, and it enforces the invariants that must hold no matter which
-model or agent produced an event (goal immutability, commit-only-by-humans…).
+model or agent produced an event: who may emit it (the authority table), goal
+immutability, withheld material staying withheld, G7 only from a human, an
+objection closed only by re-running its check or by an expert…
 """
 
 from __future__ import annotations
@@ -10,12 +12,12 @@ from __future__ import annotations
 from typing import Callable, Iterable
 
 from ..protocol.artifacts import Artifact
-from ..protocol.base import stable_id
+from ..protocol.base import content_hash, stable_id
 from ..protocol.claims import Claim
 from ..protocol.confidence import ConfidenceVector
 from ..protocol.events import Event, EventType
 from ..protocol.evidence import EvidenceRecord, Stance
-from ..protocol.hypothesis import Hypothesis, HypothesisReview, Observation, ScoreCard
+from ..protocol.hypothesis import CLOSURE_METHODS, Hypothesis, HypothesisReview, Observation, ScoreCard
 from ..protocol.outputs import PhilologyAssessment, TermResolution
 from ..protocol.research import (
     AgentInstance,
@@ -30,6 +32,8 @@ from ..protocol.research import (
     ResearchObject,
     TaskNode,
 )
+
+from . import authority
 
 T = EventType
 
@@ -97,6 +101,15 @@ class Reducer:
             T.CHECKPOINT_CREATED.value: self._checkpoint_created,
             T.ARTIFACT_PUBLISHED.value: self._artifact_published,
             T.TRANSACTION_COMMITTED.value: lambda s, e: None,
+            T.CONTRACT_EVALUATED.value: self._contract_evaluated,
+            T.RUN_MANIFEST_RECORDED.value: self._run_manifest_recorded,
+            T.BUDGET_RESERVED.value: self._budget_reserved,
+            T.BUDGET_SETTLED.value: self._budget_settled,
+            T.EVIDENCE_RETRACTED.value: self._evidence_retracted,
+            T.WARRANT_RECORDED.value: self._warrant_recorded,
+            T.HYPOTHESIS_CONFIRMED.value: self._hypothesis_confirmed,
+            T.OBJECTION_RESOLUTION_PROPOSED.value: self._objection_resolution_proposed,
+            T.OBJECTION_CLOSED.value: self._objection_closed,
         }
 
     # ------------------------------------------------------------------ public
@@ -112,52 +125,140 @@ class Reducer:
             self.apply(state, event)
         return state
 
-    def validate(self, state: ResearchObject, event: Event, pending_ids: set[str] | None = None) -> None:
-        """Check invariants against committed state plus ids created earlier in the same transaction."""
-        pending = pending_ids or set()
+    def validate(self, state: ResearchObject, event: Event, pending_ids: set[str] | None = None,
+                 pending: list[Event] | None = None) -> None:
+        """Check an event against the state it would apply to (plus, for an early check inside a transaction, the ids
+        and events buffered before it).  Raises :class:`InvalidEvent`; never mutates."""
+        pending_ids = pending_ids or set()
+        pending = pending or []
         p = event.payload
         if event.type not in self._handlers:
             raise InvalidEvent(f"unknown event type {event.type!r}")
+        if event.principal and not authority.allowed(event.type, event.principal):
+            raise InvalidEvent(authority.reason(event.type, event.principal))
         if event.type == T.RESEARCH_CREATED.value:
-            if state.goal is not None:
+            if state.goal is not None or any(e.type == T.RESEARCH_CREATED.value for e in pending):
                 raise InvalidEvent("GoalSpec is immutable: the session already has a goal contract")
             if "goal" not in p:
                 raise InvalidEvent("ResearchCreated requires a goal")
+            declared = p.get("goal_digest")
+            if declared and content_hash(p["goal"]) != declared:
+                raise InvalidEvent("goal digest mismatch: GoalSpec was altered")
         elif "goal" in p:
             raise InvalidEvent("GoalSpec is immutable: only ResearchCreated may carry a goal")
 
         def need_hypothesis(hid: str | None) -> None:
-            if not hid or (hid not in state.hypotheses and hid not in pending):
+            if not hid or (hid not in state.hypotheses and hid not in pending_ids):
                 raise InvalidEvent(f"{event.type}: unknown hypothesis {hid!r}")
 
         if event.type in (T.TASK_STARTED.value, T.TASK_COMPLETED.value, T.TASK_FAILED.value, T.TASK_SKIPPED.value):
             tid = p.get("task_id") or event.task_id
-            if tid not in state.task_graph and tid not in pending:
+            if tid not in state.task_graph and tid not in pending_ids:
                 raise InvalidEvent(f"{event.type}: unknown task {tid!r}")
         elif event.type == T.HYPOTHESIS_REVIEWED.value:
-            need_hypothesis(p.get("review", {}).get("hypothesis_id"))
-        elif event.type in (T.HYPOTHESIS_REJECTED.value, T.HYPOTHESIS_SCORED.value, T.COUNTER_EVIDENCE_FOUND.value):
+            review = p.get("review", {})
+            need_hypothesis(review.get("hypothesis_id"))
+            for o in review.get("objections", []):
+                if o.get("status") == "closed" or (o.get("resolved") and o.get("status") != "noted"):
+                    raise InvalidEvent(f"a review raises objections and may propose resolutions; closing {o.get('check')!r} "
+                                       "is a validator's re-run or an expert's decision (ObjectionClosed)")
+                if o.get("status") == "noted" and o.get("severity") != "info":
+                    raise InvalidEvent("only an info-level objection may be merely noted")
+        elif event.type in (T.HYPOTHESIS_REJECTED.value, T.HYPOTHESIS_SCORED.value, T.COUNTER_EVIDENCE_FOUND.value,
+                            T.HYPOTHESIS_CONFIRMED.value):
             need_hypothesis(p.get("hypothesis_id"))
         elif event.type == T.HYPOTHESIS_REVISED.value:
             need_hypothesis(p.get("hypothesis", {}).get("parent_id"))
         elif event.type in (T.EXPERT_APPROVED.value, T.EXPERT_REJECTED.value):
-            if not event.actor.startswith("human:"):
+            if not event.principal and not event.actor.startswith("human:"):
                 raise InvalidEvent("only a human expert may approve or reject a hypothesis (Gate G7)")
             need_hypothesis(p.get("hypothesis_id"))
         elif event.type in (T.CHANGE_APPROVED.value, T.CHANGE_REJECTED.value):
-            if event.actor.startswith("agent:"):
+            if not event.principal and event.actor.startswith("agent:"):
                 raise InvalidEvent("agents may only propose changes; a validator or human must decide")
             cid = p.get("change_id")
-            if cid not in state.changes and cid not in pending:
+            if cid not in state.changes and cid not in pending_ids:
                 raise InvalidEvent(f"{event.type}: unknown change {cid!r}")
         elif event.type == T.HYPOTHESIS_RANKED.value:
             for hid in p.get("elo", {}):
                 need_hypothesis(hid)
+        elif event.type == T.GATE_EVALUATED.value:
+            for r in p.get("results", []):
+                if r.get("gate") == "G7":
+                    raise InvalidEvent("G7 is set only by a human expert's ExpertApproved / ExpertRejected, never by GateEvaluated")
+        elif event.type == T.CORPUS_SCOPED.value:
+            self._validate_scope(state, CorpusManifest.from_dict(p["manifest"]))
+        elif event.type in (T.OBJECTION_RESOLUTION_PROPOSED.value, T.OBJECTION_CLOSED.value):
+            self._validate_objection(state, event)
+        elif event.type == T.EVIDENCE_RETRACTED.value:
+            missing = [e for e in p.get("evidence_ids", []) if e not in state.evidence]
+            if missing or not p.get("evidence_ids"):
+                raise InvalidEvent(f"EvidenceRetracted: unknown evidence {missing or '(none named)'}")
+            if not p.get("reason"):
+                raise InvalidEvent("EvidenceRetracted requires a reason")
+        elif event.type == T.WARRANT_RECORDED.value:
+            for w in p.get("warrants", []):
+                need_hypothesis(w.get("hypothesis_id"))
+        elif event.type == T.CONTRACT_EVALUATED.value:
+            if state.goal is None:
+                raise InvalidEvent("ContractEvaluated: the session has no research contract")
+
+    @staticmethod
+    def _validate_scope(state: ResearchObject, manifest: CorpusManifest) -> None:
+        """Withheld material stays withheld: a manifest never lists a withheld passage as exploration material, and a
+        later manifest never releases what an earlier one withheld."""
+        withheld = manifest.withheld()
+        leaked = sorted(set(manifest.passage_ids) & withheld)
+        if leaked:
+            raise InvalidEvent(f"CorpusScoped lists {len(leaked)} withheld passage(s) as exploration material (e.g. {leaked[0]})")
+        if state.corpus is not None:
+            before = state.corpus.withheld()
+            released = sorted(before - withheld)
+            if released:
+                raise InvalidEvent(f"CorpusScoped would release {len(released)} withheld passage(s) (e.g. {released[0]}): "
+                                   "withheld material stays withheld for the whole session")
+
+    @staticmethod
+    def _validate_objection(state: ResearchObject, event: Event) -> None:
+        p = event.payload
+        review = state.reviews.get(p.get("review_id", ""))
+        if review is None or review.hypothesis_id != p.get("hypothesis_id"):
+            raise InvalidEvent(f"{event.type}: unknown review {p.get('review_id')!r} for {p.get('hypothesis_id')!r}")
+        objection = review.objection(p.get("objection_id", ""))
+        if objection is None:
+            raise InvalidEvent(f"{event.type}: unknown objection {p.get('objection_id')!r}")
+        if not objection.is_open:
+            raise InvalidEvent(f"{event.type}: objection {objection.id} is already {objection.status}")
+        if event.type == T.OBJECTION_RESOLUTION_PROPOSED.value:
+            if p.get("basis") not in ("qualifier", "new_evidence", "rationale"):
+                raise InvalidEvent("a resolution proposal names its basis: qualifier | new_evidence | rationale")
+            return
+        method = p.get("method")
+        if method not in CLOSURE_METHODS:
+            raise InvalidEvent(f"ObjectionClosed: unknown method {method!r}")
+        principal = event.principal or ("human" if event.actor.startswith("human:") else "validator")
+        if principal == authority.HUMAN and method != "expert":
+            raise InvalidEvent("an expert closes an objection with method 'expert'")
+        if principal == authority.VALIDATOR and method == "expert":
+            raise InvalidEvent("method 'expert' is a human's decision")
+        if objection.hard and method != "validator_rerun":
+            raise InvalidEvent(f"{objection.check!r} is a hard objection: it closes only when a validator re-runs the check "
+                               "and it passes — not by new evidence, a narrowing, a rationale or an expert's agreement")
+        if method == "validator_rerun" and p.get("rerun", {}).get("status") != "pass":
+            raise InvalidEvent("validator_rerun closes an objection only with a passing re-run of its check")
+        if method == "new_evidence":
+            ids = p.get("evidence_ids") or []
+            unknown = [e for e in ids if e not in state.evidence or e in state.retractions]
+            if not ids or unknown:
+                raise InvalidEvent(f"new_evidence closure needs evidence recorded in the session and not retracted: {unknown or 'none named'}")
 
     # --------------------------------------------------------------- lifecycle
     def _research_created(self, s: ResearchObject, e: Event) -> None:
+        if s.goal is not None:
+            raise InvalidEvent("GoalSpec is immutable: the session already has a goal contract")
         s.goal = GoalSpec.from_dict(e.payload["goal"])
-        s.goal_digest = s.goal.digest()
+        # the digest of the contract as written (fields added to GoalSpec later must not change an old contract's digest)
+        s.goal_digest = content_hash(e.payload["goal"])
         declared = e.payload.get("goal_digest")
         if declared and declared != s.goal_digest:
             raise InvalidEvent("goal digest mismatch: GoalSpec was altered")
@@ -169,7 +270,15 @@ class Reducer:
         s.metrics["profile"] = e.payload
 
     def _corpus_scoped(self, s: ResearchObject, e: Event) -> None:
-        s.corpus = CorpusManifest.from_dict(e.payload["manifest"])
+        manifest = CorpusManifest.from_dict(e.payload["manifest"])
+        if s.corpus is not None:  # withheld stays withheld (the validator already refused a release; this keeps replay honest)
+            before = s.corpus
+            manifest.holdout_passage_ids = sorted(set(manifest.holdout_passage_ids) | set(before.holdout_passage_ids))
+            manifest.confirmation_passage_ids = sorted(set(manifest.confirmation_passage_ids) | set(before.confirmation_passage_ids))
+            manifest.expert_only_passage_ids = sorted(set(manifest.expert_only_passage_ids) | set(before.expert_only_passage_ids))
+            withheld = manifest.withheld()
+            manifest.passage_ids = [pid for pid in manifest.passage_ids if pid not in withheld]
+        s.corpus = manifest
 
     def _round_started(self, s: ResearchObject, e: Event) -> None:
         s.round = int(e.payload["round"])
@@ -383,6 +492,8 @@ class Reducer:
         if "novelty" in e.payload:
             h.novelty = e.payload["novelty"]
             h.novelty_rationale = e.payload.get("novelty_rationale", h.novelty_rationale)
+        if "novelty_profile" in e.payload:
+            h.novelty_profile = dict(e.payload["novelty_profile"])
 
     def _hypothesis_ranked(self, s: ResearchObject, e: Event) -> None:
         for hid, elo in e.payload["elo"].items():
@@ -396,7 +507,83 @@ class Reducer:
     def _gate_evaluated(self, s: ResearchObject, e: Event) -> None:
         for raw in e.payload["results"]:
             result = GateResult.from_dict(raw)
+            if result.gate == "G7":  # logs written before G7 was reserved to experts: never let them set it
+                continue
             s.gates.setdefault(result.subject_id, {})[result.gate] = result
+
+    # ------------------------------------------------------------- objections
+    def _objection_resolution_proposed(self, s: ResearchObject, e: Event) -> None:
+        p = e.payload
+        objection = s.reviews[p["review_id"]].objection(p["objection_id"])
+        objection.status = "resolution_proposed"
+        objection.proposal = {"basis": p["basis"], "rationale": p.get("rationale", ""), "evidence_ids": list(p.get("evidence_ids", [])),
+                              "qualifier": p.get("qualifier"), "proposed_by": e.actor}
+
+    def _objection_closed(self, s: ResearchObject, e: Event) -> None:
+        p = e.payload
+        objection = s.reviews[p["review_id"]].objection(p["objection_id"])
+        objection.status = "closed"
+        objection.resolved = True
+        objection.closure = p["method"]
+        objection.closed_by = e.actor
+        objection.resolution = p.get("resolution", objection.resolution)
+        for eid in p.get("evidence_ids", []):
+            if eid not in objection.evidence_ids:
+                objection.evidence_ids.append(eid)
+
+    # ------------------------------------------------------ contract / audit
+    def _contract_evaluated(self, s: ResearchObject, e: Event) -> None:
+        s.acceptance = dict(e.payload["evaluation"])
+
+    def _run_manifest_recorded(self, s: ResearchObject, e: Event) -> None:
+        s.run_manifest = dict(e.payload["manifest"])
+
+    def _budget_reserved(self, s: ResearchObject, e: Event) -> None:
+        ledger = s.metrics.setdefault("budget_ledger", {})
+        ledger[e.payload["reservation_id"]] = {**e.payload, "status": "reserved"}
+
+    def _budget_settled(self, s: ResearchObject, e: Event) -> None:
+        ledger = s.metrics.setdefault("budget_ledger", {})
+        entry = ledger.setdefault(e.payload["reservation_id"], {"reservation_id": e.payload["reservation_id"]})
+        entry.update({**e.payload, "status": "settled"})
+
+    def _warrant_recorded(self, s: ResearchObject, e: Event) -> None:
+        for raw in e.payload["warrants"]:
+            s.warrants[raw["id"]] = dict(raw)
+            h = s.hypotheses.get(raw["hypothesis_id"])
+            if h is not None:
+                h.warrant_id = raw["id"]
+
+    def _hypothesis_confirmed(self, s: ResearchObject, e: Event) -> None:
+        s.hypotheses[e.payload["hypothesis_id"]].confirmation = dict(e.payload["confirmation"])
+
+    def _evidence_retracted(self, s: ResearchObject, e: Event) -> None:
+        """Retracting evidence takes it out of every hypothesis it supported or opposed and invalidates what was
+        computed on it: those hypotheses' gates, and objections closed with it as new evidence re-open."""
+        reason = e.payload["reason"]
+        for eid in e.payload["evidence_ids"]:
+            touched = []
+            for h in s.hypotheses.values():
+                hit = False
+                if eid in h.supporting_evidence:
+                    h.supporting_evidence.remove(eid)
+                    hit = True
+                if eid in h.contradictory_evidence:
+                    h.contradictory_evidence.remove(eid)
+                    hit = True
+                if hit:
+                    touched.append(h.id)
+                    if h.id in s.gates:  # every gate result computed on the old evidence is void
+                        s.gates[h.id] = {g: r for g, r in s.gates[h.id].items() if g == "G7"}
+            reopened = []
+            for review in s.reviews.values():
+                for o in review.objections:
+                    if o.closure == "new_evidence" and eid in o.evidence_ids:
+                        o.status, o.resolved, o.closure = "raised", False, ""
+                        o.resolution = f"re-opened: evidence {eid} retracted ({reason})"
+                        reopened.append(o.id)
+            s.gates.pop(eid, None)
+            s.retractions[eid] = {"reason": reason, "by": e.actor, "hypotheses": touched, "reopened_objections": reopened}
 
     # ------------------------------------------------------------- governance
     def _change_proposed(self, s: ResearchObject, e: Event) -> None:

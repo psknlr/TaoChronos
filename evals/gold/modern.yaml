@@ -1,0 +1,24 @@
+# ModernEval (S13–S14): the design and population read from a record's indexing, the cross-level guard, and the RWD
+# compiler on the synthetic OMOP database (dev cases).
+typing:
+  - {pubtypes: [Journal Article, Randomized Controlled Trial], title: Efficacy of berberine in patients with type 2 diabetes, want: rct}
+  - {pubtypes: [Journal Article, Randomized Controlled Trial], title: Berberine lowers glucose in diabetic rats, mesh: [Animals, Rats], want: animal}
+  - {pubtypes: [Meta-Analysis, Systematic Review], title: "Berberine for type 2 diabetes: a meta-analysis", want: systematic_review}
+  - {pubtypes: [Journal Article], title: Network pharmacology and molecular docking of Gegen Qinlian decoction, want: in_silico}
+  - {pubtypes: [Journal Article], title: Berberine inhibits lipid accumulation in 3T3-L1 cells, want: in_vitro}
+  - {pubtypes: [Case Reports], title: Aconite poisoning after a herbal decoction, want: case_report}
+  - {pubtypes: [Journal Article, Observational Study], title: Chinese herbal medicine use and dementia risk, want: cohort}
+  - {pubtypes: [Journal Article], title: A case-control study of aristolochic acid exposure and urothelial cancer, want: case_control}
+  - {pubtypes: [Review], title: Berberine in metabolic disease, want: narrative_review}
+  - {pubtypes: [Practice Guideline], title: Guidelines for the treatment of malaria, want: guideline}
+guard:
+  - {claim: 黄连素可降低2型糖尿病患者的血糖, type: rct, carries: true}
+  - {claim: 黄连素可降低2型糖尿病患者的血糖, type: animal, carries: false}
+  - {claim: 黄连素可降低2型糖尿病患者的血糖, type: in_silico, carries: false}
+  - {claim: 黄连素通过激活AMPK通路发挥作用, type: animal, carries: true}
+  - {claim: 网络药理学预测葛根芩连汤作用于胰岛素信号通路, type: in_silico, carries: true}
+  - {claim: 附子可致心律失常等毒性反应, type: case_report, carries: true}
+  - {claim: 黄连素可降低2型糖尿病患者的血糖, type: case_series, carries: false}
+rwd:
+  question: 2型糖尿病患者中，使用黄连素与糖尿病肾病的关系
+  planted_direction: lower   # the synthetic database plants a lower nephropathy risk with berberine

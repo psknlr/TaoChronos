@@ -1,0 +1,26 @@
+# 安全提示 — materials of the classics with well-documented toxicity: a warning whenever a claim or an answer names them.
+# For warnings only: TaoChronos gives no clinical or dosage advice, and nothing here says a material is safe when absent.
+# Sources: pharmacovigilance and toxicology reviews; the Chinese Pharmacopoeia marks most of these 有毒 or 大毒.
+materials:
+  附子: {aliases: [乌头, 川乌, 草乌, 天雄], risk: "cardiotoxicity and neurotoxicity (aconitine alkaloids)", note: 须炮制久煎；误用可致心律失常}
+  关木通: {aliases: [木通（马兜铃科）], risk: "nephrotoxicity and urothelial cancer (aristolochic acid)", note: 马兜铃酸肾病；与木通科木通须区分}
+  广防己: {aliases: [], risk: "aristolochic acid nephropathy", note: 与汉防己（粉防己）须区分}
+  马兜铃: {aliases: [青木香, 天仙藤, 寻骨风, 朱砂莲], risk: "aristolochic acid nephropathy and carcinogenicity"}
+  细辛: {aliases: [], risk: "aristolochic acid in the aerial parts; volatile oil toxicity", note: 历代有"细辛不过钱"之说}
+  朱砂: {aliases: [丹砂, 辰砂], risk: "mercury poisoning"}
+  轻粉: {aliases: [水银粉, 汞粉], risk: "mercury poisoning"}
+  雄黄: {aliases: [], risk: "arsenic poisoning"}
+  砒石: {aliases: [砒霜, 信石], risk: "arsenic poisoning", note: 大毒}
+  铅丹: {aliases: [黄丹, 密陀僧], risk: "lead poisoning"}
+  马钱子: {aliases: [番木鳖], risk: "strychnine poisoning"}
+  雷公藤: {aliases: [], risk: "hepatotoxicity, reproductive and haematological toxicity"}
+  何首乌: {aliases: [首乌], risk: "idiosyncratic hepatotoxicity"}
+  千里光: {aliases: [], risk: "hepatotoxicity (pyrrolizidine alkaloids)"}
+  蟾酥: {aliases: [], risk: "cardiotoxicity (bufadienolides)"}
+  斑蝥: {aliases: [], risk: "cantharidin poisoning (renal, mucosal)"}
+  苍耳子: {aliases: [], risk: "hepatotoxicity"}
+  洋金花: {aliases: [曼陀罗], risk: "anticholinergic poisoning"}
+  甘遂: {aliases: [大戟, 芫花, 京大戟], risk: "severe irritant purgation", note: 十八反：反甘草}
+  麻黄: {aliases: [], risk: "sympathomimetic effects (ephedrine): hypertension, arrhythmia"}
+  甘草: {aliases: [炙甘草], risk: "pseudoaldosteronism and hypokalaemia with long or high use (glycyrrhizin)"}
+  半夏: {aliases: [生半夏], risk: "raw tuber irritant and toxic; used processed"}

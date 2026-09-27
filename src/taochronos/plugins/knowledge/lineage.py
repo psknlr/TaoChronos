@@ -225,7 +225,7 @@ class LineageBuilder:
             match = self.reuse.compare(later, earlier)
             if match is None:
                 continue
-            certain = ra is not None and rb is not None and (ra[1] < rb[0] or rb[1] < ra[0])
+            certain = ra is not None and rb is not None and self.corpus.year_range(a).order(self.corpus.year_range(b)) != "undetermined"
             confidence = max(match.containment, match.weighted_overlap) * (0.9 if certain else 0.7)
             edges.append(
                 self._edge(
@@ -241,6 +241,7 @@ class LineageBuilder:
                         "longest_block": match.longest_block,
                         "containment": match.containment,
                         "weighted_bigram_overlap": match.weighted_overlap,
+                        **({"reuse_type": match.reuse_type, "reuse": match.reuse} if match.reuse_type else {}),
                     },
                     source_passage=later.id,
                     target_passage=earlier.id,

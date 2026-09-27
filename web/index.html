@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>道乃久 · 中医古籍研究智能体</title>
+<meta name="description" content="道乃久（TaoChronos · Tao-R1）：医哲未来人工智能研究院（IMPF-AI）发布的中医古籍研究智能体。检索原文、考据源流、发现与核验，每一条引文都可逐字核对。">
+<meta name="author" content="医哲未来人工智能研究院（IMPF-AI）">
+<meta name="application-name" content="道乃久">
+<meta name="apple-mobile-web-app-title" content="道乃久">
+<meta name="theme-color" content="#f6f2e9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#151412" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/logo.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/app.css">
+<script>
+  // the theme is applied before the first paint
+  try {
+    var t = JSON.parse(localStorage.getItem("tc.settings") || "{}").theme;
+    if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+    if (localStorage.getItem("tc.sidebar") === "\"collapsed\"") document.documentElement.classList.add("pre-collapsed");
+  } catch (e) { /* storage unavailable */ }
+</script>
+</head>
+<body>
+<div id="app" class="app">
+  <aside id="sidebar" class="sidebar" aria-label="对话列表">
+    <div class="brand">
+      <img src="assets/logo.svg" alt="">
+      <div class="name">道乃久<small>TaoChronos · IMPF-AI</small></div>
+      <div class="spacer"></div>
+      <button id="collapse-sidebar" class="icon-btn" type="button" title="收起侧栏 (Ctrl+B)" aria-label="收起侧栏"></button>
+    </div>
+    <div class="side-actions">
+      <button id="new-chat" class="new-chat" type="button"><span id="new-chat-icon"></span>新对话<kbd>Ctrl K</kbd></button>
+      <label class="search"><span class="sr-only">搜索对话</span><span id="search-icon"></span><input id="search" type="search" placeholder="搜索对话" autocomplete="off"></label>
+    </div>
+    <nav id="convs" class="convs" aria-label="历史对话"></nav>
+    <div class="side-foot">
+      <button id="runtime-pill" class="runtime-pill" type="button" title="运行环境">
+        <span class="dot"></span><span class="rt"><b>运行环境</b><span>准备中…</span></span>
+      </button>
+      <div class="foot-row">
+        <button id="theme-btn" class="btn-ghost" type="button" title="切换主题"></button>
+        <button id="settings-btn" class="btn-ghost" type="button" title="设置"></button>
+      </div>
+    </div>
+  </aside>
+
+  <main id="main" class="main">
+    <header class="topbar">
+      <button id="toggle-sidebar" class="icon-btn" type="button" title="侧栏" aria-label="打开或收起对话列表"></button>
+      <button id="model-chip" class="model-chip" type="button" title="Tao-R1 · 模型设置"><img class="seal" src="assets/logo.svg" alt=""><span class="nm">Tao-R1</span></button>
+      <div id="conv-title" class="title"></div>
+      <button id="toggle-drawer" class="icon-btn" type="button" title="证据 · 研究 · 工具台 (Ctrl+J)" aria-label="证据、研究与工具台"></button>
+      <button id="new-chat-top" class="icon-btn" type="button" title="新对话" aria-label="新对话"></button>
+    </header>
+    <div id="thread" class="thread">
+      <div id="thread-inner" class="thread-inner" aria-live="polite"></div>
+    </div>
+    <button id="to-bottom" class="to-bottom" type="button" aria-label="滚动到底部"></button>
+    <div class="composer-wrap">
+      <form id="composer" class="composer" autocomplete="off">
+        <div id="attachments" class="attachments" hidden></div>
+        <label class="sr-only" for="input">输入问题</label>
+        <textarea id="input" rows="1" placeholder="问一个关于中医古籍的问题……" enterkeyhint="send"></textarea>
+        <div class="bar">
+          <button id="attach" class="icon-btn" type="button" title="附上书影或图片（需模型支持）" aria-label="附加图片"></button>
+          <input id="file" type="file" accept="image/*" multiple hidden>
+          <span id="hint" class="hint"></span>
+          <span class="grow"></span>
+          <button id="send" class="send" type="submit" title="发送 (Enter)" aria-label="发送"></button>
+        </div>
+      </form>
+      <div class="disclaimer">回答以工具返回的古籍原文为据，引文逐字核对；计算推断须经专家核验，不构成医疗建议。</div>
+    </div>
+  </main>
+
+  <aside id="drawer" class="drawer" aria-label="证据、研究与工具台"></aside>
+  <div id="scrim" class="scrim"></div>
+</div>
+
+<dialog id="settings" aria-label="设置"></dialog>
+<dialog id="report" aria-label="研究报告"></dialog>
+<noscript><p style="padding:24px">TaoChronos 的网页端需要启用 JavaScript。</p></noscript>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

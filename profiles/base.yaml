@@ -9,14 +9,16 @@ bundles:
   - {plugin: taochronos.plugins.models.offline}
   - {plugin: taochronos.plugins.models.anthropic_provider}
   - {plugin: taochronos.plugins.models.openai_compat}
+  - {plugin: taochronos.plugins.models.litellm_provider}
   - {plugin: taochronos.plugins.sandbox}
   - {plugin: taochronos.plugins.subagents}
+  - {plugin: taochronos.plugins.modern, config: {domain: domains/modern, curated: corpus/modern/evidence.yaml, online: false}}
   - {plugin: taochronos.plugins.storage, config: {event_store: sqlite}}
 agents: ["*"]
 skills: ["*"]
 tracks: [D1, D2, D3, D4, D5]
 routing: {default_provider: offline}
-hooks: [provenance_validator, anachronism_guard, publish_guard]
+hooks: [provenance_validator, semantic_support, anachronism_guard, publish_guard]
 gates: {min_independent_sources: 2, sense_threshold: 0.6}
 budget: {max_tool_calls: 6000, max_agents: 200}
 stop: {max_rounds: 2}

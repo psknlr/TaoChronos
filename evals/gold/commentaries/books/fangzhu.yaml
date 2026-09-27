@@ -1,0 +1,10 @@
+- book: fangzhu
+  passages:
+    - {id: fangzhu.001, locator: {volume: 卷一}, text: 太阳之为病，脉浮，头项强痛而恶寒。}
+    - {id: fangzhu.002, locator: {volume: 卷一}, kind: commentary, tags: ["layer:方有执注"], text: 太阳者，膀胱经也，乃六经之首，主皮肤而统营卫，所以为受病之始也。}
+    - {id: fangzhu.003, locator: {volume: 卷一}, text: 太阳病，发热，汗出，恶风，脉缓者，名为中风。}
+    - {id: fangzhu.004, locator: {volume: 卷一}, kind: commentary, tags: ["layer:方有执注"], text: 风之为风，其性属阳，其中人也，从卫而入。卫，气道也，风邪客之，故汗出。}
+    - {id: fangzhu.005, locator: {volume: 卷一}, text: 太阳病，或已发热，或未发热，必恶寒，体痛，呕逆，脉阴阳俱紧者，名为伤寒。}
+    - {id: fangzhu.006, locator: {volume: 卷一}, kind: commentary, tags: ["layer:方有执注"], text: 寒为阴邪，伤于营。营，血道也，营血凝涩，故体痛。}
+    - {id: fangzhu.007, locator: {volume: 卷一}, text: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之。}
+    - {id: fangzhu.008, locator: {volume: 卷一}, text: 太阳病，项背强几几，反汗出恶风者，桂枝加葛根汤主之。}

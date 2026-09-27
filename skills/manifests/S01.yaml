@@ -1,0 +1,18 @@
+id: S01
+key: source_provenance
+name: 来源与版本 Source & Provenance
+version: 1.0.0
+owner: classical_scholar
+description: Find the passages a question turns on, each with its work, edition, locator, date, layer, source and licence.
+inputs: [question, terms]
+outputs: [passages]
+dependencies: []
+requires_llm: none
+deterministic_steps:
+  - hybrid retrieval over seven routes (lexical, dense, graph, temporal, citation, variant, sense) with the question's period constraints
+  - the witness card of each hit (book, edition, locator, layer, licence, transcription note)
+llm_steps: []
+calls:
+  - {tool: classics.search, args: {query: "{question}", k: 8}, collect: passages}
+validators: [every passage has a book, a locator and a licence, quotes are verbatim spans of the store]
+evaluation: {suites: [provenance, hallucination, temporal]}

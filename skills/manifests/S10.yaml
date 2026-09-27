@@ -1,0 +1,16 @@
+id: S10
+key: ancient_phenotyping
+name: 古代表型化 Ancient Phenotyping
+version: 1.0.0
+owner: translational
+description: The AncientPhenotypePacket of each passage — findings with negation, optional / conditional status, modifiers, course, population, and the historical names with their senses.
+inputs: [passages]
+outputs: [phenotype_packets]
+dependencies: [S01]
+requires_llm: optional
+deterministic_steps: [written forms longest first on the normalised text, negation and clause bounds, ambiguous readings by cues, senses of named diseases]
+llm_steps: [adjudication of uncertain findings, recall of missed findings as validated spans]
+calls:
+  - {tool: bridge.phenotype, for_each: passages, limit: 3, args: {passage_id: "{passage_id}"}}
+validators: [a finding is a span of the passage, a model's addition must be one too]
+evaluation: {suites: [bridge], metrics: [phenotypes.f1, heldout.f1]}

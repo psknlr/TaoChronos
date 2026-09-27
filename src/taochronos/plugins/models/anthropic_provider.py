@@ -89,6 +89,17 @@ class AnthropicProvider:
                     if m.text:
                         blocks.append({"type": "text", "text": m.text})
                     wire.append({"role": "user", "content": blocks})
+                elif m.images:
+                    import base64
+
+                    parts: list[dict[str, Any]] = [
+                        {"type": "image", "source": {"type": "base64", "media_type": img.media_type,
+                                                     "data": base64.b64encode(img.data).decode("ascii")}}
+                        for img in m.images
+                    ]
+                    if m.text:
+                        parts.append({"type": "text", "text": m.text})
+                    wire.append({"role": "user", "content": parts})
                 else:
                     wire.append({"role": "user", "content": m.text})
         return wire
