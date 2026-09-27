@@ -2,7 +2,7 @@
 // the conversations' data, and what this page is.
 
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY, PUBLISHER, PUBLISHER_EN } from "../brand.js";
-import { allProviders, DEFAULTS, newCustomProvider, providerById } from "../providers.js";
+import { allProviders, customPreset, DEFAULTS, newCustomProvider, providerById } from "../providers.js";
 import { h, icon, replace } from "../util.js";
 
 const SECTIONS = [
@@ -58,9 +58,23 @@ function seg(options, value, onChange) {
 function modelPane(d, S, ctx, redraw) {
   const p = providerById(d.provider, d);
   const custom = p.custom ? d.customProviders.find((c) => c.id === p.id) : null;
-  const tile = (x) => h("button.provider-opt", { type: "button", class: x.id === d.provider ? "on" : "", on: { click: () => { d.provider = x.id; redraw(); } } },
-    h("span.lbl", x.label, x.custom ? h("span.tag", "自定义") : null),
-    h("small", x.default_model || (x.examples || [])[0] || (x.base_url || "").replace(/^https?:\/\//, "") || "未设置"));
+  const sub = (x) => x.default_model || (x.examples || [])[0] || (x.base_url || "").replace(/^https?:\/\//, "") || "未设置";
+  const tiles = new Map();
+  const tile = (x) => {
+    const el = h("button.provider-opt", { type: "button", class: x.id === d.provider ? "on" : "", on: { click: () => { d.provider = x.id; redraw(); } } },
+      h("span.lbl", h("span.name", x.label), x.custom ? h("span.tag", "自定义") : null),
+      h("small", sub(x)));
+    tiles.set(x.id, el);
+    return el;
+  };
+  // the tile of the API being edited follows its form
+  const retitle = () => {
+    const el = custom && tiles.get(custom.id);
+    if (!el) return;
+    const x = customPreset(custom);
+    el.querySelector(".name").textContent = x.label;
+    el.querySelector("small").textContent = sub(x);
+  };
   const add = h("button.provider-opt.add", { type: "button", on: { click: () => {
     const c = newCustomProvider(d.customProviders.length + 1);
     d.customProviders.push(c);
@@ -98,7 +112,7 @@ function modelPane(d, S, ctx, redraw) {
       "列表之外的服务（自建网关、私有部署、本地模型）点“自定义 API”手动设置。"),
     h("div.form-grid",
       h("div.field", h("span.lb", "服务商"), grid, p.note ? h("div.help", p.note) : null),
-      ...(custom ? customFields(custom, d, redraw) : presetFields(p, d)),
+      ...(custom ? customFields(custom, d, redraw, retitle) : presetFields(p, d)),
       keyField,
       h("div.field", h("span.lb", "请求路径"),
         seg([["auto", "自动"], ["direct", "浏览器直连"], ["proxy", "经本地服务转发"]], d.route, (v) => { d.route = v; }),
@@ -125,7 +139,7 @@ function presetFields(p, d) {
 }
 
 /** The form of an endpoint set by hand: everything the page needs to call it. */
-function customFields(c, d, redraw) {
+function customFields(c, d, redraw, retitle = () => {}) {
   const input = (value, placeholder, on, type = "text") => {
     const el = h("input", { type, value: value ?? "", placeholder, spellcheck: false, autocomplete: "off" });
     el.addEventListener("input", () => on(el.value));
@@ -156,7 +170,7 @@ function customFields(c, d, redraw) {
     return [ta, note];
   };
   const anthropic = c.format === "anthropic";
-  const base = input(c.base_url, anthropic ? "https://api.example.com" : "https://api.example.com/v1", (v) => { c.base_url = v.trim(); }, "url");
+  const base = input(c.base_url, anthropic ? "https://api.example.com" : "https://api.example.com/v1", (v) => { c.base_url = v.trim(); retitle(); }, "url");
   const [headers, headersNote] = json(c.headers, '{"api-key": "…"}', (v) => { c.headers = v; });
   const [body, bodyNote] = json(c.extra_body, '{"enable_thinking": true}', (v) => { c.extra_body = v; });
   const remove = h("button.btn.secondary", { type: "button", on: { click: () => {
@@ -168,7 +182,7 @@ function customFields(c, d, redraw) {
   } } }, icon("trash", "sm"), "删除这个 API");
   return [
     h("div.custom-api",
-      h("div.field", h("label", "名称"), input(c.label, "给这个 API 起个名字", (v) => { c.label = v.trim() || "自定义 API"; })),
+      h("div.field", h("label", "名称"), input(c.label, "给这个 API 起个名字", (v) => { c.label = v.trim() || "自定义 API"; retitle(); })),
       h("div.field", h("span.lb", "接口格式"),
         seg([["openai", "OpenAI 兼容"], ["anthropic", "Anthropic Messages"]], c.format || "openai", (v) => { c.format = v; redraw(); }),
         h("div.help", anthropic ? "经官方 Anthropic SDK 请求 …/v1/messages（Claude 或兼容 Anthropic 接口的服务）。"
@@ -177,7 +191,7 @@ function customFields(c, d, redraw) {
         h("div.help", anthropic ? "填到域名或 /v1 为止。" : "填到 /v1 为止（如 https://api.example.com/v1），页面在后面接 /chat/completions。")),
       anthropic ? null : h("label.check", check(c.full_url, (v) => { c.full_url = v; }),
         h("span", "这是完整的请求地址，原样请求（如 Azure OpenAI：…/deployments/名称/chat/completions?api-version=…）")),
-      h("div.field", h("label", "模型"), input(c.model, "服务要求的模型名，如 qwen-max、deepseek-chat、my-model", (v) => { c.model = v.trim(); })),
+      h("div.field", h("label", "模型"), input(c.model, "服务要求的模型名，如 qwen-max、deepseek-chat、my-model", (v) => { c.model = v.trim(); retitle(); })),
       h("details.more",
         h("summary", "高级：请求头、请求参数、思考与图片"),
         h("div.form-grid", { style: { marginTop: "8px" } },

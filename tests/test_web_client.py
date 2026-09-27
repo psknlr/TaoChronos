@@ -326,6 +326,8 @@ def test_an_api_set_by_hand(tmp_path):
             page.fill(".custom-api input[type=text] >> nth=0", "我的网关")
             page.fill(".custom-api input[type=url]", mock.base_url)
             page.fill(".custom-api input[placeholder^='服务要求的模型名']", "my-model")
+            tile = page.inner_text(".provider-opt.on")
+            assert "我的网关" in tile and "my-model" in tile, tile  # the tile follows the form as it is filled
             page.click(".custom-api details summary")
             page.fill(".custom-api textarea >> nth=0", '{"X-Gateway": "tc-test"}')
             page.fill(".custom-api textarea >> nth=1", "{not json")

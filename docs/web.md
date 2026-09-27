@@ -221,7 +221,8 @@ was not built, the in-browser runtime's archives are made from the checkout on f
 
 `.github/workflows/pages.yml` builds and deploys the site on every push to `main` that touches the client, the package
 or the data it ships, and on demand.  One-time setup: **Settings → Pages → Build and deployment → Source: GitHub
-Actions**.  To build locally:
+Actions**.  A Pages site left on "Deploy from a branch" keeps serving the branch (the README rendered by Jekyll), not the
+client.  The site lives under the repository's path (`/TaoChronos/`); every address in it is relative.  To build locally:
 
 ```bash
 taochronos study canon --write-catalog      # (with the full corpus) rank the works → corpus/catalog/canon.yaml
