@@ -64,8 +64,8 @@ and decide.
 > `[[passage_id]]` it cites word for word (✓ matches the passage · ≠ misquoted · ✕ no such passage); evidence, research runs
 > and a tool console (any tool, no model needed) sit in the side panel.  In the browser TaoChronos runs with Pyodide on the
 > **要籍语料**: of the **350 key works** ranked by how the tradition cited them ([list](corpus/catalog/canon.yaml)), the 108 with
-> an openly licensed witness (114 witnesses, 3.8 million characters; the 素问, 灵枢, 伤寒论 and 金匮 with two or three
-> witnesses to collate; CC BY-SA 4.0, [sources](corpus/web/ATTRIBUTION.md)).  For **all the books**, build the full corpus and
+> an openly licensed witness (114 witnesses, 4.1 million characters; the 素问, 灵枢, 伤寒论 and 金匮 whole, with two or
+> three witnesses to collate; CC BY-SA 4.0, [sources](corpus/web/ATTRIBUTION.md)).  For **all the books**, build the full corpus and
 > run `taochronos serve`, then connect under Settings → 运行环境 in one step (the browser remembers it; a server on another
 > machine is reached with its access token).  See [docs/web.md](docs/web.md).
 
@@ -270,11 +270,11 @@ See [docs/data.md](docs/data.md) and [ADR 0003](docs/adr/0003-corpus-store-and-s
   less time to be cited, lost works are not in it.  The `classics.canon` tool queries the list in any corpus and says
   whether the current one holds each work's text.
 - **要籍语料** (`taochronos web pack` → [`corpus/web/`](corpus/web/ATTRIBUTION.md)): the **108 of the 350 with an openly licensed
-  witness** (114 witnesses, 60 000 passages, 3.8 million characters): up to three witnesses for the first ten (CMETA's
-  collated editions first, then the most complete), whole within 250 000 characters; the others by rank within 50 000 /
+  witness** (114 witnesses, 66 000 passages, 4.1 million characters): up to three witnesses for the first ten (CMETA's
+  collated editions first, then the most complete), whole within 350 000 characters; the others by rank within 50 000 /
   25 000 / 12 000 characters, as whole chapters spread through the book; passage ids as in the full corpus.  The witnesses
   of the other 242 are mostly for local research only and are not published.  The site ships the store without its
-  full-text index (about 8 MB); the browser builds the index once (about ten seconds) and keeps it.
+  full-text index (about 8.6 MB); the browser builds the index once (about ten seconds) and keeps it.
 
 ## 4. Study: mining the classics on their own terms
 

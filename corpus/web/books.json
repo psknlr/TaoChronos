@@ -80,10 +80,10 @@
   },
   "excerpt": {
    "chars": 339993,
-   "kept_chars": 242830,
-   "kept_units": 18,
+   "kept_chars": 339993,
+   "kept_units": 25,
    "units": 25,
-   "whole": false
+   "whole": true
   },
   "id": "cm_suwen_gucongde",
   "rank": 1,
@@ -981,8 +981,8 @@
   },
   "excerpt": {
    "chars": 484201,
-   "kept_chars": 249281,
-   "kept_units": 133,
+   "kept_chars": 349356,
+   "kept_units": 197,
    "units": 252,
    "whole": false
   },
@@ -1243,8 +1243,8 @@
   },
   "excerpt": {
    "chars": 725793,
-   "kept_chars": 249875,
-   "kept_units": 472,
+   "kept_chars": 349856,
+   "kept_units": 678,
    "units": 1429,
    "whole": false
   },

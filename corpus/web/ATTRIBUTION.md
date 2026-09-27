@@ -5,11 +5,11 @@
 与授权如下（CC BY 与公有领域的文本可以并入 CC BY-SA 的汇编，须保留署名）。录文均未经本项目逐字校勘；段落号与全量语料相同。
 其余要籍（多为笈成等仅限本地研究使用的来源）不随网站发布，接入全量语料（`taochronos serve`）后可用。
 
-共 108 部要籍、114 个录本，3,776,258 字，60,003 段。
+共 108 部要籍、114 个录本，4,073,477 字，66,422 段。
 
 | 要籍序 | 书名 | 来源 | 授权 | 地址 | 收录范围 |
 |---|---|---|---|---|---|
-| 1 | 重广补注黄帝内经素问（顾从德本） | 數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台） | CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域） | https://cmeta.lctseng.csie.org/prototype/ | 节选 18/25 个章节单位，242,830/339,993 字 |
+| 1 | 重广补注黄帝内经素问（顾从德本） | 數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台） | CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域） | https://cmeta.lctseng.csie.org/prototype/ | 全书 |
 | 1 | 重广补注黄帝内经素问 | 漢籍リポジトリ Kanseki Repository（Christian Wittern 等） | CC BY-SA 4.0 | https://github.com/kanripo/kr3e0001 | 节选 27/94 个章节单位，88,971/280,625 字 |
 | 2 | 黄帝素问灵枢经（赵府居敬堂本） | 數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台） | CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域） | https://cmeta.lctseng.csie.org/prototype/ | 全书 |
 | 2 | 黄帝素问灵枢经 | 漢籍リポジトリ Kanseki Repository（Christian Wittern 等） | CC BY-SA 4.0 | https://github.com/kanripo/kr3e0002 | 全书 |
@@ -21,10 +21,10 @@
 | 5 | 伤寒论（宋本·安政本） | 數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台） | CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域） | https://cmeta.lctseng.csie.org/prototype/ | 全书 |
 | 5 | 伤寒论（康平本） | 數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台） | CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域） | https://cmeta.lctseng.csie.org/prototype/ | 全书 |
 | 6 | 神农本草经 | 维基文库（zh.wikisource.org）· Category:中醫、Category:醫書 | CC BY-SA 4.0（维基文库录文与标点；古籍原文属公有领域） | https://zh.wikisource.org/wiki/神農本草經 | 全书 |
-| 7 | 备急千金要方 | 漢籍リポジトリ Kanseki Repository（Christian Wittern 等） | CC BY-SA 4.0 | https://github.com/kanripo/kr3e0013 | 节选 133/252 个章节单位，249,281/484,201 字 |
+| 7 | 备急千金要方 | 漢籍リポジトリ Kanseki Repository（Christian Wittern 等） | CC BY-SA 4.0 | https://github.com/kanripo/kr3e0013 | 节选 197/252 个章节单位，349,356/484,201 字 |
 | 8 | 脉经 | 漢籍リポジトリ Kanseki Repository（Christian Wittern 等） | CC BY-SA 4.0 | https://github.com/kanripo/kr3e0009 | 全书 |
 | 9 | 针灸甲乙经 | 漢籍リポジトリ Kanseki Repository（Christian Wittern 等） | CC BY-SA 4.0 | https://github.com/kanripo/kr3e0005 | 全书 |
-| 10 | 外台秘要方 | 漢籍リポジトリ Kanseki Repository（Christian Wittern 等） | CC BY-SA 4.0 | https://github.com/kanripo/kr3e0015 | 节选 472/1429 个章节单位，249,875/725,793 字 |
+| 10 | 外台秘要方 | 漢籍リポジトリ Kanseki Repository（Christian Wittern 等） | CC BY-SA 4.0 | https://github.com/kanripo/kr3e0015 | 节选 678/1429 个章节单位，349,856/725,793 字 |
 | 11 | 肘后备急方 | 漢籍リポジトリ Kanseki Repository（Christian Wittern 等） | CC BY-SA 4.0 | https://github.com/kanripo/kr3e0010 | 节选 65/87 个章节单位，47,902/78,605 字 |
 | 12 | 太平惠民和剂局方 | 漢籍リポジトリ Kanseki Repository（Christian Wittern 等） | CC BY-SA 4.0 | https://github.com/kanripo/kr3e0033 | 节选 16/67 个章节单位，49,246/169,028 字 |
 | 13 | 诸病源候总论 | 漢籍リポジトリ Kanseki Repository（Christian Wittern 等） | CC BY-SA 4.0 | https://github.com/kanripo/kr3e0012 | 节选 536/1746 个章节单位，49,989/165,097 字 |

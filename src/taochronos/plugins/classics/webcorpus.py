@@ -33,7 +33,7 @@ from .store import CorpusStore, grams
 from .study.canon import OPEN_SOURCES, witness_order
 
 # by the work's rank: how many witnesses, the characters the first may bring, the characters each further one may bring
-TIERS: tuple[tuple[int | None, int, int, int], ...] = ((10, 3, 250_000, 90_000), (40, 1, 50_000, 0), (120, 1, 25_000, 0),
+TIERS: tuple[tuple[int | None, int, int, int], ...] = ((10, 3, 350_000, 90_000), (40, 1, 50_000, 0), (120, 1, 25_000, 0),
                                                         (None, 1, 12_000, 0))
 PREFACE = 4000  # a short 提要 or preface at the head of a book is always kept
 COLUMNS = ("id", "book_id", "edition_id", "seq", "kind", "layer", "year", "y_start", "y_end", "locator", "temporal", "text",

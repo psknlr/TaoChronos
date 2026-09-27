@@ -56,14 +56,15 @@ are openly licensed.  Two steps choose them:
 2. **要籍语料** — `taochronos web pack` takes, for each of the 350 with a witness under an open licence (汉籍仓库 and 维基文库
    CC BY-SA 4.0, CMETA CC BY 4.0, McGill public domain), the best witness (CMETA's collated editions first, then the most
    complete) — up to three for the first ten, so that the 素问, 灵枢, 伤寒论 and 金匮要略 can be collated in the browser —
-   whole within 250 000 characters for the first ten; then 50 000, 25 000 and 12 000 by rank, as whole chapters spread
-   through the book.  Result: 108 works, 114 witnesses, 60 003 passages, 3.78 million characters, with the passage ids of
-   the full corpus, in `corpus/web/` (passages.jsonl.gz, books.json, [ATTRIBUTION.md](../corpus/web/ATTRIBUTION.md); the
-   pack under CC BY-SA 4.0).  The other 242 key works are held only by sources kept to local research and are not published.
+   whole within 350 000 characters for the first ten; then 50 000, 25 000 and 12 000 by rank, as whole chapters spread
+   through the book.  Result: 108 works, 114 witnesses, 66 422 passages, 4.07 million characters (the 素问, 灵枢, 伤寒论
+   and 金匮 whole), with the passage ids of the full corpus, in `corpus/web/` (passages.jsonl.gz, books.json,
+   [ATTRIBUTION.md](../corpus/web/ATTRIBUTION.md); the pack under CC BY-SA 4.0).  The other 242 key works are held only by
+   sources kept to local research and are not published.
 
 `taochronos web build` turns the pack into a corpus store — the schema of the full corpus — without its full-text index,
-gzipped (`runtime/corpus.sqlite.gz`, about 8 MB instead of 20).  On the first visit the worker downloads it (with
-progress), builds the index (about ten seconds; 60 000 passages) and keeps the indexed store in the browser's cache; later
+gzipped (`runtime/corpus.sqlite.gz`, about 8.6 MB instead of 21).  On the first visit the worker downloads it (with
+progress), builds the index (about ten seconds; 66 000 passages) and keeps the indexed store in the browser's cache; later
 visits open it at once.  The runtime uses the `web-canon` profile; `info.corpus` says `kind: canon`, `label: 要籍语料`, and
 how many of the 350 it holds.  The standing instructions tell the model which corpus it reads, that excerpted books may
 lack what the whole book has, and where the rest is.
@@ -232,10 +233,10 @@ taochronos web build -o _site --pyodide cdn # without Pyodide: the page loads it
 python -m http.server -d _site 8000
 ```
 
-The site (about 23 MB) holds: the client (`web/`), `runtime/taochronos.zip` (the package), `runtime/home.zip`
+The site (about 24 MB) holds: the client (`web/`), `runtime/taochronos.zip` (the package), `runtime/home.zip`
 (profiles, domain packs, the demonstration corpus, catalogs with the 要籍 list, agents, skills, gold sets; the lexicon
 harvested from the full corpus is left out), `runtime/corpus.sqlite.gz` (the 要籍语料 as a store without its index, about
-8 MB; built from `corpus/web` by the build, the same bytes for the same pack), `runtime/manifest.json` (sizes and SHA-256;
+8.6 MB; built from `corpus/web` by the build, the same bytes for the same pack), `runtime/manifest.json` (sizes and SHA-256;
 the worker caches the archives by content, and the corpus once indexed),
 `providers.json` (from `taochronos.chat.providers`) and, by default, the Pyodide core with the PyYAML and SQLite
 wheels, checksums verified against `pyodide-lock.json`.  Archives are deterministic.  Every path is relative, so the

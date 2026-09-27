@@ -70,9 +70,9 @@ the model told to name them when asked and to claim no other identity.
 network of the whole store (``study canon``: distinct later works citing it, periods, citations, witnesses, 四库); the first
 350 are a published list with metadata only.  Of these, the 108 that have a witness under an open licence (汉籍仓库, 维基文库,
 CMETA, McGill) are packed (``web pack``) — whole for the first classics, with up to three witnesses to collate, otherwise
-chapters spread through the book, 3.8 million characters — and committed as ``corpus/web`` under CC BY-SA 4.0 with per-text
+chapters spread through the book, 4.1 million characters — and committed as ``corpus/web`` under CC BY-SA 4.0 with per-text
 attribution: the one set of texts in the repository, because it is what the published site carries.  Nothing from a source
-kept to local research is in it.  The site ships the pack as a store without its full-text index (8 MB instead of 20); the
+kept to local research is in it.  The site ships the pack as a store without its full-text index (8.6 MB instead of 21); the
 browser indexes it once and keeps it.  The passage ids are those of the full corpus, so a citation means the same passage
 in the browser and on the server.
 
