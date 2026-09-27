@@ -818,6 +818,90 @@ def entities(r: dict[str, Any]) -> list[str]:
     return out + ["", f"> {r.get('note', '')}"]
 
 
+def translate(r: dict[str, Any]) -> list[str]:
+    out = ["# 释义与今译", ""]
+    if r.get("passage"):
+        out += [_cite(r["passage"], 0), ""]
+    out += ["## 原文（不改一字）", "", r["original"], ""]
+    if r.get("normalized_changes"):
+        out += ["## 规范字", "", r["normalized"], "", "改动：" + "、".join(f"{c['from']}→{c['to']}" for c in r["normalized_changes"][:30]), ""]
+    how = {"input": "原有标点", "model": "句读模型所加（只加标点，原字保留：" + ("是" if r["preserved"] else "否") + "）"}[r["punctuation"]]
+    out += ["## 句读", "", r["punctuated"], "", f"（{how}）", "", "## 训释（诸家训诂与历史义项）", ""]
+    if not r["interpreted"]:
+        out += ["（未见需训释之词）"]
+    for it in r["interpreted"]:
+        glosses = "；".join(f"{g['id']} {g['by'] or '佚名'}《{g['title'] or ''}》{('（' + str(int(g['years'][0])) + '）') if g.get('years') else ''}："
+                           f"{g['gloss']}" for g in it["glosses"]) or "（库中未见训释）"
+        sense = f"；当时义项：{it['sense']['label']}（{it['sense']['p']:.2f}）" if it.get("sense") else ""
+        out.append(f"- **{it['term']}**（{it['type']}）：{glosses}{sense}")
+    t = r.get("translated")
+    out += ["", "## 今译", ""]
+    if not t:
+        out += ["（需模型：`--llm provider:model`；以上四层不依赖模型）"]
+    elif not t.get("ok"):
+        out += [f"（模型译文未通过检查，未采用：{t.get('error')}）"]
+    else:
+        out += [t["text"], "", f"> 模型译文（{t['judge']}），非原文；所据训诂："
+                + ("、".join(sorted({g for n in t.get("notes", []) for g in n.get('gloss_ids', [])})) or "无")
+                + ("；无把握：" + "；".join(t["uncertain"]) if t.get("uncertain") else "")]
+    return out + ["", f"> {r['note']}"]
+
+
+def places(r: dict[str, Any]) -> list[str]:
+    view = r.get("view")
+
+    def who(x: dict[str, Any]) -> str:
+        years = x.get("years")
+        span = f"{int(years[0])}–{int(years[1])}" if years else "年代未详"
+        return f"{x.get('name')}（{x.get('dynasty') or ''}，{span}）"
+
+    if view == "person":
+        x = r["person"]
+        out = [f"# 地域：{x['name']}", "", f"- 籍贯（整理）：{x.get('place_name') or '未详'}"
+               + (f"（{x['province']}，{x['region']}）" if x.get("place") else "")]
+        if r.get("stated"):
+            out += ["- 文本所述：" + "；".join(f"{s['place_name']}：{_cite(s['witness'], 40)}" for s in r["stated"][:6])]
+        if r.get("signed"):
+            out += ["- 序跋所署：" + "；".join(f"{s['place_name']}：{_cite(s['witness'], 40)}" for s in r["signed"][:6])]
+        if r.get("curated_confirmed") is not None:
+            out += ["", "文本与整理的籍贯" + ("一致" if r["curated_confirmed"] else "不一致或未见，待核") + "。"]
+        return out + ["", f"> {r['note']}"]
+    if view == "school":
+        out = [f"# 地域：{r['school']}学派", "", "| 地区 | 成员 | 占比 | 全体医家中占比 |", "|---|---|---|---|"]
+        out += [f"| {x['region']} | {x['members']} | {x['share']:.0%} | {x['all_physicians_share']:.0%} |" for x in r["by_region"]]
+        out += ["", "成员：" + "；".join(f"{who(m)} {m.get('place_name') or '未详'}" for m in r["members"])]
+        return out + ["", f"> {r['note']}"]
+    if view == "place":
+        pl = r["place"]
+        out = [f"# 地域：{pl['place_name']}", "", f"{'、'.join(pl['names'])} · {pl.get('province') or ''} · {pl.get('region') or ''}", ""]
+        out += ["医家：" + ("；".join(who(m) for m in r["physicians"]) or "无")]
+        out += ["", "著作：" + ("；".join(f"《{w['title']}》（{_years(w)}，{w['how']}）" for w in r["works"][:30]) or "无")]
+        return out + ["", f"> {r['note']}"]
+    if view == "term":
+        out = [f"# 地域：「{r['term']}」的地区分布", "",
+               f"含此词的著作 {r['works_with_term']} 部，其中可定地区者 {r['placed_works_with_term']} 部。", ""]
+        if r["rows"]:
+            out += ["| 时期 | 地区 | 用此词的著作 | 著作 | 占比 | 其他地区 | z | q |", "|---|---|---|---|---|---|---|---|"]
+            out += [f"| {x['period']} | {x['region']} | {x['works_with']} | {x['works']} | {x['share']:.0%} | {x['rest_share']:.0%} | "
+                    f"{x['z']} | {x['q']}{' *' if x['significant'] else ''} |" for x in r["rows"]]
+        else:
+            out += ["（各期各地区可比的著作太少）"]
+        return out + ["", f"> {r['note']}"]
+    placed = r["placed"]
+    out = ["# 地域：医家与著作的地区分布", "",
+           f"医家 {placed['physicians']}/{placed['physicians_total']} 有籍贯；著作 {placed['works']}/{placed['works_total']} 可定地区"
+           f"（{'、'.join(f'{k} {v}' for k, v in placed['works_by'].items())}）。", ""]
+    present = {per for v in r["by_region_period"].values() for per in v}
+    periods = [per for per in r.get("periods", sorted(present)) if per in present]
+    out += ["| 地区 | " + " | ".join(periods) + " |", "|---|" + "---|" * len(periods)]
+    for rg in r["regions"]:
+        cells = r["by_region_period"].get(rg)
+        if cells:
+            out.append(f"| {rg} | " + " | ".join(f"{cells[p]['physicians']}/{cells[p]['works']}" if p in cells else "" for p in periods) + " |")
+    out += ["", "（每格：医家/著作）", "", "常见地名：" + "、".join(f"{x['place']} {x['count']}" for x in r["top_places"][:15])]
+    return out + ["", f"> {r['note']}"]
+
+
 def _dates(d: Any) -> str:
     return f"{d[0]}–{d[1]}" if d else "生卒未详"
 
@@ -912,7 +996,7 @@ PAGES = {"concordance": concordance, "formula": formula, "herb": herb, "term": t
          "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship, "cases": cases,
          "trajectories": trajectories, "argument": argument, "senses": senses, "fragments": fragments, "witnesses": witnesses,
          "punctuate": punctuate, "commentaries": commentaries, "disputes": disputes, "clause": clause, "glosses": glosses,
-         "pairs": pairs, "network": network, "schools": schools, "names": names, "chain": chain, "entities": entities}
+         "pairs": pairs, "network": network, "schools": schools, "names": names, "chain": chain, "entities": entities, "places": places, "translate": translate}
 
 
 def _model_sections(result: dict[str, Any]) -> list[str]:

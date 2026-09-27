@@ -556,6 +556,28 @@ def _study_entities(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(res, int(a.get("items", 60)))
 
 
+def _study_places(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).places(a.get("place"), term=a.get("term"), school=a.get("school"), person=a.get("person"))
+    res.pop("geojson", None)
+    return _brief(res, int(a.get("items", 25)))
+
+
+def _study_translate(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).translate(a.get("text"), a.get("passage_id"))
+    res.pop("normalized_changes", None)
+    return _brief(res, int(a.get("items", 12)), chars=int(a.get("chars", 1500)))
+
+
+def _vision_layout(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return ctx.cap("vision").layout(a.get("tokens"), path=a.get("path"), fmt=a.get("format"))
+
+
+def _vision_compare(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = ctx.cap("vision").compare(a["text"], passage_id=a.get("passage_id"), reference=a.get("reference"))
+    res["differences"] = res.get("differences", [])[:int(a.get("items", 30))]
+    return res
+
+
 def _study_schools(ctx: ToolContext, a: dict[str, Any]) -> Any:
     probes = a.get("probes") or []
     return _brief(_study(ctx).schools(a.get("school"), probes=[probes] if isinstance(probes, str) else probes),
@@ -784,6 +806,30 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "alternatives (typed by the model when one reviews the study layer).",
                  obj({"text": S, "passage_id": S, "items": I}), _study_entities, family="study", permission="classics:read",
                  returns="entities with type, reference, source, ambiguity and negation; counts by type"),
+        ToolSpec("study.places", "地域 (T27, time × person × place): physicians and works by region and period (native places "
+                 "from physicians.yaml, places signed in prefaces and colophons); with person, a physician's place as curated, "
+                 "stated (「…，真定人」) and signed; with school, where its physicians came from; with term, the share of each "
+                 "region's works using the term against the other regions', period by period (z, BH); with place, its "
+                 "physicians and works.",
+                 obj({"place": S, "term": S, "school": S, "person": S, "items": I}), _study_places, family="study",
+                 permission="classics:read", expensive=True, returns="rows by region and period, people and works with places"),
+        ToolSpec("study.translate", "释义与今译 (T10): a text in five layers — original (never changed), normalised, punctuated "
+                 "(the editors' marks, or the 句读 model's), interpreted (for its doublets and terms: the commentators' "
+                 "glosses with who first gave them, and the curated historical sense its date and context favour) and, "
+                 "when a model reviews the study layer, a modern Chinese translation that cites the glosses it uses and "
+                 "passes the presentism guardrail.",
+                 obj({"text": S, "passage_id": S, "items": I, "chars": I}), _study_translate, family="study",
+                 permission="classics:read", expensive=True, returns="the five layers; glosses and senses; a checked translation"),
+        ToolSpec("vision.layout", "版面理解 (T1): the layout and reading order of a page from an OCR engine's boxes (a file in "
+                 "ALTO, hOCR, PAGE, PaddleOCR or token JSON, or tokens {text, bbox}) — vertical columns right to left, "
+                 "双行小注 read right half first, 版心 and 书眉 set apart — as a PageGraph with the running text.",
+                 obj({"path": S, "format": S, "tokens": {"type": "array"}}), _vision_layout, family="philology",
+                 permission="classics:read", returns="blocks with kind, box and order; the running text; the apparatus"),
+        ToolSpec("vision.compare", "OCR 核对 (T2): an OCR text against the transcription of the store it reads (found by probes, "
+                 "or a passage given) or a reference: character error rate, after normalising variants too, the engine's "
+                 "commonest substitutions and each difference in context.",
+                 obj({"text": S, "passage_id": S, "reference": S, "items": I}, ["text"]), _vision_compare, family="philology",
+                 permission="classics:read", returns="CER, variant-only differences, confusions, differences, the passage"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

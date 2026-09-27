@@ -9,7 +9,7 @@ mode: procedure
 procedure: taochronos.agents.procedures.scholar
 skills: [source-criticism]
 tools: [study.formula, study.herb, study.term, study.senses, study.concordance, study.taboo, study.metrology, study.commentaries, study.disputes,
-        study.network, study.schools, study.names]
+        study.network, study.schools, study.names, study.places, study.translate]
 context_view: sources
 permissions: [classics:read]
 output_schema: SourcesDossier

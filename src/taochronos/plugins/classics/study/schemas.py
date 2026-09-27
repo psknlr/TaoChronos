@@ -76,6 +76,21 @@ STUDY_SCHEMAS: dict[str, dict[str, Any]] = {
         "equations": arr(obj({"names": STRS, "year": NN, "witness": WITNESS}, ["names", "witness"])),
         "candidates": arr(obj({"name": S, "passages": I, "works": I, "first": WITNESS}, ["name", "passages", "works", "first"]))},
         ["term", "names", "periods", "switches", "equations", "candidates"]),
+    # T1 版面理解 (a PageGraph) · T2 OCR 核对
+    "layout": obj({
+        "page": {"type": "object"}, "orientation": {"enum": ["vertical-rtl", "horizontal-ltr", "unknown"]}, "char_size": N,
+        "blocks": arr(obj({"id": S, "kind": {"enum": ["main", "commentary", "title", "header", "page_number", "margin", "seal",
+                                                      "figure"]},
+                           "text": S, "bbox": arr(N), "order": {"type": ["integer", "null"]}, "rule": S, "parts": STRS},
+                          ["id", "kind", "text", "bbox", "rule"])),
+        "text": S, "apparatus": arr(obj({"id": S, "kind": S, "text": S})), "reading_order": STRS},
+        ["orientation", "blocks", "text", "apparatus", "reading_order"]),
+    "ocr_compare": obj({
+        "ocr_chars": I, "reference_chars": I, "cer": NN, "cer_normalized": NN, "variant_only": I, "substitutions": I,
+        "insertions": I, "deletions": I, "confusions": arr(obj({"pair": S, "count": I})),
+        "differences": arr(obj({"op": {"enum": ["sub", "ins", "del"]}, "ocr": S, "reference": S, "context": S})),
+        "located": STRS},
+        ["cer", "substitutions", "insertions", "deletions", "differences"]),
     # T7 实体识别
     "entities": obj({
         "text": S, "types": STRS,
@@ -84,6 +99,28 @@ STUDY_SCHEMAS: dict[str, dict[str, Any]] = {
                              "decided_by": S}, ["id", "start", "end", "text", "type", "source", "ambiguous", "extraction"])),
         "counts": {"type": "object"}, "ambiguous": I, "llm_review": {"type": "object"}},
         ["text", "entities", "counts"]),
+    # T27 时间 × 人物 × 地域
+    "places": obj({
+        "view": {"enum": ["overview", "person", "school", "place", "term"]}, "regions": STRS,
+        "physicians": arr(obj({"person": S, "name": S, "years": {"anyOf": [arr(N), {"type": "null"}]}, "place": NS,
+                               "place_name": NS, "region": NS, "province": NS, "lat": NN, "lon": NN}, ["person", "name", "place"])),
+        "works": arr(obj({"work": S, "title": S, "book_id": S, "period": NS, "place": NS, "region": NS,
+                          "how": {"enum": ["author", "signed", None]}}, ["work", "title", "place", "how"])),
+        "by_region_period": {"type": "object"}, "top_places": arr(obj({"place": S, "count": I})),
+        "rows": arr(obj({"period": S, "region": S, "works_with": I, "works": I, "share": N, "rest_share": N, "z": N, "q": N,
+                         "significant": B}, ["period", "region", "works_with", "works", "share", "z", "q"])),
+        "geojson": obj({"type": S, "features": {"type": "array"}}, ["type", "features"])},
+        ["view"]),
+    # T10 释义与今译 (five layers)
+    "translate": obj({
+        "original": S, "normalized": S, "normalized_changes": arr(obj({"at": I, "from": S, "to": S})),
+        "punctuated": S, "punctuation": {"enum": ["input", "model"]}, "preserved": B, "layers": STRS,
+        "interpreted": arr(obj({"term": S, "type": S, "start": I, "end": I,
+                                "glosses": arr(obj({"id": S, "gloss": S, "by": NS, "title": NS, "passage_id": NS}, ["id", "gloss"])),
+                                "sense": {"anyOf": [obj({"id": S, "label": S, "p": N}, ["id", "label"]), {"type": "null"}]}},
+                               ["term", "type", "glosses"])),
+        "translated": {"anyOf": [obj({"ok": B, "text": S, "judge": S, "error": NS}, ["ok"]), {"type": "null"}]}},
+        ["original", "normalized", "punctuated", "preserved", "interpreted", "translated", "layers"]),
     # T10 训诂
     "glosses": obj({
         "term": NS, "book": NS, "count": I,

@@ -48,7 +48,11 @@ def register(registry: Any, config: dict[str, Any], context: Any) -> None:
     else:
         detector.fit(corpus.passages())
     registry.register("reuse", "classics", detector, default=True)
-    registry.register("study", "classics", StudyService(pack, corpus), default=True)
+    study = StudyService(pack, corpus)
+    registry.register("study", "classics", study, default=True)
+    from .vision.service import VisionService
+
+    registry.register("vision", "classics", VisionService(study), default=True)
 
 
 __all__ = [

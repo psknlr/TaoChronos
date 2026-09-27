@@ -1,0 +1,28 @@
+# Gold for `study places` (T27): prefaces' and colophons' signatures (place + writer + verb) and statements of a
+# physician's place (「…，真定人」), with what should be read from each, and traps that must read nothing.  Written by
+# the authors of TaoChronos for the test (the signatures follow the forms of real prefaces); a regression set.
+#
+#   place   the id of places.yaml the text names (null: nothing should be read)
+#   person  the physician of physicians.yaml, or null for a writer the list lacks
+signatures:
+  - {text: 新安汪机撰, place: huizhou, person: wang_ji}
+  - {text: 吴门叶桂天士著, place: suzhou, person: ye_gui}
+  - {text: 云间李中梓识, place: songjiang, person: li_zhongzi}
+  - {text: 钱塘张志聪隐庵集注, place: hangzhou, person: zhang_zhicong}
+  - {text: 河间刘完素守真序, place: hejian, person: liu_wansu}
+  - {text: 古歙吴谦纂, place: shexian, person: wu_qian}
+  - {text: 新安程国彭钟龄书于天都, place: huizhou, person: null}
+  - {text: 淮阴吴瑭鞠通氏序, place: huaian, person: wu_tang}
+  - {text: 海昌王士雄孟英撰, place: haining, person: wang_shixiong}
+  - {text: 昆山王履安道撰, place: kunshan, person: wang_lü}
+  - {text: 治江南之病，宜辛凉, place: null, person: null}
+  - {text: 长沙方论，世所宗也, place: null, person: null}
+  - {text: 余游吴中，见其医者多用凉药, place: null, person: null}
+  - {text: 下及仲景河间东垣丹溪诸书。, place: null, person: null}  # 河间 is 刘完素 here, and 书 a noun
+  - {text: 读吴门诸家之书, place: null, person: null}
+stated:
+  - {text: 李杲，字明之，真定人也。, place: zhending, person: li_gao}
+  - {text: 朱震亨，字彦修，婺州义乌人。, place: yiwu, person: zhu_zhenheng}
+  - {text: 张机，字仲景，南阳人。, place: nanyang, person: zhang_ji}
+  - {text: 叶桂，字天士，号香岩，吴县人。, place: wuxian, person: ye_gui}
+  - {text: 丹溪之学，行于江南。, place: null, person: null}

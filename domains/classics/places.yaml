@@ -9,6 +9,7 @@
 #   region    the macro-region used for statistics: 江南 (southern Jiangsu, Shanghai, Zhejiang, southern Anhui) · 江淮 ·
 #             中原 · 华北 · 齐鲁 · 西北 · 巴蜀 · 荆楚 · 江西 · 闽 · 岭南 · 西南 · 东北
 #   lat, lon  the modern seat, approximate — for maps, never for reasoning
+#   in        the prefecture a county lies in (a text naming the prefecture agrees with its county)
 #   ambiguous a name that often means something else (长沙 is also 张仲景; 新建 is also "newly built"): kept as a candidate
 #             for review, not asserted
 #
@@ -60,31 +61,31 @@ places:
   - {id: kunshan, names: [昆山], level: county, province: 江苏, region: 江南, lat: 31.38, lon: 120.98, in: suzhou}
   - {id: taicang, names: [太仓, 娄东], level: county, province: 江苏, region: 江南, lat: 31.46, lon: 121.13, in: suzhou}
   - {id: songjiang, names: [松江, 华亭, 云间], level: prefecture, province: 上海, region: 江南, lat: 31.03, lon: 121.23}
-  - {id: shanghai, names: [上海], level: county, province: 上海, region: 江南, lat: 31.23, lon: 121.47}
-  - {id: jiading, names: [嘉定], level: county, province: 上海, region: 江南, lat: 31.38, lon: 121.25}
+  - {id: shanghai, names: [上海], level: county, province: 上海, region: 江南, lat: 31.23, lon: 121.47, in: songjiang}
+  - {id: jiading, names: [嘉定], level: county, province: 上海, region: 江南, lat: 31.38, lon: 121.25, in: suzhou}
   - {id: changzhou, names: [常州, 毗陵, 武进, 晋陵], level: prefecture, province: 江苏, region: 江南, lat: 31.81, lon: 119.97}
-  - {id: wuxi, names: [无锡, 梁溪, 锡山], level: county, province: 江苏, region: 江南, lat: 31.49, lon: 120.31}
-  - {id: jiangyin, names: [江阴, 澄江], level: county, province: 江苏, region: 江南, lat: 31.92, lon: 120.29}
-  - {id: yixing, names: [宜兴, 阳羡], level: county, province: 江苏, region: 江南, lat: 31.36, lon: 119.82}
+  - {id: wuxi, names: [无锡, 梁溪, 锡山], level: county, province: 江苏, region: 江南, lat: 31.49, lon: 120.31, in: changzhou}
+  - {id: jiangyin, names: [江阴, 澄江], level: county, province: 江苏, region: 江南, lat: 31.92, lon: 120.29, in: changzhou}
+  - {id: yixing, names: [宜兴, 阳羡], level: county, province: 江苏, region: 江南, lat: 31.36, lon: 119.82, in: changzhou}
   - {id: zhenjiang, names: [镇江, 京口, 丹徒, 润州], level: prefecture, province: 江苏, region: 江南, lat: 32.19, lon: 119.43}
-  - {id: danyang, names: [丹阳], level: county, province: 江苏, region: 江南, lat: 32.00, lon: 119.58}
-  - {id: jintan, names: [金坛], level: county, province: 江苏, region: 江南, lat: 31.74, lon: 119.57}
-  - {id: jurong, names: [句容], level: county, province: 江苏, region: 江南, lat: 31.94, lon: 119.17}
+  - {id: danyang, names: [丹阳], level: county, province: 江苏, region: 江南, lat: 32.00, lon: 119.58, in: zhenjiang}
+  - {id: jintan, names: [金坛], level: county, province: 江苏, region: 江南, lat: 31.74, lon: 119.57, in: zhenjiang}
+  - {id: jurong, names: [句容], level: county, province: 江苏, region: 江南, lat: 31.94, lon: 119.17, in: nanjing}
   - {id: nanjing, names: [南京, 金陵, 江宁, 建康, 建业, 秣陵, 白下], level: prefecture, province: 江苏, region: 江南, lat: 32.06, lon: 118.80}
-  - {id: shangyuan, names: [上元], level: county, province: 江苏, region: 江南, lat: 32.06, lon: 118.80, ambiguous: true, same_as: nanjing}
+  - {id: shangyuan, names: [上元], level: county, province: 江苏, region: 江南, lat: 32.06, lon: 118.80, ambiguous: true, same_as: nanjing, in: nanjing}
   - {id: hangzhou, names: [杭州, 钱塘, 仁和, 武林, 临安, 余杭, 杭城], level: prefecture, province: 浙江, region: 江南, lat: 30.25, lon: 120.17}
   - {id: jiaxing, names: [嘉兴, 秀水, 檇李, 槜李, 禾中], level: prefecture, province: 浙江, region: 江南, lat: 30.75, lon: 120.76}
-  - {id: haiyan, names: [海盐], level: county, province: 浙江, region: 江南, lat: 30.53, lon: 120.94}
-  - {id: haining, names: [海宁, 海昌, 盐官], level: county, province: 浙江, region: 江南, lat: 30.51, lon: 120.68}
+  - {id: haiyan, names: [海盐], level: county, province: 浙江, region: 江南, lat: 30.53, lon: 120.94, in: jiaxing}
+  - {id: haining, names: [海宁, 海昌, 盐官], level: county, province: 浙江, region: 江南, lat: 30.51, lon: 120.68, in: hangzhou}
   - {id: huzhou, names: [湖州, 吴兴, 乌程, 归安, 苕溪], level: prefecture, province: 浙江, region: 江南, lat: 30.87, lon: 120.09}
   - {id: shaoxing, names: [绍兴, 会稽, 山阴, 越州], level: prefecture, province: 浙江, region: 江南, lat: 30.00, lon: 120.58}
   - {id: ningbo, names: [宁波, 四明, 鄞县, 明州, 甬上, 鄞], level: prefecture, province: 浙江, region: 江南, lat: 29.87, lon: 121.54}
-  - {id: cixi, names: [慈溪, 慈城], level: county, province: 浙江, region: 江南, lat: 29.97, lon: 121.45}
-  - {id: yuyao, names: [余姚, 姚江], level: county, province: 浙江, region: 江南, lat: 30.04, lon: 121.16}
+  - {id: cixi, names: [慈溪, 慈城], level: county, province: 浙江, region: 江南, lat: 29.97, lon: 121.45, in: ningbo}
+  - {id: yuyao, names: [余姚, 姚江], level: county, province: 浙江, region: 江南, lat: 30.04, lon: 121.16, in: shaoxing}
   - {id: jinhua, names: [金华, 婺州], level: prefecture, province: 浙江, region: 江南, lat: 29.08, lon: 119.65}
-  - {id: yiwu, names: [义乌, 乌伤], level: county, province: 浙江, region: 江南, lat: 29.31, lon: 120.08}
-  - {id: lanxi, names: [兰溪], level: county, province: 浙江, region: 江南, lat: 29.21, lon: 119.46}
-  - {id: pujiang, names: [浦江], level: county, province: 浙江, region: 江南, lat: 29.45, lon: 119.89}
+  - {id: yiwu, names: [义乌, 乌伤], level: county, province: 浙江, region: 江南, lat: 29.31, lon: 120.08, in: jinhua}
+  - {id: lanxi, names: [兰溪], level: county, province: 浙江, region: 江南, lat: 29.21, lon: 119.46, in: jinhua}
+  - {id: pujiang, names: [浦江], level: county, province: 浙江, region: 江南, lat: 29.45, lon: 119.89, in: jinhua}
   - {id: quzhou, names: [衢州, 衢县], level: prefecture, province: 浙江, region: 江南, lat: 28.97, lon: 118.87}
   - {id: wenzhou, names: [温州, 东瓯], level: prefecture, province: 浙江, region: 江南, lat: 28.00, lon: 120.70}
   - {id: taizhou_zj, names: [台州, 天台], level: prefecture, province: 浙江, region: 江南, lat: 28.66, lon: 121.42}
@@ -98,7 +99,7 @@ places:
 
   # ---------------------------------------------------------------- 江淮
   - {id: yangzhou, names: [扬州, 维扬, 广陵, 江都], level: prefecture, province: 江苏, region: 江淮, lat: 32.39, lon: 119.42}
-  - {id: yizheng, names: [仪征, 真州, 仪真], level: county, province: 江苏, region: 江淮, lat: 32.27, lon: 119.18}
+  - {id: yizheng, names: [仪征, 真州, 仪真], level: county, province: 江苏, region: 江淮, lat: 32.27, lon: 119.18, in: yangzhou}
   - {id: taizhou_js, names: [泰州, 海陵], level: prefecture, province: 江苏, region: 江淮, lat: 32.46, lon: 119.92}
   - {id: rugao, names: [如皋], level: county, province: 江苏, region: 江淮, lat: 32.37, lon: 120.57}
   - {id: nantong, names: [南通, 崇川], level: prefecture, province: 江苏, region: 江淮, lat: 32.00, lon: 120.86}
@@ -115,25 +116,25 @@ places:
   - {id: nanyang, names: [南阳], level: prefecture, province: 河南, region: 中原, lat: 32.99, lon: 112.53}
   - {id: kaifeng, names: [开封, 汴京, 汴梁, 大梁], level: prefecture, province: 河南, region: 中原, lat: 34.80, lon: 114.31}
   - {id: luoyang, names: [洛阳, 洛下, 洛邑], level: prefecture, province: 河南, region: 中原, lat: 34.62, lon: 112.45}
-  - {id: suizhou_kaocheng, names: [睢州, 考城], level: county, province: 河南, region: 中原, lat: 34.45, lon: 115.07}
+  - {id: suizhou_kaocheng, names: [睢州, 考城], level: county, province: 河南, region: 中原, lat: 34.45, lon: 115.07, in: shangqiu}
   - {id: zhengzhou, names: [郑州], level: prefecture, province: 河南, region: 中原, lat: 34.75, lon: 113.62}
   - {id: runan, names: [汝南], level: prefecture, province: 河南, region: 中原, lat: 33.00, lon: 114.36}
   - {id: ruzhou, names: [汝州], level: prefecture, province: 河南, region: 中原, lat: 34.17, lon: 112.84}
-  - {id: xiayi, names: [夏邑], level: county, province: 河南, region: 中原, lat: 34.24, lon: 116.13}
+  - {id: xiayi, names: [夏邑], level: county, province: 河南, region: 中原, lat: 34.24, lon: 116.13, in: shangqiu}
   - {id: shangqiu, names: [商丘, 归德, 睢阳], level: prefecture, province: 河南, region: 中原, lat: 34.41, lon: 115.66}
-  - {id: fugou, names: [扶沟], level: county, province: 河南, region: 中原, lat: 34.06, lon: 114.39}
+  - {id: fugou, names: [扶沟], level: county, province: 河南, region: 中原, lat: 34.06, lon: 114.39, in: kaifeng}
   - {id: yancheng_hn, names: [郾城], level: county, province: 河南, region: 中原, lat: 33.59, lon: 114.00}
 
   # ---------------------------------------------------------------- 华北
   - {id: beijing, names: [北京, 燕京, 顺天, 大都], level: prefecture, province: 北京, region: 华北, lat: 39.90, lon: 116.40}
   - {id: tianjin, names: [天津, 津门], level: prefecture, province: 天津, region: 华北, lat: 39.13, lon: 117.20}
   - {id: hejian, names: [河间, 瀛州], level: prefecture, province: 河北, region: 华北, lat: 38.44, lon: 116.10}
-  - {id: renqiu, names: [任丘, 鄚州], level: county, province: 河北, region: 华北, lat: 38.71, lon: 116.10}
+  - {id: renqiu, names: [任丘, 鄚州], level: county, province: 河北, region: 华北, lat: 38.71, lon: 116.10, in: hejian}
   - {id: zhending, names: [真定, 正定], level: prefecture, province: 河北, region: 华北, lat: 38.15, lon: 114.57}
-  - {id: gaocheng, names: [藁城], level: county, province: 河北, region: 华北, lat: 38.02, lon: 114.85}
+  - {id: gaocheng, names: [藁城], level: county, province: 河北, region: 华北, lat: 38.02, lon: 114.85, in: zhending}
   - {id: yizhou, names: [易州, 易水, 易县], level: prefecture, province: 河北, region: 华北, lat: 39.35, lon: 115.50}
   - {id: zhaozhou, names: [赵州, 赵县], level: prefecture, province: 河北, region: 华北, lat: 37.76, lon: 114.78}
-  - {id: baixiang, names: [柏乡], level: county, province: 河北, region: 华北, lat: 37.48, lon: 114.69}
+  - {id: baixiang, names: [柏乡], level: county, province: 河北, region: 华北, lat: 37.48, lon: 114.69, in: zhaozhou}
   - {id: baoding, names: [保定], level: prefecture, province: 河北, region: 华北, lat: 38.87, lon: 115.46}
   - {id: yutian, names: [玉田], level: county, province: 河北, region: 华北, lat: 39.90, lon: 117.74}
   - {id: yanshan, names: [盐山], level: county, province: 河北, region: 华北, lat: 38.06, lon: 117.23}
@@ -156,8 +157,8 @@ places:
 
   # ---------------------------------------------------------------- 西北
   - {id: changan, names: [长安, 西安, 京兆, 奉元], level: prefecture, province: 陕西, region: 西北, lat: 34.34, lon: 108.94}
-  - {id: xianyang, names: [咸阳], level: county, province: 陕西, region: 西北, lat: 34.33, lon: 108.71}
-  - {id: yaozhou, names: [耀州, 华原], level: county, province: 陕西, region: 西北, lat: 34.91, lon: 108.98}
+  - {id: xianyang, names: [咸阳], level: county, province: 陕西, region: 西北, lat: 34.33, lon: 108.71, in: changan}
+  - {id: yaozhou, names: [耀州, 华原], level: county, province: 陕西, region: 西北, lat: 34.91, lon: 108.98, in: changan}
   - {id: meixian, names: [郿县, 眉县], level: county, province: 陕西, region: 西北, lat: 34.27, lon: 107.75}
   - {id: chaona, names: [朝那], level: county, province: 甘肃, region: 西北, lat: 35.54, lon: 106.66}
   - {id: lanzhou, names: [兰州], level: prefecture, province: 甘肃, region: 西北, lat: 36.06, lon: 103.83}
@@ -165,19 +166,19 @@ places:
 
   # ---------------------------------------------------------------- 巴蜀
   - {id: chengdu, names: [成都, 锦城, 蓉城, 益州], level: prefecture, province: 四川, region: 巴蜀, lat: 30.66, lon: 104.07}
-  - {id: chongzhou, names: [崇庆, 崇州, 蜀州], level: county, province: 四川, region: 巴蜀, lat: 30.63, lon: 103.67}
+  - {id: chongzhou, names: [崇庆, 崇州, 蜀州], level: county, province: 四川, region: 巴蜀, lat: 30.63, lon: 103.67, in: chengdu}
   - {id: mianzhu, names: [绵竹], level: county, province: 四川, region: 巴蜀, lat: 31.34, lon: 104.20}
-  - {id: pengzhou, names: [彭县, 彭州], level: county, province: 四川, region: 巴蜀, lat: 30.99, lon: 103.94}
+  - {id: pengzhou, names: [彭县, 彭州], level: county, province: 四川, region: 巴蜀, lat: 30.99, lon: 103.94, in: chengdu}
   - {id: qiongzhou, names: [邛州, 临邛, 邛崃], level: county, province: 四川, region: 巴蜀, lat: 30.41, lon: 103.46}
   - {id: chongqing, names: [重庆, 渝州, 巴县], level: prefecture, province: 重庆, region: 巴蜀, lat: 29.56, lon: 106.55}
 
   # ---------------------------------------------------------------- 荆楚
   - {id: wuchang, names: [武昌, 江夏, 鄂州], level: prefecture, province: 湖北, region: 荆楚, lat: 30.55, lon: 114.30}
   - {id: hanyang, names: [汉阳, 汉口], level: county, province: 湖北, region: 荆楚, lat: 30.55, lon: 114.27}
-  - {id: qizhou, names: [蕲州, 蕲春], level: county, province: 湖北, region: 荆楚, lat: 30.23, lon: 115.44}
-  - {id: qishui, names: [蕲水, 浠水], level: county, province: 湖北, region: 荆楚, lat: 30.45, lon: 115.26}
+  - {id: qizhou, names: [蕲州, 蕲春], level: county, province: 湖北, region: 荆楚, lat: 30.23, lon: 115.44, in: huangzhou}
+  - {id: qishui, names: [蕲水, 浠水], level: county, province: 湖北, region: 荆楚, lat: 30.45, lon: 115.26, in: huangzhou}
   - {id: huangzhou, names: [黄州, 黄冈], level: prefecture, province: 湖北, region: 荆楚, lat: 30.45, lon: 114.87}
-  - {id: luotian, names: [罗田], level: county, province: 湖北, region: 荆楚, lat: 30.78, lon: 115.40}
+  - {id: luotian, names: [罗田], level: county, province: 湖北, region: 荆楚, lat: 30.78, lon: 115.40, in: huangzhou}
   - {id: xiangyang, names: [襄阳, 襄樊], level: prefecture, province: 湖北, region: 荆楚, lat: 32.01, lon: 112.12}
   - {id: jingzhou, names: [荆州, 江陵], level: prefecture, province: 湖北, region: 荆楚, lat: 30.33, lon: 112.24}
   - {id: changsha, names: [长沙, 潭州], level: prefecture, province: 湖南, region: 荆楚, lat: 28.23, lon: 112.94, ambiguous: true}
@@ -186,10 +187,10 @@ places:
 
   # ---------------------------------------------------------------- 江西
   - {id: nanchang, names: [南昌, 豫章, 洪州], level: prefecture, province: 江西, region: 江西, lat: 28.68, lon: 115.86}
-  - {id: xinjian, names: [新建], level: county, province: 江西, region: 江西, lat: 28.69, lon: 115.82, ambiguous: true}
-  - {id: jinxian, names: [进贤], level: county, province: 江西, region: 江西, lat: 28.38, lon: 116.24, ambiguous: true}
+  - {id: xinjian, names: [新建], level: county, province: 江西, region: 江西, lat: 28.69, lon: 115.82, ambiguous: true, in: nanchang}
+  - {id: jinxian, names: [进贤], level: county, province: 江西, region: 江西, lat: 28.38, lon: 116.24, ambiguous: true, in: nanchang}
   - {id: fuzhou_jx, names: [抚州, 临川], level: prefecture, province: 江西, region: 江西, lat: 27.95, lon: 116.36}
-  - {id: jinxi, names: [金溪], level: county, province: 江西, region: 江西, lat: 27.91, lon: 116.78}
+  - {id: jinxi, names: [金溪], level: county, province: 江西, region: 江西, lat: 27.91, lon: 116.78, in: fuzhou_jx}
   - {id: nanfeng, names: [南丰], level: county, province: 江西, region: 江西, lat: 27.22, lon: 116.53}
   - {id: jian, names: [吉安, 庐陵, 吉州], level: prefecture, province: 江西, region: 江西, lat: 27.11, lon: 114.99}
   - {id: jiujiang, names: [九江, 浔阳, 江州, 庐山], level: prefecture, province: 江西, region: 江西, lat: 29.71, lon: 116.00}
@@ -199,10 +200,10 @@ places:
   # ---------------------------------------------------------------- 闽
   - {id: fuzhou, names: [福州, 闽县, 侯官], level: prefecture, province: 福建, region: 闽, lat: 26.07, lon: 119.30}
   - {id: sanshan, names: [三山], level: prefecture, province: 福建, region: 闽, lat: 26.07, lon: 119.30, ambiguous: true, same_as: fuzhou}
-  - {id: changle, names: [长乐], level: county, province: 福建, region: 闽, lat: 25.96, lon: 119.52, ambiguous: true}
+  - {id: changle, names: [长乐], level: county, province: 福建, region: 闽, lat: 25.96, lon: 119.52, ambiguous: true, in: fuzhou}
   - {id: jianning, names: [建宁, 建阳], level: prefecture, province: 福建, region: 闽, lat: 27.37, lon: 118.12}
   - {id: quanzhou, names: [泉州, 温陵], level: prefecture, province: 福建, region: 闽, lat: 24.87, lon: 118.68}
-  - {id: tongan, names: [同安], level: county, province: 福建, region: 闽, lat: 24.73, lon: 118.15}
+  - {id: tongan, names: [同安], level: county, province: 福建, region: 闽, lat: 24.73, lon: 118.15, in: quanzhou}
   - {id: zhangzhou, names: [漳州], level: prefecture, province: 福建, region: 闽, lat: 24.51, lon: 117.65}
   - {id: putian, names: [莆田], level: county, province: 福建, region: 闽, lat: 25.43, lon: 119.01}
 

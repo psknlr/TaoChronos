@@ -7,7 +7,7 @@ objective: >-
 mode: procedure
 procedure: taochronos.agents.procedures.curator
 skills: [evidence-ledger]
-tools: [classics.list_books]
+tools: [classics.list_books, vision.layout, vision.compare]
 context_view: curation
 permissions: [classics:read]
 output_schema: CorpusManifest

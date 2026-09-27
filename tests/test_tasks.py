@@ -412,6 +412,12 @@ def test_results_match_the_schemas_of_the_task_specification(pack, study, commen
         "claims": tool("kg.extract_claims", {"passage_id": pid}),
         "names": study.names("山药"),
         "entities": study.entities("成无己注曰：太阳病，脉浮，不恶寒，桂枝汤主之。桂枝三两（去皮）。"),
+        "places": study.places(school="温病"),
+        "layout": tool("vision.layout", {"tokens": [{"text": "太阳病发热汗出", "bbox": [400, 80, 40, 280]},
+                                                    {"text": "此太阳", "bbox": [360, 80, 20, 120]}, {"text": "中风", "bbox": [340, 80, 20, 80]},
+                                                    {"text": "桂枝汤主之", "bbox": [352, 200, 40, 200]}]}),
+        "ocr_compare": tool("vision.compare", {"text": "太阳病发热汗出恶风桂枝场主之", "reference": "太阳病，发热汗出恶风，桂枝汤主之。"}),
+        "translate": study.translate("太阳病，项背强几几，反汗出恶风者，桂枝加葛根汤主之。"),
         "glosses": commentary_study.glosses("几几"),
         "concordance": commentary_study.concordance("太阳之为病，脉浮，头项强痛而恶寒。"),
         "variants": commentary_study.variants("shanghanlun"),
@@ -486,3 +492,89 @@ def test_entities_through_the_tool_and_the_cli(harness, capsys, tmp_path):
     assert main(["--data", str(tmp_path), "study", "entities", "太阳病，发热，桂枝汤主之。"]) == 0
     page = capsys.readouterr().out
     assert page.startswith("# 实体识别") and "【桂枝汤｜方剂】" in page
+
+
+# ------------------------------------------------------------------ 地域 (T27)
+def test_places_signatures_statements_and_views(study):
+    reader = study._places
+    signed = reader.read_signatures(None, "钱塘张志聪隐庵集注")
+    assert signed and signed[0]["place"] == "hangzhou" and signed[0]["person"] == "zhang_zhicong" and signed[0]["verb"] == "集注"
+    assert reader.read_signatures(None, "治江南之病，宜辛凉") == []
+    assert reader.read_stated("朱震亨，字彦修，婺州义乌人。")[0]["place"] == "yiwu"  # the county after its prefecture
+    over = study.places()
+    assert over["view"] == "overview" and over["placed"]["physicians"] >= 80
+    assert over["geojson"]["type"] == "FeatureCollection" and over["geojson"]["features"]
+    school = study.places(school="温病")
+    shares = {r["region"]: r for r in school["by_region"]}
+    assert shares["江南"]["share"] > shares["江南"]["all_physicians_share"]  # 温病 physicians are mostly from 江南
+    person = study.places(person="叶桂")
+    assert person["person"]["place"] == "wuxian" and person["person"]["region"] == "江南"
+    xinan = study.places("新安")  # 徽州 and its counties
+    assert {"汪机", "吴谦"} <= {p["name"] for p in xinan["physicians"]}
+
+
+def test_places_through_the_tool_and_the_cli(harness, capsys, tmp_path):
+    out = harness.scheduler.execute(ToolCall("study.places", {"school": "丹溪"}), actor=Actor.kernel())
+    assert out.ok and out.result["view"] == "school" and "geojson" not in out.result
+    geo = tmp_path / "wenbing.geojson"
+    assert main(["--data", str(tmp_path), "study", "places", "--school", "温病", "--geojson", str(geo)]) == 0
+    page = capsys.readouterr().out
+    assert page.startswith("# 地域：温病学派") and geo.exists()
+
+
+# ------------------------------------------------------------------ 释义与今译 (T10)
+@pytest.fixture(scope="module")
+def gloss_study(pack, tmp_path_factory):
+    from taochronos.evals.textual import _write_corpus
+
+    root = _write_corpus(tmp_path_factory.mktemp("gloss"), [
+        ("zhu", "注解伤寒论", "成无己", 1144, "注本", ["太阳病项背强几几。几几者，伸颈之貌也。"]),
+        ("shl", "伤寒论", "张机", 205, "医经", ["太阳病，项背强几几，反汗出恶风者，桂枝加葛根汤主之。"]),
+    ], "translate test")
+    corpus = Corpus.load(root)
+    corpus.normalize = pack.variants.normalize_text
+    return StudyService(pack, corpus)
+
+
+def test_translate_keeps_the_original_and_grounds_the_reading(gloss_study):
+    text = "太阳病，项背强几几，反汗出恶风者，桂枝加葛根汤主之。"
+    r = gloss_study.translate(text)
+    assert r["original"] == text and r["punctuation"] == "input" and r["preserved"]
+    jiji = next(it for it in r["interpreted"] if it["term"] == "几几")
+    assert jiji["glosses"] and jiji["glosses"][0]["gloss"] == "伸颈之貌" and jiji["glosses"][0]["by"] == "成无己"
+    assert r["translated"] is None  # no model: the four layers stand without it
+    plain = gloss_study.translate("太阳病项背强几几反汗出恶风者桂枝加葛根汤主之")
+    assert plain["punctuation"] == "model" and plain["preserved"] and plain["original"] == "太阳病项背强几几反汗出恶风者桂枝加葛根汤主之"
+
+
+def test_translate_with_a_model_cites_glosses_and_is_refused_when_it_diagnoses(gloss_study):
+    import json
+
+    from taochronos.capabilities.judge import Judge
+    from taochronos.plugins.models.scripted import ScriptedProvider
+
+    good = {"translation": "太阳病，项背拘紧、伸颈不利，反而出汗怕风，用桂枝加葛根汤主治。", "notes": [{"term": "几几", "gloss_ids": ["G1"]}]}
+    gloss_study.judge = Judge(ScriptedProvider([{"text": json.dumps(good, ensure_ascii=False)}]), "m")
+    try:
+        r = gloss_study.translate("太阳病，项背强几几，反汗出恶风者，桂枝加葛根汤主之。")
+    finally:
+        gloss_study.judge = None
+    assert r["translated"]["ok"] and r["translated"]["assertion"] == "MODEL_GENERATED" and r["original"].startswith("太阳病，项背")
+    bad = {"translation": "口渴想喝很多水，小便也多，这就是糖尿病。", "notes": []}
+    gloss_study.judge = Judge(ScriptedProvider([{"text": json.dumps(bad, ensure_ascii=False)}] * 2), "m")
+    try:
+        r = gloss_study.translate("消渴，饮一斗，小便一斗。")
+    finally:
+        gloss_study.judge = None
+    assert not r["translated"]["ok"] and "presentism" in r["translated"]["error"]
+
+
+def test_presentism_guard_stops_equations_and_lets_comparisons_pass(pack):
+    from taochronos.verification.presentism import guard_from_pack
+
+    guard = guard_from_pack(pack)
+    assert [f.kind for f in guard.check("消渴即糖尿病。")] == ["equation"]
+    assert [f.kind for f in guard.check("《金匮要略》已经描述了糖尿病。")] == ["retrospective"]
+    assert guard.check("消渴的描述与现代糖尿病有部分相似，但并非一一对应。") == []
+    assert guard.check("黄疸身目俱黄，茵陈蒿汤主之。") == []  # a classical term the modern list does not claim
+    assert [f.kind for f in guard.check("口渴，这是糖尿病。", source="渴欲饮水")] == ["modern_term"]

@@ -7,6 +7,8 @@ study outputs are made of witnesses, so every statement can be checked against t
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+
 import hashlib
 import json
 import math
@@ -16,7 +18,7 @@ import threading
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Iterator
 
 import yaml
 
@@ -108,6 +110,16 @@ class StudyBase:
         self._entries_lock = threading.Lock()
         # the model that reviews what the rules leave uncertain (capabilities/judge.py); None: rules only
         self.judge: Any = None
+
+    @contextmanager
+    def rules_only(self) -> Iterator[None]:
+        """The steps of a function whose own model phase comes later run on the rules alone (one model call per question,
+        not one per sub-step)."""
+        judge, self.judge = self.judge, None
+        try:
+            yield
+        finally:
+            self.judge = judge
 
     # ------------------------------------------------------------ data files
     def data(self, name: str) -> dict[str, Any]:

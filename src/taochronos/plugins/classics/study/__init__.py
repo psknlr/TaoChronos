@@ -28,6 +28,10 @@ pairs / network    配伍 and 方证网络: drugs prescribed together against ch
                    a formula's findings and drugs, a finding's formulas
 entities           实体识别: the entities of a text in context (24 types: 病 证 症 脉 舌 方 药 剂量 炮制 禁忌 医家 注家
                    学派 学说 书 版本 地 时 …), rules first, ambiguous ones typed by the model with --llm
+translate          释义与今译: original, normalised, punctuated, interpreted (glosses, historical senses) and — with a
+                   model — translated layers; the original never changes, the translation cites its glosses
+places             地域: where physicians came from and works were signed; a school's places; a term's use by region
+                   and period (two-proportion z, BH); GeoJSON points for maps
 names              名称: the names of a drug, formula or disease through time (薯蓣→山药, 玄参→元参), where texts
                    equate them, and the names the punctuated texts give that the lexicon lacks
 schools            学派: a school's words and formulas against the other works of its time, whom it cites and rejects,
@@ -70,12 +74,14 @@ from .learning import Learning, anki_tsv
 from .names import NameStudy
 from .network import CitationNetwork
 from .pairs import FormulaHarvest, PairsStudy
+from .places import PlaceStudy
 from .punctuation import PunctuationStudy
 from .schools import SchoolStudy
 from .stemma import StemmaStudy
 from .stratigraphy import StratigraphyStudy
 from .taboo import TabooStudy
 from .terms import TermStudy
+from .translate import TranslationStudy
 from .witnesses import WitnessStudy
 
 
@@ -109,6 +115,8 @@ class StudyService(StudyBase):
         self._names = NameStudy(self)
         self._chain = ChainStudy(self, self._concordance)
         self._entities = EntityRecognizer(self)
+        self._places = PlaceStudy(self, self._network)
+        self._translate = TranslationStudy(self, self._punct, self._glosses, self._entities)
 
     @property
     def metrology(self) -> Any:
@@ -296,6 +304,17 @@ class StudyService(StudyBase):
         edition, place, time — by lexicon, lists and patterns, the ambiguous ones kept with their alternatives (and
         typed by the model with ``--llm``, which also lists what the rules missed)."""
         return self._entities.run(text, passage_id, **kw)
+
+    def translate(self, text: str | None = None, passage_id: str | None = None, **kw: Any) -> dict[str, Any]:
+        """释义与今译: a text in five layers — original (never changed), normalised, punctuated, interpreted (the
+        commentators' glosses and the curated historical senses), and, with a model, a translation that cites the
+        glosses it relies on and passes the presentism guardrail."""
+        return self._translate.run(text, passage_id, **kw)
+
+    def places(self, target: str | None = None, **kw: Any) -> dict[str, Any]:
+        """地域 (time × person × place): physicians and works by region and period; a person's place (curated, stated,
+        signed); a school's places; a term's use by region, period by period; one place's physicians and works."""
+        return self._places.run(target, **kw)
 
     def names(self, term: str, **kw: Any) -> dict[str, Any]:
         """名称: the names of a drug, formula or disease through time — the works writing each name period by period,

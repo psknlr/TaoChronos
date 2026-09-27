@@ -790,7 +790,7 @@ def cmd_eval(args: argparse.Namespace) -> None:
 STUDY = ("concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
          "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship", "cases",
          "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate", "commentaries", "disputes",
-         "clause", "glosses", "pairs", "network", "schools", "names", "chain", "entities")
+         "clause", "glosses", "pairs", "network", "schools", "names", "chain", "entities", "places", "translate")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -896,6 +896,16 @@ def cmd_study(args: argparse.Namespace) -> None:
         if not (target or args.passage):
             raise SystemExit("taochronos study chain: give a text or --passage <id>")
         res = study.chain(target, args.passage)
+    elif what == "places":
+        res = study.places(target, term=args.term, school=args.school, person=args.person)
+        if args.geojson and res.get("geojson"):
+            Path(args.geojson).write_text(json.dumps(res["geojson"], ensure_ascii=False, indent=1), encoding="utf-8")
+            notice = f"GeoJSON written to {args.geojson}"
+    elif what == "translate":
+        text = Path(args.input).read_text(encoding="utf-8") if args.input else target
+        if not (text or args.passage):
+            raise SystemExit("taochronos study translate: give a text, --input <file> or --passage <id>")
+        res = study.translate(text, args.passage)
     elif what == "entities":
         text = Path(args.input).read_text(encoding="utf-8") if args.input else target
         if not (text or args.passage):
@@ -1007,6 +1017,50 @@ def cmd_llm(args: argparse.Namespace) -> None:
           "tokens": {"input": res.input_tokens, "output": res.output_tokens}, "cost_usd": round(res.cost_usd, 6)})
 
 
+def cmd_vision(args: argparse.Namespace) -> None:
+    """版面理解与 OCR (T1–T2): the layout of an OCR engine's page, a vision model's reading, a comparison with the store."""
+    from .plugins.classics.vision import iiif
+
+    if args.action == "fetch":
+        if not args.target or not args.page:
+            raise SystemExit("taochronos vision fetch <manifest url or file> --page N")
+        _, data = _corpus_paths(args)
+        _out(iiif.fetch_page(args.target, args.page, data / "images" / "pages", width=args.width))
+        return
+    if not args.profile:
+        _, data = _corpus_paths(args)
+        args.profile = "full-corpus" if (data / "corpus" / "tcm.sqlite").exists() else "full-discovery"
+    harness = _harness(args)
+    study = harness.capabilities.get("study")
+    vision = harness.capabilities.get("vision")
+    if args.action == "layout":
+        g = vision.layout(path=args.target, fmt=args.format)
+        if args.json:
+            _out(g)
+            return
+        lines = [f"# 版面：{args.target}", "", f"{g['orientation']}，主文字径 {g['char_size']}；{'；'.join(g['notes'])}", "",
+                 "## 正文（阅读顺序，小注在（）中）", "", g["text"], ""]
+        if g["apparatus"]:
+            lines += ["## 版心、书眉", ""] + [f"- {a['kind']}：{a['text']}" for a in g["apparatus"]]
+        _out("\n".join(lines))
+        return
+    if args.action == "read":
+        study.judge = _judge(args, harness)
+        try:
+            _out(vision.read(args.target, hint=args.hint or ""))
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+        return
+    text = Path(args.target).read_text(encoding="utf-8") if args.target and Path(args.target).exists() else args.target
+    if not text:
+        raise SystemExit("taochronos vision compare <OCR text or file> [--passage ID] [--reference FILE]")
+    ref = Path(args.reference).read_text(encoding="utf-8") if args.reference else None
+    try:
+        _out(vision.compare(text, passage_id=args.passage, reference=ref))
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+
+
 def _has_module(name: str) -> bool:
     import importlib.util
 
@@ -1035,6 +1089,21 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("action", choices=["list", "presets", "test"])
     sp.add_argument("spec", nargs="?", help="test: provider:model (minimax:MiniMax-M2.7, poe:claude-sonnet-4.6, litellm:deepseek/deepseek-chat …)")
     add("agents", cmd_agents, "list agent specs and their current routes")
+    sp = sub.add_parser("vision", help="版面与 OCR: layout of an OCR engine's page (alto, hocr, page, paddle, tokens), a vision "
+                                       "model's reading of an image, the comparison of an OCR text with the store, IIIF pages")
+    sp.set_defaults(fn=cmd_vision)
+    sp.add_argument("action", choices=["layout", "read", "compare", "fetch"])
+    sp.add_argument("target", nargs="?", help="layout: an OCR file; read: an image; compare: an OCR text or file; fetch: a manifest")
+    sp.add_argument("--format", choices=["alto", "hocr", "page", "paddle", "tokens"], help="layout: the OCR format (default: guessed)")
+    sp.add_argument("--passage", help="compare: the passage the OCR text transcribes (default: found by probes)")
+    sp.add_argument("--reference", help="compare: a reference text file instead of the store")
+    sp.add_argument("--page", type=int, help="fetch: the page (1-based) of the manifest")
+    sp.add_argument("--width", type=int, default=1600, help="fetch: the width of the image to request")
+    sp.add_argument("--hint", help="read: a hint for the model (the work, the chapter)")
+    sp.add_argument("--json", action="store_true")
+    sp.add_argument("--profile", help="default: full-corpus when the corpus store exists")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    _llm_args(sp)
     sp = add("corpus", cmd_corpus, "list the corpus, or fetch / unpack / catalog / ingest / status / reindex the full-corpus store")
     sp.add_argument("action", nargs="?", default="list",
                     choices=["list", "fetch", "unpack", "catalog", "ingest", "status", "reindex", "images"])
@@ -1119,15 +1188,17 @@ def build_parser() -> argparse.ArgumentParser:
                                       "文本地层 (layers/dating/authorship), 医案轨迹 (cases/trajectories), 医理论证 (argument), "
                                       "语义演变 (senses), 佚书辑佚 (fragments), 句读 (punctuate), 集注 (commentaries), 争议 (disputes), "
                                       "条文结构 (clause), 训诂 (glosses), 配伍 (pairs), 方证网络 (network), 学派 (schools), 名称 (names), "
-                                      "传播链 (chain), 实体识别 (entities)")
+                                      "传播链 (chain), 实体识别 (entities), 地域 (places), 释义与今译 (translate)")
     sp.set_defaults(fn=cmd_study)
     sp.add_argument("what", choices=STUDY)
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
     sp.add_argument("--profile", help="default: full-corpus when the corpus store exists, else full-discovery (demo corpus)")
     sp.add_argument("--provider", help=argparse.SUPPRESS)
     sp.add_argument("--passage", help="concordance/reuse/argument/punctuate/chain: a passage id instead of a text")
-    sp.add_argument("--input", help="punctuate/entities: read the text from this file")
-    sp.add_argument("--person", help="disputes: the physician whose views are disputed (e.g. 丹溪)")
+    sp.add_argument("--input", help="punctuate/entities/translate: read the text from this file")
+    sp.add_argument("--person", help="disputes: the physician whose views are disputed (e.g. 丹溪); places: a physician")
+    sp.add_argument("--school", help="places: where a school's physicians came from (e.g. 温病)")
+    sp.add_argument("--geojson", help="places: also write the map points (GeoJSON) to this file")
     sp.add_argument("--period", help="pairs: only the compositions of this period (e.g. 宋金元)")
     sp.add_argument("--probe", action="append", help="schools: also report this word for the school (repeatable, e.g. 相火)")
     sp.add_argument("--min-coverage", type=float, default=0.6, help="concordance: share of the text a witness must carry")
@@ -1137,7 +1208,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--book", help="cards: 方证 cards from this book (e.g. 伤寒论); glosses: a book's glossary")
     sp.add_argument("--formula", action="append", help="cards/dataset: a formula (repeatable)")
     sp.add_argument("--herb", action="append", help="cards/dataset: a drug (repeatable)")
-    sp.add_argument("--term", help="cards/dataset: a term")
+    sp.add_argument("--term", help="cards/dataset: a term; places: a term's use by region and period")
     sp.add_argument("--citations", action="store_true", help="dataset: include the citation network")
     sp.add_argument("--year", type=float, help="metrology: the year whose measures to read the dose in")
     sp.add_argument("--limit", type=int)

@@ -1,0 +1,28 @@
+# Gold for the presentism guardrail (verification/presentism.py): statements and translations with what the guardrail
+# should find (equation · retrospective · modern_term · none).  Written by the authors of TaoChronos for the test.
+#   source  for a translation: the classical text it translates (a modern name the source lacks is `modern_term`)
+cases:
+  - {text: 消渴即糖尿病。, expect: equation}
+  - {text: 胸痹就是现代医学的冠心病。, expect: equation}
+  - {text: 中风相当于脑卒中，治宜息风。, expect: equation}
+  - {text: 肺痨实为肺结核。, expect: equation}
+  - {text: 历节乃是类风湿关节炎。, expect: equation}
+  - {text: 黄疸即是肝炎。, expect: equation}
+  - {text: 肠痈指的是阑尾炎。, expect: equation}
+  - {text: 《金匮要略》已经描述了糖尿病。, expect: retrospective}
+  - {text: 张仲景最早记载了心绞痛。, expect: retrospective}
+  - {text: 古人早已认识到高血压与情志有关。, expect: retrospective}
+  - {text: 华佗首次描述了阑尾炎。, expect: retrospective}
+  - {text: 消渴的描述与现代糖尿病有部分相似，但并非一一对应。, expect: none}
+  - {text: 胸痹与冠心病的表现相近，不宜等同。, expect: none}
+  - {text: 中风的症状与脑卒中有所重叠。, expect: none}
+  - {text: 患者多饮多尿，或可作为糖尿病的候选表型。, expect: none}
+  - {text: 霍乱吐利，当温中。, expect: none}
+  - {text: 黄疸身目俱黄，茵陈蒿汤主之。, expect: none}
+  - {text: 太阳病，发热汗出，桂枝汤主之。, expect: none}
+  - {text: 口渴想喝水，是糖尿病的表现。, source: 渴欲饮水, expect: modern_term}
+  - {text: 胸口闷痛，这是冠心病。, source: 胸痹，喘息咳唾，胸背痛, expect: modern_term}
+  - {text: 病人得了肺结核，咳嗽吐血。, source: 劳瘵咳嗽吐血, expect: modern_term}
+  - {text: 口渴想喝水，小便不通畅。, source: 渴欲饮水，小便不利, expect: none}
+  - {text: 这是消渴病，口渴而小便多。, source: 消渴，小便反多, expect: none}
+  - {text: 胸中憋闷疼痛，喘息咳嗽。, source: 胸痹，喘息咳唾, expect: none}
