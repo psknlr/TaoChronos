@@ -1,6 +1,10 @@
 """TaoChronos-Eval: does the harness do what it claims?
 
-Suites: philology · claims · provenance · hallucination · contradiction · lineage · temporal ·
+Three layers: *invariants* (the boundaries the harness promises, as probes — ``invariants``), *hard interpretive
+cases* (quotes that are true while the reading is false — ``interpretive``, with metrics per case class) and *research
+value* (the suites below, and the ablations against baselines).
+
+Suites: invariants · interpretive · philology · claims · provenance · hallucination · contradiction · lineage · temporal ·
 anachronism · recovery · time_machine · source_rediscovery · ablations · collation · reuse · stratigraphy · cases · argument · senses · fragments ·
 punctuation · commentaries · disputes · variant_impact · clause · glosses · pairs · schools · names · chain · entities · places · translation · layout.
 Gold sets live in
@@ -15,6 +19,8 @@ from typing import Any, Callable
 
 from .ablations import ablations
 from .base import EvalContext, SuiteResult
+from .boundaries import invariants
+from .interpretation import interpretive
 from .rediscovery import source_rediscovery, time_machine
 from .suites import anachronism, claims, contradiction, hallucination, lineage, philology, provenance, recovery, temporal
 from .textual import (argument, cases, chain, clause, collation, commentaries, disputes, fragments, glosses, names, pairs,
@@ -22,6 +28,8 @@ from .textual import (argument, cases, chain, clause, collation, commentaries, d
 from .v2 import audit, bridge, entities, layout, modern, places, translation, workflow
 
 SUITES: dict[str, Callable[[EvalContext], SuiteResult]] = {
+    "invariants": invariants,
+    "interpretive": interpretive,
     "philology": philology,
     "claims": claims,
     "provenance": provenance,
@@ -60,7 +68,7 @@ SUITES: dict[str, Callable[[EvalContext], SuiteResult]] = {
     "modern": modern,
     "workflow": workflow,
 }
-QUICK = ("philology", "claims", "hallucination", "contradiction", "lineage", "temporal", "anachronism", "source_rediscovery",
+QUICK = ("invariants", "interpretive", "philology", "claims", "hallucination", "contradiction", "lineage", "temporal", "anachronism", "source_rediscovery",
          "collation", "reuse", "stratigraphy", "cases", "argument", "senses", "fragments", "punctuation", "commentaries",
          "disputes", "variant_impact", "clause", "glosses", "pairs", "schools", "names", "chain", "entities", "places", "translation", "layout", "bridge", "audit", "modern", "workflow")
 

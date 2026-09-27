@@ -19,6 +19,7 @@ Rules (see docs/discovery.md for examples):
   TREAT  “X者Y之 / 当以…和之 / 温能除大热 / 在卫汗之…”             → treatment_principle
   COMPL  “消渴之人…发痈疽”                                      → complication
   TRANS  “转为X”                                               → transforms_to
+  PROG   “…则愈 / 自愈 / 欲解 / 可治 / …者死 / 难治 / 不治”          → prognosis (outcome favourable / unfavourable)
   THEORY fallback for dense theoretical sentences               → theory
 """
 
@@ -37,7 +38,7 @@ from ...protocol.outputs import PhilologyAssessment
 from ..classics.domain import PULSE_QUALITIES, DomainPack, LexEntry, Mention
 from ..classics.segment import SEGMENTER_VERSION, Segmenter, is_unpunctuated
 
-EXTRACTOR_VERSION = "lexicon-rules@0.1"
+EXTRACTOR_VERSION = "lexicon-rules@0.2"
 SEGMENTED_DISCOUNT = 0.9  # claims read through machine segmentation are less certain than on punctuated text
 SENT_END = "。；！？"
 NEG_PREFIXES = ("不能", "不甚", "反不", "不", "无", "非", "未", "勿", "莫")
@@ -51,12 +52,23 @@ RULE_CONFIDENCE = {
     "COMP": 0.85, "HERB": 0.85, "META": 0.75, "IND": 0.85, "IND-advisory": 0.8, "IND-hedged": 0.75,
     "IND-heading": 0.6, "IND-zhi": 0.8, "CONTRA": 0.75, "ADV": 0.7, "DEF": 0.82, "DEF-generic": 0.65,
     "CAUSE": 0.78, "CAUSE-season": 0.82, "PATHO": 0.8, "PATHO-generic": 0.62, "TREAT": 0.82,
-    "TREAT-generic": 0.62, "COMPL": 0.72, "TRANS": 0.75, "THEORY": 0.5,
+    "TREAT-generic": 0.62, "COMPL": 0.72, "TRANS": 0.75, "PROG": 0.74, "THEORY": 0.5,
 }
 TEXTUAL_BY_MODALITY = {"assertive": 0.9, "advisory": 0.82, "hedged": 0.68, "conditional": 0.72}
 ATTRIBUTION_TEMPORAL = {"traditional": 0.9, "compiled": 0.78, "disputed": 0.62, "pseudepigraphic": 0.62}
 FINDING_CATEGORIES = ("symptom", "sign", "tongue", "pulse")
 CONDITION_CATEGORIES = ("disease", "pattern")
+# prognosis: the outcome a text states for a presentation (recovery, resolution, treatability — or death, intractability);
+# 不治 / 可治 / 死 only at a clause end, so 不治已病 (a principle) and 寒极则生热 (pathogenesis) are not read as outcomes
+_CLAUSE_END = r"(?:也|矣)?(?=[，。；！？]|$)"
+PROGNOSIS_CUES = (
+    ("unfavourable", re.compile(r"(?:者|则|必|皆|即|当)死(?:不治)?" + _CLAUSE_END + r"|死不治|不可治" + _CLAUSE_END
+                                + r"|难治" + _CLAUSE_END + r"|(?<![可])不治" + _CLAUSE_END + r"|难(?:愈|差|瘥)|[一二三四五六七八九十]+日(?:而)?死")),
+    ("favourable", re.compile(r"(?<![不难])(?:则|自|必|乃|即|当|可|而|渐|者)(?:愈|差|瘥)|(?:为)?欲(?:自)?解|(?<![不难])可治" + _CLAUSE_END
+                              + r"|易治" + _CLAUSE_END + r"|(?:者|则)生" + _CLAUSE_END + r"|(?:者|则|必)?不死" + _CLAUSE_END)),
+)
+# the states of 「寒者热之，热者寒之……留者攻之」: what may stand before 者 in a treatment principle without a lexicon entry
+PRINCIPLE_SUBJECTS = set("寒热温凉清虚实燥湿结留散急缓衰盛劳逸坚客损惊高下微甚陷逆滑涩")
 CAUSAL_MARKERS = ("伤于", "因于", "属于", "所生", "所感", "杂至", "合而", "胜者", "化为", "客于", "成痹", "所发", "犯")
 
 
@@ -150,6 +162,7 @@ class ClaimExtractor:
         self._rule_pathogenesis(ctx)
         self._rule_treatment(ctx)
         self._rule_complication_transform(ctx)
+        self._rule_prognosis(ctx)
         self._rule_heading_indication(ctx)
         self._rule_theory(ctx)
         claims = self._dedupe(ctx.claims)
@@ -460,7 +473,7 @@ class ClaimExtractor:
                 out.append((m, "assertive", "IND", m.end + 2))
             elif re.search(r"宜(服)?$", before):
                 out.append((m, "advisory", "IND-advisory", m.end))
-            elif before.endswith("可与"):
+            elif before.endswith("可与") and not re.search(r"不可(?:再|更|复)?与$", before):  # 不可与X prohibits X
                 out.append((m, "hedged", "IND-hedged", m.end))
             elif m.category == "herb" and before.endswith("治之以"):
                 out.append((m, "assertive", "IND", m.end))
@@ -535,7 +548,9 @@ class ClaimExtractor:
                 target = self._previous_intervention(ctx, m.start())
                 if target is None:
                     continue
-                args.append(self._arg(ctx, target).replace(start=None, end=None, qualifiers={"referent": "之"}) if target.start < clause_start else self._arg(ctx, target))
+                # 之 refers back to an intervention named earlier (…大青龙汤主之，若…不可服之): the claim names it by reference,
+                # not by its span, whose own cue (主之) states the other reading
+                args.append(self._arg(ctx, target).replace(start=None, end=None, qualifiers={"referent": "之"}))
             elif verb == "更行":
                 target = next((x for x in ctx.mentions if x.category in ("formula", "herb") and x.start >= m.end()), None)
                 if target is None:
@@ -576,6 +591,8 @@ class ClaimExtractor:
         # adverse outcomes of a method: 汗之则神昏耳聋 …
         for m in re.finditer(r"(汗|下|润)之(则|，必|，|徒)?", norm):
             if re.match(r"(则|乃|即)?愈", norm[m.end(): m.end() + 2]) or norm[m.end(): m.end() + 1] == "可":
+                continue
+            if re.search(r"(宜|可|当|急|先|须)$", norm[max(0, m.start() - 2): m.start()]):  # 宜下之 recommends, it does not warn
                 continue
             method = {"汗": "发汗", "下": "下法", "润": "润法"}[m.group(1)]
             entry = self.lex.resolve(method)
@@ -741,6 +758,8 @@ class ClaimExtractor:
             if subject is not None and subject.category in ("formula", "herb", "disease"):
                 continue
             subj_entry = subject.entry if subject is not None else self.lex.resolve(subj_char)
+            if subject is None and subj_entry is None and subj_char not in PRINCIPLE_SUBJECTS:
+                continue  # 「亦非三者攻之所可能及」: a numeral or a pronoun before 者 is not a state to be treated
             subj_arg = ClaimArgument(
                 role=Role.PATHOGENESIS if subj_entry is None else Role(self.pack.role_of(subj_entry.category)),
                 surface=subj_char if subject is None else subject.surface,
@@ -805,6 +824,39 @@ class ClaimExtractor:
             if target and subject and target[0].term_id != subject.term_id:
                 args = [self._arg(ctx, subject), self._arg(ctx, target[0])] + [self._arg(ctx, x) for x in ctx.mentions_in(s.start, s.end, "organ", include_weak=False)]
                 self._new(ctx, ClaimRelation.COMPLICATION, args, subject.start, s.end, "COMPL")
+
+    def _rule_prognosis(self, ctx: _Ctx) -> None:
+        """The outcome a text states: 「太阳病，发汗后，…少少与饮之，令胃气和则愈」 → prognosis(太阳病, 发汗后, …; favourable).
+        The scope is the sentence up to the cue, or from the previous cue in the same sentence (「浮者可治，沉者死」 gives
+        two claims); a scope that names no disease, pattern or condition inherits them from the start of the sentence,
+        then from the heading."""
+        cues = sorted(((m.start(), m.end(), outcome) for outcome, rx in PROGNOSIS_CUES for m in rx.finditer(ctx.norm)
+                       if not ctx.in_paren(m.start())), key=lambda c: c[0])
+        taken: list[tuple[int, int]] = []
+        for start, end, outcome in cues:
+            if any(s <= start < e for s, e in taken):
+                continue
+            taken.append((start, end))
+            sent = ctx.sentence_of(start)
+            scope_start = max([sent.start] + [e for s, e in taken[:-1] if sent.start <= s < start])
+            # 「…者，下之则愈」: the clause between the last 「…者，」 and a connective cue is what brings the outcome about
+            turn = -1
+            if re.match(r"(则|乃|即|而)", ctx.norm[start:end]):
+                comma = ctx.norm.rfind("，", scope_start, start)
+                turn = comma if comma > 0 and ctx.norm[comma - 1] == "者" else -1
+            args = [a.replace(qualifiers={**a.qualifiers, "means": "true"}) if turn != -1 and a.start is not None and a.start > turn else a
+                    for a in self._scope_args(ctx, scope_start, start, causal=True) if a.role != Role.FORMULA]
+            if not args:
+                continue
+            heads = (Role.DISEASE, Role.PATTERN, Role.CONDITION)
+            if not any(a.role in heads for a in args):
+                inherited = [a for a in self._scope_args(ctx, sent.start, scope_start) if a.role in heads]
+                args += [a.replace(qualifiers={**a.qualifiers, "inherited": "true"}) for a in inherited[:2]]
+                if not inherited:
+                    args += [self._heading_arg(h) for h in ctx.heading if h.category in ("disease", "pattern")][:1]
+            modality = "conditional" if re.match(r"^(若|如|设)", ctx.norm[scope_start:start].lstrip("，")) else "assertive"
+            self._new(ctx, ClaimRelation.PROGNOSIS, args, scope_start, end, "PROG", modality=modality,
+                      context=f"outcome:{outcome}:{ctx.norm[start:end]}")
 
     def _rule_heading_indication(self, ctx: _Ctx) -> None:
         if any(c.relation == ClaimRelation.INDICATED_FOR for c in ctx.claims):

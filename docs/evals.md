@@ -10,8 +10,18 @@ Gold sets live in `evals/gold/` — **author-constructed for the demo corpus and
 Read the scores as regression tests of intended behaviour, not benchmark results; replace the gold with
 expert annotations before drawing conclusions about a real corpus.
 
+The suites form three layers ([ADR 0009](adr/0009-boundaries-contract-and-evaluation-layers.md)):
+
+1. **Invariants** (`invariants`) — the boundaries the harness promises, as probes run against the harness under
+   evaluation: a profile that drops a validator, or a plugin that leaks a result, shows up as a broken invariant.
+2. **Hard interpretive cases** (`interpretive`) — verbatim quotes that can still be read wrongly, scored per class with
+   the *unsafe* errors (those that would let a false claim through) counted apart, on a dev and a held-out split.
+3. **Research value** — every other suite, and the ablations and baselines.
+
 | Suite | Question | Metrics |
 |---|---|---|
+| `invariants` | Do the harness's boundaries hold — scope on every read path, semantic support at commit, objections a model cannot close, AfterToolCall denials, isolation of model code, atomic batches, G7 for experts only, evidence bounds, G8 by stance and level, read-only agent views, integrity, retraction, publication on current versions, acceptance ≠ execution? | held / exercised / broken |
+| `interpretive` | Are true quotes read right where the reading is hard — inverted relations, a prohibition beside a prescription, consequences, reported and rejected views, omitted conditions, mixed witnesses, disputed dates? | accuracy and unsafe errors, per class and per split (dev / held-out) |
 | `philology` | Are contested readings kept with probabilities and an uncertain mass? Are variant spellings normalised for matching? | pass rate |
 | `claims` | Does extraction find the right hyperedges (relation + key arguments + negations)? | precision · recall · F1 · recall by relation · provenance pass rate |
 | `provenance` | Are all committed claims and evidence verbatim? How deep is the Claim → Pixel chain? | verbatim rates · chain depth · level availability |
@@ -46,8 +56,10 @@ expert annotations before drawing conclusions about a real corpus.
 
 | Suite | Result |
 |---|---|
+| invariants | 19/19 held (P01–P10 and nine boundaries added with them); each of six boundaries removed on purpose (scope guard, result firewall, semantic support hook, reducer authority, evidence bounds, publish guard) breaks its invariant |
+| interpretive | held-out 73/76 (0.961), 2 unsafe — both textual cruxes (公案); dev 16/16. First blind round: held-out 43/53 (0.811), 4 unsafe; see below |
 | philology | 7/7 |
-| claims | P 0.976 · R 0.952 · F1 0.964 (misses: a prognosis clause of 伤寒论 §71, the second 湿痹 sign definition; one spurious `theory` claim) |
+| claims | P 1.0 · R 0.976 · F1 0.988 (miss: the second 湿痹 sign definition). Before the general PROGNOSIS rule (则愈 / 自愈 / 欲解 / 可治 … / 者死 / 难治 / 不治 …): P 0.976 · R 0.952 · F1 0.964, prognosis recall 0 — this gold is dev |
 | provenance | 100% verbatim claims and evidence; mean chain depth 7.8; page/line/region/image unavailable (no images in the demo) |
 | hallucination | fabricated 100% · perturbed 100% · wrong span 100% detected; verbatim recall 100%; variant spelling accepted |
 | contradiction | 12/12 |
@@ -55,9 +67,52 @@ expert annotations before drawing conclusions about a real corpus.
 | temporal | constraints 6/6 · earliest 6/6 · leakage 0 |
 | anachronism | statements 10/10 · mappings 8/8 · agent equivalence blocked |
 | recovery | 4/4 crash points; deterministic rerun; parallel = sequential; replay consistent |
-| time_machine (1368) | 3 decidable predictions, 2 held (taboo rename persisted; lost association stayed absent); failed: the 肾气丸-family core predicted from two members — 张景岳's 左/右归丸 dropped 泽泻·牡丹皮·茯苓 |
+| time_machine (1368) | a passage is on one side of the cutoff only when its whole date range is (straddling texts are in neither the past corpus nor the checking future; none at 1368); 3 decidable predictions, 2 held (taboo rename persisted; lost association stayed absent); failed: the 肾气丸-family core predicted from two members — 张景岳's 左/右归丸 dropped 泽泻·牡丹皮·茯苓 |
 | source_rediscovery | 3/3 re-inferred with consistent date bounds |
 | ablations | earliest accuracy: all 1.0 · no sense route 0.67 · BM25 only 0.67; contradiction: no sense resolution 0.83 · no philology 0.92; 1 hypothesis would pass G5 only by counting dependent books; Context OS −94% tokens; without the Skeptic 1 rejected hypothesis survives and no revisions happen |
+
+## The first two layers
+
+**Invariants.**  Nineteen probes, each one of the audit's counterexamples (P01–P10) or a boundary added with them, run
+against the harness being evaluated (`src/taochronos/evals/boundaries.py`); `tests/test_boundaries.py` checks the same
+boundaries on the default harness.  A probe that cannot run in the environment (no user namespaces for the isolation
+tier) is reported as *not exercised*, never as held.  Each probe was checked by mutation — the boundary removed, the
+invariant broken, the boundary restored, the invariant held again:
+
+| boundary removed | invariant reported broken |
+|---|---|
+| BeforeToolCall scope guard | I01: the withheld passage read through `philology.inspect_page` |
+| AfterToolCall scope firewall | I02: a tool result naming withheld material reached the caller |
+| semantic-support commit hook | I04: a true quote with an inverted relation committed |
+| reducer authority for `GateEvaluated` | I12: G7 set by an agent and a validator |
+| evidence bound checks | I13: five empty or out-of-bounds records verified |
+| publish guard | I18: a report published on hypothesis versions the contract never judged |
+
+**Hard interpretive cases** (`gold/interpretive.yaml`, 92 cases in seven classes).  Every quote is verbatim — passages
+of the demo corpus, or excerpts of the full corpus given with their book — and every case has one reading that is
+right.  The harness reads each with the readers of a research run: the support reading and the statement frame
+(`verification/support.py`), the quote locator, the corpus's date ranges.  *Unsafe* errors are counted apart: a
+contradicted claim read as supported, a rejected or reported view read as the author's, a condition dropped, a mixed
+witness verified, a disputed order asserted, a possibly later text put before a cutoff.
+
+The split was fixed before the suite first ran, and the rounds are reported as they happened:
+
+| round | cases | result |
+|---|---|---|
+| 1, blind | 60 written together (7 dev: the cases of changes already made — argument negation, the straddling cutoff — and their controls; 53 held out) | held-out 43/53 (0.811), 4 unsafe: a 或曰 view the author answers kept as the report (3), 「《古今录验》论：」 not read as a citation, 「…者，X主之」 conditions without 若/凡 dropped (2), a formula named by 之 unreadable (2), 「未有不成」 not causal, the 大黄牡丹汤 crux |
+| changes | general, not per case: a report governs until the author answers it (余曰 / 答曰 / 曰不然 / 是又不然); a book cited by title and colon is a report; a 者-clause followed in its sentence by an action or a consequence is a condition (a definition is not); an intervention named by 之 is read through its pronoun (不可与之 forbids, 服之则厥逆 warns, 宜服之 prescribes); 未有不 is a causal cue | the 9 round-1 cases that prompted them moved to dev |
+| 2, blind | 32 new held-out cases written after round 1 and before the changes ran | 30/32 (0.938), 1 unsafe |
+| now | 16 dev · 76 held-out | dev 16/16 · held-out 73/76 (0.961), 2 unsafe |
+
+By class (all cases): negation scope, consequence, reported view, omitted condition, mixed witnesses and disputed dates
+1.0; relation inversion 0.82.  The three held-out misses are reported, not patched:
+
+* **Textual cruxes (公案), unsafe:** 「脉洪数者，脓已成，不可下也。大黄牡丹汤主之」 (read by most commentators as an
+  inversion) and 「此以表有热，里有寒，白虎汤主之」 (里有寒 long suspected an error) read as plain indications.  The
+  reader has no way to know a crux; a curated registry of cruxes consulted by the support reading is the direction,
+  measured on new held-out cases.
+* **A cue across a clause:** 「大便微硬者，可与大承气汤，不硬者，不可与之」 — the prohibition that governs the next clause is
+  read as bearing on 大承气汤 too, so the indication comes out *ambiguous* (a safe miss: the claim waits for an expert).
 
 ## 深层发现 2.0
 

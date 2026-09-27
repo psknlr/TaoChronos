@@ -1,0 +1,214 @@
+# InterpretiveEval — hard interpretive cases: every quote below is verbatim, and every reading can still be wrong.
+#
+# Author annotation.  Passages named by id are in corpus/demo; `text` cases are short excerpts (≤ 120 characters) of
+# pre-1900 public-domain works found in the full corpus, given with their book, and kept in the characters of that
+# witness (the harness normalises variants itself).
+#
+# split — fixed before the suite first ran:
+#   dev      cases behind a change already made to the rules (argument negation in the support reading; the
+#            straddling cutoff of the time machine) and the positive controls used while making it;
+#   heldout  every other case.  A held-out miss is reported, not fixed by a rule written for it; a fix needs new
+#            held-out cases to be measured.
+#
+# classes and what is compared:
+#   relation_inversion  the support verdict on a claim whose relation or argument reading is inverted (and controls)
+#   negation_scope      the support verdict where a prohibition and a prescription stand side by side
+#   consequence         the support verdict where 「X之则…」 recommends or warns by its consequence
+#   reported_view       the stance of the statement: asserted by the author / reported (endorsed or not) / rejected
+#   omitted_condition   whether the frame keeps the condition (若…者, 凡…, …者) of a quote that leaves it out
+#   witness_mixing      whether the quote is found at the witness it cites (words of one witness under another's locator)
+#   date_dispute        the order of two disputed dates, the date basis of a passage, its side of a cutoff
+#
+# arguments: [role, surface] or {role, surface, nth (occurrence in the quote, from 0), negated, referent (named by 之)}
+cases:
+  # ------------------------------------------------------------------ true quote, false relation
+  - {id: ri01, class: relation_inversion, split: dev, passage: shanghanlun.c013, quote: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之,
+     relation: contraindicated, arguments: [[formula, 桂枝汤], [disease, 太阳病]], expect: {verdict: contradicts}}
+  - {id: ri02, class: relation_inversion, split: dev, passage: shanghanlun.c013, quote: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之,
+     relation: indicated_for, arguments: [[formula, 桂枝汤], [disease, 太阳病]], expect: {verdict: supports}}
+  - {id: ri03, class: relation_inversion, split: dev, was: heldout, passage: shanghanlun.c038, quote: 若脉微弱，汗出恶风者，不可服之,
+     relation: indicated_for, arguments: [{role: formula, surface: 大青龙汤, referent: true}, [symptom, 汗出], [symptom, 恶风]],
+     expect: {verdict: contradicts}}
+  - {id: ri04, class: relation_inversion, split: heldout, passage: shanghanlun.c038,
+     quote: 太阳中风，脉浮紧，发热恶寒，身疼痛，不汗出而烦躁者，大青龙汤主之,
+     relation: contraindicated, arguments: [[formula, 大青龙汤], [symptom, 烦躁]], expect: {verdict: contradicts}}
+  - {id: ri05, class: relation_inversion, split: heldout, passage: jinkui.18.changyong2, quote: 脉洪数者，脓已成，不可下也。大黄牡丹汤主之,
+     relation: indicated_for, arguments: [[formula, 大黄牡丹汤], [pulse, 洪], [pulse, 数]], expect: {verdict: ambiguous},
+     note: "「不可下也」与「大黄牡丹汤主之」相连，历代注家多以为倒装（当接「可下之，当有血」之后）——字面上是一桩公案，不能读成确定的适应证"}
+  - {id: ri06, class: relation_inversion, split: dev, passage: wenyilun.xu, quote: 夫温疫之为病，非风、非寒、非暑、非湿，乃天地间别有一种异气所感,
+     relation: causes, arguments: [[disease, 温疫], [etiology, 风], [etiology, 异气]], expect: {verdict: contradicts}}
+  - {id: ri07, class: relation_inversion, split: dev, passage: wenyilun.xu, quote: 夫温疫之为病，非风、非寒、非暑、非湿，乃天地间别有一种异气所感,
+     relation: causes, arguments: [[disease, 温疫], {role: etiology, surface: 风, negated: true}, [etiology, 异气]], expect: {verdict: supports}}
+  - {id: ri08, class: relation_inversion, split: dev, was: heldout, passage: qianjin.21.jiu, quote: 凡积久饮酒，未有不成消渴,
+     relation: causes, arguments: [[etiology, 饮酒], [disease, 消渴]], expect: {verdict: supports}, note: "未有不 is a double negation"}
+  - {id: ri09, class: relation_inversion, split: heldout, passage: qianjin.21.jiu, quote: 凡积久饮酒，未有不成消渴,
+     relation: causes, arguments: [[etiology, 饮酒], {role: disease, surface: 消渴, negated: true}], expect: {verdict: contradicts}}
+
+  # ------------------------------------------------------------------ a prohibition beside a prescription
+  - {id: ns01, class: negation_scope, split: heldout, passage: wenyilun.chuqi, quote: 又不可下，此邪不在里，下之徒伤胃气，其渴愈甚。宜达原饮,
+     relation: contraindicated, arguments: [{role: treatment_method, surface: 下, nth: 0}], expect: {verdict: supports}}
+  - {id: ns02, class: negation_scope, split: heldout, passage: wenyilun.chuqi, quote: 又不可下，此邪不在里，下之徒伤胃气，其渴愈甚。宜达原饮,
+     relation: indicated_for, arguments: [[formula, 达原饮]], expect: {verdict: supports}}
+  - {id: ns03, class: negation_scope, split: heldout, passage: wenyilun.chuqi, quote: 又不可下，此邪不在里，下之徒伤胃气，其渴愈甚。宜达原饮,
+     relation: indicated_for, arguments: [{role: treatment_method, surface: 下, nth: 0}], expect: {verdict: contradicts}}
+  - {id: ns04, class: negation_scope, split: heldout, text: 太阳病，外证未解，不可下也，下之为逆。欲解外者，宜桂枝汤。, book: 伤寒论（第44条）,
+     quote: 太阳病，外证未解，不可下也，下之为逆。欲解外者，宜桂枝汤,
+     relation: contraindicated, arguments: [[formula, 桂枝汤]], expect: {verdict: contradicts}}
+  - {id: ns05, class: negation_scope, split: heldout, text: 太阳病，外证未解，不可下也，下之为逆。欲解外者，宜桂枝汤。, book: 伤寒论（第44条）,
+     quote: 太阳病，外证未解，不可下也，下之为逆。欲解外者，宜桂枝汤,
+     relation: indicated_for, arguments: [[formula, 桂枝汤], [disease, 太阳病]], expect: {verdict: supports}}
+  - {id: ns06, class: negation_scope, split: heldout, passage: wenyilun.chuqi, quote: 辄用麻黄、桂枝之类强发其汗,
+     relation: indicated_for, arguments: [[herb, 麻黄], [herb, 桂枝]], expect: {verdict: contradicts}, note: "辄用 = a misuse"}
+
+  # ------------------------------------------------------------------ the consequence decides
+  - {id: cq01, class: consequence, split: heldout, passage: wenbing_tiaobian.s43, quote: 汗之则神昏耳聋,
+     relation: indicated_for, arguments: [[treatment_method, 汗]], expect: {verdict: contradicts}}
+  - {id: cq02, class: consequence, split: heldout, passage: wenbing_tiaobian.s43, quote: 汗之则神昏耳聋,
+     relation: contraindicated, arguments: [[treatment_method, 汗]], expect: {verdict: supports}}
+  - {id: cq03, class: consequence, split: heldout, passage: shanghanlun.c220, quote: 大便难而谵语者，下之则愈，宜大承气汤,
+     relation: contraindicated, arguments: [[treatment_method, 下]], expect: {verdict: contradicts}}
+  - {id: cq04, class: consequence, split: heldout, passage: shanghanlun.c220, quote: 大便难而谵语者，下之则愈，宜大承气汤,
+     relation: indicated_for, arguments: [[treatment_method, 下]], expect: {verdict: supports}}
+  - {id: cq05, class: consequence, split: heldout, passage: shanghanlun.c273, quote: 若下之，必胸下结鞕,
+     relation: indicated_for, arguments: [[treatment_method, 下]], expect: {verdict: contradicts}}
+  - {id: cq06, class: consequence, split: dev, was: heldout, passage: shanghanlun.c038, quote: 服之则厥逆，筋惕肉瞤，此为逆也,
+     relation: contraindicated, arguments: [{role: formula, surface: 大青龙汤, referent: true}], expect: {verdict: supports}}
+
+  # ------------------------------------------------------------------ whose view is it
+  - {id: rv01, class: reported_view, split: heldout, passage: piwei.rezhong, quote: 劳者温之，损者温之, expect: {stance: reported},
+     note: "the author cites the 经 to endorse it"}
+  - {id: rv02, class: reported_view, split: dev, was: heldout, passage: waitai.11.gujin, quote: 消渴病有三, expect: {stance: reported}}
+  - {id: rv03, class: reported_view, split: heldout, passage: bencao_gangmu.rendong, quote: 治风除胀，解痢逐尸为要药, expect: {stance: reported},
+     note: "时珍 laments that later physicians forgot it — reported, not rejected"}
+  - {id: rv04, class: reported_view, split: heldout, passage: wenyilun.xu, quote: 乃天地间别有一种异气所感, expect: {stance: asserted}}
+  - {id: rv05, class: reported_view, split: heldout, book: 证治准绳（王肯堂）, text: 肝經之病三者自是不一昔人以小腸膀胱氣為疝者誤也殊不知足厥隂之經環隂器抵少腹,
+     quote: 以小腸膀胱氣為疝, expect: {stance: rejected}}
+  - {id: rv06, class: reported_view, split: heldout, book: 伤寒六书（陶华）,
+     text: 或曰：陰出而乘於外，是陽之不足也。陽病，則當有以發表而汗之，何哉？是大不然，陰邪傳於外，不汗之，則邪何由而去？,
+     quote: 是陽之不足也, expect: {stance: rejected}}
+  - {id: rv07, class: reported_view, split: heldout, book: 仁端录（徐谦）, text: 昔人謂痘出于臟疹出于腑皆非也疹出于腑則涕𠻳毒從毛竅而出,
+     quote: 痘出于臟疹出于腑, expect: {stance: rejected}}
+  - {id: rv08, class: reported_view, split: heldout, book: 本草备要（汪昂）, text: （或曰：補腎及治崩帶、淋濁宜鹽水浸炒。昂按：此說非也，前證用黃耆，非欲抑黃耆使入腎也，取其補中升氣,
+     quote: 補腎及治崩帶、淋濁宜鹽水浸炒, expect: {stance: rejected}}
+  - {id: rv09, class: reported_view, split: heldout, book: 金匮玉函要略辑义（丹波元简）, text: 即其治也。前人擬小陷胸湯。恐非其治。,
+     quote: 擬小陷胸湯, expect: {stance: rejected}}
+  - {id: rv10, class: reported_view, split: heldout, book: 伤寒兼证析义（张倬）,
+     text: 其五更腎瀉昔人皆謂腎虚而用四神五味補歛之藥服之未必悉應殊不知此皆酒濕入傷水藏所致,
+     quote: 腎虚而用四神五味補歛之藥, expect: {stance: rejected}}
+  - {id: rv11, class: reported_view, split: heldout, book: 伤寒兼证析义（张倬）,
+     text: 其五更腎瀉昔人皆謂腎虚而用四神五味補歛之藥服之未必悉應殊不知此皆酒濕入傷水藏所致,
+     quote: 酒濕入傷水藏所致, expect: {stance: asserted}}
+  - {id: rv12, class: reported_view, split: heldout, book: 温疫论（吴有性）, text: 或曰得毋為積滯而設與余曰非也邪氣客於下焦氣血壅滯鬱而為積,
+     quote: 為積滯而設, expect: {stance: rejected}}
+  - {id: rv13, class: reported_view, split: dev, was: heldout, book: 温疫论（吴有性）, text: 或曰得毋為積滯而設與余曰非也邪氣客於下焦氣血壅滯鬱而為積,
+     quote: 邪氣客於下焦, expect: {stance: asserted}}
+  - {id: rv14, class: reported_view, split: heldout, book: 名医类案（江瓘）, text: 語言狂亂或曰發斑譫語非熱乎許曰非也陽為隂逼上入於肺傳之皮毛故癍出,
+     quote: 發斑譫語非熱乎, expect: {stance: rejected}}
+  - {id: rv15, class: reported_view, split: dev, was: heldout, book: 名医类案（江瓘）, text: 語言狂亂或曰發斑譫語非熱乎許曰非也陽為隂逼上入於肺傳之皮毛故癍出,
+     quote: 陽為隂逼上入於肺, expect: {stance: asserted}, note: "the physician's own answer, which the compiler records to endorse"}
+  - {id: rv16, class: reported_view, split: heldout, book: 续名医类案（魏之琇）,
+     text: 或曰虛勞失血曷不用滋陰降火反行辛燥乎曰不然虛勞之成未必皆本虛也多由誤藥所致,
+     quote: 曷不用滋陰降火, expect: {stance: rejected}}
+  - {id: rv17, class: reported_view, split: dev, was: heldout, book: 续名医类案（魏之琇）,
+     text: 或曰虛勞失血曷不用滋陰降火反行辛燥乎曰不然虛勞之成未必皆本虛也多由誤藥所致,
+     quote: 多由誤藥所致, expect: {stance: asserted}}
+
+  # ------------------------------------------------------------------ the condition a quote leaves out
+  - {id: oc01, class: omitted_condition, split: heldout, passage: shanghanlun.c071, quote: 若脉浮，小便不利，微热消渴者，五苓散主之,
+     expect: {condition: 若脉浮}}
+  - {id: oc02, class: omitted_condition, split: heldout, passage: shanghanlun.c071, quote: 五苓散主之, expect: {condition: 若脉浮}}
+  - {id: oc03, class: omitted_condition, split: heldout, passage: shanghanlun.c038, quote: 不可服之, expect: {condition: 若脉微弱}}
+  - {id: oc04, class: omitted_condition, split: heldout, passage: qianjin.21.jiu, quote: 未有不成消渴, expect: {condition: 凡积久饮酒}}
+  - {id: oc05, class: omitted_condition, split: dev, was: heldout, passage: jinkui.18.changyong2, quote: 可下之，当有血, expect: {condition: 迟紧}}
+  - {id: oc06, class: omitted_condition, split: dev, was: heldout, passage: shanghanlun.c220, quote: 宜大承气汤, expect: {condition: 谵语}}
+
+  # ------------------------------------------------------------------ one witness's words under another's locator
+  - {id: wm01, class: witness_mixing, split: heldout, cited: shanghanlun.c013, quote: 太阳病，头痛发热，汗出恶风者，宜桂枝汤, expect: {found: false},
+     note: "a later witness's wording of the same clause"}
+  - {id: wm02, class: witness_mixing, split: dev, cited: shanghanlun.c013, quote: 太阳病，头痛，发热，汗出，恶风，桂枝汤主之, expect: {found: true}}
+  - {id: wm03, class: witness_mixing, split: heldout, cited: suwen.035, quote: 横连膜原, expect: {found: true}, note: "募/膜 — a loan character"}
+  - {id: wm04, class: witness_mixing, split: heldout, cited_book: lingshu, quote: 横连膜原, expect: {found: false},
+     note: "吴有性 cites it as 《针经》所谓; in this corpus the words stand in 素问·疟论"}
+  - {id: wm05, class: witness_mixing, split: heldout, cited_book: jinkui, quote: 若脉浮，小便不利，微热消渴者，五苓散主之, expect: {found: false}}
+  - {id: wm06, class: witness_mixing, split: heldout, cited: shanghanlun.c071, quote: 少少与饮之，令胃气调则愈, expect: {found: false}}
+
+  # ------------------------------------------------------------------ disputed dates
+  - {id: dd01, class: date_dispute, split: heldout, order: [suwen.074.bingji, zhubing.05.xiaoke], expect: {order: undetermined},
+     note: "运气七篇 (100–762, 王冰补入之说) against 诸病源候论 (610)"}
+  - {id: dd02, class: date_dispute, split: dev, order: [suwen.005.siji, shanghanlun.c013], expect: {order: before}}
+  - {id: dd03, class: date_dispute, split: heldout, order: [shennong.huangqi, shanghanlun.c013], expect: {order: undetermined}}
+  - {id: dd04, class: date_dispute, split: heldout, order: [shanghanlun.c013, qianjin.21.yong], expect: {order: before}}
+  - {id: dd05, class: date_dispute, split: heldout, order: [nanjing.077, shanghanlun.c013], expect: {order: undetermined}}
+  - {id: dd06, class: date_dispute, split: heldout, basis: shanghanlun.c013, expect: {range: [200, 219]},
+     note: "dated by its composition, not by the 1599 edition that transmits it"}
+  - {id: dd07, class: date_dispute, split: heldout, basis: suwen.005.siji, expect: {within: [-300, 25]},
+     note: "attributed to 黄帝 (pseudepigraphic): dated by its composition, never by the legend"}
+  - {id: dd08, class: date_dispute, split: dev, cutoff: [suwen.074.bingji, 618], expect: {side: straddling}}
+  - {id: dd09, class: date_dispute, split: heldout, cutoff: [zhubing.05.xiaoke, 618], expect: {side: before}}
+  - {id: dd10, class: date_dispute, split: heldout, cutoff: [qianjin.21.yong, 618], expect: {side: after}}
+
+  # ================================================================== round 2 — written after the round-1 blind run and
+  # before the rules it prompted were changed; held out from those changes
+  - {id: r2rv01, class: reported_view, split: heldout, round: 2, book: 仁斋直指（杨士瀛）,
+     text: 或曰巴豆圎子相依而行亦能泄也是又不然巴豆攻於下積茍欲蕩滌血熱不可以無大黄, quote: 巴豆圎子相依而行亦能泄也, expect: {stance: rejected}}
+  - {id: r2rv02, class: reported_view, split: heldout, round: 2, book: 仁斋直指（杨士瀛）,
+     text: 或曰巴豆圎子相依而行亦能泄也是又不然巴豆攻於下積茍欲蕩滌血熱不可以無大黄, quote: 巴豆攻於下積, expect: {stance: asserted}}
+  - {id: r2rv03, class: reported_view, split: heldout, round: 2, book: 妇人大全良方（陈自明）,
+     text: 或曰風脉當浮今脉弦緩微弱恐非風也荅曰風無一定之脉大抵此證虚極生風, quote: 風脉當浮, expect: {stance: rejected}}
+  - {id: r2rv04, class: reported_view, split: heldout, round: 2, book: 妇人大全良方（陈自明）,
+     text: 或曰風脉當浮今脉弦緩微弱恐非風也荅曰風無一定之脉大抵此證虚極生風, quote: 風無一定之脉, expect: {stance: asserted}}
+  - {id: r2rv05, class: reported_view, split: heldout, round: 2, book: 脉诀刊误（戴启宗）,
+     text: 或曰南政北政三隂司天在泉而尺寸亦或易位褚氏之論或原此乎曰不然也司天在泉以天之六歩為客脉也, quote: 尺寸亦或易位, expect: {stance: rejected}}
+  - {id: r2rv06, class: reported_view, split: heldout, round: 2, book: 脉诀刊误（戴启宗）,
+     text: 或曰南政北政三隂司天在泉而尺寸亦或易位褚氏之論或原此乎曰不然也司天在泉以天之六歩為客脉也, quote: 以天之六歩為客脉, expect: {stance: asserted}}
+  - {id: r2rv07, class: reported_view, split: heldout, round: 2, book: 外台秘要方（王焘）所引张仲景伤寒论,
+     text: 問曰病有結胸有藏結其狀如何答曰按之痛寸脉浮闗脉沈名結胸也, quote: 按之痛寸脉浮闗脉沈名結胸也, expect: {stance: asserted}}
+  - {id: r2rv08, class: reported_view, split: heldout, round: 2, book: 外台秘要（王焘）,
+     text: 《近效極要》論：消渴舊來以為難療，古方有黃連湯、牛膽丸為勝，亦不能好差, quote: 消渴舊來以為難療, expect: {stance: reported}}
+  - {id: r2rv09, class: reported_view, split: heldout, round: 2, book: 黄帝素问宣明论方（刘完素）,
+     text: 痛，出白液，名曰蠱。《左傳》云：惑以喪志，名為蠱，乃真精不守也。, quote: 惑以喪志, expect: {stance: reported}}
+  - {id: r2ri01, class: relation_inversion, split: heldout, round: 2, book: 伤寒论（宋本，第16条）,
+     text: 桂枝本為解肌，若其人脈浮緊，發熱汗不出者，不可與之也。常須識此，勿令誤也。, quote: 若其人脈浮緊，發熱汗不出者，不可與之也,
+     relation: indicated_for, arguments: [{role: formula, surface: 桂枝湯, referent: true}], expect: {verdict: contradicts}}
+  - {id: r2ri02, class: relation_inversion, split: heldout, round: 2, book: 伤寒论（宋本，第16条）,
+     text: 桂枝本為解肌，若其人脈浮緊，發熱汗不出者，不可與之也。常須識此，勿令誤也。, quote: 若其人脈浮緊，發熱汗不出者，不可與之也,
+     relation: contraindicated, arguments: [{role: formula, surface: 桂枝湯, referent: true}], expect: {verdict: supports}}
+  - {id: r2ri03, class: relation_inversion, split: heldout, round: 2, book: 伤寒论类方（徐灵胎）,
+     text: 陽明病，潮熱，大便微硬者，可與大承氣湯，不硬者，不可與之。, quote: 不硬者，不可與之,
+     relation: indicated_for, arguments: [{role: formula, surface: 大承氣湯, referent: true}], expect: {verdict: contradicts}}
+  - {id: r2ri04, class: relation_inversion, split: heldout, round: 2, book: 伤寒论类方（徐灵胎）,
+     text: 陽明病，潮熱，大便微硬者，可與大承氣湯，不硬者，不可與之。, quote: 大便微硬者，可與大承氣湯,
+     relation: indicated_for, arguments: [[formula, 大承氣湯]], expect: {verdict: supports}}
+  - {id: r2ri05, class: relation_inversion, split: heldout, round: 2, book: 金匮要略论注（徐彬）,
+     text: 土主肌肉土虚水溢則未有不腫者故曰此法當病水, quote: 土虚水溢則未有不腫者,
+     relation: causes, arguments: [[pathogenesis, 土虚], [symptom, 腫]], expect: {verdict: supports}}
+  - {id: r2ri06, class: relation_inversion, split: heldout, round: 2, book: 金匮要略论注（徐彬）,
+     text: 土主肌肉土虚水溢則未有不腫者故曰此法當病水, quote: 土虚水溢則未有不腫者,
+     relation: causes, arguments: [[pathogenesis, 土虚], {role: symptom, surface: 腫, negated: true}], expect: {verdict: contradicts}}
+  - {id: r2ri07, class: relation_inversion, split: heldout, round: 2, book: 寿亲养老新书（陈直）,
+     text: 凡人疾病未有不因八邪而感所謂八邪者風寒暑濕饑飽勞逸也, quote: 凡人疾病未有不因八邪而感,
+     relation: causes, arguments: [[etiology, 八邪], [disease, 疾病]], expect: {verdict: supports}}
+  - {id: r2ri08, class: relation_inversion, split: heldout, round: 2, book: 伤寒论（宋本，第176条）,
+     text: 傷寒，脈浮滑，此以表有熱，裏有寒，白虎湯主之。, quote: 傷寒，脈浮滑，此以表有熱，裏有寒，白虎湯主之,
+     relation: indicated_for, arguments: [[formula, 白虎湯], [pathogenesis, 裏有寒]], expect: {verdict: ambiguous},
+     note: "「里有寒」而用白虎汤，历代注家多疑其误（或作里有热）——字面是公案，不能读成确定的适应证"}
+  - {id: r2oc01, class: omitted_condition, split: heldout, round: 2, passage: shanghanlun.c035, quote: 麻黄汤主之, expect: {condition: 喘}}
+  - {id: r2oc02, class: omitted_condition, split: heldout, round: 2, book: 伤寒论类方（徐灵胎）,
+     text: 陽明病，潮熱，大便微硬者，可與大承氣湯，不硬者，不可與之。, quote: 可與大承氣湯, expect: {condition: 大便微硬}}
+  - {id: r2oc03, class: omitted_condition, split: heldout, round: 2, book: 伤寒论类方（徐灵胎）,
+     text: 陽明病，潮熱，大便微硬者，可與大承氣湯，不硬者，不可與之。, quote: 不可與之, expect: {condition: 不硬}}
+  - {id: r2oc04, class: omitted_condition, split: heldout, round: 2, passage: zhubing.05.xiaoke, quote: 渴不止，小便多是也, expect: {condition: null},
+     note: "a definition (X者，…是也), not a condition"}
+  - {id: r2oc05, class: omitted_condition, split: heldout, round: 2, passage: lingshu.046, quote: 善病消瘅, expect: {condition: 五藏皆柔弱}}
+  - {id: r2wm01, class: witness_mixing, split: heldout, round: 2, cited: shanghanlun.c220,
+     quote: 二阳并病，太阳证罢，但发潮热，手足漐漐汗出，大便难而谵语者，下之则愈，宜大承气汤, expect: {found: true}}
+  - {id: r2wm02, class: witness_mixing, split: heldout, round: 2, cited: suwen.035, quote: 橫連募原, expect: {found: true}}
+  - {id: r2wm03, class: witness_mixing, split: heldout, round: 2, cited_book: shanghanlun, quote: 陽明病，潮熱，大便微硬者，可與大承氣湯, expect: {found: false}}
+  - {id: r2wm04, class: witness_mixing, split: heldout, round: 2, cited: nanjing.077, quote: 上工治未病，中工治已病, expect: {found: true}}
+  - {id: r2wm05, class: witness_mixing, split: heldout, round: 2, cited_book: suwen, quote: 上工治未病, expect: {found: false},
+     note: "难经 says 经言; the words are not in the 素问 of this corpus"}
+  - {id: r2dd01, class: date_dispute, split: heldout, round: 2, order: [lingshu.046, nanjing.077], expect: {order: undetermined}}
+  - {id: r2dd02, class: date_dispute, split: heldout, round: 2, order: [suwen.047, zhubing.05.xiaoke], expect: {order: before}}
+  - {id: r2dd03, class: date_dispute, split: heldout, round: 2, cutoff: [nanjing.077, 100], expect: {side: straddling}}
+  - {id: r2dd04, class: date_dispute, split: heldout, round: 2, cutoff: [wenyilun.xu, 1368], expect: {side: after}}
+  - {id: r2dd05, class: date_dispute, split: heldout, round: 2, basis: bencao_gangmu.rendong, expect: {range: [1552, 1578]}}

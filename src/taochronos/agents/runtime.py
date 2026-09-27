@@ -23,7 +23,6 @@ from ..kernel.budget import Budget, BudgetExceeded
 from ..kernel.context import ContextManager
 from ..kernel.hooks import HookContext, HookPoint, HookRegistry, HookResult
 from ..kernel.policy import Actor, PolicyEngine
-from ..kernel.reducer import InvalidEvent
 from ..kernel.session import kernel_session
 from ..kernel.store import SimulatedCrash
 from ..kernel.tools import ToolCall, ToolOutcome, ToolRegistry, ToolScheduler, ToolSpec

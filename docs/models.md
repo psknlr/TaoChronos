@@ -45,6 +45,19 @@ and extracted); retries respect `Retry-After`.  With the Anthropic provider, ser
 (`fallbacks="default"`) are on for Opus 5; a refusal, a schema failure or an exhausted budget falls back to the
 deterministic procedure and is recorded as a Decision.
 
+## Long runs: budgets, pages, replay
+
+* **Budgets are a ledger.**  Every model call of a research run reserves its estimated cost before it runs and
+  settles the actual usage after it, as events in the log (`BudgetReserved`, `BudgetSettled`); a concurrent call
+  cannot spend what another holds, a failed call releases its reservation, and a resumed run starts from the ledger —
+  a reservation never settled counts as spent.
+* **Long tool results are paged, never cut.**  A result longer than a page (`page_chars`, 6000 by default) reaches the
+  model as its first page and a handle; the model reads on with the `context__page` tool.  Each turn's messages are
+  compiled afresh: the recent exchanges whole, older tool results reduced to a stub that names their page id.
+* **Exact replay.**  `taochronos research … --record-llm DIR` saves every model response under the hash of its request
+  (model, prompt, messages, tools, limits); `--replay-llm DIR` answers from the recordings and never calls the model —
+  a request with no recording is an error, not a live call.  The files hold responses and usage, not keys.
+
 ## The judge
 
 Every judge call is cached (the hash of the task, prompt, schema, temperature and any images), budgeted (calls, tokens,

@@ -43,7 +43,11 @@ that can be searched, dated and cited, and offers two layers on top of it:
   executor** (`taochronos ask "…"`).
 - **Research** turns a question into a replayable, auditable, falsifiable process: the research director
   **TaoChronos** dispatches 16 specialist agents — research contract → evidence foundation → pattern mining →
-  hypotheses → falsification → gates G0–G8 → expert review.
+  hypotheses → falsification → gates G0–G8 → expert review.  The contract is **executable**: a run whose tasks are
+  done has only finished executing — whether the research is accepted is a validator's verdict, criterion by criterion
+  (`research_accepted` / `needs_expert` / `inconclusive` / `budget_exhausted`).  A true quote is not a true reading
+  (every claim must be *stated* by its quote), a model's proposal is not a verdict, and an internal score is not
+  external evidence ([ADR 0009](docs/adr/0009-boundaries-contract-and-evaluation-layers.md)).
 
 Both layers share one rule: **every statement rests on verbatim witnesses** (book, volume·chapter·section, date,
 text layer, source and licence of the transcription). Rule-based reading is labelled as machine reading; people check
@@ -377,6 +381,33 @@ time, statistics, modern mapping; modern biomedical validity defaults to **unkno
 concepts are linked only by typed mappings (related / partially_overlapping / uncertain / not_equivalent); only a
 human expert can declare equivalence.
 
+**The contract and its boundaries** ([ADR 0009](docs/adr/0009-boundaries-contract-and-evaluation-layers.md)):
+
+- **A quote is not its reading.**  Before a claim is committed its quote must *state* it: the nearest cue governs each
+  intervention (「不可发汗，宜桂枝汤」), the consequence tells a warning from a recommendation (「汗之则神昏」 / 「汗之则愈」),
+  an intervention named by 之 is read through its pronoun, and every argument is read with its negation (「非风、非寒…乃
+  异气所感」 does not support "风 causes 温疫").  The statement's frame records who says it (after 或曰……余曰非也 the words are
+  the author's), the stance (asserted / reported / rejected), the conditions (若…者, 凡…, the 「…者，X主之」 clause),
+  negations and time.  A claim its quote contradicts is refused.
+- **A proposal is not a verdict.**  Every event carries the principal of its emitter (kernel › human › validator ›
+  agent), set by the session from an identity object; only an expert sets G7; objections are a state machine (raised →
+  resolution proposed → closed) in which a model only proposes and a hard objection closes only by a validator's
+  passing re-run.
+- **Execution is not acceptance.**  The contract judges each hypothesis on its current version, each criterion recording
+  its judge, observation, requirement and the state a failure leads to.  Each hypothesis has a **warrant** — inference,
+  assumptions, the rival explanations of its discovery type (excluded / open / not applicable / unaddressed) and the
+  discriminating analyses; predictions can be confirmed on material withheld from exploration; statistics are
+  selection-aware (a max-statistic permutation over all boundaries, leave-one-family-out, family bootstrap); novelty
+  is scoped ("not found within the stated scope", never "first discovery"); Elo is an **exploration priority**, not
+  credibility.
+- **An internal score is not external evidence.**  Withheld material does not exist on any read path of an agent (views
+  plus a result firewall); G8 reads modern evidence by stance and level (contradicting human evidence fails it); model
+  code runs in a namespace-isolated tier or not at all.
+- **Long runs.**  Budgets reserve before and settle after each model call, in the log, and a resumed run starts from the
+  ledger; long tool results are paged, never cut; model responses can be recorded and replayed exactly
+  (`--record-llm` / `--replay-llm`); evidence can be retracted, which propagates (support removed, gates voided, the
+  contract judged again); tasks can be cancelled and retried.
+
 ### Design principles
 
 | Principle | In the code |
@@ -389,6 +420,8 @@ human expert can declare equivalence.
 | **Propose, don't commit** | agents propose changes to canonical knowledge; validators or people decide |
 | **Evidence first** | nothing without verbatim evidence is written; fabricated or altered quotes are caught mechanically |
 | **The harness decides when to stop** | evidence saturation, no new sources, gates passed, budget exhausted or expert needed |
+| **Authority from identity** | authority comes from identity objects, not strings; every event carries a principal checked per event type; agents hold a view bound to their identity and a read-only state |
+| **Execution ≠ acceptance** | finished tasks do not make an accepted research: the contract judges each hypothesis on its current version, and a report presents only hypotheses so judged |
 
 ## 6. Use cases
 
@@ -461,10 +494,17 @@ decided each item.  External command subagents and Research Code Mode: [docs/age
 `taochronos eval` runs on the demo corpus; with the corpus store, the deep-discovery and task-specification suites also check the real corpus (~7 min for all suites once the caches are built). The gold sets were built by the authors for the demo corpus and used
 during development: **regression tests, not an unbiased benchmark** (see [evals/gold/README.md](evals/gold/README.md)).
 
+The evaluation has three layers ([ADR 0009](docs/adr/0009-boundaries-contract-and-evaluation-layers.md)):
+**invariants** (the harness's boundaries as probes run on the harness under evaluation), **hard interpretive cases**
+(verbatim quotes that can still be read wrongly, scored per class with the *unsafe* errors counted apart, on dev and
+held-out splits) and **research value** (every other suite, the ablations and the baselines).
+
 | Suite | Result |
 |---|---|
+| Invariants | 19/19 hold (the audit's P01–P10 and nine boundaries added with them); each of six boundaries removed on purpose (scope guard, result firewall, semantic support, reducer authority, evidence bounds, publish guard) breaks its invariant |
+| Interpretive | 92 cases in seven classes (inverted relations, a prohibition beside a prescription, consequences, reported and rejected views, omitted conditions, mixed witnesses, disputed dates): **held-out 73/76 (0.961)**, 2 unsafe — both textual cruxes (「不可下也。大黄牡丹汤主之」, 「表有热，里有寒，白虎汤主之」); first blind round held-out 43/53 (0.811) |
 | Philology | 7/7: no forced reading, uncertainty mass kept, normalised matching |
-| Claims | P 0.98 · R 0.95 · F1 0.96; 100 % of extracted claims verbatim |
+| Claims | P 1.0 · R 0.976 · F1 0.988 (a general prognosis rule: 则愈 / 自愈 / 欲解 / 可治 … / 者死 / 难治 / 不治; before it F1 0.964 and prognosis recall 0; this gold is dev); 100 % of extracted claims verbatim |
 | Provenance | claims and evidence 100 % verbatim; mean provenance chain 7.8 levels (page/line/region/image honestly unavailable: no page images) |
 | Hallucination | fabricated and one-character-altered quotes 100 % caught; genuine quotes and legitimate variant spellings accepted |
 | Contradiction | 12/12 (including differential-diagnosis and inherited-text hard negatives) |
@@ -510,8 +550,10 @@ The development sets of deep discovery and of the task specification were writte
 intended behaviour, not generalisation. Expert gold on the full corpus is on the roadmap; the benchmark table of
 [docs/tasks.md](docs/tasks.md) lists each task's metric and gold.
 
-Plus 247 unit and integration tests (`pytest`, with format samples of every source, a synthetic corpus for the
-study layer, `tests/fixtures/study`, and a contract test that checks real results against the JSON Schemas of the tasks) and the architecture governance check (`taochronos governance`: layering,
+Plus 312 unit and integration tests (`pytest`, with format samples of every source, a synthetic corpus for the
+study layer, `tests/fixtures/study`, a contract test that checks real results against the JSON Schemas of the tasks, the
+audit's P01–P10 as regression tests in `tests/test_boundaries.py`, and `test_contract.py`, `test_statistics.py`,
+`test_longrun.py` and `test_eval_layers.py`) and the architecture governance check (`taochronos governance`: layering,
 kernel neutrality, model-SDK isolation, agent rules). CI runs governance, tests, the quick evaluation and the demo
 research on Python 3.11 and 3.12.
 
@@ -531,8 +573,11 @@ engine        the research engine (operational and scientific loops, branches, t
 
 Code asks the **capability registry** for capabilities (`corpus`, `domain`, `philology`, `lineage`, `retriever`,
 `study`, `llm` …) and never imports a provider; plugins are assembled by profiles (`profiles/*.yaml`). Tools import no
-plugin, and agents act only through capabilities and tools — enforced by `taochronos governance`. See
-[docs/architecture.md](docs/architecture.md).
+plugin, agents act only through capabilities and tools, and agents, tools and plugins mint no privileged identity —
+enforced by `taochronos governance`. Every event carries its emitter's principal, checked by the reducer against
+`kernel/authority.py`; a transaction is validated as a whole before it is applied and persisted only after, with the
+state restored from the log on failure; every round checks the live state against a replay of the log. See
+[docs/architecture.md](docs/architecture.md) and [ADR 0009](docs/adr/0009-boundaries-contract-and-evaluation-layers.md).
 
 ## 10. Repository layout
 
@@ -620,6 +665,11 @@ docs/                      study, task specification, architecture, agents, disc
   evidence types, leaps), not a historian's argument; PubMed types are read from indexing and should be checked against
   full texts on a sample; the real-world-data path is a guarded compiler, and on synthetic people it tests the compiler,
   not a finding.
+- The boundaries have limits of their own: a tool-level hold-out (the confirmation tier) is not a blind prediction; the
+  namespace tier is not VM-grade isolation; the contract's verdicts and levels are ordinal labels, **not calibrated
+  probabilities**; the semantic-support reading is a rule-based second reader that cannot see a textual crux (倒装, a
+  suspected error) — the two unsafe held-out errors of the interpretive layer are of that kind, reported and not
+  patched; the interpretive gold is author-annotated.
 - The system gives no medical advice; any research result is a lead until an expert (Gate G7) has reviewed it.
 
 ## 13. Roadmap and citation

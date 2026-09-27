@@ -9,6 +9,7 @@ before drawing conclusions about a real corpus.
 | file | suite | what is annotated |
 |---|---|---|
 | `philology.yaml` | PhilologyEval | contested spans, reading probabilities, normalisations |
+| `interpretive.yaml` | InterpretiveEval | 92 hard interpretive cases in seven classes (inverted relations, prohibitions beside prescriptions, consequences, reported / rejected views, omitted conditions, mixed witnesses, disputed dates), with a dev / held-out split fixed before the first run and rounds recorded as they ran |
 | `claims.yaml` | ClaimEval | complete claim sets (relation + key arguments, negations) for selected passages |
 | `contradictions.yaml` | ContradictionEval | passage pairs labelled contradiction / conditional / apparent / support / unrelated |
 | `lineage.yaml` | LineageEval | true and false lineage edges (formula derivation, citation, transcription, opposition) |

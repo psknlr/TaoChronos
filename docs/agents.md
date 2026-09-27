@@ -94,10 +94,18 @@ and one `commit` verifies both:
 - quotes are located in the passage by the harness (never trusted from the output) — a quote that cannot be
   found verbatim, or after length-preserving variant normalisation, is dropped;
 - sense ids must exist, spans must match surfaces, probabilities are normalised with an uncertain floor;
+- claims pass the commit hooks: verbatim at their span (provenance) and *stated* by their quote (semantic support —
+  a claim its quote contradicts is refused), and they carry the statement's frame (speaker, stance, conditions,
+  negations, time) read by the harness, not by the producer;
 - hypotheses without verified evidence are dropped (evidence-first), and `AfterHypothesis` hooks block
-  anachronisms;
-- a model may add Skeptic objections but cannot skip a review; a critical objection without verifiable
-  counter-evidence is downgraded to major; the verdict follows from severities (harness policy).
+  anachronisms; a revision is typed restricting or substantive, and a substantive one needs its own support;
+- a model may add Skeptic objections but cannot skip a review, soften one or close one: whatever it says was
+  "resolved" becomes a *proposed* resolution, which a validator's re-run (hard checks) or a verified narrowing or an
+  expert (interpretive ones) may close; the verdict follows from severities (harness policy).
+
+An agent never holds the session: it acts through a `SessionView` bound to its own identity (it cannot emit above its
+principal) and reads a frozen `StateView`; its capability handles are scoped to its reading scope, so material withheld
+from exploration does not exist for it.
 
 ## Modes and routing
 
@@ -118,9 +126,11 @@ Decision is recorded.
 
 `AgentRuntime._llm_loop`: context view → system prompt (“You are TaoChronos…” for the director,
 “You are TaoChronos-<Role>, the … agent of TaoChronos” for specialists) → model call (checked by the
-`BeforeLLMCall` hook and the budget) → tool calls executed by the scheduler under the agent's permissions →
-repeat until the model returns JSON that validates against the output schema (invalid output is sent back
-with the validation errors; `max_tokens` truncation is retried) → `commit`.
+`BeforeLLMCall` hook; its estimated cost reserved in the budget ledger first and settled after) → tool calls executed
+by the scheduler under the agent's permissions (long results paged: the model reads on with `context__page`) →
+repeat, each turn's messages compiled afresh with older tool results reduced to their page handles, until the model
+returns JSON that validates against the output schema (invalid output is sent back with the validation errors;
+`max_tokens` truncation is retried) → `commit`.
 
 ## Providers
 
@@ -160,7 +170,9 @@ Instead of many JSON tool calls, a model may write a short Python program agains
 (`classics.search(...)`, `kg.claims(...)`, `analysis.concept_drift(...)`, `batch([...])`). The program's
 AST is checked against a whitelist (no imports, no private names), runs with a step budget, and every SDK
 call goes through the scheduler — so permissions, hooks, budgets and the event log apply. The whitelist is
-defence in depth, not a security boundary; untrusted models belong behind a process sandbox.
+defence in depth, not the boundary: a model's program runs in the **namespace** sandbox tier (unprivileged user,
+mount, network, PID and IPC namespaces; a read-only root; a private workspace; no network) and reaches the SDK only by
+RPC through the scheduler. Where no isolating tier exists, model code is refused rather than run in a weaker one.
 
 ## Skills
 

@@ -33,20 +33,32 @@ hypotheses, reviews, gate results, proposed changes, decisions, expert actions, 
 It is never edited directly. Agents emit **typed events**; the **Reducer** is the only code path that
 mutates state, and it enforces invariants no model can bypass:
 
-- the GoalSpec (research contract) is immutable after `ResearchCreated`;
-- only `human:` actors may emit `ExpertApproved` / `ExpertRejected` (Gate G7);
-- agents may emit `ChangeProposed` but never `ChangeApproved` / `ChangeRejected`;
-- events must reference existing tasks, hypotheses and changes.
+- every event carries the **principal** of the actor that emitted it — kernel › human › validator › agent — set by the
+  session from an `Actor` object, never by the emitter; `kernel/authority.py` says which principals may emit each event
+  type, and a bare string that says "human" is at most an agent;
+- the GoalSpec (research contract) is immutable after `ResearchCreated` (its digest is checked; a second goal is refused);
+- only a human expert's `ExpertApproved` / `ExpertRejected` sets Gate G7 — a `GateEvaluated` carrying G7 is refused
+  from anyone; agents may emit `ChangeProposed` but never `ChangeApproved` / `ChangeRejected`;
+- objections close only as their state machine allows (a hard one by a validator's passing re-run);
+- withheld material (hold-out, confirmation, expert-only) stays withheld: a later manifest cannot release it;
+- events must reference existing tasks, hypotheses, changes and (unretracted) evidence.
+
+Agents act through a `SessionView` bound to their identity and read a frozen `StateView`; only the kernel, the engine
+and the app mint privileged identities (checked by `taochronos governance`).
 
 State is `reduce(events)`. `taochronos replay` rebuilds it from the log and compares it with the live
 projection and every checkpoint.
 
 ### Transactions and crash recovery
 
-Each agent task runs inside a **transaction**: its domain events are validated when emitted but appended
-only at commit, *together with* `TaskCompleted` and a `TransactionCommitted` marker, as one batch. A
-crash before the marker leaves a torn tail that `Session.open` discards; the task is then simply re-run.
-Tool-call telemetry is appended outside the transaction (it is operational, not scientific).
+Each agent task runs inside a **transaction**: its domain events are validated when emitted — each on the state its
+predecessors in the batch build, so two goals in one batch fail early — but appended only at commit, *together with*
+`TaskCompleted` and a `TransactionCommitted` marker, as one batch. The commit revalidates the whole batch, applies it,
+and only then persists it; a failed persist restores the live state from the log, and a rejected event reaches neither.
+A crash before the marker leaves a torn tail that `Session.open` discards; the task is then simply re-run. An old log
+with an invalid event reopens only with an explicit repair. Every round checks that the live state equals the replay of
+the log and restores it if not. Tool-call telemetry is appended outside the transaction (it is operational, not
+scientific).
 
 ### Deterministic scientific state
 
@@ -113,20 +125,64 @@ DAG and runs it through the tool scheduler as those agents, with every call an a
 The **Tool Mesh** (`tools/mesh.py`) exposes 58 tools in seven families (philology, retrieval, knowledge,
 analytics, study, literature, validation) plus `research.run_code` (Code Mode). Every call passes the same
 gauntlet — permission → argument schema → budget → `BeforeToolCall` hooks → execution → events →
-`AfterToolCall` hooks — whether a model or a deterministic procedure makes it. Consecutive
-`parallel_safe` calls run concurrently; `exclusive` calls are barriers.
+`AfterToolCall` hooks — whether a model or a deterministic procedure makes it. An `AfterToolCall` denial withholds the
+result (only its hash is kept, the call is marked quarantined), and every call leaves a **receipt** (tool, version,
+actor, principal, hashes of arguments and result, outcome, duration) whose hash chain the run manifest records.
+Capabilities reach tools through views scoped to the caller's reading scope. Consecutive `parallel_safe` calls run
+concurrently; `exclusive` calls are barriers. Long results are paged, not cut (`context__page`).
 
 ## Hooks and gates
 
-Lifecycle hooks are deterministic guards: `provenance_validator` (claims must quote their passage
-verbatim at the stated span), `anachronism_guard` (blocks equations of historical and modern disease
-concepts, agent-asserted equivalence and the contract's forbidden assumptions) and `publish_guard`
-(reports must cite evidence).
+Lifecycle hooks are deterministic guards: `scope_guard` and `scope_firewall` (always installed: no argument may name,
+and no result may carry, material withheld from the caller), `provenance_validator` (claims must quote their passage
+verbatim at the stated span), `semantic_support` (the quote must *state* the claim — see below), `anachronism_guard`
+(blocks equations of historical and modern disease concepts, agent-asserted equivalence and the contract's forbidden
+assumptions) and `publish_guard` (reports must cite existing, unretracted evidence and present only hypotheses the
+contract judged on their current versions).
+
+**Quotes are read, not only matched** (`verification/support.py`).  A claim's quote *supports* it when it states the
+relation: the nearest cue governs each intervention (「不可发汗，宜桂枝汤」), the consequence decides between a warning
+and a recommendation (「汗之则神昏」 / 「汗之则愈」), an intervention named by 之 is read through its pronoun, and every
+argument is read with its negation (「非风、非寒…乃异气所感」 does not support "风 causes 温疫").  The statement frame
+records who says it (a report governs until the author answers it), the stance — asserted, reported, rejected — the
+conditions (若…者, 凡…, the 「…者，X主之」 clause), negations and time.  A contradicted claim is refused at commit.
 
 Epistemic gates G0–G8 promote knowledge step by step: G0 source · G1 transcription/OCR · G2 philology ·
-G3 semantics · G4 claim provenance · G5 independent replication (author/transcription clusters, not
-books) · G6 falsification · G7 expert (human only) · G8 biomedical evidence (only for cross-space
-hypotheses). Gates run as `validator:gates` — agents never grade their own work.
+G3 semantics · G4 claim (layers: authenticity, locator, support, scope) · G5 independent replication
+(author/transcription clusters, not books) · G6 falsification (fails while a critical objection is open) · G7 expert
+(human only) · G8 biomedical evidence (only for cross-space hypotheses; layers: exists, supports, contradicts,
+context, human support, levels — contradicting modern evidence fails it). Gates run as `validator:gates`, stamped with
+the hypothesis version they judged — agents never grade their own work.
+
+## Contract, warrants and acceptance
+
+A `GoalSpec` is an executable contract: its `AcceptanceSpec` (minimum support, semantic support, source dependence,
+falsification review, open hard and critical objections, rival explanations addressed, gates on the current version,
+confirmation, expert review) and an optional `ConfirmationSpec` (material withheld from exploration, by source family
+and period, on which the hypotheses' predictions are then checked).  At the end of a run a validator judges every
+hypothesis against the criteria on the version it now has; each criterion records its judge, what it observed, what it
+required and the state a failure leads to.  The research is `research_accepted`, `needs_expert`, `inconclusive` or
+`budget_exhausted` — never "completed" because no task was left.  Each hypothesis carries a **warrant**: its inference,
+assumptions, the rival explanations of its discovery type (excluded / open / not applicable / unaddressed) and the
+discriminating analyses that decided them; the director plans discriminating actions for the rivals still open.
+Objections follow a state machine (raised → resolution proposed → closed): a model only proposes; a hard objection
+closes by a validator's passing re-run, an interpretive one by a verified narrowing or an expert.
+
+## Long runs
+
+Budgets reserve before a model call and settle after it, as events (a resumed run starts from the ledger; an unsettled
+reservation counts as spent). Each turn's messages are compiled afresh: recent exchanges whole, older tool results
+reduced to their page handles. Model responses can be recorded and replayed exactly (`--record-llm`, `--replay-llm`).
+Evidence can be retracted — it is removed from what rested on it, the gates that used it are voided, closures that cited
+it reopen and the contract is judged again — and tasks cancelled or retried. A run manifest records the code, corpus,
+configuration and the hash chain of tool receipts at the start and the end of a run.
+
+## Isolation
+
+Sandboxes have tiers — in-process, process, namespace, container. Code of model or user origin needs the namespace
+tier or better (unprivileged user, mount, network, PID and IPC namespaces; a read-only root; a private workspace; no
+network) and is refused where none is available. Code Mode runs there and reaches tools only by RPC through the
+scheduler, under the caller's permissions. The namespace tier is not VM-grade isolation.
 
 ## Context OS and memory
 
@@ -144,6 +200,11 @@ ResearchObject) · M3 domain (expert-confirmed knowledge; only humans or validat
 After every discovery round the `StopEvaluator` (not a model) checks: budget exhausted; evidence
 saturation and no novel sources; top hypotheses passing the required gates (strict gates G4–G6 must
 *pass*); critical objections needing an expert; the round limit; or an empty plan from the director.
+Stopping ends the *execution*; whether the research is accepted is the contract's verdict, judged after it.
+
+The boundaries of this page are measured, not only tested: `taochronos eval invariants` runs them as probes against the
+harness under evaluation, and `taochronos eval interpretive` scores the reading of hard cases
+([evals.md](evals.md), [ADR 0009](adr/0009-boundaries-contract-and-evaluation-layers.md)).
 
 ## Observability
 

@@ -93,8 +93,23 @@ and a resumable executor (`taochronos ask`).
 - Dose- and preparation-aware formula comparison.
 - Time-machine evaluation on a large corpus (link-level hits@k against the baselines).
 
-**Harness**
+**Harness — done with the architecture audit ([ADR 0009](adr/0009-boundaries-contract-and-evaluation-layers.md))**:
+authority by principal on every event; atomic, pre-validated batches with restore; reading scopes as views with a result
+firewall; semantic support at commit and the statement frame; the objection state machine; sandbox tiers with a
+namespace tier for model code; the executable contract with acceptance statuses, warrants, confirmation on withheld
+material; selection-aware statistics; the budget ledger, paging, record/replay, retraction, cancel and retry, run
+manifests and tool receipts; discriminating actions; the invariant and interpretive evaluation layers.
+
+**Harness — next**
+- A registry of textual cruxes (公案: 倒装, suspected errors such as 「里有寒」), consulted by the support reading so that a
+  claim resting on one is *ambiguous*; measured on new held-out interpretive cases.
+- Clause-bounded cue windows in the support reading (a prohibition of the next 者-clause must not govern this one).
+- The research-value layer against baselines on the full corpus: blind predictions with the confirmation tier withheld
+  by family and period, compared with co-occurrence and popularity baselines.
+- Calibration of acceptance levels against expert verdicts once expert reviews accumulate (they are ordinal labels
+  now, not probabilities).
+- A container sandbox provider (VM-grade isolation) behind the same tier interface.
 - A queue-backed scheduler and remote subagents for large runs.
-- Human-in-the-loop review UI on top of the Discovery Workspace (approve, reject, steer, decide changes).
+- Human-in-the-loop review UI on top of the Discovery Workspace (approve, reject, close objections, retract evidence,
+  steer, decide changes).
 - More providers behind the `llm` capability; per-role routing learned from evaluation results.
-- Container sandbox provider for untrusted Code Mode programs.

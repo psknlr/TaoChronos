@@ -10,6 +10,10 @@ words that state each relation and returns one of
 ``insufficient``  nothing in the quote states the relation — the claim may be an inference, not an assertion;
 ``ambiguous``     the quote states both, and which governs the claim's arguments is not decidable by rule;
 
+and, for every relation, the arguments must be read with their negation: 「非风、非寒、非暑、非湿，乃……异气所感」 does not
+support "风 causes 温疫" — the claim asserts what the quote denies (``contradicts``), as does a claim that negates what
+the quote asserts;
+
 with the cue spans, and the **frame** of the statement: who says it (the author, a quoted book or person, 或曰),
 whether the author endorses it or rejects it (「某家以为……然余不取」), its conditions (若…者, 凡…), negations and their
 targets, its modality (不可, 未可, 非必, 若…则…) and its time or stage (五六日, 初起, 久病, 产后).
@@ -53,7 +57,7 @@ BAD_OUTCOME = re.compile(r"^[之者]?[，,]?(?:则|必|即|便|遂|而)[^。；�
 
 RELATION_CUES: dict[ClaimRelation, re.Pattern[str]] = {
     ClaimRelation.DEFINES: re.compile(r"之为病|名曰|名为|此名|谓之|是为|此为|名之曰|是名|号为|者[^。；]{0,24}也|者为|为[^。；，]{1,6}"),
-    ClaimRelation.CAUSES: re.compile(r"因于|所致|所感|伤于|由于|得之|所发|客于|中于|感于|因|由|杂至|合而|犯|善病|易病|多病|令人|使人|致|"
+    ClaimRelation.CAUSES: re.compile(r"因于|所致|所感|伤于|由于|得之|所发|客于|中于|感于|因|由|杂至|合而|犯|善病|易病|多病|令人|使人|致|未有不|"
                                      r"故[^。；]{0,10}(?:作|发|病|生)"),
     ClaimRelation.PATHOGENESIS: re.compile(r"皆属于|属于|所生|病机|所以然者|以其|化为|胜者|故|是以|乃[^。；]{0,6}所|之变|生|则|为"),
     ClaimRelation.TREATMENT_PRINCIPLE: re.compile(
@@ -65,18 +69,28 @@ RELATION_CUES: dict[ClaimRelation, re.Pattern[str]] = {
     ClaimRelation.HERB_INDICATION: re.compile(r"味[甘苦辛酸咸淡涩]|[性气][寒热温凉平]|主[^之。；]|治|疗|为要药|功用|除|解|消|散"),
     ClaimRelation.TRANSFORMS_TO: re.compile(r"转为|传为|变为|转属|转成|变成|发为|成为|遂成|乃成|久则|久而|传入|化为|转入|致成|恐成|将为"),
     ClaimRelation.COMPLICATION: re.compile(r"必发|续发|并发|兼见|变生|发(?:痈|疽|黄|斑|狂|热|痉|衄|渴|疮)|致[^。；]{0,4}(?:痈|疽|疮)"),
-    ClaimRelation.PROGNOSIS: re.compile(r"必愈|自愈|欲愈|欲解|可治|难治|不治|不可治|死|愈|易治|为逆|为顺|不死|可生|难已|自止|自已|自解"),
+    ClaimRelation.PROGNOSIS: re.compile(r"必愈|自愈|欲愈|欲解|可治|难治|不治|不可治|死|愈|易治|为逆|为顺|不死|可生|难已|自止|自已|自解"
+                                        r"|(?:难|自|则|必|乃|即|当|者)(?:差|瘥)|瘥"),
 }
 
 # the frame of a statement
 QUOTED = re.compile(r"(?P<src>《[^》]{1,20}》|经|论|书|方书|古人|前人|先贤|昔人|世医|俗医|俗|时医|或|有|诸家|旧说|[一-鿿]{1,4}(?:氏|子|公|先生))"
                     r"(?:所)?(?:曰|云|言|谓|以为|认为|称|说|论曰|论云)")
+CITED_BOOK = re.compile(r"(?P<src>《[^》]{1,20}》)(?:论|曰|云|言|谓|称|说)?[：:]")
+# the author's answer to a reported view or a question: 余曰 / 答曰 / 许曰非也 / 曰不然 / 是又不然 — what follows is not the report
+ANSWER = re.compile(r"(?:余|予|吾|愚)(?:曰|谓|按)|[答荅对]曰|[一-鿿]{1,3}曰[：:]?(?:非也|不然|否)|曰[：:]?(?:非也|不然|是大不然|否)|"
+                    r"是(?:又|大)?不然|(?:[一-鿿]{1,2})?按[：:]")
 REJECTS = re.compile(r"然余不取|余不取|不可从|非也|误矣|谬矣|谬也|不足信|未可信|不然|殊不知|岂知|恐非|未必然|非是|此说非|其说非|大谬|失之|不足据|断不可从|余未敢信")
 HEDGES = re.compile(r"或(?!曰|云|谓)|恐|疑|似|盖|大抵|未必|未可|或者|抑或|殆|庶几")
 CONDITION = re.compile(r"(?:若|如|倘|凡|假令|设|其人|病人|病者)[^。；，]{0,24}(?:者|时|则|，)")
+ZHE_CONDITION = re.compile(r"[^。；：，]{1,24}者(?=[，,])")
+CONSEQUENT = re.compile(r"主之|宜|可(?:与|下|汗|吐|服|温|攻)|不可|当|则|必|死|愈|治|与|服|善病|易病|多病|难已")
 NEGATORS = re.compile(r"不可|不能|不宜|不得|未可|非必|勿|莫|无|不|未|非")
 STAGE = re.compile(r"[一二三四五六七八九十百]+日|初起|初得|初病|初发|久病|日久|新病|病后|产后|病愈后|愈后|瘥后|将愈|未愈|春|夏|秋|冬|四时|平旦|日晡|夜半|"
                    r"始得之|得之[一二三四五六七八九十]+日")
+# an argument the quote negates: a negator right before it in its clause (非风, 不恶寒), not a double negation (未有不成消渴)
+ARG_NEGATORS = ("不能", "不甚", "反不", "不", "无", "非", "未", "勿", "莫")
+DOUBLE_NEGATION = ("未有不", "无非", "莫不", "无不")
 CLINICAL = re.compile(r"诊|复诊|二诊|三诊|投以|服后|服[一二三四五六七八九十]+剂|案|病者|患者|一人|某|治[^。]{0,4}(?:一|某)")
 
 
@@ -98,6 +112,15 @@ def _sentence_bounds(text: str, pos: int) -> tuple[int, int]:
 
 def _cue(kind: str, m: re.Match[str], offset: int, reads: str) -> dict[str, Any]:
     return {"cue": m.group(0), "start": offset + m.start(), "end": offset + m.end(), "reads": reads, "kind": kind}
+
+
+def _pronoun_warning(norm: str, lo: int, hi: int) -> str | None:
+    """「服之则厥逆」「与之必呕」: a warning of what taking the intervention named by 之 brings."""
+    for m in re.finditer(r"(?:服|与|饮|用|得)之", norm[lo:hi]):
+        at = lo + m.end() - 1
+        if BAD_OUTCOME.search(norm[at: at + 14]):
+            return norm[lo + m.start(): min(hi, at + 6)]
+    return None
 
 
 def _intervention_reading(norm: str, start: int, end: int, lo: int, hi: int) -> tuple[str | None, list[dict[str, Any]]]:
@@ -154,20 +177,33 @@ def statement_frame(text: str, start: int, end: int, normalize: Callable[[str], 
     head = norm[max(0, s_lo - 60): s_lo] + norm[s_lo: end]
     frame: dict[str, Any] = {"speaker": "author", "quoted_from": "", "stance": "asserted", "modality": "assertive",
                              "conditions": [], "negation_scope": [], "temporal_scope": [], "context": "textual"}
-    quoted = list(QUOTED.finditer(head))
+    offset = max(0, s_lo - 60)
+    quoted = sorted([*QUOTED.finditer(head), *CITED_BOOK.finditer(head)], key=lambda m: m.start())
     if quoted:
         q = quoted[-1]
-        src = q.group("src").strip("《》")
-        frame["quoted_from"] = src
-        frame["speaker"] = {"或": "unnamed other (或曰)", "有": "unnamed other"}.get(src, src)
-        frame["stance"] = "reported"
+        # a report governs until the author answers it: the words after 余曰 / 答曰 / 曰不然 are the author's own
+        answered = ANSWER.search(head, q.end(), max(q.end(), start - offset))
+        if not answered:
+            src = q.group("src").strip("《》")
+            frame["quoted_from"] = src
+            frame["speaker"] = {"或": "unnamed other (或曰)", "有": "unnamed other"}.get(src, src)
+            frame["stance"] = "reported"
     tail = norm[end: min(len(norm), s_hi + 40)]
-    if REJECTS.search(tail) or REJECTS.search(norm[start:end]):
+    # a rejection after the words (「……然余不取」「……是又不然」) rejects them, unless an answer of the author's lies between
+    # (the words are then that answer: 「或曰……余曰非也，邪气客于下焦」)
+    rejection = REJECTS.search(tail) or REJECTS.search(norm[start:end])
+    if rejection and not (frame["stance"] == "asserted" and quoted and ANSWER.search(head, quoted[-1].end(), max(quoted[-1].end(), start - offset))):
         frame["stance"] = "rejected" if frame["stance"] == "reported" or REJECTS.search(tail) else frame["stance"]
     span = norm[s_lo: s_hi]
     for m in CONDITION.finditer(span):
         if s_lo + m.start() <= end:
             frame["conditions"].append(m.group(0).rstrip("，"))
+    # 「……大便难而谵语者，下之则愈」: the clause closed by 者 conditions what the sentence says next — not in a definition
+    # (「夫消渴者，渴不止，小便多是也」), where no action or consequence follows
+    for m in ZHE_CONDITION.finditer(span):
+        after = span[m.end(): max(m.end(), end - s_lo) + 8]
+        if s_lo + m.start() < end and CONSEQUENT.search(after) and not any(m.group(0) in c or c in m.group(0) for c in frame["conditions"]):
+            frame["conditions"].append(m.group(0))
     if frame["conditions"]:
         frame["modality"] = "conditional"
     if HEDGES.search(norm[max(s_lo, start - 6): end]) and frame["modality"] == "assertive":
@@ -181,6 +217,35 @@ def statement_frame(text: str, start: int, end: int, normalize: Callable[[str], 
     return frame
 
 
+def negated_in_text(norm: str, start: int, surface: str) -> bool:
+    """Whether the text negates the term at ``start``: 「非风」「不恶寒」 yes; 「无汗」 (the negation is the term) and
+    「未有不成消渴」 (a double negation) no."""
+    if surface.startswith(("不", "无", "非", "未")):
+        return False
+    clause_start = max(norm.rfind(c, 0, start) for c in "，、。；：,;") + 1
+    prefix = norm[max(clause_start, start - 3): start]
+    return not prefix.endswith(DOUBLE_NEGATION) and prefix.endswith(ARG_NEGATORS)
+
+
+def negation_disagreements(claim: Claim, norm: str) -> list[dict[str, Any]]:
+    """Arguments whose negation in the claim differs from their negation in the quote.  An intervention of an
+    indication or a contraindication is left to the cue reading (「不可与桂枝汤」 prohibits it, it does not negate it);
+    claims read through machine segmentation are left out (the source has no clause marks to bound a negator)."""
+    if "machine-segmented" in claim.tags:
+        return []
+    out = []
+    for a in claim.arguments:
+        if a.start is None or a.end is None or not (0 <= a.start < len(norm)):
+            continue
+        if a.role in INTERVENTION_ROLES and claim.relation in (ClaimRelation.INDICATED_FOR, ClaimRelation.CONTRAINDICATED):
+            continue
+        in_text = negated_in_text(norm, a.start, a.surface or norm[a.start:a.end])
+        if in_text != bool(a.negated):
+            out.append({"cue": a.surface, "start": a.start, "end": a.end, "kind": "negation",
+                        "reads": "denied" if in_text else "asserted", "claimed": "negated" if a.negated else "asserted"})
+    return out
+
+
 def assess_support(claim: Claim, text: str, normalize: Callable[[str], str] | None = None) -> SupportAssessment:
     """Read the claim's quote in its passage for the words that state the claim's relation."""
     norm = normalize(text) if normalize else text
@@ -191,14 +256,39 @@ def assess_support(claim: Claim, text: str, normalize: Callable[[str], str] | No
     def result(verdict: str, cues: list[dict[str, Any]], why: str) -> SupportAssessment:
         return SupportAssessment(verdict=verdict, relation=relation.value, cues=cues, explanation=why, frame=frame)
 
+    disagree = negation_disagreements(claim, norm)
+    if disagree:
+        names = "、".join(f"{d['cue']}（{'原文否定' if d['reads'] == 'denied' else '原文肯定'}）" for d in disagree[:4])
+        return result("contradicts", disagree, f"the claim reads the negation of its arguments against the quote: {names}")
+
     if relation in (ClaimRelation.INDICATED_FOR, ClaimRelation.CONTRAINDICATED):
         want = "indicated" if relation == ClaimRelation.INDICATED_FOR else "contraindicated"
         interventions = [a for a in claim.arguments if a.role in INTERVENTION_ROLES and a.start is not None and a.end is not None]
         if not interventions:
-            # a contraindication may concern a behaviour or food (忌生冷); an indication needs something to indicate
+            referents = [a for a in claim.arguments if a.role in INTERVENTION_ROLES and a.qualifiers.get("referent")]
             m = CONTRA_BEFORE.search(norm[lo:hi]) or CONTRA_PRONOUN.search(norm, lo, hi) or re.search(r"忌|禁|勿|不可", norm[lo:hi])
-            if relation == ClaimRelation.CONTRAINDICATED and m:
-                return result("supports", [{"cue": m.group(0), "reads": "contraindicated"}], "a prohibition in the quote")
+            warning = _pronoun_warning(norm, lo, hi)
+            prescribed = [x for x in IND_PRONOUN.finditer(norm, lo, hi) if not BAD_OUTCOME.search(norm[x.end() - 1: x.end() + 12])
+                          and not CONTRA_PRONOUN.search(norm, max(lo, x.start() - 3), x.end())]
+            forbids = m or warning
+            if relation == ClaimRelation.CONTRAINDICATED:
+                # a contraindication may concern a behaviour or food (忌生冷): a prohibition or a warning in the quote states it
+                if forbids:
+                    cue = m.group(0) if m else warning
+                    return result("supports", [{"cue": cue, "reads": "contraindicated"}], "a prohibition or a warning in the quote")
+                if referents and prescribed:
+                    return result("contradicts", [{"cue": prescribed[0].group(0), "reads": "indicated"}],
+                                  f"the quote prescribes what 之 refers to ({prescribed[0].group(0)})")
+                return result("insufficient", [], "no word in the quote prohibits the intervention")
+            if referents:
+                # an indication of what 之 refers to: 「宜服之」 prescribes it, 「不可与之」「服之则厥逆」 forbid it
+                if forbids and prescribed:
+                    return result("ambiguous", [], "the quote both prescribes and forbids what 之 refers to")
+                if forbids:
+                    cue = m.group(0) if m else warning
+                    return result("contradicts", [{"cue": cue, "reads": "contraindicated"}], f"the quote forbids what 之 refers to ({cue})")
+                if prescribed:
+                    return result("supports", [{"cue": prescribed[0].group(0), "reads": "indicated"}], "the quote prescribes what 之 refers to")
             return result("insufficient", [], "no intervention argument whose indication the quote could state")
         readings, cues = [], []
         for arg in interventions:

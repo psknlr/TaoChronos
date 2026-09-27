@@ -2,7 +2,9 @@
 
 Time Machine — the research runs on a corpus truncated at a cutoff year (a separate harness, so no index,
 cache or graph ever sees a later text).  Every hypothesis carries structured predictions; they are then
-checked against the claims of the texts written *after* the cutoff.
+checked against the claims of the texts written *after* the cutoff.  A text is on one side of the cutoff only when its
+whole date range is: one whose range straddles it (素问·至真要大论, 100–762, at 618) is in neither the past corpus nor
+the future that checks predictions — a midpoint would put a possibly later text into the past.
 
 Source rediscovery — a cited book is removed from the corpus; the lineage engine should re-infer it as a
 cited-but-absent source, dated before its earliest citer.
@@ -18,6 +20,12 @@ from ..tools.adapters import SenseOracle
 from .base import EvalContext, SuiteResult
 
 POSITIVE = (ClaimRelation.INDICATED_FOR, ClaimRelation.HERB_INDICATION, ClaimRelation.COMPOSED_OF)
+
+
+def side(corpus: Any, passage: Any, cutoff: float) -> str:
+    """``before`` / ``after`` / ``straddling`` the cutoff, by the passage's whole date range (undated: ``before``)."""
+    rng = corpus.year_range(passage)
+    return "before" if rng is None else rng.side_of(cutoff)
 
 
 def _members(claim: Any) -> set[str]:
@@ -75,16 +83,16 @@ def time_machine(ctx: EvalContext) -> SuiteResult:
     details, notes = [], []
     metrics: dict[str, Any] = {}
     for cutoff in gold.get("cutoffs", [1368]):
-        pre = corpus.subset(p.id for p in corpus.passages() if (corpus.year(p) or 0) < cutoff)
+        sides = {p.id: side(corpus, p, cutoff) for p in corpus.passages()}
+        pre = corpus.subset(pid for pid, where in sides.items() if where == "before")
         harness = ctx.harness(corpus=pre)
         session = ctx.run(harness, gold.get("question", "消渴的概念如何演变？"), session_id=f"tm{cutoff}",
                           focus_terms=gold.get("focus_terms", ["消渴"]))
         state = session.state
-        leaked = [e.id for e in state.evidence.values() if corpus.has_passage(e.passage_id)
-                  and (corpus.year(corpus.passage(e.passage_id)) or 0) >= cutoff]
-        future = [c for c in kb_full.claims() if (corpus.year(corpus.passage(c.passage_id)) or 0) >= cutoff]
+        leaked = [e.id for e in state.evidence.values() if sides.get(e.passage_id, "before") != "before"]
+        future = [c for c in kb_full.claims() if sides.get(c.passage_id) == "after"]
         derived = [e for e in kb_full.lineage() if e.relation == "formula_derived_from" and e.source_passage
-                   and (corpus.year(corpus.passage(e.source_passage)) or 0) >= cutoff]
+                   and sides.get(e.source_passage) == "after"]
         outcomes: dict[str, list[bool]] = {"survived": [], "other": []}
         for h in state.hypotheses.values():
             if h.status == "superseded":
@@ -99,6 +107,7 @@ def time_machine(ctx: EvalContext) -> SuiteResult:
         checkable = outcomes["survived"] + outcomes["other"]
         metrics[str(cutoff)] = {
             "pre_cutoff_passages": len(pre.passage_ids()),
+            "straddling_passages": sum(1 for where in sides.values() if where == "straddling"),
             "post_cutoff_claims": len(future),
             "hypotheses": sum(1 for h in state.hypotheses.values() if h.status != "superseded"),
             "checkable_predictions": len(checkable),
@@ -116,9 +125,9 @@ def time_machine(ctx: EvalContext) -> SuiteResult:
 def link_baselines(claims: list[Any], corpus: Any, cutoff: float, k: int = 20) -> dict[str, Any]:
     left = lambda t: t.split(":")[0] in ("symptom", "sign", "disease", "pattern", "pulse")  # noqa: E731
     right = lambda t: t.split(":")[0] in ("formula", "herb")  # noqa: E731
-    year = lambda c: corpus.year(corpus.passage(c.passage_id)) or 0  # noqa: E731
-    pre = [c for c in claims if year(c) < cutoff and c.relation in POSITIVE]
-    post = [c for c in claims if year(c) >= cutoff and c.relation in POSITIVE]
+    where = lambda c: side(corpus, corpus.passage(c.passage_id), cutoff)  # noqa: E731
+    pre = [c for c in claims if c.relation in POSITIVE and where(c) == "before"]
+    post = [c for c in claims if c.relation in POSITIVE and where(c) == "after"]
     graph = CooccurrenceGraph([sorted(_members(c)) for c in pre])
     nodes = set(graph.nodes())
     truth = {(a, b) for c in post for a in _members(c) for b in _members(c)

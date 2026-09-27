@@ -1,8 +1,8 @@
 """The Discovery Report: research question → … → recommended human verification.
 
-Twelve sections in a fixed order, every claim tied to evidence ids and every
-score shown with its components.  What did not survive is reported as
-clearly as what did.  Published as versioned artifacts (Markdown + JSON), with
+Twelve numbered sections in a fixed order, the contract's evaluation right after the question, and the
+appendices (sources dossier, research tree); every claim tied to evidence ids and every score shown with its
+components.  What did not survive is reported as clearly as what did.  Published as versioned artifacts (Markdown + JSON), with
 the evidence table and knowledge graph beside them.
 """
 
