@@ -3,7 +3,7 @@
 **A provenance-grounded research harness for the Chinese medical classics — for scholars, students and discovery.**
 *面向中医古籍的可溯源知识发现与治学系统*
 
-[中文 README](README.md) · [V2](docs/v2.md) · [Ancient–modern bridge](docs/bridge.md) · [Models](docs/models.md) · [Study layer](docs/study.md) · [Task specification](docs/tasks.md) ·
+**[Use it online · web chat](https://psknlr.github.io/TaoChronos/)** · [中文 README](README.md) · [Web client](docs/web.md) · [V2](docs/v2.md) · [Ancient–modern bridge](docs/bridge.md) · [Models](docs/models.md) · [Study layer](docs/study.md) · [Task specification](docs/tasks.md) ·
 [Architecture](docs/architecture.md) · [Agents](docs/agents.md) · [Discovery](docs/discovery.md) · [Evaluation](docs/evals.md) · [Data](docs/data.md) · [Roadmap](docs/roadmap.md) · [ADRs](docs/adr/)
 
 TaoChronos turns 966 Chinese medical classics (about 123 million characters in 2.05 million passages) into a corpus
@@ -55,6 +55,14 @@ Both layers share one rule: **every statement rests on verbatim witnesses** (boo
 text layer, source and licence of the transcription). Rule-based reading is labelled as machine reading; people check
 and decide.
 
+> 💬 **Web chat**: open **<https://psknlr.github.io/TaoChronos/>**, paste your own model API key in the settings
+> (default **MiniMax (mainland) · MiniMax-M3**; DeepSeek, Qwen, Kimi, GLM, Doubao, SiliconFlow, OpenRouter, Poe, LiteLLM,
+> Claude and others are listed) and hold a multi-turn conversation as in ChatGPT or Claude.  The model answers through all
+> 72 of TaoChronos's tools, and the page checks every `[[passage_id]]` it cites word for word (✓ matches the passage ·
+> ≠ misquoted · ✕ no such passage); evidence, research runs and a tool console (any tool, no model needed) sit in the
+> side panel.  The page runs TaoChronos itself in the browser with Pyodide (demonstration corpus), or connects to
+> `taochronos serve` on your machine for the full corpus.  See [docs/web.md](docs/web.md).
+
 > ⚠️ The corpus consists of transcriptions from several sources (Siku, 笈成, McGill rare books, CMETA, the 東亜医学協会,
 > Wikisource, web text sets), **none collated by this project**; `corpus/demo` holds unverified excerpts for demonstrating the method.
 > Contemporary publications and works of contemporary physicians are left out; in the modern editions kept, the editors'
@@ -104,9 +112,22 @@ and decide.
 | **Modern evidence and real-world data** | PubMed typed by design and population, the cross-level guard, safety warnings; real-world questions as validated study specs over OMOP | `modern search` · `modern safety` · `rwd ask` · `rwd synth` |
 | **Layout, entities, translation, places** | vertical reading order and 双行小注, a multimodal reading, OCR checked against the store; entities in context; five-layer translation; native places, signed prefaces, regional statistics | `vision` · `study entities` · `study translate` · `study places` |
 | **Knowledge discovery** | multi-agent research: lost knowledge, concept drift, formula evolution, hidden associations, contradictions, lost sources; verbatim evidence, falsification, gates, expert review | `research` · `report` · `workspace` · `review` |
+| **Everyone (web)** | a ChatGPT/Claude-style multi-turn chat: a model of your choice (MiniMax-M3 by default) answers through every tool, quotations checked word for word, sources one click away (horizontal or vertical reading); a research panel and a tool console; conversations kept in your browser, exportable | [web](https://psknlr.github.io/TaoChronos/) · `serve` · `web build` |
 | **Developers** | plugin kernel, capability registry, a tool mesh of 72 tools, agents as YAML specs, event sourcing and replay, evaluation and architecture governance; the JSON Schemas of the tasks' outputs | `agents` · `eval` · `governance` · `schema --study` |
 
 ## 2. Quick start
+
+**Web**: open <https://psknlr.github.io/TaoChronos/> (runs in the browser, demonstration corpus), or on your machine
+with the full corpus:
+
+```bash
+pip install -e .
+taochronos serve                   # http://localhost:8765 — web chat + the full corpus (when built) + the model proxy
+taochronos serve --env-keys        # model keys from this machine's environment (MINIMAX_API_KEY …), none typed in the page
+taochronos web build -o _site      # the static site (GitHub Pages deploys it from .github/workflows/pages.yml)
+```
+
+**Command line**:
 
 ```bash
 pip install -e ".[dev]"            # Python ≥ 3.11; data and configuration live in the repository root (or TAOCHRONOS_HOME)
@@ -499,6 +520,14 @@ workflow commands take `--llm platform:model` (with `--llm-max-calls`, `--llm-ma
 schema-validated (one repair turn) and logged without their prompts; results record whether the rule, the model or both
 decided each item.  External command subagents and Research Code Mode: [docs/agents.md](docs/agents.md).
 
+**Web chat** ([docs/web.md](docs/web.md), [ADR 0011](docs/adr/0011-web-client.md)): the conversation runs in the browser
+with your own key, straight to the provider (MiniMax allows the page's origin) or through `taochronos serve`; TaoChronos
+executes the tools in the browser (Pyodide, demonstration corpus) or on your machine (full corpus).  The model acts as an
+agent with read and analysis permissions only, sees fifteen common tools directly and the rest through a catalog;
+MiniMax-M3's `reasoning_details` and tool calls are replayed verbatim turn after turn, and Claude is called through the
+official SDK (adaptive thinking, server-side refusal fallbacks).  The local server binds to 127.0.0.1, answers only this
+machine's pages, the published client and named origins, and forwards model requests only to the listed providers.
+
 ## 8. Evaluation and quality
 
 `taochronos eval` runs on the demo corpus; with the corpus store, the deep-discovery and task-specification suites also check the real corpus and the research-value layer runs blind on it (~18 min for all suites once the caches are built, ~11 of them research value). The gold sets were built by the authors for the demo corpus and used
@@ -563,7 +592,7 @@ The development sets of deep discovery and of the task specification were writte
 intended behaviour, not generalisation. Expert gold on the full corpus is on the roadmap; the benchmark table of
 [docs/tasks.md](docs/tasks.md) lists each task's metric and gold.
 
-Plus 332 unit and integration tests (`pytest`, with format samples of every source, a synthetic corpus for the
+Plus 349 unit and integration tests (`pytest`, with format samples of every source, a synthetic corpus for the
 study layer, `tests/fixtures/study`, a contract test that checks real results against the JSON Schemas of the tasks, the
 audit's P01–P10 as regression tests in `tests/test_boundaries.py`, and `test_contract.py`, `test_statistics.py`,
 `test_longrun.py` and `test_eval_layers.py`) and the architecture governance check (`taochronos governance`: layering,
@@ -600,6 +629,8 @@ harness builds in 0.64 s instead of 9.2 s, and a full-corpus research run takes 
 
 ```
 architecture-policy.yaml   layering, kernel neutrality, SDK isolation, agent rules
+web/                       the web chat client (plain ES modules, no build step): conversations, streaming, quotation checks,
+                           evidence · research · tool console, settings; js/worker.js runs TaoChronos in the browser (Pyodide)
 agents/                    16 AgentSpecs (YAML); agents/core/: the four V2 core agents
 skills/                    SKILL.md packs (incl. source-criticism, the study method); skills/manifests/: the fifteen V2 skills (S01–S15)
 profiles/                  full-discovery, full-corpus, classics-basic, formula-discovery, historical-disease, claude, minimax, poe, litellm
@@ -613,12 +644,13 @@ domains/modern/            modern evidence: the crosswalk for queries, the safet
 domains/classics/lexicon-harvested/  candidate formula and drug names harvested from the corpus (full-corpus only)
 corpus/                    the demo corpus (unverified), modern evidence summaries, catalogues (catalog/) and source locks
 evals/gold/                gold sets
-src/taochronos/            protocol/ kernel/ capabilities/ science/ verification/ tools/ plugins/ agents/ engine/ evals/ workspace/
+src/taochronos/            protocol/ kernel/ capabilities/ science/ verification/ tools/ plugins/ agents/ engine/ evals/ workspace/ chat/
+  chat/                    the web chat's runtime (tool catalog, calls, citations, research sessions), `serve`, `web build`, providers
   plugins/classics/study/  the study layer: concordance · formulas · herbs · terms · taboo · network · metrology · learning · dataset · render
                            deep discovery: stemma · intertext · stratigraphy · cases · argument · senses · fragments
                            task specification: punctuation · clause · glosses · commentary · disputes · pairs · schools · names · chain · schemas
   plugins/classics/collation/  computational collation: anchored alignment · variant units · variant impact · stemma and contamination · TEI
-tests/                     332 tests (fixtures/: source format samples and the study corpus)
+tests/                     349 tests (fixtures/: source format samples and the study corpus; web_mock.py: scripted model providers for the web client)
 docs/                      study, task specification, architecture, agents, discovery, evaluation, data, ADRs, roadmap
 ```
 

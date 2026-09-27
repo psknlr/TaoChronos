@@ -1314,6 +1314,32 @@ def cmd_skills(args: argparse.Namespace) -> None:
     _out("\n".join(lines))
 
 
+def cmd_serve(args: argparse.Namespace) -> None:
+    """The web client's local server: the chat runtime over the full corpus (or the demonstration corpus when no store
+    has been built), the client itself and a model proxy restricted to the listed providers."""
+    from .chat import ChatRuntime
+    from .chat.server import serve
+
+    _default_profile(args)
+    try:
+        runtime = ChatRuntime.create(args.profile, home=args.home, data_dir=args.data, llm=args.llm, kind="server",
+                                     code_mode=args.code_mode)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    serve(runtime, host=args.host, port=args.port, web=Path(args.web) if args.web else None, origins=args.allow_origin,
+          env_keys=args.env_keys, proxy=not args.no_proxy, open_browser=args.open, quiet=not args.verbose)
+
+
+def cmd_web(args: argparse.Namespace) -> None:
+    """Build the web client as a static site (GitHub Pages): client, in-browser runtime, providers, Pyodide."""
+    from .chat.build import build_site
+    from .config import find_home
+
+    home = find_home(args.home)
+    info = build_site(Path(args.output), home=home, web=Path(args.web) if args.web else None, pyodide=args.pyodide)
+    _out(info)
+
+
 def _has_module(name: str) -> bool:
     import importlib.util
 
@@ -1594,6 +1620,28 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--outputs", action="store_true")
     sp.add_argument("--study", nargs="?", const="all",
                     help="the output schemas of the tasks of docs/tasks.md (one by name, e.g. punctuate; or all)")
+    sp = add("serve", cmd_serve, "网页对话: serve the web chat client and its API (full corpus when built) on this machine",
+             profile=False)
+    sp.add_argument("--profile", help="default: full-corpus when the store exists, else full-discovery (demo corpus)")
+    sp.add_argument("--host", default="127.0.0.1")
+    sp.add_argument("--port", type=int, default=8765)
+    sp.add_argument("--llm", help="provider:model for the research engine's judgement roles (e.g. minimax:MiniMax-M3); "
+                                  "the chat model itself is chosen in the web client")
+    sp.add_argument("--allow-origin", action="append", help="another origin allowed to call the API (repeatable; "
+                                                            "this machine's pages and the published client always are)")
+    sp.add_argument("--env-keys", action="store_true", help="the model proxy adds this machine's provider keys "
+                                                            "(MINIMAX_API_KEY …) to requests that carry none")
+    sp.add_argument("--no-proxy", action="store_true", help="turn the model proxy off")
+    sp.add_argument("--code-mode", action="store_true", help="let the chat model run Code Mode programs (research.run_code)")
+    sp.add_argument("--web", help="serve the client from this directory (default: <home>/web)")
+    sp.add_argument("--open", action="store_true", help="open the client in a browser")
+    sp.add_argument("--verbose", action="store_true", help="log requests (paths only)")
+    sp = add("web", cmd_web, "build the web chat client as a static site (GitHub Pages)", profile=False)
+    sp.add_argument("action", choices=["build"])
+    sp.add_argument("-o", "--output", default="_site")
+    sp.add_argument("--web", help="the client's sources (default: <home>/web)")
+    sp.add_argument("--pyodide", choices=["self", "cdn"], default="self",
+                    help="self: put the pinned Pyodide files in the site (default); cdn: load them from jsDelivr")
     add("governance", cmd_governance, "check the architecture policy", profile=False)
     sp = add("eval", cmd_eval, "run TaoChronos-Eval suites", profile=False)
     sp.add_argument("suites", nargs="*")

@@ -1,0 +1,67 @@
+name: pages
+
+# The web client on GitHub Pages: https://psknlr.github.io/TaoChronos/
+# One-time setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "src/**"
+      - "profiles/**"
+      - "domains/**"
+      - "corpus/demo/**"
+      - "corpus/catalog/**"
+      - "corpus/modern/**"
+      - "agents/**"
+      - "skills/**"
+      - "evals/gold/**"
+      - "architecture-policy.yaml"
+      - "pyproject.toml"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: Check the chat runtime the site ships
+        run: |
+          python - <<'EOF'
+          from taochronos.chat import ChatRuntime
+          rt = ChatRuntime.create("full-discovery", kind="ci", ephemeral=True)
+          out = rt.call("classics.search", {"query": "桂枝汤", "k": 2})
+          assert out["ok"] and out["citations"], out
+          print(rt.info()["corpus"], len(rt.catalog("all")["tools"]), "tools")
+          EOF
+      - name: Build the site (client, in-browser runtime, providers, pinned Pyodide)
+        run: taochronos web build -o _site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

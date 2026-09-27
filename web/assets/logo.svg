@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="TaoChronos">
+  <!-- a vermilion seal holding a sundial: the dial's twelve hours (时辰) and the gnomon's shadow -->
+  <rect x="3" y="3" width="58" height="58" rx="13" fill="#b3372b"/>
+  <rect x="7.5" y="7.5" width="49" height="49" rx="9.5" fill="none" stroke="#fbeee4" stroke-opacity=".55" stroke-width="1.6"/>
+  <circle cx="32" cy="32" r="16.5" fill="none" stroke="#fbeee4" stroke-width="3"/>
+  <g stroke="#fbeee4" stroke-width="2.2" stroke-linecap="round">
+    <path d="M32 19.5v3.2M32 41.3v3.2M19.5 32h3.2M41.3 32h3.2"/>
+    <path d="M23.2 23.2l1.6 1.6M39.2 39.2l1.6 1.6M40.8 23.2l-1.6 1.6M24.8 39.2l-1.6 1.6" stroke-width="1.6"/>
+  </g>
+  <path d="M32 32L41.5 25.5" stroke="#fbeee4" stroke-width="3.2" stroke-linecap="round"/>
+  <circle cx="32" cy="32" r="3.1" fill="#fbeee4"/>
+</svg>

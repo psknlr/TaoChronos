@@ -3,7 +3,7 @@
 **面向中医古籍的可溯源知识发现与治学系统**
 *A provenance-grounded research harness for the Chinese medical classics — for scholars, students and discovery.*
 
-[English README](README.en.md) · [V2](docs/v2.md) · [古今桥接](docs/bridge.md) · [模型接入](docs/models.md) · [治学](docs/study.md) · [任务规格](docs/tasks.md) ·
+**[在线使用 · 网页对话](https://psknlr.github.io/TaoChronos/)** · [English README](README.en.md) · [网页端](docs/web.md) · [V2](docs/v2.md) · [古今桥接](docs/bridge.md) · [模型接入](docs/models.md) · [治学](docs/study.md) · [任务规格](docs/tasks.md) ·
 [架构](docs/architecture.md) · [智能体](docs/agents.md) · [发现引擎](docs/discovery.md) · [评测](docs/evals.md) · [数据格式](docs/data.md) · [路线图](docs/roadmap.md) · [ADR](docs/adr/)
 
 TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一个**可检索、可断代、可溯源**的语料库，并在其上提供两层能力：
@@ -35,6 +35,12 @@ TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一
 
 两层共享同一原则：**每一个结论都落到逐字可核的原文见证上**（书、卷篇节、年代、层次、录文来源与授权），规则抽取标明为机器阅读，
 由人去核对与定夺。
+
+> 💬 **网页对话**：打开 **<https://psknlr.github.io/TaoChronos/>**，在设置里填入自己的模型 API Key（默认 **MiniMax 国内站 · MiniMax-M3**，
+> 另有 DeepSeek、通义、Kimi、智谱、豆包、硅基流动、OpenRouter、Poe、LiteLLM、Claude 等十余家），即可像使用 ChatGPT / Claude 一样多轮对话。
+> 模型通过 TaoChronos 的全部 72 项工具检索与考据，回答里的每条引文 `[[段落号]]` 都由页面**逐字核对**（✓ 与原文一致 · ≠ 引文不符 ·
+> ✕ 查无此段）；证据、研究（多智能体发现）与工具台（无需模型、直接运行任一工具）在侧栏。页面在浏览器里用 Pyodide 运行 TaoChronos
+> 本身（演示语料），也可以连接本机的 `taochronos serve` 使用全量语料。见[网页端说明](docs/web.md)。
 
 > ⚠️ 语料为各来源的录文（四库本、笈成整理本、麦吉尔善本、CMETA 精校本、东亚医学协会本、维基文库与网络文本集），**均未经本项目逐字校勘**；`corpus/demo`
 > 是为演示方法整理的未经核验的节录。当代出版物与当代名医著作不入库；保留的现代校注本，今人整理成分单列为层或移入元数据。所有输出都是**文献研究与计算推断**，
@@ -82,9 +88,21 @@ TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一
 | **现代证据与真实世界** | PubMed 记录按设计与对象分级、跨层防护、安全提示；真实世界问题 → 研究规格 → 只读参数化 OMOP 查询 | `modern search` · `modern safety` · `rwd ask` · `rwd synth` |
 | **版面、实体、今译、地域** | 竖排阅读顺序与双行小注、多模态识读、OCR 对库核对；24 类语境实体；五层今译；医家籍贯、序跋落款与地域统计 | `vision` · `study entities` · `study translate` · `study places` |
 | **知识发现** | 多智能体研究：失传知识、概念演变、方剂演化、隐性关联、矛盾发现、佚书线索；逐字证据、证伪、门控、专家核验 | `research` · `report` · `workspace` · `review` |
+| **所有人（网页）** | 类 ChatGPT / Claude 的多轮对话：自选模型（默认 MiniMax-M3）调用全部工具作答，引文逐字核对、出处一点即读（横排 / 竖排）；研究面板与工具台；对话存于本机浏览器，可导出 | [网页](https://psknlr.github.io/TaoChronos/) · `serve` · `web build` |
 | **开发者** | 插件化内核、能力注册、工具网格（72 个工具）、智能体配置（YAML）、事件溯源与重放、评测与架构治理；各任务输出的 JSON Schema | `agents` · `eval` · `governance` · `schema --study` |
 
 ## 二、快速开始
+
+**网页**：直接打开 <https://psknlr.github.io/TaoChronos/>（浏览器内运行，演示语料）；或在本机连接全量语料：
+
+```bash
+pip install -e .
+taochronos serve                   # http://localhost:8765 ：网页对话 + 全量语料（已构建时）+ 模型转发
+taochronos serve --env-keys        # 模型密钥从本机环境变量读取（MINIMAX_API_KEY …），网页里不必填写
+taochronos web build -o _site      # 构建静态站点（GitHub Pages 由 .github/workflows/pages.yml 自动部署）
+```
+
+**命令行**：
 
 ```bash
 pip install -e ".[dev]"            # Python ≥ 3.11；数据与配置位于仓库根目录（或设置 TAOCHRONOS_HOME）
@@ -431,6 +449,11 @@ Poe（`poe`，`POE_API_KEY`，以机器人名为模型名）、LiteLLM（`litell
 复核模型一并配好。模型调用逐次缓存、计入预算、按 JSON 模式校验（一次修复机会）、记日志（不记提示词）；结果标明每项由规则、模型
 还是二者共同决定。外部命令子智能体与 Research Code Mode 见 [docs/agents.md](docs/agents.md)。
 
+**网页对话**（[docs/web.md](docs/web.md)、[ADR 0011](docs/adr/0011-web-client.md)）：对话在浏览器里进行，模型用你自己的密钥直接调用（MiniMax 允许
+网页跨域访问），或经本机 `taochronos serve` 转发；TaoChronos 在浏览器内（Pyodide，演示语料）或本机服务（全量语料）执行工具。模型以
+“智能体”身份只获读与分析权限，默认直接看到 15 个常用工具、经目录按需调用其余工具；MiniMax-M3 的 `reasoning_details` 与工具调用逐轮原样回传，
+Claude 经官方 SDK 调用（自适应思考、服务端拒答回退）。本机服务只绑定 127.0.0.1，只接受本机页面、已发布的网页与指定来源，只向列出的模型平台转发。
+
 ## 八、评测与质量保证
 
 `taochronos eval` 在演示语料上运行；有全量语料库时，深层发现 2.0 与任务规格的套件同时在真实语料上核查，研究价值层在全量语料上盲测（缓存建好后全部套件约 18 分钟，其中研究价值约 11 分钟）。金标准由作者为演示语料构建并在开发中使用，**只作回归测试，不是无偏基准**
@@ -491,7 +514,7 @@ V2 的套件（[docs/evals.md](docs/evals.md)）：
 
 深层发现 2.0 与任务规格的开发集与规则一起写成，数值说明规则“打算做什么”，不代表泛化能力；全量语料上的专家金标准列入路线图。各项任务的评测、指标与金标准见 [docs/tasks.md](docs/tasks.md) 的 Benchmark 表。
 
-另有 332 个单元与集成测试（`pytest`，含各来源格式样例、一个为治学层编写的合成语料 `tests/fixtures/study`、用真实结果逐项校验各任务输出 JSON Schema 的契约测试，
+另有 349 个单元与集成测试（`pytest`，含各来源格式样例、一个为治学层编写的合成语料 `tests/fixtures/study`、用真实结果逐项校验各任务输出 JSON Schema 的契约测试，
 以及审计复现包 P01–P10 的回归测试 `tests/test_boundaries.py`、合同 `tests/test_contract.py`、统计 `tests/test_statistics.py`、长程运行 `tests/test_longrun.py`
 与评测分层 `tests/test_eval_layers.py`），
 以及架构治理检查（`taochronos governance`：分层依赖、内核中立、模型 SDK 隔离、智能体规则）。CI 在 Python 3.11/3.12 上运行治理、测试、
@@ -522,6 +545,8 @@ engine        研究引擎（操作循环与科学循环、分支、锦标赛、
 
 ```
 architecture-policy.yaml   架构策略（分层、内核中立、SDK 隔离、智能体规则）
+web/                       网页对话客户端（原生 ES 模块，无构建步骤）：对话、流式渲染、引文核对、证据 · 研究 · 工具台、设置；
+                           js/worker.js 在浏览器内用 Pyodide 运行 TaoChronos
 agents/                    16 个 AgentSpec（YAML）；agents/core/ 四个 V2 核心智能体
 skills/                    SKILL.md 能力包（含 source-criticism 治学方法）；skills/manifests/ 十五项 V2 技能清单（S01–S15）
 profiles/                  配置画像：full-discovery、full-corpus、classics-basic、formula-discovery、historical-disease、claude、minimax、poe、litellm
@@ -535,12 +560,13 @@ domains/modern/            现代证据：中英对照（检索用）、安全�
 domains/classics/lexicon-harvested/  从全量语料采集的候选方名、药名（仅 full-corpus 画像加载）
 corpus/                    演示语料（未经核验）、现代证据摘要、全量书目 catalog/ 与来源锁定 sources.lock.yaml
 evals/gold/                评测金标准
-src/taochronos/            protocol/ kernel/ capabilities/ science/ verification/ tools/ plugins/ agents/ engine/ evals/ workspace/
+src/taochronos/            protocol/ kernel/ capabilities/ science/ verification/ tools/ plugins/ agents/ engine/ evals/ workspace/ chat/
+  chat/                    网页对话的运行时（工具目录、调用、引文、研究会话）、本机服务 serve、站点构建 web build、模型平台列表
   plugins/classics/study/  治学层：concordance · formulas · herbs · terms · taboo · network · metrology · learning · dataset · render
                            深层发现：stemma · intertext · stratigraphy · cases · argument · senses · fragments
                            任务规格：punctuation · clause · glosses · commentary · disputes · pairs · schools · names · chain · schemas
   plugins/classics/collation/  计算校勘：锚点对齐 · 异文单元 · 异文分级 · 谱系与污染 · TEI
-tests/                     332 个测试（fixtures/ 含各来源格式样例与治学合成语料）
+tests/                     349 个测试（fixtures/ 含各来源格式样例与治学合成语料；web_mock.py 为网页端的模拟模型服务）
 docs/                      治学、任务规格、架构、智能体、发现、评测、数据、ADR、路线图
 ```
 

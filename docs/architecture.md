@@ -7,7 +7,7 @@ trustworthy — state, ordering, permissions, verification, stopping — is dete
 ## Layers
 
 ```
-app          cli · bootstrap · config · governance · workspace
+app          cli · bootstrap · config · governance · workspace · chat (the web client's runtime, local server, site build)
 evals        TaoChronos-Eval (may use everything)
 engine       research loop · validators · Discovery Report
 agents       AgentSpec · skills · router · prompts · context views · runtime · role procedures
@@ -131,6 +131,16 @@ classics bundle; `modern` (PubMed typed by design, the safety table) and `rwd` (
 (`capabilities/judge.py`) is the one place a model enters these functions: it is handed to a capability (`study.judge`),
 never imported by it.  `engine/workflow.py` loads the skill manifests and the core agents, compiles a question into a
 DAG and runs it through the tool scheduler as those agents, with every call an artifact of a resumable workspace.
+
+## The web client
+
+`web/` is a conversation in the browser: the page runs the agent loop with the user's own model, and the tools run in
+`taochronos.chat.ChatRuntime` — in the browser under Pyodide (demonstration corpus) or on the user's machine under
+`taochronos serve` (full corpus).  The chat model acts as an agent-principal actor with read and analysis permissions,
+so every call goes through the scheduler like any agent's; it never holds `kg:propose`, and Code Mode only by the server's
+`--code-mode`.  The page checks every `[[passage_id]]` the model writes against the corpus (the quotation before it,
+directly or after normalisation; the passage's existence; whether a tool returned it).  See [web.md](web.md) and
+[ADR 0011](adr/0011-web-client.md).
 
 ## Tools and the scheduler
 
