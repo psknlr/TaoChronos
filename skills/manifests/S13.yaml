@@ -1,0 +1,16 @@
+id: S13
+key: modern_evidence
+name: 现代证据 Modern Evidence
+version: 1.0.0
+owner: translational
+description: Modern literature on the question's drugs and diseases, typed by design and population, summed by level, with the cross-level guard and safety warnings.
+inputs: [drugs, diseases]
+outputs: [modern_records]
+dependencies: []
+requires_llm: none
+deterministic_steps: [crosswalk to English and Latin names, PubMed (when online) and curated records, typing by publication type, MeSH and abstract, safety table]
+llm_steps: []
+calls:
+  - {tool: modern.search, for_each: drugs, limit: 2, args: {subject: "{drug}", disease: "{disease0}"}}
+validators: [animal, cell and computational work never carries a claim about people]
+evaluation: {suites: [modern]}

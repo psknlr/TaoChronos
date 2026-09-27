@@ -35,8 +35,9 @@ SENTENCE = re.compile(r"[^。；！？!?;\n]+[。；！？!?;]?")
 INFER = re.compile(r"(所以|因此|因而|故而|可见|由此可见|这说明|说明|这证明|证明|提示|表明)")
 QUOTE = re.compile(r"[「“]([^」”]{2,})[」”]")
 WORK = re.compile(r"《([^》]{2,20})》")
-CLINICAL = re.compile(r"(每日|每次|每天|日服|顿服|\d+\s*(?:克|g|毫克|mg|钱|两)|可用于治疗|建议(?:患者|服用|使用)|推荐(?:用于|服用)|"
-                      r"适用于[^。，]{0,8}患者|处方|代替[^。，]{0,6}药)")
+CLINICAL = re.compile(r"(每日|每次|每天|日服|顿服|\d+\s*(?:克|g|毫克|mg|钱|两)|可用于治疗|建议[^。，；]{0,10}(?:服用|使用|用药|服)|"
+                      r"推荐[^。，；]{0,8}(?:用于|服用|使用)|(?:患者|病人)[^。，；]{0,6}(?:宜服|可服|应服)|适用于[^。，]{0,8}患者|处方|"
+                      r"代替[^。，]{0,6}药|停用[^。，]{0,6}药)")
 MODERN_WORDS = re.compile(r"(研究|试验|临床|患者|病人|机制|通路|靶点|血糖|血压|RCT|meta|Meta|荟萃|系统评价|动物|小鼠|大鼠|细胞|"
                           r"网络药理|分子对接|有效率|疗效|降低|改善|抑制|激活|表达|显著)")
 HISTORICAL_WORDS = re.compile(r"(载|记载|记述|言|曰|云|称|谓|论|描述|提到|指出)")
@@ -49,6 +50,8 @@ ASSOCIATION = re.compile(r"(相关|关联|风险|发生率)")
 MECHANISM = re.compile(r"(机制|通路|靶点|抑制|激活|表达|受体|信号)")
 PREDICTION = re.compile(r"(网络药理|分子对接|预测|计算)")
 SAFETY = re.compile(r"(毒性|不良反应|相互作用|中毒|肝损|肾损)")
+# a sentence that only bounds what the others say asserts nothing to check
+CAVEAT = re.compile(r"^(?:(?:这是|此为)[^，。；]{0,8}[，,])?(?:不是回溯诊断|并非一一对应|未经校准|不是概率|非临床建议|不是疗效结论|仅供研究)")
 
 
 @dataclass
@@ -60,6 +63,7 @@ class AuditContext:
     locate: Callable[[str, str | None], list[str]]  # quote, book id → passage ids that carry it
     guard: Any  # verification.presentism.PresentismGuard
     bridge: Callable[[str], dict[str, Any]] | None = None  # a text → a bridge mapping
+    bridge_passage: Callable[[str], dict[str, Any]] | None = None  # a passage id → its bridge mapping
     modern: Callable[[str], list[dict[str, Any]]] | None = None  # a query → typed modern records
     modern_terms: list[str] = field(default_factory=list)  # modern disease / drug names
     ancient_terms: list[str] = field(default_factory=list)  # historical terms of the terminology
@@ -69,23 +73,32 @@ class AuditContext:
 
 
 def decompose(text: str) -> list[dict[str, Any]]:
-    """Atomic claims: sentences, split at the inference connectives (premise / conclusion)."""
+    """Atomic claims: sentences, split at the inference connectives (premise / conclusion); a quotation is never split
+    (its 。？ and 所以 are the source's, not the claim's)."""
+    quotes: list[str] = []
+
+    def hide(m: re.Match[str]) -> str:
+        quotes.append(m.group(0))
+        return f"\ue000{len(quotes) - 1}\ue001"
+
+    masked = re.sub(r"[「“][^」”]*[」”]", hide, text)
+    restore = lambda s: re.sub("\ue000(\\d+)\ue001", lambda m: quotes[int(m.group(1))], s)  # noqa: E731
     out: list[dict[str, Any]] = []
-    for m in SENTENCE.finditer(text):
+    for m in SENTENCE.finditer(masked):
         sent = m.group(0).strip()
-        if len(sent) < 2:
+        if len(sent) < 2 or CAVEAT.search(sent.strip("。；;")):
             continue
         parts = INFER.split(sent)
         if len(parts) == 1:
-            out.append({"text": sent, "role": "statement"})
+            out.append({"text": restore(sent), "role": "statement"})
             continue
         head = parts[0].strip("，, ")
         if head:
-            out.append({"text": head, "role": "premise"})
+            out.append({"text": restore(head), "role": "premise"})
         for k in range(1, len(parts), 2):
             body = (parts[k] + parts[k + 1]).strip("，, ") if k + 1 < len(parts) else parts[k]
             if body:
-                out.append({"text": body, "role": "conclusion", "connective": parts[k]})
+                out.append({"text": restore(body), "role": "conclusion", "connective": parts[k]})
     for k, c in enumerate(out, 1):
         c["id"] = f"C{k}"
     return out
@@ -135,7 +148,7 @@ def _check(name: str, ok: bool | None, detail: str = "", **extra: Any) -> dict[s
 def check_historical(c: dict[str, Any], ctx: AuditContext) -> tuple[AuditVerdict, list[dict[str, Any]]]:
     checks = []
     books = []
-    for title in WORK.findall(c["text"]):
+    for title in WORK.findall(QUOTE.sub("", c["text"])):  # a title inside a quote is the quoted text's, not the claim's
         bid = ctx.work_of(title)
         checks.append(_check("source_exists", bid is not None, f"《{title}》" + ("" if bid else " is not in the corpus")))
         if bid:
@@ -172,7 +185,7 @@ GLOSS = re.compile(r"者，?([^。，；]{2,24}?)(?:也|之谓)|(?:是指|指的
 def check_interpretive(c: dict[str, Any], ctx: AuditContext) -> tuple[AuditVerdict, list[dict[str, Any]]]:
     verdict, checks = check_historical(c, ctx) if (QUOTE.search(c["text"]) or WORK.search(c["text"])) else (V.INSUFFICIENT_EVIDENCE, [])
     glossators = [g for g in ctx.glossators if g in c["text"]]
-    cited = glossators or WORK.findall(c["text"])
+    cited = glossators or WORK.findall(QUOTE.sub("", c["text"]))
     checks.append(_check("interpretation", bool(cited), "cites " + "、".join(cited) if cited else
                          "an interpretation with no gloss or commentator cited: one reading among others"))
     if verdict == V.UNSUPPORTED:
@@ -206,7 +219,13 @@ def check_mapping(c: dict[str, Any], ctx: AuditContext) -> tuple[AuditVerdict, l
     if ctx.bridge is None:
         return V.INSUFFICIENT_EVIDENCE, checks
     quoted = QUOTE.findall(c["text"])
-    r = ctx.bridge(quoted[0] if quoted else c["text"])
+    hits = ctx.locate(quoted[0], None) if quoted else []
+    if hits and ctx.bridge_passage is not None:  # the quote is the passage's: map the passage it comes from
+        r = ctx.bridge_passage(hits[0])
+        c["passages"] = hits[:1]
+        checks.append(_check("exact_span", True, f"「{quoted[0][:20]}…」 in {hits[0]}"))
+    else:
+        r = ctx.bridge(quoted[0] if quoted else c["text"])
     named = [x for x in r.get("candidates", []) if x["label"].split("（")[0] in c["text"] or x.get("en", "").lower() in c["text"].lower()]
     if not named:
         checks.append(_check("mapping", None, "the bridge scores no profile named in the claim"))

@@ -1,0 +1,16 @@
+id: S08
+key: tcm_normalization
+name: 名称规范 TCM Normalization
+version: 1.0.0
+owner: classical_scholar
+description: The names a thing went by over time (本名, 异名, 避讳改名), which prevailed when, and the curated term behind them.
+inputs: [terms]
+outputs: [names]
+dependencies: []
+requires_llm: none
+deterministic_steps: [lexicon forms, preferred name by period, switch points, stated equations]
+llm_steps: []
+calls:
+  - {tool: study.names, for_each: terms, limit: 2, args: {term: "{term}"}}
+validators: [each equation is a quoted statement of a witness]
+evaluation: {suites: [names]}

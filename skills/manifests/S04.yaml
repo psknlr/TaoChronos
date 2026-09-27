@@ -1,0 +1,16 @@
+id: S04
+key: structure_clause
+name: 条文结构 Structure & Clause
+version: 1.0.0
+owner: classical_scholar
+description: The clause structure of a passage — condition, findings, pulse, pattern, treatment, formula — as roles.
+inputs: [passages]
+outputs: [clauses]
+dependencies: [S01]
+requires_llm: none
+deterministic_steps: [clause roles by rules over the lexicon and the clause grammar of the classics]
+llm_steps: []
+calls:
+  - {tool: study.clause, for_each: passages, limit: 2, args: {passage_id: "{passage_id}"}}
+validators: [roles cover the clause without overlap]
+evaluation: {suites: [clause]}

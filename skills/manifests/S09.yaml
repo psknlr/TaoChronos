@@ -1,0 +1,17 @@
+id: S09
+key: historical_evolution
+name: 源流演变 Historical Evolution
+version: 1.0.0
+owner: classical_scholar
+description: How a term was used period by period — first attestations, curated senses and their shares, change points.
+inputs: [terms]
+outputs: [term_history, senses]
+dependencies: []
+requires_llm: none
+deterministic_steps: [attestations by period, sense assignment by cues, change points by permutation]
+llm_steps: []
+calls:
+  - {tool: study.term, for_each: terms, limit: 2, args: {term: "{term}"}}
+  - {tool: study.senses, for_each: terms, limit: 2, args: {term: "{term}"}}
+validators: [shares need adequate period coverage]
+evaluation: {suites: [senses, temporal]}

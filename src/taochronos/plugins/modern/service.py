@@ -113,8 +113,11 @@ class ModernEvidence:
                                    retracted="Retracted Publication" in pts)
                 records.append(rec.to_dict())
         except PubMedError as exc:
-            errors.append(str(exc))
-            source = "unavailable"
+            if "offline and not cached" in str(exc):
+                source = "offline"
+            else:
+                errors.append(str(exc))
+                source = "unavailable"
         records += self.curated(subject, disease)
         return {"subject": subject, "disease": disease, "query": q, "source": source, "records": records,
                 "summary": summarize(records), "safety": self.safety(subject), "errors": errors,

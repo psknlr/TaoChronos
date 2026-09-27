@@ -1212,6 +1212,50 @@ def cmd_rwd(args: argparse.Namespace) -> None:
     _out(service.ask(args.target, args.db, judge=_judge(args, harness)))
 
 
+def cmd_ask(args: argparse.Namespace) -> None:
+    """V2: a question compiled into a workflow of skills (S01–S15) owned by four core agents, run as a DAG with every step
+    an artifact in the run's workspace (resumable), and answered with statements the critic audits."""
+    from .engine.workflow import ask
+
+    _default_profile(args)
+    harness = _harness(args)
+    if args.online:
+        harness.capabilities.get("modern").online = True
+    judge = _judge(args, harness)
+    harness.capabilities.get("study").judge = judge
+    r = ask(harness, args.question, page=args.page, judge=judge, run_id=args.run, resume=not args.fresh, plan_only=args.plan_only)
+    if args.plan_only:
+        _out(r["plan"])
+        return
+    _out({k: r[k] for k in ("run", "workspace", "plan", "steps")} if args.json else r["report"])
+
+
+def cmd_skills(args: argparse.Namespace) -> None:
+    """The skill manifests (S01–S15) and the core agents, checked against the tool registry."""
+    from .engine.workflow import load_core_agents, load_manifests, validate_registry
+
+    harness = _harness(args)
+    skills = load_manifests(harness.home / "skills" / "manifests")
+    agents = load_core_agents(harness.home / "agents" / "core")
+    errors = validate_registry(skills, agents, harness.scheduler.registry, set(harness.specs))
+    if args.json:
+        _out({"skills": [m.to_dict() for m in skills.values()], "agents": [a.__dict__ for a in agents.values()], "errors": errors})
+        return
+    lines = ["# 技能与核心智能体", ""]
+    for a in agents.values():
+        lines.append(f"## {a.name}（{a.id}）")
+        lines.append(a.description)
+        for sid in a.skills:
+            m = skills.get(sid)
+            if m:
+                tools = "、".join(dict.fromkeys(c["tool"] for c in m.calls))
+                lines.append(f"- {m.id} {m.name} v{m.version}：LLM {m.requires_llm}；依赖 {m.dependencies or '—'}；工具 {tools}")
+        lines.append(f"- 委派：{'、'.join(a.delegates)}；权限：{'、'.join(a.permissions)}")
+        lines.append("")
+    lines.append("注册检查：" + ("通过" if not errors else "；".join(errors)))
+    _out("\n".join(lines))
+
+
 def _has_module(name: str) -> bool:
     import importlib.util
 
@@ -1271,6 +1315,21 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--profile", help="default: full-corpus when the corpus store exists")
     sp.add_argument("--provider", help=argparse.SUPPRESS)
     _llm_args(sp)
+    sp = sub.add_parser("ask", help="V2: a question → a workflow of skills S01–S15 (four core agents) → an answer whose "
+                                    "statements are audited; every step an artifact in a resumable workspace")
+    sp.set_defaults(fn=cmd_ask)
+    sp.add_argument("question")
+    sp.add_argument("--page", help="a page image or OCR output for S02")
+    sp.add_argument("--plan-only", action="store_true", help="show the compiled workflow without running it")
+    sp.add_argument("--run", help="the run id (default: from the question and plan; the same question resumes)")
+    sp.add_argument("--fresh", action="store_true", help="redo every step instead of reading the workspace")
+    sp.add_argument("--online", action="store_true", help="consult PubMed in S13")
+    sp.add_argument("--json", action="store_true")
+    sp.add_argument("--profile")
+    sp.add_argument("--provider", help=argparse.SUPPRESS)
+    _llm_args(sp)
+    sp = add("skills", cmd_skills, "the skill manifests S01–S15 and the four core agents, checked against the tool registry")
+    sp.add_argument("--json", action="store_true")
     sp = sub.add_parser("audit", help="证据审计 (S15): a claim checked atom by atom against the witnesses, the bridge, modern "
                                       "evidence and the presentism guard (SUPPORTED … UNSUPPORTED)")
     sp.set_defaults(fn=cmd_audit)

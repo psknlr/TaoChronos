@@ -459,3 +459,120 @@ def bridge(ctx: EvalContext) -> SuiteResult:
             b.study.judge = None
     return SuiteResult("bridge", metrics, details, notes=notes)
 
+
+def audit(ctx: EvalContext) -> SuiteResult:
+    """AuditEval (S15): claims against the verdict and the claim kinds the audit must give (gold/audit.yaml: verbatim and
+    fabricated quotes, wrong works, equations and bounded comparisons, inference leaps and hypotheses, clinical advice,
+    glosses, caveats), and the safety flags."""
+    h = ctx.default
+    a = h.capabilities.get("audit")
+    a.study.judge = None
+    gold = ctx.gold("audit")
+    details: list[dict[str, Any]] = []
+    right = kinds_right = 0
+    confusion: dict[str, int] = {}
+    for row in gold["claims"]:
+        r = a.audit(row["text"], modern=False)
+        got_kinds = [c["kind"] for c in r["claims"]]
+        ok, kok = r["verdict"] == row["verdict"], got_kinds == row["kinds"]
+        right += ok
+        kinds_right += kok
+        if not ok:
+            key = f"{row['verdict']}→{r['verdict']}"
+            confusion[key] = confusion.get(key, 0) + 1
+        if not ok or not kok:
+            details.append({"claim": row["text"], "want": row["verdict"], "got": r["verdict"], "kinds": got_kinds, "want_kinds": row["kinds"]})
+    safe_ok = 0
+    for row in gold["safety"]:
+        got = sorted(x["material"] for x in a.audit(row["text"], modern=False)["safety"])
+        safe_ok += got == sorted(row["materials"])
+        if got != sorted(row["materials"]):
+            details.append({"safety": row["text"], "want": row["materials"], "got": got})
+    n = len(gold["claims"])
+    metrics = {"verdict_accuracy": round(right / n, 3), "kind_accuracy": round(kinds_right / n, 3), "claims": n,
+               "confusions": confusion, "safety": f"{safe_ok}/{len(gold['safety'])}",
+               "false_supported": sum(1 for d in details if d.get("got") == "SUPPORTED")}
+    return SuiteResult("audit", metrics, details, notes=["dev cases written with the checks (gold/audit.yaml); offline: no modern evidence"])
+
+
+def modern(ctx: EvalContext) -> SuiteResult:
+    """ModernEval (S13–S14): evidence typing from publication types, titles and MeSH (gold/modern.yaml), the cross-level
+    guard, and the RWD compiler on the synthetic OMOP database — the planted association recovered, every query checked."""
+    import tempfile
+    from pathlib import Path
+
+    from ..plugins.modern import rwd
+    from ..plugins.modern.evidence_types import type_record
+    from ..protocol.modern import EvidenceType, cross_level
+    from ..verification.audit import claim_level
+
+    gold = ctx.gold("modern")
+    details: list[dict[str, Any]] = []
+    typed = 0
+    for row in gold["typing"]:
+        et, _, rule = type_record(row["pubtypes"], row["title"], "", row.get("mesh"))
+        typed += et.value == row["want"]
+        if et.value != row["want"]:
+            details.append({"title": row["title"], "want": row["want"], "got": et.value, "rule": rule})
+    guarded = 0
+    for row in gold["guard"]:
+        carries = cross_level(claim_level(row["claim"]), EvidenceType(row["type"])) is None
+        guarded += carries == row["carries"]
+        if carries != row["carries"]:
+            details.append({"claim": row["claim"], "type": row["type"], "want": row["carries"], "got": carries})
+    with tempfile.TemporaryDirectory() as tmp:
+        db = Path(tmp) / "omop.sqlite"
+        rwd.synthesize(db)
+        import sqlite3
+
+        con = sqlite3.connect(db)
+        spec = rwd.spec_from_question(gold["rwd"]["question"], con)
+        con.close()
+        sql, params = rwd.compile_spec(spec)
+        res = rwd.run(spec, db)
+    rr = (res.get("risk_ratio") or {}).get("estimate")
+    direction = None if rr is None else ("lower" if rr < 1 else "higher")
+    metrics = {"typing_accuracy": round(typed / len(gold["typing"]), 3), "typing_cases": len(gold["typing"]),
+               "guard_accuracy": round(guarded / len(gold["guard"]), 3), "guard_cases": len(gold["guard"]),
+               "rwd": {"sql_checks": rwd.check_sql(sql, params) == [], "risk_ratio": res.get("risk_ratio"),
+                       "planted_direction_recovered": direction == gold["rwd"]["planted_direction"],
+                       "bad_sql_refused": all(rwd.check_sql(q, []) for q in ("DROP TABLE person", "SELECT * FROM secrets",
+                                                                            "SELECT 1 FROM person WHERE year_of_birth = '1950'"))}}
+    return SuiteResult("modern", metrics, details, notes=["dev cases (gold/modern.yaml); PubMed is not queried by the suite",
+                                                          "RWD on synthetic people: a check of the compiler, not a finding"])
+
+
+def workflow(ctx: EvalContext) -> SuiteResult:
+    """WorkflowEval (V2 runtime): the registry of skills and core agents is valid; questions compile into the skills they
+    need and not those they do not (gold/workflow.yaml); one question runs end to end, resumes from its workspace, and its
+    statements pass the audit without an UNSUPPORTED verdict."""
+    from ..engine.workflow import WorkflowCompiler, ask, load_core_agents, load_manifests, validate_registry
+
+    h = ctx.default
+    skills = load_manifests(ctx.home / "skills" / "manifests")
+    agents = load_core_agents(ctx.home / "agents" / "core")
+    errors = validate_registry(skills, agents, h.scheduler.registry, set(h.specs))
+    gold = ctx.gold("workflow")
+    details: list[dict[str, Any]] = []
+    ok = 0
+    compiler = WorkflowCompiler(skills, h)
+    for row in gold["questions"]:
+        plan = compiler.plan(row["q"])
+        missing = sorted(set(row["need"]) - set(plan.skills))
+        extra = sorted(set(row["absent"]) & set(plan.skills))
+        ok += not missing and not extra
+        if missing or extra:
+            details.append({"question": row["q"], "missing": missing, "unwanted": extra, "plan": plan.skills})
+    h.capabilities.get("study").judge = None
+    run = ask(h, gold["questions"][0]["q"], run_id="eval", resume=False)
+    again = ask(h, gold["questions"][0]["q"], run_id="eval")
+    audit_step = next(s for s in run["steps"] if s["skill"] == "S15")
+    verdicts = [r["result"]["verdict"] for r in audit_step["results"] if r["tool"] == "audit.claim"]
+    metrics = {"registry_errors": len(errors), "skills": len(skills), "agents": len(agents),
+               "plans_right": f"{ok}/{len(gold['questions'])}",
+               "run": {"steps": len(run["steps"]), "calls": sum(s["calls"] for s in run["steps"]),
+                       "resumed_all": all(s["cached"] == s["calls"] for s in again["steps"]),
+                       "statements": len(verdicts), "verdicts": {v: verdicts.count(v) for v in sorted(set(verdicts))}}}
+    return SuiteResult("workflow", metrics, details + [{"registry_error": e} for e in errors],
+                       notes=["dev questions (gold/workflow.yaml); the run uses the demo corpus and the rules only"])
+

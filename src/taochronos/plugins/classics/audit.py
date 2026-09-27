@@ -104,6 +104,7 @@ class AuditService:
         return AuditContext(
             normalize=self.study.normalize, work_of=self.work_of, locate=self.locate, guard=self.guard,
             bridge=(lambda text: bridge.map(text)) if bridge is not None else None,
+            bridge_passage=(lambda pid: bridge.map(passage_id=pid)) if bridge is not None else None,
             modern=(lambda text: mod.for_claim(text)) if mod is not None else None,
             modern_terms=modern_terms, ancient_terms=sorted(set(terms)),
             safety=getattr(self._modern(), "safety_table", {}) if self._modern() is not None else {},  # local: always read
