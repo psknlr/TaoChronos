@@ -64,9 +64,10 @@ and decide.
 > conversation as in ChatGPT or Claude.  The model answers through all 73 of TaoChronos's tools, and the page checks every
 > `[[passage_id]]` it cites word for word (✓ matches the passage · ≠ misquoted · ✕ no such passage); evidence, research runs
 > and a tool console (any tool, no model needed) sit in the side panel.  In the browser TaoChronos runs with Pyodide on the
-> **要籍语料**: of the **350 key works** ranked by how the tradition cited them ([list](corpus/catalog/canon.yaml)), the 108 with
-> an openly licensed witness (114 witnesses, 4.1 million characters; the 素问, 灵枢, 伤寒论 and 金匮 whole, with two or
-> three witnesses to collate; CC BY-SA 4.0, [sources](corpus/web/ATTRIBUTION.md)).  For **all the books**, build the full corpus and
+> **要籍语料**: 348 of the **350 key works** ranked by how the tradition cited them ([list](corpus/catalog/canon.yaml))
+> (368 witnesses, 8.5 million characters; the first classics whole, the 素问, 灵枢, 伤寒论 and 金匮 with two or three
+> witnesses to collate, the others in chapters; [sources and terms](corpus/web/ATTRIBUTION.md)), kept in the browser after the
+> first visit so that it opens again in seconds.  For **all the books**, build the full corpus and
 > run `taochronos serve`, then connect under Settings → 运行环境 in one step (the browser remembers it; a server on another
 > machine is reached with its access token).  See [docs/web.md](docs/web.md).
 
@@ -270,12 +271,14 @@ See [docs/data.md](docs/data.md) and [ADR 0003](docs/adr/0003-corpus-store-and-s
   外台秘要 lead; each of the 350 is cited by at least two later works.  It reads what this corpus quotes — late works have had
   less time to be cited, lost works are not in it.  The `classics.canon` tool queries the list in any corpus and says
   whether the current one holds each work's text.
-- **要籍语料** (`taochronos web pack` → [`corpus/web/`](corpus/web/ATTRIBUTION.md)): the **108 of the 350 with an openly licensed
-  witness** (114 witnesses, 66 000 passages, 4.1 million characters): up to three witnesses for the first ten (CMETA's
-  collated editions first, then the most complete), whole within 350 000 characters; the others by rank within 50 000 /
-  25 000 / 12 000 characters, as whole chapters spread through the book; passage ids as in the full corpus.  The witnesses
-  of the other 242 are mostly for local research only and are not published.  The site ships the store without its
-  full-text index (about 8.6 MB); the browser builds the index once (about ten seconds) and keeps it.
+- **要籍语料** (`taochronos web pack` → [`corpus/web/`](corpus/web/ATTRIBUTION.md)): **348 of the 350** (368 witnesses,
+  135 000 passages, 8.5 million characters): the best witness of each (the openly licensed first — CMETA's collated
+  editions, Kanripo, Wikisource, McGill — then 笈成 and its derivatives; the most complete within a source), up to three for
+  the first ten, whole within 350 000 characters; the others by rank within 50 000 / 25 000 / 12 000 characters, as whole
+  chapters spread through the book; passage ids as in the full corpus.  The two known only through sources that forbid
+  passing their texts on are listed without text.  The site ships the store xz-compressed without its full-text index
+  (10.8 MB); the browser unpacks it as it downloads, indexes the first 40 works before it answers and the rest in the
+  background, and keeps the result in IndexedDB ([ADR 0013](docs/adr/0013-canon-corpus-in-the-browser.md)).
 
 ## 4. Study: mining the classics on their own terms
 
@@ -549,7 +552,7 @@ model Tao-R1), published by IMPF-AI — TaoChronos's tools and evidence discipli
 the page and the instructions name (an endpoint not in the list can be set by hand).  The conversation runs in the browser
 on the default service (no key; the page shows it as 道乃久默认服务 / Tao-R1 and names no vendor) or with your own key,
 straight to the provider or through `taochronos serve`; TaoChronos
-executes the tools in the browser (Pyodide, the 要籍语料: the open texts of 108 of the 350 key works) or under
+executes the tools in the browser (Pyodide, the 要籍语料: 348 of the 350 key works) or under
 `taochronos serve` (the full corpus, all the books; the browser remembers the server).  The model acts as an
 agent with read and analysis permissions only, sees sixteen common tools directly and the rest through a catalog;
 MiniMax-M3's `reasoning_details` and tool calls are replayed verbatim turn after turn, and Claude is called through the
@@ -688,10 +691,12 @@ docs/                      study, task specification, architecture, agents, disc
 
 - **The repository holds catalogues, lock files, domain data and code only**; transcriptions stay in the local data
   directory (`.taochronos/`, git-ignored) and are rebuilt reproducibly by `corpus fetch / unpack / ingest`.  The one
-  exception is the web client's **要籍语料** (`corpus/web/`): the witnesses of the ranked works from openly licensed sources
-  (Kanripo and Wikisource CC BY-SA 4.0, CMETA CC BY 4.0, McGill public domain), written by `taochronos web pack` and
-  published as a whole under CC BY-SA 4.0 with per-text attribution ([ATTRIBUTION.md](corpus/web/ATTRIBUTION.md)); nothing
-  from a source kept to local research (笈成, 東亜医学協会, the web collections, Hugging Face) is in it.
+  exception is the web client's **要籍语料** (`corpus/web/`): the texts of the 350 ranked works (all in the public domain),
+  written by `taochronos web pack`.  The openly licensed witnesses (Kanripo and Wikisource CC BY-SA 4.0, CMETA CC BY 4.0,
+  McGill public domain) are used under their licences; the transcriptions of 笈成 and its derivatives declare no licence and
+  their punctuation and collation are their editors' — IMPF-AI decided to publish them with the site, for study; nothing from
+  a source whose terms forbid passing it on (東亜医学協会, a Hugging Face dataset under a proprietary licence) is in it.
+  Per-text sources and terms: [ATTRIBUTION.md](corpus/web/ATTRIBUTION.md).
 - **Conversation records** (`data/chat-logs/`): during the test period of 道乃久默认服务, the turns of visitors who agreed to
   be recorded (no key, settings or address), held by the relay and collected hourly into this repository.  It must stay
   private; move the directory out before it is ever made public.  The MiniMax key exists only as an encrypted secret of

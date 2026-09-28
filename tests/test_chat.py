@@ -290,9 +290,15 @@ def test_the_site_build_is_deterministic_and_complete(tmp_path):
         assert (site / rel).is_file(), rel
     manifest = json.loads((site / "runtime" / "manifest.json").read_text())
     assert manifest["pyodide_base"].startswith("https://cdn.jsdelivr.net/pyodide/") and info["files"] == manifest["files"]
-    if (ROOT / "corpus" / "web" / "passages.jsonl.gz").is_file():  # the 要籍语料: a store without its index, gzipped
-        corpus = manifest["files"]["corpus.sqlite.gz"]
-        assert corpus["profile"] == "web-canon" and corpus["bytes"] == (site / "runtime" / "corpus.sqlite.gz").stat().st_size
+    if (ROOT / "corpus" / "web" / "passages.jsonl.gz").is_file():  # the 要籍语料: a store without its index, xz-compressed
+        corpus = manifest["files"]["corpus.sqlite.xz"]
+        assert corpus["profile"] == "web-canon" and corpus["bytes"] == (site / "runtime" / "corpus.sqlite.xz").stat().st_size
+        assert corpus["encoding"] == "xz" and corpus["core_rank"] == 40 and corpus["core_passages"] < corpus["passages"]
+    # what the runtime will report, known before it loads: the page asks the model at once
+    boot = json.loads((site / "runtime" / "boot.json").read_text(encoding="utf-8"))
+    assert boot["info"]["name"] == "TaoChronos" and boot["info"]["runtime"] == "browser" and boot["info"]["system_prompt"]
+    core, every = ({t["name"] for t in boot["catalogs"][mode]["tools"]} for mode in ("core", "all"))
+    assert "classics__search" in core and core - {"taochronos_catalog", "taochronos_call"} < every  # core: some, with the catalog
     html = (site / "index.html").read_text(encoding="utf-8")
     assert not re.search(r'(src|href)="/', html)  # every path is relative: the site lives under /TaoChronos/
     # the texts' credits travel with the site (the repository is private); no conversation record can enter it

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ from taochronos.bootstrap import Harness
 from taochronos.kernel import MemoryEventStore
 
 HOME = Path(__file__).resolve().parents[1]
+os.environ.setdefault("TAOCHRONOS_WEB_XZ_PRESET", "1")  # the site's corpus compressed fast: tests read it, nobody downloads it
 QUESTION = "消渴的概念如何随时代演变？宋代以前治疗消渴的哪些知识后来被遗忘？"
 
 

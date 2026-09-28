@@ -2,9 +2,9 @@
 
 **道乃久** (TaoChronos; model **Tao-R1**; published by 医哲未来人工智能研究院, IMPF-AI): a model of your choice that answers
 from the classics through TaoChronos's tools, with every quotation checked against its source.  Published at
-**https://chat.impf.ai/** (GitHub Pages under IMPF-AI's domain; the old address redirects there), where it runs in the browser on the **要籍语料** — the openly licensed texts of the
-350 key works ([要籍语料](#要籍语料--the-browsers-corpus)); the same page is served by `taochronos serve`, which brings all the
-books of the full corpus into it ([接入全部古籍](#接入全部古籍)).
+**https://chat.impf.ai/** (GitHub Pages under IMPF-AI's domain; the old address redirects there), where it runs in the browser on the **要籍语料** — the texts of the 350 key works,
+the first whole, the rest in excerpts ([要籍语料](#要籍语料--the-browsers-corpus)); the same page is served by
+`taochronos serve`, which brings all the books of the full corpus into it ([接入全部古籍](#接入全部古籍)).
 
 ```
             browser                                         your machine (optional)
@@ -25,7 +25,7 @@ run in one of two places, with the same Python module (`taochronos.chat`) behind
 
 | Runtime | Where | Corpus | Start |
 |---|---|---|---|
-| **浏览器内** (in the browser) | Pyodide (CPython on WebAssembly) in a Web Worker | the 要籍语料: the open texts of 108 of the 350 key works (a site built without the pack: the demonstration corpus, 23 short excerpts) | nothing: the page loads it (about 22 MB the first time, then kept) |
+| **浏览器内** (in the browser) | Pyodide (CPython on WebAssembly) in a Web Worker | the 要籍语料: 348 of the 350 key works, the first whole, the rest in excerpts (a site built without the pack: the demonstration corpus, 23 short excerpts) | nothing: the page loads it (about 20 MB the first time, then kept in the browser) |
 | **本地服务 / 远程服务** (a TaoChronos server) | `taochronos serve` on your machine, or on another one with a token | the full corpus you built (`corpus ingest …`; this project's build: 966 books, 2.05 million passages, 123 million characters), else the demonstration corpus | `pip install -e . && taochronos serve` |
 
 The full corpus is never part of the site: it is built from its sources on your machine, under their licences.
@@ -45,8 +45,9 @@ reports `agent_name`, `assistant_name` and `publisher`.
 
 ## 要籍语料 — the browser's corpus
 
-The published site cannot carry all the books ([接入全部古籍](#接入全部古籍)), but it can carry those whose transcriptions
-are openly licensed.  Two steps choose them:
+The published site cannot carry all the books ([接入全部古籍](#接入全部古籍)): the 350 key works alone are some 57 million
+characters, far more than a browser can download and index.  It carries every one of them, the first whole and the rest in
+excerpts.  Two steps choose them:
 
 1. **要籍** — `taochronos study canon --write-catalog` ranks the works of the full corpus by the citation network of the
    whole store (who cites which book, 《书名》 and 经曰, resolved to works): score = 10·log₂(1 + distinct works citing it, not
@@ -54,27 +55,46 @@ are openly licensed.  Two steps choose them:
    first 350 of 759 are written to `corpus/catalog/canon.yaml` (metadata only).  It is what this corpus quotes, not a verdict:
    late works have had less time to be cited, lost works are not in it.  `classics.canon` — offered to the model directly —
    queries the list in any corpus and says whether the current one holds each work.
-2. **要籍语料** — `taochronos web pack` takes, for each of the 350 with a witness under an open licence (汉籍仓库 and 维基文库
-   CC BY-SA 4.0, CMETA CC BY 4.0, McGill public domain), the best witness (CMETA's collated editions first, then the most
-   complete) — up to three for the first ten, so that the 素问, 灵枢, 伤寒论 and 金匮要略 can be collated in the browser —
+2. **要籍语料** — `taochronos web pack` takes, for each of the 350, the best witness (`WEB_SOURCES`: the openly licensed first
+   — CMETA's collated editions, 汉籍仓库, 维基文库, McGill — then 笈成 and the collections transcribed from it; the most complete
+   within a source) — up to three for the first ten, so that the 素问, 灵枢, 伤寒论 and 金匮要略 can be collated in the browser —
    whole within 350 000 characters for the first ten; then 50 000, 25 000 and 12 000 by rank, as whole chapters spread
-   through the book.  Result: 108 works, 114 witnesses, 66 422 passages, 4.07 million characters (the 素问, 灵枢, 伤寒论
-   and 金匮 whole), with the passage ids of the full corpus, in `corpus/web/` (passages.jsonl.gz, books.json,
-   [ATTRIBUTION.md](../corpus/web/ATTRIBUTION.md); the pack under CC BY-SA 4.0).  The other 242 key works are held only by
-   sources kept to local research and are not published.
+   through the book.  Result: 348 works, 368 witnesses, 135 083 passages, 8.5 million characters, with the passage ids of
+   the full corpus, in rank order, in `corpus/web/` (passages.jsonl.gz, books.json, [ATTRIBUTION.md](../corpus/web/ATTRIBUTION.md)).
+   The texts are all in the public domain.  The transcriptions of 笈成 and its derivatives declare no licence and their
+   punctuation and collation are their editors'; IMPF-AI decided to publish them with the site (2026-09-28), and their
+   records say so.  Sources whose terms forbid passing their transcriptions on (`NEVER_PACKED`: 東亜医学協会, a Hugging Face
+   dataset under a proprietary licence) are never packed; the two works known only through them (扁鹊仓公列传, 伤寒论集注) are
+   listed without text.
 
-`taochronos web build` turns the pack into a corpus store — the schema of the full corpus — without its full-text index,
-gzipped (`runtime/corpus.sqlite.gz`, about 8.6 MB instead of 21).  On the first visit the worker downloads it (with
-progress), builds the index (about ten seconds; 66 000 passages) and keeps the indexed store in the browser's cache; later
-visits open it at once.  The runtime uses the `web-canon` profile; `info.corpus` says `kind: canon`, `label: 要籍语料`, and
-how many of the 350 it holds.  The standing instructions tell the model which corpus it reads, that excerpted books may
-lack what the whole book has, and where the rest is.
+`taochronos web build` turns the pack into a corpus store — the schema of the full corpus — without its full-text index
+(the index is two thirds of a download that compresses badly), xz-compressed (`runtime/corpus.sqlite.xz`: 10.8 MB for 90;
+gzip would be 17).  Loading is arranged for the wait a visitor sees:
+
+* **In parallel** — the worker downloads the corpus while Pyodide starts, and unpacks it (xzwasm, `web/js/vendor/`) into
+  the runtime's file system as the bytes arrive.
+* **The first-ranked first** — on the first visit the worker indexes the passages of the works ranked up to 40 (the pack is
+  in rank order; 70 648 passages) before the runtime answers, and the rest in the background, a slice at a time between the
+  questions it answers (`index_store(phase=…, limit=…)`, resumable).  The text of every book is there from the start; only
+  the search of the later ones waits, a few seconds.  The status pill shows “其余要籍检索索引 n%”.
+* **Kept in the browser** — once it is all indexed, the store is kept in IndexedDB (in 16 MB parts; the head written last,
+  so that a half-kept store is never read), with the runtime archives.  IndexedDB, unlike the Cache API, is there on an
+  http:// page too — the site is served over http until its certificate is issued — so a later visit downloads and indexes
+  nothing: Pyodide, then the kept store, then the tools, in about 6 seconds.
+* **The conversation starts at once** — the build writes `runtime/boot.json`: what the runtime will report once loaded (its
+  info with the standing instructions, and its tool catalogs), computed on the same code and corpus.  The page puts the first
+  question to the model with it while the runtime loads; the tools the model calls wait for the runtime.
+
+Measured in Chromium on a fast machine: first visit ready in 15 s (the rest indexed 10 s later), a return visit in 6 s; on a
+connection throttled to 1 MB/s and 150 ms, 40 s and 16 s.  The runtime uses the `web-canon` profile; `info.corpus` says
+`kind: canon`, `label: 要籍语料`, and how many of the 350 it holds.  The standing instructions tell the model which corpus it
+reads, that excerpted books may lack what the whole book has, and where the rest is.
 
 ## 接入全部古籍
 
-The published site runs the 要籍语料 in the browser.  All the books — the full corpus — cannot be put on the site: the store is about 2.2 GB (a published GitHub Pages site may be no larger than 1 GB; git refuses files over 100 MB), its sources come under
-their own licences (some, such as 笈成, are provided by the user and may not be redistributed), and the project keeps no
-bulk texts in git.  So the full corpus reaches the page through `taochronos serve`, wherever it runs:
+The published site runs the 要籍语料 in the browser.  All the books — the full corpus — cannot be put on the site: the store is about 2.2 GB (a published GitHub Pages site may be no larger than 1 GB; git refuses files over 100 MB), a browser could
+neither download nor index it, some of its sources may not be redistributed, and the project keeps no bulk texts in git
+beyond the site's pack.  So the full corpus reaches the page through `taochronos serve`, wherever it runs:
 
 1. **Build the corpus once** on the machine that will serve it — the commands under “接入全量语料” in the
    [README](../README.md#二快速开始) (`taochronos corpus fetch … && taochronos corpus ingest …`; `corpus status` counts
@@ -271,14 +291,14 @@ taochronos web build -o _site --pyodide cdn # without Pyodide: the page loads it
 python -m http.server -d _site 8000
 ```
 
-The site (about 24 MB) holds: the client (`web/`), `runtime/taochronos.zip` (the package), `runtime/home.zip`
+The site (about 26 MB) holds: the client (`web/`), `runtime/taochronos.zip` (the package), `runtime/home.zip`
 (profiles, domain packs, the demonstration corpus, catalogs with the 要籍 list, agents, skills, gold sets; the lexicon
-harvested from the full corpus is left out), `runtime/corpus.sqlite.gz` (the 要籍语料 as a store without its index, about
-8.6 MB; built from `corpus/web` by the build, the same bytes for the same pack), `runtime/manifest.json` (sizes and SHA-256;
-the worker caches the archives by content, and the corpus once indexed),
-`providers.json` (from `taochronos.chat.providers`) and, by default, the Pyodide core with the PyYAML and SQLite
-wheels, checksums verified against `pyodide-lock.json`.  Archives are deterministic.  Every path is relative, so the
-site works under `/TaoChronos/`.
+harvested from the full corpus is left out), `runtime/corpus.sqlite.xz` (the 要籍语料 as a store without its index, 10.8 MB;
+built from `corpus/web` by the build, the same bytes for the same pack; `TAOCHRONOS_WEB_XZ_PRESET` trades size for build
+time, the tests use 1), `runtime/boot.json` (the runtime's info and catalogs, for the conversation to start while it
+loads), `runtime/manifest.json` (sizes and SHA-256; the worker keeps the archives by content in IndexedDB, and the corpus
+once indexed), `providers.json` (from `taochronos.chat.providers`) and, by default, the Pyodide core with the PyYAML and
+SQLite wheels, checksums verified against `pyodide-lock.json`.  Archives are deterministic.  Every path is relative.
 
 ## Tests
 
@@ -288,9 +308,11 @@ their sessions, the V2 workflow, every server endpoint, CORS and Private Network
 (the server's own pages on any address), the access token (refused without it, the proxy too; generated for any address
 but loopback), the proxy (streaming, allow-list, the SDK path form, `--env-keys`, `--allow-host`), background research, the
 site build (with the corpus store).  `tests/test_web_corpus.py` — the 要籍 list (ranked, metadata only, the classics first,
-nothing modern), the choice of witnesses, budgets kept as whole chapters spread through a book, the pack → a store with
-the same bytes → indexed once → read by the harness, and the shipped pack under the `web-canon` profile (only open
-sources; a 宋本 found for a punctuated 伤寒论 clause; `classics.canon` for what it lacks).
+nothing modern), the choice of witnesses (openly licensed first, never a source in `NEVER_PACKED`), budgets kept as whole
+chapters spread through a book, the pack → a store with the same bytes → indexed once → read by the harness, the index in
+two phases (the first-ranked works first, the rest in slices, seen by a connection already reading) and the shipped pack
+under the `web-canon` profile (348 works in rank order, the terms of each transcription that is not openly licensed; a 宋本
+found for a punctuated 伤寒论 clause; `classics.canon` for what it lacks).
 `tests/test_corpus_store.py` — on a store: a quotation found whatever its punctuation and in either script, across a
 witness's own marks, never with a changed or missing character; outside a session `classics.list_books` lists every
 book with its filters and `kg.claims` / `kg.neighbors` read the passages that write the term.  `tests/test_web_client.py` — the
@@ -304,8 +326,9 @@ token taken from the address (and its absence reported); an API set by hand (add
 checked in the request it makes); the default service (a stand-in relay): asked at once without a key, no key sent by the
 page, the consent question once, a turn recorded only after 同意 (its fields, no key or settings), none after 不记录 or
 once switched off under 设置 → 数据, and the page asking for a key while the relay is down; and, with
-`TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium — Pyodide, the 要籍语料 downloaded, indexed once and kept, a turn
-answered on it.  The browser tests are skipped where Playwright or Chromium is missing.  `relay/test/relay.test.js`
+`TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium on an http:// origin like the published one (no Cache API) —
+Pyodide, the 要籍语料 downloaded, the first-ranked works indexed before it answers and the rest in the background, the
+store kept in IndexedDB and a reload that downloads no corpus, a turn answered on it.  The browser tests are skipped where Playwright or Chromium is missing.  `relay/test/relay.test.js`
 (`node --test`, in CI) — the Worker's handler and its two stores on SQLite: the key added by the relay and never shown,
 origins, models, output cap and body size, the three limits and a new day, MiniMax's refusals turned into plain messages,
 the records reduced to their fields, and the collector's token, cursor, deletion and ids never reused.
@@ -315,10 +338,11 @@ committed with them, deleted only once held, a deployment checked (and a refused
 
 ## Limits
 
-* In the browser the corpus is the 要籍语料: the open texts of 108 of the 350 key works, the smaller ones whole, the larger in
-  chapters spread through the book — enough to read and compare the main classics, not the whole literature; the page says
-  so, and so does the model's standing instruction.  The first visit downloads about 22 MB (Pyodide and the corpus) and
-  indexes the corpus for about ten seconds; later visits open it from the browser's cache.  `modern.search` reads its cached records only (no network from
+* In the browser the corpus is the 要籍语料: 348 of the 350 key works, the first whole, the others in chapters spread
+  through the book — enough to read and compare the main classics, not the whole literature; the page says so, and so
+  does the model's standing instruction.  The first visit downloads about 20 MB (Pyodide and the corpus) and indexes the
+  corpus (the first-ranked works before the runtime answers, the rest in the background); later visits open it from
+  IndexedDB.  A browser that keeps no site data (a private window) indexes it on every visit.  `modern.search` reads its cached records only (no network from
   Python in the browser); `vision.layout` needs a file on the server's disk.
 * Quotation checks compare characters after removing punctuation and spacing, then after the harness's normalisation
   (`philology.normalize`); a quotation that abridges the passage (「……」 dropped words) reads as a mismatch, by design:

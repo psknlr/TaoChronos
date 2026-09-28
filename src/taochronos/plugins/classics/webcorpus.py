@@ -1,21 +1,27 @@
 """要籍语料 — the corpus the published site carries.
 
-The full corpus cannot go on a public website: the store is about 2.2 GB, and most of its sources allow local research
-only (``corpus/sources.lock.yaml``).  What can go: the witnesses under open licences (``OPEN_SOURCES`` — Kanripo and
-Wikisource under CC BY-SA 4.0, CMETA under CC BY 4.0, McGill in the public domain).
+The full corpus cannot go into a browser: the store is about 2.2 GB (the 350 ranked works alone are some 57 million
+characters).  What goes is the 要籍 list (``corpus/catalog/canon.yaml``), every work with text — the first classics whole,
+the rest as whole chapters spread through the book, within a budget that grows with the work's rank.
 
-``taochronos web pack`` takes, for every work of the 要籍 list (``corpus/catalog/canon.yaml``) that has such witnesses,
-the best of them (CMETA's collated editions first, then the most complete) — up to three for the first classics, so
-that their witnesses can be collated in the browser — whole when they fit the work's budget, which grows with its rank,
-otherwise whole chapters spread evenly through the book.  It writes ``corpus/web/``:
+The witnesses (``WEB_SOURCES``): the openly licensed first (``OPEN_SOURCES`` — CMETA under CC BY 4.0, Kanripo and
+Wikisource under CC BY-SA 4.0, McGill in the public domain), then — IMPF-AI's decision for its site (2026-09-28: the works
+are all in the public domain) — the transcriptions of 笈成 and of the collections derived from it, whose punctuation and
+collation are their editors' and which declare no licence.  Sources whose terms forbid redistribution
+(``NEVER_PACKED``) are never packed: a work known only through them is listed, without text.
+
+``taochronos web pack`` takes, for every ranked work, the best witnesses (CMETA's collated editions first, then the most
+complete) — up to three for the first classics, so that their witnesses can be collated in the browser — whole when they
+fit the work's budget, otherwise whole chapters spread evenly through the book.  It writes ``corpus/web/``:
 
 * ``books.json`` — each witness's catalog record, the work's rank, and how much of the witness was kept;
-* ``passages.jsonl.gz`` — the passages, with the ids they have in the full corpus (a citation means the same passage in
-  the browser and on the server);
-* ``ATTRIBUTION.md`` — every text with its source and licence (the pack as a whole: CC BY-SA 4.0).
+* ``passages.jsonl.gz`` — the passages in rank order, with the ids they have in the full corpus (a citation means the
+  same passage in the browser and on the server);
+* ``ATTRIBUTION.md`` — every text with its source and terms.
 
-``taochronos web build`` turns the pack into a corpus store without its full-text index (``build_store``: a third of
-the download); the browser builds the index once (``index_store``, seconds) and keeps the result.
+``taochronos web build`` turns the pack into a corpus store without its full-text index (``build_store``: the index is
+two thirds of a download that compresses badly); the browser indexes it (``index_store``) in two steps — the works ranked
+up to ``CORE_RANK`` before it answers, the rest in the background — and keeps the result.
 """
 
 from __future__ import annotations
@@ -30,7 +36,21 @@ from typing import Any, Callable, Iterable
 
 from .ingest import load_external_works
 from .store import CorpusStore, grams
-from .study.canon import OPEN_SOURCES, witness_order
+from .study.canon import OPEN_SOURCES
+
+# the sources the site's pack may take, in the order their witnesses are preferred (the terms, for the attribution)
+WEB_SOURCES: dict[str, str] = {
+    **OPEN_SOURCES,
+    "jicheng": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
+    "tcm-ancient-books": "古籍原文属公有领域；录文未声明授权（多为笈成整理本的简体转换本）",
+    "tcmoc": "古籍原文属公有领域；录文未声明授权（据 TCM-Ancient-Books 整理）",
+}
+# sources whose terms forbid passing their transcriptions on: never in the pack
+NEVER_PACKED: dict[str, str] = {
+    "aeam": "東亜医学協会：限非营利的个人保存与使用，未经许可不得转载、再分发",
+    "hf-tcm-canon": "数据集声明 proprietary-commercial 授权",
+}
+CORE_RANK = 40  # the works the browser indexes before it answers; those ranked below follow in the background
 
 # by the work's rank: how many witnesses, the characters the first may bring, the characters each further one may bring
 TIERS: tuple[tuple[int | None, int, int, int], ...] = ((10, 3, 350_000, 90_000), (40, 1, 50_000, 0), (120, 1, 25_000, 0),
@@ -38,6 +58,13 @@ TIERS: tuple[tuple[int | None, int, int, int], ...] = ((10, 3, 350_000, 90_000),
 PREFACE = 4000  # a short 提要 or preface at the head of a book is always kept
 COLUMNS = ("id", "book_id", "edition_id", "seq", "kind", "layer", "year", "y_start", "y_end", "locator", "temporal", "text",
            "punctuation", "extra")
+
+
+def pack_order(book_id: str, sources: dict[str, str], size: dict[str, int]) -> tuple[int, int, str]:
+    """The witnesses of a work, best first: by source in ``WEB_SOURCES`` order (CMETA's collated editions first, the
+    openly licensed before the rest), then the most complete text."""
+    src = sources.get(book_id, "")
+    return (list(WEB_SOURCES).index(src) if src in WEB_SOURCES else len(WEB_SOURCES), -size.get(book_id, 0), book_id)
 
 
 def tier(rank: int, tiers: Iterable[tuple[int | None, int, int, int]] = TIERS) -> tuple[int, int, int]:
@@ -98,6 +125,9 @@ def select(rows: list[dict[str, Any]], cap: int) -> tuple[list[dict[str, Any]], 
     return out, {"chars": total, "kept_chars": size, "units": len(units), "kept_units": len(kept), "whole": False}
 
 
+PUBLISHED = "随道乃久网站发布，供学习研究（发布方 IMPF-AI 决定，2026-09-28）"
+
+
 def export_pack(db: sqlite3.Connection, works: list[dict[str, Any]], out: Path,
                 tiers: Iterable[tuple[int | None, int, int, int]] = TIERS) -> dict[str, Any]:
     """Write the pack for the ranked ``works`` from the full store's database ``db``."""
@@ -106,16 +136,18 @@ def export_pack(db: sqlite3.Connection, works: list[dict[str, Any]], out: Path,
     records: dict[str, dict[str, Any]] = {}
     by_work: dict[str, list[str]] = defaultdict(list)
     for bid, source, data in db.execute("SELECT id, source, data FROM books"):
-        if source in OPEN_SOURCES:
+        if source in WEB_SOURCES:
             raw = json.loads(data)
             sources[bid], records[bid] = source, raw
             by_work[raw.get("work") or bid].append(bid)
     size = dict(db.execute("SELECT book_id, SUM(LENGTH(text)) FROM passages WHERE kind != 'toc' GROUP BY book_id"))
     out.mkdir(parents=True, exist_ok=True)
-    books, lines, credits = [], [], []
+    books, lines, credits, unheld = [], [], [], []
     for w in works:
         n, first, other = tier(int(w["rank"]), tiers)
-        chosen = sorted(by_work.get(w["work"], []), key=lambda b: witness_order(b, sources, size))[:n]
+        chosen = sorted(by_work.get(w["work"], []), key=lambda b: pack_order(b, sources, size))[:n]
+        if not chosen:
+            unheld.append(w)
         for k, bid in enumerate(chosen):
             rows = [dict(zip(COLUMNS, r)) for r in db.execute(f"SELECT {', '.join(COLUMNS)} FROM passages WHERE book_id=? ORDER BY seq", (bid,))]
             for r in rows:
@@ -127,28 +159,37 @@ def export_pack(db: sqlite3.Connection, works: list[dict[str, Any]], out: Path,
             if not kept:
                 continue
             data = records[bid]
+            src = dict(data.get("source") or {})
+            if sources[bid] not in OPEN_SOURCES:  # the terms under which the site carries it, not the local-research note
+                src.update(license=WEB_SOURCES[sources[bid]], published=PUBLISHED)
+                data = {**data, "source": src}
             books.append({"id": bid, "source": sources[bid], "rank": w["rank"], "work": w["work"], "witness": k + 1,
                           "excerpt": extent, "data": data})
             lines += [json.dumps(r, ensure_ascii=False, sort_keys=True) for r in kept]
-            src = data.get("source") or {}
             span = "全书" if extent["whole"] else f"节选 {extent['kept_units']}/{extent['units']} 个章节单位，{extent['kept_chars']:,}/{extent['chars']:,} 字"
             credits.append(f"| {w['rank']} | {data.get('title')} | {src.get('origin', sources[bid])} | "
-                           f"{src.get('license', OPEN_SOURCES[sources[bid]])} | {src.get('url') or ''} | {span} |")
+                           f"{src.get('license') or WEB_SOURCES[sources[bid]]} | {src.get('url') or ''} | {span} |")
     (out / "books.json").write_text(json.dumps(books, ensure_ascii=False, indent=1, sort_keys=True), encoding="utf-8")
     payload = ("\n".join(lines) + "\n").encode("utf-8")
     (out / "passages.jsonl.gz").write_bytes(gzip.compress(payload, compresslevel=9, mtime=0))
     chars = sum(b["excerpt"]["kept_chars"] for b in books)
     works_in = len({b["work"] for b in books})
     head = ["# 要籍语料 · 来源与授权", "",
-            "网页端（GitHub Pages）在浏览器里运行的语料：要籍书目（`corpus/catalog/canon.yaml`，按历代引用排序的 350 部要籍）中",
-            "有开放授权录本的各部古籍的原文，由 `taochronos web pack` 从全量语料生成。**整个语料包以 CC BY-SA 4.0 发布**；各书的来源",
-            "与授权如下（CC BY 与公有领域的文本可以并入 CC BY-SA 的汇编，须保留署名）。录文均未经本项目逐字校勘；段落号与全量语料相同。",
-            "其余要籍（多为笈成等仅限本地研究使用的来源）不随网站发布，接入全量语料（`taochronos serve`）后可用。", "",
-            f"共 {works_in} 部要籍、{len(books)} 个录本，{chars:,} 字，{len(lines):,} 段。", "",
-            "| 要籍序 | 书名 | 来源 | 授权 | 地址 | 收录范围 |", "|---|---|---|---|---|---|"]
+            "网页端在浏览器里运行的语料：要籍书目（`corpus/catalog/canon.yaml`，按历代引用排序的 350 部要籍）各书的原文，由",
+            "`taochronos web pack` 从全量语料生成：最重要的典籍收全书，其余收分布全书的章节节选。所收均为公有领域的古籍；各录本的",
+            "来源与条件见下表：", "",
+            "* 开放授权的录本（维基文库、漢籍リポジトリ：CC BY-SA 4.0；數位中醫校書郎 CMETA：CC BY 4.0；McGill：公有领域）按其授权使用，"
+            "须保留署名；",
+            "* 其余录本（笈成及据其转录的整理本）：古籍原文属公有领域，录文、标点与校勘出自各来源的整理者，谨致谢忱；经发布方",
+            "  （IMPF-AI）决定随网站发布，供学习研究；",
+            "* 条款禁止转载或限定授权的来源（" + "；".join(f"{k}：{v}" for k, v in NEVER_PACKED.items()) + "）不收。",
+            "", "录文均未经本项目逐字校勘；段落号与全量语料相同。", "",
+            f"共 {works_in} 部要籍、{len(books)} 个录本，{chars:,} 字，{len(lines):,} 段。"
+            + (f"只有上述不收来源的 {len(unheld)} 部（{'、'.join(w.get('title') or w['work'] for w in unheld)}）只列书目。" if unheld else ""),
+            "", "| 要籍序 | 书名 | 来源 | 授权与条件 | 地址 | 收录范围 |", "|---|---|---|---|---|---|"]
     (out / "ATTRIBUTION.md").write_text("\n".join(head + credits) + "\n", encoding="utf-8")
     return {"out": str(out), "works": works_in, "books": len(books), "passages": len(lines), "characters": chars,
-            "sha256": hashlib.sha256(payload).hexdigest()}
+            "unheld": [w["work"] for w in unheld], "sha256": hashlib.sha256(payload).hexdigest()}
 
 
 def read_pack(pack: Path) -> tuple[list[dict[str, Any]], Iterable[dict[str, Any]]]:
@@ -179,6 +220,13 @@ def build_store(pack: Path, path: Path, normalize: Callable[[str], str], fingerp
     store.set_meta("edition", "web")
     store.set_meta("label", "要籍语料")
     store.set_meta("index", "built" if index else "pending")
+    if not index:
+        # the pack is in rank order: the passages of the works the browser indexes first end at this rowid
+        core = [b["id"] for b in books if int(b.get("rank") or 0) <= CORE_RANK]
+        last = store.db.execute(f"SELECT MAX(rid) FROM passages WHERE book_id IN ({','.join('?' * len(core))})",
+                                core).fetchone()[0] if core else None
+        store.set_meta("index_core", str(last or 0))
+        store.set_meta("index_rid", "0")
     store.commit()
     if external is not None:
         store.set_external(load_external_works(external))
@@ -191,27 +239,54 @@ def build_store(pack: Path, path: Path, normalize: Callable[[str], str], fingerp
 
 
 def index_store(path: Path, normalize: Callable[[str], str], *, progress: Callable[[int, int], None] | None = None,
-                chunk: int = 4000) -> int:
-    """Build the full-text index of a store written without one (``build_store(index=False)``); returns the passages
-    indexed (0 when the index was built already)."""
+                chunk: int = 4000, phase: str = "all", limit: int | None = None) -> int:
+    """Build the full-text index of a store written without one (``build_store(index=False)``), resumably.
+
+    ``phase="core"`` indexes the passages of the works ranked up to ``CORE_RANK`` (they come first); ``"all"`` whatever is
+    left, when it is done the index is optimized and ``built``.  ``limit`` stops after about that many passages, so that
+    the browser can index in slices between the questions it answers.  Returns the passages indexed by this call (0 when
+    there was nothing left to index)."""
     db = sqlite3.connect(path)
     try:
-        row = db.execute("SELECT value FROM meta WHERE key='index'").fetchone()
-        if not row or row[0] != "pending":
+        state = dict(db.execute("SELECT key, value FROM meta WHERE key IN ('index', 'index_rid', 'index_core')").fetchall())
+        if state.get("index") != "pending":
             return 0
-        total = db.execute("SELECT COUNT(*) FROM passages").fetchone()[0]
-        done, last = 0, 0
-        while True:
-            rows = db.execute("SELECT rid, text FROM passages WHERE rid > ? ORDER BY rid LIMIT ?", (last, chunk)).fetchall()
+        last = int(state.get("index_rid") or 0)
+        until = int(state.get("index_core") or 0) if phase == "core" else 0
+        bound, params = (" AND rid <= ?", [until]) if until else ("", [])
+        total = db.execute(f"SELECT COUNT(*) FROM passages WHERE rid > ?{bound}", [last, *params]).fetchone()[0]
+        if last == 0:
+            db.execute("INSERT INTO grams(grams, rank) VALUES('automerge', 16)")  # fewer merges while it grows: faster
+        done = 0
+        while not limit or done < limit:
+            rows = db.execute(f"SELECT rid, text FROM passages WHERE rid > ?{bound} ORDER BY rid LIMIT ?",
+                              [last, *params, chunk]).fetchall()
             if not rows:
                 break
             db.executemany("INSERT INTO grams(rowid, g) VALUES (?, ?)", [(rid, grams(normalize(text))) for rid, text in rows])
             last, done = rows[-1][0], done + len(rows)
+            db.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('index_rid', ?)", (str(last),))
+            db.commit()
             if progress:
                 progress(done, total)
-        db.execute("INSERT INTO grams(grams) VALUES('optimize')")
-        db.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('index', 'built')")
+        if phase != "core" and not db.execute("SELECT 1 FROM passages WHERE rid > ? LIMIT 1", (last,)).fetchone():
+            db.execute("INSERT INTO grams(grams) VALUES('optimize')")
+            db.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('index', 'built')")
         db.commit()
         return done
+    finally:
+        db.close()
+
+
+def index_state(path: Path) -> dict[str, Any]:
+    """How far the browser's index has got: {"state": pending | built, "indexed": passages, "total": passages}."""
+    db = sqlite3.connect(path)
+    try:
+        state = dict(db.execute("SELECT key, value FROM meta WHERE key IN ('index', 'index_rid')").fetchall())
+        total = db.execute("SELECT COUNT(*) FROM passages").fetchone()[0]
+        built = state.get("index") != "pending"
+        indexed = total if built else db.execute("SELECT COUNT(*) FROM passages WHERE rid <= ?",
+                                                 (int(state.get("index_rid") or 0),)).fetchone()[0]
+        return {"state": "built" if built else "pending", "indexed": indexed, "total": total}
     finally:
         db.close()

@@ -489,7 +489,9 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
 
 @pytest.mark.skipif(not os.environ.get("TAOCHRONOS_PYODIDE_E2E"), reason="set TAOCHRONOS_PYODIDE_E2E=1: builds the site with Pyodide")
 def test_the_published_site_runs_on_the_canon_corpus_in_the_browser(tmp_path):
-    """The built site in Chromium: Pyodide starts, the 要籍语料 is downloaded, indexed once and kept, a turn cites it."""
+    """The built site in Chromium, on an http:// origin like the published one (no Cache API there): Pyodide starts, the
+    要籍语料 is downloaded and indexed — the first-ranked works before the runtime answers, the rest in the background —
+    and kept in IndexedDB, so that a reload has nothing to download or index; a turn cites it."""
     exe = _chromium()
     if exe is None:
         pytest.skip("playwright is not installed")
@@ -518,17 +520,26 @@ def test_the_published_site_runs_on_the_canon_corpus_in_the_browser(tmp_path):
                 "base_url": mock.base_url, "model": "test-model"}], "keys": {"custom-e2e": "k"}, "route": "direct", "runtime": "browser"}
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            browser = p.chromium.launch(**({"executable_path": exe} if exe else {}),
+                                        args=["--host-resolver-rules=MAP taochronos.test 127.0.0.1"])
             ctx = browser.new_context(viewport={"width": 1280, "height": 860})
             ctx.add_init_script(f"localStorage.setItem('tc.settings', {json.dumps(json.dumps(settings))});")
             page = ctx.new_page()
-            page.goto(f"http://127.0.0.1:{site.server_address[1]}/")
+            fetched = []
+            page.on("request", lambda r: fetched.append(r.url))
+            page.goto(f"http://taochronos.test:{site.server_address[1]}/")
+            assert page.evaluate("() => !window.isSecureContext && typeof caches === 'undefined'")
             page.wait_for_selector(".runtime-pill .dot.ok", timeout=240000)
             assert "要籍语料" in page.inner_text(".runtime-pill")
+            page.wait_for_function("() => document.querySelector('.runtime-pill').innerText.includes('其余要籍检索索引')", timeout=60000)
+            page.wait_for_function("() => !document.querySelector('.runtime-pill').innerText.includes('其余要籍检索索引')", timeout=240000)
+            time.sleep(3)  # the indexed store is written to IndexedDB
+            fetched.clear()
             t0 = time.time()
             page.reload()  # the indexed store is kept: no download, no indexing
             page.wait_for_selector(".runtime-pill .dot.ok", timeout=120000)
-            assert time.time() - t0 < 60
+            assert time.time() - t0 < 30
+            assert not [u for u in fetched if "corpus.sqlite" in u]
             page.fill("#input", "桂枝汤主治什么？")
             page.keyboard.press("Enter")
             page.wait_for_selector(".msg.assistant .verify-bar", timeout=120000)

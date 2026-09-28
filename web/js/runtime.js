@@ -1,6 +1,8 @@
-// Where TaoChronos runs: in this browser (Pyodide in a worker, demonstration corpus) or under `taochronos serve` — on the
+// Where TaoChronos runs: in this browser (Pyodide in a worker, on the 要籍语料) or under `taochronos serve` — on the
 // user's machine or another one they run it on (the full corpus).  Both answer the same calls — info, catalog, call,
-// passage, research — with the same shapes, because both run the same Python module (taochronos.chat).
+// passage, research — with the same shapes, because both run the same Python module (taochronos.chat).  The browser
+// runtime knows its info and catalogs before it has loaded (runtime/boot.json, written by the build), so that a
+// conversation can begin at once; only the tools it calls wait for it.
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
@@ -45,8 +47,9 @@ export class BrowserRuntime {
     this.pending = new Map();
     this.seq = 0;
     this.listeners = new Set();
-    this.state = { status: "idle", progress: 0, message: "" };
+    this.state = { status: "idle", progress: 0, message: "", index: null };
     this.ready = null;
+    this.boot = null; // runtime/boot.json: {info, catalogs}
   }
 
   onStatus(fn) { this.listeners.add(fn); fn(this.state); return () => this.listeners.delete(fn); }
@@ -55,10 +58,13 @@ export class BrowserRuntime {
   start() {
     if (this.ready) return this.ready;
     this._status({ status: "loading", progress: 2, message: "启动运行环境" });
+    this.boot ||= fetch(new URL("../runtime/boot.json", import.meta.url), { cache: "no-cache" })
+      .then((r) => (r.ok ? r.json() : null)).catch(() => null);
     this.worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module", name: "taochronos" });
     this.worker.onmessage = (e) => {
       const msg = e.data || {};
       if (msg.type === "progress") { this._status({ status: "loading", progress: msg.progress, message: msg.message }); return; }
+      if (msg.type === "index") { this._status({ index: { ...this.state.index, ...msg } }); return; }
       const p = this.pending.get(msg.id);
       if (!p) return;
       this.pending.delete(msg.id);
@@ -93,8 +99,22 @@ export class BrowserRuntime {
   }
 
   async call_(method, params) { await this.start(); return this._rpc(method, params); }
-  async info() { return this.info_ || (await this.start()); }
-  catalog(mode) { return this.call_("catalog", { mode }); }
+  /** The runtime's info — while it loads, what it will say once loaded (the boot file), when the site has one. */
+  async info() {
+    if (this.info_) return this.info_;
+    const started = this.start();
+    started.catch(() => { /* shown in the status */ });
+    const boot = await this.boot;
+    return boot?.info || (await started);
+  }
+  async catalog(mode) {
+    if (!this.info_) {
+      this.start().catch(() => { /* shown in the status */ });
+      const boot = await this.boot;
+      if (boot?.catalogs?.[mode]) return boot.catalogs[mode];
+    }
+    return this.call_("catalog", { mode });
+  }
   call(name, args, { maxChars } = {}) { return this.call_("call", { name, arguments: args, max_chars: maxChars }); }
   passage(id) { return this.call_("passage", { id }); }
   session(id, what, extra = {}) { return this.call_("session", { session_id: id, what, ...extra }); }

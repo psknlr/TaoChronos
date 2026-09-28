@@ -16,6 +16,7 @@ LRU cache) and adds the search interface used by retrieval, curation and falsifi
 from __future__ import annotations
 
 import json
+import os
 import re
 import sqlite3
 import threading
@@ -126,9 +127,13 @@ class CorpusStore:
             raise FileNotFoundError(f"corpus store not found: {self.path} (run `taochronos corpus ingest`)")
         uri = f"file:{self.path}?mode=ro" if readonly else f"file:{self.path}"
         self.db = sqlite3.connect(uri, uri=True, check_same_thread=False)
-        self.db.execute("PRAGMA journal_mode=WAL" if not readonly else "PRAGMA query_only=1")
+        # the browser runtime keeps the rollback journal (it indexes through a second connection while this one reads)
+        # and a smaller page cache (the file is in memory already)
+        journal = "DELETE" if os.environ.get("TAOCHRONOS_SQLITE_JOURNAL", "").upper() == "DELETE" else "WAL"
+        self.db.execute(f"PRAGMA journal_mode={journal}" if not readonly else "PRAGMA query_only=1")
         self.db.execute("PRAGMA synchronous=NORMAL")
-        self.db.execute("PRAGMA cache_size=-200000")
+        cache_kb = os.environ.get("TAOCHRONOS_SQLITE_CACHE_KB", "")
+        self.db.execute(f"PRAGMA cache_size=-{int(cache_kb) if cache_kb.isdigit() else 200000}")
         self.lock = threading.RLock()
         if create:
             self._schema()

@@ -125,6 +125,15 @@ async function ensureRuntime() {
   return S.runtime;
 }
 
+/** The runtime a turn runs on.  A browser runtime still loading describes itself from its boot file, so that the model
+ * is asked at once; the tools it calls wait for the runtime (runtime.call waits until it is ready). */
+async function turnRuntime() {
+  if (!S.runtime) await (runtimeSwitch || switchRuntime());
+  if (S.runtime.kind !== "browser" || S.runtime.state?.status === "error") return ensureRuntime();
+  S.runtimeInfo ||= await S.runtime.info();
+  return S.runtime;
+}
+
 async function getCatalog(mode) {
   if (!S.catalogs[mode]) {
     S.catalogs[mode] = await S.runtime.catalog(mode);
@@ -414,7 +423,7 @@ async function runAssistant(conv, msg) {
   msg.wireFormat = formatOf(provider);
   msg.wireProvider = provider.id;
   try {
-    const runtime = await ensureRuntime();
+    const runtime = await turnRuntime();
     const catalog = await getCatalog(S.settings.toolMode);
     const idx = conv.messages.indexOf(msg);
     const user = conv.messages[idx - 1];
@@ -862,7 +871,10 @@ function renderPill() {
   const kind = S.runtime?.label || "运行环境";
   const dot = st.status === "ready" ? "ok" : st.status === "error" ? "bad" : "busy";
   const ready = st.status === "ready" && info;
-  const detail = ready ? describeRuntime(info, " · ")
+  const ix = st.index;
+  const indexing = ready && ix && !ix.done && !ix.error && ix.total
+    ? ` · 其余要籍检索索引 ${Math.floor(100 * (ix.indexed || 0) / ix.total)}%` : "";
+  const detail = ready ? describeRuntime(info, " · ") + indexing
     : st.status === "error" ? truncate(st.message || "出错", 40) : (st.message || "准备中…");
   el.pill.replaceChildren(h("span.dot", { class: dot }),
     h("span.rt", h("b", `${kind}${st.status === "ready" ? "" : st.status === "error" ? " · 未就绪" : " · 载入中"}`), h("span", detail),
