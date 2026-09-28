@@ -26,6 +26,7 @@ const S = {
   runtimeState: { status: "idle", progress: 0, message: "" },
   relay: null,             // 道乃久默认服务: {url, ok, model, models, logs, limits, pending} when the site has one (site.json)
   relayReady: null,
+  relayRetry: null,
   catalogs: {},
   catalogAll: null,
   catalogIndex: new Map(),
@@ -383,6 +384,7 @@ async function send(text, images = []) {
   if (!text && !images.length) return;
   if (S.running) return;
   if (S.relay?.pending) await S.relayReady;
+  if (needsKey() && S.relay?.url && !S.relay.ok) await recheckRelay([15000]); // the default service, once more
   if (needsKey()) {
     el.input.value = text;
     autosize();
@@ -990,22 +992,43 @@ async function loadRelay() {
   if (!/^https?:\/\//.test(url)) return;
   S.relay = { url, ok: false, logs: false, pending: true };
   setRelay(S.relay);
-  S.relayReady = checkRelay().finally(() => { renderTopbar(); renderMain(); renderComposer(); });
+  recheckRelay([10000, 15000]);
 }
 
-async function checkRelay() {
-  const url = S.relay.url;
-  const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 5000);
-  try {
-    const r = await fetch(`${url}/v1/health`, { cache: "no-store", signal: ctl.signal });
-    const j = r.ok ? await r.json() : null;
-    if (j?.ok) {
-      Object.assign(S.relay, { ok: true, model: j.model, models: j.models, logs: Boolean(j.logs), limits: j.limits,
-        maxOutput: Number(j.max_output_tokens) || null });
+const RELAY_RETRIES = 4; // after the first check fails: tried again 20, 40, 60 and 80 seconds later
+
+/** Check the relay again (its health, with the timeouts given, one after another until one answers).  A page that is
+ * loading its runtime shares a slow link with this request, so it is patient, and a relay that did not answer is tried
+ * again a few times: until it answers, a visitor without a key of their own is asked for one. */
+function recheckRelay(timeouts, retry = 0) {
+  S.relay.pending = true;
+  S.relayReady = checkRelay(timeouts).finally(() => {
+    renderTopbar(); renderMain(); renderComposer();
+    if (!S.relay.ok && retry < RELAY_RETRIES) {
+      clearTimeout(S.relayRetry);
+      S.relayRetry = setTimeout(() => { if (!S.relay.ok && !S.relay.pending) recheckRelay([15000], retry + 1); }, 20000 * (retry + 1));
     }
-  } catch { /* down or not deployed yet: the page works as before, with the visitor's own key */ }
-  clearTimeout(timer);
+  });
+  return S.relayReady;
+}
+
+async function checkRelay(timeouts) {
+  const url = S.relay.url;
+  let j = null;
+  for (let i = 0; i < timeouts.length && !j?.ok; i++) {
+    if (i) await new Promise((r) => setTimeout(r, 1500));
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), timeouts[i]);
+    try {
+      const r = await fetch(`${url}/v1/health`, { cache: "no-store", signal: ctl.signal });
+      j = r.ok ? await r.json() : null;
+    } catch { j = null; /* down, not deployed yet, or the link too slow this time */ }
+    clearTimeout(timer);
+  }
+  if (j?.ok) {
+    Object.assign(S.relay, { ok: true, model: j.model, models: j.models, logs: Boolean(j.logs), limits: j.limits,
+      maxOutput: Number(j.max_output_tokens) || null });
+  }
   delete S.relay.pending;
   setRelay(S.relay);
   // a visitor without a model of their own asks through it; one who chose it falls back while it is down
