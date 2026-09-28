@@ -68,11 +68,11 @@ def corpus_note(info: dict[str, Any]) -> str:
                 f" {listed} 部要籍，并注明本语料是否收有。回答时说明这一点；需要全部古籍时，建议用户在本机运行 `taochronos serve` 并在设置中"
                 "连接本地服务（全量语料）。")
     if kind == "canon":
-        return (f"当前语料：要籍语料——按历代引用排序的 {listed} 部要籍中，有开放授权录本的 {canon.get('held', '?')} 部（{books} 个录本、"
-                f"{passages} 段）。最重要的典籍多为全书（素问、灵枢、伤寒论、金匮要略各收两三个录本，可以对校），其余为分布全书的章节节选；"
-                f"录文未经本项目逐字校勘。classics.canon 可查 {listed} 部要籍及本语料是否收有其原文；未收的要籍（其录本多仅限本地研究使用）"
-                "与全部古籍需接入全量语料（用户在本机运行 `taochronos serve` 并在设置中连接）。回答时说明检索范围：某书在本语料中是节选时，"
-                "未检得不等于原书没有。" + whole)
+        return (f"当前语料：要籍语料——按历代引用排序的 {listed} 部要籍中的 {canon.get('held', '?')} 部（{books} 个录本、"
+                f"{passages} 段）。最重要的典籍多为全书（素问、灵枢、伤寒论、金匮要略等各收两三个录本，可以对校），其余为分布全书的章节"
+                f"节选；录文未经本项目逐字校勘。classics.canon 可查 {listed} 部要籍及本语料是否收有其原文；各书全文与全部古籍需接入全量语料"
+                "（用户在本机运行 `taochronos serve` 并在设置中连接）。回答时说明检索范围：某书在本语料中是节选时，未检得不等于原书没有。"
+                + whole)
     return f"当前语料：全量语料（{books} 部书、{passages} 段）。{whole}classics.canon 可查按历代引用排序的 {listed} 部要籍。"
 
 

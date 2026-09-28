@@ -49,7 +49,7 @@ function hero(ctx) {
   const action = ready && info.corpus?.demo
     ? h("button.hero-action", { type: "button", on: { click: ctx.onOpenRuntime } }, icon("book", "sm"),
       h("span", h("b", "接入全部古籍"), info.corpus?.kind === "canon"
-        ? `此处是要籍语料（${info.corpus?.canon?.held ?? "?"} 部要籍的开放授权原文）；连接 taochronos serve 即用全部古籍`
+        ? `此处是要籍语料（${info.corpus?.canon?.held ?? "?"} 部要籍，重要典籍为全书、其余为节选）；连接 taochronos serve 即用全部古籍`
         : "此处是演示语料；连接 taochronos serve 即用全量语料"), icon("chev", "sm"))
     : st.status === "error"
       ? h("button.hero-action", { type: "button", on: { click: ctx.onOpenRuntime } }, icon("server", "sm"), h("span", h("b", "设置运行环境")), icon("chev", "sm"))

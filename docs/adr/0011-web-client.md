@@ -66,7 +66,8 @@ is found in every witness whatever its punctuation.  The session-scoped analyses
 道乃久 and the publisher on the page, Tao-R1 on the model chip, the underlying model beside it and in the instructions, and
 the model told to name them when asked and to claim no other identity.
 
-**In the browser, the openly licensed texts of the key works.**  The works of the full corpus are ranked by the citation
+**In the browser, the openly licensed texts of the key works** (superseded by [ADR 0013](0013-canon-corpus-in-the-browser.md):
+all 350, and how the browser loads them).  The works of the full corpus are ranked by the citation
 network of the whole store (``study canon``: distinct later works citing it, periods, citations, witnesses, 四库); the first
 350 are a published list with metadata only.  Of these, the 108 that have a witness under an open licence (汉籍仓库, 维基文库,
 CMETA, McGill) are packed (``web pack``) — whole for the first classics, with up to three witnesses to collate, otherwise
@@ -84,10 +85,10 @@ its operator allows the host (``--allow-host``).
 
 * The page works with no installation: open it, paste a key, ask.  Every tool also runs by hand in the tool console,
   so the functions are usable without any model.
-* In the browser the corpus is the 要籍语料 — a third of the key works, many in chapters.  The page, the model's
+* In the browser the corpus is the 要籍语料 — since ADR 0013 all 350 key works, many in chapters.  The page, the model's
   instructions and the documentation say so, ``classics.canon`` tells what it lacks, and the page offers the connection
   to all the books; research on the full corpus goes through the server.
-* The first visit costs about 22 MB and ten seconds of indexing; later visits open from the browser's cache.
+* The first visit costs about 20 MB and some seconds of indexing; later visits open from IndexedDB (ADR 0013).
 * A server reachable from other machines is a deliberate step with a token; the published page reaches one only over
   HTTPS (or the server's own page is used).
 * A citation the model invents is visible as such, and a misquotation is marked — the discipline the research engine

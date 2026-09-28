@@ -56,20 +56,27 @@ jobs:
       - name: Check the 要籍语料 the site ships, as the browser will read it
         run: |
           python - <<'EOF'
-          import gzip, json, pathlib, tempfile
+          import json, lzma, pathlib, tempfile
           from taochronos.chat import ChatRuntime
           from taochronos.plugins.classics.domain import DomainPack
-          from taochronos.plugins.classics.webcorpus import index_store
+          from taochronos.plugins.classics.webcorpus import index_state, index_store
           site = pathlib.Path("_site/runtime")
-          meta = json.loads((site / "manifest.json").read_text())["files"]["corpus.sqlite.gz"]
+          meta = json.loads((site / "manifest.json").read_text())["files"]["corpus.sqlite.xz"]
           data = pathlib.Path(tempfile.mkdtemp())
           (data / "corpus").mkdir()
           db = data / "corpus" / "tcm.sqlite"
-          db.write_bytes(gzip.decompress((site / "corpus.sqlite.gz").read_bytes()))
-          assert index_store(db, DomainPack(pathlib.Path("domains/classics")).variants.normalize_text) == meta["passages"]
-          rt = ChatRuntime.create("web-canon", kind="ci", ephemeral=True, data_dir=data)
+          db.write_bytes(lzma.decompress((site / "corpus.sqlite.xz").read_bytes()))
+          normalize = DomainPack(pathlib.Path("domains/classics")).variants.normalize_text
+          # as the browser does: the first-ranked works, then the rest
+          assert index_store(db, normalize, phase="core") == meta["core_passages"]
+          assert index_store(db, normalize) == meta["passages"] - meta["core_passages"]
+          assert index_state(db)["state"] == "built"
+          rt = ChatRuntime.create("web-canon", kind="browser", ephemeral=True, data_dir=data)
           out = rt.call("classics.search", {"query": "桂枝汤", "k": 2})
           assert out["ok"] and out["citations"], out
+          boot = json.loads((site / "boot.json").read_text(encoding="utf-8"))
+          same = lambda a, b: json.dumps(a, ensure_ascii=False, sort_keys=True) == json.dumps(b, ensure_ascii=False, sort_keys=True)
+          assert same(boot["info"], rt.info()) and same(boot["catalogs"]["all"], rt.catalog("all")), "boot.json is not what the runtime reports"
           print(rt.info()["corpus"]["label"], rt.info()["corpus"]["canon"], meta["bytes"], "bytes")
           EOF
       - uses: actions/configure-pages@v5

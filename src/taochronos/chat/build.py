@@ -5,18 +5,22 @@ reads (``runtime/home.zip``: profiles, domain packs, the demonstration corpus, a
 list (``providers.json``) and, unless ``--pyodide cdn``, the Pyodide files the runtime runs on, so that the site
 depends on no other host.  Archives are deterministic: the same checkout builds the same bytes.
 
-The full corpus store is never part of the site.  The site carries the 要籍语料 (``corpus/web``: the openly licensed
-texts of the ranked works, ``taochronos web pack``) as a store without its full-text index (``runtime/corpus.sqlite.gz``);
-the browser builds the index on first use and keeps the result.  Without a pack the browser runs on the demonstration
-corpus.  The full corpus is reached through ``taochronos serve``.
+The full corpus store is never part of the site.  The site carries the 要籍语料 (``corpus/web``: the texts of the 350
+ranked works, ``taochronos web pack``) as a store without its full-text index, xz-compressed (``runtime/corpus.sqlite.xz``);
+the browser indexes it on first use and keeps the result.  ``runtime/boot.json`` holds what the runtime will say about
+itself (its info, with the standing instructions, and its tool catalogs), so that the page can start a conversation
+while the runtime is still loading.  Without a pack the browser runs on the demonstration corpus.  The full corpus is
+reached through ``taochronos serve``.
 """
 
 from __future__ import annotations
 
-import gzip
+import functools
 import hashlib
 import io
 import json
+import lzma
+import os
 import re
 import shutil
 import tempfile
@@ -77,23 +81,59 @@ def manifest(pkg: bytes, home: bytes) -> dict[str, Any]:
                       "home.zip": {"bytes": len(home), "sha256": hashlib.sha256(home).hexdigest()}}}
 
 
+def _pack_digest(pack: Path) -> str:
+    h = hashlib.sha256()
+    for name in ("books.json", "passages.jsonl.gz"):
+        h.update((pack / name).read_bytes())
+    return h.hexdigest()
+
+
 def corpus_store(home: Path) -> tuple[bytes, dict[str, Any]] | None:
-    """The 要籍语料 pack as a gzipped store without its index (deterministic), or None without a pack."""
+    """The 要籍语料 pack as an xz-compressed store without its index (deterministic), or None without a pack."""
     pack = home / "corpus" / "web"
     if not (pack / "passages.jsonl.gz").is_file():
         return None
-    from ..plugins.classics.domain import DomainPack
-    from ..plugins.classics.webcorpus import build_store
+    preset = int(os.environ.get("TAOCHRONOS_WEB_XZ_PRESET") or 6)  # tests may trade size for time
+    return _corpus_store(str(home), _pack_digest(pack), preset)
 
+
+@functools.lru_cache(maxsize=2)
+def _corpus_store(home_dir: str, digest: str, preset: int) -> tuple[bytes, dict[str, Any]]:
+    import sqlite3
+
+    from ..plugins.classics.domain import DomainPack
+    from ..plugins.classics.webcorpus import CORE_RANK, build_store
+
+    home = Path(home_dir)
     domain = DomainPack(home / "domains" / "classics")
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "tcm.sqlite"
-        info = build_store(pack, path, domain.variants.normalize_text, domain.variants.fingerprint,
+        info = build_store(home / "corpus" / "web", path, domain.variants.normalize_text, domain.variants.fingerprint,
                            external=home / "corpus" / "catalog" / "external-works.yaml", index=False)
+        db = sqlite3.connect(path)
+        core_rid = int(dict(db.execute("SELECT key, value FROM meta").fetchall()).get("index_core") or 0)
+        core = db.execute("SELECT COUNT(*) FROM passages WHERE rid <= ?", (core_rid,)).fetchone()[0]
+        db.close()
         raw = path.read_bytes()
-    data = gzip.compress(raw, compresslevel=9, mtime=0)
-    return data, {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(), "raw_bytes": len(raw),
-                  "books": info["books"], "passages": info["passages"], "profile": "web-canon"}
+    # xz (LZMA2, CRC32: what the browser's decoder reads) is two thirds the size of gzip for this data
+    data = lzma.compress(raw, format=lzma.FORMAT_XZ, check=lzma.CHECK_CRC32, preset=preset)
+    return data, {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(), "raw_bytes": len(raw), "encoding": "xz",
+                  "books": info["books"], "passages": info["passages"], "core_rank": CORE_RANK, "core_passages": core,
+                  "profile": "web-canon"}
+
+
+def boot_file(home: Path, corpus: bytes | None) -> dict[str, Any]:
+    """What the browser runtime will report once loaded — its info and tool catalogs — computed here on the same code and
+    corpus, so that the page can put the first question to the model while the runtime loads."""
+    from . import ChatRuntime
+
+    with tempfile.TemporaryDirectory() as tmp:
+        if corpus is not None:
+            (Path(tmp) / "corpus").mkdir(parents=True)
+            (Path(tmp) / "corpus" / "tcm.sqlite").write_bytes(lzma.decompress(corpus))
+        rt = ChatRuntime.create("web-canon" if corpus is not None else "full-discovery", home=home, data_dir=tmp,
+                                kind="browser", ephemeral=True)
+        return {"info": rt.info(), "catalogs": {mode: rt.catalog(mode) for mode in ("core", "all")}}
 
 
 def _download(url: str) -> bytes:
@@ -148,8 +188,10 @@ def build_site(out: Path, *, home: Path, web: Path | None = None, pyodide: str =
     info = manifest(pkg, data)
     corpus = corpus_store(home)
     if corpus is not None:
-        (runtime / "corpus.sqlite.gz").write_bytes(corpus[0])
-        info["files"]["corpus.sqlite.gz"] = corpus[1]
+        (runtime / "corpus.sqlite.xz").write_bytes(corpus[0])
+        info["files"]["corpus.sqlite.xz"] = corpus[1]
+    boot = boot_file(home, corpus[0] if corpus is not None else None)
+    (runtime / "boot.json").write_text(json.dumps(boot, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     info["pyodide_base"] = "pyodide/" if pyodide == "self" else PYODIDE_CDN
     if pyodide == "self":
         info["pyodide_files"] = fetch_pyodide(out / "pyodide")
