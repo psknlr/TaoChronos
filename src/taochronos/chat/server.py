@@ -10,7 +10,7 @@ It serves the web client (``web/``) and a small JSON API over :class:`~taochrono
   The key travels with the request and is never stored or logged; with ``--env-keys`` a request without one gets the
   provider's key from this machine's environment.
 
-Only this machine's pages, the server's own pages, the published client (``https://psknlr.github.io``) and origins
+Only this machine's pages, the server's own pages, the published client (``https://chat.impf.ai``) and origins
 named with ``--allow-origin`` may call the API (CORS, Private Network Access); the Host header must name this machine,
 so a rebound DNS name cannot reach it.  It binds to 127.0.0.1 unless told otherwise; bound to another address it
 requires an access token (``--token``, else one is generated and printed), carried by every API request as
@@ -35,7 +35,8 @@ from urllib.parse import parse_qs, unquote, urlsplit
 
 from .providers import key_env_for, proxy_hosts, web_providers
 
-PAGES_ORIGIN = "https://psknlr.github.io"
+PAGES_ORIGIN = "https://chat.impf.ai"  # the published client (GitHub Pages under IMPF-AI's domain)
+PAGES_ORIGINS = (PAGES_ORIGIN, "http://chat.impf.ai", "https://psknlr.github.io")  # before HTTPS is enforced; the old address
 ENV_KEY = "tc-env-key"  # what the client sends as a key when it relies on --env-keys
 LOCAL_NAMES = {"localhost", "127.0.0.1", "::1", "[::1]"}
 FORWARD = ("content-type", "accept", "authorization", "x-api-key", "anthropic-version", "anthropic-beta",
@@ -62,7 +63,7 @@ class ChatServer(ThreadingHTTPServer):
         self.runtime = runtime
         self.token = token or None
         self.web_root = web_root.resolve() if web_root else None
-        self.origins = {o.rstrip("/") for o in (origins or [])} | {PAGES_ORIGIN}
+        self.origins = {o.rstrip("/") for o in (origins or [])} | set(PAGES_ORIGINS)
         self.env_keys = env_keys
         self.proxy = proxy
         self.proxy_hosts = proxy_hosts() | {allowed_host(h) for h in allow_hosts or ()}
@@ -350,7 +351,7 @@ def serve(runtime: Any, *, host: str = "127.0.0.1", port: int = 8765, web: Path 
         print(f"other machines: http://{lan}:{server.server_address[1]}/#token={token}", file=sys.stderr)
     if token:
         print(f"access token (访问令牌): {token}  — every API request must carry it (X-TC-Token)", file=sys.stderr)
-    print(f"published client: {PAGES_ORIGIN}/TaoChronos/ → 设置 → 运行环境 → 接入全部古籍 → 连接 {url.rstrip('/')}", file=sys.stderr)
+    print(f"published client: {PAGES_ORIGIN}/ → 设置 → 运行环境 → 接入全部古籍 → 连接 {url.rstrip('/')}", file=sys.stderr)
     if open_browser:
         threading.Timer(0.6, lambda: __import__("webbrowser").open(open_url)).start()
     try:
@@ -361,4 +362,4 @@ def serve(runtime: Any, *, host: str = "127.0.0.1", port: int = 8765, web: Path 
         server.server_close()
 
 
-__all__ = ["ENV_KEY", "ChatServer", "PAGES_ORIGIN", "access_token", "allowed_host", "lan_address", "serve", "web_root"]
+__all__ = ["ENV_KEY", "ChatServer", "PAGES_ORIGIN", "PAGES_ORIGINS", "access_token", "allowed_host", "lan_address", "serve", "web_root"]

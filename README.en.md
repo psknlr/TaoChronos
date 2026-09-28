@@ -4,7 +4,7 @@
 The agent **道乃久** (Dào nǎi jiǔ; model **Tao-R1**) is **published by 医哲未来人工智能研究院 (IMPF-AI)**.
 *面向中医古籍的可溯源知识发现与治学系统*
 
-**[Use it online · web chat](https://psknlr.github.io/TaoChronos/)** · [中文 README](README.md) · [Web client](docs/web.md) · [V2](docs/v2.md) · [Ancient–modern bridge](docs/bridge.md) · [Models](docs/models.md) · [Study layer](docs/study.md) · [Task specification](docs/tasks.md) ·
+**[Use it online · web chat](https://chat.impf.ai/)** · [中文 README](README.md) · [Web client](docs/web.md) · [V2](docs/v2.md) · [Ancient–modern bridge](docs/bridge.md) · [Models](docs/models.md) · [Study layer](docs/study.md) · [Task specification](docs/tasks.md) ·
 [Architecture](docs/architecture.md) · [Agents](docs/agents.md) · [Discovery](docs/discovery.md) · [Evaluation](docs/evals.md) · [Data](docs/data.md) · [Roadmap](docs/roadmap.md) · [ADRs](docs/adr/)
 
 TaoChronos turns 966 Chinese medical classics (about 123 million characters in 2.05 million passages) into a corpus
@@ -56,9 +56,10 @@ Both layers share one rule: **every statement rests on verbatim witnesses** (boo
 text layer, source and licence of the transcription). Rule-based reading is labelled as machine reading; people check
 and decide.
 
-> 💬 **Web chat · 道乃久**: open **<https://psknlr.github.io/TaoChronos/>** and talk with **道乃久** (TaoChronos; model Tao-R1;
-> published by IMPF-AI).  Choose the underlying model and paste your own API key in the settings (default **MiniMax
-> (mainland) · MiniMax-M3**; DeepSeek, Qwen, Kimi, GLM, Doubao, SiliconFlow, OpenRouter, Poe, LiteLLM, Claude and others are
+> 💬 **Web chat · 道乃久**: open **<https://chat.impf.ai/>** and talk with **道乃久** (TaoChronos; model Tao-R1; published by
+> IMPF-AI).  Ask at once: **道乃久默认服务** (MiniMax-M3 through IMPF-AI's [relay](relay/README.md); no key needed; during the test
+> period conversations are recorded for visitors who agree).  Or choose the underlying model and paste your own API key in the
+> settings (DeepSeek, Qwen, Kimi, GLM, Doubao, SiliconFlow, OpenRouter, Poe, LiteLLM, Claude and others are
 > listed; any other endpoint can be set by hand under **自定义 API** — address, model, key, headers) and hold a multi-turn
 > conversation as in ChatGPT or Claude.  The model answers through all 73 of TaoChronos's tools, and the page checks every
 > `[[passage_id]]` it cites word for word (✓ matches the passage · ≠ misquoted · ✕ no such passage); evidence, research runs
@@ -118,12 +119,12 @@ and decide.
 | **Modern evidence and real-world data** | PubMed typed by design and population, the cross-level guard, safety warnings; real-world questions as validated study specs over OMOP | `modern search` · `modern safety` · `rwd ask` · `rwd synth` |
 | **Layout, entities, translation, places** | vertical reading order and 双行小注, a multimodal reading, OCR checked against the store; entities in context; five-layer translation; native places, signed prefaces, regional statistics | `vision` · `study entities` · `study translate` · `study places` |
 | **Knowledge discovery** | multi-agent research: lost knowledge, concept drift, formula evolution, hidden associations, contradictions, lost sources; verbatim evidence, falsification, gates, expert review | `research` · `report` · `workspace` · `review` |
-| **Everyone (web)** | a ChatGPT/Claude-style multi-turn chat: a model of your choice (MiniMax-M3 by default) answers through every tool, quotations checked word for word, sources one click away (horizontal or vertical reading); a research panel and a tool console; conversations kept in your browser, exportable | [web](https://psknlr.github.io/TaoChronos/) · `serve` · `web build` |
+| **Everyone (web)** | a ChatGPT/Claude-style multi-turn chat: the default service with no key (MiniMax-M3) or a model of your choice answers through every tool, quotations checked word for word, sources one click away (horizontal or vertical reading); a research panel and a tool console; conversations kept in your browser, exportable | [web](https://chat.impf.ai/) · `serve` · `web build` |
 | **Developers** | plugin kernel, capability registry, a tool mesh of 73 tools, agents as YAML specs, event sourcing and replay, evaluation and architecture governance; the JSON Schemas of the tasks' outputs | `agents` · `eval` · `governance` · `schema --study` |
 
 ## 2. Quick start
 
-**Web**: open <https://psknlr.github.io/TaoChronos/> (runs in the browser, demonstration corpus), or bring in all the books
+**Web**: open <https://chat.impf.ai/> (runs in the browser on the 要籍语料; the default service needs no key), or bring in all the books
 (the full corpus, built as below):
 
 ```bash
@@ -543,10 +544,11 @@ workflow commands take `--llm platform:model` (with `--llm-max-calls`, `--llm-ma
 schema-validated (one repair turn) and logged without their prompts; results record whether the rule, the model or both
 decided each item.  External command subagents and Research Code Mode: [docs/agents.md](docs/agents.md).
 
-**Web chat · 道乃久** ([docs/web.md](docs/web.md), [ADR 0011](docs/adr/0011-web-client.md)): the agent 道乃久 (TaoChronos;
+**Web chat · 道乃久** ([docs/web.md](docs/web.md), [ADR 0011](docs/adr/0011-web-client.md); the default service and records: [ADR 0012](docs/adr/0012-default-service-relay.md)): the agent 道乃久 (TaoChronos;
 model Tao-R1), published by IMPF-AI — TaoChronos's tools and evidence discipline over the underlying model you choose, which
 the page and the instructions name (an endpoint not in the list can be set by hand).  The conversation runs in the browser
-with your own key, straight to the provider (MiniMax allows the page's origin) or through `taochronos serve`; TaoChronos
+on the default service (no key; the page shows it as 道乃久默认服务 / Tao-R1 and names no vendor) or with your own key,
+straight to the provider or through `taochronos serve`; TaoChronos
 executes the tools in the browser (Pyodide, the 要籍语料: the open texts of 108 of the 350 key works) or under
 `taochronos serve` (the full corpus, all the books; the browser remembers the server).  The model acts as an
 agent with read and analysis permissions only, sees sixteen common tools directly and the rest through a catalog;
@@ -690,6 +692,10 @@ docs/                      study, task specification, architecture, agents, disc
   (Kanripo and Wikisource CC BY-SA 4.0, CMETA CC BY 4.0, McGill public domain), written by `taochronos web pack` and
   published as a whole under CC BY-SA 4.0 with per-text attribution ([ATTRIBUTION.md](corpus/web/ATTRIBUTION.md)); nothing
   from a source kept to local research (笈成, 東亜医学協会, the web collections, Hugging Face) is in it.
+- **Conversation records** (`data/chat-logs/`): during the test period of 道乃久默认服务, the turns of visitors who agreed to
+  be recorded (no key, settings or address), held by the relay and collected hourly into this repository.  It must stay
+  private; move the directory out before it is ever made public.  The MiniMax key exists only as an encrypted secret of
+  the relay and of the repository's Actions — never in the code, the site or a log.
 - Licences are recorded per work in the catalogues and the store and travel with every witness: Kanripo and
   Wikisource CC BY-SA 4.0; McGill public domain; CMETA's collation and editing CC BY 4.0 (attribution: 數位中醫校書郎
   CMETA), the texts public domain; the 東亜医学協会's transcriptions © the association, non-commercial personal use

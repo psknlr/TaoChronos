@@ -10,3 +10,7 @@ venv/
 .taochronos/
 *.sqlite
 *.sqlite-journal
+# the relay (relay/): local secrets for `wrangler dev`, its install and state
+relay/.dev.vars
+relay/node_modules/
+relay/.wrangler/

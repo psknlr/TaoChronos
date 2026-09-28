@@ -1,6 +1,6 @@
 name: pages
 
-# The web client on GitHub Pages: https://psknlr.github.io/TaoChronos/
+# The web client on GitHub Pages: https://chat.impf.ai/ (the custom domain; https://psknlr.github.io/TaoChronos/ redirects there)
 # One-time setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
 on:
   push:
@@ -50,8 +50,9 @@ jobs:
           assert out["ok"] and out["citations"], out
           print(rt.info()["corpus"], len(rt.catalog("all")["tools"]), "tools")
           EOF
-      - name: Build the site (client, in-browser runtime, 要籍语料, providers, pinned Pyodide)
-        run: taochronos web build -o _site
+      - name: Build the site (client, in-browser runtime, 要籍语料, providers, pinned Pyodide, the relay's address)
+        # the page uses 道乃久默认服务 (relay/) when it answers, and asks for the visitor's own key when it does not
+        run: taochronos web build -o _site --relay "${{ vars.RELAY_URL || 'https://chat-api.impf.ai' }}"
       - name: Check the 要籍语料 the site ships, as the browser will read it
         run: |
           python - <<'EOF'

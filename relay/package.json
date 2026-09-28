@@ -1,0 +1,11 @@
+{
+  "name": "taochronos-relay",
+  "private": true,
+  "type": "module",
+  "description": "道乃久默认服务: the Cloudflare Worker between chat.impf.ai and MiniMax (see README.md)",
+  "scripts": {
+    "test": "node --test test/relay.test.js",
+    "dev": "npx wrangler@4 dev",
+    "deploy": "npx wrangler@4 deploy"
+  }
+}

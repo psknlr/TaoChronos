@@ -5,12 +5,13 @@ import { streamClaude } from "./llm/anthropic.js";
 import { streamChat } from "./llm/openai.js";
 import { extractCitations, renderMarkdown } from "./markdown.js";
 import { AGENT, MODEL as ASSISTANT, PUBLISHER, PUBLISHER_EN } from "./brand.js";
-import { activeProvider, allProviders, loadProviders, loadSettings, saveSettings } from "./providers.js";
+import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, RELAY_ID, saveSettings, setRelay } from "./providers.js";
+import { consent, NOTICE, setConsent } from "./records.js";
 import { BrowserRuntime, probeServer, sameOriginServer, ServerRuntime } from "./runtime.js";
 import * as store from "./store.js";
 import {
-  $, bare, copyText, count, dateGroup, debounce, download, fmtMs, h, icon, passageLabel, replace, storage, throttleFrame, toast, truncate,
-  uid, yearLabel,
+  $, bare, copyText, count, dateGroup, debounce, download, fmtMs, h, icon, passageLabel, replace, sleep, storage, throttleFrame, toast,
+  truncate, uid, yearLabel,
 } from "./util.js";
 import { renderDrawer, reportNode } from "./view/drawer.js";
 import { openSettings } from "./view/settings.js";
@@ -23,6 +24,8 @@ const S = {
   here: null,              // the TaoChronos server that served this page, if one did
   runtimeInfo: null,
   runtimeState: { status: "idle", progress: 0, message: "" },
+  relay: null,             // 道乃久默认服务: {url, ok, model, models, logs, limits, pending} when the site has one (site.json)
+  relayReady: null,
   catalogs: {},
   catalogAll: null,
   catalogIndex: new Map(),
@@ -43,7 +46,7 @@ const el = {
   main: $("#main"), toggleSidebar: $("#toggle-sidebar"), modelChip: $("#model-chip"), title: $("#conv-title"),
   toggleDrawer: $("#toggle-drawer"), thread: $("#thread"), inner: $("#thread-inner"), toBottom: $("#to-bottom"),
   composer: $("#composer"), input: $("#input"), send: $("#send"), attach: $("#attach"), file: $("#file"), attachments: $("#attachments"),
-  hint: $("#hint"), drawer: $("#drawer"), scrim: $("#scrim"), settings: $("#settings"), report: $("#report"),
+  hint: $("#hint"), drawer: $("#drawer"), scrim: $("#scrim"), settings: $("#settings"), report: $("#report"), consent: $("#consent"),
 };
 
 const mobile = () => matchMedia("(max-width: 980px)").matches;
@@ -132,7 +135,9 @@ async function getCatalog(mode) {
 
 function routeFor(settings = S.settings) {
   const server = S.runtime?.kind === "server" ? S.runtime : null;
-  const custom = activeProvider(settings).custom; // a hand-set endpoint goes direct unless told otherwise (the proxy lists hosts)
+  const p = activeProvider(settings);
+  if (p.relay) return { kind: "direct" }; // the default service is reached directly, never through a local server
+  const custom = p.custom; // a hand-set endpoint goes direct unless told otherwise (the proxy lists hosts)
   if (settings.route === "proxy" || (settings.route === "auto" && server && !custom)) {
     return { kind: "proxy", serverUrl: server ? server.url : settings.serverUrl, token: server ? server.token : settings.serverToken || "" };
   }
@@ -140,6 +145,7 @@ function routeFor(settings = S.settings) {
 }
 
 function needsKey() {
+  if (S.relay?.pending) return false; // the default service is being checked: sending waits for it
   const p = activeProvider(S.settings);
   if (p.apiKey || p.key_optional) return false;
   return !(routeFor().kind === "proxy" && S.runtimeInfo?.env_keys);
@@ -367,13 +373,15 @@ async function send(text, images = []) {
   text = (text || "").trim();
   if (!text && !images.length) return;
   if (S.running) return;
+  if (S.relay?.pending) await S.relayReady;
   if (needsKey()) {
     el.input.value = text;
     autosize();
-    toast(`请先为 ${ASSISTANT} 配置底层模型的 API Key（默认 MiniMax-M3）`);
+    toast(`请先为 ${ASSISTANT} 配置底层模型的 API Key`);
     openSettings(S, settingsCtx, "model");
     return;
   }
+  if (S.relay?.ok && S.relay.logs && consent() === null) await askConsent();
   let conv = S.conv;
   if (!conv) {
     conv = newConversation(truncate(text.replace(/\s+/g, " "), 30) || "图片");
@@ -435,6 +443,7 @@ async function runAssistant(conv, msg) {
       renderSidebar();
     }
     renderComposer();
+    recordTurn(conv, msg);
   }
 }
 
@@ -697,6 +706,7 @@ const threadCtx = {
   get runtimeInfo() { return S.runtimeInfo; },
   get runtimeState() { return S.runtimeState; },
   get needsKey() { return needsKey(); },
+  get relayActive() { return Boolean(S.relay?.ok && activeProvider(S.settings).relay); },
   get editing() { return S.ui.editing; },
   get running() { return Boolean(S.running); },
   openThink: S.ui.openThink,
@@ -775,7 +785,7 @@ function renderTopbar() {
   const warn = needsKey();
   el.modelChip.classList.toggle("warn", warn);
   replace(el.modelChip, h("img.seal", { src: "assets/logo.svg", alt: "" }), h("span.nm", ASSISTANT), warn ? h("span.tag", "未配置") : null, icon("chevdown", "sm"));
-  el.modelChip.title = `${ASSISTANT} · 底层模型 ${p.model || "未选"}（${p.label}）${warn ? " · 尚未配置 API Key" : ""}`;
+  el.modelChip.title = `${ASSISTANT} · ${modelLabel(p)}${warn ? " · 尚未配置 API Key" : ""}`;
   el.modelChip.setAttribute("aria-label", `${ASSISTANT} 的模型设置`);
   el.title.textContent = S.conv?.title || "";
   document.title = S.conv?.title ? `${S.conv.title} · ${AGENT}` : `${AGENT} · 中医古籍研究智能体`;
@@ -877,7 +887,7 @@ function renderComposerHint() {
   const p = activeProvider(S.settings);
   const info = S.runtimeInfo;
   el.hint.textContent = `${ASSISTANT} · ${S.runtime?.label || "运行环境"}${info ? ` · ${corpusLabel(info.corpus)}` : ""}`;
-  el.hint.title = `底层模型 ${p.model || "未选"}（${p.label}）`;
+  el.hint.title = modelLabel(p);
 }
 
 function renderAttachments() {
@@ -957,6 +967,108 @@ for (const ev of ["dragenter", "dragover"]) el.composer.addEventListener(ev, (e)
 for (const ev of ["dragleave", "drop"]) el.composer.addEventListener(ev, () => el.composer.classList.remove("drag"));
 el.composer.addEventListener("drop", (e) => { if (e.dataTransfer?.files?.length) { e.preventDefault(); addImages(e.dataTransfer.files); } });
 
+// ------------------------------------------------------------------ 道乃久默认服务 and conversation records
+/** site.json (written by the build) names the site's relay; its health says whether it is up and collects records. */
+async function loadRelay() {
+  let url = "";
+  try {
+    const r = await fetch("site.json", { cache: "no-cache" });
+    if (r.ok) url = String((await r.json())?.relay || "").trim().replace(/\/+$/, "");
+  } catch { /* no site.json: a local server's page, or a site built without a relay */ }
+  if (!/^https?:\/\//.test(url)) return;
+  S.relay = { url, ok: false, logs: false, pending: true };
+  setRelay(S.relay);
+  S.relayReady = checkRelay().finally(() => { renderTopbar(); renderMain(); renderComposer(); });
+}
+
+async function checkRelay() {
+  const url = S.relay.url;
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 5000);
+  try {
+    const r = await fetch(`${url}/v1/health`, { cache: "no-store", signal: ctl.signal });
+    const j = r.ok ? await r.json() : null;
+    if (j?.ok) {
+      Object.assign(S.relay, { ok: true, model: j.model, models: j.models, logs: Boolean(j.logs), limits: j.limits,
+        maxOutput: Number(j.max_output_tokens) || null });
+    }
+  } catch { /* down or not deployed yet: the page works as before, with the visitor's own key */ }
+  clearTimeout(timer);
+  delete S.relay.pending;
+  setRelay(S.relay);
+  // a visitor without a model of their own asks through it; one who chose it falls back while it is down
+  if (S.relay.ok && needsKey()) S.settings.provider = RELAY_ID;
+  else if (!S.relay.ok && S.settings.provider === RELAY_ID) S.settings.provider = allProviders(S.settings).find((p) => !p.relay)?.id;
+}
+
+function askConsent() {
+  return new Promise((resolve) => {
+    const dlg = el.consent ||= document.body.appendChild(h("dialog#consent", { "aria-label": "对话记录说明" })); // an index.html cached from before
+    const done = (agreed) => {
+      setConsent(agreed);
+      dlg.close();
+      toast(agreed ? "已同意记录。可随时在“设置 → 数据”里更改" : "不记录。可随时在“设置 → 数据”里更改");
+      resolve(agreed);
+    };
+    dlg.oncancel = (e) => { e.preventDefault(); done(false); };
+    dlg.replaceChildren(h("div.modal.consent", { role: "document" },
+      h("div.modal-head", h("h2", "对话记录说明")),
+      h("div.consent-body", ...NOTICE.map((t) => h("p", t)),
+        h("p.muted", "你的选择只保存在本浏览器，可随时在“设置 → 数据”里更改；不记录也可以照常使用。")),
+      h("div.modal-foot",
+        h("button.btn.secondary", { type: "button", on: { click: () => done(false) } }, "不记录"),
+        h("button.btn", { type: "button", on: { click: () => done(true) } }, "同意并继续"))));
+    dlg.showModal();
+  });
+}
+
+const recording = () => Boolean(S.relay?.ok && S.relay.logs && consent() === true);
+
+/** How the answer's citations were checked: waits for the checks under way (15 s at most). */
+async function citationSummary(conv, msg) {
+  const cites = extractCitations(answerText(msg));
+  const out = { total: cites.length, ok: 0, warn: 0, bad: 0, pending: 0, pids: [...new Set(cites.map((c) => c.pid))].slice(0, 60) };
+  const deadline = Date.now() + 15000;
+  for (const c of cites) {
+    let v = S.verify.get(`${conv.id}|${c.pid}|${c.quote || ""}`);
+    if (v && typeof v.then === "function") v = await Promise.race([v, sleep(Math.max(0, deadline - Date.now())).then(() => null)]);
+    out[["ok", "warn", "bad"].includes(v?.status) ? v.status : "pending"]++;
+  }
+  return out;
+}
+
+/** One finished turn, compact (no key, no settings, no address), to the relay — only when the visitor agreed. */
+async function recordTurn(conv, msg) {
+  if (!recording()) return;
+  try {
+    const idx = conv.messages.indexOf(msg);
+    const user = conv.messages[idx - 1];
+    if (!user || user.role !== "user") return;
+    const tools = [];
+    for (const seg of msg.segments || []) {
+      for (const c of seg.calls || []) {
+        tools.push({ name: c.resolved || c.name, ok: c.status === "ok", ms: c.ms, args: truncate(JSON.stringify(c.args ?? {}), 300) });
+      }
+    }
+    const record = {
+      v: 1, id: msg.id, conversation: conv.id, turn: conv.messages.slice(0, idx).filter((m) => m.role === "user").length,
+      started: new Date(msg.created).toISOString(), finished: new Date().toISOString(), ms: msg.ms, rounds: msg.rounds,
+      question: (user.text || "").slice(0, 4000), images: user.images?.length || undefined, answer: answerText(msg).slice(0, 12000),
+      status: msg.status, error: msg.error ? String(msg.error).slice(0, 500) : undefined,
+      model: msg.model, provider: msg.provider, runtime: S.runtimeInfo?.runtime || S.runtime?.kind, corpus: S.runtimeInfo?.corpus?.kind,
+      app: S.runtimeInfo?.version, usage: msg.usage || undefined, tools: tools.slice(0, 40), citations: await citationSummary(conv, msg),
+    };
+    let body = JSON.stringify(record);
+    const size = () => new TextEncoder().encode(body).length;
+    while (size() > 60000 && record.answer.length > 400) { // within the relay's limit: the answer is shortened
+      record.answer = record.answer.slice(0, Math.floor(record.answer.length * 0.7));
+      body = JSON.stringify(record);
+    }
+    // text/plain: a simple request, no preflight (the relay reads the body as JSON whatever its type)
+    await fetch(`${S.relay.url}/v1/logs`, { method: "POST", headers: { "Content-Type": "text/plain;charset=UTF-8" }, body, keepalive: true });
+  } catch { /* a record that did not arrive is not the visitor's concern */ }
+}
+
 // ------------------------------------------------------------------ settings
 const settingsCtx = {
   save(draft) {
@@ -982,7 +1094,7 @@ const settingsCtx = {
       const res = p.format === "anthropic"
         ? await streamClaude({ provider: p, system: "你是一个连接测试。", messages, tools: [], settings, route, signal: ctl.signal })
         : await streamChat({ provider: p, messages: [{ role: "system", content: "你是一个连接测试。" }, ...messages], tools: [], settings, route, signal: ctl.signal });
-      return { ok: true, message: `连接成功 · ${res.model || p.model} · ${fmtMs(Date.now() - started)} · 回复「${truncate(res.text || res.thinking || "（空）", 40)}」` };
+      return { ok: true, message: `连接成功 · ${p.relay ? p.label : res.model || p.model} · ${fmtMs(Date.now() - started)} · 回复「${truncate(res.text || res.thinking || "（空）", 40)}」` };
     } catch (err) {
       return { ok: false, message: err.name === "AbortError" ? "请求超时" : err.message };
     } finally {
@@ -1010,6 +1122,8 @@ const settingsCtx = {
     }
   },
   describeRuntime,
+  consent,
+  setConsent(agreed) { setConsent(agreed); toast(agreed ? "已同意记录" : "已停止记录"); },
   exportAll() {
     download(`TaoChronos-对话-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ app: "TaoChronos", version: 1, exported: new Date().toISOString(), conversations: S.list }, null, 1), "application/json");
   },
@@ -1055,7 +1169,8 @@ function exportMarkdown(conv) {
     else {
       const tools = (m.segments || []).flatMap((s) => s.calls || []).map((c) => `\`${c.name}\``);
       lines.push(`## ${AGENT}`, "");
-      const about = [m.model ? `底层模型 ${m.model}` : null, tools.length ? `工具 ${[...new Set(tools)].join("、")}` : null].filter(Boolean);
+      const about = [m.provider === RELAY_ID ? "道乃久默认服务" : m.model ? `底层模型 ${m.model}` : null,
+        tools.length ? `工具 ${[...new Set(tools)].join("、")}` : null].filter(Boolean);
       if (about.length) lines.push(`*${about.join("；")}*`, "");
       lines.push(answerText(m) || "（无回答）", "");
     }
@@ -1170,7 +1285,10 @@ async function main() {
   applyTheme();
   wireChrome();
   await loadProviders();
-  if (!allProviders(S.settings).some((p) => p.id === S.settings.provider)) S.settings.provider = allProviders(S.settings)[0].id;
+  await loadRelay(); // site.json only; the relay's health is checked meanwhile
+  if (!allProviders(S.settings).some((p) => p.id === S.settings.provider)) {
+    S.settings.provider = allProviders(S.settings).find((p) => !p.relay)?.id || allProviders(S.settings)[0].id;
+  }
   S.list = await store.listConversations().catch(() => []);
   const m = /^#\/c\/(.+)$/.exec(location.hash);
   S.conv = m ? S.list.find((c) => c.id === m[1]) || null : null;

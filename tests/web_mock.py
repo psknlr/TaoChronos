@@ -161,3 +161,95 @@ class _AnthropicHandler(_Handler):
         yield {"type": "content_block_stop", "index": 0}
         yield {"type": "message_delta", "delta": {"stop_reason": "end_turn", "stop_sequence": None}, "usage": {"output_tokens": 120}}
         yield {"type": "message_stop"}
+
+
+class MockRelay(ThreadingHTTPServer):
+    """道乃久默认服务 as the page sees it (relay/src/relay.js): health, the model calls forwarded to ``upstream`` with the
+    relay's own key, and the conversation records.  Records what the browser sent — the page never sends a key."""
+
+    daemon_threads = True
+    SECRET = "relay-held-secret"
+
+    def __init__(self, upstream: str, port: int = 0, logs: bool = True) -> None:
+        super().__init__(("127.0.0.1", port), _RelayHandler)
+        self.upstream = upstream.rstrip("/")
+        self.logs = logs
+        self.chat: list[dict] = []     # the browser's requests to the relay
+        self.records: list[dict] = []  # the records the page sent
+        self.record_types: list[str] = []
+
+    @property
+    def url(self) -> str:
+        return f"http://127.0.0.1:{self.server_address[1]}"
+
+    def start(self) -> "MockRelay":
+        threading.Thread(target=self.serve_forever, daemon=True).start()
+        return self
+
+
+class _RelayHandler(BaseHTTPRequestHandler):
+    server: MockRelay
+    protocol_version = "HTTP/1.1"
+
+    def log_message(self, *args) -> None:
+        pass
+
+    def _cors(self) -> None:
+        self.send_header("Access-Control-Allow-Origin", self.headers.get("Origin") or "*")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Vary", "Origin")
+
+    def _json(self, status: int, data) -> None:
+        raw = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self._cors()
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(raw)))
+        self.end_headers()
+        self.wfile.write(raw)
+
+    def do_OPTIONS(self) -> None:
+        self.send_response(204)
+        self._cors()
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def do_GET(self) -> None:
+        if self.path == "/v1/health":
+            self._json(200, {"ok": True, "service": "taochronos-relay", "model": "MiniMax-M3", "models": ["MiniMax-M3"],
+                             "logs": self.server.logs, "max_output_tokens": 8192, "limits": {"per_minute": 30, "per_day": 600}})
+        else:
+            self._json(404, {"error": {"message": "not found"}})
+
+    def do_POST(self) -> None:
+        raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        if self.path == "/v1/logs":
+            self.server.records.append(json.loads(raw or b"{}"))
+            self.server.record_types.append(self.headers.get("Content-Type", ""))
+            self.send_response(204)
+            self._cors()
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        if self.path != "/v1/chat/completions":
+            self._json(404, {"error": {"message": "not found"}})
+            return
+        self.server.chat.append({"headers": dict(self.headers), "body": json.loads(raw or b"{}")})
+        import urllib.request
+
+        req = urllib.request.Request(f"{self.server.upstream}/chat/completions", data=raw, method="POST",
+                                     headers={"Content-Type": "application/json", "Authorization": f"Bearer {MockRelay.SECRET}"})
+        with urllib.request.urlopen(req, timeout=30) as up:  # noqa: S310 — the test's own mock
+            self.send_response(up.status)
+            self._cors()
+            self.send_header("Content-Type", up.headers.get("Content-Type", "text/event-stream"))
+            self.send_header("Transfer-Encoding", "chunked")
+            self.end_headers()
+            while True:
+                data = up.read1(65536) if hasattr(up, "read1") else up.read(65536)
+                if not data:
+                    break
+                self.wfile.write(f"{len(data):X}\r\n".encode() + data + b"\r\n")
+                self.wfile.flush()
+            self.wfile.write(b"0\r\n\r\n")

@@ -1,0 +1,75 @@
+name: relay
+
+# 道乃久默认服务: relay/ deployed to Cloudflare as chat-api.impf.ai (relay/README.md).
+# Repository secrets it needs (Settings → Secrets and variables → Actions): CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID,
+# MINIMAX_API_KEY, LOG_EXPORT_TOKEN.  The key and the token become secrets of the Worker; neither is ever printed or
+# written into the repository or the site.  Until they are set, this workflow tests the relay and deploys nothing.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "relay/**"
+      - ".github/workflows/relay.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: relay
+  cancel-in-progress: false
+
+env:
+  WRANGLER: wrangler@4.142.0
+  RELAY_URL: ${{ vars.RELAY_URL || 'https://chat-api.impf.ai' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test the relay
+        run: node --test relay/test/relay.test.js
+      - name: Are its secrets set?
+        id: secrets
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          KEY: ${{ secrets.MINIMAX_API_KEY }}
+          TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
+        run: |
+          missing=""
+          [ -n "$CF_TOKEN" ] || missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -n "$CF_ACCOUNT" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          [ -n "$KEY" ] || missing="$missing MINIMAX_API_KEY"
+          [ -n "$TOKEN" ] || missing="$missing LOG_EXPORT_TOKEN"
+          token="$(printf '%s' "$TOKEN" | tr -d '[:space:]')"
+          if [ -n "$missing" ]; then
+            echo "::warning::the relay is not deployed until these repository secrets are set:$missing (see relay/SETUP.md)"
+            echo "ready=0" >> "$GITHUB_OUTPUT"
+          elif [ "${#token}" -lt 16 ]; then
+            echo "::error::LOG_EXPORT_TOKEN must be at least 16 characters"
+            exit 1
+          else
+            echo "ready=1" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Deploy the Worker, then give it its secrets
+        if: steps.secrets.outputs.ready == '1'
+        working-directory: relay
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
+          LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
+          WRANGLER_SEND_METRICS: "false"
+        # a space or line break pasted with a secret is not part of it (neither value has any)
+        run: |
+          npx --yes "$WRANGLER" deploy
+          printf '%s' "$MINIMAX_API_KEY" | tr -d '[:space:]' | npx --yes "$WRANGLER" secret put MINIMAX_API_KEY
+          printf '%s' "$LOG_EXPORT_TOKEN" | tr -d '[:space:]' | npx --yes "$WRANGLER" secret put LOG_EXPORT_TOKEN
+      - name: Check it answers, and that MiniMax takes its key (one tiny call)
+        if: steps.secrets.outputs.ready == '1'
+        run: python3 relay/collect.py check --relay "$RELAY_URL"

@@ -156,7 +156,8 @@ def test_the_server_answers_the_api_and_serves_the_client(server):
     resp, raw = request(server, "GET", "/js/app.js")
     assert resp.getheader("Content-Type").startswith("text/javascript")
     resp, raw = request(server, "GET", "/providers.json")
-    assert json.loads(raw)[0]["id"] == "minimax" and json.loads(raw)[0]["default_model"] == "MiniMax-M3"
+    listed = json.loads(raw)  # the page's list names no vendor behind its default service
+    assert listed[0]["id"] == "deepseek" and "minimax" not in raw.decode().lower()
     resp, raw = request(server, "GET", "/runtime/manifest.json")
     manifest = json.loads(raw)
     resp, pkg = request(server, "GET", "/runtime/taochronos.zip")
@@ -172,6 +173,9 @@ def test_the_server_admits_only_this_machine_and_the_published_client(server):
                                                              "Access-Control-Request-Private-Network": "true"})
     assert resp.status == 204 and resp.getheader("Access-Control-Allow-Origin") == "https://psknlr.github.io"
     assert resp.getheader("Access-Control-Allow-Private-Network") == "true"
+    for origin in ("https://chat.impf.ai", "http://chat.impf.ai"):  # the published client under its own domain
+        resp, _ = request(server, "OPTIONS", "/api/call", headers={"Origin": origin, "Access-Control-Request-Method": "POST"})
+        assert resp.status == 204 and resp.getheader("Access-Control-Allow-Origin") == origin
     resp, _ = request(server, "POST", "/api/call", {"name": "classics.search", "arguments": {"query": "x"}},
                       {"Origin": "https://evil.example"})
     assert resp.status == 403
@@ -291,3 +295,21 @@ def test_the_site_build_is_deterministic_and_complete(tmp_path):
         assert corpus["profile"] == "web-canon" and corpus["bytes"] == (site / "runtime" / "corpus.sqlite.gz").stat().st_size
     html = (site / "index.html").read_text(encoding="utf-8")
     assert not re.search(r'(src|href)="/', html)  # every path is relative: the site lives under /TaoChronos/
+    # the texts' credits travel with the site (the repository is private); no conversation record can enter it
+    assert (site / "attribution.html").is_file() and "CC BY-SA 4.0" in (site / "ATTRIBUTION.md").read_text(encoding="utf-8")
+    assert not any("chat-logs" in p.as_posix() or p.relative_to(site).parts[0] == "data" for p in site.rglob("*"))
+    assert not any(n.startswith("data/") for n in names)
+    assert not (site / "site.json").exists() and info["relay"] is None  # without a relay: the visitor's own key, as before
+
+
+def test_the_site_names_its_relay_only_when_told(tmp_path):
+    from taochronos.chat.build import build_site
+
+    info = build_site(tmp_path / "a", home=ROOT, pyodide="cdn", relay="https://chat-api.impf.ai/")
+    assert json.loads((tmp_path / "a" / "site.json").read_text()) == {"relay": "https://chat-api.impf.ai"} == {"relay": info["relay"]}
+    build_site(tmp_path / "b", home=ROOT, pyodide="cdn", relay="none")
+    assert not (tmp_path / "b" / "site.json").exists()
+    with pytest.raises(ValueError):
+        build_site(tmp_path / "c", home=ROOT, pyodide="cdn", relay="chat-api.impf.ai")
+    key = re.compile(rb"sk-[A-Za-z0-9_-]{24,}")  # no key-shaped string anywhere in what the site serves
+    assert not [p for p in (tmp_path / "a").rglob("*") if p.is_file() and p.suffix in (".json", ".js", ".html", ".md") and key.search(p.read_bytes())]

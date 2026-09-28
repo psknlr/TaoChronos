@@ -2,6 +2,7 @@
 
 import { renderMarkdown } from "../markdown.js";
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY } from "../brand.js";
+import { RELAY_ID } from "../providers.js";
 import { fmtMs, h, icon, passageLabel, prettyJSON, replace, truncate } from "../util.js";
 
 export const FAMILY = {
@@ -64,8 +65,10 @@ function hero(ctx) {
       h("button.starter", { type: "button", on: { click: () => ctx.onStarter(s.prompt) } }, h("b", s.title), s.prompt))),
     ctx.needsKey
       ? h("p.keyhint", "开始前请先为 ", ASSISTANT, " ", h("button", { type: "button", on: { click: ctx.onOpenSettings } }, "配置底层模型的 API"),
-        "（默认 MiniMax-M3）。也可以不配置模型，直接在右侧“工具台”使用全部功能。")
-      : h("p.keyhint", "Enter 发送 · Shift+Enter 换行 · ", h("kbd", "Ctrl"), " ", h("kbd", "K"), " 新对话"),
+        "。也可以不配置模型，直接在右侧“工具台”使用全部功能。")
+      : ctx.relayActive
+        ? h("p.keyhint", "已接入道乃久默认服务：无需设置，直接提问 · Enter 发送 · Shift+Enter 换行")
+        : h("p.keyhint", "Enter 发送 · Shift+Enter 换行 · ", h("kbd", "Ctrl"), " ", h("kbd", "K"), " 新对话"),
     h("p.publisher", PUBLISHED_BY),
   );
 }
@@ -135,7 +138,7 @@ export function fillAssistant(body, m, ctx, last) {
     body.append(h("div.actions",
       h("button.icon-btn", { type: "button", title: "复制回答", "aria-label": "复制回答", on: { click: () => ctx.onCopy(answerText(m)) } }, icon("copy", "sm")),
       last && !ctx.running ? h("button.icon-btn", { type: "button", title: "重新生成", "aria-label": "重新生成", on: { click: () => ctx.onRegenerate(m.id) } }, icon("redo", "sm")) : null,
-      h("span.meta", { title: m.model ? `底层模型 ${m.model}` : null }, meta)));
+      h("span.meta", { title: m.provider === RELAY_ID ? "道乃久默认服务" : m.model ? `底层模型 ${m.model}` : null }, meta)));
   }
 }
 
