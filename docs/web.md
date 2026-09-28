@@ -2,7 +2,7 @@
 
 **道乃久** (TaoChronos; model **Tao-R1**; published by 医哲未来人工智能研究院, IMPF-AI): a model of your choice that answers
 from the classics through TaoChronos's tools, with every quotation checked against its source.  Published at
-**https://psknlr.github.io/TaoChronos/**, where it runs in the browser on the **要籍语料** — the openly licensed texts of the
+**https://chat.impf.ai/** (GitHub Pages under IMPF-AI's domain; the old address redirects there), where it runs in the browser on the **要籍语料** — the openly licensed texts of the
 350 key works ([要籍语料](#要籍语料--the-browsers-corpus)); the same page is served by `taochronos serve`, which brings all the
 books of the full corpus into it ([接入全部古籍](#接入全部古籍)).
 
@@ -195,6 +195,34 @@ MiniMax does, for the published page's origin), *经本地服务转发* (through
 (through the proxy when the page is connected to a local server; an API set by hand goes direct, since the proxy forwards
 only to listed hosts — `taochronos serve --allow-host api.example.com` adds one).  **测试连接** sends one short request.
 
+## 道乃久默认服务 — asking without a key, and conversation records
+
+The published page lets a visitor ask at once: **道乃久默认服务** is MiniMax-M3 behind a relay of IMPF-AI's
+([`relay/`](../relay/README.md), a Cloudflare Worker at `chat-api.impf.ai`).  The MiniMax key is a secret of that Worker,
+set from the repository's Actions secrets when it is deployed: it is never in the page, the site or the repository, and
+the page sends no key to the relay.  A key inside a static page cannot be kept, however it is encoded — the browser has to
+send it in clear to the provider, where any visitor can read it — so the relay is the only place it can live.
+
+* The build writes the relay's address into the site (`taochronos web build --relay URL` → `site.json`; the Pages
+  workflow passes `https://chat-api.impf.ai`, or the repository variable `RELAY_URL`).  The page asks the relay's
+  `/v1/health` as it loads; when it answers, a visitor who has set up no model of their own uses the default service (the
+  tile 道乃久默认服务 · 免密钥 in 设置 → 模型, no key or address to fill in), and the opening screen says so.  When it does
+  not answer, the page is what it was before: the visitor's own key.
+* The relay accepts the page's origins only, the allowed models only, caps the output, and counts use per visitor
+  (a hash of address and day; addresses are kept nowhere) per minute and per day, and in all per day
+  (`relay/wrangler.toml`).  Its refusals are sentences a visitor can act on (wait, or use one's own key).
+* **Conversation records** (the test period): before a visitor's first question the page says what would be recorded
+  and why, and asks — 同意并继续 or 不记录; the choice stays in that browser and can be changed at any time under
+  设置 → 数据.  A visitor who agreed sends, after each finished turn, one compact record to the relay: the question, the
+  answer, the tools called, how the citations were checked, the model, token usage and timings — never a key, the
+  settings or an address (`web/js/records.js`, `relay/src/relay.js` keeps only those fields).  The relay holds the records
+  until `.github/workflows/chat-logs.yml` collects them, every hour, into `data/chat-logs/YYYY/MM/DD.jsonl` in this private
+  repository, and deletes them once the commit is pushed (`relay/collect.py`).  The records never enter the published
+  site.  If the repository is ever made public, `data/chat-logs/` must be moved out first.
+
+Setting it up once: a Cloudflare API token and account id, the MiniMax key and a collector token as repository secrets,
+then **Actions → relay → Run workflow** — see [relay/README.md](../relay/README.md).
+
 ## The local server
 
 ```bash
@@ -210,7 +238,7 @@ Endpoints: `GET /api/info`, `GET /api/catalog?mode=core|all`, `POST /api/call {n
 then the outcome), `GET /api/session/<id>?what=summary|report|hypothesis|evidence`, `POST /api/llm` (model proxy).
 
 It binds to 127.0.0.1.  Only this machine's pages, the server's own pages, the published client
-(`https://psknlr.github.io`) and origins named with `--allow-origin` may call it (CORS, with Private Network Access
+(`https://chat.impf.ai`, and `https://psknlr.github.io`) and origins named with `--allow-origin` may call it (CORS, with Private Network Access
 headers so the HTTPS page may reach it — the browser may ask for permission); the Host header must name this machine,
 so a rebound DNS name cannot reach it.  Bound to any other address it requires its access token (above).  The
 proxy forwards only to the hosts of the listed providers and streams the answer back; keys pass through and are never
@@ -264,9 +292,17 @@ requests (`reasoning_split`, `max_completion_tokens`, `reasoning_details` and th
 the chip states, the highlighted passage, Tao-R1 in the chip and under the answer, and persistence across a reload; and
 a page served elsewhere (as on GitHub Pages) connecting to a server in one step, using it again after a reload, and a
 token taken from the address (and its absence reported); an API set by hand (address, model, key, headers, parameters —
-checked in the request it makes); and, with `TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium — Pyodide, the 要籍语料
-downloaded, indexed once and kept, a turn answered on it.  The browser tests are skipped where Playwright or Chromium is
-missing.
+checked in the request it makes); the default service (a stand-in relay): asked at once without a key, no key sent by the
+page, the consent question once, a turn recorded only after 同意 (its fields, no key or settings), none after 不记录 or
+once switched off under 设置 → 数据, and the page asking for a key while the relay is down; and, with
+`TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium — Pyodide, the 要籍语料 downloaded, indexed once and kept, a turn
+answered on it.  The browser tests are skipped where Playwright or Chromium is missing.  `relay/test/relay.test.js`
+(`node --test`, in CI) — the Worker's handler and its two stores on SQLite: the key added by the relay and never shown,
+origins, models, output cap and body size, the three limits and a new day, MiniMax's refusals turned into plain messages,
+the records reduced to their fields, and the collector's token, cursor, deletion and ids never reused.
+`tests/test_relay_collect.py` — `relay/collect.py` against a stand-in relay: records pulled once, by day, the cursor
+committed with them, deleted only once held, a deployment checked (and a refused key explained).  The site build writes
+`site.json` only when given a relay, carries the texts' attribution, and never a conversation record or a key.
 
 ## Limits
 

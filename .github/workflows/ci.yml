@@ -25,3 +25,13 @@ jobs:
         run: taochronos eval --quick
       - name: Demo research run
         run: taochronos --data "$RUNNER_TEMP/taochronos" demo --session ci
+
+  relay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: The relay (道乃久默认服务)
+        run: node --test relay/test/relay.test.js

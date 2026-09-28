@@ -77,10 +77,14 @@ export async function streamChat({ provider, messages, tools, settings, route, s
     body.tools = tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } }));
     body.tool_choice = "auto";
   }
-  if (settings.maxTokens) body[provider.max_tokens_param || "max_tokens"] = Number(settings.maxTokens);
+  if (settings.maxTokens) {
+    // a service with its own ceiling (the default service) is asked within it, so it forwards the request unchanged
+    const max = provider.max_output ? Math.min(Number(settings.maxTokens), provider.max_output) : Number(settings.maxTokens);
+    body[provider.max_tokens_param || "max_tokens"] = max;
+  }
   if (settings.temperature !== null && settings.temperature !== "" && settings.temperature !== undefined) body.temperature = Number(settings.temperature);
   Object.assign(body, provider.extra_body || {});
-  if (provider.id.startsWith("minimax") && settings.thinking === false) body.thinking = { type: "disabled" };
+  if ((provider.id.startsWith("minimax") || provider.family === "minimax") && settings.thinking === false) body.thinking = { type: "disabled" };
   if (provider.stream_usage) body.stream_options = { include_usage: true };
 
   const target = endpoint(url, route);
@@ -96,7 +100,9 @@ export async function streamChat({ provider, messages, tools, settings, route, s
   } catch (err) {
     if (err.name === "AbortError") throw err;
     throw new ProviderError(
-      route?.kind === "proxy"
+      provider.relay
+        ? "无法连接道乃久默认服务：网络不通或服务暂时不可用，请稍后再试，或在“设置 → 模型”里改用自己的 API Key。"
+        : route?.kind === "proxy"
         ? `无法连接 TaoChronos 服务 ${route.serverUrl}：请确认 taochronos serve 正在运行`
         : `无法连接 ${new URL(url).host}：网络不通，或该服务不允许浏览器直接访问（CORS）。可在设置中改为“经本地服务转发”。`,
       { retryable: true });

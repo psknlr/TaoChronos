@@ -1,6 +1,8 @@
 // Model providers (providers.json, written from the harness's own presets) and the user's settings.
 // API keys are kept in this browser's localStorage only, and sent only to the provider (or your local server's proxy).
+// 道乃久默认服务 (the site's relay, site.json) needs no key: the relay holds it, and no key is ever sent to it.
 
+import { PUBLISHER } from "./brand.js";
 import { storage } from "./util.js";
 
 
@@ -34,6 +36,25 @@ export const DEFAULTS = {
 
 let providers = FALLBACK;
 
+export const RELAY_ID = "impf";
+let relay = null; // {url, ok, model, models, logs, limits} once the site's relay has answered (or failed to)
+
+export function setRelay(r) { relay = r; }
+
+/** The default service as a provider: MiniMax behind the site's relay, no key. */
+function relayPreset() {
+  if (!relay?.url) return null;
+  const models = relay.models?.length ? relay.models : [relay.model || "MiniMax-M3"];
+  return {
+    id: RELAY_ID, label: "道乃久默认服务", format: "openai", base_url: `${relay.url}/v1`, key_optional: true, relay: true, family: "minimax",
+    max_tokens_param: "max_completion_tokens", extra_body: { reasoning_split: true }, examples: models, default_model: relay.model || models[0],
+    reasoning: "reasoning_details", vision: true, stream_usage: true, unavailable: !relay.ok, max_output: relay.maxOutput || null,
+    note: relay.ok
+      ? `${PUBLISHER}提供，无需 API Key，直接提问${relay.limits?.per_day ? `；测试期间每人每天约 ${relay.limits.per_day} 次模型调用（一个问题通常用几次）` : ""}。`
+      : "默认服务暂时连不上：请稍后再试，或选择其他服务并填入自己的 API Key。",
+  };
+}
+
 export async function loadProviders() {
   try {
     const r = await fetch("providers.json", { cache: "no-cache" });
@@ -62,7 +83,10 @@ export function newCustomProvider(n = 1) {
     headers: {}, extra_body: {}, max_tokens_param: "max_tokens", reasoning: null, vision: false };
 }
 
-export const allProviders = (settings) => [...providers, ...(settings?.customProviders || []).map(customPreset)];
+export const allProviders = (settings) => {
+  const r = relayPreset();
+  return [...(r ? [r] : []), ...providers, ...(settings?.customProviders || []).map(customPreset)];
+};
 export const providerById = (id, settings) => allProviders(settings).find((p) => p.id === id) || providers[0];
 
 export function loadSettings() {
@@ -80,8 +104,9 @@ export function activeProvider(settings) {
   const p = providerById(settings.provider, settings);
   return {
     ...p,
-    model: (p.custom ? p.default_model : settings.models[p.id] || p.default_model) || (p.examples || [])[0] || "",
-    baseUrl: ((p.custom ? p.base_url : settings.baseUrls[p.id] || p.base_url) || "").trim().replace(/\/+$/, ""),
-    apiKey: settings.keys[p.id] || "",
+    model: (p.custom ? p.default_model : (p.relay && !(p.examples || []).includes(settings.models[p.id]) ? "" : settings.models[p.id])
+      || p.default_model) || (p.examples || [])[0] || "",
+    baseUrl: ((p.custom || p.relay ? p.base_url : settings.baseUrls[p.id] || p.base_url) || "").trim().replace(/\/+$/, ""),
+    apiKey: p.relay ? "" : settings.keys[p.id] || "", // the relay holds its own key: none is sent to it
   };
 }

@@ -3,7 +3,7 @@
 **面向中医古籍的可溯源知识发现与治学系统** · 智能体**道乃久**（模型 **Tao-R1**），**医哲未来人工智能研究院（IMPF-AI）发布**
 *A provenance-grounded research harness for the Chinese medical classics — for scholars, students and discovery.*
 
-**[在线使用 · 网页对话](https://psknlr.github.io/TaoChronos/)** · [English README](README.en.md) · [网页端](docs/web.md) · [V2](docs/v2.md) · [古今桥接](docs/bridge.md) · [模型接入](docs/models.md) · [治学](docs/study.md) · [任务规格](docs/tasks.md) ·
+**[在线使用 · 网页对话](https://chat.impf.ai/)** · [English README](README.en.md) · [网页端](docs/web.md) · [V2](docs/v2.md) · [古今桥接](docs/bridge.md) · [模型接入](docs/models.md) · [治学](docs/study.md) · [任务规格](docs/tasks.md) ·
 [架构](docs/architecture.md) · [智能体](docs/agents.md) · [发现引擎](docs/discovery.md) · [评测](docs/evals.md) · [数据格式](docs/data.md) · [路线图](docs/roadmap.md) · [ADR](docs/adr/)
 
 TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一个**可检索、可断代、可溯源**的语料库，并在其上提供两层能力：
@@ -36,8 +36,9 @@ TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一
 两层共享同一原则：**每一个结论都落到逐字可核的原文见证上**（书、卷篇节、年代、层次、录文来源与授权），规则抽取标明为机器阅读，
 由人去核对与定夺。
 
-> 💬 **网页对话 · 道乃久**：打开 **<https://psknlr.github.io/TaoChronos/>**，与**道乃久**（TaoChronos，模型 Tao-R1，医哲未来人工智能研究院
-> IMPF-AI 发布）多轮对话。在设置里选择底层模型并填入自己的 API Key（默认 **MiniMax 国内站 · MiniMax-M3**，另有 DeepSeek、通义、Kimi、智谱、
+> 💬 **网页对话 · 道乃久**：打开 **<https://chat.impf.ai/>**，与**道乃久**（TaoChronos，模型 Tao-R1，医哲未来人工智能研究院
+> IMPF-AI 发布）多轮对话。打开即可提问：**道乃久默认服务**（MiniMax-M3，经 IMPF-AI 的[中转服务](relay/README.md)调用，访客无需 API Key；
+> 测试期间，经访客同意后记录对话）。也可以在设置里选择底层模型、填入自己的 API Key（MiniMax 国内站 · MiniMax-M3、DeepSeek、通义、Kimi、智谱、
 > 豆包、硅基流动、OpenRouter、Poe、LiteLLM、Claude 等十余家；列表之外的服务点“**自定义 API**”手动设置地址、模型、密钥与请求头），即可像使用
 > ChatGPT / Claude 一样对话。模型通过 TaoChronos 的全部 73 项工具检索与考据，回答里的每条引文 `[[段落号]]` 都由页面**逐字核对**（✓ 与原文
 > 一致 · ≠ 引文不符 · ✕ 查无此段）；证据、研究（多智能体发现）与工具台（无需模型、直接运行任一工具）在侧栏。
@@ -92,12 +93,12 @@ TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一
 | **现代证据与真实世界** | PubMed 记录按设计与对象分级、跨层防护、安全提示；真实世界问题 → 研究规格 → 只读参数化 OMOP 查询 | `modern search` · `modern safety` · `rwd ask` · `rwd synth` |
 | **版面、实体、今译、地域** | 竖排阅读顺序与双行小注、多模态识读、OCR 对库核对；24 类语境实体；五层今译；医家籍贯、序跋落款与地域统计 | `vision` · `study entities` · `study translate` · `study places` |
 | **知识发现** | 多智能体研究：失传知识、概念演变、方剂演化、隐性关联、矛盾发现、佚书线索；逐字证据、证伪、门控、专家核验 | `research` · `report` · `workspace` · `review` |
-| **所有人（网页）** | 类 ChatGPT / Claude 的多轮对话：自选模型（默认 MiniMax-M3）调用全部工具作答，引文逐字核对、出处一点即读（横排 / 竖排）；研究面板与工具台；对话存于本机浏览器，可导出 | [网页](https://psknlr.github.io/TaoChronos/) · `serve` · `web build` |
+| **所有人（网页）** | 类 ChatGPT / Claude 的多轮对话：默认服务免填密钥（MiniMax-M3），也可自选模型，调用全部工具作答，引文逐字核对、出处一点即读（横排 / 竖排）；研究面板与工具台；对话存于本机浏览器，可导出 | [网页](https://chat.impf.ai/) · `serve` · `web build` |
 | **开发者** | 插件化内核、能力注册、工具网格（73 个工具）、智能体配置（YAML）、事件溯源与重放、评测与架构治理；各任务输出的 JSON Schema | `agents` · `eval` · `governance` · `schema --study` |
 
 ## 二、快速开始
 
-**网页**：直接打开 <https://psknlr.github.io/TaoChronos/>（浏览器内运行，演示语料）；或接入全部古籍（全量语料，构建见下文）：
+**网页**：直接打开 <https://chat.impf.ai/>（浏览器内运行，要籍语料；默认服务免填密钥）；或接入全部古籍（全量语料，构建见下文）：
 
 ```bash
 pip install -e .
@@ -466,7 +467,7 @@ Poe（`poe`，`POE_API_KEY`，以机器人名为模型名）、LiteLLM（`litell
 复核模型一并配好。模型调用逐次缓存、计入预算、按 JSON 模式校验（一次修复机会）、记日志（不记提示词）；结果标明每项由规则、模型
 还是二者共同决定。外部命令子智能体与 Research Code Mode 见 [docs/agents.md](docs/agents.md)。
 
-**网页对话 · 道乃久**（[docs/web.md](docs/web.md)、[ADR 0011](docs/adr/0011-web-client.md)）：智能体道乃久（TaoChronos，模型 Tao-R1），由医哲未来
+**网页对话 · 道乃久**（[docs/web.md](docs/web.md)、[ADR 0011](docs/adr/0011-web-client.md)、默认服务与对话记录见 [ADR 0012](docs/adr/0012-default-service-relay.md)）：智能体道乃久（TaoChronos，模型 Tao-R1），由医哲未来
 人工智能研究院（IMPF-AI）发布——TaoChronos 的工具与证据纪律加上你选择的底层模型（界面与指令中都标明底层模型；列表之外的服务可在“自定义 API”
 中手动设置）。对话在浏览器里进行，模型用你自己的密钥直接调用（MiniMax 允许网页跨域访问），或经 `taochronos serve` 转发；TaoChronos 在浏览器内
 （Pyodide，要籍语料：350 部要籍中开放授权的 108 部原文）或 `taochronos serve`（全量语料，全部古籍；浏览器记住连接过的服务）执行工具。模型以
@@ -596,6 +597,8 @@ docs/                      治学、任务规格、架构、智能体、发现�
   ingest` 可复现地生成。唯一的例外是网页端的**要籍语料**（`corpus/web/`）：要籍书目中来源为开放授权（汉籍仓库、维基文库 CC BY-SA 4.0，
   CMETA CC BY 4.0，麦吉尔公有领域）的录本，由 `taochronos web pack` 从全量语料生成，整包以 CC BY-SA 4.0 发布，逐部署名见
   [ATTRIBUTION.md](corpus/web/ATTRIBUTION.md)；授权仅限本地研究的来源（笈成、东亚医学协会、网络文本集、Hugging Face）一字不收。
+- **对话记录**（`data/chat-logs/`）：道乃久默认服务测试期间，只有同意记录的访客的问答（不含密钥、设置与网络地址），由中转服务暂存、
+  每小时收入本仓库。仓库须保持私有；公开之前先移走该目录。MiniMax 密钥只作为中转服务与仓库 Actions 的加密机密存在，不在代码、网页或日志里。
 - 各来源授权逐部记录在书目与语料库中，并随每条见证输出：汉籍仓库与维基文库为 CC BY-SA 4.0；麦吉尔善本为公有领域；
   CMETA 的校订与编辑成果为 CC BY 4.0（须标示“數位中醫校書郎 CMETA”），底本文字属公有领域；东亚医学协会录文 © 该会，
   仅限非营利的个人保存与使用、不得转载再分发，本项目只作本地研究；

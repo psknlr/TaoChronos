@@ -143,7 +143,9 @@ access token).  The agent is 道乃久 (model Tao-R1), published by IMPF-AI.  Ou
 so every call goes through the scheduler like any agent's; it never holds `kg:propose`, and Code Mode only by the server's
 `--code-mode`.  The page checks every `[[passage_id]]` the model writes against the corpus (the quotation before it,
 directly or after normalisation; the passage's existence; whether a tool returned it).  See [web.md](web.md) and
-[ADR 0011](adr/0011-web-client.md).
+[ADR 0011](adr/0011-web-client.md).  The published page's default service (道乃久默认服务) is a Cloudflare Worker in
+`relay/` holding the MiniMax key as a secret; conversation records, sent only by visitors who agreed, are collected hourly
+into `data/chat-logs/` by a workflow — the relay holds no GitHub token ([ADR 0012](adr/0012-default-service-relay.md)).
 
 ## Tools and the scheduler
 

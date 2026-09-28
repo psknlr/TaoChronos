@@ -1360,7 +1360,8 @@ def cmd_web(args: argparse.Namespace) -> None:
             raise SystemExit("no corpus/catalog/canon.yaml: run taochronos study canon --write-catalog first")
         _out(export_pack(sqlite3.connect(f"file:{db_path}?mode=ro", uri=True), works, Path(args.output or home / "corpus" / "web")))
         return
-    info = build_site(Path(args.output or "_site"), home=home, web=Path(args.web) if args.web else None, pyodide=args.pyodide)
+    info = build_site(Path(args.output or "_site"), home=home, web=Path(args.web) if args.web else None, pyodide=args.pyodide,
+                      relay=args.relay if args.relay is not None else os.environ.get("TAOCHRONOS_RELAY_URL"))
     _out(info)
 
 
@@ -1673,6 +1674,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--web", help="the client's sources (default: <home>/web)")
     sp.add_argument("--pyodide", choices=["self", "cdn"], default="self",
                     help="self: put the pinned Pyodide files in the site (default); cdn: load them from jsDelivr")
+    sp.add_argument("--relay", help="build: the 道乃久默认服务 relay the page may use without a key (relay/; default "
+                                    "$TAOCHRONOS_RELAY_URL); none: the visitor's own key, as before")
     add("governance", cmd_governance, "check the architecture policy", profile=False)
     sp = add("eval", cmd_eval, "run TaoChronos-Eval suites", profile=False)
     sp.add_argument("suites", nargs="*")

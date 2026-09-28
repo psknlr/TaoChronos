@@ -10,6 +10,7 @@ import os
 import shutil
 import subprocess
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -350,6 +351,124 @@ def test_an_api_set_by_hand(tmp_path):
     finally:
         srv.shutdown()
         srv.server_close()
+        mock.shutdown()
+
+
+def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path):
+    """道乃久默认服务 (the site's relay, site.json): a visitor asks at once, without a key; the page sends none; a turn is
+    recorded only after the visitor agreed — never with a key or the settings — and no more once they say no; with the
+    relay down the page asks for a key as before."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import MockProvider, MockRelay
+
+    mock = MockProvider().start()
+    relay = MockRelay(mock.base_url).start()
+    web = tmp_path / "web"
+    shutil.copytree(ROOT / "web", web)
+    (web / "site.json").write_text(json.dumps({"relay": relay.url}), encoding="utf-8")
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+
+    def records(n, wait=25.0):
+        end = time.time() + wait
+        while len(relay.records) < n and time.time() < end:
+            time.sleep(0.2)
+        return relay.records
+
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+
+            def visit(down=False):
+                ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN")
+                page = ctx.new_page()
+                errors: list[str] = []
+                page.on("pageerror", lambda e: errors.append(str(e)))
+                if down:
+                    page.route("**/v1/health", lambda route: route.abort())
+                page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
+                page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+                return ctx, page, errors
+
+            def ask(page, text, answers):
+                page.fill("#input", text)
+                page.keyboard.press("Enter")
+                if page.query_selector("#consent[open]") is None:
+                    page.wait_for_function(f"document.querySelectorAll('.msg.assistant .verify-bar').length >= {answers}", timeout=60000)
+
+            # a first visit, nothing set: the default service; asked once; agreed → the turn is recorded
+            ctx, page, errors = visit()
+            page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('默认服务')", timeout=10000)
+            assert "道乃久默认服务" in page.get_attribute("#model-chip", "title")
+            page.fill("#input", "桂枝汤主治什么？请给出原文。")
+            page.keyboard.press("Enter")
+            page.wait_for_selector("#consent[open]", timeout=10000)
+            assert "私有 GitHub 仓库" in page.inner_text("#consent") and "不记录 API Key" in page.inner_text("#consent")
+            page.click("#consent .btn:not(.secondary)")
+            page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
+            rec = records(1)[0]
+            assert rec["v"] == 1 and rec["question"] == "桂枝汤主治什么？请给出原文。" and rec["turn"] == 1
+            assert "桂枝汤" in rec["answer"] and rec["status"] == "done" and rec["provider"] == "impf" and rec["model"] == "MiniMax-M3"
+            assert rec["tools"] and rec["tools"][0]["name"].startswith("classics") and rec["tools"][0]["ok"]
+            assert rec["citations"]["total"] == 4 and rec["citations"]["bad"] == 1 and rec["citations"]["pending"] == 0
+            assert rec["usage"] == {"input": 1200, "output": 180} and rec["rounds"] == 2
+            assert not {"apiKey", "keys", "settings"} & set(rec) and MockRelay.SECRET not in json.dumps(rec)
+            assert relay.chat and all("authorization" not in {k.lower() for k in c["headers"]} for c in relay.chat)  # no key from the page
+            assert all(r["headers"].get("Authorization") == f"Bearer {MockRelay.SECRET}" for r in mock.requests)
+            assert relay.chat[0]["body"]["model"] == "MiniMax-M3"
+            assert relay.chat[0]["body"]["max_completion_tokens"] == 8192  # within the relay's ceiling: forwarded unchanged
+            assert relay.record_types[0].startswith("text/plain")  # a simple request: no preflight
+            # the choice is kept: a follow-up asks nothing and is recorded as the conversation's second turn
+            ask(page, "它的剂量出自哪里？", 2)
+            assert page.query_selector("#consent[open]") is None
+            second = records(2)[1]
+            assert second["turn"] == 2 and second["conversation"] == rec["conversation"]
+            # 设置 → 数据: the switch shows the choice and changes it at once
+            page.click("#settings-btn")
+            page.click("nav.settings-nav button:has-text('数据')")
+            box = page.locator(".settings-pane input[type=checkbox]").first
+            assert box.is_checked()
+            box.uncheck()
+            page.keyboard.press("Escape")
+            ask(page, "再问一次。", 3)
+            time.sleep(2)
+            assert len(relay.records) == 2
+            assert not errors, errors
+            ctx.close()
+
+            # another visitor says no: answered, never recorded
+            ctx, page, errors = visit()
+            page.fill("#input", "消渴是什么？")
+            page.keyboard.press("Enter")
+            page.wait_for_selector("#consent[open]", timeout=10000)
+            page.click("#consent .btn.secondary")
+            page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
+            time.sleep(2)
+            assert len(relay.records) == 2
+            assert not errors, errors
+            ctx.close()
+
+            # the relay down: the page asks for a key, as it did before there was one
+            ctx, page, errors = visit(down=True)
+            page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('配置底层模型')", timeout=15000)
+            assert "未配置" in page.inner_text("#model-chip")
+            assert not errors, errors
+            ctx.close()
+            browser.close()
+    finally:
+        srv.shutdown()
+        srv.server_close()
+        relay.shutdown()
         mock.shutdown()
 
 

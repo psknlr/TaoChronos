@@ -1,0 +1,40 @@
+# 道乃久默认服务 — the relay between chat.impf.ai and MiniMax (relay/README.md).
+# Deployed by .github/workflows/relay.yml.  Its secrets — MINIMAX_API_KEY and LOG_EXPORT_TOKEN — are set from the
+# repository's Actions secrets at each deployment; they are never written here or anywhere in the repository.
+name = "taochronos-relay"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+workers_dev = false
+
+# the Worker's own hostname; Cloudflare creates its DNS record and certificate (the name must not exist in DNS before)
+[[routes]]
+pattern = "chat-api.impf.ai"
+custom_domain = true
+
+[vars]
+# MiniMax's mainland platform; a key from the international platform (platform.minimax.io) needs https://api.minimax.io/v1
+UPSTREAM_BASE = "https://api.minimax.cn/v1"
+MODELS = "MiniMax-M3"
+MAX_OUTPUT_TOKENS = "8192"
+# model calls (a question takes several: one per round of tool use)
+PER_MINUTE = "30"
+PER_DAY = "600"
+TOTAL_PER_DAY = "5000"
+# conversation records, sent only by visitors who agreed; "off" stops collecting them
+LOGS = "on"
+ALLOWED_ORIGINS = "https://chat.impf.ai,http://chat.impf.ai,https://psknlr.github.io"
+
+[[durable_objects.bindings]]
+name = "LIMITER"
+class_name = "Limiter"
+
+[[durable_objects.bindings]]
+name = "LOGBOOK"
+class_name = "LogBook"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Limiter", "LogBook"]
+
+[observability]
+enabled = true

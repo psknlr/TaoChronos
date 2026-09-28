@@ -65,7 +65,9 @@ function hero(ctx) {
     ctx.needsKey
       ? h("p.keyhint", "开始前请先为 ", ASSISTANT, " ", h("button", { type: "button", on: { click: ctx.onOpenSettings } }, "配置底层模型的 API"),
         "（默认 MiniMax-M3）。也可以不配置模型，直接在右侧“工具台”使用全部功能。")
-      : h("p.keyhint", "Enter 发送 · Shift+Enter 换行 · ", h("kbd", "Ctrl"), " ", h("kbd", "K"), " 新对话"),
+      : ctx.relayActive
+        ? h("p.keyhint", "已接入道乃久默认服务：无需设置，直接提问 · Enter 发送 · Shift+Enter 换行")
+        : h("p.keyhint", "Enter 发送 · Shift+Enter 换行 · ", h("kbd", "Ctrl"), " ", h("kbd", "K"), " 新对话"),
     h("p.publisher", PUBLISHED_BY),
   );
 }

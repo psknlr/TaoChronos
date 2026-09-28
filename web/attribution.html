@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>要籍语料 · 来源与授权 · 道乃久</title>
+<meta name="description" content="道乃久网页端在浏览器里运行的要籍语料：各部古籍录本的来源与授权（CC BY-SA 4.0 等），随网站发布。">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<style>
+  :root { --ink: #221f1a; --ink-3: #6b645a; --line: #e4ddd0; --surface: #fbf8f2; --accent: #9b2c1f; color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) { :root { --ink: #ece6da; --ink-3: #a59d90; --line: #38342e; --surface: #151412; --accent: #e0796a; } }
+  body { margin: 0; background: var(--surface); color: var(--ink); font: 15px/1.75 -apple-system, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 16px 60px; }
+  a { color: var(--accent); }
+  h1 { font-size: 22px; font-family: "Songti SC", "Noto Serif CJK SC", serif; }
+  .back { font-size: 13px; color: var(--ink-3); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; font-size: 13px; min-width: 720px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { position: sticky; top: 0; background: var(--surface); }
+  code { font-size: 12.5px; }
+</style>
+</head>
+<body>
+<main>
+  <p class="back"><a href="./">← 返回道乃久</a> · 本页随网站发布：语料包的来源与授权说明</p>
+  <div id="doc" class="scroll">正在载入…</div>
+</main>
+<script type="module">
+  import { renderMarkdown } from "./js/markdown.js";
+  const doc = document.getElementById("doc");
+  try {
+    const r = await fetch("ATTRIBUTION.md", { cache: "no-cache" });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    doc.replaceChildren(renderMarkdown(await r.text()));
+  } catch (err) {
+    doc.textContent = `来源与授权说明未能载入（${err.message}）。`;
+  }
+</script>
+</body>
+</html>
