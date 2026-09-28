@@ -7,18 +7,17 @@ import { storage } from "./util.js";
 
 
 const FALLBACK = [{
-  id: "minimax", label: "MiniMax（国内站）", format: "openai", base_url: "https://api.minimax.cn/v1", key_env: "MINIMAX_API_KEY",
-  key_optional: false, max_tokens_param: "max_completion_tokens", extra_body: { reasoning_split: true },
-  examples: ["MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.7-highspeed", "MiniMax-M2.5"], default_model: "MiniMax-M3",
-  reasoning: "reasoning_details", vision: true, stream_usage: true, note: "",
+  id: "deepseek", label: "DeepSeek", format: "openai", base_url: "https://api.deepseek.com/v1", key_env: "DEEPSEEK_API_KEY",
+  key_optional: false, max_tokens_param: "max_tokens", extra_body: {}, examples: ["deepseek-chat", "deepseek-reasoner"],
+  default_model: "deepseek-chat", reasoning: "reasoning_content", vision: false, stream_usage: true, note: "",
 }];
 
 export const DEFAULTS = {
-  provider: "minimax",
+  provider: "impf",           // 道乃久默认服务 when the site has it; else the first provider listed
   models: {},              // provider id → model name
   baseUrls: {},            // provider id → base URL override
   keys: {},                // provider id → API key (this browser only)
-  temperature: null,       // null: the provider's default (MiniMax-M3: 1.0)
+  temperature: null,       // null: the provider's default
   maxTokens: 16000,
   thinking: true,
   route: "auto",           // auto | direct | proxy (through the local server)
@@ -44,10 +43,10 @@ export function setRelay(r) { relay = r; }
 /** The default service as a provider: MiniMax behind the site's relay, no key. */
 function relayPreset() {
   if (!relay?.url) return null;
-  const models = relay.models?.length ? relay.models : [relay.model || "MiniMax-M3"];
+  const models = relay.models?.length ? relay.models : relay.model ? [relay.model] : [];
   return {
     id: RELAY_ID, label: "道乃久默认服务", format: "openai", base_url: `${relay.url}/v1`, key_optional: true, relay: true, family: "minimax",
-    max_tokens_param: "max_completion_tokens", extra_body: { reasoning_split: true }, examples: models, default_model: relay.model || models[0],
+    max_tokens_param: "max_completion_tokens", extra_body: { reasoning_split: true }, examples: models, default_model: relay.model || models[0] || "",
     reasoning: "reasoning_details", vision: true, stream_usage: true, unavailable: !relay.ok, max_output: relay.maxOutput || null,
     note: relay.ok
       ? `${PUBLISHER}提供，无需 API Key，直接提问${relay.limits?.per_day ? `；测试期间每人每天约 ${relay.limits.per_day} 次模型调用（一个问题通常用几次）` : ""}。`
@@ -62,7 +61,7 @@ export async function loadProviders() {
       const list = await r.json();
       if (Array.isArray(list) && list.length) providers = list;
     }
-  } catch { /* the embedded MiniMax preset is enough to start */ }
+  } catch { /* the embedded preset is enough to start */ }
   return providers;
 }
 
@@ -91,6 +90,8 @@ export const providerById = (id, settings) => allProviders(settings).find((p) =>
 
 export function loadSettings() {
   const saved = storage.get("tc.settings", {}) || {};
+  // MiniMax is no longer listed on the page: it is the default service, which a visitor reaches without a key
+  if (/^minimax/.test(saved.provider || "")) saved.provider = RELAY_ID;
   return { ...DEFAULTS, ...saved, models: { ...(saved.models || {}) }, baseUrls: { ...(saved.baseUrls || {}) }, keys: { ...(saved.keys || {}) },
     customProviders: Array.isArray(saved.customProviders) ? saved.customProviders.map((c) => ({ ...c })) : [] };
 }
@@ -98,6 +99,9 @@ export function loadSettings() {
 export function saveSettings(settings) {
   storage.set("tc.settings", settings);
 }
+
+/** How a provider is named on the page: the default service by its own name (the page names no vendor behind it). */
+export const modelLabel = (p) => (p.relay ? p.label : `底层模型 ${p.model || "未选"}（${p.label}）`);
 
 /** The provider as configured now: preset + the user's model, base URL and key. */
 export function activeProvider(settings) {

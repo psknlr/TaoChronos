@@ -38,7 +38,7 @@ TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一
 
 > 💬 **网页对话 · 道乃久**：打开 **<https://chat.impf.ai/>**，与**道乃久**（TaoChronos，模型 Tao-R1，医哲未来人工智能研究院
 > IMPF-AI 发布）多轮对话。打开即可提问：**道乃久默认服务**（MiniMax-M3，经 IMPF-AI 的[中转服务](relay/README.md)调用，访客无需 API Key；
-> 测试期间，经访客同意后记录对话）。也可以在设置里选择底层模型、填入自己的 API Key（MiniMax 国内站 · MiniMax-M3、DeepSeek、通义、Kimi、智谱、
+> 测试期间，经访客同意后记录对话；页面上只显示“道乃久默认服务 / Tao-R1”，不显示所用的模型厂商）。也可以在设置里选择底层模型、填入自己的 API Key（DeepSeek、通义、Kimi、智谱、
 > 豆包、硅基流动、OpenRouter、Poe、LiteLLM、Claude 等十余家；列表之外的服务点“**自定义 API**”手动设置地址、模型、密钥与请求头），即可像使用
 > ChatGPT / Claude 一样对话。模型通过 TaoChronos 的全部 73 项工具检索与考据，回答里的每条引文 `[[段落号]]` 都由页面**逐字核对**（✓ 与原文
 > 一致 · ≠ 引文不符 · ✕ 查无此段）；证据、研究（多智能体发现）与工具台（无需模型、直接运行任一工具）在侧栏。
@@ -469,7 +469,7 @@ Poe（`poe`，`POE_API_KEY`，以机器人名为模型名）、LiteLLM（`litell
 
 **网页对话 · 道乃久**（[docs/web.md](docs/web.md)、[ADR 0011](docs/adr/0011-web-client.md)、默认服务与对话记录见 [ADR 0012](docs/adr/0012-default-service-relay.md)）：智能体道乃久（TaoChronos，模型 Tao-R1），由医哲未来
 人工智能研究院（IMPF-AI）发布——TaoChronos 的工具与证据纪律加上你选择的底层模型（界面与指令中都标明底层模型；列表之外的服务可在“自定义 API”
-中手动设置）。对话在浏览器里进行，模型用你自己的密钥直接调用（MiniMax 允许网页跨域访问），或经 `taochronos serve` 转发；TaoChronos 在浏览器内
+中手动设置）。对话在浏览器里进行，经道乃久默认服务（免密钥）或用你自己的密钥直接调用，或经 `taochronos serve` 转发；TaoChronos 在浏览器内
 （Pyodide，要籍语料：350 部要籍中开放授权的 108 部原文）或 `taochronos serve`（全量语料，全部古籍；浏览器记住连接过的服务）执行工具。模型以
 “智能体”身份只获读与分析权限，默认直接看到 16 个常用工具、经目录按需调用其余工具；MiniMax-M3 的 `reasoning_details` 与工具调用逐轮原样回传，
 Claude 经官方 SDK 调用（自适应思考、服务端拒答回退）。本机服务默认只绑定 127.0.0.1，只接受本机页面、服务自己的网页、已发布的网页与指定来源，

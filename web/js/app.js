@@ -5,7 +5,7 @@ import { streamClaude } from "./llm/anthropic.js";
 import { streamChat } from "./llm/openai.js";
 import { extractCitations, renderMarkdown } from "./markdown.js";
 import { AGENT, MODEL as ASSISTANT, PUBLISHER, PUBLISHER_EN } from "./brand.js";
-import { activeProvider, allProviders, loadProviders, loadSettings, RELAY_ID, saveSettings, setRelay } from "./providers.js";
+import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, RELAY_ID, saveSettings, setRelay } from "./providers.js";
 import { consent, NOTICE, setConsent } from "./records.js";
 import { BrowserRuntime, probeServer, sameOriginServer, ServerRuntime } from "./runtime.js";
 import * as store from "./store.js";
@@ -377,7 +377,7 @@ async function send(text, images = []) {
   if (needsKey()) {
     el.input.value = text;
     autosize();
-    toast(`请先为 ${ASSISTANT} 配置底层模型的 API Key（默认 MiniMax-M3）`);
+    toast(`请先为 ${ASSISTANT} 配置底层模型的 API Key`);
     openSettings(S, settingsCtx, "model");
     return;
   }
@@ -785,7 +785,7 @@ function renderTopbar() {
   const warn = needsKey();
   el.modelChip.classList.toggle("warn", warn);
   replace(el.modelChip, h("img.seal", { src: "assets/logo.svg", alt: "" }), h("span.nm", ASSISTANT), warn ? h("span.tag", "未配置") : null, icon("chevdown", "sm"));
-  el.modelChip.title = `${ASSISTANT} · 底层模型 ${p.model || "未选"}（${p.label}）${warn ? " · 尚未配置 API Key" : ""}`;
+  el.modelChip.title = `${ASSISTANT} · ${modelLabel(p)}${warn ? " · 尚未配置 API Key" : ""}`;
   el.modelChip.setAttribute("aria-label", `${ASSISTANT} 的模型设置`);
   el.title.textContent = S.conv?.title || "";
   document.title = S.conv?.title ? `${S.conv.title} · ${AGENT}` : `${AGENT} · 中医古籍研究智能体`;
@@ -887,7 +887,7 @@ function renderComposerHint() {
   const p = activeProvider(S.settings);
   const info = S.runtimeInfo;
   el.hint.textContent = `${ASSISTANT} · ${S.runtime?.label || "运行环境"}${info ? ` · ${corpusLabel(info.corpus)}` : ""}`;
-  el.hint.title = `底层模型 ${p.model || "未选"}（${p.label}）`;
+  el.hint.title = modelLabel(p);
 }
 
 function renderAttachments() {
@@ -998,7 +998,7 @@ async function checkRelay() {
   setRelay(S.relay);
   // a visitor without a model of their own asks through it; one who chose it falls back while it is down
   if (S.relay.ok && needsKey()) S.settings.provider = RELAY_ID;
-  else if (!S.relay.ok && S.settings.provider === RELAY_ID) S.settings.provider = allProviders(S.settings).find((p) => !p.relay)?.id || "minimax";
+  else if (!S.relay.ok && S.settings.provider === RELAY_ID) S.settings.provider = allProviders(S.settings).find((p) => !p.relay)?.id;
 }
 
 function askConsent() {
@@ -1094,7 +1094,7 @@ const settingsCtx = {
       const res = p.format === "anthropic"
         ? await streamClaude({ provider: p, system: "你是一个连接测试。", messages, tools: [], settings, route, signal: ctl.signal })
         : await streamChat({ provider: p, messages: [{ role: "system", content: "你是一个连接测试。" }, ...messages], tools: [], settings, route, signal: ctl.signal });
-      return { ok: true, message: `连接成功 · ${res.model || p.model} · ${fmtMs(Date.now() - started)} · 回复「${truncate(res.text || res.thinking || "（空）", 40)}」` };
+      return { ok: true, message: `连接成功 · ${p.relay ? p.label : res.model || p.model} · ${fmtMs(Date.now() - started)} · 回复「${truncate(res.text || res.thinking || "（空）", 40)}」` };
     } catch (err) {
       return { ok: false, message: err.name === "AbortError" ? "请求超时" : err.message };
     } finally {
@@ -1169,7 +1169,8 @@ function exportMarkdown(conv) {
     else {
       const tools = (m.segments || []).flatMap((s) => s.calls || []).map((c) => `\`${c.name}\``);
       lines.push(`## ${AGENT}`, "");
-      const about = [m.model ? `底层模型 ${m.model}` : null, tools.length ? `工具 ${[...new Set(tools)].join("、")}` : null].filter(Boolean);
+      const about = [m.provider === RELAY_ID ? "道乃久默认服务" : m.model ? `底层模型 ${m.model}` : null,
+        tools.length ? `工具 ${[...new Set(tools)].join("、")}` : null].filter(Boolean);
       if (about.length) lines.push(`*${about.join("；")}*`, "");
       lines.push(answerText(m) || "（无回答）", "");
     }

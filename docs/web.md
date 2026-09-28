@@ -16,7 +16,7 @@ books of the full corpus into it ([接入全部古籍](#接入全部古籍)).
  └──────────────┬─────────────────────┘                └──────────────┬───────────────┘
                 │ your key, straight to the provider (or via /api/llm) │
                 ▼                                                      ▼
-   MiniMax-M3 (default) · DeepSeek · Qwen · Kimi · GLM · OpenRouter · Poe · LiteLLM · Claude · local models · any API set by hand
+   道乃久默认服务 (default, no key; relay/) · DeepSeek · Qwen · Kimi · GLM · OpenRouter · Poe · LiteLLM · Claude · local models · any API set by hand
 ```
 
 The model holds the conversation; TaoChronos executes.  The browser runs the agent loop — it streams the model's
@@ -36,8 +36,9 @@ The agent is **道乃久** (its English name TaoChronos; the name is from the �
 **医哲未来人工智能研究院 (IMPF-AI)**; its model is called **Tao-R1**.  The page says so where people look: 道乃久 on the
 opening screen, in the side bar, the page title and exports, with the publisher's line; Tao-R1 on the model chip and under
 each answer.  Tao-R1 is TaoChronos (the tools, the evidence discipline, the quotation checks) over a general language model
-chosen under **设置 → 模型** (default MiniMax-M3); that underlying model is named in the chip's tooltip, under each answer's
-line and in the settings.  The standing instructions give the model its names and publisher and tell it to be plain about
+chosen under **设置 → 模型** (by default 道乃久默认服务); a model the visitor chose is named in the chip's tooltip, under each
+answer's line and in the settings, while the default service is shown by its own name only — the page names no vendor
+behind it.  The standing instructions give the model its names and publisher and tell it to be plain about
 what it is: asked what it is or what it is built on, it names TaoChronos and the underlying model (the page adds
 `底层语言模型：<model>（<provider>）` to the instructions' 运行环境 section), and it claims no other identity.  `/api/info`
 reports `agent_name`, `assistant_name` and `publisher`.
@@ -115,10 +116,10 @@ missing character is never accepted).
 
 ## Using it
 
-1. Open the page, choose **设置 → 模型**, paste an API key.  The default is **MiniMax (mainland) · MiniMax-M3**
-   (`https://api.minimax.cn/v1`); sixteen other providers are listed, from the harness's own presets
-   (`taochronos llm presets`).  The key is kept in this browser's localStorage and sent only to the provider — or to your
-   local server's proxy.
+1. Open the page and ask: **道乃久默认服务** needs no key (below).  To use a model of your own, choose **设置 → 模型** and
+   paste its key; fifteen providers are listed from the harness's own presets (`taochronos llm presets`; MiniMax's own
+   presets are not listed, since it serves the default service), and any other endpoint can be set by hand.  A key is
+   kept in this browser's localStorage and sent only to its provider — or to your local server's proxy.
 2. Ask.  The page shows the model's thinking (folded), each tool call (its family, arguments, what the model read, the
    passages it returned), and the answer.
 3. Every `[[passage_id]]` in the answer becomes a chip, checked as soon as it appears:
@@ -190,8 +191,8 @@ streams is sent back in later turns (`reasoning_content`, `reasoning_details`, o
 images.  The model must support tool calling for the agent to read the classics.  The underlying model's line in the
 instructions names the endpoint (`底层语言模型：<model>（<name>）`).
 
-**请求路径** chooses how requests travel: *浏览器直连* (straight to the provider, which must allow browser requests —
-MiniMax does, for the published page's origin), *经本地服务转发* (through `taochronos serve`'s proxy), or *自动*
+**请求路径** chooses how requests travel: *浏览器直连* (straight to the provider, which must allow browser requests),
+*经本地服务转发* (through `taochronos serve`'s proxy), or *自动*
 (through the proxy when the page is connected to a local server; an API set by hand goes direct, since the proxy forwards
 only to listed hosts — `taochronos serve --allow-host api.example.com` adds one).  **测试连接** sends one short request.
 
@@ -219,6 +220,13 @@ send it in clear to the provider, where any visitor can read it — so the relay
   until `.github/workflows/chat-logs.yml` collects them, every hour, into `data/chat-logs/YYYY/MM/DD.jsonl` in this private
   repository, and deletes them once the commit is pushed (`relay/collect.py`).  The records never enter the published
   site.  If the repository is ever made public, `data/chat-logs/` must be moved out first.
+
+**The page names no vendor.**  The default service appears as 道乃久默认服务 and its answers as Tao-R1 — on its tile
+(免密钥 · 直接提问, with no model to choose), in the chip's and the composer's tooltips, under each answer, in exports and in
+the connection test — and MiniMax's own presets are not listed (`UNLISTED` in `taochronos.chat.providers`; the local
+server's proxy still reaches them).  The consent notice speaks of recording to the institute's server.  The standing
+instructions still carry the underlying model (`底层语言模型：…`), so that a visitor who asks what the assistant is built on
+gets a truthful answer rather than a denial.
 
 Setting it up once: a Cloudflare API token and account id, the MiniMax key and a collector token as repository secrets,
 then **Actions → relay → Run workflow** — see [relay/README.md](../relay/README.md).

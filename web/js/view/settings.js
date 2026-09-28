@@ -59,7 +59,8 @@ function seg(options, value, onChange) {
 function modelPane(d, S, ctx, redraw) {
   const p = providerById(d.provider, d);
   const custom = p.custom ? d.customProviders.find((c) => c.id === p.id) : null;
-  const sub = (x) => x.default_model || (x.examples || [])[0] || (x.base_url || "").replace(/^https?:\/\//, "") || "未设置";
+  const sub = (x) => (x.relay ? (x.unavailable ? "暂时连不上" : "免密钥 · 直接提问")
+    : x.default_model || (x.examples || [])[0] || (x.base_url || "").replace(/^https?:\/\//, "") || "未设置");
   const tiles = new Map();
   const tile = (x) => {
     const el = h("button.provider-opt", { type: "button", class: x.id === d.provider ? "on" : "", on: { click: () => { d.provider = x.id; redraw(); } } },
@@ -111,19 +112,19 @@ function modelPane(d, S, ctx, redraw) {
     h("p.lead", `${AGENT}的模型 ${ASSISTANT}，是 ${AGENT_EN} 研究平台（七十余项检索、考据、发现与核验工具，引文逐字核对）`,
       "加上你在这里选择的底层语言模型——它理解问题、调用工具、组织回答。",
       S.relay?.ok ? "默认使用道乃久默认服务（无需 API Key）；也可以选择其他服务，使用你自己的 API Key。"
-        : "使用你自己的 API Key，默认 MiniMax 国内站的 MiniMax-M3。",
+        : "使用你自己的 API Key。",
       "列表之外的服务（自建网关、私有部署、本地模型）点“自定义 API”手动设置。"),
     h("div.form-grid",
-      h("div.field", h("span.lb", "服务商"), grid, p.note ? h("div.help", p.note) : null),
-      ...(p.relay ? relayFields(p, d) : custom ? customFields(custom, d, redraw, retitle) : presetFields(p, d)),
+      h("div.field", h("span.lb", "服务商"), grid, p.note && !p.relay ? h("div.help", p.note) : null), // the default service's in its box
+      ...(p.relay ? relayFields(p) : custom ? customFields(custom, d, redraw, retitle) : presetFields(p, d)),
       p.relay ? null : keyField,
       p.relay ? null : h("div.field", h("span.lb", "请求路径"),
         seg([["auto", "自动"], ["direct", "浏览器直连"], ["proxy", "经本地服务转发"]], d.route, (v) => { d.route = v; }),
         h("div.help", "直连：浏览器直接请求模型服务（需该服务允许跨域）。转发：由 taochronos serve 代为请求，适用于不允许跨域的服务，",
           "也可使用本机环境变量中的密钥（自定义 API 的主机须以 --allow-host 允许）。自动：连着本地服务时转发（自定义 API 直连），否则直连。")),
-      h("label.check", think, h("span", "启用思考（MiniMax-M3 默认开启自适应思考；Claude 使用 adaptive thinking）")),
+      h("label.check", think, h("span", "启用思考（支持的模型先思考再作答；Claude 使用 adaptive thinking）")),
       h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" } },
-        field("温度", temp, "留空使用服务商默认值（MiniMax-M3 为 1.0）"),
+        field("温度", temp, "留空使用服务商默认值"),
         field("最大输出（tokens）", maxTok, "含思考内容")),
       h("div", test, result)),
   ];
@@ -204,7 +205,7 @@ function customFields(c, d, redraw, retitle = () => {}) {
             seg([["max_tokens", "max_tokens"], ["max_completion_tokens", "max_completion_tokens"]], c.max_tokens_param || "max_tokens", (v) => { c.max_tokens_param = v; })),
           anthropic ? null : h("div.field", h("span.lb", "思考内容回传"),
             seg([["", "不回传"], ["reasoning_content", "reasoning_content"], ["reasoning_details", "reasoning_details"]], c.reasoning || "", (v) => { c.reasoning = v || null; }),
-            h("div.help", "模型流式返回的思考都会显示；多轮对话中是否把它原样传回，依服务要求（MiniMax 类：reasoning_details；多数服务：不回传）。")),
+            h("div.help", "模型流式返回的思考都会显示；多轮对话中是否把它原样传回，依服务要求（有的服务要求以 reasoning_details 原样传回；多数服务：不回传）。")),
           h("label.check", check(c.vision, (v) => { c.vision = v; }), h("span", "支持图片输入（可附书影）")))),
       h("div", remove)),
   ];
@@ -293,14 +294,9 @@ function instructionsPane(d, S) {
 }
 
 // ------------------------------------------------------------------ data
-/** 道乃久默认服务: the model is the relay's; nothing to fill in. */
-function relayFields(p, d) {
-  const model = h("select", {}, (p.examples || []).map((m) => h("option", { value: m, selected: m === (d.models[p.id] || p.default_model) }, m)));
-  model.addEventListener("change", () => { d.models[p.id] = model.value; });
-  return [
-    h("div.field", h("label", "模型"), model),
-    h(`div.notice${p.unavailable ? ".warn" : ".ok"}`, icon(p.unavailable ? "warn" : "check"), h("div.grow", p.note)),
-  ];
+/** 道乃久默认服务: nothing to fill in, and no vendor named. */
+function relayFields(p) {
+  return [h(`div.notice${p.unavailable ? ".warn" : ".ok"}`, icon(p.unavailable ? "warn" : "check"), h("div.grow", p.note))];
 }
 
 function dataPane(d, S, ctx) {
@@ -316,7 +312,7 @@ function dataPane(d, S, ctx) {
   return [
     h("h3", "数据"),
     h("p.lead", "对话保存在本浏览器（IndexedDB）。换设备或清理浏览器数据前，请先导出。",
-      collecting ? "若你同意记录，每轮问答另有一份记录发给开发者（见下）；不同意则不会上传。" : "对话不会上传。"),
+      collecting ? "若你同意记录，每轮问答另记录一份到研究院的服务器（见下）；不同意则不会上传。" : "对话不会上传。"),
     h("div.form-grid",
       collecting ? h("div.field", h("span.lb", "对话记录（测试期间）"),
         h("label.check", agree, h("span", "同意记录我的对话，用于测试和改进（立即生效）")),
@@ -346,8 +342,8 @@ function aboutPane(d, S) {
         h("div", h("b", "语料："), "浏览器内运行的是要籍语料：按历代引用排序的 350 部要籍（书目见 classics.canon）中有开放授权录本的百余部原文（CC BY-SA 4.0，",
           h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, "来源与授权"),
           "），重要典籍多为全书，其余为章节节选，未经本项目逐字校勘；全部古籍（全量语料）在本机构建，经 taochronos serve 接入（设置 → 运行环境）。"),
-        h("div", h("b", "隐私："), "对话与密钥保存在本浏览器。使用道乃久默认服务时，模型请求经", PUBLISHER, "的中转服务发往 MiniMax，中转不保存请求内容；",
-          "只有在你同意后，每轮问答才另存一份到", PUBLISHER, "的私有仓库，用于测试（设置 → 数据）。使用自己的 API Key 时，请求直接发往你选择的服务，或经你本机的服务转发。"))),
+        h("div", h("b", "隐私："), "对话与密钥保存在本浏览器。使用道乃久默认服务时，你的问题经", PUBLISHER, "的服务交由大语言模型处理，该服务不保存请求内容；",
+          "只有在你同意后，每轮问答才另记录一份到", PUBLISHER, "的服务器，用于测试（设置 → 数据）。使用自己的 API Key 时，请求直接发往你选择的服务，或经你本机的服务转发。"))),
       h("div.muted", { style: { fontSize: "13px", lineHeight: "1.8" } },
         `${AGENT} · ${ASSISTANT} · ${AGENT_EN} ${info?.version || "?"} · ${PUBLISHED_BY} · 运行环境 ${info?.runtime === "server" ? S.runtime?.label || "服务" : "浏览器（Pyodide）"} · `,
         h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, "语料来源与授权"))),

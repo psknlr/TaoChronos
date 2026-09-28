@@ -156,7 +156,8 @@ def test_the_server_answers_the_api_and_serves_the_client(server):
     resp, raw = request(server, "GET", "/js/app.js")
     assert resp.getheader("Content-Type").startswith("text/javascript")
     resp, raw = request(server, "GET", "/providers.json")
-    assert json.loads(raw)[0]["id"] == "minimax" and json.loads(raw)[0]["default_model"] == "MiniMax-M3"
+    listed = json.loads(raw)  # the page's list names no vendor behind its default service
+    assert listed[0]["id"] == "deepseek" and "minimax" not in raw.decode().lower()
     resp, raw = request(server, "GET", "/runtime/manifest.json")
     manifest = json.loads(raw)
     resp, pkg = request(server, "GET", "/runtime/taochronos.zip")

@@ -59,7 +59,7 @@ and decide.
 > 💬 **Web chat · 道乃久**: open **<https://chat.impf.ai/>** and talk with **道乃久** (TaoChronos; model Tao-R1; published by
 > IMPF-AI).  Ask at once: **道乃久默认服务** (MiniMax-M3 through IMPF-AI's [relay](relay/README.md); no key needed; during the test
 > period conversations are recorded for visitors who agree).  Or choose the underlying model and paste your own API key in the
-> settings (MiniMax (mainland) · MiniMax-M3; DeepSeek, Qwen, Kimi, GLM, Doubao, SiliconFlow, OpenRouter, Poe, LiteLLM, Claude and others are
+> settings (DeepSeek, Qwen, Kimi, GLM, Doubao, SiliconFlow, OpenRouter, Poe, LiteLLM, Claude and others are
 > listed; any other endpoint can be set by hand under **自定义 API** — address, model, key, headers) and hold a multi-turn
 > conversation as in ChatGPT or Claude.  The model answers through all 73 of TaoChronos's tools, and the page checks every
 > `[[passage_id]]` it cites word for word (✓ matches the passage · ≠ misquoted · ✕ no such passage); evidence, research runs
@@ -547,7 +547,8 @@ decided each item.  External command subagents and Research Code Mode: [docs/age
 **Web chat · 道乃久** ([docs/web.md](docs/web.md), [ADR 0011](docs/adr/0011-web-client.md); the default service and records: [ADR 0012](docs/adr/0012-default-service-relay.md)): the agent 道乃久 (TaoChronos;
 model Tao-R1), published by IMPF-AI — TaoChronos's tools and evidence discipline over the underlying model you choose, which
 the page and the instructions name (an endpoint not in the list can be set by hand).  The conversation runs in the browser
-with your own key, straight to the provider (MiniMax allows the page's origin) or through `taochronos serve`; TaoChronos
+on the default service (no key; the page shows it as 道乃久默认服务 / Tao-R1 and names no vendor) or with your own key,
+straight to the provider or through `taochronos serve`; TaoChronos
 executes the tools in the browser (Pyodide, the 要籍语料: the open texts of 108 of the 350 key works) or under
 `taochronos serve` (the full corpus, all the books; the browser remembers the server).  The model acts as an
 agent with read and analysis permissions only, sees sixteen common tools directly and the rest through a catalog;

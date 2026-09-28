@@ -33,6 +33,10 @@ token it would need is a key of the same kind, and one that opens the repository
    records, not the repository.
 6. The site carries the texts' attribution itself (`attribution.html`): links into a private repository would break the
    licence's credit for visitors.
+7. **The page names no vendor** (IMPF-AI's choice): the default service appears as 道乃久默认服务 / Tao-R1 wherever a model
+   would be named, MiniMax's presets are not listed, and the consent notice speaks of recording to the institute's server
+   (where the records are kept is IMPF-AI's to decide; what is recorded, and why, the notice states).  The standing
+   instructions keep the underlying model, so the assistant, asked what it is built on, answers truthfully.
 
 ## Consequences
 
