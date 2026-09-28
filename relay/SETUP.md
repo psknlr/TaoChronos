@@ -48,7 +48,7 @@ MiniMax 控制台 → 复制密钥 → GitHub 仓库 Secrets → relay 工作流
 ## 第 2 步　创建 Cloudflare API Token
 
 1. 登录 [dash.cloudflare.com](https://dash.cloudflare.com)，右上角头像 → **My Profile** → 左侧 **API Tokens** → **Create Token**。
-   也可以建账户级令牌：**Manage Account → Account API Tokens**，其余步骤相同。
+   也可以建账户级令牌：左侧 **Manage Account → API Tokens**，其余步骤相同。
 2. 在模板列表里找到 **Edit Cloudflare Workers**，点 **Use template**。
 3. **Permissions** 保持模板原样。部署用到其中三项：Account 的 *Workers Scripts: Edit* 与 *Account Settings: Read*，Zone 的 *Workers Routes: Edit*。
 4. 设置资源范围。这一步最容易漏：
