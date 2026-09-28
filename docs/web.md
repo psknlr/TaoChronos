@@ -227,8 +227,10 @@ send it in clear to the provider, where any visitor can read it — so the relay
 * The build writes the relay's address into the site (`taochronos web build --relay URL` → `site.json`; the Pages
   workflow passes `https://chat-api.impf.ai`, or the repository variable `RELAY_URL`).  The page asks the relay's
   `/v1/health` as it loads; when it answers, a visitor who has set up no model of their own uses the default service (the
-  tile 道乃久默认服务 · 免密钥 in 设置 → 模型, no key or address to fill in), and the opening screen says so.  When it does
-  not answer, the page is what it was before: the visitor's own key.
+  tile 道乃久默认服务 · 免密钥 in 设置 → 模型, no key or address to fill in), and the opening screen says so.  The page is
+  patient — it is downloading its runtime over the same link: 10 s, then 15 s, and if the relay did not answer, again 20,
+  40, 60 and 80 seconds later, and once more before it asks a visitor for a key.  When it does not answer, the page is what
+  it was before: the visitor's own key.
 * The relay accepts the page's origins only, the allowed models only, caps the output, and counts use per visitor
   (a hash of address and day; addresses are kept nowhere) per minute and per day, and in all per day
   (`relay/wrangler.toml`).  Its refusals are sentences a visitor can act on (wait, or use one's own key).
@@ -325,7 +327,8 @@ a page served elsewhere (as on GitHub Pages) connecting to a server in one step,
 token taken from the address (and its absence reported); an API set by hand (address, model, key, headers, parameters —
 checked in the request it makes); the default service (a stand-in relay): asked at once without a key, no key sent by the
 page, the consent question once, a turn recorded only after 同意 (its fields, no key or settings), none after 不记录 or
-once switched off under 设置 → 数据, and the page asking for a key while the relay is down; and, with
+once switched off under 设置 → 数据, a relay slow to answer (6 s) or missed once still found, and the page asking for a
+key while the relay is down; and, with
 `TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium on an http:// origin like the published one (no Cache API) —
 Pyodide, the 要籍语料 downloaded, the first-ranked works indexed before it answers and the rest in the background, the
 store kept in IndexedDB and a reload that downloads no corpus, a turn answered on it.  The browser tests are skipped where Playwright or Chromium is missing.  `relay/test/relay.test.js`

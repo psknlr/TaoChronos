@@ -370,8 +370,8 @@ def test_an_api_set_by_hand(tmp_path):
 
 def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path):
     """道乃久默认服务 (the site's relay, site.json): a visitor asks at once, without a key; the page sends none; a turn is
-    recorded only after the visitor agreed — never with a key or the settings — and no more once they say no; with the
-    relay down the page asks for a key as before."""
+    recorded only after the visitor agreed — never with a key or the settings — and no more once they say no; a relay
+    slow to answer, or missed once, is still found; with the relay down the page asks for a key as before."""
     exe = _chromium()
     if exe is None:
         pytest.skip("playwright is not installed")
@@ -403,13 +403,16 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
             except Error as exc:
                 pytest.skip(f"no Chromium for Playwright: {exc}")
 
-            def visit(down=False):
+            def visit(down=False, missed_once=False):
                 ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN")
                 page = ctx.new_page()
                 errors: list[str] = []
                 page.on("pageerror", lambda e: errors.append(str(e)))
                 if down:
                     page.route("**/v1/health", lambda route: route.abort())
+                if missed_once:
+                    missed: list[int] = []
+                    page.route("**/v1/health", lambda route: (missed.append(1), route.abort()) if not missed else route.continue_())
                 page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
                 page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
                 return ctx, page, errors
@@ -470,6 +473,17 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
             page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
             time.sleep(2)
             assert len(relay.records) == 2
+            assert not errors, errors
+            ctx.close()
+
+            # a relay slow to answer (the page loading its runtime shares the link), or missed once: still found
+            relay.health_delay = 6.0
+            ctx, page, errors = visit()
+            page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('默认服务')", timeout=20000)
+            relay.health_delay = 0.0
+            ctx.close()
+            ctx, page, errors = visit(missed_once=True)
+            page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('默认服务')", timeout=20000)
             assert not errors, errors
             ctx.close()
 

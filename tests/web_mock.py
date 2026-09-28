@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 ANSWER = ("## 结论\n\n《伤寒论》以桂枝汤治太阳中风。\n\n"
@@ -177,6 +178,7 @@ class MockRelay(ThreadingHTTPServer):
         self.chat: list[dict] = []     # the browser's requests to the relay
         self.records: list[dict] = []  # the records the page sent
         self.record_types: list[str] = []
+        self.health_delay = 0.0        # seconds before /v1/health answers: a slow link
 
     @property
     def url(self) -> str:
@@ -217,6 +219,7 @@ class _RelayHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         if self.path == "/v1/health":
+            time.sleep(self.server.health_delay)
             self._json(200, {"ok": True, "service": "taochronos-relay", "model": "MiniMax-M3", "models": ["MiniMax-M3"],
                              "logs": self.server.logs, "max_output_tokens": 8192, "limits": {"per_minute": 30, "per_day": 600}})
         else:
