@@ -46,10 +46,11 @@ jobs:
           [ -n "$CF_ACCOUNT" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID"
           [ -n "$KEY" ] || missing="$missing MINIMAX_API_KEY"
           [ -n "$TOKEN" ] || missing="$missing LOG_EXPORT_TOKEN"
+          token="$(printf '%s' "$TOKEN" | tr -d '[:space:]')"
           if [ -n "$missing" ]; then
-            echo "::warning::the relay is not deployed until these repository secrets are set:$missing (see relay/README.md)"
+            echo "::warning::the relay is not deployed until these repository secrets are set:$missing (see relay/SETUP.md)"
             echo "ready=0" >> "$GITHUB_OUTPUT"
-          elif [ "${#TOKEN}" -lt 16 ]; then
+          elif [ "${#token}" -lt 16 ]; then
             echo "::error::LOG_EXPORT_TOKEN must be at least 16 characters"
             exit 1
           else
@@ -64,10 +65,11 @@ jobs:
           MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
           LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
           WRANGLER_SEND_METRICS: "false"
+        # a space or line break pasted with a secret is not part of it (neither value has any)
         run: |
           npx --yes "$WRANGLER" deploy
-          printf '%s' "$MINIMAX_API_KEY" | npx --yes "$WRANGLER" secret put MINIMAX_API_KEY
-          printf '%s' "$LOG_EXPORT_TOKEN" | npx --yes "$WRANGLER" secret put LOG_EXPORT_TOKEN
+          printf '%s' "$MINIMAX_API_KEY" | tr -d '[:space:]' | npx --yes "$WRANGLER" secret put MINIMAX_API_KEY
+          printf '%s' "$LOG_EXPORT_TOKEN" | tr -d '[:space:]' | npx --yes "$WRANGLER" secret put LOG_EXPORT_TOKEN
       - name: Check it answers, and that MiniMax takes its key (one tiny call)
         if: steps.secrets.outputs.ready == '1'
         run: python3 relay/collect.py check --relay "$RELAY_URL"

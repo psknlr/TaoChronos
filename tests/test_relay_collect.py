@@ -123,6 +123,8 @@ def test_the_collector_needs_its_token(relay, tmp_path, monkeypatch):
     with pytest.raises(SystemExit, match="401"):
         collect.pull(relay.url, tmp_path / "logs")
     assert not (tmp_path / "logs").exists()
+    monkeypatch.setenv("LOG_EXPORT_TOKEN", f" {TOKEN}\n")  # pasted with a space and a line break
+    assert collect.pull(relay.url, tmp_path / "logs")["new"] == 1
     monkeypatch.setenv("LOG_EXPORT_TOKEN", "short")
     with pytest.raises(SystemExit, match="LOG_EXPORT_TOKEN"):
         collect.ack(relay.url, 1)

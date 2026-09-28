@@ -229,7 +229,8 @@ instructions still carry the underlying model (`底层语言模型：…`), so t
 gets a truthful answer rather than a denial.
 
 Setting it up once: a Cloudflare API token and account id, the MiniMax key and a collector token as repository secrets,
-then **Actions → relay → Run workflow** — see [relay/README.md](../relay/README.md).
+then **Actions → relay → Run workflow** — step by step, with the checks and the usual errors, in
+[relay/SETUP.md](../relay/SETUP.md) (Chinese).
 
 ## The local server
 

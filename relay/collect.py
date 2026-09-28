@@ -49,7 +49,7 @@ def _request(url: str, *, token: str | None = None, data: dict | None = None, or
 
 
 def _token() -> str:
-    token = os.environ.get("LOG_EXPORT_TOKEN", "")
+    token = "".join(os.environ.get("LOG_EXPORT_TOKEN", "").split())  # a space or line break pasted with it is not part of it
     if len(token) < 16:
         raise SystemExit("LOG_EXPORT_TOKEN is not set (at least 16 characters)")
     return token

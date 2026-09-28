@@ -20,20 +20,20 @@
 
 ## 启用（一次）
 
-1. **Cloudflare API Token**：Cloudflare 控制台 → My Profile → API Tokens → Create Token → 模板 **Edit Cloudflare Workers**；
-   Account Resources 选你的账户，Zone Resources 选 `impf.ai` → 创建并复制。再记下 **Account ID**（Workers & Pages 概览页右侧）。
-   `chat-api.impf.ai` 不要事先建 DNS 记录——部署时 Cloudflare 自动创建它和证书。
-2. **仓库 Secrets**（GitHub 仓库 → Settings → Secrets and variables → Actions → New repository secret），四个：
-   - `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`
-   - `MINIMAX_API_KEY`：MiniMax 密钥（建议为网站单独创建一个按量计费的 API Key，并在 MiniMax 控制台设用量上限）
-   - `LOG_EXPORT_TOKEN`：收集器令牌，任意 32 位以上随机串（如 `openssl rand -hex 32`）
-   Secrets 保存后加密存放、无法再查看，只在工作流运行时注入。
-3. 运行 **Actions → relay → Run workflow**（之后 `relay/` 有改动合入 main 也会自动部署）。它先跑测试，再部署 Worker、写入两个机密，
-   最后检查 `https://chat-api.impf.ai/v1/health` 并用 MiniMax 做一次极小的调用。网页（chat.impf.ai）刷新后即显示
-   “已接入道乃久默认服务”。
+分步教程——每一步在哪里点、怎样验证、常见报错怎么处理——见 **[SETUP.md](SETUP.md)**。概要：
 
-密钥来自 MiniMax **国际站**（platform.minimax.io）时，把 `wrangler.toml` 里的 `UPSTREAM_BASE` 改为 `https://api.minimax.io/v1`
-（国内站为 `https://api.minimax.cn/v1`）；检查步骤遇到密钥被拒时会提示这一点。
+1. 四个仓库 Secrets（GitHub 仓库 → Settings → Secrets and variables → Actions → New repository secret）：
+   - `CLOUDFLARE_API_TOKEN`：模板 **Edit Cloudflare Workers**，Account Resources 选你的账户，Zone Resources 选 `impf.ai`；
+   - `CLOUDFLARE_ACCOUNT_ID`：Workers & Pages → Account Details；
+   - `MINIMAX_API_KEY`：建议为网站单独创建的按量付费密钥（从账户余额扣费，余额就是费用上限）；
+   - `LOG_EXPORT_TOKEN`：收集器令牌，32 位以上随机串（如 `openssl rand -hex 32`）。
+
+   Secrets 保存后加密存放、无法再查看，只在工作流运行时注入。
+2. 合并含 `relay/` 改动的提交到 main，或运行 **Actions → relay → Run workflow**。它先跑测试，再部署 Worker、写入两个机密，
+   最后检查 `https://chat-api.impf.ai/v1/health` 并用 MiniMax 做一次极小的调用。网页（chat.impf.ai）刷新后即显示
+   “已接入道乃久默认服务”。`chat-api.impf.ai` 不要事先建 DNS 记录——部署时 Cloudflare 自动创建它和证书。
+3. 密钥来自 MiniMax **国际站**（platform.minimax.io）时，把 `wrangler.toml` 里的 `UPSTREAM_BASE` 改为 `https://api.minimax.io/v1`
+   （国内站为 `https://api.minimax.cn/v1`）；检查步骤遇到密钥被拒时会提示这一点。
 
 ## 对话记录
 
@@ -46,6 +46,6 @@
 ## 调整与维护
 
 - 限额、模型、允许的来源：改 `wrangler.toml` 的 `[vars]`，合入 main 后自动重新部署。
-- 更换密钥：更新仓库 Secret `MINIMAX_API_KEY`，再运行一次 relay 工作流。
+- 更换密钥：更新仓库 Secret `MINIMAX_API_KEY`，再运行一次 relay 工作流（其余维护与排错见 [SETUP.md](SETUP.md)）。
 - 本地试运行：`cd relay && npm test`（Node 22）；`npx wrangler@4 dev`（在 `relay/.dev.vars` 写入 `MINIMAX_API_KEY=…` 与
   `LOG_EXPORT_TOKEN=…`，该文件已被 .gitignore）。

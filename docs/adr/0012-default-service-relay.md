@@ -41,8 +41,9 @@ token it would need is a key of the same kind, and one that opens the repository
 ## Consequences
 
 - IMPF-AI sets four secrets once (Cloudflare token and account, the MiniMax key, the collector token) and runs the relay
-  workflow; until then nothing changes for visitors.
+  workflow (`relay/SETUP.md`); until then nothing changes for visitors.
 - Cost is bounded by the relay's daily totals and by the MiniMax plan.  A Token Plan (subscription) key serves one
-  account holder within 5-hour and weekly windows; a pay-as-you-go key with a spending limit suits a public site better.
+  account holder within 5-hour and weekly windows; a pay-as-you-go key, which spends only the balance paid in, suits a
+  public site better.
 - The records live in the private repository.  Making the repository public requires moving `data/chat-logs/` first.
 - Records arrive within the hour, not at once; a failed push leaves them on the relay for the next run.
