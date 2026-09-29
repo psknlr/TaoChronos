@@ -1,0 +1,29 @@
+{
+ "warnings": [],
+ "text_sizes_pt": [
+  5.0,
+  5.5,
+  6.0,
+  6.5,
+  8.0
+ ],
+ "stroke_widths_pt": [
+  0.5,
+  0.6,
+  0.7
+ ],
+ "n_texts": 41,
+ "width_mm": 183.0,
+ "height_mm": 62.0,
+ "fonts": [
+  "Arial-BoldMT",
+  "Arial-ItalicMT",
+  "ArialMT"
+ ],
+ "live_text_chars": 583,
+ "files": [
+  "/home/user/TaoChronos/paper/figures/out/extfig2_canon_replication.pdf",
+  "/home/user/TaoChronos/paper/figures/out/extfig2_canon_replication.svg",
+  "/home/user/TaoChronos/paper/figures/out/extfig2_canon_replication.png"
+ ]
+}

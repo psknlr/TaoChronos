@@ -1,0 +1,6180 @@
+{
+ "research_value": {
+  "name": "research_value",
+  "metrics": {
+   "headline": {
+    "adamic_adar_p@10": 0.0233,
+    "popularity_p@10": 0.02,
+    "chance_p@10": 0.011,
+    "adamic_adar_vs_popularity": "24/6 (p=0.0014)",
+    "heldout_held": "4/21",
+    "heldout_surviving_discoveries": "3/15",
+    "leakage": 0
+   },
+   "link_anticipation": {
+    "by_cutoff": {
+     "1127": {
+      "topics_read": 49,
+      "topics_with_links_come_true": 18,
+      "skipped": {
+       "past_too_few": 104,
+       "future_too_few": 27
+      },
+      "candidates": 2832,
+      "came_true": 35,
+      "base_rate": 0.0124,
+      "adamic_adar": {
+       "mean_ap": 0.0621,
+       "mean_ap_ci": [
+        0.0417,
+        0.0869
+       ],
+       "precision@10": 0.0278,
+       "precision@10_ci": [
+        0.0119,
+        0.0634
+       ],
+       "precision@20": 0.0223,
+       "precision@20_ci": [
+        0.0114,
+        0.0435
+       ]
+      },
+      "resource_allocation": {
+       "mean_ap": 0.0548,
+       "mean_ap_ci": [
+        0.0332,
+        0.0865
+       ],
+       "precision@10": 0.0111,
+       "precision@10_ci": [
+        0.0031,
+        0.0396
+       ],
+       "precision@20": 0.0251,
+       "precision@20_ci": [
+        0.0133,
+        0.0471
+       ]
+      },
+      "common_neighbors": {
+       "mean_ap": 0.0704,
+       "mean_ap_ci": [
+        0.0456,
+        0.1003
+       ],
+       "precision@10": 0.0333,
+       "precision@10_ci": [
+        0.0154,
+        0.0708
+       ],
+       "precision@20": 0.0251,
+       "precision@20_ci": [
+        0.0133,
+        0.0471
+       ]
+      },
+      "popularity": {
+       "mean_ap": 0.0392,
+       "mean_ap_ci": [
+        0.022,
+        0.0588
+       ],
+       "precision@10": 0.0278,
+       "precision@10_ci": [
+        0.0119,
+        0.0634
+       ],
+       "precision@20": 0.0196,
+       "precision@20_ci": [
+        0.0095,
+        0.0398
+       ]
+      },
+      "random": {
+       "mean_ap": 0.0521,
+       "mean_ap_ci": [
+        0.0358,
+        0.0716
+       ],
+       "precision@10": 0.0142,
+       "precision@20": 0.0148
+      },
+      "adamic_adar_vs_popularity": {
+       "wins": 12,
+       "losses": 6,
+       "ties": 0,
+       "sign_test_p": 0.2379
+      },
+      "adamic_adar_vs_random": {
+       "wins": 8,
+       "losses": 10,
+       "ties": 0,
+       "sign_test_p": 0.8145
+      },
+      "popularity_vs_random": {
+       "wins": 4,
+       "losses": 14,
+       "ties": 0,
+       "sign_test_p": 0.0309
+      }
+     },
+     "1368": {
+      "topics_read": 29,
+      "topics_with_links_come_true": 12,
+      "skipped": {
+       "past_too_few": 93,
+       "future_too_few": 58
+      },
+      "candidates": 3346,
+      "came_true": 21,
+      "base_rate": 0.0063,
+      "adamic_adar": {
+       "mean_ap": 0.0577,
+       "mean_ap_ci": [
+        0.0162,
+        0.1162
+       ],
+       "precision@10": 0.0167,
+       "precision@10_ci": [
+        0.0046,
+        0.0587
+       ],
+       "precision@20": 0.0125,
+       "precision@20_ci": [
+        0.0043,
+        0.0361
+       ]
+      },
+      "resource_allocation": {
+       "mean_ap": 0.0406,
+       "mean_ap_ci": [
+        0.0135,
+        0.0886
+       ],
+       "precision@10": 0.0083,
+       "precision@10_ci": [
+        0.0015,
+        0.0457
+       ],
+       "precision@20": 0.0083,
+       "precision@20_ci": [
+        0.0023,
+        0.0299
+       ]
+      },
+      "common_neighbors": {
+       "mean_ap": 0.113,
+       "mean_ap_ci": [
+        0.0194,
+        0.2821
+       ],
+       "precision@10": 0.025,
+       "precision@10_ci": [
+        0.0085,
+        0.0709
+       ],
+       "precision@20": 0.0125,
+       "precision@20_ci": [
+        0.0043,
+        0.0361
+       ]
+      },
+      "popularity": {
+       "mean_ap": 0.03,
+       "mean_ap_ci": [
+        0.0075,
+        0.0723
+       ],
+       "precision@10": 0.0083,
+       "precision@10_ci": [
+        0.0015,
+        0.0457
+       ],
+       "precision@20": 0.0042,
+       "precision@20_ci": [
+        0.0007,
+        0.0232
+       ]
+      },
+      "random": {
+       "mean_ap": 0.0229,
+       "mean_ap_ci": [
+        0.0157,
+        0.0305
+       ],
+       "precision@10": 0.0063,
+       "precision@20": 0.0069
+      },
+      "adamic_adar_vs_popularity": {
+       "wins": 12,
+       "losses": 0,
+       "ties": 0,
+       "sign_test_p": 0.0005
+      },
+      "adamic_adar_vs_random": {
+       "wins": 5,
+       "losses": 7,
+       "ties": 0,
+       "sign_test_p": 0.7744
+      },
+      "popularity_vs_random": {
+       "wins": 2,
+       "losses": 10,
+       "ties": 0,
+       "sign_test_p": 0.0386
+      }
+     }
+    },
+    "pooled": {
+     "topics_read": 78,
+     "topics_with_links_come_true": 30,
+     "skipped": {
+      "past_too_few": 197,
+      "future_too_few": 85
+     },
+     "candidates": 6178,
+     "came_true": 56,
+     "base_rate": 0.0091,
+     "adamic_adar": {
+      "mean_ap": 0.0603,
+      "mean_ap_ci": [
+       0.0382,
+       0.0899
+      ],
+      "precision@10": 0.0233,
+      "precision@10_ci": [
+       0.0113,
+       0.0474
+      ],
+      "precision@20": 0.0184,
+      "precision@20_ci": [
+       0.0103,
+       0.0326
+      ]
+     },
+     "resource_allocation": {
+      "mean_ap": 0.0491,
+      "mean_ap_ci": [
+       0.0286,
+       0.0756
+      ],
+      "precision@10": 0.01,
+      "precision@10_ci": [
+       0.0034,
+       0.029
+      ],
+      "precision@20": 0.0184,
+      "precision@20_ci": [
+       0.0103,
+       0.0326
+      ]
+     },
+     "common_neighbors": {
+      "mean_ap": 0.0875,
+      "mean_ap_ci": [
+       0.0426,
+       0.1592
+      ],
+      "precision@10": 0.03,
+      "precision@10_ci": [
+       0.0159,
+       0.056
+      ],
+      "precision@20": 0.0201,
+      "precision@20_ci": [
+       0.0115,
+       0.0347
+      ]
+     },
+     "popularity": {
+      "mean_ap": 0.0355,
+      "mean_ap_ci": [
+       0.0188,
+       0.0574
+      ],
+      "precision@10": 0.02,
+      "precision@10_ci": [
+       0.0092,
+       0.0429
+      ],
+      "precision@20": 0.0134,
+      "precision@20_ci": [
+       0.0068,
+       0.0262
+      ]
+     },
+     "random": {
+      "mean_ap": 0.0404,
+      "mean_ap_ci": [
+       0.0299,
+       0.0539
+      ],
+      "precision@10": 0.011,
+      "precision@20": 0.0116
+     },
+     "adamic_adar_vs_popularity": {
+      "wins": 24,
+      "losses": 6,
+      "ties": 0,
+      "sign_test_p": 0.0014
+     },
+     "adamic_adar_vs_random": {
+      "wins": 13,
+      "losses": 17,
+      "ties": 0,
+      "sign_test_p": 0.5847
+     },
+     "popularity_vs_random": {
+      "wins": 6,
+      "losses": 24,
+      "ties": 0,
+      "sign_test_p": 0.0014
+     }
+    },
+    "topics_considered": 180
+   },
+   "end_to_end": {
+    "cutoff": 1368,
+    "topics": {
+     "disease:消渴": {
+      "split": "dev",
+      "seconds": 38.1,
+      "status": "max_rounds",
+      "acceptance": "needs_expert",
+      "claims": 1776,
+      "hypotheses": 14,
+      "predictions": 14,
+      "judged": 7,
+      "passages_referenced": 1117,
+      "leakage": 0,
+      "leaked": []
+     },
+     "disease:中风": {
+      "split": "dev",
+      "seconds": 79.4,
+      "status": "max_rounds",
+      "acceptance": "needs_expert",
+      "claims": 2511,
+      "hypotheses": 14,
+      "predictions": 14,
+      "judged": 5,
+      "passages_referenced": 1528,
+      "leakage": 0,
+      "leaked": []
+     },
+     "disease:胸痹": {
+      "split": "heldout",
+      "seconds": 4.5,
+      "status": "max_rounds",
+      "acceptance": "needs_expert",
+      "claims": 156,
+      "hypotheses": 12,
+      "predictions": 12,
+      "judged": 4,
+      "passages_referenced": 119,
+      "leakage": 0,
+      "leaked": []
+     },
+     "disease:霍乱": {
+      "split": "heldout",
+      "seconds": 31.3,
+      "status": "max_rounds",
+      "acceptance": "needs_expert",
+      "claims": 1553,
+      "hypotheses": 14,
+      "predictions": 14,
+      "judged": 4,
+      "passages_referenced": 1121,
+      "leakage": 0,
+      "leaked": []
+     },
+     "disease:虚劳": {
+      "split": "heldout",
+      "seconds": 8.8,
+      "status": "max_rounds",
+      "acceptance": "inconclusive",
+      "claims": 431,
+      "hypotheses": 14,
+      "predictions": 14,
+      "judged": 5,
+      "passages_referenced": 320,
+      "leakage": 0,
+      "leaked": []
+     },
+     "disease:痰饮": {
+      "split": "heldout",
+      "seconds": 10.6,
+      "status": "max_rounds",
+      "acceptance": "needs_expert",
+      "claims": 292,
+      "hypotheses": 14,
+      "predictions": 14,
+      "judged": 8,
+      "passages_referenced": 209,
+      "leakage": 0,
+      "leaked": []
+     }
+    },
+    "dev": {
+     "judged": {
+      "n": 12,
+      "held": 4,
+      "rate": 0.3333,
+      "ci": [
+       0.1381,
+       0.6094
+      ]
+     },
+     "by_prediction": {
+      "absent_after": {
+       "n": 5,
+       "held": 2,
+       "rate": 0.4,
+       "ci": [
+        0.1176,
+        0.7693
+       ]
+      },
+      "cooccurrence_after": {
+       "n": 2,
+       "held": 0,
+       "rate": 0.0,
+       "ci": [
+        0.0,
+        0.6576
+       ]
+      },
+      "link_appears": {
+       "n": 4,
+       "held": 1,
+       "rate": 0.25,
+       "ci": [
+        0.0456,
+        0.6994
+       ]
+      },
+      "sense_shift": {
+       "n": 1,
+       "held": 1,
+       "rate": 1.0,
+       "ci": [
+        0.2065,
+        1.0
+       ]
+      }
+     },
+     "by_review": {
+      "other": {
+       "n": 2,
+       "held": 0,
+       "rate": 0.0,
+       "ci": [
+        0.0,
+        0.6576
+       ]
+      },
+      "survived": {
+       "n": 10,
+       "held": 4,
+       "rate": 0.4,
+       "ci": [
+        0.1682,
+        0.6873
+       ]
+      }
+     },
+     "judged_loose": {
+      "n": 12,
+      "held": 2,
+      "rate": 0.1667,
+      "ci": [
+       0.047,
+       0.448
+      ]
+     },
+     "by_prediction_loose": {
+      "absent_after": {
+       "n": 5,
+       "held": 0,
+       "rate": 0.0,
+       "ci": [
+        0.0,
+        0.4345
+       ]
+      },
+      "cooccurrence_after": {
+       "n": 2,
+       "held": 0,
+       "rate": 0.0,
+       "ci": [
+        0.0,
+        0.6576
+       ]
+      },
+      "link_appears": {
+       "n": 4,
+       "held": 1,
+       "rate": 0.25,
+       "ci": [
+        0.0456,
+        0.6994
+       ]
+      },
+      "sense_shift": {
+       "n": 1,
+       "held": 1,
+       "rate": 1.0,
+       "ci": [
+        0.2065,
+        1.0
+       ]
+      }
+     },
+     "hidden_associations_new_and_true": {
+      "n": 4,
+      "held": 1,
+      "rate": 0.25,
+      "ci": [
+       0.0456,
+       0.6994
+      ]
+     },
+     "discoveries_by_review": {
+      "other": {
+       "n": 2,
+       "held": 0,
+       "rate": 0.0,
+       "ci": [
+        0.0,
+        0.6576
+       ]
+      },
+      "survived": {
+       "n": 10,
+       "held": 4,
+       "rate": 0.4,
+       "ci": [
+        0.1682,
+        0.6873
+       ]
+      }
+     }
+    },
+    "heldout": {
+     "judged": {
+      "n": 21,
+      "held": 4,
+      "rate": 0.1905,
+      "ci": [
+       0.0767,
+       0.4
+      ]
+     },
+     "by_prediction": {
+      "absent_after": {
+       "n": 6,
+       "held": 3,
+       "rate": 0.5,
+       "ci": [
+        0.1876,
+        0.8124
+       ]
+      },
+      "cooccurrence_after": {
+       "n": 5,
+       "held": 0,
+       "rate": 0.0,
+       "ci": [
+        0.0,
+        0.4345
+       ]
+      },
+      "link_appears": {
+       "n": 8,
+       "held": 1,
+       "rate": 0.125,
+       "ci": [
+        0.0224,
+        0.4709
+       ]
+      },
+      "sense_shift": {
+       "n": 2,
+       "held": 0,
+       "rate": 0.0,
+       "ci": [
+        0.0,
+        0.6576
+       ]
+      }
+     },
+     "by_review": {
+      "other": {
+       "n": 6,
+       "held": 1,
+       "rate": 0.1667,
+       "ci": [
+        0.0301,
+        0.5635
+       ]
+      },
+      "survived": {
+       "n": 15,
+       "held": 3,
+       "rate": 0.2,
+       "ci": [
+        0.0705,
+        0.4519
+       ]
+      }
+     },
+     "judged_loose": {
+      "n": 21,
+      "held": 3,
+      "rate": 0.1429,
+      "ci": [
+       0.0498,
+       0.3464
+      ]
+     },
+     "by_prediction_loose": {
+      "absent_after": {
+       "n": 6,
+       "held": 2,
+       "rate": 0.3333,
+       "ci": [
+        0.0968,
+        0.7
+       ]
+      },
+      "cooccurrence_after": {
+       "n": 5,
+       "held": 0,
+       "rate": 0.0,
+       "ci": [
+        0.0,
+        0.4345
+       ]
+      },
+      "link_appears": {
+       "n": 8,
+       "held": 1,
+       "rate": 0.125,
+       "ci": [
+        0.0224,
+        0.4709
+       ]
+      },
+      "sense_shift": {
+       "n": 2,
+       "held": 0,
+       "rate": 0.0,
+       "ci": [
+        0.0,
+        0.6576
+       ]
+      }
+     },
+     "hidden_associations_new_and_true": {
+      "n": 8,
+      "held": 0,
+      "rate": 0.0,
+      "ci": [
+       0.0,
+       0.3244
+      ]
+     },
+     "discoveries_by_review": {
+      "other": {
+       "n": 6,
+       "held": 0,
+       "rate": 0.0,
+       "ci": [
+        0.0,
+        0.3903
+       ]
+      },
+      "survived": {
+       "n": 15,
+       "held": 3,
+       "rate": 0.2,
+       "ci": [
+        0.0705,
+        0.4519
+       ]
+      }
+     }
+    },
+    "leakage": 0
+   },
+   "passages_read": 40876,
+   "seconds": 220.6
+  },
+  "details": [
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:三消",
+    "past_passages": 3,
+    "future_passages": 41,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:上消",
+    "past_passages": 1,
+    "future_passages": 9,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:下消",
+    "past_passages": 6,
+    "future_passages": 10,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:中消",
+    "past_passages": 27,
+    "future_passages": 48,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:中风",
+    "past_passages": 757,
+    "future_passages": 968,
+    "future_read": 968,
+    "linked_before": 41,
+    "candidates": 173,
+    "came_true": 1,
+    "came_true_one_book": 6,
+    "base_rate": 0.0058,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0667,
+     "first_hit": 15
+    },
+    "examples": [
+     {
+      "remedy": "formula:麻黄汤",
+      "rank": 15,
+      "future_books": 2
+     }
+    ],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0256,
+     "first_hit": 39
+    },
+    "common_neighbors": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.1429,
+     "first_hit": 7
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0074,
+     "first_hit": 136
+    },
+    "random": {
+     "hits@10": 0.05,
+     "hits@20": 0.15,
+     "ap": 0.0243
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:伤寒",
+    "past_passages": 1962,
+    "future_passages": 2752,
+    "future_read": 2752,
+    "linked_before": 114,
+    "candidates": 231,
+    "came_true": 6,
+    "came_true_one_book": 19,
+    "base_rate": 0.026,
+    "adamic_adar": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.0952,
+     "first_hit": 4
+    },
+    "examples": [
+     {
+      "remedy": "herb:麻黄",
+      "rank": 4,
+      "future_books": 2
+     }
+    ],
+    "resource_allocation": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.1217,
+     "first_hit": 3
+    },
+    "common_neighbors": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.0807,
+     "first_hit": 6
+    },
+    "popularity": {
+     "hits@10": 2,
+     "hits@20": 2,
+     "ap": 0.106,
+     "first_hit": 6
+    },
+    "random": {
+     "hits@10": 0.3,
+     "hits@20": 0.6,
+     "ap": 0.0441
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:冬温",
+    "past_passages": 27,
+    "future_passages": 32,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:厥阴病",
+    "past_passages": 35,
+    "future_passages": 37,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:太阳病",
+    "past_passages": 620,
+    "future_passages": 328,
+    "future_read": 328,
+    "linked_before": 35,
+    "candidates": 29,
+    "came_true": 0,
+    "came_true_one_book": 3,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:太阴病",
+    "past_passages": 39,
+    "future_passages": 32,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:少阳病",
+    "past_passages": 26,
+    "future_passages": 30,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:少阴病",
+    "past_passages": 355,
+    "future_passages": 181,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:暑温",
+    "past_passages": 9,
+    "future_passages": 14,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:洞泄",
+    "past_passages": 69,
+    "future_passages": 57,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:消中",
+    "past_passages": 31,
+    "future_passages": 47,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:消渴",
+    "past_passages": 304,
+    "future_passages": 345,
+    "future_read": 345,
+    "linked_before": 6,
+    "candidates": 63,
+    "came_true": 0,
+    "came_true_one_book": 1,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:消瘅",
+    "past_passages": 86,
+    "future_passages": 16,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:温毒",
+    "past_passages": 34,
+    "future_passages": 38,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:温热",
+    "past_passages": 56,
+    "future_passages": 282,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:温疟",
+    "past_passages": 143,
+    "future_passages": 100,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:温疫",
+    "past_passages": 44,
+    "future_passages": 213,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:温病",
+    "past_passages": 202,
+    "future_passages": 292,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:湿温",
+    "past_passages": 19,
+    "future_passages": 88,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:湿痹",
+    "past_passages": 225,
+    "future_passages": 148,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:热病",
+    "past_passages": 563,
+    "future_passages": 463,
+    "future_read": 463,
+    "linked_before": 7,
+    "candidates": 42,
+    "came_true": 0,
+    "came_true_one_book": 1,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:疔",
+    "past_passages": 28,
+    "future_passages": 217,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:疟",
+    "past_passages": 808,
+    "future_passages": 987,
+    "future_read": 987,
+    "linked_before": 39,
+    "candidates": 144,
+    "came_true": 0,
+    "came_true_one_book": 1,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:疥",
+    "past_passages": 224,
+    "future_passages": 278,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:疮",
+    "past_passages": 2386,
+    "future_passages": 3140,
+    "future_read": 3140,
+    "linked_before": 38,
+    "candidates": 263,
+    "came_true": 0,
+    "came_true_one_book": 9,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:疽",
+    "past_passages": 587,
+    "future_passages": 783,
+    "future_read": 783,
+    "linked_before": 8,
+    "candidates": 113,
+    "came_true": 0,
+    "came_true_one_book": 0,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:痈",
+    "past_passages": 1265,
+    "future_passages": 1299,
+    "future_read": 1299,
+    "linked_before": 17,
+    "candidates": 162,
+    "came_true": 0,
+    "came_true_one_book": 4,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:痈疽",
+    "past_passages": 266,
+    "future_passages": 402,
+    "future_read": 402,
+    "linked_before": 9,
+    "candidates": 86,
+    "came_true": 0,
+    "came_true_one_book": 0,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:痔",
+    "past_passages": 317,
+    "future_passages": 428,
+    "future_read": 428,
+    "linked_before": 3,
+    "candidates": 51,
+    "came_true": 0,
+    "came_true_one_book": 2,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:痛痹",
+    "past_passages": 57,
+    "future_passages": 20,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:痰饮",
+    "past_passages": 103,
+    "future_passages": 288,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:痹",
+    "past_passages": 1723,
+    "future_passages": 1176,
+    "future_read": 1176,
+    "linked_before": 34,
+    "candidates": 226,
+    "came_true": 0,
+    "came_true_one_book": 4,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:痿",
+    "past_passages": 622,
+    "future_passages": 787,
+    "future_read": 787,
+    "linked_before": 16,
+    "candidates": 101,
+    "came_true": 0,
+    "came_true_one_book": 1,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:瘰疬",
+    "past_passages": 71,
+    "future_passages": 57,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:瘿",
+    "past_passages": 87,
+    "future_passages": 87,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:瘿瘤",
+    "past_passages": 19,
+    "future_passages": 33,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:癞疾",
+    "past_passages": 173,
+    "future_passages": 128,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:癥瘕",
+    "past_passages": 524,
+    "future_passages": 360,
+    "future_read": 360,
+    "linked_before": 15,
+    "candidates": 176,
+    "came_true": 0,
+    "came_true_one_book": 1,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:秋燥",
+    "past_passages": 0,
+    "future_passages": 16,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:结胸",
+    "past_passages": 212,
+    "future_passages": 253,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:肠澼",
+    "past_passages": 91,
+    "future_passages": 47,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:肠痈",
+    "past_passages": 56,
+    "future_passages": 52,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:肾消",
+    "past_passages": 6,
+    "future_passages": 17,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:胸痹",
+    "past_passages": 72,
+    "future_passages": 68,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:脾瘅",
+    "past_passages": 5,
+    "future_passages": 9,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:著痹",
+    "past_passages": 17,
+    "future_passages": 7,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:虚劳",
+    "past_passages": 199,
+    "future_passages": 333,
+    "future_read": 333,
+    "linked_before": 22,
+    "candidates": 101,
+    "came_true": 0,
+    "came_true_one_book": 0,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:蛊毒",
+    "past_passages": 264,
+    "future_passages": 111,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:血痹",
+    "past_passages": 54,
+    "future_passages": 36,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:行痹",
+    "past_passages": 5,
+    "future_passages": 13,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:金疮",
+    "past_passages": 233,
+    "future_passages": 209,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:阳明病",
+    "past_passages": 349,
+    "future_passages": 169,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:霍乱",
+    "past_passages": 361,
+    "future_passages": 479,
+    "future_read": 479,
+    "linked_before": 7,
+    "candidates": 118,
+    "came_true": 0,
+    "came_true_one_book": 2,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:风温",
+    "past_passages": 31,
+    "future_passages": 137,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:风湿痹",
+    "past_passages": 45,
+    "future_passages": 36,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:风痹",
+    "past_passages": 124,
+    "future_passages": 97,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:飧泄",
+    "past_passages": 119,
+    "future_passages": 106,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "disease:鼠瘘",
+    "past_passages": 67,
+    "future_passages": 9,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:上气",
+    "past_passages": 976,
+    "future_passages": 422,
+    "future_read": 422,
+    "linked_before": 37,
+    "candidates": 173,
+    "came_true": 0,
+    "came_true_one_book": 0,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:下利",
+    "past_passages": 1145,
+    "future_passages": 1320,
+    "future_read": 1320,
+    "linked_before": 73,
+    "candidates": 171,
+    "came_true": 2,
+    "came_true_one_book": 11,
+    "base_rate": 0.0117,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0355,
+     "first_hit": 22
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0431,
+     "first_hit": 17
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0254,
+     "first_hit": 31
+    },
+    "popularity": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.0811,
+     "first_hit": 7
+    },
+    "random": {
+     "hits@10": 0.15,
+     "hits@20": 0.2,
+     "ap": 0.0318
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:下血",
+    "past_passages": 403,
+    "future_passages": 454,
+    "future_read": 454,
+    "linked_before": 16,
+    "candidates": 109,
+    "came_true": 1,
+    "came_true_one_book": 4,
+    "base_rate": 0.0092,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0122,
+     "first_hit": 82
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0122,
+     "first_hit": 82
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0122,
+     "first_hit": 82
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.013,
+     "first_hit": 77
+    },
+    "random": {
+     "hits@10": 0.05,
+     "hits@20": 0.1,
+     "ap": 0.0355
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:不得眠",
+    "past_passages": 166,
+    "future_passages": 123,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:不恶寒",
+    "past_passages": 154,
+    "future_passages": 173,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:不渴",
+    "past_passages": 265,
+    "future_passages": 299,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:不饥",
+    "past_passages": 163,
+    "future_passages": 94,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:中满",
+    "past_passages": 180,
+    "future_passages": 187,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:五心烦热",
+    "past_passages": 3,
+    "future_passages": 42,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:但头汗出",
+    "past_passages": 81,
+    "future_passages": 35,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:但欲寐",
+    "past_passages": 103,
+    "future_passages": 112,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:午后身热",
+    "past_passages": 0,
+    "future_passages": 0,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:半身不遂",
+    "past_passages": 35,
+    "future_passages": 101,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:厥逆",
+    "past_passages": 287,
+    "future_passages": 282,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:反胃",
+    "past_passages": 32,
+    "future_passages": 127,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:发热",
+    "past_passages": 1661,
+    "future_passages": 2767,
+    "future_read": 2767,
+    "linked_before": 94,
+    "candidates": 163,
+    "came_true": 3,
+    "came_true_one_book": 11,
+    "base_rate": 0.0184,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0389,
+     "first_hit": 39
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0421,
+     "first_hit": 31
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0356,
+     "first_hit": 35
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0172,
+     "first_hit": 78
+    },
+    "random": {
+     "hits@10": 0.25,
+     "hits@20": 0.5,
+     "ap": 0.0582
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:发狂",
+    "past_passages": 44,
+    "future_passages": 122,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:口干",
+    "past_passages": 429,
+    "future_passages": 570,
+    "future_read": 570,
+    "linked_before": 30,
+    "candidates": 118,
+    "came_true": 0,
+    "came_true_one_book": 3,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:口甘",
+    "past_passages": 8,
+    "future_passages": 15,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:口眼歪斜",
+    "past_passages": 9,
+    "future_passages": 52,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:口苦",
+    "past_passages": 122,
+    "future_passages": 186,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:口角流涎",
+    "past_passages": 0,
+    "future_passages": 12,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:吐蛔",
+    "past_passages": 31,
+    "future_passages": 59,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:吐血",
+    "past_passages": 233,
+    "future_passages": 366,
+    "future_read": 366,
+    "linked_before": 18,
+    "candidates": 38,
+    "came_true": 0,
+    "came_true_one_book": 1,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:呕吐",
+    "past_passages": 854,
+    "future_passages": 1276,
+    "future_read": 1276,
+    "linked_before": 62,
+    "candidates": 245,
+    "came_true": 2,
+    "came_true_one_book": 14,
+    "base_rate": 0.0082,
+    "adamic_adar": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.127,
+     "first_hit": 5
+    },
+    "examples": [
+     {
+      "remedy": "formula:五苓散",
+      "rank": 5,
+      "future_books": 4
+     }
+    ],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0718,
+     "first_hit": 11
+    },
+    "common_neighbors": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.1944,
+     "first_hit": 3
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0103,
+     "first_hit": 86
+    },
+    "random": {
+     "hits@10": 0.05,
+     "hits@20": 0.05,
+     "ap": 0.0395
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:咳",
+    "past_passages": 1727,
+    "future_passages": 1783,
+    "future_read": 1783,
+    "linked_before": 72,
+    "candidates": 227,
+    "came_true": 1,
+    "came_true_one_book": 14,
+    "base_rate": 0.0044,
+    "adamic_adar": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.1667,
+     "first_hit": 6
+    },
+    "examples": [
+     {
+      "remedy": "herb:杏仁",
+      "rank": 6,
+      "future_books": 2
+     }
+    ],
+    "resource_allocation": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.25,
+     "first_hit": 4
+    },
+    "common_neighbors": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.1429,
+     "first_hit": 7
+    },
+    "popularity": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.1111,
+     "first_hit": 9
+    },
+    "random": {
+     "hits@10": 0.0,
+     "hits@20": 0.1,
+     "ap": 0.0173
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:咽干",
+    "past_passages": 133,
+    "future_passages": 185,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:喘",
+    "past_passages": 1461,
+    "future_passages": 1639,
+    "future_read": 1639,
+    "linked_before": 68,
+    "candidates": 157,
+    "came_true": 3,
+    "came_true_one_book": 7,
+    "base_rate": 0.0191,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0592,
+     "first_hit": 19
+    },
+    "examples": [
+     {
+      "remedy": "herb:人参",
+      "rank": 19,
+      "future_books": 2
+     }
+    ],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 2,
+     "ap": 0.1007,
+     "first_hit": 11
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0446,
+     "first_hit": 20
+    },
+    "popularity": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.123,
+     "first_hit": 3
+    },
+    "random": {
+     "hits@10": 0.15,
+     "hits@20": 0.4,
+     "ap": 0.0436
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:噎",
+    "past_passages": 170,
+    "future_passages": 235,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:壮热",
+    "past_passages": 226,
+    "future_passages": 257,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:多食",
+    "past_passages": 277,
+    "future_passages": 169,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:多饮",
+    "past_passages": 146,
+    "future_passages": 105,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:大便难",
+    "past_passages": 226,
+    "future_passages": 156,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:大便黑",
+    "past_passages": 11,
+    "future_passages": 26,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:大热",
+    "past_passages": 322,
+    "future_passages": 462,
+    "future_read": 462,
+    "linked_before": 14,
+    "candidates": 52,
+    "came_true": 0,
+    "came_true_one_book": 4,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:失音",
+    "past_passages": 36,
+    "future_passages": 86,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:头痛",
+    "past_passages": 974,
+    "future_passages": 1318,
+    "future_read": 1318,
+    "linked_before": 54,
+    "candidates": 144,
+    "came_true": 2,
+    "came_true_one_book": 10,
+    "base_rate": 0.0139,
+    "adamic_adar": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.135,
+     "first_hit": 4
+    },
+    "examples": [
+     {
+      "remedy": "formula:四逆汤",
+      "rank": 4,
+      "future_books": 3
+     }
+    ],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0413,
+     "first_hit": 16
+    },
+    "common_neighbors": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.1767,
+     "first_hit": 3
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0201,
+     "first_hit": 53
+    },
+    "random": {
+     "hits@10": 0.1,
+     "hits@20": 0.15,
+     "ap": 0.0343
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:头重",
+    "past_passages": 152,
+    "future_passages": 90,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:头项强痛",
+    "past_passages": 36,
+    "future_passages": 45,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:寒热",
+    "past_passages": 1715,
+    "future_passages": 1800,
+    "future_read": 1800,
+    "linked_before": 35,
+    "candidates": 250,
+    "came_true": 1,
+    "came_true_one_book": 10,
+    "base_rate": 0.004,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0069,
+     "first_hit": 145
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0069,
+     "first_hit": 145
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0069,
+     "first_hit": 145
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0048,
+     "first_hit": 207
+    },
+    "random": {
+     "hits@10": 0.05,
+     "hits@20": 0.05,
+     "ap": 0.0204
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:小便不利",
+    "past_passages": 569,
+    "future_passages": 514,
+    "future_read": 514,
+    "linked_before": 49,
+    "candidates": 83,
+    "came_true": 1,
+    "came_true_one_book": 7,
+    "base_rate": 0.012,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0417,
+     "first_hit": 24
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0227,
+     "first_hit": 44
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0667,
+     "first_hit": 15
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0139,
+     "first_hit": 72
+    },
+    "random": {
+     "hits@10": 0.2,
+     "hits@20": 0.3,
+     "ap": 0.0898
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:小便多",
+    "past_passages": 208,
+    "future_passages": 281,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:小便如膏",
+    "past_passages": 0,
+    "future_passages": 2,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:小便少",
+    "past_passages": 23,
+    "future_passages": 35,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:小便自利",
+    "past_passages": 111,
+    "future_passages": 102,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:小便黄赤",
+    "past_passages": 25,
+    "future_passages": 25,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:少腹拘急",
+    "past_passages": 11,
+    "future_passages": 4,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:少腹满",
+    "past_passages": 123,
+    "future_passages": 44,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:尿甜",
+    "past_passages": 0,
+    "future_passages": 0,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:干呕",
+    "past_passages": 194,
+    "future_passages": 182,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:往来寒热",
+    "past_passages": 111,
+    "future_passages": 102,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:微热",
+    "past_passages": 151,
+    "future_passages": 173,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:心下悸",
+    "past_passages": 225,
+    "future_passages": 406,
+    "future_read": 406,
+    "linked_before": 17,
+    "candidates": 121,
+    "came_true": 0,
+    "came_true_one_book": 1,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:心中疼热",
+    "past_passages": 13,
+    "future_passages": 9,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:心烦",
+    "past_passages": 665,
+    "future_passages": 547,
+    "future_read": 547,
+    "linked_before": 47,
+    "candidates": 139,
+    "came_true": 1,
+    "came_true_one_book": 4,
+    "base_rate": 0.0072,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0213,
+     "first_hit": 47
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0323,
+     "first_hit": 31
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0156,
+     "first_hit": 64
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0108,
+     "first_hit": 93
+    },
+    "random": {
+     "hits@10": 0.0,
+     "hits@20": 0.15,
+     "ap": 0.0246
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:恶寒",
+    "past_passages": 891,
+    "future_passages": 1250,
+    "future_read": 1250,
+    "linked_before": 63,
+    "candidates": 123,
+    "came_true": 0,
+    "came_true_one_book": 7,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:恶心",
+    "past_passages": 69,
+    "future_passages": 230,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:恶风",
+    "past_passages": 455,
+    "future_passages": 373,
+    "future_read": 373,
+    "linked_before": 24,
+    "candidates": 75,
+    "came_true": 0,
+    "came_true_one_book": 3,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:恶风寒",
+    "past_passages": 51,
+    "future_passages": 52,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:手足汗出",
+    "past_passages": 7,
+    "future_passages": 8,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:拘急",
+    "past_passages": 363,
+    "future_passages": 352,
+    "future_read": 352,
+    "linked_before": 25,
+    "candidates": 169,
+    "came_true": 0,
+    "came_true_one_book": 2,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:按之即痛",
+    "past_passages": 3,
+    "future_passages": 1,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:掉眩",
+    "past_passages": 7,
+    "future_passages": 32,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:收引",
+    "past_passages": 6,
+    "future_passages": 23,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:无大热",
+    "past_passages": 70,
+    "future_passages": 46,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:无汗",
+    "past_passages": 247,
+    "future_passages": 534,
+    "future_read": 534,
+    "linked_before": 20,
+    "candidates": 18,
+    "came_true": 1,
+    "came_true_one_book": 4,
+    "base_rate": 0.0556,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0588,
+     "first_hit": 17
+    },
+    "examples": [
+     {
+      "remedy": "formula:茵陈汤",
+      "rank": 17,
+      "future_books": 2
+     }
+    ],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0588,
+     "first_hit": 17
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0588,
+     "first_hit": 17
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0667,
+     "first_hit": 15
+    },
+    "random": {
+     "hits@10": 0.55,
+     "hits@20": 1.0,
+     "ap": 0.1659
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:气上撞心",
+    "past_passages": 7,
+    "future_passages": 5,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:汗出",
+    "past_passages": 2217,
+    "future_passages": 1914,
+    "future_read": 1914,
+    "linked_before": 119,
+    "candidates": 207,
+    "came_true": 1,
+    "came_true_one_book": 16,
+    "base_rate": 0.0048,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0185,
+     "first_hit": 54
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.008,
+     "first_hit": 125
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.025,
+     "first_hit": 40
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0062,
+     "first_hit": 162
+    },
+    "random": {
+     "hits@10": 0.05,
+     "hits@20": 0.05,
+     "ap": 0.0249
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:浊",
+    "past_passages": 391,
+    "future_passages": 976,
+    "future_read": 976,
+    "linked_before": 14,
+    "candidates": 91,
+    "came_true": 1,
+    "came_true_one_book": 5,
+    "base_rate": 0.011,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.025,
+     "first_hit": 40
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.025,
+     "first_hit": 40
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.025,
+     "first_hit": 40
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0233,
+     "first_hit": 43
+    },
+    "random": {
+     "hits@10": 0.05,
+     "hits@20": 0.1,
+     "ap": 0.0732
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:消瘦",
+    "past_passages": 36,
+    "future_passages": 79,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:淋",
+    "past_passages": 588,
+    "future_passages": 923,
+    "future_read": 923,
+    "linked_before": 9,
+    "candidates": 139,
+    "came_true": 0,
+    "came_true_one_book": 5,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:渴",
+    "past_passages": 1654,
+    "future_passages": 2732,
+    "future_read": 2732,
+    "linked_before": 74,
+    "candidates": 224,
+    "came_true": 4,
+    "came_true_one_book": 15,
+    "base_rate": 0.0179,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0234,
+     "first_hit": 65
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0198,
+     "first_hit": 95
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0303,
+     "first_hit": 46
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0166,
+     "first_hit": 91
+    },
+    "random": {
+     "hits@10": 0.05,
+     "hits@20": 0.1,
+     "ap": 0.0273
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:漱口不欲咽",
+    "past_passages": 0,
+    "future_passages": 0,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:潮热",
+    "past_passages": 169,
+    "future_passages": 339,
+    "future_read": 339,
+    "linked_before": 11,
+    "candidates": 39,
+    "came_true": 0,
+    "came_true_one_book": 1,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:烦躁",
+    "past_passages": 274,
+    "future_passages": 554,
+    "future_read": 554,
+    "linked_before": 28,
+    "candidates": 65,
+    "came_true": 0,
+    "came_true_one_book": 6,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:痈脓",
+    "past_passages": 68,
+    "future_passages": 34,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:痛痒",
+    "past_passages": 53,
+    "future_passages": 111,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:皮肤顽厚",
+    "past_passages": 1,
+    "future_passages": 0,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:盗汗",
+    "past_passages": 90,
+    "future_passages": 356,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:目痛",
+    "past_passages": 127,
+    "future_passages": 96,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:目眩",
+    "past_passages": 388,
+    "future_passages": 322,
+    "future_read": 322,
+    "linked_before": 22,
+    "candidates": 134,
+    "came_true": 0,
+    "came_true_one_book": 2,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:目瞑",
+    "past_passages": 85,
+    "future_passages": 38,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:瞀瘛",
+    "past_passages": 2,
+    "future_passages": 10,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:短气",
+    "past_passages": 563,
+    "future_passages": 226,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:神不足",
+    "past_passages": 10,
+    "future_passages": 16,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:神昏",
+    "past_passages": 19,
+    "future_passages": 175,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:筋惕肉瞤",
+    "past_passages": 13,
+    "future_passages": 13,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:耳聋",
+    "past_passages": 292,
+    "future_passages": 309,
+    "future_read": 309,
+    "linked_before": 5,
+    "candidates": 72,
+    "came_true": 0,
+    "came_true_one_book": 0,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:肌肉酸痛",
+    "past_passages": 0,
+    "future_passages": 0,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:肢体疼痛",
+    "past_passages": 1,
+    "future_passages": 14,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:胁下痞硬",
+    "past_passages": 11,
+    "future_passages": 9,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:胸下结硬",
+    "past_passages": 7,
+    "future_passages": 4,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:胸胁苦满",
+    "past_passages": 77,
+    "future_passages": 30,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:胸背痛",
+    "past_passages": 20,
+    "future_passages": 10,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:胸闷",
+    "past_passages": 4,
+    "future_passages": 23,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:腐肉",
+    "past_passages": 10,
+    "future_passages": 29,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:腰痛",
+    "past_passages": 525,
+    "future_passages": 342,
+    "future_read": 342,
+    "linked_before": 21,
+    "candidates": 63,
+    "came_true": 0,
+    "came_true_one_book": 3,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:腹满",
+    "past_passages": 1004,
+    "future_passages": 711,
+    "future_read": 711,
+    "linked_before": 56,
+    "candidates": 166,
+    "came_true": 3,
+    "came_true_one_book": 9,
+    "base_rate": 0.0181,
+    "adamic_adar": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.1417,
+     "first_hit": 3
+    },
+    "examples": [
+     {
+      "remedy": "formula:桂枝汤",
+      "rank": 3,
+      "future_books": 2
+     }
+    ],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0612,
+     "first_hit": 14
+    },
+    "common_neighbors": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.1408,
+     "first_hit": 3
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0151,
+     "first_hit": 81
+    },
+    "random": {
+     "hits@10": 0.3,
+     "hits@20": 0.7,
+     "ap": 0.0699
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:腹痛",
+    "past_passages": 952,
+    "future_passages": 1312,
+    "future_read": 1312,
+    "linked_before": 54,
+    "candidates": 210,
+    "came_true": 0,
+    "came_true_one_book": 13,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:腹皮急",
+    "past_passages": 8,
+    "future_passages": 5,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:膹郁",
+    "past_passages": 2,
+    "future_passages": 16,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:臂不遂",
+    "past_passages": 7,
+    "future_passages": 7,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:语言謇涩",
+    "past_passages": 3,
+    "future_passages": 20,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:谵语",
+    "past_passages": 316,
+    "future_passages": 402,
+    "future_read": 402,
+    "linked_before": 16,
+    "candidates": 34,
+    "came_true": 1,
+    "came_true_one_book": 2,
+    "base_rate": 0.0294,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0435,
+     "first_hit": 23
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0435,
+     "first_hit": 23
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0435,
+     "first_hit": 23
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0588,
+     "first_hit": 17
+    },
+    "random": {
+     "hits@10": 0.2,
+     "hits@20": 0.6,
+     "ap": 0.1126
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:身体不仁",
+    "past_passages": 401,
+    "future_passages": 232,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:身灼热",
+    "past_passages": 5,
+    "future_passages": 11,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:身疼痛",
+    "past_passages": 272,
+    "future_passages": 351,
+    "future_read": 351,
+    "linked_before": 23,
+    "candidates": 46,
+    "came_true": 0,
+    "came_true_one_book": 1,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:身肿",
+    "past_passages": 341,
+    "future_passages": 502,
+    "future_read": 502,
+    "linked_before": 19,
+    "candidates": 112,
+    "came_true": 0,
+    "came_true_one_book": 3,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:身重",
+    "past_passages": 262,
+    "future_passages": 223,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:遗尿",
+    "past_passages": 52,
+    "future_passages": 81,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:阴痿",
+    "past_passages": 109,
+    "future_passages": 57,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:项背强",
+    "past_passages": 26,
+    "future_passages": 35,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:颊赤",
+    "past_passages": 22,
+    "future_passages": 31,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:食不下",
+    "past_passages": 232,
+    "future_passages": 232,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:饥而不欲食",
+    "past_passages": 21,
+    "future_passages": 5,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:骨节疼痛",
+    "past_passages": 84,
+    "future_passages": 70,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:鼻衄",
+    "past_passages": 52,
+    "future_passages": 107,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1127,
+    "topic": "symptom:鼻鸣",
+    "past_passages": 26,
+    "future_passages": 13,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:三消",
+    "past_passages": 19,
+    "future_passages": 23,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:上消",
+    "past_passages": 2,
+    "future_passages": 7,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:下消",
+    "past_passages": 10,
+    "future_passages": 6,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:中消",
+    "past_passages": 47,
+    "future_passages": 29,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:中风",
+    "past_passages": 1089,
+    "future_passages": 616,
+    "future_read": 616,
+    "linked_before": 55,
+    "candidates": 266,
+    "came_true": 1,
+    "came_true_one_book": 5,
+    "base_rate": 0.0038,
+    "adamic_adar": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.25,
+     "first_hit": 4
+    },
+    "examples": [
+     {
+      "remedy": "formula:麻黄汤",
+      "rank": 4,
+      "future_books": 2
+     }
+    ],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0556,
+     "first_hit": 18
+    },
+    "common_neighbors": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 1.0,
+     "first_hit": 1
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0147,
+     "first_hit": 68
+    },
+    "random": {
+     "hits@10": 0.0,
+     "hits@20": 0.0,
+     "ap": 0.0104
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:伤寒",
+    "past_passages": 2811,
+    "future_passages": 1856,
+    "future_read": 1856,
+    "linked_before": 149,
+    "candidates": 308,
+    "came_true": 2,
+    "came_true_one_book": 13,
+    "base_rate": 0.0065,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0361,
+     "first_hit": 27
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0295,
+     "first_hit": 36
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0406,
+     "first_hit": 22
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0164,
+     "first_hit": 56
+    },
+    "random": {
+     "hits@10": 0.2,
+     "hits@20": 0.35,
+     "ap": 0.039
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:冬温",
+    "past_passages": 28,
+    "future_passages": 31,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:厥阴病",
+    "past_passages": 44,
+    "future_passages": 27,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:太阳病",
+    "past_passages": 693,
+    "future_passages": 255,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:太阴病",
+    "past_passages": 46,
+    "future_passages": 24,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:少阳病",
+    "past_passages": 36,
+    "future_passages": 19,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:少阴病",
+    "past_passages": 395,
+    "future_passages": 139,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:暑温",
+    "past_passages": 14,
+    "future_passages": 9,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:洞泄",
+    "past_passages": 107,
+    "future_passages": 31,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:消中",
+    "past_passages": 59,
+    "future_passages": 16,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:消渴",
+    "past_passages": 442,
+    "future_passages": 188,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:消瘅",
+    "past_passages": 97,
+    "future_passages": 9,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:温毒",
+    "past_passages": 37,
+    "future_passages": 34,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:温热",
+    "past_passages": 113,
+    "future_passages": 226,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:温疟",
+    "past_passages": 179,
+    "future_passages": 64,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:温疫",
+    "past_passages": 78,
+    "future_passages": 175,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:温病",
+    "past_passages": 248,
+    "future_passages": 253,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:湿温",
+    "past_passages": 36,
+    "future_passages": 71,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:湿痹",
+    "past_passages": 256,
+    "future_passages": 105,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:热病",
+    "past_passages": 733,
+    "future_passages": 315,
+    "future_read": 315,
+    "linked_before": 13,
+    "candidates": 56,
+    "came_true": 0,
+    "came_true_one_book": 1,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:疔",
+    "past_passages": 47,
+    "future_passages": 193,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:疟",
+    "past_passages": 1069,
+    "future_passages": 768,
+    "future_read": 768,
+    "linked_before": 47,
+    "candidates": 175,
+    "came_true": 0,
+    "came_true_one_book": 2,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:疥",
+    "past_passages": 289,
+    "future_passages": 194,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:疮",
+    "past_passages": 3404,
+    "future_passages": 2082,
+    "future_read": 2082,
+    "linked_before": 63,
+    "candidates": 425,
+    "came_true": 1,
+    "came_true_one_book": 12,
+    "base_rate": 0.0024,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0132,
+     "first_hit": 76
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0067,
+     "first_hit": 150
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0217,
+     "first_hit": 46
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0033,
+     "first_hit": 303
+    },
+    "random": {
+     "hits@10": 0.05,
+     "hits@20": 0.05,
+     "ap": 0.0111
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:疽",
+    "past_passages": 841,
+    "future_passages": 523,
+    "future_read": 523,
+    "linked_before": 10,
+    "candidates": 182,
+    "came_true": 0,
+    "came_true_one_book": 0,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:痈",
+    "past_passages": 1617,
+    "future_passages": 930,
+    "future_read": 930,
+    "linked_before": 24,
+    "candidates": 269,
+    "came_true": 0,
+    "came_true_one_book": 2,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:痈疽",
+    "past_passages": 408,
+    "future_passages": 259,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:痔",
+    "past_passages": 442,
+    "future_passages": 304,
+    "future_read": 304,
+    "linked_before": 4,
+    "candidates": 110,
+    "came_true": 0,
+    "came_true_one_book": 2,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:痛痹",
+    "past_passages": 62,
+    "future_passages": 16,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:痰饮",
+    "past_passages": 177,
+    "future_passages": 205,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:痹",
+    "past_passages": 2100,
+    "future_passages": 829,
+    "future_read": 829,
+    "linked_before": 44,
+    "candidates": 302,
+    "came_true": 0,
+    "came_true_one_book": 1,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:痿",
+    "past_passages": 926,
+    "future_passages": 505,
+    "future_read": 505,
+    "linked_before": 22,
+    "candidates": 224,
+    "came_true": 0,
+    "came_true_one_book": 2,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:瘰疬",
+    "past_passages": 110,
+    "future_passages": 21,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:瘿",
+    "past_passages": 118,
+    "future_passages": 61,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:瘿瘤",
+    "past_passages": 25,
+    "future_passages": 26,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:癞疾",
+    "past_passages": 232,
+    "future_passages": 73,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:癥瘕",
+    "past_passages": 665,
+    "future_passages": 193,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:秋燥",
+    "past_passages": 2,
+    "future_passages": 14,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:结胸",
+    "past_passages": 314,
+    "future_passages": 153,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:肠澼",
+    "past_passages": 123,
+    "future_passages": 17,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:肠痈",
+    "past_passages": 71,
+    "future_passages": 36,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:肾消",
+    "past_passages": 17,
+    "future_passages": 6,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:胸痹",
+    "past_passages": 82,
+    "future_passages": 61,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:脾瘅",
+    "past_passages": 7,
+    "future_passages": 7,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:著痹",
+    "past_passages": 19,
+    "future_passages": 5,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:虚劳",
+    "past_passages": 305,
+    "future_passages": 213,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:蛊毒",
+    "past_passages": 298,
+    "future_passages": 66,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:血痹",
+    "past_passages": 62,
+    "future_passages": 28,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:行痹",
+    "past_passages": 7,
+    "future_passages": 11,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:金疮",
+    "past_passages": 279,
+    "future_passages": 134,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:阳明病",
+    "past_passages": 388,
+    "future_passages": 129,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:霍乱",
+    "past_passages": 535,
+    "future_passages": 290,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:风温",
+    "past_passages": 56,
+    "future_passages": 111,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:风湿痹",
+    "past_passages": 55,
+    "future_passages": 21,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:风痹",
+    "past_passages": 162,
+    "future_passages": 56,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:飧泄",
+    "past_passages": 168,
+    "future_passages": 57,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "disease:鼠瘘",
+    "past_passages": 71,
+    "future_passages": 5,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:上气",
+    "past_passages": 1193,
+    "future_passages": 234,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:下利",
+    "past_passages": 1563,
+    "future_passages": 892,
+    "future_read": 892,
+    "linked_before": 103,
+    "candidates": 269,
+    "came_true": 0,
+    "came_true_one_book": 6,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:下血",
+    "past_passages": 577,
+    "future_passages": 280,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:不得眠",
+    "past_passages": 219,
+    "future_passages": 68,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:不恶寒",
+    "past_passages": 210,
+    "future_passages": 122,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:不渴",
+    "past_passages": 359,
+    "future_passages": 199,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:不饥",
+    "past_passages": 181,
+    "future_passages": 73,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:中满",
+    "past_passages": 291,
+    "future_passages": 91,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:五心烦热",
+    "past_passages": 17,
+    "future_passages": 28,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:但头汗出",
+    "past_passages": 93,
+    "future_passages": 23,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:但欲寐",
+    "past_passages": 146,
+    "future_passages": 74,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:午后身热",
+    "past_passages": 0,
+    "future_passages": 0,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:半身不遂",
+    "past_passages": 68,
+    "future_passages": 75,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:厥逆",
+    "past_passages": 379,
+    "future_passages": 193,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:反胃",
+    "past_passages": 68,
+    "future_passages": 89,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:发热",
+    "past_passages": 2369,
+    "future_passages": 2083,
+    "future_read": 2083,
+    "linked_before": 121,
+    "candidates": 262,
+    "came_true": 3,
+    "came_true_one_book": 12,
+    "base_rate": 0.0115,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0202,
+     "first_hit": 53
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0174,
+     "first_hit": 62
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0211,
+     "first_hit": 50
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0193,
+     "first_hit": 33
+    },
+    "random": {
+     "hits@10": 0.15,
+     "hits@20": 0.2,
+     "ap": 0.053
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:发狂",
+    "past_passages": 94,
+    "future_passages": 75,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:口干",
+    "past_passages": 648,
+    "future_passages": 367,
+    "future_read": 367,
+    "linked_before": 40,
+    "candidates": 169,
+    "came_true": 0,
+    "came_true_one_book": 3,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:口甘",
+    "past_passages": 12,
+    "future_passages": 11,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:口眼歪斜",
+    "past_passages": 28,
+    "future_passages": 33,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:口苦",
+    "past_passages": 178,
+    "future_passages": 128,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:口角流涎",
+    "past_passages": 0,
+    "future_passages": 12,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:吐蛔",
+    "past_passages": 38,
+    "future_passages": 51,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:吐血",
+    "past_passages": 319,
+    "future_passages": 275,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:呕吐",
+    "past_passages": 1392,
+    "future_passages": 761,
+    "future_read": 761,
+    "linked_before": 101,
+    "candidates": 348,
+    "came_true": 0,
+    "came_true_one_book": 6,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:咳",
+    "past_passages": 2277,
+    "future_passages": 1273,
+    "future_read": 1273,
+    "linked_before": 100,
+    "candidates": 341,
+    "came_true": 0,
+    "came_true_one_book": 14,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:咽干",
+    "past_passages": 209,
+    "future_passages": 117,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:喘",
+    "past_passages": 2117,
+    "future_passages": 1070,
+    "future_read": 1070,
+    "linked_before": 96,
+    "candidates": 309,
+    "came_true": 2,
+    "came_true_one_book": 6,
+    "base_rate": 0.0065,
+    "adamic_adar": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.2588,
+     "first_hit": 2
+    },
+    "examples": [
+     {
+      "remedy": "herb:人参",
+      "rank": 2,
+      "future_books": 2
+     }
+    ],
+    "resource_allocation": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.2833,
+     "first_hit": 2
+    },
+    "common_neighbors": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.1297,
+     "first_hit": 4
+    },
+    "popularity": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.2539,
+     "first_hit": 2
+    },
+    "random": {
+     "hits@10": 0.05,
+     "hits@20": 0.05,
+     "ap": 0.0208
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:噎",
+    "past_passages": 258,
+    "future_passages": 151,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:壮热",
+    "past_passages": 319,
+    "future_passages": 175,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:多食",
+    "past_passages": 334,
+    "future_passages": 106,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:多饮",
+    "past_passages": 195,
+    "future_passages": 55,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:大便难",
+    "past_passages": 284,
+    "future_passages": 108,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:大便黑",
+    "past_passages": 21,
+    "future_passages": 16,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:大热",
+    "past_passages": 471,
+    "future_passages": 289,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:失音",
+    "past_passages": 64,
+    "future_passages": 58,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:头痛",
+    "past_passages": 1468,
+    "future_passages": 843,
+    "future_read": 843,
+    "linked_before": 85,
+    "candidates": 213,
+    "came_true": 1,
+    "came_true_one_book": 4,
+    "base_rate": 0.0047,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0075,
+     "first_hit": 134
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0082,
+     "first_hit": 122
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0076,
+     "first_hit": 132
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0069,
+     "first_hit": 145
+    },
+    "random": {
+     "hits@10": 0.0,
+     "hits@20": 0.0,
+     "ap": 0.0107
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:头重",
+    "past_passages": 195,
+    "future_passages": 58,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:头项强痛",
+    "past_passages": 49,
+    "future_passages": 32,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:寒热",
+    "past_passages": 2334,
+    "future_passages": 1222,
+    "future_read": 1222,
+    "linked_before": 61,
+    "candidates": 314,
+    "came_true": 1,
+    "came_true_one_book": 10,
+    "base_rate": 0.0032,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0123,
+     "first_hit": 81
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0192,
+     "first_hit": 52
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0116,
+     "first_hit": 86
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0035,
+     "first_hit": 286
+    },
+    "random": {
+     "hits@10": 0.0,
+     "hits@20": 0.1,
+     "ap": 0.0122
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:小便不利",
+    "past_passages": 767,
+    "future_passages": 337,
+    "future_read": 337,
+    "linked_before": 57,
+    "candidates": 144,
+    "came_true": 0,
+    "came_true_one_book": 4,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:小便多",
+    "past_passages": 334,
+    "future_passages": 156,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:小便如膏",
+    "past_passages": 2,
+    "future_passages": 0,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:小便少",
+    "past_passages": 38,
+    "future_passages": 20,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:小便自利",
+    "past_passages": 147,
+    "future_passages": 66,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:小便黄赤",
+    "past_passages": 36,
+    "future_passages": 17,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:少腹拘急",
+    "past_passages": 11,
+    "future_passages": 4,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:少腹满",
+    "past_passages": 133,
+    "future_passages": 33,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:尿甜",
+    "past_passages": 0,
+    "future_passages": 0,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:干呕",
+    "past_passages": 255,
+    "future_passages": 116,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:往来寒热",
+    "past_passages": 152,
+    "future_passages": 61,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:微热",
+    "past_passages": 209,
+    "future_passages": 117,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:心下悸",
+    "past_passages": 370,
+    "future_passages": 272,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:心中疼热",
+    "past_passages": 14,
+    "future_passages": 8,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:心烦",
+    "past_passages": 895,
+    "future_passages": 348,
+    "future_read": 348,
+    "linked_before": 65,
+    "candidates": 199,
+    "came_true": 0,
+    "came_true_one_book": 2,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:恶寒",
+    "past_passages": 1247,
+    "future_passages": 901,
+    "future_read": 901,
+    "linked_before": 79,
+    "candidates": 172,
+    "came_true": 0,
+    "came_true_one_book": 10,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:恶心",
+    "past_passages": 157,
+    "future_passages": 133,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:恶风",
+    "past_passages": 620,
+    "future_passages": 212,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:恶风寒",
+    "past_passages": 90,
+    "future_passages": 24,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:手足汗出",
+    "past_passages": 10,
+    "future_passages": 5,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:拘急",
+    "past_passages": 497,
+    "future_passages": 217,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:按之即痛",
+    "past_passages": 4,
+    "future_passages": 0,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:掉眩",
+    "past_passages": 22,
+    "future_passages": 17,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:收引",
+    "past_passages": 15,
+    "future_passages": 14,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:无大热",
+    "past_passages": 78,
+    "future_passages": 38,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:无汗",
+    "past_passages": 413,
+    "future_passages": 368,
+    "future_read": 368,
+    "linked_before": 40,
+    "candidates": 49,
+    "came_true": 0,
+    "came_true_one_book": 6,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:气上撞心",
+    "past_passages": 7,
+    "future_passages": 5,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:汗出",
+    "past_passages": 2896,
+    "future_passages": 1263,
+    "future_read": 1263,
+    "linked_before": 150,
+    "candidates": 281,
+    "came_true": 1,
+    "came_true_one_book": 12,
+    "base_rate": 0.0036,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0112,
+     "first_hit": 89
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0061,
+     "first_hit": 165
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0154,
+     "first_hit": 65
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0044,
+     "first_hit": 227
+    },
+    "random": {
+     "hits@10": 0.0,
+     "hits@20": 0.15,
+     "ap": 0.0175
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:浊",
+    "past_passages": 626,
+    "future_passages": 727,
+    "future_read": 727,
+    "linked_before": 25,
+    "candidates": 142,
+    "came_true": 1,
+    "came_true_one_book": 5,
+    "base_rate": 0.007,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0204,
+     "first_hit": 49
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0204,
+     "first_hit": 49
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0263,
+     "first_hit": 38
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0139,
+     "first_hit": 72
+    },
+    "random": {
+     "hits@10": 0.05,
+     "hits@20": 0.15,
+     "ap": 0.0274
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:消瘦",
+    "past_passages": 64,
+    "future_passages": 53,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:淋",
+    "past_passages": 898,
+    "future_passages": 619,
+    "future_read": 619,
+    "linked_before": 26,
+    "candidates": 231,
+    "came_true": 1,
+    "came_true_one_book": 3,
+    "base_rate": 0.0043,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0078,
+     "first_hit": 128
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0078,
+     "first_hit": 128
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0078,
+     "first_hit": 128
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.005,
+     "first_hit": 202
+    },
+    "random": {
+     "hits@10": 0.0,
+     "hits@20": 0.05,
+     "ap": 0.0121
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:渴",
+    "past_passages": 2567,
+    "future_passages": 1814,
+    "future_read": 1814,
+    "linked_before": 105,
+    "candidates": 329,
+    "came_true": 5,
+    "came_true_one_book": 19,
+    "base_rate": 0.0152,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0159,
+     "first_hit": 122
+    },
+    "examples": [],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0156,
+     "first_hit": 101
+    },
+    "common_neighbors": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0178,
+     "first_hit": 127
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0116,
+     "first_hit": 148
+    },
+    "random": {
+     "hits@10": 0.2,
+     "hits@20": 0.5,
+     "ap": 0.0396
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:漱口不欲咽",
+    "past_passages": 0,
+    "future_passages": 0,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:潮热",
+    "past_passages": 256,
+    "future_passages": 246,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:烦躁",
+    "past_passages": 406,
+    "future_passages": 417,
+    "future_read": 417,
+    "linked_before": 37,
+    "candidates": 93,
+    "came_true": 0,
+    "came_true_one_book": 4,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:痈脓",
+    "past_passages": 78,
+    "future_passages": 24,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:痛痒",
+    "past_passages": 98,
+    "future_passages": 68,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:皮肤顽厚",
+    "past_passages": 1,
+    "future_passages": 0,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:盗汗",
+    "past_passages": 196,
+    "future_passages": 244,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:目痛",
+    "past_passages": 165,
+    "future_passages": 63,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:目眩",
+    "past_passages": 544,
+    "future_passages": 197,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:目瞑",
+    "past_passages": 107,
+    "future_passages": 20,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:瞀瘛",
+    "past_passages": 9,
+    "future_passages": 1,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:短气",
+    "past_passages": 677,
+    "future_passages": 132,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:神不足",
+    "past_passages": 17,
+    "future_passages": 10,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:神昏",
+    "past_passages": 71,
+    "future_passages": 122,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:筋惕肉瞤",
+    "past_passages": 18,
+    "future_passages": 8,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:耳聋",
+    "past_passages": 383,
+    "future_passages": 227,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:肌肉酸痛",
+    "past_passages": 0,
+    "future_passages": 0,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:肢体疼痛",
+    "past_passages": 10,
+    "future_passages": 6,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:胁下痞硬",
+    "past_passages": 16,
+    "future_passages": 4,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:胸下结硬",
+    "past_passages": 8,
+    "future_passages": 3,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:胸胁苦满",
+    "past_passages": 101,
+    "future_passages": 16,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:胸背痛",
+    "past_passages": 28,
+    "future_passages": 6,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:胸闷",
+    "past_passages": 7,
+    "future_passages": 22,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:腐肉",
+    "past_passages": 12,
+    "future_passages": 27,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:腰痛",
+    "past_passages": 658,
+    "future_passages": 232,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:腹满",
+    "past_passages": 1325,
+    "future_passages": 408,
+    "future_read": 408,
+    "linked_before": 76,
+    "candidates": 266,
+    "came_true": 2,
+    "came_true_one_book": 9,
+    "base_rate": 0.0075,
+    "adamic_adar": {
+     "hits@10": 0,
+     "hits@20": 1,
+     "ap": 0.0387,
+     "first_hit": 15
+    },
+    "examples": [
+     {
+      "remedy": "formula:桂枝汤",
+      "rank": 15,
+      "future_books": 2
+     }
+    ],
+    "resource_allocation": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0173,
+     "first_hit": 42
+    },
+    "common_neighbors": {
+     "hits@10": 1,
+     "hits@20": 1,
+     "ap": 0.0565,
+     "first_hit": 10
+    },
+    "popularity": {
+     "hits@10": 0,
+     "hits@20": 0,
+     "ap": 0.0074,
+     "first_hit": 143
+    },
+    "random": {
+     "hits@10": 0.05,
+     "hits@20": 0.05,
+     "ap": 0.021
+    }
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:腹痛",
+    "past_passages": 1423,
+    "future_passages": 850,
+    "future_read": 850,
+    "linked_before": 80,
+    "candidates": 295,
+    "came_true": 0,
+    "came_true_one_book": 12,
+    "base_rate": 0.0
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:腹皮急",
+    "past_passages": 11,
+    "future_passages": 2,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:膹郁",
+    "past_passages": 9,
+    "future_passages": 9,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:臂不遂",
+    "past_passages": 8,
+    "future_passages": 6,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:语言謇涩",
+    "past_passages": 9,
+    "future_passages": 13,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:谵语",
+    "past_passages": 436,
+    "future_passages": 280,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:身体不仁",
+    "past_passages": 511,
+    "future_passages": 144,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:身灼热",
+    "past_passages": 8,
+    "future_passages": 8,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:身疼痛",
+    "past_passages": 366,
+    "future_passages": 259,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:身肿",
+    "past_passages": 572,
+    "future_passages": 281,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:身重",
+    "past_passages": 347,
+    "future_passages": 142,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:遗尿",
+    "past_passages": 78,
+    "future_passages": 58,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:阴痿",
+    "past_passages": 128,
+    "future_passages": 40,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:项背强",
+    "past_passages": 36,
+    "future_passages": 25,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:颊赤",
+    "past_passages": 34,
+    "future_passages": 23,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:食不下",
+    "past_passages": 341,
+    "future_passages": 138,
+    "skipped": "future_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:饥而不欲食",
+    "past_passages": 21,
+    "future_passages": 4,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:骨节疼痛",
+    "past_passages": 106,
+    "future_passages": 47,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:鼻衄",
+    "past_passages": 105,
+    "future_passages": 65,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "link_anticipation",
+    "cutoff": 1368,
+    "topic": "symptom:鼻鸣",
+    "past_passages": 29,
+    "future_passages": 10,
+    "skipped": "past_too_few"
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:消渴",
+    "hypothesis": "hyp_ec73bbdaf1a2",
+    "kind": "hidden_association",
+    "status": "rejected",
+    "prediction": "link_appears",
+    "subject": "symptom:咳",
+    "object": "formula:五苓散",
+    "held": false,
+    "held_loose": false,
+    "future_books": 1,
+    "future_books_loose": 1,
+    "written_before": true,
+    "same_condition": {
+     "candidates": 237,
+     "chance": 0.0,
+     "popularity_pick": "formula:五苓散",
+     "popularity_pick_held": false,
+     "adamic_adar_rank": 1,
+     "adamic_adar_precision@5": 0.0
+    }
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:消渴",
+    "hypothesis": "hyp_af6d5b43f7af",
+    "kind": "lost_source",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "work:wupu_bencao",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:消渴",
+    "hypothesis": "hyp_651fa1673f25",
+    "kind": "concept_drift",
+    "status": "survived",
+    "prediction": "sense_shift",
+    "subject": "disease:消渴",
+    "object": "消渴#病·多饮多尿",
+    "held": true,
+    "held_loose": true
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:消渴",
+    "hypothesis": "hyp_7a1ec44e1bfd",
+    "kind": "association_rule",
+    "status": "survived",
+    "prediction": "cooccurrence_after",
+    "subject": "symptom:头痛,symptom:无大热",
+    "object": "formula:越婢汤",
+    "held": null,
+    "held_loose": null
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:消渴",
+    "hypothesis": "hyp_4ad17f25a523",
+    "kind": "lost_knowledge",
+    "status": "survived",
+    "prediction": "absent_after",
+    "subject": "formula:五苓散",
+    "object": "disease:消渴",
+    "held": false,
+    "held_loose": false,
+    "future_books": 4,
+    "future_books_loose": 4
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:消渴",
+    "hypothesis": "hyp_2f86959af8d4",
+    "kind": "lost_knowledge",
+    "status": "survived",
+    "prediction": "absent_after",
+    "subject": "etiology:寒",
+    "object": "disease:消渴",
+    "held": true,
+    "held_loose": false,
+    "future_books": 0,
+    "future_books_loose": 2
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:消渴",
+    "hypothesis": "hyp_dc5e204b197e",
+    "kind": "lost_source",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "work:jingxin_lu",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:消渴",
+    "hypothesis": "hyp_ae44900af968",
+    "kind": "contradiction",
+    "status": "survived",
+    "prediction": "resolution",
+    "subject": "disease:伤寒",
+    "object": "contradiction",
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:消渴",
+    "hypothesis": "hyp_9f1c3f0ed371",
+    "kind": "formula_evolution",
+    "status": "survived",
+    "prediction": "herb_retained",
+    "subject": "herb:猪苓,herb:白术,herb:茯苓",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:消渴",
+    "hypothesis": "hyp_823d383ae14e",
+    "kind": "contradiction",
+    "status": "survived",
+    "prediction": "resolution",
+    "subject": "disease:伤寒",
+    "object": "contradiction",
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:消渴",
+    "hypothesis": "hyp_b4c92c32c385",
+    "kind": "contradiction",
+    "status": "survived",
+    "prediction": "resolution",
+    "subject": "disease:伤寒",
+    "object": "contradiction",
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:消渴",
+    "hypothesis": "hyp_72149189a2f4",
+    "kind": "association_rule",
+    "status": "survived",
+    "prediction": "cooccurrence_after",
+    "subject": "symptom:不渴,symptom:头痛",
+    "object": "formula:越婢汤",
+    "held": false,
+    "held_loose": false
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:消渴",
+    "hypothesis": "hyp_514347a5ab71",
+    "kind": "hidden_association",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "symptom:小便不利",
+    "object": "formula:麻黄汤",
+    "held": false,
+    "held_loose": false,
+    "future_books": 0,
+    "future_books_loose": 0,
+    "written_before": false,
+    "same_condition": {
+     "candidates": 207,
+     "chance": 0.0,
+     "popularity_pick": "herb:人参",
+     "popularity_pick_held": false,
+     "adamic_adar_rank": 2,
+     "adamic_adar_precision@5": 0.0
+    }
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:消渴",
+    "hypothesis": "hyp_08b2269de51a",
+    "kind": "lost_knowledge",
+    "status": "survived",
+    "prediction": "absent_after",
+    "subject": "etiology:服石",
+    "object": "disease:消渴",
+    "held": true,
+    "held_loose": false,
+    "future_books": 0,
+    "future_books_loose": 2
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:中风",
+    "hypothesis": "hyp_b556c451a515",
+    "kind": "lost_knowledge",
+    "status": "rejected",
+    "prediction": "absent_after",
+    "subject": "etiology:风",
+    "object": "disease:中风",
+    "held": false,
+    "held_loose": false,
+    "future_books": 8,
+    "future_books_loose": 22
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:中风",
+    "hypothesis": "hyp_6391fe879596",
+    "kind": "lost_source",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "work:yingru_fang",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:中风",
+    "hypothesis": "hyp_3495600970d8",
+    "kind": "contradiction",
+    "status": "survived",
+    "prediction": "resolution",
+    "subject": "pathogenesis:里寒",
+    "object": "contradiction",
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:中风",
+    "hypothesis": "hyp_194ef9aa2f95",
+    "kind": "contradiction",
+    "status": "survived",
+    "prediction": "resolution",
+    "subject": "disease:中风",
+    "object": "conditional",
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:中风",
+    "hypothesis": "hyp_373d31ba6e0d",
+    "kind": "concept_drift",
+    "status": "survived",
+    "prediction": "sense_shift",
+    "subject": "disease:中风",
+    "object": null,
+    "held": null,
+    "held_loose": null
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:中风",
+    "hypothesis": "hyp_aa95d8eaed27",
+    "kind": "association_rule",
+    "status": "survived",
+    "prediction": "cooccurrence_after",
+    "subject": "pulse:微,symptom:头痛",
+    "object": "formula:鸡屎白散",
+    "held": false,
+    "held_loose": false
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:中风",
+    "hypothesis": "hyp_89303484a9d1",
+    "kind": "formula_evolution",
+    "status": "survived",
+    "prediction": "herb_retained",
+    "subject": "herb:大枣,herb:甘草,herb:生姜,herb:芍药",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:中风",
+    "hypothesis": "hyp_51f54da65656",
+    "kind": "lost_source",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "work:玉函",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:中风",
+    "hypothesis": "hyp_d83e15e95ac8",
+    "kind": "lost_knowledge",
+    "status": "survived",
+    "prediction": "absent_after",
+    "subject": "formula:五苓散",
+    "object": "disease:中风",
+    "held": false,
+    "held_loose": false,
+    "future_books": 6,
+    "future_books_loose": 6
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:中风",
+    "hypothesis": "hyp_e0c76e58ffd1",
+    "kind": "formula_evolution",
+    "status": "survived",
+    "prediction": "herb_retained",
+    "subject": "herb:杏仁,herb:甘草,herb:石膏,herb:麻黄",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:中风",
+    "hypothesis": "hyp_5ed6252ce76e",
+    "kind": "formula_evolution",
+    "status": "survived",
+    "prediction": "herb_retained",
+    "subject": "herb:甘草,herb:葛根,herb:黄芩",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:中风",
+    "hypothesis": "hyp_1c0f22705407",
+    "kind": "association_rule",
+    "status": "survived",
+    "prediction": "cooccurrence_after",
+    "subject": "symptom:下利,symptom:半身不遂",
+    "object": "formula:姜附汤",
+    "held": null,
+    "held_loose": null
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:中风",
+    "hypothesis": "hyp_3bffbbea414e",
+    "kind": "hidden_association",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "symptom:喘",
+    "object": "formula:小柴胡汤",
+    "held": false,
+    "held_loose": false,
+    "future_books": 0,
+    "future_books_loose": 0,
+    "written_before": false,
+    "same_condition": {
+     "candidates": 213,
+     "chance": 0.0141,
+     "popularity_pick": "herb:麻黄",
+     "popularity_pick_held": false,
+     "adamic_adar_rank": 1,
+     "adamic_adar_precision@5": 0.0
+    }
+   },
+   {
+    "part": "end_to_end",
+    "split": "dev",
+    "topic": "disease:中风",
+    "hypothesis": "hyp_4dbf0e894295",
+    "kind": "hidden_association",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "symptom:短气",
+    "object": "formula:小柴胡汤",
+    "held": true,
+    "held_loose": true,
+    "future_books": 2,
+    "future_books_loose": 2,
+    "written_before": false,
+    "same_condition": {
+     "candidates": 226,
+     "chance": 0.0044,
+     "popularity_pick": "herb:麻黄",
+     "popularity_pick_held": false,
+     "adamic_adar_rank": 2,
+     "adamic_adar_precision@5": 0.2
+    }
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:胸痹",
+    "hypothesis": "hyp_4af9e0e3e79c",
+    "kind": "lost_source",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "work:gujin_luyan",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:胸痹",
+    "hypothesis": "hyp_5ebe75623097",
+    "kind": "formula_evolution",
+    "status": "survived",
+    "prediction": "herb_retained",
+    "subject": "herb:栝楼实,herb:薤白",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:胸痹",
+    "hypothesis": "hyp_a43b2b13831c",
+    "kind": "formula_evolution",
+    "status": "survived",
+    "prediction": "herb_retained",
+    "subject": "herb:甘草,herb:白术,herb:茯苓",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:胸痹",
+    "hypothesis": "hyp_7b3550c17534",
+    "kind": "association_rule",
+    "status": "survived",
+    "prediction": "cooccurrence_after",
+    "subject": "pulse:微",
+    "object": "formula:附子汤",
+    "held": false,
+    "held_loose": false
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:胸痹",
+    "hypothesis": "hyp_0910282fd418",
+    "kind": "contradiction",
+    "status": "survived",
+    "prediction": "resolution",
+    "subject": "disease:胸痹",
+    "object": "contradiction",
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:胸痹",
+    "hypothesis": "hyp_fa95353f8b7c",
+    "kind": "contradiction",
+    "status": "survived",
+    "prediction": "resolution",
+    "subject": "disease:胸痹",
+    "object": "contradiction",
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:胸痹",
+    "hypothesis": "hyp_d05ebd4bb9c5",
+    "kind": "contradiction",
+    "status": "survived",
+    "prediction": "resolution",
+    "subject": "disease:胸痹",
+    "object": "contradiction",
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:胸痹",
+    "hypothesis": "hyp_664857ebf4f8",
+    "kind": "contradiction",
+    "status": "survived",
+    "prediction": "resolution",
+    "subject": "disease:胸痹",
+    "object": "contradiction",
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:胸痹",
+    "hypothesis": "hyp_ae095c1a8d06",
+    "kind": "association_rule",
+    "status": "survived",
+    "prediction": "cooccurrence_after",
+    "subject": "pulse:微,symptom:拘急",
+    "object": "formula:附子汤",
+    "held": false,
+    "held_loose": false
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:胸痹",
+    "hypothesis": "hyp_a5b35de6aeeb",
+    "kind": "hidden_association",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "symptom:咳",
+    "object": "formula:薤白汤",
+    "held": false,
+    "held_loose": false,
+    "future_books": 0,
+    "future_books_loose": 0,
+    "written_before": false,
+    "same_condition": {
+     "candidates": 128,
+     "chance": 0.0,
+     "popularity_pick": "herb:甘草",
+     "popularity_pick_held": false,
+     "adamic_adar_rank": 1,
+     "adamic_adar_precision@5": 0.0
+    }
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:胸痹",
+    "hypothesis": "hyp_6d7c0046ef32",
+    "kind": "hidden_association",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "disease:胸痹",
+    "object": "herb:栝楼实",
+    "held": false,
+    "held_loose": false,
+    "future_books": 0,
+    "future_books_loose": 0,
+    "written_before": false,
+    "same_condition": {
+     "candidates": 121,
+     "chance": 0.0,
+     "popularity_pick": "herb:甘草",
+     "popularity_pick_held": false,
+     "adamic_adar_rank": 1,
+     "adamic_adar_precision@5": 0.0
+    }
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:胸痹",
+    "hypothesis": "hyp_90aded69eb74",
+    "kind": "concept_drift",
+    "status": "survived",
+    "prediction": "sense_shift",
+    "subject": "disease:胸痹",
+    "object": null,
+    "held": null,
+    "held_loose": null
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:霍乱",
+    "hypothesis": "hyp_1101b63a75f5",
+    "kind": "hidden_association",
+    "status": "rejected",
+    "prediction": "link_appears",
+    "subject": "disease:少阴病",
+    "object": "formula:五苓散",
+    "held": false,
+    "held_loose": false,
+    "future_books": 0,
+    "future_books_loose": 0,
+    "written_before": false,
+    "same_condition": {
+     "candidates": 251,
+     "chance": 0.012,
+     "popularity_pick": "herb:甘草",
+     "popularity_pick_held": false,
+     "adamic_adar_rank": 1,
+     "adamic_adar_precision@5": 0.0
+    }
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:霍乱",
+    "hypothesis": "hyp_a640f4ce86db",
+    "kind": "concept_drift",
+    "status": "survived",
+    "prediction": "sense_shift",
+    "subject": "disease:霍乱",
+    "object": null,
+    "held": null,
+    "held_loose": null
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:霍乱",
+    "hypothesis": "hyp_64658eb3b657",
+    "kind": "hidden_association",
+    "status": "rejected",
+    "prediction": "link_appears",
+    "subject": "symptom:心烦",
+    "object": "formula:四逆汤",
+    "held": false,
+    "held_loose": false,
+    "future_books": 0,
+    "future_books_loose": 0,
+    "written_before": false,
+    "same_condition": {
+     "candidates": 234,
+     "chance": 0.0085,
+     "popularity_pick": "herb:甘草",
+     "popularity_pick_held": false,
+     "adamic_adar_rank": 1,
+     "adamic_adar_precision@5": 0.0
+    }
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:霍乱",
+    "hypothesis": "hyp_fab01fabcef8",
+    "kind": "lost_source",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "work:廣志",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:霍乱",
+    "hypothesis": "hyp_631d624ae984",
+    "kind": "association_rule",
+    "status": "survived",
+    "prediction": "cooccurrence_after",
+    "subject": "pulse:细,symptom:心烦",
+    "object": "formula:橘皮汤",
+    "held": null,
+    "held_loose": null
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:霍乱",
+    "hypothesis": "hyp_01ac93cc8c2c",
+    "kind": "lost_source",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "work:jinxiao_fang",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:霍乱",
+    "hypothesis": "hyp_24329942a5fb",
+    "kind": "contradiction",
+    "status": "survived",
+    "prediction": "resolution",
+    "subject": "disease:伤寒",
+    "object": "contradiction",
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:霍乱",
+    "hypothesis": "hyp_e2d7d528bdc3",
+    "kind": "lost_knowledge",
+    "status": "survived",
+    "prediction": "absent_after",
+    "subject": "etiology:生冷",
+    "object": "disease:霍乱",
+    "held": true,
+    "held_loose": false,
+    "future_books": 0,
+    "future_books_loose": 3
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:霍乱",
+    "hypothesis": "hyp_6a1c6ff4847d",
+    "kind": "lost_knowledge",
+    "status": "survived",
+    "prediction": "absent_after",
+    "subject": "etiology:湿",
+    "object": "disease:霍乱",
+    "held": false,
+    "held_loose": false,
+    "future_books": 3,
+    "future_books_loose": 5
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:霍乱",
+    "hypothesis": "hyp_fb3ec7b257f7",
+    "kind": "formula_evolution",
+    "status": "survived",
+    "prediction": "herb_retained",
+    "subject": "herb:桂心,herb:泽泻,herb:猪苓,herb:白术,herb:茯苓",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:霍乱",
+    "hypothesis": "hyp_5ddb1771ada9",
+    "kind": "contradiction",
+    "status": "survived",
+    "prediction": "resolution",
+    "subject": "disease:伤寒",
+    "object": "contradiction",
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:霍乱",
+    "hypothesis": "hyp_63d3fa4367b7",
+    "kind": "association_rule",
+    "status": "survived",
+    "prediction": "cooccurrence_after",
+    "subject": "pulse:弦,symptom:心烦",
+    "object": "formula:橘皮汤",
+    "held": null,
+    "held_loose": null
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:霍乱",
+    "hypothesis": "hyp_6bbe7b001ba1",
+    "kind": "formula_evolution",
+    "status": "survived",
+    "prediction": "herb_retained",
+    "subject": "herb:桔梗,herb:白术,herb:葛根",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:霍乱",
+    "hypothesis": "hyp_cbd5c278d27e",
+    "kind": "formula_evolution",
+    "status": "survived",
+    "prediction": "herb_retained",
+    "subject": "herb:地黄,herb:桂心,herb:白芍药",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:虚劳",
+    "hypothesis": "hyp_6e2c442d68f4",
+    "kind": "lost_source",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "work:gujin_luyan",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:虚劳",
+    "hypothesis": "hyp_eb599602bc5b",
+    "kind": "hidden_association",
+    "status": "rejected",
+    "prediction": "link_appears",
+    "subject": "disease:虚劳",
+    "object": "formula:阳旦汤",
+    "held": false,
+    "held_loose": false,
+    "future_books": 0,
+    "future_books_loose": 0,
+    "written_before": false,
+    "same_condition": {
+     "candidates": 244,
+     "chance": 0.0,
+     "popularity_pick": "herb:人参",
+     "popularity_pick_held": false,
+     "adamic_adar_rank": 1,
+     "adamic_adar_precision@5": 0.0
+    }
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:虚劳",
+    "hypothesis": "hyp_9bf01dd41feb",
+    "kind": "concept_drift",
+    "status": "survived",
+    "prediction": "sense_shift",
+    "subject": "disease:虚劳",
+    "object": null,
+    "held": null,
+    "held_loose": null
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:虚劳",
+    "hypothesis": "hyp_71c8050c5b39",
+    "kind": "contradiction",
+    "status": "survived",
+    "prediction": "resolution",
+    "subject": "symptom:喘",
+    "object": "contradiction",
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:虚劳",
+    "hypothesis": "hyp_7f5d2b067426",
+    "kind": "lost_source",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "work:虗勞脉證第六",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:虚劳",
+    "hypothesis": "hyp_ef9914bc5ca5",
+    "kind": "hidden_association",
+    "status": "rejected",
+    "prediction": "link_appears",
+    "subject": "disease:中风",
+    "object": "formula:桂枝汤",
+    "held": true,
+    "held_loose": true,
+    "future_books": 2,
+    "future_books_loose": 2,
+    "written_before": true,
+    "same_condition": {
+     "candidates": 269,
+     "chance": 0.0112,
+     "popularity_pick": "herb:人参",
+     "popularity_pick_held": false,
+     "adamic_adar_rank": 1,
+     "adamic_adar_precision@5": 0.4
+    }
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:虚劳",
+    "hypothesis": "hyp_e83081eba4fd",
+    "kind": "formula_evolution",
+    "status": "survived",
+    "prediction": "herb_retained",
+    "subject": "herb:人参,herb:地黄,herb:茯苓",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:虚劳",
+    "hypothesis": "hyp_fe67ebeb0ff0",
+    "kind": "formula_evolution",
+    "status": "survived",
+    "prediction": "herb_retained",
+    "subject": "herb:姜",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:虚劳",
+    "hypothesis": "hyp_757226e1d312",
+    "kind": "contradiction",
+    "status": "survived",
+    "prediction": "resolution",
+    "subject": "disease:虚劳",
+    "object": "contradiction",
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:虚劳",
+    "hypothesis": "hyp_23d926167618",
+    "kind": "association_rule",
+    "status": "survived",
+    "prediction": "cooccurrence_after",
+    "subject": "symptom:心烦,symptom:鼻衄",
+    "object": "formula:小建中汤",
+    "held": null,
+    "held_loose": null
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:虚劳",
+    "hypothesis": "hyp_8146f24b4b41",
+    "kind": "lost_knowledge",
+    "status": "survived",
+    "prediction": "absent_after",
+    "subject": "pathogenesis:痰",
+    "object": "disease:虚劳",
+    "held": false,
+    "held_loose": false,
+    "future_books": 2,
+    "future_books_loose": 7
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:虚劳",
+    "hypothesis": "hyp_ce997dbb3574",
+    "kind": "formula_evolution",
+    "status": "survived",
+    "prediction": "herb_retained",
+    "subject": "herb:人参,herb:白术,herb:陈皮",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:虚劳",
+    "hypothesis": "hyp_35e9d86013f7",
+    "kind": "lost_knowledge",
+    "status": "survived",
+    "prediction": "absent_after",
+    "subject": "formula:桂枝汤",
+    "object": "disease:虚劳",
+    "held": true,
+    "held_loose": true,
+    "future_books": 0,
+    "future_books_loose": 0
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:虚劳",
+    "hypothesis": "hyp_daaa09c2954a",
+    "kind": "association_rule",
+    "status": "survived",
+    "prediction": "cooccurrence_after",
+    "subject": "pulse:微,symptom:拘急",
+    "object": "formula:附子汤",
+    "held": false,
+    "held_loose": false
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:痰饮",
+    "hypothesis": "hyp_6e2c442d68f4",
+    "kind": "lost_source",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "work:gujin_luyan",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:痰饮",
+    "hypothesis": "hyp_5299b6d78bc6",
+    "kind": "hidden_association",
+    "status": "rejected",
+    "prediction": "link_appears",
+    "subject": "symptom:下利",
+    "object": "formula:甘草汤",
+    "held": false,
+    "held_loose": false,
+    "future_books": 0,
+    "future_books_loose": 0,
+    "written_before": false,
+    "same_condition": {
+     "candidates": 192,
+     "chance": 0.0052,
+     "popularity_pick": "herb:人参",
+     "popularity_pick_held": false,
+     "adamic_adar_rank": 1,
+     "adamic_adar_precision@5": 0.2
+    }
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:痰饮",
+    "hypothesis": "hyp_5730b22d8213",
+    "kind": "lost_source",
+    "status": "survived",
+    "prediction": "link_appears",
+    "subject": "work:jiyan_fang",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:痰饮",
+    "hypothesis": "hyp_a5e57687fd43",
+    "kind": "hidden_association",
+    "status": "rejected",
+    "prediction": "link_appears",
+    "subject": "symptom:呕吐",
+    "object": "formula:泽泻汤",
+    "held": false,
+    "held_loose": false,
+    "future_books": 0,
+    "future_books_loose": 0,
+    "written_before": false,
+    "same_condition": {
+     "candidates": 180,
+     "chance": 0.0111,
+     "popularity_pick": "herb:人参",
+     "popularity_pick_held": false,
+     "adamic_adar_rank": 1,
+     "adamic_adar_precision@5": 0.0
+    }
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:痰饮",
+    "hypothesis": "hyp_40c55f5cfa8a",
+    "kind": "formula_evolution",
+    "status": "survived",
+    "prediction": "herb_retained",
+    "subject": "herb:厚朴,herb:葛根,herb:陈皮",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:痰饮",
+    "hypothesis": "hyp_3196175ee3f3",
+    "kind": "association_rule",
+    "status": "survived",
+    "prediction": "cooccurrence_after",
+    "subject": "pulse:微,symptom:拘急",
+    "object": "formula:附子汤",
+    "held": false,
+    "held_loose": false
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:痰饮",
+    "hypothesis": "hyp_50b7cabffc3b",
+    "kind": "concept_drift",
+    "status": "survived",
+    "prediction": "sense_shift",
+    "subject": "disease:痰饮",
+    "object": null,
+    "held": null,
+    "held_loose": null
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:痰饮",
+    "hypothesis": "hyp_0ccd266e27f9",
+    "kind": "association_rule",
+    "status": "survived",
+    "prediction": "cooccurrence_after",
+    "subject": "pulse:微",
+    "object": "formula:附子汤",
+    "held": false,
+    "held_loose": false
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:痰饮",
+    "hypothesis": "hyp_db0d098c3ba7",
+    "kind": "lost_knowledge",
+    "status": "survived",
+    "prediction": "absent_after",
+    "subject": "etiology:寒",
+    "object": "disease:痰饮",
+    "held": false,
+    "held_loose": false,
+    "future_books": 2,
+    "future_books_loose": 4
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:痰饮",
+    "hypothesis": "hyp_c4211fadc6e5",
+    "kind": "lost_knowledge",
+    "status": "survived",
+    "prediction": "absent_after",
+    "subject": "formula:小半夏汤",
+    "object": "disease:痰饮",
+    "held": true,
+    "held_loose": true,
+    "future_books": 0,
+    "future_books_loose": 0
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:痰饮",
+    "hypothesis": "hyp_d4166477be17",
+    "kind": "concept_drift",
+    "status": "survived",
+    "prediction": "sense_shift",
+    "subject": "disease:伤寒",
+    "object": "伤寒#广义",
+    "held": false,
+    "held_loose": false
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:痰饮",
+    "hypothesis": "hyp_992d7302feb3",
+    "kind": "formula_evolution",
+    "status": "survived",
+    "prediction": "herb_retained",
+    "subject": "herb:人参,herb:甘草,herb:白术",
+    "object": null,
+    "held": null,
+    "why": "not judged by this benchmark"
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:痰饮",
+    "hypothesis": "hyp_20f5f4132d38",
+    "kind": "concept_drift",
+    "status": "survived",
+    "prediction": "sense_shift",
+    "subject": "disease:中风",
+    "object": "风#外风",
+    "held": false,
+    "held_loose": false
+   },
+   {
+    "part": "end_to_end",
+    "split": "heldout",
+    "topic": "disease:痰饮",
+    "hypothesis": "hyp_c2c854128b6c",
+    "kind": "contradiction",
+    "status": "survived",
+    "prediction": "resolution",
+    "subject": "disease:痰饮",
+    "object": "contradiction",
+    "held": null,
+    "why": "not judged by this benchmark"
+   }
+  ],
+  "notes": [
+   "Past and future are the passages wholly before and wholly after the cutoff (a passage straddling it is in neither); a candidate comes true when future claims of at least two books link it to the topic.",
+   "Anticipation, not influence: a link that comes true was written later, whoever found it first.",
+   "Both sides are read by the rule extractor: a link it misses is a miss for every ranker alike.",
+   "The full-text index of the store ranks with whole-store statistics; no passage of the other side is read."
+  ],
+  "seconds": 221.2
+ }
+}

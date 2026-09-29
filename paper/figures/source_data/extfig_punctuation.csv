@@ -1,0 +1,4 @@
+setting,model,rules,source
+"Demonstration corpus, 22 works, 4-fold",0.5833,0.3937,eval
+55 held-out works (104 k characters),0.767,0.235,docs/evals.md (full corpus)
+"Siku 白文, 4 works",0.78,0.303,docs/evals.md (full corpus)

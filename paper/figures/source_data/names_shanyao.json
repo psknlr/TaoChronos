@@ -1,0 +1,741 @@
+{
+ "term": "山药",
+ "term_id": "herb:山药",
+ "names": [
+  {
+   "name": "山药",
+   "kind": "本名",
+   "note": "",
+   "passages": 435,
+   "works": 149,
+   "first": [
+    {
+     "passage_id": "jc_c000.00168",
+     "book_id": "jc_c000",
+     "title": "神农本草经",
+     "work": "shennong",
+     "authors": [
+      "佚名（托名神农）"
+     ],
+     "dynasty": "东汉",
+     "years": [
+      25,
+      220
+     ],
+     "period": "先秦两汉",
+     "category": "本草",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《神农本草经》上經·署豫",
+     "quote": "《本草衍義》云：山藥，上一字犯宋英廟諱，下一字曰蕷，唐代",
+     "span": [
+      88,
+      90
+     ],
+     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+     "license": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
+     "punctuation": "editorial"
+    },
+    {
+     "passage_id": "jc_d025.06501",
+     "book_id": "jc_d025",
+     "title": "备急千金要方",
+     "work": "qianjin",
+     "authors": [
+      "孙思邈"
+     ],
+     "dynasty": "唐",
+     "years": [
+      650,
+      659
+     ],
+     "period": "隋唐五代",
+     "category": "方书",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《备急千金要方》卷十七肺臟方·肺虛實第二·瀉肺散",
+     "quote": "銖）　甘草（三十六銖）　秦艽　桂心　山藥　杜仲　人參　細辛　防己（各三十銖）",
+     "span": [
+      85,
+      87
+     ],
+     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+     "license": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
+     "punctuation": "editorial"
+    },
+    {
+     "passage_id": "jc_d004.03794",
+     "book_id": "jc_d004",
+     "title": "外台秘要",
+     "work": "waitai",
+     "authors": [
+      "王焘"
+     ],
+     "dynasty": "唐",
+     "years": [
+      752,
+      752
+     ],
+     "period": "隋唐五代",
+     "category": "方书",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《外台秘要》卷第十·肺虛寒方三首",
+     "quote": "心山藥　杜仲人分）",
+     "span": [
+      1,
+      3
+     ],
+     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+     "license": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
+     "punctuation": "editorial"
+    }
+   ]
+  },
+  {
+   "name": "薯蓣",
+   "kind": "避讳改名",
+   "note": "本名薯蓣；避唐代宗李豫讳改“薯药”，又避宋英宗赵曙讳改“山药”",
+   "passages": 163,
+   "works": 31,
+   "first": [
+    {
+     "passage_id": "jc_c000.00023",
+     "book_id": "jc_c000",
+     "title": "神农本草经",
+     "work": "shennong",
+     "authors": [
+      "佚名（托名神农）"
+     ],
+     "dynasty": "东汉",
+     "years": [
+      25,
+      220
+     ],
+     "period": "先秦两汉",
+     "category": "本草",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《神农本草经》上經",
+     "quote": "葵柴胡　麥門冬　獨活　車前子　木香　薯蕷　薏苡仁　澤瀉　遠志　龍膽　細辛　石",
+     "span": [
+      128,
+      130
+     ],
+     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+     "license": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
+     "punctuation": "editorial"
+    },
+    {
+     "passage_id": "cm_jingui_dengzhen.00415",
+     "book_id": "cm_jingui_dengzhen",
+     "title": "新编金匮方论（邓珍本）",
+     "work": "jinkui",
+     "authors": [
+      "张机"
+     ],
+     "dynasty": "东汉",
+     "years": [
+      200,
+      219
+     ],
+     "period": "先秦两汉",
+     "category": "杂病",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《新编金匮方论（邓珍本）》卷上·血痹虛勞病脉證并治第六（54）",
+     "quote": "虛勞諸不足，風氣百疾，薯蕷丸主之。",
+     "span": [
+      11,
+      13
+     ],
+     "source": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+     "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+     "punctuation": "editorial"
+    },
+    {
+     "passage_id": "jc_m100.00202",
+     "book_id": "jc_m100",
+     "title": "脉经",
+     "work": "maijing",
+     "authors": [
+      "王叔和"
+     ],
+     "dynasty": "西晋",
+     "years": [
+      265,
+      290
+     ],
+     "period": "魏晋南北朝",
+     "category": "诊法",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《脉经》卷二·平三關病候並治宜第三",
+     "quote": "宜服乾地黃湯，薯蕷丸、內補散、牡蠣散並粉，針太衝，補之",
+     "span": [
+      25,
+      27
+     ],
+     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+     "license": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
+     "punctuation": "editorial"
+    }
+   ]
+  },
+  {
+   "name": "薯药",
+   "kind": "避讳改名",
+   "note": "避唐代宗李豫讳，薯蓣改称薯药",
+   "passages": 1,
+   "works": 1,
+   "first": [
+    {
+     "passage_id": "shouqin_yanglao.001.00069",
+     "book_id": "shouqin_yanglao",
+     "title": "寿亲养老新书",
+     "work": "shouqin_yanglao",
+     "authors": [
+      "陈直",
+      "邹铉"
+     ],
+     "dynasty": "宋元",
+     "years": [
+      1307,
+      1307
+     ],
+     "period": "宋金元",
+     "category": "养生",
+     "kind": "text",
+     "layer": "陈直原书与邹铉续增（未分）",
+     "locator": "《寿亲养老新书》卷一·夏時攝養第十·夏時用藥諸方（001-29a）",
+     "quote": "黄（八兩洗乾杵）　山茱萸（四兩）　乾薯藥（四兩㣲炒炙）",
+     "span": [
+      91,
+      93
+     ],
+     "source": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+     "license": "CC BY-SA 4.0",
+     "punctuation": "none"
+    }
+   ]
+  },
+  {
+   "name": "署豫",
+   "kind": "异名",
+   "note": "《本经》孙星衍辑本据《御览》作署豫",
+   "passages": 3,
+   "works": 1,
+   "first": [
+    {
+     "passage_id": "jc_c000.00163",
+     "book_id": "jc_c000",
+     "title": "神农本草经",
+     "work": "shennong",
+     "authors": [
+      "佚名（托名神农）"
+     ],
+     "dynasty": "东汉",
+     "years": [
+      25,
+      220
+     ],
+     "period": "先秦两汉",
+     "category": "本草",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《神农本草经》上經·署豫",
+     "quote": "（舊作薯蕷，《御覽》作署豫，是）",
+     "span": [
+      11,
+      13
+     ],
+     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+     "license": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
+     "punctuation": "editorial"
+    }
+   ]
+  },
+  {
+   "name": "署预",
+   "kind": "异名",
+   "note": "",
+   "passages": 15,
+   "works": 3,
+   "first": [
+    {
+     "passage_id": "cm_jingui_dengzhen.00724",
+     "book_id": "cm_jingui_dengzhen",
+     "title": "新编金匮方论（邓珍本）",
+     "work": "jinkui",
+     "authors": [
+      "张机"
+     ],
+     "dynasty": "东汉",
+     "years": [
+      200,
+      219
+     ],
+     "period": "先秦两汉",
+     "category": "杂病",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《新编金匮方论（邓珍本）》卷中·消渴小便利淋病脉證并治第十三（101）",
+     "quote": "括蔞根（貳兩）　茯苓　署預（各叁兩）　附子（乙枚，炮）　瞿麥（",
+     "span": [
+      11,
+      13
+     ],
+     "source": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+     "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+     "punctuation": "editorial"
+    },
+    {
+     "passage_id": "jc_d025a.01391",
+     "book_id": "jc_d025a",
+     "title": "备急千金要方",
+     "work": "qianjin",
+     "authors": [
+      "孙思邈"
+     ],
+     "dynasty": "唐",
+     "years": [
+      650,
+      659
+     ],
+     "period": "隋唐五代",
+     "category": "方书",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《备急千金要方》備急千金要方卷第三（婦人方中）。·中風第三（論一首方三十首）。",
+     "quote": "茯苓（各三兩）、麥門冬、昌蒲、澤瀉、署預、乾薑（各二兩）桂心（一兩）、大棗（",
+     "span": [
+      24,
+      26
+     ],
+     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+     "license": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
+     "punctuation": "editorial"
+    },
+    {
+     "passage_id": "yishuo.002.00204",
+     "book_id": "yishuo",
+     "title": "医说",
+     "work": "yishuo",
+     "authors": [
+      "张杲"
+     ],
+     "dynasty": "南宋",
+     "years": [
+      1189,
+      1224
+     ],
+     "period": "宋金元",
+     "category": "医史",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《医说》卷二·藥名之異（002-8a）",
+     "quote": "服乃蘿蔔小草即逺志葉半天河竹籬頭水也署預今之山藥神屋即龜甲五靈脂寒號虫糞也芰",
+     "span": [
+      251,
+      253
+     ],
+     "source": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+     "license": "CC BY-SA 4.0",
+     "punctuation": "none"
+    }
+   ]
+  },
+  {
+   "name": "干山药",
+   "kind": "炮制/加工名",
+   "note": "",
+   "passages": 69,
+   "works": 41,
+   "first": [
+    {
+     "passage_id": "susheng_liangfang.005.00119",
+     "book_id": "susheng_liangfang",
+     "title": "苏沈良方",
+     "work": "susheng_liangfang",
+     "authors": [
+      "苏轼",
+      "沈括"
+     ],
+     "dynasty": "北宋",
+     "years": [
+      1075,
+      1101
+     ],
+     "period": "宋金元",
+     "category": "方书",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《苏沈良方》卷五·桂香散·經效阿膠方（005-10b）",
+     "quote": "碎㣲炒）　卷柏（去塵土）　生乾地黄　乾山藥　大　薊（獨根者更佳曰影乾）　五味子",
+     "span": [
+      30,
+      33
+     ],
+     "source": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+     "license": "CC BY-SA 4.0",
+     "punctuation": "none"
+    },
+    {
+     "passage_id": "hejiju_fang.001.00043",
+     "book_id": "hejiju_fang",
+     "title": "太平惠民和剂局方",
+     "work": "hejiju",
+     "authors": [
+      "陈师文",
+      "裴宗元",
+      "陈承"
+     ],
+     "dynasty": "宋",
+     "years": [
+      1107,
+      1110
+     ],
+     "period": "宋金元",
+     "category": "方书",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《太平惠民和剂局方》卷1（001-30b）",
+     "quote": "去土）　萆薢（酒浸一宿）　木香　　　乾山藥　肉桂（去麄皮）　杜仲（剉炒）　　當",
+     "span": [
+      183,
+      186
+     ],
+     "source": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+     "license": "CC BY-SA 4.0",
+     "punctuation": "none"
+    },
+    {
+     "passage_id": "jc_h000a.01115",
+     "book_id": "jc_h000a",
+     "title": "小儿药证直诀",
+     "work": "jc:小儿药证直诀",
+     "authors": [
+      "钱乙"
+     ],
+     "dynasty": "宋",
+     "years": [
+      1119,
+      1119
+     ],
+     "period": "宋金元",
+     "category": "儿科",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《小儿药证直诀》卷下·泄外風者。",
+     "quote": "甘草（炙取末）、寒水石（燒各一兩）、乾山藥（白者）、白茯苓（各二兩）、硃砂（一",
+     "span": [
+      34,
+      37
+     ],
+     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+     "license": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
+     "punctuation": "editorial"
+    }
+   ]
+  }
+ ],
+ "skipped": [],
+ "periods": [
+  {
+   "period": "先秦两汉",
+   "works": 2,
+   "names": {
+    "山药": 1,
+    "薯蓣": 2,
+    "署豫": 1,
+    "署预": 1
+   },
+   "shares": {
+    "山药": 0.5,
+    "薯蓣": 1.0,
+    "署豫": 0.5,
+    "署预": 0.5
+   },
+   "preferred": "薯蓣"
+  },
+  {
+   "period": "魏晋南北朝",
+   "works": 4,
+   "names": {
+    "薯蓣": 4
+   },
+   "shares": {
+    "薯蓣": 1.0
+   },
+   "preferred": "薯蓣"
+  },
+  {
+   "period": "隋唐五代",
+   "works": 5,
+   "names": {
+    "山药": 3,
+    "薯蓣": 4,
+    "署预": 1
+   },
+   "shares": {
+    "山药": 0.6,
+    "薯蓣": 0.8,
+    "署预": 0.2
+   },
+   "preferred": "薯蓣"
+  },
+  {
+   "period": "宋金元",
+   "works": 48,
+   "names": {
+    "山药": 37,
+    "薯蓣": 9,
+    "薯药": 1,
+    "署预": 1,
+    "干山药": 19
+   },
+   "shares": {
+    "山药": 0.771,
+    "薯蓣": 0.188,
+    "薯药": 0.021,
+    "署预": 0.021,
+    "干山药": 0.396
+   },
+   "preferred": "山药"
+  },
+  {
+   "period": "明",
+   "works": 51,
+   "names": {
+    "山药": 45,
+    "薯蓣": 5,
+    "署预": 1,
+    "干山药": 15
+   },
+   "shares": {
+    "山药": 0.882,
+    "薯蓣": 0.098,
+    "署预": 0.02,
+    "干山药": 0.294
+   },
+   "preferred": "山药"
+  },
+  {
+   "period": "清",
+   "works": 71,
+   "names": {
+    "山药": 63,
+    "薯蓣": 8,
+    "干山药": 8
+   },
+   "shares": {
+    "山药": 0.887,
+    "薯蓣": 0.113,
+    "干山药": 0.113
+   },
+   "preferred": "山药"
+  }
+ ],
+ "bins": [
+  {
+   "from": 100,
+   "to": 200,
+   "works": 1,
+   "shares": {
+    "山药": 1.0,
+    "薯蓣": 1.0,
+    "署豫": 1.0
+   },
+   "preferred": "薯蓣"
+  },
+  {
+   "from": 200,
+   "to": 300,
+   "works": 2,
+   "shares": {
+    "薯蓣": 1.0,
+    "署预": 0.5
+   },
+   "preferred": "薯蓣"
+  },
+  {
+   "from": 300,
+   "to": 400,
+   "works": 1,
+   "shares": {
+    "薯蓣": 1.0
+   },
+   "preferred": "薯蓣"
+  },
+  {
+   "from": 500,
+   "to": 600,
+   "works": 2,
+   "shares": {
+    "薯蓣": 1.0
+   },
+   "preferred": "薯蓣"
+  },
+  {
+   "from": 600,
+   "to": 700,
+   "works": 3,
+   "shares": {
+    "山药": 0.333,
+    "薯蓣": 1.0,
+    "署预": 0.333
+   },
+   "preferred": "薯蓣"
+  },
+  {
+   "from": 700,
+   "to": 800,
+   "works": 2,
+   "shares": {
+    "山药": 1.0,
+    "薯蓣": 0.5
+   },
+   "preferred": "山药"
+  },
+  {
+   "from": 900,
+   "to": 1000,
+   "works": 1,
+   "shares": {
+    "薯蓣": 1.0
+   },
+   "preferred": "薯蓣"
+  },
+  {
+   "from": 1000,
+   "to": 1100,
+   "works": 4,
+   "shares": {
+    "薯蓣": 0.75,
+    "干山药": 0.25
+   },
+   "preferred": "薯蓣"
+  },
+  {
+   "from": 1100,
+   "to": 1200,
+   "works": 17,
+   "shares": {
+    "山药": 0.824,
+    "薯蓣": 0.118,
+    "干山药": 0.529
+   },
+   "preferred": "山药"
+  },
+  {
+   "from": 1200,
+   "to": 1300,
+   "works": 13,
+   "shares": {
+    "山药": 0.846,
+    "薯蓣": 0.154,
+    "署预": 0.077,
+    "干山药": 0.462
+   },
+   "preferred": "山药"
+  },
+  {
+   "from": 1300,
+   "to": 1400,
+   "works": 19,
+   "shares": {
+    "山药": 0.842,
+    "薯蓣": 0.105,
+    "薯药": 0.053,
+    "干山药": 0.263
+   },
+   "preferred": "山药"
+  },
+  {
+   "from": 1400,
+   "to": 1500,
+   "works": 3,
+   "shares": {
+    "山药": 1.0
+   },
+   "preferred": "山药"
+  },
+  {
+   "from": 1500,
+   "to": 1600,
+   "works": 29,
+   "shares": {
+    "山药": 0.828,
+    "薯蓣": 0.138,
+    "署预": 0.034,
+    "干山药": 0.31
+   },
+   "preferred": "山药"
+  },
+  {
+   "from": 1600,
+   "to": 1700,
+   "works": 28,
+   "shares": {
+    "山药": 0.964,
+    "薯蓣": 0.107,
+    "干山药": 0.179
+   },
+   "preferred": "山药"
+  },
+  {
+   "from": 1700,
+   "to": 1800,
+   "works": 38,
+   "shares": {
+    "山药": 0.921,
+    "薯蓣": 0.079,
+    "干山药": 0.158
+   },
+   "preferred": "山药"
+  },
+  {
+   "from": 1800,
+   "to": 1900,
+   "works": 16,
+   "shares": {
+    "山药": 0.938,
+    "干山药": 0.062
+   },
+   "preferred": "山药"
+  },
+  {
+   "from": 1900,
+   "to": 2000,
+   "works": 3,
+   "shares": {
+    "薯蓣": 1.0
+   },
+   "preferred": "薯蓣"
+  }
+ ],
+ "bin_years": 100,
+ "switches": [
+  {
+   "from": "薯蓣",
+   "to": "山药",
+   "between": [
+    1000,
+    1200
+   ],
+   "last_bin": false
+  },
+  {
+   "from": "山药",
+   "to": "薯蓣",
+   "between": [
+    1800,
+    2000
+   ],
+   "last_bin": true
+  }
+ ],
+ "equations": [],
+ "candidates": [],
+ "note": "works writing each name (a work counts once, dated by the passage's layer); shares of the works writing any of the names; candidates are names the punctuated texts give it after 一名/又名/俗呼… that the lexicon lacks — readings to check, not findings"
+}

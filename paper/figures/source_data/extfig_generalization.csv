@@ -1,0 +1,10 @@
+capability,metric,dev_label,dev_value,test_label,test_value,dev_source,test_source
+Hard interpretive readings,accuracy,"development, 23 cases",1.0,"held-out, 84 cases",0.9762,eval,eval
+"Entities, 24 types",F1,"development, 41 sentences",0.991,"held-out, 25 sentences",0.776,eval,eval
+Ancient phenotypes → HPO,F1,"development, 20 cases",0.985,"12 random passages, annotated first",0.822,eval,docs/evals.md (full corpus)
+Senses of a term,labelling accuracy,synthetic shift,0.9297,curated exemplars of 消渴,0.75,eval,eval
+Named disputes,accuracy,"development, 22 sentences",0.8636,known controversies,1.0,eval,docs/evals.md (full corpus)
+School doctrines,recall,"synthetic school (planted, top 2)",1.0,44 textbook doctrines,0.73,eval,docs/evals.md (full corpus)
+Case records,outcome accuracy,"development, 6 records",1.0,two transcriptions agree,0.92,eval,docs/evals.md (full corpus)
+Lost-text fragments,precision,constructed lost work,0.8571,"Qianjin yaofang, real",0.32,eval,docs/evals.md (full corpus)
+Discoveries among surviving predictions,proportion,"development topics, 8",0.125,"held-out topics, 19",0.3684,docs/evals.md (full corpus),docs/evals.md (full corpus)

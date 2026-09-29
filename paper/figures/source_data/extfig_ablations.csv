@@ -1,0 +1,13 @@
+test,condition,value,n
+Earliest attestation,all retrieval routes,1.0,6
+Earliest attestation,without the variant route,1.0,6
+Earliest attestation,without the sense route,0.6667,6
+Earliest attestation,BM25 only,0.6667,6
+Earliest attestation,dense only,0.6667,6
+Contradiction typing,full reader,1.0,12
+Contradiction typing,without sense resolution,0.8333,12
+Contradiction typing,without philology,0.9167,12
+Context tokens,Context OS view,8427,
+Context tokens,naive dump,142388,
+Hypotheses surviving review,with the Skeptic,13,
+Hypotheses surviving review,without the Skeptic,14,
