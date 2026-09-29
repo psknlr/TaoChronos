@@ -61,7 +61,9 @@ opens on the full corpus, and it always says which corpus it is on.  Outside a r
 store: every book is listed, a term's claims are read from the passages that write it (spread over time), a quotation
 is found in every witness whatever its punctuation.  The session-scoped analyses keep reading their working set.
 
-**The agent is 道乃久, its model Tao-R1, its publisher IMPF-AI.**  道乃久 (TaoChronos) is published by 医哲未来人工智能研究院
+**The agent is 道乃久, its model Tao-R1, its publisher IMPF-AI.**  (What it tells about itself is superseded by
+[ADR 0014](0014-identity-fixed-reply.md): asked who it is, the page gives a fixed reply, and the instructions no longer
+name the underlying model.)  道乃久 (TaoChronos) is published by 医哲未来人工智能研究院
 (IMPF-AI); Tao-R1 names TaoChronos over the model the user chose.  The page and the instructions keep everything visible:
 道乃久 and the publisher on the page, Tao-R1 on the model chip, the underlying model beside it and in the instructions, and
 the model told to name them when asked and to claim no other identity.

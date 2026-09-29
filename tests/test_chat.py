@@ -76,7 +76,11 @@ def test_the_assistant_is_daonaijiu_with_the_model_tao_r1_published_by_impf_ai(r
     assert info["publisher"] == "医哲未来人工智能研究院（IMPF-AI）"
     prompt = info["system_prompt"]
     assert prompt.startswith("你是道乃久（TaoChronos）") and "医哲未来人工智能研究院（IMPF-AI）发布" in prompt and "Tao-R1" in prompt
-    assert "不要否认底层模型" in prompt and prompt.rstrip().endswith("连接本地服务（全量语料）。")
+    # asked who it is, it introduces the platform as the page's fixed reply does, and neither names nor denies its model
+    flat = prompt.replace("\n", "")
+    assert "欢迎用户使用道乃久（TaoChronos）中医古籍科学知识发现智能体平台" in flat and "本平台由医哲未来人工智能研究院（IMPF-AI）研发" in flat
+    assert "不谈底层模型" in flat and "不否认" in flat and "不冒称其他身份" in flat
+    assert prompt.rstrip().endswith("连接本地服务（全量语料）。")
     assert info["corpus"]["kind"] == "demo" and info["corpus"]["canon"]["listed"] == 350
     books = next(t for t in rt.catalog("all")["tools"] if t["tool"] == "classics.list_books")
     assert set(books["parameters"]["properties"]) == {"query", "dynasty", "category", "limit"}

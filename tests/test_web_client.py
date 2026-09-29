@@ -23,6 +23,7 @@ import { Accum, splitThink } from "./js/llm/openai.js";
 import { answerDangling, buildHistory } from "./js/agent.js";
 import { extractCitations } from "./js/markdown.js";
 import { count } from "./js/util.js";
+import { fixedReply, IDENTITY_REPLY, isIdentityQuestion } from "./js/fixed.js";
 
 // streams: increments and MiniMax's cumulative chunks read alike
 const inc = new Accum(); for (const t of ["桂", "枝", "汤主之。"]) inc.push(t);
@@ -65,6 +66,25 @@ assert.deepEqual(extractCitations("- 「甲乙」[[a.1]]\n- 无引文[[b.2]]\n\n
 // the corpus in 万 and 亿, as the page shows it
 assert.deepEqual([count(2053597, "段"), count(122841774, "字"), count(966, "部书"), count(12345), count(null, "段")],
   ["205 万段", "1.2 亿字", "966 部书", "1.2 万", "? 段"]);
+
+// asked who answers, and nothing else, the page replies itself, in fixed words that name no model
+assert.ok(IDENTITY_REPLY.startsWith("欢迎您使用道乃久（TaoChronos）中医古籍科学知识发现智能体平台，本平台由医哲未来人工智能研究院（IMPF-AI）研发。"));
+assert.ok(!/模型|底层|minimax|deepseek|gpt|claude|qwen/i.test(IDENTITY_REPLY));
+for (const q of ["你是谁，谁发布的，你真实模型是什么", "你可以自己介绍一下自己这个平台吗", "你是谁？", "您好，请问您是哪位？", "你是谁开发的",
+  "谁创造了你", "你是哪家公司的产品", "你用的是什么大模型？", "你基于什么模型", "底层模型是什么", "Tao-R1 的底层模型是什么",
+  "你是 ChatGPT 吗？", "你是不是DeepSeek-R1", "你是claude还是gpt", "说实话你到底是谁", "请做个自我介绍", "介绍一下你自己",
+  "这是什么网站？", "你叫什么名字", "道乃久是什么", "你能做什么", "这个平台有哪些功能", "你们是做什么的", "你是誰？誰開發的？"]) {
+  assert.equal(fixedReply(q), IDENTITY_REPLY, q);
+}
+// anything else goes to the model: a question about someone or something else, one that asks more, one with pictures
+for (const q of ["张仲景是谁", "《伤寒论》是谁写的？", "你是什么意思", "你是谁的学生", "你是谁？张仲景是谁？", "你是什么模型？帮我查一下桂枝汤",
+  "谁发布的", "什么模型", "介绍一下桂枝汤", "介绍一下你们的语料", "你用什么模型分析五运六气", "五运六气模型是什么", "你能检索哪些书",
+  "你能找到的最早的资料是什么？", "在这个平台上，关于脾胃功能的记载有哪些", "道乃久出自哪里", "道乃久是什么意思",
+  "这是豆包吗", "你是AI吗", "你好", "Who are you?", "桂枝汤的原方组成与剂量出自哪里？后世有哪些重要的加减化裁？"]) {
+  assert.equal(isIdentityQuestion(q), false, q);
+  assert.equal(fixedReply(q), null, q);
+}
+assert.equal(fixedReply("你是谁", ["data:image/jpeg;base64,/9j/"]), null);
 console.log("ok");
 """
 
@@ -160,7 +180,8 @@ def test_a_conversation_in_the_browser(tmp_path):
             first, second = mock.requests[0]["body"], mock.requests[1]["body"]
             assert first["max_completion_tokens"] == 8192 and first["reasoning_split"] is True and first["tools"]  # within the relay's ceiling
             assert first["messages"][0]["role"] == "system" and "[[passage_id]]" in first["messages"][0]["content"]
-            assert first["messages"][0]["content"].startswith("你是道乃久") and "底层语言模型：MiniMax-M3" in first["messages"][0]["content"]
+            system = first["messages"][0]["content"]
+            assert system.startswith("你是道乃久") and "MiniMax" not in system and "底层语言模型：" not in system  # no model named
             replay = second["messages"][2]
             assert replay["tool_calls"][0]["function"] == {"name": "classics__search", "arguments": '{"query": "桂枝汤 主之", "k": 3}'}
             assert replay["reasoning_details"][0]["text"] == "用户问桂枝汤的主治，先检索原文。"
@@ -357,7 +378,7 @@ def test_an_api_set_by_hand(tmp_path):
             req = mock.requests[0]
             assert req["path"] == "/v1/chat/completions" and req["body"]["model"] == "my-model" and req["body"]["top_k"] == 20
             assert req["headers"]["Authorization"] == "Bearer sk-custom" and req["headers"]["X-Gateway"] == "tc-test"
-            assert "底层语言模型：my-model（我的网关）" in req["body"]["messages"][0]["content"]
+            assert "my-model" not in req["body"]["messages"][0]["content"]  # the instructions name no model, the visitor's own included
             saved = json.loads(page.evaluate("localStorage.getItem('tc.settings')"))
             assert saved["provider"].startswith("custom-") and saved["customProviders"][0]["headers"] == {"X-Gateway": "tc-test"}
             assert not errors, errors
@@ -491,6 +512,113 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
             ctx, page, errors = visit(down=True)
             page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('配置底层模型')", timeout=15000)
             assert "未配置" in page.inner_text("#model-chip")
+            assert not errors, errors
+            ctx.close()
+            browser.close()
+    finally:
+        srv.shutdown()
+        srv.server_close()
+        relay.shutdown()
+        mock.shutdown()
+
+
+def test_a_question_about_the_assistant_gets_the_fixed_reply(tmp_path):
+    """Asked who it is, who made it or what model it runs on, the page answers itself (web/js/fixed.js): the same words
+    every time, no model called and no key needed; with consent the turn is recorded as the page's.  The next question
+    goes to the model with that reply in its history, and so does one that asks more than who answers."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import MockProvider, MockRelay
+
+    mock = MockProvider().start()
+    relay = MockRelay(mock.base_url).start()
+    web = tmp_path / "web"
+    shutil.copytree(ROOT / "web", web)
+    (web / "site.json").write_text(json.dumps({"relay": relay.url}), encoding="utf-8")
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    consent = {"v": 1, "logs": True, "at": "2026-09-29T00:00:00Z"}
+    welcome = "欢迎您使用道乃久（TaoChronos）中医古籍科学知识发现智能体平台，本平台由医哲未来人工智能研究院（IMPF-AI）研发。"
+    question = "你是谁，谁发布的，你真实模型是什么"
+
+    def records(n, wait=25.0):
+        end = time.time() + wait
+        while len(relay.records) < n and time.time() < end:
+            time.sleep(0.2)
+        return relay.records
+
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+
+            def visit(down=False):
+                ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN")
+                ctx.add_init_script(f"localStorage.setItem('tc.consent', {json.dumps(json.dumps(consent))});")
+                page = ctx.new_page()
+                errors: list[str] = []
+                page.on("pageerror", lambda e: errors.append(str(e)))
+                if down:
+                    page.route("**/v1/health", lambda route: route.abort())
+                page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
+                page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+                return ctx, page, errors
+
+            def answers(page, n):
+                page.wait_for_function(f"document.querySelectorAll('.msg.assistant .actions').length >= {n}", timeout=60000)
+                return page.eval_on_selector_all(".msg.assistant .md", "els => els.map(e => e.innerText)")
+
+            # on the default service: the page's own words, no model asked, recorded as the page's
+            ctx, page, errors = visit()
+            page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('默认服务')", timeout=10000)
+            page.fill("#input", question)
+            page.keyboard.press("Enter")
+            reply = answers(page, 1)[0]
+            assert reply.startswith(welcome) and "检索与细读原文" in reply and "模型" not in reply
+            assert page.inner_text(".msg.assistant .meta") == "Tao-R1" and page.query_selector(".msg.assistant .think") is None
+            assert not relay.chat and not mock.requests
+            rec = records(1)[0]
+            assert rec["question"] == question and rec["answer"].startswith(welcome) and rec["status"] == "done"
+            assert rec["provider"] == "fixed" and "model" not in rec and rec["rounds"] == 0 and rec["tools"] == []
+            # the next question goes to the model, the reply in its history as the assistant's own; the instructions name no model
+            page.fill("#input", "桂枝汤主治什么？")
+            page.keyboard.press("Enter")
+            page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
+            sent = relay.chat[0]["body"]["messages"]
+            assert [m["role"] for m in sent] == ["system", "user", "assistant", "user"]
+            assert sent[1]["content"] == question and sent[2]["content"].startswith(welcome)
+            assert "MiniMax" not in sent[0]["content"] and "底层语言模型：" not in sent[0]["content"]
+            # a question that asks more than who answers is the model's
+            asked = len(relay.chat)
+            page.fill("#input", "你是谁？张仲景是谁？")
+            page.keyboard.press("Enter")
+            page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 2", timeout=60000)
+            assert len(relay.chat) > asked and records(3)[2]["provider"] == "impf"
+            assert not errors, errors
+            ctx.close()
+
+            # no service and no key of the visitor's: still answered, and again the same when asked to answer again
+            ctx, page, errors = visit(down=True)
+            page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('配置底层模型')", timeout=15000)
+            asked, recorded = len(relay.chat), len(relay.records)
+            page.fill("#input", "请介绍一下你自己")
+            page.keyboard.press("Enter")
+            assert answers(page, 1)[0].startswith(welcome)
+            assert page.query_selector("#settings[open]") is None  # no key asked for
+            before = page.get_attribute(".msg.assistant", "data-id")
+            page.click(".msg.assistant [aria-label='重新生成']")
+            page.wait_for_function(f"document.querySelector('.msg.assistant .actions')?.closest('.msg').dataset.id !== {json.dumps(before)}",
+                                   timeout=10000)
+            assert answers(page, 1) == [page.inner_text(".msg.assistant .md")] and answers(page, 1)[0].startswith(welcome)
+            assert len(relay.chat) == asked and len(relay.records) == recorded  # no model; nothing recorded without the service
             assert not errors, errors
             ctx.close()
             browser.close()

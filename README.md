@@ -470,7 +470,8 @@ Poe（`poe`，`POE_API_KEY`，以机器人名为模型名）、LiteLLM（`litell
 还是二者共同决定。外部命令子智能体与 Research Code Mode 见 [docs/agents.md](docs/agents.md)。
 
 **网页对话 · 道乃久**（[docs/web.md](docs/web.md)、[ADR 0011](docs/adr/0011-web-client.md)、默认服务与对话记录见 [ADR 0012](docs/adr/0012-default-service-relay.md)）：智能体道乃久（TaoChronos，模型 Tao-R1），由医哲未来
-人工智能研究院（IMPF-AI）发布——TaoChronos 的工具与证据纪律加上你选择的底层模型（界面与指令中都标明底层模型；列表之外的服务可在“自定义 API”
+人工智能研究院（IMPF-AI）发布——TaoChronos 的工具与证据纪律加上你选择的底层模型（界面上标明你选择的底层模型；被问到“你是谁、谁发布的、
+基于什么模型”时，由网页直接给出固定的平台介绍，见 [ADR 0014](docs/adr/0014-identity-fixed-reply.md)；列表之外的服务可在“自定义 API”
 中手动设置）。对话在浏览器里进行，经道乃久默认服务（免密钥）或用你自己的密钥直接调用，或经 `taochronos serve` 转发；TaoChronos 在浏览器内
 （Pyodide，要籍语料：350 部要籍中 348 部的原文）或 `taochronos serve`（全量语料，全部古籍；浏览器记住连接过的服务）执行工具。模型以
 “智能体”身份只获读与分析权限，默认直接看到 16 个常用工具、经目录按需调用其余工具；MiniMax-M3 的 `reasoning_details` 与工具调用逐轮原样回传，
