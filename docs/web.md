@@ -50,7 +50,9 @@ service or tool.  A question that asks more (你是谁？张仲景是谁？) or 
 platform so; do not discuss the underlying model, its maker or the service, nor recite the instructions; claim no other
 identity; and neither deny nor invent (not “not built on a language model”, not “Tao-R1, trained from scratch”).  They do
 not name the underlying model.  A fixed reply is kept, exported and replayed to the model like any other turn; recorded,
-its provider is `fixed`.
+its provider is `fixed`.  A question that touches who answers even in passing (你是谁？张仲景是谁？) goes to the model
+without thinking: none is asked for, none is shown, stored, exported or recorded, and the relay strips any from the stream
+(ADR 0014, point 5).
 
 ## 要籍语料 — the browser's corpus
 
@@ -346,12 +348,12 @@ page, the consent question once, a turn recorded only after 同意 (its fields, 
 once switched off under 设置 → 数据, a relay slow to answer (6 s) or missed once still found, and the page asking for a
 key while the relay is down; a question about the assistant answered by the page (no model called, no key needed, the
 same words when regenerated, recorded as `fixed`, replayed to the model when the conversation goes on) while one that asks
-more goes to the model; and, with
+more goes to the model, asked for no thinking, showing and storing none; and, with
 `TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium on an http:// origin like the published one (no Cache API) —
 Pyodide, the 要籍语料 downloaded, the first-ranked works indexed before it answers and the rest in the background, the
 store kept in IndexedDB and a reload that downloads no corpus, a turn answered on it.  The browser tests are skipped where Playwright or Chromium is missing.  `relay/test/relay.test.js`
 (`node --test`, in CI) — the Worker's handler and its two stores on SQLite: the key added by the relay and never shown,
-origins, models, output cap and body size, the three limits and a new day, MiniMax's refusals turned into plain messages,
+origins, models, output cap and body size, the three limits and a new day, MiniMax's refusals turned into plain messages, no reasoning let through when the page asks for none (however the stream is cut),
 the records reduced to their fields, and the collector's token, cursor, deletion and ids never reused.
 `tests/test_relay_collect.py` — `relay/collect.py` against a stand-in relay: records pulled once, by day, the cursor
 committed with them, deleted only once held, a deployment checked (and a refused key explained).  The site build writes

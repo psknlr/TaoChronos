@@ -143,6 +143,12 @@ export function isIdentityQuestion(text) {
   return !rest;
 }
 
+/** Whether `text` asks, among other things or not, who answers or what it runs on.  Such a turn goes to the model without
+ * its thinking: none is asked for, and whatever comes is neither shown nor kept (app.js). */
+export function touchesIdentity(text) {
+  return ASKS_ONE.test(fold(text));
+}
+
 // ------------------------------------------------------------------ the replies
 const FIXED = [
   { id: "identity", asks: isIdentityQuestion, reply: IDENTITY_REPLY },

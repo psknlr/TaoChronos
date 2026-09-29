@@ -116,7 +116,7 @@ export function fillAssistant(body, m, ctx, last) {
   const segs = m.segments || [];
   segs.forEach((seg, k) => {
     const isLast = k === segs.length - 1;
-    if (seg.type === "thinking") body.append(thinkingNode(m, seg, k, ctx, live && isLast));
+    if (seg.type === "thinking") { if (!m.hideThinking) body.append(thinkingNode(m, seg, k, ctx, live && isLast)); }
     else if (seg.type === "tools") body.append(stepsNode(m, seg, k, ctx, live));
     else if (seg.type === "text" && (seg.text || (live && isLast))) {
       const md = h("div.md");

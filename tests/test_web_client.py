@@ -20,10 +20,10 @@ ROOT = Path(__file__).resolve().parents[1]
 NODE_TEST = r"""
 import assert from "node:assert/strict";
 import { Accum, splitThink } from "./js/llm/openai.js";
-import { answerDangling, buildHistory } from "./js/agent.js";
+import { answerDangling, buildHistory, withoutReasoning } from "./js/agent.js";
 import { extractCitations } from "./js/markdown.js";
 import { count } from "./js/util.js";
-import { fixedReply, IDENTITY_REPLY, isIdentityQuestion } from "./js/fixed.js";
+import { fixedReply, IDENTITY_REPLY, isIdentityQuestion, touchesIdentity } from "./js/fixed.js";
 
 // streams: increments and MiniMax's cumulative chunks read alike
 const inc = new Accum(); for (const t of ["桂", "枝", "汤主之。"]) inc.push(t);
@@ -85,6 +85,16 @@ for (const q of ["张仲景是谁", "《伤寒论》是谁写的？", "你是什
   assert.equal(fixedReply(q), null, q);
 }
 assert.equal(fixedReply("你是谁", ["data:image/jpeg;base64,/9j/"]), null);
+// a question that touches who answers, even in passing, is answered without thinking; the rest are not
+for (const q of ["你是谁？张仲景是谁？", "你是什么模型？帮我查一下桂枝汤", "你是谁"]) assert.ok(touchesIdentity(q), q);
+for (const q of ["张仲景是谁", "桂枝汤主治什么？", "《伤寒论》是谁写的？"]) assert.ok(!touchesIdentity(q), q);
+assert.deepEqual(withoutReasoning([
+  { role: "assistant", content: "<think>想</think>答", reasoning_details: [{ text: "想" }], reasoning_content: "想" },
+  { role: "assistant", content: [{ type: "thinking", thinking: "想", signature: "s" }, { type: "text", text: "答" }] },
+  { role: "tool", tool_call_id: "c", content: "<think>工具结果原样</think>" }]), [
+  { role: "assistant", content: "答" },
+  { role: "assistant", content: [{ type: "text", text: "答" }] },
+  { role: "tool", tool_call_id: "c", content: "<think>工具结果原样</think>" }]);
 console.log("ok");
 """
 
@@ -602,6 +612,13 @@ def test_a_question_about_the_assistant_gets_the_fixed_reply(tmp_path):
             page.keyboard.press("Enter")
             page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 2", timeout=60000)
             assert len(relay.chat) > asked and records(3)[2]["provider"] == "impf"
+            # and, touching who answers, it is asked without thinking; what thinking comes is neither shown nor kept
+            assert all(c["body"]["thinking"] == {"type": "disabled"} for c in relay.chat[asked:])
+            assert "thinking" not in relay.chat[0]["body"]
+            assert page.locator(".msg.assistant").nth(2).locator(".think").count() == 0
+            assert page.locator(".msg.assistant").nth(1).locator(".think").count() >= 1  # a research question keeps its thinking
+            stored = page.evaluate("import('./js/store.js').then((s) => s.listConversations()).then((l) => JSON.stringify(l[0].messages.at(-1)))")
+            assert "reasoning" not in stored and "用户问桂枝汤" not in stored and "桂枝汤" in stored, stored[:500]
             assert not errors, errors
             ctx.close()
 
