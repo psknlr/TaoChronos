@@ -14,6 +14,8 @@ What comes from where:
   the study layer runs (``study names`` · ``study term`` · ``study pairs`` · ``study citations``);
 * ``taochronos eval`` on the demonstration corpus: invariants, hard interpretive cases, hallucination probes and the other
   suites (``eval_demo_corpus.json``);
+* the harness itself (``agents``, ``skills/manifests``, the tool mesh, hooks, gates and the event-authority table):
+  ``fig1_architecture.json``; and one research question run end to end on the 要籍语料 (``e2e_case.py``);
 * ``docs/evals.md``: the full-corpus research-value benchmark and the blind rounds of the interpretive suite, which need
   the full corpus store (not distributed) — transcribed into ``research_value_full_corpus.json`` and
   ``interpretive_rounds.csv`` with the page they come from.
@@ -36,7 +38,8 @@ from pathlib import Path
 import yaml
 
 HOME = Path(__file__).resolve().parents[2]
-OUT = Path(__file__).resolve().parent / "source_data"
+HERE = Path(__file__).resolve().parent
+OUT = HERE / "source_data"
 
 PERIODS = [("Qin–Han", "先秦两汉", -475, 220), ("Wei–Jin", "魏晋南北朝", 220, 581), ("Sui–Tang", "隋唐五代", 581, 960),
            ("Song–Jin–Yuan", "宋金元", 960, 1368), ("Ming", "明", 1368, 1644), ("Qing", "清", 1644, 1912),
@@ -184,9 +187,9 @@ def eval_suites(eval_json: Path | None) -> None:
     cases = [{"id": d["id"], "class": d["class"], "split": d["split"], "correct": d["correct"], "unsafe": d["unsafe"],
               "expected": json.dumps(d.get("expected"), ensure_ascii=False), "got": d.get("got")}
              for d in r["interpretive"]["details"]]
-    write_csv("fig3_interpretive_cases.csv", cases)
+    write_csv("fig4_interpretive_cases.csv", cases)
     inv = [{k: d[k] for k in ("id", "probe", "invariant", "boundary", "held", "observed")} for d in r["invariants"]["details"]]
-    write_csv("fig3_invariants.csv", inv)
+    write_csv("fig4_invariants.csv", inv)
     h = r["hallucination"]["metrics"]
     n = hallucination_counts()
     rows = [("Verbatim quotation accepted", "verbatim", h["verbatim_recall"]),
@@ -198,12 +201,12 @@ def eval_suites(eval_json: Path | None) -> None:
         k, total = n[key]
         assert abs(k / total - rate) < 1e-4, (key, k, total, rate)
         out.append({"probe": label, "passed": k, "n": total, "rate": rate})
-    write_csv("fig3_hallucination.csv", out)
+    write_csv("fig4_hallucination.csv", out)
 
 
 def hallucination_counts() -> dict[str, tuple[int, int]]:
     """The hallucination suite reports rates; its exact counts, by the suite's own procedure and seed
-    (``taochronos.evals.suites.hallucination``), for the intervals of Fig. 3."""
+    (``taochronos.evals.suites.hallucination``), for the intervals of Fig. 4."""
     import random
 
     sys.path.insert(0, str(HOME / "src"))
@@ -347,10 +350,10 @@ def generalization() -> None:
 
 def documented() -> None:
     generalization()
-    write_csv("fig3_interpretive_rounds.csv", INTERPRETIVE_ROUNDS)
-    (OUT / "fig4_research_value_full_corpus.json").write_text(json.dumps(RESEARCH_VALUE, ensure_ascii=False, indent=1),
+    write_csv("fig4_interpretive_rounds.csv", INTERPRETIVE_ROUNDS)
+    (OUT / "fig5_research_value_full_corpus.json").write_text(json.dumps(RESEARCH_VALUE, ensure_ascii=False, indent=1),
                                                                 encoding="utf-8")
-    print("  fig4_research_value_full_corpus.json (transcribed from docs/evals.md)")
+    print("  fig5_research_value_full_corpus.json (transcribed from docs/evals.md)")
 
 
 # 3. the study layer on the 要籍语料 -----------------------------------------------------------------------------------------
@@ -367,6 +370,34 @@ from taochronos.bootstrap import Harness
 h = Harness.from_profile("web-canon", home=sys.argv[1], data_dir=sys.argv[2])
 res = h.capabilities.get("study").pairs(None, top=100000)
 json.dump(res, open(sys.argv[3], "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+"""
+
+
+# the harness as it is configured: agents, skills, tools with the permission each needs, hooks, gates, event authority
+ARCH = """
+import json, sys
+from pathlib import Path
+import yaml
+from taochronos.bootstrap import Harness
+from taochronos.kernel.authority import EVENT_AUTHORITY, WHY
+from taochronos.kernel.hooks import HookPoint
+from taochronos.verification.gates import GATE_NAMES
+home = Path(sys.argv[1])
+h = Harness.from_profile("web-canon", home=home, data_dir=sys.argv[2])
+load = lambda f: yaml.safe_load(f.read_text(encoding="utf-8"))
+keys = ("role", "name", "description", "mode", "permissions", "tools", "skills", "output_schema", "model", "budget")
+out = {
+    "agents": [{k: load(f).get(k) for k in keys} for f in sorted((home / "agents").glob("*.yaml"))],
+    "core_agents": [load(f) for f in sorted((home / "agents" / "core").glob("*.yaml"))],
+    "skills": [{k: load(f).get(k) for k in ("id", "name", "description")}
+               for f in sorted((home / "skills" / "manifests").glob("S*.yaml"))],
+    "tools": [s.metadata() for s in h.tools.list()],
+    "hooks": {p.value: h.hooks.names(p) for p in HookPoint if h.hooks.names(p)},
+    "gates": GATE_NAMES,
+    "authority": {e: sorted(p) for e, p in EVENT_AUTHORITY.items()},
+    "why": WHY,
+}
+json.dump(out, open(sys.argv[3], "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 """
 
 
@@ -397,6 +428,12 @@ def study(canon_data: Path | None, research_value: bool = False) -> None:
     subprocess.run([sys.executable, "-c", PAIRS, str(HOME), str(canon_data), str(OUT / "pairs.json")], check=True,
                    env=env, cwd=HOME, stdout=subprocess.DEVNULL)
     print("  pairs.json: study pairs (every significant pair)")
+    subprocess.run([sys.executable, "-c", ARCH, str(HOME), str(canon_data), str(OUT / "fig1_architecture.json")],
+                   check=True, env=env, cwd=HOME, stdout=subprocess.DEVNULL)
+    print("  fig1_architecture.json: agents, skills, tools, hooks, gates and event authority")
+    subprocess.run([sys.executable, str(HERE / "e2e_case.py"), "--canon-data", str(canon_data)], check=True, cwd=HOME,
+                   stdout=subprocess.DEVNULL)
+    print("  fig3_e2e_*: the end-to-end research case (e2e_case.py)")
     if research_value:  # the full-corpus benchmark re-run on the open corpus (Extended Data Fig. 2), about 4 minutes
         subprocess.run([sys.executable, "-m", "taochronos", "eval", "research_value", "-o",
                         str(OUT / "extfig_research_value_canon.json")], check=True, env=env, cwd=HOME,

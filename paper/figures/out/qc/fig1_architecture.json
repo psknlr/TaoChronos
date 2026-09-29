@@ -1,0 +1,30 @@
+{
+ "warnings": [],
+ "text_sizes_pt": [
+  5.0,
+  5.5,
+  6.0,
+  8.0
+ ],
+ "stroke_widths_pt": [
+  0.3,
+  0.4,
+  0.5,
+  0.55,
+  0.6
+ ],
+ "n_texts": 224,
+ "width_mm": 183.0,
+ "height_mm": 166.0,
+ "fonts": [
+  "Arial-BoldMT",
+  "ArialMT",
+  "NotoSansCJKsc-Regular"
+ ],
+ "live_text_chars": 4672,
+ "files": [
+  "/home/user/TaoChronos/paper/figures/out/fig1_architecture.pdf",
+  "/home/user/TaoChronos/paper/figures/out/fig1_architecture.svg",
+  "/home/user/TaoChronos/paper/figures/out/fig1_architecture.png"
+ ]
+}

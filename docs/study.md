@@ -245,8 +245,8 @@ work older than it by more than 30 years is a misresolved title and is not count
 is cited; **volume**, its citations in all; **transmission**, its witnesses in the corpus; **siku**, whether the 四库全书
 editors took it into 子部·医家类.  score = 10·log₂(1+influence) + 2·breadth + 2·log₂(1+volume) + 3·log₂(1+witnesses) +
 6·siku; ties fall to the earlier work; non-medical and post-1949 works are not ranked.  Each entry also records its
-sources and whether one of its witnesses is under an open licence — the web client's corpus is made of those
-([web.md](web.md#要籍语料--the-browsers-corpus)).  `taochronos study canon [words]` and the tool `classics.canon` list the
+sources and whether one of its witnesses is under an open licence (CMETA, 汉籍仓库, 维基文库, McGill, 笈成) — the web
+client's corpus takes those first ([web.md](web.md#要籍语料--the-browsers-corpus)).  `taochronos study canon [words]` and the tool `classics.canon` list the
 works (filter by title or author, dynasty, category; `held: true/false`) and say whether the current corpus holds each.
 
 **Result (full corpus, 759 works ranked).** 1 黄帝内经素问 (cited by 365 works), 2 灵枢, 3 金匮要略, 4 难经, 5 伤寒论,
@@ -546,9 +546,9 @@ A discriminative model learned from the store's editorially punctuated texts dec
 characters, whether a mark goes there and which (，。；：、？！ and the openings and closings of quotations and notes).
 Its features are character n-grams around the gap and the lexicon's terms; the thresholds are set on development
 works. The output inserts marks and **never changes a character** (`preserved` is checked on every input). A punctuated
-input is stripped, punctuated again and compared with its editors. The model lives in the local cache only (it is
-derived from texts licensed for local research). Held out of training: boundary F1 0.767 on 55 works (rules 0.235),
-0.780 on four Siku 白文 works against their 笈成 punctuation (rules 0.303).
+input is stripped, punctuated again and compared with its editors. The model lives in the local cache only (some of
+the texts it learns from, the 東亜医学協会's among them, are licensed for local research only). Held out of training:
+boundary F1 0.767 on 55 works (rules 0.235), 0.780 on four Siku 白文 works against their 笈成 punctuation (rules 0.303).
 
 ### 条文结构 (clause)
 

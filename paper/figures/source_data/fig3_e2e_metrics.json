@@ -1,0 +1,95 @@
+{
+ "status": "max_rounds",
+ "round": 2,
+ "claims": 777,
+ "rejected_claims": 2,
+ "evidence_count": 87,
+ "counter_evidence": 22,
+ "observations": 43,
+ "contradictions": 40,
+ "lineage_edges": 1283,
+ "hypotheses": 24,
+ "hypothesis_survival": 0.5417,
+ "source_diversity": {
+  "books": 38,
+  "normalised_entropy": 0.9422
+ },
+ "knowledge_gain": {
+  "0": {
+   "new_evidence": 16,
+   "new_sources": 12,
+   "new_hypotheses": 0
+  },
+  "1": {
+   "new_evidence": 67,
+   "new_sources": 25,
+   "new_hypotheses": 24
+  },
+  "2": {
+   "new_evidence": 4,
+   "new_sources": 1,
+   "new_hypotheses": 0
+  }
+ },
+ "gates": {
+  "G0": {
+   "pass": 878
+  },
+  "G1": {
+   "warn": 878
+  },
+  "G2": {
+   "warn": 878
+  },
+  "G3": {
+   "warn": 186,
+   "pass": 605
+  },
+  "G4": {
+   "pass": 690,
+   "warn": 188
+  },
+  "G5": {
+   "warn": 13,
+   "pass": 1
+  },
+  "G6": {
+   "pass": 13,
+   "fail": 1
+  },
+  "G8": {
+   "not_applicable": 14
+  }
+ },
+ "agents_spawned": 21,
+ "context_tokens_mean": null,
+ "llm_calls": 0,
+ "input_tokens": 0,
+ "output_tokens": 0,
+ "cost_usd": 0.0,
+ "tool_calls": 156,
+ "tool_errors": 0,
+ "tool_denials": 0,
+ "hook_blocks": 2,
+ "tool_calls_by_tool": {
+  "analysis.association_rules": 1,
+  "analysis.concept_drift": 8,
+  "analysis.contradictions": 1,
+  "analysis.formula_evolution": 1,
+  "analysis.link_prediction": 2,
+  "analysis.lost_knowledge": 1,
+  "analysis.missing_sources": 1,
+  "classics.search": 3,
+  "study.formula": 2,
+  "validation.verify_quote": 136
+ },
+ "changes_proposed": 0,
+ "artifacts": 6,
+ "stop": {
+  "status": "max_rounds",
+  "reasons": [
+   "evidence saturation (0.046 < 0.05)",
+   "reached max_rounds=2"
+  ]
+ }
+}

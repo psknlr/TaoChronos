@@ -1,4 +1,6 @@
-"""Tables 1–2 of the TaoChronos (道乃久) paper as editable text: Markdown, LaTeX (booktabs) and Word (.docx).
+"""Extended Data Tables 1–2 of the TaoChronos (道乃久) paper as editable text: Markdown, LaTeX (booktabs) and Word.
+
+The main text carries six figures, the most Nature allows an Article, so the two tables are Extended Data.
 
     python paper/tables/make_tables.py
 
@@ -37,8 +39,8 @@ def table1() -> dict:
     rows = [
         ["Kanseki Repository KR3e, Siku quanshu medical section (漢籍リポジトリ)", "CC BY-SA 4.0", str(n["kanripo"]),
          "25.66*", "Wenyuange Siku and Sibu congkan facsimiles; unpunctuated; catalogue with authors, dates, layers"],
-        ["JiCheng 笈成 edited texts, v1.4.8", "User-supplied; local research only†", str(n["jicheng"]), "93.64*",
-         "Volunteer transcriptions with modern punctuation; 41 of 857 works excluded"],
+        ["JiCheng 笈成 edited texts, v1.4.8", "CC0 1.0 (editorial work); base texts public domain§",
+         str(n["jicheng"]), "93.64*", "Volunteer transcriptions with modern punctuation; 41 of 857 works excluded"],
         ["CMETA 數位中醫校書郎 collated editions", "CC BY 4.0 (collation); base texts public domain", str(n["cmeta"]),
          fmt(ch["cmeta"]), "Collated page by page against images; passages carry page numbers and image links"],
         ["Tōa Igaku Kyōkai 東亜医学協会 texts", "© the society; local research only†", str(n["aeam"]), fmt(ch["aeam"]),
@@ -47,7 +49,7 @@ def table1() -> dict:
          "Works new after de-duplication of 627 candidates"],
         ["McGill University Library rare books", "Public domain", str(n["mcgill"]), fmt(ch["mcgill"]),
          "Qing prints and manuscripts on gynaecology"],
-        ["TCM-Ancient-Books; tcmoc", "Not declared; local research only†", str(n["tcm-ancient-books"]),
+        ["TCM-Ancient-Books; tcmoc", "Not declared by the repositories‖", str(n["tcm-ancient-books"]),
          fmt(ch["tcm-ancient-books"]), "Mostly simplified copies of JiCheng texts, de-duplicated work by work"],
         ["Hugging Face classical-tcm-canon", "Proprietary-commercial; local research only†", str(n["hf-tcm-canon"]),
          fmt(ch["hf-tcm-canon"]), "One work (Zhang Zhicong's commentary on the Shanghan lun)"],
@@ -58,7 +60,7 @@ def table1() -> dict:
     ]
     total = ["Total", "", str(len(wit)), "≈123", "2.05 M passages; 761 distinct works; analysis periods 475 BCE–1949"]
     return {
-        "title": "Table 1 | Sources of the corpus",
+        "title": "Extended Data Table 1 | Sources of the corpus",
         "header": ["Source", "Licence", "Works admitted", "Characters (millions)", "Transcription and notes"],
         "rows": rows, "total": total,
         "notes": [
@@ -66,6 +68,14 @@ def table1() -> dict:
             "counts sum the catalogue records of the admitted works.",
             "†Used for local research only and never redistributed; the open web corpus carries none of the texts whose "
             "terms forbid redistribution.",
+            "§JiCheng releases its selection, arrangement, punctuation and notes on public-domain texts under CC0 1.0 "
+            "and its own writing under CC BY 4.0 (https://jicheng.tw/tcm/copyright.html, consulted 29 September 2026); "
+            "the open web corpus carries 250 JiCheng witnesses under these terms, crediting JiCheng. The modern "
+            "editors' part of the few texts JiCheng transcribed from modern reconstructions of lost books is not "
+            "covered.",
+            "‖Mostly simplified-character copies of JiCheng texts; de-duplication removes every copy, and the 8 texts "
+            "kept match no JiCheng text. The 4 in the open web corpus are carried on the decision of the releasing "
+            "institute (IMPF-AI); the others are used for local research only.",
             "‡Kyoto University (Fujikawa), Staatsbibliothek zu Berlin (Unschuld), Kyushu University, Keio University "
             "(Fujikawa), University of Tokyo (two libraries), Kenikai, Waseda University, National Diet Library, "
             "Tohoku University and Library of Congress. Only metadata are held; no image is downloaded.",
@@ -87,7 +97,8 @@ def table2() -> dict:
         ["Readings", "Hard interpretive cases", f"{it['cases']} cases in 8 classes", "Accuracy (unsafe errors)",
          f"{it['dev']['n']}/{it['dev']['n']} (0)", f"82/84 = {it['heldout']['accuracy']:.3f} ({it['heldout']['unsafe']})"],
         ["Research value†", "Link anticipation", "189 topic–cutoff pairs; 29,467 candidates", "Precision@10",
-         "–", "0.168 (popularity 0.134; chance 0.054); better in 149 of 189, P = 2.4 × 10⁻¹⁶"],
+         "–", "0.168 (popularity 0.134; chance 0.054); higher average precision than popularity in 149 of 189, "
+              "P = 2.4 × 10⁻¹⁶"],
         ["", "End-to-end predictions", "Held-out topics, cutoff 1368", "Discoveries among survivors", "1/8",
          "7/19 = 0.37; leakage 0"],
         ["Verification", "Fabricated quotations", f"{m('hallucination')['samples']} quotations × 4 probes",
@@ -116,7 +127,7 @@ def table2() -> dict:
          f"{m('audit')['claims']}/{m('audit')['claims']} ({m('audit')['false_supported']})", "–"],
     ]
     return {
-        "title": "Table 2 | Evaluation of TaoChronos across its three layers",
+        "title": "Extended Data Table 2 | Evaluation of TaoChronos across its three layers",
         "header": ["Layer", "Suite", "Data", "Metric", "Development or constructed", "Held-out or real corpus"],
         "rows": rows, "total": None,
         "notes": [
@@ -125,7 +136,8 @@ def table2() -> dict:
             "estimate generalization.",
             "†Needs the full corpus store, which is not distributed; values from docs/evals.md. All other values were "
             "reproduced for this paper by `taochronos eval` on the demonstration corpus (40 suites, 47 s).",
-            "P value from a two-sided sign test over topic–cutoff pairs. HPO, Human Phenotype Ontology.",
+            "P value from a two-sided sign test of average precision over topic–cutoff pairs. HPO, Human Phenotype "
+            "Ontology.",
         ],
     }
 
@@ -142,8 +154,8 @@ def to_markdown(t: dict) -> str:
 
 def tex_escape(s: str) -> str:
     rep = {"&": r"\&", "%": r"\%", "#": r"\#", "_": r"\_", "~": r"\textasciitilde{}", "†": r"$^{\dagger}$",
-           "‡": r"$^{\ddagger}$", "*": r"$^{*}$", "×": r"$\times$", "⁻¹⁶": r"$^{-16}$", "→": r"$\rightarrow$",
-           "≈": r"$\approx$", ">": r"$>$"}
+           "‡": r"$^{\ddagger}$", "§": r"\S{}", "‖": r"$\|$", "*": r"$^{*}$", "×": r"$\times$", "⁻¹⁶": r"$^{-16}$",
+           "→": r"$\rightarrow$", "≈": r"$\approx$", ">": r"$>$"}
     for k, v in rep.items():
         s = s.replace(k, v)
     return s
@@ -238,11 +250,13 @@ def to_docx(tables: list[dict], path: Path) -> None:
 
 def main() -> None:
     tables = [table1(), table2()]
+    for old in list(OUT.glob("table*.md")) + list(OUT.glob("table*.tex")) + [OUT / "tables.docx"]:
+        old.unlink(missing_ok=True)  # the names of the first submission, before the tables became Extended Data
     for i, t in enumerate(tables, start=1):
-        (OUT / f"table{i}.md").write_text(to_markdown(t), encoding="utf-8")
-        (OUT / f"table{i}.tex").write_text(to_latex(t), encoding="utf-8")
-    to_docx(tables, OUT / "tables.docx")
-    print("wrote", ", ".join(str(p.relative_to(HOME)) for p in sorted(OUT.glob("table*")) if p.suffix != ".py"))
+        (OUT / f"extended_data_table{i}.md").write_text(to_markdown(t), encoding="utf-8")
+        (OUT / f"extended_data_table{i}.tex").write_text(to_latex(t), encoding="utf-8")
+    to_docx(tables, OUT / "extended_data_tables.docx")
+    print("wrote", ", ".join(str(p.relative_to(HOME)) for p in sorted(OUT.glob("extended_data_table*"))))
 
 
 if __name__ == "__main__":

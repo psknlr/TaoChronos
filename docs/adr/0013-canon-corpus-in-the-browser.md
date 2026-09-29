@@ -22,7 +22,8 @@ works whole, are for `taochronos serve`.
    by rank that the pack already had (the first ten whole within 350 000 characters, with up to three witnesses; then 50 000,
    25 000 and 12 000, as whole chapters spread through the book): 348 works, 8.5 million characters.  The transcriptions of
    笈成 declare no licence and their punctuation is their editors': the site carries them because IMPF-AI decided so, and
-   each record and the attribution say on what terms.  Sources whose terms forbid passing their texts on (`NEVER_PACKED`)
+   each record and the attribution say on what terms.  *(Corrected 2026-09-29: 笈成 releases its editorial work under
+   CC0 1.0 — see the addendum.)*  Sources whose terms forbid passing their texts on (`NEVER_PACKED`)
    are never packed; the two works known only through them are listed without text.
 2. **Smaller, and unpacked as it arrives.**  The store ships without its index (two thirds of an indexed download, and it
    compresses badly), xz-compressed: 10.8 MB where gzip would be 17.  It downloads while Python starts and is unpacked
@@ -48,3 +49,17 @@ works whole, are for `taochronos serve`.
   (`TAOCHRONOS_WEB_XZ_PRESET=1`).
 - The page loads faster still once https is on and when served from a CDN near its readers (Cloudflare in front of
   chat.impf.ai): neither changes this design.
+
+## Addendum — 2026-09-29: 笈成 is openly licensed
+
+The premise of decision 1 was wrong.  中醫笈成's copyright statement ([著作權聲明](https://jicheng.tw/tcm/copyright.html),
+checked 2026-09-29) releases all the site's editing of public-domain texts — selection, arrangement, punctuation,
+annotation — under CC0 1.0, and its own writing (introductions, help and data pages) under CC BY 4.0, free to use when
+the site is credited; individual pages may declare other terms, embedded images and media may carry other licences, and
+the site does not guarantee every marking.  笈成 is now an open source (`OPEN_SOURCES`, last, so that the preference
+among the others and the order of `WEB_SOURCES` are unchanged): its records keep their own licence in the pack, and 344
+of the 350 have an openly licensed witness (`open` in `canon.yaml`, 108 before).  The pack's choice of witnesses is
+unchanged.  The decision of 2026-09-28 now carries only what that licence does not: the four works known only through
+TCM-Ancient-Books, whose repository declares no licence (a copy of a 笈成 text is never stored, so these four match no
+笈成 text in the store), and the modern editors' part of the 笈成 texts that follow a modern edition — the 今人辑校本 of
+lost works (集验方, 名医别录, 食疗本草, 小品方, 吴普本草, 海药本草, 新修本草) among them — which 笈成's CC0 cannot release.

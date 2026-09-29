@@ -317,7 +317,9 @@ def _corpus_admin_jicheng(args: argparse.Namespace, action: str, home: Path, dat
         root = _jicheng_root(data)
         m = re.search(r"v(\d+(?:\.\d+)+)", root.name)
         facts = {"name": "笈成檢閱系統資料（笈成中医古籍整理本）", "program": root.name, "version": m.group(0) if m else None,
-                 "license": "古籍原文属公有领域；标点、校勘与整理成果归笈成整理者；当代著作与现代整理本不入库，仅供本地研究使用。"
+                 "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；"
+                            "见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；"
+                            "笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库。"
                             "检阅程序：授權任何人使用與散布（© 2009-2013 Danny）",
                  "url": "https://jicheng.tw/", "catalog": catalog_path.name, **facts, **tree_facts(root)}
         write_archive_lock(lock_path, "jicheng", facts)

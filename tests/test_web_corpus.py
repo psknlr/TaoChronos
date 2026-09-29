@@ -51,21 +51,27 @@ def test_the_ranked_list_is_metadata_ordered_by_citation():
     assert all(w["cited_by"] >= 1 for w in works) and not any("text" in w for w in works)  # no text in the list
     assert data["open"] == sum(1 for w in works if w["open"]) and all(
         (w["open_witness"] is not None) == w["open"] for w in works)
+    assert all(w["open"] == bool(set(w["sources"]) & set(OPEN_SOURCES)) for w in works)  # open: a source in OPEN_SOURCES
     assert not any(w["category"] in ("现代", "非医籍") for w in works)
+    pack = ROOT / "corpus" / "web" / "books.json"
+    if pack.is_file():  # an open work's witness is the pack's first: the same order (OPEN_SOURCES leads WEB_SOURCES)
+        first = {b["work"]: b["id"] for b in json.loads(pack.read_text(encoding="utf-8")) if b["witness"] == 1}
+        assert all(first[w["work"]] == w["open_witness"] for w in works if w["open"])
 
 
 def test_witnesses_are_chosen_open_collated_and_complete_first():
-    sources = {"a": "kanripo", "b": "cmeta", "c": "cmeta", "d": "jicheng"}
-    size = {"a": 90_000, "b": 30_000, "c": 88_000, "d": 99_000}
-    assert sorted(sources, key=lambda b: witness_order(b, sources, size)) == ["c", "b", "a", "d"]
-    assert set(OPEN_SOURCES) == {"cmeta", "kanripo", "wikisource", "mcgill"}
+    sources = {"a": "kanripo", "b": "cmeta", "c": "cmeta", "d": "jicheng", "e": "tcm-ancient-books"}
+    size = {"a": 90_000, "b": 30_000, "c": 88_000, "d": 99_000, "e": 500_000}
+    assert sorted(sources, key=lambda b: witness_order(b, sources, size)) == ["c", "b", "a", "d", "e"]
+    # 笈成 (CC0 1.0 for its editorial work) is open, last: the others keep their order
+    assert list(OPEN_SOURCES) == ["cmeta", "kanripo", "wikisource", "mcgill", "jicheng"]
 
 
 def test_the_site_takes_every_ranked_work_openly_licensed_witnesses_first_never_what_may_not_be_passed_on():
     sources = {"a": "kanripo", "b": "jicheng", "c": "cmeta", "d": "tcm-ancient-books", "e": "aeam"}
     size = {"a": 10, "b": 99_000, "c": 5, "d": 120_000, "e": 200_000}
     assert sorted(sources, key=lambda b: pack_order(b, sources, size))[:4] == ["c", "a", "b", "d"]
-    assert list(WEB_SOURCES)[:len(OPEN_SOURCES)] == list(OPEN_SOURCES) and "jicheng" in WEB_SOURCES
+    assert list(WEB_SOURCES) == [*OPEN_SOURCES, "tcm-ancient-books", "tcmoc"]  # the open first, then the 笈成 copies
     assert set(NEVER_PACKED) == {"aeam", "hf-tcm-canon"} and not set(NEVER_PACKED) & set(WEB_SOURCES)
 
 
@@ -163,8 +169,8 @@ def test_the_site_corpus_is_the_ranked_works(web_runtime):
     books = json.loads((ROOT / "corpus" / "web" / "books.json").read_text(encoding="utf-8"))
     assert {b["source"] for b in books} <= set(WEB_SOURCES) and not {b["source"] for b in books} & set(NEVER_PACKED)
     assert [b["rank"] for b in books] == sorted(b["rank"] for b in books)  # rank order: the first-ranked are indexed first
-    for b in books:  # a transcription that is not openly licensed says under what terms the site carries it
-        assert b["source"] in OPEN_SOURCES or b["data"]["source"].get("published"), b["id"]
+    for b in books:  # an openly licensed transcription keeps its own terms, any other says on what terms the site carries it
+        assert (b["source"] in OPEN_SOURCES) != bool(b["data"]["source"].get("published")), b["id"]
     assert "要籍语料" in info["system_prompt"] and "classics.canon" in info["system_prompt"]
     hit = rt.call("validation.verify_quote", {"quote": "太阳病，头痛，发热，汗出，恶风，桂枝汤主之。"})
     assert hit["ok"] and "cm_shanghan_npm" in json.dumps(hit["result"], ensure_ascii=False)  # the 宋本, punctuation aside

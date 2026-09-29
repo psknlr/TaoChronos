@@ -1,0 +1,9 @@
+Hook point,Guard,Runs on,Refuses
+BeforeToolCall,scope_guard,every tool call,"arguments that name material outside the research's scope (withheld books, the future of a blind cutoff)"
+AfterToolCall,scope_firewall,every tool result,a result that carries withheld material back to the caller
+BeforeClaimCommit,provenance_validator,every claim,"a quote that is not verbatim, empty or outside its passage; inconsistent argument spans"
+BeforeClaimCommit,semantic_support,every claim,"a claim its quote contradicts (a true quote with a false relation); frames the rest with speaker, stance, conditions and negations"
+BeforeClaimCommit,anachronism_guard,every claim,a classical claim that carries a modern concept
+AfterHypothesis,anachronism_guard,every hypothesis and revision,"a statement that equates a historical concept with a modern category, or breaks a forbidden assumption of the contract"
+BeforeGraphWrite,anachronism_guard,every mapping into the knowledge graph,a historical-to-modern equivalence asserted by anyone but a human expert
+BeforeArtifactPublish,publish_guard,every report that is not a draft,"a report without evidence, one that cites missing or retracted objects, or one that presents a hypothesis not judged on its current version"

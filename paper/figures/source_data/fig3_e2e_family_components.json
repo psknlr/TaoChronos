@@ -1,0 +1,30 @@
+{
+ "lineage_edges": {
+  "cites": 30,
+  "rephrases": 1117,
+  "transcribes": 75,
+  "inherits": 61
+ },
+ "corpus_books": 368,
+ "evidence_books": 38,
+ "rules": {
+  "harness": {
+   "families_in_corpus": 160,
+   "largest_in_corpus": 182,
+   "families_among_evidence_books": 4,
+   "largest_among_evidence_books": 35
+  },
+  "transcription_only": {
+   "families_in_corpus": 235,
+   "largest_in_corpus": 24,
+   "families_among_evidence_books": 18,
+   "largest_among_evidence_books": 11
+  },
+  "work_author_only": {
+   "families_in_corpus": 252,
+   "largest_in_corpus": 11,
+   "families_among_evidence_books": 27,
+   "largest_among_evidence_books": 5
+  }
+ }
+}

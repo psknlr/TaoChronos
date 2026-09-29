@@ -1,0 +1,62 @@
+Event,Agent,Validator,Human,Kernel,Why
+ResearchCreated,,,,●,only the harness opens a research contract
+ProfileLoaded,,,,●,
+CorpusScoped,●,●,,●,
+RoundStarted,,,,●,
+RoundCompleted,,,,●,
+StopConditionMet,,,,●,
+ResearchCompleted,,,,●,only the harness completes a research
+ResearchStopped,,,●,●,
+ContractEvaluated,,●,,●,the research contract is evaluated by validators
+TaskPlanned,●,●,,●,
+TaskStarted,●,●,,●,
+TaskCompleted,●,●,,●,
+TaskFailed,●,●,,●,
+TaskSkipped,●,●,,●,
+AgentSpawned,,,,●,
+AgentReleased,,,,●,
+ModelRouted,,,,●,
+LLMCalled,●,,,●,
+ToolCalled,●,●,●,●,
+ToolResult,●,●,●,●,
+ToolDenied,●,●,●,●,
+HookBlocked,●,●,●,●,
+BudgetExceeded,●,●,●,●,
+BudgetReserved,,,,●,
+BudgetSettled,,,,●,
+RunManifestRecorded,,,,●,
+PassageAssessed,●,●,,●,
+TermResolved,●,●,,●,
+EvidenceRetrieved,●,●,,●,
+EvidenceRetracted,,●,●,●,
+ClaimExtracted,●,●,,●,
+ClaimRejected,●,●,,●,
+LineageDetected,●,●,,●,
+ContradictionFound,●,●,,●,
+ObservationRecorded,●,●,,●,
+AnalysisRecorded,●,●,,●,
+WarrantRecorded,●,●,,●,
+HypothesisGenerated,●,●,,●,
+CounterEvidenceFound,●,●,,●,
+HypothesisReviewed,●,●,,●,
+HypothesisRevised,●,●,,●,
+HypothesisRejected,,●,●,●,
+HypothesisScored,,●,,●,scores are computed by validators
+HypothesisRanked,,●,,●,rankings are computed by validators
+HypothesisConfirmed,,●,,●,confirmation is a validator's re-test on withheld material
+GateEvaluated,,●,,●,"gates are graded by validators, never by the work they grade"
+ObjectionResolutionProposed,●,●,,●,
+ObjectionClosed,,●,●,,"an objection is closed by re-running its check (validator) or by an expert, never by a model"
+ChangeProposed,●,●,●,●,
+ChangeApproved,,●,●,,agents may only propose changes; a validator or human must decide
+ChangeRejected,,●,●,,agents may only propose changes; a validator or human must decide
+ExpertApproved,,,●,,only a human expert may approve or reject a hypothesis (Gate G7)
+ExpertRejected,,,●,,only a human expert may approve or reject a hypothesis (Gate G7)
+ExpertSteered,,,●,,only a human expert steers a research
+DecisionRecorded,●,●,●,●,
+MemoryWritten,,●,●,●,
+BranchForked,,,,●,
+BranchMerged,,,,●,
+CheckpointCreated,,,,●,
+ArtifactPublished,,●,,●,publication is a validator's act after the contract is evaluated
+TransactionCommitted,,,,●,

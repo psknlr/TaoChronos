@@ -1,0 +1,15 @@
+label,id,kind,books,harness,transcription_only,work_author_only,G5
+H1,hyp_d1436acd2959,association_rule,2,2,2,2,pass
+H2,hyp_12a32285d3a3,lost_knowledge,5,1,1,2,warn
+H3,hyp_e2ebd991ae10,lost_source,1,1,1,1,warn
+H4,hyp_24368056df5c,concept_drift,4,1,2,3,warn
+H5,hyp_3849a6721ca0,concept_drift,6,1,3,4,warn
+H6,hyp_de35c2a355f0,lost_knowledge,2,1,1,2,warn
+H7,hyp_0af4af4a83db,association_rule,1,1,1,1,warn
+H8,hyp_5730b22d8213,lost_source,1,1,1,1,warn
+H9,hyp_ed4b5625f057,concept_drift,6,1,4,5,warn
+H10,hyp_502e05814d54,contradiction,2,1,1,2,warn
+H11,hyp_18f4717f2182,contradiction,2,1,1,2,warn
+H12,hyp_80883924c519,hidden_association,5,1,4,5,warn
+H13,hyp_7c62e0a0d161,hidden_association,3,1,2,3,warn
+R1,hyp_ccbe3e9607db,lost_knowledge,2,1,1,1,warn

@@ -4,7 +4,7 @@ source:
   id: tcmoc
   name: 中医开源医典 tcmoc（GitHub lab99x）
   url: https://github.com/lab99x/tcmoc
-  license: 未声明授权（据 TCM-Ancient-Books 整理，古籍原文属公有领域）；仅供本地研究使用
+  license: 仓库未声明授权；古籍原文属公有领域，录文据 TCM-Ancient-Books 整理，多为中醫笈成整理本（CC0 1.0）的简体转换本；与笈成本重复者不入库，所收者仅供本地研究使用
   transcription: TCM-Ancient-Books 文本的整理与 Markdown 改写本
   acquisition: git clone
   edition_name: 网络简体本
