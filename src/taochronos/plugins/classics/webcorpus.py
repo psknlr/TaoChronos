@@ -226,6 +226,7 @@ def build_store(pack: Path, path: Path, normalize: Callable[[str], str], fingerp
     store.set_meta("edition", "web")
     store.set_meta("label", "要籍语料")
     store.set_meta("index", "built" if index else "pending")
+    store.count()
     if not index:
         # the pack is in rank order: the passages of the works the browser indexes first end at this rowid
         core = [b["id"] for b in books if int(b.get("rank") or 0) <= CORE_RANK]

@@ -146,6 +146,48 @@ def test_store_round_trip_and_search(corpus, pack):
     assert corpus.stats(pack.periods)["index_current"] is True
 
 
+def test_the_bigram_tokens_are_those_of_each_run_of_han_characters():
+    def reference(norm):  # the definition, one character at a time
+        from taochronos.plugins.classics.store import BREAK, PAD, is_han
+        out, start = [], -1
+        for i in range(len(norm) + 1):
+            han = i < len(norm) and is_han(norm[i])
+            if han and start < 0:
+                start = i
+            elif not han and start >= 0:
+                run = norm[start:i]
+                out += [run[j: j + 2] for j in range(len(run) - 1)] + [run[-1] + PAD]
+                start = -1
+                if i < len(norm):
+                    out.append(BREAK)
+            elif not han and i < len(norm) and out and out[-1] != BREAK:
+                out.append(BREAK)
+        return " ".join(out)
+
+    import random
+    rng = random.Random(7)
+    alphabet = "天地人消渴，。 a1〇〓\U00020000\u3400\u9fff\uf900\ufaffx"
+    samples = ["", "，", "天", "天，", "，天", "天地，人", "，，天地，，", "〇〓", "𠀀𠀁天"]
+    samples += ["".join(rng.choice(alphabet) for _ in range(rng.randint(0, 16))) for _ in range(20000)]
+    for s in samples:
+        assert grams(s) == reference(s), s
+
+
+def test_a_store_written_once_keeps_its_counts(tmp_path, store_path, pack):
+    import shutil as _shutil
+    copy = tmp_path / "counted.sqlite"
+    _shutil.copy(store_path, copy)
+    scanned = StoreCorpus(CorpusStore(copy), pack.variants.normalize_text).stats(pack.periods)
+    store = CorpusStore(copy)
+    store.count()
+    store.commit()
+    corpus = StoreCorpus(store, pack.variants.normalize_text)
+    assert store.counted() is not None and corpus.stats(pack.periods) == scanned  # read, not scanned: the same
+    store.db.execute("DELETE FROM passages WHERE rid = (SELECT MAX(rid) FROM passages)")
+    assert store.counted() is None  # the passages changed: counted again
+    store.close()
+
+
 def test_a_quotation_is_found_however_it_is_punctuated(corpus, pack):
     n = pack.variants.normalize_text
     main = corpus.passage("ceshi_neijing.001.00000").text

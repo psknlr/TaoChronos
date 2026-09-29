@@ -87,8 +87,9 @@ excerpts.  Two steps choose them:
 (the index is two thirds of a download that compresses badly), xz-compressed (`runtime/corpus.sqlite.xz`: 10.8 MB for 90;
 gzip would be 17).  Loading is arranged for the wait a visitor sees:
 
-* **In parallel** — the worker downloads the corpus while Pyodide starts, and unpacks it (xzwasm, `web/js/vendor/`) into
-  the runtime's file system as the bytes arrive.
+* **In parallel** — while Pyodide starts, a worker of its own (`unpack-worker.js`) downloads the corpus and unpacks it
+  (xzwasm, `web/js/vendor/`) as the bytes arrive, into one buffer the runtime's file system then takes without a copy
+  ([ADR 0015](adr/0015-faster-start.md)).
 * **The first-ranked first** — on the first visit the worker indexes the passages of the works ranked up to 40 (the pack is
   in rank order; 70 648 passages) before the runtime answers, and the rest in the background, a slice at a time between the
   questions it answers (`index_store(phase=…, limit=…)`, resumable).  The text of every book is there from the start; only
@@ -96,13 +97,15 @@ gzip would be 17).  Loading is arranged for the wait a visitor sees:
 * **Kept in the browser** — once it is all indexed, the store is kept in IndexedDB (in 16 MB parts; the head written last,
   so that a half-kept store is never read), with the runtime archives.  IndexedDB, unlike the Cache API, is there on an
   http:// page too — the site is served over http until its certificate is issued — so a later visit downloads and indexes
-  nothing: Pyodide, then the kept store, then the tools, in about 6 seconds.
+  nothing: Pyodide, then the kept store, then the tools, in about 4 seconds.  The package's bytecode is kept too (compiled
+  once after the first visit's indexing), the YAML the runtime reads comes parsed with the site (`home.zip`, `.cache/yaml`),
+  and the store's counts come with the store.
 * **The conversation starts at once** — the build writes `runtime/boot.json`: what the runtime will report once loaded (its
   info with the standing instructions, and its tool catalogs), computed on the same code and corpus.  The page puts the first
   question to the model with it while the runtime loads; the tools the model calls wait for the runtime.
 
-Measured in Chromium on a fast machine: first visit ready in 15 s (the rest indexed 10 s later), a return visit in 6 s; on a
-connection throttled to 1 MB/s and 150 ms, 40 s and 16 s.  The runtime uses the `web-canon` profile; `info.corpus` says
+Measured in Chromium on a fast machine: first visit ready in 9.6 s (the rest indexed 7 s later), a return visit in 4 s; on a
+connection throttled to 1 MB/s and 150 ms, 27 s and 13–14 s (before ADR 0015: 15 s, 6 s; 39 s, 15–16 s).  The runtime uses the `web-canon` profile; `info.corpus` says
 `kind: canon`, `label: 要籍语料`, and how many of the 350 it holds.  The standing instructions tell the model which corpus it
 reads, that excerpted books may lack what the whole book has, and where the rest is.
 

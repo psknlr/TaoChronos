@@ -1340,6 +1340,7 @@ function takeToken() {
 
 async function main() {
   takeToken();
+  switchRuntime(); // at once: Python and the corpus load in the worker while the page sets itself up
   if (document.documentElement.classList.contains("pre-collapsed")) el.app.classList.add("sidebar-collapsed");
   applyTheme();
   wireChrome();
@@ -1354,7 +1355,6 @@ async function main() {
   renderAll();
   scrollToBottom(false);
   if (!(await store.persistent())) toast("此浏览器无法保存对话（隐私模式？）：关闭页面后对话将丢失", "", 5000);
-  setTimeout(switchRuntime, 250);
   el.input.focus();
 }
 

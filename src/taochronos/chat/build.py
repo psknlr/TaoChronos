@@ -7,7 +7,9 @@ depends on no other host.  Archives are deterministic: the same checkout builds 
 
 The full corpus store is never part of the site.  The site carries the 要籍语料 (``corpus/web``: the texts of the 350
 ranked works, ``taochronos web pack``) as a store without its full-text index, xz-compressed (``runtime/corpus.sqlite.xz``);
-the browser indexes it on first use and keeps the result.  ``runtime/boot.json`` holds what the runtime will say about
+the browser indexes it on first use and keeps the result.  ``home.zip`` also carries the YAML the runtime reads already
+parsed (``.cache/yaml``, the cache of ``protocol.yamlio``, keyed by each file's content): parsing it in the browser took
+most of the runtime's start.  ``runtime/boot.json`` holds what the runtime will say about
 itself (its info, with the standing instructions, and its tool catalogs), so that the page can start a conversation
 while the runtime is still loading.  Without a pack the browser runs on the demonstration corpus.  The full corpus is
 reached through ``taochronos serve``.
@@ -61,9 +63,12 @@ def package_zip(package: Path = PACKAGE) -> bytes:
     return _zip(entries)
 
 
-def home_zip(home: Path) -> bytes:
-    """What the harness reads from its home, for the demonstration corpus."""
+def home_zip(home: Path, yaml_cache: Path | None = None) -> bytes:
+    """What the harness reads from its home, for the demonstration corpus; with ``yaml_cache``, that YAML parsed
+    (``.cache/yaml/…``: the browser points ``TAOCHRONOS_CACHE`` at ``.cache``)."""
     entries: list[tuple[str, Path]] = []
+    if yaml_cache is not None:
+        entries += [(f".cache/yaml/{p.relative_to(yaml_cache).as_posix()}", p) for p in sorted(yaml_cache.rglob("*.pickle"))]
     for part in HOME_PARTS:
         root = home / part
         paths = [root] if root.is_file() else sorted(p for p in root.rglob("*") if p.is_file()) if root.is_dir() else []
@@ -122,9 +127,24 @@ def _corpus_store(home_dir: str, digest: str, preset: int) -> tuple[bytes, dict[
                   "profile": "web-canon"}
 
 
-def boot_file(home: Path, corpus: bytes | None) -> dict[str, Any]:
+def boot_file(home: Path, corpus: bytes | None, yaml_cache: Path | None = None) -> dict[str, Any]:
     """What the browser runtime will report once loaded — its info and tool catalogs — computed here on the same code and
-    corpus, so that the page can put the first question to the model while the runtime loads."""
+    corpus, so that the page can put the first question to the model while the runtime loads.  With ``yaml_cache`` (an
+    empty directory), the YAML this reads is left there parsed, for the browser."""
+    before = os.environ.get("TAOCHRONOS_CACHE")
+    if yaml_cache is not None:
+        os.environ["TAOCHRONOS_CACHE"] = str(yaml_cache.parent)  # yamlio keeps its entries in <cache>/yaml
+    try:
+        return _boot(home, corpus)
+    finally:
+        if yaml_cache is not None:
+            if before is None:
+                os.environ.pop("TAOCHRONOS_CACHE", None)
+            else:
+                os.environ["TAOCHRONOS_CACHE"] = before
+
+
+def _boot(home: Path, corpus: bytes | None) -> dict[str, Any]:
     from . import ChatRuntime
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -182,15 +202,18 @@ def build_site(out: Path, *, home: Path, web: Path | None = None, pyodide: str =
     shutil.copytree(web, out, ignore=shutil.ignore_patterns("node_modules", "tests", "*.map", ".DS_Store"))
     runtime = out / "runtime"
     runtime.mkdir(parents=True, exist_ok=True)
-    pkg, data = package_zip(), home_zip(home)
+    corpus = corpus_store(home)
+    with tempfile.TemporaryDirectory() as tmp:
+        yaml_cache = Path(tmp) / "yaml"  # what booting the runtime parses, parsed once here
+        yaml_cache.mkdir()
+        boot = boot_file(home, corpus[0] if corpus is not None else None, yaml_cache)
+        pkg, data = package_zip(), home_zip(home, yaml_cache)
     (runtime / "taochronos.zip").write_bytes(pkg)
     (runtime / "home.zip").write_bytes(data)
     info = manifest(pkg, data)
-    corpus = corpus_store(home)
     if corpus is not None:
         (runtime / "corpus.sqlite.xz").write_bytes(corpus[0])
         info["files"]["corpus.sqlite.xz"] = corpus[1]
-    boot = boot_file(home, corpus[0] if corpus is not None else None)
     (runtime / "boot.json").write_text(json.dumps(boot, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     info["pyodide_base"] = "pyodide/" if pyodide == "self" else PYODIDE_CDN
     if pyodide == "self":
