@@ -1,0 +1,108 @@
+id,class,split,correct,unsafe,expected,got
+ri01,relation_inversion,dev,True,False,"{""verdict"": ""contradicts""}",contradicts
+ri02,relation_inversion,dev,True,False,"{""verdict"": ""supports""}",supports
+ri03,relation_inversion,dev,True,False,"{""verdict"": ""contradicts""}",contradicts
+ri04,relation_inversion,heldout,True,False,"{""verdict"": ""contradicts""}",contradicts
+ri05,relation_inversion,heldout,False,True,"{""verdict"": ""ambiguous""}",supports
+ri06,relation_inversion,dev,True,False,"{""verdict"": ""contradicts""}",contradicts
+ri07,relation_inversion,dev,True,False,"{""verdict"": ""supports""}",supports
+ri08,relation_inversion,dev,True,False,"{""verdict"": ""supports""}",supports
+ri09,relation_inversion,heldout,True,False,"{""verdict"": ""contradicts""}",contradicts
+ns01,negation_scope,heldout,True,False,"{""verdict"": ""supports""}",supports
+ns02,negation_scope,heldout,True,False,"{""verdict"": ""supports""}",supports
+ns03,negation_scope,heldout,True,False,"{""verdict"": ""contradicts""}",contradicts
+ns04,negation_scope,heldout,True,False,"{""verdict"": ""contradicts""}",contradicts
+ns05,negation_scope,heldout,True,False,"{""verdict"": ""supports""}",supports
+ns06,negation_scope,heldout,True,False,"{""verdict"": ""contradicts""}",contradicts
+cq01,consequence,heldout,True,False,"{""verdict"": ""contradicts""}",contradicts
+cq02,consequence,heldout,True,False,"{""verdict"": ""supports""}",supports
+cq03,consequence,heldout,True,False,"{""verdict"": ""contradicts""}",contradicts
+cq04,consequence,heldout,True,False,"{""verdict"": ""supports""}",supports
+cq05,consequence,heldout,True,False,"{""verdict"": ""contradicts""}",contradicts
+cq06,consequence,dev,True,False,"{""verdict"": ""supports""}",supports
+rv01,reported_view,heldout,True,False,"{""stance"": ""reported""}",reported
+rv02,reported_view,dev,True,False,"{""stance"": ""reported""}",reported
+rv03,reported_view,heldout,True,False,"{""stance"": ""reported""}",reported
+rv04,reported_view,heldout,True,False,"{""stance"": ""asserted""}",asserted
+rv05,reported_view,heldout,True,False,"{""stance"": ""rejected""}",rejected
+rv06,reported_view,heldout,True,False,"{""stance"": ""rejected""}",rejected
+rv07,reported_view,heldout,True,False,"{""stance"": ""rejected""}",rejected
+rv08,reported_view,heldout,True,False,"{""stance"": ""rejected""}",rejected
+rv09,reported_view,heldout,True,False,"{""stance"": ""rejected""}",rejected
+rv10,reported_view,heldout,True,False,"{""stance"": ""rejected""}",rejected
+rv11,reported_view,heldout,True,False,"{""stance"": ""asserted""}",asserted
+rv12,reported_view,heldout,True,False,"{""stance"": ""rejected""}",rejected
+rv13,reported_view,dev,True,False,"{""stance"": ""asserted""}",asserted
+rv14,reported_view,heldout,True,False,"{""stance"": ""rejected""}",rejected
+rv15,reported_view,dev,True,False,"{""stance"": ""asserted""}",asserted
+rv16,reported_view,heldout,True,False,"{""stance"": ""rejected""}",rejected
+rv17,reported_view,dev,True,False,"{""stance"": ""asserted""}",asserted
+oc01,omitted_condition,heldout,True,False,"{""condition"": ""若脉浮""}","['若脉浮', '微热消渴者']"
+oc02,omitted_condition,heldout,True,False,"{""condition"": ""若脉浮""}","['若脉浮', '微热消渴者']"
+oc03,omitted_condition,heldout,True,False,"{""condition"": ""若脉微弱""}","['若脉微弱', '汗出恶风者']"
+oc04,omitted_condition,heldout,True,False,"{""condition"": ""凡积久饮酒""}",['凡积久饮酒']
+oc05,omitted_condition,dev,True,False,"{""condition"": ""迟紧""}",['其脉迟紧者']
+oc06,omitted_condition,dev,True,False,"{""condition"": ""谵语""}",['大便难而谵语者']
+wm01,witness_mixing,heldout,True,False,"{""found"": false}","{'found': False, 'located_at': []}"
+wm02,witness_mixing,dev,True,False,"{""found"": true}","{'found': True, 'located_at': ['shanghanlun.c013']}"
+wm03,witness_mixing,heldout,True,False,"{""found"": true}","{'found': True, 'located_at': ['suwen.035', 'wenyilun.yuanbing']}"
+wm04,witness_mixing,heldout,True,False,"{""found"": false}","{'found': False, 'located_at': ['suwen.035', 'wenyilun.yuanbing']}"
+wm05,witness_mixing,heldout,True,False,"{""found"": false}","{'found': False, 'located_at': ['shanghanlun.c071']}"
+wm06,witness_mixing,heldout,True,False,"{""found"": false}","{'found': False, 'located_at': []}"
+dd01,date_dispute,heldout,True,False,"{""order"": ""undetermined""}",undetermined
+dd02,date_dispute,dev,True,False,"{""order"": ""before""}",before
+dd03,date_dispute,heldout,True,False,"{""order"": ""undetermined""}",undetermined
+dd04,date_dispute,heldout,True,False,"{""order"": ""before""}",before
+dd05,date_dispute,heldout,True,False,"{""order"": ""undetermined""}",undetermined
+dd06,date_dispute,heldout,True,False,"{""range"": [200, 219]}","[200, 219]"
+dd07,date_dispute,heldout,True,False,"{""within"": [-300, 25]}","[-300, 25]"
+dd08,date_dispute,dev,True,False,"{""side"": ""straddling""}",straddling
+dd09,date_dispute,heldout,True,False,"{""side"": ""before""}",before
+dd10,date_dispute,heldout,True,False,"{""side"": ""after""}",after
+r2rv01,reported_view,heldout,True,False,"{""stance"": ""rejected""}",rejected
+r2rv02,reported_view,heldout,True,False,"{""stance"": ""asserted""}",asserted
+r2rv03,reported_view,heldout,True,False,"{""stance"": ""rejected""}",rejected
+r2rv04,reported_view,heldout,True,False,"{""stance"": ""asserted""}",asserted
+r2rv05,reported_view,heldout,True,False,"{""stance"": ""rejected""}",rejected
+r2rv06,reported_view,heldout,True,False,"{""stance"": ""asserted""}",asserted
+r2rv07,reported_view,heldout,True,False,"{""stance"": ""asserted""}",asserted
+r2rv08,reported_view,heldout,True,False,"{""stance"": ""reported""}",reported
+r2rv09,reported_view,heldout,True,False,"{""stance"": ""reported""}",reported
+r2ri01,relation_inversion,heldout,True,False,"{""verdict"": ""contradicts""}",contradicts
+r2ri02,relation_inversion,heldout,True,False,"{""verdict"": ""supports""}",supports
+r2ri03,relation_inversion,heldout,True,False,"{""verdict"": ""contradicts""}",contradicts
+r2ri04,relation_inversion,dev,True,False,"{""verdict"": ""supports""}",supports
+r2ri05,relation_inversion,heldout,True,False,"{""verdict"": ""supports""}",supports
+r2ri06,relation_inversion,heldout,True,False,"{""verdict"": ""contradicts""}",contradicts
+r2ri07,relation_inversion,heldout,True,False,"{""verdict"": ""supports""}",supports
+r2ri08,relation_inversion,dev,True,False,"{""verdict"": ""ambiguous""}",ambiguous
+r2oc01,omitted_condition,heldout,True,False,"{""condition"": ""喘""}",['无汗而喘者']
+r2oc02,omitted_condition,heldout,True,False,"{""condition"": ""大便微硬""}",['大便微硬者']
+r2oc03,omitted_condition,heldout,True,False,"{""condition"": ""不硬""}","['大便微硬者', '不硬者']"
+r2oc04,omitted_condition,heldout,True,False,"{""condition"": null}",[]
+r2oc05,omitted_condition,heldout,True,False,"{""condition"": ""五藏皆柔弱""}",['五脏皆柔弱者']
+r2wm01,witness_mixing,heldout,True,False,"{""found"": true}","{'found': True, 'located_at': ['shanghanlun.c220']}"
+r2wm02,witness_mixing,heldout,True,False,"{""found"": true}","{'found': True, 'located_at': ['suwen.035', 'wenyilun.yuanbing']}"
+r2wm03,witness_mixing,heldout,True,False,"{""found"": false}","{'found': False, 'located_at': []}"
+r2wm04,witness_mixing,heldout,True,False,"{""found"": true}","{'found': True, 'located_at': ['nanjing.077']}"
+r2wm05,witness_mixing,heldout,True,False,"{""found"": false}","{'found': False, 'located_at': ['jinkui.01.zhiweibing', 'nanjing.077']}"
+r2dd01,date_dispute,heldout,True,False,"{""order"": ""undetermined""}",undetermined
+r2dd02,date_dispute,heldout,True,False,"{""order"": ""before""}",before
+r2dd03,date_dispute,heldout,True,False,"{""side"": ""straddling""}",straddling
+r2dd04,date_dispute,heldout,True,False,"{""side"": ""after""}",after
+r2dd05,date_dispute,heldout,True,False,"{""range"": [1552, 1578]}","[1552, 1578]"
+r3tc01,textual_crux,dev,True,False,"{""verdict"": ""ambiguous""}",ambiguous
+r3tc02,textual_crux,dev,True,False,"{""verdict"": ""ambiguous""}",ambiguous
+r3tc03,textual_crux,heldout,False,True,"{""verdict"": ""ambiguous""}",supports
+r3tc04,textual_crux,dev,True,False,"{""verdict"": ""supports""}",supports
+r3tc05,textual_crux,dev,True,False,"{""verdict"": ""supports""}",supports
+r3tc06,textual_crux,heldout,True,False,"{""verdict"": ""supports""}",supports
+r3tc07,textual_crux,dev,True,False,"{""verdict"": ""supports""}",supports
+r3ns01,negation_scope,heldout,True,False,"{""verdict"": ""supports""}",supports
+r3rv01,reported_view,heldout,True,False,"{""stance"": ""asserted""}",asserted
+r3oc01,omitted_condition,heldout,True,False,"{""condition"": ""烦躁""}",['不汗出而烦躁者']
+r4tc01,textual_crux,heldout,True,False,"{""verdict"": ""ambiguous""}",ambiguous
+r4tc02,textual_crux,heldout,True,False,"{""verdict"": ""ambiguous""}",ambiguous
+r4tc03,textual_crux,heldout,True,False,"{""verdict"": ""supports""}",supports
+r4tc04,textual_crux,heldout,True,False,"{""verdict"": ""supports""}",supports
+r4tc05,textual_crux,heldout,True,False,"{""verdict"": ""supports""}",supports

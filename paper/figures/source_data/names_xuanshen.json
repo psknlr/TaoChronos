@@ -1,0 +1,436 @@
+{
+ "term": "玄参",
+ "term_id": "herb:玄参",
+ "names": [
+  {
+   "name": "玄参",
+   "kind": "本名",
+   "note": "",
+   "passages": 387,
+   "works": 112,
+   "first": [
+    {
+     "passage_id": "jc_c000a.00134",
+     "book_id": "jc_c000a",
+     "title": "神农本草经（复古辑本）",
+     "work": "shennong",
+     "authors": [
+      "佚名（托名神农）"
+     ],
+     "dynasty": "东汉",
+     "years": [
+      25,
+      220
+     ],
+     "period": "先秦两汉",
+     "category": "本草",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《神农本草经（复古辑本）》神農本草經卷三中藥（中品）·一三三　玄參",
+     "quote": "玄參　一名重臺。",
+     "span": [
+      0,
+      2
+     ],
+     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+     "license": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
+     "punctuation": "editorial"
+    },
+    {
+     "passage_id": "jc_c001.00230",
+     "book_id": "jc_c001",
+     "title": "吴普本草",
+     "work": "wupu_bencao",
+     "authors": [
+      "吴普"
+     ],
+     "dynasty": "三国·魏",
+     "years": [
+      220,
+      265
+     ],
+     "period": "魏晋南北朝",
+     "category": "本草",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《吴普本草》缺盆·生大豆",
+     "quote": "殺烏頭毒，並不用玄參。",
+     "span": [
+      23,
+      25
+     ],
+     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+     "license": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
+     "punctuation": "editorial"
+    },
+    {
+     "passage_id": "jc_d001.00975",
+     "book_id": "jc_d001",
+     "title": "名医别录",
+     "work": "mingyi_bielu",
+     "authors": [
+      "佚名"
+     ],
+     "dynasty": "魏晋",
+     "years": [
+      200,
+      500
+     ],
+     "period": "魏晋南北朝",
+     "category": "本草",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《名医别录》下品‧卷第三·五茄",
+     "quote": "（遠志為之使，畏蛇皮、玄參。",
+     "span": [
+      33,
+      35
+     ],
+     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+     "license": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
+     "punctuation": "editorial"
+    }
+   ]
+  },
+  {
+   "name": "元参",
+   "kind": "避讳改名",
+   "note": "清人避康熙帝玄烨讳改“玄”为“元”",
+   "passages": 159,
+   "works": 51,
+   "first": [
+    {
+     "passage_id": "jc_c000.00558",
+     "book_id": "jc_c000",
+     "title": "神农本草经",
+     "work": "shennong",
+     "authors": [
+      "佚名（托名神农）"
+     ],
+     "dynasty": "东汉",
+     "years": [
+      25,
+      220
+     ],
+     "period": "先秦两汉",
+     "category": "本草",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《神农本草经》中經",
+     "quote": "當歸　麻黃　通草　芍藥　蠡實　瞿麥　元參　秦艽　百合　知母　貝母　白芷　淫羊",
+     "span": [
+      135,
+      137
+     ],
+     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+     "license": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
+     "punctuation": "editorial"
+    },
+    {
+     "passage_id": "jc_d025.00175",
+     "book_id": "jc_d025",
+     "title": "备急千金要方",
+     "work": "qianjin",
+     "authors": [
+      "孙思邈"
+     ],
+     "dynasty": "唐",
+     "years": [
+      650,
+      659
+     ],
+     "period": "隋唐五代",
+     "category": "方书",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《备急千金要方》卷一諸論·論用藥第六·木藥上部",
+     "quote": "五加皮（遠志為使，畏蛇蛻、元參）",
+     "span": [
+      13,
+      15
+     ],
+     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+     "license": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
+     "punctuation": "editorial"
+    },
+    {
+     "passage_id": "susheng_liangfang.007.00215",
+     "book_id": "susheng_liangfang",
+     "title": "苏沈良方",
+     "work": "susheng_liangfang",
+     "authors": [
+      "苏轼",
+      "沈括"
+     ],
+     "dynasty": "北宋",
+     "years": [
+      1075,
+      1101
+     ],
+     "period": "宋金元",
+     "category": "方书",
+     "kind": "text",
+     "layer": "正文",
+     "locator": "《苏沈良方》卷七·小硃㪚·祛風丸（007-11b）",
+     "quote": "水浸槌去滓）　何首烏（蒸）　乾薄荷　元參（各四兩）　精羊肉（半斤）",
+     "span": [
+      45,
+      47
+     ],
+     "source": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+     "license": "CC BY-SA 4.0",
+     "punctuation": "none"
+    }
+   ]
+  }
+ ],
+ "skipped": [],
+ "periods": [
+  {
+   "period": "先秦两汉",
+   "works": 1,
+   "names": {
+    "玄参": 1,
+    "元参": 1
+   },
+   "shares": {
+    "玄参": 1.0,
+    "元参": 1.0
+   },
+   "preferred": "玄参"
+  },
+  {
+   "period": "魏晋南北朝",
+   "works": 2,
+   "names": {
+    "玄参": 2
+   },
+   "shares": {
+    "玄参": 1.0
+   },
+   "preferred": "玄参"
+  },
+  {
+   "period": "隋唐五代",
+   "works": 4,
+   "names": {
+    "玄参": 4,
+    "元参": 1
+   },
+   "shares": {
+    "玄参": 1.0,
+    "元参": 0.25
+   },
+   "preferred": "玄参"
+  },
+  {
+   "period": "宋金元",
+   "works": 34,
+   "names": {
+    "玄参": 31,
+    "元参": 5
+   },
+   "shares": {
+    "玄参": 0.912,
+    "元参": 0.147
+   },
+   "preferred": "玄参"
+  },
+  {
+   "period": "明",
+   "works": 47,
+   "names": {
+    "玄参": 45,
+    "元参": 4
+   },
+   "shares": {
+    "玄参": 0.957,
+    "元参": 0.085
+   },
+   "preferred": "玄参"
+  },
+  {
+   "period": "清",
+   "works": 67,
+   "names": {
+    "玄参": 30,
+    "元参": 40
+   },
+   "shares": {
+    "玄参": 0.448,
+    "元参": 0.597
+   },
+   "preferred": "元参"
+  }
+ ],
+ "bins": [
+  {
+   "from": 100,
+   "to": 200,
+   "works": 1,
+   "shares": {
+    "玄参": 1.0,
+    "元参": 1.0
+   },
+   "preferred": "玄参"
+  },
+  {
+   "from": 200,
+   "to": 300,
+   "works": 1,
+   "shares": {
+    "玄参": 1.0
+   },
+   "preferred": "玄参"
+  },
+  {
+   "from": 300,
+   "to": 400,
+   "works": 1,
+   "shares": {
+    "玄参": 1.0
+   },
+   "preferred": "玄参"
+  },
+  {
+   "from": 600,
+   "to": 700,
+   "works": 3,
+   "shares": {
+    "玄参": 1.0,
+    "元参": 0.333
+   },
+   "preferred": "玄参"
+  },
+  {
+   "from": 700,
+   "to": 800,
+   "works": 1,
+   "shares": {
+    "玄参": 1.0
+   },
+   "preferred": "玄参"
+  },
+  {
+   "from": 900,
+   "to": 1000,
+   "works": 2,
+   "shares": {
+    "玄参": 1.0
+   },
+   "preferred": "玄参"
+  },
+  {
+   "from": 1000,
+   "to": 1100,
+   "works": 5,
+   "shares": {
+    "玄参": 0.8,
+    "元参": 0.2
+   },
+   "preferred": "玄参"
+  },
+  {
+   "from": 1100,
+   "to": 1200,
+   "works": 10,
+   "shares": {
+    "玄参": 0.9,
+    "元参": 0.2
+   },
+   "preferred": "玄参"
+  },
+  {
+   "from": 1200,
+   "to": 1300,
+   "works": 9,
+   "shares": {
+    "玄参": 1.0
+   },
+   "preferred": "玄参"
+  },
+  {
+   "from": 1300,
+   "to": 1400,
+   "works": 13,
+   "shares": {
+    "玄参": 0.923,
+    "元参": 0.154
+   },
+   "preferred": "玄参"
+  },
+  {
+   "from": 1400,
+   "to": 1500,
+   "works": 4,
+   "shares": {
+    "玄参": 1.0
+   },
+   "preferred": "玄参"
+  },
+  {
+   "from": 1500,
+   "to": 1600,
+   "works": 25,
+   "shares": {
+    "玄参": 0.96,
+    "元参": 0.08
+   },
+   "preferred": "玄参"
+  },
+  {
+   "from": 1600,
+   "to": 1700,
+   "works": 26,
+   "shares": {
+    "玄参": 0.846,
+    "元参": 0.231
+   },
+   "preferred": "玄参"
+  },
+  {
+   "from": 1700,
+   "to": 1800,
+   "works": 38,
+   "shares": {
+    "玄参": 0.342,
+    "元参": 0.684
+   },
+   "preferred": "元参"
+  },
+  {
+   "from": 1800,
+   "to": 1900,
+   "works": 14,
+   "shares": {
+    "玄参": 0.357,
+    "元参": 0.714
+   },
+   "preferred": "元参"
+  },
+  {
+   "from": 1900,
+   "to": 2000,
+   "works": 2,
+   "shares": {
+    "玄参": 1.0
+   },
+   "preferred": "玄参"
+  }
+ ],
+ "bin_years": 100,
+ "switches": [
+  {
+   "from": "玄参",
+   "to": "元参",
+   "between": [
+    1600,
+    1800
+   ],
+   "last_bin": false
+  }
+ ],
+ "equations": [],
+ "candidates": [],
+ "note": "works writing each name (a work counts once, dated by the passage's layer); shares of the works writing any of the names; candidates are names the punctuated texts give it after 一名/又名/俗呼… that the lexicon lacks — readings to check, not findings"
+}

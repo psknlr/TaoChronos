@@ -1,0 +1,29 @@
+{
+ "warnings": [],
+ "text_sizes_pt": [
+  5.0,
+  5.5,
+  6.0,
+  6.5,
+  8.0
+ ],
+ "stroke_widths_pt": [
+  0.5,
+  0.6,
+  0.7,
+  0.8
+ ],
+ "n_texts": 93,
+ "width_mm": 183.0,
+ "height_mm": 104.0,
+ "fonts": [
+  "Arial-BoldMT",
+  "ArialMT"
+ ],
+ "live_text_chars": 980,
+ "files": [
+  "/home/user/TaoChronos/paper/figures/out/fig3_verification.pdf",
+  "/home/user/TaoChronos/paper/figures/out/fig3_verification.svg",
+  "/home/user/TaoChronos/paper/figures/out/fig3_verification.png"
+ ]
+}

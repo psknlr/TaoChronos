@@ -1,0 +1,967 @@
+source,source_family,id,title,work,dynasty,comp_lo,comp_hi,category,dating_basis,dating_class,modern
+kanripo,Siku quanshu (Kanripo),suwen_wangbing,重广补注黄帝内经素问,suwen,战国—西汉,-300,25,医经,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),lingshu_shisong,黄帝素问灵枢经,lingshu,战国—西汉,-300,25,医经,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),nanjing_jizhu,王翰林集注黄帝八十一难经,nanjing,东汉,0,200,医经,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),nanjing_benyi,难经本义,nanjing_benyi,元,1361,1361,医经,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),zhenjiu_jiayi,针灸甲乙经,jiayi,西晋,256,282,针灸,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),jinkui_lunzhu,金匮要略论注,jinkui_lunzhu,清,1671,1671,杂病,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),jinkui_yaolue,新编金匮要略方论,jinkui,东汉,200,219,杂病,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),zhujie_shanghanlun,注解伤寒论,shanghanlun,金,1144,1144,伤寒,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),maijing,脉经,maijing,西晋,265,290,诊法,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),zhouhou_beiji,肘后备急方,zhouhou,东晋,306,363,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),chushi_yishu,褚氏遗书,chushi_yishu,南齐（宋代始出）,479,502,医论,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),zhubing_yuanhou,诸病源候总论,zhubing,隋,610,610,病源,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),qianjin_yaofang,备急千金要方,qianjin,唐,650,659,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),yinhai_jingwei,银海精微,yinhai_jingwei,宋元—明（托名唐）,1127,1644,眼科,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),waitai_miyao,外台秘要方,waitai,唐,752,752,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),luxin_jing,颅囟经,luxin_jing,唐末宋初,900,1100,儿科,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),tongren_zhenjiujing,铜人针灸经,tongren_zhenjiujing,宋,1000,1127,针灸,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),mingtang_jiujing,明堂灸经,mingtang_jiujing,宋元,1100,1300,针灸,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),boji_fang,博济方,boji_fang,北宋,1047,1047,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),susheng_liangfang,苏沈良方,susheng_liangfang,北宋,1075,1101,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),shouqin_yanglao,寿亲养老新书,shouqin_yanglao,宋元,1080,1085,养生,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),jiaoqi_zhifa,脚气治法总要,jiaoqi_zhifa,北宋,1093,1093,内科,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),lvshe_beiyao,旅舍备要方,lvshe_beiyao,北宋,1086,1086,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),suwen_yunqi_lunao,素问入式运气论奥,yunqi_lunao,北宋,1099,1099,运气,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),shanghan_weizhi,伤寒微旨论,shanghan_weizhi,北宋,1086,1086,伤寒,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),shanghan_zongbing,伤寒总病论,shanghan_zongbing,北宋,1100,1100,伤寒,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),shengji_zonglu_zuanyao,圣济总录纂要,shengji_zonglu,清（原书北宋）,1111,1117,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),zhenglei_bencao,证类本草,zhenglei,北宋,1082,1108,本草,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),zhenghe_bencao,重修政和经史证类备用本草,zhenglei,北宋—金,1082,1116,本草,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),quansheng_zhimi,全生指迷方,quansheng_zhimi,北宋,1125,1125,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),xiaoer_weisheng_zongwei,小儿卫生总微论方,xiaoer_weisheng,南宋,1156,1156,儿科,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),puji_benshi,类证普济本事方,benshi_fang,南宋,1132,1150,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),hejiju_fang,太平惠民和剂局方,hejiju,宋,1107,1110,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),chuanxin_shiyong,传信适用方,chuanxin_shiyong,南宋,1180,1180,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),weiji_baoshu,卫济宝书,weiji_baoshu,南宋,1170,1170,外科,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),yishuo,医说,yishuo,南宋,1189,1224,医史,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),zhenjiu_zisheng,针灸资生经,zhenjiu_zisheng,南宋,1220,1220,针灸,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),furen_daquan,妇人大全良方,furen_daquan,南宋,1237,1237,妇科,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),taiyiju_chengwen,太医局诸科程文格,taiyiju_chengwen,南宋,1212,1212,医政,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),chanyu_baoqing,产育宝庆集,chanyu_baoqing,宋,1100,1150,妇科,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),sanyin_fang,三因极一病证方论,sanyin,南宋,1174,1174,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),jiyan_beiju,集验背疽方,jiyan_beiju,南宋,1196,1196,外科,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),jisheng_fang,济生方,jisheng,南宋,1253,1253,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),chanbao_zhufang,产宝诸方,chanbao_zhufang,宋,1100,1200,妇科,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),renzhai_zhizhi,仁斋直指,renzhai_zhizhi,南宋,1264,1264,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),jijiu_xianfang,急救仙方,jijiu_xianfang,宋元,1100,1368,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),yuanbingshi,素问玄机原病式,yuanbingshi,金,1152,1186,医论,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),xuanming_lunfang,黄帝素问宣明论方,xuanming,金,1172,1172,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),shanghan_zhige,伤寒直格方,shanghan_zhige,金元,1160,1200,伤寒,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),baoming_ji,素问病机气宜保命集,baoming_ji,金,1186,1186,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),rumen_shiqin,儒门事亲,rumen_shiqin,金,1217,1228,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),neiwaishang_bianhuo,内外伤辨惑论,neiwaishang,金,1247,1247,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),piweilun,脾胃论,piwei,金,1249,1249,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),lanshi_micang,兰室秘藏,lanshi,金元,1249,1276,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),cishi_nanzhi,此事难知,cishi_nanzhi,元,1308,1308,医论,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),yilei_yuanrong,医垒元戎,yilei_yuanrong,元,1297,1297,伤寒,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),tangye_bencao,汤液本草,tangye_bencao,元,1289,1308,本草,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),ruizhutang,瑞竹堂经验方,ruizhutang,元,1326,1326,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),shiyi_dexiao,世医得效方,shiyi_dexiao,元,1328,1345,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),gezhi_yulun,格致余论,gezhi_yulun,元,1347,1347,医论,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),jufang_fahui,局方发挥,jufang_fahui,元,1347,1350,医论,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),jinkui_gouxuan,金匮钩玄,jinkui_gouxuan,元明,1340,1400,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),yulong_jing,扁鹊神应针灸玉龙经,yulong_jing,元,1329,1329,针灸,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),waike_jingyi,外科精义,waike_jingyi,元,1335,1335,外科,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),maijue_kanwu,脉诀刊误,maijue_kanwu,元,1330,1370,诊法,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),yijing_suhui,医经溯洄集,yijing_suhui,元明,1368,1368,医论,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),puji_fang,普济方,puji_fang,明,1390,1406,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),yuji_weiyi,玉机微义,yuji_weiyi,明,1396,1396,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),renduan_lu,仁端录,renduan_lu,明,1500,1644,儿科,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),xueshi_yian,薛氏医案,xueshi_yian,明,1529,1600,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),tuiqiu_shiyi,推求师意,tuiqiu_shiyi,明,1380,1405,医论,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),zhenjiu_wendui,针灸问对,zhenjiu_wendui,明,1530,1530,针灸,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),waike_lili,外科理例,waike_lili,明,1531,1531,外科,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),shishan_yian,石山医案,shishan_yian,明,1531,1531,医案,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),mingyi_leian,名医类案,mingyi_leian,明,1549,1591,医案,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),chishui_xuanzhu,赤水玄珠,chishui_xuanzhu,明,1584,1584,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),yizhi_xuyu,医旨绪余,yizhi_xuyu,明,1573,1573,医论,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),zhengzhi_zhunsheng,证治准绳,zhengzhi_zhunsheng,明,1602,1608,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),bencao_gangmu_skqs,本草纲目,bencao_gangmu,明,1552,1578,本草,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),qijing_bamai_kao,奇经八脉考,qijing_bamai_kao,明,1572,1572,针灸,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),binhu_maixue,濒湖脉学,binhu_maixue,明,1564,1564,诊法,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),shanghanlun_tiaobian,伤寒论条辨,shanghan_tiaobian,明,1582,1592,伤寒,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),xianxingzhai_biji,先醒斋广笔记,xianxingzhai,明,1613,1622,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),bencao_jingshu,神农本草经疏,bencao_jingshu,明,1625,1625,本草,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),leijing,类经,leijing,明,1624,1624,医经,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),jingyue_quanshu_skqs,景岳全书,jingyue,明,1624,1640,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),wenyilun_skqs,瘟疫论,wenyilun,明,1642,1642,温病,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),jienuelun_shu,痎疟论疏,jienuelun_shu,明清,1640,1664,内科,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),bencao_chengya,本草乘雅半偈,bencao_chengya,明清,1647,1647,本草,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),yizong_jinjian,御纂医宗金鉴,yizong_jinjian,清,1742,1742,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),shanglun_pian,尚论篇,shanglun,清,1648,1648,伤寒,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),yimen_falv,医门法律,yimen_falv,清,1658,1658,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),shanghan_shejian,伤寒舌鉴,shanghan_shejian,清,1668,1668,诊法,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),shanghan_jianzheng,伤寒兼证析义,shanghan_jianzheng,清,1667,1667,伤寒,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),jiangxueyuan_fangxuan,绛雪园古方选注,jiangxueyuan,清,1732,1732,方书,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),xu_mingyi_leian,续名医类案,xu_mingyi_leian,清,1770,1770,医案,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),lantai_guifan,兰台轨范,lantai_guifan,清,1764,1764,综合,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),bencao_baizhonglu,神农本草经百种录,bencao_baizhonglu,清,1736,1736,本草,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),shanghan_leifang,伤寒类方,shanghan_leifang,清,1759,1759,伤寒,kanripo-curated,curated,False
+kanripo,Siku quanshu (Kanripo),yixue_yuanliu,医学源流论,yixue_yuanliu,清,1757,1757,医论,kanripo-curated,curated,False
+jicheng,JiCheng editions,jc_a000,黄帝内经素问,suwen,战国—西汉,-300,25,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a000a,黄帝内经素问遗篇,suwen_yipian,宋,1000,1279,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a001,重广补注黄帝内经素问,suwen,战国—西汉,-300,25,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a002,黄帝内经太素,taisu,唐,605,683,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a003,黄帝内经素问集注,jc:黄帝内经素问集注,清,1670,1670,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a004,素问要旨论,jc:素问要旨论,金,1152,1206,医经,author:刘完素,author,False
+jicheng,JiCheng editions,jc_a004a,素问要旨论,jc:素问要旨论,金,1152,1206,医经,author:刘完素,author,False
+jicheng,JiCheng editions,jc_a005,黄帝素问宣明论方,xuanming,金,1172,1172,医经,kanripo:KR3e0048,witness,False
+jicheng,JiCheng editions,jc_a005a,黄帝素问宣明论方,xuanming,金,1172,1172,医经,kanripo:KR3e0048,witness,False
+jicheng,JiCheng editions,jc_a006,订正太素脉秘诀,jc:订正太素脉秘诀,清,1644,1911,医经,undated,undated,False
+jicheng,JiCheng editions,jc_a007,素问六气玄珠密语,jc:素问六气玄珠密语,唐,960,1127,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a008,素问玄机原病式,yuanbingshi,金,1152,1186,医经,kanripo:KR3e0047,witness,False
+jicheng,JiCheng editions,jc_a008a,素问玄机原病式,yuanbingshi,金,1152,1186,医经,kanripo:KR3e0047,witness,False
+jicheng,JiCheng editions,jc_a009,素问病机气宜保命集,baoming_ji,金,1186,1186,医经,kanripo:KR3e0050,witness,False
+jicheng,JiCheng editions,jc_a009a,素问病机气宜保命集,baoming_ji,金,1186,1186,医经,kanripo:KR3e0050,witness,False
+jicheng,JiCheng editions,jc_a010,黄帝素问直解,jc:黄帝素问直解,清,1695,1695,医经,preface:author,author,False
+jicheng,JiCheng editions,jc_a011,素问经注节解,jc:素问经注节解,清,1677,1677,医经,preface:author,author,False
+jicheng,JiCheng editions,jc_a012,黄帝内经素问校义,jc:黄帝内经素问校义,清,1881,1881,医经,preface,preface,False
+jicheng,JiCheng editions,jc_a013,读素问钞,jc:读素问钞,元,1321,1368,医经,author:滑寿,author,False
+jicheng,JiCheng editions,jc_a014,素问识,jc:素问识,清,1806,1806,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a100,黄帝内经·灵枢,lingshu,战国—西汉,-300,25,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a101,黄帝内经灵枢集注,jc:黄帝内经灵枢集注,清,1672,1672,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a102,灵枢经脉翼,jc:灵枢经脉翼,明,1497,1497,医经,western,western,False
+jicheng,JiCheng editions,jc_a103,灵枢识,jc:灵枢识,清,1781,1826,医经,author:丹波元简,author,False
+jicheng,JiCheng editions,jc_a200,内经知要,jc:内经知要,宋,1642,1642,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a201,内经博议,jc:内经博议,清,1675,1675,医经,western,western,False
+jicheng,JiCheng editions,jc_a202,内经评文,jc:内经评文,清,1896,1896,医经,western,western,False
+jicheng,JiCheng editions,jc_a203,内经药瀹,jc:内经药瀹,清,1675,1675,医经,western,western,False
+jicheng,JiCheng editions,jc_a204,灵素节注类编,jc:灵素节注类编,清,1834,1834,医经,preface,preface,False
+jicheng,JiCheng editions,jc_a205,素问灵枢类纂约注,jc:素问灵枢类纂约注,清,1689,1689,医经,preface:author,author,False
+jicheng,JiCheng editions,jc_a300,八十一难经,nanjing,东汉,0,200,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a301,难经集注,nanjing,明,0,200,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a302,难经经释,jc:难经经释,清,1727,1727,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a303,古本难经阐注,jc:古本难经阐注,清,1738,1738,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a303a,古本难经阐注,jc:古本难经阐注,清,1738,1738,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a304,难经正义,jc:难经正义,清,1895,1895,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a305,难经古义,jc:难经古义,清,1644,1911,医经,undated,undated,False
+jicheng,JiCheng editions,jc_a306,难经本义,nanjing_benyi,元,1361,1361,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a400,医经读,jc:医经读,清,1830,1870,医经,author:沈又彭,author,False
+jicheng,JiCheng editions,jc_a401,医经原旨,jc:医经原旨,清,1644,1911,医经,western,western,False
+jicheng,JiCheng editions,jc_a402,类经,leijing,明,1624,1624,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a402a,类经,leijing,明,1624,1624,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a402b,类经,leijing,明,1624,1624,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a403,类经图翼,leijing_tuyi,明,1624,1624,医经,curated,curated,False
+jicheng,JiCheng editions,jc_a500,马王堆简帛,mawangdui,战国—西汉,-300,-168,医经,curated,curated,False
+jicheng,JiCheng editions,jc_b000,伤寒论(宋本),shanghanlun,东汉,200,219,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b000a,伤寒论,shanghanlun,东汉,200,219,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b001,注解伤寒论,shanghanlun,金,1144,1144,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b002,伤寒总病论,shanghan_zongbing,宋,1100,1100,伤寒,kanripo:KR3e0026,witness,False
+jicheng,JiCheng editions,jc_b002a,伤寒总病论,shanghan_zongbing,宋,1100,1100,伤寒,kanripo:KR3e0026,witness,False
+jicheng,JiCheng editions,jc_b003,类证活人书,jc:类证活人书,宋,1108,1108,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b003a,类证活人书,jc:类证活人书,宋,1108,1108,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b004,伤寒九十论,jc:伤寒九十论,宋,1132,1150,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b005,伤寒百证歌,jc:伤寒百证歌,宋,1132,1150,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b006,伤寒发微论,jc:伤寒发微论,宋,1132,1150,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b007,伤寒明理论,jc:伤寒明理论,宋,1142,1142,伤寒,western,western,False
+jicheng,JiCheng editions,jc_b007a,伤寒明理论,jc:伤寒明理论,金,1142,1142,伤寒,western,western,False
+jicheng,JiCheng editions,jc_b008,仲景伤寒补亡论,jc:仲景伤寒补亡论,宋,1181,1181,伤寒,western,western,False
+jicheng,JiCheng editions,jc_b009,伤寒寻源,jc:伤寒寻源,清,1850,1850,伤寒,preface:author,author,False
+jicheng,JiCheng editions,jc_b010,伤寒直格,shanghan_zhige,金,1160,1200,伤寒,kanripo:KR3e0049,witness,False
+jicheng,JiCheng editions,jc_b010a,伤寒直格,shanghan_zhige,金,1160,1200,伤寒,kanripo:KR3e0049,witness,False
+jicheng,JiCheng editions,jc_b011,伤寒标本心法类萃,jc:伤寒标本心法类萃,金,1152,1206,伤寒,author:刘完素,author,False
+jicheng,JiCheng editions,jc_b011a,伤寒标本心法类萃,jc:伤寒标本心法类萃,金,1152,1206,伤寒,author:刘完素,author,False
+jicheng,JiCheng editions,jc_b012,河间伤寒心要,jc:河间伤寒心要,金,1127,1279,伤寒,western,western,False
+jicheng,JiCheng editions,jc_b012a,伤寒心要,jc:伤寒心要,金,1152,1206,伤寒,author:刘完素,author,False
+jicheng,JiCheng editions,jc_b013,伤寒论条辨,shanghan_tiaobian,明,1592,1592,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b013a,伤寒论条辨,shanghan_tiaobian,明,1592,1592,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b014,张卿子伤寒论,shanghanlun,清,1624,1624,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b015,伤寒证治准绳,jc:伤寒证治准绳,明,1604,1604,伤寒,preface:author,author,False
+jicheng,JiCheng editions,jc_b016,伤寒论注,jc:伤寒论注,清,1669,1669,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b017,重订通俗伤寒论,jc:重订通俗伤寒论,清,1776,1776,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b018,伤寒溯源集,jc:伤寒溯源集,清,1707,1707,伤寒,preface:author,author,False
+jicheng,JiCheng editions,jc_b019,伤寒括要,jc:伤寒括要,明,1649,1649,伤寒,preface:author,author,False
+jicheng,JiCheng editions,jc_b020,伤寒缵论,jc:伤寒缵论,清,1669,1715,伤寒,author:张璐,author,False
+jicheng,JiCheng editions,jc_b021,伤寒贯珠集,jc:伤寒贯珠集,清,1729,1729,伤寒,western,western,False
+jicheng,JiCheng editions,jc_b021a,伤寒贯珠集,jc:伤寒贯珠集,清,1729,1729,伤寒,western,western,False
+jicheng,JiCheng editions,jc_b022,伤寒法祖,jc:伤寒法祖,宋,960,1279,伤寒,western,western,False
+jicheng,JiCheng editions,jc_b023,伤寒大白,jc:伤寒大白,清,1714,1714,伤寒,preface,preface,False
+jicheng,JiCheng editions,jc_b024,伤寒悬解,jc:伤寒悬解,清,1644,1911,伤寒,western,western,False
+jicheng,JiCheng editions,jc_b025,伤寒论类方,shanghan_leifang,清,1759,1759,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b025a,伤寒论类方,shanghan_leifang,清,1759,1759,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b026,伤寒论辩证广注,jc:伤寒论辩证广注,清,1680,1680,伤寒,preface:author,author,False
+jicheng,JiCheng editions,jc_b027,伤寒论辑义,jc:伤寒论辑义,清,1801,1801,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b028,伤寒医诀串解,jc:伤寒医诀串解,清,1856,1856,伤寒,preface,preface,False
+jicheng,JiCheng editions,jc_b029,伤寒审证表,jc:伤寒审证表,清,1870,1870,伤寒,preface,preface,False
+jicheng,JiCheng editions,jc_b030,伤寒补例,jc:伤寒补例,清,1876,1911,伤寒,author:周学海,author,False
+jicheng,JiCheng editions,jc_b031,敖氏伤寒金镜录,jc:敖氏伤寒金镜录,元,1341,1341,伤寒,western,western,False
+jicheng,JiCheng editions,jc_b032,伤寒舌鉴,shanghan_shejian,清,1668,1668,伤寒,kanripo:KR3e0093,witness,False
+jicheng,JiCheng editions,jc_b033,伤寒论翼,jc:伤寒论翼,清,1674,1674,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b034,伤寒附翼,jc:伤寒附翼,清,1674,1674,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b035,伤寒指掌,jc:伤寒指掌,清,1796,1796,伤寒,preface:author,author,False
+jicheng,JiCheng editions,jc_b036,中寒论辩证广注,jc:中寒论辩证广注,清,1684,1686,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b037,伤寒六书,jc:伤寒六书,明,1445,1445,伤寒,preface:author,author,False
+jicheng,JiCheng editions,jc_b038,刘河间伤寒医鉴,jc:刘河间伤寒医鉴,元代,1271,1368,伤寒,western,western,False
+jicheng,JiCheng editions,jc_b039,伤寒论纲目,jc:伤寒论纲目,清,1774,1774,伤寒,preface:author,author,False
+jicheng,JiCheng editions,jc_b040,伤寒心镜别集,jc:伤寒心镜别集,金,1197,1234,伤寒,author:张从正,author,False
+jicheng,JiCheng editions,jc_b041,伤寒来苏集,jc:伤寒来苏集,清,1669,1674,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b042,伤寒捷诀,jc:伤寒捷诀,清,1644,1911,伤寒,western,western,False
+jicheng,JiCheng editions,jc_b044,伤寒恒论,jc:伤寒恒论,清,1894,1894,伤寒,curated,curated,False
+jicheng,JiCheng editions,jc_b100,金匮要略方论,jinkui,东汉,200,219,杂病,curated,curated,False
+jicheng,JiCheng editions,jc_b100a,金匮要略方论,jinkui,东汉,200,219,杂病,curated,curated,False
+jicheng,JiCheng editions,jc_b101,金匮翼,jc:金匮翼,清,1768,1768,杂病,western,western,False
+jicheng,JiCheng editions,jc_b102,金匮要略浅注,jc:金匮要略浅注,清,1781,1865,杂病,author:陈修园,author,False
+jicheng,JiCheng editions,jc_b103,金匮要略心典,jc:金匮要略心典,清,1729,1729,杂病,preface:author,author,False
+jicheng,JiCheng editions,jc_b104,金匮玉函经二注,jc:金匮玉函经二注,清,1687,1687,杂病,western,western,False
+jicheng,JiCheng editions,jc_b105,金匮玉函要略述义,jc:金匮玉函要略述义,清,1842,1842,杂病,curated,curated,False
+jicheng,JiCheng editions,jc_b106,金匮玉函要略辑义,jc:金匮玉函要略辑义,清,1806,1806,杂病,western,western,False
+jicheng,JiCheng editions,jc_b107,高注金匮要略,jc:高注金匮要略,清,1872,1872,杂病,western,western,False
+jicheng,JiCheng editions,jc_b108,金匮钩玄,jinkui_gouxuan,元,1340,1400,杂病,curated,curated,False
+jicheng,JiCheng editions,jc_b108a,金匮钩玄,jinkui_gouxuan,元,1340,1400,杂病,curated,curated,False
+jicheng,JiCheng editions,jc_b200,曹氏伤寒金匮发微合刊,jc:曹氏伤寒金匮发微合刊,民国,1931,1936,近代,curated,curated,True
+jicheng,JiCheng editions,jc_c000,神农本草经,shennong,东汉,25,220,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c000a,神农本草经（复古辑本）,shennong,东汉,25,220,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c000b,神农本草经,shennong,东汉,25,220,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c000c,神农本草经并注,jc:神农本草经并注,清,1644,1911,本草,undated,undated,False
+jicheng,JiCheng editions,jc_c001,吴普本草,wupu_bencao,三国·魏,220,265,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c002,本草经集注,bencao_jizhu,南朝·梁,480,500,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c003,新修本草,xinxiu_bencao,唐,659,659,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c004,食疗本草,shiliao_bencao,唐,701,741,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c005,海药本草,haiyao_bencao,五代,907,925,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c006,本草图经,bencao_tujing,宋,1061,1062,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c007,本草衍义,bencao_yanyi,宋,1116,1116,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c008,汤液本草,tangye_bencao,元,1289,1308,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c010,滇南本草,jc:滇南本草,明,1396,1476,本草,western,western,False
+jicheng,JiCheng editions,jc_c011,本草品汇精要,jc:本草品汇精要,明,1505,1505,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c012,本草蒙筌,jc:本草蒙筌,明,1368,1644,本草,western,western,False
+jicheng,JiCheng editions,jc_c014,本草乘雅半偈,bencao_chengya,明,1647,1647,本草,kanripo:KR3e0089,witness,False
+jicheng,JiCheng editions,jc_c015,本草征要,jc:本草征要,明,1622,1644,本草,author:李中梓,author,False
+jicheng,JiCheng editions,jc_c016,本草易读,jc:本草易读,清,1644,1911,本草,western,western,False
+jicheng,JiCheng editions,jc_c017,本草新编,jc:本草新编,清,1691,1691,本草,preface,preface,False
+jicheng,JiCheng editions,jc_c018,本草备要,jc:本草备要,清,1694,1694,本草,preface,preface,False
+jicheng,JiCheng editions,jc_c018a,本草备要,jc:本草备要,清,1694,1694,本草,preface:author,author,False
+jicheng,JiCheng editions,jc_c019,本经逢原,jc:本经逢原,清,1695,1695,本草,preface:author,author,False
+jicheng,JiCheng editions,jc_c020,本草经解,jc:本草经解,清,1724,1724,本草,preface,preface,False
+jicheng,JiCheng editions,jc_c021,本草从新,jc:本草从新,清,1757,1757,本草,preface:author,author,False
+jicheng,JiCheng editions,jc_c023,本草纲目拾遗,jc:本草纲目拾遗,清,1765,1765,本草,western,western,False
+jicheng,JiCheng editions,jc_c024,本草崇原,jc:本草崇原,清,1674,1674,本草,western,western,False
+jicheng,JiCheng editions,jc_c025,本草求真,bencao_qiuzhen,清,1769,1769,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c025a,本草求真,bencao_qiuzhen,清,1769,1769,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c026,神农本草经读,jc:神农本草经读,清,1803,1803,本草,preface,preface,False
+jicheng,JiCheng editions,jc_c027,本草述钩元,jc:本草述钩元,清,1833,1833,本草,preface:author,author,False
+jicheng,JiCheng editions,jc_c028,食鉴本草,jc:食鉴本草,清,1883,1883,本草,preface,preface,False
+jicheng,JiCheng editions,jc_c029,药性歌括四百味,jc:药性歌括四百味,明,1368,1644,本草,western,western,False
+jicheng,JiCheng editions,jc_c030,本草纲目别名录,jc:本草纲目别名录,明,1544,1592,本草,author:李时珍,author,False
+jicheng,JiCheng editions,jc_c031,本草便读,jc:本草便读,清,1887,1887,本草,preface:author,author,False
+jicheng,JiCheng editions,jc_c032,本草撮要,jc:本草撮要,清,1886,1886,本草,preface:author,author,False
+jicheng,JiCheng editions,jc_c034,神农本草经赞,jc:神农本草经赞,清,1850,1850,本草,preface,preface,False
+jicheng,JiCheng editions,jc_c035,本草择要纲目,jc:本草择要纲目,清,1679,1679,本草,preface,preface,False
+jicheng,JiCheng editions,jc_c036,得配本草,jc:得配本草,清,1761,1761,本草,preface,preface,False
+jicheng,JiCheng editions,jc_c037,本草害利,jc:本草害利,清,1644,1911,本草,western,western,False
+jicheng,JiCheng editions,jc_c038,本草分经,jc:本草分经,清,1644,1911,本草,western,western,False
+jicheng,JiCheng editions,jc_c039,要药分剂,jc:要药分剂,清,1644,1911,本草,undated,undated,False
+jicheng,JiCheng editions,jc_c040,珍珠囊补遗药性赋,jc:珍珠囊补遗药性赋,元,1368,1644,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c041,药鉴,jc:药鉴,明,1598,1598,本草,preface,preface,False
+jicheng,JiCheng editions,jc_c042,药征,jc:药征,清,1644,1911,本草,undated,undated,False
+jicheng,JiCheng editions,jc_c043,药征续编,jc:药征续编,清,1644,1911,本草,undated,undated,False
+jicheng,JiCheng editions,jc_c044,神农本草经百种录,bencao_baizhonglu,清,1736,1736,本草,kanripo:KR3e0098,witness,False
+jicheng,JiCheng editions,jc_c045,本草思辨录,jc:本草思辨录,清,1904,1904,本草,preface:author,author,False
+jicheng,JiCheng editions,jc_c046,本经疏证,jc:本经疏证,清,1840,1840,本草,preface:author,author,False
+jicheng,JiCheng editions,jc_c047,饮膳正要,jc:饮膳正要,元,1330,1330,本草,preface:author,author,False
+jicheng,JiCheng editions,jc_c049,千金食治,jc:千金食治,唐,630,702,本草,author:孙思邈,author,False
+jicheng,JiCheng editions,jc_c050,证类本草,zhenglei,宋,1082,1108,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c051,民间药性赋,jc:民间药性赋,清,1644,1911,本草,undated,undated,False
+jicheng,JiCheng editions,jc_c100,雷公炮炙论,leigong_paozhi,南北朝,420,479,本草,curated,curated,False
+jicheng,JiCheng editions,jc_c101,炮炙全书,jc:炮炙全书,清,1644,1911,本草,undated,undated,False
+jicheng,JiCheng editions,jc_c102,炮炙大法,jc:炮炙大法,明,1622,1622,本草,western,western,False
+jicheng,JiCheng editions,jc_c103,雷公炮制药性解,jc:雷公炮制药性解,明,1588,1655,本草,western,western,False
+jicheng,JiCheng editions,jc_c104,濒湖炮炙法,jc:濒湖炮炙法,南北朝,420,581,本草,western,western,False
+jicheng,JiCheng editions,jc_d000,五十二病方,wushier_bingfang,战国—西汉,-300,-168,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d001,名医别录,mingyi_bielu,魏晋,200,500,本草,curated,curated,False
+jicheng,JiCheng editions,jc_d002,千金翼方,qianjin_yifang,唐,682,682,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d002a,千金翼方,qianjin_yifang,唐,682,682,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d003,孙真人海上方,jc:孙真人海上方,唐,630,702,方书,author:孙思邈,author,False
+jicheng,JiCheng editions,jc_d004,外台秘要,waitai,唐,752,752,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d004a,外台秘要,waitai,唐,752,752,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d005,医心方,yixinfang,北宋,984,984,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d007,苏沈良方,susheng_liangfang,北宋,1075,1101,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d008,博济方,boji_fang,宋,1047,1047,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d009,史载之方,jc:史载之方,宋,1127,1279,方书,western,western,False
+jicheng,JiCheng editions,jc_d010,太平惠民和剂局方,hejiju,初刊于宋,1107,1110,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d010a,太平惠民和剂局方,hejiju,宋,1107,1110,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d012,鸡峰普济方,jc:鸡峰普济方,宋,960,1279,方书,western,western,False
+jicheng,JiCheng editions,jc_d013,洪氏集验方,jc:洪氏集验方,宋,1170,1170,方书,western,western,False
+jicheng,JiCheng editions,jc_d014,杨氏家藏方,jc:杨氏家藏方,宋,1178,1178,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d015,千金宝要,jc:千金宝要,唐,630,702,方书,author:孙思邈,author,False
+jicheng,JiCheng editions,jc_d016,卫生易简方,jc:卫生易简方,明,1424,1424,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d017,全生指迷方,quansheng_zhimi,宋,1125,1125,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d018,仁斋直指方论（附补遗）,renzhai_zhizhi,南宋,1264,1264,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d019,瑞竹堂经验方,ruizhutang,元,1326,1326,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d020,世医得效方,shiyi_dexiao,天历元年,1328,1345,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d021,奇效良方,jc:奇效良方,明,1470,1470,方书,western,western,False
+jicheng,JiCheng editions,jc_d022,医方集宜,jc:医方集宜,明,1368,1644,方书,western,western,False
+jicheng,JiCheng editions,jc_d023,医方考,jc:医方考,明代,1584,1584,方书,western,western,False
+jicheng,JiCheng editions,jc_d024,增广和剂局方药性总论,jc:增广和剂局方药性总论,元,1279,1368,方书,western,western,False
+jicheng,JiCheng editions,jc_d025,备急千金要方,qianjin,唐,650,659,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d025a,备急千金要方,qianjin,唐,650,659,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d026,肘后备急方,zhouhou,东晋,306,363,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d027,普济本事方,benshi_fang,南宋,1132,1150,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d028,严氏济生方,jisheng,宋,1253,1253,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d030,仁术便览,jc:仁术便览,明,1585,1585,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d031,祖剂,jc:祖剂,明,1368,1644,方书,western,western,False
+jicheng,JiCheng editions,jc_d032,古今名医方论,jc:古今名医方论,清,1675,1675,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d033,种福堂公选良方,jc:种福堂公选良方,清,1775,1775,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d034,汤头歌诀,jc:汤头歌诀,清,1662,1714,方书,author:汪昂,author,False
+jicheng,JiCheng editions,jc_d035,急救便方,jc:急救便方,清,1644,1911,方书,undated,undated,False
+jicheng,JiCheng editions,jc_d036,奇方类编,jc:奇方类编,清,1719,1719,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d037,绛雪园古方选注,jiangxueyuan,清,1732,1732,方书,kanripo:KR3e0095,witness,False
+jicheng,JiCheng editions,jc_d038,医方论,jc:医方论,清,1865,1865,方书,western,western,False
+jicheng,JiCheng editions,jc_d039,串雅内外编,jc:串雅内外编,清,1759,1759,方书,western,western,False
+jicheng,JiCheng editions,jc_d040,成方切用,jc:成方切用,清,1761,1761,方书,western,western,False
+jicheng,JiCheng editions,jc_d041,时方妙用,jc:时方妙用,清,1803,1803,方书,preface:author,author,False
+jicheng,JiCheng editions,jc_d042,时方歌括,jc:时方歌括,清,1801,1801,方书,western,western,False
+jicheng,JiCheng editions,jc_d043,长沙方歌括,jc:长沙方歌括,清,1783,1876,方书,author:陈念祖,author,False
+jicheng,JiCheng editions,jc_d044,金匮方歌括,jc:金匮方歌括,清,1811,1811,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d045,医方证治汇编歌诀,jc:医方证治汇编歌诀,清,1644,1911,方书,western,western,False
+jicheng,JiCheng editions,jc_d046,验方新编,jc:验方新编,清,1883,1883,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d047,十剂表,jc:十剂表,清,1840,1840,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d048,经验丹方汇编,jc:经验丹方汇编,清,1707,1707,方书,preface:author,author,False
+jicheng,JiCheng editions,jc_d049,方症会要,jc:方症会要,清,1644,1644,方书,western,western,False
+jicheng,JiCheng editions,jc_d050,药性切用,jc:药性切用,清,1644,1911,方书,undated,undated,False
+jicheng,JiCheng editions,jc_d051,退思集类方歌注,jc:退思集类方歌注,清,1644,1911,方书,western,western,False
+jicheng,JiCheng editions,jc_d052,华佗神方,jc:华佗神方,汉,1900,1920,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d053,集验方,jiyan_fang,北周,557,581,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d054,大小诸证方论,jc:大小诸证方论,明末清初,1673,1673,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d055,奇效简便良方,jc:奇效简便良方,清,1880,1880,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d056,神仙济世良方,jc:神仙济世良方,清,1796,1796,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d057,是斋百一选方,jc:是斋百一选方,宋,1196,1196,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d058,小品方,xiaopin_fang,南北朝,454,473,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d059,惠直堂经验方,jc:惠直堂经验方,清,1734,1734,方书,preface:author,author,False
+jicheng,JiCheng editions,jc_d060,绛囊撮要,jc:绛囊撮要,清,1744,1744,方书,preface:author,author,False
+jicheng,JiCheng editions,jc_d061,经验奇方,jc:经验奇方,清,1898,1898,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d062,古方汇精,jc:古方汇精,清,1804,1804,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d063,外治寿世方,jc:外治寿世方,清,1877,1877,方书,preface:author,author,False
+jicheng,JiCheng editions,jc_d064,文堂集验方,jc:文堂集验方,明,1368,1644,方书,western,western,False
+jicheng,JiCheng editions,jc_d065,回生集,jc:回生集,清,1644,1911,方书,western,western,False
+jicheng,JiCheng editions,jc_d066,本草简要方,jc:本草简要方,现代,1938,1938,近代,western,western,True
+jicheng,JiCheng editions,jc_d067,增订医方歌诀,jc:增订医方歌诀,清,1644,1911,方书,western,western,False
+jicheng,JiCheng editions,jc_d068,济世神验良方,jc:济世神验良方,清,1644,1911,方书,western,western,False
+jicheng,JiCheng editions,jc_d069,太医院秘藏膏丹丸散方剂,jc:太医院秘藏膏丹丸散方剂,清,1644,1911,方书,undated,undated,False
+jicheng,JiCheng editions,jc_d070,医方歌括,jc:医方歌括,清,1644,1911,方书,western,western,False
+jicheng,JiCheng editions,jc_d071,医方简义,jc:医方简义,清,1883,1883,方书,preface:author,author,False
+jicheng,JiCheng editions,jc_d072,增订十药神书,jc:增订十药神书,清,1879,1879,方书,preface,preface,False
+jicheng,JiCheng editions,jc_d073,食疗方,jc:食疗方,清,1644,1911,方书,undated,undated,False
+jicheng,JiCheng editions,jc_d074,局方发挥,jufang_fahui,元,1347,1350,方书,curated,curated,False
+jicheng,JiCheng editions,jc_d075,医方集解,jc:医方集解,清,1682,1682,方书,western,western,False
+jicheng,JiCheng editions,jc_d075a,医方集解,jc:医方集解,清,1682,1682,方书,western,western,False
+jicheng,JiCheng editions,jc_d076,类证普济本事方续集,jc:类证普济本事方续集,清,1644,1911,方书,undated,undated,False
+jicheng,JiCheng editions,jc_d078,鲁府禁方,jc:鲁府禁方,明,1594,1594,方书,preface,preface,False
+jicheng,JiCheng editions,jc_e001,温疫论,wenyilun,明,1642,1642,温病,kanripo:KR3e0087,witness,False
+jicheng,JiCheng editions,jc_e001a,温疫论,wenyilun,明,1642,1642,温病,kanripo:KR3e0087,witness,False
+jicheng,JiCheng editions,jc_e002,温热论,jc:温热论,清,1726,1766,温病,author:叶桂,author,False
+jicheng,JiCheng editions,jc_e003,湿热病篇,jc:湿热病篇,清,1644,1911,温病,dynasty,dynasty,False
+jicheng,JiCheng editions,jc_e004,温病条辨,wenbing_tiaobian,清,1798,1813,温病,curated,curated,False
+jicheng,JiCheng editions,jc_e004a,温病条辨,wenbing_tiaobian,清,1798,1813,温病,curated,curated,False
+jicheng,JiCheng editions,jc_e005,广瘟疫论,jc:广温疫论,清,1675,1722,温病,curated,curated,False
+jicheng,JiCheng editions,jc_e006,温热经纬,jc:温热经纬,清,1852,1852,温病,preface:author,author,False
+jicheng,JiCheng editions,jc_e007,重订广温热论,jc:重订广温热论,清,1644,1911,温病,western,western,False
+jicheng,JiCheng editions,jc_e008,六因条辨,jc:六因条辨,清,1644,1911,温病,western,western,False
+jicheng,JiCheng editions,jc_e009,增订叶评伤暑全书,jc:增订叶评伤暑全书,清,1675,1675,温病,preface:author,author,False
+jicheng,JiCheng editions,jc_e010,温热暑疫全书,jc:温热暑疫全书,清,1679,1679,温病,preface:author,author,False
+jicheng,JiCheng editions,jc_e011,温热逢源,jc:温热逢源,清,1862,1902,温病,author:柳宝诒,author,False
+jicheng,JiCheng editions,jc_e011a,温热逢源,jc:温热逢源,清,1862,1902,温病,author:柳宝诒,author,False
+jicheng,JiCheng editions,jc_e012,时病论,jc:时病论,清,1882,1882,温病,western,western,False
+jicheng,JiCheng editions,jc_e012a,时病论,jc:时病论,清,1882,1882,温病,work:E012,witness,False
+jicheng,JiCheng editions,jc_e013,温病指南,jc:温病指南,清,1903,1903,温病,preface,preface,False
+jicheng,JiCheng editions,jc_e014,松峰说疫,jc:松峰说疫,清,1785,1785,温病,preface,preface,False
+jicheng,JiCheng editions,jc_e015,温病正宗,jc:温病正宗,民国,1935,1935,近代,preface,preface,True
+jicheng,JiCheng editions,jc_e016,温热论,jc:温热论,清,1726,1766,温病,author:叶桂,author,False
+jicheng,JiCheng editions,jc_e017,三时伏气外感篇,jc:三时伏气外感篇,清,1726,1908,温病,author:叶天士,author,False
+jicheng,JiCheng editions,jc_e018,外感温热篇,jc:外感温热篇,清,1644,1911,温病,dynasty,dynasty,False
+jicheng,JiCheng editions,jc_e019,广温疫论,jc:广温疫论,清,1675,1722,温病,curated,curated,False
+jicheng,JiCheng editions,jc_e020,疫疹一得,jc:疫疹一得,清,1794,1794,温病,preface:author,author,False
+jicheng,JiCheng editions,jc_f000,脚气治法总要,jiaoqi_zhifa,宋,1093,1093,内科,curated,curated,False
+jicheng,JiCheng editions,jc_f002,血证论,jc:血证论,清,1884,1884,内科,western,western,False
+jicheng,JiCheng editions,jc_f002a,血证论,jc:血证论,清,1884,1884,内科,work:F002,witness,False
+jicheng,JiCheng editions,jc_f004,杂病广要,jc:杂病广要,清,1853,1853,内科,western,western,False
+jicheng,JiCheng editions,jc_f005,风劳臌膈四大证治,jc:风劳臌膈四大证治,清,1644,1911,内科,undated,undated,False
+jicheng,JiCheng editions,jc_f006,傅青主男科重编考释,jc:傅青主男科重编考释,清,1821,1863,内科,curated,curated,False
+jicheng,JiCheng editions,jc_f007,阴证略例,jc:阴证略例,元,1279,1328,内科,author:王好古,author,False
+jicheng,JiCheng editions,jc_f008,中风论,jc:中风论,清,1884,1884,内科,preface,preface,False
+jicheng,JiCheng editions,jc_f009,内外伤辨,neiwaishang,金,1247,1247,内科,kanripo:KR3e0052,witness,False
+jicheng,JiCheng editions,jc_f009a,内外伤辨,neiwaishang,金,1247,1247,内科,kanripo:KR3e0052,witness,False
+jicheng,JiCheng editions,jc_f010,内科摘要,jc:内科摘要,明,1508,1591,内科,author:薛己,author,False
+jicheng,JiCheng editions,jc_f011,何氏虚劳心传,jc:何氏虚劳心传,清,1644,1911,内科,undated,undated,False
+jicheng,JiCheng editions,jc_f012,理虚元鉴,jc:理虚元鉴,明,1368,1644,内科,western,western,False
+jicheng,JiCheng editions,jc_f013,虚损启微,jc:虚损启微,清,1761,1761,内科,preface,preface,False
+jicheng,JiCheng editions,jc_f014,慎柔五书,jc:慎柔五书,明,1368,1644,内科,western,western,False
+jicheng,JiCheng editions,jc_f015,痰火点雪,jc:痰火点雪,明,1368,1644,内科,western,western,False
+jicheng,JiCheng editions,jc_f016,疯门全书,jc:疯门全书,清,1796,1796,内科,preface:author,author,False
+jicheng,JiCheng editions,jc_f017,痰疠法门,jc:痰疠法门,清,1644,1911,内科,western,western,False
+jicheng,JiCheng editions,jc_f018,走马急疳真方,jc:走马急疳真方,元,1275,1275,内科,preface,preface,False
+jicheng,JiCheng editions,jc_f019,随息居重订霍乱论,jc:随息居重订霍乱论,清,1863,1863,内科,preface,preface,False
+jicheng,JiCheng editions,jc_f020,瘴疟指南,jc:瘴疟指南,明,1609,1609,内科,preface:author,author,False
+jicheng,JiCheng editions,jc_f021,杂病治例,jc:杂病治例,明,1479,1479,内科,preface,preface,False
+jicheng,JiCheng editions,jc_f022,秘传证治要诀及类方,jc:秘传证治要诀及类方,明,1443,1443,内科,preface,preface,False
+jicheng,JiCheng editions,jc_f023,三消论,jc:三消论,南宋,1172,1186,内科,curated,curated,False
+jicheng,JiCheng editions,jc_f024,脾胃论,piwei,金元,1249,1249,内科,curated,curated,False
+jicheng,JiCheng editions,jc_f024a,脾胃论,piwei,金,1249,1249,内科,curated,curated,False
+jicheng,JiCheng editions,jc_f025,杂症会心录,jc:杂症会心录,清,1754,1754,内科,western,western,False
+jicheng,JiCheng editions,jc_f026,活法机要,jc:活法机要,元,1327,1368,内科,author:朱震亨,author,False
+jicheng,JiCheng editions,jc_f027,辅行诀脏腑用药法要,jc:辅行诀脏腑用药法要,梁,1918,1974,近代,curated,curated,True
+jicheng,JiCheng editions,jc_f028,七十二症辨治方法（手抄本）,jc:七十二症辨治方法,清,1644,1911,内科,undated,undated,False
+jicheng,JiCheng editions,jc_f100,急救良方,jc:急救良方,明,1550,1550,内科,preface,preface,False
+jicheng,JiCheng editions,jc_f101,急救广生集,jc:急救广生集,清,1805,1805,内科,western,western,False
+jicheng,JiCheng editions,jc_g000,女科切要,jc:女科切要,清,1773,1773,妇科,preface:author,author,False
+jicheng,JiCheng editions,jc_g000a,女科切要,jc:女科切要,清,1773,1773,妇科,work:G000,witness,False
+jicheng,JiCheng editions,jc_g001,傅青主女科歌括,jc:傅青主女科歌括,清,1827,1827,妇科,preface,preface,False
+jicheng,JiCheng editions,jc_g002,产宝,jc:产宝,唐,618,907,妇科,western,western,False
+jicheng,JiCheng editions,jc_g003,女科百问,nuke_baiwen,南宋,1220,1220,妇科,curated,curated,False
+jicheng,JiCheng editions,jc_g003a,女科百问,nuke_baiwen,南宋,1220,1220,妇科,curated,curated,False
+jicheng,JiCheng editions,jc_g004,钱氏秘传产科方书名试验录,jc:钱氏秘传产科方书名试验录,清,1644,1911,妇科,undated,undated,False
+jicheng,JiCheng editions,jc_g005,妇人大全良方,furen_daquan,南宋,1237,1237,妇科,kanripo:KR3e0038,witness,False
+jicheng,JiCheng editions,jc_g006,沈氏女科辑要,jc:沈氏女科辑要,清,1850,1850,妇科,preface,preface,False
+jicheng,JiCheng editions,jc_g007,济生集,jc:济生集,清,1896,1896,妇科,preface,preface,False
+jicheng,JiCheng editions,jc_g010,女科旨要,jc:女科旨要,清,1644,1911,妇科,western,western,False
+jicheng,JiCheng editions,jc_g011,女科折衷纂要,jc:女科折衷纂要,清,1644,1911,妇科,western,western,False
+jicheng,JiCheng editions,jc_g012,女科指要,jc:女科指要,清,1644,1911,妇科,undated,undated,False
+jicheng,JiCheng editions,jc_g013,女科指掌,jc:女科指掌,清,1644,1911,妇科,undated,undated,False
+jicheng,JiCheng editions,jc_g014,女科要旨,jc:女科要旨,清,1783,1876,妇科,author:陈念祖,author,False
+jicheng,JiCheng editions,jc_g015,女科秘旨,jc:女科秘旨,清,1771,1771,妇科,western,western,False
+jicheng,JiCheng editions,jc_g016,女科秘要,jc:女科秘要,清,1644,1911,妇科,undated,undated,False
+jicheng,JiCheng editions,jc_g017,女科经纶,jc:女科经纶,清,1684,1684,妇科,preface,preface,False
+jicheng,JiCheng editions,jc_g017a,女科经纶,jc:女科经纶,清,1684,1684,妇科,work:G017,witness,False
+jicheng,JiCheng editions,jc_g018,女科精要,jc:女科精要,清,1644,1911,妇科,undated,undated,False
+jicheng,JiCheng editions,jc_g019,女科撮要,jc:女科撮要,明,1548,1548,妇科,preface,preface,False
+jicheng,JiCheng editions,jc_g020,内府秘传经验女科,jc:内府秘传经验女科,明,1716,1716,妇科,western,western,False
+jicheng,JiCheng editions,jc_g021,竹泉生女科集要,jc:竹泉生女科集要,民国,1931,1931,近代,preface,preface,True
+jicheng,JiCheng editions,jc_g022,胎产心法,jc:胎产心法,清,1725,1725,妇科,preface,preface,False
+jicheng,JiCheng editions,jc_g023,胎产指南,jc:胎产指南,清,1856,1856,妇科,preface,preface,False
+jicheng,JiCheng editions,jc_g023a,胎产指南,jc:胎产指南,清,1856,1856,妇科,work:G023,witness,False
+jicheng,JiCheng editions,jc_g024,胎产秘书,jc:胎产秘书,清,1809,1809,妇科,preface,preface,False
+jicheng,JiCheng editions,jc_g025,家传女科经验摘奇,jc:家传女科经验摘奇,清,1644,1911,妇科,undated,undated,False
+jicheng,JiCheng editions,jc_g026,妇人规,jc:妇人规,明,1604,1644,妇科,author:张介宾,author,False
+jicheng,JiCheng editions,jc_g027,达生编,jc:达生编,清,1868,1868,妇科,preface,preface,False
+jicheng,JiCheng editions,jc_g028,妇科秘方,jc:妇科秘方,清,1644,1911,妇科,undated,undated,False
+jicheng,JiCheng editions,jc_g029,妇科秘书,jc:妇科秘书,清,1644,1911,妇科,undated,undated,False
+jicheng,JiCheng editions,jc_g030,妇科问答,jc:妇科问答,清,1644,1911,妇科,undated,undated,False
+jicheng,JiCheng editions,jc_g031,张氏妇科,jc:张氏妇科,清,1644,1911,妇科,undated,undated,False
+jicheng,JiCheng editions,jc_g032,产鉴,jc:产鉴,明,1618,1618,妇科,preface,preface,False
+jicheng,JiCheng editions,jc_g033,评注产科心法,jc:评注产科心法,民国,1923,1923,近代,preface,preface,True
+jicheng,JiCheng editions,jc_g034,产后十八论,jc:产后十八论,清,1729,1729,妇科,preface,preface,False
+jicheng,JiCheng editions,jc_g035,盘珠集胎产症治,jc:盘珠集胎产症治,清,1836,1876,妇科,author:单南山,author,False
+jicheng,JiCheng editions,jc_g035a,盘珠集胎产症治,jc:盘珠集胎产症治,清,1644,1911,妇科,dynasty,dynasty,False
+jicheng,JiCheng editions,jc_g036,竹林女科证治,jc:竹林女科证治,清,1827,1827,妇科,preface,preface,False
+jicheng,JiCheng editions,jc_g037,卫生家宝产科备要,jc:卫生家宝产科备要,宋,960,1279,妇科,western,western,False
+jicheng,JiCheng editions,jc_g038,邯郸遗稿,jc:邯郸遗稿,明,1597,1637,妇科,author:赵献可,author,False
+jicheng,JiCheng editions,jc_g039,济阴纲目,jiyin_gangmu,明,1620,1620,妇科,curated,curated,False
+jicheng,JiCheng editions,jc_g039a,济阴纲目,jiyin_gangmu,明,1620,1620,妇科,curated,curated,False
+jicheng,JiCheng editions,jc_g040,妇科玉尺,jc:妇科玉尺,清,1774,1774,妇科,preface:author,author,False
+jicheng,JiCheng editions,jc_g041,重订产孕集,jc:重订产孕集,清,1836,1876,妇科,author:张曜孙,author,False
+jicheng,JiCheng editions,jc_g042,经效产宝,jc:经效产宝,唐,618,907,妇科,dynasty,dynasty,False
+jicheng,JiCheng editions,jc_g043,校注妇人良方,jc:校注妇人良方,宋,1217,1279,妇科,author:陈自明,author,False
+jicheng,JiCheng editions,jc_g044,傅青主女科,jc:傅青主女科,清,1807,1847,妇科,author:傅山,author,False
+jicheng,JiCheng editions,jc_g044a,傅青主女科,jc:傅青主女科,清,1644,1911,妇科,undated,undated,False
+jicheng,JiCheng editions,jc_g047,竹林寺女科秘方,jc:竹林寺女科秘方,清,1644,1911,妇科,dynasty,dynasty,False
+jicheng,JiCheng editions,jc_h000,小儿药证直诀,jc:小儿药证直诀,北宋,1119,1119,儿科,curated,curated,False
+jicheng,JiCheng editions,jc_h000a,小儿药证直诀,jc:小儿药证直诀,宋,1119,1119,儿科,work:H000,witness,False
+jicheng,JiCheng editions,jc_h001,幼科切要,jc:幼科切要,清,1847,1847,儿科,preface:author,author,False
+jicheng,JiCheng editions,jc_h002,婴儿论,jc:婴儿论,清,1644,1911,儿科,western,western,False
+jicheng,JiCheng editions,jc_h003,活幼心书,jc:活幼心书,元,1294,1294,儿科,preface:author,author,False
+jicheng,JiCheng editions,jc_h004,儿科要略,jc:儿科要略,清,1644,1911,儿科,undated,undated,False
+jicheng,JiCheng editions,jc_h005,儿科萃精,jc:儿科萃精,民国,1930,1930,近代,western,western,True
+jicheng,JiCheng editions,jc_h006,小儿推拿广意,jc:小儿推拿广意,清,1644,1911,儿科,western,western,False
+jicheng,JiCheng editions,jc_h007,幼科证治准绳,jc:幼科证治准绳,明,1607,1607,儿科,preface,preface,False
+jicheng,JiCheng editions,jc_h008,小儿痘疹方论,jc:小儿痘疹方论,宋,960,1279,儿科,western,western,False
+jicheng,JiCheng editions,jc_h009,小儿卫生总微论方,xiaoer_weisheng,宋,1156,1156,儿科,kanripo:KR3e0031,witness,False
+jicheng,JiCheng editions,jc_h010,幼幼集成,jc:幼幼集成,清,1750,1750,儿科,western,western,False
+jicheng,JiCheng editions,jc_h011,幼幼新书,jc:幼幼新书,宋,1150,1150,儿科,western,western,False
+jicheng,JiCheng editions,jc_h013,幼科折衷,jc:幼科折衷,明,1368,1644,儿科,western,western,False
+jicheng,JiCheng editions,jc_h014,幼科指南,jc:幼科指南,清,1644,1911,儿科,undated,undated,False
+jicheng,JiCheng editions,jc_h015,幼科推拿秘书,jc:幼科推拿秘书,清,1644,1911,儿科,western,western,False
+jicheng,JiCheng editions,jc_h016,幼科发挥,jc:幼科发挥,明,1549,1549,儿科,western,western,False
+jicheng,JiCheng editions,jc_h017,幼科概论,jc:幼科概论,清,1644,1911,儿科,undated,undated,False
+jicheng,JiCheng editions,jc_h018,幼科类萃,jc:幼科类萃,明,1534,1534,儿科,preface,preface,False
+jicheng,JiCheng editions,jc_h019,幼科铁镜,jc:幼科铁镜,清,1644,1911,儿科,western,western,False
+jicheng,JiCheng editions,jc_h020,儿科醒,jc:儿科醒,清,1644,1911,儿科,western,western,False
+jicheng,JiCheng editions,jc_h021,保幼新编,jc:保幼新编,清,1644,1911,儿科,undated,undated,False
+jicheng,JiCheng editions,jc_h022,保婴撮要,jc:保婴撮要,明,1556,1556,儿科,preface,preface,False
+jicheng,JiCheng editions,jc_h023,活幼口议,jc:活幼口议,元,1279,1368,儿科,western,western,False
+jicheng,JiCheng editions,jc_h024,陈氏幼科秘诀,jc:陈氏幼科秘诀,清,1644,1911,儿科,undated,undated,False
+jicheng,JiCheng editions,jc_h025,慈幼便览,jc:慈幼便览,清,1644,1911,儿科,undated,undated,False
+jicheng,JiCheng editions,jc_h026,慈幼新书,jc:慈幼新书,明,1368,1644,儿科,western,western,False
+jicheng,JiCheng editions,jc_h027,毓麟验方,jc:毓麟验方,清,1644,1911,儿科,undated,undated,False
+jicheng,JiCheng editions,jc_h028,鬻婴提要说,jc:鬻婴提要说,清,1889,1889,儿科,preface,preface,False
+jicheng,JiCheng editions,jc_h029,颅囟经,luxin_jing,东汉,900,1100,儿科,kanripo:KR3e0016,witness,False
+jicheng,JiCheng editions,jc_h030,婴童类萃,jc:婴童类萃,明,1622,1622,儿科,preface,preface,False
+jicheng,JiCheng editions,jc_h031,万氏秘传片玉心书,jc:万氏秘传片玉心书,清,1644,1911,儿科,western,western,False
+jicheng,JiCheng editions,jc_h032,幼科释谜,jc:幼科释谜,清,1774,1774,儿科,preface:author,author,False
+jicheng,JiCheng editions,jc_h033,幼科种痘心法要旨,jc:幼科种痘心法要旨,清,1722,1762,儿科,author:吴谦,author,False
+jicheng,JiCheng editions,jc_h034,婴童百问,jc:婴童百问,明,1506,1506,儿科,preface,preface,False
+jicheng,JiCheng editions,jc_i000,外科精义,waike_jingyi,元,1335,1335,外科,kanripo:KR3e0064,witness,False
+jicheng,JiCheng editions,jc_i001,立斋外科发挥,jc:立斋外科发挥,明,1508,1591,外科,author:薛己,author,False
+jicheng,JiCheng editions,jc_i002,外科枢要,jc:外科枢要,明,1571,1571,外科,preface,preface,False
+jicheng,JiCheng editions,jc_i003,外科集验方,jc:外科集验方,明,1498,1498,外科,curated,curated,False
+jicheng,JiCheng editions,jc_i004,外科大成,jc:外科大成,清,1665,1665,外科,western,western,False
+jicheng,JiCheng editions,jc_i004a,外科大成,jc:外科大成,清,1665,1665,外科,preface,preface,False
+jicheng,JiCheng editions,jc_i005,外科正宗,jc:外科正宗,明,1617,1617,外科,western,western,False
+jicheng,JiCheng editions,jc_i005a,外科正宗,jc:外科正宗,明,1617,1617,外科,western,western,False
+jicheng,JiCheng editions,jc_i006,外科十三方考,jc:外科十三方考,清,1644,1911,外科,undated,undated,False
+jicheng,JiCheng editions,jc_i007,外科十法,jc:外科十法,清,1644,1911,外科,western,western,False
+jicheng,JiCheng editions,jc_i008,外科方外奇方,jc:外科方外奇方,民国,1936,1936,近代,preface,preface,True
+jicheng,JiCheng editions,jc_i009,外科全生集,jc:外科全生集,清,1740,1740,外科,western,western,False
+jicheng,JiCheng editions,jc_i010,外科启玄,jc:外科启玄,明,1604,1604,外科,western,western,False
+jicheng,JiCheng editions,jc_i011,外科理例,waike_lili,明,1531,1531,外科,kanripo:KR3e0073,witness,False
+jicheng,JiCheng editions,jc_i012,外科传薪集,jc:外科传薪集,清,1912,1949,近代,western,western,True
+jicheng,JiCheng editions,jc_i013,外科精要,jc:外科精要,宋,1263,1263,外科,western,western,False
+jicheng,JiCheng editions,jc_i014,外科选要,jc:外科选要,清,1644,1911,外科,western,western,False
+jicheng,JiCheng editions,jc_i015,外科医镜,jc:外科医镜,清,1883,1883,外科,preface,preface,False
+jicheng,JiCheng editions,jc_i016,秘传外科方,jc:秘传外科方,明,1395,1395,外科,preface,preface,False
+jicheng,JiCheng editions,jc_i017,仙传外科集验方,jc:仙传外科集验方,元末明初,1382,1382,外科,western,western,False
+jicheng,JiCheng editions,jc_i018,外科证治全书,jc:外科证治全书,清,1831,1831,外科,preface,preface,False
+jicheng,JiCheng editions,jc_i019,万氏秘传外科心法,jc:万氏秘传外科心法,清,1644,1911,外科,undated,undated,False
+jicheng,JiCheng editions,jc_i101,疡科心得集,jc:疡科心得集,清,1805,1805,外科,preface,preface,False
+jicheng,JiCheng editions,jc_i102,疡医大全,jc:疡医大全,清,1760,1760,外科,preface,preface,False
+jicheng,JiCheng editions,jc_i103,疡科捷径,jc:疡科捷径,清,1644,1911,外科,undated,undated,False
+jicheng,JiCheng editions,jc_i104,疠疡机要,jc:疠疡机要,明,1554,1554,外科,preface,preface,False
+jicheng,JiCheng editions,jc_i105,疡科纲要,jc:疡科纲要,民国初年,1912,1912,近代,western,western,True
+jicheng,JiCheng editions,jc_i200,专治麻痧初编,jc:专治麻痧初编,清,1890,1890,外科,preface,preface,False
+jicheng,JiCheng editions,jc_i201,痧疹辑要,jc:痧疹辑要,清,1890,1890,外科,preface:author,author,False
+jicheng,JiCheng editions,jc_i202,麻科活人全书,jc:麻科活人全书,清,1748,1748,外科,western,western,False
+jicheng,JiCheng editions,jc_i203,麻疹备要方论,jc:麻疹备要方论,清,1853,1853,外科,western,western,False
+jicheng,JiCheng editions,jc_i204,麻疹阐注,jc:麻疹阐注,清,1840,1840,外科,western,western,False
+jicheng,JiCheng editions,jc_i205,经验麻科,jc:经验麻科,清,1644,1911,外科,undated,undated,False
+jicheng,JiCheng editions,jc_i207,集验背疽方,jiyan_beiju,宋,1196,1196,外科,kanripo:KR3e0042,witness,False
+jicheng,JiCheng editions,jc_i208,痧胀玉衡,jc:痧胀玉衡,清,1675,1675,外科,preface:author,author,False
+jicheng,JiCheng editions,jc_i300,刘涓子鬼遗方,jc:刘涓子鬼遗方,南齐,479,502,外科,western,western,False
+jicheng,JiCheng editions,jc_i301,原要论,jc:原要论,清,1828,1828,外科,western,western,False
+jicheng,JiCheng editions,jc_i302,发背对口治诀论,jc:发背对口治诀论,清,1840,1840,外科,preface,preface,False
+jicheng,JiCheng editions,jc_i303,青囊秘诀,jc:青囊秘诀,清,1723,1723,外科,preface,preface,False
+jicheng,JiCheng editions,jc_j000,仙授理伤续断秘方,jc:仙授理伤续断秘方,唐代,618,907,伤科,western,western,False
+jicheng,JiCheng editions,jc_j001,正体类要,jc:正体类要,明,1529,1529,伤科,western,western,False
+jicheng,JiCheng editions,jc_j002,跌损妙方,jc:跌损妙方,明,1368,1644,伤科,western,western,False
+jicheng,JiCheng editions,jc_j003,江氏伤科学,jc:江氏伤科学,清,1644,1911,伤科,undated,undated,False
+jicheng,JiCheng editions,jc_j004,伤科大成,jc:伤科大成,清,1877,1911,伤科,author:赵濂,author,False
+jicheng,JiCheng editions,jc_j004a,伤科大成,jc:伤科大成,清,1644,1911,伤科,undated,undated,False
+jicheng,JiCheng editions,jc_j005,跌打秘方,jc:跌打秘方,清,1644,1911,伤科,undated,undated,False
+jicheng,JiCheng editions,jc_j006,跌打损伤方,jc:跌打损伤方,清,1644,1911,伤科,undated,undated,False
+jicheng,JiCheng editions,jc_j007,跌打损伤回生集,jc:跌打损伤回生集,清,1856,1856,伤科,preface:author,author,False
+jicheng,JiCheng editions,jc_j008,少林真传伤科秘方,jc:少林真传伤科秘方,清,1644,1911,伤科,undated,undated,False
+jicheng,JiCheng editions,jc_j010,金疮秘传禁方,jc:金疮秘传禁方,清,1644,1911,伤科,undated,undated,False
+jicheng,JiCheng editions,jc_j011,金疮跌打接骨药性秘书,jc:金疮跌打接骨药性秘书,清,1644,1911,伤科,undated,undated,False
+jicheng,JiCheng editions,jc_j012,秘传刘伯温家藏接骨金疮禁方,jc:秘传刘伯温家藏接骨金疮禁方,明,1427,1427,伤科,preface,preface,False
+jicheng,JiCheng editions,jc_j013,接骨手法,jc:接骨手法,清,1644,1911,伤科,undated,undated,False
+jicheng,JiCheng editions,jc_j014,救伤秘旨,jc:救伤秘旨,清,1851,1851,伤科,preface,preface,False
+jicheng,JiCheng editions,jc_j015,伤科方书,jc:伤科方书,清,1840,1840,伤科,western,western,False
+jicheng,JiCheng editions,jc_j016,伤科汇纂,jc:伤科汇纂,清,1808,1808,伤科,western,western,False
+jicheng,JiCheng editions,jc_j017,伤科补要,jc:伤科补要,清,1808,1808,伤科,western,western,False
+jicheng,JiCheng editions,jc_k000,针灸甲乙经,jiayi,晋,256,282,针灸,curated,curated,False
+jicheng,JiCheng editions,jc_k000a,针灸甲乙经,jiayi,晋,256,282,针灸,curated,curated,False
+jicheng,JiCheng editions,jc_k001,针灸大成,jc:针灸大成,清,1644,1911,针灸,undated,undated,False
+jicheng,JiCheng editions,jc_k002,神应经,jc:神应经,明,1425,1425,针灸,western,western,False
+jicheng,JiCheng editions,jc_k003,针灸聚英,jc:针灸聚英,明,1529,1529,针灸,western,western,False
+jicheng,JiCheng editions,jc_k003a,针灸聚英,jc:针灸聚英,明,1529,1529,针灸,work:K003,witness,False
+jicheng,JiCheng editions,jc_k004,针灸问对,zhenjiu_wendui,明,1530,1530,针灸,kanripo:KR3e0072,witness,False
+jicheng,JiCheng editions,jc_k004a,针灸问对,zhenjiu_wendui,明,1530,1530,针灸,kanripo:KR3e0072,witness,False
+jicheng,JiCheng editions,jc_k005,针灸集成,jc:针灸集成,清,1874,1874,针灸,western,western,False
+jicheng,JiCheng editions,jc_k006,针灸大全,jc:针灸大全,明,1439,1439,针灸,western,western,False
+jicheng,JiCheng editions,jc_k007,针灸易学,jc:针灸易学,清,1798,1798,针灸,western,western,False
+jicheng,JiCheng editions,jc_k008,针灸逢源,jc:针灸逢源,清,1822,1822,针灸,preface:author,author,False
+jicheng,JiCheng editions,jc_k009,针经节要,jc:针经节要,元,1315,1315,针灸,western,western,False
+jicheng,JiCheng editions,jc_k010,金针秘传,jc:金针秘传,民国,1937,1937,近代,preface,preface,True
+jicheng,JiCheng editions,jc_k011,针灸神书,jc:针灸神书,清,1644,1911,针灸,undated,undated,False
+jicheng,JiCheng editions,jc_k012,针灸素难要旨,jc:针灸素难要旨,明,1537,1537,针灸,western,western,False
+jicheng,JiCheng editions,jc_k013,针灸资生经,zhenjiu_zisheng,南宋,1220,1220,针灸,curated,curated,False
+jicheng,JiCheng editions,jc_k014,扁鹊神应针灸玉龙经,yulong_jing,元,1329,1329,针灸,curated,curated,False
+jicheng,JiCheng editions,jc_k015,杨敬斋针灸全书,jc:杨敬斋针灸全书,明,1591,1591,针灸,western,western,False
+jicheng,JiCheng editions,jc_k016,子午流注针经,jc:子午流注针经,金,1115,1234,针灸,dynasty,dynasty,False
+jicheng,JiCheng editions,jc_k017,子午流注说难,jc:子午流注说难,当代,1956,1956,针灸,curated,curated,True
+jicheng,JiCheng editions,jc_k018,针经指南,jc:针经指南,元,1295,1295,针灸,western,western,False
+jicheng,JiCheng editions,jc_k019,巢氏病源补养宣导法,zhubing,隋,610,610,针灸,curated,curated,False
+jicheng,JiCheng editions,jc_k020,推拿抉微,jc:推拿抉微,民国,1928,1928,近代,preface,preface,True
+jicheng,JiCheng editions,jc_k021,针灸节要,jc:针灸节要,明,1509,1557,针灸,author:高武,author,False
+jicheng,JiCheng editions,jc_k022,经穴秘密,jc:经穴秘密,清,1644,1911,针灸,undated,undated,False
+jicheng,JiCheng editions,jc_k023,百家针灸歌赋［举拙修订版］,jc:百家针灸歌赋［举拙修订版］,清,1644,1911,针灸,undated,undated,False
+jicheng,JiCheng editions,jc_k100,灸法秘传,jc:灸法秘传,清,1883,1883,针灸,preface,preface,False
+jicheng,JiCheng editions,jc_k101,神灸经纶,jc:神灸经纶,清,1851,1851,针灸,western,western,False
+jicheng,JiCheng editions,jc_k102,黄帝明堂灸经,mingtang_jiujing,唐代,1100,1300,针灸,curated,curated,False
+jicheng,JiCheng editions,jc_k103,西方子明堂灸经,mingtang_jiujing,元,1100,1300,针灸,curated,curated,False
+jicheng,JiCheng editions,jc_k104,宋本备急灸法,jc:宋本备急灸法,南宋,1226,1226,针灸,curated,curated,False
+jicheng,JiCheng editions,jc_k105,炙膏肓腧穴法,jc:炙膏肓腧穴法,南宋,1128,1128,针灸,preface,preface,False
+jicheng,JiCheng editions,jc_k200,厘正按摩要术,jc:厘正按摩要术,清,1644,1911,针灸,dynasty,dynasty,False
+jicheng,JiCheng editions,jc_l000,银海精微,yinhai_jingwei,唐,1127,1644,眼科,curated,curated,False
+jicheng,JiCheng editions,jc_l001,眼科秘诀,jc:眼科秘诀,清,1644,1911,眼科,undated,undated,False
+jicheng,JiCheng editions,jc_l002,银海指南,jc:银海指南,清,1809,1809,眼科,preface,preface,False
+jicheng,JiCheng editions,jc_l003,审视瑶函,shenshi_yaohan,明,1644,1644,眼科,curated,curated,False
+jicheng,JiCheng editions,jc_l003a,审视瑶函,shenshi_yaohan,明,1644,1644,眼科,curated,curated,False
+jicheng,JiCheng editions,jc_l004,目经大成,jc:目经大成,清,1741,1741,眼科,western,western,False
+jicheng,JiCheng editions,jc_l005,明目至宝,jc:明目至宝,清,1644,1911,眼科,undated,undated,False
+jicheng,JiCheng editions,jc_l006,异授眼科,jc:异授眼科,清,1644,1911,眼科,undated,undated,False
+jicheng,JiCheng editions,jc_l007,眼科阐微,jc:眼科阐微,清,1701,1701,眼科,preface,preface,False
+jicheng,JiCheng editions,jc_l008,秘传眼科龙木论,jc:秘传眼科龙木论,元,960,1644,眼科,curated,curated,False
+jicheng,JiCheng editions,jc_l009,一草亭目科全书,jc:一草亭目科全书,清,1717,1717,眼科,preface,preface,False
+jicheng,JiCheng editions,jc_l100,尤氏喉科秘书,jc:尤氏喉科秘书,清,1781,1781,五官,preface,preface,False
+jicheng,JiCheng editions,jc_l101,尤氏喉症指南,jc:尤氏喉症指南,清,1644,1911,五官,undated,undated,False
+jicheng,JiCheng editions,jc_l102,白喉全生集,jc:白喉全生集,清,1882,1882,五官,western,western,False
+jicheng,JiCheng editions,jc_l103,白喉条辨,jc:白喉条辨,清,1897,1897,五官,preface,preface,False
+jicheng,JiCheng editions,jc_l104,咽喉秘集,jc:咽喉秘集,清,1644,1911,五官,undated,undated,False
+jicheng,JiCheng editions,jc_l105,喉舌备要秘旨,jc:喉舌备要秘旨,清,1644,1911,五官,western,western,False
+jicheng,JiCheng editions,jc_l106,喉科指掌,jc:喉科指掌,清,1757,1757,五官,western,western,False
+jicheng,JiCheng editions,jc_l107,喉科秘诀,jc:喉科秘诀,清,1644,1911,五官,undated,undated,False
+jicheng,JiCheng editions,jc_l108,喉科集腋,jc:喉科集腋,清,1890,1890,五官,preface:author,author,False
+jicheng,JiCheng editions,jc_l109,焦氏喉科枕秘,jc:焦氏喉科枕秘,清,1868,1868,五官,preface,preface,False
+jicheng,JiCheng editions,jc_l110,包氏喉证家宝,jc:包氏喉证家宝,清,1644,1911,五官,western,western,False
+jicheng,JiCheng editions,jc_l111,咽喉脉证通论,jc:咽喉脉证通论,清,1825,1825,五官,preface,preface,False
+jicheng,JiCheng editions,jc_l112,重订囊秘喉书,jc:重订囊秘喉书,民国,1915,1915,近代,preface,preface,True
+jicheng,JiCheng editions,jc_l113,重楼玉钥,jc:重楼玉钥,清,1838,1838,五官,western,western,False
+jicheng,JiCheng editions,jc_l114,重楼玉钥续编,jc:重楼玉钥续编,清,1838,1838,五官,western,western,False
+jicheng,JiCheng editions,jc_l200,口齿类要,jc:口齿类要,明,1528,1528,五官,western,western,False
+jicheng,JiCheng editions,jc_m000,重订诊家直诀,jc:重订诊家直诀,清,1876,1911,诊法,author:周学海,author,False
+jicheng,JiCheng editions,jc_m001,诊家枢要,jc:诊家枢要,元,1359,1359,诊法,western,western,False
+jicheng,JiCheng editions,jc_m002,诊家正眼,jc:诊家正眼,明,1642,1642,诊法,western,western,False
+jicheng,JiCheng editions,jc_m003,四诊抉微,jc:四诊抉微,清,1723,1723,诊法,western,western,False
+jicheng,JiCheng editions,jc_m004,形色外诊简摩,jc:形色外诊简摩,清,1876,1911,诊法,author:周学海,author,False
+jicheng,JiCheng editions,jc_m005,诊宗三昧,jc:诊宗三昧,清,1689,1689,诊法,western,western,False
+jicheng,JiCheng editions,jc_m006,察病指南,jc:察病指南,宋,960,1279,诊法,western,western,False
+jicheng,JiCheng editions,jc_m100,脉经,maijing,西晋,265,290,诊法,curated,curated,False
+jicheng,JiCheng editions,jc_m100a,脉经,maijing,晋,265,290,诊法,curated,curated,False
+jicheng,JiCheng editions,jc_m101,濒湖脉学,binhu_maixue,明,1564,1564,诊法,curated,curated,False
+jicheng,JiCheng editions,jc_m102,脉确,jc:脉确,清,1746,1746,诊法,preface,preface,False
+jicheng,JiCheng editions,jc_m103,诊脉三十二辨,jc:诊脉三十二辨,清,1644,1911,诊法,undated,undated,False
+jicheng,JiCheng editions,jc_m104,脉诀乳海,jc:脉诀乳海,清,1891,1891,诊法,preface,preface,False
+jicheng,JiCheng editions,jc_m105,脉诀考证,jc:脉诀考证,清,1644,1911,诊法,undated,undated,False
+jicheng,JiCheng editions,jc_m106,脉诀,jc:脉诀,宋,1189,1189,诊法,western,western,False
+jicheng,JiCheng editions,jc_m107,症因脉治,jc:症因脉治,明末清初,1641,1706,诊法,curated,curated,False
+jicheng,JiCheng editions,jc_m108,脉症治方,jc:脉症治方,清,1673,1673,诊法,preface,preface,False
+jicheng,JiCheng editions,jc_m109,三指禅,jc:三指禅,清,1872,1872,诊法,western,western,False
+jicheng,JiCheng editions,jc_m110,脉理求真,jc:脉理求真,清,1644,1911,诊法,undated,undated,False
+jicheng,JiCheng editions,jc_m111,脉诀刊误,maijue_kanwu,元,1330,1370,诊法,curated,curated,False
+jicheng,JiCheng editions,jc_m112,脉诀汇辨,jc:脉诀汇辨,清,1644,1911,诊法,undated,undated,False
+jicheng,JiCheng editions,jc_m113,脉象统类,jc:脉象统类,清,1644,1911,诊法,undated,undated,False
+jicheng,JiCheng editions,jc_m114,脉诀指掌病式图说,jc:脉诀指掌病式图说,元,1327,1368,诊法,author:朱震亨,author,False
+jicheng,JiCheng editions,jc_m115,脉诀阐微（修订版）,jc:脉诀阐微,清,1667,1767,诊法,author:陈士铎,author,False
+jicheng,JiCheng editions,jc_m200,望诊遵经,jc:望诊遵经,清,1644,1911,诊法,western,western,False
+jicheng,JiCheng editions,jc_m201,临症验舌法,jc:临症验舌法,清,1917,1917,近代,western,western,True
+jicheng,JiCheng editions,jc_m202,察舌辨症新法,jc:察舌辨症新法,清,1644,1911,诊法,western,western,False
+jicheng,JiCheng editions,jc_n000,医门补要,jc:医门补要,清,1897,1897,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n001,友渔斋医话,jc:友渔斋医话,清,1644,1911,医案,western,western,False
+jicheng,JiCheng editions,jc_n002,徐批叶天士晚年方案真本,jc:徐批叶天士晚年方案真本,清,1888,1888,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n003,吴鞠通医案,jc:吴鞠通医案,清,1798,1836,医案,curated,curated,False
+jicheng,JiCheng editions,jc_n003a,吴鞠通医案,jc:吴鞠通医案,清,1798,1836,医案,curated,curated,False
+jicheng,JiCheng editions,jc_n004,冷庐医话,jc:冷庐医话,清,1858,1858,医案,preface:author,author,False
+jicheng,JiCheng editions,jc_n005,柳洲医话,jc:柳洲医话,清,1851,1851,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n006,医贯,jc:医贯,明,1617,1617,医案,curated,curated,False
+jicheng,JiCheng editions,jc_n007,古今医案按,jc:古今医案按,清,1778,1778,医案,western,western,False
+jicheng,JiCheng editions,jc_n008,侣山堂类辩,jc:侣山堂类辩,清,1670,1670,医案,curated,curated,False
+jicheng,JiCheng editions,jc_n009,临证指南医案,jc:临证指南医案,清,1746,1746,医案,western,western,False
+jicheng,JiCheng editions,jc_n009a,临证指南医案,jc:临证指南医案,清,1746,1746,医案,work:N009,witness,False
+jicheng,JiCheng editions,jc_n010,存存斋医话稿,jc:存存斋医话稿,清,1881,1881,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n011,丹溪治法心要,jc:丹溪治法心要,元,1327,1368,医案,author:朱震亨,author,False
+jicheng,JiCheng editions,jc_n012,医经溯洄集,yijing_suhui,清,1368,1368,医案,kanripo:KR3e0066,witness,False
+jicheng,JiCheng editions,jc_n013,叶天士医案精华,jc:叶天士医案精华,清,1644,1911,医案,undated,undated,False
+jicheng,JiCheng editions,jc_n014,一得集,jc:一得集,清,1889,1889,医案,preface:author,author,False
+jicheng,JiCheng editions,jc_n015,丁甘仁医案,jc:丁甘仁医案,民国,1912,1949,近代,undated,undated,True
+jicheng,JiCheng editions,jc_n016,三家医案合刻,jc:三家医案合刻,清,1831,1831,医案,western,western,False
+jicheng,JiCheng editions,jc_n017,上池杂说,jc:上池杂说,清,1644,1911,医案,undated,undated,False
+jicheng,JiCheng editions,jc_n018,也是山人医案,jc:也是山人医案,清,1644,1911,医案,undated,undated,False
+jicheng,JiCheng editions,jc_n019,客尘医话,jc:客尘医话,清,1804,1804,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n020,王氏医案绎注,jc:王氏医案绎注,清,1644,1644,医案,western,western,False
+jicheng,JiCheng editions,jc_n021,市隐庐医学杂著,jc:市隐庐医学杂著,清,1644,1911,医案,western,western,False
+jicheng,JiCheng editions,jc_n022,未刻本叶氏医案,jc:未刻本叶氏医案,清,1769,1769,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n023,先哲医话,jc:先哲医话,清,1878,1878,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n024,回春录,jc:回春录,清,1824,1857,医案,western,western,False
+jicheng,JiCheng editions,jc_n025,何澹安医案,jc:何澹安医案,清,1644,1911,医案,undated,undated,False
+jicheng,JiCheng editions,jc_n026,吴医汇讲,jc:吴医汇讲,清,1792,1792,医案,preface:author,author,False
+jicheng,JiCheng editions,jc_n027,奇症汇,jc:奇症汇,清,1786,1786,医案,western,western,False
+jicheng,JiCheng editions,jc_n028,知医必辨,jc:知医必辨,清,1848,1848,医案,preface:author,author,False
+jicheng,JiCheng editions,jc_n029,肯堂医论,jc:肯堂医论,明,1602,1602,医案,western,western,False
+jicheng,JiCheng editions,jc_n030,花韵楼医案,jc:花韵楼医案,清,1644,1911,医案,western,western,False
+jicheng,JiCheng editions,jc_n031,证治心传,jc:证治心传,明,1643,1643,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n032,柳选四家医案,jc:柳选四家医案,清,1882,1882,医案,western,western,False
+jicheng,JiCheng editions,jc_n033,眉寿堂方案选存,jc:眉寿堂方案选存,清,1726,1908,医案,author:叶天士,author,False
+jicheng,JiCheng editions,jc_n034,研经言,jc:研经言,清,1871,1871,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n035,重订灵兰要览,jc:重订灵兰要览,清,1644,1911,医案,undated,undated,False
+jicheng,JiCheng editions,jc_n036,重庆堂随笔,jc:重庆堂随笔,清,1830,1830,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n037,凌临灵方,jc:凌临灵方,清,1644,1911,医案,western,western,False
+jicheng,JiCheng editions,jc_n038,孙文垣医案,jc:孙文垣医案,清,1573,1573,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n039,塘医话,jc:塘医话,清,1644,1911,医案,undated,undated,False
+jicheng,JiCheng editions,jc_n040,马培之医案,jc:马培之医案,清,1893,1893,医案,western,western,False
+jicheng,JiCheng editions,jc_n041,张聿青医案,jc:张聿青医案,清,1644,1911,医案,western,western,False
+jicheng,JiCheng editions,jc_n042,张畹香医案,jc:张畹香医案,清,1644,1911,医案,western,western,False
+jicheng,JiCheng editions,jc_n043,曹仁伯医案论,jc:曹仁伯医案论,清,1644,1911,医案,western,western,False
+jicheng,JiCheng editions,jc_n045,寓意草,jc:寓意草,清,1645,1645,医案,western,western,False
+jicheng,JiCheng editions,jc_n046,程杏轩医案,jc:程杏轩医案,清,1800,1800,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n047,慎疾刍言,jc:慎疾刍言,清,1767,1767,医案,western,western,False
+jicheng,JiCheng editions,jc_n048,叶选医衡,jc:叶选医衡,清,1890,1890,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n049,对山医话,jc:对山医话,清,1644,1911,医案,western,western,False
+jicheng,JiCheng editions,jc_n050,质疑录,jc:质疑录,清,1687,1687,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n051,丛桂草堂医案,jc:丛桂草堂医案,清,1644,1911,医案,western,western,False
+jicheng,JiCheng editions,jc_n052,归砚录,jc:归砚录,清,1861,1861,医案,western,western,False
+jicheng,JiCheng editions,jc_n053,医原,jc:医原,清,1861,1861,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n054,医暇卮言,jc:医暇卮言,清,1676,1676,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n055,医学课儿策,jc:医学课儿策,清,1843,1843,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n056,医学读书记,jc:医学读书记,清,1729,1729,医案,western,western,False
+jicheng,JiCheng editions,jc_n057,医医医,jc:医医医,清,1644,1911,医案,undated,undated,False
+jicheng,JiCheng editions,jc_n058,续名医类案,xu_mingyi_leian,清,1770,1770,医案,kanripo:KR3e0096,witness,False
+jicheng,JiCheng editions,jc_n059,读医随笔,jc:读医随笔,清,1898,1898,医案,preface:author,author,False
+jicheng,JiCheng editions,jc_n060,王旭高临证医案,jc:王旭高临证医案,清,1644,1644,医案,western,western,False
+jicheng,JiCheng editions,jc_n061,邵兰荪医案,jc:邵兰荪医案,清,1644,1911,医案,western,western,False
+jicheng,JiCheng editions,jc_n063,经方实验录,jc:经方实验录,清,1937,1937,近代,curated,curated,True
+jicheng,JiCheng editions,jc_n064,仿寓意草,jc:仿寓意草,清,1835,1835,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n065,洄溪医案,jc:洄溪医案,清,1855,1855,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n066,许氏医案,jc:许氏医案,清,1644,1911,医案,undated,undated,False
+jicheng,JiCheng editions,jc_n066a,许氏医案,jc:许氏医案,清,1644,1911,医案,undated,undated,False
+jicheng,JiCheng editions,jc_n067,医病简要,jc:医病简要,清,1644,1911,医案,undated,undated,False
+jicheng,JiCheng editions,jc_n068,一瓢医案,jc:一瓢医案,清,1644,1911,医案,dynasty,dynasty,False
+jicheng,JiCheng editions,jc_n069,医验随笔,jc:医验随笔,清,1908,1908,医案,preface,preface,False
+jicheng,JiCheng editions,jc_n070,玉台新案（《医学举要》）,jc:玉台新案,清,1644,1911,医案,dynasty,dynasty,False
+jicheng,JiCheng editions,jc_n074,旧德堂医案,jc:旧德堂医案,清,1644,1911,医案,undated,undated,False
+jicheng,JiCheng editions,jc_n078,诊余举隅录,jc:诊余举隅录,清,1644,1911,医案,undated,undated,False
+jicheng,JiCheng editions,jc_n079,醉花窗医案,jc:醉花窗医案,清,1644,1911,医案,undated,undated,False
+jicheng,JiCheng editions,jc_n081,增补评注柳选医案,jc:增补评注柳选医案,清,1644,1911,医案,undated,undated,False
+jicheng,JiCheng editions,jc_n086,景景医话,jc:景景医话,民国,1912,1949,近代,undated,undated,True
+jicheng,JiCheng editions,jc_n087,湖岳村叟医案,jc:湖岳村叟医案,民国,1935,1935,医案,curated,curated,True
+jicheng,JiCheng editions,jc_o000,医门法律,yimen_falv,清,1658,1658,综合,kanripo:KR3e0092,witness,False
+jicheng,JiCheng editions,jc_o001,医林改错,jc:医林改错,清,1848,1848,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o001a,医林改错,jc:医林改错,清,1848,1848,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o002,医学从众录,jc:医学从众录,清,1845,1845,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o003,笔花医镜,jc:笔花医镜,清,1824,1824,综合,preface:author,author,False
+jicheng,JiCheng editions,jc_o004,证治汇补,jc:证治汇补,清,1687,1687,综合,western,western,False
+jicheng,JiCheng editions,jc_o005,十四经发挥,shisijing_fahui,元,1341,1341,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o005a,十四经发挥,shisijing_fahui,元,1341,1341,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o006,原机启微,jc:原机启微,元,1370,1370,综合,western,western,False
+jicheng,JiCheng editions,jc_o007,理瀹骈文,jc:理瀹骈文,清,1864,1864,综合,western,western,False
+jicheng,JiCheng editions,jc_o007a,理瀹骈文,jc:理瀹骈文,清,1864,1864,综合,preface:author,author,False
+jicheng,JiCheng editions,jc_o008,经穴汇解,jc:经穴汇解,清,1644,1911,综合,undated,undated,False
+jicheng,JiCheng editions,jc_o009,经络全书,jc:经络全书,明,1576,1576,综合,western,western,False
+jicheng,JiCheng editions,jc_o010,经络考,jc:经络考,明,1609,1609,综合,western,western,False
+jicheng,JiCheng editions,jc_o011,经络汇编,jc:经络汇编,明,1628,1628,综合,western,western,False
+jicheng,JiCheng editions,jc_o012,凌门传授铜人指穴,jc:凌门传授铜人指穴,清,1644,1911,综合,western,western,False
+jicheng,JiCheng editions,jc_o013,广嗣要语,jc:广嗣要语,清,1644,1911,综合,undated,undated,False
+jicheng,JiCheng editions,jc_o014,医学源流论,yixue_yuanliu,清,1757,1757,综合,kanripo:KR3e0100,witness,False
+jicheng,JiCheng editions,jc_o014a,医学源流论,yixue_yuanliu,清,1757,1757,综合,kanripo:KR3e0100,witness,False
+jicheng,JiCheng editions,jc_o015,中西汇通医经精义,jc:中西汇通医经精义,清,1644,1911,综合,western,western,False
+jicheng,JiCheng editions,jc_o016,医效秘传,jc:医效秘传,清,1831,1831,综合,western,western,False
+jicheng,JiCheng editions,jc_o017,医灯续焰,jc:医灯续焰,清,1644,1911,综合,western,western,False
+jicheng,JiCheng editions,jc_o018,女丹合编选注,jc:女丹合编选注,清,1905,1905,综合,preface:author,author,False
+jicheng,JiCheng editions,jc_o019,心医集,jc:心医集,清,1644,1911,综合,western,western,False
+jicheng,JiCheng editions,jc_o020,西池集,jc:西池集,清,1644,1911,综合,undated,undated,False
+jicheng,JiCheng editions,jc_o021,性命要旨,jc:性命要旨,清,1887,1887,综合,preface:author,author,False
+jicheng,JiCheng editions,jc_o022,寿世传真,jc:寿世传真,清,1644,1911,综合,western,western,False
+jicheng,JiCheng editions,jc_o023,陆地仙经,jc:陆地仙经,清,1644,1911,综合,western,western,False
+jicheng,JiCheng editions,jc_o024,宁坤秘笈,jc:宁坤秘笈,清,1786,1786,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o025,寿世保元,jc:寿世保元,明,1574,1644,综合,author:龚廷贤,author,False
+jicheng,JiCheng editions,jc_o026,达摩洗髓易筋经,jc:达摩洗髓易筋经,清,1644,1911,综合,undated,undated,False
+jicheng,JiCheng editions,jc_o027,养生秘旨,jc:养生秘旨,清,1644,1911,综合,western,western,False
+jicheng,JiCheng editions,jc_o028,养生导引法,jc:养生导引法,明,1368,1644,综合,western,western,False
+jicheng,JiCheng editions,jc_o029,养生导引秘籍,jc:养生导引秘籍,明,1368,1644,综合,western,western,False
+jicheng,JiCheng editions,jc_o030,修昆仑证验,jc:修昆仑证验,清,1846,1846,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o031,寿世青编,jc:寿世青编,清,1805,1845,综合,author:尤乘,author,False
+jicheng,JiCheng editions,jc_o032,养生类要,jc:养生类要,明,1564,1564,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o033,饮食须知,jc:饮食须知,元代,1271,1368,综合,western,western,False
+jicheng,JiCheng editions,jc_o034,华氏中藏经,jc:华氏中藏经,东汉,900,1279,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o035,三因极一病证方论,sanyin,宋,1174,1174,综合,kanripo:KR3e0041,witness,False
+jicheng,JiCheng editions,jc_o036,扁鹊心书,jc:扁鹊心书,宋,1146,1146,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o037,玉机微义,yuji_weiyi,元明,1396,1396,综合,kanripo:KR3e0068,witness,False
+jicheng,JiCheng editions,jc_o038,明医指掌,jc:明医指掌,明,1622,1622,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o039,明医杂著,jc:明医杂著,明,1502,1549,综合,western,western,False
+jicheng,JiCheng editions,jc_o040,此事难知,cishi_nanzhi,元,1308,1308,综合,kanripo:KR3e0055,witness,False
+jicheng,JiCheng editions,jc_o040a,此事难知,cishi_nanzhi,金,1308,1308,综合,kanripo:KR3e0055,witness,False
+jicheng,JiCheng editions,jc_o041,卫生宝鉴,jc:卫生宝鉴,元,1343,1343,综合,western,western,False
+jicheng,JiCheng editions,jc_o042,校注医醇剩义,jc:校注医醇剩义,清,1863,1863,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o043,脉因证治,jc:脉因证治,清,1775,1775,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o044,丹溪心法,jc:丹溪心法,元末明初,1347,1347,综合,western,western,False
+jicheng,JiCheng editions,jc_o044a,丹溪心法,jc:丹溪心法,元,1347,1347,综合,work:O044,witness,False
+jicheng,JiCheng editions,jc_o045,诸病源候论,zhubing,隋,610,610,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o045a,诸病源候论,zhubing,隋,610,610,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o046,儒门事亲,rumen_shiqin,金,1217,1228,综合,kanripo:KR3e0051,witness,False
+jicheng,JiCheng editions,jc_o046a,儒门事亲,rumen_shiqin,金,1217,1228,综合,kanripo:KR3e0051,witness,False
+jicheng,JiCheng editions,jc_o047,古今医鉴,jc:古今医鉴,明,1368,1644,综合,western,western,False
+jicheng,JiCheng editions,jc_o048,医说,yishuo,南宋,1189,1224,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o049,医经国小,jc:医经国小,明,1388,1388,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o050,医学入门,jc:医学入门,明,1575,1575,综合,western,western,False
+jicheng,JiCheng editions,jc_o051,医学启源,jc:医学启源,金,1127,1279,综合,western,western,False
+jicheng,JiCheng editions,jc_o052,医学纲目,jc:医学纲目,明,1565,1565,综合,western,western,False
+jicheng,JiCheng editions,jc_o053,医垒元戎,yilei_yuanrong,元,1297,1297,综合,kanripo:KR3e0056,witness,False
+jicheng,JiCheng editions,jc_o054,兰室秘藏,lanshi,金元间,1249,1276,综合,kanripo:KR3e0054,witness,False
+jicheng,JiCheng editions,jc_o054a,兰室秘藏,lanshi,金,1249,1276,综合,kanripo:KR3e0054,witness,False
+jicheng,JiCheng editions,jc_o055,韩氏医通,jc:韩氏医通,明,1522,1522,综合,western,western,False
+jicheng,JiCheng editions,jc_o056,医学正传,jc:医学正传,明,1515,1515,综合,western,western,False
+jicheng,JiCheng editions,jc_o057,卫济宝书,weiji_baoshu,宋,1170,1170,综合,kanripo:KR3e0035,witness,False
+jicheng,JiCheng editions,jc_o058,石室秘录,jc:石室秘录,清,1687,1687,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o059,丹溪手镜,jc:丹溪手镜,元,1281,1358,综合,western,western,False
+jicheng,JiCheng editions,jc_o060,古今名医汇粹,jc:古今名医汇粹,清,1823,1823,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o061,轩岐救正论,jc:轩岐救正论,明,1644,1644,综合,western,western,False
+jicheng,JiCheng editions,jc_o062,医学三字经,jc:医学三字经,清,1804,1804,综合,preface:author,author,False
+jicheng,JiCheng editions,jc_o063,辨证录,jc:辨证录,清,1747,1747,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o063a,辨证录,jc:辨证录,清,1747,1747,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o064,医学指归,jc:医学指归,清,1851,1851,综合,western,western,False
+jicheng,JiCheng editions,jc_o065,医学实在易,jc:医学实在易,清,1781,1865,综合,author:陈修园,author,False
+jicheng,JiCheng editions,jc_o066,医学摘粹,jc:医学摘粹,清,1895,1895,综合,preface:author,author,False
+jicheng,JiCheng editions,jc_o067,冯氏锦囊秘录,jc:冯氏锦囊秘录,清代,1686,1686,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o068,简明医彀,jc:简明医彀,明,1629,1629,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o069,医述,jc:医述,清,1826,1826,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o070,辨症玉函,jc:辨症玉函,清,1693,1693,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o071,医学心悟,jc:医学心悟,清,1732,1732,综合,preface:author,author,False
+jicheng,JiCheng editions,jc_o072,类证治裁,jc:类证治裁,清,1839,1839,综合,preface:author,author,False
+jicheng,JiCheng editions,jc_o072a,类证治裁,jc:类证治裁,清,1839,1839,综合,work:O072,witness,False
+jicheng,JiCheng editions,jc_o073,医碥,jc:医碥,清,1751,1751,综合,western,western,False
+jicheng,JiCheng editions,jc_o074,医学真传,jc:医学真传,清,1699,1699,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o075,张氏医通,jc:张氏医通,清,1695,1695,综合,western,western,False
+jicheng,JiCheng editions,jc_o075a,张氏医通,jc:张氏医通,清,1695,1695,综合,preface:author,author,False
+jicheng,JiCheng editions,jc_o076,中国医籍考,jc:中国医籍考,清,1644,1911,综合,undated,undated,False
+jicheng,JiCheng editions,jc_o077,丹台玉案,jc:丹台玉案,明,1637,1637,综合,western,western,False
+jicheng,JiCheng editions,jc_o078,古今医彻,jc:古今医彻,清,1808,1808,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o079,药症忌宜,jc:药症忌宜,清,1644,1911,综合,western,western,False
+jicheng,JiCheng editions,jc_o080,四圣心源,jc:四圣心源,清,1705,1758,综合,western,western,False
+jicheng,JiCheng editions,jc_o081,洗冤集录,jc:洗冤集录,宋,1247,1247,法医,curated,curated,False
+jicheng,JiCheng editions,jc_o082,古今医统大全,jc:古今医统大全,明,1556,1556,综合,western,western,False
+jicheng,JiCheng editions,jc_o083,格致余论,gezhi_yulun,元,1347,1347,综合,kanripo:KR3e0060,witness,False
+jicheng,JiCheng editions,jc_o083a,格致余论,gezhi_yulun,元,1347,1347,综合,kanripo:KR3e0060,witness,False
+jicheng,JiCheng editions,jc_o084,御药院方,jc:御药院方,元,1279,1368,综合,western,western,False
+jicheng,JiCheng editions,jc_o085,推求师意,tuiqiu_shiyi,明,1380,1405,综合,kanripo:KR3e0071,witness,False
+jicheng,JiCheng editions,jc_o086,褚氏遗书,chushi_yishu,南齐,479,502,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o087,诸病主病诗,jc:诸病主病诗,宋,1150,1190,综合,author:东轩居士,author,False
+jicheng,JiCheng editions,jc_o088,医旨绪余,yizhi_xuyu,明,1573,1573,综合,kanripo:KR3e0077,witness,False
+jicheng,JiCheng editions,jc_o089,医宗己任编,jc:医宗己任编,清,1891,1891,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o090,医学妙谛,jc:医学妙谛,清,1893,1893,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o091,医学见能,jc:医学见能,清,1644,1911,综合,undated,undated,False
+jicheng,JiCheng editions,jc_o092,顾松园医镜,jc:顾松园医镜,清,1719,1719,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o093,医医小草,jc:医医小草,清,1901,1901,综合,preface:author,author,False
+jicheng,JiCheng editions,jc_o094,医学传灯,jc:医学传灯,清,1700,1700,综合,preface:author,author,False
+jicheng,JiCheng editions,jc_o095,宜麟策,jc:宜麟策,清,1644,1911,综合,western,western,False
+jicheng,JiCheng editions,jc_o096,松崖医径,jc:松崖医径,明,1625,1625,综合,preface,preface,False
+jicheng,JiCheng editions,jc_o097,万病回春,jc:万病回春,明,1615,1615,综合,western,western,False
+jicheng,JiCheng editions,jc_o098,罗氏会约医镜,jc:罗氏会约医镜,清,1789,1789,综合,preface:author,author,False
+jicheng,JiCheng editions,jc_o099,续医说,jc:续医说,明,1545,1545,综合,western,western,False
+jicheng,JiCheng editions,jc_o100,杨成博先生遗留穴道秘书,jc:杨成博先生遗留穴道秘书,清,1644,1911,综合,undated,undated,False
+jicheng,JiCheng editions,jc_o101,解围元薮,jc:解围元薮,明,1550,1550,综合,western,western,False
+jicheng,JiCheng editions,jc_o102,养老奉亲书,shouqin_yanglao,宋,1080,1085,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o103,医学举要,jc:医学举要,清,1644,1911,综合,undated,undated,False
+jicheng,JiCheng editions,jc_o104,周慎斋遗书,jc:周慎斋遗书,清,1644,1911,综合,undated,undated,False
+jicheng,JiCheng editions,jc_o105,奇经八脉考,qijing_bamai_kao,明,1572,1572,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o106,皇汉医学,jc:皇汉医学,民国,1927,1927,近代,western,western,True
+jicheng,JiCheng editions,jc_o107,医学衷中参西录,jc:医学衷中参西录,清,1912,1949,近代,modern,witness,True
+jicheng,JiCheng editions,jc_o108,景岳全书,jingyue,明,1624,1640,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o108a,景岳全书,jingyue,明,1624,1640,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o109,医学发明,jc:医学发明,金,1231,1251,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o110,尚论篇,shanglun,清,1648,1648,综合,curated,curated,False
+jicheng,JiCheng editions,jc_o111,尚论后篇,jc:尚论后篇,清,1644,1678,综合,author:喻昌,author,False
+jicheng,JiCheng editions,jc_o112,沈氏尊生书,jc:沈氏尊生书,清,1754,1794,综合,author:沈金鳌,author,False
+jicheng,JiCheng editions,jc_o113,评琴书屋医略,jc:评琴书屋医略,清,1865,1865,综合,western,western,False
+jicheng,JiCheng editions,jc_o115,医学传心录,jc:医学传心录,清,1644,1911,综合,undated,undated,False
+jicheng,JiCheng editions,jc_o117,鲙残篇,jc:鲙残篇,清,1644,1911,综合,undated,undated,False
+jicheng,JiCheng editions,jc_o118,推篷寤语,jc:推篷寤语,明,1570,1570,综合,preface:author,author,False
+jicheng,JiCheng editions,jc_o119,医林琐语,jc:医林琐语,清,1644,1911,综合,dynasty,dynasty,False
+jicheng,JiCheng editions,jc_o120,医中一得,jc:医中一得,清,1644,1911,综合,undated,undated,False
+jicheng,JiCheng editions,jc_o121,医医十病,jc:医医十病,清,1644,1911,综合,undated,undated,False
+jicheng,JiCheng editions,jc_o122,士谔医话,jc:士谔医话,民国,1912,1949,近代,undated,undated,True
+jicheng,JiCheng editions,jc_o123,止园医话,jc:止园医话,民国,1912,1949,近代,undated,undated,True
+jicheng,JiCheng editions,jc_o127,圆运动的古中医学,jc:圆运动的古中医学,民国,1939,1939,近代,preface,preface,True
+jicheng,JiCheng editions,jc_o128,医学集成,jc:医学集成,清,1644,1911,综合,dynasty,dynasty,False
+jicheng,JiCheng editions,jc_p0000,医宗金鉴·订正仲景全书,yizong_jinjian,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0001,医宗金鉴·订正仲景全书伤寒论注,yizong_jinjian,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0001a,医宗金鉴(订正仲景全书伤寒论注),yizong_jinjian,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0002,医宗金鉴·订正仲景全书金匮要略注,yizong_jinjian,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0002a,医宗金鉴（订正仲景全书金匮要略注）,yizong_jinjian,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0003,医宗金鉴·删补名医方论,yzjj_mingyi_fanglun,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0003a,医宗金鉴-删补名医方论,yzjj_mingyi_fanglun,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0004,医宗金鉴·四诊心法要诀,yzjj_sizhen,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0005,医宗金鉴·运气要诀,yzjj_yunqi,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0006,医宗金鉴·伤寒心法要诀,yzjj_shanghan_yaojue,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0007,医宗金鉴·杂病心法要诀,yzjj_zabing,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0007a,医宗金鉴-杂病心法,yzjj_zabing,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0008,医宗金鉴·妇科心法要诀,yzjj_fuke,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0008a,医宗金鉴-妇科心法要诀,yzjj_fuke,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0009,医宗金鉴·幼科心法要诀,yzjj_youke,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0009a,医宗金鉴-幼科杂病心法,yzjj_youke,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0010,医宗金鉴·眼科心法要诀,yzjj_yanke,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0010a,医宗金鉴-眼科心法,yzjj_yanke,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0011,医宗金鉴·痘疹心法要诀,yzjj_douzhen,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0011a,医宗金鉴-痘疹心法要诀,yzjj_douzhen,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0012,医宗金鉴·外科心法要诀,yzjj_waike,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0013,医宗金鉴·刺灸心法要诀,yzjj_cijiu,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0013a,医宗金鉴-刺灸心法要诀,yzjj_cijiu,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0014,医宗金鉴·正骨心法要旨,yzjj_zhenggu,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0014a,正骨心法,yzjj_zhenggu,清,1742,1742,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0100,证治准绳·类方,zzzs_leifang,明,1602,1608,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0101,证治准绳·伤寒,zzzs_shanghan,明,1604,1604,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0102,证治准绳·杂病,zzzs_zabing,明,1602,1602,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0103,证治准绳·女科,zzzs_nuke,明,1607,1607,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0103a,女科证治准绳,zzzs_nuke,明,1607,1607,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0104,证治准绳·幼科,zzzs_youke,明,1607,1607,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0105,证治准绳·疡医,zzzs_yangyi,明,1608,1608,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0200,本草纲目(上),bencao_gangmu,明,1552,1578,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0201,本草纲目(下),bencao_gangmu,明,1552,1578,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0300,太平圣惠方(上),taiping_shenghui,宋,978,992,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0301,太平圣惠方(下),taiping_shenghui,宋,978,992,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0400,圣济总录(一),shengji_zonglu,宋,1111,1117,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0401,圣济总录(二),shengji_zonglu,宋,1111,1117,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0402,圣济总录(三),shengji_zonglu,宋,1111,1117,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0403,圣济总录(四),shengji_zonglu,宋,1111,1117,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0500,普济方,puji_fang,明,1390,1406,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0501,普济方(二),puji_fang,明,1390,1406,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0502,普济方(三),puji_fang,明,1390,1406,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0503,普济方(四),puji_fang,明,1390,1406,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0504,普济方(五),puji_fang,明,1390,1406,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0505,普济方(六),puji_fang,明,1390,1406,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0506,普济方(七),puji_fang,明,1390,1406,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0800,古今医统大全(上),gujin_yitong,明,1556,1556,综合,curated,curated,False
+jicheng,JiCheng editions,jc_p0801,古今医统大全(下),gujin_yitong,明,1556,1556,综合,curated,curated,False
+jicheng,JiCheng editions,jc_q000,十四经穴歌诀（针灸大成）,jc:十四经穴歌诀,明,1368,1644,歌赋,dynasty,dynasty,False
+jicheng,JiCheng editions,jc_q001,十四经穴歌诀（医宗金鉴）,jc:十四经穴歌诀,清,1644,1911,歌赋,dynasty,dynasty,False
+jicheng,JiCheng editions,jc_q002,大医精诚,jc:大医精诚,唐,630,702,歌赋,author:孙思邈,author,False
+jicheng,JiCheng editions,jc_q003,五输穴即景诗,jc:五输穴即景诗,明,1368,1644,歌赋,dynasty,dynasty,False
+jicheng,JiCheng editions,jc_q004,玉龙歌,jc:玉龙歌,元,1309,1349,歌赋,author:王国瑞,author,False
+jicheng,JiCheng editions,jc_q005,百证赋,jc:百证赋,清,1644,1911,歌赋,undated,undated,False
+jicheng,JiCheng editions,jc_q006,肘后歌,jc:肘后歌,清,1644,1911,歌赋,undated,undated,False
+jicheng,JiCheng editions,jc_q007,席弘赋,jc:席弘赋,清,1644,1911,歌赋,undated,undated,False
+jicheng,JiCheng editions,jc_q008,胜玉歌,jc:胜玉歌,清,1644,1911,歌赋,undated,undated,False
+jicheng,JiCheng editions,jc_q009,标幽赋,jc:标幽赋,清,1644,1911,歌赋,undated,undated,False
+jicheng,JiCheng editions,jc_q010,十二经补泻温凉引经药歌,jc:十二经补泻温凉引经药歌,清,1644,1911,歌赋,undated,undated,False
+jicheng,JiCheng editions,jc_q011,濒湖脉学脉诀,jc:濒湖脉学脉诀,清,1644,1911,歌赋,undated,undated,False
+jicheng,JiCheng editions,jc_q012,通玄指要赋,jc:通玄指要赋,清,1644,1911,歌赋,undated,undated,False
+jicheng,JiCheng editions,jc_q013,金针赋,jc:金针赋,清,1644,1911,歌赋,undated,undated,False
+jicheng,JiCheng editions,jc_z000,易经（周易）,jc:易经,约西周,-1000,-200,非医籍,curated,curated,False
+jicheng,JiCheng editions,jc_c033,本草问答,jc:本草问答,清,1862,1918,本草,western,western,False
+mcgill,Collated witnesses,mg_baosheng_suishi,保生碎事,mg:保生碎事,清,1665,1665,妇科,curated,curated,False
+mcgill,Collated witnesses,mg_chongding_jiyin_gangmu,重订济阴纲目,jiyin_gangmu,明,1620,1620,妇科,curated,curated,False
+mcgill,Collated witnesses,mg_fuqingzhu_nuke,傅青主女科,jc:傅青主女科,清,1827,1827,妇科,curated,curated,False
+mcgill,Collated witnesses,mg_nuke_jiyao,女科辑要,jc:沈氏女科辑要,清,1850,1850,妇科,curated,curated,False
+mcgill,Collated witnesses,mg_zhencun_mifang,珍存秘方,mg:珍存秘方,清,1870,1920,妇科,curated,curated,False
+cmeta,Collated witnesses,cm_gujin_yian_an,古今医案按（会文堂石印本）,jc:古今医案按,清,1778,1778,医案,curated,curated,False
+cmeta,Collated witnesses,cm_jingui_dengzhen,新编金匮方论（邓珍本）,jinkui,东汉,200,219,杂病,curated,curated,False
+cmeta,Collated witnesses,cm_jingui_wuqian,金匮要略方（吴迁本）,jinkui,东汉,200,219,杂病,curated,curated,False
+cmeta,Collated witnesses,cm_kanhei_shanghan_vision_ocr,伤寒论（康平本）,shanghanlun,东汉,200,219,伤寒,curated,curated,False
+cmeta,Collated witnesses,cm_lingshu_sibucongkan,黄帝素问灵枢经（赵府居敬堂本）,lingshu,战国—西汉,-300,25,医经,curated,curated,False
+cmeta,Collated witnesses,cm_mingyi_leian,名医类案（知不足斋·藏修堂本）,mingyi_leian,明,1549,1591,医案,curated,curated,False
+cmeta,Collated witnesses,cm_shanghan_guilin,伤寒杂病论（桂林古本）,ws:伤寒杂病论,民国,1939,1939,近代,curated,curated,True
+cmeta,Collated witnesses,cm_shanghan_kangzhi,伤寒论（康治本）,shanghanlun,东汉,200,219,伤寒,curated,curated,False
+cmeta,Collated witnesses,cm_shanghan_npm,伤寒论（宋本·台北故宫）,shanghanlun,东汉,200,219,伤寒,curated,curated,False
+cmeta,Collated witnesses,cm_shanghan_zhao_kaimei,伤寒论（宋本·安政本）,shanghanlun,东汉,200,219,伤寒,curated,curated,False
+cmeta,Collated witnesses,cm_suwen_gucongde,重广补注黄帝内经素问（顾从德本）,suwen,战国—西汉,-300,25,医经,curated,curated,False
+aeam,Collated witnesses,ae_henjyaku,扁鹊仓公列传,shiji_bianque_canggong,西汉,-104,-91,医史,curated,curated,False
+aeam,Collated witnesses,ae_jinguiyaolue,金匮要略（东亚医学协会本·邓珍本）,jinkui,东汉,200,219,杂病,curated,curated,False
+aeam,Collated witnesses,ae_nangyo,难经（东亚医学协会本）,nanjing,东汉,0,200,医经,curated,curated,False
+aeam,Collated witnesses,ae_reisu,灵枢（东亚医学协会本·明无名氏本）,lingshu,战国—西汉,-300,25,医经,curated,curated,False
+aeam,Collated witnesses,ae_shanghanlun,伤寒论（东亚医学协会本·赵开美本）,shanghanlun,东汉,200,219,伤寒,curated,curated,False
+aeam,Collated witnesses,ae_shennongbencaojing,神农本草经（森立之校正本）,shennong,东汉,25,220,本草,curated,curated,False
+aeam,Collated witnesses,ae_somon,素问（东亚医学协会本·顾从德本）,suwen,战国—西汉,-300,25,医经,curated,curated,False
+wikisource,Wikisource and web,ws_ba8c96ccf4,中国医药论文集,ws:中国医药论文集,民国,1936,1936,近代,western,western,True
+wikisource,Wikisource and web,ws_10_d8b12ca2f1,事林广记·续集·卷十（医学类）,ws:事林广记/续集/卷10,元,1330,1333,本草,curated,curated,False
+wikisource,Wikisource and web,ws_893fe4f123,五十二病方,wushier_bingfang,西汉,-300,-168,方书,jicheng:D000,witness,False
+wikisource,Wikisource and web,ws_84511d4881,伤寒杂病论（康平本）,ws:伤寒杂病论,民国,1937,1947,近代,curated,curated,True
+wikisource,Wikisource and web,ws_249a948505,伤寒杂病论（长沙古本）,ws:伤寒杂病论,民国,1932,1934,近代,curated,curated,True
+wikisource,Wikisource and web,ws_0649304bb5,伤寒杂病论（白云阁藏本）,ws:伤寒杂病论,民国,1939,1939,近代,curated,curated,True
+wikisource,Wikisource and web,ws_abfd7a1046,伤寒杂病论义疏,ws:伤寒杂病论义疏,民国,1934,1934,近代,preface:author,author,True
+wikisource,Wikisource and web,ws_464ee58bb4,天回医简,ws:天回医简,西汉,-206,-87,医经,curated,curated,False
+wikisource,Wikisource and web,ws_2a51839cb9,妇人寿草,ws:妇人寿草,日本,1726,1726,妇科,curated,curated,False
+wikisource,Wikisource and web,ws_05e1ac6c6d,摄生总要,ws:摄生总要,明朝,1638,1638,综合,western,western,False
+wikisource,Wikisource and web,ws_f0edcf313b,东医宝鉴,ws:东医宝鉴,朝鲜,1611,1611,综合,preface,preface,False
+wikisource,Wikisource and web,ws_f0f5addb51,汤头歌诀,jc:汤头歌诀,清,1662,1714,方书,jicheng:D034,witness,False
+wikisource,Wikisource and web,ws_e223e698c5,灌园草木识,ws:灌园草木识,清,1644,1911,本草,undated,undated,False
+wikisource,Wikisource and web,ws_36bca7b992,神农本草经,shennong,东汉,25,220,本草,jicheng:C000,witness,False
+wikisource,Wikisource and web,ws_e965e3774c,医方类聚,ws:医方类聚,朝鲜,1443,1445,方书,curated,curated,False
+wikisource,Wikisource and web,ws_863b76c972,医津一筏,ws:医津一筏,清,1644,1911,综合,dynasty,dynasty,False
+wikisource,Wikisource and web,ws_e5903d4bcc,医理真传,ws:医理真传,清,1869,1869,综合,curated,curated,False
+wikisource,Wikisource and web,ws_89ce7eaf36,医脉摘要,ws:医脉摘要,民国,1922,1922,近代,preface,preface,True
+tcm-ancient-books,Wikisource and web,tab_277,医略,tab:医略,清,1840,1840,综合,preface:author,author,False
+tcm-ancient-books,Wikisource and web,tab_283,医源,tab:医源,民国,1919,1919,近代,preface,preface,True
+tcm-ancient-books,Wikisource and web,tab_321_805c29b241,灵药秘方,tab:灵药秘方,清,1718,1718,方书,preface,preface,False
+tcm-ancient-books,Wikisource and web,tab_390_651cf96c36,辨证汇编,tab:辨证汇编,清,1644,1911,综合,undated,undated,False
+tcm-ancient-books,Wikisource and web,tab_615_6699dfb67c,外经微言,tab:外经微言,清,1667,1767,综合,author:陈士铎,author,False
+tcm-ancient-books,Wikisource and web,tab_619_0a7261aa40,验方家秘,tab:验方家秘,清,1644,1911,方书,undated,undated,False
+tcm-ancient-books,Wikisource and web,tab_629_5f6838653d,眼科奇书,tab:眼科奇书,民国,1934,1934,近代,preface,preface,True
+tcm-ancient-books,Wikisource and web,tab_631_851237de5b,医法圆通,tab:医法圆通,清,1874,1874,综合,curated,curated,False
+hf-tcm-canon,Wikisource and web,hf_canon_0084,伤寒论集注,hf:伤寒论集注,清,1683,1683,伤寒,curated,curated,False

@@ -1,0 +1,2929 @@
+{
+ "periods": [
+  {
+   "period": "先秦两汉",
+   "books": [
+    {
+     "work": "external:shuowen",
+     "title": "说文解字",
+     "citations": 192.6
+    },
+    {
+     "work": "external:erya",
+     "title": "尔雅",
+     "citations": 147.8
+    },
+    {
+     "work": "external:shijing",
+     "title": "诗经",
+     "citations": 55.7
+    },
+    {
+     "work": "external:huainanzi",
+     "title": "淮南子",
+     "citations": 35.9
+    },
+    {
+     "work": "external:liexian_zhuan",
+     "title": "列仙传",
+     "citations": 17.0
+    },
+    {
+     "work": "external:zhouli",
+     "title": "周礼",
+     "citations": 16.9
+    },
+    {
+     "work": "external:shiji",
+     "title": "史记",
+     "citations": 8.4
+    },
+    {
+     "work": "external:liji",
+     "title": "礼记",
+     "citations": 6.9
+    },
+    {
+     "work": "external:lvshi_chunqiu",
+     "title": "吕氏春秋",
+     "citations": 6.8
+    },
+    {
+     "work": "external:shanhai_jing",
+     "title": "山海经",
+     "citations": 6.0
+    },
+    {
+     "work": "external:mingyi_bielu",
+     "title": "名医别录",
+     "citations": 6.0
+    },
+    {
+     "work": "external:hanshu",
+     "title": "汉书",
+     "citations": 4.5
+    }
+   ],
+   "persons": [
+    {
+     "person": "wu_pu",
+     "name": "吴普",
+     "citations": 1
+    }
+   ]
+  },
+  {
+   "period": "魏晋南北朝",
+   "books": [
+    {
+     "work": "work:shennong",
+     "title": "神农本草经",
+     "citations": 184.0
+    },
+    {
+     "work": "work:suwen",
+     "title": "重广补注黄帝内经素问",
+     "citations": 160.4
+    },
+    {
+     "work": "work:lingshu",
+     "title": "黄帝内经·灵枢",
+     "citations": 54.2
+    },
+    {
+     "work": "work:nanjing",
+     "title": "难经集注",
+     "citations": 15.2
+    },
+    {
+     "work": "work:jiayi",
+     "title": "针灸甲乙经",
+     "citations": 4.0
+    },
+    {
+     "work": "work:jinkui",
+     "title": "新编金匮要略方论",
+     "citations": 3.2
+    },
+    {
+     "work": "external:shanhai_jing",
+     "title": "山海经",
+     "citations": 1.0
+    }
+   ],
+   "persons": [
+    {
+     "person": "bianque",
+     "name": "扁鹊",
+     "citations": 28
+    },
+    {
+     "person": "tao_hongjing",
+     "name": "陶弘景",
+     "citations": 9
+    },
+    {
+     "person": "zhang_ji",
+     "name": "张机",
+     "citations": 6
+    },
+    {
+     "person": "wang_shuhe",
+     "name": "王叔和",
+     "citations": 1
+    }
+   ]
+  },
+  {
+   "period": "隋唐五代",
+   "books": [
+    {
+     "work": "work:qianjin",
+     "title": "备急千金要方",
+     "citations": 209.2
+    },
+    {
+     "work": "work:lingshu",
+     "title": "黄帝内经·灵枢",
+     "citations": 164.3
+    },
+    {
+     "work": "external:gujin_luyan",
+     "title": "古今录验方",
+     "citations": 65.8
+    },
+    {
+     "work": "work:zhouhou",
+     "title": "肘后备急方",
+     "citations": 56.6
+    },
+    {
+     "work": "work:jiayi",
+     "title": "针灸甲乙经",
+     "citations": 48.8
+    },
+    {
+     "work": "external:jiyan_fang",
+     "title": "集验方",
+     "citations": 33.0
+    },
+    {
+     "work": "work:qianjin_yifang",
+     "title": "千金翼方",
+     "citations": 32.0
+    },
+    {
+     "work": "external:shanfan_fang",
+     "title": "删繁方",
+     "citations": 31.0
+    },
+    {
+     "work": "external:jingxin_lu",
+     "title": "经心录",
+     "citations": 27.8
+    },
+    {
+     "work": "external:guangji_fang",
+     "title": "广济方",
+     "citations": 24.0
+    },
+    {
+     "work": "external:fanwang_fang",
+     "title": "范汪方",
+     "citations": 24.0
+    },
+    {
+     "work": "external:shenshi_fang",
+     "title": "深师方",
+     "citations": 18.0
+    }
+   ],
+   "persons": [
+    {
+     "person": "zhang_ji",
+     "name": "张机",
+     "citations": 41
+    },
+    {
+     "person": "bianque",
+     "name": "扁鹊",
+     "citations": 37
+    },
+    {
+     "person": "su_jing",
+     "name": "苏敬",
+     "citations": 6
+    },
+    {
+     "person": "hua_tuo",
+     "name": "华佗",
+     "citations": 4
+    },
+    {
+     "person": "wang_shuhe",
+     "name": "王叔和",
+     "citations": 3
+    },
+    {
+     "person": "huangfu_mi",
+     "name": "皇甫谧",
+     "citations": 3
+    },
+    {
+     "person": "tao_hongjing",
+     "name": "陶弘景",
+     "citations": 2
+    },
+    {
+     "person": "zhen_quan",
+     "name": "甄权",
+     "citations": 2
+    },
+    {
+     "person": "wang_bing",
+     "name": "王冰",
+     "citations": 2
+    },
+    {
+     "person": "ge_hong",
+     "name": "葛洪",
+     "citations": 2
+    },
+    {
+     "person": "chen_cangqi",
+     "name": "陈藏器",
+     "citations": 1
+    },
+    {
+     "person": "canggong",
+     "name": "淳于意",
+     "citations": 1
+    }
+   ]
+  },
+  {
+   "period": "宋金元",
+   "books": [
+    {
+     "work": "work:jiayi",
+     "title": "针灸甲乙经",
+     "citations": 312.8
+    },
+    {
+     "work": "external:yaoxing_lun",
+     "title": "药性论",
+     "citations": 105.8
+    },
+    {
+     "work": "work:suwen",
+     "title": "重广补注黄帝内经素问",
+     "citations": 82.5
+    },
+    {
+     "work": "work:qianjin",
+     "title": "备急千金要方",
+     "citations": 48.0
+    },
+    {
+     "work": "work:lingshu",
+     "title": "黄帝内经·灵枢",
+     "citations": 43.4
+    },
+    {
+     "work": "work:shennong",
+     "title": "神农本草经",
+     "citations": 32.9
+    },
+    {
+     "work": "work:taiping_shenghui",
+     "title": "太平圣惠方(下)",
+     "citations": 31.2
+    },
+    {
+     "work": "work:jc:类证活人书",
+     "title": "类证活人书",
+     "citations": 16.0
+    },
+    {
+     "work": "external:erya",
+     "title": "尔雅",
+     "citations": 14.9
+    },
+    {
+     "work": "work:zhouhou",
+     "title": "肘后备急方",
+     "citations": 13.8
+    },
+    {
+     "work": "work:sanyin",
+     "title": "三因极一病证方论",
+     "citations": 13.6
+    },
+    {
+     "work": "external:tujing_bencao",
+     "title": "本草图经",
+     "citations": 11.4
+    }
+   ],
+   "persons": [
+    {
+     "person": "zhang_ji",
+     "name": "张机",
+     "citations": 387
+    },
+    {
+     "person": "rihuazi",
+     "name": "日华子",
+     "citations": 148
+    },
+    {
+     "person": "yang_shangshan",
+     "name": "杨上善",
+     "citations": 82
+    },
+    {
+     "person": "li_gao",
+     "name": "李杲",
+     "citations": 38
+    },
+    {
+     "person": "sun_simiao",
+     "name": "孙思邈",
+     "citations": 36
+    },
+    {
+     "person": "wang_shuhe",
+     "name": "王叔和",
+     "citations": 33
+    },
+    {
+     "person": "tao_hongjing",
+     "name": "陶弘景",
+     "citations": 31
+    },
+    {
+     "person": "wang_bing",
+     "name": "王冰",
+     "citations": 27
+    },
+    {
+     "person": "liu_wansu",
+     "name": "刘完素",
+     "citations": 21
+    },
+    {
+     "person": "chen_cangqi",
+     "name": "陈藏器",
+     "citations": 20
+    },
+    {
+     "person": "zhu_zhenheng",
+     "name": "朱震亨",
+     "citations": 19
+    },
+    {
+     "person": "xu_shuwei",
+     "name": "许叔微",
+     "citations": 15
+    }
+   ]
+  },
+  {
+   "period": "明",
+   "books": [
+    {
+     "work": "work:suwen",
+     "title": "重广补注黄帝内经素问",
+     "citations": 107.0
+    },
+    {
+     "work": "work:hejiju",
+     "title": "太平惠民和剂局方",
+     "citations": 22.8
+    },
+    {
+     "work": "work:shennong",
+     "title": "神农本草经",
+     "citations": 18.5
+    },
+    {
+     "work": "work:maijing",
+     "title": "脉经",
+     "citations": 18.0
+    },
+    {
+     "work": "work:nanjing",
+     "title": "难经集注",
+     "citations": 17.6
+    },
+    {
+     "work": "work:lingshu",
+     "title": "黄帝内经·灵枢",
+     "citations": 15.8
+    },
+    {
+     "work": "work:qianjin",
+     "title": "备急千金要方",
+     "citations": 12.0
+    },
+    {
+     "work": "work:furen_daquan",
+     "title": "妇人大全良方",
+     "citations": 11.4
+    },
+    {
+     "work": "work:jc:脉诀",
+     "title": "脉诀",
+     "citations": 9.8
+    },
+    {
+     "work": "work:renzhai_zhizhi",
+     "title": "仁斋直指",
+     "citations": 7.8
+    },
+    {
+     "work": "external:tujing_bencao",
+     "title": "本草图经",
+     "citations": 7.0
+    },
+    {
+     "work": "work:taiping_shenghui",
+     "title": "太平圣惠方(下)",
+     "citations": 6.4
+    }
+   ],
+   "persons": [
+    {
+     "person": "zhu_zhenheng",
+     "name": "朱震亨",
+     "citations": 112
+    },
+    {
+     "person": "zhang_ji",
+     "name": "张机",
+     "citations": 101
+    },
+    {
+     "person": "li_gao",
+     "name": "李杲",
+     "citations": 64
+    },
+    {
+     "person": "rihuazi",
+     "name": "日华子",
+     "citations": 37
+    },
+    {
+     "person": "liu_wansu",
+     "name": "刘完素",
+     "citations": 32
+    },
+    {
+     "person": "zhang_yuansu",
+     "name": "张元素",
+     "citations": 24
+    },
+    {
+     "person": "tao_hongjing",
+     "name": "陶弘景",
+     "citations": 23
+    },
+    {
+     "person": "xue_ji",
+     "name": "薛己",
+     "citations": 21
+    },
+    {
+     "person": "wang_haogu",
+     "name": "王好古",
+     "citations": 19
+    },
+    {
+     "person": "zhang_congzheng",
+     "name": "张从正",
+     "citations": 19
+    },
+    {
+     "person": "sun_simiao",
+     "name": "孙思邈",
+     "citations": 17
+    },
+    {
+     "person": "chen_cangqi",
+     "name": "陈藏器",
+     "citations": 13
+    }
+   ]
+  },
+  {
+   "period": "清",
+   "books": [
+    {
+     "work": "work:suwen",
+     "title": "重广补注黄帝内经素问",
+     "citations": 337.6
+    },
+    {
+     "work": "work:shennong",
+     "title": "神农本草经",
+     "citations": 125.2
+    },
+    {
+     "work": "work:lingshu",
+     "title": "黄帝内经·灵枢",
+     "citations": 96.7
+    },
+    {
+     "work": "work:jinkui",
+     "title": "新编金匮要略方论",
+     "citations": 96.0
+    },
+    {
+     "work": "work:nanjing",
+     "title": "难经集注",
+     "citations": 59.8
+    },
+    {
+     "work": "work:shanglun",
+     "title": "尚论篇",
+     "citations": 51.2
+    },
+    {
+     "work": "work:qianjin",
+     "title": "备急千金要方",
+     "citations": 39.0
+    },
+    {
+     "work": "external:mingyi_bielu",
+     "title": "名医别录",
+     "citations": 29.0
+    },
+    {
+     "work": "work:bencao_gangmu",
+     "title": "本草纲目",
+     "citations": 27.8
+    },
+    {
+     "work": "work:waitai",
+     "title": "外台秘要",
+     "citations": 22.0
+    },
+    {
+     "work": "work:yizong_jinjian",
+     "title": "御纂医宗金鉴",
+     "citations": 16.8
+    },
+    {
+     "work": "work:gujin_yitong",
+     "title": "古今医统大全(下)",
+     "citations": 16.0
+    }
+   ],
+   "persons": [
+    {
+     "person": "zhang_ji",
+     "name": "张机",
+     "citations": 115
+    },
+    {
+     "person": "zhu_zhenheng",
+     "name": "朱震亨",
+     "citations": 76
+    },
+    {
+     "person": "li_gao",
+     "name": "李杲",
+     "citations": 50
+    },
+    {
+     "person": "li_shizhen",
+     "name": "李时珍",
+     "citations": 42
+    },
+    {
+     "person": "yu_chang",
+     "name": "喻昌",
+     "citations": 27
+    },
+    {
+     "person": "zhang_yuansu",
+     "name": "张元素",
+     "citations": 21
+    },
+    {
+     "person": "xue_ji",
+     "name": "薛己",
+     "citations": 19
+    },
+    {
+     "person": "fang_youzhi",
+     "name": "方有执",
+     "citations": 19
+    },
+    {
+     "person": "cheng_wuji",
+     "name": "成无己",
+     "citations": 15
+    },
+    {
+     "person": "zhang_jiebin",
+     "name": "张介宾",
+     "citations": 15
+    },
+    {
+     "person": "liu_wansu",
+     "name": "刘完素",
+     "citations": 14
+    },
+    {
+     "person": "cheng_yingmao",
+     "name": "程应旄",
+     "citations": 14
+    }
+   ]
+  },
+  {
+   "period": "民国",
+   "books": [
+    {
+     "work": "work:shanglun",
+     "title": "尚论篇",
+     "citations": 22.4
+    },
+    {
+     "work": "work:jc:温热论",
+     "title": "温热论",
+     "citations": 7.0
+    },
+    {
+     "work": "work:suwen",
+     "title": "重广补注黄帝内经素问",
+     "citations": 5.0
+    },
+    {
+     "work": "work:wenbing_tiaobian",
+     "title": "温病条辨",
+     "citations": 3.8
+    },
+    {
+     "work": "work:ws:伤寒杂病论",
+     "title": "伤寒杂病论（桂林古本）",
+     "citations": 3.2
+    },
+    {
+     "work": "work:wenyilun",
+     "title": "瘟疫论",
+     "citations": 2.0
+    },
+    {
+     "work": "work:nanjing",
+     "title": "难经集注",
+     "citations": 1.0
+    },
+    {
+     "work": "work:qianjin",
+     "title": "备急千金要方",
+     "citations": 1.0
+    },
+    {
+     "work": "work:yixue_yuanliu",
+     "title": "医学源流论",
+     "citations": 0.8
+    },
+    {
+     "work": "work:lingshu",
+     "title": "黄帝内经·灵枢",
+     "citations": 0.8
+    }
+   ],
+   "persons": []
+  }
+ ],
+ "passages_scanned": 135083,
+ "set_aside_later_layers": {
+  "先秦两汉": 1253.4,
+  "隋唐五代": 66.4,
+  "宋金元": 160.5,
+  "清": 1.6,
+  "明": 21.0,
+  "魏晋南北朝": 96.2
+ },
+ "unresolved": [
+  {
+   "title": "素",
+   "count": 69
+  },
+  {
+   "title": "范子计然",
+   "count": 65
+  },
+  {
+   "title": "传",
+   "count": 53
+  },
+  {
+   "title": "全元起本",
+   "count": 50
+  },
+  {
+   "title": "易",
+   "count": 46
+  },
+  {
+   "title": "灵",
+   "count": 39
+  },
+  {
+   "title": "广志",
+   "count": 25
+  },
+  {
+   "title": "月令",
+   "count": 22
+  },
+  {
+   "title": "广州记",
+   "count": 21
+  },
+  {
+   "title": "翼",
+   "count": 21
+  },
+  {
+   "title": "下经",
+   "count": 19
+  },
+  {
+   "title": "难",
+   "count": 19
+  },
+  {
+   "title": "尚书",
+   "count": 17
+  },
+  {
+   "title": "南州记",
+   "count": 17
+  },
+  {
+   "title": "玉篇",
+   "count": 16
+  },
+  {
+   "title": "神农本经",
+   "count": 15
+  },
+  {
+   "title": "方言",
+   "count": 15
+  },
+  {
+   "title": "中山经",
+   "count": 14
+  },
+  {
+   "title": "救急",
+   "count": 13
+  },
+  {
+   "title": "正理论",
+   "count": 12
+  },
+  {
+   "title": "九墟",
+   "count": 11
+  },
+  {
+   "title": "神农经",
+   "count": 11
+  },
+  {
+   "title": "本",
+   "count": 11
+  },
+  {
+   "title": "夏小正",
+   "count": 10
+  },
+  {
+   "title": "集",
+   "count": 10
+  },
+  {
+   "title": "永类",
+   "count": 10
+  },
+  {
+   "title": "中诰",
+   "count": 9
+  },
+  {
+   "title": "西山经",
+   "count": 9
+  },
+  {
+   "title": "司马相如赋",
+   "count": 9
+  },
+  {
+   "title": "巢源",
+   "count": 8
+  },
+  {
+   "title": "脉法",
+   "count": 8
+  },
+  {
+   "title": "药辨决",
+   "count": 8
+  },
+  {
+   "title": "天元玉册",
+   "count": 7
+  },
+  {
+   "title": "初学记",
+   "count": 7
+  },
+  {
+   "title": "北山经",
+   "count": 7
+  },
+  {
+   "title": "太素经",
+   "count": 7
+  },
+  {
+   "title": "短剧方",
+   "count": 7
+  },
+  {
+   "title": "周易",
+   "count": 6
+  },
+  {
+   "title": "艺文志",
+   "count": 6
+  },
+  {
+   "title": "洪范",
+   "count": 6
+  }
+ ],
+ "lineage": [
+  {
+   "from": "许叔微",
+   "to": "张机",
+   "citations": 187,
+   "from_dates": [
+    1079,
+    1154
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "孙思邈",
+   "to": "扁鹊",
+   "citations": 36,
+   "from_dates": [
+    581,
+    682
+   ],
+   "to_dates": [
+    -420,
+    -310
+   ]
+  },
+  {
+   "from": "朱肱",
+   "to": "张机",
+   "citations": 31,
+   "from_dates": [
+    1088,
+    1118
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "王好古",
+   "to": "张机",
+   "citations": 28,
+   "from_dates": [
+    1200,
+    1264
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "王叔和",
+   "to": "扁鹊",
+   "citations": 28,
+   "from_dates": [
+    201,
+    280
+   ],
+   "to_dates": [
+    -420,
+    -310
+   ]
+  },
+  {
+   "from": "唐慎微",
+   "to": "日华子",
+   "citations": 26,
+   "from_dates": [
+    1082,
+    1108
+   ],
+   "to_dates": [
+    908,
+    970
+   ]
+  },
+  {
+   "from": "刘完素",
+   "to": "张机",
+   "citations": 24,
+   "from_dates": [
+    1110,
+    1200
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "王焘",
+   "to": "张机",
+   "citations": 23,
+   "from_dates": [
+    730,
+    755
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "唐慎微",
+   "to": "陶弘景",
+   "citations": 22,
+   "from_dates": [
+    1082,
+    1108
+   ],
+   "to_dates": [
+    456,
+    536
+   ]
+  },
+  {
+   "from": "王好古",
+   "to": "李杲",
+   "citations": 21,
+   "from_dates": [
+    1200,
+    1264
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "王冰",
+   "to": "杨上善",
+   "citations": 20,
+   "from_dates": [
+    750,
+    790
+   ],
+   "to_dates": [
+    620,
+    680
+   ]
+  },
+  {
+   "from": "孙思邈",
+   "to": "张机",
+   "citations": 20,
+   "from_dates": [
+    581,
+    682
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "张介宾",
+   "to": "薛己",
+   "citations": 18,
+   "from_dates": [
+    1563,
+    1640
+   ],
+   "to_dates": [
+    1487,
+    1559
+   ]
+  },
+  {
+   "from": "刘纯",
+   "to": "张机",
+   "citations": 18,
+   "from_dates": [
+    1370,
+    1400
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "李杲",
+   "to": "张机",
+   "citations": 16,
+   "from_dates": [
+    1180,
+    1251
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "吴谦",
+   "to": "方有执",
+   "citations": 16,
+   "from_dates": [
+    1736,
+    1742
+   ],
+   "to_dates": [
+    1582,
+    1593
+   ]
+  },
+  {
+   "from": "李时珍",
+   "to": "陶弘景",
+   "citations": 15,
+   "from_dates": [
+    1518,
+    1593
+   ],
+   "to_dates": [
+    456,
+    536
+   ]
+  },
+  {
+   "from": "汪昂",
+   "to": "李时珍",
+   "citations": 13,
+   "from_dates": [
+    1615,
+    1695
+   ],
+   "to_dates": [
+    1518,
+    1593
+   ]
+  },
+  {
+   "from": "汪机",
+   "to": "朱震亨",
+   "citations": 13,
+   "from_dates": [
+    1463,
+    1539
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "郭雍",
+   "to": "张机",
+   "citations": 12,
+   "from_dates": [
+    1103,
+    1187
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "杨士瀛",
+   "to": "朱震亨",
+   "citations": 12,
+   "from_dates": [
+    1260,
+    1270
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "张从正",
+   "to": "张机",
+   "citations": 12,
+   "from_dates": [
+    1156,
+    1228
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "吴谦",
+   "to": "程应旄",
+   "citations": 12,
+   "from_dates": [
+    1736,
+    1742
+   ],
+   "to_dates": [
+    1670,
+    1670
+   ]
+  },
+  {
+   "from": "李时珍",
+   "to": "苏敬",
+   "citations": 11,
+   "from_dates": [
+    1518,
+    1593
+   ],
+   "to_dates": [
+    650,
+    674
+   ]
+  },
+  {
+   "from": "孙一奎",
+   "to": "朱震亨",
+   "citations": 11,
+   "from_dates": [
+    1573,
+    1600
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "吴仪洛",
+   "to": "李时珍",
+   "citations": 11,
+   "from_dates": [
+    1757,
+    1766
+   ],
+   "to_dates": [
+    1518,
+    1593
+   ]
+  },
+  {
+   "from": "虞抟",
+   "to": "朱震亨",
+   "citations": 11,
+   "from_dates": [
+    1438,
+    1517
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "王好古",
+   "to": "日华子",
+   "citations": 11,
+   "from_dates": [
+    1200,
+    1264
+   ],
+   "to_dates": [
+    908,
+    970
+   ]
+  },
+  {
+   "from": "李时珍",
+   "to": "寇宗奭",
+   "citations": 10,
+   "from_dates": [
+    1518,
+    1593
+   ],
+   "to_dates": [
+    1111,
+    1117
+   ]
+  },
+  {
+   "from": "汪昂",
+   "to": "朱震亨",
+   "citations": 10,
+   "from_dates": [
+    1615,
+    1695
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "张介宾",
+   "to": "李杲",
+   "citations": 10,
+   "from_dates": [
+    1563,
+    1640
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "张介宾",
+   "to": "朱震亨",
+   "citations": 10,
+   "from_dates": [
+    1563,
+    1640
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "张介宾",
+   "to": "张机",
+   "citations": 10,
+   "from_dates": [
+    1563,
+    1640
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "李时珍",
+   "to": "雷敩",
+   "citations": 9,
+   "from_dates": [
+    1518,
+    1593
+   ],
+   "to_dates": [
+    420,
+    479
+   ]
+  },
+  {
+   "from": "陈自明",
+   "to": "许叔微",
+   "citations": 9,
+   "from_dates": [
+    1190,
+    1270
+   ],
+   "to_dates": [
+    1079,
+    1154
+   ]
+  },
+  {
+   "from": "罗天益",
+   "to": "张机",
+   "citations": 9,
+   "from_dates": [
+    1220,
+    1290
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "王履",
+   "to": "张机",
+   "citations": 9,
+   "from_dates": [
+    1332,
+    1391
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "吴谦",
+   "to": "魏荔彤",
+   "citations": 9,
+   "from_dates": [
+    1736,
+    1742
+   ],
+   "to_dates": [
+    1720,
+    1724
+   ]
+  },
+  {
+   "from": "李时珍",
+   "to": "张机",
+   "citations": 8,
+   "from_dates": [
+    1518,
+    1593
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "朱震亨",
+   "to": "张机",
+   "citations": 8,
+   "from_dates": [
+    1281,
+    1358
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "张璐",
+   "to": "张机",
+   "citations": 8,
+   "from_dates": [
+    1617,
+    1699
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "汪昂",
+   "to": "张机",
+   "citations": 8,
+   "from_dates": [
+    1615,
+    1695
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "戴思恭",
+   "to": "李杲",
+   "citations": 8,
+   "from_dates": [
+    1324,
+    1405
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "王肯堂",
+   "to": "李杲",
+   "citations": 8,
+   "from_dates": [
+    1549,
+    1613
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "汪机",
+   "to": "张机",
+   "citations": 8,
+   "from_dates": [
+    1463,
+    1539
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "汪机",
+   "to": "李杲",
+   "citations": 8,
+   "from_dates": [
+    1463,
+    1539
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "王履",
+   "to": "李杲",
+   "citations": 8,
+   "from_dates": [
+    1332,
+    1391
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "朱震亨",
+   "to": "李杲",
+   "citations": 7,
+   "from_dates": [
+    1281,
+    1358
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "周扬俊",
+   "to": "张机",
+   "citations": 7,
+   "from_dates": [
+    1677,
+    1687
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "王士雄",
+   "to": "徐大椿",
+   "citations": 7,
+   "from_dates": [
+    1808,
+    1868
+   ],
+   "to_dates": [
+    1693,
+    1771
+   ]
+  },
+  {
+   "from": "唐慎微",
+   "to": "陈藏器",
+   "citations": 7,
+   "from_dates": [
+    1082,
+    1108
+   ],
+   "to_dates": [
+    713,
+    741
+   ]
+  },
+  {
+   "from": "王肯堂",
+   "to": "朱震亨",
+   "citations": 7,
+   "from_dates": [
+    1549,
+    1613
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "刘完素",
+   "to": "王叔和",
+   "citations": 6,
+   "from_dates": [
+    1110,
+    1200
+   ],
+   "to_dates": [
+    201,
+    280
+   ]
+  },
+  {
+   "from": "李时珍",
+   "to": "日华子",
+   "citations": 6,
+   "from_dates": [
+    1518,
+    1593
+   ],
+   "to_dates": [
+    908,
+    970
+   ]
+  },
+  {
+   "from": "李时珍",
+   "to": "张元素",
+   "citations": 6,
+   "from_dates": [
+    1518,
+    1593
+   ],
+   "to_dates": [
+    1151,
+    1234
+   ]
+  },
+  {
+   "from": "王好古",
+   "to": "王叔和",
+   "citations": 6,
+   "from_dates": [
+    1200,
+    1264
+   ],
+   "to_dates": [
+    201,
+    280
+   ]
+  },
+  {
+   "from": "张从正",
+   "to": "王冰",
+   "citations": 6,
+   "from_dates": [
+    1156,
+    1228
+   ],
+   "to_dates": [
+    750,
+    790
+   ]
+  },
+  {
+   "from": "吴仪洛",
+   "to": "朱震亨",
+   "citations": 6,
+   "from_dates": [
+    1757,
+    1766
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "王焘",
+   "to": "苏敬",
+   "citations": 6,
+   "from_dates": [
+    730,
+    755
+   ],
+   "to_dates": [
+    650,
+    674
+   ]
+  },
+  {
+   "from": "陈念祖",
+   "to": "柯琴",
+   "citations": 6,
+   "from_dates": [
+    1753,
+    1823
+   ],
+   "to_dates": [
+    1669,
+    1674
+   ]
+  },
+  {
+   "from": "汪昂",
+   "to": "喻昌",
+   "citations": 6,
+   "from_dates": [
+    1615,
+    1695
+   ],
+   "to_dates": [
+    1585,
+    1664
+   ]
+  },
+  {
+   "from": "王士雄",
+   "to": "张璐",
+   "citations": 6,
+   "from_dates": [
+    1808,
+    1868
+   ],
+   "to_dates": [
+    1617,
+    1699
+   ]
+  },
+  {
+   "from": "陈自明",
+   "to": "陈言",
+   "citations": 6,
+   "from_dates": [
+    1190,
+    1270
+   ],
+   "to_dates": [
+    1161,
+    1174
+   ]
+  },
+  {
+   "from": "滑寿",
+   "to": "张机",
+   "citations": 6,
+   "from_dates": [
+    1304,
+    1386
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "喻昌",
+   "to": "张机",
+   "citations": 6,
+   "from_dates": [
+    1585,
+    1664
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "王肯堂",
+   "to": "王好古",
+   "citations": 6,
+   "from_dates": [
+    1549,
+    1613
+   ],
+   "to_dates": [
+    1200,
+    1264
+   ]
+  },
+  {
+   "from": "李时珍",
+   "to": "苏颂",
+   "citations": 5,
+   "from_dates": [
+    1518,
+    1593
+   ],
+   "to_dates": [
+    1020,
+    1101
+   ]
+  },
+  {
+   "from": "李时珍",
+   "to": "陈藏器",
+   "citations": 5,
+   "from_dates": [
+    1518,
+    1593
+   ],
+   "to_dates": [
+    713,
+    741
+   ]
+  },
+  {
+   "from": "李时珍",
+   "to": "王好古",
+   "citations": 5,
+   "from_dates": [
+    1518,
+    1593
+   ],
+   "to_dates": [
+    1200,
+    1264
+   ]
+  },
+  {
+   "from": "孙一奎",
+   "to": "张机",
+   "citations": 5,
+   "from_dates": [
+    1573,
+    1600
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "王好古",
+   "to": "王冰",
+   "citations": 5,
+   "from_dates": [
+    1200,
+    1264
+   ],
+   "to_dates": [
+    750,
+    790
+   ]
+  },
+  {
+   "from": "朱震亨",
+   "to": "刘完素",
+   "citations": 5,
+   "from_dates": [
+    1281,
+    1358
+   ],
+   "to_dates": [
+    1110,
+    1200
+   ]
+  },
+  {
+   "from": "薛雪",
+   "to": "张机",
+   "citations": 5,
+   "from_dates": [
+    1681,
+    1770
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "寇宗奭",
+   "to": "陶弘景",
+   "citations": 5,
+   "from_dates": [
+    1111,
+    1117
+   ],
+   "to_dates": [
+    456,
+    536
+   ]
+  },
+  {
+   "from": "汪昂",
+   "to": "李杲",
+   "citations": 5,
+   "from_dates": [
+    1615,
+    1695
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "张璐",
+   "to": "李杲",
+   "citations": 5,
+   "from_dates": [
+    1617,
+    1699
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "戴思恭",
+   "to": "张机",
+   "citations": 5,
+   "from_dates": [
+    1324,
+    1405
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "薛己",
+   "to": "朱震亨",
+   "citations": 5,
+   "from_dates": [
+    1487,
+    1559
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "赵献可",
+   "to": "张机",
+   "citations": 5,
+   "from_dates": [
+    1600,
+    1620
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "叶桂",
+   "to": "张机",
+   "citations": 5,
+   "from_dates": [
+    1667,
+    1746
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "王肯堂",
+   "to": "张机",
+   "citations": 5,
+   "from_dates": [
+    1549,
+    1613
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "戴思恭",
+   "to": "刘完素",
+   "citations": 5,
+   "from_dates": [
+    1324,
+    1405
+   ],
+   "to_dates": [
+    1110,
+    1200
+   ]
+  },
+  {
+   "from": "汪机",
+   "to": "刘完素",
+   "citations": 5,
+   "from_dates": [
+    1463,
+    1539
+   ],
+   "to_dates": [
+    1110,
+    1200
+   ]
+  },
+  {
+   "from": "刘纯",
+   "to": "朱震亨",
+   "citations": 5,
+   "from_dates": [
+    1370,
+    1400
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "李时珍",
+   "to": "孙思邈",
+   "citations": 4,
+   "from_dates": [
+    1518,
+    1593
+   ],
+   "to_dates": [
+    581,
+    682
+   ]
+  },
+  {
+   "from": "李时珍",
+   "to": "甄权",
+   "citations": 4,
+   "from_dates": [
+    1518,
+    1593
+   ],
+   "to_dates": [
+    541,
+    643
+   ]
+  },
+  {
+   "from": "李时珍",
+   "to": "韩保升",
+   "citations": 4,
+   "from_dates": [
+    1518,
+    1593
+   ],
+   "to_dates": [
+    934,
+    965
+   ]
+  },
+  {
+   "from": "滑寿",
+   "to": "王履",
+   "citations": 4,
+   "from_dates": [
+    1304,
+    1386
+   ],
+   "to_dates": [
+    1332,
+    1391
+   ]
+  },
+  {
+   "from": "尤怡",
+   "to": "李杲",
+   "citations": 4,
+   "from_dates": [
+    1700,
+    1749
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "丹波元简",
+   "to": "张机",
+   "citations": 4,
+   "from_dates": [
+    1755,
+    1810
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "丹波元简",
+   "to": "吴仪洛",
+   "citations": 4,
+   "from_dates": [
+    1755,
+    1810
+   ],
+   "to_dates": [
+    1757,
+    1766
+   ]
+  },
+  {
+   "from": "尤怡",
+   "to": "朱震亨",
+   "citations": 4,
+   "from_dates": [
+    1700,
+    1749
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "汪昂",
+   "to": "张元素",
+   "citations": 4,
+   "from_dates": [
+    1615,
+    1695
+   ],
+   "to_dates": [
+    1151,
+    1234
+   ]
+  },
+  {
+   "from": "吴仪洛",
+   "to": "孟诜",
+   "citations": 4,
+   "from_dates": [
+    1757,
+    1766
+   ],
+   "to_dates": [
+    621,
+    713
+   ]
+  },
+  {
+   "from": "汪昂",
+   "to": "成无己",
+   "citations": 4,
+   "from_dates": [
+    1615,
+    1695
+   ],
+   "to_dates": [
+    1063,
+    1156
+   ]
+  },
+  {
+   "from": "陈自明",
+   "to": "朱震亨",
+   "citations": 4,
+   "from_dates": [
+    1190,
+    1270
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "陈自明",
+   "to": "李杲",
+   "citations": 4,
+   "from_dates": [
+    1190,
+    1270
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "皇甫谧",
+   "to": "杨上善",
+   "citations": 4,
+   "from_dates": [
+    215,
+    282
+   ],
+   "to_dates": [
+    620,
+    680
+   ]
+  },
+  {
+   "from": "皇甫谧",
+   "to": "王冰",
+   "citations": 4,
+   "from_dates": [
+    215,
+    282
+   ],
+   "to_dates": [
+    750,
+    790
+   ]
+  },
+  {
+   "from": "赵献可",
+   "to": "朱震亨",
+   "citations": 4,
+   "from_dates": [
+    1600,
+    1620
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "王纶",
+   "to": "李杲",
+   "citations": 4,
+   "from_dates": [
+    1484,
+    1510
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "王纶",
+   "to": "刘完素",
+   "citations": 4,
+   "from_dates": [
+    1484,
+    1510
+   ],
+   "to_dates": [
+    1110,
+    1200
+   ]
+  },
+  {
+   "from": "李杲",
+   "to": "张元素",
+   "citations": 4,
+   "from_dates": [
+    1180,
+    1251
+   ],
+   "to_dates": [
+    1151,
+    1234
+   ]
+  },
+  {
+   "from": "李杲",
+   "to": "孙思邈",
+   "citations": 4,
+   "from_dates": [
+    1180,
+    1251
+   ],
+   "to_dates": [
+    581,
+    682
+   ]
+  },
+  {
+   "from": "张介宾",
+   "to": "刘完素",
+   "citations": 4,
+   "from_dates": [
+    1563,
+    1640
+   ],
+   "to_dates": [
+    1110,
+    1200
+   ]
+  },
+  {
+   "from": "扁鹊",
+   "to": "王冰",
+   "citations": 4,
+   "from_dates": [
+    -420,
+    -310
+   ],
+   "to_dates": [
+    750,
+    790
+   ]
+  },
+  {
+   "from": "杨士瀛",
+   "to": "李杲",
+   "citations": 4,
+   "from_dates": [
+    1260,
+    1270
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "庞安时",
+   "to": "张机",
+   "citations": 4,
+   "from_dates": [
+    1042,
+    1099
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "王好古",
+   "to": "孙思邈",
+   "citations": 4,
+   "from_dates": [
+    1200,
+    1264
+   ],
+   "to_dates": [
+    581,
+    682
+   ]
+  },
+  {
+   "from": "戴思恭",
+   "to": "张从正",
+   "citations": 4,
+   "from_dates": [
+    1324,
+    1405
+   ],
+   "to_dates": [
+    1156,
+    1228
+   ]
+  },
+  {
+   "from": "汪机",
+   "to": "张从正",
+   "citations": 4,
+   "from_dates": [
+    1463,
+    1539
+   ],
+   "to_dates": [
+    1156,
+    1228
+   ]
+  },
+  {
+   "from": "吴谦",
+   "to": "沈明宗",
+   "citations": 4,
+   "from_dates": [
+    1736,
+    1742
+   ],
+   "to_dates": [
+    1693,
+    1693
+   ]
+  },
+  {
+   "from": "吴谦",
+   "to": "成无己",
+   "citations": 4,
+   "from_dates": [
+    1736,
+    1742
+   ],
+   "to_dates": [
+    1063,
+    1156
+   ]
+  },
+  {
+   "from": "吴谦",
+   "to": "喻昌",
+   "citations": 4,
+   "from_dates": [
+    1736,
+    1742
+   ],
+   "to_dates": [
+    1585,
+    1664
+   ]
+  },
+  {
+   "from": "吴谦",
+   "to": "张璐",
+   "citations": 4,
+   "from_dates": [
+    1736,
+    1742
+   ],
+   "to_dates": [
+    1617,
+    1699
+   ]
+  },
+  {
+   "from": "孙一奎",
+   "to": "刘完素",
+   "citations": 3,
+   "from_dates": [
+    1573,
+    1600
+   ],
+   "to_dates": [
+    1110,
+    1200
+   ]
+  },
+  {
+   "from": "朱肱",
+   "to": "王叔和",
+   "citations": 3,
+   "from_dates": [
+    1088,
+    1118
+   ],
+   "to_dates": [
+    201,
+    280
+   ]
+  },
+  {
+   "from": "朱肱",
+   "to": "孙思邈",
+   "citations": 3,
+   "from_dates": [
+    1088,
+    1118
+   ],
+   "to_dates": [
+    581,
+    682
+   ]
+  },
+  {
+   "from": "郭雍",
+   "to": "孙思邈",
+   "citations": 3,
+   "from_dates": [
+    1103,
+    1187
+   ],
+   "to_dates": [
+    581,
+    682
+   ]
+  },
+  {
+   "from": "尤怡",
+   "to": "张机",
+   "citations": 3,
+   "from_dates": [
+    1700,
+    1749
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "苏颂",
+   "to": "陶弘景",
+   "citations": 3,
+   "from_dates": [
+    1020,
+    1101
+   ],
+   "to_dates": [
+    456,
+    536
+   ]
+  },
+  {
+   "from": "苏颂",
+   "to": "苏敬",
+   "citations": 3,
+   "from_dates": [
+    1020,
+    1101
+   ],
+   "to_dates": [
+    650,
+    674
+   ]
+  },
+  {
+   "from": "陈嘉谟",
+   "to": "朱震亨",
+   "citations": 3,
+   "from_dates": [
+    1486,
+    1570
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "汪昂",
+   "to": "李中梓",
+   "citations": 3,
+   "from_dates": [
+    1615,
+    1695
+   ],
+   "to_dates": [
+    1588,
+    1655
+   ]
+  },
+  {
+   "from": "吴仪洛",
+   "to": "李杲",
+   "citations": 3,
+   "from_dates": [
+    1757,
+    1766
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "孙思邈",
+   "to": "华佗",
+   "citations": 3,
+   "from_dates": [
+    581,
+    682
+   ],
+   "to_dates": [
+    145,
+    208
+   ]
+  },
+  {
+   "from": "李中梓",
+   "to": "朱震亨",
+   "citations": 3,
+   "from_dates": [
+    1588,
+    1655
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "吴仪洛",
+   "to": "喻昌",
+   "citations": 3,
+   "from_dates": [
+    1757,
+    1766
+   ],
+   "to_dates": [
+    1585,
+    1664
+   ]
+  },
+  {
+   "from": "陈念祖",
+   "to": "张机",
+   "citations": 3,
+   "from_dates": [
+    1753,
+    1823
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "陈念祖",
+   "to": "薛己",
+   "citations": 3,
+   "from_dates": [
+    1753,
+    1823
+   ],
+   "to_dates": [
+    1487,
+    1559
+   ]
+  },
+  {
+   "from": "汪昂",
+   "to": "刘纯",
+   "citations": 3,
+   "from_dates": [
+    1615,
+    1695
+   ],
+   "to_dates": [
+    1370,
+    1400
+   ]
+  },
+  {
+   "from": "王好古",
+   "to": "扁鹊",
+   "citations": 3,
+   "from_dates": [
+    1200,
+    1264
+   ],
+   "to_dates": [
+    -420,
+    -310
+   ]
+  },
+  {
+   "from": "薛己",
+   "to": "王冰",
+   "citations": 3,
+   "from_dates": [
+    1487,
+    1559
+   ],
+   "to_dates": [
+    750,
+    790
+   ]
+  },
+  {
+   "from": "薛己",
+   "to": "李杲",
+   "citations": 3,
+   "from_dates": [
+    1487,
+    1559
+   ],
+   "to_dates": [
+    1180,
+    1251
+   ]
+  },
+  {
+   "from": "陈念祖",
+   "to": "朱震亨",
+   "citations": 3,
+   "from_dates": [
+    1753,
+    1823
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "陈念祖",
+   "to": "徐彬",
+   "citations": 3,
+   "from_dates": [
+    1753,
+    1823
+   ],
+   "to_dates": [
+    1671,
+    1671
+   ]
+  },
+  {
+   "from": "李中梓",
+   "to": "李时珍",
+   "citations": 3,
+   "from_dates": [
+    1588,
+    1655
+   ],
+   "to_dates": [
+    1518,
+    1593
+   ]
+  },
+  {
+   "from": "赵献可",
+   "to": "王纶",
+   "citations": 3,
+   "from_dates": [
+    1600,
+    1620
+   ],
+   "to_dates": [
+    1484,
+    1510
+   ]
+  },
+  {
+   "from": "赵献可",
+   "to": "刘完素",
+   "citations": 3,
+   "from_dates": [
+    1600,
+    1620
+   ],
+   "to_dates": [
+    1110,
+    1200
+   ]
+  },
+  {
+   "from": "赵献可",
+   "to": "王好古",
+   "citations": 3,
+   "from_dates": [
+    1600,
+    1620
+   ],
+   "to_dates": [
+    1200,
+    1264
+   ]
+  },
+  {
+   "from": "张介宾",
+   "to": "王纶",
+   "citations": 3,
+   "from_dates": [
+    1563,
+    1640
+   ],
+   "to_dates": [
+    1484,
+    1510
+   ]
+  },
+  {
+   "from": "华佗",
+   "to": "扁鹊",
+   "citations": 3,
+   "from_dates": [
+    145,
+    208
+   ],
+   "to_dates": [
+    -420,
+    -310
+   ]
+  },
+  {
+   "from": "王纶",
+   "to": "朱震亨",
+   "citations": 3,
+   "from_dates": [
+    1484,
+    1510
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "罗天益",
+   "to": "王叔和",
+   "citations": 3,
+   "from_dates": [
+    1220,
+    1290
+   ],
+   "to_dates": [
+    201,
+    280
+   ]
+  },
+  {
+   "from": "陈念祖",
+   "to": "喻昌",
+   "citations": 3,
+   "from_dates": [
+    1753,
+    1823
+   ],
+   "to_dates": [
+    1585,
+    1664
+   ]
+  },
+  {
+   "from": "陈念祖",
+   "to": "扁鹊",
+   "citations": 3,
+   "from_dates": [
+    1753,
+    1823
+   ],
+   "to_dates": [
+    -420,
+    -310
+   ]
+  },
+  {
+   "from": "吴谦",
+   "to": "朱震亨",
+   "citations": 3,
+   "from_dates": [
+    1736,
+    1742
+   ],
+   "to_dates": [
+    1281,
+    1358
+   ]
+  },
+  {
+   "from": "张介宾",
+   "to": "陈言",
+   "citations": 3,
+   "from_dates": [
+    1563,
+    1640
+   ],
+   "to_dates": [
+    1161,
+    1174
+   ]
+  },
+  {
+   "from": "李杲",
+   "to": "王叔和",
+   "citations": 3,
+   "from_dates": [
+    1180,
+    1251
+   ],
+   "to_dates": [
+    201,
+    280
+   ]
+  },
+  {
+   "from": "孙思邈",
+   "to": "皇甫谧",
+   "citations": 3,
+   "from_dates": [
+    581,
+    682
+   ],
+   "to_dates": [
+    215,
+    282
+   ]
+  },
+  {
+   "from": "张从正",
+   "to": "王叔和",
+   "citations": 3,
+   "from_dates": [
+    1156,
+    1228
+   ],
+   "to_dates": [
+    201,
+    280
+   ]
+  },
+  {
+   "from": "王好古",
+   "to": "张元素",
+   "citations": 3,
+   "from_dates": [
+    1200,
+    1264
+   ],
+   "to_dates": [
+    1151,
+    1234
+   ]
+  },
+  {
+   "from": "王好古",
+   "to": "陶弘景",
+   "citations": 3,
+   "from_dates": [
+    1200,
+    1264
+   ],
+   "to_dates": [
+    456,
+    536
+   ]
+  },
+  {
+   "from": "薛己",
+   "to": "钱乙",
+   "citations": 3,
+   "from_dates": [
+    1487,
+    1559
+   ],
+   "to_dates": [
+    1032,
+    1113
+   ]
+  },
+  {
+   "from": "吴谦",
+   "to": "汪琥",
+   "citations": 3,
+   "from_dates": [
+    1736,
+    1742
+   ],
+   "to_dates": [
+    1680,
+    1680
+   ]
+  },
+  {
+   "from": "皇甫谧",
+   "to": "张机",
+   "citations": 3,
+   "from_dates": [
+    215,
+    282
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "葛洪",
+   "to": "张机",
+   "citations": 3,
+   "from_dates": [
+    283,
+    343
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  },
+  {
+   "from": "陶弘景",
+   "to": "张机",
+   "citations": 3,
+   "from_dates": [
+    456,
+    536
+   ],
+   "to_dates": [
+    150,
+    219
+   ]
+  }
+ ]
+}

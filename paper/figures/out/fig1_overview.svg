@@ -1,0 +1,1000 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="518.740157pt" height="328.818898pt" viewBox="0 0 518.740157 328.818898" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-09-29T08:05:45.597316</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 328.818898 
+L 518.740157 328.818898 
+L 518.740157 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 9.637795 19.84252 
+L 106.582677 19.84252 
+Q 109.133858 19.84252 109.133858 22.393701 
+L 109.133858 73.984252 
+Q 109.133858 76.535433 106.582677 76.535433 
+L 9.637795 76.535433 
+Q 7.086614 76.535433 7.086614 73.984252 
+L 7.086614 22.393701 
+Q 7.086614 19.84252 9.637795 19.84252 
+z
+" clip-path="url(#p4c68044a48)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 111.11811 48.188976 
+Q 115.228346 48.188976 118.701083 48.188976 
+" clip-path="url(#p4c68044a48)" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+    <path d="M 117.201083 47.388976 
+L 118.701083 48.188976 
+L 117.201083 48.988976 
+z
+" clip-path="url(#p4c68044a48)" style="stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 123.023622 19.84252 
+L 177.448819 19.84252 
+Q 180 19.84252 180 22.393701 
+L 180 73.984252 
+Q 180 76.535433 177.448819 76.535433 
+L 123.023622 76.535433 
+Q 120.472441 76.535433 120.472441 73.984252 
+L 120.472441 22.393701 
+Q 120.472441 19.84252 123.023622 19.84252 
+z
+" clip-path="url(#p4c68044a48)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 181.417323 48.188976 
+Q 185.527559 48.188976 189.000295 48.188976 
+" clip-path="url(#p4c68044a48)" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+    <path d="M 187.500295 47.388976 
+L 189.000295 48.188976 
+L 187.500295 48.988976 
+z
+" clip-path="url(#p4c68044a48)" style="stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 193.322835 19.84252 
+L 247.748031 19.84252 
+Q 250.299213 19.84252 250.299213 22.393701 
+L 250.299213 73.984252 
+Q 250.299213 76.535433 247.748031 76.535433 
+L 193.322835 76.535433 
+Q 190.771654 76.535433 190.771654 73.984252 
+L 190.771654 22.393701 
+Q 190.771654 19.84252 193.322835 19.84252 
+z
+" clip-path="url(#p4c68044a48)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 251.716535 48.188976 
+Q 255.826772 48.188976 259.299508 48.188976 
+" clip-path="url(#p4c68044a48)" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+    <path d="M 257.799508 47.388976 
+L 259.299508 48.188976 
+L 257.799508 48.988976 
+z
+" clip-path="url(#p4c68044a48)" style="stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 263.622047 19.84252 
+L 318.047244 19.84252 
+Q 320.598425 19.84252 320.598425 22.393701 
+L 320.598425 73.984252 
+Q 320.598425 76.535433 318.047244 76.535433 
+L 263.622047 76.535433 
+Q 261.070866 76.535433 261.070866 73.984252 
+L 261.070866 22.393701 
+Q 261.070866 19.84252 263.622047 19.84252 
+z
+" clip-path="url(#p4c68044a48)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 322.015748 48.188976 
+Q 326.125984 48.188976 329.59872 48.188976 
+" clip-path="url(#p4c68044a48)" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+    <path d="M 328.09872 47.388976 
+L 329.59872 48.188976 
+L 328.09872 48.988976 
+z
+" clip-path="url(#p4c68044a48)" style="stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 333.92126 19.84252 
+L 388.346457 19.84252 
+Q 390.897638 19.84252 390.897638 22.393701 
+L 390.897638 73.984252 
+Q 390.897638 76.535433 388.346457 76.535433 
+L 333.92126 76.535433 
+Q 331.370079 76.535433 331.370079 73.984252 
+L 331.370079 22.393701 
+Q 331.370079 19.84252 333.92126 19.84252 
+z
+" clip-path="url(#p4c68044a48)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 392.314961 48.188976 
+Q 396.425197 48.188976 399.897933 48.188976 
+" clip-path="url(#p4c68044a48)" style="fill: none; stroke: #0072b2; stroke-width: 0.6; stroke-linecap: round"/>
+    <path d="M 398.397933 47.388976 
+L 399.897933 48.188976 
+L 398.397933 48.988976 
+z
+" clip-path="url(#p4c68044a48)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 404.220472 19.84252 
+L 509.102362 19.84252 
+Q 511.653543 19.84252 511.653543 22.393701 
+L 511.653543 73.984252 
+Q 511.653543 76.535433 509.102362 76.535433 
+L 404.220472 76.535433 
+Q 401.669291 76.535433 401.669291 73.984252 
+L 401.669291 22.393701 
+Q 401.669291 19.84252 404.220472 19.84252 
+z
+" clip-path="url(#p4c68044a48)" style="fill: #e6f1f7; stroke: #0072b2; stroke-width: 0.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="line2d_1">
+    <path d="M 410.173228 53.574803 
+L 503.149606 53.574803 
+" clip-path="url(#p4c68044a48)" style="fill: none; stroke: #0072b2; stroke-width: 0.4; stroke-linecap: square"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="10.771654" y="27.895723" transform="rotate(-0 10.771654 27.895723)">Ten sources</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="10.771654" y="35.309645" transform="rotate(-0 10.771654 35.309645)">Siku quanshu (Kanripo)</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="104.314961" y="35.309693" transform="rotate(-0 104.314961 35.309693)">100</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="10.771654" y="41.971062" transform="rotate(-0 10.771654 41.971062)">JiCheng editions</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="104.314961" y="41.971111" transform="rotate(-0 104.314961 41.971111)">816</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="10.771654" y="48.632528" transform="rotate(-0 10.771654 48.632528)">CMETA collated editions</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="104.314961" y="48.632528" transform="rotate(-0 104.314961 48.632528)">11</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="10.771654" y="55.293945" transform="rotate(-0 10.771654 55.293945)">Wikisource</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="104.314961" y="55.293945" transform="rotate(-0 104.314961 55.293945)">18</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="10.771654" y="61.955363" transform="rotate(-0 10.771654 61.955363)">AEAM · McGill · other</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="104.314961" y="61.955363" transform="rotate(-0 104.314961 61.955363)">7 · 5 · 9</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start; fill: #4d4d4d" x="10.771654" y="70.317519" transform="rotate(-0 10.771654 70.317519)">+ image catalogues: 10,001 records</text>
+   </g>
+   <g id="text_13">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="150.23622" y="33.50594" transform="rotate(-0 150.23622 33.50594)">Admission</text>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(128.42333 41.316998)">historical texts only;</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(127.730361 46.947857)">contemporary works</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(128.562783 52.578716)">removed by review;</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(125.355752 58.209576)">pseudepigrapha dated</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(128.975674 63.870904)">by first appearance</text>
+   </g>
+   <g id="text_15">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="220.535433" y="36.506129" transform="rotate(-0 220.535433 36.506129)">De-duplication</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(196.635824 44.324608)">12-character shingles</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(193.995589 49.948046)">against trusted sources;</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(195.102621 55.608202)">independent witnesses</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(198.997933 61.209765)">kept, never merged</text>
+   </g>
+   <g id="text_17">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="290.834646" y="36.506129" transform="rotate(-0 290.834646 36.506129)">Layered dating</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(266.798318 44.317187)">text, commentary and</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(268.320583 50.444921)">later additions dated</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(264.847927 55.610937)">apart; undated → Qing,</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(276.940505 61.70664)">never earlier</text>
+   </g>
+   <g id="text_19">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="361.133858" y="33.50594" transform="rotate(-0 361.133858 33.50594)">Normalization</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(337.651436 41.376763)">variant and simplified</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(343.211593 47.475201)">forms unified for</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(340.845968 52.578716)">matching only; the</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(345.017843 58.238873)">transcription is</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(346.542843 64.33731)">never altered</text>
+   </g>
+   <g id="text_21">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="456.661417" y="27.895723" transform="rotate(-0 456.661417 27.895723)">Corpus store</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(427.343058 36.329867)">966 witnesses · 761 works</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(437.348917 41.959555)">123 M characters</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(410.384074 47.11893)">2.05 M passages; periods 475 BCE–1949</text>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(425.533292 60.264461)">canon of 350 works → open</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(428.316105 65.89532)">web corpus of 348 works,</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(420.954777 71.646101)">8.5 M characters, in the browser</text>
+   </g>
+   <g id="text_24">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start; fill: #4d4d4d" x="7.086614" y="87.31305" transform="rotate(-0 7.086614 87.31305)">Every passage keeps its book, edition, volume · chapter · page, date range, textual layer, transcription source and licence</text>
+   </g>
+  </g>
+  <g id="axes_2">
+   <g id="patch_13">
+    <path d="M 9.637795 119.055118 
+L 66.897638 119.055118 
+Q 69.448819 119.055118 69.448819 121.606299 
+L 69.448819 157.606299 
+Q 69.448819 160.15748 66.897638 160.15748 
+L 9.637795 160.15748 
+Q 7.086614 160.15748 7.086614 157.606299 
+L 7.086614 121.606299 
+Q 7.086614 119.055118 9.637795 119.055118 
+z
+" clip-path="url(#p38d8471841)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 79.086614 119.055118 
+L 136.346457 119.055118 
+Q 138.897638 119.055118 138.897638 121.606299 
+L 138.897638 157.606299 
+Q 138.897638 160.15748 136.346457 160.15748 
+L 79.086614 160.15748 
+Q 76.535433 160.15748 76.535433 157.606299 
+L 76.535433 121.606299 
+Q 76.535433 119.055118 79.086614 119.055118 
+z
+" clip-path="url(#p38d8471841)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_15">
+    <path d="M 70.015748 139.606299 
+Q 72.992126 139.606299 75.331004 139.606299 
+" clip-path="url(#p38d8471841)" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+    <path d="M 73.831004 138.806299 
+L 75.331004 139.606299 
+L 73.831004 140.406299 
+z
+" clip-path="url(#p38d8471841)" style="stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 148.535433 119.055118 
+L 205.795276 119.055118 
+Q 208.346457 119.055118 208.346457 121.606299 
+L 208.346457 157.606299 
+Q 208.346457 160.15748 205.795276 160.15748 
+L 148.535433 160.15748 
+Q 145.984252 160.15748 145.984252 157.606299 
+L 145.984252 121.606299 
+Q 145.984252 119.055118 148.535433 119.055118 
+z
+" clip-path="url(#p38d8471841)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 139.464567 139.606299 
+Q 142.440945 139.606299 144.779823 139.606299 
+" clip-path="url(#p38d8471841)" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+    <path d="M 143.279823 138.806299 
+L 144.779823 139.606299 
+L 143.279823 140.406299 
+z
+" clip-path="url(#p38d8471841)" style="stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_18">
+    <path d="M 217.984252 119.055118 
+L 275.244094 119.055118 
+Q 277.795276 119.055118 277.795276 121.606299 
+L 277.795276 157.606299 
+Q 277.795276 160.15748 275.244094 160.15748 
+L 217.984252 160.15748 
+Q 215.433071 160.15748 215.433071 157.606299 
+L 215.433071 121.606299 
+Q 215.433071 119.055118 217.984252 119.055118 
+z
+" clip-path="url(#p38d8471841)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_19">
+    <path d="M 208.913386 139.606299 
+Q 211.889764 139.606299 214.228642 139.606299 
+" clip-path="url(#p38d8471841)" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+    <path d="M 212.728642 138.806299 
+L 214.228642 139.606299 
+L 212.728642 140.406299 
+z
+" clip-path="url(#p38d8471841)" style="stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_20">
+    <path d="M 9.637795 177.165354 
+L 66.897638 177.165354 
+Q 69.448819 177.165354 69.448819 179.716535 
+L 69.448819 215.716535 
+Q 69.448819 218.267717 66.897638 218.267717 
+L 9.637795 218.267717 
+Q 7.086614 218.267717 7.086614 215.716535 
+L 7.086614 179.716535 
+Q 7.086614 177.165354 9.637795 177.165354 
+z
+" clip-path="url(#p38d8471841)" style="fill: #e6f1f7; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_21">
+    <path d="M 75.968504 197.716535 
+Q 72.992126 197.716535 70.653248 197.716535 
+" clip-path="url(#p38d8471841)" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+    <path d="M 72.153248 198.516535 
+L 70.653248 197.716535 
+L 72.153248 196.916535 
+z
+" clip-path="url(#p38d8471841)" style="stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_22">
+    <path d="M 79.086614 177.165354 
+L 136.346457 177.165354 
+Q 138.897638 177.165354 138.897638 179.716535 
+L 138.897638 215.716535 
+Q 138.897638 218.267717 136.346457 218.267717 
+L 79.086614 218.267717 
+Q 76.535433 218.267717 76.535433 215.716535 
+L 76.535433 179.716535 
+Q 76.535433 177.165354 79.086614 177.165354 
+z
+" clip-path="url(#p38d8471841)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_23">
+    <path d="M 145.417323 197.716535 
+Q 142.440945 197.716535 140.102067 197.716535 
+" clip-path="url(#p38d8471841)" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+    <path d="M 141.602067 198.516535 
+L 140.102067 197.716535 
+L 141.602067 196.916535 
+z
+" clip-path="url(#p38d8471841)" style="stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_24">
+    <path d="M 148.535433 177.165354 
+L 205.795276 177.165354 
+Q 208.346457 177.165354 208.346457 179.716535 
+L 208.346457 215.716535 
+Q 208.346457 218.267717 205.795276 218.267717 
+L 148.535433 218.267717 
+Q 145.984252 218.267717 145.984252 215.716535 
+L 145.984252 179.716535 
+Q 145.984252 177.165354 148.535433 177.165354 
+z
+" clip-path="url(#p38d8471841)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_25">
+    <path d="M 214.866142 197.716535 
+Q 211.889764 197.716535 209.550886 197.716535 
+" clip-path="url(#p38d8471841)" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+    <path d="M 211.050886 198.516535 
+L 209.550886 197.716535 
+L 211.050886 196.916535 
+z
+" clip-path="url(#p38d8471841)" style="stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_26">
+    <path d="M 217.984252 177.165354 
+L 275.244094 177.165354 
+Q 277.795276 177.165354 277.795276 179.716535 
+L 277.795276 215.716535 
+Q 277.795276 218.267717 275.244094 218.267717 
+L 217.984252 218.267717 
+Q 215.433071 218.267717 215.433071 215.716535 
+L 215.433071 179.716535 
+Q 215.433071 177.165354 217.984252 177.165354 
+z
+" clip-path="url(#p38d8471841)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_27">
+    <path d="M 246.614173 160.724409 
+Q 246.614173 168.661417 246.614173 175.960925 
+" clip-path="url(#p38d8471841)" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+    <path d="M 247.414173 174.460925 
+L 246.614173 175.960925 
+L 245.814173 174.460925 
+z
+" clip-path="url(#p38d8471841)" style="stroke: #000000; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_28">
+    <path d="M 9.637795 229.606299 
+L 275.244094 229.606299 
+Q 277.795276 229.606299 277.795276 232.15748 
+L 277.795276 313.511811 
+Q 277.795276 316.062992 275.244094 316.062992 
+L 9.637795 316.062992 
+Q 7.086614 316.062992 7.086614 313.511811 
+L 7.086614 232.15748 
+Q 7.086614 229.606299 9.637795 229.606299 
+z
+" clip-path="url(#p38d8471841)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_25">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="38.267717" y="127.923452" transform="rotate(-0 38.267717 127.923452)">Question</text>
+   </g>
+   <g id="text_26">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(15.556779 135.763806)">a scholar's question,</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(16.314592 141.394666)">scoped in time, with</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(27.843888 147.523572)">forbidden</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(23.675138 152.656384)">equivalences</text>
+   </g>
+   <g id="text_27">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="107.716535" y="127.923452" transform="rotate(-0 107.716535 127.923452)">Research contract</text>
+   </g>
+   <g id="text_28">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(86.458332 136.261853)">criteria fixed before</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(87.567707 141.365369)">work begins; each</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(90.627864 147.493103)">criterion names</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(98.405598 152.627087)">its judge</text>
+   </g>
+   <g id="text_29">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="177.165354" y="127.923452" transform="rotate(-0 177.165354 127.923452)">Evidence base</text>
+   </g>
+   <g id="text_30">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(155.214573 135.906775)">verbatim witnesses,</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(156.456761 141.365369)">dated and layered,</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(162.989573 146.996228)">read through</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(162.158714 152.656384)">scoped views</text>
+   </g>
+   <g id="text_31">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="246.614173" y="127.923452" transform="rotate(-0 246.614173 127.923452)">Discovery tracks</text>
+   </g>
+   <g id="text_32">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(226.186829 135.741931)">D1 lost knowledge</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(223.267298 141.402087)">D2 concept evolution</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(223.68722 147.521228)">D3 formula evolution</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(221.463001 153.153259)">D4 hidden · D5 conflict</text>
+   </g>
+   <g id="text_33">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="38.267717" y="189.033877" transform="rotate(-0 38.267717 189.033877)">Verdict</text>
+   </g>
+   <g id="text_34">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(19.227482 196.874231)">accepted · needs</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(15.618888 202.505091)">expert · inconclusive</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(17.002482 208.106653)">· budget exhausted</text>
+   </g>
+   <g id="text_35">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="107.716535" y="189.033877" transform="rotate(-0 107.716535 189.033877)">Expert review</text>
+   </g>
+   <g id="text_36">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(92.432942 196.875403)">G7 is set by a</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(87.565754 202.505091)">named expert and</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(91.455598 208.106653)">by no one else</text>
+   </g>
+   <g id="text_37">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="177.165354" y="186.033688" transform="rotate(-0 177.165354 186.033688)">Gates G0–G8</text>
+   </g>
+   <g id="text_38">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(156.604026 194.341621)">source · verbatim ·</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(157.85012 199.97248)">collation · sense ·</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(155.490745 205.603339)">extraction · sources</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(151.463011 210.766621)">· time · expert · modern</text>
+   </g>
+   <g id="text_39">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="246.614173" y="186.033688" transform="rotate(-0 246.614173 186.033688)">Skeptic</text>
+   </g>
+   <g id="text_40">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(229.382533 194.372089)">falsification and</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(223.130579 199.97248)">absence checks over</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(227.853236 205.135761)">the whole scope;</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(229.248548 210.737324)">narrow or reject</text>
+   </g>
+   <g id="text_41">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; fill: #4d4d4d" transform="translate(218.207653 167.234367)">hypotheses</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; fill: #4d4d4d" transform="translate(214.327965 172.676359)">with warrants</text>
+   </g>
+   <g id="text_42">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="11.338583" y="237.942967" transform="rotate(-0 11.338583 237.942967)">Who may decide what</text>
+   </g>
+   <g id="text_43">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="11.338583" y="246.336672" transform="rotate(-0 11.338583 246.336672)">Agents and models</text>
+   </g>
+   <g id="text_44">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="73.700787" y="246.336672" transform="rotate(-0 73.700787 246.336672)">16 agents read through scoped views and propose; a model</text>
+   </g>
+   <g id="text_45">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="73.700787" y="254.131948" transform="rotate(-0 73.700787 254.131948)">judges only what the rules leave uncertain, and in several</text>
+   </g>
+   <g id="text_46">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="73.700787" y="261.927223" transform="rotate(-0 73.700787 261.927223)">places may lower a verdict but never raise it</text>
+   </g>
+   <g id="text_47">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="11.338583" y="269.722552" transform="rotate(-0 11.338583 269.722552)">Validators</text>
+   </g>
+   <g id="text_48">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="73.700787" y="269.722499" transform="rotate(-0 73.700787 269.722499)">re-run the checks; only a passing re-run closes a hard</text>
+   </g>
+   <g id="text_49">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="73.700787" y="277.517774" transform="rotate(-0 73.700787 277.517774)">objection</text>
+   </g>
+   <g id="text_50">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="11.338583" y="285.313104" transform="rotate(-0 11.338583 285.313104)">Experts</text>
+   </g>
+   <g id="text_51">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="73.700787" y="285.313104" transform="rotate(-0 73.700787 285.313104)">alone set G7; the contract, not finished tasks, decides</text>
+   </g>
+   <g id="text_52">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="73.700787" y="293.108379" transform="rotate(-0 73.700787 293.108379)">whether research is accepted</text>
+   </g>
+   <g id="text_53">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="11.338583" y="300.903655" transform="rotate(-0 11.338583 300.903655)">Kernel</text>
+   </g>
+   <g id="text_54">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="73.700787" y="300.903601" transform="rotate(-0 73.700787 300.903601)">event-sourced log; each event carries its principal;</text>
+   </g>
+   <g id="text_55">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="73.700787" y="308.698877" transform="rotate(-0 73.700787 308.698877)">state replayed and hashed every round</text>
+   </g>
+  </g>
+  <g id="axes_3">
+   <g id="patch_29">
+    <path d="M 445.606299 137.76378 
+L 452.976378 137.76378 
+L 452.976378 169.795276 
+L 445.606299 169.795276 
+z
+" clip-path="url(#pdee25eeb32)" style="fill: #f7e2d1"/>
+   </g>
+   <g id="patch_30">
+    <path d="M 452.976378 137.76378 
+L 460.346457 137.76378 
+L 460.346457 169.795276 
+L 452.976378 169.795276 
+z
+" clip-path="url(#pdee25eeb32)" style="fill: #f7e2d1"/>
+   </g>
+   <g id="patch_31">
+    <path d="M 460.346457 137.76378 
+L 467.716535 137.76378 
+L 467.716535 169.795276 
+L 460.346457 169.795276 
+z
+" clip-path="url(#pdee25eeb32)" style="fill: #f7e2d1"/>
+   </g>
+   <g id="patch_32">
+    <path d="M 467.716535 137.76378 
+L 475.086614 137.76378 
+L 475.086614 169.795276 
+L 467.716535 169.795276 
+z
+" clip-path="url(#pdee25eeb32)" style="fill: #f7e2d1"/>
+   </g>
+   <g id="patch_33">
+    <path d="M 489.826772 137.76378 
+L 497.19685 137.76378 
+L 497.19685 169.795276 
+L 489.826772 169.795276 
+z
+" clip-path="url(#pdee25eeb32)" style="fill: #f7e2d1"/>
+   </g>
+   <g id="line2d_2">
+    <path d="M 447.307087 153.779528 
+L 451.275591 153.779528 
+" clip-path="url(#pdee25eeb32)" style="fill: none; stroke: #4d4d4d; stroke-width: 0.5; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_3">
+    <path d="M 454.677165 153.779528 
+L 458.645669 153.779528 
+" clip-path="url(#pdee25eeb32)" style="fill: none; stroke: #4d4d4d; stroke-width: 0.5; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_4">
+    <path d="M 462.047244 153.779528 
+L 466.015748 153.779528 
+" clip-path="url(#pdee25eeb32)" style="fill: none; stroke: #4d4d4d; stroke-width: 0.5; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_5">
+    <path d="M 469.417323 153.779528 
+L 473.385827 153.779528 
+" clip-path="url(#pdee25eeb32)" style="fill: none; stroke: #4d4d4d; stroke-width: 0.5; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_6">
+    <path d="M 298.204724 191.905512 
+L 298.204724 281.19685 
+" clip-path="url(#pdee25eeb32)" style="fill: none; stroke: #0072b2; stroke-width: 0.6; stroke-linecap: square"/>
+   </g>
+   <g id="text_56">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="354.330709" y="145.152164" transform="rotate(-0 354.330709 145.152164)">Deng Zhen print, 1340</text>
+   </g>
+   <g id="text_57">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="360.850394" y="145.732159" transform="rotate(-0 360.850394 145.732159)">男</text>
+   </g>
+   <g id="text_58">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="368.220472" y="145.699659" transform="rotate(-0 368.220472 145.699659)">子</text>
+   </g>
+   <g id="text_59">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="375.590551" y="145.907355" transform="rotate(-0 375.590551 145.907355)">消</text>
+   </g>
+   <g id="text_60">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="382.96063" y="145.871808" transform="rotate(-0 382.96063 145.871808)">渴</text>
+   </g>
+   <g id="text_61">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="390.330709" y="145.858605" transform="rotate(-0 390.330709 145.858605)">小</text>
+   </g>
+   <g id="text_62">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="397.700787" y="145.891105" transform="rotate(-0 397.700787 145.891105)">便</text>
+   </g>
+   <g id="text_63">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="405.070866" y="145.874855" transform="rotate(-0 405.070866 145.874855)">反</text>
+   </g>
+   <g id="text_64">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="412.440945" y="145.910909" transform="rotate(-0 412.440945 145.910909)">多</text>
+   </g>
+   <g id="text_65">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="419.811024" y="145.777355" transform="rotate(-0 419.811024 145.777355)">以</text>
+   </g>
+   <g id="text_66">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="427.181102" y="145.923605" transform="rotate(-0 427.181102 145.923605)">飲</text>
+   </g>
+   <g id="text_67">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="434.551181" y="145.540397" transform="rotate(-0 434.551181 145.540397)">一</text>
+   </g>
+   <g id="text_68">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="441.92126" y="145.901261" transform="rotate(-0 441.92126 145.901261)">斗</text>
+   </g>
+   <g id="text_69">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="449.291339" y="145.858605" transform="rotate(-0 449.291339 145.858605)">小</text>
+   </g>
+   <g id="text_70">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="456.661417" y="145.891105" transform="rotate(-0 456.661417 145.891105)">便</text>
+   </g>
+   <g id="text_71">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="464.031496" y="145.540397" transform="rotate(-0 464.031496 145.540397)">一</text>
+   </g>
+   <g id="text_72">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="471.401575" y="145.901261" transform="rotate(-0 471.401575 145.901261)">斗</text>
+   </g>
+   <g id="text_73">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="478.771654" y="145.780909" transform="rotate(-0 478.771654 145.780909)">腎</text>
+   </g>
+   <g id="text_74">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="486.141732" y="145.907355" transform="rotate(-0 486.141732 145.907355)">氣</text>
+   </g>
+   <g id="text_75">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="493.511811" y="145.894659" transform="rotate(-0 493.511811 145.894659)">丸</text>
+   </g>
+   <g id="text_76">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="500.88189" y="145.891105" transform="rotate(-0 500.88189 145.891105)">主</text>
+   </g>
+   <g id="text_77">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="508.251969" y="145.920558" transform="rotate(-0 508.251969 145.920558)">之</text>
+   </g>
+   <g id="text_78">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="354.330709" y="155.074889" transform="rotate(-0 354.330709 155.074889)">Wu Qian manuscript, 1395</text>
+   </g>
+   <g id="text_79">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="360.850394" y="155.653419" transform="rotate(-0 360.850394 155.653419)">男</text>
+   </g>
+   <g id="text_80">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="368.220472" y="155.620919" transform="rotate(-0 368.220472 155.620919)">子</text>
+   </g>
+   <g id="text_81">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="375.590551" y="155.828614" transform="rotate(-0 375.590551 155.828614)">消</text>
+   </g>
+   <g id="text_82">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="382.96063" y="155.793068" transform="rotate(-0 382.96063 155.793068)">渴</text>
+   </g>
+   <g id="text_83">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="390.330709" y="155.779864" transform="rotate(-0 390.330709 155.779864)">小</text>
+   </g>
+   <g id="text_84">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="397.700787" y="155.812364" transform="rotate(-0 397.700787 155.812364)">便</text>
+   </g>
+   <g id="text_85">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="405.070866" y="155.796114" transform="rotate(-0 405.070866 155.796114)">反</text>
+   </g>
+   <g id="text_86">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="412.440945" y="155.832169" transform="rotate(-0 412.440945 155.832169)">多</text>
+   </g>
+   <g id="text_87">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="419.811024" y="155.698614" transform="rotate(-0 419.811024 155.698614)">以</text>
+   </g>
+   <g id="text_88">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="427.181102" y="155.844864" transform="rotate(-0 427.181102 155.844864)">飲</text>
+   </g>
+   <g id="text_89">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="434.551181" y="155.461656" transform="rotate(-0 434.551181 155.461656)">一</text>
+   </g>
+   <g id="text_90">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="441.92126" y="155.822521" transform="rotate(-0 441.92126 155.822521)">斗</text>
+   </g>
+   <g id="text_91">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="478.771654" y="155.702169" transform="rotate(-0 478.771654 155.702169)">腎</text>
+   </g>
+   <g id="text_92">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="486.141732" y="155.828614" transform="rotate(-0 486.141732 155.828614)">氣</text>
+   </g>
+   <g id="text_93">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="493.511811" y="155.815919" transform="rotate(-0 493.511811 155.815919)">丸</text>
+   </g>
+   <g id="text_94">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="500.88189" y="155.812364" transform="rotate(-0 500.88189 155.812364)">主</text>
+   </g>
+   <g id="text_95">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="508.251969" y="155.841818" transform="rotate(-0 508.251969 155.841818)">之</text>
+   </g>
+   <g id="text_96">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="354.330709" y="164.994684" transform="rotate(-0 354.330709 164.994684)">Maijing, Yuan print, 1330</text>
+   </g>
+   <g id="text_97">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="360.850394" y="165.574679" transform="rotate(-0 360.850394 165.574679)">男</text>
+   </g>
+   <g id="text_98">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="368.220472" y="165.542179" transform="rotate(-0 368.220472 165.542179)">子</text>
+   </g>
+   <g id="text_99">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="375.590551" y="165.749874" transform="rotate(-0 375.590551 165.749874)">消</text>
+   </g>
+   <g id="text_100">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="382.96063" y="165.714327" transform="rotate(-0 382.96063 165.714327)">渴</text>
+   </g>
+   <g id="text_101">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="390.330709" y="165.701124" transform="rotate(-0 390.330709 165.701124)">小</text>
+   </g>
+   <g id="text_102">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="397.700787" y="165.733624" transform="rotate(-0 397.700787 165.733624)">便</text>
+   </g>
+   <g id="text_103">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="405.070866" y="165.717374" transform="rotate(-0 405.070866 165.717374)">反</text>
+   </g>
+   <g id="text_104">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="412.440945" y="165.753429" transform="rotate(-0 412.440945 165.753429)">多</text>
+   </g>
+   <g id="text_105">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="419.811024" y="165.619874" transform="rotate(-0 419.811024 165.619874)">以</text>
+   </g>
+   <g id="text_106">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="427.181102" y="165.766124" transform="rotate(-0 427.181102 165.766124)">飲</text>
+   </g>
+   <g id="text_107">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="434.551181" y="165.382916" transform="rotate(-0 434.551181 165.382916)">一</text>
+   </g>
+   <g id="text_108">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="441.92126" y="165.743781" transform="rotate(-0 441.92126 165.743781)">斗</text>
+   </g>
+   <g id="text_109">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="449.291339" y="165.701124" transform="rotate(-0 449.291339 165.701124)">小</text>
+   </g>
+   <g id="text_110">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="456.661417" y="165.733624" transform="rotate(-0 456.661417 165.733624)">便</text>
+   </g>
+   <g id="text_111">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="464.031496" y="165.382916" transform="rotate(-0 464.031496 165.382916)">一</text>
+   </g>
+   <g id="text_112">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="471.401575" y="165.743781" transform="rotate(-0 471.401575 165.743781)">斗</text>
+   </g>
+   <g id="text_113">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="478.771654" y="165.623429" transform="rotate(-0 478.771654 165.623429)">腎</text>
+   </g>
+   <g id="text_114">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="486.141732" y="165.749874" transform="rotate(-0 486.141732 165.749874)">氣</text>
+   </g>
+   <g id="text_115">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="493.511811" y="165.613781" transform="rotate(-0 493.511811 165.613781)">圎</text>
+   </g>
+   <g id="text_116">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="500.88189" y="165.733624" transform="rotate(-0 500.88189 165.733624)">主</text>
+   </g>
+   <g id="text_117">
+    <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="508.251969" y="165.763077" transform="rotate(-0 508.251969 165.763077)">之</text>
+   </g>
+   <g id="text_118">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="460.346457" y="133.87679" transform="rotate(-0 460.346457 133.87679)">omission (脱)</text>
+   </g>
+   <g id="text_119">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="493.511811" y="133.876888" transform="rotate(-0 493.511811 133.876888)">丸 → 圎</text>
+   </g>
+   <g id="text_120">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="293.385827" y="121.922765" transform="rotate(-0 293.385827 121.922765)">Jingui yaolüe ch. 13, a clause on xiaoke 消渴 in three witnesses (punctuation removed)</text>
+   </g>
+   <g id="text_121">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; fill: #4d4d4d" transform="translate(363.375289 176.618405)">圎 (圓) for 丸 avoids the name of Emperor Qinzong (桓, from 1126):</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; fill: #4d4d4d" transform="translate(390.85732 182.23027)">that witness descends from an edition made after 1126</text>
+   </g>
+   <g id="patch_34">
+    <path d="M 298.204724 189.92126 
+C 298.730954 189.92126 299.235702 190.130333 299.607802 190.502434 
+C 299.979903 190.874534 300.188976 191.379282 300.188976 191.905512 
+C 300.188976 192.431742 299.979903 192.936489 299.607802 193.30859 
+C 299.235702 193.68069 298.730954 193.889764 298.204724 193.889764 
+C 297.678495 193.889764 297.173747 193.68069 296.801646 193.30859 
+C 296.429546 192.936489 296.220472 192.431742 296.220472 191.905512 
+C 296.220472 191.379282 296.429546 190.874534 296.801646 190.502434 
+C 297.173747 190.130333 297.678495 189.92126 298.204724 189.92126 
+z
+" clip-path="url(#pdee25eeb32)" style="fill: #0072b2"/>
+   </g>
+   <g id="text_122">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="303.874016" y="193.328852" transform="rotate(-0 303.874016 193.328852)">Claim</text>
+   </g>
+   <g id="text_123">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="355.748031" y="193.642309" transform="rotate(-0 355.748031 193.642309)">Shenqi wan 肾气丸 indicated for 消渴 with polyuria</text>
+   </g>
+   <g id="patch_35">
+    <path d="M 298.204724 202.677165 
+C 298.730954 202.677165 299.235702 202.886239 299.607802 203.258339 
+C 299.979903 203.63044 300.188976 204.135188 300.188976 204.661417 
+C 300.188976 205.187647 299.979903 205.692395 299.607802 206.064495 
+C 299.235702 206.436596 298.730954 206.645669 298.204724 206.645669 
+C 297.678495 206.645669 297.173747 206.436596 296.801646 206.064495 
+C 296.429546 205.692395 296.220472 205.187647 296.220472 204.661417 
+C 296.220472 204.135188 296.429546 203.63044 296.801646 203.258339 
+C 297.173747 202.886239 297.678495 202.677165 298.204724 202.677165 
+z
+" clip-path="url(#pdee25eeb32)" style="fill: #0072b2"/>
+   </g>
+   <g id="text_124">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="303.874016" y="206.084757" transform="rotate(-0 303.874016 206.084757)">Quote</text>
+   </g>
+   <g id="text_125">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="355.748031" y="206.40901" transform="rotate(-0 355.748031 206.40901)">男子消渴，小便反多，以飲一斗，小便一斗，腎氣丸主之</text>
+   </g>
+   <g id="patch_36">
+    <path d="M 298.204724 215.433071 
+C 298.730954 215.433071 299.235702 215.642144 299.607802 216.014245 
+C 299.979903 216.386345 300.188976 216.891093 300.188976 217.417323 
+C 300.188976 217.943553 299.979903 218.4483 299.607802 218.820401 
+C 299.235702 219.192501 298.730954 219.401575 298.204724 219.401575 
+C 297.678495 219.401575 297.173747 219.192501 296.801646 218.820401 
+C 296.429546 218.4483 296.220472 217.943553 296.220472 217.417323 
+C 296.220472 216.891093 296.429546 216.386345 296.801646 216.014245 
+C 297.173747 215.642144 297.678495 215.433071 298.204724 215.433071 
+z
+" clip-path="url(#pdee25eeb32)" style="fill: #0072b2"/>
+   </g>
+   <g id="text_126">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="303.874016" y="218.840609" transform="rotate(-0 303.874016 218.840609)">Passage</text>
+   </g>
+   <g id="text_127">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="355.748031" y="218.840609" transform="rotate(-0 355.748031 218.840609)">cm_jingui_dengzhen.00712</text>
+   </g>
+   <g id="patch_37">
+    <path d="M 298.204724 228.188976 
+C 298.730954 228.188976 299.235702 228.39805 299.607802 228.77015 
+C 299.979903 229.142251 300.188976 229.646999 300.188976 230.173228 
+C 300.188976 230.699458 299.979903 231.204206 299.607802 231.576306 
+C 299.235702 231.948407 298.730954 232.15748 298.204724 232.15748 
+C 297.678495 232.15748 297.173747 231.948407 296.801646 231.576306 
+C 296.429546 231.204206 296.220472 230.699458 296.220472 230.173228 
+C 296.220472 229.646999 296.429546 229.142251 296.801646 228.77015 
+C 297.173747 228.39805 297.678495 228.188976 298.204724 228.188976 
+z
+" clip-path="url(#pdee25eeb32)" style="fill: #0072b2"/>
+   </g>
+   <g id="text_128">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="303.874016" y="231.596568" transform="rotate(-0 303.874016 231.596568)">Locator</text>
+   </g>
+   <g id="text_129">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="355.748031" y="231.923829" transform="rotate(-0 355.748031 231.923829)">卷中 · 消渴小便利淋病脉證并治第十三 · p. 100</text>
+   </g>
+   <g id="patch_38">
+    <path d="M 298.204724 240.944882 
+C 298.730954 240.944882 299.235702 241.153955 299.607802 241.526056 
+C 299.979903 241.898156 300.188976 242.402904 300.188976 242.929134 
+C 300.188976 243.455364 299.979903 243.960111 299.607802 244.332212 
+C 299.235702 244.704313 298.730954 244.913386 298.204724 244.913386 
+C 297.678495 244.913386 297.173747 244.704313 296.801646 244.332212 
+C 296.429546 243.960111 296.220472 243.455364 296.220472 242.929134 
+C 296.220472 242.402904 296.429546 241.898156 296.801646 241.526056 
+C 297.173747 241.153955 297.678495 240.944882 298.204724 240.944882 
+z
+" clip-path="url(#pdee25eeb32)" style="fill: #0072b2"/>
+   </g>
+   <g id="text_130">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="303.874016" y="244.352474" transform="rotate(-0 303.874016 244.352474)">Witness</text>
+   </g>
+   <g id="text_131">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="355.748031" y="244.35242" transform="rotate(-0 355.748031 244.35242)">Deng Zhen print, 1340; Peking University Library</text>
+   </g>
+   <g id="patch_39">
+    <path d="M 298.204724 253.700787 
+C 298.730954 253.700787 299.235702 253.909861 299.607802 254.281961 
+C 299.979903 254.654062 300.188976 255.15881 300.188976 255.685039 
+C 300.188976 256.211269 299.979903 256.716017 299.607802 257.088117 
+C 299.235702 257.460218 298.730954 257.669291 298.204724 257.669291 
+C 297.678495 257.669291 297.173747 257.460218 296.801646 257.088117 
+C 296.429546 256.716017 296.220472 256.211269 296.220472 255.685039 
+C 296.220472 255.15881 296.429546 254.654062 296.801646 254.281961 
+C 297.173747 253.909861 297.678495 253.700787 298.204724 253.700787 
+z
+" clip-path="url(#pdee25eeb32)" style="fill: #0072b2"/>
+   </g>
+   <g id="text_132">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="303.874016" y="257.108326" transform="rotate(-0 303.874016 257.108326)">Work · layer</text>
+   </g>
+   <g id="text_133">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="355.748031" y="257.108326" transform="rotate(-0 355.748031 257.108326)">Jingui yaolüe, 200–219 · main text</text>
+   </g>
+   <g id="patch_40">
+    <path d="M 298.204724 266.456693 
+C 298.730954 266.456693 299.235702 266.665766 299.607802 267.037867 
+C 299.979903 267.409968 300.188976 267.914715 300.188976 268.440945 
+C 300.188976 268.967175 299.979903 269.471922 299.607802 269.844023 
+C 299.235702 270.216124 298.730954 270.425197 298.204724 270.425197 
+C 297.678495 270.425197 297.173747 270.216124 296.801646 269.844023 
+C 296.429546 269.471922 296.220472 268.967175 296.220472 268.440945 
+C 296.220472 267.914715 296.429546 267.409968 296.801646 267.037867 
+C 297.173747 266.665766 297.678495 266.456693 298.204724 266.456693 
+z
+" clip-path="url(#pdee25eeb32)" style="fill: #0072b2"/>
+   </g>
+   <g id="text_134">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="303.874016" y="269.864285" transform="rotate(-0 303.874016 269.864285)">Source · licence</text>
+   </g>
+   <g id="text_135">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="355.748031" y="269.864231" transform="rotate(-0 355.748031 269.864231)">CMETA, collated page by page · CC BY 4.0</text>
+   </g>
+   <g id="patch_41">
+    <path d="M 298.204724 279.212598 
+C 298.730954 279.212598 299.235702 279.421672 299.607802 279.793772 
+C 299.979903 280.165873 300.188976 280.670621 300.188976 281.19685 
+C 300.188976 281.72308 299.979903 282.227828 299.607802 282.599928 
+C 299.235702 282.972029 298.730954 283.181102 298.204724 283.181102 
+C 297.678495 283.181102 297.173747 282.972029 296.801646 282.599928 
+C 296.429546 282.227828 296.220472 281.72308 296.220472 281.19685 
+C 296.220472 280.670621 296.429546 280.165873 296.801646 279.793772 
+C 297.173747 279.421672 297.678495 279.212598 298.204724 279.212598 
+z
+" clip-path="url(#pdee25eeb32)" style="fill: #0072b2"/>
+   </g>
+   <g id="text_136">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="303.874016" y="282.62019" transform="rotate(-0 303.874016 282.62019)">Check in chat</text>
+   </g>
+   <g id="text_137">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="355.748031" y="282.719233" transform="rotate(-0 355.748031 282.719233)">✓ verbatim    ≠ quote differs    × no such passage</text>
+   </g>
+  </g>
+  <g id="panel-label">
+   <text style="font-weight: 700; font-size: 8px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="14.328156" transform="rotate(-0 5.669291 14.328156)">a</text>
+  </g>
+  <g id="panel-label">
+   <text style="font-weight: 700; font-size: 8px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="113.540754" transform="rotate(-0 5.669291 113.540754)">b</text>
+  </g>
+  <g id="panel-label">
+   <text style="font-weight: 700; font-size: 8px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="286.299213" y="113.540754" transform="rotate(-0 286.299213 113.540754)">c</text>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p4c68044a48">
+   <rect x="5.669291" y="17.007874" width="507.401575" height="79.370079"/>
+  </clipPath>
+  <clipPath id="p38d8471841">
+   <rect x="5.669291" y="116.220472" width="274.96063" height="209.76378"/>
+  </clipPath>
+  <clipPath id="pdee25eeb32">
+   <rect x="291.968504" y="116.220472" width="221.102362" height="209.76378"/>
+  </clipPath>
+ </defs>
+</svg>
