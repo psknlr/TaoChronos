@@ -316,5 +316,47 @@ def pval(p: float) -> str:
     return f"$\\mathit{{P}}$ = {m:.1f} × 10$^{{{e}}}$"
 
 
-__all__ = ["C", "CJK", "LATIN", "MM", "Canvas", "apply_style", "despine", "measure_pdf", "pval", "qc_figure", "tint",
-           "wilson"]
+_RENDERER = None
+_NO_LINE_START = set("，。、；：？！」』）》〉,.;:?!)]…")
+
+
+def text_width_mm(s: str, fontsize: float, weight: str = "normal") -> float:
+    """Printed width of ``s`` in millimetres, with the figure fonts (Arial, then Noto Sans CJK glyph by glyph)."""
+    global _RENDERER
+    from matplotlib.backends.backend_agg import RendererAgg
+
+    if _RENDERER is None:
+        apply_style()
+        _RENDERER = RendererAgg(100, 100, 72)
+    prop = font_manager.FontProperties(family=mpl.rcParams["font.family"], size=fontsize, weight=weight)
+    w, _, _ = _RENDERER.get_text_width_height_descent(s, prop, ismath=False)
+    return w / 72 * 25.4
+
+
+def wrap_mm(s: str, width_mm: float, fontsize: float, weight: str = "normal") -> list[str]:
+    """Break mixed Chinese and Latin text into lines no wider than ``width_mm``: Latin words stay whole (a no-break
+    space joins two), Chinese breaks between characters, and closing punctuation never starts a line.  Explicit
+    newlines are kept."""
+    import re
+
+    lines: list[str] = []
+    for para in s.split("\n"):
+        tokens = []
+        for tok in re.findall(r"[A-Za-z0-9_#\u00A0\u00C0-\u024F'’.,;:()\[\]%=<>≥≤±×+/\-–—·]+[ \t]*|[\u3400-\u9FFF]+\s*|\s+|.",
+                              para):
+            # a short run of Chinese characters (a name) stays whole; a long one (a quotation) breaks anywhere
+            tokens.extend([tok] if len(tok.strip()) <= 8 or not "\u3400" <= tok[0] <= "\u9FFF" else list(tok))
+        line = ""
+        for tok in tokens:
+            trial = line + tok
+            if line and text_width_mm(trial.rstrip(), fontsize, weight) > width_mm and tok[0] not in _NO_LINE_START:
+                lines.append(line.rstrip())
+                line = tok.lstrip()
+            else:
+                line = trial
+        lines.append(line.rstrip())
+    return lines
+
+
+__all__ = ["C", "CJK", "LATIN", "MM", "Canvas", "apply_style", "despine", "measure_pdf", "pval", "qc_figure",
+           "text_width_mm", "tint", "wilson", "wrap_mm"]

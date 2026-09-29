@@ -167,7 +167,7 @@
    "Each invariant is a probe run against the harness under evaluation; the unit tests (tests/test_boundaries.py) check the same boundaries on the default harness.",
    "A probe that cannot run here is reported as not exercised, never as held."
   ],
-  "seconds": 3.72
+  "seconds": 3.19
  },
  "interpretive": {
   "name": "interpretive",
@@ -1513,7 +1513,7 @@
    "unsafe = a misreading that lets a false claim through: a contradicted claim read as supported, a rejected or reported view read as the author's, a mixed witness verified, a disputed order asserted, a text that may be later put before a cutoff, a condition dropped.",
    "Only the held-out score estimates anything; the dev cases were used to make the rules they test."
   ],
-  "seconds": 0.09
+  "seconds": 0.07
  },
  "research_value": {
   "name": "research_value",
@@ -1813,7 +1813,7 @@
   "notes": [
    "perturbed = one character replaced; fabricated = random characters; wrong span = verbatim quote at shifted offsets"
   ],
-  "seconds": 0.3
+  "seconds": 0.17
  },
  "contradiction": {
   "name": "contradiction",
@@ -1938,7 +1938,7 @@
    }
   ],
   "notes": [],
-  "seconds": 0.77
+  "seconds": 0.66
  },
  "lineage": {
   "name": "lineage",
@@ -2218,7 +2218,7 @@
    }
   ],
   "notes": [],
-  "seconds": 0.03
+  "seconds": 0.04
  },
  "anachronism": {
   "name": "anachronism",
@@ -2381,7 +2381,7 @@
    }
   ],
   "notes": [],
-  "seconds": 25.64
+  "seconds": 20.95
  },
  "time_machine": {
   "name": "time_machine",
@@ -2568,7 +2568,7 @@
   "notes": [
    "Link-level hold-out needs a large corpus: the demo corpus has very few links that first appear after the cutoff, so the baseline table documents the protocol, not a result."
   ],
-  "seconds": 2.58
+  "seconds": 1.86
  },
  "source_rediscovery": {
   "name": "source_rediscovery",
@@ -2622,7 +2622,7 @@
    }
   ],
   "notes": [],
-  "seconds": 2.24
+  "seconds": 1.9
  },
  "ablations": {
   "name": "ablations",
@@ -2663,7 +2663,7 @@
   },
   "details": [],
   "notes": [],
-  "seconds": 3.36
+  "seconds": 2.68
  },
  "collation": {
   "name": "collation",
@@ -2957,7 +2957,7 @@
   "notes": [
    "artificial traditions copied from the demo corpus down a known stemma (two branches, a contaminated witness); base = witness C, as in real use; a change counts as found when a variant unit covers it; the tree is scored on the uncontaminated witnesses (a contaminated one has no single place in a tree)"
   ],
-  "seconds": 0.3
+  "seconds": 0.35
  },
  "reuse": {
   "name": "reuse",
@@ -3680,7 +3680,7 @@
   "notes": [
    "author-constructed pairs (gold/reuse.yaml): a development set for the transparent rules, not an independent benchmark; mode = retained / transformed / disputed / none; pipeline_recall = lineage gold transcriptions and rephrasings that study.reuse finds in the demo corpus"
   ],
-  "seconds": 0.09
+  "seconds": 0.11
  },
  "stratigraphy": {
   "name": "stratigraphy",
@@ -3828,7 +3828,7 @@
   "notes": [
    "composites: 16 000 characters drawn clause by clause from the demo corpus, in 400-character chunks, blocks of 4–8 chunks rewritten with a second author's function characters (half of them), so the layers differ in style only; function-character profiles; a change point counts within one chunk of a boundary"
   ],
-  "seconds": 2.51
+  "seconds": 2.03
  },
  "cases": {
   "name": "cases",
@@ -4658,7 +4658,7 @@
   "notes": [
    "synthetic occurrences (600 per trial): sense B's share rises from 15% to 75% in the year 1000, a sense C that no cue names appears from 1300 (30%); change_year_error in years; hidden_sense_found = a candidate cluster with 3 of its top 5 words from C; exemplars: the curated exemplar passages of 消渴 in the demo corpus labelled with their curated sense"
   ],
-  "seconds": 1.85
+  "seconds": 1.55
  },
  "fragments": {
   "name": "fragments",
@@ -4744,7 +4744,7 @@
   "notes": [
    "demo corpus: 22 works in 4 folds, each punctuated by a model trained on the other folds (a few thousand characters of training text: the scores show the method works, not how well it works)"
   ],
-  "seconds": 0.39
+  "seconds": 0.34
  },
  "commentaries": {
   "name": "commentaries",
@@ -4835,7 +4835,7 @@
   "notes": [
    "constructed corpus (gold/commentaries): four layouts — the row after the clause, rows of a layer of their own, run on in the clause's paragraph, 白文 with notes after each clause; text_f1 = character F1 of the text taken as a commentary (the lemma's own characters left out) against the gold commentary"
   ],
-  "seconds": 0.03
+  "seconds": 0.02
  },
  "disputes": {
   "name": "disputes",
@@ -4882,7 +4882,7 @@
   "notes": [
    "constructed sentences (gold/disputes.yaml) with known hard cases; the misses listed in the details are the limits of a marker-and-name reading"
   ],
-  "seconds": 0.0
+  "seconds": 0.01
  },
  "variant_impact": {
   "name": "variant_impact",
@@ -4973,7 +4973,7 @@
   "notes": [
    "gold/glosses.yaml: glosses in the set forms and traps; a gloss counts when its words and its kind are right"
   ],
-  "seconds": 0.0
+  "seconds": 0.01
  },
  "pairs": {
   "name": "pairs",
@@ -5022,7 +5022,7 @@
   "notes": [
    "synthetic: 5 温病 physicians and 16 other authors (1650–1800); planted words in several phrases (so the word, not one phrase, must be found); common_words_listed = findings every author writes found significant"
   ],
-  "seconds": 0.11
+  "seconds": 0.12
  },
  "names": {
   "name": "names",
@@ -5072,7 +5072,7 @@
   "notes": [
    "synthetic: 6 traditions × 12 witnesses of an 80-character passage; each copies an earlier witness at random and adds one content change (30%: two); convergent: each copy also flips each of eight spellings of collation.yaml (沉/沈, 涩/濇, 肢/支, 膈/鬲, 痰/淡, 硬/鞕, 咳/欬, 藏/脏) with p=0.3, independently of its model; judged = found witnesses whose model was found too; baseline = the most similar earlier witness among those found"
   ],
-  "seconds": 0.36
+  "seconds": 0.29
  },
  "entities": {
   "name": "entities",
@@ -5352,7 +5352,7 @@
    "gold/ner.yaml is the development set; gold/ner_heldout.yaml was annotated before the recognizer ran on it (first measured F1 0.757; 0.776 after fixing two bugs it revealed — chained processing words, 破八片 read as a dose — with no rule added for its content)",
    "no model measured (set TAOCHRONOS_EVAL_LLM=provider:model to measure the rule + model pipeline)"
   ],
-  "seconds": 0.21
+  "seconds": 0.25
  },
  "places": {
   "name": "places",
@@ -5408,7 +5408,7 @@
   "notes": [
    "gold/places.yaml: signatures and statements written in the forms of real prefaces and biographies, with traps"
   ],
-  "seconds": 0.01
+  "seconds": 0.02
  },
  "translation": {
   "name": "translation",
@@ -5434,7 +5434,7 @@
    "gold/presentism.yaml: equations, retrospective diagnoses, modern names a translation adds, and bounded comparisons that must pass",
    "grounding: a synthetic 注解伤寒论 glossing the doublets of the 桂枝汤 clause"
   ],
-  "seconds": 0.49
+  "seconds": 0.35
  },
  "layout": {
   "name": "layout",
@@ -5493,7 +5493,7 @@
    "synthetic pages from the demo corpus (notes planted at random, 版心 and 书眉 added); an engine's lines or characters, boxes jittered by 5 % (12 % noisy) of a character and shuffled",
    "a page carrying more than nine characters of note for one of text is read as all text (the main size cannot be told), the known limit of reading layout from boxes alone"
   ],
-  "seconds": 0.69
+  "seconds": 0.71
  },
  "bridge": {
   "name": "bridge",
@@ -5568,7 +5568,7 @@
   "notes": [
    "phenotypes and mapping: dev cases written while the reader was built (gold/bridge.yaml); levels are not calibrated and the mapping cases test the construct, not a diagnosis"
   ],
-  "seconds": 0.21
+  "seconds": 0.14
  },
  "audit": {
   "name": "audit",
@@ -5584,7 +5584,7 @@
   "notes": [
    "dev cases written with the checks (gold/audit.yaml); offline: no modern evidence"
   ],
-  "seconds": 0.03
+  "seconds": 0.02
  },
  "modern": {
   "name": "modern",
@@ -5636,6 +5636,6 @@
   "notes": [
    "dev questions (gold/workflow.yaml); the run uses the demo corpus and the rules only"
   ],
-  "seconds": 0.16
+  "seconds": 0.13
  }
 }

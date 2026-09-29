@@ -8,19 +8,21 @@
   8.0
  ],
  "stroke_widths_pt": [
+  0.4,
   0.5,
   0.6,
   0.7
  ],
- "n_texts": 41,
+ "n_texts": 98,
  "width_mm": 183.0,
- "height_mm": 62.0,
+ "height_mm": 80.0,
  "fonts": [
   "Arial-BoldMT",
   "Arial-ItalicMT",
-  "ArialMT"
+  "ArialMT",
+  "NotoSansCJKsc-Regular"
  ],
- "live_text_chars": 583,
+ "live_text_chars": 979,
  "files": [
   "/home/user/TaoChronos/paper/figures/out/extfig2_canon_replication.pdf",
   "/home/user/TaoChronos/paper/figures/out/extfig2_canon_replication.svg",

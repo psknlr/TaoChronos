@@ -711,7 +711,8 @@ jicheng:
   name: 笈成檢閱系統資料（笈成中医古籍整理本）
   program: 笈成檢閱系統v1.4.8
   version: v1.4.8
-  license: 古籍原文属公有领域；标点、校勘与整理成果归笈成整理者；当代著作与现代整理本不入库，仅供本地研究使用。检阅程序：授權任何人使用與散布（© 2009-2013 Danny）
+  license: CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在
+    CC0 之列；当代著作与现代整理本除经审定保留者外不入库。检阅程序：授權任何人使用與散布（© 2009-2013 Danny）
   url: https://jicheng.tw/
   catalog: jicheng.yaml
   archive: jc_1_4_8_all.7z
@@ -773,7 +774,7 @@ wikisource:
   - 醫書
 tcm-ancient-books:
   name: TCM-Ancient-Books（中医药古籍文本，GitHub xiaopangxia）
-  license: 未声明授权（古籍原文属公有领域；多为笈成整理本的简体转换本，经“中医世家”网站流传）；仅供本地研究使用
+  license: 仓库未声明授权；古籍原文属公有领域，录文多为中醫笈成整理本（CC0 1.0）的简体转换本，经“中医世家”网站流传；与笈成本重复者不入库，所收者仅供本地研究使用
   url: https://github.com/xiaopangxia/TCM-Ancient-Books
   catalog: tcm-ancient-books.yaml
   repo: https://github.com/xiaopangxia/TCM-Ancient-Books
@@ -784,7 +785,7 @@ tcm-ancient-books:
   locked: '2026-09-26'
 tcmoc:
   name: 中医开源医典 tcmoc（GitHub lab99x）
-  license: 未声明授权（据 TCM-Ancient-Books 整理，古籍原文属公有领域）；仅供本地研究使用
+  license: 仓库未声明授权；古籍原文属公有领域，录文据 TCM-Ancient-Books 整理，多为中醫笈成整理本（CC0 1.0）的简体转换本；与笈成本重复者不入库，所收者仅供本地研究使用
   url: https://github.com/lab99x/tcmoc
   catalog: tcmoc.yaml
   repo: https://github.com/lab99x/tcmoc

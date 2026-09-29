@@ -1,9 +1,11 @@
-"""One reviewing copy of the display items: every figure (vector SVG) with its legend, then the tables, as HTML and PDF.
+"""One reviewing copy of the display items: every figure (vector SVG) with its legend, then the Extended Data tables and
+Supplementary Fig. 1, as HTML and PDF.
 
     python paper/build_preview.py      # paper/preview.html and, when Chromium is found, paper/TaoChronos_display_items.pdf
 
 The PDF is for reading and circulating among the authors; the files submitted are the figures in paper/figures/out
-(PDF masters), the legends in paper/legends.md and the tables in paper/tables (Word, LaTeX or Markdown).
+(PDF masters), the legends in paper/legends.md, the tables in paper/tables (Word, LaTeX or Markdown) and the
+Supplementary Information in paper/supplementary.
 """
 
 from __future__ import annotations
@@ -17,10 +19,12 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE / "tables"))
+sys.path.insert(0, str(HERE / "supplementary"))
+from make_supplementary import FIG_LEGEND  # noqa: E402
 from make_tables import table1, table2  # noqa: E402
 
-FIGURES = ["fig1_overview", "fig2_corpus", "fig3_verification", "fig4_research_value", "fig5_case_studies",
-           "extfig1_generalization", "extfig2_canon_replication", "extfig3_resources"]
+FIGURES = ["fig1_architecture", "fig2_corpus", "fig3_end_to_end", "fig4_verification", "fig5_research_value",
+           "fig6_case_studies", "extfig1_generalization", "extfig2_canon_replication", "extfig3_resources"]
 CSS = """
 @page { size: A4; margin: 14mm 13.5mm; }
 body { font-family: Arial, 'Noto Sans CJK SC', sans-serif; font-size: 8.5pt; line-height: 1.35; color: #000; }
@@ -69,9 +73,9 @@ def main() -> None:
     leg = legends()
     parts = [f"<!doctype html><html lang='en'><meta charset='utf-8'><title>TaoChronos display items</title>"
              f"<style>{CSS}</style><body><h1>TaoChronos (道乃久): display items</h1>"
-             "<div class='sub'>Five figures, three Extended Data figures and two tables, at their final print size "
-             "(183 mm wide). Masters: paper/figures/out (PDF, SVG, 600 dpi PNG); legends: paper/legends.md; tables: "
-             "paper/tables.</div>"]
+             "<div class='sub'>Six figures, three Extended Data figures, two Extended Data tables and Supplementary "
+             "Fig. 1, at their final print size (183 mm wide). Masters: paper/figures/out (PDF, SVG, 600 dpi PNG); "
+             "legends: paper/legends.md; tables: paper/tables; Supplementary Information: paper/supplementary.</div>"]
     for i, name in enumerate(FIGURES):
         key = (f"Fig. {i + 1}" if not name.startswith("extfig") else f"Extended Data Fig. {name[6]}")
         title, body = leg[key]
@@ -80,6 +84,9 @@ def main() -> None:
                      f'<div class="legend"><h2>{inline(title)}</h2><p>{inline(body)}</p></div></div>')
     parts.append('<div class="pagebreak"></div>' + table_html(table1()))
     parts.append('<div class="pagebreak"></div>' + table_html(table2()))
+    head, _, body = FIG_LEGEND.partition("** ")
+    parts.append('<div class="item pagebreak"><img src="figures/out/suppfig1_failures.svg" alt="Supplementary Fig. 1">'
+                 f'<div class="legend"><h2>{inline(head.strip("*"))}</h2><p>{inline(body)}</p></div></div>')
     parts.append("</body></html>")
     page = HERE / "preview.html"
     page.write_text("\n".join(parts), encoding="utf-8")

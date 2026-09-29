@@ -1,0 +1,29 @@
+{
+ "warnings": [],
+ "text_sizes_pt": [
+  5.0,
+  5.5,
+  6.0,
+  6.5,
+  8.0
+ ],
+ "stroke_widths_pt": [
+  0.3,
+  0.5,
+  0.6
+ ],
+ "n_texts": 75,
+ "width_mm": 183.0,
+ "height_mm": 112.0,
+ "fonts": [
+  "Arial-BoldMT",
+  "ArialMT",
+  "NotoSansCJKsc-Regular"
+ ],
+ "live_text_chars": 2266,
+ "files": [
+  "/home/user/TaoChronos/paper/figures/out/suppfig1_failures.pdf",
+  "/home/user/TaoChronos/paper/figures/out/suppfig1_failures.svg",
+  "/home/user/TaoChronos/paper/figures/out/suppfig1_failures.png"
+ ]
+}

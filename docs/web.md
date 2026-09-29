@@ -65,16 +65,21 @@ excerpts.  Two steps choose them:
    late works have had less time to be cited, lost works are not in it.  `classics.canon` — offered to the model directly —
    queries the list in any corpus and says whether the current one holds each work.
 2. **要籍语料** — `taochronos web pack` takes, for each of the 350, the best witness (`WEB_SOURCES`: the openly licensed first
-   — CMETA's collated editions, 汉籍仓库, 维基文库, McGill — then 笈成 and the collections transcribed from it; the most complete
-   within a source) — up to three for the first ten, so that the 素问, 灵枢, 伤寒论 and 金匮要略 can be collated in the browser —
+   — CMETA's collated editions, 汉籍仓库, 维基文库, McGill, 笈成 — then the two web text sets transcribed from 笈成; the most
+   complete within a source) — up to three for the first ten, so that the 素问, 灵枢, 伤寒论 and 金匮要略 can be collated in the browser —
    whole within 350 000 characters for the first ten; then 50 000, 25 000 and 12 000 by rank, as whole chapters spread
    through the book.  Result: 348 works, 368 witnesses, 135 083 passages, 8.5 million characters, with the passage ids of
    the full corpus, in rank order, in `corpus/web/` (passages.jsonl.gz, books.json, [ATTRIBUTION.md](../corpus/web/ATTRIBUTION.md)).
-   The texts are all in the public domain.  The transcriptions of 笈成 and its derivatives declare no licence and their
-   punctuation and collation are their editors'; IMPF-AI decided to publish them with the site (2026-09-28), and their
-   records say so.  Sources whose terms forbid passing their transcriptions on (`NEVER_PACKED`: 東亜医学協会, a Hugging Face
-   dataset under a proprietary licence) are never packed; the two works known only through them (扁鹊仓公列传, 伤寒论集注) are
-   listed without text.
+   The texts are all in the public domain.  笈成 releases its editorial work on them — selection, arrangement, punctuation,
+   annotation — under CC0 1.0 and its own writing under CC BY 4.0 ([著作權聲明](https://jicheng.tw/tcm/copyright.html),
+   checked 2026-09-29; credit 中醫笈成), so 344 of the works come from an openly licensed witness.  IMPF-AI decided to
+   publish the rest with the site (2026-09-28): the four works known only through TCM-Ancient-Books, a set of copies of 笈成
+   texts whose repository declares no licence (a copy of a 笈成 text is never stored, so these four match no 笈成 text in
+   the store; their records carry the site's terms), and the modern editors' part of the 笈成 texts that follow a modern edition, such as
+   the 今人辑校本 of 集验方, 名医别录, 食疗本草, 小品方, 吴普本草, 海药本草 and 新修本草, which 笈成's CC0 cannot release (the
+   licence of every 笈成 record and the attribution say so).  Sources whose terms forbid passing their transcriptions on
+   (`NEVER_PACKED`: 東亜医学協会, a Hugging Face dataset under a proprietary licence) are never packed; the two works known
+   only through them (扁鹊仓公列传, 伤寒论集注) are listed without text.
 
 `taochronos web build` turns the pack into a corpus store — the schema of the full corpus — without its full-text index
 (the index is two thirds of a download that compresses badly), xz-compressed (`runtime/corpus.sqlite.xz`: 10.8 MB for 90;
@@ -319,11 +324,12 @@ their sessions, the V2 workflow, every server endpoint, CORS and Private Network
 (the server's own pages on any address), the access token (refused without it, the proxy too; generated for any address
 but loopback), the proxy (streaming, allow-list, the SDK path form, `--env-keys`, `--allow-host`), background research, the
 site build (with the corpus store).  `tests/test_web_corpus.py` — the 要籍 list (ranked, metadata only, the classics first,
-nothing modern), the choice of witnesses (openly licensed first, never a source in `NEVER_PACKED`), budgets kept as whole
-chapters spread through a book, the pack → a store with the same bytes → indexed once → read by the harness, the index in
-two phases (the first-ranked works first, the rest in slices, seen by a connection already reading) and the shipped pack
-under the `web-canon` profile (348 works in rank order, the terms of each transcription that is not openly licensed; a 宋本
-found for a punctuated 伤寒论 clause; `classics.canon` for what it lacks).
+nothing modern, open where a source is openly licensed, its open witness the pack's first), the choice of witnesses
+(openly licensed first, 笈成 last among them, never a source in `NEVER_PACKED`), budgets kept as whole chapters spread
+through a book, the pack → a store with the same bytes → indexed once → read by the harness, the index in two phases
+(the first-ranked works first, the rest in slices, seen by a connection already reading) and the shipped pack under the
+`web-canon` profile (348 works in rank order, an openly licensed transcription with its own terms, any other with the
+terms the site carries it under; a 宋本 found for a punctuated 伤寒论 clause; `classics.canon` for what it lacks).
 `tests/test_corpus_store.py` — on a store: a quotation found whatever its punctuation and in either script, across a
 witness's own marks, never with a changed or missing character; outside a session `classics.list_books` lists every
 book with its filters and `kg.claims` / `kg.neighbors` read the passages that write the term.  `tests/test_web_client.py` — the

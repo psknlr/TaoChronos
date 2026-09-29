@@ -38,6 +38,7 @@ OPEN_SOURCES = {
     "kanripo": "CC BY-SA 4.0 — 漢籍リポジトリ Kanseki Repository",
     "wikisource": "CC BY-SA 4.0 — 维基文库 Wikisource",
     "mcgill": "Public Domain Mark 1.0 — McGill University Library",
+    "jicheng": "CC0 1.0 — 中醫笈成 JiCheng（公有领域古籍的编辑成果；网站原创内容 CC BY 4.0）",
 }
 NOT_RANKED = {"现代", "非医籍"}
 LATEST = 1950

@@ -1,5 +1,5 @@
 """Extended Data Fig. 3 | The witnesses behind the texts: image catalogues of eleven collections linked to the corpus,
-and the sources and licences of the open web corpus."""
+and the sources and licences of the open web corpus (all but four of its 368 witnesses openly licensed)."""
 
 from __future__ import annotations
 
@@ -27,7 +27,10 @@ HOLDER_EN = {
     "loc:chinese-rare-books": "Library of Congress, Chinese rare books",
     "nijl:utokyo-medlib": "University of Tokyo Medical Library",
 }
-SOURCE_EN = {"jicheng": ("JiCheng editions", False), "kanripo": ("Siku quanshu (Kanripo)", True),
+# open: the transcriptions' own licence allows reuse (JiCheng: CC0 1.0 for its editorial work, https://jicheng.tw/tcm/
+# copyright.html); TCM-Ancient-Books, copies of JiCheng texts whose repository declares no licence, keeps the four texts
+# that match no JiCheng text
+SOURCE_EN = {"jicheng": ("JiCheng editions", True), "kanripo": ("Siku quanshu (Kanripo)", True),
              "cmeta": ("CMETA collated editions", True), "wikisource": ("Wikisource", True),
              "tcm-ancient-books": ("TCM-Ancient-Books", False), "mcgill": ("McGill rare books", True)}
 
@@ -78,8 +81,9 @@ def main() -> dict:
     ax.set_xlim(0, 6)
     ax.set_xticks([0, 2, 4, 6])
     ax.set_xlabel("Characters in the web corpus (millions)")
-    ax.legend(handles=[Patch(facecolor=C["blue"], edgecolor="none", label="Open licence (CC BY, CC BY-SA, public domain)"),
-                       Patch(facecolor=C["grey"], edgecolor="none", label="No licence declared; published by IMPF-AI")],
+    ax.legend(handles=[Patch(facecolor=C["blue"], edgecolor="none",
+                             label="Open licence (CC0, CC BY, CC BY-SA, public domain)"),
+                       Patch(facecolor=C["grey"], edgecolor="none", label="Repository declares no licence")],
               loc="lower left", bbox_to_anchor=(-0.95, 1.0), ncol=1, fontsize=5, handlelength=1.0)
     cv.text(179, 54.5, f"After each bar: characters · witnesses. Total {web.chars_kept.sum() / 1e6:.2f} M characters,\n"
                        f"{len(web)} witnesses of {web.work.nunique()} works", ha="right", va="center", fontsize=5,

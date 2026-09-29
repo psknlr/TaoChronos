@@ -1,0 +1,58 @@
+{
+ "warnings": [],
+ "text_sizes_pt": [
+  5.0,
+  5.5,
+  6.0,
+  6.5,
+  8.0
+ ],
+ "stroke_widths_pt": [
+  0.25,
+  0.3,
+  0.345,
+  0.36,
+  0.373,
+  0.384,
+  0.395,
+  0.4,
+  0.405,
+  0.415,
+  0.423,
+  0.432,
+  0.44,
+  0.448,
+  0.462,
+  0.469,
+  0.483,
+  0.495,
+  0.5,
+  0.501,
+  0.507,
+  0.513,
+  0.519,
+  0.53,
+  0.54,
+  0.555,
+  0.579,
+  0.6,
+  0.7,
+  0.9,
+  1.0
+ ],
+ "n_texts": 102,
+ "width_mm": 183.0,
+ "height_mm": 128.0,
+ "fonts": [
+  "Arial-BoldMT",
+  "Arial-ItalicMT",
+  "ArialMT",
+  "NotoSansCJKsc-Regular"
+ ],
+ "live_text_chars": 1129,
+ "files": [
+  "/home/user/TaoChronos/paper/figures/out/fig6_case_studies.pdf",
+  "/home/user/TaoChronos/paper/figures/out/fig6_case_studies.svg",
+  "/home/user/TaoChronos/paper/figures/out/fig6_case_studies.png"
+ ]
+}

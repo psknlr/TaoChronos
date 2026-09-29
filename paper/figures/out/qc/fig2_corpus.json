@@ -1,6 +1,7 @@
 {
  "warnings": [],
  "text_sizes_pt": [
+  5.0,
   5.5,
   6.0,
   6.5,
@@ -8,17 +9,18 @@
  ],
  "stroke_widths_pt": [
   0.4,
+  0.5,
   0.6,
   0.7
  ],
- "n_texts": 93,
+ "n_texts": 118,
  "width_mm": 183.0,
- "height_mm": 122.0,
+ "height_mm": 158.0,
  "fonts": [
   "Arial-BoldMT",
   "ArialMT"
  ],
- "live_text_chars": 1014,
+ "live_text_chars": 1901,
  "files": [
   "/home/user/TaoChronos/paper/figures/out/fig2_corpus.pdf",
   "/home/user/TaoChronos/paper/figures/out/fig2_corpus.svg",

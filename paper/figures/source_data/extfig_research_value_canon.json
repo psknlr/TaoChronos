@@ -339,7 +339,7 @@
     "topics": {
      "disease:消渴": {
       "split": "dev",
-      "seconds": 38.1,
+      "seconds": 28.5,
       "status": "max_rounds",
       "acceptance": "needs_expert",
       "claims": 1776,
@@ -352,7 +352,7 @@
      },
      "disease:中风": {
       "split": "dev",
-      "seconds": 79.4,
+      "seconds": 68.2,
       "status": "max_rounds",
       "acceptance": "needs_expert",
       "claims": 2511,
@@ -365,7 +365,7 @@
      },
      "disease:胸痹": {
       "split": "heldout",
-      "seconds": 4.5,
+      "seconds": 3.5,
       "status": "max_rounds",
       "acceptance": "needs_expert",
       "claims": 156,
@@ -378,7 +378,7 @@
      },
      "disease:霍乱": {
       "split": "heldout",
-      "seconds": 31.3,
+      "seconds": 26.2,
       "status": "max_rounds",
       "acceptance": "needs_expert",
       "claims": 1553,
@@ -391,7 +391,7 @@
      },
      "disease:虚劳": {
       "split": "heldout",
-      "seconds": 8.8,
+      "seconds": 7.5,
       "status": "max_rounds",
       "acceptance": "inconclusive",
       "claims": 431,
@@ -404,7 +404,7 @@
      },
      "disease:痰饮": {
       "split": "heldout",
-      "seconds": 10.6,
+      "seconds": 9.4,
       "status": "max_rounds",
       "acceptance": "needs_expert",
       "claims": 292,
@@ -709,7 +709,7 @@
     "leakage": 0
    },
    "passages_read": 40876,
-   "seconds": 220.6
+   "seconds": 176.8
   },
   "details": [
    {
@@ -6175,6 +6175,6 @@
    "Both sides are read by the rule extractor: a link it misses is a miss for every ranker alike.",
    "The full-text index of the store ranks with whole-store statistics; no passage of the other side is read."
   ],
-  "seconds": 221.2
+  "seconds": 177.35
  }
 }

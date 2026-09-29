@@ -69,7 +69,8 @@ name the underlying model.)  道乃久 (TaoChronos) is published by 医哲未来
 the model told to name them when asked and to claim no other identity.
 
 **In the browser, the openly licensed texts of the key works** (superseded by [ADR 0013](0013-canon-corpus-in-the-browser.md):
-all 350, and how the browser loads them).  The works of the full corpus are ranked by the citation
+all 350, and how the browser loads them; and 笈成, counted here among the sources kept to local research, releases its
+editorial work under CC0 1.0 — ADR 0013, addendum of 2026-09-29).  The works of the full corpus are ranked by the citation
 network of the whole store (``study canon``: distinct later works citing it, periods, citations, witnesses, 四库); the first
 350 are a published list with metadata only.  Of these, the 108 that have a witness under an open licence (汉籍仓库, 维基文库,
 CMETA, McGill) are packed (``web pack``) — whole for the first classics, with up to three witnesses to collate, otherwise

@@ -7,6 +7,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+
 from nature_style import C, Canvas, tint
 
 HERE = Path(__file__).resolve().parent
@@ -15,6 +17,72 @@ SD = HERE / "source_data"
 PERIODS = [("Qin–Han", -475, 220), ("Wei–Jin", 220, 581), ("Sui–Tang", 581, 960), ("Song–Jin–Yuan", 960, 1368),
            ("Ming", 1368, 1644), ("Qing", 1644, 1912), ("R", 1912, 1950)]
 X0, X1 = -500, 1960
+DY = 36.0  # the construction pipeline (a) sits above the four data panels
+PT = 0.3528  # mm per point
+
+
+def box(ax, x, y, w, h, title=None, body=None, *, fc="white", ec=None, lw=0.5, title_fs=6, body_fs=5):
+    ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0,rounding_size=0.9", facecolor=fc,
+                                edgecolor=ec or C["black"], lw=lw))
+    if title and body:
+        lines = body.count("\n") + 1
+        block = title_fs * PT * 1.35 + lines * body_fs * PT * 1.2
+        top = y + (h - block) / 2
+        ax.text(x + w / 2, top, title, ha="center", va="top", fontsize=title_fs, fontweight="bold")
+        ax.text(x + w / 2, top + title_fs * PT * 1.35, body, ha="center", va="top", fontsize=body_fs, linespacing=1.2)
+
+
+def arrow(ax, p0, p1, color=None, lw=0.6):
+    ax.add_patch(FancyArrowPatch(p0, p1, arrowstyle="-|>,head_length=1.5,head_width=0.8", mutation_scale=1, lw=lw,
+                                 color=color or C["black"], shrinkA=0, shrinkB=0))
+
+
+def pipeline(cv, wit, web) -> None:
+    """a — from ten sources to a dated corpus (the steps of `taochronos corpus build`)."""
+    ax = cv.blank(2, 6, 179, 28)
+    by, bh = 1.0, 20.0
+    src = wit.source.value_counts()
+    named = ["kanripo", "jicheng", "cmeta", "wikisource", "aeam", "mcgill"]
+    other = int(len(wit) - sum(src.get(k, 0) for k in named))
+    sw = 36.0
+    box(ax, 0.5, by, sw, bh)
+    ax.text(1.8, by + 1.3, "Ten sources", ha="left", va="top", fontsize=6, fontweight="bold")
+    rows = [("Siku quanshu (Kanripo)", src["kanripo"]), ("JiCheng editions", src["jicheng"]),
+            ("CMETA collated editions", src["cmeta"]), ("Wikisource", src["wikisource"]),
+            ("AEAM · McGill · other", f"{src['aeam']} · {src['mcgill']} · {other}")]
+    for k, (lab, n) in enumerate(rows):
+        yy = by + 5.0 + k * 2.35
+        ax.text(1.8, yy, lab, ha="left", va="center", fontsize=5)
+        ax.text(sw - 1.2, yy, f"{n}", ha="right", va="center", fontsize=5)
+    ax.text(1.8, by + 5.0 + 5 * 2.35 + 0.6, "+ image catalogues: 10,001 records", ha="left", va="center", fontsize=5,
+            color=C["dark"])
+    steps = [("Admission", "historical texts only;\ncontemporary works\nremoved by review;\npseudepigrapha dated\n"
+                           "by first appearance"),
+             ("De-duplication", "12-character shingles\nagainst trusted sources;\nindependent witnesses\n"
+                                "kept, never merged"),
+             ("Layered dating", "text, commentary and\nlater additions dated\napart; undated → Qing,\nnever earlier"),
+             ("Normalization", "variant and simplified\nforms unified for\nmatching only; the\ntranscription is\n"
+                               "never altered")]
+    x, w, gap = 0.5 + sw + 4.0, 21.0, 3.8
+    for t, b in steps:
+        arrow(ax, (x - gap + 0.5, by + bh / 2), (x - 0.4, by + bh / 2))
+        box(ax, x, by, w, bh, t, b)
+        x += w + gap
+    arrow(ax, (x - gap + 0.5, by + bh / 2), (x - 0.4, by + bh / 2), color=C["blue"])
+    ox, ow = x, 179 - x - 0.5
+    box(ax, ox, by, ow, bh, fc=tint(C["blue"], 0.10), ec=C["blue"], lw=0.6)
+    ax.text(ox + ow / 2, by + 1.3, "Corpus store", ha="center", va="top", fontsize=6, fontweight="bold")
+    ax.text(ox + ow / 2, by + 4.2, f"{len(wit)} witnesses · {wit.work.nunique()} works\n123 M characters\n"
+                                   "2.05 M passages; periods 475 BCE–1949", ha="center", va="top", fontsize=5,
+            linespacing=1.2)
+    ax.plot([ox + 3, ox + ow - 3], [by + 11.9, by + 11.9], color=C["blue"], lw=0.4)
+    ax.text(ox + ow / 2, by + 12.8, f"canon of 350 works → open\nweb corpus of {web.work.nunique()} works,\n"
+                                    f"{web.chars_kept.sum() / 1e6:.1f} M characters, in the browser", ha="center",
+            va="top", fontsize=5, linespacing=1.2)
+    ax.text(0.5, by + bh + 3.3, "Every passage keeps its book, edition, volume · chapter · page, date range, textual "
+                                "layer, transcription source and licence", ha="left", va="center", fontsize=5.5,
+            color=C["dark"])
+    cv.label(2, 3, "a")
 
 
 def spread(lo: np.ndarray, hi: np.ndarray, edges: np.ndarray) -> np.ndarray:
@@ -44,10 +112,11 @@ def main() -> dict:
     web = pd.read_csv(SD / "extfig_web_canon_witnesses.csv")
     wit["in_canon"] = wit.work.isin(set(canon.work))
 
-    cv = Canvas("double", 122)
+    cv = Canvas("double", 122 + DY)
+    pipeline(cv, wit, web)
 
-    # a — witnesses through time ------------------------------------------------------------------------------------------
-    ax = cv.ax(11, 9, 103, 44)
+    # b — witnesses through time ------------------------------------------------------------------------------------------
+    ax = cv.ax(11, 9 + DY, 103, 44)
     edges = np.arange(X0, X1 + 25, 25)
     allw = spread(wit.comp_lo.values, wit.comp_hi.values, edges)
     canw = spread(wit[wit.in_canon].comp_lo.values, wit[wit.in_canon].comp_hi.values, edges)
@@ -65,15 +134,15 @@ def main() -> dict:
     ax.set_ylabel("Witnesses per 25 years")
     ax.set_xlabel("Composition date (year)")
     ax.legend(loc="upper left", bbox_to_anchor=(0.0, 0.93), handlelength=1.0)
-    cv.label(2, 3, "a")
+    cv.label(2, 3 + DY, "b")
 
-    # b — how the witnesses were dated -------------------------------------------------------------------------------------
+    # c — how the witnesses were dated -------------------------------------------------------------------------------------
     order = [("curated", "Curated by the editors"), ("western", "Year in the book record"),
              ("preface", "Signed preface or colophon"), ("author", "Author's life or other works"),
              ("witness", "Another witness of the work"), ("dynasty", "Dynasty only"),
              ("undated", "Undated (counted as Qing)")]
     counts = wit.dating_class.value_counts()
-    ax = cv.ax(151, 9, 27, 36)
+    ax = cv.ax(151, 9 + DY, 27, 36)
     ys = np.arange(len(order))[::-1]
     vals = [int(counts.get(k, 0)) for k, _ in order]
     cols = [C["vermillion"] if k == "undated" else C["dark"] for k, _ in order]
@@ -88,13 +157,13 @@ def main() -> dict:
     ax.tick_params(axis="y", length=0)
     ax.spines["left"].set_visible(False)
     exact = int((wit.comp_hi == wit.comp_lo).sum())
-    cv.text(118, 52.5, f"Dated to a single year: {exact} of {len(wit)}; median range 0 years,\n"
+    cv.text(118, 52.5 + DY, f"Dated to a single year: {exact} of {len(wit)}; median range 0 years,\n"
                        f"upper quartile {int(np.percentile(wit.comp_hi - wit.comp_lo, 75))} years", fontsize=5.5,
             va="top", color=C["dark"])
-    cv.label(117, 3, "b")
+    cv.label(117, 3 + DY, "c")
 
-    # c — the canon: influence against date -------------------------------------------------------------------------------
-    ax = cv.ax(11, 70, 103, 42)
+    # d — the canon: influence against date -------------------------------------------------------------------------------
+    ax = cv.ax(11, 70 + DY, 103, 42)
     period_bands(ax, 160, labels=False)
     size = 3 + 1.6 * canon.witnesses.clip(upper=10)
     top = canon["rank"] <= 10
@@ -125,10 +194,10 @@ def main() -> dict:
         ax.scatter([], [], s=3 + 1.6 * s_, color=C["grey"], lw=0, label=lab)
     ax.legend(title="Witnesses in the corpus", loc="upper right", ncol=3, handletextpad=0.2, columnspacing=0.8,
               bbox_to_anchor=(1.0, 1.02))
-    cv.label(2, 64, "c")
+    cv.label(2, 64 + DY, "d")
 
-    # d — the 要籍语料 carried by the web client --------------------------------------------------------------------------
-    ax = cv.ax(133, 70, 46, 42)
+    # e — the 要籍语料 carried by the web client --------------------------------------------------------------------------
+    ax = cv.ax(133, 70 + DY, 46, 42)
     first = web[web.witness_no == 1]
     rest = web[web.witness_no > 1]
     for sub, col, lab in ((first[~first.whole], C["grey"], "Chapters sampled"), (first[first.whole], C["blue"], "Whole text")):
@@ -152,7 +221,7 @@ def main() -> dict:
     ax.legend(loc="lower left", handletextpad=0.2, borderaxespad=0.1, labelspacing=0.2, fontsize=5.5)
     ax.text(420, 700, f"{web.work.nunique()} works · {len(web)} witnesses\n{web.chars_kept.sum() / 1e6:.2f} M characters",
             ha="right", va="top", fontsize=5.5)
-    cv.label(121, 64, "d")
+    cv.label(121, 64 + DY, "e")
 
     rep = cv.save("fig2_corpus", HERE / "out")
     return rep

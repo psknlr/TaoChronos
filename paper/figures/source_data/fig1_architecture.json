@@ -1,0 +1,1766 @@
+{
+ "agents": [
+  {
+   "role": "curator",
+   "name": "TaoChronos-Curator",
+   "description": "Corpus Curator. Freezes scope, hold-out and coverage into the corpus manifest.",
+   "mode": "procedure",
+   "permissions": [
+    "classics:read"
+   ],
+   "tools": [
+    "classics.list_books",
+    "vision.layout",
+    "vision.compare"
+   ],
+   "skills": [
+    "evidence-ledger"
+   ],
+   "output_schema": "CorpusManifest",
+   "model": {
+    "min_tier": "small"
+   },
+   "budget": {
+    "max_tool_calls": 10
+   }
+  },
+  {
+   "role": "director",
+   "name": "TaoChronos",
+   "description": "Research Director. Plans each round and decides which specialists to spawn; never judges evidence alone.",
+   "mode": "hybrid",
+   "permissions": [
+    "classics:read",
+    "kg:read",
+    "analysis:run",
+    "codemode:exec"
+   ],
+   "tools": [
+    "classics.list_books",
+    "classics.search",
+    "kg.claims",
+    "analysis.temporal_profile"
+   ],
+   "skills": [
+    "research-planning",
+    "meta-review"
+   ],
+   "output_schema": "ResearchPlan",
+   "model": {
+    "min_tier": "frontier",
+    "effort": "high",
+    "max_tokens": 8000
+   },
+   "budget": {
+    "max_tool_calls": 30,
+    "max_llm_calls": 6
+   }
+  },
+  {
+   "role": "evidence",
+   "name": "TaoChronos-Evidence",
+   "description": "Evidence Retriever. The Evidence Ledger — verbatim, locatable, independently sourced.",
+   "mode": "hybrid",
+   "permissions": [
+    "classics:read",
+    "kg:read"
+   ],
+   "tools": [
+    "classics.search",
+    "classics.get_passage",
+    "kg.claims",
+    "validation.verify_quote",
+    "study.cases",
+    "study.trajectories",
+    "study.argument",
+    "graph.evidence"
+   ],
+   "skills": [
+    "evidence-ledger",
+    "lineage-analysis"
+   ],
+   "output_schema": "EvidenceSet",
+   "model": {
+    "min_tier": "medium",
+    "effort": "medium",
+    "max_tokens": 12000
+   },
+   "budget": {
+    "max_tool_calls": 80,
+    "max_llm_calls": 10
+   }
+  },
+  {
+   "role": "evolution",
+   "name": "TaoChronos-Evolution",
+   "description": "Evolution Analyst. Concept timelines and formula family trees.",
+   "mode": "procedure",
+   "permissions": [
+    "analysis:run"
+   ],
+   "tools": [
+    "analysis.concept_drift",
+    "analysis.formula_evolution",
+    "analysis.temporal_profile"
+   ],
+   "skills": [
+    "discovery-engines"
+   ],
+   "output_schema": "AnalysisSet",
+   "model": {
+    "min_tier": "small"
+   },
+   "budget": {
+    "max_tool_calls": 20
+   }
+  },
+  {
+   "role": "extractor",
+   "name": "TaoChronos-Extractor",
+   "description": "Claim Extractor. Passages to claim hyperedges with verbatim spans.",
+   "mode": "hybrid",
+   "permissions": [
+    "classics:read",
+    "kg:read"
+   ],
+   "tools": [
+    "kg.extract_claims",
+    "kg.term",
+    "classics.get_passage",
+    "validation.verify_quote",
+    "study.clause",
+    "study.entities"
+   ],
+   "skills": [
+    "claim-extraction"
+   ],
+   "output_schema": "ClaimSet",
+   "model": {
+    "min_tier": "medium",
+    "effort": "medium",
+    "prefer": "classical_chinese",
+    "max_tokens": 12000
+   },
+   "budget": {
+    "max_tool_calls": 80,
+    "max_llm_calls": 10
+   }
+  },
+  {
+   "role": "hypothesis",
+   "name": "TaoChronos-Hypothesis",
+   "description": "Hypothesis Generator. Observations to testable, evidence-bound hypotheses; revisions after review.",
+   "mode": "hybrid",
+   "permissions": [
+    "classics:read",
+    "kg:read",
+    "codemode:exec"
+   ],
+   "tools": [
+    "kg.claims",
+    "kg.neighbors",
+    "kg.term",
+    "classics.search",
+    "classics.get_passage",
+    "validation.verify_quote"
+   ],
+   "skills": [
+    "hypothesis-generation",
+    "evidence-ledger",
+    "anachronism-guard"
+   ],
+   "output_schema": "HypothesisSet",
+   "model": {
+    "min_tier": "frontier",
+    "effort": "high",
+    "max_tokens": 16000
+   },
+   "budget": {
+    "max_tool_calls": 60,
+    "max_llm_calls": 10
+   }
+  },
+  {
+   "role": "lineage",
+   "name": "TaoChronos-Lineage",
+   "description": "Lineage Analyst. Citation, transcription, rephrasing, formula derivation and opposition edges.",
+   "mode": "procedure",
+   "permissions": [
+    "classics:read",
+    "analysis:run"
+   ],
+   "tools": [
+    "classics.lineage",
+    "philology.collate",
+    "analysis.missing_sources",
+    "study.schools",
+    "study.chain",
+    "study.places"
+   ],
+   "skills": [
+    "lineage-analysis"
+   ],
+   "output_schema": "LineageReport",
+   "model": {
+    "min_tier": "small"
+   },
+   "budget": {
+    "max_tool_calls": 20
+   }
+  },
+  {
+   "role": "meta_reviewer",
+   "name": "TaoChronos-MetaReviewer",
+   "description": "Meta-Reviewer. Systemic weaknesses, duplicates and next-round recommendations.",
+   "mode": "hybrid",
+   "permissions": [
+    "kg:read",
+    "classics:read"
+   ],
+   "tools": [
+    "kg.claims",
+    "audit.claim"
+   ],
+   "skills": [
+    "meta-review"
+   ],
+   "output_schema": "MetaReview",
+   "model": {
+    "min_tier": "frontier",
+    "effort": "high",
+    "max_tokens": 8000
+   },
+   "budget": {
+    "max_tool_calls": 10,
+    "max_llm_calls": 4
+   }
+  },
+  {
+   "role": "modern_evidence",
+   "name": "TaoChronos-ModernEvidence",
+   "description": "Modern Evidence Analyst. The only door between the historical and biomedical spaces (Gate G8).",
+   "mode": "hybrid",
+   "permissions": [
+    "literature:read",
+    "kg:read",
+    "classics:read"
+   ],
+   "tools": [
+    "literature.modern_evidence",
+    "kg.term",
+    "bridge.map",
+    "bridge.reverse",
+    "modern.search",
+    "modern.safety",
+    "rwd.ask"
+   ],
+   "skills": [
+    "terminology-mapping",
+    "anachronism-guard"
+   ],
+   "output_schema": "ModernEvidenceSet",
+   "model": {
+    "min_tier": "frontier",
+    "effort": "high",
+    "max_tokens": 8000
+   },
+   "budget": {
+    "max_tool_calls": 30,
+    "max_llm_calls": 6
+   }
+  },
+  {
+   "role": "ontologist",
+   "name": "TaoChronos-Ontologist",
+   "description": "Ontologist / Terminology Curator. Typed historical-to-modern mappings, proposed only.",
+   "mode": "hybrid",
+   "permissions": [
+    "kg:read",
+    "kg:propose",
+    "classics:read"
+   ],
+   "tools": [
+    "kg.term",
+    "kg.propose_change",
+    "bridge.phenotype",
+    "bridge.map",
+    "bridge.reverse"
+   ],
+   "skills": [
+    "terminology-mapping",
+    "anachronism-guard"
+   ],
+   "output_schema": "MappingProposals",
+   "model": {
+    "min_tier": "frontier",
+    "effort": "high",
+    "max_tokens": 8000
+   },
+   "budget": {
+    "max_tool_calls": 40,
+    "max_llm_calls": 6
+   }
+  },
+  {
+   "role": "pattern_miner",
+   "name": "TaoChronos-PatternMiner",
+   "description": "Pattern Miner. Tool-first discovery engines D1–D5 and source rediscovery; no model.",
+   "mode": "procedure",
+   "permissions": [
+    "analysis:run",
+    "kg:read",
+    "classics:read"
+   ],
+   "tools": [
+    "analysis.*",
+    "study.pairs",
+    "study.network"
+   ],
+   "skills": [
+    "discovery-engines"
+   ],
+   "output_schema": "ObservationSet",
+   "model": {
+    "min_tier": "small"
+   },
+   "budget": {
+    "max_tool_calls": 60
+   }
+  },
+  {
+   "role": "philologist",
+   "name": "TaoChronos-Philologist",
+   "description": "Philologist (校勘). Readings, variants, collation status — never a forced single reading.",
+   "mode": "hybrid",
+   "permissions": [
+    "classics:read"
+   ],
+   "tools": [
+    "philology.*",
+    "classics.get_passage",
+    "validation.verify_quote",
+    "study.variants",
+    "study.stemma",
+    "study.layers",
+    "study.dating",
+    "study.authorship",
+    "study.witnesses",
+    "study.punctuate",
+    "study.commentaries",
+    "study.glosses",
+    "study.clause",
+    "study.entities",
+    "study.translate",
+    "vision.layout",
+    "vision.compare"
+   ],
+   "skills": [
+    "philology-collation"
+   ],
+   "output_schema": "PhilologyReport",
+   "model": {
+    "min_tier": "medium",
+    "effort": "high",
+    "prefer": "classical_chinese",
+    "max_tokens": 12000
+   },
+   "budget": {
+    "max_tool_calls": 60,
+    "max_llm_calls": 8
+   }
+  },
+  {
+   "role": "scholar",
+   "name": "TaoChronos-Scholar",
+   "description": "Source Scholar (治学). The textual history of the focus formulas, drugs and terms over the whole corpus.",
+   "mode": "procedure",
+   "permissions": [
+    "classics:read"
+   ],
+   "tools": [
+    "study.formula",
+    "study.herb",
+    "study.term",
+    "study.senses",
+    "study.concordance",
+    "study.taboo",
+    "study.metrology",
+    "study.commentaries",
+    "study.disputes",
+    "study.network",
+    "study.schools",
+    "study.names",
+    "study.places",
+    "study.translate"
+   ],
+   "skills": [
+    "source-criticism"
+   ],
+   "output_schema": "SourcesDossier",
+   "model": {
+    "min_tier": "small"
+   },
+   "budget": {
+    "max_tool_calls": 24
+   }
+  },
+  {
+   "role": "semanticist",
+   "name": "TaoChronos-Semanticist",
+   "description": "Historical Semanticist. Period-bound sense resolution; guards against homonymy.",
+   "mode": "hybrid",
+   "permissions": [
+    "classics:read",
+    "kg:read"
+   ],
+   "tools": [
+    "kg.term",
+    "classics.get_passage",
+    "classics.search",
+    "study.term",
+    "study.senses",
+    "study.glosses",
+    "study.names",
+    "study.entities",
+    "study.translate",
+    "bridge.phenotype"
+   ],
+   "skills": [
+    "historical-semantics",
+    "anachronism-guard"
+   ],
+   "output_schema": "TermResolutionReport",
+   "model": {
+    "min_tier": "medium",
+    "effort": "high",
+    "prefer": "classical_chinese",
+    "max_tokens": 12000
+   },
+   "budget": {
+    "max_tool_calls": 60,
+    "max_llm_calls": 8
+   }
+  },
+  {
+   "role": "skeptic",
+   "name": "TaoChronos-Skeptic",
+   "description": "Skeptic (falsification). Tries to break every hypothesis before anyone believes it.",
+   "mode": "hybrid",
+   "permissions": [
+    "classics:read",
+    "kg:read",
+    "analysis:run",
+    "codemode:exec"
+   ],
+   "tools": [
+    "classics.search",
+    "classics.get_passage",
+    "classics.lineage",
+    "kg.claims",
+    "philology.assess_passage",
+    "validation.verify_quote",
+    "analysis.temporal_profile",
+    "study.reuse",
+    "study.dating",
+    "study.argument",
+    "study.disputes",
+    "audit.claim",
+    "graph.evidence"
+   ],
+   "skills": [
+    "falsification",
+    "philology-collation",
+    "historical-semantics"
+   ],
+   "output_schema": "ReviewSet",
+   "model": {
+    "min_tier": "frontier",
+    "effort": "high",
+    "max_tokens": 16000
+   },
+   "budget": {
+    "max_tool_calls": 400,
+    "max_llm_calls": 12
+   }
+  },
+  {
+   "role": "statistician",
+   "name": "TaoChronos-Statistician",
+   "description": "Statistician. Significance, multiple-testing control and coverage for every observation; no model.",
+   "mode": "procedure",
+   "permissions": [
+    "analysis:run"
+   ],
+   "tools": [
+    "analysis.link_prediction",
+    "analysis.temporal_profile"
+   ],
+   "skills": [
+    "discovery-engines"
+   ],
+   "output_schema": "AnalysisSet",
+   "model": {
+    "min_tier": "small"
+   },
+   "budget": {
+    "max_tool_calls": 20
+   }
+  }
+ ],
+ "core_agents": [
+  {
+   "id": "classical_scholar",
+   "name": "古籍学者 Classical TCM Scholar",
+   "description": "Reads the classics as a philologist and historian: witnesses and editions, the text as written, its punctuation and glosses, its structure, variants and quotations, its entities and claims, the names and senses of its terms over time.",
+   "skills": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S07",
+    "S08",
+    "S09"
+   ],
+   "delegates": [
+    "curator",
+    "philologist",
+    "extractor",
+    "semanticist",
+    "lineage",
+    "scholar",
+    "evolution"
+   ],
+   "permissions": [
+    "classics:read",
+    "kg:read"
+   ],
+   "outputs": [
+    "passages",
+    "readings",
+    "glosses",
+    "clauses",
+    "apparatus",
+    "reuse",
+    "entities",
+    "claims",
+    "names",
+    "term_history"
+   ],
+   "rules": [
+    "the original is never changed; every reading is a layer with its source",
+    "absence is only meaningful where the period's coverage is adequate"
+   ]
+  },
+  {
+   "id": "critic",
+   "name": "证据与批评 Evidence & Critic Agent",
+   "description": "Audits every statement of an answer against the witnesses, the glosses, the bridge, modern evidence and the presentism guard, gives each a verdict, builds the evidence graph, and may only lower what others claim.",
+   "skills": [
+    "S15"
+   ],
+   "delegates": [
+    "evidence",
+    "skeptic",
+    "statistician"
+   ],
+   "permissions": [
+    "classics:read",
+    "kg:read",
+    "literature:read",
+    "validation:run"
+   ],
+   "outputs": [
+    "audit",
+    "graph"
+   ],
+   "rules": [
+    "a verdict is never raised by a model",
+    "SUPPORTED means the checks this system can run pass, not that the claim is true"
+   ]
+  },
+  {
+   "id": "orchestrator",
+   "name": "研究编排者 Research Orchestrator",
+   "description": "Turns a question into a workflow of skills (a DAG checked against their manifests), runs it, and writes the answer from the artifacts — every statement tied to evidence and handed to the critic before it is shown.",
+   "skills": [
+    "plan",
+    "synthesize"
+   ],
+   "delegates": [
+    "director",
+    "meta_reviewer"
+   ],
+   "permissions": [
+    "classics:read",
+    "kg:read",
+    "analysis:run"
+   ],
+   "outputs": [
+    "plan",
+    "report"
+   ],
+   "rules": [
+    "rules plan first; a model may add or drop optional skills, never S01 or S15, and never a skill the registry lacks",
+    "the answer says what the evidence says and no more; the critic's verdict is shown beside each statement"
+   ]
+  },
+  {
+   "id": "translational",
+   "name": "古今转译 Translational Medicine Agent",
+   "description": "Carries a description across to modern medicine and no further than the evidence allows: phenotypes as the text states them, their HPO projections with relation types, the disease profiles they resemble (a level, never a probability), modern literature typed by design, and real-world data through validated study specs.",
+   "skills": [
+    "S10",
+    "S11",
+    "S12",
+    "S13",
+    "S14"
+   ],
+   "delegates": [
+    "ontologist",
+    "modern_evidence",
+    "hypothesis"
+   ],
+   "permissions": [
+    "classics:read",
+    "kg:read",
+    "literature:read"
+   ],
+   "outputs": [
+    "phenotype_packets",
+    "projections",
+    "candidates",
+    "modern_records",
+    "rwd_result"
+   ],
+   "rules": [
+    "phenotypic similarity, never retrospective diagnosis; no ancient name is equated with a modern disease",
+    "animal, cell and computational work is not efficacy in people; no clinical or dosage advice"
+   ]
+  }
+ ],
+ "skills": [
+  {
+   "id": "S01",
+   "name": "来源与版本 Source & Provenance",
+   "description": "Find the passages a question turns on, each with its work, edition, locator, date, layer, source and licence."
+  },
+  {
+   "id": "S02",
+   "name": "影像与版面 Document Vision",
+   "description": "Read a page image or an OCR engine's output into a PageGraph (reading order, 双行小注, 版心, 书眉) and compare the text with the store."
+  },
+  {
+   "id": "S03",
+   "name": "句读·训诂 Philology",
+   "description": "Punctuation of unpunctuated text, the glosses of the commentators on the question's terms, and a five-layer reading of the key passage."
+  },
+  {
+   "id": "S04",
+   "name": "条文结构 Structure & Clause",
+   "description": "The clause structure of a passage — condition, findings, pulse, pattern, treatment, formula — as roles."
+  },
+  {
+   "id": "S05",
+   "name": "校勘 Collation",
+   "description": "Where a passage recurs in other witnesses, with a collation apparatus (异文, 脱, 衍, 倒) by witness and date."
+  },
+  {
+   "id": "S06",
+   "name": "互文与传承 Intertext",
+   "description": "Quotations, restatements and paraphrases of a passage across the corpus, and the chain of transmission they form."
+  },
+  {
+   "id": "S07",
+   "name": "知识抽取 Knowledge Extraction",
+   "description": "Entities (formulas, drugs, findings, people, places …) and the claims a passage makes, as typed hyperedges with their quotes."
+  },
+  {
+   "id": "S08",
+   "name": "名称规范 TCM Normalization",
+   "description": "The names a thing went by over time (本名, 异名, 避讳改名), which prevailed when, and the curated term behind them."
+  },
+  {
+   "id": "S09",
+   "name": "源流演变 Historical Evolution",
+   "description": "How a term was used period by period — first attestations, curated senses and their shares, change points."
+  },
+  {
+   "id": "S10",
+   "name": "古代表型化 Ancient Phenotyping",
+   "description": "The AncientPhenotypePacket of each passage — findings with negation, optional / conditional status, modifiers, course, population, and the historical names with their senses."
+  },
+  {
+   "id": "S11",
+   "name": "本体桥接 Ontology Bridge",
+   "description": "Each finding projected into HPO with a relation type (EXACT … NO_MODERN_EQUIVALENT) and the ontology release; each historical name related to the modern concepts its curated sense names."
+  },
+  {
+   "id": "S12",
+   "name": "古今映射 Clinical Mapping",
+   "description": "The modern disease profiles a description resembles, with matched and missing findings, conflicts, required findings, a qualitative level (never a probability), discriminators; and from a modern disease back to the passages."
+  },
+  {
+   "id": "S13",
+   "name": "现代证据 Modern Evidence",
+   "description": "Modern literature on the question's drugs and diseases, typed by design and population, summed by level, with the cross-level guard and safety warnings."
+  },
+  {
+   "id": "S14",
+   "name": "真实世界验证 RWD Validation",
+   "description": "A question about real-world data as a structured study spec over an OMOP database, compiled into a checked read-only query; counts, risks, a crude risk ratio and its caveats."
+  },
+  {
+   "id": "S15",
+   "name": "证据审计 Evidence Audit",
+   "description": "Every statement of the answer decomposed and checked by what it asserts (witness, gloss, mapping, modern evidence, inference, clinical advice), with a verdict; the evidence graph of the answer."
+  }
+ ],
+ "tools": [
+  {
+   "name": "analysis.association_rules",
+   "family": "analytics",
+   "permission": "analysis:run",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "analysis.communities",
+   "family": "analytics",
+   "permission": "analysis:run",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "analysis.concept_drift",
+   "family": "analytics",
+   "permission": "analysis:run",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "analysis.contradictions",
+   "family": "analytics",
+   "permission": "analysis:run",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "analysis.formula_evolution",
+   "family": "analytics",
+   "permission": "analysis:run",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "analysis.link_prediction",
+   "family": "analytics",
+   "permission": "analysis:run",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "analysis.lost_knowledge",
+   "family": "analytics",
+   "permission": "analysis:run",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "analysis.missing_sources",
+   "family": "analytics",
+   "permission": "analysis:run",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "analysis.temporal_profile",
+   "family": "analytics",
+   "permission": "analysis:run",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "audit.claim",
+   "family": "validation",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "bridge.map",
+   "family": "bridge",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "bridge.phenotype",
+   "family": "bridge",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "bridge.reverse",
+   "family": "bridge",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "classics.canon",
+   "family": "retrieval",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "classics.get_passage",
+   "family": "retrieval",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "classics.lineage",
+   "family": "retrieval",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "classics.list_books",
+   "family": "retrieval",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "classics.search",
+   "family": "retrieval",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "graph.evidence",
+   "family": "validation",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "kg.claims",
+   "family": "knowledge",
+   "permission": "kg:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "kg.extract_claims",
+   "family": "knowledge",
+   "permission": "kg:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "kg.neighbors",
+   "family": "knowledge",
+   "permission": "kg:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "kg.propose_change",
+   "family": "knowledge",
+   "permission": "kg:propose",
+   "read_only": false,
+   "parallel_safe": false,
+   "exclusive": true,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "kg.term",
+   "family": "knowledge",
+   "permission": "kg:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "literature.modern_evidence",
+   "family": "literature",
+   "permission": "literature:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "modern.safety",
+   "family": "literature",
+   "permission": "literature:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "modern.search",
+   "family": "literature",
+   "permission": "literature:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "philology.assess_passage",
+   "family": "philology",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "philology.collate",
+   "family": "philology",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "philology.inspect_page",
+   "family": "philology",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "philology.normalize",
+   "family": "philology",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "research.run_code",
+   "family": "research",
+   "permission": "codemode:exec",
+   "read_only": true,
+   "parallel_safe": false,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "rwd.ask",
+   "family": "literature",
+   "permission": "literature:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.argument",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.authorship",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.cards",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "study.cases",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.chain",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.citations",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.clause",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "study.commentaries",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.concordance",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.dating",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.disputes",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.entities",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "study.formula",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "study.fragments",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.glosses",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.herb",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "study.layers",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.metrology",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "study.names",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.network",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.pairs",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.places",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.punctuate",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.reading",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "study.reuse",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.schools",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.senses",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.stemma",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.taboo",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "study.term",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "study.trajectories",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.translate",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.transmission",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.variants",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.witnesses",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "validation.gates",
+   "family": "validation",
+   "permission": "validation:run",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "validation.provenance_chain",
+   "family": "validation",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "validation.verify_quote",
+   "family": "validation",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "vision.compare",
+   "family": "philology",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "vision.layout",
+   "family": "philology",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  }
+ ],
+ "hooks": {
+  "BeforeToolCall": [
+   "scope_guard"
+  ],
+  "AfterToolCall": [
+   "scope_firewall"
+  ],
+  "BeforeClaimCommit": [
+   "provenance_validator",
+   "semantic_support",
+   "anachronism_guard"
+  ],
+  "AfterHypothesis": [
+   "anachronism_guard"
+  ],
+  "BeforeGraphWrite": [
+   "anachronism_guard"
+  ],
+  "BeforeArtifactPublish": [
+   "publish_guard"
+  ]
+ },
+ "gates": {
+  "G0": "Source",
+  "G1": "OCR / transcription",
+  "G2": "Philology",
+  "G3": "Semantic",
+  "G4": "Claim provenance",
+  "G5": "Cross-source",
+  "G6": "Falsification",
+  "G7": "Expert",
+  "G8": "Biomedical evidence"
+ },
+ "authority": {
+  "ResearchCreated": [
+   "kernel"
+  ],
+  "ProfileLoaded": [
+   "kernel"
+  ],
+  "CorpusScoped": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "RoundStarted": [
+   "kernel"
+  ],
+  "RoundCompleted": [
+   "kernel"
+  ],
+  "StopConditionMet": [
+   "kernel"
+  ],
+  "ResearchCompleted": [
+   "kernel"
+  ],
+  "ResearchStopped": [
+   "human",
+   "kernel"
+  ],
+  "ContractEvaluated": [
+   "kernel",
+   "validator"
+  ],
+  "TaskPlanned": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "TaskStarted": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "TaskCompleted": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "TaskFailed": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "TaskSkipped": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "AgentSpawned": [
+   "kernel"
+  ],
+  "AgentReleased": [
+   "kernel"
+  ],
+  "ModelRouted": [
+   "kernel"
+  ],
+  "LLMCalled": [
+   "agent",
+   "kernel"
+  ],
+  "ToolCalled": [
+   "agent",
+   "human",
+   "kernel",
+   "validator"
+  ],
+  "ToolResult": [
+   "agent",
+   "human",
+   "kernel",
+   "validator"
+  ],
+  "ToolDenied": [
+   "agent",
+   "human",
+   "kernel",
+   "validator"
+  ],
+  "HookBlocked": [
+   "agent",
+   "human",
+   "kernel",
+   "validator"
+  ],
+  "BudgetExceeded": [
+   "agent",
+   "human",
+   "kernel",
+   "validator"
+  ],
+  "BudgetReserved": [
+   "kernel"
+  ],
+  "BudgetSettled": [
+   "kernel"
+  ],
+  "RunManifestRecorded": [
+   "kernel"
+  ],
+  "PassageAssessed": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "TermResolved": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "EvidenceRetrieved": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "EvidenceRetracted": [
+   "human",
+   "kernel",
+   "validator"
+  ],
+  "ClaimExtracted": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "ClaimRejected": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "LineageDetected": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "ContradictionFound": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "ObservationRecorded": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "AnalysisRecorded": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "WarrantRecorded": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "HypothesisGenerated": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "CounterEvidenceFound": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "HypothesisReviewed": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "HypothesisRevised": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "HypothesisRejected": [
+   "human",
+   "kernel",
+   "validator"
+  ],
+  "HypothesisScored": [
+   "kernel",
+   "validator"
+  ],
+  "HypothesisRanked": [
+   "kernel",
+   "validator"
+  ],
+  "HypothesisConfirmed": [
+   "kernel",
+   "validator"
+  ],
+  "GateEvaluated": [
+   "kernel",
+   "validator"
+  ],
+  "ObjectionResolutionProposed": [
+   "agent",
+   "kernel",
+   "validator"
+  ],
+  "ObjectionClosed": [
+   "human",
+   "validator"
+  ],
+  "ChangeProposed": [
+   "agent",
+   "human",
+   "kernel",
+   "validator"
+  ],
+  "ChangeApproved": [
+   "human",
+   "validator"
+  ],
+  "ChangeRejected": [
+   "human",
+   "validator"
+  ],
+  "ExpertApproved": [
+   "human"
+  ],
+  "ExpertRejected": [
+   "human"
+  ],
+  "ExpertSteered": [
+   "human"
+  ],
+  "DecisionRecorded": [
+   "agent",
+   "human",
+   "kernel",
+   "validator"
+  ],
+  "MemoryWritten": [
+   "human",
+   "kernel",
+   "validator"
+  ],
+  "BranchForked": [
+   "kernel"
+  ],
+  "BranchMerged": [
+   "kernel"
+  ],
+  "CheckpointCreated": [
+   "kernel"
+  ],
+  "ArtifactPublished": [
+   "kernel",
+   "validator"
+  ],
+  "TransactionCommitted": [
+   "kernel"
+  ]
+ },
+ "why": {
+  "GateEvaluated": "gates are graded by validators, never by the work they grade",
+  "HypothesisScored": "scores are computed by validators",
+  "HypothesisRanked": "rankings are computed by validators",
+  "HypothesisConfirmed": "confirmation is a validator's re-test on withheld material",
+  "ObjectionClosed": "an objection is closed by re-running its check (validator) or by an expert, never by a model",
+  "ExpertApproved": "only a human expert may approve or reject a hypothesis (Gate G7)",
+  "ExpertRejected": "only a human expert may approve or reject a hypothesis (Gate G7)",
+  "ExpertSteered": "only a human expert steers a research",
+  "ChangeApproved": "agents may only propose changes; a validator or human must decide",
+  "ChangeRejected": "agents may only propose changes; a validator or human must decide",
+  "ResearchCompleted": "only the harness completes a research",
+  "ResearchCreated": "only the harness opens a research contract",
+  "ContractEvaluated": "the research contract is evaluated by validators",
+  "ArtifactPublished": "publication is a validator's act after the contract is evaluated"
+ }
+}

@@ -1,0 +1,11 @@
+Criterion,Requirement,Judge,State when unmet,H1 in Fig. 3 (observed)
+min_supporting_evidence,≥ 2,validator:contract,inconclusive,pass: 2 verified supporting record(s)
+semantic_support,every supporting claim borne by its quote,validator:contract,inconclusive,pass: every supporting claim is stated by its quote
+source_dependence,"≥ 2 independent source families, on the current version",validator:contract,inconclusive,"pass: G5 pass: 2 independent source cluster(s) (need 2): baoming_ji, jc_o128"
+falsification_review,a skeptic review,validator:contract,inconclusive,pass: reviewed
+unresolved_hard_objections,≤ 0,validator:contract,inconclusive,pass: 0 open hard objection(s)
+unresolved_critical,≤ 0,validator:contract,inconclusive,pass: 0 open critical objection(s)
+alternatives_addressed,every rival explanation of the discovery type excluded or stated as open,validator:contract,inconclusive,pass: all addressed; open: same_name_other_formula
+current_version_gates,"G0, G1, G2, G3, G4, G5, G6 on the current version (strict: G4, G5, G6)",validator:contract,inconclusive,pass: all required gates pass on this version
+expert_review,an expert's approval,human,needs_expert,pending: G7 pending
+falsification,not rejected,validator:contract,rejected,R1 in Fig. 3: status rejected
