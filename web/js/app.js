@@ -5,6 +5,7 @@ import { streamClaude } from "./llm/anthropic.js";
 import { streamChat } from "./llm/openai.js";
 import { extractCitations, renderMarkdown } from "./markdown.js";
 import { AGENT, MODEL as ASSISTANT, PUBLISHER, PUBLISHER_EN } from "./brand.js";
+import { FIXED_ID, fixedReply } from "./fixed.js";
 import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, RELAY_ID, saveSettings, setRelay } from "./providers.js";
 import { consent, NOTICE, setConsent } from "./records.js";
 import { BrowserRuntime, probeServer, sameOriginServer, ServerRuntime } from "./runtime.js";
@@ -161,12 +162,12 @@ function needsKey() {
   return !(routeFor().kind === "proxy" && S.runtimeInfo?.env_keys);
 }
 
-/** The runtime's standing instructions (they end with 运行环境), the model underneath, and the user's own instructions. */
-function systemPrompt(provider) {
+/** The runtime's standing instructions (they end with 运行环境) and the user's own instructions.  The model underneath is
+ * not named in them: asked what it is built on, 道乃久 neither names nor denies it (fixed.js, 身份). */
+function systemPrompt() {
   const base = S.runtimeInfo?.system_prompt || "";
-  const model = provider?.model ? `\n底层语言模型：${provider.model}（${provider.label}）。` : "";
   const extra = (S.settings.instructions || "").trim();
-  return `${base}${model}${extra ? `\n\n## 用户的附加指令\n${extra}` : ""}`;
+  return `${base}${extra ? `\n\n## 用户的附加指令\n${extra}` : ""}`;
 }
 
 // ------------------------------------------------------------------ passages and citations
@@ -383,14 +384,16 @@ async function send(text, images = []) {
   text = (text || "").trim();
   if (!text && !images.length) return;
   if (S.running) return;
-  if (S.relay?.pending) await S.relayReady;
-  if (needsKey() && S.relay?.url && !S.relay.ok) await recheckRelay([15000]); // the default service, once more
-  if (needsKey()) {
-    el.input.value = text;
-    autosize();
-    toast(`请先为 ${ASSISTANT} 配置底层模型的 API Key`);
-    openSettings(S, settingsCtx, "model");
-    return;
+  if (!fixedReply(text, images)) { // a question the page answers itself needs no model, so no key
+    if (S.relay?.pending) await S.relayReady;
+    if (needsKey() && S.relay?.url && !S.relay.ok) await recheckRelay([15000]); // the default service, once more
+    if (needsKey()) {
+      el.input.value = text;
+      autosize();
+      toast(`请先为 ${ASSISTANT} 配置底层模型的 API Key`);
+      openSettings(S, settingsCtx, "model");
+      return;
+    }
   }
   if (S.relay?.ok && S.relay.logs && consent() === null) await askConsent();
   let conv = S.conv;
@@ -413,6 +416,10 @@ async function send(text, images = []) {
 }
 
 async function runAssistant(conv, msg) {
+  const idx = conv.messages.indexOf(msg);
+  const user = conv.messages[idx - 1];
+  const fixed = fixedReply(user.text, user.images);
+  if (fixed) return answerFixed(conv, msg, fixed);
   const controller = new AbortController();
   S.running = { controller, convId: conv.id, msgId: msg.id };
   renderComposer();
@@ -427,11 +434,9 @@ async function runAssistant(conv, msg) {
   try {
     const runtime = await turnRuntime();
     const catalog = await getCatalog(S.settings.toolMode);
-    const idx = conv.messages.indexOf(msg);
-    const user = conv.messages[idx - 1];
     const history = buildHistory(conv.messages.slice(0, idx - 1), provider);
     const result = await runTurn({
-      provider, settings: S.settings, route: routeFor(), runtime, tools: toolDefs(catalog), system: systemPrompt(provider),
+      provider, settings: S.settings, route: routeFor(), runtime, tools: toolDefs(catalog), system: systemPrompt(),
       history, user, signal: controller.signal, hooks: makeHooks(conv, msg), sink,
     });
     msg.rounds = result.rounds;
@@ -456,6 +461,20 @@ async function runAssistant(conv, msg) {
     renderComposer();
     recordTurn(conv, msg);
   }
+}
+
+/** A question the page answers itself (fixed.js): the same reply every time, without a model or tools. */
+async function answerFixed(conv, msg, text) {
+  Object.assign(msg, { status: "done", provider: FIXED_ID, rounds: 0, segments: [{ type: "text", round: 1, text }] });
+  touch(conv);
+  await persistNow(conv);
+  if (S.conv === conv) {
+    renderAll();
+    if (S.stick) scrollToBottom(false);
+  } else {
+    renderSidebar();
+  }
+  recordTurn(conv, msg);
 }
 
 function makeHooks(conv, msg) {

@@ -13,7 +13,7 @@
 | `question`、`answer` | 问题（≤4000 字）与回答（Markdown，≤12000 字；含 `[[段落号]]` 引文） |
 | `images` | 附图张数（图片本身不记录） |
 | `status`、`error` | done / error / stopped，以及出错信息 |
-| `model`、`provider` | 底层模型与服务（`impf` 为默认服务） |
+| `model`、`provider` | 底层模型与服务（`impf` 为默认服务；`fixed` 为网页自己给出的固定回复，如问“你是谁”，此时没有 `model`，`rounds` 为 0） |
 | `runtime`、`corpus` | 运行环境（browser / server）与语料（canon 要籍语料 / full 全量 / demo） |
 | `tools` | 调用的工具：名称、是否成功、耗时、参数（≤300 字） |
 | `citations` | 引文核对：总数与 ok（与原文一致）/ warn（存疑）/ bad（查无此段）/ pending，及所引段落号 |

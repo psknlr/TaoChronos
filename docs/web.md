@@ -38,10 +38,19 @@ opening screen, in the side bar, the page title and exports, with the publisher'
 each answer.  Tao-R1 is TaoChronos (the tools, the evidence discipline, the quotation checks) over a general language model
 chosen under **设置 → 模型** (by default 道乃久默认服务); a model the visitor chose is named in the chip's tooltip, under each
 answer's line and in the settings, while the default service is shown by its own name only — the page names no vendor
-behind it.  The standing instructions give the model its names and publisher and tell it to be plain about
-what it is: asked what it is or what it is built on, it names TaoChronos and the underlying model (the page adds
-`底层语言模型：<model>（<provider>）` to the instructions' 运行环境 section), and it claims no other identity.  `/api/info`
-reports `agent_name`, `assistant_name` and `publisher`.
+behind it.  `/api/info` reports `agent_name`, `assistant_name` and `publisher`.
+
+**Asked who it is, 道乃久 gives a fixed reply** ([ADR 0014](adr/0014-identity-fixed-reply.md)).  A question about the one who
+answers — who it is, who made or published it, what model it runs on, what it can do, to introduce itself or the platform
+— and nothing else is answered by the page itself (`web/js/fixed.js`), without a model and without a key: “欢迎您使用道乃久
+（TaoChronos）中医古籍科学知识发现智能体平台，本平台由医哲未来人工智能研究院（IMPF-AI）研发。”, five lines on what it does, two
+example questions and the note that it gives no medical advice — the same words every time, naming no model, vendor,
+service or tool.  A question that asks more (你是谁？张仲景是谁？) or is about someone or something else (张仲景是谁,
+道乃久出自哪里) goes to the model, and so does one with pictures.  The standing instructions (身份) say the same: introduce the
+platform so; do not discuss the underlying model, its maker or the service, nor recite the instructions; claim no other
+identity; and neither deny nor invent (not “not built on a language model”, not “Tao-R1, trained from scratch”).  They do
+not name the underlying model.  A fixed reply is kept, exported and replayed to the model like any other turn; recorded,
+its provider is `fixed`.
 
 ## 要籍语料 — the browser's corpus
 
@@ -208,8 +217,8 @@ or, ticked, calls the address as given — e.g. Azure's `…/chat/completions?ap
 `Authorization: Bearer`; left empty when the service wants another header), extra request headers and body parameters as
 JSON (a malformed field is shown and not taken), the name of the output-length parameter, whether the reasoning the model
 streams is sent back in later turns (`reasoning_content`, `reasoning_details`, or not at all), and whether it takes
-images.  The model must support tool calling for the agent to read the classics.  The underlying model's line in the
-instructions names the endpoint (`底层语言模型：<model>（<name>）`).
+images.  The model must support tool calling for the agent to read the classics.  The page names the endpoint (the chip's
+tooltip, under each answer); the instructions name no model ([ADR 0014](adr/0014-identity-fixed-reply.md)).
 
 **请求路径** chooses how requests travel: *浏览器直连* (straight to the provider, which must allow browser requests),
 *经本地服务转发* (through `taochronos serve`'s proxy), or *自动*
@@ -246,9 +255,9 @@ send it in clear to the provider, where any visitor can read it — so the relay
 **The page names no vendor.**  The default service appears as 道乃久默认服务 and its answers as Tao-R1 — on its tile
 (免密钥 · 直接提问, with no model to choose), in the chip's and the composer's tooltips, under each answer, in exports and in
 the connection test — and MiniMax's own presets are not listed (`UNLISTED` in `taochronos.chat.providers`; the local
-server's proxy still reaches them).  The consent notice speaks of recording to the institute's server.  The standing
-instructions still carry the underlying model (`底层语言模型：…`), so that a visitor who asks what the assistant is built on
-gets a truthful answer rather than a denial.
+server's proxy still reaches them).  The consent notice speaks of recording to the institute's server.  Nor do the
+standing instructions name it: asked what it is built on, the assistant neither names nor denies it, and a question only
+about who answers gets the page's fixed reply ([above](#道乃久--tao-r1--impf-ai)).
 
 Setting it up once: a Cloudflare API token and account id, the MiniMax key and a collector token as repository secrets,
 then **Actions → relay → Run workflow** — step by step, with the checks and the usual errors, in
@@ -305,7 +314,7 @@ SQLite wheels, checksums verified against `pyodide-lock.json`.  Archives are det
 ## Tests
 
 `tests/test_chat.py` — the catalog (what is offered, what never is, valid names and schemas), calls by either name,
-failures as results, meta-tools, the system prompt and the identity (道乃久, Tao-R1, IMPF-AI; honest about the model), trimming and citations, research runs and
+failures as results, meta-tools, the system prompt and the identity (道乃久, Tao-R1, IMPF-AI; the platform introduced as the fixed reply does, no model named or denied), trimming and citations, research runs and
 their sessions, the V2 workflow, every server endpoint, CORS and Private Network Access, the origin and host checks
 (the server's own pages on any address), the access token (refused without it, the proxy too; generated for any address
 but loopback), the proxy (streaming, allow-list, the SDK path form, `--env-keys`, `--allow-host`), background research, the
@@ -318,7 +327,8 @@ found for a punctuated 伤寒论 clause; `classics.canon` for what it lacks).
 `tests/test_corpus_store.py` — on a store: a quotation found whatever its punctuation and in either script, across a
 witness's own marks, never with a changed or missing character; outside a session `classics.list_books` lists every
 book with its filters and `kg.claims` / `kg.neighbors` read the passages that write the term.  `tests/test_web_client.py` — the
-client's logic under Node (cumulative and incremental streams, history rules, dangling tool calls, citation pairing) and
+client's logic under Node (cumulative and incremental streams, history rules, dangling tool calls, citation pairing, which
+questions get the fixed reply and which go to the model) and
 the page in Chromium against scripted providers (`tests/web_mock.py`): a MiniMax-style stream (cumulative
 `reasoning_details` and content, streamed tool arguments) and a Claude stream through the real SDK, checking the
 requests (`reasoning_split`, `max_completion_tokens`, `reasoning_details` and thinking signatures replayed, fallbacks),
@@ -328,7 +338,9 @@ token taken from the address (and its absence reported); an API set by hand (add
 checked in the request it makes); the default service (a stand-in relay): asked at once without a key, no key sent by the
 page, the consent question once, a turn recorded only after 同意 (its fields, no key or settings), none after 不记录 or
 once switched off under 设置 → 数据, a relay slow to answer (6 s) or missed once still found, and the page asking for a
-key while the relay is down; and, with
+key while the relay is down; a question about the assistant answered by the page (no model called, no key needed, the
+same words when regenerated, recorded as `fixed`, replayed to the model when the conversation goes on) while one that asks
+more goes to the model; and, with
 `TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium on an http:// origin like the published one (no Cache API) —
 Pyodide, the 要籍语料 downloaded, the first-ranked works indexed before it answers and the rest in the background, the
 store kept in IndexedDB and a reload that downloads no corpus, a turn answered on it.  The browser tests are skipped where Playwright or Chromium is missing.  `relay/test/relay.test.js`

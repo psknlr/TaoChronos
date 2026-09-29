@@ -549,7 +549,8 @@ decided each item.  External command subagents and Research Code Mode: [docs/age
 
 **Web chat · 道乃久** ([docs/web.md](docs/web.md), [ADR 0011](docs/adr/0011-web-client.md); the default service and records: [ADR 0012](docs/adr/0012-default-service-relay.md)): the agent 道乃久 (TaoChronos;
 model Tao-R1), published by IMPF-AI — TaoChronos's tools and evidence discipline over the underlying model you choose, which
-the page and the instructions name (an endpoint not in the list can be set by hand).  The conversation runs in the browser
+the page names (asked who it is, who published it or what model it runs on, the page itself gives a fixed introduction of
+the platform: [ADR 0014](docs/adr/0014-identity-fixed-reply.md); an endpoint not in the list can be set by hand).  The conversation runs in the browser
 on the default service (no key; the page shows it as 道乃久默认服务 / Tao-R1 and names no vendor) or with your own key,
 straight to the provider or through `taochronos serve`; TaoChronos
 executes the tools in the browser (Pyodide, the 要籍语料: 348 of the 350 key works) or under
