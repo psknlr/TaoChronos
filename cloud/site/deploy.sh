@@ -51,8 +51,13 @@ fi
 # the D1 backup of the full corpus (docs/adr/0017-d1-backup.md): its databases (taochronos-d1-<k>, bound as D1_<k>) and,
 # once the d1 workflow has imported them all (it records the version in the KV namespace), D1_BACKUP: that version.
 # The Worker answers from them only when there is no container, and only while they hold that version.
-d1=$(curl -fsS -H "$auth" "$api/d1/database?per_page=100" 2>/dev/null | python3 -c \
-       'import json,sys; [print(d["name"], d["uuid"]) for d in json.load(sys.stdin)["result"] if d["name"].startswith("taochronos-d1-")]' || true)
+d1=""
+if listed=$(curl -fsS -H "$auth" "$api/d1/database?per_page=100" 2>/dev/null); then
+  d1=$(python3 -c 'import json,sys; [print(d["name"], d["uuid"]) for d in json.load(sys.stdin)["result"] if d["name"].startswith("taochronos-d1-")]' \
+         <<< "$listed" || true)
+else
+  echo "the D1 backup: the token may not use D1 (Account · D1 · Edit: cloud/SETUP.md, D1 备份), so none is bound"
+fi
 backup=""
 while read -r name uuid; do
   [ -n "$name" ] || continue
