@@ -180,7 +180,7 @@ export async function search(corpus, args) {
 
 const numberOrNull = (v) => (v === null || v === undefined || v === "" || Number.isNaN(Number(v)) ? null : Number(v));
 
-function timeline(hits) {
+export function timeline(hits) {
   const periods = {};
   const sorted = [...hits].sort((a, b) => (a.year || 0) - (b.year || 0) || (a.passage_id < b.passage_id ? -1 : a.passage_id > b.passage_id ? 1 : 0));
   for (const h of sorted) (periods[periodOf(h.year) || "?"] ||= []).push(h.passage_id);
@@ -316,7 +316,7 @@ async function passages(corpus, q, chosen, { search, surfaces, groups, targets }
 const bit = (mask, b) => Math.floor(mask / 2 ** b) % 2 === 1;
 
 /** The routes over the candidates and their reciprocal-rank fusion (HybridRetriever.search). */
-function fuse(q, cands, { k, active, chunkRank, surfaces, groups, targets }) {
+export function fuse(q, cands, { k, active, chunkRank, surfaces, groups, targets }) {
   const depth = Math.max(k * 3, 20);
   const ranked = {};
   // bm25 (BM25Index over the candidates)

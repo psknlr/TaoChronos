@@ -23,6 +23,45 @@ KEYS: list[tuple[str, str, dict[str, Any]]] = [
     ("study.taboo", "", {}),
     ("kg.claims", "disease:消渴", {"terms": ["disease:消渴"]}),
 ]
+# the Python tools' answers on the fixture, which the backup's must equal (a search: its query analysis)
+REFERENCE: list[tuple[str, dict[str, Any]]] = [
+    ("classics.get_passage", {"passage_id": "cm_shanghan_npm.00001"}),
+    ("classics.get_passage", {"passage_id": "suwen_wangbing.000.00001"}),
+    ("classics.get_passage", {"passage_id": "hejiju_fang.000.00002"}),
+    ("classics.get_passage", {"passage_id": "cm_jingui_wuqian.99999"}),
+    ("classics.list_books", {}),
+    ("classics.list_books", {"query": "伤寒"}),
+    ("classics.list_books", {"dynasty": "宋", "limit": 3}),
+    ("classics.canon", {"limit": 5}),
+    ("classics.canon", {"query": "伤寒"}),
+    ("classics.canon", {"held": True}),
+    ("kg.term", {"surface": "消渴"}),
+    ("kg.term", {"surface": "桂枝汤"}),
+    ("kg.term", {"surface": "pulse:浮"}),  # an id that is not category:term (the term is 脉浮)
+    ("kg.term", {"surface": "formula:小柴胡汤"}),
+    ("kg.term", {"surface": "薯蓣"}),
+    ("philology.normalize", {"text": "太陽之為病，脈浮，頭項強痛而惡寒。黃耆、五藏"}),
+    ("philology.normalize", {"text": "募原淡飲栝蔞"}),
+    ("philology.assess_passage", {"passage_id": "suwen_wangbing.000.00001"}),
+    ("philology.assess_passage", {"passage_id": "cm_jingui_wuqian.00365"}),
+    ("philology.collate", {"passage_a": "cm_jingui_wuqian.00356", "passage_b": "cm_jingui_wuqian.00365"}),
+    ("philology.inspect_page", {"object_id": "suwen_wangbing.000.00001"}),
+    ("validation.provenance_chain", {"object_id": "cm_shanghan_npm.00001"}),
+    ("validation.verify_quote", {"quote": CLAUSE}),
+    ("validation.verify_quote", {"quote": "桂枝湯主之"}),  # twice in one chunk (00356, 00365), among others
+    ("validation.verify_quote", {"quote": "太阳之为病脉浮头项强痛而恶寒"}),  # 白文 against punctuated witnesses
+    ("validation.verify_quote", {"quote": "这句话不在任何古籍里出现过"}),
+    ("validation.verify_quote", {"quote": "脉浮紧"}),
+    ("validation.verify_quote", {"quote": "柴胡桂枝湯主之", "passage_id": "cm_jingui_wuqian.00365"}),
+    ("study.metrology", {"dose": "一两半", "year": 1600}),
+    ("study.metrology", {"dose": "三两", "year": 200}),
+    ("study.metrology", {"dose": "半升", "year": 200}),
+    ("modern.safety", {"text": "附子一枚，炮，朱砂、雄黄各少许"}),
+    ("literature.modern_evidence", {"term": "青蒿"}),
+    ("classics.search", {"query": "太阳之为病脉浮头项强痛而恶寒"}),
+    ("classics.search", {"query": "宋代以前的消渴"}),
+    ("classics.search", {"query": "桂枝汤", "books": ["cm_shanghan_npm"]}),
+]
 
 
 def build_fixture(out: str | Path, *, home: str | Path | None = None, log: Any = print) -> dict[str, Any]:
@@ -56,8 +95,13 @@ def build_fixture(out: str | Path, *, home: str | Path | None = None, log: Any =
     target = SqliteTarget(out)
     report = run_import(plan, target, budget=10**9, log=lambda m: None)
     target.close()
+    reference = []
+    for name, args in REFERENCE:
+        r = runtime.call(name, args, max_chars=16000)
+        reference.append({"name": name, "args": args, "ok": r["ok"], "result": r.get("result"), "error": r.get("error")})
     runtime.h.corpus.store.close()
-    info = {"report": report, "summary": summary(plan, statements=False), "clause": CLAUSE, "keys": [[t, k] for t, k, _ in keys]}
+    info = {"report": report, "summary": summary(plan, statements=False), "clause": CLAUSE, "keys": [[t, k] for t, k, _ in keys],
+            "reference": reference}
     (out / "fixture.json").write_text(json.dumps(info, ensure_ascii=False, indent=1), encoding="utf-8")
     log(f"fixture: {report['statements']} statements, {plan.databases} databases, {len(plan.chunks)} chunks, complete={report['complete']}")
     return info

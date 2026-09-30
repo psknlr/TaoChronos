@@ -210,6 +210,8 @@ export async function inspectPage(corpus, a) {
 const HAN_RUN = /[㐀-䶿一-鿿豈-﫿\u{20000}-\u{3134f}]{2,}/gu; // provenance.HAN_RUN
 const QUOTE_CANDIDATES = 500;
 const isAlnum = (ch) => /[\p{L}\p{N}]/u.test(ch); // str.isalnum
+const NOT_ALNUM = /[^\p{L}\p{N}]/gu;
+const ASCII_MARK = /[\u0000-/:-@[-`{-\u007f]/u; // what the index form writes as BREAK
 
 /** provenance._bare: the characters of a text without punctuation and spacing, with each one's offset. */
 function bare(text) {
@@ -226,42 +228,60 @@ function bare(text) {
   return [chars.join(""), offsets];
 }
 
+/** find_quote's three tests on one passage: the quote verbatim, the normalised quote in the normalised text, the
+ * quote's characters (punctuation and spacing aside) in the text's — {start, end} in code points, or null. */
+function locate(text, quote, nq, bq) {
+  let idx = cpIndex(text, quote);
+  if (idx >= 0) return { start: idx, end: idx + cpLength(quote) };
+  const nt = normalize(text);
+  idx = cpIndex(nt, nq);
+  if (idx >= 0) return { start: idx, end: idx + cpLength(quote) };
+  if (cpLength(bq) < 4) return null;
+  const flat = nt.replace(NOT_ALNUM, "");
+  const at = flat.indexOf(bq);
+  if (at < 0 || cpLength(flat) !== cpLength(text.replace(NOT_ALNUM, ""))) return null;
+  const offsets = bare(nt)[1];
+  const k = cpLength(flat.slice(0, at));
+  return { start: offsets[k], end: offsets[k + cpLength(bq) - 1] + 1 };
+}
+
 /** validation.verify_quote (provenance.find_quote): where a quote is, verbatim, after normalisation, or ignoring
- * punctuation and spacing — never with a character changed or missing.  [{passage_id, start, end}] */
+ * punctuation and spacing — never with a character changed or missing.  [{passage_id, start, end}]
+ * Over the corpus the first two tests run in D1, on the candidates where the index finds them (on the raw text, and
+ * on the passage's index form token for token): the Worker reads the text only of those the third test decides. */
 export async function verifyQuote(corpus, a) {
   need(a, "quote");
   const quote = String(a.quote);
   const nq = normalize(quote);
   const bq = bare(nq)[0];
-  let targets;
-  if (a.passage_id && (await corpus.passage(a.passage_id))) {
+  if (a.passage_id) {
     const hit = await corpus.passage(a.passage_id);
-    targets = [hit];
-  } else {
-    targets = await quoteCandidates(corpus, quote, nq);
+    if (hit) {
+      const at = locate(hit.p.t, quote, nq, bq);
+      return at ? [{ passage_id: passageId(hit.book, hit.p), ...at }] : [];
+    }
   }
-  const out = [];
+  // the second test in SQL needs the quote's index form to stand for the normalised quote exactly: no ASCII marks
+  const test = { quote, form: ` ${ftsForm(nq)} `, mode: ASCII_MARK.test(nq) ? 2 : cpLength(bq) >= 4 ? 1 : 0 };
+  let rows = await quoteRows(corpus, quote, nq, test);
+  if (!rows.length) {
+    // provenance._large_candidates, failing the rest: the passages the index ranks first for the quote's 3-grams
+    const chars = [...quote].filter(isAlnum);
+    if (chars.length < 4) return [];
+    const grams = [...new Set(chars.slice(0, -2).map((_, i) => chars.slice(i, i + 3).join("")))].slice(0, 40);
+    const phrases = [...new Set(grams.map((g) => ftsPhrase(normalize(g))).filter(Boolean))];
+    if (!phrases.length) return [];
+    rows = await rankedRows(corpus, phrases, QUOTE_CANDIDATES / 2, test);
+  }
   const qlen = cpLength(quote);
-  for (const hit of targets) {
-    const text = hit.p.t;
-    const pid = passageId(hit.book, hit.p);
-    let idx = cpIndex(text, quote);
-    if (idx >= 0) {
-      out.push({ passage_id: pid, start: idx, end: idx + qlen });
-      continue;
-    }
-    const nt = normalize(text);
-    idx = cpIndex(nt, nq);
-    if (idx >= 0) {
-      out.push({ passage_id: pid, start: idx, end: idx + qlen });
-      continue;
-    }
-    if (cpLength(bq) >= 4) {
-      const [flat, offsets] = bare(nt);
-      const at = cpIndex(flat, bq);
-      if (at >= 0 && cpLength(flat) === cpLength(bare(text)[0])) {
-        out.push({ passage_id: pid, start: offsets[at], end: offsets[at + cpLength(bq) - 1] + 1 });
-      }
+  const out = [];
+  for (const r of rows) {
+    const pid = r.pid ?? passageId(r.book, { q: r.q, m: r.m });
+    if (r.v > 0) out.push({ passage_id: pid, start: r.v - 1, end: r.v - 1 + qlen });
+    else if (r.w > 0 && test.mode !== 2) out.push({ passage_id: pid, start: r.k, end: r.k + qlen });
+    else if (typeof r.t === "string") {
+      const at = locate(r.t, quote, nq, bq);
+      if (at) out.push({ passage_id: pid, ...at });
     }
   }
   return out;
@@ -274,72 +294,77 @@ function cpIndex(text, sub) {
   return cpLength(text.slice(0, i));
 }
 
-/** provenance._large_candidates in D1: the passages that write the quote's first 24 characters as they stand (白文 and
- * witnesses punctuated as the quote is), and those that write each of its runs of characters; failing both, those
- * the index ranks first for its three-character pieces. */
-async function quoteCandidates(corpus, quote, nq) {
+/** For the candidates p(n, cid, i[, s]): the passage's book and seq, and find_quote's first tests in SQL — v: where the
+ * raw text has the quote (instr, from 1); w: where the index form has the normalised quote's, token for token, and
+ * k: the tokens (characters) before it; t: the raw text when the Worker must decide (mode 1: the third test, when
+ * neither found the quote; mode 2: the second test too). */
+const tests = (s = "") => `SELECT ${s}n, cid, i, book, year, q, m, v, w, ` +
+  "CASE WHEN w > 0 THEN w - length(replace(substr(pad, 1, w), ' ', '')) - 1 END AS k, " +
+  "CASE WHEN v = 0 AND (?9 = 2 OR (?9 = 1 AND w = 0)) THEN t END AS t " +
+  `FROM (SELECT ${s}n, cid, i, book, year, q, m, t, pad, instr(t, ?7) AS v, instr(pad, ?8) AS w FROM ` +
+  `(SELECT ${s ? "p.s AS s, " : ""}p.n AS n, p.cid AS cid, p.i AS i, c.book AS book, c.year AS year, ` +
+  "json_extract(c.body, '$.p[' || p.i || '].q') AS q, json_extract(c.body, '$.p[' || p.i || '].m') AS m, " +
+  "json_extract(c.body, '$.p[' || p.i || '].t') AS t, ' ' || json_extract(c.norm, '$[' || p.i || ']') || ' ' AS pad " +
+  "FROM p JOIN chunks c ON c.cid = p.cid))";
+
+/** provenance._large_candidates in D1, tested: the passages that write the quote's first 24 characters as they stand
+ * (白文), and those that write each of its runs of characters however punctuated — per database, in each chunk the
+ * index matches (the earliest first), every occurrence of the needle's form in turn (a recursive query) and the
+ * passage it falls in, by the passages' separators before it: a row read per chunk and per occurrence. */
+async function quoteRows(corpus, quote, nq, test) {
   const head = ftsPhrase(normalize(cpSlice(quote, 24)));
   const runs = [...new Set(nq.match(HAN_RUN) || [])].sort((x, y) => cpLength(y) - cpLength(x)).slice(0, 8).map((r) => cpSlice(r, 24));
   const needles = [];
   if (head) needles.push([head, ftsForm(normalize(cpSlice(quote, 24))).split(" ").filter((t) => [...t].every((c) => isHan(c))).join(" ")]);
   if (runs.length > 1) needles.push([runs.map((r) => ftsPhrase(r)).join(" AND "), ftsForm(runs[0])]);
-  let found = [];
-  for (const [match, form] of needles) found.push(...(await firstInChunks(corpus, match, form, QUOTE_CANDIDATES)));
-  if (!found.length) {
-    const chars = [...quote].filter(isAlnum);
-    if (chars.length < 4) return [];
-    const grams = [...new Set(chars.slice(0, -2).map((_, i) => chars.slice(i, i + 3).join("")))].slice(0, 40);
-    const phrases = [...new Set(grams.map((g) => ftsPhrase(normalize(g))).filter(Boolean))];
-    if (!phrases.length) return [];
-    found = await rankedPassages(corpus, phrases, QUOTE_CANDIDATES / 2);
-  }
+  if (!needles.length) return [];
+  const st = await corpus.stats();
+  const spans = await corpus.spans(1, st.chunks);
+  const ctes = [];
+  const parts = [];
+  needles.forEach((_, j) => {
+    const [m, f] = [`?${3 + 2 * j}`, `?${4 + 2 * j}`];
+    const at = `o.pos + instr(substr(c.norm, o.pos + 1), ${f})`;
+    ctes.push(`f${j}(cid) AS (SELECT rowid FROM fts WHERE fts MATCH ${m} AND rowid BETWEEN ?1 AND ?2 ORDER BY rowid LIMIT ${QUOTE_CANDIDATES})`,
+      `o${j}(cid, pos, i) AS (SELECT cid, 0, -1 FROM f${j} UNION ALL SELECT o.cid, ${at}, ` +
+      `(length(substr(c.norm, 1, ${at})) - length(replace(substr(c.norm, 1, ${at}), '","', ''))) / 3 ` +
+      `FROM o${j} o JOIN chunks c ON c.cid = o.cid WHERE instr(substr(c.norm, o.pos + 1), ${f}) > 0)`);
+    parts.push(`SELECT * FROM (SELECT DISTINCT ${j} AS n, cid, i FROM o${j} WHERE i >= 0 ORDER BY cid, i LIMIT ${QUOTE_CANDIDATES})`);
+  });
+  const sql = `WITH RECURSIVE ${ctes.join(", ")}, p(n, cid, i) AS (${parts.join(" UNION ALL ")}) ${tests()}`;
+  const rows = [];
+  await Promise.all(spans.map(async ([db, lo, hi]) => {
+    const params = [lo, hi, null, null, null, null, test.quote, test.form, test.mode];
+    needles.forEach(([m, f], j) => { params[2 + 2 * j] = m; params[3 + 2 * j] = f; });
+    rows.push(...(await corpus.all(db, sql, params)));
+  }));
+  // per needle, the first QUOTE_CANDIDATES passages in (year, id) order, as the store's contains lists them; each
+  // passage once, in that order
+  for (const r of rows) r.pid = passageId(r.book, { q: r.q, m: r.m });
+  rows.sort((x, y) => x.n - y.n || (x.year ?? 9999) - (y.year ?? 9999) || (x.pid < y.pid ? -1 : x.pid > y.pid ? 1 : 0));
   const seen = new Set();
-  const pairs = [];
-  for (const x of found) {
-    const key = `${x[0]}:${x[1]}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      pairs.push(x);
-    }
-  }
-  const got = await corpus.fetch(pairs);
-  const cards = await corpus.cards([...new Set([...got.values()].map((h) => h.book))]);
-  return pairs.map(([cid, i]) => got.get(`${cid}:${i}`)).filter(Boolean).map((h) => ({ ...h, card: cards.get(h.book) }));
+  const counts = [0, 0];
+  return rows.filter((r) => {
+    if (counts[r.n]++ >= QUOTE_CANDIDATES || seen.has(r.pid)) return false;
+    seen.add(r.pid);
+    return true;
+  });
 }
 
-/** [cid, i]: in each chunk matching `match` (in the corpus's order, the earliest first), the passage where `form`
- * first occurs — found by counting the passages' separators before it, a row read per chunk. */
-async function firstInChunks(corpus, match, form, limit) {
+/** The passages holding most of the phrases, in the chunks the index ranks first for any of them, tested. */
+async function rankedRows(corpus, phrases, limit, test) {
   const st = await corpus.stats();
   const spans = await corpus.spans(1, st.chunks);
-  const out = [];
+  const score = phrases.map((p) => `(instr(j.value, '${p.slice(1, -1).replaceAll("'", "''")}') > 0)`).join(" + ");
+  const sql = `WITH p(s, n, cid, i) AS (SELECT ${score}, 0, c.cid, CAST(j.key AS INTEGER) FROM ` +
+    "(SELECT rowid AS cid FROM fts WHERE fts MATCH ?3 AND rowid BETWEEN ?1 AND ?2 ORDER BY rank LIMIT 8) f " +
+    `JOIN chunks c ON c.cid = f.cid, json_each(c.norm) j WHERE ${score} > 0 ORDER BY 1 DESC, c.cid, j.key LIMIT ?4) ${tests("s, ")}`;
+  const rows = [];
   await Promise.all(spans.map(async ([db, lo, hi]) => {
-    const rows = await corpus.all(db, "SELECT cid, (length(pre) - length(replace(pre, '\",\"', ''))) / 3 AS i FROM " +
-      "(SELECT c.cid AS cid, substr(c.norm, 1, instr(c.norm, ?4)) AS pre FROM " +
-      "(SELECT rowid AS cid FROM fts WHERE fts MATCH ?1 AND rowid BETWEEN ?2 AND ?3 ORDER BY rowid LIMIT ?5) f " +
-      "JOIN chunks c ON c.cid = f.cid WHERE instr(c.norm, ?4) > 0)", [match, lo, hi, form, limit]);
-    for (const r of rows) out.push([r.cid, r.i]);
+    rows.push(...(await corpus.all(db, sql, [lo, hi, phrases.join(" OR "), limit, null, null, test.quote, test.form, test.mode])));
   }));
-  out.sort((x, y) => x[0] - y[0] || x[1] - y[1]);
-  return out.slice(0, limit);
-}
-
-/** [cid, i] of the passages holding most of the phrases, in the chunks the index ranks first for any of them. */
-async function rankedPassages(corpus, phrases, limit) {
-  const st = await corpus.stats();
-  const spans = await corpus.spans(1, st.chunks);
-  const forms = phrases.map((p) => p.slice(1, -1));
-  const score = forms.map((f) => `(instr(j.value, '${f.replaceAll("'", "''")}') > 0)`).join(" + ");
-  const out = [];
-  await Promise.all(spans.map(async ([db, lo, hi]) => {
-    const rows = await corpus.all(db, `SELECT c.cid AS cid, CAST(j.key AS INTEGER) AS i, ${score} AS s FROM ` +
-      "(SELECT rowid AS cid FROM fts WHERE fts MATCH ?1 AND rowid BETWEEN ?2 AND ?3 ORDER BY rank LIMIT 8) f " +
-      `JOIN chunks c ON c.cid = f.cid, json_each(c.norm) j WHERE ${score} > 0 ORDER BY s DESC, c.cid, j.key LIMIT ?4`,
-    [phrases.join(" OR "), lo, hi, limit]);
-    for (const r of rows) out.push([r.cid, r.i, r.s]);
-  }));
-  out.sort((x, y) => y[2] - x[2] || x[0] - y[0] || x[1] - y[1]);
-  return out.slice(0, limit).map(([cid, i]) => [cid, i]);
+  rows.sort((x, y) => y.s - x.s || x.cid - y.cid || x.i - y.i);
+  return rows.slice(0, limit);
 }
 
 // ------------------------------------------------------------------ study, computed here

@@ -12,15 +12,17 @@ const SEQMAP_PART = 30_000; // d1.SEQMAP_PART
 const KEEP_MS = 10 * 60 * 1000;
 const CARDS = 2000; // book cards kept per isolate
 
-let kept = null; // {at, stats, cards: Map}
+const ISOLATE = { kept: null }; // what this isolate keeps of the corpus: {at, stats, cards: Map, works}
 
 export class CorpusError extends Error {}
 
 export class Corpus {
-  /** env: the Worker's bindings (D1_0 …); opts.queries: counts the D1 statements of this request. */
-  constructor(env, { now = () => Date.now() } = {}) {
+  /** env: the Worker's bindings (D1_0 …); `cache`: where what is kept per isolate is kept (the start's warm-up over
+   * made-up databases keeps its own: warm.js).  `queries` counts the D1 statements of this request. */
+  constructor(env, { now = () => Date.now(), cache = ISOLATE } = {}) {
     this.env = env;
     this.now = now;
+    this.cache = cache;
     this.queries = 0;
   }
 
@@ -51,13 +53,14 @@ export class Corpus {
 
   // -------------------------------------------------------------- what the corpus says of itself
   async stats() {
+    const kept = this.cache.kept;
     if (kept && this.now() - kept.at < KEEP_MS) return kept.stats;
     const rows = await this.all(0, "SELECT k, v FROM meta WHERE k IN ('stats', 'complete')");
     const meta = Object.fromEntries(rows.map((r) => [r.k, r.v]));
     if (!meta.stats || !meta.complete) throw new CorpusError("the D1 backup is not complete");
     const stats = JSON.parse(meta.stats);
     stats.complete = meta.complete;
-    kept = { at: this.now(), stats, cards: kept?.cards || new Map(), works: null };
+    this.cache.kept = { at: this.now(), stats, cards: kept?.cards || new Map(), works: null };
     return stats;
   }
 
@@ -105,6 +108,7 @@ export class Corpus {
   /** The works this corpus holds (a witness of each), kept per isolate. */
   async works() {
     await this.stats();
+    const kept = this.cache.kept;
     if (!kept.works) {
       const row = await this.first(0, "SELECT v FROM meta WHERE k = 'works'");
       kept.works = new Set(row ? JSON.parse(row.v) : []);
@@ -122,7 +126,7 @@ export class Corpus {
   /** Book cards (title, dynasty, dating basis …) by id, kept per isolate. */
   async cards(ids) {
     await this.stats();
-    const cache = kept.cards;
+    const cache = this.cache.kept.cards;
     const want = [...new Set(ids)].filter((id) => !cache.has(id));
     if (want.length) {
       const rows = await this.all(0, "SELECT id, card FROM books WHERE id IN (SELECT value FROM json_each(?))", [JSON.stringify(want)]);
@@ -183,7 +187,7 @@ export class Corpus {
     const got = await this.fetch([[cid, rank - rank0]]);
     const hit = got.get(`${cid}:${rank - rank0}`);
     if (!hit || hit.p.q !== seq || (hit.p.m || undefined) !== (mid || undefined) || hit.book !== bookId) return null;
-    kept.cards.set(bookId, card);
+    this.cache.kept.cards.set(bookId, card);
     return { ...hit, card };
   }
 

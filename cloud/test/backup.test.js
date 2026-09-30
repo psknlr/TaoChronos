@@ -10,11 +10,13 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { handle } from "../site/src/site.js";
-import { call as backupCall } from "../site/src/backup/api.js";
+import { call as backupCall, classification } from "../site/src/backup/api.js";
+import { CATALOG } from "../site/src/backup/tables.js";
 import { Corpus } from "../site/src/backup/corpus.js";
 import { clauseKey } from "../site/src/backup/precomputed.js";
 import { ftsForm, normalize, normalizeWithRecords, parseConstraint } from "../site/src/backup/text.js";
 import { collate } from "../site/src/backup/difflib.js";
+import { warmUp } from "../site/src/backup/warm.js";
 import { D1Adapter, workerCpu } from "./d1-adapter.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -89,6 +91,25 @@ test("catalog: only the tools served — core with the two meta-tools, never the
   assert.ok(all.tools.every((t) => t.name === t.tool.replaceAll(".", "__") && t.parameters.type === "object"));
   assert.ok(!all.tools.some((t) => t.tool === "study.pairs"), "a precomputed tool without results is not offered");
   assert.equal(Object.values(all.families).reduce((a, f) => a + f.count, 0), all.tools.length);
+});
+
+test("the start's warm-up runs the tools over made-up databases and leaves the isolate's cache alone", { skip }, async () => {
+  await site("/api/info"); // the real corpus kept
+  await warmUp(); // over made-up databases (one book), with its own cache
+  const info = await (await site("/api/info")).json();
+  assert.equal(info.corpus.books, 10);
+  assert.equal(info.corpus.passages, fixture.summary.passages);
+});
+
+test("every tool of the server's catalog (74) is live, precomputed, or unavailable with its reason — once", () => {
+  const { live, precomputed, unavailable } = classification();
+  const every = [...CATALOG.tools.map((t) => t.tool), ...CATALOG.engine.map((e) => e.name)];
+  const classed = [...live, ...precomputed, ...Object.keys(unavailable)];
+  assert.equal(every.length, 74);
+  assert.deepEqual([...classed].sort(), [...every].sort());
+  assert.equal(new Set(classed).size, classed.length);
+  assert.deepEqual([live.length, precomputed.length, Object.keys(unavailable).length], [14, 16, 44]);
+  assert.ok(Object.values(unavailable).every((why) => why.length > 10));
 });
 
 test("passage: a passage in full (the page checks quotations against it); an unknown id says so", { skip }, async () => {
@@ -278,6 +299,20 @@ test("the normaliser and the index form: exactly as the databases were built (Py
   assert.deepEqual(parseConstraint("宋代以前"), [null, 960]);
   assert.deepEqual(parseConstraint("唐以后"), [618, null]);
   assert.equal(normalizeWithRecords("募原").normalized, "膜原");
+});
+
+test("parity: the live tools answer as the Python tools answered on the same store (a search: its query analysis)", { skip }, async () => {
+  assert.ok(fixture.reference.length >= 30);
+  for (const ref of fixture.reference) {
+    const { out } = await measured(ref.name, ref.args);
+    const label = `${ref.name} ${JSON.stringify(ref.args)}`;
+    assert.equal(out.ok, ref.ok, `${label}: ${out.error}`);
+    if (!ref.ok) assert.equal(out.error, ref.error, label);
+    else if (ref.name === "classics.search") {
+      assert.deepEqual(out.result.query, ref.result.query, label);
+      assert.equal(out.result.hits.length > 0, ref.result.hits.length > 0, label);
+    } else assert.deepEqual(out.result, ref.result, label);
+  }
 });
 
 test("every live tool within a Worker's limits on the fixture", { skip }, async () => {

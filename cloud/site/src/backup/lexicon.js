@@ -32,12 +32,14 @@ export class Lexicon {
     return hits.map((e) => ({ entry: e, kind: e.sk || null }));
   }
 
-  /** Lexicon.entry: by term id (formula:桂枝汤), found in the bucket of its term's first character. */
+  /** Lexicon.entry: by term id (formula:桂枝汤), found in the bucket of its term's first character — or, for an id
+   * that names another term than the entry's own (pulse:浮, whose term is 脉浮), as "@<id>" in that bucket. */
   entry(termId) {
     const i = termId.indexOf(":");
-    if (i < 0) return null;
+    if (i < 0 || i === termId.length - 1) return null;
     const term = termId.slice(i + 1);
-    return this.lookup(term).map((x) => x.entry).find((e) => e.id === termId) || null;
+    const found = this.lookup(term).map((x) => x.entry).find((e) => e.id === termId);
+    return found || this.buckets.get(String.fromCodePoint(term.codePointAt(0)))?.[`@${termId}`]?.[0] || null;
   }
 
   /** The buckets an id or a surface needs. */

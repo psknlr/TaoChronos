@@ -10,15 +10,51 @@ const ALNUM = /^[A-Za-z0-9]$/;
 
 const normalized = new Map(); // short texts normalised in this isolate (queries, surfaces, cues)
 
+// The character map as a table of UTF-16 code units, for speed: MAP16[c] is what a BMP character c becomes when that
+// is one BMP character, WIDE (marked 0xffff, a code unit no text has) when it becomes an astral one (a surrogate pair);
+// an astral character is looked up in CHAR_MAP itself.
+const MAP16 = new Uint16Array(65536);
+const WIDE = new Map();
+for (const [from, to] of Object.entries(CHAR_MAP)) {
+  if (from.length !== 1) continue;
+  if (to.length === 1) MAP16[from.charCodeAt(0)] = to.charCodeAt(0);
+  else {
+    MAP16[from.charCodeAt(0)] = 0xffff;
+    WIDE.set(from.charCodeAt(0), to);
+  }
+}
+let units = new Uint16Array(4096);
+
 /** VariantTable.normalize_text: the character map (curated variants, then script conversion), then the word variants. */
 export function normalize(text) {
   const s = String(text ?? "");
-  const hit = normalized.get(s);
-  if (hit !== undefined) return hit;
+  const n = s.length;
+  if (n <= 64) {
+    const hit = normalized.get(s);
+    if (hit !== undefined) return hit;
+  }
+  if (units.length < 2 * n) units = new Uint16Array(2 * n + 1024);
+  let m = 0;
+  for (let i = 0; i < n; i++) {
+    const c = s.charCodeAt(i);
+    const to = MAP16[c];
+    if (to === 0) {
+      if (c >= 0xd800 && c <= 0xdbff && i + 1 < n) { // an astral character: a surrogate pair
+        const pair = s.slice(i, i + 2);
+        const got = CHAR_MAP[pair] ?? pair;
+        for (let j = 0; j < got.length; j++) units[m++] = got.charCodeAt(j);
+        i++;
+      } else units[m++] = c;
+    } else if (to !== 0xffff) units[m++] = to;
+    else {
+      const w = WIDE.get(c);
+      for (let j = 0; j < w.length; j++) units[m++] = w.charCodeAt(j);
+    }
+  }
   let out = "";
-  for (const ch of s) out += CHAR_MAP[ch] ?? ch;
+  for (let i = 0; i < m; i += 8192) out += String.fromCharCode.apply(null, units.subarray(i, Math.min(m, i + 8192)));
   for (const [from, to] of WORDS) if (out.includes(from)) out = out.split(from).join(to);
-  if (s.length <= 64) {
+  if (n <= 64) {
     if (normalized.size > 5000) normalized.clear();
     normalized.set(s, out);
   }
@@ -188,18 +224,23 @@ export function rangeLabel(r) {
 }
 
 // ------------------------------------------------------------------ Python's numbers
-/** round(x, n) as Python rounds: the nearest, ties to even (on the value as stored). */
+/** round(x, n) as Python rounds: to the nearest on the value as stored, ties to even.  x·10ⁿ is itself rounded, so it
+ * decides only when clear of a tie; near one, the stored value's own decimal digits do (1.5 × 36.9 is stored just
+ * under 55.35: 55.3, as in Python). */
 export function pyRound(x, n = 0) {
   if (x === null || x === undefined || !Number.isFinite(x)) return x;
   const m = 10 ** n;
   const y = x * m;
   const f = Math.floor(y);
   const diff = y - f;
-  let r;
-  if (diff > 0.5) r = f + 1;
-  else if (diff < 0.5) r = f;
-  else r = f % 2 === 0 ? f : f + 1;
-  return r / m;
+  if (Math.abs(y) < 1e9 && Math.abs(diff - 0.5) > 1e-6) return (diff > 0.5 ? f + 1 : f) / m;
+  if (Math.abs(x) >= 1e21 || n > 70) return x;
+  const [whole, frac = ""] = Math.abs(x).toFixed(n + 25).split(".");
+  const next = frac[n];
+  let up = next > "5" || (next === "5" && /[1-9]/.test(frac.slice(n + 1)));
+  if (next === "5" && !up) up = Number((whole + frac.slice(0, n)).slice(-1)) % 2 === 1; // an exact tie: to even
+  const digits = BigInt(whole + frac.slice(0, n)) + (up ? 1n : 0n);
+  return (x < 0 ? -1 : 1) * Number(`${digits}e-${n}`);
 }
 
 /** Python's float formatting of a year (1911.0) where a result prints one: JSON keeps numbers as numbers. */

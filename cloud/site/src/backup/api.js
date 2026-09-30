@@ -10,8 +10,13 @@ import { shape } from "./results.js";
 import { INFO, PROMPT } from "./tables.js";
 import * as tools from "./tools.js";
 import { ToolError } from "./tools.js";
+import { warmUp } from "./warm.js";
 
 export const LABEL = "全量语料（备份）";
+
+// the code compiled and warmed as the isolate starts, not in the first request's 10 ms (warm.js: made-up databases in
+// memory, so the promises settle before the start is over)
+warmUp().catch((err) => console.error("backup warm-up", err?.message || err));
 
 const RUN = {
   "classics.search": tools.search,
@@ -33,14 +38,24 @@ const RUN = {
 // why a tool is not in the backup (the ADR's table: what it needs that a Worker on D1 does not have)
 const WHY = {
   engine: "多智能体研究与研究会话需要服务器上的研究引擎（数十个智能体、数分钟的计算）",
-  working_set: "D1–D5 分析读的是研究会话或服务器进程中已检索段落的工作集与其中抽取的主张，备份服务无状态",
-  model: "需要服务器上的统计模型或逐段计算（句读模型、候选数千段的比对与分类），超出 Worker 每次 10 毫秒的计算",
-  session: "需要研究会话",
+  session: "门控 G0–G8 评的是研究会话中的主张、证据与假说，备份服务没有研究会话",
+  working_set: "D1–D5 分析与知识谱系读的是研究会话或服务器进程中已检索段落的工作集及其中抽取的主张，备份服务无状态",
+  passages: "需要在服务器上对大量段落逐段计算（比对、归类、抽取、统计检验），超出 Worker 每次 10 毫秒的计算；其参数不定，无法预先算好",
+  data: "需要服务器上的模型、规则或数据（句读模型、实体与主张抽取规则、现代医学映射与数据库、OCR 版面），Worker 中没有",
 };
-const UNAVAILABLE = {
-  taochronos_research: WHY.engine, taochronos_session: WHY.engine, taochronos_ask: WHY.engine,
-  "validation.gates": WHY.session, "classics.lineage": WHY.working_set, "kg.extract_claims": WHY.model,
-};
+const UNAVAILABLE = Object.fromEntries([
+  ["engine", ["taochronos_research", "taochronos_session", "taochronos_ask"]],
+  ["session", ["validation.gates"]],
+  ["working_set", ["analysis.association_rules", "analysis.communities", "analysis.concept_drift", "analysis.contradictions",
+    "analysis.formula_evolution", "analysis.link_prediction", "analysis.lost_knowledge", "analysis.missing_sources",
+    "analysis.temporal_profile", "classics.lineage"]],
+  ["data", ["study.punctuate", "study.translate", "study.entities", "study.clause", "study.argument", "kg.extract_claims",
+    "bridge.map", "bridge.phenotype", "bridge.reverse", "modern.search", "rwd.ask", "vision.compare", "vision.layout",
+    "audit.claim", "graph.evidence"]],
+  ["passages", ["study.authorship", "study.cards", "study.cases", "study.chain", "study.dating", "study.disputes",
+    "study.fragments", "study.glosses", "study.layers", "study.places", "study.reuse", "study.stemma", "study.trajectories",
+    "study.transmission", "study.variants"]],
+].flatMap(([why, names]) => names.map((n) => [n, WHY[why]])));
 
 const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), { status, headers: { ...headers, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
@@ -173,9 +188,13 @@ function errorText(err) {
 }
 
 function unavailable(tool) {
-  return `${tool} 在本站的备份服务（全量语料的 D1 备份）中不可用：${UNAVAILABLE[tool] || WHY.model}。` +
+  const why = PRECOMPUTED.has(tool) ? "它在全量语料上预先计算的结果还没有导入" : UNAVAILABLE[tool] || WHY.passages;
+  return `${tool} 在本站的备份服务（全量语料的 D1 备份）中不可用：${why}。` +
     "可用的工具见 taochronos_catalog；全量语料的完整服务恢复后即可使用。";
 }
+
+/** Every tool of the catalog is live, precomputed or unavailable for a stated reason (the tests hold the catalog to it). */
+export const classification = () => ({ live: [...LIVE], precomputed: [...PRECOMPUTED], unavailable: { ...UNAVAILABLE } });
 
 // ------------------------------------------------------------------ receipts (kernel/tools.py: what was called, what came back)
 async function digest(value) {
