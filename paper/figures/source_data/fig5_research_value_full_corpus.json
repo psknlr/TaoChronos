@@ -1,0 +1,143 @@
+{
+ "source": "docs/evals.md § Research value (full corpus); taochronos eval research_value on the full-corpus store",
+ "cutoffs": [
+  1127,
+  1368
+ ],
+ "topic_cutoff_pairs_read": 230,
+ "topic_cutoff_pairs_scored": 189,
+ "candidates": 29467,
+ "came_true": 1314,
+ "base_rate": 0.045,
+ "rankers": [
+  {
+   "ranker": "Adamic–Adar (D4)",
+   "p10": 0.168,
+   "p10_lo": 0.152,
+   "p10_hi": 0.185,
+   "p20": 0.131,
+   "p20_lo": 0.12,
+   "p20_hi": 0.142,
+   "map": 0.199,
+   "map_lo": 0.175,
+   "map_hi": 0.222
+  },
+  {
+   "ranker": "Common neighbours",
+   "p10": 0.17,
+   "p10_lo": 0.154,
+   "p10_hi": 0.188,
+   "p20": 0.133,
+   "p20_lo": 0.123,
+   "p20_hi": 0.145,
+   "map": 0.208,
+   "map_lo": 0.185,
+   "map_hi": 0.232
+  },
+  {
+   "ranker": "Resource allocation",
+   "p10": 0.149,
+   "p10_lo": 0.134,
+   "p10_hi": 0.166,
+   "p20": 0.118,
+   "p20_lo": 0.108,
+   "p20_hi": 0.129,
+   "map": 0.175,
+   "map_lo": 0.154,
+   "map_hi": 0.197
+  },
+  {
+   "ranker": "Popularity",
+   "p10": 0.134,
+   "p10_lo": 0.119,
+   "p10_hi": 0.15,
+   "p20": 0.101,
+   "p20_lo": 0.092,
+   "p20_hi": 0.111,
+   "map": 0.143,
+   "map_lo": 0.126,
+   "map_hi": 0.161
+  },
+  {
+   "ranker": "Chance (20 draws)",
+   "p10": 0.054,
+   "p10_lo": null,
+   "p10_hi": null,
+   "p20": 0.055,
+   "p20_lo": null,
+   "p20_hi": null,
+   "map": 0.092,
+   "map_lo": null,
+   "map_hi": null
+  }
+ ],
+ "paired": [
+  {
+   "comparison": "Adamic–Adar vs popularity",
+   "cutoff": "all",
+   "better": 149,
+   "worse": 39,
+   "tie": 1,
+   "p": 2.4e-16
+  },
+  {
+   "comparison": "Adamic–Adar vs popularity",
+   "cutoff": "1127",
+   "better": 73,
+   "worse": 21,
+   "tie": null,
+   "p": null
+  },
+  {
+   "comparison": "Adamic–Adar vs popularity",
+   "cutoff": "1368",
+   "better": 76,
+   "worse": 18,
+   "tie": null,
+   "p": null
+  },
+  {
+   "comparison": "Popularity vs chance",
+   "cutoff": "all",
+   "better": 116,
+   "worse": 73,
+   "tie": null,
+   "p": 0.002
+  }
+ ],
+ "end_to_end_heldout": [
+  {
+   "prediction": "Lost association stays absent (D1)",
+   "held_before": 4,
+   "n_before": 9,
+   "held_after": 4,
+   "n_after": 9,
+   "note": "the 2 rejected by the new checks were both wrong; 4/7 of those surviving hold"
+  },
+  {
+   "prediction": "Association rule holds",
+   "held_before": 1,
+   "n_before": 7,
+   "held_after": 1,
+   "n_after": 7,
+   "note": ""
+  },
+  {
+   "prediction": "Hidden association comes true (D4)",
+   "held_before": 4,
+   "n_before": 8,
+   "held_after": 4,
+   "n_after": 8,
+   "note": "2 new; the 2 already written before the cutoff are now rejected (attested)"
+  },
+  {
+   "prediction": "Surviving predictions that are discoveries",
+   "held_before": 7,
+   "n_before": 23,
+   "held_after": 7,
+   "n_after": 19,
+   "note": "true and new; Wilson 95% CI 0.19–0.59 after"
+  }
+ ],
+ "leakage": 0
+}

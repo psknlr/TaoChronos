@@ -4,14 +4,19 @@
 // worker so the page never blocks.
 //
 // Loading is arranged for the wait a visitor sees:
-// * the corpus downloads while Python starts, not after;
+// * the corpus downloads and is unpacked while Python starts, on a thread of its own (unpack-worker.js), and is handed
+//   to Python's file system without a copy;
 // * on the first visit the works ranked first are indexed before the runtime answers, the rest in the background,
 //   between questions (their text is there from the start; only their search waits);
+// * the YAML the runtime reads comes parsed with the site (home.zip, .cache/yaml), the store's counts with the store;
 // * what was downloaded and indexed is kept in IndexedDB — which, unlike the Cache API, a page served over http:// has
-//   too — so that a later visit loads in seconds, with nothing to download or index.
+//   too — so that a later visit loads in seconds, with nothing to download or index; so is the package's bytecode,
+//   compiled once after the first visit's indexing.
 //
 // Messages: {id, method, params} → {id, result} | {id, error}; while loading {type: "progress", progress, message}; while
 // the rest is indexed {type: "index", indexed, total, done, kept}.
+
+import { readAll, spool, unxz } from "./unpack.js";
 
 const CDN = "https://cdn.jsdelivr.net/pyodide/v0.28.2/full/";
 const CORPUS = "/home/pyodide/data/corpus/tcm.sqlite";
@@ -107,71 +112,46 @@ async function keepCorpus(sha) {
 }
 
 // ------------------------------------------------------------------------------------------------------- download
-/** The response body read at full speed into memory, as a stream its consumer drains whenever it is ready: the download
- * runs while Python starts, and what arrived is unpacked from the moment Python is there. */
-function spool(body, onBytes) {
-  const queue = [];
-  let done = false;
-  let failed = null;
-  let wake = null;
-  let got = 0;
-  (async () => {
-    const reader = body.getReader();
+
+/** The corpus downloaded and unpacked in a worker of its own, in parallel with Python starting here (unpacking on this
+ * thread would take its turns with Python's start); here as it was when a worker cannot be started from this one. */
+function unpackCorpus(url, size, onGot, onUnpacked) {
+  return new Promise((resolve, reject) => {
+    let helper = null;
+    const here = async () => {
+      const r = await fetch(url, { cache: "no-cache" });
+      if (!r.ok || !r.body) throw new Error(`下载 ${url} 失败（HTTP ${r.status}）`);
+      return readAll(await unxz(spool(r.body, onGot)), size, onUnpacked);
+    };
+    const fallback = () => { helper?.terminate(); helper = null; here().then(resolve, reject); };
     try {
-      for (;;) {
-        const { done: end, value } = await reader.read();
-        if (end) break;
-        queue.push(value);
-        got += value.length;
-        onBytes?.(got);
-        wake?.();
-      }
-    } catch (err) {
-      failed = err;
+      helper = new Worker(new URL("./unpack-worker.js", import.meta.url), { type: "module", name: "taochronos-unpack" });
+    } catch {
+      fallback();
+      return;
     }
-    done = true;
-    wake?.();
-  })();
-  return new ReadableStream({
-    async pull(ctl) {
-      while (!queue.length && !done) await new Promise((r) => { wake = r; });
-      wake = null;
-      if (queue.length) ctl.enqueue(queue.shift());
-      else if (failed) ctl.error(failed);
-      else ctl.close();
-    },
+    let heard = false;
+    helper.onerror = (e) => { e.preventDefault?.(); if (!heard) fallback(); else { helper?.terminate(); reject(new Error("解压要籍语料失败：请刷新重试")); } };
+    helper.onmessage = ({ data }) => {
+      heard = true;
+      if (data.got !== undefined) onGot?.(data.got);
+      if (data.unpacked !== undefined) onUnpacked?.(data.unpacked);
+      if (data.error) { helper.terminate(); reject(new Error(data.error)); }
+      if (data.buffer) { helper.terminate(); resolve(new Uint8Array(data.buffer)); }
+    };
+    helper.postMessage({ url, size });
   });
 }
 
-let XzStream = null;
-async function unxz(stream) {
-  if (!XzStream) {
-    const mod = await import("./vendor/xzwasm.min.js");
-    XzStream = (mod.default || self.xzwasm).XzReadableStream;
-  }
-  return new XzStream(stream);
-}
-
-/** Write a stream of bytes into the Python file system at CORPUS (the file sized first: no growing copies). */
-async function streamToCorpus(stream, size, onBytes) {
+/** The corpus, whole in `buf`, as the file at CORPUS — the file system takes the buffer itself (canOwn). */
+function ownCorpus(buf) {
   py.FS.mkdirTree("/home/pyodide/data/corpus");
-  py.FS.writeFile(CORPUS, new Uint8Array(0));
-  if (size) py.FS.truncate(CORPUS, size);
-  const file = py.FS.open(CORPUS, "r+");
-  const reader = stream.getReader();
-  let pos = 0;
+  const file = py.FS.open(CORPUS, "w+");
   try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      py.FS.write(file, value, 0, value.length, pos);
-      pos += value.length;
-      onBytes?.(pos);
-    }
+    py.FS.write(file, buf, 0, buf.length, 0, true);
   } finally {
     py.FS.close(file);
   }
-  if (size && pos !== size) throw new Error(`要籍语料不完整（${pos} / ${size} 字节）：请刷新重试`);
 }
 
 // ----------------------------------------------------------------------------------------------------------- Python
@@ -190,13 +170,17 @@ async function loadPython(base, manifest) {
   throw new Error(`无法载入 Python 运行时（${lastErr?.message || lastErr}）`);
 }
 
-const BOOT = `
-import json, os
+const ENV = `
+import os
 os.environ["TAOCHRONOS_HOME"] = "/home/pyodide/taochronos"
 os.environ["TAOCHRONOS_DATA"] = "/home/pyodide/data"
-os.environ["TAOCHRONOS_CACHE"] = "off"
+os.environ["TAOCHRONOS_CACHE"] = "/home/pyodide/taochronos/.cache"  # the YAML it reads, parsed by the build (home.zip)
 os.environ["TAOCHRONOS_SQLITE_JOURNAL"] = "DELETE"   # the index is built through a second connection
 os.environ["TAOCHRONOS_SQLITE_CACHE_KB"] = "32000"   # the file is in memory already
+`;
+
+const BOOT = `
+import json
 from taochronos.chat import ChatRuntime
 _rt = ChatRuntime.create(_profile, kind="browser", ephemeral=True, data_dir="/home/pyodide/data")
 
@@ -230,8 +214,36 @@ def _index(phase, limit=0, progress=None):
     return json.dumps({"indexed_now": n, **index_state(Path("${CORPUS}"))})
 `;
 
+// The package's bytecode, compiled once in this browser and kept (by the package's hash): a later visit imports it
+// instead of compiling some 240 modules from source (about a second).  Unchecked-hash .pyc: valid whatever the files'
+// times, and only ever next to the very sources they were compiled from.
+const BYTECODE = `
+import compileall, io, os, py_compile, sysconfig, zipfile
+def _bytecode():
+    root = sysconfig.get_paths()["purelib"]
+    compileall.compile_dir(os.path.join(root, "taochronos"), quiet=1, force=True,
+                           invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH)
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as z:
+        for d, _, names in os.walk(os.path.join(root, "taochronos")):
+            if d.endswith("__pycache__"):
+                for n in names:
+                    z.write(os.path.join(d, n), os.path.relpath(os.path.join(d, n), root))
+    return buf.getvalue()
+`;
+
+async function keepBytecode(key) {
+  try {
+    py.runPython(BYTECODE);
+    const make = py.globals.get("_bytecode");
+    const data = make().toJs();
+    make.destroy?.();
+    await kept.put(key, { blob: new Blob([data]) });
+  } catch { /* a later visit compiles from source, as before */ }
+}
+
 /** The rest of the corpus indexed in slices, between the questions the runtime answers; kept once it is all indexed. */
-async function indexRest(sha) {
+async function indexRest(sha, then) {
   const step = py.globals.get("_index");
   try {
     for (;;) {
@@ -247,6 +259,7 @@ async function indexRest(sha) {
     self.postMessage({ type: "index", error: String(err?.message || err) });
   } finally {
     step.destroy?.();
+    then?.();
   }
 }
 
@@ -268,13 +281,14 @@ async function init({ base }) {
   };
   const corpusSource = meta ? (async () => {
     const hit = await keptCorpus(meta.sha256);
-    if (hit) return hit;
+    if (hit) return { kept: true, whole: new Blob(hit.parts).arrayBuffer().then((b) => new Uint8Array(b)) };
     const url = new URL("runtime/corpus.sqlite.xz", base).href;
-    const r = await fetch(url, { cache: "no-cache" });
-    if (!r.ok || !r.body) throw new Error(`下载 ${url} 失败（HTTP ${r.status}）`);
     view.downloading = true;
     const showSoon = every(200, show);
-    return { stream: spool(r.body, (g) => { view.got = g; showSoon(); }) };
+    // downloaded and unpacked as it arrives, while Python starts
+    const whole = unpackCorpus(url, meta.raw_bytes, (g) => { view.got = g; showSoon(); }, (n) => { view.unpacked = n; });
+    whole.catch(() => {});
+    return { whole };
   })() : Promise.resolve(null);
   const archives = Promise.all([
     archive(base, "taochronos.zip", files["taochronos.zip"]?.sha256),
@@ -291,24 +305,32 @@ async function init({ base }) {
   const [pkg, home] = await archives;
   const site = py.runPython("import sysconfig; sysconfig.get_paths()['purelib']");
   py.unpackArchive(pkg, "zip", { extractDir: site });
+  const pycKey = `pyc:${files["taochronos.zip"]?.sha256 || ""}`;
+  const pyc = files["taochronos.zip"]?.sha256 ? await kept.get(pycKey) : undefined;
+  if (pyc?.blob instanceof Blob) py.unpackArchive(new Uint8Array(await pyc.blob.arrayBuffer()), "zip", { extractDir: site });
   py.FS.mkdirTree("/home/pyodide/taochronos");
   py.FS.mkdirTree("/home/pyodide/data");
   py.unpackArchive(home, "zip", { extractDir: "/home/pyodide/taochronos" });
+  py.runPython(ENV); // before anything reads the home: the indexer below loads the domain pack
   view.step = "载入 TaoChronos"; view.frac = 1; show();
 
   let rest = false;
   if (meta) {
     const src = await corpusSource;
-    if (src.parts) {
+    if (src.kept) {
       progress(62, "载入本机保存的要籍语料");
-      await streamToCorpus(new Blob(src.parts).stream(), src.bytes);
+      ownCorpus(await src.whole);
     } else {
       py.runPython(INDEX); // the indexer's code, while the download may still be running
-      const unpacking = every(200, (n) => {
+      const unpacking = setInterval(() => {
         const dl = view.got < view.total ? `下载要籍语料 ${mb(view.got)} / ${mb(view.total)} MB · ` : "";
-        progress(60 + 6 * n / meta.raw_bytes, `${dl}解压（仅首次）`);
-      });
-      await streamToCorpus(await unxz(src.stream), meta.raw_bytes, unpacking);
+        progress(60 + 6 * (view.unpacked || 0) / meta.raw_bytes, `${dl}解压（仅首次）`);
+      }, 200);
+      try {
+        ownCorpus(await src.whole);
+      } finally {
+        clearInterval(unpacking);
+      }
       const what = meta.core_rank && meta.core_passages < meta.passages ? `前 ${meta.core_rank} 部要籍` : "要籍语料";
       py.globals.set("_index_progress", (done, total) => progress(66 + 22 * done / total,
         `为${what}建立全文索引 ${Math.round(100 * done / total)}%（仅首次）`));
@@ -324,7 +346,9 @@ async function init({ base }) {
   info.load_ms = Math.round(performance.now() - t0);
   info.version_manifest = manifest.version;
   progress(100, "就绪");
-  if (rest) setTimeout(() => indexRest(meta.sha256), 0);
+  const compile = pyc || !files["taochronos.zip"]?.sha256 ? null : () => setTimeout(() => keepBytecode(pycKey), 1000);
+  if (rest) setTimeout(() => indexRest(meta.sha256, compile), 0);
+  else compile?.();
   return info;
 }
 

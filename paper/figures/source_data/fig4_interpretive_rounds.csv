@@ -1,0 +1,6 @@
+round,cases,correct,unsafe,note
+Round 1,53,43,4,"60 cases written together, 53 held out"
+Round 2,32,30,1,"written after round 1, before its changes ran"
+Round 3,10,7,3,before the crux registry
+Round 4,5,5,0,"written after the changes, before they ran"
+Held-out now,84,82,2,all held-out cases on the current rules

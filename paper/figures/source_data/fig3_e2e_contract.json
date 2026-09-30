@@ -1,0 +1,68 @@
+{
+ "question": "肾气丸的组成与主治如何随时代演变？",
+ "focus_terms": [
+  "肾气丸",
+  "六味地黄丸"
+ ],
+ "tracks": [
+  "D1",
+  "D2",
+  "D3",
+  "D4",
+  "D5"
+ ],
+ "forbidden_assumptions": [
+  "消渴=糖尿病"
+ ],
+ "required_validation": [
+  "G0",
+  "G1",
+  "G2",
+  "G3",
+  "G4",
+  "G5",
+  "G6"
+ ],
+ "required_evidence": {
+  "min_independent_sources": 2,
+  "min_supporting_evidence": 2,
+  "require_verbatim_quotes": true
+ },
+ "stop": {
+  "max_rounds": 2,
+  "evidence_saturation": 0.05,
+  "min_novel_source_gain": 1,
+  "stop_on_validation": false,
+  "require_contradictions_addressed": false,
+  "expert_intervention_on_critical": true,
+  "strict_gates": [
+   "G4",
+   "G5",
+   "G6"
+  ]
+ },
+ "acceptance": {
+  "semantic_support_checked": true,
+  "source_dependence_checked": true,
+  "max_unresolved_hard_objections": 0,
+  "max_unresolved_critical": 0,
+  "alternatives_required": true,
+  "current_version_gates": true,
+  "confirmation_required": false,
+  "expert_review_required_for_publication": true
+ },
+ "goal_digest": "255a516498e9d09349a75f824c3c0ed884ddd7784ab7594867f5e689c564ae45",
+ "books_in_scope": 206,
+ "passages_in_scope": 1399,
+ "passages_by_period": {
+  "先秦两汉": 51,
+  "魏晋南北朝": 15,
+  "隋唐五代": 23,
+  "宋金元": 293,
+  "明": 624,
+  "清": 392,
+  "民国": 1
+ },
+ "profile": "web-canon",
+ "llm_calls": 0
+}

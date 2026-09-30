@@ -30,6 +30,7 @@ from typing import Any
 
 import yaml
 
+from ....protocol.yamlio import load_yaml
 from .base import StudyBase
 
 # sources whose licence allows republishing their text (corpus/sources.lock.yaml): what a published site may carry
@@ -38,6 +39,7 @@ OPEN_SOURCES = {
     "kanripo": "CC BY-SA 4.0 — 漢籍リポジトリ Kanseki Repository",
     "wikisource": "CC BY-SA 4.0 — 维基文库 Wikisource",
     "mcgill": "Public Domain Mark 1.0 — McGill University Library",
+    "jicheng": "CC0 1.0 — 中醫笈成 JiCheng（公有领域古籍的编辑成果；网站原创内容 CC BY 4.0）",
 }
 NOT_RANKED = {"现代", "非医籍"}
 LATEST = 1950
@@ -144,7 +146,7 @@ class CanonStudy:
     def catalog(self) -> list[dict[str, Any]]:
         if self._catalog is None:
             path = self.path
-            data = yaml.safe_load(path.read_text(encoding="utf-8")) if path.is_file() else {}
+            data = load_yaml(path) if path.is_file() else {}
             self._catalog = list((data or {}).get("works") or [])
         return self._catalog
 

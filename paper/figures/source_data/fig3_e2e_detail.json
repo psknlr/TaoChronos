@@ -1,0 +1,657 @@
+{
+ "needs_expert": {
+  "label": "H1",
+  "id": "hyp_d1436acd2959",
+  "kind": "association_rule",
+  "statement": "在主治类记载中，烦躁 并见时多用 六味地黄丸（置信度 1.0，lift 5.1053）：该组合可视为 六味地黄丸 的特征性指征。",
+  "statistics": {
+   "observation": "obs_d550b68256af",
+   "method": "one-sided Fisher exact test on indication claims",
+   "null": "the formula is used independently of the finding combination",
+   "effect": {
+    "lift": 5.1053,
+    "confidence": 1.0
+   },
+   "p_value": 0.03673,
+   "bh_significant": true,
+   "fdr": 0.1,
+   "n": {
+    "support": 2
+   },
+   "clusters": 2,
+   "correction": "Benjamini–Hochberg across 6 rule(s), q=0.1",
+   "sensitivity": {
+    "leave_one_family_out_support": {
+     "full": 2,
+     "without": {
+      "baoming_ji": 1,
+      "jc_o128": 1
+     },
+     "min": 1,
+     "max": 1,
+     "clusters": 2,
+     "by_family": {
+      "baoming_ji": 1,
+      "jc_o128": 1
+     }
+    }
+   }
+  },
+  "confidence": {
+   "textual": 0.825,
+   "philological": 0.6685,
+   "semantic": 0.9,
+   "extraction": 0.825,
+   "cross_source": 1.0,
+   "temporal": 1.0,
+   "statistical": null,
+   "modern_mapping": null,
+   "contradiction_penalty": 0.0
+  },
+  "discovery_score": 0.7069,
+  "gates": {
+   "G0": "pass",
+   "G1": "warn",
+   "G2": "warn",
+   "G3": "pass",
+   "G4": "pass",
+   "G5": "pass",
+   "G6": "pass",
+   "G7": "pending",
+   "G8": "not_applicable"
+  },
+  "criteria": [
+   {
+    "id": "min_supporting_evidence",
+    "status": "pass",
+    "judge": "validator:contract",
+    "observed": "2 verified supporting record(s)",
+    "required": "≥ 2",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "semantic_support",
+    "status": "pass",
+    "judge": "validator:contract",
+    "observed": "every supporting claim is stated by its quote",
+    "required": "every supporting claim borne by its quote",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "source_dependence",
+    "status": "pass",
+    "judge": "validator:contract",
+    "observed": "G5 pass: 2 independent source cluster(s) (need 2): baoming_ji, jc_o128",
+    "required": "≥ 2 independent source families, on the current version",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "falsification_review",
+    "status": "pass",
+    "judge": "validator:contract",
+    "observed": "reviewed",
+    "required": "a skeptic review",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "unresolved_hard_objections",
+    "status": "pass",
+    "judge": "validator:contract",
+    "observed": "0 open hard objection(s)",
+    "required": "≤ 0",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "unresolved_critical",
+    "status": "pass",
+    "judge": "validator:contract",
+    "observed": "0 open critical objection(s)",
+    "required": "≤ 0",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "alternatives_addressed",
+    "status": "pass",
+    "judge": "validator:contract",
+    "observed": "all addressed; open: same_name_other_formula",
+    "required": "every rival explanation of the discovery type excluded or stated as open",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "current_version_gates",
+    "status": "pass",
+    "judge": "validator:contract",
+    "observed": "all required gates pass on this version",
+    "required": "G0, G1, G2, G3, G4, G5, G6 on the current version (strict: G4, G5, G6)",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "expert_review",
+    "status": "pending",
+    "judge": "human",
+    "observed": "G7 pending",
+    "required": "an expert's approval",
+    "failure_state": "needs_expert"
+   }
+  ],
+  "competing": [
+   {
+    "id": "same_name_other_formula",
+    "label": "同名异方",
+    "status": "open",
+    "test": "比较各处方名下的组成",
+    "basis": "compositions under the name differ (Jaccard 0.00)",
+    "evidence_ids": []
+   },
+   {
+    "id": "same_formula_other_name",
+    "label": "同方异名",
+    "status": "excluded",
+    "test": "按组成而非方名归并后重新统计",
+    "basis": "no other formula has the same composition",
+    "evidence_ids": []
+   },
+   {
+    "id": "single_case",
+    "label": "仅一例或一书",
+    "status": "excluded",
+    "test": "是否有两个以上独立源流",
+    "basis": "2 independent source families",
+    "evidence_ids": []
+   },
+   {
+    "id": "quotation_duplication",
+    "label": "同一记载被反复转引",
+    "status": "excluded",
+    "test": "剔除转引后是否仍成立",
+    "basis": "2 supporting passages remain once copies of each other are collapsed",
+    "evidence_ids": []
+   }
+  ],
+  "testable_prediction": "在独立的后世方书中统计该症状组合的用方分布。",
+  "evidence": [
+   {
+    "id": "evd_cd4fbdd2675f",
+    "passage_id": "jc_o128.00164",
+    "book_id": "jc_o128",
+    "title": "医学集成",
+    "dynasty": "清",
+    "year": 1777.5,
+    "quote": "若夜不熱而朝熱，暴病者，陽邪勝也。陽逢陽旺，所以晝甚，一柴胡飲加減以散其熱。久病者，陰虛也，陰遇陰扶，所以夜寧，其證必兼喘嗽煩躁，遺淋失血，治宜六味丸",
+    "span": [
+     95,
+     170
+    ],
+    "chapter": "醫學集成卷一",
+    "section": "問證知標本",
+    "stance": "supports",
+    "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+    "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
+   },
+   {
+    "id": "evd_b4ab500453c5",
+    "passage_id": "jc_o003.00384",
+    "book_id": "jc_o003",
+    "title": "笔花医镜",
+    "dynasty": "清",
+    "year": 1824.0,
+    "quote": "七福飲主之。口渴者。血虛液燥也。甘露飲主之。煩躁發熱者。虛火亢也。六味地黃丸主之",
+    "span": [
+     0,
+     40
+    ],
+    "chapter": "臟腑證治",
+    "section": "肝部",
+    "stance": "supports",
+    "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+    "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
+   }
+  ]
+ },
+ "inconclusive": {
+  "label": "H2",
+  "id": "hyp_12a32285d3a3",
+  "parent_id": "hyp_71c99bcff38f",
+  "kind": "lost_knowledge",
+  "statement": "在本次调查的语料范围内，「肾气丸」与「心烦」的关联见于 960 年以前的《新编金匮方论（邓珍本）》、《金匮要略方（吴迁本）》、《脉经》、《脉经》、《新编金匮要略方论》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识（现有证据可能出自同一传本系统；目前仅有单一独立来源，需更多文献复核；探索性发现，未通过多重检验校正）。",
+  "parent_statement": "「肾气丸」与「心烦」的关联见于 960 年以前的《新编金匮方论（邓珍本）》、《金匮要略方（吴迁本）》、《脉经》、《脉经》、《新编金匮要略方论》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识。",
+  "revision_note": "针对异议：obj_4d207401e0f9[transcription_dependence] → tradition=single；obj_8087ec945588[single_source] → scope=surveyed_corpus；obj_b52febdf4a90[statistical] → status=exploratory",
+  "qualifiers": {
+   "tradition": "single",
+   "scope": "surveyed_corpus",
+   "status": "exploratory"
+  },
+  "replication_sources": [
+   "cm_jingui_dengzhen",
+   "cm_jingui_wuqian",
+   "jc_m100",
+   "jc_m100a",
+   "jinkui_yaolue"
+  ],
+  "statistics": {
+   "observation": "obs_97e6690a2bec",
+   "method": "P(no later co-occurrence | association persisted at its early rate); conservative max over both terms",
+   "null": "the association persisted after the pivot at its early rate",
+   "effect": {
+    "early_rate": 0.3125,
+    "early_rate_ci95_wilson": [
+     0.1416,
+     0.556
+    ],
+    "early_rate_ci95_family_bootstrap": [
+     0.3125,
+     0.3125
+    ]
+   },
+   "p_absence": 0.1667,
+   "n": {
+    "early_mentions": 16,
+    "late_mentions": 22,
+    "late_passages": 1310
+   },
+   "clusters": 1,
+   "correction": "none (one test per observation; mined candidates are ranked, not selected by p)",
+   "sensitivity": {
+    "leave_one_family_out_p_absence": {
+     "full": 0.0003,
+     "without": {
+      "baoming_ji": 1.0
+     },
+     "min": 1.0,
+     "max": 1.0,
+     "clusters": 1
+    }
+   },
+   "absence": {
+    "level": 2,
+    "statement": "在指定覆盖范围内未见（not found within the stated coverage）",
+    "not_asserted": "历史上的衰落或失传（第 4 层）只能作为待专家判断的假说，不是机器结论"
+   }
+  },
+  "gates": {
+   "G0": "pass",
+   "G1": "warn",
+   "G2": "warn",
+   "G3": "pass",
+   "G4": "pass",
+   "G5": "warn",
+   "G6": "pass",
+   "G7": "pending",
+   "G8": "not_applicable"
+  },
+  "gate_details": {
+   "G0": "5 supporting records; worst=pass",
+   "G1": "5 supporting records; worst=warn",
+   "G2": "5 supporting records; worst=warn",
+   "G3": "sense resolution of supporting claims",
+   "G4": "5 supporting records; worst=pass",
+   "G5": "1 independent source cluster(s) (need 2): baoming_ji",
+   "G6": "verdict=survives; unresolved critical=0 major=0",
+   "G8": "historical-text hypothesis: modern validity not asserted"
+  },
+  "criteria": [
+   {
+    "id": "min_supporting_evidence",
+    "status": "pass",
+    "judge": "validator:contract",
+    "observed": "5 verified supporting record(s)",
+    "required": "≥ 2",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "semantic_support",
+    "status": "pass",
+    "judge": "validator:contract",
+    "observed": "every supporting claim is stated by its quote",
+    "required": "every supporting claim borne by its quote",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "source_dependence",
+    "status": "fail",
+    "judge": "validator:contract",
+    "observed": "G5 warn: 1 independent source cluster(s) (need 2): baoming_ji",
+    "required": "≥ 2 independent source families, on the current version",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "falsification_review",
+    "status": "pass",
+    "judge": "validator:contract",
+    "observed": "reviewed",
+    "required": "a skeptic review",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "unresolved_hard_objections",
+    "status": "pass",
+    "judge": "validator:contract",
+    "observed": "0 open hard objection(s)",
+    "required": "≤ 0",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "unresolved_critical",
+    "status": "pass",
+    "judge": "validator:contract",
+    "observed": "0 open critical objection(s)",
+    "required": "≤ 0",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "alternatives_addressed",
+    "status": "pass",
+    "judge": "validator:contract",
+    "observed": "all addressed; open: transcription_omission, survival_bias",
+    "required": "every rival explanation of the discovery type excluded or stated as open",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "current_version_gates",
+    "status": "fail",
+    "judge": "validator:contract",
+    "observed": "failing ['G5=warn']",
+    "required": "G0, G1, G2, G3, G4, G5, G6 on the current version (strict: G4, G5, G6)",
+    "failure_state": "inconclusive"
+   },
+   {
+    "id": "expert_review",
+    "status": "pending",
+    "judge": "human",
+    "observed": "G7 pending",
+    "required": "an expert's approval",
+    "failure_state": "needs_expert"
+   }
+  ],
+  "evidence": [
+   {
+    "id": "evd_14619ba6f548",
+    "passage_id": "jinkui_yaolue.003.00499",
+    "book_id": "jinkui_yaolue",
+    "title": "新编金匮要略方论",
+    "dynasty": "东汉",
+    "year": 209.5,
+    "quote": "問曰婦人病飲食如故煩熱不得卧而反倚息者何也師曰此名轉胞不得溺也以胞絲了戾故致此病但利小便則愈冝腎氣丸主之",
+    "span": [
+     0,
+     52
+    ],
+    "chapter": "升",
+    "section": "礬石丸方",
+    "stance": "supports",
+    "source": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "license": "CC BY-SA 4.0"
+   },
+   {
+    "id": "evd_6ca081f5d306",
+    "passage_id": "cm_jingui_dengzhen.01094",
+    "book_id": "cm_jingui_dengzhen",
+    "title": "新编金匮方论（邓珍本）",
+    "dynasty": "东汉",
+    "year": 209.5,
+    "quote": "問曰：婦人病飲食如故，煩熱不得臥，而反倚息者，何也？師曰：此名轉胞，不得溺也。以胞系了戾，故致此病。但利小便則愈，宜腎氣丸主之",
+    "span": [
+     0,
+     63
+    ],
+    "chapter": "卷下",
+    "section": "婦人雜病脉證并治第二十二",
+    "stance": "supports",
+    "source": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）"
+   },
+   {
+    "id": "evd_6ac00636115e",
+    "passage_id": "cm_jingui_wuqian.00930",
+    "book_id": "cm_jingui_wuqian",
+    "title": "金匮要略方（吴迁本）",
+    "dynasty": "东汉",
+    "year": 209.5,
+    "quote": "婦人腹中痛，小建中湯主之。（方見勞中。）問曰：婦人病，食飲如故，煩熱不得臥，而反倚息者，何也？師曰：此病轉胞，不得尿也，以胞繫了戾，故致此病。但利小便則愈，宜腎氣丸",
+    "span": [
+     0,
+     82
+    ],
+    "chapter": "卷下",
+    "section": "婦人襍病脉證並治第二十三",
+    "stance": "supports",
+    "source": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）"
+   },
+   {
+    "id": "evd_92cd809e0227",
+    "passage_id": "jc_m100.01340",
+    "book_id": "jc_m100",
+    "title": "脉经",
+    "dynasty": "西晋",
+    "year": 277.5,
+    "quote": "問曰：有一婦人病，飲食如故，煩熱不得臥，而反倚息者，何也？師曰：得病轉胞，不得溺也。何以故？師曰：此人故肌盛，頭舉身滿，今反羸瘦，頭舉中空感（一作減），胞系了戾，故致此病，但利小便則愈，宜服腎氣丸",
+    "span": [
+     0,
+     98
+    ],
+    "chapter": "卷九",
+    "section": "平陰中寒轉胞陰吹陰生瘡脫下證第七",
+    "stance": "supports",
+    "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+    "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
+   },
+   {
+    "id": "evd_73eca855da57",
+    "passage_id": "jc_m100a.00256",
+    "book_id": "jc_m100a",
+    "title": "脉经",
+    "dynasty": "晋",
+    "year": 277.5,
+    "quote": "婦人陰寒，溫中坐藥，蛇床子散主之。婦人著坐藥，強下其經，目眶為痛，足跟難以踐地，心中狀如懸。問曰有一婦人病飲食如故，煩熱不得臥，而反倚息者何也，師曰得病轉胞不得溺也，何以故，師曰此人故肌盛，頭舉身滿，今反羸瘦，頭舉中空（一作減），胞系了戾，故致此病，但利小便則愈，宜服腎氣丸",
+    "span": [
+     0,
+     137
+    ],
+    "chapter": "脈經卷之九",
+    "section": "平陰中寒轉胞陰吹陰生瘡脫下證第七",
+    "stance": "supports",
+    "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+    "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
+   }
+  ],
+  "objections": [
+   {
+    "hypothesis": "parent",
+    "check": "transcription_dependence",
+    "severity": "major",
+    "status": "raised",
+    "closure": "",
+    "detail": "5 部书的证据只构成 1 个独立来源（同一作者或转录关系）"
+   },
+   {
+    "hypothesis": "parent",
+    "check": "single_source",
+    "severity": "major",
+    "status": "raised",
+    "closure": "",
+    "detail": "仅有 1 个独立来源（要求 ≥ 2）"
+   },
+   {
+    "hypothesis": "parent",
+    "check": "statistical",
+    "severity": "major",
+    "status": "raised",
+    "closure": "",
+    "detail": "按早期关联率推算，后世未见共现的概率为 0.1667，缺失并不显著"
+   },
+   {
+    "hypothesis": "revision",
+    "check": "transcription_dependence",
+    "severity": "major",
+    "status": "closed",
+    "closure": "scope_restriction",
+    "detail": "5 部书的证据只构成 1 个独立来源（同一作者或转录关系）"
+   },
+   {
+    "hypothesis": "revision",
+    "check": "single_source",
+    "severity": "major",
+    "status": "closed",
+    "closure": "scope_restriction",
+    "detail": "仅有 1 个独立来源（要求 ≥ 2）"
+   },
+   {
+    "hypothesis": "revision",
+    "check": "statistical",
+    "severity": "major",
+    "status": "closed",
+    "closure": "scope_restriction",
+    "detail": "按早期关联率推算，后世未见共现的概率为 0.1667，缺失并不显著"
+   },
+   {
+    "hypothesis": "revision",
+    "check": "transcription_dependence",
+    "severity": "major",
+    "status": "closed",
+    "closure": "scope_restriction",
+    "detail": "5 部书的证据只构成 1 个独立来源（同一作者或转录关系）"
+   },
+   {
+    "hypothesis": "revision",
+    "check": "single_source",
+    "severity": "major",
+    "status": "closed",
+    "closure": "scope_restriction",
+    "detail": "仅有 1 个独立来源（要求 ≥ 2）"
+   },
+   {
+    "hypothesis": "revision",
+    "check": "statistical",
+    "severity": "major",
+    "status": "closed",
+    "closure": "scope_restriction",
+    "detail": "按早期关联率推算，后世未见共现的概率为 0.1667，缺失并不显著"
+   }
+  ]
+ },
+ "rejected": {
+  "label": "R1",
+  "id": "hyp_ccbe3e9607db",
+  "kind": "lost_knowledge",
+  "statement": "「理中丸」与「发热」的关联见于 960 年以前的《伤寒论（宋本·台北故宫）》、《伤寒论（宋本·安政本）》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识。",
+  "supporting": [
+   {
+    "id": "evd_0c370fcc05c6",
+    "passage_id": "cm_shanghan_zhao_kaimei.01333",
+    "book_id": "cm_shanghan_zhao_kaimei",
+    "title": "伤寒论（宋本·安政本）",
+    "dynasty": "东汉",
+    "year": 209.5,
+    "quote": "霍亂，頭痛，發𤍠，身疼，𤍠多飲水者，五苓散主之。寒多不用水者，理中丸主之",
+    "span": [
+     0,
+     36
+    ],
+    "chapter": "卷第七",
+    "section": "辨霍亂病脉證并治",
+    "stance": "supports",
+    "source": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）"
+   },
+   {
+    "id": "evd_04ebbee17452",
+    "passage_id": "cm_shanghan_npm.01676",
+    "book_id": "cm_shanghan_npm",
+    "title": "伤寒论（宋本·台北故宫）",
+    "dynasty": "东汉",
+    "year": 209.5,
+    "quote": "霍亂，頭痛，發𤍠，身疼，𤍠多飲水者，五苓散主之。寒多不用水者，理中丸主之",
+    "span": [
+     0,
+     36
+    ],
+    "chapter": "卷第七",
+    "section": "辨霍亂病脉證并治第十三",
+    "stance": "supports",
+    "source": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）"
+   }
+  ],
+  "counter": [
+   {
+    "id": "evd_4b5ab61cecae",
+    "passage_id": "jc_e009.00395",
+    "book_id": "jc_e009",
+    "title": "增订叶评伤暑全书",
+    "dynasty": "清",
+    "year": 1675.0,
+    "quote": "萬密齋治縣丞李天泉，六月中暑腹痛，渠有婢外家，醫謂病寒，進理中湯一劑痛止，乃發熱，一身骨節盡痛，又進十神湯，發汗熱退身不痛矣。",
+    "span": [
+     0,
+     63
+    ],
+    "chapter": "古今名醫暑證匯論",
+    "section": "《名醫類案》《增補名醫類案》",
+    "stance": "contradicts",
+    "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+    "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
+   },
+   {
+    "id": "evd_df38acbd0f52",
+    "passage_id": "jc_d041.00588",
+    "book_id": "jc_d041",
+    "title": "时方妙用",
+    "dynasty": "清",
+    "year": 1803.0,
+    "quote": "人觸之則生暑病。即為中熱。無非動以得之。他若畏熱求涼。涼襲於外。則為發熱惡寒頭痛項強等症。宜九味羌活湯以散之。涼中於中。則為吐瀉腸痛。宜理中湯",
+    "span": [
+     0,
+     71
+    ],
+    "chapter": "卷三",
+    "section": "暑症",
+    "stance": "contradicts",
+    "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+    "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
+   }
+  ],
+  "objections": [
+   {
+    "check": "transcription_dependence",
+    "severity": "major",
+    "status": "raised",
+    "detail": "2 部书的证据只构成 1 个独立来源（同一作者或转录关系）"
+   },
+   {
+    "check": "single_source",
+    "severity": "major",
+    "status": "raised",
+    "detail": "仅有 1 个独立来源（要求 ≥ 2）"
+   },
+   {
+    "check": "transcription_dependence",
+    "severity": "major",
+    "status": "raised",
+    "detail": "缺失的显著性依赖单一来源家族：逐一剔除早期来源家族后 p 最高为 1.0（1 个家族）"
+   },
+   {
+    "check": "earliest_source",
+    "severity": "major",
+    "status": "raised",
+    "detail": "960 年后仍有 1 处文本同时提及二者（如 jc_e009.00395），失传结论需限定为“不再形成明确记载”"
+   },
+   {
+    "check": "restated_after",
+    "severity": "critical",
+    "status": "raised",
+    "detail": "960 年后仍有 1 部书（1 个来源家族）明确陈述二者的关联（如 jc_d041.00588「人觸之則生暑病。即為中熱。無非動以得之。他若畏熱求涼。涼襲於外。則為發熱惡寒頭痛」），“后世不再出现”不成立；若这些后世来源只是转录早期文本，可改为“仅见于转录”另行论证"
+   }
+  ],
+  "criteria": [
+   {
+    "id": "falsification",
+    "status": "fail",
+    "judge": "validator:contract",
+    "observed": "status rejected",
+    "required": "not rejected",
+    "failure_state": "rejected"
+   }
+  ]
+ }
+}

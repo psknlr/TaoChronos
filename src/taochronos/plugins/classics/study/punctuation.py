@@ -15,7 +15,7 @@ a punctuator.
 **Measured.**  The ``punctuation`` suite of TaoChronos-Eval holds out whole books, strips their marks and scores the
 model's gaps against the editors' (boundary and sentence F1, the mark type, character preservation), beside the rule
 segmenter as a baseline.  The model is trained on the transcriptions in the store; it stays in the local cache, since
-it is derived from texts that are for local research only.
+some of them (the 東亜医学協会's among them) are for local research only.
 """
 
 from __future__ import annotations

@@ -5,10 +5,13 @@ characters).  What goes is the 要籍 list (``corpus/catalog/canon.yaml``), ever
 the rest as whole chapters spread through the book, within a budget that grows with the work's rank.
 
 The witnesses (``WEB_SOURCES``): the openly licensed first (``OPEN_SOURCES`` — CMETA under CC BY 4.0, Kanripo and
-Wikisource under CC BY-SA 4.0, McGill in the public domain), then — IMPF-AI's decision for its site (2026-09-28: the works
-are all in the public domain) — the transcriptions of 笈成 and of the collections derived from it, whose punctuation and
-collation are their editors' and which declare no licence.  Sources whose terms forbid redistribution
-(``NEVER_PACKED``) are never packed: a work known only through them is listed, without text.
+Wikisource under CC BY-SA 4.0, McGill in the public domain, and 笈成, which releases its editorial work on the
+public-domain texts under CC0 1.0 and its own writing under CC BY 4.0: https://jicheng.tw/tcm/copyright.html), then the
+two web text sets transcribed from 笈成 (TCM-Ancient-Books, tcmoc), mostly copies of its texts, whose own repositories
+declare no licence.  The site carries these — and the modern editors' part of the 笈成 texts that follow a modern
+edition (a reconstruction of a lost book, an annotated edition), which 笈成's CC0 cannot release — by IMPF-AI's decision
+(2026-09-28: the works are all in the public domain).  Sources whose terms forbid redistribution (``NEVER_PACKED``) are
+never packed: a work known only through them is listed, without text.
 
 ``taochronos web pack`` takes, for every ranked work, the best witnesses (CMETA's collated editions first, then the most
 complete) — up to three for the first classics, so that their witnesses can be collated in the browser — whole when they
@@ -41,9 +44,9 @@ from .study.canon import OPEN_SOURCES
 # the sources the site's pack may take, in the order their witnesses are preferred (the terms, for the attribution)
 WEB_SOURCES: dict[str, str] = {
     **OPEN_SOURCES,
-    "jicheng": "古籍原文属公有领域；录文、标点与校勘出自笈成整理者（未声明授权）",
-    "tcm-ancient-books": "古籍原文属公有领域；录文未声明授权（多为笈成整理本的简体转换本）",
-    "tcmoc": "古籍原文属公有领域；录文未声明授权（据 TCM-Ancient-Books 整理）",
+    "tcm-ancient-books": "古籍原文属公有领域；该文本集多为中醫笈成整理本（CC0 1.0）的简体转换本，与笈成本重复者不收；其仓库未声明授权",
+    "tcmoc": "古籍原文属公有领域；该文本集据 TCM-Ancient-Books 整理，多为中醫笈成整理本（CC0 1.0）的简体转换本，与笈成本重复者不收；"
+             "其仓库未声明授权",
 }
 # sources whose terms forbid passing their transcriptions on: never in the pack
 NEVER_PACKED: dict[str, str] = {
@@ -180,8 +183,11 @@ def export_pack(db: sqlite3.Connection, works: list[dict[str, Any]], out: Path,
             "来源与条件见下表：", "",
             "* 开放授权的录本（维基文库、漢籍リポジトリ：CC BY-SA 4.0；數位中醫校書郎 CMETA：CC BY 4.0；McGill：公有领域）按其授权使用，"
             "须保留署名；",
-            "* 其余录本（笈成及据其转录的整理本）：古籍原文属公有领域，录文、标点与校勘出自各来源的整理者，谨致谢忱；经发布方",
-            "  （IMPF-AI）决定随网站发布，供学习研究；",
+            "* 中醫笈成的录本：笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果以 CC0 1.0 释出至公有领域，网站自行创作的内容以",
+            "  CC BY 4.0 释出（https://jicheng.tw/tcm/copyright.html），可自由使用，请注明来自中醫笈成；笈成所据今人辑校、校注本（如辑佚",
+            "  古书）中的今人成分不在其列，经发布方（IMPF-AI）决定随网站发布，供学习研究；",
+            "* 据笈成转录的网络文本集（TCM-Ancient-Books、tcmoc）：多为笈成整理本的简体转换本（与笈成本重复者不收），其仓库未声明",
+            "  授权；经发布方（IMPF-AI）决定随网站发布，供学习研究；",
             "* 条款禁止转载或限定授权的来源（" + "；".join(f"{k}：{v}" for k, v in NEVER_PACKED.items()) + "）不收。",
             "", "录文均未经本项目逐字校勘；段落号与全量语料相同。", "",
             f"共 {works_in} 部要籍、{len(books)} 个录本，{chars:,} 字，{len(lines):,} 段。"
@@ -220,6 +226,7 @@ def build_store(pack: Path, path: Path, normalize: Callable[[str], str], fingerp
     store.set_meta("edition", "web")
     store.set_meta("label", "要籍语料")
     store.set_meta("index", "built" if index else "pending")
+    store.count()
     if not index:
         # the pack is in rank order: the passages of the works the browser indexes first end at this rowid
         core = [b["id"] for b in books if int(b.get("rank") or 0) <= CORE_RANK]

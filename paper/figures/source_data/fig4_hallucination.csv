@@ -1,0 +1,5 @@
+probe,passed,n,rate
+Verbatim quotation accepted,60,60,1.0
+One character replaced,60,60,1.0
+Random characters (fabricated),60,60,1.0
+Verbatim text at a shifted span,60,60,1.0

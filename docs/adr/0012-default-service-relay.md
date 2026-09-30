@@ -36,7 +36,9 @@ token it would need is a key of the same kind, and one that opens the repository
 7. **The page names no vendor** (IMPF-AI's choice): the default service appears as 道乃久默认服务 / Tao-R1 wherever a model
    would be named, MiniMax's presets are not listed, and the consent notice speaks of recording to the institute's server
    (where the records are kept is IMPF-AI's to decide; what is recorded, and why, the notice states).  The standing
-   instructions keep the underlying model, so the assistant, asked what it is built on, answers truthfully.
+   instructions keep the underlying model, so the assistant, asked what it is built on, answers truthfully.  (Superseded
+   by [ADR 0014](0014-identity-fixed-reply.md): the instructions no longer name it, the assistant neither names nor denies
+   it, and a question only about who answers gets a fixed reply from the page.)
 
 ## Consequences
 

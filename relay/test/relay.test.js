@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
-import { config, handle, normalizeRecord } from "../src/relay.js";
+import { config, handle, normalizeRecord, withoutReasoning } from "../src/relay.js";
 import { LimiterCore, LogBookCore } from "../src/state.js";
 
 /** The Durable Object SQL API's shape over node:sqlite. */
@@ -74,6 +74,36 @@ test("the key is added by the relay, the page never has it; the stream passes th
   assert.equal(c.body.max_completion_tokens, 8192); // capped
   assert.equal(c.body.n, undefined);
   for (const [, v] of res.headers) assert.ok(!v.includes(KEY));
+});
+
+test("asked for no thinking, the relay lets no reasoning through, however the stream is cut", async () => {
+  const events = [
+    '{"choices":[{"delta":{"reasoning_details":[{"type":"reasoning.text","text":"底层是某模型"}],"reasoning_content":"想"}}]}',
+    '{"choices":[{"delta":{"content":"<think>内心独白</think>欢迎使用"}}]}',
+    '{"choices":[{"delta":{"content":"道乃久"}}]}',
+    "[DONE]",
+  ];
+  const whole = events.map((e) => `data: ${e}\n\n`).join("");
+  const cut = (text) => { // the upstream's bytes in pieces that split events, lines and characters
+    const bytes = new TextEncoder().encode(text);
+    return new Response(new ReadableStream({ start(c) { for (let i = 0; i < bytes.length; i += 7) c.enqueue(bytes.slice(i, i + 7)); c.close(); } }),
+      { status: 200, headers: { "Content-Type": "text/event-stream" } });
+  };
+  const hidden = await relay({ upstream: () => cut(whole) }).call("/v1/chat/completions", post({ ...ask, thinking: { type: "disabled" } }));
+  const text = await hidden.text();
+  assert.ok(!/reasoning|底层是某模型|内心独白|think>/.test(text), text);
+  assert.match(text, /欢迎使用/);
+  assert.match(text, /道乃久/);
+  assert.match(text, /data: \[DONE\]/);
+  const plain = await relay({ upstream: () => cut(whole) }).call("/v1/chat/completions", post(ask));
+  assert.match(await plain.text(), /reasoning_details/); // otherwise the stream passes through as it came
+  const json = await relay({ upstream: () => new Response(JSON.stringify({ choices: [{ message: { content: "答", reasoning_content: "想" } }] }),
+    { status: 200, headers: { "Content-Type": "application/json" } }) }).call("/v1/chat/completions", post({ ...ask, thinking: { type: "disabled" } }));
+  assert.deepEqual(await json.json(), { choices: [{ message: { content: "答" } }] });
+  // a <think> block streamed in pieces, or cumulatively: none of it passes
+  const read = (chunks) => { const open = new Map(); return chunks.map((c) => withoutReasoning({ choices: [{ delta: { content: c } }] }, open).choices[0].delta.content).join("|"); };
+  assert.equal(read(["<think>一", "二", "三</think>答", "案"]), "||答|案");
+  assert.equal(read(["<think>一", "<think>一二", "<think>一二</think>答", "<think>一二</think>答案"]), "||答|答案");
 });
 
 test("a request the relay need not change goes on byte for byte", async () => {

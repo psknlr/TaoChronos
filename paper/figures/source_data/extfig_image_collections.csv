@@ -1,0 +1,12 @@
+source,holder,collection,records,linked_to_corpus,dated,manuscripts,prints,iiif_manifest,works_linked
+nijl:kyoto-fujikawa,京都大学附属図書館（富士川文庫）,富士川文庫,4443,132,97,26,106,4443,78
+sbb:unschuld,Staatsbibliothek zu Berlin,Sammlung Unschuld,1044,69,321,1010,0,905,40
+nijl:kyushu-medlib,九州大学附属図書館（医学図書館）,,946,21,19,1,20,946,19
+nijl:keio-fujikawa,慶應義塾大学信濃町メディアセンター（富士川文庫）,,866,24,14,8,16,866,18
+nijl:utokyo-medicine,東京大学総合図書館（医学・本草類，含鶚軒文庫）,,819,40,22,10,30,819,20
+nijl:knik,研医会図書館,,663,46,29,3,42,663,31
+waseda:ya09,早稲田大学図書館,古典籍総合データベース,661,85,509,127,533,0,65
+ndl,国立国会図書館,NDLデジタルコレクション,363,341,363,0,106,363,36
+nijl:tohoku-medlib,東北大学附属図書館医学分館,,68,0,0,0,0,68,0
+loc:chinese-rare-books,"Library of Congress, Asian Division",Chinese Rare Books,66,29,63,0,2,66,23
+nijl:utokyo-medlib,東京大学医学図書館,,62,0,0,0,0,62,0

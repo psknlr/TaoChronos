@@ -221,12 +221,12 @@ taochronos governance              # architecture policy check
 | Source | Licence | Ingested | Notes |
 |---|---|---|---|
 | Kanseki Repository KR3e, *Siku quanshu* medical works | CC BY-SA 4.0 | **100 works**, 25.7 M characters | unpunctuated Siku / Sibu congkan texts; a curated catalogue with authors, dates, schools, editions and layer dating |
-| 笈成 (JiCheng) v1.4.8 | user-supplied, local research only | **816 works** (857 less 41), ~93.6 M characters | punctuated by its editors; headings, prescription blocks, commentaries, collation remarks and missing characters parsed from the markup |
+| 笈成 (JiCheng) v1.4.8 | CC0 1.0 (the editing); the site's own writing CC BY 4.0; texts public domain | **816 works** (857 less 41), ~93.6 M characters | archive supplied by the user; punctuated by its editors; headings, prescription blocks, commentaries, collation remarks and missing characters parsed from the markup |
 | McGill University Library rare gynaecology books | public domain | **5 works** | Qing prints and manuscripts, unpunctuated |
 | 數位中醫校書郎 CMETA (collated editions) | CC BY 4.0 (the collation); texts public domain | **11 works**, 1.45 M characters | collated page by page against the images: 伤寒论 (赵开美本: the 台北故宫 copy and the 安政 reprint; 康平本; 康治本), 金匮 (吴迁本, 邓珍本), 素问 (顾从德本), 灵枢 (赵府居敬堂本), 古今医案按, 名医类案, and the 桂林古本 伤寒杂病论 (米伯让's 1980 printing from the 白云阁 blocks, dated by its appearance, 1939); passages carry their page and, where the site shows the images to guests, the page image |
 | 東亜医学協会 · 医学古典テキスト | © the association, local research only | **7 works**, 0.32 M characters | 素问, 灵枢, 难经, 伤寒论, 金匮要略, 神农本草经, 扁鹊仓公列传, each from a named base edition |
 | Wikisource Category:中醫 and Category:醫書 (from the Wikimedia dumps) | CC BY-SA 4.0 | **18 works** (new of 627) | 天回医简, 五十二病方, three Republican "ancient" editions of the 伤寒杂病论, 东医宝鉴, the Korean 医方类聚 (1445), 医理真传 (唐步祺's explicated edition, his commentary a layer of its own) … |
-| TCM-Ancient-Books / tcmoc | undeclared, local research only | **8** / 0 works | mostly simplified copies of 笈成 texts, deduplicated work by work |
+| TCM-Ancient-Books / tcmoc | undeclared by the repositories, local research only | **8** / 0 works | mostly simplified copies of 笈成 texts, deduplicated work by work (a copy of a 笈成 text is not stored) |
 | Hugging Face classical-tcm-canon | proprietary-commercial, local research only, never redistributed | **1 work** | 张志聪's 伤寒论宗印·集注 |
 | KR-Catalog (Kanripo catalogue) | CC BY-SA 4.0 | catalogue | roles and dates of 132 persons responsible for the Siku works |
 | Image witnesses: NIJL (研医会; the 富士川文庫 of Keio and Kyoto; the University of Tokyo incl. the 鶚軒文庫; Kyushu; Tohoku), Staatsbibliothek zu Berlin (Sammlung Unschuld), Library of Congress (Chinese Rare Books), Waseda, the NDL Digital Collections | per record, as each holder states | **10,001 records** (787 linked to 179 works) | records only — title, date, print or manuscript, holder, shelfmark, IIIF manifest, terms — linked to the works of the store by title; no image downloaded |
@@ -273,12 +273,13 @@ See [docs/data.md](docs/data.md) and [ADR 0003](docs/adr/0003-corpus-store-and-s
   whether the current one holds each work's text.
 - **要籍语料** (`taochronos web pack` → [`corpus/web/`](corpus/web/ATTRIBUTION.md)): **348 of the 350** (368 witnesses,
   135 000 passages, 8.5 million characters): the best witness of each (the openly licensed first — CMETA's collated
-  editions, Kanripo, Wikisource, McGill — then 笈成 and its derivatives; the most complete within a source), up to three for
-  the first ten, whole within 350 000 characters; the others by rank within 50 000 / 25 000 / 12 000 characters, as whole
-  chapters spread through the book; passage ids as in the full corpus.  The two known only through sources that forbid
-  passing their texts on are listed without text.  The site ships the store xz-compressed without its full-text index
-  (10.8 MB); the browser unpacks it as it downloads, indexes the first 40 works before it answers and the rest in the
-  background, and keeps the result in IndexedDB ([ADR 0013](docs/adr/0013-canon-corpus-in-the-browser.md)).
+  editions, Kanripo, Wikisource, McGill, 笈成, which give 344 of the works — then the web text sets transcribed from 笈成;
+  the most complete within a source), up to three for the first ten, whole within 350 000 characters; the others by rank
+  within 50 000 / 25 000 / 12 000 characters, as whole chapters spread through the book; passage ids as in the full
+  corpus.  The two known only through sources that forbid passing their texts on are listed without text.  The site
+  ships the store xz-compressed without its full-text index (10.8 MB); the browser unpacks it as it downloads, indexes
+  the first 40 works before it answers and the rest in the background, and keeps the result in IndexedDB
+  ([ADR 0013](docs/adr/0013-canon-corpus-in-the-browser.md)).
 
 ## 4. Study: mining the classics on their own terms
 
@@ -549,7 +550,8 @@ decided each item.  External command subagents and Research Code Mode: [docs/age
 
 **Web chat · 道乃久** ([docs/web.md](docs/web.md), [ADR 0011](docs/adr/0011-web-client.md); the default service and records: [ADR 0012](docs/adr/0012-default-service-relay.md)): the agent 道乃久 (TaoChronos;
 model Tao-R1), published by IMPF-AI — TaoChronos's tools and evidence discipline over the underlying model you choose, which
-the page and the instructions name (an endpoint not in the list can be set by hand).  The conversation runs in the browser
+the page names (asked who it is, who published it or what model it runs on, the page itself gives a fixed introduction of
+the platform: [ADR 0014](docs/adr/0014-identity-fixed-reply.md); an endpoint not in the list can be set by hand).  The conversation runs in the browser
 on the default service (no key; the page shows it as 道乃久默认服务 / Tao-R1 and names no vendor) or with your own key,
 straight to the provider or through `taochronos serve`; TaoChronos
 executes the tools in the browser (Pyodide, the 要籍语料: 348 of the 350 key works) or under
@@ -693,9 +695,10 @@ docs/                      study, task specification, architecture, agents, disc
   directory (`.taochronos/`, git-ignored) and are rebuilt reproducibly by `corpus fetch / unpack / ingest`.  The one
   exception is the web client's **要籍语料** (`corpus/web/`): the texts of the 350 ranked works (all in the public domain),
   written by `taochronos web pack`.  The openly licensed witnesses (Kanripo and Wikisource CC BY-SA 4.0, CMETA CC BY 4.0,
-  McGill public domain) are used under their licences; the transcriptions of 笈成 and its derivatives declare no licence and
-  their punctuation and collation are their editors' — IMPF-AI decided to publish them with the site, for study; nothing from
-  a source whose terms forbid passing it on (東亜医学協会, a Hugging Face dataset under a proprietary licence) is in it.
+  McGill public domain, 笈成 CC0 1.0) are used under their licences; the four works known only through a web text set (its
+  repository declares no licence) and the modern editors' part of the 笈成 texts that follow a modern reconstruction or
+  annotated edition (which 笈成's CC0 cannot release) are published with the site by IMPF-AI's decision, for study; nothing
+  from a source whose terms forbid passing it on (東亜医学協会, a Hugging Face dataset under a proprietary licence) is in it.
   Per-text sources and terms: [ATTRIBUTION.md](corpus/web/ATTRIBUTION.md).
 - **Conversation records** (`data/chat-logs/`): during the test period of 道乃久默认服务, the turns of visitors who agreed to
   be recorded (no key, settings or address), held by the relay and collected hourly into this repository.  It must stay
@@ -704,10 +707,13 @@ docs/                      study, task specification, architecture, agents, disc
 - Licences are recorded per work in the catalogues and the store and travel with every witness: Kanripo and
   Wikisource CC BY-SA 4.0; McGill public domain; CMETA's collation and editing CC BY 4.0 (attribution: 數位中醫校書郎
   CMETA), the texts public domain; the 東亜医学協会's transcriptions © the association, non-commercial personal use
-  only and no redistribution — local research only; 笈成 supplied by the user — the classical texts are in the public
-  domain, the punctuation and editing belong to the 笈成 editors, local research only; the web text sets declare no
-  licence, local research only; Hugging Face classical-tcm-canon declares proprietary-commercial terms — local
-  research only, never redistributed.
+  only and no redistribution — local research only; 笈成 (the archive supplied by the user): 中醫笈成 releases its
+  editorial work on the public-domain texts — selection, arrangement, punctuation, annotation — under CC0 1.0 and its own
+  writing under CC BY 4.0 ([著作權聲明](https://jicheng.tw/tcm/copyright.html), checked 2026-09-29): credit 中醫笈成; a
+  page's own notice prevails, the modern editors' part of the editions 笈成 follows is not covered, and a twentieth-century
+  work may itself still be in copyright; the web text sets, mostly simplified copies of 笈成 texts, declare no licence of
+  their own — a copy of a 笈成 text is not stored, and what is stored is for local research only; Hugging Face
+  classical-tcm-canon declares proprietary-commercial terms — local research only, never redistributed.
 - Image witnesses are catalogued as records only (title, date, holder, shelfmark, IIIF manifest, terms); **no image is
   downloaded**, and each record carries its holder's terms (研医会 CC BY-NC 4.0, Keio CC BY-NC-SA 4.0, Berlin PDM 1.0,
   the Library of Congress online reading only …).
@@ -715,8 +721,8 @@ docs/                      study, task specification, architecture, agents, disc
 - Caches (entry headings, citation network, transmission results, the 句读 model, the corpus-wide pass over compositions
   and treatment sentences, school comparisons) live in `<data>/corpus/study-cache/`, keyed by a digest of the store,
   the normaliser, the book records and the data files they read; they are rebuilt when the corpus changes. The 句读
-  model is learned from punctuated texts licensed for local research only: it stays in the local cache and is never
-  committed or distributed.
+  model is learned from the store's punctuated texts, some of which (the 東亜医学協会's among them) are licensed for
+  local research only: it stays in the local cache and is never committed or distributed.
 
 ## 12. Limitations
 

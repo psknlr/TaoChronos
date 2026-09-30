@@ -3,7 +3,7 @@
 # score = 10·log2(1+influence) + 2·breadth + 2·log2(1+volume) + 3·log2(1+witnesses) + 6·siku; influence = number of distinct works citing it (not older than it), breadth = periods in which it is cited, volume = citations in all, witnesses = copies in the corpus, siku = in 四库全书·子部·医家类
 ranked: 759
 top: 350
-open: 108
+open: 344
 works:
 - rank: 1
   work: suwen
@@ -356,8 +356,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_p0301
 - rank: 19
   work: benshi_fang
   title: 普济本事方
@@ -393,8 +393,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b003
 - rank: 21
   work: jisheng
   title: 济生方
@@ -430,8 +430,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d002
 - rank: 23
   work: baoming_ji
   title: 素问病机气宜保命集
@@ -467,8 +467,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_m106
 - rank: 25
   work: yuanbingshi
   title: 素问玄机原病式
@@ -561,8 +561,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d053
 - rank: 30
   work: piwei
   title: 脾胃论
@@ -598,8 +598,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o041
 - rank: 32
   work: rumen_shiqin
   title: 儒门事亲
@@ -635,8 +635,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_g002
 - rank: 34
   work: zhengzhi_zhunsheng
   title: 证治准绳
@@ -728,8 +728,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_g043
 - rank: 39
   work: wenyilun
   title: 温疫论
@@ -765,8 +765,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_p0801
 - rank: 41
   work: zzzs_nuke
   title: 女科证治准绳
@@ -783,8 +783,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_p0103
 - rank: 42
   work: yuji_weiyi
   title: 玉机微义
@@ -839,8 +839,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c007
 - rank: 45
   work: quansheng_zhimi
   title: 全生指迷方
@@ -914,8 +914,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_f026
 - rank: 49
   work: luxin_jing
   title: 颅囟经
@@ -1045,8 +1045,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o056
 - rank: 56
   work: neiwaishang
   title: 内外伤辨
@@ -1139,8 +1139,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i005
 - rank: 61
   work: jc:张氏医通
   title: 张氏医通
@@ -1157,8 +1157,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o075a
 - rank: 62
   work: jufang_fahui
   title: 局方发挥
@@ -1194,8 +1194,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o034
 - rank: 64
   work: lanshi
   title: 兰室秘藏
@@ -1232,8 +1232,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o044
 - rank: 66
   work: susheng_liangfang
   title: 苏沈良方
@@ -1269,8 +1269,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n006
 - rank: 68
   work: mingyi_bielu
   title: 名医别录
@@ -1287,8 +1287,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d001
 - rank: 69
   work: jc:卫生家宝产科备要
   title: 卫生家宝产科备要
@@ -1305,8 +1305,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_g037
 - rank: 70
   work: yimen_falv
   title: 医门法律
@@ -1361,8 +1361,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b011
 - rank: 73
   work: jc:类证普济本事方续集
   title: 类证普济本事方续集
@@ -1378,8 +1378,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d076
 - rank: 74
   work: jiyin_gangmu
   title: 济阴纲目
@@ -1453,8 +1453,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_a007
 - rank: 78
   work: jc:冯氏锦囊秘录
   title: 冯氏锦囊秘录
@@ -1471,8 +1471,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o067
 - rank: 79
   work: jc:寓意草
   title: 寓意草
@@ -1489,8 +1489,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n045
 - rank: 80
   work: chishui_xuanzhu
   title: 赤水玄珠
@@ -1525,8 +1525,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d016
 - rank: 82
   work: jc:是斋百一选方
   title: 是斋百一选方
@@ -1543,8 +1543,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d057
 - rank: 83
   work: jc:临证指南医案
   title: 临证指南医案
@@ -1561,8 +1561,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n009
 - rank: 84
   work: jc:孙真人海上方
   title: 孙真人海上方
@@ -1579,8 +1579,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d003
 - rank: 85
   work: jc:伤寒明理论
   title: 伤寒明理论
@@ -1597,8 +1597,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b007
 - rank: 86
   work: jc:医学入门
   title: 医学入门
@@ -1615,8 +1615,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o050
 - rank: 87
   work: jc:秘传证治要诀及类方
   title: 秘传证治要诀及类方
@@ -1633,8 +1633,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_f022
 - rank: 88
   work: jc:万病回春
   title: 万病回春
@@ -1651,8 +1651,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o097
 - rank: 89
   work: shanglun
   title: 尚论篇
@@ -1688,8 +1688,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o109
 - rank: 91
   work: shanghan_tiaobian
   title: 伤寒论条辨
@@ -1743,8 +1743,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_a006
 - rank: 94
   work: waike_jingyi
   title: 外科精义
@@ -1798,8 +1798,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i013
 - rank: 97
   work: jc:御药院方
   title: 御药院方
@@ -1816,8 +1816,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o084
 - rank: 98
   work: jc:刘河间伤寒医鉴
   title: 刘河间伤寒医鉴
@@ -1834,8 +1834,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b038
 - rank: 99
   work: jc:刘涓子鬼遗方
   title: 刘涓子鬼遗方
@@ -1852,8 +1852,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i300
 - rank: 100
   work: shouqin_yanglao
   title: 养老奉亲书
@@ -1889,8 +1889,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_e004a
 - rank: 102
   work: jc:医方集解
   title: 医方集解
@@ -1907,8 +1907,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d075a
 - rank: 103
   work: bencao_jingshu
   title: 神农本草经疏
@@ -1943,8 +1943,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d014
 - rank: 105
   work: nuke_baiwen
   title: 女科百问
@@ -1961,8 +1961,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_g003a
 - rank: 106
   work: shanghan_zongbing
   title: 伤寒总病论
@@ -1998,8 +1998,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o052
 - rank: 108
   work: yizhi_xuyu
   title: 医旨绪余
@@ -2035,8 +2035,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_h000a
 - rank: 110
   work: jc:敖氏伤寒金镜录
   title: 敖氏伤寒金镜录
@@ -2053,8 +2053,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b031
 - rank: 111
   work: jc:幼幼集成
   title: 幼幼集成
@@ -2071,8 +2071,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_h010
 - rank: 112
   work: xueshi_yian
   title: 薛氏医案
@@ -2107,8 +2107,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d024
 - rank: 114
   work: jc:石室秘录
   title: 石室秘录
@@ -2125,8 +2125,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o058
 - rank: 115
   work: jc:秘传眼科龙木论
   title: 秘传眼科龙木论
@@ -2142,8 +2142,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_l008
 - rank: 116
   work: shanghan_leifang
   title: 伤寒类方
@@ -2197,8 +2197,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o039
 - rank: 119
   work: yixue_yuanliu
   title: 医学源流论
@@ -2252,8 +2252,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_h011
 - rank: 122
   work: jc:本草品汇精要
   title: 本草品汇精要
@@ -2270,8 +2270,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c011
 - rank: 123
   work: leigong_paozhi
   title: 雷公炮炙论
@@ -2288,8 +2288,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c100
 - rank: 124
   work: jc:本草备要
   title: 本草备要
@@ -2306,8 +2306,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c018a
 - rank: 125
   work: jc:温热论
   title: 温热论
@@ -2324,8 +2324,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_e016
 - rank: 126
   work: jc:伤寒六书
   title: 伤寒六书
@@ -2342,8 +2342,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b037
 - rank: 127
   work: jc:医方考
   title: 医方考
@@ -2360,8 +2360,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d023
 - rank: 128
   work: shanghan_shejian
   title: 伤寒舌鉴
@@ -2396,8 +2396,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_q000
 - rank: 130
   work: jc:凌门传授铜人指穴
   title: 凌门传授铜人指穴
@@ -2413,8 +2413,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o012
 - rank: 131
   work: shiliao_bencao
   title: 食疗本草
@@ -2432,8 +2432,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c004
 - rank: 132
   work: xiaoer_weisheng
   title: 小儿卫生总微论方
@@ -2487,8 +2487,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_m114
 - rank: 135
   work: tongren_zhenjiujing
   title: 铜人针灸经
@@ -2523,8 +2523,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c040
 - rank: 137
   work: jc:沈氏尊生书
   title: 沈氏尊生书
@@ -2541,8 +2541,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o112
 - rank: 138
   work: xu_mingyi_leian
   title: 续名医类案
@@ -2597,8 +2597,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o006
 - rank: 141
   work: jc:金匮翼
   title: 金匮翼
@@ -2615,8 +2615,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b101
 - rank: 142
   work: jc:活幼心书
   title: 活幼心书
@@ -2633,8 +2633,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_h003
 - rank: 143
   work: jc:医学心悟
   title: 医学心悟
@@ -2651,8 +2651,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o071
 - rank: 144
   work: jc:韩氏医通
   title: 韩氏医通
@@ -2669,8 +2669,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o055
 - rank: 145
   work: jc:阴证略例
   title: 阴证略例
@@ -2687,8 +2687,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_f007
 - rank: 146
   work: jc:鸡峰普济方
   title: 鸡峰普济方
@@ -2705,8 +2705,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d012
 - rank: 147
   work: jc:外科全生集
   title: 外科全生集
@@ -2723,8 +2723,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i009
 - rank: 148
   work: jc:陆地仙经
   title: 陆地仙经
@@ -2741,8 +2741,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o023
 - rank: 149
   work: jc:医林改错
   title: 医林改错
@@ -2759,8 +2759,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o001a
 - rank: 150
   work: jc:中西汇通医经精义
   title: 中西汇通医经精义
@@ -2777,8 +2777,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o015
 - rank: 151
   work: jiaoqi_zhifa
   title: 脚气治法总要
@@ -2814,8 +2814,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n026
 - rank: 153
   work: jc:女科折衷纂要
   title: 女科折衷纂要
@@ -2832,8 +2832,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_g011
 - rank: 154
   work: tuiqiu_shiyi
   title: 推求师意
@@ -2869,8 +2869,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_h023
 - rank: 156
   work: jc:正体类要
   title: 正体类要
@@ -2887,8 +2887,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_j001
 - rank: 157
   work: jc:外科枢要
   title: 外科枢要
@@ -2905,8 +2905,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i002
 - rank: 158
   work: jc:金匮玉函要略述义
   title: 金匮玉函要略述义
@@ -2923,8 +2923,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b105
 - rank: 159
   work: shanghan_weizhi
   title: 伤寒微旨论
@@ -2978,8 +2978,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_j000
 - rank: 162
   work: jc:温热经纬
   title: 温热经纬
@@ -2996,8 +2996,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_e006
 - rank: 163
   work: jc:仲景伤寒补亡论
   title: 仲景伤寒补亡论
@@ -3014,8 +3014,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b008
 - rank: 164
   work: waike_lili
   title: 外科理例
@@ -3051,8 +3051,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d021
 - rank: 166
   work: jc:伤寒来苏集
   title: 伤寒来苏集
@@ -3069,8 +3069,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b041
 - rank: 167
   work: jc:针灸大全
   title: 针灸大全
@@ -3087,8 +3087,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_k006
 - rank: 168
   work: chuanxin_shiyong
   title: 传信适用方
@@ -3123,8 +3123,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b016
 - rank: 170
   work: jc:医经国小
   title: 医经国小
@@ -3140,8 +3140,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o049
 - rank: 171
   work: jc:针灸大成
   title: 针灸大成
@@ -3157,8 +3157,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_k001
 - rank: 172
   work: yulong_jing
   title: 扁鹊神应针灸玉龙经
@@ -3213,8 +3213,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o005
 - rank: 175
   work: jc:针灸聚英
   title: 针灸聚英
@@ -3231,8 +3231,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_k003a
 - rank: 176
   work: shishan_yian
   title: 石山医案
@@ -3286,8 +3286,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c012
 - rank: 179
   work: jc:罗氏会约医镜
   title: 罗氏会约医镜
@@ -3304,8 +3304,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o098
 - rank: 180
   work: leijing_tuyi
   title: 类经图翼
@@ -3322,8 +3322,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_a403
 - rank: 181
   work: jc:伤寒心镜别集
   title: 伤寒心镜别集
@@ -3340,8 +3340,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b040
 - rank: 182
   work: jc:经效产宝
   title: 经效产宝
@@ -3358,8 +3358,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_g042
 - rank: 183
   work: jc:婴童百问
   title: 婴童百问
@@ -3376,8 +3376,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_h034
 - rank: 184
   work: jc:寿世保元
   title: 寿世保元
@@ -3394,8 +3394,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o025
 - rank: 185
   work: jc:幼科铁镜
   title: 幼科铁镜
@@ -3412,8 +3412,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_h019
 - rank: 186
   work: weiji_baoshu
   title: 卫济宝书
@@ -3450,8 +3450,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c024
 - rank: 188
   work: jc:证治汇补
   title: 证治汇补
@@ -3468,8 +3468,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o004
 - rank: 189
   work: jc:续医说
   title: 续医说
@@ -3486,8 +3486,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o099
 - rank: 190
   work: jc:汤头歌诀
   title: 汤头歌诀
@@ -3522,8 +3522,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_l105
 - rank: 192
   work: yinhai_jingwei
   title: 银海精微
@@ -3594,8 +3594,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_k021
 - rank: 196
   work: jc:痧胀玉衡
   title: 痧胀玉衡
@@ -3612,8 +3612,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i208
 - rank: 197
   work: jc:诊家枢要
   title: 诊家枢要
@@ -3630,8 +3630,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_m001
 - rank: 198
   work: jc:古今医鉴
   title: 古今医鉴
@@ -3648,8 +3648,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o047
 - rank: 199
   work: jc:秘传刘伯温家藏接骨金疮禁方
   title: 秘传刘伯温家藏接骨金疮禁方
@@ -3665,8 +3665,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_j012
 - rank: 200
   work: xiaopin_fang
   title: 小品方
@@ -3683,8 +3683,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d058
 - rank: 201
   work: yzjj_mingyi_fanglun
   title: 医宗金鉴·删补名医方论
@@ -3701,8 +3701,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_p0003a
 - rank: 202
   work: bencao_chengya
   title: 本草乘雅半偈
@@ -3739,8 +3739,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_k002
 - rank: 204
   work: wupu_bencao
   title: 吴普本草
@@ -3757,8 +3757,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c001
 - rank: 205
   work: jc:饮膳正要
   title: 饮膳正要
@@ -3775,8 +3775,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c047
 - rank: 206
   work: jc:保婴撮要
   title: 保婴撮要
@@ -3793,8 +3793,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_h022
 - rank: 207
   work: jc:金匮玉函经二注
   title: 金匮玉函经二注
@@ -3811,8 +3811,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b104
 - rank: 208
   work: bencao_tujing
   title: 本草图经
@@ -3829,8 +3829,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c006
 - rank: 209
   work: jc:素问灵枢类纂约注
   title: 素问灵枢类纂约注
@@ -3847,8 +3847,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_a205
 - rank: 210
   work: jc:内科摘要
   title: 内科摘要
@@ -3865,8 +3865,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_f010
 - rank: 211
   work: jc:医学真传
   title: 医学真传
@@ -3883,8 +3883,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o074
 - rank: 212
   work: ws:伤寒杂病论
   title: 伤寒杂病论（长沙古本）
@@ -3920,8 +3920,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i001
 - rank: 214
   work: bencao_baizhonglu
   title: 神农本草经百种录
@@ -3957,8 +3957,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o128
 - rank: 216
   work: yzjj_sizhen
   title: 医宗金鉴·四诊心法要诀
@@ -3975,8 +3975,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_p0004
 - rank: 217
   work: jc:养生导引秘籍
   title: 养生导引秘籍
@@ -3993,8 +3993,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o029
 - rank: 218
   work: jc:医灯续焰
   title: 医灯续焰
@@ -4011,8 +4011,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o017
 - rank: 219
   work: jc:医学三字经
   title: 医学三字经
@@ -4029,8 +4029,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o062
 - rank: 220
   work: jc:重庆堂随笔
   title: 重庆堂随笔
@@ -4046,8 +4046,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n036
 - rank: 221
   work: jc:本草从新
   title: 本草从新
@@ -4064,8 +4064,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c021
 - rank: 222
   work: jc:灵素节注类编
   title: 灵素节注类编
@@ -4081,8 +4081,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_a204
 - rank: 223
   work: jc:雷公炮制药性解
   title: 雷公炮制药性解
@@ -4099,8 +4099,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c103
 - rank: 224
   work: jc:医暇卮言
   title: 医暇卮言
@@ -4116,8 +4116,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n054
 - rank: 225
   work: jc:小儿痘疹方论
   title: 小儿痘疹方论
@@ -4134,8 +4134,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_h008
 - rank: 226
   work: jc:幼科类萃
   title: 幼科类萃
@@ -4152,8 +4152,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_h018
 - rank: 227
   work: jc:本经疏证
   title: 本经疏证
@@ -4170,8 +4170,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c046
 - rank: 228
   work: jc:青囊秘诀
   title: 青囊秘诀
@@ -4187,8 +4187,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i303
 - rank: 229
   work: jc:伤寒论翼
   title: 伤寒论翼
@@ -4205,8 +4205,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b033
 - rank: 230
   work: jc:明医指掌
   title: 明医指掌
@@ -4223,8 +4223,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o038
 - rank: 231
   work: chanyu_baoqing
   title: 产育宝庆集
@@ -4260,8 +4260,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o073
 - rank: 233
   work: jc:广温疫论
   title: 广瘟疫论
@@ -4278,8 +4278,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_e019
 - rank: 234
   work: jc:医述
   title: 医述
@@ -4296,8 +4296,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o069
 - rank: 235
   work: jc:理虚元鉴
   title: 理虚元鉴
@@ -4314,8 +4314,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_f012
 - rank: 236
   work: jc:本草纲目拾遗
   title: 本草纲目拾遗
@@ -4332,8 +4332,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c023
 - rank: 237
   work: jc:时方妙用
   title: 时方妙用
@@ -4350,8 +4350,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d041
 - rank: 238
   work: jc:肯堂医论
   title: 肯堂医论
@@ -4368,8 +4368,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n029
 - rank: 239
   work: jc:三消论
   title: 三消论
@@ -4385,8 +4385,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_f023
 - rank: 240
   work: jc:仙传外科集验方
   title: 仙传外科集验方
@@ -4403,8 +4403,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i017
 - rank: 241
   work: jc:医学读书记
   title: 医学读书记
@@ -4421,8 +4421,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n056
 - rank: 242
   work: jc:伤寒指掌
   title: 伤寒指掌
@@ -4439,8 +4439,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b035
 - rank: 243
   work: jc:慎柔五书
   title: 慎柔五书
@@ -4457,8 +4457,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_f014
 - rank: 244
   work: jc:难经经释
   title: 难经经释
@@ -4475,8 +4475,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_a302
 - rank: 245
   work: jc:疫疹一得
   title: 疫疹一得
@@ -4493,8 +4493,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_e020
 - rank: 246
   work: jc:疠疡机要
   title: 疠疡机要
@@ -4511,8 +4511,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i104
 - rank: 247
   work: jc:重订灵兰要览
   title: 重订灵兰要览
@@ -4528,8 +4528,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n035
 - rank: 248
   work: jc:达生编
   title: 达生编
@@ -4545,8 +4545,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_g027
 - rank: 249
   work: jc:笔花医镜
   title: 笔花医镜
@@ -4563,8 +4563,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o003
 - rank: 250
   work: jc:伤寒发微论
   title: 伤寒发微论
@@ -4581,8 +4581,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b006
 - rank: 251
   work: jc:随息居重订霍乱论
   title: 随息居重订霍乱论
@@ -4599,8 +4599,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_f019
 - rank: 252
   work: jc:伤寒缵论
   title: 伤寒缵论
@@ -4617,8 +4617,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b020
 - rank: 253
   work: jc:玉台新案
   title: 玉台新案（《医学举要》）
@@ -4635,8 +4635,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n070
 - rank: 254
   work: jc:市隐庐医学杂著
   title: 市隐庐医学杂著
@@ -4653,8 +4653,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n021
 - rank: 255
   work: jc:慎疾刍言
   title: 慎疾刍言
@@ -4671,8 +4671,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n047
 - rank: 256
   work: jc:伤寒贯珠集
   title: 伤寒贯珠集
@@ -4689,8 +4689,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b021a
 - rank: 257
   work: jc:伤寒百证歌
   title: 伤寒百证歌
@@ -4707,8 +4707,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b005
 - rank: 258
   work: jc:外科大成
   title: 外科大成
@@ -4725,8 +4725,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i004
 - rank: 259
   work: jc:读素问钞
   title: 读素问钞
@@ -4743,8 +4743,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_a013
 - rank: 260
   work: jc:针经指南
   title: 针经指南
@@ -4761,8 +4761,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_k018
 - rank: 261
   work: tab:验方家秘
   title: 验方家秘
@@ -4797,8 +4797,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d033
 - rank: 263
   work: jc:内府秘传经验女科
   title: 内府秘传经验女科
@@ -4815,8 +4815,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_g020
 - rank: 264
   work: jc:冷庐医话
   title: 冷庐医话
@@ -4833,8 +4833,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n004
 - rank: 265
   work: jc:温热暑疫全书
   title: 温热暑疫全书
@@ -4851,8 +4851,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_e010
 - rank: 266
   work: jc:杂症会心录
   title: 杂症会心录
@@ -4869,8 +4869,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_f025
 - rank: 267
   work: yixinfang
   title: 医心方
@@ -4887,8 +4887,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d005
 - rank: 268
   work: jc:简明医彀
   title: 简明医彀
@@ -4904,8 +4904,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o068
 - rank: 269
   work: jc:外科启玄
   title: 外科启玄
@@ -4922,8 +4922,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i010
 - rank: 270
   work: jc:外科十三方考
   title: 外科十三方考
@@ -4939,8 +4939,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i006
 - rank: 271
   work: jc:疡医大全
   title: 疡医大全
@@ -4957,8 +4957,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i102
 - rank: 272
   work: jc:丹溪治法心要
   title: 丹溪治法心要
@@ -4975,8 +4975,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n011
 - rank: 273
   work: jc:医原
   title: 医原
@@ -4992,8 +4992,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n053
 - rank: 274
   work: jc:本草述钩元
   title: 本草述钩元
@@ -5010,8 +5010,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c027
 - rank: 275
   work: renduan_lu
   title: 仁端录
@@ -5046,8 +5046,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b018
 - rank: 277
   work: jc:沈氏女科辑要
   title: 女科辑要
@@ -5102,8 +5102,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_l003
 - rank: 280
   work: jc:素问要旨论
   title: 素问要旨论
@@ -5120,8 +5120,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_a004
 - rank: 281
   work: jc:经验丹方汇编
   title: 经验丹方汇编
@@ -5138,8 +5138,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d048
 - rank: 282
   work: jc:药征
   title: 药征
@@ -5155,8 +5155,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c042
 - rank: 283
   work: tab:医略
   title: 医略
@@ -5190,8 +5190,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n022
 - rank: 285
   work: jc:千金食治
   title: 千金食治
@@ -5208,8 +5208,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c049
 - rank: 286
   work: lvshe_beiyao
   title: 旅舍备要方
@@ -5244,8 +5244,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o036
 - rank: 288
   work: jc:女科撮要
   title: 女科撮要
@@ -5262,8 +5262,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_g019
 - rank: 289
   work: jc:伤寒悬解
   title: 伤寒悬解
@@ -5280,8 +5280,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b024
 - rank: 290
   work: jc:小儿推拿广意
   title: 小儿推拿广意
@@ -5298,8 +5298,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_h006
 - rank: 291
   work: jc:急救良方
   title: 急救良方
@@ -5315,8 +5315,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_f100
 - rank: 292
   work: jc:伤寒大白
   title: 伤寒大白
@@ -5333,8 +5333,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b023
 - rank: 293
   work: jc:女科要旨
   title: 女科要旨
@@ -5351,8 +5351,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_g014
 - rank: 294
   work: jc:外感温热篇
   title: 外感温热篇
@@ -5369,8 +5369,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_e018
 - rank: 295
   work: jc:何氏虚劳心传
   title: 何氏虚劳心传
@@ -5386,8 +5386,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_f011
 - rank: 296
   work: jc:松峰说疫
   title: 松峰说疫
@@ -5404,8 +5404,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_e014
 - rank: 297
   work: suwen_yipian
   title: 黄帝内经素问遗篇
@@ -5422,8 +5422,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_a000a
 - rank: 298
   work: jc:幼科发挥
   title: 幼科发挥
@@ -5440,8 +5440,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_h016
 - rank: 299
   work: jc:洄溪医案
   title: 洄溪医案
@@ -5458,8 +5458,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n065
 - rank: 300
   work: taiyiju_chengwen
   title: 太医局诸科程文格
@@ -5494,8 +5494,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_m002
 - rank: 302
   work: mg:保生碎事
   title: 保生碎事
@@ -5549,8 +5549,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n050
 - rank: 305
   work: haiyao_bencao
   title: 海药本草
@@ -5567,8 +5567,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c005
 - rank: 306
   work: jc:玉龙歌
   title: 玉龙歌
@@ -5585,8 +5585,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_q004
 - rank: 307
   work: jc:医效秘传
   title: 医效秘传
@@ -5604,8 +5604,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o016
 - rank: 308
   work: jc:辨证录
   title: 辨证录
@@ -5622,8 +5622,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o063a
 - rank: 309
   work: jc:口齿类要
   title: 口齿类要
@@ -5640,8 +5640,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_l200
 - rank: 310
   work: shiji_bianque_canggong
   title: 扁鹊仓公列传
@@ -5676,8 +5676,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b027
 - rank: 312
   work: jc:增订叶评伤暑全书
   title: 增订叶评伤暑全书
@@ -5693,8 +5693,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_e009
 - rank: 313
   work: yzjj_douzhen
   title: 医宗金鉴·痘疹心法要诀
@@ -5711,8 +5711,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_p0011a
 - rank: 314
   work: ws:医理真传
   title: 医理真传
@@ -5801,8 +5801,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i014
 - rank: 319
   work: jc:本草经解
   title: 本草经解
@@ -5819,8 +5819,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c020
 - rank: 320
   work: jc:脉诀汇辨
   title: 脉诀汇辨
@@ -5836,8 +5836,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_m112
 - rank: 321
   work: jc:串雅内外编
   title: 串雅内外编
@@ -5854,8 +5854,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d039
 - rank: 322
   work: jc:伤寒心要
   title: 伤寒心要
@@ -5872,8 +5872,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b012a
 - rank: 323
   work: jc:存存斋医话稿
   title: 存存斋医话稿
@@ -5890,8 +5890,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n010
 - rank: 324
   work: jc:医经原旨
   title: 医经原旨
@@ -5908,8 +5908,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_a401
 - rank: 325
   work: tab:外经微言
   title: 外经微言
@@ -5962,8 +5962,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_f015
 - rank: 328
   work: ws:摄生总要
   title: 摄生总要
@@ -5998,8 +5998,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_b103
 - rank: 330
   work: yzjj_cijiu
   title: 医宗金鉴·刺灸心法要诀
@@ -6016,8 +6016,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_p0013a
 - rank: 331
   work: jc:湿热病篇
   title: 湿热病篇
@@ -6034,8 +6034,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_e003
 - rank: 332
   work: ws:伤寒杂病论义疏
   title: 伤寒杂病论义疏
@@ -6070,8 +6070,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_e012
 - rank: 334
   work: jc:本经逢原
   title: 本经逢原
@@ -6088,8 +6088,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c019
 - rank: 335
   work: jc:异授眼科
   title: 异授眼科
@@ -6105,8 +6105,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_l006
 - rank: 336
   work: jc:史载之方
   title: 史载之方
@@ -6123,8 +6123,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d009
 - rank: 337
   work: jc:校注医醇剩义
   title: 校注医醇剩义
@@ -6140,8 +6140,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_o042
 - rank: 338
   work: xinxiu_bencao
   title: 新修本草
@@ -6158,8 +6158,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c003
 - rank: 339
   work: ws:医方类聚
   title: 医方类聚
@@ -6196,8 +6196,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_i003
 - rank: 341
   work: jc:成方切用
   title: 成方切用
@@ -6214,8 +6214,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d040
 - rank: 342
   work: jc:验方新编
   title: 验方新编
@@ -6232,8 +6232,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d046
 - rank: 343
   work: jc:诊宗三昧
   title: 诊宗三昧
@@ -6250,8 +6250,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_m005
 - rank: 344
   work: jc:重订广温热论
   title: 重订广温热论
@@ -6268,8 +6268,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_e007
 - rank: 345
   work: hf:伤寒论集注
   title: 伤寒论集注
@@ -6304,8 +6304,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_c037
 - rank: 347
   work: jc:时方歌括
   title: 时方歌括
@@ -6322,8 +6322,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_d042
 - rank: 348
   work: jc:客尘医话
   title: 客尘医话
@@ -6340,8 +6340,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n019
 - rank: 349
   work: jc:胎产秘书
   title: 胎产秘书
@@ -6357,8 +6357,8 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_g024
 - rank: 350
   work: jc:归砚录
   title: 归砚录
@@ -6375,5 +6375,5 @@ works:
   siku: false
   sources:
   - jicheng
-  open: false
-  open_witness: null
+  open: true
+  open_witness: jc_n052

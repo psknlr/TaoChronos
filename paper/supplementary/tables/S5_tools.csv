@@ -1,0 +1,12 @@
+Family,Permission needed,What the permission allows,Tools,Names
+analytics,analysis:run,run the discovery and statistics engines,9,"analysis.association_rules, analysis.communities, analysis.concept_drift, analysis.contradictions, analysis.formula_evolution, analysis.link_prediction, analysis.lost_knowledge, analysis.missing_sources, analysis.temporal_profile"
+bridge,classics:read,read the corpus through the research's scoped view,3,"bridge.map, bridge.phenotype, bridge.reverse"
+knowledge,kg:propose,propose a change to canonical knowledge,1,kg.propose_change (writes)
+knowledge,kg:read,read the knowledge graph,4,"kg.claims, kg.extract_claims, kg.neighbors, kg.term"
+literature,literature:read,read modern literature and real-world data,4,"literature.modern_evidence, modern.safety, modern.search, rwd.ask"
+philology,classics:read,read the corpus through the research's scoped view,6,"philology.assess_passage, philology.collate, philology.inspect_page, philology.normalize, vision.compare, vision.layout"
+research,codemode:exec,run code in the sandbox,1,research.run_code
+retrieval,classics:read,read the corpus through the research's scoped view,5,"classics.canon, classics.get_passage, classics.lineage, classics.list_books, classics.search"
+study,classics:read,read the corpus through the research's scoped view,35,"study.argument, study.authorship, study.cards, study.cases, study.chain, study.citations, study.clause, study.commentaries, study.concordance, study.dating, study.disputes, study.entities, study.formula, study.fragments, study.glosses, study.herb, study.layers, study.metrology, study.names, study.network, study.pairs, study.places, study.punctuate, study.reading, study.reuse, study.schools, study.senses, study.stemma, study.taboo, study.term, study.trajectories, study.translate, study.transmission, study.variants, study.witnesses"
+validation,classics:read,read the corpus through the research's scoped view,4,"audit.claim, graph.evidence, validation.provenance_chain, validation.verify_quote"
+validation,validation:run,run the gates (validators),1,validation.gates

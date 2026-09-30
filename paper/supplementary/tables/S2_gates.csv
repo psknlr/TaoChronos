@@ -1,0 +1,10 @@
+Gate,Name,Subject,Pass,Warn,Fail,Set by
+G0,Source,"claim, evidence",the book is in the store with an origin and a licence (score 0.8 when the transcription is unverified),—,"unknown book, or no origin or licence",validator
+G1,Transcription,"claim, evidence","a verified manual transcription, or OCR confidence ≥ 0.9","an unverified transcription, or OCR confidence 0.7–0.9",OCR confidence < 0.7,validator
+G2,Philology,"claim, evidence","text collated against an edition, and the span not on a contested reading","uncollated text, or a contested reading whose base reading has p ≥ 0.4",the span rests on a contested reading with p < 0.4,validator
+G3,Sense,claim; hypothesis,every term resolved to one sense for its period,a homonym whose most likely sense has p < 0.6,—,validator
+G4,Claim provenance,"claim, evidence; hypothesis",the quote is verbatim at its span and states the relation,"verbatim, but the quote does not clearly state the relation, or states a view the author rejects","the quote is not verbatim or not where it is said to be, or it contradicts the claim",validator
+G5,Independent sources,hypothesis,supporting evidence from ≥ 2 independent source families (the contract may ask for more),one family,no supporting evidence,validator
+G6,Falsification,hypothesis,the latest Skeptic review leaves no open critical or major objection,an open major objection,an open critical objection (pending before any review),validator
+G7,Expert,hypothesis,a named expert approves,—,a named expert rejects (pending until then),human only
+G8,Modern evidence,hypothesis (biomedical or bridge claims),records in people support a biomedical claim; any modern record contextualizes a typed bridge,—,"no modern record, or a record contradicts the claim; not applicable to historical hypotheses",validator

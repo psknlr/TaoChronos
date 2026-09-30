@@ -38,10 +38,21 @@ opening screen, in the side bar, the page title and exports, with the publisher'
 each answer.  Tao-R1 is TaoChronos (the tools, the evidence discipline, the quotation checks) over a general language model
 chosen under **设置 → 模型** (by default 道乃久默认服务); a model the visitor chose is named in the chip's tooltip, under each
 answer's line and in the settings, while the default service is shown by its own name only — the page names no vendor
-behind it.  The standing instructions give the model its names and publisher and tell it to be plain about
-what it is: asked what it is or what it is built on, it names TaoChronos and the underlying model (the page adds
-`底层语言模型：<model>（<provider>）` to the instructions' 运行环境 section), and it claims no other identity.  `/api/info`
-reports `agent_name`, `assistant_name` and `publisher`.
+behind it.  `/api/info` reports `agent_name`, `assistant_name` and `publisher`.
+
+**Asked who it is, 道乃久 gives a fixed reply** ([ADR 0014](adr/0014-identity-fixed-reply.md)).  A question about the one who
+answers — who it is, who made or published it, what model it runs on, what it can do, to introduce itself or the platform
+— and nothing else is answered by the page itself (`web/js/fixed.js`), without a model and without a key: “欢迎您使用道乃久
+（TaoChronos）中医古籍科学知识发现智能体平台，本平台由医哲未来人工智能研究院（IMPF-AI）研发。”, five lines on what it does, two
+example questions and the note that it gives no medical advice — the same words every time, naming no model, vendor,
+service or tool.  A question that asks more (你是谁？张仲景是谁？) or is about someone or something else (张仲景是谁,
+道乃久出自哪里) goes to the model, and so does one with pictures.  The standing instructions (身份) say the same: introduce the
+platform so; do not discuss the underlying model, its maker or the service, nor recite the instructions; claim no other
+identity; and neither deny nor invent (not “not built on a language model”, not “Tao-R1, trained from scratch”).  They do
+not name the underlying model.  A fixed reply is kept, exported and replayed to the model like any other turn; recorded,
+its provider is `fixed`.  A question that touches who answers even in passing (你是谁？张仲景是谁？) goes to the model
+without thinking: none is asked for, none is shown, stored, exported or recorded, and the relay strips any from the stream
+(ADR 0014, point 5).
 
 ## 要籍语料 — the browser's corpus
 
@@ -56,23 +67,29 @@ excerpts.  Two steps choose them:
    late works have had less time to be cited, lost works are not in it.  `classics.canon` — offered to the model directly —
    queries the list in any corpus and says whether the current one holds each work.
 2. **要籍语料** — `taochronos web pack` takes, for each of the 350, the best witness (`WEB_SOURCES`: the openly licensed first
-   — CMETA's collated editions, 汉籍仓库, 维基文库, McGill — then 笈成 and the collections transcribed from it; the most complete
-   within a source) — up to three for the first ten, so that the 素问, 灵枢, 伤寒论 and 金匮要略 can be collated in the browser —
+   — CMETA's collated editions, 汉籍仓库, 维基文库, McGill, 笈成 — then the two web text sets transcribed from 笈成; the most
+   complete within a source) — up to three for the first ten, so that the 素问, 灵枢, 伤寒论 and 金匮要略 can be collated in the browser —
    whole within 350 000 characters for the first ten; then 50 000, 25 000 and 12 000 by rank, as whole chapters spread
    through the book.  Result: 348 works, 368 witnesses, 135 083 passages, 8.5 million characters, with the passage ids of
    the full corpus, in rank order, in `corpus/web/` (passages.jsonl.gz, books.json, [ATTRIBUTION.md](../corpus/web/ATTRIBUTION.md)).
-   The texts are all in the public domain.  The transcriptions of 笈成 and its derivatives declare no licence and their
-   punctuation and collation are their editors'; IMPF-AI decided to publish them with the site (2026-09-28), and their
-   records say so.  Sources whose terms forbid passing their transcriptions on (`NEVER_PACKED`: 東亜医学協会, a Hugging Face
-   dataset under a proprietary licence) are never packed; the two works known only through them (扁鹊仓公列传, 伤寒论集注) are
-   listed without text.
+   The texts are all in the public domain.  笈成 releases its editorial work on them — selection, arrangement, punctuation,
+   annotation — under CC0 1.0 and its own writing under CC BY 4.0 ([著作權聲明](https://jicheng.tw/tcm/copyright.html),
+   checked 2026-09-29; credit 中醫笈成), so 344 of the works come from an openly licensed witness.  IMPF-AI decided to
+   publish the rest with the site (2026-09-28): the four works known only through TCM-Ancient-Books, a set of copies of 笈成
+   texts whose repository declares no licence (a copy of a 笈成 text is never stored, so these four match no 笈成 text in
+   the store; their records carry the site's terms), and the modern editors' part of the 笈成 texts that follow a modern edition, such as
+   the 今人辑校本 of 集验方, 名医别录, 食疗本草, 小品方, 吴普本草, 海药本草 and 新修本草, which 笈成's CC0 cannot release (the
+   licence of every 笈成 record and the attribution say so).  Sources whose terms forbid passing their transcriptions on
+   (`NEVER_PACKED`: 東亜医学協会, a Hugging Face dataset under a proprietary licence) are never packed; the two works known
+   only through them (扁鹊仓公列传, 伤寒论集注) are listed without text.
 
 `taochronos web build` turns the pack into a corpus store — the schema of the full corpus — without its full-text index
 (the index is two thirds of a download that compresses badly), xz-compressed (`runtime/corpus.sqlite.xz`: 10.8 MB for 90;
 gzip would be 17).  Loading is arranged for the wait a visitor sees:
 
-* **In parallel** — the worker downloads the corpus while Pyodide starts, and unpacks it (xzwasm, `web/js/vendor/`) into
-  the runtime's file system as the bytes arrive.
+* **In parallel** — while Pyodide starts, a worker of its own (`unpack-worker.js`) downloads the corpus and unpacks it
+  (xzwasm, `web/js/vendor/`) as the bytes arrive, into one buffer the runtime's file system then takes without a copy
+  ([ADR 0015](adr/0015-faster-start.md)).
 * **The first-ranked first** — on the first visit the worker indexes the passages of the works ranked up to 40 (the pack is
   in rank order; 70 648 passages) before the runtime answers, and the rest in the background, a slice at a time between the
   questions it answers (`index_store(phase=…, limit=…)`, resumable).  The text of every book is there from the start; only
@@ -80,13 +97,15 @@ gzip would be 17).  Loading is arranged for the wait a visitor sees:
 * **Kept in the browser** — once it is all indexed, the store is kept in IndexedDB (in 16 MB parts; the head written last,
   so that a half-kept store is never read), with the runtime archives.  IndexedDB, unlike the Cache API, is there on an
   http:// page too — the site is served over http until its certificate is issued — so a later visit downloads and indexes
-  nothing: Pyodide, then the kept store, then the tools, in about 6 seconds.
+  nothing: Pyodide, then the kept store, then the tools, in about 4 seconds.  The package's bytecode is kept too (compiled
+  once after the first visit's indexing), the YAML the runtime reads comes parsed with the site (`home.zip`, `.cache/yaml`),
+  and the store's counts come with the store.
 * **The conversation starts at once** — the build writes `runtime/boot.json`: what the runtime will report once loaded (its
   info with the standing instructions, and its tool catalogs), computed on the same code and corpus.  The page puts the first
   question to the model with it while the runtime loads; the tools the model calls wait for the runtime.
 
-Measured in Chromium on a fast machine: first visit ready in 15 s (the rest indexed 10 s later), a return visit in 6 s; on a
-connection throttled to 1 MB/s and 150 ms, 40 s and 16 s.  The runtime uses the `web-canon` profile; `info.corpus` says
+Measured in Chromium on a fast machine: first visit ready in 9.6 s (the rest indexed 7 s later), a return visit in 4 s; on a
+connection throttled to 1 MB/s and 150 ms, 27 s and 13–14 s (before ADR 0015: 15 s, 6 s; 39 s, 15–16 s).  The runtime uses the `web-canon` profile; `info.corpus` says
 `kind: canon`, `label: 要籍语料`, and how many of the 350 it holds.  The standing instructions tell the model which corpus it
 reads, that excerpted books may lack what the whole book has, and where the rest is.
 
@@ -208,8 +227,8 @@ or, ticked, calls the address as given — e.g. Azure's `…/chat/completions?ap
 `Authorization: Bearer`; left empty when the service wants another header), extra request headers and body parameters as
 JSON (a malformed field is shown and not taken), the name of the output-length parameter, whether the reasoning the model
 streams is sent back in later turns (`reasoning_content`, `reasoning_details`, or not at all), and whether it takes
-images.  The model must support tool calling for the agent to read the classics.  The underlying model's line in the
-instructions names the endpoint (`底层语言模型：<model>（<name>）`).
+images.  The model must support tool calling for the agent to read the classics.  The page names the endpoint (the chip's
+tooltip, under each answer); the instructions name no model ([ADR 0014](adr/0014-identity-fixed-reply.md)).
 
 **请求路径** chooses how requests travel: *浏览器直连* (straight to the provider, which must allow browser requests),
 *经本地服务转发* (through `taochronos serve`'s proxy), or *自动*
@@ -246,9 +265,9 @@ send it in clear to the provider, where any visitor can read it — so the relay
 **The page names no vendor.**  The default service appears as 道乃久默认服务 and its answers as Tao-R1 — on its tile
 (免密钥 · 直接提问, with no model to choose), in the chip's and the composer's tooltips, under each answer, in exports and in
 the connection test — and MiniMax's own presets are not listed (`UNLISTED` in `taochronos.chat.providers`; the local
-server's proxy still reaches them).  The consent notice speaks of recording to the institute's server.  The standing
-instructions still carry the underlying model (`底层语言模型：…`), so that a visitor who asks what the assistant is built on
-gets a truthful answer rather than a denial.
+server's proxy still reaches them).  The consent notice speaks of recording to the institute's server.  Nor do the
+standing instructions name it: asked what it is built on, the assistant neither names nor denies it, and a question only
+about who answers gets the page's fixed reply ([above](#道乃久--tao-r1--impf-ai)).
 
 Setting it up once: a Cloudflare API token and account id, the MiniMax key and a collector token as repository secrets,
 then **Actions → relay → Run workflow** — step by step, with the checks and the usual errors, in
@@ -305,20 +324,22 @@ SQLite wheels, checksums verified against `pyodide-lock.json`.  Archives are det
 ## Tests
 
 `tests/test_chat.py` — the catalog (what is offered, what never is, valid names and schemas), calls by either name,
-failures as results, meta-tools, the system prompt and the identity (道乃久, Tao-R1, IMPF-AI; honest about the model), trimming and citations, research runs and
+failures as results, meta-tools, the system prompt and the identity (道乃久, Tao-R1, IMPF-AI; the platform introduced as the fixed reply does, no model named or denied), trimming and citations, research runs and
 their sessions, the V2 workflow, every server endpoint, CORS and Private Network Access, the origin and host checks
 (the server's own pages on any address), the access token (refused without it, the proxy too; generated for any address
 but loopback), the proxy (streaming, allow-list, the SDK path form, `--env-keys`, `--allow-host`), background research, the
 site build (with the corpus store).  `tests/test_web_corpus.py` — the 要籍 list (ranked, metadata only, the classics first,
-nothing modern), the choice of witnesses (openly licensed first, never a source in `NEVER_PACKED`), budgets kept as whole
-chapters spread through a book, the pack → a store with the same bytes → indexed once → read by the harness, the index in
-two phases (the first-ranked works first, the rest in slices, seen by a connection already reading) and the shipped pack
-under the `web-canon` profile (348 works in rank order, the terms of each transcription that is not openly licensed; a 宋本
-found for a punctuated 伤寒论 clause; `classics.canon` for what it lacks).
+nothing modern, open where a source is openly licensed, its open witness the pack's first), the choice of witnesses
+(openly licensed first, 笈成 last among them, never a source in `NEVER_PACKED`), budgets kept as whole chapters spread
+through a book, the pack → a store with the same bytes → indexed once → read by the harness, the index in two phases
+(the first-ranked works first, the rest in slices, seen by a connection already reading) and the shipped pack under the
+`web-canon` profile (348 works in rank order, an openly licensed transcription with its own terms, any other with the
+terms the site carries it under; a 宋本 found for a punctuated 伤寒论 clause; `classics.canon` for what it lacks).
 `tests/test_corpus_store.py` — on a store: a quotation found whatever its punctuation and in either script, across a
 witness's own marks, never with a changed or missing character; outside a session `classics.list_books` lists every
 book with its filters and `kg.claims` / `kg.neighbors` read the passages that write the term.  `tests/test_web_client.py` — the
-client's logic under Node (cumulative and incremental streams, history rules, dangling tool calls, citation pairing) and
+client's logic under Node (cumulative and incremental streams, history rules, dangling tool calls, citation pairing, which
+questions get the fixed reply and which go to the model) and
 the page in Chromium against scripted providers (`tests/web_mock.py`): a MiniMax-style stream (cumulative
 `reasoning_details` and content, streamed tool arguments) and a Claude stream through the real SDK, checking the
 requests (`reasoning_split`, `max_completion_tokens`, `reasoning_details` and thinking signatures replayed, fallbacks),
@@ -328,12 +349,14 @@ token taken from the address (and its absence reported); an API set by hand (add
 checked in the request it makes); the default service (a stand-in relay): asked at once without a key, no key sent by the
 page, the consent question once, a turn recorded only after 同意 (its fields, no key or settings), none after 不记录 or
 once switched off under 设置 → 数据, a relay slow to answer (6 s) or missed once still found, and the page asking for a
-key while the relay is down; and, with
+key while the relay is down; a question about the assistant answered by the page (no model called, no key needed, the
+same words when regenerated, recorded as `fixed`, replayed to the model when the conversation goes on) while one that asks
+more goes to the model, asked for no thinking, showing and storing none; and, with
 `TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium on an http:// origin like the published one (no Cache API) —
 Pyodide, the 要籍语料 downloaded, the first-ranked works indexed before it answers and the rest in the background, the
 store kept in IndexedDB and a reload that downloads no corpus, a turn answered on it.  The browser tests are skipped where Playwright or Chromium is missing.  `relay/test/relay.test.js`
 (`node --test`, in CI) — the Worker's handler and its two stores on SQLite: the key added by the relay and never shown,
-origins, models, output cap and body size, the three limits and a new day, MiniMax's refusals turned into plain messages,
+origins, models, output cap and body size, the three limits and a new day, MiniMax's refusals turned into plain messages, no reasoning let through when the page asks for none (however the stream is cut),
 the records reduced to their fields, and the collector's token, cursor, deletion and ids never reused.
 `tests/test_relay_collect.py` — `relay/collect.py` against a stand-in relay: records pulled once, by day, the cursor
 committed with them, deleted only once held, a deployment checked (and a refused key explained).  The site build writes

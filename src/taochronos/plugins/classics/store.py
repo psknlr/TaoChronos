@@ -49,24 +49,24 @@ def is_han(ch: str) -> bool:
     return 0x3400 <= o <= 0x9FFF or 0xF900 <= o <= 0xFAFF or 0x20000 <= o <= 0x3134F or o == 0x3007 or o == 0x3013
 
 
+HAN_RUN = re.compile("[\u3400-\u9fff\uf900-\ufaff\U00020000-\U0003134f\u3007\u3013]+")  # runs of what is_han accepts
+
+
 def grams(norm: str) -> str:
-    """Overlapping bigram tokens of each run of Han characters (plus a padded final token)."""
+    """Overlapping bigram tokens of each run of Han characters (plus a padded final token), the runs separated by a
+    break token (and one after the last run when something follows it).  The runs are found by one regular expression:
+    this is on the path of indexing every passage, in the browser too."""
     out: list[str] = []
-    run_start = -1
-    n = len(norm)
-    for i in range(n + 1):
-        han = i < n and is_han(norm[i])
-        if han and run_start < 0:
-            run_start = i
-        elif not han and run_start >= 0:
-            run = norm[run_start:i]
-            out.extend(run[j: j + 2] for j in range(len(run) - 1))
-            out.append(run[-1] + PAD)
-            run_start = -1
-            if i < n:
-                out.append(BREAK)
-        elif not han and i < n and out and out[-1] != BREAK:
+    end = 0
+    for m in HAN_RUN.finditer(norm):
+        run = m.group()
+        if out:
             out.append(BREAK)
+        out += [run[j: j + 2] for j in range(len(run) - 1)]
+        out.append(run[-1] + PAD)
+        end = m.end()
+    if out and end < len(norm):
+        out.append(BREAK)
     return " ".join(out)
 
 
@@ -83,6 +83,15 @@ def fts_phrase(norm_surface: str) -> str | None:
 
 def _dump(value: Any) -> str:
     return json.dumps(to_jsonable(value), ensure_ascii=False, separators=(",", ":"))
+
+
+def _dump_set(value: Any) -> str:
+    """A locator or temporal context without its empty fields: every reader takes a missing field for None (a tenth of
+    the store in the browser)."""
+    data = to_jsonable(value)
+    if isinstance(data, dict):
+        data = {k: v for k, v in data.items() if v is not None}
+    return json.dumps(data, ensure_ascii=False, separators=(",", ":"))
 
 
 def book_from_dict(raw: dict[str, Any]) -> Book:
@@ -175,6 +184,24 @@ class CorpusStore:
         row = self.db.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
         return row[0] if row else default
 
+    def count(self) -> None:
+        """Keep the whole store's counts (passages per book, characters, passages per year) in its meta, for ``stats`` to
+        read instead of scanning every passage (half a second in the browser).  For a store that is written once."""
+        by_book = dict(self.db.execute("SELECT book_id, COUNT(*) FROM passages GROUP BY book_id ORDER BY book_id").fetchall())
+        chars = self.db.execute("SELECT COALESCE(SUM(LENGTH(text)), 0) FROM passages").fetchone()[0]
+        years = self.db.execute("SELECT year, COUNT(*) FROM passages GROUP BY year").fetchall()
+        last = self.db.execute("SELECT MAX(rid) FROM passages").fetchone()[0]
+        self.set_meta("counted", json.dumps({"last_rid": last, "by_book": by_book, "characters": chars, "years": years}))
+
+    def counted(self) -> dict[str, Any] | None:
+        """The counts ``count`` kept, while the passages are still those it counted (else None)."""
+        raw = self.meta("counted")
+        if not raw:
+            return None
+        data = json.loads(raw)
+        last = self.db.execute("SELECT MAX(rid) FROM passages").fetchone()[0]
+        return data if data.get("last_rid") == last else None
+
     def set_meta(self, key: str, value: str) -> None:
         self.db.execute("INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)", (key, value))
 
@@ -214,7 +241,7 @@ class CorpusStore:
                 "INSERT INTO passages(id, book_id, edition_id, seq, kind, layer, year, y_start, y_end, locator, temporal, text, punctuation, extra)"
                 " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (r["id"], r["book_id"], r.get("edition_id"), r["seq"], r.get("kind", "text"), r.get("layer"), r.get("year"),
-                 r.get("y_start"), r.get("y_end"), _dump(r["locator"]), _dump(r["temporal"]), r["text"], r.get("punctuation", "none"),
+                 r.get("y_start"), r.get("y_end"), _dump_set(r["locator"]), _dump_set(r["temporal"]), r["text"], r.get("punctuation", "none"),
                  _dump(r.get("extra") or {})),
             )
             if index:
@@ -574,10 +601,14 @@ class StoreCorpus:
     def stats(self, periods: Any = None) -> dict[str, Any]:
         extra, params = self._book_filter()
         with self.store.lock:
-            by_book = dict(self.store.db.execute(
-                f"SELECT p.book_id, COUNT(*) FROM passages p WHERE 1{extra} GROUP BY p.book_id ORDER BY p.book_id", params).fetchall())
-            chars = self.store.db.execute(f"SELECT COALESCE(SUM(LENGTH(p.text)), 0) FROM passages p WHERE 1{extra}", params).fetchone()[0]
-            years = self.store.db.execute(f"SELECT p.year, COUNT(*) FROM passages p WHERE 1{extra} GROUP BY p.year", params).fetchall()
+            counted = None if extra else self.store.counted()  # the whole store, counted when it was written
+            if counted is not None:
+                by_book, chars, years = counted["by_book"], counted["characters"], counted["years"]
+            else:
+                by_book = dict(self.store.db.execute(
+                    f"SELECT p.book_id, COUNT(*) FROM passages p WHERE 1{extra} GROUP BY p.book_id ORDER BY p.book_id", params).fetchall())
+                chars = self.store.db.execute(f"SELECT COALESCE(SUM(LENGTH(p.text)), 0) FROM passages p WHERE 1{extra}", params).fetchone()[0]
+                years = self.store.db.execute(f"SELECT p.year, COUNT(*) FROM passages p WHERE 1{extra} GROUP BY p.year", params).fetchall()
         by_period: dict[str, int] = {}
         if periods is not None:
             for y, n in years:

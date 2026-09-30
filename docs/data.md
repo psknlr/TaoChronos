@@ -78,14 +78,14 @@ historical evidence.
 | Source | Scope | Licence | Connector |
 |---|---|---|---|
 | 漢籍リポジトリ Kanseki Repository, `KR3e` | 《四库全书·子部·医家类》, all 100 works (文渊阁本 WYG; seven in 四部丛刊 SBCK) — 25.7M characters | CC BY-SA 4.0 | `taochronos corpus fetch|ingest kanripo` |
-| 笈成 (JiCheng), data of the 笈成檢閱系統 v1.4.8 (user-supplied archive `jc_1_4_8_all.7z`, 3 volumes) | 857 punctuated texts: 内经难经, 伤寒, 金匮, 本草, 方剂, 温病, 各科, 医案, 综合, 丛书, 歌赋; 816 stored (41 contemporary works and physicians' writings left out; the 17 modern editions and 子午流注说难 kept with their editors' work separated, below) — 93.6M characters, 1.63M passages | originals public domain; punctuation and collation by the 笈成 volunteers — local research use | `taochronos corpus unpack|catalog|ingest jicheng` |
+| 笈成 (JiCheng), data of the 笈成檢閱系統 v1.4.8 (user-supplied archive `jc_1_4_8_all.7z`, 3 volumes) | 857 punctuated texts: 内经难经, 伤寒, 金匮, 本草, 方剂, 温病, 各科, 医案, 综合, 丛书, 歌赋; 816 stored (41 contemporary works and physicians' writings left out; the 17 modern editions and 子午流注说难 kept with their editors' work separated, below) — 93.6M characters, 1.63M passages | CC0 1.0 for 笈成's editorial work on the public-domain texts (selection, arrangement, punctuation, annotation), CC BY 4.0 for the site's own writing ([著作權聲明](https://jicheng.tw/tcm/copyright.html), checked 2026-09-29) — credit 中醫笈成; the originals public domain; not the modern editors' part of the editions 笈成 follows (below) | `taochronos corpus unpack|catalog|ingest jicheng` |
 | Kanripo catalogue (KR-Catalog), `KR/KR3e.txt` | the 100 KR3e entries: responsible persons with roles (撰, 次注, 校正 …) and dates, Siku volume and page, extent | CC BY-SA 4.0 | `taochronos corpus fetch|catalog kr-catalog` (merged into the Kanripo records) |
 | McGill University Library, *Gynaecology in Traditional Chinese Medicine* (GitHub `mcgill-digital/gynaecology_in_chinese_medicine`) | 5 Qing prints and a manuscript (傅青主女科, 重订济阴纲目, 保生碎事, 女科辑要, 珍存秘方), page by page, unpunctuated — 366k characters | Public Domain Mark 1.0 | `taochronos corpus fetch|catalog|ingest mcgill` |
 | 數位中醫校書郎 CMETA (`cmeta.lctseng.csie.org`) | the editions the site has collated in full against their page images (精校) and opens to every visitor: 伤寒论 (赵开美本: 台北故宫本 and 安政覆刻本; 康平本; 康治本), 金匮 (吴迁本, 邓珍本), 素问 (顾从德本), 灵枢 (赵府居敬堂本), 古今医案按, 名医类案, and the 桂林古本 伤寒杂病论 (kept as a recension that surfaced in modern times, dated 1939) — 11 read and stored — 1.45M characters, 27,710 passages, located by page and, where the site shows the images to guests, linked to the page image | CC BY 4.0 for the site's collation and editing (attribution: 數位中醫校書郎 CMETA); the texts public domain; images per holder (故宫 Open Data, SBB PDM 1.0, Commons) | `taochronos corpus fetch|catalog|ingest cmeta` |
 | 東亜医学協会 · 医学古典テキスト (`aeam.jp/koten`) | 7 PDF texts of named base editions: 素問 (顾从德本), 霊枢 (明无名氏本), 難経, 傷寒論 (赵开美本), 金匱要略 (邓珍本), 神農本草経 (森立之), 扁鵲倉公列伝 — 317k characters, 12,212 passages | © 東亜医学協会: saving and use for non-commercial personal purposes only, no redistribution — local research use only | `taochronos corpus fetch|catalog|ingest aeam` (needs the `pdf` extra: pypdf) |
 | 维基文库 zh.wikisource, `Category:中醫` and its subcategories, and `Category:醫書` (from the Wikimedia dumps) | 627 works read, 18 stored after deduplication — 737k characters (the Korean 医方类聚, 1445, comes from 醫書; 医理真传 and 妇人寿草 are kept with their modern layers) | CC BY-SA 4.0 (the originals public domain) | `taochronos corpus fetch|catalog|ingest wikisource` |
-| TCM-Ancient-Books (GitHub `xiaopangxia/TCM-Ancient-Books`) | 701 texts read, 8 stored — 369k characters | no licence stated — local research use | `taochronos corpus fetch|catalog|ingest tcm-ancient-books` |
-| tcmoc (GitHub `lab99x/tcmoc`) | 701 texts read (a copy of the previous), none stored | no licence stated — local research use | `taochronos corpus fetch|catalog|ingest tcmoc` |
+| TCM-Ancient-Books (GitHub `xiaopangxia/TCM-Ancient-Books`) | 701 texts read, 8 stored — 369k characters | no licence stated by the repository — local research use (mostly simplified copies of 笈成 texts, which 笈成 releases under CC0, but a copy of a 笈成 text is never stored: the 8 match no 笈成 text in the store) | `taochronos corpus fetch|catalog|ingest tcm-ancient-books` |
+| tcmoc (GitHub `lab99x/tcmoc`) | 701 texts read (a copy of the previous), none stored | no licence stated by the repository — local research use | `taochronos corpus fetch|catalog|ingest tcmoc` |
 | classical-tcm-canon (Hugging Face `wangekxy/classical-tcm-canon`) | 115 records read, 1 stored — 305k characters | dataset card: `license: other` (proprietary-commercial), texts declared public domain — local research use only, never redistributed | `taochronos corpus fetch|catalog|ingest hf-tcm-canon` (needs the `parquet` extra: pyarrow) |
 | Image witnesses (影像见证): NIJL 国書データベース, Staatsbibliothek zu Berlin (Sammlung Unschuld), Library of Congress (Chinese Rare Books), 早稲田大学 古典籍総合データベース, NDL デジタルコレクション | the *records* of digitised prints and manuscripts — title, author, date, print or manuscript, holder, shelfmark, IIIF manifest, terms of use — linked to the works of the store by title; no image is downloaded (see *Image witnesses* below) | the records: each catalogue's terms; the images: each holder's licence, per record | `taochronos corpus images [source] [--enrich]` → `corpus/catalog/images/*.csv` |
 
@@ -145,6 +145,18 @@ ends one; editions with irregular note widths use a looser threshold); chapter t
 credit lines are recognised; ingredient lines and the 右…味 preparation line are merged into their prescription.
 
 ### The 笈成 collection (`corpus/catalog/jicheng.yaml`)
+
+**Terms.**  中醫笈成's copyright statement ([著作權聲明](https://jicheng.tw/tcm/copyright.html), checked 2026-09-29):
+all the site's editing of public-domain texts — selection, arrangement, punctuation, annotation — is released under
+CC0 1.0; its own writing (introductions, help pages, the data pages it compiles) under CC BY 4.0, free to use when the
+site is credited.  Individual pages may declare other terms, embedded images and media may carry other licences (the
+store keeps no image, only a figure's caption and file name), and the site does not guarantee every marking.  Credit
+中醫笈成.  The archive — the 笈成檢閱系統 v1.4.8 with its data — is supplied by the user; the viewer program is
+授權任何人使用與散布 (© 2009-2013 Danny).  What 笈成 transcribed from a modern edition — the
+今人辑校本 of lost works, the modern editions kept on review ([ADR 0007](adr/0007-modern-apparatus-as-layers.md)) — is in
+part its modern editors' work, which 笈成's CC0 cannot release: their notes and references are separated as layers or
+metadata, their reconstruction of a lost text cannot be.  A twentieth-century work (`modern` in the catalog) may itself
+still be in copyright; none is in the web pack.
 
 The archive is the data of a local viewer: `data/<A–R,Z>/<code>.txt` (one book per file, UTF-8), `config/filelist.txt`
 (categories and display names), `config/nclist.txt` (codes of characters outside common fonts, with Unicode code

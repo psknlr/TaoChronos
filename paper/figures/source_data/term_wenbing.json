@@ -1,0 +1,1007 @@
+{
+ "term": {
+  "term_id": "disease:温病",
+  "name": "温病",
+  "forms": [
+   {
+    "form": "温病",
+    "kind": "本名"
+   },
+   {
+    "form": "病温",
+    "kind": "异名"
+   },
+   {
+    "form": "温证",
+    "kind": "异名"
+   }
+  ]
+ },
+ "periods": [
+  {
+   "period": "先秦两汉",
+   "id": "qin_han",
+   "passages": 39,
+   "total": 15743,
+   "per_10k": 24.77,
+   "ci_per_10k": [
+    18.13,
+    33.85
+   ],
+   "characters": 761330
+  },
+  {
+   "period": "魏晋南北朝",
+   "id": "wei_jin",
+   "passages": 40,
+   "total": 11140,
+   "per_10k": 35.91,
+   "ci_per_10k": [
+    26.38,
+    48.85
+   ],
+   "characters": 708658
+  },
+  {
+   "period": "隋唐五代",
+   "id": "sui_tang",
+   "passages": 89,
+   "total": 26780,
+   "per_10k": 33.23,
+   "ci_per_10k": [
+    27.02,
+    40.88
+   ],
+   "characters": 1512524
+  },
+  {
+   "period": "宋金元",
+   "id": "song_jin_yuan",
+   "passages": 84,
+   "total": 32471,
+   "per_10k": 25.87,
+   "ci_per_10k": [
+    20.9,
+    32.01
+   ],
+   "characters": 2175499
+  },
+  {
+   "period": "明",
+   "id": "ming",
+   "passages": 57,
+   "total": 19919,
+   "per_10k": 28.62,
+   "ci_per_10k": [
+    22.1,
+    37.05
+   ],
+   "characters": 1319785
+  },
+  {
+   "period": "清",
+   "id": "qing",
+   "passages": 188,
+   "total": 28638,
+   "per_10k": 65.65,
+   "ci_per_10k": [
+    56.93,
+    75.68
+   ],
+   "characters": 2008139
+  },
+  {
+   "period": "民国",
+   "id": "minguo",
+   "passages": 8,
+   "total": 353,
+   "per_10k": 226.63,
+   "ci_per_10k": [
+    115.27,
+    440.76
+   ],
+   "characters": 21339
+  }
+ ],
+ "trend": {
+  "z": 6.62,
+  "p": 0.0
+ },
+ "total_passages": 505,
+ "earliest": [
+  {
+   "passage_id": "cm_lingshu_sibucongkan.00381",
+   "book_id": "cm_lingshu_sibucongkan",
+   "title": "黄帝素问灵枢经（赵府居敬堂本）",
+   "work": "lingshu",
+   "authors": [
+    "佚名（托名黄帝、岐伯）"
+   ],
+   "dynasty": "战国—西汉",
+   "years": [
+    -300,
+    25
+   ],
+   "period": "先秦两汉",
+   "category": "医经",
+   "kind": "text",
+   "layer": "正文",
+   "locator": "《黄帝素问灵枢经（赵府居敬堂本）》卷之十一·論疾診尺第七十四（468）",
+   "quote": "尺膚熱甚，脉盛躁者，病温也。",
+   "span": [
+    177,
+    179
+   ],
+   "source": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+   "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+   "punctuation": "editorial"
+  },
+  {
+   "passage_id": "cm_suwen_gucongde.00465",
+   "book_id": "cm_suwen_gucongde",
+   "title": "重广补注黄帝内经素问（顾从德本）",
+   "work": "suwen",
+   "authors": [
+    "佚名（托名黄帝、岐伯）"
+   ],
+   "dynasty": "战国—西汉",
+   "years": [
+    -300,
+    25
+   ],
+   "period": "先秦两汉",
+   "category": "医经",
+   "kind": "text",
+   "layer": "正文",
+   "locator": "《重广补注黄帝内经素问（顾从德本）》卷第一·生氣通天論篇第三（45）",
+   "quote": "冬傷於寒，春必温病",
+   "span": [
+    7,
+    9
+   ],
+   "source": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+   "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+   "punctuation": "editorial"
+  },
+  {
+   "passage_id": "jc_a300.00094",
+   "book_id": "jc_a300",
+   "title": "八十一难经",
+   "work": "nanjing",
+   "authors": [
+    "旧题秦越人"
+   ],
+   "dynasty": "东汉",
+   "years": [
+    0,
+    200
+   ],
+   "period": "先秦两汉",
+   "category": "医经",
+   "kind": "text",
+   "layer": "正文",
+   "locator": "《八十一难经》五十八難",
+   "quote": "然，傷寒有五，有中風，有傷寒，有濕溫，有熱病，有溫病，其所苦各不同。",
+   "span": [
+    37,
+    39
+   ],
+   "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+   "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）",
+   "punctuation": "editorial"
+  },
+  {
+   "passage_id": "cm_kanhei_shanghan_vision_ocr.00015",
+   "book_id": "cm_kanhei_shanghan_vision_ocr",
+   "title": "伤寒论（康平本）",
+   "work": "shanghanlun",
+   "authors": [
+    "张机"
+   ],
+   "dynasty": "东汉",
+   "years": [
+    200,
+    219
+   ],
+   "period": "先秦两汉",
+   "category": "伤寒",
+   "kind": "text",
+   "layer": "正文",
+   "locator": "《伤寒论（康平本）》和家氏傷寒論　乾·傷寒例（9）",
+   "quote": "中寒，不即病者，寒毒藏於肌膚，至春變爲温病，至夏變爲暑病，暑病者，热極重於温也。",
+   "span": [
+    19,
+    21
+   ],
+   "source": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+   "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）",
+   "punctuation": "editorial"
+  },
+  {
+   "passage_id": "jc_k000.00728",
+   "book_id": "jc_k000",
+   "title": "针灸甲乙经",
+   "work": "jiayi",
+   "authors": [
+    "皇甫谧"
+   ],
+   "dynasty": "晋",
+   "years": [
+    256,
+    282
+   ],
+   "period": "魏晋南北朝",
+   "category": "针灸",
+   "kind": "text",
+   "layer": "正文",
+   "locator": "《针灸甲乙经》卷五·針灸禁忌第一（下）",
+   "quote": "是故刺毫毛腠理無傷皮，皮傷則內動肺，肺動則秋病溫瘧，熱厥，淅然寒栗。",
+   "span": [
+    140,
+    142
+   ],
+   "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+   "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）",
+   "punctuation": "editorial"
+  },
+  {
+   "passage_id": "jc_m100.00321",
+   "book_id": "jc_m100",
+   "title": "脉经",
+   "work": "maijing",
+   "authors": [
+    "王叔和"
+   ],
+   "dynasty": "西晋",
+   "years": [
+    265,
+    290
+   ],
+   "period": "魏晋南北朝",
+   "category": "诊法",
+   "kind": "text",
+   "layer": "正文",
+   "locator": "《脉经》卷四·辨三部九候脈證第一",
+   "quote": "尺膚熱甚，脈盛躁者，病溫也，其脈盛而滑者，汗且出；",
+   "span": [
+    61,
+    63
+   ],
+   "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+   "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）",
+   "punctuation": "editorial"
+  },
+  {
+   "passage_id": "jc_d058.00853",
+   "book_id": "jc_d058",
+   "title": "小品方",
+   "work": "xiaopin_fang",
+   "authors": [
+    "陈延之"
+   ],
+   "dynasty": "南北朝",
+   "years": [
+    454,
+    473
+   ],
+   "period": "魏晋南北朝",
+   "category": "方书",
+   "kind": "text",
+   "layer": "正文",
+   "locator": "《小品方》卷第六·治春夏溫熱病諸方",
+   "quote": "茅根湯，治溫病有熱，飲水暴冷　者方。",
+   "span": [
+    5,
+    7
+   ],
+   "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+   "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）",
+   "punctuation": "editorial"
+  },
+  {
+   "passage_id": "zhouhou_beiji.002.00695",
+   "book_id": "zhouhou_beiji",
+   "title": "肘后备急方",
+   "work": "zhouhou",
+   "authors": [
+    "葛洪",
+    "陶弘景",
+    "杨用道"
+   ],
+   "dynasty": "东晋",
+   "years": [
+    500,
+    500
+   ],
+   "period": "魏晋南北朝",
+   "category": "方书",
+   "kind": "text",
+   "layer": "葛洪原著与陶弘景增补（未能分离）",
+   "locator": "《肘后备急方》卷二·治時氣病起諸勞復方第十四（002-35a）",
+   "quote": "卒隂易病男女溫病差後雖數十日血脉未和尚有熱毒與之交接者即得病曰隂易殺人甚於時",
+   "span": [
+    6,
+    8
+   ],
+   "source": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+   "license": "CC BY-SA 4.0",
+   "punctuation": "none"
+  }
+ ],
+ "collocates": [
+  {
+   "period": "先秦两汉",
+   "sampled": 39,
+   "top": [
+    {
+     "term": "寒",
+     "term_id": "etiology:寒",
+     "count": 9,
+     "lift": 3.38
+    },
+    {
+     "term": "中风",
+     "term_id": "disease:中风",
+     "count": 3,
+     "lift": 8.51
+    },
+    {
+     "term": "咳",
+     "term_id": "symptom:咳",
+     "count": 3,
+     "lift": 4.79
+    },
+    {
+     "term": "身灼热",
+     "term_id": "symptom:身灼热",
+     "count": 2,
+     "lift": 10.21
+    },
+    {
+     "term": "发汗后",
+     "term_id": "condition:发汗后",
+     "count": 2,
+     "lift": 7.29
+    },
+    {
+     "term": "湿温",
+     "term_id": "disease:湿温",
+     "count": 2,
+     "lift": 5.67
+    },
+    {
+     "term": "不恶寒",
+     "term_id": "symptom:不恶寒",
+     "count": 3,
+     "lift": 2.47
+    },
+    {
+     "term": "发热",
+     "term_id": "symptom:发热",
+     "count": 2,
+     "lift": 1.02
+    },
+    {
+     "term": "热病",
+     "term_id": "disease:热病",
+     "count": 2,
+     "lift": 0.6
+    },
+    {
+     "term": "伤寒",
+     "term_id": "disease:伤寒",
+     "count": 2,
+     "lift": 0.39
+    }
+   ]
+  },
+  {
+   "period": "魏晋南北朝",
+   "sampled": 40,
+   "top": [
+    {
+     "term": "脉细",
+     "term_id": "pulse:细",
+     "count": 5,
+     "lift": 10.94
+    },
+    {
+     "term": "下利",
+     "term_id": "symptom:下利",
+     "count": 4,
+     "lift": 9.72
+    },
+    {
+     "term": "腹满",
+     "term_id": "symptom:腹满",
+     "count": 4,
+     "lift": 8.75
+    },
+    {
+     "term": "腹痛",
+     "term_id": "symptom:腹痛",
+     "count": 4,
+     "lift": 7.96
+    },
+    {
+     "term": "痰饮",
+     "term_id": "disease:痰饮",
+     "count": 2,
+     "lift": 21.88
+    },
+    {
+     "term": "大热",
+     "term_id": "symptom:大热",
+     "count": 3,
+     "lift": 5.47
+    },
+    {
+     "term": "中满",
+     "term_id": "symptom:中满",
+     "count": 2,
+     "lift": 10.94
+    },
+    {
+     "term": "汗出",
+     "term_id": "symptom:汗出",
+     "count": 3,
+     "lift": 3.13
+    },
+    {
+     "term": "脉大",
+     "term_id": "pulse:大",
+     "count": 2,
+     "lift": 5.47
+    },
+    {
+     "term": "伤寒",
+     "term_id": "disease:伤寒",
+     "count": 3,
+     "lift": 0.5
+    }
+   ]
+  },
+  {
+   "period": "隋唐五代",
+   "sampled": 89,
+   "top": [
+    {
+     "term": "伤寒",
+     "term_id": "disease:伤寒",
+     "count": 17,
+     "lift": 1.15
+    },
+    {
+     "term": "头痛",
+     "term_id": "symptom:头痛",
+     "count": 9,
+     "lift": 2.74
+    },
+    {
+     "term": "壮热",
+     "term_id": "symptom:壮热",
+     "count": 6,
+     "lift": 5.3
+    },
+    {
+     "term": "阴阳",
+     "term_id": "concept:阴阳",
+     "count": 5,
+     "lift": 4.02
+    },
+    {
+     "term": "呕吐",
+     "term_id": "symptom:呕吐",
+     "count": 4,
+     "lift": 5.89
+    },
+    {
+     "term": "寒热",
+     "term_id": "symptom:寒热",
+     "count": 4,
+     "lift": 3.93
+    },
+    {
+     "term": "汗出",
+     "term_id": "symptom:汗出",
+     "count": 5,
+     "lift": 2.1
+    },
+    {
+     "term": "麻黄",
+     "term_id": "herb:麻黄",
+     "count": 3,
+     "lift": 4.42
+    },
+    {
+     "term": "肾",
+     "term_id": "organ:肾",
+     "count": 2,
+     "lift": 8.84
+    },
+    {
+     "term": "霍乱",
+     "term_id": "disease:霍乱",
+     "count": 2,
+     "lift": 8.84
+    }
+   ]
+  },
+  {
+   "period": "宋金元",
+   "sampled": 84,
+   "top": [
+    {
+     "term": "伤寒",
+     "term_id": "disease:伤寒",
+     "count": 18,
+     "lift": 0.88
+    },
+    {
+     "term": "下法",
+     "term_id": "treatment_method:下法",
+     "count": 5,
+     "lift": 4.59
+    },
+    {
+     "term": "长夏",
+     "term_id": "condition:长夏",
+     "count": 4,
+     "lift": 5.14
+    },
+    {
+     "term": "发热",
+     "term_id": "symptom:发热",
+     "count": 9,
+     "lift": 1.16
+    },
+    {
+     "term": "发汗",
+     "term_id": "treatment_method:发汗",
+     "count": 6,
+     "lift": 2.14
+    },
+    {
+     "term": "火毒",
+     "term_id": "pathogenesis:火毒",
+     "count": 4,
+     "lift": 4.28
+    },
+    {
+     "term": "头痛",
+     "term_id": "symptom:头痛",
+     "count": 7,
+     "lift": 1.55
+    },
+    {
+     "term": "目眩",
+     "term_id": "symptom:目眩",
+     "count": 3,
+     "lift": 6.43
+    },
+    {
+     "term": "异气",
+     "term_id": "etiology:异气",
+     "count": 3,
+     "lift": 4.82
+    },
+    {
+     "term": "阴阳",
+     "term_id": "concept:阴阳",
+     "count": 4,
+     "lift": 2.34
+    }
+   ]
+  },
+  {
+   "period": "明",
+   "sampled": 57,
+   "top": [
+    {
+     "term": "热病",
+     "term_id": "disease:热病",
+     "count": 27,
+     "lift": 1.56
+    },
+    {
+     "term": "伤寒",
+     "term_id": "disease:伤寒",
+     "count": 31,
+     "lift": 1.16
+    },
+    {
+     "term": "寒",
+     "term_id": "etiology:寒",
+     "count": 19,
+     "lift": 1.37
+    },
+    {
+     "term": "不恶寒",
+     "term_id": "symptom:不恶寒",
+     "count": 14,
+     "lift": 2.22
+    },
+    {
+     "term": "发热",
+     "term_id": "symptom:发热",
+     "count": 13,
+     "lift": 1.28
+    },
+    {
+     "term": "恶寒",
+     "term_id": "symptom:恶寒",
+     "count": 8,
+     "lift": 2.81
+    },
+    {
+     "term": "辛凉",
+     "term_id": "treatment_principle:辛凉",
+     "count": 4,
+     "lift": 3.93
+    },
+    {
+     "term": "疟",
+     "term_id": "disease:疟",
+     "count": 3,
+     "lift": 3.69
+    },
+    {
+     "term": "壮热",
+     "term_id": "symptom:壮热",
+     "count": 4,
+     "lift": 1.97
+    },
+    {
+     "term": "头痛",
+     "term_id": "symptom:头痛",
+     "count": 6,
+     "lift": 1.02
+    }
+   ]
+  },
+  {
+   "period": "清",
+   "sampled": 188,
+   "top": [
+    {
+     "term": "热病",
+     "term_id": "disease:热病",
+     "count": 41,
+     "lift": 1.16
+    },
+    {
+     "term": "伤寒",
+     "term_id": "disease:伤寒",
+     "count": 47,
+     "lift": 0.86
+    },
+    {
+     "term": "寒",
+     "term_id": "etiology:寒",
+     "count": 29,
+     "lift": 1.03
+    },
+    {
+     "term": "风温",
+     "term_id": "disease:风温",
+     "count": 14,
+     "lift": 1.98
+    },
+    {
+     "term": "渴",
+     "term_id": "symptom:渴",
+     "count": 12,
+     "lift": 2.06
+    },
+    {
+     "term": "发热",
+     "term_id": "symptom:发热",
+     "count": 17,
+     "lift": 0.82
+    },
+    {
+     "term": "咳",
+     "term_id": "symptom:咳",
+     "count": 9,
+     "lift": 1.35
+    },
+    {
+     "term": "发汗",
+     "term_id": "treatment_method:发汗",
+     "count": 9,
+     "lift": 1.2
+    },
+    {
+     "term": "不渴",
+     "term_id": "symptom:不渴",
+     "count": 6,
+     "lift": 2.06
+    },
+    {
+     "term": "温热",
+     "term_id": "disease:温热",
+     "count": 7,
+     "lift": 1.53
+    }
+   ]
+  },
+  {
+   "period": "民国",
+   "sampled": 8,
+   "top": [
+    {
+     "term": "伤寒",
+     "term_id": "disease:伤寒",
+     "count": 13,
+     "lift": 3.65
+    },
+    {
+     "term": "太阳病",
+     "term_id": "disease:太阳病",
+     "count": 2,
+     "lift": 14.7
+    },
+    {
+     "term": "发热",
+     "term_id": "symptom:发热",
+     "count": 3,
+     "lift": 2.21
+    },
+    {
+     "term": "不恶寒",
+     "term_id": "symptom:不恶寒",
+     "count": 2,
+     "lift": 2.37
+    },
+    {
+     "term": "热病",
+     "term_id": "disease:热病",
+     "count": 2,
+     "lift": 0.86
+    }
+   ]
+  }
+ ],
+ "dense_books": [
+  {
+   "book_id": "jc_e018",
+   "title": "外感温热篇",
+   "dynasty": "清",
+   "years": [
+    1644,
+    1911
+   ],
+   "passages": 14,
+   "share": 0.5385,
+   "category": "温病"
+  },
+  {
+   "book_id": "yijing_suhui",
+   "title": "医经溯洄集",
+   "dynasty": "元明",
+   "years": [
+    1368,
+    1368
+   ],
+   "passages": 10,
+   "share": 0.1515,
+   "category": "医论"
+  },
+  {
+   "book_id": "jc_e004a",
+   "title": "温病条辨",
+   "dynasty": "清",
+   "years": [
+    1798,
+    1813
+   ],
+   "passages": 47,
+   "share": 0.1155,
+   "category": "温病"
+  },
+  {
+   "book_id": "jc_b033",
+   "title": "伤寒论翼",
+   "dynasty": "清",
+   "years": [
+    1674,
+    1674
+   ],
+   "passages": 7,
+   "share": 0.1029,
+   "category": "伤寒"
+  },
+  {
+   "book_id": "jc_e007",
+   "title": "重订广温热论",
+   "dynasty": "清",
+   "years": [
+    1644,
+    1911
+   ],
+   "passages": 13,
+   "share": 0.0977,
+   "category": "温病"
+  },
+  {
+   "book_id": "jc_a000a",
+   "title": "黄帝内经素问遗篇",
+   "dynasty": "宋",
+   "years": [
+    1000,
+    1279
+   ],
+   "passages": 3,
+   "share": 0.0968,
+   "category": "医经"
+  },
+  {
+   "book_id": "ws_abfd7a1046",
+   "title": "伤寒杂病论义疏",
+   "dynasty": "民国",
+   "years": [
+    1934,
+    1934
+   ],
+   "passages": 3,
+   "share": 0.0811,
+   "category": "近代"
+  },
+  {
+   "book_id": "jc_n052",
+   "title": "归砚录",
+   "dynasty": "清",
+   "years": [
+    1861,
+    1861
+   ],
+   "passages": 4,
+   "share": 0.0741,
+   "category": "医案"
+  },
+  {
+   "book_id": "jc_n021",
+   "title": "市隐庐医学杂著",
+   "dynasty": "清",
+   "years": [
+    1644,
+    1911
+   ],
+   "passages": 4,
+   "share": 0.0714,
+   "category": "医案"
+  },
+  {
+   "book_id": "jc_e016",
+   "title": "温热论",
+   "dynasty": "清",
+   "years": [
+    1726,
+    1766
+   ],
+   "passages": 3,
+   "share": 0.0667,
+   "category": "温病"
+  },
+  {
+   "book_id": "jc_m005",
+   "title": "诊宗三昧",
+   "dynasty": "清",
+   "years": [
+    1689,
+    1689
+   ],
+   "passages": 4,
+   "share": 0.0656,
+   "category": "诊法"
+  },
+  {
+   "book_id": "jc_n056",
+   "title": "医学读书记",
+   "dynasty": "清",
+   "years": [
+    1729,
+    1729
+   ],
+   "passages": 4,
+   "share": 0.0625,
+   "category": "医案"
+  },
+  {
+   "book_id": "jc_e009",
+   "title": "增订叶评伤暑全书",
+   "dynasty": "清",
+   "years": [
+    1675,
+    1675
+   ],
+   "passages": 7,
+   "share": 0.0551,
+   "category": "温病"
+  },
+  {
+   "book_id": "wenyilun_skqs",
+   "title": "瘟疫论",
+   "dynasty": "明",
+   "years": [
+    1642,
+    1642
+   ],
+   "passages": 15,
+   "share": 0.0543,
+   "category": "温病"
+  },
+  {
+   "book_id": "jc_b024",
+   "title": "伤寒悬解",
+   "dynasty": "清",
+   "years": [
+    1644,
+    1911
+   ],
+   "passages": 6,
+   "share": 0.0526,
+   "category": "伤寒"
+  }
+ ],
+ "senses": [
+  {
+   "sense": "温病#伏气",
+   "label": "病类：伏气温病（冬伤于寒，春必温病）",
+   "gloss": "以季节伏邪解释的春季温热病",
+   "period": [
+    -300,
+    1911
+   ],
+   "cues": [
+    "冬",
+    "春",
+    "寒",
+    "藏于精",
+    "伏邪"
+   ],
+   "candidates": [],
+   "note": "现代概念仅为候选映射，不等同"
+  },
+  {
+   "sense": "温病#太阳",
+   "label": "证名：太阳病中发热而渴、不恶寒者",
+   "gloss": "《伤寒论》框架内的温病",
+   "period": [
+    -300,
+    1911
+   ],
+   "cues": [
+    "太阳病",
+    "发热",
+    "渴",
+    "不恶寒",
+    "风温"
+   ],
+   "candidates": [],
+   "note": "现代概念仅为候选映射，不等同"
+  },
+  {
+   "sense": "温病#温病学派",
+   "label": "病类：温病学派的温热类疾病总称",
+   "gloss": "风温、温热、温疫、湿温等，以卫气营血、三焦辨证",
+   "period": [
+    1640,
+    1911
+   ],
+   "cues": [
+    "风温",
+    "湿温",
+    "温疫",
+    "暑温",
+    "冬温",
+    "温热",
+    "初起",
+    "银翘散"
+   ],
+   "candidates": [],
+   "note": "现代概念仅为候选映射，不等同"
+  }
+ ],
+ "notice": "频率为“含该词段落 / 该期全部段落”，括号内为 95% Wilson 区间；各期存世文献多寡不同，比例而非绝对数才可比较。"
+}

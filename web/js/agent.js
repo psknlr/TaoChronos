@@ -54,6 +54,19 @@ function shorten(text) {
   return text.slice(0, OLD_RESULT_CHARS) + `…［早先的工具结果已截短，原长 ${text.length} 字符；需要细节时请重新调用工具］`;
 }
 
+/** A turn's messages without the model's reasoning: reasoning fields, thinking blocks, a leading <think>…</think>. */
+export function withoutReasoning(wire) {
+  return structuredClone(wire || []).map((msg) => {
+    if (msg.role !== "assistant") return msg;
+    delete msg.reasoning_details;
+    delete msg.reasoning_content;
+    delete msg.reasoning;
+    if (typeof msg.content === "string") msg.content = msg.content.replace(/^\s*<think>[\s\S]*?(<\/think>\s*|$)/, "");
+    if (Array.isArray(msg.content)) msg.content = msg.content.filter((b) => b.type !== "thinking" && b.type !== "redacted_thinking");
+    return msg;
+  });
+}
+
 /** Every tool call must have its result before the conversation goes on. */
 export function answerDangling(msgs, format) {
   const out = [];

@@ -24,12 +24,14 @@ from .documents import Block, Document, chartype, strip_modern_paratext
 TAB_SOURCE = {
     "id": "tcm-ancient-books", "name": "TCM-Ancient-Books（中医药古籍文本，GitHub xiaopangxia）",
     "url": "https://github.com/xiaopangxia/TCM-Ancient-Books",
-    "license": "未声明授权（古籍原文属公有领域；多为笈成整理本的简体转换本，经“中医世家”网站流传）；仅供本地研究使用",
+    "license": "仓库未声明授权；古籍原文属公有领域，录文多为中醫笈成整理本（CC0 1.0）的简体转换本，经“中医世家”网站流传；"
+               "与笈成本重复者不入库，所收者仅供本地研究使用",
     "transcription": "网络流传的简体转换本（中医世家格式），未经校勘", "acquisition": "git clone", "edition_name": "网络简体本",
 }
 TCMOC_SOURCE = {
     "id": "tcmoc", "name": "中医开源医典 tcmoc（GitHub lab99x）", "url": "https://github.com/lab99x/tcmoc",
-    "license": "未声明授权（据 TCM-Ancient-Books 整理，古籍原文属公有领域）；仅供本地研究使用",
+    "license": "仓库未声明授权；古籍原文属公有领域，录文据 TCM-Ancient-Books 整理，多为中醫笈成整理本（CC0 1.0）的简体转换本；"
+               "与笈成本重复者不入库，所收者仅供本地研究使用",
     "transcription": "TCM-Ancient-Books 文本的整理与 Markdown 改写本", "acquisition": "git clone", "edition_name": "网络简体本",
 }
 HF_SOURCE = {

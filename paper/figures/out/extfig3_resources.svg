@@ -1,0 +1,608 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="518.740157pt" height="164.409449pt" viewBox="0 0 518.740157 164.409449" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-09-29T14:14:32.054469</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 164.409449 
+L 518.740157 164.409449 
+L 518.740157 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 147.401575 136.062992 
+L 289.133858 136.062992 
+L 289.133858 22.677165 
+L 147.401575 22.677165 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 147.401575 33.848804 
+L 273.344882 33.848804 
+L 273.344882 27.831067 
+L 147.401575 27.831067 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #999999"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 147.401575 33.848804 
+L 151.143307 33.848804 
+L 151.143307 27.831067 
+L 147.401575 27.831067 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 147.401575 43.554833 
+L 176.995276 43.554833 
+L 176.995276 37.537095 
+L 147.401575 37.537095 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #999999"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 147.401575 43.554833 
+L 149.35748 43.554833 
+L 149.35748 37.537095 
+L 147.401575 37.537095 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 147.401575 53.260862 
+L 174.217323 53.260862 
+L 174.217323 47.243124 
+L 147.401575 47.243124 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #999999"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 147.401575 53.260862 
+L 147.99685 53.260862 
+L 147.99685 47.243124 
+L 147.401575 47.243124 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 147.401575 62.96689 
+L 171.949606 62.96689 
+L 171.949606 56.949153 
+L 147.401575 56.949153 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #999999"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 147.401575 62.96689 
+L 148.08189 62.96689 
+L 148.08189 56.949153 
+L 147.401575 56.949153 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 147.401575 72.672919 
+L 170.617323 72.672919 
+L 170.617323 66.655181 
+L 147.401575 66.655181 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #999999"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 147.401575 72.672919 
+L 148.535433 72.672919 
+L 148.535433 66.655181 
+L 147.401575 66.655181 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 147.401575 82.378948 
+L 166.195276 82.378948 
+L 166.195276 76.36121 
+L 147.401575 76.36121 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #999999"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 147.401575 82.378948 
+L 148.705512 82.378948 
+L 148.705512 76.36121 
+L 147.401575 76.36121 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_15">
+    <path d="M 147.401575 92.084976 
+L 166.138583 92.084976 
+L 166.138583 86.067239 
+L 147.401575 86.067239 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #999999"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 147.401575 92.084976 
+L 149.811024 92.084976 
+L 149.811024 86.067239 
+L 147.401575 86.067239 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 147.401575 101.791005 
+L 157.691339 101.791005 
+L 157.691339 95.773267 
+L 147.401575 95.773267 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #999999"/>
+   </g>
+   <g id="patch_18">
+    <path d="M 147.401575 101.791005 
+L 157.067717 101.791005 
+L 157.067717 95.773267 
+L 147.401575 95.773267 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_19">
+    <path d="M 147.401575 111.497034 
+L 149.329134 111.497034 
+L 149.329134 105.479296 
+L 147.401575 105.479296 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #999999"/>
+   </g>
+   <g id="patch_20">
+    <path d="M 147.401575 121.203062 
+L 149.272441 121.203062 
+L 149.272441 115.185324 
+L 147.401575 115.185324 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #999999"/>
+   </g>
+   <g id="patch_21">
+    <path d="M 147.401575 121.203062 
+L 148.223622 121.203062 
+L 148.223622 115.185324 
+L 147.401575 115.185324 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_22">
+    <path d="M 147.401575 130.909091 
+L 149.159055 130.909091 
+L 149.159055 124.891353 
+L 147.401575 124.891353 
+z
+" clip-path="url(#pdf8f054f21)" style="fill: #999999"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <defs>
+       <path id="m5da6433d99" d="M 0 0 
+L 0 2.5 
+" style="stroke: #000000; stroke-width: 0.6"/>
+      </defs>
+      <g>
+       <use xlink:href="#m5da6433d99" x="147.401575" y="136.062992" style="stroke: #000000; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="147.401575" y="144.731156" transform="rotate(-0 147.401575 144.731156)">0</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2">
+      <g>
+       <use xlink:href="#m5da6433d99" x="175.748031" y="136.062992" style="stroke: #000000; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="175.748031" y="144.731156" transform="rotate(-0 175.748031 144.731156)">1,000</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3">
+      <g>
+       <use xlink:href="#m5da6433d99" x="204.094488" y="136.062992" style="stroke: #000000; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="204.094488" y="144.731156" transform="rotate(-0 204.094488 144.731156)">2,000</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#m5da6433d99" x="232.440945" y="136.062992" style="stroke: #000000; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_4">
+      <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="232.440945" y="144.731156" transform="rotate(-0 232.440945 144.731156)">3,000</text>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_5">
+      <g>
+       <use xlink:href="#m5da6433d99" x="260.787402" y="136.062992" style="stroke: #000000; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_5">
+      <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="260.787402" y="144.731156" transform="rotate(-0 260.787402 144.731156)">4,000</text>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#m5da6433d99" x="289.133858" y="136.062992" style="stroke: #000000; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="289.133858" y="144.731156" transform="rotate(-0 289.133858 144.731156)">5,000</text>
+     </g>
+    </g>
+    <g id="text_7">
+     <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="218.267717" y="152.726029" transform="rotate(-0 218.267717 152.726029)">Catalogue records (linked / all)</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_7"/>
+     <g id="text_8">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="145.601575" y="32.660004" transform="rotate(-0 145.601575 32.660004)">Kyoto University Library, Fujikawa collection</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_8"/>
+     <g id="text_9">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="145.601575" y="42.366032" transform="rotate(-0 145.601575 42.366032)">Staatsbibliothek zu Berlin, Unschuld collection</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_9"/>
+     <g id="text_10">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="145.601575" y="52.072061" transform="rotate(-0 145.601575 52.072061)">Kyushu University Medical Library</text>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_10"/>
+     <g id="text_11">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="145.601575" y="61.77809" transform="rotate(-0 145.601575 61.77809)">Keio University, Fujikawa collection</text>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_11"/>
+     <g id="text_12">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="145.601575" y="71.484118" transform="rotate(-0 145.601575 71.484118)">University of Tokyo General Library</text>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_12"/>
+     <g id="text_13">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="145.601575" y="81.190147" transform="rotate(-0 145.601575 81.190147)">Kenikai Library</text>
+     </g>
+    </g>
+    <g id="ytick_7">
+     <g id="line2d_13"/>
+     <g id="text_14">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="145.601575" y="90.896176" transform="rotate(-0 145.601575 90.896176)">Waseda University Library</text>
+     </g>
+    </g>
+    <g id="ytick_8">
+     <g id="line2d_14"/>
+     <g id="text_15">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="145.601575" y="100.602204" transform="rotate(-0 145.601575 100.602204)">National Diet Library</text>
+     </g>
+    </g>
+    <g id="ytick_9">
+     <g id="line2d_15"/>
+     <g id="text_16">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="145.601575" y="110.308233" transform="rotate(-0 145.601575 110.308233)">Tohoku University Medical Library</text>
+     </g>
+    </g>
+    <g id="ytick_10">
+     <g id="line2d_16"/>
+     <g id="text_17">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="145.601575" y="120.014262" transform="rotate(-0 145.601575 120.014262)">Library of Congress, Chinese rare books</text>
+     </g>
+    </g>
+    <g id="ytick_11">
+     <g id="line2d_17"/>
+     <g id="text_18">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="145.601575" y="129.72029" transform="rotate(-0 145.601575 129.72029)">University of Tokyo Medical Library</text>
+     </g>
+    </g>
+   </g>
+   <g id="patch_23">
+    <path d="M 147.401575 136.062992 
+L 289.133858 136.062992 
+" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="275.045669" y="32.133881" transform="rotate(-0 275.045669 32.133881)">132 / 4,443</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="178.696063" y="41.839909" transform="rotate(-0 178.696063 41.839909)">69 / 1,044</text>
+   </g>
+   <g id="text_21">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="175.91811" y="51.545938" transform="rotate(-0 175.91811 51.545938)">21 / 946</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="173.650394" y="61.251967" transform="rotate(-0 173.650394 61.251967)">24 / 866</text>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="172.31811" y="70.957995" transform="rotate(-0 172.31811 70.957995)">40 / 819</text>
+   </g>
+   <g id="text_24">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="167.896063" y="80.664024" transform="rotate(-0 167.896063 80.664024)">46 / 663</text>
+   </g>
+   <g id="text_25">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="167.83937" y="90.370053" transform="rotate(-0 167.83937 90.370053)">85 / 661</text>
+   </g>
+   <g id="text_26">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="159.392126" y="100.076081" transform="rotate(-0 159.392126 100.076081)">341 / 363</text>
+   </g>
+   <g id="text_27">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="151.029921" y="109.78211" transform="rotate(-0 151.029921 109.78211)">0 / 68</text>
+   </g>
+   <g id="text_28">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="150.973228" y="119.488139" transform="rotate(-0 150.973228 119.488139)">29 / 66</text>
+   </g>
+   <g id="text_29">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="150.859843" y="129.194167" transform="rotate(-0 150.859843 129.194167)">0 / 62</text>
+   </g>
+   <g id="legend_1">
+    <g id="patch_24">
+     <path d="M 39.050394 19.319587 
+L 44.550394 19.319587 
+L 44.550394 15.469587 
+L 39.050394 15.469587 
+z
+" style="fill: #999999"/>
+    </g>
+    <g id="text_30">
+     <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="46.750394" y="19.319587" transform="rotate(-0 46.750394 19.319587)">All records (10,001)</text>
+    </g>
+    <g id="patch_25">
+     <path d="M 100.240472 19.319587 
+L 105.740472 19.319587 
+L 105.740472 15.469587 
+L 100.240472 15.469587 
+z
+" style="fill: #0072b2"/>
+    </g>
+    <g id="text_31">
+     <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="107.940472" y="19.319587" transform="rotate(-0 107.940472 19.319587)">Linked to a work in the corpus (787)</text>
+    </g>
+   </g>
+  </g>
+  <g id="axes_2">
+   <g id="patch_26">
+    <path d="M 411.023622 96.377953 
+L 507.401575 96.377953 
+L 507.401575 22.677165 
+L 411.023622 22.677165 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="patch_27">
+    <path d="M 411.023622 33.418739 
+L 481.608377 33.418739 
+L 481.608377 26.027201 
+L 411.023622 26.027201 
+z
+" clip-path="url(#p75cb903045)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_28">
+    <path d="M 411.023622 45.340575 
+L 462.287055 45.340575 
+L 462.287055 37.949037 
+L 411.023622 37.949037 
+z
+" clip-path="url(#p75cb903045)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_29">
+    <path d="M 411.023622 57.26241 
+L 423.101225 57.26241 
+L 423.101225 49.870872 
+L 411.023622 49.870872 
+z
+" clip-path="url(#p75cb903045)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_30">
+    <path d="M 411.023622 69.184246 
+L 412.47313 69.184246 
+L 412.47313 61.792708 
+L 411.023622 61.792708 
+z
+" clip-path="url(#p75cb903045)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_31">
+    <path d="M 411.023622 81.106081 
+L 411.737076 81.106081 
+L 411.737076 73.714543 
+L 411.023622 73.714543 
+z
+" clip-path="url(#p75cb903045)" style="fill: #999999"/>
+   </g>
+   <g id="patch_32">
+    <path d="M 411.023622 93.027917 
+L 411.665306 93.027917 
+L 411.665306 85.636379 
+L 411.023622 85.636379 
+z
+" clip-path="url(#p75cb903045)" style="fill: #0072b2"/>
+   </g>
+   <g id="matplotlib.axis_3">
+    <g id="xtick_7">
+     <g id="line2d_18">
+      <g>
+       <use xlink:href="#m5da6433d99" x="411.023622" y="96.377953" style="stroke: #000000; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_32">
+      <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="411.023622" y="105.046117" transform="rotate(-0 411.023622 105.046117)">0</text>
+     </g>
+    </g>
+    <g id="xtick_8">
+     <g id="line2d_19">
+      <g>
+       <use xlink:href="#m5da6433d99" x="443.149606" y="96.377953" style="stroke: #000000; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_33">
+      <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="443.149606" y="105.046117" transform="rotate(-0 443.149606 105.046117)">2</text>
+     </g>
+    </g>
+    <g id="xtick_9">
+     <g id="line2d_20">
+      <g>
+       <use xlink:href="#m5da6433d99" x="475.275591" y="96.377953" style="stroke: #000000; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_34">
+      <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="475.275591" y="105.046117" transform="rotate(-0 475.275591 105.046117)">4</text>
+     </g>
+    </g>
+    <g id="xtick_10">
+     <g id="line2d_21">
+      <g>
+       <use xlink:href="#m5da6433d99" x="507.401575" y="96.377953" style="stroke: #000000; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_35">
+      <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="507.401575" y="105.046117" transform="rotate(-0 507.401575 105.046117)">6</text>
+     </g>
+    </g>
+    <g id="text_36">
+     <text style="font-size: 6.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="459.212598" y="113.04099" transform="rotate(-0 459.212598 113.04099)">Characters in the web corpus (millions)</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_4">
+    <g id="ytick_12">
+     <g id="line2d_22"/>
+     <g id="text_37">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="409.223622" y="31.543039" transform="rotate(-0 409.223622 31.543039)">JiCheng editions</text>
+     </g>
+    </g>
+    <g id="ytick_13">
+     <g id="line2d_23"/>
+     <g id="text_38">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="409.223622" y="43.464874" transform="rotate(-0 409.223622 43.464874)">Siku quanshu (Kanripo)</text>
+     </g>
+    </g>
+    <g id="ytick_14">
+     <g id="line2d_24"/>
+     <g id="text_39">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="409.223622" y="55.38671" transform="rotate(-0 409.223622 55.38671)">CMETA collated editions</text>
+     </g>
+    </g>
+    <g id="ytick_15">
+     <g id="line2d_25"/>
+     <g id="text_40">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="409.223622" y="67.308545" transform="rotate(-0 409.223622 67.308545)">Wikisource</text>
+     </g>
+    </g>
+    <g id="ytick_16">
+     <g id="line2d_26"/>
+     <g id="text_41">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="409.223622" y="79.230381" transform="rotate(-0 409.223622 79.230381)">TCM-Ancient-Books</text>
+     </g>
+    </g>
+    <g id="ytick_17">
+     <g id="line2d_27"/>
+     <g id="text_42">
+      <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="409.223622" y="91.152216" transform="rotate(-0 409.223622 91.152216)">McGill rare books</text>
+     </g>
+    </g>
+   </g>
+   <g id="patch_33">
+    <path d="M 411.023622 96.377953 
+L 507.401575 96.377953 
+" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_43">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="482.893416" y="31.016915" transform="rotate(-0 482.893416 31.016915)">4.39 M · 250</text>
+   </g>
+   <g id="text_44">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="463.572094" y="42.938751" transform="rotate(-0 463.572094 42.938751)">3.19 M · 93</text>
+   </g>
+   <g id="text_45">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="424.386265" y="54.860587" transform="rotate(-0 424.386265 54.860587)">0.75 M · 10</text>
+   </g>
+   <g id="text_46">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="413.75817" y="66.782422" transform="rotate(-0 413.75817 66.782422)">0.09 M · 8</text>
+   </g>
+   <g id="text_47">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="413.022115" y="78.704258" transform="rotate(-0 413.022115 78.704258)">0.04 M · 4</text>
+   </g>
+   <g id="text_48">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="412.950346" y="90.626093" transform="rotate(-0 412.950346 90.626093)">0.04 M · 3</text>
+   </g>
+   <g id="legend_2">
+    <g id="patch_34">
+     <path d="M 321.464567 13.432341 
+L 326.464567 13.432341 
+L 326.464567 9.932341 
+L 321.464567 9.932341 
+z
+" style="fill: #0072b2"/>
+    </g>
+    <g id="text_49">
+     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="328.464567" y="13.432341" transform="rotate(-0 328.464567 13.432341)">Open licence (CC0, CC BY, CC BY-SA, public domain)</text>
+    </g>
+    <g id="patch_35">
+     <path d="M 321.464567 19.624822 
+L 326.464567 19.624822 
+L 326.464567 16.124822 
+L 321.464567 16.124822 
+z
+" style="fill: #999999"/>
+    </g>
+    <g id="text_50">
+     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="328.464567" y="19.624822" transform="rotate(-0 328.464567 19.624822)">Repository declares no licence</text>
+    </g>
+   </g>
+  </g>
+  <g id="panel-label">
+   <text style="font-weight: 700; font-size: 8px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="14.328156" transform="rotate(-0 5.669291 14.328156)">a</text>
+  </g>
+  <g id="text_51">
+   <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(367.718762 153.256084)">After each bar: characters · witnesses. Total 8.51 M characters,</text>
+   <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(445.984387 158.97459)">368 witnesses of 348 works</text>
+  </g>
+  <g id="panel-label">
+   <text style="font-weight: 700; font-size: 8px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="306.141732" y="14.328156" transform="rotate(-0 306.141732 14.328156)">b</text>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pdf8f054f21">
+   <rect x="147.401575" y="22.677165" width="141.732283" height="113.385827"/>
+  </clipPath>
+  <clipPath id="p75cb903045">
+   <rect x="411.023622" y="22.677165" width="96.377953" height="73.700787"/>
+  </clipPath>
+ </defs>
+</svg>

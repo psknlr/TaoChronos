@@ -61,13 +61,16 @@ opens on the full corpus, and it always says which corpus it is on.  Outside a r
 store: every book is listed, a term's claims are read from the passages that write it (spread over time), a quotation
 is found in every witness whatever its punctuation.  The session-scoped analyses keep reading their working set.
 
-**The agent is 道乃久, its model Tao-R1, its publisher IMPF-AI.**  道乃久 (TaoChronos) is published by 医哲未来人工智能研究院
+**The agent is 道乃久, its model Tao-R1, its publisher IMPF-AI.**  (What it tells about itself is superseded by
+[ADR 0014](0014-identity-fixed-reply.md): asked who it is, the page gives a fixed reply, and the instructions no longer
+name the underlying model.)  道乃久 (TaoChronos) is published by 医哲未来人工智能研究院
 (IMPF-AI); Tao-R1 names TaoChronos over the model the user chose.  The page and the instructions keep everything visible:
 道乃久 and the publisher on the page, Tao-R1 on the model chip, the underlying model beside it and in the instructions, and
 the model told to name them when asked and to claim no other identity.
 
 **In the browser, the openly licensed texts of the key works** (superseded by [ADR 0013](0013-canon-corpus-in-the-browser.md):
-all 350, and how the browser loads them).  The works of the full corpus are ranked by the citation
+all 350, and how the browser loads them; and 笈成, counted here among the sources kept to local research, releases its
+editorial work under CC0 1.0 — ADR 0013, addendum of 2026-09-29).  The works of the full corpus are ranked by the citation
 network of the whole store (``study canon``: distinct later works citing it, periods, citations, witnesses, 四库); the first
 350 are a published list with metadata only.  Of these, the 108 that have a witness under an open licence (汉籍仓库, 维基文库,
 CMETA, McGill) are packed (``web pack``) — whole for the first classics, with up to three witnesses to collate, otherwise

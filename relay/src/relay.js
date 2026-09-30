@@ -175,6 +175,8 @@ async function chat(request, env, cfg, cors, allowed, deps) {
   }
   if (!capped) { body.max_completion_tokens = cfg.maxTokens; changed = true; }
   if ("n" in body) { delete body.n; changed = true; } // one answer per call
+  // the page asks for no thinking (a question about who answers): none is to reach the browser, whatever the model sends
+  const noReasoning = body.thinking?.type === "disabled";
 
   const gate = await deps.limit(await caller(request, deps.now()), "chat", cfg.chat);
   if (!gate.ok) return limited(gate, cfg.chat, cors);
@@ -212,9 +214,72 @@ async function chat(request, env, cfg, cors, allowed, deps) {
         : kind === "upstream_quota" ? "默认服务的模型额度已用完" : "默认服务的模型调用过于频繁";
       return error(status, `${msg}，请稍后再试，或在“设置 → 模型”里填入自己的 API Key`, kind, cors);
     }
-    return new Response(text, { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
+    const out = noReasoning && j ? JSON.stringify(withoutReasoning(j)) : text;
+    return new Response(out, { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
   }
-  return new Response(upstream.body, { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
+  const stream = noReasoning && upstream.body && type.includes("event-stream") ? upstream.body.pipeThrough(reasoningFilter()) : upstream.body;
+  return new Response(stream, { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
+}
+
+/** A completion, or one chunk of a stream, without the model's reasoning: its reasoning fields, and whatever of its
+ * content lies inside <think>…</think>.  `open` carries, per choice, whether the stream is inside such a block — its
+ * chunks may bring the content piece by piece, or (as MiniMax's examples read them) all of it so far each time. */
+export function withoutReasoning(j, open = new Map()) {
+  for (const [k, choice] of (Array.isArray(j?.choices) ? j.choices : []).entries()) {
+    for (const part of [choice.delta, choice.message]) {
+      if (!part || typeof part !== "object") continue;
+      delete part.reasoning_details;
+      delete part.reasoning_content;
+      delete part.reasoning;
+      if (typeof part.content !== "string") continue;
+      const index = choice.index ?? k;
+      let text = part.content;
+      let out = "";
+      if (open.get(index) && !text.startsWith("<think>")) { // inside a block: drop up to its end
+        const close = text.indexOf("</think>");
+        if (close < 0) text = "";
+        else { text = text.slice(close + 8).replace(/^\s+/, ""); open.set(index, false); }
+      }
+      for (;;) {
+        const at = text.indexOf("<think>");
+        if (at < 0) { out += text; break; }
+        out += text.slice(0, at);
+        const close = text.indexOf("</think>", at);
+        if (close < 0) { open.set(index, true); break; }
+        open.set(index, false);
+        text = text.slice(close + 8).replace(/^\s+/, "");
+      }
+      part.content = out;
+    }
+  }
+  return j;
+}
+
+/** The stream's events, each without the model's reasoning (an event is read whole: its lines up to a blank line). */
+export function reasoningFilter() {
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let buffer = "";
+  const open = new Map();
+  const clean = (event) => event.split("\n").map((line) => {
+    const m = /^data:\s?(.*)$/.exec(line);
+    if (!m || m[1].trim() === "[DONE]") return line;
+    try { return `data: ${JSON.stringify(withoutReasoning(JSON.parse(m[1]), open))}`; } catch { return line; }
+  }).join("\n");
+  return new TransformStream({
+    transform(chunk, controller) {
+      buffer += decoder.decode(chunk, { stream: true }).replace(/\r\n/g, "\n");
+      let end;
+      while ((end = buffer.indexOf("\n\n")) >= 0) {
+        controller.enqueue(encoder.encode(`${clean(buffer.slice(0, end))}\n\n`));
+        buffer = buffer.slice(end + 2);
+      }
+    },
+    flush(controller) {
+      buffer += decoder.decode();
+      if (buffer) controller.enqueue(encoder.encode(clean(buffer)));
+    },
+  });
 }
 
 function upstreamMessage(text) {
