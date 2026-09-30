@@ -52,6 +52,9 @@ service already runs (ADR 0012) — with the full corpus there.
   browser's pack, so a conversation reads the same either way.
 - A cold container takes some tens of seconds (the image is 1.8 GB); the kept info and the wake-up on page load hide most
   of it.  Research jobs live in the one container and are lost when it sleeps mid-run (it sleeps only when unused).
+- On the Workers Free plan the site is served all the same (HTTPS, Cloudflare's network, the 要籍语料 in the browser):
+  the Worker runs first only for the pages and the API, so the site's files — free and unmetered — do not count
+  against the plan's 100,000 Worker requests a day.
 - Cost: Workers Paid (5 USD a month) and the container's running time (about 0.036 USD an hour for `standard-1`); the
   store within Workers KV's free tier.  The account's API token must also be allowed to edit Containers.
 - Updating the corpus: `taochronos web store`, `taochronos web upload`, commit `cloud/store.json` — the next deployment

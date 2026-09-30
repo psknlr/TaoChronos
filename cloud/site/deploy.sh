@@ -15,6 +15,8 @@ work=$(mktemp -d)
 
 # ---------------------------------------------------------------- the bindings the account has
 cp wrangler.toml wrangler.deploy.toml
+# the headers of the files Cloudflare serves without this Worker (wrangler.toml: run_worker_first)
+cp _headers ../../_site/_headers
 if [ -n "${STORE_TOKEN_SHA256:-}" ]; then
   if ! [[ "$STORE_TOKEN_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
     echo "::error::the repository variable STORE_TOKEN_SHA256 must be a sha256 in lowercase hex (64 characters)"; exit 1

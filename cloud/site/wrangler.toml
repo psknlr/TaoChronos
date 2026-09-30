@@ -15,11 +15,15 @@ preview_urls = false
 pattern = "chat.impf.ai"
 custom_domain = true
 
-# the site built by `taochronos web build` (the workflow builds it into _site at the repository's root)
+# the site built by `taochronos web build` (the workflow builds it into _site at the repository's root).  The Worker runs
+# first only for the pages (http → https, the security headers) and the API; every other file (the scripts, the
+# in-browser runtime and corpus) Cloudflare serves directly — free and unmetered on every plan, where requests to the
+# Worker count against the Free plan's 100,000 a day — with the headers in `_headers` (deploy.sh copies it into _site)
 [assets]
 directory = "../../_site"
 binding = "ASSETS"
-run_worker_first = true
+# (a page's .html address is redirected to the address without it: both are listed)
+run_worker_first = ["/", "/index.html", "/attribution", "/attribution.html", "/api/*"]
 
 [vars]
 ALLOWED_ORIGINS = "https://chat.impf.ai"
