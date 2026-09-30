@@ -39,7 +39,10 @@ service already runs (ADR 0012) — with the full corpus there.
 6. **Degrade, never block.**  The workflow (`site.yml`) deploys the site whatever the account lacks: without the
    uploaded store, or without Containers (the Workers Paid plan), the site is deployed without the full corpus, with a
    warning saying what is missing.  Nor does the site wait for the container: it is deployed right after the tests, the
-   container beside it (a build takes minutes), and the site again, bound to it, once a new one is up.
+   container beside it (a build takes minutes), and the site again, bound to it, once a new one is up.  A container
+   counts as deployed only once its deployment has succeeded (recorded in the KV namespace): the site is bound to it only
+   then, the workflow checks that the account may deploy containers before building one, and a corpus Worker without
+   its container answers as if there were none, so that the page falls back at once.
 
 ## Consequences
 

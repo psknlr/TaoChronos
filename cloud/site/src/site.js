@@ -112,7 +112,14 @@ async function api(request, env, cfg, deps, url) {
     headers["Content-Type"] = "application/json";
   }
   // only the path, the query and the body go on: not the visitor's cookies, address or other headers
-  const upstream = await env.CORPUS.fetch(new Request(`https://corpus.internal${url.pathname}${url.search}`, { method: request.method, headers, body }));
+  let upstream;
+  try {
+    upstream = await env.CORPUS.fetch(new Request(`https://corpus.internal${url.pathname}${url.search}`, { method: request.method, headers, body }));
+  } catch (err) {
+    // the corpus Worker failed: the page falls back on a 503 (and runs the 要籍语料 in the browser)
+    console.error("corpus", err?.message || err);
+    return json({ error: "全量语料服务暂不可用，请稍后再试", starting: true }, 503, { ...cors, "Retry-After": "10" });
+  }
   const res = new Response(upstream.body, { status: upstream.status, headers: { ...cors, "Cache-Control": "no-store" } });
   res.headers.set("Content-Type", upstream.headers.get("Content-Type") || "application/json; charset=utf-8");
   for (const h of ["X-TC-Corpus", "Retry-After"]) if (upstream.headers.has(h)) res.headers.set(h, upstream.headers.get(h));
