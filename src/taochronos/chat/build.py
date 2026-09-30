@@ -28,11 +28,12 @@ import shutil
 import tempfile
 import urllib.request
 import zipfile
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
 from .. import __version__
-from .providers import web_providers
+from .providers import ORDER, web_providers
 
 PYODIDE_VERSION = "0.28.2"
 PYODIDE_CDN = f"https://cdn.jsdelivr.net/pyodide/v{PYODIDE_VERSION}/full/"
@@ -185,15 +186,19 @@ def fetch_pyodide(dest: Path, *, base: str = PYODIDE_CDN, packages: list[str] = 
     return got
 
 
-def build_site(out: Path, *, home: Path, web: Path | None = None, pyodide: str = "self", relay: str | None = None) -> dict[str, Any]:
-    """Assemble the site in ``out``: the client, the runtime, providers.json, (``pyodide="self"``) Pyodide, the texts'
-    attribution (the repository may be private: the licence's credits travel with the site) and, with ``relay``,
-    site.json naming the 道乃久默认服务 relay (relay/) the page may use without a key."""
+def build_site(out: Path, *, home: Path, web: Path | None = None, pyodide: str = "self", relay: str | None = None,
+               unlist: Iterable[str] = ()) -> dict[str, Any]:
+    """Assemble the site in ``out``: the client, the runtime, providers.json (without the presets named in ``unlist``),
+    (``pyodide="self"``) Pyodide, the texts' attribution (the repository may be private: the licence's credits travel
+    with the site) and, with ``relay``, site.json naming the 道乃久默认服务 relay (relay/) the page may use without a key."""
     relay = (relay or "").strip().rstrip("/")
     if relay.lower() in ("", "none", "off"):
         relay = ""
     elif not re.match(r"^https?://[^/\s]+(/\S*)?$", relay):
         raise ValueError(f"the relay must be an http(s) address: {relay!r}")
+    unlist = sorted({u.strip() for u in unlist if u.strip()})
+    if unknown := [u for u in unlist if u not in ORDER]:
+        raise ValueError(f"no such provider preset: {', '.join(unknown)} (the presets: {', '.join(ORDER)})")
     web = web or home / "web"
     if not (web / "index.html").is_file():
         raise FileNotFoundError(f"no web client at {web}")
@@ -219,7 +224,7 @@ def build_site(out: Path, *, home: Path, web: Path | None = None, pyodide: str =
     if pyodide == "self":
         info["pyodide_files"] = fetch_pyodide(out / "pyodide")
     (runtime / "manifest.json").write_text(json.dumps(info, ensure_ascii=False, indent=1), encoding="utf-8")
-    (out / "providers.json").write_text(json.dumps(web_providers(), ensure_ascii=False, indent=1), encoding="utf-8")
+    (out / "providers.json").write_text(json.dumps(web_providers(unlist), ensure_ascii=False, indent=1), encoding="utf-8")
     credits = home / "corpus" / "web" / "ATTRIBUTION.md"
     if credits.is_file():
         shutil.copyfile(credits, out / "ATTRIBUTION.md")

@@ -1,10 +1,11 @@
 // The agent loop: the model answers or asks for tools; the runtime runs them; their results go back; until the model
 // answers.  The model is the user's own (their key, their provider); the tools are TaoChronos's.
 //
-// History discipline.  Each assistant turn keeps the exact messages its provider produced (`wire`) — MiniMax requires
-// its reasoning_details back, Claude its thinking blocks — and is replayed verbatim to the same provider.  A turn made by
-// another provider is replayed as plain text; reasoning fields a provider does not understand are dropped; a tool call
-// that never got its result (a stopped turn) is answered with a note; and tool results of earlier turns are shortened.
+// History discipline.  Each assistant turn keeps the exact messages its provider produced (`wire`) — some providers
+// require their reasoning_details back, Claude its thinking blocks — and is replayed verbatim to the same provider.  A
+// turn made by another provider is replayed as plain text; reasoning fields a provider does not understand are dropped;
+// a tool call that never got its result (a stopped turn) is answered with a note; and tool results of earlier turns are
+// shortened.
 
 import * as openai from "./llm/openai.js";
 import * as claude from "./llm/anthropic.js";

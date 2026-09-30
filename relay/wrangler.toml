@@ -15,6 +15,8 @@ custom_domain = true
 # MiniMax's mainland platform; a key from the international platform (platform.minimax.io) needs https://api.minimax.io/v1
 UPSTREAM_BASE = "https://api.minimax.cn/v1"
 MODELS = "MiniMax-M3"
+# the model's name on the page (and in everything a visitor can see): the upstream is never named there
+PUBLIC_MODEL = "Tao-R1"
 MAX_OUTPUT_TOKENS = "8192"
 # model calls (a question takes several: one per round of tool use)
 PER_MINUTE = "30"

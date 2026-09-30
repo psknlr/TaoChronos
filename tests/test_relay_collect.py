@@ -59,7 +59,7 @@ class _Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         url = urlsplit(self.path)
         if url.path == "/v1/health":
-            return self._json(200, {"ok": True, "model": "MiniMax-M3", "logs": True, "limits": {"per_day": 600}})
+            return self._json(200, {"ok": True, "model": "Tao-R1", "logs": True, "limits": {"per_day": 600}})
         if url.path == "/v1/logs/export":
             if not self._authorized():
                 return self._json(401, {"error": {"message": "需要收集令牌"}})

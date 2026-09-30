@@ -1396,7 +1396,8 @@ def cmd_web(args: argparse.Namespace) -> None:
         _out(upload(data / "cloud" / f"{manifest['sha256']}.sqlite.xz", manifest, args.site, token, log=print))
         return
     info = build_site(Path(args.output or "_site"), home=home, web=Path(args.web) if args.web else None, pyodide=args.pyodide,
-                      relay=args.relay if args.relay is not None else os.environ.get("TAOCHRONOS_RELAY_URL"))
+                      relay=args.relay if args.relay is not None else os.environ.get("TAOCHRONOS_RELAY_URL"),
+                      unlist=[u for group in args.unlist or [] for u in group.split(",")])
     _out(info)
 
 
@@ -1716,6 +1717,8 @@ def build_parser() -> argparse.ArgumentParser:
                     help="self: put the pinned Pyodide files in the site (default); cdn: load them from jsDelivr")
     sp.add_argument("--relay", help="build: the 道乃久默认服务 relay the page may use without a key (relay/; default "
                                     "$TAOCHRONOS_RELAY_URL); none: the visitor's own key, as before")
+    sp.add_argument("--unlist", action="append", metavar="IDS",
+                    help="build: provider presets the page does not offer (comma-separated ids; repeatable)")
     add("governance", cmd_governance, "check the architecture policy", profile=False)
     sp = add("eval", cmd_eval, "run TaoChronos-Eval suites", profile=False)
     sp.add_argument("suites", nargs="*")

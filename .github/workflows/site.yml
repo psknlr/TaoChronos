@@ -48,6 +48,8 @@ env:
   STORE_NAMESPACE: taochronos-store
   SITE_URL: ${{ vars.SITE_URL || 'https://chat.impf.ai' }}
   RELAY_URL: ${{ vars.RELAY_URL || 'https://chat-api.impf.ai' }}
+  # the presets of the model behind 道乃久默认服务 (relay/): the page names no vendor
+  UNLIST: minimax,minimax-global
 
 jobs:
   test:
@@ -75,7 +77,7 @@ jobs:
       - name: Install
         run: pip install -e .
       - name: Build the site (client, in-browser runtime and 要籍语料, pinned Pyodide, the relay's address, the corpora's credits)
-        run: taochronos web build -o _site --relay "$RELAY_URL"
+        run: taochronos web build -o _site --relay "$RELAY_URL" --unlist "$UNLIST"
       - name: Are the secrets set?
         id: secrets
         env:
@@ -216,7 +218,7 @@ jobs:
       - name: Install
         run: pip install -e .
       - name: Build the site
-        run: taochronos web build -o _site --relay "$RELAY_URL"
+        run: taochronos web build -o _site --relay "$RELAY_URL" --unlist "$UNLIST"
       - name: Deploy the site's Worker bound to the full corpus, and check a search on it
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

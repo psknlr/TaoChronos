@@ -160,8 +160,9 @@ def test_the_server_answers_the_api_and_serves_the_client(server):
     resp, raw = request(server, "GET", "/js/app.js")
     assert resp.getheader("Content-Type").startswith("text/javascript")
     resp, raw = request(server, "GET", "/providers.json")
-    listed = json.loads(raw)  # the page's list names no vendor behind its default service
-    assert listed[0]["id"] == "deepseek" and "minimax" not in raw.decode().lower()
+    listed = {p["id"]: p for p in json.loads(raw)}  # the local server's page offers every preset (a published one: fewer)
+    assert {"minimax", "deepseek", "anthropic", "ollama"} <= set(listed)
+    assert listed["minimax"]["thinking_off"] == {"thinking": {"type": "disabled"}} and listed["deepseek"]["thinking_off"] is None
     resp, raw = request(server, "GET", "/runtime/manifest.json")
     manifest = json.loads(raw)
     resp, pkg = request(server, "GET", "/runtime/taochronos.zip")
@@ -333,5 +334,12 @@ def test_the_site_names_its_relay_only_when_told(tmp_path):
     assert not (tmp_path / "b" / "site.json").exists()
     with pytest.raises(ValueError):
         build_site(tmp_path / "c", home=ROOT, pyodide="cdn", relay="chat-api.impf.ai")
+    # the page names no vendor behind its default service: the build leaves out the presets it is told to
+    build_site(tmp_path / "d", home=ROOT, pyodide="cdn", relay="https://chat-api.impf.ai", unlist=["minimax", " minimax-global"])
+    offered = (tmp_path / "d" / "providers.json").read_text(encoding="utf-8")
+    assert json.loads(offered)[0]["id"] == "deepseek" and "minimax" not in offered.lower()
+    assert "minimax" in (tmp_path / "a" / "providers.json").read_text(encoding="utf-8").lower()
+    with pytest.raises(ValueError, match="no such provider preset: minmax"):
+        build_site(tmp_path / "e", home=ROOT, pyodide="cdn", unlist=["minmax"])
     key = re.compile(rb"sk-[A-Za-z0-9_-]{24,}")  # no key-shaped string anywhere in what the site serves
     assert not [p for p in (tmp_path / "a").rglob("*") if p.is_file() and p.suffix in (".json", ".js", ".html", ".md") and key.search(p.read_bytes())]

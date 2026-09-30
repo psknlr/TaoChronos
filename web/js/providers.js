@@ -2,7 +2,7 @@
 // API keys are kept in this browser's localStorage only, and sent only to the provider (or your local server's proxy).
 // 道乃久默认服务 (the site's relay, site.json) needs no key: the relay holds it, and no key is ever sent to it.
 
-import { PUBLISHER } from "./brand.js";
+import { MODEL, PUBLISHER } from "./brand.js";
 import { storage } from "./util.js";
 
 
@@ -40,14 +40,16 @@ let relay = null; // {url, ok, model, models, logs, limits} once the site's rela
 
 export function setRelay(r) { relay = r; }
 
-/** The default service as a provider: MiniMax behind the site's relay, no key. */
+/** The default service as a provider: the site's relay, no key.  The page knows its model by the name the relay gives
+ * (Tao-R1); whatever the model behind it needs besides, the relay adds. */
 function relayPreset() {
   if (!relay?.url) return null;
   const models = relay.models?.length ? relay.models : relay.model ? [relay.model] : [];
   return {
-    id: RELAY_ID, label: "道乃久默认服务", format: "openai", base_url: `${relay.url}/v1`, key_optional: true, relay: true, family: "minimax",
-    max_tokens_param: "max_completion_tokens", extra_body: { reasoning_split: true }, examples: models, default_model: relay.model || models[0] || "",
-    reasoning: "reasoning_details", vision: true, stream_usage: true, unavailable: !relay.ok, max_output: relay.maxOutput || null,
+    id: RELAY_ID, label: "道乃久默认服务", format: "openai", base_url: `${relay.url}/v1`, key_optional: true, relay: true,
+    max_tokens_param: "max_completion_tokens", extra_body: {}, thinking_off: { thinking: { type: "disabled" } }, examples: models,
+    default_model: relay.model || models[0] || "", reasoning: "reasoning_details", vision: true, stream_usage: true,
+    unavailable: !relay.ok, max_output: relay.maxOutput || null,
     note: relay.ok
       ? `${PUBLISHER}提供，无需 API Key，直接提问${relay.limits?.per_day ? `；测试期间每人每天约 ${relay.limits.per_day} 次模型调用（一个问题通常用几次）` : ""}。`
       : "默认服务暂时连不上：请稍后再试，或选择其他服务并填入自己的 API Key。",
@@ -90,8 +92,6 @@ export const providerById = (id, settings) => allProviders(settings).find((p) =>
 
 export function loadSettings() {
   const saved = storage.get("tc.settings", {}) || {};
-  // MiniMax is no longer listed on the page: it is the default service, which a visitor reaches without a key
-  if (/^minimax/.test(saved.provider || "")) saved.provider = RELAY_ID;
   return { ...DEFAULTS, ...saved, models: { ...(saved.models || {}) }, baseUrls: { ...(saved.baseUrls || {}) }, keys: { ...(saved.keys || {}) },
     customProviders: Array.isArray(saved.customProviders) ? saved.customProviders.map((c) => ({ ...c })) : [] };
 }
@@ -113,4 +113,47 @@ export function activeProvider(settings) {
     baseUrl: ((p.custom || p.relay ? p.base_url : settings.baseUrls[p.id] || p.base_url) || "").trim().replace(/\/+$/, ""),
     apiKey: p.relay ? "" : settings.keys[p.id] || "", // the relay holds its own key: none is sent to it
   };
+}
+
+// ------------------------------------------------------------------ what the page keeps of the default service
+const PUBLIC_FORMAT = "Tao-";
+// the default service words its errors itself, for the visitor; a turn made by an older page may keep other words
+const OWN_WORDS = /默认服务|道乃久|对话太长|请求不是有效的 JSON|请求缺少 messages|没有这个接口|太频繁|免费额度/;
+const SERVICE_FAILED = "默认服务出错了，请稍后再试，或在“设置 → 模型”里填入自己的 API Key";
+const MODEL_REFUSED = "默认服务不提供这个模型：请在“设置 → 模型”里选用道乃久默认服务，或改用自己的 API Key";
+
+/** An error of a default-service turn as the page shows it: the service's own words, without the model client's
+ * preamble; anything else (what an older relay passed on) as a plain failure. */
+export function publicError(text) {
+  const m = /^(?:模型服务返回 \d+(?:（[^）]*）)?|模型服务报错|无法解析模型服务的回复)：([\s\S]*)$/.exec(String(text ?? ""));
+  if (!m) return text;
+  const said = m[1].replace(/API Key（[\s\S]*$/, "API Key").trim();
+  if (said.startsWith("默认服务只提供")) return MODEL_REFUSED;
+  return OWN_WORDS.test(said) ? said : SERVICE_FAILED;
+}
+
+/**
+ * A stored conversation as the default service presents itself now (turns kept by an older page named more): its turns
+ * carry the service's model name, the reasoning they send back the service's format names, and their errors its own
+ * words.  Returns whether anything changed, for the caller to store it again.
+ */
+export function publicConversation(conv) {
+  let changed = false;
+  for (const m of Array.isArray(conv?.messages) ? conv.messages : []) {
+    if (m?.role !== "assistant" || (m.provider !== RELAY_ID && m.wireProvider !== RELAY_ID)) continue;
+    if (m.model !== MODEL) { m.model = MODEL; changed = true; }
+    for (const w of Array.isArray(m.wire) ? m.wire : []) {
+      for (const d of Array.isArray(w?.reasoning_details) ? w.reasoning_details : []) {
+        if (typeof d?.format === "string" && !d.format.startsWith(PUBLIC_FORMAT) && /^[^-]+-./.test(d.format)) {
+          d.format = PUBLIC_FORMAT + d.format.replace(/^[^-]+-/, "");
+          changed = true;
+        }
+      }
+    }
+    if (typeof m.error === "string") {
+      const e = publicError(m.error);
+      if (e !== m.error) { m.error = e; changed = true; }
+    }
+  }
+  return changed;
 }

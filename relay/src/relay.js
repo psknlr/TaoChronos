@@ -18,6 +18,11 @@ export const VERSION = "1";
 export const DEFAULTS = {
   UPSTREAM_BASE: "https://api.minimax.cn/v1", // MiniMax's mainland platform; https://api.minimax.io/v1 for international keys
   MODELS: "MiniMax-M3",                       // the first is the default
+  // what a visitor sees of the upstream: nothing.  The page knows the default service's model by this name only; the
+  // upstream's parameters are added here; its reasoning formats reach the page as "Tao-…" and go back as they came
+  PUBLIC_MODEL: "Tao-R1",
+  UPSTREAM_FIELDS: '{"reasoning_split":true}',
+  FORMAT_PREFIX: "MiniMax-",
   MAX_OUTPUT_TOKENS: "8192",
   MAX_BODY_BYTES: "2000000",
   PER_MINUTE: "30",                           // model calls per visitor (one question takes several: the tools)
@@ -36,10 +41,18 @@ export function config(env = {}) {
   const num = (k) => Number(get(k));
   const list = (k) => String(get(k)).split(",").map((s) => s.trim()).filter(Boolean);
   const models = list("MODELS");
+  let fields = {};
+  try {
+    const v = JSON.parse(String(get("UPSTREAM_FIELDS")));
+    if (v && typeof v === "object" && !Array.isArray(v)) fields = v;
+  } catch { /* none */ }
   return {
     upstream: String(get("UPSTREAM_BASE")).replace(/\/+$/, ""),
     models,
     model: models[0],
+    publicModel: String(get("PUBLIC_MODEL")),
+    upstreamFields: fields,
+    formatPrefix: String(get("FORMAT_PREFIX")),
     maxTokens: num("MAX_OUTPUT_TOKENS"),
     maxBody: num("MAX_BODY_BYTES"),
     origins: list("ALLOWED_ORIGINS"),
@@ -142,7 +155,7 @@ function limited(gate, limits, cors, what = "请求") {
 // ------------------------------------------------------------------ endpoints
 function health(env, cfg, cors) {
   return json({
-    ok: Boolean(env.MINIMAX_API_KEY), service: "taochronos-relay", version: VERSION, model: cfg.model, models: cfg.models,
+    ok: Boolean(env.MINIMAX_API_KEY), service: "taochronos-relay", version: VERSION, model: cfg.publicModel, models: [cfg.publicModel],
     logs: cfg.logs, max_output_tokens: cfg.maxTokens, limits: { per_minute: cfg.chat.perMinute, per_day: cfg.chat.perDay },
   }, 200, cors);
 }
@@ -161,20 +174,33 @@ async function chat(request, env, cfg, cors, allowed, deps) {
   if (!body || typeof body !== "object" || !Array.isArray(body.messages) || !body.messages.length) {
     return error(400, "请求缺少 messages", "bad_request", cors);
   }
-  // what the relay changes; an unchanged request goes on as it came (no second serialisation: CPU is counted per request)
-  let changed = false;
-  if (body.model === undefined || body.model === null || body.model === "") { body.model = cfg.model; changed = true; }
-  if (!cfg.models.includes(body.model)) return error(400, `默认服务只提供 ${cfg.models.join("、")}`, "model_not_allowed", cors);
+  // the default service's model by its public name, or by none (pages older than it send the upstream's own name)
+  const asked = body.model;
+  if (asked !== undefined && asked !== null && asked !== "" && asked !== cfg.publicModel && !cfg.models.includes(asked)) {
+    return error(400, "默认服务不提供这个模型：请在“设置 → 模型”里选用道乃久默认服务，或改用自己的 API Key", "model_not_allowed", cors);
+  }
+  const model = cfg.models.includes(asked) ? asked : cfg.model;
+  const fields = Object.fromEntries(Object.entries(cfg.upstreamFields).filter(([k]) => !(k in body)));
+  // what else the relay changes: then the request is written anew; otherwise the page's own text is edited (a second
+  // serialisation of a long conversation would cost much of the CPU a request is allowed)
+  let rewrite = false;
   let capped = false;
   for (const k of ["max_tokens", "max_completion_tokens"]) {
     if (k in body) {
       const v = Math.min(Math.max(1, Math.floor(Number(body[k]) || cfg.maxTokens)), cfg.maxTokens);
-      if (v !== body[k]) { body[k] = v; changed = true; }
+      if (v !== body[k]) { body[k] = v; rewrite = true; }
       capped = true;
     }
   }
-  if (!capped) { body.max_completion_tokens = cfg.maxTokens; changed = true; }
-  if ("n" in body) { delete body.n; changed = true; } // one answer per call
+  if (!capped) { body.max_completion_tokens = cfg.maxTokens; rewrite = true; }
+  if ("n" in body) { delete body.n; rewrite = true; } // one answer per call
+  let payload = rewrite ? null : upstreamText(raw, model, fields, cfg);
+  if (payload === null) {
+    Object.assign(body, fields);
+    body.model = model;
+    restoreFormats(body.messages, cfg);
+    payload = JSON.stringify(body);
+  }
   // the page asks for no thinking (a question about who answers): none is to reach the browser, whatever the model sends
   const noReasoning = body.thinking?.type === "disabled";
 
@@ -187,7 +213,7 @@ async function chat(request, env, cfg, cors, allowed, deps) {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: request.headers.get("Accept") || "application/json",
         Authorization: `Bearer ${env.MINIMAX_API_KEY}` },
-      body: changed ? JSON.stringify(body) : raw,
+      body: payload,
     });
   } catch {
     return error(502, "默认服务暂时连不上模型服务，请稍后再试", "upstream_unreachable", cors);
@@ -198,9 +224,16 @@ async function chat(request, env, cfg, cors, allowed, deps) {
     return error(503, "默认服务暂时不可用（模型服务拒绝了它的密钥），请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_auth", cors);
   }
   if (upstream.status === 429) {
-    const detail = await upstream.text().catch(() => "");
-    return error(429, `默认服务的模型额度暂时用完或调用过于频繁，请稍后再试，或在“设置 → 模型”里填入自己的 API Key（${upstreamMessage(detail)}）`,
-      "upstream_rate", cors);
+    await upstream.body?.cancel();
+    return error(429, "默认服务的模型额度暂时用完或调用过于频繁，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_rate", cors);
+  }
+  if (!upstream.ok) {
+    // the upstream's own message would name it, its models and its parameters: the visitor is told what to do instead
+    await upstream.body?.cancel();
+    console.error("upstream", upstream.status);
+    return upstream.status >= 500 || upstream.status === 404
+      ? error(502, "默认服务暂时不可用，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_error", cors)
+      : error(400, "默认服务无法完成这个请求：请检查“设置 → 模型”里的温度、最大输出等选项，或新开一个对话后重试", "upstream_rejected", cors);
   }
   if (upstream.ok && !type.includes("event-stream") && type.includes("json")) {
     // a stream request answered with plain JSON: MiniMax's base_resp may carry a failure
@@ -208,17 +241,145 @@ async function chat(request, env, cfg, cors, allowed, deps) {
     let j = null;
     try { j = JSON.parse(text); } catch { /* passed on as it is */ }
     const code = j?.base_resp?.status_code;
-    if (code && BASE_RESP[code]) {
-      const [status, kind] = BASE_RESP[code];
+    if (code) {
+      const [status, kind] = BASE_RESP[code] || [502, "upstream_error"];
       const msg = kind === "upstream_auth" ? "默认服务暂时不可用（模型服务拒绝了它的密钥）"
-        : kind === "upstream_quota" ? "默认服务的模型额度已用完" : "默认服务的模型调用过于频繁";
+        : kind === "upstream_quota" ? "默认服务的模型额度已用完" : kind === "upstream_rate" ? "默认服务的模型调用过于频繁" : "默认服务出错了";
       return error(status, `${msg}，请稍后再试，或在“设置 → 模型”里填入自己的 API Key`, kind, cors);
     }
     const out = noReasoning && j ? JSON.stringify(withoutReasoning(j)) : text;
-    return new Response(out, { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
+    return new Response(publicText(out, cfg), { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
   }
-  const stream = noReasoning && upstream.body && type.includes("event-stream") ? upstream.body.pipeThrough(reasoningFilter()) : upstream.body;
+  if (!type.includes("event-stream") || !upstream.body) {
+    const text = await upstream.text().catch(() => "");
+    return new Response(publicText(text, cfg), { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
+  }
+  const stream = (noReasoning ? upstream.body.pipeThrough(reasoningFilter()) : upstream.body).pipeThrough(publicFilter(cfg));
   return new Response(stream, { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
+}
+
+// ------------------------------------------------------------------ what a visitor sees of the upstream: nothing
+const PUBLIC_FORMAT = "Tao-";
+const MODEL_FIELD = /"model"\s*:\s*"(?:[^"\\]|\\.)*"/g;
+const LEADING_MODEL = /^\{\s*"model"\s*:\s*"(?:[^"\\]|\\.)*"\s*,/;
+const PUBLIC_FORMAT_FIELD = /"format"\s*:\s*"Tao-/g;
+// fields only the upstream sends (its status block, its content flags, a count in its usage) and an error it reports
+// inside a reply
+const VENDOR_FIELD = /"(?:base_resp|input_sensitive|output_sensitive|input_sensitive_type|output_sensitive_type|output_sensitive_int|total_characters|error)"\s*:/;
+const VENDOR_KEYS = ["base_resp", "input_sensitive", "output_sensitive", "input_sensitive_type", "output_sensitive_type", "output_sensitive_int"];
+const formats = new Map();
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * The page's request in the upstream's terms, edited as text: the model, the upstream's fields after it, the reasoning
+ * formats of the turns before.  A quote inside a JSON string is escaped, so these patterns meet only keys and their
+ * values.  Null when the text does not open with the model, as the page writes it.
+ */
+function upstreamText(raw, model, fields, cfg) {
+  if (!LEADING_MODEL.test(raw)) return null;
+  const extra = JSON.stringify(fields).slice(1, -1);
+  let out = raw.replace(LEADING_MODEL, () => `{"model":${JSON.stringify(model)},${extra ? `${extra},` : ""}`);
+  if (cfg.formatPrefix && out.includes(PUBLIC_FORMAT)) out = out.replace(PUBLIC_FORMAT_FIELD, () => `"format":"${cfg.formatPrefix}`);
+  return out;
+}
+
+/** The reasoning a page sends back (the turns before) under the upstream's own format names again. */
+function restoreFormats(messages, cfg) {
+  if (!cfg.formatPrefix) return false;
+  let changed = false;
+  for (const m of messages) {
+    if (!Array.isArray(m?.reasoning_details)) continue;
+    for (const d of m.reasoning_details) {
+      if (typeof d?.format === "string" && d.format.startsWith(PUBLIC_FORMAT)) {
+        d.format = cfg.formatPrefix + d.format.slice(PUBLIC_FORMAT.length);
+        changed = true;
+      }
+    }
+  }
+  return changed;
+}
+
+/** The upstream's model and reasoning format names in a text, the default service's instead (a text pass). */
+function renamed(text, cfg) {
+  const model = `"model":${JSON.stringify(cfg.publicModel)}`;
+  let out = text.replace(MODEL_FIELD, () => model);
+  if (cfg.formatPrefix && out.includes(cfg.formatPrefix)) {
+    if (!formats.has(cfg.formatPrefix)) formats.set(cfg.formatPrefix, new RegExp(`"format"\\s*:\\s*"${escapeRe(cfg.formatPrefix)}`, "g"));
+    out = out.replace(formats.get(cfg.formatPrefix), () => `"format":"${PUBLIC_FORMAT}`);
+  }
+  return out;
+}
+
+/**
+ * A reply, or one event's data, as a visitor may see it: the default service's model name for the upstream's, its
+ * reasoning formats renamed, the upstream's own fields dropped, and an error it reports inside a reply told in the
+ * default service's words.  Text only in the common case (the Worker's CPU is counted per request).
+ */
+export function publicText(text, cfg) {
+  const out = renamed(text, cfg);
+  if (!VENDOR_FIELD.test(out)) return out;
+  let j;
+  try { j = JSON.parse(out); } catch { return out; }
+  if (!j || typeof j !== "object" || Array.isArray(j)) return out;
+  if (j.error || (j.base_resp && j.base_resp.status_code)) {
+    console.error("upstream error in a reply", j.base_resp?.status_code || "");
+    return JSON.stringify({ error: { message: "默认服务出错了，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", type: "upstream_error" } });
+  }
+  for (const k of VENDOR_KEYS) delete j[k];
+  for (const c of Array.isArray(j.choices) ? j.choices : []) for (const k of VENDOR_KEYS) if (c && typeof c === "object") delete c[k];
+  if (j.usage && typeof j.usage === "object") delete j.usage.total_characters;
+  return JSON.stringify(j);
+}
+
+/** One pattern for what the stream's text may hold of the upstream: a model name, a reasoning format with its prefix,
+ * one of its own fields (so that a single pass finds them all). */
+function streamPattern(cfg) {
+  const key = `stream:${cfg.formatPrefix}`;
+  if (!formats.has(key)) {
+    const vendor = String.raw`"(?:base_resp|input_sensitive|output_sensitive|input_sensitive_type|output_sensitive_type|output_sensitive_int|total_characters|error)"\s*:`;
+    const format = cfg.formatPrefix ? String.raw`|"format"\s*:\s*"${escapeRe(cfg.formatPrefix)}` : "";
+    formats.set(key, new RegExp(String.raw`"model"\s*:\s*"(?:[^"\\]|\\.)*"|${vendor}${format}`, "g"));
+  }
+  return formats.get(key);
+}
+
+/**
+ * The stream's events as a visitor may see them, passed on up to the last whole line of what has arrived, in one pass
+ * over the text: the model's and the reasoning formats' names replaced; a stretch naming one of the upstream's own
+ * fields (its final usage, or an error) is read event by event (publicText).  The Worker's CPU is counted per request
+ * and every byte of an answer passes through here, so nothing is done twice (about 5 ms per MB of stream under Node,
+ * most of it decoding and encoding; a long answer is well under 1 MB).
+ */
+export function publicFilter(cfg) {
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  const pattern = streamPattern(cfg);
+  const model = `"model":${JSON.stringify(cfg.publicModel)}`;
+  const format = `"format":"${PUBLIC_FORMAT}`;
+  let buffer = "";
+  const pass = (text) => {
+    let vendor = false;
+    const out = text.replace(pattern, (m) => (m.charCodeAt(1) === 0x6d ? model : m.charCodeAt(1) === 0x66 ? format : ((vendor = true), m)));
+    if (!vendor) return encoder.encode(out);
+    return encoder.encode(out.split(/\r?\n/).map((line) => {
+      const m = /^data:\s?(.*)$/.exec(line);
+      if (!m || m[1].trim() === "[DONE]") return line;
+      return `data: ${publicText(m[1], cfg)}`;
+    }).join("\n"));
+  };
+  return new TransformStream({
+    transform(chunk, controller) {
+      buffer += decoder.decode(chunk, { stream: true });
+      const end = buffer.lastIndexOf("\n");
+      if (end < 0) return;
+      controller.enqueue(pass(buffer.slice(0, end + 1)));
+      buffer = buffer.slice(end + 1);
+    },
+    flush(controller) {
+      buffer += decoder.decode();
+      if (buffer) controller.enqueue(pass(buffer));
+    },
+  });
 }
 
 /** A completion, or one chunk of a stream, without the model's reasoning: its reasoning fields, and whatever of its
@@ -282,15 +443,6 @@ export function reasoningFilter() {
   });
 }
 
-function upstreamMessage(text) {
-  try {
-    const j = JSON.parse(text);
-    return String(j.error?.message || j.base_resp?.status_msg || j.message || "限流").slice(0, 200);
-  } catch {
-    return "限流";
-  }
-}
-
 // ------------------------------------------------------------------ records
 const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : undefined);
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
@@ -332,6 +484,8 @@ async function submit(request, cfg, cors, allowed, deps) {
   try { r = JSON.parse(raw); } catch { return error(400, "记录不是有效的 JSON", "bad_record", cors); }
   const record = normalizeRecord(r);
   if (!record) return error(400, "记录格式不对", "bad_record", cors);
+  // the page names the default service's model by its public name; the records (the owner's) keep the one that answered
+  if (record.model === cfg.publicModel) record.model = cfg.model;
   const gate = await deps.limit(await caller(request, deps.now()), "log", cfg.log);
   if (!gate.ok) return limited(gate, cfg.log, cors, "记录");
   await deps.logbook.add(JSON.stringify(record), new Date(deps.now()).toISOString(), cfg.keep);
