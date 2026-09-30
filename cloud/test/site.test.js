@@ -161,6 +161,10 @@ test("the store is uploaded part by part, only with the token, with the digest i
 
   const none = site();
   assert.equal((await none.call(url, put({ Authorization: `Bearer ${TOKEN}`, "X-Content-SHA256": sha }))).status, 404);
+  const off = site({ store: true, env: { STORE_TOKEN_SHA256: "" } });  // as deployed: no token registered, uploads off
+  assert.equal((await off.call(url, put({ Authorization: `Bearer ${TOKEN}`, "X-Content-SHA256": sha }))).status, 404);
+  assert.equal((await off.call(url, put({ Authorization: "Bearer ", "X-Content-SHA256": sha }))).status, 404);
+  assert.equal(off.objects.size, 0);
 
   const { call, seen, objects } = site({ store: true });
   assert.equal((await call(url, { method: "HEAD", headers: { Authorization: `Bearer ${TOKEN}` } })).status, 404);

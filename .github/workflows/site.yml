@@ -6,8 +6,11 @@ name: site
 # Repository secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (the relay's; for the full corpus the token must also
 # be allowed to edit Containers — cloud/SETUP.md).  What the account lacks is skipped with a warning and the site is
 # deployed all the same: without the uploaded store, or without Containers (the Workers Paid plan), there is no full
-# corpus and the page runs the 要籍语料 in the browser.  The first deployment moves chat.impf.ai from GitHub Pages to the
-# Worker (Cloudflare replaces the DNS record and issues the certificate).
+# corpus and the page runs the 要籍语料 in the browser.  The site is deployed right after the tests, the container beside
+# it (it takes minutes to build); after a new container the site is deployed again, bound to it, and checked.
+# chat.impf.ai: Cloudflare puts a Worker's custom domain on a name only when no DNS record of the account's own is there,
+# so the CNAME that pointed the name at GitHub Pages is deleted first (cloud/SETUP.md, step 3); Cloudflare then makes
+# the record and issues the certificate.
 on:
   push:
     branches: [main]
@@ -52,11 +55,45 @@ jobs:
       - name: Test the site's Worker and the corpus Worker
         run: node --test cloud/test/site.test.js cloud/test/corpus.test.js
 
+  # the site: chat.impf.ai, bound to what the account has
+  site:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install
+        run: pip install -e .
+      - name: Build the site (client, in-browser runtime and 要籍语料, pinned Pyodide, the relay's address, the corpora's credits)
+        run: taochronos web build -o _site --relay "$RELAY_URL"
+      - name: Are the secrets set?
+        id: secrets
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$CF_TOKEN" ] && [ -n "$CF_ACCOUNT" ]; then echo "ready=1" >> "$GITHUB_OUTPUT"
+          else echo "::warning::the site is not deployed until the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are set"; echo "ready=0" >> "$GITHUB_OUTPUT"; fi
+      - name: Deploy the site's Worker (chat.impf.ai) with the bindings the account has, and check the site
+        if: steps.secrets.outputs.ready == '1'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          STORE_TOKEN_SHA256: ${{ vars.STORE_TOKEN_SHA256 }}
+        run: bash cloud/site/deploy.sh
+
   # the full corpus: built and deployed when what it is made of changed (the code, the home, the store)
   corpus:
     needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    outputs:
+      deployed: ${{ steps.deploy.outcome }}
     steps:
       - uses: actions/checkout@v4
       - name: Are the secrets set?
@@ -119,7 +156,7 @@ jobs:
             echo "$sha  cloud/.store/parts/$name" | sha256sum -c --quiet
           done < cloud/.store/parts.txt
           sha=$(python3 -c 'import json; print(json.load(open("cloud/store.json"))["sha256"])')
-          cat $(cut -d' ' -f2 cloud/.store/parts.txt | sed 's|^|cloud/.store/parts/|') > "cloud/.store/$sha.sqlite.xz"
+          while read -r _ name _; do cat "cloud/.store/parts/$name"; done < cloud/.store/parts.txt > "cloud/.store/$sha.sqlite.xz"
           echo "$sha  cloud/.store/$sha.sqlite.xz" | sha256sum -c --quiet
           rm -rf cloud/.store/parts cloud/.store/parts.txt
           ls -l cloud/.store
@@ -143,9 +180,11 @@ jobs:
         run: |
           echo "::warning::the full corpus's container was not deployed. Containers need the Workers Paid plan, and the API token needs Account → Containers → Edit (cloud/SETUP.md). The site is deployed without it."
 
-  site:
-    needs: [test, corpus]
-    if: always() && needs.test.result == 'success'
+  # after a new container: the site again, bound to the corpus Worker (which, the first time, did not exist when the
+  # site was deployed), and checked against it
+  bind:
+    needs: [site, corpus]
+    if: needs.site.result == 'success' && needs.corpus.outputs.deployed == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -157,89 +196,11 @@ jobs:
           node-version: "22"
       - name: Install
         run: pip install -e .
-      - name: Build the site (client, in-browser runtime and 要籍语料, pinned Pyodide, the relay's address, the corpora's credits)
+      - name: Build the site
         run: taochronos web build -o _site --relay "$RELAY_URL"
-      - name: Are the secrets set?
-        id: secrets
-        env:
-          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          if [ -n "$CF_TOKEN" ] && [ -n "$CF_ACCOUNT" ]; then echo "ready=1" >> "$GITHUB_OUTPUT"
-          else echo "::warning::the site is not deployed until the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are set"; echo "ready=0" >> "$GITHUB_OUTPUT"; fi
-      - name: The bindings the account has
-        if: steps.secrets.outputs.ready == '1'
-        working-directory: cloud/site
+      - name: Deploy the site's Worker bound to the full corpus, and check a search on it
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           STORE_TOKEN_SHA256: ${{ vars.STORE_TOKEN_SHA256 }}
-        run: |
-          cp wrangler.toml wrangler.deploy.toml
-          if [ -n "$STORE_TOKEN_SHA256" ]; then sed -i "s/^STORE_TOKEN_SHA256 = .*/STORE_TOKEN_SHA256 = \"$STORE_TOKEN_SHA256\"/" wrangler.deploy.toml; fi
-          api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces"
-          find='import json,sys,os; r=json.load(sys.stdin)["result"]; print(next((n["id"] for n in r if n["title"]==os.environ["STORE_NAMESPACE"]), ""))'
-          ns=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api?per_page=100" | python3 -c "$find" || true)
-          if [ -z "$ns" ]; then
-            ns=$(curl -fsS -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
-                   -d "{\"title\": \"$STORE_NAMESPACE\"}" "$api" | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["id"])' || true)
-          fi
-          if [ -n "$ns" ]; then
-            printf '\n[[kv_namespaces]]\nbinding = "STORE"\nid = "%s"\n' "$ns" >> wrangler.deploy.toml
-            echo "the store's KV namespace: $STORE_NAMESPACE"
-          else
-            echo "::warning::no KV namespace (the token may not use Workers KV): the site takes no store uploads (cloud/SETUP.md)"
-          fi
-          if curl -fsS -o /dev/null -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-               "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/taochronos-corpus/settings"; then
-            printf '\n[[services]]\nbinding = "CORPUS"\nservice = "taochronos-corpus"\n' >> wrangler.deploy.toml
-            echo "the corpus Worker: taochronos-corpus"
-          else
-            echo "::warning::no corpus Worker yet: the site's API answers 503 and the page runs the 要籍语料 in the browser"
-          fi
-      - name: Deploy the site's Worker (chat.impf.ai)
-        if: steps.secrets.outputs.ready == '1'
-        working-directory: cloud/site
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx --yes "$WRANGLER" deploy --config wrangler.deploy.toml
-      - name: Check the site answers over HTTPS, and what its API says (this also wakes the full corpus)
-        if: steps.secrets.outputs.ready == '1'
-        run: |
-          # the first time, the certificate and the DNS record take a few minutes (until then the name may still lead to
-          # GitHub Pages, which has no certificate for it)
-          for i in $(seq 1 40); do
-            if curl -fsS -D headers.txt -o /dev/null "$SITE_URL/" && grep -qi '^server: cloudflare' headers.txt; then break; fi
-            echo "waiting for $SITE_URL on Cloudflare ($i)"; sleep 15
-          done
-          grep -qi '^server: cloudflare' headers.txt
-          grep -qi '^strict-transport-security' headers.txt
-          curl -fsS "$SITE_URL/" | grep -q "道乃久"
-          test "$(curl -s -o /dev/null -w '%{http_code}' "http://${SITE_URL#https://}/")" = "301"
-          curl -fsS -o /dev/null "$SITE_URL/runtime/boot.json"
-          # the full corpus: its container starts on the first call (the first after a deployment takes minutes)
-          for i in $(seq 1 8); do
-            code=$(curl -s -o info.json -w '%{http_code}' --max-time 240 "$SITE_URL/api/info" || true)
-            if [ "$code" = "200" ]; then break; fi
-            if [ "$code" = "503" ] && grep -q '"corpus": *"none"' info.json; then break; fi
-            echo "the full corpus answers $code ($i)"; sleep 30
-          done
-          python3 - <<'EOF'
-          import json
-          info = json.load(open("info.json"))
-          if info.get("corpus") == "none":
-              print("::warning::the site runs without the full corpus: the page uses the 要籍语料 in the browser")
-          else:
-              assert "name" in info, f"the full corpus does not answer: {info}"
-              c = info["corpus"]
-              print(f"full corpus: {c['books']} books, {c['passages']:,} passages, {info['tools']['offered']} tools")
-              assert c["kind"] == "full", c
-          EOF
-      - name: A search on the full corpus
-        if: steps.secrets.outputs.ready == '1'
-        run: |
-          if grep -q '"corpus": *"none"' info.json; then exit 0; fi
-          curl -fsS --max-time 300 -X POST -H "Content-Type: application/json" -H "Origin: $SITE_URL" \
-            -d '{"name": "classics.search", "arguments": {"query": "桂枝汤", "k": 3}}' "$SITE_URL/api/call" > call.json
-          python3 -c 'import json; out = json.load(open("call.json")); assert out["ok"] and out["citations"], out; print(out["summary"])'
+        run: bash cloud/site/deploy.sh
