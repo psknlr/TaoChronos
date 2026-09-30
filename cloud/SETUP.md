@@ -4,11 +4,13 @@
 
 - **https://chat.impf.ai** 有正式证书（浏览器地址栏显示锁），输入 http 地址会自动跳转到 https；
 - 网站从 Cloudflare 的全球节点提供，国内访问一般比 GitHub Pages 快、也更稳定；
-- 页面打开即可提问，不再下载 10 MB 的浏览器语料和 Python 运行环境；工具检索的是**全部古籍**：958 部录本、1.22 亿字
-  （本项目收录的全部古籍中，来源条件允许随网站发布的部分；条款禁止转载的 8 部不收，见 [ATTRIBUTION.md](ATTRIBUTION.md)）；
-- 全量语料服务暂不可用时，页面自动改用浏览器内的要籍语料，照常可用。
+- **免费版**（Workers Free）就能做到以上两点：页面和原来一样在浏览器里运行要籍语料（350 部）；网页文件（脚本、浏览器语料、
+  Python 运行环境）由 Cloudflare 直接提供，免费且不限量；
+- **开通全量古籍后**（可选，第 1、2 步，需 Workers Paid）：页面打开即可提问，不再下载浏览器语料和 Python 运行环境；工具检索的是
+  **全部古籍**：958 部录本、1.22 亿字（本项目收录的全部古籍中，来源条件允许随网站发布的部分；条款禁止转载的 8 部不收，见
+  [ATTRIBUTION.md](ATTRIBUTION.md)）；全量语料服务暂不可用时，页面自动改用浏览器内的要籍语料，照常可用。
 
-技术说明见 [README.md](README.md)。下面的步骤只需做一次，约 10 分钟。
+技术说明见 [README.md](README.md)。只用免费版：只做第 3 步，约 5 分钟；要全量古籍：再做第 1、2 步。每一步都只需做一次。
 
 ## 需要准备
 
@@ -16,9 +18,9 @@
 |---|---|
 | Cloudflare 账户 | 就是 `impf.ai` 和道乃久默认服务（chat-api.impf.ai）所在的账户 |
 | 仓库 Secrets | 已有的 `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`（relay 用的那两个），不需要新建 |
-| 付款方式 | Workers Paid 每月 5 美元（容器需要）；语料存放在 Workers KV 的免费额度内 |
+| 付款方式 | 免费版不需要；全量古籍的容器需要 Workers Paid（每月 5 美元，可选）；语料存放在 Workers KV 的免费额度内 |
 
-## 第 1 步：开通 Workers Paid（容器需要）
+## 第 1 步（可选）：开通 Workers Paid（全量古籍的容器需要）
 
 1. 登录 https://dash.cloudflare.com ，选中你的账户。
 2. 左侧 **Compute (Workers)**（或 **Workers & Pages**）→ **Plans**（套餐）。
@@ -26,7 +28,7 @@
 
 没有这一步，网站照样部署到 Cloudflare（HTTPS 生效），只是全量语料服务不会部署，页面继续在浏览器里运行要籍语料。
 
-## 第 2 步：给 API 令牌加上 Containers 权限
+## 第 2 步（可选）：给 API 令牌加上 Containers 权限
 
 relay 用的令牌（模板 *Edit Cloudflare Workers*）已经能管理 Worker、KV 和路由，只差容器：
 
@@ -57,11 +59,11 @@ Cloudflare 只在没有自建 DNS 记录的名称上建 Worker 的自定义域�
 ## 第 4 步：验证
 
 1. 打开 **https://chat.impf.ai**：地址栏有锁；输入 `http://chat.impf.ai` 会跳到 https。
-2. 左下角运行环境显示 **本站服务 · 全量语料 958 部书 · 204 万段 · 1.2 亿字**。
+2. 左下角运行环境：免费版显示 **浏览器内 · 要籍语料**；开通全量古籍后显示 **本站服务 · 全量语料 958 部书 · 204 万段 · 1.2 亿字**。
 3. 问一个问题（如"桂枝汤的组成出自哪部书？"），回答里的引文可点开核对。
 4. **设置 → 关于**：语料一栏链接到全量语料的来源与授权。
 
-全量语料服务闲置 15 分钟后会休眠（省钱）；休眠后第一位访客打开页面时它开始启动，通常在对方输入问题的时间里就绪。
+全量语料服务（开通后）闲置 15 分钟会休眠（省钱）；休眠后第一位访客打开页面时它开始启动，通常在对方输入问题的时间里就绪。
 
 ## 第 5 步（建议）：GitHub Pages 的自定义域名
 
@@ -73,6 +75,7 @@ Cloudflare 只在没有自建 DNS 记录的名称上建 Worker 的自定义域�
 
 | 项目 | 价格（Cloudflare 公布） |
 |---|---|
+| Workers Free（免费版） | 0 元。网页文件由 Cloudflare 直接提供，不计次数；只有打开网页和 `/api` 请求经过网站的 Worker（每次访问约 2–3 次），免费版每天 10 万次，约够每天 3 万次访问。超出后当天剩余时间这些请求返回 429 |
 | Workers Paid | 5 美元/月，含每月 1000 万次请求，以及容器 25 GiB·小时内存、375 vCPU·分钟、200 GB·小时磁盘 |
 | 全量语料容器（standard-1：1/2 vCPU、4 GiB 内存） | 只在运行时计费，约 0.036 美元/小时＋少量磁盘与实际 CPU；闲置 15 分钟即休眠。每天平均运行 4 小时约 4 美元/月，从不休眠约 30 美元/月 |
 | Workers KV | 143 MB，在免费额度（1 GB）内 |
@@ -89,7 +92,7 @@ Cloudflare 只在没有自建 DNS 记录的名称上建 Worker 的自定义域�
 | 警告"the store … is not (all) in the KV namespace" | 全量语料尚未上传：由维护者运行 `taochronos web upload`（见 README.md） |
 | 警告"the account may not deploy containers yet" | 第 1 步或第 2 步未完成（工作流先检查，不白白构建镜像）；补上后 **Run workflow** |
 | 警告"container was not deployed" | 部署容器时出错，日志里有 Cloudflare 的具体报错；修正后 **Run workflow**（可勾选 rebuild 强制重建） |
-| 页面显示"浏览器内 · 要籍语料" | 全量语料服务未部署或暂不可用；页面已自动改用浏览器语料，功能不受影响 |
+| 页面显示"浏览器内 · 要籍语料" | 免费版的正常状态；开通全量古籍后仍这样显示，说明全量语料服务未部署或暂不可用，页面已自动改用浏览器语料，功能不受影响 |
 | 地址栏仍显示"不安全" | 证书签发需要几分钟；清除浏览器缓存后重试。确认 DNS 里 `chat` 记录类型为 Worker（由 Cloudflare 管理） |
 
 ## 需要时回退到 GitHub Pages

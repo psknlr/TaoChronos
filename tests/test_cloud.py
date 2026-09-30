@@ -11,6 +11,7 @@ import lzma
 import os
 import sqlite3
 import threading
+import tomllib
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -284,3 +285,22 @@ def test_the_site_carries_the_full_corpus_credits_beside_the_browsers(tmp_path):
     build_site(tmp_path / "site", home=ROOT, pyodide="cdn")
     assert (tmp_path / "site" / "ATTRIBUTION-full.md").read_text(encoding="utf-8") == (ROOT / "cloud" / "ATTRIBUTION.md").read_text(encoding="utf-8")
     assert "corpus=full" in (tmp_path / "site" / "attribution.html").read_text(encoding="utf-8")
+
+
+def test_the_worker_runs_only_for_the_pages_and_the_api():
+    """On the Workers Free plan every request the Worker answers counts (100,000 a day): the site's files are served
+    without it — free and unmetered — with the headers of _headers; the pages (http → https) and the API with its own."""
+    config = tomllib.loads((ROOT / "cloud" / "site" / "wrangler.toml").read_text(encoding="utf-8"))
+    first = set(config["assets"]["run_worker_first"])
+    pages = sorted(p.name for p in (ROOT / "web").glob("*.html"))
+    # a page is asked for at its .html address and at the one without it (the assets redirect the first to the second)
+    assert pages and first == {"/api/*", *(f"/{p}" for p in pages),
+                               *("/" if p == "index.html" else f"/{p.removesuffix('.html')}" for p in pages)}
+    rules = [line.strip() for line in (ROOT / "cloud" / "site" / "_headers").read_text(encoding="utf-8").splitlines()
+             if line.strip() and not line.startswith("#")]
+    assert rules[0] == "/*"
+    assert {"X-Content-Type-Options: nosniff", "X-Frame-Options: SAMEORIGIN",
+            "Referrer-Policy: strict-origin-when-cross-origin"} <= set(rules)
+    assert any(rule.startswith("Strict-Transport-Security: max-age=") for rule in rules)
+    assert "cp _headers ../../_site/_headers" in (ROOT / "cloud" / "site" / "deploy.sh").read_text(encoding="utf-8")
+
