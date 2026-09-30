@@ -13,6 +13,7 @@ import urllib.parse
 import uuid
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -20,7 +21,7 @@ import pytest
 from taochronos.chat import d1
 from taochronos.chat.d1 import (MAX_PARAMS, MAX_SQL_BYTES, ApiTarget, SqliteTarget, TargetError, fts_form, fts_phrase, make_plan,
                                 run_import, status)
-from taochronos.chat.d1results import clause_key, pack, unpack
+from taochronos.chat.d1results import Precompute, clause_key, pack, unpack
 from taochronos.chat.d1tables import module
 from taochronos.plugins.classics.domain import DomainPack
 from taochronos.plugins.classics.ingest import ingest_kanripo, load_catalog
@@ -395,6 +396,27 @@ def test_the_index_form_and_the_query_phrases():
     assert clause_key("太陽之為病，脈浮，頭項強痛而惡寒。", DomainPack(ROOT / "domains" / "classics").variants.normalize_text) == "太阳之为病脉浮头项强痛而恶寒"
     value = {"a": [1, "二"], "b": None}
     assert unpack(pack(value)) == value and pack(value) == pack(value)
+
+
+def test_a_clause_is_computed_as_its_witness_punctuates_it():
+    """The concordance's probes follow a query's punctuation (a clause's bare characters find other witnesses), so the
+    commentaries and concordance of a clause are computed for it as its open witness writes it, normalised, and found
+    by its bare characters — the key the Worker takes from a call's clause however it is punctuated."""
+    norm = DomainPack(ROOT / "domains" / "classics").variants.normalize_text
+    written = ["太陽之為病，脈浮，頭項強痛而惡寒。", "太陽病，發熱。", "太陽之為病脈浮頭項強痛而惡寒"]
+
+    class Corpus:
+        books = {"sw": {}, "jk": {}}
+
+        def passages(self, book_ids, kinds):
+            return [SimpleNamespace(text=t) for t in written] if book_ids == ["sw"] else []
+
+    pre = Precompute(SimpleNamespace(h=SimpleNamespace(corpus=Corpus()), call=None))
+    canon = [{"work": "shanghanlun", "open_witness": "sw"}, {"work": "neijing", "open_witness": "jk"},
+             {"work": "jinkui", "open_witness": "absent"}]
+    key = clause_key(written[0], norm)
+    assert pre._clauses(canon, norm) == {key: norm(written[0])}  # 太陽病，發熱: too short; the unpunctuated copy: the first kept
+    assert norm(written[0]) == "太阳之为病，脉浮，头项强痛而恶寒。"
 
 
 def test_the_workers_tables_are_those_of_this_checkout():

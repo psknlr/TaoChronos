@@ -7,7 +7,9 @@ the lexicon's curated terms, the historical terms, every book, the 要籍, the s
 commentators comment on — and a key is what the result depends on, as the Worker derives it from a call's arguments
 (``cloud/site/src/backup/precomputed.js``, ``KEYS``: the canonical term the study layer resolves a name to, the
 clause's normalised characters …).  Each result is the tool's own, through ``ChatRuntime.call`` with the tool's
-default arguments; a call that fails is left out (the Worker then says it was not precomputed).
+default arguments (a clause: as its witness punctuates it); a call that fails is left out (the Worker then says it was
+not precomputed).  Some tools order ties by string hashing, so the daily job runs with a fixed ``PYTHONHASHSEED``: a
+result computed again is the same.
 
 Computing is slow (a formula's history takes seconds): the import computes a key only when its batch is due, in key
 order, and a run stops at its time budget; the next run resumes after the last key imported.
@@ -137,24 +139,28 @@ class Precompute:
         for s in schools:
             add("study.schools", s, {"school": s})
         add("study.schools", "", {})
-        for clause in self._clauses(canon, norm):
-            add("study.commentaries", clause, {"text": clause})
-            add("study.concordance", clause, {"text": clause})
+        for clause, text in self._clauses(canon, norm).items():
+            add("study.commentaries", clause, {"text": text})
+            add("study.concordance", clause, {"text": text})
         self._keys = [(tool, key, args) for (tool, key), args in sorted(out.items(), key=lambda kv: f"{kv[0][0]}\t{kv[0][1]}")]
         return self._keys
 
-    def _clauses(self, canon: list[dict[str, Any]], norm: Callable[[str], str]) -> list[str]:
-        """The clauses of the classics' open witnesses (the canon's ``open_witness``), as the concordance keys them."""
+    def _clauses(self, canon: list[dict[str, Any]], norm: Callable[[str], str]) -> dict[str, str]:
+        """The clauses of the classics' open witnesses (the canon's ``open_witness``): the concordance's key of each →
+        the clause as the witness punctuates it, normalised.  The key is what the Worker finds a call's clause by,
+        however it is punctuated; the result is computed for the punctuated clause, as a reader quotes it (the
+        concordance's probes follow a query's punctuation: 太阳之为病，脉浮，… and its bare characters find different
+        witnesses).  A key two passages share keeps the first, in the canon's order."""
         corpus = self.h.corpus
-        keys: list[str] = []
+        keys: dict[str, str] = {}
         for w in canon:
             if w.get("work") not in CLAUSE_WORKS or not w.get("open_witness") or w["open_witness"] not in corpus.books:
                 continue
             for p in corpus.passages(book_ids=[w["open_witness"]], kinds=["text"]):
                 key = clause_key(p.text, norm)
                 if CLAUSE_CHARS[0] <= len(key) <= CLAUSE_CHARS[1]:
-                    keys.append(key)
-        return sorted(set(keys))
+                    keys.setdefault(key, norm(p.text))
+        return dict(sorted(keys.items()))
 
     # -------------------------------------------------------------- results
     def value(self, tool: str, args: dict[str, Any]) -> Any | None:
@@ -163,8 +169,8 @@ class Precompute:
         return out.get("result") if out.get("ok") else None
 
     def rows(self, after: str | None = None, *, deadline: Callable[[], bool] = lambda: False) -> Iterator[tuple[str, str, Any]]:
-        """(tool, key, packed result) after ``after`` ("<tool>\\t<key>" of the last row imported), computed one at a time;
-        stops when ``deadline()`` says so."""
+        """(tool, key, result) after ``after`` ("<tool>\\t<key>" of the last row imported), computed one at a time (the
+        importer packs them); stops when ``deadline()`` says so."""
         import time
 
         keys = self.keys()
