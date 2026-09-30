@@ -51,6 +51,16 @@ const REVERSE = (() => {
 const lit = (s) => `'${String(s).replaceAll("'", "''")}'`;
 const unique = (xs) => [...new Set(xs)];
 
+/** SELECTs joined by UNION ALL as D1 takes them: at most five terms a compound (its SQLITE_LIMIT_COMPOUND_SELECT),
+ * so more are nested, five subqueries of at most five, and so on. */
+export function unionAll(parts, fanout = 5) {
+  if (parts.length <= fanout) return parts.join(" UNION ALL ");
+  const size = Math.ceil(parts.length / fanout);
+  const groups = [];
+  for (let i = 0; i < parts.length; i += size) groups.push(`SELECT * FROM (${unionAll(parts.slice(i, i + size), fanout)})`);
+  return groups.join(" UNION ALL ");
+}
+
 /** QueryAnalyzer.variant_spellings */
 export function variantSpellings(surface) {
   const forms = new Set([surface]);
@@ -208,25 +218,36 @@ export async function find(corpus, q, { k = 10, active = ROUTES, books = null } 
   const heads = unique(targets.map((t) => t[0])).map((h) => ftsPhrase(normalize(h))).filter(Boolean);
   const spans = await corpus.spans(lo, hi);
   const ranked = [];
-  const edges = new Set();
+  const edgeRows = new Map(); // "a<i>" / "d<i>" (surface i, earliest / latest) and "h<i>" (head i) → chunk numbers
+  const inBooks = only ? " AND rowid IN (SELECT value FROM json_each(?4))" : "";
   await Promise.all(spans.map(async ([db, s, e]) => {
-    const parts = [`SELECT 'r' AS t, cid, r FROM (SELECT rowid AS cid, rank AS r FROM fts WHERE fts MATCH ?1 AND rowid BETWEEN ?2 AND ?3${only ? " AND rowid IN (SELECT value FROM json_each(?4))" : ""} ORDER BY rank LIMIT ${RANKED})`];
-    edgeSurfaces.slice(0, EDGE_SURFACES).forEach((p) => {
-      for (const dir of ["", " DESC"]) {
-        parts.push(`SELECT 'e' AS t, cid, 0 FROM (SELECT rowid AS cid FROM fts WHERE fts MATCH ${lit(p)} AND rowid BETWEEN ?2 AND ?3${only ? " AND rowid IN (SELECT value FROM json_each(?4))" : ""} ORDER BY rowid${dir} LIMIT ${EDGES})`);
+    const parts = [`SELECT 'r' AS t, cid, r FROM (SELECT rowid AS cid, rank AS r FROM fts WHERE fts MATCH ?1 AND rowid BETWEEN ?2 AND ?3${inBooks} ORDER BY rank LIMIT ${RANKED})`];
+    edgeSurfaces.slice(0, EDGE_SURFACES).forEach((p, i) => {
+      for (const [dir, tag] of [["", "a"], [" DESC", "d"]]) {
+        parts.push(`SELECT '${tag}${i}' AS t, cid, 0 FROM (SELECT rowid AS cid FROM fts WHERE fts MATCH ${lit(p)} AND rowid BETWEEN ?2 AND ?3${inBooks} ORDER BY rowid${dir} LIMIT ${EDGES})`);
       }
     });
-    heads.forEach((p) => parts.push(`SELECT 'e' AS t, cid, 0 FROM (SELECT rowid AS cid FROM fts WHERE fts MATCH ${lit(p)} AND rowid BETWEEN ?2 AND ?3${only ? " AND rowid IN (SELECT value FROM json_each(?4))" : ""} ORDER BY rowid LIMIT ${SENSE_EDGES})`));
+    heads.forEach((p, i) => parts.push(`SELECT 'h${i}' AS t, cid, 0 FROM (SELECT rowid AS cid FROM fts WHERE fts MATCH ${lit(p)} AND rowid BETWEEN ?2 AND ?3${inBooks} ORDER BY rowid LIMIT ${SENSE_EDGES})`));
     const params = [phrases.join(" OR "), s, e];
     if (only) params.push(JSON.stringify(only.filter((c) => c >= s && c <= e)));
-    const rows = await corpus.all(db, parts.join(" UNION ALL "), params);
+    const rows = await corpus.all(db, unionAll(parts), params);
     for (const r of rows) {
       if (r.t === "r") ranked.push([r.cid, r.r]);
-      else edges.add(r.cid);
+      else {
+        if (!edgeRows.has(r.t)) edgeRows.set(r.t, []);
+        edgeRows.get(r.t).push(r.cid);
+      }
     }
   }));
   ranked.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
   const chunkRank = new Map(ranked.map(([cid], i) => [cid, i]));
+  // the earliest and latest over the whole corpus (chunk numbers follow the year across the databases): of what each
+  // database found, the first EDGES (SENSE_EDGES for a head term), or the last
+  const edges = [];
+  for (const [tag, cids] of edgeRows) {
+    cids.sort((a, b) => a - b);
+    edges.push(...(tag[0] === "d" ? cids.slice(-EDGES) : cids.slice(0, tag[0] === "h" ? SENSE_EDGES : EDGES)));
+  }
   const chosen = unique([...ranked.slice(0, KEEP).map((x) => x[0]), ...edges]);
   if (!chosen.length) return [];
   // 2. the passages that write a surface (or a sense's head term), with the routes' measures
@@ -313,7 +334,7 @@ async function passages(corpus, q, chosen, { search, surfaces, groups, targets }
   return out;
 }
 
-const bit = (mask, b) => Math.floor(mask / 2 ** b) % 2 === 1;
+const bit = (mask, b) => ((mask >> b) & 1) === 1; // mask < 2 ** MASK_BITS: an int32
 
 /** The routes over the candidates and their reciprocal-rank fusion (HybridRetriever.search). */
 export function fuse(q, cands, { k, active, chunkRank, surfaces, groups, targets }) {

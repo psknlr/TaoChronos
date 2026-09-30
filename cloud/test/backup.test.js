@@ -17,7 +17,9 @@ import { clauseKey } from "../site/src/backup/precomputed.js";
 import { ftsForm, normalize, normalizeWithRecords, parseConstraint } from "../site/src/backup/text.js";
 import { collate } from "../site/src/backup/difflib.js";
 import { warmUp } from "../site/src/backup/warm.js";
-import { D1Adapter, workerCpu } from "./d1-adapter.js";
+import { compoundTerms, D1Adapter, workerCpu } from "./d1-adapter.js";
+import { unionAll } from "../site/src/backup/search.js";
+import { DatabaseSync } from "node:sqlite";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const dir = resolve(process.env.D1_FIXTURE || `${here}/../.d1-fixture`);
@@ -99,6 +101,17 @@ test("the start's warm-up runs the tools over made-up databases and leaves the i
   const info = await (await site("/api/info")).json();
   assert.equal(info.corpus.books, 10);
   assert.equal(info.corpus.passages, fixture.summary.passages);
+});
+
+test("D1's own limits (five terms a compound SELECT, found in the emulator): the adapter holds the tools to them", () => {
+  const parts = Array.from({ length: 23 }, (_, i) => `SELECT ${i} AS x FROM (SELECT 1 UNION ALL SELECT 2)`);
+  assert.equal(compoundTerms(parts.join(" UNION ALL ")), 23);
+  assert.equal(compoundTerms("SELECT 'a UNION b UNION c UNION d UNION e UNION f'"), 1);
+  const nested = unionAll(parts);
+  assert.ok(compoundTerms(nested) <= 5);
+  const db = new DatabaseSync(":memory:");
+  assert.equal(db.prepare(`SELECT count(*) AS n FROM (${nested})`).get().n, 46); // two rows a part
+  assert.equal(db.prepare(`SELECT sum(x) AS s FROM (${nested})`).get().s, 22 * 23); // every part, in any order
 });
 
 test("every tool of the server's catalog (74) is live, precomputed, or unavailable with its reason — once", () => {
