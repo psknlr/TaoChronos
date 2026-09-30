@@ -16,6 +16,8 @@ relay/node_modules/
 relay/.wrangler/
 # the site on Cloudflare (cloud/): the store fetched for the image, installs, local state, generated configs
 cloud/.store/
+cloud/.d1/
+cloud/.d1-fixture/
 cloud/*/node_modules/
 cloud/*/.wrangler/
 cloud/*/wrangler.deploy.toml
