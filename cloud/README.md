@@ -73,6 +73,43 @@ git add cloud/store.json cloud/ATTRIBUTION.md && git commit … # 合入 main �
   每天运行 4 小时约每月 4 美元；全天不休眠约每月 30 美元。
 - Workers KV：存 143 MB（6 个值）在免费额度（1 GB）内。静态文件请求不收费。
 
+## D1 备份：没有容器时的全量语料
+
+Workers 免费套餐没有容器。此时网站 Worker 自己回答页面的 API：全量语料存在 **Cloudflare D1**（5 个数据库
+`taochronos-d1-0…4`，共约 1.5 GB），工具用 JavaScript 重写后在 Worker 里运行（`site/src/backup/`），重活在 SQL 里做——
+Worker 每次请求只有 10 毫秒的计算。设计、测量与 74 个工具逐一的归类见
+[docs/adr/0017-d1-backup.md](../docs/adr/0017-d1-backup.md)；站长需要做的一步见 [SETUP.md](SETUP.md)「免费套餐下的全量语料」。
+
+```
+/api/* ──▶ 有容器（CORPUS 绑定）：交给容器，与上文相同
+        ├─ 否则 D1 备份已导入完成（D1_BACKUP 与数据库所存版本一致）：Worker 用 D1 回答
+        │     /api/info（标明「全量语料（备份）」）、/api/catalog（只列出能回答的工具）、/api/passage、/api/call；
+        │     /api/research 答 501 并说明原因
+        └─ 否则 503：页面改用浏览器内的要籍语料
+```
+
+| 部分 | 作用 |
+|---|---|
+| `src/taochronos/chat/d1.py` | 导出与导入：段落按「一部书、一种时间背景」切块（≤ 64 段、4000 字，共 41,869 块，块号按年代排序，时间范围即块号范围），FTS5 全文索引（每字一词，在 SQL 里由块建成），书目与块映射、词表、预计算结果、统计。建表之后每条语句都是一条原子的 INSERT（≤ 90 KB、≤ 100 个参数），进度从数据库本身读出：中断后续跑，不会重复写入 |
+| `src/taochronos/chat/d1results.py` | Worker 算不了的 16 个治学工具：在 CI 里由 Python 工具在全量语料上对可列举的条目（常见方剂、药物、术语、每部书、要籍、伤寒金匮条文…，共 11,765 条）预先计算，压缩存入 `results` |
+| `src/taochronos/chat/d1tables.py` | 生成 `site/src/backup/tables.js`：规范化字表、时期、术语、度量衡、工具目录与说明（测试核对与代码一致） |
+| `site/src/backup/` | API（与 Python 服务器同样的返回形状）与 14 个直接计算的工具：检索（bm25、时间、异体、词义四路的倒数排名融合）、原文、书目、要籍、术语、规范化、评估、校勘、溯源、引文核对、度量衡、安全提示、现代证据 |
+| `.github/workflows/d1.yml` | 每天 UTC 0 点后（及 **Run workflow**）：从 KV 取回并校验 `store.json` 指定的语料，导入下一段，直到当天额度（写 90,000 行，D1 免费额度为 10 万行）；先检查令牌有无 D1 权限；导入完成后在 KV 记下版本（`deployed/d1`）并重新部署网站 |
+| `site/deploy.sh` | 绑定 `taochronos-d1-*`（`D1_0…`），导入完成后设置 `D1_BACKUP` |
+
+全量语料约写 87,000 行、预计算结果约 12,000 行：**两天**导入完。换了语料（`store.json`）、规范化器或布局即为新版本：数据库删除重建、
+重新导入，期间页面用浏览器语料。
+
+```bash
+python -m taochronos.chat.d1 plan .taochronos/cloud/<sha256>.sqlite.xz --manifest cloud/store.json     # 各数据库、各步骤的行数
+python -m taochronos.chat.d1 import .taochronos/cloud/<sha256>.sqlite.xz --manifest cloud/store.json \
+  --sqlite cloud/.d1 --budget 1000000000                                  # 在本地 SQLite 里完整构建（约 1.4 GB）
+python -m taochronos.chat.d1 fixture cloud/.d1-fixture                    # 测试用的小备份（10 部书），含 Python 工具的参考答案
+REQUIRE_D1_FIXTURE=1 node --test cloud/test/backup.test.js                # 备份的 API 与工具（与 Python 工具逐项比对、CPU 与查询数）
+WRANGLER_DIST=…/wrangler-dist/cli.js python -m taochronos.chat.d1 import <store> --manifest cloud/store.json \
+  --bridge "node cloud/test/d1-emulator.mjs --state cloud/.d1/emulator"  # 在本地 D1 模拟器里导入：D1 自己计的写入行数
+```
+
 ## 本地试运行
 
 ```bash

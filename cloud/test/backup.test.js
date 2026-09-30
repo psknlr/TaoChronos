@@ -1,5 +1,5 @@
 // The D1 backup (cloud/site/src/backup; docs/adr/0017-d1-backup.md) against a small D1 made by the exporter itself:
-// `python -m taochronos.chat.d1 fixture cloud/.d1-fixture` (ten books of the committed 要籍 pack over four databases,
+// `python -m taochronos.chat.d1 fixture cloud/.d1-fixture` (ten books of the committed 要籍 pack over three databases,
 // seven precomputed results), read through a D1-compatible adapter over node:sqlite.  The API answers in the shapes of
 // the Python server; each call stays within a Worker's limits (its CPU time here, the SQL apart; ≤ 50 D1 statements).
 
