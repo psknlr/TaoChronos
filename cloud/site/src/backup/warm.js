@@ -1,8 +1,9 @@
 // The backup's code run once over made-up data when the isolate starts, before any request: on the Workers Free plan a
 // request may use 10 ms of CPU, and the request that first runs this code pays for compiling it (a first search took
-// some 15 ms where the next ones take 2–5).  The start of an isolate has its own, far larger allowance.  The made-up
-// databases answer the statements the tools send from memory (no D1, no I/O: the promises settle at once), and the run
-// keeps what it reads in a cache of its own, never the isolate's: a request always reads the real corpus.
+// 10–16 ms, measured, where the next take 2–5; after this run 4–10).  The start of an isolate has its own, far larger
+// allowance.  The made-up databases answer the statements the tools send from memory (no D1, no I/O: the promises
+// settle at once), and the run keeps what it reads in a cache of its own, never the isolate's: a request always reads
+// the real corpus.  The tests check that it goes through every step (candidates, passages, fusion, cards, quotations).
 
 import { Corpus } from "./corpus.js";
 import { shape } from "./results.js";
@@ -21,6 +22,9 @@ const BUCKETS = {
   桂: { 桂枝汤: [{ id: "formula:桂枝汤", term: "桂枝汤", cat: "formula", aliases: ["桂枝湯"] }] },
   消: { 消渴: [{ id: "disease:消渴", term: "消渴", cat: "disease", related: ["三消"] }] },
   三: { 三消: [{ id: "disease:三消", term: "三消", cat: "disease" }] },
+  湿: { 湿热: [{ id: "pathogen:湿热", term: "湿热", cat: "pathogen", components: ["湿", "热"] }],
+    湿: [{ id: "pathogen:湿", term: "湿", cat: "pathogen", weak: true }] },
+  热: { 热: [{ id: "pathogen:热", term: "热", cat: "pathogen", weak: true }] },
 };
 
 const passage = (cid, i) => ({ t: `${TEXT}${i}`, q: (cid - 1) * PER_CHUNK + i, l: 0 });
@@ -31,19 +35,23 @@ const yearOf = (cid) => 209 + 180 * (cid - 1);
 function answer(sql, params) {
   if (sql.includes("FROM meta WHERE k IN ('stats', 'complete')")) return [{ k: "stats", v: JSON.stringify(STATS) }, { k: "complete", v: "warm" }];
   if (sql.includes("FROM lex WHERE")) return JSON.parse(params[0]).filter((c) => BUCKETS[c]).map((c) => ({ k: c, v: JSON.stringify(BUCKETS[c]) }));
-  if (sql.startsWith("SELECT 't' AS t")) {
+  if (sql.includes("SELECT 'r' AS t, cid, r FROM (SELECT rowid AS cid, rank AS r FROM fts")) { // the candidates' query
     const [, lo, hi] = params;
     const out = [];
-    for (let cid = lo; cid <= hi; cid++) out.push({ t: cid % 2 ? "r" : "e", cid, r: -cid / 10 });
+    for (let cid = lo; cid <= hi; cid++) out.push({ t: ["r", "a0", "r", "d0", "h0"][cid % 5], cid, r: -cid / 10 });
     return out;
   }
   if (sql.startsWith("WITH m AS MATERIALIZED")) {
     const out = [];
     for (const cid of JSON.parse(params[0])) {
-      for (let i = 0; i < PER_CHUNK; i++) out.push([cid, i, "warm", yearOf(cid), (cid - 1) * PER_CHUNK + i, null, 40 + i, 1 + (i % 2) * 2, `${i % 3},${i % 2}`, "", i % 3]);
+      for (let i = 0; i < PER_CHUNK; i++) {
+        out.push([cid, i, "warm", yearOf(cid), (cid - 1) * PER_CHUNK + i, null, 40 + i, 1 + (i % 2) * 2, `${i % 3},${i % 2},1`,
+          i % 3 ? "" : "1,1,1,0,0,1,1,0", i % 3]);
+      }
     }
     return out;
   }
+  if (sql.startsWith("SELECT map FROM books")) return [{ map: JSON.stringify({ C: [[[0, 1], [8, 2], [16, 3], [24, 4]]] }) }];
   if (sql.includes("json_extract(c.body, '$.p[' || (j.value ->> 1) || ']')")) {
     return JSON.parse(params[0]).map(([cid, i]) => ({ cid, i, book: "warm", year: yearOf(cid), p: JSON.stringify(passage(cid, i)),
       T: JSON.stringify(chunk(cid).T), L: JSON.stringify(chunk(cid).L), Y: JSON.stringify(chunk(cid).Y) }));
@@ -70,7 +78,8 @@ const statement = (sql, params = []) => ({
   params,
 });
 const database = { prepare: (sql) => statement(sql), batch: async (list) => list.map((s) => ({ results: answer(s.sql, s.params), meta: {} })) };
-const ENV = { D1_0: database, D1_1: database };
+/** The made-up databases, as bindings (the tests check that the warm-up really runs the tools through them). */
+export const ENV = { D1_0: database, D1_1: database };
 
 export async function warmUp() {
   const cache = { kept: null }; // its own: never the isolate's
@@ -80,7 +89,8 @@ export async function warmUp() {
     normalizeWithRecords(TEXT);
     parseConstraint(`宋代以前${r}`);
     pyRound(55.349999, 1);
-    for (const [query, extra] of [["桂枝汤", {}], ["消渴的认识如何演变", {}], ["宋代以前的消渴", {}], ["三消最早见于哪部书", { after: 200 }]]) {
+    for (const [query, extra] of [["桂枝汤", {}], ["消渴的认识如何演变", {}], ["宋代以前的消渴", {}], ["三消最早见于哪部书", { after: 200 }],
+      ["湿热与消渴", {}], ["桂枝汤", { books: ["warm"] }]]) {
       const res = await search(new Corpus(ENV, { cache }), { query, k: 10, ...extra });
       shape("classics.search", true, res, null, { durationMs: 1, maxChars: 16000 });
     }

@@ -16,7 +16,9 @@ import { Corpus } from "../site/src/backup/corpus.js";
 import { clauseKey } from "../site/src/backup/precomputed.js";
 import { ftsForm, normalize, normalizeWithRecords, parseConstraint } from "../site/src/backup/text.js";
 import { collate } from "../site/src/backup/difflib.js";
-import { warmUp } from "../site/src/backup/warm.js";
+import { ENV as MADE_UP, warmUp } from "../site/src/backup/warm.js";
+import { search } from "../site/src/backup/search.js";
+import { verifyQuote } from "../site/src/backup/tools.js";
 import { compoundTerms, D1Adapter, workerCpu } from "./d1-adapter.js";
 import { unionAll } from "../site/src/backup/search.js";
 import { DatabaseSync } from "node:sqlite";
@@ -101,6 +103,13 @@ test("the start's warm-up runs the tools over made-up databases and leaves the i
   const info = await (await site("/api/info")).json();
   assert.equal(info.corpus.books, 10);
   assert.equal(info.corpus.passages, fixture.summary.passages);
+  // and it does run the tools through: a search over the made-up databases finds, fuses and cites
+  for (const [query, extra] of [["消渴的认识如何演变", {}], ["湿热与消渴", {}], ["桂枝汤", { books: ["warm"] }]]) {
+    const res = await search(new Corpus(MADE_UP, { cache: { kept: null } }), { query, k: 10, ...extra });
+    assert.ok(res.hits.length > 0 && res.hits[0].passage_id.startsWith("warm."), query);
+  }
+  const quote = await verifyQuote(new Corpus(MADE_UP, { cache: { kept: null } }), { quote: "桂枝湯主之" });
+  assert.ok(quote.length > 0);
 });
 
 test("D1's own limits (five terms a compound SELECT, found in the emulator): the adapter holds the tools to them", () => {

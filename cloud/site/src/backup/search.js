@@ -3,8 +3,9 @@
 // The query is analysed as in Python (QueryAnalyzer: normalisation, the lexicon's terms and their surfaces, historical
 // related terms, variant spellings, a time constraint, the intent), and the passages are found in three steps, the
 // work in SQL:
-//   1. candidates: in each database, the chunks the full-text index ranks first for any surface (BM25), and the
-//      earliest and latest chunks writing each surface (the corpus's own ordering: chunk numbers follow the year);
+//   1. candidates: in each database, the chunks the full-text index ranks first for any surface (BM25); and over the
+//      whole corpus, the earliest and latest chunks writing each surface (chunk numbers follow the year, across the
+//      databases) — one statement a database, its SELECTs nested five to a compound (D1's limit);
 //   2. the passages of those chunks that write a surface, with what the routes need — how often each query bigram
 //      occurs (BM25), whether a sense's cues are there (the sense route), how often a variant spelling is written;
 //   3. the routes and their reciprocal-rank fusion, in JavaScript, over those passages; the cards of the k best.
@@ -22,8 +23,8 @@ export const SERVED_ROUTES = ["bm25", "temporal", "variant", "sense"];
 const WEIGHTS = { bm25: 1.0, dense: 0.6, graph: 1.0, temporal: 0.5, citation: 0.5, variant: 0.6, sense: 0.7 };
 const RANKED = 24; // chunks the index ranks first, per database
 const KEEP = 32; // of those, kept over all databases
-const EDGES = 3; // earliest and latest chunks per surface
-const SENSE_EDGES = 6; // earliest chunks writing a targeted sense's head term
+const EDGES = 3; // earliest and latest chunks per surface, over the whole corpus
+const SENSE_EDGES = 6; // earliest chunks writing a targeted sense's head term, over the whole corpus
 const ROWS_RELEVANT = 72; // passages a database returns: the densest in the query's bigrams,
 const ROWS_EDGE = 16; //      the latest and the earliest writing a surface, and those a sense may select
 const MASK_BITS = 30; // surfaces whose presence is reported (a bit each)
