@@ -49,14 +49,19 @@ GitHub Pages 的 `chat` CNAME（[SETUP.md](SETUP.md) 第 3 步）；部署时 Cl
 
 ## 更新全量语料
 
+上传接口平时关闭（`site/wrangler.toml` 的 `STORE_TOKEN_SHA256` 为空）；维护者更新语料时临时登记一个上传令牌：
+
 ```bash
+t=$(openssl rand -hex 32); printf %s "$t" | sha256sum   # 新令牌及其 sha256（令牌只留在本机）
+# GitHub 仓库 → Settings → Secrets and variables → Actions → Variables：新建 STORE_TOKEN_SHA256 = 上面的 sha256，
+# 再 Actions → site → Run workflow（网站随即接受该令牌的上传）
 taochronos web store                                   # 写 .taochronos/cloud/<sha256>.sqlite.xz，更新 cloud/store.json 与 cloud/ATTRIBUTION.md
-TAOCHRONOS_STORE_TOKEN=… taochronos web upload         # 分片上传到 https://chat.impf.ai/api/store/…（已上传的分片跳过）
-git add cloud/store.json cloud/ATTRIBUTION.md && git commit … # 合入 main 后工作流构建新镜像
+TAOCHRONOS_STORE_TOKEN=$t taochronos web upload        # 分片上传到 https://chat.impf.ai/api/store/…（已上传的分片跳过）
+# 删除仓库变量 STORE_TOKEN_SHA256，然后：
+git add cloud/store.json cloud/ATTRIBUTION.md && git commit … # 合入 main 后工作流构建新镜像，网站的上传接口随之关闭
 ```
 
-上传令牌只有其 sha256 在 `site/wrangler.toml`（`STORE_TOKEN_SHA256`，也可用仓库变量 `STORE_TOKEN_SHA256` 覆盖）；换令牌：
-生成新的随机串（如 `openssl rand -hex 32`），把它的 sha256 写进去并部署。没有有效令牌时上传接口一律拒绝。
+没有有效令牌时上传接口一律拒绝；令牌只以其 sha256 登记，泄露了也只能往 KV 里写分片（部署时逐片按 `store.json` 校验）。
 
 ## 费用（Cloudflare 公布的价格）
 
