@@ -4,9 +4,10 @@
 //                           over https only: a request over http is redirected
 //   GET  /api/info           the full corpus's runtime, answered by the corpus Worker (cloud/corpus: a container running
 //   GET  /api/catalog         taochronos on the full corpus, started on demand) through a service binding, when the site
-//   GET  /api/passage         has one; without it these answer 503 and the page runs the 要籍语料 in the browser
-//   POST /api/call
-//   POST /api/research, GET /api/research/<job>, GET /api/session/<id>
+//   GET  /api/passage         has one; else by the D1 backup (./backup: the full corpus in D1, the tools in this Worker)
+//   POST /api/call            once its import is complete (D1_BACKUP); without either these answer 503 and the page runs
+//   POST /api/research, …     the 要籍语料 in the browser
+//   GET  /api/research/<job>, GET /api/session/<id>
 //   PUT  /api/store/<sha256>/part-NNN   the full corpus store, uploaded part by part into the site's Workers KV namespace,
 //   HEAD /api/store/<sha256>/part-NNN   with the token whose sha256 is STORE_TOKEN_SHA256 (`taochronos web upload`); the
 //                                       deploy workflow reads it from there to build the container
@@ -14,6 +15,8 @@
 // Nothing else reaches the corpus: not the model proxy of `taochronos serve` (the page talks to its models itself, or to
 // the relay), not its static files.  API calls are limited per visitor (the rate-limit bindings); addresses are kept
 // nowhere.
+
+import { answer as backupAnswer, ready as backupReady } from "./backup/api.js";
 
 export const DEFAULTS = {
   ALLOWED_ORIGINS: "https://chat.impf.ai",
@@ -99,7 +102,7 @@ async function api(request, env, cfg, deps, url) {
   if (deps.limit && !(await deps.limit(isGet ? "read" : "call", who))) {
     return json({ error: "请求太频繁，请稍候再试", rate_limited: true }, 429, { ...cors, "Retry-After": "60" });
   }
-  if (!env.CORPUS) {
+  if (!env.CORPUS && !backupReady(env)) {
     return json({ error: "本站的全量语料服务未部署：网页在浏览器里运行要籍语料", corpus: "none" }, 503, cors);
   }
   const headers = { Accept: "application/json" };
@@ -110,6 +113,13 @@ async function api(request, env, cfg, deps, url) {
     body = await request.arrayBuffer();
     if (body.byteLength > cfg.maxBody) return json({ error: "请求太大" }, 413, cors);
     headers["Content-Type"] = "application/json";
+  }
+  if (!env.CORPUS) {
+    // no container: the D1 backup answers (the full corpus in D1, the tools in this Worker; ./backup)
+    const res = await backupAnswer(request.method, url, body, env);
+    const out = new Response(res.body, { status: res.status, headers: { ...cors, "Cache-Control": "no-store" } });
+    for (const h of ["Content-Type", "X-TC-Corpus"]) if (res.headers.has(h)) out.headers.set(h, res.headers.get(h));
+    return out;
   }
   // only the path, the query and the body go on: not the visitor's cookies, address or other headers
   let upstream;
