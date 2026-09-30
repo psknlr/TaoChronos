@@ -855,6 +855,7 @@ def run_import(plan: Plan, target: Any, *, budget: int = DAY_BUDGET, log: Callab
                 report["rows_written"] += int(res.get("rows_written") or 0)
             res = target.run(Batch(0, "results", "", "INSERT OR REPLACE INTO progress(k, v) VALUES ('results_plan', ?)", [digest], 1))
             used += int(res.get("rows_written") or 0)
+            report["rows_written"] += int(res.get("rows_written") or 0)
             st0["results_plan"], st0["results"] = digest, None
         return st0.get("results")
 
