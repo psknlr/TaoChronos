@@ -87,7 +87,8 @@ Cloudflare 只在没有自建 DNS 记录的名称上建 Worker 的自定义域�
 | 工作流报「chat.impf.ai 还有一条自建的 DNS 记录」（Cloudflare：externally managed DNS records） | 第 3 步的 CNAME 还没删除：删除后再 **Run workflow** |
 | 警告"no KV namespace" | 令牌缺 Account · Workers KV Storage · Edit |
 | 警告"the store … is not (all) in the KV namespace" | 全量语料尚未上传：由维护者运行 `taochronos web upload`（见 README.md） |
-| 警告"container was not deployed" | 第 1 步或第 2 步未完成；日志里有 Cloudflare 的具体报错 |
+| 警告"the account may not deploy containers yet" | 第 1 步或第 2 步未完成（工作流先检查，不白白构建镜像）；补上后 **Run workflow** |
+| 警告"container was not deployed" | 部署容器时出错，日志里有 Cloudflare 的具体报错；修正后 **Run workflow**（可勾选 rebuild 强制重建） |
 | 页面显示"浏览器内 · 要籍语料" | 全量语料服务未部署或暂不可用；页面已自动改用浏览器语料，功能不受影响 |
 | 地址栏仍显示"不安全" | 证书签发需要几分钟；清除浏览器缓存后重试。确认 DNS 里 `chat` 记录类型为 Worker（由 Cloudflare 管理） |
 

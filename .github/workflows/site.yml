@@ -29,6 +29,11 @@ on:
       - ".dockerignore"
       - ".github/workflows/site.yml"
   workflow_dispatch:
+    inputs:
+      rebuild:
+        description: "Build and deploy the full corpus's container even if this version is deployed"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -104,12 +109,13 @@ jobs:
         run: |
           if [ -n "$CF_TOKEN" ] && [ -n "$CF_ACCOUNT" ]; then echo "ready=1" >> "$GITHUB_OUTPUT"
           else echo "::warning::nothing is deployed until the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are set (cloud/SETUP.md)"; echo "ready=0" >> "$GITHUB_OUTPUT"; fi
-      - name: Which version, and is it deployed already?
+      - name: Which version, is it deployed already, and may the account deploy containers?
         id: plan
         if: steps.secrets.outputs.ready == '1'
         env:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          REBUILD: ${{ inputs.rebuild }}
         run: |
           # the version: the store and every tracked file the image is built from
           store=$(python3 -c 'import json; print(json.load(open("cloud/store.json"))["sha256"])')
@@ -117,12 +123,25 @@ jobs:
                    corpus/modern agents skills evals/gold cloud/corpus cloud/store.json .dockerignore | sha256sum | cut -c1-12)
           version="${store:0:12}-${tree}"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          current=$(curl -fsS -H "Authorization: Bearer $CF_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts/taochronos-corpus/settings" 2>/dev/null \
-            | python3 -c 'import json,sys; b=json.load(sys.stdin)["result"].get("bindings") or []; print(next((x.get("text","") for x in b if x.get("name")=="VERSION"), ""))' \
-            2>/dev/null || true)
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT"
+          ns=$(curl -fsS -H "Authorization: Bearer $CF_TOKEN" "$api/storage/kv/namespaces?per_page=100" \
+                | python3 -c 'import json,sys,os; r=json.load(sys.stdin)["result"]; print(next((n["id"] for n in r if n["title"]==os.environ["STORE_NAMESPACE"]), ""))' || true)
+          if [ -z "$ns" ]; then
+            echo "::warning::no KV namespace $STORE_NAMESPACE yet (the site's deployment creates it): upload the store with taochronos web upload (cloud/README.md); the full corpus is not deployed"
+            echo "build=0" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "ns=$ns" >> "$GITHUB_OUTPUT"
+          # what is deployed: written into the KV namespace once a deployment of the container has succeeded (the Worker
+          # itself is uploaded before its container, so its own VERSION does not say the container is there)
+          current=$(curl -fsS -H "Authorization: Bearer $CF_TOKEN" "$api/storage/kv/namespaces/$ns/values/deployed%2Fcorpus" 2>/dev/null || true)
           echo "deployed: ${current:-none}; this commit: $version"
-          if [ "$current" = "$version" ]; then echo "build=0" >> "$GITHUB_OUTPUT"; else echo "build=1" >> "$GITHUB_OUTPUT"; fi
+          if [ "$current" = "$version" ] && [ "$REBUILD" != "true" ]; then echo "build=0" >> "$GITHUB_OUTPUT"; exit 0; fi
+          # containers need the Workers Paid plan and the token's Account → Containers → Edit: without them, no build
+          if ! curl -fsS -o /dev/null -H "Authorization: Bearer $CF_TOKEN" "$api/containers/me"; then
+            echo "::warning::the account may not deploy containers yet: the full corpus is not built. Containers need the Workers Paid plan, and the API token needs Account → Containers → Edit (cloud/SETUP.md, steps 1–2); then run this workflow again."
+            echo "build=0" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "build=1" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         if: steps.plan.outputs.build == '1'
         with:
@@ -133,14 +152,9 @@ jobs:
         env:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NS: ${{ steps.plan.outputs.ns }}
         run: |
           api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces"
-          ns=$(curl -fsS -H "Authorization: Bearer $CF_TOKEN" "$api?per_page=100" \
-                | python3 -c 'import json,sys,os; r=json.load(sys.stdin)["result"]; print(next((n["id"] for n in r if n["title"]==os.environ["STORE_NAMESPACE"]), ""))' || true)
-          if [ -z "$ns" ]; then
-            echo "::warning::no KV namespace $STORE_NAMESPACE yet (the site's deployment creates it): upload the store with taochronos web upload (cloud/README.md); the full corpus is not deployed"
-            echo "ok=0" >> "$GITHUB_OUTPUT"; exit 0
-          fi
           mkdir -p cloud/.store/parts
           python3 - <<'EOF' > cloud/.store/parts.txt
           import json, urllib.parse
@@ -149,7 +163,7 @@ jobs:
               print(urllib.parse.quote(m["key"] + p["name"], safe=""), p["name"], p["sha256"])
           EOF
           while read -r key name sha; do
-            if ! curl -fsS -H "Authorization: Bearer $CF_TOKEN" "$api/$ns/values/$key" -o "cloud/.store/parts/$name"; then
+            if ! curl -fsS -H "Authorization: Bearer $CF_TOKEN" "$api/$NS/values/$key" -o "cloud/.store/parts/$name"; then
               echo "::warning::the store cloud/store.json names is not (all) in the KV namespace: upload it with taochronos web upload (cloud/README.md); the full corpus is not deployed"
               echo "ok=0" >> "$GITHUB_OUTPUT"; exit 0
             fi
@@ -172,13 +186,18 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          NS: ${{ steps.plan.outputs.ns }}
         run: |
           npm ci --no-audit --no-fund
-          npx --yes "$WRANGLER" deploy --var "VERSION:${{ steps.plan.outputs.version }}"
+          npx --yes "$WRANGLER" deploy --var "VERSION:$VERSION"
+          # the container is deployed: said in the KV namespace, for the next run and for the site's binding (deploy.sh)
+          curl -fsS -X PUT -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: text/plain" --data-binary "$VERSION" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces/$NS/values/deployed%2Fcorpus" > /dev/null
       - name: If the corpus could not be deployed
         if: steps.deploy.outcome == 'failure'
         run: |
-          echo "::warning::the full corpus's container was not deployed. Containers need the Workers Paid plan, and the API token needs Account → Containers → Edit (cloud/SETUP.md). The site is deployed without it."
+          echo "::warning::the full corpus's container was not deployed (the error is in the step above; cloud/SETUP.md). The site runs without it: the page uses the 要籍语料 in the browser."
 
   # after a new container: the site again, bound to the corpus Worker (which, the first time, did not exist when the
   # site was deployed), and checked against it
@@ -203,4 +222,5 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           STORE_TOKEN_SHA256: ${{ vars.STORE_TOKEN_SHA256 }}
+          CORPUS_DEPLOYED: "1"
         run: bash cloud/site/deploy.sh

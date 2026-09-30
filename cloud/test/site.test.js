@@ -85,6 +85,15 @@ test("without the corpus Worker the API says so, and the page runs in the browse
   assert.equal((await res.json()).corpus, "none");
 });
 
+test("a corpus Worker that fails is answered with a 503, which the page falls back on", async () => {
+  const { call } = site({ env: { CORPUS: { fetch: async () => { throw new Error("internal error; reference = x"); } } } });
+  const res = await call(`${PAGE}/api/info`, { headers: { Origin: PAGE } });
+  assert.equal(res.status, 503);
+  assert.equal(res.headers.get("Access-Control-Allow-Origin"), PAGE);
+  assert.equal(res.headers.get("Retry-After"), "10");
+  assert.equal((await res.json()).starting, true);
+});
+
 test("the API's reads and calls reach the corpus with only their path, query and body", async () => {
   const { call, seen } = site();
   const info = await call(`${PAGE}/api/info`, { headers: { Cookie: "secret=1", "CF-Connecting-IP": "203.0.113.9" } });

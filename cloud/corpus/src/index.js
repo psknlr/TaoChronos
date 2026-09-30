@@ -3,7 +3,7 @@
 // through its service binding.  Deployed by .github/workflows/site.yml (cloud/README.md).
 
 import { Container } from "@cloudflare/containers";
-import { route, unavailable } from "./corpus.js";
+import { reach, route, unavailable } from "./corpus.js";
 
 const PORT = 8080;
 // a container starting from its image: the instance, then Python and the runtime over the full corpus (tens of seconds)
@@ -70,6 +70,6 @@ export default {
   async fetch(request, env) {
     // one instance, placed near the site's readers (a Durable Object stays where it was first created)
     const id = env.CORPUS.idFromName("main");
-    return env.CORPUS.get(id, { locationHint: env.LOCATION_HINT || "apac" }).fetch(request);
+    return reach(() => env.CORPUS.get(id, { locationHint: env.LOCATION_HINT || "apac" }).fetch(request));
   },
 };

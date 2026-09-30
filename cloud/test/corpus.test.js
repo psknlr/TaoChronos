@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { route, unavailable } from "../corpus/src/corpus.js";
+import { reach, route, unavailable } from "../corpus/src/corpus.js";
 
 function box({ version = "v2", answer } = {}) {
   const storage = new Map();
@@ -72,4 +72,20 @@ test("an answer that is not the runtime's is passed on, not kept", async () => {
   const odd = box({ answer: () => new Response("<html>", { status: 200 }) });
   assert.equal((await route(get("/api/info"), odd)).status, 502);
   assert.equal(odd.storage.size, 0);
+});
+
+test("a Durable Object without its container, or failing, is answered as the page can fall back on", async () => {
+  const ok = await reach(async () => new Response("{}", { status: 200 }));
+  assert.equal(ok.status, 200);
+  // the Worker uploaded, its container not deployed (no Workers Paid, or the token cannot deploy containers)
+  const bare = await reach(async () => {
+    throw new Error("Containers have not been enabled for this Durable Object class. Have you correctly setup your Wrangler config?");
+  });
+  assert.equal(bare.status, 503);
+  assert.equal(bare.headers.get("X-TC-Corpus"), "none");
+  assert.equal((await bare.json()).corpus, "none");
+  const broken = await reach(async () => { throw new Error("Durable Object reset because its code was updated."); });
+  assert.equal(broken.status, 503);
+  assert.equal(broken.headers.get("Retry-After"), "10");
+  assert.equal((await broken.json()).starting, true);
 });

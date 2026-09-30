@@ -4,7 +4,8 @@
 #
 # Environment: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID; WRANGLER (the wrangler to run, e.g. wrangler@4.142.0);
 # STORE_NAMESPACE (the Workers KV namespace the full corpus store is uploaded into); SITE_URL; STORE_TOKEN_SHA256
-# (optional: the sha256 of a store upload token, in place of wrangler.toml's).
+# (optional: the sha256 of a store upload token, in place of wrangler.toml's); CORPUS_DEPLOYED=1 when the corpus's
+# container has just been deployed (otherwise the KV namespace says whether it is).
 set -euo pipefail
 cd "$(dirname "$0")"
 api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID"
@@ -33,11 +34,17 @@ if [ -n "$ns" ]; then
 else
   echo "::warning::no KV namespace (the token may not use Workers KV): the site takes no store uploads (cloud/SETUP.md)"
 fi
-if curl -fsS -o /dev/null -H "$auth" "$api/workers/scripts/taochronos-corpus/settings" 2>/dev/null; then
+# the corpus Worker, once its container is deployed (the workflow says so in the KV namespace; the Worker alone, uploaded
+# before a container that failed, would answer nothing)
+deployed="${CORPUS_DEPLOYED:-}"
+if [ -z "$deployed" ] && [ -n "$ns" ]; then
+  deployed=$(curl -fsS -H "$auth" "$api/storage/kv/namespaces/$ns/values/deployed%2Fcorpus" 2>/dev/null || true)
+fi
+if [ -n "$deployed" ] && curl -fsS -o /dev/null -H "$auth" "$api/workers/scripts/taochronos-corpus/settings" 2>/dev/null; then
   printf '\n[[services]]\nbinding = "CORPUS"\nservice = "taochronos-corpus"\n' >> wrangler.deploy.toml
   echo "the corpus Worker: taochronos-corpus"
 else
-  echo "::warning::no corpus Worker yet: the site's API answers 503 and the page runs the 要籍语料 in the browser"
+  echo "::warning::the full corpus's container is not deployed: the site's API answers 503 and the page runs the 要籍语料 in the browser"
 fi
 
 # ---------------------------------------------------------------- deploy

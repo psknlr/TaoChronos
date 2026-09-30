@@ -35,11 +35,14 @@ Pyodide：打开即可提问，引文可在全部古籍中核对。全量语料�
 `.github/workflows/site.yml`：合入 main（网页、代码、语料或 `cloud/` 有改动时）或 **Actions → site → Run workflow**。
 
 1. **test**：两个 Worker 的单元测试（`node --test`）。
-2. **site**（测试通过后立即）：构建网站，部署 `taochronos-site`（创建并绑定上传用的 KV 命名空间；有 `taochronos-corpus` 就绑定
-   服务），然后检查：https 页面可访问、http 跳转、`/api/info`，全量语料已部署时再做一次全量检索。部署与检查都在 `site/deploy.sh`。
-3. **corpus**（与 site 同时）：本次提交的版本（语料 sha256 + 构建镜像所用文件的 git 树）与已部署的不同时：从 KV 命名空间
-   `taochronos-store` 取回 `store.json` 指定的各分片并逐片校验，构建镜像（约 15 分钟）并部署 `taochronos-corpus`。语料未上传、
-   没有 Workers Paid 或令牌不能管理 Containers 时跳过并给出警告，**不影响网站**。
+2. **site**（测试通过后立即）：构建网站，部署 `taochronos-site`（创建并绑定上传用的 KV 命名空间；全量语料的容器已部署——KV 里记有
+   `deployed/corpus`——就绑定 `taochronos-corpus`），然后检查：https 页面可访问、http 跳转、`/api/info`，全量语料已部署时再做一次
+   全量检索。部署与检查都在 `site/deploy.sh`。
+3. **corpus**（与 site 同时）：本次提交的版本（语料 sha256 + 构建镜像所用文件的 git 树）与已部署的不同时（已部署的版本在容器部署
+   成功后记入 KV 命名空间的 `deployed/corpus`；手动 **Run workflow** 时勾选 *rebuild* 可强制重建）：先确认账户能部署容器
+   （Workers Paid、令牌有 Containers 权限，否则跳过并给出警告，不白白构建），再从 KV 命名空间 `taochronos-store` 取回
+   `store.json` 指定的各分片并逐片校验，构建镜像（约 12 分钟）并部署 `taochronos-corpus`。语料未上传或部署失败时给出警告，
+   **不影响网站**。
 4. **bind**（部署了新容器之后）：再部署一次网站——第一次部署容器时网站还没有绑定它——并对新容器做一次全量检索检查。
 
 `chat.impf.ai`：Cloudflare 只在没有自建 DNS 记录的名称上建 Worker 的自定义域名，所以切换时先在 Cloudflare 删除原先指向

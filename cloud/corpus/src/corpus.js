@@ -15,6 +15,24 @@ export const json = (data, status = 200, headers = {}) =>
 export const unavailable = () =>
   json({ error: "全量语料服务正在启动或暂不可用，请稍后再试", starting: true }, 503, { "Retry-After": "10", "X-TC-Corpus": "unavailable" });
 
+/** What the page is told when this Worker has no container (the account cannot run containers yet): as without it. */
+export const none = () =>
+  json({ error: "本站的全量语料服务未部署：网页在浏览器里运行要籍语料", corpus: "none" }, 503, { "X-TC-Corpus": "none" });
+
+/**
+ * The Durable Object's answer (call: its fetch).  It throws when its class has no container — the Worker was uploaded
+ * but its container was not deployed — or on any other error: the page is then told what it can fall back on.
+ */
+export async function reach(call) {
+  try {
+    return await call();
+  } catch (err) {
+    const message = String(err?.message || err);
+    console.error("corpus", message);
+    return /containers have not been enabled/i.test(message) ? none() : unavailable();
+  }
+}
+
 /**
  * box: {
  *   version,                               the deployed version (the Worker's VERSION: commit and store)
