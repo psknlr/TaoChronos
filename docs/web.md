@@ -256,9 +256,10 @@ send it in clear to the provider, where any visitor can read it — so the relay
   patient — it is downloading its runtime over the same link: 10 s, then 15 s, and if the relay did not answer, again 20,
   40, 60 and 80 seconds later, and once more before it asks a visitor for a key.  When it does not answer, the page is what
   it was before: the visitor's own key.
-* The relay accepts the page's origins only, the allowed models only, caps the output, and counts use per visitor
-  (a hash of address and day; addresses are kept nowhere) per minute and per day, and in all per day
-  (`relay/wrangler.toml`).  Its refusals are sentences a visitor can act on (wait, or use one's own key).
+* The relay accepts the page's origins only, its own model only (by its public name, Tao-R1), caps the output, and
+  counts use per visitor (a hash of address and day; addresses are kept nowhere) per minute and per day, and in all per
+  day (`relay/wrangler.toml`).  Its refusals are sentences a visitor can act on (wait, check an option, or use one's own
+  key).
 * **Conversation records** (the test period): before a visitor's first question the page says what would be recorded
   and why, and asks — 同意并继续 or 不记录; the choice stays in that browser and can be changed at any time under
   设置 → 数据.  A visitor who agreed sends, after each finished turn, one compact record to the relay: the question, the
@@ -268,10 +269,20 @@ send it in clear to the provider, where any visitor can read it — so the relay
   repository, and deletes them once the commit is pushed (`relay/collect.py`).  The records never enter the published
   site.  If the repository is ever made public, `data/chat-logs/` must be moved out first.
 
-**The page names no vendor.**  The default service appears as 道乃久默认服务 and its answers as Tao-R1 — on its tile
-(免密钥 · 直接提问, with no model to choose), in the chip's and the composer's tooltips, under each answer, in exports and in
-the connection test — and MiniMax's own presets are not listed (`UNLISTED` in `taochronos.chat.providers`; the local
-server's proxy still reaches them).  The consent notice speaks of recording to the institute's server.  Nor do the
+**The page names no vendor, and nothing it receives does.**  The default service appears as 道乃久默认服务 and its
+answers as Tao-R1 — on its tile (免密钥 · 直接提问, with no model to choose), in the chip's and the composer's tooltips,
+under each answer, in exports and in the connection test — and the presets of the model behind it are not offered: the
+site's build leaves them out (`taochronos web build --unlist minimax,minimax-global` in `site.yml` and `pages.yml`; the
+local server's page offers every preset, and its proxy reaches them all).  Between the page and the relay only the
+service's own terms travel (`relay/src/relay.js`, `publicText`): the relay's health names the model Tao-R1; the page asks
+for Tao-R1 and sends nothing only the upstream would understand (the relay adds `reasoning_split`, and renames the
+reasoning formats the page sends back); in the replies the model reads Tao-R1 and the reasoning formats `Tao-…`, the
+upstream's own fields (`base_resp`, the `*_sensitive` flags, `usage.total_characters`) are dropped, and an upstream error
+— an HTTP error, a failure reported in a 200 body or inside the stream — reaches the visitor as a sentence of the
+service's own, never the upstream's text (the relay logs its status only).  The page shows the service's errors without
+the model client's preamble, and brings conversations kept by an older page in line as it loads
+(`web/js/providers.js`, `publicConversation`).  The records, which are the institute's, keep the model that answered: the
+relay turns the public name back.  The consent notice speaks of recording to the institute's server.  Nor do the
 standing instructions name it: asked what it is built on, the assistant neither names nor denies it, and a question only
 about who answers gets the page's fixed reply ([above](#道乃久--tao-r1--impf-ai)).
 

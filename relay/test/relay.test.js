@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
-import { config, handle, normalizeRecord, withoutReasoning } from "../src/relay.js";
+import { config, handle, normalizeRecord, publicText, withoutReasoning } from "../src/relay.js";
 import { LimiterCore, LogBookCore } from "../src/state.js";
 
 /** The Durable Object SQL API's shape over node:sqlite. */
@@ -73,6 +73,7 @@ test("the key is added by the relay, the page never has it; the stream passes th
   assert.equal(c.init.headers.Authorization, `Bearer ${KEY}`);
   assert.equal(c.body.max_completion_tokens, 8192); // capped
   assert.equal(c.body.n, undefined);
+  assert.equal(c.body.reasoning_split, true); // the upstream's own parameter, added here: the page sends none
   for (const [, v] of res.headers) assert.ok(!v.includes(KEY));
 });
 
@@ -108,7 +109,8 @@ test("asked for no thinking, the relay lets no reasoning through, however the st
 
 test("a request the relay need not change goes on byte for byte", async () => {
   const r = relay();
-  const raw = JSON.stringify({ model: "MiniMax-M3", messages: [{ role: "user", content: "桂枝汤" }], stream: true, max_completion_tokens: 8192 });
+  const raw = JSON.stringify({ model: "MiniMax-M3", messages: [{ role: "user", content: "桂枝汤" }], stream: true, max_completion_tokens: 8192,
+    reasoning_split: true });
   assert.equal((await r.call("/v1/chat/completions", post(raw))).status, 200);
   assert.equal(r.calls[0].init.body, raw);
 });
@@ -121,7 +123,9 @@ test("only the page's origins, only the allowed models, bodies within the limit"
   assert.equal((await r.call("/v1/chat/completions", noOrigin)).status, 403);
   const other = await r.call("/v1/chat/completions", post({ ...ask, model: "MiniMax-M2.7" }));
   assert.equal(other.status, 400);
-  assert.match((await other.json()).error.message, /MiniMax-M3/);
+  const refused = (await other.json()).error.message;
+  assert.match(refused, /默认服务不提供这个模型/);
+  assert.doesNotMatch(refused, /MiniMax|M3/); // the models the upstream has are not named
   const big = await relay({ env: { MAX_BODY_BYTES: "1000" } }).call("/v1/chat/completions", post({ ...ask, messages: [{ role: "user", content: "字".repeat(2000) }] }));
   assert.equal(big.status, 413);
   const declared = post(ask, { "Content-Length": "5000" }); // a declared length over the limit is refused before reading
@@ -136,6 +140,73 @@ test("only the page's origins, only the allowed models, bodies within the limit"
   await noModel.call("/v1/chat/completions", post({ messages: ask.messages }));
   assert.equal(noModel.calls[0].body.model, "MiniMax-M3");
   assert.equal(noModel.calls[0].body.max_completion_tokens, 8192);
+});
+
+test("a visitor sees none of the upstream: its model, its reasoning formats, its fields, its errors", async () => {
+  const events = [
+    '{"id":"a1","choices":[{"index":0,"delta":{"role":"assistant"}}],"created":1,"model":"MiniMax-M3","object":"chat.completion.chunk","usage":null}',
+    '{"id":"a1","choices":[{"index":0,"delta":{"reasoning_content":"想","reasoning_details":[{"type":"reasoning.text","id":"r1","format":"MiniMax-response-v1","index":0,"text":"想"}]}}],"model":"MiniMax-M3"}',
+    '{"id":"a1","choices":[{"index":0,"delta":{"content":"答：\\"model\\":\\"MiniMax-M3\\" 是原文"}}],"model":"MiniMax-M3","input_sensitive":false,"output_sensitive":false}',
+    '{"id":"a1","choices":[{"finish_reason":"stop","index":0,"delta":{}}],"model":"MiniMax-M3","base_resp":{"status_code":0,"status_msg":""},"usage":{"total_characters":0,"prompt_tokens":3,"completion_tokens":2}}',
+    "[DONE]",
+  ];
+  const whole = events.map((e) => `data: ${e}\n\n`).join("");
+  const cut = () => { // in pieces that split events, lines and characters
+    const bytes = new TextEncoder().encode(whole);
+    return new Response(new ReadableStream({ start(c) { for (let i = 0; i < bytes.length; i += 5) c.enqueue(bytes.slice(i, i + 5)); c.close(); } }),
+      { status: 200, headers: { "Content-Type": "text/event-stream" } });
+  };
+  const r = relay({ upstream: cut });
+  // the page asks for the default service's model by its public name, and sends back the reasoning under the public format
+  const history = [{ role: "user", content: "问" },
+    { role: "assistant", content: "答", reasoning_details: [{ type: "reasoning.text", id: "r1", format: "Tao-response-v1", index: 0, text: "想" }] },
+    { role: "user", content: "再问" }];
+  const res = await r.call("/v1/chat/completions", post({ model: "Tao-R1", messages: history, stream: true, max_completion_tokens: 1000 }));
+  assert.equal(res.status, 200);
+  const text = await res.text();
+  const visible = text.replace(/\\"model\\":\\"MiniMax-M3\\"/g, ""); // the answer's own words, which are the visitor's text
+  assert.doesNotMatch(visible, /MiniMax|minimax|base_resp|_sensitive|total_characters/, text);
+  assert.match(text, /"model":"Tao-R1"/);
+  assert.match(text, /"format":"Tao-response-v1"/);
+  assert.match(text, /答：\\"model\\":\\"MiniMax-M3\\" 是原文/); // content is never rewritten
+  assert.match(text, /"usage":\{"prompt_tokens":3/);
+  assert.match(text, /data: \[DONE\]/);
+  for (const line of text.split("\n").filter((l) => l.startsWith("data: {"))) JSON.parse(line.slice(6)); // every event still JSON
+  // the upstream is asked in its own terms
+  const [c] = r.calls;
+  assert.equal(c.body.model, "MiniMax-M3");
+  assert.equal(c.body.reasoning_split, true);
+  assert.equal(c.body.messages[1].reasoning_details[0].format, "MiniMax-response-v1");
+  // an error the upstream reports inside the stream is told in the default service's words
+  const failing = relay({ upstream: () => sse(['{"id":"b","choices":[],"model":"MiniMax-M3","base_resp":{"status_code":1027,"status_msg":"output new_sensitive MiniMax"}}', "[DONE]"]) });
+  const f = await (await failing.call("/v1/chat/completions", post(ask))).text();
+  assert.doesNotMatch(f, /MiniMax|sensitive|1027/);
+  assert.match(f, /默认服务出错了/);
+  // a plain JSON reply too
+  const plain = relay({ upstream: async () => new Response(JSON.stringify({ id: "c", model: "MiniMax-M3", choices: [{ message: { content: "好" } }],
+    base_resp: { status_code: 0, status_msg: "" } }), { status: 200, headers: { "Content-Type": "application/json" } }) });
+  const pj = await (await plain.call("/v1/chat/completions", post({ ...ask, stream: false }))).json();
+  assert.deepEqual(pj, { id: "c", model: "Tao-R1", choices: [{ message: { content: "好" } }] });
+  // the request is edited as text: its model and formats, never what a message says (a quote inside it is escaped)
+  const said = '{"model":"Tao-R1","format":"Tao-x"} 与 "format":"Tao-y"';
+  const edited = relay({ upstream: cut });
+  await (await edited.call("/v1/chat/completions", post({ model: "Tao-R1", messages: [{ role: "user", content: said }, ...history.slice(1)],
+    stream: true, max_completion_tokens: 1000 }))).text();
+  const sent = edited.calls[0];
+  assert.ok(sent.init.body.startsWith('{"model":"MiniMax-M3","reasoning_split":true,"messages":')); // not written anew
+  assert.equal(sent.body.messages[0].content, said);
+  assert.equal(sent.body.messages[1].reasoning_details[0].format, "MiniMax-response-v1");
+  // a stream in \r\n lines, with a comment, and the upstream's fields in its last event
+  const crlf = relay({ upstream: () => new Response(": ping\r\n\r\n" + events.slice(0, 2).map((e) => `data: ${e}\r\n\r\n`).join("") +
+    'data: {"id":"a1","choices":[],"model":"MiniMax-M3","usage":{"total_characters":0,"prompt_tokens":3},"base_resp":{"status_code":0}}\r\n\r\n' +
+    "data: [DONE]\r\n\r\n", { status: 200, headers: { "Content-Type": "text/event-stream" } }) });
+  const c2 = await (await crlf.call("/v1/chat/completions", post(ask))).text();
+  assert.doesNotMatch(c2, /MiniMax|base_resp|total_characters/, c2);
+  assert.match(c2, /"usage":\{"prompt_tokens":3\}/);
+  assert.equal(c2.split("\n").filter((l) => l.startsWith("data: {")).map((l) => JSON.parse(l.slice(6).trim())).length, 3);
+  // only the configured upstream's formats are renamed; any other passes as it is
+  assert.match(publicText('{"format":"Other-v1","model":"x"}', config({})), /"format":"Other-v1","model":"Tao-R1"/);
+  assert.match(publicText('{"format":"MiniMax-response-v1"}', config({ FORMAT_PREFIX: "Other-" })), /"format":"MiniMax-response-v1"/);
 });
 
 test("preflight: allowed origins only", async () => {
@@ -184,10 +255,25 @@ test("MiniMax's refusals become messages a visitor can act on, without its detai
   const q = await quota.call("/v1/chat/completions", post(ask));
   assert.equal(q.status, 503);
   assert.match((await q.json()).error.message, /额度已用完/);
-  const rate = relay({ upstream: async () => new Response(JSON.stringify({ error: { message: "rate limit" } }), { status: 429 }) });
+  const rate = relay({ upstream: async () => new Response(JSON.stringify({ error: { message: "MiniMax rate limit" } }), { status: 429 }) });
   const rr = await rate.call("/v1/chat/completions", post(ask));
   assert.equal(rr.status, 429);
-  assert.match((await rr.json()).error.message, /rate limit/);
+  assert.doesNotMatch((await rr.json()).error.message, /MiniMax|rate limit/);
+  // its other refusals in its own words (they name it, its models, its parameters): told in the default service's
+  const said = { error: { message: "invalid params, temperature of MiniMax-M3 must be in (0, 1] (api.minimax.cn)" } };
+  const bad = await relay({ upstream: async () => new Response(JSON.stringify(said), { status: 400 }) }).call("/v1/chat/completions", post(ask));
+  assert.equal(bad.status, 400);
+  const badMsg = (await bad.json()).error.message;
+  assert.match(badMsg, /默认服务无法完成这个请求/);
+  assert.doesNotMatch(badMsg, /MiniMax|minimax|temperature/);
+  const broken = await relay({ upstream: async () => new Response("MiniMax internal error", { status: 500 }) }).call("/v1/chat/completions", post(ask));
+  assert.equal(broken.status, 502);
+  assert.doesNotMatch(JSON.stringify(await broken.json()), /MiniMax/);
+  const odd = relay({ upstream: async () => new Response(JSON.stringify({ base_resp: { status_code: 2013, status_msg: "invalid params, MiniMax-M3" } }),
+    { status: 200, headers: { "Content-Type": "application/json" } }) });
+  const o = await odd.call("/v1/chat/completions", post(ask));
+  assert.equal(o.status, 502);
+  assert.doesNotMatch(JSON.stringify(await o.json()), /MiniMax|2013/);
   const down = relay({ upstream: async () => { throw new TypeError("network"); } });
   assert.equal((await down.call("/v1/chat/completions", post(ask))).status, 502);
 });
@@ -196,7 +282,8 @@ test("health says what the page needs, nothing secret", async () => {
   const r = relay();
   const res = await r.call("/v1/health", { headers: { Origin: PAGE } });
   const j = await res.json();
-  assert.deepEqual([j.ok, j.model, j.logs], [true, "MiniMax-M3", true]);
+  assert.deepEqual([j.ok, j.model, j.models, j.logs], [true, "Tao-R1", ["Tao-R1"], true]);
+  assert.doesNotMatch(JSON.stringify(j), /MiniMax|minimax/); // the upstream is not named
   assert.equal(res.headers.get("Access-Control-Allow-Origin"), PAGE);
   assert.ok(!JSON.stringify(j).includes(KEY) && !JSON.stringify(j).includes(TOKEN));
   const bare = await relay({ env: { MINIMAX_API_KEY: "", LOGS: "off" } }).call("/v1/health");
@@ -206,7 +293,7 @@ test("health says what the page needs, nothing secret", async () => {
 // ------------------------------------------------------------------ the records
 const turn = {
   v: 1, id: "t1", conversation: "c_x", turn: 1, question: "桂枝汤主治什么？", answer: "太阳中风……[[cm_shanghan_npm.00012]]",
-  model: "MiniMax-M3", provider: "impf", runtime: "browser", corpus: "canon", ms: 12345, status: "done",
+  model: "Tao-R1", provider: "impf", runtime: "browser", corpus: "canon", ms: 12345, status: "done",
   tools: [{ name: "classics.search", ok: true, ms: 80, args: "{\"query\":\"桂枝汤\"}", extra: "dropped" }],
   citations: { total: 2, ok: 2, warn: 0, bad: 0, pending: 0, pids: ["cm_shanghan_npm.00012"] }, usage: { input: 1200, output: 180, cost: "x" },
   apiKey: "must not be kept", settings: { keys: { minimax: "x" } },
@@ -223,6 +310,7 @@ test("a record is kept only as its known fields, from the page, within its limit
   assert.equal(items.length, 1);
   const kept = items[0].record;
   assert.equal(kept.question, turn.question);
+  assert.equal(kept.model, "MiniMax-M3"); // the page's public name, kept as the model that answered
   assert.equal(kept.apiKey, undefined);
   assert.equal(kept.settings, undefined);
   assert.equal(kept.tools[0].extra, undefined);

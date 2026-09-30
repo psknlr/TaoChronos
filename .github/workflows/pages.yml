@@ -53,8 +53,9 @@ jobs:
           print(rt.info()["corpus"], len(rt.catalog("all")["tools"]), "tools")
           EOF
       - name: Build the site (client, in-browser runtime, 要籍语料, providers, pinned Pyodide, the relay's address)
-        # the page uses 道乃久默认服务 (relay/) when it answers, and asks for the visitor's own key when it does not
-        run: taochronos web build -o _site --relay "${{ vars.RELAY_URL || 'https://chat-api.impf.ai' }}"
+        # the page uses 道乃久默认服务 (relay/) when it answers, and asks for the visitor's own key when it does not; it
+        # names no vendor, so the presets of the model behind the relay are not offered
+        run: taochronos web build -o _site --relay "${{ vars.RELAY_URL || 'https://chat-api.impf.ai' }}" --unlist minimax,minimax-global
       - name: Check the 要籍语料 the site ships, as the browser will read it
         run: |
           python - <<'EOF'

@@ -11,12 +11,19 @@
 
 | 接口 | 作用 |
 |---|---|
-| `POST /v1/chat/completions` | 转发网页的模型调用（流式）；只接受网页来源（`ALLOWED_ORIGINS`）、只允许 `MODELS` 里的模型、输出上限 `MAX_OUTPUT_TOKENS`；网页要求不思考（`thinking: disabled`，涉及模型与智能体身份的提问）时，流中的思考内容一律去掉再转发；每人每分钟 `PER_MINUTE`、每天 `PER_DAY` 次，全体每天 `TOTAL_PER_DAY` 次 |
-| `GET /v1/health` | 是否配置好、模型、是否收集记录、限额（网页据此决定用不用默认服务） |
+| `POST /v1/chat/completions` | 转发网页的模型调用（流式）；只接受网页来源（`ALLOWED_ORIGINS`）、只接受默认服务的模型（公开名 `PUBLIC_MODEL`，即 Tao-R1）、输出上限 `MAX_OUTPUT_TOKENS`；网页要求不思考（`thinking: disabled`，涉及模型与智能体身份的提问）时，流中的思考内容一律去掉再转发；每人每分钟 `PER_MINUTE`、每天 `PER_DAY` 次，全体每天 `TOTAL_PER_DAY` 次 |
+| `GET /v1/health` | 是否配置好、模型的公开名、是否收集记录、限额（网页据此决定用不用默认服务） |
 | `POST /v1/logs` | 网页在访客**同意后**发来的一轮问答记录（只保留已知字段，截断过长内容；不含密钥、设置、IP） |
 | `GET /v1/logs/export`、`POST /v1/logs/ack` | 仓库的收集器取走记录、确认已提交后删除（需 `LOG_EXPORT_TOKEN`） |
 
 访客按“IP + 日期”的哈希计数，IP 本身不保存；记录里没有 IP。一个问题通常要调用模型几次（每轮工具调用一次）。
+
+**访客看不到上游。** 网页与中转之间只出现默认服务自己的说法：health 只给模型的公开名 Tao-R1；网页按 Tao-R1 请求，不带任何只有
+上游才认的参数——中转换成 `MODELS` 的第一个模型，加上 `UPSTREAM_FIELDS`（`reasoning_split`），并把网页送回的思考格式
+`Tao-…` 还原成上游的（`FORMAT_PREFIX`）；回复里的模型名一律是 Tao-R1、思考格式是 `Tao-…`，上游独有的字段（`base_resp`、
+`*_sensitive`、`usage.total_characters`）去掉；上游的任何报错（HTTP 错误、200 回复里的失败、流中的错误）都换成默认服务自己的
+一句话（检查哪个选项、稍后再试或改用自己的 Key），上游原文只以状态码记进 Worker 日志。对话记录（研究院自己的）仍记下实际作答的
+模型：中转把公开名换回 `MODELS` 的模型名。
 
 ## 启用（一次）
 

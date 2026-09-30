@@ -6,7 +6,8 @@ import { streamChat } from "./llm/openai.js";
 import { extractCitations, renderMarkdown } from "./markdown.js";
 import { AGENT, MODEL as ASSISTANT, PUBLISHER, PUBLISHER_EN } from "./brand.js";
 import { FIXED_ID, fixedReply, touchesIdentity } from "./fixed.js";
-import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, RELAY_ID, saveSettings, setRelay } from "./providers.js";
+import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, publicConversation, RELAY_ID, saveSettings, setRelay }
+  from "./providers.js";
 import { consent, NOTICE, setConsent } from "./records.js";
 import { BrowserRuntime, probeServer, sameOriginServer, ServerRuntime } from "./runtime.js";
 import * as store from "./store.js";
@@ -388,6 +389,7 @@ async function openConversation(id) {
   if (S.running && S.running.convId !== id) { /* a turn keeps running in the background; its conversation keeps updating */ }
   const conv = S.list.find((c) => c.id === id) || (await store.getConversation(id));
   if (!conv) return newChat();
+  if (publicConversation(conv)) store.putConversation(conv).catch(() => {}); // one another tab kept
   S.conv = conv;
   S.ui.editing = null;
   S.drawer.pid = null;
@@ -463,7 +465,7 @@ async function runAssistant(conv, msg) {
   S.running = { controller, convId: conv.id, msgId: msg.id };
   renderComposer();
   const provider = activeProvider(S.settings);
-  msg.model = provider.model;
+  msg.model = provider.relay ? ASSISTANT : provider.model; // the default service by its own model name only
   msg.provider = provider.id;
   const started = Date.now();
   const sink = [];
@@ -481,7 +483,7 @@ async function runAssistant(conv, msg) {
     });
     msg.rounds = result.rounds;
     msg.usage = result.usage;
-    if (result.model) msg.model = result.model;
+    if (result.model && !provider.relay) msg.model = result.model;
     msg.status = controller.signal.aborted ? "stopped" : "done";
   } catch (err) {
     if (err?.name === "AbortError" || controller.signal.aborted) msg.status = "stopped";
@@ -1233,6 +1235,7 @@ const settingsCtx = {
         if (!c?.id || !Array.isArray(c.messages)) continue;
         c.evidence ||= {};
         c.research ||= [];
+        publicConversation(c);
         await store.putConversation(c);
         S.list = S.list.filter((x) => x.id !== c.id);
         S.list.push(c);
@@ -1387,6 +1390,8 @@ async function main() {
     S.settings.provider = allProviders(S.settings).find((p) => !p.relay)?.id || allProviders(S.settings)[0].id;
   }
   S.list = await store.listConversations().catch(() => []);
+  // conversations kept by an older page, as the default service presents itself now
+  for (const c of S.list) if (publicConversation(c)) store.putConversation(c).catch(() => {});
   const m = /^#\/c\/(.+)$/.exec(location.hash);
   S.conv = m ? S.list.find((c) => c.id === m[1]) || null : null;
   renderAll();

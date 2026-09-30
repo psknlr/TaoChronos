@@ -1,13 +1,13 @@
 """The model providers the web client offers, derived from the harness's own presets.
 
 The browser calls a provider directly with the user's key when the provider allows it (CORS), or through the local
-server's proxy (``taochronos serve``), which forwards only to the hosts listed here.  The published page's default is
-道乃久默认服务 (relay/: MiniMax-M3 behind IMPF-AI's relay); the page names no vendor, so MiniMax's own presets are not
-listed there, while the proxy still reaches them.
+server's proxy (``taochronos serve``), which forwards only to the hosts listed here.  A published page may list fewer
+(``taochronos web build --unlist``); the proxy reaches them all.
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -19,16 +19,15 @@ LABELS = {
     "siliconflow": "硅基流动", "ark": "火山方舟（豆包）", "openrouter": "OpenRouter", "poe": "Poe", "grok": "xAI Grok",
     "gemini": "Google Gemini（兼容接口）", "litellm-proxy": "LiteLLM 代理", "local": "本地 vLLM", "ollama": "Ollama（本机）",
 }
-# MiniMax serves the published page's default service (relay/), which names no vendor: its presets are not listed on
-# the page, but the local server's proxy still forwards to them (and --env-keys still finds MINIMAX_API_KEY)
-UNLISTED = {"minimax", "minimax-global"}
 ORDER = ["minimax", "minimax-global", "deepseek", "qwen", "moonshot", "zhipu", "siliconflow", "ark", "openrouter", "poe",
          "openai", "anthropic", "gemini", "grok", "litellm-proxy", "ollama", "local"]
 # what the web client needs to know beyond the harness presets
 EXTRA = {
     "minimax": {"default_model": "MiniMax-M3", "reasoning": "reasoning_details", "vision": True, "stream_usage": True,
+                "thinking_off": {"thinking": {"type": "disabled"}},
                 "note": "在 MiniMax 开放平台控制台创建 API Key；默认模型 MiniMax-M3（1M 上下文，自适应思考）"},
-    "minimax-global": {"default_model": "MiniMax-M3", "reasoning": "reasoning_details", "vision": True, "stream_usage": True},
+    "minimax-global": {"default_model": "MiniMax-M3", "reasoning": "reasoning_details", "vision": True, "stream_usage": True,
+                       "thinking_off": {"thinking": {"type": "disabled"}}},
     "deepseek": {"default_model": "deepseek-chat", "reasoning": "reasoning_content", "stream_usage": True},
     "openai": {"stream_usage": True, "vision": True},
     "qwen": {"stream_usage": True},
@@ -43,12 +42,12 @@ EXTRA = {
 }
 
 
-def web_providers(listed: bool = True) -> list[dict[str, Any]]:
-    """The provider list of the web client's settings (``providers.json``); ``listed=False`` adds the unlisted ones
-    (what the local server's proxy may reach)."""
+def web_providers(unlisted: Iterable[str] = ()) -> list[dict[str, Any]]:
+    """The provider list of the web client's settings (``providers.json``), without the presets named in ``unlisted``."""
+    skip = set(unlisted)
     out = []
     for pid in ORDER:
-        if listed and pid in UNLISTED:
+        if pid in skip:
             continue
         preset = {**PRESETS.get(pid, {}), **EXTRA.get(pid, {})}
         if not preset.get("base_url"):
@@ -67,6 +66,7 @@ def web_providers(listed: bool = True) -> list[dict[str, Any]]:
             "reasoning": preset.get("reasoning"),
             "vision": bool(preset.get("vision")),
             "stream_usage": bool(preset.get("stream_usage")),
+            "thinking_off": preset.get("thinking_off"),  # the request fields that ask for no thinking, where there are any
             "note": preset.get("note", ""),
         })
     return out
@@ -75,14 +75,14 @@ def web_providers(listed: bool = True) -> list[dict[str, Any]]:
 def proxy_hosts() -> set[tuple[str, str, int]]:
     """(scheme, host, port) the local server may forward model requests to."""
     hosts = set()
-    for p in web_providers(listed=False):
+    for p in web_providers():
         parts = urlsplit(p["base_url"])
         hosts.add((parts.scheme, parts.hostname or "", parts.port or (443 if parts.scheme == "https" else 80)))
     return hosts
 
 
 def key_env_for(host: str) -> str | None:
-    for p in web_providers(listed=False):
+    for p in web_providers():
         if urlsplit(p["base_url"]).hostname == host:
             return p.get("key_env")
     return None

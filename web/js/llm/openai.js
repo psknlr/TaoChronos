@@ -1,9 +1,11 @@
-// OpenAI-compatible chat completions, streamed (MiniMax, DeepSeek, Qwen, Kimi, GLM, OpenRouter, Poe, LiteLLM, vLLM …).
+// OpenAI-compatible chat completions, streamed (DeepSeek, Qwen, Kimi, GLM, OpenRouter, Poe, LiteLLM, vLLM …).
 //
-// Providers differ in how they stream.  MiniMax, with reasoning_split, streams its thinking in delta.reasoning_details and
-// its own examples read both that and delta.content as cumulative text; most providers send increments.  Every field
-// is therefore accumulated by `Accum`, which accepts either.  The assistant message is returned whole — content,
-// tool_calls and the provider's reasoning field — because MiniMax requires it back verbatim in the history.
+// Providers differ in how they stream.  Some stream their thinking in delta.reasoning_details, and some send both that
+// and delta.content as cumulative text; most send increments.  Every field is therefore accumulated by `Accum`, which
+// accepts either.  The assistant message is returned whole — content, tool_calls and the provider's reasoning field —
+// because some providers require it back verbatim in the history.
+
+import { publicError } from "../providers.js";
 
 export class Accum {
   constructor() { this.text = ""; this.mode = null; }
@@ -84,7 +86,7 @@ export async function streamChat({ provider, messages, tools, settings, route, s
   }
   if (settings.temperature !== null && settings.temperature !== "" && settings.temperature !== undefined) body.temperature = Number(settings.temperature);
   Object.assign(body, provider.extra_body || {});
-  if ((provider.id.startsWith("minimax") || provider.family === "minimax") && settings.thinking === false) body.thinking = { type: "disabled" };
+  if (settings.thinking === false && provider.thinking_off) Object.assign(body, provider.thinking_off); // what asks for no thinking
   if (provider.stream_usage) body.stream_options = { include_usage: true };
 
   const target = endpoint(url, route);
@@ -109,7 +111,9 @@ export async function streamChat({ provider, messages, tools, settings, route, s
   }
   if (!resp.ok) {
     const text = await resp.text().catch(() => "");
-    throw new ProviderError(errorMessage(resp.status, text), { status: resp.status, body: text, retryable: resp.status === 429 || resp.status >= 500 });
+    const message = errorMessage(resp.status, text);
+    throw new ProviderError(provider.relay ? publicError(message) : message,
+      { status: resp.status, body: provider.relay ? "" : text, retryable: resp.status === 429 || resp.status >= 500 });
   }
 
   const state = {
@@ -117,18 +121,23 @@ export async function streamChat({ provider, messages, tools, settings, route, s
     final: null, shownThinking: 0,
   };
   const type = resp.headers.get("content-type") || "";
-  if (!type.includes("event-stream")) {
-    // a provider that ignored stream: true (or an error delivered with status 200)
-    const text = await resp.text();
-    let j;
-    try { j = JSON.parse(text); } catch { throw new ProviderError(`无法解析模型服务的回复：${text.slice(0, 300)}`); }
-    handleChunk(j, state, onEvent, true);
-  } else {
-    await readSSE(resp.body, signal, (data) => {
+  try {
+    if (!type.includes("event-stream")) {
+      // a provider that ignored stream: true (or an error delivered with status 200)
+      const text = await resp.text();
       let j;
-      try { j = JSON.parse(data); } catch { return; }
-      handleChunk(j, state, onEvent, false);
-    });
+      try { j = JSON.parse(text); } catch { throw new ProviderError(`无法解析模型服务的回复：${text.slice(0, 300)}`); }
+      handleChunk(j, state, onEvent, true);
+    } else {
+      await readSSE(resp.body, signal, (data) => {
+        let j;
+        try { j = JSON.parse(data); } catch { return; }
+        handleChunk(j, state, onEvent, false);
+      });
+    }
+  } catch (err) {
+    if (provider.relay && err instanceof ProviderError) { err.message = publicError(err.message); err.body = ""; }
+    throw err;
   }
   return finish(state, provider);
 }

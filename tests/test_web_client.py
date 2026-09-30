@@ -19,7 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 NODE_TEST = r"""
 import assert from "node:assert/strict";
-import { Accum, splitThink } from "./js/llm/openai.js";
+import { Accum, splitThink, streamChat } from "./js/llm/openai.js";
+import { publicConversation, publicError } from "./js/providers.js";
 import { answerDangling, buildHistory, withoutReasoning } from "./js/agent.js";
 import { extractCitations } from "./js/markdown.js";
 import { count } from "./js/util.js";
@@ -120,6 +121,53 @@ await assert.rejects(up.passage("zz.1"), /no such passage/);
 answers["/api/call"] = [503, { error: "down" }];
 await assert.rejects(new ServerRuntime("https://example.org").call("x", {}), (e) => e.unavailable === true && /down/.test(e.message));
 assert.equal(new ServerRuntime("http://localhost:8765").label, "本地服务");
+
+// the default service reaches the visitor in its own words: an error it passed on from the model behind it is a plain
+// failure; its own messages come without the model client's preamble; another provider's errors come as they are
+const relayP = { id: "impf", relay: true, baseUrl: "https://relay.example/v1", model: "Tao-R1", extra_body: {},
+  max_tokens_param: "max_completion_tokens", thinking_off: { thinking: { type: "disabled" } }, reasoning: "reasoning_details" };
+const FAILED = "默认服务出错了，请稍后再试，或在“设置 → 模型”里填入自己的 API Key";
+let sent = null;
+const reply = (status, body, type = "application/json") => {
+  globalThis.fetch = async (url, init) => { sent = JSON.parse(init.body); return new Response(body, { status, headers: { "Content-Type": type } }); };
+};
+reply(400, JSON.stringify({ error: { message: "invalid params: temperature (MiniMax-M3)" }, base_resp: { status_code: 2013 } }));
+await assert.rejects(streamChat({ provider: relayP, messages: [], tools: [], settings: { thinking: false } }),
+  (e) => e.message === FAILED && e.body === "");
+assert.deepEqual(sent.thinking, { type: "disabled" }); // no thinking asked for, in the service's own field
+assert.equal(sent.reasoning_split, undefined); // the relay adds what the model behind it needs
+reply(429, JSON.stringify({ error: { message: "今天的免费额度已用完，明天再来", type: "daily_limit" } }));
+await assert.rejects(streamChat({ provider: relayP, messages: [], tools: [], settings: {} }), (e) => e.message === "今天的免费额度已用完，明天再来");
+reply(200, 'data: {"error":{"message":"output new_sensitive (MiniMax)"}}\n\n', "text/event-stream");
+await assert.rejects(streamChat({ provider: relayP, messages: [], tools: [], settings: {} }), (e) => e.message === FAILED);
+reply(400, JSON.stringify({ error: { message: "invalid params" } }));
+await assert.rejects(streamChat({ provider: { ...relayP, id: "deepseek", relay: false, thinking_off: null }, messages: [], tools: [],
+  settings: { thinking: false } }), (e) => e.message === "模型服务返回 400：invalid params");
+assert.equal(sent.thinking, undefined);
+
+// conversations an older page kept: the default service's turns as it presents itself now; nothing else is touched
+const kept = { messages: [
+  { role: "user", text: "问" },
+  { role: "assistant", provider: "impf", model: "MiniMax-M3", wireProvider: "impf", error: "模型服务返回 400：默认服务只提供 MiniMax-M3",
+    wire: [{ role: "assistant", content: "答", reasoning_details: [{ type: "reasoning.text", format: "MiniMax-response-v1", text: "想" }] }] },
+  { role: "assistant", provider: "impf", model: "MiniMax-M3", error: "模型服务返回 400：invalid params, temperature out of range" },
+  { role: "assistant", provider: "impf", error: "模型服务返回 429（请求过于频繁或额度不足）：默认服务的模型额度暂时用完或调用过于频繁，请稍后再试，" +
+    "或在“设置 → 模型”里填入自己的 API Key（rate limit exceeded（MiniMax））" },
+  { role: "assistant", provider: "impf", error: "模型服务报错：output new_sensitive" },
+  { role: "assistant", provider: "impf", error: "工具运行出错：timeout" },
+  { role: "assistant", provider: "deepseek", model: "deepseek-chat", error: "模型服务返回 400：invalid params" },
+] };
+assert.equal(publicConversation(kept), true);
+const [, k1, k2, k3, k4, k5, k6] = kept.messages;
+assert.ok(!/MiniMax|invalid|sensitive|rate limit/.test(JSON.stringify([k1, k2, k3, k4, k5])));
+assert.deepEqual([k1.model, k2.model, k1.wire[0].reasoning_details[0].format], ["Tao-R1", "Tao-R1", "Tao-response-v1"]);
+assert.equal(k1.error, "默认服务不提供这个模型：请在“设置 → 模型”里选用道乃久默认服务，或改用自己的 API Key");
+assert.deepEqual([k2.error, k4.error], [FAILED, FAILED]);
+assert.equal(k3.error, "默认服务的模型额度暂时用完或调用过于频繁，请稍后再试，或在“设置 → 模型”里填入自己的 API Key");
+assert.equal(k5.error, "工具运行出错：timeout"); // not the model service's
+assert.deepEqual([k6.model, k6.error], ["deepseek-chat", "模型服务返回 400：invalid params"]); // another provider's
+assert.equal(publicConversation(kept), false); // once is enough
+assert.equal(publicError("无法连接道乃久默认服务：网络不通"), "无法连接道乃久默认服务：网络不通");
 console.log("ok");
 """
 
@@ -137,6 +185,16 @@ def test_the_client_logic_under_node(tmp_path):
         check = subprocess.run([node, "--check", str(tmp_path / "js" / js.relative_to(ROOT / "web" / "js"))],
                                capture_output=True, text=True, timeout=60)
         assert check.returncode == 0, (js, check.stderr[-1000:])
+
+
+def _published(web: Path, relay: str) -> None:
+    """The client as the site's build publishes it (.github/workflows/site.yml): the relay's address, and the provider
+    list without the presets of the model behind it."""
+    from taochronos.chat.providers import web_providers
+
+    shutil.copytree(ROOT / "web", web)
+    (web / "site.json").write_text(json.dumps({"relay": relay}), encoding="utf-8")
+    (web / "providers.json").write_text(json.dumps(web_providers(["minimax", "minimax-global"]), ensure_ascii=False), encoding="utf-8")
 
 
 def _chromium():
@@ -164,8 +222,7 @@ def test_a_conversation_in_the_browser(tmp_path):
     mock = MockProvider().start()
     relay = MockRelay(mock.base_url).start()
     web = tmp_path / "web"
-    shutil.copytree(ROOT / "web", web)
-    (web / "site.json").write_text(json.dumps({"relay": relay.url}), encoding="utf-8")
+    _published(web, relay.url)
     rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
     srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -214,19 +271,26 @@ def test_a_conversation_in_the_browser(tmp_path):
             page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 2", timeout=60000)
             first, second = mock.requests[0]["body"], mock.requests[1]["body"]
             assert first["max_completion_tokens"] == 8192 and first["reasoning_split"] is True and first["tools"]  # within the relay's ceiling
+            # the page asks in the default service's own terms (the relay adds the upstream's), and reads them back
+            asked = relay.chat[0]["body"]
+            assert asked["model"] == "Tao-R1" and "reasoning_split" not in asked and first["model"] == "MiniMax-M3"
+            assert "MiniMax" not in json.dumps(relay.chat, ensure_ascii=False)
             assert first["messages"][0]["role"] == "system" and "[[passage_id]]" in first["messages"][0]["content"]
             system = first["messages"][0]["content"]
             assert system.startswith("你是道乃久") and "MiniMax" not in system and "底层语言模型：" not in system  # no model named
             replay = second["messages"][2]
             assert replay["tool_calls"][0]["function"] == {"name": "classics__search", "arguments": '{"query": "桂枝汤 主之", "k": 3}'}
             assert replay["reasoning_details"][0]["text"] == "用户问桂枝汤的主治，先检索原文。"
+            assert replay["reasoning_details"][0]["format"] == "MiniMax-response-v1"  # the page kept it as Tao-…; the relay restores it
             assert second["messages"][3]["role"] == "tool" and "shanghanlun.c013" in second["messages"][3]["content"]
             later = mock.requests[2]["body"]["messages"]
             assert [m["role"] for m in later] == ["system", "user", "assistant", "tool", "assistant", "user"]
-            # the conversation survives a reload
+            # the conversation survives a reload, and keeps nothing of the upstream
             page.reload()
             page.wait_for_selector(".conv.active", timeout=15000)
             assert page.locator(".msg.assistant").count() == 2
+            stored = page.evaluate("import('./js/store.js').then((s) => s.listConversations()).then((l) => JSON.stringify(l))")
+            assert "MiniMax" not in stored and '"model":"Tao-R1"' in stored and '"format":"Tao-response-v1"' in stored
             assert not errors, errors
             browser.close()
     finally:
@@ -440,8 +504,7 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
     mock = MockProvider().start()
     relay = MockRelay(mock.base_url).start()
     web = tmp_path / "web"
-    shutil.copytree(ROOT / "web", web)
-    (web / "site.json").write_text(json.dumps({"relay": relay.url}), encoding="utf-8")
+    _published(web, relay.url)
     rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
     srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -492,14 +555,14 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
             page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
             rec = records(1)[0]
             assert rec["v"] == 1 and rec["question"] == "桂枝汤主治什么？请给出原文。" and rec["turn"] == 1
-            assert "桂枝汤" in rec["answer"] and rec["status"] == "done" and rec["provider"] == "impf" and rec["model"] == "MiniMax-M3"
+            assert "桂枝汤" in rec["answer"] and rec["status"] == "done" and rec["provider"] == "impf" and rec["model"] == "Tao-R1"
             assert rec["tools"] and rec["tools"][0]["name"].startswith("classics") and rec["tools"][0]["ok"]
             assert rec["citations"]["total"] == 4 and rec["citations"]["bad"] == 1 and rec["citations"]["pending"] == 0
             assert rec["usage"] == {"input": 1200, "output": 180} and rec["rounds"] == 2
             assert not {"apiKey", "keys", "settings"} & set(rec) and MockRelay.SECRET not in json.dumps(rec)
             assert relay.chat and all("authorization" not in {k.lower() for k in c["headers"]} for c in relay.chat)  # no key from the page
             assert all(r["headers"].get("Authorization") == f"Bearer {MockRelay.SECRET}" for r in mock.requests)
-            assert relay.chat[0]["body"]["model"] == "MiniMax-M3"
+            assert relay.chat[0]["body"]["model"] == "Tao-R1"
             assert relay.chat[0]["body"]["max_completion_tokens"] == 8192  # within the relay's ceiling: forwarded unchanged
             assert relay.record_types[0].startswith("text/plain")  # a simple request: no preflight
             # the choice is kept: a follow-up asks nothing and is recorded as the conversation's second turn
@@ -573,8 +636,7 @@ def test_a_question_about_the_assistant_gets_the_fixed_reply(tmp_path):
     mock = MockProvider().start()
     relay = MockRelay(mock.base_url).start()
     web = tmp_path / "web"
-    shutil.copytree(ROOT / "web", web)
-    (web / "site.json").write_text(json.dumps({"relay": relay.url}), encoding="utf-8")
+    _published(web, relay.url)
     rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
     srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
     threading.Thread(target=srv.serve_forever, daemon=True).start()

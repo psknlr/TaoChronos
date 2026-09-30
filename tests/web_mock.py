@@ -8,7 +8,9 @@ verbatim, one misquoted, one to a passage that does not exist and one quoted in 
 
 from __future__ import annotations
 
+import codecs
 import json
+import re
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -68,6 +70,7 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Transfer-Encoding", "chunked")
         self.end_headers()
         for chunk in (self._answer() if answered else self._tool_call()) if body.get("tools") else self._answer():
+            chunk = {"id": "mock-1", "object": "chat.completion.chunk", "model": body.get("model") or "", **chunk}
             self._write(f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n")
         self._write("data: [DONE]\n\n")
         self.wfile.write(b"0\r\n\r\n")
@@ -164,9 +167,34 @@ class _AnthropicHandler(_Handler):
         yield {"type": "message_stop"}
 
 
+PUBLIC_MODEL = "Tao-R1"          # the default service's model, as the page knows it (relay/src/relay.js: PUBLIC_MODEL)
+UPSTREAM_MODEL = "MiniMax-M3"    # the model behind it (relay.js: MODELS)
+_MODEL_FIELD = re.compile(r'"model"\s*:\s*"(?:[^"\\]|\\.)*"')
+_FORMAT_FIELD = re.compile(r'"format"\s*:\s*"MiniMax-')
+
+
+def _upstream_request(raw: bytes) -> bytes:
+    """The page's request in the upstream's own terms, as the relay sends it: its model, its parameters, its formats."""
+    body = json.loads(raw or b"{}")
+    if body.get("model") in (None, "", PUBLIC_MODEL):
+        body["model"] = UPSTREAM_MODEL
+    body.setdefault("reasoning_split", True)
+    for m in body.get("messages") or []:
+        for d in (m.get("reasoning_details") or []) if isinstance(m, dict) else []:
+            if isinstance(d, dict) and str(d.get("format", "")).startswith("Tao-"):
+                d["format"] = "MiniMax-" + d["format"][len("Tao-"):]
+    return json.dumps(body, ensure_ascii=False).encode("utf-8")
+
+
+def _public_event(text: str) -> str:
+    """One event of the reply as a visitor sees it (relay.js: publicText): the public model name and formats."""
+    return _FORMAT_FIELD.sub('"format":"Tao-', _MODEL_FIELD.sub(f'"model":"{PUBLIC_MODEL}"', text))
+
+
 class MockRelay(ThreadingHTTPServer):
     """道乃久默认服务 as the page sees it (relay/src/relay.js): health, the model calls forwarded to ``upstream`` with the
-    relay's own key, and the conversation records.  Records what the browser sent — the page never sends a key."""
+    relay's own key (in the upstream's terms, the reply in the service's own), and the conversation records.  Records
+    what the browser sent — the page never sends a key."""
 
     daemon_threads = True
     SECRET = "relay-held-secret"
@@ -220,7 +248,7 @@ class _RelayHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if self.path == "/v1/health":
             time.sleep(self.server.health_delay)
-            self._json(200, {"ok": True, "service": "taochronos-relay", "model": "MiniMax-M3", "models": ["MiniMax-M3"],
+            self._json(200, {"ok": True, "service": "taochronos-relay", "model": PUBLIC_MODEL, "models": [PUBLIC_MODEL],
                              "logs": self.server.logs, "max_output_tokens": 8192, "limits": {"per_minute": 30, "per_day": 600}})
         else:
             self._json(404, {"error": {"message": "not found"}})
@@ -241,7 +269,7 @@ class _RelayHandler(BaseHTTPRequestHandler):
         self.server.chat.append({"headers": dict(self.headers), "body": json.loads(raw or b"{}")})
         import urllib.request
 
-        req = urllib.request.Request(f"{self.server.upstream}/chat/completions", data=raw, method="POST",
+        req = urllib.request.Request(f"{self.server.upstream}/chat/completions", data=_upstream_request(raw), method="POST",
                                      headers={"Content-Type": "application/json", "Authorization": f"Bearer {MockRelay.SECRET}"})
         with urllib.request.urlopen(req, timeout=30) as up:  # noqa: S310 — the test's own mock
             self.send_response(up.status)
@@ -249,10 +277,21 @@ class _RelayHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", up.headers.get("Content-Type", "text/event-stream"))
             self.send_header("Transfer-Encoding", "chunked")
             self.end_headers()
-            while True:
-                data = up.read1(65536) if hasattr(up, "read1") else up.read(65536)
-                if not data:
-                    break
+            decoder, buffer = codecs.getincrementaldecoder("utf-8")(), ""
+
+            def send(text: str) -> None:
+                data = text.encode("utf-8")
                 self.wfile.write(f"{len(data):X}\r\n".encode() + data + b"\r\n")
                 self.wfile.flush()
+
+            while True:
+                data = up.read1(65536) if hasattr(up, "read1") else up.read(65536)
+                buffer += decoder.decode(data, final=not data)
+                while "\n\n" in buffer:  # an event is read whole
+                    event, buffer = buffer.split("\n\n", 1)
+                    send(_public_event(event) + "\n\n")
+                if not data:
+                    break
+            if buffer:
+                send(_public_event(buffer))
             self.wfile.write(b"0\r\n\r\n")

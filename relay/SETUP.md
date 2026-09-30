@@ -141,7 +141,7 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 | Test the relay | 10 项测试全部通过 |
 | Are its secrets set? | 没有输出。缺了哪个 Secret，这里会出现黄色警告并列出名称，后面的步骤会被跳过：运行仍显示成功，但**什么也没部署** |
 | Deploy the Worker, then give it its secrets | 出现类似 `Uploaded taochronos-relay`、`Deployed taochronos-relay triggers`、`chat-api.impf.ai (custom domain)` 的输出，以及两行 `Success! Uploaded secret …` |
-| Check it answers, and that MiniMax takes its key | 最多等 4 分钟让新域名生效，再用 MiniMax 做一次极小的调用。成功时最后一行是 `{"relay": "https://chat-api.impf.ai", "model": "MiniMax-M3", "logs": true, …, "call": "ok"}` |
+| Check it answers, and that MiniMax takes its key | 最多等 4 分钟让新域名生效，再用 MiniMax 做一次极小的调用。成功时最后一行是 `{"relay": "https://chat-api.impf.ai", "model": "Tao-R1", "logs": true, …, "call": "ok"}` |
 
 第一次部署时，Cloudflare 会自动在 impf.ai 的 DNS 里创建 `chat-api` 记录并签发证书。**不要**事先手动添加这条 DNS 记录，已有记录会导致部署失败。
 
@@ -150,7 +150,7 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 1. 用浏览器打开 <https://chat-api.impf.ai/v1/health>，应看到：
 
    ```json
-   {"ok":true,"service":"taochronos-relay","version":"1","model":"MiniMax-M3","models":["MiniMax-M3"],"logs":true,"max_output_tokens":8192,"limits":{"per_minute":30,"per_day":600}}
+   {"ok":true,"service":"taochronos-relay","version":"1","model":"Tao-R1","models":["Tao-R1"],"logs":true,"max_output_tokens":8192,"limits":{"per_minute":30,"per_day":600}}
    ```
 
    如果是 `"ok":false`，说明 Worker 已上线但没有密钥，重跑一次 relay 工作流即可。
