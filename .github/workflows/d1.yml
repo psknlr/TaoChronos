@@ -122,6 +122,7 @@ jobs:
                    f"- statements this run: {r['statements']:,}; rows written: {r['rows_written']:,} (earlier today: {r['used_before']:,})",
                    f"- by step: " + ", ".join(f"{k} {v:,}" for k, v in r["by_step"].items()),
                    f"- by database: " + ", ".join(f"{r['names'][int(k)]} {v:,}" for k, v in r["by_db"].items()),
+                   f"- the slowest statement of each step (D1 allows 30 s): " + ", ".join(f"{k} {v} s" for k, v in r["seconds"].items()),
                    f"- complete: {'yes' if r['complete'] else 'no — ' + str(r['stopped'])}"]
           open(os.environ["GITHUB_STEP_SUMMARY"], "a").write("\n".join(lines) + "\n")
           open(os.environ["GITHUB_OUTPUT"], "a").write(f"complete={'1' if r['complete'] else '0'}\n")
