@@ -297,3 +297,145 @@ def index_state(path: Path) -> dict[str, Any]:
         return {"state": "built" if built else "pending", "indexed": indexed, "total": total}
     finally:
         db.close()
+
+
+# ------------------------------------------------------------------ the site's server: the full corpus (全量语料)
+PART_BYTES = 24 * 1024 * 1024  # the compressed store travels in parts of this size: each a value in Workers KV (≤ 25 MiB)
+
+
+def site_record(data: dict[str, Any], source: str) -> dict[str, Any]:
+    """A book's catalog record with the terms under which the site carries it: the transcriptions of the sources that
+    declare no licence (``WEB_SOURCES`` beyond ``OPEN_SOURCES``) are published by IMPF-AI's decision, and 笈成's are
+    CC0 — a record written by an older ingest may still say "local research only"."""
+    src = dict(data.get("source") or {})
+    if source == "jicheng":
+        from .ingest import JC_SOURCE
+
+        src["license"] = JC_SOURCE["license"]
+    elif source not in OPEN_SOURCES:
+        src.update(license=WEB_SOURCES[source], published=PUBLISHED)
+    return {**data, "source": src}
+
+
+def server_store(src: Path, out: Path) -> dict[str, Any]:
+    """The full corpus as the site's server carries it (``taochronos web store``): every book of a source the site may
+    carry (``WEB_SOURCES``; never ``NEVER_PACKED``), its passages as in the full store (the same ids and row ids, so a
+    citation means the same passage here, in the browser and on the server), without the full-text index — built where
+    the server is built (``index_store``: the index is most of the store, and the normalizer of the code that serves
+    it builds it) — and without cached claims.  One compact file (no journal)."""
+    for p in (out, out.with_name(out.name + "-wal"), out.with_name(out.name + "-shm"), out.with_name(out.name + "-journal")):
+        if p.exists():
+            p.unlink()
+    store = CorpusStore(out, create=True)
+    db = store.db
+    db.execute("PRAGMA journal_mode=DELETE")
+    db.execute("ATTACH DATABASE ? AS full", (f"file:{src}?mode=ro",))
+    kept: dict[str, dict[str, int]] = defaultdict(lambda: {"books": 0})
+    excluded: dict[str, int] = defaultdict(int)
+    for bid, source, data in db.execute("SELECT id, source, data FROM full.books ORDER BY id").fetchall():
+        if source in WEB_SOURCES:
+            store.put_book(site_record(json.loads(data), source), source)
+            kept[source]["books"] += 1
+        else:
+            excluded[source] += 1
+    db.execute("INSERT INTO external(id, data) SELECT id, data FROM full.external ORDER BY id")
+    columns = ", ".join(("rid",) + COLUMNS)
+    db.execute(f"INSERT INTO passages({columns}) SELECT {columns} FROM full.passages "
+               "WHERE book_id IN (SELECT id FROM main.books) ORDER BY rid")
+    normalizer = db.execute("SELECT value FROM full.meta WHERE key = 'normalizer'").fetchone()
+    db.commit()
+    db.execute("DETACH DATABASE full")
+    for source, n, chars in db.execute("SELECT b.source, COUNT(*), SUM(LENGTH(p.text)) FROM passages p "
+                                       "JOIN books b ON b.id = p.book_id GROUP BY b.source"):
+        kept[source].update(passages=n, characters=chars)
+    if normalizer:
+        store.set_meta("normalizer", normalizer[0])
+    store.set_meta("edition", "full")
+    store.set_meta("label", "全量语料")
+    store.set_meta("index", "pending")
+    store.set_meta("index_rid", "0")
+    store.count()
+    store.commit()
+    db.execute("VACUUM")
+    store.close()
+    totals = {k: sum(v.get(k, 0) for v in kept.values()) for k in ("books", "passages", "characters")}
+    return {"path": str(out), **totals, "sources": {k: dict(v) for k, v in sorted(kept.items())},
+            "excluded": dict(sorted(excluded.items())), "bytes": out.stat().st_size}
+
+
+def compress_store(path: Path, dest: Path, *, preset: int = 6) -> dict[str, Any]:
+    """``path`` xz-compressed into ``dest`` (the xz tool with all cores when there is one, else lzma), with the digests
+    and the parts it travels in (``PART_BYTES`` each, the last smaller)."""
+    import lzma
+    import shutil
+    import subprocess
+
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    raw = hashlib.sha256()
+    with open(path, "rb") as f:
+        while chunk := f.read(1 << 20):
+            raw.update(chunk)
+    if shutil.which("xz"):
+        with open(dest, "wb") as out:
+            subprocess.run(["xz", "-z", "-c", f"-{preset}", "-T0", "--block-size=64MiB", "--check=crc32", str(path)],
+                           stdout=out, check=True)
+    else:
+        comp = lzma.LZMACompressor(format=lzma.FORMAT_XZ, check=lzma.CHECK_CRC32, preset=preset)
+        with open(path, "rb") as f, open(dest, "wb") as out:
+            while chunk := f.read(1 << 20):
+                out.write(comp.compress(chunk))
+            out.write(comp.flush())
+    whole, parts = hashlib.sha256(), []
+    with open(dest, "rb") as f:
+        while chunk := f.read(PART_BYTES):
+            whole.update(chunk)
+            parts.append({"name": f"part-{len(parts):03d}", "bytes": len(chunk), "sha256": hashlib.sha256(chunk).hexdigest()})
+    return {"encoding": "xz", "bytes": dest.stat().st_size, "sha256": whole.hexdigest(), "raw_bytes": path.stat().st_size,
+            "raw_sha256": raw.hexdigest(), "part_bytes": PART_BYTES, "parts": parts}
+
+
+def server_attribution(path: Path, info: dict[str, Any]) -> str:
+    """The sources and terms of every text the site's server carries (``cloud/ATTRIBUTION.md``): each source's terms once,
+    then every book (with its own terms where they are not its source's)."""
+    from collections import Counter
+
+    db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        chars = dict(db.execute("SELECT book_id, SUM(LENGTH(text)) FROM passages GROUP BY book_id"))
+        books = []
+        for bid, source, data in db.execute("SELECT id, source, data FROM books"):
+            d = json.loads(data)
+            src = d.get("source") or {}
+            books.append({"id": bid, "source": source, "title": d.get("title") or bid, "dynasty": d.get("dynasty") or "",
+                          "origin": src.get("origin") or source, "license": src.get("license") or WEB_SOURCES[source],
+                          "url": src.get("url") or "", "chars": chars.get(bid, 0)})
+    finally:
+        db.close()
+    order = list(WEB_SOURCES)
+    books.sort(key=lambda b: (order.index(b["source"]), b["id"]))
+    terms = {s: Counter(b["license"] for b in books if b["source"] == s).most_common(1)[0][0] for s in {b["source"] for b in books}}
+    origin = {s: Counter(b["origin"] for b in books if b["source"] == s).most_common(1)[0][0] for s in terms}
+    cell = lambda text: str(text).replace("|", "／").replace("\n", " ")
+    by_source = info["sources"]
+    head = ["# 全量语料 · 来源与授权", "",
+            "道乃久网站的服务器（chat.impf.ai，部署在 Cloudflare）所用的全量语料：本项目收录的全部古籍中，来源条件允许随网站发布的",
+            "各部录本，由 `taochronos web store` 从全量语料生成。所收均为公有领域的古籍：",
+            "",
+            "* 开放授权的录本（维基文库、漢籍リポジトリ：CC BY-SA 4.0；數位中醫校書郎 CMETA：CC BY 4.0；McGill：公有领域）按其授权使用，"
+            "须保留署名；",
+            "* 中醫笈成的录本：笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果以 CC0 1.0 释出至公有领域，网站自行创作的内容以",
+            "  CC BY 4.0 释出（https://jicheng.tw/tcm/copyright.html），可自由使用，请注明来自中醫笈成；笈成所据今人辑校、校注本（如辑佚",
+            "  古书）中的今人成分不在其列，经发布方（IMPF-AI）决定随网站发布，供学习研究；",
+            "* 据笈成转录的网络文本集（TCM-Ancient-Books、tcmoc）：多为笈成整理本的简体转换本，其仓库未声明授权；经发布方（IMPF-AI）",
+            "  决定随网站发布，供学习研究；",
+            "* 条款禁止转载或限定授权的来源（" + "；".join(f"{k}：{v}" for k, v in NEVER_PACKED.items()) + "）不收"
+            + ("（" + "、".join(f"{k} {n} 部" for k, n in info["excluded"].items()) + "）" if info["excluded"] else "") + "。",
+            "", "录文均未经本项目逐字校勘；段落号与全量语料、网页端的要籍语料相同。", "",
+            f"共 {info['books']} 部录本，{info['characters']:,} 字，{info['passages']:,} 段。", "",
+            "## 来源", "", "| 来源 | 录本 | 字数 | 出处 | 授权与条件 |", "|---|---|---|---|---|"]
+    head += [f"| {s} | {by_source[s]['books']} | {by_source[s].get('characters', 0):,} | {cell(origin[s])} | {cell(terms[s])} |"
+             for s in sorted(terms, key=order.index)]
+    head += ["", "## 书目", "", "授权与条件与其来源相同者不再重复。", "", "| 书名 | 朝代 | 来源 | 地址 | 字数 | 另注 |", "|---|---|---|---|---|---|"]
+    lines = [f"| {cell(b['title'])} | {cell(b['dynasty'])} | {b['source']} | {cell(b['url'])} | {b['chars']:,} | "
+             f"{cell(b['license']) if b['license'] != terms[b['source']] else ''} |" for b in books]
+    return "\n".join(head + lines) + "\n"

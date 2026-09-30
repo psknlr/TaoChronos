@@ -126,14 +126,25 @@ export class BrowserRuntime {
 }
 
 export class ServerRuntime {
-  constructor(url, token = "") {
+  /** `fallback` (the site's own server): a runtime to answer instead when this server cannot — asleep past waiting, or
+   * down — called once, with the error. */
+  constructor(url, token = "", { label = "", fallback = null } = {}) {
     this.kind = "server";
     this.url = url.replace(/\/+$/, "");
     this.token = token || "";
-    this.label = isLoopback(this.url) ? "本地服务" : "远程服务";
+    this.label = label || (isLoopback(this.url) ? "本地服务" : "远程服务");
     this.state = { status: "idle", progress: 0, message: "" };
     this.listeners = new Set();
     this.ready = null;
+    this.fallback = fallback;
+    this.backup = null;
+  }
+
+  /** Answer with the fallback runtime when this server is unavailable (not for an error the server itself reports). */
+  async _or(err, fn) {
+    if (!this.fallback || !err?.unavailable) throw err;
+    this.backup ||= this.fallback(err);
+    return fn(this.backup);
   }
 
   onStatus(fn) { this.listeners.add(fn); fn(this.state); return () => this.listeners.delete(fn); }
@@ -149,6 +160,7 @@ export class ServerRuntime {
     try {
       const r = await fetch(this.url + path, { ...init, headers: { ...tokenHeaders(this.token), ...(init.headers || {}) }, signal: init.signal || ctl.signal });
       const j = await r.json().catch(() => ({}));
+      if ([502, 503, 504].includes(r.status)) throw Object.assign(new Error(j.error || `HTTP ${r.status}`), { unavailable: true });
       if (r.status === 401 && j.token_required) {
         throw Object.assign(new Error(this.token
           ? "访问令牌不对：请核对 taochronos serve 启动时打印的令牌（设置 → 运行环境）"
@@ -157,8 +169,10 @@ export class ServerRuntime {
       if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
       return j;
     } catch (err) {
-      if (err.name === "AbortError" && !init.signal) throw new Error(`连接 ${this.url} 超时`);
-      if (err instanceof TypeError) throw new Error(`无法连接 ${this.url}：请确认 taochronos serve 正在运行（网页由 HTTPS 打开时，浏览器可能会询问是否允许访问本机网络）`);
+      if (err.name === "AbortError" && !init.signal) throw Object.assign(new Error(`连接 ${this.url} 超时`), { unavailable: true });
+      if (err instanceof TypeError) {
+        throw Object.assign(new Error(this.fallback ? `无法连接 ${this.url}` : `无法连接 ${this.url}：请确认 taochronos serve 正在运行（网页由 HTTPS 打开时，浏览器可能会询问是否允许访问本机网络）`), { unavailable: true });
+      }
       throw err;
     } finally {
       if (t) clearTimeout(t);
@@ -177,14 +191,28 @@ export class ServerRuntime {
   async info() { return this.info_ || (await this.start()); }
   catalog(mode) { return this._fetch(`/api/catalog?mode=${encodeURIComponent(mode)}`); }
   call(name, args, { maxChars, signal } = {}) {
-    return this._fetch("/api/call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, arguments: args, max_chars: maxChars }), signal });
+    if (this.backup) return this.backup.call(name, args, { maxChars, signal });
+    return this._fetch("/api/call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, arguments: args, max_chars: maxChars }), signal })
+      .catch((err) => this._or(err, (rt) => rt.call(name, args, { maxChars, signal })));
   }
-  passage(id) { return this._fetch(`/api/passage?id=${encodeURIComponent(id)}`); }
+  passage(id) {
+    if (this.backup) return this.backup.passage(id);
+    return this._fetch(`/api/passage?id=${encodeURIComponent(id)}`).catch((err) => this._or(err, (rt) => rt.passage(id)));
+  }
   session(id, what, extra = {}) {
+    if (this.backup) return this.backup.session(id, what, extra);
     const q = new URLSearchParams({ what, ...extra });
     return this._fetch(`/api/session/${encodeURIComponent(id)}?${q}`);
   }
-  async research(args, { onProgress, signal } = {}) {
+  async research(args, options = {}) {
+    if (this.backup) return this.backup.research(args, options);
+    try {
+      return await this._research(args, options);
+    } catch (err) {
+      return this._or(err, (rt) => rt.research(args, options));
+    }
+  }
+  async _research(args, { onProgress, signal } = {}) {
     const { job } = await this._fetch("/api/research", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(args) });
     for (;;) {
       if (signal?.aborted) throw new DOMException("aborted", "AbortError");

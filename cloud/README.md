@@ -1,0 +1,74 @@
+# 道乃久 on Cloudflare（chat.impf.ai）
+
+网站与全量语料都在 Cloudflare 上：**https://chat.impf.ai** 由一个 Worker 提供（证书由 Cloudflare 签发，http 一律跳转
+https），页面的工具调用由同一域名下的 API 交给**全量语料服务**——一个运行 `taochronos` 的容器，语料是本项目收录的全部古籍中
+可随网站发布的 958 部录本（1.22 亿字，204 万段；来源与授权见 [ATTRIBUTION.md](ATTRIBUTION.md)）。页面不再下载浏览器语料和
+Pyodide：打开即可提问，引文可在全部古籍中核对。全量语料服务不可用时，页面自动改用浏览器内的要籍语料（与原来一样）。
+
+```
+浏览器 ──https──▶ chat.impf.ai：Worker taochronos-site（cloud/site）
+                   ├─ 网页文件（taochronos web build：客户端 + 浏览器内运行环境，后者只在全量服务不可用时才下载）
+                   ├─ /api/info、/api/catalog、/api/passage、/api/call、/api/research…（白名单，限流）
+                   │     └─ 服务绑定 ──▶ Worker taochronos-corpus（cloud/corpus，无公网地址）
+                   │                     └─ Durable Object「main」──▶ 容器：python -m taochronos.chat.cloud serve
+                   │                          （全量语料 + 索引 + 预热缓存；闲置 15 分钟休眠，来请求时再启动）
+                   └─ /api/store/…（带令牌把全量语料分片上传到 Workers KV，供部署时构建镜像）
+模型调用照旧：浏览器 ──▶ chat-api.impf.ai（relay/，道乃久默认服务）或访客自己的 API
+```
+
+## 各部分
+
+| 部分 | 作用 |
+|---|---|
+| `site/`（Worker `taochronos-site`） | 以 Workers Static Assets 提供网页；http→https（301）、HSTS、`nosniff`；只放行 `GET /api/info`、`/api/catalog`、`/api/passage`、`/api/research/<job>`、`/api/session/<id>` 与 `POST /api/call`、`/api/research`，只转发路径、查询与请求体（不转发 Cookie、IP 等），每位访客每分钟调用 120 次、读取 600 次（`[[ratelimits]]`，按 Cloudflare 节点计）；`taochronos serve` 的模型代理（`/api/llm`）不开放 |
+| `corpus/`（Worker `taochronos-corpus`） | Durable Object 按需启动容器（`standard-1`：1/2 vCPU、4 GiB、8 GB 磁盘），带着它为容器生成的令牌转发请求；`/api/info` 与工具目录按部署版本缓存在 Durable Object 里，容器休眠时也能立刻回答，同时唤醒容器——模型第一次调用工具时它已就绪 |
+| `corpus/Dockerfile` | 以仓库根目录为上下文构建：安装 taochronos，放入主目录（profiles、domains、catalog…），解压并校验 `store.json` 指定的全量语料，用本版代码的规范化器建全文索引，预热各工具首次使用时才构建的缓存（句读模型、引书网络、配伍、学派等）。容器每次都从镜像启动，所以这些都在构建时做好 |
+| `store.json` | 部署所用的全量语料：sha256、分片（每片 24 MiB，即一个 KV 值）、书数/段数/字数、各来源、排除的来源。`taochronos web store` 生成 |
+| `ATTRIBUTION.md` | 全量语料每部录本的来源与授权；网站以 `attribution.html?corpus=full` 展示 |
+
+全量语料由 `taochronos web store` 从本地全量库生成：只收 `WEB_SOURCES`（开放授权来源，以及发布方决定随网站发布的笈成转录本），
+**绝不收** `NEVER_PACKED`（東亜医学協会、Hugging Face 数据集——条款禁止转载）；段落号与全量库、浏览器语料相同；不带全文索引
+（索引在构建镜像时重建，1.24 GB 的库压缩为 143 MB）；不带缓存的判断结果。
+
+## 部署
+
+`.github/workflows/site.yml`：合入 main（网页、代码、语料或 `cloud/` 有改动时）或 **Actions → site → Run workflow**。
+
+1. **test**：两个 Worker 的单元测试（`node --test`）。
+2. **corpus**：本次提交的版本（语料 sha256 + 构建镜像所用文件的 git 树）与已部署的不同时：从 KV 命名空间 `taochronos-store`
+   取回 `store.json` 指定的各分片并逐片校验，构建镜像（约 15 分钟）并部署 `taochronos-corpus`。语料未上传、没有 Workers Paid
+   或令牌不能管理 Containers 时跳过并给出警告，**不影响网站**。
+3. **site**：构建网站，部署 `taochronos-site`（创建并绑定上传用的 KV 命名空间；有 `taochronos-corpus` 就绑定服务），然后检查：
+   https 页面可访问、http 跳转、`/api/info` 报告全量语料、一次全量检索成功。第一次部署时 Cloudflare 把 `chat.impf.ai`
+   的 DNS 记录（原先指向 GitHub Pages 的 CNAME）改为指向此 Worker 并签发证书，通常几分钟生效。
+
+需要的仓库 Secrets 与 relay 相同：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`。令牌权限、套餐与各步点击位置见 **[SETUP.md](SETUP.md)**。
+
+## 更新全量语料
+
+```bash
+taochronos web store                                   # 写 .taochronos/cloud/<sha256>.sqlite.xz，更新 cloud/store.json 与 cloud/ATTRIBUTION.md
+TAOCHRONOS_STORE_TOKEN=… taochronos web upload         # 分片上传到 https://chat.impf.ai/api/store/…（已上传的分片跳过）
+git add cloud/store.json cloud/ATTRIBUTION.md && git commit … # 合入 main 后工作流构建新镜像
+```
+
+上传令牌只有其 sha256 在 `site/wrangler.toml`（`STORE_TOKEN_SHA256`，也可用仓库变量 `STORE_TOKEN_SHA256` 覆盖）；换令牌：
+生成新的随机串（如 `openssl rand -hex 32`），把它的 sha256 写进去并部署。没有有效令牌时上传接口一律拒绝。
+
+## 费用（Cloudflare 公布的价格）
+
+- Workers Paid：每月 5 美元，含 1000 万次请求、3000 万 CPU 毫秒，以及容器的 25 GiB·小时内存、375 vCPU·分钟、200 GB·小时磁盘。
+- 容器只在运行时计费（闲置 15 分钟即休眠，`SLEEP_AFTER`）：`standard-1` 每运行 1 小时约 0.036 美元（内存）＋磁盘与实际 CPU。
+  每天运行 4 小时约每月 4 美元；全天不休眠约每月 30 美元。
+- Workers KV：存 143 MB（6 个值）在免费额度（1 GB）内。静态文件请求不收费。
+
+## 本地试运行
+
+```bash
+node --test cloud/test/site.test.js cloud/test/corpus.test.js      # 两个 Worker 的逻辑
+cd cloud/corpus && npm ci && cd ../..
+mkdir -p cloud/.store && cp .taochronos/cloud/<sha256>.sqlite.xz cloud/.store/
+taochronos web build -o _site
+cp cloud/site/wrangler.toml cloud/site/wrangler.deploy.toml && printf '\n[[services]]\nbinding = "CORPUS"\nservice = "taochronos-corpus"\n' >> cloud/site/wrangler.deploy.toml
+npx wrangler@4 dev -c cloud/site/wrangler.deploy.toml -c cloud/corpus/wrangler.toml   # 需要 Docker：本地构建并运行容器
+```

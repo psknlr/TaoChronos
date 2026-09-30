@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>要籍语料 · 来源与授权 · 道乃久</title>
-<meta name="description" content="道乃久网页端在浏览器里运行的要籍语料：各部古籍录本的来源与授权（CC BY-SA 4.0 等），随网站发布。">
+<title>语料来源与授权 · 道乃久</title>
+<meta name="description" content="道乃久网站的语料（浏览器里运行的要籍语料、本站服务器上的全量语料）：各部古籍录本的来源与授权（CC BY-SA 4.0 等），随网站发布。">
 <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
 <style>
   :root { --ink: #221f1a; --ink-3: #6b645a; --line: #e4ddd0; --surface: #fbf8f2; --accent: #9b2c1f; color-scheme: light dark; }
@@ -23,14 +23,17 @@
 </head>
 <body>
 <main>
-  <p class="back"><a href="./">← 返回道乃久</a> · 本页随网站发布：语料包的来源与授权说明</p>
+  <p class="back"><a href="./">← 返回道乃久</a> · 本页随网站发布：语料的来源与授权说明 ·
+    <a id="canon" href="attribution.html">要籍语料（浏览器）</a> · <a id="full" href="attribution.html?corpus=full">全量语料（本站服务器）</a></p>
   <div id="doc" class="scroll">正在载入…</div>
 </main>
 <script type="module">
   import { renderMarkdown } from "./js/markdown.js";
   const doc = document.getElementById("doc");
+  const full = new URLSearchParams(location.search).get("corpus") === "full";
+  document.getElementById(full ? "full" : "canon").style.fontWeight = "600";
   try {
-    const r = await fetch("ATTRIBUTION.md", { cache: "no-cache" });
+    const r = await fetch(full ? "ATTRIBUTION-full.md" : "ATTRIBUTION.md", { cache: "no-cache" });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     doc.replaceChildren(renderMarkdown(await r.text()));
   } catch (err) {

@@ -1,0 +1,9 @@
+{
+  "name": "taochronos-cloud",
+  "private": true,
+  "type": "module",
+  "description": "道乃久 on Cloudflare: the site's Worker (site/) and the full corpus's server (corpus/); see README.md",
+  "scripts": {
+    "test": "node --test test/site.test.js test/corpus.test.js"
+  }
+}

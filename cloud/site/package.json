@@ -1,0 +1,9 @@
+{
+  "name": "taochronos-site",
+  "private": true,
+  "type": "module",
+  "description": "道乃久: the Worker serving https://chat.impf.ai — the site and its API (see ../README.md)",
+  "scripts": {
+    "deploy": "npx wrangler@4 deploy"
+  }
+}

@@ -98,14 +98,15 @@ TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一
 
 ## 二、快速开始
 
-**网页**：直接打开 <https://chat.impf.ai/>（浏览器内运行，要籍语料；默认服务免填密钥）；或接入全部古籍（全量语料，构建见下文）：
+**网页**：直接打开 <https://chat.impf.ai/>（HTTPS，部署在 Cloudflare；工具在本站服务器上检索全量语料 958 部古籍，服务不可用时改在浏览器内运行要籍语料；默认服务免填密钥。部署见 [cloud/](cloud/README.md)）；或在本机接入你构建的全量语料：
 
 ```bash
 pip install -e .
 taochronos serve                   # http://localhost:8765 ：网页对话 + 全量语料（已构建时）+ 模型转发；网页“设置 → 运行环境 → 连接”
 taochronos serve --env-keys        # 模型密钥从本机环境变量读取（MINIMAX_API_KEY …），网页里不必填写
 taochronos serve --host 0.0.0.0    # 供其他机器使用：启动时打印访问令牌与带令牌的地址（--token 或 TAOCHRONOS_TOKEN 可指定）
-taochronos web build -o _site      # 构建静态站点（GitHub Pages 由 .github/workflows/pages.yml 自动部署）
+taochronos web build -o _site      # 构建静态站点（Cloudflare 由 .github/workflows/site.yml 部署，GitHub Pages 镜像由 pages.yml 部署）
+taochronos web store               # 网站服务器所用的全量语料（cloud/store.json）；taochronos web upload 上传
 ```
 
 **命令行**：

@@ -24,6 +24,7 @@ import { answerDangling, buildHistory, withoutReasoning } from "./js/agent.js";
 import { extractCitations } from "./js/markdown.js";
 import { count } from "./js/util.js";
 import { fixedReply, IDENTITY_REPLY, isIdentityQuestion, touchesIdentity } from "./js/fixed.js";
+import { ServerRuntime } from "./js/runtime.js";
 
 // streams: increments and MiniMax's cumulative chunks read alike
 const inc = new Accum(); for (const t of ["桂", "枝", "汤主之。"]) inc.push(t);
@@ -95,6 +96,30 @@ assert.deepEqual(withoutReasoning([
   { role: "assistant", content: "答" },
   { role: "assistant", content: [{ type: "text", text: "答" }] },
   { role: "tool", tool_call_id: "c", content: "<think>工具结果原样</think>" }]);
+
+// the site's own server (chat.impf.ai, the full corpus on Cloudflare): when it cannot answer, the page carries on in the
+// browser — once, for everything after; an error the server reports is the tool's, and a server the user chose has no stand-in
+globalThis.location = { protocol: "https:", hostname: "chat.impf.ai", href: "https://chat.impf.ai/" };
+const answers = { "/api/call": [503, { error: "全量语料服务正在启动或暂不可用，请稍后再试", starting: true }], "/api/passage": [404, { error: "no such passage" }] };
+globalThis.fetch = async (url) => {
+  const [status, body] = answers[new URL(url).pathname] || [200, { name: "TaoChronos" }];
+  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+};
+let fell = 0;
+const inBrowser = { call: async (name) => ({ ok: true, tool: name, from: "browser" }), passage: async (id) => ({ ok: true, passage_id: id, from: "browser" }) };
+const site = new ServerRuntime("https://chat.impf.ai/", "", { label: "本站服务", fallback: (err) => { fell++; assert.ok(err.unavailable); return inBrowser; } });
+assert.equal(site.label, "本站服务");
+assert.deepEqual(await site.call("classics.search", { query: "桂枝汤" }), { ok: true, tool: "classics.search", from: "browser" });
+answers["/api/call"] = [200, { ok: true, from: "server" }];
+assert.equal((await site.call("classics.search", {})).from, "browser");
+assert.equal((await site.passage("a.1")).from, "browser");
+assert.equal(fell, 1);
+const up = new ServerRuntime("https://chat.impf.ai", "", { fallback: () => { throw new Error("not unavailable"); } });
+assert.equal((await up.call("classics.search", {})).from, "server");
+await assert.rejects(up.passage("zz.1"), /no such passage/);
+answers["/api/call"] = [503, { error: "down" }];
+await assert.rejects(new ServerRuntime("https://example.org").call("x", {}), (e) => e.unavailable === true && /down/.test(e.message));
+assert.equal(new ServerRuntime("http://localhost:8765").label, "本地服务");
 console.log("ok");
 """
 

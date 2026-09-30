@@ -1,0 +1,12 @@
+{
+  "name": "taochronos-corpus",
+  "private": true,
+  "type": "module",
+  "description": "道乃久: the full corpus's server on Cloudflare — a Durable Object starting a container (see ../README.md)",
+  "scripts": {
+    "deploy": "npx wrangler@4 deploy"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "0.3.7"
+  }
+}

@@ -1,0 +1,35 @@
+# 道乃久 on Cloudflare — the full corpus's server (cloud/README.md): a Durable Object that starts a container running
+# taochronos over the full corpus (Dockerfile) and forwards the site's API calls to it.  Only the site's Worker reaches
+# it (a service binding): no route, no workers.dev address.  Deployed by .github/workflows/site.yml, which fetches the
+# store cloud/store.json names from the site's KV namespace into cloud/.store/ before building the image.
+# Needs the Workers Paid plan (Containers) and an API token that may edit Containers.
+name = "taochronos-corpus"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+workers_dev = false
+preview_urls = false
+
+[[containers]]
+class_name = "Corpus"
+image = "./Dockerfile"
+image_build_context = "../.."
+# 1/2 vCPU, 4 GiB, 8 GB disk: the store (2.3 GB with its index) and room for the page cache.  Billed while it runs:
+# it sleeps after SLEEP_AFTER without calls.
+instance_type = "standard-1"
+max_instances = 2
+
+[[durable_objects.bindings]]
+name = "CORPUS"
+class_name = "Corpus"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Corpus"]
+
+[vars]
+SLEEP_AFTER = "15m"
+# where the one instance lives (its readers are mostly in East Asia); fixed when it is first created
+LOCATION_HINT = "apac"
+
+[observability]
+enabled = true
