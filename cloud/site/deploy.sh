@@ -46,6 +46,25 @@ if [ -n "$deployed" ] && curl -fsS -o /dev/null -H "$auth" "$api/workers/scripts
 else
   echo "::warning::the full corpus's container is not deployed: the site's API answers 503 and the page runs the 要籍语料 in the browser"
 fi
+# the D1 backup of the full corpus (docs/adr/0017-d1-backup.md): its databases (taochronos-d1-<k>, bound as D1_<k>) and,
+# once the d1 workflow has imported them all (it records the version in the KV namespace), D1_BACKUP: that version.
+# The Worker answers from them only when there is no container, and only while they hold that version.
+d1=$(curl -fsS -H "$auth" "$api/d1/database?per_page=100" 2>/dev/null | python3 -c \
+       'import json,sys; [print(d["name"], d["uuid"]) for d in json.load(sys.stdin)["result"] if d["name"].startswith("taochronos-d1-")]' || true)
+backup=""
+while read -r name uuid; do
+  [ -n "$name" ] || continue
+  printf '\n[[d1_databases]]\nbinding = "D1_%s"\ndatabase_name = "%s"\ndatabase_id = "%s"\n' "${name##*-}" "$name" "$uuid" >> wrangler.deploy.toml
+done <<< "$d1"
+if [ -n "$d1" ] && [ -n "$ns" ]; then
+  backup=$(curl -fsS -H "$auth" "$api/storage/kv/namespaces/$ns/values/deployed%2Fd1" 2>/dev/null || true)
+fi
+if [[ "$backup" =~ ^[0-9a-f]{12}-[0-9a-f]{8}-s[0-9]+$ ]]; then
+  sed -i "/^\[vars\]/a D1_BACKUP = \"$backup\"" wrangler.deploy.toml
+  echo "the D1 backup: $(wc -l <<< "$d1") databases, $backup"
+elif [ -n "$d1" ]; then
+  echo "the D1 backup: $(wc -l <<< "$d1") databases, not all imported yet (the d1 workflow imports a slice a day)"
+fi
 
 # ---------------------------------------------------------------- deploy
 set +e
@@ -94,7 +113,8 @@ info = json.load(open(sys.argv[1]))
 assert "name" in info, f"the full corpus does not answer: {info}"
 c = info["corpus"]
 assert c["kind"] == "full", c
-print(f"the full corpus: {c['books']} books, {c['passages']:,} passages, {info['tools']['offered']} tools")
+print(f"the full corpus{' (the D1 backup)' if info.get('backup') else ''}: {c['books']} books, {c['passages']:,} passages, "
+      f"{info['tools']['offered']} tools")
 EOF
 curl -fsS --max-time 300 -X POST -H "Content-Type: application/json" -H "Origin: $SITE_URL" \
   -d '{"name": "classics.search", "arguments": {"query": "桂枝汤", "k": 3}}' "$SITE_URL/api/call" -o "$work/call.json"

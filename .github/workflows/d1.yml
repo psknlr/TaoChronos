@@ -1,0 +1,141 @@
+name: d1
+
+# The D1 backup of the full corpus (docs/adr/0017-d1-backup.md, cloud/README.md): on the Workers Free plan there are no
+# Containers, so the site's own Worker answers the page from Cloudflare D1.  D1 Free writes at most 100,000 rows a day,
+# so the corpus is imported a slice a day: every day shortly after 00:00 UTC (when the allowance is renewed), and on
+# "Run workflow", this job fetches the store cloud/store.json names from the site's KV namespace (as the corpus job of
+# site.yml does), and imports the next statements until the day's budget; where the import has got to is read from the
+# databases themselves, each statement is atomic, and an interrupted run resumes without writing anything twice.  The
+# tools a Worker cannot compute are computed here by the Python tools and imported with it.  When all is imported, the
+# version is recorded in the KV namespace (deployed/d1) and the site is deployed again, bound to the databases; from
+# then on a run only checks that nothing has changed.  Another store (or normaliser, or layout) is imported afresh.
+# Repository secrets: CLOUDFLARE_API_TOKEN (with Account · D1 · Edit: cloud/SETUP.md) and CLOUDFLARE_ACCOUNT_ID.
+on:
+  schedule:
+    - cron: "7 0 * * *"
+  workflow_dispatch:
+    inputs:
+      budget:
+        description: "Rows to write at most in this run (D1 Free: 100,000 a day; runs of the same day count together)"
+        type: number
+        default: 90000
+
+permissions:
+  contents: read
+  actions: write  # to deploy the site again once the import is complete (site.yml)
+
+concurrency:
+  group: d1
+  cancel-in-progress: false
+
+env:
+  STORE_NAMESPACE: taochronos-store
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: Which version, is it imported already, and may the token use D1?
+        id: plan
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ]; then
+            echo "::warning::nothing is imported until the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are set (cloud/SETUP.md)"
+            echo "go=0" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT"
+          version=$(python -m taochronos.chat.d1 version)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # the token must be allowed to use D1: without Account · D1 · Edit the list is refused
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" "$api/d1/database?per_page=1")
+          if [ "$code" != "200" ]; then
+            echo "::warning::the API token may not use D1 (HTTP $code): add the permission Account · D1 · Edit to the token CLOUDFLARE_API_TOKEN (cloud/SETUP.md, D1 备份), then run this workflow again. The site keeps running: the page uses the 要籍语料 in the browser."
+            echo "go=0" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          ns=$(curl -fsS -H "Authorization: Bearer $CF_TOKEN" "$api/storage/kv/namespaces?per_page=100" \
+                | python3 -c 'import json,sys,os; r=json.load(sys.stdin)["result"]; print(next((n["id"] for n in r if n["title"]==os.environ["STORE_NAMESPACE"]), ""))' || true)
+          if [ -z "$ns" ]; then
+            echo "::warning::no KV namespace $STORE_NAMESPACE yet (the site's deployment creates it; the store is uploaded with taochronos web upload, cloud/README.md): nothing to import"
+            echo "go=0" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "ns=$ns" >> "$GITHUB_OUTPUT"
+          done=$(curl -fsS -H "Authorization: Bearer $CF_TOKEN" "$api/storage/kv/namespaces/$ns/values/deployed%2Fd1" 2>/dev/null || true)
+          echo "imported: ${done:-nothing yet}; this commit: $version"
+          if [ "$done" = "$version" ]; then
+            echo "the D1 backup of this version is complete: nothing to do"
+            echo "go=0" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "go=1" >> "$GITHUB_OUTPUT"
+      - name: The store, from the site's KV namespace
+        id: store
+        if: steps.plan.outputs.go == '1'
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NS: ${{ steps.plan.outputs.ns }}
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces"
+          mkdir -p cloud/.store/parts
+          python3 - <<'EOF' > cloud/.store/parts.txt
+          import json, urllib.parse
+          m = json.load(open("cloud/store.json"))
+          for p in m["parts"]:
+              print(urllib.parse.quote(m["key"] + p["name"], safe=""), p["name"], p["sha256"])
+          EOF
+          while read -r key name sha; do
+            if ! curl -fsS -H "Authorization: Bearer $CF_TOKEN" "$api/$NS/values/$key" -o "cloud/.store/parts/$name"; then
+              echo "::warning::the store cloud/store.json names is not (all) in the KV namespace: upload it with taochronos web upload (cloud/README.md); nothing is imported"
+              echo "ok=0" >> "$GITHUB_OUTPUT"; exit 0
+            fi
+            echo "$sha  cloud/.store/parts/$name" | sha256sum -c --quiet
+          done < cloud/.store/parts.txt
+          sha=$(python3 -c 'import json; print(json.load(open("cloud/store.json"))["sha256"])')
+          while read -r _ name _; do cat "cloud/.store/parts/$name"; done < cloud/.store/parts.txt > "cloud/.store/$sha.sqlite.xz"
+          echo "$sha  cloud/.store/$sha.sqlite.xz" | sha256sum -c --quiet
+          rm -rf cloud/.store/parts cloud/.store/parts.txt
+          echo "file=cloud/.store/$sha.sqlite.xz" >> "$GITHUB_OUTPUT"
+          echo "ok=1" >> "$GITHUB_OUTPUT"
+      - name: Import the next slice (and compute the precomputed results when the import comes to them)
+        id: import
+        if: steps.store.outputs.ok == '1'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BUDGET: ${{ inputs.budget || 90000 }}
+        run: |
+          # --reset: when the databases hold another version (another store, normaliser or layout), they are made anew
+          python -m taochronos.chat.d1 import "${{ steps.store.outputs.file }}" --manifest cloud/store.json --work cloud/.d1 \
+            --api --budget "$BUDGET" --minutes 300 --reset --precompute --report cloud/.d1/report.json
+          python3 - <<'EOF'
+          import json, os
+          r = json.load(open("cloud/.d1/report.json"))
+          lines = [f"## D1 backup · {r['version']}", "",
+                   f"- statements this run: {r['statements']:,}; rows written: {r['rows_written']:,} (earlier today: {r['used_before']:,})",
+                   f"- by step: " + ", ".join(f"{k} {v:,}" for k, v in r["by_step"].items()),
+                   f"- by database: " + ", ".join(f"{r['names'][int(k)]} {v:,}" for k, v in r["by_db"].items()),
+                   f"- complete: {'yes' if r['complete'] else 'no — ' + str(r['stopped'])}"]
+          open(os.environ["GITHUB_STEP_SUMMARY"], "a").write("\n".join(lines) + "\n")
+          open(os.environ["GITHUB_OUTPUT"], "a").write(f"complete={'1' if r['complete'] else '0'}\n")
+          EOF
+      - name: Complete — recorded in the KV namespace, and the site deployed again with the backup
+        if: steps.import.outputs.complete == '1'
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NS: ${{ steps.plan.outputs.ns }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -fsS -X PUT -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: text/plain" --data-binary "$VERSION" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces/$NS/values/deployed%2Fd1" > /dev/null
+          echo "the D1 backup $VERSION is complete; deploying the site with it"
+          gh workflow run site.yml --ref "${{ github.event.repository.default_branch }}"

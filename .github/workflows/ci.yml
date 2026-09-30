@@ -43,5 +43,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: The site's Worker and the corpus Worker (cloud/)
-        run: node --test cloud/test/site.test.js cloud/test/corpus.test.js
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: A small D1 backup for its tests (ten books, made by the D1 exporter; docs/adr/0017-d1-backup.md)
+        run: |
+          pip install -e .
+          python -m taochronos.chat.d1 fixture cloud/.d1-fixture
+      - name: The site's Worker (and its D1 backup) and the corpus Worker (cloud/)
+        run: REQUIRE_D1_FIXTURE=1 node --test cloud/test/site.test.js cloud/test/corpus.test.js cloud/test/backup.test.js

@@ -15,7 +15,8 @@ day, 500 MB a database):
 * **fts** — FTS5 over the chunks' ``norm`` (the ascii tokenizer: every character is a token, punctuation and the
   passages' ends break a phrase), contentless and without document sizes, built from the chunks in SQL in a few
   large statements (a segment each) and optimized once: an index that costs a row per chunk;
-* **books**, **lex**, **results**, **meta** — in database 0: the books with their chunk maps (a passage id finds its
+* **books**, **seqmap**, **lex**, **results**, **meta** — in database 0: the books with their chunk maps and, for a
+  book whose passages fall into several temporal groups, which group each passage is in (a passage id finds its
   chunk without an index), the lexicon by first character, the precomputed results of the tools a Worker cannot
   compute (``results``), the corpus statistics, and ``complete`` last.
 
@@ -23,9 +24,10 @@ Every statement is one INSERT, at most ``MAX_SQL_BYTES`` of SQL and values and `
 statement is atomic: where the import has got to is read from the databases themselves (the last chunk, the last
 book …, and ``progress`` for the index), so an interrupted run resumes where it stopped, without duplicates.
 
-* ``python -m taochronos.chat.d1 plan <store.sqlite>`` — the databases, their sizes and the rows each step writes;
-* ``python -m taochronos.chat.d1 import <store.sqlite> --api|--sqlite DIR|--bridge CMD [--budget N]`` — import the next
-  slice (the daily run, ``.github/workflows/d1.yml``);
+* ``python -m taochronos.chat.d1 plan <store>`` — the databases, their sizes and the rows each step writes;
+* ``python -m taochronos.chat.d1 import <store> --api|--sqlite DIR|--bridge CMD [--budget N] [--precompute]`` — import
+  the next slice (the daily run, ``.github/workflows/d1.yml``; the store may be the compressed one, with ``--manifest``);
+* ``python -m taochronos.chat.d1 version`` / ``status --api`` — the version this checkout wants; what the databases hold;
 * ``python -m taochronos.chat.d1 tables`` — write the JavaScript module of the normaliser's tables, the periods, the
   catalog … (``cloud/site/src/backup/tables.js``);
 * ``python -m taochronos.chat.d1 fixture <dir>`` — a small store exported as the Node tests read it.
@@ -35,6 +37,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import sqlite3
 import time
 from collections import Counter, defaultdict
@@ -53,6 +56,7 @@ DB_BYTES = 320_000_000  # what one database is filled to (D1 Free: 500 MB a data
 DB0_RESERVE = 80_000_000  # database 0's room for the books, the lexicon, the precomputed results and the meta
 FTS_CHARS = 6_000_000  # characters indexed by one statement (one index segment; well inside D1's 30 s)
 DAY_BUDGET = 90_000  # rows written a day, of D1 Free's 100,000
+USE_RECORD_ROWS = 5_000  # the day's use is recorded at least this often (rows): a killed run under-counts it by less
 BREAK = "zx"  # the token in place of ASCII punctuation, space and control characters (no phrase runs across them)
 END = "zq"  # the token between two passages of a chunk
 FTS_CONFIG = (("pgsz", 64000), ("automerge", 0), ("crisismerge", 1999), ("hashsize", 64 * 1024 * 1024))
@@ -349,13 +353,19 @@ class Plan:
     # -------------------------------------------------------------- the lexicon
     def lex_rows(self) -> list[tuple[str, str]]:
         """The lexicon by first character: {surface: [entry …]} with each surface's entries in lookup order (the
-        category ranking of ``Lexicon.lookup``) and the synonym kind the surface has for it."""
+        category ranking of ``Lexicon.lookup``) and the synonym kind the surface has for it.  An entry is found by its id
+        in the bucket of the id's term part (formula:桂枝汤 → 桂); one whose id names another term than its own (pulse:浮,
+        whose term is 脉浮) is also there, as "@<id>"."""
         if self.lexicon is None:
             return []
         lex = self.lexicon
         buckets: dict[str, dict[str, list[dict[str, Any]]]] = defaultdict(dict)
         for surface in sorted(lex._by_surface):
             buckets[surface[0]][surface] = [{**lex_entry(e), **({"sk": kind} if kind else {})} for e, kind in lex.lookup(surface)]
+        for e in sorted(lex.entries.values(), key=lambda e: e.term_id):
+            named = e.term_id.split(":", 1)[1] if ":" in e.term_id else ""
+            if named and named != e.term:
+                buckets[named[0]][f"@{e.term_id}"] = [lex_entry(e)]
         return [(k, _dump(buckets[k])) for k in sorted(buckets)]
 
     # -------------------------------------------------------------- statistics
@@ -620,8 +630,10 @@ class BridgeTarget:
 
         self.proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, encoding="utf-8",
                                      bufsize=1)
-        if "ready" not in self._line():
+        ready = self._line()
+        if "ready" not in ready:
             raise RuntimeError("the emulator did not start")
+        self.databases = int(ready.get("databases") or 0)  # the databases it has bindings for
 
     def _line(self) -> dict[str, Any]:
         """The next answer (lines that are not one — what wrangler may print — are passed over)."""
@@ -799,7 +811,8 @@ def run_import(plan: Plan, target: Any, *, budget: int = DAY_BUDGET, log: Callab
     a statement is sent only if even its upper bound fits) or ``minutes`` have passed.  Resumable: what is done is
     read from the databases.  Returns what was done, the rows written by step and database, and whether the import
     is complete."""
-    today = time.strftime("%Y-%m-%d", time.gmtime())
+    # the UTC day whose allowance this run uses (TAOCHRONOS_D1_DAY: another, to simulate a run of days)
+    today = os.environ.get("TAOCHRONOS_D1_DAY") or time.strftime("%Y-%m-%d", time.gmtime())
     end = time.monotonic() + minutes * 60 if minutes else None
     deadline = (lambda: time.monotonic() > end) if end else (lambda: False)
     states = {db: status(target, db) for db in range(plan.databases)}
@@ -812,20 +825,25 @@ def run_import(plan: Plan, target: Any, *, budget: int = DAY_BUDGET, log: Callab
         target.reset(plan.databases)
         states = {db: {} for db in range(plan.databases)}
     used_before = int((states.get(0) or {}).get(f"used:{today}") or 0)
-    used = 0
+    used = recorded = 0
+    # seconds: the slowest statement of each step, as long as it took from here (D1's limit is 30 s a query)
     report: dict[str, Any] = {"version": plan.version, "databases": plan.databases, "day": today, "used_before": used_before,
-                              "statements": 0, "rows_written": 0, "by_step": {}, "by_db": {}, "complete": False, "stopped": None}
+                              "statements": 0, "rows_written": 0, "by_step": {}, "by_db": {}, "seconds": {},
+                              "complete": False, "stopped": None}
     sent = 0
 
     def results_start(digest: str) -> str | None:
         """Where the precomputed results resume; another key list than the one they were made with: afresh."""
+        nonlocal used
         st0 = states[0]
         if st0.get("results_plan") != digest:
             if st0.get("results") is not None:
                 log(f"  results: another key list ({digest}): the old results are deleted")
                 res = target.run(Batch(0, "results", "", "DELETE FROM results", [], 0))
+                used += int(res.get("rows_written") or 0)
                 report["rows_written"] += int(res.get("rows_written") or 0)
-            target.run(Batch(0, "results", "", "INSERT OR REPLACE INTO progress(k, v) VALUES ('results_plan', ?)", [digest], 1))
+            res = target.run(Batch(0, "results", "", "INSERT OR REPLACE INTO progress(k, v) VALUES ('results_plan', ?)", [digest], 1))
+            used += int(res.get("rows_written") or 0)
             st0["results_plan"], st0["results"] = digest, None
         return st0.get("results")
 
@@ -845,9 +863,12 @@ def run_import(plan: Plan, target: Any, *, budget: int = DAY_BUDGET, log: Callab
         if stop_after is not None and sent >= stop_after:
             report["stopped"] = f"stopped after {sent} statements"
             break
+        started = time.perf_counter()
         for attempt in range(1, 6):
             try:
                 res = target.run(batch)
+                took = time.perf_counter() - started
+                report["seconds"][batch.step] = max(report["seconds"].get(batch.step, 0), round(took, 2))
                 break
             except TargetError as exc:
                 if exc.exhausted:
@@ -873,7 +894,11 @@ def run_import(plan: Plan, target: Any, *, budget: int = DAY_BUDGET, log: Callab
         _advance(st, batch)
         if sent % 500 == 0:
             log(f"  {sent} statements, {used:,} rows written")
+        # the day's use, kept often enough that a run killed between two records under-counts it by less than the
+        # margin between the budget and D1's allowance (a record is a row written)
+        if sent % 500 == 0 or used - recorded >= USE_RECORD_ROWS:
             _record_use(target, today, used_before + used, log)
+            recorded = used
     if not report["stopped"] and deadline():
         report["stopped"] = f"the run's time is up ({minutes} minutes)"
     report["complete"] = "complete" in (states.get(0, {}).get("meta") or {})
@@ -947,34 +972,93 @@ def summary(plan: Plan, *, statements: bool = True) -> dict[str, Any]:
     return out
 
 
+def wanted_version(manifest: str | Path, home: str | Path | None = None) -> str:
+    """The version the databases should hold for this checkout: the store cloud/store.json names, the normaliser, the
+    layout (``Plan.version``) — known without the store, so that a run with nothing to do stops before fetching it."""
+    from ..config import find_home
+    from ..plugins.classics.domain import DomainPack
+
+    root = find_home(str(home) if home else None)
+    sha = json.loads(Path(manifest).read_text(encoding="utf-8"))["sha256"]
+    return f"{sha[:12]}-{DomainPack(root / 'domains' / 'classics').variants.fingerprint[:8]}-s{SCHEMA}"
+
+
+def _target(args: Any, databases: int | None) -> Any:
+    """Where the import goes (``--api``, ``--sqlite``, ``--bridge``); with ``databases`` None only the databases there
+    are (``status``), else the plan's, created if missing."""
+    if args.api:
+        token, account = os.environ.get("CLOUDFLARE_API_TOKEN", ""), os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
+        if not token or not account:
+            raise SystemExit("set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID")
+        target = ApiTarget(account, token, log=lambda m: print(m, flush=True))
+        if databases is None:  # the databases that are there
+            have = target.databases()
+            target.ids = {int(n.rsplit("-", 1)[1]): u for n, u in have.items() if n.startswith(f"{PREFIX}-") and n.rsplit("-", 1)[1].isdigit()}
+        else:
+            target.ensure(databases)
+        return target
+    if args.sqlite:
+        return SqliteTarget(args.sqlite)
+    import shlex
+
+    return BridgeTarget(shlex.split(args.bridge))
+
+
+def _store(path: str, manifest: str | None, work: str | None) -> Path:
+    """The store to export: as given, or unpacked from the compressed store the site's KV namespace holds (checked
+    against cloud/store.json) into ``work``."""
+    p = Path(path)
+    if p.suffix != ".xz":
+        return p
+    from .cloud import unpack
+
+    dest = Path(work or p.parent / "d1") / "data" / "corpus" / "tcm.sqlite"
+    if not dest.exists():
+        unpack(p, dest, json.loads(Path(manifest).read_text(encoding="utf-8")) if manifest else None)
+    return dest
+
+
 def main(argv: list[str] | None = None) -> int:
     import argparse
-    import os
 
     p = argparse.ArgumentParser(prog="python -m taochronos.chat.d1", description=__doc__.split("\n\n")[0])
     sub = p.add_subparsers(dest="cmd", required=True)
+
+    def where(sp: Any) -> None:
+        w = sp.add_mutually_exclusive_group(required=True)
+        w.add_argument("--api", action="store_true", help="Cloudflare D1 ($CLOUDFLARE_API_TOKEN, $CLOUDFLARE_ACCOUNT_ID)")
+        w.add_argument("--sqlite", help="local SQLite files in this directory")
+        w.add_argument("--bridge", help="the local D1 emulator: the command that starts cloud/test/d1-emulator.mjs")
+
+    def store(sp: Any) -> None:
+        sp.add_argument("store", help="the store (a .sqlite, or the compressed .sqlite.xz with --manifest)")
+        sp.add_argument("--manifest", help="cloud/store.json: the compressed store's digests, and its sha256 as the version")
+        sp.add_argument("--version", help="the store's sha256 (default: the manifest's)")
+        sp.add_argument("--work", help="where a compressed store is unpacked (default: beside it)")
+
     sp = sub.add_parser("plan", help="the databases, their sizes and the rows each step writes")
-    sp.add_argument("store")
-    sp.add_argument("--version", help="the store's sha256 (cloud/store.json)")
+    store(sp)
     sp = sub.add_parser("import", help="import the next slice, within the day's budget")
-    sp.add_argument("store")
-    sp.add_argument("--version", help="the store's sha256 (cloud/store.json)")
-    where = sp.add_mutually_exclusive_group(required=True)
-    where.add_argument("--api", action="store_true", help="Cloudflare D1 ($CLOUDFLARE_API_TOKEN, $CLOUDFLARE_ACCOUNT_ID)")
-    where.add_argument("--sqlite", help="local SQLite files in this directory")
-    where.add_argument("--bridge", help="the local D1 emulator: the command that starts cloud/test/d1-emulator.mjs")
+    store(sp)
+    where(sp)
     sp.add_argument("--budget", type=int, default=DAY_BUDGET, help=f"rows to write at most today (default {DAY_BUDGET:,})")
     sp.add_argument("--minutes", type=float, help="stop after this many minutes (the job's time)")
-    sp.add_argument("--reset", action="store_true", help="a new store: make the databases anew")
+    sp.add_argument("--reset", action="store_true", help="another store: make the databases anew")
     sp.add_argument("--stop-after", type=int, help="stop after this many statements (tests)")
-    sp.add_argument("--precompute", action="store_true", help="also compute and import the precomputed results (the store "
-                                                              "must be indexed, <data>/corpus/tcm.sqlite: chat.cloud prepare)")
+    sp.add_argument("--precompute", action="store_true", help="also compute the precomputed results with the Python tools "
+                                                              "(the store is indexed for them when the import comes to them)")
+    sp.add_argument("--report", help="also write the report (JSON) to this file")
+    sp = sub.add_parser("version", help="the version the databases should hold for this checkout (cloud/store.json …)")
+    sp.add_argument("--manifest", default=None, help="default: cloud/store.json")
+    sp = sub.add_parser("status", help="what each database holds (its version, how far each step has got)")
+    where(sp)
     sp = sub.add_parser("tables", help="write the JavaScript module of the normaliser's tables, periods, catalog …")
     sp.add_argument("-o", "--output", help="default: cloud/site/src/backup/tables.js")
     sp.add_argument("--check", action="store_true", help="only check that the module is up to date")
     sp = sub.add_parser("fixture", help="a small D1 backup for the tests (local SQLite files)")
     sp.add_argument("output")
     args = p.parse_args(argv)
+    log = lambda m: print(m, flush=True)  # noqa: E731
 
     if args.cmd == "tables":
         from .d1tables import write_tables
@@ -985,34 +1069,50 @@ def main(argv: list[str] | None = None) -> int:
 
         build_fixture(args.output)
         return 0
+    if args.cmd == "version":
+        from ..config import find_home
+
+        print(wanted_version(args.manifest or find_home() / "cloud" / "store.json"))
+        return 0
+    if args.cmd == "status":
+        target = _target(args, None)
+        try:
+            if args.api:
+                dbs = sorted(target.ids)
+            elif args.sqlite:
+                dbs = sorted(int(f.stem.split("-")[1]) for f in Path(args.sqlite).glob("db-*.sqlite"))
+            else:
+                dbs = list(range(target.databases))
+            out = {}
+            for k in dbs:
+                st = status(target, k)
+                out[f"{PREFIX}-{k}"] = {key: v for key, v in st.items() if key != "meta"} | ({"meta": sorted(st["meta"])} if "meta" in st else {})
+        finally:
+            target.close()
+        print(json.dumps(out, ensure_ascii=False, indent=1))
+        return 0
+    path = _store(args.store, args.manifest, args.work)
+    version = args.version or (json.loads(Path(args.manifest).read_text(encoding="utf-8"))["sha256"] if args.manifest else None)
     results = None
     if getattr(args, "precompute", False):
         from .d1results import Precompute, runtime_for
 
-        results = Precompute(runtime_for(args.store), log=lambda m: print(m, flush=True))
-    plan = make_plan(args.store, version=args.version, results=results)
+        results = Precompute(lambda: runtime_for(path, log=log), log=log)
+    plan = make_plan(path, version=version, results=results)
     if args.cmd == "plan":
         print(json.dumps(summary(plan), ensure_ascii=False, indent=1))
         return 0
-    if args.api:
-        token, account = os.environ.get("CLOUDFLARE_API_TOKEN", ""), os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
-        if not token or not account:
-            raise SystemExit("set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID")
-        target: Any = ApiTarget(account, token)
-        target.ensure(plan.databases)
-    elif args.sqlite:
-        target = SqliteTarget(args.sqlite)
-    else:
-        import shlex
-
-        target = BridgeTarget(shlex.split(args.bridge))
+    target = _target(args, plan.databases)
     try:
         report = run_import(plan, target, budget=args.budget, reset=args.reset, stop_after=args.stop_after, minutes=args.minutes,
-                            log=lambda m: print(m, flush=True))
+                            log=log)
     finally:
         target.close()
     report["names"] = plan.names()
-    print(json.dumps(report, ensure_ascii=False, indent=1))
+    text = json.dumps(report, ensure_ascii=False, indent=1)
+    if args.report:
+        Path(args.report).write_text(text + "\n", encoding="utf-8")
+    print(text)
     return 0
 
 

@@ -55,11 +55,22 @@ class Precompute:
 
     def __init__(self, runtime: Any, *, log: Callable[[str], None] = print,
                  only: list[tuple[str, str, dict[str, Any]]] | None = None) -> None:
-        self.rt = runtime
-        self.h = runtime.h
+        # ``runtime``: a ChatRuntime, or a function making one (called when the first key is needed: the daily run
+        # indexes the store only once the import has come to the results)
+        self._runtime = runtime
         self.log = log
         # ``only``: these keys and no others (the test fixture)
         self._keys = sorted(only, key=lambda t: f"{t[0]}\t{t[1]}") if only is not None else None
+
+    @property
+    def rt(self) -> Any:
+        if callable(self._runtime) and not hasattr(self._runtime, "call"):
+            self._runtime = self._runtime()
+        return self._runtime
+
+    @property
+    def h(self) -> Any:
+        return self.rt.h
 
     # -------------------------------------------------------------- which keys
     def _counts(self, entries: list[Any]) -> dict[str, int]:
@@ -177,12 +188,23 @@ class Precompute:
         return h.hexdigest()[:16]
 
 
-def runtime_for(store: str | Path, home: str | Path | None = None) -> Any:
-    """The Python runtime over the full corpus whose (indexed) store is ``store`` (<data>/corpus/tcm.sqlite)."""
+def runtime_for(store: str | Path, home: str | Path | None = None, *, log: Callable[[str], None] = print) -> Any:
+    """The Python runtime over the full corpus whose store is ``store`` (<data>/corpus/tcm.sqlite): its full-text
+    index built first if the store travelled without it (``taochronos web store``), with this checkout's normaliser."""
+    import time
+
+    from ..config import find_home
+    from ..plugins.classics.domain import DomainPack
+    from ..plugins.classics.webcorpus import index_state, index_store
     from . import ChatRuntime
 
-    data = Path(store).resolve().parent.parent
-    return ChatRuntime.create("full-corpus", home=home, data_dir=data, kind="server", ephemeral=True)
+    path = Path(store).resolve()
+    if index_state(path)["state"] != "built":
+        started = time.perf_counter()
+        normalize = DomainPack(find_home(str(home) if home else None) / "domains" / "classics").variants.normalize_text
+        index_store(path, normalize, chunk=20000)
+        log(f"  results: the store indexed for the Python runtime ({time.perf_counter() - started:.0f} s)")
+    return ChatRuntime.create("full-corpus", home=home, data_dir=path.parent.parent, kind="server", ephemeral=True)
 
 
 __all__ = ["Precompute", "clause_key", "pack", "runtime_for", "unpack"]
