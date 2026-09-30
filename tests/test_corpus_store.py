@@ -287,3 +287,15 @@ def test_research_over_a_corpus_store(store_path, tmp_path, pack):
     report = next(a for a in state.artifacts.values() if a.kind == "discovery_report" and a.media_type == "text/markdown")
     text = (tmp_path / "artifacts" / report.path).read_text(encoding="utf-8")
     assert "CC BY-SA 4.0" in text and "未经本项目逐字校勘" in text
+
+
+def test_the_normaliser_fingerprint_is_the_same_under_every_python(pack):
+    """A store records the fingerprint of the normaliser it was indexed with; it must not depend on the Python that
+    computes it.  repr() escapes the ideographs its Unicode database does not know yet (CJK Extension H under 3.11,
+    written as themselves from 3.12 on): the fingerprint writes them as themselves under every Python."""
+    from taochronos.plugins.classics.domain import _stable_repr
+
+    ext_h = chr(0x31F5A)  # 𱽚, Unicode 15.0: one of the variant table's characters
+    assert _stable_repr([(ext_h, "丁")]) == f"[('{ext_h}', '丁')]"
+    assert _stable_repr(["a\\U00031f5a"]) == repr(["a\\U00031f5a"])  # a backslash of the text itself is left as it is
+    assert ext_h in pack.variants.script.map or any(ext_h in (k, v) for k, v in pack.variants.chars.items())

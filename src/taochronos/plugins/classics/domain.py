@@ -201,6 +201,17 @@ class ScriptTable:
         return len(self.map)
 
 
+# an escape repr() writes for a character of planes 2–3 (\U0002…, \U0003…) that is not itself escaped
+_IDEOGRAPH_ESCAPE = re.compile(r"(?<!\\)((?:\\\\)*)\\U000([23][0-9a-f]{4})")
+
+
+def _stable_repr(value: Any) -> str:
+    """repr(), the same under every Python.  Planes 2–3 hold only CJK ideographs, which are printable, but repr() escapes
+    those the running Python's Unicode database does not know yet (Python 3.11 knows Unicode 14: CJK Extension H, added
+    in Unicode 15, is escaped there and written as itself from 3.12 on); here they are always written as themselves."""
+    return _IDEOGRAPH_ESCAPE.sub(lambda m: m.group(1) + chr(int(m.group(2), 16)), repr(value))
+
+
 class VariantTable:
     """Length-preserving normalisation so offsets into the original text stay valid."""
 
@@ -232,9 +243,8 @@ class VariantTable:
             if len(src) == len(dst):
                 w["from"], w["to"] = src, dst
         self._cache: dict[str, str] = {}
-        self.fingerprint = hashlib.sha1(
-            (self.script.fingerprint + repr(sorted(combined.items())) + repr([(w["from"], w["to"]) for w in self.words])).encode("utf-8")
-        ).hexdigest()[:12]
+        self.fingerprint = hashlib.sha1((self.script.fingerprint + _stable_repr(sorted(combined.items()))
+                                         + _stable_repr([(w["from"], w["to"]) for w in self.words])).encode("utf-8")).hexdigest()[:12]
 
     def normalize(self, text: str) -> tuple[str, list[Normalization]]:
         chars = list(text)

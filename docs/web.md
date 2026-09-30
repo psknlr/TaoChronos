@@ -3,7 +3,8 @@
 **道乃久** (TaoChronos; model **Tao-R1**; published by 医哲未来人工智能研究院, IMPF-AI): a model of your choice that answers
 from the classics through TaoChronos's tools, with every quotation checked against its source.  Published at
 **https://chat.impf.ai/** — served over HTTPS by a Cloudflare Worker, its tools running on the site's own server over the
-**full corpus** (958 books, 122 million characters: [cloud/](../cloud/README.md), [ADR 0016](adr/0016-site-and-full-corpus-on-cloudflare.md));
+**full corpus** (958 books, 122 million characters: [cloud/](../cloud/README.md), [ADR 0016](adr/0016-site-and-full-corpus-on-cloudflare.md);
+without a container, the site's own Worker answers from its copy in Cloudflare D1: [ADR 0017](adr/0017-d1-backup.md));
 when that server cannot answer, the page runs in the browser on the **要籍语料** — the texts of the 350 key works, the
 first whole, the rest in excerpts ([要籍语料](#要籍语料--the-browsers-corpus)).  The same page is served by
 `taochronos serve`, which brings the full corpus you built into it ([接入全部古籍](#接入全部古籍)).
