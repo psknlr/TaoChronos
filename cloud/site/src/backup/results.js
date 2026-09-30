@@ -43,25 +43,28 @@ function trim(value, items, chars, depth = 0) {
 
 export const dumps = (value) => JSON.stringify(value);
 
-/** The result as the model reads it: JSON, trimmed evenly until it fits maxChars. */
-export function compact(value, maxChars = 16000) {
-  let text = dumps(value);
-  if (cpLength(text) <= maxChars) return text;
+/** cpLength(text) <= max, counting only when the UTF-16 length leaves it open (a code point is one or two units). */
+const fits = (text, max) => text.length <= max || (text.length <= 2 * max && cpLength(text) <= max);
+
+/** The result as the model reads it: JSON, trimmed evenly until it fits maxChars (`dumped`: dumps(value), if made). */
+export function compact(value, maxChars = 16000, dumped = null) {
+  let text = dumped ?? dumps(value);
+  if (fits(text, maxChars)) return text;
   for (const [items, chars] of LEVELS) {
     text = dumps(trim(value, items, chars));
-    if (cpLength(text) <= maxChars) return text;
+    if (fits(text, maxChars)) return text;
   }
   return `${cpSlice(text, maxChars)}…［截断：原长 ${cpLength(text)} 字符］`;
 }
 
 /** The result as the interface shows it: whole when small enough, trimmed (still valid JSON) otherwise. */
-export function forInterface(value, maxChars = 400_000) {
-  if (cpLength(dumps(value)) <= maxChars) return value;
+export function forInterface(value, maxChars = 400_000, dumped = null) {
+  if (fits(dumped ?? dumps(value), maxChars)) return value;
   for (const [items, chars] of [[200, 4000], [80, 2000], [30, 800], [10, 300]]) {
     const trimmed = trim(value, items, chars);
-    if (cpLength(dumps(trimmed)) <= maxChars) return trimmed;
+    if (fits(dumps(trimmed), maxChars)) return trimmed;
   }
-  return { note: "结果过大，界面只显示摘要", preview: cpSlice(dumps(value), 4000) };
+  return { note: "结果过大，界面只显示摘要", preview: cpSlice(dumped ?? dumps(value), 4000) };
 }
 
 /** Every passage a result names: {passage_id, title, dynasty, year, locator, text} as far as the result says. */
@@ -116,10 +119,11 @@ export function summarize(result) {
 }
 
 /** ChatRuntime's shape: {ok, tool, duration_ms, text, result, citations, summary, receipt} or the error. */
-export function shape(tool, ok, result, error = null, { durationMs = 0, maxChars = 16000, receipt = {} } = {}) {
+export function shape(tool, ok, result, error = null, { durationMs = 0, maxChars = 16000, receipt = {}, dumped = null } = {}) {
   const out = { ok, tool, duration_ms: Math.round(durationMs * 10) / 10 };
   if (ok) {
-    Object.assign(out, { text: compact(result, maxChars), result: forInterface(result), citations: citations(result),
+    const text = dumped ?? dumps(result ?? null); // serialised once for the model's text and the interface's check
+    Object.assign(out, { text: compact(result, maxChars, text), result: forInterface(result, 400_000, text), citations: citations(result),
       summary: summarize(result), receipt });
   } else {
     Object.assign(out, { text: `ERROR: ${error}`, error, summary: cpSlice(error || "", 160), citations: [] });

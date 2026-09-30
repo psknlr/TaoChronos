@@ -165,7 +165,11 @@ class Precompute:
     def rows(self, after: str | None = None, *, deadline: Callable[[], bool] = lambda: False) -> Iterator[tuple[str, str, Any]]:
         """(tool, key, packed result) after ``after`` ("<tool>\\t<key>" of the last row imported), computed one at a time;
         stops when ``deadline()`` says so."""
-        for tool, key, args in self.keys():
+        import time
+
+        keys = self.keys()
+        started, done = time.perf_counter(), 0
+        for n, (tool, key, args) in enumerate(keys):
             k = f"{tool}\t{key}"
             if after is not None and k <= after:
                 continue
@@ -173,6 +177,9 @@ class Precompute:
                 self.log(f"  results: the run's time is up before {k!r}")
                 return
             value = self.value(tool, args)
+            done += 1
+            if done % 250 == 0:
+                self.log(f"  results: {n + 1:,} of {len(keys):,} keys ({tool}), {time.perf_counter() - started:.0f} s this run")
             if value is None:
                 self.log(f"  results: {tool} {key!r} failed; left out")
                 continue

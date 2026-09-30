@@ -60,18 +60,21 @@ export async function listBooks(corpus, a) {
     params.push(category);
     where.push(`instr(json_extract(card, '$.category'), ?${params.length}) > 0`);
   }
+  // sorted as the server sorts them — by the composition's label (YearRange.label: 前200–219 …), then the id — and cut, in
+  // SQL: the Worker reads only the books it returns
+  const year = (i) => `(CASE WHEN json_extract(card, '$.composition[${i}]') < 0 THEN '前' || (-json_extract(card, '$.composition[${i}]')) ` +
+    `ELSE CAST(json_extract(card, '$.composition[${i}]') AS TEXT) END)`;
+  const label = "(CASE WHEN json_extract(card, '$.composition') IS NULL THEN '' " +
+    `WHEN json_extract(card, '$.composition[0]') = json_extract(card, '$.composition[1]') THEN ${year(0)} ELSE ${year(0)} || '–' || ${year(1)} END)`;
+  const limit = a.limit ? Number.parseInt(a.limit, 10) : -1;
+  params.push(Number.isFinite(limit) ? limit : -1);
   const rows = await corpus.all(0, "SELECT id, json_extract(card, '$.title') AS title, json_extract(card, '$.authors') AS authors, " +
-    "json_extract(card, '$.dynasty') AS dynasty, json_extract(card, '$.composition') AS composition, " +
+    `json_extract(card, '$.dynasty') AS dynasty, ${label} AS composition, ` +
     "json_extract(card, '$.category') AS category, json_extract(card, '$.attribution') AS attribution, " +
-    `json_extract(card, '$.passages') AS passages FROM books WHERE ${where.join(" AND ")}`, params);
-  const out = rows.map((r) => ({ book_id: r.id, title: r.title, authors: JSON.parse(r.authors || "[]").slice(0, 3), dynasty: r.dynasty,
-    composition: r.composition ? rangeLabel(JSON.parse(r.composition)) : null, category: r.category, attribution: r.attribution,
-    passages: r.passages }));
-  out.sort((x, y) => cmp(x.composition || "", y.composition || "") || cmp(x.book_id, y.book_id));
-  return a.limit ? out.slice(0, Number(a.limit)) : out;
+    `json_extract(card, '$.passages') AS passages FROM books WHERE ${where.join(" AND ")} ORDER BY composition, id LIMIT ?${params.length}`, params);
+  return rows.map((r) => ({ book_id: r.id, title: r.title, authors: JSON.parse(r.authors || "[]").slice(0, 3), dynasty: r.dynasty,
+    composition: r.composition || null, category: r.category, attribution: r.attribution, passages: r.passages }));
 }
-
-const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
 export async function canon(corpus, a) {
   const works = CANON.works;

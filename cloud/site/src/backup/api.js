@@ -169,7 +169,9 @@ export async function call(corpus, name, args, maxChars = 16000, pre = new Set()
     const errors = validate(a, spec.parameters);
     if (errors.length) throw new ToolError("invalid", `invalid arguments: ${errors.slice(0, 5).join("; ")}`);
     const result = LIVE.has(tool) ? await RUN[tool](corpus, a) : await precomputed(corpus, tool, a);
-    return withVia(shape(tool, true, result, null, { durationMs: Date.now() - started, maxChars, receipt: await receipt(tool, a, result) }), via);
+    const dumped = JSON.stringify(result ?? null);
+    return withVia(shape(tool, true, result, null, { durationMs: Date.now() - started, maxChars, dumped,
+      receipt: await receipt(tool, a, result, dumped) }), via);
   } catch (err) {
     return withVia(shape(tool, false, null, errorText(err), { durationMs: Date.now() - started }), via);
   }
@@ -197,15 +199,16 @@ function unavailable(tool) {
 export const classification = () => ({ live: [...LIVE], precomputed: [...PRECOMPUTED], unavailable: { ...UNAVAILABLE } });
 
 // ------------------------------------------------------------------ receipts (kernel/tools.py: what was called, what came back)
-async function digest(value) {
-  const bytes = new TextEncoder().encode(JSON.stringify(value ?? null));
+async function digest(value, dumped = null) {
+  const bytes = new TextEncoder().encode(dumped ?? JSON.stringify(value ?? null));
   const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
   return [...hash.slice(0, 12)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function receipt(tool, args, result) {
+/** `dumped`: the result serialised (JSON.stringify(result ?? null)), made once for the receipt and the shaping. */
+async function receipt(tool, args, result, dumped = null) {
   return { tool, version: "1", actor: "agent:chat", principal: "agent", arguments_sha256: await digest(args),
-    result_sha256: await digest(result), ok: true, quarantined: false, backup: "d1" };
+    result_sha256: await digest(result, dumped), ok: true, quarantined: false, backup: "d1" };
 }
 
 export { CorpusError };
