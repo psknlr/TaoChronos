@@ -38,17 +38,21 @@ relay 用的令牌（模板 *Edit Cloudflare Workers*）已经能管理 Worker�
 
 编辑权限不会改变令牌本身，GitHub 里的 `CLOUDFLARE_API_TOKEN` 不用更新。
 
-## 第 3 步：部署
+## 第 3 步：把 chat.impf.ai 交给 Cloudflare（删除旧的 DNS 记录，再部署）
 
-合并本项目的 PR 后工作流会自动运行；也可以手动：GitHub 仓库 → **Actions → site → Run workflow**。它依次：
+Cloudflare 只在没有自建 DNS 记录的名称上建 Worker 的自定义域名，所以先删掉原来指向 GitHub Pages 的那条 CNAME：
 
-1. 测试两个 Worker；
-2. 构建并部署全量语料容器（第一次约 20 分钟：解压语料、建全文索引、预热缓存、上传镜像）；
-3. 部署网站 Worker：**第一次部署时，Cloudflare 自动把 `chat.impf.ai` 的 DNS 记录从 GitHub Pages 改为指向这个 Worker，并签发证书**
-   （几分钟内生效，期间访问不中断）；
-4. 检查 https 页面、http 跳转、全量语料的一次检索。
+1. Cloudflare 控制台 → 选中域名 **impf.ai** → **DNS → Records**。
+2. 找到 **类型 CNAME、名称 `chat`、内容 `psknlr.github.io`** 的那一条 → 右侧 **Edit → Delete**，确认删除。
+   只删这一条；`chat-api`（道乃久默认服务）等其他记录不要动。
+3. 紧接着到 GitHub 仓库 → **Actions** → 左侧 **site** → 右侧 **Run workflow → Run workflow**。
 
-工作流里黄色的警告会指出缺了哪一步（例如"没有 Workers Paid"或"令牌不能管理 Containers"）；补上后重新运行即可。
+工作流先测试两个 Worker，随即部署网站（约 3 分钟）：Cloudflare 为 `chat.impf.ai` 建立指向网站 Worker 的记录并签发证书，
+几分钟内 https 生效；从删除记录到这时，chat.impf.ai 会短暂打不开。与此同时，工作流构建并部署全量语料容器（第一次约 20 分钟：
+取回语料并校验、建全文索引、预热缓存、上传镜像），完成后再部署一次网站把它接上，并做一次全量检索检查。
+
+工作流里黄色的警告会指出缺了哪一步（例如"没有 Workers Paid"或"令牌不能管理 Containers"），红色的错误说明失败原因；补上后再
+**Run workflow** 即可。以后合入 main 时工作流自动运行，不必再动 DNS。
 
 ## 第 4 步：验证
 
@@ -80,7 +84,7 @@ relay 用的令牌（模板 *Edit Cloudflare Workers*）已经能管理 Worker�
 
 | 现象 | 原因与处理 |
 |---|---|
-| site 步骤报 `chat.impf.ai` 的 DNS 记录冲突或无权修改 | 令牌不能替换已有记录。Cloudflare → impf.ai → **DNS → Records**，删除 `chat` 这条 CNAME（指向 psknlr.github.io），再重跑工作流；删除到部署完成之间网站短暂不可访问 |
+| 工作流报「chat.impf.ai 还有一条自建的 DNS 记录」（Cloudflare：externally managed DNS records） | 第 3 步的 CNAME 还没删除：删除后再 **Run workflow** |
 | 警告"no KV namespace" | 令牌缺 Account · Workers KV Storage · Edit |
 | 警告"the store … is not (all) in the KV namespace" | 全量语料尚未上传：由维护者运行 `taochronos web upload`（见 README.md） |
 | 警告"container was not deployed" | 第 1 步或第 2 步未完成；日志里有 Cloudflare 的具体报错 |

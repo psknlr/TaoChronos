@@ -14,8 +14,9 @@ service already runs (ADR 0012) — with the full corpus there.
 ## Decision
 
 1. **The site is a Worker** (`cloud/site`) on the custom domain `chat.impf.ai`: Cloudflare issues the certificate, the
-   Worker redirects http to https and serves the site (`taochronos web build`) as static assets.  The deployment replaces
-   the DNS record that pointed at GitHub Pages; the Pages site stays as a mirror.
+   Worker redirects http to https and serves the site (`taochronos web build`) as static assets.  Cloudflare puts a
+   custom domain only on a name without a DNS record of the account's own, so the CNAME that pointed the name at GitHub
+   Pages is deleted when switching; the Pages site stays as a mirror.
 2. **The full corpus runs in a container** (`cloud/corpus`): Cloudflare Containers, started on demand by a Durable Object
    and put to sleep when unused.  It is `taochronos`'s own server (`taochronos.chat.cloud serve`, the `ChatServer` of
    `taochronos serve`) without its model proxy and static files, over the full corpus as the site may carry it (`taochronos
@@ -36,7 +37,8 @@ service already runs (ADR 0012) — with the full corpus there.
    the 要籍语料 in the browser, as before.
 6. **Degrade, never block.**  The workflow (`site.yml`) deploys the site whatever the account lacks: without the
    uploaded store, or without Containers (the Workers Paid plan), the site is deployed without the full corpus, with a
-   warning saying what is missing.
+   warning saying what is missing.  Nor does the site wait for the container: it is deployed right after the tests, the
+   container beside it (a build takes minutes), and the site again, bound to it, once a new one is up.
 
 ## Consequences
 
