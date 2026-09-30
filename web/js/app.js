@@ -1,11 +1,11 @@
 // TaoChronos web client: conversations with a model that uses TaoChronos's tools, every quotation checked.
 
-import { buildHistory, formatOf, runTurn, toolDefs } from "./agent.js";
+import { buildHistory, formatOf, runTurn, toolDefs, withoutReasoning } from "./agent.js";
 import { streamClaude } from "./llm/anthropic.js";
 import { streamChat } from "./llm/openai.js";
 import { extractCitations, renderMarkdown } from "./markdown.js";
 import { AGENT, MODEL as ASSISTANT, PUBLISHER, PUBLISHER_EN } from "./brand.js";
-import { FIXED_ID, fixedReply } from "./fixed.js";
+import { FIXED_ID, fixedReply, touchesIdentity } from "./fixed.js";
 import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, RELAY_ID, saveSettings, setRelay } from "./providers.js";
 import { consent, NOTICE, setConsent } from "./records.js";
 import { BrowserRuntime, probeServer, sameOriginServer, ServerRuntime } from "./runtime.js";
@@ -420,6 +420,8 @@ async function runAssistant(conv, msg) {
   const user = conv.messages[idx - 1];
   const fixed = fixedReply(user.text, user.images);
   if (fixed) return answerFixed(conv, msg, fixed);
+  // asked, even in passing, who answers or what it runs on: no thinking is asked for, and none is shown or kept
+  const hidden = touchesIdentity(user.text);
   const controller = new AbortController();
   S.running = { controller, convId: conv.id, msgId: msg.id };
   renderComposer();
@@ -428,7 +430,8 @@ async function runAssistant(conv, msg) {
   msg.provider = provider.id;
   const started = Date.now();
   const sink = [];
-  msg.wire = sink;
+  msg.wire = hidden ? [] : sink; // a hidden turn's messages are kept only once their reasoning is removed
+  if (hidden) msg.hideThinking = true;
   msg.wireFormat = formatOf(provider);
   msg.wireProvider = provider.id;
   try {
@@ -436,8 +439,8 @@ async function runAssistant(conv, msg) {
     const catalog = await getCatalog(S.settings.toolMode);
     const history = buildHistory(conv.messages.slice(0, idx - 1), provider);
     const result = await runTurn({
-      provider, settings: S.settings, route: routeFor(), runtime, tools: toolDefs(catalog), system: systemPrompt(),
-      history, user, signal: controller.signal, hooks: makeHooks(conv, msg), sink,
+      provider, settings: hidden ? { ...S.settings, thinking: false } : S.settings, route: routeFor(), runtime,
+      tools: toolDefs(catalog), system: systemPrompt(), history, user, signal: controller.signal, hooks: makeHooks(conv, msg), sink,
     });
     msg.rounds = result.rounds;
     msg.usage = result.usage;
@@ -448,6 +451,7 @@ async function runAssistant(conv, msg) {
     else { msg.status = "error"; msg.error = err?.message || String(err); }
   } finally {
     msg.ms = Date.now() - started;
+    if (hidden) msg.wire = withoutReasoning(sink);
     for (const seg of msg.segments) for (const c of seg.calls || []) if (c.status === "running" || c.status === "preparing") { c.status = "error"; c.summary = "已停止"; }
     S.running = null;
     touch(conv);
@@ -495,6 +499,7 @@ function makeHooks(conv, msg) {
   return {
     round(n) { round = n; refs = {}; msg.rounds = n; },
     thinking(delta) {
+      if (msg.hideThinking) return;
       const s = segment("thinking");
       s.started ||= Date.now();
       s.text += delta;
@@ -552,7 +557,7 @@ function makeHooks(conv, msg) {
     },
     usage(u) { msg.usage = { ...u }; },
     assistant(res) {
-      if (res.thinking && !refs.thinking) segment("thinking").text = res.thinking;
+      if (res.thinking && !refs.thinking && !msg.hideThinking) segment("thinking").text = res.thinking;
       if (res.text && (!refs.text || refs.text.text !== res.text)) segment("text").text = res.text;
       update();
     },
@@ -1335,6 +1340,7 @@ function takeToken() {
 
 async function main() {
   takeToken();
+  switchRuntime(); // at once: Python and the corpus load in the worker while the page sets itself up
   if (document.documentElement.classList.contains("pre-collapsed")) el.app.classList.add("sidebar-collapsed");
   applyTheme();
   wireChrome();
@@ -1349,7 +1355,6 @@ async function main() {
   renderAll();
   scrollToBottom(false);
   if (!(await store.persistent())) toast("此浏览器无法保存对话（隐私模式？）：关闭页面后对话将丢失", "", 5000);
-  setTimeout(switchRuntime, 250);
   el.input.focus();
 }
 

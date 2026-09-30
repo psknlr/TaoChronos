@@ -298,6 +298,18 @@ def test_the_site_build_is_deterministic_and_complete(tmp_path):
         corpus = manifest["files"]["corpus.sqlite.xz"]
         assert corpus["profile"] == "web-canon" and corpus["bytes"] == (site / "runtime" / "corpus.sqlite.xz").stat().st_size
         assert corpus["encoding"] == "xz" and corpus["core_rank"] == 40 and corpus["core_passages"] < corpus["passages"]
+    # the YAML the runtime reads, parsed by the build: the browser reads it from the cache, keyed by each file's content
+    shipped = zipfile.ZipFile(site / "runtime" / "home.zip")
+    cached = [n for n in shipped.namelist() if n.startswith(".cache/yaml/")]
+    assert len(cached) > 40 and all(n.endswith(".v1.pickle") for n in cached)
+    import hashlib
+    import pickle
+
+    from taochronos.protocol.yamlio import load_yaml
+    raw = shipped.read("domains/classics/periods.yaml")
+    key = hashlib.sha256(raw).hexdigest()
+    entry = f".cache/yaml/{key[:2]}/{key}.v1.pickle"
+    assert entry in cached and pickle.loads(shipped.read(entry)) == load_yaml(ROOT / "domains" / "classics" / "periods.yaml")
     # what the runtime will report, known before it loads: the page asks the model at once
     boot = json.loads((site / "runtime" / "boot.json").read_text(encoding="utf-8"))
     assert boot["info"]["name"] == "TaoChronos" and boot["info"]["runtime"] == "browser" and boot["info"]["system_prompt"]

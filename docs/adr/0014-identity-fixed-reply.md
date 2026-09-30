@@ -36,6 +36,14 @@ Instructions alone cannot fix an answer: a model paraphrases, adds, and can be t
 4. **A fixed reply is a turn like any other.**  It is kept in the conversation and replayed to the model as the
    assistant's own answer when the conversation goes on, exported, and — with the visitor's consent, on the default
    service — recorded, as `provider: "fixed"` with no model, no tools and `rounds: 0`.
+5. **A turn that touches who answers has no thinking to see** (added 2026-09-29, at IMPF-AI's request).  A question that
+   asks, even in passing, who answers or what it runs on — any of the ways of (2), whatever else it asks — still goes to
+   the model, but without thinking: the page asks for none (`thinking: disabled` for MiniMax and the default service,
+   no thinking for Claude); whatever reasoning a model sends anyway is not shown, not kept in the conversation (its
+   messages are stored and replayed without reasoning fields, thinking blocks or `<think>`), not exported and not
+   recorded; and the relay, asked for no thinking, strips reasoning from the stream itself, so none reaches the browser
+   even in its network log.  With a visitor's own key the page cannot filter what that provider sends to the visitor's
+   own browser; it still asks for no thinking and shows and keeps none.  Other turns keep their thinking.
 
 ## Consequences
 
