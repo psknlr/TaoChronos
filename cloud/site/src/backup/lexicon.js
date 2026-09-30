@@ -3,6 +3,7 @@
 // synonym kind the surface has for each.  An entry is the LexEntry without its defaults ({id, term, cat, aliases …}).
 
 const MAX_LEN = 9; // the longest surface (Lexicon.max_len on the full-corpus lexicon: checked by the tests)
+const SHARED_BUCKETS = 1500; // buckets an isolate keeps (of 1,916; some 10 MB parsed at most)
 
 export class Lexicon {
   constructor(corpus) {
@@ -10,13 +11,26 @@ export class Lexicon {
     this.buckets = new Map(); // first character → {surface: [entry …]}
   }
 
-  /** Load the buckets of these first characters (one query for all that are not loaded yet). */
+  /** Load the buckets of these first characters: those the isolate has read before from its cache, the others in one
+   * query. */
   async load(chars) {
     const want = [...new Set([...chars].filter((c) => !this.buckets.has(c)))];
     if (!want.length) return;
-    const rows = await this.corpus.all(0, "SELECT k, v FROM lex WHERE k IN (SELECT value FROM json_each(?))", [JSON.stringify(want)]);
-    for (const c of want) this.buckets.set(c, {});
+    const shared = typeof this.corpus.lexicon === "function" ? await this.corpus.lexicon() : null;
+    const missing = [];
+    for (const c of want) {
+      const got = shared?.get(c);
+      if (got !== undefined) this.buckets.set(c, got);
+      else missing.push(c);
+    }
+    if (!missing.length) return;
+    const rows = await this.corpus.all(0, "SELECT k, v FROM lex WHERE k IN (SELECT value FROM json_each(?))", [JSON.stringify(missing)]);
+    for (const c of missing) this.buckets.set(c, {});
     for (const r of rows) this.buckets.set(r.k, JSON.parse(r.v));
+    if (shared) {
+      if (shared.size > SHARED_BUCKETS) shared.clear();
+      for (const c of missing) shared.set(c, this.buckets.get(c));
+    }
   }
 
   /** Load what `match` needs for a text: the bucket of every character in it. */

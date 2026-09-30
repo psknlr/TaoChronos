@@ -60,7 +60,7 @@ export class Corpus {
     if (!meta.stats || !meta.complete) throw new CorpusError("the D1 backup is not complete");
     const stats = JSON.parse(meta.stats);
     stats.complete = meta.complete;
-    this.cache.kept = { at: this.now(), stats, cards: kept?.cards || new Map(), works: null };
+    this.cache.kept = { at: this.now(), stats, cards: kept?.cards || new Map(), works: null, lex: kept?.lex || new Map() };
     return stats;
   }
 
@@ -103,6 +103,13 @@ export class Corpus {
       if (s <= e) out.push([k, s, e]);
     });
     return out;
+  }
+
+  /** The lexicon's buckets read so far (first character → the parsed bucket, never changed by a reader), kept per
+   * isolate with the statistics. */
+  async lexicon() {
+    await this.stats();
+    return this.cache.kept.lex;
   }
 
   /** The works this corpus holds (a witness of each), kept per isolate. */
