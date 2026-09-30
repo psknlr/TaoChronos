@@ -5,9 +5,7 @@
 name = "taochronos-site"
 main = "src/index.js"
 compatibility_date = "2025-09-01"
-# for now also at https://taochronos-site.<the account's subdomain>.workers.dev: the full corpus store is uploaded there
-# while chat.impf.ai still points at GitHub Pages; off again once it is uploaded
-workers_dev = true
+workers_dev = false
 preview_urls = false
 
 # the site's own hostname: Cloudflare points chat.impf.ai at this Worker and issues its certificate.  Cloudflare puts a
@@ -26,9 +24,10 @@ run_worker_first = true
 [vars]
 ALLOWED_ORIGINS = "https://chat.impf.ai"
 HSTS_MAX_AGE = "86400"
-# sha256 of the token that may upload the full corpus store (`taochronos web upload`); the token itself is kept nowhere
-# here.  A new token: put the sha256 of a new random string here (or in the repository variable STORE_TOKEN_SHA256).
-STORE_TOKEN_SHA256 = "9e482c012af36141a644410116a6eb8cdb768a231513826e7e010e7482d8340d"
+# sha256 of the token that may upload the full corpus store (`taochronos web upload`).  Empty: uploads are off.  To
+# upload a new store, register a new token's sha256 in the repository variable STORE_TOKEN_SHA256 for as long as the
+# upload takes (cloud/README.md); the token itself is kept nowhere here.
+STORE_TOKEN_SHA256 = ""
 
 # per visitor and Cloudflare location, per minute: tool calls and research runs; reads (info, catalogs, passages, polls)
 [[ratelimits]]

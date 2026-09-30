@@ -27,7 +27,8 @@ service already runs (ADR 0012) — with the full corpus there.
    address of its own, and answers only the token its Durable Object started it with.
 4. **The store travels without its index.**  The store is uploaded once, compressed (1.24 GB → 143 MB, in parts of 24 MiB
    — a Workers KV value each, checked by sha256 when read back), into the site's KV namespace through the site's Worker,
-   with a token whose hash is in the repository; `cloud/store.json` pins the one deployed.  KV rather than R2: every
+   with a token whose hash is registered only for the upload (the repository variable `STORE_TOKEN_SHA256`: the upload
+   is otherwise off); `cloud/store.json` pins the one deployed.  KV rather than R2: every
    account has it, with no plan to buy, and the site's token may already write it.  The image is built in CI: the store is unpacked and checked, indexed with the normalizer of the
    code that serves it, and the caches the tools otherwise build on first use (the punctuation model, the citation network,
    the pair harvest, the schools) are built into the image — a container always starts from its image.
