@@ -1,0 +1,18 @@
+# The image of the full corpus's server (cloud/corpus/Dockerfile) is built from the repository's root: only what it copies.
+*
+!pyproject.toml
+!README.md
+!src/
+!architecture-policy.yaml
+!profiles/
+!domains/
+!corpus/catalog/
+!corpus/demo/
+!corpus/modern/
+!agents/
+!skills/
+!evals/gold/
+!cloud/store.json
+!cloud/.store/
+**/__pycache__
+**/*.pyc

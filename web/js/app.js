@@ -54,8 +54,9 @@ const el = {
 const mobile = () => matchMedia("(max-width: 980px)").matches;
 
 // ------------------------------------------------------------------ runtime
-// Auto: the server that served this page; else the server this browser last worked with (the full corpus), when it
-// answers; else TaoChronos in this browser (the demonstration corpus).
+// Auto: the server that served this page (the site's own, on Cloudflare: the full corpus; or `taochronos serve`); else
+// the server this browser last worked with (the full corpus), when it answers; else TaoChronos in this browser (the
+// 要籍语料).  When the site's own server cannot answer, the page carries on in the browser.
 const KNOWN_SERVER = "tc.server";
 
 async function chooseRuntime() {
@@ -63,7 +64,7 @@ async function chooseRuntime() {
   if (pref === "server") return new ServerRuntime(serverUrl, token);
   if (pref === "browser") return new BrowserRuntime();
   S.here = await sameOriginServer(token);
-  if (S.here) return new ServerRuntime(S.here, token);
+  if (S.here) return new ServerRuntime(S.here, token, { label: siteServer() ? "本站服务" : "", fallback: inBrowserInstead });
   const known = storage.get(KNOWN_SERVER, null);
   if (known) {
     S.runtimeState = { status: "loading", progress: 12, message: `寻找 TaoChronos 服务 ${known.replace(/^https?:\/\//, "")}` };
@@ -71,6 +72,20 @@ async function chooseRuntime() {
     if (await probeServer(known, token)) return new ServerRuntime(known, token);
   }
   return new BrowserRuntime();
+}
+
+/** Is this page served by the site's own server (not `taochronos serve` on this or another machine)? */
+function siteServer() {
+  return !isLoopbackHost(location.hostname) && !/^\d+\.\d+\.\d+\.\d+$|^\[/.test(location.hostname) && !location.port;
+}
+const isLoopbackHost = (host) => ["localhost", "127.0.0.1", "[::1]", "::1"].includes(host);
+
+/** The site's own server cannot answer: the page carries on with TaoChronos in this browser (the 要籍语料). */
+function inBrowserInstead(err) {
+  const rt = new BrowserRuntime();
+  toast(`全量语料服务暂不可用（${truncate(err?.message || "", 40)}），改用浏览器内的要籍语料`, "err");
+  switchRuntime(rt);
+  return rt;
 }
 
 let runtimeSwitch = null;
@@ -102,7 +117,9 @@ function switchRuntime(ready = null) {
       renderComposerHint();
       if (!S.conv?.messages.length) renderMain();
       refreshAllCites();
-    }).catch(() => { /* shown in the pill */ });
+    }).catch((err) => {
+      if (S.runtime === rt && rt.fallback && !rt.backup && err?.unavailable) rt.backup = rt.fallback(err); // else shown in the pill
+    });
   })();
   return runtimeSwitch;
 }
@@ -121,17 +138,36 @@ async function ensureRuntime() {
   try {
     await S.runtime.start();
   } catch (err) {
+    if (await fellBack(err)) return ensureRuntime();
     throw new Error(`TaoChronos 运行环境不可用：${err.message}`);
   }
   S.runtimeInfo = await S.runtime.info();
   return S.runtime;
 }
 
+/** The site's own server could not be reached: the page has carried on in the browser (true), or it had no other way. */
+async function fellBack(err) {
+  const rt = S.runtime;
+  if (rt?.kind !== "server" || !rt.fallback || !err?.unavailable) return false;
+  rt.backup ||= rt.fallback(err);
+  await runtimeSwitch;
+  return S.runtime !== rt;
+}
+
 /** The runtime a turn runs on.  A browser runtime still loading describes itself from its boot file, so that the model
  * is asked at once; the tools it calls wait for the runtime (runtime.call waits until it is ready). */
 async function turnRuntime() {
   if (!S.runtime) await (runtimeSwitch || switchRuntime());
-  if (S.runtime.kind !== "browser" || S.runtime.state?.status === "error") return ensureRuntime();
+  if (S.runtime.kind !== "browser" || S.runtime.state?.status === "error") {
+    try {
+      await S.runtime.start();
+    } catch (err) {
+      if (await fellBack(err)) return turnRuntime();
+      throw new Error(`TaoChronos 运行环境不可用：${err.message}`);
+    }
+    S.runtimeInfo = await S.runtime.info();
+    return S.runtime;
+  }
   S.runtimeInfo ||= await S.runtime.info();
   return S.runtime;
 }
@@ -149,7 +185,8 @@ function routeFor(settings = S.settings) {
   const p = activeProvider(settings);
   if (p.relay) return { kind: "direct" }; // the default service is reached directly, never through a local server
   const custom = p.custom; // a hand-set endpoint goes direct unless told otherwise (the proxy lists hosts)
-  if (settings.route === "proxy" || (settings.route === "auto" && server && !custom)) {
+  // a server started without its model proxy (the site's own) forwards no model calls
+  if (settings.route === "proxy" || (settings.route === "auto" && server && !custom && S.runtimeInfo?.proxy !== false)) {
     return { kind: "proxy", serverUrl: server ? server.url : settings.serverUrl, token: server ? server.token : settings.serverToken || "" };
   }
   return { kind: "direct" };

@@ -1362,6 +1362,39 @@ def cmd_web(args: argparse.Namespace) -> None:
             raise SystemExit("no corpus/catalog/canon.yaml: run taochronos study canon --write-catalog first")
         _out(export_pack(sqlite3.connect(f"file:{db_path}?mode=ro", uri=True), works, Path(args.output or home / "corpus" / "web")))
         return
+    if args.action == "store":
+        from .plugins.classics.webcorpus import compress_store, server_attribution, server_store
+
+        _, data = _corpus_paths(args)
+        db_path = data / "corpus" / "tcm.sqlite"
+        if not db_path.exists():
+            raise SystemExit(f"no full corpus store at {db_path}: the site's store is written from it (taochronos corpus ingest …)")
+        out = Path(args.output or home / "cloud")
+        work = data / "cloud"
+        work.mkdir(parents=True, exist_ok=True)
+        info = server_store(db_path, work / "tcm.sqlite")
+        packed = compress_store(work / "tcm.sqlite", work / "tcm.sqlite.xz")
+        final = work / f"{packed['sha256']}.sqlite.xz"
+        (work / "tcm.sqlite.xz").replace(final)
+        manifest = {"format": 1, "key": f"store/{packed['sha256']}/", **packed,
+                    **{k: info[k] for k in ("books", "passages", "characters", "sources", "excluded")}}
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "store.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        (out / "ATTRIBUTION.md").write_text(server_attribution(work / "tcm.sqlite", info), encoding="utf-8")
+        (work / "tcm.sqlite").unlink()
+        _out({"file": str(final), "manifest": str(out / "store.json"), **manifest})
+        return
+    if args.action == "upload":
+        from .chat.cloud import upload
+
+        manifest_path = Path(args.manifest or home / "cloud" / "store.json")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        _, data = _corpus_paths(args)
+        token = os.environ.get("TAOCHRONOS_STORE_TOKEN", "").strip()
+        if not token:
+            raise SystemExit("set TAOCHRONOS_STORE_TOKEN: the token whose sha256 the site's Worker holds (STORE_TOKEN_SHA256)")
+        _out(upload(data / "cloud" / f"{manifest['sha256']}.sqlite.xz", manifest, args.site, token, log=print))
+        return
     info = build_site(Path(args.output or "_site"), home=home, web=Path(args.web) if args.web else None, pyodide=args.pyodide,
                       relay=args.relay if args.relay is not None else os.environ.get("TAOCHRONOS_RELAY_URL"))
     _out(info)
@@ -1669,10 +1702,15 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--web", help="serve the client from this directory (default: <home>/web)")
     sp.add_argument("--open", action="store_true", help="open the client in a browser")
     sp.add_argument("--verbose", action="store_true", help="log requests (paths only)")
-    sp = add("web", cmd_web, "the web chat client: build the static site (GitHub Pages); pack the 要籍语料 it carries", profile=False)
-    sp.add_argument("action", choices=["build", "pack"])
-    sp.add_argument("-o", "--output", help="build: the site directory (default _site); pack: the pack directory (default corpus/web)")
-    sp.add_argument("--data", help="pack: the data directory holding the full corpus store")
+    sp = add("web", cmd_web, "the web chat client: build the static site; pack the 要籍语料 it carries; write and upload the full "
+                             "corpus its server carries (Cloudflare)", profile=False)
+    sp.add_argument("action", choices=["build", "pack", "store", "upload"])
+    sp.add_argument("-o", "--output", help="build: the site directory (default _site); pack: the pack directory (default "
+                                           "corpus/web); store: where store.json and ATTRIBUTION.md go (default cloud)")
+    sp.add_argument("--data", help="pack, store: the data directory holding the full corpus store")
+    sp.add_argument("--site", default="https://chat.impf.ai", help="upload: the site whose Worker takes the store "
+                                                                 "(the token: $TAOCHRONOS_STORE_TOKEN)")
+    sp.add_argument("--manifest", help="upload: the store's manifest (default cloud/store.json)")
     sp.add_argument("--web", help="the client's sources (default: <home>/web)")
     sp.add_argument("--pyodide", choices=["self", "cdn"], default="self",
                     help="self: put the pinned Pyodide files in the site (default); cdn: load them from jsDelivr")

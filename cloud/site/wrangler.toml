@@ -1,0 +1,42 @@
+# 道乃久 on Cloudflare — the Worker serving https://chat.impf.ai: the site, and its API to the full corpus (cloud/README.md).
+# Deployed by .github/workflows/site.yml, which adds the bindings the account has: the Workers KV namespace the full
+# corpus store is uploaded into (STORE) and the corpus Worker (a service binding: CORPUS).  Without them the site still
+# serves: the page then runs the 要籍语料 in the browser.
+name = "taochronos-site"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+workers_dev = false
+preview_urls = false
+
+# the site's own hostname: Cloudflare points chat.impf.ai at this Worker and issues its certificate (a deployment from CI
+# replaces a DNS record already there, such as the CNAME to GitHub Pages)
+[[routes]]
+pattern = "chat.impf.ai"
+custom_domain = true
+
+# the site built by `taochronos web build` (the workflow builds it into _site at the repository's root)
+[assets]
+directory = "../../_site"
+binding = "ASSETS"
+run_worker_first = true
+
+[vars]
+ALLOWED_ORIGINS = "https://chat.impf.ai"
+HSTS_MAX_AGE = "86400"
+# sha256 of the token that may upload the full corpus store (`taochronos web upload`); the token itself is kept nowhere
+# here.  A new token: put the sha256 of a new random string here (or in the repository variable STORE_TOKEN_SHA256).
+STORE_TOKEN_SHA256 = "9e482c012af36141a644410116a6eb8cdb768a231513826e7e010e7482d8340d"
+
+# per visitor and Cloudflare location, per minute: tool calls and research runs; reads (info, catalogs, passages, polls)
+[[ratelimits]]
+name = "CALL_LIMIT"
+namespace_id = "7311"
+simple = { limit = 120, period = 60 }
+
+[[ratelimits]]
+name = "READ_LIMIT"
+namespace_id = "7312"
+simple = { limit = 600, period = 60 }
+
+[observability]
+enabled = true

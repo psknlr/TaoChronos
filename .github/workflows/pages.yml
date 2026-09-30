@@ -1,6 +1,8 @@
 name: pages
 
-# The web client on GitHub Pages: https://chat.impf.ai/ (the custom domain; https://psknlr.github.io/TaoChronos/ redirects there)
+# The web client on GitHub Pages: https://psknlr.github.io/TaoChronos/, a mirror of https://chat.impf.ai/ — which Cloudflare
+# serves (site.yml, cloud/README.md).  Once chat.impf.ai is on Cloudflare, remove the custom domain under Settings → Pages
+# (cloud/SETUP.md); until then this site answers for it.
 # One-time setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
 on:
   push:

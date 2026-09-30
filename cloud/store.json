@@ -1,0 +1,81 @@
+{
+ "format": 1,
+ "key": "store/ef628936d382e7e22962dacd14de4f28e316849db44906dfb4f30071ef7517fc/",
+ "encoding": "xz",
+ "bytes": 143182284,
+ "sha256": "ef628936d382e7e22962dacd14de4f28e316849db44906dfb4f30071ef7517fc",
+ "raw_bytes": 1239236608,
+ "raw_sha256": "20e70d74ea5df3affca71864cba3394d1c270ca1556af876fbfc14070d80b646",
+ "part_bytes": 25165824,
+ "parts": [
+  {
+   "name": "part-000",
+   "bytes": 25165824,
+   "sha256": "f4cc46d4b79c8126a4d47cb3338de88abaac6388c1235bbe559b402f66cba5e4"
+  },
+  {
+   "name": "part-001",
+   "bytes": 25165824,
+   "sha256": "6714b98d8acc20eab14882eed72ef489ee4208caf2e5099dc70f229bfc2003d0"
+  },
+  {
+   "name": "part-002",
+   "bytes": 25165824,
+   "sha256": "3518fabfda00de2b13cb038eb8359c897a37d9dea894471af613c037334d478c"
+  },
+  {
+   "name": "part-003",
+   "bytes": 25165824,
+   "sha256": "c5013b9201ba8781defc2bbe60b84ce5a96340e2791d5566280c78b0bad97f2c"
+  },
+  {
+   "name": "part-004",
+   "bytes": 25165824,
+   "sha256": "dc54379f762b6ea782f95464265bef844d67f6573f6a296bafe0df53d7210436"
+  },
+  {
+   "name": "part-005",
+   "bytes": 17353164,
+   "sha256": "3ca958f5a49588f6528bf81f216d3beab9c17e725eae9b69944cfbaf6d0b66f9"
+  }
+ ],
+ "books": 958,
+ "passages": 2038497,
+ "characters": 122219380,
+ "sources": {
+  "cmeta": {
+   "books": 11,
+   "passages": 27710,
+   "characters": 1448951
+  },
+  "jicheng": {
+   "books": 816,
+   "passages": 1632424,
+   "characters": 93637607
+  },
+  "kanripo": {
+   "books": 100,
+   "passages": 353666,
+   "characters": 25660569
+  },
+  "mcgill": {
+   "books": 5,
+   "passages": 4968,
+   "characters": 365891
+  },
+  "tcm-ancient-books": {
+   "books": 8,
+   "passages": 3748,
+   "characters": 368979
+  },
+  "wikisource": {
+   "books": 18,
+   "passages": 15981,
+   "characters": 737383
+  }
+ },
+ "excluded": {
+  "aeam": 7,
+  "hf-tcm-canon": 1
+ }
+}

@@ -35,3 +35,13 @@ jobs:
           node-version: "22"
       - name: The relay (道乃久默认服务)
         run: node --test relay/test/relay.test.js
+
+  cloud:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: The site's Worker and the corpus Worker (cloud/)
+        run: node --test cloud/test/site.test.js cloud/test/corpus.test.js

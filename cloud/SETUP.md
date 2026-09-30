@@ -1,0 +1,102 @@
+# 把网站和全量古籍放到 Cloudflare：分步教程
+
+完成后：
+
+- **https://chat.impf.ai** 有正式证书（浏览器地址栏显示锁），输入 http 地址会自动跳转到 https；
+- 网站从 Cloudflare 的全球节点提供，国内访问一般比 GitHub Pages 快、也更稳定；
+- 页面打开即可提问，不再下载 10 MB 的浏览器语料和 Python 运行环境；工具检索的是**全部古籍**：958 部录本、1.22 亿字
+  （本项目收录的全部古籍中，来源条件允许随网站发布的部分；条款禁止转载的 8 部不收，见 [ATTRIBUTION.md](ATTRIBUTION.md)）；
+- 全量语料服务暂不可用时，页面自动改用浏览器内的要籍语料，照常可用。
+
+技术说明见 [README.md](README.md)。下面的步骤只需做一次，约 10 分钟。
+
+## 需要准备
+
+| 项目 | 说明 |
+|---|---|
+| Cloudflare 账户 | 就是 `impf.ai` 和道乃久默认服务（chat-api.impf.ai）所在的账户 |
+| 仓库 Secrets | 已有的 `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`（relay 用的那两个），不需要新建 |
+| 付款方式 | Workers Paid 每月 5 美元（容器需要）；语料存放在 Workers KV 的免费额度内 |
+
+## 第 1 步：开通 Workers Paid（容器需要）
+
+1. 登录 https://dash.cloudflare.com ，选中你的账户。
+2. 左侧 **Compute (Workers)**（或 **Workers & Pages**）→ **Plans**（套餐）。
+3. 选 **Workers Paid**（5 美元/月）→ 按提示完成付款。
+
+没有这一步，网站照样部署到 Cloudflare（HTTPS 生效），只是全量语料服务不会部署，页面继续在浏览器里运行要籍语料。
+
+## 第 2 步：给 API 令牌加上 Containers 权限
+
+relay 用的令牌（模板 *Edit Cloudflare Workers*）已经能管理 Worker、KV 和路由，只差容器：
+
+1. 右上角头像 → **My Profile → API Tokens**。
+2. 找到当初为 GitHub 创建的那个令牌，点右侧 **⋯ → Edit**（编辑，不是 Roll）。
+3. **Permissions** 里点 **+ Add more**，加一行：**Account** · **Containers** · **Edit**。
+   同时确认已有：Account · Workers Scripts · Edit；Account · Workers KV Storage · Edit；Zone · Workers Routes · Edit。
+4. **Continue to summary → Update token**。
+
+编辑权限不会改变令牌本身，GitHub 里的 `CLOUDFLARE_API_TOKEN` 不用更新。
+
+## 第 3 步：部署
+
+合并本项目的 PR 后工作流会自动运行；也可以手动：GitHub 仓库 → **Actions → site → Run workflow**。它依次：
+
+1. 测试两个 Worker；
+2. 构建并部署全量语料容器（第一次约 20 分钟：解压语料、建全文索引、预热缓存、上传镜像）；
+3. 部署网站 Worker：**第一次部署时，Cloudflare 自动把 `chat.impf.ai` 的 DNS 记录从 GitHub Pages 改为指向这个 Worker，并签发证书**
+   （几分钟内生效，期间访问不中断）；
+4. 检查 https 页面、http 跳转、全量语料的一次检索。
+
+工作流里黄色的警告会指出缺了哪一步（例如"没有 Workers Paid"或"令牌不能管理 Containers"）；补上后重新运行即可。
+
+## 第 4 步：验证
+
+1. 打开 **https://chat.impf.ai**：地址栏有锁；输入 `http://chat.impf.ai` 会跳到 https。
+2. 左下角运行环境显示 **本站服务 · 全量语料 958 部书 · 204 万段 · 1.2 亿字**。
+3. 问一个问题（如"桂枝汤的组成出自哪部书？"），回答里的引文可点开核对。
+4. **设置 → 关于**：语料一栏链接到全量语料的来源与授权。
+
+全量语料服务闲置 15 分钟后会休眠（省钱）；休眠后第一位访客打开页面时它开始启动，通常在对方输入问题的时间里就绪。
+
+## 第 5 步（建议）：GitHub Pages 的自定义域名
+
+确认 chat.impf.ai 已由 Cloudflare 提供后：GitHub 仓库 → **Settings → Pages → Custom domain** → **Remove**。
+这样 GitHub 不再为这个域名申请证书，`https://psknlr.github.io/TaoChronos/` 继续作为备用镜像（只有浏览器内的要籍语料）。
+**不要在第 3 步完成前移除**，否则切换前的几分钟里 chat.impf.ai 会打不开。
+
+## 费用
+
+| 项目 | 价格（Cloudflare 公布） |
+|---|---|
+| Workers Paid | 5 美元/月，含每月 1000 万次请求，以及容器 25 GiB·小时内存、375 vCPU·分钟、200 GB·小时磁盘 |
+| 全量语料容器（standard-1：1/2 vCPU、4 GiB 内存） | 只在运行时计费，约 0.036 美元/小时＋少量磁盘与实际 CPU；闲置 15 分钟即休眠。每天平均运行 4 小时约 4 美元/月，从不休眠约 30 美元/月 |
+| Workers KV | 143 MB，在免费额度（1 GB）内 |
+| 网页静态文件 | 不收费 |
+
+想更省：把 `cloud/corpus/wrangler.toml` 的 `SLEEP_AFTER` 改短（如 `"5m"`）。想更快：改长，或 `instance_type` 改为 `standard-2`。
+
+## 常见问题
+
+| 现象 | 原因与处理 |
+|---|---|
+| site 步骤报 `chat.impf.ai` 的 DNS 记录冲突或无权修改 | 令牌不能替换已有记录。Cloudflare → impf.ai → **DNS → Records**，删除 `chat` 这条 CNAME（指向 psknlr.github.io），再重跑工作流；删除到部署完成之间网站短暂不可访问 |
+| 警告"no KV namespace" | 令牌缺 Account · Workers KV Storage · Edit |
+| 警告"the store … is not (all) in the KV namespace" | 全量语料尚未上传：由维护者运行 `taochronos web upload`（见 README.md） |
+| 警告"container was not deployed" | 第 1 步或第 2 步未完成；日志里有 Cloudflare 的具体报错 |
+| 页面显示"浏览器内 · 要籍语料" | 全量语料服务未部署或暂不可用；页面已自动改用浏览器语料，功能不受影响 |
+| 地址栏仍显示"不安全" | 证书签发需要几分钟；清除浏览器缓存后重试。确认 DNS 里 `chat` 记录类型为 Worker（由 Cloudflare 管理） |
+
+## 需要时回退到 GitHub Pages
+
+1. Cloudflare → **Workers & Pages → taochronos-site → Settings → Domains & Routes**，移除 `chat.impf.ai`；
+2. **impf.ai → DNS → Records**：新建 CNAME，名称 `chat`，目标 `psknlr.github.io`，代理状态 **DNS only**（灰色云朵）；
+3. GitHub 仓库 → **Settings → Pages → Custom domain** 填回 `chat.impf.ai`。
+
+回退后网站回到 GitHub Pages（在证书签发前只有 http），页面在浏览器内运行要籍语料。
+
+## 安全说明
+
+- 全量语料容器没有公网地址，只有网站 Worker 能通过服务绑定访问它；每个请求还要带 Worker 为容器生成的令牌。
+- 网站 Worker 只放行固定的几个只读接口和工具调用，按访客限流，不转发 Cookie、IP 等信息；不代理任何模型调用。
+- 上传全量语料的接口只接受其 SHA-256 登记在 `cloud/site/wrangler.toml` 里的令牌，令牌本身不在仓库里。

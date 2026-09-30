@@ -2,9 +2,11 @@
 
 **道乃久** (TaoChronos; model **Tao-R1**; published by 医哲未来人工智能研究院, IMPF-AI): a model of your choice that answers
 from the classics through TaoChronos's tools, with every quotation checked against its source.  Published at
-**https://chat.impf.ai/** (GitHub Pages under IMPF-AI's domain; the old address redirects there), where it runs in the browser on the **要籍语料** — the texts of the 350 key works,
-the first whole, the rest in excerpts ([要籍语料](#要籍语料--the-browsers-corpus)); the same page is served by
-`taochronos serve`, which brings all the books of the full corpus into it ([接入全部古籍](#接入全部古籍)).
+**https://chat.impf.ai/** — served over HTTPS by a Cloudflare Worker, its tools running on the site's own server over the
+**full corpus** (958 books, 122 million characters: [cloud/](../cloud/README.md), [ADR 0016](adr/0016-site-and-full-corpus-on-cloudflare.md));
+when that server cannot answer, the page runs in the browser on the **要籍语料** — the texts of the 350 key works, the
+first whole, the rest in excerpts ([要籍语料](#要籍语料--the-browsers-corpus)).  The same page is served by
+`taochronos serve`, which brings the full corpus you built into it ([接入全部古籍](#接入全部古籍)).
 
 ```
             browser                                         your machine (optional)
@@ -26,9 +28,11 @@ run in one of two places, with the same Python module (`taochronos.chat`) behind
 | Runtime | Where | Corpus | Start |
 |---|---|---|---|
 | **浏览器内** (in the browser) | Pyodide (CPython on WebAssembly) in a Web Worker | the 要籍语料: 348 of the 350 key works, the first whole, the rest in excerpts (a site built without the pack: the demonstration corpus, 23 short excerpts) | nothing: the page loads it (about 20 MB the first time, then kept in the browser) |
+| **本站服务** (the site's server) | a container on Cloudflare behind https://chat.impf.ai/api (`cloud/`), started on demand | the full corpus as the site may carry it: 958 books, 2.04 million passages, 122 million characters (`taochronos web store`: never the sources whose terms forbid it) | nothing: the page on chat.impf.ai uses it, and falls back to the browser when it cannot answer |
 | **本地服务 / 远程服务** (a TaoChronos server) | `taochronos serve` on your machine, or on another one with a token | the full corpus you built (`corpus ingest …`; this project's build: 966 books, 2.05 million passages, 123 million characters), else the demonstration corpus | `pip install -e . && taochronos serve` |
 
-The full corpus is never part of the site: it is built from its sources on your machine, under their licences.
+The full corpus is never part of the site's files: the site's server carries it as a store built once from the full
+corpus (`taochronos web store`), and `taochronos serve` reads the one you built from its sources, under their licences.
 
 ## 道乃久 · Tao-R1 · IMPF-AI
 
@@ -111,9 +115,11 @@ reads, that excerpted books may lack what the whole book has, and where the rest
 
 ## 接入全部古籍
 
-The published site runs the 要籍语料 in the browser.  All the books — the full corpus — cannot be put on the site: the store is about 2.2 GB (a published GitHub Pages site may be no larger than 1 GB; git refuses files over 100 MB), a browser could
-neither download nor index it, some of its sources may not be redistributed, and the project keeps no bulk texts in git
-beyond the site's pack.  So the full corpus reaches the page through `taochronos serve`, wherever it runs:
+On https://chat.impf.ai the full corpus is there already: the site's own server (a container on Cloudflare, [cloud/](../cloud/README.md))
+answers the page's tools over every book the site may carry.  A browser could neither download nor index the full store
+(1.7 GB indexed), some of its sources may not be redistributed, and the project keeps no bulk texts in git beyond the
+site's pack; so everywhere else — and for the books the site may not carry — the full corpus reaches the page through
+`taochronos serve`, wherever it runs:
 
 1. **Build the corpus once** on the machine that will serve it — the commands under “接入全量语料” in the
    [README](../README.md#二快速开始) (`taochronos corpus fetch … && taochronos corpus ingest …`; `corpus status` counts

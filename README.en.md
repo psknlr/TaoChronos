@@ -125,15 +125,17 @@ and decide.
 
 ## 2. Quick start
 
-**Web**: open <https://chat.impf.ai/> (runs in the browser on the 要籍语料; the default service needs no key), or bring in all the books
-(the full corpus, built as below):
+**Web**: open <https://chat.impf.ai/> (HTTPS, on Cloudflare: the tools search the full corpus, 958 books, on the site's own
+server, and run the 要籍语料 in the browser when it cannot answer; the default service needs no key; deployment in
+[cloud/](cloud/README.md)), or bring the full corpus you built into it on your machine:
 
 ```bash
 pip install -e .
 taochronos serve                   # http://localhost:8765 — web chat + the full corpus (when built) + the model proxy; connect under 设置 → 运行环境
 taochronos serve --env-keys        # model keys from this machine's environment (MINIMAX_API_KEY …), none typed in the page
 taochronos serve --host 0.0.0.0    # for other machines: prints an access token and the address carrying it (or --token / TAOCHRONOS_TOKEN)
-taochronos web build -o _site      # the static site (GitHub Pages deploys it from .github/workflows/pages.yml)
+taochronos web build -o _site      # the static site (Cloudflare: .github/workflows/site.yml; the GitHub Pages mirror: pages.yml)
+taochronos web store               # the full corpus the site's server carries (cloud/store.json); taochronos web upload sends it
 ```
 
 **Command line**:

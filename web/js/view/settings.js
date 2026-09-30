@@ -240,8 +240,11 @@ function runtimePane(d, S, ctx, redraw) {
   const where = info ? `${S.runtime?.label || ""}${S.runtime?.url ? ` ${S.runtime.url.replace(/^https?:\/\//, "")}` : ""}` : "";
   return [
     h("h3", "运行环境"),
-    h("p.lead", "TaoChronos 可以在浏览器里运行（Pyodide，要籍语料：按历代引用排序的 350 部要籍的原文，开箱即用；首次载入后保存在本机），",
-      "也可以连接 taochronos serve——在你的电脑或服务器上运行，读全部古籍（全量语料）。"),
+    S.runtime?.label === "本站服务"
+      ? h("p.lead", "本站服务器（Cloudflare）运行 TaoChronos 的全量语料，打开即用；它暂不可用时，页面自动改在浏览器里运行（Pyodide，要籍语料）。",
+        "也可以连接你自己运行的 taochronos serve（你构建的全量语料）。")
+      : h("p.lead", "TaoChronos 可以在浏览器里运行（Pyodide，要籍语料：按历代引用排序的 350 部要籍的原文，开箱即用；首次载入后保存在本机），",
+        "也可以连接 taochronos serve——在你的电脑或服务器上运行，读全部古籍（全量语料）。"),
     info ? h(`div.notice${full ? ".ok" : ""}`, icon(full ? "check" : "info"), h("div.grow",
       h("b", `当前：${where}`), ` · ${ctx.describeRuntime(info)} · 画像 ${info.profile}`,
       info.engine_model ? ` · 研究引擎模型 ${info.engine_model}` : " · 研究引擎：规则（确定性）",
@@ -339,13 +342,18 @@ function aboutPane(d, S) {
       h("div.notice", icon("info"), h("div.grow",
         h("div", h("b", "证据纪律："), "回答中的古籍原文应来自工具结果，并以 [[段落号]] 标注出处；页面会把每条引文与原文逐字核对。"),
         h("div", h("b", "非医疗建议："), "本系统不提供诊断、处方或剂量建议；历代度量衡换算只是历史读法。计算得到的关联与假说须经专家核验。"),
-        h("div", h("b", "语料："), "浏览器内运行的是要籍语料：按历代引用排序的 350 部要籍（书目见 classics.canon）的原文（",
-          h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, "来源与授权"),
-          "），重要典籍多为全书，其余为章节节选，未经本项目逐字校勘；各书全文与全部古籍（全量语料）经 taochronos serve 接入（设置 → 运行环境）。"),
+        info?.corpus?.kind === "full"
+          ? h("div", h("b", "语料："), `全量语料：${info.corpus.books ?? "?"} 部古籍录本的全文（`,
+            h("a", { href: "attribution.html?corpus=full", target: "_blank", rel: "noopener" }, "来源与授权"),
+            "），未经本项目逐字校勘；", S.runtime?.label === "本站服务" ? "由本站服务器提供，服务暂不可用时页面改用浏览器内的要籍语料（" : "由你接入的服务提供；浏览器内另有要籍语料（",
+            h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, "来源与授权"), "）。")
+          : h("div", h("b", "语料："), "浏览器内运行的是要籍语料：按历代引用排序的 350 部要籍（书目见 classics.canon）的原文（",
+            h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, "来源与授权"),
+            "），重要典籍多为全书，其余为章节节选，未经本项目逐字校勘；各书全文与全部古籍（全量语料）由本站服务器或 taochronos serve 提供（设置 → 运行环境）。"),
         h("div", h("b", "隐私："), "对话与密钥保存在本浏览器。使用道乃久默认服务时，你的问题经", PUBLISHER, "的服务交由大语言模型处理，该服务不保存请求内容；",
           "只有在你同意后，每轮问答才另记录一份到", PUBLISHER, "的服务器，用于测试（设置 → 数据）。使用自己的 API Key 时，请求直接发往你选择的服务，或经你本机的服务转发。"))),
       h("div.muted", { style: { fontSize: "13px", lineHeight: "1.8" } },
         `${AGENT} · ${ASSISTANT} · ${AGENT_EN} ${info?.version || "?"} · ${PUBLISHED_BY} · 运行环境 ${info?.runtime === "server" ? S.runtime?.label || "服务" : "浏览器（Pyodide）"} · `,
-        h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, "语料来源与授权"))),
+        h("a", { href: info?.corpus?.kind === "full" ? "attribution.html?corpus=full" : "attribution.html", target: "_blank", rel: "noopener" }, "语料来源与授权"))),
   ];
 }
