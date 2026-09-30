@@ -162,6 +162,27 @@ test("without the import complete (or with another version) the site says 503, a
   assert.equal(res.status, 503);
 });
 
+test("D1 unavailable mid-call (its daily allowance used up) is a 503 the page falls back on; a statement's own error is not", { skip }, async () => {
+  const failing = (message) => {
+    const out = { ...env };
+    for (let k = 0; k < dbs.length; k++) {
+      out[`D1_${k}`] = { prepare: (sql) => (sql.includes("fts MATCH") ? { bind: () => ({ all: async () => { throw new Error(message); },
+        raw: async () => { throw new Error(message); } }) } : dbs[k].prepare(sql)), batch: (list) => dbs[k].batch(list) };
+    }
+    return out;
+  };
+  const request = () => new Request("https://chat.impf.ai/api/call", { method: "POST", headers: { "Content-Type": "application/json",
+    Origin: "https://chat.impf.ai" }, body: JSON.stringify({ name: "classics.search", arguments: { query: "桂枝汤" } }) });
+  let res = await handle(request(), failing("D1_ERROR: Exceeded maximum daily rows read"), {});
+  assert.equal(res.status, 503);
+  assert.equal((await res.json()).corpus, "none");
+  res = await handle(request(), failing("D1_ERROR: no such column: x: SQLITE_ERROR"), {});
+  assert.equal(res.status, 200);
+  const out = await res.json();
+  assert.equal(out.ok, false);
+  assert.match(out.error, /no such column/);
+});
+
 // ------------------------------------------------------------------ the live tools
 test("classics.search: the passages that write the query, fused as the server fuses them, with their cards", { skip }, async () => {
   const { out, ms, queries } = await measured("classics.search", { query: "桂枝汤", k: 5 });

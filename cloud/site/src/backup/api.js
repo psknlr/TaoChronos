@@ -63,6 +63,14 @@ const json = (data, status = 200, headers = {}) =>
 /** Is the backup there for this deployment?  (deploy.sh sets D1_BACKUP to the version the import completed.) */
 export const ready = (env) => Boolean(env.D1_BACKUP && env.D1_0);
 
+const DOWN = { error: "本站的全量语料备份暂不可用：网页在浏览器里运行要籍语料", corpus: "none" };
+
+/** Is this error D1 being unavailable (its daily allowance used up, overloaded, the network) rather than the call's
+ * own?  Then the page is answered 503 and falls back to the browser, as when there is no backup. */
+export const unavailableError = (text) => /D1_ERROR|D1 |D1:/.test(String(text || "")) &&
+  /exceed|quota|limit (?:reached|exceeded)|daily|free tier|rate.?limit|too many requests|network connection lost|internal error|overloaded|temporarily unavailable|timed? ?out/i
+    .test(String(text || ""));
+
 /** method, url, body (an ArrayBuffer for POST) → a Response. */
 export async function answer(method, url, body, env) {
   const corpus = new Corpus(env);
@@ -71,7 +79,7 @@ export async function answer(method, url, body, env) {
     stats = await corpus.stats();
   } catch (err) {
     console.error("backup", err?.message || err);
-    return json({ error: "本站的全量语料备份暂不可用：网页在浏览器里运行要籍语料", corpus: "none" }, 503, { "X-TC-Corpus": "none" });
+    return json(DOWN, 503, { "X-TC-Corpus": "none" });
   }
   if (env.D1_BACKUP !== stats.complete) {
     // the databases hold another version than this deployment was made for (an import in progress): not served
@@ -83,7 +91,10 @@ export async function answer(method, url, body, env) {
   if (method === "GET" || method === "HEAD") {
     if (path === "/api/info") return json(info(stats, pre), 200, headers);
     if (path === "/api/catalog") return json(catalog(url.searchParams.get("mode") || "core", pre), 200, headers);
-    if (path === "/api/passage") return json(await passage(corpus, url.searchParams.get("id") || ""), 200, headers);
+    if (path === "/api/passage") {
+      const out = await passage(corpus, url.searchParams.get("id") || "");
+      return out.ok || !unavailableError(out.error) ? json(out, 200, headers) : json(DOWN, 503, { "X-TC-Corpus": "none" });
+    }
     if (path.startsWith("/api/research/")) return json({ id: path.split("/").pop(), status: "unknown" }, 200, headers);
     if (path.startsWith("/api/session/")) return json({ error: `本站的备份服务没有研究会话：${WHY.engine}` }, 501, headers);
   }
@@ -95,7 +106,8 @@ export async function answer(method, url, body, env) {
       return json({ error: `invalid JSON: ${err.message}` }, 400, headers);
     }
     if (path === "/api/call") {
-      return json(await call(corpus, String(data.name || ""), data.arguments || {}, Number(data.max_chars) || 16000, pre), 200, headers);
+      const out = await call(corpus, String(data.name || ""), data.arguments || {}, Number(data.max_chars) || 16000, pre);
+      return out.ok || !unavailableError(out.error) ? json(out, 200, headers) : json(DOWN, 503, { "X-TC-Corpus": "none" });
     }
     if (path === "/api/research") return json({ error: `本站的备份服务不能运行多智能体研究：${WHY.engine}。可改用检索与治学工具分步研究。` }, 501, headers);
   }
