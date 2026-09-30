@@ -812,9 +812,20 @@ def run_import(plan: Plan, target: Any, *, budget: int = DAY_BUDGET, log: Callab
     read from the databases.  Returns what was done, the rows written by step and database, and whether the import
     is complete."""
     # the UTC day whose allowance this run uses (TAOCHRONOS_D1_DAY: another, to simulate a run of days)
-    today = os.environ.get("TAOCHRONOS_D1_DAY") or time.strftime("%Y-%m-%d", time.gmtime())
+    simulated = os.environ.get("TAOCHRONOS_D1_DAY")
+    today = simulated or time.strftime("%Y-%m-%d", time.gmtime())
     end = time.monotonic() + minutes * 60 if minutes else None
-    deadline = (lambda: time.monotonic() > end) if end else (lambda: False)
+
+    def over() -> str | None:
+        """Why the run must stop now, if it must: its time is up, or the UTC day is over (what it wrote after 00:00
+        would count against the new day's allowance, which the next run counts from the start)."""
+        if end is not None and time.monotonic() > end:
+            return f"the run's time is up ({minutes} minutes)"
+        if not simulated and time.strftime("%Y-%m-%d", time.gmtime()) != today:
+            return "the UTC day is over: the next run goes on with the new day's allowance"
+        return None
+
+    deadline = lambda: over() is not None  # noqa: E731
     states = {db: status(target, db) for db in range(plan.databases)}
     versions = {st["version"] for st in states.values() if st.get("version")}
     if versions - {plan.version}:
@@ -855,7 +866,7 @@ def run_import(plan: Plan, target: Any, *, budget: int = DAY_BUDGET, log: Callab
         if done(batch, st):
             continue
         if deadline():
-            report["stopped"] = f"the run's time is up ({minutes} minutes)"
+            report["stopped"] = over()
             break
         if used_before + used + batch.bound > budget:
             report["stopped"] = f"the day's budget: {used_before + used:,} of {budget:,} rows written"
@@ -900,7 +911,7 @@ def run_import(plan: Plan, target: Any, *, budget: int = DAY_BUDGET, log: Callab
             _record_use(target, today, used_before + used, log)
             recorded = used
     if not report["stopped"] and deadline():
-        report["stopped"] = f"the run's time is up ({minutes} minutes)"
+        report["stopped"] = over()
     report["complete"] = "complete" in (states.get(0, {}).get("meta") or {})
     if states.get(0):
         _record_use(target, today, used_before + used, log)

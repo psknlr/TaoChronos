@@ -173,6 +173,19 @@ def test_a_lost_answer_or_a_failed_statement_is_not_applied_twice(site_store, tm
     assert dump(whole, plan.databases) == dump(flaky, plan.databases)
 
 
+def test_a_run_stops_when_the_utc_day_is_over(site_store, tmp_path, monkeypatch):
+    """What a run writes after 00:00 UTC would count against the new day's allowance, which the next run counts from
+    the start: the run stops at midnight, and the next goes on from where it stopped."""
+    monkeypatch.delenv("TAOCHRONOS_D1_DAY", raising=False)
+    days = iter(["2026-10-01"] * 6 + ["2026-10-02"] * 10**6)
+    monkeypatch.setattr(d1.time, "strftime", lambda fmt, t=None: next(days))
+    target = SqliteTarget(tmp_path)
+    report = run_import(small(site_store), target, budget=10**9, log=lambda m: None)
+    assert report["stopped"].startswith("the UTC day is over") and not report["complete"]
+    assert 0 < report["statements"] < 10
+    assert run_import(small(site_store), target, budget=10**9, log=lambda m: None)["complete"]
+
+
 def test_another_store_is_imported_afresh_only_when_asked(site_store, tmp_path):
     target = SqliteTarget(tmp_path)
     run_import(small(site_store), target, budget=10**9, log=lambda m: None)
