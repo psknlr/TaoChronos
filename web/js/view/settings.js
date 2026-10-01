@@ -227,7 +227,7 @@ function runtimePane(d, S, ctx, redraw) {
     result.textContent = "正在连接…";
     const r = await ctx.connectServer(d);
     connect.disabled = false;
-    if (r.ok) { redraw(); return; } // the pane shows the new state
+    if (r.ok) { redraw(); return; } // the pane shows the new state: 全量语料已接入, or the warning that the server has only the demonstration corpus
     result.className = "test-result err";
     result.textContent = r.message;
     if (r.tokenRequired) token.focus();
@@ -237,7 +237,6 @@ function runtimePane(d, S, ctx, redraw) {
   const chars = h("input", { type: "number", min: 2000, max: 200000, step: 1000, value: d.resultChars });
   chars.addEventListener("input", () => { d.resultChars = Number(chars.value) || DEFAULTS.resultChars; });
   const full = info && !info.corpus?.demo;
-  const where = info ? `${S.runtime?.label || ""}${S.runtime?.url ? ` ${S.runtime.url.replace(/^https?:\/\//, "")}` : ""}` : "";
   return [
     h("h3", "运行环境"),
     S.runtime?.label === "本站服务"
@@ -245,10 +244,6 @@ function runtimePane(d, S, ctx, redraw) {
         "也可以连接你自己运行的 taochronos serve（你构建的全量语料）。")
       : h("p.lead", "TaoChronos 可以在浏览器里运行（Pyodide，要籍语料：按历代引用排序的 350 部要籍的原文，开箱即用；首次载入后保存在本机），",
         "也可以连接 taochronos serve——在你的电脑或服务器上运行，读全部古籍（全量语料）。"),
-    info ? h(`div.notice${full ? ".ok" : ""}`, icon(full ? "check" : "info"), h("div.grow",
-      h("b", `当前：${where}`), ` · ${ctx.describeRuntime(info)} · 画像 ${info.profile}`,
-      info.engine_model ? ` · 研究引擎模型 ${info.engine_model}` : " · 研究引擎：规则（确定性）",
-      info.load_ms ? ` · 载入 ${Math.round(info.load_ms / 100) / 10} 秒` : "")) : null,
     h("section.connect",
       h("h4", icon("book", "sm"), full ? "全量语料已接入" : "接入全部古籍"),
       info && S.runtime?.kind === "server" && info.corpus?.kind === "demo"

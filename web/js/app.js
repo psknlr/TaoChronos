@@ -12,7 +12,7 @@ import { consent, NOTICE, setConsent } from "./records.js";
 import { BrowserRuntime, probeServer, sameOriginServer, ServerRuntime } from "./runtime.js";
 import * as store from "./store.js";
 import {
-  $, bare, copyText, count, dateGroup, debounce, download, fmtMs, h, icon, moveBar, passageLabel, progressBar, replace, sleep, storage,
+  $, bare, copyText, dateGroup, debounce, download, fmtMs, h, icon, moveBar, passageLabel, progressBar, replace, sleep, storage,
   throttleFrame, toast, truncate, uid, yearLabel,
 } from "./util.js";
 import { renderDrawer, reportNode } from "./view/drawer.js";
@@ -133,15 +133,6 @@ function switchRuntime(ready = null) {
 function showState(st) {
   const was = S.runtimeState;
   S.runtimeState = { ...st, bar: st.status === "ready" ? 100 : Math.max(was.status === "ready" ? 0 : was.bar || 0, st.progress || 0) };
-}
-
-const corpusLabel = (c) => c?.label || (c?.demo ? "演示语料" : "全量语料");
-
-/** "全量语料 966 部书、205 万段、1.2 亿字 · 88 项工具" */
-function describeRuntime(info, sep = "、") {
-  const c = info?.corpus || {};
-  const books = c.kind === "canon" && c.canon?.held ? `${c.canon.held} 部要籍` : count(c.books, "部书");
-  return `${corpusLabel(c)} ${[books, count(c.passages, "段"), c.characters ? count(c.characters, "字") : null].filter(Boolean).join(sep)} · ${info?.tools?.offered ?? "?"} 项工具`;
 }
 
 async function ensureRuntime() {
@@ -938,8 +929,8 @@ function rename(c, item) {
   input.addEventListener("click", (e) => e.stopPropagation());
 }
 
-/** The side panel's pill: 加载中 and one bar while the runtime loads, 已就绪 once it answers — no steps, no corpus, no counts
- * (those are in the settings' 运行环境, where the pill leads); what went wrong, when something did. */
+/** The side panel's pill (it leads to the settings' 运行环境): 加载中 and one bar while the runtime loads, 已就绪 once it
+ * answers — no steps, no runtime, corpus or counts; what went wrong, when something did. */
 function renderPill() {
   const st = S.runtimeState || {};
   const shown = st.status === "ready" && S.runtimeInfo ? "ready" : st.status === "error" ? "error" : "loading";
@@ -1219,12 +1210,11 @@ const settingsCtx = {
       await switchRuntime(rt);
       S.runtimeInfo = info;
       renderAll();
-      return { ok: true, message: `已接入${rt.label} ${rt.url.replace(/^https?:\/\//, "")}：${describeRuntime(info)}${info.env_keys ? " · 可使用服务端环境变量中的模型密钥" : ""}` };
+      return { ok: true };
     } catch (err) {
       return { ok: false, message: err.message, tokenRequired: Boolean(err.tokenRequired) };
     }
   },
-  describeRuntime,
   consent,
   setConsent(agreed) { setConsent(agreed); toast(agreed ? "已同意记录" : "已停止记录"); },
   exportAll() {
