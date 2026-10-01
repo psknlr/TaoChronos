@@ -3,7 +3,7 @@
 import { renderMarkdown } from "../markdown.js";
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY } from "../brand.js";
 import { RELAY_ID } from "../providers.js";
-import { fmtMs, h, icon, passageLabel, prettyJSON, replace, truncate } from "../util.js";
+import { fmtMs, h, icon, passageLabel, prettyJSON, progressBar, replace, truncate } from "../util.js";
 
 export const FAMILY = {
   retrieval: "检索", study: "治学", knowledge: "知识", analytics: "发现", philology: "文献", validation: "核验",
@@ -43,23 +43,21 @@ export function renderThread(root, conv, ctx) {
 function hero(ctx) {
   const info = ctx.runtimeInfo;
   const st = ctx.runtimeState || {};
-  const ready = st.status === "ready" && info;
-  const status = ready ? `${ctx.runtimeLabel} · ${ctx.describeRuntime(info, " · ")}`
-    : st.status === "error" ? `运行环境未就绪：${truncate(st.message || "", 60)}` : `${st.message || "正在准备运行环境"}… ${st.progress ? Math.round(st.progress) + "%" : ""}`;
-  const action = ready && info.corpus?.demo
-    ? h("button.hero-action", { type: "button", on: { click: ctx.onOpenRuntime } }, icon("book", "sm"),
-      h("span", h("b", "接入全部古籍"), info.corpus?.kind === "canon"
-        ? `此处是要籍语料（${info.corpus?.canon?.held ?? "?"} 部要籍，重要典籍为全书、其余为节选）；连接 taochronos serve 即用全部古籍`
-        : "此处是演示语料；连接 taochronos serve 即用全量语料"), icon("chev", "sm"))
-    : st.status === "error"
-      ? h("button.hero-action", { type: "button", on: { click: ctx.onOpenRuntime } }, icon("server", "sm"), h("span", h("b", "设置运行环境")), icon("chev", "sm"))
-      : null;
+  const failed = st.status === "error";
+  // while the runtime loads, 加载中 and one bar for the whole load; once it answers, nothing (what runs, on which corpus,
+  // is in the settings' 运行环境); what went wrong, when something did, with the way to the settings
+  const status = st.status === "ready" && info ? null : failed
+    ? h("div.status", h("span.dot.bad"), `运行环境未就绪：${truncate(st.message || "", 60)}`)
+    : h("div.status.loading", h("span.dot.busy"), "加载中", progressBar(st.bar));
+  const action = failed
+    ? h("button.hero-action", { type: "button", on: { click: ctx.onOpenRuntime } }, icon("server", "sm"), h("span", h("b", "设置运行环境")), icon("chev", "sm"))
+    : null;
   return h("div.hero",
     h("img.seal", { src: "assets/logo.svg", alt: "" }),
     h("h1", AGENT),
     h("div.model-badge", h("b", ASSISTANT), h("span", `${AGENT_EN} · 中医古籍研究智能体`)),
     h("p.sub", "问古籍，得原文——每一条引文都可溯源、可逐字核对"),
-    h("div.status", h("span.dot", { class: st.status === "ready" ? "" : st.status === "error" ? "bad" : "busy" }), status),
+    status,
     action,
     h("div.starters", (info?.starters || DEFAULT_STARTERS).map((s) =>
       h("button.starter", { type: "button", on: { click: () => ctx.onStarter(s.prompt) } }, h("b", s.title), s.prompt))),

@@ -222,9 +222,9 @@ kbd { font: 11px var(--font-mono); color: var(--ink-3); border: 1px solid var(--
 .runtime-pill .rt { flex: 1; min-width: 0; line-height: 1.35; }
 .runtime-pill .rt b { display: block; font-weight: 600; color: var(--ink); font-size: 12.5px; }
 .runtime-pill .rt span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.runtime-pill .rt .cta { color: var(--accent); font-weight: 600; margin-top: 1px; }
-.progress { height: 3px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 5px; }
+.progress { display: block; height: 3px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 5px; }
 .progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .4s var(--ease); }
+.runtime-pill .progress { margin: 7px 0; }  /* the height of the line it takes the place of: the pill does not jump */
 .foot-row { display: flex; gap: 6px; }
 .foot-row .btn-ghost { flex: 1; justify-content: center; }
 
@@ -292,6 +292,7 @@ kbd { font: 11px var(--font-mono); color: var(--ink-3); border: 1px solid var(--
 .hero .status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--jade); }
 .hero .status .dot.busy { background: var(--ochre); animation: pulse 1.4s infinite; }
 .hero .status .dot.bad { background: var(--danger); }
+.hero .status .progress { width: 96px; margin: 0 0 0 2px; }
 .hero .hero-action {
   display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; max-width: 100%;
   border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 12px; padding: 7px 11px 7px 12px;
