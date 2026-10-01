@@ -423,17 +423,20 @@ def test_a_published_page_connects_to_a_server_and_remembers_it(tmp_path):
             page.click(".hero-action")
             page.fill(".connect-row input[type=url]", f"http://127.0.0.1:{api.server_address[1]}/")
             page.click(".connect-row .btn")
-            page.wait_for_function("document.querySelector('.settings-pane .notice')?.textContent.includes('当前：本地服务')", timeout=30000)
-            assert "演示语料" in page.inner_text(".settings-pane .notice")  # which runtime, which corpus: said here, in the settings
-            assert "尚未构建全量语料" in page.inner_text(".connect .notice.warn")  # this server has only the demonstration corpus
+            page.wait_for_selector(".connect .notice.warn", timeout=30000)  # connected: a server with only the demonstration corpus
+            assert "尚未构建全量语料" in page.inner_text(".connect .notice.warn")
+            # and nothing more of it, the settings neither: no 当前：…, no runtime, no counts
+            pane = page.inner_text(".settings-pane")
+            assert not any(w in pane for w in ("当前：", "本地服务", "项工具", "万段", "画像")), pane
             page.click(".modal-foot .btn:not(.secondary)")
             # the page itself says only that it is ready: no runtime, corpus or counts, and no 接入全部古籍 on the opening screen
             assert page.inner_text(".runtime-pill") == "运行环境\n已就绪" and page.inner_text("#hint") == "Tao-R1"
             assert page.query_selector(".hero") and not page.query_selector(".hero .status, .hero .hero-action")
-            page.reload()  # auto mode: the server this browser worked with, first
+            page.reload()  # auto mode: the server this browser worked with, first (this page has no runtime of its own)
             page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
             page.click(".runtime-pill")
-            page.wait_for_function("document.querySelector('.settings-pane .notice')?.textContent.includes('当前：本地服务')", timeout=10000)
+            page.wait_for_selector(".connect .notice.warn", timeout=10000)  # that server, with its demonstration corpus
+            assert "当前：" not in page.inner_text(".settings-pane")
             page.click(".modal-foot .btn.secondary")
             assert json.loads(page.evaluate("localStorage.getItem('tc.settings')"))["runtime"] == "auto"
 
@@ -839,9 +842,9 @@ def test_the_published_site_runs_on_the_canon_corpus_in_the_browser(tmp_path):
             # the rest of the 要籍 is indexed in the background: not shown on the page, but the pill carries it for scripts
             page.wait_for_selector(".runtime-pill[data-indexing]", state="attached", timeout=60000)
             page.wait_for_selector(".runtime-pill:not([data-indexing])", state="attached", timeout=240000)
-            page.click(".runtime-pill")
-            page.wait_for_function("document.querySelector('.settings-pane .notice')?.textContent.includes('当前：浏览器内')", timeout=10000)
-            assert "要籍语料" in page.inner_text(".settings-pane .notice")
+            page.click(".runtime-pill")  # the settings' 运行环境 says nothing of the runtime or its corpus either
+            page.wait_for_selector(".settings-pane .connect", timeout=10000)
+            assert "当前：" not in page.inner_text(".settings-pane") and not page.query_selector(".settings-pane .notice")
             page.click(".modal-foot .btn.secondary")
             time.sleep(3)  # the indexed store is written to IndexedDB
             fetched.clear()

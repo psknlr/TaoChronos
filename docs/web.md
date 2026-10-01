@@ -133,12 +133,14 @@ site's pack; so everywhere else — and for the books the site may not carry —
 
 The browser remembers the server it connected to.  In **自动** mode the page uses, in order: the server that served it;
 the server this browser last worked with, if it answers within a moment; TaoChronos in the browser.  So with the server
-running, the page opens on the full corpus; without it, on the demonstration corpus, and **设置 → 运行环境** says which
-(“当前：…”, with the counts).  The page itself shows none of it: while the runtime loads, 加载中 and one progress bar for
-the whole load (on the opening screen and on the side panel's pill; the bar never goes back, also when the runtime
-tried first does not answer and another takes over); once it answers, the pill says 运行环境 · 已就绪 and the opening
-screen nothing; when it cannot load, what went wrong and the way to the settings.  **指定的服务** always uses the
-server and reports it when it is down; **浏览器内** never looks for one.
+running, the page opens on the full corpus; without it, on the demonstration corpus.  The page does not say which —
+not on the opening screen, the side panel or the composer, nor in **设置 → 运行环境** (a server's `/api/info` says what
+it serves): while the runtime loads, 加载中 and one progress bar for the whole load (on the opening screen and on the
+side panel's pill; the bar never goes back, also when the runtime tried first does not answer and another takes over);
+once it answers, the pill says 运行环境 · 已就绪 and the opening screen nothing; when it cannot load, what went wrong and
+the way to the settings.  Connected to a server that has only the demonstration corpus, 设置 → 运行环境 says so (the
+corpus is to be built on that machine).  **指定的服务** always uses the server and reports it when it is down;
+**浏览器内** never looks for one.
 
 **On another machine** (a workstation, a server):
 
