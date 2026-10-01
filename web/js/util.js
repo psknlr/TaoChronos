@@ -42,6 +42,21 @@ export function append(el, children) {
   return el;
 }
 
+/** A progress bar at `pct` (0–100). */
+export const progressBar = (pct) =>
+  moveBar(h("span.progress", { role: "progressbar", "aria-label": "加载进度", "aria-valuemin": "0", "aria-valuemax": "100" }, h("i")), pct);
+
+/** Move the progress bar in `root` (or `root` itself) to `pct` where it is, so that it slides there (its CSS transition)
+ * instead of being drawn anew; null when there is none. */
+export function moveBar(root, pct) {
+  const bar = root.classList.contains("progress") ? root : root.querySelector(".progress");
+  if (!bar) return null;
+  const p = Math.min(100, Math.max(0, Math.round(pct || 0)));
+  bar.setAttribute("aria-valuenow", String(p));
+  bar.firstChild.style.width = `${Math.max(4, p)}%`;
+  return bar;
+}
+
 const PATHS = {
   plus: "M12 5v14M5 12h14",
   send: "M5 12h14M13 6l6 6-6 6",

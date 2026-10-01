@@ -98,7 +98,8 @@ gzip would be 17).  Loading is arranged for the wait a visitor sees:
 * **The first-ranked first** — on the first visit the worker indexes the passages of the works ranked up to 40 (the pack is
   in rank order; 70 648 passages) before the runtime answers, and the rest in the background, a slice at a time between the
   questions it answers (`index_store(phase=…, limit=…)`, resumable).  The text of every book is there from the start; only
-  the search of the later ones waits, a few seconds.  The status pill shows “其余要籍检索索引 n%”.
+  the search of the later ones waits, a few seconds.  The page does not show it (the side panel's pill carries it as
+  `data-indexing`, for scripts and tests).
 * **Kept in the browser** — once it is all indexed, the store is kept in IndexedDB (in 16 MB parts; the head written last,
   so that a half-kept store is never read), with the runtime archives.  IndexedDB, unlike the Cache API, is there on an
   http:// page too — the site is served over http until its certificate is issued — so a later visit downloads and indexes
@@ -132,9 +133,12 @@ site's pack; so everywhere else — and for the books the site may not carry —
 
 The browser remembers the server it connected to.  In **自动** mode the page uses, in order: the server that served it;
 the server this browser last worked with, if it answers within a moment; TaoChronos in the browser.  So with the server
-running, the page opens on the full corpus; without it, on the demonstration corpus, and it says which (the side
-panel's status, the composer, the opening screen's “接入全部古籍”).  **指定的服务** always uses the server and reports
-it when it is down; **浏览器内** never looks for one.
+running, the page opens on the full corpus; without it, on the demonstration corpus, and **设置 → 运行环境** says which
+(“当前：…”, with the counts).  The page itself shows none of it: while the runtime loads, 加载中 and one progress bar for
+the whole load (on the opening screen and on the side panel's pill; the bar never goes back, also when the runtime
+tried first does not answer and another takes over); once it answers, the pill says 运行环境 · 已就绪 and the opening
+screen nothing; when it cannot load, what went wrong and the way to the settings.  **指定的服务** always uses the
+server and reports it when it is down; **浏览器内** never looks for one.
 
 **On another machine** (a workstation, a server):
 

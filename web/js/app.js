@@ -12,8 +12,8 @@ import { consent, NOTICE, setConsent } from "./records.js";
 import { BrowserRuntime, probeServer, sameOriginServer, ServerRuntime } from "./runtime.js";
 import * as store from "./store.js";
 import {
-  $, bare, copyText, count, dateGroup, debounce, download, fmtMs, h, icon, passageLabel, replace, sleep, storage, throttleFrame, toast,
-  truncate, uid, yearLabel,
+  $, bare, copyText, count, dateGroup, debounce, download, fmtMs, h, icon, moveBar, passageLabel, progressBar, replace, sleep, storage,
+  throttleFrame, toast, truncate, uid, yearLabel,
 } from "./util.js";
 import { renderDrawer, reportNode } from "./view/drawer.js";
 import { openSettings } from "./view/settings.js";
@@ -68,7 +68,7 @@ async function chooseRuntime() {
   if (S.here) return new ServerRuntime(S.here, token, { label: siteServer() ? "本站服务" : "", fallback: inBrowserInstead });
   const known = storage.get(KNOWN_SERVER, null);
   if (known) {
-    S.runtimeState = { status: "loading", progress: 12, message: `寻找 TaoChronos 服务 ${known.replace(/^https?:\/\//, "")}` };
+    showState({ status: "loading", progress: 12, message: `寻找 TaoChronos 服务 ${known.replace(/^https?:\/\//, "")}` });
     renderPill();
     if (await probeServer(known, token)) return new ServerRuntime(known, token);
   }
@@ -81,10 +81,10 @@ function siteServer() {
 }
 const isLoopbackHost = (host) => ["localhost", "127.0.0.1", "[::1]", "::1"].includes(host);
 
-/** The site's own server cannot answer: the page carries on with TaoChronos in this browser (the 要籍语料). */
-function inBrowserInstead(err) {
+/** The site's own server cannot answer: the page carries on with TaoChronos in this browser (the 要籍语料), without a word —
+ * the load's one bar goes on, and 设置 → 运行环境 says which runtime answers. */
+function inBrowserInstead() {
   const rt = new BrowserRuntime();
-  toast(`全量语料服务暂不可用（${truncate(err?.message || "", 40)}），改用浏览器内的要籍语料`, "err");
   switchRuntime(rt);
   return rt;
 }
@@ -92,6 +92,7 @@ function inBrowserInstead(err) {
 let runtimeSwitch = null;
 /** Use `ready` (a runtime already connected) or choose one; the previous runtime is stopped. */
 function switchRuntime(ready = null) {
+  if (!ready) S.runtimeState = { status: "idle", progress: 0, message: "" }; // a new choice: its bar starts from nothing
   runtimeSwitch = (async () => {
     const rt = ready || (await chooseRuntime());
     if (S.runtime && S.runtime !== rt) S.runtime.stop?.();
@@ -105,17 +106,18 @@ function switchRuntime(ready = null) {
     foldsNow.clear();
     rt.onStatus((st) => {
       if (S.runtime !== rt) return;
-      S.runtimeState = st;
+      const was = S.runtimeState.status;
+      showState(st);
       renderPill();
-      renderComposerHint();
-      if (!S.conv?.messages.length) renderMain();
+      if (S.conv?.messages.length) return;
+      if (st.status !== was || st.status === "error") renderMain();
+      else moveBar(el.inner, S.runtimeState.bar); // the opening screen's bar, if it shows one
     });
     rt.start().then((info) => {
       if (S.runtime !== rt) return;
       S.runtimeInfo = info;
       if (rt.kind === "server") storage.set(KNOWN_SERVER, rt.url); // auto mode tries it first from now on
       renderPill();
-      renderComposerHint();
       if (!S.conv?.messages.length) renderMain();
       refreshAllCites();
     }).catch((err) => {
@@ -123,6 +125,14 @@ function switchRuntime(ready = null) {
     });
   })();
   return runtimeSwitch;
+}
+
+/** What the side panel's pill and the opening screen show of the runtime: its state, and `bar`, the one progress bar of a
+ * load, which never goes back — when the runtime tried first cannot answer and another takes over (a server, then the
+ * browser), the bar waits until the new count passes it. */
+function showState(st) {
+  const was = S.runtimeState;
+  S.runtimeState = { ...st, bar: st.status === "ready" ? 100 : Math.max(was.status === "ready" ? 0 : was.bar || 0, st.progress || 0) };
 }
 
 const corpusLabel = (c) => c?.label || (c?.demo ? "演示语料" : "全量语料");
@@ -793,8 +803,6 @@ const threadCtx = {
   },
   onOpenSettings: () => openSettings(S, settingsCtx, "model"),
   onOpenRuntime: () => openSettings(S, settingsCtx, "runtime"),
-  describeRuntime,
-  get runtimeLabel() { return S.runtime?.label || "运行环境"; },
   onCopy: (text) => copyText(text).then((ok) => toast(ok ? "已复制" : "复制失败")),
   onEdit(id) { S.ui.editing = id; renderMain(); },
   onEditCancel() { S.ui.editing = null; renderMain(); },
@@ -930,22 +938,21 @@ function rename(c, item) {
   input.addEventListener("click", (e) => e.stopPropagation());
 }
 
+/** The side panel's pill: 加载中 and one bar while the runtime loads, 已就绪 once it answers — no steps, no corpus, no counts
+ * (those are in the settings' 运行环境, where the pill leads); what went wrong, when something did. */
 function renderPill() {
   const st = S.runtimeState || {};
-  const info = S.runtimeInfo;
-  const kind = S.runtime?.label || "运行环境";
-  const dot = st.status === "ready" ? "ok" : st.status === "error" ? "bad" : "busy";
-  const ready = st.status === "ready" && info;
-  const ix = st.index;
-  const indexing = ready && ix && !ix.done && !ix.error && ix.total
-    ? ` · 其余要籍检索索引 ${Math.floor(100 * (ix.indexed || 0) / ix.total)}%` : "";
-  const detail = ready ? describeRuntime(info, " · ") + indexing
-    : st.status === "error" ? truncate(st.message || "出错", 40) : (st.message || "准备中…");
-  el.pill.replaceChildren(h("span.dot", { class: dot }),
-    h("span.rt", h("b", `${kind}${st.status === "ready" ? "" : st.status === "error" ? " · 未就绪" : " · 载入中"}`), h("span", detail),
-      ready && info.corpus?.demo ? h("span.cta", "接入全部古籍 →") : null,
-      st.status === "loading" ? h("div.progress", h("i", { style: { width: `${Math.max(4, st.progress || 0)}%` } })) : null));
-  el.pill.title = st.status === "error" ? st.message : ready && info.corpus?.demo ? "接入全部古籍：连接 taochronos serve（全量语料）" : "运行环境设置";
+  const shown = st.status === "ready" && S.runtimeInfo ? "ready" : st.status === "error" ? "error" : "loading";
+  const ix = st.index; // the rest of the 要籍 indexed in the background: not shown, but there for scripts and tests
+  if (shown === "ready" && ix && !ix.done && !ix.error && ix.total) el.pill.dataset.indexing = `${ix.indexed || 0}/${ix.total}`;
+  else delete el.pill.dataset.indexing;
+  if (shown === "loading" && el.pill.dataset.status === "loading" && moveBar(el.pill, st.bar)) return;
+  el.pill.dataset.status = shown;
+  el.pill.replaceChildren(h("span.dot", { class: { ready: "ok", error: "bad", loading: "busy" }[shown] }),
+    h("span.rt", shown === "ready" ? [h("b", "运行环境"), h("span", "已就绪")]
+      : shown === "error" ? [h("b", `${S.runtime?.label || "运行环境"} · 未就绪`), h("span", truncate(st.message || "出错", 40))]
+      : [h("b", "加载中"), progressBar(st.bar)]));
+  el.pill.title = shown === "error" ? st.message || "" : "运行环境设置";
 }
 
 function renderComposer() {
@@ -961,10 +968,8 @@ function renderComposer() {
 }
 
 function renderComposerHint() {
-  const p = activeProvider(S.settings);
-  const info = S.runtimeInfo;
-  el.hint.textContent = `${ASSISTANT} · ${S.runtime?.label || "运行环境"}${info ? ` · ${corpusLabel(info.corpus)}` : ""}`;
-  el.hint.title = modelLabel(p);
+  el.hint.textContent = ASSISTANT;
+  el.hint.title = modelLabel(activeProvider(S.settings));
 }
 
 function renderAttachments() {

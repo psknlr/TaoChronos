@@ -238,8 +238,29 @@ def test_a_conversation_in_the_browser(tmp_path):
             page = ctx.new_page()
             errors: list[str] = []
             page.on("pageerror", lambda e: errors.append(str(e)))
+            held: list = []
+
+            def hold_the_runtime(route) -> None:  # the page's look for a server passes; the runtime's own start waits
+                held.append(route)
+                if len(held) != 2:
+                    route.continue_()
+
+            page.route("**/api/info", hold_the_runtime)
             page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
+            # loading: 加载中 and one bar for the whole load — no step, no percent, no runtime, corpus or counts
+            page.wait_for_function("document.querySelector('.hero .status.loading [role=progressbar]')?.getAttribute('aria-valuenow') === '30'",
+                                   timeout=30000)
+            assert page.inner_text(".hero .status") == "加载中" and page.inner_text(".runtime-pill") == "加载中"
+            assert page.get_attribute(".runtime-pill [role=progressbar]", "aria-valuenow") == "30"
+            for _ in range(200):
+                if len(held) == 2:
+                    break
+                page.wait_for_timeout(25)
+            held[1].continue_()
+            page.unroute("**/api/info")
             page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            # ready: the opening screen says nothing of the runtime, and there is no 接入全部古籍 to it
+            assert not page.query_selector(".hero .status, .hero .hero-action") and page.inner_text(".runtime-pill") == "运行环境\n已就绪"
             page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('默认服务')", timeout=10000)
             assert page.title() == "道乃久 · 中医古籍研究智能体" and page.inner_text(".hero h1") == "道乃久"
             assert page.inner_text(".hero .publisher") == "医哲未来人工智能研究院（IMPF-AI）发布"
@@ -403,13 +424,17 @@ def test_a_published_page_connects_to_a_server_and_remembers_it(tmp_path):
             page.fill(".connect-row input[type=url]", f"http://127.0.0.1:{api.server_address[1]}/")
             page.click(".connect-row .btn")
             page.wait_for_function("document.querySelector('.settings-pane .notice')?.textContent.includes('当前：本地服务')", timeout=30000)
+            assert "演示语料" in page.inner_text(".settings-pane .notice")  # which runtime, which corpus: said here, in the settings
             assert "尚未构建全量语料" in page.inner_text(".connect .notice.warn")  # this server has only the demonstration corpus
             page.click(".modal-foot .btn:not(.secondary)")
-            assert "本地服务" in page.inner_text(".runtime-pill") and "演示语料" in page.inner_text(".runtime-pill")
-            assert page.inner_text("#hint") == "Tao-R1 · 本地服务 · 演示语料"
+            # the page itself says only that it is ready: no runtime, corpus or counts, and no 接入全部古籍 on the opening screen
+            assert page.inner_text(".runtime-pill") == "运行环境\n已就绪" and page.inner_text("#hint") == "Tao-R1"
+            assert page.query_selector(".hero") and not page.query_selector(".hero .status, .hero .hero-action")
             page.reload()  # auto mode: the server this browser worked with, first
             page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
-            assert page.inner_text(".runtime-pill").startswith("本地服务")
+            page.click(".runtime-pill")
+            page.wait_for_function("document.querySelector('.settings-pane .notice')?.textContent.includes('当前：本地服务')", timeout=10000)
+            page.click(".modal-foot .btn.secondary")
             assert json.loads(page.evaluate("localStorage.getItem('tc.settings')"))["runtime"] == "auto"
 
             page = browser.new_context(viewport={"width": 1280, "height": 860}).new_page()
@@ -421,7 +446,41 @@ def test_a_published_page_connects_to_a_server_and_remembers_it(tmp_path):
             page = browser.new_context(viewport={"width": 1280, "height": 860}).new_page()
             page.goto(f"http://127.0.0.1:{locked.server_address[1]}/")
             page.wait_for_selector(".runtime-pill .dot.bad", timeout=30000)
-            assert "访问令牌" in page.inner_text(".hero .status")
+            assert "访问令牌" in page.inner_text(".hero .status")  # what went wrong is said, and how to put it right
+
+            # the server this browser knew is down, so the browser's own runtime takes over: the bar never goes back
+            ctx = browser.new_context(viewport={"width": 1280, "height": 860})
+            ctx.add_init_script("""localStorage.setItem('tc.server', JSON.stringify('http://127.0.0.1:9'));
+              window.__bars = [];
+              const seen = (n) => n.nodeType === 1 && [n, ...n.querySelectorAll('[role=progressbar]')]
+                .forEach((b) => b.getAttribute('role') === 'progressbar' && __bars.push(+b.getAttribute('aria-valuenow')));
+              new MutationObserver((ms) => ms.forEach((m) => m.type === 'attributes' ? seen(m.target) : m.addedNodes.forEach(seen)))
+                .observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-valuenow'] });""")
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{pages.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.bad", timeout=30000)  # and this page has no browser runtime either
+            bars = page.evaluate("window.__bars")
+            assert 12 in bars and bars == sorted(bars), bars
+
+            # the server that served the page answers the page's look, then cannot start: the browser takes over without a word
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            seen: list = []
+
+            def then_down(route) -> None:
+                seen.append(route)
+                if len(seen) == 2:
+                    route.fulfill(status=503, content_type="application/json", body=json.dumps({"error": "全量语料服务未部署"}))
+                else:
+                    route.continue_()
+
+            page.route("**/api/info", then_down)
+            page.goto(f"http://127.0.0.1:{api.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.bad", timeout=30000)  # the browser's runtime is not on this server
+            bars = page.evaluate("window.__bars")
+            assert len(seen) >= 2 and 30 in bars and bars == sorted(bars), bars
+            assert not page.query_selector(".toast"), page.inner_text(".toasts")
             assert not errors, errors
             browser.close()
     finally:
@@ -776,9 +835,14 @@ def test_the_published_site_runs_on_the_canon_corpus_in_the_browser(tmp_path):
             page.goto(f"http://taochronos.test:{site.server_address[1]}/")
             assert page.evaluate("() => !window.isSecureContext && typeof caches === 'undefined'")
             page.wait_for_selector(".runtime-pill .dot.ok", timeout=240000)
-            assert "要籍语料" in page.inner_text(".runtime-pill")
-            page.wait_for_function("() => document.querySelector('.runtime-pill').innerText.includes('其余要籍检索索引')", timeout=60000)
-            page.wait_for_function("() => !document.querySelector('.runtime-pill').innerText.includes('其余要籍检索索引')", timeout=240000)
+            assert page.inner_text(".runtime-pill") == "运行环境\n已就绪" and not page.query_selector(".hero .status")
+            # the rest of the 要籍 is indexed in the background: not shown on the page, but the pill carries it for scripts
+            page.wait_for_selector(".runtime-pill[data-indexing]", state="attached", timeout=60000)
+            page.wait_for_selector(".runtime-pill:not([data-indexing])", state="attached", timeout=240000)
+            page.click(".runtime-pill")
+            page.wait_for_function("document.querySelector('.settings-pane .notice')?.textContent.includes('当前：浏览器内')", timeout=10000)
+            assert "要籍语料" in page.inner_text(".settings-pane .notice")
+            page.click(".modal-foot .btn.secondary")
             time.sleep(3)  # the indexed store is written to IndexedDB
             fetched.clear()
             t0 = time.time()
