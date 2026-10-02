@@ -323,6 +323,17 @@ def test_the_site_build_is_deterministic_and_complete(tmp_path):
     assert not any("chat-logs" in p.as_posix() or p.relative_to(site).parts[0] == "data" for p in site.rglob("*"))
     assert not any(n.startswith("data/") for n in names)
     assert not (site / "site.json").exists() and info["relay"] is None  # without a relay: the visitor's own key, as before
+    # what a search engine reads: the pages' text without the script, their addresses, and the files it may skip
+    about = (site / "about.html").read_text(encoding="utf-8")
+    assert not re.search(r'(src|href)="/', about) and '<link rel="canonical" href="https://chat.impf.ai/about">' in about
+    assert '<link rel="canonical" href="https://chat.impf.ai/">' in html and 'class="intro-static"' in html
+    assert 'href="about"' in html and "医哲未来人工智能研究院" in html
+    robots = (site / "robots.txt").read_text(encoding="utf-8")
+    assert "Disallow: /runtime/" in robots and "Sitemap: https://chat.impf.ai/sitemap.xml" in robots
+    assert "Disallow: /\n" not in robots
+    sitemap = (site / "sitemap.xml").read_text(encoding="utf-8")
+    assert re.findall(r"<loc>(.*?)</loc>", sitemap) == ["https://chat.impf.ai/", "https://chat.impf.ai/about",
+                                                         "https://chat.impf.ai/attribution"]
 
 
 def test_the_site_names_its_relay_only_when_told(tmp_path):

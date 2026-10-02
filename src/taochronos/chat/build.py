@@ -186,11 +186,30 @@ def fetch_pyodide(dest: Path, *, base: str = PYODIDE_CDN, packages: list[str] = 
     return got
 
 
+# the pages a search engine may index (sitemap.xml), by their addresses without .html (the site redirects those)
+PAGES = ("", "about", "attribution")
+
+
+def search_files(site: str) -> dict[str, str]:
+    """robots.txt and sitemap.xml for the site at ``site``: the pages are indexed, the runtime and Pyodide (the files
+    the page loads, not pages) are not.  No lastmod: the build stays deterministic."""
+    site = site.strip().rstrip("/")
+    if not re.match(r"^https://[^/\s]+$", site):
+        raise ValueError(f"the site must be an https origin: {site!r}")
+    robots = (f"User-agent: *\nAllow: /\nDisallow: /runtime/\nDisallow: /pyodide/\n\nSitemap: {site}/sitemap.xml\n")
+    urls = "".join(f"  <url><loc>{site}/{page}</loc></url>\n" for page in PAGES)
+    sitemap = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+               f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{urls}</urlset>\n')
+    return {"robots.txt": robots, "sitemap.xml": sitemap}
+
+
 def build_site(out: Path, *, home: Path, web: Path | None = None, pyodide: str = "self", relay: str | None = None,
-               unlist: Iterable[str] = ()) -> dict[str, Any]:
+               unlist: Iterable[str] = (), site: str = "https://chat.impf.ai") -> dict[str, Any]:
     """Assemble the site in ``out``: the client, the runtime, providers.json (without the presets named in ``unlist``),
     (``pyodide="self"``) Pyodide, the texts' attribution (the repository may be private: the licence's credits travel
-    with the site) and, with ``relay``, site.json naming the 道乃久默认服务 relay (relay/) the page may use without a key."""
+    with the site), robots.txt and sitemap.xml for the site's address ``site`` and, with ``relay``, site.json naming
+    the 道乃久默认服务 relay (relay/) the page may use without a key."""
+    search = search_files(site)
     relay = (relay or "").strip().rstrip("/")
     if relay.lower() in ("", "none", "off"):
         relay = ""
@@ -233,5 +252,7 @@ def build_site(out: Path, *, home: Path, web: Path | None = None, pyodide: str =
         shutil.copyfile(full_credits, out / "ATTRIBUTION-full.md")
     if relay:
         (out / "site.json").write_text(json.dumps({"relay": relay}, ensure_ascii=False, indent=1), encoding="utf-8")
+    for name, text in search.items():
+        (out / name).write_text(text, encoding="utf-8")
     (out / ".nojekyll").write_text("", encoding="utf-8")
     return {"out": str(out), **info, "relay": relay or None}
