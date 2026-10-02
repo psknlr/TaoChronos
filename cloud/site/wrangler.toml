@@ -23,7 +23,7 @@ custom_domain = true
 directory = "../../_site"
 binding = "ASSETS"
 # (a page's .html address is redirected to the address without it: both are listed)
-run_worker_first = ["/", "/index.html", "/attribution", "/attribution.html", "/api/*"]
+run_worker_first = ["/", "/index.html", "/about", "/about.html", "/attribution", "/attribution.html", "/api/*"]
 
 [vars]
 ALLOWED_ORIGINS = "https://chat.impf.ai"

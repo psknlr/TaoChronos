@@ -1397,7 +1397,7 @@ def cmd_web(args: argparse.Namespace) -> None:
         return
     info = build_site(Path(args.output or "_site"), home=home, web=Path(args.web) if args.web else None, pyodide=args.pyodide,
                       relay=args.relay if args.relay is not None else os.environ.get("TAOCHRONOS_RELAY_URL"),
-                      unlist=[u for group in args.unlist or [] for u in group.split(",")])
+                      unlist=[u for group in args.unlist or [] for u in group.split(",")], site=args.site)
     _out(info)
 
 
@@ -1709,7 +1709,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("-o", "--output", help="build: the site directory (default _site); pack: the pack directory (default "
                                            "corpus/web); store: where store.json and ATTRIBUTION.md go (default cloud)")
     sp.add_argument("--data", help="pack, store: the data directory holding the full corpus store")
-    sp.add_argument("--site", default="https://chat.impf.ai", help="upload: the site whose Worker takes the store "
+    sp.add_argument("--site", default="https://chat.impf.ai", help="build: the site's address (robots.txt, sitemap.xml); "
+                                                                 "upload: the site whose Worker takes the store "
                                                                  "(the token: $TAOCHRONOS_STORE_TOKEN)")
     sp.add_argument("--manifest", help="upload: the store's manifest (default cloud/store.json)")
     sp.add_argument("--web", help="the client's sources (default: <home>/web)")
