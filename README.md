@@ -603,6 +603,9 @@ docs/                      治学、任务规格、架构、智能体、发现�
   文本集（仓库未声明授权）的 4 部，以及笈成所据今人辑校、校注本中的今人成分（笈成的 CC0 不及于此），经发布方（IMPF-AI）决定随网站
   发布，供学习研究；条款禁止转载的来源（东亚医学协会、Hugging Face 专有授权数据集）一字不收。逐部来源与条件见
   [ATTRIBUTION.md](corpus/web/ATTRIBUTION.md)。
+- **安全防护**（[`security/`](security/README.md)）：Cloudflare 边缘的 WAF 规则、速率限制与机器人设置（`rules.yaml`，由 `apply.py` 写入）；
+  两个 Worker 共用的哨兵（`sentinel.js`：请求指纹、异常打分、扫描器路径的阻断、按用量计的额度）；可疑请求的事件与边缘的安全事件取回到
+  `data/security-logs/`。设计见 [ADR 0018](docs/adr/0018-sentinel-and-edge-rules.md)。
 - **对话记录**（`data/chat-logs/`）：道乃久默认服务测试期间，只有同意记录的访客的问答（不含密钥、设置与网络地址），由中转服务暂存、
   每小时收入本仓库。仓库须保持私有；公开之前先移走该目录。MiniMax 密钥只作为中转服务与仓库 Actions 的加密机密存在，不在代码、网页或日志里。
 - 各来源授权逐部记录在书目与语料库中，并随每条见证输出：汉籍仓库与维基文库为 CC BY-SA 4.0；麦吉尔善本为公有领域；

@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
+import { WatchCore } from "../../security/sentinel.js";
 import { config, handle, normalizeRecord, publicText, withoutReasoning } from "../src/relay.js";
 import { LimiterCore, LogBookCore } from "../src/state.js";
 
@@ -30,12 +31,30 @@ const KEY = "relay-test-key-not-a-real-one";
 const TOKEN = "export-token-0123456789abcdef";
 const PAGE = "https://chat.impf.ai";
 
-function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0) } = {}) {
+/** The relay with its stores in memory.  `cf`: what the edge would say of every request (request.cf). */
+function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0), cf, burst, gateFails = false } = {}) {
   const limiter = new LimiterCore(sqlStore());
+  const watch = new WatchCore(sqlStore());
   const book = new LogBookCore(sqlStore());
   const calls = [];
+  const pending = [];
+  const bursts = [];
+  const observe = async (fp, a, extra, cfg) => watch.observe(fp, a, extra, cfg, now());
   const deps = {
     limit: async (who, kind, limits) => limiter.hit(who, kind, limits, now()),
+    // as the Durable Object does it (relay/src/index.js): the sentinel first, then the counters
+    gate: async ({ who, kind, limits, fp, a, shape, status, cfg, served, reserve }) => {
+      if (gateFails) throw new Error("Durable Object: daily limit reached");
+      const w = fp && a ? await observe(fp, a, { shape, status }, cfg) : null;
+      if (w?.blocked) return { ok: false, reason: "blocked", retry: w.retry, watch: w };
+      if (served && !limiter.served(who, served, now())) return { ok: false, reason: "not_served", retry: 0, watch: w };
+      return { ...limiter.hit(who, kind, limits, now(), reserve), watch: w };
+    },
+    observe,
+    spend: async (who, kind, tokens) => limiter.spend(who, kind, tokens, now()),
+    burst: async (key) => { bursts.push(key); return burst ? burst(key) : true; },
+    watch: { observe, records: async (...a) => watch.records(...a), remove: async (...a) => watch.remove(...a), summary: async () => watch.summary(now()) },
+    defer: (p) => { pending.push(Promise.resolve(p).catch(() => {})); },
     logbook: { add: async (...a) => book.add(...a), records: async (...a) => book.records(...a), remove: async (...a) => book.remove(...a) },
     fetch: async (url, init) => {
       calls.push({ url, init, body: JSON.parse(init.body) });
@@ -44,8 +63,13 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
     now,
   };
   const fullEnv = { MINIMAX_API_KEY: KEY, LOG_EXPORT_TOKEN: TOKEN, ...env };
-  const call = (path, init = {}) => handle(new Request(`https://chat-api.impf.ai${path}`, init), fullEnv, deps);
-  return { call, calls, book, limiter };
+  const call = (path, init = {}) => {
+    const request = new Request(`https://chat-api.impf.ai${path}`, init);
+    if (cf) request.cf = cf;
+    return handle(request, fullEnv, deps);
+  };
+  const settle = () => Promise.all(pending.splice(0)); // what the Worker finishes after the answer (ctx.waitUntil)
+  return { call, calls, book, limiter, watch, settle, bursts };
 }
 
 function sse(events) {
@@ -53,8 +77,11 @@ function sse(events) {
   return new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } });
 }
 
+const BROWSER = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+  Accept: "text/event-stream", "Accept-Language": "zh-CN,zh;q=0.9", "Sec-Fetch-Site": "same-site", "Sec-Fetch-Mode": "cors", "Sec-Fetch-Dest": "empty",
+  "Sec-CH-UA": '"Chromium";v="129"' };
 const post = (body, headers = {}) => ({
-  method: "POST", headers: { "Content-Type": "application/json", Origin: PAGE, "CF-Connecting-IP": "203.0.113.7", ...headers },
+  method: "POST", headers: { "Content-Type": "application/json", Origin: PAGE, "CF-Connecting-IP": "203.0.113.7", ...BROWSER, ...headers },
   body: typeof body === "string" ? body : JSON.stringify(body),
 });
 
@@ -301,14 +328,20 @@ const turn = {
 
 test("a record is kept only as its known fields, from the page, within its limits", async () => {
   const r = relay();
+  // a record of the default service's conversation: only from a visitor the relay answered today
+  const unserved = await r.call("/v1/logs", post(turn));
+  assert.equal(unserved.status, 403);
+  assert.equal((await unserved.json()).error.type, "not_served");
+  assert.equal((await r.call("/v1/logs", post({ ...turn, provider: "openai", model: "gpt-x" }))).status, 204); // a conversation held with the visitor's own key
+  assert.equal((await r.call("/v1/chat/completions", post(PAGE_ASK))).status, 200);
   assert.equal((await r.call("/v1/logs", post(turn))).status, 204);
   assert.equal((await r.call("/v1/logs", post(turn, { Origin: "https://evil.example" }))).status, 403);
   assert.equal((await r.call("/v1/logs", post({ ...turn, v: 2 }))).status, 400);
   assert.equal((await r.call("/v1/logs", post("{not json"))).status, 400);
   assert.equal((await relay({ env: { LOGS: "off" } }).call("/v1/logs", post(turn))).status, 404);
   const { items } = r.book.records(0, 10);
-  assert.equal(items.length, 1);
-  const kept = items[0].record;
+  assert.equal(items.length, 2);
+  const kept = items[1].record;
   assert.equal(kept.question, turn.question);
   assert.equal(kept.model, "MiniMax-M3"); // the page's public name, kept as the model that answered
   assert.equal(kept.apiKey, undefined);
@@ -325,7 +358,9 @@ test("a record is kept only as its known fields, from the page, within its limit
 
 test("the collector: token required, records after its cursor, deleted once committed, ids never reused", async () => {
   const r = relay();
+  await r.call("/v1/chat/completions", post(PAGE_ASK));
   for (let k = 0; k < 5; k++) await r.call("/v1/logs", post({ ...turn, turn: k + 1 }));
+  assert.equal(r.book.records(0, 10).items.length, 5);
   assert.equal((await r.call("/v1/logs/export?after=0")).status, 401);
   assert.equal((await r.call("/v1/logs/export?after=0", { headers: { Authorization: "Bearer wrong-token-0123456789" } })).status, 401);
   const auth = { Authorization: `Bearer ${TOKEN}` };
@@ -343,6 +378,154 @@ test("the collector: token required, records after its cursor, deleted once comm
   const weak = relay({ env: { LOG_EXPORT_TOKEN: "short" } });
   assert.equal((await weak.call("/v1/logs/export", { headers: { Authorization: "Bearer short" } })).status, 401);
 });
+
+// ------------------------------------------------------------------ the sentinel
+const PAGE_ASK = { model: "Tao-R1", messages: [{ role: "system", content: "你是道乃久" }, { role: "user", content: "桂枝汤主治什么？" }], stream: true,
+  tools: [{ type: "function", function: { name: "classics.search" } }], max_completion_tokens: 8192, stream_options: { include_usage: true } };
+const quiet = async (fn) => { const log = console.log; console.log = () => {}; try { return await fn(); } finally { console.log = log; } };
+
+test("a scanner path refuses its address for a day; the page's requests score nothing and leave only a count", () => quiet(async () => {
+  let t = Date.UTC(2026, 8, 28, 12, 0, 0);
+  const r = relay({ now: () => t });
+  const probe = await r.call("/wp-config.php.bak", { headers: { "User-Agent": "Go-http-client/1.1", "CF-Connecting-IP": "45.138.12.10" } });
+  assert.equal(probe.status, 404);
+  await r.settle();
+  t += 61000; // a minute on: the scanner tries the API
+  const refused = await r.call("/v1/chat/completions", post(PAGE_ASK, { "CF-Connecting-IP": "45.138.12.10" }));
+  assert.equal(refused.status, 403);
+  assert.equal((await refused.json()).error.type, "blocked");
+  assert.equal(Number(refused.headers.get("Retry-After")), 21600 - 61); // a home network's address: the ordinary six hours
+  assert.equal((await r.call("/v1/logs", post(turn, { "CF-Connecting-IP": "45.138.12.10" }))).status, 403);
+  assert.equal(r.calls.length, 0); // nothing reached MiniMax
+  assert.equal((await r.call("/v1/chat/completions", post(PAGE_ASK))).status, 200); // another address
+  const auth = { Authorization: `Bearer ${TOKEN}` };
+  const { items } = await (await r.call("/v1/security/export", { headers: auth })).json();
+  assert.deepEqual(items.map((i) => i.event.kind), ["honeypot", "blocked"]); // the refused requests of the same minute: one event
+  assert.deepEqual([items[0].event.fp.ip, items[0].event.fp.path, items[0].event.fp.uaClass, items[0].event.status], ["45.138.12.10", "/wp-config.php.bak", "tool", 404]);
+  assert.deepEqual(items[1].event.decision, { mode: "observe", blocked: true, shadow: false, until: "2026-09-28T18:00:00.000Z" });
+  const summary = await (await r.call("/v1/security/summary", { headers: auth })).json();
+  assert.equal(summary.blocked.length, 1);
+  assert.equal(summary.blocked[0].ip, "45.138.12.10");
+  const page = summary.top.find((v) => v.ip === undefined);
+  assert.deepEqual([page.n, page.score, page.flagged], [1, 0, 0]); // the page's visitor: a count, no address
+  assert.equal((await r.call("/v1/security/export")).status, 401);
+  assert.equal((await r.call("/v1/security/summary", { headers: { Authorization: "Bearer not-the-token-0123456789" } })).status, 401);
+  assert.deepEqual(await (await r.call("/v1/security/ack", { method: "POST", headers: auth, body: JSON.stringify({ through: items[1].id }) })).json(), { remaining: 0 });
+  // a browser's policy report is kept as an event
+  const csp = await r.call("/v1/security/csp", { method: "POST", headers: { "Content-Type": "application/csp-report", Origin: PAGE },
+    body: JSON.stringify({ "csp-report": { "violated-directive": "script-src", "blocked-uri": "https://evil.example/x.js" } }) });
+  assert.equal(csp.status, 204);
+  assert.equal((await (await r.call("/v1/security/export", { headers: auth })).json()).items[0].event.kind, "csp");
+}));
+
+test("what is not the page's is scored: served and flagged in observe mode, refused in enforce mode; the owner's clients stay under the line", () => quiet(async () => {
+  const script = { "User-Agent": "python-requests/2.31.0", Accept: "application/json", "Accept-Language": "", "Sec-Fetch-Site": "", "Sec-Fetch-Mode": "",
+    "Sec-Fetch-Dest": "", "Sec-CH-UA": "", "CF-Connecting-IP": "198.51.100.77" };
+  const bare = { model: "Tao-R1", messages: [{ role: "user", content: "hi" }], max_tokens: 50 };
+  const observe = relay({ cf: { asn: 14061, country: "US", httpProtocol: "HTTP/1.1", tlsVersion: "TLSv1.3" } });
+  const served = await observe.call("/v1/chat/completions", post(bare, script));
+  assert.equal(served.status, 200);
+  assert.equal(observe.calls.length, 1);
+  const auth = { Authorization: `Bearer ${TOKEN}` };
+  const [ev] = (await (await observe.call("/v1/security/export", { headers: auth })).json()).items;
+  assert.equal(ev.event.kind, "shadow"); // would have been refused in enforce mode
+  assert.deepEqual(ev.event.reasons, ["ua_tool", "dc_asn", "no_stream", "no_stream_options", "max_tokens_key", "no_tools", "no_system"]);
+  assert.deepEqual([ev.event.fp.ip, ev.event.fp.asn, ev.event.shape.system, ev.event.decision.shadow], ["198.51.100.77", 14061, false, true]);
+  const enforce = relay({ env: { SENTINEL: "enforce" }, cf: { asn: 14061, country: "US" } });
+  const refused = await enforce.call("/v1/chat/completions", post(bare, script));
+  assert.equal(refused.status, 403);
+  assert.equal(enforce.calls.length, 0);
+  assert.equal(Number(refused.headers.get("Retry-After")), 21600);
+  assert.equal((await enforce.call("/v1/chat/completions", post(PAGE_ASK))).status, 200); // the page, from another address
+  // a flagged request under the block score is served in enforce mode too (the collector's check call is one)
+  const check = { "User-Agent": "taochronos-collector/1", Accept: "application/json", "Accept-Language": "", "Sec-Fetch-Site": "", "Sec-Fetch-Mode": "",
+    "Sec-Fetch-Dest": "", "Sec-CH-UA": "", "CF-Connecting-IP": "198.51.100.78" };
+  assert.equal((await enforce.call("/v1/chat/completions", post({ model: "Tao-R1", messages: [{ role: "user", content: "请只回复两个字：可以" }], max_completion_tokens: 16 }, check))).status, 200);
+  // the owner's own agent string is a label, not a pass: on a scanner path it is refused like anyone
+  const own = relay();
+  assert.equal((await own.call("/.git/HEAD", { headers: { "User-Agent": "taochronos-deploy/1", "CF-Connecting-IP": "198.51.100.79" } })).status, 404);
+  await own.settle();
+  assert.equal((await own.call("/v1/chat/completions", post(PAGE_ASK, { ...check, "CF-Connecting-IP": "198.51.100.79" }))).status, 403);
+  assert.equal(own.watch.records().items[0].event.own, true);
+  // SENTINEL = off: nothing is recorded, the security endpoints are not there
+  const off = relay({ env: { SENTINEL: "off" } });
+  assert.equal((await off.call("/wp-config.php", { headers: { "CF-Connecting-IP": "45.138.12.10" } })).status, 404);
+  await off.settle();
+  assert.equal((await off.call("/v1/chat/completions", post(PAGE_ASK, { "CF-Connecting-IP": "45.138.12.10" }))).status, 200);
+  assert.equal((await off.call("/v1/security/summary", { headers: auth })).status, 404);
+  assert.deepEqual(off.watch.records().items, []);
+}));
+
+test("tokens: what an answer cost counts against the visitor's day, and against the day", () => quiet(async () => {
+  const final = '{"id":"a","choices":[{"finish_reason":"stop","index":0,"delta":{}}],"model":"MiniMax-M3","usage":{"prompt_tokens":70,"completion_tokens":40,"total_characters":9},"base_resp":{"status_code":0}}';
+  const events = ['{"id":"a","choices":[{"index":0,"delta":{"content":"答"}}],"model":"MiniMax-M3","usage":null}', final, "[DONE]"];
+  const r = relay({ env: { TOKENS_PER_DAY: "200", TOTAL_TOKENS_PER_DAY: "300" }, upstream: () => sse(events) });
+  const first = await r.call("/v1/chat/completions", post(PAGE_ASK));
+  const text = await first.text(); // the stream read to its end, as a browser would
+  assert.doesNotMatch(text, /total_characters/);
+  assert.match(text, /"usage":\{"prompt_tokens":70,"completion_tokens":40\}/);
+  await r.settle();
+  const read = async (res) => { assert.equal(res.status, 200); await res.text(); await r.settle(); }; // an answer read to its end: its cost counted
+  await read(await r.call("/v1/chat/completions", post(PAGE_ASK))); // 220 of 200: the next is refused
+  const over = await r.call("/v1/chat/completions", post(PAGE_ASK));
+  assert.equal(over.status, 429);
+  assert.match((await over.json()).error.message, /按用量计/);
+  await read(await r.call("/v1/chat/completions", post(PAGE_ASK, { "CF-Connecting-IP": "198.51.100.1" }))); // 330 in all: over the day
+  const total = await r.call("/v1/chat/completions", post(PAGE_ASK, { "CF-Connecting-IP": "198.51.100.2" }));
+  assert.equal(total.status, 429);
+  assert.match((await total.json()).error.message, /总额度已用完（按用量计）/);
+  assert.equal(r.calls.length, 3);
+  // a plain JSON reply counts too; the health says the budget
+  const plain = relay({ env: { TOKENS_PER_DAY: "100" }, upstream: async () => new Response(JSON.stringify({ id: "c", model: "MiniMax-M3", choices: [{ message: { content: "好" } }],
+    usage: { prompt_tokens: 90, completion_tokens: 20 } }), { status: 200, headers: { "Content-Type": "application/json" } }) });
+  assert.equal((await plain.call("/v1/chat/completions", post({ ...PAGE_ASK, stream: false }))).status, 200);
+  await plain.settle();
+  assert.equal((await plain.call("/v1/chat/completions", post({ ...PAGE_ASK, stream: false }))).status, 429);
+  assert.equal((await (await plain.call("/v1/health")).json()).limits.tokens_per_day, 100);
+  const none = relay({ env: { TOKENS_PER_DAY: "0", TOTAL_TOKENS_PER_DAY: "0" }, upstream: () => sse(events) });
+  for (let i = 0; i < 3; i++) { await (await none.call("/v1/chat/completions", post(PAGE_ASK))).text(); await none.settle(); }
+  assert.equal(none.calls.length, 3);
+  // a call is charged its size as it goes out, the answer's usage settles it: thirty calls in flight cannot overdraw
+  const inflight = relay({ env: { TOKENS_PER_DAY: "250" }, upstream: () => sse(events) });
+  const flight = await inflight.call("/v1/chat/completions", post(PAGE_ASK)); // reserved ~ a third of the body's bytes
+  const who = inflight.limiter.sql.exec("SELECT k FROM hits WHERE k LIKE 'k:chat:%'").toArray()[0].k;
+  const reserved = inflight.limiter.count(who);
+  assert.ok(reserved > 50 && reserved < 250, String(reserved));
+  await flight.text(); await inflight.settle();
+  assert.equal(inflight.limiter.count(who), 110); // settled to what the answer cost
+  // the upstream call carries the visitor's signal: leaving cancels it
+  assert.ok(inflight.calls[0].init.signal instanceof AbortSignal);
+  // the counters out of reach: a call is not let through uncounted; a record is let go
+  const down = relay({ gateFails: true });
+  const refused = await down.call("/v1/chat/completions", post(PAGE_ASK));
+  assert.equal(refused.status, 503);
+  assert.equal((await refused.json()).error.type, "unavailable");
+  assert.equal(down.calls.length, 0);
+  assert.equal((await down.call("/v1/logs", post(turn))).status, 204);
+  assert.equal(down.book.records().items.length, 0);
+}));
+
+test("https only; the ten-second gate before anything is read; a body without a length is read only up to the limit", () => quiet(async () => {
+  const r = relay();
+  const clear = await handle(new Request("http://chat-api.impf.ai/v1/chat/completions", post(PAGE_ASK)), { MINIMAX_API_KEY: KEY, LOG_EXPORT_TOKEN: TOKEN }, {
+    ...Object.fromEntries(["gate", "spend", "burst", "watch", "logbook", "fetch"].map((k) => [k, async () => { throw new Error("not reached"); }])),
+    observe: async () => null, defer: () => {}, now: () => Date.UTC(2026, 8, 28, 12, 0, 0) });
+  assert.equal(clear.status, 403);
+  assert.equal((await clear.json()).error.type, "https_required");
+  const gated = relay({ burst: (key) => key !== "203.0.113.7" });
+  const refused = await gated.call("/v1/chat/completions", post(PAGE_ASK));
+  assert.equal(refused.status, 429);
+  assert.equal(refused.headers.get("Retry-After"), "10");
+  assert.equal(gated.calls.length, 0);
+  assert.equal((await gated.call("/v1/logs", post(turn))).status, 429);
+  assert.equal((await gated.call("/v1/chat/completions", post(PAGE_ASK, { "CF-Connecting-IP": "2001:db8:1:2:aaaa::1" }))).status, 200);
+  assert.deepEqual(gated.bursts.slice(-1), ["2001:db8:1:2::/64"]); // the gate's key: an IPv6 address by its /64
+  const chunked = relay({ env: { MAX_BODY_BYTES: "1000" } });
+  const body = new ReadableStream({ start(c) { for (let i = 0; i < 20; i++) c.enqueue(new TextEncoder().encode("x".repeat(100))); c.close(); } });
+  const big = await chunked.call("/v1/chat/completions", { ...post(""), body, duplex: "half" });
+  assert.equal(big.status, 413);
+  assert.equal(chunked.calls.length, 0);
+}));
 
 test("config: the defaults, and the Worker's variables over them", () => {
   const c = config({ MODELS: "MiniMax-M3, MiniMax-M2.7", UPSTREAM_BASE: "https://api.minimax.io/v1/" });

@@ -15,8 +15,16 @@
 | `GET /v1/health` | 是否配置好、模型的公开名、是否收集记录、限额（网页据此决定用不用默认服务） |
 | `POST /v1/logs` | 网页在访客**同意后**发来的一轮问答记录（只保留已知字段，截断过长内容；不含密钥、设置、IP） |
 | `GET /v1/logs/export`、`POST /v1/logs/ack` | 仓库的收集器取走记录、确认已提交后删除（需 `LOG_EXPORT_TOKEN`） |
+| `GET /v1/security/export`、`POST /v1/security/ack`、`GET /v1/security/summary` | 哨兵记下的可疑请求事件（取走、确认删除）与当前概览（按分数排列的访客、正在被拒绝的地址）；需 `LOG_EXPORT_TOKEN` |
+| `POST /v1/security/csp` | 浏览器上报的内容安全策略违规（存为事件） |
 
-访客按“IP + 日期”的哈希计数，IP 本身不保存；记录里没有 IP。一个问题通常要调用模型几次（每轮工具调用一次）。
+访客按“IP + 日期”的哈希计数，IP 本身不保存；记录里没有 IP。一个问题通常要调用模型几次（每轮工具调用一次）。模型回复末尾报告的
+用量（输入 + 输出 token）也计入该访客当天与全体当天的额度（`TOKENS_PER_DAY`、`TOTAL_TOKENS_PER_DAY`）：用完即拒绝下一次调用。
+
+**哨兵**（[`security/`](../security/README.md)，两个 Worker 共用）看每一个请求：地址、网络、国家、协议、TLS、浏览器会带的请求头，以及
+模型调用请求的形状（是否以系统提示开头、有没有工具、是否流式……只存哈希，不存正文），给出分数与理由。扫描器路径（`/wp-config.php`、
+`/.git/HEAD`……）的地址被拒绝一天；分数达到标记线的请求连同地址整条记下，由 chat-logs 工作流取回到 `data/security-logs/`；
+`SENTINEL = "enforce"` 时超过阻断分数的地址被拒绝六小时（默认 `observe`：只记录、不拒绝；网页自己的请求分数为 0，只留一个计数）。
 
 **访客看不到上游。** 网页与中转之间只出现默认服务自己的说法：health 只给模型的公开名 Tao-R1；网页按 Tao-R1 请求，不带任何只有
 上游才认的参数——中转换成 `MODELS` 的第一个模型，加上 `UPSTREAM_FIELDS`（`reasoning_split`），并把网页送回的思考格式
@@ -53,6 +61,9 @@
 ## 调整与维护
 
 - 限额、模型、允许的来源：改 `wrangler.toml` 的 `[vars]`，合入 main 后自动重新部署。
+- 哨兵的模式与阈值（`SENTINEL`、`HONEYPOT`、`FLAG_SCORE`、`BLOCK_SCORE`、`BLOCK_SECONDS`、`KNOWN_PROMPTS`……）：同样在 `[vars]`；
+  含义与建议见 [`security/README.md`](../security/README.md)。可选 Secret `SENTINEL_SALT`（任意长随机串）让访客的哈希键跨月不变。
+- 看哨兵现在看到什么：`LOG_EXPORT_TOKEN=… python3 security/collect.py summary --site ""`（只看中转）。
 - 更换密钥：更新仓库 Secret `MINIMAX_API_KEY`，再运行一次 relay 工作流（其余维护与排错见 [SETUP.md](SETUP.md)）。
 - 本地试运行：`cd relay && npm test`（Node 22）；`npx wrangler@4 dev`（在 `relay/.dev.vars` 写入 `MINIMAX_API_KEY=…` 与
   `LOG_EXPORT_TOKEN=…`，该文件已被 .gitignore）。

@@ -6,3 +6,12 @@
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
+
+# the in-browser runtime's workers: Pyodide (WebAssembly; from the site's own copy, or jsDelivr as a fallback) and the xz
+# unpacker (its WebAssembly fetched as a data: URL).  Reported, not enforced (security/README.md); by report-uri alone —
+# a browser that honours report-to ignores report-uri, and whether a worker's own response's Reporting-Endpoints is
+# processed is not certain, so report-to here could lose the reports in silence
+/js/worker.js
+  Content-Security-Policy-Report-Only: default-src 'none'; script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval'; connect-src 'self' data: https://cdn.jsdelivr.net; worker-src 'self'; report-uri /api/security/csp
+/js/unpack-worker.js
+  Content-Security-Policy-Report-Only: default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' data:; worker-src 'self'; report-uri /api/security/csp

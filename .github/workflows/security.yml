@@ -1,0 +1,91 @@
+name: security
+
+# The edge of impf.ai as code (security/README.md): the WAF custom rules, the rate limit, the zone and bot settings in
+# security/rules.yaml, written to Cloudflare by security/apply.py — on request (Run workflow: plan says what would change,
+# apply writes it); and the edge's own security events and the requests worth a look, pulled every day by
+# security/events.py into data/security-logs/edge/ before the plan's retention lets them go.
+# Repository secrets: CLOUDFLARE_SECURITY_TOKEN (Zone WAF, Zone Settings, Bot Management: Edit; Zone: Read; Account Filter
+# Lists: Edit), CLOUDFLARE_ANALYTICS_TOKEN (Zone Analytics: Read); the variable CLOUDFLARE_ZONE_ID (or Zone: Read on the
+# tokens).  Neither is the deploy token.  Without them each job says so and does nothing.
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "edge rules: plan (nothing written) or apply"
+        type: choice
+        options: [plan, apply]
+        default: plan
+      day:
+        description: "events: a UTC day to pull (YYYY-MM-DD; yesterday when empty)"
+        type: string
+        default: ""
+  schedule:
+    - cron: "41 1 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: security
+  cancel-in-progress: false
+
+jobs:
+  edge:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Is the security token set?
+        id: ready
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_SECURITY_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "::warning::CLOUDFLARE_SECURITY_TOKEN is not set: the edge rules are not written (security/README.md)"; echo "go=0" >> "$GITHUB_OUTPUT"
+          else echo "go=1" >> "$GITHUB_OUTPUT"; fi
+      - name: The rules as code against the zone (${{ inputs.action }})
+        if: steps.ready.outputs.go == '1'
+        env:
+          CLOUDFLARE_SECURITY_TOKEN: ${{ secrets.CLOUDFLARE_SECURITY_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
+        run: |
+          python3 -m pip install --quiet pyyaml
+          python3 security/apply.py "${{ inputs.action }}"
+
+  events:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Is the analytics token set?
+        id: ready
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_ANALYTICS_TOKEN }}
+          ZONE: ${{ vars.CLOUDFLARE_ZONE_ID }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$ZONE" ]; then echo "::notice::CLOUDFLARE_ANALYTICS_TOKEN or the variable CLOUDFLARE_ZONE_ID is not set: the edge's events are not collected (security/README.md)"; echo "go=0" >> "$GITHUB_OUTPUT"
+          else echo "go=1" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.ready.outputs.go == '1'
+      - name: Pull the day's security events and the requests worth a look
+        id: pull
+        if: steps.ready.outputs.go == '1'
+        env:
+          CLOUDFLARE_ANALYTICS_TOKEN: ${{ secrets.CLOUDFLARE_ANALYTICS_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
+          DAY: ${{ inputs.day }}
+        run: |
+          if [ -n "$DAY" ]; then python3 security/events.py pull --out data/security-logs/edge --day "$DAY"
+          else python3 security/events.py pull --out data/security-logs/edge; fi
+      - name: Commit them
+        if: steps.ready.outputs.go == '1' && steps.pull.outputs.new != '0'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/security-logs/edge
+          git commit -q -m "security: ${{ steps.pull.outputs.new }} edge events [skip ci]"
+          pushed=0
+          for attempt in 1 2 3; do
+            if git push -q origin HEAD:main; then pushed=1; break; fi
+            sleep $((attempt * 5))
+            git pull -q --rebase origin main
+          done
+          [ "$pushed" = 1 ] || { echo "::error::the events could not be pushed; the next run pulls the day again"; exit 1; }

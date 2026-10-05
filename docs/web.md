@@ -263,6 +263,10 @@ send it in clear to the provider, where any visitor can read it — so the relay
   patient — it is downloading its runtime over the same link: 10 s, then 15 s, and if the relay did not answer, again 20,
   40, 60 and 80 seconds later, and once more before it asks a visitor for a key.  When it does not answer, the page is what
   it was before: the visitor's own key.
+* Both Workers carry the sentinel (`security/sentinel.js`, [ADR 0018](adr/0018-sentinel-and-edge-rules.md)): every request
+  is fingerprinted and scored, a scanner path refuses its address, a flagged request is kept whole for the owner
+  (`data/security-logs/`), and the edge's own rules are code (`security/rules.yaml`); the relay also counts an answer's
+  tokens against the visitor's day.
 * The relay accepts the page's origins only, its own model only (by its public name, Tao-R1), caps the output, and
   counts use per visitor (a hash of address and day; addresses are kept nowhere) per minute and per day, and in all per
   day (`relay/wrangler.toml`).  Its refusals are sentences a visitor can act on (wait, check an option, or use one's own

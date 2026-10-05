@@ -1,9 +1,12 @@
 # 道乃久默认服务 — the relay between chat.impf.ai and MiniMax (relay/README.md).
-# Deployed by .github/workflows/relay.yml.  Its secrets — MINIMAX_API_KEY and LOG_EXPORT_TOKEN — are set from the
-# repository's Actions secrets at each deployment; they are never written here or anywhere in the repository.
+# Deployed by .github/workflows/relay.yml.  Its secrets — MINIMAX_API_KEY and LOG_EXPORT_TOKEN, and SENTINEL_SALT when the
+# repository has one — are set from the repository's Actions secrets at each deployment; they are never written here or
+# anywhere in the repository.
 name = "taochronos-relay"
 main = "src/index.js"
 compatibility_date = "2025-09-01"
+# request.signal: a visitor who leaves (or stops the answer) cancels the model call, which costs nothing further
+compatibility_flags = ["enable_request_signal"]
 workers_dev = false
 
 # the Worker's own hostname; Cloudflare creates its DNS record and certificate (the name must not exist in DNS before)
@@ -22,9 +25,26 @@ MAX_OUTPUT_TOKENS = "8192"
 PER_MINUTE = "30"
 PER_DAY = "600"
 TOTAL_PER_DAY = "5000"
+# tokens (input + output, as the model service counts them) per visitor per day, and all visitors together per day: a
+# call is refused once they are spent, so a visitor's cost is bounded by use and not only by calls.  Seen in the records
+# so far: a turn p50 80k, p90 500k, at most 1.5M; a conversation at most 3.6M.  0: no limit
+TOKENS_PER_DAY = "10000000"
+TOTAL_TOKENS_PER_DAY = "200000000"
+# the sentinel (security/README.md): observe — every request scored and, flagged, recorded with its address, never
+# refused; enforce — an address over the block score is refused for six hours; off — nothing recorded
+SENTINEL = "observe"
+# a scanner path (/wp-config.php, /.git/HEAD, /xmlrpc.php, …) refuses its address for a day, in observe mode too: block | observe
+HONEYPOT = "block"
 # conversation records, sent only by visitors who agreed; "off" stops collecting them
 LOGS = "on"
 ALLOWED_ORIGINS = "https://chat.impf.ai,http://chat.impf.ai,https://psknlr.github.io"
+
+# per visitor and Cloudflare location, over ten seconds: the first gate on a model call or a record, before the counters
+# in the Durable Object are asked (cheap and local; approximate — the Durable Object keeps the exact per-day counts)
+[[ratelimits]]
+name = "BURST"
+namespace_id = "7313"
+simple = { limit = 40, period = 10 }
 
 [[durable_objects.bindings]]
 name = "LIMITER"

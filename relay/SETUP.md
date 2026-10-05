@@ -205,7 +205,8 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 | 检查步骤或网页提示“额度已用完”“调用过于频繁” | MiniMax 余额不足，或 Token Plan 当前窗口的额度用完 | 充值，或等下一个窗口。公开网站建议用按量付费的密钥 |
 | 网页仍要求填 API Key | 网站还是旧版本，或者中转没上线 | 确认 PR #3 已合并、pages 工作流成功；打开 `http://chat.impf.ai/site.json`，应看到中转地址；打开 health，应看到 `"ok":true`；再强制刷新。已在“设置 → 模型”里选了其他服务的访客，选回“道乃久默认服务”即可 |
 | 网页提示“这个服务只供道乃久网页使用” | 网页的地址不在 `ALLOWED_ORIGINS` 里 | 换了网址时，把新地址加进 `ALLOWED_ORIGINS` 并重新部署 |
-| 访客看到“请求太频繁”或“今天的免费额度已用完” | 触发了中转的限额 | 这是正常的保护。需要时调高 `PER_MINUTE`、`PER_DAY` 或 `TOTAL_PER_DAY` |
+| 访客看到“请求太频繁”或“今天的免费额度已用完” | 触发了中转的限额 | 这是正常的保护。需要时调高 `PER_MINUTE`、`PER_DAY` 或 `TOTAL_PER_DAY`；“（按用量计）”的是 token 额度 `TOKENS_PER_DAY`、`TOTAL_TOKENS_PER_DAY` |
+| 访客看到“该地址因异常访问已被暂时限制” | 哨兵拒绝了这个地址：它探测过扫描器路径，或（enforce 模式）分数超过阻断线 | 看 `data/security-logs/` 里该地址的事件；误伤时把 `BLOCK_SECONDS` 调短、`SENTINEL` 改回 `observe`，或在 `security/README.md` 的指引下调整阈值 |
 | chat-logs 报 `the records could not be pushed` | main 分支有保护规则，工作流不能直接推送 | 放宽 main 的保护规则，允许 GitHub Actions 推送。记录会留在中转，下次运行再取 |
 | chat-logs 报 `the relay refused the export: HTTP 401` | 仓库与 Worker 的 `LOG_EXPORT_TOKEN` 不一致 | 重跑 relay，用仓库里的值重写 Worker 的机密 |
 | 访问中转得到 Cloudflare Error 1027 | Workers 免费计划每天 10 万次请求用完了（UTC 零点重置） | 中转自己的全体日限额（默认 5000 次模型调用）远低于此，一般不会发生。发生时可调低限额，或升级 Workers 付费计划 |
@@ -216,4 +217,6 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 - 能改仓库 Secrets 或 Cloudflare Workers 的人就能换掉密钥。只把仓库管理员和 Cloudflare 账户权限给可信的人。
 - 令牌泄露时，在 Cloudflare 的 **API Tokens** 里对它 **Roll**（重新生成）或删除，再更新 GitHub Secret。MiniMax 密钥泄露时，
   在 MiniMax 控制台删除它，再按“更换 MiniMax 密钥”换新。
-- 中转限制了来源、模型、输出长度和每人、全体的调用次数，这些限定的是被滥用时最多能花多少。真正的费用上限是 MiniMax 账户余额。
+- 中转限制了来源、模型、输出长度和每人、全体的调用次数与 token 用量，这些限定的是被滥用时最多能花多少。真正的费用上限是 MiniMax 账户余额。
+- 哨兵（`security/`）记下可疑请求的地址与请求头，取回到私有仓库的 `data/security-logs/`；Cloudflare 边缘的 WAF 规则与速率限制见
+  `security/README.md`，用另一个只有 WAF 权限的令牌（`CLOUDFLARE_WAF_TOKEN`）由 security 工作流写入。
