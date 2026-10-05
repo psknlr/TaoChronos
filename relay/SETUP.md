@@ -218,5 +218,6 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 - 令牌泄露时，在 Cloudflare 的 **API Tokens** 里对它 **Roll**（重新生成）或删除，再更新 GitHub Secret。MiniMax 密钥泄露时，
   在 MiniMax 控制台删除它，再按“更换 MiniMax 密钥”换新。
 - 中转限制了来源、模型、输出长度和每人、全体的调用次数与 token 用量，这些限定的是被滥用时最多能花多少。真正的费用上限是 MiniMax 账户余额。
-- 哨兵（`security/`）记下可疑请求的地址与请求头，取回到私有仓库的 `data/security-logs/`；Cloudflare 边缘的 WAF 规则与速率限制见
-  `security/README.md`，用另一个只有 WAF 权限的令牌（`CLOUDFLARE_WAF_TOKEN`）由 security 工作流写入。
+- 哨兵（`security/`）记下可疑请求的地址与请求头，取回到私有仓库的 `data/security-logs/`；Cloudflare 边缘的 WAF 规则、速率限制与区域设置由
+  security 工作流用两个专用令牌写入与读取（仓库 Secrets `CLOUDFLARE_SECURITY_TOKEN`、`CLOUDFLARE_ANALYTICS_TOKEN` 与变量 `CLOUDFLARE_ZONE_ID`；
+  权限清单与步骤见 `security/README.md`「启用」）。

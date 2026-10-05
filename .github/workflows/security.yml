@@ -5,8 +5,9 @@ name: security
 # apply writes it); and the edge's own security events and the requests worth a look, pulled every day by
 # security/events.py into data/security-logs/edge/ before the plan's retention lets them go.
 # Repository secrets: CLOUDFLARE_SECURITY_TOKEN (Zone WAF, Zone Settings, Bot Management: Edit; Zone: Read; Account Filter
-# Lists: Edit), CLOUDFLARE_ANALYTICS_TOKEN (Zone Analytics: Read); the variable CLOUDFLARE_ZONE_ID (or Zone: Read on the
-# tokens).  Neither is the deploy token.  Without them each job says so and does nothing.
+# Lists: Edit), CLOUDFLARE_ANALYTICS_TOKEN (Zone Analytics: Read); the variable CLOUDFLARE_ZONE_ID (the events job needs
+# it; the edge job can find the zone by name with Zone: Read).  Neither is the deploy token.  Without them each job says
+# so and does nothing.
 on:
   workflow_dispatch:
     inputs:

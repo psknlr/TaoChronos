@@ -13,7 +13,7 @@
 |---|---|
 | `POST /v1/chat/completions` | 转发网页的模型调用（流式）；只接受网页来源（`ALLOWED_ORIGINS`）、只接受默认服务的模型（公开名 `PUBLIC_MODEL`，即 Tao-R1）、输出上限 `MAX_OUTPUT_TOKENS`；网页要求不思考（`thinking: disabled`，涉及模型与智能体身份的提问）时，流中的思考内容一律去掉再转发；每人每分钟 `PER_MINUTE`、每天 `PER_DAY` 次，全体每天 `TOTAL_PER_DAY` 次 |
 | `GET /v1/health` | 是否配置好、模型的公开名、是否收集记录、限额（网页据此决定用不用默认服务） |
-| `POST /v1/logs` | 网页在访客**同意后**发来的一轮问答记录（只保留已知字段，截断过长内容；不含密钥、设置、IP） |
+| `POST /v1/logs` | 网页在访客**同意后**发来的一轮问答记录（只保留已知字段，截断过长内容；不含密钥、设置、IP）。默认服务自己的记录（`provider: impf`）只收自中转在前 26 小时内答过的地址；访客用自己 Key 的对话记录只看来源 |
 | `GET /v1/logs/export`、`POST /v1/logs/ack` | 仓库的收集器取走记录、确认已提交后删除（需 `LOG_EXPORT_TOKEN`） |
 | `GET /v1/security/export`、`POST /v1/security/ack`、`GET /v1/security/summary` | 哨兵记下的可疑请求事件（取走、确认删除）与当前概览（按分数排列的访客、正在被拒绝的地址）；需 `LOG_EXPORT_TOKEN` |
 | `POST /v1/security/csp` | 浏览器上报的内容安全策略违规（存为事件） |

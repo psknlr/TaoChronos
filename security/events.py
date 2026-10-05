@@ -69,19 +69,43 @@ def available(token: str, zone: str) -> dict[str, dict]:
     return zones[0]["settings"]
 
 
-def firewall_events(token: str, zone: str, start: str, end: str, fields: list[str], page: int) -> list[dict]:
+def firewall_events(token: str, zone: str, start: str, end: str, fields: list[str], page: int, pages: int = 40) -> tuple[list[dict], bool]:
+    """The events of the window, newest first, page by page (the next page ends where the last one began); (events,
+    complete) — not complete when the pages ran out."""
     q = ("query($zone: string, $start: Time, $end: Time, $limit: Int) { viewer { zones(filter: {zoneTag: $zone}) { "
          f"firewallEventsAdaptive(filter: {{datetime_geq: $start, datetime_leq: $end}}, limit: $limit, orderBy: [datetime_DESC]) {{ {' '.join(fields)} }} }} }} }}")
-    data = query(token, q, {"zone": zone, "start": start, "end": end, "limit": page})
-    return data["viewer"]["zones"][0]["firewallEventsAdaptive"]
+    out: list[dict] = []
+    until = end
+    for _ in range(pages):
+        rows = query(token, q, {"zone": zone, "start": start, "end": until, "limit": page})["viewer"]["zones"][0]["firewallEventsAdaptive"]
+        out.extend(rows)
+        if len(rows) < page:
+            return out, True
+        oldest = min(r.get("datetime") or until for r in rows)
+        if oldest >= until:  # a page of events all at one instant: nothing earlier can be asked for
+            return out, False
+        until = oldest
+    return out, False
 
 
-def request_groups(token: str, zone: str, start: str, end: str, host: str, dims: list[str], page: int) -> list[dict]:
+def request_groups(token: str, zone: str, start: str, end: str, host: str, dims: list[str], page: int) -> tuple[list[dict], bool]:
+    """The request groups of the window, in four-hour slices (a group node cannot be paged); (groups, complete) — not
+    complete when a slice filled its page."""
     q = ("query($zone: string, $start: Time, $end: Time, $host: string, $limit: Int) { viewer { zones(filter: {zoneTag: $zone}) { "
          "httpRequestsAdaptiveGroups(filter: {datetime_geq: $start, datetime_lt: $end, requestSource: \"eyeball\", clientRequestHTTPHost: $host}, "
          f"limit: $limit, orderBy: [count_DESC]) {{ count avg {{ sampleInterval }} dimensions {{ {' '.join(dims)} }} }} }} }} }}")
-    data = query(token, q, {"zone": zone, "start": start, "end": end, "host": host, "limit": page})
-    return data["viewer"]["zones"][0]["httpRequestsAdaptiveGroups"]
+    out: list[dict] = []
+    complete = True
+    begin = datetime.strptime(start, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    finish = datetime.strptime(end, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    while begin < finish:
+        stop = min(begin + timedelta(hours=4), finish)
+        rows = query(token, q, {"zone": zone, "start": begin.strftime("%Y-%m-%dT%H:%M:%SZ"), "end": stop.strftime("%Y-%m-%dT%H:%M:%SZ"), "host": host, "limit": page})["viewer"]["zones"][0]["httpRequestsAdaptiveGroups"]
+        out.extend(rows)
+        if len(rows) >= page:
+            complete = False
+        begin = stop
+    return out, complete
 
 
 # ---------------------------------------------------------------- what is worth keeping of the requests
@@ -104,8 +128,9 @@ def worth(row: dict, volume: int) -> list[str]:
     status = int(d.get("edgeResponseStatus") or 0)
     if status >= 400:
         why.append(f"status_{status // 100}xx")
-    if d.get("securityAction"):
-        why.append(f"security_{d['securityAction']}")
+    action = str(d.get("securityAction") or "").strip().lower()
+    if action and action not in ("unknown", "none", "allow", "skip", "log"):  # an action taken, not the absence of one
+        why.append(f"security_{action}")
     path = d.get("clientRequestPath") or ""
     if SCANNER_PATH.search(path):
         why.append("scanner_path")
@@ -138,7 +163,10 @@ def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str]) -> d
     if fw.get("enabled"):
         fields = [f for f in FIREWALL_FIELDS if f in (fw.get("availableFields") or FIREWALL_FIELDS)]
         page = min(int(fw.get("maxPageSize") or 1000), 5000)
-        for ev in firewall_events(token, zone, start, end, fields, page):
+        events, complete = firewall_events(token, zone, start, end, fields, page)
+        if not complete:
+            kept["skipped"].append(f"firewall events: more than the pages fetched for {day.strftime('%Y-%m-%d')} (the oldest hours may be missing)")
+        for ev in events:
             key = f"fw:{ev.get('rayName') or ''}:{ev.get('datetime')}:{ev.get('ruleId') or ''}"
             if key in seen:
                 continue
@@ -150,8 +178,14 @@ def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str]) -> d
     if rq.get("enabled"):
         dims = [d for d in REQUEST_DIMENSIONS if d in (rq.get("availableFields") or REQUEST_DIMENSIONS)]
         page = min(int(rq.get("maxPageSize") or 2000), 10000)
+        actions: dict[str, int] = {}
         for host in hosts:
-            for row in request_groups(token, zone, start, end, host, dims, page):
+            groups, complete = request_groups(token, zone, start, end, host, dims, page)
+            if not complete:
+                kept["skipped"].append(f"request groups of {host}: a four-hour slice filled its page of {page} (the rarest groups may be missing)")
+            for row in groups:
+                act = str(row["dimensions"].get("securityAction") or "")
+                actions[act] = actions.get(act, 0) + 1
                 d = row["dimensions"]
                 volume = int(round((row.get("count") or 0) * float((row.get("avg") or {}).get("sampleInterval") or 1)))
                 why = worth(row, volume)
@@ -163,6 +197,7 @@ def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str]) -> d
                 seen.add(key)
                 lines.append(json.dumps({"key": key, "kind": "requests", "day": day.strftime("%Y-%m-%d"), "requests": volume, "why": why, **d}, ensure_ascii=False, sort_keys=True))
                 kept["requests"] += 1
+        kept["security_actions_seen"] = actions  # what the zone reports as 'no action': checked once against what worth() ignores
     else:
         kept["skipped"].append("httpRequestsAdaptiveGroups is not enabled for this zone/token")
     if lines:

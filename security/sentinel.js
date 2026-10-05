@@ -81,6 +81,31 @@ export async function bearerOk(request, expected) {
   return diff === 0;
 }
 
+/** The body as text, or null when it is larger than `max` bytes: refused by its declared length, else read only up to
+ * the limit (a body sent without a length is not taken whole into memory first). */
+export async function readText(request, max) {
+  const declared = request.headers.get("Content-Length");
+  if (declared !== null && Number(declared) > max) return null;
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const parts = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > max) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    parts.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let at = 0;
+  for (const part of parts) { bytes.set(part, at); at += part.byteLength; }
+  return new TextDecoder().decode(bytes);
+}
+
 export const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), { status, headers: { ...headers, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 
@@ -151,7 +176,7 @@ export function fingerprint(request, now = Date.now()) {
 // user agents by kind: what scans, what is a program, what claims to be a known crawler, what is a browser
 const SCANNER = /masscan|zgrab|zmap|nmap|nikto|sqlmap|nuclei|dirbuster|gobuster|feroxbuster|ffuf|wfuzz|wpscan|acunetix|nessus|openvas|w3af|arachni|l9explore|l9tcpid|xmrig|censysinspect|expanse|paloaltonetworks|internetmeasurement|netsystemsresearch|projectdiscovery|odin|hello.?world|zoominfo|scanner/i;
 const TOOL = /^curl\/|^wget\/|python-requests|python-urllib|python-httpx|^python\/|aiohttp|go-http-client|^java\/|okhttp|apache-httpclient|node-fetch|undici|^axios\/|^got \(|libwww|lwp-trivial|httpie|scrapy|postmanruntime|insomnia|^dart\/|^ruby|^php\/|guzzle|faraday|restsharp|winhttp|microsoft url control|coldfusion|headlesschrome|phantomjs|selenium|puppeteer|playwright|^mozilla\/[45]\.0$/i;
-const BOT = /googlebot|bingbot|baiduspider|yandexbot|duckduckbot|applebot|sogou|360spider|bytespider|petalbot|facebookexternalhit|twitterbot|linkedinbot|slackbot|telegrambot|whatsapp|discordbot|gptbot|chatgpt-user|oai-searchbot|claudebot|claude-web|claude-user|claude-searchbot|anthropic-ai|perplexitybot|perplexity-user|google-extended|amazonbot|ccbot|meta-externalagent|meta-externalfetcher|diffbot|cohere-ai|youbot|duckassistbot|mistralai-user|semrushbot|ahrefsbot|mj12bot|dotbot|barkrowler|seznambot|archive\.org_bot|ia_archiver|timpibot|omgili|dataforseo|bravebot/i;
+const BOT = /googlebot|bingbot|baiduspider|yandexbot|duckduckbot|applebot|sogou\s?(?:web\s?)?spider|360spider|bytespider|petalbot|facebookexternalhit|twitterbot|linkedinbot|slackbot|telegrambot|whatsapp|discordbot|gptbot|chatgpt-user|oai-searchbot|claudebot|claude-web|claude-user|claude-searchbot|anthropic-ai|perplexitybot|perplexity-user|google-extended|amazonbot|ccbot|meta-externalagent|meta-externalfetcher|diffbot|cohere-ai|youbot|duckassistbot|mistralai-user|semrushbot|ahrefsbot|mj12bot|dotbot|barkrowler|seznambot|archive\.org_bot|ia_archiver|timpibot|omgili|dataforseo|bravebot/i;
 const BROWSER = /chrome\/|crios\/|firefox\/|fxios\/|safari\/|edg[ea]?\/|opr\/|micromessenger|qqbrowser|ucbrowser|baiduboxapp|quark|heytapbrowser|miuibrowser|huaweibrowser|samsungbrowser|vivobrowser|sogoumobilebrowser|mobile/i;
 
 /** empty | scanner | tool | bot | browser | other. */
@@ -234,7 +259,9 @@ export async function bodyShape(body) {
     maxTokensKey: body && "max_completion_tokens" in body ? "max_completion_tokens" : body && "max_tokens" in body ? "max_tokens" : null,
   };
   if (system) shape.sys = await digest(textOf(first.content).slice(0, SYS_PREFIX), 16);
-  if (lastUser) shape.q = await digest(textOf(lastUser.content), 16);
+  // the question with its place in the conversation: a turn's tool rounds repeat the question with more messages after
+  // it and are not replays; the same body sent again is
+  if (lastUser) shape.q = await digest(`${textOf(lastUser.content)}|${msgs.length}`, 16);
   return shape;
 }
 
@@ -327,12 +354,18 @@ export class WatchCore {
       "nets TEXT NOT NULL, blocked_until INTEGER NOT NULL, blocks INTEGER NOT NULL, day TEXT NOT NULL DEFAULT '', today TEXT NOT NULL DEFAULT '{}')");
     // rows and events are written sparingly (the plan counts rows written per day, for the whole account): a visitor's
     // counts are kept here between writes, and written with the next one — at the latest a minute later
-    this.pending = new Map(); // who → {n, bad, routes: {route: n}, uas, paths, nets (since the last write), wrote: ms, event: ms}
+    this.pending = new Map(); // who → {n, bad, flagged, score, ip, routes: {route: n}, uas, paths, nets (since the last write), wrote, event, touched: ms}
+    this.prompts = new Map(); // sys → {n, first, last}: the system prompts seen since the last flush (a minute)
+    this.promptsWrote = 0;
     this.sql.exec("CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, received TEXT NOT NULL, event TEXT NOT NULL)");
     // the system prompts seen (hashes): the page's own are the common ones — what KNOWN_PROMPTS is set from
     this.sql.exec("CREATE TABLE IF NOT EXISTS prompts (sys TEXT PRIMARY KEY, n INTEGER NOT NULL, first TEXT NOT NULL, last TEXT NOT NULL)");
     this.recent = new Map(); // who → {t: [ms], q: Map(hash → [ms]), bad: [ms], paths: Map(path → ms), csp: [ms]}
     this.swept = 0;
+  }
+
+  static fresh(wrote = 0) {
+    return { n: 0, bad: 0, flagged: 0, score: 0, ip: null, routes: {}, uas: [], paths: [], nets: [], wrote, event: 0, touched: 0 };
   }
 
   /** The visitor's key: the address (an IPv6 one by its /64) hashed with the salt, or with the month. */
@@ -345,8 +378,20 @@ export class WatchCore {
     this.swept = now;
     const cutoff = new Date(now - Math.max(1, cfg.watchDays || 7) * 86400000).toISOString();
     this.sql.exec("DELETE FROM watch WHERE last < ? AND blocked_until < ?", cutoff, now);
+    this.sql.exec("DELETE FROM prompts WHERE n <= 2 AND last < ?", cutoff); // a prompt seen once or twice: not the page's
     for (const [who, r] of this.recent) if (!r.t.length || now - r.t[r.t.length - 1] > WINDOW) this.recent.delete(who);
-    for (const [who, p] of this.pending) if (now - p.wrote > WINDOW && !p.n) this.pending.delete(who);
+    // a visitor gone for ten minutes: what was not written of their last minute is let go (a count, not a record)
+    for (const [who, p] of this.pending) if (now - Math.max(p.wrote, p.touched) > WINDOW) this.pending.delete(who);
+  }
+
+  /** The system prompts counted in memory, written once a minute (a row each), or now. */
+  flushPrompts(now, force = false) {
+    if (!this.prompts.size || (!force && now - this.promptsWrote < 60000)) return;
+    for (const [sys, p] of this.prompts) {
+      this.sql.exec("INSERT INTO prompts (sys, n, first, last) VALUES (?, ?, ?, ?) ON CONFLICT(sys) DO UPDATE SET n = n + excluded.n, last = excluded.last", sys, p.n, p.first, p.last);
+    }
+    this.prompts.clear();
+    this.promptsWrote = now;
   }
 
   /** The last ten minutes of this visitor, with this request added: {burst, tenMin, replay, bad, probed}. */
@@ -372,19 +417,24 @@ export class WatchCore {
     }
     if (extra.status >= 400 && extra.status < 500 && extra.status !== 429) { r.bad.push(now); keep(r.bad); } // the visitor's errors, not ours
     if (extra.status === 404 || a.route === "honeypot") {
-      r.paths.set(fp.path, now);
+      for (const path of [...(Array.isArray(extra.paths) ? extra.paths : []), fp.path]) r.paths.set(path, now); // the held ones first: in order
       for (const [p, t] of r.paths) if (t < since) r.paths.delete(p);
-      if (r.paths.size > 100) r.paths.delete(r.paths.keys().next().value);
+      while (r.paths.size > 100) r.paths.delete(r.paths.keys().next().value);
     }
-    let repeat = false;
-    if (extra.kind === "csp") {
-      const key = `${extra.report?.directive}|${extra.report?.blocked}|${extra.report?.source}`;
-      repeat = r.seen.has(key);
-      r.seen.add(key);
-      if (r.seen.size > 50) r.seen.delete(r.seen.values().next().value);
-      if (!repeat) { r.csp.push(now); keep(r.csp); }
+    const fresh = [];
+    if (extra.kind === "csp") { // the reports not seen from this visitor in the window, within the window's allowance
+      for (const report of Array.isArray(extra.reports) ? extra.reports : []) {
+        const key = `${report?.directive}|${report?.blocked}|${report?.source}`;
+        if (r.seen.has(key)) continue;
+        keep(r.csp);
+        if (r.csp.length >= 20) break;
+        r.seen.add(key);
+        if (r.seen.size > 50) r.seen.delete(r.seen.values().next().value);
+        r.csp.push(now);
+        fresh.push(report);
+      }
     }
-    return { burst, tenMin: r.t.length, replay, bad: r.bad.length, probed: r.paths.size, csp: r.csp.length, repeat };
+    return { burst, tenMin: r.t.length, replay, bad: r.bad.length, probed: r.paths.size, csp: r.csp.length, fresh };
   }
 
   row(who) {
@@ -419,16 +469,25 @@ export class WatchCore {
     else if (w.bad >= 10) add("errors", 2);
     if (w.probed >= 8) add("probing", 4);
     else if (w.probed >= 4) add("probing", 2);
-    if (extra.kind === "csp" && (w.repeat || w.csp > 20)) return { who, score, reasons, flagged: false, blocked: false, shadow: false, until: 0, retry: 0, dropped: true };
+    if (extra.kind === "csp" && !w.fresh.length) return { who, score, reasons, flagged: false, blocked: false, shadow: false, until: 0, retry: 0, dropped: true };
     if (extra.shape?.sys) {
-      this.sql.exec("INSERT INTO prompts (sys, n, first, last) VALUES (?, 1, ?, ?) ON CONFLICT(sys) DO UPDATE SET n = n + 1, last = excluded.last", extra.shape.sys, fp.ts, fp.ts);
+      const seen = this.prompts.get(extra.shape.sys) || { n: 0, first: fp.ts, last: fp.ts };
+      seen.n += 1; seen.last = fp.ts;
+      this.prompts.set(extra.shape.sys, seen);
+      if (this.prompts.size > 200) this.flushPrompts(now, true);
     }
+    this.flushPrompts(now);
     const prev = this.row(who);
-    const p = this.pending.get(who) || { n: 0, bad: 0, routes: {}, uas: [], paths: [], nets: [], wrote: 0, event: 0 };
-    this.pending.set(who, p);
+    let p = this.pending.get(who);
+    if (!p || !prev) { // a first sighting, or a row swept since: nothing carried over
+      if (!p && this.pending.size >= 5000) this.pending.delete(this.pending.keys().next().value);
+      p = WatchCore.fresh();
+      this.pending.set(who, p);
+    }
+    p.touched = now;
     // the agents by a short hash: enough to count them (the agent itself is in a flagged visitor's events)
     p.uas = addTo(p.uas, fp.ua ? hashOf(fp.ua) : "-", 10);
-    if (extra.status === 404 || a.route === "honeypot") p.paths = addTo(p.paths, fp.path, 20);
+    if (extra.status === 404 || a.route === "honeypot") for (const path of [...(Array.isArray(extra.paths) ? extra.paths : []), fp.path]) p.paths = addTo(p.paths, path, 20);
     p.nets = addTo(p.nets, fp.asn !== undefined ? `${fp.asn}/${fp.country || "?"}` : fp.country, 5);
     const merged = (stored, fresh, cap) => fresh.reduce((list, v) => addTo(list, v, cap), parse(stored, []));
     const uas = merged(prev?.uas, p.uas, 10);
@@ -464,30 +523,36 @@ export class WatchCore {
     const k = Math.max(1, Math.floor(Number(extra.count) || 1)); // requests this one stands for (a Worker may report a reader's quiet minute at once)
     p.n += k;
     if (isBad) p.bad += 1;
+    if (flagged) p.flagged += 1;
+    p.score = Math.max(p.score, score);
+    if (flagged || blocked || shadow) p.ip = fp.ip;
     p.routes[a.route] = (p.routes[a.route] || 0) + k;
     const n = Number(prev?.n || 0) + p.n;
     const bad = Number(prev?.bad || 0) + p.bad;
-    // written now, or with a later request: a first sighting, anything worth an event, a new day, or a minute's counts
-    if (!prev || worth || prev.day !== day || now - p.wrote >= 60000) {
-      const ip = flagged || blocked || shadow ? fp.ip : prev?.ip || null;
+    // the row is written at a first sighting, a new block, a new day, and otherwise once a minute: a scanner knocking a
+    // hundred times costs a row a minute, not a hundred (the events keep the record; the plan counts rows written per
+    // day for the whole account)
+    if (!prev || newBlock || prev.day !== day || now - p.wrote >= 60000) {
+      const ip = p.ip || prev?.ip || null;
       this.sql.exec(
         "INSERT INTO watch (who, ip, first, last, n, bad, flagged, score, uas, paths, nets, blocked_until, blocks, day, today) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
         "ON CONFLICT(who) DO UPDATE SET ip = excluded.ip, last = excluded.last, n = excluded.n, bad = excluded.bad, flagged = flagged + excluded.flagged, " +
         "score = MAX(score, excluded.score), uas = excluded.uas, paths = excluded.paths, nets = excluded.nets, blocked_until = excluded.blocked_until, " +
         "blocks = excluded.blocks, day = excluded.day, today = excluded.today",
-        who, ip, prev?.first || fp.ts, fp.ts, n, bad, flagged ? 1 : 0, score, JSON.stringify(uas), JSON.stringify(paths), JSON.stringify(nets), until, blocks,
+        who, ip, prev?.first || fp.ts, fp.ts, n, bad, p.flagged, p.score, JSON.stringify(uas), JSON.stringify(paths), JSON.stringify(nets), until, blocks,
         day, JSON.stringify(today));
-      p.n = 0; p.bad = 0; p.routes = {}; p.uas = []; p.paths = []; p.nets = []; p.wrote = now;
+      Object.assign(p, WatchCore.fresh(now), { event: p.event, touched: now });
     }
     // an event: at most one every ten seconds for a visitor, one a minute once blocked (a refused scanner keeps
-    // knocking); a browser's policy reports come several at a time and have their own cap
+    // knocking); a browser's policy reports come several at a time (one event a POST) and have their own cap
     if (worth && (extra.kind === "csp" || now - p.event >= (blockedBefore ? 60000 : 10000))) {
       if (extra.kind !== "csp") p.event = now;
       const event = { v: VERSION, kind: extra.kind || (honeypot ? "honeypot" : newBlock ? "block" : blocked ? "blocked" : shadow ? "shadow" : "flag"),
-        who, own: a.own || undefined, score, reasons, route: a.route, status: extra.status ?? null, fp, shape: extra.shape, report: extra.report,
+        who, own: a.own || undefined, score, reasons, route: a.route, status: extra.status ?? null, fp, shape: extra.shape,
         decision: { mode: cfg.mode, blocked, shadow, until: until > now ? new Date(until).toISOString() : undefined },
-        state: { n, bad, flagged: Number(prev?.flagged || 0) + (flagged ? 1 : 0), blocks, burst: w.burst, tenMin: w.tenMin,
+        state: { n, bad, flagged: Number(prev?.flagged || 0) + p.flagged, blocks, burst: w.burst, tenMin: w.tenMin,
           replay: w.replay, probed: w.probed, uas: uas.length, paths: paths.slice(-5), nets, today } };
+      if (extra.kind === "csp") event.reports = w.fresh;
       const { id } = this.sql.exec("INSERT INTO events (received, event) VALUES (?, ?) RETURNING id", fp.ts, JSON.stringify(event)).one();
       if (cfg.eventKeep && Number(id) % 100 === 0) this.sql.exec("DELETE FROM events WHERE id <= ?", Number(id) - cfg.eventKeep);
     }
@@ -516,11 +581,12 @@ export class WatchCore {
   /** What the owner looks at: the visitors by score, the addresses refused now, the events waiting (the counts not yet
    * written are added in). */
   summary(now = Date.now(), limit = 50) {
+    this.flushPrompts(now, true);
     const merged = (stored, fresh, cap) => (fresh || []).reduce((list, v) => addTo(list, v, cap), parse(stored, []));
     const strip = (r) => {
       const p = this.pending.get(r.who);
-      return { who: r.who, ip: r.ip || undefined, first: r.first, last: r.last, n: Number(r.n) + (p?.n || 0), bad: Number(r.bad) + (p?.bad || 0),
-        flagged: Number(r.flagged), score: Number(r.score), uas: merged(r.uas, p?.uas, 10).length, paths: merged(r.paths, p?.paths, 20),
+      return { who: r.who, ip: p?.ip || r.ip || undefined, first: r.first, last: r.last, n: Number(r.n) + (p?.n || 0), bad: Number(r.bad) + (p?.bad || 0),
+        flagged: Number(r.flagged) + (p?.flagged || 0), score: Math.max(Number(r.score), p?.score || 0), uas: merged(r.uas, p?.uas, 10).length, paths: merged(r.paths, p?.paths, 20),
         nets: merged(r.nets, p?.nets, 5), blocks: Number(r.blocks),
         blocked_until: Number(r.blocked_until) > now ? new Date(Number(r.blocked_until)).toISOString() : undefined, day: r.day || undefined, today: parse(r.today, {}) };
     };
@@ -548,14 +614,11 @@ export async function serveSecurity(request, url, { prefix, token, watch, cfg, f
   if (what === "csp") {
     if (request.method !== "POST") return json({ error: { message: "POST", type: "bad_request" } }, 405, { ...headers, Allow: "POST" });
     if (cfg.mode === "off") return new Response(null, { status: 204, headers });
-    const declared = Number(request.headers.get("Content-Length") || 0);
-    if (declared > 16384) return json({ error: { message: "报告过大", type: "too_large" } }, 413, headers);
-    let text = await request.text();
-    if (text.length > 16384) text = text.slice(0, 16384);
+    const text = await readText(request, 16384);
+    if (text === null) return json({ error: { message: "报告过大", type: "too_large" } }, 413, headers);
     if (/(?:chrome|moz|safari-web)-extension:/.test(text)) return new Response(null, { status: 204, headers }); // a browser extension's, not the page's
-    for (const report of cspReports(text)) {
-      await watch.observe(fp, assess(fp, { route: "csp", ownPrefix: cfg.ownPrefix }), { kind: "csp", status: 204, report }, cfg, now);
-    }
+    const reports = cspReports(text);
+    if (reports.length) await watch.observe(fp, assess(fp, { route: "csp", ownPrefix: cfg.ownPrefix }), { kind: "csp", status: 204, reports }, cfg, now); // one round trip a POST
     return new Response(null, { status: 204, headers });
   }
   if (!(await bearerOk(request, token))) return json({ error: { message: "需要收集令牌", type: "unauthorized" } }, 401, headers);

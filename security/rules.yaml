@@ -141,15 +141,18 @@ custom_rules:
 
 # ---------------------------------------------------------------- 速率限制（阶段 http_ratelimit；免费计划 1 条）
 # 只看路径（免费计划的限制），按 IP 与节点计 10 秒：API 路径的突发。网页核对一个回答的引文时会在几秒内取几十段原文
-# （每条引文一次 /api/passage，最多 60 条），加上几次工具调用：80 次 / 10 秒远在其上，又挡住傻循环。超过者 10 秒内得 429。
-# 静态文件不在计数内（它们的路径不匹配）。这不是日配额的保护——那靠上面的拦截规则与 Worker 自己的计数
+# （每条引文一次 /api/passage，最多 60 条）并对不完全一致的引文各做两次规范化调用（/api/call），一个回答可达 90 次；
+# 两个主机（chat.impf.ai 的 /api/*、chat-api.impf.ai 的 /v1/*）共用一个计数：240 次 / 10 秒在其上，又挡住傻循环。
+# 超过者 10 秒内得 429。浏览器的策略报告（/api/security/csp）由 Worker 自己限制，不在此计。静态文件不在计数内
+# （它们的路径不匹配）。这不是日配额的保护——那靠上面的拦截规则、Worker 的每日上限与它自己的计数
 rate_limits:
   - ref: tc-api-burst
     description: "[taochronos] API burst per address per location"
     action: block
     expression: >-
-      (starts_with(http.request.uri.path, "/api/") or starts_with(http.request.uri.path, "/v1/"))
-    ratelimit: {characteristics: [cf.colo.id, ip.src], period: 10, requests_per_period: 80, mitigation_timeout: 10}
+      ((starts_with(http.request.uri.path, "/api/") or starts_with(http.request.uri.path, "/v1/"))
+       and not starts_with(http.request.uri.path, "/api/security/csp"))
+    ratelimit: {characteristics: [cf.colo.id, ip.src], period: 10, requests_per_period: 240, mitigation_timeout: 10}
 
 # ---------------------------------------------------------------- 区域设置（PATCH /zones/{id}/settings/{name}）
 settings:

@@ -47,8 +47,11 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
       if (gateFails) throw new Error("Durable Object: daily limit reached");
       const w = fp && a ? await observe(fp, a, { shape, status }, cfg) : null;
       if (w?.blocked) return { ok: false, reason: "blocked", retry: w.retry, watch: w };
-      if (served && !limiter.served(who, served, now())) return { ok: false, reason: "not_served", retry: 0, watch: w };
-      return { ...limiter.hit(who, kind, limits, now(), reserve), watch: w };
+      const keys = fp ? [await WatchCore.who(fp.ip, cfg, now()), await WatchCore.who(fp.ip, cfg, now() - 86400000)] : [];
+      if (served && !(fp ? limiter.wasServed(keys, now()) : limiter.served(who, served, now()))) return { ok: false, reason: "not_served", retry: 0, watch: w };
+      const gate = limiter.hit(who, kind, limits, now(), reserve);
+      if (gate.ok && kind === "chat" && keys.length) limiter.markServed(keys[0], now());
+      return { ...gate, watch: w };
     },
     observe,
     spend: async (who, kind, tokens) => limiter.spend(who, kind, tokens, now()),
@@ -335,6 +338,14 @@ test("a record is kept only as its known fields, from the page, within its limit
   assert.equal((await r.call("/v1/logs", post({ ...turn, provider: "openai", model: "gpt-x" }))).status, 204); // a conversation held with the visitor's own key
   assert.equal((await r.call("/v1/chat/completions", post(PAGE_ASK))).status, 200);
   assert.equal((await r.call("/v1/logs", post(turn))).status, 204);
+  // a turn answered before midnight, its record sent after: taken
+  let t = Date.UTC(2026, 8, 28, 23, 59, 30);
+  const late = relay({ now: () => t });
+  assert.equal((await late.call("/v1/chat/completions", post(PAGE_ASK))).status, 200);
+  t = Date.UTC(2026, 8, 29, 0, 0, 30);
+  assert.equal((await late.call("/v1/logs", post(turn))).status, 204);
+  t = Date.UTC(2026, 8, 30, 3, 0, 0); // more than a day on: no longer
+  assert.equal((await late.call("/v1/logs", post(turn))).status, 403);
   assert.equal((await r.call("/v1/logs", post(turn, { Origin: "https://evil.example" }))).status, 403);
   assert.equal((await r.call("/v1/logs", post({ ...turn, v: 2 }))).status, 400);
   assert.equal((await r.call("/v1/logs", post("{not json"))).status, 400);

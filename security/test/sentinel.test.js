@@ -187,7 +187,12 @@ test("a visitor's row: counts without the address; the address once flagged; the
   assert.equal(flagged.flagged, true);
   assert.equal(flagged.who, ok.who);
   row = w.row(ok.who);
-  assert.deepEqual([row.ip, Number(row.n), Number(row.flagged), JSON.parse(row.uas).length], ["203.0.113.7", 2, 1, 2]);
+  assert.deepEqual([row.ip, Number(row.n), Number(row.flagged)], [null, 1, 0]); // the flag waits for the minute's write; the event has it now
+  const seen = w.summary(T0 + 2000).top[0];
+  assert.deepEqual([seen.ip, seen.n, seen.flagged, seen.uas], ["203.0.113.7", 2, 1, 2]); // the summary counts what is not yet written
+  await w.observe(script, assess(script, { route: "chat", origins: [PAGE] }), { status: null }, cfg, T0 + 61000);
+  row = w.row(ok.who);
+  assert.deepEqual([row.ip, Number(row.n), Number(row.flagged), JSON.parse(row.uas).length], ["203.0.113.7", 3, 1, 2]);
   assert.ok(!JSON.parse(row.uas).some((u) => u.includes("python")), row.uas); // agents counted by hash, kept whole only in the event
   const { items, last, more } = w.records();
   assert.deepEqual([items.length, last, more], [1, 1, false]);
@@ -196,7 +201,7 @@ test("a visitor's row: counts without the address; the address once flagged; the
   assert.ok(ev.reasons.includes("ua_tool"));
   assert.deepEqual(w.remove(1), { remaining: 0 });
   const summary = w.summary(T0 + 2000);
-  assert.deepEqual([summary.visitors, summary.events, summary.blocked.length, summary.top[0].ip, summary.top[0].n], [1, 0, 0, "203.0.113.7", 2]);
+  assert.deepEqual([summary.visitors, summary.events, summary.blocked.length, summary.top[0].ip, summary.top[0].n], [1, 0, 0, "203.0.113.7", 3]);
   // the system prompts seen, by their hashes: what KNOWN_PROMPTS is set from
   const shape = await bodyShape(PAGE_BODY);
   for (let i = 0; i < 3; i++) await w.observe(fp, { route: "chat", own: false, score: 0, reasons: [] }, { shape }, cfg, T0 + 3000 + i);
@@ -305,8 +310,21 @@ test("over the block score: refused in enforce mode, a shadow in observe mode; t
   const knock = new WatchCore(sqlStore());
   const probe = (t) => fingerprint(new Request("https://chat.impf.ai/api/info", { headers: { "User-Agent": "Go-http-client/1.1", "CF-Connecting-IP": "45.8.19.134" } }), t);
   await knock.observe(fingerprint(new Request("https://chat.impf.ai/.env", { headers: { "User-Agent": "Go-http-client/1.1", "CF-Connecting-IP": "45.8.19.134" } }), T0), { route: "honeypot", own: false, score: 10, reasons: ["honeypot"] }, { status: 404 }, cfg, T0);
+  let writes = 0;
+  const knocking = knock.sql.exec.bind(knock.sql);
+  knock.sql.exec = (q, ...p) => { if (/INSERT INTO watch/.test(q)) writes++; return knocking(q, ...p); };
   for (let i = 1; i <= 120; i++) await knock.observe(probe(T0 + i * 1000), { route: "api-read", own: false, score: 3, reasons: ["ua_tool"] }, {}, cfg, T0 + i * 1000);
   assert.deepEqual(knock.records().items.map((i) => i.event.kind), ["honeypot", "blocked", "blocked"]);
+  assert.equal(writes, 2); // two minutes of knocking: a row write a minute, not one a knock
+  // a flagged client's minute is one write too
+  const flaggedWrites = new WatchCore(sqlStore());
+  let fw = 0;
+  const counting2 = flaggedWrites.sql.exec.bind(flaggedWrites.sql);
+  flaggedWrites.sql.exec = (q, ...p) => { if (/INSERT INTO watch/.test(q)) fw++; return counting2(q, ...p); };
+  const tool = (t) => fingerprint(new Request("https://chat.impf.ai/api/passage?id=x", { headers: { "User-Agent": "python-requests/2.31.0", "CF-Connecting-IP": "34.151.137.169" } }), t);
+  for (let i = 0; i < 60; i++) await flaggedWrites.observe(tool(T0 + i * 1000), { route: "api-read", own: false, score: 5, reasons: ["ua_tool", "dc_asn"] }, {}, cfg, T0 + i * 1000);
+  assert.equal(fw, 1);
+  assert.equal(flaggedWrites.summary(T0 + 59000).top[0].ip, "34.151.137.169"); // and the summary knows the address already
   // old rows are swept (an hour after the last sweep), blocked ones kept
   const old = await w.observe(mk("198.51.100.9", T0), { route: "chat", own: false, score: 0, reasons: [] }, {}, cfg, T0);
   await w.observe(mk("198.51.100.8", T0 + 8 * 86400000), { route: "chat", own: false, score: 0, reasons: [] }, {}, cfg, T0 + 8 * 86400000);
@@ -343,7 +361,7 @@ test("the endpoints: the token for export, ack and summary; csp reports from any
   assert.deepEqual([page1.items.length, page1.last, page1.more, page1.items[0].event.kind, page1.items[0].event.fp.ip], [1, 1, true, "honeypot", "93.123.109.101"]);
   const page2 = await (await serve("/v1/security/export?after=1", { headers: auth })).json();
   assert.deepEqual([page2.items.length, page2.items[0].event.kind], [1, "csp"]);
-  assert.deepEqual(page2.items[0].event.report, { directive: "script-src", blocked: "https://evil.example", document: "https://chat.impf.ai/" }); // reduced: origins and paths, never a query or a sample
+  assert.deepEqual(page2.items[0].event.reports, [{ directive: "script-src", blocked: "https://evil.example", document: "https://chat.impf.ai/" }]); // reduced: origins and paths, never a query or a sample
   const ack = await (await serve("/v1/security/ack", { method: "POST", headers: auth, body: JSON.stringify({ through: 2 }) })).json();
   assert.equal(ack.remaining, 0);
   assert.equal((await serve("/v1/security/ack", { method: "POST", headers: auth, body: "{}" })).status, 400);
@@ -360,7 +378,12 @@ test("the endpoints: the token for export, ack and summary; csp reports from any
   }
   assert.equal(r.status, 204);
   assert.equal(w.records().items.length, 19); // the first report of this address is in the same ten minutes
-  assert.deepEqual(w.records().items[0].event.report, { directive: "img-src", blocked: "https://img0.example", document: "https://chat.impf.ai/about" });
+  assert.deepEqual(w.records().items[0].event.reports, [{ directive: "img-src", blocked: "https://img0.example", document: "https://chat.impf.ai/about" }]);
+  // several reports in one POST: one round trip, one event
+  const batch = await serve("/v1/security/csp", { method: "POST", headers: { "CF-Connecting-IP": "198.51.100.60", "Content-Type": "application/reports+json" },
+    body: JSON.stringify([0, 1, 2].map((i) => ({ type: "csp-violation", body: { effectiveDirective: "connect-src", blockedURL: `https://api${i}.example/v1`, documentURL: "https://chat.impf.ai/" } }))) });
+  assert.equal(batch.status, 204);
+  assert.equal(w.records().items.at(-1).event.reports.length, 3);
   // the two shapes, reduced
   assert.deepEqual(cspReports(JSON.stringify({ "csp-report": { "effective-directive": "style-src-attr", "blocked-uri": "inline", "source-file": "https://chat.impf.ai/index.html?v=2", "line-number": 117, "script-sample": "padding:24px" } })),
     [{ directive: "style-src-attr", blocked: "inline", source: "https://chat.impf.ai/index.html", line: 117 }]);
@@ -369,7 +392,7 @@ test("the endpoints: the token for export, ack and summary; csp reports from any
   // mode off: reports are not kept
   assert.equal((await serveSecurity(new Request("https://chat-api.impf.ai/v1/security/csp", { method: "POST", body: "{}" }), new URL("https://chat-api.impf.ai/v1/security/csp"),
     { prefix: "/v1/security", token, watch, cfg: cfgOf({ SENTINEL: "off" }), fp: probe, now: T0 })).status, 204);
-  assert.equal(w.records().items.length, 19);
+  assert.equal(w.records().items.length, 20); // the batch above, and nothing from a sentinel that is off
 });
 
 test("config, and the log lines: only requests worth a look, the address only when flagged", () => {

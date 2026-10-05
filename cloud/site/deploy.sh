@@ -10,8 +10,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID"
 auth="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
-# the checks below name themselves: the edge rules challenge plain curl, and the sentinel never refuses the repository's
-# own clients (security/README.md)
+# the checks below name themselves: the edge rules spare the name the browser integrity check, and the sentinel labels
+# it in its events (never an exemption: the checks score low and are served; security/README.md)
 UA="taochronos-deploy/1"
 host="${SITE_URL#https://}"
 work=$(mktemp -d)

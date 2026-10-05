@@ -38,13 +38,14 @@ chat.impf.ai（网站）与 chat-api.impf.ai（道乃久默认服务的中转）
 |---|---|---|
 | `honeypot` | 10 | 扫描器路径（见下） |
 | `traversal` | 6 | 路径穿越 |
+| `no_cf_ip` | 3 | 没有 `CF-Connecting-IP`：不是经边缘进来的请求 |
 | `ua_scanner` / `ua_tool` / `no_ua` / `ua_other` | 6 / 3 / 3 / 1 | 扫描器、HTTP 库、没有 UA、叫不出名字的 UA（仓库自己的客户端 `taochronos-*` 不计） |
 | `ua_bot_unverified` | 2 | 自称 Googlebot、ChatGPT-User、PerplexityBot…… 而 Cloudflare 没有验证 |
 | `no_sec_fetch` / `no_lang` / `no_ch_ua` / `old_proto` / `enc_odd` | 2 / 1 / 1 / 1 / 1 | 自称现代浏览器却没有 Sec-Fetch-*、Accept-Language、Sec-CH-UA（只对 Chromium ≥ 90 要求）、用 HTTP/1.x、不接受压缩 |
 | `ch_ua_odd` | 2 | 不是 Chromium 浏览器却带 Sec-CH-UA |
 | `sec_fetch_mode` / `sec_fetch_dest` | 2 / 1 | API 请求的 Sec-Fetch 不是 fetch 的样子 |
 | `tls_old` | 3 | TLS 1.0/1.1 |
-| `dc_asn` | 2 | 托管/云网络（`DATACENTER` 表；VPN 用户也会命中，所以只是一分，不是结论）；`warp`（Cloudflare WARP，ASN 13335）只记不计分 |
+| `dc_asn` | 2 | 托管/云网络（`DATACENTER` 表；VPN 用户也会命中，所以只是两分，不是结论）；`warp`（Cloudflare WARP，ASN 13335）只记不计分 |
 | `origin_foreign` / `origin_missing` / `referer_foreign` | 3 / 2 / 2 | 不是网页的来源 |
 | `method_odd` | 2 | GET/POST/OPTIONS/HEAD/PUT 之外的方法 |
 | 中转：`no_system` / `unknown_prompt` / `no_tools` / `no_stream` / `no_stream_options` / `max_tokens_key` / `many_messages` / `huge_prompt` / `accept_odd` | 2 / 3 / 1 / 1 / 1 / 1 / 1 / 1 / 1 | 请求体不是网页发的形状（`unknown_prompt` 只在设定了 `KNOWN_PROMPTS` 时计） |
@@ -53,8 +54,10 @@ chat.impf.ai（网站）与 chat-api.impf.ai（道乃久默认服务的中转）
 `errors`（十分钟内 ≥ 10 / ≥ 30 次 4xx——不算我们自己的 429 与 5xx，+2 / +4）、`probing`（十分钟内 ≥ 4 / ≥ 8 个不同的 404 路径，+2 / +4）、
 `ua_rotation`（一个地址 ≥ 5 / ≥ 10 个不同 UA，+1 / +2——运营商 NAT 后面本来就有很多人，所以分很轻）。
 
-写入是节制的（免费计划按整个账户计每天写入的行数）：一个访客的行在首次出现、值得记事件、换日或距上次写入一分钟时才写，其间的计数留在内存里；
-事件每个访客十秒最多一条，被拒绝后每分钟一条（扫描器会一直敲门）。普通访客的行里只有 UA 的短哈希（够数不同的 UA），完整的 UA 只在被标记的事件里。
+写入是节制的（免费计划按整个账户计每天写入的行数）：一个访客的行在首次出现、新的阻断、换日或距上次写入一分钟时才写——被标记、被拒绝的访客也一样，
+其间的计数、分数与地址留在内存里随下一次写入；事件每个访客十秒最多一条，被拒绝后每分钟一条（扫描器会一直敲门）。普通访客的行里只有 UA 的短哈希
+（够数不同的 UA），完整的 UA 只在被标记的事件里。系统提示的哈希也在内存里计，每分钟写一次；只见过一两次的一周后清掉。
+网站这边，找不到的路径与非浏览器的页面访问每个地址每分钟只报一次对象（路径随行带上），浏览器的策略报告每次 POST 只问一次对象、并经速率限制。
 
 网页从浏览器发出的请求：**0 分**，只留一个计数。微信、QQ、UC 等应用内浏览器少几个请求头，得一两分，照常服务。
 
@@ -72,7 +75,8 @@ chat.impf.ai（网站）与 chat-api.impf.ai（道乃久默认服务的中转）
 | `OWN_UA_PREFIX` | `taochronos-` | 仓库自己的客户端（收集器、部署检查）：在事件里标出来，**不豁免**——UA 谁都能填；它们的调用分数本来就在阻断线之下（测试里钉住） |
 | Secret `SENTINEL_SALT`（可选） | — | 任意长随机串（如 `openssl rand -hex 32`）：访客的哈希键跨月不变。两个 Worker 用同一个（relay 工作流与 `cloud/site/deploy.sh` 都从仓库 Secret 写入） |
 | 中转：`TOKENS_PER_DAY` / `TOTAL_TOKENS_PER_DAY` | 10,000,000 / 200,000,000 | 回答的 token（输入 + 输出，按模型服务报的用量）每人每天、全体每天的额度，用完拒绝下一次调用（0 不限）。记录里见过的量：一轮 p50 8 万、p90 50 万、最多 150 万；一次对话最多 360 万 |
-| 中转：`[[ratelimits]] BURST` | 10 秒 40 次 | 每个地址每个节点的突发闸门，在问计数对象之前（近似、按节点；精确的按日计数仍在对象里） |
+| 中转：`[[ratelimits]] BURST` | 10 秒 40 次 | 每个地址每个节点的突发闸门，在问计数对象之前（近似、按节点；精确的按日计数仍在对象里）；`/v1/security/csp` 的报告也经它 |
+| 中转：记录的来源 | — | 默认服务自己的对话记录（`provider: impf`）只收自中转在前 26 小时内答过的地址（按哨兵的键，不随日期变；跨午夜发来的记录照收）；访客用自己 Key 的对话记录只看来源 |
 | 网站：`API_READS_PER_DAY` / `API_CALLS_PER_DAY` | 6000 / 3000 | 每个地址（IPv6 按 /64）每天的读取（原文、目录、轮询）与调用（工具、研究）上限：抓取者一天拿不走多少，也烧不完账户的 Worker 次数。宽，因为运营商 NAT 后面是很多人（0 不限） |
 
 拒绝时访客看到「该地址因异常访问已被暂时限制，请稍后再试」（403，带 `Retry-After`），不说理由。
@@ -81,13 +85,15 @@ chat.impf.ai（网站）与 chat-api.impf.ai（道乃久默认服务的中转）
 
 `isHoneypot()`：`/wp-*`、`/wordpress`、`/xmlrpc.php`、`/.git`、`/.svn`、`/.env`、`/.aws`、`/.ssh`、`/.DS_Store`、`/phpmyadmin`、`/adminer`、`/cgi-bin/`、
 `/vendor/phpunit`、`/actuator`、`/boaform`、`/HNAP1`、`/eval-stdin`、`/phpinfo`、`/server-status`、`/owa/`、`/autodiscover`…… 以及后缀
-`.php .phtml .asp .aspx .jsp .cgi .bak .sql .old .orig .swp .save .rar .7z .env .ini .log .pem .key`。
+`.php .php7 .phtml .asp .aspx .jsp .jspx .cgi .bak .sql .old .orig .swp .save .rar .7z .env .ini .log .pem .key`（完整表在 `sentinel.js` 的
+`HONEYPOT_PREFIXES` / `HONEYPOT_SUFFIXES`）。
 **列表是保守的**：网站提供的任何文件类型（`.js .json .wasm .whl .zip .xz .svg .css .html .txt .xml .webmanifest`）和 `/.well-known/` 下的路径都不在内。
 命中：网站不去查静态文件、直接 404；地址被记下并拒绝（网站拒绝的是它的 API，网页本身照常）。
 
 ### 隐私规则
 
-- 分数低于 `FLAG_SCORE` 的请求只在访客行上加一个计数，**不存地址**。网页自己的请求都是这样。
+- 分数低于 `FLAG_SCORE` 的请求**不存地址**：访客行里只有哈希键、按日按接口类别的计数、UA 的短哈希（够数不同的 UA）、网络（ASN/国家）与
+  它请求过的 404 路径。网页自己的请求都是这样。
 - 达到 `FLAG_SCORE`、被拒绝或本应拒绝（`shadow`）的请求，整条记为事件：指纹（含地址与请求头）、分数与理由、当时的决定、该访客的累计。
   事件由收集器取走进仓库后在 Worker 里删除。
 - 对话记录（`data/chat-logs/`）与安全事件是两套存储：记录里没有地址，事件里没有对话（中转的事件只有系统提示与问题的哈希）。
@@ -144,7 +150,7 @@ Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView
 | 3 | `tc-relay-origin` | block | 向中转 `POST /v1/chat/…`、`/v1/logs` 而 `Origin` 不是网页的来源——中转自己也会拒，但在边缘拒绝**不进 Worker、不计次数** | 无：浏览器一定带 Origin；来源表与 `relay/wrangler.toml` 一致，改一处要改另一处 |
 | 4 | `tc-tooling-and-spoofed-crawlers` | block | 没有 UA；`python*`、`Go-http-client`、`Java/`、扫描器名；以及自称 Googlebot、ChatGPT-User、PerplexityBot、ClaudeBot…… 却**没有通过 Cloudflare 验证**（`not cf.client.bot`）的 | 真正的爬虫（验证通过）放行；`curl`、`wget` 不拦（站长自己会用）；`/.well-known/acme-challenge/` 除外 |
 | 5 | `tc-block-list` | block | 列表 `taochronos_block` 里的地址与网段（全站；平时为空，出事时往里加，不改规则）。没有列表时这条省略 | 只拦你放进去的 |
-| 速率 | `tc-api-burst` | block 10 秒 | `/api/*`、`/v1/*` 每个地址每个节点 10 秒 80 次 | 网页核对引文时几秒内最多取 60 段原文，加几次工具调用，仍在其下 |
+| 速率 | `tc-api-burst` | block 10 秒 | `/api/*`、`/v1/*`（两个主机共用计数；`/api/security/csp` 除外）每个地址每个节点 10 秒 240 次 | 网页核对引文时几秒内最多取 60 段原文、再做最多 60 次规范化调用，仍在其下 |
 
 对托管/云网络（DigitalOcean、GCP、OVH、Hetzner、Vultr、Linode……）的网页请求出质询的表达式写在第 5 条的注释里，默认不用：这些网络也是
 大陆访客常用的 VPN 出口，而质询页在大陆不一定打得开——哨兵只把它当两分的信号。要用先在 Security → Analytics 看这些 ASN 占正常页面访问的比例。
@@ -175,7 +181,7 @@ Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView
 - **某个地址在捣乱**：Cloudflare → Manage Account → Configurations → Lists → `taochronos_block` 加上地址或网段，立即生效，不用动规则；或在 enforce 模式下让哨兵自己处理。
 - **正在被打**：Cloudflare → impf.ai → Security → Settings → Under Attack Mode（会让 API 调用失败，只在网页被打时开）；`rules.yaml` 的速率限制调低后 `apply`。
 - **误伤了真实访客**：在 Security → Events 找到规则与原因；临时把该规则的 `enabled` 改为 `false` 后 `apply`，再按路径或来源修改表达式。
-  不要以 UA 开例外——UA 谁都能填（第 1 条只免除速率限制与浏览器完整性检查，正因为此）。
+  不要以 UA 开例外——UA 谁都能填（第 1 条只免除浏览器完整性检查，正因为此）。
 
 ## 三、数据与日常
 

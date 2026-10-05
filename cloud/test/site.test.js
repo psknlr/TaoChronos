@@ -226,15 +226,15 @@ test("a visitor's day of the API has a ceiling: reads and calls apart, wide, by 
   for (let i = 0; i < 3; i++) assert.equal((await call(`${PAGE}/api/passage?id=p${i}`, { headers: BROWSER })).status, 200);
   assert.equal(trips, 1); // the first read waited for the object; the next two were counted here
   const over = await call(`${PAGE}/api/passage?id=p3`, { headers: BROWSER });
-  assert.equal(over.status, 429);
-  assert.deepEqual(await over.json(), { error: "今天的查询次数已用完，明天再来", rate_limited: true, daily: true });
+  assert.equal(over.status, 503); // the page falls back on the browser's corpus for the day
+  assert.deepEqual(await over.json(), { error: "今天的查询次数已用完，明天再来", rate_limited: true, daily: true, starting: false });
   assert.equal(Number(over.headers.get("Retry-After")), 16 * 3600); // T0 is 08:00 UTC
   const post = { method: "POST", body: "{}", headers: { ...BROWSER, Origin: PAGE, "Content-Type": "application/json" } };
   assert.equal((await call(`${PAGE}/api/call`, post)).status, 200); // calls are counted apart, and always wait for the object
-  assert.equal((await call(`${PAGE}/api/call`, post)).status, 429);
+  assert.equal((await call(`${PAGE}/api/call`, post)).status, 503);
   assert.equal(trips, 3);
   advance(61000);
-  assert.equal((await call(`${PAGE}/api/passage?id=p9`, { headers: BROWSER })).status, 429); // the object's count agrees: the minute's reads reported with this one
+  assert.equal((await call(`${PAGE}/api/passage?id=p9`, { headers: BROWSER })).status, 503); // the object's count agrees: the minute's reads reported with this one
   assert.equal(trips, 4);
   assert.equal(watch.summary(T0 + 61000).top.find((v) => v.today["api-read"]).today["api-read"], 5);
   assert.equal((await call(`${PAGE}/api/passage?id=x`, { headers: { ...BROWSER, "CF-Connecting-IP": "198.51.100.40" } })).status, 200); // another address
@@ -295,8 +295,9 @@ test("a scanner path refuses its address the API for a day; the page's own calls
   await settle();
   advance(61000); // a minute on: the scanner tries the API
   const refused = await call(`${PAGE}/api/info`, { headers: { "CF-Connecting-IP": "45.138.12.10" } });
-  assert.equal(refused.status, 403);
+  assert.equal(refused.status, 503); // as when the corpus is away: a page refused falls back on the browser's corpus
   assert.equal((await refused.json()).blocked, true);
+  assert.equal(refused.headers.get("X-TC-Corpus"), "refused");
   assert.equal(Number(refused.headers.get("Retry-After")), 21600 - 61); // a home network's address: the ordinary six hours
   assert.equal(seen.corpus.length, 0);
   assert.equal((await call(`${PAGE}/`, { headers: { ...BROWSER, "CF-Connecting-IP": "45.138.12.10" } })).status, 200); // the page itself still answers
@@ -320,12 +321,22 @@ test("a scanner path refuses its address the API for a day; the page's own calls
   assert.equal(csp.status, 204);
   assert.equal(watch.records().items[0].event.kind, "csp");
   // a file that is not there is noted (a probe, or a stale link); the page by a browser is not
-  await call(`${PAGE}/missing/x.txt`, { headers: { ...BROWSER } });
-  await call(`${PAGE}/missing/old-page`, { headers: { ...BROWSER } });
+  let trips = 0;
+  const observe = watch.observe.bind(watch);
+  watch.observe = (...a) => { trips++; return observe(...a); };
+  for (const p of ["x.txt", "old-page", "a", "b", "c"]) await call(`${PAGE}/missing/${p}`, { headers: { ...BROWSER } });
   await settle();
-  const me = watch.summary(T0).top.find((v) => v.n === 5);
-  assert.deepEqual(me.paths, ["/missing/x.txt", "/missing/old-page"]);
-  assert.equal(me.ip, undefined); // two files not found: noted, still nobody's address
+  assert.equal(trips, 1); // five misses in a minute: one round trip, the rest held here
+  advance(61000);
+  await call(`${PAGE}/missing/d`, { headers: { ...BROWSER } });
+  await settle();
+  assert.equal(trips, 2); // the held misses went with this one, their paths along
+  const me = watch.summary(T0 + 61000).top.find((v) => v.n >= 8);
+  assert.deepEqual(me.paths, ["/missing/x.txt", "/missing/old-page", "/missing/a", "/missing/b", "/missing/c", "/missing/d"]);
+  assert.equal(me.ip, undefined); // files not found: noted, still nobody's address
+  // a browser's reports: taken within the rate limit
+  const limited = site({ watch: true, limit: async () => false });
+  assert.equal((await limited.call(`${PAGE}/api/security/csp`, { method: "POST", headers: BROWSER, body: "{}" })).status, 429);
 }));
 
 test("an API call that is not the page's is scored: served and flagged in observe mode, refused over the block score in enforce mode", () => quiet(async () => {
@@ -341,7 +352,7 @@ test("an API call that is not the page's is scored: served and flagged in observ
   const enforce = site({ watch: true, env: { SENTINEL: "enforce" }, cf: { asn: 14061, country: "US" } });
   assert.equal((await enforce.call(`${PAGE}/api/passage?id=x`, { headers: script })).status, 200); // flagged, under the block score
   const refused = await enforce.call(`${PAGE}/api/info`, { headers: scanner });
-  assert.equal(refused.status, 403);
+  assert.equal(refused.status, 503);
   assert.equal(enforce.seen.corpus.length, 1);
   assert.equal((await enforce.call(`${PAGE}/api/info`, { headers: BROWSER })).status, 200);
   // the deploy check's agent string is a label, not a pass: on a scanner path it is refused like anyone; off a scanner
@@ -351,7 +362,7 @@ test("an API call that is not the page's is scored: served and flagged in observ
   assert.equal((await own.call(`${PAGE}/.git/config`, { headers: { "User-Agent": "taochronos-deploy/1", "CF-Connecting-IP": "198.51.100.79" } })).status, 404);
   await own.settle();
   own.advance(61000);
-  assert.equal((await own.call(`${PAGE}/api/info`, { headers: { "User-Agent": "taochronos-deploy/1", "CF-Connecting-IP": "198.51.100.79" } })).status, 403);
+  assert.equal((await own.call(`${PAGE}/api/info`, { headers: { "User-Agent": "taochronos-deploy/1", "CF-Connecting-IP": "198.51.100.79" } })).status, 503);
   assert.equal(own.watch.records().items[0].event.own, true);
   const off = site({ watch: true, env: { SENTINEL: "off", LOG_EXPORT_TOKEN: EXPORT } });
   assert.equal((await off.call(`${PAGE}/wp-login.php`, { headers: { "CF-Connecting-IP": "45.138.12.10" } })).status, 200); // asked of the files as any path

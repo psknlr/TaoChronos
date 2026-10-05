@@ -37,9 +37,12 @@ cost by what the answers actually cost rather than by how many were asked for.
    let through uncounted; nothing thrown in the sentinel itself reaches a visitor.
 3. **Three modes, observe first.**  `SENTINEL = observe` (the default) records and flags and refuses nobody; `enforce`
    refuses an address over the block score for six hours; `off` records nothing.  A scanner path (`HONEYPOT = block`)
-   refuses its address for a day in observe mode too: nobody asks these hosts for `/wp-config.php` by mistake, and the
-   list holds nothing the site serves and nothing under `/.well-known/`.  The repository's own clients (user agent
-   `taochronos-`) are recorded and never refused.
+   refuses its address in observe mode too — a day for a hosting network's address, the ordinary six hours for a home
+   network's, which many may share: nobody asks these hosts for `/wp-config.php` by mistake, and the list holds nothing
+   the site serves and nothing under `/.well-known/`.  The repository's own clients (user agent `taochronos-`) are
+   labelled in the events, not exempted — an agent string is anyone's to send; their calls stay under the block score,
+   which a test pins.  The site answers a refusal as a 503, which the page takes as the corpus being away: it falls
+   back on the 要籍语料 in the browser rather than show a passage as missing.
 4. **Addresses only when flagged.**  A visitor is known by a hash (with the secret `SENTINEL_SALT`, the same across
    months).  The row keeps the address, and an event is written with the whole fingerprint, only from the flag score on;
    the page's own requests score 0 and leave a count.  The consent notice's promise (no address in a conversation record)
@@ -56,11 +59,12 @@ cost by what the answers actually cost rather than by how many were asked for.
    of calls: a scraper takes little, and one address cannot spend the account's Worker requests.
 7. **The edge as code** (`security/rules.yaml`, applied by `security/apply.py` through the Rulesets API with a token of
    its own): the custom rules and the rate limit the Free plan allows, written for its operators, refusing scanner paths,
-   spoofed crawlers (a known bot's name without Cloudflare's verification), empty and scanner agents, the scraping
-   libraries (challenged, not blocked, so a visitor behind an odd client can still get through), and a flood before it
-   reaches the Workers' daily allowance; `security/events.py` keeps the edge's own security events beyond the plan's
-   retention.  The repository's clients name themselves (`taochronos-collector/1`, `taochronos-deploy/1`) and are let
-   through by name — a spoofable courtesy that bypasses no other rule.
+   spoofed crawlers (a known bot's name without Cloudflare's verification), empty, scanner and scraping-library agents
+   (blocked: none of them is a browser; `curl` and `wget` are left alone for the owner's own use), the block list, and a
+   flood before it reaches the Workers' daily allowance; `security/events.py` keeps the edge's own security events
+   beyond the plan's retention, paged, with a summary of suspects.  The repository's clients name themselves
+   (`taochronos-collector/1`, `taochronos-deploy/1`) and are spared the browser integrity check by name — a spoofable
+   courtesy that bypasses no other rule.
 
 ## Consequences
 

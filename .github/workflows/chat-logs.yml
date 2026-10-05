@@ -29,9 +29,11 @@ jobs:
         env:
           TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
         run: |
-          # the collector's token goes to our own hosts only (the addresses are repository variables)
+          # the collector's token goes to our own hosts only (the addresses are repository variables): the host itself
           for u in "$RELAY_URL" "$SITE_URL"; do
-            case "$u" in https://*.impf.ai|https://*.impf.ai/*) ;; *) echo "::error::$u is not one of our hosts (RELAY_URL / SITE_URL)"; exit 1;; esac
+            h="${u#https://}"; h="${h%%/*}"
+            case "$u" in https://*) ;; *) echo "::error::$u is not https (RELAY_URL / SITE_URL)"; exit 1;; esac
+            case "$h" in chat.impf.ai|chat-api.impf.ai|*.impf.ai) ;; *) echo "::error::$h is not one of our hosts (RELAY_URL / SITE_URL)"; exit 1;; esac
           done
           if [ -z "$TOKEN" ]; then
             echo "::notice::LOG_EXPORT_TOKEN is not set: nothing to collect"

@@ -19,12 +19,18 @@ export class Limiter extends DurableObject {
   }
 
   /** One round trip for a call: the sentinel sees the request (and may refuse it), then the counters.  `served`: the
-   * call is let through only for a caller the relay answered today (a record of the default service's conversation). */
+   * call is let through only for a caller the relay answered lately (a record of the default service's conversation;
+   * the caller is known by the sentinel's key, which does not change at midnight — yesterday's is tried too for the
+   * month's turn). */
   async gate({ who, kind, limits, fp, a, shape, status, cfg, served, reserve }) {
+    const now = Date.now();
     const watch = fp && a ? await this.watch.observe(fp, a, { shape, status }, cfg) : null;
     if (watch?.blocked) return { ok: false, reason: "blocked", retry: watch.retry, watch };
-    if (served && !this.core.served(who, served)) return { ok: false, reason: "not_served", retry: 0, watch };
-    return { ...this.core.hit(who, kind, limits, Date.now(), reserve), watch };
+    const keys = fp ? [await WatchCore.who(fp.ip, cfg, now), await WatchCore.who(fp.ip, cfg, now - 86400000)] : [];
+    if (served && !(fp ? this.core.wasServed(keys, now) : this.core.served(who, served, now))) return { ok: false, reason: "not_served", retry: 0, watch };
+    const gate = this.core.hit(who, kind, limits, now, reserve);
+    if (gate.ok && kind === "chat" && keys.length) this.core.markServed(keys[0], now);
+    return { ...gate, watch };
   }
 
   observe(fp, a, extra, cfg) {

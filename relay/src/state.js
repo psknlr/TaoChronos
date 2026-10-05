@@ -14,6 +14,8 @@ export class LimiterCore {
   constructor(sql) {
     this.sql = sql;
     this.sql.exec("CREATE TABLE IF NOT EXISTS hits (k TEXT PRIMARY KEY, n INTEGER NOT NULL, day TEXT NOT NULL)");
+    // the callers answered lately, by a key without the day (a record may come in after midnight): when, last
+    this.sql.exec("CREATE TABLE IF NOT EXISTS served (k TEXT PRIMARY KEY, last INTEGER NOT NULL)");
     this.minute = new Map();
     this.currentMinute = -1;
     this.currentDay = null;
@@ -35,6 +37,7 @@ export class LimiterCore {
     const today = day(now);
     if (today !== this.currentDay) {
       this.sql.exec("DELETE FROM hits WHERE day <> ?", today);
+      this.sql.exec("DELETE FROM served WHERE last < ?", now - 2 * 86400000);
       this.currentDay = today;
     }
     const minute = Math.floor(now / 60000);
@@ -74,6 +77,23 @@ export class LimiterCore {
   /** Has this caller been let through today, for this kind of call? */
   served(who, kind, now = Date.now()) {
     return this.count(`d:${kind}:${who}:${day(now)}`) > 0;
+  }
+
+  /** A caller answered now, by a key that does not change with the day (written at most once in ten minutes). */
+  markServed(key, now = Date.now()) {
+    const rows = this.sql.exec("SELECT last FROM served WHERE k = ?", key).toArray();
+    if (rows.length && now - Number(rows[0].last) < 600000) return;
+    this.sql.exec("INSERT INTO served (k, last) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET last = excluded.last", key, now);
+  }
+
+  /** Was one of these keys answered in the last `within` milliseconds (a day and two hours: a record of a turn that
+   * ended before midnight, sent after)? */
+  wasServed(keys, now = Date.now(), within = 26 * 3600000) {
+    for (const key of keys) {
+      const rows = this.sql.exec("SELECT last FROM served WHERE k = ?", key).toArray();
+      if (rows.length && now - Number(rows[0].last) < within) return true;
+    }
+    return false;
   }
 
   /** The tokens spent today: by this caller, and by all. */

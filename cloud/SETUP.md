@@ -110,7 +110,8 @@ Cloudflare 只在没有自建 DNS 记录的名称上建 Worker 的自定义域�
 - 全量语料容器没有公网地址，只有网站 Worker 能通过服务绑定访问它；每个请求还要带 Worker 为容器生成的令牌。
 - 网站 Worker 只放行固定的几个只读接口和工具调用，按访客限流，不转发 Cookie、IP 等信息；不代理任何模型调用。
 - 哨兵（`security/`，见其 README）记下扫描与非浏览器调用的地址和请求头，取回到私有仓库的 `data/security-logs/`；Cloudflare 边缘的
-  WAF 规则与速率限制由 security 工作流用另一个只有 WAF 权限的令牌写入。
+  WAF 规则、速率限制与区域设置由 security 工作流用专用令牌写入（`CLOUDFLARE_SECURITY_TOKEN`、`CLOUDFLARE_ANALYTICS_TOKEN`、变量
+  `CLOUDFLARE_ZONE_ID`；见 `security/README.md`「启用」）。
 - 上传全量语料的接口平时关闭；维护者更新语料时临时在仓库变量 `STORE_TOKEN_SHA256` 登记一个新令牌的 SHA-256，上传完即删除（见 README.md）。令牌本身不在仓库里。
 
 ## 免费套餐下的全量语料：D1 备份

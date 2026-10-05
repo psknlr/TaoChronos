@@ -109,6 +109,7 @@ export async function handle(request, env, deps) {
       return error(404, "没有这个接口", "not_found", cors);
     }
     if (s && url.pathname.startsWith("/v1/security/")) {
+      if (url.pathname === "/v1/security/csp" && (await bursting(request, deps))) return error(429, "报告太频繁", "rate_limited", { ...cors, "Retry-After": "10" });
       const res = await serveSecurity(request, url, { prefix: "/v1/security", token: env.LOG_EXPORT_TOKEN || "", watch: deps.watch, cfg: scfg, fp: s.fp,
         now: deps.now(), cors });
       if (res) return res;

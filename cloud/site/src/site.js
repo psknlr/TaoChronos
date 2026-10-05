@@ -96,11 +96,31 @@ export async function handle(request, env, deps = {}) {
   return secure(response, cfg, url.origin);
 }
 
-/** A request noted by the sentinel without waiting for it (an answer that needs no decision from it). */
+/**
+ * A request noted by the sentinel without waiting for it (an answer that needs no decision from it).  A scanner path
+ * is reported at once (its address is to be refused); other notes of an address within a minute of its last report are
+ * held in this instance (deps.local) and go with the next one, their paths along: a flood of misses costs one object
+ * request a minute, not one a miss.
+ */
 function note(s, route, status) {
   const a = assess(s.fp, { route, origins: s.origins, selfOrigin: s.self, ownPrefix: s.cfg.ownPrefix });
   logLine("site", s.fp, a, null, status, s.cfg);
-  s.deps.defer(s.deps.watch.observe(s.fp, a, { status }, s.cfg));
+  const local = s.deps.local || (s.deps.local = new Map());
+  const who = ipKey(s.fp.ip);
+  let l = local.get(who);
+  if (!l) {
+    if (local.size >= 5000) local.delete(local.keys().next().value);
+    l = { at: 0, reads: 0, today: 0, blockedUntil: 0, notedAt: 0, notes: 0, paths: [] };
+    local.set(who, l);
+  }
+  if (route !== "honeypot" && l.notedAt && s.now - l.notedAt < 60000) {
+    l.notes += 1;
+    if (status === 404 && l.paths.length < 20 && !l.paths.includes(s.fp.path)) l.paths.push(s.fp.path);
+    return;
+  }
+  const extra = { status, count: 1 + l.notes, paths: l.paths };
+  l.notedAt = s.now; l.notes = 0; l.paths = [];
+  s.deps.defer(s.deps.watch.observe(s.fp, a, extra, s.cfg));
 }
 
 const BLOCKED = "该地址因异常访问已被暂时限制，请稍后再试";
@@ -156,6 +176,7 @@ async function api(request, env, cfg, deps, url, s) {
   }
   if (url.pathname.startsWith("/api/security/")) { // before the origin check: a browser's report may come with none
     if (!s) return url.pathname === "/api/security/csp" ? new Response(null, { status: 204 }) : json({ error: "no such endpoint" }, 404, cors);
+    if (url.pathname === "/api/security/csp" && deps.limit && !(await deps.limit("call", ipKey(s.fp.ip)))) return new Response(null, { status: 429, headers: { "Retry-After": "60" } });
     const res = await serveSecurity(request, url, { prefix: "/api/security", token: env.LOG_EXPORT_TOKEN || "", watch: deps.watch, cfg: s.cfg, fp: s.fp,
       now: s.now, cors });
     if (res) return res;
@@ -186,9 +207,11 @@ async function api(request, env, cfg, deps, url, s) {
     // reader's further requests within the minute are counted here and reported with the next round trip
     const a = assess(s.fp, { route, origins: cfg.origins, selfOrigin: url.origin, ownPrefix: s.cfg.ownPrefix });
     const verdict = await consult(deps, s, a, who, isGet, cfg);
-    logLine("site", s.fp, a, verdict.w, verdict.blocked ? 403 : verdict.over ? 429 : null, s.cfg);
-    if (verdict.blocked) return json({ error: BLOCKED, blocked: true }, 403, { ...cors, "Retry-After": String(verdict.retry || 60) });
-    if (verdict.over) return json({ error: "今天的查询次数已用完，明天再来", rate_limited: true, daily: true }, 429, { ...cors, "Retry-After": String(secondsToMidnight(s.now)) });
+    // refused as 503, which the page takes as the corpus being away and falls back on the 要籍语料 in the browser — not as
+    // an answer about the passage (a 403 or 429 would be shown as "no such passage")
+    logLine("site", s.fp, a, verdict.w, verdict.blocked || verdict.over ? 503 : null, s.cfg);
+    if (verdict.blocked) return json({ error: BLOCKED, blocked: true, starting: false }, 503, { ...cors, "Retry-After": String(verdict.retry || 60), "X-TC-Corpus": "refused" });
+    if (verdict.over) return json({ error: "今天的查询次数已用完，明天再来", rate_limited: true, daily: true, starting: false }, 503, { ...cors, "Retry-After": String(secondsToMidnight(s.now)), "X-TC-Corpus": "refused" });
   }
   if (!env.CORPUS && !backupReady(env)) {
     return json({ error: "本站的全量语料服务未部署：网页在浏览器里运行要籍语料", corpus: "none" }, 503, cors);
@@ -246,7 +269,7 @@ async function consult(deps, s, a, who, isGet, cfg) {
   let l = local.get(who);
   if (!l) {
     if (local.size >= 5000) local.delete(local.keys().next().value);
-    l = { at: 0, reads: 0, today: 0, blockedUntil: 0 };
+    l = { at: 0, reads: 0, today: 0, blockedUntil: 0, notedAt: 0, notes: 0, paths: [] };
     local.set(who, l);
   }
   const route = isGet ? "api-read" : "api-call";

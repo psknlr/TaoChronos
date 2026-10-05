@@ -108,21 +108,24 @@ def zone_id(api: Api, name: str) -> str:
     return body["result"][0]["id"]
 
 
-def ensure_list(api: Api, account: str, name: str, write: bool) -> tuple[bool, str]:
-    """Is the block list there (created when apply may)?  Returns (usable, note)."""
+def ensure_list(api: Api, account: str, name: str, write: bool) -> tuple[str, str]:
+    """Is the block list there (created when apply may)?  Returns (state, note): ok — usable; missing — none, and none
+    to be made (the rules go without it); unknown — it could not be read, so nothing about it may be changed."""
     if not account:
-        return False, "no CLOUDFLARE_ACCOUNT_ID: the block list is not used"
+        return "missing", "no CLOUDFLARE_ACCOUNT_ID: the block list is not used"
     status, body = api.get(f"/accounts/{account}/rules/lists")
+    if status in (401, 403):
+        return "missing", f"the token may not read the account's lists ({errors(body)}): the block list is not used"
     if status != 200:
-        return False, f"the lists could not be read ({errors(body)}): the block list is not used"
+        return "unknown", f"the lists could not be read ({errors(body)}): the custom rules are left as they are"
     if any(item.get("name") == name for item in body.get("result", []) or []):
-        return True, f"the block list {name} exists"
+        return "ok", f"the block list {name} exists"
     if not write:
-        return True, f"the block list {name} would be created"
+        return "ok", f"the block list {name} would be created"
     status, body = api.call("POST", f"/accounts/{account}/rules/lists", {"name": name, "kind": "ip", "description": "taochronos: addresses refused everywhere (security/README.md); empty until an incident"})
     if status in (200, 201):
-        return True, f"the block list {name} created (empty)"
-    return False, f"the block list could not be created ({errors(body)}): the block list is not used"
+        return "ok", f"the block list {name} created (empty)"
+    return "unknown", f"the block list could not be created ({errors(body)}): the custom rules are left as they are"
 
 
 # ---------------------------------------------------------------- the phases
@@ -194,12 +197,18 @@ def main(argv: list[str] | None = None) -> None:
     failed = []
     print(f"{args.action}: zone {rules['zone']} ({zone})")
 
-    usable, note = ensure_list(api, os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip(), str(rules.get("list", "")), write) if rules.get("list") else (False, "no block list named")
+    state, note = ensure_list(api, os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip(), str(rules.get("list", "")), write) if rules.get("list") else ("missing", "no block list named")
     print(f"- {note}")
-    rendered = render(rules, usable)
+    rendered = render(rules, state == "ok")
     for key, phase in PHASES.items():
         part = "custom" if key == "custom_rules" else "ratelimit"
         if part not in parts:
+            continue
+        if part == "custom" and state == "unknown":
+            # a list that may be in use (an incident) must not be dropped on a failed read: nothing is written to the phase
+            print(f"- {phase}: not touched (the block list could not be read)")
+            if write:
+                failed.append(phase)
             continue
         current, target, notes = phase_plan(api, zone, phase, rendered[phase])
         print(f"- {phase}: {len(current)} rule(s) now, {len(target)} wanted")
