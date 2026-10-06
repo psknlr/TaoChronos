@@ -157,7 +157,9 @@ Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView
 大陆访客常用的 VPN 出口，而质询页在大陆不一定打得开——哨兵只把它当两分的信号。要用先在 Security → Analytics 看这些 ASN 占正常页面访问的比例。
 
 另有区域设置（强制 HTTPS、TLS ≥ 1.2、TLS 1.3、浏览器完整性检查、质询有效期 30 分钟、边缘 HSTS 半年不含子域）与机器人设置
-（Bot Fight Mode 关；按行为分：训练用的爬虫 `ai_training: block`，搜索引擎与 AI 助手代用户的抓取放行——网页本来就是可索引的；托管 robots.txt 开。
+（Bot Fight Mode 关；按行为分：训练用的爬虫 `ai_training: block`，搜索引擎与 AI 助手代用户的抓取放行——网页本来就是可索引的。
+托管 robots.txt **关**：Cloudflare 的名单把百度、花瓣、头条的搜索爬虫也列为训练爬虫并整站禁止，网站会从这些搜索结果里消失；
+对训练爬虫的声明由构建写进站点自己的 robots.txt，不点名任何搜索引擎（`tests/test_chat.py` 逐个核对各搜索引擎都能抓页面）。
 不想拦训练爬虫就把 `ai_training` 改为 `disabled`）。
 
 **与控制台助手方案的差别**：它提的两条 60 秒窗口、300 秒封禁的速率限制在免费计划上写不进去（只有 1 条、10 秒）；12 个固定 IP 的拦截名单一周就过时

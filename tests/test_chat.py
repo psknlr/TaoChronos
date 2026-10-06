@@ -6,6 +6,7 @@ import http.client
 import json
 import re
 import threading
+import urllib.robotparser
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -330,7 +331,15 @@ def test_the_site_build_is_deterministic_and_complete(tmp_path):
     assert 'href="about"' in html and "医哲未来人工智能研究院" in html
     robots = (site / "robots.txt").read_text(encoding="utf-8")
     assert "Disallow: /runtime/" in robots and "Sitemap: https://chat.impf.ai/sitemap.xml" in robots
-    assert "Disallow: /\n" not in robots
+    # every search engine may read the pages (Baidu's, Petal's and Toutiao's crawlers too: they gather for search as
+    # well); a crawler that only gathers training data may not
+    rules = urllib.robotparser.RobotFileParser()
+    rules.parse(robots.splitlines())
+    for agent in ("Baiduspider", "Googlebot", "bingbot", "Sogou web spider", "360Spider", "YisouSpider", "PetalBot", "Bytespider",
+                  "Applebot", "YandexBot", "DuckDuckBot", "OAI-SearchBot", "Claude-SearchBot", "PerplexityBot"):
+        assert rules.can_fetch(agent, "https://chat.impf.ai/") and rules.can_fetch(agent, "https://chat.impf.ai/about"), agent
+    for agent in ("GPTBot", "ClaudeBot", "CCBot", "Google-Extended", "Applebot-Extended", "meta-externalagent", "Amazonbot"):
+        assert not rules.can_fetch(agent, "https://chat.impf.ai/"), agent
     sitemap = (site / "sitemap.xml").read_text(encoding="utf-8")
     assert re.findall(r"<loc>(.*?)</loc>", sitemap) == ["https://chat.impf.ai/", "https://chat.impf.ai/about",
                                                          "https://chat.impf.ai/attribution"]
