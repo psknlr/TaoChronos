@@ -1,0 +1,181 @@
+# 边缘规则：Cloudflare 对 impf.ai 在请求到达 Worker 之前所做的事（security/README.md「边缘」一节）。
+# 由 security/apply.py 读入并通过 Rulesets API 写入（Actions → security → Run workflow，或本机运行）；
+# 这里是唯一的来源——在控制台改过的同名规则会被下一次 apply 覆盖（描述不以 [taochronos] 开头的规则保留，排在后面）。
+#
+# 写给免费计划：自定义规则最多 5 条、没有正则（matches）、没有 log 动作；速率限制只有 1 条，表达式只能看路径，
+# 按 IP 与节点计数，窗口与封禁都只能是 10 秒。字段与运算符见 security/README.md 的说明与出处。
+zone: impf.ai
+
+# 中转允许的网页来源（与 relay/wrangler.toml 的 ALLOWED_ORIGINS 一致；R3 在边缘复刻中转自己的检查）
+origins:
+  - https://chat.impf.ai
+  - http://chat.impf.ai
+  - https://psknlr.github.io
+
+# 仓库自己的客户端（relay/collect.py、security/collect.py、cloud/site/deploy.sh）：免于浏览器完整性检查（它质询
+# 非常规 UA）。以 UA 识别是可以冒充的，所以只免这一项：突发限制不免——自己的客户端一小时也只发几十个请求，用不着
+own_agents:
+  - taochronos-collector/1
+  - taochronos-deploy/1
+
+# 免费计划仅有的一个自定义 IP 列表（账户级）：平时为空，出事时把地址或网段放进去即生效（R5），不必改规则。
+# apply.py 找不到时会创建它；没有 Account → Account Filter Lists 权限时，R5 去掉这一项照常写入
+list: taochronos_block
+
+# 托管与云网络（扫描器与抓取器的常住地）：DigitalOcean、Google Cloud、OVH、Hetzner、Vultr、Linode、Alibaba、Tencent、Contabo、M247、Datacamp。
+# 只供 ${HOSTING_ASNS} 代入；默认的 R5 不用它——这些也是大陆访客常用的 VPN 出口，质询页面在大陆不一定打得开，
+# 所以哨兵只把它当两分的信号。要用时参考 R5 下方注释里的表达式。不要加 8075（微软 Azure：GitHub Actions 的运行器）
+hosting_asns: [14061, 396982, 16276, 24940, 20473, 63949, 45102, 132203, 51167, 9009, 212238]
+
+# ---------------------------------------------------------------- 自定义规则（阶段 http_request_firewall_custom，按序）
+# 表达式里的 ${ORIGINS}、${OWN_AGENTS}、${LIST}、${HOSTING_ASNS} 由 apply.py 代入
+custom_rules:
+  - ref: tc-own-clients
+    description: "[taochronos] 1 own clients: no browser integrity check"
+    action: skip
+    action_parameters: {products: [bic]}
+    logging: {enabled: true}
+    expression: >-
+      (http.user_agent in {${OWN_AGENTS}})
+
+  - ref: tc-scanner-paths
+    description: "[taochronos] 2 scanner paths: nothing of ours (wp-, .git, .env, .php, xmlrpc, …)"
+    action: block
+    expression: >-
+      (not starts_with(http.request.uri.path, "/.well-known/"))
+      and (
+        (lower(http.request.uri.path) contains "wp-")
+        or (lower(http.request.uri.path) contains "/wordpress")
+        or (lower(http.request.uri.path) contains "/.git")
+        or (lower(http.request.uri.path) contains "/.env")
+        or (lower(http.request.uri.path) contains "/.aws")
+        or (lower(http.request.uri.path) contains "/.svn")
+        or (lower(http.request.uri.path) contains "/.ds_store")
+        or (lower(http.request.uri.path) contains "phpmyadmin")
+        or (lower(http.request.uri.path) contains "xmlrpc")
+        or (lower(http.request.uri.path) contains "/cgi-bin/")
+        or (lower(http.request.uri.path) contains "/vendor/phpunit")
+        or (lower(http.request.uri.path) contains "/actuator")
+        or (lower(http.request.uri.path) contains "/boaform")
+        or (lower(http.request.uri.path) contains "/hnap1")
+        or (lower(http.request.uri.path) contains "eval-stdin")
+        or (lower(http.request.uri.path) contains "phpinfo")
+        or (lower(http.request.uri.path) contains "/server-status")
+        or ends_with(lower(http.request.uri.path), ".php")
+        or ends_with(lower(http.request.uri.path), ".phtml")
+        or ends_with(lower(http.request.uri.path), ".asp")
+        or ends_with(lower(http.request.uri.path), ".aspx")
+        or ends_with(lower(http.request.uri.path), ".jsp")
+        or ends_with(lower(http.request.uri.path), ".cgi")
+        or ends_with(lower(http.request.uri.path), ".bak")
+        or ends_with(lower(http.request.uri.path), ".sql")
+        or ends_with(lower(http.request.uri.path), ".old")
+        or ends_with(lower(http.request.uri.path), ".swp")
+        or ends_with(lower(http.request.uri.path), ".rar")
+        or ends_with(lower(http.request.uri.path), ".7z")
+        or (http.request.uri.path contains "/../")
+        or (lower(http.request.uri) contains "%2e%2e")
+        or (http.request.uri contains "%00")
+      )
+
+  - ref: tc-relay-origin
+    description: "[taochronos] 3 relay: a model call or a record only from the page's origins (as the relay checks, before the Worker is counted)"
+    action: block
+    expression: >-
+      (http.host eq "chat-api.impf.ai" and http.request.method eq "POST"
+       and (starts_with(http.request.uri.path, "/v1/chat/") or http.request.uri.path eq "/v1/logs")
+       and not (http.request.headers["origin"][0] in {${ORIGINS}}))
+
+  - ref: tc-tooling-and-spoofed-crawlers
+    description: "[taochronos] 4 no agent, scanners, scraping libraries, and a crawler's name without Cloudflare's verification"
+    action: block
+    expression: >-
+      (not cf.client.bot)
+      and (not starts_with(http.request.uri.path, "/.well-known/acme-challenge/"))
+      and (
+        len(http.user_agent) eq 0
+        or starts_with(lower(http.user_agent), "python")
+        or starts_with(http.user_agent, "Go-http-client")
+        or starts_with(http.user_agent, "Java/")
+        or starts_with(http.user_agent, "libwww")
+        or starts_with(lower(http.user_agent), "mozilla/5.0 (compatible; nuclei")
+        or (lower(http.user_agent) contains "scrapy")
+        or (lower(http.user_agent) contains "zgrab")
+        or (lower(http.user_agent) contains "masscan")
+        or (lower(http.user_agent) contains "nikto")
+        or (lower(http.user_agent) contains "sqlmap")
+        or (lower(http.user_agent) contains "nmap")
+        or (lower(http.user_agent) contains "censysinspect")
+        or (lower(http.user_agent) contains "paloaltonetworks")
+        or (lower(http.user_agent) contains "internetmeasurement")
+        or (http.user_agent contains "ChatGPT-User")
+        or (http.user_agent contains "GPTBot")
+        or (http.user_agent contains "OAI-SearchBot")
+        or (http.user_agent contains "PerplexityBot")
+        or (http.user_agent contains "Perplexity-User")
+        or (http.user_agent contains "ClaudeBot")
+        or (http.user_agent contains "Claude-User")
+        or (http.user_agent contains "Claude-SearchBot")
+        or (http.user_agent contains "Googlebot")
+        or (http.user_agent contains "bingbot")
+        or (http.user_agent contains "Baiduspider")
+        or (http.user_agent contains "Bytespider")
+        or (http.user_agent contains "Applebot")
+        or (http.user_agent contains "Amazonbot")
+        or (http.user_agent contains "CCBot")
+        or (http.user_agent contains "meta-externalagent")
+      )
+
+  # 没有列表（apply.py 没有账户权限或建不了）时这条整条省略
+  - ref: tc-block-list
+    description: "[taochronos] 5 the block list: addresses and networks refused everywhere (empty until an incident)"
+    action: block
+    expression: >-
+      (ip.src in $${LIST})
+    # 要让托管网络的网页请求先过一道质询（API 路径不动），把表达式换成：
+    #   (ip.src in $${LIST})
+    #   or (ip.src.asnum in {${HOSTING_ASNS}}
+    #       and not starts_with(http.request.uri.path, "/api/") and not starts_with(http.request.uri.path, "/v1/")
+    #       and not starts_with(http.request.uri.path, "/cdn-cgi/") and not starts_with(http.request.uri.path, "/.well-known/"))
+    # 并把 action 改为 managed_challenge；先在 Security → Analytics 里看这些 ASN 占正常页面访问的比例
+
+# ---------------------------------------------------------------- 速率限制（阶段 http_ratelimit；免费计划 1 条）
+# 只看路径（免费计划的限制），按 IP 与节点计 10 秒：API 路径的突发。网页核对一个回答的引文时会在几秒内取几十段原文
+# （每条引文一次 /api/passage，最多 60 条）并对不完全一致的引文各做两次规范化调用（/api/call），一个回答可达 90 次；
+# 两个主机（chat.impf.ai 的 /api/*、chat-api.impf.ai 的 /v1/*）共用一个计数：240 次 / 10 秒在其上，又挡住傻循环。
+# 超过者 10 秒内得 429。浏览器的策略报告（/api/security/csp）由 Worker 自己限制，不在此计。静态文件不在计数内
+# （它们的路径不匹配）。这不是日配额的保护——那靠上面的拦截规则、Worker 的每日上限与它自己的计数
+rate_limits:
+  - ref: tc-api-burst
+    description: "[taochronos] API burst per address per location"
+    action: block
+    expression: >-
+      ((starts_with(http.request.uri.path, "/api/") or starts_with(http.request.uri.path, "/v1/"))
+       and not starts_with(http.request.uri.path, "/api/security/csp"))
+    ratelimit: {characteristics: [cf.colo.id, ip.src], period: 10, requests_per_period: 240, mitigation_timeout: 10}
+
+# ---------------------------------------------------------------- 区域设置（PATCH /zones/{id}/settings/{name}）
+settings:
+  always_use_https: "on"
+  automatic_https_rewrites: "on"
+  min_tls_version: "1.2"
+  tls_1_3: "on"
+  browser_check: "on"          # 浏览器完整性检查（默认开；自己的客户端由 R1 免除）
+  challenge_ttl: 1800
+  # 边缘的 HSTS（Worker 自己也发一天的）：半年；不含子域——impf.ai 下还有 GitHub Pages 的主机
+  security_header:
+    strict_transport_security: {enabled: true, max_age: 15552000, include_subdomains: false, preload: false, nosniff: true}
+
+# ---------------------------------------------------------------- 机器人（PUT /zones/{id}/bot_management）
+# Bot Fight Mode 保持关闭：它对全站生效、不能为收集器与部署检查开例外，还可能质询网页自己的 API 调用。
+# 按行为分：训练用的爬虫拦下（GPTBot、ClaudeBot、CCBot、Bytespider……），搜索引擎与 AI 助手代用户的抓取放行
+# （网页是可被索引的：robots.txt 与 sitemap 由构建生成），托管 robots.txt 开（在站点自己的 robots.txt 前面加上对训练爬虫的声明）。
+# 旧字段 ai_bots_protection 已于 2026-09-15 弃用，不再写。不想拦训练爬虫时把 ai_training 改为 disabled
+bot_management:
+  fight_mode: false
+  ai_training: block
+  ai_search: disabled
+  ai_user: disabled
+  is_robots_txt_managed: true
+  crawler_protection: disabled
+  enable_js: false

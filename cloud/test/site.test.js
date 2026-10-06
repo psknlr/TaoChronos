@@ -3,22 +3,47 @@
 
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
-import { handle } from "../site/src/site.js";
+import { WatchCore } from "../../security/sentinel.js";
+import { DEFAULTS, handle } from "../site/src/site.js";
 
 const TOKEN = "upload-token-for-tests-only";
 const TOKEN_SHA = createHash("sha256").update(TOKEN).digest("hex");
+const EXPORT = "export-token-0123456789abcdef";
 const PAGE = "https://chat.impf.ai";
+const T0 = Date.UTC(2026, 9, 5, 8, 0, 0);
+const CHROME = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36";
+// the headers a browser sends with the page's own fetch
+const BROWSER = { "User-Agent": CHROME, "Accept-Language": "zh-CN,zh;q=0.9", "Sec-Fetch-Site": "same-origin", "Sec-Fetch-Mode": "cors",
+  "Sec-Fetch-Dest": "empty", "Sec-CH-UA": '"Chromium";v="129"', "CF-Connecting-IP": "203.0.113.9" };
 
-function site({ corpus = true, store = false, env = {}, limit } = {}) {
+/** The Durable Object SQL API's shape over node:sqlite. */
+function sqlStore() {
+  const db = new DatabaseSync(":memory:");
+  return {
+    exec(query, ...params) {
+      const stmt = db.prepare(query);
+      const rows = /^\s*select|returning/i.test(query) ? stmt.all(...params) : (stmt.run(...params), []);
+      return { toArray: () => rows, one: () => { if (rows.length !== 1) throw new Error(`expected one row, got ${rows.length}`); return rows[0]; } };
+    },
+  };
+}
+
+/** The site with plain objects for its bindings.  watch: true gives it the sentinel's memory; cf: what the edge would
+ * say of every request (request.cf). */
+function site({ corpus = true, store = false, env = {}, limit, watch = false, cf } = {}) {
   const seen = { assets: [], corpus: [], puts: [] };
   const objects = new Map();
   const full = {
     ASSETS: {
       fetch: async (request) => {
         seen.assets.push(request);
-        const html = new URL(request.url).pathname === "/";
+        const path = new URL(request.url).pathname;
+        if (path.startsWith("/missing")) return new Response("Not Found", { status: 404 });
+        const html = path === "/";
         return new Response(html ? "<!doctype html><title>道乃久</title>" : "export {}", {
           headers: { "Content-Type": html ? "text/html; charset=utf-8" : "text/javascript; charset=utf-8", ETag: "\"x\"" },
         });
@@ -49,9 +74,23 @@ function site({ corpus = true, store = false, env = {}, limit } = {}) {
     } : {}),
     ...env,
   };
-  const call = (url, init = {}) => handle(new Request(url, init), full, { limit });
-  return { call, seen, objects };
+  const core = watch ? new WatchCore(sqlStore()) : null;
+  const pending = [];
+  let t = T0; // the clock: advance(ms) moves it
+  const deps = { limit, now: () => t, defer: (p) => { pending.push(Promise.resolve(p).catch(() => {})); }, local: new Map() };
+  if (core) {
+    deps.watch = { observe: (fp, a, extra, cfg) => core.observe(fp, a, extra, cfg, t), blocked: (ip, cfg) => core.blocked(ip, cfg, t),
+      records: (...a) => core.records(...a), remove: (...a) => core.remove(...a), summary: () => core.summary(t) };
+  }
+  const call = (url, init = {}) => {
+    const request = new Request(url, init);
+    if (cf) request.cf = cf;
+    return handle(request, full, deps);
+  };
+  const settle = () => Promise.all(pending.splice(0)); // what the Worker finishes after the answer (ctx.waitUntil)
+  return { call, seen, objects, watch: core, settle, advance: (ms) => { t += ms; }, deps };
 }
+const quiet = async (fn) => { const log = console.log; console.log = () => {}; try { return await fn(); } finally { console.log = log; } };
 
 test("http is redirected to https, path and query kept", async () => {
   const { call, seen } = site();
@@ -159,7 +198,55 @@ test("calls are limited per visitor: reads and calls apart", async () => {
   assert.equal(res.headers.get("Retry-After"), "60");
   assert.deepEqual(asked, [["read", "203.0.113.5"], ["call", "203.0.113.5"]]);
   assert.equal(seen.corpus.length, 1);
+  const v6 = site({ limit: async (kind, who) => { asked.push([kind, who]); return true; } });
+  await v6.call(`${PAGE}/api/info`, { headers: { "CF-Connecting-IP": "2001:db8:1:2:aaaa:bbbb::1" } });
+  assert.deepEqual(asked.at(-1), ["read", "2001:db8:1:2::/64"]); // an IPv6 address by its /64
+  // the store's upload waits for the rate limit too
+  const stored = site({ store: true, limit: async () => false });
+  assert.equal((await stored.call(`${PAGE}/api/store/${"a".repeat(64)}/part-000`, { method: "PUT", body: "x", headers: { "Content-Length": "1" } })).status, 429);
 });
+
+test("the corpus's own words of a failure stay inside; the page's fallback fields do not", async () => {
+  const failing = site({ env: { CORPUS: { fetch: async () => new Response(JSON.stringify({ error: "KeyError: 'passages_v3' at corpus.py:88", starting: true }),
+    { status: 503, headers: { "Content-Type": "application/json", "Retry-After": "10" } }) } } });
+  const res = await failing.call(`${PAGE}/api/info`);
+  assert.equal(res.status, 503);
+  const j = await res.json();
+  assert.deepEqual(j, { error: "全量语料服务出错了，请稍后再试", starting: true });
+  assert.equal(res.headers.get("Retry-After"), "10");
+  const plain = site({ env: { CORPUS: { fetch: async () => new Response("Traceback (most recent call last) ...", { status: 500 }) } } });
+  assert.deepEqual(await (await plain.call(`${PAGE}/api/info`)).json(), { error: "全量语料服务出错了，请稍后再试" });
+});
+
+test("a visitor's day of the API has a ceiling: reads and calls apart, wide, by the /64; a quiet reader's minute is one round trip", () => quiet(async () => {
+  const { call, seen, watch, advance } = site({ watch: true, env: { API_READS_PER_DAY: "3", API_CALLS_PER_DAY: "1" } });
+  let trips = 0;
+  const observe = watch.observe.bind(watch);
+  watch.observe = (...a) => { trips++; return observe(...a); };
+  for (let i = 0; i < 3; i++) assert.equal((await call(`${PAGE}/api/passage?id=p${i}`, { headers: BROWSER })).status, 200);
+  assert.equal(trips, 1); // the first read waited for the object; the next two were counted here
+  const over = await call(`${PAGE}/api/passage?id=p3`, { headers: BROWSER });
+  assert.equal(over.status, 503); // the page falls back on the browser's corpus for the day
+  assert.deepEqual(await over.json(), { error: "今天的查询次数已用完，明天再来", rate_limited: true, daily: true, starting: false });
+  assert.equal(Number(over.headers.get("Retry-After")), 16 * 3600); // T0 is 08:00 UTC
+  const post = { method: "POST", body: "{}", headers: { ...BROWSER, Origin: PAGE, "Content-Type": "application/json" } };
+  assert.equal((await call(`${PAGE}/api/call`, post)).status, 200); // calls are counted apart, and always wait for the object
+  assert.equal((await call(`${PAGE}/api/call`, post)).status, 503);
+  assert.equal(trips, 3);
+  advance(61000);
+  assert.equal((await call(`${PAGE}/api/passage?id=p9`, { headers: BROWSER })).status, 503); // the object's count agrees: the minute's reads reported with this one
+  assert.equal(trips, 4);
+  assert.equal(watch.summary(T0 + 61000).top.find((v) => v.today["api-read"]).today["api-read"], 5);
+  assert.equal((await call(`${PAGE}/api/passage?id=x`, { headers: { ...BROWSER, "CF-Connecting-IP": "198.51.100.40" } })).status, 200); // another address
+  assert.equal(seen.corpus.length, 5);
+  const none = site({ watch: true, env: { API_READS_PER_DAY: "0" } });
+  for (let i = 0; i < 5; i++) assert.equal((await none.call(`${PAGE}/api/passage?id=p${i}`, { headers: BROWSER })).status, 200);
+  // the object out of reach: reads go on (the rate-limit bindings stand), the page is none the wiser
+  const down = site({ watch: true });
+  down.watch.observe = async () => { throw new Error("Durable Object: daily limit reached"); };
+  assert.equal((await down.call(`${PAGE}/api/passage?id=p`, { headers: BROWSER })).status, 200);
+  assert.equal((await down.call(`${PAGE}/api/call`, post)).status, 200);
+}));
 
 test("the store is uploaded part by part, only with the token, with the digest it is checked against later", async () => {
   const part = Buffer.from("xz-bytes-of-the-store");
@@ -197,4 +284,135 @@ test("the store is uploaded part by part, only with the token, with the digest i
   assert.equal((await call(`${PAGE}/api/store/abc/part-000`, put({ Authorization: `Bearer ${TOKEN}`, "X-Content-SHA256": sha }))).status, 404);
   assert.equal((await call(url, { method: "DELETE", headers: { Authorization: `Bearer ${TOKEN}` } })).status, 405);
   assert.equal(seen.corpus.length, 0);
+});
+
+// ------------------------------------------------------------------ the sentinel
+test("a scanner path refuses its address the API for a day; the page's own calls leave only a count", () => quiet(async () => {
+  const { call, seen, settle, watch, advance } = site({ watch: true, env: { LOG_EXPORT_TOKEN: EXPORT } });
+  const probe = await call(`${PAGE}/wp-config.php`, { headers: { "User-Agent": "python-requests/2.31.0", "CF-Connecting-IP": "45.138.12.10" } });
+  assert.equal(probe.status, 404);
+  assert.equal(seen.assets.length, 0); // never asked of the site's files
+  await settle();
+  advance(61000); // a minute on: the scanner tries the API
+  const refused = await call(`${PAGE}/api/info`, { headers: { "CF-Connecting-IP": "45.138.12.10" } });
+  assert.equal(refused.status, 503); // as when the corpus is away: a page refused falls back on the browser's corpus
+  assert.equal((await refused.json()).blocked, true);
+  assert.equal(refused.headers.get("X-TC-Corpus"), "refused");
+  assert.equal(Number(refused.headers.get("Retry-After")), 21600 - 61); // a home network's address: the ordinary six hours
+  assert.equal(seen.corpus.length, 0);
+  assert.equal((await call(`${PAGE}/`, { headers: { ...BROWSER, "CF-Connecting-IP": "45.138.12.10" } })).status, 200); // the page itself still answers
+  assert.equal((await call(`${PAGE}/api/info`, { headers: BROWSER })).status, 200);
+  assert.equal((await call(`${PAGE}/api/call`, { method: "POST", body: "{}", headers: { ...BROWSER, Origin: PAGE, "Content-Type": "application/json" } })).status, 200);
+  await settle();
+  const auth = { Authorization: `Bearer ${EXPORT}` };
+  const { items } = await (await call(`${PAGE}/api/security/export`, { headers: auth })).json();
+  assert.deepEqual(items.map((i) => i.event.kind), ["honeypot", "blocked"]);
+  assert.deepEqual([items[0].event.fp.ip, items[0].event.fp.path, items[0].event.route], ["45.138.12.10", "/wp-config.php", "honeypot"]);
+  const summary = await (await call(`${PAGE}/api/security/summary`, { headers: auth })).json();
+  assert.equal(summary.blocked[0].ip, "45.138.12.10");
+  const visitor = summary.top.find((v) => !v.ip);
+  assert.deepEqual([visitor.n, visitor.score, visitor.flagged], [2, 0, 0]); // the browser's two calls: a count, no address
+  assert.equal((await call(`${PAGE}/api/security/export`)).status, 401);
+  assert.equal((await call(`${PAGE}/api/security/summary`, { headers: { Authorization: "Bearer not-it-not-it-not-it" } })).status, 401);
+  assert.deepEqual(await (await call(`${PAGE}/api/security/ack`, { method: "POST", headers: auth, body: JSON.stringify({ through: items[1].id }) })).json(), { remaining: 0 });
+  // a browser's policy report comes with no origin of its own, and is kept
+  const csp = await call(`${PAGE}/api/security/csp`, { method: "POST", headers: { "Content-Type": "application/reports+json", Origin: "null", ...BROWSER },
+    body: JSON.stringify([{ type: "csp-violation", body: { blockedURL: "https://evil.example/x.js", effectiveDirective: "script-src" } }]) });
+  assert.equal(csp.status, 204);
+  assert.equal(watch.records().items[0].event.kind, "csp");
+  // a file that is not there is noted (a probe, or a stale link); the page by a browser is not
+  let trips = 0;
+  const observe = watch.observe.bind(watch);
+  watch.observe = (...a) => { trips++; return observe(...a); };
+  for (const p of ["x.txt", "old-page", "a", "b", "c"]) await call(`${PAGE}/missing/${p}`, { headers: { ...BROWSER } });
+  await settle();
+  assert.equal(trips, 1); // five misses in a minute: one round trip, the rest held here
+  advance(61000);
+  await call(`${PAGE}/missing/d`, { headers: { ...BROWSER } });
+  await settle();
+  assert.equal(trips, 2); // the held misses went with this one, their paths along
+  const me = watch.summary(T0 + 61000).top.find((v) => v.n >= 8);
+  assert.deepEqual(me.paths, ["/missing/x.txt", "/missing/old-page", "/missing/a", "/missing/b", "/missing/c", "/missing/d"]);
+  assert.equal(me.ip, undefined); // files not found: noted, still nobody's address
+  // a browser's reports: taken within the rate limit
+  const limited = site({ watch: true, limit: async () => false });
+  assert.equal((await limited.call(`${PAGE}/api/security/csp`, { method: "POST", headers: BROWSER, body: "{}" })).status, 429);
+}));
+
+test("an API call that is not the page's is scored: served and flagged in observe mode, refused over the block score in enforce mode", () => quiet(async () => {
+  const script = { "User-Agent": "python-requests/2.31.0", "CF-Connecting-IP": "198.51.100.77" };
+  const observe = site({ watch: true, cf: { asn: 14061, country: "US" } });
+  assert.equal((await observe.call(`${PAGE}/api/passage?id=jc_a000.12`, { headers: script })).status, 200);
+  const [flag] = observe.watch.records().items;
+  assert.deepEqual([flag.event.kind, flag.event.route, flag.event.reasons, flag.event.fp.ip], ["flag", "api-read", ["ua_tool", "dc_asn"], "198.51.100.77"]);
+  const scanner = { "User-Agent": "Mozilla/5.0 (compatible; Nuclei - Open-source project (github.com/projectdiscovery/nuclei))", Referer: "https://evil.example/",
+    "CF-Connecting-IP": "198.51.100.78" };
+  assert.equal((await observe.call(`${PAGE}/api/info`, { headers: scanner })).status, 200); // observe: served, a shadow of a refusal
+  assert.equal(observe.watch.records().items[1].event.kind, "shadow");
+  const enforce = site({ watch: true, env: { SENTINEL: "enforce" }, cf: { asn: 14061, country: "US" } });
+  assert.equal((await enforce.call(`${PAGE}/api/passage?id=x`, { headers: script })).status, 200); // flagged, under the block score
+  const refused = await enforce.call(`${PAGE}/api/info`, { headers: scanner });
+  assert.equal(refused.status, 503);
+  assert.equal(enforce.seen.corpus.length, 1);
+  assert.equal((await enforce.call(`${PAGE}/api/info`, { headers: BROWSER })).status, 200);
+  // the deploy check's agent string is a label, not a pass: on a scanner path it is refused like anyone; off a scanner
+  // path its calls stay under the block score.  The site without the binding, or off, records nothing
+  const own = site({ watch: true, env: { SENTINEL: "enforce" } });
+  assert.equal((await own.call(`${PAGE}/api/info`, { headers: { "User-Agent": "taochronos-deploy/1", "CF-Connecting-IP": "198.51.100.79" } })).status, 200);
+  assert.equal((await own.call(`${PAGE}/.git/config`, { headers: { "User-Agent": "taochronos-deploy/1", "CF-Connecting-IP": "198.51.100.79" } })).status, 404);
+  await own.settle();
+  own.advance(61000);
+  assert.equal((await own.call(`${PAGE}/api/info`, { headers: { "User-Agent": "taochronos-deploy/1", "CF-Connecting-IP": "198.51.100.79" } })).status, 503);
+  assert.equal(own.watch.records().items[0].event.own, true);
+  const off = site({ watch: true, env: { SENTINEL: "off", LOG_EXPORT_TOKEN: EXPORT } });
+  assert.equal((await off.call(`${PAGE}/wp-login.php`, { headers: { "CF-Connecting-IP": "45.138.12.10" } })).status, 200); // asked of the files as any path
+  assert.equal((await off.call(`${PAGE}/api/security/summary`, { headers: { Authorization: `Bearer ${EXPORT}` } })).status, 404);
+  assert.equal((await off.call(`${PAGE}/api/security/csp`, { method: "POST", body: "{}" })).status, 204); // a browser's report is taken, and dropped
+  assert.deepEqual(off.watch.records().items, []);
+  const plain = site();
+  assert.equal((await plain.call(`${PAGE}/api/security/summary`, { headers: { Authorization: `Bearer ${EXPORT}` } })).status, 404);
+}));
+
+test("the pages' headers: no device features; the reported policy and where to report it", async () => {
+  const { call } = site({ env: { CSP_REPORT_ONLY: "default-src 'self'; report-to csp" } });
+  const page = await call(`${PAGE}/`);
+  const script = await call(`${PAGE}/js/app.js`);
+  assert.equal(page.headers.get("Permissions-Policy"), DEFAULTS.PERMISSIONS_POLICY);
+  assert.equal(page.headers.get("Content-Security-Policy-Report-Only"), "default-src 'self'; report-to csp");
+  assert.equal(page.headers.get("Reporting-Endpoints"), 'csp="https://chat.impf.ai/api/security/csp"');
+  assert.equal(page.headers.get("X-Frame-Options"), "SAMEORIGIN");
+  assert.equal(page.headers.get("Cross-Origin-Opener-Policy"), "same-origin");
+  assert.equal(page.headers.get("Cross-Origin-Resource-Policy"), "same-origin");
+  assert.equal(script.headers.get("Cross-Origin-Opener-Policy"), null);
+  assert.equal(script.headers.get("Content-Security-Policy-Report-Only"), null);
+  assert.equal(script.headers.get("Permissions-Policy"), DEFAULTS.PERMISSIONS_POLICY);
+  const uri = site({ env: { CSP_REPORT_ONLY: "default-src 'self'; report-uri /api/security/csp" } });
+  assert.equal((await uri.call(`${PAGE}/`)).headers.get("Reporting-Endpoints"), null);
+  const none = site();
+  assert.equal((await none.call(`${PAGE}/`)).headers.get("Content-Security-Policy-Report-Only"), null);
+  assert.equal((await none.call(`${PAGE}/`)).headers.get("Reporting-Endpoints"), null);
+});
+
+test("the policy deployed names the pages' inline scripts and styles by their hashes, as web/ has them", () => {
+  const toml = readFileSync(new URL("../site/wrangler.toml", import.meta.url), "utf-8");
+  const policy = /^CSP_REPORT_ONLY = "(.*)"$/m.exec(toml)[1];
+  const hash = (text) => `'sha256-${createHash("sha256").update(text).digest("base64")}'`;
+  const inline = { scripts: [], styles: [], attrs: [] };
+  for (const file of ["index.html", "about.html", "attribution.html"]) {
+    const html = readFileSync(new URL(`../../web/${file}`, import.meta.url), "utf-8");
+    for (const m of html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)) if (!/ld\+json|src=/.test(m[1])) inline.scripts.push(hash(m[2]));
+    for (const m of html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)) inline.styles.push(hash(m[1]));
+    for (const m of html.matchAll(/ style="([^"]*)"/g)) inline.attrs.push(hash(m[1]));
+  }
+  assert.deepEqual([inline.scripts.length, inline.styles.length, inline.attrs.length], [2, 2, 1]); // an inline block added to a page needs its hash in the policy
+  const directive = (name) => (new RegExp(`(?:^|; )${name} ([^;]*)`).exec(policy) || [])[1] || "";
+  for (const h of inline.scripts) assert.ok(directive("script-src").includes(h), `script-src lacks ${h}`);
+  for (const h of inline.styles) assert.ok(directive("style-src").includes(h), `style-src lacks ${h}`);
+  for (const h of inline.attrs) assert.ok(directive("style-src-attr").includes(h), `style-src-attr lacks ${h}`);
+  assert.match(policy, /report-to csp$/);
+  assert.doesNotMatch(policy, /unsafe-inline|unsafe-eval/);
+  const headers = readFileSync(new URL("../site/_headers", import.meta.url), "utf-8");
+  assert.match(headers, /^\/js\/worker\.js\n  Content-Security-Policy-Report-Only: .*wasm-unsafe-eval.*report-uri \/api\/security\/csp$/m);
+  assert.match(headers, /^\/js\/unpack-worker\.js\n  Content-Security-Policy-Report-Only: .*connect-src 'self' data:/m);
+  assert.doesNotMatch(headers, /Content-Security-Policy-Report-Only:.*report-to/); // a worker's response may not have its Reporting-Endpoints processed: report-uri alone
 });

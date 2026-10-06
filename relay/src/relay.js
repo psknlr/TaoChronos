@@ -8,12 +8,20 @@
 //   POST /v1/logs               one turn of a conversation, sent by the page only when the visitor agreed to it
 //   GET  /v1/logs/export        the records waiting, for the repository's collector (Authorization: Bearer LOG_EXPORT_TOKEN)
 //   POST /v1/logs/ack           the collector has committed them: they are deleted here
+//   GET  /v1/security/export    the sentinel's events waiting (Bearer LOG_EXPORT_TOKEN); POST /v1/security/ack deletes them
+//   GET  /v1/security/summary   the visitors by score and the addresses refused now (Bearer LOG_EXPORT_TOKEN)
+//   POST /v1/security/csp       a browser's Content-Security-Policy report (kept as an event)
 //
-// Visitors are counted by a hash of their address and the day; addresses are not stored, and records carry none.
+// Visitors are counted by a hash of their address and the day; addresses are not stored, and records carry none.  The
+// sentinel (security/sentinel.js) sees every request: a scanner path refuses its address for a day, a request that is
+// not the page's is scored and, flagged, kept whole for the owner; in enforce mode an address over the block score is
+// refused for a while.  An answer's tokens, as the upstream reports them, count against the visitor's day and the day.
 
+import { assess, bodyShape, fingerprint, ipKey, isHoneypot, logLine, sentinelConfig, serveSecurity } from "../../security/sentinel.js";
 import { day } from "./state.js";
 
 export const VERSION = "1";
+const LOCAL = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 export const DEFAULTS = {
   UPSTREAM_BASE: "https://api.minimax.cn/v1", // MiniMax's mainland platform; https://api.minimax.io/v1 for international keys
@@ -28,6 +36,8 @@ export const DEFAULTS = {
   PER_MINUTE: "30",                           // model calls per visitor (one question takes several: the tools)
   PER_DAY: "600",
   TOTAL_PER_DAY: "5000",                      // all visitors together
+  TOKENS_PER_DAY: "10000000",                 // tokens (input + output, as the upstream counts them) per visitor per day
+  TOTAL_TOKENS_PER_DAY: "200000000",          // and all visitors together (0: no limit)
   LOGS: "on",
   LOG_MAX_BYTES: "65536",
   LOGS_PER_MINUTE: "20",
@@ -56,7 +66,7 @@ export function config(env = {}) {
     maxTokens: num("MAX_OUTPUT_TOKENS"),
     maxBody: num("MAX_BODY_BYTES"),
     origins: list("ALLOWED_ORIGINS"),
-    chat: { perMinute: num("PER_MINUTE"), perDay: num("PER_DAY"), total: num("TOTAL_PER_DAY") },
+    chat: { perMinute: num("PER_MINUTE"), perDay: num("PER_DAY"), total: num("TOTAL_PER_DAY"), tokensPerDay: num("TOKENS_PER_DAY"), totalTokens: num("TOTAL_TOKENS_PER_DAY") },
     log: { perMinute: num("LOGS_PER_MINUTE"), perDay: num("LOGS_PER_DAY"), total: 0 },
     logs: String(get("LOGS")).toLowerCase() !== "off",
     logMax: num("LOG_MAX_BYTES"),
@@ -65,8 +75,9 @@ export function config(env = {}) {
 }
 
 /**
- * deps: {limit(who, kind, limits) → {ok, reason, retry, remaining}, logbook: {add, records, remove}, fetch, now}
- * (the Durable Objects and the network in the Worker; plain objects in tests).
+ * deps: {gate({who, kind, limits, fp, a, shape, status, cfg}) → {ok, reason, retry, remaining, watch}, observe(fp, a, extra, cfg),
+ * spend(who, kind, tokens), watch: {observe, records, remove, summary}, logbook: {add, records, remove}, defer(promise),
+ * fetch, now} (the Durable Objects and the network in the Worker; plain objects in tests).
  */
 export async function handle(request, env, deps) {
   const cfg = config(env);
@@ -74,8 +85,18 @@ export async function handle(request, env, deps) {
   const origin = request.headers.get("Origin") || "";
   const allowed = cfg.origins.includes(origin);
   const cors = allowed ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" } : { Vary: "Origin" };
+  // the sentinel: the request as seen at the edge, and a note of it when it is worth one (security/sentinel.js)
+  const scfg = sentinelConfig(env);
+  const s = scfg.mode === "off" ? null : { cfg: scfg, fp: fingerprint(request, deps.now()), origins: cfg.origins, deps };
+  if (url.protocol === "http:" && !LOCAL.has(url.hostname)) { // a conversation is never taken in clear
+    if (s) note(s, "other", 403);
+    return error(403, "请使用 https", "https_required", cors);
+  }
   if (request.method === "OPTIONS") {
-    if (!allowed) return new Response(null, { status: 403, headers: cors });
+    if (!allowed) {
+      if (s) note(s, "other", 403);
+      return new Response(null, { status: 403, headers: cors });
+    }
     return new Response(null, {
       status: 204,
       headers: { ...cors, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Accept",
@@ -83,13 +104,25 @@ export async function handle(request, env, deps) {
     });
   }
   try {
+    if (s && isHoneypot(url.pathname)) {
+      note(s, "honeypot", 404); // the address is noted — and, HONEYPOT = block, refused from now on — after the answer
+      return error(404, "没有这个接口", "not_found", cors);
+    }
+    if (s && url.pathname.startsWith("/v1/security/")) {
+      if (url.pathname === "/v1/security/csp" && (await bursting(request, deps))) return error(429, "报告太频繁", "rate_limited", { ...cors, "Retry-After": "10" });
+      const res = await serveSecurity(request, url, { prefix: "/v1/security", token: env.LOG_EXPORT_TOKEN || "", watch: deps.watch, cfg: scfg, fp: s.fp,
+        now: deps.now(), cors });
+      if (res) return res;
+    }
     switch (`${request.method} ${url.pathname}`) {
       case "GET /v1/health": return health(env, cfg, cors);
-      case "POST /v1/chat/completions": return await chat(request, env, cfg, cors, allowed, deps);
-      case "POST /v1/logs": return await submit(request, cfg, cors, allowed, deps);
+      case "POST /v1/chat/completions": return await chat(request, env, cfg, cors, allowed, deps, s);
+      case "POST /v1/logs": return await submit(request, cfg, cors, allowed, deps, s);
       case "GET /v1/logs/export": return await records(request, env, url, deps);
       case "POST /v1/logs/ack": return await ack(request, env, deps);
-      default: return error(404, "没有这个接口", "not_found", cors);
+      default:
+        if (s) note(s, "other", 404);
+        return error(404, "没有这个接口", "not_found", cors);
     }
   } catch (err) {
     console.error("relay error", err?.name || "Error"); // never the request: it may carry what a visitor wrote
@@ -112,10 +145,11 @@ async function sha256(text) {
 
 const hex = (bytes) => [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
 
-/** Who is calling, for the counters: a hash of the address and the day (the address itself is kept nowhere). */
+/** Who is calling, for the counters: a hash of the address (an IPv6 one by its /64) and the day (the address itself is
+ * kept nowhere). */
 async function caller(request, now) {
   const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() || "unknown";
-  return hex(await sha256(`${ip}|${day(now)}`)).slice(0, 24);
+  return hex(await sha256(`${ipKey(ip)}|${day(now)}`)).slice(0, 24);
 }
 
 /** Compare two secrets in constant time (both hashed first, so their lengths do not show). */
@@ -132,17 +166,58 @@ async function authorized(request, env) {
   return expected.length >= 16 && given.length > 0 && (await sameSecret(given, expected));
 }
 
-/** The body as text, or null when it is larger than `max` bytes (measured only when no length was declared). */
+/** The body as text, or null when it is larger than `max` bytes: refused by its declared length, else read only up to
+ * the limit (a body sent without a length is not taken whole into memory first). */
 async function readBody(request, max) {
   const declared = request.headers.get("Content-Length");
   if (declared !== null && Number(declared) > max) return null;
-  const text = await request.text();
-  if (declared !== null) return text; // the body is the length it declared, within the limit
-  return encoder.encode(text).length > max ? null : text;
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const parts = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > max) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    parts.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let at = 0;
+  for (const part of parts) { bytes.set(part, at); at += part.byteLength; }
+  return new TextDecoder().decode(bytes);
 }
+
+/** Over the ten-second gate for this address and location?  (The binding is approximate and local; the counters decide.) */
+async function bursting(request, deps) {
+  if (!deps.burst) return false;
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  return !(await deps.burst(ipKey(ip)));
+}
+
+/** A request noted by the sentinel without waiting for it (an answer that needs no decision from it). */
+function note(s, route, status, extra = {}) {
+  const a = assess(s.fp, { route, origins: s.origins, ownPrefix: s.cfg.ownPrefix });
+  logLine("relay", s.fp, a, null, status, s.cfg);
+  s.deps.defer(s.deps.observe(s.fp, a, { status, ...extra }, s.cfg));
+}
+
+const BLOCKED = "该地址因异常访问已被暂时限制，请稍后再试";
 
 function limited(gate, limits, cors, what = "请求") {
   const headers = { ...cors, "Retry-After": String(gate.retry || 60) };
+  if (gate.reason === "blocked") return error(403, BLOCKED, "blocked", headers);
+  if (gate.reason === "burst") return error(429, `${what}太频繁，请稍后再试`, "rate_limited", { ...cors, "Retry-After": "10" });
+  if (gate.reason === "not_served") return error(403, "没有这个对话", "not_served", headers);
+  if (gate.reason === "tokens") {
+    return error(429, "今天的免费额度已用完（按用量计），明天再来，或在“设置 → 模型”里填入自己的 API Key", "daily_limit", headers);
+  }
+  if (gate.reason === "total_tokens") {
+    return error(429, "默认服务今天的总额度已用完（按用量计），明天再来，或在“设置 → 模型”里填入自己的 API Key", "total_limit", headers);
+  }
   if (gate.reason === "minute") {
     return error(429, `${what}太频繁：每分钟最多 ${limits.perMinute} 次，请 ${gate.retry || 60} 秒后再试`, "rate_limited", headers);
   }
@@ -156,7 +231,7 @@ function limited(gate, limits, cors, what = "请求") {
 function health(env, cfg, cors) {
   return json({
     ok: Boolean(env.MINIMAX_API_KEY), service: "taochronos-relay", version: VERSION, model: cfg.publicModel, models: [cfg.publicModel],
-    logs: cfg.logs, max_output_tokens: cfg.maxTokens, limits: { per_minute: cfg.chat.perMinute, per_day: cfg.chat.perDay },
+    logs: cfg.logs, max_output_tokens: cfg.maxTokens, limits: { per_minute: cfg.chat.perMinute, per_day: cfg.chat.perDay, tokens_per_day: cfg.chat.tokensPerDay },
   }, 200, cors);
 }
 
@@ -164,16 +239,33 @@ function health(env, cfg, cors) {
 const BASE_RESP = { 1004: [503, "upstream_auth"], 2049: [503, "upstream_auth"], 1008: [503, "upstream_quota"], 1002: [429, "upstream_rate"],
   1039: [429, "upstream_rate"] };
 
-async function chat(request, env, cfg, cors, allowed, deps) {
-  if (!allowed) return error(403, "这个服务只供道乃久网页使用", "forbidden_origin", cors);
+async function chat(request, env, cfg, cors, allowed, deps, s) {
+  if (!allowed) {
+    if (s) note(s, "chat", 403);
+    return error(403, "这个服务只供道乃久网页使用", "forbidden_origin", cors);
+  }
   if (!env.MINIMAX_API_KEY) return error(503, "默认服务尚未配置，请在“设置 → 模型”里填入自己的 API Key", "not_configured", cors);
+  if (await bursting(request, deps)) {
+    if (s) note(s, "chat", 429);
+    return limited({ reason: "burst" }, cfg.chat, cors);
+  }
   const raw = await readBody(request, cfg.maxBody);
-  if (raw === null) return error(413, `对话太长，超过了默认服务的上限（${Math.round(cfg.maxBody / 1e6)} MB）：请新开一个对话`, "too_large", cors);
+  if (raw === null) {
+    if (s) note(s, "chat", 413);
+    return error(413, `对话太长，超过了默认服务的上限（${Math.round(cfg.maxBody / 1e6)} MB）：请新开一个对话`, "too_large", cors);
+  }
   let body;
-  try { body = JSON.parse(raw); } catch { return error(400, "请求不是有效的 JSON", "bad_request", cors); }
+  try { body = JSON.parse(raw); } catch {
+    if (s) note(s, "chat", 400);
+    return error(400, "请求不是有效的 JSON", "bad_request", cors);
+  }
   if (!body || typeof body !== "object" || !Array.isArray(body.messages) || !body.messages.length) {
+    if (s) note(s, "chat", 400);
     return error(400, "请求缺少 messages", "bad_request", cors);
   }
+  // the sentinel reads the request's shape before the relay edits it: is this the page asking?
+  const shape = s ? await bodyShape(body) : null;
+  const a = s ? assess(s.fp, { route: "chat", origins: cfg.origins, shape, knownPrompts: s.cfg.knownPrompts, ownPrefix: s.cfg.ownPrefix }) : null;
   // the default service's model by its public name, or by none (pages older than it send the upstream's own name)
   const asked = body.model;
   if (asked !== undefined && asked !== null && asked !== "" && asked !== cfg.publicModel && !cfg.models.includes(asked)) {
@@ -204,8 +296,26 @@ async function chat(request, env, cfg, cors, allowed, deps) {
   // the page asks for no thinking (a question about who answers): none is to reach the browser, whatever the model sends
   const noReasoning = body.thinking?.type === "disabled";
 
-  const gate = await deps.limit(await caller(request, deps.now()), "chat", cfg.chat);
+  const who = await caller(request, deps.now());
+  // tokens charged now from the request's size (about three bytes a token), reconciled when the answer's usage is known
+  const reserve = Math.ceil(raw.length / 3);
+  let gate;
+  try {
+    gate = await deps.gate({ who, kind: "chat", limits: cfg.chat, fp: s?.fp, a, shape, cfg: s?.cfg, reserve });
+  } catch (err) {
+    // the counters cannot be asked (the object's day's allowance spent, or a failure): a call is never let through
+    // uncounted — the visitor is told to come back, and may use a key of their own
+    console.error("gate", err?.name || "Error");
+    return error(503, "默认服务暂时不可用，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "unavailable", { ...cors, "Retry-After": "60" });
+  }
+  if (s) logLine("relay", s.fp, a, gate.watch, gate.ok ? null : gate.reason === "blocked" ? 403 : 429, s.cfg);
   if (!gate.ok) return limited(gate, cfg.chat, cors);
+  // what the answer costs, as the upstream reports it when the answer ends, counted against the visitor's day (less
+  // what was reserved; an answer that never reports stays charged its reserve)
+  const spend = (usage) => {
+    const tokens = (Number(usage?.prompt_tokens) || 0) + (Number(usage?.completion_tokens) || 0);
+    if (tokens > 0) deps.defer(deps.spend(who, "chat", tokens - (gate.reserved || 0)));
+  };
 
   let upstream;
   try {
@@ -214,6 +324,7 @@ async function chat(request, env, cfg, cors, allowed, deps) {
       headers: { "Content-Type": "application/json", Accept: request.headers.get("Accept") || "application/json",
         Authorization: `Bearer ${env.MINIMAX_API_KEY}` },
       body: payload,
+      signal: request.signal, // the visitor leaving, or stopping the answer, ends the model call too
     });
   } catch {
     return error(502, "默认服务暂时连不上模型服务，请稍后再试", "upstream_unreachable", cors);
@@ -248,13 +359,13 @@ async function chat(request, env, cfg, cors, allowed, deps) {
       return error(status, `${msg}，请稍后再试，或在“设置 → 模型”里填入自己的 API Key`, kind, cors);
     }
     const out = noReasoning && j ? JSON.stringify(withoutReasoning(j)) : text;
-    return new Response(publicText(out, cfg), { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
+    return new Response(publicText(out, cfg, spend), { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
   }
   if (!type.includes("event-stream") || !upstream.body) {
     const text = await upstream.text().catch(() => "");
-    return new Response(publicText(text, cfg), { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
+    return new Response(publicText(text, cfg, spend), { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
   }
-  const stream = (noReasoning ? upstream.body.pipeThrough(reasoningFilter()) : upstream.body).pipeThrough(publicFilter(cfg));
+  const stream = (noReasoning ? upstream.body.pipeThrough(reasoningFilter()) : upstream.body).pipeThrough(publicFilter(cfg, spend));
   return new Response(stream, { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
 }
 
@@ -263,9 +374,10 @@ const PUBLIC_FORMAT = "Tao-";
 const MODEL_FIELD = /"model"\s*:\s*"(?:[^"\\]|\\.)*"/g;
 const LEADING_MODEL = /^\{\s*"model"\s*:\s*"(?:[^"\\]|\\.)*"\s*,/;
 const PUBLIC_FORMAT_FIELD = /"format"\s*:\s*"Tao-/g;
-// fields only the upstream sends (its status block, its content flags, a count in its usage) and an error it reports
-// inside a reply
-const VENDOR_FIELD = /"(?:base_resp|input_sensitive|output_sensitive|input_sensitive_type|output_sensitive_type|output_sensitive_int|total_characters|error)"\s*:/;
+// fields only the upstream sends (its status block, its content flags, a count in its usage), an error it reports
+// inside a reply — and the usage itself (an object: the final event of a stream; "usage":null in the events before it is
+// passed over), read for what the answer cost
+const VENDOR_FIELD = /"(?:base_resp|input_sensitive|output_sensitive|input_sensitive_type|output_sensitive_type|output_sensitive_int|total_characters|error)"\s*:|"usage"\s*:\s*\{/;
 const VENDOR_KEYS = ["base_resp", "input_sensitive", "output_sensitive", "input_sensitive_type", "output_sensitive_type", "output_sensitive_int"];
 const formats = new Map();
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -313,9 +425,10 @@ function renamed(text, cfg) {
 /**
  * A reply, or one event's data, as a visitor may see it: the default service's model name for the upstream's, its
  * reasoning formats renamed, the upstream's own fields dropped, and an error it reports inside a reply told in the
- * default service's words.  Text only in the common case (the Worker's CPU is counted per request).
+ * default service's words.  Text only in the common case (the Worker's CPU is counted per request).  `onUsage` is told
+ * the usage a reply carries (what the answer cost).
  */
-export function publicText(text, cfg) {
+export function publicText(text, cfg, onUsage) {
   const out = renamed(text, cfg);
   if (!VENDOR_FIELD.test(out)) return out;
   let j;
@@ -327,7 +440,10 @@ export function publicText(text, cfg) {
   }
   for (const k of VENDOR_KEYS) delete j[k];
   for (const c of Array.isArray(j.choices) ? j.choices : []) for (const k of VENDOR_KEYS) if (c && typeof c === "object") delete c[k];
-  if (j.usage && typeof j.usage === "object") delete j.usage.total_characters;
+  if (j.usage && typeof j.usage === "object") {
+    if (onUsage) { try { onUsage(j.usage); } catch { /* the count is not the visitor's concern */ } }
+    delete j.usage.total_characters;
+  }
   return JSON.stringify(j);
 }
 
@@ -336,7 +452,7 @@ export function publicText(text, cfg) {
 function streamPattern(cfg) {
   const key = `stream:${cfg.formatPrefix}`;
   if (!formats.has(key)) {
-    const vendor = String.raw`"(?:base_resp|input_sensitive|output_sensitive|input_sensitive_type|output_sensitive_type|output_sensitive_int|total_characters|error)"\s*:`;
+    const vendor = String.raw`"(?:base_resp|input_sensitive|output_sensitive|input_sensitive_type|output_sensitive_type|output_sensitive_int|total_characters|error)"\s*:|"usage"\s*:\s*\{`;
     const format = cfg.formatPrefix ? String.raw`|"format"\s*:\s*"${escapeRe(cfg.formatPrefix)}` : "";
     formats.set(key, new RegExp(String.raw`"model"\s*:\s*"(?:[^"\\]|\\.)*"|${vendor}${format}`, "g"));
   }
@@ -350,7 +466,7 @@ function streamPattern(cfg) {
  * and every byte of an answer passes through here, so nothing is done twice (about 5 ms per MB of stream under Node,
  * most of it decoding and encoding; a long answer is well under 1 MB).
  */
-export function publicFilter(cfg) {
+export function publicFilter(cfg, onUsage) {
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   const pattern = streamPattern(cfg);
@@ -364,7 +480,7 @@ export function publicFilter(cfg) {
     return encoder.encode(out.split(/\r?\n/).map((line) => {
       const m = /^data:\s?(.*)$/.exec(line);
       if (!m || m[1].trim() === "[DONE]") return line;
-      return `data: ${publicText(m[1], cfg)}`;
+      return `data: ${publicText(m[1], cfg, onUsage)}`;
     }).join("\n"));
   };
   return new TransformStream({
@@ -444,6 +560,7 @@ export function reasoningFilter() {
 }
 
 // ------------------------------------------------------------------ records
+const RELAY_PROVIDER = "impf"; // the page's id for the default service (web/js/providers.js)
 const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : undefined);
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 
@@ -475,18 +592,42 @@ export function normalizeRecord(r) {
   return JSON.parse(JSON.stringify(out)); // without the undefined fields
 }
 
-async function submit(request, cfg, cors, allowed, deps) {
-  if (!allowed) return error(403, "这个服务只供道乃久网页使用", "forbidden_origin", cors);
+async function submit(request, cfg, cors, allowed, deps, s) {
+  if (!allowed) {
+    if (s) note(s, "logs", 403);
+    return error(403, "这个服务只供道乃久网页使用", "forbidden_origin", cors);
+  }
   if (!cfg.logs) return error(404, "对话记录已关闭", "logs_off", cors);
+  if (await bursting(request, deps)) {
+    if (s) note(s, "logs", 429);
+    return limited({ reason: "burst" }, cfg.log, cors, "记录");
+  }
   const raw = await readBody(request, cfg.logMax);
   if (raw === null) return error(413, "记录过大", "too_large", cors);
   let r;
-  try { r = JSON.parse(raw); } catch { return error(400, "记录不是有效的 JSON", "bad_record", cors); }
+  try { r = JSON.parse(raw); } catch {
+    if (s) note(s, "logs", 400);
+    return error(400, "记录不是有效的 JSON", "bad_record", cors);
+  }
   const record = normalizeRecord(r);
-  if (!record) return error(400, "记录格式不对", "bad_record", cors);
+  if (!record) {
+    if (s) note(s, "logs", 400);
+    return error(400, "记录格式不对", "bad_record", cors);
+  }
   // the page names the default service's model by its public name; the records (the owner's) keep the one that answered
   if (record.model === cfg.publicModel) record.model = cfg.model;
-  const gate = await deps.limit(await caller(request, deps.now()), "log", cfg.log);
+  const a = s ? assess(s.fp, { route: "logs", origins: cfg.origins, ownPrefix: s.cfg.ownPrefix }) : null;
+  // a record of the default service's own conversation comes from a visitor it answered today; a record of a conversation
+  // held with the visitor's own key (another provider) never passed through here, and is taken on its origin alone
+  const served = record.provider === RELAY_PROVIDER ? "chat" : undefined;
+  let gate;
+  try {
+    gate = await deps.gate({ who: await caller(request, deps.now()), kind: "log", limits: cfg.log, fp: s?.fp, a, cfg: s?.cfg, served });
+  } catch (err) {
+    console.error("gate", err?.name || "Error"); // the record is let go: it is not the visitor's concern
+    return new Response(null, { status: 204, headers: cors });
+  }
+  if (s) logLine("relay", s.fp, a, gate.watch, gate.ok ? 204 : gate.reason === "blocked" ? 403 : 429, s.cfg);
   if (!gate.ok) return limited(gate, cfg.log, cors, "记录");
   await deps.logbook.add(JSON.stringify(record), new Date(deps.now()).toISOString(), cfg.keep);
   return new Response(null, { status: 204, headers: cors });

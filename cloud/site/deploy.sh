@@ -10,6 +10,9 @@ set -euo pipefail
 cd "$(dirname "$0")"
 api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID"
 auth="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
+# the checks below name themselves: the edge rules spare the name the browser integrity check, and the sentinel labels
+# it in its events (never an exemption: the checks score low and are served; security/README.md)
+UA="taochronos-deploy/1"
 host="${SITE_URL#https://}"
 work=$(mktemp -d)
 
@@ -25,9 +28,9 @@ if [ -n "${STORE_TOKEN_SHA256:-}" ]; then
   echo "store uploads: with the token the repository variable STORE_TOKEN_SHA256 names"
 fi
 find='import json,sys,os; r=json.load(sys.stdin)["result"]; print(next((n["id"] for n in r if n["title"]==os.environ["STORE_NAMESPACE"]), ""))'
-ns=$(curl -fsS -H "$auth" "$api/storage/kv/namespaces?per_page=100" | python3 -c "$find" || true)
+ns=$(curl -A "$UA" -fsS -H "$auth" "$api/storage/kv/namespaces?per_page=100" | python3 -c "$find" || true)
 if [ -z "$ns" ]; then
-  ns=$(curl -fsS -X POST -H "$auth" -H "Content-Type: application/json" -d "{\"title\": \"$STORE_NAMESPACE\"}" \
+  ns=$(curl -A "$UA" -fsS -X POST -H "$auth" -H "Content-Type: application/json" -d "{\"title\": \"$STORE_NAMESPACE\"}" \
          "$api/storage/kv/namespaces" | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["id"])' || true)
 fi
 if [ -n "$ns" ]; then
@@ -40,9 +43,9 @@ fi
 # before a container that failed, would answer nothing)
 deployed="${CORPUS_DEPLOYED:-}"
 if [ -z "$deployed" ] && [ -n "$ns" ]; then
-  deployed=$(curl -fsS -H "$auth" "$api/storage/kv/namespaces/$ns/values/deployed%2Fcorpus" 2>/dev/null || true)
+  deployed=$(curl -A "$UA" -fsS -H "$auth" "$api/storage/kv/namespaces/$ns/values/deployed%2Fcorpus" 2>/dev/null || true)
 fi
-if [ -n "$deployed" ] && curl -fsS -o /dev/null -H "$auth" "$api/workers/scripts/taochronos-corpus/settings" 2>/dev/null; then
+if [ -n "$deployed" ] && curl -A "$UA" -fsS -o /dev/null -H "$auth" "$api/workers/scripts/taochronos-corpus/settings" 2>/dev/null; then
   printf '\n[[services]]\nbinding = "CORPUS"\nservice = "taochronos-corpus"\n' >> wrangler.deploy.toml
   echo "the corpus Worker: taochronos-corpus"
 else
@@ -52,7 +55,7 @@ fi
 # once the d1 workflow has imported them all (it records the version in the KV namespace), D1_BACKUP: that version.
 # The Worker answers from them only when there is no container, and only while they hold that version.
 d1=""
-if listed=$(curl -fsS -H "$auth" "$api/d1/database?per_page=100" 2>/dev/null); then
+if listed=$(curl -A "$UA" -fsS -H "$auth" "$api/d1/database?per_page=100" 2>/dev/null); then
   d1=$(python3 -c 'import json,sys; [print(d["name"], d["uuid"]) for d in json.load(sys.stdin)["result"] if d["name"].startswith("taochronos-d1-")]' \
          <<< "$listed" || true)
 else
@@ -64,7 +67,7 @@ while read -r name uuid; do
   printf '\n[[d1_databases]]\nbinding = "D1_%s"\ndatabase_name = "%s"\ndatabase_id = "%s"\n' "${name##*-}" "$name" "$uuid" >> wrangler.deploy.toml
 done <<< "$d1"
 if [ -n "$d1" ] && [ -n "$ns" ]; then
-  backup=$(curl -fsS -H "$auth" "$api/storage/kv/namespaces/$ns/values/deployed%2Fd1" 2>/dev/null || true)
+  backup=$(curl -A "$UA" -fsS -H "$auth" "$api/storage/kv/namespaces/$ns/values/deployed%2Fd1" 2>/dev/null || true)
 fi
 if [[ "$backup" =~ ^[0-9a-f]{12}-[0-9a-f]{8}-s[0-9]+$ ]]; then
   sed -i "/^\[vars\]/a D1_BACKUP = \"$backup\"" wrangler.deploy.toml
@@ -84,11 +87,22 @@ if [ "$status" != 0 ]; then
   fi
   exit "$status"
 fi
+# the sentinel's secrets (security/README.md): the collector's token, so that its events can be taken to the repository
+# (without it the security endpoints answer 401 and the events wait), and the salt that keeps a visitor's key the same
+# across months (optional).  A space or line break pasted with a secret is not part of it.
+if [ -n "${LOG_EXPORT_TOKEN:-}" ]; then
+  printf '%s' "$LOG_EXPORT_TOKEN" | tr -d '[:space:]' | npx --yes "$WRANGLER" secret put LOG_EXPORT_TOKEN --config wrangler.deploy.toml
+else
+  echo "::warning::LOG_EXPORT_TOKEN is not set: the site's sentinel keeps its events until the chat-logs workflow can take them (security/README.md)"
+fi
+if [ -n "${SENTINEL_SALT:-}" ]; then
+  printf '%s' "$SENTINEL_SALT" | tr -d '[:space:]' | npx --yes "$WRANGLER" secret put SENTINEL_SALT --config wrangler.deploy.toml
+fi
 
 # ---------------------------------------------------------------- check the site over HTTPS
 # the first time, the DNS record and the certificate take a few minutes (until then the name may still lead elsewhere)
 for i in $(seq 1 40); do
-  if curl -fsS --max-time 30 -D "$work/headers.txt" -o "$work/page.html" "$SITE_URL/" && grep -qi '^server: cloudflare' "$work/headers.txt"; then
+  if curl -A "$UA" -fsS --max-time 30 -D "$work/headers.txt" -o "$work/page.html" "$SITE_URL/" && grep -qi '^server: cloudflare' "$work/headers.txt"; then
     break
   fi
   echo "waiting for $SITE_URL on Cloudflare ($i)"; sleep 15
@@ -98,14 +112,14 @@ if ! grep -qi '^server: cloudflare' "$work/headers.txt" 2>/dev/null; then
 fi
 grep -qi '^strict-transport-security' "$work/headers.txt"
 grep -q "道乃久" "$work/page.html"
-test "$(curl -s --max-time 30 -o /dev/null -w '%{http_code}' "http://$host/")" = "301"
-curl -fsS --max-time 30 -o /dev/null "$SITE_URL/runtime/boot.json"
+test "$(curl -A "$UA" -s --max-time 30 -o /dev/null -w '%{http_code}' "http://$host/")" = "301"
+curl -A "$UA" -fsS --max-time 30 -o /dev/null "$SITE_URL/runtime/boot.json"
 echo "$SITE_URL: HTTPS from Cloudflare, http redirected, the page and the browser runtime served"
 
 # ---------------------------------------------------------------- what its API says (this also wakes the full corpus)
 # the container starts on the first call: the first after a new image takes minutes
 for i in $(seq 1 8); do
-  code=$(curl -s -o "$work/info.json" -w '%{http_code}' --max-time 240 "$SITE_URL/api/info" || true)
+  code=$(curl -A "$UA" -s -o "$work/info.json" -w '%{http_code}' --max-time 240 "$SITE_URL/api/info" || true)
   if [ "$code" = "200" ]; then break; fi
   if [ "$code" = "503" ] && grep -q '"corpus": *"none"' "$work/info.json"; then break; fi
   echo "the full corpus answers $code ($i)"; sleep 30
@@ -123,7 +137,7 @@ assert c["kind"] == "full", c
 print(f"the full corpus{' (the D1 backup)' if info.get('backup') else ''}: {c['books']} books, {c['passages']:,} passages, "
       f"{info['tools']['offered']} tools")
 EOF
-curl -fsS --max-time 300 -X POST -H "Content-Type: application/json" -H "Origin: $SITE_URL" \
+curl -A "$UA" -fsS --max-time 300 -X POST -H "Content-Type: application/json" -H "Origin: $SITE_URL" \
   -d '{"name": "classics.search", "arguments": {"query": "桂枝汤", "k": 3}}' "$SITE_URL/api/call" -o "$work/call.json"
 python3 - "$work/call.json" <<'EOF'
 import json, sys

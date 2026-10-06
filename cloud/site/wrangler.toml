@@ -28,10 +28,33 @@ run_worker_first = ["/", "/index.html", "/about", "/about.html", "/attribution",
 [vars]
 ALLOWED_ORIGINS = "https://chat.impf.ai"
 HSTS_MAX_AGE = "86400"
+# the sentinel (security/README.md): observe — every API call scored and, flagged, recorded with its address, never
+# refused; enforce — an address over the block score is refused the API for six hours; off — nothing recorded
+SENTINEL = "observe"
+# a scanner path (/wp-config.php, /.git/HEAD, /xmlrpc.php, …: nothing of the site's) refuses its address the API for a
+# day, in observe mode too: block | observe
+HONEYPOT = "block"
+# the pages' Content-Security-Policy, reported to /api/security/csp and not enforced (empty: none is sent).  Written
+# from what the page loads (security/README.md): its own files, the two inline scripts and two inline styles by their
+# hashes (cloud/test/site.test.js checks them against web/), the Anthropic SDK from jsDelivr, any https model service a
+# visitor names and a local one, images attached as data: and blob:.  The reports are collected with the sentinel's
+# events; a policy that draws none for a while can be enforced.  The in-browser runtime's workers get their own policy
+# in _headers (a worker's policy is the one on its own file)
+CSP_REPORT_ONLY = "default-src 'self'; script-src 'self' 'sha256-8cHKOAsMjSAfwzaoDvyOuFfoKbHgnKmcCuF/FxBYBS4=' 'sha256-3GGkBeyJLucDpcVf9PHI1htNrvh+56Mpc2lBudjsmvA=' https://cdn.jsdelivr.net; style-src 'self' 'sha256-VrLFZKPfHvq0BrCaxwVKgW4iNmTwt7wQKlHT8FtvLDc=' 'sha256-5Fv00cN5Xaipqi9gKad2XUqLKm7+TNig9gVVRc0rhR0='; style-src-attr 'unsafe-hashes' 'sha256-qFn50HMKisaTPwbV1pKoe3olf1lYhv+m32EWXEn8+S4='; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; worker-src 'self'; manifest-src 'self'; font-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'; report-uri /api/security/csp; report-to csp"
 # sha256 of the token that may upload the full corpus store (`taochronos web upload`).  Empty: uploads are off.  To
 # upload a new store, register a new token's sha256 in the repository variable STORE_TOKEN_SHA256 for as long as the
 # upload takes (cloud/README.md); the token itself is kept nowhere here.
 STORE_TOKEN_SHA256 = ""
+
+# the sentinel's memory (security/sentinel.js): per visitor the counts and the score, the addresses refused, the events
+# waiting for the repository's collector (the chat-logs workflow, with LOG_EXPORT_TOKEN — a secret deploy.sh sets)
+[[durable_objects.bindings]]
+name = "WATCH"
+class_name = "Watch"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Watch"]
 
 # per visitor and Cloudflare location, per minute: tool calls and research runs; reads (info, catalogs, passages, polls)
 [[ratelimits]]

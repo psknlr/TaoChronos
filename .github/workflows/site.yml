@@ -24,6 +24,7 @@ on:
       - "agents/**"
       - "skills/**"
       - "evals/gold/**"
+      - "security/**"
       - "architecture-policy.yaml"
       - "pyproject.toml"
       - ".dockerignore"
@@ -59,8 +60,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Test the site's Worker and the corpus Worker
-        run: node --test cloud/test/site.test.js cloud/test/corpus.test.js
+      - name: Test the site's Worker, the corpus Worker and the sentinel (security/)
+        run: node --test cloud/test/site.test.js cloud/test/corpus.test.js security/test/sentinel.test.js
 
   # the site: chat.impf.ai, bound to what the account has
   site:
@@ -92,6 +93,8 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           STORE_TOKEN_SHA256: ${{ vars.STORE_TOKEN_SHA256 }}
+          LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
+          SENTINEL_SALT: ${{ secrets.SENTINEL_SALT }}
         run: bash cloud/site/deploy.sh
 
   # the full corpus: built and deployed when what it is made of changed (the code, the home, the store)
@@ -224,5 +227,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           STORE_TOKEN_SHA256: ${{ vars.STORE_TOKEN_SHA256 }}
+          LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
+          SENTINEL_SALT: ${{ secrets.SENTINEL_SALT }}
           CORPUS_DEPLOYED: "1"
         run: bash cloud/site/deploy.sh
