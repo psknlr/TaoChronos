@@ -169,13 +169,15 @@ settings:
 # ---------------------------------------------------------------- 机器人（PUT /zones/{id}/bot_management）
 # Bot Fight Mode 保持关闭：它对全站生效、不能为收集器与部署检查开例外，还可能质询网页自己的 API 调用。
 # 按行为分：训练用的爬虫拦下（GPTBot、ClaudeBot、CCBot、Bytespider……），搜索引擎与 AI 助手代用户的抓取放行
-# （网页是可被索引的：robots.txt 与 sitemap 由构建生成），托管 robots.txt 开（在站点自己的 robots.txt 前面加上对训练爬虫的声明）。
+# （网页是可被索引的：robots.txt 与 sitemap 由构建生成）。托管 robots.txt 关：它的名单把百度（Baiduspider）、花瓣
+# （PetalBot）、头条（Bytespider）的搜索爬虫也当训练爬虫，叫它们整站别抓，网站会从这些搜索结果里消失。对训练爬虫的
+# 声明改由构建写进站点自己的 robots.txt（src/taochronos/chat/build.py 的 TRAINING_CRAWLERS，不含任何搜索引擎）。
 # 旧字段 ai_bots_protection 已于 2026-09-15 弃用，不再写。不想拦训练爬虫时把 ai_training 改为 disabled
 bot_management:
   fight_mode: false
   ai_training: block
   ai_search: disabled
   ai_user: disabled
-  is_robots_txt_managed: true
+  is_robots_txt_managed: false
   crawler_protection: disabled
   enable_js: false

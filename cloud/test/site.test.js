@@ -409,6 +409,8 @@ test("the policy deployed names the pages' inline scripts and styles by their ha
   for (const h of inline.scripts) assert.ok(directive("script-src").includes(h), `script-src lacks ${h}`);
   for (const h of inline.styles) assert.ok(directive("style-src").includes(h), `style-src lacks ${h}`);
   for (const h of inline.attrs) assert.ok(directive("style-src-attr").includes(h), `style-src-attr lacks ${h}`);
+  // the edge adds Cloudflare Web Analytics' beacon to every page: without it, each visit would file a report
+  assert.ok(directive("script-src").split(" ").includes("https://static.cloudflareinsights.com"), "script-src lacks the analytics beacon");
   assert.match(policy, /report-to csp$/);
   assert.doesNotMatch(policy, /unsafe-inline|unsafe-eval/);
   const headers = readFileSync(new URL("../site/_headers", import.meta.url), "utf-8");

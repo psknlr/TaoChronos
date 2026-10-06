@@ -352,7 +352,8 @@ SQLite wheels, checksums verified against `pyodide-lock.json`.  Archives are det
 For search engines: the page is a script, so `index.html` carries what a crawler reads without it — a short static
 introduction (`.intro-static`, replaced by the conversation once the script runs), the canonical address, Open Graph and
 a schema.org `WebApplication` — and `about.html` describes the platform in full.  The build writes `robots.txt` (the
-pages indexed, `runtime/` and `pyodide/` not) and `sitemap.xml` (`/`, `/about`, `/attribution`) for the site's address
+pages indexed, `runtime/` and `pyodide/` not; crawlers that only gather training data — `TRAINING_CRAWLERS` in
+`build.py`, never a search engine's — asked to stay away) and `sitemap.xml` (`/`, `/about`, `/attribution`) for the site's address
 (`--site`, default `https://chat.impf.ai`; no lastmod, so the build stays deterministic).  To be indexed: verify the
 domain in Google Search Console (a DNS TXT record, added in Cloudflare), submit `https://chat.impf.ai/sitemap.xml`, and
 request indexing of the home page.

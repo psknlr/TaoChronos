@@ -190,13 +190,24 @@ def fetch_pyodide(dest: Path, *, base: str = PYODIDE_CDN, packages: list[str] = 
 PAGES = ("", "about", "attribution")
 
 
+# crawlers that gather pages only to train models: asked here to stay away (the edge also refuses the verified ones,
+# security/rules.yaml ai_training).  A search engine's crawler is never named — Baiduspider, PetalBot and Bytespider
+# gather for search as well — so every search engine reads the rules for every crawler
+TRAINING_CRAWLERS = ("GPTBot", "ClaudeBot", "anthropic-ai", "Claude-Web", "CCBot", "Google-Extended", "Applebot-Extended",
+                     "Google-CloudVertexBot", "meta-externalagent", "FacebookBot", "Amazonbot", "cohere-ai", "Diffbot", "omgili",
+                     "MistralAI-Training")
+
+
 def search_files(site: str) -> dict[str, str]:
     """robots.txt and sitemap.xml for the site at ``site``: the pages are indexed, the runtime and Pyodide (the files
-    the page loads, not pages) are not.  No lastmod: the build stays deterministic."""
+    the page loads, not pages) are not, and crawlers that only gather training data are asked to stay away.  No
+    lastmod: the build stays deterministic."""
     site = site.strip().rstrip("/")
     if not re.match(r"^https://[^/\s]+$", site):
         raise ValueError(f"the site must be an https origin: {site!r}")
-    robots = (f"User-agent: *\nAllow: /\nDisallow: /runtime/\nDisallow: /pyodide/\n\nSitemap: {site}/sitemap.xml\n")
+    robots = ("User-agent: *\nAllow: /\nDisallow: /runtime/\nDisallow: /pyodide/\n\n"
+              + "".join(f"User-agent: {agent}\nDisallow: /\n\n" for agent in TRAINING_CRAWLERS)
+              + f"Sitemap: {site}/sitemap.xml\n")
     urls = "".join(f"  <url><loc>{site}/{page}</loc></url>\n" for page in PAGES)
     sitemap = ('<?xml version="1.0" encoding="UTF-8"?>\n'
                f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{urls}</urlset>\n')

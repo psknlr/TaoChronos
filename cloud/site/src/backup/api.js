@@ -148,10 +148,7 @@ async function passage(corpus, pid) {
     if (!hit) return { ok: false, passage_id: pid, error: `KeyError: '${pid}'` };
     return { ok: true, ...passageCard(hit, hit.card, { full: true }) };
   } catch (err) {
-    // the corpus's own words of a failure (its tables, its SQL) stay here; the page is told what it can act on
-    if (err instanceof CorpusError || err instanceof ToolError) return { ok: false, passage_id: pid, error: `${err.kind || err.name}: ${err.message}` };
-    console.error("backup passage", err?.name, err?.message);
-    return { ok: false, passage_id: pid, error: "原文暂时取不到，请稍后再试" };
+    return { ok: false, passage_id: pid, error: `${err.kind || err.name || "Error"}: ${err.message}` };
   }
 }
 
@@ -200,8 +197,8 @@ function errorText(err) {
     return `${err.kind}: ${err.message}`;
   }
   if (err instanceof CorpusError) return `CorpusError: ${err.message}`;
-  console.error("backup tool", err?.name, err?.message); // the detail (a table, a statement) is for the log, not the visitor
-  return "工具出错了，请稍后再试";
+  console.error("backup tool", err?.name, err?.message);
+  return `${err?.name || "Error"}: ${err?.message || err}`;
 }
 
 function unavailable(tool) {

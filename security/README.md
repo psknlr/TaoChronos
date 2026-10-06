@@ -118,7 +118,8 @@ Workers Logs（两个 Worker 都开了 observability）：分数 ≥ 1、状态 
 页面（`/`、`/about`、`/attribution`）带：HSTS、`nosniff`、`Referrer-Policy`、`X-Frame-Options: SAMEORIGIN`、`Permissions-Policy`（关掉页面用不到的设备能力；剪贴板保留）、
 `Cross-Origin-Opener-Policy: same-origin`、`Cross-Origin-Resource-Policy: same-origin`，以及 **只报告、不执行** 的 `Content-Security-Policy-Report-Only`
 （`cloud/site/wrangler.toml` 的 `CSP_REPORT_ONLY`；报告发到 `/api/security/csp`，随哨兵事件取回）。策略按页面实际加载的东西写成：自己的文件；两段内联脚本与两段内联样式按
-**哈希**放行（`cloud/test/site.test.js` 核对哈希与 `web/` 一致：改了内联脚本就要更新策略）；jsDelivr 上的 Anthropic SDK；访客填的任何 https 模型服务与本机服务
+**哈希**放行（`cloud/test/site.test.js` 核对哈希与 `web/` 一致：改了内联脚本就要更新策略）；jsDelivr 上的 Anthropic SDK；Cloudflare Web Analytics 的统计脚本
+（`static.cloudflareinsights.com`：由边缘插入每个页面，仓库里没有；关掉 Web Analytics 后可从策略里删去）；访客填的任何 https 模型服务与本机服务
 （`https:`、`http://localhost:*`）；附图的 `data:`/`blob:`。浏览器内运行环境的两个 Worker 脚本有自己的策略（`cloud/site/_headers`：WebAssembly 需要 `'wasm-unsafe-eval'`）。
 报告只留目录、被拦的来源与出处（不留查询串与页面文字），同一访客的同一违规十分钟内只记一次。看报告先按浏览器内核分组：Chromium < 97、Firefox < 102、
 Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView）会为此报 script-src——那不是策略的错。
@@ -156,7 +157,9 @@ Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView
 大陆访客常用的 VPN 出口，而质询页在大陆不一定打得开——哨兵只把它当两分的信号。要用先在 Security → Analytics 看这些 ASN 占正常页面访问的比例。
 
 另有区域设置（强制 HTTPS、TLS ≥ 1.2、TLS 1.3、浏览器完整性检查、质询有效期 30 分钟、边缘 HSTS 半年不含子域）与机器人设置
-（Bot Fight Mode 关；按行为分：训练用的爬虫 `ai_training: block`，搜索引擎与 AI 助手代用户的抓取放行——网页本来就是可索引的；托管 robots.txt 开。
+（Bot Fight Mode 关；按行为分：训练用的爬虫 `ai_training: block`，搜索引擎与 AI 助手代用户的抓取放行——网页本来就是可索引的。
+托管 robots.txt **关**：Cloudflare 的名单把百度、花瓣、头条的搜索爬虫也列为训练爬虫并整站禁止，网站会从这些搜索结果里消失；
+对训练爬虫的声明由构建写进站点自己的 robots.txt，不点名任何搜索引擎（`tests/test_chat.py` 逐个核对各搜索引擎都能抓页面）。
 不想拦训练爬虫就把 `ai_training` 改为 `disabled`）。
 
 **与控制台助手方案的差别**：它提的两条 60 秒窗口、300 秒封禁的速率限制在免费计划上写不进去（只有 1 条、10 秒）；12 个固定 IP 的拦截名单一周就过时
@@ -167,14 +170,17 @@ Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView
 
 1. **建一个专用令牌**（不要扩大部署令牌）：Cloudflare 头像 → My Profile → API Tokens → Create Token → Custom token，权限：
    Zone · Zone WAF · Edit；Zone · Zone Settings · Edit；Zone · Bot Management · Edit；Zone · Zone · Read；Account · Account Filter Lists · Edit。
-   Zone Resources 选 `impf.ai`。存为仓库 Secret `CLOUDFLARE_SECURITY_TOKEN`。
-2. **再建一个只读令牌**：Zone · Analytics · Read（`impf.ai`）。存为仓库 Secret `CLOUDFLARE_ANALYTICS_TOKEN`。
+   Zone Resources 选 `impf.ai`。存为仓库 Secret `CLOUDFLARE_SECURITY_TOKEN`（Settings → Secrets and variables → Actions →
+   **Secrets** 选项卡 → New repository secret；不是 Variables，也不是某个 Environment 的 Secret，名称一字不差）。
+2. **再建一个只读令牌**：Zone · Analytics · Read（`impf.ai`）。同样存为仓库 Secret `CLOUDFLARE_ANALYTICS_TOKEN`。
 3. 仓库 Variables 里新建 `CLOUDFLARE_ZONE_ID`（Cloudflare → impf.ai → Overview 右侧 API 区的 Zone ID）。
 4. **Actions → security → Run workflow**，action 选 `plan`：只读，列出会改什么。再运行一次选 `apply`。
+   手动运行时缺了哪个令牌或变量，对应的任务会失败并写出名称；每天的定时运行只提示、不失败。
    本机：`CLOUDFLARE_SECURITY_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… python3 security/apply.py plan`（需要 `pip install pyyaml`）。
 5. 验证：手动运行一次 chat-logs 工作流（收集器要能过）、site 工作流（部署检查要能过）；48 小时后看 Cloudflare → impf.ai → Security → Events，
    按描述里的 `[taochronos] n` 筛选，确认没有真实访客被拦。
-6. security 工作流每天 01:41 UTC 把前一天的边缘事件取回 `data/security-logs/edge/`，并更新 `suspects.json`。
+6. security 工作流每天 01:41 UTC 把前一天的边缘事件取回 `data/security-logs/edge/`，并更新 `suspects.json`。查询按区域自己报的限额来写
+   （字段名、能回看多久、单次窗口多宽、一次能要多少字段）；运行日志末行的 `limits` 就是这些限额，前一天有够不着的时段会以 notice 写明。
 
 ### 应急
 

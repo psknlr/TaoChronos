@@ -8,7 +8,8 @@
   suspects the suspects, printed
 
 Environment: CLOUDFLARE_ANALYTICS_TOKEN — a read-only token with Zone → Analytics: Read on impf.ai (never the deploy
-token); CLOUDFLARE_ZONE_ID.  The first query asks the zone which fields its plan exposes, and asks only for those.
+token); CLOUDFLARE_ZONE_ID.  The first query asks the zone what its plan exposes of each node (the fields, how far back,
+how wide a window, how many fields a query may name) and the pulls keep within it; what was out of reach is said.
 """
 
 from __future__ import annotations
@@ -60,13 +61,57 @@ def query(token: str, q: str, variables: dict) -> dict:
 def available(token: str, zone: str) -> dict[str, dict]:
     """What the zone's plan exposes of the two nodes: enabled, the fields, the limits."""
     q = ("query($zone: string) { viewer { zones(filter: {zoneTag: $zone}) { settings { "
-         "firewallEventsAdaptive { enabled availableFields maxDuration maxPageSize notOlderThan } "
-         "httpRequestsAdaptiveGroups { enabled availableFields maxDuration maxPageSize notOlderThan } } } } }")
+         "firewallEventsAdaptive { enabled availableFields maxDuration maxNumberOfFields maxPageSize notOlderThan } "
+         "httpRequestsAdaptiveGroups { enabled availableFields maxDuration maxNumberOfFields maxPageSize notOlderThan } } } } }")
     data = query(token, q, {"zone": zone})
     zones = data["viewer"]["zones"]
     if not zones:
         raise SystemExit("the zone is not visible to this token (Zone → Analytics: Read on impf.ai, and the right CLOUDFLARE_ZONE_ID)")
     return zones[0]["settings"]
+
+
+def offered(wanted: list[str], node: dict, nested: str = "") -> list[str]:
+    """The wanted fields the node offers, in order.  availableFields names a nested field by its path joined with '_'
+    (dimensions_clientIP, avg_sampleInterval); a node that lists none is asked for all of them."""
+    have = {str(f).replace(".", "_") for f in node.get("availableFields") or []}
+    if not have:
+        return list(wanted)
+    return [f for f in wanted if (f"{nested}_{f}" if nested else f) in have]
+
+
+def capped(fields: list[str], node: dict, others: int = 0) -> list[str]:
+    """As many of the fields as a query of the node may name beside `others`."""
+    most = int(node.get("maxNumberOfFields") or 0)
+    return fields[: max(most - others, 0)] if most else fields
+
+
+def reach(node: dict, start: datetime, end: datetime, now: datetime) -> datetime | None:
+    """Where a query of [start, end) may begin: not before the node's notOlderThan (five minutes inside it, for the
+    clock and the run); None when none of it is in reach."""
+    older = int(node.get("notOlderThan") or 0)
+    if older:
+        start = max(start, (now - timedelta(seconds=older) + timedelta(minutes=5)).replace(second=0, microsecond=0))
+    return start if start < end else None
+
+
+def slices(start: datetime, end: datetime, width: timedelta) -> list[tuple[str, str]]:
+    """[start, end) in windows no wider than width, as the API's times."""
+    out = []
+    while start < end:
+        stop = min(start + width, end)
+        out.append((start.strftime("%Y-%m-%dT%H:%M:%SZ"), stop.strftime("%Y-%m-%dT%H:%M:%SZ")))
+        start = stop
+    return out
+
+
+def widest(node: dict, most: timedelta) -> timedelta:
+    """The window a query of the node may cover: its maxDuration, and no more than most."""
+    return min(timedelta(seconds=int(node.get("maxDuration") or 0)) or most, most)
+
+
+def limits(node: dict) -> dict:
+    return {k: node.get(k) for k in ("enabled", "notOlderThan", "maxDuration", "maxPageSize", "maxNumberOfFields")} | {
+        "fields": len(node.get("availableFields") or [])}
 
 
 def firewall_events(token: str, zone: str, start: str, end: str, fields: list[str], page: int, pages: int = 40) -> tuple[list[dict], bool]:
@@ -88,23 +133,22 @@ def firewall_events(token: str, zone: str, start: str, end: str, fields: list[st
     return out, False
 
 
-def request_groups(token: str, zone: str, start: str, end: str, host: str, dims: list[str], page: int) -> tuple[list[dict], bool]:
-    """The request groups of the window, in four-hour slices (a group node cannot be paged); (groups, complete) — not
-    complete when a slice filled its page."""
+def request_groups(token: str, zone: str, windows: list[tuple[str, str]], host: str, dims: list[str], page: int,
+                   sampled: bool = True, eyeball: bool = True) -> tuple[list[dict], bool]:
+    """The request groups of the windows (a group node cannot be paged, so they are narrow: four hours at most);
+    (groups, complete) — not complete when a window filled its page.  sampled: ask for the sample interval (a group's
+    count is of the sampled requests); eyeball: only what visitors asked, not the Workers' own fetches."""
+    where = "datetime_geq: $start, datetime_lt: $end, " + ('requestSource: "eyeball", ' if eyeball else "") + "clientRequestHTTPHost: $host"
     q = ("query($zone: string, $start: Time, $end: Time, $host: string, $limit: Int) { viewer { zones(filter: {zoneTag: $zone}) { "
-         "httpRequestsAdaptiveGroups(filter: {datetime_geq: $start, datetime_lt: $end, requestSource: \"eyeball\", clientRequestHTTPHost: $host}, "
-         f"limit: $limit, orderBy: [count_DESC]) {{ count avg {{ sampleInterval }} dimensions {{ {' '.join(dims)} }} }} }} }} }}")
+         f"httpRequestsAdaptiveGroups(filter: {{{where}}}, limit: $limit, orderBy: [count_DESC]) "
+         f"{{ count {'avg { sampleInterval } ' if sampled else ''}dimensions {{ {' '.join(dims)} }} }} }} }} }}")
     out: list[dict] = []
     complete = True
-    begin = datetime.strptime(start, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-    finish = datetime.strptime(end, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-    while begin < finish:
-        stop = min(begin + timedelta(hours=4), finish)
-        rows = query(token, q, {"zone": zone, "start": begin.strftime("%Y-%m-%dT%H:%M:%SZ"), "end": stop.strftime("%Y-%m-%dT%H:%M:%SZ"), "host": host, "limit": page})["viewer"]["zones"][0]["httpRequestsAdaptiveGroups"]
+    for start, end in windows:
+        rows = query(token, q, {"zone": zone, "start": start, "end": end, "host": host, "limit": page})["viewer"]["zones"][0]["httpRequestsAdaptiveGroups"]
         out.extend(rows)
         if len(rows) >= page:
             complete = False
-        begin = stop
     return out, complete
 
 
@@ -142,14 +186,27 @@ def worth(row: dict, volume: int) -> list[str]:
     return why
 
 
-def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str]) -> dict:
-    start = day.strftime("%Y-%m-%dT00:00:00Z")
-    end_dt = day + timedelta(days=1)
-    end = end_dt.strftime("%Y-%m-%dT00:00:00Z")
+def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str], now: datetime | None = None) -> dict:
+    now = now or datetime.now(timezone.utc)
+    end_dt = min(day + timedelta(days=1), now.replace(second=0, microsecond=0))
+    the_day = day.strftime("%Y-%m-%d")
     caps = available(token, zone)
     fw = caps.get("firewallEventsAdaptive") or {}
     rq = caps.get("httpRequestsAdaptiveGroups") or {}
-    kept = {"events": 0, "requests": 0, "skipped": []}
+    kept = {"events": 0, "requests": 0, "skipped": [], "limits": {"firewallEventsAdaptive": limits(fw), "httpRequestsAdaptiveGroups": limits(rq)}}
+
+    def within(node: dict, name: str) -> datetime | None:
+        """Where the node may be asked from, saying what of the day it may not be asked for."""
+        begin = reach(node, day, end_dt, now)
+        keeps = f"the plan keeps {int(node.get('notOlderThan') or 0) // 3600} hours"
+        if end_dt <= day:
+            kept["skipped"].append(f"{name}: {the_day} has not begun")
+        elif begin is None:
+            kept["skipped"].append(f"{name}: {the_day} is out of reach ({keeps})")
+        elif begin > day:
+            kept["skipped"].append(f"{name}: {the_day} before {begin.strftime('%H:%M')} UTC is out of reach ({keeps})")
+        return begin
+
     path = out / day.strftime("%Y") / day.strftime("%m") / f"{day.strftime('%d')}.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
     seen = set()
@@ -160,29 +217,43 @@ def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str]) -> d
             except json.JSONDecodeError:
                 continue
     lines = []
-    if fw.get("enabled"):
-        fields = [f for f in FIREWALL_FIELDS if f in (fw.get("availableFields") or FIREWALL_FIELDS)]
+    fields = capped(offered(FIREWALL_FIELDS, fw), fw)
+    begin = within(fw, "firewall events") if fw.get("enabled") and "datetime" in fields else None
+    if not fw.get("enabled"):
+        kept["skipped"].append("firewallEventsAdaptive is not enabled for this zone/token")
+    elif "datetime" not in fields:
+        kept["skipped"].append(f"firewall events: the zone offers none of the fields asked for (it lists {sorted(fw.get('availableFields') or [])[:12]})")
+    if begin is not None:
         page = min(int(fw.get("maxPageSize") or 1000), 5000)
-        events, complete = firewall_events(token, zone, start, end, fields, page)
-        if not complete:
-            kept["skipped"].append(f"firewall events: more than the pages fetched for {day.strftime('%Y-%m-%d')} (the oldest hours may be missing)")
+        events = []
+        for start, end in slices(begin, end_dt, widest(fw, timedelta(days=1))):
+            got, complete = firewall_events(token, zone, start, end, fields, page)
+            events.extend(got)
+            if not complete:
+                kept["skipped"].append(f"firewall events: more than the pages fetched for {start}–{end} (the oldest of it may be missing)")
         for ev in events:
             key = f"fw:{ev.get('rayName') or ''}:{ev.get('datetime')}:{ev.get('ruleId') or ''}"
             if key in seen:
                 continue
             seen.add(key)
-            lines.append(json.dumps({"key": key, "kind": "firewall", "day": day.strftime("%Y-%m-%d"), **ev}, ensure_ascii=False, sort_keys=True))
+            lines.append(json.dumps({"key": key, "kind": "firewall", "day": the_day, **ev}, ensure_ascii=False, sort_keys=True))
             kept["events"] += 1
-    else:
-        kept["skipped"].append("firewallEventsAdaptive is not enabled for this zone/token")
-    if rq.get("enabled"):
-        dims = [d for d in REQUEST_DIMENSIONS if d in (rq.get("availableFields") or REQUEST_DIMENSIONS)]
+    sampled = bool(offered(["sampleInterval"], rq, "avg"))
+    dims = capped(offered(REQUEST_DIMENSIONS, rq, "dimensions"), rq, 1 + sampled)
+    begin = within(rq, "request groups") if rq.get("enabled") and "clientRequestHTTPHost" in dims else None
+    if not rq.get("enabled"):
+        kept["skipped"].append("httpRequestsAdaptiveGroups is not enabled for this zone/token")
+    elif "clientRequestHTTPHost" not in dims:
+        kept["skipped"].append(f"request groups: the zone offers none of the dimensions asked for (it lists {sorted(rq.get('availableFields') or [])[:12]})")
+    if begin is not None:
         page = min(int(rq.get("maxPageSize") or 2000), 10000)
+        windows = slices(begin, end_dt, widest(rq, timedelta(hours=4)))
+        eyeball = bool(offered(["requestSource"], rq, "dimensions"))
         actions: dict[str, int] = {}
         for host in hosts:
-            groups, complete = request_groups(token, zone, start, end, host, dims, page)
+            groups, complete = request_groups(token, zone, windows, host, dims, page, sampled, eyeball)
             if not complete:
-                kept["skipped"].append(f"request groups of {host}: a four-hour slice filled its page of {page} (the rarest groups may be missing)")
+                kept["skipped"].append(f"request groups of {host}: a window filled its page of {page} (the rarest groups may be missing)")
             for row in groups:
                 act = str(row["dimensions"].get("securityAction") or "")
                 actions[act] = actions.get(act, 0) + 1
@@ -195,11 +266,9 @@ def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str]) -> d
                 if key in seen:
                     continue
                 seen.add(key)
-                lines.append(json.dumps({"key": key, "kind": "requests", "day": day.strftime("%Y-%m-%d"), "requests": volume, "why": why, **d}, ensure_ascii=False, sort_keys=True))
+                lines.append(json.dumps({"key": key, "kind": "requests", "day": the_day, "requests": volume, "why": why, **d}, ensure_ascii=False, sort_keys=True))
                 kept["requests"] += 1
         kept["security_actions_seen"] = actions  # what the zone reports as 'no action': checked once against what worth() ignores
-    else:
-        kept["skipped"].append("httpRequestsAdaptiveGroups is not enabled for this zone/token")
     if lines:
         with path.open("a", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
