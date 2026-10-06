@@ -36,11 +36,12 @@ SENTINEL = "observe"
 HONEYPOT = "block"
 # the pages' Content-Security-Policy, reported to /api/security/csp and not enforced (empty: none is sent).  Written
 # from what the page loads (security/README.md): its own files, the two inline scripts and two inline styles by their
-# hashes (cloud/test/site.test.js checks them against web/), the Anthropic SDK from jsDelivr, any https model service a
-# visitor names and a local one, images attached as data: and blob:.  The reports are collected with the sentinel's
+# hashes (cloud/test/site.test.js checks them against web/), the Anthropic SDK from jsDelivr, Cloudflare's Web Analytics
+# beacon (the edge adds it to every page; it is not in web/), any https model service a visitor names and a local one,
+# images attached as data: and blob:.  The reports are collected with the sentinel's
 # events; a policy that draws none for a while can be enforced.  The in-browser runtime's workers get their own policy
 # in _headers (a worker's policy is the one on its own file)
-CSP_REPORT_ONLY = "default-src 'self'; script-src 'self' 'sha256-8cHKOAsMjSAfwzaoDvyOuFfoKbHgnKmcCuF/FxBYBS4=' 'sha256-3GGkBeyJLucDpcVf9PHI1htNrvh+56Mpc2lBudjsmvA=' https://cdn.jsdelivr.net; style-src 'self' 'sha256-VrLFZKPfHvq0BrCaxwVKgW4iNmTwt7wQKlHT8FtvLDc=' 'sha256-5Fv00cN5Xaipqi9gKad2XUqLKm7+TNig9gVVRc0rhR0='; style-src-attr 'unsafe-hashes' 'sha256-qFn50HMKisaTPwbV1pKoe3olf1lYhv+m32EWXEn8+S4='; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; worker-src 'self'; manifest-src 'self'; font-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'; report-uri /api/security/csp; report-to csp"
+CSP_REPORT_ONLY = "default-src 'self'; script-src 'self' 'sha256-8cHKOAsMjSAfwzaoDvyOuFfoKbHgnKmcCuF/FxBYBS4=' 'sha256-3GGkBeyJLucDpcVf9PHI1htNrvh+56Mpc2lBudjsmvA=' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'sha256-VrLFZKPfHvq0BrCaxwVKgW4iNmTwt7wQKlHT8FtvLDc=' 'sha256-5Fv00cN5Xaipqi9gKad2XUqLKm7+TNig9gVVRc0rhR0='; style-src-attr 'unsafe-hashes' 'sha256-qFn50HMKisaTPwbV1pKoe3olf1lYhv+m32EWXEn8+S4='; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; worker-src 'self'; manifest-src 'self'; font-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'; report-uri /api/security/csp; report-to csp"
 # sha256 of the token that may upload the full corpus store (`taochronos web upload`).  Empty: uploads are off.  To
 # upload a new store, register a new token's sha256 in the repository variable STORE_TOKEN_SHA256 for as long as the
 # upload takes (cloud/README.md); the token itself is kept nowhere here.

@@ -118,7 +118,8 @@ Workers Logs（两个 Worker 都开了 observability）：分数 ≥ 1、状态 
 页面（`/`、`/about`、`/attribution`）带：HSTS、`nosniff`、`Referrer-Policy`、`X-Frame-Options: SAMEORIGIN`、`Permissions-Policy`（关掉页面用不到的设备能力；剪贴板保留）、
 `Cross-Origin-Opener-Policy: same-origin`、`Cross-Origin-Resource-Policy: same-origin`，以及 **只报告、不执行** 的 `Content-Security-Policy-Report-Only`
 （`cloud/site/wrangler.toml` 的 `CSP_REPORT_ONLY`；报告发到 `/api/security/csp`，随哨兵事件取回）。策略按页面实际加载的东西写成：自己的文件；两段内联脚本与两段内联样式按
-**哈希**放行（`cloud/test/site.test.js` 核对哈希与 `web/` 一致：改了内联脚本就要更新策略）；jsDelivr 上的 Anthropic SDK；访客填的任何 https 模型服务与本机服务
+**哈希**放行（`cloud/test/site.test.js` 核对哈希与 `web/` 一致：改了内联脚本就要更新策略）；jsDelivr 上的 Anthropic SDK；Cloudflare Web Analytics 的统计脚本
+（`static.cloudflareinsights.com`：由边缘插入每个页面，仓库里没有；关掉 Web Analytics 后可从策略里删去）；访客填的任何 https 模型服务与本机服务
 （`https:`、`http://localhost:*`）；附图的 `data:`/`blob:`。浏览器内运行环境的两个 Worker 脚本有自己的策略（`cloud/site/_headers`：WebAssembly 需要 `'wasm-unsafe-eval'`）。
 报告只留目录、被拦的来源与出处（不留查询串与页面文字），同一访客的同一违规十分钟内只记一次。看报告先按浏览器内核分组：Chromium < 97、Firefox < 102、
 Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView）会为此报 script-src——那不是策略的错。
@@ -167,10 +168,12 @@ Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView
 
 1. **建一个专用令牌**（不要扩大部署令牌）：Cloudflare 头像 → My Profile → API Tokens → Create Token → Custom token，权限：
    Zone · Zone WAF · Edit；Zone · Zone Settings · Edit；Zone · Bot Management · Edit；Zone · Zone · Read；Account · Account Filter Lists · Edit。
-   Zone Resources 选 `impf.ai`。存为仓库 Secret `CLOUDFLARE_SECURITY_TOKEN`。
-2. **再建一个只读令牌**：Zone · Analytics · Read（`impf.ai`）。存为仓库 Secret `CLOUDFLARE_ANALYTICS_TOKEN`。
+   Zone Resources 选 `impf.ai`。存为仓库 Secret `CLOUDFLARE_SECURITY_TOKEN`（Settings → Secrets and variables → Actions →
+   **Secrets** 选项卡 → New repository secret；不是 Variables，也不是某个 Environment 的 Secret，名称一字不差）。
+2. **再建一个只读令牌**：Zone · Analytics · Read（`impf.ai`）。同样存为仓库 Secret `CLOUDFLARE_ANALYTICS_TOKEN`。
 3. 仓库 Variables 里新建 `CLOUDFLARE_ZONE_ID`（Cloudflare → impf.ai → Overview 右侧 API 区的 Zone ID）。
 4. **Actions → security → Run workflow**，action 选 `plan`：只读，列出会改什么。再运行一次选 `apply`。
+   手动运行时缺了哪个令牌或变量，对应的任务会失败并写出名称；每天的定时运行只提示、不失败。
    本机：`CLOUDFLARE_SECURITY_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… python3 security/apply.py plan`（需要 `pip install pyyaml`）。
 5. 验证：手动运行一次 chat-logs 工作流（收集器要能过）、site 工作流（部署检查要能过）；48 小时后看 Cloudflare → impf.ai → Security → Events，
    按描述里的 `[taochronos] n` 筛选，确认没有真实访客被拦。
