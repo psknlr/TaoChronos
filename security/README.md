@@ -177,7 +177,8 @@ Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView
    本机：`CLOUDFLARE_SECURITY_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… python3 security/apply.py plan`（需要 `pip install pyyaml`）。
 5. 验证：手动运行一次 chat-logs 工作流（收集器要能过）、site 工作流（部署检查要能过）；48 小时后看 Cloudflare → impf.ai → Security → Events，
    按描述里的 `[taochronos] n` 筛选，确认没有真实访客被拦。
-6. security 工作流每天 01:41 UTC 把前一天的边缘事件取回 `data/security-logs/edge/`，并更新 `suspects.json`。
+6. security 工作流每天 01:41 UTC 把前一天的边缘事件取回 `data/security-logs/edge/`，并更新 `suspects.json`。查询按区域自己报的限额来写
+   （字段名、能回看多久、单次窗口多宽、一次能要多少字段）；运行日志末行的 `limits` 就是这些限额，前一天有够不着的时段会以 notice 写明。
 
 ### 应急
 
