@@ -95,6 +95,7 @@ jobs:
           STORE_TOKEN_SHA256: ${{ vars.STORE_TOKEN_SHA256 }}
           LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
           SENTINEL_SALT: ${{ secrets.SENTINEL_SALT }}
+          STATS_TOKEN: ${{ secrets.STATS_TOKEN }}
         run: bash cloud/site/deploy.sh
 
   # the full corpus: built and deployed when what it is made of changed (the code, the home, the store)

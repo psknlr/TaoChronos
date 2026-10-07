@@ -20,7 +20,8 @@
 // (security/sentinel.js) sees the pages, the API and what is not found: a scanner path refuses its address for a day, an
 // API call that is not the page's is scored and, flagged, kept whole for the owner; addresses are kept only then.
 
-import { assess, fingerprint, ipKey, isHoneypot, logLine, sentinelConfig, serveSecurity } from "../../../security/sentinel.js";
+import { assess, fingerprint, ipKey, isHoneypot, logLine, sentinelConfig, serveSecurity, WatchCore } from "../../../security/sentinel.js";
+import { place, serveStats, usageConfig, usageDay } from "../../../security/usage.js";
 import { answer as backupAnswer, ready as backupReady } from "./backup/api.js";
 
 export const DEFAULTS = {
@@ -136,8 +137,43 @@ async function site(request, env, s) {
     // a page asked for by what is not a browser, or a file that is not there (a probe, or a link gone stale): noted
     if (res.status === 404) note(s, "other", 404);
     else if (assess(s.fp, { route: "page", ownPrefix: s.cfg.ownPrefix }).score >= 1) note(s, "page", res.status);
+    // a page a browser opened (only the pages come through this Worker: run_worker_first) is counted for the 统计 pane
+    if (res.status === 200 && request.method === "GET" && s.fp.uaClass === "browser" && s.deps.watch?.usage) tally(s, env);
   }
   return res;
+}
+
+// ------------------------------------------------------------------ the counts for the settings' 统计 pane
+const BATCH_MS = 15000;
+
+/**
+ * A page opened, counted by day and place (security/usage.js) — held in this instance (deps.usage) and sent to the
+ * object a moment later with the others of that moment, after the answer: the visitor never waits for it.  The visitor is
+ * counted once a day by the sentinel's hashed key; the address itself never leaves the instance.
+ */
+function tally(s, env) {
+  const u = s.deps.usage || (s.deps.usage = { counts: new Map(), visitors: new Map(), pending: false });
+  const offset = usageConfig(env).offset;
+  const day = usageDay(s.now, offset);
+  const { country, region } = place(s.fp);
+  const key = `${day}|${country}|${region}`;
+  u.counts.set(key, (u.counts.get(key) || 0) + 1);
+  const visitor = `${day}|${ipKey(s.fp.ip)}`;
+  if (!u.visitors.has(visitor) && u.visitors.size < 5000) u.visitors.set(visitor, { day, country, region, ip: s.fp.ip });
+  if (u.pending) return;
+  u.pending = true;
+  const moment = s.deps.batch ? s.deps.batch() : new Promise((resolve) => setTimeout(resolve, BATCH_MS)); // a test says when
+  s.deps.defer((async () => {
+    await moment;
+    const counts = [...u.counts].map(([k, n]) => { const [d, c, r] = k.split("|"); return { day: d, kind: "view", country: c, region: r, n }; });
+    const visitors = [...u.visitors.values()];
+    u.counts = new Map();
+    u.visitors = new Map();
+    u.pending = false;
+    const seen = [];
+    for (const v of visitors) seen.push({ day: v.day, kind: "visitor", who: await WatchCore.who(v.ip, s.cfg, s.now), country: v.country, region: v.region });
+    await s.deps.watch.usage(counts, seen, usageDay(s.now, offset));
+  })());
 }
 
 /** The headers every answer carries: https from now on, no sniffing, no framing by other sites, no device features;
@@ -190,6 +226,13 @@ async function api(request, env, cfg, deps, url, s) {
   if (store) {
     if (deps.limit && !(await deps.limit("call", who))) return json({ error: "请求太频繁，请稍候再试", rate_limited: true }, 429, { "Retry-After": "60" });
     return storePart(request, env, cfg, store[1]);
+  }
+  if (url.pathname === "/api/stats") { // the counts for the settings' 统计 pane: the stats token's holder (security/usage.js)
+    if (deps.limit && !(await deps.limit("read", who))) return json({ error: "请求太频繁，请稍候再试", rate_limited: true }, 429, { ...cors, "Retry-After": "60" });
+    if (!deps.watch?.stats) return json({ error: "这里没有统计" }, 404, cors);
+    const ucfg = usageConfig(env);
+    const today = usageDay(deps.now ? deps.now() : Date.now(), ucfg.offset);
+    return serveStats(request, url, { cfg: ucfg, stats: (days) => deps.watch.stats(days, today), cors, today });
   }
   const isGet = request.method === "GET" || request.method === "HEAD";
   if (!(isGet && GETS.test(url.pathname)) && !(request.method === "POST" && POSTS.test(url.pathname))) {

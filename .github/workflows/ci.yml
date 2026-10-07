@@ -34,7 +34,7 @@ jobs:
         with:
           node-version: "22"
       - name: The relay (道乃久默认服务) and the sentinel both Workers share (security/)
-        run: node --test relay/test/relay.test.js security/test/sentinel.test.js
+        run: node --test relay/test/relay.test.js security/test/sentinel.test.js security/test/usage.test.js
 
   cloud:
     runs-on: ubuntu-latest

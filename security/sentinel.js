@@ -255,6 +255,7 @@ export async function bodyShape(body) {
   for (let i = msgs.length - 1; i >= 0; i--) if (msgs[i]?.role === "user") { lastUser = msgs[i]; break; }
   const shape = {
     msgs: msgs.length, chars, system, stream: body?.stream === true, streamOptions: Boolean(body?.stream_options),
+    turn: msgs.length > 0 && msgs[msgs.length - 1]?.role === "user", // a question asked, not a tool round of one
     tools: Array.isArray(body?.tools) ? body.tools.length : 0,
     maxTokensKey: body && "max_completion_tokens" in body ? "max_completion_tokens" : body && "max_tokens" in body ? "max_tokens" : null,
   };

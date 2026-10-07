@@ -194,6 +194,24 @@ Keyboard: Enter sends, Shift+Enter breaks the line (input methods are respected)
 conversation, Ctrl/⌘+B the conversation list, Ctrl/⌘+J the side panel, `/` focuses the input.  Conversations are kept in
 this browser (IndexedDB); **设置 → 数据** exports and imports them (JSON) or one as Markdown.
 
+## 设置 → 统计 — how much the site is used, and from where
+
+The site's owner reads the site's usage under **设置 → 统计**, over the last 7, 30 or 90 days: pages opened and their
+visitors (the site's Worker counts a page a browser opens — crawlers and scripts are not counted), questions asked of
+道乃久默认服务, the model calls they took and who asked (the relay counts each call it lets through; a tool round of a
+question is a call, not a question).  Four stat tiles with the change against the days before, a day-by-day line for
+pages and one for questions, and the countries and China's provinces by pages opened — every chart switches to a table.
+A day runs on Beijing time.  Visitors are counted once a day by the sentinel's hashed key (dropped after two days); a
+place is the country and first-level region Cloudflare puts the request in (ISO 3166-2; the page names China's
+provinces); no address is kept (`security/usage.js`, `/api/stats` on the site, `/v1/stats` on the relay).
+
+The counts are read with a token: create the repository secret **`STATS_TOKEN`** (16 characters or more, e.g.
+`openssl rand -hex 24`), let the site and relay workflows deploy (a push, or Run workflow), then enter the same value in
+the pane once — it is kept in that browser only, and **忘记令牌** removes it.  `STATS_PUBLIC = "1"` in both
+`wrangler.toml` files shows the counts to every visitor instead; `STATS_UTC_OFFSET` moves the day boundary.  Without the
+token set, the pane says how to set it; on a page with neither the site's server nor the relay (a local server, the
+GitHub Pages copy), it says the counts live on chat.impf.ai.
+
 ## What the model is offered
 
 `taochronos.chat.catalog` turns the tool mesh into function schemas.  In **精选 + 目录** mode (the default) the model

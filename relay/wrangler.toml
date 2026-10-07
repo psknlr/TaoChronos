@@ -35,6 +35,10 @@ TOTAL_TOKENS_PER_DAY = "200000000"
 SENTINEL = "observe"
 # a scanner path (/wp-config.php, /.git/HEAD, /xmlrpc.php, …) refuses its address for a day, in observe mode too: block | observe
 HONEYPOT = "block"
+# the counts behind the page's 统计 pane in the settings (security/usage.js, docs/web.md): read with the secret
+# STATS_TOKEN, or by anyone when STATS_PUBLIC = "1"; a day runs on UTC+8 (STATS_UTC_OFFSET, in hours)
+STATS_PUBLIC = "0"
+STATS_UTC_OFFSET = "8"
 # conversation records, sent only by visitors who agreed; "off" stops collecting them
 LOGS = "on"
 ALLOWED_ORIGINS = "https://chat.impf.ai,http://chat.impf.ai,https://psknlr.github.io"
