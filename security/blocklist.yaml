@@ -1,0 +1,59 @@
+# 封禁名单：边缘的 IP 列表 taochronos_block（rules.yaml 的 list），规则 tc-block-list 让其中的地址在两个主机上都只得到 403
+# （security/README.md「封禁名单」）。security/apply.py 把这里未过期的条目写进列表；改了本文件合并进 main 后，security
+# 工作流自动只同步名单。
+#
+# 只收表现出攻击意图的地址：找漏洞或密钥的路径（.git、.env、wp-、配置文件……）、冒充爬虫、成批的探测。只是请求头不像浏览器、
+# 只抓了首页、或来自机房网络，都不够——那可能是真实访客（大陆访客常走机房 VPN）、链接预览或安全检测。每条写明看到了什么
+# （why）、何时（seen），并有到期日（until）：扫描器的地址常是租来的，几个月后可能转给别人；过期的条目 apply 时自动移出。
+#
+# 在 Cloudflare 控制台里手动加进列表的地址（应急）不带 [taochronos] 标记，apply 保留它们；事后照样补进这里。
+
+block:
+  - ip: 82.102.18.116
+    why: "WordPress 扫描：53 次请求，在 /blog/、/site/、/sito/、/2018/、/wp/、/wordpress/ 等十个目录下找 wp-includes/wlwmanifest.xml"
+    seen: 2026-10-05
+    until: 2027-01-05
+  - ip: 216.81.200.21
+    why: "在两个主机上探测 /.git/config，冒充 Googlebot-Image 与旧版安卓 Chrome"
+    seen: 2026-10-05
+    until: 2027-01-05
+  - ip: 93.123.109.101
+    why: "在中转上找 AI 与模型网关的配置和密钥（/api/config/ai、/litellm_config.yaml）及 Atlassian 接口；托管网络 AS48090"
+    seen: 2026-10-06
+    until: 2027-01-06
+  - ip: 34.76.3.119
+    why: "Joomla 探测（/media/system/js/core.js），伪造来源页；Google Cloud 机房"
+    seen: 2026-10-06
+    until: 2027-01-06
+
+# 永不封禁：与这些网段重叠的条目 apply 拒绝写入（整份名单都不写，直到改正）。
+never:
+  - net: 160.79.104.0/21
+    why: "Anthropic 的出口网段：本项目在 Claude Code 里做的部署检查与测试从这里来"
+  - net: 66.249.64.0/19
+    why: "Googlebot（谷歌搜索的爬虫）"
+  - net: 180.163.0.0/16
+    why: "360 搜索的爬虫与 360 浏览器的网址安全检测（上海电信；2026-10-06 见过五个地址）"
+  # Cloudflare 自己（边缘、SSL 检测等），https://www.cloudflare.com/ips/
+  - {net: 173.245.48.0/20, why: Cloudflare}
+  - {net: 103.21.244.0/22, why: Cloudflare}
+  - {net: 103.22.200.0/22, why: Cloudflare}
+  - {net: 103.31.4.0/22, why: Cloudflare}
+  - {net: 141.101.64.0/18, why: Cloudflare}
+  - {net: 108.162.192.0/18, why: Cloudflare}
+  - {net: 190.93.240.0/20, why: Cloudflare}
+  - {net: 188.114.96.0/20, why: Cloudflare}
+  - {net: 197.234.240.0/22, why: Cloudflare}
+  - {net: 198.41.128.0/17, why: Cloudflare}
+  - {net: 162.158.0.0/15, why: Cloudflare}
+  - {net: 104.16.0.0/13, why: Cloudflare}
+  - {net: 104.24.0.0/14, why: Cloudflare}
+  - {net: 172.64.0.0/13, why: Cloudflare}
+  - {net: 131.0.72.0/22, why: Cloudflare}
+  - {net: "2400:cb00::/32", why: Cloudflare}
+  - {net: "2606:4700::/32", why: Cloudflare}
+  - {net: "2803:f800::/32", why: Cloudflare}
+  - {net: "2405:b500::/32", why: Cloudflare}
+  - {net: "2405:8100::/32", why: Cloudflare}
+  - {net: "2a06:98c0::/29", why: Cloudflare}
+  - {net: "2c0f:f248::/32", why: Cloudflare}

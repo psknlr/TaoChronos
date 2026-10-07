@@ -2,8 +2,9 @@ name: security
 
 # The edge of impf.ai as code (security/README.md): the WAF custom rules, the rate limit, the zone and bot settings in
 # security/rules.yaml, written to Cloudflare by security/apply.py — on request (Run workflow: plan says what would change,
-# apply writes it); and the edge's own security events and the requests worth a look, pulled every day by
-# security/events.py into data/security-logs/edge/ before the plan's retention lets them go.
+# apply writes it); the block list's addresses (security/blocklist.yaml), written as soon as a change to that file reaches
+# main (only the list: nothing else is touched); and the edge's own security events and the requests worth a look, pulled
+# every day by security/events.py into data/security-logs/edge/ before the plan's retention lets them go.
 # Repository secrets: CLOUDFLARE_SECURITY_TOKEN (Zone WAF, Zone Settings, Bot Management: Edit; Zone: Read; Account Filter
 # Lists: Edit), CLOUDFLARE_ANALYTICS_TOKEN (Zone Analytics: Read); the variable CLOUDFLARE_ZONE_ID (the events job needs
 # it; the edge job can find the zone by name with Zone: Read).  Neither is the deploy token.  A run by hand without them
@@ -22,6 +23,9 @@ on:
         default: ""
   schedule:
     - cron: "41 1 * * *"
+  push:
+    branches: [main]
+    paths: [security/blocklist.yaml]
 
 permissions:
   contents: write
@@ -32,7 +36,7 @@ concurrency:
 
 jobs:
   edge:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,18 +44,22 @@ jobs:
         env:
           TOKEN: ${{ secrets.CLOUDFLARE_SECURITY_TOKEN }}
         run: |
-          # asked for by hand, so a missing token is a failure, not a green run that wrote nothing
+          # asked for (by hand, or by a change to the block list), so a missing token is a failure, not a green run that wrote nothing
           if [ -z "$TOKEN" ]; then echo "::error::the repository secret CLOUDFLARE_SECURITY_TOKEN is not set (Settings → Secrets and variables → Actions → Secrets): nothing was planned or written (security/README.md)"; exit 1; fi
-      - name: The rules as code against the zone (${{ inputs.action }})
+      - name: The rules as code against the zone (${{ github.event_name == 'push' && 'apply, the block list only' || inputs.action }})
         env:
           CLOUDFLARE_SECURITY_TOKEN: ${{ secrets.CLOUDFLARE_SECURITY_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ inputs.action }}
         run: |
           python3 -m pip install --quiet pyyaml
-          python3 security/apply.py "${{ inputs.action }}"
+          if [ "$EVENT" = push ]; then python3 security/apply.py apply --only list
+          else python3 security/apply.py "$ACTION"; fi
 
   events:
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Is the analytics token set?
