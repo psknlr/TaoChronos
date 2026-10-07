@@ -1,6 +1,7 @@
 // The conversation: user turns, assistant turns (thinking, tool steps, the answer), citation chips and actions.
 
 import { renderMarkdown } from "../markdown.js";
+import { redact, toolWord } from "../redact.js";
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY } from "../brand.js";
 import { RELAY_ID } from "../providers.js";
 import { fmtMs, h, icon, passageLabel, prettyJSON, progressBar, replace, truncate } from "../util.js";
@@ -8,11 +9,6 @@ import { fmtMs, h, icon, passageLabel, prettyJSON, progressBar, replace, truncat
 export const FAMILY = {
   retrieval: "检索", study: "治学", knowledge: "知识", analytics: "发现", philology: "文献", validation: "核验",
   bridge: "古今", literature: "现代", engine: "研究", meta: "目录", research: "代码",
-};
-
-const ENGINE_NAMES = {
-  taochronos_research: "发现研究", taochronos_session: "研究会话", taochronos_ask: "技能工作流",
-  taochronos_catalog: "工具目录", taochronos_call: "调用工具",
 };
 
 export function toolFamily(name, catalogIndex) {
@@ -25,7 +21,8 @@ export function toolFamily(name, catalogIndex) {
     rwd: "literature", research: "research" }[prefix] || "meta";
 }
 
-export const displayName = (name) => ENGINE_NAMES[name] || name.replace(/__/g, ".");
+/** A tool as the page names it: in plain words, never by its inside name (redact.js). */
+export const displayName = (name) => toolWord(name);
 
 /** The whole thread, or the hero when the conversation is empty. */
 export function renderThread(root, conv, ctx) {
@@ -118,13 +115,13 @@ export function fillAssistant(body, m, ctx, last) {
     else if (seg.type === "tools") body.append(stepsNode(m, seg, k, ctx, live));
     else if (seg.type === "text" && (seg.text || (live && isLast))) {
       const md = h("div.md");
-      md.append(renderMarkdown(seg.text, { streaming: live && isLast, cite: ctx.cite }));
+      md.append(renderMarkdown(redact(seg.text, { streaming: live && isLast }), { streaming: live && isLast, cite: ctx.cite }));
       body.append(md);
     }
   });
   if (live && !segs.length) body.append(h("div.think.live", h("summary", h("span.lbl", "正在思考…"))));
   if (m.error) {
-    body.append(h("div.notice.err", icon("warn"), h("div.grow", m.error),
+    body.append(h("div.notice.err", icon("warn"), h("div.grow", redact(m.error)),
       ctx.running ? null : h("button.btn.secondary", { type: "button", on: { click: () => ctx.onRegenerate(m.id) } }, "重试")));
   }
   if (m.status === "stopped") body.append(h("div.notice.warn", icon("info"), h("div.grow", "已停止生成。")));
@@ -140,8 +137,14 @@ export function fillAssistant(body, m, ctx, last) {
   }
 }
 
-export function answerText(m) {
+/** The answer as the model wrote it — for the model only; what anyone reads of it is answerText. */
+export function rawAnswer(m) {
   return (m.segments || []).filter((s) => s.type === "text").map((s) => s.text).join("\n\n").trim();
+}
+
+/** The answer as a visitor reads it, copies it and the record keeps it: in plain words (redact.js). */
+export function answerText(m) {
+  return redact(rawAnswer(m));
 }
 
 function thinkingNode(m, seg, k, ctx, live) {
@@ -151,7 +154,7 @@ function thinkingNode(m, seg, k, ctx, live) {
   d.addEventListener("toggle", () => { if (d.open) ctx.openThink.add(key); else ctx.openThink.delete(key); });
   const secs = seg.ms ? ` · ${fmtMs(seg.ms)}` : "";
   d.append(h("summary", icon("chev", "sm chev"), h("span.lbl", live ? "思考中…" : "思考过程"), h("span", secs)),
-    h("div.tx", seg.text || "…"));
+    h("div.tx", redact(seg.text, { streaming: live }) || "…"));
   return d;
 }
 
@@ -187,7 +190,7 @@ function toolNode(m, c, key, ctx) {
   const summary = c.status === "preparing" ? "准备参数…" : c.status === "running" ? (c.progress || "运行中…") : (c.summary || "");
   const row = h("button.row", { type: "button" },
     status, h("span.fam", { class: c.family }, FAMILY[c.family] || c.family), h("span.nm", displayName(c.name)),
-    h("span.sm", summary), h("span.ms", c.ms ? fmtMs(c.ms) : ""));
+    h("span.sm", redact(summary)), h("span.ms", c.ms ? fmtMs(c.ms) : ""));
   row.addEventListener("click", () => {
     const now = !t.classList.contains("open");
     t.classList.toggle("open", now);

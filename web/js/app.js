@@ -4,6 +4,7 @@ import { buildHistory, formatOf, runTurn, toolDefs, withoutReasoning } from "./a
 import { streamClaude } from "./llm/anthropic.js";
 import { streamChat } from "./llm/openai.js";
 import { extractCitations, renderMarkdown } from "./markdown.js";
+import { scrub } from "./redact.js";
 import { AGENT, MODEL as ASSISTANT, PUBLISHER, PUBLISHER_EN } from "./brand.js";
 import { FIXED_ID, fixedReply, touchesIdentity } from "./fixed.js";
 import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, publicConversation, RELAY_ID, saveSettings, setRelay }
@@ -17,7 +18,7 @@ import {
 } from "./util.js";
 import { renderDrawer, reportNode } from "./view/drawer.js";
 import { openSettings } from "./view/settings.js";
-import { answerText, fillAssistant, renderedCites, renderThread, toolFamily, verifyBar } from "./view/thread.js";
+import { answerText, displayName, fillAssistant, rawAnswer, renderedCites, renderThread, toolFamily, verifyBar } from "./view/thread.js";
 
 // ------------------------------------------------------------------ state
 const S = {
@@ -1144,11 +1145,12 @@ async function recordTurn(conv, msg) {
         tools.push({ name: c.resolved || c.name, ok: c.status === "ok", ms: c.ms, args: truncate(JSON.stringify(c.args ?? {}), 300) });
       }
     }
+    const said = scrub(rawAnswer(msg)); // as the visitor read it, and how many inside names were told in plain words
     const record = {
       v: 1, id: msg.id, conversation: conv.id, turn: conv.messages.slice(0, idx).filter((m) => m.role === "user").length,
       started: new Date(msg.created).toISOString(), finished: new Date().toISOString(), ms: msg.ms, rounds: msg.rounds,
-      question: (user.text || "").slice(0, 4000), images: user.images?.length || undefined, answer: answerText(msg).slice(0, 12000),
-      status: msg.status, error: msg.error ? String(msg.error).slice(0, 500) : undefined,
+      question: (user.text || "").slice(0, 4000), images: user.images?.length || undefined, answer: said.text.slice(0, 12000),
+      redacted: said.hits || undefined, status: msg.status, error: msg.error ? String(msg.error).slice(0, 500) : undefined,
       model: msg.model, provider: msg.provider, runtime: S.runtimeInfo?.runtime || S.runtime?.kind, corpus: S.runtimeInfo?.corpus?.kind,
       app: S.runtimeInfo?.version, usage: msg.usage || undefined, tools: tools.slice(0, 40), citations: await citationSummary(conv, msg),
     };
@@ -1261,7 +1263,7 @@ function exportMarkdown(conv) {
   for (const m of conv.messages) {
     if (m.role === "user") lines.push("## 问", "", m.text, "");
     else {
-      const tools = (m.segments || []).flatMap((s) => s.calls || []).map((c) => `\`${c.name}\``);
+      const tools = (m.segments || []).flatMap((s) => s.calls || []).map((c) => displayName(c.name));
       lines.push(`## ${AGENT}`, "");
       const about = [m.provider === RELAY_ID ? "道乃久默认服务" : m.model ? `底层模型 ${m.model}` : null,
         tools.length ? `工具 ${[...new Set(tools)].join("、")}` : null].filter(Boolean);

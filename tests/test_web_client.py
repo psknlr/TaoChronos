@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import threading
@@ -26,6 +27,7 @@ import { extractCitations } from "./js/markdown.js";
 import { count } from "./js/util.js";
 import { fixedReply, IDENTITY_REPLY, isIdentityQuestion, touchesIdentity } from "./js/fixed.js";
 import { ServerRuntime } from "./js/runtime.js";
+import { redact, scrub, toolWord } from "./js/redact.js";
 
 // streams: increments and MiniMax's cumulative chunks read alike
 const inc = new Accum(); for (const t of ["桂", "枝", "汤主之。"]) inc.push(t);
@@ -168,6 +170,28 @@ assert.equal(k5.error, "工具运行出错：timeout"); // not the model service
 assert.deepEqual([k6.model, k6.error], ["deepseek-chat", "模型服务返回 400：invalid params"]); // another provider's
 assert.equal(publicConversation(kept), false); // once is enough
 assert.equal(publicError("无法连接道乃久默认服务：网络不通"), "无法连接道乃久默认服务：网络不通");
+
+// what a visitor reads of the model: the names it works with inside — tools, fields, codes, commands, files — in plain
+// words, wherever the model put them; a citation's mark, a link and the platform's own names stay as they are
+const leaked = "用户可在本机运行 `taochronos serve`，并在平台设置中连接；并附 passage_id 以便复核；D1–D5 的多智能体研究；" +
+  "用 `validation__verify_quote`、`audit__claim` 等工具核对，或 classics.search/study.formula；须经专家核验（G7）；见 docs/web.md。";
+const told = scrub(leaked);
+assert.equal(told.text, "用户可在本机运行本地服务，并在平台设置中连接；并附段落编号以便复核；知识发现的多智能体研究；" +
+  "用引文核验、论断审计等工具核对，或古籍检索/方源考；须经专家核验；见内部文件。");
+assert.equal(told.hits, 9);
+assert.equal(redact(told.text), told.text); // once is enough
+const plain = "「太阳病，头痛」[[shanghanlun.c013]] 见 https://chat.impf.ai/a_b?q=classics.search；道乃久（TaoChronos）· Tao-R1；" +
+  "多巴胺 D2 受体、维生素 D3；ICD-10、HPO";
+assert.deepEqual(scrub(plain), { text: plain, hits: 0 });
+assert.equal(redact("D2 概念漂移；D4 分析；门控 G0–G8；技能 S01–S15 的图；证据审计 (S15)；设置 holdout_after 参数；STATS_TOKEN"),
+  "概念漂移；关联规则与隐含关联分析；各级门控；各项技能的图；证据审计；设置相应参数；内部配置");
+// in a code block only the names: the identifiers of the code are its own
+assert.equal(redact("```py\nn_total = 1  # passage_id\nclassics__search(q)\n```"), "```py\nn_total = 1  # 段落编号\n古籍检索(q)\n```");
+// while the answer streams, half a name is never shown
+assert.equal(redact("先用 validation__ver", { streaming: true }), "先用 ");
+assert.equal(redact("先用 validation__verify_quote 核对", { streaming: true }), "先用引文核验核对");
+assert.deepEqual([toolWord("classics__search"), toolWord("study.formula"), toolWord("taochronos_research"), toolWord("study.new_one"), toolWord("…")],
+  ["古籍检索", "方源考", "发现研究", "治学工具", "…"]);
 console.log("ok");
 """
 
@@ -185,6 +209,20 @@ def test_the_client_logic_under_node(tmp_path):
         check = subprocess.run([node, "--check", str(tmp_path / "js" / js.relative_to(ROOT / "web" / "js"))],
                                capture_output=True, text=True, timeout=60)
         assert check.returncode == 0, (js, check.stderr[-1000:])
+
+
+def test_every_tool_the_model_can_call_has_plain_words_on_the_page():
+    """The tool steps and the answers name a tool in plain words, never by its inside name (web/js/redact.js): there are
+    words for every tool the model can be offered, and none of them is an identifier."""
+    from taochronos.chat import ChatRuntime
+
+    source = (ROOT / "web" / "js" / "redact.js").read_text(encoding="utf-8")
+    start = source.index("export const TOOL_WORDS")
+    words = dict(re.findall(r'"?([a-z_]+(?:\.[a-z_]+)?)"?: "([^"]+)"', source[start:source.index("};", start)]))
+    rt = ChatRuntime.create(kind="browser", ephemeral=True)
+    tools = {t["tool"] for t in rt.catalog("all")["tools"]} | {t["tool"] for t in rt.catalog("core")["tools"]} | {"research.run_code"}
+    assert len(tools) > 70 and not sorted(tools - set(words)), sorted(tools - set(words))
+    assert not [w for w in words.values() if re.search(r"[a-z_]", w)], words
 
 
 def _published(web: Path, relay: str) -> None:
@@ -282,7 +320,12 @@ def test_a_conversation_in_the_browser(tmp_path):
             assert "道乃久默认服务" in settings_text and "免密钥" in settings_text and "minimax" not in settings_text.lower()
             page.keyboard.press("Escape")
             page.click(".steps .head")  # the finished steps are folded
-            assert "classics.search" in page.inner_text(".steps .list")
+            steps = page.inner_text(".steps .list")
+            assert "古籍检索" in steps and "classics" not in steps  # a tool by its plain words
+            # the names the model worked with, told in plain words: in the answer and in its thinking, wherever it put them
+            assert "以上经古籍检索检得，可用引文核验复核，出处附段落编号。" in page.inner_text(".msg.assistant .md")
+            said = "".join(page.eval_on_selector_all(".msg.assistant", "els => els.map(e => e.textContent)"))
+            assert "古籍检索检索到了原文" in said and not re.search(r"classics|validation|passage_id|__", said)
             assert "繁简" in page.eval_on_selector_all(".md .cite.ok", "els => els[1].title")
             page.click(".md .cite.ok >> nth=0")
             assert page.inner_text(".passage-view .text mark") == "太阳病，头痛，发热，汗出，恶风，桂枝汤主之"
@@ -618,6 +661,8 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
             rec = records(1)[0]
             assert rec["v"] == 1 and rec["question"] == "桂枝汤主治什么？请给出原文。" and rec["turn"] == 1
             assert "桂枝汤" in rec["answer"] and rec["status"] == "done" and rec["provider"] == "impf" and rec["model"] == "Tao-R1"
+            # the answer as the visitor read it, and how many inside names it was spared (redact.js)
+            assert "以上经古籍检索检得，可用引文核验复核，出处附段落编号。" in rec["answer"] and rec["redacted"] == 3
             assert rec["tools"] and rec["tools"][0]["name"].startswith("classics") and rec["tools"][0]["ok"]
             assert rec["citations"]["total"] == 4 and rec["citations"]["bad"] == 1 and rec["citations"]["pending"] == 0
             assert rec["usage"] == {"input": 1200, "output": 180} and rec["rounds"] == 2
