@@ -17,6 +17,7 @@
 | `GET /v1/logs/export`、`POST /v1/logs/ack` | 仓库的收集器取走记录、确认已提交后删除（需 `LOG_EXPORT_TOKEN`） |
 | `GET /v1/security/export`、`POST /v1/security/ack`、`GET /v1/security/summary` | 哨兵记下的可疑请求事件（取走、确认删除）与当前概览（按分数排列的访客、正在被拒绝的地址）；需 `LOG_EXPORT_TOKEN` |
 | `POST /v1/security/csp` | 浏览器上报的内容安全策略违规（存为事件） |
+| `GET /v1/stats?days=N` | 网页「设置 → 统计」读取的提问与模型调用次数（按天、国家与省份；需 `STATS_TOKEN`，`STATS_PUBLIC = "1"` 时公开；docs/web.md） |
 
 访客按“IP + 日期”的哈希计数，IP 本身不保存；记录里没有 IP。一个问题通常要调用模型几次（每轮工具调用一次）。模型回复末尾报告的
 用量（输入 + 输出 token）也计入该访客当天与全体当天的额度（`TOKENS_PER_DAY`、`TOTAL_TOKENS_PER_DAY`）：用完即拒绝下一次调用。

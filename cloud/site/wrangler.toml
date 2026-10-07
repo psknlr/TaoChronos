@@ -34,6 +34,10 @@ SENTINEL = "observe"
 # a scanner path (/wp-config.php, /.git/HEAD, /xmlrpc.php, …: nothing of the site's) refuses its address the API for a
 # day, in observe mode too: block | observe
 HONEYPOT = "block"
+# the counts behind the page's 统计 pane in the settings (security/usage.js, docs/web.md): read with the secret
+# STATS_TOKEN, or by anyone when STATS_PUBLIC = "1"; a day runs on UTC+8 (STATS_UTC_OFFSET, in hours)
+STATS_PUBLIC = "0"
+STATS_UTC_OFFSET = "8"
 # the pages' Content-Security-Policy, reported to /api/security/csp and not enforced (empty: none is sent).  Written
 # from what the page loads (security/README.md): its own files, the two inline scripts and two inline styles by their
 # hashes (cloud/test/site.test.js checks them against web/), the Anthropic SDK from jsDelivr, Cloudflare's Web Analytics

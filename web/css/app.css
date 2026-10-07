@@ -715,6 +715,68 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(2px); }
   .hero .keyhint { display: none; }
   .composer .hint { display: none; }
 }
+/* ---------------------------------------------------------------- the 统计 pane (web/js/view/stats.js)
+   The marks in one blue, validated against these surfaces in both modes (the dataviz reference palette's first slot: the
+   page's own vermilion is too near --danger to carry data); grid, axes and every word in the page's ink and lines. */
+.stats { --viz-1: #2a78d6; display: grid; gap: 14px; transition: opacity .2s var(--ease); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .stats { --viz-1: #3987e5; } }
+:root[data-theme="dark"] .stats { --viz-1: #3987e5; }
+.stats.busy { opacity: .55; }
+.stats > h3 { margin: 0; }
+.stats > .lead { margin: -8px 0 0; }
+.stats-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.stat-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.stat-tile { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 12px 14px; display: grid; gap: 4px; align-content: start; min-width: 0; }
+.stat-tile .label { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.stat-tile .value { font-size: 26px; font-weight: 650; line-height: 1.15; color: var(--ink); letter-spacing: -.01em; }
+.stat-tile .delta { font-size: 12px; color: var(--ink-3); }
+.stat-tile .delta.up { color: var(--jade); }
+.stat-tile .delta.down { color: var(--danger); }
+.stat-tile .sub { font-size: 12px; color: var(--ink-3); }
+.viz-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.viz-card { margin: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 10px 12px 12px; min-width: 0; }
+.viz-card figcaption { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.viz-card .title { font-size: 13px; font-weight: 600; color: var(--ink); }
+.viz-toggle { font-size: 12px; padding: 3px 8px; }
+.viz-body { position: relative; }
+.viz-line { position: relative; }
+.viz-line svg { display: block; overflow: visible; touch-action: pan-y; }
+.viz-line svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.viz-line .grid { stroke: var(--line); stroke-width: 1; }
+.viz-line .axis { stroke: var(--line-2); stroke-width: 1; }
+.viz-line .tick { fill: var(--ink-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+.viz-line .end { fill: var(--ink-2); font-size: 11.5px; font-weight: 600; }
+.viz-line .line { fill: none; stroke: var(--viz-1); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.viz-line .area { fill: var(--viz-1); opacity: .1; }
+.viz-line .dot { fill: var(--viz-1); stroke: var(--surface); stroke-width: 2; }
+.viz-line .cross { stroke: var(--ink-3); stroke-width: 1; }
+.viz-line .hit { fill: transparent; cursor: crosshair; }
+.hbars { position: relative; display: grid; gap: 8px; }
+.hbar { display: grid; grid-template-columns: minmax(4.5em, 7.5em) minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 12.5px; border-radius: 6px; }
+.hbar:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hbar .name { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbar .track { height: 12px; }
+.hbar .track i { display: block; height: 100%; background: var(--viz-1); border-radius: 0 4px 4px 0; }
+.hbar:hover .track i, .hbar:focus .track i { filter: brightness(1.15); }
+.hbar .val { min-width: 2.5em; text-align: right; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.viz-tip { position: absolute; z-index: 5; pointer-events: none; display: grid; gap: 2px; padding: 6px 9px; white-space: nowrap; font-size: 12px;
+  background: var(--surface); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: var(--shadow); }
+.viz-tip[hidden] { display: none; }
+.viz-tip .row { display: flex; gap: 6px; align-items: baseline; }
+.viz-tip b { color: var(--ink); font-weight: 650; }
+.viz-tip span { color: var(--ink-3); }
+.viz-empty { padding: 14px 0; text-align: center; color: var(--ink-3); font-size: 12.5px; }
+.viz-table-wrap { max-height: 260px; overflow: auto; }
+.viz-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.viz-table th, .viz-table td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+.viz-table th { position: sticky; top: 0; background: var(--surface); color: var(--ink-3); font-weight: 600; }
+.viz-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.stats-note { margin: 0; font-size: 12px; line-height: 1.65; color: var(--ink-3); }
+@media (max-width: 760px) {
+  .stat-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .viz-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 @media print {
   .sidebar, .drawer, .composer-wrap, .topbar, .actions, .to-bottom { display: none !important; }
   body { overflow: visible; background: #fff; }

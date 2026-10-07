@@ -18,6 +18,7 @@
 // refused for a while.  An answer's tokens, as the upstream reports them, count against the visitor's day and the day.
 
 import { assess, bodyShape, fingerprint, ipKey, isHoneypot, logLine, sentinelConfig, serveSecurity } from "../../security/sentinel.js";
+import { place, serveStats, usageConfig, usageDay } from "../../security/usage.js";
 import { day } from "./state.js";
 
 export const VERSION = "1";
@@ -99,7 +100,7 @@ export async function handle(request, env, deps) {
     }
     return new Response(null, {
       status: 204,
-      headers: { ...cors, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Accept",
+      headers: { ...cors, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
         "Access-Control-Max-Age": "86400" },
     });
   }
@@ -116,6 +117,7 @@ export async function handle(request, env, deps) {
     }
     switch (`${request.method} ${url.pathname}`) {
       case "GET /v1/health": return health(env, cfg, cors);
+      case "GET /v1/stats": return await stats(request, env, url, cors, deps);
       case "POST /v1/chat/completions": return await chat(request, env, cfg, cors, allowed, deps, s);
       case "POST /v1/logs": return await submit(request, cfg, cors, allowed, deps, s);
       case "GET /v1/logs/export": return await records(request, env, url, deps);
@@ -301,7 +303,10 @@ async function chat(request, env, cfg, cors, allowed, deps, s) {
   const reserve = Math.ceil(raw.length / 3);
   let gate;
   try {
-    gate = await deps.gate({ who, kind: "chat", limits: cfg.chat, fp: s?.fp, a, shape, cfg: s?.cfg, reserve });
+    // the call is counted with the gate's round trip for the settings' 统计 pane (security/usage.js): its day, its place,
+    // and whether it is a question or a tool round of one
+    const usage = s ? { day: usageDay(deps.now(), usageConfig(env).offset), ...place(s.fp), turn: Boolean(shape?.turn) } : null;
+    gate = await deps.gate({ who, kind: "chat", limits: cfg.chat, fp: s?.fp, a, shape, cfg: s?.cfg, reserve, usage });
   } catch (err) {
     // the counters cannot be asked (the object's day's allowance spent, or a failure): a call is never let through
     // uncounted — the visitor is told to come back, and may use a key of their own
@@ -631,6 +636,14 @@ async function submit(request, cfg, cors, allowed, deps, s) {
   if (!gate.ok) return limited(gate, cfg.log, cors, "记录");
   await deps.logbook.add(JSON.stringify(record), new Date(deps.now()).toISOString(), cfg.keep);
   return new Response(null, { status: 204, headers: cors });
+}
+
+// ------------------------------------------------------------------ the counts for the settings' 统计 pane
+async function stats(request, env, url, cors, deps) {
+  if (await bursting(request, deps)) return error(429, "请求太频繁，请稍后再试", "rate_limited", { ...cors, "Retry-After": "10" });
+  const ucfg = usageConfig(env);
+  const today = usageDay(deps.now(), ucfg.offset);
+  return serveStats(request, url, { cfg: ucfg, stats: (days) => deps.stats(days, today), cors, today });
 }
 
 async function records(request, env, url, deps) {

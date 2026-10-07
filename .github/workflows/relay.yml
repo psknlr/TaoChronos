@@ -67,6 +67,7 @@ jobs:
           MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
           LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
           SENTINEL_SALT: ${{ secrets.SENTINEL_SALT }}
+          STATS_TOKEN: ${{ secrets.STATS_TOKEN }}
           WRANGLER_SEND_METRICS: "false"
         # a space or line break pasted with a secret is not part of it (no value has any)
         run: |
@@ -74,6 +75,10 @@ jobs:
           printf '%s' "$MINIMAX_API_KEY" | tr -d '[:space:]' | npx --yes "$WRANGLER" secret put MINIMAX_API_KEY
           printf '%s' "$LOG_EXPORT_TOKEN" | tr -d '[:space:]' | npx --yes "$WRANGLER" secret put LOG_EXPORT_TOKEN
           if [ -n "$SENTINEL_SALT" ]; then printf '%s' "$SENTINEL_SALT" | tr -d '[:space:]' | npx --yes "$WRANGLER" secret put SENTINEL_SALT; fi
+          # the token that reads the counts in the page's settings (统计; docs/web.md): optional, 16 characters or more
+          stats="$(printf '%s' "$STATS_TOKEN" | tr -d '[:space:]')"
+          if [ "${#stats}" -ge 16 ]; then printf '%s' "$stats" | npx --yes "$WRANGLER" secret put STATS_TOKEN
+          elif [ -n "$stats" ]; then echo "::warning::STATS_TOKEN is shorter than 16 characters: not set, the counts stay closed (docs/web.md)"; fi
       - name: Check it answers, and that MiniMax takes its key (one tiny call)
         if: steps.secrets.outputs.ready == '1'
         run: python3 relay/collect.py check --relay "$RELAY_URL"

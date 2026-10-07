@@ -8,6 +8,7 @@ import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
 import { WatchCore } from "../../security/sentinel.js";
+import { UsageCore } from "../../security/usage.js";
 import { DEFAULTS, handle } from "../site/src/site.js";
 
 const TOKEN = "upload-token-for-tests-only";
@@ -75,20 +76,25 @@ function site({ corpus = true, store = false, env = {}, limit, watch = false, cf
     ...env,
   };
   const core = watch ? new WatchCore(sqlStore()) : null;
+  const counts = watch ? new UsageCore(sqlStore()) : null;
+  const usageCalls = [];
   const pending = [];
   let t = T0; // the clock: advance(ms) moves it
-  const deps = { limit, now: () => t, defer: (p) => { pending.push(Promise.resolve(p).catch(() => {})); }, local: new Map() };
+  const held = []; // the counts' moment (site.js: tally) passes when the test settles
+  const deps = { limit, now: () => t, defer: (p) => { pending.push(Promise.resolve(p).catch(() => {})); }, local: new Map(),
+    batch: () => new Promise((resolve) => held.push(resolve)) };
   if (core) {
     deps.watch = { observe: (fp, a, extra, cfg) => core.observe(fp, a, extra, cfg, t), blocked: (ip, cfg) => core.blocked(ip, cfg, t),
-      records: (...a) => core.records(...a), remove: (...a) => core.remove(...a), summary: () => core.summary(t) };
+      records: (...a) => core.records(...a), remove: (...a) => core.remove(...a), summary: () => core.summary(t),
+      usage: async (c, seen, today) => { usageCalls.push(c); counts.add(c, seen, today); }, stats: async (days, today) => counts.stats(days, today) };
   }
   const call = (url, init = {}) => {
     const request = new Request(url, init);
     if (cf) request.cf = cf;
     return handle(request, full, deps);
   };
-  const settle = () => Promise.all(pending.splice(0)); // what the Worker finishes after the answer (ctx.waitUntil)
-  return { call, seen, objects, watch: core, settle, advance: (ms) => { t += ms; }, deps };
+  const settle = () => { for (const go of held.splice(0)) go(); return Promise.all(pending.splice(0)); }; // what the Worker finishes after the answer (ctx.waitUntil)
+  return { call, seen, objects, watch: core, counts, usageCalls, settle, advance: (ms) => { t += ms; }, deps };
 }
 const quiet = async (fn) => { const log = console.log; console.log = () => {}; try { return await fn(); } finally { console.log = log; } };
 
@@ -417,4 +423,46 @@ test("the policy deployed names the pages' inline scripts and styles by their ha
   assert.match(headers, /^\/js\/worker\.js\n  Content-Security-Policy-Report-Only: .*wasm-unsafe-eval.*report-uri \/api\/security\/csp$/m);
   assert.match(headers, /^\/js\/unpack-worker\.js\n  Content-Security-Policy-Report-Only: .*connect-src 'self' data:/m);
   assert.doesNotMatch(headers, /Content-Security-Policy-Report-Only:.*report-to/); // a worker's response may not have its Reporting-Endpoints processed: report-uri alone
+});
+
+// ------------------------------------------------------------------ the counts for the settings' 统计 pane
+const STATS = "stats-token-0123456789abcdef";
+const visit = (call, ip, { ua = CHROME, path = "/", method = "GET" } = {}) =>
+  call(`${PAGE}${path}`, { method, headers: { "User-Agent": ua, "Accept-Language": "zh-CN", "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Dest": "document",
+    "CF-Connecting-IP": ip } });
+
+test("a page a browser opens is counted by day and place, its visitor once a day, after the answer and in one batch", async () => {
+  const { call, counts, usageCalls, settle, advance } = site({ watch: true, cf: { country: "CN", regionCode: "GD", asn: 4134 } });
+  for (const ip of ["203.0.113.1", "203.0.113.1", "203.0.113.2"]) assert.equal((await visit(call, ip)).status, 200);
+  assert.equal((await visit(call, "203.0.113.3", { path: "/about" })).status, 200);
+  await visit(call, "203.0.113.4", { ua: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" }); // a crawler
+  await visit(call, "203.0.113.5", { ua: "python-requests/2.32" }); // a script
+  await visit(call, "203.0.113.6", { method: "HEAD" });
+  await visit(call, "203.0.113.7", { path: "/missing-page" }); // not there
+  assert.equal(usageCalls.length, 0); // nothing yet: the visitor never waits for it
+  await settle();
+  assert.equal(usageCalls.length, 1); // the moment's pages, together
+  const s = counts.stats(1, "2026-10-05");
+  assert.deepEqual(s.today, { view: 4, visitor: 3, question: 0, call: 0, asker: 0 });
+  assert.deepEqual(s.places, [{ country: "CN", region: "GD", view: 4, visitor: 3, question: 0, call: 0, asker: 0 }]);
+  advance(3600000);
+  await visit(call, "203.0.113.1");
+  await settle();
+  assert.deepEqual(counts.stats(1, "2026-10-05").today, { view: 5, visitor: 3, question: 0, call: 0, asker: 0 }); // the same visitor, the same day
+});
+
+test("the counts are read with the stats token; without the sentinel's object there are none", async () => {
+  const { call } = site({ watch: true, env: { STATS_TOKEN: STATS }, cf: { country: "CN", regionCode: "SH" } });
+  await visit(call, "203.0.113.9");
+  assert.equal((await call(`${PAGE}/api/stats?days=7`)).status, 401);
+  const ok = await call(`${PAGE}/api/stats?days=7`, { headers: { Authorization: `Bearer ${STATS}` } });
+  assert.equal(ok.status, 200);
+  const body = await ok.json();
+  assert.equal(body.days.length, 7);
+  assert.equal(body.offset, 8);
+  assert.equal(ok.headers.get("Cache-Control"), "no-store");
+  const foreign = await call(`${PAGE}/api/stats`, { headers: { Authorization: `Bearer ${STATS}`, Origin: "https://evil.example" } });
+  assert.equal(foreign.status, 403);
+  const bare = site({ env: { STATS_PUBLIC: "1" } });
+  assert.equal((await bare.call(`${PAGE}/api/stats`)).status, 404);
 });

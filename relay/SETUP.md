@@ -27,6 +27,7 @@ MiniMax 控制台 → 复制密钥 → GitHub 仓库 Secrets → relay 工作流
 | `CLOUDFLARE_API_TOKEN` | 让 GitHub Actions 能部署 Worker 的令牌 | 第 2 步 |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 账户编号 | 第 3 步 |
 | `LOG_EXPORT_TOKEN` | 仓库取回对话记录用的口令，自己生成 | 第 4 步 |
+| `STATS_TOKEN`（可选） | 在网页「设置 → 统计」里查看使用次数与地区的令牌，16 位以上随机串（如 `openssl rand -hex 24`）；网站与默认服务共用 | 自己生成（见 docs/web.md） |
 
 取得的值先暂存在密码管理器或本机的临时记事里，存进 GitHub 后就删掉。**不要**把它们发到聊天、Issue、PR 里，也不要提交进仓库。
 

@@ -1,16 +1,18 @@
 // Settings: the model (provider, key, model name, thinking, route), where TaoChronos runs, standing instructions,
-// the conversations' data, and what this page is.
+// the conversations' data, the site's usage (统计: stats.js), and what this page is.
 
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY, PUBLISHER, PUBLISHER_EN } from "../brand.js";
 import { allProviders, customPreset, DEFAULTS, newCustomProvider, providerById } from "../providers.js";
 import { NOTICE } from "../records.js";
 import { h, icon, replace } from "../util.js";
+import { statsPane } from "./stats.js";
 
 const SECTIONS = [
   ["model", "模型", "chip"],
   ["runtime", "运行环境", "server"],
   ["instructions", "指令", "edit"],
   ["data", "数据", "download"],
+  ["stats", "统计", "chart"],
   ["about", "关于", "info"],
 ];
 
@@ -22,7 +24,7 @@ export function openSettings(S, ctx, section = "model") {
   const pane = h("div.settings-pane");
   const draw = () => {
     nav.replaceChildren(...SECTIONS.map(([id, label, ic]) => h("button", { type: "button", class: id === current ? "on" : "", on: { click: () => { current = id; draw(); } } }, icon(ic, "sm"), label)));
-    replace(pane, ({ model: modelPane, runtime: runtimePane, instructions: instructionsPane, data: dataPane, about: aboutPane }[current])(draft, S, ctx, draw));
+    replace(pane, ({ model: modelPane, runtime: runtimePane, instructions: instructionsPane, data: dataPane, stats: statsPane, about: aboutPane }[current])(draft, S, ctx, draw));
     pane.scrollTop = 0;
   };
   const save = () => { ctx.save(draft); dlg.close(); };
@@ -346,7 +348,8 @@ function aboutPane(d, S) {
             h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, "来源与授权"),
             "），重要典籍多为全书，其余为章节节选，未经本项目逐字校勘；各书全文与全部古籍（全量语料）由本站服务器或 taochronos serve 提供（设置 → 运行环境）。"),
         h("div", h("b", "隐私："), "对话与密钥保存在本浏览器。使用道乃久默认服务时，你的问题经", PUBLISHER, "的服务交由大语言模型处理，该服务不保存请求内容；",
-          "只有在你同意后，每轮问答才另记录一份到", PUBLISHER, "的服务器，用于测试（设置 → 数据）。使用自己的 API Key 时，请求直接发往你选择的服务，或经你本机的服务转发。"))),
+          "只有在你同意后，每轮问答才另记录一份到", PUBLISHER, "的服务器，用于测试（设置 → 数据）。使用自己的 API Key 时，请求直接发往你选择的服务，或经你本机的服务转发。",
+          "本站按日统计网页打开与提问的次数及其所在国家和省份（设置 → 统计），不记录网络地址。"))),
       h("div.muted", { style: { fontSize: "13px", lineHeight: "1.8" } },
         `${AGENT} · ${ASSISTANT} · ${AGENT_EN} ${info?.version || "?"} · ${PUBLISHED_BY} · 运行环境 ${info?.runtime === "server" ? S.runtime?.label || "服务" : "浏览器（Pyodide）"} · `,
         h("a", { href: info?.corpus?.kind === "full" ? "attribution.html?corpus=full" : "attribution.html", target: "_blank", rel: "noopener" }, "语料来源与授权"))),

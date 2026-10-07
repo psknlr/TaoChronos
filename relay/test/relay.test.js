@@ -8,6 +8,7 @@ import test from "node:test";
 import { WatchCore } from "../../security/sentinel.js";
 import { config, handle, normalizeRecord, publicText, withoutReasoning } from "../src/relay.js";
 import { LimiterCore, LogBookCore } from "../src/state.js";
+import { UsageCore } from "../../security/usage.js";
 
 /** The Durable Object SQL API's shape over node:sqlite. */
 function sqlStore() {
@@ -36,6 +37,7 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
   const limiter = new LimiterCore(sqlStore());
   const watch = new WatchCore(sqlStore());
   const book = new LogBookCore(sqlStore());
+  const usage = new UsageCore(sqlStore());
   const calls = [];
   const pending = [];
   const bursts = [];
@@ -43,7 +45,7 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
   const deps = {
     limit: async (who, kind, limits) => limiter.hit(who, kind, limits, now()),
     // as the Durable Object does it (relay/src/index.js): the sentinel first, then the counters
-    gate: async ({ who, kind, limits, fp, a, shape, status, cfg, served, reserve }) => {
+    gate: async ({ who, kind, limits, fp, a, shape, status, cfg, served, reserve, usage: counted }) => {
       if (gateFails) throw new Error("Durable Object: daily limit reached");
       const w = fp && a ? await observe(fp, a, { shape, status }, cfg) : null;
       if (w?.blocked) return { ok: false, reason: "blocked", retry: w.retry, watch: w };
@@ -51,8 +53,10 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
       if (served && !(fp ? limiter.wasServed(keys, now()) : limiter.served(who, served, now()))) return { ok: false, reason: "not_served", retry: 0, watch: w };
       const gate = limiter.hit(who, kind, limits, now(), reserve);
       if (gate.ok && kind === "chat" && keys.length) limiter.markServed(keys[0], now());
+      if (gate.ok && kind === "chat" && counted) usage.call(counted, keys[0]);
       return { ...gate, watch: w };
     },
+    stats: async (days, today) => usage.stats(days, today),
     observe,
     spend: async (who, kind, tokens) => limiter.spend(who, kind, tokens, now()),
     burst: async (key) => { bursts.push(key); return burst ? burst(key) : true; },
@@ -72,7 +76,7 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
     return handle(request, fullEnv, deps);
   };
   const settle = () => Promise.all(pending.splice(0)); // what the Worker finishes after the answer (ctx.waitUntil)
-  return { call, calls, book, limiter, watch, settle, bursts };
+  return { call, calls, book, limiter, watch, usage, settle, bursts };
 }
 
 function sse(events) {
@@ -544,3 +548,47 @@ test("config: the defaults, and the Worker's variables over them", () => {
   assert.equal(c.upstream, "https://api.minimax.io/v1");
   assert.ok(config().origins.includes("https://chat.impf.ai"));
 });
+
+// ------------------------------------------------------------------ the counts for the settings' 统计 pane
+const STATS = "stats-token-0123456789abcdef";
+
+test("a question is counted with its place and visitor, a tool round only as a call, a refused call not at all", () => quiet(async () => {
+  let t = Date.UTC(2026, 9, 6, 16, 30, 0); // 00:30 on the 7th in Beijing: the readers' day
+  const r = relay({ now: () => t, cf: { country: "CN", regionCode: "GD", asn: 4134 }, env: { STATS_TOKEN: STATS } });
+  assert.equal((await r.call("/v1/chat/completions", post(PAGE_ASK))).status, 200);
+  const round = { ...PAGE_ASK, messages: [...PAGE_ASK.messages, { role: "assistant", content: null, tool_calls: [{ id: "c1", type: "function", function: { name: "classics.search", arguments: "{}" } }] },
+    { role: "tool", tool_call_id: "c1", content: "《伤寒论》……" }] };
+  t += 5000;
+  assert.equal((await r.call("/v1/chat/completions", post(round))).status, 200);
+  t += 5000;
+  assert.equal((await r.call("/v1/chat/completions", post(PAGE_ASK))).status, 200); // the same visitor asks again
+  const s = r.usage.stats(1, "2026-10-07");
+  assert.deepEqual(s.today, { view: 0, visitor: 0, question: 2, call: 3, asker: 1 });
+  assert.deepEqual(s.places, [{ country: "CN", region: "GD", view: 0, visitor: 0, question: 2, call: 3, asker: 1 }]); // ISO 3166-2, as Cloudflare gives it
+  const refused = relay({ cf: { country: "US", regionCode: "OH" }, burst: () => false });
+  assert.equal((await refused.call("/v1/chat/completions", post(PAGE_ASK))).status, 429);
+  assert.deepEqual(refused.usage.stats(1, "2026-09-28").places, []);
+}));
+
+test("the counts are read with the stats token, from the page's origin", () => quiet(async () => {
+  const t = Date.UTC(2026, 9, 7, 4, 0, 0);
+  const r = relay({ now: () => t, cf: { country: "CN", regionCode: "BJ" }, env: { STATS_TOKEN: STATS } });
+  await r.call("/v1/chat/completions", post(PAGE_ASK));
+  const preflight = await r.call("/v1/stats", { method: "OPTIONS", headers: { Origin: PAGE, "Access-Control-Request-Headers": "authorization" } });
+  assert.match(preflight.headers.get("Access-Control-Allow-Headers"), /Authorization/);
+  const none = await r.call("/v1/stats?days=7", { headers: { Origin: PAGE } });
+  assert.equal(none.status, 401);
+  assert.equal(none.headers.get("Access-Control-Allow-Origin"), PAGE); // the page reads why
+  const ok = await r.call("/v1/stats?days=7", { headers: { Origin: PAGE, Authorization: `Bearer ${STATS}` } });
+  assert.equal(ok.status, 200);
+  const body = await ok.json();
+  assert.equal(body.asOf, "2026-10-07");
+  assert.deepEqual(body.today, { view: 0, visitor: 0, question: 1, call: 1, asker: 1 });
+  assert.equal(body.days.length, 7);
+  assert.deepEqual([body.totals.question, body.totals.call], [1, 1]);
+  assert.equal(body.places[0].region, "BJ");
+  const unset = relay({ cf: { country: "CN" } });
+  assert.equal((await (await unset.call("/v1/stats", { headers: { Origin: PAGE, Authorization: `Bearer ${STATS}` } })).json()).configured, false);
+  const open = relay({ env: { STATS_PUBLIC: "1" } });
+  assert.equal((await open.call("/v1/stats", { headers: { Origin: PAGE } })).status, 200);
+}));
