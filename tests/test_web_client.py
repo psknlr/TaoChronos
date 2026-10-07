@@ -185,6 +185,9 @@ const plain = "「太阳病，头痛」[[shanghanlun.c013]] 见 https://chat.imp
 assert.deepEqual(scrub(plain), { text: plain, hits: 0 });
 assert.equal(redact("D2 概念漂移；D4 分析；门控 G0–G8；技能 S01–S15 的图；证据审计 (S15)；设置 holdout_after 参数；STATS_TOKEN"),
   "概念漂移；关联规则与隐含关联分析；各级门控；各项技能的图；证据审计；设置相应参数；内部配置");
+// the labels the tools grade with, as a reader says them (not 内部配置)
+assert.equal(redact("判读证据等级（SUPPORTED / CONTESTED / INSUFFICIENT_EVIDENCE …）；证据类型 systematic_review；SOURCE_ASSERTED"),
+  "判读证据等级（有据 / 有争议 / 证据不足 …）；证据类型系统综述；原文所言");
 // in a code block only the names: the identifiers of the code are its own
 assert.equal(redact("```py\nn_total = 1  # passage_id\nclassics__search(q)\n```"), "```py\nn_total = 1  # 段落编号\n古籍检索(q)\n```");
 // while the answer streams, half a name is never shown

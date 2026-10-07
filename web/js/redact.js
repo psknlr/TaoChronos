@@ -37,6 +37,16 @@ const FAMILY_WORDS = { classics: "检索", kg: "知识", analysis: "发现", stu
   validation: "核验", audit: "核验", graph: "核验", bridge: "古今", modern: "现代", literature: "现代", rwd: "现代", research: "代码" };
 const FIELD_WORDS = { passage_id: "段落编号", book_id: "录本编号", session_id: "研究会话编号", claim_id: "主张编号",
   hypothesis_id: "假说编号", evidence_id: "证据编号", work_id: "书目编号" };
+// the labels the tools grade with — an audit's verdict, who asserts a link, modern evidence by its design and by what
+// it claims (src/taochronos/protocol: assertions.py, modern.py) — as a reader says them
+const LABEL_WORDS = {
+  SUPPORTED: "有据", PARTIALLY_SUPPORTED: "部分有据", CONTESTED: "有争议", INSUFFICIENT_EVIDENCE: "证据不足", UNSUPPORTED: "无据",
+  SOURCE_ASSERTED: "原文所言", SCHOLAR_INTERPRETED: "注家解释", MODEL_EXTRACTED: "模型抽取", MODEL_INFERRED: "模型推断",
+  MODERN_EVIDENCE_SUPPORTED: "现代证据支持", HYPOTHESIS: "假说",
+  systematic_review: "系统综述", case_control: "病例对照研究", cross_sectional: "横断面研究", case_series: "病例系列",
+  case_report: "病例报告", narrative_review: "叙述性综述", in_vitro: "体外研究", in_silico: "计算预测", expert_opinion: "专家意见",
+  human_efficacy: "人体疗效", human_association: "人群关联", tcm_semantic: "中医语义",
+};
 const TRACKS = ["失传关联", "概念漂移", "方剂演化", "关联规则与隐含关联", "矛盾"]; // D1–D5
 const GATES = ["来源", "录文", "文献", "语义", "主张溯源", "跨源互证", "证伪", "专家核验", "生物医学证据"]; // G0–G8
 
@@ -70,6 +80,8 @@ const NAMES = [
   [new RegExp(String.raw`(^|[^\w.@-])((?:${PREFIXES})\.[a-z][a-z0-9_]*)(?![\w@-]|\.[a-z])`, "g"), (m, lead, name) => lead + put(toolWord(name))],
   // fields of the tools' results
   [/\b(passage_id|book_id|session_id|claim_id|hypothesis_id|evidence_id|work_id)s?\b/g, (m, f) => put(FIELD_WORDS[f])],
+  // the tools' grading labels
+  [new RegExp(String.raw`\b(?:${Object.keys(LABEL_WORDS).join("|")})\b`, "g"), (m) => put(LABEL_WORDS[m])],
   // codes: of a step in parentheses — （G7）、(S15)、(AMBE S11–S12)、(T10) — gone; the discovery tracks D1–D5, the gates
   // G0–G8 and the skills S01–S15 told by what they are
   [new RegExp(String.raw`\s*[（(]\s*(?:AMBE\s*)?${CODE}(?:\s*[,，、/]\s*${CODE})*\s*[）)]`, "g"), ""],
