@@ -18,7 +18,8 @@ own_agents:
   - taochronos-collector/1
   - taochronos-deploy/1
 
-# 免费计划仅有的一个自定义 IP 列表（账户级）：平时为空，出事时把地址或网段放进去即生效（R5），不必改规则。
+# 免费计划仅有的一个自定义 IP 列表（账户级）：其中的地址与网段在两个主机上都被拦下（R5），不必改规则。地址由
+# security/blocklist.yaml 管理（每条写明看到了什么、到何时为止；合并进 main 即写入）；控制台里手动加的应急地址保留。
 # apply.py 找不到时会创建它；没有 Account → Account Filter Lists 权限时，R5 去掉这一项照常写入
 list: taochronos_block
 
@@ -128,7 +129,7 @@ custom_rules:
 
   # 没有列表（apply.py 没有账户权限或建不了）时这条整条省略
   - ref: tc-block-list
-    description: "[taochronos] 5 the block list: addresses and networks refused everywhere (empty until an incident)"
+    description: "[taochronos] 5 the block list: addresses and networks refused everywhere (security/blocklist.yaml)"
     action: block
     expression: >-
       (ip.src in $${LIST})

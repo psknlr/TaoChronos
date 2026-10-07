@@ -150,7 +150,7 @@ Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView
 | 2 | `tc-scanner-paths` | block | `wp-`、`/.git`、`/.env`、`.php`、`xmlrpc`、`/../`…… 这两个主机上根本不存在的路径（与哨兵的列表同源） | 无：网站没有这些路径；`/.well-known/` 除外 |
 | 3 | `tc-relay-origin` | block | 向中转 `POST /v1/chat/…`、`/v1/logs` 而 `Origin` 不是网页的来源——中转自己也会拒，但在边缘拒绝**不进 Worker、不计次数** | 无：浏览器一定带 Origin；来源表与 `relay/wrangler.toml` 一致，改一处要改另一处 |
 | 4 | `tc-tooling-and-spoofed-crawlers` | block | 没有 UA；`python*`、`Go-http-client`、`Java/`、扫描器名；以及自称 Googlebot、ChatGPT-User、PerplexityBot、ClaudeBot…… 却**没有通过 Cloudflare 验证**（`not cf.client.bot`）的 | 真正的爬虫（验证通过）放行；`curl`、`wget` 不拦（站长自己会用）；`/.well-known/acme-challenge/` 除外 |
-| 5 | `tc-block-list` | block | 列表 `taochronos_block` 里的地址与网段（全站；平时为空，出事时往里加，不改规则）。没有列表时这条省略 | 只拦你放进去的 |
+| 5 | `tc-block-list` | block | 列表 `taochronos_block` 里的地址与网段（全站），由 `security/blocklist.yaml` 管理，见下文「封禁名单」。没有列表时这条省略 | 只拦名单上的 |
 | 速率 | `tc-api-burst` | block 10 秒 | `/api/*`、`/v1/*`（两个主机共用计数；`/api/security/csp` 除外）每个地址每个节点 10 秒 240 次 | 网页核对引文时几秒内最多取 60 段原文、再做最多 60 次规范化调用，仍在其下 |
 
 对托管/云网络（DigitalOcean、GCP、OVH、Hetzner、Vultr、Linode……）的网页请求出质询的表达式写在第 5 条的注释里，默认不用：这些网络也是
@@ -182,9 +182,25 @@ Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView
 6. security 工作流每天 01:41 UTC 把前一天的边缘事件取回 `data/security-logs/edge/`，并更新 `suspects.json`。查询按区域自己报的限额来写
    （字段名、能回看多久、单次窗口多宽、一次能要多少字段）；运行日志末行的 `limits` 就是这些限额，前一天有够不着的时段会以 notice 写明。
 
+### 封禁名单
+
+`security/blocklist.yaml` 是列表 `taochronos_block` 的内容：每条写明地址或网段（`ip`）、看到了什么（`why`）、何时（`seen`）。封禁是
+**永久**的；只想封一段时间的写上到期日（`until`），过期的条目下次写入时自动移出。扫描器的地址多是租来的，日后若有真实访客因此
+打不开网站，删掉那一行即解封。改动合并进 main 后，security 工作流自动执行 `apply --only list`，只同步名单，不动规则与设置；
+`plan` 也会列出名单的增减。
+
+- **收什么**：表现出攻击意图的地址——找漏洞与密钥的路径（`.git`、`.env`、`wp-`、模型网关的配置……）、冒充爬虫、成批的探测。
+  只是请求头不像浏览器、只抓了首页、来自机房网络，都**不够**：大陆访客常走机房 VPN；微信/QQ 的链接预览与安全检测（腾讯云地址、
+  iPhone UA、会执行页面脚本）、360 浏览器的网址检测（`180.163.*`）也长这样，封掉它们网站会在微信里打不开、在 360 里报风险。
+- **永不封禁**（`never`）：Cloudflare 自己的网段、Googlebot、360 的爬虫与检测、Anthropic 的出口（本项目在 Claude Code 里的检查与测试）。
+  名单里任何一条与之重叠，整份名单都不写入、运行失败，直到改正；`tests/test_security_apply.py` 在 CI 里先查一遍。
+- **控制台里手动加的地址**（应急，立即生效）不带 `[taochronos]` 标记，写入名单时保留；事后照样补进 `blocklist.yaml`。
+- 候选从 `data/security-logs/edge/suspects.json`（边缘）与 `data/security-logs/{site,relay}/` 里哨兵标记的事件（`fp.ip`、`reasons`、`state.paths`）来。
+
 ### 应急
 
-- **某个地址在捣乱**：Cloudflare → Manage Account → Configurations → Lists → `taochronos_block` 加上地址或网段，立即生效，不用动规则；或在 enforce 模式下让哨兵自己处理。
+- **某个地址在捣乱**：Cloudflare → Manage Account → Configurations → Lists → `taochronos_block` 加上地址或网段，立即生效，不用动规则
+  （再补进 `security/blocklist.yaml`）；或在 enforce 模式下让哨兵自己处理。
 - **正在被打**：Cloudflare → impf.ai → Security → Settings → Under Attack Mode（会让 API 调用失败，只在网页被打时开）；`rules.yaml` 的速率限制调低后 `apply`。
 - **误伤了真实访客**：在 Security → Events 找到规则与原因；临时把该规则的 `enabled` 改为 `false` 后 `apply`，再按路径或来源修改表达式。
   不要以 UA 开例外——UA 谁都能填（第 1 条只免除浏览器完整性检查，正因为此）。
