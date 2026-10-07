@@ -1,7 +1,8 @@
 """The block list as code (security/apply.py, security/blocklist.yaml) against a stand-in Cloudflare API: the repository's
 list is valid and spares what must never be blocked; an entry that overlaps such a network, or cannot be read, stops the
-list's write; expired entries go; apply writes ours, keeps the addresses added by hand in the dashboard, drops ours that
-left the file, and waits for Cloudflare's operation to finish."""
+list's write; an entry is refused for good unless it has an until, and goes once that day is past; apply writes ours,
+keeps the addresses added by hand in the dashboard, drops ours that left the file, and waits for Cloudflare's operation
+to finish."""
 
 from __future__ import annotations
 
@@ -71,18 +72,19 @@ def write_blocklist(tmp_path: Path, block: list[dict]) -> Path:
     return path
 
 
-def entry(ip: str, until: date = date(2027, 1, 5), why: str = "scanner") -> dict:
-    return {"ip": ip, "why": why, "seen": date(2026, 10, 5), "until": until}
+def entry(ip: str, until: date | None = None, why: str = "scanner") -> dict:
+    """A block-list entry: for good, or until a day."""
+    return {"ip": ip, "why": why, "seen": date(2026, 10, 5), **({"until": until} if until else {})}
 
 
 def test_the_repository_blocklist_is_valid_and_spares_what_must_never_be_blocked():
     blocklist = yaml.safe_load(BLOCKLIST.read_text(encoding="utf-8"))
     items, notes, problems = apply.wanted_items(blocklist, TODAY)
     assert problems == [] and notes == [] and len(items) == len(blocklist["block"]) > 0
-    for e in blocklist["block"]:
-        assert e["until"] > e["seen"] and (e["until"] - e["seen"]).days <= 366, e["ip"]  # nothing is refused for good
-    for i in items:
+    for e, i in zip(blocklist["block"], items):
+        assert isinstance(e["seen"], date) and ("until" not in e or e["until"] > e["seen"]), e["ip"]
         assert i["comment"].startswith(apply.TAG) and len(i["comment"]) <= apply.COMMENT_MAX
+        assert i["comment"].endswith("for good" if "until" not in e else f"until {e['until']}")
     blocked = [ipaddress.ip_network(i["ip"]) for i in items]
     # what this repository's own checks, the search engines and Cloudflare send from: never in the list
     for ip in ("160.79.106.130", "160.79.106.16", "66.249.64.99", "180.163.30.100", "172.70.67.148", "104.16.0.1"):
@@ -99,16 +101,20 @@ def test_an_entry_overlapping_a_network_never_to_be_blocked_stops_the_write(clou
     assert fake.puts == []  # not even the good entry: a half-applied list is worse than an unchanged one
 
 
-def test_every_entry_is_checked_and_an_expired_one_is_left_out():
-    blocklist = {"block": [entry("999.1.1.1"), entry("10.0.0.0/4"), {"ip": "198.51.100.1", "why": "x"}, entry("203.0.113.9"),
-                           entry("203.0.113.9/32"), entry("203.0.113.0/24", until=date(2026, 10, 1)), entry("2001:db8::1"),
+def test_every_entry_is_checked_refused_for_good_without_until_and_left_out_past_it():
+    blocklist = {"block": [entry("999.1.1.1"), entry("10.0.0.0/4"), {"ip": "198.51.100.1", "why": "x"},
+                           {"ip": "198.51.100.2", "until": date(2027, 1, 1)}, {"ip": "198.51.100.3", "why": "x", "until": "soon"},
+                           entry("203.0.113.9", until=date(2027, 1, 5)), entry("203.0.113.9/32"),
+                           entry("203.0.113.0/24", until=date(2026, 10, 1)), entry("2001:db8::1"),
                            entry("192.0.2.0/24", until=datetime(2026, 9, 30, 12, 0))],
                  "never": [{"net": "not a network"}]}
     items, notes, problems = apply.wanted_items(blocklist, TODAY)
-    assert [i["ip"] for i in items] == ["203.0.113.9", "2001:db8::1"]
+    assert [i["ip"] for i in items] == ["198.51.100.1", "203.0.113.9", "2001:db8::1"]
+    assert items[0]["comment"].endswith("· for good") and items[1]["comment"].endswith("· until 2027-01-05")
     assert notes == ["· 203.0.113.0/24: expired on 2026-10-01, left out", "· 192.0.2.0/24: expired on 2026-09-30, left out"]
-    assert len(problems) == 5 and any("wider than /8" in p for p in problems) and any("listed twice" in p for p in problems)
-    assert any("needs why" in p for p in problems) and any("never:" in p for p in problems)
+    assert len(problems) == 6 and any("wider than /8" in p for p in problems) and any("listed twice" in p for p in problems)
+    assert any("needs why" in p for p in problems) and any("until must be a date" in p for p in problems)
+    assert any("never:" in p for p in problems)
 
 
 def test_apply_writes_ours_keeps_the_ones_added_by_hand_and_drops_ours_that_left(cloudflare, tmp_path, capsys):

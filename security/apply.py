@@ -146,9 +146,10 @@ def canon(text: str) -> str:
 
 
 def wanted_items(blocklist: dict, today: date) -> tuple[list[dict], list[str], list[str]]:
-    """The addresses the list should hold of ours ({ip, comment}), the notes (what was left out: an entry past its date)
+    """The addresses the list should hold of ours ({ip, comment}), the notes (what was left out: an entry past its until)
     and the problems (what may not be written: an entry that cannot be read, or one overlapping a network never to be
-    blocked).  Any problem stops the list's write: a half-applied list is worse than an unchanged one."""
+    blocked).  An entry without until is refused for good.  Any problem stops the list's write: a half-applied list is
+    worse than an unchanged one."""
     never, problems = [], []
     for n in blocklist.get("never", []) or []:
         try:
@@ -170,8 +171,11 @@ def wanted_items(blocklist: dict, today: date) -> tuple[list[dict], list[str], l
         why, until = str(e.get("why") or "").strip(), e.get("until")
         if isinstance(until, datetime):  # until: 2027-01-05T00:00:00 reads as a time; the day is what counts
             until = until.date()
-        if not why or not isinstance(until, date):
-            problems.append(f"{raw}: needs why (what was seen) and until (a date, YYYY-MM-DD)")
+        if not why:
+            problems.append(f"{raw}: needs why (what was seen)")
+            continue
+        if until is not None and not isinstance(until, date):
+            problems.append(f"{raw}: until must be a date (YYYY-MM-DD), or be left out to refuse the address for good")
             continue
         spared = next((w for n, w in never if n.version == net.version and n.overlaps(net)), None)
         if spared is not None:
@@ -182,10 +186,10 @@ def wanted_items(blocklist: dict, today: date) -> tuple[list[dict], list[str], l
             problems.append(f"{raw}: listed twice")
             continue
         taken.add(ip)
-        if until < today:
+        if until is not None and until < today:
             notes.append(f"· {ip}: expired on {until}, left out")
             continue
-        items.append({"ip": ip, "comment": f"{TAG} {why} · seen {e.get('seen', '?')} · until {until}"[:COMMENT_MAX]})
+        items.append({"ip": ip, "comment": f"{TAG} {why} · seen {e.get('seen', '?')} · {f'until {until}' if until else 'for good'}"[:COMMENT_MAX]})
     return items, notes, problems
 
 
