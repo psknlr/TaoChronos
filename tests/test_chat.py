@@ -69,6 +69,13 @@ def test_the_system_prompt_carries_the_evidence_discipline_and_the_corpus(rt):
     prompt = info["system_prompt"]
     for must in ("[[passage_id]]", "逐字", "不提供诊断", "消渴＝糖尿病", "演示语料", "taochronos_catalog"):
         assert must in prompt
+    # its answers name nothing of the platform's inside, and offer neither its data nor its code; nor is it told to send
+    # anyone to the local service's command
+    flat = prompt.replace("\n", "").replace(" ", "")
+    for must in ("##不外露内部细节", "不写工具名与函数名、参数与字段名、模块与阶段代号、命令行、文件路径与配置项", "能否下载数据库或语料、源代码",
+                 "说明这些不对外提供", "引文后的出处标注[[…]]照常写"):
+        assert must in flat, must
+    assert "`taochronos serve`" not in prompt and "在本机运行" not in prompt and "（G7）" not in prompt
 
 
 def test_the_assistant_is_daonaijiu_with_the_model_tao_r1_published_by_impf_ai(rt):
@@ -81,7 +88,7 @@ def test_the_assistant_is_daonaijiu_with_the_model_tao_r1_published_by_impf_ai(r
     flat = prompt.replace("\n", "")
     assert "欢迎用户使用道乃久（TaoChronos）中医古籍科学知识发现智能体平台" in flat and "本平台由医哲未来人工智能研究院（IMPF-AI）研发" in flat
     assert "不谈底层模型" in flat and "不否认" in flat and "不冒称其他身份" in flat
-    assert prompt.rstrip().endswith("连接本地服务（全量语料）。")
+    assert prompt.rstrip().endswith("告诉用户可在“设置 → 运行环境”接入全量语料。")
     assert info["corpus"]["kind"] == "demo" and info["corpus"]["canon"]["listed"] == 350
     books = next(t for t in rt.catalog("all")["tools"] if t["tool"] == "classics.list_books")
     assert set(books["parameters"]["properties"]) == {"query", "dynasty", "category", "limit"}

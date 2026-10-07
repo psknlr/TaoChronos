@@ -3,7 +3,9 @@
 MiniMax (with ``reasoning_split``) streams its thinking in ``delta.reasoning_details`` and, in its own examples, both that
 and ``delta.content`` as cumulative text; tool-call arguments arrive in pieces.  The first reply of a turn asks for
 ``classics__search``; once the turn holds a tool result, the reply is an answer with four citations — one quoted
-verbatim, one misquoted, one to a passage that does not exist and one quoted in the traditional script.  Every request is recorded for the test to inspect.
+verbatim, one misquoted, one to a passage that does not exist and one quoted in the traditional script — and, as a model
+forgetting its instructions would, the names of the tools and fields it worked with, which the page tells in plain words
+(web/js/redact.js).  Every request is recorded for the test to inspect.
 """
 
 from __future__ import annotations
@@ -20,7 +22,9 @@ ANSWER = ("## 结论\n\n《伤寒论》以桂枝汤治太阳中风。\n\n"
           "- 节引：「太阳中风，阳浮而阴弱，桂枝汤主之」[[shanghanlun.c012]]\n"
           "- 一个不存在的出处[[fake.999]]\n"
           "- 繁体引文：「太陽病，頭痛，發熱」[[shanghanlun.c013]]\n\n"
-          "| 书 | 朝代 |\n|---|---|\n| 伤寒论 | 东汉 |\n\n这是计算与文献检索的结果，不构成医疗建议。")
+          "| 书 | 朝代 |\n|---|---|\n| 伤寒论 | 东汉 |\n\n"
+          "以上经 classics__search 检得，可用 `validation__verify_quote` 复核，出处附 passage_id。\n\n"
+          "这是计算与文献检索的结果，不构成医疗建议。")
 THINKING = ["用户问桂枝汤", "用户问桂枝汤的主治，先检索原文。"]
 
 
@@ -96,7 +100,7 @@ class _Handler(BaseHTTPRequestHandler):
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]}
 
     def _answer(self):
-        yield self._reasoning("检索到了原文，整理作答。")
+        yield self._reasoning("classics__search 检索到了原文，整理作答。")
         for cut in (8, 40, 90, len(ANSWER)):  # cumulative, as in MiniMax's own streaming example
             yield {"choices": [{"index": 0, "delta": {"content": ANSWER[:cut]}}]}
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],

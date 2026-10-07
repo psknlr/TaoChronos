@@ -344,14 +344,13 @@ function aboutPane(d, S) {
             h("a", { href: "attribution.html?corpus=full", target: "_blank", rel: "noopener" }, "来源与授权"),
             "），未经本项目逐字校勘；", S.runtime?.label === "本站服务" ? "由本站服务器提供，服务暂不可用时页面改用浏览器内的要籍语料（" : "由你接入的服务提供；浏览器内另有要籍语料（",
             h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, "来源与授权"), "）。")
-          : h("div", h("b", "语料："), "浏览器内运行的是要籍语料：按历代引用排序的 350 部要籍（书目见 classics.canon）的原文（",
+          : h("div", h("b", "语料："), "浏览器内运行的是要籍语料：按历代引用排序的 350 部要籍的原文（",
             h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, "来源与授权"),
-            "），重要典籍多为全书，其余为章节节选，未经本项目逐字校勘；各书全文与全部古籍（全量语料）由本站服务器或 taochronos serve 提供（设置 → 运行环境）。"),
+            "），重要典籍多为全书，其余为章节节选，未经本项目逐字校勘；各书全文与全部古籍（全量语料）由本站服务器或你接入的服务提供（设置 → 运行环境）。"),
         h("div", h("b", "隐私："), "对话与密钥保存在本浏览器。使用道乃久默认服务时，你的问题经", PUBLISHER, "的服务交由大语言模型处理，该服务不保存请求内容；",
-          "只有在你同意后，每轮问答才另记录一份到", PUBLISHER, "的服务器，用于测试（设置 → 数据）。使用自己的 API Key 时，请求直接发往你选择的服务，或经你本机的服务转发。",
-          "本站按日统计网页打开与提问的次数及其所在国家和省份（设置 → 统计），不记录网络地址。"))),
+          "只有在你同意后，每轮问答才另记录一份到", PUBLISHER, "的服务器，用于测试（设置 → 数据）。使用自己的 API Key 时，请求直接发往你选择的服务，或经你本机的服务转发。"))),
       h("div.muted", { style: { fontSize: "13px", lineHeight: "1.8" } },
-        `${AGENT} · ${ASSISTANT} · ${AGENT_EN} ${info?.version || "?"} · ${PUBLISHED_BY} · 运行环境 ${info?.runtime === "server" ? S.runtime?.label || "服务" : "浏览器（Pyodide）"} · `,
+        `${AGENT} · ${ASSISTANT} · ${AGENT_EN} ${info?.version || "?"} · ${PUBLISHED_BY} · 运行环境 ${info?.runtime === "server" ? S.runtime?.label || "服务" : "浏览器"} · `,
         h("a", { href: info?.corpus?.kind === "full" ? "attribution.html?corpus=full" : "attribution.html", target: "_blank", rel: "noopener" }, "语料来源与授权"))),
   ];
 }

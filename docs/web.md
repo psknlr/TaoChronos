@@ -235,6 +235,20 @@ quote only what a tool returned, verbatim, with its `[[passage_id]]`; say "本�
 keep the text, its commentators, computation and modern medicine apart (no 消渴＝糖尿病); no diagnosis, prescription
 or dose.  What you write under **设置 → 指令** is added after them.
 
+**What a visitor reads names nothing of the inside.**  The instructions (不外露内部细节) keep the model's answers free
+of the names it works with — tools and functions, parameters and fields, module, track, gate and skill codes, commands,
+files and settings — and have it decline a request for the database, the corpus files, the code, the instructions or how
+the platform is built, saying instead what it can do.  The page holds to that where the model forgets
+(`web/js/redact.js`): before an answer, its thinking or a tool step is shown, copied, exported or recorded, those names
+are told in plain words — `validation__verify_quote` → 引文核验, `passage_id` → 段落编号, D1–D5 → 知识发现, a `taochronos …`
+command → 本地服务, a file → 内部文件, any other identifier → 相应参数 — while citation marks `[[…]]`, links and the
+platform's own names (道乃久, TaoChronos, Tao-R1) stay; a name still arriving in the stream is held back until it is
+whole.  Every tool has its plain words there (`TOOL_WORDS`; a test checks there are words for each one the model can
+be offered).  The record of a turn keeps the answer as the visitor read it and how many names were replaced
+(`redacted`).  What it does not cover: the tool steps' 参数 and 结果 views and the 工具台, which show the tools as they
+are; the JSON backup of 设置 → 数据, which keeps a conversation whole to be imported again; and the page's own code and
+requests — the tools run in the visitor's browser, so their names travel with it.
+
 ## Models
 
 The page speaks two wire formats:

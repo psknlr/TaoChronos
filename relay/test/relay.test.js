@@ -366,6 +366,9 @@ test("a record is kept only as its known fields, from the page, within its limit
   assert.deepEqual(kept.usage, { input: 1200, output: 180 });
   const long = normalizeRecord({ ...turn, answer: "字".repeat(30000), question: "问".repeat(5000) });
   assert.equal(long.answer.length, 20000);
+  // how many inside names the page told in plain words in the answer it shows (web/js/redact.js): kept, as a number
+  assert.equal(normalizeRecord({ ...turn, redacted: 5 }).redacted, 5);
+  assert.equal(normalizeRecord({ ...turn, redacted: "5" }).redacted, undefined);
   assert.equal(long.question.length, 4000);
   assert.equal(normalizeRecord({ v: 1, question: "" }), null);
   assert.equal(normalizeRecord([1]), null);
