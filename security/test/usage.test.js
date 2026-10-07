@@ -82,7 +82,8 @@ test("the counts are read with the token, or by anyone when public", async () =>
   const serve = (request, cfg) => serveStats(request, new URL(request.url), { cfg, stats: (d) => u.stats(d, "2026-10-07"), cors: { Vary: "Origin" }, today: "2026-10-07" });
   const off = await serve(ask(TOKEN), usageConfig({}));
   assert.equal(off.status, 401);
-  assert.deepEqual(await off.json(), { error: "统计尚未开放：在仓库的 Secrets 里设置 STATS_TOKEN 并重新部署（docs/web.md）", token_required: true, configured: false });
+  // a refusal anyone may read: nothing of how the counts are opened (the secret's name, the docs)
+  assert.deepEqual(await off.json(), { error: "统计尚未开放", token_required: true, configured: false });
   const wrong = await serve(ask("not-the-token-at-all"), usageConfig({ STATS_TOKEN: TOKEN }));
   assert.equal(wrong.status, 401);
   assert.equal((await wrong.json()).configured, true);
