@@ -117,11 +117,12 @@ export class UsageCore {
   }
 }
 
-/** GET …/stats?days=N: the counts for the holder of the token (or anyone, when public).  stats(days) → the counts. */
+/** GET …/stats?days=N: the counts for the holder of the token (or anyone, when public).  stats(days) → the counts.
+ * Anyone may ask, so a refusal says no more than the page shows: how the counts are opened is in docs/web.md. */
 export async function serveStats(request, url, { cfg, stats, cors = {}, today }) {
   if (request.method !== "GET" && request.method !== "HEAD") return json({ error: "method not allowed" }, 405, cors);
   if (!cfg.public) {
-    if (!cfg.token) return json({ error: "统计尚未开放：在仓库的 Secrets 里设置 STATS_TOKEN 并重新部署（docs/web.md）", token_required: true, configured: false }, 401, cors);
+    if (!cfg.token) return json({ error: "统计尚未开放", token_required: true, configured: false }, 401, cors);
     if (!(await bearerOk(request, cfg.token))) return json({ error: "统计令牌不对", token_required: true, configured: true }, 401, cors);
   }
   const days = Math.min(Math.max(Math.floor(Number(url.searchParams.get("days"))) || 30, 1), MAX_DAYS);

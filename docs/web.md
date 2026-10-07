@@ -208,9 +208,10 @@ provinces); no address is kept (`security/usage.js`, `/api/stats` on the site, `
 The counts are read with a token: create the repository secret **`STATS_TOKEN`** (16 characters or more, e.g.
 `openssl rand -hex 24`), let the site and relay workflows deploy (a push, or Run workflow), then enter the same value in
 the pane once — it is kept in that browser only, and **忘记令牌** removes it.  `STATS_PUBLIC = "1"` in both
-`wrangler.toml` files shows the counts to every visitor instead; `STATS_UTC_OFFSET` moves the day boundary.  Without the
-token set, the pane says how to set it; on a page with neither the site's server nor the relay (a local server, the
-GitHub Pages copy), it says the counts live on chat.impf.ai.
+`wrangler.toml` files shows the counts to every visitor instead; `STATS_UTC_OFFSET` moves the day boundary.  The pane
+and the endpoints tell a visitor nothing of how the counts are opened — that is here only: without the token set (and on
+a page with neither the site's server nor the relay: a local server, the GitHub Pages copy) the pane says just
+统计尚未开放, and with it set it asks for the token and nothing more.
 
 ## What the model is offered
 

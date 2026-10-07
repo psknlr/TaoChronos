@@ -1,7 +1,7 @@
 // The 统计 pane of the settings: how much the site is used and from where — the pages opened and their visitors (the
 // site's counts, /api/stats) and the questions asked of 道乃久默认服务 and who asked (the relay's, /v1/stats) — over the
 // last 7, 30 or 90 days, by country and by China's provinces (security/usage.js; docs/web.md).  The counts are read with
-// the stats token (kept in this browser only) unless the site makes them public; no address is ever among them.
+// a token kept in this browser only; no address is ever among them.
 // Charts are drawn here as SVG: one validated blue for the marks (--viz-1), the page's own ink and lines for the rest.
 
 import { h, icon, storage } from "../util.js";
@@ -84,21 +84,14 @@ function merge(site, relay) {
 }
 
 // ------------------------------------------------------------------ when the counts cannot be read
+// A visitor is told no more than that they are not open, or asked for the token; how they are opened is in the docs.
 function closed(root, S, site, rel, token) {
   const bodies = [site?.body, rel?.body].filter(Boolean);
   const unset = bodies.some((b) => b.configured === false) && !bodies.some((b) => b.configured === true);
   const asked = bodies.some((b) => b.token_required);
-  const head = [h("h3", "统计"), h("p.lead", "本站的使用情况：网页打开的次数与访客、向道乃久默认服务提的问题，以及它们来自哪些国家和省份。")];
-  if (!asked) {
-    return [...head, h("div.notice", icon("info"), h("div.grow", "这里读不到统计：统计由 chat.impf.ai 上的服务提供（本地运行或镜像站没有）。"))];
-  }
-  if (unset) {
-    return [...head, h("div.notice", icon("info"), h("div.grow",
-      h("div", h("b", "统计尚未开放。"), "站长在仓库的 Settings → Secrets and variables → Actions 里新建 Secret ", h("code", "STATS_TOKEN"),
-        "（至少 16 个字符），重新部署网站与默认服务后，在这里输入同一个令牌即可查看。"),
-      h("div.muted", "统计只给持有令牌的人看；要让所有访客都能看，把 wrangler.toml 里的 STATS_PUBLIC 设为 1。")))];
-  }
-  const input = h("input", { type: "password", placeholder: "STATS_TOKEN", autocomplete: "off", spellcheck: "false", "aria-label": "统计令牌" });
+  const head = h("h3", "统计");
+  if (!asked || unset) return [head, h("div.notice", icon("info"), h("div.grow", "统计尚未开放。"))];
+  const input = h("input", { type: "password", autocomplete: "off", spellcheck: "false", "aria-label": "统计令牌" });
   const go = () => {
     const v = input.value.trim();
     if (!v) return input.focus();
@@ -106,12 +99,11 @@ function closed(root, S, site, rel, token) {
     render(root, S);
   };
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
-  return [...head,
+  return [head,
     h("div.form-grid",
       h("div.field", h("label", "统计令牌"),
         h("div.inline", input, h("button.btn", { type: "button", on: { click: go } }, "查看")),
-        token ? h("div.help.err", "令牌不对，请重新输入。") : null,
-        h("div.help", "统计只给站长看：输入仓库 Secret ", h("code", "STATS_TOKEN"), " 的值。令牌只保存在本浏览器，可随时在这里忘记。")))];
+        token ? h("div.help.err", "令牌不对，请重新输入。") : null))];
 }
 
 // ------------------------------------------------------------------ the dashboard
