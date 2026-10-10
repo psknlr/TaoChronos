@@ -57,23 +57,27 @@ export function compact(value, maxChars = 16000, dumped = null) {
   return `${cpSlice(text, maxChars)}…［截断：原长 ${cpLength(text)} 字符］`;
 }
 
-/** What the model reads of a result: all of it but the chart specifications (charts), which are for the page — of them it
- * reads only the titles of those the page shows (charts_shown), so that it can point to them. */
+const PAGE_ONLY = ["charts", "document"]; // for the page: the model reads the result they are drawn or written from
+
+/** What the model reads of a result: all of it but the chart specifications (charts) and the document a result carries to
+ * download (document), which are for the page — of the charts it reads only the titles of those the page shows
+ * (charts_shown), so that it can point to them. */
 export function forModel(value) {
-  if (!isPlainObject(value) || !("charts" in value)) return value;
-  const { charts, ...rest } = value;
+  if (!isPlainObject(value) || !PAGE_ONLY.some((k) => k in value)) return value;
+  const { charts, document, ...rest } = value;
   const titles = (Array.isArray(charts) ? charts : []).filter((c) => isPlainObject(c) && typeof c.title === "string" && c.title).map((c) => c.title);
   return titles.length ? { ...rest, charts_shown: titles } : rest;
 }
 
-/** The result as the interface shows it: whole when small enough, trimmed (still valid JSON) otherwise — its charts never
- * trimmed. */
+/** The result as the interface shows it: whole when small enough, trimmed (still valid JSON) otherwise — its charts and
+ * its document never trimmed. */
 export function forInterface(value, maxChars = 400_000, dumped = null) {
   if (fits(dumped ?? dumps(value), maxChars)) return value;
-  if (isPlainObject(value) && "charts" in value) {
-    const { charts, ...rest } = value;
-    const out = forInterface(rest, maxChars - cpLength(dumps(charts)));
-    return isPlainObject(out) ? { ...out, charts } : out;
+  if (isPlainObject(value) && PAGE_ONLY.some((k) => k in value)) {
+    const kept = Object.fromEntries(PAGE_ONLY.filter((k) => k in value).map((k) => [k, value[k]]));
+    const rest = Object.fromEntries(Object.entries(value).filter(([k]) => !PAGE_ONLY.includes(k)));
+    const out = forInterface(rest, maxChars - cpLength(dumps(kept)));
+    return isPlainObject(out) ? { ...out, ...kept } : out;
   }
   for (const [items, chars] of [[200, 4000], [80, 2000], [30, 800], [10, 300]]) {
     const trimmed = trim(value, items, chars);

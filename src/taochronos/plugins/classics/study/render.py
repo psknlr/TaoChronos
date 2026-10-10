@@ -1070,7 +1070,7 @@ def usage(r: dict[str, Any]) -> list[str]:
                        f"{x['grams']['median']:.0f} | {'、'.join(c['dose'] for c in x['common'])} |" if x.get("grams") else
                        f"| {x['period']} | {x['n']} | {q['median']:g} | {q['q1']:g}–{q['q3']:g} |  | {'、'.join(c['dose'] for c in x['common'])} |")
     if doses.get("by_form"):
-        out += ["", "各剂型（丸、散、膏之量为一料，不与汤剂相比）：" + "，".join(f"{x['form']} {x['n']} 首，中位 {x['liang']['median']:g} 两"
+        out += ["", "各剂型（丸、散、膏与煮散之量为一料，不与汤剂相比）：" + "，".join(f"{x['form']} {x['n']} 首，中位 {x['liang']['median']:g} 两"
                                                        for x in doses["by_form"])]
     largest = r.get("largest_dose") or {}
     if largest.get("share") is not None:
@@ -1139,19 +1139,26 @@ def incompat(r: dict[str, Any]) -> list[str]:
     return out + ["", f"> {r.get('notice', '')}"]
 
 
+def _cn_ordinal(n: int) -> str:
+    digits = "一二三四五六七八九"
+    return digits[n - 1] if n < 10 else "十" + (digits[n - 11] if n > 10 else "")
+
+
 def protocol(r: dict[str, Any]) -> list[str]:
     ent = r.get("entities", {})
+    count = iter(range(1, 100))
+    sec = lambda title: f"## {_cn_ordinal(next(count))}、{title}"  # noqa: E731 — numbered as they come (no background, no figures)
     named = [("方", ent.get("formulas")), ("药", ent.get("herbs")), ("病证、症状", ent.get("findings")), ("术语", ent.get("terms")),
              ("书", ent.get("books"))]
     out = [f"# {r['title']}", "", f"> 研究问题：{r['question']}", "",
            "研究类型：" + "、".join(k["label"] for k in r.get("kinds", [])) + "；"
            + "；".join(f"{label}：{'、'.join(v)}" for label, v in named if v) + f"；时间范围：{ent.get('period', {}).get('label', '')}", ""]
     if r.get("background"):
-        out += ["## 一、研究背景（预试验所见，须回查原文）", ""]
+        out += [sec("研究背景（预试验所见，须回查原文）"), ""]
         out += [f"- {b['text']}" + (f" `{b['passage_id']}`" if b.get("passage_id") else "") for b in r["background"]]
         out.append("")
-    out += ["## 二、研究目标", ""] + [f"{i}. {o}" for i, o in enumerate(r.get("objectives", []), 1)] + [""]
-    out += ["## 三、研究问题与假设", ""] + [f"- **{q['id']}** {q['text']}" for q in r.get("questions", [])] + [""]
+    out += [sec("研究目标"), ""] + [f"{i}. {o}" for i, o in enumerate(r.get("objectives", []), 1)] + [""]
+    out += [sec("研究问题与假设"), ""] + [f"- **{q['id']}** {q['text']}" for q in r.get("questions", [])] + [""]
     for h in r.get("hypotheses", []):
         out += [f"**{h['id']}　{h['statement']}**", "", f"- 预测：{h['prediction']}", f"- 检验：{h['test']}", f"- 证伪条件：{h['falsified_if']}"]
         if h.get("alternatives"):
@@ -1159,28 +1166,28 @@ def protocol(r: dict[str, Any]) -> list[str]:
         out.append("")
     sc = r.get("scope", {})
     corpus = sc.get("corpus", {})
-    out += ["## 四、研究范围与资料", "", f"- 语料：{corpus.get('label', '')}（{corpus.get('books', '?')} 部录本、{corpus.get('passages', '?')} 段；来源 "
+    out += [sec("研究范围与资料"), "", f"- 语料：{corpus.get('label', '')}（{corpus.get('books', '?')} 部录本、{corpus.get('passages', '?')} 段；来源 "
             + "、".join(corpus.get("sources", [])) + "）", f"- 时间：{sc.get('period', {}).get('label', '')}"]
     if sc.get("works"):
         out.append("- 首要文献：" + "；".join(f"《{w['title']}》" + (f"（要籍第 {w['rank']}）" if w.get("rank") else "")
                                          + ("" if w.get("in_this_corpus") in (True, None) else "〔本语料未收，需全量语料〕") for w in sc["works"]))
     out += ["- 纳入：" + "；".join(sc.get("inclusion", [])), "- 排除：" + "；".join(sc.get("exclusion", [])), ""]
-    out += ["## 五、变量与操作定义", "", "| 变量 | 定义 | 度量 | 来源 |", "|---|---|---|---|"]
+    out += [sec("变量与操作定义"), "", "| 变量 | 定义 | 度量 | 来源 |", "|---|---|---|---|"]
     out += [f"| {v['name']} | {v['definition']} | {v['measure']} | {v['source']} |" for v in r.get("variables", [])] + [""]
-    out += ["## 六、研究方法与步骤", "", "| 步骤 | 内容 | 能力 | 目的 | 产出 |", "|---|---|---|---|---|"]
+    out += [sec("研究方法与步骤"), "", "| 步骤 | 内容 | 能力 | 目的 | 产出 |", "|---|---|---|---|---|"]
     out += [f"| {m['step']} | {m['title']} | {m['tool']} | {m['purpose']} | {m['outputs']} |" for m in r.get("methods", [])]
     out += ["", "重现命令：", "", "```"] + [m["command"] for m in r.get("methods", [])] + ["```", ""]
-    out += ["## 七、分析计划", ""] + [f"- **{a['name']}**：{a['method']}（{a['detail']}）" for a in r.get("analysis", [])] + [""]
+    out += [sec("分析计划"), ""] + [f"- **{a['name']}**：{a['method']}（{a['detail']}）" for a in r.get("analysis", [])] + [""]
     if r.get("figures"):
-        out += ["## 八、预期图表", ""] + [f"- **{f['id']}** {f['title']}（{f['type']}，来自 {f['from']}）" for f in r["figures"]] + [""]
-    out += ["## 九、质量控制", ""] + [f"- {q}" for q in r.get("quality", [])] + [""]
-    out += ["## 十、局限与偏倚", ""] + [f"- {x}" for x in r.get("limitations", [])] + [""]
-    out += ["## 十一、伦理与声明", ""] + [f"- {x}" for x in r.get("ethics", [])] + [""]
-    out += ["## 十二、进度安排", "", "| 阶段 | 任务 | 产出 |", "|---|---|---|"]
+        out += [sec("预期图表"), ""] + [f"- **{f['id']}** {f['title']}（{f['type']}，来自 {f['from']}）" for f in r["figures"]] + [""]
+    out += [sec("质量控制"), ""] + [f"- {q}" for q in r.get("quality", [])] + [""]
+    out += [sec("局限与偏倚"), ""] + [f"- {x}" for x in r.get("limitations", [])] + [""]
+    out += [sec("伦理与声明"), ""] + [f"- {x}" for x in r.get("ethics", [])] + [""]
+    out += [sec("进度安排"), "", "| 阶段 | 任务 | 产出 |", "|---|---|---|"]
     out += [f"| {t['phase']} | {t['tasks']} | {t['deliverables']} |" for t in r.get("timeline", [])] + [""]
-    out += ["## 十三、预期成果", ""] + [f"- {x}" for x in r.get("outputs", [])] + [""]
+    out += [sec("预期成果"), ""] + [f"- {x}" for x in r.get("outputs", [])] + [""]
     c = r.get("contract", {})
-    out += ["## 十四、研究合同（系统研究）", "", f"- 聚焦：{'、'.join(c.get('focus_terms', []))}；研究路线：{'、'.join(c.get('tracks', []))}；"
+    out += [sec("研究合同（系统研究）"), "", f"- 聚焦：{'、'.join(c.get('focus_terms', []))}；研究路线：{'、'.join(c.get('tracks', []))}；"
             f"禁用假定：{'；'.join(c.get('forbidden_assumptions', []))}", "", "```", c.get("command", ""), "```", ""]
     pilot = r.get("pilot", {})
     if pilot.get("ran"):

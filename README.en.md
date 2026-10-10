@@ -398,7 +398,7 @@ reads 十八反 and 十九畏 in the texts — who stated each pair first, where
 write both drugs.  **`study protocol`** turns a research question into a protocol with falsifiable hypotheses (a formula's
 name is read as one: 白虎加人参汤 is 白虎汤 加 人参), operational variables, methods that are this system's tools with the
 commands that rerun them, analysis, figures, quality checks, limitations, ethics, a timeline and a research contract, and
-runs its main steps once to say whether the corpus holds enough.  Their results — and those of `formula`, `herb`, `term`,
+runs its main steps once to say whether the corpus holds enough; the page offers the whole protocol as a Markdown document.  Their results — and those of `formula`, `herb`, `term`,
 `pairs`, `network`, `names` and `senses` — carry chart specifications that the page draws (with downloads as SVG, PNG,
 CSV and JSON) and `--charts DIR` writes as files.  See [docs/study.md](docs/study.md#方药研究-herb-and-formula-research) and
 [ADR 0019](docs/adr/0019-herb-formula-research-protocols-charts.md).

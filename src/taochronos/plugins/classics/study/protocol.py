@@ -53,6 +53,9 @@ CATEGORIES = {"origin": ("方书", "伤寒", "杂病"), "compare": ("方书", "�
               "network": ("伤寒", "杂病", "方书", "医案"), "term": ("医经", "伤寒", "温病", "综合"), "names": ("本草", "方书"),
               "modern": ("本草", "方书")}
 _QUESTION_WORDS = re.compile(r"如何|怎样|怎么|为何|为什么|是否|哪些|什么|研究|探讨|考察|分析|古代|古籍|历代|中医|的|了|吗|呢|？|\?|。|，")
+# a formula's name the lexicon may lack (桂枝加桂汤): characters up to a dosage-form ending, no connective or mark inside
+_FORMULA_SHAPE = re.compile(r"[^\s与和及或的、，,。；;：:？?！!在对从至自]{2,14}?(?:饮子|汤|散|丸|圆|饮|丹|膏)")
+_ASKING = re.compile(r"^(?:比较|对比|研究|分析|考察|探讨|关于|请问|请|试论|论)+")
 _BOTH_SIDES = re.compile(r"(以前|之前).{0,8}(以后|之后|以来)|(以后|之后).{0,8}(以前|之前)|前后")
 NOTICE = ("本方案是研究计划，不是研究结论：其中的背景与预试验数字来自语料的机器阅读，须回查原文；不构成诊断、处方或剂量建议，"
           "历代剂量折合只是历史读法。")
@@ -72,11 +75,26 @@ class ProtocolDesigner:
         b = self.b
         norm = b.normalize(question)
         mentions = b.pack.lexicon.match(norm, include_weak=False)
+        # formula names the lexicon lacks, read by their shape — unless a known formula, or a drug (石膏), ends there
+        spans = [(m.start, m.end) for m in mentions if m.category == "formula"]
+        ends = {m.end for m in mentions if m.category in ("formula", "herb")}
+        unknown: list[tuple[int, str]] = []
+        for c in _FORMULA_SHAPE.finditer(norm):
+            name = _ASKING.sub("", c.group(0))
+            if c.end() in ends or len(name) < 3:
+                continue
+            unknown.append((c.end() - len(name), question[c.end() - len(name): c.end()]))
+            spans.append((c.end() - len(name), c.end()))
         by: dict[str, list[str]] = {}
-        for m in mentions:
+        for m in sorted(mentions, key=lambda m: m.start):
+            if m.category != "formula" and any(a <= m.start and m.end <= z for a, z in spans):
+                continue  # a drug inside a formula's name (桂枝 in 桂枝加桂汤) is not asked about
             by.setdefault(m.category, [])
             if m.entry.term not in by[m.category]:
                 by[m.category].append(m.entry.term)
+        if unknown:  # in the order the question names them
+            known = [(m.start, m.entry.term) for m in mentions if m.category == "formula"]
+            by["formula"] = list(dict.fromkeys(t for _, t in sorted(known + unknown)))
         terms = [t for t in b.pack.terminology.terms if t in question or b.normalize(t) in norm]
         books = [t for t in re.findall(r"《([^》]{1,30})》", question)]
         after, before = b.pack.periods.parse_constraint(question)
@@ -86,6 +104,7 @@ class ProtocolDesigner:
         terms = [t for t in terms if t not in by.get("herb", []) + by.get("formula", [])]
         findings = [x for c in ("disease", "pattern", "symptom", "sign", "pulse") for x in by.get(c, []) if x not in terms]
         return {"formulas": by.get("formula", []), "herbs": by.get("herb", []), "findings": findings, "terms": terms, "books": books,
+                "unlisted": [t for _, t in unknown],
                 "period": {"after": after, "before": before, "split": split, "label": self._period_label(after, before, split)}}
 
     @staticmethod
@@ -144,6 +163,9 @@ class ProtocolDesigner:
         p["figures"] = [{"id": f"F{i}", **fig} for i, fig in enumerate(self._dedupe([f for part in parts for f in part.get("figures", [])], "chart"), 1)]
         p["quality"] = QUALITY
         p["limitations"] = [x for part in parts for x in part.get("limitations", [])] + self._limitations(corpus)
+        if ent.get("unlisted"):
+            p["limitations"].insert(0, f"{'、'.join(ent['unlisted'])}不在本系统词表中（按方名读作方剂）：其见证只能按原名检索，异名与讳改名"
+                                       "不会自动合并，预试验可能检不到")
         p["ethics"] = self._ethics(ent)
         p["timeline"] = self._timeline(p)
         p["outputs"] = OUTPUTS

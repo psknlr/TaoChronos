@@ -45,6 +45,8 @@ easy to download.
    into kinds and entities, each kind contributing hypotheses (prediction, test, falsification, rivals), scope, variables,
    methods (this system's tools with their commands), analysis, figures, quality, limitations, ethics, a timeline and a
    research contract; a pilot run of the main steps reports how much the corpus holds.  It plans; it concludes nothing.
+   The result carries its Markdown page (`document`), which the page offers to download and the model does not read; a
+   formula name the lexicon lacks is read by its shape (…汤, …丸), not as the drug inside it.
 5. **Charts as data** (`study/charts.py`): a declarative specification (version 1: line, bar, hbar, stack, heatmap, range,
    timeline, network) built from the full result, carried under `charts`, never trimmed for the interface and never shown
    to the model, which reads only their titles (`charts_shown`).  Two renderers of one mark specification: `study/svg.py`

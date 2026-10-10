@@ -28,7 +28,7 @@ import { count } from "./js/util.js";
 import { fixedReply, IDENTITY_REPLY, isIdentityQuestion, touchesIdentity } from "./js/fixed.js";
 import { ServerRuntime } from "./js/runtime.js";
 import { redact, scrub, toolWord } from "./js/redact.js";
-import { chartsOf, fmt, invalid, niceMax, normalize, seriesColors, ticks, toCSV, toMarkdown } from "./js/chart.js";
+import { chartsOf, documentOf, fmt, invalid, niceMax, normalize, seriesColors, ticks, toCSV, toMarkdown } from "./js/chart.js";
 
 // streams: increments and MiniMax's cumulative chunks read alike
 const inc = new Accum(); for (const t of ["桂", "枝", "汤主之。"]) inc.push(t);
@@ -217,6 +217,8 @@ assert.deepEqual(ticks(0, 1.5), [0, 0.5, 1, 1.5]);
 assert.deepEqual([fmt(0.125, true), fmt(1234), fmt(2), fmt(0.4375)], ["13%", "1.2K", "2", "0.438"]);
 assert.deepEqual(chartsOf({ charts: [spec, { type: "pie" }] }), [spec]);
 assert.deepEqual(chartsOf(null), []);
+assert.deepEqual(documentOf({ document: { name: "桂枝汤/方案", text: "# 方案" } }), { name: "桂枝汤_方案.md", format: "markdown", text: "# 方案" });
+assert.equal(documentOf({ document: { name: "x.md", text: "" } }), null);
 console.log("ok");
 """
 
@@ -459,6 +461,18 @@ def test_charts_in_the_browser(tmp_path):
             page.click(".drawer .console-form .btn >> text=运行")
             page.wait_for_selector(".drawer .console-form .charts .viz-svg", timeout=30000)
             assert page.locator(".drawer .console-form .chart-tabs [role=tab]").count() >= 2
+            # a research protocol run there is offered as a document to download
+            page.click(".drawer .console-form .icon-btn[aria-label=关闭]")
+            page.fill(".drawer input[type=search]", "study.protocol")
+            page.click(".drawer .tool-item >> nth=0")
+            page.fill(".drawer .console-form textarea >> nth=0", "桂枝汤与桂枝加桂汤的组成与剂量有何异同？")
+            page.click(".drawer .console-form .btn >> text=运行")
+            page.wait_for_selector(".drawer .console-form .doc-dl", timeout=60000)
+            with page.expect_download() as doc:
+                page.click(".drawer .console-form .doc-dl")
+            assert doc.value.suggested_filename.endswith("研究方案.md")
+            text = Path(doc.value.path()).read_text(encoding="utf-8")
+            assert text.startswith("# 桂枝汤") and "证伪条件" in text and "桂枝加桂汤即桂枝汤加重桂之量" in text
             assert not errors, errors
             browser.close()
     finally:

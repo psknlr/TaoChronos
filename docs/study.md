@@ -340,7 +340,10 @@ own names:
 With the pilot (the default; `--no-pilot` or `pilot: false` skips it) the main steps run once at their default settings:
 the protocol then says how much the corpus holds — compositions, works, periods, the earliest witness — whether that is
 enough, and carries the pilot's charts; its background cites witnesses, never memory.  It plans research and concludes
-nothing.
+nothing.  The result carries the protocol as a document (`document`: the Markdown page, sections numbered as they come),
+which the web client offers to download; the model reads the structured protocol instead.  A formula the question names
+that the lexicon lacks (桂枝加桂汤 in a corpus without the harvest) is read by its shape — characters up to 汤, 散, 丸, 饮,
+丹 or 膏 — never as the drug inside its name, and the limitations say its witnesses are searched by that name only.
 
 ## 图表 (charts)
 

@@ -159,10 +159,14 @@ def test_protocol_turns_a_question_into_a_protocol_with_testable_hypotheses(stud
     assert background and all(study.corpus.has_passage(b["passage_id"]) for b in background)  # cites witnesses, never memory
     page = markdown("protocol", r, study.signature())
     assert page.startswith("# 白虎汤") and "证伪条件" in page and "taochronos study compare 白虎汤 白虎加人参汤" in page
+    doc = r["document"]  # the protocol as a file to download: the page, its sections numbered as they come
+    assert doc["name"] == f"{r['title']}.md" and doc["format"] == "markdown" and doc["text"].startswith("# 白虎汤")
+    assert "## 一、研究背景" in doc["text"] and "## 二、研究目标" in doc["text"]
     raised = study.protocol("桂枝汤与桂枝加桂汤的组成与剂量有何异同？", pilot=False)  # 加 the drug the base is named after
     assert "桂枝加桂汤即桂枝汤加重桂之量（同药异量），药味与桂枝汤相同" in [h["statement"] for h in raised["hypotheses"]]
     quiet = study.protocol("半夏的用量与炮制历代如何变化？", pilot=False)
     assert [k["id"] for k in quiet["kinds"]][0] == "usage" and not quiet["pilot"]["ran"] and "charts" not in quiet
+    assert "## 一、研究目标" in quiet["document"]["text"]  # no background without a pilot: the numbering does not skip
 
 
 # ------------------------------------------------------------------ charts
@@ -217,9 +221,11 @@ def test_the_model_reads_which_charts_the_page_shows_never_their_data():
     result = {"x": 1, "charts": [{"type": "bar", "title": "甲", "rows": [{"a": 1}] * 50}, {"type": "line", "title": "乙"}]}
     assert for_model(result) == {"x": 1, "charts_shown": ["甲", "乙"]}
     assert for_model({"x": 1}) == {"x": 1}
-    big = {"rows": ["长" * 500] * 400, "charts": result["charts"]}
-    shown = for_interface(big, max_chars=20000)
-    assert shown["charts"] == result["charts"] and len(shown["rows"]) < 400  # the rest trimmed, the charts whole
+    document = {"name": "方案.md", "format": "markdown", "text": "# 方案\n" + "正文" * 3000}
+    assert for_model({"x": 1, "document": document}) == {"x": 1}  # the document is for the page: the model has its result
+    big = {"rows": ["长" * 500] * 400, "charts": result["charts"], "document": document}
+    shown = for_interface(big, max_chars=30000)
+    assert shown["charts"] == result["charts"] and shown["document"] == document and len(shown["rows"]) < 400  # trimmed, but not these
 
 
 # ------------------------------------------------------------------ tools and CLI (the demonstration corpus)
@@ -235,6 +241,11 @@ def test_the_new_studies_through_the_scheduler(harness):
     assert out.ok and out.result["check"]["flagged"][0]["pair"] == "甘草反海藻"
     out = call("study.protocol", question="桂枝汤的组成在宋代以前与以后有何变化？", pilot=False)
     assert out.ok and out.result["hypotheses"] and out.result["contract"]["focus_terms"]
+    assert out.result["document"]["text"].startswith("# 桂枝汤") and len(out.result["document"]["text"]) > 2000  # never shortened
+    out = call("study.protocol", question="桂枝汤与桂枝加桂汤的组成与剂量有何异同？", pilot=False)  # a name the lexicon lacks
+    ent = out.result["entities"]
+    assert (ent["formulas"], ent["unlisted"], ent["herbs"]) == (["桂枝汤", "桂枝加桂汤"], ["桂枝加桂汤"], [])  # not 桂枝 the drug
+    assert out.result["limitations"][0].startswith("桂枝加桂汤不在本系统词表中")
     assert not call("study.compare", formulas=["桂枝汤"]).ok
 
 

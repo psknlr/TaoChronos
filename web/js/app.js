@@ -1,7 +1,7 @@
 // TaoChronos web client: conversations with a model that uses TaoChronos's tools, every quotation checked.
 
 import { buildHistory, formatOf, runTurn, toolDefs, withoutReasoning } from "./agent.js";
-import { chartsOf, toMarkdown } from "./chart.js";
+import { chartsOf, documentOf, toMarkdown } from "./chart.js";
 import { streamClaude } from "./llm/anthropic.js";
 import { streamChat } from "./llm/openai.js";
 import { extractCitations, renderMarkdown } from "./markdown.js";
@@ -581,6 +581,7 @@ function makeHooks(conv, msg) {
       c.preview = (out.text || "").slice(0, 8000);
       c.citations = (out.citations || []).slice(0, 80);
       c.charts = out.ok ? chartsOf(out.result) : [];
+      c.document = out.ok ? documentOf(out.result) : null;
       if (out.tool && out.tool !== call.name) c.resolved = out.tool;
       toolTextCache.delete(conv); // what the tools returned has grown: citations are checked against it
       registerEvidence(conv, out.citations);

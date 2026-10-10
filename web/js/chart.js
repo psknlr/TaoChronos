@@ -690,6 +690,21 @@ export function cachedCard(spec) {
   return cards.get(spec);
 }
 
+/** The document a tool result carries to download (a research protocol in Markdown): {name, format, text}, or null. */
+export function documentOf(result) {
+  const d = result && typeof result === "object" ? result.document : null;
+  if (!d || typeof d.text !== "string" || !d.text) return null;
+  const name = String(d.name || "document.md").replace(/[\\/:*?"<>|]+/g, "_").slice(0, 80);
+  return { name: /\.(md|markdown|txt)$/i.test(name) ? name : `${name}.md`, format: d.format || "markdown", text: d.text };
+}
+
+/** A button that saves a result's document as a file. */
+export function documentButton(doc, label = "下载研究方案（Markdown）") {
+  if (!doc) return null;
+  return h("button.btn.secondary.doc-dl", { type: "button", title: doc.name, on: { click: () => download(doc.name, doc.text, "text/markdown") } },
+    icon("download", "sm"), label);
+}
+
 /** The charts a tool result carries (at most ``limit``), ready to keep with the call. */
 export function chartsOf(result, limit = 8) {
   const list = result && typeof result === "object" && Array.isArray(result.charts) ? result.charts : [];

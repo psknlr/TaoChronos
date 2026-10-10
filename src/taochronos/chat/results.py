@@ -53,12 +53,16 @@ def compact(value: Any, max_chars: int = 16000) -> str:
     return text[:max_chars] + f"…［截断：原长 {len(text)} 字符］"
 
 
+PAGE_ONLY = ("charts", "document")  # for the page: the model reads the result they are drawn or written from
+
+
 def for_model(value: Any) -> Any:
-    """What the model reads of a result: all of it but the chart specifications (``charts``), which are for the page —
-    of them it reads only the titles of those the page shows (``charts_shown``), so that it can point to them."""
-    if isinstance(value, dict) and "charts" in value:
-        rest = {k: v for k, v in value.items() if k != "charts"}
-        charts = value["charts"] if isinstance(value["charts"], list) else []
+    """What the model reads of a result: all of it but the chart specifications (``charts``) and the document a result
+    carries to download (``document``), which are for the page — of the charts it reads only the titles of those the page
+    shows (``charts_shown``), so that it can point to them."""
+    if isinstance(value, dict) and any(k in value for k in PAGE_ONLY):
+        rest = {k: v for k, v in value.items() if k not in PAGE_ONLY}
+        charts = value.get("charts") if isinstance(value.get("charts"), list) else []
         titles = [c["title"] for c in charts if isinstance(c, dict) and isinstance(c.get("title"), str) and c["title"]]
         if titles:
             rest["charts_shown"] = titles
@@ -68,13 +72,14 @@ def for_model(value: Any) -> Any:
 
 def for_interface(value: Any, max_chars: int = 400_000) -> Any:
     """The result as the interface shows it: whole when it is small enough, trimmed (still valid JSON) otherwise — its
-    charts never trimmed (a chart cut short would draw something the result did not say)."""
+    charts and its document never trimmed (a chart cut short would draw something the result did not say)."""
     data = to_jsonable(value)
     if len(dumps(data)) <= max_chars:
         return data
-    if isinstance(data, dict) and "charts" in data:
-        rest = for_interface({k: v for k, v in data.items() if k != "charts"}, max_chars - len(dumps(data["charts"])))
-        return {**rest, "charts": data["charts"]} if isinstance(rest, dict) else rest
+    if isinstance(data, dict) and any(k in data for k in PAGE_ONLY):
+        kept = {k: data[k] for k in PAGE_ONLY if k in data}
+        rest = for_interface({k: v for k, v in data.items() if k not in PAGE_ONLY}, max_chars - len(dumps(kept)))
+        return {**rest, **kept} if isinstance(rest, dict) else rest
     for items, chars in ((200, 4000), (80, 2000), (30, 800), (10, 300)):
         trimmed = _trim(data, items, chars)
         if len(dumps(trimmed)) <= max_chars:

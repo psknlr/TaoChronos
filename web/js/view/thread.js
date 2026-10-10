@@ -1,6 +1,6 @@
 // The conversation: user turns, assistant turns (thinking, tool steps, the answer), citation chips and actions.
 
-import { chartGallery } from "../chart.js";
+import { chartGallery, documentButton } from "../chart.js";
 import { renderMarkdown } from "../markdown.js";
 import { redact, toolWord } from "../redact.js";
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY } from "../brand.js";
@@ -117,6 +117,8 @@ export function fillAssistant(body, m, ctx, last) {
       body.append(stepsNode(m, seg, k, ctx, live));
       const charts = chartsNode(seg);
       if (charts) body.append(charts);
+      const docs = (seg.calls || []).map((c) => documentButton(c.document)).filter(Boolean);
+      if (docs.length) body.append(h("div.docs", docs));
     }
     else if (seg.type === "text" && (seg.text || (live && isLast))) {
       const md = h("div.md");

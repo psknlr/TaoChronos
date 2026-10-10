@@ -397,10 +397,10 @@ def _study(ctx: ToolContext) -> Any:
 def _brief(value: Any, items: int = 12, chars: int = 240) -> Any:
     """Keep tool results small for agent context: long lists are cut (with the count left out), long strings shortened,
     bulky keys (member lists, Anki text, per-field quotes) dropped.  The full results are in the CLI and the datasets.
-    The chart specifications (``charts``, drawn from the full result) pass as they are: the interface shows them, the
-    model's text leaves them out (``chat.results``)."""
+    The chart specifications (``charts``, drawn from the full result) and a result's document (``document``) pass as they
+    are: the interface shows them, the model's text leaves them out (``chat.results``)."""
     if isinstance(value, dict):
-        return {k: (v if k == "charts" else _brief(v, items, chars)) for k, v in value.items()
+        return {k: (v if k in ("charts", "document") else _brief(v, items, chars)) for k, v in value.items()
                 if k not in ("member_ids", "anki_tsv", "quotes")}
     if isinstance(value, list):
         out = [_brief(v, items, chars) for v in value[:items]]

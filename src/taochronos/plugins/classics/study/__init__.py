@@ -61,6 +61,7 @@ dataset            研究数据集: the results as tables with provenance, for a
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from typing import Any
 
@@ -92,6 +93,7 @@ from .network import CitationNetwork
 from .pairs import FormulaHarvest, PairsStudy
 from .places import PlaceStudy
 from .protocol import ProtocolDesigner
+from .render import markdown as _markdown
 from .punctuation import PunctuationStudy
 from .schools import SchoolStudy
 from .stemma import StemmaStudy
@@ -357,8 +359,12 @@ class StudyService(StudyBase):
     def protocol(self, question: str, **kw: Any) -> dict[str, Any]:
         """研究方案: the question's protocol — what it names and asks, hypotheses with tests and refutations, scope,
         variables, methods, analysis, figures, quality, limitations, ethics, timeline, a research contract; ``pilot``
-        (default) runs the main steps once and says how much evidence the corpus holds, with their charts."""
-        return self._protocol.design(question, **kw)
+        (default) runs the main steps once and says how much evidence the corpus holds, with their charts.  The protocol
+        carries its own document (``document``: the Markdown page, to download as a file); the model reads the rest."""
+        r = self._protocol.design(question, **kw)
+        name = re.sub(r'[\\/:*?"<>|\s]+', "_", r.get("title") or "研究方案")[:60] + ".md"
+        r["document"] = {"name": name, "format": "markdown", "text": _markdown("protocol", r, self.signature(), r.get("notice", ""))}
+        return r
 
     def schools(self, school: str | None = None, **kw: Any) -> dict[str, Any]:
         """学派: what a school's works share against the other works of their time (words, formulas), whom they cite,

@@ -836,6 +836,9 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(2px); }
 .viz-menu button:hover, .viz-menu button:focus-visible { background: var(--surface-2); color: var(--ink); }
 .viz-foot { margin-top: 8px; font-size: 11.5px; line-height: 1.55; color: var(--ink-3); }
 .viz-note { font-size: 12px; color: var(--ink-3); margin: -.5em 0 1em; }
+.docs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+.docs .btn { font-size: 12.5px; padding: 5px 12px; }
+.docs .btn .icon { margin-right: 4px; }
 .chart-wait { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-3); border: 1px dashed var(--line-2); border-radius: 12px; padding: 14px; margin: 0 0 1em; }
 @media print {
   .viz-card .tools, .chart-tabs { display: none !important; }

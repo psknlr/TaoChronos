@@ -226,7 +226,8 @@ from the model's trimmed copy.  The page draws them (`web/js/chart.js`) in three
 Each chart is a card: its title and what it counts; hover, or focus and the arrow keys, read out the values; **表格** shows
 every number; **下载** gives the figure as **SVG** (standalone: title, subtitle, note and source, colours and fonts inline),
 **PNG** (twice the size), the table as **CSV** (UTF-8 with a byte-order mark, for spreadsheet programs) and the
-specification as **JSON**.  A conversation exported as Markdown appends each chart's table.  The colours are tokens
+specification as **JSON**.  A conversation exported as Markdown appends each chart's table.  A research protocol
+(`study.protocol`) comes with its whole text: **下载研究方案（Markdown）** under its step, and in the 工具台.  The colours are tokens
 (`--viz-1` … `--viz-8`, `--viz-other`, the `--viz-seq` ramp; `css/app.css`), selected for the light and the dark surfaces
 and validated for colour-vision deficiency; a downloaded figure takes the light ones.  The model reads only the titles of
 the charts the page shows (`charts_shown`), so it can point to them without spending its context on their data.
