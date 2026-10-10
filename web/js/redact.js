@@ -23,6 +23,8 @@ export const TOOL_WORDS = {
   "study.punctuate": "句读", "study.reading": "阅读门径", "study.reuse": "语义复用", "study.schools": "学派",
   "study.senses": "语义演变", "study.stemma": "版本谱系", "study.taboo": "避讳断代", "study.trajectories": "医案轨迹",
   "study.transmission": "思想传播", "study.variants": "异文校勘", "study.witnesses": "版本与影像见证",
+  "study.compare": "方剂比较", "study.family": "类方", "study.usage": "药物用量与配伍", "study.properties": "性味归经对照",
+  "study.incompat": "配伍禁忌", "study.protocol": "研究方案设计",
   "philology.assess_passage": "文献评估", "philology.collate": "校勘", "philology.inspect_page": "页面溯源",
   "philology.normalize": "异体规范", "vision.layout": "版面理解", "vision.compare": "OCR 核对",
   "validation.verify_quote": "引文核验", "validation.gates": "门控核验", "validation.provenance_chain": "溯源链",

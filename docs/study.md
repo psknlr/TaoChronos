@@ -37,6 +37,12 @@ the way the 考据 tradition answers them: from the texts, witness by witness.
 | `study entities` | 实体识别 (T7) — what does this passage name? | entities in 24 types (disease, syndrome, symptom, pulse, tongue, formula, herb, dose, preparation, physician, commentator, book, place, time …) with their references, ambiguity and negation; a model, when configured, types the ambiguous and adds the missed as exact spans |
 | `study translate` | 释义与今译 (T10) — what does this passage say, layer by layer? | the original (never changed), normalised, punctuated, interpreted (glosses with who first gave them, the sense the date and context favour) and, with a model, a modern Chinese translation that cites its glosses and passes the presentism guard |
 | `study places` | 地域 (T27) — where did physicians come from and books appear, and does a term or a school lead in a region? | native places and places of writing (author and signed prefaces), a place's physicians and works, region × period shares of a term or a school with z tests and Benjamini–Hochberg, GeoJSON |
+| `study compare` | 方剂比较 — how do these formulas differ in drugs and doses? | each formula's 原方 (or 通行方) witness, its drugs by family with doses, ratios (largest weight = 1) and shares; per pair: shared and own drugs, Jaccard, dose-weighted overlap, dose changes and a verdict (同方 / 同药异量 / 加减化裁 / 异方) |
+| `study family` | 类方 — which formulas were made from this one? | the base's core (the drug set most works write); every formula whose written-out compositions hold that core and add few drugs, as 加味 / 减味 / 加减 / 同药异量 / 同方异名, with the drugs added and removed, works, earliest witness and 合方 |
+| `study usage` | 用药谱 — how was this drug prescribed through the periods? | its share of the compositions by period (Wilson intervals, trend test); decoction doses by period in 两 and grams, the batch doses of pills, powders and 煮散 apart; how often it is the largest dose; preparation notes; partners with lift; formulas |
+| `study properties` | 药性谱 — what did the 本草 say of these drugs, side by side? | flavours, natures, toxicity and channels (as organs), the share of works stating each and the first to state it; a formula's 原方 profile weighted by dose |
+| `study incompat` | 配伍禁忌 — who said which drugs are 反 or 畏, and which formulas still write them together? | statements of 反 / 畏 with their earliest witness and works by period; where the verses of 十八反 and 十九畏 are written; compositions holding both drugs of a pair; a formula or a list of drugs checked against the pairs |
+| `study protocol` | 研究方案 — how would one research this question? | the question read into kinds and entities; hypotheses with prediction, test, falsification and rivals; scope, variables, methods (each a tool with its command), analysis, figures, quality, limitations, ethics, timeline; a research contract; a pilot run with its charts |
 
 Page images and OCR output (T1–T2) are read by `taochronos vision` (layout, a model's reading, comparison with the
 store); descriptions are carried across to modern medicine by `taochronos bridge` ([bridge.md](bridge.md)); a claim is
@@ -60,6 +66,14 @@ taochronos study cards --book 伤寒论 --formula 桂枝汤 --herb 柴胡 --term
 taochronos study reading 温病
 taochronos study dataset --formula 桂枝汤 --herb 柴胡 --term 温病 --citations -o datasets/guizhi
 taochronos study metrology 三两 --year 200
+
+# 方药研究 and 研究方案 (--charts DIR: the result's charts as SVG figures, CSV tables and JSON specifications)
+taochronos study compare 桂枝汤 麻黄汤 葛根汤 --charts figures     # --which current: compare the 通行方
+taochronos study family 桂枝汤                                     # --min-share 0.75 --max-extra 4
+taochronos study usage 半夏 --charts figures
+taochronos study properties 黄连 黄芩 黄柏                        # or --formula 小柴胡汤
+taochronos study incompat 甘草                                     # a drug, a formula, --herb 甘草 --herb 甘遂, or nothing: the whole rules
+taochronos study protocol "十八反之说何时形成？后世何方仍将反药同用？"  # --no-pilot: the protocol without its pilot run
 
 # 深层发现 2.0
 taochronos study stemma 伤寒论                                     # --books <id> --books <id>+<id> · --chapter 辨太阳病
@@ -240,7 +254,13 @@ not taken for an abbreviation where the tradition has its own.
 ## 要籍 (canon)
 
 `taochronos study canon --write-catalog` ranks the works of the corpus by the citation network above and writes the first
-350 to `corpus/catalog/canon.yaml` (metadata only).  For each work: **influence**, the distinct works that cite it (a citing
+535 (`CANON_SIZE`; 350 until October 2026) to `corpus/catalog/canon.yaml` (metadata only).  The ranking is total, so a
+longer list keeps the head of the shorter one; `--extend` keeps the works already listed, in their order, and appends the
+next ones of this ranking — the way to lengthen the list from a store that lacks some sources of the first ranking (the
+web client's packing never reads `NEVER_PACKED` sources, [web.md](web.md#要籍语料--the-browsers-corpus)).  `taochronos web
+canon` does both steps on the full store — the catalog, then the browser's corpus — and so does the `canon` workflow
+(`.github/workflows/canon.yml`); until one of them runs on the full store, the list in the repository is the 350 of the
+ranking below.  For each work: **influence**, the distinct works that cite it (a citing
 work older than it by more than 30 years is a misresolved title and is not counted); **breadth**, the periods in which it
 is cited; **volume**, its citations in all; **transmission**, its witnesses in the corpus; **siku**, whether the 四库全书
 editors took it into 子部·医家类.  score = 10·log₂(1+influence) + 2·breadth + 2·log₂(1+volume) + 3·log₂(1+witnesses) +
@@ -253,6 +273,95 @@ works (filter by title or author, dynasty, category; `held: true/false`) and say
 6 神农本草经, 7 千金要方, 8 脉经, 9 甲乙经, 10 外台秘要, … 14 本草纲目, 17 医宗金鉴, … 39 温疫论; every one of the 350 is
 cited by at least two later works; 137 are Qing, 73 Ming.  It reads what this corpus quotes: late works have had less time
 to be cited, and works known only through quotations (佚书) are not in it.
+
+## 方药研究 (herb and formula research)
+
+Five studies read the compositions, the 本草 entries and the 七情 notes of the corpus together.  They share the harvest
+of `study pairs` — every composition the store writes out, read once and cached per corpus state (`harvest@3`): the
+work, the formula, the drugs by family (桂枝, 桂心, 肉桂 → 桂), each drug's dose and preparation note as written, and the
+form the preparation after the drugs makes of them (汤剂, 丸剂, 散剂, 煮散) — one row per work and composition, so that a
+formula copied in many editions of one work counts once.  Formulas and drugs are those of the lexicon: the curated one,
+and in the browser's corpus the supplement and the core of the harvested lexicon (`domains/classics/lexicon-supplement`,
+`lexicon-core`; [data.md](data.md)).
+
+* **方剂比较 (`compare`)** takes two to six formulas, each as one witness writes it: its 原方 (the earliest tradition of
+  `study formula`) or, with `--which current`, its 通行方 (the most witnessed).  Doses written in weights are read in 两 of
+  the witness's period; counts (枚) and volumes are compared only within their unit.  Each formula gets its ratios (its
+  largest weight = 1) and shares of the total weight; each pair its shared and own drugs, Jaccard, the dose-weighted overlap
+  (the sum of the smaller share of each shared drug), the dose changes beyond a tenth, and a verdict: 同方, 同药异量, 药味相同
+  （剂量未能比较）, 加减化裁 (Jaccard ≥ 0.5) or 异方.
+* **类方 (`family`)** starts from the base's core — the drug set most works write under its name — and finds every formula
+  whose compositions hold at least `--min-share` (0.75) of the core and add at most `--max-extra` (4) drugs: 加味, 减味,
+  加减, and, when the drugs are the same, 同药异量 or 同方异名 by the median share of each drug's weight.  A member that also
+  holds the core of another formula (three drugs at least, two beyond the base) names it as its 合方.
+* **用药谱 (`usage`)** counts, period by period, the compositions holding a drug (Wilson intervals; a Cochran–Armitage test
+  for a trend), its doses as written and read in 两 and grams (median and quartiles), how often it is the formula's largest
+  dose (a clue the literature reads as the 君药, not a judgement of 君臣佐使), its preparation notes, the drugs written with it
+  (count and lift) and the formulas.  Doses are compared across periods for decoctions only: a pill's, a powder's or a
+  煮散's amounts are the batch it is made in (宋 方书 write many a 汤 as a powder boiled by the spoonful: 右为粗末，每服三钱，水一
+  盏，煎至七分), so they are summarised by form apart.  The form is the preparation's when it says one, else the name's.
+* **药性谱 (`properties`)** sets the readings of `study herb` side by side for several drugs or a formula's drugs: the
+  flavours (味微苦而甘 reads 苦 and 甘), the five natures (大寒, 微寒 → 寒), toxicity and channels, each with the share of the
+  works stating it and the first work to state it; channels are also read as organs by the usual correspondence (手太阴 →
+  肺), and a list keeps its hand or foot (入足厥阴、太阴、少阴经 is 足厥阴, 足太阴 and 足少阴).  For a formula, its profile is
+  weighted by the dose of each drug in its 原方.
+* **配伍禁忌 (`incompat`)** reads 十八反 and 十九畏 in the texts, from `incompatibility.yaml` (the groups of the two verses, and
+  the names each drug goes by): every statement of 反 or 畏 followed by a list of drugs, its subject (the entry's heading,
+  else the drug whose note it is in or that its sentence opens with — never another drug's 使 or the object of 恶), quoted
+  as its whole sentence; the earliest witness and the works by period of each pair (a 辑本 such as the 神农本草经 is dated as
+  the lost work, so the earliest other witness is given too); pairs stated that the verses lack; where the verses are
+  written; and the compositions writing both drugs of a pair (甘遂半夏汤 writes 甘遂 with 甘草).  A formula or a list of drugs
+  is checked against the pairs.
+
+All five read what the texts write, not what was done or whether it was sound: a composition counts once per work, what
+was not written down is not counted, and a 反 written in a book is a text, not a pharmacological finding — the modern
+warnings are `modern.safety`'s.
+
+## 研究方案 (research protocols)
+
+`study protocol` turns a question into a protocol that can be carried out and checked.  The question is read against the
+lexicon (the formulas, drugs, findings and terms it names) and the period expressions (宋代以前, 明清; a question on both
+sides of a date — 宋代以前与以后 — is a comparison split there); its kinds are told by its words and what it names: 方源考,
+方剂比较, 类方, 药性源流, 用药谱, 配伍规律, 配伍禁忌, 方证关系, 术语源流, 名称考, 古今对照.  Each kind contributes, in the question's
+own names:
+
+* questions and **hypotheses** — each with its prediction, the test that decides it, what would refute it and the rival
+  explanations to rule out.  A name is read for what it claims: 白虎加人参汤 is 白虎汤 加 人参, 桂枝去芍药加附子汤 is 桂枝汤 去 芍药
+  加 附子, so the comparison's first hypothesis is that one is the other so changed (with the rival that the added drug was
+  already in the base: a dose raised, 同药异量); 桂枝加桂汤 adds the drug its base is named after, so there the hypothesis
+  is the raised dose itself;
+* the **scope** (the corpus, its sources, the period, the 要籍 of the kind's categories to read first, what is included and
+  not), the **variables** and how each is read off the texts, the **methods** — each a capability of this system with its
+  arguments and the command that reruns it — the **analysis** (statistics and corrections), the **figures** planned, the
+  **quality** checks, the **limitations**, the **ethics** (no clinical advice; doses are historical readings; the modern
+  warnings for the toxic drugs named) and a **timeline**;
+* a **research contract** for `taochronos research` (focus terms, tracks, period, forbidden assumptions).
+
+With the pilot (the default; `--no-pilot` or `pilot: false` skips it) the main steps run once at their default settings:
+the protocol then says how much the corpus holds — compositions, works, periods, the earliest witness — whether that is
+enough, and carries the pilot's charts; its background cites witnesses, never memory.  It plans research and concludes
+nothing.
+
+## 图表 (charts)
+
+The results of `formula`, `herb`, `term`, `pairs`, `network`, `names`, `senses`, `compare`, `family`, `usage`,
+`properties`, `incompat` (and a protocol's pilot) carry their charts under `charts`: small declarative specifications
+(`study/charts.py`, version 1) drawn from the full result before it is trimmed for a model — line (with an interval band),
+bar (grouped, with whiskers), hbar, stack (counts or shares), heatmap, range (quartiles and whiskers), timeline and network.
+Each has a title, a subtitle that says what is counted, the rows and their columns (the table and the CSV), and a note and
+source line: the caveat that goes with the numbers (machine reading; doses are historical readings, never dosage
+guidance) and the corpus version.  A chart adds no inference: its numbers are the result's.
+
+* `taochronos study … --charts DIR` writes each chart as a standalone SVG figure (`study/svg.py`), a CSV table (UTF-8 with a
+  byte-order mark, for spreadsheet programs) and its JSON specification.
+* The web client draws them under the step of the tool that made them, in the tool console, and in the ```chart blocks the
+  model writes — with hover and keyboard read-outs, a table view and downloads (SVG, PNG at twice the size, CSV, JSON)
+  ([web.md](web.md#图表--charts-and-their-downloads)).  The model reads only their titles (`charts_shown`).
+
+The marks follow one specification: thin, solid, a recessive grid and axes; whole-number ticks for counts; categorical
+colours in a fixed order validated for colour-vision deficiency (light and dark), never a ninth hue — the rest is 其他, in
+grey — and a category keeps its colour in every chart of a result (`groups`); one hue, light to dark, for magnitude; a
+legend for two series or more; values and labels in ink, never in a series colour.
 
 ## 学习 (learning)
 
@@ -718,3 +827,10 @@ own, against 0.87 for the most similar earlier witness).
 - 名称: only the names the lexicon records are counted; the candidate names from 一名 and 俗名 need curation.
 - 传播链: the tree is a hypothesis from shared readings; convergent changes by independent copyists can make a false
   edge, which is why each edge carries its margin and its readings.
+- 方药研究: compositions are read with the lexicon, so a formula the lexicon lacks is not compared, and a drug written under
+  a name it lacks is not counted (the browser's corpus loads the supplement and the core of the harvest for this); a dose
+  the parser cannot read is left out of the doses, not guessed.  类方 finds what the compositions show, not what a
+  commentator says a formula derives from; a 合方 is a reading to check.  配伍禁忌: a statement is found only in the form 反 /
+  畏 followed by a list; its subject is a rule of thumb that can misattribute a statement in a run of notes.
+- 研究方案: kinds are told by cue words and the names found; a question in words the lexicon lacks gets the general
+  protocol, filled with the question itself.  The pilot's numbers are this corpus's, at default settings.

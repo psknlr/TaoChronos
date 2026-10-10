@@ -31,7 +31,7 @@ CORE = [
     "classics.search", "classics.get_passage", "classics.list_books", "classics.canon",
     "kg.term", "kg.claims",
     "study.formula", "study.herb", "study.term", "study.concordance", "study.commentaries", "study.translate",
-    "study.network",
+    "study.network", "study.compare", "study.usage", "study.protocol",
     "validation.verify_quote", "audit.claim", "modern.safety",
 ]
 NEVER = {"kg.propose_change"}   # proposals to canonical knowledge are made by people, not by a chat model

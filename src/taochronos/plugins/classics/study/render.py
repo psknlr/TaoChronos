@@ -1004,12 +1004,204 @@ def canon(r: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _ratio(x: Any) -> str:
+    return "" if x is None else f"{x:g}"
+
+
+def compare(r: dict[str, Any]) -> list[str]:
+    found = [f for f in r.get("formulas", []) if f.get("found")]
+    which = "通行方（见证最多）" if r.get("which") == "current" else "原方（最早见）"
+    out = [f"# 方剂比较：{'、'.join(f['name'] for f in r.get('formulas', []))}", "",
+           f"各方取其{which}的一条见证；比例以方中最大重量为 1，与各期计量无关。", ""]
+    for f in r.get("formulas", []):
+        if not f.get("found"):
+            out.append(f"- **{f['name']}**：未检得写出组成的见证（提及 {f.get('mentions', 0)} 处）")
+    if found:
+        out += ["| 药 | " + " | ".join(f["name"] for f in found) + " |", "|---" * (len(found) + 1) + "|"]
+        for row in r.get("matrix", []):
+            cells = []
+            for f in found:
+                c = row.get(f["name"])
+                cells.append("—" if not c else f"{c['dose'] or '?'}" + (f"（{_ratio(c['ratio'])}）" if c.get("ratio") is not None else ""))
+            out.append(f"| {row['drug']} | " + " | ".join(cells) + " |")
+        out += ["", "## 出处", ""] + [f"- **{f['name']}**（{f.get('relation', '')}，{f.get('witnesses', 0)} 条见证）：{_cite(f['witness'], 200)}"
+                                      for f in found]
+    if r.get("pairs"):
+        out += ["", "## 两两比较", "", "| 方 | 方 | 结论 | 共有 | 仅前者 | 仅后者 | Jaccard | 剂量加权重合 | 剂量变化 |", "|---|---|---|---|---|---|---|---|---|"]
+        for x in r["pairs"]:
+            changes = "；".join(f"{c['drug']} {c['a']}→{c['b']}（×{c['fold']:g}）" for c in x["dose_changes"])
+            out.append(f"| {x['a']} | {x['b']} | {x['verdict']} | {'、'.join(x['shared'])} | {'、'.join(x['only_a'])} | "
+                       f"{'、'.join(x['only_b'])} | {x['jaccard']} | {'' if x['weighted_overlap'] is None else x['weighted_overlap']} | {changes} |")
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+def family(r: dict[str, Any]) -> list[str]:
+    f = r["formula"]
+    out = [f"# 类方：{f['name']}", "", f"核心组成：{'、'.join(f['core'])}（写出组成 {f['compositions']} 首、{f['works']} 部著作）", ""]
+    if f.get("earliest"):
+        out += ["**本方最早见**：" + _cite(f["earliest"], 160), ""]
+    if r.get("by_relation"):
+        out += ["关系：" + "，".join(f"{k} {v}" for k, v in r["by_relation"].items()), ""]
+    out += ["| 方 | 关系 | 加 | 减 | 合方 | 著作 | 最早见 |", "|---|---|---|---|---|---|---|"]
+    for m in r.get("members", []):
+        e = m.get("earliest") or {}
+        out.append(f"| {m['formula']} | {m['relation']} | {'、'.join(m['added'])} | {'、'.join(m['removed'])} | {m.get('combines') or ''} | "
+                   f"{m['works']} | {e.get('locator', '')}（{_years(e)}） |")
+    if r.get("by_period"):
+        out += ["", "成员最早见的时期：" + "，".join(f"{x['period']} {x['members']}" for x in r["by_period"])]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+def usage(r: dict[str, Any]) -> list[str]:
+    d = r["drug"]
+    trend = r.get("trend") or {}
+    out = [f"# 用药谱：{d['name']}", "",
+           f"写出组成 {r['compositions']} 首中含此药 {r['with']} 首（{r['share']:.1%}，{r['works']} 部著作）"
+           + (f"；历期趋势 z = {trend['z']:.2f}，p = {trend['p']:.3g}" if trend.get("z") is not None else "") + "。", "",
+           "| 时期 | 组成 | 含此药 | 占比 | 95% 区间 |", "|---|---|---|---|---|"]
+    out += [f"| {x['period']} | {x['compositions']} | {x['with']} | {x['share']:.1%} | {x['ci'][0]:.1%}–{x['ci'][1]:.1%} |" for x in r["by_period"]]
+    doses = r.get("doses") or {}
+    if doses.get("by_period"):
+        out += ["", "## 历代汤剂用量（按各期计量的学术估值，非剂量建议）", "", "| 时期 | 见证 | 中位（两） | 四分位（两） | 中位约合（克） | 常见写法 |",
+                "|---|---|---|---|---|---|"]
+        for x in doses["by_period"]:
+            q = x["liang"]
+            out.append(f"| {x['period']} | {x['n']} | {q['median']:g} | {q['q1']:g}–{q['q3']:g} | "
+                       f"{x['grams']['median']:.0f} | {'、'.join(c['dose'] for c in x['common'])} |" if x.get("grams") else
+                       f"| {x['period']} | {x['n']} | {q['median']:g} | {q['q1']:g}–{q['q3']:g} |  | {'、'.join(c['dose'] for c in x['common'])} |")
+    if doses.get("by_form"):
+        out += ["", "各剂型（丸、散、膏之量为一料，不与汤剂相比）：" + "，".join(f"{x['form']} {x['n']} 首，中位 {x['liang']['median']:g} 两"
+                                                       for x in doses["by_form"])]
+    largest = r.get("largest_dose") or {}
+    if largest.get("share") is not None:
+        out += ["", f"为方中最大剂量者：{largest['share']:.0%}（{largest['compositions']} 首以重量写出剂量的组成；剂量线索，非君臣佐使判定）"]
+    if (r.get("processing") or {}).get("top"):
+        out += ["", "炮制与用法注：" + "，".join(f"{x['note']}（{x['count']}）" for x in r["processing"]["top"])]
+    if r.get("partners"):
+        out += ["", "常同用之药：" + "，".join(f"{x['with']}（{x['compositions']}，提升度 {x['lift']}）" for x in r["partners"][:15])]
+    if r.get("formulas"):
+        out += ["", "所在之方：" + "，".join(f"{x['formula']}（{x['works']} 部）" for x in r["formulas"][:15])]
+    if r.get("examples"):
+        out += ["", "## 最早的组成", ""] + [f"- {x.get('formula', '')}：{_cite(x, 120)}" for x in r["examples"] if x.get("locator")]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+def properties(r: dict[str, Any]) -> list[str]:
+    head = f"# 药性谱：{r['formula']}" if r.get("formula") else f"# 药性谱：{'、'.join(d['drug'] for d in r.get('drugs', []))}"
+    out = [head, ""]
+    if r.get("composition"):
+        out += ["组成据：" + _cite(r["composition"], 160), ""]
+    out += ["| 药 | 本草著作 | 性 | 味 | 毒 | 归经（占著作） | 首见 |", "|---|---|---|---|---|---|---|"]
+    for d in r.get("drugs", []):
+        fmt = lambda m: "、".join(f"{k} {v:.0%}" for k, v in list(m.items())[:4])
+        first = d.get("first", {})
+        firsts = "；".join(f"{k}{v['value']}：{v['locator']}" for k, v in first.items() if v)[:120]
+        out.append(f"| {d['drug']} | {d['works']} | {fmt(d['natures'])} | {fmt(d['flavors'])} | {fmt(d['toxicity'])} | {fmt(d['channels'])} | {firsts} |")
+    if r.get("profile"):
+        pr = r["profile"]
+        how = "按剂量加权" if pr["weighted_by"] == "dose" else "各药等权"
+        out += ["", f"## 全方药性（{how}，{pr['drugs']} 味）", ""]
+        for kind, label in (("natures", "性"), ("flavors", "味"), ("channels", "归经")):
+            out.append(f"- {label}：" + "，".join(f"{k} {v:.0%}" for k, v in list(pr[kind].items())[:8]))
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+def incompat(r: dict[str, Any]) -> list[str]:
+    out = ["# 配伍禁忌：" + (r.get("drug") or (r.get("check") or {}).get("formula") or "十八反·十九畏"), ""]
+    for rule in r.get("rules", []):
+        out.append(f"- **{rule['name']}**：{rule['verse']}（{rule['attribution']}）")
+    check = r.get("check")
+    if check:
+        out += ["", "## 核对", ""]
+        if check.get("witness"):
+            out += ["组成据：" + _cite(check["witness"], 160), ""]
+        out.append("药味：" + "、".join(check.get("drugs", [])))
+        out += [f"- **{x['pair']}**（{x['rule']}）：{'、'.join(x['a'])} 与 {'、'.join(x['b'])}" for x in check.get("flagged", [])] or ["- 未见十八反、十九畏所列之药对。"]
+    st = r.get("statements") or {}
+    if st.get("pairs"):
+        out += ["", "## 文献中的“反”“畏”之说（每部著作一条，示最早见）", "", "| 药对 | 著作 | 最早见 | 辑本之外的最早见 |", "|---|---|---|---|"]
+        for x in st["pairs"]:
+            e, u = x["earliest"], x.get("earliest_uncompiled")
+            out.append(f"| {x['pair']} | {x['works']} | {e['locator']}（{_years(e)}） | "
+                       + (f"{u['locator']}（{_years(u)}）" if u else "") + " |")
+        if st.get("unattested"):
+            out += ["", "未检得“反”“畏”陈述的药对：" + "、".join(st["unattested"])]
+        if st.get("other_pairs"):
+            out += ["", "歌诀之外亦言“反”“畏”者：" + "，".join(f"{x['pair']}（{x['works']} 部）" for x in st["other_pairs"])]
+    if r.get("verses"):
+        out += ["", "## 歌诀见于", ""] + [f"- {v['rule']}：{v['works']} 部" + (f"，最早 {v['earliest']['locator']}（{_years(v['earliest'])}）" if v.get("earliest") else "")
+                                         for v in r["verses"]]
+    together = [x for x in (r.get("formulas") or {}).get("pairs", []) if x["works"]]
+    if together:
+        out += ["", "## 写出组成中仍同用的药对（每部著作一次）", "", "| 药对 | 著作 | 时期 | 方 |", "|---|---|---|---|"]
+        out += [f"| {x['pair']} | {x['works']} | {'，'.join(f'{k} {v}' for k, v in x['periods'].items())} | "
+                f"{'、'.join(f['formula'] for f in x['formulas'][:5])} |" for x in together]
+    return out + ["", f"> {r.get('notice', '')}"]
+
+
+def protocol(r: dict[str, Any]) -> list[str]:
+    ent = r.get("entities", {})
+    named = [("方", ent.get("formulas")), ("药", ent.get("herbs")), ("病证、症状", ent.get("findings")), ("术语", ent.get("terms")),
+             ("书", ent.get("books"))]
+    out = [f"# {r['title']}", "", f"> 研究问题：{r['question']}", "",
+           "研究类型：" + "、".join(k["label"] for k in r.get("kinds", [])) + "；"
+           + "；".join(f"{label}：{'、'.join(v)}" for label, v in named if v) + f"；时间范围：{ent.get('period', {}).get('label', '')}", ""]
+    if r.get("background"):
+        out += ["## 一、研究背景（预试验所见，须回查原文）", ""]
+        out += [f"- {b['text']}" + (f" `{b['passage_id']}`" if b.get("passage_id") else "") for b in r["background"]]
+        out.append("")
+    out += ["## 二、研究目标", ""] + [f"{i}. {o}" for i, o in enumerate(r.get("objectives", []), 1)] + [""]
+    out += ["## 三、研究问题与假设", ""] + [f"- **{q['id']}** {q['text']}" for q in r.get("questions", [])] + [""]
+    for h in r.get("hypotheses", []):
+        out += [f"**{h['id']}　{h['statement']}**", "", f"- 预测：{h['prediction']}", f"- 检验：{h['test']}", f"- 证伪条件：{h['falsified_if']}"]
+        if h.get("alternatives"):
+            out.append("- 须排除的替代解释：" + "；".join(h["alternatives"]))
+        out.append("")
+    sc = r.get("scope", {})
+    corpus = sc.get("corpus", {})
+    out += ["## 四、研究范围与资料", "", f"- 语料：{corpus.get('label', '')}（{corpus.get('books', '?')} 部录本、{corpus.get('passages', '?')} 段；来源 "
+            + "、".join(corpus.get("sources", [])) + "）", f"- 时间：{sc.get('period', {}).get('label', '')}"]
+    if sc.get("works"):
+        out.append("- 首要文献：" + "；".join(f"《{w['title']}》" + (f"（要籍第 {w['rank']}）" if w.get("rank") else "")
+                                         + ("" if w.get("in_this_corpus") in (True, None) else "〔本语料未收，需全量语料〕") for w in sc["works"]))
+    out += ["- 纳入：" + "；".join(sc.get("inclusion", [])), "- 排除：" + "；".join(sc.get("exclusion", [])), ""]
+    out += ["## 五、变量与操作定义", "", "| 变量 | 定义 | 度量 | 来源 |", "|---|---|---|---|"]
+    out += [f"| {v['name']} | {v['definition']} | {v['measure']} | {v['source']} |" for v in r.get("variables", [])] + [""]
+    out += ["## 六、研究方法与步骤", "", "| 步骤 | 内容 | 能力 | 目的 | 产出 |", "|---|---|---|---|---|"]
+    out += [f"| {m['step']} | {m['title']} | {m['tool']} | {m['purpose']} | {m['outputs']} |" for m in r.get("methods", [])]
+    out += ["", "重现命令：", "", "```"] + [m["command"] for m in r.get("methods", [])] + ["```", ""]
+    out += ["## 七、分析计划", ""] + [f"- **{a['name']}**：{a['method']}（{a['detail']}）" for a in r.get("analysis", [])] + [""]
+    if r.get("figures"):
+        out += ["## 八、预期图表", ""] + [f"- **{f['id']}** {f['title']}（{f['type']}，来自 {f['from']}）" for f in r["figures"]] + [""]
+    out += ["## 九、质量控制", ""] + [f"- {q}" for q in r.get("quality", [])] + [""]
+    out += ["## 十、局限与偏倚", ""] + [f"- {x}" for x in r.get("limitations", [])] + [""]
+    out += ["## 十一、伦理与声明", ""] + [f"- {x}" for x in r.get("ethics", [])] + [""]
+    out += ["## 十二、进度安排", "", "| 阶段 | 任务 | 产出 |", "|---|---|---|"]
+    out += [f"| {t['phase']} | {t['tasks']} | {t['deliverables']} |" for t in r.get("timeline", [])] + [""]
+    out += ["## 十三、预期成果", ""] + [f"- {x}" for x in r.get("outputs", [])] + [""]
+    c = r.get("contract", {})
+    out += ["## 十四、研究合同（系统研究）", "", f"- 聚焦：{'、'.join(c.get('focus_terms', []))}；研究路线：{'、'.join(c.get('tracks', []))}；"
+            f"禁用假定：{'；'.join(c.get('forbidden_assumptions', []))}", "", "```", c.get("command", ""), "```", ""]
+    pilot = r.get("pilot", {})
+    if pilot.get("ran"):
+        out += ["## 附：预试验与可行性", "", f"可行性：**{pilot.get('feasibility')}**。{pilot.get('advice', '')}", ""]
+        out += [f"- {f['text']}" + (f" `{f['passage_id']}`" if f.get("passage_id") else "") for f in pilot.get("findings", [])]
+        out += [f"- {n}" for n in pilot.get("notes", [])]
+        if r.get("charts"):
+            out += ["", "预试验图表：" + "、".join(ch["title"] for ch in r["charts"]) + "（--charts 输出 SVG/CSV）"]
+        out.append("")
+    rep = r.get("reproducibility", {}).get("corpus", {})
+    out += [f"方案编号 {r.get('id')}；语料指纹 {rep.get('corpus_digest', '')}"]
+    return out
+
+
 PAGES = {"canon": canon, "concordance": concordance, "formula": formula, "herb": herb, "term": term, "taboo": taboo, "citations": citations,
          "cards": cards, "reading": reading, "variants": variants, "stemma": stemma, "edition": edition, "reuse": reuse,
          "transmission": transmission, "layers": layers, "dating": dating, "authorship": authorship, "cases": cases,
          "trajectories": trajectories, "argument": argument, "senses": senses, "fragments": fragments, "witnesses": witnesses,
          "punctuate": punctuate, "commentaries": commentaries, "disputes": disputes, "clause": clause, "glosses": glosses,
-         "pairs": pairs, "network": network, "schools": schools, "names": names, "chain": chain, "entities": entities, "places": places, "translate": translate}
+         "pairs": pairs, "network": network, "schools": schools, "names": names, "chain": chain, "entities": entities, "places": places, "translate": translate,
+         "compare": compare, "family": family, "usage": usage, "properties": properties, "incompat": incompat, "protocol": protocol}
 
 
 def _model_sections(result: dict[str, Any]) -> list[str]:

@@ -1,0 +1,10668 @@
+# The harvested names the full corpus attests most — NOT curated. See plugins/classics/harvest.py (core_entries).
+provenance: the 2000 formula names of lexicon-harvested the full corpus attests most (`taochronos lexicon core`); candidates, not expert-reviewed
+category: formula
+entries:
+- term: 瓜蒂散
+  kind: harvested
+  evidence:
+    books: 109
+    count: 145
+- term: 大柴胡汤
+  kind: harvested
+  evidence:
+    books: 105
+    count: 148
+- term: 乌梅丸
+  kind: harvested
+  synonyms:
+  - surface: 乌梅圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 92
+    count: 155
+- term: 小承气汤
+  kind: harvested
+  evidence:
+    books: 91
+    count: 132
+- term: 十枣汤
+  kind: harvested
+  evidence:
+    books: 90
+    count: 125
+- term: 吴茱萸汤
+  kind: harvested
+  evidence:
+    books: 87
+    count: 170
+- term: 桔梗汤
+  kind: harvested
+  evidence:
+    books: 84
+    count: 127
+- term: 四物汤
+  kind: harvested
+  evidence:
+    books: 83
+    count: 188
+- term: 猪苓汤
+  kind: harvested
+  evidence:
+    books: 83
+    count: 141
+- term: 小建中汤
+  kind: harvested
+  evidence:
+    books: 83
+    count: 122
+- term: 调胃承气汤
+  kind: harvested
+  evidence:
+    books: 82
+    count: 138
+- term: 大陷胸汤
+  kind: harvested
+  evidence:
+    books: 78
+    count: 155
+- term: 栀子豉汤
+  kind: harvested
+  evidence:
+    books: 78
+    count: 135
+- term: 当归散
+  kind: harvested
+  evidence:
+    books: 76
+    count: 203
+- term: 真武汤
+  kind: harvested
+  evidence:
+    books: 76
+    count: 135
+- term: 竹叶石膏汤
+  kind: harvested
+  evidence:
+    books: 76
+    count: 112
+- term: 黄芩汤
+  kind: harvested
+  evidence:
+    books: 74
+    count: 144
+- term: 通脉四逆汤
+  kind: harvested
+  evidence:
+    books: 74
+    count: 116
+- term: 白头翁汤
+  kind: harvested
+  evidence:
+    books: 74
+    count: 110
+- term: 半夏泻心汤
+  kind: harvested
+  evidence:
+    books: 74
+    count: 94
+- term: 桂枝附子汤
+  kind: harvested
+  evidence:
+    books: 73
+    count: 98
+- term: 白术散
+  kind: harvested
+  evidence:
+    books: 72
+    count: 209
+- term: 桃花汤
+  kind: harvested
+  evidence:
+    books: 70
+    count: 112
+- term: 归脾汤
+  kind: harvested
+  evidence:
+    books: 69
+    count: 132
+- term: 黄连汤
+  kind: harvested
+  evidence:
+    books: 69
+    count: 127
+- term: 附子汤
+  kind: harvested
+  evidence:
+    books: 68
+    count: 143
+- term: 甘草附子汤
+  kind: harvested
+  evidence:
+    books: 68
+    count: 96
+- term: 十全大补汤
+  kind: harvested
+  evidence:
+    books: 66
+    count: 169
+- term: 麦门冬汤
+  kind: harvested
+  evidence:
+    books: 65
+    count: 165
+- term: 黄连解毒汤
+  kind: harvested
+  evidence:
+    books: 64
+    count: 114
+- term: 当归四逆汤
+  kind: harvested
+  evidence:
+    books: 64
+    count: 88
+- term: 麻仁丸
+  kind: harvested
+  evidence:
+    books: 63
+    count: 84
+- term: 平胃散
+  kind: harvested
+  evidence:
+    books: 62
+    count: 92
+- term: 凉膈散
+  kind: harvested
+  evidence:
+    books: 61
+    count: 98
+- term: 文蛤散
+  kind: harvested
+  evidence:
+    books: 60
+    count: 76
+- term: 小陷胸汤
+  kind: harvested
+  evidence:
+    books: 59
+    count: 73
+- term: 柴胡加芒硝汤
+  kind: harvested
+  evidence:
+    books: 58
+    count: 87
+- term: 甘草干姜汤
+  kind: harvested
+  evidence:
+    books: 57
+    count: 64
+- term: 五积散
+  kind: harvested
+  evidence:
+    books: 56
+    count: 69
+- term: 橘皮汤
+  kind: harvested
+  evidence:
+    books: 55
+    count: 95
+- term: 小半夏汤
+  kind: harvested
+  evidence:
+    books: 55
+    count: 89
+- term: 泻心汤
+  kind: harvested
+  evidence:
+    books: 55
+    count: 87
+- term: 失笑散
+  kind: harvested
+  evidence:
+    books: 55
+    count: 75
+- term: 甘草泻心汤
+  kind: harvested
+  evidence:
+    books: 55
+    count: 72
+- term: 羚羊角散
+  kind: harvested
+  evidence:
+    books: 54
+    count: 142
+- term: 竹叶汤
+  kind: harvested
+  evidence:
+    books: 54
+    count: 105
+- term: 四逆散
+  kind: harvested
+  evidence:
+    books: 54
+    count: 84
+- term: 小续命汤
+  kind: harvested
+  evidence:
+    books: 54
+    count: 83
+- term: 温经汤
+  kind: harvested
+  evidence:
+    books: 54
+    count: 79
+- term: 人参汤
+  kind: harvested
+  evidence:
+    books: 53
+    count: 205
+- term: 桃仁承气汤
+  kind: harvested
+  evidence:
+    books: 53
+    count: 69
+- term: 赤石脂禹余粮汤
+  kind: harvested
+  evidence:
+    books: 53
+    count: 62
+- term: 甘草汤
+  kind: harvested
+  evidence:
+    books: 52
+    count: 88
+- term: 当归补血汤
+  kind: harvested
+  evidence:
+    books: 51
+    count: 94
+- term: 麻黄附子细辛汤
+  kind: harvested
+  evidence:
+    books: 51
+    count: 72
+- term: 茯苓甘草汤
+  kind: harvested
+  evidence:
+    books: 51
+    count: 69
+- term: 炙甘草汤
+  kind: harvested
+  evidence:
+    books: 51
+    count: 63
+- term: 六君子汤
+  kind: harvested
+  evidence:
+    books: 50
+    count: 162
+- term: 防风汤
+  kind: harvested
+  evidence:
+    books: 50
+    count: 138
+- term: 导赤散
+  kind: harvested
+  evidence:
+    books: 50
+    count: 85
+- term: 旋覆花汤
+  kind: harvested
+  evidence:
+    books: 50
+    count: 78
+- term: 生姜泻心汤
+  kind: harvested
+  evidence:
+    books: 49
+    count: 77
+- term: 茯苓桂枝甘草大枣汤
+  kind: harvested
+  evidence:
+    books: 49
+    count: 63
+- term: 三黄丸
+  kind: harvested
+  synonyms:
+  - surface: 三黄圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 49
+    count: 56
+- term: 木香散
+  kind: harvested
+  evidence:
+    books: 48
+    count: 161
+- term: 大黄黄连泻心汤
+  kind: harvested
+  evidence:
+    books: 48
+    count: 74
+- term: 茯苓丸
+  kind: harvested
+  synonyms:
+  - surface: 茯苓圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 48
+    count: 73
+- term: 干姜附子汤
+  kind: harvested
+  evidence:
+    books: 48
+    count: 67
+- term: 大陷胸丸
+  kind: harvested
+  synonyms:
+  - surface: 大陷胸圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 48
+    count: 54
+- term: 桂枝加大黄汤
+  kind: harvested
+  evidence:
+    books: 47
+    count: 73
+- term: 四神丸
+  kind: harvested
+  synonyms:
+  - surface: 四神圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 47
+    count: 71
+- term: 黄芩加半夏生姜汤
+  kind: harvested
+  evidence:
+    books: 47
+    count: 63
+- term: 大半夏汤
+  kind: harvested
+  evidence:
+    books: 47
+    count: 61
+- term: 大建中汤
+  kind: harvested
+  evidence:
+    books: 47
+    count: 55
+- term: 八珍汤
+  kind: harvested
+  evidence:
+    books: 46
+    count: 132
+- term: 琥珀散
+  kind: harvested
+  evidence:
+    books: 46
+    count: 94
+- term: 桂枝加桂汤
+  kind: harvested
+  evidence:
+    books: 46
+    count: 70
+- term: 黑神散
+  kind: harvested
+  evidence:
+    books: 46
+    count: 65
+- term: 茵陈五苓散
+  kind: harvested
+  evidence:
+    books: 46
+    count: 54
+- term: 芍药甘草汤
+  kind: harvested
+  evidence:
+    books: 46
+    count: 53
+- term: 八正散
+  kind: harvested
+  evidence:
+    books: 44
+    count: 90
+- term: 消风散
+  kind: harvested
+  evidence:
+    books: 44
+    count: 74
+- term: 桂枝加葛根汤
+  kind: harvested
+  evidence:
+    books: 44
+    count: 67
+- term: 桂枝人参汤
+  kind: harvested
+  evidence:
+    books: 44
+    count: 64
+- term: 附子泻心汤
+  kind: harvested
+  evidence:
+    books: 44
+    count: 60
+- term: 黄连阿胶汤
+  kind: harvested
+  evidence:
+    books: 44
+    count: 56
+- term: 白通汤
+  kind: harvested
+  evidence:
+    books: 44
+    count: 55
+- term: 参苏饮
+  kind: harvested
+  evidence:
+    books: 43
+    count: 64
+- term: 通关散
+  kind: harvested
+  evidence:
+    books: 43
+    count: 58
+- term: 芍药汤
+  kind: harvested
+  evidence:
+    books: 42
+    count: 119
+- term: 槟榔散
+  kind: harvested
+  evidence:
+    books: 42
+    count: 108
+- term: 橘皮竹茹汤
+  kind: harvested
+  evidence:
+    books: 42
+    count: 60
+- term: 清暑益气汤
+  kind: harvested
+  evidence:
+    books: 42
+    count: 47
+- term: 人参散
+  kind: harvested
+  evidence:
+    books: 41
+    count: 232
+- term: 羌活散
+  kind: harvested
+  evidence:
+    books: 41
+    count: 87
+- term: 茯苓四逆汤
+  kind: harvested
+  evidence:
+    books: 41
+    count: 70
+- term: 姜附汤
+  kind: harvested
+  evidence:
+    books: 41
+    count: 68
+- term: 葶苈丸
+  kind: harvested
+  synonyms:
+  - surface: 葶苈圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 41
+    count: 64
+- term: 桂枝加附子汤
+  kind: harvested
+  evidence:
+    books: 41
+    count: 57
+- term: 抵当丸
+  kind: harvested
+  synonyms:
+  - surface: 抵当圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 41
+    count: 44
+- term: 独活汤
+  kind: harvested
+  evidence:
+    books: 40
+    count: 87
+- term: 败毒散
+  kind: harvested
+  evidence:
+    books: 40
+    count: 57
+- term: 芍药甘草附子汤
+  kind: harvested
+  evidence:
+    books: 40
+    count: 54
+- term: 桂枝二麻黄一汤
+  kind: harvested
+  evidence:
+    books: 40
+    count: 53
+- term: 桂枝加芍药汤
+  kind: harvested
+  evidence:
+    books: 40
+    count: 49
+- term: 牡蛎散
+  kind: harvested
+  evidence:
+    books: 39
+    count: 64
+- term: 防风通圣散
+  kind: harvested
+  evidence:
+    books: 39
+    count: 61
+- term: 参苓白术散
+  kind: harvested
+  evidence:
+    books: 39
+    count: 60
+- term: 葛根加半夏汤
+  kind: harvested
+  evidence:
+    books: 39
+    count: 56
+- term: 桂枝甘草汤
+  kind: harvested
+  evidence:
+    books: 39
+    count: 51
+- term: 白术汤
+  kind: harvested
+  evidence:
+    books: 38
+    count: 123
+- term: 木通散
+  kind: harvested
+  evidence:
+    books: 38
+    count: 84
+- term: 羊肉汤
+  kind: harvested
+  evidence:
+    books: 38
+    count: 63
+- term: 调中汤
+  kind: harvested
+  evidence:
+    books: 38
+    count: 59
+- term: 猪苓散
+  kind: harvested
+  evidence:
+    books: 38
+    count: 55
+- term: 桂枝去芍药汤
+  kind: harvested
+  evidence:
+    books: 38
+    count: 54
+- term: 猪肤汤
+  kind: harvested
+  evidence:
+    books: 38
+    count: 50
+- term: 香连丸
+  kind: harvested
+  synonyms:
+  - surface: 香连圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 38
+    count: 49
+- term: 小半夏加茯苓汤
+  kind: harvested
+  evidence:
+    books: 38
+    count: 46
+- term: 夺命丹
+  kind: harvested
+  evidence:
+    books: 37
+    count: 66
+- term: 异功散
+  kind: harvested
+  evidence:
+    books: 37
+    count: 66
+- term: 栀子干姜汤
+  kind: harvested
+  evidence:
+    books: 37
+    count: 50
+- term: 柴胡桂枝汤
+  kind: harvested
+  evidence:
+    books: 37
+    count: 49
+- term: 术附汤
+  kind: harvested
+  evidence:
+    books: 37
+    count: 44
+- term: 胶艾汤
+  kind: harvested
+  evidence:
+    books: 37
+    count: 44
+- term: 安神丸
+  kind: harvested
+  evidence:
+    books: 37
+    count: 41
+- term: 木香丸
+  kind: harvested
+  synonyms:
+  - surface: 木香圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 36
+    count: 159
+- term: 乌金散
+  kind: harvested
+  evidence:
+    books: 36
+    count: 82
+- term: 龙胆泻肝汤
+  kind: harvested
+  evidence:
+    books: 36
+    count: 61
+- term: 柴胡加龙骨牡蛎汤
+  kind: harvested
+  evidence:
+    books: 36
+    count: 60
+- term: 白通加猪胆汁汤
+  kind: harvested
+  evidence:
+    books: 36
+    count: 55
+- term: 胃风汤
+  kind: harvested
+  evidence:
+    books: 36
+    count: 54
+- term: 栀子生姜豉汤
+  kind: harvested
+  evidence:
+    books: 36
+    count: 49
+- term: 栀子柏皮汤
+  kind: harvested
+  evidence:
+    books: 36
+    count: 47
+- term: 桂枝甘草龙骨牡蛎汤
+  kind: harvested
+  evidence:
+    books: 36
+    count: 47
+- term: 越婢汤
+  kind: harvested
+  evidence:
+    books: 36
+    count: 44
+- term: 大顺散
+  kind: harvested
+  evidence:
+    books: 36
+    count: 39
+- term: 犀角散
+  kind: harvested
+  evidence:
+    books: 35
+    count: 181
+- term: 半夏汤
+  kind: harvested
+  evidence:
+    books: 35
+    count: 123
+- term: 柴胡汤
+  kind: harvested
+  evidence:
+    books: 35
+    count: 116
+- term: 阿胶散
+  kind: harvested
+  evidence:
+    books: 35
+    count: 82
+- term: 泻青丸
+  kind: harvested
+  evidence:
+    books: 35
+    count: 58
+- term: 生肌散
+  kind: harvested
+  evidence:
+    books: 35
+    count: 53
+- term: 人参败毒散
+  kind: harvested
+  evidence:
+    books: 35
+    count: 52
+- term: 皂荚丸
+  kind: harvested
+  synonyms:
+  - surface: 皂荚圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 35
+    count: 51
+- term: 乌头汤
+  kind: harvested
+  evidence:
+    books: 35
+    count: 47
+- term: 独活寄生汤
+  kind: harvested
+  evidence:
+    books: 35
+    count: 47
+- term: 栀子甘草豉汤
+  kind: harvested
+  evidence:
+    books: 35
+    count: 45
+- term: 生脉散
+  kind: harvested
+  evidence:
+    books: 35
+    count: 45
+- term: 泻白散
+  kind: harvested
+  evidence:
+    books: 35
+    count: 40
+- term: 麻黄附子甘草汤
+  kind: harvested
+  evidence:
+    books: 35
+    count: 38
+- term: 大黄汤
+  kind: harvested
+  evidence:
+    books: 34
+    count: 83
+- term: 槟榔丸
+  kind: harvested
+  synonyms:
+  - surface: 槟榔圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 34
+    count: 69
+- term: 人参养荣汤
+  kind: harvested
+  evidence:
+    books: 34
+    count: 64
+- term: 清胃散
+  kind: harvested
+  evidence:
+    books: 34
+    count: 59
+- term: 立效散
+  kind: harvested
+  evidence:
+    books: 34
+    count: 57
+- term: 竹茹汤
+  kind: harvested
+  evidence:
+    books: 34
+    count: 49
+- term: 枳实栀子豉汤
+  kind: harvested
+  evidence:
+    books: 34
+    count: 47
+- term: 酸枣仁汤
+  kind: harvested
+  evidence:
+    books: 34
+    count: 44
+- term: 柴胡桂枝干姜汤
+  kind: harvested
+  evidence:
+    books: 34
+    count: 42
+- term: 控涎丹
+  kind: harvested
+  evidence:
+    books: 34
+    count: 38
+- term: 牛黄丸
+  kind: harvested
+  evidence:
+    books: 33
+    count: 147
+- term: 茯苓汤
+  kind: harvested
+  evidence:
+    books: 33
+    count: 136
+- term: 当归汤
+  kind: harvested
+  evidence:
+    books: 33
+    count: 125
+- term: 当归丸
+  kind: harvested
+  synonyms:
+  - surface: 当归圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 33
+    count: 66
+- term: 附子理中汤
+  kind: harvested
+  evidence:
+    books: 33
+    count: 48
+- term: 滋肾丸
+  kind: harvested
+  evidence:
+    books: 33
+    count: 44
+- term: 羌活胜湿汤
+  kind: harvested
+  evidence:
+    books: 33
+    count: 44
+- term: 温胆汤
+  kind: harvested
+  evidence:
+    books: 33
+    count: 41
+- term: 甘桔汤
+  kind: harvested
+  evidence:
+    books: 33
+    count: 41
+- term: 白术附子汤
+  kind: harvested
+  evidence:
+    books: 33
+    count: 35
+- term: 麝香散
+  kind: harvested
+  evidence:
+    books: 32
+    count: 88
+- term: 当归六黄汤
+  kind: harvested
+  evidence:
+    books: 32
+    count: 54
+- term: 牡蛎泽泻散
+  kind: harvested
+  evidence:
+    books: 32
+    count: 50
+- term: 益黄散
+  kind: harvested
+  evidence:
+    books: 32
+    count: 48
+- term: 润肠丸
+  kind: harvested
+  evidence:
+    books: 32
+    count: 42
+- term: 金沸草散
+  kind: harvested
+  evidence:
+    books: 32
+    count: 42
+- term: 白虎加桂枝汤
+  kind: harvested
+  evidence:
+    books: 32
+    count: 34
+- term: 地黄汤
+  kind: harvested
+  evidence:
+    books: 31
+    count: 100
+- term: 雄黄散
+  kind: harvested
+  evidence:
+    books: 31
+    count: 90
+- term: 附子散
+  kind: harvested
+  evidence:
+    books: 31
+    count: 84
+- term: 天麻丸
+  kind: harvested
+  synonyms:
+  - surface: 天麻圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 31
+    count: 78
+- term: 参附汤
+  kind: harvested
+  evidence:
+    books: 31
+    count: 53
+- term: 桂枝去芍药加附子汤
+  kind: harvested
+  evidence:
+    books: 31
+    count: 47
+- term: 肥儿丸
+  kind: harvested
+  synonyms:
+  - surface: 肥儿圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 31
+    count: 45
+- term: 胃苓汤
+  kind: harvested
+  evidence:
+    books: 31
+    count: 45
+- term: 槐花散
+  kind: harvested
+  evidence:
+    books: 31
+    count: 39
+- term: 益元散
+  kind: harvested
+  evidence:
+    books: 31
+    count: 39
+- term: 苦参汤
+  kind: harvested
+  evidence:
+    books: 31
+    count: 39
+- term: 葶苈大枣泻肺汤
+  kind: harvested
+  evidence:
+    books: 31
+    count: 39
+- term: 当归芍药散
+  kind: harvested
+  evidence:
+    books: 31
+    count: 38
+- term: 桂枝二越婢一汤
+  kind: harvested
+  evidence:
+    books: 31
+    count: 38
+- term: 泽泻汤
+  kind: harvested
+  evidence:
+    books: 31
+    count: 38
+- term: 半夏散及汤
+  kind: harvested
+  evidence:
+    books: 31
+    count: 34
+- term: 蜘蛛散
+  kind: harvested
+  evidence:
+    books: 31
+    count: 34
+- term: 麻黄加术汤
+  kind: harvested
+  evidence:
+    books: 31
+    count: 33
+- term: 防风散
+  kind: harvested
+  evidence:
+    books: 30
+    count: 88
+- term: 麦门冬散
+  kind: harvested
+  evidence:
+    books: 30
+    count: 78
+- term: 抱龙丸
+  kind: harvested
+  synonyms:
+  - surface: 抱龙圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 30
+    count: 58
+- term: 双解散
+  kind: harvested
+  evidence:
+    books: 30
+    count: 39
+- term: 葛根黄芩黄连汤
+  kind: harvested
+  evidence:
+    books: 30
+    count: 37
+- term: 四逆加人参汤
+  kind: harvested
+  evidence:
+    books: 30
+    count: 35
+- term: 栝楼桂枝汤
+  kind: harvested
+  evidence:
+    books: 30
+    count: 34
+- term: 干姜黄连黄芩人参汤
+  kind: harvested
+  evidence:
+    books: 30
+    count: 33
+- term: 羌活汤
+  kind: harvested
+  evidence:
+    books: 29
+    count: 69
+- term: 麻黄散
+  kind: harvested
+  evidence:
+    books: 29
+    count: 67
+- term: 茯苓散
+  kind: harvested
+  evidence:
+    books: 29
+    count: 66
+- term: 五香连翘汤
+  kind: harvested
+  evidence:
+    books: 29
+    count: 53
+- term: 蒲黄散
+  kind: harvested
+  evidence:
+    books: 29
+    count: 50
+- term: 地骨皮散
+  kind: harvested
+  evidence:
+    books: 29
+    count: 49
+- term: 茱萸汤
+  kind: harvested
+  evidence:
+    books: 29
+    count: 47
+- term: 泻黄散
+  kind: harvested
+  evidence:
+    books: 29
+    count: 45
+- term: 猪蹄汤
+  kind: harvested
+  evidence:
+    books: 29
+    count: 42
+- term: 独圣散
+  kind: harvested
+  evidence:
+    books: 29
+    count: 41
+- term: 紫苏饮
+  kind: harvested
+  evidence:
+    books: 29
+    count: 41
+- term: 承气汤
+  kind: harvested
+  evidence:
+    books: 29
+    count: 39
+- term: 天雄散
+  kind: harvested
+  evidence:
+    books: 29
+    count: 36
+- term: 桃核承气汤
+  kind: harvested
+  evidence:
+    books: 29
+    count: 34
+- term: 清空膏
+  kind: harvested
+  evidence:
+    books: 29
+    count: 33
+- term: 枳术汤
+  kind: harvested
+  evidence:
+    books: 29
+    count: 30
+- term: 附子粳米汤
+  kind: harvested
+  evidence:
+    books: 29
+    count: 30
+- term: 人参丸
+  kind: harvested
+  synonyms:
+  - surface: 人参圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 28
+    count: 86
+- term: 丁香散
+  kind: harvested
+  evidence:
+    books: 28
+    count: 84
+- term: 生地黄汤
+  kind: harvested
+  evidence:
+    books: 28
+    count: 61
+- term: 泽漆汤
+  kind: harvested
+  evidence:
+    books: 28
+    count: 40
+- term: 栝楼散
+  kind: harvested
+  evidence:
+    books: 28
+    count: 39
+- term: 四生丸
+  kind: harvested
+  evidence:
+    books: 28
+    count: 34
+- term: 洗肝散
+  kind: harvested
+  evidence:
+    books: 28
+    count: 34
+- term: 防己茯苓汤
+  kind: harvested
+  evidence:
+    books: 28
+    count: 33
+- term: 排脓散
+  kind: harvested
+  evidence:
+    books: 28
+    count: 32
+- term: 备急丸
+  kind: harvested
+  synonyms:
+  - surface: 备急圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 28
+    count: 28
+- term: 柴胡散
+  kind: harvested
+  evidence:
+    books: 27
+    count: 92
+- term: 惺惺散
+  kind: harvested
+  evidence:
+    books: 27
+    count: 50
+- term: 石膏散
+  kind: harvested
+  evidence:
+    books: 27
+    count: 49
+- term: 独参汤
+  kind: harvested
+  evidence:
+    books: 27
+    count: 47
+- term: 龙胆汤
+  kind: harvested
+  evidence:
+    books: 27
+    count: 47
+- term: 射干汤
+  kind: harvested
+  evidence:
+    books: 27
+    count: 44
+- term: 川芎散
+  kind: harvested
+  evidence:
+    books: 27
+    count: 44
+- term: 花蕊石散
+  kind: harvested
+  evidence:
+    books: 27
+    count: 44
+- term: 妙香散
+  kind: harvested
+  evidence:
+    books: 27
+    count: 41
+- term: 当归生姜羊肉汤
+  kind: harvested
+  evidence:
+    books: 27
+    count: 39
+- term: 越婢加半夏汤
+  kind: harvested
+  evidence:
+    books: 27
+    count: 38
+- term: 诃黎勒散
+  kind: harvested
+  evidence:
+    books: 27
+    count: 37
+- term: 柏叶汤
+  kind: harvested
+  evidence:
+    books: 27
+    count: 36
+- term: 甘露饮
+  kind: harvested
+  evidence:
+    books: 27
+    count: 35
+- term: 人参白虎汤
+  kind: harvested
+  evidence:
+    books: 27
+    count: 32
+- term: 四七汤
+  kind: harvested
+  evidence:
+    books: 27
+    count: 31
+- term: 蜀漆散
+  kind: harvested
+  evidence:
+    books: 27
+    count: 28
+- term: 黄土汤
+  kind: harvested
+  evidence:
+    books: 27
+    count: 28
+- term: 雄黄丸
+  kind: harvested
+  evidence:
+    books: 26
+    count: 76
+- term: 半夏散
+  kind: harvested
+  evidence:
+    books: 26
+    count: 66
+- term: 茯神汤
+  kind: harvested
+  evidence:
+    books: 26
+    count: 64
+- term: 石膏汤
+  kind: harvested
+  evidence:
+    books: 26
+    count: 59
+- term: 龙骨散
+  kind: harvested
+  evidence:
+    books: 26
+    count: 59
+- term: 没药丸
+  kind: harvested
+  evidence:
+    books: 26
+    count: 46
+- term: 桃仁汤
+  kind: harvested
+  evidence:
+    books: 26
+    count: 42
+- term: 大岩蜜汤
+  kind: harvested
+  evidence:
+    books: 26
+    count: 37
+- term: 定志丸
+  kind: harvested
+  evidence:
+    books: 26
+    count: 37
+- term: 麦煎散
+  kind: harvested
+  evidence:
+    books: 26
+    count: 37
+- term: 七宝散
+  kind: harvested
+  evidence:
+    books: 26
+    count: 36
+- term: 清燥汤
+  kind: harvested
+  evidence:
+    books: 26
+    count: 36
+- term: 苏子降气汤
+  kind: harvested
+  evidence:
+    books: 26
+    count: 35
+- term: 佛手散
+  kind: harvested
+  evidence:
+    books: 26
+    count: 33
+- term: 排风汤
+  kind: harvested
+  evidence:
+    books: 26
+    count: 31
+- term: 川芎茶调散
+  kind: harvested
+  evidence:
+    books: 26
+    count: 29
+- term: 桂枝茯苓丸
+  kind: harvested
+  evidence:
+    books: 26
+    count: 29
+- term: 三生饮
+  kind: harvested
+  evidence:
+    books: 26
+    count: 28
+- term: 大黄附子汤
+  kind: harvested
+  evidence:
+    books: 26
+    count: 28
+- term: 枳术丸
+  kind: harvested
+  evidence:
+    books: 26
+    count: 28
+- term: 甘遂半夏汤
+  kind: harvested
+  evidence:
+    books: 26
+    count: 27
+- term: 灵砂丹
+  kind: harvested
+  evidence:
+    books: 26
+    count: 26
+- term: 芦荟丸
+  kind: harvested
+  evidence:
+    books: 25
+    count: 76
+- term: 地榆散
+  kind: harvested
+  evidence:
+    books: 25
+    count: 60
+- term: 半夏丸
+  kind: harvested
+  synonyms:
+  - surface: 半夏圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 25
+    count: 55
+- term: 细辛散
+  kind: harvested
+  evidence:
+    books: 25
+    count: 55
+- term: 荆防败毒散
+  kind: harvested
+  evidence:
+    books: 25
+    count: 53
+- term: 阿胶丸
+  kind: harvested
+  synonyms:
+  - surface: 阿胶圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 25
+    count: 47
+- term: 栀子汤
+  kind: harvested
+  evidence:
+    books: 25
+    count: 44
+- term: 夺命散
+  kind: harvested
+  evidence:
+    books: 25
+    count: 41
+- term: 枇杷叶散
+  kind: harvested
+  evidence:
+    books: 25
+    count: 40
+- term: 黄芪建中汤
+  kind: harvested
+  evidence:
+    books: 25
+    count: 39
+- term: 桑螵蛸散
+  kind: harvested
+  evidence:
+    books: 25
+    count: 35
+- term: 茵陈汤
+  kind: harvested
+  evidence:
+    books: 25
+    count: 32
+- term: 乌药顺气散
+  kind: harvested
+  evidence:
+    books: 25
+    count: 31
+- term: 金液丹
+  kind: harvested
+  evidence:
+    books: 25
+    count: 31
+- term: 导痰汤
+  kind: harvested
+  evidence:
+    books: 25
+    count: 30
+- term: 当归建中汤
+  kind: harvested
+  evidence:
+    books: 25
+    count: 30
+- term: 生姜半夏汤
+  kind: harvested
+  evidence:
+    books: 25
+    count: 30
+- term: 生犀散
+  kind: harvested
+  evidence:
+    books: 25
+    count: 30
+- term: 续命汤
+  kind: harvested
+  evidence:
+    books: 25
+    count: 30
+- term: 麻黄连轺赤小豆汤
+  kind: harvested
+  evidence:
+    books: 25
+    count: 30
+- term: 射干麻黄汤
+  kind: harvested
+  evidence:
+    books: 25
+    count: 29
+- term: 华盖散
+  kind: harvested
+  evidence:
+    books: 25
+    count: 28
+- term: 杏子汤
+  kind: harvested
+  evidence:
+    books: 25
+    count: 27
+- term: 栀子大黄汤
+  kind: harvested
+  evidence:
+    books: 25
+    count: 27
+- term: 硝石矾石散
+  kind: harvested
+  evidence:
+    books: 25
+    count: 26
+- term: 鳖甲煎丸
+  kind: harvested
+  synonyms:
+  - surface: 鳖甲煎圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 25
+    count: 26
+- term: 麝香丸
+  kind: harvested
+  synonyms:
+  - surface: 麝香圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 24
+    count: 78
+- term: 没药散
+  kind: harvested
+  evidence:
+    books: 24
+    count: 56
+- term: 地黄散
+  kind: harvested
+  evidence:
+    books: 24
+    count: 52
+- term: 枳壳散
+  kind: harvested
+  evidence:
+    books: 24
+    count: 47
+- term: 鹿茸丸
+  kind: harvested
+  synonyms:
+  - surface: 鹿茸圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 24
+    count: 47
+- term: 伏龙肝散
+  kind: harvested
+  evidence:
+    books: 24
+    count: 38
+- term: 旋覆代赭石汤
+  kind: harvested
+  evidence:
+    books: 24
+    count: 37
+- term: 荆芥散
+  kind: harvested
+  evidence:
+    books: 24
+    count: 36
+- term: 金花散
+  kind: harvested
+  evidence:
+    books: 24
+    count: 33
+- term: 漏芦汤
+  kind: harvested
+  evidence:
+    books: 24
+    count: 31
+- term: 三黄汤
+  kind: harvested
+  evidence:
+    books: 24
+    count: 30
+- term: 乌头桂枝汤
+  kind: harvested
+  evidence:
+    books: 24
+    count: 30
+- term: 奔豚汤
+  kind: harvested
+  evidence:
+    books: 24
+    count: 30
+- term: 柏子仁丸
+  kind: harvested
+  synonyms:
+  - surface: 柏子仁圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 24
+    count: 30
+- term: 桂枝芍药知母汤
+  kind: harvested
+  evidence:
+    books: 24
+    count: 29
+- term: 七气汤
+  kind: harvested
+  evidence:
+    books: 24
+    count: 28
+- term: 大黄甘草汤
+  kind: harvested
+  evidence:
+    books: 24
+    count: 28
+- term: 百药煎
+  kind: harvested
+  evidence:
+    books: 24
+    count: 28
+- term: 茯苓泽泻汤
+  kind: harvested
+  evidence:
+    books: 24
+    count: 28
+- term: 天王补心丹
+  kind: harvested
+  evidence:
+    books: 24
+    count: 26
+- term: 虎潜丸
+  kind: harvested
+  evidence:
+    books: 24
+    count: 26
+- term: 王不留行散
+  kind: harvested
+  evidence:
+    books: 24
+    count: 25
+- term: 朱砂丸
+  kind: harvested
+  synonyms:
+  - surface: 朱砂圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 23
+    count: 80
+- term: 牛膝汤
+  kind: harvested
+  evidence:
+    books: 23
+    count: 43
+- term: 消毒散
+  kind: harvested
+  evidence:
+    books: 23
+    count: 39
+- term: 化虫丸
+  kind: harvested
+  synonyms:
+  - surface: 化虫圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 23
+    count: 37
+- term: 菊花散
+  kind: harvested
+  evidence:
+    books: 23
+    count: 37
+- term: 四圣散
+  kind: harvested
+  evidence:
+    books: 23
+    count: 36
+- term: 胜金散
+  kind: harvested
+  evidence:
+    books: 23
+    count: 35
+- term: 追风散
+  kind: harvested
+  evidence:
+    books: 23
+    count: 34
+- term: 地龙散
+  kind: harvested
+  evidence:
+    books: 23
+    count: 30
+- term: 茅根汤
+  kind: harvested
+  evidence:
+    books: 23
+    count: 30
+- term: 葛花解酲汤
+  kind: harvested
+  evidence:
+    books: 23
+    count: 29
+- term: 薯蓣丸
+  kind: harvested
+  synonyms:
+  - surface: 薯蓣圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 23
+    count: 29
+- term: 通脉四逆加猪胆汁汤
+  kind: harvested
+  evidence:
+    books: 23
+    count: 28
+- term: 大黄甘遂汤
+  kind: harvested
+  evidence:
+    books: 23
+    count: 26
+- term: 肾著汤
+  kind: harvested
+  evidence:
+    books: 23
+    count: 26
+- term: 飞龙夺命丹
+  kind: harvested
+  evidence:
+    books: 23
+    count: 26
+- term: 渗湿汤
+  kind: harvested
+  evidence:
+    books: 23
+    count: 25
+- term: 阳旦汤
+  kind: harvested
+  evidence:
+    books: 23
+    count: 25
+- term: 大秦艽汤
+  kind: harvested
+  evidence:
+    books: 23
+    count: 24
+- term: 麻黄附子汤
+  kind: harvested
+  evidence:
+    books: 23
+    count: 24
+- term: 牛黄散
+  kind: harvested
+  evidence:
+    books: 22
+    count: 88
+- term: 黄芪汤
+  kind: harvested
+  evidence:
+    books: 22
+    count: 76
+- term: 犀角丸
+  kind: harvested
+  synonyms:
+  - surface: 犀角圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 22
+    count: 67
+- term: 白术丸
+  kind: harvested
+  evidence:
+    books: 22
+    count: 56
+- term: 黄芩散
+  kind: harvested
+  evidence:
+    books: 22
+    count: 51
+- term: 防己汤
+  kind: harvested
+  evidence:
+    books: 22
+    count: 48
+- term: 托里散
+  kind: harvested
+  evidence:
+    books: 22
+    count: 47
+- term: 地黄煎
+  kind: harvested
+  evidence:
+    books: 22
+    count: 43
+- term: 枳壳丸
+  kind: harvested
+  evidence:
+    books: 22
+    count: 43
+- term: 五淋散
+  kind: harvested
+  evidence:
+    books: 22
+    count: 42
+- term: 紫菀汤
+  kind: harvested
+  evidence:
+    books: 22
+    count: 41
+- term: 苦参丸
+  kind: harvested
+  synonyms:
+  - surface: 苦参圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 22
+    count: 35
+- term: 三黄石膏汤
+  kind: harvested
+  evidence:
+    books: 22
+    count: 32
+- term: 一字散
+  kind: harvested
+  evidence:
+    books: 22
+    count: 30
+- term: 十补丸
+  kind: harvested
+  synonyms:
+  - surface: 十补圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 22
+    count: 30
+- term: 神应丸
+  kind: harvested
+  synonyms:
+  - surface: 神应圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 22
+    count: 29
+- term: 诃子散
+  kind: harvested
+  evidence:
+    books: 22
+    count: 28
+- term: 还少丹
+  kind: harvested
+  evidence:
+    books: 22
+    count: 28
+- term: 调经散
+  kind: harvested
+  evidence:
+    books: 22
+    count: 27
+- term: 木防己汤
+  kind: harvested
+  evidence:
+    books: 22
+    count: 26
+- term: 稀涎散
+  kind: harvested
+  evidence:
+    books: 22
+    count: 26
+- term: 感应丸
+  kind: harvested
+  synonyms:
+  - surface: 感应圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 22
+    count: 25
+- term: 朱砂安神丸
+  kind: harvested
+  evidence:
+    books: 22
+    count: 25
+- term: 猪肚丸
+  kind: harvested
+  synonyms:
+  - surface: 猪肚圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 22
+    count: 25
+- term: 矾石丸
+  kind: harvested
+  evidence:
+    books: 22
+    count: 25
+- term: 木香槟榔丸
+  kind: harvested
+  evidence:
+    books: 22
+    count: 24
+- term: 枳实薤白桂枝汤
+  kind: harvested
+  evidence:
+    books: 22
+    count: 24
+- term: 白芷散
+  kind: harvested
+  evidence:
+    books: 22
+    count: 24
+- term: 香薷饮
+  kind: harvested
+  evidence:
+    books: 22
+    count: 22
+- term: 黄连散
+  kind: harvested
+  evidence:
+    books: 21
+    count: 110
+- term: 大黄丸
+  kind: harvested
+  synonyms:
+  - surface: 大黄圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 21
+    count: 83
+- term: 茯神散
+  kind: harvested
+  evidence:
+    books: 21
+    count: 65
+- term: 阿胶汤
+  kind: harvested
+  evidence:
+    books: 21
+    count: 49
+- term: 乳香散
+  kind: harvested
+  evidence:
+    books: 21
+    count: 46
+- term: 乳香丸
+  kind: harvested
+  synonyms:
+  - surface: 乳香圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 21
+    count: 40
+- term: 木瓜丸
+  kind: harvested
+  synonyms:
+  - surface: 木瓜圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 21
+    count: 38
+- term: 洗心散
+  kind: harvested
+  evidence:
+    books: 21
+    count: 36
+- term: 二神丸
+  kind: harvested
+  synonyms:
+  - surface: 二神圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 21
+    count: 34
+- term: 磁石丸
+  kind: harvested
+  synonyms:
+  - surface: 磁石圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 21
+    count: 34
+- term: 青金丹
+  kind: harvested
+  evidence:
+    books: 21
+    count: 34
+- term: 通气散
+  kind: harvested
+  evidence:
+    books: 21
+    count: 33
+- term: 越婢加术汤
+  kind: harvested
+  evidence:
+    books: 21
+    count: 32
+- term: 温白丸
+  kind: harvested
+  synonyms:
+  - surface: 温白圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 21
+    count: 31
+- term: 桃花散
+  kind: harvested
+  evidence:
+    books: 21
+    count: 30
+- term: 二圣散
+  kind: harvested
+  evidence:
+    books: 21
+    count: 29
+- term: 大圣散
+  kind: harvested
+  evidence:
+    books: 21
+    count: 29
+- term: 神芎丸
+  kind: harvested
+  evidence:
+    books: 21
+    count: 29
+- term: 补肾丸
+  kind: harvested
+  evidence:
+    books: 21
+    count: 29
+- term: 葛根黄连黄芩汤
+  kind: harvested
+  evidence:
+    books: 21
+    count: 28
+- term: 栝楼薤白半夏汤
+  kind: harvested
+  evidence:
+    books: 21
+    count: 27
+- term: 蛇床子散
+  kind: harvested
+  evidence:
+    books: 21
+    count: 27
+- term: 养心汤
+  kind: harvested
+  evidence:
+    books: 21
+    count: 26
+- term: 四生散
+  kind: harvested
+  evidence:
+    books: 21
+    count: 26
+- term: 大青汤
+  kind: harvested
+  evidence:
+    books: 21
+    count: 25
+- term: 琼玉膏
+  kind: harvested
+  evidence:
+    books: 21
+    count: 25
+- term: 薏苡仁汤
+  kind: harvested
+  evidence:
+    books: 21
+    count: 25
+- term: 补肺汤
+  kind: harvested
+  evidence:
+    books: 21
+    count: 25
+- term: 当归拈痛汤
+  kind: harvested
+  evidence:
+    books: 21
+    count: 24
+- term: 栝楼牡蛎散
+  kind: harvested
+  evidence:
+    books: 21
+    count: 23
+- term: 栝楼瞿麦丸
+  kind: harvested
+  evidence:
+    books: 21
+    count: 23
+- term: 神术散
+  kind: harvested
+  evidence:
+    books: 21
+    count: 23
+- term: 半夏干姜散
+  kind: harvested
+  evidence:
+    books: 21
+    count: 22
+- term: 桂苓甘露饮
+  kind: harvested
+  evidence:
+    books: 21
+    count: 22
+- term: 滑石白鱼散
+  kind: harvested
+  evidence:
+    books: 21
+    count: 22
+- term: 甘草麻黄汤
+  kind: harvested
+  evidence:
+    books: 21
+    count: 22
+- term: 紫参汤
+  kind: harvested
+  evidence:
+    books: 21
+    count: 22
+- term: 大羌活汤
+  kind: harvested
+  evidence:
+    books: 21
+    count: 21
+- term: 犀角汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 78
+- term: 黄连丸
+  kind: harvested
+  synonyms:
+  - surface: 黄连圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 20
+    count: 66
+- term: 独活散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 65
+- term: 鳖甲散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 62
+- term: 鳖甲汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 52
+- term: 草豆蔻散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 51
+- term: 知母汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 50
+- term: 远志丸
+  kind: harvested
+  synonyms:
+  - surface: 远志圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 20
+    count: 38
+- term: 青金散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 36
+- term: 赤茯苓汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 35
+- term: 不换金正气散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 34
+- term: 五香散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 33
+- term: 秦艽散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 32
+- term: 蒲灰散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 31
+- term: 栀子厚朴汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 30
+- term: 真珠散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 30
+- term: 必效散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 29
+- term: 蝉花散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 29
+- term: 牡丹皮散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 28
+- term: 四神散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 27
+- term: 玉露散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 27
+- term: 紫金丹
+  kind: harvested
+  evidence:
+    books: 20
+    count: 27
+- term: 芎归汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 27
+- term: 五福化毒丹
+  kind: harvested
+  evidence:
+    books: 20
+    count: 26
+- term: 保元汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 26
+- term: 滑石代赭汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 26
+- term: 补肝汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 26
+- term: 三圣散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 25
+- term: 三拗汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 25
+- term: 土瓜根散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 25
+- term: 文蛤汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 25
+- term: 栝楼汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 25
+- term: 半夏麻黄丸
+  kind: harvested
+  synonyms:
+  - surface: 半夏麻黄圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 20
+    count: 24
+- term: 麻黄杏仁薏苡甘草汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 23
+- term: 常山饮
+  kind: harvested
+  evidence:
+    books: 20
+    count: 22
+- term: 蠲痹汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 22
+- term: 黑锡丹
+  kind: harvested
+  evidence:
+    books: 20
+    count: 22
+- term: 大黄硝石汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 21
+- term: 枳实芍药散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 21
+- term: 苍耳散
+  kind: harvested
+  evidence:
+    books: 20
+    count: 21
+- term: 茯苓戎盐汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 21
+- term: 茯苓杏仁甘草汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 21
+- term: 柴胡桂姜汤
+  kind: harvested
+  evidence:
+    books: 20
+    count: 20
+- term: 沉香散
+  kind: harvested
+  evidence:
+    books: 19
+    count: 54
+- term: 滑石散
+  kind: harvested
+  evidence:
+    books: 19
+    count: 51
+- term: 浓朴汤
+  kind: harvested
+  evidence:
+    books: 19
+    count: 49
+- term: 秦艽汤
+  kind: harvested
+  evidence:
+    books: 19
+    count: 47
+- term: 丁香丸
+  kind: harvested
+  evidence:
+    books: 19
+    count: 42
+- term: 竹沥汤
+  kind: harvested
+  evidence:
+    books: 19
+    count: 37
+- term: 匀气散
+  kind: harvested
+  evidence:
+    books: 19
+    count: 36
+- term: 清心莲子饮
+  kind: harvested
+  evidence:
+    books: 19
+    count: 36
+- term: 神效散
+  kind: harvested
+  evidence:
+    books: 19
+    count: 33
+- term: 丹砂丸
+  kind: harvested
+  evidence:
+    books: 19
+    count: 32
+- term: 大防风汤
+  kind: harvested
+  evidence:
+    books: 19
+    count: 31
+- term: 白豆蔻散
+  kind: harvested
+  evidence:
+    books: 19
+    count: 31
+- term: 胜金丸
+  kind: harvested
+  synonyms:
+  - surface: 胜金圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 19
+    count: 31
+- term: 杏仁煎
+  kind: harvested
+  evidence:
+    books: 19
+    count: 29
+- term: 桃仁丸
+  kind: harvested
+  synonyms:
+  - surface: 桃仁圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 19
+    count: 29
+- term: 消毒饮
+  kind: harvested
+  evidence:
+    books: 19
+    count: 29
+- term: 豆蔻散
+  kind: harvested
+  evidence:
+    books: 19
+    count: 29
+- term: 虎骨散
+  kind: harvested
+  evidence:
+    books: 19
+    count: 28
+- term: 调中丸
+  kind: harvested
+  evidence:
+    books: 19
+    count: 28
+- term: 三黄散
+  kind: harvested
+  evidence:
+    books: 19
+    count: 27
+- term: 珍珠散
+  kind: harvested
+  evidence:
+    books: 19
+    count: 27
+- term: 通顶散
+  kind: harvested
+  evidence:
+    books: 19
+    count: 27
+- term: 禹余粮丸
+  kind: harvested
+  synonyms:
+  - surface: 禹余粮圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 19
+    count: 26
+- term: 紫金丸
+  kind: harvested
+  synonyms:
+  - surface: 紫金圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 19
+    count: 25
+- term: 鹿角散
+  kind: harvested
+  evidence:
+    books: 19
+    count: 24
+- term: 当归龙荟丸
+  kind: harvested
+  evidence:
+    books: 19
+    count: 23
+- term: 栀子浓朴汤
+  kind: harvested
+  evidence:
+    books: 19
+    count: 22
+- term: 神功丸
+  kind: harvested
+  evidence:
+    books: 19
+    count: 22
+- term: 半夏茯苓汤
+  kind: harvested
+  evidence:
+    books: 19
+    count: 21
+- term: 建中汤
+  kind: harvested
+  evidence:
+    books: 19
+    count: 21
+- term: 返魂丹
+  kind: harvested
+  evidence:
+    books: 19
+    count: 21
+- term: 猪膏发煎
+  kind: harvested
+  evidence:
+    books: 19
+    count: 20
+- term: 甘草粉蜜汤
+  kind: harvested
+  evidence:
+    books: 19
+    count: 20
+- term: 缩脾饮
+  kind: harvested
+  evidence:
+    books: 19
+    count: 20
+- term: 葵子茯苓散
+  kind: harvested
+  evidence:
+    books: 19
+    count: 20
+- term: 左金丸
+  kind: harvested
+  evidence:
+    books: 19
+    count: 19
+- term: 鳖甲丸
+  kind: harvested
+  synonyms:
+  - surface: 鳖甲圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 18
+    count: 63
+- term: 桑白皮汤
+  kind: harvested
+  evidence:
+    books: 18
+    count: 60
+- term: 藿香散
+  kind: harvested
+  evidence:
+    books: 18
+    count: 53
+- term: 牡丹散
+  kind: harvested
+  evidence:
+    books: 18
+    count: 41
+- term: 漏芦散
+  kind: harvested
+  evidence:
+    books: 18
+    count: 36
+- term: 内托散
+  kind: harvested
+  evidence:
+    books: 18
+    count: 30
+- term: 圣愈汤
+  kind: harvested
+  evidence:
+    books: 18
+    count: 30
+- term: 姜黄散
+  kind: harvested
+  evidence:
+    books: 18
+    count: 28
+- term: 荆芥汤
+  kind: harvested
+  evidence:
+    books: 18
+    count: 28
+- term: 防风丸
+  kind: harvested
+  synonyms:
+  - surface: 防风圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 18
+    count: 28
+- term: 复元通气散
+  kind: harvested
+  evidence:
+    books: 18
+    count: 27
+- term: 生地黄散
+  kind: harvested
+  evidence:
+    books: 18
+    count: 27
+- term: 石苇散
+  kind: harvested
+  evidence:
+    books: 18
+    count: 27
+- term: 薏苡附子散
+  kind: harvested
+  evidence:
+    books: 18
+    count: 27
+- term: 赤石脂散
+  kind: harvested
+  evidence:
+    books: 18
+    count: 27
+- term: 安胎饮
+  kind: harvested
+  evidence:
+    books: 18
+    count: 26
+- term: 防己黄芪汤
+  kind: harvested
+  evidence:
+    books: 18
+    count: 25
+- term: 降气汤
+  kind: harvested
+  evidence:
+    books: 18
+    count: 25
+- term: 温脾汤
+  kind: harvested
+  evidence:
+    books: 18
+    count: 24
+- term: 十神汤
+  kind: harvested
+  evidence:
+    books: 18
+    count: 22
+- term: 活络丹
+  kind: harvested
+  evidence:
+    books: 18
+    count: 22
+- term: 固经丸
+  kind: harvested
+  evidence:
+    books: 18
+    count: 21
+- term: 大橘皮汤
+  kind: harvested
+  evidence:
+    books: 18
+    count: 21
+- term: 麻子仁丸
+  kind: harvested
+  evidence:
+    books: 18
+    count: 21
+- term: 四磨汤
+  kind: harvested
+  evidence:
+    books: 18
+    count: 20
+- term: 旋覆代赭汤
+  kind: harvested
+  evidence:
+    books: 18
+    count: 20
+- term: 普济消毒饮
+  kind: harvested
+  evidence:
+    books: 18
+    count: 20
+- term: 脾约丸
+  kind: harvested
+  synonyms:
+  - surface: 脾约圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 18
+    count: 20
+- term: 膏发煎
+  kind: harvested
+  evidence:
+    books: 18
+    count: 20
+- term: 赴筵散
+  kind: harvested
+  evidence:
+    books: 18
+    count: 20
+- term: 鲤鱼汤
+  kind: harvested
+  evidence:
+    books: 18
+    count: 20
+- term: 大补阴丸
+  kind: harvested
+  evidence:
+    books: 18
+    count: 19
+- term: 当归贝母苦参丸
+  kind: harvested
+  evidence:
+    books: 18
+    count: 19
+- term: 桂枝加龙骨牡蛎汤
+  kind: harvested
+  evidence:
+    books: 18
+    count: 19
+- term: 竹皮大丸
+  kind: harvested
+  evidence:
+    books: 18
+    count: 19
+- term: 羊肝丸
+  kind: harvested
+  synonyms:
+  - surface: 羊肝圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 18
+    count: 19
+- term: 神应散
+  kind: harvested
+  evidence:
+    books: 18
+    count: 18
+- term: 木香汤
+  kind: harvested
+  evidence:
+    books: 17
+    count: 53
+- term: 桃仁散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 52
+- term: 槟榔汤
+  kind: harvested
+  evidence:
+    books: 17
+    count: 51
+- term: 牛膝散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 46
+- term: 牛膝丸
+  kind: harvested
+  synonyms:
+  - surface: 牛膝圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 17
+    count: 41
+- term: 龙胆丸
+  kind: harvested
+  evidence:
+    books: 17
+    count: 37
+- term: 桃红散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 32
+- term: 乌梅散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 31
+- term: 白薇丸
+  kind: harvested
+  synonyms:
+  - surface: 白薇圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 17
+    count: 30
+- term: 红绵散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 30
+- term: 人参养胃汤
+  kind: harvested
+  evidence:
+    books: 17
+    count: 29
+- term: 阿魏丸
+  kind: harvested
+  evidence:
+    books: 17
+    count: 29
+- term: 茯神丸
+  kind: harvested
+  synonyms:
+  - surface: 茯神圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 17
+    count: 26
+- term: 葱白汤
+  kind: harvested
+  evidence:
+    books: 17
+    count: 26
+- term: 清肺饮
+  kind: harvested
+  evidence:
+    books: 17
+    count: 25
+- term: 牛黄膏
+  kind: harvested
+  evidence:
+    books: 17
+    count: 25
+- term: 补肝散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 25
+- term: 茯苓半夏汤
+  kind: harvested
+  evidence:
+    books: 17
+    count: 24
+- term: 三物白散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 23
+- term: 葱豉汤
+  kind: harvested
+  evidence:
+    books: 17
+    count: 23
+- term: 葵子散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 23
+- term: 补肺散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 23
+- term: 六一散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 22
+- term: 急风散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 22
+- term: 必胜散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 21
+- term: 接骨丹
+  kind: harvested
+  evidence:
+    books: 17
+    count: 21
+- term: 温中汤
+  kind: harvested
+  evidence:
+    books: 17
+    count: 21
+- term: 甘麦大枣汤
+  kind: harvested
+  evidence:
+    books: 17
+    count: 21
+- term: 大青膏
+  kind: harvested
+  evidence:
+    books: 17
+    count: 20
+- term: 泻肺汤
+  kind: harvested
+  evidence:
+    books: 17
+    count: 20
+- term: 真人养脏汤
+  kind: harvested
+  evidence:
+    books: 17
+    count: 20
+- term: 小青龙加石膏汤
+  kind: harvested
+  evidence:
+    books: 17
+    count: 19
+- term: 来复丹
+  kind: harvested
+  evidence:
+    books: 17
+    count: 19
+- term: 温肺汤
+  kind: harvested
+  evidence:
+    books: 17
+    count: 19
+- term: 立应散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 19
+- term: 通圣散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 19
+- term: 人参固本丸
+  kind: harvested
+  evidence:
+    books: 17
+    count: 18
+- term: 换骨丹
+  kind: harvested
+  evidence:
+    books: 17
+    count: 18
+- term: 消食丸
+  kind: harvested
+  synonyms:
+  - surface: 消食圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 17
+    count: 18
+- term: 琥珀丸
+  kind: harvested
+  synonyms:
+  - surface: 琥珀圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 17
+    count: 18
+- term: 白头翁加甘草阿胶汤
+  kind: harvested
+  evidence:
+    books: 17
+    count: 18
+- term: 五皮饮
+  kind: harvested
+  evidence:
+    books: 17
+    count: 17
+- term: 霹雳散
+  kind: harvested
+  evidence:
+    books: 17
+    count: 17
+- term: 黑龙丹
+  kind: harvested
+  evidence:
+    books: 17
+    count: 17
+- term: 于桂枝汤
+  kind: harvested
+  evidence:
+    books: 16
+    count: 77
+- term: 附子丸
+  kind: harvested
+  evidence:
+    books: 16
+    count: 50
+- term: 芦根汤
+  kind: harvested
+  evidence:
+    books: 16
+    count: 32
+- term: 菖蒲散
+  kind: harvested
+  evidence:
+    books: 16
+    count: 31
+- term: 苁蓉丸
+  kind: harvested
+  synonyms:
+  - surface: 苁蓉圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 16
+    count: 30
+- term: 桔梗散
+  kind: harvested
+  evidence:
+    books: 16
+    count: 29
+- term: 枳壳汤
+  kind: harvested
+  evidence:
+    books: 16
+    count: 28
+- term: 人参羌活散
+  kind: harvested
+  evidence:
+    books: 16
+    count: 27
+- term: 枳实散
+  kind: harvested
+  evidence:
+    books: 16
+    count: 27
+- term: 黄连膏
+  kind: harvested
+  evidence:
+    books: 16
+    count: 27
+- term: 硫黄丸
+  kind: harvested
+  synonyms:
+  - surface: 硫黄圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 16
+    count: 25
+- term: 养正丹
+  kind: harvested
+  evidence:
+    books: 16
+    count: 24
+- term: 泽泻散
+  kind: harvested
+  evidence:
+    books: 16
+    count: 24
+- term: 厚朴麻黄汤
+  kind: harvested
+  evidence:
+    books: 16
+    count: 22
+- term: 大豆紫汤
+  kind: harvested
+  evidence:
+    books: 16
+    count: 22
+- term: 椒红丸
+  kind: harvested
+  evidence:
+    books: 16
+    count: 22
+- term: 清神散
+  kind: harvested
+  evidence:
+    books: 16
+    count: 22
+- term: 凉血地黄汤
+  kind: harvested
+  evidence:
+    books: 16
+    count: 21
+- term: 温脾散
+  kind: harvested
+  evidence:
+    books: 16
+    count: 21
+- term: 滋血汤
+  kind: harvested
+  evidence:
+    books: 16
+    count: 21
+- term: 草豆蔻丸
+  kind: harvested
+  evidence:
+    books: 16
+    count: 21
+- term: 何首乌散
+  kind: harvested
+  evidence:
+    books: 16
+    count: 20
+- term: 回生丹
+  kind: harvested
+  evidence:
+    books: 16
+    count: 20
+- term: 地芝丸
+  kind: harvested
+  evidence:
+    books: 16
+    count: 20
+- term: 葫芦巴丸
+  kind: harvested
+  synonyms:
+  - surface: 葫芦巴圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 16
+    count: 20
+- term: 趁痛散
+  kind: harvested
+  evidence:
+    books: 16
+    count: 20
+- term: 五皮散
+  kind: harvested
+  evidence:
+    books: 16
+    count: 19
+- term: 桦皮散
+  kind: harvested
+  evidence:
+    books: 16
+    count: 19
+- term: 益母丸
+  kind: harvested
+  evidence:
+    books: 16
+    count: 19
+- term: 半夏白术天麻汤
+  kind: harvested
+  evidence:
+    books: 16
+    count: 18
+- term: 增损四物汤
+  kind: harvested
+  evidence:
+    books: 16
+    count: 18
+- term: 搜风顺气丸
+  kind: harvested
+  evidence:
+    books: 16
+    count: 18
+- term: 正元散
+  kind: harvested
+  evidence:
+    books: 16
+    count: 18
+- term: 荜澄茄丸
+  kind: harvested
+  evidence:
+    books: 16
+    count: 18
+- term: 调中益气汤
+  kind: harvested
+  evidence:
+    books: 16
+    count: 18
+- term: 鸡鸣散
+  kind: harvested
+  evidence:
+    books: 16
+    count: 18
+- term: 人参荆芥散
+  kind: harvested
+  evidence:
+    books: 16
+    count: 17
+- term: 健步丸
+  kind: harvested
+  evidence:
+    books: 16
+    count: 17
+- term: 干姜人参半夏丸
+  kind: harvested
+  evidence:
+    books: 16
+    count: 17
+- term: 桂枝生姜枳实汤
+  kind: harvested
+  evidence:
+    books: 16
+    count: 17
+- term: 碧霞丹
+  kind: harvested
+  evidence:
+    books: 16
+    count: 17
+- term: 返阴丹
+  kind: harvested
+  evidence:
+    books: 16
+    count: 17
+- term: 青娥丸
+  kind: harvested
+  synonyms:
+  - surface: 青娥圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 16
+    count: 17
+- term: 九痛丸
+  kind: harvested
+  synonyms:
+  - surface: 九痛圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 16
+    count: 16
+- term: 排脓汤
+  kind: harvested
+  evidence:
+    books: 16
+    count: 16
+- term: 滚痰丸
+  kind: harvested
+  evidence:
+    books: 16
+    count: 16
+- term: 风引汤
+  kind: harvested
+  evidence:
+    books: 16
+    count: 16
+- term: 天南星丸
+  kind: harvested
+  synonyms:
+  - surface: 天南星圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 15
+    count: 38
+- term: 吴茱萸丸
+  kind: harvested
+  evidence:
+    books: 15
+    count: 32
+- term: 四顺清凉饮
+  kind: harvested
+  evidence:
+    books: 15
+    count: 32
+- term: 藿香汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 32
+- term: 天门冬丸
+  kind: harvested
+  synonyms:
+  - surface: 天门冬圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 15
+    count: 30
+- term: 泻肝汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 30
+- term: 青黛散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 30
+- term: 大腹皮散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 29
+- term: 天麻散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 29
+- term: 桑白皮散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 29
+- term: 桂枝加黄芪汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 27
+- term: 知母散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 27
+- term: 紫苏散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 26
+- term: 防己散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 26
+- term: 獭肝丸
+  kind: harvested
+  evidence:
+    books: 15
+    count: 24
+- term: 薏苡仁散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 24
+- term: 款冬花散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 23
+- term: 泽兰汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 23
+- term: 香砂六君子汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 23
+- term: 厚朴大黄汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 22
+- term: 栀子仁汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 22
+- term: 硫黄散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 22
+- term: 茴香丸
+  kind: harvested
+  synonyms:
+  - surface: 茴香圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 15
+    count: 22
+- term: 金黄散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 22
+- term: 麦门冬饮
+  kind: harvested
+  evidence:
+    books: 15
+    count: 22
+- term: 七圣散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 21
+- term: 二黄散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 21
+- term: 牛黄清心丸
+  kind: harvested
+  synonyms:
+  - surface: 牛黄清心圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 15
+    count: 21
+- term: 黄柏散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 21
+- term: 决明散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 20
+- term: 生姜汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 20
+- term: 连翘丸
+  kind: harvested
+  synonyms:
+  - surface: 连翘圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 15
+    count: 20
+- term: 黄连香薷饮
+  kind: harvested
+  evidence:
+    books: 15
+    count: 20
+- term: 半夏厚朴汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 19
+- term: 天仙藤散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 19
+- term: 牡蛎汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 19
+- term: 草果饮
+  kind: harvested
+  evidence:
+    books: 15
+    count: 19
+- term: 吹喉散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 18
+- term: 清心丸
+  kind: harvested
+  synonyms:
+  - surface: 清心圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 15
+    count: 18
+- term: 玉真散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 18
+- term: 白薇散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 18
+- term: 葱白散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 18
+- term: 赤小豆当归散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 18
+- term: 妙应丸
+  kind: harvested
+  evidence:
+    books: 15
+    count: 17
+- term: 当归芍药汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 17
+- term: 抵圣汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 17
+- term: 补阴丸
+  kind: harvested
+  evidence:
+    books: 15
+    count: 17
+- term: 一物瓜蒂汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 16
+- term: 大金花丸
+  kind: harvested
+  evidence:
+    books: 15
+    count: 16
+- term: 安肾丸
+  kind: harvested
+  synonyms:
+  - surface: 安肾圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 15
+    count: 16
+- term: 无忧散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 16
+- term: 枳实理中丸
+  kind: harvested
+  evidence:
+    books: 15
+    count: 16
+- term: 神保丸
+  kind: harvested
+  synonyms:
+  - surface: 神保圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 15
+    count: 16
+- term: 黄龙汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 16
+- term: 二母散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 15
+- term: 天真丸
+  kind: harvested
+  evidence:
+    books: 15
+    count: 15
+- term: 桂枝加浓朴杏仁汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 15
+- term: 白蒺藜散
+  kind: harvested
+  evidence:
+    books: 15
+    count: 15
+- term: 白虎加苍术汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 15
+- term: 集效丸
+  kind: harvested
+  synonyms:
+  - surface: 集效圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 15
+    count: 15
+- term: 黄建中汤
+  kind: harvested
+  evidence:
+    books: 15
+    count: 15
+- term: 大黄散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 63
+- term: 羚羊角汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 56
+- term: 厚朴汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 44
+- term: 托里消毒散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 42
+- term: 真珠丸
+  kind: harvested
+  synonyms:
+  - surface: 真珠圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 14
+    count: 37
+- term: 镇心丸
+  kind: harvested
+  synonyms:
+  - surface: 镇心圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 14
+    count: 34
+- term: 龙骨丸
+  kind: harvested
+  synonyms:
+  - surface: 龙骨圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 14
+    count: 33
+- term: 肉豆蔻丸
+  kind: harvested
+  evidence:
+    books: 14
+    count: 32
+- term: 枳实汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 30
+- term: 芍药散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 30
+- term: 豆蔻丸
+  kind: harvested
+  synonyms:
+  - surface: 豆蔻圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 14
+    count: 29
+- term: 连翘散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 29
+- term: 杏仁丸
+  kind: harvested
+  evidence:
+    books: 14
+    count: 27
+- term: 紫霜丸
+  kind: harvested
+  synonyms:
+  - surface: 紫霜圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 14
+    count: 27
+- term: 葛根散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 27
+- term: 赤芍药散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 26
+- term: 五香汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 25
+- term: 烧裩散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 25
+- term: 调中散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 25
+- term: 葵子汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 24
+- term: 木瓜汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 23
+- term: 茯苓补心汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 23
+- term: 赤石脂丸
+  kind: harvested
+  synonyms:
+  - surface: 赤石脂圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 14
+    count: 23
+- term: 还睛丸
+  kind: harvested
+  evidence:
+    books: 14
+    count: 23
+- term: 温中丸
+  kind: harvested
+  evidence:
+    books: 14
+    count: 22
+- term: 香薷散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 22
+- term: 杜仲丸
+  kind: harvested
+  synonyms:
+  - surface: 杜仲圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 14
+    count: 21
+- term: 六神散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 20
+- term: 清凉饮
+  kind: harvested
+  evidence:
+    books: 14
+    count: 20
+- term: 瞿麦散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 20
+- term: 三白散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 19
+- term: 摩风膏
+  kind: harvested
+  evidence:
+    books: 14
+    count: 19
+- term: 柏子仁散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 19
+- term: 桃仁煎
+  kind: harvested
+  evidence:
+    books: 14
+    count: 19
+- term: 泻肝散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 19
+- term: 白前汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 19
+- term: 紫金散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 19
+- term: 解毒散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 19
+- term: 养荣汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 18
+- term: 发灰散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 18
+- term: 拔毒散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 18
+- term: 清魂散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 18
+- term: 温脾丸
+  kind: harvested
+  synonyms:
+  - surface: 温脾圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 14
+    count: 18
+- term: 血竭散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 18
+- term: 解肌汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 18
+- term: 七珍散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 17
+- term: 人参清膈散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 17
+- term: 劫劳散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 17
+- term: 千金漏芦汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 17
+- term: 太乙膏
+  kind: harvested
+  evidence:
+    books: 14
+    count: 17
+- term: 薤白汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 17
+- term: 青龙汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 17
+- term: 乌龙膏
+  kind: harvested
+  evidence:
+    books: 14
+    count: 16
+- term: 接骨散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 16
+- term: 清气化痰丸
+  kind: harvested
+  evidence:
+    books: 14
+    count: 16
+- term: 清脾饮
+  kind: harvested
+  evidence:
+    books: 14
+    count: 16
+- term: 玉真丸
+  kind: harvested
+  synonyms:
+  - surface: 玉真圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 14
+    count: 16
+- term: 人参当归散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 15
+- term: 侯氏黑散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 15
+- term: 催生丹
+  kind: harvested
+  evidence:
+    books: 14
+    count: 15
+- term: 大乌头煎
+  kind: harvested
+  evidence:
+    books: 14
+    count: 15
+- term: 威喜丸
+  kind: harvested
+  evidence:
+    books: 14
+    count: 15
+- term: 桃花丸
+  kind: harvested
+  synonyms:
+  - surface: 桃花圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 14
+    count: 15
+- term: 止汗散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 15
+- term: 附子八物汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 15
+- term: 除湿汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 15
+- term: 三物备急丸
+  kind: harvested
+  evidence:
+    books: 14
+    count: 14
+- term: 三痹汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 14
+- term: 千缗汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 14
+- term: 大黄左经汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 14
+- term: 头风摩散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 14
+- term: 芎苏散
+  kind: harvested
+  evidence:
+    books: 14
+    count: 14
+- term: 防己黄汤
+  kind: harvested
+  evidence:
+    books: 14
+    count: 14
+- term: 乳香膏
+  kind: harvested
+  evidence:
+    books: 13
+    count: 44
+- term: 大连翘饮
+  kind: harvested
+  evidence:
+    books: 13
+    count: 35
+- term: 清凉膏
+  kind: harvested
+  evidence:
+    books: 13
+    count: 29
+- term: 浓朴丸
+  kind: harvested
+  evidence:
+    books: 13
+    count: 28
+- term: 柴胡加桂枝汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 25
+- term: 柴胡四物汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 24
+- term: 桔梗丸
+  kind: harvested
+  evidence:
+    books: 13
+    count: 24
+- term: 地黄膏
+  kind: harvested
+  evidence:
+    books: 13
+    count: 23
+- term: 神功散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 23
+- term: 交加散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 22
+- term: 当归饮
+  kind: harvested
+  evidence:
+    books: 13
+    count: 22
+- term: 车前子散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 22
+- term: 远志汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 22
+- term: 乌蛇丸
+  kind: harvested
+  synonyms:
+  - surface: 乌蛇圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 13
+    count: 21
+- term: 大调经散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 21
+- term: 苍术丸
+  kind: harvested
+  evidence:
+    books: 13
+    count: 21
+- term: 内消散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 20
+- term: 千金丸
+  kind: harvested
+  evidence:
+    books: 13
+    count: 20
+- term: 固精丸
+  kind: harvested
+  evidence:
+    books: 13
+    count: 20
+- term: 琥珀膏
+  kind: harvested
+  evidence:
+    books: 13
+    count: 20
+- term: 茜根散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 20
+- term: 黑神丸
+  kind: harvested
+  synonyms:
+  - surface: 黑神圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 13
+    count: 20
+- term: 干姜汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 19
+- term: 白矾散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 19
+- term: 细辛汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 19
+- term: 一粒金丹
+  kind: harvested
+  evidence:
+    books: 13
+    count: 18
+- term: 内补散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 18
+- term: 海桐皮散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 18
+- term: 炙肝散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 18
+- term: 白花蛇散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 18
+- term: 神效栝楼散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 18
+- term: 菟丝子丸
+  kind: harvested
+  evidence:
+    books: 13
+    count: 18
+- term: 葶苈散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 18
+- term: 香苏散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 18
+- term: 高良姜散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 18
+- term: 三圣丸
+  kind: harvested
+  synonyms:
+  - surface: 三圣圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 13
+    count: 17
+- term: 三棱散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 17
+- term: 朱砂膏
+  kind: harvested
+  evidence:
+    books: 13
+    count: 17
+- term: 桂枝石膏汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 17
+- term: 沉香降气汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 17
+- term: 铁刷汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 17
+- term: 鸡屎白散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 17
+- term: 万金散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 16
+- term: 乌头煎
+  kind: harvested
+  evidence:
+    books: 13
+    count: 16
+- term: 解毒汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 16
+- term: 趁痛丸
+  kind: harvested
+  synonyms:
+  - surface: 趁痛圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 13
+    count: 16
+- term: 金华散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 16
+- term: 铁粉散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 16
+- term: 黄连阿胶丸
+  kind: harvested
+  synonyms:
+  - surface: 黄连阿胶圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 13
+    count: 16
+- term: 四兽饮
+  kind: harvested
+  evidence:
+    books: 13
+    count: 15
+- term: 桂枝葛根汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 15
+- term: 桂香丸
+  kind: harvested
+  synonyms:
+  - surface: 桂香圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 13
+    count: 15
+- term: 白茯苓丸
+  kind: harvested
+  evidence:
+    books: 13
+    count: 15
+- term: 石莲散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 15
+- term: 苍术散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 15
+- term: 贝母汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 15
+- term: 二香散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 14
+- term: 八宝丹
+  kind: harvested
+  evidence:
+    books: 13
+    count: 14
+- term: 八珍散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 14
+- term: 半夏左经汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 14
+- term: 实脾散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 14
+- term: 清震汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 14
+- term: 胡麻散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 14
+- term: 通幽汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 14
+- term: 镇肝丸
+  kind: harvested
+  evidence:
+    books: 13
+    count: 14
+- term: 万病丸
+  kind: harvested
+  synonyms:
+  - surface: 万病圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 13
+    count: 13
+- term: 三化汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 13
+- term: 二妙散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 13
+- term: 仓公散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 13
+- term: 化斑汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 13
+- term: 参香散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 13
+- term: 橘核丸
+  kind: harvested
+  evidence:
+    books: 13
+    count: 13
+- term: 润肺散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 13
+- term: 知母茯苓汤
+  kind: harvested
+  evidence:
+    books: 13
+    count: 13
+- term: 祛风丸
+  kind: harvested
+  evidence:
+    books: 13
+    count: 13
+- term: 红花当归散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 13
+- term: 资生丸
+  kind: harvested
+  evidence:
+    books: 13
+    count: 13
+- term: 进食散
+  kind: harvested
+  evidence:
+    books: 13
+    count: 13
+- term: 龙脑散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 33
+- term: 乌头丸
+  kind: harvested
+  synonyms:
+  - surface: 乌头圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 12
+    count: 32
+- term: 瞿麦汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 31
+- term: 内疏黄连汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 27
+- term: 羚羊角丸
+  kind: harvested
+  evidence:
+    books: 12
+    count: 27
+- term: 金丝膏
+  kind: harvested
+  evidence:
+    books: 12
+    count: 27
+- term: 钟乳丸
+  kind: harvested
+  evidence:
+    books: 12
+    count: 27
+- term: 巴戟丸
+  kind: harvested
+  evidence:
+    books: 12
+    count: 23
+- term: 紫金膏
+  kind: harvested
+  evidence:
+    books: 12
+    count: 23
+- term: 杏仁汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 22
+- term: 何首乌丸
+  kind: harvested
+  evidence:
+    books: 12
+    count: 21
+- term: 白龙丸
+  kind: harvested
+  synonyms:
+  - surface: 白龙圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 12
+    count: 21
+- term: 五香丸
+  kind: harvested
+  synonyms:
+  - surface: 五香圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 12
+    count: 20
+- term: 胡粉散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 20
+- term: 远志散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 20
+- term: 一捻金散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 19
+- term: 人参白术散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 19
+- term: 化痰丸
+  kind: harvested
+  evidence:
+    books: 12
+    count: 18
+- term: 柏叶散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 18
+- term: 钩藤汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 18
+- term: 鹿茸散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 18
+- term: 麝香膏
+  kind: harvested
+  evidence:
+    books: 12
+    count: 18
+- term: 万金膏
+  kind: harvested
+  evidence:
+    books: 12
+    count: 17
+- term: 厚朴三物汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 16
+- term: 宣风散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 16
+- term: 桔梗枳壳汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 16
+- term: 清凉散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 16
+- term: 玉烛散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 16
+- term: 白附子散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 16
+- term: 盐煎散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 16
+- term: 苦参散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 16
+- term: 解毒防风汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 16
+- term: 驱风散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 16
+- term: 鸡舌香散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 16
+- term: 丹参膏
+  kind: harvested
+  evidence:
+    books: 12
+    count: 15
+- term: 人参当归汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 15
+- term: 六神汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 15
+- term: 养脾丸
+  kind: harvested
+  evidence:
+    books: 12
+    count: 15
+- term: 四苓散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 15
+- term: 当归地黄汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 15
+- term: 替针丸
+  kind: harvested
+  evidence:
+    books: 12
+    count: 15
+- term: 桂枝芍药汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 15
+- term: 生化汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 15
+- term: 白芨散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 15
+- term: 醉仙散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 15
+- term: 钩藤饮
+  kind: harvested
+  evidence:
+    books: 12
+    count: 15
+- term: 防风当归散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 15
+- term: 麻黄羌活汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 15
+- term: 三一承气汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 14
+- term: 人参益气汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 14
+- term: 使君子丸
+  kind: harvested
+  evidence:
+    books: 12
+    count: 14
+- term: 厚朴七物汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 14
+- term: 参术膏
+  kind: harvested
+  evidence:
+    books: 12
+    count: 14
+- term: 大七气汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 14
+- term: 妙香丸
+  kind: harvested
+  evidence:
+    books: 12
+    count: 14
+- term: 石斛夜光丸
+  kind: harvested
+  evidence:
+    books: 12
+    count: 14
+- term: 红花散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 14
+- term: 补骨脂丸
+  kind: harvested
+  evidence:
+    books: 12
+    count: 14
+- term: 通气防风汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 14
+- term: 陈氏木香散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 14
+- term: 黄芩芍药汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 14
+- term: 黑奴丸
+  kind: harvested
+  evidence:
+    books: 12
+    count: 14
+- term: 四顺汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 13
+- term: 大八风汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 13
+- term: 椒仁丸
+  kind: harvested
+  evidence:
+    books: 12
+    count: 13
+- term: 狼牙汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 13
+- term: 玉屏风散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 13
+- term: 甘草小麦大枣汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 13
+- term: 甘草干姜茯苓白术汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 13
+- term: 神授散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 13
+- term: 芎附散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 13
+- term: 葳蕤汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 13
+- term: 蜡矾丸
+  kind: harvested
+  synonyms:
+  - surface: 蜡矾圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 12
+    count: 13
+- term: 酸枣汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 13
+- term: 除湿丹
+  kind: harvested
+  evidence:
+    books: 12
+    count: 13
+- term: 乌头赤石脂丸
+  kind: harvested
+  synonyms:
+  - surface: 乌头赤石脂圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 12
+    count: 12
+- term: 八物汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 半硫丸
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 宁志膏
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 木香化滞汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 消风百解散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 玉屑无忧散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 神秘汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 禹功散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 茵陈四逆汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 葶苈木香散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 辰砂散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 野狼牙汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 金铃子散
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 驻车丸
+  kind: harvested
+  synonyms:
+  - surface: 驻车圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 12
+    count: 12
+- term: 麻黄人参芍药汤
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 虎睛丸
+  kind: harvested
+  synonyms:
+  - surface: 虎睛圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 44
+- term: 桂心散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 42
+- term: 胡黄连丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 39
+- term: 沉香丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 38
+- term: 桂心汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 33
+- term: 肉豆蔻散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 33
+- term: 芎䓖汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 29
+- term: 浓朴散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 27
+- term: 柴胡饮
+  kind: harvested
+  evidence:
+    books: 11
+    count: 26
+- term: 乌犀丸
+  kind: harvested
+  synonyms:
+  - surface: 乌犀圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 25
+- term: 吴茱萸散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 24
+- term: 益气养荣汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 23
+- term: 菖蒲丸
+  kind: harvested
+  synonyms:
+  - surface: 菖蒲圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 23
+- term: 延胡索散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 22
+- term: 抵圣散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 20
+- term: 生地黄煎
+  kind: harvested
+  evidence:
+    books: 11
+    count: 20
+- term: 虎骨丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 20
+- term: 三棱丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 19
+- term: 地榆汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 19
+- term: 杏仁膏
+  kind: harvested
+  evidence:
+    books: 11
+    count: 19
+- term: 五膈丸
+  kind: harvested
+  synonyms:
+  - surface: 五膈圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 18
+- term: 干姜散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 18
+- term: 万灵丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 17
+- term: 三才封髓丹
+  kind: harvested
+  evidence:
+    books: 11
+    count: 17
+- term: 保安丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 17
+- term: 天南星散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 17
+- term: 干姜丸
+  kind: harvested
+  synonyms:
+  - surface: 干姜圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 17
+- term: 香茸丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 17
+- term: 乌金膏
+  kind: harvested
+  evidence:
+    books: 11
+    count: 16
+- term: 人中白散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 16
+- term: 紫苏子汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 16
+- term: 蜈蚣散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 16
+- term: 辰砂丸
+  kind: harvested
+  synonyms:
+  - surface: 辰砂圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 16
+- term: 金箔丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 16
+- term: 四柱散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 15
+- term: 导滞通经汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 15
+- term: 柴苓汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 15
+- term: 栝楼根汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 15
+- term: 活血散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 15
+- term: 滋阴地黄丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 15
+- term: 白僵蚕散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 15
+- term: 百解散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 15
+- term: 磁石散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 15
+- term: 蒲黄汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 15
+- term: 蟾酥丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 15
+- term: 通神散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 15
+- term: 鸡苏散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 15
+- term: 三棱煎丸
+  kind: harvested
+  synonyms:
+  - surface: 三棱煎圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 14
+- term: 二气丹
+  kind: harvested
+  evidence:
+    books: 11
+    count: 14
+- term: 大豆汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 14
+- term: 密蒙花散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 14
+- term: 玉女煎
+  kind: harvested
+  evidence:
+    books: 11
+    count: 14
+- term: 皂角膏
+  kind: harvested
+  evidence:
+    books: 11
+    count: 14
+- term: 益气聪明汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 14
+- term: 紫石英丸
+  kind: harvested
+  synonyms:
+  - surface: 紫石英圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 14
+- term: 辰砂膏
+  kind: harvested
+  evidence:
+    books: 11
+    count: 14
+- term: 青蒿散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 14
+- term: 龙齿丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 14
+- term: 九龙丹
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 五灵脂散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 人参清肺汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 卫生汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 安息香丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 导气汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 开关散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 愈风丹
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 正舌散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 海蛤散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 消毒犀角饮
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 火府丹
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 血余散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 补心汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 补肾汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 人参半夏丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 人参定喘汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 固真丹
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 大枣汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 定喘汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 抑气散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 斑龙丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 木防己加茯苓芒硝汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 桂枝新加汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 槐子丸
+  kind: harvested
+  synonyms:
+  - surface: 槐子圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 12
+- term: 沉香鳖甲散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 没药降圣丹
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 济危上丹
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 淡竹茹汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 磨积丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 秦艽鳖甲散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 艾煎丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 蒺藜散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 辛夷散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 退阴散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 通经丸
+  kind: harvested
+  synonyms:
+  - surface: 通经圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 12
+- term: 通经散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 遇仙丹
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 金锁正元丹
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 附子理中丸
+  kind: harvested
+  synonyms:
+  - surface: 附子理中圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 12
+- term: 龙石散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 七枣汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 乌鸡丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 五色丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 利惊丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 地仙散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 大补丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 川芎汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 戊巳丸
+  kind: harvested
+  synonyms:
+  - surface: 戊巳圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 11
+- term: 橘皮半夏汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 泻肺散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 浓朴麻黄汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 白玉膏
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 矾石汤
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 破棺丹
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 胜金丹
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 舟车丸
+  kind: harvested
+  synonyms:
+  - surface: 舟车圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 11
+- term: 蟠葱散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 达生散
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 金花丸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 铁弹丸
+  kind: harvested
+  synonyms:
+  - surface: 铁弹圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 11
+- term: 香薷丸
+  kind: harvested
+  synonyms:
+  - surface: 香薷圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 11
+    count: 11
+- term: 木通汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 39
+- term: 诃梨勒丸
+  kind: harvested
+  synonyms:
+  - surface: 诃梨勒圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 10
+    count: 30
+- term: 诃黎勒丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 29
+- term: 人参平肺散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 26
+- term: 人参饮
+  kind: harvested
+  evidence:
+    books: 10
+    count: 26
+- term: 干地黄丸
+  kind: harvested
+  synonyms:
+  - surface: 干地黄圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 10
+    count: 25
+- term: 熟干地黄散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 25
+- term: 地骨皮汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 24
+- term: 滑石汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 23
+- term: 醒脾散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 23
+- term: 麦门冬丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 23
+- term: 豆蔻汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 21
+- term: 牡丹丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 20
+- term: 羌活膏
+  kind: harvested
+  evidence:
+    books: 10
+    count: 20
+- term: 茵陈散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 20
+- term: 酸枣仁丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 20
+- term: 铁粉丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 20
+- term: 银白散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 20
+- term: 甘草散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 19
+- term: 石斛散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 19
+- term: 地黄煎丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 18
+- term: 甘遂散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 18
+- term: 石韦散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 18
+- term: 钟乳散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 18
+- term: 白茯苓散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 16
+- term: 知母丸
+  kind: harvested
+  synonyms:
+  - surface: 知母圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 10
+    count: 16
+- term: 穿山甲散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 16
+- term: 茱萸丸
+  kind: harvested
+  synonyms:
+  - surface: 茱萸圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 10
+    count: 16
+- term: 赤小豆散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 16
+- term: 万应膏
+  kind: harvested
+  evidence:
+    books: 10
+    count: 15
+- term: 万灵丹
+  kind: harvested
+  evidence:
+    books: 10
+    count: 15
+- term: 天门冬煎
+  kind: harvested
+  evidence:
+    books: 10
+    count: 15
+- term: 泽兰散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 15
+- term: 海蛤丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 15
+- term: 连翘汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 15
+- term: 青木香丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 15
+- term: 内托羌活汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 14
+- term: 利膈丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 14
+- term: 复元活血汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 14
+- term: 干漆散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 14
+- term: 桂附汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 14
+- term: 熟干地黄丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 14
+- term: 续断丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 14
+- term: 续断汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 14
+- term: 肾沥汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 14
+- term: 茵陈丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 14
+- term: 通神丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 14
+- term: 香甲散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 14
+- term: 保生汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 13
+- term: 当归川芎散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 13
+- term: 枳实丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 13
+- term: 清脾汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 13
+- term: 皂角丸
+  kind: harvested
+  synonyms:
+  - surface: 皂角圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 10
+    count: 13
+- term: 紫菀散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 13
+- term: 绿袍散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 13
+- term: 芜荑散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 13
+- term: 芸苔散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 13
+- term: 调气散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 13
+- term: 进食丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 13
+- term: 鸡肠散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 13
+- term: 七圣丸
+  kind: harvested
+  synonyms:
+  - surface: 七圣圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 10
+    count: 12
+- term: 八风散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 冬葵子散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 半夏桂枝甘草汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 当归活血汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 木瓜煎
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 槐角丸
+  kind: harvested
+  synonyms:
+  - surface: 槐角圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 10
+    count: 12
+- term: 流气饮
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 牡蛎丸
+  kind: harvested
+  synonyms:
+  - surface: 牡蛎圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 10
+    count: 12
+- term: 白金散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 白龙散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 百部丸
+  kind: harvested
+  synonyms:
+  - surface: 百部圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 10
+    count: 12
+- term: 省风汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 茶调散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 薄荷汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 补肺阿胶散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 补脾汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 解毒雄黄丸
+  kind: harvested
+  synonyms:
+  - surface: 解毒雄黄圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 10
+    count: 12
+- term: 豆蔻香连丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 车前散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 连翘饮
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 青金丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 龙脑鸡苏丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 12
+- term: 七香丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 三补丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 乌荆丸
+  kind: harvested
+  synonyms:
+  - surface: 乌荆圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 10
+    count: 11
+- term: 九宝汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 健脾丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 四逆加猪胆汁汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 国老膏
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 愈风散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 托里温中汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 散肿溃坚汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 曲术丸
+  kind: harvested
+  synonyms:
+  - surface: 曲术圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 10
+    count: 11
+- term: 枳实栀子汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 柴葛解肌汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 桂枝救逆汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 桂枝龙骨牡蛎汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 消暑丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 白术木香散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 白薇汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 神仙太乙膏
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 绛雪散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 芎归胶艾汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 草还丹
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 葛根解肌汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 薏苡汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 藿香养胃汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 金锁丹
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 麻黄白术汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 三花神佑丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 二至丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 保真汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 复明散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 外台茯苓饮
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 宁肺散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 安荣散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 当归羊肉汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 戊己丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 指迷茯苓丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 推气散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 无比山药丸
+  kind: harvested
+  synonyms:
+  - surface: 无比山药圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 10
+    count: 10
+- term: 汤泡散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 浓朴七物汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 润下丸
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 清燥救肺汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 温胃汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 益胃散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 秦皮散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 芎辛汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 苍术汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 萆厘清饮
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 赤豆当归散
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 还魂汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 防己饮
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 陷胸汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 麻黄桂枝汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 麻黄连翘赤小豆汤
+  kind: harvested
+  evidence:
+    books: 10
+    count: 10
+- term: 仙方活命饮
+  kind: harvested
+  evidence:
+    books: 9
+    count: 37
+- term: 黄芪散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 37
+- term: 清热解毒汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 35
+- term: 赤茯苓散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 33
+- term: 龙脑丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 31
+- term: 沉香汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 29
+- term: 干地黄汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 26
+- term: 钩藤散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 26
+- term: 龙骨汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 24
+- term: 泽兰丸
+  kind: harvested
+  synonyms:
+  - surface: 泽兰圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 9
+    count: 22
+- term: 香豉汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 21
+- term: 于栀子豉汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 19
+- term: 神效当归膏
+  kind: harvested
+  evidence:
+    books: 9
+    count: 19
+- term: 栀子清肝散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 18
+- term: 石苇汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 18
+- term: 解毒丸
+  kind: harvested
+  synonyms:
+  - surface: 解毒圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 9
+    count: 18
+- term: 郁金散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 18
+- term: 神效膏
+  kind: harvested
+  evidence:
+    books: 9
+    count: 17
+- term: 乌药散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 16
+- term: 伏龙肝汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 16
+- term: 地黄饮
+  kind: harvested
+  evidence:
+    books: 9
+    count: 16
+- term: 增损柴胡汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 16
+- term: 定命散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 15
+- term: 春雪膏
+  kind: harvested
+  evidence:
+    books: 9
+    count: 15
+- term: 桂枝羌活汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 15
+- term: 汉防己散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 15
+- term: 猪肾汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 15
+- term: 珍珠丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 15
+- term: 知母饮
+  kind: harvested
+  evidence:
+    books: 9
+    count: 15
+- term: 竹叶黄芪汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 15
+- term: 紫苏汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 15
+- term: 养胃汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 14
+- term: 坎离丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 14
+- term: 桂枝加厚朴杏子汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 14
+- term: 桂枝大黄汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 14
+- term: 橘皮丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 14
+- term: 生地黄丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 14
+- term: 硝石散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 14
+- term: 荜茇丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 14
+- term: 蓝叶散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 14
+- term: 难治四逆汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 14
+- term: 马兜铃散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 14
+- term: 凉惊丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 13
+- term: 卷柏丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 13
+- term: 大芦荟丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 13
+- term: 应痛丸
+  kind: harvested
+  synonyms:
+  - surface: 应痛圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 9
+    count: 13
+- term: 救生散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 13
+- term: 枸杞子丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 13
+- term: 白芷汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 13
+- term: 蛤蚧丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 13
+- term: 二圣丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 五倍子散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 侧柏散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 八仙散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 固肠丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 宽中丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 旋覆花丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 木瓜散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 桂心丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 榆白皮散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 消毒膏
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 玉粉丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 白芍药散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 神曲丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 酸枣仁散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 麋角丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 麦冬汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 龙脑膏
+  kind: harvested
+  evidence:
+    books: 9
+    count: 12
+- term: 五虎汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 交感丹
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 人参顺气散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 健脾散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 内消丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 千金苇茎汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 定命丹
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 木香流气饮
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 栀子散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 桂枝黄芩汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 消痞丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 独胜散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 玉壶丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 玉池散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 玉粉散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 真人活命饮
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 矾石散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 芍药清肝散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 茯苓饮
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 茱萸散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 薄荷丹
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 连须葱白汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 选奇汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 阳起石丸
+  kind: harvested
+  synonyms:
+  - surface: 阳起石圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 9
+    count: 11
+- term: 驱邪散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 鹿角丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 11
+- term: 丁香半夏丸
+  kind: harvested
+  synonyms:
+  - surface: 丁香半夏圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 9
+    count: 10
+- term: 三建汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 三神丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 乌金丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 九仙散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 五加皮散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 内塞散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 十灰散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 千金龙胆汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 半夏加茯苓汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 圣灵丹
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 地肤子汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 天灵盖散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 宁肺汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 导饮丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 少阴病下利白通汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 左归饮
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 异香散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 接骨膏
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 枸杞煎
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 桂枝加厚朴杏仁汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 桂苓甘露散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 沉香降气丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 清心汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 清肺汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 百花膏
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 皂角散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 石南汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 硼砂散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 神效参香散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 肠风黑散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 胡椒汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 茴香散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 辰砂半夏丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 韭子丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 顺元散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 顺气散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 麻黄甘草汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 黑龙丸
+  kind: harvested
+  synonyms:
+  - surface: 黑龙圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 9
+    count: 10
+- term: 七厘散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 万应丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 三才丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 三棱消积丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 三物小陷胸汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 三黄枳术丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 二丹丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 人参石膏汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 保生救苦散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 养气丹
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 千金汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 半夏浓朴汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 大醒风汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 大黄龙丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 天麻汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 宁志丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 己椒苈黄丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 平肺汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 当归白术汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 抽刀散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 木香枳术丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 枳实导滞丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 樗皮丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 橘皮煎丸
+  kind: harvested
+  synonyms:
+  - surface: 橘皮煎圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 9
+    count: 9
+- term: 浓朴三物汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 浓朴大黄汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 涤痰汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 清心散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 火郁汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 熟地黄汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 白蔹散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 礞石滚痰丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 神圣复气汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 罂粟汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 舒筋散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 舒筋汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 芍药柏皮丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 葛根葱白汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 蝎附散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 诜诜丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 赤龙皮汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 通声膏
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 通草散
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 防己地黄汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 香薷汤
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 鸡苏丸
+  kind: harvested
+  synonyms:
+  - surface: 鸡苏圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 9
+    count: 9
+- term: 麦饭石膏
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 黑地黄丸
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 肉苁蓉丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 30
+- term: 芎䓖散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 28
+- term: 天竺黄散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 26
+- term: 朱砂散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 26
+- term: 胡黄连散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 23
+- term: 乌蛇散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 22
+- term: 贝母散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 21
+- term: 大腹汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 19
+- term: 艾叶汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 19
+- term: 芫花丸
+  kind: harvested
+  synonyms:
+  - surface: 芫花圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 8
+    count: 19
+- term: 陈橘皮散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 19
+- term: 吹鼻散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 18
+- term: 清解散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 17
+- term: 芦荟散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 16
+- term: 郁李仁丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 16
+- term: 乌头散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 15
+- term: 常山散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 15
+- term: 木香大安丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 15
+- term: 雄黄膏
+  kind: harvested
+  evidence:
+    books: 8
+    count: 15
+- term: 麒麟竭散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 15
+- term: 丹参散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 14
+- term: 千金散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 14
+- term: 塌气丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 14
+- term: 栝楼丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 14
+- term: 海金沙散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 14
+- term: 清咽利膈汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 14
+- term: 犀角饮
+  kind: harvested
+  evidence:
+    books: 8
+    count: 14
+- term: 荷叶散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 14
+- term: 高良姜汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 14
+- term: 兔丝子丸
+  kind: harvested
+  synonyms:
+  - surface: 兔丝子圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 8
+    count: 13
+- term: 大黄膏
+  kind: harvested
+  evidence:
+    books: 8
+    count: 13
+- term: 旋覆花散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 13
+- term: 昆布丸
+  kind: harvested
+  synonyms:
+  - surface: 昆布圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 8
+    count: 13
+- term: 松脂膏
+  kind: harvested
+  evidence:
+    books: 8
+    count: 13
+- term: 败草散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 13
+- term: 露蜂房散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 13
+- term: 丁香柿蒂汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 七宝汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 五膈宽中散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 保生丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 四物二连汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 大芎黄汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 大麻仁丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 密陀僧散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 川芎丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 平胃丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 当归养荣汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 杏仁散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 熟干地黄汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 玄参汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 竹皮汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 葛根橘皮汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 蟾蜍丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 赤小豆汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 赤茯苓丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 12
+- term: 丹砂散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 大黄䗪虫丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 寸金散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 当归黄芪汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 烧肝散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 秦艽丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 羊肾丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 菩萨散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 藜芦甘草汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 蝉蜕散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 观音散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 贝母丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 金匮加减肾气丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 金箔镇心丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 雄黄解毒丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 万病解毒丸
+  kind: harvested
+  synonyms:
+  - surface: 万病解毒圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 8
+    count: 10
+- term: 三脘散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 三黄熟艾汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 乐令建中汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 六神丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 助胃膏
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 双金散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 四白散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 外台桔梗白散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 大戟丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 天麻防风丸
+  kind: harvested
+  synonyms:
+  - surface: 天麻防风圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 8
+    count: 10
+- term: 小麦汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 小黄丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 平补镇心丹
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 必自下利葛根汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 枸杞汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 没石子丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 清热导滞汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 牵牛丸
+  kind: harvested
+  synonyms:
+  - surface: 牵牛圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 8
+    count: 10
+- term: 玉粉丹
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 神术汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 蜀椒汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 补真丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 补肝丸
+  kind: harvested
+  synonyms:
+  - surface: 补肝圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 8
+    count: 10
+- term: 防葵散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 除风湿羌活汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 雄朱散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 香芎散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 香苏饮
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 鳖甲饮
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 鹿角胶丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 黑龙散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 七宣丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 二黄汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 于黄芩汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 全蝎散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 养肾散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 冬葵子汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 四顺附子汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 回生散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 固肠散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 大五柔丸
+  kind: harvested
+  synonyms:
+  - surface: 大五柔圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 8
+    count: 9
+- term: 姜蜜汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 导气丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 当归煎丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 托里荣卫汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 换腿丸
+  kind: harvested
+  synonyms:
+  - surface: 换腿圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 8
+    count: 9
+- term: 枳实理中汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 桂枝桃仁汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 橘皮枳实生姜汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 正气散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 煨肾丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 牛黄凉膈丸
+  kind: harvested
+  synonyms:
+  - surface: 牛黄凉膈圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 8
+    count: 9
+- term: 生发膏
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 神圣散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 秘传降气汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 紫草饮
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 茴香汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 蛇蜕散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 蛤蚧散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 补骨脂散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 褊银丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 软金丹
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 除湿散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 雄麝散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 震灵丹
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 香桂散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 驻景丸
+  kind: harvested
+  synonyms:
+  - surface: 驻景圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 8
+    count: 9
+- term: 麦门冬煎
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 黑金散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 一醉膏
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 七子散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 三棱煎
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 三黄补血汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 五痹汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 人参养营汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 人参款花膏
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 保灵丹
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 八仙丹
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 六物附子汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 内补丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 再造散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 四顺理中丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 回阳丹
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 大补汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 安胎散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 寸金丹
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 小温中丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 局方玉壶丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 开胃丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 开胃散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 手拈散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 护心散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 抵当汤丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 摩腰膏
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 断下汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 松节散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 枳实消痞丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 柴胡去半夏加栝楼汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 柴胡通经汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 桂苓丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 梅花点舌丹
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 椒附丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 比金丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 活血丹
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 浮萍散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 消积丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 消肿散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 消饮丸
+  kind: harvested
+  synonyms:
+  - surface: 消饮圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 8
+    count: 8
+- term: 牵正散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 玉锁丹
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 琥珀地黄丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 痞气丸
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 石子汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 祛风散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 神应丹
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 神效托里散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 胃苓散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 脾约麻仁丸
+  kind: harvested
+  synonyms:
+  - surface: 脾约麻仁圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 8
+    count: 8
+- term: 良姜汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 芎黄汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 苇茎汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 茵陈附子干姜汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 菊花汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 薄荷煎
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 藿香安胃散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 调胃散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 通天散
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 麻黄左经汤
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 黄芪丸
+  kind: harvested
+  synonyms:
+  - surface: 黄芪圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 33
+- term: 厚朴丸
+  kind: harvested
+  synonyms:
+  - surface: 厚朴圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 29
+- term: 厚朴散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 29
+- term: 柴胡清肝散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 29
+- term: 龙齿散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 24
+- term: 凉血解毒汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 20
+- term: 石斛丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 17
+- term: 抵圣丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 16
+- term: 熊胆丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 16
+- term: 牵牛子丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 16
+- term: 羚羊角饮
+  kind: harvested
+  evidence:
+    books: 7
+    count: 16
+- term: 乌梅汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 15
+- term: 人参安胃散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 15
+- term: 莽草散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 15
+- term: 辰砂丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 15
+- term: 辰砂妙香散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 15
+- term: 防己丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 15
+- term: 侧子散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 14
+- term: 山茱萸丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 13
+- term: 牡丹汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 13
+- term: 猪肝丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 13
+- term: 生地黄膏
+  kind: harvested
+  evidence:
+    books: 7
+    count: 13
+- term: 白芷丸
+  kind: harvested
+  synonyms:
+  - surface: 白芷圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 13
+- term: 补肾地黄丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 13
+- term: 黄芩清肺饮
+  kind: harvested
+  evidence:
+    books: 7
+    count: 13
+- term: 参归鹿茸汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 12
+- term: 大腹皮汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 12
+- term: 木香三棱丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 12
+- term: 柴胡清肝汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 12
+- term: 海藻丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 12
+- term: 于四逆汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 11
+- term: 固真汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 11
+- term: 宽气饮
+  kind: harvested
+  evidence:
+    books: 7
+    count: 11
+- term: 干漆丸
+  kind: harvested
+  synonyms:
+  - surface: 干漆圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 11
+- term: 泻热黄连汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 11
+- term: 清毒活血汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 11
+- term: 理阴煎
+  kind: harvested
+  evidence:
+    books: 7
+    count: 11
+- term: 生肉膏
+  kind: harvested
+  evidence:
+    books: 7
+    count: 11
+- term: 芦荟肥儿丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 11
+- term: 蜀椒丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 11
+- term: 贯众散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 11
+- term: 车前子汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 11
+- term: 除风汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 11
+- term: 万安丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 乳香定痛散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 人参白术汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 凌霄花散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 化毒汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 圣功散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 救生丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 杜仲散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 涌泉散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 甘草丸
+  kind: harvested
+  synonyms:
+  - surface: 甘草圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 10
+- term: 石胆散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 草龙胆散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 蜀漆汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 通气丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 野葛膏
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 钩藤膏
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 香棱丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 10
+- term: 一醉散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 三仙丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 乌梅饮
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 人参黄芪散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 半夏橘皮汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 地榆防风散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 地骨皮饮
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 地黄当归汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 地黄清肺饮
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 安中散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 定痛接骨紫金丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 射干丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 川楝散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 当归膏
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 暖宫丸
+  kind: harvested
+  synonyms:
+  - surface: 暖宫圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 9
+- term: 柴胡石膏汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 消毒丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 琥珀抱龙丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 甘菊花散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 甘露丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 甘露散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 白花蛇丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 益胃汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 睡惊丸
+  kind: harvested
+  synonyms:
+  - surface: 睡惊圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 9
+- term: 石南散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 罩胎散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 羊肉当归汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 藜芦膏
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 赤箭丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 野狼毒丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 集香丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 麻子汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 黄连煎
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 黄金散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 七生丸
+  kind: harvested
+  synonyms:
+  - surface: 七生圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 8
+- term: 丹皮汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 二姜丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 于小柴胡汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 于白虎汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 五加皮汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 五柔丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 人参鳖甲散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 保安散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 保阴煎
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 全蝎观音散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 十四友丸
+  kind: harvested
+  synonyms:
+  - surface: 十四友圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 8
+- term: 千金托里散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 千金生姜甘草汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 参术散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 固真丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 大续命汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 大阿胶丸
+  kind: harvested
+  synonyms:
+  - surface: 大阿胶圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 8
+- term: 妙圣丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 妙应丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 安神散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 小半夏茯苓汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 小蓟汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 平肌散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 抵党汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 指迷七气汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 斗门散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 星香散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 来复丹五苓散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 桔梗半夏汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 椿皮丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 橘皮干姜汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 清肺散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 理气丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 疏风散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 白梅汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 白附子丸
+  kind: harvested
+  synonyms:
+  - surface: 白附子圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 8
+- term: 白鹅膏
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 百部散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 碧玉散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 神白散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 神芎散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 立胜散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 紫菀丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 经效散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 绵茧散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 缩泉丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 胃苓丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 胡桃丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 胡椒理中丸
+  kind: harvested
+  synonyms:
+  - surface: 胡椒理中圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 8
+- term: 莽草膏
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 葶苈大枣汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 调肝散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 调脉汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 败龟散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 通天再造散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 都梁丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 金铃散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 雄黄兑散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 顺气木香散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 香朴丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 香附散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 鳖甲地黄汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 鹅梨煎丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 黑虎丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 龙荟丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 丁香烂饭丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 三子养亲汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 三物黄芩汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 不卧散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 二灰散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 人参蛤蚧散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 人参豆蔻散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 仙灵脾散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 仙茅丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 倒换散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 兰香散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 千金三物黄芩汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 半夏枳术丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 半夏生姜汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 南岳魏夫人济阴丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 厘清饮
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 回阳汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 备急丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 复元丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 大七香丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 大圣一粒金丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 大川芎丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 大造丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 大黄虫丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 天台乌药散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 夺魂散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 姜粉散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 威灵仙丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 寿星丸
+  kind: harvested
+  synonyms:
+  - surface: 寿星圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 7
+- term: 小胃丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 干姜甘草汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 平安散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 当归养血丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 无碍丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 星香汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 曾青散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 木香调气散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 柴胡疏肝散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 桂苓白术丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 椒附散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 橘皮枳术丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 止血散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 止衄散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 正阳散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 沉香荜澄茄散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 油煎散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 润体丸
+  kind: harvested
+  synonyms:
+  - surface: 润体圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 7
+- term: 清骨散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 温肾汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 滑胎枳壳散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 烧脾散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 熟艾汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 牛蒡子散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 牛蒡子汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 牡丹皮汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 独圣汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 猪膏汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 玉华白丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 玉液丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 珍珠粉丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 瓜蒂汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 甘竹茹汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 生姜甘草汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 生料五积散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 生熟地黄丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 生熟汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 画眉膏
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 白垩丸
+  kind: harvested
+  synonyms:
+  - surface: 白垩圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 7
+- term: 白虎人参汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 百沸汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 益元汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 益阴肾气丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 石南丸
+  kind: harvested
+  synonyms:
+  - surface: 石南圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 7
+- term: 礞石丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 秦艽扶羸汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 竹叶黄汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 缠腰火丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 聚金丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 肥气丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 芎黄散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 苍术地榆汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 菊花丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 葫芦巴散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 葵根汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 蒺藜汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 薯蓣汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 蝎梢散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 螵蛸散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 辟瘟丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 辰砂金箔散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 追毒丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 透冰丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 金粟汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 金露丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 钓肠丸
+  kind: harvested
+  synonyms:
+  - surface: 钓肠圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 7
+- term: 防己椒目葶苈大黄丸
+  kind: harvested
+  synonyms:
+  - surface: 防己椒目葶苈大黄圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 7
+- term: 防风白术甘草汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 防风芍药汤
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 防风黄芩丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 阿胶枳壳丸
+  kind: harvested
+  synonyms:
+  - surface: 阿胶枳壳圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 7
+- term: 阿胶梅连丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 除湿益气丸
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 顺风匀气散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 鹤顶丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 黄龙丸
+  kind: harvested
+  synonyms:
+  - surface: 黄龙圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 7
+    count: 7
+- term: 龙泉散
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 龙虎丹
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 款冬花丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 23
+- term: 诃梨勒散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 22
+- term: 半夏饮
+  kind: harvested
+  evidence:
+    books: 6
+    count: 18
+- term: 陈橘皮汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 18
+- term: 善应膏
+  kind: harvested
+  evidence:
+    books: 6
+    count: 17
+- term: 五灵脂丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 16
+- term: 紫苑汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 16
+- term: 万灵膏
+  kind: harvested
+  evidence:
+    books: 6
+    count: 15
+- term: 常山丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 15
+- term: 玄参散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 15
+- term: 化毒散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 14
+- term: 射干散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 14
+- term: 助阳活血汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 13
+- term: 甘遂丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 13
+- term: 白矾丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 13
+- term: 神应膏
+  kind: harvested
+  evidence:
+    books: 6
+    count: 13
+- term: 金牙散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 13
+- term: 龙胆散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 13
+- term: 白茯苓汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 12
+- term: 芦根散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 12
+- term: 催生汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 11
+- term: 小调经散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 11
+- term: 快活丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 11
+- term: 柴胡清热饮
+  kind: harvested
+  evidence:
+    books: 6
+    count: 11
+- term: 栀子蘗皮汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 11
+- term: 生干地黄丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 11
+- term: 荆防解毒汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 11
+- term: 陈皮汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 11
+- term: 京三棱散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 10
+- term: 凉膈消毒饮
+  kind: harvested
+  evidence:
+    books: 6
+    count: 10
+- term: 新法半夏汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 10
+- term: 消乳丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 10
+- term: 清金宁嗽汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 10
+- term: 猬皮散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 10
+- term: 百祥丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 10
+- term: 硫黄膏
+  kind: harvested
+  evidence:
+    books: 6
+    count: 10
+- term: 神异膏
+  kind: harvested
+  evidence:
+    books: 6
+    count: 10
+- term: 羌活丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 10
+- term: 腽肭脐丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 10
+- term: 芫花散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 10
+- term: 谷精草散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 10
+- term: 陈橘皮丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 10
+- term: 三物汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 二豆散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 保命丹
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 僵蚕散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 大青丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 天雄丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 杏苏饮
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 栝楼根散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 桂苓甘术汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 温中散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 温中止吐汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 玉容散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 白石脂散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 白藓皮汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 缩砂丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 缩砂散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 蕤仁膏
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 鸡子汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 9
+- term: 七宝丹
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 二金散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 五苓汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 仓廪汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 保生无忧散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 六物汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 坠翳丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 塌气散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 大养脾丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 大金牙散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 川乌散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 巴豆丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 心肾丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 抱胆丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 撞气阿魏丸
+  kind: harvested
+  synonyms:
+  - surface: 撞气阿魏圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 6
+    count: 8
+- term: 无比散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 朴硝散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 杉木节汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 柴胡半夏汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 桃皮汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 江鳔丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 海蛤汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 清金散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 烧裈散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 玄胡索散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 琥珀犀角膏
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 生地黄连汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 生地黄黄连汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 石斛汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 砂煎丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 蓬莪术散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 败酱汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 辛夷膏
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 辰砂益元散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 防已黄芪汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 雷丸散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 顺气丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 风缓汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 骨碎补散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 鹿肉汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 黄蜡膏
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 黄连安神丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 龙须汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 8
+- term: 丁香脾积丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 丁香豆蔻散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 七宝饮
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 七物黄连汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 不老丹
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 乌龙散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 二黄丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 五加皮丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 五灰散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 五补汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 全生活血汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 全生白术散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 八厘散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 六物麻黄汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 六神丹
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 养脏汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 冰硼散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 刘寄奴散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 卷柏散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 参苓琥珀汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 四顺饮
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 回阳玉龙膏
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 地髓汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 备急散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 夜光丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 大前胡汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 大定心汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 天门冬汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 奇效四物汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 导赤丸
+  kind: harvested
+  synonyms:
+  - surface: 导赤圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 6
+    count: 7
+- term: 封脐散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 小香连丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 延胡散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 排风散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 无价散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 木香导饮丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 木香枳壳丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 木香槟榔散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 柏子仁汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 楮实汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 正胃散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 津调散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 濡脏汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 猪脏丸
+  kind: harvested
+  synonyms:
+  - surface: 猪脏圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 6
+    count: 7
+- term: 玄胡丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 瑞莲散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 白术防风汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 石灰散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 石菖蒲丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 硼砂丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 神效丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 立效丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 立消散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 立马回疔丹
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 竹叶泻经汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 续随子丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 羌活防风汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 羌活附子汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 芙蓉膏
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 苦楝丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 茯苓白术汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 茱萸内消丸
+  kind: harvested
+  synonyms:
+  - surface: 茱萸内消圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 6
+    count: 7
+- term: 荆沥汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 荜澄茄散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 荜茇散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 薏苡仁丸
+  kind: harvested
+  synonyms:
+  - surface: 薏苡仁圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 6
+    count: 7
+- term: 蜀漆丸
+  kind: harvested
+  synonyms:
+  - surface: 蜀漆圆
+    kind: taboo_rename
+    note: 宋人避讳，丸作圆
+  evidence:
+    books: 6
+    count: 7
+- term: 补宫丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 补气汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 补阳汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 轻粉散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 辰砂远志丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 连理汤
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 都气丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 金液丸
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 金露散
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7

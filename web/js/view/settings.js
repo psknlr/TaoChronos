@@ -215,6 +215,12 @@ function customFields(c, d, redraw, retitle = () => {}) {
 
 // ------------------------------------------------------------------ runtime
 
+/** " 535 部" — how many works the 要籍 list holds, as the runtime reports it (nothing before it has answered). */
+function canonCount(info) {
+  const n = info?.corpus?.canon?.listed;
+  return n ? ` ${n} 部` : "";
+}
+
 function runtimePane(d, S, ctx, redraw) {
   const info = S.runtimeInfo;
   const url = h("input", { type: "url", value: d.serverUrl, placeholder: DEFAULTS.serverUrl, "aria-label": "服务地址" });
@@ -244,7 +250,7 @@ function runtimePane(d, S, ctx, redraw) {
     S.runtime?.label === "本站服务"
       ? h("p.lead", "本站服务器（Cloudflare）运行 TaoChronos 的全量语料，打开即用；它暂不可用时，页面自动改在浏览器里运行（Pyodide，要籍语料）。",
         "也可以连接你自己运行的 taochronos serve（你构建的全量语料）。")
-      : h("p.lead", "TaoChronos 可以在浏览器里运行（Pyodide，要籍语料：按历代引用排序的 350 部要籍的原文，开箱即用；首次载入后保存在本机），",
+      : h("p.lead", `TaoChronos 可以在浏览器里运行（Pyodide，要籍语料：按历代引用排序的${canonCount(info)}要籍的原文，开箱即用；首次载入后保存在本机），`,
         "也可以连接 taochronos serve——在你的电脑或服务器上运行，读全部古籍（全量语料）。"),
     h("section.connect",
       h("h4", icon("book", "sm"), full ? "全量语料已接入" : "接入全部古籍"),
@@ -344,7 +350,7 @@ function aboutPane(d, S) {
             h("a", { href: "attribution.html?corpus=full", target: "_blank", rel: "noopener" }, "来源与授权"),
             "），未经本项目逐字校勘；", S.runtime?.label === "本站服务" ? "由本站服务器提供，服务暂不可用时页面改用浏览器内的要籍语料（" : "由你接入的服务提供；浏览器内另有要籍语料（",
             h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, "来源与授权"), "）。")
-          : h("div", h("b", "语料："), "浏览器内运行的是要籍语料：按历代引用排序的 350 部要籍的原文（",
+          : h("div", h("b", "语料："), `浏览器内运行的是要籍语料：按历代引用排序的${canonCount(info)}要籍的原文（`,
             h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, "来源与授权"),
             "），重要典籍多为全书，其余为章节节选，未经本项目逐字校勘；各书全文与全部古籍（全量语料）由本站服务器或你接入的服务提供（设置 → 运行环境）。"),
         h("div", h("b", "隐私："), "对话与密钥保存在本浏览器。使用道乃久默认服务时，你的问题经", PUBLISHER, "的服务交由大语言模型处理，该服务不保存请求内容；",

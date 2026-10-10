@@ -1,0 +1,8 @@
+- book: zl
+  defaults: {kind: materia_medica}
+  passages:
+    - {id: zl.gancao, locator: {volume: 卷六, section: 甘草}, text: 甘草，味甘，平，无毒。主五脏六腑寒热邪气，坚筋骨，长肌肉，倍力。术、干漆、苦参为之使，恶远志，反大戟、芫花、甘遂、海藻。}
+    - {id: zl.banxia, locator: {volume: 卷十, section: 半夏}, text: 半夏，味辛，平，生微寒、熟温，有毒。主伤寒寒热，心下坚，下气。射干为之使，恶皂荚，畏雄黄、生姜、干姜、秦皮、龟甲，反乌头。}
+    - {id: zl.huanglian, locator: {volume: 卷七, section: 黄连}, text: 黄连，味苦，寒，无毒。主热气目痛，眦伤泣出，明目，肠澼腹痛下利。}
+    - {id: zl.huangqin, locator: {volume: 卷八, section: 黄芩}, text: 黄芩，味苦，平、大寒，无毒。主诸热黄疸，肠澼泄利，逐水。}
+    - {id: zl.renshen, locator: {volume: 卷六, section: 人参}, text: 人参，味甘，微寒、微温，无毒。主补五脏，安精神，定魂魄。茯苓为之使，恶溲疏，反藜芦。}

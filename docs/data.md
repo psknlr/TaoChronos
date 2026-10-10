@@ -63,6 +63,8 @@ historical evidence.
 | `metrology.yaml` | historical measures for reading doses: unit ratios (斤/两/铢/钱/分/厘, 斛/斗/升/合, counts, 方寸匕 …) and per period the 两 in grams and the 升 in ml (ranges, with sources), the value of 分; the notice that these are historical readings, never dosage guidance |
 | `physicians.yaml` | ~70 physicians for the citation network: name, other names (仲景, 东垣 …), 本草 short names (恭, 颂, 藏器 …), dynasty, life or active years, school |
 | `drug_families.yaml` | drugs compared as one in formula compositions (桂枝/桂心/肉桂 → 桂; 山药/薯蓣; 陈皮/橘皮 …) |
+| `incompatibility.yaml` | 十八反 and 十九畏 for `study incompat`: the groups of each verse and the names each drug goes by, the verse, its probes (lines searched as written) and the usual attribution, with the notice that this is a history of texts, not guidance |
+| `lexicon-supplement/` · `lexicon-core/` | lexicons loaded after the curated one by the `web-canon` profile (`lexicon_extra`; `full-corpus` loads the supplement and the whole harvest): common drugs neither the curated lexicon nor the core of the harvest names, curated by hand; and the 800 drugs and 2 000 formulas of the harvest the full corpus attests most (`taochronos lexicon core`), still candidates — they never shadow a curated term |
 
 ## Adding a real corpus
 
@@ -105,6 +107,8 @@ taochronos corpus images all --enrich      # image-witness records → corpus/ca
 taochronos corpus status                   # counts by period, kind and layer; whether the index matches the variant table
 taochronos corpus reindex                  # rebuild the full-text index after changing domains/classics/script or variants.yaml
 taochronos lexicon harvest                 # candidate formula and drug names → domains/classics/lexicon-harvested/
+taochronos lexicon core                    # the most attested of them → domains/classics/lexicon-core/ (for the browser's corpus)
+taochronos web canon --extend              # the 要籍 list lengthened to CANON_SIZE on this store, the browser's corpus packed again
 taochronos research "…" --profile full-corpus
 ```
 
@@ -480,3 +484,10 @@ pairs as synonyms. Disease headings that end like a name (一切痰饮, 留饮) 
 running text, and 「附都气丸」 (附 = appended) is merged into 都气丸. Each entry
 keeps its evidence (count, books, earliest witness). Only the `full-corpus` profile loads them, and they never
 shadow a curated term; promote reviewed entries into `domains/classics/lexicon/`.
+
+`taochronos lexicon core` takes the core of the harvest for a corpus that does not load all of it — the browser's 要籍语料,
+whose compositions would otherwise be read with the curated lexicon's 40 formulas only: drugs ranked by the 本草 that
+have an entry for them, formulas by the works that write them out, weak and one-character names left out
+(`CORE_HERBS` 800, `CORE_FORMULAS` 2 000; `--herbs`, `--formulas`).  `lexicon-supplement/herbs.yaml` adds by hand the
+common drugs the harvest ranks low because they are written mostly in formulas (五味子, 芒硝, 青皮, 天南星 …), loaded before
+the harvested lexicons so that their forms win.

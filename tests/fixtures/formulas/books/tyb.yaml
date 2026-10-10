@@ -1,0 +1,6 @@
+- book: tyb
+  defaults: {kind: materia_medica}
+  passages:
+    - {id: tyb.huanglian, locator: {volume: 卷四, section: 黄连}, text: 黄连，气寒，味苦，无毒。入手少阴经。}
+    - {id: tyb.huangqin, locator: {volume: 卷四, section: 黄芩}, text: 黄芩，气寒，味微苦而甘。入手太阴经。}
+    - {id: tyb.gancao, locator: {volume: 卷三, section: 甘草}, text: 甘草，气平，味甘，无毒。入足厥阴、太阴、少阴经。}

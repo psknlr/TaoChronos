@@ -49,10 +49,11 @@ const UNAVAILABLE = Object.fromEntries([
   ["working_set", ["analysis.association_rules", "analysis.communities", "analysis.concept_drift", "analysis.contradictions",
     "analysis.formula_evolution", "analysis.link_prediction", "analysis.lost_knowledge", "analysis.missing_sources",
     "analysis.temporal_profile", "classics.lineage"]],
-  ["data", ["study.punctuate", "study.translate", "study.entities", "study.clause", "study.argument", "kg.extract_claims",
+  ["data", ["study.punctuate", "study.translate", "study.entities", "study.clause", "study.argument", "study.protocol", "kg.extract_claims",
     "bridge.map", "bridge.phenotype", "bridge.reverse", "modern.search", "rwd.ask", "vision.compare", "vision.layout",
     "audit.claim", "graph.evidence"]],
-  ["passages", ["study.authorship", "study.cards", "study.cases", "study.chain", "study.dating", "study.disputes",
+  ["passages", ["study.authorship", "study.cards", "study.cases", "study.chain", "study.compare", "study.dating", "study.disputes",
+    "study.family", "study.incompat", "study.properties", "study.usage",
     "study.fragments", "study.glosses", "study.layers", "study.places", "study.reuse", "study.stemma", "study.trajectories",
     "study.transmission", "study.variants"]],
 ].flatMap(([why, names]) => names.map((n) => [n, WHY[why]])));

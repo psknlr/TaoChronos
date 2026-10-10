@@ -1,6 +1,6 @@
 """要籍语料 — the corpus the published site carries.
 
-The full corpus cannot go into a browser: the store is about 2.2 GB (the 350 ranked works alone are some 57 million
+The full corpus cannot go into a browser: the store is about 2.2 GB (the first 350 ranked works alone are some 57 million
 characters).  What goes is the 要籍 list (``corpus/catalog/canon.yaml``), every work with text — the first classics whole,
 the rest as whole chapters spread through the book, within a budget that grows with the work's rank.
 
@@ -178,7 +178,7 @@ def export_pack(db: sqlite3.Connection, works: list[dict[str, Any]], out: Path,
     chars = sum(b["excerpt"]["kept_chars"] for b in books)
     works_in = len({b["work"] for b in books})
     head = ["# 要籍语料 · 来源与授权", "",
-            "网页端在浏览器里运行的语料：要籍书目（`corpus/catalog/canon.yaml`，按历代引用排序的 350 部要籍）各书的原文，由",
+            f"网页端在浏览器里运行的语料：要籍书目（`corpus/catalog/canon.yaml`，按历代引用排序的 {len(works)} 部要籍）各书的原文，由",
             "`taochronos web pack` 从全量语料生成：最重要的典籍收全书，其余收分布全书的章节节选。所收均为公有领域的古籍；各录本的",
             "来源与条件见下表：", "",
             "* 开放授权的录本（维基文库、漢籍リポジトリ：CC BY-SA 4.0；數位中醫校書郎 CMETA：CC BY 4.0；McGill：公有领域）按其授权使用，"

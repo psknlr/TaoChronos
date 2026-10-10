@@ -1,9 +1,11 @@
 // A small, safe Markdown renderer: it builds DOM nodes and never parses HTML, so a model's answer cannot inject markup.
-// Blocks: headings, paragraphs, lists (nested), block quotes, fenced code, GFM tables, rules.  Inline: code, bold,
+// Blocks: headings, paragraphs, lists (nested), block quotes, fenced code, GFM tables, rules, and ```chart blocks — a
+// chart specification in JSON, drawn by chart.js (while it is still being written, a placeholder).  Inline: code, bold,
 // italic, strike, links (http/https/mailto only), bare URLs, 「quotations」 and [[passage_id]] citations.  Each
 // citation is paired with the quotation just before it (「…」[[id]]), so the client can check the words against the
 // passage.
 
+import { chartCard, invalid } from "./chart.js";
 import { append, h, icon } from "./util.js";
 
 const FENCE = /^(\s{0,3})(`{3,}|~{3,})\s*([\w+#.-]*)\s*$/;
@@ -27,7 +29,7 @@ export function renderMarkdown(text, opts = {}) {
       else break;
     }
     const caret = h("span.caret", { "aria-hidden": "true" });
-    if (target && !["PRE", "TABLE", "HR"].includes(target.nodeName)) target.append(caret);
+    if (target && !["PRE", "TABLE", "HR", "FIGURE", "DIV"].includes(target.nodeName)) target.append(caret);
     else frag.append(h("p", caret));
   }
   return frag;
@@ -42,13 +44,17 @@ function blocks(lines, parent, opts) {
     if ((m = FENCE.exec(line))) {
       const fence = m[2], lang = m[3];
       const body = [];
+      let closed = false;
       i++;
-      while (i < lines.length && !(lines[i].trim().startsWith(fence[0].repeat(fence.length)) && !lines[i].trim().slice(fence.length).trim())) {
+      while (i < lines.length) {
+        const t = lines[i].trim();
+        if (t.startsWith(fence[0].repeat(fence.length)) && !t.slice(fence.length).trim()) { closed = true; break; }
         body.push(lines[i]);
         i++;
       }
       i++;
-      parent.append(codeBlock(body.join("\n"), lang));
+      if (lang.toLowerCase() === "chart") parent.append(...chartBlock(body.join("\n"), closed, opts));
+      else parent.append(codeBlock(body.join("\n"), lang));
       continue;
     }
     if ((m = HEADING.exec(line))) {
@@ -104,6 +110,23 @@ function codeBlock(code, lang) {
   if (lang) pre.append(h("span.lang", lang));
   pre.append(h("button.icon-btn.copy", { type: "button", title: "复制代码", "aria-label": "复制代码", dataset: { copy: "code" } }, icon("copy", "sm")));
   return pre;
+}
+
+// a chart block's JSON → its card: an answer is drawn again on every streamed update, its charts are not
+const drawn = new Map();
+
+function chartBlock(code, closed, opts) {
+  if (!closed && opts.streaming) return [h("div.chart-wait", h("span.spinner"), "正在绘制图表…")];
+  let spec = null, why;
+  try { spec = JSON.parse(code); why = invalid(spec); } catch (err) { why = `规格不是合法的 JSON（${err.message}）`; }
+  if (why) return [codeBlock(code, "chart"), h("p.viz-note", `未能绘制此图：${why}`)];
+  let card = drawn.get(code);
+  if (!card || card.isConnected) { // the same chart twice on the page: a second card
+    card = chartCard(spec);
+    drawn.set(code, card);
+    if (drawn.size > 60) drawn.delete(drawn.keys().next().value);
+  }
+  return [card];
 }
 
 function splitRow(row) {

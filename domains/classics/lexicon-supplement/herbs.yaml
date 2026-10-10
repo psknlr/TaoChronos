@@ -1,0 +1,92 @@
+# 常用药补遗 — common drugs that neither the curated lexicon nor the core of the harvest names (the harvester leaves out a
+# name holding 味 — 五味子 — and ranks drugs by their 本草 entries, so drugs written mostly in formulas rank low), chosen by
+# how often the 要籍语料 writes them (2026-10: 五味子 1 216 times, 芒硝 882, 青皮 710, 南星 601, 前胡 545 …).  Loaded with the
+# harvested lexicons (profiles full-corpus and web-canon), before them, so that these forms win; never over a curated term.
+# Aliases that are also ordinary words are left out (五味 is also "the five flavours", 茱萸 names two drugs).
+category: herb
+entries:
+  - {term: 五味子, synonyms: [{surface: 北五味子, kind: variety}, {surface: 南五味子, kind: variety}]}
+  - {term: 芒硝, synonyms: [{surface: 芒消, kind: alias}]}
+  - {term: 朴硝, synonyms: [{surface: 朴消, kind: alias}, {surface: 皮硝, kind: alias}]}
+  - {term: 青皮, synonyms: [{surface: 青橘皮, kind: alias}]}
+  - {term: 天南星, synonyms: [{surface: 南星, kind: abbreviation}, {surface: 胆南星, kind: processing_variant}, {surface: 胆星, kind: processing_variant}]}
+  - {term: 车前子, synonyms: [{surface: 车前, kind: abbreviation}]}
+  - {term: 茯神, aliases: []}
+  - {term: 前胡, aliases: []}
+  - {term: 木通, aliases: []}
+  - {term: 肉苁蓉, synonyms: [{surface: 苁蓉, kind: abbreviation}]}
+  - {term: 砂仁, synonyms: [{surface: 缩砂仁, kind: alias}, {surface: 缩砂, kind: alias}, {surface: 缩砂密, kind: alias}]}
+  - {term: 竹沥, aliases: []}
+  - {term: 竹茹, aliases: []}
+  - {term: 白矾, synonyms: [{surface: 明矾, kind: alias}, {surface: 矾石, kind: alias}, {surface: 枯矾, kind: processing_variant}]}
+  - {term: 地骨皮, aliases: []}
+  - term: 牵牛子
+    synonyms:
+      - {surface: 牵牛, kind: abbreviation}
+      - {surface: 黑牵牛, kind: variety}
+      - {surface: 白牵牛, kind: variety}
+      - {surface: 黑丑, kind: alias}
+      - {surface: 白丑, kind: alias}
+      - {surface: 二丑, kind: alias}
+  - {term: 酸枣仁, synonyms: [{surface: 枣仁, kind: abbreviation}]}
+  - {term: 川乌, synonyms: [{surface: 川乌头, kind: alias}]}
+  - {term: 草乌, synonyms: [{surface: 草乌头, kind: alias}]}
+  - {term: 轻粉, synonyms: [{surface: 汞粉, kind: alias}]}
+  - {term: 铅丹, synonyms: [{surface: 黄丹, kind: alias}]}
+  - {term: 胡粉, synonyms: [{surface: 铅粉, kind: alias}]}
+  - {term: 决明子, synonyms: [{surface: 草决明, kind: alias}]}
+  - {term: 石决明, aliases: []}
+  - {term: 火麻仁, synonyms: [{surface: 麻子仁, kind: alias}, {surface: 麻仁, kind: abbreviation}]}
+  - {term: 柏子仁, synonyms: [{surface: 柏仁, kind: abbreviation}]}
+  - {term: 款冬花, synonyms: [{surface: 款冬, kind: abbreviation}]}
+  - {term: 蔓荆子, synonyms: [{surface: 蔓荆实, kind: alias}]}
+  - {term: 钟乳石, synonyms: [{surface: 石钟乳, kind: alias}, {surface: 钟乳, kind: abbreviation}]}
+  - {term: 鹿角, aliases: []}
+  - {term: 高良姜, synonyms: [{surface: 良姜, kind: abbreviation}]}
+  - {term: 冰片, synonyms: [{surface: 龙脑, kind: alias}, {surface: 龙脑香, kind: alias}, {surface: 梅片, kind: alias}]}
+  - {term: 蛇床子, synonyms: [{surface: 蛇床, kind: abbreviation}]}
+  - {term: 诃子, synonyms: [{surface: 诃黎勒, kind: alias}, {surface: 诃梨勒, kind: alias}]}
+  - {term: 灯心草, synonyms: [{surface: 灯心, kind: abbreviation}, {surface: 灯草, kind: abbreviation}]}
+  - {term: 紫苏子, synonyms: [{surface: 苏子, kind: abbreviation}]}
+  - {term: 紫苏叶, synonyms: [{surface: 苏叶, kind: abbreviation}]}
+  - {term: 三七, synonyms: [{surface: 田七, kind: alias}]}
+  - {term: 花椒, synonyms: [{surface: 蜀椒, kind: variety}, {surface: 川椒, kind: variety}, {surface: 秦椒, kind: variety}]}
+  - {term: 椒目, aliases: []}
+  - {term: 麦芽, synonyms: [{surface: 麦蘖, kind: alias}]}
+  - {term: 菊花, synonyms: [{surface: 甘菊, kind: variety}, {surface: 甘菊花, kind: variety}, {surface: 白菊花, kind: variety}]}
+  - {term: 五加皮, aliases: []}
+  - {term: 全蝎, synonyms: [{surface: 全虫, kind: alias}, {surface: 干蝎, kind: alias}, {surface: 蝎梢, kind: part_name}]}
+  - {term: 莪术, synonyms: [{surface: 蓬莪术, kind: alias}, {surface: 蓬术, kind: alias}]}
+  - {term: 虻虫, aliases: []}
+  - {term: 补骨脂, synonyms: [{surface: 破故纸, kind: alias}]}
+  - {term: 露蜂房, synonyms: [{surface: 蜂房, kind: abbreviation}]}
+  - {term: 侧柏叶, synonyms: [{surface: 柏叶, kind: abbreviation}]}
+  - {term: 龙胆, synonyms: [{surface: 龙胆草, kind: alias}]}
+  - {term: 青盐, synonyms: [{surface: 戎盐, kind: alias}]}
+  - {term: 珍珠, synonyms: [{surface: 真珠, kind: alias}]}
+  - {term: 硼砂, synonyms: [{surface: 蓬砂, kind: alias}]}
+  - {term: 葶苈子, synonyms: [{surface: 葶苈, kind: abbreviation}]}
+  - {term: 天冬, synonyms: [{surface: 天门冬, kind: alias}]}
+  - {term: 益智仁, synonyms: [{surface: 益智子, kind: alias}]}
+  - {term: 桑寄生, aliases: []}
+  - {term: 延胡索, synonyms: [{surface: 玄胡索, kind: alias}, {surface: 元胡索, kind: alias}, {surface: 元胡, kind: abbreviation}]}
+  - {term: 蟾酥, aliases: []}
+  - {term: 皂荚, synonyms: [{surface: 皂角, kind: alias}, {surface: 牙皂, kind: variety}, {surface: 猪牙皂, kind: variety}, {surface: 猪牙皂角, kind: variety}]}
+  - {term: 桑叶, aliases: []}
+  - {term: 川楝子, synonyms: [{surface: 金铃子, kind: alias}, {surface: 楝实, kind: alias}]}
+  - {term: 青葙子, aliases: []}
+  - {term: 莱菔子, synonyms: [{surface: 萝卜子, kind: alias}, {surface: 萝菔子, kind: alias}]}
+  - {term: 狼毒, aliases: []}
+  - {term: 龙齿, aliases: []}
+  - {term: 斑蝥, synonyms: [{surface: 斑猫, kind: alias}]}
+  - {term: 甘松, synonyms: [{surface: 甘松香, kind: alias}]}
+  - {term: 胆矾, synonyms: [{surface: 石胆, kind: alias}]}
+  - {term: 麻黄根, aliases: []}
+  - {term: 山楂, synonyms: [{surface: 山查, kind: alias}]}
+  - {term: 代赭石, synonyms: [{surface: 赭石, kind: abbreviation}, {surface: 代赭, kind: abbreviation}]}
+  - {term: 海螵蛸, synonyms: [{surface: 乌贼骨, kind: alias}, {surface: 乌贼鱼骨, kind: alias}]}
+  - {term: 百草霜, aliases: []}
+  - {term: 韭子, synonyms: [{surface: 韭菜子, kind: alias}]}
+  - {term: 莨菪子, synonyms: [{surface: 天仙子, kind: alias}]}
+  - {term: 常山, synonyms: [{surface: 恒山, kind: taboo_rename, note: 汉避文帝讳改“恒”为“常”（taboo.yaml）}]}
+  - {term: 砒石, synonyms: [{surface: 砒霜, kind: processing_variant}, {surface: 信石, kind: alias}]}

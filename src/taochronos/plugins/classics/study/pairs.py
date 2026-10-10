@@ -37,8 +37,12 @@ from typing import Any, Iterable
 from ....science.association import CooccurrenceGraph, communities
 from ....science.stats import benjamini_hochberg, fisher_exact_greater
 from .base import StudyBase, dated
+from .formulas import _LEADS_ON
+from .usage import prepared_form
 
-HARVEST_VERSION = "harvest@1"
+HARVEST_VERSION = "harvest@3"  # @2: each composition keeps its items (drug, dose as written, preparation note); a composition
+                               # written in the passage after the one that introduces it (…汤方：) is read too; @3: and the
+                               # form its preparation gives (丸剂, 煮散 …)
 _DOSE_RAW = re.compile(r"[一二三四五六七八九十半兩两][兩两錢钱分銖铢升枚]")
 _TREAT_RAW = re.compile(r"主之|[宜與与][^，。；]{0,10}[湯汤丸散飲饮]")
 _SENTENCE = re.compile(r"[^。；？！]+[。；？！]?")
@@ -81,6 +85,10 @@ class FormulaHarvest:
                     yield pid, bid, year, text, section or ""
 
     def build(self, cache: str | Path | None = None, *, refresh: bool = False, limit: int | None = None) -> dict[str, Any]:
+        """``compositions``: [work, formula id, drug keys (sorted), year, passage id, drugs with a dose, items, form] — the
+        items [drug key, drug, dose as written, preparation note] in the order written, the form what the preparation
+        after them makes (丸剂, 煮散, 散剂, 汤剂 or ""); ``indications``: [work, formula id,
+        finding ids (sorted), year, passage id].  One row per work and composition (or indication)."""
         if self._built is not None and not refresh and limit is None:
             return self._built
         path = Path(cache) / f"harvest-{self.key()}.json.gz" if cache is not None and limit is None else None
@@ -92,6 +100,7 @@ class FormulaHarvest:
         comps: dict[tuple, list[Any]] = {}
         inds: dict[tuple, list[Any]] = {}
         scanned = 0
+        lead: tuple[str, str] | None = None  # (book, formula) a passage introduced and left to the next (…汤方：)
         for pid, bid, year, text, section in self.rows():
             scanned += 1
             if limit is not None and scanned > limit:
@@ -101,6 +110,9 @@ class FormulaHarvest:
             norm = self.b.normalize(text)
             mentions = lex.match(norm, include_weak=False)
             formulas = [m for m in mentions if m.category == "formula"]
+            led, lead = (lead[1] if lead and lead[0] == bid else None), None
+            if formulas and not _DOSE_RAW.search(text) and _LEADS_ON.match(norm[formulas[-1].end:]):
+                lead = (bid, formulas[-1].entry.term_id)  # 与桂枝加桂汤，更加桂二两也。方六十一。 / 桂枝加桂汤方：
             covered: list[tuple[int, int]] = []
             if _DOSE_RAW.search(text):
                 starts = [(m.start, m.surface, m.entry.term_id) for m in formulas
@@ -108,6 +120,8 @@ class FormulaHarvest:
                 heading = [m for m in lex.match(self.b.normalize(section), include_weak=False) if m.category == "formula"] if section else []
                 if heading and (not formulas or formulas[0].start > 12):
                     starts.insert(0, (0, "", heading[0].entry.term_id))
+                elif led and (not formulas or formulas[0].start > 12):
+                    starts.insert(0, (0, "", led))  # the composition the previous passage introduced
                 for pos, surface, fid in starts:
                     if any(a <= pos < b for a, b in covered):
                         continue
@@ -117,7 +131,9 @@ class FormulaHarvest:
                     covered.append((pos, comp.end))
                     herbs = sorted(comp.herbs)
                     if len(herbs) >= 2:
-                        comps.setdefault((work, fid, tuple(herbs)), [work, fid, herbs, year, pid, sum(1 for i in comp.items if i["dose"])])
+                        items = [[i.get("family") or i["term_id"], i["term"], i["dose"], i["processing"]] for i in comp.items]
+                        comps.setdefault((work, fid, tuple(herbs)), [work, fid, herbs, year, pid, sum(1 for i in comp.items if i["dose"]),
+                                                                     items, prepared_form(comp.preparation or norm[comp.end: comp.end + 80])])
             if _TREAT_RAW.search(text):
                 for s in _SENTENCE.finditer(norm):
                     sent = s.group(0)

@@ -28,6 +28,7 @@ import { count } from "./js/util.js";
 import { fixedReply, IDENTITY_REPLY, isIdentityQuestion, touchesIdentity } from "./js/fixed.js";
 import { ServerRuntime } from "./js/runtime.js";
 import { redact, scrub, toolWord } from "./js/redact.js";
+import { chartsOf, fmt, invalid, niceMax, normalize, seriesColors, ticks, toCSV, toMarkdown } from "./js/chart.js";
 
 // streams: increments and MiniMax's cumulative chunks read alike
 const inc = new Accum(); for (const t of ["桂", "枝", "汤主之。"]) inc.push(t);
@@ -195,6 +196,27 @@ assert.equal(redact("先用 validation__ver", { streaming: true }), "先用 ");
 assert.equal(redact("先用 validation__verify_quote 核对", { streaming: true }), "先用引文核验核对");
 assert.deepEqual([toolWord("classics__search"), toolWord("study.formula"), toolWord("taochronos_research"), toolWord("study.new_one"), toolWord("…")],
   ["古籍检索", "方源考", "发现研究", "治学工具", "…"]);
+assert.deepEqual([toolWord("study.compare"), toolWord("study.protocol")], ["方剂比较", "研究方案设计"]);
+
+// charts: a model's ```chart block is checked before it is drawn, made whole, and its table is the CSV and the export
+const spec = { type: "bar", title: "甘草·用量", x: { key: "时期" }, series: ["两"], rows: [{ 时期: "汉", 两: 2 }, { 时期: "宋", 两: 1.5 }] };
+assert.equal(invalid(spec), null);
+assert.match(invalid({ ...spec, type: "pie" }), /不支持的图表类型/);
+assert.match(invalid({ ...spec, rows: [] }), /rows/);
+assert.match(invalid({ type: "network", nodes: Array(401).fill({ id: "a" }) }), /网络过大/);
+const whole = normalize(spec);
+assert.deepEqual(whole.series, [{ key: "两", label: "两" }]);
+assert.deepEqual(whole.columns.map((c) => c.key), ["时期", "两"]);
+assert.equal(toCSV(whole), "\ufeff时期,两\r\n汉,2\r\n宋,1.5\r\n");
+assert.equal(toCSV({ ...whole, rows: [{ 时期: "明,清", 两: 'a"b' }] }, false), '时期,两\r\n"明,清","a""b"\r\n');
+assert.equal(toMarkdown(whole), "**甘草·用量**\n\n| 时期 | 两 |\n| --- | --- |\n| 汉 | 2 |\n| 宋 | 1.5 |");
+assert.deepEqual(seriesColors(["甲", "其他", "乙"]), ["var(--viz-1)", "var(--viz-other)", "var(--viz-2)"]);
+assert.deepEqual([niceMax(7), niceMax(11), niceMax(295), niceMax(0)], [8, 15, 300, 1]);
+assert.deepEqual(ticks(0, 10, 4, true), [0, 5, 10]);
+assert.deepEqual(ticks(0, 1.5), [0, 0.5, 1, 1.5]);
+assert.deepEqual([fmt(0.125, true), fmt(1234), fmt(2), fmt(0.4375)], ["13%", "1.2K", "2", "0.438"]);
+assert.deepEqual(chartsOf({ charts: [spec, { type: "pie" }] }), [spec]);
+assert.deepEqual(chartsOf(null), []);
 console.log("ok");
 """
 
@@ -363,6 +385,84 @@ def test_a_conversation_in_the_browser(tmp_path):
     finally:
         srv.shutdown()
         srv.server_close()
+        relay.shutdown()
+        mock.shutdown()
+
+
+def test_charts_in_the_browser(tmp_path):
+    """A study's charts under its step — one at a time, as a table, downloaded as PNG and CSV — a chart the model draws in a
+    ```chart block, and the tool console's; the model is told which charts the page shows, never their data."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import MockProvider, MockRelay
+
+    mock = MockProvider().start()
+    relay = MockRelay(mock.base_url).start()
+    web = tmp_path / "web"
+    _published(web, relay.url)
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    consent = {"v": 1, "logs": False, "at": "2026-09-28T00:00:00Z"}
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            ctx = browser.new_context(viewport={"width": 1280, "height": 900}, locale="zh-CN", accept_downloads=True)
+            ctx.add_init_script(f"localStorage.setItem('tc.consent', {json.dumps(json.dumps(consent))});")
+            page = ctx.new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            page.fill("#input", "用图表比较桂枝汤与麻黄汤")
+            page.keyboard.press("Enter")
+            page.wait_for_selector(".msg.assistant .actions .meta", timeout=60000)
+            # the study's charts, under its step: tabs, one chart at a time
+            tabs = page.eval_on_selector_all(".msg.assistant .charts .chart-tabs [role=tab]", "els => els.map(e => e.textContent)")
+            assert tabs == ["1. 配伍比例对照", "2. 方剂相似度"]
+            assert page.locator(".msg.assistant .charts .viz-svg path").count() >= 4  # the bars
+            page.click(".msg.assistant .chart-tabs [role=tab] >> nth=1")
+            assert page.inner_text(".msg.assistant .charts .viz-card .title") == "方剂相似度"
+            # the chart the model drew in its answer
+            assert page.inner_text(".md figure.viz-card .title") == "桂枝汤与麻黄汤共有之药" and not page.query_selector(".md pre")
+            page.click(".md figure.viz-card .viz-toggle >> text=表格")
+            assert page.eval_on_selector_all(".md .viz-table tbody tr", "rows => rows.map(r => r.textContent)") == ["桂2", "甘草2"]
+            # downloads: a PNG twice the figure's size, the table as CSV with a byte-order mark
+            card = ".msg.assistant .charts .viz-card"
+            page.click(f"{card} .viz-dl > button")
+            with page.expect_download() as png:
+                page.click(f"{card} .viz-menu button >> text=PNG 图片")
+            assert png.value.suggested_filename == "方剂相似度.png"
+            assert Path(png.value.path()).read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+            page.click(f"{card} .viz-dl > button")
+            with page.expect_download() as csv_file:
+                page.click(f"{card} .viz-menu button >> text=CSV 数据")
+            table = Path(csv_file.value.path()).read_text(encoding="utf-8")
+            assert table.startswith("\ufeff") and "桂枝汤" in table and "麻黄汤" in table
+            # what the model read of the result: which charts the page shows, not their rows
+            told = next(m["content"] for m in mock.requests[1]["body"]["messages"] if m["role"] == "tool")
+            assert '"charts_shown":["配伍比例对照","方剂相似度"]' in told and '"heatmap"' not in told
+            # the tool console draws the charts of what it runs
+            page.click("#toggle-drawer")
+            page.click(".drawer .tab >> text=工具台")
+            page.fill(".drawer input[type=search]", "study.usage")
+            page.click(".drawer .tool-item >> nth=0")
+            page.fill(".drawer .console-form input[type=text] >> nth=0", "甘草")
+            page.click(".drawer .console-form .btn >> text=运行")
+            page.wait_for_selector(".drawer .console-form .charts .viz-svg", timeout=30000)
+            assert page.locator(".drawer .console-form .chart-tabs [role=tab]").count() >= 2
+            assert not errors, errors
+            browser.close()
+    finally:
+        srv.shutdown()
         relay.shutdown()
         mock.shutdown()
 

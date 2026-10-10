@@ -396,9 +396,12 @@ def _study(ctx: ToolContext) -> Any:
 
 def _brief(value: Any, items: int = 12, chars: int = 240) -> Any:
     """Keep tool results small for agent context: long lists are cut (with the count left out), long strings shortened,
-    bulky keys (member lists, Anki text, per-field quotes) dropped.  The full results are in the CLI and the datasets."""
+    bulky keys (member lists, Anki text, per-field quotes) dropped.  The full results are in the CLI and the datasets.
+    The chart specifications (``charts``, drawn from the full result) pass as they are: the interface shows them, the
+    model's text leaves them out (``chat.results``)."""
     if isinstance(value, dict):
-        return {k: _brief(v, items, chars) for k, v in value.items() if k not in ("member_ids", "anki_tsv", "quotes")}
+        return {k: (v if k == "charts" else _brief(v, items, chars)) for k, v in value.items()
+                if k not in ("member_ids", "anki_tsv", "quotes")}
     if isinstance(value, list):
         out = [_brief(v, items, chars) for v in value[:items]]
         return out + ([{"omitted": len(value) - items}] if len(value) > items else [])
@@ -566,6 +569,40 @@ def _study_network(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(_study(ctx).network(a.get("target")), int(a.get("items", 20)))
 
 
+def _names(value: Any) -> list[str]:
+    """A list argument given as a list or as one string (桂枝汤、桂枝加桂汤 / 桂枝汤,桂枝加桂汤)."""
+    if isinstance(value, str):
+        import re
+
+        return [x for x in re.split(r"[、，,；;\s]+", value) if x]
+    return [str(x) for x in value or [] if str(x).strip()]
+
+
+def _study_compare(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).compare(_names(a.get("formulas")), which=a.get("which") or "original"), int(a.get("items", 30)))
+
+
+def _study_family(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).family(a["formula"], min_share=float(a.get("min_share", 0.75)),
+                                     max_extra=int(a.get("max_extra", 4))), int(a.get("items", 25)))
+
+
+def _study_usage(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).usage(a["herb"]), int(a.get("items", 15)))
+
+
+def _study_properties(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).properties(_names(a.get("herbs")) or None, formula=a.get("formula")), int(a.get("items", 16)))
+
+
+def _study_incompat(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).incompat(a.get("target"), drugs=_names(a.get("herbs")) or None), int(a.get("items", 25)))
+
+
+def _study_protocol(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).protocol(a["question"], pilot=bool(a.get("pilot", True))), int(a.get("items", 30)), chars=600)
+
+
 def _study_chain(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(_study(ctx).chain(a.get("text"), a.get("passage_id")), int(a.get("items", 30)))
 
@@ -679,7 +716,7 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "attribution and passage counts; filter by title/author words, dynasty or category.",
                  obj({"query": S, "dynasty": S, "category": S, "limit": I}), _list_books, family="retrieval",
                  permission="classics:read"),
-        ToolSpec("classics.canon", "要籍: the 350 most important works of Chinese medicine, ranked by how later works cite them "
+        ToolSpec("classics.canon", "要籍: the most important works of Chinese medicine, ranked by how later works cite them "
                  "(corpus/catalog/canon.yaml), with author, dynasty, category, citing works and witnesses, and whether this "
                  "corpus holds the text (held: true/false filters); filter by title/author words, dynasty or category.",
                  obj({"query": S, "dynasty": S, "category": S, "held": {"type": "boolean"}, "limit": I}), _canon,
@@ -863,6 +900,51 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "formula–finding links.",
                  obj({"target": S, "items": I}), _study_network, family="study", permission="classics:read",
                  expensive=True, returns="findings or formulas with support, share and lift; drugs; periods"),
+        ToolSpec("study.compare", "方剂比较 (同药异量): two to six formulas side by side, each as its earliest tradition (原方; "
+                 "which=current: the most witnessed) writes it out — drugs, doses as written, each dose in 两 of the witness's "
+                 "period and as a ratio (the largest = 1), and for every two formulas the drugs shared and not, Jaccard, a "
+                 "dose-weighted overlap and the verdict 同方 / 同药异量 (桂枝汤 vs 桂枝加桂汤; 小承气汤 vs 厚朴三物汤) / 加减化裁 / "
+                 "异方. Doses are historical readings, never dosage guidance.",
+                 obj({"formulas": {"type": "array", "items": S}, "which": {"type": "string", "enum": ["original", "current"]},
+                      "items": I}, ["formulas"]), _study_compare, family="study", permission="classics:read", expensive=True,
+                 returns="formulas with witness and drugs (dose, 两, ratio, share), matrix, pairwise comparison and verdicts"),
+        ToolSpec("study.family", "类方: the formulas whose written-out compositions hold most of one formula's core (min_share, "
+                 "default 0.75; max_extra drugs added, default 4), per work — what each adds and leaves out (加味, 减味, 加减, "
+                 "同药), 同药异量 / 同方异名 told apart by the doses, the formula it combines with (合方), its works and earliest "
+                 "witness, members by period.",
+                 obj({"formula": S, "min_share": N, "max_extra": I, "items": I}, ["formula"]), _study_family, family="study",
+                 permission="classics:read", expensive=True,
+                 returns="the base formula's core; members with relation, added/removed drugs, works, earliest witness, 合方"),
+        ToolSpec("study.usage", "用药谱: one drug across every written-out composition of the corpus (per work) — its share of "
+                 "compositions by period with 95% Wilson intervals and a trend test, its doses as written and read in 两 and "
+                 "grams of their period (quartiles; never dosage guidance), how often it is the largest dose, its preparation "
+                 "notes by period, the drugs it is written with (lift), its formulas and earliest compositions.",
+                 obj({"herb": S, "items": I}, ["herb"]), _study_usage, family="study", permission="classics:read", expensive=True,
+                 returns="share by period, trend, doses by period, largest-dose share, preparation notes, partners, formulas"),
+        ToolSpec("study.properties", "药性谱: what the 本草 say of several drugs (herbs) or of a formula's drugs (formula, its 原方) — "
+                 "natures (寒凉平温热), flavours, toxicity and channels (read by the twelve channels' organs), each with the "
+                 "share of works stating it and the first statement; for a formula, its profile weighted by dose.",
+                 obj({"herbs": {"type": "array", "items": S}, "formula": S, "items": I}), _study_properties, family="study",
+                 permission="classics:read", expensive=True,
+                 returns="per drug: natures, flavours, toxicity, channels with shares, consensus, first statements; profile"),
+        ToolSpec("study.incompat", "配伍禁忌 (十八反·十九畏) in the literature: statements of 反 / 畏 written in the texts (the drug "
+                 "an entry is about and the drugs listed after 反 / 畏) with their earliest witness and works by period, "
+                 "where the verses are written, and the written-out compositions that still hold both drugs of a pair; "
+                 "target: a formula (its 原方 checked) or a drug (its pairs); herbs: a list of drugs to check. Textual "
+                 "history, not safety guidance (modern.safety).",
+                 obj({"target": S, "herbs": {"type": "array", "items": S}, "items": I}), _study_incompat, family="study",
+                 permission="classics:read", expensive=True,
+                 returns="rules, check, statements with earliest witnesses, verses, compositions writing a pair together"),
+        ToolSpec("study.protocol", "研究方案: turn a research question (especially on formulas and drugs: 方源, 方剂比较/同药异量, 类方, "
+                 "药性, 用药, 配伍, 十八反十九畏, 方证, 术语, 名称) into a research protocol — what it names (formulas, drugs, "
+                 "findings, terms, period), objectives, questions, hypotheses each with prediction, test, refutation and "
+                 "rival explanations, scope (corpus, period, works to read first, inclusion and exclusion), variables, methods "
+                 "(the capabilities to run, with arguments and commands), analysis, planned figures, quality checks, "
+                 "limitations, ethics, timeline and a research contract; pilot (default true) runs the main steps once and "
+                 "reports how much evidence the corpus holds, with charts.",
+                 obj({"question": S, "pilot": {"type": "boolean"}, "items": I}, ["question"]), _study_protocol, family="study",
+                 permission="classics:read", expensive=True,
+                 returns="protocol sections, pilot findings with feasibility, research contract, charts"),
         ToolSpec("study.chain", "传播链: a passage's dated witnesses (copies, quotations, restatements) ordered into a tree by shared "
                  "innovations — each hangs from the earlier witness whose variant readings it shares most (less that one's "
                  "readings it lacks), else from the earliest; each edge with its shared readings, score and margin.",

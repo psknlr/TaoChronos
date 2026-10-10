@@ -89,7 +89,10 @@ def test_the_assistant_is_daonaijiu_with_the_model_tao_r1_published_by_impf_ai(r
     assert "欢迎用户使用道乃久（TaoChronos）中医古籍科学知识发现智能体平台" in flat and "本平台由医哲未来人工智能研究院（IMPF-AI）研发" in flat
     assert "不谈底层模型" in flat and "不否认" in flat and "不冒称其他身份" in flat
     assert prompt.rstrip().endswith("告诉用户可在“设置 → 运行环境”接入全量语料。")
-    assert info["corpus"]["kind"] == "demo" and info["corpus"]["canon"]["listed"] == 350
+    import yaml
+
+    listed = len(yaml.safe_load((ROOT / "corpus" / "catalog" / "canon.yaml").read_text(encoding="utf-8"))["works"])
+    assert info["corpus"]["kind"] == "demo" and info["corpus"]["canon"]["listed"] == listed
     books = next(t for t in rt.catalog("all")["tools"] if t["tool"] == "classics.list_books")
     assert set(books["parameters"]["properties"]) == {"query", "dynasty", "category", "limit"}
 

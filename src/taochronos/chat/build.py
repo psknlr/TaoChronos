@@ -5,7 +5,7 @@ reads (``runtime/home.zip``: profiles, domain packs, the demonstration corpus, a
 list (``providers.json``) and, unless ``--pyodide cdn``, the Pyodide files the runtime runs on, so that the site
 depends on no other host.  Archives are deterministic: the same checkout builds the same bytes.
 
-The full corpus store is never part of the site.  The site carries the 要籍语料 (``corpus/web``: the texts of the 350
+The full corpus store is never part of the site.  The site carries the 要籍语料 (``corpus/web``: the texts of the
 ranked works, ``taochronos web pack``) as a store without its full-text index, xz-compressed (``runtime/corpus.sqlite.xz``);
 the browser indexes it on first use and keeps the result.  ``home.zip`` also carries the YAML the runtime reads already
 parsed (``.cache/yaml``, the cache of ``protocol.yamlio``, keyed by each file's content): parsing it in the browser took

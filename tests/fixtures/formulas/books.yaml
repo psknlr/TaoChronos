@@ -1,0 +1,21 @@
+# Synthetic test corpus for the herb and formula studies (tests/test_formulas.py): short passages modelled on the wording
+# of public-domain classics, arranged so that each study has something to find — one formula and the formulas made from
+# it (白虎汤 → 白虎加人参汤, 桂枝汤 → 葛根汤), the same formula with other doses in a later book, materia-medica entries
+# with their natures, channels and 七情 notes, a verse of the 十八反, and two drugs a rule keeps apart written together
+# in one formula.  Not a transcription of any edition; never cite it.
+defaults:
+  source: &src
+    origin: TaoChronos test fixture (synthetic)
+    license: CC0-1.0
+    acquisition: written for the test suite
+    transcription: synthetic
+    verified: false
+books:
+  - {id: shl, title: 伤寒论, authors: [张机（仲景）], dynasty: 东汉, composition: [200, 219], category: 伤寒, source: *src}
+  - {id: jk, title: 金匮要略, authors: [张机（仲景）], dynasty: 东汉, composition: [200, 219], category: 金匮, source: *src}
+  - {id: qj, title: 备急千金要方, authors: [孙思邈], dynasty: 唐, composition: [652, 652], category: 方书, source: *src}
+  - {id: zl, title: 证类本草, authors: [唐慎微], dynasty: 宋, composition: [1108, 1108], category: 本草, source: *src}
+  - {id: jf, title: 太平惠民和剂局方, aliases: [局方], authors: [太平惠民和剂局], dynasty: 宋, composition: [1107, 1151], category: 方书, source: *src}
+  - {id: rm, title: 儒门事亲, authors: [张从正], dynasty: 金, composition: [1228, 1228], category: 综合, source: *src}
+  - {id: tyb, title: 汤液本草, authors: [王好古], dynasty: 元, composition: [1289, 1308], category: 本草, source: *src}
+  - {id: yz, title: 医宗金鉴, authors: [吴谦等], dynasty: 清, composition: [1742, 1742], category: 综合, source: *src}

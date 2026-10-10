@@ -57,9 +57,24 @@ export function compact(value, maxChars = 16000, dumped = null) {
   return `${cpSlice(text, maxChars)}…［截断：原长 ${cpLength(text)} 字符］`;
 }
 
-/** The result as the interface shows it: whole when small enough, trimmed (still valid JSON) otherwise. */
+/** What the model reads of a result: all of it but the chart specifications (charts), which are for the page — of them it
+ * reads only the titles of those the page shows (charts_shown), so that it can point to them. */
+export function forModel(value) {
+  if (!isPlainObject(value) || !("charts" in value)) return value;
+  const { charts, ...rest } = value;
+  const titles = (Array.isArray(charts) ? charts : []).filter((c) => isPlainObject(c) && typeof c.title === "string" && c.title).map((c) => c.title);
+  return titles.length ? { ...rest, charts_shown: titles } : rest;
+}
+
+/** The result as the interface shows it: whole when small enough, trimmed (still valid JSON) otherwise — its charts never
+ * trimmed. */
 export function forInterface(value, maxChars = 400_000, dumped = null) {
   if (fits(dumped ?? dumps(value), maxChars)) return value;
+  if (isPlainObject(value) && "charts" in value) {
+    const { charts, ...rest } = value;
+    const out = forInterface(rest, maxChars - cpLength(dumps(charts)));
+    return isPlainObject(out) ? { ...out, charts } : out;
+  }
   for (const [items, chars] of [[200, 4000], [80, 2000], [30, 800], [10, 300]]) {
     const trimmed = trim(value, items, chars);
     if (fits(dumps(trimmed), maxChars)) return trimmed;
@@ -123,7 +138,8 @@ export function shape(tool, ok, result, error = null, { durationMs = 0, maxChars
   const out = { ok, tool, duration_ms: Math.round(durationMs * 10) / 10 };
   if (ok) {
     const text = dumped ?? dumps(result ?? null); // serialised once for the model's text and the interface's check
-    Object.assign(out, { text: compact(result, maxChars, text), result: forInterface(result, 400_000, text), citations: citations(result),
+    const seen = forModel(result);
+    Object.assign(out, { text: compact(seen, maxChars, seen === result ? text : null), result: forInterface(result, 400_000, text), citations: citations(result),
       summary: summarize(result), receipt });
   } else {
     Object.assign(out, { text: `ERROR: ${error}`, error, summary: cpSlice(error || "", 160), citations: [] });

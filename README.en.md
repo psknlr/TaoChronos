@@ -61,10 +61,11 @@ and decide.
 > period conversations are recorded for visitors who agree).  Or choose the underlying model and paste your own API key in the
 > settings (DeepSeek, Qwen, Kimi, GLM, Doubao, SiliconFlow, OpenRouter, Poe, LiteLLM, Claude and others are
 > listed; any other endpoint can be set by hand under **自定义 API** — address, model, key, headers) and hold a multi-turn
-> conversation as in ChatGPT or Claude.  The model answers through all 73 of TaoChronos's tools, and the page checks every
+> conversation as in ChatGPT or Claude.  The model answers through all 79 of TaoChronos's tools, and the page checks every
 > `[[passage_id]]` it cites word for word (✓ matches the passage · ≠ misquoted · ✕ no such passage); evidence, research runs
 > and a tool console (any tool, no model needed) sit in the side panel.  In the browser TaoChronos runs with Pyodide on the
-> **要籍语料**: 348 of the **350 key works** ranked by how the tradition cited them ([list](corpus/catalog/canon.yaml))
+> **要籍语料**: the key works ranked by how the tradition cited them ([list](corpus/catalog/canon.yaml); the list is now
+> **535** works — until it is regenerated on the full corpus the repository holds the earlier 348 of 350)
 > (368 witnesses, 8.5 million characters; the first classics whole, the 素问, 灵枢, 伤寒论 and 金匮 with two or three
 > witnesses to collate, the others in chapters; [sources and terms](corpus/web/ATTRIBUTION.md)), kept in the browser after the
 > first visit so that it opens again in seconds.  For **all the books**, build the full corpus and
@@ -106,6 +107,9 @@ and decide.
 | **句读 and 训诂** | punctuation of 白文 learned from the editors' punctuated texts (marks inserted, every character kept); the parts of a clause (condition, disease, findings, pulse, pattern, principle, contraindication, formula, composition, preparation, administration, modification, prognosis); the glosses of a word in the commentators' set forms (…者…也, 貌, 音, 反切, 读为, 当作, 一作, 通), with who gave each first | `study punctuate` · `study clause` · `study glosses` |
 | **Commentators and schools** | the commentaries on a clause aligned and compared (照录, 承袭, 同解, 增益, 异解, 驳, 从); disputes (who rejects whom, on what, and who reports it); schools (the words, drugs, formulas and citations a school uses more than the other works of its time); names (a drug's names, the change of its preferred name, names the lexicon lacks) | `study commentaries` · `study disputes` · `study schools` · `study names` |
 | **Historians of formulas, materia medica and medicine** | formula provenance (original and current compositions, 加减, 同名异方, 同方异名, dose ratios, doses in the measures of their period, indications, verses); drug-property histories (flavour, toxicity, 归经, 升降浮沉 — first statements and changes); term histories (shares by period with intervals, trend test, first attestations, collocates, senses); drug pairs (NPMI, Fisher with Benjamini–Hochberg, groups of drugs) and the formula–finding network | `study formula` · `study herb` · `study term` · `study pairs` · `study network` |
+| **Herb and formula research** | formulas compared drug by drug (original or current witness: drugs, doses, ratios, dose-weighted overlap; 同方 / 同药异量 / 加减化裁 / 异方); the formulas made from a base (加味, 减味, 加减, 同药异量, 合方); a drug's use through the periods (share of compositions with a trend test, decoction doses by period, pills, powders and 煮散 apart, the largest-dose clue, preparation, partners); the 本草's natures, flavours and channels of several drugs side by side; 十八反 and 十九畏 in the texts (statements, verses, formulas that still write a pair) | `study compare` · `study family` · `study usage` · `study properties` · `study incompat` |
+| **Research design** | a question turned into a protocol: kinds and objects, falsifiable hypotheses (prediction, test, refutation, rivals), scope and the works to read first, operational variables, methods (each a tool with a command to rerun it), analysis, figures, quality, limitations, ethics, timeline and a research contract — with a pilot run that says whether the corpus holds enough | `study protocol` |
+| **Scientific charts** | results carry chart specifications (lines with interval bands, grouped bars, horizontal bars, stacks, heatmaps, box ranges, timelines, networks): drawn on the page with hover and keyboard read-outs and a table view, downloaded as SVG, PNG, CSV or JSON in one click; written by the CLI as SVG, CSV and JSON | `--charts DIR` · [web](docs/web.md#图表--charts-and-their-downloads) |
 | **Researchers who need data** | open tables with provenance, dates and licences (Frictionless data packages) for statistics and visualisation | `study dataset` |
 | **Students** | cloze cards for 方证, compositions (with verses), drug properties and key passages, exported to Anki; reading paths from the source classics to the Republican syntheses | `study cards` · `study reading` |
 | **Textual critics** | multi-witness collation into variant units (异文, 脱, 衍, 倒, lacunae, structural differences, orthographic variants) graded by impact (doses, negations, drugs first), a neighbour-joining stemma, groups of shared readings and contamination, one witness against the others, a TEI apparatus; the transmission chain of a passage (shared innovations); a work's witnesses — the transcriptions in the store with their editions, holders and page images, and the prints and manuscripts digitised by libraries with shelfmarks, IIIF manifests and terms | `study variants` · `study stemma` · `study edition` · `study tei` · `study witnesses` · `study chain` |
@@ -121,7 +125,7 @@ and decide.
 | **Layout, entities, translation, places** | vertical reading order and 双行小注, a multimodal reading, OCR checked against the store; entities in context; five-layer translation; native places, signed prefaces, regional statistics | `vision` · `study entities` · `study translate` · `study places` |
 | **Knowledge discovery** | multi-agent research: lost knowledge, concept drift, formula evolution, hidden associations, contradictions, lost sources; verbatim evidence, falsification, gates, expert review | `research` · `report` · `workspace` · `review` |
 | **Everyone (web)** | a ChatGPT/Claude-style multi-turn chat: the default service with no key (MiniMax-M3) or a model of your choice answers through every tool, quotations checked word for word, sources one click away (horizontal or vertical reading); a research panel and a tool console; conversations kept in your browser, exportable | [web](https://chat.impf.ai/) · `serve` · `web build` |
-| **Developers** | plugin kernel, capability registry, a tool mesh of 73 tools, agents as YAML specs, event sourcing and replay, evaluation and architecture governance; the JSON Schemas of the tasks' outputs | `agents` · `eval` · `governance` · `schema --study` |
+| **Developers** | plugin kernel, capability registry, a tool mesh of 79 tools, agents as YAML specs, event sourcing and replay, evaluation and architecture governance; the JSON Schemas of the tasks' outputs | `agents` · `eval` · `governance` · `schema --study` |
 
 ## 2. Quick start
 
@@ -264,16 +268,22 @@ In all **966 works, ~123 million characters, 2.05 million passages**.
 
 See [docs/data.md](docs/data.md) and [ADR 0003](docs/adr/0003-corpus-store-and-scoped-research.md).
 
-### The 350 key works, and the corpus of the web client
+### The 535 key works, and the corpus of the web client
 
 - **要籍** (`taochronos study canon --write-catalog` → [`corpus/catalog/canon.yaml`](corpus/catalog/canon.yaml), metadata only):
-  the 759 medical works ranked by the citation network of the whole store; the first 350 are listed.  score =
+  the 759 medical works ranked by the citation network of the whole store; the first 535 are listed (`CANON_SIZE`; 350
+  until October 2026).  The ranking is total, so the longer list extends the shorter: `taochronos web canon --extend` keeps
+  the 350 listed works in their order on the full store, appends ranks 351–535, packs the browser's corpus again and
+  rewrites the D1 backup's tables; the `canon` workflow (`.github/workflows/canon.yml`, run by hand) does the same in CI
+  from the site's corpus parts and commits the result.  Until it runs, the list and the corpus in the repository are those
+  of the 350, and the figures below are theirs.  score =
   10·log₂(1 + distinct works citing it, not older than it) + 2·periods citing it + 2·log₂(1 + citations) +
   3·log₂(1 + witnesses) + 6·in the 四库全书.  The 素问, 灵枢, 金匮, 难经, 伤寒论, 神农本草经, 千金要方, 脉经, 甲乙经 and
   外台秘要 lead; each of the 350 is cited by at least two later works.  It reads what this corpus quotes — late works have had
   less time to be cited, lost works are not in it.  The `classics.canon` tool queries the list in any corpus and says
   whether the current one holds each work's text.
-- **要籍语料** (`taochronos web pack` → [`corpus/web/`](corpus/web/ATTRIBUTION.md)): **348 of the 350** (368 witnesses,
+- **要籍语料** (`taochronos web pack` → [`corpus/web/`](corpus/web/ATTRIBUTION.md); the 185 works added come in excerpts of
+  about 12 000 characters each): **348 of the 350** (368 witnesses,
   135 000 passages, 8.5 million characters): the best witness of each (the openly licensed first — CMETA's collated
   editions, Kanripo, Wikisource, McGill, 笈成, which give 344 of the works — then the web text sets transcribed from 笈成;
   the most complete within a source), up to three for the first ten, whole within 350 000 characters; the others by rank
@@ -373,6 +383,25 @@ functions and tools (`study.*`) called by the existing agents, each with an eval
 
 The examples of this table were computed on the current store (966 works) by the full evaluation; see
 [docs/tasks.md](docs/tasks.md).
+
+### Herb and formula research, research protocols and charts
+
+The five herb and formula studies share the one cached pass of `study pairs` (one work counted once; each composition
+with its drugs by family, the doses and preparation notes as written, and the form its preparation makes of it — 汤剂,
+丸剂, 散剂 or 煮散, so that a 宋 powder boiled by the spoonful is not compared with a decoction): **`study compare`** sets two to
+six formulas side by side (drugs, doses in the measures of each witness's period, ratios, dose-weighted overlap, and a
+verdict per pair); **`study family`** finds the formulas made from a base by adding or removing drugs, or changing its
+doses; **`study usage`** follows a drug through the periods (its share of the compositions with Wilson intervals and a
+trend test, decoction doses by period, the largest-dose clue, preparation notes, partners); **`study properties`** sets the
+本草's flavours, natures, toxicity and channels of several drugs, or of a formula's, side by side; **`study incompat`**
+reads 十八反 and 十九畏 in the texts — who stated each pair first, where the verses are written, and which compositions still
+write both drugs.  **`study protocol`** turns a research question into a protocol with falsifiable hypotheses (a formula's
+name is read as one: 白虎加人参汤 is 白虎汤 加 人参), operational variables, methods that are this system's tools with the
+commands that rerun them, analysis, figures, quality checks, limitations, ethics, a timeline and a research contract, and
+runs its main steps once to say whether the corpus holds enough.  Their results — and those of `formula`, `herb`, `term`,
+`pairs`, `network`, `names` and `senses` — carry chart specifications that the page draws (with downloads as SVG, PNG,
+CSV and JSON) and `--charts DIR` writes as files.  See [docs/study.md](docs/study.md#方药研究-herb-and-formula-research) and
+[ADR 0019](docs/adr/0019-herb-formula-research-protocols-charts.md).
 
 The study layer is part of research too: under `full-corpus`, **TaoChronos-Scholar** traces the focus formulas, drugs
 and terms through the whole store in round 0, and the dossiers become the report's appendix "源流考证 · Sources
@@ -556,9 +585,9 @@ the page names (asked who it is, who published it or what model it runs on, the 
 the platform: [ADR 0014](docs/adr/0014-identity-fixed-reply.md); an endpoint not in the list can be set by hand).  The conversation runs in the browser
 on the default service (no key; the page shows it as 道乃久默认服务 / Tao-R1 and names no vendor) or with your own key,
 straight to the provider or through `taochronos serve`; TaoChronos
-executes the tools in the browser (Pyodide, the 要籍语料: 348 of the 350 key works) or under
+executes the tools in the browser (Pyodide, the 要籍语料: the listed key works, now 348 of 350) or under
 `taochronos serve` (the full corpus, all the books; the browser remembers the server).  The model acts as an
-agent with read and analysis permissions only, sees sixteen common tools directly and the rest through a catalog;
+agent with read and analysis permissions only, sees nineteen common tools directly and the rest through a catalog;
 MiniMax-M3's `reasoning_details` and tool calls are replayed verbatim turn after turn, and Claude is called through the
 official SDK (adaptive thinking, server-side refusal fallbacks).  The local server binds to 127.0.0.1 by default, answers
 only this machine's pages, its own pages, the published client and named origins, and forwards model requests only to the
@@ -644,7 +673,7 @@ kernel        event sourcing, transactions, replay, scheduler, policy, hooks, bu
 capabilities  provider-neutral interfaces (LLM …)
 science       D1–D5 engines, statistics, scoring, gates, provenance; reuse rules, strata, trajectories, argument graphs, sense evolution
 verification  verbatim checks and provenance chains; the presentism guard; the evidence graph and the evidence audit (V2)
-tools         the tool mesh: philology · retrieval · knowledge · analytics · study · bridge · literature · validation (73 tools)
+tools         the tool mesh: philology · retrieval · knowledge · analytics · study · bridge · literature · validation (79 tools)
 plugins       classics (corpus, store, domain pack, philology, collation, citations, text reuse, study, vision, bridge, audit) · modern (evidence, real-world data) · knowledge · retrieval · models · sandbox · storage …
 agents        AgentSpecs, routing, the LLM loop, deterministic procedures, Code Mode, subagents
 engine        the research engine (operational and scientific loops, branches, tournament, report); the V2 workflow compiler and executor
@@ -695,7 +724,7 @@ docs/                      study, task specification, architecture, agents, disc
 
 - **The repository holds catalogues, lock files, domain data and code only**; transcriptions stay in the local data
   directory (`.taochronos/`, git-ignored) and are rebuilt reproducibly by `corpus fetch / unpack / ingest`.  The one
-  exception is the web client's **要籍语料** (`corpus/web/`): the texts of the 350 ranked works (all in the public domain),
+  exception is the web client's **要籍语料** (`corpus/web/`): the texts of the ranked works (all in the public domain),
   written by `taochronos web pack`.  The openly licensed witnesses (Kanripo and Wikisource CC BY-SA 4.0, CMETA CC BY 4.0,
   McGill public domain, 笈成 CC0 1.0) are used under their licences; the four works known only through a web text set (its
   repository declares no licence) and the modern editors' part of the 笈成 texts that follow a modern reconstruction or

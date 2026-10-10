@@ -27,7 +27,7 @@ from ..protocol.base import to_jsonable
 from .catalog import CODE_MODE, ENGINE_TOOLS, META_TOOLS, NEVER, catalog_view, family_counts, llm_tools, offered
 from .prompt import AGENT_NAME as AGENT_NAME_ZH
 from .prompt import ASSISTANT_NAME, PUBLISHER, STARTERS, system_prompt
-from .results import citations, compact, for_interface, summarize
+from .results import citations, compact, for_interface, for_model, summarize
 
 CORPUS_LABELS = {"demo": "演示语料", "canon": "要籍语料", "full": "全量语料"}
 CHAT_PERMISSIONS = frozenset({"classics:read", "kg:read", "analysis:run", "literature:read", "validation:run"})
@@ -54,8 +54,8 @@ def shape(tool: str, ok: bool, result: Any, error: str | None = None, receipt: d
     """A tool's outcome as the client receives it: ``text`` for the model, ``result`` and ``citations`` for the interface."""
     out: dict[str, Any] = {"ok": ok, "tool": tool, "duration_ms": round(duration_ms, 1)}
     if ok:
-        # the model reads a research run's summary; the interface also shows its full report
-        seen = {k: v for k, v in result.items() if k != "report_markdown"} if tool == "taochronos_research" else result
+        # the model reads a research run's summary; the interface also shows its full report — and a result's charts
+        seen = {k: v for k, v in result.items() if k != "report_markdown"} if tool == "taochronos_research" else for_model(result)
         out.update(text=compact(seen, max_chars), result=for_interface(result), citations=citations(result),
                    summary=summarize(result), receipt=to_jsonable(receipt or {}))
     else:

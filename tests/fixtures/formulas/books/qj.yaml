@@ -1,0 +1,5 @@
+- book: qj
+  passages:
+    - {id: qj.1, locator: {chapter: 卷九, section: 桂枝汤}, text: 桂枝汤　桂枝　芍药　生姜各三两　甘草二两　大枣十二枚　右五味，以水七升，煮取三升，分三服。}
+    - {id: qj.2, locator: {chapter: 卷九, section: 白虎加人参汤}, text: 白虎加人参汤　知母六两　石膏一斤　甘草二两　粳米六合　人参三两　右五味，以水一斗二升，煮米熟，去米，内药煮取六升，去滓，分六服。}
+    - {id: qj.3, locator: {chapter: 卷九, section: 葛根汤}, text: 葛根汤　葛根四两　麻黄三两　桂枝　芍药　甘草各二两　生姜三两　大枣十二枚　右七味，以水一斗，煮取三升，分三服。}

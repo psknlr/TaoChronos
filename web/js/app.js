@@ -1,6 +1,7 @@
 // TaoChronos web client: conversations with a model that uses TaoChronos's tools, every quotation checked.
 
 import { buildHistory, formatOf, runTurn, toolDefs, withoutReasoning } from "./agent.js";
+import { chartsOf, toMarkdown } from "./chart.js";
 import { streamClaude } from "./llm/anthropic.js";
 import { streamChat } from "./llm/openai.js";
 import { extractCitations, renderMarkdown } from "./markdown.js";
@@ -579,6 +580,7 @@ function makeHooks(conv, msg) {
       c.error = out.ok ? null : out.error;
       c.preview = (out.text || "").slice(0, 8000);
       c.citations = (out.citations || []).slice(0, 80);
+      c.charts = out.ok ? chartsOf(out.result) : [];
       if (out.tool && out.tool !== call.name) c.resolved = out.tool;
       toolTextCache.delete(conv); // what the tools returned has grown: citations are checked against it
       registerEvidence(conv, out.citations);
@@ -1269,6 +1271,8 @@ function exportMarkdown(conv) {
         tools.length ? `工具 ${[...new Set(tools)].join("、")}` : null].filter(Boolean);
       if (about.length) lines.push(`*${about.join("；")}*`, "");
       lines.push(answerText(m) || "（无回答）", "");
+      const charts = (m.segments || []).flatMap((s) => (s.calls || []).flatMap((c) => c.charts || []));
+      if (charts.length) lines.push("### 图表数据", "", ...charts.flatMap((spec) => [toMarkdown(spec), ""]));
     }
   }
   const cited = new Set(conv.messages.flatMap((m) => extractCitations(answerText(m)).map((c) => c.pid)));
