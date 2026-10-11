@@ -437,6 +437,7 @@ pre.json { margin: 0; max-height: 280px; overflow: auto; background: var(--code-
 .md .tbl-wrap { overflow-x: auto; max-width: 100%; }
 .md table { border-collapse: collapse; margin: 0; font-size: 14px; line-height: 1.55; border-top: 1.5px solid var(--ink-2); border-bottom: 1.5px solid var(--ink-2); }
 .md th, .md td { padding: 6px 12px; text-align: left; vertical-align: top; }
+.md td:first-child, .md td[style*="center"], .md td[style*="right"] { white-space: nowrap; } /* a stub, a number: one line */
 .md thead th { border-bottom: 1px solid var(--ink-2); font-weight: 600; white-space: nowrap; }
 .md tbody tr:first-child td { padding-top: 8px; }
 .md tbody tr:last-child td { padding-bottom: 8px; }
@@ -884,6 +885,10 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(2px); }
 .sci-table td.a-left { text-align: left; }
 .sci-table td.a-center { text-align: center; }
 .sci-table td.a-right { text-align: right; }
+/* a number or a statistic never breaks (117.6 (117.6, 117.6) on one line), nor does a row's stub (先秦两汉): a table wider
+   than its card scrolls in it; a text column (lists of drugs, of books) wraps, but not into a sliver */
+.sci-table td.a-center, .sci-table td.a-right, .sci-table td:first-child { white-space: nowrap; }
+.sci-table td.a-left:not(:first-child) { min-width: 7em; }
 .sci-table tbody tr:first-child td { padding-top: 7px; }
 .sci-table tbody tr:last-child td { padding-bottom: 7px; }
 .sci-table i, .tbl-notes i { font-family: "Times New Roman", var(--font-serif); font-style: italic; }

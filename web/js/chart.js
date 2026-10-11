@@ -106,12 +106,33 @@ export function fmtEst(x) {
 
 const yearText = (t) => (t < 0 ? `前${Math.round(-t)}` : String(Math.round(t)));
 
-/** Width of a text in px: a CJK character as wide as the font size, others about 0.58 of it. */
+const WIDE = new Set(["…", "—"]); // as wide as a CJK character in the fonts a figure names
+
+/** Width of a text in px: a CJK character (and an ellipsis or a dash) as wide as the font size, others about 0.58 of it. */
 export function textWidth(text, size) {
   let w = 0;
-  for (const ch of String(text)) w += ch.codePointAt(0) > 0x2e80 ? size : size * 0.58;
+  for (const ch of String(text)) w += ch.codePointAt(0) > 0x2e80 || WIDE.has(ch) ? size : size * 0.58;
   return w;
 }
+
+/** A label cut to the room it has, with an ellipsis (the table and the hover keep it whole). */
+export function clipText(text, size, room) {
+  const s = String(text ?? "");
+  if (textWidth(s, size) <= room) return s;
+  let out = "";
+  for (const ch of s) {
+    if (textWidth(out + ch + "…", size) > room) break;
+    out += ch;
+  }
+  return (out || [...s][0] || "") + "…";
+}
+
+/** The ink of a label set at (x, y): [x0, y0, x1, y1] — its width by textWidth, its height the em box. */
+const boxOf = (x, y, w, size, anchor = "start") => {
+  const x0 = anchor === "middle" ? x - w / 2 : anchor === "end" ? x - w : x;
+  return [x0, y - 0.84 * size, x0 + w, y + 0.16 * size];
+};
+const clash = (a, b, gap = 1) => a[0] < b[2] + gap && b[0] < a[2] + gap && a[1] < b[3] + gap && b[1] < a[3] + gap;
 
 /** The top of an axis: the next of 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8 (× a power of ten) — never far above the data. */
 export function niceMax(x) {
@@ -218,7 +239,8 @@ function legend(items, width, kind = "rect") {
   if (items.length < 2) return { nodes: [], height: 0 };
   const nodes = [];
   let x = 0, y = 12;
-  for (const [label, c] of items) {
+  for (const [full, c] of items) {
+    const label = clipText(full, 11, width - 20);
     const w = 18 + textWidth(label, 11) + 16;
     if (x + w > width && x > 0) { x = 0; y += 18; }
     nodes.push(kind === "line" ? line(x, y - 4, x + 12, y - 4, c, 2) : el("rect", { x, y: y - 9, width: 10, height: 10, rx: J ? 0 : 2, fill: c }));
@@ -237,7 +259,8 @@ function leftFor(tickTexts, label) {
   return Math.max(40, Math.max(0, ...tickTexts.map((t) => textWidth(t, 10.5))) + 18 + (label ? 20 : 0));
 }
 
-function yAxis(g, left, right, top, bottom, lo, hi, percent, label, integer = false) {
+/** A y axis; on screen its title above it, ``head`` over the plot's top. */
+function yAxis(g, left, right, top, bottom, lo, hi, percent, label, integer = false, head = 8) {
   const scale = (val) => (hi > lo ? bottom - ((val - lo) / (hi - lo)) * (bottom - top) : bottom);
   const tks = ticks(lo, hi, 5, integer && !percent);
   if (J) {
@@ -255,12 +278,15 @@ function yAxis(g, left, right, top, bottom, lo, hi, percent, label, integer = fa
     g.append(line(left, y, right, y, "viz-grid"), text(left - 6, y + 4, fmt(t, percent), { size: 10.5, fill: "viz-muted", anchor: "end", cls: "tick" }));
   }
   g.append(line(left, bottom, right, bottom));
-  if (label) g.append(text(left, top - 8, label, { size: 10.5, fill: "viz-muted" }));
+  if (label) g.append(text(left, top - head, label, { size: 10.5, fill: "viz-muted" }));
   return scale;
 }
 
-/** Category labels under the axis (ticks above them in a journal), turned when they do not fit their band; in a journal
- * the axis title under them.  The y under them. */
+const TURNED = 112; // the longest a turned category label runs before it is cut
+
+/** Category labels under the axis (ticks above them in a journal); when they do not fit their band, turned — at 40°
+ * while neighbours clear each other, upright (reading upwards) in a narrower band, and only every k-th of them in a band
+ * narrower than a line of text; in a journal the axis title under them.  The y under them. */
 function xLabels(g, cats, xs, bottom, band, label = null) {
   if (J) for (const x of xs) g.append(line(x, bottom, x, bottom + 4));
   const longest = Math.max(0, ...cats.map((c) => textWidth(c, 10.5)));
@@ -268,9 +294,15 @@ function xLabels(g, cats, xs, bottom, band, label = null) {
   if (longest <= band - 4) {
     cats.forEach((c, i) => g.append(text(xs[i], bottom + 16, c, { size: 10.5, anchor: "middle" })));
     end = bottom + 22;
+  } else if (band >= 19) { // at 40° two neighbours are band × sin 40° apart: a line of text needs 12
+    const shown = cats.map((c, i) => clipText(c, 10.5, Math.min(TURNED, (xs[i] - 8) / 0.77))); // the first ones: not past the left edge
+    shown.forEach((c, i) => g.append(text(xs[i], bottom + 12, c, { size: 10.5, anchor: "end", rotate: -40 })));
+    end = bottom + 16 + Math.max(0, ...shown.map((c) => textWidth(c, 10.5))) * 0.65;
   } else {
-    cats.forEach((c, i) => g.append(text(xs[i], bottom + 12, c, { size: 10.5, anchor: "end", rotate: -40 })));
-    end = bottom + 12 + longest * 0.7;
+    const every = Math.max(1, Math.ceil(12.5 / Math.max(band, 1e-9)));
+    const shown = cats.map((c) => clipText(c, 10.5, TURNED));
+    shown.forEach((c, i) => { if (i % every === 0) g.append(text(xs[i] + 3.6, bottom + 8, c, { size: 10.5, anchor: "end", rotate: -90 })); });
+    end = bottom + 14 + Math.max(0, ...shown.map((c) => textWidth(c, 10.5)));
   }
   if (J && label && xs.length) { g.append(text((xs[0] + xs.at(-1)) / 2, end + 12, label, { size: 11, fill: "viz-ink", anchor: "middle" })); end += 16; }
   return end;
@@ -330,6 +362,7 @@ function series(spec, width) {
   const xs = rows.map((_, i) => left + band * (i + 0.5));
   const targets = [];
   if (kind === "line") {
+    const lines = [], ends = [];
     list.forEach((s, i) => {
       if (s.lo && s.hi) {
         const up = rows.map((r, j) => [xs[j], num(r[s.hi])]).filter(([, n]) => n !== null);
@@ -339,13 +372,17 @@ function series(spec, width) {
       const pts = rows.map((r, j) => [xs[j], num(r[s.key])]).filter(([, n]) => n !== null);
       if (pts.length >= 2) g.append(el("polyline", { points: pts.map(([a, b]) => `${a.toFixed(1)},${scale(b).toFixed(1)}`).join(" "), fill: "none", stroke: colors[i], "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
       for (const [a, b] of pts) g.append(el("circle", { cx: a.toFixed(1), cy: scale(b).toFixed(1), r: 4, fill: colors[i], stroke: v("viz-surface"), "stroke-width": 2 }));
-      if (pts.length && !J) { const [a, b] = pts.at(-1); g.append(text(a, scale(b) - 9, fmt(b, percent), { size: 10.5, fill: "viz-ink", anchor: "middle" })); }
+      lines.push(pts.map(([a, b]) => [a, scale(b)]));
+      if (pts.length) ends.push([pts.at(-1)[0], scale(pts.at(-1)[1]), fmt(pts.at(-1)[1], percent)]);
     });
+    if (!J) g.append(...endLabels(ends, lines, top)); // each line's end value, where it clears the other labels, dots and lines
     rows.forEach((r, j) => targets.push({ x: xs[j], y: top, crosshair: true, title: String(r[xkey] ?? ""),
       lines: list.map((s) => [fmt(r[s.key], percent) + (s.lo && s.hi && num(r[s.lo]) !== null ? `（${fmt(r[s.lo], percent)}–${fmt(r[s.hi], percent)}）` : ""), s.label]) }));
   } else if (kind === "bar") {
     const n = Math.max(list.length, 1);
     const bw = Math.max(3, Math.min(24, (band - 8) / n - 2));
+    // a value over each bar of a single series — when every one of them fits its band (else none: the table has them)
+    const labelled = list.length === 1 && rows.length <= 14 && rows.every((r) => num(r[list[0].key]) === null || textWidth(fmt(r[list[0].key], percent), 10) <= band - 3);
     rows.forEach((r, j) => {
       const x0 = xs[j] - ((bw + 2) * n) / 2 + 1;
       list.forEach((s, i) => {
@@ -354,7 +391,7 @@ function series(spec, width) {
         const yv = scale(Math.max(val, lo)), base = scale(Math.max(lo, 0));
         g.append(el("path", { d: val >= 0 ? roundedBar(x0 + i * (bw + 2), Math.min(yv, base), bw, Math.abs(base - yv)) : "", fill: colors[i] }));
         if (s.lo && s.hi && num(r[s.lo]) !== null && num(r[s.hi]) !== null) whisker(g, x0 + i * (bw + 2) + bw / 2, scale(num(r[s.lo])), scale(num(r[s.hi])), "viz-ink-2", Math.min(4, bw / 2));
-        if (n === 1 && rows.length <= 14) g.append(text(x0 + bw / 2, yv - 5, fmt(val, percent), { size: 10, anchor: "middle" }));
+        if (labelled) g.append(text(x0 + bw / 2, yv - 5, fmt(val, percent), { size: 10, anchor: "middle" }));
       });
       targets.push({ x: xs[j], y: scale(Math.max(0, ...list.map((s) => num(r[s.key]) ?? 0))), col: band / 2, title: String(r[xkey] ?? ""),
         lines: list.map((s) => [fmt(r[s.key], percent), s.label]) });
@@ -380,6 +417,33 @@ function series(spec, width) {
   return { svg: g, height: end + 4, targets, plotTop: top, plotBottom: bottom };
 }
 
+/** The end value of each line: above its last point, else below it, wherever it clears the labels set before it, every
+ * dot and every line (sampled along); a value with room in neither place is left to the hover and the table. */
+function endLabels(ends, lines, top) {
+  const out = [], placed = [];
+  const dots = lines.flat();
+  const crosses = (pts, b) => pts.slice(1).some(([x2, y2], k) => {
+    const [x1, y1] = pts[k];
+    const steps = Math.max(2, Math.floor(Math.hypot(x2 - x1, y2 - y1) / 2));
+    for (let i = 0; i <= steps; i++) {
+      const x = x1 + ((x2 - x1) * i) / steps, y = y1 + ((y2 - y1) * i) / steps;
+      if (x >= b[0] - 1 && x <= b[2] + 1 && y >= b[1] - 1 && y <= b[3] + 1) return true;
+    }
+    return false;
+  });
+  for (const [x, y, label] of ends) {
+    const w = textWidth(label, 10.5);
+    for (const by of [y - 9, y + 17]) {
+      const b = boxOf(x, by, w, 10.5, "middle");
+      if (b[1] < top - 18 || placed.some((p) => clash(b, p)) || dots.some(([dx, dy]) => clash(b, [dx - 6, dy - 6, dx + 6, dy + 6], 0)) || lines.some((pts) => crosses(pts, b))) continue;
+      placed.push(b);
+      out.push(text(x, by, label, { size: 10.5, fill: "viz-ink", anchor: "middle" }));
+      break;
+    }
+  }
+  return out;
+}
+
 function hbar(spec, width) {
   const rows = spec.rows;
   const xkey = spec.x.key;
@@ -402,7 +466,7 @@ function hbar(spec, width) {
   rows.forEach((r, i) => {
     const val = num(r[s.key]) || 0;
     const y = top + i * step + (step - bh) / 2;
-    g.append(text(left - 8, y + bh - 3.5, r[xkey] ?? "", { size: 11, anchor: "end" }));
+    g.append(text(left - 8, y + bh - 3.5, clipText(r[xkey] ?? "", 11, left - 10), { size: 11, anchor: "end" }));
     const x0 = scale(0), x1 = scale(val);
     g.append(x1 >= x0 ? el("path", { d: roundedBar(x0, y, x1 - x0, bh, false), fill: v("viz-1") }) : el("rect", { x: x1, y, width: x0 - x1, height: bh, fill: v("viz-1") }));
     g.append(text(Math.max(x0, x1) + 6, y + bh - 3.5, fmt(val, percent), { size: 10.5, fill: "viz-ink" }));
@@ -431,16 +495,24 @@ function heatmap(spec, width) {
   const left = labelW;
   const cw = Math.min(64, (width - 12 - left) / Math.max(xs.length, 1));
   const ch = J ? 20 : 24;
-  const rotated = xs.some((x) => textWidth(x, 10.5) > cw - 2);
-  const top = rotated ? 12 + Math.min(80, Math.max(...xs.map((x) => textWidth(x, 10.5))) * 0.65) : 22;
-  xs.forEach((x, i) => {
-    const cx = left + cw * (i + 0.5);
-    g.append(rotated ? text(cx, top - 6, x, { size: 10.5, rotate: -40 }) : text(cx, top - 8, x, { size: 10.5, anchor: "middle" }));
-  });
+  const centre = (i) => left + cw * (i + 0.5);
+  let top;
+  if (xs.every((x) => textWidth(x, 10.5) <= cw - 2)) {
+    top = 22;
+    xs.forEach((x, i) => g.append(text(centre(i), top - 8, x, { size: 10.5, anchor: "middle" })));
+  } else if (cw >= 19) { // turned 40°, each reaching up and to the right: cut where it would leave the figure
+    const shown = xs.map((x, i) => clipText(x, 10.5, Math.min(TURNED, (width - 2 - centre(i)) / 0.77)));
+    top = 14 + Math.max(0, ...shown.map((x) => textWidth(x, 10.5))) * 0.65;
+    shown.forEach((x, i) => g.append(text(centre(i), top - 6, x, { size: 10.5, rotate: -40 })));
+  } else { // upright, reading upwards: narrow columns
+    const shown = xs.map((x) => clipText(x, 10.5, TURNED));
+    top = 14 + Math.max(0, ...shown.map((x) => textWidth(x, 10.5)));
+    shown.forEach((x, i) => g.append(text(centre(i) + 3.6, top - 6, x, { size: 10.5, rotate: -90 })));
+  }
   const targets = [];
   ys.forEach((y, j) => {
     const cy = top + ch * j;
-    g.append(text(left - 8, cy + ch / 2 + 4, y, { size: 11, anchor: "end" }));
+    g.append(text(left - 8, cy + ch / 2 + 4, clipText(y, 11, left - 10), { size: 11, anchor: "end" }));
     xs.forEach((x, i) => {
       const r = cell.get(`${x}\u0000${y}`);
       const val = r ? num(r[vk]) : null;
@@ -448,17 +520,30 @@ function heatmap(spec, width) {
       g.append(el("rect", { x: (left + cw * i + 1).toFixed(1), y: (cy + 1).toFixed(1), width: (cw - 2).toFixed(1), height: ch - 2, rx: J ? 0 : 2, fill: k < 0 ? v("viz-empty") : v(`viz-seq-${k}`) }));
       if (val !== null && val > 0) {
         const label = fmt(val, percent);
-        if (textWidth(label, 10) <= cw - 6) g.append(text(left + cw * (i + 0.5), cy + ch / 2 + 4, label, { size: 10, anchor: "middle", fill: k >= 6 ? "#ffffff" : "viz-ink" }));
+        if (textWidth(label, 10) <= cw - 6) g.append(text(centre(i), cy + ch / 2 + 4, label, { size: 10, anchor: "middle", fill: k >= 6 ? "#ffffff" : "viz-ink" }));
       }
       const extra = r ? (spec.columns || []).filter((c) => ![xk, yk, vk].includes(c.key)).map((c) => [fmt(r[c.key]), c.label]).filter(([t]) => t) : [];
-      targets.push({ x: left + cw * (i + 0.5), y: cy + ch / 2, box: [cw / 2, ch / 2], title: `${y} · ${x}`, lines: [[val === null ? "—" : fmt(val, percent), spec.value.label || ""], ...extra] });
+      targets.push({ x: centre(i), y: cy + ch / 2, box: [cw / 2, ch / 2], title: `${y} · ${x}`, lines: [[val === null ? "—" : fmt(val, percent), spec.value.label || ""], ...extra] });
     });
   });
   const bottom = top + ch * ys.length;
-  for (let k = 0; k < RAMP; k++) g.append(el("rect", { x: left + k * 14, y: bottom + 12, width: 14, height: 8, fill: v(`viz-seq-${k}`) }));
-  g.append(text(left, bottom + 34, "0", { size: 10, fill: "viz-muted" }), text(left + 14 * RAMP, bottom + 34, fmt(vmax, percent), { size: 10, fill: "viz-muted", anchor: "end" }),
-    text(left + 14 * RAMP + 10, bottom + 20, spec.value.label || "", { size: 10.5, fill: "viz-muted" }));
+  g.append(...ramp(left, bottom, width, fmt(vmax, percent), spec.value.label || ""));
   return { svg: g, height: bottom + 42, targets };
+}
+
+/** A heatmap's colour scale under it: the ramp from 0 to its largest value, and what the colour counts after it — the
+ * steps narrowed, then the whole moved left, then the label cut, as a narrow figure needs. */
+function ramp(x0, bottom, width, topLabel, label) {
+  const room = width - 2, lw = textWidth(label, 10.5);
+  let seg = 14;
+  if (x0 + RAMP * seg + 10 + lw > room) seg = Math.max(7, (room - x0 - 10 - lw) / RAMP);
+  if (x0 + RAMP * seg + 10 + lw > room) x0 = Math.max(0, room - lw - 10 - RAMP * seg);
+  const end = x0 + RAMP * seg;
+  const out = [];
+  for (let k = 0; k < RAMP; k++) out.push(el("rect", { x: (x0 + k * seg).toFixed(1), y: bottom + 12, width: seg.toFixed(1), height: 8, fill: v(`viz-seq-${k}`) }));
+  out.push(text(x0, bottom + 34, "0", { size: 10, fill: "viz-muted" }), text(end, bottom + 34, topLabel, { size: 10, fill: "viz-muted", anchor: "end" }),
+    text(end + 10, bottom + 20, clipText(label, 10.5, room - end - 10), { size: 10.5, fill: "viz-muted" }));
+  return out;
 }
 
 function range(spec, width) {
@@ -482,13 +567,19 @@ function range(spec, width) {
     const x = xs[i];
     if (lo_ !== null && hi_ !== null) {
       whisker(g, x, scale(clip(lo_)), scale(clip(hi_)), "viz-1");
-      if (hi_ > hi) g.append(el("path", { d: `M${x - 4},${top + 6}L${x},${top}L${x + 4},${top + 6}`, fill: "none", stroke: v("viz-1"), "stroke-width": 1 }), text(x + 6, top + 6, `↑${fmt(hi_)}`, { size: 10, fill: "viz-muted" }));
+      if (hi_ > hi) {
+        g.append(el("path", { d: `M${x - 4},${top + 6}L${x},${top}L${x + 4},${top + 6}`, fill: "none", stroke: v("viz-1"), "stroke-width": 1 }));
+        if (textWidth(`↑${fmt(hi_)}`, 10) <= band - 14) g.append(text(x + 6, top + 6, `↑${fmt(hi_)}`, { size: 10, fill: "viz-muted" })); // clear of the next whisker
+      }
     }
     if (q1 !== null && q3 !== null) {
       const y1 = scale(clip(q3)), y3 = scale(clip(q1));
       g.append(el("rect", { x: x - 10, y: y1, width: 20, height: Math.max(y3 - y1, 1), rx: J ? 0 : 3, fill: v("viz-1"), "fill-opacity": 0.25, stroke: v("viz-1"), "stroke-width": 1 }));
     }
-    if (med !== null) g.append(el("circle", { cx: x, cy: scale(clip(med)), r: 4.5, fill: v("viz-1"), stroke: v("viz-surface"), "stroke-width": 2 }), text(x + 14, scale(clip(med)) + 4, fmt(med), { size: 10.5, fill: "viz-ink" }));
+    if (med !== null) {
+      g.append(el("circle", { cx: x, cy: scale(clip(med)), r: 4.5, fill: v("viz-1"), stroke: v("viz-surface"), "stroke-width": 2 }));
+      if (textWidth(fmt(med), 10.5) <= band - 27) g.append(text(x + 14, scale(clip(med)) + 4, fmt(med), { size: 10.5, fill: "viz-ink" })); // beside its box, clear of the next one
+    }
     targets.push({ x, y: scale(clip(med ?? 0)), col: band / 2, title: String(r[xkey] ?? ""),
       lines: (spec.columns || []).filter((c) => c.key !== xkey).map((c) => [fmt(r[c.key]), c.label]) });
   });
@@ -511,9 +602,11 @@ function box(spec, width) {
   const lo = num(y.min) ?? Math.min(0, ...rows.map((r) => num(r.lo) ?? 0));
   const hi = niceMax(clip ? cap * 2.5 : Math.max(1e-9, ...tops) * 1.04);
   const g = el("g");
-  const left = leftFor(ticks(lo, hi).map((t) => fmt(t)), y.label), right = width - 16, top = 20;
+  // values past the axis are counted over their box (▲n) in a row of their own, under the axis title and the key to ▲
+  const over = clip && rows.some((r) => valuesOf(r).some((val) => val > hi));
+  const left = leftFor(ticks(lo, hi).map((t) => fmt(t)), y.label), right = width - 16, top = over ? 40 : 20;
   const bottom = top + Math.min(270, Math.max(170, width * (J ? 0.5 : 0.4)));
-  const scale = yAxis(g, left, right, top, bottom, lo, hi, false, y.label);
+  const scale = yAxis(g, left, right, top, bottom, lo, hi, false, y.label, false, over ? top - 12 : 8);
   const band = (right - left) / Math.max(rows.length, 1);
   const xs = rows.map((_, i) => left + band * (i + 0.5));
   const bw = Math.max(8, Math.min(28, band * 0.42));
@@ -544,7 +637,7 @@ function box(spec, width) {
         g.append(el("circle", { cx: x, cy: scale(val).toFixed(1), r: 2.8, fill: v("viz-surface"), stroke: v("viz-1"), "stroke-width": 1.2 }));
       }
     }
-    if (above) g.append(text(x, top - 4, `▲${above}`, { size: 9.5, fill: "viz-muted", anchor: "middle" }));
+    if (above) g.append(text(x, top - 8, `▲${above}`, { size: 9.5, fill: "viz-muted", anchor: "middle" }));
     targets.push({ x, y: scale(Math.min(med ?? 0, hi)), col: band / 2, title: String(r[xkey] ?? ""),
       lines: [[fmt(r.n), "n"], [fmt(med), "中位数"], [`${fmt(q1)}–${fmt(q3)}`, "四分位距"], [`${fmt(wlo)}–${fmt(whi)}`, "须线"], ...(mean !== null ? [[fmt(mean), "均数"]] : [])] });
   });
@@ -552,7 +645,7 @@ function box(spec, width) {
   rows.forEach((r, i) => { if (num(r.n) !== null) g.append(text(xs[i], end + 8, `n = ${num(r.n)}`, { size: 9.5, fill: "viz-muted", anchor: "middle" })); });
   end += 12;
   if (J && spec.x.label) { g.append(text((left + right) / 2, end + 12, spec.x.label, { size: 11, fill: "viz-ink", anchor: "middle" })); end += 16; }
-  if (clip) g.append(text(right, top - 4, "▲：超出纵轴的值的个数", { size: 9.5, fill: "viz-muted", anchor: "end" }));
+  if (over) g.append(text(right, 12, "▲：超出纵轴的值的个数", { size: 9.5, fill: "viz-muted", anchor: "end" }));
   return { svg: g, height: end + 4, targets };
 }
 
@@ -576,14 +669,14 @@ function forest(spec, width) {
   const { lo, hi, log } = forestDomain(rows, est, ax);
   const textOf = (r) => (num(r[est.lo]) !== null && num(r[est.hi]) !== null ? `${fmtEst(r[est.key])} (${fmtEst(r[est.lo])}–${fmtEst(r[est.hi])})` : fmtEst(r[est.key]));
   const labelW = Math.min(width * 0.3, Math.max(30, ...rows.map((r) => textWidth(r[ykey] ?? "", 11))) + 12);
-  const textW = Math.min(width * 0.32, Math.max(40, ...rows.map((r) => textWidth(textOf(r), 10.5))) + 14);
+  const textW = Math.min(width * 0.4, Math.max(40, textWidth(`${est.label || ""} (95% CI)`, 10.5), ...rows.map((r) => textWidth(textOf(r), 10.5))) + 14);
   const left = labelW, right = width - textW;
   const g = el("g");
   const grey = rows.some((r) => r.sig === false) && rows.some((r) => r.sig !== false);
   const lg = grey ? legend([["显著", v("viz-1")], ["未达显著", v("viz-other")]], width) : { nodes: [], height: 0 };
   g.append(...lg.nodes);
   const top = lg.height + 22, step = 20;
-  g.append(text(left - 8, top - 8, spec.y.label || "", { size: 10.5, fill: J ? "viz-ink" : "viz-muted", anchor: "end", weight: J ? 600 : null }),
+  g.append(text(left - 8, top - 8, clipText(spec.y.label || "", 10.5, left - 10), { size: 10.5, fill: J ? "viz-ink" : "viz-muted", anchor: "end", weight: J ? 600 : null }),
     text(right + 10, top - 8, `${est.label || ""} (95% CI)`, { size: 10.5, fill: J ? "viz-ink" : "viz-muted", weight: J ? 600 : null }));
   const bottom = top + step * rows.length;
   const { scale, end } = xAxisNumeric(g, left, right, bottom + 4, lo, hi, { label: ax.label || "", log, gridTop: top });
@@ -593,7 +686,7 @@ function forest(spec, width) {
   rows.forEach((r, i) => {
     const y = top + step * i + step / 2;
     const c = r.sig === false ? v("viz-other") : v("viz-1");
-    g.append(text(left - 8, y + 4, r[ykey] ?? "", { size: 11, anchor: "end" }));
+    g.append(text(left - 8, y + 4, clipText(r[ykey] ?? "", 11, left - 10), { size: 11, anchor: "end" }));
     const e = num(r[est.key]), a = num(r[est.lo]), b = num(r[est.hi]);
     if (a !== null && b !== null) {
       const xa = scale(Math.max(a, lo)), xb = scale(Math.min(b, hi));
@@ -632,8 +725,9 @@ function scatter(spec, width) {
   const topY = Math.max(...yv, ...fit.map(([, b]) => b));
   const yhi = num(ay.max) ?? (ay.percent && topY <= 1 ? 1 : niceMax(topY));
   const left = leftFor(ticks(ylo, yhi).map((t) => fmt(t, ay.percent)), ay.label), right = width - 16;
-  const top = lg.height + 22, bottom = top + Math.min(280, Math.max(180, width * (J ? 0.55 : 0.45)));
-  const yscale = yAxis(g, left, right, top, bottom, ylo, yhi, Boolean(ay.percent), ay.label);
+  const head = sk ? 18 : 8; // the axis title and the key to the bubbles clear of a bubble at the top (radius 10 at most)
+  const top = lg.height + 14 + head, bottom = top + Math.min(280, Math.max(180, width * (J ? 0.55 : 0.45)));
+  const yscale = yAxis(g, left, right, top, bottom, ylo, yhi, Boolean(ay.percent), ay.label, false, head);
   let { scale: xscale, end } = xAxisNumeric(g, left, right, bottom, xlo, xhi, { label: J ? ax.label || "" : "", percent: Boolean(ax.percent), year: Boolean(ax.year), gridTop: top });
   if (!J && ax.label) { g.append(text(right, end + 10, ax.label, { size: 10.5, fill: "viz-muted", anchor: "end" })); end += 14; }
   const smax = sk ? Math.max(1e-9, ...pts.map(([r]) => num(r[sk]) || 0)) : 1;
@@ -649,7 +743,7 @@ function scatter(spec, width) {
       lines: [[ax.year ? yearText(a) : fmt(a, ax.percent), ax.label || ax.key], [fmt(b, ay.percent), ay.label || ay.key], ...extra] });
   }
   if (fit.length >= 2) g.append(el("polyline", { points: fit.map(([a, b]) => `${xscale(a).toFixed(1)},${yscale(Math.min(Math.max(b, ylo), yhi)).toFixed(1)}`).join(" "), fill: "none", stroke: v("viz-ink"), "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
-  if (sk && pts.length) g.append(text(right, top - 8, `点的大小：${spec.size.label || sk}（最大 ${fmt(smax)}）`, { size: 10, fill: "viz-muted", anchor: "end" }));
+  if (sk && pts.length) g.append(text(right, top - head, `点的大小：${spec.size.label || sk}（最大 ${fmt(smax)}）`, { size: 10, fill: "viz-muted", anchor: "end" }));
   return { svg: g, height: end + 4, targets };
 }
 
@@ -688,7 +782,7 @@ function dendrogram(spec, width) {
   const freq = new Map((spec.rows || []).map((r) => [String(r.drug ?? r.label ?? ""), r]));
   for (const item of order) {
     const y = ypos.get(item);
-    g.append(el("rect", { x: left - 13, y: y - 4, width: 8, height: 8, fill: colorOf(member[item]) }), text(left - 18, y + 4, labels[item], { size: 11, anchor: "end" }));
+    g.append(el("rect", { x: left - 13, y: y - 4, width: 8, height: 8, fill: colorOf(member[item]) }), text(left - 18, y + 4, clipText(labels[item], 11, left - 20), { size: 11, anchor: "end" }));
     const r = freq.get(labels[item]) || {};
     targets.push({ x: left, y, row: step / 2, title: labels[item], lines: [[nameOf(member[item]), "类别"], ...(spec.columns || []).filter((c) => !["drug", "label", "cluster"].includes(c.key)).map((c) => [fmt(r[c.key]), c.label]).filter(([t]) => t)] });
   }
@@ -696,6 +790,62 @@ function dendrogram(spec, width) {
   if (cut !== null) g.append(line(xscale(cut), top, xscale(cut), bottom, "viz-muted"));
   const { end } = xAxisNumeric(g, left, right, bottom, 0, hmax * 1.04, { label: spec.x?.label || "" });
   return { svg: g, height: end + 4, targets };
+}
+
+/** The lane (0 at the top) of each label of a timeline, and whether it is turned to the left of its dot (at the right edge,
+ * where it would leave the figure).  ``xs`` the dots in order of time, ``widths`` the room each label takes.
+ *
+ * A label takes the lane, among those where it overlaps no other label, where the fewest stems cross labels — its own
+ * stem, from its dot down to the axis, through the labels below it, and the stems from above through its text — the
+ * highest of them when several tie; lanes past the compact layout's (each label in the first lane it fits) and two more
+ * are taken only when nothing else is free, so that a crowded timeline does not grow into a tall one (the stems that
+ * still cross a label are broken around it, stemGaps).  Labels pointing right are placed in order of time, then the
+ * turned ones from the right edge inwards, so that each meets the stems it could cross already placed. */
+export function timelineLanes(xs, widths, width) {
+  const n = xs.length;
+  const flip = xs.map((x, i) => x + widths[i] > width - 6);
+  const room = xs.map((x, i) => (flip[i] ? [x - widths[i], x + 6] : [x - 6, x + widths[i]]));
+  const span = xs.map((x, i) => (flip[i] ? [x - widths[i] + 7, x - 7] : [x + 7, x + widths[i] - 7]));
+  const order = [...xs.keys()].filter((i) => !flip[i]).concat([...xs.keys()].filter((i) => flip[i]).reverse());
+  const free = (i, k, lane, done) => !done.some((j) => lane[j] === k && room[j][0] < room[i][1] + 2 && room[i][0] < room[j][1] + 2);
+  let lane = new Array(n).fill(0), done = [];
+  for (const i of order) { // the compact layout: how many lanes the labels need at least
+    let k = 0;
+    while (!free(i, k, lane, done)) k++;
+    lane[i] = k;
+    done.push(i);
+  }
+  const budget = Math.max(0, ...lane) + 1 + 2;
+  lane = new Array(n).fill(0);
+  done = [];
+  for (const i of order) {
+    let best = null;
+    const last = Math.max(-1, ...done.map((j) => lane[j])) + 1;
+    for (let k = 0; k <= last; k++) {
+      if (!free(i, k, lane, done)) continue;
+      if (k >= budget && best !== null) break;
+      let cost = 0;
+      for (const j of done) {
+        if (lane[j] > k && xs[i] >= span[j][0] - 2 && xs[i] <= span[j][1] + 2) cost++; // its stem through a label below
+        if (lane[j] < k && xs[j] >= span[i][0] - 2 && xs[j] <= span[i][1] + 2) cost++; // a stem from above through its text
+      }
+      if (best === null || cost < best[0]) { best = [cost, k]; if (!cost) break; }
+    }
+    lane[i] = best ? best[1] : 0;
+    done.push(i);
+  }
+  return { lane, flip };
+}
+
+/** A stem from ``top`` down to ``bottom`` at ``x`` as the pieces that clear the labels' ``boxes`` ([x0, y0, x1, y1]) it
+ * would cross, 2 px around each. */
+export function stemGaps(x, top, bottom, boxes) {
+  const cuts = boxes.filter(([x0, y0, x1, y1]) => x >= x0 - 2 && x <= x1 + 2 && y1 > top && y0 < bottom).map(([, y0, , y1]) => [y0 - 2, y1 + 2]).sort((a, b) => a[0] - b[0]);
+  const out = [];
+  let y = top;
+  for (const [a, b] of cuts) { if (a > y) out.push([y, a]); y = Math.max(y, b); }
+  if (y < bottom) out.push([y, bottom]);
+  return out;
 }
 
 function timeline(spec, width) {
@@ -711,32 +861,29 @@ function timeline(spec, width) {
   const pad = (hi - lo) * 0.04;
   lo -= pad; hi += pad;
   const scale = (t) => left + ((t - lo) / (hi - lo)) * (right - left);
-  const lanes = [];
-  const placed = rows.map((r) => {
-    const x = scale(num(r.start));
-    const w = textWidth(r.label ?? "", 10.5) + 14;
-    const flip = x + w > width - 6;
-    const span = flip ? [x - w, x + 6] : [x - 6, x + w];
-    let lane = lanes.findIndex(([a, b]) => b < span[0] - 2 || a > span[1] + 2);
-    if (lane < 0) { lanes.push(span); lane = lanes.length - 1; } else lanes[lane] = [Math.min(lanes[lane][0], span[0]), Math.max(lanes[lane][1], span[1])];
-    return { r, x, lane, flip };
-  });
+  const labels = rows.map((r) => clipText(r.label ?? "", 10.5, width * 0.6));
+  const xs = rows.map((r) => scale(num(r.start)));
+  const { lane, flip } = timelineLanes(xs, labels.map((t) => textWidth(t, 10.5) + 14), width);
   const top = lg.height + 18;
-  const axis = top + 22 * Math.max(lanes.length, 1) + 10;
-  for (const t of ticks(lo, hi, 6)) {
+  const axis = top + 22 * (Math.max(0, ...lane) + 1) + 10;
+  for (const t of ticks(lo, hi, 6)) { // ticks under the axis (no grid: the stems are the guides, and a line through a label is not)
     const x = scale(t);
-    g.append(J ? line(x, axis, x, axis + 4) : line(x, top, x, axis, "viz-grid"), text(x, axis + 16, yearText(t), { size: 10.5, fill: J ? "viz-ink-2" : "viz-muted", anchor: "middle", cls: "tick" }));
+    g.append(line(x, axis, x, axis + 4), text(x, axis + 16, yearText(t), { size: 10.5, fill: J ? "viz-ink-2" : "viz-muted", anchor: "middle", cls: "tick" }));
   }
   g.append(line(left, axis, right, axis));
+  const ys = lane.map((k) => top + 22 * k + 8);
+  const cs = rows.map((r) => colors.get(String(r.group ?? "")));
+  const boxes = rows.map((r, i) => boxOf(flip[i] ? xs[i] - 7 : xs[i] + 7, ys[i] + 4, textWidth(labels[i], 10.5), 10.5, flip[i] ? "end" : "start"));
+  rows.forEach((r, i) => { // the stems first, broken where they would cross a label
+    for (const [a, b] of stemGaps(xs[i], ys[i], axis, boxes.filter((_, j) => j !== i)))
+      g.append(el("line", { x1: xs[i], y1: a.toFixed(1), x2: xs[i], y2: b.toFixed(1), stroke: cs[i], "stroke-width": 1, "stroke-opacity": 0.35 }));
+  });
+  rows.forEach((r, i) => g.append(el("circle", { cx: xs[i], cy: ys[i], r: 4, fill: cs[i], stroke: v("viz-surface"), "stroke-width": 2 })));
   const targets = [];
-  for (const { r, x, lane, flip } of placed) {
-    const y = top + 22 * lane + 8;
-    const c = colors.get(String(r.group ?? ""));
-    g.append(el("line", { x1: x, y1: y, x2: x, y2: axis, stroke: c, "stroke-width": 1, "stroke-opacity": 0.35 }),
-      el("circle", { cx: x, cy: y, r: 4, fill: c, stroke: v("viz-surface"), "stroke-width": 2 }),
-      text(flip ? x - 7 : x + 7, y + 4, r.label ?? "", { size: 10.5, fill: "viz-ink", anchor: flip ? "end" : "start" }));
-    targets.push({ x, y, title: String(r.label ?? ""), lines: (spec.columns || []).filter((col) => col.key !== "label").map((col) => [fmt(r[col.key]), col.label]).filter(([s]) => s) });
-  }
+  rows.forEach((r, i) => {
+    g.append(text(flip[i] ? xs[i] - 7 : xs[i] + 7, ys[i] + 4, labels[i], { size: 10.5, fill: "viz-ink", anchor: flip[i] ? "end" : "start" }));
+    targets.push({ x: xs[i], y: ys[i], title: String(r.label ?? ""), lines: (spec.columns || []).filter((col) => col.key !== "label").map((col) => [fmt(r[col.key]), col.label]).filter(([s]) => s) });
+  });
   let end = axis + 24;
   if (J) { g.append(text((left + right) / 2, end + 6, spec.x?.label || "年代", { size: 11, fill: "viz-ink", anchor: "middle" })); end += 16; }
   return { svg: g, height: end, targets };
@@ -766,24 +913,31 @@ function network(spec, width) {
     const others = nodes.filter((n) => n.id !== hub);
     const byTarget = new Map(edges.map((e) => [e.source === hub ? e.target : e.source, e]));
     const step = 22, height = step * Math.max(others.length, 1);
-    const hx = Math.min(140, width * 0.22), hy = top + height / 2, col = Math.min(360, width * 0.48);
+    const hubLabel = clipText(centre.label ?? centre.id, 13, width * 0.3);
+    const hx = Math.max(Math.min(140, width * 0.22), rad(centre) + 2 + 8 + textWidth(hubLabel, 13) + 4); // its name to its left, inside
+    const hy = top + height / 2, col = Math.max(Math.min(360, width * 0.48), hx + 60);
     others.forEach((n, i) => {
       const y = top + step * i + step / 2;
       const e = byTarget.get(n.id) || {};
+      const name = clipText(n.label ?? n.id, 11, width - col - 16);
       g.append(el("path", { d: `M${hx},${hy}C${(hx + col) / 2},${hy} ${(hx + col) / 2},${y} ${col},${y}`, fill: "none", stroke: v(link), "stroke-width": 1 }),
         el("circle", { cx: col, cy: y, r: rad(n), fill: colors.get(String(n.group ?? "")), stroke: v("viz-surface"), "stroke-width": 2 }),
-        text(col + 14, y + 4, n.label ?? n.id, { size: 11, fill: "viz-ink" }));
-      if (e.label && col + 24 + textWidth(n.label ?? "", 11) + textWidth(e.label, 10) < width) g.append(text(col + 24 + textWidth(n.label ?? "", 11), y + 4, e.label, { size: 10, fill: "viz-muted" }));
+        text(col + 14, y + 4, name, { size: 11, fill: "viz-ink" }));
+      if (e.label && col + 24 + textWidth(name, 11) + textWidth(e.label, 10) < width) g.append(text(col + 24 + textWidth(name, 11), y + 4, e.label, { size: 10, fill: "viz-muted" }));
       targets.push({ x: col, y, title: String(n.label ?? n.id), lines: [[String(n.group ?? ""), "关系"], [fmt(n.size), "权重"], ...(e.label ? [[e.label, "说明"]] : [])] });
     });
     g.append(el("circle", { cx: hx, cy: hy, r: rad(centre) + 2, fill: colors.get(String(centre.group ?? "")), stroke: v("viz-surface"), "stroke-width": 2 }),
-      text(hx - rad(centre) - 8, hy + 5, centre.label ?? centre.id, { size: 13, fill: "viz-ink", anchor: "end", weight: 600 }));
+      text(hx - rad(centre) - 8, hy + 5, hubLabel, { size: 13, fill: "viz-ink", anchor: "end", weight: 600 }));
     return { svg: g, height: top + height + 8, targets };
   }
-  const cx = width / 2, R = Math.min(170, width * 0.34), cy = top + R + 20;
+  // a ring: each name along its radius, outwards (turned to read left to right on the left half), so that neighbours
+  // never sit on one another however many there are
+  const names = new Map(nodes.map((n) => [n.id, clipText(n.label ?? n.id, 10.5, 90)]));
+  const reach = Math.max(0, ...[...names.values()].map((t) => textWidth(t, 10.5))) + 4 + 12; // a name and the largest dot
+  const cx = width / 2, R = Math.max(40, Math.min(170, width / 2 - reach - 6)), cy = top + reach + R + 6;
   const pos = new Map(nodes.map((n, i) => {
     const a = -Math.PI / 2 + (2 * Math.PI * i) / nodes.length;
-    return [n.id, [cx + R * Math.cos(a), cy + R * Math.sin(a), Math.cos(a)]];
+    return [n.id, [cx + R * Math.cos(a), cy + R * Math.sin(a), a]];
   }));
   const wmax = Math.max(1, ...edges.map((e) => num(e.weight) || 1));
   for (const e of edges) {
@@ -791,12 +945,16 @@ function network(spec, width) {
     if (a && b) g.append(line(a[0], a[1], b[0], b[1], link, (1 + (2 * (num(e.weight) || 1)) / wmax).toFixed(1)));
   }
   for (const n of nodes) {
-    const [x, y, c] = pos.get(n.id);
+    const [x, y, a] = pos.get(n.id);
+    const rightHalf = Math.cos(a) >= -1e-9, d = R + rad(n) + 4;
+    // the baseline a third of an em off the radius, so that the glyphs sit on it
+    const [ox, oy] = rightHalf ? [-Math.sin(a), Math.cos(a)] : [Math.sin(a), -Math.cos(a)];
+    const turn = Math.round(((a * 180) / Math.PI + (rightHalf ? 0 : 180)) * 100) / 100;
     g.append(el("circle", { cx: x, cy: y, r: rad(n), fill: colors.get(String(n.group ?? "")), stroke: v("viz-surface"), "stroke-width": 2 }),
-      text(x + (rad(n) + 4) * (c >= 0 ? 1 : -1), y + 4, n.label ?? n.id, { size: 10.5, fill: "viz-ink", anchor: c >= 0 ? "start" : "end" }));
+      text(cx + d * Math.cos(a) + 3.6 * ox, cy + d * Math.sin(a) + 3.6 * oy, names.get(n.id), { size: 10.5, fill: "viz-ink", anchor: rightHalf ? "start" : "end", rotate: turn }));
     targets.push({ x, y, title: String(n.label ?? n.id), lines: [[String(n.group ?? ""), "类"], [fmt(n.size), "权重"]] });
   }
-  return { svg: g, height: cy + R + 30, targets };
+  return { svg: g, height: cy + R + reach + 8, targets };
 }
 
 // ------------------------------------------------------------------ figures: for the page's downloads and for a journal

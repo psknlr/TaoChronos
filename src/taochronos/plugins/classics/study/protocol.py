@@ -13,8 +13,9 @@ its kind is told by its words and what it names: 方源考, 方剂比较, 类方
   the measures of its witness's period; a date is the terminus ante quem; a work counts once, whatever its copies);
 * the **methods** — the steps, each a capability of this system with its arguments and the command that reruns it —
   the **analysis** (the statistics and their corrections), the **figures** planned (图 1 … with their form: a box plot, a
-  forest plot …) and the **table shells** (表 1 …: the three-line tables the steps fill, their heads and a row of
-  placeholders — n (%), M (P25, P75), OR (95% CI), P — with the statistics behind them), the **quality** checks (verbatim
+  forest plot …) and the **tables** (表 1 …: the three-line tables the steps fill — filled with the pilot's numbers where
+  the pilot ran the step that fills them, else a shell: their heads and a row of placeholders — n (%), M (P25, P75),
+  OR (95% CI), P — with the statistics behind them), the **quality** checks (verbatim
   witnesses, source dependence, the gates and the acceptance criteria of a research run), the **limitations** (what
   survives, what this corpus holds, machine reading), the **ethics** (no clinical advice; doses are historical readings;
   the modern warnings for the toxic drugs named) and a **timeline**;
@@ -22,7 +23,9 @@ its kind is told by its words and what it names: 方源考, 方剂比较, 类方
 
 With ``pilot`` (the default) the main steps are run once at their default settings: the protocol then says how much
 evidence the corpus holds — compositions, works, periods, the earliest witness — and whether that is enough, with the
-pilot's charts; its background cites witnesses, never memory.  The protocol plans research; it concludes nothing.
+pilot's charts and tables (a table the pilot filled says so: its numbers are a first machine reading, to be recomputed
+and checked against the texts); its background cites witnesses, never memory.  The protocol plans research; it
+concludes nothing.
 """
 
 from __future__ import annotations
@@ -32,6 +35,7 @@ import json
 import re
 from typing import Any, Callable
 
+from . import tables as _tables
 from .base import StudyBase, _load_yaml
 
 # kind → (label, cue words); the order is the order a protocol presents them in
@@ -71,11 +75,43 @@ N, NP, CI, MIQR, MSD, ORCI, P, PCT, TXT = "××", "×× (××.×)", "××.×–�
 PERIOD_STUBS = ["先秦两汉", "魏晋南北朝", "……"]
 
 
-def _shell(title: str, source: str, columns: list[tuple[str, str]], stubs: list[str], *, stats: str = "", groups: dict[str, str] | None = None) -> dict[str, Any]:
+def _shell(title: str, source: str, columns: list[tuple[str, str]], stubs: list[str], *, stats: str = "", groups: dict[str, str] | None = None,
+           fills: str | tuple[str, ...] | None = None) -> dict[str, Any]:
     """A table shell: the table a step will fill — its heads ((label, placeholder) pairs, the first the stub), rows of
-    placeholders under the stubs, the statistics behind its numbers; ``groups`` puts a head over columns."""
+    placeholders under the stubs, the statistics behind its numbers; ``groups`` puts a head over columns; ``fills``: the
+    id of the study's table (tables.py) that fills it — the first of them the pilot printed."""
     return {"title": title, "from": source, "columns": [c for c, _ in columns], "cells": [x for _, x in columns], "stubs": stubs,
-            "statistics": stats, "groups": groups or {}}
+            "statistics": stats, "groups": groups or {}, "fills": [fills] if isinstance(fills, str) else list(fills or [])}
+
+
+PILOT_NOTE = "预试验：以默认设置在本语料中运行一次所得，属机器阅读，未经回查原文；正式研究按方法步骤重算，并逐条回查原文。"
+MODEL_ROWS = 12  # the rows of a filled table the model reads (the page and the document print them all)
+
+
+def fill(shells: list[dict[str, Any]], printed: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The protocol's tables: each shell filled with the table the pilot printed for it (its numbers, titled 预试验 and
+    noted as a first machine reading), or, where the pilot did not run the step that fills it, the shell itself (模板).
+    A filled shell takes the table's title, heads, notes and first rows — what the model reads of it; the page prints
+    the tables returned."""
+    by_id: dict[str, dict[str, Any]] = {}
+    for t in printed:
+        by_id.setdefault(t["id"], t)
+    out = []
+    for s in shells:
+        t = next((by_id[i] for i in s.pop("fills", None) or [] if i in by_id and by_id[i].get("rows")), None)
+        if t is None:
+            s["filled"] = False
+            out.append(_tables.shell(s))
+            continue
+        cols = t["columns"]
+        s.update({"filled": True, "title": t["title"], "columns": [f"{c['group']} · {c['label']}" if c.get("group") else c["label"] for c in cols],
+                  "rows": [[r.get(c["key"], "") for c in cols] for r in t["rows"][:MODEL_ROWS]], "notes": list(t.get("notes") or [])})
+        if len(t["rows"]) > MODEL_ROWS:
+            s["rows_total"] = len(t["rows"])
+        for k in ("cells", "stubs", "groups"):
+            s.pop(k, None)
+        out.append({**t, "id": f"protocol-{s['id']}", "title": f"{t['title']}（预试验）", "notes": list(t.get("notes") or []) + [PILOT_NOTE]})
+    return out
 
 
 def _first(seq: list[Any]) -> Any:
@@ -193,6 +229,7 @@ class ProtocolDesigner:
                                 "commands": [m["command"] for m in p["methods"]] + [p["contract"]["command"]]}
         p["pilot"] = self._pilot(parts) if pilot else {"ran": False, "findings": [], "feasibility": "未做预试验"}
         charts = p["pilot"].pop("charts", [])
+        p["tables"] = fill(p["table_shells"], p["pilot"].pop("tables", []))
         p["background"] = [{"text": f["text"], "passage_id": f.get("passage_id"), "basis": "预试验（机器阅读，须回查原文）"}
                            for f in p["pilot"].get("findings", []) if f.get("background")]
         if charts:
@@ -293,20 +330,22 @@ class ProtocolDesigner:
     def _pilot(self, parts: list[dict[str, Any]]) -> dict[str, Any]:
         findings: list[dict[str, Any]] = []
         charts: list[dict[str, Any]] = []
+        printed: list[dict[str, Any]] = []
         notes: list[str] = []
         ran = 0
         for part in parts:
-            fn: Callable[[], tuple[list[dict[str, Any]], list[dict[str, Any]]]] | None = part.get("pilot")
+            fn: Callable[[], tuple[list[dict[str, Any]], dict[str, Any]]] | None = part.get("pilot")
             if fn is None or ran >= 3:
                 continue
             ran += 1
             try:
-                got, got_charts = fn()
+                got, r = fn()
             except (ValueError, KeyError) as exc:
                 notes.append(f"{part.get('label', '')}：预试验未能运行（{exc}）")
                 continue
             findings += got
-            charts += got_charts[:2]
+            charts += (r.get("charts") or [])[:2]
+            printed += r.get("tables") or []
         enough = [f for f in findings if f.get("n") is not None]
         if not enough:
             verdict = "不足" if findings or notes else "未做预试验"
@@ -319,13 +358,13 @@ class ProtocolDesigner:
         advice = {"充分": "见证足以进行按时期的统计；仍须逐条回查原文。",
                   "有限": "见证有限：按时期的统计区间会很宽，宜以个案考证为主，或在全量语料中复核。",
                   "不足": "见证不足：建议在全量语料中运行，或放宽名称（异名、讳改名）与时间范围。"}.get(verdict, "")
-        return {"ran": True, "findings": findings, "feasibility": verdict, "advice": advice, "notes": notes, "charts": charts}
+        return {"ran": True, "findings": findings, "feasibility": verdict, "advice": advice, "notes": notes, "charts": charts, "tables": printed}
 
     # ------------------------------------------------------------ the kinds
     def _origin(self, ent: dict[str, Any]) -> dict[str, Any]:
         f = ent["formulas"][0]
 
-        def pilot() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        def pilot() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             r = self.s.formula(f, other_names=False)
             s = r.get("summary", {})
             out = [{"text": f"{f}写出组成的见证 {s.get('compositions', 0)} 条，见于 {s.get('works', 0)} 部著作；组成类别 {s.get('groups', 0)} 类"
@@ -335,7 +374,7 @@ class ProtocolDesigner:
             if e:
                 out.append({"text": f"{f}原方最早见于{e['locator']}（{'–'.join(str(int(y)) for y in e['years']) if e.get('years') else '年代未定'}）",
                             "passage_id": e["passage_id"], "background": True})
-            return out, r.get("charts", [])
+            return out, r
 
         return {"label": "方源考", "pilot": pilot,
                 "objectives": [f"考定{f}的原方组成、剂量与煎服法的最早见证，梳理其通行方、加减化裁与同名异方"],
@@ -361,23 +400,24 @@ class ProtocolDesigner:
                             {"title": f"{f}类方的最早见", "type": "timeline", "from": "study.family", "chart": "family-timeline"}],
                 "tables": [_shell(f"{f}写出组成的见证（按时期与组成类别）", "study.formula",
                                   [("时期", ""), ("原方", N), ("通行方", N), ("加减化裁", N), ("同名异方", N), ("合计", N)], PERIOD_STUBS,
-                                  stats="组成按药味 Jaccard 系数（≥ 0.7）归类；每部著作计一次"),
-                           _shell(f"{f}原方与通行方的组成与剂量", "study.compare", [("药物", ""), ("原方：剂量（比例）", "××两（×.××）"),
-                                  ("通行方：剂量（比例）", "××两（×.××）")], ["……"], stats="比例：以该方最大重量为 1；剂量按见证年代计量折合")],
+                                  stats="组成按药味 Jaccard 系数（≥ 0.7）归类；每一见证为一处写出组成的原文", fills="formula-witnesses"),
+                           _shell(f"{f}各见证的剂量与配伍比例", "study.formula", [("药物", ""), ("见证一：剂量（比例）", "××两（×.××）"),
+                                  ("见证二：剂量（比例）", "××两（×.××）")], ["……"], stats="比例：以该见证最大重量为 1；剂量照原书所写",
+                                  fills="formula-ratios")],
                 "limitations": ["方名之后未写出组成者（只言“桂枝汤主之”）不计入组成，只作旁证"]}
 
     def _compare(self, ent: dict[str, Any]) -> dict[str, Any]:
         fs = ent["formulas"][:6]
         names = "、".join(fs)
 
-        def pilot() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        def pilot() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             r = self.s.compare(fs)
             out = [{"text": f"{x['a']}与{x['b']}：{x['verdict']}"
                             + (f"（{'；'.join(c['drug'] + c['a'] + '→' + c['b'] for c in x['dose_changes'])}）" if x["dose_changes"] else ""),
                     "background": True} for x in r.get("pairs", [])]
             found = [f_ for f_ in r.get("formulas", []) if f_.get("found")]
             out.append({"text": f"写出组成可资比较者 {len(found)} 方（共 {len(fs)} 方）", "n": min((f_.get("witnesses") or 0) for f_ in found) if found else 0})
-            return out, r.get("charts", [])
+            return out, r
 
         derived = self._derivation(fs[0], fs[1])
         added = [d for op, ds in derived[2] if op in ("加", "倍") for d in ds] if derived else []
@@ -429,10 +469,10 @@ class ProtocolDesigner:
                 "figures": [{"title": "配伍比例对照", "type": "bar", "from": "study.compare", "chart": "compare-ratios"},
                             {"title": "方剂相似度", "type": "heatmap", "from": "study.compare", "chart": "compare-similarity"}],
                 "tables": [_shell("、".join(fs) + "的组成与剂量", "study.compare", [("药物", "")] + [(f"{x}：剂量（比例）", "××两（×.××）") for x in fs],
-                                  ["……"], stats="比例：以该方最大重量为 1；以枚、升等计者无比例"),
+                                  ["……"], stats="比例：以该方最大重量为 1；以枚、升等计者无比例", fills="compare-doses"),
                            _shell("方剂两两比较", "study.compare", [("方 A", ""), ("方 B", TXT), ("共有药物", TXT), ("Jaccard", "×.××"),
                                   ("剂量加权重合", "×.××"), ("结论", TXT)], [fs[0] if fs else "……"],
-                                  stats="Jaccard：共有药味 ÷ 药味并集；剂量加权重合：两方各药剂量份额之较小者之和")],
+                                  stats="Jaccard：共有药味 ÷ 药味并集；剂量加权重合：两方各药剂量份额之较小者之和", fills="compare-pairs")],
                 "limitations": ["各方只取一条见证（原方或通行方）：不同版本的剂量可能不同，须结合方源考"]}
 
     def _derivation(self, a: str, b: str) -> tuple[str, str, list[tuple[str, list[str]]]] | None:
@@ -455,11 +495,11 @@ class ProtocolDesigner:
     def _family(self, ent: dict[str, Any]) -> dict[str, Any]:
         f = ent["formulas"][0]
 
-        def pilot() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        def pilot() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             r = self.s.family(f)
             rel = r.get("by_relation", {})
             return ([{"text": f"含{f}核心组成（{'、'.join(r['formula']['core'])}）而加减者 {len(r.get('members', []))} 方：" +
-                              "，".join(f"{k} {v}" for k, v in rel.items()), "n": len(r.get("members", []))}], r.get("charts", []))
+                              "，".join(f"{k} {v}" for k, v in rel.items()), "n": len(r.get("members", []))}], r)
 
         return {"label": "类方", "pilot": pilot,
                 "objectives": [f"整理以{f}为基础加减而成的类方，区分加味、减味、加减、同药异量与合方"],
@@ -474,19 +514,19 @@ class ProtocolDesigner:
                 "analysis": [{"name": "类方判定", "method": "核心药味包含度 ≥ 0.75、增药 ≤ 4 味", "detail": "合方：所增之药合于另一常见方的核心组成"}],
                 "figures": [{"title": f"{f}类方关系", "type": "network", "from": "study.family", "chart": "family-network"}],
                 "tables": [_shell(f"{f}的类方", "study.family", [("方名", ""), ("关系", TXT), ("加", TXT), ("减", TXT), ("著作（部）", N),
-                                  ("最早见", "《……》（年代）")], ["……"], stats="关系：加味、减味、加减、同药异量、同方异名、合方")],
+                                  ("最早见", "《……》（年代）")], ["……"], stats="关系：加味、减味、加减、同药异量、同方异名、合方", fills="family-members")],
                 "limitations": ["类方以组成相近判定，未必有明文的衍化关系；衍化须以“于某方加某药”之类的原文为证"]}
 
     def _herb(self, ent: dict[str, Any]) -> dict[str, Any]:
         h = ent["herbs"][0]
 
-        def pilot() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        def pilot() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             r = self.s.herb(h)
             s = r.get("summary", {})
             out = [{"text": f"{h}的本草条目见于 {s.get('works', 0)} 部著作，其中言归经者 {s.get('with_channels', 0)} 部", "n": s.get("works", 0)}]
             for f in [x for x in r.get("firsts", []) if x["field"] in ("性味", "药性", "归经")][:3]:
                 out.append({"text": f"{h}{f['field']}“{f['value']}”首见于{f['locator']}", "passage_id": f.get("passage_id"), "background": True})
-            return out, r.get("charts", [])
+            return out, r
 
         return {"label": "药性源流", "pilot": pilot,
                 "objectives": [f"梳理历代本草对{h}性味、归经、毒性、升降浮沉与主治的记载及其首见"],
@@ -506,15 +546,15 @@ class ProtocolDesigner:
                             {"title": f"{h}各项药性的首见", "type": "timeline", "from": "study.herb", "chart": "herb-firsts"}],
                 "tables": [_shell(f"历代本草所言{h}之性味", "study.herb", [("时期", ""), ("本草著作（部）", N), ("寒", N), ("凉", N), ("平", N),
                                   ("温", N), ("热", N), ("味（部）", TXT)], PERIOD_STUBS, stats="一部著作言之者计一次",
-                                  groups={c: "言其性为（部）" for c in ("寒", "凉", "平", "温", "热")}),
+                                  groups={c: "言其性为（部）" for c in ("寒", "凉", "平", "温", "热")}, fills="herb-periods"),
                            _shell(f"{h}各项性能的首见", "study.herb", [("项目", ""), ("所言", TXT), ("首见", "《……》"), ("成书年代", N)],
-                                  ["性味", "归经", "……"], stats="按成书年代下限（terminus ante quem）排序；辑本另标")],
+                                  ["性味", "归经", "……"], stats="按成书年代下限（terminus ante quem）排序；辑本另标", fills="herb-firsts")],
                 "limitations": ["本草条目的切分为规则阅读：一条之中混入他药的文字会误读，首见须回查原文"]}
 
     def _usage(self, ent: dict[str, Any]) -> dict[str, Any]:
         h = ent["herbs"][0]
 
-        def pilot() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        def pilot() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             r = self.s.usage(h)
             trend = r.get("trend") or {}
             out = [{"text": f"写出组成 {r['compositions']} 首中含{h} {r['with']} 首（{r['share']:.1%}），见于 {r['works']} 部著作"
@@ -522,7 +562,7 @@ class ProtocolDesigner:
             if r.get("examples"):
                 e = r["examples"][0]
                 out.append({"text": f"最早含{h}的组成见于{e.get('locator', '')}（{e.get('formula', '')}）", "passage_id": e.get("passage_id"), "background": True})
-            return out, r.get("charts", [])
+            return out, r
 
         return {"label": "用药谱", "pilot": pilot,
                 "objectives": [f"统计{h}在历代方剂中的使用比例、剂量、炮制与常用配伍"],
@@ -550,10 +590,11 @@ class ProtocolDesigner:
                             {"title": f"{h}汤剂用量与成书年代", "type": "scatter", "from": "study.usage", "chart": "usage-dose-years"},
                             {"title": f"{h}的炮制与用法注", "type": "stack", "from": "study.usage", "chart": "usage-processing"}],
                 "tables": [_shell(f"各时期写出组成中含{h}的比例", "study.usage", [("时期", ""), ("写出组成（首）", N), (f"含{h}，n (%)", NP),
-                                  ("95% CI（%）", CI)], PERIOD_STUBS, stats="比例的 95% CI：Wilson 法；趋势：Cochran–Armitage 检验（z，P）"),
+                                  ("95% CI（%）", CI)], PERIOD_STUBS, stats="比例的 95% CI：Wilson 法；趋势：Cochran–Armitage 检验（z，P）",
+                                  fills="usage-periods"),
                            _shell(f"历代汤剂中{h}的用量", "study.usage", [("时期", ""), ("n", N), ("M (P25, P75)", MIQR), ("x̄ ± s", MSD), ("范围", CI)],
                                   PERIOD_STUBS, stats="Kruskal–Wallis 检验（H，df，P）；年代与用量的 Spearman 相关（ρ，P）",
-                                  groups={c: "折合克数（g）" for c in ("M (P25, P75)", "x̄ ± s", "范围")})],
+                                  groups={c: "折合克数（g）" for c in ("M (P25, P75)", "x̄ ± s", "范围")}, fills="usage-doses")],
                 "limitations": ["剂量只计以重量写出者；以枚、升、方寸匕计者不折合", "“方中最大剂量”只是剂量线索，不是君臣佐使的判定"]}
 
     def _pairs(self, ent: dict[str, Any]) -> dict[str, Any]:
@@ -561,14 +602,14 @@ class ProtocolDesigner:
         h = hs[0]
         other = hs[1] if len(hs) > 1 else None
 
-        def pilot() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        def pilot() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             r = self.s.pairs(h)
             out = [{"text": f"含{h}的写出组成中，显著的配伍药对 {r.get('significant', 0)} 对（Fisher + BH，q = 0.05）", "n": r.get("significant", 0)}]
             if other:
                 row = next((x for x in r.get("partners", []) if x["with"] == other or x["key"].endswith(other)), None)
                 out.append({"text": f"{h}—{other}：" + (f"同方 {row['support']} 次，提升度 {row['lift']}，{'显著' if row['significant'] else '未达显著'}" if row else "未达最小同方次数"),
                             "background": True})
-            return out, r.get("charts", [])
+            return out, r
 
         return {"label": "配伍规律", "pilot": pilot,
                 "objectives": [f"检验{h}" + (f"与{other}" if other else "") + "在历代组成中的配伍是否高于随机"],
@@ -586,13 +627,13 @@ class ProtocolDesigner:
                 "tables": [_shell(f"与{h}同方的药物及其关联强度", "study.pairs", [("药物", ""), ("同方（首）", N), (f"{h}→该药", PCT),
                                   (f"该药→{h}", PCT), ("提升度", "×.××"), ("OR (95% CI)", ORCI), ("P", P)], ["……"],
                                   stats="单侧 Fisher 精确检验，Benjamini–Hochberg 校正（q = 0.05）；OR 的 95% CI：Woolf 法",
-                                  groups={f"{h}→该药": "置信度（%）", f"该药→{h}": "置信度（%）"})],
+                                  groups={f"{h}→该药": "置信度（%）", f"该药→{h}": "置信度（%）"}, fills="pairs-partners")],
                 "limitations": ["共现是书写的关联，不是疗效的证据"]}
 
     def _incompat(self, ent: dict[str, Any]) -> dict[str, Any]:
         target = _first(ent["formulas"]) or _first(ent["herbs"])
 
-        def pilot() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        def pilot() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             r = self.s.incompat(target) if target else self.s.incompat()
             st = r.get("statements", {})
             s = r.get("summary", {})
@@ -603,7 +644,7 @@ class ProtocolDesigner:
                 out.append({"text": f"“{x['pair']}”之说见于 {x['works']} 部著作，辑本之外最早见于{e['locator']}", "passage_id": e.get("passage_id"), "background": True})
             if r.get("check", {}).get("flagged"):
                 out.append({"text": f"{target}的原方含 " + "、".join(x["pair"] for x in r["check"]["flagged"]), "background": True})
-            return out, r.get("charts", [])
+            return out, r
 
         return {"label": "配伍禁忌", "pilot": pilot,
                 "objectives": ["考察十八反、十九畏之说的形成与流传，以及写出组成中反、畏之药同用的情形"],
@@ -626,19 +667,19 @@ class ProtocolDesigner:
                 "figures": [{"title": "反、畏之药同见于写出的组成", "type": "heatmap", "from": "study.incompat", "chart": "incompat-together"},
                             {"title": "“反”“畏”之说的最早见证", "type": "timeline", "from": "study.incompat", "chart": "incompat-firsts"}],
                 "tables": [_shell("言“反”“畏”的著作与最早见证", "study.incompat", [("药对", ""), ("著作（部）", N), ("最早见证", "《……》"),
-                                  ("成书年代", N)], ["甘草反甘遂", "……"], stats="一部著作计一次；辑本另计"),
+                                  ("成书年代", N)], ["甘草反甘遂", "……"], stats="一部著作计一次；辑本另计", fills="incompat-statements"),
                            _shell("反、畏之药同见于写出的组成", "study.incompat", [("药对", ""), ("著作（部）", N), ("各时期（部）", TXT),
-                                  ("所见之方", TXT)], ["……"], stats="文本事实：同用见于书中，不说明合理或安全")],
+                                  ("所见之方", TXT)], ["……"], stats="文本事实：同用见于书中，不说明合理或安全", fills="incompat-together")],
                 "limitations": ["同用只说明文献中有此组成，不说明其合理或无害；七情之“相畏”与十九畏之“畏”含义不同"]}
 
     def _network(self, ent: dict[str, Any]) -> dict[str, Any]:
         target = _first(ent["formulas"]) or _first(ent["findings"])
 
-        def pilot() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        def pilot() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             r = self.s.network(target)
             items = r.get("findings") or r.get("formulas") or []
             return ([{"text": f"{target}的治疗语句 {r.get('indications', 0)} 条；最常见的" + ("所见" if r.get("findings") else "方") + "："
-                              + "、".join(x.get("finding") or x.get("formula") for x in items[:5]), "n": r.get("indications", 0)}], r.get("charts", []))
+                              + "、".join(x.get("finding") or x.get("formula") for x in items[:5]), "n": r.get("indications", 0)}], r)
 
         return {"label": "方证关系", "pilot": pilot,
                 "objectives": [f"整理{target}在治疗语句中的方证对应"],
@@ -653,13 +694,13 @@ class ProtocolDesigner:
                 "analysis": [{"name": "关联强度", "method": "提升度、NPMI", "detail": "所见在方名之前、同一治疗语句中"}],
                 "figures": [{"title": f"{target}的方证对应", "type": "hbar", "from": "study.network", "chart": "network-findings"}],
                 "tables": [_shell(f"{target}的方证对应", "study.network", [("所见", ""), ("次数", N), ("占（%）", PCT), ("提升度", "×.××")], ["……"],
-                                  stats="提升度：同见次数与独立期望之比；每部著作一次")],
+                                  stats="提升度：同见次数与独立期望之比；每部著作一次", fills=("network-findings", "network-formulas"))],
                 "limitations": ["方名前所列之症不一定是该方所治（语句结构为规则阅读）"]}
 
     def _term(self, ent: dict[str, Any]) -> dict[str, Any]:
         t = _first(ent["terms"]) or _first(ent["findings"])
 
-        def pilot() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        def pilot() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             r = self.s.term(t)
             total = sum(p["passages"] for p in r.get("periods", []))
             trend = r.get("trend") or {}
@@ -667,7 +708,7 @@ class ProtocolDesigner:
             if r.get("earliest"):
                 e = r["earliest"][0]
                 out.append({"text": f"“{t}”的早期用例见于{e['locator']}", "passage_id": e["passage_id"], "background": True})
-            return out, r.get("charts", [])
+            return out, r
 
         return {"label": "术语源流", "pilot": pilot,
                 "objectives": [f"考察“{t}”一词的历代使用频率、搭配与含义的变化"],
@@ -690,12 +731,22 @@ class ProtocolDesigner:
                 "figures": [{"title": f"“{t}”各时期出现率", "type": "line", "from": "study.term", "chart": "term-periods"},
                             {"title": f"“{t}”各义项的历代份额", "type": "stack", "from": "study.senses", "chart": "senses-shares"}],
                 "tables": [_shell(f"“{t}”各时期的出现率", "study.term", [("时期", ""), ("段落总数", N), ("含该词段落", N), ("每万段 (95% CI)", "××.× (××.×–××.×)")],
-                                  PERIOD_STUBS, stats="每万段出现率与 Wilson 区间；趋势：Cochran–Armitage 检验（z，P）")],
+                                  PERIOD_STUBS, stats="每万段出现率与 Wilson 区间；趋势：Cochran–Armitage 检验（z，P）", fills="term-periods")],
                 "limitations": [f"“{t}”之古义不等同现代病名；现代概念只作候选，不作等同"]}
 
     def _names(self, ent: dict[str, Any]) -> dict[str, Any]:
         x = _first(ent["herbs"]) or _first(ent["formulas"]) or _first(ent["terms"])
-        return {"label": "名称考",
+
+        def pilot() -> tuple[list[dict[str, Any]], dict[str, Any]]:
+            r = self.s.names(x)
+            counted = [n for n in r.get("names", []) if n.get("works")]
+            out = [{"text": f"{x}的名称 {len(r.get('names', []))} 个，语料中写出者 {len(counted)} 个：" + "、".join(f"{n['name']} {n['works']} 部" for n in counted[:6]),
+                    "n": max([n["works"] for n in counted] + [0])}]
+            for sw in r.get("switches", [])[:2]:
+                out.append({"text": f"首选之名由{sw['from']}变为{sw['to']}（{sw['between'][0]}–{sw['between'][1]} 年间）", "background": True})
+            return out, r
+
+        return {"label": "名称考", "pilot": pilot,
                 "objectives": [f"考察{x}的历代名称（本名、异名、讳改名）及其更替"],
                 "questions": [f"{x}在历代有哪些名称？首选之名何时改变？"],
                 "hypotheses": [{"statement": f"{x}的首选之名在某一时期更替",
@@ -706,8 +757,8 @@ class ProtocolDesigner:
                 "methods": [{"title": f"{x}的名称", "tool": "study.names", "args": {"term": x},
                              "command": f"taochronos study names {x} --charts figures", "purpose": "名称、首见、更替、等同之文", "outputs": "名称表"}],
                 "figures": [{"title": f"{x}各名称的历代份额", "type": "stack", "from": "study.names", "chart": "names-shares"}],
-                "tables": [_shell(f"{x}各名称的历代份额", "study.names", [("时期", ""), ("名称一（%）", PCT), ("名称二（%）", PCT), ("……", "")], PERIOD_STUBS,
-                                  stats="各时期言及此物的段落中各名称所占份额")]}
+                "tables": [_shell(f"{x}各名称的历代使用", "study.names", [("时期", ""), ("著作（部）", N), ("名称一，n (%)", NP), ("名称二，n (%)", NP),
+                                  ("首选之名", TXT)], PERIOD_STUBS, stats="写此名的著作占写其任一名称者之比（每部著作计一次）", fills="names-shares")]}
 
     def _modern(self, ent: dict[str, Any]) -> dict[str, Any]:
         x = _first(ent["herbs"]) or _first(ent["formulas"]) or _first(ent["findings"]) or _first(ent["terms"])
@@ -726,14 +777,14 @@ class ProtocolDesigner:
         question = ent.get("question", "")
         topic = _QUESTION_WORDS.sub("", question).strip() or question
 
-        def pilot() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        def pilot() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             r = self.s.term(topic)
             total = sum(p["passages"] for p in r.get("periods", []))
             out = [{"text": f"含“{topic}”的段落 {total} 段", "n": total}]
             if r.get("earliest"):
                 e = r["earliest"][0]
                 out.append({"text": f"“{topic}”的早期用例见于{e['locator']}", "passage_id": e["passage_id"], "background": True})
-            return out, r.get("charts", [])
+            return out, r
 
         return {"label": "综合检索", "pilot": pilot if topic else None,
                 "objectives": [f"在语料中检索与“{topic}”相关的原文，确定可研究的对象与范围"],

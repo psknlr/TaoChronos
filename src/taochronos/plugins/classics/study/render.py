@@ -1186,10 +1186,14 @@ def protocol(r: dict[str, Any]) -> list[str]:
         if r.get("figures"):
             out += ["**图**（期刊样式：单栏 85 mm、双栏 175 mm，300 dpi 以上；可合为组图）", ""]
             out += [f"- **图{f.get('number', i)}**　{f['title']}（{f.get('form') or f['type']}；{f['from']}）" for i, f in enumerate(r["figures"], 1)] + [""]
-        if r.get("table_shells"):
-            out += ["**表格模板**（三线表；×× 为待填之数）", ""]
-            for t in r["table_shells"]:
-                out += [to_markdown(shell(t), t.get("number")).rstrip("\n"), ""]
+        shells = r.get("table_shells") or []
+        if shells:
+            filled = sum(1 for t in shells if t.get("filled"))
+            out += ["**表**（三线表；" + "；".join(x for x in (f"标“预试验”者 {filled} 表，为预试验在本语料中所得之数，须回查原文" if filled else "",
+                                                             f"标“模板”者 {len(shells) - filled} 表，×× 为待填之数" if filled < len(shells) else "") if x) + "）", ""]
+            printed = r.get("tables") if len(r.get("tables") or []) == len(shells) else [shell(t) for t in shells]
+            for t, s in zip(printed, shells):
+                out += [to_markdown(t, s.get("number")).rstrip("\n"), ""]
     out += [sec("质量控制"), ""] + [f"- {q}" for q in r.get("quality", [])] + [""]
     out += [sec("局限与偏倚"), ""] + [f"- {x}" for x in r.get("limitations", [])] + [""]
     out += [sec("伦理与声明"), ""] + [f"- {x}" for x in r.get("ethics", [])] + [""]

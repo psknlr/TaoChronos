@@ -247,8 +247,9 @@ tab-separated text — pasted into Word or WPS it is a three-line table, into Ex
 Word document and the ZIP inside it, the PNG's pHYs and the TIFF are written by `web/js/bytes.js`, without a library.
 
 A conversation exported as Markdown appends each chart's data and each table.  A research protocol (`study.protocol`) comes
-with its whole text — **下载研究方案（Markdown）** under its step and in the 工具台 — and its table shells as tables (…（模板）) to
-copy or download as Word.  The colours are tokens (`--viz-1` … `--viz-8`, `--viz-other`, the `--viz-seq` ramp; `css/app.css`),
+with its whole text — **下载研究方案（Markdown）** under its step and in the 工具台 — and its tables to copy or download as Word:
+filled with the pilot's numbers where the pilot ran the step that fills them (…（预试验）), shells with ×× placeholders where
+it did not (…（模板）).  The colours are tokens (`--viz-1` … `--viz-8`, `--viz-other`, the `--viz-seq` ramp; `css/app.css`),
 selected for the light and the dark surfaces and validated for colour-vision deficiency; a downloaded figure takes the
 light ones, a journal figure its black and white.  The model reads only the titles of the figures and tables the page
 shows (`charts_shown`, `tables_shown`), so it can point to them (见上方图 1、表 1) without spending its context on their data.

@@ -143,6 +143,30 @@ def herb(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
     return out
 
 
+def witness_labels(witnesses: list[dict[str, Any]]) -> list[str]:
+    """Each witness by its book and year — 新编金匮要略方论（219）; two from one book told apart by their juan (·卷1, ·卷2),
+    and, failing that, by their order (甲, 乙 …): a legend never names two series alike."""
+    def book(x: dict[str, Any]) -> str:
+        return str(x.get("locator") or "").split("》")[0].lstrip("《")
+
+    def year(x: dict[str, Any]) -> str:
+        return f"{int(x['years'][1])}" if x.get("years") else "?"
+
+    def part(x: dict[str, Any]) -> str:
+        rest = str(x.get("locator") or "").split("》", 1)[1] if "》" in str(x.get("locator") or "") else ""
+        return rest.split("·")[0].strip()[:8]
+
+    labels = [f"{book(x)}（{year(x)}）" for x in witnesses]
+    if len(set(labels)) < len(labels):  # two from one book: by their juan
+        labels = [f"{book(x)}·{part(x)}（{year(x)}）" if labels.count(label) > 1 and part(x) else label for x, label in zip(witnesses, labels)]
+    out: list[str] = []
+    seen: dict[str, int] = {}
+    for label in labels:  # and, failing that, by their order
+        k = seen[label] = seen.get(label, -1) + 1
+        out.append(label if labels.count(label) == 1 else label + "甲乙丙丁戊己庚辛"[k % 8])
+    return out
+
+
 def formula(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
     name = r.get("formula", {}).get("name", "")
     out = []
@@ -170,7 +194,7 @@ def formula(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
         picked = ratios[:4]
         drugs = list(dict.fromkeys(d for x in picked for d in x["ratio"]))
         keys = [f"w{i}" for i in range(len(picked))]
-        labels = [f"{x['locator'].split('》')[0].lstrip('《')}（{int(x['years'][1]) if x.get('years') else '?'}）" for x in picked]
+        labels = witness_labels(picked)
         rows = [{"drug": d, **{k: x["ratio"].get(d) for k, x in zip(keys, picked)}} for d in drugs]
         out.append(chart("bar", f"{name} · 配伍比例", rows, [("drug", "药")] + list(zip(keys, labels)),
                          id="formula-ratios", subtitle="各见证中主方药物的剂量比（以最大剂量为 1，与各期计量无关）",

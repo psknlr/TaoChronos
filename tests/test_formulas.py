@@ -288,8 +288,25 @@ def test_the_studies_print_three_line_tables_with_their_statistics(study):
     groups = [set(c["drugs"]) for c in corpus["clusters"]]
     assert {"石膏", "粳米", "知母"} <= groups[0] and {"半夏", "黄芩", "柴胡"} in groups  # 白虎汤's drugs hold together, and 小柴胡汤's
     for r in (study.compare(["桂枝汤", "麻黄汤"]), study.family("桂枝汤"), study.term("伤寒"), study.herb("甘草"),
-              study.properties(["黄连", "黄芩"]), study.incompat(), study.formula("桂枝汤")):
+              study.properties(["黄连", "黄芩"]), study.incompat(), study.formula("桂枝汤"), study.names("人参")):
         assert r["tables"] and all(x["version"] == tables.TABLE_VERSION and x["rows"] and x["columns"] for x in r["tables"])
+    f = {x["id"]: x for x in study.formula("桂枝汤")["tables"]}  # 方源考: its witnesses by period and group, and their doses
+    assert list(f) == ["formula-groups", "formula-witnesses", "formula-ratios"]
+    assert f["formula-witnesses"]["rows"][-1] == {"period": "合计", "r0": "3", "r1": "1", "total": "4"}
+    assert f["formula-ratios"]["rows"][0] == {"drug": "桂类", "w0": "三两（1）", "w1": "三两（1）", "w2": "三两（1）"}
+    assert any(row["drug"] == "大枣类" and "（" not in row["w0"] for row in f["formula-ratios"]["rows"])  # 枚: no ratio
+    # names and senses: the works writing each name, the senses' shares — by period (the shapes their studies return)
+    named = tables.names({"term": "薯蓣", "periods": [{"period": "汉", "works": 4, "names": {"薯蓣": 4}, "preferred": "薯蓣"},
+                                                      {"period": "宋", "works": 10, "names": {"薯蓣": 3, "山药": 8}, "preferred": "山药"}],
+                          "switches": [{"from": "薯蓣", "to": "山药", "between": [1000, 1100], "last_bin": False}]}, None)[0]
+    assert [c["label"] for c in named["columns"]] == ["时期", "著作（部）", "山药", "薯蓣", "首选之名"]
+    assert named["rows"][1] == {"period": "宋", "works": "10", "n0": "8 (80.0)", "n1": "3 (30.0)", "preferred": "山药"}
+    assert "薯蓣 → 山药（1000–1100 年间）" in named["notes"][1]
+    sensed = tables.senses({"term": "消渴", "senses": [{"id": "消渴#病", "label": "病名：多饮多尿"}, {"id": "消渴#症状", "label": "症状：渴"}],
+                            "series": [{"period": "汉", "occurrences": 10, "shares": {"消渴#病": 0.6, "消渴#症状": 0.3, "unassigned": 0.1}}],
+                            "change_point": None}, None)[0]
+    assert [c["label"] for c in sensed["columns"]] == ["时期", "用例（处）", "病", "症状", "未判定"] and sensed["rows"][0]["s0"] == "60.0"
+    assert tables.senses({"term": "伤寒", "senses": [], "series": [{"period": "宋", "occurrences": 1, "shares": {"unassigned": 1.0}}]}, None) == []
 
 
 def test_the_new_figures_box_forest_scatter_and_dendrogram(study):
@@ -360,6 +377,33 @@ def test_tables_as_word_latex_html_markdown_and_csv(study, tmp_path):
     assert ET.fromstring(svg.to_svg(quoted)).get("aria-label") == '他说"好"' and "'=1" in svg.to_csv(quoted)
     written = tablefmt.write(found, tmp_path, "t")
     assert sorted(Path(x).suffix for x in written).count(".tex") == 4 and (tmp_path / "t-tables.docx").exists()
+
+
+def test_the_protocol_fills_its_tables_with_the_pilots_numbers(study):
+    """Where the pilot ran the step that fills a table, the protocol's table holds the step's numbers — on the page, in
+    the document and in what the model reads — titled 预试验 and noted as a first machine reading; a table no step of
+    the pilot filled stays a shell (××)."""
+    from taochronos.chat.results import dumps, for_model
+
+    r = study.protocol("甘草的用量与配伍历代如何变化？")
+    own = {t["id"]: t for t in study.usage("甘草")["tables"] + study.pairs("甘草")["tables"]}
+    assert [t["title"] for t in r["tables"]] == ["各时期写出组成中含甘草的比例（预试验）", "历代汤剂中甘草的用量（预试验）", "与甘草同方的药物及其关联强度（预试验）"]
+    assert r["tables"][0]["rows"] == own["usage-periods"]["rows"] and r["tables"][2]["rows"] == own["pairs-partners"]["rows"]
+    assert r["tables"][0]["notes"][-1].startswith("预试验：以默认设置在本语料中运行一次所得")
+    shells = for_model(r)["table_shells"]  # the model reads the numbers, not placeholders
+    assert all(s["filled"] for s in shells) and "××" not in dumps(shells) and "tables" not in for_model(r)
+    assert shells[0]["rows"][0] == ["先秦两汉", "11", "10 (90.9)", "62.3–98.4"] and shells[1]["columns"][2] == "原书剂量（两） · M (P25, P75)"
+    doc = r["document"]["text"]
+    assert "**表1　各时期写出组成中含甘草的比例（预试验）**" in doc and "| 先秦两汉 | 11 | 10 (90.9) | 62.3–98.4 |" in doc and "××" not in doc
+    some = study.protocol("半夏的用量与配伍历代如何变化？")  # the pilot finds too few doses of 半夏 to fill the second and third
+    assert [s["filled"] for s in some["table_shells"]] == [True, False, False]
+    assert some["tables"][1]["title"].endswith("（模板）") and "预试验未得此表之数" in some["tables"][1]["notes"][0]
+    origin = study.protocol("白虎汤与白虎加人参汤的组成和剂量有何不同？")  # 方源考: the witnesses by period and group, and their doses
+    ratios = next(t for t in origin["tables"] if t["title"].startswith("白虎汤各见证的剂量与配伍比例"))
+    assert ratios["columns"][0]["label"] == "药物" and all(len(row) == len(ratios["columns"]) for row in ratios["rows"])
+    assert any("（1）" in v for row in ratios["rows"] for v in row.values())  # the dose as written, with its ratio
+    witnesses = next(t for t in origin["tables"] if t["title"].startswith("白虎汤写出组成的见证"))
+    assert witnesses["rows"][-1]["period"] == "合计"
 
 
 def test_the_protocol_plans_its_figures_and_its_table_shells(study):

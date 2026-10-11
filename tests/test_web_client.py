@@ -28,7 +28,7 @@ import { count } from "./js/util.js";
 import { fixedReply, IDENTITY_REPLY, isIdentityQuestion, touchesIdentity } from "./js/fixed.js";
 import { ServerRuntime } from "./js/runtime.js";
 import { redact, scrub, toolWord } from "./js/redact.js";
-import { boxRows, captionText, chartsOf, commonTitle, documentOf, fmt, fmtEst, forestDomain, invalid, logTicks, niceMax, normalize, seriesColors, ticks, toCSV, toMarkdown, tukey } from "./js/chart.js";
+import { boxRows, captionText, chartsOf, clipText, commonTitle, documentOf, fmt, fmtEst, forestDomain, invalid, logTicks, niceMax, normalize, seriesColors, stemGaps, textWidth, ticks, timelineLanes, toCSV, toMarkdown, tukey } from "./js/chart.js";
 import { crc32, packBits, pngWithDpi, tiff, unpackBits, zip } from "./js/bytes.js";
 import { documentXML, headRows, invalidTable, runs, tablesOf, tex, toCSV as tableCSV, toLaTeX, toMarkdown as tableMarkdown } from "./js/table.js";
 
@@ -214,6 +214,19 @@ assert.equal(toCSV({ ...whole, rows: [{ 时期: "明,清", 两: 'a"b' }] }, fals
 assert.equal(toMarkdown(whole), "**甘草·用量**\n\n| 时期 | 两 |\n| --- | --- |\n| 汉 | 2 |\n| 宋 | 1.5 |");
 assert.deepEqual(seriesColors(["甲", "其他", "乙"]), ["var(--viz-1)", "var(--viz-other)", "var(--viz-2)"]);
 assert.deepEqual([niceMax(7), niceMax(11), niceMax(295), niceMax(0)], [8, 15, 300, 1]);
+
+// a timeline's lanes as the Python figures lay them out (tests/test_figure_layout.py): no stem through a label, the
+// right edge's labels turned; a stem still crossing one is broken around it; a long name cut to its room
+const family = ["葛根汤", "大青龙汤", "小建中汤", "桂枝加葛根汤", "桂枝二麻黄一汤", "桂枝加桂汤", "桂枝加附子汤", "桂枝附子汤", "茯苓白术汤",
+  "黄芩加半夏生姜汤", "栝楼桂枝汤", "桂枝二越婢一汤", "桂枝加黄芪汤", "桂枝去芍药加附子汤", "桂枝救逆汤", "龙骨汤", "泽兰汤", "干地黄汤",
+  "栝楼汤", "生地黄汤", "芍药汤", "乌头汤", "四逆汤", "葵子汤", "青龙汤", "桂枝葛根汤", "葛根加半夏汤", "当归芍药汤", "当归四逆汤", "桂枝加芍药汤"];
+const years = [...Array(16).fill(209.5), 654.5, 654.5, 654.5, 682, 752, 752, 752, 752, 752, 1180, 1398, 1652, 1685, 1732];
+const lanes = timelineLanes(years.map((y) => 30 + ((y - 200) / (1740 - 200)) * (304 - 60)), family.map((f) => textWidth(f, 10.5) + 14), 304);
+assert.deepEqual(lanes.lane, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15, 16, 17, 14, 10, 12, 0, 1, 2, 0, 1, 4, 3, 2]);
+assert.deepEqual(family.filter((_, i) => lanes.flip[i]), ["当归芍药汤", "当归四逆汤", "桂枝加芍药汤"]);
+assert.deepEqual(stemGaps(100, 0, 100, [[90, 20, 120, 30], [0, 40, 50, 50], [95, 60, 99, 70]]), [[0, 18], [32, 58], [72, 100]]);
+const cut = clipText("加味甘草汤（出《太平惠民和剂局方》卷三）", 11, 60);
+assert.ok(cut.endsWith("…") && textWidth(cut, 11) <= 60 && cut.startsWith("加味甘草") && clipText("甘草", 11, 60) === "甘草");
 assert.deepEqual(ticks(0, 10, 4, true), [0, 5, 10]);
 assert.deepEqual(ticks(0, 1.5), [0, 0.5, 1, 1.5]);
 assert.deepEqual([fmt(0.125, true), fmt(1234), fmt(2), fmt(0.4375)], ["13%", "1.2K", "2", "0.438"]);
