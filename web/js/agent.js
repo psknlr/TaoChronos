@@ -9,12 +9,17 @@
 
 import * as openai from "./llm/openai.js";
 import * as claude from "./llm/anthropic.js";
+import { dataNote } from "./mydata.js";
 import { sleep } from "./util.js";
 
 const OLD_RESULT_CHARS = 2500;
 const MAX_EXTRA_ROUNDS = 1;
 
 export const formatOf = (provider) => (provider.format === "anthropic" ? "anthropic" : "openai");
+
+/** A user message as the model reads it: its text, and what it knows of the datasets the message carries (the page
+ * shows them as chips; the model reads their shape, and the 我的资料 tools read the rest). */
+export const userText = (m) => (m.text || "") + dataNote(m.data);
 const lib = (format) => (format === "anthropic" ? claude : openai);
 
 /** The messages of earlier turns, in the wire format of `provider`. */
@@ -22,7 +27,7 @@ export function buildHistory(messages, provider) {
   const format = formatOf(provider);
   const out = [];
   for (const m of messages) {
-    if (m.role === "user") { out.push(lib(format).userMessage(m.text, m.images || [])); continue; }
+    if (m.role === "user") { out.push(lib(format).userMessage(userText(m), m.images || [])); continue; }
     if (m.role !== "assistant") continue;
     if (m.wire?.length && m.wireFormat === format) {
       out.push(...prepareWire(m.wire, format, m.wireProvider === provider.id ? provider : null));
@@ -105,7 +110,7 @@ export function answerDangling(msgs, format) {
 export async function runTurn({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink }) {
   const format = formatOf(provider);
   const L = lib(format);
-  const userWire = L.userMessage(user.text, user.images || []);
+  const userWire = L.userMessage(userText(user), user.images || []);
   const turn = sink || []; // the caller keeps what finished, even if the turn is stopped
   const usage = { input: 0, output: 0 };
   let round = 0;

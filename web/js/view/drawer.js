@@ -1,8 +1,9 @@
-// The side panel: 证据 (the passages of this conversation, one read in full), 研究 (research runs), 工具台 (every tool,
-// run by hand — no model needed).
+// The side panel: 证据 (the passages of this conversation, one read in full), 研究 (research runs), 资料 (the user's own
+// data: 我的资料), 工具台 (every tool, run by hand — no model needed).
 
 import { renderMarkdown } from "../markdown.js";
 import { chartGallery, chartsOf, documentButton, documentOf } from "../chart.js";
+import { columnsLabel, DATA_NOTICE, deidLabel, sizeLabel } from "../mydata.js";
 import { tablesOf } from "../table.js";
 import { append, bare, fmtMs, h, icon, passageLabel, prettyJSON, truncate, yearLabel } from "../util.js";
 import { FAMILY, toolFamily } from "./thread.js";
@@ -15,6 +16,7 @@ export function renderDrawer(el, S, ctx) {
   const tabs = [
     ["evidence", "证据", evidence.length],
     ["research", "研究", runs.length],
+    ["data", "资料", S.data?.list?.length || null],
     ["tools", "工具台", null],
   ];
   const head = h("div.drawer-head",
@@ -26,6 +28,7 @@ export function renderDrawer(el, S, ctx) {
   const body = h("div.drawer-body");
   if (tab === "evidence") body.append(evidencePane(S, ctx, evidence));
   else if (tab === "research") body.append(researchPane(S, ctx, runs));
+  else if (tab === "data") body.append(dataPane(S, ctx));
   else body.append(toolsPane(S, ctx));
   el.replaceChildren(head, body);
 }
@@ -48,7 +51,7 @@ function evidencePane(S, ctx, evidence) {
         type: "button", class: card.passage_id === sel ? "sel" : "",
         on: { click: () => ctx.openPassage(card.passage_id, null) },
       },
-      h("div.top", h("b", card.title ? `《${card.title}》` : card.passage_id), h("span.grow", truncate(stripBook(card.locator), 26)),
+      h("div.top", h("b", card.title ? bookTitle(card) : card.passage_id), h("span.grow", truncate(stripBook(card.locator), 26)),
         st ? h("span.badge", { class: st.status }, st.label) : null),
       h("div.q", card.text || ""),
       h("div.top", h("span", yearLabel(card)), h("span.grow"), h("span.mono", { style: { fontSize: "11px" } }, card.passage_id))));
@@ -58,6 +61,8 @@ function evidencePane(S, ctx, evidence) {
 }
 
 const stripBook = (loc) => String(loc || "").replace(/^《[^》]*》/, "");
+/** A book's title in 《》; a file of the user's as it is named. */
+const bookTitle = (card) => (card.mine || String(card.passage_id || "").startsWith("mine:") ? card.title : `《${card.title}》`);
 
 function passageView(S, ctx, pid, quote) {
   const box = h("div.passage-view", { class: S.drawer.vertical ? "vertical" : "" });
@@ -65,6 +70,11 @@ function passageView(S, ctx, pid, quote) {
   if (!card) {
     box.append(h("div.ph", h("div.ti", h("b", pid), h("div.loc", "正在读取原文…"))), h("div.text", h("span.spinner")));
     ctx.loadPassage(pid);
+    return box;
+  }
+  if (!card.ok && pid.startsWith("mine:")) {
+    box.append(h("div.ph", h("div.ti", h("b", pid), h("div.loc", "我的资料中没有这一行或这一段"))),
+      h("div.meta", "这份资料可能已被删除，或模型写错了编号。", card.error ? h("div.mono", truncate(card.error, 200)) : null));
     return box;
   }
   if (!card.ok) {
@@ -84,9 +94,9 @@ function passageView(S, ctx, pid, quote) {
   else text.append(card.text);
   append(box, [
     h("div.ph",
-      h("div.ti", h("b", `《${card.title}》`), h("div.loc", stripBook(card.locator)), h("div.loc", [yearLabel(card), card.period].filter(Boolean).join(" · "))),
+      h("div.ti", h("b", bookTitle(card)), h("div.loc", stripBook(card.locator)), h("div.loc", [yearLabel(card), card.period].filter(Boolean).join(" · "))),
       h("button.icon-btn", { type: "button", title: S.drawer.vertical ? "横排" : "竖排", "aria-label": "切换横排竖排", on: { click: ctx.toggleVertical } }, icon(S.drawer.vertical ? "text" : "vertical")),
-      h("button.icon-btn", { type: "button", title: "复制原文与出处", "aria-label": "复制原文", on: { click: () => ctx.copy(`${card.text}\n——《${card.title}》${stripBook(card.locator)}（${card.passage_id}）`) } }, icon("copy"))),
+      h("button.icon-btn", { type: "button", title: "复制原文与出处", "aria-label": "复制原文", on: { click: () => ctx.copy(`${card.text}\n——${bookTitle(card)}${stripBook(card.locator)}（${card.passage_id}）`) } }, icon("copy"))),
     h("div.status-line",
       st ? h("span.badge", { class: st.status }, st.label) : null,
       card.collation_status ? h("span.badge", card.collation_status === "unverified" ? "未经校勘" : `校勘：${card.collation_status}`) : null,
@@ -112,6 +122,46 @@ export function findQuote(text, quote) {
   const at = flat.indexOf(q);
   if (at < 0) return null;
   return [map[at], map[at + q.length - 1] + 1];
+}
+
+// ------------------------------------------------------------------ 我的资料
+function dataPane(S, ctx) {
+  const pane = h("div.pane.data-pane");
+  const list = S.data?.list || [];
+  pane.append(h("div.data-head",
+    h("button.btn", { type: "button", disabled: Boolean(S.data?.busy), on: { click: () => ctx.pickData() } }, icon("upload", "sm"), "上传资料"),
+    h("span.muted", "CSV、Excel、Word、TXT、JSON · 每个至多 10 MB")));
+  if (S.data?.busy) {
+    pane.append(h("div.data-status", h("span.spinner"), h("span", S.data.busy),
+      S.data.loading ? h("span.muted", S.data.loading.message || "") : null));
+  } else if (S.data?.error && !list.length) {
+    pane.append(h("div.data-status.err", icon("warn", "sm"), h("span", truncate(S.data.error, 160)),
+      h("button.btn.secondary", { type: "button", on: { click: () => ctx.refreshData() } }, "重试")));
+  }
+  if (!list.length) {
+    pane.append(h("div.pane-empty", icon("table"), h("div", "上传自己的资料——门诊处方、病案、调查表、读书笔记——请道乃久读取、统计和分析。"),
+      h("div", "例如：“统计这批处方的高频药物和药对，并与经典方比较”“比较两组患者的年龄和疗效”。")));
+  }
+  for (const d of list) {
+    pane.append(h("div.data-card",
+      h("div.top", icon(d.kind === "table" ? "table" : "file", "sm"), h("b", { title: d.name }, truncate(d.name, 34)), h("span.grow"),
+        h("span.muted", sizeLabel(d))),
+      d.kind === "table" && d.columns?.length ? h("div.cols", columnsLabel(d, 10)) : null,
+      h("div.deid", icon("shield", "sm"), h("span", deidLabel(d))),
+      d.notes?.length ? h("div.notes", d.notes.join("；")) : null,
+      h("div.row",
+        h("span.mono", d.id),
+        h("span.grow"),
+        h("button.btn.secondary", { type: "button", title: "把这份资料附到下一条消息", on: { click: () => ctx.attachData(d.id) } }, "附到消息"),
+        h("button.icon-btn", { type: "button", title: "删除这份资料", "aria-label": `删除「${d.name}」`, on: { click: () => ctx.removeData(d.id) } }, icon("trash", "sm")))));
+  }
+  if (list.length > 1) {
+    pane.append(h("div.data-foot", h("button.btn.secondary.danger", { type: "button", on: { click: () => ctx.clearData() } }, icon("trash", "sm"), "全部删除")));
+  }
+  const about = h("details.data-about", h("summary", icon("shield", "sm"), "资料如何处理"),
+    h("dl.notice-list", DATA_NOTICE.flatMap(([k, v]) => [h("dt", k), h("dd", v)])));
+  pane.append(about);
+  return pane;
 }
 
 // ------------------------------------------------------------------ research

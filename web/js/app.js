@@ -11,6 +11,8 @@ import { AGENT, MODEL as ASSISTANT, PUBLISHER, PUBLISHER_EN } from "./brand.js";
 import { FIXED_ID, fixedReply, touchesIdentity } from "./fixed.js";
 import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, publicConversation, RELAY_ID, saveSettings, setRelay }
   from "./providers.js";
+import { ACCEPT, brief, cacheList, cachedList, DATA_NOTICE, isMine, MAX_BYTES, noticeSeen, personal, setNoticeSeen, sizeLabel }
+  from "./mydata.js";
 import { consent, NOTICE, setConsent } from "./records.js";
 import { BrowserRuntime, probeServer, sameOriginServer, ServerRuntime } from "./runtime.js";
 import * as store from "./store.js";
@@ -35,12 +37,15 @@ const S = {
   catalogs: {},
   catalogAll: null,
   catalogIndex: new Map(),
+  local: null,             // a runtime in this browser for 我的资料, when the one that answers is not on this machine
+  data: { list: cachedList(), busy: null, ready: false }, // 我的资料: the datasets of the runtime that reads them
+  mydataDefs: null,        // the 我的资料 tools, offered while there are datasets
   list: [],
   conv: null,
   running: null,
   researchRunning: null,
   drawer: { open: false, tab: "evidence", pid: null, quote: null, vertical: false, tool: null, toolQuery: "", famOpen: new Set(), toolArgs: {} },
-  ui: { editing: null, openThink: new Set(), openSteps: new Set(), closedSteps: new Set(), openTools: new Set(), search: "", attachments: [] },
+  ui: { editing: null, openThink: new Set(), openSteps: new Set(), closedSteps: new Set(), openTools: new Set(), search: "", attachments: [], data: [] },
   passages: new Map(),
   verify: new Map(),
   stick: true,
@@ -52,6 +57,7 @@ const el = {
   main: $("#main"), toggleSidebar: $("#toggle-sidebar"), modelChip: $("#model-chip"), title: $("#conv-title"),
   toggleDrawer: $("#toggle-drawer"), thread: $("#thread"), inner: $("#thread-inner"), toBottom: $("#to-bottom"),
   composer: $("#composer"), input: $("#input"), send: $("#send"), attach: $("#attach"), file: $("#file"), attachments: $("#attachments"),
+  attachData: $("#attach-data"), dataFile: $("#data-file"),
   hint: $("#hint"), drawer: $("#drawer"), scrim: $("#scrim"), settings: $("#settings"), report: $("#report"), consent: $("#consent"),
 };
 
@@ -103,6 +109,8 @@ function switchRuntime(ready = null) {
     S.runtimeInfo = null;
     S.catalogs = {};
     S.catalogAll = null;
+    S.mydataDefs = null;
+    if (rt.local && S.local) { S.local.stop(); S.local = null; } // this runtime reads the user's data itself
     S.passages.clear();
     S.verify.clear();
     folds.clear();
@@ -123,6 +131,7 @@ function switchRuntime(ready = null) {
       renderPill();
       if (!S.conv?.messages.length) renderMain();
       refreshAllCites();
+      if (rt.local || S.data.list.length) refreshData(); // the datasets kept from earlier visits
     }).catch((err) => {
       if (S.runtime === rt && rt.fallback && !rt.backup && err?.unavailable) rt.backup = rt.fallback(err); // else shown in the pill
     });
@@ -215,7 +224,7 @@ function systemPrompt() {
 // ------------------------------------------------------------------ passages and citations
 function getPassage(pid) {
   if (!S.passages.has(pid)) {
-    const p = S.runtime.passage(pid)
+    const p = (pid.startsWith("mine:") ? dataRuntime() : S.runtime).passage(pid)
       .then((card) => { S.passages.set(pid, card); return card; })
       .catch((err) => { const card = { ok: false, passage_id: pid, error: err.message }; S.passages.delete(pid); return card; });
     S.passages.set(pid, p);
@@ -250,11 +259,12 @@ function toolText(conv) {
 
 const folds = new Map();
 const foldsNow = new Map();
-/** A text in the harness's normalised forms (繁→简, 异体, 通假), for comparing a quotation with its passage. */
-function normalized(text, pid) {
-  const key = pid ? `p:${pid}` : `q:${text}`;
+/** A text in the harness's normalised forms (繁→简, 异体, 通假), for comparing a quotation with its passage — by the
+ * runtime that holds the user's data when it is theirs (`mine`): their rows never go to a server elsewhere. */
+function normalized(text, pid, mine = false) {
+  const key = pid ? `p:${pid}` : `${mine ? "m" : "q"}:${text}`;
   if (!folds.has(key)) {
-    folds.set(key, S.runtime.call("philology.normalize", { text }, { maxChars: 1000 })
+    folds.set(key, (mine ? dataRuntime() : S.runtime).call("philology.normalize", { text }, { maxChars: 1000 })
       .then((out) => { const v = out?.ok ? out.result?.normalized ?? null : null; foldsNow.set(key, v); return v; })
       .catch(() => null));
   }
@@ -283,7 +293,8 @@ function queueVerify(pid, quote) {
         let ok = bare(card.text).includes(bare(quote));
         let folded = false;
         if (!ok) { // another script or variant forms of the same words: compare after the harness's own normalisation
-          const [q, t] = await Promise.all([normalized(quote), normalized(card.text, pid)]);
+          const mine = pid.startsWith("mine:");
+          const [q, t] = await Promise.all([normalized(quote, null, mine), normalized(card.text, pid, mine)]);
           folded = ok = Boolean(q && t && bare(t).includes(bare(q)));
         }
         const unseen = grounded ? "" : "（此段未经本轮工具返回）";
@@ -425,6 +436,8 @@ async function deleteConversation(conv) {
 // ------------------------------------------------------------------ sending
 async function send(text, images = []) {
   text = (text || "").trim();
+  const data = S.ui.data.map((id) => S.data.list.find((d) => d.id === id)).filter(Boolean).map(brief);
+  if (!text && data.length) text = "请先概述我上传的资料，再建议可以做哪些分析。";
   if (!text && !images.length) return;
   if (S.running) return;
   if (!fixedReply(text, images)) { // a question the page answers itself needs no model, so no key
@@ -445,12 +458,13 @@ async function send(text, images = []) {
     S.conv = conv;
     location.hash = `#/c/${conv.id}`;
   }
-  conv.messages.push({ id: uid("m_"), role: "user", text, images, created: Date.now() });
+  conv.messages.push({ id: uid("m_"), role: "user", text, images, ...(data.length ? { data } : {}), created: Date.now() });
   const msg = { id: uid("m_"), role: "assistant", created: Date.now(), status: "streaming", segments: [] };
   conv.messages.push(msg);
   touch(conv);
   el.input.value = "";
   S.ui.attachments = [];
+  S.ui.data = [];
   autosize();
   renderAttachments();
   renderAll();
@@ -480,10 +494,14 @@ async function runAssistant(conv, msg) {
   try {
     const runtime = await turnRuntime();
     const catalog = await getCatalog(S.settings.toolMode);
+    const tools = toolDefs(catalog);
+    if (S.data.list.length || personal(conv)) { // the 我的资料 tools, while there is data to read
+      for (const t of await mydataDefs()) if (!tools.some((x) => x.name === t.name)) tools.push({ name: t.name, description: t.description, parameters: t.parameters });
+    }
     const history = buildHistory(conv.messages.slice(0, idx - 1), provider);
     const result = await runTurn({
-      provider, settings: hidden ? { ...S.settings, thinking: false } : S.settings, route: routeFor(), runtime,
-      tools: toolDefs(catalog), system: systemPrompt(), history, user, signal: controller.signal, hooks: makeHooks(conv, msg), sink,
+      provider, settings: hidden ? { ...S.settings, thinking: false } : S.settings, route: routeFor(), runtime: routed(runtime),
+      tools, system: systemPrompt(), history, user, signal: controller.signal, hooks: makeHooks(conv, msg), sink,
     });
     msg.rounds = result.rounds;
     msg.usage = result.usage;
@@ -695,13 +713,156 @@ async function runResearchDirect(args) {
 async function runTool(name, args) {
   try {
     await ensureRuntime();
-    const out = await S.runtime.call(name, args, { maxChars: S.settings.resultChars });
+    const out = await routed(S.runtime).call(name, args, { maxChars: S.settings.resultChars });
     if (out.ok && S.conv) registerEvidence(S.conv, out.citations);
     for (const c of out.citations || []) if (!S.passages.has(c.passage_id)) { /* fetched on demand */ }
     return out;
   } catch (err) {
     return { ok: false, error: err.message };
   }
+}
+
+// ------------------------------------------------------------------ 我的资料
+/** The runtime that reads the user's data: one on this machine — the browser's, or a TaoChronos server here.  When the
+ * page works with the site's server or one elsewhere, a runtime of its own in this browser, started for the data. */
+function dataRuntime() {
+  const rt = S.runtime;
+  if (rt?.backup?.local) return rt.backup; // the site's server fell back on the browser
+  if (rt?.local) return rt;
+  if (!S.local) {
+    S.local = new BrowserRuntime();
+    S.local.onStatus((st) => {
+      S.data.loading = st.status === "loading" ? st : null;
+      if (st.status === "error") S.data.error = st.message;
+      renderDataSoon();
+    });
+  }
+  return S.local;
+}
+
+/** A turn's runtime, with the 我的资料 tools (and the passages they cite) answered by the runtime that holds the data. */
+function routed(runtime) {
+  return {
+    call(name, args, options) {
+      const mine = isMine(name) || (name === "taochronos_call" && isMine(args?.tool));
+      return (mine ? dataRuntime() : runtime).call(name, args, options);
+    },
+    research: (args, options) => runtime.research(args, options),
+  };
+}
+
+/** The 我的资料 tools as the model is offered them (from the runtime that reads the data). */
+async function mydataDefs() {
+  if (!S.mydataDefs?.length) { // none yet: asked again (a runtime still describing itself from an older boot file has none)
+    const cat = await dataRuntime().catalog("core").catch(() => null);
+    S.mydataDefs = cat?.mydata || [];
+    for (const t of S.mydataDefs) S.catalogIndex.set(t.name, t);
+  }
+  return S.mydataDefs;
+}
+
+/** The datasets of the runtime that reads them (the cached list until it answers). */
+async function refreshData() {
+  try {
+    const out = await dataRuntime().listData();
+    S.data.list = (out?.datasets || []).map(brief);
+    S.data.ready = true;
+    S.data.error = null;
+    cacheList(S.data.list);
+    S.ui.data = S.ui.data.filter((id) => S.data.list.some((d) => d.id === id));
+  } catch (err) {
+    S.data.error = err.message;
+  }
+  renderAttachments();
+  renderDataSoon();
+}
+
+const renderDataSoon = throttleFrame(() => { if (S.drawer.open && S.drawer.tab === "data") renderDrawer(el.drawer, S, drawerCtx); });
+
+/** Before the first upload: what happens to the user's data (once per browser, per version of the notice). */
+function dataNotice() {
+  if (noticeSeen()) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const dlg = document.body.appendChild(h("dialog.data-notice", { "aria-label": "上传个人资料之前" }));
+    const done = (ok) => { if (ok) setNoticeSeen(); dlg.close(); dlg.remove(); resolve(ok); };
+    dlg.oncancel = (e) => { e.preventDefault(); done(false); };
+    dlg.append(h("div.modal.consent", { role: "document" },
+      h("div.modal-head", icon("shield"), h("h2", "上传个人资料之前")),
+      h("div.consent-body", h("p", "你可以上传自己的资料（病案、处方、调查表、笔记……），让道乃久读取、统计和分析："),
+        h("dl.notice-list", DATA_NOTICE.flatMap(([k, v]) => [h("dt", k), h("dd", v)])),
+        h("p.muted", `支持 CSV、TSV、Excel（.xlsx）、Word（.docx）、TXT、Markdown 与 JSON，单个文件至多 ${MAX_BYTES / 1048576} MB。`)),
+      h("div.modal-foot",
+        h("button.btn.secondary", { type: "button", on: { click: () => done(false) } }, "取消"),
+        h("button.btn", { type: "button", on: { click: () => done(true) } }, "我已了解，继续"))));
+    dlg.showModal();
+  });
+}
+
+/** Choose files to add to 我的资料 (the notice first, the first time). */
+async function pickData() {
+  if (await dataNotice()) el.dataFile.click();
+}
+
+/** Files added to 我的资料: read and made anonymous by the runtime that holds the data, attached to the next message. */
+async function addData(files) {
+  files = [...files];
+  if (!files.length || S.data.busy) return;
+  if (!(await dataNotice())) return;
+  const rt = dataRuntime();
+  S.data.busy = files.length > 1 ? `正在读取 ${files.length} 个文件…` : `正在读取「${truncate(files[0].name, 24)}」…`;
+  renderAttachments();
+  renderDataSoon();
+  try {
+    await rt.start();
+    for (const f of files) {
+      if (f.size > MAX_BYTES) { toast(`「${f.name}」过大：单个文件至多 ${MAX_BYTES / 1048576} MB`, "err", 5000); continue; }
+      const out = await rt.addData(f.name, await f.arrayBuffer());
+      if (!out?.ok) { toast(`未能读取「${f.name}」：${out?.error || "未知原因"}`, "err", 7000); continue; }
+      S.ui.data.push(out.dataset.id);
+      toast(`已读取「${truncate(f.name, 24)}」：${sizeLabel(out.dataset)}，已脱敏`);
+      if (out.kept === false) toast("此浏览器无法保存资料（隐私模式？）：关闭页面后需重新上传", "", 6000);
+    }
+  } catch (err) {
+    toast(`读取资料失败：${err.message}`, "err", 6000);
+  } finally {
+    S.data.busy = null;
+    await refreshData();
+    renderComposer();
+  }
+}
+
+function attachData(id) {
+  if (!S.ui.data.includes(id)) S.ui.data.push(id);
+  renderAttachments();
+  renderComposer();
+  if (mobile()) { S.drawer.open = false; renderLayout(); }
+  el.input.focus();
+}
+
+async function removeData(id) {
+  const d = S.data.list.find((x) => x.id === id);
+  if (!confirm(`删除资料「${truncate(d?.name || id, 30)}」？对话中引用它的行与段落将无法再打开。`)) return;
+  try {
+    const out = await dataRuntime().removeData(id);
+    if (!out?.ok) throw new Error(out?.error || "删除失败");
+    toast("已删除");
+  } catch (err) {
+    toast(err.message, "err");
+  }
+  for (const pid of [...S.passages.keys()]) if (pid.startsWith(`mine:${id}.`)) S.passages.delete(pid);
+  await refreshData();
+}
+
+async function clearData() {
+  if (!confirm("删除本浏览器中的全部资料？此操作不可撤销。")) return;
+  try {
+    await dataRuntime().clearData();
+    toast("已删除全部资料");
+  } catch (err) {
+    toast(err.message, "err");
+  }
+  for (const pid of [...S.passages.keys()]) if (pid.startsWith("mine:")) S.passages.delete(pid);
+  await refreshData();
 }
 
 // ------------------------------------------------------------------ drawer
@@ -741,7 +902,8 @@ const drawerCtx = {
   close() { S.drawer.open = false; renderLayout(); },
   openPassage,
   passageNow,
-  folded: (pid, quote) => ({ text: foldsNow.get(`p:${pid}`) ?? null, quote: quote ? foldsNow.get(`q:${quote}`) ?? null : null }),
+  folded: (pid, quote) => ({ text: foldsNow.get(`p:${pid}`) ?? null,
+    quote: quote ? foldsNow.get(`${pid.startsWith("mine:") ? "m" : "q"}:${quote}`) ?? null : null }),
   loadPassage(pid) { getPassage(pid).then(() => renderDrawerSoon()); },
   citeStatus: statusFor,
   bestStatus,
@@ -778,6 +940,12 @@ const drawerCtx = {
   },
   pickTool(name) { S.drawer.tool = name; renderDrawer(el.drawer, S, drawerCtx); el.drawer.querySelector(".drawer-body")?.scrollTo({ top: 0 }); },
   runTool,
+  pickData,
+  attachData,
+  removeData,
+  clearData,
+  refreshData,
+  get dataLocal() { return Boolean(S.runtime?.local); },
   cite: (pid, quote) => citeChip(pid, quote),
   citeCard: (card) => citeChip(card.passage_id, undefined, card),
 };
@@ -958,7 +1126,7 @@ function renderComposer() {
   el.send.replaceChildren(running ? h("span.sq") : icon("up"));
   el.send.title = running ? "停止 (Esc)" : "发送 (Enter)";
   el.send.setAttribute("aria-label", running ? "停止生成" : "发送");
-  el.send.disabled = !running && !el.input.value.trim() && !S.ui.attachments.length;
+  el.send.disabled = !running && !el.input.value.trim() && !S.ui.attachments.length && !S.ui.data.length;
   const p = activeProvider(S.settings);
   el.attach.hidden = !p.vision;
   renderComposerHint();
@@ -970,9 +1138,16 @@ function renderComposerHint() {
 }
 
 function renderAttachments() {
-  el.attachments.hidden = !S.ui.attachments.length;
-  el.attachments.replaceChildren(...S.ui.attachments.map((src, k) => h("div.attachment", h("img", { src, alt: "附图" }),
-    h("button", { type: "button", "aria-label": "移除图片", on: { click: () => { S.ui.attachments.splice(k, 1); renderAttachments(); renderComposer(); } } }, "×"))));
+  const data = S.ui.data.map((id) => S.data.list.find((d) => d.id === id)).filter(Boolean);
+  el.attachments.hidden = !S.ui.attachments.length && !data.length && !S.data.busy;
+  el.attachments.replaceChildren(
+    ...S.ui.attachments.map((src, k) => h("div.attachment", h("img", { src, alt: "附图" }),
+      h("button", { type: "button", "aria-label": "移除图片", on: { click: () => { S.ui.attachments.splice(k, 1); renderAttachments(); renderComposer(); } } }, "×"))),
+    ...data.map((d) => h("div.data-chip", { title: `${d.name} · ${sizeLabel(d)} · 已脱敏` }, icon(d.kind === "table" ? "table" : "file", "sm"),
+      h("span.nm", truncate(d.name, 28)), h("span.sz", sizeLabel(d)),
+      h("button", { type: "button", "aria-label": `不附上「${d.name}」`, on: { click: () => { S.ui.data = S.ui.data.filter((x) => x !== d.id); renderAttachments(); renderComposer(); } } }, "×"))),
+    ...(S.data.busy ? [h("div.data-chip.busy", h("span.spinner"), h("span.nm", S.data.busy),
+      S.data.loading ? h("span.sz", truncate(S.data.loading.message || "准备本机运行环境", 30)) : null)] : []));
 }
 
 // ------------------------------------------------------------------ scrolling
@@ -992,7 +1167,7 @@ el.thread.addEventListener("scroll", () => {
 function autosize() {
   el.input.style.height = "auto";
   el.input.style.height = `${Math.min(el.input.scrollHeight, innerHeight * 0.38)}px`;
-  el.send.disabled = !S.running && !el.input.value.trim() && !S.ui.attachments.length;
+  el.send.disabled = !S.running && !el.input.value.trim() && !S.ui.attachments.length && !S.ui.data.length;
 }
 
 async function addImages(files) {
@@ -1036,15 +1211,26 @@ el.input.addEventListener("keydown", (e) => {
   }
   if (e.key === "Escape" && S.running) stop();
 });
+/** Files given to the composer (dropped, pasted): images go with the message, other files to 我的资料. */
+function addFiles(files) {
+  const all = [...files];
+  const images = all.filter((f) => f.type.startsWith("image/"));
+  const data = all.filter((f) => !f.type.startsWith("image/"));
+  if (images.length) addImages(images);
+  if (data.length) addData(data);
+}
+
 el.input.addEventListener("paste", (e) => {
-  const files = [...(e.clipboardData?.files || [])].filter((f) => f.type.startsWith("image/"));
-  if (files.length) { e.preventDefault(); addImages(files); }
+  const files = [...(e.clipboardData?.files || [])];
+  if (files.length) { e.preventDefault(); addFiles(files); }
 });
 el.attach.addEventListener("click", () => el.file.click());
 el.file.addEventListener("change", () => { addImages(el.file.files || []); el.file.value = ""; });
+el.attachData?.addEventListener("click", pickData);
+el.dataFile?.addEventListener("change", () => { addData(el.dataFile.files || []); el.dataFile.value = ""; });
 for (const ev of ["dragenter", "dragover"]) el.composer.addEventListener(ev, (e) => { if (e.dataTransfer?.types?.includes("Files")) { e.preventDefault(); el.composer.classList.add("drag"); } });
 for (const ev of ["dragleave", "drop"]) el.composer.addEventListener(ev, () => el.composer.classList.remove("drag"));
-el.composer.addEventListener("drop", (e) => { if (e.dataTransfer?.files?.length) { e.preventDefault(); addImages(e.dataTransfer.files); } });
+el.composer.addEventListener("drop", (e) => { if (e.dataTransfer?.files?.length) { e.preventDefault(); addFiles(e.dataTransfer.files); } });
 
 // ------------------------------------------------------------------ 道乃久默认服务 and conversation records
 /** site.json (written by the build) names the site's relay; its health says whether it is up and collects records. */
@@ -1139,7 +1325,7 @@ async function citationSummary(conv, msg) {
 
 /** One finished turn, compact (no key, no settings, no address), to the relay — only when the visitor agreed. */
 async function recordTurn(conv, msg) {
-  if (!recording()) return;
+  if (!recording() || personal(conv)) return; // a conversation that touches the user's own data is never recorded
   try {
     const idx = conv.messages.indexOf(msg);
     const user = conv.messages[idx - 1];
@@ -1327,6 +1513,8 @@ function wireChrome() {
   el.newChatTop.append(icon("plus"));
   el.toBottom.append(icon("down"));
   el.attach.append(icon("image"));
+  el.attachData?.append(icon("file"));
+  if (el.dataFile) el.dataFile.accept = ACCEPT;
   el.settingsBtn.append(icon("gear", "sm"), "设置");
 
   el.newChat.addEventListener("click", newChat);

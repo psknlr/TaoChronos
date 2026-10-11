@@ -5,6 +5,9 @@ It serves the web client (``web/``) and a small JSON API over :class:`~taochrono
 * ``GET  /api/info`` — corpus, tools, the system prompt;  ``GET /api/catalog?mode=core|all`` — tool definitions;
 * ``POST /api/call`` ``{name, arguments, max_chars}`` — run one tool;  ``GET /api/passage?id=`` — a passage in full;
 * ``POST /api/research`` — start a research run in the background;  ``GET /api/research/<job>`` — its progress and outcome;
+* ``POST /api/data`` ``{name, data}`` (the file's bytes in base64) — add a file to 我的资料;  ``GET /api/data`` — the
+  datasets;  ``POST /api/data/remove`` ``{id}``, ``POST /api/data/clear`` — remove one, or all.  Only a server bound to
+  this machine takes a user's data: one other machines reach would mix its visitors' data in one runtime;
 * ``POST /api/llm`` — forward one model request (``X-TC-Target: <url>``) to a provider listed in
   :mod:`taochronos.chat.providers` and stream the answer back, for providers a browser cannot call directly.
   The key travels with the request and is never stored or logged; with ``--env-keys`` a request without one gets the
@@ -19,6 +22,8 @@ requires an access token (``--token``, else one is generated and printed), carri
 
 from __future__ import annotations
 
+import base64
+import binascii
 import hmac
 import json
 import mimetypes
@@ -82,6 +87,11 @@ class ChatServer(ThreadingHTTPServer):
             return False
         # this machine's pages, and the server's own pages wherever it is reached (a LAN address, a domain)
         return (parts.hostname or "") in LOCAL_NAMES or bool(host and parts.netloc.lower() == host.strip().lower())
+
+    @property
+    def private(self) -> bool:
+        """Bound to this machine only: the one person at it is the only visitor, and may bring their own data."""
+        return self.server_address[0] in ("127.0.0.1", "::1", "localhost")
 
     def token_ok(self, given: str | None) -> bool:
         return self.token is None or hmac.compare_digest((given or "").encode(), self.token.encode())
@@ -185,6 +195,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json(web_providers())
                 if path == "/api/passage":
                     return self._json(rt.passage(query.get("id", "")))
+                if path == "/api/data":
+                    return self._json(rt.data_list() if self.server.private else {"datasets": [], "private": False})
                 if path.startswith("/api/research/"):
                     return self._json(rt.job(path.rsplit("/", 1)[-1]))
                 if path.startswith("/api/session/"):
@@ -212,6 +224,8 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/call":
                 return self._json(rt.call(str(data.get("name", "")), data.get("arguments") or {},
                                           max_chars=int(data.get("max_chars") or 16000)))
+            if path.startswith("/api/data"):
+                return self._data(path, data)
             if path == "/api/research":
                 args = dict(data.get("arguments") or data)
                 question = str(args.pop("question", "") or "").strip()
@@ -222,6 +236,23 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"job": job})
         except Exception as exc:
             return self._json({"error": f"{type(exc).__name__}: {exc}"}, 500)
+        return self._json({"error": f"no such endpoint {path}"}, 404)
+
+    def _data(self, path: str, data: dict[str, Any]) -> None:
+        """我的资料: a file added, a dataset removed, all removed — on a server only this machine reaches."""
+        rt = self.server.runtime
+        if not self.server.private:
+            return self._json({"ok": False, "error": "这个服务可由其他机器访问：个人资料不在这里处理，请在浏览器内处理"}, 403)
+        if path == "/api/data":
+            try:
+                raw = base64.b64decode(str(data.get("data") or ""), validate=True)
+            except (binascii.Error, ValueError):
+                return self._json({"ok": False, "error": "文件内容须以 base64 编码"}, 400)
+            return self._json(rt.data_add(str(data.get("name") or "资料"), raw))
+        if path == "/api/data/remove":
+            return self._json(rt.data_remove(str(data.get("id") or "")))
+        if path == "/api/data/clear":
+            return self._json(rt.data_clear())
         return self._json({"error": f"no such endpoint {path}"}, 404)
 
     # ------------------------------------------------------------------ static files

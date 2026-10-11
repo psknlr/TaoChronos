@@ -3,6 +3,10 @@
 // passage, research — with the same shapes, because both run the same Python module (taochronos.chat).  The browser
 // runtime knows its info and catalogs before it has loaded (runtime/boot.json, written by the build), so that a
 // conversation can begin at once; only the tools it calls wait for it.
+//
+// Both also keep the user's own data (我的资料: addData, listData, removeData, clearData) — but only where it stays on the
+// user's machine: in this browser, or in a server on this machine (`local`).  The page reads the data with a runtime
+// that is (app.js, dataRuntime).
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
@@ -90,11 +94,11 @@ export class BrowserRuntime {
     this.ready = null;
   }
 
-  _rpc(method, params = {}) {
+  _rpc(method, params = {}, transfer = []) {
     const id = ++this.seq;
     return new Promise((resolve, reject) => {
       this.pending.set(id, { resolve, reject });
-      this.worker.postMessage({ id, method, params });
+      this.worker.postMessage({ id, method, params }, transfer);
     });
   }
 
@@ -118,6 +122,12 @@ export class BrowserRuntime {
   call(name, args, { maxChars } = {}) { return this.call_("call", { name, arguments: args, max_chars: maxChars }); }
   passage(id) { return this.call_("passage", { id }); }
   session(id, what, extra = {}) { return this.call_("session", { session_id: id, what, ...extra }); }
+  get local() { return true; }
+  /** A file of the user's (an ArrayBuffer, handed over to the worker): {ok, dataset} or {ok: false, error}. */
+  async addData(name, buffer) { await this.start(); return this._rpc("data_add", { name, bytes: buffer }, [buffer]); }
+  listData() { return this.call_("data_list"); }
+  removeData(id) { return this.call_("data_remove", { id }); }
+  clearData() { return this.call_("data_clear"); }
   async research(args, { maxChars, onProgress } = {}) {
     const started = Date.now();
     const timer = setInterval(() => onProgress?.({ status: "running", elapsed_s: (Date.now() - started) / 1000 }), 500);
@@ -190,6 +200,14 @@ export class ServerRuntime {
 
   async info() { return this.info_ || (await this.start()); }
   catalog(mode) { return this._fetch(`/api/catalog?mode=${encodeURIComponent(mode)}`); }
+  /** A server on this machine may keep the user's data; one elsewhere is never sent it (the page uses the browser). */
+  get local() { return isLoopback(this.url); }
+  addData(name, buffer) {
+    return this._fetch("/api/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, data: base64(buffer) }) });
+  }
+  listData() { return this._fetch("/api/data"); }
+  removeData(id) { return this._fetch("/api/data/remove", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) }); }
+  clearData() { return this._fetch("/api/data/clear", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); }
   call(name, args, { maxChars, signal } = {}) {
     if (this.backup) return this.backup.call(name, args, { maxChars, signal });
     return this._fetch("/api/call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, arguments: args, max_chars: maxChars }), signal })
@@ -223,6 +241,14 @@ export class ServerRuntime {
       if (st.status === "unknown") throw new Error("研究任务已丢失（服务是否重启过？）");
     }
   }
+}
+
+/** Bytes as base64, a slice at a time (a whole file at once would overflow the arguments of fromCharCode). */
+export function base64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let text = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) text += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(text);
 }
 
 /** Is a TaoChronos server answering at this origin (the client served by `taochronos serve`)? */

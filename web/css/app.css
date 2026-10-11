@@ -516,6 +516,16 @@ pre.json { margin: 0; max-height: 280px; overflow: auto; background: var(--code-
 .attachment { position: relative; width: 58px; height: 58px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
 .attachment img { width: 100%; height: 100%; object-fit: cover; }
 .attachment button { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: 0; background: rgba(0, 0, 0, .6); color: #fff; font-size: 12px; line-height: 18px; padding: 0; }
+/* 我的资料: a dataset on the composer and on the message that carried it */
+.data-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; border: 1px solid color-mix(in srgb, var(--jade) 35%, var(--line)); background: var(--jade-soft); color: var(--jade); border-radius: 10px; padding: 5px 6px 5px 9px; font-size: 12.5px; min-width: 0; }
+.data-chip .nm { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.data-chip .sz { color: color-mix(in srgb, var(--jade) 75%, var(--ink-3)); white-space: nowrap; font-size: 11.5px; }
+.data-chip button { border: 0; background: none; color: inherit; width: 20px; height: 20px; border-radius: 6px; padding: 0; font-size: 14px; line-height: 20px; }
+.data-chip button:hover { background: color-mix(in srgb, var(--jade) 18%, transparent); }
+.data-chip.busy { border-style: dashed; background: var(--surface-2); color: var(--ink-2); padding-right: 10px; }
+.data-chip.busy .sz { color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; }
+.msg.user .data-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; margin-bottom: 6px; }
+.msg.user .data-chips .data-chip { padding-right: 10px; }
 .disclaimer { pointer-events: auto; text-align: center; font-size: 11.5px; color: var(--ink-3); margin-top: 7px; }
 .disclaimer a { color: inherit; }
 /* the introduction in index.html, shown until the client draws the page */
@@ -578,6 +588,31 @@ pre.json { margin: 0; max-height: 280px; overflow: auto; background: var(--code-
 .ev-item .q { font-family: var(--font-serif); font-size: 14px; line-height: 1.75; color: var(--ink-2); margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .section-title { font-size: 11.5px; font-weight: 650; letter-spacing: .08em; color: var(--ink-3); margin: 16px 2px 8px; display: flex; align-items: center; gap: 8px; }
 .section-title::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+/* 资料 (我的资料) */
+.data-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.data-head .muted { font-size: 12px; }
+.data-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); border: 1px dashed var(--line-2); border-radius: 12px; padding: 9px 12px; margin-bottom: 10px; }
+.data-status .muted { font-size: 12px; }
+.data-status.err { border-style: solid; border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: var(--danger-soft); color: var(--danger); }
+.data-card { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; }
+.data-card .top { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.data-card .top b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.data-card .top .grow { flex: 1; }
+.data-card .top .muted { font-size: 12px; white-space: nowrap; }
+.data-card .cols { color: var(--ink-2); margin-top: 5px; line-height: 1.6; font-size: 12.5px; }
+.data-card .deid { display: flex; gap: 6px; align-items: flex-start; color: var(--jade); margin-top: 6px; font-size: 12.5px; line-height: 1.6; }
+.data-card .deid .icon { flex: none; margin-top: 2px; }
+.data-card .notes { color: var(--ink-3); font-size: 12px; margin-top: 4px; }
+.data-card .row { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.data-card .row .grow { flex: 1; }
+.data-card .row .mono { font-size: 11px; color: var(--ink-3); }
+.data-card .row .btn { padding: 4px 10px; font-size: 12.5px; }
+.data-foot { display: flex; justify-content: flex-end; margin: 4px 0 12px; }
+.btn.secondary.danger { color: var(--danger); background: var(--surface); }
+.data-about { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; font-size: 13px; }
+.data-about summary { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--ink-2); font-weight: 600; }
+.data-about .notice-list { margin-top: 10px; font-size: 12.5px; }
+.fam.mydata { background: var(--jade-soft); color: var(--jade); }
 
 /* research */
 .run-card { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; background: var(--paper); }
@@ -637,6 +672,11 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(2px); }
 }
 .modal.wide { width: min(980px, calc(100vw - 32px)); }
 .modal.consent { width: min(520px, calc(100vw - 32px)); }
+.modal-head .icon { color: var(--jade); }
+.notice-list { margin: 4px 0 12px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; font-size: 13.5px; line-height: 1.7; }
+.notice-list dt { font-weight: 650; color: var(--ink); white-space: nowrap; }
+.notice-list dd { margin: 0; color: var(--ink-2); }
+@media (max-width: 520px) { .notice-list { grid-template-columns: minmax(0, 1fr); gap: 0; } .notice-list dd { margin-bottom: 8px; } }
 .consent-body { padding: 16px 20px 6px; font-size: 14px; line-height: 1.75; overflow: auto; }
 .consent-body p { margin: 0 0 10px; }
 .consent-body .muted { font-size: 12.5px; }

@@ -22,7 +22,8 @@ NODE_TEST = r"""
 import assert from "node:assert/strict";
 import { Accum, splitThink, streamChat } from "./js/llm/openai.js";
 import { publicConversation, publicError } from "./js/providers.js";
-import { answerDangling, buildHistory, withoutReasoning } from "./js/agent.js";
+import { answerDangling, buildHistory, userText, withoutReasoning } from "./js/agent.js";
+import { brief, dataNote, deidLabel, isMine, personal, sizeLabel } from "./js/mydata.js";
 import { extractCitations } from "./js/markdown.js";
 import { count } from "./js/util.js";
 import { fixedReply, IDENTITY_REPLY, isIdentityQuestion, touchesIdentity } from "./js/fixed.js";
@@ -286,6 +287,27 @@ assert.equal(tableCSV({ ...tspec, columns: [tspec.columns[0]], rows: [{ p: "=HYP
 assert.ok(tableMarkdown(tspec, 1).startsWith("**表1　各时期的用量**\n\n| 时期 | 折合克数（g） · M (P25, P75) |"));
 const docXML = documentXML([tspec]);
 for (const piece of ['<w:gridSpan w:val="2"/>', '<w:vMerge w:val="restart"/>', "<w:vMerge/>", "<w:tblHeader/>", "表1　各时期的用量", '<w:top w:val="single" w:sz="12"', "<w:i/>"]) assert.ok(docXML.includes(piece), piece);
+
+// 我的资料: what a message keeps of a dataset (its shape, no rows), what the model reads of it, what the page says
+const dataset = { id: "d1a2b3c", name: "门诊.csv", kind: "table", rows: 120, created: "2026-10-11T00:00:00+00:00",
+  columns: [{ name: "姓名", type: "text" }, { name: "处方", type: "prescription" }, { name: "电话", type: "empty" }],
+  preview: [{ 姓名: "P0001" }], deidentified: { columns: { 姓名: "以化名代替（P0001…）", 电话: "已删除" }, masked: { 手机号: 2 } } };
+const shape = brief(dataset);
+assert.ok(!("preview" in shape) && shape.rows === 120 && shape.columns.length === 3);
+assert.equal(sizeLabel(shape), "表格 120 行 · 3 列");
+assert.equal(deidLabel(shape), "姓名：以化名代替（P0001…）；电话已删除；文中手机号 2 处");
+const note = dataNote([shape]);
+assert.ok(note.includes("d1a2b3c「门诊.csv」，表格 120 行；列：姓名（文本）、处方（处方）") && note.includes("[[mine:…]]") && !note.includes("电话（"));
+assert.equal(userText({ text: "分析", data: [shape] }), "分析" + note);
+assert.equal(userText({ text: "分析" }), "分析");
+const withData = buildHistory([{ role: "user", text: "看看", data: [shape] }, { role: "assistant", segments: [{ type: "text", text: "好" }] }],
+  { format: "openai", id: "x" });
+assert.ok(withData[0].content.includes("d1a2b3c「门诊.csv」"));
+assert.ok(isMine("mydata__describe") && isMine("mydata.read") && !isMine("study__pairs") && !isMine(undefined));
+assert.equal(personal({ messages: [{ role: "user", text: "桂枝汤" }] }), false);
+assert.equal(personal({ messages: [{ role: "user", text: "看看", data: [shape] }] }), true);
+assert.equal(personal({ messages: [{ role: "assistant", segments: [{ type: "tools", calls: [{ name: "mydata__list" }] }] }] }), true);
+assert.equal(personal({ messages: [{ role: "assistant", segments: [{ type: "tools", calls: [{ name: "taochronos_call", args: { tool: "mydata.read" } }] }] }] }), true);
 console.log("ok");
 """
 
@@ -1176,4 +1198,366 @@ def test_the_published_site_runs_on_the_canon_corpus_in_the_browser(tmp_path):
             browser.close()
     finally:
         site.shutdown()
+        mock.shutdown()
+
+
+# ------------------------------------------------------------------ 我的资料
+def _clinic_csv(path: Path, rows: int = 30) -> Path:
+    """A clinic's prescriptions as a Chinese Excel saves them (GB18030): names, telephones and identity card numbers that
+    must never leave the machine, a diagnosis to compare and the prescriptions to read."""
+    import random
+
+    rng = random.Random(7)
+    bases = {"感冒": ["柴胡", "黄芩", "半夏", "党参", "甘草", "生姜", "大枣"], "咳嗽": ["麻黄", "杏仁", "甘草", "石膏"],
+             "腹痛": ["白芍", "甘草", "桂枝", "生姜", "大枣"]}
+    lines = ["姓名,电话,身份证号,性别,年龄,诊断,处方,疗效"]
+    for i in range(rows):
+        dx = list(bases)[i % 3]
+        drugs = [d for d in bases[dx] if rng.random() > 0.12 or d in bases[dx][:2]]
+        rx = "柴胡12g 黄芩9g 半夏9g 党参15g 甘草6g" if i == 0 else " ".join(f"{d}{rng.choice([6, 9, 12])}g" for d in drugs)
+        lines.append(f"张{'三四五'[i % 3]}{i},1380013{i:04d},11010519491231{i:03d}X,{'男女'[i % 2]},{20 + i},{dx},{rx},"
+                     f"{rng.choice(['有效', '无效'])}")
+    path.write_bytes("\n".join(lines).encode("gb18030"))
+    return path
+
+
+def test_my_data_with_a_server_on_this_machine(tmp_path):
+    """我的资料 with `taochronos serve` on this machine: the notice before the first upload, a GB18030 CSV read and made
+    anonymous by the server, attached to a message, its prescriptions analysed with figures and tables, a row cited and
+    checked — and nothing that names a patient sent to the model, no record of the turn sent to the relay."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import MockProvider, MockRelay
+
+    mock = MockProvider().start()
+    relay = MockRelay(mock.base_url).start()
+    web = tmp_path / "web"
+    _published(web, relay.url)
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    csv_file = _clinic_csv(tmp_path / "门诊处方.csv")
+    consent = {"v": 1, "logs": True, "at": "2026-10-11T00:00:00Z"}  # the visitor agreed to records: still none of this
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN")
+            ctx.add_init_script(f"localStorage.setItem('tc.consent', {json.dumps(json.dumps(consent))});")
+            page = ctx.new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            # the first upload: what happens to the data, before any file is chosen
+            page.click("#attach-data")
+            page.wait_for_selector("dialog.data-notice[open]", timeout=10000)
+            notice = page.inner_text("dialog.data-notice")
+            assert "在本机处理" in notice and "读取时即脱敏" in notice and "不记录" in notice and "模型读到什么" in notice
+            with page.expect_file_chooser() as chooser:
+                page.click("dialog.data-notice .btn:not(.secondary)")
+            chooser.value.set_files(str(csv_file))
+            page.wait_for_selector("#attachments .data-chip:not(.busy)", timeout=30000)
+            assert page.inner_text("#attachments .data-chip .nm") == "门诊处方.csv"
+            assert "表格 30 行 · 8 列" in page.inner_text("#attachments .data-chip")
+            [ds] = rt.data_list()["datasets"]
+            assert {c["name"]: c["type"] for c in ds["columns"]}["处方"] == "prescription"
+            assert ds["preview"][0]["姓名"] == "P0001" and ds["preview"][0]["电话"] == "" and ds["preview"][0]["身份证号"] == "ID0001"
+            # the side panel lists it, with what was taken out
+            page.click("#toggle-drawer")
+            page.click(".drawer .tab:has-text('资料')")
+            card = page.inner_text(".data-card")
+            assert "门诊处方.csv" in card and "化名" in card and "电话已删除" in card and ds["id"] in card
+            # a message with the data: the model reads its shape, analyses it with the tools, cites its first row
+            page.fill("#input", "分析这些处方的用药规律")
+            page.keyboard.press("Enter")
+            page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
+            assert "门诊处方.csv" in page.inner_text(".msg.user .data-chips")
+            page.wait_for_function("document.querySelectorAll('.md .cite.pending').length === 0", timeout=15000)
+            assert page.eval_on_selector_all(".md .cite", "els => els.map(e => [e.dataset.pid, e.className])") == \
+                [[f"mine:{ds['id']}.r1", "cite ok"]]
+            page.click(".steps .head")
+            assert "处方用药分析" in page.inner_text(".steps .list") and "mydata" not in page.inner_text(".steps .list")
+            tabs = page.eval_on_selector_all(".msg.assistant .charts .chart-tabs [role=tab]", "els => els.map(e => e.textContent)")
+            assert len(tabs) >= 10 and any("高频药物" in t for t in tabs) and any("最相近的经典方" in t for t in tabs), tabs
+            assert "道乃久（TaoChronos）· 用户资料（本机分析）" in page.inner_text(".msg.assistant .charts .viz-card")
+            page.click(".md .cite.ok")
+            assert "第 1 行" in page.inner_text(".passage-view") and "柴胡12g 黄芩9g" in page.inner_text(".passage-view .text")
+            first = mock.requests[0]["body"]
+            assert "［本条消息附有用户上传的资料" in json.dumps(first, ensure_ascii=False)
+            assert "mydata__prescriptions" in [t["function"]["name"] for t in first["tools"]]
+            sent = json.dumps(mock.requests, ensure_ascii=False) + json.dumps(relay.chat, ensure_ascii=False)
+            assert "张三" not in sent and "13800130000" not in sent and "110105" not in sent  # names, telephones, ID numbers
+            assert "P0001" in sent  # the model read the rows it asked for, made anonymous
+            time.sleep(1.5)
+            assert relay.records == []  # a conversation that touches the user's data is never recorded
+            # removed from the side panel: gone from the server
+            page.click(".drawer .tab:has-text('资料')")
+            page.once("dialog", lambda d: d.accept())
+            page.click(".data-card .icon-btn")
+            page.wait_for_selector(".data-pane .pane-empty", timeout=10000)
+            assert rt.data_list()["datasets"] == []
+            assert not errors, errors
+            browser.close()
+    finally:
+        srv.shutdown()
+        srv.server_close()
+        relay.shutdown()
+        mock.shutdown()
+
+
+# a stand-in for Pyodide (pyodide.mjs): the worker's Python runs in the test's CPython, behind a server of the test's
+# (PY: its address, "" when it is the site's own) — the worker's own code, its IndexedDB and the page are the real ones
+STAND_IN = r"""
+const PY = "{py}";
+function post(path, body, type) {
+  const x = new XMLHttpRequest();
+  x.open("POST", PY + path, false); // a worker may wait: Python's calls are synchronous too
+  x.setRequestHeader("Content-Type", type || "text/plain");
+  x.send(body);
+  if (x.status !== 200) throw new Error(x.responseText);
+  return x.responseText;
+}
+export async function loadPyodide() {
+  post("/py/start", "{}"); // a new visit: a new interpreter
+  const rpc = (method, params) => post("/py/rpc", JSON.stringify({ method, params }));
+  return {
+    loadPackage: async () => {},
+    unpackArchive: () => {},
+    runPython: (code) => (code.includes("purelib") ? "/lib/python3.13/site-packages" : undefined),
+    globals: { get: (name) => (name === "_rpc" ? rpc : undefined), set: () => {} },
+    FS: {
+      mkdirTree: () => {},
+      writeFile: (path, bytes) => post(`/py/fs?path=${encodeURIComponent(path)}`, bytes, "text/plain"),
+      unlink: (path) => post(`/py/fs?path=${encodeURIComponent(path)}&unlink=1`, ""),
+    },
+  };
+}
+"""
+
+
+def _browser_runtime(site: Path, tmp: Path, py: str = "") -> None:
+    """The in-browser runtime's files in ``site``, with the stand-in for Pyodide (its Python behind ``py``)."""
+    (site / "runtime").mkdir(exist_ok=True)
+    (site / "runtime" / "manifest.json").write_text(json.dumps({"version": "test", "pyodide_base": "pyodide/",
+                                                                "files": {"taochronos.zip": {}, "home.zip": {}}}), encoding="utf-8")
+    for name in ("taochronos.zip", "home.zip"):
+        (site / "runtime" / name).write_bytes(b"PK\x05\x06" + b"\x00" * 18)
+    (site / "pyodide").mkdir(exist_ok=True)
+    (site / "pyodide" / "pyodide.mjs").write_text(STAND_IN.replace("{py}", py), encoding="utf-8")
+
+
+def _python_behind(site: Path, tmp: Path):
+    """A server of the site's files and of the stand-in's Python (the worker's BOOT code, run here): /py/start a new
+    interpreter, /py/rpc a call, /py/fs the files the worker writes (kept in ``tmp``/uploads, where its Python reads them)."""
+    import functools
+    from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+    from urllib.parse import parse_qs, urlsplit
+
+    source = (ROOT / "web" / "js" / "worker.js").read_text(encoding="utf-8")
+    boot = re.search(r"const BOOT = `(.*?)`;", source, re.S).group(1).replace("/home/pyodide/data", str(tmp / "data"))
+    uploads = tmp / "uploads"
+    uploads.mkdir(exist_ok=True)
+    reading = 'with open(p["path"], "rb") as f:'
+    assert reading in boot
+    boot = boot.replace(reading, f'with open({str(uploads)!r} + "/" + p["path"].rsplit("/", 1)[-1], "rb") as f:')
+    python: dict = {}
+
+    class Site(SimpleHTTPRequestHandler):
+        extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".mjs": "text/javascript", ".js": "text/javascript"}
+
+        def log_message(self, *args) -> None:
+            pass
+
+        def end_headers(self) -> None:
+            self.send_header("Access-Control-Allow-Origin", "*")
+            super().end_headers()
+
+        def do_OPTIONS(self) -> None:
+            self.send_response(204)
+            self.send_header("Access-Control-Allow-Headers", "content-type")
+            self.send_header("Access-Control-Allow-Methods", "POST")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
+        def do_POST(self) -> None:
+            url = urlsplit(self.path)
+            body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+            if url.path == "/py/start":
+                python.clear()
+                python.update(_profile="full-discovery")
+                exec(boot, python)  # noqa: S102 — the worker's own Python
+                out = b"null"
+            elif url.path == "/py/rpc":
+                call = json.loads(body)
+                out = python["_rpc"](call["method"], call["params"]).encode("utf-8")
+            elif url.path == "/py/fs":
+                q = {k: v[-1] for k, v in parse_qs(url.query).items()}
+                name = uploads / Path(q["path"]).name
+                name.unlink(missing_ok=True) if q.get("unlink") else name.write_bytes(body)
+                out = b"null"
+            else:
+                self.send_error(404)
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(out)))
+            self.end_headers()
+            self.wfile.write(out)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Site, directory=str(site)))
+    server.python, server.uploads = python, uploads
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server
+
+
+MINE_KEYS = ("() => new Promise((ok) => { const r = indexedDB.open('taochronos-runtime'); r.onsuccess = () => { "
+             "const q = r.result.transaction('files').objectStore('files').getAllKeys(); q.onsuccess = () => ok(q.result.filter((k) => "
+             "String(k).startsWith('mydata:'))); }; })")
+
+
+def _prescriptions_book(tmp: Path) -> Path:
+    from officefiles import xlsx
+
+    rows = [["姓名", "联系电话", "诊断", "处方"]] + [[f"王{i}", f"1370000{i:04d}", ["感冒", "咳嗽"][i % 2],
+                                                     "柴胡12g 黄芩9g 半夏9g 甘草6g" if i % 2 == 0 else "麻黄9g 杏仁9g 甘草6g 石膏30g"]
+                                                    for i in range(12)]
+    book = tmp / "处方.xlsx"
+    book.write_bytes(xlsx(rows))
+    return book
+
+
+def test_my_data_in_the_browsers_own_runtime(tmp_path):
+    """我的资料 with TaoChronos in the browser (the published site's runtime): an Excel workbook read by the worker's
+    Python, its anonymous dataset kept in IndexedDB and given back to the runtime at the next visit, analysed through the
+    tools the page offers while there is data, removed from IndexedDB with the dataset."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    from web_mock import MockProvider
+
+    site = tmp_path / "site"
+    shutil.copytree(ROOT / "web", site)
+    _browser_runtime(site, tmp_path)
+    server = _python_behind(site, tmp_path)
+    mock = MockProvider().start()
+    settings = {"provider": "custom-e2e", "customProviders": [{"id": "custom-e2e", "label": "测试网关", "format": "openai",
+                "base_url": mock.base_url, "model": "test-model"}], "keys": {"custom-e2e": "k"}, "route": "direct", "runtime": "browser"}
+    book = _prescriptions_book(tmp_path)
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN")
+            ctx.add_init_script(f"localStorage.setItem('tc.settings', {json.dumps(json.dumps(settings))});"
+                                "localStorage.setItem('tc.mydata.notice', JSON.stringify({v: 1}));")  # the notice: the other test
+            page = ctx.new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{server.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=60000)
+            page.set_input_files("#data-file", str(book))
+            page.wait_for_selector("#attachments .data-chip:not(.busy)", timeout=30000)
+            assert "表格 12 行 · 4 列" in page.inner_text("#attachments .data-chip")
+            [kept] = page.evaluate(MINE_KEYS)
+            ds = kept.split(":", 1)[1]
+            # the next visit: a new interpreter, the dataset given back from IndexedDB before the runtime answers
+            page.reload()
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=60000)
+            page.click("#toggle-drawer")
+            page.click(".drawer .tab:has-text('资料')")
+            page.wait_for_selector(".data-card", timeout=10000)
+            assert "处方.xlsx" in page.inner_text(".data-card") and "联系电话已删除" in page.inner_text(".data-card")
+            page.click(".data-card .btn.secondary")  # 附到消息
+            page.fill("#input", "分析这些处方的用药规律")
+            page.keyboard.press("Enter")
+            page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
+            page.wait_for_function("document.querySelectorAll('.md .cite.pending').length === 0", timeout=15000)
+            assert page.eval_on_selector_all(".md .cite", "els => els.map(e => [e.dataset.pid, e.className])") == [[f"mine:{ds}.r1", "cite ok"]]
+            assert "王0" not in json.dumps(mock.requests, ensure_ascii=False) and "P0001" in json.dumps(mock.requests, ensure_ascii=False)
+            page.click(".drawer .tab:has-text('资料')")
+            page.once("dialog", lambda d: d.accept())
+            page.click(".data-card .icon-btn")
+            page.wait_for_selector(".data-pane .pane-empty", timeout=10000)
+            assert page.evaluate(MINE_KEYS) == []
+            assert not list(server.uploads.iterdir())  # the worker removed the file it was handed
+            assert not errors, errors
+            browser.close()
+    finally:
+        server.shutdown()
+        mock.shutdown()
+
+
+def test_my_data_stays_in_the_browser_when_the_site_answers(tmp_path):
+    """The page working with the site's own server (one other machines reach, like the published site's): the user's
+    data is read by a runtime of the page's own in this browser — the server is never sent it, and refuses it — and
+    the 我的资料 tools and the rows they cite are answered there, the rest by the server."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import MockProvider
+
+    web = tmp_path / "web"
+    shutil.copytree(ROOT / "web", web)
+    python = _python_behind(tmp_path, tmp_path)  # the stand-in's Python, apart from the site
+    _browser_runtime(web, tmp_path, py=f"http://127.0.0.1:{python.server_address[1]}")
+    mock = MockProvider().start()
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "server-data")
+    srv = ChatServer(("0.0.0.0", 0), rt, web_root=web, home=ROOT)  # reached by its name: not this machine's to the page
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    settings = {"provider": "custom-e2e", "customProviders": [{"id": "custom-e2e", "label": "测试网关", "format": "openai",
+                "base_url": mock.base_url, "model": "test-model"}], "keys": {"custom-e2e": "k"}, "route": "direct"}
+    book = _prescriptions_book(tmp_path)
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}),
+                                            args=["--host-resolver-rules=MAP taochronos.test 127.0.0.1"])
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN")
+            ctx.add_init_script(f"localStorage.setItem('tc.settings', {json.dumps(json.dumps(settings))});"
+                                "localStorage.setItem('tc.mydata.notice', JSON.stringify({v: 1}));")
+            page = ctx.new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            calls: list[str] = []  # what the page asked of the server: each request's address and body
+            page.on("request", lambda r: calls.append(f"{r.url} {r.post_data or ''}") if "/api/" in r.url else None)
+            page.goto(f"http://taochronos.test:{srv.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            assert page.evaluate("() => location.hostname") == "taochronos.test"
+            page.set_input_files("#data-file", str(book))
+            page.wait_for_selector("#attachments .data-chip:not(.busy)", timeout=60000)
+            assert rt.data_list()["datasets"] == [] and len(page.evaluate(MINE_KEYS)) == 1  # in this browser, not the server
+            page.fill("#input", "分析这些处方的用药规律")
+            page.keyboard.press("Enter")
+            page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
+            page.wait_for_function("document.querySelectorAll('.md .cite.pending').length === 0", timeout=15000)
+            [[pid, cls]] = page.eval_on_selector_all(".md .cite", "els => els.map(e => [e.dataset.pid, e.className])")
+            assert pid.startswith("mine:") and cls == "cite ok"
+            assert not [u for u in calls if "/api/data" in u or "mine" in u or "mydata" in u or "王0" in u]  # nothing of it
+            assert any("/api/info" in u for u in calls) and rt.data_list()["datasets"] == []
+            [ds] = python.python["_rt"].data_list()["datasets"]  # read and analysed by the browser's own runtime
+            assert ds["name"] == "处方.xlsx" and pid.startswith(f"mine:{ds['id']}.")
+            assert not errors, errors
+            browser.close()
+    finally:
+        srv.shutdown()
+        srv.server_close()
+        python.shutdown()
         mock.shutdown()
