@@ -8,6 +8,7 @@
 # 扫描器的地址常是租来的，日后若有真实访客因此打不开网站，删掉那一行、合并进 main 即解封。
 #
 # 在 Cloudflare 控制台里手动加进列表的地址（应急）不带 [taochronos] 标记，apply 保留它们；事后照样补进这里。
+# 站长也可以点名封禁没有攻击意图的扫描器（如自报身份的互联网测绘），why 里写明「按站长要求」。
 
 block:
   - ip: 82.102.18.116
@@ -22,6 +23,100 @@ block:
   - ip: 34.76.3.119
     why: "Joomla 探测（/media/system/js/core.js），伪造来源页；Google Cloud 机房"
     seen: 2026-10-06
+  # 2026-10-11：data/security-logs（边缘 2026-10-05 至 10-10、两个哨兵）中有攻击意图的地址，与站长当天的安全报告
+  - ip: 123.58.215.183
+    why: "在中转上一天 5685 次请求，找加密货币交易所与 App 的后台接口（/api/pay/info、/api/user/*、/index.php/sign）；UCloud 香港"
+    seen: 2026-10-07
+  - ip: 165.154.71.9
+    why: "同一类探测：一天 1 万余次请求，找 App 与管理后台接口（/api/app/version/check、/static/admincp/、/config.json）；UCloud 香港"
+    seen: 2026-10-08
+  - ip: 136.85.99.221
+    why: "在中转上找密钥与配置：.env 的各种变体、/.s3cfg.ini、/config.yml，750 次请求；Google Cloud 新加坡"
+    seen: 2026-10-09
+  - ip: 143.244.57.90
+    why: "WordPress 扫描：在十余个目录下找 wp-includes/wlwmanifest.xml，55 次；Datacamp（AS60068）"
+    seen: 2026-10-08
+  - ip: 143.244.57.120
+    why: "WordPress 扫描：在 /wordpress/、/cms/、/blog/ 等目录下找 wp-includes/wlwmanifest.xml，74 次；Datacamp（AS60068）"
+    seen: 2026-10-10
+  - ip: 45.138.12.0/24
+    why: "TC DATACENTER（AS218785）同一网段三个地址：.10 找模型网关的配置与密钥（/api/config/ai、litellm.yaml、/ai/credentials），.41、.43 冒充 Googlebot 做 WordPress 探测"
+    seen: 2026-10-07
+  - ip: 185.218.86.27
+    why: "在 science.impf.ai 上找 .git 与 .env（/.git/HEAD、/.git/config、/api/.env、/backend/.env），76 次；TC DATACENTER（AS218785）"
+    seen: 2026-10-09
+  - ip: 130.12.180.117
+    why: "在 science.impf.ai 的 80、443、8080 端口上找 .env（/app/.env、/api/.env、/.env.staging……），36 次；Omegatech（AS202412）"
+    seen: 2026-10-08
+  - ip: 2a0f:ca80:b00b:eff9::/64
+    why: "在 science.impf.ai 上找 phpinfo、配置文件与 /.aws/credentials，21 个路径；TechTies（AS197170）"
+    seen: 2026-10-09
+  - ip: 193.47.62.167
+    why: "在 science.impf.ai 上找 /wp-login.php、/api/.env、/phpinfo.php3、/.gitlab-ci.yml；BestDC（AS216014）"
+    seen: 2026-10-08
+  - ip: 35.240.58.49
+    why: "在 science.impf.ai 上找 .env 的各种变体与 /info.php；Google Cloud 比利时"
+    seen: 2026-10-09
+  - ip: 34.22.126.178
+    why: "在 science.impf.ai 上找 .env（/.env.anthropic、/web/.env、/.env.old）与 /phpinfo；Google Cloud 比利时"
+    seen: 2026-10-10
+  - ip: 206.189.81.87
+    why: "在中转上做 WordPress 探测（//wordpress/、//xmlrpc.php）；DigitalOcean 新加坡"
+    seen: 2026-10-08
+  - ip: 104.244.74.39
+    why: "冒充 Anthropic 的 Claude-User 在两个主机上找 .env（/.env.local、/.env.prod、/.env.dev）；FranTech（AS53667）"
+    seen: 2026-10-07
+  - ip: 170.9.29.112
+    why: "在两个主机上探测 /.git/config；Oracle Cloud"
+    seen: 2026-10-09
+  - ip: 178.93.5.203
+    why: "在中转上探测 /.git/config；FLASH EDGE（AS219329）"
+    seen: 2026-10-07
+  - ip: 92.112.56.27
+    why: "在网站上探测 /.git/config；FLASH EDGE（AS219329）"
+    seen: 2026-10-07
+  - ip: 193.32.162.0/24
+    why: "UNMANAGED LTD（AS47890）同一网段两个地址在两个主机上找 /.svn/wc.db（版本库泄露）"
+    seen: 2026-10-08
+  - ip: 199.127.61.4
+    why: "在网站上找 /.env；ReliableSite（AS23470）"
+    seen: 2026-10-09
+  - ip: 45.130.203.188
+    why: "用 Python-urllib 在 science.impf.ai 上探测 /.git/HEAD；GSL Networks（AS137409）"
+    seen: 2026-10-09
+  - ip: 31.77.203.199
+    why: "用 python-httpx 找开放的模型接口（/v1/models、/v1/health/v1/models、/v1/*/v1/models），图白用模型；DpkgSoft（AS215590）"
+    seen: 2026-10-08
+  - ip: 104.199.36.53
+    why: "据站长 2026-10-11 的安全报告：在 science.impf.ai 上找 /.git/config、/.git/HEAD、/.git/logs/refs/heads/main 与 /.aws/config；Google Cloud"
+    seen: 2026-10-11
+  - ip: 165.154.68.133
+    why: "据站长 2026-10-11 的安全报告：PHP 后门与管理后台扫描（/admin/webadmin.php、/leftDao.php、/zz.php 等）；UCloud 香港"
+    seen: 2026-10-11
+  - ip: 165.154.71.216
+    why: "据站长 2026-10-11 的安全报告：PHP 后门与管理后台扫描（/CCB/ccb.php、/mobile/login.php 等）；UCloud 香港"
+    seen: 2026-10-11
+  - ip: 165.154.66.81
+    why: "据站长 2026-10-11 的安全报告：PHP 后门与管理后台扫描（/queryVersion.php、/user/reg.php 等）；UCloud 香港"
+    seen: 2026-10-11
+  - ip: 152.32.187.66
+    why: "据站长 2026-10-11 的安全报告：PHP 后门与管理后台扫描（/Public/initJs.php、/AppInfo.aspx 等）；UCloud"
+    seen: 2026-10-11
+  - ip: 123.58.209.196
+    why: "据站长 2026-10-11 的安全报告：PHP 后门与管理后台扫描；UCloud"
+    seen: 2026-10-11
+  - ip: 36.255.220.241
+    why: "据站长 2026-10-11 的安全报告：PHP 后门与管理后台扫描（science.impf.ai 多个端口与中转）"
+    seen: 2026-10-11
+  - ip: 206.189.86.139
+    why: "据站长 2026-10-11 的安全报告：在 science.impf.ai 上做 WordPress 探测（//wordpress/、//xmlrpc.php）；DigitalOcean 新加坡"
+    seen: 2026-10-11
+  - ip: 147.185.132.0/24
+    why: "按站长要求封禁：Palo Alto Networks Cortex Xpanse 的互联网扫描（UA 自报身份），本网段见过 .24、.69、.115，只请求首页"
+    seen: 2026-10-06
+  - ip: 198.235.24.0/24
+    why: "按站长要求封禁：Palo Alto Networks Cortex Xpanse 的扫描网段（同上），见过 .86、.146、.195，只请求首页"
+    seen: 2026-10-07
 
 # 永不封禁：与这些网段重叠的条目 apply 拒绝写入（整份名单都不写，直到改正）。
 never:

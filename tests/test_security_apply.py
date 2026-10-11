@@ -86,8 +86,11 @@ def test_the_repository_blocklist_is_valid_and_spares_what_must_never_be_blocked
         assert i["comment"].startswith(apply.TAG) and len(i["comment"]) <= apply.COMMENT_MAX
         assert i["comment"].endswith("for good" if "until" not in e else f"until {e['until']}")
     blocked = [ipaddress.ip_network(i["ip"]) for i in items]
-    # what this repository's own checks, the search engines and Cloudflare send from: never in the list
-    for ip in ("160.79.106.130", "160.79.106.16", "66.249.64.99", "180.163.30.100", "172.70.67.148", "104.16.0.1"):
+    # what this repository's own checks, the search engines and Cloudflare send from: never in the list — nor a GitHub
+    # Actions runner the collector and the deploy check ran on, Bingbot, Bytespider (头条搜索), or a Tencent Cloud address
+    # fetching the page as WeChat's link preview and safety check do (seen in data/security-logs; security/README.md)
+    for ip in ("160.79.106.130", "160.79.106.16", "66.249.64.99", "180.163.30.100", "172.70.67.148", "104.16.0.1",
+               "20.168.124.176", "40.77.167.46", "52.167.144.25", "111.225.148.175", "106.55.200.45"):
         assert not any(ipaddress.ip_address(ip) in n for n in blocked), ip
 
 
