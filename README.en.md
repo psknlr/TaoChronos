@@ -64,9 +64,8 @@ and decide.
 > conversation as in ChatGPT or Claude.  The model answers through all 79 of TaoChronos's tools, and the page checks every
 > `[[passage_id]]` it cites word for word (✓ matches the passage · ≠ misquoted · ✕ no such passage); evidence, research runs
 > and a tool console (any tool, no model needed) sit in the side panel.  In the browser TaoChronos runs with Pyodide on the
-> **要籍语料**: the key works ranked by how the tradition cited them ([list](corpus/catalog/canon.yaml); the list is now
-> **535** works — until it is regenerated on the full corpus the repository holds the earlier 348 of 350)
-> (368 witnesses, 8.5 million characters; the first classics whole, the 素问, 灵枢, 伤寒论 and 金匮 with two or three
+> **要籍语料**: 533 of the **535 key works** ranked by how the tradition cited them ([list](corpus/catalog/canon.yaml))
+> (553 witnesses, 10.5 million characters; the first classics whole, the 素问, 灵枢, 伤寒论 and 金匮 with two or three
 > witnesses to collate, the others in chapters; [sources and terms](corpus/web/ATTRIBUTION.md)), kept in the browser after the
 > first visit so that it opens again in seconds.  For **all the books**, build the full corpus and
 > run `taochronos serve`, then connect under Settings → 运行环境 in one step (the browser remembers it; a server on another
@@ -272,24 +271,24 @@ See [docs/data.md](docs/data.md) and [ADR 0003](docs/adr/0003-corpus-store-and-s
 
 - **要籍** (`taochronos study canon --write-catalog` → [`corpus/catalog/canon.yaml`](corpus/catalog/canon.yaml), metadata only):
   the 759 medical works ranked by the citation network of the whole store; the first 535 are listed (`CANON_SIZE`; 350
-  until October 2026).  The ranking is total, so the longer list extends the shorter: `taochronos web canon --extend` keeps
-  the 350 listed works in their order on the full store, appends ranks 351–535, packs the browser's corpus again and
-  rewrites the D1 backup's tables; the `canon` workflow (`.github/workflows/canon.yml`, run by hand) does the same in CI
-  from the site's corpus parts and commits the result.  Until it runs, the list and the corpus in the repository are those
-  of the 350, and the figures below are theirs.  score =
+  until October 2026).  The ranking is total, so the longer list extends the shorter: ranks 1–350 are the list ranked on
+  the full corpus, unchanged; ranks 351–535 were appended by the `canon` workflow (`.github/workflows/canon.yml`: `taochronos
+  web canon --extend`) on the site's corpus parts — which hold no source whose terms forbid passing it on, 757 works ranked
+  there — and the browser's corpus and the D1 backup's tables were made again with them.  score =
   10·log₂(1 + distinct works citing it, not older than it) + 2·periods citing it + 2·log₂(1 + citations) +
   3·log₂(1 + witnesses) + 6·in the 四库全书.  The 素问, 灵枢, 金匮, 难经, 伤寒论, 神农本草经, 千金要方, 脉经, 甲乙经 and
-  外台秘要 lead; each of the 350 is cited by at least two later works.  It reads what this corpus quotes — late works have had
+  外台秘要 lead; each of the first 350 is cited by at least two later works, and past them citations thin out (161 of ranks
+  351–535 are cited by fewer than two), so the order there rests more on witnesses, volume and the 四库; the 185 added are
+  mostly Qing (122) and Ming (34).  It reads what this corpus quotes — late works have had
   less time to be cited, lost works are not in it.  The `classics.canon` tool queries the list in any corpus and says
   whether the current one holds each work's text.
-- **要籍语料** (`taochronos web pack` → [`corpus/web/`](corpus/web/ATTRIBUTION.md); the 185 works added come in excerpts of
-  about 12 000 characters each): **348 of the 350** (368 witnesses,
-  135 000 passages, 8.5 million characters): the best witness of each (the openly licensed first — CMETA's collated
-  editions, Kanripo, Wikisource, McGill, 笈成, which give 344 of the works — then the web text sets transcribed from 笈成;
+- **要籍语料** (`taochronos web pack` → [`corpus/web/`](corpus/web/ATTRIBUTION.md)): **533 of the 535** (553 witnesses,
+  168 000 passages, 10.5 million characters): the best witness of each (the openly licensed first — CMETA's collated
+  editions, Kanripo, Wikisource, McGill, 笈成, which give 529 of the works — then the web text sets transcribed from 笈成;
   the most complete within a source), up to three for the first ten, whole within 350 000 characters; the others by rank
-  within 50 000 / 25 000 / 12 000 characters, as whole chapters spread through the book; passage ids as in the full
+  within 50 000 / 25 000 / 12 000 characters (all 185 added: 12 000), as whole chapters spread through the book; passage ids as in the full
   corpus.  The two known only through sources that forbid passing their texts on are listed without text.  The site
-  ships the store xz-compressed without its full-text index (10.8 MB); the browser unpacks it as it downloads, indexes
+  ships the store xz-compressed without its full-text index (13.3 MB); the browser unpacks it as it downloads, indexes
   the first 40 works before it answers and the rest in the background, and keeps the result in IndexedDB
   ([ADR 0013](docs/adr/0013-canon-corpus-in-the-browser.md)).
 
@@ -585,7 +584,7 @@ the page names (asked who it is, who published it or what model it runs on, the 
 the platform: [ADR 0014](docs/adr/0014-identity-fixed-reply.md); an endpoint not in the list can be set by hand).  The conversation runs in the browser
 on the default service (no key; the page shows it as 道乃久默认服务 / Tao-R1 and names no vendor) or with your own key,
 straight to the provider or through `taochronos serve`; TaoChronos
-executes the tools in the browser (Pyodide, the 要籍语料: the listed key works, now 348 of 350) or under
+executes the tools in the browser (Pyodide, the 要籍语料: 533 of the 535 key works) or under
 `taochronos serve` (the full corpus, all the books; the browser remembers the server).  The model acts as an
 agent with read and analysis permissions only, sees nineteen common tools directly and the rest through a catalog;
 MiniMax-M3's `reasoning_details` and tool calls are replayed verbatim turn after turn, and Claude is called through the
@@ -724,7 +723,7 @@ docs/                      study, task specification, architecture, agents, disc
 
 - **The repository holds catalogues, lock files, domain data and code only**; transcriptions stay in the local data
   directory (`.taochronos/`, git-ignored) and are rebuilt reproducibly by `corpus fetch / unpack / ingest`.  The one
-  exception is the web client's **要籍语料** (`corpus/web/`): the texts of the ranked works (all in the public domain),
+  exception is the web client's **要籍语料** (`corpus/web/`): the texts of 533 of the 535 ranked works (all in the public domain),
   written by `taochronos web pack`.  The openly licensed witnesses (Kanripo and Wikisource CC BY-SA 4.0, CMETA CC BY 4.0,
   McGill public domain, 笈成 CC0 1.0) are used under their licences; the four works known only through a web text set (its
   repository declares no licence) and the modern editors' part of the 笈成 texts that follow a modern reconstruction or

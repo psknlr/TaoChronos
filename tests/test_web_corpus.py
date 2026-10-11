@@ -51,7 +51,11 @@ def test_the_ranked_list_is_metadata_ordered_by_citation():
     top = [w["title"] for w in works[:8]]
     for classic in ("黄帝内经素问", "伤寒论", "金匮要略方论", "神农本草经"):
         assert classic in top, top
-    assert all(w["cited_by"] >= 1 for w in works) and not any("text" in w for w in works)  # no text in the list
+    # the head is what the tradition cites most: each of the first 350 by two later works at least; past them citations
+    # thin out, and the last of a longer list may be cited by none (五十二病方, lost until 1973) — ranked by witnesses and the
+    # 四库 — but every listed work scores
+    assert all(w["cited_by"] >= 2 for w in works[:350]) and all(w["score"] > 0 for w in works)
+    assert not any("text" in w for w in works)  # no text in the list
     assert data["open"] == sum(1 for w in works if w["open"]) and all(
         (w["open_witness"] is not None) == w["open"] for w in works)
     assert all(w["open"] == bool(set(w["sources"]) & set(OPEN_SOURCES)) for w in works)  # open: a source in OPEN_SOURCES
@@ -207,7 +211,7 @@ def test_the_site_corpus_is_the_ranked_works(web_runtime):
     listed = yaml.safe_load((ROOT / "corpus" / "catalog" / "canon.yaml").read_text(encoding="utf-8"))["works"]
     only_never = sum(1 for w in listed if set(w["sources"]) <= set(NEVER_PACKED))  # known only through NEVER_PACKED
     assert corpus["canon"]["listed"] == len(listed) and corpus["canon"]["held"] >= len(listed) - only_never
-    assert meta["bytes"] < 16_000_000 and corpus["passages"] == meta["passages"] and 0 < meta["core_passages"] < meta["passages"]
+    assert corpus["passages"] == meta["passages"] and 0 < meta["core_passages"] < meta["passages"]
     books = json.loads((ROOT / "corpus" / "web" / "books.json").read_text(encoding="utf-8"))
     assert {b["source"] for b in books} <= set(WEB_SOURCES) and not {b["source"] for b in books} & set(NEVER_PACKED)
     assert [b["rank"] for b in books] == sorted(b["rank"] for b in books)  # rank order: the first-ranked are indexed first
@@ -220,6 +224,17 @@ def test_the_site_corpus_is_the_ranked_works(web_runtime):
     assert held["works"] and not any(w["in_this_corpus"] for w in held["works"])
     search = rt.call("classics.search", {"query": "消渴", "k": 3})
     assert search["ok"] and search["citations"]
+
+
+def test_the_corpus_the_site_ships_downloads_within_its_budget():
+    """The first visit downloads the 要籍语料: as the site builds it (xz preset 6 — the tests' own copy is compressed
+    faster and larger), it stays under 16 MB."""
+    from taochronos.chat import build
+
+    if build.corpus_store(ROOT) is None:
+        pytest.skip("no corpus/web pack in this checkout")
+    shipped = build._corpus_store.__wrapped__(str(ROOT), build._pack_digest(ROOT / "corpus" / "web"), 6)
+    assert shipped[1]["bytes"] < 16_000_000, shipped[1]["bytes"]
 
 
 def test_the_store_the_site_ships_is_deterministic():

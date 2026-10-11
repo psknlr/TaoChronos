@@ -259,8 +259,8 @@ longer list keeps the head of the shorter one; `--extend` keeps the works alread
 next ones of this ranking — the way to lengthen the list from a store that lacks some sources of the first ranking (the
 web client's packing never reads `NEVER_PACKED` sources, [web.md](web.md#要籍语料--the-browsers-corpus)).  `taochronos web
 canon` does both steps on the full store — the catalog, then the browser's corpus — and so does the `canon` workflow
-(`.github/workflows/canon.yml`); until one of them runs on the full store, the list in the repository is the 350 of the
-ranking below.  For each work: **influence**, the distinct works that cite it (a citing
+(`.github/workflows/canon.yml`), which lengthened the list to 535 on 2026-10-11: ranks 1–350 as ranked below on the full
+corpus, 351–535 appended from its ranking of the site's corpus parts (757 works there).  For each work: **influence**, the distinct works that cite it (a citing
 work older than it by more than 30 years is a misresolved title and is not counted); **breadth**, the periods in which it
 is cited; **volume**, its citations in all; **transmission**, its witnesses in the corpus; **siku**, whether the 四库全书
 editors took it into 子部·医家类.  score = 10·log₂(1+influence) + 2·breadth + 2·log₂(1+volume) + 3·log₂(1+witnesses) +
@@ -270,9 +270,11 @@ client's corpus takes those first ([web.md](web.md#要籍语料--the-browsers-co
 works (filter by title or author, dynasty, category; `held: true/false`) and say whether the current corpus holds each.
 
 **Result (full corpus, 759 works ranked).** 1 黄帝内经素问 (cited by 365 works), 2 灵枢, 3 金匮要略, 4 难经, 5 伤寒论,
-6 神农本草经, 7 千金要方, 8 脉经, 9 甲乙经, 10 外台秘要, … 14 本草纲目, 17 医宗金鉴, … 39 温疫论; every one of the 350 is
-cited by at least two later works; 137 are Qing, 73 Ming.  It reads what this corpus quotes: late works have had less time
-to be cited, and works known only through quotations (佚书) are not in it.
+6 神农本草经, 7 千金要方, 8 脉经, 9 甲乙经, 10 外台秘要, … 14 本草纲目, 17 医宗金鉴, … 39 温疫论; every one of the first 350
+is cited by at least two later works; 137 are Qing, 73 Ming.  The 185 appended (351 形色外诊简摩 … 535 证治准绳·类方) are
+mostly Qing (122) and Ming (34); citations thin out there — 161 are cited by fewer than two later works, the last 46 by none
+(五十二病方, lost until 1973; 针灸问对) — so their order rests on witnesses, volume and the 四库.  It reads what this corpus
+quotes: late works have had less time to be cited, and works known only through quotations (佚书) are not in it.
 
 ## 方药研究 (herb and formula research)
 

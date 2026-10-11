@@ -61,9 +61,8 @@ easy to download.
 ## Consequences
 
 * The list grows from the tail: ranks 1–350 do not move, so citations of rank and every earlier protocol stay valid.  The
-  185 works added are later, less cited works; by the pack's budgets they come in 12 000-character excerpts, some
-  2 million characters more for the browser.  Until the workflow or a machine with the store runs `web canon`, the site
-  serves the 350.
+  185 works added are later, less cited works (161 cited by fewer than two later works, the last 46 by none, ranked on
+  their witnesses and the 四库); by the pack's budgets they come in 12 000-character excerpts.
 * The new studies read what the texts write: counts are of works writing a composition, not of practice; a dose is a
   historical reading; a 反 in a book is a text, not a finding — each result says so, and so does each chart's note.
 * The harvest is rebuilt once on every store (its version changed).
@@ -72,3 +71,13 @@ easy to download.
 * Tests: `tests/test_formulas.py` on a synthetic corpus (`tests/fixtures/formulas`) read with the browser's lexicons;
   the chart functions under Node; a conversation in Chromium with a study's charts, a ```chart block, downloads and the
   tool console's charts.
+
+## Addendum — 2026-10-11: the list at 535
+
+The `canon` workflow's first run on main ranked and packed the 535 works, then failed reading its own report: `web canon`
+wrote the D1 tables' line to stdout ahead of the JSON.  Fixed (stdout is the report alone; the push retries if the branch
+moved; on main the job starts the site's deployment, since a push made with the job's token starts no workflow), it ran on
+the branch: 757 works ranked on the site's corpus parts, 535 listed (350 kept as ranked on the full corpus), 529 with an
+openly licensed witness; the 要籍语料 holds 533 of them in 553 witnesses, 168 278 passages and 10.5 million characters
+(8.5 million with the 350), 13.3 MB as the site ships it (10.8 MB) — under the 16 MB a test now checks at the site's own
+compression.  The two works known only through sources never packed are listed without text, as before.
