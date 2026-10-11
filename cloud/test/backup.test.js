@@ -131,14 +131,15 @@ test("D1's own limits (five terms a compound SELECT, found in the emulator): the
   assert.equal(db.prepare(`SELECT sum(x) AS s FROM (${nested})`).get().s, 22 * 23); // every part, in any order
 });
 
-test("every tool of the server's catalog (80) is live, precomputed, or unavailable with its reason — once", () => {
+test("every tool of the server's catalog (86) is live, precomputed, or unavailable with its reason — once", () => {
   const { live, precomputed, unavailable } = classification();
   const every = [...CATALOG.tools.map((t) => t.tool), ...CATALOG.engine.map((e) => e.name)];
   const classed = [...live, ...precomputed, ...Object.keys(unavailable)];
-  assert.equal(every.length, 80);
+  assert.equal(every.length, 86);
   assert.deepEqual([...classed].sort(), [...every].sort());
   assert.equal(new Set(classed).size, classed.length);
-  assert.deepEqual([live.length, precomputed.length, Object.keys(unavailable).length], [14, 16, 50]);
+  assert.deepEqual([live.length, precomputed.length, Object.keys(unavailable).length], [14, 16, 56]);
+  assert.ok(Object.keys(unavailable).filter((t) => t.startsWith("mydata.")).every((t) => unavailable[t].includes("本机"))); // never the site's
   assert.ok(Object.values(unavailable).every((why) => why.length > 10));
 });
 
