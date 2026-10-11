@@ -237,11 +237,13 @@ class StudyBase:
         head = (loc.get("section") or loc.get("chapter") or "").split("·")[-1].split("‧")[-1].strip("【】〖〗 　")
         return re.sub(r"[（(〔][^）)〕]*[）)〕]", "", head).strip()
 
-    def entries(self, names: Iterable[str], *, limit: int = 400, span: int = 8) -> list[tuple[str, list[Passage]]]:
+    def entries(self, names: Iterable[str], *, limit: int = 400, span: int = 8, suffix: str = "") -> list[tuple[str, list[Passage]]]:
         """Entries headed by one of ``names`` anywhere in the corpus: (the heading as printed, the first ``span``
         passages under it).  笈成 prints a formula's or a drug's name as the heading of its entry, and the indication,
-        the drugs and the preparation as paragraphs under it, so the name is in no passage's text."""
-        keys = sorted({han_only(self.normalize(n))[0] for n in names} - {""})
+        the drugs and the preparation as paragraphs under it, so the name is in no passage's text.  ``suffix``: a
+        heading may also be the name with it (a formula's entry headed 桂枝汤方, as the 伤寒论 prints it)."""
+        heads = {han_only(self.normalize(n))[0] for n in names} - {""}
+        keys = sorted(heads | ({h + suffix for h in heads if not h.endswith(suffix)} if suffix else set()))
         if not keys:
             return []
         store = getattr(self.corpus, "store", None)

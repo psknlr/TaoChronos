@@ -26,6 +26,12 @@ ANSWER = ("## 结论\n\n《伤寒论》以桂枝汤治太阳中风。\n\n"
           "以上经 classics__search 检得，可用 `validation__verify_quote` 复核，出处附 passage_id。\n\n"
           "这是计算与文献检索的结果，不构成医疗建议。")
 THINKING = ["用户问桂枝汤", "用户问桂枝汤的主治，先检索原文。"]
+# a question asking for 图表: the model compares two formulas (a study whose result carries charts), then draws a chart of
+# its own in a ```chart block
+CHART_ANSWER = ("两方的对照见上方图表。合两方的共有药味作图如下：\n\n```chart\n"
+                '{"type":"hbar","title":"桂枝汤与麻黄汤共有之药","x":{"key":"药"},"series":[{"key":"方数","label":"方数"}],'
+                '"rows":[{"药":"桂","方数":2},{"药":"甘草","方数":2}],"source":"演示语料"}'
+                "\n```\n\n以上数字出自方剂比较的结果。")
 
 
 class MockProvider(ThreadingHTTPServer):
@@ -68,12 +74,14 @@ class _Handler(BaseHTTPRequestHandler):
         messages = body.get("messages", [])
         last_user = max((i for i, m in enumerate(messages) if m.get("role") == "user"), default=-1)
         answered = any(m.get("role") == "tool" for m in messages[last_user + 1:])
+        asked = messages[last_user].get("content") if last_user >= 0 else ""
+        charting = "图表" in (asked if isinstance(asked, str) else json.dumps(asked, ensure_ascii=False))
         self.send_response(200)
         self._cors()
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Transfer-Encoding", "chunked")
         self.end_headers()
-        for chunk in (self._answer() if answered else self._tool_call()) if body.get("tools") else self._answer():
+        for chunk in (self._answer(charting) if answered else self._tool_call(charting)) if body.get("tools") else self._answer():
             chunk = {"id": "mock-1", "object": "chat.completion.chunk", "model": body.get("model") or "", **chunk}
             self._write(f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n")
         self._write("data: [DONE]\n\n")
@@ -89,20 +97,23 @@ class _Handler(BaseHTTPRequestHandler):
         return {"choices": [{"index": 0, "delta": {"reasoning_details": [
             {"type": "reasoning.text", "id": "rd-1", "format": "MiniMax-response-v1", "index": 0, "text": text}]}}]}
 
-    def _tool_call(self):
+    def _tool_call(self, charting: bool = False):
         yield {"choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}}]}
         for t in THINKING:  # cumulative
             yield self._reasoning(t)
+        name, pieces = ("study__compare", ('{"formulas": ["桂枝汤",', ' "麻黄汤"]}')) if charting else \
+            ("classics__search", ('{"query": "桂枝汤', ' 主之", "k": 3}'))
         yield {"choices": [{"index": 0, "delta": {"tool_calls": [
-            {"index": 0, "id": "call_1", "type": "function", "function": {"name": "classics__search", "arguments": ""}}]}}]}
-        for piece in ('{"query": "桂枝汤', ' 主之", "k": 3}'):  # incremental
+            {"index": 0, "id": "call_1", "type": "function", "function": {"name": name, "arguments": ""}}]}}]}
+        for piece in pieces:  # incremental
             yield {"choices": [{"index": 0, "delta": {"tool_calls": [{"index": 0, "function": {"arguments": piece}}]}}]}
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]}
 
-    def _answer(self):
+    def _answer(self, charting: bool = False):
         yield self._reasoning("classics__search 检索到了原文，整理作答。")
-        for cut in (8, 40, 90, len(ANSWER)):  # cumulative, as in MiniMax's own streaming example
-            yield {"choices": [{"index": 0, "delta": {"content": ANSWER[:cut]}}]}
+        text = CHART_ANSWER if charting else ANSWER
+        for cut in (8, 40, 90, 160, len(text)):  # cumulative, as in MiniMax's own streaming example
+            yield {"choices": [{"index": 0, "delta": {"content": text[:cut]}}]}
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
                "usage": {"prompt_tokens": 1200, "completion_tokens": 180}}
 

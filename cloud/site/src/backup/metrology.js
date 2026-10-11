@@ -5,12 +5,15 @@ import { METROLOGY } from "./tables.js";
 import { escapeRe, pyRound } from "./text.js";
 
 const DIGITS = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 〇: 0, 零: 0 };
-const NUM = "[一二三四五六七八九十廿卅百千半〇零]+";
+// the formal numerals some editions write doses in (吴迁本、邓珍本金匮: 大黄陆两, 厚朴乙尺), as normalised
+const FORMAL = { 壹: "一", 乙: "一", 贰: "二", 貳: "二", 叁: "三", 叄: "三", 参: "三", 參: "三", 肆: "四", 伍: "五", 陆: "六", 陸: "六",
+  柒: "七", 捌: "八", 玖: "九", 拾: "十", 佰: "百", 仟: "千" };
+const NUM = "[一二三四五六七八九十廿卅百千半〇零壹乙贰貳叁叄参參肆伍陆陸柒捌玖拾佰仟]+";
 
-/** 一 → 1, 十二 → 12, 廿四 → 24, 一百二十 → 120, 半 → 0.5 (null when it is not a number). */
+/** 一 → 1, 十二 → 12, 廿四 → 24, 一百二十 → 120, 半 → 0.5; the formal numerals too (陆 → 6) (null when it is not a number). */
 export function cnNumber(text) {
   if (text === "半") return 0.5;
-  const s = text.replaceAll("廿", "二十").replaceAll("卅", "三十");
+  const s = [...text].map((ch) => FORMAL[ch] ?? ch).join("").replaceAll("廿", "二十").replaceAll("卅", "三十");
   let total = 0;
   let current = 0;
   for (const ch of s) {

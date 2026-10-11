@@ -113,8 +113,8 @@ entries:
   - {term: 穿山甲, synonyms: [{surface: 山甲, kind: abbreviation}]}
   - {term: 皂角刺, synonyms: [{surface: 皂角针, kind: alias}]}
   - {term: 败酱, aliases: [败酱草]}
-  - {term: 栝楼根, synonyms: [{surface: 天花粉, kind: alias}]}
-  - {term: 栝楼实, aliases: [栝楼]}
+  - {term: 栝楼根, synonyms: [{surface: 天花粉, kind: alias}, {surface: 瓜蒌根, kind: alias}, {surface: 栝蒌根, kind: alias}]}
+  - {term: 栝楼实, aliases: [栝楼], synonyms: [{surface: 瓜蒌, kind: alias}, {surface: 栝蒌, kind: alias}, {surface: 瓜蒌实, kind: alias}, {surface: 栝蒌实, kind: alias}, {surface: 全瓜蒌, kind: alias}]}
   - {term: 薤白, aliases: []}
   - term: 青蒿
     synonyms:

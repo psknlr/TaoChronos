@@ -15,9 +15,14 @@ earlier work.  Non-medical works and works after 1949 are not ranked.  The list 
 citations — what the books in it quote — not a verdict on the tradition: late works have had less time to be cited,
 and works known only through quotations (佚书) are not in it.
 
-``taochronos study canon --write-catalog`` writes the list to ``corpus/catalog/canon.yaml`` (metadata only: titles,
-authors, dates, counts, which sources hold the work).  Every harness reads it back, whatever its corpus, so the
-browser's small corpus can say which of the important works it holds and which only the full corpus has.
+``taochronos study canon --write-catalog`` writes the first ``CANON_SIZE`` to ``corpus/catalog/canon.yaml`` (metadata
+only: titles, authors, dates, counts, which sources hold the work).  Every harness reads it back, whatever its corpus,
+so the browser's small corpus can say which of the important works it holds and which only the full corpus has.
+
+Ranked again on the same store, the list only grows at its end: the ranking is total, so the first 350 of a list of
+535 are the list of 350.  ``extend`` keeps the works already listed with their ranks and figures and appends the next
+ones of this ranking — for a store that lacks some of the sources the list was ranked on (the site's store carries no
+``NEVER_PACKED`` text, so ranked on it alone, the two works known only through those sources would drop out).
 """
 
 from __future__ import annotations
@@ -41,6 +46,7 @@ OPEN_SOURCES = {
     "mcgill": "Public Domain Mark 1.0 — McGill University Library",
     "jicheng": "CC0 1.0 — 中醫笈成 JiCheng（公有领域古籍的编辑成果；网站原创内容 CC BY 4.0）",
 }
+CANON_SIZE = 535  # the works the list keeps: 350 until 2026-10, extended at IMPF-AI's request
 NOT_RANKED = {"现代", "非医籍"}
 LATEST = 1950
 TOLERANCE = 30  # years by which a citing work may seem to precede the cited one (uncertain dates)
@@ -80,7 +86,9 @@ class CanonStudy:
         return self.b.pack.root.parent.parent / "corpus" / "catalog" / "canon.yaml"
 
     # ------------------------------------------------------------ ranking (needs the full corpus)
-    def rank(self, top: int = 350, cache: str | None = None) -> dict[str, Any]:
+    def rank(self, top: int = CANON_SIZE, cache: str | None = None, *, extend: bool = False) -> dict[str, Any]:
+        """The first ``top`` works by score; with ``extend``, the works already in the catalog first, as they are listed
+        there, then the next works of this ranking."""
         corpus = self.b.corpus
         books = corpus.books
         sources: dict[str, str] = dict(getattr(corpus, "sources", {}) or {})
@@ -133,9 +141,20 @@ class CanonStudy:
         for k, r in enumerate(rows, 1):
             r["rank"] = k
             del r["_start"]
-        chosen = rows[:top]
-        return {"method": METHOD, "ranked": len(rows), "top": top, "open": sum(1 for r in chosen if r["open"]),
-                "works": [{"rank": r.pop("rank"), **r} for r in chosen]}
+        out: dict[str, Any] = {"method": METHOD, "ranked": len(rows), "top": top}
+        if extend:
+            kept = sorted(self.catalog(), key=lambda w: int(w["rank"]))[:top]
+            listed = {w["work"] for w in kept}
+            more = [r for r in rows if r["work"] not in listed][:max(top - len(kept), 0)]
+            for k, r in enumerate(more, len(kept) + 1):
+                r["rank"] = k
+            chosen = [{"rank": int(w["rank"]), **{k: v for k, v in w.items() if k != "rank"}} for w in kept] + more
+            out["extends"] = {"kept": len(kept), "ranked_here": len(rows)}
+        else:
+            chosen = rows[:top]
+        out["open"] = sum(1 for r in chosen if r["open"])
+        out["works"] = [{"rank": r.pop("rank"), **r} for r in chosen]
+        return out
 
     def _representative(self, bids: list[str]) -> str:
         """The witness whose metadata stands for the work: the earliest, then the one titled as the work."""
@@ -173,6 +192,12 @@ def write_catalog(path: Path, ranking: dict[str, Any]) -> dict[str, Any]:
     head = ("# 要籍 — the works of the corpus ranked by how the tradition cited them (taochronos study canon --write-catalog).\n"
             "# Metadata only: no text.  Read with classics.canon; the published site's corpus holds the works marked open.\n"
             f"# {ranking['method']}\n")
-    body = {"ranked": ranking["ranked"], "top": ranking["top"], "open": ranking["open"], "works": ranking["works"]}
+    body = {"ranked": ranking["ranked"], "top": ranking["top"], "open": ranking["open"]}
+    if ranking.get("extends"):
+        ext = ranking["extends"]
+        head += (f"# Extended: the first {ext['kept']} as listed before (ranked on the full corpus); the next ones ranked on a "
+                 f"store that ranks {ext['ranked_here']} works.\n")
+        body["extends"] = ext
+    body["works"] = ranking["works"]
     path.write_text(head + yaml.safe_dump(body, allow_unicode=True, sort_keys=False, width=160), encoding="utf-8")
     return {"path": str(path), "works": len(ranking["works"]), "open": ranking["open"]}

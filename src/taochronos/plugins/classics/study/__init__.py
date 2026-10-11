@@ -26,6 +26,17 @@ clause             条文结构: a clause's parts (condition … formula, compos
 glosses            训诂: a word's glosses (…者…也, 貌, 音, 反切, 当作, 一作) by commentator and period; a book's glossary
 pairs / network    配伍 and 方证网络: drugs prescribed together against chance (lift, PMI, Fisher + BH, groups, periods);
                    a formula's findings and drugs, a finding's formulas
+compare / family   方剂比较 and 类方: formulas side by side (drugs, doses as written and in 两 of their period, ratios,
+                   Jaccard and dose-weighted overlap, 同药异量); the formulas built on one (加味 减味 加减 同药, 合方)
+usage              用药谱: a drug across every written-out composition — its share by period (Wilson, trend test), its
+                   doses read in its period's measures, how often it is the largest dose, preparation notes, partners
+properties         药性谱: what the 本草 say of several drugs (or a formula's drugs): natures, flavours, toxicity, channels,
+                   each with its share of works and first statement; a formula's profile weighted by dose
+incompat           配伍禁忌: 十八反 and 十九畏 — the statements of 反 / 畏 in the texts and their earliest witnesses, the
+                   verses, the compositions that still write a pair together; a formula's or drugs' check
+protocol           研究方案: a research question turned into a protocol — questions, hypotheses with their tests and what
+                   refutes them, scope, variables, methods (the capabilities to run), analysis, figures, quality checks,
+                   limitations, ethics, timeline and a research contract — with a pilot run of its main steps
 entities           实体识别: the entities of a text in context (24 types: 病 证 症 脉 舌 方 药 剂量 炮制 禁忌 医家 注家
                    学派 学说 书 版本 地 时 …), rules first, ambiguous ones typed by the model with --llm
 translate          释义与今译: original, normalised, punctuated, interpreted (glosses, historical senses) and — with a
@@ -50,17 +61,20 @@ dataset            研究数据集: the results as tables with provenance, for a
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from typing import Any
 
 from ..domain import DomainPack
 from .argument import ArgumentStudy
 from .base import StudyBase
-from .canon import CanonStudy
+from . import charts as _charts
+from .canon import CANON_SIZE, CanonStudy
 from .cases import CaseStudy
 from .chain import ChainStudy
 from .clause import ClauseStructure
 from .commentary import CommentaryStudy
+from .compare import FormulaComparison
 from .cruxes import CruxStudy
 from .concordance import Concordance
 from .dataset import tables as dataset_tables
@@ -70,6 +84,7 @@ from .formulas import FormulaStudy
 from .fragments import FragmentStudy
 from .glosses import GlossStudy
 from .herbs import HerbStudy
+from .incompat import IncompatibilityStudy
 from .senses import SenseStudy
 from .intertext import IntertextStudy
 from .learning import Learning, anki_tsv
@@ -77,6 +92,8 @@ from .names import NameStudy
 from .network import CitationNetwork
 from .pairs import FormulaHarvest, PairsStudy
 from .places import PlaceStudy
+from .protocol import ProtocolDesigner
+from .render import markdown as _markdown
 from .punctuation import PunctuationStudy
 from .schools import SchoolStudy
 from .stemma import StemmaStudy
@@ -84,6 +101,7 @@ from .stratigraphy import StratigraphyStudy
 from .taboo import TabooStudy
 from .terms import TermStudy
 from .translate import TranslationStudy
+from .usage import DrugUsage
 from .witnesses import WitnessStudy
 
 
@@ -114,6 +132,10 @@ class StudyService(StudyBase):
         self._clause = ClauseStructure(self, self._punct)
         self._glosses = GlossStudy(self, self._commentary)
         self._pairs = PairsStudy(self, FormulaHarvest(self, self._formulas))
+        self._compare = FormulaComparison(self, self._formulas, self._pairs)
+        self._usage = DrugUsage(self, self._formulas, self._herbs, self._pairs)
+        self._incompat = IncompatibilityStudy(self, self._formulas, self._pairs)
+        self._protocol = ProtocolDesigner(self)
         self._schools = SchoolStudy(self, self._network, self._pairs.h)
         self._names = NameStudy(self)
         self._canon = CanonStudy(self, self._network)
@@ -135,13 +157,13 @@ class StudyService(StudyBase):
         return self._concordance.run(text, passage_id, **kw)
 
     def formula(self, name: str, **kw: Any) -> dict[str, Any]:
-        return self._formulas.run(name, **kw)
+        return _charts.attach("formula", self._formulas.run(name, **kw), self)
 
     def herb(self, name: str, **kw: Any) -> dict[str, Any]:
-        return self._herbs.run(name, **kw)
+        return _charts.attach("herb", self._herbs.run(name, **kw), self)
 
     def term(self, term: str, **kw: Any) -> dict[str, Any]:
-        return self._terms.run(term, **kw)
+        return _charts.attach("term", self._terms.run(term, **kw), self)
 
     def taboo(self, book_id: str | None = None, **kw: Any) -> dict[str, Any]:
         return self._taboo.profile(book_id) if book_id else self._taboo.survey(**kw)
@@ -157,9 +179,10 @@ class StudyService(StudyBase):
         """要籍: the works of the ranked list (corpus/catalog/canon.yaml), each marked with whether this corpus holds it."""
         return self._canon.lookup(query or "", **kw)
 
-    def canon_rank(self, top: int = 350) -> dict[str, Any]:
-        """Rank the works of this corpus by how they are cited (for ``study canon --write-catalog``)."""
-        return self._canon.rank(top, self.cache_dir())
+    def canon_rank(self, top: int = CANON_SIZE, *, extend: bool = False) -> dict[str, Any]:
+        """Rank the works of this corpus by how they are cited (for ``study canon --write-catalog``); ``extend`` keeps the
+        works already listed and appends the next."""
+        return self._canon.rank(top, self.cache_dir(), extend=extend)
 
     def cards(self, *, book: str | None = None, formulas: list[str] = (), herbs: list[str] = (), term: str | None = None,
               limit: int = 60) -> dict[str, Any]:
@@ -246,7 +269,7 @@ class StudyService(StudyBase):
 
     def senses(self, term: str, **kw: Any) -> dict[str, Any]:
         """A term's senses by period, the change point of their shares, candidate senses and the neighbourhood."""
-        return self._senses.run(term, **kw)
+        return _charts.attach("senses", self._senses.run(term, **kw), self)
 
     def fragments(self, work: str, *, exclude_books: list[str] | None = None, verify_against: list[str] | None = None,
                   **kw: Any) -> dict[str, Any]:
@@ -302,11 +325,46 @@ class StudyService(StudyBase):
     def pairs(self, herb: str | None = None, **kw: Any) -> dict[str, Any]:
         """配伍: drug pairs prescribed together against chance (support, confidence, lift, PMI, Fisher + BH), the
         partners of one drug and their periods, the groups of drugs that hold together."""
-        return self._pairs.pairs(herb, **kw)
+        return _charts.attach("pairs", self._pairs.pairs(herb, **kw), self)
 
     def network(self, target: str | None = None, **kw: Any) -> dict[str, Any]:
         """方证网络: a formula's findings and drugs, a finding's formulas, or the strongest formula–finding links."""
-        return self._pairs.network(target, **kw)
+        return _charts.attach("network", self._pairs.network(target, **kw), self)
+
+    def compare(self, names: list[str], **kw: Any) -> dict[str, Any]:
+        """方剂比较: two to six formulas side by side — drugs, doses as written and in 两 of their period, ratios, the
+        drugs shared and not, Jaccard and dose-weighted overlap, and the verdict (同方, 同药异量, 加减化裁, 异方)."""
+        return _charts.attach("compare", self._compare.compare(names, **kw), self)
+
+    def family(self, name: str, **kw: Any) -> dict[str, Any]:
+        """类方: the formulas whose written-out compositions hold most of this formula's core — what each adds and
+        leaves out, its works and earliest witness, 同药异量 / 同方异名 by the doses, and 合方."""
+        return _charts.attach("family", self._compare.family(name, **kw), self)
+
+    def usage(self, name: str, **kw: Any) -> dict[str, Any]:
+        """用药谱: a drug across every written-out composition — share by period with intervals and a trend test, doses
+        in the measures of their period, how often it is the largest dose, preparation notes, partners, formulas."""
+        return _charts.attach("usage", self._usage.usage(name, **kw), self)
+
+    def properties(self, drugs: list[str] | None = None, **kw: Any) -> dict[str, Any]:
+        """药性谱: natures, flavours, toxicity and channels of several drugs (or a formula's drugs) as the 本草 state
+        them, with the share of works and the first statement; a formula's profile weighted by dose."""
+        return _charts.attach("properties", self._usage.properties(drugs, **kw), self)
+
+    def incompat(self, target: str | None = None, **kw: Any) -> dict[str, Any]:
+        """配伍禁忌: 十八反 and 十九畏 in the literature — statements of 反 / 畏 and their earliest witnesses, the verses,
+        the compositions writing a pair together; ``target`` a formula (its 原方 checked) or a drug (its pairs)."""
+        return _charts.attach("incompat", self._incompat.run(target, **kw), self)
+
+    def protocol(self, question: str, **kw: Any) -> dict[str, Any]:
+        """研究方案: the question's protocol — what it names and asks, hypotheses with tests and refutations, scope,
+        variables, methods, analysis, figures, quality, limitations, ethics, timeline, a research contract; ``pilot``
+        (default) runs the main steps once and says how much evidence the corpus holds, with their charts.  The protocol
+        carries its own document (``document``: the Markdown page, to download as a file); the model reads the rest."""
+        r = self._protocol.design(question, **kw)
+        name = re.sub(r'[\\/:*?"<>|\s]+', "_", r.get("title") or "研究方案")[:60] + ".md"
+        r["document"] = {"name": name, "format": "markdown", "text": _markdown("protocol", r, self.signature(), r.get("notice", ""))}
+        return r
 
     def schools(self, school: str | None = None, **kw: Any) -> dict[str, Any]:
         """学派: what a school's works share against the other works of their time (words, formulas), whom they cite,
@@ -339,7 +397,7 @@ class StudyService(StudyBase):
     def names(self, term: str, **kw: Any) -> dict[str, Any]:
         """名称: the names of a drug, formula or disease through time — the works writing each name period by period,
         the first to write it, when the preferred name changes, where texts equate two names, names the lexicon lacks."""
-        return self._names.run(term, **kw)
+        return _charts.attach("names", self._names.run(term, **kw), self)
 
     def _edition_floors(self, out: dict[str, Any]) -> None:
         """Each witness's lower date bound from its taboo characters (a witness in volumes: the latest)."""

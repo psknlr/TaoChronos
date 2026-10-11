@@ -25,13 +25,31 @@ from .base import StudyBase, dated, han_only
 FLAVORS = "酸苦甘辛咸淡涩"
 NATURE = r"(大寒|微寒|寒|大热|微热|热|大温|微温|温|微凉|凉|平)"
 ORGANS = ["心包络", "心包", "包络", "命门", "三焦", "膀胱", "大肠", "小肠", "肺", "脾", "胃", "心", "肝", "胆", "肾"]
-CHANNEL = r"(?:手|足)(?:太阴|少阴|厥阴|太阳|阳明|少阳)"
-_FLAVOR = re.compile(rf"(?:气味|性味|味)[：:]?\s*([{FLAVORS}]{{1,3}})")
+CHANNEL = r"(?:手足|手|足)(?:太阴|少阴|厥阴|太阳|阳明|少阳)"
+BARE = r"(?:太阴|少阴|厥阴|太阳|阳明|少阳)"  # 入足厥阴、太阴、少阴经: the hand or foot of the first carries over
+_FLAVOR = re.compile(rf"(?:气味|性味|味)[：:]?\s*((?:微|大|略)?[{FLAVORS}](?:(?:而|兼|、)?(?:微|大|略)?[{FLAVORS}]){{0,2}})")
 _NATURE = re.compile(rf"(?:性|气)[：:]?\s*{NATURE}|[{FLAVORS}]{{1,3}}[，、,\s]*{NATURE}")
 _TOXIC = re.compile(r"(大毒|小毒|微毒|有毒|无毒)")
-_ENTER = re.compile(rf"(?:专入|兼入|入|归|行|走)((?:{CHANNEL}|{'|'.join(ORGANS)})(?:[、，,及与兼]?(?:{CHANNEL}|{'|'.join(ORGANS)}))*)(?:二|三|四)?(?:经|之经|脏|藏)?"
-                    rf"|((?:{CHANNEL})(?:[、，,]?{CHANNEL})*)经(?:之)?药")
-_CHANNEL_TOKEN = re.compile(rf"{CHANNEL}|{'|'.join(ORGANS)}")
+_ENTER = re.compile(rf"(?:专入|兼入|入|归|行|走)((?:{CHANNEL}|{'|'.join(ORGANS)})(?:[、，,及与兼]?(?:{CHANNEL}|{BARE}|{'|'.join(ORGANS)}))*)(?:二|三|四)?(?:经|之经|脏|藏)?"
+                    rf"|((?:{CHANNEL})(?:[、，,]?(?:{CHANNEL}|{BARE}))*)经(?:之)?药")
+_CHANNEL_TOKEN = re.compile(rf"{CHANNEL}|{BARE}|{'|'.join(ORGANS)}")
+
+
+def channel_tokens(seg: str) -> list[str]:
+    """The channels and organs a statement names, in order: 手足太阴 is 手太阴 and 足太阴; a bare 太阴 after 足厥阴 is 足太阴."""
+    out: list[str] = []
+    limb = ""
+    for tok in _CHANNEL_TOKEN.findall(seg):
+        if tok.startswith("手足"):
+            limb, toks = "足", ["手" + tok[2:], "足" + tok[2:]]
+        elif tok[0] in "手足" and len(tok) == 3:
+            limb, toks = tok[0], [tok]
+        elif len(tok) == 2 and tok[1] in "阴阳" and tok not in ORGANS:
+            toks = [limb + tok] if limb else []
+        else:
+            toks = [tok]
+        out += [t for t in toks if t not in out]
+    return out
 _DIRECTION = re.compile(r"(可升可降|浮而升|沉而降|升而浮|降而沉|阳中之阴|阴中之阳|阳中之阳|阴中之阴|纯阳|纯阴|(?:升|降|浮|沉)也)")
 _INDICATION = re.compile(r"(?:【主治】|主治[：:]|功用[：:]|主(?![之人])(?:治)?)([^。；【]{2,90})")
 _ALIAS = re.compile(r"一名([^，。、；一]{1,6})")
@@ -85,7 +103,7 @@ class HerbStudy:
                                "aliases": [], "quotes": {}}
         m = _FLAVOR.search(text)
         if m:
-            out["flavor"] = m.group(1)
+            out["flavor"] = "".join(dict.fromkeys(c for c in m.group(1) if c in FLAVORS))
             out["quotes"]["flavor"] = text[max(0, m.start() - 2): m.end() + 8]
         n = _NATURE.search(text)
         if n:
@@ -98,7 +116,7 @@ class HerbStudy:
         channels: list[str] = []
         for e in _ENTER.finditer(text):
             seg = e.group(1) or e.group(2) or ""
-            for tok in _CHANNEL_TOKEN.findall(seg):
+            for tok in channel_tokens(seg):
                 if tok not in channels:
                     channels.append(tok)
             out["quotes"].setdefault("channels", text[max(0, e.start() - 2): e.end() + 4])

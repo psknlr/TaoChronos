@@ -1,0 +1,5 @@
+- book: yz
+  passages:
+    - {id: yz.1, locator: {chapter: 删补名医方论, section: 白虎加人参汤}, text: 白虎加人参汤　石膏一斤　知母六两　甘草二两　粳米六合　人参三两　右五味，以水一斗，煮米熟汤成，去滓，温服。}
+    - {id: yz.2, locator: {chapter: 删补名医方论, section: 小柴胡汤}, text: 小柴胡汤　柴胡八两　黄芩　人参　甘草　生姜各三两　半夏半升　大枣十二枚　右七味，以水一斗二升，煮取六升，去滓，再煎取三升，温服一升。}
+    - {id: yz.3, locator: {chapter: 删补名医方论, section: 甘遂半夏汤}, text: 甘草反甘遂，而仲景甘遂半夏汤二味同用，以其相反而相激也。}

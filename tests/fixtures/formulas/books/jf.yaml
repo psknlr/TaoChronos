@@ -1,0 +1,5 @@
+- book: jf
+  passages:
+    - {id: jf.1, locator: {chapter: 卷二, section: 桂枝汤}, text: 桂枝汤　治太阳中风。桂枝　芍药各一两半　甘草一两　右为粗末，每服三钱，生姜三片，枣一枚，同煎。}
+    - {id: jf.2, locator: {chapter: 卷三, section: 四君子汤}, text: 四君子汤　治荣卫气虚，脏腑怯弱。人参　白术　茯苓　甘草各等分　右为细末，每服二钱，水一盏，煎至七分。}
+    - {id: jf.3, locator: {chapter: 卷五, section: 理中丸}, text: 理中丸　治脾胃冷弱，心腹绞痛。人参　干姜　甘草　白术各三两　右为细末，炼蜜为丸，如鸡子黄大。}

@@ -8,7 +8,7 @@ notice: 以下为历史计量换算的学术估值（各家考证不一），仅
 # units → value in 两 (weights) or 升 (volumes); 分 changed meaning over time (see `fen`)
 weight_units: {斤: 16, 两: 1, 铢: 0.041667, 钱: 0.1, 厘: 0.001}
 volume_units: {斛: 100, 斗: 10, 升: 1, 合: 0.1, 勺: 0.01}
-count_units: [枚, 个, 片, 茎, 握, 把, 条, 具, 只, 粒, 颗, 瓣, 段, 节]
+count_units: [枚, 个, 片, 茎, 握, 把, 条, 具, 只, 粒, 颗, 瓣, 段, 节, 尺, 寸]  # 尺, 寸: lengths (厚朴一尺), compared, never converted
 nonstandard: [方寸匕, 钱匕, 刀圭, 一字, 鸡子大, 弹丸大, 梧子大, 梧桐子大, 小豆大, 麻子大, 如指大]
 
 periods:

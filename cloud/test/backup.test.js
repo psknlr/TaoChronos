@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 
 import { handle } from "../site/src/site.js";
 import { call as backupCall, classification } from "../site/src/backup/api.js";
-import { CATALOG } from "../site/src/backup/tables.js";
+import { CANON, CATALOG } from "../site/src/backup/tables.js";
 import { Corpus } from "../site/src/backup/corpus.js";
 import { clauseKey } from "../site/src/backup/precomputed.js";
 import { ftsForm, normalize, normalizeWithRecords, parseConstraint } from "../site/src/backup/text.js";
@@ -123,14 +123,14 @@ test("D1's own limits (five terms a compound SELECT, found in the emulator): the
   assert.equal(db.prepare(`SELECT sum(x) AS s FROM (${nested})`).get().s, 22 * 23); // every part, in any order
 });
 
-test("every tool of the server's catalog (74) is live, precomputed, or unavailable with its reason — once", () => {
+test("every tool of the server's catalog (80) is live, precomputed, or unavailable with its reason — once", () => {
   const { live, precomputed, unavailable } = classification();
   const every = [...CATALOG.tools.map((t) => t.tool), ...CATALOG.engine.map((e) => e.name)];
   const classed = [...live, ...precomputed, ...Object.keys(unavailable)];
-  assert.equal(every.length, 74);
+  assert.equal(every.length, 80);
   assert.deepEqual([...classed].sort(), [...every].sort());
   assert.equal(new Set(classed).size, classed.length);
-  assert.deepEqual([live.length, precomputed.length, Object.keys(unavailable).length], [14, 16, 44]);
+  assert.deepEqual([live.length, precomputed.length, Object.keys(unavailable).length], [14, 16, 50]);
   assert.ok(Object.values(unavailable).every((why) => why.length > 10));
 });
 
@@ -244,7 +244,7 @@ test("classics.get_passage, list_books and canon, as the server gives them", { s
   const dyn = await callTool("classics.list_books", { dynasty: "清" });
   assert.ok(dyn.result.length > 0 && dyn.result.every((b) => b.dynasty.includes("清")));
   const canon = await callTool("classics.canon", { limit: 5 });
-  assert.equal(canon.result.listed, 350);
+  assert.equal(canon.result.listed, CANON.works.length); // the 要籍 list as corpus/catalog/canon.yaml holds it
   assert.equal(canon.result.works.length, 5);
   assert.equal(canon.result.works[0].in_this_corpus, true); // 素问
   const held = await callTool("classics.canon", { held: true, limit: 0 });

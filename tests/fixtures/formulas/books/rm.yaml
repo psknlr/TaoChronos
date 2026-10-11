@@ -1,0 +1,3 @@
+- book: rm
+  passages:
+    - {id: rm.1, locator: {chapter: 卷十四, section: 十八反}, text: 本草明言十八反，半蒌贝蔹及攻乌，藻戟遂芫俱战草，诸参辛芍叛藜芦。}

@@ -32,8 +32,12 @@ _MODIFY = re.compile(r"方?(?:内|中|於|于)?[，、]?(?:去|加|更加|倍|�
 _INLINE_PROC = re.compile("|".join(sorted((
     "炙 切 洗 擘 碎 熬 炮 炒 研 破 烧 煨 蒸 焙 锉 剉 捣 杵 去皮 去节 去心 去皮尖 去皮脐 去核 去毛 去芦 去须 去土 去白 去子 去瓤 "
     "去足 去翅 去翅足 去皮尖双仁 去皮尖及双仁 去皮破八片 破八片 酒洗 酒浸 酒炒 酒蒸 汤洗 绵裹 碎绵裹 先煎 后下 生用 微炒 炒香 "
-    "研末 蜜炙 姜汁炒 醋炒 盐炒 另煎 冲服 烊化 包煎 汤浸 汤泡 去油 去壳 去苗 去粗皮 去皮切 洗去腥 洗去咸").split(), key=len, reverse=True)))
+    "研末 蜜炙 姜汁炒 醋炒 盐炒 另煎 冲服 烊化 包煎 汤浸 汤泡 去油 去壳 去苗 去粗皮 去皮切 洗去腥 洗去咸 大者 小者 大者破").split(),
+    key=len, reverse=True)))
 _SONG_BOOK = re.compile(r"(歌|赋|賦|心法要诀|心法要訣)")
+# a passage that ends by introducing the formula's composition, written in the passages after it (宋本: 与桂枝加桂汤，
+# 更加桂二两也。方六十一。 / 邓珍本: 桂枝加桂汤方：)
+_LEADS_ON = re.compile(r"^[^。]{0,20}[。，]?\s*方[一二三四五六七八九十百零〇]*[。：:]?\s*$")
 _OTHER_LIST = re.compile(r"(主之|服此|宜此|用此方|宜用此)")
 _COMMON_CHARS = set("子草花叶根皮仁实白黄红赤青黑大小生干熟炙山川石木水火土金香甘苦辛酸咸肉心头尾节藤枝米汤散丸膏丹")
 
@@ -107,6 +111,9 @@ class FormulaStudy:
             else:
                 gap = window[last_end: m.start]
                 if len([c for c in gap if c not in _SEP]) > 6:
+                    break
+                # another formula begins (桂枝汤方，…大枣十二枚。麻黄汤方，麻黄三两…): its drugs are not this one's
+                if any(f.category == "formula" and not f.weak and last_end <= f.start < m.start for f in found):
                     break
             cursor = m.end
             processing = ""
@@ -223,9 +230,13 @@ class FormulaStudy:
             for p in b.passages(ids):
                 norm = b.normalize(p.text)
                 key = b.normalize(form)
+                parsed = False
+                lead = None
                 for m in re.finditer(re.escape(key), norm):
                     if self._inside_longer_name(norm, m.start(), m.end()):
                         continue  # 柴胡桂枝汤 is not 桂枝汤
+                    if _LEADS_ON.match(norm[m.end():]):
+                        lead = m
                     if _MODIFY.match(norm, m.end()):
                         if len(modifications) < 30:
                             end = norm.find("。", m.end())
@@ -240,10 +251,16 @@ class FormulaStudy:
                         comp.passage_id = p.id
                         comp.name = p.text[m.start(): m.end()]
                         compositions.append((comp, p))
+                        parsed = True
                         break
+                if not parsed and lead is not None:
+                    follows = b.following(p, 3)
+                    entry = self._parse_entry(p.text[lead.start(): lead.end()], follows) if follows else None
+                    if entry is not None and not any(q.id == entry[1].id for _, q in compositions):
+                        compositions.append(entry)
         # entries whose heading is the name (笈成: 地黄丸 / 治肾怯失音… / 熟地黄八钱　山萸肉… / 上为末…)
         done = {c.passage_id for c, _ in compositions}
-        for head, run in b.entries([f for f, _ in forms]):
+        for head, run in b.entries([f for f, _ in forms], suffix="方"):
             if run and not any(q.id in done for q in run):
                 parsed = self._parse_entry(head, run)
                 if parsed is not None:

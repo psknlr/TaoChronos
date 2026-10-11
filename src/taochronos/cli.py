@@ -540,14 +540,30 @@ def _mesh_call(harness: Any, tool: str, **arguments: Any) -> Any:
 
 
 def cmd_lexicon(args: argparse.Namespace) -> None:
-    """Harvest candidate formula and drug names from the corpus store into domains/classics/lexicon-harvested/."""
+    """``harvest``: candidate formula and drug names from the corpus store into domains/classics/lexicon-harvested/;
+    ``core``: the names of that harvest the full corpus attests most, into domains/classics/lexicon-core/ (the lexicon
+    of the browser's 要籍语料)."""
     import yaml
 
     from .plugins.classics.domain import DomainPack
-    from .plugins.classics.harvest import Harvester, to_yaml_entries
+    from .plugins.classics.harvest import CORE_FORMULAS, CORE_HERBS, Harvester, core_entries, to_yaml_entries
     from .plugins.classics.store import CorpusStore, StoreCorpus
 
     home, data = _corpus_paths(args)
+    if args.action == "core":
+        from .protocol.yamlio import load_yaml
+
+        src, out = home / "domains" / "classics" / "lexicon-harvested", home / "domains" / "classics" / "lexicon-core"
+        out.mkdir(parents=True, exist_ok=True)
+        written = {}
+        for name, top in (("herbs.yaml", args.herbs or CORE_HERBS), ("formulas.yaml", args.formulas or CORE_FORMULAS)):
+            payload = core_entries(load_yaml(src / name), top)
+            (out / name).write_text("# The harvested names the full corpus attests most — NOT curated. See plugins/classics/harvest.py "
+                                    "(core_entries).\n" + yaml.safe_dump(payload, allow_unicode=True, sort_keys=False, width=200),
+                                    encoding="utf-8")
+            written[name] = len(payload["entries"])
+        _out({"output": str(out), **written})
+        return
     pack = DomainPack(home / "domains" / "classics")
     known = {pack.variants.normalize_text(s) for s in pack.lexicon._by_surface}
     store = CorpusStore(_store_path(args, data))
@@ -837,7 +853,8 @@ def cmd_eval(args: argparse.Namespace) -> None:
 STUDY = ("canon", "concordance", "formula", "herb", "term", "taboo", "citations", "cards", "reading", "metrology", "dataset",
          "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship", "cases",
          "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate", "commentaries", "disputes",
-         "clause", "glosses", "pairs", "network", "schools", "names", "chain", "entities", "places", "translate", "cruxes")
+         "clause", "glosses", "pairs", "network", "schools", "names", "chain", "entities", "places", "translate", "cruxes",
+         "compare", "family", "usage", "properties", "incompat", "protocol")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -950,6 +967,34 @@ def cmd_study(args: argparse.Namespace) -> None:
         res = study.disputes(target, person=args.person)
     elif what == "pairs":
         res = study.pairs(target, period=args.period)
+    elif what == "compare":
+        names = [n for t in args.target for n in re.split(r"[、，,]", t) if n]
+        if len(names) < 2:
+            raise SystemExit("taochronos study compare: give two to six formulas (e.g. 桂枝汤 桂枝加桂汤 桂枝加芍药汤)")
+        res = study.compare(names, which=args.which)
+        notice = res.get("metrology_notice", "")
+    elif what == "family":
+        if not target:
+            raise SystemExit("taochronos study family: give a formula (e.g. 桂枝汤)")
+        res = study.family(target, min_share=args.min_share, max_extra=args.max_extra)
+    elif what == "usage":
+        if not target:
+            raise SystemExit("taochronos study usage: give a drug (e.g. 半夏)")
+        res = study.usage(target)
+        notice = res.get("metrology_notice", "")
+    elif what == "properties":
+        herbs = [n for t in args.target for n in re.split(r"[、，,]", t) if n]
+        if not (herbs or args.formula):
+            raise SystemExit("taochronos study properties: give drugs (柴胡 黄芩 …) or --formula <name>")
+        res = study.properties(herbs or None, formula=(args.formula or [None])[0])
+    elif what == "incompat":
+        res = study.incompat(target, drugs=args.herb or None)
+        notice = res.get("notice", "")
+    elif what == "protocol":
+        if not target:
+            raise SystemExit("taochronos study protocol: give a research question (e.g. 桂枝汤与桂枝加桂汤的组成与剂量有何异同？)")
+        res = study.protocol(target, pilot=not args.no_pilot)
+        notice = res.get("notice", "")
     elif what == "network":
         res = study.network(target)
     elif what == "chain":
@@ -1000,9 +1045,9 @@ def cmd_study(args: argparse.Namespace) -> None:
         res = study.citations(target) if target else study.citations(top=args.top)
     elif what == "canon":
         if args.write_catalog:
-            from .plugins.classics.study.canon import write_catalog
+            from .plugins.classics.study.canon import CANON_SIZE, write_catalog
 
-            ranking = study.canon_rank(top=args.limit or 350)
+            ranking = study.canon_rank(top=args.limit or CANON_SIZE, extend=args.extend)
             res = write_catalog(study._canon.path, ranking)
         else:
             res = study.canon(target, limit=args.limit or 60)
@@ -1027,6 +1072,12 @@ def cmd_study(args: argparse.Namespace) -> None:
                                 signature=res["signature"], licenses=res["licenses"], notice=res["notice"])
         _out({"path": str(out_dir), "resources": {r["name"]: r["rows"] for r in pkg["resources"]}, "licenses": res["licenses"]})
         return
+    if args.charts and res.get("charts"):
+        from .plugins.classics.study.svg import write as write_charts
+
+        stem = re.sub(r"[^\w一-鿿]+", "-", f"{what}-{target or ''}").strip("-")
+        written = write_charts(res["charts"], args.charts, stem)
+        print(f"wrote {len(written) // 3} chart(s) to {args.charts} (SVG, CSV, JSON)", file=sys.stderr)
     text = json.dumps(res, ensure_ascii=False, indent=1, default=str) if args.json else markdown(what, res, study.signature(), notice)
     if args.output:
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
@@ -1343,11 +1394,33 @@ def cmd_serve(args: argparse.Namespace) -> None:
 
 def cmd_web(args: argparse.Namespace) -> None:
     """The web client as a static site (GitHub Pages): ``build`` — client, in-browser runtime, providers, Pyodide and
-    the 要籍语料; ``pack`` — write that corpus (corpus/web) from the full corpus store and corpus/catalog/canon.yaml."""
+    the 要籍语料; ``pack`` — write that corpus (corpus/web) from the full corpus store and corpus/catalog/canon.yaml;
+    ``canon`` — rank the 要籍 anew and write the list, the pack and the D1 backup's tables in one go."""
     from .chat.build import build_site
     from .config import find_home
 
     home = find_home(args.home)
+    if args.action == "canon":
+        import sqlite3
+
+        from .bootstrap import Harness
+        from .chat.d1tables import write_tables
+        from .plugins.classics.study.canon import CANON_SIZE, write_catalog
+        from .plugins.classics.webcorpus import export_pack
+
+        _, data = _corpus_paths(args)
+        db_path = data / "corpus" / "tcm.sqlite"
+        if not db_path.exists():
+            raise SystemExit(f"no full corpus store at {db_path}: the 要籍 are ranked on it (taochronos corpus ingest …)")
+        study = Harness.from_profile("full-corpus", home=str(home), data_dir=str(data)).capabilities.get("study")
+        ranking = study.canon_rank(top=args.size or CANON_SIZE, extend=args.extend)
+        listed = write_catalog(study._canon.path, ranking)
+        packed = export_pack(sqlite3.connect(f"file:{db_path}?mode=ro", uri=True), ranking["works"],
+                             Path(args.output or home / "corpus" / "web"))
+        write_tables(home=home)
+        _out({"canon": listed | {"ranked": ranking["ranked"], **({"extends": ranking["extends"]} if ranking.get("extends") else {})},
+              "pack": packed, "next": "check the numbers the READMEs and docs/web.md quote against corpus/web/ATTRIBUTION.md"})
+        return
     if args.action == "pack":
         import sqlite3
 
@@ -1536,11 +1609,14 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--enrich", nargs="?", const="linked", choices=["linked", "all"],
                     help="images: read the IIIF manifests of NIJL records for author and date (linked records, or all)")
     sp.add_argument("--pause", type=float, help="images: seconds between requests (default 1)")
-    sp = add("lexicon", cmd_lexicon, "harvest candidate formula / drug names from the corpus store", profile=False)
-    sp.add_argument("action", choices=["harvest"])
+    sp = add("lexicon", cmd_lexicon, "harvest candidate formula / drug names from the corpus store; core: the most attested of them "
+                                     "for the browser's 要籍语料", profile=False)
+    sp.add_argument("action", choices=["harvest", "core"])
     sp.add_argument("--db", help="corpus store path (default: <data>/corpus/tcm.sqlite)")
     sp.add_argument("--min-books", type=int, default=2)
     sp.add_argument("--min-count", type=int, default=3)
+    sp.add_argument("--herbs", type=int, help="core: how many drug names (default 800)")
+    sp.add_argument("--formulas", type=int, help="core: how many formula names (default 2000)")
     sp = add("search", cmd_search, "philology-aware temporal GraphRAG search")
     sp.add_argument("query")
     sp.add_argument("-k", type=int, default=8)
@@ -1626,7 +1702,8 @@ def build_parser() -> argparse.ArgumentParser:
                                       "文本地层 (layers/dating/authorship), 医案轨迹 (cases/trajectories), 医理论证 (argument), "
                                       "语义演变 (senses), 佚书辑佚 (fragments), 句读 (punctuate), 集注 (commentaries), 争议 (disputes), "
                                       "条文结构 (clause), 训诂 (glosses), 配伍 (pairs), 方证网络 (network), 学派 (schools), 名称 (names), "
-                                      "传播链 (chain), 实体识别 (entities), 地域 (places), 释义与今译 (translate)")
+                                      "传播链 (chain), 实体识别 (entities), 地域 (places), 释义与今译 (translate), 方剂比较 (compare), "
+                                      "类方 (family), 用药谱 (usage), 药性谱 (properties), 配伍禁忌 (incompat), 研究方案 (protocol)")
     sp.set_defaults(fn=cmd_study)
     sp.add_argument("what", choices=STUDY)
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
@@ -1638,14 +1715,19 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--school", help="places: where a school's physicians came from (e.g. 温病)")
     sp.add_argument("--geojson", help="places: also write the map points (GeoJSON) to this file")
     sp.add_argument("--period", help="pairs: only the compositions of this period (e.g. 宋金元)")
+    sp.add_argument("--which", choices=["original", "current"], default="original",
+                    help="compare: each formula as its earliest tradition (原方, default) or its most witnessed (通行方)")
+    sp.add_argument("--min-share", type=float, default=0.75, help="family: share of the formula's core a member must hold")
+    sp.add_argument("--max-extra", type=int, default=4, help="family: drugs a member may add")
+    sp.add_argument("--no-pilot", action="store_true", help="protocol: do not run the main steps once (faster; no feasibility)")
     sp.add_argument("--probe", action="append", help="schools: also report this word for the school (repeatable, e.g. 相火)")
     sp.add_argument("--min-coverage", type=float, default=0.6, help="concordance: share of the text a witness must carry")
     sp.add_argument("--no-other-names", action="store_true", help="formula: skip the search for 同方异名")
     sp.add_argument("--min-chars", type=int, default=20000, help="taboo survey: smallest book to judge")
     sp.add_argument("--top", type=int, default=12, help="citations: works and physicians per period")
     sp.add_argument("--book", help="cards: 方证 cards from this book (e.g. 伤寒论); glosses: a book's glossary")
-    sp.add_argument("--formula", action="append", help="cards/dataset: a formula (repeatable)")
-    sp.add_argument("--herb", action="append", help="cards/dataset: a drug (repeatable)")
+    sp.add_argument("--formula", action="append", help="cards/dataset: a formula (repeatable); properties: the formula whose drugs to read")
+    sp.add_argument("--herb", action="append", help="cards/dataset: a drug (repeatable); incompat: a drug of the list to check")
     sp.add_argument("--term", help="cards/dataset: a term; places: a term's use by region and period")
     sp.add_argument("--citations", action="store_true", help="dataset: include the citation network")
     sp.add_argument("--year", type=float, help="metrology: the year whose measures to read the dose in")
@@ -1670,11 +1752,16 @@ def build_parser() -> argparse.ArgumentParser:
                                    "cruxes: the works (comma-separated) whose cruxes to harvest")
     sp.add_argument("--write-registry", action="store_true", help="cruxes: write the harvest to domains/classics/cruxes.yaml")
     sp.add_argument("--write-catalog", action="store_true", help="canon: rank the works of the full corpus by how they are cited "
-                                                                  "and write the list (--limit, default 350) to corpus/catalog/canon.yaml")
+                                                                  "and write the list (--limit, default 535) to corpus/catalog/canon.yaml")
+    sp.add_argument("--extend", action="store_true", help="canon --write-catalog: keep the works already listed, with their ranks, "
+                                                          "and append the next (for a store without some sources, e.g. the site's)")
     sp.add_argument("--against-work", help="argument: … compared with another work")
     sp.add_argument("--candidate", action="append", help="authorship: a candidate work or book id (repeatable)")
     sp.add_argument("--json", action="store_true", help="print the full result as JSON")
     sp.add_argument("-o", "--output", help="write to this file (dataset: this directory)")
+    sp.add_argument("--charts", metavar="DIR", help="also write the result's charts to DIR as SVG figures, CSV tables and JSON "
+                                                    "specifications (term, herb, formula, pairs, network, names, senses, compare, "
+                                                    "family, usage, properties, incompat, protocol)")
     _llm_args(sp)
     sp = add("codemode", cmd_codemode, "run a Research Code Mode program against the SDK")
     sp.add_argument("file", nargs="?")
@@ -1703,12 +1790,15 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--web", help="serve the client from this directory (default: <home>/web)")
     sp.add_argument("--open", action="store_true", help="open the client in a browser")
     sp.add_argument("--verbose", action="store_true", help="log requests (paths only)")
-    sp = add("web", cmd_web, "the web chat client: build the static site; pack the 要籍语料 it carries; write and upload the full "
-                             "corpus its server carries (Cloudflare)", profile=False)
-    sp.add_argument("action", choices=["build", "pack", "store", "upload"])
-    sp.add_argument("-o", "--output", help="build: the site directory (default _site); pack: the pack directory (default "
+    sp = add("web", cmd_web, "the web chat client: build the static site; pack the 要籍语料 it carries (canon: rank the 要籍 anew "
+                             "and pack them); write and upload the full corpus its server carries (Cloudflare)", profile=False)
+    sp.add_argument("action", choices=["build", "pack", "canon", "store", "upload"])
+    sp.add_argument("-o", "--output", help="build: the site directory (default _site); pack, canon: the pack directory (default "
                                            "corpus/web); store: where store.json and ATTRIBUTION.md go (default cloud)")
-    sp.add_argument("--data", help="pack, store: the data directory holding the full corpus store")
+    sp.add_argument("--data", help="pack, canon, store: the data directory holding the full corpus store")
+    sp.add_argument("--size", type=int, help="canon: how many works the 要籍 list keeps (default 535)")
+    sp.add_argument("--extend", action="store_true", help="canon: keep the works already listed, with their ranks, and append "
+                                                          "the next (for a store without some sources, e.g. the site's)")
     sp.add_argument("--site", default="https://chat.impf.ai", help="build: the site's address (robots.txt, sitemap.xml); "
                                                                  "upload: the site whose Worker takes the store "
                                                                  "(the token: $TAOCHRONOS_STORE_TOKEN)")

@@ -15,7 +15,7 @@ import yaml
 from taochronos.plugins.classics.domain import DomainPack
 from taochronos.plugins.classics.ingest import ingest_kanripo, load_catalog
 from taochronos.plugins.classics.store import CorpusStore, StoreCorpus
-from taochronos.plugins.classics.study.canon import OPEN_SOURCES, witness_order
+from taochronos.plugins.classics.study.canon import CANON_SIZE, OPEN_SOURCES, witness_order
 from taochronos.plugins.classics.webcorpus import (CORE_RANK, NEVER_PACKED, WEB_SOURCES, build_store, export_pack,
                                                    index_state, index_store, pack_order, select)
 
@@ -43,8 +43,11 @@ def fixture_store(tmp_path_factory, pack) -> Path:
 def test_the_ranked_list_is_metadata_ordered_by_citation():
     data = yaml.safe_load((ROOT / "corpus" / "catalog" / "canon.yaml").read_text(encoding="utf-8"))
     works = data["works"]
-    assert len(works) == data["top"] == 350 and [w["rank"] for w in works] == list(range(1, 351))
-    assert [w["score"] for w in works] == sorted((w["score"] for w in works), reverse=True)
+    # the list as last written: 350 works, until it is ranked again at CANON_SIZE (taochronos web canon)
+    assert len(works) == data["top"] <= CANON_SIZE and [w["rank"] for w in works] == list(range(1, len(works) + 1))
+    assert data["top"] in (350, CANON_SIZE)
+    if not data.get("extends"):  # an extended list keeps its first works as they were ranked on the full corpus
+        assert [w["score"] for w in works] == sorted((w["score"] for w in works), reverse=True)
     top = [w["title"] for w in works[:8]]
     for classic in ("黄帝内经素问", "伤寒论", "金匮要略方论", "神农本草经"):
         assert classic in top, top
@@ -57,6 +60,43 @@ def test_the_ranked_list_is_metadata_ordered_by_citation():
     if pack.is_file():  # an open work's witness is the pack's first: the same order (OPEN_SOURCES leads WEB_SOURCES)
         first = {b["work"]: b["id"] for b in json.loads(pack.read_text(encoding="utf-8")) if b["witness"] == 1}
         assert all(first[w["work"]] == w["open_witness"] for w in works if w["open"])
+
+
+def test_the_list_keeps_canon_size_works_and_grows_only_at_its_end():
+    from taochronos.plugins.classics.corpus import Corpus
+    from taochronos.plugins.classics.study import StudyService
+
+    domain = DomainPack(ROOT / "domains" / "classics")
+    corpus = Corpus.load(ROOT / "tests" / "fixtures" / "study")
+    corpus.normalize = domain.variants.normalize_text
+    study = StudyService(domain, corpus)
+    assert CANON_SIZE == 535 and study.canon_rank()["top"] == CANON_SIZE
+    full = study.canon_rank(top=6)
+    first = study.canon_rank(top=3)
+    assert [w["work"] for w in full["works"][:3]] == [w["work"] for w in first["works"]]  # a longer list: the same head
+    assert [w["rank"] for w in full["works"]] == list(range(1, 7)) and full["ranked"] == first["ranked"]
+    assert full["works"][0]["work"] == "shanghanlun" and full["works"][0]["cited_by"] >= 1
+    # extend: the works already listed keep their ranks and figures (ranked on a corpus this store may lack), the next
+    # come from this ranking
+    study._canon._catalog = [{"rank": 1, "work": "yz", "title": "医宗金鉴", "score": 99.0, "open": False, "sources": ["aeam"]},
+                             {"rank": 2, "work": "shanghanlun", "title": "伤寒论", "score": 98.0, "open": True}]
+    ext = study.canon_rank(top=4, extend=True)
+    assert [(w["rank"], w["work"]) for w in ext["works"][:2]] == [(1, "yz"), (2, "shanghanlun")]
+    assert ext["works"][0]["score"] == 99.0 and ext["works"][0]["sources"] == ["aeam"]
+    assert [w["rank"] for w in ext["works"]] == [1, 2, 3, 4] and len({w["work"] for w in ext["works"]}) == 4
+    assert ext["extends"] == {"kept": 2, "ranked_here": full["ranked"]} and ext["open"] == sum(w["open"] for w in ext["works"])
+
+
+def test_the_catalog_says_when_it_was_extended(tmp_path):
+    from taochronos.plugins.classics.study.canon import METHOD, write_catalog
+
+    works = [{"rank": 1, "work": "a", "open": True}, {"rank": 2, "work": "b", "open": False}]
+    write_catalog(tmp_path / "canon.yaml", {"method": METHOD, "ranked": 9, "top": 2, "open": 1, "works": works,
+                                            "extends": {"kept": 1, "ranked_here": 9}})
+    text = (tmp_path / "canon.yaml").read_text(encoding="utf-8")
+    data = yaml.safe_load(text)
+    assert "# Extended: the first 1 as listed before" in text and data["extends"] == {"kept": 1, "ranked_here": 9}
+    assert [w["work"] for w in data["works"]] == ["a", "b"] and data["top"] == 2
 
 
 def test_witnesses_are_chosen_open_collated_and_complete_first():
@@ -164,7 +204,9 @@ def test_the_site_corpus_is_the_ranked_works(web_runtime):
     info = rt.info()
     corpus = info["corpus"]
     assert corpus["kind"] == "canon" and corpus["label"] == "要籍语料" and corpus["demo"]
-    assert corpus["canon"]["listed"] == 350 and corpus["canon"]["held"] >= 345  # all but those known only through NEVER_PACKED
+    listed = yaml.safe_load((ROOT / "corpus" / "catalog" / "canon.yaml").read_text(encoding="utf-8"))["works"]
+    only_never = sum(1 for w in listed if set(w["sources"]) <= set(NEVER_PACKED))  # known only through NEVER_PACKED
+    assert corpus["canon"]["listed"] == len(listed) and corpus["canon"]["held"] >= len(listed) - only_never
     assert meta["bytes"] < 16_000_000 and corpus["passages"] == meta["passages"] and 0 < meta["core_passages"] < meta["passages"]
     books = json.loads((ROOT / "corpus" / "web" / "books.json").read_text(encoding="utf-8"))
     assert {b["source"] for b in books} <= set(WEB_SOURCES) and not {b["source"] for b in books} & set(NEVER_PACKED)

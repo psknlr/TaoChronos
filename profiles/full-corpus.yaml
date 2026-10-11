@@ -6,7 +6,7 @@ name: full-corpus
 extends: full-discovery
 description: Full-discovery research over the whole ingested corpus (四库全书·医家类, 笈成, McGill, 维基文库 and the web collections, deduplicated) via the corpus store.
 bundles:
-  - {plugin: taochronos.plugins.classics, config: {domain: domains/classics, store: corpus/tcm.sqlite, lexicon_extra: [lexicon-harvested]}}
+  - {plugin: taochronos.plugins.classics, config: {domain: domains/classics, store: corpus/tcm.sqlite, lexicon_extra: [lexicon-supplement, lexicon-harvested]}}
   - {plugin: taochronos.plugins.knowledge}
   - {plugin: taochronos.plugins.retrieval}
   - {plugin: taochronos.plugins.models.offline}

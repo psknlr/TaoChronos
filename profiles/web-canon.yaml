@@ -1,11 +1,13 @@
 # 要籍语料 — the corpus of the published site: the openly licensed texts of the ranked works (corpus/web, packed by
 # `taochronos web pack`, built into a store by `taochronos web build`, indexed by the browser on first use).  Like
-# full-corpus, without the lexicon harvested from the full corpus (it names what this corpus mostly does not hold).
+# full-corpus, without the whole lexicon harvested from the full corpus (it names what this corpus mostly does not hold):
+# its core instead — the drugs and formulas the full corpus attests most (lexicon-core, `taochronos lexicon core`) — and
+# the common drugs the harvest misses (lexicon-supplement), so that the compositions of the ranked works are read whole.
 name: web-canon
 extends: full-corpus
 description: 要籍语料 — the openly licensed texts of the ranked works (the published site's corpus), as a store.
 bundles:
-  - {plugin: taochronos.plugins.classics, config: {domain: domains/classics, store: corpus/tcm.sqlite}}
+  - {plugin: taochronos.plugins.classics, config: {domain: domains/classics, store: corpus/tcm.sqlite, lexicon_extra: [lexicon-supplement, lexicon-core]}}
   - {plugin: taochronos.plugins.knowledge}
   - {plugin: taochronos.plugins.retrieval}
   - {plugin: taochronos.plugins.models.offline}

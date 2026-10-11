@@ -1,5 +1,5 @@
 // The in-browser runtime: Pyodide (CPython compiled to WebAssembly) running the TaoChronos package on the 要籍语料 — the
-// 350 ranked works (the first classics whole, the rest in chapters spread through the book), shipped xz-compressed as a
+// ranked works (the first classics whole, the rest in chapters spread through the book), shipped xz-compressed as a
 // store without its full-text index — or, on a site built without it, the demonstration corpus.  It runs inside a module
 // worker so the page never blocks.
 //

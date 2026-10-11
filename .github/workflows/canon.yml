@@ -1,0 +1,135 @@
+name: canon
+
+# 要籍 (corpus/catalog/canon.yaml) and the 要籍语料 the browser runs (corpus/web), regenerated from the full corpus — for
+# when no machine at hand holds it: this job fetches the store cloud/store.json names from the site's KV namespace (as
+# d1.yml and the corpus job of site.yml do), indexes it, and runs `taochronos web canon`, which ranks the works, writes the
+# list (CANON_SIZE works unless `size` says otherwise), packs their texts and regenerates the D1 backup's tables; the
+# result is committed to the branch the workflow runs on.  The site's store carries no text of the sources whose terms
+# forbid passing it on (NEVER_PACKED), so the job keeps the works already listed, with their ranks and figures as they
+# were ranked on the full corpus, and appends the next ones (`extend`); a fresh ranking belongs on the full corpus
+# (`taochronos web canon` where it is built).  The numbers the READMEs and docs/web.md quote are then read off
+# corpus/web/ATTRIBUTION.md.  Repository secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (cloud/SETUP.md).
+on:
+  workflow_dispatch:
+    inputs:
+      size:
+        description: "How many works the 要籍 list keeps (empty: CANON_SIZE in the code)"
+        type: string
+        default: ""
+      extend:
+        description: "Keep the works already listed and append the next (the site's store lacks the never-packed sources)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: canon
+  cancel-in-progress: false
+
+env:
+  STORE_NAMESPACE: taochronos-store
+  TAOCHRONOS_DATA: ${{ github.workspace }}/.taochronos
+
+jobs:
+  canon:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: The site's KV namespace
+        id: plan
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ]; then
+            echo "::error::the store is fetched with the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (cloud/SETUP.md)"
+            exit 1
+          fi
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT"
+          ns=$(curl -fsS -H "Authorization: Bearer $CF_TOKEN" "$api/storage/kv/namespaces?per_page=100" \
+                | python3 -c 'import json,sys,os; r=json.load(sys.stdin)["result"]; print(next((n["id"] for n in r if n["title"]==os.environ["STORE_NAMESPACE"]), ""))' || true)
+          if [ -z "$ns" ]; then
+            echo "::error::no KV namespace $STORE_NAMESPACE (the site's deployment creates it; the store is uploaded with taochronos web upload, cloud/README.md)"
+            exit 1
+          fi
+          echo "ns=$ns" >> "$GITHUB_OUTPUT"
+      - name: The store, from the site's KV namespace
+        id: store
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NS: ${{ steps.plan.outputs.ns }}
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces"
+          mkdir -p cloud/.store/parts
+          python3 - <<'EOF' > cloud/.store/parts.txt
+          import json, urllib.parse
+          m = json.load(open("cloud/store.json"))
+          for p in m["parts"]:
+              print(urllib.parse.quote(m["key"] + p["name"], safe=""), p["name"], p["sha256"])
+          EOF
+          while read -r key name sha; do
+            curl -fsS -H "Authorization: Bearer $CF_TOKEN" "$api/$NS/values/$key" -o "cloud/.store/parts/$name"
+            echo "$sha  cloud/.store/parts/$name" | sha256sum -c --quiet
+          done < cloud/.store/parts.txt
+          sha=$(python3 -c 'import json; print(json.load(open("cloud/store.json"))["sha256"])')
+          while read -r _ name _; do cat "cloud/.store/parts/$name"; done < cloud/.store/parts.txt > "cloud/.store/$sha.sqlite.xz"
+          echo "$sha  cloud/.store/$sha.sqlite.xz" | sha256sum -c --quiet
+          rm -rf cloud/.store/parts cloud/.store/parts.txt
+          echo "file=cloud/.store/$sha.sqlite.xz" >> "$GITHUB_OUTPUT"
+      - name: Unpack and index it
+        env:
+          XZ: ${{ steps.store.outputs.file }}
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          from pathlib import Path
+          from taochronos.chat.cloud import unpack
+          from taochronos.config import find_home
+          from taochronos.plugins.classics.domain import DomainPack
+          from taochronos.plugins.classics.webcorpus import index_state, index_store
+          path = Path(os.environ["TAOCHRONOS_DATA"]) / "corpus" / "tcm.sqlite"
+          unpack(Path(os.environ["XZ"]), path, json.load(open("cloud/store.json")))
+          index_store(path, DomainPack(find_home() / "domains" / "classics").variants.normalize_text, chunk=20000)
+          print(index_state(path))
+          EOF
+          rm -rf cloud/.store
+      - name: Rank, pack, tables (taochronos web canon)
+        env:
+          SIZE: ${{ inputs.size }}
+          EXTEND: ${{ inputs.extend }}
+          # some study tools order ties by string hashing: fixed, a result computed again is the same
+          PYTHONHASHSEED: "0"
+        run: |
+          args=()
+          if [ -n "$SIZE" ]; then args+=(--size "$SIZE"); fi
+          if [ "$EXTEND" = "true" ]; then args+=(--extend); fi
+          taochronos web canon "${args[@]}" | tee canon-report.json
+          python3 - <<'EOF'
+          import json, os
+          r = json.load(open("canon-report.json"))
+          c, p = r["canon"], r["pack"]
+          lines = [f"## 要籍 · {c['works']} works ({c['open']} with an openly licensed witness)", "",
+                   f"- ranked on this store: {c['ranked']}" + (f"; kept as listed: {c['extends']['kept']}" if c.get("extends") else ""),
+                   f"- 要籍语料: {p['works']} works, {p['books']} witnesses, {p['passages']:,} passages, {p['characters']:,} characters",
+                   f"- listed without text (known only through sources never packed): {', '.join(p['unheld']) or 'none'}"]
+          open(os.environ["GITHUB_STEP_SUMMARY"], "a").write("\n".join(lines) + "\n")
+          EOF
+          rm canon-report.json
+      - name: Commit the list, the pack and the tables
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add corpus/catalog/canon.yaml corpus/web cloud/site/src/backup/tables.js
+          if git diff --cached --quiet; then echo "nothing changed"; exit 0; fi
+          n=$(python3 -c 'import yaml; print(yaml.safe_load(open("corpus/catalog/canon.yaml"))["top"])')
+          git commit -m "要籍: the list and the 要籍语料 at $n works (taochronos web canon on the site's store)"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

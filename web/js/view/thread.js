@@ -1,5 +1,6 @@
 // The conversation: user turns, assistant turns (thinking, tool steps, the answer), citation chips and actions.
 
+import { chartGallery, documentButton } from "../chart.js";
 import { renderMarkdown } from "../markdown.js";
 import { redact, toolWord } from "../redact.js";
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY } from "../brand.js";
@@ -112,7 +113,13 @@ export function fillAssistant(body, m, ctx, last) {
   segs.forEach((seg, k) => {
     const isLast = k === segs.length - 1;
     if (seg.type === "thinking") { if (!m.hideThinking) body.append(thinkingNode(m, seg, k, ctx, live && isLast)); }
-    else if (seg.type === "tools") body.append(stepsNode(m, seg, k, ctx, live));
+    else if (seg.type === "tools") {
+      body.append(stepsNode(m, seg, k, ctx, live));
+      const charts = chartsNode(seg);
+      if (charts) body.append(charts);
+      const docs = (seg.calls || []).map((c) => documentButton(c.document)).filter(Boolean);
+      if (docs.length) body.append(h("div.docs", docs));
+    }
     else if (seg.type === "text" && (seg.text || (live && isLast))) {
       const md = h("div.md");
       md.append(renderMarkdown(redact(seg.text, { streaming: live && isLast }), { streaming: live && isLast, cite: ctx.cite }));
@@ -182,6 +189,17 @@ function stepsNode(m, seg, k, ctx, live) {
   return box;
 }
 
+// which chart of a tools segment is shown, kept while the turn is drawn again
+const shown = new WeakMap();
+
+/** The charts the segment's tools drew, under its steps: one at a time, with tabs, when there are several. */
+function chartsNode(seg) {
+  const specs = (seg.calls || []).flatMap((c) => c.charts || []);
+  if (!specs.length) return null;
+  if (!shown.has(seg)) shown.set(seg, { at: 0 });
+  return chartGallery(specs, shown.get(seg));
+}
+
 function toolNode(m, c, key, ctx) {
   const open = ctx.openTools.has(key);
   const t = h("div.tool", { class: open ? "open" : "" });
@@ -208,6 +226,7 @@ function fillDetail(el, c, ctx) {
     h("h5", "参数"), h("pre.json", prettyJSON(c.args ?? {})),
     c.error ? [h("h5", "错误"), h("pre.json", c.error)] : null,
     c.preview ? [h("h5", "结果（模型读到的内容）"), h("pre.json", readable(c.preview))] : null,
+    c.charts?.length ? [h("h5", `图表（${c.charts.length}）`), h("div.muted", { style: { fontSize: "12.5px" } }, c.charts.map((x) => x.title || "图表").join("；"))] : null,
     c.citations?.length ? [h("h5", `涉及的段落（${c.citations.length}）`),
       h("div.cites-row", c.citations.slice(0, 40).map((card) => ctx.citeCard(card)))] : null,
     c.research ? h("button.btn.secondary", { type: "button", style: { marginTop: "8px" }, on: { click: () => ctx.onOpenResearch(c.research) } }, icon("flask", "sm"), "在侧栏查看研究结果") : null,

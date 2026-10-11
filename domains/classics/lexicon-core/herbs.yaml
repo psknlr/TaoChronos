@@ -1,0 +1,6704 @@
+# The harvested names the full corpus attests most — NOT curated. See plugins/classics/harvest.py (core_entries).
+provenance: the 800 herb names of lexicon-harvested the full corpus attests most (`taochronos lexicon core`); candidates, not expert-reviewed
+category: herb
+entries:
+- term: 续断
+  kind: harvested
+  synonyms:
+  - surface: 南草
+    kind: alias
+    note: 本草“一名”
+  - surface: 属折
+    kind: alias
+    note: 本草“一名”
+  - surface: 接骨
+    kind: alias
+    note: 本草“一名”
+  - surface: 龙豆
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 16
+    count: 17
+- term: 苦参
+  kind: harvested
+  synonyms:
+  - surface: 地槐
+    kind: alias
+    note: 本草“一名”
+  - surface: 岑茎
+    kind: alias
+    note: 本草“一名”
+  - surface: 水槐
+    kind: alias
+    note: 本草“一名”
+  - surface: 白茎
+    kind: alias
+    note: 本草“一名”
+  - surface: 禄白
+    kind: alias
+    note: 本草“一名”
+  - surface: 菟槐
+    kind: alias
+    note: 本草“一名”
+  - surface: 虎麻
+    kind: alias
+    note: 本草“一名”
+  - surface: 陵即
+    kind: alias
+    note: 本草“一名”
+  - surface: 陵郎
+    kind: alias
+    note: 本草“一名”
+  - surface: 骄槐
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 15
+    count: 16
+- term: 阿胶
+  kind: harvested
+  synonyms:
+  - surface: 傅致胶
+    kind: alias
+    note: 本草“一名”
+  - surface: 敷致胶
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 15
+    count: 16
+- term: 磁石
+  kind: harvested
+  synonyms:
+  - surface: 元石
+    kind: alias
+    note: 本草“一名”
+  - surface: 处石
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 15
+    count: 15
+- term: 泽兰
+  kind: harvested
+  synonyms:
+  - surface: 虎兰
+    kind: alias
+    note: 本草“一名”
+  - surface: 虎蒲
+    kind: alias
+    note: 本草“一名”
+  - surface: 龙枣
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 14
+    count: 15
+- term: 白头翁
+  kind: harvested
+  synonyms:
+  - surface: 奈何草
+    kind: alias
+    note: 本草“一名”
+  - surface: 柰何草
+    kind: alias
+    note: 本草“一名”
+  - surface: 野丈人
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 14
+    count: 15
+- term: 辛夷
+  kind: harvested
+  synonyms:
+  - surface: 侯桃
+    kind: alias
+    note: 本草“一名”
+  - surface: 候桃
+    kind: alias
+    note: 本草“一名”
+  - surface: 房木
+    kind: alias
+    note: 本草“一名”
+  - surface: 辛矧
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 14
+    count: 15
+- term: 百合
+  kind: harvested
+  synonyms:
+  - surface: 中逢花
+    kind: alias
+    note: 本草“一名”
+  - surface: 强瞿
+    kind: alias
+    note: 本草“一名”
+  - surface: 摩罗
+    kind: alias
+    note: 本草“一名”
+  - surface: 磨罗
+    kind: alias
+    note: 本草“一名”
+  - surface: 重箱
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 14
+    count: 14
+- term: 蒲黄
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 14
+    count: 14
+- term: 夏枯草
+  kind: harvested
+  synonyms:
+  - surface: 夕句
+    kind: alias
+    note: 本草“一名”
+  - surface: 燕面
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 13
+    count: 14
+- term: 木香
+  kind: harvested
+  synonyms:
+  - surface: 密青
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 13
+    count: 14
+- term: 狗脊
+  kind: harvested
+  synonyms:
+  - surface: 强膂
+    kind: alias
+    note: 本草“一名”
+  - surface: 扶盖
+    kind: alias
+    note: 本草“一名”
+  - surface: 扶筋
+    kind: alias
+    note: 本草“一名”
+  - surface: 狗青
+    kind: alias
+    note: 本草“一名”
+  - surface: 百枝
+    kind: alias
+    note: 本草“一名”
+  - surface: 赤节
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 13
+    count: 14
+- term: 王不留行
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 13
+    count: 14
+- term: 矾石
+  kind: harvested
+  synonyms:
+  - surface: 羽泽
+    kind: alias
+    note: 本草“一名”
+  - surface: 羽涅
+    kind: alias
+    note: 本草“一名”
+  - surface: 羽硁
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 13
+    count: 14
+- term: 禹余粮
+  kind: harvested
+  synonyms:
+  - surface: 白余粮
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 13
+    count: 14
+- term: 紫石英
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 13
+    count: 14
+- term: 紫菀
+  kind: harvested
+  synonyms:
+  - surface: 紫茜
+    kind: alias
+    note: 本草“一名”
+  - surface: 青苑
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 13
+    count: 14
+- term: 肉苁蓉
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 13
+    count: 14
+- term: 胡麻
+  kind: harvested
+  synonyms:
+  - surface: 巨胜
+    kind: alias
+    note: 本草“一名”
+  - surface: 狗虱
+    kind: alias
+    note: 本草“一名”
+  - surface: 鸿芷
+    kind: alias
+    note: 本草“一名”
+  - surface: 鸿藏
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 13
+    count: 14
+- term: 防风
+  kind: harvested
+  synonyms:
+  - surface: 屏风
+    kind: alias
+    note: 本草“一名”
+  - surface: 百枝
+    kind: alias
+    note: 本草“一名”
+  - surface: 百蜚
+    kind: alias
+    note: 本草“一名”
+  - surface: 简根
+    kind: alias
+    note: 本草“一名”
+  - surface: 茴草
+    kind: alias
+    note: 本草“一名”
+  - surface: 铜芸
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 13
+    count: 14
+- term: 牛黄
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 13
+    count: 13
+- term: 麝香
+  kind: harvested
+  evidence:
+    books: 13
+    count: 13
+- term: 天门冬
+  kind: harvested
+  synonyms:
+  - surface: 满冬
+    kind: alias
+    note: 本草“一名”
+  - surface: 颠勒
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 14
+- term: 秦皮
+  kind: harvested
+  synonyms:
+  - surface: 岑皮
+    kind: alias
+    note: 本草“一名”
+  - surface: 石檀
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 14
+- term: 葶苈
+  kind: harvested
+  synonyms:
+  - surface: 丁历
+    kind: alias
+    note: 本草“一名”
+  - surface: 乌扇
+    kind: alias
+    note: 本草“一名”
+  - surface: 大室
+    kind: alias
+    note: 本草“一名”
+  - surface: 大适
+    kind: alias
+    note: 本草“一名”
+  - surface: 蕇蒿
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 14
+- term: 吴茱萸
+  kind: harvested
+  synonyms:
+  - surface: 石枣
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 13
+- term: 地榆
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 13
+- term: 姜黄
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 12
+    count: 13
+- term: 槐实
+  kind: harvested
+  synonyms:
+  - surface: 地辅
+    kind: alias
+    note: 本草“一名”
+  - surface: 地骨
+    kind: alias
+    note: 本草“一名”
+  - surface: 杞根
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 12
+    count: 13
+- term: 水蛭
+  kind: harvested
+  synonyms:
+  - surface: 蚂蝗
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 13
+- term: 沙参
+  kind: harvested
+  synonyms:
+  - surface: 志取
+    kind: alias
+    note: 本草“一名”
+  - surface: 文希
+    kind: alias
+    note: 本草“一名”
+  - surface: 白参
+    kind: alias
+    note: 本草“一名”
+  - surface: 苦心
+    kind: alias
+    note: 本草“一名”
+  - surface: 虎须
+    kind: alias
+    note: 本草“一名”
+  - surface: 识美
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 13
+- term: 海藻
+  kind: harvested
+  synonyms:
+  - surface: 落首
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 13
+- term: 牡蛎
+  kind: harvested
+  synonyms:
+  - surface: 牡蛤
+    kind: alias
+    note: 本草“一名”
+  - surface: 蛎蛤
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 13
+- term: 甘遂
+  kind: harvested
+  synonyms:
+  - surface: 凌泽
+    kind: alias
+    note: 本草“一名”
+  - surface: 甘藁
+    kind: alias
+    note: 本草“一名”
+  - surface: 重泽
+    kind: alias
+    note: 本草“一名”
+  - surface: 陵泽
+    kind: alias
+    note: 本草“一名”
+  - surface: 陵藁
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 13
+- term: 石斛
+  kind: harvested
+  synonyms:
+  - surface: 杜兰
+    kind: alias
+    note: 本草“一名”
+  - surface: 林兰
+    kind: alias
+    note: 本草“一名”
+  - surface: 石蓫
+    kind: alias
+    note: 本草“一名”
+  - surface: 石遂
+    kind: alias
+    note: 本草“一名”
+  - surface: 禁生
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 13
+- term: 石钟乳
+  kind: harvested
+  synonyms:
+  - surface: 公乳
+    kind: alias
+    note: 本草“一名”
+  - surface: 夏石
+    kind: alias
+    note: 本草“一名”
+  - surface: 留公乳
+    kind: alias
+    note: 本草“一名”
+  - surface: 芦石
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 13
+- term: 芜荑
+  kind: harvested
+  synonyms:
+  - surface: 无姑
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 13
+- term: 贯众
+  kind: harvested
+  synonyms:
+  - surface: 伯萍
+    kind: alias
+    note: 本草“一名”
+  - surface: 扁符
+    kind: alias
+    note: 本草“一名”
+  - surface: 扁苻
+    kind: alias
+    note: 本草“一名”
+  - surface: 百头
+    kind: alias
+    note: 本草“一名”
+  - surface: 药藻
+    kind: alias
+    note: 本草“一名”
+  - surface: 虎卷
+    kind: alias
+    note: 本草“一名”
+  - surface: 贯渠
+    kind: alias
+    note: 本草“一名”
+  - surface: 贯节
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 13
+- term: 远志
+  kind: harvested
+  synonyms:
+  - surface: 棘菀
+    kind: alias
+    note: 本草“一名”
+  - surface: 细草
+    kind: alias
+    note: 本草“一名”
+  - surface: 葽尧
+    kind: alias
+    note: 本草“一名”
+  - surface: 葽绕
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 13
+- term: 郁金
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 12
+    count: 13
+- term: 龙骨
+  kind: harvested
+  evidence:
+    books: 12
+    count: 13
+- term: 桑螵蛸
+  kind: harvested
+  synonyms:
+  - surface: 蚀疣
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 12
+    count: 12
+- term: 白僵蚕
+  kind: harvested
+  evidence:
+    books: 12
+    count: 12
+- term: 秦艽
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 12
+- term: 蛇床子
+  kind: harvested
+  synonyms:
+  - surface: 墙蘼
+    kind: alias
+    note: 本草“一名”
+  - surface: 思益
+    kind: alias
+    note: 本草“一名”
+  - surface: 枣棘
+    kind: alias
+    note: 本草“一名”
+  - surface: 绳毒
+    kind: alias
+    note: 本草“一名”
+  - surface: 虺床
+    kind: alias
+    note: 本草“一名”
+  - surface: 虺状
+    kind: alias
+    note: 本草“一名”
+  - surface: 蛇米
+    kind: alias
+    note: 本草“一名”
+  - surface: 蛇粟
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 12
+    count: 12
+- term: 赤小豆
+  kind: harvested
+  synonyms:
+  - surface: 赤豆
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 12
+    count: 12
+- term: 龟甲
+  kind: harvested
+  synonyms:
+  - surface: 神屋
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 12
+    count: 12
+- term: 小麦
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 11
+    count: 14
+- term: 巴豆
+  kind: harvested
+  synonyms:
+  - surface: 巴椒
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 11
+    count: 13
+- term: 藜芦
+  kind: harvested
+  synonyms:
+  - surface: 山葱
+    kind: alias
+    note: 本草“一名”
+  - surface: 葱苒
+    kind: alias
+    note: 本草“一名”
+  - surface: 葱菼
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 11
+    count: 13
+- term: 鹿茸
+  kind: harvested
+  evidence:
+    books: 11
+    count: 13
+- term: 仙茅
+  kind: harvested
+  synonyms:
+  - surface: 婆罗门参
+    kind: alias
+    note: 本草“一名”
+  - surface: 独茅根
+    kind: alias
+    note: 本草“一名”
+  - surface: 茅瓜子
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 11
+    count: 12
+- term: 巴戟天
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 11
+    count: 12
+- term: 干漆
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 枇杷叶
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 梅实
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 橄榄
+  kind: harvested
+  synonyms:
+  - surface: 凉果
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 11
+    count: 12
+- term: 款冬花
+  kind: harvested
+  synonyms:
+  - surface: 免奚
+    kind: alias
+    note: 本草“一名”
+  - surface: 兔奚
+    kind: alias
+    note: 本草“一名”
+  - surface: 橐吾
+    kind: alias
+    note: 本草“一名”
+  - surface: 氐冬
+    kind: alias
+    note: 本草“一名”
+  - surface: 菟奚
+    kind: alias
+    note: 本草“一名”
+  - surface: 虎须
+    kind: alias
+    note: 本草“一名”
+  - surface: 颗东
+    kind: alias
+    note: 本草“一名”
+  - surface: 颗冻
+    kind: alias
+    note: 本草“一名”
+  - surface: 颗涷
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 11
+    count: 12
+- term: 皂荚
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 11
+    count: 12
+- term: 石硫黄
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 11
+    count: 12
+- term: 菖蒲
+  kind: harvested
+  synonyms:
+  - surface: 昌阳
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 11
+    count: 12
+- term: 覆盆子
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 11
+    count: 12
+- term: 防己
+  kind: harvested
+  synonyms:
+  - surface: 解离
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 11
+    count: 12
+- term: 阳起石
+  kind: harvested
+  synonyms:
+  - surface: 白石
+    kind: alias
+    note: 本草“一名”
+  - surface: 石生
+    kind: alias
+    note: 本草“一名”
+  - surface: 羊起石
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 11
+    count: 12
+- term: 雷丸
+  kind: harvested
+  synonyms:
+  - surface: 雷实
+    kind: alias
+    note: 本草“一名”
+  - surface: 雷矢
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 11
+    count: 12
+- term: 鳖甲
+  kind: harvested
+  evidence:
+    books: 11
+    count: 12
+- term: 龙眼
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 11
+    count: 12
+- term: 何首乌
+  kind: harvested
+  synonyms:
+  - surface: 交藤
+    kind: alias
+    note: 本草“一名”
+  - surface: 地精
+    kind: alias
+    note: 本草“一名”
+  - surface: 夜合
+    kind: alias
+    note: 本草“一名”
+  - surface: 猢狲姜
+    kind: alias
+    note: 本草“一名”
+  - surface: 野苗
+    kind: alias
+    note: 本草“一名”
+  - surface: 陈知白
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 11
+    count: 11
+- term: 决明子
+  kind: harvested
+  evidence:
+    books: 11
+    count: 11
+- term: 天麻
+  kind: harvested
+  synonyms:
+  - surface: 定风草
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 11
+    count: 11
+- term: 白薇
+  kind: harvested
+  synonyms:
+  - surface: 春草
+    kind: alias
+    note: 本草“一名”
+  - surface: 白幕
+    kind: alias
+    note: 本草“一名”
+  - surface: 薇草
+    kind: alias
+    note: 本草“一名”
+  - surface: 骨美
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 11
+    count: 11
+- term: 葡萄
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 11
+    count: 11
+- term: 蜈蚣
+  kind: harvested
+  synonyms:
+  - surface: 蝍蛆
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 11
+    count: 11
+- term: 车前子
+  kind: harvested
+  synonyms:
+  - surface: 当道
+    kind: alias
+    note: 本草“一名”
+  - surface: 牛舌
+    kind: alias
+    note: 本草“一名”
+  - surface: 牛舌草
+    kind: alias
+    note: 本草“一名”
+  - surface: 牛遗
+    kind: alias
+    note: 本草“一名”
+  - surface: 胜留
+    kind: alias
+    note: 本草“一名”
+  - surface: 芣苜
+    kind: alias
+    note: 本草“一名”
+  - surface: 虾蟆衣
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 11
+    count: 11
+- term: 郁李仁
+  kind: harvested
+  synonyms:
+  - surface: 爵李
+    kind: alias
+    note: 本草“一名”
+  - surface: 车下李
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 11
+    count: 11
+- term: 香薷
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 11
+    count: 11
+- term: 络石
+  kind: harvested
+  synonyms:
+  - surface: 悬石
+    kind: alias
+    note: 本草“一名”
+  - surface: 明石
+    kind: alias
+    note: 本草“一名”
+  - surface: 略石
+    kind: alias
+    note: 本草“一名”
+  - surface: 石磋
+    kind: alias
+    note: 本草“一名”
+  - surface: 石蹉
+    kind: alias
+    note: 本草“一名”
+  - surface: 石鲮
+    kind: alias
+    note: 本草“一名”
+  - surface: 领石
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 10
+    count: 13
+- term: 松脂
+  kind: harvested
+  synonyms:
+  - surface: 松肪
+    kind: alias
+    note: 本草“一名”
+  - surface: 松膏
+    kind: alias
+    note: 本草“一名”
+  - surface: 沥青
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 10
+    count: 12
+- term: 琥珀
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 10
+    count: 12
+- term: 石蜜
+  kind: harvested
+  synonyms:
+  - surface: 石饴
+    kind: alias
+    note: 本草“一名”
+  origin_record: 唐本
+  evidence:
+    books: 10
+    count: 12
+- term: 贝母
+  kind: harvested
+  synonyms:
+  - surface: 勤母
+    kind: alias
+    note: 本草“一名”
+  - surface: 商草
+    kind: alias
+    note: 本草“一名”
+  - surface: 空草
+    kind: alias
+    note: 本草“一名”
+  - surface: 苦花
+    kind: alias
+    note: 本草“一名”
+  - surface: 药实
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 10
+    count: 12
+- term: 丹砂
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 10
+    count: 11
+- term: 冬葵子
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 大戟
+  kind: harvested
+  synonyms:
+  - surface: 卬巨
+    kind: alias
+    note: 本草“一名”
+  - surface: 卭巨
+    kind: alias
+    note: 本草“一名”
+  - surface: 邛巨
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 10
+    count: 11
+- term: 旋覆花
+  kind: harvested
+  synonyms:
+  - surface: 戴椹
+    kind: alias
+    note: 本草“一名”
+  - surface: 盛椹
+    kind: alias
+    note: 本草“一名”
+  - surface: 金沸草
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 10
+    count: 11
+- term: 水萍
+  kind: harvested
+  synonyms:
+  - surface: 水华
+    kind: alias
+    note: 本草“一名”
+  - surface: 水白
+    kind: alias
+    note: 本草“一名”
+  - surface: 水花
+    kind: alias
+    note: 本草“一名”
+  - surface: 水鲜
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 10
+    count: 11
+- term: 没药
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 10
+    count: 11
+- term: 淫羊藿
+  kind: harvested
+  synonyms:
+  - surface: 仙灵脾
+    kind: alias
+    note: 本草“一名”
+  - surface: 刚前
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 10
+    count: 11
+- term: 牡丹
+  kind: harvested
+  synonyms:
+  - surface: 鹿韭
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 10
+    count: 11
+- term: 紫草
+  kind: harvested
+  synonyms:
+  - surface: 地血
+    kind: alias
+    note: 本草“一名”
+  - surface: 紫丹
+    kind: alias
+    note: 本草“一名”
+  - surface: 紫芙
+    kind: alias
+    note: 本草“一名”
+  - surface: 紫芺
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 10
+    count: 11
+- term: 羚羊角
+  kind: harvested
+  evidence:
+    books: 10
+    count: 11
+- term: 蜀椒
+  kind: harvested
+  synonyms:
+  - surface: 巴椒
+    kind: alias
+    note: 本草“一名”
+  - surface: 蓎毅
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 10
+    count: 11
+- term: 金樱子
+  kind: harvested
+  origin_record: 蜀本
+  evidence:
+    books: 10
+    count: 11
+- term: 雄黄
+  kind: harvested
+  synonyms:
+  - surface: 黄食石
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 10
+    count: 11
+- term: 露蜂房
+  kind: harvested
+  synonyms:
+  - surface: 百穿
+    kind: alias
+    note: 本草“一名”
+  - surface: 蜂肠
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 10
+    count: 11
+- term: 食盐
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 10
+    count: 11
+- term: 饴糖
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 10
+    count: 11
+- term: 乌药
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 10
+    count: 10
+- term: 五加皮
+  kind: harvested
+  synonyms:
+  - surface: 豺漆
+    kind: alias
+    note: 本草“一名”
+  - surface: 豺节
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 10
+    count: 10
+- term: 使君子
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 10
+    count: 10
+- term: 山豆根
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 10
+    count: 10
+- term: 浓朴
+  kind: harvested
+  synonyms:
+  - surface: 浓皮
+    kind: alias
+    note: 本草“一名”
+  - surface: 赤朴
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 10
+    count: 10
+- term: 漏芦
+  kind: harvested
+  synonyms:
+  - surface: 赤参
+    kind: alias
+    note: 本草“一名”
+  - surface: 野兰
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 10
+    count: 10
+- term: 白花蛇
+  kind: harvested
+  synonyms:
+  - surface: 褰鼻蛇
+    kind: alias
+    note: 本草“一名”
+  - surface: 蹇鼻蛇
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 10
+    count: 10
+- term: 胡桃
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 10
+    count: 10
+- term: 胡椒
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 10
+    count: 10
+- term: 自然铜
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 10
+    count: 10
+- term: 鸡头实
+  kind: harvested
+  synonyms:
+  - surface: 雁啄实
+    kind: alias
+    note: 本草“一名”
+  - surface: 雁喙实
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 10
+    count: 10
+- term: 桃核仁
+  kind: harvested
+  synonyms:
+  - surface: 枭景
+    kind: alias
+    note: 本草“一名”
+  - surface: 桃奴
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 9
+    count: 13
+- term: 鳗鲡鱼
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 9
+    count: 11
+- term: 伏龙肝
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 9
+    count: 10
+- term: 商陆
+  kind: harvested
+  synonyms:
+  - surface: 夜呼
+    kind: alias
+    note: 本草“一名”
+  - surface: 樟柳
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 9
+    count: 10
+- term: 威灵仙
+  kind: harvested
+  synonyms:
+  - surface: 能消
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 9
+    count: 10
+- term: 射干
+  kind: harvested
+  synonyms:
+  - surface: 乌吹
+    kind: alias
+    note: 本草“一名”
+  - surface: 乌扇
+    kind: alias
+    note: 本草“一名”
+  - surface: 乌翣
+    kind: alias
+    note: 本草“一名”
+  - surface: 乌蒲
+    kind: alias
+    note: 本草“一名”
+  - surface: 草姜
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 9
+    count: 10
+- term: 昆布
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 9
+    count: 10
+- term: 朴硝
+  kind: harvested
+  evidence:
+    books: 9
+    count: 10
+- term: 桑上寄生
+  kind: harvested
+  synonyms:
+  - surface: 宛童
+    kind: alias
+    note: 本草“一名”
+  - surface: 寄屑
+    kind: alias
+    note: 本草“一名”
+  - surface: 寄消
+    kind: alias
+    note: 本草“一名”
+  - surface: 寓木
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 9
+    count: 10
+- term: 楮实
+  kind: harvested
+  synonyms:
+  - surface: 谷实
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 9
+    count: 10
+- term: 水银
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 9
+    count: 10
+- term: 白前
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 9
+    count: 10
+- term: 百部
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 9
+    count: 10
+- term: 石龙芮
+  kind: harvested
+  synonyms:
+  - surface: 地椹
+    kind: alias
+    note: 本草“一名”
+  - surface: 天豆
+    kind: alias
+    note: 本草“一名”
+  - surface: 彭根
+    kind: alias
+    note: 本草“一名”
+  - surface: 石能
+    kind: alias
+    note: 本草“一名”
+  - surface: 鲁果能
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 9
+    count: 10
+- term: 蛇蜕
+  kind: harvested
+  synonyms:
+  - surface: 弓皮
+    kind: alias
+    note: 本草“一名”
+  - surface: 蛇符
+    kind: alias
+    note: 本草“一名”
+  - surface: 龙子单衣
+    kind: alias
+    note: 本草“一名”
+  - surface: 龙子皮
+    kind: alias
+    note: 本草“一名”
+  - surface: 龙子衣
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 9
+    count: 10
+- term: 阿魏
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 9
+    count: 10
+- term: 黄精
+  kind: harvested
+  synonyms:
+  - surface: 救穷
+    kind: alias
+    note: 本草“一名”
+  - surface: 菟竹
+    kind: alias
+    note: 本草“一名”
+  - surface: 重楼
+    kind: alias
+    note: 本草“一名”
+  - surface: 鸡格
+    kind: alias
+    note: 本草“一名”
+  - surface: 鹿竹
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 9
+    count: 10
+- term: 五灵脂
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 伏翼
+  kind: harvested
+  synonyms:
+  - surface: 蝙蝠
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 9
+    count: 9
+- term: 天南星
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 独活
+  kind: harvested
+  synonyms:
+  - surface: 独摇草
+    kind: alias
+    note: 本草“一名”
+  - surface: 羌青
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 9
+    count: 9
+- term: 獭肝
+  kind: harvested
+  synonyms:
+  - surface: 水狗
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 9
+    count: 9
+- term: 白冬瓜
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 白芨
+  kind: harvested
+  synonyms:
+  - surface: 甘根
+    kind: alias
+    note: 本草“一名”
+  - surface: 连及草
+    kind: alias
+    note: 本草“一名”
+  - surface: 连芨草
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 9
+    count: 9
+- term: 石决明
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 9
+    count: 9
+- term: 紫葳
+  kind: harvested
+  synonyms:
+  - surface: 凌霄花
+    kind: alias
+    note: 本草“一名”
+  - surface: 茇华
+    kind: alias
+    note: 本草“一名”
+  - surface: 陵苕
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 9
+    count: 9
+- term: 绿豆
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 羊踯躅
+  kind: harvested
+  synonyms:
+  - surface: 玉支
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 9
+    count: 9
+- term: 肉豆蔻
+  kind: harvested
+  synonyms:
+  - surface: 肉果
+    kind: alias
+    note: 本草“一名”
+  origin_record: 唐本
+  evidence:
+    books: 9
+    count: 9
+- term: 艾叶
+  kind: harvested
+  synonyms:
+  - surface: 冰台
+    kind: alias
+    note: 本草“一名”
+  - surface: 医草
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 9
+    count: 9
+- term: 茅根
+  kind: harvested
+  synonyms:
+  - surface: 兰根
+    kind: alias
+    note: 本草“一名”
+  - surface: 兼杜
+    kind: alias
+    note: 本草“一名”
+  - surface: 地管
+    kind: alias
+    note: 本草“一名”
+  - surface: 地菅
+    kind: alias
+    note: 本草“一名”
+  - surface: 茹根
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 9
+    count: 9
+- term: 蒺藜子
+  kind: harvested
+  synonyms:
+  - surface: 升推
+    kind: alias
+    note: 本草“一名”
+  - surface: 君水香
+    kind: alias
+    note: 本草“一名”
+  - surface: 屈人
+    kind: alias
+    note: 本草“一名”
+  - surface: 旁通
+    kind: alias
+    note: 本草“一名”
+  - surface: 止行
+    kind: alias
+    note: 本草“一名”
+  - surface: 豺羽
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 9
+    count: 9
+- term: 蛤蚧
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 9
+    count: 9
+- term: 蛴螬
+  kind: harvested
+  synonyms:
+  - surface: 㪍齐
+    kind: alias
+    note: 本草“一名”
+  - surface: 蝤蛴
+    kind: alias
+    note: 本草“一名”
+  - surface: 蟦蛴
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 9
+    count: 9
+- term: 蜚虻
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 9
+    count: 9
+- term: 蜣螂
+  kind: harvested
+  synonyms:
+  - surface: 蛣蜣
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 9
+    count: 9
+- term: 赤石脂
+  kind: harvested
+  evidence:
+    books: 9
+    count: 9
+- term: 丹雄鸡
+  kind: harvested
+  evidence:
+    books: 8
+    count: 14
+- term: 白马茎
+  kind: harvested
+  evidence:
+    books: 8
+    count: 11
+- term: 柏实
+  kind: harvested
+  evidence:
+    books: 8
+    count: 10
+- term: 乌贼鱼骨
+  kind: harvested
+  synonyms:
+  - surface: 乌鲗骨
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 8
+    count: 9
+- term: 木瓜
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 8
+    count: 9
+- term: 王瓜
+  kind: harvested
+  synonyms:
+  - surface: 土瓜
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 8
+    count: 9
+- term: 空青
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 8
+    count: 9
+- term: 芫花
+  kind: harvested
+  synonyms:
+  - surface: 杜芫
+    kind: alias
+    note: 本草“一名”
+  - surface: 毒鱼
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 8
+    count: 9
+- term: 酸枣
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 8
+    count: 9
+- term: 马兜铃
+  kind: harvested
+  evidence:
+    books: 8
+    count: 9
+- term: 马勃
+  kind: harvested
+  synonyms:
+  - surface: 马屁
+    kind: alias
+    note: 本草“一名”
+  - surface: 马庀
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 8
+    count: 9
+- term: 龙胆
+  kind: harvested
+  synonyms:
+  - surface: 陵游
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 8
+    count: 9
+- term: 丁香
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 8
+    count: 8
+- term: 大豆黄卷
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 8
+    count: 8
+- term: 大麦
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 8
+    count: 8
+- term: 天名精
+  kind: harvested
+  synonyms:
+  - surface: 天门精
+    kind: alias
+    note: 本草“一名”
+  - surface: 彘颅
+    kind: alias
+    note: 本草“一名”
+  - surface: 玉门精
+    kind: alias
+    note: 本草“一名”
+  - surface: 玊门精
+    kind: alias
+    note: 本草“一名”
+  - surface: 虾蟆蓝
+    kind: alias
+    note: 本草“一名”
+  - surface: 蛤蟆蓝
+    kind: alias
+    note: 本草“一名”
+  - surface: 蟾蜍兰
+    kind: alias
+    note: 本草“一名”
+  - surface: 豕首
+    kind: alias
+    note: 本草“一名”
+  - surface: 麦句姜
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 8
+    count: 8
+- term: 天竺黄
+  kind: harvested
+  synonyms:
+  - surface: 竹膏
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 8
+    count: 8
+- term: 女贞实
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 常山
+  kind: harvested
+  synonyms:
+  - surface: 互草
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 8
+    count: 8
+- term: 延胡索
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 8
+    count: 8
+- term: 文蛤
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 8
+    count: 8
+- term: 木贼
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 灯心草
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 8
+    count: 8
+- term: 瓜蒂
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 8
+    count: 8
+- term: 甘蔗
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 白胶
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 瞿麦
+  kind: harvested
+  synonyms:
+  - surface: 大兰
+    kind: alias
+    note: 本草“一名”
+  - surface: 大菊
+    kind: alias
+    note: 本草“一名”
+  - surface: 巨句麦
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 8
+    count: 8
+- term: 胡荽
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 苦菜
+  kind: harvested
+  synonyms:
+  - surface: 游冬
+    kind: alias
+    note: 本草“一名”
+  - surface: 荼草
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 8
+    count: 8
+- term: 茜根
+  kind: harvested
+  synonyms:
+  - surface: 地血
+    kind: alias
+    note: 本草“一名”
+  - surface: 茅搜
+    kind: alias
+    note: 本草“一名”
+  - surface: 茹藘
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 8
+    count: 8
+- term: 菊花
+  kind: harvested
+  synonyms:
+  - surface: 传延年
+    kind: alias
+    note: 本草“一名”
+  - surface: 傅延年
+    kind: alias
+    note: 本草“一名”
+  - surface: 周盈
+    kind: alias
+    note: 本草“一名”
+  - surface: 女华
+    kind: alias
+    note: 本草“一名”
+  - surface: 女节
+    kind: alias
+    note: 本草“一名”
+  - surface: 女茎
+    kind: alias
+    note: 本草“一名”
+  - surface: 更生
+    kind: alias
+    note: 本草“一名”
+  - surface: 节花
+    kind: alias
+    note: 本草“一名”
+  - surface: 阴成
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 8
+    count: 8
+- term: 蓝实
+  kind: harvested
+  evidence:
+    books: 8
+    count: 8
+- term: 贝子
+  kind: harvested
+  synonyms:
+  - surface: 贝齿
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 8
+    count: 8
+- term: 青葙子
+  kind: harvested
+  synonyms:
+  - surface: 姜蒿
+    kind: alias
+    note: 本草“一名”
+  - surface: 草葶苈
+    kind: alias
+    note: 本草“一名”
+  - surface: 萋蒿
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 8
+    count: 8
+- term: 青黛
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 8
+    count: 8
+- term: 骨碎补
+  kind: harvested
+  synonyms:
+  - surface: 猴姜
+    kind: alias
+    note: 本草“一名”
+  - surface: 石庵䕡
+    kind: alias
+    note: 本草“一名”
+  - surface: 骨碎布
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 8
+    count: 8
+- term: 牡狗阴茎
+  kind: harvested
+  synonyms:
+  - surface: 狗精
+    kind: alias
+    note: 本草“一名”
+  - surface: 狗精胆
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 7
+    count: 11
+- term: 杏核仁
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 羊肉
+  kind: harvested
+  evidence:
+    books: 7
+    count: 9
+- term: 五倍子
+  kind: harvested
+  synonyms:
+  - surface: 百虫仓
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 7
+    count: 8
+- term: 代赭石
+  kind: harvested
+  synonyms:
+  - surface: 血师
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 8
+- term: 假苏
+  kind: harvested
+  synonyms:
+  - surface: 姜芥
+    kind: alias
+    note: 本草“一名”
+  - surface: 鼠蓂
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 8
+- term: 凝水石
+  kind: harvested
+  synonyms:
+  - surface: 凌水石
+    kind: alias
+    note: 本草“一名”
+  - surface: 白水石
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 8
+- term: 刘寄奴草
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 7
+    count: 8
+- term: 卷柏
+  kind: harvested
+  synonyms:
+  - surface: 万岁
+    kind: alias
+    note: 本草“一名”
+  - surface: 交时
+    kind: alias
+    note: 本草“一名”
+  - surface: 求股
+    kind: alias
+    note: 本草“一名”
+  - surface: 豹足
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 8
+- term: 合欢
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 8
+- term: 大青
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 7
+    count: 8
+- term: 扁青
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 8
+- term: 桑根白皮
+  kind: harvested
+  synonyms:
+  - surface: 桑菌
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 7
+    count: 8
+- term: 樱桃
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 7
+    count: 8
+- term: 泽漆
+  kind: harvested
+  synonyms:
+  - surface: 漆茎
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 8
+- term: 白石英
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 8
+- term: 紫参
+  kind: harvested
+  synonyms:
+  - surface: 众戎
+    kind: alias
+    note: 本草“一名”
+  - surface: 牡蒙
+    kind: alias
+    note: 本草“一名”
+  - surface: 童肠
+    kind: alias
+    note: 本草“一名”
+  - surface: 马行
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 8
+- term: 苏方木
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 7
+    count: 8
+- term: 苦瓠
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 8
+- term: 茄子
+  kind: harvested
+  synonyms:
+  - surface: 落苏
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 7
+    count: 8
+- term: 鬼臼
+  kind: harvested
+  synonyms:
+  - surface: 九臼
+    kind: alias
+    note: 本草“一名”
+  - surface: 天臼
+    kind: alias
+    note: 本草“一名”
+  - surface: 爵犀
+    kind: alias
+    note: 本草“一名”
+  - surface: 解毒
+    kind: alias
+    note: 本草“一名”
+  - surface: 马目毒公
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 8
+- term: 鲤鱼
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 8
+- term: 鲤鱼胆
+  kind: harvested
+  evidence:
+    books: 7
+    count: 8
+- term: 发髲
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 7
+- term: 天灵盖
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 7
+    count: 7
+- term: 天鼠屎
+  kind: harvested
+  synonyms:
+  - surface: 鼠法
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 7
+- term: 无名异
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 7
+    count: 7
+- term: 景天
+  kind: harvested
+  synonyms:
+  - surface: 慎火
+    kind: alias
+    note: 本草“一名”
+  - surface: 戒火
+    kind: alias
+    note: 本草“一名”
+  - surface: 据火
+    kind: alias
+    note: 本草“一名”
+  - surface: 救火
+    kind: alias
+    note: 本草“一名”
+  - surface: 水母
+    kind: alias
+    note: 本草“一名”
+  - surface: 火母
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 7
+- term: 木瓜实
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 楝实
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 榆皮
+  kind: harvested
+  synonyms:
+  - surface: 零榆
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 7
+    count: 7
+- term: 橘柚
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 沙糖
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 7
+    count: 7
+- term: 海桐皮
+  kind: harvested
+  synonyms:
+  - surface: 刺桐
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 7
+    count: 7
+- term: 海蛤
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 7
+- term: 白颈蚯蚓
+  kind: harvested
+  synonyms:
+  - surface: 土龙
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 7
+    count: 7
+- term: 石苇
+  kind: harvested
+  synonyms:
+  - surface: 石皮
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 7
+    count: 7
+- term: 秫米
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 粉锡
+  kind: harvested
+  synonyms:
+  - surface: 解锡
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 7
+- term: 粟米
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 红蓝花
+  kind: harvested
+  synonyms:
+  - surface: 黄蓝
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 7
+    count: 7
+- term: 胡黄连
+  kind: harvested
+  synonyms:
+  - surface: 割孤露泽
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 7
+    count: 7
+- term: 腽肭脐
+  kind: harvested
+  synonyms:
+  - surface: 海狗肾
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 7
+    count: 7
+- term: 芦荟
+  kind: harvested
+  synonyms:
+  - surface: 奴会
+    kind: alias
+    note: 本草“一名”
+  - surface: 讷会
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 7
+    count: 7
+- term: 荛花
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 7
+- term: 营实
+  kind: harvested
+  synonyms:
+  - surface: 墙薇
+    kind: alias
+    note: 本草“一名”
+  - surface: 墙麻
+    kind: alias
+    note: 本草“一名”
+  - surface: 山棘
+    kind: alias
+    note: 本草“一名”
+  - surface: 牛勒
+    kind: alias
+    note: 本草“一名”
+  - surface: 牛棘
+    kind: alias
+    note: 本草“一名”
+  - surface: 蔷薇
+    kind: alias
+    note: 本草“一名”
+  - surface: 蔷蘼
+    kind: alias
+    note: 本草“一名”
+  - surface: 蔷麻
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 7
+    count: 7
+- term: 蓬砂
+  kind: harvested
+  synonyms:
+  - surface: 鹏砂
+    kind: alias
+    note: 本草“一名”
+  origin_record: 日华
+  evidence:
+    books: 7
+    count: 7
+- term: 蔓荆实
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 薇衔
+  kind: harvested
+  synonyms:
+  - surface: 承肌
+    kind: alias
+    note: 本草“一名”
+  - surface: 承膏
+    kind: alias
+    note: 本草“一名”
+  - surface: 无心
+    kind: alias
+    note: 本草“一名”
+  - surface: 无颠
+    kind: alias
+    note: 本草“一名”
+  - surface: 糜衔
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 7
+    count: 7
+- term: 蜗牛
+  kind: harvested
+  evidence:
+    books: 7
+    count: 7
+- term: 蝼蛄
+  kind: harvested
+  synonyms:
+  - surface: 地狗
+    kind: alias
+    note: 本草“一名”
+  - surface: 天蝼
+    kind: alias
+    note: 本草“一名”
+  - surface: 蟪蛄
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 7
+- term: 补骨脂
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 7
+    count: 7
+- term: 鳝鱼
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 7
+    count: 7
+- term: 鼠妇
+  kind: harvested
+  synonyms:
+  - surface: 蛜蝛
+    kind: alias
+    note: 本草“一名”
+  - surface: 蜲蜲
+    kind: alias
+    note: 本草“一名”
+  - surface: 负蟠
+    kind: alias
+    note: 本草“一名”
+  - surface: 鼠负
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 7
+    count: 7
+- term: 淡竹叶
+  kind: harvested
+  origin_record: 纲目
+  evidence:
+    books: 6
+    count: 8
+- term: 乌头
+  kind: harvested
+  synonyms:
+  - surface: 奚毒
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 冬灰
+  kind: harvested
+  synonyms:
+  - surface: 藜灰
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 卫矛
+  kind: harvested
+  synonyms:
+  - surface: 鬼箭
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 地胆
+  kind: harvested
+  synonyms:
+  - surface: 蚖青
+    kind: alias
+    note: 本草“一名”
+  - surface: 青蛀
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 天雄
+  kind: harvested
+  synonyms:
+  - surface: 白幕
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 女菀
+  kind: harvested
+  synonyms:
+  - surface: 白菀
+    kind: alias
+    note: 本草“一名”
+  - surface: 织女菀
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 女青
+  kind: harvested
+  synonyms:
+  - surface: 雀瓢
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 6
+    count: 7
+- term: 孔公孽
+  kind: harvested
+  synonyms:
+  - surface: 通石
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 安石榴
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 6
+    count: 7
+- term: 徐长卿
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 戎盐
+  kind: harvested
+  synonyms:
+  - surface: 胡盐
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 接骨木
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 6
+    count: 7
+- term: 斑蝥
+  kind: harvested
+  synonyms:
+  - surface: 龙尾
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 无食子
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 6
+    count: 7
+- term: 木兰
+  kind: harvested
+  synonyms:
+  - surface: 杜兰
+    kind: alias
+    note: 本草“一名”
+  - surface: 林兰
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 杜若
+  kind: harvested
+  synonyms:
+  - surface: 杜莲
+    kind: alias
+    note: 本草“一名”
+  - surface: 杜连
+    kind: alias
+    note: 本草“一名”
+  - surface: 白芩
+    kind: alias
+    note: 本草“一名”
+  - surface: 白连
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 灵砂
+  kind: harvested
+  origin_record: 证类
+  evidence:
+    books: 6
+    count: 7
+- term: 牵牛子
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 6
+    count: 7
+- term: 玄明粉
+  kind: harvested
+  origin_record: 药性
+  evidence:
+    books: 6
+    count: 7
+- term: 玉屑
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 理石
+  kind: harvested
+  synonyms:
+  - surface: 石立制石
+    kind: alias
+    note: 本草“一名”
+  - surface: 立制石
+    kind: alias
+    note: 本草“一名”
+  - surface: 肌石
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 白蒿
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 白附子
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 6
+    count: 7
+- term: 白青
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 石南
+  kind: harvested
+  synonyms:
+  - surface: 鬼吕
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 石龙子
+  kind: harvested
+  synonyms:
+  - surface: 山龙子
+    kind: alias
+    note: 本草“一名”
+  - surface: 石蜴
+    kind: alias
+    note: 本草“一名”
+  - surface: 蚚蜴
+    kind: alias
+    note: 本草“一名”
+  - surface: 蜥易
+    kind: alias
+    note: 本草“一名”
+  - surface: 蜥蜴
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 硝石
+  kind: harvested
+  evidence:
+    books: 6
+    count: 7
+- term: 羊桃
+  kind: harvested
+  synonyms:
+  - surface: 御弋
+    kind: alias
+    note: 本草“一名”
+  - surface: 羊肠
+    kind: alias
+    note: 本草“一名”
+  - surface: 苌楚
+    kind: alias
+    note: 本草“一名”
+  - surface: 铫弋
+    kind: alias
+    note: 本草“一名”
+  - surface: 鬼桃
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 苏合香
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 6
+    count: 7
+- term: 蘼芜
+  kind: harvested
+  synonyms:
+  - surface: 茳蓠
+    kind: alias
+    note: 本草“一名”
+  - surface: 薇芜
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 蚤休
+  kind: harvested
+  synonyms:
+  - surface: 蚩休
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 蜀羊泉
+  kind: harvested
+  synonyms:
+  - surface: 羊泉
+    kind: alias
+    note: 本草“一名”
+  - surface: 羊饴
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 蜜蜡
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 豆蔻
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 6
+    count: 7
+- term: 辟虺雷
+  kind: harvested
+  synonyms:
+  - surface: 辟蛇雷
+    kind: alias
+    note: 本草“一名”
+  origin_record: 拾遗
+  evidence:
+    books: 6
+    count: 7
+- term: 钩吻
+  kind: harvested
+  synonyms:
+  - surface: 野葛
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 铁落
+  kind: harvested
+  synonyms:
+  - surface: 铁液
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 防葵
+  kind: harvested
+  synonyms:
+  - surface: 农果
+    kind: alias
+    note: 本草“一名”
+  - surface: 利茹
+    kind: alias
+    note: 本草“一名”
+  - surface: 房慈
+    kind: alias
+    note: 本草“一名”
+  - surface: 梨盖
+    kind: alias
+    note: 本草“一名”
+  - surface: 爵离
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 陆英
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 雌黄
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 鲫鱼
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 6
+    count: 7
+- term: 鸢尾
+  kind: harvested
+  synonyms:
+  - surface: 乌园
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 7
+- term: 麋脂
+  kind: harvested
+  synonyms:
+  - surface: 官脂
+    kind: alias
+    note: 本草“一名”
+  - surface: 宫脂
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 6
+    count: 7
+- term: 乌芋
+  kind: harvested
+  synonyms:
+  - surface: 籍姑
+    kind: alias
+    note: 本草“一名”
+  - surface: 藉姑
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 6
+    count: 6
+- term: 乌韭
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 六畜毛蹄甲
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 地肤子
+  kind: harvested
+  synonyms:
+  - surface: 地华
+    kind: alias
+    note: 本草“一名”
+  - surface: 地华四字
+    kind: alias
+    note: 本草“一名”
+  - surface: 地脉
+    kind: alias
+    note: 本草“一名”
+  - surface: 地葵
+    kind: alias
+    note: 本草“一名”
+  - surface: 地裂
+    kind: alias
+    note: 本草“一名”
+  - surface: 地麦
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 6
+    count: 6
+- term: 密蒙花
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 6
+    count: 6
+- term: 木鳖子
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 6
+    count: 6
+- term: 林檎
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 6
+    count: 6
+- term: 槐花
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 殷孽
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 海松子
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 6
+    count: 6
+- term: 熊脂
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 燕屎
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 牡桂
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 王孙
+  kind: harvested
+  synonyms:
+  - surface: 海孙
+    kind: alias
+    note: 本草“一名”
+  - surface: 蔓延
+    kind: alias
+    note: 本草“一名”
+  - surface: 黄孙
+    kind: alias
+    note: 本草“一名”
+  - surface: 黄昏
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 白兔藿
+  kind: harvested
+  synonyms:
+  - surface: 白葛
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 白芥
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 白英
+  kind: harvested
+  synonyms:
+  - surface: 白草
+    kind: alias
+    note: 本草“一名”
+  - surface: 离母
+    kind: alias
+    note: 本草“一名”
+  - surface: 谷菜
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 白鲜
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 石首鱼
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 6
+    count: 6
+- term: 续随子
+  kind: harvested
+  synonyms:
+  - surface: 千金子
+    kind: alias
+    note: 本草“一名”
+  - surface: 拒冬
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 6
+    count: 6
+- term: 腐婢
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 芡实
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 芦根
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 苋实
+  kind: harvested
+  synonyms:
+  - surface: 马苋
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 6
+    count: 6
+- term: 苜蓿
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 6
+    count: 6
+- term: 茵芋
+  kind: harvested
+  synonyms:
+  - surface: 卑共
+    kind: alias
+    note: 本草“一名”
+  - surface: 莞草
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 菌桂
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 葱实
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 蒿雀
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 6
+    count: 6
+- term: 蓍实
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 蔓椒
+  kind: harvested
+  synonyms:
+  - surface: 家椒
+    kind: alias
+    note: 本草“一名”
+  - surface: 彘椒
+    kind: alias
+    note: 本草“一名”
+  - surface: 狗椒
+    kind: alias
+    note: 本草“一名”
+  - surface: 猪椒
+    kind: alias
+    note: 本草“一名”
+  - surface: 豕椒
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 藕实茎
+  kind: harvested
+  synonyms:
+  - surface: 水芝丹
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 6
+    count: 6
+- term: 虾蟆
+  kind: harvested
+  synonyms:
+  - surface: 苦蠪
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 蜀漆
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 衣鱼
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 谷精草
+  kind: harvested
+  synonyms:
+  - surface: 戴星草
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 6
+    count: 6
+- term: 赤箭
+  kind: harvested
+  synonyms:
+  - surface: 离母
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 6
+    count: 6
+- term: 酸枣仁
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 野狼毒
+  kind: harvested
+  synonyms:
+  - surface: 续毒
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 6
+    count: 6
+- term: 金屑
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 铅丹
+  kind: harvested
+  synonyms:
+  - surface: 铅华
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 陈廪米
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 6
+    count: 6
+- term: 雀卵
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 雁肪
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 马刀
+  kind: harvested
+  synonyms:
+  - surface: 马蛤
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 鹿藿
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 黄环
+  kind: harvested
+  synonyms:
+  - surface: 凌泉
+    kind: alias
+    note: 本草“一名”
+  - surface: 大就
+    kind: alias
+    note: 本草“一名”
+  - surface: 就葛
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 6
+    count: 6
+- term: 黍米
+  kind: harvested
+  evidence:
+    books: 6
+    count: 6
+- term: 恶实
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 5
+    count: 7
+- term: 三白草
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 5
+    count: 6
+- term: 兜纳香
+  kind: harvested
+  origin_record: 海药
+  evidence:
+    books: 5
+    count: 6
+- term: 君迁子
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 5
+    count: 6
+- term: 太一余粮
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 6
+- term: 安息香
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 5
+    count: 6
+- term: 密陀僧
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 5
+    count: 6
+- term: 干苔
+  kind: harvested
+  origin_record: 食疗
+  evidence:
+    books: 5
+    count: 6
+- term: 必栗香
+  kind: harvested
+  synonyms:
+  - surface: 化木香
+    kind: alias
+    note: 本草“一名”
+  origin_record: 拾遗
+  evidence:
+    books: 5
+    count: 6
+- term: 放杖木
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 5
+    count: 6
+- term: 曾青
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 6
+- term: 朴消
+  kind: harvested
+  synonyms:
+  - surface: 消石朴
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 6
+- term: 榧实
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 5
+    count: 6
+- term: 爵床
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 6
+- term: 牛扁
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 6
+- term: 白棘
+  kind: harvested
+  synonyms:
+  - surface: 棘刺
+    kind: alias
+    note: 本草“一名”
+  - surface: 棘针
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 6
+- term: 石胆
+  kind: harvested
+  synonyms:
+  - surface: 棋石
+    kind: alias
+    note: 本草“一名”
+  - surface: 毕石
+    kind: alias
+    note: 本草“一名”
+  - surface: 铜勒
+    kind: alias
+    note: 本草“一名”
+  - surface: 黑石
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 6
+- term: 石蚕
+  kind: harvested
+  synonyms:
+  - surface: 水虱
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 5
+    count: 6
+- term: 石长生
+  kind: harvested
+  synonyms:
+  - surface: 丹草
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 6
+- term: 石龙刍
+  kind: harvested
+  synonyms:
+  - surface: 悬莞
+    kind: alias
+    note: 本草“一名”
+  - surface: 草毒
+    kind: alias
+    note: 本草“一名”
+  - surface: 草续断
+    kind: alias
+    note: 本草“一名”
+  - surface: 龙华
+    kind: alias
+    note: 本草“一名”
+  - surface: 龙朱
+    kind: alias
+    note: 本草“一名”
+  - surface: 龙须
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 6
+- term: 积雪草
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 6
+- term: 羊蹄
+  kind: harvested
+  synonyms:
+  - surface: 东方宿
+    kind: alias
+    note: 本草“一名”
+  - surface: 连虫陆
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 6
+- term: 萆薢
+  kind: harvested
+  synonyms:
+  - surface: 赤节
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 5
+    count: 6
+- term: 迷迭香
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 5
+    count: 6
+- term: 长松
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 5
+    count: 6
+- term: 长石
+  kind: harvested
+  synonyms:
+  - surface: 土石
+    kind: alias
+    note: 本草“一名”
+  - surface: 直石
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 6
+- term: 雀瓮
+  kind: harvested
+  synonyms:
+  - surface: 躁舍
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 6
+- term: 预知子
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 5
+    count: 6
+- term: 飞廉
+  kind: harvested
+  synonyms:
+  - surface: 伏兔
+    kind: alias
+    note: 本草“一名”
+  - surface: 伏猪
+    kind: alias
+    note: 本草“一名”
+  - surface: 伏菟
+    kind: alias
+    note: 本草“一名”
+  - surface: 天荠
+    kind: alias
+    note: 本草“一名”
+  - surface: 木禾
+    kind: alias
+    note: 本草“一名”
+  - surface: 飞轻
+    kind: alias
+    note: 本草“一名”
+  - surface: 飞雉
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 6
+- term: 马鞭草
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 5
+    count: 6
+- term: 鲍鱼
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 5
+    count: 6
+- term: 鳢肠
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 5
+    count: 6
+- term: 丹黍米
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 乌梅
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 代赭
+  kind: harvested
+  synonyms:
+  - surface: 血师
+    kind: alias
+    note: 本草“一名”
+  - surface: 须丸
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 5
+    count: 5
+- term: 刘寄奴
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 大小蓟根
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 大盐
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 彼子
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 捶胡根
+  kind: harvested
+  synonyms:
+  - surface: 孟母菜
+    kind: alias
+    note: 本草“一名”
+  origin_record: 拾遗
+  evidence:
+    books: 5
+    count: 5
+- term: 杨梅
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 5
+    count: 5
+- term: 梓白皮
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 榛子
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 5
+    count: 5
+- term: 沉香
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 5
+    count: 5
+- term: 浆水
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 牙子
+  kind: harvested
+  synonyms:
+  - surface: 大牙
+    kind: alias
+    note: 本草“一名”
+  - surface: 犬牙
+    kind: alias
+    note: 本草“一名”
+  - surface: 狼子
+    kind: alias
+    note: 本草“一名”
+  - surface: 狼齿
+    kind: alias
+    note: 本草“一名”
+  - surface: 野狼子
+    kind: alias
+    note: 本草“一名”
+  - surface: 野狼牙
+    kind: alias
+    note: 本草“一名”
+  - surface: 野狼齿
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 5
+    count: 5
+- term: 玉泉
+  kind: harvested
+  synonyms:
+  - surface: 玉札
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 5
+- term: 生大豆
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 白垩
+  kind: harvested
+  synonyms:
+  - surface: 白善
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 5
+- term: 白石脂
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 白蔹
+  kind: harvested
+  synonyms:
+  - surface: 兔核
+    kind: alias
+    note: 本草“一名”
+  - surface: 昆仑
+    kind: alias
+    note: 本草“一名”
+  - surface: 白根
+    kind: alias
+    note: 本草“一名”
+  - surface: 白草
+    kind: alias
+    note: 本草“一名”
+  - surface: 菟核
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 5
+- term: 白鱼
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 5
+    count: 5
+- term: 白鸽
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 益智子
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 5
+    count: 5
+- term: 石蟹
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 5
+    count: 5
+- term: 稷米
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 稻米
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 糵米
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 5
+    count: 5
+- term: 罂子粟
+  kind: harvested
+  synonyms:
+  - surface: 御米
+    kind: alias
+    note: 本草“一名”
+  - surface: 米囊
+    kind: alias
+    note: 本草“一名”
+  - surface: 象谷
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 5
+    count: 5
+- term: 翘摇
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 5
+    count: 5
+- term: 肤青
+  kind: harvested
+  synonyms:
+  - surface: 推石
+    kind: alias
+    note: 本草“一名”
+  - surface: 推青
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 5
+    count: 5
+- term: 芎䓖
+  kind: harvested
+  synonyms:
+  - surface: 胡穷
+    kind: alias
+    note: 本草“一名”
+  - surface: 香果
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 5
+- term: 茺蔚子
+  kind: harvested
+  synonyms:
+  - surface: 大札
+    kind: alias
+    note: 本草“一名”
+  - surface: 益明
+    kind: alias
+    note: 本草“一名”
+  - surface: 益母
+    kind: alias
+    note: 本草“一名”
+  - surface: 贞蔚
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 5
+    count: 5
+- term: 草豆蔻
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 荩草
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 5
+- term: 药实根
+  kind: harvested
+  synonyms:
+  - surface: 连木
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 5
+    count: 5
+- term: 药王
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 莲子
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 莽草
+  kind: harvested
+  synonyms:
+  - surface: 春草
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 5
+- term: 落葵
+  kind: harvested
+  synonyms:
+  - surface: 繁露
+    kind: alias
+    note: 本草“一名”
+  - surface: 蘩露
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 5
+    count: 5
+- term: 蓼实
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 蔓荆子
+  kind: harvested
+  synonyms:
+  - surface: 寓木
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 5
+    count: 5
+- term: 蕤核
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 藕实
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 虎掌
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 赤芝
+  kind: harvested
+  synonyms:
+  - surface: 丹芝
+    kind: alias
+    note: 本草“一名”
+  - surface: 元芝
+    kind: alias
+    note: 本草“一名”
+  - surface: 木芝
+    kind: alias
+    note: 本草“一名”
+  - surface: 玉芝
+    kind: alias
+    note: 本草“一名”
+  - surface: 金芝
+    kind: alias
+    note: 本草“一名”
+  - surface: 龙芝
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 5
+    count: 5
+- term: 越瓜
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 5
+    count: 5
+- term: 醍醐
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 5
+    count: 5
+- term: 银屑
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 锻石
+  kind: harvested
+  synonyms:
+  - surface: 垩灰
+    kind: alias
+    note: 本草“一名”
+  - surface: 希灰
+    kind: alias
+    note: 本草“一名”
+  - surface: 恶灰
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 5
+    count: 5
+- term: 青粱米
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 香蒲
+  kind: harvested
+  synonyms:
+  - surface: 睢一名醮
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 5
+- term: 马陆
+  kind: harvested
+  synonyms:
+  - surface: 百足
+    kind: alias
+    note: 本草“一名”
+  - surface: 马轴
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 5
+    count: 5
+- term: 鹤虱
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 麻子
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 黄粱米
+  kind: harvested
+  evidence:
+    books: 5
+    count: 5
+- term: 木天蓼
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 6
+- term: 诃黎勒
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 6
+- term: 豚卵
+  kind: harvested
+  synonyms:
+  - surface: 豚颠
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 6
+- term: 酸浆
+  kind: harvested
+  synonyms:
+  - surface: 醋浆
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 6
+- term: 冬瓜
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 5
+- term: 千里及
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 卤咸
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 5
+- term: 土拨鼠
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 地杨梅
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 垣衣
+  kind: harvested
+  synonyms:
+  - surface: 垣嬴
+    kind: alias
+    note: 本草“一名”
+  - surface: 天韭
+    kind: alias
+    note: 本草“一名”
+  - surface: 昔邪
+    kind: alias
+    note: 本草“一名”
+  - surface: 鼠韭
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 4
+    count: 5
+- term: 天竺桂
+  kind: harvested
+  origin_record: 海药
+  evidence:
+    books: 4
+    count: 5
+- term: 女萎
+  kind: harvested
+  synonyms:
+  - surface: 地节
+    kind: alias
+    note: 本草“一名”
+  - surface: 王竹
+    kind: alias
+    note: 本草“一名”
+  - surface: 马薰
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 5
+- term: 无漏子
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 木麻
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 李核仁
+  kind: harvested
+  evidence:
+    books: 4
+    count: 5
+- term: 枫香脂
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 5
+- term: 格注草
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 5
+- term: 栾华
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 5
+- term: 榈木
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 樗鸡
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 5
+- term: 橡实
+  kind: harvested
+  synonyms:
+  - surface: 杼斗
+    kind: alias
+    note: 本草“一名”
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 5
+- term: 檀桓
+  kind: harvested
+  synonyms:
+  - surface: 檀桓芝
+    kind: alias
+    note: 本草“一名”
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 檀香
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 4
+    count: 5
+- term: 毗梨勒
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 5
+- term: 水苏
+  kind: harvested
+  synonyms:
+  - surface: 劳祖
+    kind: alias
+    note: 本草“一名”
+  - surface: 芥苴
+    kind: alias
+    note: 本草“一名”
+  - surface: 芥蒩
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 5
+- term: 海根
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 淮木
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 5
+- term: 狐阴茎
+  kind: harvested
+  evidence:
+    books: 4
+    count: 5
+- term: 狗舌草
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 5
+- term: 玻璃
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 珊瑚
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 5
+- term: 白花藤
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 5
+- term: 石松
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 石脑
+  kind: harvested
+  synonyms:
+  - surface: 石饴饼
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 4
+    count: 5
+- term: 石韦
+  kind: harvested
+  synonyms:
+  - surface: 百䩾
+    kind: alias
+    note: 本草“一名”
+  - surface: 石䩾
+    kind: alias
+    note: 本草“一名”
+  - surface: 石皮
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 5
+- term: 绿盐
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 5
+- term: 胡桐泪
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 5
+- term: 蘗木
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 5
+- term: 蚯蚓
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 5
+- term: 蛇婆
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 蜂蜜
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 5
+- term: 蜜香
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 角蒿
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 5
+- term: 越王余算
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 钩栗
+  kind: harvested
+  synonyms:
+  - surface: 巢钩子
+    kind: alias
+    note: 本草“一名”
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 阿月浑子
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 韶子
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 高良姜
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 4
+    count: 5
+- term: 鬼督邮
+  kind: harvested
+  synonyms:
+  - surface: 独摇草
+    kind: alias
+    note: 本草“一名”
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 5
+- term: 鲟鱼
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 5
+- term: 鸳鸯
+  kind: harvested
+  evidence:
+    books: 4
+    count: 5
+- term: 乳香
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 京三棱
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 人乳
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 伏牛花
+  kind: harvested
+  synonyms:
+  - surface: 隔虎刺花
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 4
+    count: 4
+- term: 列当
+  kind: harvested
+  synonyms:
+  - surface: 草苁蓉
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 4
+    count: 4
+- term: 刺蜜
+  kind: harvested
+  synonyms:
+  - surface: 草蜜
+    kind: alias
+    note: 本草“一名”
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 南烛枝叶
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 南藤
+  kind: harvested
+  synonyms:
+  - surface: 丁公藤
+    kind: alias
+    note: 本草“一名”
+  origin_record: 开宝
+  evidence:
+    books: 4
+    count: 4
+- term: 地菘
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 夏冰
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 婆罗得
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 4
+    count: 4
+- term: 庵罗果
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 4
+    count: 4
+- term: 摩厨子
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 木虻
+  kind: harvested
+  synonyms:
+  - surface: 魂常
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 4
+- term: 朱砂
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 柞木皮
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 桐叶
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 桦木皮
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 没离梨
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 海月
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 海蕴
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 灯笼草
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 熊胆
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 牛领藤
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 牡荆实
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 玉井水
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 甘露蜜
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 生枣
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 甲煎
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 白敛
+  kind: harvested
+  synonyms:
+  - surface: 昆仑
+    kind: alias
+    note: 本草“一名”
+  - surface: 白核
+    kind: alias
+    note: 本草“一名”
+  - surface: 白根
+    kind: alias
+    note: 本草“一名”
+  - surface: 白草
+    kind: alias
+    note: 本草“一名”
+  - surface: 菟核
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 4
+- term: 白粱米
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 白芝
+  kind: harvested
+  synonyms:
+  - surface: 玉芝
+    kind: alias
+    note: 本草“一名”
+  - surface: 金芝
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 4
+- term: 白藓皮
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 百丈青
+  kind: harvested
+  synonyms:
+  - surface: 薰桑
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 4
+- term: 益母草
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 盐麸子
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 4
+    count: 4
+- term: 硫黄
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 秋露水
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 秦椒
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 4
+- term: 竹笋
+  kind: harvested
+  origin_record: 蜀本
+  evidence:
+    books: 4
+    count: 4
+- term: 粮罂中水
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 糟笋中酒
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 紫河车
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 紫真檀
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 紫芝
+  kind: harvested
+  synonyms:
+  - surface: 木芝
+    kind: alias
+    note: 本草“一名”
+  - surface: 本芝
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 4
+- term: 紫藤
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 4
+    count: 4
+- term: 红豆蔻
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 罗勒
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 耳实
+  kind: harvested
+  synonyms:
+  - surface: 地葵
+    kind: alias
+    note: 本草“一名”
+  - surface: 常思
+    kind: alias
+    note: 本草“一名”
+  - surface: 苍耳实
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 4
+- term: 胡豆子
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 芰实
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 苏木
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 英鸡
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 茈胡
+  kind: harvested
+  synonyms:
+  - surface: 地熏
+    kind: alias
+    note: 本草“一名”
+  - surface: 地薰
+    kind: alias
+    note: 本草“一名”
+  - surface: 山菜
+    kind: alias
+    note: 本草“一名”
+  - surface: 芸蒿
+    kind: alias
+    note: 本草“一名”
+  - surface: 茹草叶
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 4
+- term: 茜草
+  kind: harvested
+  synonyms:
+  - surface: 地血
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 4
+- term: 茴香
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 4
+- term: 草豉
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 荏子
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 荔枝子
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 荜拨
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 荜澄茄
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 荞麦
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 莎草根
+  kind: harvested
+  synonyms:
+  - surface: 侯莎
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 4
+- term: 莸草
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 葫芦巴
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 葱白
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 蒴藋
+  kind: harvested
+  synonyms:
+  - surface: 蓳草
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 4
+    count: 4
+- term: 蓖麻子
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 蓬莪术
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 虎骨
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 蚱蝉
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 4
+- term: 蛞蝓
+  kind: harvested
+  synonyms:
+  - surface: 土蜗
+    kind: alias
+    note: 本草“一名”
+  - surface: 陵蠡
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 4
+- term: 蜂子
+  kind: harvested
+  synonyms:
+  - surface: 蜚零
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 4
+- term: 蠡实
+  kind: harvested
+  synonyms:
+  - surface: 三坚
+    kind: alias
+    note: 本草“一名”
+  - surface: 剧草
+    kind: alias
+    note: 本草“一名”
+  - surface: 荔实
+    kind: alias
+    note: 本草“一名”
+  - surface: 豕首
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 4
+    count: 4
+- term: 蠡鱼
+  kind: harvested
+  synonyms:
+  - surface: 鲖鱼
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 4
+- term: 血竭
+  kind: harvested
+  synonyms:
+  - surface: 麒麟竭
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 4
+- term: 诃梨勒
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 诸血
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 豹肉
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 邪蒿
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 郁金香
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 4
+    count: 4
+- term: 醴泉
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 野猪黄
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 金浆
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 钩藤
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 铜矿石
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 4
+- term: 零余子
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 青芝
+  kind: harvested
+  synonyms:
+  - surface: 龙芝
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 4
+- term: 青鱼
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 4
+    count: 4
+- term: 食茱萸
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 4
+    count: 4
+- term: 鱼狗
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 4
+    count: 4
+- term: 鹿药
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 黄柏
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 黄芝
+  kind: harvested
+  synonyms:
+  - surface: 金芝
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 4
+- term: 黄药根
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 黑芝
+  kind: harvested
+  synonyms:
+  - surface: 玄芝
+    kind: alias
+    note: 本草“一名”
+  - surface: 龙芝
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 4
+    count: 4
+- term: 鼠曲草
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 龙手藤
+  kind: harvested
+  evidence:
+    books: 4
+    count: 4
+- term: 莲藕
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 6
+- term: 羊角
+  kind: harvested
+  evidence:
+    books: 3
+    count: 5
+- term: 侧子
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 4
+- term: 光明盐
+  kind: harvested
+  synonyms:
+  - surface: 石盐
+    kind: alias
+    note: 本草“一名”
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 剪草
+  kind: harvested
+  synonyms:
+  - surface: 土瓜
+    kind: alias
+    note: 本草“一名”
+  - surface: 落鸦瓜
+    kind: alias
+    note: 本草“一名”
+  origin_record: 日华
+  evidence:
+    books: 3
+    count: 4
+- term: 卖子木
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 古镜
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 4
+- term: 地耳
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 4
+- term: 城东腐木
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 4
+- term: 大空
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 奴柘
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 4
+- term: 小蘗
+  kind: harvested
+  synonyms:
+  - surface: 山石榴
+    kind: alias
+    note: 本草“一名”
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 屋游
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 4
+- term: 木威子
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 4
+- term: 栾荆
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 桃花石
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 桑白皮
+  kind: harvested
+  evidence:
+    books: 3
+    count: 4
+- term: 消石
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 4
+- term: 溲疏
+  kind: harvested
+  synonyms:
+  - surface: 巨骨
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 4
+- term: 灵寿木根皮
+  kind: harvested
+  evidence:
+    books: 3
+    count: 4
+- term: 炉甘石
+  kind: harvested
+  origin_record: 纲目
+  evidence:
+    books: 3
+    count: 4
+- term: 牛肉
+  kind: harvested
+  evidence:
+    books: 3
+    count: 4
+- term: 牡蒿
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 4
+- term: 特生礜石
+  kind: harvested
+  synonyms:
+  - surface: 苍礜石
+    kind: alias
+    note: 本草“一名”
+  - surface: 鼠毒
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 4
+- term: 独用将军
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 玄石
+  kind: harvested
+  synonyms:
+  - surface: 处石
+    kind: alias
+    note: 本草“一名”
+  - surface: 玄水石
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 4
+- term: 白及
+  kind: harvested
+  synonyms:
+  - surface: 甘根
+    kind: alias
+    note: 本草“一名”
+  - surface: 连及草
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 4
+- term: 白玉髓
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 4
+- term: 白茅香
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 4
+- term: 百脉根
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 石中黄子
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 石灰
+  kind: harvested
+  synonyms:
+  - surface: 希灰
+    kind: alias
+    note: 本草“一名”
+  - surface: 恶石
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 4
+- term: 石髓
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 4
+- term: 离鬲草
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 4
+- term: 紫葛
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 红曲
+  kind: harvested
+  evidence:
+    books: 3
+    count: 4
+- term: 绿青
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 4
+- term: 胡葱
+  kind: harvested
+  evidence:
+    books: 3
+    count: 4
+- term: 芫青
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 4
+- term: 荚蒾
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 荭草
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 4
+- term: 葎草
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 葛上亭长
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 4
+- term: 蒺藜
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 4
+- term: 蔛草
+  kind: harvested
+  synonyms:
+  - surface: 蔛荣
+    kind: alias
+    note: 本草“一名”
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 藁本
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 4
+- term: 螃蟹
+  kind: harvested
+  evidence:
+    books: 3
+    count: 4
+- term: 赤地利
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 赭魁
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 4
+- term: 郁李
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 4
+- term: 钢铁
+  kind: harvested
+  synonyms:
+  - surface: 跳铁
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 4
+- term: 银膏
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 陟厘
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 4
+- term: 青蚨
+  kind: harvested
+  synonyms:
+  - surface: 鱼伯
+    kind: alias
+    note: 本草“一名”
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 4
+- term: 马先蒿
+  kind: harvested
+  synonyms:
+  - surface: 马屎蒿
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 4
+- term: 马兰
+  kind: harvested
+  origin_record: 日华
+  evidence:
+    books: 3
+    count: 4
+- term: 马鞭
+  kind: harvested
+  origin_record: 纲目
+  evidence:
+    books: 3
+    count: 4
+- term: 黄土
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 4
+- term: 鼠尾草
+  kind: harvested
+  synonyms:
+  - surface: 陵翘
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 4
+- term: 龙珠
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 4
+- term: 龙葵
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 4
+- term: 三棱
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 东风菜
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 丹沙
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 乌臼木根皮
+  kind: harvested
+  synonyms:
+  - surface: 丁公藤
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 乌骨鸡
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 乳柑子
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 乳穴中水
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 五毒草
+  kind: harvested
+  synonyms:
+  - surface: 五蕺
+    kind: alias
+    note: 本草“一名”
+  - surface: 蛇罔
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 井华水
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 仙人杖
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 仰盆
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 仲思枣
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 伏鸡子根
+  kind: harvested
+  synonyms:
+  - surface: 承露仙
+    kind: alias
+    note: 本草“一名”
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 3
+- term: 优殿
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 倒挂藤
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 倚待草
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 僵蚕
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 兔头骨
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 兔肝草
+  kind: harvested
+  synonyms:
+  - surface: 鸡肝
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 冲洞根
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 刺皮
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 吉祥草
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 含水藤中水
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 嘉鱼
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 3
+    count: 3
+- term: 土芋
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 3
+- term: 地椒
+  kind: harvested
+  synonyms:
+  - surface: 鸡瓜三棱
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 地筋
+  kind: harvested
+  synonyms:
+  - surface: 土筋
+    kind: alias
+    note: 本草“一名”
+  - surface: 管根
+    kind: alias
+    note: 本草“一名”
+  - surface: 菅根
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 3
+- term: 地龙藤
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 堇汁
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 大瓠藤水
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 大豆
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 3
+- term: 太阴玄精
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 姑活
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 姜石
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 3
+- term: 孝文韭
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 寒水石
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 小天蓼
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 屈草
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 山栀子
+  kind: harvested
+  synonyms:
+  - surface: 越桃
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 山楂
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 山胡椒
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 山菌子
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 师草实
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 底野迦
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 3
+- term: 必似勒
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 忍冬藤
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 感藤
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 扁豆
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 折伤木
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 握雪礜石
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 3
+- term: 数低
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 文林郎
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 旋花
+  kind: harvested
+  synonyms:
+  - surface: 筋根花
+    kind: alias
+    note: 本草“一名”
+  - surface: 美草
+    kind: alias
+    note: 本草“一名”
+  - surface: 金沸
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 3
+- term: 旱藕
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 昨叶何草
+  kind: harvested
+  synonyms:
+  - surface: 瓦松
+    kind: alias
+    note: 本草“一名”
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 3
+- term: 曼游藤
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 朗榆皮
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 木戟
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 木细辛
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 松叶
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 松杨木皮
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 松罗
+  kind: harvested
+  synonyms:
+  - surface: 女萝
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 果然肉
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 枳椇
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 3
+- term: 柘木
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 柯树皮
+  kind: harvested
+  synonyms:
+  - surface: 木奴
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 柰子
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 柳华
+  kind: harvested
+  synonyms:
+  - surface: 柳絮
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 栎木皮
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 桃竹笋
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 桑耳
+  kind: harvested
+  synonyms:
+  - surface: 木麦
+    kind: alias
+    note: 本草“一名”
+  - surface: 桑菌
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 梫木
+  kind: harvested
+  synonyms:
+  - surface: 榼子
+    kind: alias
+    note: 本草“一名”
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 3
+- term: 棘刺花
+  kind: harvested
+  synonyms:
+  - surface: 䓆蓂
+    kind: alias
+    note: 本草“一名”
+  - surface: 猳猪屎
+    kind: alias
+    note: 本草“一名”
+  - surface: 马朐
+    kind: alias
+    note: 本草“一名”
+  - surface: 马胊
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 椑柿
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 3
+    count: 3
+- term: 椿木叶
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 楸木皮
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 榅桲
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 3
+    count: 3
+- term: 榧子
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 榼藤子
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 3
+    count: 3
+- term: 橙子皮
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 水英
+  kind: harvested
+  origin_record: 图经
+  evidence:
+    books: 3
+    count: 3
+- term: 水银粉
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 泉水
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 海豚鱼
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 3
+- term: 温藤
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 烟药
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 牛奶藤
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 特蓬杀
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 猪肉
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 玄黄石
+  kind: harvested
+  synonyms:
+  - surface: 零陵
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 玉膏
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 瓜子
+  kind: harvested
+  synonyms:
+  - surface: 水芝
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 甘松香
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 3
+    count: 3
+- term: 甘菊花
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 甘露水
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 甘露藤
+  kind: harvested
+  synonyms:
+  - surface: 肥藤
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 生熟汤
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 3
+- term: 甲香
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 留军待
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 白扁豆
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 白昌
+  kind: harvested
+  synonyms:
+  - surface: 水宿
+    kind: alias
+    note: 本草“一名”
+  - surface: 水昌
+    kind: alias
+    note: 本草“一名”
+  - surface: 茎蒲
+    kind: alias
+    note: 本草“一名”
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 3
+- term: 白杨树皮
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 白狗血
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 白瓜子
+  kind: harvested
+  synonyms:
+  - surface: 水芝
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 白芍药
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 白芥子
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 白苣
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 白茅根
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 白药
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 白藓
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 白雄鸡肉
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 白鹤
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 皋芦叶
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 益奶草
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 益智
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 盐胆水
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 石刺木根皮
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 石栏干
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 石芒
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 石荠宁
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 石药
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 石菖蒲
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 砒霜
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 研药
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 碧海水
+  kind: harvested
+  origin_record: 拾遗
+  evidence:
+    books: 3
+    count: 3
+- term: 秦龟
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 3
+- term: 突厥白
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 筋子根
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 糯米
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 紫珠
+  kind: harvested
+  synonyms:
+  - surface: 紫荆树
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 紫荆木
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 缩沙蜜
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 羌活
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 羖羊角
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 耕香
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 胡桃肉
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 腊雪
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 芸台
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 苍耳子
+  kind: harvested
+  synonyms:
+  - surface: 常思
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 苦苣
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 茅膏菜
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 茴香子
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 草三棱根
+  kind: harvested
+  synonyms:
+  - surface: 鸡爪三棱
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 草犀根
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 草龙胆
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 荔枝
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 3
+    count: 3
+- term: 荜茇
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 3
+    count: 3
+- term: 荠苨
+  kind: harvested
+  origin_record: 别录
+  evidence:
+    books: 3
+    count: 3
+- term: 莱菔根
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 莳萝
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 菟葵
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 3
+- term: 萝摩子
+  kind: harvested
+  synonyms:
+  - surface: 芄兰
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 萤火
+  kind: harvested
+  synonyms:
+  - surface: 夜光
+    kind: alias
+    note: 本草“一名”
+  - surface: 放光
+    kind: alias
+    note: 本草“一名”
+  - surface: 熠曜
+    kind: alias
+    note: 本草“一名”
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 3
+- term: 萹蓄
+  kind: harvested
+  origin_record: 本经
+  evidence:
+    books: 3
+    count: 3
+- term: 葈耳实
+  kind: harvested
+  synonyms:
+  - surface: 地葵
+    kind: alias
+    note: 本草“一名”
+  - surface: 常思
+    kind: alias
+    note: 本草“一名”
+  - surface: 胡葈
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 葛粉
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 蒲公草
+  kind: harvested
+  synonyms:
+  - surface: 拘耨草
+    kind: alias
+    note: 本草“一名”
+  - surface: 搆耨草
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 蓼荞
+  kind: harvested
+  synonyms:
+  - surface: 胡干姜
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 蕤仁
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 藊豆
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 蘩蒌
+  kind: harvested
+  synonyms:
+  - surface: 天胡荽
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 蛇合
+  kind: harvested
+  synonyms:
+  - surface: 蛇衔
+    kind: alias
+    note: 本草“一名”
+  - surface: 蛇衘
+    kind: alias
+    note: 本草“一名”
+  evidence:
+    books: 3
+    count: 3
+- term: 蜀胡烂
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 蜜陀僧
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 蝉蜕
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 蝮蛇胆
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 西瓜
+  kind: harvested
+  origin_record: 日用
+  evidence:
+    books: 3
+    count: 3
+- term: 角落木皮
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 质汗
+  kind: harvested
+  origin_record: 开宝
+  evidence:
+    books: 3
+    count: 3
+- term: 郎耶草
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 都角子
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 酢浆草
+  kind: harvested
+  origin_record: 唐本
+  evidence:
+    books: 3
+    count: 3
+- term: 金星草
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 金疮小草
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 金石
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 金钗股
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3
+- term: 錾菜
+  kind: harvested
+  evidence:
+    books: 3
+    count: 3

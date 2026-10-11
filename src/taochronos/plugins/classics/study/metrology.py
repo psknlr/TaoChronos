@@ -12,14 +12,17 @@ import re
 from typing import Any
 
 _DIGITS = {"一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "〇": 0, "零": 0}
-NUM = "[一二三四五六七八九十廿卅百千半〇零]+"
+# the formal numerals some editions write doses in (吴迁本、邓珍本金匮: 大黄陆两, 厚朴乙尺, 甘草叄两), as normalised
+_FORMAL = {"壹": "一", "乙": "一", "贰": "二", "貳": "二", "叁": "三", "叄": "三", "参": "三", "參": "三", "肆": "四", "伍": "五",
+           "陆": "六", "陸": "六", "柒": "七", "捌": "八", "玖": "九", "拾": "十", "佰": "百", "仟": "千"}
+NUM = "[一二三四五六七八九十廿卅百千半〇零壹乙贰貳叁叄参參肆伍陆陸柒捌玖拾佰仟]+"
 
 
 def cn_number(text: str) -> float | None:
-    """一 → 1, 十二 → 12, 廿四 → 24, 一百二十 → 120, 半 → 0.5."""
+    """一 → 1, 十二 → 12, 廿四 → 24, 一百二十 → 120, 半 → 0.5; the formal numerals too (陆 → 6, 拾伍 → 15)."""
     if text == "半":
         return 0.5
-    text = text.replace("廿", "二十").replace("卅", "三十")
+    text = "".join(_FORMAL.get(ch, ch) for ch in text).replace("廿", "二十").replace("卅", "三十")
     total, current = 0, 0
     for ch in text:
         if ch in _DIGITS:

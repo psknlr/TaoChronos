@@ -5,7 +5,7 @@ from the classics through TaoChronos's tools, with every quotation checked again
 **https://chat.impf.ai/** — served over HTTPS by a Cloudflare Worker, its tools running on the site's own server over the
 **full corpus** (958 books, 122 million characters: [cloud/](../cloud/README.md), [ADR 0016](adr/0016-site-and-full-corpus-on-cloudflare.md);
 without a container, the site's own Worker answers from its copy in Cloudflare D1: [ADR 0017](adr/0017-d1-backup.md));
-when that server cannot answer, the page runs in the browser on the **要籍语料** — the texts of the 350 key works, the
+when that server cannot answer, the page runs in the browser on the **要籍语料** — the texts of the listed key works, the
 first whole, the rest in excerpts ([要籍语料](#要籍语料--the-browsers-corpus)).  The same page is served by
 `taochronos serve`, which brings the full corpus you built into it ([接入全部古籍](#接入全部古籍)).
 
@@ -28,7 +28,7 @@ run in one of two places, with the same Python module (`taochronos.chat`) behind
 
 | Runtime | Where | Corpus | Start |
 |---|---|---|---|
-| **浏览器内** (in the browser) | Pyodide (CPython on WebAssembly) in a Web Worker | the 要籍语料: 348 of the 350 key works, the first whole, the rest in excerpts (a site built without the pack: the demonstration corpus, 23 short excerpts) | nothing: the page loads it (about 20 MB the first time, then kept in the browser) |
+| **浏览器内** (in the browser) | Pyodide (CPython on WebAssembly) in a Web Worker | the 要籍语料: the listed key works (348 of 350; 535 once regenerated), the first whole, the rest in excerpts (a site built without the pack: the demonstration corpus, 23 short excerpts) | nothing: the page loads it (about 20 MB the first time, then kept in the browser) |
 | **本站服务** (the site's server) | a container on Cloudflare behind https://chat.impf.ai/api (`cloud/`), started on demand | the full corpus as the site may carry it: 958 books, 2.04 million passages, 122 million characters (`taochronos web store`: never the sources whose terms forbid it) | nothing: the page on chat.impf.ai uses it, and falls back to the browser when it cannot answer |
 | **本地服务 / 远程服务** (a TaoChronos server) | `taochronos serve` on your machine, or on another one with a token | the full corpus you built (`corpus ingest …`; this project's build: 966 books, 2.05 million passages, 123 million characters), else the demonstration corpus | `pip install -e . && taochronos serve` |
 
@@ -61,21 +61,22 @@ without thinking: none is asked for, none is shown, stored, exported or recorded
 
 ## 要籍语料 — the browser's corpus
 
-The published site cannot carry all the books ([接入全部古籍](#接入全部古籍)): the 350 key works alone are some 57 million
-characters, far more than a browser can download and index.  It carries every one of them, the first whole and the rest in
+The published site cannot carry all the books ([接入全部古籍](#接入全部古籍)): the first 350 key works alone are some 57 million
+characters, far more than a browser can download and index.  It carries every listed work, the first whole and the rest in
 excerpts.  Two steps choose them:
 
 1. **要籍** — `taochronos study canon --write-catalog` ranks the works of the full corpus by the citation network of the
    whole store (who cites which book, 《书名》 and 经曰, resolved to works): score = 10·log₂(1 + distinct works citing it, not
    older than it) + 2·periods in which it is cited + 2·log₂(1 + citations) + 3·log₂(1 + witnesses) + 6·in the 四库全书.  The
-   first 350 of 759 are written to `corpus/catalog/canon.yaml` (metadata only).  It is what this corpus quotes, not a verdict:
-   late works have had less time to be cited, lost works are not in it.  `classics.canon` — offered to the model directly —
-   queries the list in any corpus and says whether the current one holds each work.
-2. **要籍语料** — `taochronos web pack` takes, for each of the 350, the best witness (`WEB_SOURCES`: the openly licensed first
+   first `CANON_SIZE` of 759 are written to `corpus/catalog/canon.yaml` (metadata only) — 535 since October 2026, 350 before.
+   It is what this corpus quotes, not a verdict: late works have had less time to be cited, lost works are not in it.
+   `classics.canon` — offered to the model directly — queries the list in any corpus and says whether the current one holds
+   each work.
+2. **要籍语料** — `taochronos web pack` takes, for each listed work, the best witness (`WEB_SOURCES`: the openly licensed first
    — CMETA's collated editions, 汉籍仓库, 维基文库, McGill, 笈成 — then the two web text sets transcribed from 笈成; the most
    complete within a source) — up to three for the first ten, so that the 素问, 灵枢, 伤寒论 and 金匮要略 can be collated in the browser —
    whole within 350 000 characters for the first ten; then 50 000, 25 000 and 12 000 by rank, as whole chapters spread
-   through the book.  Result: 348 works, 368 witnesses, 135 083 passages, 8.5 million characters, with the passage ids of
+   through the book.  Result for the 350: 348 works, 368 witnesses, 135 083 passages, 8.5 million characters, with the passage ids of
    the full corpus, in rank order, in `corpus/web/` (passages.jsonl.gz, books.json, [ATTRIBUTION.md](../corpus/web/ATTRIBUTION.md)).
    The texts are all in the public domain.  笈成 releases its editorial work on them — selection, arrangement, punctuation,
    annotation — under CC0 1.0 and its own writing under CC BY 4.0 ([著作權聲明](https://jicheng.tw/tcm/copyright.html),
@@ -112,8 +113,23 @@ gzip would be 17).  Loading is arranged for the wait a visitor sees:
 
 Measured in Chromium on a fast machine: first visit ready in 9.6 s (the rest indexed 7 s later), a return visit in 4 s; on a
 connection throttled to 1 MB/s and 150 ms, 27 s and 13–14 s (before ADR 0015: 15 s, 6 s; 39 s, 15–16 s).  The runtime uses the `web-canon` profile; `info.corpus` says
-`kind: canon`, `label: 要籍语料`, and how many of the 350 it holds.  The standing instructions tell the model which corpus it
-reads, that excerpted books may lack what the whole book has, and where the rest is.
+`kind: canon`, `label: 要籍语料`, and how many of the listed works it holds.  The standing instructions tell the model which
+corpus it reads, that excerpted books may lack what the whole book has, and where the rest is.
+
+**From 350 to 535.**  The list and the pack are made on the full store, which this repository does not hold.  `taochronos
+web canon --extend` (on a machine with the store: `--data <dir>`) ranks the store again, keeps the 350 already listed in
+their order and appends ranks 351–535, writes the catalog, packs, and regenerates the D1 backup's tables; the `canon`
+workflow (`.github/workflows/canon.yml`, run by hand) does the same in CI from the site's corpus parts (the KV store of
+[cloud/](../cloud/README.md)) and commits the result.  `--extend` is needed whenever the store at hand lacks sources of the
+first ranking (the KV parts never hold `NEVER_PACKED` sources): ranked again without them, the first 350 would move.  Until
+it runs, the catalog and the pack in the repository are those of the 350 (348 works held), and the numbers above are
+theirs.  Budgets are by rank, so the 185 works added come in 12 000-character excerpts — some 2 million characters more for
+the browser.
+
+The browser's corpus also loads two lexicons beyond the curated one (profile `web-canon`, `lexicon_extra`): a supplement
+of common drugs (`lexicon-supplement`) and the core of the harvested lexicon — the 800 drugs and 2 000 formulas the full
+corpus attests most (`lexicon-core`, `taochronos lexicon core`) — so that its compositions are read with the names the
+literature writes most ([data.md](data.md)).
 
 ## 接入全部古籍
 
@@ -194,6 +210,28 @@ Keyboard: Enter sends, Shift+Enter breaks the line (input methods are respected)
 conversation, Ctrl/⌘+B the conversation list, Ctrl/⌘+J the side panel, `/` focuses the input.  Conversations are kept in
 this browser (IndexedDB); **设置 → 数据** exports and imports them (JSON) or one as Markdown.
 
+## 图表 — charts and their downloads
+
+A study's result carries its charts ([study.md](study.md#图表-charts)): specifications drawn from the whole result, never
+from the model's trimmed copy.  The page draws them (`web/js/chart.js`) in three places:
+
+* **under the step that made them** — the charts of a turn's tools follow its tool steps, one at a time with a row of tabs
+  (their titles) when there are several;
+* **in the 工具台**, under the result of a tool run by hand;
+* **in an answer** — the model may draw the numbers it read from the tools in a ```chart block (a JSON specification of
+  the same form: line, bar, hbar, stack, heatmap, timeline …; the standing instructions say how, and that every number must
+  come from a tool's result).  The block is checked before it is drawn; while it is still being written the page shows a
+  placeholder, and one that cannot be drawn is shown as code with the reason.
+
+Each chart is a card: its title and what it counts; hover, or focus and the arrow keys, read out the values; **表格** shows
+every number; **下载** gives the figure as **SVG** (standalone: title, subtitle, note and source, colours and fonts inline),
+**PNG** (twice the size), the table as **CSV** (UTF-8 with a byte-order mark, for spreadsheet programs) and the
+specification as **JSON**.  A conversation exported as Markdown appends each chart's table.  A research protocol
+(`study.protocol`) comes with its whole text: **下载研究方案（Markdown）** under its step, and in the 工具台.  The colours are tokens
+(`--viz-1` … `--viz-8`, `--viz-other`, the `--viz-seq` ramp; `css/app.css`), selected for the light and the dark surfaces
+and validated for colour-vision deficiency; a downloaded figure takes the light ones.  The model reads only the titles of
+the charts the page shows (`charts_shown`), so it can point to them without spending its context on their data.
+
 ## 设置 → 统计 — how much the site is used, and from where
 
 The site's owner reads the site's usage under **设置 → 统计**, over the last 7, 30 or 90 days: pages opened and their
@@ -216,9 +254,10 @@ a page with neither the site's server nor the relay: a local server, the GitHub 
 ## What the model is offered
 
 `taochronos.chat.catalog` turns the tool mesh into function schemas.  In **精选 + 目录** mode (the default) the model
-sees sixteen tools directly — `classics.search`, `classics.get_passage`, `classics.list_books`, `classics.canon`, `kg.term`, `kg.claims`,
+sees nineteen tools directly — `classics.search`, `classics.get_passage`, `classics.list_books`, `classics.canon`, `kg.term`, `kg.claims`,
 `study.formula`, `study.herb`, `study.term`, `study.concordance`, `study.commentaries`, `study.translate`,
-`study.network`, `validation.verify_quote`, `audit.claim`, `modern.safety` — and reaches the others through
+`study.network`, `study.compare`, `study.usage`, `study.protocol`, `validation.verify_quote`, `audit.claim`,
+`modern.safety` — and reaches the others (`study.family`, `study.properties` and `study.incompat` among them) through
 `taochronos_catalog` (families, tools, parameters) and `taochronos_call`.  In **全部工具** mode it sees every tool.
 Either way it also has the engine: `taochronos_research` (a full multi-agent discovery run: contract → evidence →
 D1–D5 → hypotheses → falsification → gates G0–G8), `taochronos_session` (its report, hypotheses, evidence) and
@@ -410,7 +449,7 @@ terms the site carries it under; a 宋本 found for a punctuated 伤寒论 claus
 witness's own marks, never with a changed or missing character; outside a session `classics.list_books` lists every
 book with its filters and `kg.claims` / `kg.neighbors` read the passages that write the term.  `tests/test_web_client.py` — the
 client's logic under Node (cumulative and incremental streams, history rules, dangling tool calls, citation pairing, which
-questions get the fixed reply and which go to the model) and
+questions get the fixed reply and which go to the model; the charts' checks, CSV, Markdown tables, colours and axes) and
 the page in Chromium against scripted providers (`tests/web_mock.py`): a MiniMax-style stream (cumulative
 `reasoning_details` and content, streamed tool arguments) and a Claude stream through the real SDK, checking the
 requests (`reasoning_split`, `max_completion_tokens`, `reasoning_details` and thinking signatures replayed, fallbacks),
@@ -422,7 +461,9 @@ page, the consent question once, a turn recorded only after 同意 (its fields, 
 once switched off under 设置 → 数据, a relay slow to answer (6 s) or missed once still found, and the page asking for a
 key while the relay is down; a question about the assistant answered by the page (no model called, no key needed, the
 same words when regenerated, recorded as `fixed`, replayed to the model when the conversation goes on) while one that asks
-more goes to the model, asked for no thinking, showing and storing none; and, with
+more goes to the model, asked for no thinking, showing and storing none; a study's charts under its step (tabs, the table,
+a PNG and a CSV downloaded), a ```chart block drawn in the answer, the model told only the charts' titles, and the
+工具台's charts; and, with
 `TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium on an http:// origin like the published one (no Cache API) —
 Pyodide, the 要籍语料 downloaded, the first-ranked works indexed before it answers and the rest in the background, the
 store kept in IndexedDB and a reload that downloads no corpus, a turn answered on it.  The browser tests are skipped where Playwright or Chromium is missing.  `relay/test/relay.test.js`
@@ -435,7 +476,7 @@ committed with them, deleted only once held, a deployment checked (and a refused
 
 ## Limits
 
-* In the browser the corpus is the 要籍语料: 348 of the 350 key works, the first whole, the others in chapters spread
+* In the browser the corpus is the 要籍语料: the listed key works (348 of the 350 until the list is regenerated at 535), the first whole, the others in chapters spread
   through the book — enough to read and compare the main classics, not the whole literature; the page says so, and so
   does the model's standing instruction.  The first visit downloads about 20 MB (Pyodide and the corpus) and indexes the
   corpus (the first-ranked works before the runtime answers, the rest in the background); later visits open it from

@@ -183,3 +183,27 @@ def to_yaml_entries(formulas: list[Candidate], herbs: list[Candidate]) -> tuple[
         h_entries.append(entry)
     header = {"provenance": "harvested from the corpus store by `taochronos lexicon harvest`; candidates, not expert-reviewed"}
     return ({**header, "category": "formula", "entries": f_entries}, {**header, "category": "herb", "entries": h_entries})
+
+
+CORE_HERBS = 800
+CORE_FORMULAS = 2000
+
+
+def core_entries(harvested: dict[str, Any], top: int) -> dict[str, Any]:
+    """The harvested names the full corpus attests most (``taochronos lexicon core``): for a corpus that does not load the
+    whole harvest (the browser's 要籍语料), so that its compositions are read with the drugs and formulas the literature
+    writes most.  Drugs rank by the 本草 that have an entry for them, formulas by the works that write them out (then by
+    occurrences); weak and one-character names are left out.  Still candidates, not curated."""
+    category = harvested.get("category")
+    shortest = 3 if category == "formula" else 2  # a formula's name ends in 汤 / 丸 / 散 …
+    rows = [e for e in harvested.get("entries") or [] if not e.get("weak") and len(e["term"]) >= shortest]
+    rows.sort(key=lambda e: (-(e.get("evidence") or {}).get("books", 0), -(e.get("evidence") or {}).get("count", 0), e["term"]))
+    entries = []
+    for e in rows[:top]:
+        ev = e.get("evidence") or {}
+        entries.append({"term": e["term"], "kind": "harvested", **({"synonyms": e["synonyms"]} if e.get("synonyms") else {}),
+                        **({"origin_record": e["origin_record"]} if e.get("origin_record") else {}),
+                        "evidence": {"books": ev.get("books", 0), "count": ev.get("count", 0)}})
+    return {"provenance": f"the {len(entries)} {category} names of lexicon-harvested the full corpus attests most "
+                          "(`taochronos lexicon core`); candidates, not expert-reviewed",
+            "category": category, "entries": entries}

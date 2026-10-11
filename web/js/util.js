@@ -177,7 +177,12 @@ export async function copyText(text) {
 }
 
 export function download(name, text, type = "text/plain") {
-  const url = URL.createObjectURL(new Blob([text], { type: `${type};charset=utf-8` }));
+  downloadBlob(name, new Blob([text], { type: `${type};charset=utf-8` }));
+}
+
+/** Save a Blob (an image, say) as a file. */
+export function downloadBlob(name, blob) {
+  const url = URL.createObjectURL(blob);
   const a = h("a", { href: url, download: name });
   document.body.append(a);
   a.click();
