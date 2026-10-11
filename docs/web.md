@@ -28,7 +28,7 @@ run in one of two places, with the same Python module (`taochronos.chat`) behind
 
 | Runtime | Where | Corpus | Start |
 |---|---|---|---|
-| **浏览器内** (in the browser) | Pyodide (CPython on WebAssembly) in a Web Worker | the 要籍语料: the listed key works (348 of 350; 535 once regenerated), the first whole, the rest in excerpts (a site built without the pack: the demonstration corpus, 23 short excerpts) | nothing: the page loads it (about 20 MB the first time, then kept in the browser) |
+| **浏览器内** (in the browser) | Pyodide (CPython on WebAssembly) in a Web Worker | the 要籍语料: 533 of the 535 key works, the first whole, the rest in excerpts (a site built without the pack: the demonstration corpus, 23 short excerpts) | nothing: the page loads it (about 20 MB the first time, then kept in the browser) |
 | **本站服务** (the site's server) | a container on Cloudflare behind https://chat.impf.ai/api (`cloud/`), started on demand | the full corpus as the site may carry it: 958 books, 2.04 million passages, 122 million characters (`taochronos web store`: never the sources whose terms forbid it) | nothing: the page on chat.impf.ai uses it, and falls back to the browser when it cannot answer |
 | **本地服务 / 远程服务** (a TaoChronos server) | `taochronos serve` on your machine, or on another one with a token | the full corpus you built (`corpus ingest …`; this project's build: 966 books, 2.05 million passages, 123 million characters), else the demonstration corpus | `pip install -e . && taochronos serve` |
 
@@ -69,18 +69,20 @@ excerpts.  Two steps choose them:
    whole store (who cites which book, 《书名》 and 经曰, resolved to works): score = 10·log₂(1 + distinct works citing it, not
    older than it) + 2·periods in which it is cited + 2·log₂(1 + citations) + 3·log₂(1 + witnesses) + 6·in the 四库全书.  The
    first `CANON_SIZE` of 759 are written to `corpus/catalog/canon.yaml` (metadata only) — 535 since October 2026, 350 before.
-   It is what this corpus quotes, not a verdict: late works have had less time to be cited, lost works are not in it.
+   It is what this corpus quotes, not a verdict: late works have had less time to be cited, lost works are not in it, and
+   past the first 350 citations thin out (161 of ranks 351–535 are cited by fewer than two later works, the last 46 by none:
+   五十二病方, lost until 1973, is one) — there the order rests on witnesses, volume and the 四库.
    `classics.canon` — offered to the model directly — queries the list in any corpus and says whether the current one holds
    each work.
 2. **要籍语料** — `taochronos web pack` takes, for each listed work, the best witness (`WEB_SOURCES`: the openly licensed first
    — CMETA's collated editions, 汉籍仓库, 维基文库, McGill, 笈成 — then the two web text sets transcribed from 笈成; the most
    complete within a source) — up to three for the first ten, so that the 素问, 灵枢, 伤寒论 and 金匮要略 can be collated in the browser —
    whole within 350 000 characters for the first ten; then 50 000, 25 000 and 12 000 by rank, as whole chapters spread
-   through the book.  Result for the 350: 348 works, 368 witnesses, 135 083 passages, 8.5 million characters, with the passage ids of
+   through the book.  Result: 533 of the 535 works, 553 witnesses, 168 278 passages, 10.5 million characters, with the passage ids of
    the full corpus, in rank order, in `corpus/web/` (passages.jsonl.gz, books.json, [ATTRIBUTION.md](../corpus/web/ATTRIBUTION.md)).
    The texts are all in the public domain.  笈成 releases its editorial work on them — selection, arrangement, punctuation,
    annotation — under CC0 1.0 and its own writing under CC BY 4.0 ([著作權聲明](https://jicheng.tw/tcm/copyright.html),
-   checked 2026-09-29; credit 中醫笈成), so 344 of the works come from an openly licensed witness.  IMPF-AI decided to
+   checked 2026-09-29; credit 中醫笈成), so 529 of the works come from an openly licensed witness.  IMPF-AI decided to
    publish the rest with the site (2026-09-28): the four works known only through TCM-Ancient-Books, a set of copies of 笈成
    texts whose repository declares no licence (a copy of a 笈成 text is never stored, so these four match no 笈成 text in
    the store; their records carry the site's terms), and the modern editors' part of the 笈成 texts that follow a modern edition, such as
@@ -90,8 +92,8 @@ excerpts.  Two steps choose them:
    only through them (扁鹊仓公列传, 伤寒论集注) are listed without text.
 
 `taochronos web build` turns the pack into a corpus store — the schema of the full corpus — without its full-text index
-(the index is two thirds of a download that compresses badly), xz-compressed (`runtime/corpus.sqlite.xz`: 10.8 MB for 90;
-gzip would be 17).  Loading is arranged for the wait a visitor sees:
+(the index is two thirds of a download that compresses badly), xz-compressed (`runtime/corpus.sqlite.xz`: 13.3 MB for 97.5;
+10.8 MB for 90 with the 350; a test keeps it under 16 MB).  Loading is arranged for the wait a visitor sees:
 
 * **In parallel** — while Pyodide starts, a worker of its own (`unpack-worker.js`) downloads the corpus and unpacks it
   (xzwasm, `web/js/vendor/`) as the bytes arrive, into one buffer the runtime's file system then takes without a copy
@@ -112,7 +114,9 @@ gzip would be 17).  Loading is arranged for the wait a visitor sees:
   question to the model with it while the runtime loads; the tools the model calls wait for the runtime.
 
 Measured in Chromium on a fast machine: first visit ready in 9.6 s (the rest indexed 7 s later), a return visit in 4 s; on a
-connection throttled to 1 MB/s and 150 ms, 27 s and 13–14 s (before ADR 0015: 15 s, 6 s; 39 s, 15–16 s).  The runtime uses the `web-canon` profile; `info.corpus` says
+connection throttled to 1 MB/s and 150 ms, 27 s and 13–14 s (before ADR 0015: 15 s, 6 s; 39 s, 15–16 s) — measured with the 350:
+the 535 add 2.5 MB to the first download and 33 000 passages to the background indexing, while the works ranked up to 40,
+indexed before the runtime answers, are the same.  The runtime uses the `web-canon` profile; `info.corpus` says
 `kind: canon`, `label: 要籍语料`, and how many of the listed works it holds.  The standing instructions tell the model which
 corpus it reads, that excerpted books may lack what the whole book has, and where the rest is.
 
@@ -120,11 +124,11 @@ corpus it reads, that excerpted books may lack what the whole book has, and wher
 web canon --extend` (on a machine with the store: `--data <dir>`) ranks the store again, keeps the 350 already listed in
 their order and appends ranks 351–535, writes the catalog, packs, and regenerates the D1 backup's tables; the `canon`
 workflow (`.github/workflows/canon.yml`, run by hand) does the same in CI from the site's corpus parts (the KV store of
-[cloud/](../cloud/README.md)) and commits the result.  `--extend` is needed whenever the store at hand lacks sources of the
-first ranking (the KV parts never hold `NEVER_PACKED` sources): ranked again without them, the first 350 would move.  Until
-it runs, the catalog and the pack in the repository are those of the 350 (348 works held), and the numbers above are
-theirs.  Budgets are by rank, so the 185 works added come in 12 000-character excerpts — some 2 million characters more for
-the browser.
+[cloud/](../cloud/README.md)), commits the result to the branch it runs on and, on main, starts the site's deployment.
+`--extend` is needed whenever the store at hand lacks sources of the first ranking (the KV parts never hold `NEVER_PACKED`
+sources): ranked again without them, the first 350 would move.  It ran on 2026-10-11 (757 works ranked on the parts):
+budgets are by rank, so the 185 works added came in 12 000-character excerpts — 1.9 million characters more for the
+browser.
 
 The browser's corpus also loads two lexicons beyond the curated one (profile `web-canon`, `lexicon_extra`): a supplement
 of common drugs (`lexicon-supplement`) and the core of the harvested lexicon — the 800 drugs and 2 000 formulas the full
@@ -415,7 +419,7 @@ python -m http.server -d _site 8000
 
 The site (about 26 MB) holds: the client (`web/`), `runtime/taochronos.zip` (the package), `runtime/home.zip`
 (profiles, domain packs, the demonstration corpus, catalogs with the 要籍 list, agents, skills, gold sets; the lexicon
-harvested from the full corpus is left out), `runtime/corpus.sqlite.xz` (the 要籍语料 as a store without its index, 10.8 MB;
+harvested from the full corpus is left out), `runtime/corpus.sqlite.xz` (the 要籍语料 as a store without its index, 13.3 MB;
 built from `corpus/web` by the build, the same bytes for the same pack; `TAOCHRONOS_WEB_XZ_PRESET` trades size for build
 time, the tests use 1), `runtime/boot.json` (the runtime's info and catalogs, for the conversation to start while it
 loads), `runtime/manifest.json` (sizes and SHA-256; the worker keeps the archives by content in IndexedDB, and the corpus
@@ -443,7 +447,7 @@ nothing modern, open where a source is openly licensed, its open witness the pac
 (openly licensed first, 笈成 last among them, never a source in `NEVER_PACKED`), budgets kept as whole chapters spread
 through a book, the pack → a store with the same bytes → indexed once → read by the harness, the index in two phases
 (the first-ranked works first, the rest in slices, seen by a connection already reading) and the shipped pack under the
-`web-canon` profile (348 works in rank order, an openly licensed transcription with its own terms, any other with the
+`web-canon` profile (533 works in rank order, an openly licensed transcription with its own terms, any other with the
 terms the site carries it under; a 宋本 found for a punctuated 伤寒论 clause; `classics.canon` for what it lacks).
 `tests/test_corpus_store.py` — on a store: a quotation found whatever its punctuation and in either script, across a
 witness's own marks, never with a changed or missing character; outside a session `classics.list_books` lists every
@@ -476,7 +480,7 @@ committed with them, deleted only once held, a deployment checked (and a refused
 
 ## Limits
 
-* In the browser the corpus is the 要籍语料: the listed key works (348 of the 350 until the list is regenerated at 535), the first whole, the others in chapters spread
+* In the browser the corpus is the 要籍语料: 533 of the 535 key works, the first whole, the others in chapters spread
   through the book — enough to read and compare the main classics, not the whole literature; the page says so, and so
   does the model's standing instruction.  The first visit downloads about 20 MB (Pyodide and the corpus) and indexes the
   corpus (the first-ranked works before the runtime answers, the rest in the background); later visits open it from

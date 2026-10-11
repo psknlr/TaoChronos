@@ -8,7 +8,9 @@ name: canon
 # forbid passing it on (NEVER_PACKED), so the job keeps the works already listed, with their ranks and figures as they
 # were ranked on the full corpus, and appends the next ones (`extend`); a fresh ranking belongs on the full corpus
 # (`taochronos web canon` where it is built).  The numbers the READMEs and docs/web.md quote are then read off
-# corpus/web/ATTRIBUTION.md.  Repository secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (cloud/SETUP.md).
+# corpus/web/ATTRIBUTION.md.  A commit pushed by a workflow starts no other workflow, so on main the job then starts the
+# site's deployment itself (`deploy`); on another branch the site is deployed when the branch is merged.  Repository
+# secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (cloud/SETUP.md).
 on:
   workflow_dispatch:
     inputs:
@@ -20,9 +22,14 @@ on:
         description: "Keep the works already listed and append the next (the site's store lacks the never-packed sources)"
         type: boolean
         default: true
+      deploy:
+        description: "On main: deploy the site with the new corpus once it is committed (the site workflow)"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
+  actions: write  # to start the site's deployment: a push made with the job's token starts no workflow
 
 concurrency:
   group: canon
@@ -112,7 +119,9 @@ jobs:
           args=()
           if [ -n "$SIZE" ]; then args+=(--size "$SIZE"); fi
           if [ "$EXTEND" = "true" ]; then args+=(--extend); fi
-          taochronos web canon "${args[@]}" | tee canon-report.json
+          # the report is stdout alone (what else the command says goes to stderr, into this log)
+          taochronos web canon "${args[@]}" > canon-report.json
+          cat canon-report.json
           python3 - <<'EOF'
           import json, os
           r = json.load(open("canon-report.json"))
@@ -125,11 +134,30 @@ jobs:
           EOF
           rm canon-report.json
       - name: Commit the list, the pack and the tables
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add corpus/catalog/canon.yaml corpus/web cloud/site/src/backup/tables.js
-          if git diff --cached --quiet; then echo "nothing changed"; exit 0; fi
+          if git diff --cached --quiet; then echo "nothing changed"; echo "pushed=0" >> "$GITHUB_OUTPUT"; exit 0; fi
           n=$(python3 -c 'import yaml; print(yaml.safe_load(open("corpus/catalog/canon.yaml"))["top"])')
-          git commit -m "要籍: the list and the 要籍语料 at $n works (taochronos web canon on the site's store)"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git commit -q -m "要籍: the list and the 要籍语料 at $n works (taochronos web canon on the site's store)"
+          # the branch may have moved while the store was read (the chat-logs job commits to main): rebase and retry
+          pushed=0
+          for attempt in 1 2 3; do
+            if git push -q origin "HEAD:${GITHUB_REF_NAME}"; then pushed=1; break; fi
+            sleep $((attempt * 5))
+            git pull -q --rebase origin "${GITHUB_REF_NAME}"
+          done
+          [ "$pushed" = 1 ] || { echo "::error::the list and the pack could not be pushed to ${GITHUB_REF_NAME}"; exit 1; }
+          echo "pushed=1" >> "$GITHUB_OUTPUT"
+      - name: Deploy the site with the new corpus
+        if: steps.commit.outputs.pushed == '1' && github.ref == 'refs/heads/main' && inputs.deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run site.yml --ref main
+          echo "- the site's deployment was started: the site workflow, on main" >> "$GITHUB_STEP_SUMMARY"
+      - name: The site, from a branch
+        if: steps.commit.outputs.pushed == '1' && github.ref != 'refs/heads/main'
+        run: echo "- committed to ${GITHUB_REF_NAME}; the site is deployed with it when the branch is merged into main" >> "$GITHUB_STEP_SUMMARY"

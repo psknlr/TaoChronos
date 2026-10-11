@@ -424,3 +424,15 @@ def test_the_workers_tables_are_those_of_this_checkout():
     databases were built, and offer the tools as they are described here."""
     path = ROOT / "cloud" / "site" / "src" / "backup" / "tables.js"
     assert path.read_text(encoding="utf-8") == module(ROOT), "run: python -m taochronos.chat.d1 tables"
+
+
+def test_writing_the_tables_says_so_where_it_is_told(tmp_path, capsys):
+    """`taochronos web canon` writes the tables too, and its stdout is its JSON report (the canon workflow reads it):
+    the writer's own line goes where the caller says."""
+    from taochronos.chat.d1tables import write_tables
+
+    said: list[str] = []
+    assert write_tables(tmp_path / "tables.js", home=ROOT, log=said.append) == 0
+    assert said == [f"{tmp_path / 'tables.js'}: {(tmp_path / 'tables.js').stat().st_size:,} bytes"]
+    assert capsys.readouterr().out == ""
+    assert write_tables(tmp_path / "tables.js", home=ROOT, check=True, log=said.append) == 0 and said[-1].endswith("up to date")
