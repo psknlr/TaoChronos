@@ -68,7 +68,10 @@ def quoted_set(values: list[str]) -> str:
 
 def render(rules: dict, with_list: bool) -> dict[str, list[dict]]:
     """The phases' rule lists as the API takes them, with the placeholders filled."""
+    training = [str(a) for a in rules.get("training_agents", []) or []]
     subst = {
+        "${TRAINING_AGENTS_MATCH}": "(" + " or ".join(f"(http.user_agent contains {json.dumps(a)})" for a in training) + ")"
+                                    if training else "false",
         "${ORIGINS}": quoted_set(rules.get("origins", [])),
         "${OWN_AGENTS}": quoted_set(rules.get("own_agents", [])),
         "${HOSTING_ASNS}": " ".join(str(int(a)) for a in rules.get("hosting_asns", [])),

@@ -190,9 +190,10 @@ def fetch_pyodide(dest: Path, *, base: str = PYODIDE_CDN, packages: list[str] = 
 PAGES = ("", "about", "attribution")
 
 
-# crawlers that gather pages only to train models: asked here to stay away (the edge also refuses the verified ones,
-# security/rules.yaml ai_training).  A search engine's crawler is never named — Baiduspider, PetalBot and Bytespider
-# gather for search as well — so every search engine reads the rules for every crawler
+# crawlers that gather pages only to train models: asked here to stay away, and refused by name at the edge
+# (security/rules.yaml training_agents, the same names but the robots.txt-only tokens; tests/test_security_apply.py
+# checks).  A search engine's crawler is never named — Baiduspider, PetalBot and Bytespider gather for search as well —
+# so every search engine reads the rules for every crawler
 TRAINING_CRAWLERS = ("GPTBot", "ClaudeBot", "anthropic-ai", "Claude-Web", "CCBot", "Google-Extended", "Applebot-Extended",
                      "Google-CloudVertexBot", "meta-externalagent", "FacebookBot", "Amazonbot", "cohere-ai", "Diffbot", "omgili",
                      "MistralAI-Training")

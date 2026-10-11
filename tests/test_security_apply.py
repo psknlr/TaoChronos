@@ -156,3 +156,154 @@ def test_a_failed_operation_and_a_missing_list_are_failures(cloudflare, tmp_path
     with pytest.raises(SystemExit):
         apply.main(["apply", "--only", "list", "--rules", str(RULES), "--blocklist", str(path)])
     assert fake.puts == []
+
+
+# ------------------------------------------------------------------ the rules as Cloudflare reads them
+TOKEN = __import__("re").compile(r'\s*(?:(?P<str>"(?:[^"\\]|\\.)*")|(?P<num>\d+)|(?P<op>\(|\)|\{|\}|,|\[|\])|(?P<word>[A-Za-z_][\w.]*))')
+
+
+def evaluate(expression: str, request: dict) -> bool:
+    """A rule's expression evaluated against a request — the part of Cloudflare's rules language these rules use: fields,
+    strings, numbers and sets, eq / ne / contains / in, lower() / len() / starts_with() / ends_with(), not / and / or."""
+    import json as _json
+
+    tokens, at = [], 0
+    while at < len(expression):
+        m = TOKEN.match(expression, at)
+        if not m or m.end() == at:
+            if expression[at:].strip():
+                raise ValueError(f"cannot read {expression[at:at + 30]!r}")
+            break
+        at = m.end()
+        kind = m.lastgroup
+        tokens.append((kind, _json.loads(m.group(kind)) if kind == "str" else int(m.group(kind)) if kind == "num" else m.group(kind)))
+    pos = 0
+
+    def peek():
+        return tokens[pos] if pos < len(tokens) else (None, None)
+
+    def take(value=None):
+        nonlocal pos
+        tok = tokens[pos]
+        assert value is None or tok[1] == value, (tok, value)
+        pos += 1
+        return tok
+
+    def value():
+        kind, v = take()
+        if kind in ("str", "num"):
+            return v
+        if v == "{":
+            items = []
+            while peek()[1] != "}":
+                items.append(take()[1])
+            take("}")
+            return set(items)
+        if v == "(":
+            out = disjunction()
+            take(")")
+            return out
+        if v in ("lower", "len", "starts_with", "ends_with"):
+            take("(")
+            args = [value()]
+            while peek()[1] == ",":
+                take(",")
+                args.append(value())
+            take(")")
+            return {"lower": lambda s: s.lower(), "len": len, "starts_with": lambda s, p: s.startswith(p),
+                    "ends_with": lambda s, p: s.endswith(p)}[v](*args)
+        if v in ("true", "false"):
+            return v == "true"
+        return request[v]  # a field
+
+    def comparison():
+        left = value()
+        op = peek()[1]
+        if op in ("eq", "ne", "contains", "in"):
+            take()
+            right = value()
+            if op == "eq":
+                return left == right
+            if op == "ne":
+                return left != right
+            if op == "contains":
+                return isinstance(left, str) and right in left
+            return left in right
+        return left
+
+    def negation():
+        if peek()[1] == "not":
+            take()
+            return not negation()
+        return comparison()
+
+    def conjunction():
+        out = negation()
+        while peek()[1] == "and":
+            take()
+            right = negation()
+            out = out and right
+        return out
+
+    def disjunction():
+        out = conjunction()
+        while peek()[1] == "or":
+            take()
+            right = conjunction()
+            out = out or right
+        return out
+
+    result = disjunction()
+    assert pos == len(tokens), tokens[pos:]
+    return bool(result)
+
+
+def rendered_rule(ref: str) -> str:
+    rules = yaml.safe_load(RULES.read_text(encoding="utf-8"))
+    return next(r["expression"] for r in apply.render(rules, True)["http_request_firewall_custom"] if r["ref"] == ref)
+
+
+GOOGLEBOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+GOOGLEBOT_PHONE = ("Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) "
+                   "Chrome/141.0.7390.122 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
+BINGBOT = ("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm) "
+           "Chrome/116.0.1938.76 Safari/537.36")
+CHROME = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+
+
+def test_search_engines_pass_the_edge_and_crawlers_for_ai_training_do_not():
+    """Cloudflare's own AI-training block (ai_training: block, its rule BOBA-199) refused the real Googlebot and Bingbot
+    (data/security-logs/edge, 2026-10-07 to 10-10), so the site fell out of their indexes.  Training crawlers are refused
+    by name in R4 instead — verified or not — and the search engines, verified, pass; a name a crawler claims without
+    Cloudflare's verification is still refused."""
+    from taochronos.chat.build import TRAINING_CRAWLERS
+
+    rules = yaml.safe_load(RULES.read_text(encoding="utf-8"))
+    assert rules["bot_management"]["ai_training"] != "block"
+    robots_only = {"Google-Extended", "Applebot-Extended"}  # tokens in robots.txt, never in a request's agent
+    assert set(rules["training_agents"]) == set(TRAINING_CRAWLERS) - robots_only
+    search = ("Googlebot", "bingbot", "Baiduspider", "Bytespider", "YandexBot", "Applebot/", "PetalBot", "Sogou", "360Spider",
+              "DuckDuckBot", "YisouSpider", "OAI-SearchBot", "ChatGPT-User", "Claude-User", "Claude-SearchBot", "PerplexityBot")
+    assert not [a for a in rules["training_agents"] for s in search if s.lower() in a.lower() or a.lower() in s.lower()]
+    r4 = rendered_rule("tc-tooling-and-spoofed-crawlers")
+    req = lambda ua, bot=False, path="/": {"http.user_agent": ua, "cf.client.bot": bot, "http.request.uri.path": path}  # noqa: E731
+    passes = [req(GOOGLEBOT, True), req(GOOGLEBOT_PHONE, True), req("Googlebot-Image/1.0", True), req(BINGBOT, True),
+              req("Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)", True),
+              req("Mozilla/5.0 (Linux; Android 5.0) AppleWebKit/537.36 (KHTML, like Gecko) Mobile Safari/537.36 (compatible; "
+                  "Bytespider; spider-feedback@bytedance.com)", True),
+              req("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ChatGPT-User/1.0; +https://openai.com/bot)", True),
+              req("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-User/1.0; +claude-user@anthropic.com)", True),
+              req(CHROME), req("curl/8.5.0"), req("taochronos-collector/1"), req("", path="/.well-known/acme-challenge/x")]
+    blocked = [req("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)", True),
+               req("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)", True),
+               req("CCBot/2.0 (https://commoncrawl.org/faq/)", True), req("meta-externalagent/1.1", True),
+               req(GOOGLEBOT), req(BINGBOT),  # the names without Cloudflare's verification
+               req("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-User/1.0; +claude-user@anthropic.com)"),
+               req("python-requests/2.27.1"), req("Python-urllib/3.10"), req(""), req("Go-http-client/1.1")]
+    assert [r["http.user_agent"][:40] for r in passes if evaluate(r4, r)] == []
+    assert [r["http.user_agent"][:40] for r in blocked if not evaluate(r4, r)] == []
+    # the other rules read the same language: the scanner paths (R2) refuse /.env and let the site's own files through
+    r2 = rendered_rule("tc-scanner-paths")
+    path = lambda p: {"http.request.uri.path": p, "http.request.uri": p, "http.host": "chat.impf.ai",  # noqa: E731
+                      "http.user_agent": CHROME, "http.request.uri.query": "", "http.request.method": "GET", "cf.client.bot": False}
+    assert evaluate(r2, path("/.env")) and evaluate(r2, path("/.git/config")) and not evaluate(r2, path("/js/app.js"))

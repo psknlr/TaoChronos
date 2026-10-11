@@ -149,7 +149,7 @@ Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView
 | 1 | `tc-own-clients` | skip（只跳过浏览器完整性检查） | 仓库自己的客户端：`taochronos-collector/1`（收集器）、`taochronos-deploy/1`（`deploy.sh` 的检查） | 冒充这个 UA 只能绕过这一项（突发限制也不免：自己的客户端一小时只发几十个请求），其余规则照常 |
 | 2 | `tc-scanner-paths` | block | `wp-`、`/.git`、`/.env`、`.php`、`xmlrpc`、`/../`…… 这两个主机上根本不存在的路径（与哨兵的列表同源） | 无：网站没有这些路径；`/.well-known/` 除外 |
 | 3 | `tc-relay-origin` | block | 向中转 `POST /v1/chat/…`、`/v1/logs` 而 `Origin` 不是网页的来源——中转自己也会拒，但在边缘拒绝**不进 Worker、不计次数** | 无：浏览器一定带 Origin；来源表与 `relay/wrangler.toml` 一致，改一处要改另一处 |
-| 4 | `tc-tooling-and-spoofed-crawlers` | block | 没有 UA；`python*`、`Go-http-client`、`Java/`、扫描器名；以及自称 Googlebot、ChatGPT-User、PerplexityBot、ClaudeBot…… 却**没有通过 Cloudflare 验证**（`not cf.client.bot`）的 | 真正的爬虫（验证通过）放行；`curl`、`wget` 不拦（站长自己会用）；`/.well-known/acme-challenge/` 除外 |
+| 4 | `tc-tooling-and-spoofed-crawlers` | block | 只为训练模型抓取的爬虫（`training_agents`：GPTBot、ClaudeBot、CCBot、meta-externalagent……，**验证与否都拦**，与站点 robots.txt 的名单一致）；没有 UA；`python*`、`Go-http-client`、`Java/`、扫描器名；以及自称 Googlebot、bingbot、ChatGPT-User、PerplexityBot…… 却**没有通过 Cloudflare 验证**（`not cf.client.bot`）的 | 真正的搜索引擎与 AI 助手（验证通过）放行；`curl`、`wget` 不拦（站长自己会用）；`/.well-known/acme-challenge/` 除外 |
 | 5 | `tc-block-list` | block | 列表 `taochronos_block` 里的地址与网段（全站），由 `security/blocklist.yaml` 管理，见下文「封禁名单」。没有列表时这条省略 | 只拦名单上的 |
 | 速率 | `tc-api-burst` | block 10 秒 | `/api/*`、`/v1/*`（两个主机共用计数；`/api/security/csp` 除外）每个地址每个节点 10 秒 240 次 | 网页核对引文时几秒内最多取 60 段原文、再做最多 60 次规范化调用，仍在其下 |
 
@@ -157,10 +157,14 @@ Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView
 大陆访客常用的 VPN 出口，而质询页在大陆不一定打得开——哨兵只把它当两分的信号。要用先在 Security → Analytics 看这些 ASN 占正常页面访问的比例。
 
 另有区域设置（强制 HTTPS、TLS ≥ 1.2、TLS 1.3、浏览器完整性检查、质询有效期 30 分钟、边缘 HSTS 半年不含子域）与机器人设置
-（Bot Fight Mode 关；按行为分：训练用的爬虫 `ai_training: block`，搜索引擎与 AI 助手代用户的抓取放行——网页本来就是可索引的。
+（Bot Fight Mode 关；三类 AI 设置都是 `disabled`：搜索引擎与 AI 助手代用户的抓取放行——网页本来就是可索引的。
+训练用的爬虫由第 4 条按名字拦下，**不用** `ai_training: block`：它的托管规则（Block AI training crawlers，BOBA-199）在 2026-10-07 至 10-10
+把真正的 Googlebot（66.249.66.43–45）与 Bingbot（40.77.167.4、.46，52.167.144.25）的首页请求也拦了，网站因此进不了谷歌与必应的索引。
+`tests/test_security_apply.py` 按 Cloudflare 的规则语言算一遍渲染出的第 4 条：验证过的 Googlebot、Bingbot、百度、头条与 AI 助手放行，
+训练爬虫与冒名的拦下，`ai_training` 不是 `block`。
 托管 robots.txt **关**：Cloudflare 的名单把百度、花瓣、头条的搜索爬虫也列为训练爬虫并整站禁止，网站会从这些搜索结果里消失；
-对训练爬虫的声明由构建写进站点自己的 robots.txt，不点名任何搜索引擎（`tests/test_chat.py` 逐个核对各搜索引擎都能抓页面）。
-不想拦训练爬虫就把 `ai_training` 改为 `disabled`）。
+对训练爬虫的声明由构建写进站点自己的 robots.txt，不点名任何搜索引擎（`tests/test_chat.py` 逐个核对各搜索引擎都能抓页面），
+与 `training_agents` 同一份名单（测试核对两处一致）。不想拦训练爬虫就把 `training_agents` 清空）。
 
 **与控制台助手方案的差别**：它提的两条 60 秒窗口、300 秒封禁的速率限制在免费计划上写不进去（只有 1 条、10 秒）；12 个固定 IP 的拦截名单一周就过时
 （扫描器换网段），其中 160.79.106.129 还是 Anthropic 公布的 ClaudeBot 网段——真爬虫该由验证字段与 AI 爬虫设置处理，固定名单改用随时可改的列表；
