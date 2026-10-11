@@ -474,3 +474,50 @@ def tukey(values: Sequence[float]) -> dict[str, Any] | None:
     inside = [x for x in v if fence_lo <= x <= fence_hi] or v
     return {"n": len(v), "min": v[0], "q1": round(q1, 4), "median": round(med, 4), "q3": round(q3, 4), "lo": inside[0], "hi": inside[-1],
             "max": v[-1], "mean": round(sum(v) / len(v), 4), "outliers": [x for x in v if x < inside[0] or x > inside[-1]]}
+
+
+def fisher_exact_two_sided(a: int, b: int, c: int, d: int) -> float:
+    """Two-sided Fisher exact P for [[a, b], [c, d]]: the probability, given the margins, of every table no more likely
+    than the one observed."""
+    row1, col1, n = a + b, a + c, a + b + c + d
+    lo, hi = max(0, row1 + col1 - n), min(row1, col1)
+    denom = _log_comb(n, col1)
+    prob = [math.exp(_log_comb(row1, x) + _log_comb(n - row1, col1 - x) - denom) for x in range(lo, hi + 1)]
+    seen = prob[a - lo]
+    return min(1.0, sum(p for p in prob if p <= seen * (1 + 1e-7)))
+
+
+def chi_square_independence(table: Sequence[Sequence[float]]) -> dict[str, Any] | None:
+    """Pearson's χ² test that the rows and columns of a table of counts are independent: χ², its degrees of freedom, P,
+    n, the smallest expected count (below 5 the approximation is poor: a 2 × 2 table then wants Fisher's exact test)
+    and Cramér's V.  Rows and columns that are empty throughout are left out; None when fewer than two of either
+    remain."""
+    rows = [list(map(float, r)) for r in table if sum(r) > 0]
+    if len(rows) < 2:
+        return None
+    keep = [j for j in range(len(rows[0])) if sum(r[j] for r in rows) > 0]
+    rows = [[r[j] for j in keep] for r in rows]
+    if len(keep) < 2:
+        return None
+    n = sum(map(sum, rows))
+    rsum = [sum(r) for r in rows]
+    csum = [sum(r[j] for r in rows) for j in range(len(keep))]
+    chi2, smallest = 0.0, float("inf")
+    for i, r in enumerate(rows):
+        for j, o in enumerate(r):
+            e = rsum[i] * csum[j] / n
+            smallest = min(smallest, e)
+            chi2 += (o - e) ** 2 / e
+    df = (len(rows) - 1) * (len(keep) - 1)
+    v = math.sqrt(chi2 / (n * (min(len(rows), len(keep)) - 1))) if n else 0.0
+    return {"chi2": round(chi2, 3), "df": df, "p": chi2_sf(chi2, df), "n": int(n), "min_expected": round(smallest, 2),
+            "cramers_v": round(v, 4)}
+
+
+def mean_sd(values: Sequence[float]) -> tuple[float, float]:
+    """The mean and the sample standard deviation (n − 1)."""
+    n = len(values)
+    if not n:
+        return 0.0, 0.0
+    m = sum(values) / n
+    return m, math.sqrt(sum((x - m) ** 2 for x in values) / (n - 1)) if n > 1 else 0.0

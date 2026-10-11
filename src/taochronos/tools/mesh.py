@@ -394,13 +394,17 @@ def _study(ctx: ToolContext) -> Any:
         raise KeyError("no 'study' capability is registered (the classics plugin provides it)") from exc
 
 
+PAGE_WHOLE = ("charts", "tables", "document")  # for the page, whole; the model reads none of them
+
+
 def _brief(value: Any, items: int = 12, chars: int = 240) -> Any:
     """Keep tool results small for agent context: long lists are cut (with the count left out), long strings shortened,
     bulky keys (member lists, Anki text, per-field quotes) dropped.  The full results are in the CLI and the datasets.
-    The chart specifications (``charts``, drawn from the full result) and a result's document (``document``) pass as they
-    are: the interface shows them, the model's text leaves them out (``chat.results``)."""
+    The chart specifications (``charts``, drawn from the full result), the three-line tables (``tables``) and a result's
+    document (``document``) pass as they are: the interface shows them whole, the model's text leaves them out
+    (``chat.results``) — a table cut here would print part of its rows and a row saying how many were left out."""
     if isinstance(value, dict):
-        return {k: (v if k in ("charts", "document") else _brief(v, items, chars)) for k, v in value.items()
+        return {k: (v if k in PAGE_WHOLE else _brief(v, items, chars)) for k, v in value.items()
                 if k not in ("member_ids", "anki_tsv", "quotes")}
     if isinstance(value, list):
         out = [_brief(v, items, chars) for v in value[:items]]
@@ -694,6 +698,42 @@ def _study_schools(ctx: ToolContext, a: dict[str, Any]) -> Any:
     probes = a.get("probes") or []
     return _brief(_study(ctx).schools(a.get("school"), probes=[probes] if isinstance(probes, str) else probes),
                   int(a.get("items", 20)))
+
+
+# ------------------------------------------------------------------ 我的资料 (the user's own data)
+def _mydata(ctx: ToolContext) -> Any:
+    try:
+        return ctx.cap("mydata")
+    except LookupError as exc:
+        raise LookupError("我的资料只在对话中可用（mydata 能力由对话运行环境提供）") from exc
+
+
+def _mydata_list(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_mydata(ctx).list(), 20, chars=400)
+
+
+def _mydata_read(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    limit = max(1, min(int(a.get("limit", 20)), 100))
+    res = _mydata(ctx).read(a.get("dataset"), start=int(a.get("start", 1)), limit=limit, columns=_names(a.get("columns")) or None)
+    return _brief(res, limit, chars=800)
+
+
+def _mydata_search(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_mydata(ctx).search(a["query"], dataset=a.get("dataset"), limit=int(a.get("limit", 30))), int(a.get("limit", 30)), chars=400)
+
+
+def _mydata_describe(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_mydata(ctx).describe(a.get("dataset"), _names(a.get("columns")) or None), int(a.get("items", 40)))
+
+
+def _mydata_compare(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_mydata(ctx).compare(a["outcome"], a["group"], dataset=a.get("dataset")), int(a.get("items", 20)))
+
+
+def _mydata_prescriptions(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _mydata(ctx).prescriptions(a.get("dataset"), column=a.get("column"), group=a.get("group"),
+                                     merge=a.get("merge") or "written", classics=bool(a.get("classics", True)))
+    return _brief(res, int(a.get("items", 15)))
 
 
 def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
@@ -1038,6 +1078,43 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "risk ratio with caveats.  A model never writes the SQL.",
                  obj({"question": S}, ["question"]), _rwd_ask, family="literature", permission="literature:read",
                  expensive=True, returns="the spec, arms, risk ratio, caveats"),
+        ToolSpec("mydata.list", "我的资料: the datasets the user has uploaded in this conversation's runtime (files read in "
+                 "their own browser or machine and made anonymous: names, identity, telephone and record numbers removed) — "
+                 "each one's id, file name, kind (table or text), size, columns with their types (number, date, category, "
+                 "text, prescription) and a preview, and what was removed.",
+                 obj({}), _mydata_list, family="mydata", permission="mydata:read",
+                 returns="datasets with ids, columns and types, de-identification report"),
+        ToolSpec("mydata.read", "我的资料: read a dataset — a table's rows (columns to choose some; start, limit) or a text's "
+                 "passages — each with its citable id (mine:<dataset>.r<n> for a row, mine:<dataset>.<n> for a passage). "
+                 "dataset is its id or file name (may be left out when there is only one).",
+                 obj({"dataset": S, "start": I, "limit": I, "columns": {"type": "array", "items": S}}), _mydata_read, family="mydata",
+                 permission="mydata:read", returns="rows or passages with mine: ids"),
+        ToolSpec("mydata.search", "我的资料: where the user's data writes the words of query (all of them, after the corpus's "
+                 "variant folding): the passages and rows with the words around them, and how many there are.",
+                 obj({"query": S, "dataset": S, "limit": I}, ["query"]), _mydata_search, family="mydata", permission="mydata:read",
+                 returns="hits with mine: ids and context, the total"),
+        ToolSpec("mydata.describe", "我的资料 · 描述统计: a table's columns described as a paper's first table — a numeric column's "
+                 "n, missing, mean ± SD, median (P25, P75) and range with a histogram; a categorical column's categories, "
+                 "n (%), with a bar chart — as three-line tables the page shows and downloads.",
+                 obj({"dataset": S, "columns": {"type": "array", "items": S}, "items": I}), _mydata_describe, family="mydata",
+                 permission="mydata:read", returns="variables with their statistics; charts and tables for the page"),
+        ToolSpec("mydata.compare", "我的资料 · 组间比较: an outcome column across the groups of another column — a numeric "
+                 "outcome by Kruskal–Wallis (each group's n, mean ± SD, median (P25, P75); a box plot), a categorical one by "
+                 "Pearson's χ² (Fisher's exact test for a 2 × 2 table with an expected count under 5; n (%) by group; a "
+                 "stacked chart), two numeric columns by Spearman's ρ (a scatter with a LOESS curve).",
+                 obj({"outcome": S, "group": S, "dataset": S, "items": I}, ["outcome", "group"]), _mydata_compare, family="mydata",
+                 permission="mydata:read", returns="the test, per-group statistics; charts and tables for the page"),
+        ToolSpec("mydata.prescriptions", "我的资料 · 处方用药分析: the prescriptions of a table's column (found by itself, or "
+                 "column) or of a text's passages, read with the classics' lexicon (drugs and their doses: 柴胡12g, "
+                 "桂枝三两, 柴胡、黄芩各9g) — the drugs used most, their doses in grams, the pairs used together more often "
+                 "than chance (one-sided Fisher test, Benjamini–Hochberg), association rules, a clustering of the frequent "
+                 "drugs; with group (a diagnosis column), which drugs differ across the groups; with classics, each "
+                 "prescription's nearest composition in the classics (Jaccard on drug families) and its witness.  merge: "
+                 "written (default: 白芍 and 赤芍 apart) or family (as the classics: 白芍、赤芍 → 芍药).",
+                 obj({"dataset": S, "column": S, "group": S, "merge": {"type": "string", "enum": ["written", "family"]},
+                      "classics": {"type": "boolean"}, "items": I}),
+                 _mydata_prescriptions, family="mydata", permission="mydata:read", expensive=True,
+                 returns="frequency, doses, pairs, rules, clusters, groups, nearest classics; charts and tables for the page"),
         ToolSpec("validation.verify_quote", "Locate a quote verbatim (or after variant normalisation) in the corpus — catches fabricated citations.",
                  obj({"quote": S, "passage_id": S}, ["quote"]), _verify_quote, family="validation", permission="classics:read"),
         ToolSpec("validation.gates", "Evaluate epistemic gates G0–G8 for a claim, evidence record or hypothesis.",

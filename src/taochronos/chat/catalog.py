@@ -22,6 +22,7 @@ FAMILIES: dict[str, dict[str, str]] = {
     "validation": {"label": "核验", "blurb": "引文核对、溯源链、门控、证据审计、证据图谱"},
     "bridge": {"label": "古今", "blurb": "古代表型包、HPO 映射、今病溯古（表型相似，不是回溯诊断）"},
     "literature": {"label": "现代", "blurb": "现代研究证据、有毒药物安全提示、真实世界数据（合成 OMOP）"},
+    "mydata": {"label": "我的资料", "blurb": "用户上传的资料（本机读取、已脱敏）：列表、阅读、检索、描述统计、组间比较、处方用药分析"},
     "engine": {"label": "研究", "blurb": "多智能体发现研究（证据 → 假说 → 证伪 → 门控）、研究会话、V2 技能工作流"},
     "research": {"label": "代码", "blurb": "Code Mode：在隔离环境中运行调用工具的 Python 研究脚本"},
 }

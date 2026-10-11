@@ -83,6 +83,7 @@
             <li>考据与治学：方剂源流与加减化裁、药物性味归经、术语源流、经文异文、历代注家集注、训诂、句读、版本、避讳、度量衡。</li>
             <li>知识发现：发掘失传的关联、概念与方剂的演变、隐含的关联与文献矛盾，提出并检验研究假说。</li>
             <li>证据核验：引文逐字核对；也可以审计一个说法有没有文献依据。</li>
+            <li>分析我的资料：上传门诊处方、病案或调查表，做统计与处方用药分析；资料在本机读取并脱敏。</li>
           </ul>
           <p>例如：桂枝汤的原方组成与剂量出自哪里？「消渴」一词在历代文献中的含义如何演变？</p>
           <p><a href="about">关于道乃久</a> · <a href="attribution">语料来源与授权</a></p>
@@ -98,6 +99,8 @@
         <div class="bar">
           <button id="attach" class="icon-btn" type="button" title="附上书影或图片（需模型支持）" aria-label="附加图片"></button>
           <input id="file" type="file" accept="image/*" multiple hidden>
+          <button id="attach-data" class="icon-btn" type="button" title="上传资料：表格、病案、处方或笔记（本机处理，自动脱敏）" aria-label="上传资料"></button>
+          <input id="data-file" type="file" multiple hidden>
           <span id="hint" class="hint"></span>
           <span class="grow"></span>
           <button id="send" class="send" type="submit" title="发送 (Enter)" aria-label="发送"></button>

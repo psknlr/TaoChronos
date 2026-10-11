@@ -32,11 +32,14 @@ export const TOOL_WORDS = {
   "bridge.phenotype": "古代表型", "bridge.map": "古今映射", "bridge.reverse": "今病溯古",
   "modern.safety": "安全提示", "modern.search": "现代证据", "literature.modern_evidence": "现代研究证据", "rwd.ask": "真实世界数据",
   "research.run_code": "研究脚本",
+  "mydata.list": "我的资料", "mydata.read": "资料阅读", "mydata.search": "资料检索", "mydata.describe": "描述统计",
+  "mydata.compare": "组间比较", "mydata.prescriptions": "处方用药分析",
   taochronos_research: "发现研究", taochronos_session: "研究会话", taochronos_ask: "技能工作流",
   taochronos_catalog: "工具目录", taochronos_call: "调用工具",
 };
 const FAMILY_WORDS = { classics: "检索", kg: "知识", analysis: "发现", study: "治学", philology: "文献", vision: "文献",
-  validation: "核验", audit: "核验", graph: "核验", bridge: "古今", modern: "现代", literature: "现代", rwd: "现代", research: "代码" };
+  validation: "核验", audit: "核验", graph: "核验", bridge: "古今", modern: "现代", literature: "现代", rwd: "现代", research: "代码",
+  mydata: "我的资料" };
 const FIELD_WORDS = { passage_id: "段落编号", book_id: "录本编号", session_id: "研究会话编号", claim_id: "主张编号",
   hypothesis_id: "假说编号", evidence_id: "证据编号", work_id: "书目编号" };
 // the labels the tools grade with — an audit's verdict, who asserts a link, modern evidence by its design and by what

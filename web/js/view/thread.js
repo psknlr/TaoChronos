@@ -4,12 +4,13 @@ import { chartGallery, documentButton } from "../chart.js";
 import { renderMarkdown } from "../markdown.js";
 import { redact, toolWord } from "../redact.js";
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY } from "../brand.js";
+import { sizeLabel } from "../mydata.js";
 import { RELAY_ID } from "../providers.js";
 import { fmtMs, h, icon, passageLabel, prettyJSON, progressBar, replace, truncate } from "../util.js";
 
 export const FAMILY = {
   retrieval: "检索", study: "治学", knowledge: "知识", analytics: "发现", philology: "文献", validation: "核验",
-  bridge: "古今", literature: "现代", engine: "研究", meta: "目录", research: "代码",
+  bridge: "古今", literature: "现代", engine: "研究", meta: "目录", research: "代码", mydata: "我的资料",
 };
 
 export function toolFamily(name, catalogIndex) {
@@ -19,7 +20,7 @@ export function toolFamily(name, catalogIndex) {
   const prefix = name.split(/__|\./)[0];
   return { classics: "retrieval", kg: "knowledge", analysis: "analytics", study: "study", philology: "philology", vision: "philology",
     validation: "validation", audit: "validation", graph: "validation", bridge: "bridge", modern: "literature", literature: "literature",
-    rwd: "literature", research: "research" }[prefix] || "meta";
+    rwd: "literature", research: "research", mydata: "mydata" }[prefix] || "meta";
 }
 
 /** A tool as the page names it: in plain words, never by its inside name (redact.js). */
@@ -90,6 +91,10 @@ function userNode(m, ctx, last) {
     return el;
   }
   if (m.images?.length) el.append(h("div.imgs", m.images.map((src) => h("img", { src, alt: "附图" }))));
+  if (m.data?.length) {
+    el.append(h("div.data-chips", m.data.map((d) => h("div.data-chip", { title: `${d.name} · ${sizeLabel(d)} · 已脱敏` },
+      icon(d.kind === "table" ? "table" : "file", "sm"), h("span.nm", truncate(d.name, 28)), h("span.sz", sizeLabel(d))))));
+  }
   el.append(h("div.bubble", m.text));
   el.append(h("div.actions",
     h("button.icon-btn", { type: "button", title: "复制", "aria-label": "复制", on: { click: () => ctx.onCopy(m.text) } }, icon("copy", "sm")),

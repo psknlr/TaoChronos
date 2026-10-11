@@ -13,6 +13,10 @@
 //   too — so that a later visit loads in seconds, with nothing to download or index; so is the package's bytecode,
 //   compiled once after the first visit's indexing.
 //
+// 我的资料: a file the page hands over (data_add, its bytes transferred) is read, made anonymous and kept by the runtime;
+// what was kept — the anonymous dataset, never the file — is stored here too (IndexedDB, "mydata:<id>") and given back to
+// the runtime when it starts at the next visit, until the page removes it (data_remove, data_clear).
+//
 // Messages: {id, method, params} → {id, result} | {id, error}; while loading {type: "progress", progress, message}; while
 // the rest is indexed {type: "index", indexed, total, done, kept}.
 
@@ -59,13 +63,14 @@ const kept = (() => {
     get: async (key) => (await run("readonly", (s) => s.get(key))).value,
     put: async (key, value) => (await run("readwrite", (s) => s.put(value, key))).ok,
     drop: async (key) => (await run("readwrite", (s) => s.delete(key))).ok,
+    keys: async (prefix) => (await run("readonly", (s) => s.getAllKeys(IDBKeyRange.bound(prefix, `${prefix}\uffff`)))).value || [],
   };
 })();
 
 /** A runtime archive: kept by content (the manifest's sha256), so that a new build is always fetched. */
 async function archive(base, name, sha) {
   const hit = sha ? await kept.get(`zip:${name}`) : undefined;
-  if (hit?.sha === sha && hit.blob instanceof Blob) return new Uint8Array(await hit.blob.arrayBuffer());
+  if (sha && hit?.sha === sha && hit.blob instanceof Blob) return new Uint8Array(await hit.blob.arrayBuffer());
   const url = new URL(`runtime/${name}`, base).href;
   const r = await fetch(url, { cache: "no-cache" });
   if (!r.ok) throw new Error(`下载 ${url} 失败（HTTP ${r.status}）`);
@@ -197,6 +202,19 @@ def _rpc(method, params):
     elif method == "session":
         out = _rt.session_view(p["session_id"], what=p.get("what", "summary"), hypothesis=p.get("hypothesis"),
                                section=p.get("section"))
+    elif method == "data_add":
+        with open(p["path"], "rb") as f:
+            out = _rt.data_add(p.get("name", ""), f.read())
+    elif method == "data_list":
+        out = _rt.data_list()
+    elif method == "data_remove":
+        out = _rt.data_remove(p.get("id", ""))
+    elif method == "data_clear":
+        out = _rt.data_clear()
+    elif method == "data_export":
+        out = _rt.data_export(p.get("id", ""))
+    elif method == "data_restore":
+        out = _rt.data_restore(p.get("data") or {})
     else:
         raise ValueError(f"unknown method {method}")
     return json.dumps(out, ensure_ascii=False, default=str)
@@ -261,6 +279,44 @@ async function indexRest(sha, then) {
     step.destroy?.();
     then?.();
   }
+}
+
+// ------------------------------------------------------------------------------------------------------ 我的资料
+const MINE = "mydata:";
+
+/** A file of the user's: read and kept by the runtime, and its anonymous dataset kept here for the next visit. */
+async function addData({ name, bytes }) {
+  const path = `/tmp/mydata-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  py.FS.writeFile(path, new Uint8Array(bytes));
+  try {
+    const out = JSON.parse(rpc("data_add", JSON.stringify({ name, path })));
+    if (out.ok) out.kept = await kept.put(MINE + out.dataset.id, rpc("data_export", JSON.stringify({ id: out.dataset.id })));
+    return out;
+  } finally {
+    try { py.FS.unlink(path); } catch { /* gone already */ }
+  }
+}
+
+/** The datasets kept by earlier visits, given back to the runtime; one it cannot read any more is dropped. */
+async function restoreData() {
+  for (const key of await kept.keys(MINE)) {
+    const text = await kept.get(key);
+    let ok = false;
+    try { ok = typeof text === "string" && JSON.parse(rpc("data_restore", `{"data":${text}}`)).ok; } catch { ok = false; }
+    if (!ok) await kept.drop(key);
+  }
+}
+
+async function removeData({ id }) {
+  const out = JSON.parse(rpc("data_remove", JSON.stringify({ id })));
+  if (out.ok) await kept.drop(MINE + out.removed);
+  return out;
+}
+
+async function clearData() {
+  const out = JSON.parse(rpc("data_clear", "{}"));
+  await kept.drop(IDBKeyRange.bound(MINE, `${MINE}\uffff`));
+  return out;
 }
 
 async function init({ base }) {
@@ -342,6 +398,7 @@ async function init({ base }) {
   progress(90, "建立工具网格");
   py.runPython(BOOT);
   rpc = py.globals.get("_rpc");
+  await restoreData();
   const info = JSON.parse(rpc("info", "{}"));
   info.load_ms = Math.round(performance.now() - t0);
   info.version_manifest = manifest.version;
@@ -362,7 +419,8 @@ self.onmessage = async (e) => {
     } else {
       if (!ready) throw new Error("运行环境尚未启动");
       await ready;
-      result = JSON.parse(rpc(method, JSON.stringify(params || {})));
+      const local = { data_add: addData, data_remove: removeData, data_clear: clearData }[method];
+      result = local ? await local(params || {}) : JSON.parse(rpc(method, JSON.stringify(params || {})));
     }
     self.postMessage({ id, result });
   } catch (err) {

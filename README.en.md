@@ -124,6 +124,7 @@ and decide.
 | **Modern evidence and real-world data** | PubMed typed by design and population, the cross-level guard, safety warnings; real-world questions as validated study specs over OMOP | `modern search` · `modern safety` · `rwd ask` · `rwd synth` |
 | **Layout, entities, translation, places** | vertical reading order and 双行小注, a multimodal reading, OCR checked against the store; entities in context; five-layer translation; native places, signed prefaces, regional statistics | `vision` · `study entities` · `study translate` · `study places` |
 | **Knowledge discovery** | multi-agent research: lost knowledge, concept drift, formula evolution, hidden associations, contradictions, lost sources; verbatim evidence, falsification, gates, expert review | `research` · `report` · `workspace` · `review` |
+| **Your own data** | upload your own data (a clinic's prescriptions, case records, a survey, notes: CSV, Excel, Word, TXT, JSON) for 道乃久 to analyse: read on your machine (in the browser or by a server on it — never by the site's servers), made anonymous as it is read (names and doctors to pseudonyms, identity and record numbers to codes, telephones and addresses removed), conversations touching it never recorded; descriptive statistics, group comparisons (Kruskal–Wallis, χ² / Fisher, Spearman), prescription mining (frequent drugs, doses, pairs by Fisher + BH, rules, clusters, groups compared, the nearest compositions of the classics with their witnesses), with figures and three-line tables, the rows it cites checked like any citation | [web](docs/web.md#我的资料--the-users-own-data) · [notes](docs/mydata.md) |
 | **Everyone (web)** | a ChatGPT/Claude-style multi-turn chat: the default service with no key (MiniMax-M3) or a model of your choice answers through every tool, quotations checked word for word, sources one click away (horizontal or vertical reading); a research panel and a tool console; conversations kept in your browser, exportable | [web](https://chat.impf.ai/) · `serve` · `web build` |
 | **Developers** | plugin kernel, capability registry, a tool mesh of 79 tools, agents as YAML specs, event sourcing and replay, evaluation and architecture governance; the JSON Schemas of the tasks' outputs | `agents` · `eval` · `governance` · `schema --study` |
 
@@ -602,7 +603,9 @@ MiniMax-M3's `reasoning_details` and tool calls are replayed verbatim turn after
 official SDK (adaptive thinking, server-side refusal fallbacks).  The local server binds to 127.0.0.1 by default, answers
 only this machine's pages, its own pages, the published client and named origins, and forwards model requests only to the
 listed providers; bound to any other address it requires an access token.  All the books (about 2.2 GB, under their
-sources' licences) are not published with the site: they reach it through the server.
+sources' licences) are not published with the site: they reach it through the server.  A user may upload their own data
+for 道乃久 to analyse ([your own data](docs/mydata.md), [ADR 0022](docs/adr/0022-the-users-own-data.md)): it is read and
+made anonymous on their machine, never handled by the site's servers, and a conversation touching it is never recorded.
 
 ## 8. Evaluation and quality
 

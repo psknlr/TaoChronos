@@ -6,6 +6,10 @@ engine, the V2 skill workflow — and answers in two forms: a compact text for t
 interface, with the passages the result cites, so that every ``[[passage_id]]`` the model writes can be checked
 against what a tool returned.
 
+It also holds the user's own data (我的资料, the ``mydata`` capability): files the page hands it (``data_add``) are
+read, made anonymous and kept in this runtime — in the browser, the browser's — for the ``mydata.*`` tools, their
+passages and rows citable as ``[[mine:…]]``.
+
 The model acts as an agent-principal actor holding read and analysis permissions only: it can propose nothing to
 canonical knowledge and, unless the runtime was started with Code Mode, run no code.  The same module serves the
 local server (``taochronos serve``, the full corpus) and the browser (Pyodide, the demonstration corpus), so both
@@ -24,13 +28,16 @@ from .. import AGENT_NAME, __version__
 from ..kernel.policy import Actor
 from ..kernel.tools import ToolCall
 from ..protocol.base import to_jsonable
-from .catalog import CODE_MODE, ENGINE_TOOLS, META_TOOLS, NEVER, catalog_view, family_counts, llm_tools, offered
+from ..plugins.userdata.formats import ACCEPTED, MAX_BYTES, Unreadable
+from ..plugins.userdata.service import MyData
+from ..plugins.userdata.store import MAX_DATASETS
+from .catalog import CODE_MODE, ENGINE_TOOLS, META_TOOLS, NEVER, catalog_view, family_counts, llm_tools, offered, tool_entry
 from .prompt import AGENT_NAME as AGENT_NAME_ZH
 from .prompt import ASSISTANT_NAME, PUBLISHER, STARTERS, system_prompt
 from .results import citations, compact, for_interface, for_model, summarize
 
 CORPUS_LABELS = {"demo": "演示语料", "canon": "要籍语料", "full": "全量语料"}
-CHAT_PERMISSIONS = frozenset({"classics:read", "kg:read", "analysis:run", "literature:read", "validation:run"})
+CHAT_PERMISSIONS = frozenset({"classics:read", "kg:read", "analysis:run", "literature:read", "validation:run", "mydata:read"})
 ENGINE_NAMES = {t["name"] for t in ENGINE_TOOLS} | {t["name"] for t in META_TOOLS}
 MAX_ROUNDS = 6
 
@@ -74,6 +81,9 @@ class ChatRuntime:
         self.jobs: dict[str, dict[str, Any]] = {}
         self._research = threading.Lock()  # one research run at a time: a run installs its contract's guards harness-wide
         self._info: dict[str, Any] | None = None
+        caps = harness.capabilities
+        self.mydata = MyData(caps.get("study") if caps.has("study") else None)  # 我的资料: the classics read its prescriptions
+        caps.register("mydata", "chat", self.mydata, default=True)
 
     @classmethod
     def create(cls, profile: str | None = None, *, home: str | Path | None = None, data_dir: str | Path | None = None,
@@ -110,14 +120,21 @@ class ChatRuntime:
                 "engine_model": f"{judge['provider']}:{judge.get('model', '')}" if judge.get("provider") else None,
                 "code_mode": self.code_mode,
                 "starters": STARTERS,
+                "mydata": {"accepted": list(ACCEPTED), "max_bytes": MAX_BYTES, "max_datasets": MAX_DATASETS,
+                           "prescriptions": self.mydata.reader is not None},
             }
             info["system_prompt"] = system_prompt(info)
             self._info = info
         return self._info
 
     def catalog(self, mode: str = "core") -> dict[str, Any]:
-        return {"mode": mode, "tools": llm_tools(self.h.tools, mode=mode, code_mode=self.code_mode),
-                "families": family_counts(self.h.tools, code_mode=self.code_mode)}
+        """The tools offered to the model; in ``core`` mode with the 我的资料 tools apart (``mydata``), which the page
+        offers too while the user has data."""
+        out = {"mode": mode, "tools": llm_tools(self.h.tools, mode=mode, code_mode=self.code_mode),
+               "families": family_counts(self.h.tools, code_mode=self.code_mode)}
+        if mode == "core":
+            out["mydata"] = [tool_entry(s) for s in offered(self.h.tools, code_mode=self.code_mode) if s.family == "mydata"]
+        return out
 
     # ---------------------------------------------------------------------- call
     def _resolve(self, name: str) -> str:
@@ -154,7 +171,15 @@ class ChatRuntime:
             error = str(exc)
         except Exception as exc:  # a failing tool is data for the model, not a crash of the conversation
             error = f"{type(exc).__name__}: {exc}"
-        return shape(tool, ok, result, error, receipt, duration_ms=(time.perf_counter() - started) * 1000, max_chars=max_chars)
+        out = shape(tool, ok, result, error, receipt, duration_ms=(time.perf_counter() - started) * 1000, max_chars=max_chars)
+        for card in out.get("citations") or []:  # a row or passage of the user's data, as the page names it (for the page only)
+            if str(card.get("passage_id", "")).startswith("mine:"):
+                try:
+                    full = self.mydata.card(card["passage_id"])
+                except LookupError:
+                    continue
+                card.update({k: v for k, v in full.items() if k != "passage_id"}, text=full["text"][:240])
+        return out
 
     def _engine_tool(self, name: str, a: dict[str, Any]) -> Any:
         spec = next(t for t in (*ENGINE_TOOLS, *META_TOOLS) if t["name"] == name)
@@ -175,11 +200,49 @@ class ChatRuntime:
 
     # ------------------------------------------------------------------ passages
     def passage(self, passage_id: str) -> dict[str, Any]:
-        """A passage in full, for the evidence drawer (and to check a citation the model wrote)."""
+        """A passage in full, for the evidence drawer (and to check a citation the model wrote) — a passage or row of the
+        user's data too (``mine:…``)."""
+        if passage_id.startswith("mine:"):
+            try:
+                return {"ok": True, **self.mydata.card(passage_id)}
+            except LookupError as exc:
+                return {"ok": False, "passage_id": passage_id, "error": str(exc)}
         outcome = self.h.scheduler.execute(ToolCall("classics.get_passage", {"passage_id": passage_id}), actor=self.actor)
         if not outcome.ok:
             return {"ok": False, "passage_id": passage_id, "error": outcome.error}
         return {"ok": True, **to_jsonable(outcome.result)}
+
+    # ------------------------------------------------------------------ 我的资料
+    def data_add(self, name: str, data: bytes) -> dict[str, Any]:
+        """Read a file of the user's, make it anonymous and keep it: the dataset's summary, or why it cannot be read."""
+        try:
+            return {"ok": True, "dataset": self.mydata.add(str(name or "资料"), bytes(data))}
+        except Unreadable as exc:
+            return {"ok": False, "error": str(exc)}
+        except Exception as exc:  # a damaged file: the reason, not a crash
+            return {"ok": False, "error": f"无法读取「{name}」：文件可能已损坏或格式不符（{type(exc).__name__}）"}
+
+    def data_list(self) -> dict[str, Any]:
+        return self.mydata.datasets()
+
+    def data_remove(self, ds_id: str) -> dict[str, Any]:
+        try:
+            return {"ok": True, **self.mydata.remove(ds_id)}
+        except LookupError as exc:
+            return {"ok": False, "error": str(exc)}
+
+    def data_clear(self) -> dict[str, Any]:
+        return {"ok": True, **self.mydata.clear()}
+
+    def data_export(self, ds_id: str) -> dict[str, Any]:
+        """A dataset as plain data, for the browser to keep (the runtime there starts afresh at each visit)."""
+        return self.mydata.export(ds_id)
+
+    def data_restore(self, payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return {"ok": True, "dataset": self.mydata.restore(payload)}
+        except Exception as exc:  # kept by an older page in a form this one does not read: dropped by the page
+            return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
 
     # ------------------------------------------------------------------ research
     def _goal(self, question: str, *, focus_terms: list[str] | None = None, tracks: list[str] | None = None,

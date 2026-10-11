@@ -5,7 +5,8 @@ and ``delta.content`` as cumulative text; tool-call arguments arrive in pieces. 
 ``classics__search``; once the turn holds a tool result, the reply is an answer with four citations — one quoted
 verbatim, one misquoted, one to a passage that does not exist and one quoted in the traditional script — and, as a model
 forgetting its instructions would, the names of the tools and fields it worked with, which the page tells in plain words
-(web/js/redact.js).  Every request is recorded for the test to inspect.
+(web/js/redact.js).  A message carrying the user's data (我的资料: the page's note on it) is answered by analysing its
+prescriptions (``mydata__prescriptions``) and citing its first row.  Every request is recorded for the test to inspect.
 """
 
 from __future__ import annotations
@@ -34,6 +35,12 @@ CHART_ANSWER = ("两方的对照见上方图表。合两方的共有药味作图
                 "\n```\n\n以上数字出自方剂比较的结果。\n\n表1　两方共有之药的剂量\n\n"
                 "| 药 | 桂枝汤 | 麻黄汤 |\n|:---|:---:|:---:|\n| 桂 | 三两 | 二两 |\n| 甘草 | 二两 | 一两 |\n\n"
                 "注：剂量照原书所写；n = 2。")
+
+
+# a message carrying the user's data: its prescriptions analysed by diagnosis, its first row quoted
+DATA_ANSWER = ("## 用药规律\n\n高频药物、药对与各组用药见上方图表。\n\n"
+               "- 第一张处方：「处方：柴胡12g 黄芩9g」[[mine:{id}.r1]]\n\n统计只描述这份资料，不构成诊疗建议。")
+DATA_ID = re.compile(r"资料（已在本机脱敏）：(d[0-9a-z]+)「")
 
 
 class MockProvider(ThreadingHTTPServer):
@@ -77,7 +84,9 @@ class _Handler(BaseHTTPRequestHandler):
         last_user = max((i for i, m in enumerate(messages) if m.get("role") == "user"), default=-1)
         answered = any(m.get("role") == "tool" for m in messages[last_user + 1:])
         asked = messages[last_user].get("content") if last_user >= 0 else ""
-        charting = "图表" in (asked if isinstance(asked, str) else json.dumps(asked, ensure_ascii=False))
+        asked = asked if isinstance(asked, str) else json.dumps(asked, ensure_ascii=False)
+        mine = DATA_ID.search(asked)
+        charting = mine.group(1) if mine else "图表" in asked
         self.send_response(200)
         self._cors()
         self.send_header("Content-Type", "text/event-stream")
@@ -99,11 +108,12 @@ class _Handler(BaseHTTPRequestHandler):
         return {"choices": [{"index": 0, "delta": {"reasoning_details": [
             {"type": "reasoning.text", "id": "rd-1", "format": "MiniMax-response-v1", "index": 0, "text": text}]}}]}
 
-    def _tool_call(self, charting: bool = False):
+    def _tool_call(self, charting: bool | str = False):
         yield {"choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}}]}
         for t in THINKING:  # cumulative
             yield self._reasoning(t)
-        name, pieces = ("study__compare", ('{"formulas": ["桂枝汤",', ' "麻黄汤"]}')) if charting else \
+        name, pieces = ("mydata__prescriptions", ('{"group": ', '"诊断"}')) if isinstance(charting, str) else \
+            ("study__compare", ('{"formulas": ["桂枝汤",', ' "麻黄汤"]}')) if charting else \
             ("classics__search", ('{"query": "桂枝汤', ' 主之", "k": 3}'))
         yield {"choices": [{"index": 0, "delta": {"tool_calls": [
             {"index": 0, "id": "call_1", "type": "function", "function": {"name": name, "arguments": ""}}]}}]}
@@ -111,9 +121,9 @@ class _Handler(BaseHTTPRequestHandler):
             yield {"choices": [{"index": 0, "delta": {"tool_calls": [{"index": 0, "function": {"arguments": piece}}]}}]}
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]}
 
-    def _answer(self, charting: bool = False):
+    def _answer(self, charting: bool | str = False):
         yield self._reasoning("classics__search 检索到了原文，整理作答。")
-        text = CHART_ANSWER if charting else ANSWER
+        text = DATA_ANSWER.format(id=charting) if isinstance(charting, str) else CHART_ANSWER if charting else ANSWER
         for cut in (8, 40, 90, 160, len(text)):  # cumulative, as in MiniMax's own streaming example
             yield {"choices": [{"index": 0, "delta": {"content": text[:cut]}}]}
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],

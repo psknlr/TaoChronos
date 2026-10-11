@@ -207,8 +207,12 @@ missing character is never accepted).
    Clicking a chip opens the passage in the side panel with the quotation highlighted, in horizontal or vertical
    (竖排) reading, with its variants and notes.  A line under each answer counts the results.
 4. The side panel: **证据** (every passage the conversation touched), **研究** (research runs: verdict, metrics,
-   hypotheses with their supporting and contradicting quotations, the full report), **工具台** (every tool, with a form
-   generated from its schema — no model needed).
+   hypotheses with their supporting and contradicting quotations, the full report), **资料** (the user's own files:
+   [below](#我的资料--the-users-own-data)), **工具台** (every tool, with a form generated from its schema — no model
+   needed).
+5. **上传资料** (the document button beside the image button, or a file dropped or pasted into the composer — images go
+   with the message, other files to 我的资料): the user's own table or text, read on their machine, made anonymous and
+   attached to the next message, for the model to analyse ([below](#我的资料--the-users-own-data)).
 
 Keyboard: Enter sends, Shift+Enter breaks the line (input methods are respected), Esc stops, Ctrl/⌘+K new
 conversation, Ctrl/⌘+B the conversation list, Ctrl/⌘+J the side panel, `/` focuses the input.  Conversations are kept in
@@ -254,6 +258,36 @@ selected for the light and the dark surfaces and validated for colour-vision def
 light ones, a journal figure its black and white.  The model reads only the titles of the figures and tables the page
 shows (`charts_shown`, `tables_shown`), so it can point to them (见上方图 1、表 1) without spending its context on their data.
 
+## 我的资料 — the user's own data
+
+A visitor may bring their own data — a clinic's prescriptions, case records, a survey, notes — as CSV, TSV, Excel
+(.xlsx), Word (.docx), TXT, Markdown or JSON, up to 10 MB a file ([mydata.md](mydata.md), [ADR 0022](adr/0022-the-users-own-data.md)):
+
+* **Before the first upload** the page says, once per browser, what happens to the data: read on this machine (in the
+  browser, or by `taochronos serve` on this machine) and never sent to the site's server; made anonymous as it is read
+  (names and doctors' names to pseudonyms, identity and record numbers to codes, telephones, addresses and e-mails
+  removed, a birth date to its year; such numbers in free text replaced; a freely written name may be missed); what the
+  model reads (statistics and the rows it asks for, anonymous, sent with the conversation to the chosen model service;
+  the file's name too); never recorded; kept in this browser until removed; statistics describe, they do not infer a
+  cause or advise treatment.
+* **Uploading** reads the file and attaches it to the next message as a chip (门诊处方.csv · 表格 120 行 · 9 列); a message
+  may carry it alone (the page asks for an overview).  The model reads, with the message, the dataset's id, name,
+  columns and their types — never its rows — and is offered the 我的资料 tools while there is data: `mydata.list`,
+  `mydata.read`, `mydata.search`, `mydata.describe` (descriptive statistics), `mydata.compare` (Kruskal–Wallis, χ² or
+  Fisher, Spearman) and `mydata.prescriptions` (drugs, doses, pairs, rules, clusters, groups compared, the nearest
+  compositions of the classics).  Their figures and three-line tables are drawn and downloaded as a study's are; a row
+  or passage the answer cites, `[[mine:…]]`, is a chip checked like any citation (门诊处方.csv·第 1 行), opened in the
+  side panel.
+* **资料** in the side panel lists the datasets: size, columns and types, what was taken out, its id; **附到消息** attaches
+  one to the next message, the bin removes it (and its rows from the conversation's chips), **全部删除** removes all, and
+  **资料如何处理** repeats the notice.
+* **Where it is read**: by the browser's runtime (and kept in IndexedDB, given back at the next visit), or by
+  `taochronos serve` on this machine (kept in its memory).  When the page works with the site's own server or a server
+  elsewhere, it starts a runtime of its own in the browser for the data and sends that runtime the 我的资料 tools, the
+  `mine:` passages and the normalisation of their quotations — the server is sent none of it, and would refuse it.
+* **Never recorded**: a conversation that carried a dataset or called a 我的资料 tool sends no conversation record, even
+  when the visitor agreed to records.
+
 ## 设置 → 统计 — how much the site is used, and from where
 
 The site's owner reads the site's usage under **设置 → 统计**, over the last 7, 30 or 90 days: pages opened and their
@@ -283,9 +317,11 @@ sees nineteen tools directly — `classics.search`, `classics.get_passage`, `cla
 `taochronos_catalog` (families, tools, parameters) and `taochronos_call`.  In **全部工具** mode it sees every tool.
 Either way it also has the engine: `taochronos_research` (a full multi-agent discovery run: contract → evidence →
 D1–D5 → hypotheses → falsification → gates G0–G8), `taochronos_session` (its report, hypotheses, evidence) and
-`taochronos_ask` (the V2 skill workflow).
+`taochronos_ask` (the V2 skill workflow).  While the visitor has data in 我的资料 the page adds the six 我的资料 tools
+(the runtime lists them apart: `catalog("core")["mydata"]`), routed to the runtime that holds the data.
 
-The model acts as an agent-principal actor with read and analysis permissions only.  It is never offered
+The model acts as an agent-principal actor with read and analysis permissions only (and `mydata:read`, which no research
+agent holds: a research run never reads the user's data).  It is never offered
 `kg.propose_change` (a proposal to canonical knowledge is a person's act) or Code Mode (`research.run_code`) unless the
 local server is started with `--code-mode`.  Every call passes the scheduler's gauntlet (permission, schema, hooks,
 receipts).  Results reach the model trimmed evenly to a budget (16 000 characters by default: long lists keep their
@@ -373,7 +409,8 @@ send it in clear to the provider, where any visitor can read it — so the relay
   settings or an address (`web/js/records.js`, `relay/src/relay.js` keeps only those fields).  The relay holds the records
   until `.github/workflows/chat-logs.yml` collects them, every hour, into `data/chat-logs/YYYY/MM/DD.jsonl` in this private
   repository, and deletes them once the commit is pushed (`relay/collect.py`).  The records never enter the published
-  site.  If the repository is ever made public, `data/chat-logs/` must be moved out first.
+  site.  If the repository is ever made public, `data/chat-logs/` must be moved out first.  A conversation that touches
+  the visitor's own data (我的资料) is never recorded, whatever they chose.
 
 **The page names no vendor, and nothing it receives does.**  The default service appears as 道乃久默认服务 and its
 answers as Tao-R1 — on its tile (免密钥 · 直接提问, with no model to choose), in the chip's and the composer's tooltips,
@@ -408,7 +445,9 @@ taochronos serve --allow-host https://gw.example.com:8443   # the proxy may also
 
 Endpoints: `GET /api/info`, `GET /api/catalog?mode=core|all`, `POST /api/call {name, arguments, max_chars}`,
 `GET /api/passage?id=`, `POST /api/research` → `{job}`, `GET /api/research/<job>` (progress: round, claims, hypotheses;
-then the outcome), `GET /api/session/<id>?what=summary|report|hypothesis|evidence`, `POST /api/llm` (model proxy).
+then the outcome), `GET /api/session/<id>?what=summary|report|hypothesis|evidence`, `POST /api/llm` (model proxy),
+`POST /api/data {name, data}` (a file of the user's in base64) · `GET /api/data` · `POST /api/data/remove {id}` ·
+`POST /api/data/clear` (我的资料 — only when the server is bound to this machine: one other machines reach answers 403).
 
 It binds to 127.0.0.1.  Only this machine's pages, the server's own pages, the published client
 (`https://chat.impf.ai`, and `https://psknlr.github.io`) and origins named with `--allow-origin` may call it (CORS, with Private Network Access
@@ -490,6 +529,10 @@ more goes to the model, asked for no thinking, showing and storing none; a study
 their resolution, an 85 mm SVG, CSV; all the figures in panels, all the tables in one Word document; a table downloaded as
 LaTeX and copied as HTML), a ```chart block drawn in the answer and a table it writes (its caption and notes gathered, saved
 as Word and read back), the model told only the titles, and the 工具台's charts; and, with
+我的资料 (`tests/test_userdata.py` too): the notice, a GB18030 CSV uploaded to a server on this machine, made anonymous,
+analysed, a `mine:` row cited and checked, nothing naming a patient sent to the model and no record sent; the browser's
+own runtime (the worker's code and IndexedDB, with a stand-in for Pyodide whose Python runs in the test) keeping a
+workbook across a reload; and the page working with a server elsewhere keeping the data in the browser; and, with
 `TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium on an http:// origin like the published one (no Cache API) —
 Pyodide, the 要籍语料 downloaded, the first-ranked works indexed before it answers and the rest in the background, the
 store kept in IndexedDB and a reload that downloads no corpus, a turn answered on it.  The browser tests are skipped where Playwright or Chromium is missing.  `relay/test/relay.test.js`
@@ -515,3 +558,6 @@ committed with them, deleted only once held, a deployment checked (and a refused
 * Research in the browser runs the deterministic procedures (no model inside the harness); on the local server
   `--llm` gives its judgement roles a model.
 * A provider that does not allow browser requests needs the local server's proxy.
+* 我的资料 reads no PDF, scanned image, .xls or .doc (it says what to save them as); it finds the names a table's heads
+  or a label (姓名：) mark, not a name written freely in a text; a server's data lives in its memory (gone when it
+  stops); with the site's server, the first upload starts the browser's runtime, which downloads it on a first visit.
