@@ -30,7 +30,7 @@ the way the 考据 tradition answers them: from the texts, witness by witness.
 | `study commentaries` | 集注 — what did each commentator say on this clause, and how do they relate? | the commentaries aligned to the clause in date order; 照录 承袭 同解 增益 异解, explicit 驳 and 从, consensus and singular readings |
 | `study disputes` | 争议 — who rejected whose view on this? | named views rejected or endorsed, about a term or of a physician, with the reporting work; who rejects whom corpus-wide |
 | `study cruxes` | 校勘疑义 — which words of this clause did the commentators doubt? | per clause (or for a whole work) the statements of transposition, emendation, interpolation, omission or doubt, their target words and proposed reading, and who made them; `--write-registry` writes the registry the support reading consults |
-| `study pairs` · `network` | 配伍与方证网络 — which drugs go together, and which formulas answer which findings? | drug pairs against chance (lift, PMI, NPMI, Fisher + BH), a drug's partners by period, the groups of drugs; a formula's findings and drugs, a finding's formulas |
+| `study pairs` · `network` | 配伍与方证网络 — which drugs go together, and which formulas answer which findings? | drug pairs against chance (lift, PMI, NPMI, odds ratio with its 95% CI, Fisher + BH), a drug's partners by period; over the corpus the drugs written most often, association rules (support, confidence, lift), the groups of drugs and a clustering of the most frequent (average linkage, a dendrogram); a formula's findings and drugs, a finding's formulas |
 | `study schools` | 学派 — what sets a school apart, whom did it cite and dispute? | its members and works; the words and formulas it uses more than the other authors of its time; homophily, citing and cited schools, rejections; the school-by-school matrix |
 | `study names` | 名称 — what was this drug or formula called, when? | each name's works by period and century, the first to write it, when the preferred name changes, passages equating names, names the lexicon lacks |
 | `study chain` | 传播链 — through which earlier witness did each later copy or quotation come? | the passage's dated witnesses as a tree by shared innovations, each edge with its evidence and margin |
@@ -39,10 +39,10 @@ the way the 考据 tradition answers them: from the texts, witness by witness.
 | `study places` | 地域 (T27) — where did physicians come from and books appear, and does a term or a school lead in a region? | native places and places of writing (author and signed prefaces), a place's physicians and works, region × period shares of a term or a school with z tests and Benjamini–Hochberg, GeoJSON |
 | `study compare` | 方剂比较 — how do these formulas differ in drugs and doses? | each formula's 原方 (or 通行方) witness, its drugs by family with doses, ratios (largest weight = 1) and shares; per pair: shared and own drugs, Jaccard, dose-weighted overlap, dose changes and a verdict (同方 / 同药异量 / 加减化裁 / 异方) |
 | `study family` | 类方 — which formulas were made from this one? | the base's core (the drug set most works write); every formula whose written-out compositions hold that core and add few drugs, as 加味 / 减味 / 加减 / 同药异量 / 同方异名, with the drugs added and removed, works, earliest witness and 合方 |
-| `study usage` | 用药谱 — how was this drug prescribed through the periods? | its share of the compositions by period (Wilson intervals, trend test); decoction doses by period in 两 and grams, the batch doses of pills, powders and 煮散 apart; how often it is the largest dose; preparation notes; partners with lift; formulas |
+| `study usage` | 用药谱 — how was this drug prescribed through the periods? | its share of the compositions by period (Wilson intervals, trend test); decoction doses by period in 两 and grams (M (P25, P75), x̄ ± s, a Kruskal–Wallis test across periods, Spearman's ρ with the year; a box plot and a scatter with its LOESS curve), the batch doses of pills, powders and 煮散 apart; how often it is the largest dose; preparation notes; partners with lift; formulas |
 | `study properties` | 药性谱 — what did the 本草 say of these drugs, side by side? | flavours, natures, toxicity and channels (as organs), the share of works stating each and the first to state it; a formula's 原方 profile weighted by dose |
 | `study incompat` | 配伍禁忌 — who said which drugs are 反 or 畏, and which formulas still write them together? | statements of 反 / 畏 with their earliest witness and works by period; where the verses of 十八反 and 十九畏 are written; compositions holding both drugs of a pair; a formula or a list of drugs checked against the pairs |
-| `study protocol` | 研究方案 — how would one research this question? | the question read into kinds and entities; hypotheses with prediction, test, falsification and rivals; scope, variables, methods (each a tool with its command), analysis, figures, quality, limitations, ethics, timeline; a research contract; a pilot run with its charts |
+| `study protocol` | 研究方案 — how would one research this question? | the question read into kinds and entities; hypotheses with prediction, test, falsification and rivals; scope, variables, methods (each a tool with its command), analysis, the figures planned (图 1 … with their form) and the table shells (表 1 …: three-line tables with placeholders and their statistics), quality, limitations, ethics, timeline; a research contract; a pilot run with its charts |
 
 Page images and OCR output (T1–T2) are read by `taochronos vision` (layout, a model's reading, comparison with the
 store); descriptions are carried across to modern medicine by `taochronos bridge` ([bridge.md](bridge.md)); a claim is
@@ -67,7 +67,8 @@ taochronos study reading 温病
 taochronos study dataset --formula 桂枝汤 --herb 柴胡 --term 温病 --citations -o datasets/guizhi
 taochronos study metrology 三两 --year 200
 
-# 方药研究 and 研究方案 (--charts DIR: the result's charts as SVG figures, CSV tables and JSON specifications)
+# 方药研究 and 研究方案 (--charts DIR: the result's figures in the journal style — SVG, numbered, and all of them as one
+# figure in panels — with their CSV and JSON, and its three-line tables as Word, LaTeX, CSV and Markdown)
 taochronos study compare 桂枝汤 麻黄汤 葛根汤 --charts figures     # --which current: compare the 通行方
 taochronos study family 桂枝汤                                     # --min-share 0.75 --max-extra 4
 taochronos study usage 半夏 --charts figures
@@ -347,26 +348,79 @@ which the web client offers to download; the model reads the structured protocol
 that the lexicon lacks (桂枝加桂汤 in a corpus without the harvest) is read by its shape — characters up to 汤, 散, 丸, 饮,
 丹 or 膏 — never as the drug inside its name, and the limitations say its witnesses are searched by that name only.
 
+The protocol plans its figures and tables as a paper will print them: **图 1 …**, each with its form in words (Tukey 箱线图,
+森林图, 散点图, 聚类树状图 …) and the tool that draws it, and **表 1 …** — table shells (`table_shells`): each kind's three-line
+tables with their column heads (grouped where a paper groups them), a row of placeholders under each stub in the notation
+the numbers will take — ×× (××.×) for n (%), ××.× (××.×, ××.×) for M (P25, P75), ×.×× (×.××–×.××) for an odds ratio and
+its interval, ×.××× for P — and the statistics behind them.  The document prints them as tables, and the result carries
+them as three-line tables (`tables`, titled …（模板）) that the page copies into Word or downloads as a Word document.
+
 ## 图表 (charts)
 
 The results of `formula`, `herb`, `term`, `pairs`, `network`, `names`, `senses`, `compare`, `family`, `usage`,
 `properties`, `incompat` (and a protocol's pilot) carry their charts under `charts`: small declarative specifications
 (`study/charts.py`, version 1) drawn from the full result before it is trimmed for a model — line (with an interval band),
-bar (grouped, with whiskers), hbar, stack (counts or shares), heatmap, range (quartiles and whiskers), timeline and network.
-Each has a title, a subtitle that says what is counted, the rows and their columns (the table and the CSV), and a note and
+bar (grouped, with whiskers), hbar, stack (counts or shares), heatmap, range (quartiles and whiskers), **box** (a Tukey box
+plot: quartiles, whiskers to the furthest value within 1.5 IQR, the mean, the values beyond the whiskers and, when there
+are few, every value beside its box; n under each), **forest** (estimates with their intervals on one axis, a log axis and
+a line at 1 for odds ratios, the estimate and its interval written beside each row, the rows not significant after
+Benjamini–Hochberg in grey), **scatter** (with a LOESS curve, a bubble's size or up to three groups), **dendrogram** (a
+clustering's tree with its cut and its clusters in colour), timeline and network.  Each has a title, a subtitle that says
+what is counted and which test gave which number, the rows and their columns (the table and the CSV), and a note and
 source line: the caveat that goes with the numbers (machine reading; doses are historical readings, never dosage
-guidance) and the corpus version.  A chart adds no inference: its numbers are the result's.
+guidance) and the corpus version.  A chart adds no inference: its numbers are the result's.  The values a figure draws
+one by one (each dose, a tree) travel in the result's `_raw` until the charts are built, and are then taken out: the model
+never reads them.
 
-* `taochronos study … --charts DIR` writes each chart as a standalone SVG figure (`study/svg.py`), a CSV table (UTF-8 with a
-  byte-order mark, for spreadsheet programs) and its JSON specification.
+A figure is drawn in one of two styles of one layout (`study/svg.py` in Python, `web/js/chart.js` in the page):
+
+* **journal** (期刊样式) — as a journal prints it: white, black L-shaped axes with outward ticks, no grid, the y-axis title
+  turned along its axis, square bars, error bars with caps, sans-serif text at 8 pt of the printed width — 85 mm a single
+  column, 120 mm one and a half, 175 mm two — a physical size in millimetres, and its number and caption under it
+  (**图 1**　title。what it shows。, then its notes and source); several charts of a result as **one figure in panels**
+  (A, B …, each with its short title; one caption: （A）…；（B）…, the notes once, the sources once);
+* **screen** — the page's: the title above, a recessive grid, 4 px rounded data ends.
+
+* `taochronos study … --charts DIR` writes each chart as a journal figure (SVG, numbered 图 1, 图 2 … in order), a CSV table
+  (UTF-8 with a byte-order mark, for spreadsheet programs) and its JSON specification, all of them as one figure in panels
+  (`<stem>-figure.svg`), and the result's tables (below).
 * The web client draws them under the step of the tool that made them, in the tool console, and in the ```chart blocks the
-  model writes — with hover and keyboard read-outs, a table view and downloads (SVG, PNG at twice the size, CSV, JSON)
-  ([web.md](web.md#图表--charts-and-their-downloads)).  The model reads only their titles (`charts_shown`).
+  model writes — with hover and keyboard read-outs, a table view, the journal figure in the page, and exports (SVG, PNG and
+  TIFF at 300 or 600 dpi, CSV, JSON) ([web.md](web.md#图表--charts-and-their-downloads)).  The model reads only their
+  titles (`charts_shown`).
 
 The marks follow one specification: thin, solid, a recessive grid and axes; whole-number ticks for counts; categorical
 colours in a fixed order validated for colour-vision deficiency (light and dark), never a ninth hue — the rest is 其他, in
 grey — and a category keeps its colour in every chart of a result (`groups`); one hue, light to dark, for magnitude; a
 legend for two series or more; values and labels in ink, never in a series colour.
+
+## 表格 (three-line tables)
+
+The same results carry their tables under `tables` (`study/tables.py`, version 1): the numbers a paper reports, put in the
+form a journal prints — a **three-line table** (三线表): the title above with its number (表 1　…; a page numbers a result's
+tables in order), a rule over the column heads, a rule under them and a short one under each group head (two heads over
+three columns: 折合克数（g）over M (P25, P75), x̄ ± s and 范围), a rule under the last row, no vertical lines; the notes below —
+what each abbreviation means, which test gave which number (Cochran–Armitage z and P, Kruskal–Wallis H, df and P,
+Spearman ρ, Fisher with Benjamini–Hochberg), how the texts were counted — and the source.  The statistics are written in
+their usual notation: n (%), M (P25, P75), x̄ ± s, a 95% CI as 62.3–98.4, an odds ratio as 2.43 (0.09–67.6), P to three
+decimals and P < 0.001 below (* when significant after Benjamini–Hochberg).
+
+| study | its tables |
+|---|---|
+| `usage` | 各时期写出组成中含该药的比例; 历代汤剂中的用量 (in 两 and grams, the tests in the notes); 各剂型的原书剂量; 同用最多的药物 |
+| `pairs` (a drug) | 同方的药物及其关联强度 (confidence both ways, lift, OR (95% CI), P) |
+| `pairs` (the corpus) | 高频药物; 药物关联规则; 显著药对; 高频药物的聚类 |
+| `compare` · `family` | 组成与剂量 (each formula's dose and ratio); 方剂两两比较; 类方 |
+| `term` · `herb` · `properties` | 各时期的出现率 (per 10 000 passages, 95% CI); 历代本草所言之性味, 各项性能的首见; 性味归经 |
+| `incompat` · `network` · `formula` | 言“反”“畏”的著作与最早见证, 同见于写出的组成; 方证对应; 写出组成的类别 |
+
+`study/tablefmt.py` writes a table as **Word** (.docx: a real Word table with its three rules, its header rows repeated on a
+new page, 宋体 and Times New Roman at 10.5 pt, written with the standard library — several tables make one document),
+**LaTeX** (`booktabs`: `\toprule`, `\midrule`, `\cmidrule`, `\bottomrule`, in a `table` float with `\caption` and `\label`;
+Chinese needs `ctex` with XeLaTeX), **CSV** (with a byte-order mark), **Markdown** and **HTML** with its rules inline (it
+pastes into Word as a three-line table).  Statistical symbols are set in italics where the format has them (P, n, z, H, t,
+r, ρ, q, x̄, s).  `--charts DIR` writes each table as .csv, .tex and .md, and all of them in `<stem>-tables.docx`.  The model
+reads only the tables' titles (`tables_shown`); the page prints them ([web.md](web.md#图表--charts-and-their-downloads)).
 
 ## 学习 (learning)
 

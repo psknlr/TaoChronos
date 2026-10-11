@@ -8,7 +8,9 @@ from types import SimpleNamespace
 from taochronos.agents.procedures.hypothesis import revision_kind
 from taochronos.protocol.hypothesis import Hypothesis
 from taochronos.science.scoring import explanatory_comparison, novelty_profile, pairwise_tournament
-from taochronos.science.stats import cluster_bootstrap, context_jsd, leave_one_cluster_out, max_statistic_permutation, permutation_test
+from taochronos.science.stats import (average_linkage, chi2_sf, cluster_bootstrap, context_jsd, cut_tree, kruskal_wallis, largest_gap,
+                                      leaf_order, leave_one_cluster_out, max_statistic_permutation, odds_ratio, permutation_test,
+                                      spearman, t_two_sided)
 
 
 def _periods(k: int, n: int, *, shift_at: int | None = None) -> list[list[list[str]]]:
@@ -131,3 +133,36 @@ def test_skeptic_flags_an_absence_resting_on_one_family(harness):
     review = skeptic._review(ctx, s.state.hypotheses[hyp.id])
     flagged = [o for o in review["objections"] if o["check"] == "transcription_dependence" and "单一来源家族" in o["detail"]]
     assert flagged and flagged[0]["severity"] == "major"
+
+
+# ------------------------------------------------------------------ the tests the figures and tables report
+def test_the_distributions_give_the_textbook_critical_values():
+    assert abs(chi2_sf(3.841458820694124, 1) - 0.05) < 1e-12 and abs(chi2_sf(11.070497693516351, 5) - 0.05) < 1e-12
+    assert chi2_sf(0, 3) == 1.0 and chi2_sf(100, 2) < 1e-20
+    assert abs(t_two_sided(2.228138851986274, 10) - 0.05) < 1e-12 and abs(t_two_sided(2.0, 10) - 0.073388) < 1e-6
+
+
+def test_kruskal_wallis_as_r_computes_it():
+    # R: kruskal.test(list(x, y, z)) of its documentation — chi-squared = 0.77143, df = 2, p-value = 0.68
+    kw = kruskal_wallis([[2.9, 3.0, 2.5, 2.6, 3.2], [3.8, 2.7, 4.0, 2.4], [2.8, 3.4, 3.7, 2.2, 2.0]])
+    assert kw["h"] == 0.771 and kw["df"] == 2 and abs(kw["p"] - 0.68) < 0.001 and kw["n"] == 14
+    assert kruskal_wallis([[1, 1, 2], [2, 3, 3], [1, 3]])["h"] == 3.111  # ties corrected
+    assert kruskal_wallis([[1, 1], [1]]) is None and kruskal_wallis([[1, 2, 3]]) is None
+
+
+def test_spearman_and_the_odds_ratio():
+    s = spearman(list(range(1, 11)), [2, 1, 4, 3, 6, 5, 8, 7, 10, 9])
+    assert s["rho"] == 0.9394 and s["p"] < 1e-4 and s["n"] == 10
+    assert spearman([1, 2, 3], [1, 2, 3]) is None and spearman([1, 2, 3, 4], [5, 5, 5, 5]) is None
+    o = odds_ratio(10, 20, 30, 40)
+    assert abs(o["or"] - 2 / 3) < 1e-12 and abs(o["lo"] - 0.2725) < 1e-4 and abs(o["hi"] - 1.6309) < 1e-4 and not o["corrected"]
+    assert odds_ratio(0, 5, 5, 5)["corrected"]  # a zero cell: 0.5 added to every cell
+
+
+def test_average_linkage_its_order_and_its_cut():
+    pts = [0, 1, 5, 6, 20]
+    merges = average_linkage([[abs(a - b) for b in pts] for a in pts])
+    assert merges == [[0, 1, 1.0, 2], [2, 3, 1.0, 2], [5, 6, 5.0, 4], [4, 7, 17.0, 5]]  # {0,1}–{5,6}: (5+6+4+5)/4
+    assert leaf_order(merges, 5) == [0, 1, 2, 3, 4]  # the cluster holding the first item first
+    assert cut_tree(merges, 5, 2) == [0, 0, 0, 0, 1] and cut_tree(merges, 5, 3) == [0, 0, 1, 1, 2]
+    assert largest_gap(merges, 5) == 2  # 5 → 17 is the longest branch

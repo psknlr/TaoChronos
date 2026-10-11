@@ -1178,8 +1178,18 @@ def protocol(r: dict[str, Any]) -> list[str]:
     out += [f"| {m['step']} | {m['title']} | {m['tool']} | {m['purpose']} | {m['outputs']} |" for m in r.get("methods", [])]
     out += ["", "重现命令：", "", "```"] + [m["command"] for m in r.get("methods", [])] + ["```", ""]
     out += [sec("分析计划"), ""] + [f"- **{a['name']}**：{a['method']}（{a['detail']}）" for a in r.get("analysis", [])] + [""]
-    if r.get("figures"):
-        out += [sec("预期图表"), ""] + [f"- **{f['id']}** {f['title']}（{f['type']}，来自 {f['from']}）" for f in r["figures"]] + [""]
+    if r.get("figures") or r.get("table_shells"):
+        from .tablefmt import to_markdown
+        from .tables import shell
+
+        out += [sec("图表计划"), ""]
+        if r.get("figures"):
+            out += ["**图**（期刊样式：单栏 85 mm、双栏 175 mm，300 dpi 以上；可合为组图）", ""]
+            out += [f"- **图{f.get('number', i)}**　{f['title']}（{f.get('form') or f['type']}；{f['from']}）" for i, f in enumerate(r["figures"], 1)] + [""]
+        if r.get("table_shells"):
+            out += ["**表格模板**（三线表；×× 为待填之数）", ""]
+            for t in r["table_shells"]:
+                out += [to_markdown(shell(t), t.get("number")).rstrip("\n"), ""]
     out += [sec("质量控制"), ""] + [f"- {q}" for q in r.get("quality", [])] + [""]
     out += [sec("局限与偏倚"), ""] + [f"- {x}" for x in r.get("limitations", [])] + [""]
     out += [sec("伦理与声明"), ""] + [f"- {x}" for x in r.get("ethics", [])] + [""]

@@ -3,6 +3,7 @@
 
 import { renderMarkdown } from "../markdown.js";
 import { chartGallery, chartsOf, documentButton, documentOf } from "../chart.js";
+import { tablesOf } from "../table.js";
 import { append, bare, fmtMs, h, icon, passageLabel, prettyJSON, truncate, yearLabel } from "../util.js";
 import { FAMILY, toolFamily } from "./thread.js";
 
@@ -349,7 +350,7 @@ function resultView(res, ctx) {
   return h("div", { style: { marginTop: "10px" } },
     h("div.muted", { style: { fontSize: "12.5px", marginBottom: "6px" } }, `${res.summary || "完成"} · ${fmtMs(res.duration_ms)}`),
     res.citations?.length ? h("div.cites-row", { style: { marginBottom: "8px" } }, res.citations.slice(0, 30).map((c) => ctx.citeCard(c))) : null,
-    chartGallery(chartsOf(res.result)),
+    chartGallery(chartsOf(res.result), { at: 0 }, tablesOf(res.result)),
     documentOf(res.result) ? h("div.docs", documentButton(documentOf(res.result))) : null,
     h("pre.json", prettyJSON(res.result, 120000)));
 }

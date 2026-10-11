@@ -28,7 +28,9 @@ import { count } from "./js/util.js";
 import { fixedReply, IDENTITY_REPLY, isIdentityQuestion, touchesIdentity } from "./js/fixed.js";
 import { ServerRuntime } from "./js/runtime.js";
 import { redact, scrub, toolWord } from "./js/redact.js";
-import { chartsOf, documentOf, fmt, invalid, niceMax, normalize, seriesColors, ticks, toCSV, toMarkdown } from "./js/chart.js";
+import { boxRows, captionText, chartsOf, commonTitle, documentOf, fmt, fmtEst, forestDomain, invalid, logTicks, niceMax, normalize, seriesColors, ticks, toCSV, toMarkdown, tukey } from "./js/chart.js";
+import { crc32, packBits, pngWithDpi, tiff, unpackBits, zip } from "./js/bytes.js";
+import { documentXML, headRows, invalidTable, runs, tablesOf, tex, toCSV as tableCSV, toLaTeX, toMarkdown as tableMarkdown } from "./js/table.js";
 
 // streams: increments and MiniMax's cumulative chunks read alike
 const inc = new Accum(); for (const t of ["桂", "枝", "汤主之。"]) inc.push(t);
@@ -219,6 +221,58 @@ assert.deepEqual(chartsOf({ charts: [spec, { type: "pie" }] }), [spec]);
 assert.deepEqual(chartsOf(null), []);
 assert.deepEqual(documentOf({ document: { name: "桂枝汤/方案", text: "# 方案" } }), { name: "桂枝汤_方案.md", format: "markdown", text: "# 方案" });
 assert.equal(documentOf({ document: { name: "x.md", text: "" } }), null);
+
+// the scientific figures: a box plot's numbers (Tukey), a forest plot's log axis, a tree checked, captions
+assert.deepEqual(tukey([1, 2, 3, 4, 5, 6, 7, 8, 9, 100]), { n: 10, min: 1, q1: 3.25, median: 5.5, q3: 7.75, lo: 1, hi: 9, max: 100, mean: 14.5 });
+assert.equal(boxRows({ type: "box", x: { key: "期" }, rows: [{ 期: "汉", values: [1, 2, 3] }] })[0].median, 2);
+assert.match(invalid({ type: "box", x: { key: "期" }, rows: [{ 期: "汉" }] }), /箱线图需要/);
+assert.equal(invalid({ type: "forest", y: { key: "药" }, estimate: { key: "or", lo: "lo", hi: "hi" }, rows: [{ 药: "甲", or: 2, lo: 1, hi: 4 }] }), null);
+assert.deepEqual(forestDomain([{ or: 2, lo: 1, hi: 4 }], { key: "or", lo: "lo", hi: "hi" }, { log: true, ref: 1 }), { lo: 1 / 1.3, hi: 4 * 1.3, log: true });
+assert.deepEqual([logTicks(0.05, 60), logTicks(0.8, 4)], [[0.1, 1, 10], [1, 2]]);
+assert.match(invalid({ type: "dendrogram", labels: ["甲", "乙", "丙"], merges: [[0, 1, 0.5, 2]] }), /n − 1/);
+assert.equal(invalid({ type: "dendrogram", labels: ["甲", "乙", "丙"], merges: [[0, 1, 0.5, 2], [2, 3, 0.9, 3]] }), null);
+assert.equal(normalize({ type: "dendrogram", labels: ["甲", "乙"], merges: [[0, 1, 1, 2]] }).rows.length, 2);
+assert.equal(invalid({ type: "scatter", x: { key: "年" }, rows: [{ 年: 1 }] }), "散点图需要 x.key 与 y.key");
+assert.deepEqual([fmtEst(67.61), fmtEst(2.434), fmtEst(0.0873), fmtEst(0.004)], ["67.6", "2.43", "0.09", "0.004"]);
+assert.equal(captionText({ title: "甘草 · 历代汤剂用量", subtitle: "箱为四分位距。" }), "甘草：历代汤剂用量。箱为四分位距。");
+assert.deepEqual([commonTitle([{ title: "甘草 · 甲" }, { title: "甘草 · 乙" }]), commonTitle([{ title: "甲" }, { title: "甘草 · 乙" }])], ["甘草", ""]);
+
+// the files written byte by byte: CRC-32 as PNG and ZIP compute it, PackBits both ways, a TIFF that says its dpi
+assert.equal(crc32(new TextEncoder().encode("123456789")), 0xcbf43926);
+const row = Uint8Array.from([0, 0, 0, 0, 5, 6, 7, 7, 7, 7, 7, 1, 2]);
+assert.deepEqual(unpackBits(packBits(row), row.length), row);
+assert.ok(packBits(new Uint8Array(1000).fill(255)).length <= 16);
+const tif = tiff({ width: 3, height: 2, data: Uint8ClampedArray.from([255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 0, 1, 2, 3, 255, 4, 5, 6, 255, 7, 8, 9, 255]) }, 300);
+const tv = new DataView(tif.buffer), ifd = tv.getUint32(4, true), tags = {};
+for (let k = 0; k < tv.getUint16(ifd, true); k++) tags[tv.getUint16(ifd + 2 + 12 * k, true)] = tv.getUint32(ifd + 10 + 12 * k, true);
+assert.equal(String.fromCharCode(tif[0], tif[1]) + tv.getUint16(2, true), "II42");
+assert.deepEqual([tags[256], tags[257], tags[259], tags[262], tv.getUint32(tags[282], true) / tv.getUint32(tags[282] + 4, true)], [3, 2, 32773, 2, 300]);
+assert.deepEqual([...unpackBits(tif.subarray(tags[273]), 18).subarray(0, 9)], [255, 0, 0, 0, 255, 0, 255, 255, 255]); // transparent: white
+const fakePng = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, ...new Array(17).fill(0), 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130]);
+const dpiPng = pngWithDpi(fakePng, 300), pv = new DataView(dpiPng.buffer);
+assert.equal(String.fromCharCode(...dpiPng.subarray(37, 41)), "pHYs");
+assert.deepEqual([pv.getUint32(41), pv.getUint32(45), dpiPng[49]], [11811, 11811, 1]);
+assert.equal(pv.getUint32(50), crc32(dpiPng.subarray(37, 50)));
+assert.equal(pngWithDpi(dpiPng, 600).length, dpiPng.length); // the old pHYs replaced, not kept
+const z = zip([{ name: "a.txt", data: "甲" }, { name: "word/b.xml", data: "<x/>" }]), zv = new DataView(z.buffer);
+assert.deepEqual([zv.getUint32(0, true), zv.getUint32(z.length - 22, true), zv.getUint16(z.length - 12, true)], [0x04034b50, 0x06054b50, 2]);
+
+// three-line tables: grouped heads, italic symbols, LaTeX (booktabs), CSV, Markdown and Word's XML
+const tspec = { id: "t", title: "各时期的用量", columns: [{ key: "p", label: "时期", align: "left" }, { key: "m", label: "M (P25, P75)", align: "center", group: "折合克数（g）" },
+  { key: "s", label: "x̄ ± s", align: "center", group: "折合克数（g）" }], rows: [{ p: "汉", m: "29.4 (29.4, 29.4)", s: "29.4 ± 7.3" }], notes: ["P < 0.05"], source: "演示" };
+assert.equal(invalidTable(tspec), null);
+assert.match(invalidTable({ columns: [] }), /columns/);
+assert.deepEqual(tablesOf({ tables: [tspec, { title: "坏" }] }), [tspec]);
+assert.deepEqual(headRows(tspec).map((r) => r.map((c) => [c.label, c.span, c.rows])), [[["时期", 1, 2], ["折合克数（g）", 2, 1]], [["M (P25, P75)", 1, 1], ["x̄ ± s", 1, 1]]]);
+assert.deepEqual(runs("P < 0.05，n = 3；Jaccard"), [["P", true], [" < 0.05，", false], ["n", true], [" = 3；Jaccard", false]]);
+assert.equal(tex("50% & _x，P"), "50\\% \\& \\_x，\\textit{P}");
+const latex = toLaTeX(tspec, 2);
+for (const piece of ["\\caption{各时期的用量}", "\\toprule", "\\multirow{2}{*}{时期}", "\\cmidrule(lr){2-3}", "$\\bar{x}$", "\\bottomrule", "注：\\textit{P} < 0.05"]) assert.ok(latex.includes(piece), piece);
+assert.equal(tableCSV(tspec), '﻿时期,"折合克数（g） · M (P25, P75)",折合克数（g） · x̄ ± s\r\n汉,"29.4 (29.4, 29.4)",29.4 ± 7.3\r\n'); // commas quoted
+assert.equal(tableCSV({ ...tspec, columns: [tspec.columns[0]], rows: [{ p: "=HYPERLINK(1)" }, { p: "-0.5" }, { p: "@A1" }], notes: [] }, false), "时期\r\n'=HYPERLINK(1)\r\n-0.5\r\n'@A1\r\n"); // a formula stays text
+assert.ok(tableMarkdown(tspec, 1).startsWith("**表1　各时期的用量**\n\n| 时期 | 折合克数（g） · M (P25, P75) |"));
+const docXML = documentXML([tspec]);
+for (const piece of ['<w:gridSpan w:val="2"/>', '<w:vMerge w:val="restart"/>', "<w:vMerge/>", "<w:tblHeader/>", "表1　各时期的用量", '<w:top w:val="single" w:sz="12"', "<w:i/>"]) assert.ok(docXML.includes(piece), piece);
 console.log("ok");
 """
 
@@ -391,9 +445,50 @@ def test_a_conversation_in_the_browser(tmp_path):
         mock.shutdown()
 
 
+def _png_dpi(data: bytes) -> tuple[int, int]:
+    """(width in pixels, dots per inch) of a PNG: its IHDR and its pHYs."""
+    import struct
+
+    width, at = struct.unpack(">I", data[16:20])[0], 8
+    while at < len(data):
+        n, kind = struct.unpack(">I4s", data[at: at + 8])
+        if kind == b"pHYs":
+            ppm, _, unit = struct.unpack(">IIB", data[at + 8: at + 17])
+            return width, round(ppm * 0.0254) if unit == 1 else 0
+        at += 12 + n
+    return width, 0
+
+
+def _tiff_info(data: bytes) -> tuple[int, int]:
+    """(width in pixels, dots per inch) of a little-endian TIFF: its first directory."""
+    import struct
+
+    assert data[:4] == b"II*\x00"
+    ifd = struct.unpack("<I", data[4:8])[0]
+    tags = {}
+    for k in range(struct.unpack("<H", data[ifd: ifd + 2])[0]):
+        tag, kind, count, value = struct.unpack("<HHII", data[ifd + 2 + 12 * k: ifd + 14 + 12 * k])
+        tags[tag] = (kind, count, value)
+    num, den = struct.unpack("<II", data[tags[282][2]: tags[282][2] + 8])
+    return tags[256][2], num // den
+
+
+def _docx_text(path) -> str:
+    """The paragraphs of a Word document (its tables' cells among them), one a line."""
+    import xml.etree.ElementTree as ET
+    import zipfile
+
+    with zipfile.ZipFile(path) as z:
+        root = ET.fromstring(z.read("word/document.xml"))
+    w = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    return "\n".join("".join(t.text or "" for t in p.iter(f"{w}t")) for p in root.iter(f"{w}p"))
+
+
 def test_charts_in_the_browser(tmp_path):
-    """A study's charts under its step — one at a time, as a table, downloaded as PNG and CSV — a chart the model draws in a
-    ```chart block, and the tool console's; the model is told which charts the page shows, never their data."""
+    """A study's figures and tables under its step — one at a time, a chart as its table or as a journal prints it,
+    exported as SVG, PNG and TIFF at a journal's width and resolution, as one figure in panels; a table copied for Word,
+    downloaded as Word and LaTeX — a chart the model draws in a ```chart block and a table it writes, and the tool
+    console's; the model is told which figures and tables the page shows, never their data."""
     exe = _chromium()
     if exe is None:
         pytest.skip("playwright is not installed")
@@ -427,31 +522,78 @@ def test_charts_in_the_browser(tmp_path):
             page.fill("#input", "用图表比较桂枝汤与麻黄汤")
             page.keyboard.press("Enter")
             page.wait_for_selector(".msg.assistant .actions .meta", timeout=60000)
-            # the study's charts, under its step: tabs, one chart at a time
+            # the study's figures and tables, under its step: tabs, one at a time
             tabs = page.eval_on_selector_all(".msg.assistant .charts .chart-tabs [role=tab]", "els => els.map(e => e.textContent)")
-            assert tabs == ["1. 配伍比例对照", "2. 方剂相似度"]
+            assert tabs == ["图1 配伍比例对照", "图2 方剂相似度", "表1 桂枝汤、麻黄汤的组成与剂量", "表2 方剂两两比较"]
             assert page.locator(".msg.assistant .charts .viz-svg path").count() >= 4  # the bars
             page.click(".msg.assistant .chart-tabs [role=tab] >> nth=1")
-            assert page.inner_text(".msg.assistant .charts .viz-card .title") == "方剂相似度"
-            # the chart the model drew in its answer
+            assert page.inner_text(".msg.assistant .charts .viz-card .title") == "图2　方剂相似度"
+            # the chart the model drew in its answer, and its table: three-line, with its caption and notes, to Word
             assert page.inner_text(".md figure.viz-card .title") == "桂枝汤与麻黄汤共有之药" and not page.query_selector(".md pre")
             page.click(".md figure.viz-card .viz-toggle >> text=表格")
             assert page.eval_on_selector_all(".md .viz-table tbody tr", "rows => rows.map(r => r.textContent)") == ["桂2", "甘草2"]
-            # downloads: a PNG twice the figure's size, the table as CSV with a byte-order mark
+            assert page.inner_text(".md .md-table .tbl-cap") == "表1　两方共有之药的剂量"
+            assert page.inner_text(".md .md-table .tbl-note").startswith("注：剂量照原书所写")
+            page.click(".md .md-table-tools .viz-dl > button")
+            with page.expect_download() as word:
+                page.click(".md .md-table-tools .viz-menu button >> text=Word 文档（.docx）")
+            doc = _docx_text(word.value.path())
+            assert word.value.suggested_filename == "表1-两方共有之药的剂量.docx"
+            assert "表1　两方共有之药的剂量" in doc and "三两" in doc and "注：剂量照原书所写；n = 2。" in doc
+            # a figure's export: a journal's style at its width and resolution — PNG and TIFF say their dpi — SVG, CSV
             card = ".msg.assistant .charts .viz-card"
             page.click(f"{card} .viz-dl > button")
             with page.expect_download() as png:
-                page.click(f"{card} .viz-menu button >> text=PNG 图片")
-            assert png.value.suggested_filename == "方剂相似度.png"
-            assert Path(png.value.path()).read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
-            page.click(f"{card} .viz-dl > button")
+                page.click(f"{card} .viz-export button >> text=PNG")
+            assert png.value.suggested_filename == "图2-方剂相似度.png"
+            data = Path(png.value.path()).read_bytes()
+            assert data[:8] == b"\x89PNG\r\n\x1a\n" and _png_dpi(data) == (1417, 300)  # 120 mm at 300 dpi
+            page.check(f"{card} .viz-export input[value=single]")
+            page.check(f"{card} .viz-export input[value='600']")
+            with page.expect_download() as tif:
+                page.click(f"{card} .viz-export button >> text=TIFF")
+            assert tif.value.suggested_filename == "图2-方剂相似度.tif" and _tiff_info(Path(tif.value.path()).read_bytes()) == (2008, 600)
+            with page.expect_download() as svg_file:
+                page.click(f"{card} .viz-export button >> text=SVG")
+            figure = Path(svg_file.value.path()).read_text(encoding="utf-8")
+            assert 'width="85mm"' in figure and "图2" in figure and "方剂相似度" in figure and "var(--" not in figure
             with page.expect_download() as csv_file:
-                page.click(f"{card} .viz-menu button >> text=CSV 数据")
+                page.click(f"{card} .viz-export button >> text=CSV")
             table = Path(csv_file.value.path()).read_text(encoding="utf-8")
             assert table.startswith("\ufeff") and "桂枝汤" in table and "麻黄汤" in table
-            # what the model read of the result: which charts the page shows, not their rows
+            page.keyboard.press("Escape")
+            # the journal style in the page: what the download gives, its caption under it
+            page.click(f"{card} .viz-toggle >> text=期刊样式")
+            assert "图2" in page.text_content(f"{card} .viz-paper") and page.is_visible(f"{card} .viz-paper svg")
+            # all the figures as one figure in panels; all the tables in one Word document
+            page.click(".msg.assistant .chart-all .viz-dl > button")
+            with page.expect_download() as panels:
+                page.click(".msg.assistant .chart-all .viz-export button >> text=SVG")
+            figure = Path(panels.value.path()).read_text(encoding="utf-8")
+            assert 'width="175mm"' in figure and "（A）配伍比例对照" in figure and "（B）方剂相似度" in figure
+            page.keyboard.press("Escape")
+            with page.expect_download() as all_tables:
+                page.click(".msg.assistant .chart-all button >> text=全部表格（Word）")
+            doc = _docx_text(all_tables.value.path())
+            assert "表1　桂枝汤、麻黄汤的组成与剂量" in doc and "表2　方剂两两比较" in doc
+            # a table of the study: three-line, its notes under it; LaTeX, and a copy that pastes into Word as a table
+            page.click(".msg.assistant .chart-tabs [role=tab] >> nth=2")
+            assert page.locator(".msg.assistant .charts .tbl-card .sci-table tbody tr").count() >= 4
+            assert page.inner_text(".msg.assistant .tbl-card .tbl-notes").startswith("注：各方取其原方")
+            page.click(".msg.assistant .tbl-card .viz-dl > button")
+            with page.expect_download() as tex:
+                page.click(".msg.assistant .tbl-card .viz-menu button >> text=LaTeX（booktabs）")
+            latex = Path(tex.value.path()).read_text(encoding="utf-8")
+            assert "\\toprule" in latex and "\\midrule" in latex and "\\bottomrule" in latex and "桂枝汤" in latex
+            ctx.grant_permissions(["clipboard-read", "clipboard-write"])
+            page.click(".msg.assistant .tbl-card button >> text=复制")
+            page.wait_for_selector(".toast >> text=已复制", timeout=10000)
+            copied = page.evaluate("async () => { const [item] = await navigator.clipboard.read(); return await (await item.getType('text/html')).text(); }")
+            assert "border-top:1.5pt solid #000" in copied and "表1" in copied and "桂枝汤" in copied
+            # what the model read of the result: which figures and tables the page shows, not their data
             told = next(m["content"] for m in mock.requests[1]["body"]["messages"] if m["role"] == "tool")
             assert '"charts_shown":["配伍比例对照","方剂相似度"]' in told and '"heatmap"' not in told
+            assert '"tables_shown":["桂枝汤、麻黄汤的组成与剂量","方剂两两比较"]' in told and '"columns"' not in told
             # the tool console draws the charts of what it runs
             page.click("#toggle-drawer")
             page.click(".drawer .tab >> text=工具台")

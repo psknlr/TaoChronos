@@ -431,11 +431,19 @@ pre.json { margin: 0; max-height: 280px; overflow: auto; background: var(--code-
 .md pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.6; white-space: pre; }
 .md pre .lang { position: absolute; top: 6px; right: 40px; font: 11px var(--font-mono); color: var(--ink-3); }
 .md pre .copy { position: absolute; top: 4px; right: 4px; padding: 4px; }
-.md table { border-collapse: separate; border-spacing: 0; margin: 0 0 1em; font-size: 14px; display: block; overflow-x: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 10px; }
-.md th, .md td { padding: 7px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
-.md tr:last-child td { border-bottom: 0; }
-.md th { background: var(--surface-2); font-weight: 600; white-space: nowrap; }
-.md td + td, .md th + th { border-left: 1px solid var(--line); }
+/* an answer's tables: three-line tables (三线表) — a rule over the heads, one under them, one under the last row; a
+   "表1 …" line above is their caption, a "注：…" line below their notes (markdown.js) */
+.md .md-table { margin: 0 0 1em; width: fit-content; max-width: 100%; }
+.md .tbl-wrap { overflow-x: auto; max-width: 100%; }
+.md table { border-collapse: collapse; margin: 0; font-size: 14px; line-height: 1.55; border-top: 1.5px solid var(--ink-2); border-bottom: 1.5px solid var(--ink-2); }
+.md th, .md td { padding: 6px 12px; text-align: left; vertical-align: top; }
+.md thead th { border-bottom: 1px solid var(--ink-2); font-weight: 600; white-space: nowrap; }
+.md tbody tr:first-child td { padding-top: 8px; }
+.md tbody tr:last-child td { padding-bottom: 8px; }
+.md .md-table p.tbl-cap { margin: 0 0 .45em; font-weight: 650; color: var(--ink); }
+.md .md-table p.tbl-note { margin: .45em 0 0; font-size: 12.5px; line-height: 1.6; color: var(--ink-3); }
+.md-table-tools { display: flex; justify-content: flex-end; gap: 2px; margin-top: 4px; }
+.md-table-tools .viz-toggle { font-size: 11.5px; color: var(--ink-3); }
 .md hr { border: 0; border-top: 1px solid var(--line); margin: 1.4em 0; }
 .md q.yin { quotes: none; font-family: var(--font-serif); color: var(--ink); background: linear-gradient(transparent 62%, color-mix(in srgb, var(--accent) 10%, transparent) 62%); }
 .md q.yin::before { content: "「"; color: var(--ink-3); }
@@ -835,14 +843,60 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(2px); }
 .viz-menu button { border: 0; background: none; text-align: left; font-size: 12.5px; color: var(--ink-2); padding: 6px 10px; border-radius: 7px; white-space: nowrap; }
 .viz-menu button:hover, .viz-menu button:focus-visible { background: var(--surface-2); color: var(--ink); }
 .viz-foot { margin-top: 8px; font-size: 11.5px; line-height: 1.55; color: var(--ink-3); }
+.viz-card .cap .title b, .tbl-card .cap .title b { font-weight: 700; }
+.chart-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.chart-head .chart-tabs { flex: 1; min-width: 0; }
+.chart-all { display: flex; gap: 2px; flex: none; }
+/* the export of a figure: its style, width, resolution and caption, then the formats */
+.viz-export {
+  position: absolute; right: 0; top: calc(100% + 4px); z-index: 7; width: min(23.5em, calc(100vw - 32px)); padding: 10px 12px 12px;
+  background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; box-shadow: var(--shadow); display: grid; gap: 8px;
+}
+.viz-export[hidden] { display: none; }
+.viz-export-form { display: grid; gap: 7px; }
+.viz-export .field { display: grid; grid-template-columns: 3.6em minmax(0, 1fr); align-items: baseline; gap: 6px; }
+.viz-export .field .lbl { font-size: 12px; color: var(--ink-3); }
+.viz-export .opts { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.viz-export .opt { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.viz-export .opt input { margin: 0; accent-color: var(--accent); }
+.viz-export .hint { margin: 0; font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+.viz-export-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 8px; }
+.viz-export-row .lbl { width: 3.6em; font-size: 12px; color: var(--ink-3); }
+.viz-export-row .btn { font-size: 12px; padding: 4px 10px; }
+/* the journal figure in the page: white paper in either mode, what the journal style downloads */
+.viz-paper { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin: 0 auto; box-shadow: 0 1px 2px rgba(0, 0, 0, .06); }
+.viz-paper-svg { display: block; width: 100%; height: auto; }
+.viz-card.paper .viz-foot { display: none; }
+/* the study tools' tables: three-line, numbered, with their notes (web/js/table.js) */
+.tbl-card { margin: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 12px 14px; min-width: 0; }
+.tbl-card figcaption { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.tbl-card .cap .title { font-size: 13.5px; line-height: 1.45; font-weight: 600; color: var(--ink); }
+.tbl-card .tools { display: flex; gap: 2px; flex: none; }
+.tbl-wrap { overflow-x: auto; max-width: 100%; }
+.tbl-card .tbl-wrap { max-height: 420px; overflow: auto; }
+.tbl-card .tbl-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sci-table { border-collapse: collapse; margin: 0 auto; font-size: 13px; line-height: 1.5; font-variant-numeric: tabular-nums; border-top: 1.5px solid var(--ink-2); border-bottom: 1.5px solid var(--ink-2); }
+.sci-table th, .sci-table td { padding: 5px 11px; vertical-align: middle; }
+.sci-table th { font-weight: 600; color: var(--ink); text-align: center; white-space: nowrap; }
+.sci-table thead tr:last-child th, .sci-table th[rowspan="2"] { border-bottom: 1px solid var(--ink-2); }
+.sci-table th.group { background: linear-gradient(var(--ink-3), var(--ink-3)) no-repeat center bottom / calc(100% - 14px) 1px; }
+.sci-table td { color: var(--ink-2); }
+.sci-table td.a-left { text-align: left; }
+.sci-table td.a-center { text-align: center; }
+.sci-table td.a-right { text-align: right; }
+.sci-table tbody tr:first-child td { padding-top: 7px; }
+.sci-table tbody tr:last-child td { padding-bottom: 7px; }
+.sci-table i, .tbl-notes i { font-family: "Times New Roman", var(--font-serif); font-style: italic; }
+.tbl-notes { margin-top: 8px; font-size: 12px; line-height: 1.6; color: var(--ink-3); }
+.tbl-notes p { margin: 0; }
 .viz-note { font-size: 12px; color: var(--ink-3); margin: -.5em 0 1em; }
 .docs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
 .docs .btn { font-size: 12.5px; padding: 5px 12px; }
 .docs .btn .icon { margin-right: 4px; }
 .chart-wait { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-3); border: 1px dashed var(--line-2); border-radius: 12px; padding: 14px; margin: 0 0 1em; }
 @media print {
-  .viz-card .tools, .chart-tabs { display: none !important; }
-  .viz-card { break-inside: avoid; }
+  .viz-card .tools, .tbl-card .tools, .chart-tabs, .chart-all, .md-table-tools { display: none !important; }
+  .viz-card, .tbl-card, .md .md-table { break-inside: avoid; }
 }
 
 @media print {

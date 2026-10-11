@@ -53,27 +53,35 @@ def compact(value: Any, max_chars: int = 16000) -> str:
     return text[:max_chars] + f"…［截断：原长 {len(text)} 字符］"
 
 
-PAGE_ONLY = ("charts", "document")  # for the page: the model reads the result they are drawn or written from
+PAGE_ONLY = ("charts", "tables", "document")  # for the page: the model reads the result they are drawn or written from
+RAW = "_raw"  # the values a study's figures draw one by one: taken out when they are drawn (study/charts.py), never shown
+
+
+def _titles(items: Any) -> list[str]:
+    return [c["title"] for c in (items if isinstance(items, list) else []) if isinstance(c, dict) and isinstance(c.get("title"), str) and c["title"]]
 
 
 def for_model(value: Any) -> Any:
-    """What the model reads of a result: all of it but the chart specifications (``charts``) and the document a result
-    carries to download (``document``), which are for the page — of the charts it reads only the titles of those the page
-    shows (``charts_shown``), so that it can point to them."""
-    if isinstance(value, dict) and any(k in value for k in PAGE_ONLY):
-        rest = {k: v for k, v in value.items() if k not in PAGE_ONLY}
-        charts = value.get("charts") if isinstance(value.get("charts"), list) else []
-        titles = [c["title"] for c in charts if isinstance(c, dict) and isinstance(c.get("title"), str) and c["title"]]
-        if titles:
-            rest["charts_shown"] = titles
+    """What the model reads of a result: all of it but the chart specifications (``charts``), the three-line tables
+    (``tables``) and the document a result carries to download (``document``), which are for the page — of the charts and
+    tables it reads only the titles of those the page shows (``charts_shown``, ``tables_shown``), so that it can point to
+    them."""
+    if isinstance(value, dict) and (any(k in value for k in PAGE_ONLY) or RAW in value):
+        rest = {k: v for k, v in value.items() if k not in PAGE_ONLY and k != RAW}
+        for key, shown in (("charts", "charts_shown"), ("tables", "tables_shown")):
+            titles = _titles(value.get(key))
+            if titles:
+                rest[shown] = titles
         return rest
     return value
 
 
 def for_interface(value: Any, max_chars: int = 400_000) -> Any:
     """The result as the interface shows it: whole when it is small enough, trimmed (still valid JSON) otherwise — its
-    charts and its document never trimmed (a chart cut short would draw something the result did not say)."""
+    charts, tables and document never trimmed (a chart cut short would draw something the result did not say)."""
     data = to_jsonable(value)
+    if isinstance(data, dict) and RAW in data:
+        data = {k: v for k, v in data.items() if k != RAW}
     if len(dumps(data)) <= max_chars:
         return data
     if isinstance(data, dict) and any(k in data for k in PAGE_ONLY):

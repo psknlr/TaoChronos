@@ -216,25 +216,42 @@ this browser (IndexedDB); **设置 → 数据** exports and imports them (JSON) 
 
 ## 图表 — charts and their downloads
 
-A study's result carries its charts ([study.md](study.md#图表-charts)): specifications drawn from the whole result, never
-from the model's trimmed copy.  The page draws them (`web/js/chart.js`) in three places:
+A study's result carries its charts and its three-line tables ([study.md](study.md#图表-charts),
+[study.md](study.md#表格-three-line-tables)): specifications drawn from the whole result, never from the model's trimmed copy.
+The page draws them (`web/js/chart.js`, `web/js/table.js`) in three places:
 
-* **under the step that made them** — the charts of a turn's tools follow its tool steps, one at a time with a row of tabs
-  (their titles) when there are several;
+* **under the step that made them** — the figures and tables of a turn's tools follow its tool steps, one at a time with a
+  row of tabs (图 1 …, 表 1 …: numbered as a paper numbers them) when there are several, with **导出组图** (all the figures as
+  one figure in panels, A, B …, two columns at 175 mm, one caption) and **全部表格（Word）** (all the tables in one Word
+  document);
 * **in the 工具台**, under the result of a tool run by hand;
 * **in an answer** — the model may draw the numbers it read from the tools in a ```chart block (a JSON specification of
-  the same form: line, bar, hbar, stack, heatmap, timeline …; the standing instructions say how, and that every number must
-  come from a tool's result).  The block is checked before it is drawn; while it is still being written the page shows a
-  placeholder, and one that cannot be drawn is shown as code with the reason.
+  the same form: line, bar, hbar, stack, heatmap, timeline, box, forest, scatter …; the standing instructions say how, and
+  that every number must come from a tool's result).  The block is checked before it is drawn; while it is still being
+  written the page shows a placeholder, and one that cannot be drawn is shown as code with the reason.  A Markdown table in
+  an answer is a three-line table: a line 「表1　…」 just above it is its caption, a line 「注：…」 just below its notes, and once
+  the answer is written it has **复制** and **下载** as a study's table has.
 
-Each chart is a card: its title and what it counts; hover, or focus and the arrow keys, read out the values; **表格** shows
-every number; **下载** gives the figure as **SVG** (standalone: title, subtitle, note and source, colours and fonts inline),
-**PNG** (twice the size), the table as **CSV** (UTF-8 with a byte-order mark, for spreadsheet programs) and the
-specification as **JSON**.  A conversation exported as Markdown appends each chart's table.  A research protocol
-(`study.protocol`) comes with its whole text: **下载研究方案（Markdown）** under its step, and in the 工具台.  The colours are tokens
-(`--viz-1` … `--viz-8`, `--viz-other`, the `--viz-seq` ramp; `css/app.css`), selected for the light and the dark surfaces
-and validated for colour-vision deficiency; a downloaded figure takes the light ones.  The model reads only the titles of
-the charts the page shows (`charts_shown`), so it can point to them without spending its context on their data.
+Each chart is a card: 图 n and its title, what it counts; hover, or focus and the arrow keys, read out the values; **表格**
+shows every number; **期刊样式** shows the figure as a journal prints it (white paper in either mode — what the journal export
+gives); **导出** opens the export: the style (期刊 or 屏幕), the printed width (单栏 85 mm, 1.5 栏 120 mm, 双栏 175 mm), the
+resolution (300 or 600 dpi), the number and caption (含图号与图注, off for a journal that sets its own), then the figure as
+**SVG** (vector, its physical size in millimetres), **PNG** (the resolution written in the file, pHYs) or **TIFF** (RGB,
+PackBits, with its resolution — what many journals ask for), the data as **CSV** (UTF-8 with a byte-order mark, for
+spreadsheet programs) and the specification as **JSON**.  The settings are kept for the next figure (this browser only).
+
+Each table is a card: 表 n and its title, the three-line table (its group heads ruled as booktabs' `\cmidrule`, statistical
+symbols in italics), its notes and source; **复制** puts it on the clipboard as HTML with its rules inline and as
+tab-separated text — pasted into Word or WPS it is a three-line table, into Excel cells; **下载** gives **Word** (.docx),
+**LaTeX** (booktabs), **CSV** and **Markdown** — the same files as `taochronos study … --charts` (`study/tablefmt.py`).  The
+Word document and the ZIP inside it, the PNG's pHYs and the TIFF are written by `web/js/bytes.js`, without a library.
+
+A conversation exported as Markdown appends each chart's data and each table.  A research protocol (`study.protocol`) comes
+with its whole text — **下载研究方案（Markdown）** under its step and in the 工具台 — and its table shells as tables (…（模板）) to
+copy or download as Word.  The colours are tokens (`--viz-1` … `--viz-8`, `--viz-other`, the `--viz-seq` ramp; `css/app.css`),
+selected for the light and the dark surfaces and validated for colour-vision deficiency; a downloaded figure takes the
+light ones, a journal figure its black and white.  The model reads only the titles of the figures and tables the page
+shows (`charts_shown`, `tables_shown`), so it can point to them (见上方图 1、表 1) without spending its context on their data.
 
 ## 设置 → 统计 — how much the site is used, and from where
 
@@ -453,7 +470,9 @@ terms the site carries it under; a 宋本 found for a punctuated 伤寒论 claus
 witness's own marks, never with a changed or missing character; outside a session `classics.list_books` lists every
 book with its filters and `kg.claims` / `kg.neighbors` read the passages that write the term.  `tests/test_web_client.py` — the
 client's logic under Node (cumulative and incremental streams, history rules, dangling tool calls, citation pairing, which
-questions get the fixed reply and which go to the model; the charts' checks, CSV, Markdown tables, colours and axes) and
+questions get the fixed reply and which go to the model; the charts' checks, CSV, Markdown tables, colours and axes; a box
+plot's numbers, a forest plot's log axis, a tree's checks; CRC-32, PackBits, a TIFF's directory, a PNG's pHYs and a ZIP;
+three-line tables' heads, italics, LaTeX, CSV, Markdown and Word XML) and
 the page in Chromium against scripted providers (`tests/web_mock.py`): a MiniMax-style stream (cumulative
 `reasoning_details` and content, streamed tool arguments) and a Claude stream through the real SDK, checking the
 requests (`reasoning_split`, `max_completion_tokens`, `reasoning_details` and thinking signatures replayed, fallbacks),
@@ -465,9 +484,11 @@ page, the consent question once, a turn recorded only after 同意 (its fields, 
 once switched off under 设置 → 数据, a relay slow to answer (6 s) or missed once still found, and the page asking for a
 key while the relay is down; a question about the assistant answered by the page (no model called, no key needed, the
 same words when regenerated, recorded as `fixed`, replayed to the model when the conversation goes on) while one that asks
-more goes to the model, asked for no thinking, showing and storing none; a study's charts under its step (tabs, the table,
-a PNG and a CSV downloaded), a ```chart block drawn in the answer, the model told only the charts' titles, and the
-工具台's charts; and, with
+more goes to the model, asked for no thinking, showing and storing none; a study's figures and tables under its step (tabs
+图 1 … 表 1 …, a chart as its table and in the journal style, exported as PNG at 300 dpi and TIFF at 600 dpi read back with
+their resolution, an 85 mm SVG, CSV; all the figures in panels, all the tables in one Word document; a table downloaded as
+LaTeX and copied as HTML), a ```chart block drawn in the answer and a table it writes (its caption and notes gathered, saved
+as Word and read back), the model told only the titles, and the 工具台's charts; and, with
 `TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium on an http:// origin like the published one (no Cache API) —
 Pyodide, the 要籍语料 downloaded, the first-ranked works indexed before it answers and the rest in the background, the
 store kept in IndexedDB and a reload that downloads no corpus, a turn answered on it.  The browser tests are skipped where Playwright or Chromium is missing.  `relay/test/relay.test.js`

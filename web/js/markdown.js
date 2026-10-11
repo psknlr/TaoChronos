@@ -3,9 +3,11 @@
 // chart specification in JSON, drawn by chart.js (while it is still being written, a placeholder).  Inline: code, bold,
 // italic, strike, links (http/https/mailto only), bare URLs, 「quotations」 and [[passage_id]] citations.  Each
 // citation is paired with the quotation just before it (「…」[[id]]), so the client can check the words against the
-// passage.
+// passage.  A table is a three-line table (三线表): a "表1 …" line just above it is its caption, a "注：…" line just
+// below its notes, and once the answer is written it copies into Word or Excel and downloads (table.js).
 
 import { chartCard, invalid } from "./chart.js";
+import { specFromTable, tableTools } from "./table.js";
 import { append, h, icon } from "./util.js";
 
 const FENCE = /^(\s{0,3})(`{3,}|~{3,})\s*([\w+#.-]*)\s*$/;
@@ -20,6 +22,7 @@ export function renderMarkdown(text, opts = {}) {
   const frag = document.createDocumentFragment();
   const lines = String(text || "").replace(/\r\n?/g, "\n").split("\n");
   blocks(lines, frag, opts);
+  for (const box of frag.querySelectorAll(".md-table")) tableBlock(box, opts);
   if (opts.streaming) {
     // the caret follows the last words written: descend into the last list item or quotation
     let target = frag.lastElementChild;
@@ -146,6 +149,22 @@ function splitRow(row) {
   return cells;
 }
 
+const CAPTION = /^\s*表\s*[\dA-Za-z][\w.-]*(?:[\s　:：.、]|$)/;
+const NOTE = /^\s*注\s*[：:]/;
+
+/** A table with its caption ("表1 …" just above) and notes ("注：…" just below) gathered into one block, and — once
+ * the answer is written — its copy and downloads. */
+function tableBlock(box, opts) {
+  const prev = box.previousElementSibling, next = box.nextElementSibling;
+  const cap = prev?.nodeName === "P" && CAPTION.test(prev.textContent) ? prev : null;
+  const note = next?.nodeName === "P" && NOTE.test(next.textContent) ? next : null;
+  if (cap) { cap.classList.add("tbl-cap"); box.prepend(cap); }
+  if (note) { note.classList.add("tbl-note"); box.append(note); }
+  if (opts.streaming) return;
+  const { spec, number } = specFromTable(box.querySelector("table"), cap?.textContent || "", note ? [note.textContent] : []);
+  if (spec.columns.length && spec.rows.length) box.append(h("div.md-table-tools", ...tableTools(spec, number)));
+}
+
 function table(rows, sep, opts) {
   const aligns = splitRow(sep).map((c) => (c.startsWith(":") && c.endsWith(":") ? "center" : c.endsWith(":") ? "right" : ""));
   const head = splitRow(rows[0]);
@@ -161,7 +180,7 @@ function table(rows, sep, opts) {
     body.append(row);
   }
   t.append(body);
-  return t;
+  return h("div.md-table", h("div.tbl-wrap", t));
 }
 
 function list(block, opts) {
