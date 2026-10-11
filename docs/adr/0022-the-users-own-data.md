@@ -18,7 +18,8 @@ for its test period, with consent ([ADR 0012](0012-default-service-relay.md)).
    `taochronos serve` bound to this machine.  The page decides (`dataRuntime`): its runtime when that is local
    (`runtime.local`), else a browser runtime it starts for the data.  The 我的资料 tools, the `mine:` passages and the
    normalisation of a quotation from them go to that runtime (`routed`); everything else goes where it went.  A server
-   other machines reach refuses the data endpoints (403): its single runtime would hold its visitors' data together.
+   other machines reach refuses the data endpoints (403): its single runtime would hold its visitors' data together;
+   the site's D1 backup lists the 我的资料 tools as unavailable there, for that reason.
 2. **Made anonymous as it is read** (`plugins/userdata/deid.py`): columns by their heads — persons and doctors to
    pseudonyms (consistent within a column, not reversible), identifiers to codes, contact details removed, a birth date to
    its year — and identity, telephone, e-mail and labelled record numbers and labelled names in any text.  What is kept is
