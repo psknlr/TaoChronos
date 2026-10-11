@@ -1417,7 +1417,7 @@ def cmd_web(args: argparse.Namespace) -> None:
         listed = write_catalog(study._canon.path, ranking)
         packed = export_pack(sqlite3.connect(f"file:{db_path}?mode=ro", uri=True), ranking["works"],
                              Path(args.output or home / "corpus" / "web"))
-        write_tables(home=home)
+        write_tables(home=home, log=lambda line: print(line, file=sys.stderr))  # stdout is the report, JSON only
         _out({"canon": listed | {"ranked": ranking["ranked"], **({"extends": ranking["extends"]} if ranking.get("extends") else {})},
               "pack": packed, "next": "check the numbers the READMEs and docs/web.md quote against corpus/web/ATTRIBUTION.md"})
         return
