@@ -399,17 +399,19 @@ write both drugs.  **`study protocol`** turns a research question into a protoco
 name is read as one: 白虎加人参汤 is 白虎汤 加 人参), operational variables, methods that are this system's tools with the
 commands that rerun them, analysis, figures, quality checks, limitations, ethics, a timeline and a research contract, and
 runs its main steps once to say whether the corpus holds enough; its figure plan names each figure and its form (图 1 …)
-and its table shells set out each table a paper will print, with placeholders in the notation of its numbers (×× (××.×),
-×.×× (×.××–×.××) …) and the statistics behind them, to copy or download as Word; the page offers the whole protocol as a
-Markdown document.  Their results — and those of `formula`, `herb`, `term`, `pairs`, `network`, `names` and `senses` — carry
+and its tables set out each table a paper will print — holding the pilot's numbers where the pilot ran the step that
+fills them (marked 预试验, to be checked against the texts), and elsewhere placeholders in the notation of its numbers
+(×× (××.×), ×.×× (×.××–×.××) …) with the statistics behind them — to copy or download as Word; the page offers the whole
+protocol as a Markdown document.  Their results — and those of `formula`, `herb`, `term`, `pairs`, `network`, `names` and `senses` — carry
 chart specifications and three-line tables: the page draws the charts (a drug's decoction doses as a Tukey box plot and
 against the year with a LOESS curve; a drug's partners as a forest plot of odds ratios; the corpus's most frequent drugs as
 a cluster dendrogram) and exports them in a journal's style — white, L-shaped axes with outward ticks, 8 pt at 85, 120 or
 175 mm, numbered with their caption, as SVG, PNG or TIFF at 300 or 600 dpi, and several as one figure in panels — and
 prints the tables as a journal does (n (%), M (P25, P75), OR (95% CI), P; the tests in the notes), to copy into Word or
 Excel or download as Word, LaTeX, CSV or Markdown; `--charts DIR` writes the same figures and tables as files.  See
-[docs/study.md](docs/study.md#表格-three-line-tables), [ADR 0019](docs/adr/0019-herb-formula-research-protocols-charts.md) and
-[ADR 0020](docs/adr/0020-figures-and-tables-for-a-paper.md).
+[docs/study.md](docs/study.md#表格-three-line-tables), [ADR 0019](docs/adr/0019-herb-formula-research-protocols-charts.md),
+[ADR 0020](docs/adr/0020-figures-and-tables-for-a-paper.md) and [ADR 0021](docs/adr/0021-labels-that-keep-apart-and-tables-with-numbers.md)
+(labels that never overlap; a protocol's tables filled with its pilot's numbers).
 
 The study layer is part of research too: under `full-corpus`, **TaoChronos-Scholar** traces the focus formulas, drugs
 and terms through the whole store in round 0, and the dossiers become the report's appendix "源流考证 · Sources

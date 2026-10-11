@@ -42,7 +42,7 @@ the way the 考据 tradition answers them: from the texts, witness by witness.
 | `study usage` | 用药谱 — how was this drug prescribed through the periods? | its share of the compositions by period (Wilson intervals, trend test); decoction doses by period in 两 and grams (M (P25, P75), x̄ ± s, a Kruskal–Wallis test across periods, Spearman's ρ with the year; a box plot and a scatter with its LOESS curve), the batch doses of pills, powders and 煮散 apart; how often it is the largest dose; preparation notes; partners with lift; formulas |
 | `study properties` | 药性谱 — what did the 本草 say of these drugs, side by side? | flavours, natures, toxicity and channels (as organs), the share of works stating each and the first to state it; a formula's 原方 profile weighted by dose |
 | `study incompat` | 配伍禁忌 — who said which drugs are 反 or 畏, and which formulas still write them together? | statements of 反 / 畏 with their earliest witness and works by period; where the verses of 十八反 and 十九畏 are written; compositions holding both drugs of a pair; a formula or a list of drugs checked against the pairs |
-| `study protocol` | 研究方案 — how would one research this question? | the question read into kinds and entities; hypotheses with prediction, test, falsification and rivals; scope, variables, methods (each a tool with its command), analysis, the figures planned (图 1 … with their form) and the table shells (表 1 …: three-line tables with placeholders and their statistics), quality, limitations, ethics, timeline; a research contract; a pilot run with its charts |
+| `study protocol` | 研究方案 — how would one research this question? | the question read into kinds and entities; hypotheses with prediction, test, falsification and rivals; scope, variables, methods (each a tool with its command), analysis, the figures planned (图 1 … with their form) and the tables (表 1 …: three-line tables filled with the pilot's numbers, or shells with placeholders and their statistics where the pilot did not run the step), quality, limitations, ethics, timeline; a research contract; a pilot run with its charts |
 
 Page images and OCR output (T1–T2) are read by `taochronos vision` (layout, a model's reading, comparison with the
 store); descriptions are carried across to modern medicine by `taochronos bridge` ([bridge.md](bridge.md)); a claim is
@@ -349,11 +349,18 @@ that the lexicon lacks (桂枝加桂汤 in a corpus without the harvest) is read
 丹 or 膏 — never as the drug inside its name, and the limitations say its witnesses are searched by that name only.
 
 The protocol plans its figures and tables as a paper will print them: **图 1 …**, each with its form in words (Tukey 箱线图,
-森林图, 散点图, 聚类树状图 …) and the tool that draws it, and **表 1 …** — table shells (`table_shells`): each kind's three-line
-tables with their column heads (grouped where a paper groups them), a row of placeholders under each stub in the notation
-the numbers will take — ×× (××.×) for n (%), ××.× (××.×, ××.×) for M (P25, P75), ×.×× (×.××–×.××) for an odds ratio and
-its interval, ×.××× for P — and the statistics behind them.  The document prints them as tables, and the result carries
-them as three-line tables (`tables`, titled …（模板）) that the page copies into Word or downloads as a Word document.
+森林图, 散点图, 聚类树状图 …) and the tool that draws it, and **表 1 …** (`table_shells`): each kind's three-line tables, each
+naming the study table that fills it.  Where the pilot ran that step, the table holds the step's numbers — the same rows
+the study prints (usage: the share of compositions by period with its Wilson interval, the decoction doses as M (P25, P75)
+and x̄ ± s with the Kruskal–Wallis and Spearman tests; pairs: each partner's confidence, lift, OR (95% CI) and P; a
+formula's witnesses by period and group, and the doses of the witnesses compared; …) — titled …（预试验） and noted as a
+first machine reading, to be recomputed and checked against the texts.  Where it did not (the pilot runs three kinds at
+most, finds too little, or is skipped), the table is a shell: its column heads (grouped where a paper groups them), a row
+of placeholders under each stub in the notation the numbers will take — ×× (××.×) for n (%), ××.× (××.×, ××.×) for
+M (P25, P75), ×.×× (×.××–×.××) for an odds ratio and its interval, ×.××× for P — and the statistics behind them, titled
+…（模板）.  The document prints them as tables, the result carries them as three-line tables (`tables`) that the page copies
+into Word or downloads as a Word document, and the model reads the filled ones' heads, notes and first twelve rows (the
+standing instructions forbid it placeholders and invented numbers in a table: a number no tool returned is 未得).
 
 ## 图表 (charts)
 
@@ -392,7 +399,21 @@ A figure is drawn in one of two styles of one layout (`study/svg.py` in Python, 
 The marks follow one specification: thin, solid, a recessive grid and axes; whole-number ticks for counts; categorical
 colours in a fixed order validated for colour-vision deficiency (light and dark), never a ninth hue — the rest is 其他, in
 grey — and a category keeps its colour in every chart of a result (`groups`); one hue, light to dark, for magnitude; a
-legend for two series or more; values and labels in ink, never in a series colour.
+legend for two series or more, never naming two series alike (two witnesses of one book are told apart by their juan,
+新编金匮要略方论·卷1（219）); values and labels in ink, never in a series colour.
+
+**Labels keep apart** at every width, in both renderers: a timeline's labels take lanes where no other label is and,
+among those, where the fewest stems cross a label — a label at the right edge turned to the left of its dot, the turned
+ones placed from the edge inwards — within two lanes more than the compact layout needs; a stem that must still pass a
+label is broken around it (no grid on a timeline: the stems are the guides).  Category labels that do not fit their band
+turn 40° while neighbours clear each other, stand upright in a narrower band, and only every k-th is written in a band
+narrower than a line of text; a name longer than its room is cut with an ellipsis (the table and the hover keep it
+whole); a value over a bar is written when every one fits, a line's end value where it clears the other labels, dots and
+lines (else the hover has it); a heatmap's colour scale narrows, then moves left, to stay inside a single column; the
+count of a box plot's values past its axis (▲n) has a row of its own under the axis title; a scatter's axis title and
+bubble key sit clear of a bubble at the top; a ring of nodes writes each name along its radius.
+`tests/test_figure_layout.py` draws crowded figures with both renderers at a screen's widths and a journal's and checks
+them in Chromium (`tests/collisions.js`): no label over a label, over a dot, a stem, a line or a bar, or off the figure.
 
 ## 表格 (three-line tables)
 
@@ -412,7 +433,9 @@ decimals and P < 0.001 below (* when significant after Benjamini–Hochberg).
 | `pairs` (the corpus) | 高频药物; 药物关联规则; 显著药对; 高频药物的聚类 |
 | `compare` · `family` | 组成与剂量 (each formula's dose and ratio); 方剂两两比较; 类方 |
 | `term` · `herb` · `properties` | 各时期的出现率 (per 10 000 passages, 95% CI); 历代本草所言之性味, 各项性能的首见; 性味归经 |
-| `incompat` · `network` · `formula` | 言“反”“畏”的著作与最早见证, 同见于写出的组成; 方证对应; 写出组成的类别 |
+| `incompat` · `network` | 言“反”“畏”的著作与最早见证, 同见于写出的组成; 方证对应 |
+| `formula` | 写出组成的类别; 见证（按时期与组成类别）; 各见证的剂量与配伍比例 (the dose as written, the ratio to the largest weight) |
+| `names` · `senses` | 各名称的历代使用 (the works writing each name, n (%), the name preferred; its changes); 各义项的历代份额 (and the change point) |
 
 `study/tablefmt.py` writes a table as **Word** (.docx: a real Word table with its three rules, its header rows repeated on a
 new page, 宋体 and Times New Roman at 10.5 pt, written with the standard library — several tables make one document),

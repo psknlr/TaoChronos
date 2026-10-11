@@ -351,7 +351,8 @@ JSON Schema（`taochronos schema --study`），测试用真实结果逐项校验
 时期，按类型生成可执行、可检验的方案：每个假设都有预测、检验方法、证伪条件与须排除的替代解释（方名本身也被读作假设：“白虎加人参汤
 即白虎汤加人参”）；研究范围与首要文献、变量的操作定义、方法步骤（每步一个工具及可重跑的命令）、统计分析、图表计划、质量控制、
 局限、伦理与时间表，以及可直接交给 `taochronos research` 的研究契约。图表计划逐一列出图 1、图 2……及其形式（Tukey 箱线图、森林图等），
-并给出表格模板（三线表的表头与 ×× (××.×)、××.× (××.×, ××.×)、×.×× (×.××–×.××) 之类的占位，附统计方法），可直接复制或下载为 Word。
+并给出三线表：试跑到的步骤，表中即是试跑所得的实数（标“预试验”，须回查原文）；未试跑的步骤给出表格模板（表头与 ×× (××.×)、
+××.× (××.×, ××.×)、×.×× (×.××–×.××) 之类的占位，附统计方法）；均可直接复制或下载为 Word。
 默认试跑主要步骤一次，报告语料中的证据量与可行性，并附试跑的图表；方案全文可在网页上一键下载为 Markdown 文档。
 词表未收的方名（如“桂枝加桂汤”）按方名的形式读作方剂，不会误读为其中的药名。
 
@@ -370,7 +371,8 @@ Kruskal–Wallis 检验）与用量—年代**散点图**（LOESS 曲线、Spear
 即为三线表，粘贴到 Excel 为单元格），下载 **Word**（.docx）、**LaTeX**（booktabs）、**CSV** 与 **Markdown**，一组表格可合为一个
 Word 文档；回答中的 Markdown 表格同样以三线表显示，其上一行“表1　……”为表题、下一行“注：……”为表注。命令行 `--charts DIR`
 写出期刊样式的图、组图与表格（.docx、.tex、.csv、.md）。详见 [docs/study.md](docs/study.md#表格-three-line-tables)、
-[ADR 0019](docs/adr/0019-herb-formula-research-protocols-charts.md) 与 [ADR 0020](docs/adr/0020-figures-and-tables-for-a-paper.md)。
+[ADR 0019](docs/adr/0019-herb-formula-research-protocols-charts.md)、[ADR 0020](docs/adr/0020-figures-and-tables-for-a-paper.md)
+与 [ADR 0021](docs/adr/0021-labels-that-keep-apart-and-tables-with-numbers.md)（图中文字互不重叠；研究方案的表格填入试跑所得的实数）。
 
 治学层同样是研究流程的一部分：`full-corpus` 画像下，**TaoChronos-Scholar** 在第 0 轮对焦点方剂、药物与术语做源流考证，
 结果作为发现报告的附录“源流考证”（描述文本，不是假说，不经门控）。

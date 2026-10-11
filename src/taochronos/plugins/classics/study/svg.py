@@ -92,9 +92,35 @@ def group_colors(spec: dict[str, Any], seen: list[str]) -> dict[str, str]:
     return {g: colors[g] for g in order if g in seen}
 
 
+WIDE = set("…—")  # as wide as a CJK character in the fonts a figure names
+
+
 def text_width(text: str, size: float) -> float:
-    """Estimated width: a CJK character is as wide as the font size, others about 0.58 of it."""
-    return sum(size if ord(ch) > 0x2e80 else size * 0.58 for ch in str(text))
+    """Estimated width: a CJK character (and an ellipsis or a dash) is as wide as the font size, others about 0.58 of it."""
+    return sum(size if ord(ch) > 0x2e80 or ch in WIDE else size * 0.58 for ch in str(text))
+
+
+def clip_text(text: Any, size: float, room: float) -> str:
+    """A label cut to the room it has, with an ellipsis (the table and the hover keep it whole)."""
+    s = str(text)
+    if text_width(s, size) <= room:
+        return s
+    out = ""
+    for ch in s:
+        if text_width(out + ch + "…", size) > room:
+            break
+        out += ch
+    return (out or s[:1]) + "…"
+
+
+def _box_of(x: float, y: float, w: float, size: float, anchor: str = "start") -> tuple[float, float, float, float]:
+    """The ink of a label set at (x, y): (x0, y0, x1, y1) — its width by ``text_width``, its height the em box."""
+    x0 = x - w / 2 if anchor == "middle" else x - w if anchor == "end" else x
+    return x0, y - 0.84 * size, x0 + w, y + 0.16 * size
+
+
+def _clash(a: tuple[float, float, float, float], b: tuple[float, float, float, float], gap: float = 1.0) -> bool:
+    return a[0] < b[2] + gap and b[0] < a[2] + gap and a[1] < b[3] + gap and b[1] < a[3] + gap
 
 
 def nice_max(v: float) -> float:
@@ -214,6 +240,7 @@ def _legend(items: list[tuple[str, str]], width: float, kind: str = "rect") -> t
         return [], 0.0
     out, x, y = [], 0.0, 12.0
     for label, color in items:
+        label = clip_text(label, 11, width - 20)
         w = 18 + text_width(label, 11) + 16
         if x + w > width and x > 0:
             x, y = 0.0, y + 18
@@ -236,7 +263,8 @@ def _left(tks: list[str], label: str | None) -> float:
 
 
 def _y_axis(p: list[str], left: float, right: float, top: float, bottom: float, lo: float, hi: float, percent: bool, label: str,
-            integer: bool = False) -> Any:
+            integer: bool = False, head: float = 8) -> Any:
+    """A y axis; on screen its title above it, ``head`` over the plot's top."""
     scale = (lambda v: bottom - (v - lo) / (hi - lo) * (bottom - top)) if hi > lo else (lambda v: bottom)
     tks = ticks(lo, hi, integer=integer and not percent)
     if S.journal:
@@ -256,13 +284,17 @@ def _y_axis(p: list[str], left: float, right: float, top: float, bottom: float, 
         p.append(_t(left - 6, y + 4, fmt(t, percent), size=10.5, fill=S.muted, anchor="end"))
     p.append(_line(left, bottom, right, bottom, S.axis))
     if label:
-        p.append(_t(left, top - 8, label, size=10.5, fill=S.muted))
+        p.append(_t(left, top - head, label, size=10.5, fill=S.muted))
     return scale
 
 
+TURNED = 112.0  # the longest a turned category label runs before it is cut
+
+
 def _x_labels(p: list[str], cats: list[str], xs: list[float], bottom: float, band: float, label: str | None = None) -> float:
-    """Category labels under the axis (ticks above them in a journal), turned when they do not fit their band; in a
-    journal the axis title under them."""
+    """Category labels under the axis (ticks above them in a journal); when they do not fit their band, turned — at 40°
+    while neighbours clear each other, upright (reading upwards) in a narrower band, and only every k-th of them in a
+    band narrower than a line of text; in a journal the axis title under them."""
     if S.journal:
         for x in xs:
             p.append(_line(x, bottom, x, bottom + 4, S.axis))
@@ -271,10 +303,18 @@ def _x_labels(p: list[str], cats: list[str], xs: list[float], bottom: float, ban
         for c, x in zip(cats, xs):
             p.append(_t(x, bottom + 16, c, size=10.5, fill=S.ink2, anchor="middle"))
         end = bottom + 22
-    else:
-        for c, x in zip(cats, xs):
+    elif band >= 19:  # at 40° two neighbours are band × sin 40° apart: a line of text needs 12
+        shown = [clip_text(c, 10.5, min(TURNED, (x - 8) / 0.77)) for c, x in zip(cats, xs)]  # the first ones: not past the left edge
+        for c, x in zip(shown, xs):
             p.append(_t(x, bottom + 12, c, size=10.5, fill=S.ink2, anchor="end", rotate=-40))
-        end = bottom + 12 + longest * 0.7
+        end = bottom + 16 + max(text_width(c, 10.5) for c in shown) * 0.65
+    else:
+        every = max(1, math.ceil(12.5 / max(band, 1e-9)))
+        shown = [clip_text(c, 10.5, TURNED) for c in cats]
+        for i, (c, x) in enumerate(zip(shown, xs)):
+            if i % every == 0:
+                p.append(_t(x + 3.6, bottom + 8, c, size=10.5, fill=S.ink2, anchor="end", rotate=-90))
+        end = bottom + 14 + max(text_width(c, 10.5) for c in shown)
     if S.journal and label:
         p.append(_t((xs[0] + xs[-1]) / 2 if xs else 0, end + 12, label, size=11, fill=S.ink, anchor="middle"))
         end += 16
@@ -334,6 +374,7 @@ def _series(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     band = (right - left) / max(len(rows), 1)
     xs = [left + band * (i + 0.5) for i in range(len(rows))]
     if kind == "line":
+        lines, ends = [], []
         for i, s in enumerate(series):
             color = colors[i]
             if s.get("lo") and s.get("hi"):
@@ -348,12 +389,17 @@ def _series(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
                          f'stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>')
             for x, v in pts:
                 p.append(f'<circle cx="{x:.1f}" cy="{scale(v):.1f}" r="4" fill="{color}" stroke="{S.surface}" stroke-width="2"/>')
-            if pts and not S.journal:  # the end value, labelled
-                x, v = pts[-1]
-                p.append(_t(x, scale(v) - 9, fmt(v, percent), size=10.5, fill=S.ink, anchor="middle"))
+            lines.append([(x, scale(v)) for x, v in pts])
+            if pts:
+                ends.append(((pts[-1][0], scale(pts[-1][1])), fmt(pts[-1][1], percent)))
+        if not S.journal:  # each line's end value, where it clears the other labels, dots and lines
+            p += _end_labels(ends, lines, top)
     elif kind == "bar":
         n = max(len(series), 1)
         bw = max(3.0, min(24.0, (band - 8) / n - 2))
+        # a value over each bar of a single series — when every one of them fits its band (else none: the table has them)
+        labelled = len(series) == 1 and len(rows) <= 14 and all(text_width(fmt(_num(r.get(series[0]["key"])), percent), 10) <= band - 3
+                                                      for r in rows if _num(r.get(series[0]["key"])) is not None)
         for j, r in enumerate(rows):
             x0 = xs[j] - (bw + 2) * n / 2 + 1
             for i, s in enumerate(series):
@@ -365,7 +411,7 @@ def _series(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
                     p.append(_bar(x0 + i * (bw + 2), min(yv, base), bw, abs(base - yv), colors[i]))
                 if s.get("lo") and _num(r.get(s["lo"])) is not None and _num(r.get(s.get("hi"))) is not None:
                     p += _whisker(x0 + i * (bw + 2) + bw / 2, scale(_num(r[s["lo"]])), scale(_num(r[s["hi"]])), S.ink2, min(4, bw / 2))
-                if n == 1 and len(rows) <= 14:
+                if labelled:
                     p.append(_t(x0 + bw / 2, yv - 5, fmt(v, percent), size=10, fill=S.ink2, anchor="middle"))
     else:  # stack
         bw = min(24.0, band - 8)
@@ -383,6 +429,39 @@ def _series(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
                 acc += v
     end = _x_labels(p, [str(r.get(xkey, "")) for r in rows], xs, bottom, band, spec["x"].get("label"))
     return p, end + 4
+
+
+def _end_labels(ends: list[tuple[tuple[float, float], str]], lines: list[list[tuple[float, float]]], top: float) -> list[str]:
+    """The end value of each line: above its last point, else below it, wherever it clears the labels set before it, every
+    dot and every line (sampled along); a value with room in neither place is left to the hover and the table."""
+    out: list[str] = []
+    placed: list[tuple[float, float, float, float]] = []
+    dots = [pt for pts in lines for pt in pts]
+    for (x, y), text in ends:
+        w = text_width(text, 10.5)
+        for by in (y - 9, y + 17):
+            box = _box_of(x, by, w, 10.5, "middle")
+            if box[1] < top - 18:
+                continue
+            if any(_clash(box, b) for b in placed) or any(_clash(box, (dx - 6, dy - 6, dx + 6, dy + 6), 0) for dx, dy in dots):
+                continue
+            if any(_crosses(pts, box) for pts in lines):
+                continue
+            placed.append(box)
+            out.append(_t(x, by, text, size=10.5, fill=S.ink, anchor="middle"))
+            break
+    return out
+
+
+def _crosses(pts: list[tuple[float, float]], box: tuple[float, float, float, float]) -> bool:
+    """Does the polyline through ``pts`` pass through the box?"""
+    for (x1, y1), (x2, y2) in zip(pts, pts[1:]):
+        steps = max(2, int(math.hypot(x2 - x1, y2 - y1) / 2))
+        for k in range(steps + 1):
+            x, y = x1 + (x2 - x1) * k / steps, y1 + (y2 - y1) * k / steps
+            if box[0] - 1 <= x <= box[2] + 1 and box[1] - 1 <= y <= box[3] + 1:
+                return True
+    return False
 
 
 def _hbar(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
@@ -409,7 +488,7 @@ def _hbar(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     for i, r in enumerate(rows):
         v = _num(r.get(s.get("key"))) or 0.0
         y = top + i * step + (step - bh) / 2
-        p.append(_t(left - 8, y + bh - 3.5, r.get(xkey, ""), size=11, fill=S.ink2, anchor="end"))
+        p.append(_t(left - 8, y + bh - 3.5, clip_text(r.get(xkey, ""), 11, left - 10), size=11, fill=S.ink2, anchor="end"))
         x0, x1 = scale(0), scale(v)
         p.append(_bar(x0, y, x1 - x0, bh, PALETTE[0], up=False) if x1 >= x0 else
                  f'<rect x="{x1:.1f}" y="{y:.1f}" width="{x0 - x1:.1f}" height="{bh}" fill="{PALETTE[0]}"/>')
@@ -438,15 +517,24 @@ def _heatmap(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     left = label_w
     cw = min(64.0, (width - 12 - left) / max(len(xs), 1))
     ch = 24.0 if not S.journal else 20.0
-    rotated = any(text_width(x, 10.5) > cw - 2 for x in xs)
-    top = 12 + min(80, max(text_width(x, 10.5) for x in xs) * 0.65) if rotated else 22
-    for i, x in enumerate(xs):
-        cx = left + cw * (i + 0.5)
-        p.append(_t(cx, top - 6, x, size=10.5, fill=S.ink2, anchor="start", rotate=-40) if rotated else
-                 _t(cx, top - 8, x, size=10.5, fill=S.ink2, anchor="middle"))
+    centre = lambda i: left + cw * (i + 0.5)  # noqa: E731
+    if all(text_width(x, 10.5) <= cw - 2 for x in xs):
+        top = 22.0
+        for i, x in enumerate(xs):
+            p.append(_t(centre(i), top - 8, x, size=10.5, fill=S.ink2, anchor="middle"))
+    elif cw >= 19:  # turned 40°, each reaching up and to the right: cut where it would leave the figure
+        shown = [clip_text(x, 10.5, min(TURNED, (width - 2 - centre(i)) / 0.77)) for i, x in enumerate(xs)]
+        top = 14 + max(text_width(x, 10.5) for x in shown) * 0.65
+        for i, x in enumerate(shown):
+            p.append(_t(centre(i), top - 6, x, size=10.5, fill=S.ink2, anchor="start", rotate=-40))
+    else:  # upright, reading upwards: narrow columns
+        shown = [clip_text(x, 10.5, TURNED) for x in xs]
+        top = 14 + max(text_width(x, 10.5) for x in shown)
+        for i, x in enumerate(shown):
+            p.append(_t(centre(i) + 3.6, top - 6, x, size=10.5, fill=S.ink2, anchor="start", rotate=-90))
     for j, y in enumerate(ys):
         cy = top + ch * j
-        p.append(_t(left - 8, cy + ch / 2 + 4, y, size=11, fill=S.ink2, anchor="end"))
+        p.append(_t(left - 8, cy + ch / 2 + 4, clip_text(y, 11, left - 10), size=11, fill=S.ink2, anchor="end"))
         for i, x in enumerate(xs):
             v = cell.get((x, y))
             k = -1 if v is None or v <= 0 else min(len(RAMP) - 1, round(v / vmax * (len(RAMP) - 1)))
@@ -455,14 +543,27 @@ def _heatmap(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
             if v is not None and v > 0:
                 label = fmt(v, percent)
                 if text_width(label, 10) <= cw - 6:
-                    p.append(_t(left + cw * (i + 0.5), cy + ch / 2 + 4, label, size=10, fill="#ffffff" if k >= 6 else S.ink, anchor="middle"))
+                    p.append(_t(centre(i), cy + ch / 2 + 4, label, size=10, fill="#ffffff" if k >= 6 else S.ink, anchor="middle"))
     bottom = top + ch * len(ys)
-    for k, color in enumerate(RAMP):
-        p.append(f'<rect x="{left + k * 14:.1f}" y="{bottom + 12:.1f}" width="14" height="8" fill="{color}"/>')
-    p.append(_t(left, bottom + 34, "0", size=10, fill=S.muted))
-    p.append(_t(left + 14 * len(RAMP), bottom + 34, fmt(vmax, percent), size=10, fill=S.muted, anchor="end"))
-    p.append(_t(left + 14 * len(RAMP) + 10, bottom + 20, spec["value"].get("label", ""), size=10.5, fill=S.muted))
+    p += _ramp(left, bottom, width, fmt(vmax, percent), spec["value"].get("label", ""))
     return p, bottom + 42
+
+
+def _ramp(x0: float, bottom: float, width: float, top_label: str, label: str) -> list[str]:
+    """A heatmap's colour scale under it: the ramp from 0 to its largest value, and what the colour counts after it — the
+    steps narrowed, then the whole moved left, then the label cut, as a narrow figure needs."""
+    seg, room = 14.0, width - 2
+    lw = text_width(label, 10.5)
+    if x0 + 13 * seg + 10 + lw > room:
+        seg = max(7.0, (room - x0 - 10 - lw) / 13)
+    if x0 + 13 * seg + 10 + lw > room:
+        x0 = max(0.0, room - lw - 10 - 13 * seg)
+    end = x0 + 13 * seg
+    out = [f'<rect x="{x0 + k * seg:.1f}" y="{bottom + 12:.1f}" width="{seg:.1f}" height="8" fill="{color}"/>' for k, color in enumerate(RAMP)]
+    out.append(_t(x0, bottom + 34, "0", size=10, fill=S.muted))
+    out.append(_t(end, bottom + 34, top_label, size=10, fill=S.muted, anchor="end"))
+    out.append(_t(end + 10, bottom + 20, clip_text(label, 10.5, room - end - 10), size=10.5, fill=S.muted))
+    return out
 
 
 def _range(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
@@ -487,14 +588,16 @@ def _range(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
             p += _whisker(x, scale(min(lo_, hi)), scale(min(hi_, hi)), PALETTE[0])
             if hi_ > hi:
                 p.append(f'<path d="M{x - 4:.1f},{top + 6:.1f} L{x:.1f},{top:.1f} L{x + 4:.1f},{top + 6:.1f}" fill="none" stroke="{PALETTE[0]}" stroke-width="1"/>')
-                p.append(_t(x + 6, top + 6, f"↑{fmt(hi_)}", size=10, fill=S.muted))
+                if text_width(f"↑{fmt(hi_)}", 10) <= band - 14:  # clear of the next whisker
+                    p.append(_t(x + 6, top + 6, f"↑{fmt(hi_)}", size=10, fill=S.muted))
         if q1 is not None and q3 is not None:
             y1, y3 = scale(min(q3, hi)), scale(min(q1, hi))
             p.append(f'<rect x="{x - 10:.1f}" y="{y1:.1f}" width="20" height="{max(y3 - y1, 1):.1f}" rx="{0 if S.journal else 3}" fill="{PALETTE[0]}" '
                      f'fill-opacity="0.25" stroke="{PALETTE[0]}" stroke-width="1"/>')
         if med is not None:
             p.append(f'<circle cx="{x:.1f}" cy="{scale(min(med, hi)):.1f}" r="4.5" fill="{PALETTE[0]}" stroke="{S.surface}" stroke-width="2"/>')
-            p.append(_t(x + 14, scale(min(med, hi)) + 4, fmt(med), size=10.5, fill=S.ink))
+            if text_width(fmt(med), 10.5) <= band - 27:  # beside its box, clear of the next one
+                p.append(_t(x + 14, scale(min(med, hi)) + 4, fmt(med), size=10.5, fill=S.ink))
     end = _x_labels(p, [str(r.get(xkey, "")) for r in rows], xs, bottom, band, spec["x"].get("label"))
     return p, end + 4
 
@@ -534,9 +637,11 @@ def _box(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     hi = nice_max(cap * 2.5 if clip else max(tops or [1]) * 1.04)
     p: list[str] = []
     left, right = _left([fmt(t) for t in ticks(lo, hi)], y.get("label")), width - 16
-    top = 20.0
+    # values past the axis are counted over their box (▲n) in a row of their own, under the axis title and the key to ▲
+    over = clip and any(_num(v) > hi for r in rows for v in values_of(r))
+    top = 40.0 if over else 20.0
     bottom = top + min(270, max(170, width * (0.5 if S.journal else 0.4)))
-    scale = _y_axis(p, left, right, top, bottom, lo, hi, False, y.get("label", ""))
+    scale = _y_axis(p, left, right, top, bottom, lo, hi, False, y.get("label", ""), head=top - 12 if over else 8)
     band = (right - left) / max(len(rows), 1)
     xs = [left + band * (i + 0.5) for i in range(len(rows))]
     bw = max(8.0, min(28.0, band * 0.42))
@@ -570,7 +675,7 @@ def _box(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
                     continue
                 p.append(f'<circle cx="{x:.1f}" cy="{scale(v):.1f}" r="2.8" fill="{S.surface}" stroke="{color}" stroke-width="1.2"/>')
         if above:
-            p.append(_t(x, top - 4, f"▲{above}", size=9.5, fill=S.muted, anchor="middle"))
+            p.append(_t(x, top - 8, f"▲{above}", size=9.5, fill=S.muted, anchor="middle"))
     cats = [str(r.get(xkey, "")) for r in rows]
     end = _x_labels(p, cats, xs, bottom, band, None)
     for x, r in zip(xs, rows):  # n under each category
@@ -580,8 +685,8 @@ def _box(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     if S.journal and spec["x"].get("label"):
         p.append(_t((left + right) / 2, end + 12, spec["x"]["label"], size=11, fill=S.ink, anchor="middle"))
         end += 16
-    if clip:
-        p.append(_t(right, top - 4, "▲：超出纵轴的值的个数", size=9.5, fill=S.muted, anchor="end"))
+    if over:
+        p.append(_t(right, 12, "▲：超出纵轴的值的个数", size=9.5, fill=S.muted, anchor="end"))
     return p, end + 4
 
 
@@ -611,7 +716,7 @@ def _forest(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     text_of = lambda r: (f"{fmt_est(r.get(est['key']))} ({fmt_est(r.get(est['lo']))}–{fmt_est(r.get(est['hi']))})"  # noqa: E731
                          if _num(r.get(est.get("lo"))) is not None and _num(r.get(est.get("hi"))) is not None else fmt_est(r.get(est.get("key"))))
     label_w = min(width * 0.3, max([text_width(r.get(ykey, ""), 11) for r in rows] + [30]) + 12)
-    text_w = min(width * 0.32, max([text_width(text_of(r), 10.5) for r in rows] + [40]) + 14)
+    text_w = min(width * 0.4, max([text_width(text_of(r), 10.5) for r in rows] + [text_width(f"{est.get('label', '')} (95% CI)", 10.5), 40]) + 14)
     left, right = label_w, width - text_w
     p: list[str] = []
     has_grey = any(r.get("sig") is False for r in rows) and any(r.get("sig") is not False for r in rows)
@@ -621,7 +726,8 @@ def _forest(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     top = lh + 22
     step = 20.0
     head = (spec.get("y") or {}).get("label") or ""
-    p.append(_t(left - 8, top - 8, head, size=10.5, fill=S.ink if S.journal else S.muted, anchor="end", weight="600" if S.journal else None))
+    p.append(_t(left - 8, top - 8, clip_text(head, 10.5, left - 10), size=10.5, fill=S.ink if S.journal else S.muted, anchor="end",
+                weight="600" if S.journal else None))
     p.append(_t(right + 10, top - 8, f"{est.get('label', '')} (95% CI)", size=10.5, fill=S.ink if S.journal else S.muted, weight="600" if S.journal else None))
     bottom = top + step * len(rows)
     scale, end = _x_axis_numeric(p, left, right, bottom + 4, lo, hi, label=xs_.get("label", ""), log=log, grid_top=top)
@@ -631,7 +737,7 @@ def _forest(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     for i, r in enumerate(rows):
         y = top + step * i + step / 2
         color = OTHER if r.get("sig") is False else PALETTE[0]
-        p.append(_t(left - 8, y + 4, r.get(ykey, ""), size=11, fill=S.ink2, anchor="end"))
+        p.append(_t(left - 8, y + 4, clip_text(r.get(ykey, ""), 11, left - 10), size=11, fill=S.ink2, anchor="end"))
         e, a, b = _num(r.get(est.get("key"))), _num(r.get(est.get("lo"))), _num(r.get(est.get("hi")))
         if a is not None and b is not None:
             xa, xb = scale(max(a, lo)), scale(min(b, hi))
@@ -676,15 +782,16 @@ def _scatter(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     y_hi = _num(ys_.get("max")) or (1.0 if percent_y and top_y <= 1 else nice_max(top_y))
     tks = [fmt(t, percent_y) for t in ticks(y_lo, y_hi)]
     left, right = _left(tks, ys_.get("label")), width - 16
-    top = lh + 22
+    sk = size.get("key")
+    head = 18.0 if sk else 8.0  # the axis title and the key to the bubbles clear of a bubble at the top (radius 10 at most)
+    top = lh + 14 + head
     bottom = top + min(280, max(180, width * (0.55 if S.journal else 0.45)))
-    yscale = _y_axis(p, left, right, top, bottom, y_lo, y_hi, percent_y, ys_.get("label", ""))
+    yscale = _y_axis(p, left, right, top, bottom, y_lo, y_hi, percent_y, ys_.get("label", ""), head=head)
     xscale, end = _x_axis_numeric(p, left, right, bottom, x_lo, x_hi, label=xs_.get("label", "") if S.journal else "",
                                   percent=bool(xs_.get("percent")), year=bool(xs_.get("year")), grid_top=top)
     if not S.journal and xs_.get("label"):
         p.append(_t(right, end + 10, xs_["label"], size=10.5, fill=S.muted, anchor="end"))
         end += 14
-    sk = size.get("key")
     smax = max([_num(r.get(sk)) or 0 for r, _, _ in pts] + [1e-9]) if sk else 1
     radius = (lambda r: 3 + 7 * math.sqrt(max(_num(r.get(sk)) or 0, 0) / smax)) if sk else (lambda r: 3.0)  # noqa: E731
     dense = len(pts) > 200
@@ -696,7 +803,7 @@ def _scatter(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
         p.append(f'<polyline points="{" ".join(f"{xscale(a):.1f},{yscale(min(max(b, y_lo), y_hi)):.1f}" for a, b in fit)}" fill="none" '
                  f'stroke="{S.ink}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>')
     if sk and pts:  # a bubble's legend: the largest
-        p.append(_t(right, top - 8, f"点的大小：{size.get('label', '')}（最大 {fmt(smax)}）", size=10, fill=S.muted, anchor="end"))
+        p.append(_t(right, top - head, f"点的大小：{size.get('label', '')}（最大 {fmt(smax)}）", size=10, fill=S.muted, anchor="end"))
     return p, end + 4
 
 
@@ -734,12 +841,70 @@ def _dendrogram(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     for item in order:
         y = ypos[item]
         p.append(f'<rect x="{left - 13:.1f}" y="{y - 4:.1f}" width="8" height="8" fill="{color_of(member[item])}"/>')
-        p.append(_t(left - 18, y + 4, labels[item], size=11, fill=S.ink2, anchor="end"))
+        p.append(_t(left - 18, y + 4, clip_text(labels[item], 11, left - 20), size=11, fill=S.ink2, anchor="end"))
     bottom = top + step * n + 4
     if cut is not None:
         p.append(_line(xscale(cut), top, xscale(cut), bottom, S.muted, 1))
     _, end = _x_axis_numeric(p, left, right, bottom, 0.0, hmax * 1.04, label=(spec.get("x") or {}).get("label", ""), grid_top=None)
     return p, end + 4
+
+
+def timeline_lanes(xs: list[float], widths: list[float], width: float) -> tuple[list[int], list[bool]]:
+    """The lane (0 at the top) of each label of a timeline, and whether it is turned to the left of its dot (at the right
+    edge, where it would leave the figure).  ``xs`` the dots in order of time, ``widths`` the room each label takes.
+
+    A label takes the lane, among those where it overlaps no other label, where the fewest stems cross labels — its own
+    stem, from its dot down to the axis, through the labels below it, and the stems from above through its text — the
+    highest of them when several tie; lanes past the compact layout's (each label in the first lane it fits) and two more
+    are taken only when nothing else is free, so that a crowded timeline does not grow into a tall one (the stems that
+    still cross a label are broken around it, ``stem_gaps``).  Labels pointing right are placed in order of time, then
+    the turned ones from the right edge inwards, so that each meets the stems it could cross already placed."""
+    n = len(xs)
+    flip = [x + w > width - 6 for x, w in zip(xs, widths)]
+    room = [(x - w, x + 6) if f else (x - 6, x + w) for x, w, f in zip(xs, widths, flip)]
+    text = [(x - w + 7, x - 7) if f else (x + 7, x + w - 7) for x, w, f in zip(xs, widths, flip)]
+    order = [i for i in range(n) if not flip[i]] + [i for i in reversed(range(n)) if flip[i]]
+
+    def free(i: int, k: int, lane: list[int], done: list[int]) -> bool:
+        return not any(lane[j] == k and room[j][0] < room[i][1] + 2 and room[i][0] < room[j][1] + 2 for j in done)
+
+    lane = [0] * n
+    done: list[int] = []
+    for i in order:  # the compact layout: how many lanes the labels need at least
+        lane[i] = next(k for k in range(n + 1) if free(i, k, lane, done))
+        done.append(i)
+    budget = max(lane, default=0) + 1 + 2
+    lane, done = [0] * n, []
+    for i in order:
+        best: tuple[int, int] | None = None
+        for k in range(max((lane[j] for j in done), default=-1) + 2):
+            if not free(i, k, lane, done):
+                continue
+            if k >= budget and best is not None:
+                break
+            cost = sum(1 for j in done if lane[j] > k and text[j][0] - 2 <= xs[i] <= text[j][1] + 2)  # its stem through a label below
+            cost += sum(1 for j in done if lane[j] < k and text[i][0] - 2 <= xs[j] <= text[i][1] + 2)  # a stem from above through its text
+            if best is None or cost < best[0]:
+                best = (cost, k)
+                if not cost:
+                    break
+        lane[i] = best[1] if best else 0
+        done.append(i)
+    return lane, flip
+
+
+def stem_gaps(x: float, top: float, bottom: float, boxes: list[tuple[float, float, float, float]]) -> list[tuple[float, float]]:
+    """A stem from ``top`` down to ``bottom`` at ``x`` as the pieces that clear the labels' ``boxes`` (x0, y0, x1, y1) it
+    would cross, 2 px around each."""
+    cuts = sorted((y0 - 2, y1 + 2) for x0, y0, x1, y1 in boxes if x0 - 2 <= x <= x1 + 2 and y1 > top and y0 < bottom)
+    out, y = [], top
+    for a, b in cuts:
+        if a > y:
+            out.append((y, a))
+        y = max(y, b)
+    if y < bottom:
+        out.append((y, bottom))
+    return out
 
 
 def _timeline(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
@@ -754,37 +919,26 @@ def _timeline(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     pad = (hi - lo) * 0.04
     lo, hi = lo - pad, hi + pad
     scale = lambda v: left + (v - lo) / (hi - lo) * (right - left)  # noqa: E731
-    lanes: list[tuple[float, float]] = []
-    placed = []
-    for r in rows:
-        x = scale(_num(r["start"]))
-        w = text_width(r.get("label", ""), 10.5) + 14
-        flip = x + w > width - 6
-        span = (x - w, x + 6) if flip else (x - 6, x + w)
-        lane = next((i for i, (a, b) in enumerate(lanes) if b < span[0] - 2 or a > span[1] + 2), None)
-        if lane is None:
-            lanes.append(span)
-            lane = len(lanes) - 1
-        else:
-            a, b = lanes[lane]
-            lanes[lane] = (min(a, span[0]), max(b, span[1]))
-        placed.append((r, x, lane, flip))
+    labels = [clip_text(r.get("label", ""), 10.5, width * 0.6) for r in rows]
+    xs = [scale(_num(r["start"])) for r in rows]
+    lanes, flips = timeline_lanes(xs, [text_width(t, 10.5) + 14 for t in labels], width)
     top = lh + 18
-    axis = top + 22 * max(len(lanes), 1) + 10
-    for t in ticks(lo, hi, 6):
+    axis = top + 22 * (max(lanes, default=0) + 1) + 10
+    for t in ticks(lo, hi, 6):  # ticks under the axis (no grid: the stems are the guides, and a line through a label is not)
         x = scale(t)
-        if S.journal:
-            p.append(_line(x, axis, x, axis + 4, S.axis))
-        else:
-            p.append(_line(x, top, x, axis, S.grid or S.axis))
+        p.append(_line(x, axis, x, axis + 4, S.axis))
         p.append(_t(x, axis + 16, year_text(t), size=10.5, fill=S.ink2 if S.journal else S.muted, anchor="middle"))
     p.append(_line(left, axis, right, axis, S.axis))
-    for r, x, lane, flip in placed:
-        y = top + 22 * lane + 8
-        c = color[str(r.get("group", ""))]
-        p.append(_line(x, y, x, axis, c, 1, ' stroke-opacity="0.35"'))
+    ys = [top + 22 * lane + 8 for lane in lanes]
+    colors = [color[str(r.get("group", ""))] for r in rows]
+    boxes = [_box_of(x - 7 if f else x + 7, y + 4, text_width(t, 10.5), 10.5, "end" if f else "start") for x, y, t, f in zip(xs, ys, labels, flips)]
+    for i, (x, y, c) in enumerate(zip(xs, ys, colors)):  # the stems first, broken where they would cross a label
+        for a, b in stem_gaps(x, y, axis, [bx for j, bx in enumerate(boxes) if j != i]):
+            p.append(_line(x, a, x, b, c, 1, ' stroke-opacity="0.35"'))
+    for x, y, c in zip(xs, ys, colors):
         p.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" fill="{c}" stroke="{S.surface}" stroke-width="2"/>')
-        p.append(_t(x - 7 if flip else x + 7, y + 4, r.get("label", ""), size=10.5, fill=S.ink, anchor="end" if flip else "start"))
+    for x, y, label, flip in zip(xs, ys, labels, flips):
+        p.append(_t(x - 7 if flip else x + 7, y + 4, label, size=10.5, fill=S.ink, anchor="end" if flip else "start"))
     end = axis + 24
     if S.journal:
         p.append(_t((left + right) / 2, end + 6, (spec.get("x") or {}).get("label") or "年代", size=11, fill=S.ink, anchor="middle"))
@@ -816,36 +970,50 @@ def _network(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
         by_target = {e["target"] if e["source"] == hub else e["source"]: e for e in edges}
         step = 22.0
         height = step * max(len(others), 1)
-        hx, hy, col = min(140.0, width * 0.22), top + height / 2, min(360.0, width * 0.48)
+        hub_label = clip_text(centre.get("label", centre["id"]), 13, width * 0.3)
+        hx = max(min(140.0, width * 0.22), rad(centre) + 2 + 8 + text_width(hub_label, 13) + 4)  # its name to its left, inside
+        hy, col = top + height / 2, max(min(360.0, width * 0.48), hx + 60)
         for i, n in enumerate(others):
             y = top + step * i + step / 2
             e = by_target.get(n["id"], {})
             p.append(f'<path d="M{hx:.1f},{hy:.1f} C{(hx + col) / 2:.1f},{hy:.1f} {(hx + col) / 2:.1f},{y:.1f} {col:.1f},{y:.1f}" fill="none" '
                      f'stroke="{S.axis if not S.journal else "#9a9a9a"}" stroke-width="1"/>')
             p.append(f'<circle cx="{col:.1f}" cy="{y:.1f}" r="{rad(n):.1f}" fill="{color.get(str(n.get("group", "")), OTHER)}" stroke="{S.surface}" stroke-width="2"/>')
-            p.append(_t(col + 14, y + 4, n.get("label", n["id"]), size=11, fill=S.ink))
-            if e.get("label") and col + 24 + text_width(n.get("label", ""), 11) + text_width(e["label"], 10) < width:
-                p.append(_t(col + 24 + text_width(n.get("label", ""), 11), y + 4, e["label"], size=10, fill=S.muted))
+            name = clip_text(n.get("label", n["id"]), 11, width - col - 16)
+            p.append(_t(col + 14, y + 4, name, size=11, fill=S.ink))
+            if e.get("label") and col + 24 + text_width(name, 11) + text_width(e["label"], 10) < width:
+                p.append(_t(col + 24 + text_width(name, 11), y + 4, e["label"], size=10, fill=S.muted))
         p.append(f'<circle cx="{hx:.1f}" cy="{hy:.1f}" r="{rad(centre) + 2:.1f}" fill="{color.get(str(centre.get("group", "")), OTHER)}" '
                  f'stroke="{S.surface}" stroke-width="2"/>')
-        p.append(_t(hx - rad(centre) - 8, hy + 5, centre.get("label", centre["id"]), size=13, fill=S.ink, anchor="end", weight="600"))
+        p.append(_t(hx - rad(centre) - 8, hy + 5, hub_label, size=13, fill=S.ink, anchor="end", weight="600"))
         return p, top + height + 8
-    cx, radius = width / 2, min(170.0, width * 0.34)
-    cy = top + radius + 20
+    # a ring: each name along its radius, outwards (turned to read left to right on the left half), so that neighbours
+    # never sit on one another however many there are
+    names = {n["id"]: clip_text(n.get("label", n["id"]), 10.5, 90) for n in nodes}
+    reach = max([text_width(t, 10.5) for t in names.values()] + [0]) + 4 + 12  # a name and the largest dot
+    cx = width / 2
+    radius = max(40.0, min(170.0, width / 2 - reach - 6))
+    cy = top + reach + radius + 6
     pos = {}
     for i, n in enumerate(nodes):
         a = -math.pi / 2 + 2 * math.pi * i / max(len(nodes), 1)
-        pos[n["id"]] = (cx + radius * math.cos(a), cy + radius * math.sin(a), math.cos(a))
+        pos[n["id"]] = (cx + radius * math.cos(a), cy + radius * math.sin(a), a)
     wmax = max([_num(e.get("weight")) or 1 for e in edges] + [1])
     for e in edges:
         if e["source"] in pos and e["target"] in pos:
             (x1, y1, _), (x2, y2, _) = pos[e["source"]], pos[e["target"]]
             p.append(_line(x1, y1, x2, y2, S.axis if not S.journal else "#9a9a9a", 1 + 2 * (_num(e.get("weight")) or 1) / wmax))
     for n in nodes:
-        x, y, c = pos[n["id"]]
+        x, y, a = pos[n["id"]]
         p.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{rad(n):.1f}" fill="{color.get(str(n.get("group", "")), OTHER)}" stroke="{S.surface}" stroke-width="2"/>')
-        p.append(_t(x + (rad(n) + 4) * (1 if c >= 0 else -1), y + 4, n.get("label", n["id"]), size=10.5, fill=S.ink, anchor="start" if c >= 0 else "end"))
-    return p, cy + radius + 30
+        right_half = math.cos(a) >= -1e-9
+        d = radius + rad(n) + 4
+        # the baseline a third of an em off the radius, so that the glyphs sit on it
+        ox, oy = (-math.sin(a), math.cos(a)) if right_half else (math.sin(a), -math.cos(a))
+        lx, ly = cx + d * math.cos(a) + 3.6 * ox, cy + d * math.sin(a) + 3.6 * oy
+        turn = math.degrees(a) if right_half else math.degrees(a) + 180
+        p.append(_t(lx, ly, names[n["id"]], size=10.5, fill=S.ink, anchor="start" if right_half else "end", rotate=round(turn, 2)))
+    return p, cy + radius + reach + 8
 
 
 PLOTS = {"line": _series, "bar": _series, "stack": _series, "hbar": _hbar, "heatmap": _heatmap, "range": _range, "box": _box,

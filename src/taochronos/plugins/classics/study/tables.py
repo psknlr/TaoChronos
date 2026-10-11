@@ -365,7 +365,12 @@ def network(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
     return []
 
 
+RELATION_ORDER = ["原方·通行方", "原方", "通行方", "加减化裁", "同名异方", "孤例"]
+
+
 def formula(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
+    from .charts import witness_labels
+
     name = (r.get("formula") or {}).get("name", "")
     groups = r.get("groups") or []
     if not groups:
@@ -375,25 +380,117 @@ def formula(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
         e = g.get("earliest") or {}
         rows.append({"group": f"{i}. {g.get('relation') or ''}", "core": "、".join(g.get("core_terms") or [])[:60], "n": g.get("witnesses", 0),
                      "books": "、".join(g.get("books") or [])[:60], "earliest": f"{_book(e)}（{_years(e)}）" if e else ""})
-    return [table("formula-groups", f"{name}写出组成的类别", [("group", "组成类别", "l"), ("core", "核心药味", "l"), ("n", "见证", "c"),
-                                                         ("books", "见于", "l"), ("earliest", "最早见", "l")], rows,
-                  notes=["组成按药味的 Jaccard 相似度（≥ 0.7）归类；最早见者为原方，见证最多者为通行方。"])]
+    out = [table("formula-groups", f"{name}写出组成的类别", [("group", "组成类别", "l"), ("core", "核心药味", "l"), ("n", "见证", "c"),
+                                                        ("books", "见于", "l"), ("earliest", "最早见", "l")], rows,
+                 notes=["组成按药味的 Jaccard 相似度（≥ 0.7）归类；最早见者为原方，见证最多者为通行方。"])]
+    # the witnesses by period and by the group of their composition (the numbers of the figure)
+    rel_of = {pid: (g.get("relation") or "").split("（")[0] for g in groups for pid in g.get("member_ids", [])}
+    counts: dict[str, dict[str, int]] = {}
+    for w in r.get("witnesses", []):
+        per, rel = w.get("period") or "未定", rel_of.get(w.get("passage_id"), "其他")
+        counts.setdefault(per, {})
+        counts[per][rel] = counts[per].get(rel, 0) + 1
+    rels = sorted({k for c in counts.values() for k in c}, key=lambda k: (RELATION_ORDER + [k]).index(k))
+    if counts:
+        keys = [f"r{i}" for i in range(len(rels))]
+        rows = [{"period": p, **{k: counts[p].get(rel, 0) for k, rel in zip(keys, rels)}, "total": sum(counts[p].values())}
+                for p in _period_order(base) if p in counts]
+        rows.append({"period": "合计", **{k: sum(c.get(rel, 0) for c in counts.values()) for k, rel in zip(keys, rels)},
+                     "total": sum(sum(c.values()) for c in counts.values())})
+        out.append(table("formula-witnesses", f"{name}写出组成的见证（按时期与组成类别）",
+                         [("period", "时期", "l")] + [(k, rel, "c", "组成类别（处）") for k, rel in zip(keys, rels)] + [("total", "合计（处）", "c")], rows,
+                         notes=["见证：一处写出组成的原文（一书数处者分计）；组成类别见上表：原方为最早见者，通行方为见证最多者，"
+                                "加减化裁为与之相近（Jaccard ≥ 0.5）者，同名异方为同名而组成不同者，孤例为只见一处者。"]))
+    # the doses of the witnesses whose ratios are compared (the numbers of the figure), as written and as ratios
+    ratios = [x for x in r.get("ratios", []) if x.get("ratio")][:4]
+    if ratios:
+        by_pid = {w.get("passage_id"): w for w in r.get("witnesses", [])}
+
+        def key(ing: dict[str, Any], ratio: dict[str, Any]) -> str:  # a drug as the ratios name it: its family (桂类) or itself (生姜)
+            family = str(ing.get("family") or "").split(":")[-1]
+            names = ([family + "类"] if family else []) + [str(ing.get("term") or "")]
+            return next((n for n in names if n in ratio), names[0])
+
+        doses = [{key(ing, x["ratio"]): str(ing.get("dose") or "") for ing in (by_pid.get(x.get("passage_id")) or {}).get("ingredients", [])}
+                 for x in ratios]
+        drugs = list(dict.fromkeys([d for x in ratios for d in x["ratio"]] + [d for ds in doses for d in ds]))  # those by weight first
+        keys = [f"w{i}" for i in range(len(ratios))]
+        cell = lambda x, ds, d: ((ds.get(d) or "") + (f"（{plain(x['ratio'][d])}）" if d in x["ratio"] else "")) if d in ds or d in x["ratio"] else "—"  # noqa: E731
+        rows = [{"drug": d, **{k: cell(x, ds, d) for k, x, ds in zip(keys, ratios, doses)}} for d in drugs]
+        out.append(table("formula-ratios", f"{name}各见证的剂量与配伍比例", [("drug", "药物", "l")]
+                         + [(k, label, "c") for k, label in zip(keys, witness_labels(ratios))], rows,
+                         notes=["剂量照原书所写；括号内为配伍比例：以该见证中最大重量为 1，以枚、升等计者无比例。“—”：该见证无此药。"
+                                "药物按同类归并（桂枝、桂心 → 桂类）。",
+                                (r.get("metrology_notice") or "").replace("以下为", "表中剂量为", 1) or None]))
+    return out
+
+
+def names(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
+    periods = [p for p in r.get("periods", []) if p.get("works")]
+    if not periods:
+        return []
+    totals: dict[str, int] = {}
+    for p in periods:
+        for form, k in (p.get("names") or {}).items():
+            totals[form] = totals.get(form, 0) + k
+    forms = sorted(totals, key=lambda f: -totals[f])[:6]
+    keys = [f"n{i}" for i in range(len(forms))]
+    rows = [{"period": p["period"], "works": p["works"], **{k: n_pct((p.get("names") or {}).get(f, 0), p["works"]) for k, f in zip(keys, forms)},
+             "preferred": p.get("preferred") or ""} for p in periods]
+    switches = r.get("switches") or []
+    return [table("names-shares", f"{r.get('term', '')}各名称的历代使用", [("period", "时期", "l"), ("works", "著作（部）", "c")]
+                  + [(k, f, "c", "写此名的著作，n (%)") for k, f in zip(keys, forms)] + [("preferred", "首选之名", "c")], rows,
+                  notes=["著作：写其任一名称的著作（每部著作计一次，按段落的层次定年）；一书可写数名，故各名之和可逾 100%。"
+                         + ("" if len(totals) <= len(forms) else f"另有 {len(totals) - len(forms)} 名见名称表。"),
+                         ("首选之名的更替（按百年分段）：" + "；".join(f"{x['from']} → {x['to']}（{_year(x['between'][0])}–{_year(x['between'][1])} 年间）"
+                                                              for x in switches) + "。") if switches else None])]
 
 
 def shell(t: dict[str, Any]) -> dict[str, Any]:
     """A protocol's table shell (protocol.py) as a table: its heads, a row of placeholders under each stub, and how its
-    numbers will be computed — the table a paper will print, before it is filled."""
+    numbers will be computed — the table a paper will print, before it is filled; a shell the pilot filled
+    (``protocol.fill``) with the rows it holds."""
+    if t.get("filled") and t.get("rows"):
+        cols = [(f"c{i}", label, "l" if i == 0 else "c") for i, label in enumerate(t["columns"])]
+        return table(f"shell-{t.get('id') or t.get('number') or 1}", f"{t['title']}（预试验）", cols,
+                     [{f"c{i}": v for i, v in enumerate(row)} for row in t["rows"]], notes=list(t.get("notes") or []))
     groups = t.get("groups") or {}
     cols = [(f"c{i}", label, "l" if i == 0 else "c", groups.get(label)) for i, label in enumerate(t["columns"])]
-    rows = [{"c0": stub, **{f"c{i}": cell for i, cell in enumerate(t["cells"]) if i}} for stub in t.get("stubs") or ["……"]]
+    rows = [{"c0": stub, **{f"c{i}": cell for i, cell in enumerate(t.get("cells") or []) if i}} for stub in t.get("stubs") or ["……"]]
     return table(f"shell-{t.get('id') or t.get('number') or 1}", f"{t['title']}（模板）", cols, rows,
-                 notes=["表格模板：×× 为待填之数，按研究方法的步骤取得。" + (f"统计：{t['statistics']}。" if t.get("statistics") else ""),
+                 notes=["表格模板：×× 为待填之数，按研究方法的步骤取得" + ("；预试验未得此表之数" if t.get("filled") is False else "") + "。"
+                        + (f"统计：{t['statistics']}。" if t.get("statistics") else ""),
                         f"数据来自：{t['from']}。" if t.get("from") else None])
+
+
+def senses(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
+    series = [x for x in r.get("series", []) if x.get("occurrences")]
+    if not series:
+        return []
+    term_ = r.get("term")
+    name = term_.get("name") if isinstance(term_, dict) else term_
+    label = {x["id"]: x.get("label") or x["id"] for x in r.get("senses", []) if isinstance(x, dict) and x.get("id")}
+    ids = [k for k in dict.fromkeys(k for x in series for k in x.get("shares", {})) if k != "unassigned"]
+    if not ids:  # no sense told apart (a term without curated senses): nothing to tabulate
+        return []
+    ids.sort(key=lambda k: -sum(x["shares"].get(k, 0) * x["occurrences"] for x in series))
+    keys = [f"s{i}" for i in range(len(ids))]
+    rows = [{"period": x["period"], "n": x["occurrences"], **{k: pct(x["shares"].get(i, 0)) for k, i in zip(keys, ids)},
+             "none": pct(x["shares"].get("unassigned", 0))} for x in series]
+    cp = r.get("change_point") or {}
+    short = {i: i.split("#", 1)[-1] for i in ids}  # 消渴#病·三消 → 病·三消: unique, where the labels' heads (病名) are not
+    return [table("senses-shares", f"“{name or ''}”各义项的历代份额", [("period", "时期", "l"), ("n", "用例（处）", "c")]
+                  + [(k, short[i], "c", "义项（%）") for k, i in zip(keys, ids)] + [("none", "未判定", "c", "义项（%）")], rows,
+                  notes=["义项：" + "；".join(f"{short[i]}，{label.get(i, i).split('：', 1)[-1]}" for i in ids)
+                         + "。用例由规则按上下文判归义项，未判定者另列；每期份额之和为 100%。",
+                         f"变点：约 {_year(cp['year'])} 年前后义项的分布相差最大（n₁n₂/n × Jensen–Shannon 散度 = {cp['statistic']:.2f}，置换检验 "
+                         f"{p_eq(cp['p'])}；其前 {cp['n_before']} 例，其后 {cp['n_after']} 例）。"
+                         if cp.get("year") is not None and cp.get("p") is not None else None])]
 
 
 BUILDERS: dict[str, Callable[[dict[str, Any], Any], list[dict[str, Any]]]] = {
     "usage": usage, "pairs": pairs, "compare": compare, "family": family, "term": term, "herb": herb, "properties": properties,
-    "incompat": incompat, "network": network, "formula": formula,
+    "incompat": incompat, "network": network, "formula": formula, "names": names, "senses": senses,
 }
 
 

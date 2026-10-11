@@ -69,7 +69,6 @@ from ..domain import DomainPack
 from .argument import ArgumentStudy
 from .base import StudyBase
 from . import charts as _charts
-from . import tables as _tables
 from .canon import CANON_SIZE, CanonStudy
 from .cases import CaseStudy
 from .chain import ChainStudy
@@ -359,12 +358,12 @@ class StudyService(StudyBase):
 
     def protocol(self, question: str, **kw: Any) -> dict[str, Any]:
         """研究方案: the question's protocol — what it names and asks, hypotheses with tests and refutations, scope,
-        variables, methods, analysis, figures, quality, limitations, ethics, timeline, a research contract; ``pilot``
-        (default) runs the main steps once and says how much evidence the corpus holds, with their charts.  The protocol
-        carries its own document (``document``: the Markdown page, to download as a file); the model reads the rest."""
+        variables, methods, analysis, figures, tables, quality, limitations, ethics, timeline, a research contract;
+        ``pilot`` (default) runs the main steps once and says how much evidence the corpus holds, with their charts and
+        tables — the protocol's tables filled with its numbers where it ran the step that fills them, shells (××) where it
+        did not.  The protocol carries its own document (``document``: the Markdown page, to download as a file); the
+        model reads the rest."""
         r = self._protocol.design(question, **kw)
-        if r.get("table_shells"):  # the page prints the shells as three-line tables, to copy or download as Word
-            r["tables"] = [_tables.shell(t) for t in r["table_shells"]]
         name = re.sub(r'[\\/:*?"<>|\s]+', "_", r.get("title") or "研究方案")[:60] + ".md"
         r["document"] = {"name": name, "format": "markdown", "text": _markdown("protocol", r, self.signature(), r.get("notice", ""))}
         return r
