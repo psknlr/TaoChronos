@@ -23,6 +23,15 @@ own_agents:
 # apply.py 找不到时会创建它；没有 Account → Account Filter Lists 权限时，R5 去掉这一项照常写入
 list: taochronos_block
 
+# 只为训练模型而抓取的爬虫（不是搜索引擎，也不是代用户上网的 AI 助手）：R4 不论 Cloudflare 验证与否都拦下。与站点
+# robots.txt 的 TRAINING_CRAWLERS（src/taochronos/chat/build.py）一致，只取会出现在 UA 里的名字（Google-Extended、
+# Applebot-Extended 只是 robots.txt 里的标记）。不用区域的 ai_training: block 来拦：它的托管规则（Block AI training
+# crawlers，BOBA-199）在 2026-10-07、09、10 把真正的 Googlebot（66.249.66.43–45）与 Bingbot（40.77.167.4、.46，
+# 52.167.144.25）的首页请求也拦了（data/security-logs/edge），网站因此进不了谷歌与必应的索引。
+# tests/test_security_apply.py 核对：与 robots.txt 一致、不含任何搜索引擎的爬虫、渲染出的 R4 放行 Googlebot 与 Bingbot
+training_agents: [GPTBot, ClaudeBot, anthropic-ai, Claude-Web, CCBot, Google-CloudVertexBot, meta-externalagent, FacebookBot, Amazonbot,
+                  cohere-ai, Diffbot, omgili, MistralAI-Training]
+
 # 托管与云网络（扫描器与抓取器的常住地）：DigitalOcean、Google Cloud、OVH、Hetzner、Vultr、Linode、Alibaba、Tencent、Contabo、M247、Datacamp。
 # 只供 ${HOSTING_ASNS} 代入；默认的 R5 不用它——这些也是大陆访客常用的 VPN 出口，质询页面在大陆不一定打得开，
 # 所以哨兵只把它当两分的信号。要用时参考 R5 下方注释里的表达式。不要加 8075（微软 Azure：GitHub Actions 的运行器）
@@ -88,12 +97,12 @@ custom_rules:
        and not (http.request.headers["origin"][0] in {${ORIGINS}}))
 
   - ref: tc-tooling-and-spoofed-crawlers
-    description: "[taochronos] 4 no agent, scanners, scraping libraries, and a crawler's name without Cloudflare's verification"
+    description: "[taochronos] 4 no agent, scanners, scraping libraries, a crawler's name without Cloudflare's verification, crawlers for AI training"
     action: block
     expression: >-
-      (not cf.client.bot)
-      and (not starts_with(http.request.uri.path, "/.well-known/acme-challenge/"))
-      and (
+      (not starts_with(http.request.uri.path, "/.well-known/acme-challenge/"))
+      and (${TRAINING_AGENTS_MATCH}
+      or ((not cf.client.bot) and (
         len(http.user_agent) eq 0
         or starts_with(lower(http.user_agent), "python")
         or starts_with(http.user_agent, "Go-http-client")
@@ -110,11 +119,9 @@ custom_rules:
         or (lower(http.user_agent) contains "paloaltonetworks")
         or (lower(http.user_agent) contains "internetmeasurement")
         or (http.user_agent contains "ChatGPT-User")
-        or (http.user_agent contains "GPTBot")
         or (http.user_agent contains "OAI-SearchBot")
         or (http.user_agent contains "PerplexityBot")
         or (http.user_agent contains "Perplexity-User")
-        or (http.user_agent contains "ClaudeBot")
         or (http.user_agent contains "Claude-User")
         or (http.user_agent contains "Claude-SearchBot")
         or (http.user_agent contains "Googlebot")
@@ -122,10 +129,7 @@ custom_rules:
         or (http.user_agent contains "Baiduspider")
         or (http.user_agent contains "Bytespider")
         or (http.user_agent contains "Applebot")
-        or (http.user_agent contains "Amazonbot")
-        or (http.user_agent contains "CCBot")
-        or (http.user_agent contains "meta-externalagent")
-      )
+      )))
 
   # 没有列表（apply.py 没有账户权限或建不了）时这条整条省略
   - ref: tc-block-list
@@ -173,10 +177,11 @@ settings:
 # （网页是可被索引的：robots.txt 与 sitemap 由构建生成）。托管 robots.txt 关：它的名单把百度（Baiduspider）、花瓣
 # （PetalBot）、头条（Bytespider）的搜索爬虫也当训练爬虫，叫它们整站别抓，网站会从这些搜索结果里消失。对训练爬虫的
 # 声明改由构建写进站点自己的 robots.txt（src/taochronos/chat/build.py 的 TRAINING_CRAWLERS，不含任何搜索引擎）。
-# 旧字段 ai_bots_protection 已于 2026-09-15 弃用，不再写。不想拦训练爬虫时把 ai_training 改为 disabled
+# 训练爬虫由 R4 按名字拦下（training_agents），不用 ai_training: block——它的托管规则把 Googlebot 与 Bingbot 也拦了
+# （见 training_agents 的注释）。旧字段 ai_bots_protection 已于 2026-09-15 弃用，不再写
 bot_management:
   fight_mode: false
-  ai_training: block
+  ai_training: disabled
   ai_search: disabled
   ai_user: disabled
   is_robots_txt_managed: false
