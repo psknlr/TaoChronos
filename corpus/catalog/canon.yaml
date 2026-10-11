@@ -1,9 +1,13 @@
 # 要籍 — the works of the corpus ranked by how the tradition cited them (taochronos study canon --write-catalog).
 # Metadata only: no text.  Read with classics.canon; the published site's corpus holds the works marked open.
 # score = 10·log2(1+influence) + 2·breadth + 2·log2(1+volume) + 3·log2(1+witnesses) + 6·siku; influence = number of distinct works citing it (not older than it), breadth = periods in which it is cited, volume = citations in all, witnesses = copies in the corpus, siku = in 四库全书·子部·医家类
-ranked: 759
-top: 350
-open: 344
+# Extended: the first 350 as listed before (ranked on the full corpus); the next ones ranked on a store that ranks 757 works.
+ranked: 757
+top: 535
+open: 529
+extends:
+  kept: 350
+  ranked_here: 757
 works:
 - rank: 1
   work: suwen
@@ -6377,3 +6381,3300 @@ works:
   - jicheng
   open: true
   open_witness: jc_n052
+- rank: 351
+  work: jc:形色外诊简摩
+  title: 形色外诊简摩
+  authors:
+  - 周学海
+  dynasty: 清
+  composition: 1876–1911
+  category: 诊法
+  score: 25.82
+  cited_by: 2
+  periods: 2
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_m004
+- rank: 352
+  work: yzjj_zabing
+  title: 医宗金鉴-杂病心法
+  authors:
+  - 吴谦 等
+  dynasty: 清
+  composition: '1742'
+  category: 综合
+  score: 25.68
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_p0007a
+- rank: 353
+  work: jc:子午流注针经
+  title: 子午流注针经
+  authors:
+  - 何若愚
+  - 阎明广
+  dynasty: 金
+  composition: 1115–1234
+  category: 针灸
+  score: 25.61
+  cited_by: 2
+  periods: 2
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_k016
+- rank: 354
+  work: jc:素问经注节解
+  title: 素问经注节解
+  authors:
+  - 姚止庵
+  dynasty: 清
+  composition: '1677'
+  category: 医经
+  score: 25.61
+  cited_by: 2
+  periods: 2
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_a011
+- rank: 355
+  work: jc:黄帝内经灵枢集注
+  title: 黄帝内经灵枢集注
+  authors:
+  - 张志聪
+  dynasty: 清
+  composition: '1672'
+  category: 医经
+  score: 25.52
+  cited_by: 2
+  periods: 2
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_a101
+- rank: 356
+  work: jc:症因脉治
+  title: 症因脉治
+  authors:
+  - 秦昌遇
+  - 秦之桢
+  dynasty: 明末清初
+  composition: 1641–1706
+  category: 诊法
+  score: 25.49
+  cited_by: 2
+  periods: 1
+  citations: 4
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_m107
+- rank: 357
+  work: jc:奇方类编
+  title: 奇方类编
+  authors:
+  - 吴世昌
+  dynasty: 清
+  composition: '1719'
+  category: 方书
+  score: 25.48
+  cited_by: 1
+  periods: 1
+  citations: 37
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d036
+- rank: 358
+  work: jc:奇效简便良方
+  title: 奇效简便良方
+  authors: []
+  dynasty: 清
+  composition: '1880'
+  category: 方书
+  score: 25.35
+  cited_by: 1
+  periods: 1
+  citations: 35
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d055
+- rank: 359
+  work: jc:内经知要
+  title: 内经知要
+  authors:
+  - 李中梓
+  dynasty: 宋
+  composition: '1642'
+  category: 医经
+  score: 25.12
+  cited_by: 2
+  periods: 1
+  citations: 3
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_a200
+- rank: 360
+  work: jc:咽喉秘集
+  title: 咽喉秘集
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 五官
+  score: 25.12
+  cited_by: 2
+  periods: 1
+  citations: 3
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_l104
+- rank: 361
+  work: jc:医学从众录
+  title: 医学从众录
+  authors:
+  - 陈修园
+  dynasty: 清
+  composition: '1845'
+  category: 综合
+  score: 24.99
+  cited_by: 2
+  periods: 1
+  citations: 3
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o002
+- rank: 362
+  work: jc:丹台玉案
+  title: 丹台玉案
+  authors:
+  - 孙文胤
+  dynasty: 明
+  composition: '1637'
+  category: 综合
+  score: 24.83
+  cited_by: 1
+  periods: 1
+  citations: 29
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o077
+- rank: 363
+  work: jiyan_beiju
+  title: 集验背疽方
+  authors:
+  - 李迅
+  dynasty: 宋
+  composition: '1196'
+  category: 外科
+  score: 24.75
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 2
+  siku: true
+  sources:
+  - jicheng
+  - kanripo
+  open: true
+  open_witness: jiyan_beiju
+- rank: 364
+  work: jc:少林真传伤科秘方
+  title: 少林真传伤科秘方
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 伤科
+  score: 24.38
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_j008
+- rank: 365
+  work: jc:杨成博先生遗留穴道秘书
+  title: 杨成博先生遗留穴道秘书
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 综合
+  score: 24.38
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o100
+- rank: 366
+  work: jc:王氏医案绎注
+  title: 王氏医案绎注
+  authors:
+  - 任钖庚
+  dynasty: 清
+  composition: '1644'
+  category: 医案
+  score: 24.38
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_n020
+- rank: 367
+  work: jc:脉诀阐微
+  title: 脉诀阐微（修订版）
+  authors:
+  - 陈士铎
+  dynasty: 清
+  composition: 1667–1767
+  category: 诊法
+  score: 24.38
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_m115
+- rank: 368
+  work: jc:解围元薮
+  title: 解围元薮
+  authors:
+  - 沈之问
+  dynasty: 明
+  composition: '1550'
+  category: 综合
+  score: 24.02
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o101
+- rank: 369
+  work: jc:经络全书
+  title: 经络全书
+  authors:
+  - 沈子禄
+  - 徐师曾
+  dynasty: 明
+  composition: '1576'
+  category: 综合
+  score: 24.02
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o009
+- rank: 370
+  work: jc:邯郸遗稿
+  title: 邯郸遗稿
+  authors:
+  - 赵献可
+  dynasty: 明
+  composition: 1597–1637
+  category: 妇科
+  score: 24.02
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_g038
+- rank: 371
+  work: jc:内经博议
+  title: 内经博议
+  authors:
+  - 罗美
+  dynasty: 清
+  composition: '1675'
+  category: 医经
+  score: 24.02
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_a201
+- rank: 372
+  work: jc:回春录
+  title: 回春录
+  authors:
+  - 王士维
+  dynasty: 清
+  composition: 1824–1857
+  category: 医案
+  score: 24.02
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_n024
+- rank: 373
+  work: jc:伤寒九十论
+  title: 伤寒九十论
+  authors:
+  - 许叔微
+  dynasty: 宋
+  composition: 1132–1150
+  category: 伤寒
+  score: 23.82
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_b004
+- rank: 374
+  work: jc:心医集
+  title: 心医集
+  authors:
+  - 祝登元
+  dynasty: 清
+  composition: 1644–1911
+  category: 综合
+  score: 23.82
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o019
+- rank: 375
+  work: jc:伤寒附翼
+  title: 伤寒附翼
+  authors:
+  - 柯琴
+  dynasty: 清
+  composition: '1674'
+  category: 伤寒
+  score: 23.82
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_b034
+- rank: 376
+  work: jc:金匮要略浅注
+  title: 金匮要略浅注
+  authors:
+  - 陈修园
+  dynasty: 清
+  composition: 1781–1865
+  category: 杂病
+  score: 23.82
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_b102
+- rank: 377
+  work: jc:濒湖脉学脉诀
+  title: 濒湖脉学脉诀
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 歌赋
+  score: 23.61
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_q011
+- rank: 378
+  work: jc:达摩洗髓易筋经
+  title: 达摩洗髓易筋经
+  authors:
+  - 项杨惠吴德华张鉴若曹江
+  dynasty: 清
+  composition: 1644–1911
+  category: 综合
+  score: 23.61
+  cited_by: 2
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o026
+- rank: 379
+  work: jc:外科十法
+  title: 外科十法
+  authors:
+  - 朱世杰
+  dynasty: 清
+  composition: 1644–1911
+  category: 外科
+  score: 23.31
+  cited_by: 1
+  periods: 1
+  citations: 17
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_i007
+- rank: 380
+  work: jc:傅青主女科
+  title: 傅青主女科
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 妇科
+  score: 23.17
+  cited_by: 1
+  periods: 1
+  citations: 5
+  witnesses: 3
+  siku: false
+  sources:
+  - jicheng
+  - mcgill
+  open: true
+  open_witness: mg_fuqingzhu_nuke
+- rank: 381
+  work: jc:外治寿世方
+  title: 外治寿世方
+  authors:
+  - 邹存检
+  dynasty: 清
+  composition: '1877'
+  category: 方书
+  score: 22.89
+  cited_by: 1
+  periods: 1
+  citations: 14
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d063
+- rank: 382
+  work: chanbao_zhufang
+  title: 产宝诸方
+  authors:
+  - 佚名
+  dynasty: 宋
+  composition: 1100–1200
+  category: 妇科
+  score: 22.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: true
+  sources:
+  - kanripo
+  open: true
+  open_witness: chanbao_zhufang
+- rank: 383
+  work: jc:古今名医汇粹
+  title: 古今名医汇粹
+  authors:
+  - 罗美
+  dynasty: 清
+  composition: '1823'
+  category: 综合
+  score: 21.07
+  cited_by: 1
+  periods: 1
+  citations: 7
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o060
+- rank: 384
+  work: jc:食鉴本草
+  title: 食鉴本草
+  authors:
+  - 宁原
+  dynasty: 清
+  composition: '1883'
+  category: 本草
+  score: 21.07
+  cited_by: 1
+  periods: 1
+  citations: 7
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_c028
+- rank: 385
+  work: ws:医津一筏
+  title: 医津一筏
+  authors:
+  - 江之兰
+  dynasty: 清
+  composition: 1644–1911
+  category: 综合
+  score: 20.53
+  cited_by: 1
+  periods: 1
+  citations: 6
+  witnesses: 1
+  siku: false
+  sources:
+  - wikisource
+  open: true
+  open_witness: ws_863b76c972
+- rank: 386
+  work: jc:宁坤秘笈
+  title: 宁坤秘笈
+  authors: []
+  dynasty: 清
+  composition: '1786'
+  category: 综合
+  score: 20.44
+  cited_by: 1
+  periods: 1
+  citations: 6
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o024
+- rank: 387
+  work: jc:寿世青编
+  title: 寿世青编
+  authors:
+  - 尤乘
+  dynasty: 清
+  composition: 1805–1845
+  category: 综合
+  score: 20.17
+  cited_by: 1
+  periods: 1
+  citations: 5
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o031
+- rank: 388
+  work: jc:幼科推拿秘书
+  title: 幼科推拿秘书
+  authors:
+  - 骆如龙
+  dynasty: 清
+  composition: 1644–1911
+  category: 儿科
+  score: 20.07
+  cited_by: 1
+  periods: 1
+  citations: 5
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_h015
+- rank: 389
+  work: jc:女科经纶
+  title: 女科经纶
+  authors:
+  - 萧埙
+  dynasty: 清
+  composition: '1684'
+  category: 妇科
+  score: 19.92
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_g017
+- rank: 390
+  work: jc:杂病治例
+  title: 杂病治例
+  authors: []
+  dynasty: 明
+  composition: '1479'
+  category: 内科
+  score: 19.87
+  cited_by: 1
+  periods: 1
+  citations: 4
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_f021
+- rank: 391
+  work: jc:温热逢源
+  title: 温热逢源
+  authors:
+  - 柳宝诒
+  dynasty: 清
+  composition: 1862–1902
+  category: 温病
+  score: 19.73
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_e011
+- rank: 392
+  work: jc:本草征要
+  title: 本草征要
+  authors:
+  - 李中梓
+  dynasty: 明
+  composition: 1622–1644
+  category: 本草
+  score: 19.64
+  cited_by: 1
+  periods: 1
+  citations: 4
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_c015
+- rank: 393
+  work: jc:增订十药神书
+  title: 增订十药神书
+  authors: []
+  dynasty: 清
+  composition: '1879'
+  category: 方书
+  score: 19.64
+  cited_by: 1
+  periods: 1
+  citations: 4
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d072
+- rank: 394
+  work: bencao_qiuzhen
+  title: 本草求真
+  authors:
+  - 黄宫绣
+  dynasty: 清
+  composition: '1769'
+  category: 本草
+  score: 19.51
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_c025a
+- rank: 395
+  work: jc:医学实在易
+  title: 医学实在易
+  authors:
+  - 陈修园
+  dynasty: 清
+  composition: 1781–1865
+  category: 综合
+  score: 19.14
+  cited_by: 1
+  periods: 1
+  citations: 3
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o065
+- rank: 396
+  work: jc:曹氏伤寒金匮发微合刊
+  title: 曹氏伤寒金匮发微合刊
+  authors:
+  - 曹家达
+  dynasty: 民国
+  composition: 1931–1936
+  category: 近代
+  score: 19.14
+  cited_by: 1
+  periods: 1
+  citations: 3
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_b200
+- rank: 397
+  work: jc:四诊抉微
+  title: 四诊抉微
+  authors:
+  - 林之瀚
+  dynasty: 清
+  composition: '1723'
+  category: 诊法
+  score: 19.0
+  cited_by: 1
+  periods: 1
+  citations: 3
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_m003
+- rank: 398
+  work: yzjj_zhenggu
+  title: 正骨心法
+  authors:
+  - 吴谦 等
+  dynasty: 清
+  composition: '1742'
+  category: 综合
+  score: 18.75
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_p0014a
+- rank: 399
+  work: jc:吴鞠通医案
+  title: 吴鞠通医案
+  authors:
+  - 吴瑭
+  dynasty: 清
+  composition: 1798–1836
+  category: 医案
+  score: 18.75
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_n003a
+- rank: 400
+  work: jc:血证论
+  title: 血证论
+  authors:
+  - 唐容川
+  dynasty: 清
+  composition: '1884'
+  category: 内科
+  score: 18.75
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_f002
+- rank: 401
+  work: jc:厘正按摩要术
+  title: 厘正按摩要术
+  authors:
+  - 张振鉴
+  dynasty: 清
+  composition: 1644–1911
+  category: 针灸
+  score: 18.7
+  cited_by: 1
+  periods: 1
+  citations: 3
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_k200
+- rank: 402
+  work: jc:理瀹骈文
+  title: 理瀹骈文
+  authors:
+  - 吴师机
+  dynasty: 清
+  composition: '1864'
+  category: 综合
+  score: 18.61
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o007a
+- rank: 403
+  work: yzjj_fuke
+  title: 医宗金鉴·妇科心法要诀
+  authors:
+  - 吴谦 等
+  dynasty: 清
+  composition: '1742'
+  category: 综合
+  score: 18.45
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_p0008a
+- rank: 404
+  work: jc:洪氏集验方
+  title: 洪氏集验方
+  authors:
+  - 洪遵
+  dynasty: 宋
+  composition: '1170'
+  category: 方书
+  score: 18.17
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d013
+- rank: 405
+  work: jc:眼科秘诀
+  title: 眼科秘诀
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 眼科
+  score: 18.17
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_l001
+- rank: 406
+  work: jc:伤寒括要
+  title: 伤寒括要
+  authors:
+  - 李中梓
+  dynasty: 明
+  composition: '1649'
+  category: 伤寒
+  score: 18.17
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_b019
+- rank: 407
+  work: jc:妇科玉尺
+  title: 妇科玉尺
+  authors:
+  - 沈金鳌
+  dynasty: 清
+  composition: '1774'
+  category: 妇科
+  score: 18.17
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_g040
+- rank: 408
+  work: jc:知医必辨
+  title: 知医必辨
+  authors:
+  - 李冠仙
+  dynasty: 清
+  composition: '1848'
+  category: 医案
+  score: 18.17
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_n028
+- rank: 409
+  work: jc:增订医方歌诀
+  title: 增订医方歌诀
+  authors:
+  - 王泰林
+  dynasty: 清
+  composition: 1644–1911
+  category: 方书
+  score: 17.97
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d067
+- rank: 410
+  work: jc:金针赋
+  title: 金针赋
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 歌赋
+  score: 17.97
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_q013
+- rank: 411
+  work: jc:程杏轩医案
+  title: 程杏轩医案
+  authors:
+  - 程杏轩
+  dynasty: 清
+  composition: '1800'
+  category: 医案
+  score: 17.97
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_n046
+- rank: 412
+  work: jc:儿科要略
+  title: 儿科要略
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 儿科
+  score: 17.76
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_h004
+- rank: 413
+  work: yzjj_shanghan_yaojue
+  title: 医宗金鉴·伤寒心法要诀
+  authors:
+  - 吴谦 等
+  dynasty: 清
+  composition: '1742'
+  category: 综合
+  score: 17.76
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_p0006
+- rank: 414
+  work: yzjj_waike
+  title: 医宗金鉴·外科心法要诀
+  authors:
+  - 吴谦 等
+  dynasty: 清
+  composition: '1742'
+  category: 综合
+  score: 17.76
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_p0012
+- rank: 415
+  work: jc:虚损启微
+  title: 虚损启微
+  authors: []
+  dynasty: 清
+  composition: '1761'
+  category: 内科
+  score: 17.76
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_f013
+- rank: 416
+  work: jc:重订通俗伤寒论
+  title: 重订通俗伤寒论
+  authors:
+  - 俞根初
+  dynasty: 清
+  composition: '1776'
+  category: 伤寒
+  score: 17.76
+  cited_by: 1
+  periods: 1
+  citations: 2
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_b017
+- rank: 417
+  work: jc:医学启源
+  title: 医学启源
+  authors:
+  - 张元素
+  dynasty: 金
+  composition: 1127–1279
+  category: 综合
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o051
+- rank: 418
+  work: jc:针经节要
+  title: 针经节要
+  authors:
+  - 杜思敬
+  dynasty: 元
+  composition: '1315'
+  category: 针灸
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_k009
+- rank: 419
+  work: jc:祖剂
+  title: 祖剂
+  authors:
+  - 施沛
+  dynasty: 明
+  composition: 1368–1644
+  category: 方书
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d031
+- rank: 420
+  work: jc:秘传外科方
+  title: 秘传外科方
+  authors: []
+  dynasty: 明
+  composition: '1395'
+  category: 外科
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_i016
+- rank: 421
+  work: jc:滇南本草
+  title: 滇南本草
+  authors:
+  - 兰茂
+  dynasty: 明
+  composition: 1396–1476
+  category: 本草
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_c010
+- rank: 422
+  work: jc:妇人规
+  title: 妇人规
+  authors:
+  - 张介宾
+  dynasty: 明
+  composition: 1604–1644
+  category: 妇科
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_g026
+- rank: 423
+  work: jc:婴童类萃
+  title: 婴童类萃
+  authors: []
+  dynasty: 明
+  composition: '1622'
+  category: 儿科
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_h030
+- rank: 424
+  work: jc:松崖医径
+  title: 松崖医径
+  authors:
+  - 程颉阶
+  dynasty: 明
+  composition: '1625'
+  category: 综合
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o096
+- rank: 425
+  work: jc:凌临灵方
+  title: 凌临灵方
+  authors:
+  - 凌晓五
+  dynasty: 清
+  composition: 1644–1911
+  category: 医案
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_n037
+- rank: 426
+  work: jc:医学举要
+  title: 医学举要
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 综合
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o103
+- rank: 427
+  work: jc:医方歌括
+  title: 医方歌括
+  authors:
+  - 王泰林
+  dynasty: 清
+  composition: 1644–1911
+  category: 方书
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d070
+- rank: 428
+  work: jc:医方证治汇编歌诀
+  title: 医方证治汇编歌诀
+  authors:
+  - 王泰林
+  dynasty: 清
+  composition: 1644–1911
+  category: 方书
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d045
+- rank: 429
+  work: jc:回生集
+  title: 回生集
+  authors:
+  - 陈杰
+  dynasty: 清
+  composition: 1644–1911
+  category: 方书
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d065
+- rank: 430
+  work: jc:女科指掌
+  title: 女科指掌
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 妇科
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_g013
+- rank: 431
+  work: jc:幼科指南
+  title: 幼科指南
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 儿科
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_h014
+- rank: 432
+  work: jc:广嗣要语
+  title: 广嗣要语
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 综合
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o013
+- rank: 433
+  work: jc:本草分经
+  title: 本草分经
+  authors:
+  - 姚澜
+  dynasty: 清
+  composition: 1644–1911
+  category: 本草
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_c038
+- rank: 434
+  work: jc:标幽赋
+  title: 标幽赋
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 歌赋
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_q009
+- rank: 435
+  work: jc:肘后歌
+  title: 肘后歌
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 歌赋
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_q006
+- rank: 436
+  work: jc:要药分剂
+  title: 要药分剂
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 本草
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_c039
+- rank: 437
+  work: jc:轩岐救正论
+  title: 轩岐救正论
+  authors:
+  - 萧京
+  dynasty: 明
+  composition: '1644'
+  category: 综合
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o061
+- rank: 438
+  work: jc:侣山堂类辩
+  title: 侣山堂类辩
+  authors:
+  - 张志聪
+  dynasty: 清
+  composition: '1670'
+  category: 医案
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_n008
+- rank: 439
+  work: jc:胎产心法
+  title: 胎产心法
+  authors:
+  - 闵纯玺
+  dynasty: 清
+  composition: '1725'
+  category: 妇科
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_g022
+- rank: 440
+  work: jc:喉科指掌
+  title: 喉科指掌
+  authors:
+  - 张宗良
+  dynasty: 清
+  composition: '1757'
+  category: 五官
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_l106
+- rank: 441
+  work: jc:伤寒论纲目
+  title: 伤寒论纲目
+  authors:
+  - 沈金鳌
+  dynasty: 清
+  composition: '1774'
+  category: 伤寒
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_b039
+- rank: 442
+  work: jc:脉因证治
+  title: 脉因证治
+  authors:
+  - 朱丹溪
+  dynasty: 清
+  composition: '1775'
+  category: 综合
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o043
+- rank: 443
+  work: jc:医经读
+  title: 医经读
+  authors:
+  - 沈又彭
+  dynasty: 清
+  composition: 1830–1870
+  category: 医经
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_a400
+- rank: 444
+  work: jc:重楼玉钥
+  title: 重楼玉钥
+  authors:
+  - 郑梅涧
+  dynasty: 清
+  composition: '1838'
+  category: 五官
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_l113
+- rank: 445
+  work: jc:伤寒寻源
+  title: 伤寒寻源
+  authors:
+  - 吕震名
+  dynasty: 清
+  composition: '1850'
+  category: 伤寒
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_b009
+- rank: 446
+  work: jc:柳洲医话
+  title: 柳洲医话
+  authors:
+  - 魏之琇
+  dynasty: 清
+  composition: '1851'
+  category: 医案
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_n005
+- rank: 447
+  work: jc:神灸经纶
+  title: 神灸经纶
+  authors:
+  - 吴亦鼎
+  dynasty: 清
+  composition: '1851'
+  category: 针灸
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_k101
+- rank: 448
+  work: jc:杂病广要
+  title: 杂病广要
+  authors:
+  - 丹波元坚
+  dynasty: 清
+  composition: '1853'
+  category: 内科
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_f004
+- rank: 449
+  work: jc:本草问答
+  title: 本草问答
+  authors:
+  - 唐宗海
+  dynasty: 清
+  composition: 1862–1918
+  category: 本草
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_c033
+- rank: 450
+  work: jc:医方论
+  title: 医方论
+  authors:
+  - 费伯雄
+  dynasty: 清
+  composition: '1865'
+  category: 方书
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d038
+- rank: 451
+  work: jc:研经言
+  title: 研经言
+  authors: []
+  dynasty: 清
+  composition: '1871'
+  category: 医案
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_n034
+- rank: 452
+  work: jc:白喉全生集
+  title: 白喉全生集
+  authors:
+  - 李纪方
+  dynasty: 清
+  composition: '1882'
+  category: 五官
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_l102
+- rank: 453
+  work: jc:伤寒恒论
+  title: 伤寒恒论
+  authors:
+  - 郑寿全
+  dynasty: 清
+  composition: '1894'
+  category: 伤寒
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_b044
+- rank: 454
+  work: jc:白喉条辨
+  title: 白喉条辨
+  authors:
+  - 陈葆善
+  dynasty: 清
+  composition: '1897'
+  category: 五官
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_l103
+- rank: 455
+  work: jc:温病指南
+  title: 温病指南
+  authors:
+  - 高秉钧
+  dynasty: 清
+  composition: '1903'
+  category: 温病
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_e013
+- rank: 456
+  work: jc:本草思辨录
+  title: 本草思辨录
+  authors:
+  - 周岩
+  dynasty: 清
+  composition: '1904'
+  category: 本草
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_c045
+- rank: 457
+  work: jc:医学衷中参西录
+  title: 医学衷中参西录
+  authors:
+  - 张锡纯
+  dynasty: 清
+  composition: 1912–1949
+  category: 近代
+  score: 17.0
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o107
+- rank: 458
+  work: jc:宋本备急灸法
+  title: 宋本备急灸法
+  authors: []
+  dynasty: 南宋
+  composition: '1226'
+  category: 针灸
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_k104
+- rank: 459
+  work: jc:药性歌括四百味
+  title: 药性歌括四百味
+  authors:
+  - 龚延贤
+  dynasty: 明
+  composition: 1368–1644
+  category: 本草
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_c029
+- rank: 460
+  work: jc:仁术便览
+  title: 仁术便览
+  authors:
+  - 张洁
+  dynasty: 明
+  composition: '1585'
+  category: 方书
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d030
+- rank: 461
+  work: jc:七十二症辨治方法
+  title: 七十二症辨治方法（手抄本）
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 内科
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_f028
+- rank: 462
+  work: jc:上池杂说
+  title: 上池杂说
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 医案
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_n017
+- rank: 463
+  work: jc:中国医籍考
+  title: 中国医籍考
+  authors:
+  - 丹波元胤
+  dynasty: 清
+  composition: 1644–1911
+  category: 综合
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o076
+- rank: 464
+  work: jc:保幼新编
+  title: 保幼新编
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 儿科
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_h021
+- rank: 465
+  work: jc:叶天士医案精华
+  title: 叶天士医案精华
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 医案
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_n013
+- rank: 466
+  work: jc:女科精要
+  title: 女科精要
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 妇科
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_g018
+- rank: 467
+  work: jc:婴儿论
+  title: 婴儿论
+  authors:
+  - 周士祢
+  dynasty: 清
+  composition: 1644–1911
+  category: 儿科
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_h002
+- rank: 468
+  work: jc:宜麟策
+  title: 宜麟策
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 综合
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o095
+- rank: 469
+  work: jc:疡科捷径
+  title: 疡科捷径
+  authors:
+  - 杨成博
+  dynasty: 清
+  composition: 1644–1911
+  category: 外科
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_i103
+- rank: 470
+  work: jc:百家针灸歌赋［举拙修订版］
+  title: 百家针灸歌赋［举拙修订版］
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 针灸
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_k023
+- rank: 471
+  work: jc:通玄指要赋
+  title: 通玄指要赋
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 歌赋
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_q012
+- rank: 472
+  work: jc:钱氏秘传产科方书名试验录
+  title: 钱氏秘传产科方书名试验录
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 妇科
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_g004
+- rank: 473
+  work: jc:陈氏幼科秘诀
+  title: 陈氏幼科秘诀
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 儿科
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_h024
+- rank: 474
+  work: jc:中寒论辩证广注
+  title: 中寒论辩证广注
+  authors:
+  - 汪琥
+  dynasty: 清
+  composition: 1684–1686
+  category: 伤寒
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_b036
+- rank: 475
+  work: jc:黄帝素问直解
+  title: 黄帝素问直解
+  authors:
+  - 高士宗
+  dynasty: 清
+  composition: '1695'
+  category: 医经
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_a010
+- rank: 476
+  work: jc:医学传灯
+  title: 医学传灯
+  authors:
+  - 陈歧
+  dynasty: 清
+  composition: '1700'
+  category: 综合
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o094
+- rank: 477
+  work: jc:尤氏喉科秘书
+  title: 尤氏喉科秘书
+  authors:
+  - 梁溪尤氏
+  dynasty: 清
+  composition: '1781'
+  category: 五官
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_l100
+- rank: 478
+  work: jc:神农本草经读
+  title: 神农本草经读
+  authors:
+  - 陈修园
+  dynasty: 清
+  composition: '1803'
+  category: 本草
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_c026
+- rank: 479
+  work: jc:疡科心得集
+  title: 疡科心得集
+  authors:
+  - 高秉钧
+  dynasty: 清
+  composition: '1805'
+  category: 外科
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_i101
+- rank: 480
+  work: jc:金匮玉函要略辑义
+  title: 金匮玉函要略辑义
+  authors:
+  - 元简
+  dynasty: 清
+  composition: '1806'
+  category: 杂病
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_b106
+- rank: 481
+  work: jc:古今医彻
+  title: 古今医彻
+  authors:
+  - 怀远
+  dynasty: 清
+  composition: '1808'
+  category: 综合
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o078
+- rank: 482
+  work: jc:咽喉脉证通论
+  title: 咽喉脉证通论
+  authors:
+  - 尤乘
+  dynasty: 清
+  composition: '1825'
+  category: 五官
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_l111
+- rank: 483
+  work: jc:三家医案合刻
+  title: 三家医案合刻
+  authors:
+  - 吴金寿
+  dynasty: 清
+  composition: '1831'
+  category: 医案
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_n016
+- rank: 484
+  work: jc:医学指归
+  title: 医学指归
+  authors:
+  - 赵术堂
+  dynasty: 清
+  composition: '1851'
+  category: 综合
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o064
+- rank: 485
+  work: jc:麻疹备要方论
+  title: 麻疹备要方论
+  authors:
+  - 吴砚丞
+  dynasty: 清
+  composition: '1853'
+  category: 外科
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_i203
+- rank: 486
+  work: jc:焦氏喉科枕秘
+  title: 焦氏喉科枕秘
+  authors: []
+  dynasty: 清
+  composition: '1868'
+  category: 五官
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_l109
+- rank: 487
+  work: jc:高注金匮要略
+  title: 高注金匮要略
+  authors:
+  - 高学山
+  dynasty: 清
+  composition: '1872'
+  category: 杂病
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_b107
+- rank: 488
+  work: jc:重订诊家直诀
+  title: 重订诊家直诀
+  authors:
+  - 周学海
+  dynasty: 清
+  composition: 1876–1911
+  category: 诊法
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_m000
+- rank: 489
+  work: jc:难经正义
+  title: 难经正义
+  authors:
+  - 叶霖
+  dynasty: 清
+  composition: '1895'
+  category: 医经
+  score: 16.7
+  cited_by: 1
+  periods: 1
+  citations: 1
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_a304
+- rank: 490
+  work: zhenjiu_wendui
+  title: 针灸问对
+  authors:
+  - 汪机
+  dynasty: 明
+  composition: '1530'
+  category: 针灸
+  score: 12.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 3
+  siku: true
+  sources:
+  - jicheng
+  - kanripo
+  open: true
+  open_witness: zhenjiu_wendui
+- rank: 491
+  work: jienuelun_shu
+  title: 痎疟论疏
+  authors:
+  - 卢之颐
+  dynasty: 明清
+  composition: 1640–1664
+  category: 内科
+  score: 9.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: true
+  sources:
+  - kanripo
+  open: true
+  open_witness: jienuelun_shu
+- rank: 492
+  work: wushier_bingfang
+  title: 五十二病方
+  authors: []
+  dynasty: 战国—西汉
+  composition: 前300–前168
+  category: 方书
+  score: 4.75
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  - wikisource
+  open: true
+  open_witness: ws_893fe4f123
+- rank: 493
+  work: jc:伤科大成
+  title: 伤科大成
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 伤科
+  score: 4.75
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_j004a
+- rank: 494
+  work: jc:盘珠集胎产症治
+  title: 盘珠集胎产症治
+  authors:
+  - 施澹宁
+  dynasty: 清
+  composition: 1644–1911
+  category: 妇科
+  score: 4.75
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_g035
+- rank: 495
+  work: jc:许氏医案
+  title: 许氏医案
+  authors: []
+  dynasty: 清
+  composition: 1644–1911
+  category: 医案
+  score: 4.75
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_n066
+- rank: 496
+  work: jc:古本难经阐注
+  title: 古本难经阐注
+  authors:
+  - 丁锦
+  dynasty: 清
+  composition: '1738'
+  category: 医经
+  score: 4.75
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_a303
+- rank: 497
+  work: yzjj_yanke
+  title: 医宗金鉴-眼科心法
+  authors:
+  - 吴谦 等
+  dynasty: 清
+  composition: '1742'
+  category: 综合
+  score: 4.75
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_p0010a
+- rank: 498
+  work: yzjj_youke
+  title: 医宗金鉴·幼科心法要诀
+  authors:
+  - 吴谦 等
+  dynasty: 清
+  composition: '1742'
+  category: 综合
+  score: 4.75
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_p0009a
+- rank: 499
+  work: jc:女科切要
+  title: 女科切要
+  authors:
+  - 吴道源
+  dynasty: 清
+  composition: '1773'
+  category: 妇科
+  score: 4.75
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_g000
+- rank: 500
+  work: jc:类证治裁
+  title: 类证治裁
+  authors:
+  - 林佩琴
+  dynasty: 清
+  composition: '1839'
+  category: 综合
+  score: 4.75
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o072
+- rank: 501
+  work: jc:胎产指南
+  title: 胎产指南
+  authors:
+  - 张曜孙
+  dynasty: 清
+  composition: '1856'
+  category: 妇科
+  score: 4.75
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 2
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_g023
+- rank: 502
+  work: mawangdui
+  title: 马王堆简帛
+  authors: []
+  dynasty: 战国—西汉
+  composition: 前300–前168
+  category: 医经
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_a500
+- rank: 503
+  work: ws:天回医简
+  title: 天回医简
+  authors:
+  - 扁鹊
+  dynasty: 西汉
+  composition: 前206–前87
+  category: 医经
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - wikisource
+  open: true
+  open_witness: ws_464ee58bb4
+- rank: 504
+  work: jc:濒湖炮炙法
+  title: 濒湖炮炙法
+  authors:
+  - 刘宋
+  - 雷学所
+  dynasty: 南北朝
+  composition: 420–581
+  category: 本草
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_c104
+- rank: 505
+  work: bencao_jizhu
+  title: 本草经集注
+  authors:
+  - 陶弘景
+  dynasty: 南朝·梁
+  composition: 480–500
+  category: 本草
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_c002
+- rank: 506
+  work: taisu
+  title: 黄帝内经太素
+  authors:
+  - 杨上善
+  dynasty: 唐
+  composition: 605–683
+  category: 医经
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_a002
+- rank: 507
+  work: jc:千金宝要
+  title: 千金宝要
+  authors:
+  - 孙思邈
+  dynasty: 唐
+  composition: 630–702
+  category: 方书
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d015
+- rank: 508
+  work: jc:大医精诚
+  title: 大医精诚
+  authors:
+  - 孙思邈
+  dynasty: 唐
+  composition: 630–702
+  category: 歌赋
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_q002
+- rank: 509
+  work: jc:伤寒法祖
+  title: 伤寒法祖
+  authors:
+  - 任越庵
+  dynasty: 宋
+  composition: 960–1279
+  category: 伤寒
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_b022
+- rank: 510
+  work: jc:察病指南
+  title: 察病指南
+  authors:
+  - 施桂堂
+  dynasty: 宋
+  composition: 960–1279
+  category: 诊法
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_m006
+- rank: 511
+  work: jc:河间伤寒心要
+  title: 河间伤寒心要
+  authors:
+  - 镏洪
+  dynasty: 金
+  composition: 1127–1279
+  category: 伤寒
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_b012
+- rank: 512
+  work: jc:炙膏肓腧穴法
+  title: 炙膏肓腧穴法
+  authors: []
+  dynasty: 南宋
+  composition: '1128'
+  category: 针灸
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_k105
+- rank: 513
+  work: jc:诸病主病诗
+  title: 诸病主病诗
+  authors:
+  - 东轩居士
+  dynasty: 宋
+  composition: 1150–1190
+  category: 综合
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o087
+- rank: 514
+  work: jc:洗冤集录
+  title: 洗冤集录
+  authors:
+  - 宋慈
+  dynasty: 宋
+  composition: '1247'
+  category: 法医
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o081
+- rank: 515
+  work: jc:饮食须知
+  title: 饮食须知
+  authors:
+  - 贾铭
+  dynasty: 元代
+  composition: 1271–1368
+  category: 综合
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o033
+- rank: 516
+  work: jc:走马急疳真方
+  title: 走马急疳真方
+  authors: []
+  dynasty: 元
+  composition: '1275'
+  category: 内科
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_f018
+- rank: 517
+  work: jc:丹溪手镜
+  title: 丹溪手镜
+  authors:
+  - 朱丹溪
+  dynasty: 元
+  composition: 1281–1358
+  category: 综合
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o059
+- rank: 518
+  work: jc:五输穴即景诗
+  title: 五输穴即景诗
+  authors:
+  - 李梴
+  dynasty: 明
+  composition: 1368–1644
+  category: 歌赋
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_q003
+- rank: 519
+  work: jc:养生导引法
+  title: 养生导引法
+  authors:
+  - 胡文焕
+  dynasty: 明
+  composition: 1368–1644
+  category: 综合
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o028
+- rank: 520
+  work: jc:医方集宜
+  title: 医方集宜
+  authors:
+  - 丁毅
+  dynasty: 明
+  composition: 1368–1644
+  category: 方书
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d022
+- rank: 521
+  work: jc:幼科折衷
+  title: 幼科折衷
+  authors:
+  - 秦景明
+  dynasty: 明
+  composition: 1368–1644
+  category: 儿科
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_h013
+- rank: 522
+  work: jc:慈幼新书
+  title: 慈幼新书
+  authors:
+  - 程云鹏
+  dynasty: 明
+  composition: 1368–1644
+  category: 儿科
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_h026
+- rank: 523
+  work: jc:文堂集验方
+  title: 文堂集验方
+  authors:
+  - 罗浮山人
+  dynasty: 明
+  composition: 1368–1644
+  category: 方书
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d064
+- rank: 524
+  work: jc:跌损妙方
+  title: 跌损妙方
+  authors:
+  - 异远真人
+  dynasty: 明
+  composition: 1368–1644
+  category: 伤科
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_j002
+- rank: 525
+  work: jc:灵枢经脉翼
+  title: 灵枢经脉翼
+  authors:
+  - 夏英
+  dynasty: 明
+  composition: '1497'
+  category: 医经
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_a102
+- rank: 526
+  work: jc:针灸素难要旨
+  title: 针灸素难要旨
+  authors:
+  - 高武
+  dynasty: 明
+  composition: '1537'
+  category: 针灸
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_k012
+- rank: 527
+  work: jc:本草纲目别名录
+  title: 本草纲目别名录
+  authors:
+  - 李时珍
+  dynasty: 明
+  composition: 1544–1592
+  category: 本草
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_c030
+- rank: 528
+  work: jc:古今医统大全
+  title: 古今医统大全
+  authors:
+  - 徐春甫
+  dynasty: 明
+  composition: '1556'
+  category: 综合
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o082
+- rank: 529
+  work: jc:养生类要
+  title: 养生类要
+  authors:
+  - 吴正伦
+  dynasty: 明
+  composition: '1564'
+  category: 综合
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o032
+- rank: 530
+  work: jc:推篷寤语
+  title: 推篷寤语
+  authors:
+  - 李豫亨
+  dynasty: 明
+  composition: '1570'
+  category: 综合
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_o118
+- rank: 531
+  work: jc:孙文垣医案
+  title: 孙文垣医案
+  authors:
+  - 孙一奎
+  dynasty: 清
+  composition: '1573'
+  category: 医案
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_n038
+- rank: 532
+  work: jc:杨敬斋针灸全书
+  title: 杨敬斋针灸全书
+  authors:
+  - 陈言
+  dynasty: 明
+  composition: '1591'
+  category: 针灸
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_k015
+- rank: 533
+  work: jc:鲁府禁方
+  title: 鲁府禁方
+  authors:
+  - 龚廷贤
+  dynasty: 明
+  composition: '1594'
+  category: 方书
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_d078
+- rank: 534
+  work: jc:药鉴
+  title: 药鉴
+  authors:
+  - 杜文燮
+  dynasty: 明
+  composition: '1598'
+  category: 本草
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_c041
+- rank: 535
+  work: zzzs_leifang
+  title: 证治准绳·类方
+  authors:
+  - 王肯堂
+  dynasty: 明
+  composition: 1602–1608
+  category: 综合
+  score: 3.0
+  cited_by: 0
+  periods: 0
+  citations: 0
+  witnesses: 1
+  siku: false
+  sources:
+  - jicheng
+  open: true
+  open_witness: jc_p0100
