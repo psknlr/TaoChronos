@@ -1072,12 +1072,18 @@ def cmd_study(args: argparse.Namespace) -> None:
                                 signature=res["signature"], licenses=res["licenses"], notice=res["notice"])
         _out({"path": str(out_dir), "resources": {r["name"]: r["rows"] for r in pkg["resources"]}, "licenses": res["licenses"]})
         return
-    if args.charts and res.get("charts"):
+    if args.charts and (res.get("charts") or res.get("tables")):
         from .plugins.classics.study.svg import write as write_charts
+        from .plugins.classics.study.tablefmt import write as write_tables
 
         stem = re.sub(r"[^\w一-鿿]+", "-", f"{what}-{target or ''}").strip("-")
-        written = write_charts(res["charts"], args.charts, stem)
-        print(f"wrote {len(written) // 3} chart(s) to {args.charts} (SVG, CSV, JSON)", file=sys.stderr)
+        if res.get("charts"):
+            write_charts(res["charts"], args.charts, stem)
+            print(f"wrote {len(res['charts'])} figure(s) to {args.charts} (SVG in the journal style, CSV, JSON"
+                  + ("; all of them as one figure in panels" if len(res["charts"]) > 1 else "") + ")", file=sys.stderr)
+        if res.get("tables"):
+            write_tables(res["tables"], args.charts, stem)
+            print(f"wrote {len(res['tables'])} table(s) to {args.charts} (three-line: Word, LaTeX, CSV, Markdown)", file=sys.stderr)
     text = json.dumps(res, ensure_ascii=False, indent=1, default=str) if args.json else markdown(what, res, study.signature(), notice)
     if args.output:
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
@@ -1759,9 +1765,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--candidate", action="append", help="authorship: a candidate work or book id (repeatable)")
     sp.add_argument("--json", action="store_true", help="print the full result as JSON")
     sp.add_argument("-o", "--output", help="write to this file (dataset: this directory)")
-    sp.add_argument("--charts", metavar="DIR", help="also write the result's charts to DIR as SVG figures, CSV tables and JSON "
-                                                    "specifications (term, herb, formula, pairs, network, names, senses, compare, "
-                                                    "family, usage, properties, incompat, protocol)")
+    sp.add_argument("--charts", metavar="DIR", help="also write the result's figures and tables to DIR: figures as SVG in the "
+                                                    "journal style (numbered, captioned, with all of them as one figure in panels), "
+                                                    "CSV and JSON; three-line tables as Word (.docx), LaTeX (booktabs), CSV and "
+                                                    "Markdown (term, herb, formula, pairs, network, names, senses, compare, family, "
+                                                    "usage, properties, incompat, protocol)")
     _llm_args(sp)
     sp = add("codemode", cmd_codemode, "run a Research Code Mode program against the SDK")
     sp.add_argument("file", nargs="?")

@@ -13,6 +13,7 @@ import { handle } from "../site/src/site.js";
 import { call as backupCall, classification } from "../site/src/backup/api.js";
 import { CANON, CATALOG } from "../site/src/backup/tables.js";
 import { Corpus } from "../site/src/backup/corpus.js";
+import { forInterface, forModel } from "../site/src/backup/results.js";
 import { clauseKey } from "../site/src/backup/precomputed.js";
 import { ftsForm, normalize, normalizeWithRecords, parseConstraint } from "../site/src/backup/text.js";
 import { collate } from "../site/src/backup/difflib.js";
@@ -369,4 +370,13 @@ test("every live tool within a Worker's limits on the fixture", { skip }, async 
     assert.ok(queries <= 50, `${name}: ${queries} statements`);
     assert.ok(ms < LIMIT_MS, `${name}: ${ms.toFixed(1)} ms`);
   }
+});
+
+test("a result's figures and tables are for the page: the model reads their titles, never their data or raw values", () => {
+  const chart = { type: "box", title: "甲 · 用量", rows: [{ q1: 1 }] }, table = { title: "各时期", columns: [{ key: "a", label: "甲" }], rows: [{ a: "1" }] };
+  assert.deepEqual(forModel({ x: 1, charts: [chart], tables: [table], _raw: { grams: [1, 2] } }), { x: 1, charts_shown: ["甲 · 用量"], tables_shown: ["各时期"] });
+  assert.deepEqual(forModel({ x: 1, _raw: [1] }), { x: 1 });
+  const shown = forInterface({ rows: Array(400).fill("长".repeat(500)), tables: [table] }, 30000);
+  assert.deepEqual(shown.tables, [table]);
+  assert.ok(shown.rows.length < 400);
 });

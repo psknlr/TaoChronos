@@ -21,6 +21,7 @@ import re
 from collections import Counter, defaultdict
 from typing import Any
 
+from ....science.stats import kruskal_wallis, spearman
 from .base import StudyBase, dated, trend_test, wilson
 
 # the twelve channels as the organs the 本草 name (the usual correspondence), and the names of the 心包
@@ -30,6 +31,7 @@ ORGAN_ORDER = ["肺", "大肠", "胃", "脾", "心", "小肠", "膀胱", "肾", 
 NATURE_ORDER = ["寒", "凉", "平", "温", "热"]
 FLAVOR_ORDER = list("酸苦甘辛咸淡涩")
 MAX_DRUGS = 16
+MAX_POINTS = 1500  # the doses a figure draws one by one (an even sample of them beyond; the statistics use every dose)
 # the form a formula's name gives (汤剂, 丸剂 …): a decoction's doses are what is boiled for a course; a pill's, powder's or
 # paste's are the batch it is made in — the two are not compared
 FORMS = (("汤剂", ("汤", "饮", "煎", "饮子")), ("丸剂", ("丸", "圆", "丹")), ("散剂", ("散",)), ("煮散", ()), ("膏剂", ("膏",)))
@@ -79,6 +81,24 @@ def _quantiles(values: list[float]) -> dict[str, float]:
     return {"min": round(v[0], 3), "q1": round(q(0.25), 3), "median": round(q(0.5), 3), "q3": round(q(0.75), 3), "max": round(v[-1], 3)}
 
 
+def _describe(values: list[float]) -> dict[str, float]:
+    """Quartiles, mean and standard deviation (n − 1)."""
+    out = _quantiles(values)
+    n = len(values)
+    mean = sum(values) / n
+    out["mean"] = round(mean, 3)
+    out["sd"] = round((sum((x - mean) ** 2 for x in values) / (n - 1)) ** 0.5, 3) if n > 1 else 0.0
+    return out
+
+
+def even_sample(rows: list[Any], k: int) -> list[Any]:
+    """At most ``k`` of ``rows``, evenly spaced (the first and last kept): a figure's sample that is the same every run."""
+    if len(rows) <= k:
+        return list(rows)
+    step = (len(rows) - 1) / (k - 1)
+    return [rows[round(i * step)] for i in range(k)]
+
+
 class DrugUsage:
     def __init__(self, base: StudyBase, formulas: Any, herbs: Any, pairs: Any) -> None:
         self.b = base
@@ -107,6 +127,7 @@ class DrugUsage:
                               "ci": [round(lo, 4), round(hi, 4)]})
         trend = trend_test([(r["with"], r["compositions"]) for r in by_period if r["period"] != "未定"])
         doses, largest, processing = self._doses(mine, key)
+        raw = {"grams": doses.pop("_values"), "points": doses.pop("_points")}
         partners = self._partners(comps, mine, key, top)
         formulas = Counter(c[1] for c in mine if c[1])
         work_of: dict[str, set[str]] = defaultdict(set)
@@ -124,6 +145,7 @@ class DrugUsage:
                          for f, k in formulas.most_common(top)],
             "examples": [self._example(c) for c in first],
             "metrology_notice": self.formulas.metrology.notice,
+            "_raw": raw,  # what the figures draw dose by dose: taken out with the charts (charts.attach), never read by a model
             "note": "per work: a composition repeated in the copies of one work counts once; doses are read in the measures "
                     "of each witness's period (weights only), by period for the decoctions (汤剂) — a pill's or powder's amount "
                     "is its batch, as is a 煮散's (a 汤 the preparation makes a powder boiled by the spoonful), summarised by "
@@ -136,6 +158,7 @@ class DrugUsage:
         met = self.formulas.metrology
         liang: dict[str, list[float]] = defaultdict(list)
         grams: dict[str, list[float]] = defaultdict(list)
+        points: list[list[Any]] = []  # [year, grams, formula] of each dated decoction
         written: dict[str, Counter] = defaultdict(Counter)
         by_form: dict[str, list[float]] = defaultdict(list)
         largest: Counter = Counter()
@@ -162,7 +185,10 @@ class DrugUsage:
                     liang[per].append(weights[key])
                     measures = met.period(c[3])
                     if measures and measures.get("liang_g"):  # the middle of the period's 两 in grams
-                        grams[per].append(weights[key] * sum(measures["liang_g"]) / 2)
+                        g = weights[key] * sum(measures["liang_g"]) / 2
+                        grams[per].append(g)
+                        if c[3] is not None:
+                            points.append([c[3], round(g, 2), self.pairs._label(c[1]) if c[1] else ""])
                 if len(weights) >= 2:
                     weighed[per] += 1
                     largest[per] += weights[key] >= max(weights.values()) - 1e-9
@@ -174,10 +200,18 @@ class DrugUsage:
             row = {"period": per, "n": len(liang[per]), "liang": _quantiles(liang[per]),
                    "common": [{"dose": d, "count": k} for d, k in written[per].most_common(3)]}
             if grams[per]:
-                row["grams"] = _quantiles(grams[per])
+                row["grams"] = _describe(grams[per])
             dose_rows.append(row)
         all_written: Counter = sum(written.values(), Counter())
+        tested = [grams[p] for p in order if p != "未定" and len(grams[p]) >= 3]
+        kw = kruskal_wallis(tested) if len(tested) >= 2 else None
+        dated_points = sorted(points, key=lambda x: x[0])
+        rho = spearman([x[0] for x in dated_points], [x[1] for x in dated_points]) if len(dated_points) >= 10 else None
         doses = {"form": "汤剂", "by_period": dose_rows, "weighed": sum(len(v) for v in liang.values()),
+                 "test": {"name": "Kruskal–Wallis", "unit": "克", "groups": len(tested), **kw} if kw else None,
+                 "trend": {"name": "Spearman", "of": "年代与克数", **rho} if rho else None,
+                 "_values": {p: sorted(round(x, 2) for x in grams[p]) for p in order if grams[p]},
+                 "_points": even_sample(dated_points, MAX_POINTS),
                  "common": [{"dose": d, "count": k} for d, k in all_written.most_common(8)],
                  "by_form": [{"form": f, "n": len(v), "liang": _quantiles(v)} for f, v in
                              sorted(by_form.items(), key=lambda kv: [x for x, _ in FORMS].index(kv[0]) if kv[0] in dict(FORMS) else 9)]}

@@ -7,26 +7,41 @@ context, and carried in the result under ``charts``: the web client draws it (``
 SVG / PNG / CSV / JSON downloads), ``taochronos study … --charts <dir>`` writes it as SVG, CSV and JSON (``svg.py``), and
 the model's text leaves it out.
 
-A specification: ``type`` (line, bar, hbar, stack, heatmap, range, timeline, network), ``title``, ``subtitle``, ``rows``
-(records) with ``columns`` ([{key, label}] — the table and the CSV), and per type the keys it reads:
+A specification: ``type`` (line, bar, hbar, stack, heatmap, range, box, forest, scatter, dendrogram, timeline,
+network), ``title``, ``subtitle``, ``rows`` (records) with ``columns`` ([{key, label}] — the table and the CSV), and per
+type the keys it reads:
 
 * line / bar / hbar / stack — ``x`` the category ({key, label}), ``series`` [{key, label, lo?, hi?}] the values (lo/hi:
   an interval, drawn as a band or whiskers), ``y`` {label, percent?, min?}; stack: ``percent`` to show shares of 100 %;
 * heatmap — ``x`` and ``y`` the two categories, ``value`` {key, label, percent?} the cell's number;
 * range — ``x`` the category, ``range`` {min, q1, median, q3, max} keys (whiskers, box and median);
+* box — a box plot (Tukey): ``x`` the category, rows with q1, median, q3, the whiskers lo and hi (the furthest values
+  within 1.5 IQR), mean and n — or, without them, ``points`` {category: [values]} from which they are computed;
+  ``points`` are drawn too (the values beyond the whiskers always, the others jittered when there are few);
+* forest — estimates with their intervals, one row each: ``y`` the label ({key}), ``estimate`` {key, lo, hi, label},
+  ``x`` {label, log?, ref?} (an odds ratio: a log axis and a line at 1), a row's ``sig`` (false: drawn in grey);
+* scatter — ``x`` and ``y`` numeric ({key, label, year?, percent?, min?}), ``size`` {key, label} (a bubble), ``group``
+  {key} (three groups at most), ``fit`` {points: [[x, y]], label} (a smoothed line), ``label`` the key named on hover;
+* dendrogram — a tree of ``labels``: ``merges`` [[a, b, height, size]] (scipy's linkage form), ``order`` (the leaves
+  top to bottom), ``member`` (each item's cluster), ``groups`` (the clusters' names), ``cut`` (the height cut), ``x``;
 * timeline — ``rows`` with ``start`` (a year), ``label`` and ``group``;
 * network — ``nodes`` [{id, label, group, size}] and ``edges`` [{source, target, weight, label}].
 
 Numbers are what the result computed; a chart adds no inference.  ``note`` repeats the caveat that goes with the numbers
-(machine reading, historical doses, per-work counting).
+(machine reading, historical doses, per-work counting).  A page numbers the charts of a result 图 1, 图 2 … in order
+and writes them, for a paper, in the journal style (``svg.py``, ``web/js/chart.js``).
 """
 
 from __future__ import annotations
 
 from typing import Any, Callable
 
+from ....science.stats import loess, tukey
+from .usage import even_sample
+
 SPEC_VERSION = 1
-TYPES = ("line", "bar", "hbar", "stack", "heatmap", "range", "timeline", "network")
+TYPES = ("line", "bar", "hbar", "stack", "heatmap", "range", "box", "forest", "scatter", "dendrogram", "timeline", "network")
+MAX_JITTER = 300  # a box's values drawn one by one beside it (beyond them: the box and the values past its whiskers)
 MAX_SERIES = 8  # the palette's categorical slots: past them, fold into 其他 (never a generated colour)
 
 
@@ -54,6 +69,12 @@ def _fold(counts: dict[str, int | float], top: int) -> tuple[list[str], dict[str
         out["其他"] = other
         head = head + ["其他"]
     return head, out
+
+
+def _p(p: Any) -> str:
+    """"< 0.001" / "= 0.045": P as a figure's subtitle writes it."""
+    p = float(p)
+    return "< 0.001" if p < 0.001 else f"= {p:.3f}" if p < 0.1 else f"= {p:.2f}"
 
 
 def _dose_note(r: dict[str, Any]) -> str | None:
@@ -162,6 +183,15 @@ def formula(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
 def pairs(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
     out = []
     if r.get("partners"):
+        forest = [{"drug": x["with"], "or": x["or"], "lo": x["or_ci"][0], "hi": x["or_ci"][1], "support": x["support"], "lift": x["lift"],
+                   "p": x.get("p"), "sig": bool(x["significant"])} for x in r["partners"][:20] if x.get("or") and x.get("or_ci")]
+        if forest:
+            out.append(chart("forest", f"{r.get('herb')} · 同方药物的关联强度", forest,
+                             [("drug", "药物"), ("or", "OR"), ("lo", "95% CI 下限"), ("hi", "95% CI 上限"), ("support", "同方次数"),
+                              ("lift", "提升度"), ("p", "P")],
+                             id="pairs-forest", subtitle="比值比（OR）与 95% 置信区间（Woolf 法），对数轴；灰色为经 Benjamini–Hochberg 校正后不显著",
+                             y={"key": "drug", "label": "药物"}, estimate={"key": "or", "lo": "lo", "hi": "hi", "label": "OR"},
+                             x={"label": "OR（95% CI）", "log": True, "ref": 1}))
         rows = [{"drug": x["with"], "npmi": x["npmi"], "support": x["support"], "lift": x["lift"]} for x in r["partners"][:15]]
         out.append(chart("hbar", f"{r.get('herb')} · 常相配伍之药", rows, [("drug", "药"), ("npmi", "NPMI"), ("support", "同方次数"), ("lift", "提升度")],
                          id="pairs-partners", subtitle="按归一化点互信息（NPMI）排序；显著性见表（Fisher 检验 + BH）",
@@ -173,10 +203,33 @@ def pairs(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
                              [("period", "时期"), ("share", "占比"), ("with", "含此药"), ("compositions", "组成")],
                              id="pairs-periods", x={"key": "period", "label": "时期"}, y={"label": "占比", "percent": True, "min": 0},
                              series=[{"key": "share", "label": r.get("herb")}]))
-    elif r.get("pairs"):
-        rows = [{"pair": f"{x['a_name']}—{x['b_name']}", "npmi": x["npmi"], "support": x["support"], "lift": x["lift"]} for x in r["pairs"][:20]]
-        out.append(chart("hbar", "最显著的药对", rows, [("pair", "药对"), ("npmi", "NPMI"), ("support", "同方次数"), ("lift", "提升度")],
-                         id="pairs-top", x={"key": "pair", "label": "药对"}, y={"label": "NPMI"}, series=[{"key": "npmi", "label": "NPMI"}]))
+    else:
+        if r.get("frequency"):
+            rows = [{"drug": x["drug"], "n": x["compositions"], "share": x["share"]} for x in r["frequency"][:20]]
+            out.append(chart("hbar", "高频药物", rows, [("drug", "药物"), ("n", "频次（首）"), ("share", "频率")], id="pairs-frequency",
+                             subtitle=f"写出组成 {r.get('compositions', 0)} 首中含各药者（前 20 位，每部著作计一次）",
+                             x={"key": "drug", "label": "药物"}, y={"label": "频次（首）", "min": 0}, series=[{"key": "n", "label": "频次"}]))
+        if r.get("pairs"):
+            rows = [{"pair": f"{x['a_name']}—{x['b_name']}", "npmi": x["npmi"], "support": x["support"], "lift": x["lift"]} for x in r["pairs"][:20]]
+            out.append(chart("hbar", "最显著的药对", rows, [("pair", "药对"), ("npmi", "NPMI"), ("support", "同方次数"), ("lift", "提升度")],
+                             id="pairs-top", x={"key": "pair", "label": "药对"}, y={"label": "NPMI"}, series=[{"key": "npmi", "label": "NPMI"}]))
+        tree = (r.get("_raw") or {}).get("dendrogram")
+        if tree and tree.get("merges"):
+            names_ = [f"第 {c + 1} 类" for c in range(tree["k"])]
+            rows = [{"drug": tree["labels"][i], "cluster": names_[tree["member"][i]], "n": tree["frequency"][i]} for i in tree["order"]]
+            out.append(chart("dendrogram", "高频药物聚类树状图", rows, [("drug", "药物"), ("cluster", "类别"), ("n", "频次（首）")],
+                             id="pairs-dendrogram", subtitle=f"频次最高的 {len(tree['labels'])} 味药，以 1 − Jaccard 系数为距离，平均联结法（UPGMA）；"
+                                                             f"竖线为切分处，分为 {tree['k']} 类",
+                             labels=tree["labels"], merges=tree["merges"], order=tree["order"], member=tree["member"], cut=tree.get("cut"),
+                             groups=names_, x={"label": "距离（1 − Jaccard）"}))
+        if r.get("rules"):
+            rows = [{"rule": f"{x['if']} → {x['then']}", "support": x["support_share"], "confidence": x["confidence"], "lift": x["lift"],
+                     "n": x["support"]} for x in r["rules"]]
+            out.append(chart("scatter", "药物关联规则", rows, [("rule", "规则"), ("support", "支持度"), ("confidence", "置信度"), ("lift", "提升度"),
+                                                          ("n", "同方（首）")],
+                             id="pairs-rules", subtitle="每点为一条规则（前项 → 后项）；点的大小为提升度",
+                             x={"key": "support", "label": "支持度", "percent": True, "min": 0}, y={"key": "confidence", "label": "置信度", "percent": True},
+                             size={"key": "lift", "label": "提升度"}, label="rule"))
     return out
 
 
@@ -298,15 +351,44 @@ def usage(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
                          + (f"；趋势 z = {trend['z']:.2f}" if trend.get("z") is not None else ""),
                          x={"key": "period", "label": "时期"}, y={"label": "占比", "percent": True, "min": 0},
                          series=[{"key": "share", "label": name, "lo": "lo", "hi": "hi"}]))
-    doses = [x for x in (r.get("doses") or {}).get("by_period", []) if x.get("grams")]
-    if doses:
-        rows = [{"period": x["period"], "n": x["n"], **{k: x["grams"][k] for k in ("min", "q1", "median", "q3", "max")}} for x in doses]
-        out.append(chart("range", f"{name} · 历代汤剂用量（克，学术估值）", rows,
-                         [("period", "时期"), ("n", "见证"), ("min", "最小"), ("q1", "下四分位"), ("median", "中位"), ("q3", "上四分位"), ("max", "最大")],
-                         id="usage-doses", subtitle="汤剂中以重量写出的剂量，按各期计量折合（两之克数取各期估值的中点）；丸、散与煮散为一料之量，不入此图；箱为四分位，须线为最小至最大",
-                         x={"key": "period", "label": "时期"}, y={"label": "克", "min": 0},
-                         range={"min": "min", "q1": "q1", "median": "median", "q3": "q3", "max": "max"},
-                         note=_dose_note(r)))
+    raw = r.get("_raw") or {}
+    doses_ = r.get("doses") or {}
+    grams = raw.get("grams") or {}
+    rows, points = [], {}
+    for x in doses_.get("by_period", []):
+        if not x.get("grams"):
+            continue
+        values = grams.get(x["period"]) or []
+        t = tukey(values) if values else None
+        if t:
+            rows.append({"period": x["period"], "n": t["n"], "q1": t["q1"], "median": t["median"], "q3": t["q3"], "lo": t["lo"], "hi": t["hi"],
+                         "mean": t["mean"], "min": t["min"], "max": t["max"]})
+            inside = [v for v in values if t["lo"] <= v <= t["hi"]]
+            points[x["period"]] = sorted(t["outliers"] + even_sample(inside, MAX_JITTER))
+        else:  # no values to draw: the summary the result keeps
+            q = x["grams"]
+            rows.append({"period": x["period"], "n": x["n"], **{k: q[k] for k in ("q1", "median", "q3")}, "lo": q["min"], "hi": q["max"],
+                         "mean": q.get("mean"), "min": q["min"], "max": q["max"]})
+    if rows:
+        test = doses_.get("test") or {}
+        out.append(chart("box", f"{name} · 历代汤剂用量（折合克数）", rows,
+                         [("period", "时期"), ("n", "n"), ("median", "中位数"), ("q1", "P25"), ("q3", "P75"), ("lo", "须线下端"), ("hi", "须线上端"),
+                          ("mean", "均数"), ("min", "最小"), ("max", "最大")],
+                         id="usage-doses", subtitle="汤剂中以重量写出的剂量，按各期计量折合（两之克数取各期估值的中点）；箱为四分位距，中线为中位数，"
+                                                    "须线至 1.5 倍四分位距内的最远值，圆点为各剂量"
+                         + (f"；Kruskal–Wallis H = {test['h']:.2f}，P {_p(test['p'])}" if test.get("h") is not None else ""),
+                         x={"key": "period", "label": "时期"}, y={"label": "折合克数（g）", "min": 0}, points=points,
+                         note="丸、散、膏与煮散为一料之量，不入此图。" + (_dose_note(r) or "")))
+    pts = raw.get("points") or []
+    if len(pts) >= 10:
+        trend = doses_.get("trend") or {}
+        fit = loess([p[0] for p in pts], [p[1] for p in pts])
+        out.append(chart("scatter", f"{name} · 汤剂用量与成书年代", [{"year": p[0], "grams": p[1], "formula": p[2]} for p in pts],
+                         [("year", "成书年代"), ("grams", "折合克数（g）"), ("formula", "方")],
+                         id="usage-dose-years", subtitle="每点为一首写出组成（汤剂，按成书年代的中点）；曲线为 LOESS 平滑"
+                         + (f"；Spearman ρ = {trend['rho']:.2f}，P {_p(trend['p'])}，n = {trend['n']}" if trend.get("rho") is not None else ""),
+                         x={"key": "year", "label": "成书年代", "year": True}, y={"key": "grams", "label": "折合克数（g）", "min": 0},
+                         label="formula", fit={"points": fit, "label": "LOESS"} if fit else None, note=_dose_note(r)))
     proc = r.get("processing") or {}
     if proc.get("by_period") and proc.get("notes"):
         keys = list(proc["notes"]) + ["其他"]
@@ -411,10 +493,18 @@ def build(kind: str, result: dict[str, Any], base: Any) -> list[dict[str, Any]]:
 
 
 def attach(kind: str, result: dict[str, Any], base: Any) -> dict[str, Any]:
-    """``result`` with its charts under ``charts`` (when it has any)."""
+    """``result`` with its charts under ``charts`` and its three-line tables under ``tables`` (``tables.py``), when it
+    has any; the values its figures draw one by one (``_raw``: doses, a tree) are taken out once they are drawn."""
+    from . import tables as _tables
+
     charts = build(kind, result, base)
+    tables = _tables.build(kind, result, base)
+    if isinstance(result, dict):
+        result.pop("_raw", None)
     if charts:
         result["charts"] = charts
+    if tables:
+        result["tables"] = tables
     return result
 
 

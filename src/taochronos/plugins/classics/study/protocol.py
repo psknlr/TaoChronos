@@ -12,7 +12,9 @@ its kind is told by its words and what it names: 方源考, 方剂比较, 类方
 * the **variables** and how each is read off the texts (a composition is a set of drugs by family; a dose is read in
   the measures of its witness's period; a date is the terminus ante quem; a work counts once, whatever its copies);
 * the **methods** — the steps, each a capability of this system with its arguments and the command that reruns it —
-  the **analysis** (the statistics and their corrections), the **figures** planned, the **quality** checks (verbatim
+  the **analysis** (the statistics and their corrections), the **figures** planned (图 1 … with their form: a box plot, a
+  forest plot …) and the **table shells** (表 1 …: the three-line tables the steps fill, their heads and a row of
+  placeholders — n (%), M (P25, P75), OR (95% CI), P — with the statistics behind them), the **quality** checks (verbatim
   witnesses, source dependence, the gates and the acceptance criteria of a research run), the **limitations** (what
   survives, what this corpus holds, machine reading), the **ethics** (no clinical advice; doses are historical readings;
   the modern warnings for the toxic drugs named) and a **timeline**;
@@ -59,6 +61,21 @@ _ASKING = re.compile(r"^(?:比较|对比|研究|分析|考察|探讨|关于|请�
 _BOTH_SIDES = re.compile(r"(以前|之前).{0,8}(以后|之后|以来)|(以后|之后).{0,8}(以前|之前)|前后")
 NOTICE = ("本方案是研究计划，不是研究结论：其中的背景与预试验数字来自语料的机器阅读，须回查原文；不构成诊断、处方或剂量建议，"
           "历代剂量折合只是历史读法。")
+
+
+# a figure's form in words (charts.py's types)
+FORMS = {"line": "折线图，含 95% 置信带", "bar": "柱状图", "hbar": "条形图", "stack": "堆积柱状图", "heatmap": "热图", "range": "箱线图",
+         "box": "Tukey 箱线图", "forest": "森林图", "scatter": "散点图", "dendrogram": "聚类树状图", "timeline": "时间线", "network": "网络图"}
+# a table shell's placeholders: the notation of the number each cell will hold
+N, NP, CI, MIQR, MSD, ORCI, P, PCT, TXT = "××", "×× (××.×)", "××.×–××.×", "××.× (××.×, ××.×)", "××.× ± ××.×", "×.×× (×.××–×.××)", "×.×××", "××.×", "……"
+PERIOD_STUBS = ["先秦两汉", "魏晋南北朝", "……"]
+
+
+def _shell(title: str, source: str, columns: list[tuple[str, str]], stubs: list[str], *, stats: str = "", groups: dict[str, str] | None = None) -> dict[str, Any]:
+    """A table shell: the table a step will fill — its heads ((label, placeholder) pairs, the first the stub), rows of
+    placeholders under the stubs, the statistics behind its numbers; ``groups`` puts a head over columns."""
+    return {"title": title, "from": source, "columns": [c for c, _ in columns], "cells": [x for _, x in columns], "stubs": stubs,
+            "statistics": stats, "groups": groups or {}}
 
 
 def _first(seq: list[Any]) -> Any:
@@ -160,7 +177,9 @@ class ProtocolDesigner:
         steps = self._dedupe([m for part in parts for m in part.get("methods", [])], "command")
         p["methods"] = [{"step": i, **m} for i, m in enumerate(steps, 1)]
         p["analysis"] = self._dedupe([a for part in parts for a in part.get("analysis", [])] + COMMON_ANALYSIS, "name")
-        p["figures"] = [{"id": f"F{i}", **fig} for i, fig in enumerate(self._dedupe([f for part in parts for f in part.get("figures", [])], "chart"), 1)]
+        p["figures"] = [{"id": f"F{i}", "number": i, **fig, "form": FORMS.get(fig.get("type"), fig.get("type"))}
+                        for i, fig in enumerate(self._dedupe([f for part in parts for f in part.get("figures", [])], "chart"), 1)]
+        p["table_shells"] = [{"id": f"T{i}", "number": i, **t} for i, t in enumerate(self._dedupe([t for part in parts for t in part.get("tables", [])], "title"), 1)]
         p["quality"] = QUALITY
         p["limitations"] = [x for part in parts for x in part.get("limitations", [])] + self._limitations(corpus)
         if ent.get("unlisted"):
@@ -340,6 +359,11 @@ class ProtocolDesigner:
                 "figures": [{"title": f"{f}的见证（按时期与组成类别）", "type": "stack", "from": "study.formula", "chart": "formula-witnesses"},
                             {"title": f"{f}的配伍比例", "type": "bar", "from": "study.formula", "chart": "formula-ratios"},
                             {"title": f"{f}类方的最早见", "type": "timeline", "from": "study.family", "chart": "family-timeline"}],
+                "tables": [_shell(f"{f}写出组成的见证（按时期与组成类别）", "study.formula",
+                                  [("时期", ""), ("原方", N), ("通行方", N), ("加减化裁", N), ("同名异方", N), ("合计", N)], PERIOD_STUBS,
+                                  stats="组成按药味 Jaccard 系数（≥ 0.7）归类；每部著作计一次"),
+                           _shell(f"{f}原方与通行方的组成与剂量", "study.compare", [("药物", ""), ("原方：剂量（比例）", "××两（×.××）"),
+                                  ("通行方：剂量（比例）", "××两（×.××）")], ["……"], stats="比例：以该方最大重量为 1；剂量按见证年代计量折合")],
                 "limitations": ["方名之后未写出组成者（只言“桂枝汤主之”）不计入组成，只作旁证"]}
 
     def _compare(self, ent: dict[str, Any]) -> dict[str, Any]:
@@ -404,6 +428,11 @@ class ProtocolDesigner:
                 "analysis": [{"name": "同药异量判定", "method": "药味集合相同且剂量倍数偏离 1 超过 0.1", "detail": "以重量计者换算为两；以枚、升计者只在同单位间比较"}],
                 "figures": [{"title": "配伍比例对照", "type": "bar", "from": "study.compare", "chart": "compare-ratios"},
                             {"title": "方剂相似度", "type": "heatmap", "from": "study.compare", "chart": "compare-similarity"}],
+                "tables": [_shell("、".join(fs) + "的组成与剂量", "study.compare", [("药物", "")] + [(f"{x}：剂量（比例）", "××两（×.××）") for x in fs],
+                                  ["……"], stats="比例：以该方最大重量为 1；以枚、升等计者无比例"),
+                           _shell("方剂两两比较", "study.compare", [("方 A", ""), ("方 B", TXT), ("共有药物", TXT), ("Jaccard", "×.××"),
+                                  ("剂量加权重合", "×.××"), ("结论", TXT)], [fs[0] if fs else "……"],
+                                  stats="Jaccard：共有药味 ÷ 药味并集；剂量加权重合：两方各药剂量份额之较小者之和")],
                 "limitations": ["各方只取一条见证（原方或通行方）：不同版本的剂量可能不同，须结合方源考"]}
 
     def _derivation(self, a: str, b: str) -> tuple[str, str, list[tuple[str, list[str]]]] | None:
@@ -444,6 +473,8 @@ class ProtocolDesigner:
                              "command": f"taochronos study family {f} --charts figures", "purpose": "类方及其关系", "outputs": "类方表、关系图"}],
                 "analysis": [{"name": "类方判定", "method": "核心药味包含度 ≥ 0.75、增药 ≤ 4 味", "detail": "合方：所增之药合于另一常见方的核心组成"}],
                 "figures": [{"title": f"{f}类方关系", "type": "network", "from": "study.family", "chart": "family-network"}],
+                "tables": [_shell(f"{f}的类方", "study.family", [("方名", ""), ("关系", TXT), ("加", TXT), ("减", TXT), ("著作（部）", N),
+                                  ("最早见", "《……》（年代）")], ["……"], stats="关系：加味、减味、加减、同药异量、同方异名、合方")],
                 "limitations": ["类方以组成相近判定，未必有明文的衍化关系；衍化须以“于某方加某药”之类的原文为证"]}
 
     def _herb(self, ent: dict[str, Any]) -> dict[str, Any]:
@@ -473,6 +504,11 @@ class ProtocolDesigner:
                 "analysis": [{"name": "首见", "method": "按成书年代下限（terminus ante quem）排序", "detail": "辑本另行标注"}],
                 "figures": [{"title": f"{h}历代本草所言药性", "type": "stack", "from": "study.herb", "chart": "herb-natures"},
                             {"title": f"{h}各项药性的首见", "type": "timeline", "from": "study.herb", "chart": "herb-firsts"}],
+                "tables": [_shell(f"历代本草所言{h}之性味", "study.herb", [("时期", ""), ("本草著作（部）", N), ("寒", N), ("凉", N), ("平", N),
+                                  ("温", N), ("热", N), ("味（部）", TXT)], PERIOD_STUBS, stats="一部著作言之者计一次",
+                                  groups={c: "言其性为（部）" for c in ("寒", "凉", "平", "温", "热")}),
+                           _shell(f"{h}各项性能的首见", "study.herb", [("项目", ""), ("所言", TXT), ("首见", "《……》"), ("成书年代", N)],
+                                  ["性味", "归经", "……"], stats="按成书年代下限（terminus ante quem）排序；辑本另标")],
                 "limitations": ["本草条目的切分为规则阅读：一条之中混入他药的文字会误读，首见须回查原文"]}
 
     def _usage(self, ent: dict[str, Any]) -> dict[str, Any]:
@@ -510,8 +546,14 @@ class ProtocolDesigner:
                 "analysis": [{"name": "趋势检验", "method": "Cochran–Armitage", "detail": "各期比例按时间排序"},
                              {"name": "用量", "method": "中位数与四分位距", "detail": "只计汤剂中以重量写出的剂量，按见证年代计量折合"}],
                 "figures": [{"title": f"含{h}的组成占比", "type": "line", "from": "study.usage", "chart": "usage-share"},
-                            {"title": f"{h}历代汤剂用量", "type": "range", "from": "study.usage", "chart": "usage-doses"},
+                            {"title": f"{h}历代汤剂用量", "type": "box", "from": "study.usage", "chart": "usage-doses"},
+                            {"title": f"{h}汤剂用量与成书年代", "type": "scatter", "from": "study.usage", "chart": "usage-dose-years"},
                             {"title": f"{h}的炮制与用法注", "type": "stack", "from": "study.usage", "chart": "usage-processing"}],
+                "tables": [_shell(f"各时期写出组成中含{h}的比例", "study.usage", [("时期", ""), ("写出组成（首）", N), (f"含{h}，n (%)", NP),
+                                  ("95% CI（%）", CI)], PERIOD_STUBS, stats="比例的 95% CI：Wilson 法；趋势：Cochran–Armitage 检验（z，P）"),
+                           _shell(f"历代汤剂中{h}的用量", "study.usage", [("时期", ""), ("n", N), ("M (P25, P75)", MIQR), ("x̄ ± s", MSD), ("范围", CI)],
+                                  PERIOD_STUBS, stats="Kruskal–Wallis 检验（H，df，P）；年代与用量的 Spearman 相关（ρ，P）",
+                                  groups={c: "折合克数（g）" for c in ("M (P25, P75)", "x̄ ± s", "范围")})],
                 "limitations": ["剂量只计以重量写出者；以枚、升、方寸匕计者不折合", "“方中最大剂量”只是剂量线索，不是君臣佐使的判定"]}
 
     def _pairs(self, ent: dict[str, Any]) -> dict[str, Any]:
@@ -539,7 +581,12 @@ class ProtocolDesigner:
                 "methods": [{"title": f"{h}的配伍", "tool": "study.pairs", "args": {"herb": h},
                              "command": f"taochronos study pairs {h} --charts figures", "purpose": "药对统计、三药同用、按时期", "outputs": "配伍表"}],
                 "analysis": [{"name": "配伍检验", "method": "单侧 Fisher 精确检验 + Benjamini–Hochberg", "detail": "支持度 ≥ 5；NPMI 排序以免稀见药居前"}],
-                "figures": [{"title": f"{h}常相配伍之药", "type": "hbar", "from": "study.pairs", "chart": "pairs-partners"}],
+                "figures": [{"title": f"{h}同方药物的关联强度（OR 与 95% CI）", "type": "forest", "from": "study.pairs", "chart": "pairs-forest"},
+                            {"title": f"{h}常相配伍之药", "type": "hbar", "from": "study.pairs", "chart": "pairs-partners"}],
+                "tables": [_shell(f"与{h}同方的药物及其关联强度", "study.pairs", [("药物", ""), ("同方（首）", N), (f"{h}→该药", PCT),
+                                  (f"该药→{h}", PCT), ("提升度", "×.××"), ("OR (95% CI)", ORCI), ("P", P)], ["……"],
+                                  stats="单侧 Fisher 精确检验，Benjamini–Hochberg 校正（q = 0.05）；OR 的 95% CI：Woolf 法",
+                                  groups={f"{h}→该药": "置信度（%）", f"该药→{h}": "置信度（%）"})],
                 "limitations": ["共现是书写的关联，不是疗效的证据"]}
 
     def _incompat(self, ent: dict[str, Any]) -> dict[str, Any]:
@@ -578,6 +625,10 @@ class ProtocolDesigner:
                 "analysis": [{"name": "首见", "method": "按成书年代下限，辑本另计", "detail": "一部著作只计一次"}],
                 "figures": [{"title": "反、畏之药同见于写出的组成", "type": "heatmap", "from": "study.incompat", "chart": "incompat-together"},
                             {"title": "“反”“畏”之说的最早见证", "type": "timeline", "from": "study.incompat", "chart": "incompat-firsts"}],
+                "tables": [_shell("言“反”“畏”的著作与最早见证", "study.incompat", [("药对", ""), ("著作（部）", N), ("最早见证", "《……》"),
+                                  ("成书年代", N)], ["甘草反甘遂", "……"], stats="一部著作计一次；辑本另计"),
+                           _shell("反、畏之药同见于写出的组成", "study.incompat", [("药对", ""), ("著作（部）", N), ("各时期（部）", TXT),
+                                  ("所见之方", TXT)], ["……"], stats="文本事实：同用见于书中，不说明合理或安全")],
                 "limitations": ["同用只说明文献中有此组成，不说明其合理或无害；七情之“相畏”与十九畏之“畏”含义不同"]}
 
     def _network(self, ent: dict[str, Any]) -> dict[str, Any]:
@@ -601,6 +652,8 @@ class ProtocolDesigner:
                              "command": f"taochronos study network {target} --charts figures", "purpose": "所见或方、提升度、时期", "outputs": "方证表"}],
                 "analysis": [{"name": "关联强度", "method": "提升度、NPMI", "detail": "所见在方名之前、同一治疗语句中"}],
                 "figures": [{"title": f"{target}的方证对应", "type": "hbar", "from": "study.network", "chart": "network-findings"}],
+                "tables": [_shell(f"{target}的方证对应", "study.network", [("所见", ""), ("次数", N), ("占（%）", PCT), ("提升度", "×.××")], ["……"],
+                                  stats="提升度：同见次数与独立期望之比；每部著作一次")],
                 "limitations": ["方名前所列之症不一定是该方所治（语句结构为规则阅读）"]}
 
     def _term(self, ent: dict[str, Any]) -> dict[str, Any]:
@@ -636,6 +689,8 @@ class ProtocolDesigner:
                 "analysis": [{"name": "频率", "method": "每万段出现率与 Wilson 区间", "detail": "分母为该期全部段落"}],
                 "figures": [{"title": f"“{t}”各时期出现率", "type": "line", "from": "study.term", "chart": "term-periods"},
                             {"title": f"“{t}”各义项的历代份额", "type": "stack", "from": "study.senses", "chart": "senses-shares"}],
+                "tables": [_shell(f"“{t}”各时期的出现率", "study.term", [("时期", ""), ("段落总数", N), ("含该词段落", N), ("每万段 (95% CI)", "××.× (××.×–××.×)")],
+                                  PERIOD_STUBS, stats="每万段出现率与 Wilson 区间；趋势：Cochran–Armitage 检验（z，P）")],
                 "limitations": [f"“{t}”之古义不等同现代病名；现代概念只作候选，不作等同"]}
 
     def _names(self, ent: dict[str, Any]) -> dict[str, Any]:
@@ -650,7 +705,9 @@ class ProtocolDesigner:
                                 "alternatives": ["避讳改字只影响某些版本（看版本年代）"]}],
                 "methods": [{"title": f"{x}的名称", "tool": "study.names", "args": {"term": x},
                              "command": f"taochronos study names {x} --charts figures", "purpose": "名称、首见、更替、等同之文", "outputs": "名称表"}],
-                "figures": [{"title": f"{x}各名称的历代份额", "type": "stack", "from": "study.names", "chart": "names-shares"}]}
+                "figures": [{"title": f"{x}各名称的历代份额", "type": "stack", "from": "study.names", "chart": "names-shares"}],
+                "tables": [_shell(f"{x}各名称的历代份额", "study.names", [("时期", ""), ("名称一（%）", PCT), ("名称二（%）", PCT), ("……", "")], PERIOD_STUBS,
+                                  stats="各时期言及此物的段落中各名称所占份额")]}
 
     def _modern(self, ent: dict[str, Any]) -> dict[str, Any]:
         x = _first(ent["herbs"]) or _first(ent["formulas"]) or _first(ent["findings"]) or _first(ent["terms"])
@@ -661,6 +718,8 @@ class ProtocolDesigner:
                 "methods": [{"title": "现代证据", "tool": "modern.search", "args": {"query": x or ""},
                              "command": f'taochronos modern search "{x or ""}"', "purpose": "按设计与人群分层的文献", "outputs": "证据表"}],
                 "analysis": [{"name": "证据分层", "method": "按研究设计与人群", "detail": "动物实验、细胞实验与网络药理不作为人体疗效的证据"}],
+                "tables": [_shell("古今对照的现代证据", "modern.search", [("文献", ""), ("研究设计", TXT), ("人群", TXT), ("结局", TXT), ("证据等级", TXT)],
+                                  ["……"], stats="按研究设计与人群分层；动物、细胞与网络药理研究不作为人体疗效的证据")],
                 "limitations": ["古籍记载与现代证据分属不同知识空间：不得以现代疗效证古书之是，亦不得以古书证现代疗效"]}
 
     def _general(self, ent: dict[str, Any]) -> dict[str, Any]:
@@ -704,7 +763,8 @@ QUALITY = [
     "门控：G0 来源、G1 录文、G2 文献学、G3 语义、G4 主张溯源、G5 跨来源、G6 证伪、G7 专家、G8 现代证据",
     "以今律古之防：古今概念分层表述，不以现代病名释古",
 ]
-OUTPUTS = ["研究方案（本文件，Markdown 与 JSON）", "见证表与数据包（CSV + datapackage.json：taochronos study dataset）",
-           "图表（SVG 矢量图、CSV 数据、JSON 规格：--charts）", "研究报告（原文、注家解释、计算推断、现代医学四层分述）"]
+OUTPUTS = ["研究方案（本文件，Markdown 与 JSON；表格模板另可下载为 Word）", "见证表与数据包（CSV + datapackage.json：taochronos study dataset）",
+           "图（期刊样式的 SVG、PNG、TIFF，组图；CSV 数据：--charts）", "三线表（Word、LaTeX、CSV：--charts）",
+           "研究报告（原文、注家解释、计算推断、现代医学四层分述）"]
 
 __all__ = ["KINDS", "NOTICE", "ProtocolDesigner"]

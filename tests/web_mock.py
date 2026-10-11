@@ -26,12 +26,14 @@ ANSWER = ("## 结论\n\n《伤寒论》以桂枝汤治太阳中风。\n\n"
           "以上经 classics__search 检得，可用 `validation__verify_quote` 复核，出处附 passage_id。\n\n"
           "这是计算与文献检索的结果，不构成医疗建议。")
 THINKING = ["用户问桂枝汤", "用户问桂枝汤的主治，先检索原文。"]
-# a question asking for 图表: the model compares two formulas (a study whose result carries charts), then draws a chart of
-# its own in a ```chart block
+# a question asking for 图表: the model compares two formulas (a study whose result carries charts and tables), then
+# draws a chart of its own in a ```chart block and writes a table with its caption and notes
 CHART_ANSWER = ("两方的对照见上方图表。合两方的共有药味作图如下：\n\n```chart\n"
                 '{"type":"hbar","title":"桂枝汤与麻黄汤共有之药","x":{"key":"药"},"series":[{"key":"方数","label":"方数"}],'
                 '"rows":[{"药":"桂","方数":2},{"药":"甘草","方数":2}],"source":"演示语料"}'
-                "\n```\n\n以上数字出自方剂比较的结果。")
+                "\n```\n\n以上数字出自方剂比较的结果。\n\n表1　两方共有之药的剂量\n\n"
+                "| 药 | 桂枝汤 | 麻黄汤 |\n|:---|:---:|:---:|\n| 桂 | 三两 | 二两 |\n| 甘草 | 二两 | 一两 |\n\n"
+                "注：剂量照原书所写；n = 2。")
 
 
 class MockProvider(ThreadingHTTPServer):

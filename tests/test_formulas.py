@@ -14,7 +14,7 @@ import pytest
 from taochronos.cli import main
 from taochronos.kernel import Actor, ToolCall
 from taochronos.plugins.classics import Corpus, DomainPack
-from taochronos.plugins.classics.study import StudyService, charts, svg
+from taochronos.plugins.classics.study import StudyService, charts, svg, tablefmt, tables
 from taochronos.plugins.classics.study.herbs import channel_tokens
 from taochronos.plugins.classics.study.metrology import cn_number
 from taochronos.plugins.classics.study.render import markdown
@@ -95,7 +95,7 @@ def test_usage_counts_per_work_and_compares_the_doses_of_decoctions(study):
     assert forms.get("煮散") == 1 and forms.get("丸剂") == 1  # 局方's 桂枝汤 (为粗末，每服) and 理中丸: their batch, apart
     assert r["processing"]["top"][0]["note"] == "炙"
     assert {p["with"] for p in r["partners"]} >= {"大枣", "生姜", "人参"}
-    assert {c["type"] for c in r["charts"]} == {"line", "range", "stack", "hbar"}
+    assert {c["type"] for c in r["charts"]} == {"line", "box", "scatter", "stack", "hbar"}
     with pytest.raises(ValueError):
         study.usage("不是药")
 
@@ -180,7 +180,7 @@ def _all_charts(study) -> list[dict]:
 
 def test_every_chart_is_a_valid_specification_with_a_plain_source(study):
     found = _all_charts(study)
-    assert {c["type"] for c in found} >= {"bar", "heatmap", "timeline", "network", "line", "range", "stack", "hbar"}
+    assert {c["type"] for c in found} >= {"bar", "heatmap", "timeline", "network", "line", "box", "scatter", "stack", "hbar"}
     for c in found:
         assert c["version"] == charts.SPEC_VERSION and c["type"] in charts.TYPES and c["title"] and c["id"]
         rows = c.get("rows") or []
@@ -197,7 +197,7 @@ def test_every_chart_is_a_valid_specification_with_a_plain_source(study):
 def test_charts_are_drawn_as_svg_and_written_as_csv_and_json(study, tmp_path):
     found = _all_charts(study)
     written = svg.write(found, tmp_path, "t")
-    assert len(written) == 3 * len(found)
+    assert len(written) == 3 * len(found) + 1  # and all of them as one figure in panels
     for path in map(Path, written):
         text = path.read_text(encoding="utf-8")
         if path.suffix == ".svg":
@@ -220,6 +220,8 @@ def test_the_model_reads_which_charts_the_page_shows_never_their_data():
 
     result = {"x": 1, "charts": [{"type": "bar", "title": "甲", "rows": [{"a": 1}] * 50}, {"type": "line", "title": "乙"}]}
     assert for_model(result) == {"x": 1, "charts_shown": ["甲", "乙"]}
+    table = {"title": "丙", "columns": [{"key": "a", "label": "甲"}], "rows": [{"a": "1"}] * 50}
+    assert for_model({"x": 1, "tables": [table], "_raw": {"grams": [1.0] * 900}}) == {"x": 1, "tables_shown": ["丙"]}  # never the raw values
     assert for_model({"x": 1}) == {"x": 1}
     document = {"name": "方案.md", "format": "markdown", "text": "# 方案\n" + "正文" * 3000}
     assert for_model({"x": 1, "document": document}) == {"x": 1}  # the document is for the page: the model has its result
@@ -253,6 +255,121 @@ def test_cli_compare_writes_its_figures(capsys, tmp_path):
     figures = tmp_path / "figures"
     assert main(["--data", str(tmp_path), "study", "compare", "桂枝汤", "麻黄汤", "--charts", str(figures)]) == 0
     out = capsys.readouterr()
-    assert out.out.startswith("# 方剂比较") and sorted(p.suffix for p in figures.iterdir()).count(".svg") == 2
+    suffixes = sorted(p.suffix for p in figures.iterdir())
+    assert out.out.startswith("# 方剂比较") and suffixes.count(".svg") == 3 and suffixes.count(".docx") == 1 and ".tex" in suffixes
     assert main(["--data", str(tmp_path), "study", "protocol", "桂枝汤的源流", "--no-pilot"]) == 0
     assert capsys.readouterr().out.startswith("# 桂枝汤")
+
+
+# ------------------------------------------------------------------ figures and tables for a paper
+def test_the_studies_print_three_line_tables_with_their_statistics(study):
+    u = study.usage("甘草")
+    assert "_raw" not in u  # the doses the figures draw one by one are taken out once drawn
+    t = {x["id"]: x for x in u["tables"]}
+    assert list(t) == ["usage-periods", "usage-doses", "usage-forms", "usage-partners"]
+    first = t["usage-periods"]["rows"][0]
+    assert first["period"] == "先秦两汉" and first["with"] == "10 (90.9)" and first["ci"] == "62.3–98.4"  # n (%), the Wilson CI
+    doses = t["usage-doses"]
+    assert [c.get("group") for c in doses["columns"]][2:6] == ["原书剂量（两）", "折合克数（g）", "折合克数（g）", "折合克数（g）"]
+    assert doses["rows"][0]["grams"] == "29.4 (29.4, 29.4)" and doses["rows"][0]["mean"] == "29.4 ± 7.3"  # M (P25, P75); x̄ ± s
+    assert any("Kruskal–Wallis" in n and "H = " in n for n in doses["notes"]) and any("Spearman" in n for n in doses["notes"])
+    assert u["doses"]["test"]["name"] == "Kruskal–Wallis" and u["doses"]["trend"]["n"] == 14
+    assert all(x["source"].startswith("道乃久（TaoChronos）· ") for x in u["tables"])
+    p = study.pairs("甘草")
+    partner = p["partners"][0]
+    assert partner["or"] == 2.43 and partner["or_ci"] == [0.0873, 67.6]  # the odds ratio with its Woolf interval
+    row = p["tables"][0]["rows"][0]
+    assert row["or"] == "2.43 (0.09–67.6)" and row["p"] == "0.58"  # not significant: no star
+    corpus = study.pairs(min_support=2)
+    ids = [x["id"] for x in corpus["tables"]]
+    assert ids == ["pairs-frequency", "pairs-rules", "pairs-top", "pairs-clusters"]
+    assert corpus["frequency"][0] == {"drug": "甘草", "compositions": 18, "share": 0.9474}
+    assert {"if": "知母", "then": "石膏", "support": 5, "support_share": 0.2632, "confidence": 1.0, "lift": 3.8} in corpus["rules"]
+    groups = [set(c["drugs"]) for c in corpus["clusters"]]
+    assert {"石膏", "粳米", "知母"} <= groups[0] and {"半夏", "黄芩", "柴胡"} in groups  # 白虎汤's drugs hold together, and 小柴胡汤's
+    for r in (study.compare(["桂枝汤", "麻黄汤"]), study.family("桂枝汤"), study.term("伤寒"), study.herb("甘草"),
+              study.properties(["黄连", "黄芩"]), study.incompat(), study.formula("桂枝汤")):
+        assert r["tables"] and all(x["version"] == tables.TABLE_VERSION and x["rows"] and x["columns"] for x in r["tables"])
+
+
+def test_the_new_figures_box_forest_scatter_and_dendrogram(study):
+    u = study.usage("甘草")
+    box = next(c for c in u["charts"] if c["type"] == "box")
+    assert box["rows"][0]["median"] == 29.4 and box["rows"][0]["lo"] == 29.4 and set(box["points"]["先秦两汉"]) >= {14.7, 44.1}  # the outliers kept
+    scatter = next(c for c in u["charts"] if c["type"] == "scatter")
+    assert len(scatter["rows"]) == 14 and scatter["fit"]["label"] == "LOESS" and "Spearman ρ = 0.54" in scatter["subtitle"]
+    forest = next(c for c in study.pairs("甘草")["charts"] if c["type"] == "forest")
+    assert forest["x"] == {"label": "OR（95% CI）", "log": True, "ref": 1} and forest["rows"][0]["lo"] == 0.0873
+    tree = next(c for c in study.pairs(min_support=2)["charts"] if c["type"] == "dendrogram")
+    n = len(tree["labels"])
+    assert len(tree["merges"]) == n - 1 and sorted(tree["order"]) == list(range(n)) and tree["groups"][0] == "第 1 类"
+    # a box from its values alone (as a model may write one), drawn in both styles
+    spec = {"type": "box", "title": "甲", "x": {"key": "期", "label": "时期"}, "y": {"label": "克"}, "rows": [{"期": "汉", "values": [1, 2, 3, 4, 50]}]}
+    assert svg.box_rows(spec)[0]["hi"] == 4  # 50 is past the whisker
+    for c in (spec, box, scatter, forest, tree):
+        for style in ("journal", "screen"):
+            ET.fromstring(svg.to_svg(c, style=style, number=3))
+
+
+def test_journal_figures_and_a_figure_in_panels(study):
+    found = study.usage("甘草")["charts"]
+    paper = svg.to_svg(found[0], number=2, width="single")
+    root = ET.fromstring(paper)
+    assert root.get("width") == "85mm" and root.get("height").endswith("mm") and "var(--" not in paper
+    assert "图2" in paper and "甘草：含此药的组成占比" in paper and "#ffffff" in paper  # its number and caption under it, on white
+    assert "图2" not in svg.to_svg(found[0], caption=False)  # for a journal's own caption
+    screen = svg.to_svg(found[0], style="screen")
+    assert ET.fromstring(screen).get("width") == "760" and "图" not in screen.split("</title>")[1][:200]  # the page's figure: its title above
+    panels = svg.to_panels(found, number=1)
+    assert ET.fromstring(panels).get("width") == "175mm" and "（A）含此药的组成占比" in panels and "（E）" in panels
+    assert panels.count("图中剂量为历史计量换算的学术估值") == 1  # a note the panels share, once
+
+
+def test_tables_as_word_latex_html_markdown_and_csv(study, tmp_path):
+    import zipfile
+
+    found = study.usage("甘草")["tables"]
+    doses = next(t for t in found if t["id"] == "usage-doses")
+    with zipfile.ZipFile(__import__("io").BytesIO(tablefmt.to_docx(found))) as z:
+        assert set(z.namelist()) >= {"[Content_Types].xml", "word/document.xml", "word/styles.xml"}
+        root = ET.fromstring(z.read("word/document.xml"))
+    w = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    assert len(root.findall(f".//{w}tbl")) == 4
+    first = root.find(f".//{w}tbl")
+    borders = first.find(f"{w}tblPr/{w}tblBorders")
+    assert borders.find(f"{w}top").get(f"{w}sz") == "12" and borders.find(f"{w}insideV").get(f"{w}val") == "nil"  # three lines, no grid
+    text = "".join(t.text or "" for t in root.iter(f"{w}t"))
+    assert "表1　各时期写出组成中含甘草的比例" in text and "注：CI：置信区间" in text
+    grouped = root.findall(f".//{w}tbl")[1]
+    assert grouped.find(f".//{w}gridSpan") is not None and grouped.find(f".//{w}vMerge") is not None and grouped.find(f".//{w}tblHeader") is not None
+    assert any(r.find(f"{w}rPr/{w}i") is not None and r.find(f"{w}t").text == "P" for r in root.iter(f"{w}r"))  # P in italics
+    latex = tablefmt.to_latex(doses, 2)
+    for piece in (r"\caption{历代汤剂中甘草的用量}", r"\toprule", r"\cmidrule(lr){4-6}", r"\multirow{2}{*}{时期}", r"$\bar{x}$", r"\bottomrule"):
+        assert piece in latex, piece
+    assert tablefmt.tex("50% & a_b ~") == r"50\% \& a\_b \textasciitilde{}"
+    html = tablefmt.to_html(doses, 2)
+    assert "border-top:1.5pt solid #000" in html and 'colspan="3"' in html and "<i>P</i>" in html
+    md = tablefmt.to_markdown(doses, 2)
+    assert md.startswith("**表2　历代汤剂中甘草的用量**") and "| 时期 | n | 原书剂量（两） · M (P25, P75) |" in md
+    csv_text = tablefmt.to_csv(doses)
+    assert csv_text.startswith("\ufeff时期,n,") and '"29.4 (29.4, 29.4)"' in csv_text
+    formulas = {"id": "x", "title": "甲", "columns": [{"key": "a", "label": "a", "align": "left"}],
+                "rows": [{"a": "=HYPERLINK(1)"}, {"a": "-0.5"}, {"a": "@SUM(1)"}]}
+    assert tablefmt.to_csv(formulas, bom=False) == "a\r\n'=HYPERLINK(1)\r\n-0.5\r\n'@SUM(1)\r\n"  # a formula stays text, a number a number
+    quoted = {"type": "bar", "title": '他说"好"', "x": {"key": "a"}, "series": [{"key": "b", "label": "b"}], "rows": [{"a": "=1", "b": 2}]}
+    assert ET.fromstring(svg.to_svg(quoted)).get("aria-label") == '他说"好"' and "'=1" in svg.to_csv(quoted)
+    written = tablefmt.write(found, tmp_path, "t")
+    assert sorted(Path(x).suffix for x in written).count(".tex") == 4 and (tmp_path / "t-tables.docx").exists()
+
+
+def test_the_protocol_plans_its_figures_and_its_table_shells(study):
+    r = study.protocol("半夏的用量与配伍历代如何变化？", pilot=False)
+    forms = {f["chart"]: f["form"] for f in r["figures"]}
+    assert forms["usage-doses"] == "Tukey 箱线图" and forms["pairs-forest"] == "森林图" and r["figures"][0]["number"] == 1
+    shells = r["table_shells"]
+    assert [t["number"] for t in shells] == [1, 2, 3] and shells[2]["cells"][5] == "×.×× (×.××–×.××)"
+    assert [t["title"] for t in r["tables"]] == [f"{t['title']}（模板）" for t in shells]  # the page prints them, to download as Word
+    assert r["tables"][1]["columns"][2]["group"] == "折合克数（g）"
+    doc = r["document"]["text"]
+    assert "图表计划" in doc and "**图2**　半夏历代汤剂用量（Tukey 箱线图；study.usage）" in doc
+    assert "**表1　各时期写出组成中含半夏的比例（模板）**" in doc and "| 先秦两汉 | ×× | ×× (××.×) | ××.×–××.× |" in doc

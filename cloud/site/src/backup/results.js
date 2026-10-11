@@ -57,20 +57,25 @@ export function compact(value, maxChars = 16000, dumped = null) {
   return `${cpSlice(text, maxChars)}…［截断：原长 ${cpLength(text)} 字符］`;
 }
 
-const PAGE_ONLY = ["charts", "document"]; // for the page: the model reads the result they are drawn or written from
+const PAGE_ONLY = ["charts", "tables", "document"]; // for the page: the model reads the result they are drawn or written from
 
-/** What the model reads of a result: all of it but the chart specifications (charts) and the document a result carries to
- * download (document), which are for the page — of the charts it reads only the titles of those the page shows
- * (charts_shown), so that it can point to them. */
+const titlesOf = (items) => (Array.isArray(items) ? items : []).filter((c) => isPlainObject(c) && typeof c.title === "string" && c.title).map((c) => c.title);
+
+/** What the model reads of a result: all of it but the chart specifications (charts), the three-line tables (tables) and
+ * the document a result carries to download (document), which are for the page — of the charts and tables it reads only
+ * the titles of those the page shows (charts_shown, tables_shown), so that it can point to them. */
 export function forModel(value) {
-  if (!isPlainObject(value) || !PAGE_ONLY.some((k) => k in value)) return value;
-  const { charts, document, ...rest } = value;
-  const titles = (Array.isArray(charts) ? charts : []).filter((c) => isPlainObject(c) && typeof c.title === "string" && c.title).map((c) => c.title);
-  return titles.length ? { ...rest, charts_shown: titles } : rest;
+  if (!isPlainObject(value) || !(PAGE_ONLY.some((k) => k in value) || "_raw" in value)) return value;
+  const { charts, tables, document, _raw, ...rest } = value;
+  const out = { ...rest };
+  const c = titlesOf(charts), t = titlesOf(tables);
+  if (c.length) out.charts_shown = c;
+  if (t.length) out.tables_shown = t;
+  return out;
 }
 
-/** The result as the interface shows it: whole when small enough, trimmed (still valid JSON) otherwise — its charts and
- * its document never trimmed. */
+/** The result as the interface shows it: whole when small enough, trimmed (still valid JSON) otherwise — its charts,
+ * tables and document never trimmed. */
 export function forInterface(value, maxChars = 400_000, dumped = null) {
   if (fits(dumped ?? dumps(value), maxChars)) return value;
   if (isPlainObject(value) && PAGE_ONLY.some((k) => k in value)) {

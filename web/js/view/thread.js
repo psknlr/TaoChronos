@@ -192,12 +192,13 @@ function stepsNode(m, seg, k, ctx, live) {
 // which chart of a tools segment is shown, kept while the turn is drawn again
 const shown = new WeakMap();
 
-/** The charts the segment's tools drew, under its steps: one at a time, with tabs, when there are several. */
+/** The figures and tables the segment's tools made, under its steps: one at a time, with tabs, when there are several. */
 function chartsNode(seg) {
   const specs = (seg.calls || []).flatMap((c) => c.charts || []);
-  if (!specs.length) return null;
+  const tables = (seg.calls || []).flatMap((c) => c.tables || []);
+  if (!specs.length && !tables.length) return null;
   if (!shown.has(seg)) shown.set(seg, { at: 0 });
-  return chartGallery(specs, shown.get(seg));
+  return chartGallery(specs, shown.get(seg), tables);
 }
 
 function toolNode(m, c, key, ctx) {
@@ -226,7 +227,8 @@ function fillDetail(el, c, ctx) {
     h("h5", "参数"), h("pre.json", prettyJSON(c.args ?? {})),
     c.error ? [h("h5", "错误"), h("pre.json", c.error)] : null,
     c.preview ? [h("h5", "结果（模型读到的内容）"), h("pre.json", readable(c.preview))] : null,
-    c.charts?.length ? [h("h5", `图表（${c.charts.length}）`), h("div.muted", { style: { fontSize: "12.5px" } }, c.charts.map((x) => x.title || "图表").join("；"))] : null,
+    c.charts?.length ? [h("h5", `图（${c.charts.length}）`), h("div.muted", { style: { fontSize: "12.5px" } }, c.charts.map((x, i) => `图${i + 1} ${x.title || "图表"}`).join("；"))] : null,
+    c.tables?.length ? [h("h5", `表（${c.tables.length}）`), h("div.muted", { style: { fontSize: "12.5px" } }, c.tables.map((x, i) => `表${i + 1} ${x.title || "表格"}`).join("；"))] : null,
     c.citations?.length ? [h("h5", `涉及的段落（${c.citations.length}）`),
       h("div.cites-row", c.citations.slice(0, 40).map((card) => ctx.citeCard(card)))] : null,
     c.research ? h("button.btn.secondary", { type: "button", style: { marginTop: "8px" }, on: { click: () => ctx.onOpenResearch(c.research) } }, icon("flask", "sm"), "在侧栏查看研究结果") : null,

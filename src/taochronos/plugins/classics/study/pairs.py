@@ -11,9 +11,11 @@ the same composition or indication in several transcriptions of a work counts on
 
 * ``study pairs`` — 配伍: for each pair of drugs, how often they are prescribed together against chance: support,
   confidence both ways, lift, pointwise mutual information (and its normalised form, by which pairs are ranked, so
-  that drugs named a handful of times do not come first) and a one-sided Fisher test with Benjamini–Hochberg; the
-  partners of one drug; the groups of drugs that hold together (communities of the significant pairs); a pair's
-  share of compositions period by period;
+  that drugs named a handful of times do not come first), the odds ratio with its 95 % interval and a one-sided Fisher
+  test with Benjamini–Hochberg; the partners of one drug; over the whole corpus the drugs written most often, the
+  association rules of the significant pairs (support, confidence, lift), the groups of drugs that hold together
+  (communities of the significant pairs) and a clustering of the most frequent drugs (average linkage on 1 − Jaccard);
+  a pair's share of compositions period by period;
 * ``study network`` — 方证网络: a formula's findings (lift against how often each finding is named at all) and its
   drugs; a finding's formulas; the strongest formula–finding links of the corpus.
 
@@ -35,7 +37,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from ....science.association import CooccurrenceGraph, communities
-from ....science.stats import benjamini_hochberg, fisher_exact_greater
+from ....science.stats import average_linkage, benjamini_hochberg, cut_tree, fisher_exact_greater, largest_gap, leaf_order, odds_ratio
 from .base import StudyBase, dated
 from .formulas import _LEADS_ON
 from .usage import prepared_form
@@ -48,6 +50,11 @@ _TREAT_RAW = re.compile(r"主之|[宜與与][^，。；]{0,10}[湯汤丸散飲�
 _SENTENCE = re.compile(r"[^。；？！]+[。；？！]?")
 FINDINGS = ("symptom", "sign", "tongue", "pulse")
 CONTEXT = ("pattern", "pathogenesis", "disease")
+
+
+def _sig(x: float, digits: int = 3) -> float:
+    """``x`` to ``digits`` significant figures (an odds ratio of 0.0123 or of 123 alike)."""
+    return float(f"{x:.{digits}g}") if math.isfinite(x) and x else x
 
 
 class FormulaHarvest:
@@ -210,8 +217,10 @@ class PairsStudy:
             pvals[(a, b)] = p
             pmi = math.log2(lift)
             npmi = pmi / -math.log2(k / n) if k < n else 1.0  # normalised: rare drugs do not rank first by chance of rarity
+            o = odds_ratio(k, na - k, nb - k, n - na - nb + k)
             rows.append({"a": a, "b": b, "support": k, "conf_ab": round(k / na, 4), "conf_ba": round(k / nb, 4),
-                         "lift": round(lift, 3), "pmi": round(pmi, 3), "npmi": round(npmi, 4), "p": p, "n_a": na, "n_b": nb})
+                         "lift": round(lift, 3), "pmi": round(pmi, 3), "npmi": round(npmi, 4), "p": p, "n_a": na, "n_b": nb,
+                         "or": _sig(o["or"]), "or_ci": [_sig(o["lo"]), _sig(o["hi"])]})
         passed = benjamini_hochberg(pvals, q=q) if pvals else {}
         for r in rows:
             r["significant"] = bool(passed.get((r["a"], r["b"])))
@@ -247,7 +256,54 @@ class PairsStudy:
             out["groups"] = self._groups(table)
             out["top_by_support"] = [{"pair": f"{self._label(r['a'])}—{self._label(r['b'])}", "support": r["support"], "lift": r["lift"]}
                                      for r in sorted(table, key=lambda r: -r["support"])[:20]]
+            single: Counter = Counter(x for t in transactions for x in t)
+            n = len(transactions) or 1
+            out["frequency"] = [{"drug": self._label(k), "compositions": v, "share": round(v / n, 4)} for k, v in single.most_common(30)]
+            out["rules"] = self._rules(table, n)
+            clusters, dendrogram = self._clusters(transactions, single, min_support)
+            if clusters:
+                out["clusters"] = clusters
+                out["_raw"] = {"dendrogram": dendrogram}  # the tree the figure draws: taken out with the charts (charts.attach)
         return out
+
+    def _rules(self, table: list[dict[str, Any]], n: int, *, top: int = 30, min_confidence: float = 0.5) -> list[dict[str, Any]]:
+        """Association rules of the significant pairs, both ways (A → B: of the compositions with A, the share with B),
+        at least ``min_confidence``, most confident first."""
+        rules = []
+        for r in table:
+            if not r["significant"]:
+                continue
+            for lhs, rhs, conf in ((r["a"], r["b"], r["conf_ab"]), (r["b"], r["a"], r["conf_ba"])):
+                if conf >= min_confidence:
+                    rules.append({"if": self._label(lhs), "then": self._label(rhs), "support": r["support"],
+                                  "support_share": round(r["support"] / n, 4), "confidence": conf, "lift": r["lift"]})
+        rules.sort(key=lambda x: (-x["confidence"], -x["lift"], -x["support"], x["if"], x["then"]))
+        return rules[:top]
+
+    def _clusters(self, transactions: list[set[str]], single: Counter, min_support: int,
+                  top: int = 30) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        """The ``top`` most frequent drugs clustered by average linkage on 1 − Jaccard of the compositions they are
+        written in, cut where the next merge is the longest branch: [{cluster, drugs}] and the tree to draw."""
+        keys = [k for k, v in single.most_common(top) if v >= min_support]
+        if len(keys) < 4:
+            return [], {}
+        where: dict[str, set[int]] = {k: set() for k in keys}
+        for i, t in enumerate(transactions):
+            for k in keys:
+                if k in t:
+                    where[k].add(i)
+        dist = [[0.0 if a == b else 1 - len(where[a] & where[b]) / len(where[a] | where[b]) for b in keys] for a in keys]
+        merges = average_linkage(dist)
+        n = len(keys)
+        k = largest_gap(merges, n, k_min=2, k_max=min(8, n - 1))
+        member = cut_tree(merges, n, k)
+        labels = [self._label(x) for x in keys]
+        order = leaf_order(merges, n)
+        groups = [{"cluster": c + 1, "drugs": [labels[i] for i in order if member[i] == c]} for c in range(k)]
+        cut = (float(merges[n - k - 1][2]) + float(merges[n - k][2])) / 2 if 0 < n - k < len(merges) else None
+        return groups, {"labels": labels, "frequency": [single[x] for x in keys], "merges": merges, "order": order,
+                        "member": member, "k": k, "cut": round(cut, 4) if cut is not None else None,
+                        "method": "average linkage (UPGMA), distance 1 − Jaccard"}
 
     def _partners(self, transactions: list[set[str]], target: str, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         out = []
@@ -256,7 +312,7 @@ class PairsStudy:
             given_target, given_other = (r["conf_ab"], r["conf_ba"]) if r["a"] == target else (r["conf_ba"], r["conf_ab"])
             out.append({"with": self._label(other), "key": other, "support": r["support"], "p_with_given_drug": given_target,
                         "p_drug_given_with": given_other, "lift": r["lift"], "pmi": r["pmi"], "npmi": r["npmi"],
-                        "significant": r["significant"]})
+                        "or": r["or"], "or_ci": r["or_ci"], "p": r["p"], "significant": r["significant"]})
         return sorted(out, key=lambda x: (not x["significant"], -x["npmi"], -x["support"]))[:40]
 
     def _triples(self, transactions: list[set[str]], target: str, *, min_support: int = 5) -> list[dict[str, Any]]:
