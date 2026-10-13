@@ -111,6 +111,12 @@ block:
   - ip: 206.189.86.139
     why: "据站长 2026-10-11 的安全报告：在 science.impf.ai 上做 WordPress 探测（//wordpress/、//xmlrpc.php）；DigitalOcean 新加坡"
     seen: 2026-10-11
+  - ip: 34.78.64.142
+    why: "据站长 2026-10-13 的安全报告：在 science.impf.ai 上找密钥与配置（/app/.env、/.env.php、/.env.dist、/.env-example、/config.php），约 93 次；Google Cloud"
+    seen: 2026-10-13
+  - ip: 165.154.24.148
+    why: "据站长 2026-10-13 的安全报告：在中转上成批探测 App 与卖家后台接口（/api/seller/index/GetSellerConfigAll、/queryVersion.php 等二十余个），150 余次，轮换 UA；UCloud 香港"
+    seen: 2026-10-13
   - ip: 147.185.132.0/24
     why: "按站长要求封禁：Palo Alto Networks Cortex Xpanse 的互联网扫描（UA 自报身份），本网段见过 .24、.69、.115，只请求首页"
     seen: 2026-10-06
