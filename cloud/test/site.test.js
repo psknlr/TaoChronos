@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
+import { drain, EVENTS } from "../../security/archive.js";
 import { WatchCore } from "../../security/sentinel.js";
 import { UsageCore } from "../../security/usage.js";
 import { DEFAULTS, handle } from "../site/src/site.js";
@@ -232,26 +233,32 @@ test("a visitor's day of the API has a ceiling: reads and calls apart, wide, by 
   for (let i = 0; i < 3; i++) assert.equal((await call(`${PAGE}/api/passage?id=p${i}`, { headers: BROWSER })).status, 200);
   assert.equal(trips, 1); // the first read waited for the object; the next two were counted here
   const over = await call(`${PAGE}/api/passage?id=p3`, { headers: BROWSER });
-  assert.equal(over.status, 503); // the page falls back on the browser's corpus for the day
+  assert.equal(over.status, 429); // a refusal, told as one: the page carries on in the browser for the day and says why
+  assert.equal(over.headers.get("X-TC-Corpus"), "refused");
   assert.deepEqual(await over.json(), { error: "今天的查询次数已用完，明天再来", rate_limited: true, daily: true, starting: false });
   assert.equal(Number(over.headers.get("Retry-After")), 16 * 3600); // T0 is 08:00 UTC
   const post = { method: "POST", body: "{}", headers: { ...BROWSER, Origin: PAGE, "Content-Type": "application/json" } };
   assert.equal((await call(`${PAGE}/api/call`, post)).status, 200); // calls are counted apart, and always wait for the object
-  assert.equal((await call(`${PAGE}/api/call`, post)).status, 503);
+  assert.equal((await call(`${PAGE}/api/call`, post)).status, 429);
   assert.equal(trips, 3);
   advance(61000);
-  assert.equal((await call(`${PAGE}/api/passage?id=p9`, { headers: BROWSER })).status, 503); // the object's count agrees: the minute's reads reported with this one
+  assert.equal((await call(`${PAGE}/api/passage?id=p9`, { headers: BROWSER })).status, 429); // the object's count agrees: the minute's reads reported with this one
   assert.equal(trips, 4);
   assert.equal(watch.summary(T0 + 61000).top.find((v) => v.today["api-read"]).today["api-read"], 5);
   assert.equal((await call(`${PAGE}/api/passage?id=x`, { headers: { ...BROWSER, "CF-Connecting-IP": "198.51.100.40" } })).status, 200); // another address
   assert.equal(seen.corpus.length, 5);
   const none = site({ watch: true, env: { API_READS_PER_DAY: "0" } });
   for (let i = 0; i < 5; i++) assert.equal((await none.call(`${PAGE}/api/passage?id=p${i}`, { headers: BROWSER })).status, 200);
-  // the object out of reach: reads go on (the rate-limit bindings stand), the page is none the wiser
+  // the object out of reach: reads of the public passages go on (the rate-limit bindings stand); a call — work the
+  // account pays for — is not let through unchecked: a 503, on which the page carries on in the browser
   const down = site({ watch: true });
-  down.watch.observe = async () => { throw new Error("Durable Object: daily limit reached"); };
+  down.watch.observe = async () => { throw new Error("Durable Object: overloaded"); };
   assert.equal((await down.call(`${PAGE}/api/passage?id=p`, { headers: BROWSER })).status, 200);
-  assert.equal((await down.call(`${PAGE}/api/call`, post)).status, 200);
+  const unchecked = await down.call(`${PAGE}/api/call`, post);
+  assert.equal(unchecked.status, 503);
+  assert.equal(unchecked.headers.get("X-TC-Corpus"), null); // the site's failure, not a refusal
+  assert.equal((await down.call(`${PAGE}/api/research`, post)).status, 503);
+  assert.equal(down.seen.corpus.length, 1); // only the read reached the corpus
 }));
 
 test("the store is uploaded part by part, only with the token, with the digest it is checked against later", async () => {
@@ -301,7 +308,7 @@ test("a scanner path refuses its address the API for a day; the page's own calls
   await settle();
   advance(61000); // a minute on: the scanner tries the API
   const refused = await call(`${PAGE}/api/info`, { headers: { "CF-Connecting-IP": "45.138.12.10" } });
-  assert.equal(refused.status, 503); // as when the corpus is away: a page refused falls back on the browser's corpus
+  assert.equal(refused.status, 403); // a refusal, told as one (the page carries on in the browser and says why)
   assert.equal((await refused.json()).blocked, true);
   assert.equal(refused.headers.get("X-TC-Corpus"), "refused");
   assert.equal(Number(refused.headers.get("Retry-After")), 21600 - 61); // a home network's address: the ordinary six hours
@@ -345,6 +352,42 @@ test("a scanner path refuses its address the API for a day; the page's own calls
   assert.equal((await limited.call(`${PAGE}/api/security/csp`, { method: "POST", headers: BROWSER, body: "{}" })).status, 429);
 }));
 
+test("a scanner path within a quiet reader's minute: the address's next read waits for the object, and is refused", () => quiet(async () => {
+  const { call, settle, watch, seen } = site({ watch: true });
+  let trips = 0;
+  const observe = watch.observe.bind(watch);
+  watch.observe = (...a) => { trips++; return observe(...a); };
+  const spoofed = { ...BROWSER, "CF-Connecting-IP": "45.138.12.11" }; // a browser's headers: a quiet reader's score
+  assert.equal((await call(`${PAGE}/api/passage?id=a`, { headers: spoofed })).status, 200);
+  assert.equal((await call(`${PAGE}/api/passage?id=b`, { headers: spoofed })).status, 200);
+  assert.equal(trips, 1); // the second read was answered from this instance's memory
+  assert.equal((await call(`${PAGE}/.env`, { headers: spoofed })).status, 404);
+  await settle();
+  const refused = await call(`${PAGE}/api/passage?id=c`, { headers: spoofed }); // within the same minute
+  assert.equal(refused.status, 403);
+  assert.equal(trips, 3); // the scanner path, then the read: not answered from memory
+  assert.equal(seen.corpus.length, 2);
+}));
+
+test("with the archive's bucket the sentinel's events go there: the export says so, an ack is refused, a day is read back", () => quiet(async () => {
+  const objects = new Map();
+  const ARCHIVE = {
+    put: async (key, body) => { objects.set(key, body); return { key }; },
+    get: async (key) => (objects.has(key) ? { text: async () => objects.get(key) } : null),
+    list: async ({ prefix }) => ({ objects: [...objects.keys()].filter((k) => k.startsWith(prefix)).sort().map((key) => ({ key })), truncated: false }),
+  };
+  const { call, settle, watch } = site({ watch: true, env: { ARCHIVE, LOG_EXPORT_TOKEN: EXPORT } });
+  assert.equal((await call(`${PAGE}/xmlrpc.php`, { headers: { "CF-Connecting-IP": "45.138.12.12" } })).status, 404);
+  await settle();
+  const auth = { Authorization: `Bearer ${EXPORT}` };
+  assert.equal((await (await call(`${PAGE}/api/security/export`, { headers: auth })).json()).archive, "r2");
+  assert.equal((await call(`${PAGE}/api/security/ack`, { method: "POST", headers: auth, body: JSON.stringify({ through: 1 }) })).status, 409);
+  await drain(watch, ARCHIVE, { prefix: EVENTS("site"), field: "event", extra: { source: "site" } }); // the Watch object's alarm (cloud/site/src/index.js)
+  const day = await (await call(`${PAGE}/api/security/archive?day=2026-10-05`, { headers: auth })).json();
+  assert.deepEqual(day.items.map((e) => [e.source, e.kind, e.fp.path]), [["site", "honeypot", "/xmlrpc.php"]]);
+  assert.equal((await call(`${PAGE}/api/security/archive?day=2026-10-05`)).status, 401);
+}));
+
 test("an API call that is not the page's is scored: served and flagged in observe mode, refused over the block score in enforce mode", () => quiet(async () => {
   const script = { "User-Agent": "python-requests/2.31.0", "CF-Connecting-IP": "198.51.100.77" };
   const observe = site({ watch: true, cf: { asn: 14061, country: "US" } });
@@ -358,7 +401,7 @@ test("an API call that is not the page's is scored: served and flagged in observ
   const enforce = site({ watch: true, env: { SENTINEL: "enforce" }, cf: { asn: 14061, country: "US" } });
   assert.equal((await enforce.call(`${PAGE}/api/passage?id=x`, { headers: script })).status, 200); // flagged, under the block score
   const refused = await enforce.call(`${PAGE}/api/info`, { headers: scanner });
-  assert.equal(refused.status, 503);
+  assert.equal(refused.status, 403);
   assert.equal(enforce.seen.corpus.length, 1);
   assert.equal((await enforce.call(`${PAGE}/api/info`, { headers: BROWSER })).status, 200);
   // the deploy check's agent string is a label, not a pass: on a scanner path it is refused like anyone; off a scanner
@@ -368,7 +411,7 @@ test("an API call that is not the page's is scored: served and flagged in observ
   assert.equal((await own.call(`${PAGE}/.git/config`, { headers: { "User-Agent": "taochronos-deploy/1", "CF-Connecting-IP": "198.51.100.79" } })).status, 404);
   await own.settle();
   own.advance(61000);
-  assert.equal((await own.call(`${PAGE}/api/info`, { headers: { "User-Agent": "taochronos-deploy/1", "CF-Connecting-IP": "198.51.100.79" } })).status, 503);
+  assert.equal((await own.call(`${PAGE}/api/info`, { headers: { "User-Agent": "taochronos-deploy/1", "CF-Connecting-IP": "198.51.100.79" } })).status, 403);
   assert.equal(own.watch.records().items[0].event.own, true);
   const off = site({ watch: true, env: { SENTINEL: "off", LOG_EXPORT_TOKEN: EXPORT } });
   assert.equal((await off.call(`${PAGE}/wp-login.php`, { headers: { "CF-Connecting-IP": "45.138.12.10" } })).status, 200); // asked of the files as any path

@@ -5,6 +5,11 @@
            (by the day, UTC, the Worker received them); the cursor (cursor.json) moves with them
   ack      the Workers delete what the repository now holds (after the commit is pushed, never before)
   summary  what a Worker's sentinel sees now: the visitors by score, the addresses refused (printed, kept nowhere)
+  archive  a day of the events a Worker archived in its private bucket, into .archive/security-logs/<source>/YYYY/MM/DD.jsonl
+           (a local copy to read, never committed: .gitignore)
+
+A Worker with the archive's bucket (docs/adr/0023-workers-paid.md) drains its events there itself: pull then takes none
+of its events (its export says so), and its ack is refused (409) — one collector deletes from a Worker, never two.
 
 A Worker that has no sentinel yet (an older deployment: 404), or no collector token yet (the site before deploy.sh set it:
 401), is passed over with a notice: the events wait there.  LOG_EXPORT_TOKEN, in the environment, is the collector's token
@@ -16,8 +21,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -96,6 +103,9 @@ def pull(sources: dict[str, str], out: Path, *, limit: int = 500, pages: int = 4
                 break
             if status != 200 or not isinstance(page, dict):
                 raise SystemExit(f"the {name} refused the export: HTTP {status} {str(page)[:300]}")
+            if page.get("archive"):
+                skipped = "archive"
+                break
             by_day: dict[str, list[str]] = {}
             for item in page.get("items", []):
                 received = str(item.get("received") or datetime.now(timezone.utc).isoformat())
@@ -110,7 +120,9 @@ def pull(sources: dict[str, str], out: Path, *, limit: int = 500, pages: int = 4
                     f.write("\n".join(lines) + "\n")
             if not page.get("more"):
                 break
-        if skipped:
+        if skipped == "archive":
+            print(f"::notice::the {name} archives its events in its own bucket: none are taken into the repository")
+        elif skipped:
             why = "has no sentinel endpoints yet (an older deployment)" if skipped == 404 else "has no collector token yet (deploy it again with LOG_EXPORT_TOKEN set)"
             print(f"::notice::the {name} {why}: its events, if any, wait there")
         if new:
@@ -138,10 +150,43 @@ def ack(sources: dict[str, str], out: Path) -> dict:
             result[f"{name}_acked"] = 0
             continue
         status, body = _request(f"{base}{PREFIX[name]}/ack", token=token, data={"through": through})
+        if status == 409:  # the archive took the events over since the pull: it deletes what it archived, and only that
+            print(f"::notice::the {name} archives its events now: it deletes them itself once archived")
+            result[f"{name}_acked"] = 0
+            continue
         if status != 200:
             raise SystemExit(f"the {name} refused the acknowledgement: HTTP {status} {str(body)[:300]}")
         result[f"{name}_acked"] = through
         result[f"{name}_remaining"] = body.get("remaining") if isinstance(body, dict) else None
+    return result
+
+
+def archive(sources: dict[str, str], day: str, out: Path) -> dict:
+    """A day of each Worker's archived events, a page at a time, into out/<source>/YYYY/MM/DD.jsonl (written anew)."""
+    token = _token()
+    result: dict[str, object] = {"day": day}
+    for name, base in sources.items():
+        lines, cursor, missing = [], "", False
+        while True:
+            q = f"day={day}&limit=100" + (f"&cursor={urllib.parse.quote(cursor)}" if cursor else "")
+            status, page = _request(f"{base}{PREFIX[name]}/archive?{q}", token=token)
+            if status == 404:
+                missing = True
+                break
+            if status != 200 or not isinstance(page, dict):
+                raise SystemExit(f"the {name} refused the archive: HTTP {status} {str(page)[:300]}")
+            lines += [json.dumps(item, ensure_ascii=False, sort_keys=True) for item in page.get("items", [])]
+            cursor = page.get("cursor") or ""
+            if not page.get("more") or not cursor:
+                break
+        if missing:
+            print(f"::notice::the {name} has no archive (no ARCHIVE bucket bound)")
+            result[name] = None
+            continue
+        path = out / name / day[:4] / day[5:7] / f"{day[8:10]}.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("".join(f"{x}\n" for x in lines), encoding="utf-8")
+        result[name] = len(lines)
     return result
 
 
@@ -156,16 +201,22 @@ def summary(sources: dict[str, str]) -> dict:
 
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("action", choices=["pull", "ack", "summary"])
+    ap.add_argument("action", choices=["pull", "ack", "summary", "archive"])
     ap.add_argument("--relay", default=os.environ.get("RELAY_URL") or "https://chat-api.impf.ai", help="the relay's address ('' to skip it)")
     ap.add_argument("--site", default=os.environ.get("SITE_URL") or "https://chat.impf.ai", help="the site's address ('' to skip it)")
-    ap.add_argument("--out", default="data/security-logs", help="pull, ack: where the events and the cursor are")
+    ap.add_argument("--out", help="pull, ack: where the events and the cursor are (data/security-logs); archive: where the day goes "
+                    "(.archive/security-logs)")
+    ap.add_argument("--day", help="archive: the day (YYYY-MM-DD, UTC)")
     args = ap.parse_args(argv)
     sources = _sources(args)
     if args.action == "pull":
-        _output(**pull(sources, Path(args.out)))
+        _output(**pull(sources, Path(args.out or "data/security-logs")))
     elif args.action == "ack":
-        _output(**ack(sources, Path(args.out)))
+        _output(**ack(sources, Path(args.out or "data/security-logs")))
+    elif args.action == "archive":
+        if not args.day or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", args.day):
+            raise SystemExit("archive needs --day YYYY-MM-DD")
+        _output(**archive(sources, args.day, Path(args.out or ".archive/security-logs")))
     else:
         print(json.dumps(summary(sources), ensure_ascii=False, indent=1))
 

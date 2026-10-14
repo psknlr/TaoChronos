@@ -91,10 +91,15 @@ function siteServer() {
 const isLoopbackHost = (host) => ["localhost", "127.0.0.1", "[::1]", "::1"].includes(host);
 
 /** The site's own server cannot answer: the page carries on with TaoChronos in this browser (the 要籍语料), without a word —
- * the load's one bar goes on, and 设置 → 运行环境 says which runtime answers. */
-function inBrowserInstead() {
+ * the load's one bar goes on, and 设置 → 运行环境 says which runtime answers.  When the server refused (err.refused), the
+ * visitor is told why: a restriction is not the corpus being away. */
+function inBrowserInstead(err) {
   const rt = new BrowserRuntime();
   switchRuntime(rt);
+  if (err?.refused) {
+    toast(err.refused === "daily" ? "今天在本站全量语料上的查询次数已用完：改用浏览器内的要籍语料，明天恢复"
+      : "本站暂时限制了这个网络地址使用全量语料：改用浏览器内的要籍语料", "", 8000);
+  }
   return rt;
 }
 

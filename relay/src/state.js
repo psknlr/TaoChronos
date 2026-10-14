@@ -107,17 +107,27 @@ const secondsToMidnight = (now) => Math.ceil((86400000 - (now % 86400000)) / 100
 
 /**
  * Records in arrival order.  AUTOINCREMENT: an id is never used twice, even after the rows before it were deleted,
- * so the collector's cursor (the last id it committed) stays valid.
+ * so the collector's cursor (the last id it committed) stays valid.  A record taken in is kept until it is collected
+ * (into the repository, or the archive: security/archive.js): when `keep` are waiting, a new one is refused — never an
+ * older one dropped to make room (docs/adr/0023-workers-paid.md).
  */
 export class LogBookCore {
   constructor(sql) {
     this.sql = sql;
     this.sql.exec("CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, received TEXT NOT NULL, record TEXT NOT NULL)");
+    this.size = null; // the records waiting: counted once, then kept here
   }
 
+  waiting() {
+    if (this.size === null) this.size = Number(this.sql.exec("SELECT COUNT(*) AS n FROM logs").one().n);
+    return this.size;
+  }
+
+  /** The record's id, or null when `keep` records wait already (0: no bound). */
   add(record, received, keep = 50000) {
+    if (keep && this.waiting() >= keep) return null;
     const { id } = this.sql.exec("INSERT INTO logs (received, record) VALUES (?, ?) RETURNING id", received, record).one();
-    if (keep && id % 100 === 0) this.sql.exec("DELETE FROM logs WHERE id <= ?", id - keep); // never collected: the oldest go
+    if (this.size !== null) this.size += 1;
     return Number(id);
   }
 
@@ -130,6 +140,7 @@ export class LogBookCore {
 
   remove(through) {
     this.sql.exec("DELETE FROM logs WHERE id <= ?", through);
-    return { remaining: Number(this.sql.exec("SELECT COUNT(*) AS n FROM logs").one().n) };
+    this.size = null;
+    return { remaining: this.waiting() };
   }
 }

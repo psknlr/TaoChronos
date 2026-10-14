@@ -7,8 +7,11 @@
 //   GET  /v1/health             whether the service is configured, its model, whether records are collected, the limits
 //   POST /v1/logs               one turn of a conversation, sent by the page only when the visitor agreed to it
 //   GET  /v1/logs/export        the records waiting, for the repository's collector (Authorization: Bearer LOG_EXPORT_TOKEN)
-//   POST /v1/logs/ack           the collector has committed them: they are deleted here
-//   GET  /v1/security/export    the sentinel's events waiting (Bearer LOG_EXPORT_TOKEN); POST /v1/security/ack deletes them
+//   POST /v1/logs/ack           the collector has committed them: they are deleted here (409 while the archive collects)
+//   GET  /v1/logs/archive       a day of the records archived in the private bucket ARCHIVE (Bearer LOG_EXPORT_TOKEN), when
+//                               the Worker has one: then the records go there, not to the repository (security/archive.js)
+//   GET  /v1/security/export    the sentinel's events waiting (Bearer LOG_EXPORT_TOKEN); POST /v1/security/ack deletes them;
+//                               GET /v1/security/archive, a day of them archived
 //   GET  /v1/security/summary   the visitors by score and the addresses refused now (Bearer LOG_EXPORT_TOKEN)
 //   POST /v1/security/csp       a browser's Content-Security-Policy report (kept as an event)
 //
@@ -17,6 +20,7 @@
 // not the page's is scored and, flagged, kept whole for the owner; in enforce mode an address over the block score is
 // refused for a while.  An answer's tokens, as the upstream reports them, count against the visitor's day and the day.
 
+import { EVENTS, RECORDS, serveArchive } from "../../security/archive.js";
 import { assess, bodyShape, fingerprint, ipKey, isHoneypot, logLine, sentinelConfig, serveSecurity } from "../../security/sentinel.js";
 import { place, serveStats, usageConfig, usageDay } from "../../security/usage.js";
 import { day } from "./state.js";
@@ -43,7 +47,7 @@ export const DEFAULTS = {
   LOG_MAX_BYTES: "65536",
   LOGS_PER_MINUTE: "20",
   LOGS_PER_DAY: "500",
-  LOG_KEEP: "50000",                          // records never collected beyond this many: the oldest are dropped
+  LOG_KEEP: "50000",                          // records waiting to be collected at most: beyond, new ones are refused (none dropped)
   ALLOWED_ORIGINS: "https://chat.impf.ai,http://chat.impf.ai,https://psknlr.github.io",
 };
 
@@ -111,8 +115,9 @@ export async function handle(request, env, deps) {
     }
     if (s && url.pathname.startsWith("/v1/security/")) {
       if (url.pathname === "/v1/security/csp" && (await bursting(request, deps))) return error(429, "报告太频繁", "rate_limited", { ...cors, "Retry-After": "10" });
+      if (url.pathname === "/v1/security/archive") return await serveArchive(request, url, { bucket: env.ARCHIVE, prefix: EVENTS("relay"), token: env.LOG_EXPORT_TOKEN || "", cors });
       const res = await serveSecurity(request, url, { prefix: "/v1/security", token: env.LOG_EXPORT_TOKEN || "", watch: deps.watch, cfg: scfg, fp: s.fp,
-        now: deps.now(), cors });
+        now: deps.now(), cors, archived: Boolean(env.ARCHIVE) });
       if (res) return res;
     }
     switch (`${request.method} ${url.pathname}`) {
@@ -122,6 +127,7 @@ export async function handle(request, env, deps) {
       case "POST /v1/logs": return await submit(request, cfg, cors, allowed, deps, s);
       case "GET /v1/logs/export": return await records(request, env, url, deps);
       case "POST /v1/logs/ack": return await ack(request, env, deps);
+      case "GET /v1/logs/archive": return await serveArchive(request, url, { bucket: env.ARCHIVE, prefix: RECORDS, token: env.LOG_EXPORT_TOKEN || "" });
       default:
         if (s) note(s, "other", 404);
         return error(404, "没有这个接口", "not_found", cors);
@@ -635,7 +641,12 @@ async function submit(request, cfg, cors, allowed, deps, s) {
   }
   if (s) logLine("relay", s.fp, a, gate.watch, gate.ok ? 204 : gate.reason === "blocked" ? 403 : 429, s.cfg);
   if (!gate.ok) return limited(gate, cfg.log, cors, "记录");
-  await deps.logbook.add(JSON.stringify(record), new Date(deps.now()).toISOString(), cfg.keep);
+  const id = await deps.logbook.add(JSON.stringify(record), new Date(deps.now()).toISOString(), cfg.keep);
+  if (id === null) {
+    // the book is full (nothing collected it for a long while): this record is refused, the ones taken in stay
+    console.error("logs full", cfg.keep);
+    return error(503, "对话记录暂存已满，这条记录未保存", "logs_full", { ...cors, "Retry-After": "3600" });
+  }
   return new Response(null, { status: 204, headers: cors });
 }
 
@@ -651,11 +662,14 @@ async function records(request, env, url, deps) {
   if (!(await authorized(request, env))) return error(401, "需要收集令牌", "unauthorized");
   const after = Math.max(0, Math.floor(Number(url.searchParams.get("after") || 0)) || 0);
   const limit = Math.min(1000, Math.max(1, Math.floor(Number(url.searchParams.get("limit") || 500)) || 500));
-  return json(await deps.logbook.records(after, limit));
+  const page = await deps.logbook.records(after, limit);
+  // with the archive's bucket the records go there (the Durable Object drains them): the repository's collector is told
+  return json(env.ARCHIVE ? { ...page, archive: "r2" } : page);
 }
 
 async function ack(request, env, deps) {
   if (!(await authorized(request, env))) return error(401, "需要收集令牌", "unauthorized");
+  if (env.ARCHIVE) return error(409, "记录由归档取走，这里不再确认", "archived"); // one collector deletes from the book, never two
   let body;
   try { body = JSON.parse(await request.text()); } catch { return error(400, "请求不是有效的 JSON", "bad_request"); }
   const through = Math.floor(Number(body?.through));

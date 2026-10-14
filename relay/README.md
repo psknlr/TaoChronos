@@ -58,6 +58,8 @@
 - **chat-logs** 工作流每小时（也可手动运行）取走新记录，按接收日期（UTC）追加到 `data/chat-logs/年/月/日.jsonl`，游标在
   `data/chat-logs/cursor.json`；推送成功后才通知中转删除。字段见 [`data/chat-logs/README.md`](../data/chat-logs/README.md)。
 - 记录只在这个**私有仓库**里；仓库若要公开，先把 `data/chat-logs/` 移走。停止收集：`wrangler.toml` 里 `LOGS = "off"` 并重新部署。
+- 付费计划下可改存私有 R2 存储桶（仓库变量 `ARCHIVE_BUCKET`）：记录由中转自己存进去，不再提交到仓库，可逐条删除；暂存满时拒收新记录，
+  不丢弃已收下的。步骤见 [SETUP.md](SETUP.md)「归档」，设计见 [ADR 0023](../docs/adr/0023-workers-paid.md)。
 
 ## 调整与维护
 

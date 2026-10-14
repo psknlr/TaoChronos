@@ -606,9 +606,11 @@ export class WatchCore {
  *   GET  export?after=&limit=   the events waiting (Bearer token)        POST ack {through}   delete them (Bearer token)
  *   GET  summary                the visitors by score, the blocked (Bearer token)
  *   POST csp                    a browser's Content-Security-Policy report (no token: browsers send them; kept as events)
- * watch: {observe, records, remove, summary} (the Durable Object's methods).  Null when the path is not one of these.
+ * watch: {observe, records, remove, summary} (the Durable Object's methods).  archived: the Worker has the archive's
+ * bucket (security/archive.js), which drains the events itself — the export says so, and an ack is refused (409): one
+ * collector deletes from a store, never two.  Null when the path is not one of these.
  */
-export async function serveSecurity(request, url, { prefix, token, watch, cfg, fp, now = Date.now(), cors = {} }) {
+export async function serveSecurity(request, url, { prefix, token, watch, cfg, fp, now = Date.now(), cors = {}, archived = false }) {
   if (!url.pathname.startsWith(`${prefix}/`)) return null;
   const what = url.pathname.slice(prefix.length + 1);
   const headers = { ...cors };
@@ -626,9 +628,11 @@ export async function serveSecurity(request, url, { prefix, token, watch, cfg, f
   if (what === "export" && request.method === "GET") {
     const after = Math.max(0, Math.floor(Number(url.searchParams.get("after") || 0)) || 0);
     const limit = Math.min(1000, Math.max(1, Math.floor(Number(url.searchParams.get("limit") || 500)) || 500));
-    return json(await watch.records(after, limit), 200, headers);
+    const page = await watch.records(after, limit);
+    return json(archived ? { ...page, archive: "r2" } : page, 200, headers);
   }
   if (what === "ack" && request.method === "POST") {
+    if (archived) return json({ error: { message: "事件由归档取走，这里不再确认", type: "archived" } }, 409, headers);
     let body;
     try { body = JSON.parse(await request.text()); } catch { return json({ error: { message: "请求不是有效的 JSON", type: "bad_request" } }, 400, headers); }
     const through = Math.floor(Number(body?.through));

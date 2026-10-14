@@ -4,6 +4,9 @@ name: chat-logs
 # from the relay into data/chat-logs/YYYY/MM/DD.jsonl every hour, then deleted from the relay; and, the same way, the
 # sentinel's events from both Workers (security/README.md) into data/security-logs/.  The records stay in this
 # repository: keep it private, or move them out, before it is ever made public.  Needs the LOG_EXPORT_TOKEN secret.
+# A Worker bound to the archive's private R2 bucket (the repository variable ARCHIVE_BUCKET; docs/adr/0023-workers-paid.md)
+# drains its records and events there itself: the collectors then take nothing from it, and this workflow commits
+# only what the other Worker still gives (nothing, once both are bound).
 on:
   schedule:
     - cron: "17 * * * *"
