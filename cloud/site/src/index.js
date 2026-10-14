@@ -1,7 +1,9 @@
 // The Worker behind https://chat.impf.ai: the site and its API (site.js), and the sentinel's memory of visitors (a Durable
-// Object over security/sentinel.js).  Deployed by .github/workflows/site.yml.
+// Object over security/sentinel.js; with the private bucket ARCHIVE it drains its events there: security/archive.js).
+// Deployed by .github/workflows/site.yml.
 
 import { DurableObject } from "cloudflare:workers";
+import { Drainer, EVENTS } from "../../../security/archive.js";
 import { WatchCore } from "../../../security/sentinel.js";
 import { UsageCore } from "../../../security/usage.js";
 import { handle } from "./site.js";
@@ -11,6 +13,12 @@ export class Watch extends DurableObject {
     super(ctx, env);
     this.core = new WatchCore(ctx.storage.sql);
     this.counts = new UsageCore(ctx.storage.sql);
+    this.drainer = new Drainer(ctx.storage, env.ARCHIVE, { store: this.core, prefix: EVENTS("site"), field: "event", extra: { source: "site" } });
+  }
+
+  /** The sentinel's events, into the archive's bucket (security/archive.js). */
+  async alarm() {
+    await this.drainer.run();
   }
 
   /** The pages opened, by day and place, for the settings' 统计 pane (security/usage.js). */
@@ -22,15 +30,19 @@ export class Watch extends DurableObject {
     return this.counts.stats(days, today);
   }
 
-  observe(fp, a, extra, cfg) {
-    return this.core.observe(fp, a, extra, cfg);
+  async observe(fp, a, extra, cfg) {
+    const w = await this.core.observe(fp, a, extra, cfg);
+    // an event written (security/sentinel.js: WatchCore.record): the archive drains it a moment later
+    if (w && (w.flagged || w.blocked || w.shadow || a?.route === "honeypot" || extra?.kind === "csp")) await this.drainer.arm();
+    return w;
   }
 
   blocked(ip, cfg) {
     return this.core.blocked(ip, cfg);
   }
 
-  records(after, limit) {
+  async records(after, limit) {
+    await this.drainer.arm(); // the collector's hourly look: what waits since the bucket was bound goes too
     return this.core.records(after, limit);
   }
 

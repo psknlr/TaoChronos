@@ -1,5 +1,7 @@
 # 把网站和全量古籍放到 Cloudflare：分步教程
 
+> 账户已开通 Workers Paid（付费套餐）时，请看完整的部署指南：[English](../docs/deploy.md) · [简体中文（新加坡）](../docs/deploy.zh-SG.md)。它涵盖中转、网站、全量语料容器、D1 备份、R2 归档与边缘规则的全部步骤。
+
 完成后：
 
 - **https://chat.impf.ai** 有正式证书（浏览器地址栏显示锁），输入 http 地址会自动跳转到 https；

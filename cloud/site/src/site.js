@@ -13,13 +13,21 @@
 //                                       deploy workflow reads it from there to build the container
 //   GET  /api/security/export, POST /api/security/ack, GET /api/security/summary   the sentinel's events and its view of
 //                                       the visitors (Bearer LOG_EXPORT_TOKEN); POST /api/security/csp takes the browsers'
-//                                       Content-Security-Policy reports
+//                                       Content-Security-Policy reports; GET /api/security/archive?day=, a day of the
+//                                       events archived in the private bucket ARCHIVE, when the site has one (then the
+//                                       events go there, not to the repository: security/archive.js)
 //
 // Nothing else reaches the corpus: not the model proxy of `taochronos serve` (the page talks to its models itself, or to
 // the relay), not its static files.  API calls are limited per visitor (the rate-limit bindings).  The sentinel
 // (security/sentinel.js) sees the pages, the API and what is not found: a scanner path refuses its address for a day, an
 // API call that is not the page's is scored and, flagged, kept whole for the owner; addresses are kept only then.
+//
+// A refusal says so (docs/adr/0023-workers-paid.md): an address the sentinel refuses is answered 403, a day's reads or
+// calls spent 429, each with Retry-After and X-TC-Corpus: refused; 503 is kept for a corpus that cannot answer.  The page
+// carries on with the 要籍语料 in the browser either way — public files, not a way round the refusal — and says which.
+// A call or a research run (work the account pays for) is not let through while the sentinel cannot be asked.
 
+import { EVENTS, serveArchive } from "../../../security/archive.js";
 import { assess, fingerprint, ipKey, isHoneypot, logLine, sentinelConfig, serveSecurity, WatchCore } from "../../../security/sentinel.js";
 import { place, serveStats, usageConfig, usageDay } from "../../../security/usage.js";
 import { answer as backupAnswer, ready as backupReady } from "./backup/api.js";
@@ -114,6 +122,9 @@ function note(s, route, status) {
     l = { at: 0, reads: 0, today: 0, blockedUntil: 0, notedAt: 0, notes: 0, paths: [] };
     local.set(who, l);
   }
+  // a scanner path: what this instance remembered of the address no longer stands — its next read waits for the object,
+  // which refuses it from now on (HONEYPOT = block)
+  if (route === "honeypot") l.at = 0;
   if (route !== "honeypot" && l.notedAt && s.now - l.notedAt < 60000) {
     l.notes += 1;
     if (status === 404 && l.paths.length < 20 && !l.paths.includes(s.fp.path)) l.paths.push(s.fp.path);
@@ -213,8 +224,9 @@ async function api(request, env, cfg, deps, url, s) {
   if (url.pathname.startsWith("/api/security/")) { // before the origin check: a browser's report may come with none
     if (!s) return url.pathname === "/api/security/csp" ? new Response(null, { status: 204 }) : json({ error: "no such endpoint" }, 404, cors);
     if (url.pathname === "/api/security/csp" && deps.limit && !(await deps.limit("call", ipKey(s.fp.ip)))) return new Response(null, { status: 429, headers: { "Retry-After": "60" } });
+    if (url.pathname === "/api/security/archive") return serveArchive(request, url, { bucket: env.ARCHIVE, prefix: EVENTS("site"), token: env.LOG_EXPORT_TOKEN || "", cors });
     const res = await serveSecurity(request, url, { prefix: "/api/security", token: env.LOG_EXPORT_TOKEN || "", watch: deps.watch, cfg: s.cfg, fp: s.fp,
-      now: s.now, cors });
+      now: s.now, cors, archived: Boolean(env.ARCHIVE) });
     if (res) return res;
   }
   if (!allowed) {
@@ -250,11 +262,13 @@ async function api(request, env, cfg, deps, url, s) {
     // reader's further requests within the minute are counted here and reported with the next round trip
     const a = assess(s.fp, { route, origins: cfg.origins, selfOrigin: url.origin, ownPrefix: s.cfg.ownPrefix });
     const verdict = await consult(deps, s, a, who, isGet, cfg);
-    // refused as 503, which the page takes as the corpus being away and falls back on the 要籍语料 in the browser — not as
-    // an answer about the passage (a 403 or 429 would be shown as "no such passage")
-    logLine("site", s.fp, a, verdict.w, verdict.blocked || verdict.over ? 503 : null, s.cfg);
-    if (verdict.blocked) return json({ error: BLOCKED, blocked: true, starting: false }, 503, { ...cors, "Retry-After": String(verdict.retry || 60), "X-TC-Corpus": "refused" });
-    if (verdict.over) return json({ error: "今天的查询次数已用完，明天再来", rate_limited: true, daily: true, starting: false }, 503, { ...cors, "Retry-After": String(secondsToMidnight(s.now)), "X-TC-Corpus": "refused" });
+    // a refusal is told as one (the page carries on in the browser and says why: web/js/runtime.js); a call while the
+    // sentinel cannot be asked is the site's failure, not the visitor's (503: the page carries on in the browser too)
+    const status = verdict.blocked ? 403 : verdict.over ? 429 : verdict.unavailable ? 503 : null;
+    logLine("site", s.fp, a, verdict.w, status, s.cfg);
+    if (verdict.blocked) return json({ error: BLOCKED, blocked: true, starting: false }, 403, { ...cors, "Retry-After": String(verdict.retry || 60), "X-TC-Corpus": "refused" });
+    if (verdict.over) return json({ error: "今天的查询次数已用完，明天再来", rate_limited: true, daily: true, starting: false }, 429, { ...cors, "Retry-After": String(secondsToMidnight(s.now)), "X-TC-Corpus": "refused" });
+    if (verdict.unavailable) return json({ error: "全量语料服务暂时无法核对访问，请稍后再试", starting: false }, 503, { ...cors, "Retry-After": "30" });
   }
   if (!env.CORPUS && !backupReady(env)) {
     return json({ error: "本站的全量语料服务未部署：网页在浏览器里运行要籍语料", corpus: "none" }, 503, cors);
@@ -302,10 +316,11 @@ async function api(request, env, cfg, deps, url, s) {
 const secondsToMidnight = (now) => Math.ceil((86400000 - (now % 86400000)) / 1000);
 
 /**
- * The sentinel's word on an API request: {w, blocked, retry, over}.  deps.local (a Map, this instance's) remembers per
- * address the last round trip and the reads since; a quiet reader (score 0) within the minute is answered from it.  The
- * object out of reach — its day's allowance spent, or a failure — lets reads go on (the rate-limit bindings stand) and
- * logs it: the site fails open, the page's fallback is the browser.
+ * The sentinel's word on an API request: {w, blocked, retry, over, unavailable}.  deps.local (a Map, this instance's)
+ * remembers per address the last round trip and the reads since; a quiet reader (score 0) within the minute is answered
+ * from it.  The object out of reach (a failure) lets reads go on — the corpus's public passages, the rate-limit bindings
+ * still standing — and refuses calls and research runs (unavailable): work the account pays for is not let through
+ * unchecked.  On the Free plan the object's daily allowance made this unaffordable; on Workers Paid it has none.
  */
 async function consult(deps, s, a, who, isGet, cfg) {
   const local = deps.local || (deps.local = new Map());
@@ -330,7 +345,7 @@ async function consult(deps, s, a, who, isGet, cfg) {
     console.error("sentinel", err?.name || "Error");
   }
   if (isGet) { l.at = s.now; l.reads = 0; }
-  if (!w) return { w: null, blocked: false, retry: 0, over: false };
+  if (!w) return { w: null, blocked: false, retry: 0, over: false, unavailable: !isGet };
   if (isGet) l.today = Number(w.today?.["api-read"] || 0);
   l.blockedUntil = w.blocked ? w.until : 0;
   return { w, blocked: w.blocked, retry: w.retry, over: cap > 0 && Number(w.today?.[route] || 0) > cap };

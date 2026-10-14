@@ -5,7 +5,8 @@
 # Environment: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID; WRANGLER (the wrangler to run, e.g. wrangler@4.142.0);
 # STORE_NAMESPACE (the Workers KV namespace the full corpus store is uploaded into); SITE_URL; STORE_TOKEN_SHA256
 # (optional: the sha256 of a store upload token, in place of wrangler.toml's); CORPUS_DEPLOYED=1 when the corpus's
-# container has just been deployed (otherwise the KV namespace says whether it is).
+# container has just been deployed (otherwise the KV namespace says whether it is); ARCHIVE_BUCKET (optional: the
+# private R2 bucket the sentinel's events are drained into instead of the repository — security/bind-archive.sh).
 set -euo pipefail
 cd "$(dirname "$0")"
 api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID"
@@ -75,6 +76,9 @@ if [[ "$backup" =~ ^[0-9a-f]{12}-[0-9a-f]{8}-s[0-9]+$ ]]; then
 elif [ -n "$d1" ]; then
   echo "the D1 backup: $(wc -l <<< "$d1") databases, not all imported yet (the d1 workflow imports a slice a day)"
 fi
+
+# the archive's private bucket, when the owner named one and it is private (docs/adr/0023-workers-paid.md)
+UA="$UA" bash ../../security/bind-archive.sh wrangler.deploy.toml
 
 # ---------------------------------------------------------------- deploy
 set +e

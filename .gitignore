@@ -21,5 +21,8 @@ cloud/.d1-fixture/
 cloud/*/node_modules/
 cloud/*/.wrangler/
 cloud/*/wrangler.deploy.toml
+relay/wrangler.deploy.toml
+# a day of the private archive read back (relay/collect.py archive, security/collect.py archive): never committed
+.archive/
 _site/
 .wrangler/
