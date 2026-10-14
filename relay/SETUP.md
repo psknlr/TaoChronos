@@ -1,5 +1,7 @@
 # 教程：接入 MiniMax 密钥，配置 Cloudflare Worker
 
+> 账户已开通 Workers Paid（付费套餐）时，请看完整的部署指南：[English](../docs/deploy.md) · [简体中文（新加坡）](../docs/deploy.zh-SG.md)。它涵盖中转、网站、全量语料容器、D1 备份、R2 归档与边缘规则的全部步骤。
+
 道乃久默认服务的一次性配置，约 20 分钟。完成后访客打开 chat.impf.ai 就能直接提问，不用填 API Key。
 中转服务本身的说明见 [README.md](README.md)。
 
