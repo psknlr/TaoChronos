@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import random
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import pytest
 
@@ -170,10 +170,58 @@ def test_the_loader_and_the_empty_index(tmp_path):
     ('["国老"]\n', ":1: not a record"),
     (f'{{"s":"国老"}}\n{{"_header":{{"format":"{FORMAT}","version":1}}}}\n', "a header after"),
     ('{"s":"国老","r":[{"h":"甘草","w":[["p",1,2,"e"]]}]}\n', ":1: malformed record"),
+    # a value of the wrong type refuses the file at its line, never fails later in the index
+    ('{"s":"国老"}\n{"s":123}\n', ":2: malformed record"),
+    ('{"s":"国老","r":[{"h":5}]}\n', ":1: malformed record .h is 5"),
+    ('{"s":"国老","r":[{"h":"甘草","k":["alias"]}]}\n', "k is"),
+    ('{"s":"国老","r":{"h":"甘草"}}\n', "r is"),
+    ('{"s":"国老","r":["甘草"]}\n', "r is"),
+    ('{"s":"国老","r":[{"h":"甘草","src":"curated"}]}\n', "src is"),
+    ('{"s":"国老","r":[{"h":"甘草","v":[1,2,3]}]}\n', "v is"),
+    ('{"s":"国老","r":[{"h":"甘草","w":[["p",1,2,"e",2]]}]}\n', "w is"),
+    ('{"s":"国老","r":[{"h":"甘草","cr":["本经",25.5,220]}]}\n', "cr is"),
+    ('{"s":"国老","n":1.5}\n', "n is"),
+    ('{"s":"国老","n":null}\n', "n is"),
+    ('{"s":"国老","stop":1}\n', "stop is"),
+    ('{"s":"国老","sh":"0.5"}\n', "sh is"),
+    ('{"s":"国老","b":[["大国老",1,2,3]]}\n', "b is"),
+    ('{"s":"国老","fl":"1063"}\n', "fl is"),
+    ('{"_header":1}\n', ":1: the header is not an object"),
+    (f'{{"_header":{{"format":"{FORMAT}","version":"x"}}}}\n', ":1: .* is not"),
+    (f'{{"_header":{{"format":"{FORMAT}","version":1,"sources":"curated"}}}}\n', ":1: malformed header"),
+    (f'{{"_header":{{"format":"{FORMAT}","version":1,"labels":{{"curated":1}}}}}}\n', ":1: malformed header"),
 ])
 def test_another_format_or_a_damaged_line_is_refused(text, message):
     with pytest.raises(ValueError, match=message):
         loads_records(text)
+
+
+def test_a_note_with_a_line_separator_survives_the_file():
+    rec = AliasRecord("国老", r=[Referent("甘草", nt="甲 乙\x85丙 丁", src=["curated"])])
+    text = dumps_records([rec])
+    assert text.count("\n") == 2 and " " in text  # written raw, as ensure_ascii=False does
+    assert loads_records(text)[1] == [rec] and dumps_records(loads_records(text)[1]) == text
+    assert loads_records(text.replace("\n", "\r\n"))[1] == [rec]
+
+
+def test_numbers_keep_their_types_through_the_file():
+    rec = AliasRecord("山药", n=3.0, sh=1, fl=1063.0, flb="taboo:yingzong", ho="山药", b=[("山药汤", 600.0, None)], r=[
+        Referent("薯蓣", k="taboo_rename", v=(1063.0, None), cr=("本经", 25.0, 220), src=["taboo"],
+                 w=[Witness("p.00001", 600.0, 700, "e")])])
+    text = dumps_records([rec])
+    row = lines(text)[1]
+    assert (row["n"], row["sh"], row["fl"], row["b"], row["r"][0]["v"], row["r"][0]["cr"], row["r"][0]["w"]) == (
+        3, 1.0, 1063, [["山药汤", 600, None]], [1063, None], ["本经", 25, 220], [["p.00001", 600, 700, "e", 0]])
+    assert [type(x) for x in (row["n"], row["sh"], row["fl"], row["b"][0][1], row["r"][0]["v"][0])] == [
+        int, float, int, int, int]
+    assert '"sh":1.0' in text and "1063.0" not in text
+    (back,) = loads_records(text)[1]
+    assert dumps_records([back]) == text  # read and written again: the same bytes
+    (read,) = loads_records('{"s":"山药","fl":1063.0,"n":2.0}')[1]  # a whole float is read as its int
+    assert (read.fl, read.n) == (1063, 2) and type(read.fl) is int
+    assert AliasIndex([read]).floor_flag("山药", (650, 680), None) == "anachronism:山药<1063:layer"
+    with pytest.raises(ValueError, match="fl is 1063.5"):
+        dumps_records([AliasRecord("山药", fl=1063.5)])
 
 
 def test_kinds_statuses_and_defaults():
@@ -341,9 +389,11 @@ def test_free_offsets_leave_out_the_name_inside_longer_strings():
 
 @pytest.mark.parametrize("text,cues,expected", [
     ("将军二两，水煮", [], True),  # dose
-    ("将军（炙）三两", [], True),  # dose after a note
+    ("将军，二两", [], True),  # dose after a break
+    ("将军（川者）二两", [], False),  # the dose pattern reads no bracketed note before the dose
     ("将军芒硝各三两", [], True),  # each
     ("将军（酒洗）", [], True),  # preparation
+    ("将军（炙）三两", [], True),  # preparation, before a dose
     ("将军洗净", [], False),  # a preparation needs its bracket
     ("大黄一名将军", [], True),  # name-of
     ("其味苦，荡涤肠胃，推陈致新，将军之性也", ["荡涤"], True),  # cue within 20
@@ -375,7 +425,7 @@ def test_accept_applies_the_four_gates_in_order():
     exps = {e.surface: e for e in index.expansions(ask(None, "甘草"), None, {})}
     shared = exps["美草"]
     assert (shared.status, shared.shared, shared.own, shared.rivals) == (
-        "cue", True, ["国老", "甘草", "蜜甘"], ["旋花", "筋根花"])
+        "cue", True, ["国老", "甘草", "蜜甘"], [(None, ["旋花", "筋根花"])])
 
     def accept(text, e, yr=(None, None), **cfg):
         return index.accept(gate_form(text), e, yr, cfg=cfg)
@@ -383,25 +433,32 @@ def test_accept_applies_the_four_gates_in_order():
     assert accept("美草之叶", exps["美草"]) == (False, "context")
     assert accept("美草二两", shared) == (False, "rival")  # no own name
     assert accept("旋花一名美草，国老", shared) == (False, "rival")  # a rival's name
-    assert accept("美草二两，国老", shared, ablate=["gates"]) == (True, "ok")
-    assert accept("美草之叶，国老", shared, ablate=["gates"]) == (True, "ok")
+    # the gates ablation lifts the status, context and rival gates alike; the ablations may be named by a string
+    assert accept("美草之叶", shared, ablate=["gates"]) == accept("美草之叶", shared, ablate="gates") == (True, "ok")
+    assert accept("旋花一名美草", shared, ablate=["gates"]) == (True, "ok")
     assert accept("国老", shared) == (False, "absent")
     assert accept("石蜜甘平", exps["蜜甘"]) == (False, "boundary")
-    assert accept("石蜜甘平", exps["蜜甘"], ablate=["boundary"]) == (True, "ok")
+    assert accept("石蜜甘平", exps["蜜甘"], ablate="boundary") == (True, "ok")
     (late,) = index.expansions(ask(None, "木通", before=907), None, {})  # 唐以前的木通: 通脱木 is no rival then
     assert (late.surface, late.valid, late.shared, late.rivals) == ("通草", (None, 960), False, [])
+    # undated, 通草 may be 通脱木's too — but not in a passage the rival's window misses: 650 is 木通's alone
     (undated,) = index.expansions(ask(None, "木通"), None, {})
-    assert (undated.shared, undated.own, undated.rivals) == (True, ["木通"], ["通脱木"])
-    assert accept("通草", undated, (650, 700)) == (False, "rival")
+    assert (undated.shared, undated.own, undated.rivals) == (True, ["木通"], [((960, None), ["通脱木"])])
+    assert accept("通草", undated, (650, 700)) == (True, "ok")
+    assert accept("通草", undated, (900, 1100)) == (False, "rival")  # 通脱木 may be meant: an own name is needed
+    assert accept("通草", undated, (1578, 1578)) == (False, "rival")
+    assert accept("通草", undated, (1578, 1578), ablate=["period"]) == (False, "rival")  # every rival, any year
     assert accept("通草", late, (650, 700)) == (True, "ok")
     assert accept("通草", late, (1578, 1578)) == (False, "period")
     assert accept("通草", late, (900, 1100)) == (True, "ok")  # the range may fall before 960
     assert accept("通草", late, (1578, 1578), ablate=["period"]) == (True, "ok")
     (late,) = index.expansions(ask(None, "马兜铃"), None, {})  # the rival 木香 inside 青木香 does not count
-    assert (late.surface, late.shared, late.own, late.rivals) == ("青木香", True, ["马兜铃"], ["木香"])
+    assert (late.surface, late.shared, late.own, late.rivals) == ("青木香", True, ["马兜铃"], [((None, 1100), ["木香"])])
+    assert accept("青木香，非木香", late, (1578, 1578)) == (True, "ok")  # 木香's window is past by 1578
     late.own = ["独行根"]
-    assert accept("青木香，独行根也", late, (1578, 1578)) == (True, "ok")
-    assert accept("青木香，独行根也，非木香", late, (1578, 1578)) == (False, "rival")
+    assert accept("青木香，独行根也", late, (1000, 1200)) == (True, "ok")
+    assert accept("青木香，独行根也，非木香", late, (1000, 1200)) == (False, "rival")
+    assert accept("青木香，非木香", late, (1000, 1200)) == (False, "rival")
     candidate = Expansion("川军", "大黄", "drug→alias", "大黄", "大黄", status="candidate")
     assert accept("川军二两", candidate) == (False, "candidate")
 
@@ -445,6 +502,16 @@ def test_reading_counts_cues_near_a_free_occurrence_only():
     assert single.reading("某某", "某某", (None, None)) == (None, 0.0)
 
 
+def test_reading_rounds_half_up_as_the_worker_does():
+    # 0.35 / (0.35 + 0.18333…) is 0.65625 exactly: round() gives 0.6562, Math.round(x * 1e4) / 1e4 gives 0.6563
+    index = AliasIndex([AliasRecord("鬼督邮", r=[Referent("徐长卿", a=["赤箭"]), Referent("天麻", v=(None, 100))])])
+    ref, p = index.reading(gate_form("鬼督邮，赤箭"), "鬼督邮", (590, 590))
+    assert (ref.h, p) == ("徐长卿", 0.6563)
+    # two referents at 0.5 are a tie, so no reading
+    even = AliasIndex([AliasRecord("鬼督邮", r=[Referent("徐长卿"), Referent("天麻", g="赤箭")])])
+    assert even.reading("鬼督邮", "鬼督邮", (None, None)) == (None, 0.5)
+
+
 def test_floors_flag_and_name_the_edition_or_the_layer():
     index = layer()
     assert index.floor_flag("山药", (650, 680), (1100, 1100)) == "anachronism:山药<1063:edition"
@@ -470,8 +537,46 @@ def test_one_hop_only(tmp_path):
         ("交藤", "d", True, None), ("夜合", "d", True, None), ("地精", "d", True, None)]
     assert plan(index, ask(core, "何首乌"), core) == []  # the lexicon searches them already
     hand = {e.surface: e for e in index.expansions(ask(None, "何首乌"), None, {})}
-    assert (hand["夜合"].shared, hand["夜合"].own, hand["夜合"].rivals) == (True, ["交藤", "何首乌"], ["合昏", "合欢"])
+    assert (hand["夜合"].shared, hand["夜合"].own, hand["夜合"].rivals) == (
+        True, ["交藤", "何首乌"], [(None, ["合昏", "合欢"])])
     assert (hand["交藤"].shared, hand["交藤"].rivals) == (False, [])
+
+
+def test_a_stop_name_reaches_no_drug_but_heads_its_own():
+    index = AliasIndex([
+        AliasRecord("白头", stop=True, ho="白头", r=[Referent("白头翁", src=["bielu-jc"])]),
+        AliasRecord("翁草", n=5, r=[Referent("白头", src=["curated"])]),
+        AliasRecord("白头翁", ho="白头翁", n=50),
+    ])
+    assert plan(index, ask(None, "白头")) == [("翁草", "d", True, None)]  # never 白头翁
+    assert plan(index, ask(None, "白头"), ablate="period") == plan(index, ask(None, "白头"))
+    assert index.view(ask(None, "白头"), {})["asked"] == []
+
+
+def test_same_drug_members_carry_their_group_so_split_lexicon_entries_are_one_drug(tmp_path):
+    lex = lexicon(tmp_path, {"地肤": ["地葵"], "地肤子": []})  # as the full-corpus lexicon files them: apart
+    records = [
+        AliasRecord("地肤", ho="地肤", n=100),
+        AliasRecord("地葵", n=10, r=[Referent("地肤", src=["bielu-jc"])]),
+        AliasRecord("地肤子", ho="地肤", n=80, r=[Referent("地肤", k="part_name", src=["curated"])]),
+    ]
+    view = AliasIndex(records).view(ask(lex, "地肤子"), {}, lex)["asked"][0]
+    assert not view["ambiguous"] and [r["head"] for r in view["referents"]] == ["地肤"]
+    assert plan(AliasIndex(records), ask(lex, "地肤子"), lex) == [("地肤", "a", True, None), ("地葵", "d", True, None)]
+    # without the member's ho, the lexicon's second entry reads as a second drug
+    records[2] = replace(records[2], ho=None)
+    view = AliasIndex(records).view(ask(lex, "地肤子"), {}, lex)["asked"][0]
+    assert view["ambiguous"] and [r["head"] for r in view["referents"]] == ["地肤", "地肤子"]
+
+
+def test_sources_are_credited_by_the_labels_the_file_carries(tmp_path):
+    labels = {"bielu-jc": "别名录（中醫笈成）", "curated": "编者"}
+    path = write_records(tmp_path / "aliases.jsonl", sample(), {**META, "labels": labels})
+    index = AliasIndex.load([path])
+    assert index.headers[0]["labels"] == labels
+    assert index.source_labels(["curated", "bielu-jc", "lexicon", "nope"]) == ["编者", "别名录（中醫笈成）", "词表", "nope"]
+    assert index.view(ask(None, "国老"), {})["asked"][0]["referents"][0]["source"] == ["别名录（中醫笈成）", "编者"]
+    assert layer().source_labels(["curated"]) == ["编者审定"]  # no labels in a header: the defaults
 
 
 def test_a_name_outside_the_query_period_is_left_out():

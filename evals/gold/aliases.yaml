@@ -1,0 +1,2661 @@
+# Alias-layer gold (spec §3.10): 120 items in six types and 80 resolution rows, frozen 2026-10-14 before the first run.
+#
+# Annotated on the web store (553 books, 168,278 passages, normaliser e5cf04a507c3): one annotator file per type, merged
+# by an assembler, then revised after an adversarial review (the items marked "review fix").  Selection was by hand,
+# not by propose's seed-23 draw: the annotators mined their own candidates with eval-local patterns (X一名Y, X即Y,
+# X（即Y）, 俗名/又名/谓之, glosses, 本草 entry heads) over every book outside jc_c030 and bencao_gangmu_*, and the
+# review kept only items whose asked form is a candidate of the §3.10 pools as ``aliases_gold.pools`` mines them (pool
+# names the sub-pool); its replacements are the first fitting spare of the type and band, else the first fitting
+# candidates of a seed-23 shuffle of the pool.  Nothing was taken from the alias layer; curated.yaml did not exist.
+# All strings are in the pack's normalised spelling.
+#
+# items  {id, group, split, type, pool, query, asked, asked_cues, false_friends, referents, wrong, expect_candidates,
+#          floor, band, adjudicated}
+#   pool        the sub-pool of aliases_gold.POOLS the asked form comes from (alias/head: equation, gloss, entry;
+#               ambiguous: lexicon, bielu, store; period: taboo, curated, dated; trap: false-friend, ordinary)
+#   referents   [{head, names, valid, witness}]: the drugs the asked form denotes.  names = the names whose passages are
+#               relevant (the head, or a short form covering it, unless the head is asked); valid = [from, to) in which
+#               they denote this referent (period items only), null = always
+#   asked_cues  when set, an asked-form occurrence counts only beside one of them (traps: the drug sense)
+#   false_friends  strings masked before labelling (longer names containing the asked form, ordinary phrases)
+#   wrong       names whose passages are a wrong reading (another referent, another period)
+#   expect_candidates  the referents the system should list for the asked form; period items list only those valid
+#               in the query window, a head item none, and a trap expected to stay unexpanded none: such a stop
+#               keeps its head and witness (for candidate precision) but no names and no cues, so its relevant
+#               passages are those writing the asked form
+#   floor       {surface, year}: the soft first-use year (taboo rename, first dated use) behind the anachronism flags
+#   band        passages writing the asked form outside the false friends, jc_c030 excluded: 1-2, 3-19, >=20
+#   adjudicated every name with the passage that witnesses it (outside jc_c030 and bencao_gangmu_*), which writes the name
+#               beside the asked form, a head or another name (in its text or its section heading): an equation, a
+#               gloss, an entry, a chain; or, with ``parallel``, for the taboo spellings 元参 and 元胡 that no passage
+#               writes beside the original: the same line or recipe written each way in two passages
+# group / split  items sharing any string (asked form, head, name, wrong name, cue or false friend) share a group,
+#               named by the first of them in file order (its head for an alias item, else its asked form); split =
+#               sha1(group) % 2: 0 dev, 1 heldout (``aliases_gold.groups``, ``split_of``; the (id, group, split) list is
+#               pinned by ``aliases_gold.SPLIT_SHA256``).  Held-out results are reported, never tuned on: no held-out
+#               string may be a tuned name, and curated.yaml may hold none of them (``heldout_surfaces``).
+# tuned       the names the design was tuned on before this file existed: the retrieval prototype's 29-item gold
+#               (both of its splits) and every drug name the spec writes (§2, the curated example of §3.3, §3.4–§3.7, the
+#               synthetic cases and before numbers of §3.10, the tests of §3.11).  They may appear in dev items only.
+# resolution  {surface, expect_heads, expect_action, group, split}, analysis only: expand (one drug), candidate (list
+#               every head, never merge), none (neither expand nor list).  A row takes the group of the items it
+#               touches, else its own surface.  Heads are the gold's heads, not necessarily 纲目's.
+#
+# Review replacements (the items commented "review fix") were the first spare of the type and band in a pool, else the
+# first fitting candidates of a seed-23 shuffle of the pool (aliases_gold.pools on the web store).  Draws skipped:
+#   head 1-2: 枳椇 (its names are a shared name and a shape word), 南烛枝叶 (a part); head 3-19: 殷孽 (姜石 is also
+#   唐本's own stone), 腽肭脐 (a name of head-02), 石肝 (an alias, not a head), 绿青 (碧青/绿青 swapped by painters), 乌韭
+#   (also 麦门冬's 一名), 马蓼 (蓼实 is another 蓼); ambiguous >=20: lexicon pairs of entries for one drug, 乌金, 黄瓜,
+#   昌阳, 无心, 石龙, 土瓜 (a reading without a witness), 日及 (unattested); period: 白矾石, 鼠乡 (their referent 礜石
+#   is tuned), 云珠, 长石 (no change of currency in the store), 其外皮 (a phrase); substring: 沙鱼, 燕屎, 胡瓜, 乌桕木 (the
+#   longer name is a part or kind of the same drug), 大小蓟, 薰草, 含水藤, 莞草 (phrases), 桑花 (written only in
+#   佛桑花), 蜈蚣草 (the longer name never written).
+# The comment above each item is its annotator's: counts by period, the in-window counts, witnesses and doubts.
+# Still to do (§3.10 step 4): the pooled adjudication of the top 50 hits of off, naive and on on both stores, and the
+# hand check of a 10% sample of labels; names it adds need a witness and are dated in adjudicated.
+version: 1
+frozen: "2026-10-14"
+seed: 23
+excluded_books: [jc_c030]
+report_without: [bencao_gangmu_skqs]
+tuned: [上党人参, 上党参, 丹砂, 人参, 何首乌, 元参, 党参, 冠军将军, 前将军, 卫将军, 厚朴, 厚皮, 右将军, 合欢, 后将军, 国老, 土木香, 地精, 地肤, 地肤子, 夜合, 大将军, 大黄, 天地精,
+        天麻, 官桂, 定风草, 将军, 将军之官, 将军曰, 将军者, 小便, 山姜, 山芋, 山药, 山蓟, 川军, 川贝, 川连, 左将军, 干葛, 徐长卿, 承气, 旋花, 木通, 木香, 朱砂, 李将军, 枳壳,
+        核桃, 檗木, 檗皮, 正马, 浓朴, 浓皮, 浙贝, 灵通, 牡丹, 牡丹皮, 狗脊, 独摇草, 独活, 玄参, 玄台, 玉延, 王连, 甘草, 白木, 白术, 白蜜甘, 百枝, 石蜜甘, 礜石, 米醋, 糖蜜甘,
+        署豫, 署预, 美草, 胡黄连, 芍药, 苍术, 苦酒, 荡涤, 萆薢, 葛根, 薯药, 薯蓣, 蘗木, 蘗皮, 蚤休, 蜂蜜甘, 蜜甘, 蜜草, 裨将军, 诸署, 赤箭, 辰砂, 逐马, 通脱木, 通草, 道地精,
+        酢浆草, 酸枣, 酸枣仁, 酸浆, 酽醋, 重楼, 野狼, 金银花, 锦纹, 防风, 雄黄, 青木香, 马兜铃, 鬼督邮, 鬼藏, 鸡齐, 黄斤, 黄柏, 黄檗, 黄良, 黄蘖, 黄蘗, 黄连, 黑参]
+items:
+
+  # ===== alias (30): an old or other name is asked; passages under the drug's head are relevant
+  # n=24 (晋南北朝–清); era: 南北朝（陶弘景）; witness jc_c002.00013 本草经集注[480,500]
+  - id: alias-01
+    group: 甘草
+    split: dev
+    type: alias
+    pool: gloss
+    query: 国老
+    asked: 国老
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 甘草, names: [甘草], valid: null, witness: jc_c002.00013}
+    wrong: []
+    expect_candidates: [甘草]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 甘草, witness: jc_c002.00013, by: annotator, date: "2026-10-14"}
+  # n=236 (汉–民国); era: 汉（本经正名）; witness jc_c040.00233 珍珠囊补遗药性赋[1368,1644]; 辰砂: jc_c040.00233 珍珠囊补遗药性赋[1368,1644]
+  - id: alias-02
+    group: 朱砂
+    split: dev
+    type: alias
+    pool: equation
+    query: 丹砂
+    asked: 丹砂
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 朱砂, names: [朱砂, 辰砂], valid: null, witness: jc_c040.00233}
+    wrong: []
+    expect_candidates: [朱砂]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 朱砂, witness: jc_c040.00233, by: annotator, date: "2026-10-14"}
+      - {name: 辰砂, witness: jc_c040.00233, by: annotator, date: "2026-10-14"}
+  # n=224 (宋金元–清); era: 宋; witness jc_c037.00834 本草害利[1644,1911]
+  - id: alias-03
+    group: 补骨脂
+    split: heldout
+    type: alias
+    pool: equation
+    query: 破故纸治什么病
+    asked: 破故纸
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 补骨脂, names: [补骨脂], valid: null, witness: jc_c037.00834}
+    wrong: []
+    expect_candidates: [补骨脂]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 补骨脂, witness: jc_c037.00834, by: annotator, date: "2026-10-14"}
+  # n=128 (晋南北朝–清); era: 宋; witness jc_h004.00067 儿科要略[1644,1911]; 水银粉: jc_c040.00259 珍珠囊补遗药性赋[1368,1644]
+  - id: alias-04
+    group: 轻粉
+    split: heldout
+    type: alias
+    pool: gloss
+    query: 宋代方书里的腻粉
+    asked: 腻粉
+    asked_cues: []
+    false_friends: [如腻粉]
+    referents:
+      - {head: 轻粉, names: [轻粉, 水银粉], valid: null, witness: jc_h004.00067}
+    wrong: []
+    expect_candidates: [轻粉]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 轻粉, witness: jc_h004.00067, by: annotator, date: "2026-10-14"}
+      - {name: 水银粉, witness: jc_c040.00259, by: annotator, date: "2026-10-14"}
+  # n=30 (晋南北朝–清); era: 南北朝至宋; witness jc_c040.00382 珍珠囊补遗药性赋[1368,1644]
+  - id: alias-05
+    group: 淫羊藿
+    split: heldout
+    type: alias
+    pool: equation
+    query: 仙灵脾是什么药
+    asked: 仙灵脾
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 淫羊藿, names: [淫羊藿], valid: null, witness: jc_c040.00382}
+    wrong: []
+    expect_candidates: [淫羊藿]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 淫羊藿, witness: jc_c040.00382, by: annotator, date: "2026-10-14"}
+  # n=40 (晋南北朝–清); era: 汉至唐; witness jc_c021.00818 本草从新[1757,1757]; 薰陆香: jc_c037.00112 本草害利[1644,1911]
+  - id: alias-06
+    group: 乳香
+    split: heldout
+    type: alias
+    pool: entry
+    query: 唐代的熏陆香
+    asked: 熏陆香
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 乳香, names: [乳香, 薰陆香], valid: null, witness: jc_c021.00818}
+    wrong: []
+    expect_candidates: [乳香]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 乳香, witness: jc_c021.00818, by: annotator, date: "2026-10-14"}
+      - {name: 薰陆香, witness: jc_c037.00112, by: annotator, date: "2026-10-14"}
+  # n=30 (宋金元–清); era: 唐宋; witness jc_c040.00534 珍珠囊补遗药性赋[1368,1644]
+  - id: alias-07
+    group: 血竭
+    split: heldout
+    type: alias
+    pool: equation
+    query: 麒麟竭
+    asked: 麒麟竭
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 血竭, names: [血竭], valid: null, witness: jc_c040.00534}
+    wrong: []
+    expect_candidates: [血竭]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 血竭, witness: jc_c040.00534, by: annotator, date: "2026-10-14"}
+  # n=40 (汉–清); era: 汉（本经正名）; witness jc_c029.00148 药性歌括四百味[1368,1644]
+  - id: alias-08
+    group: 凌霄花
+    split: dev
+    type: alias
+    pool: equation
+    query: 紫葳的功效
+    asked: 紫葳
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 凌霄花, names: [凌霄花], valid: null, witness: jc_c029.00148}
+    wrong: []
+    expect_candidates: [凌霄花]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 凌霄花, witness: jc_c029.00148, by: annotator, date: "2026-10-14"}
+  # n=24 (隋唐五代–清); era: 唐; witness qianjin_yaofang.067.04694 备急千金要方[650,659]
+  # review fix: replaces alias-09 (黄檗): held-out on names the design was tuned on (黄檗/黄柏)
+  - id: alias-s01
+    group: 景天
+    split: dev
+    type: alias
+    pool: entry
+    query: 慎火草
+    asked: 慎火草
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 景天, names: [景天], valid: null, witness: qianjin_yaofang.067.04694}
+    wrong: []
+    expect_candidates: [景天]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 景天, witness: qianjin_yaofang.067.04694, by: annotator, date: "2026-10-14"}
+  # n=25 (宋金元–清); era: 明清; witness jc_c037.00429 本草害利[1644,1911]; 舶茴香: jc_c037.00429 本草害利[1644,1911]
+  - id: alias-10
+    group: 八角茴香
+    split: heldout
+    type: alias
+    pool: entry
+    query: 大茴香
+    asked: 大茴香
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 八角茴香, names: [八角茴香, 舶茴香], valid: null, witness: jc_c037.00429}
+    wrong: []
+    expect_candidates: [八角茴香]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 八角茴香, witness: jc_c037.00429, by: annotator, date: "2026-10-14"}
+      - {name: 舶茴香, witness: jc_c037.00429, by: annotator, date: "2026-10-14"}
+  # n=10 (汉–清); era: 汉（本经正名）; witness jc_c000.00770 神农本草经[25,220]
+  - id: alias-11
+    group: 荆芥
+    split: dev
+    type: alias
+    pool: equation
+    query: 假苏是什么
+    asked: 假苏
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 荆芥, names: [荆芥], valid: null, witness: jc_c000.00770}
+    wrong: []
+    expect_candidates: [荆芥]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 荆芥, witness: jc_c000.00770, by: annotator, date: "2026-10-14"}
+  # n=8 (汉–明); era: 汉（本经）; witness jc_c000.00180 神农本草经[25,220]
+  # review fix: replaces alias-12 (黄良): held-out on names the design was tuned on (大黄)
+  - id: alias-s07
+    group: 细辛
+    split: heldout
+    type: alias
+    pool: entry
+    query: 小辛
+    asked: 小辛
+    asked_cues: []
+    false_friends: [小辛之药]
+    referents:
+      - {head: 细辛, names: [细辛], valid: null, witness: jc_c000.00180}
+    wrong: []
+    expect_candidates: [细辛]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 细辛, witness: jc_c000.00180, by: annotator, date: "2026-10-14"}
+  # n=17 (汉–清); era: 汉（本经）; witness ws_36bca7b992.00308 神农本草经[25,220]; 九臼: ws_36bca7b992.00308 神农本草经[25,220]
+  - id: alias-13
+    group: 鬼臼
+    split: heldout
+    type: alias
+    pool: equation
+    query: 马目毒公是哪味药
+    asked: 马目毒公
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 鬼臼, names: [鬼臼, 九臼], valid: null, witness: ws_36bca7b992.00308}
+    wrong: []
+    expect_candidates: [鬼臼]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 鬼臼, witness: ws_36bca7b992.00308, by: annotator, date: "2026-10-14"}
+      - {name: 九臼, witness: ws_36bca7b992.00308, by: annotator, date: "2026-10-14"}
+  # n=8 (晋南北朝–明); era: 南北朝至唐; witness jc_c040.00402 珍珠囊补遗药性赋[1368,1644]; 莎草: jc_c007.00206 本草衍义[1116,1116]
+  - id: alias-14
+    group: 香附
+    split: heldout
+    type: alias
+    pool: equation
+    query: 莎草根
+    asked: 莎草根
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 香附, names: [香附, 莎草], valid: null, witness: jc_c040.00402}
+    wrong: []
+    expect_candidates: [香附]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 香附, witness: jc_c040.00402, by: annotator, date: "2026-10-14"}
+      - {name: 莎草, witness: jc_c007.00206, by: annotator, date: "2026-10-14"}
+  # n=14 (宋金元–清); era: 宋（图经）; witness jc_c006.00459 本草图经[1061,1062]; 莨菪: jc_c006.00459 本草图经[1061,1062]
+  - id: alias-15
+    group: 莨菪子
+    split: dev
+    type: alias
+    pool: equation
+    query: 天仙子的用法
+    asked: 天仙子
+    asked_cues: []
+    false_friends: [似天仙子]
+    referents:
+      - {head: 莨菪子, names: [莨菪子, 莨菪], valid: null, witness: jc_c006.00459}
+    wrong: []
+    expect_candidates: [莨菪子]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 莨菪子, witness: jc_c006.00459, by: annotator, date: "2026-10-14"}
+      - {name: 莨菪, witness: jc_c006.00459, by: annotator, date: "2026-10-14"}
+  # n=19 (宋金元–清); era: 宋; witness jc_c029.00182 药性歌括四百味[1368,1644]
+  - id: alias-16
+    group: 续随子
+    split: dev
+    type: alias
+    pool: equation
+    query: 千金子
+    asked: 千金子
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 续随子, names: [续随子], valid: null, witness: jc_c029.00182}
+    wrong: []
+    expect_candidates: [续随子]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 续随子, witness: jc_c029.00182, by: annotator, date: "2026-10-14"}
+  # n=9 (明–清); era: 宋至清; witness jc_c040.00270 珍珠囊补遗药性赋[1368,1644]
+  - id: alias-17
+    group: 硼砂
+    split: heldout
+    type: alias
+    pool: equation
+    query: 蓬砂
+    asked: 蓬砂
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 硼砂, names: [硼砂], valid: null, witness: jc_c040.00270}
+    wrong: []
+    expect_candidates: [硼砂]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 硼砂, witness: jc_c040.00270, by: annotator, date: "2026-10-14"}
+  # n=17 (宋金元–清); era: 宋至清（俗名）; witness jc_c029.00121 药性歌括四百味[1368,1644]; 鼠黏子: jc_c029.00121 药性歌括四百味[1368,1644]; 恶实:
+  # jc_c047.00627 饮膳正要[1330,1330]; 牛蒡: jc_c040.00385 珍珠囊补遗药性赋[1368,1644]
+  - id: alias-18
+    group: 牛蒡子
+    split: dev
+    type: alias
+    pool: gloss
+    query: 大力子是什么药
+    asked: 大力子
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 牛蒡子, names: [牛蒡子, 鼠黏子, 恶实, 牛蒡], valid: null, witness: jc_c029.00121}
+    wrong: []
+    expect_candidates: [牛蒡子]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 牛蒡子, witness: jc_c029.00121, by: annotator, date: "2026-10-14"}
+      - {name: 鼠黏子, witness: jc_c029.00121, by: annotator, date: "2026-10-14"}
+      - {name: 恶实, witness: jc_c047.00627, by: annotator, date: "2026-10-14"}
+      - {name: 牛蒡, witness: jc_c040.00385, by: annotator, date: "2026-10-14"}
+  # n=15 (明–清); era: 清; witness jc_c021.01752 本草从新[1757,1757]
+  - id: alias-19
+    group: 鸡内金
+    split: dev
+    type: alias
+    pool: gloss
+    query: 鸡肫皮
+    asked: 鸡肫皮
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 鸡内金, names: [鸡内金], valid: null, witness: jc_c021.01752}
+    wrong: []
+    expect_candidates: [鸡内金]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 鸡内金, witness: jc_c021.01752, by: annotator, date: "2026-10-14"}
+  # n=17 (宋金元–清); era: 明清（俗名）; witness jc_c029.00210 药性歌括四百味[1368,1644]
+  - id: alias-20
+    group: 蝼蛄
+    split: heldout
+    type: alias
+    pool: equation
+    query: 土狗入药
+    asked: 土狗
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 蝼蛄, names: [蝼蛄], valid: null, witness: jc_c029.00210}
+    wrong: []
+    expect_candidates: [蝼蛄]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 蝼蛄, witness: jc_c029.00210, by: annotator, date: "2026-10-14"}
+  # n=1 (汉–汉); era: 汉（本经）; witness jc_c000.00143 神农本草经[25,220]
+  - id: alias-21
+    group: 柴胡
+    split: heldout
+    type: alias
+    pool: entry
+    query: 地熏是什么药
+    asked: 地熏
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 柴胡, names: [柴胡], valid: null, witness: jc_c000.00143}
+    wrong: []
+    expect_candidates: [柴胡]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 柴胡, witness: jc_c000.00143, by: annotator, date: "2026-10-14"}
+  # n=2 (汉–汉); era: 魏（吴普）; witness jc_c000.00678 神农本草经[25,220]
+  - id: alias-22
+    group: 黄芩
+    split: heldout
+    type: alias
+    pool: equation
+    query: 红芩是哪味药
+    asked: 红芩
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 黄芩, names: [黄芩], valid: null, witness: jc_c000.00678}
+    wrong: []
+    expect_candidates: [黄芩]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 黄芩, witness: jc_c000.00678, by: annotator, date: "2026-10-14"}
+  # n=1 (宋金元–宋金元); era: 宋（医说·药名之异）; witness yishuo.002.00204 医说[1189,1224]
+  - id: alias-23
+    group: 马勃
+    split: heldout
+    type: alias
+    pool: equation
+    query: 马屁菌
+    asked: 马屁菌
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 马勃, names: [马勃], valid: null, witness: yishuo.002.00204}
+    wrong: []
+    expect_candidates: [马勃]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 马勃, witness: yishuo.002.00204, by: annotator, date: "2026-10-14"}
+  # n=2 (宋金元–明); era: 宋明; witness jc_c029.00094 药性歌括四百味[1368,1644]
+  - id: alias-24
+    group: 商陆
+    split: heldout
+    type: alias
+    pool: gloss
+    query: 章柳
+    asked: 章柳
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 商陆, names: [商陆], valid: null, witness: jc_c029.00094}
+    wrong: []
+    expect_candidates: [商陆]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 商陆, witness: jc_c029.00094, by: annotator, date: "2026-10-14"}
+  # n=1 (宋金元–宋金元); era: 元（汤液本草）; witness tangye_bencao.003.00937 汤液本草[1289,1308]
+  - id: alias-25
+    group: 水蛭
+    split: dev
+    type: alias
+    pool: gloss
+    query: 马蝗
+    asked: 马蝗
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 水蛭, names: [水蛭], valid: null, witness: tangye_bencao.003.00937}
+    wrong: []
+    expect_candidates: [水蛭]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 水蛭, witness: tangye_bencao.003.00937, by: annotator, date: "2026-10-14"}
+  # n=1 (明–明); era: 明（滇南本草）; witness jc_c010.00040 滇南本草[1396,1476]; 笔管草: jc_c010.00040 滇南本草[1396,1476]
+  - id: alias-26
+    group: 木贼
+    split: dev
+    type: alias
+    pool: equation
+    query: 节节草是什么药
+    asked: 节节草
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 木贼, names: [木贼, 笔管草], valid: null, witness: jc_c010.00040}
+    wrong: []
+    expect_candidates: [木贼]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 木贼, witness: jc_c010.00040, by: annotator, date: "2026-10-14"}
+      - {name: 笔管草, witness: jc_c010.00040, by: annotator, date: "2026-10-14"}
+  # n=1 (明–明); era: 明; witness jc_c040.00515 珍珠囊补遗药性赋[1368,1644]
+  - id: alias-27
+    group: 虎杖
+    split: dev
+    type: alias
+    pool: equation
+    query: 斑杖根
+    asked: 斑杖根
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 虎杖, names: [虎杖], valid: null, witness: jc_c040.00515}
+    wrong: []
+    expect_candidates: [虎杖]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 虎杖, witness: jc_c040.00515, by: annotator, date: "2026-10-14"}
+  # n=2 (明–明); era: 唐名，明代仍注; witness jc_c029.00032 药性歌括四百味[1368,1644]
+  - id: alias-28
+    group: 乌药
+    split: heldout
+    type: alias
+    pool: gloss
+    query: 旁其是什么药
+    asked: 旁其
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 乌药, names: [乌药], valid: null, witness: jc_c029.00032}
+    wrong: []
+    expect_candidates: [乌药]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 乌药, witness: jc_c029.00032, by: annotator, date: "2026-10-14"}
+  # n=2 (清–清); era: 别录名，清代仍注; witness jc_c024.00424 本草崇原[1674,1674]; 玉豉: jc_c024.00424 本草崇原[1674,1674]
+  - id: alias-29
+    group: 地榆
+    split: heldout
+    type: alias
+    pool: entry
+    query: 酸赭
+    asked: 酸赭
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 地榆, names: [地榆, 玉豉], valid: null, witness: jc_c024.00424}
+    wrong: []
+    expect_candidates: [地榆]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 地榆, witness: jc_c024.00424, by: annotator, date: "2026-10-14"}
+      - {name: 玉豉, witness: jc_c024.00424, by: annotator, date: "2026-10-14"}
+  # n=2 (清–清); era: 清; witness jc_c037.00103 本草害利[1644,1911]
+  - id: alias-30
+    group: 莲子心
+    split: heldout
+    type: alias
+    pool: entry
+    query: 莲薏
+    asked: 莲薏
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 莲子心, names: [莲子心], valid: null, witness: jc_c037.00103}
+    wrong: []
+    expect_candidates: [莲子心]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 莲子心, witness: jc_c037.00103, by: annotator, date: "2026-10-14"}
+
+  # ===== head (25): the drug's head is asked; passages under its other names are relevant
+  # 急性子: asked 2 passages; other-name-only 凤仙子 5 (清5). 本经逢原 凤仙子 entry: 又名急性子
+  - id: head-01
+    group: 急性子
+    split: dev
+    type: head
+    pool: entry
+    query: 急性子是什么药
+    asked: 急性子
+    asked_cues: []
+    false_friends: [如凤仙子大]
+    referents:
+      - {head: 急性子, names: [凤仙子], valid: null, witness: jc_c019.01102}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 凤仙子, witness: jc_c019.01102, by: annotator, date: "2026-10-14"}  # jc_c019, 1695; 凤仙子 entry: 又名急性子
+  # 海狗肾: asked 2 passages; other-name-only 腽肭脐 13 (宋元6 明5 清2). 本草求真: 海狗肾即腽肭脐; 腽肭脐 is the Song-Ming name
+  - id: head-02
+    group: 海狗肾
+    split: heldout
+    type: head
+    pool: equation
+    query: 海狗肾
+    asked: 海狗肾
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 海狗肾, names: [腽肭脐], valid: null, witness: jc_c025a.00214}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 腽肭脐, witness: jc_c025a.00214, by: annotator, date: "2026-10-14"}  # jc_c025a, 1769
+  # head 1-2. n=1 (明); 伤科 recipe 五爪龙（即乌蔹莓俗名五叶藤）; 五叶藤 is written in 千金 recipes (5 passages)
+  # review fix: replaces head-03 (合欢皮): held-out on names the design was tuned on (合欢, wrong 何首乌)
+  - id: head-n1
+    group: 乌蔹莓
+    split: dev
+    type: head
+    pool: gloss
+    query: 乌蔹莓
+    asked: 乌蔹莓
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 乌蔹莓, names: [五爪龙, 五叶藤], valid: null, witness: jc_j002.00018}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 五爪龙, witness: jc_j002.00018, by: annotator, date: "2026-10-14"}  # 仙授理伤续断秘方: 五爪龙（即乌蔹莓…）
+      - {name: 五叶藤, witness: jc_j002.00018, by: annotator, date: "2026-10-14"}  # the same gloss: 俗名五叶藤
+  # head 3-19. n=10 (先唐2 唐4 宋1 明2 清1); 本经 萹蓄 一名萹竹; 萹竹 is 千金's spelling (萹竹叶, 7 passages)
+  # review fix: replaces head-04 (鱼腥草): outside the pools (no mined equation of 鱼腥草)
+  - id: head-n3
+    group: 萹蓄
+    split: heldout
+    type: head
+    pool: entry
+    query: 萹蓄
+    asked: 萹蓄
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 萹蓄, names: [萹竹], valid: null, witness: jc_c000a.00271}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 萹竹, witness: jc_c000a.00271, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）: 萹蓄 一名萹竹
+  # 没食子: asked 9 passages; other-name-only 无食子 6, 没石子 21 (隋唐3 宋元10 明12). 海药 无食子 (Tang), 没石子 (Song-Ming spelling)
+  - id: head-05
+    group: 没食子
+    split: dev
+    type: head
+    pool: equation
+    query: 没食子
+    asked: 没食子
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 没食子, names: [无食子, 没石子], valid: null, witness: jc_c029.00199}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 无食子, witness: jc_c029.00199, by: annotator, date: "2026-10-14"}  # jc_c029, 1506
+      - {name: 没石子, witness: jc_c040.00519, by: annotator, date: "2026-10-14"}  # jc_c040, 1506; equates it with 无食子
+  # 胆矾: asked 125 passages; other-name-only 石胆 28 (汉魏7 隋唐6 宋元6 明4 清5). 本经 head 石胆
+  - id: head-s01
+    group: 胆矾
+    split: heldout
+    type: head
+    pool: entry
+    query: 胆矾
+    asked: 胆矾
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 胆矾, names: [石胆], valid: null, witness: jc_c040.00271}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 石胆, witness: jc_c040.00271, by: annotator, date: "2026-10-14"}  # jc_c040, 1506
+  # 银杏: asked 16 passages; other-name-only 白果 31 (宋元4 明6 清21). 如银杏 = size comparison; 水银杏仁 = 水银 + 杏仁 straddle
+  - id: head-07
+    group: 银杏
+    split: heldout
+    type: head
+    pool: gloss
+    query: 银杏
+    asked: 银杏
+    asked_cues: []
+    false_friends: [如银杏, 水银杏]
+    referents:
+      - {head: 银杏, names: [白果], valid: null, witness: jc_c029.00341}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 白果, witness: jc_c029.00341, by: annotator, date: "2026-10-14"}  # jc_c029, 1506
+  # head 3-19. n=8 (先唐2 唐5 明1); 陆玑 quoted under 本经 蛇合/女青: 芄兰，一名萝摩.  雀瓢 and 女青 are shared names
+  # review fix: replaces head-08 (钟乳石): outside the pools (no mined equation of 钟乳石)
+  - id: head-n5
+    group: 萝摩
+    split: heldout
+    type: head
+    pool: equation
+    query: 萝摩
+    asked: 萝摩
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 萝摩, names: [芄兰], valid: null, witness: jc_c049.00067}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 芄兰, witness: jc_c000.01065, by: annotator, date: "2026-10-14"}  # 神农本草经 note: 芄兰，一名萝摩
+  # head 3-19. n=6 (先唐4 宋1 清1); 沈括《补笔谈》 quoted under 本经 栾花: 谓之木栾，即本草栾花是也
+  # review fix: replaces head-09 (蚤休): held-out on names the design was tuned on (蚤休/重楼)
+  - id: head-n2
+    group: 栾花
+    split: heldout
+    type: head
+    pool: entry
+    query: 栾花
+    asked: 栾花
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 栾花, names: [木栾], valid: null, witness: jc_c000a.00205}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 木栾, witness: jc_c000.01236, by: annotator, date: "2026-10-14"}  # 神农本草经 栾花 note
+  # head 3-19. n=6 (明6); 滇南本草 石南藤，又名搜山虎.  鬼目 (药性歌括's 一名) is left out: a shared name (ambiguous-09)
+  # review fix: replaces head-10 (砒石): outside the pools (砒霜 is 砒石's processed form, not an equated name)
+  - id: head-n4
+    group: 石南藤
+    split: dev
+    type: head
+    pool: equation
+    query: 石南藤
+    asked: 石南藤
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 石南藤, names: [搜山虎], valid: null, witness: jc_c010.01373}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 搜山虎, witness: jc_c010.01373, by: annotator, date: "2026-10-14"}  # 滇南本草[1396,1476]
+  # 甘草: asked 11295 passages; other-name-only 国老 14, 美草 3, 蜜草 2, 密甘 2, 蜜甘 1, 炙草 293 (汉魏2 隋唐1 宋元62 明23 清222). 美草 is
+  # also 旋花 (3 passages, masked); 蜜甘 straddles (石蜜甘…); 炙草 = processed 甘草; 粉草 left out (no witness)
+  - id: head-11
+    group: 甘草
+    split: dev
+    type: head
+    pool: gloss
+    query: 甘草
+    asked: 甘草
+    asked_cues: []
+    false_friends: [石蜜甘, 蜂蜜甘, 白蜜甘, 糖蜜甘, 蜜甘蜡, 呼为美草, "一名美草，《大观》", "一名美草。生豫州"]
+    referents:
+      - {head: 甘草, names: [国老, 美草, 蜜草, 密甘, 蜜甘, 炙草], valid: null, witness: jc_f018.00071}
+    wrong: [旋花]
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 国老, witness: jc_f018.00071, by: annotator, date: "2026-10-14"}  # jc_f018, 1275
+      - {name: 美草, witness: jc_c000.00112, by: annotator, date: "2026-10-14"}  # jc_c000, 122; 广雅: 美草，甘草也
+      - {name: 蜜草, witness: jc_c000.00111, by: annotator, date: "2026-10-14"}  # jc_c000, 122
+      - {name: 密甘, witness: jc_c000.00111, by: annotator, date: "2026-10-14"}  # jc_c000, 122
+      - {name: 蜜甘, witness: jc_c000a.00008, by: annotator, date: "2026-10-14"}  # jc_c000a, 122
+      - {name: 炙草, witness: jc_p0006.00273, by: annotator, date: "2026-10-14"}  # jc_p0006, 1742; 炙甘草汤，即炙草…
+  # 蝼蛄: asked 55 passages; other-name-only 土狗 13 (宋元2 明3 清8). 蝼蝈 left out (月令 sense disputed)
+  # review fix: replaces head-12 (黄柏): held-out on names the design was tuned on (黄柏)
+  - id: head-s02
+    group: 蝼蛄
+    split: heldout
+    type: head
+    pool: equation
+    query: 蝼蛄
+    asked: 蝼蛄
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 蝼蛄, names: [土狗], valid: null, witness: jc_c029.00210}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 土狗, witness: jc_c029.00210, by: annotator, date: "2026-10-14"}  # jc_c029, 1506
+  # 铜绿: asked 70 passages; other-name-only 铜青 47 (汉魏1 隋唐8 宋元19 明7 清12).
+  # review fix: replaces head-13 (山药): held-out on names the design was tuned on (山药)
+  - id: head-s03
+    group: 铜绿
+    split: dev
+    type: head
+    pool: entry
+    query: 铜绿
+    asked: 铜绿
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 铜绿, names: [铜青], valid: null, witness: jc_o050.05089}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 铜青, witness: jc_o050.05089, by: annotator, date: "2026-10-14"}  # jc_o050, 1575
+  # 补骨脂: asked 117 passages (28 in [960, 1279]); other-name-only in window 破故纸 62 (宋元62). Song formulas write 破故纸
+  - id: head-14
+    group: 补骨脂
+    split: heldout
+    type: head
+    pool: gloss
+    query: 宋代方书中的补骨脂
+    asked: 补骨脂
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 补骨脂, names: [破故纸], valid: null, witness: jc_d024.00227}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 破故纸, witness: jc_d024.00227, by: annotator, date: "2026-10-14"}  # jc_d024, 1323
+  # 金银花: asked 220 passages; other-name-only 忍冬 71, 鹭鸶藤 6, 老翁须 0 (汉魏1 隋唐3 宋元23 明16 清33). 忍冬 is also a 吴普 alias of 麦门冬
+  # and 老翁须 a name of 生银 (masked); 金钗股 (also 石斛) left out
+  - id: head-15
+    group: 金银花
+    split: dev
+    type: head
+    pool: equation
+    query: 金银花
+    asked: 金银花
+    asked_cues: []
+    false_friends: ["一名忍冬，一名忍陵", "一名忍冬，一名忍凌", 又谓之老翁须]
+    referents:
+      - {head: 金银花, names: [忍冬, 鹭鸶藤, 老翁须], valid: null, witness: susheng_liangfang.007.00199}
+    wrong: [生银]
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 忍冬, witness: susheng_liangfang.007.00199, by: annotator, date: "2026-10-14"}  # susheng_liangfang, 1088
+      - {name: 鹭鸶藤, witness: jc_i003.00243, by: annotator, date: "2026-10-14"}  # jc_i003, 1498
+      # susheng_liangfang, 1088
+      - {name: 老翁须, witness: susheng_liangfang.007.00199, by: annotator, date: "2026-10-14"}
+  # 冰片: asked 323 passages; other-name-only 龙脑 227, 龙脑香 13, 片脑 37, 梅花脑 3 (汉魏7 隋唐8 宋元116 明79 清56). 龙脑薄荷 is a 薄荷
+  # variety; 脑子 left out (also 'brain')
+  - id: head-16
+    group: 冰片
+    split: heldout
+    type: head
+    pool: gloss
+    query: 冰片
+    asked: 冰片
+    asked_cues: []
+    false_friends: [龙脑薄荷, 龙脑鸡苏, 龙脑者佳]
+    referents:
+      - {head: 冰片, names: [龙脑, 龙脑香, 片脑, 梅花脑], valid: null, witness: bencao_chengya.008.01429}
+    wrong: [薄荷]
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 龙脑, witness: bencao_chengya.008.01429, by: annotator, date: "2026-10-14"}  # bencao_chengya, 1647
+      - {name: 龙脑香, witness: bencao_chengya.008.01429, by: annotator, date: "2026-10-14"}  # bencao_chengya, 1647
+      - {name: 片脑, witness: xianxingzhai_biji.003.00433, by: annotator, date: "2026-10-14"}  # xianxingzhai_biji, 1617
+      - {name: 梅花脑, witness: bencao_chengya.008.01429, by: annotator, date: "2026-10-14"}  # bencao_chengya, 1647
+  # 天花粉: asked 191 passages; other-name-only 栝楼根 349 (汉魏47 隋唐134 宋元68 明43 清57). 栝楼根 (瓜蒌根 normalises to it) dominates
+  # Tang texts
+  - id: head-17
+    group: 天花粉
+    split: heldout
+    type: head
+    pool: equation
+    query: 天花粉
+    asked: 天花粉
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 天花粉, names: [栝楼根], valid: null, witness: puji_fang.387.78624}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 栝楼根, witness: puji_fang.387.78624, by: annotator, date: "2026-10-14"}  # puji_fang, 1398
+  # 轻粉: asked 472 passages (114 in [960, 1279]); other-name-only in window 腻粉 75, 水银粉 2 (宋元77). Song texts write 腻粉
+  # review fix: replaces head-18 (川芎): outside the pools (no mined equation of 川芎)
+  - id: head-s05
+    group: 轻粉
+    split: heldout
+    type: head
+    pool: equation
+    query: 宋代的轻粉
+    asked: 轻粉
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 轻粉, names: [腻粉, 水银粉], valid: null, witness: jc_h004.00067}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 腻粉, witness: jc_h004.00067, by: annotator, date: "2026-10-14"}  # jc_h004, 1777
+      - {name: 水银粉, witness: jc_c040.00259, by: annotator, date: "2026-10-14"}  # jc_c040, 1506
+  # 陈皮: asked 2292 passages; other-name-only 橘皮 1088, 新会皮 26 (汉魏66 隋唐392 宋元374 明103 清179). 青橘皮 is 青皮, a different
+  # drug; 橘红 (去白) treated as distinct, left out
+  - id: head-19
+    group: 陈皮
+    split: heldout
+    type: head
+    pool: gloss
+    query: 陈皮
+    asked: 陈皮
+    asked_cues: []
+    false_friends: [青橘皮]
+    referents:
+      - {head: 陈皮, names: [橘皮, 新会皮], valid: null, witness: jc_c037.00499}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 橘皮, witness: jc_c037.00499, by: annotator, date: "2026-10-14"}  # jc_c037, 1777; 橘皮 entry: 陈久者良，故名陈皮
+      - {name: 新会皮, witness: jc_c037.00499, by: annotator, date: "2026-10-14"}  # jc_c037, 1777
+  # 诃子: asked 303 passages; other-name-only 诃黎勒 58, 诃梨勒 86 (汉魏18 隋唐17 宋元58 明20 清31). furen_daquan names the two-kernel
+  # fruit 诃梨勒, the one-kernel 诃子 (same drug)
+  - id: head-20
+    group: 诃子
+    split: dev
+    type: head
+    pool: gloss
+    query: 诃子
+    asked: 诃子
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 诃子, names: [诃黎勒, 诃梨勒], valid: null, witness: jc_c029.00082}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 诃黎勒, witness: jc_c029.00082, by: annotator, date: "2026-10-14"}  # jc_c029, 1506
+      # furen_daquan, 1237; two-kernel 诃子 is called 诃梨勒
+      - {name: 诃梨勒, witness: furen_daquan.004.00026, by: annotator, date: "2026-10-14"}
+  # 淫羊藿: asked 32 passages; other-name-only 仙灵脾 25, 刚前 1 (汉魏2 隋唐2 宋元7 明7 清8). 仙灵脾 is the Tang-Song name
+  - id: head-21
+    group: 淫羊藿
+    split: heldout
+    type: head
+    pool: equation
+    query: 淫羊藿是什么药
+    asked: 淫羊藿
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 淫羊藿, names: [仙灵脾, 刚前], valid: null, witness: weiji_baoshu.002.00069}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 仙灵脾, witness: weiji_baoshu.002.00069, by: annotator, date: "2026-10-14"}  # weiji_baoshu, 1170
+      - {name: 刚前, witness: jc_c000.00674, by: annotator, date: "2026-10-14"}  # jc_c000, 122
+  # 灶心土: asked 23 passages; other-name-only 伏龙肝 133 (汉魏2 隋唐62 宋元25 明16 清28). 灶中黄土 (25 passages) left out: witnesses
+  # only say 灶中土/灶下黄土
+  - id: head-22
+    group: 灶心土
+    split: heldout
+    type: head
+    pool: gloss
+    query: 灶心土
+    asked: 灶心土
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 灶心土, names: [伏龙肝], valid: null, witness: jc_c029.00202}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 伏龙肝, witness: jc_c029.00202, by: annotator, date: "2026-10-14"}  # jc_c029, 1506
+  # 乳香: asked 1013 passages; other-name-only 熏陆香 35, 薰陆香 33 (汉魏6 隋唐38 宋元10 明7 清7). 熏陆香/薰陆香 are the Tang names
+  # review fix: replaces head-23 (铅粉): outside the pools (胡粉即真铅粉: no equation of 铅粉 itself)
+  - id: head-s04
+    group: 乳香
+    split: heldout
+    type: head
+    pool: gloss
+    query: 乳香
+    asked: 乳香
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 乳香, names: [熏陆香, 薰陆香], valid: null, witness: jc_c021.00818}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 熏陆香, witness: jc_c021.00818, by: annotator, date: "2026-10-14"}  # jc_c021, 1757
+      - {name: 薰陆香, witness: jc_c007.00290, by: annotator, date: "2026-10-14"}  # jc_c007, 1116
+  # 龟甲: asked 77 passages (29 in [1368, 1912]); other-name-only in window 龟板 137, 神屋 0 (明43 清94). Ming-Qing texts
+  # write 龟板 (败龟板 contains it); 龟版 (13) left out: no witness
+  - id: head-24
+    group: 龟甲
+    split: dev
+    type: head
+    pool: gloss
+    query: 明清的龟甲
+    asked: 龟甲
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 龟甲, names: [龟板, 神屋], valid: null, witness: jc_o097.02851}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 龟板, witness: jc_o097.02851, by: annotator, date: "2026-10-14"}  # jc_o097, 1615; 龟甲（即龟板…）
+      - {name: 神屋, witness: yishuo.002.00204, by: annotator, date: "2026-10-14"}  # yishuo, 1206
+  # 鹿角胶: asked 99 passages; other-name-only 白胶 24 (汉魏3 隋唐6 宋元6 明2 清7). 本经 head 白胶; 白胶香 is 枫香脂
+  - id: head-25
+    group: 鹿角胶
+    split: dev
+    type: head
+    pool: gloss
+    query: 鹿角胶
+    asked: 鹿角胶
+    asked_cues: []
+    false_friends: [白胶香]
+    referents:
+      - {head: 鹿角胶, names: [白胶], valid: null, witness: jc_c000a.00114}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 白胶, witness: jc_c000a.00114, by: annotator, date: "2026-10-14"}  # jc_c000a, 122
+
+  # ===== ambiguous (20): a name shared by several drugs: every referent is listed with its witness, none merged
+  # n=29 (汉–清); 赤箭 ws_36bca7b992.00142 神农本草经[25,220]; 徐长卿 jc_c000a.00063 神农本草经（复古辑本）[25,220]
+  # 本经 names both 赤箭 and 徐长卿 一名鬼督邮; asked form also in 千金/外台 formulas (唐). Its own 唐本草 entry
+  # (独摇草) has a witness only in bencao_gangmu (039.01753): not expected. 天麻 also glosses 益母草 once (证治准绳
+  # 067.11000), negligible. wrong: 独活 (独摇草 is also a 独活 name; legacy hits)
+  - id: ambiguous-01
+    group: 鬼督邮
+    split: dev
+    type: ambiguous
+    pool: store
+    query: 鬼督邮是什么药
+    asked: 鬼督邮
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 赤箭, names: [赤箭, 天麻, 离母], valid: null, witness: ws_36bca7b992.00142}
+      - {head: 徐长卿, names: [徐长卿], valid: null, witness: jc_c000a.00063}
+    wrong: [独活]
+    expect_candidates: [赤箭, 徐长卿]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 赤箭, witness: ws_36bca7b992.00142, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+      - {name: 天麻, witness: jc_c000.00199, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+      - {name: 离母, witness: ws_36bca7b992.00142, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+      - {name: 徐长卿, witness: jc_c000a.00063, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+  # n=261 (汉–清); 凝水石 jc_d001.00410 名医别录[200,500]; 石膏 zhengzhi_zhunsheng.067.11012 证治准绳[1602,1608]
+  # 别录 凝水石 一名寒水石; 证治准绳: 寒水石…即今人谓软石膏 (the Song-Ming 石膏 reading). No window set: the start of
+  # the 石膏 reading has no dated witness
+  - id: ambiguous-02
+    group: 寒水石
+    split: dev
+    type: ambiguous
+    pool: bielu
+    query: 寒水石到底是哪种石头
+    asked: 寒水石
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 凝水石, names: [凝水石, 凌水石, 白水石], valid: null, witness: jc_d001.00410}
+      - {head: 石膏, names: [石膏], valid: null, witness: zhengzhi_zhunsheng.067.11012}
+    wrong: []
+    expect_candidates: [凝水石, 石膏]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 凝水石, witness: jc_d001.00410, by: annotator, date: "2026-10-14"}  # 名医别录[200,500]
+      - {name: 凌水石, witness: jc_d001.00410, by: annotator, date: "2026-10-14"}  # 名医别录[200,500]
+      - {name: 白水石, witness: jc_c001.00024, by: annotator, date: "2026-10-14"}  # 吴普本草[220,265]
+      - {name: 石膏, witness: zhengzhi_zhunsheng.067.11012, by: annotator, date: "2026-10-14"}  # 证治准绳[1602,1608]
+  # ambiguous >=20. n=27 (先唐9 唐5 宋3 明8 清2); the 本经 vegetable 苦菜 (一名荼草) and 名医 贝母 一名苦菜.  The 别名录 files
+  # it under 败酱 and 龙葵 (no store witness); 珍珠囊补遗 苦菜，即苦茶茗 (a tea, no two-character head) is left out
+  # review fix: replaces ambiguous-03 (紫河车): held-out on names the design was tuned on (蚤休/重楼); the 蚤休 reading unknown
+  # to every shipped source
+  - id: ambiguous-n1
+    group: 苦菜
+    split: dev
+    type: ambiguous
+    pool: bielu
+    query: 苦菜是哪味药
+    asked: 苦菜
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 苦菜, names: [苦菜], valid: null, witness: jc_c000a.00091}
+      - {head: 贝母, names: [贝母], valid: null, witness: jc_c000.00664}
+    wrong: []
+    expect_candidates: [苦菜, 贝母]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 贝母, witness: jc_c000.00664, by: annotator, date: "2026-10-14"}  # 神农本草经 贝母 section: 一名苦菜
+  # ambiguous >=20. n=60 (先唐10 唐30 宋11 明6 清3), mostly 千金/外台 recipes; 本经 紫参 一名牡蒙, and 陶弘景 under 王孙:
+  # 今方家皆呼名黄昏，又云牡蒙.  王孙庆 (a man's name) is masked for the name 王孙
+  # review fix: replaces ambiguous-04 (将军): held-out on names the design was tuned on (将军/大黄; its cues copied the
+  # spec's curated cue list)
+  - id: ambiguous-n2
+    group: 牡蒙
+    split: heldout
+    type: ambiguous
+    pool: bielu
+    query: 牡蒙是什么药
+    asked: 牡蒙
+    asked_cues: []
+    false_friends: [王孙庆]
+    referents:
+      - {head: 紫参, names: [紫参], valid: null, witness: jc_c000a.00148}
+      - {head: 王孙, names: [王孙], valid: null, witness: jc_c002.01008}
+    wrong: []
+    expect_candidates: [紫参, 王孙]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 紫参, witness: jc_c000a.00148, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）: 紫参 一名牡蒙
+      - {name: 王孙, witness: jc_c002.01008, by: annotator, date: "2026-10-14"}  # 本草经集注 王孙: 又云牡蒙
+  # ambiguous 3-19 (drawn at >=20; 15 of 22 once the formulas are masked: 先唐8 唐2 宋1 明2 清2); 本经 萤火 一名夜光 and
+  # 吴普 地朕 一名夜光; 攒竹 一名夜光 (an acupoint, 5 passages) is a wrong reading, 自有夜光 (a glow) stays unlabelled
+  # review fix: replaces ambiguous-05 (文蛤): outside the pools (文蛤 is in no lexicon, 别名录 or store pair list twice)
+  - id: ambiguous-n4
+    group: 景天
+    split: dev
+    type: ambiguous
+    pool: lexicon
+    query: 夜光是什么药
+    asked: 夜光
+    asked_cues: []
+    false_friends: [夜光丸, 夜光散, 夜光膏]
+    referents:
+      - {head: 萤火, names: [萤火], valid: null, witness: jc_c000a.00355}
+      - {head: 地朕, names: [地朕], valid: null, witness: jc_c001.00152}
+    wrong: [攒竹]
+    expect_candidates: [萤火, 地朕]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 萤火, witness: jc_c000a.00355, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）: 萤火 一名夜光
+      - {name: 地朕, witness: jc_c001.00152, by: annotator, date: "2026-10-14"}  # 吴普本草 地朕: 一名夜光
+  # n=8 (汉–清); 人参 jc_c001.00036 吴普本草[220,265]; 赤箭 jc_c000.00197 神农本草经[25,220]
+  # 吴普 人参 一名神草; 吴普 换督邮(鬼督邮) 一名神草, filed under 赤箭 (茎如箭赤无叶)
+  # review fix: replaces ambiguous-06 (金不换): held-out but only in the store pool: no shipped source lists a referent
+  - id: ambiguous-s04
+    group: 鬼督邮
+    split: dev
+    type: ambiguous
+    pool: bielu
+    query: 神草
+    asked: 神草
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 人参, names: [人参], valid: null, witness: jc_c001.00036}
+      - {head: 赤箭, names: [赤箭, 天麻], valid: null, witness: jc_c000.00197}
+    wrong: []
+    expect_candidates: [人参, 赤箭]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 人参, witness: jc_c001.00036, by: annotator, date: "2026-10-14"}  # 吴普本草[220,265]
+      - {name: 赤箭, witness: jc_c000.00197, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+      - {name: 天麻, witness: jc_c000.00199, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+  # ambiguous >=20. n=195 (先唐105 唐57 宋15 明2 清15); 本经 消石 一名芒消, while 伤寒论's 芒消 is 芒硝: 医宗金鉴's
+  # 调胃承气汤 lists 芒硝 and then writes 内芒消 (one ingredient written both ways)
+  # review fix: replaces ambiguous-07 (女萎): outside the pools (女萎 filed once)
+  - id: ambiguous-n3
+    group: 芒消
+    split: dev
+    type: ambiguous
+    pool: lexicon
+    query: 芒消
+    asked: 芒消
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 消石, names: [消石], valid: null, witness: jc_c000a.00098}
+      - {head: 芒硝, names: [芒硝], valid: null, witness: yizong_jinjian.032.15126}
+    wrong: []
+    expect_candidates: [消石, 芒硝]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 消石, witness: jc_c000a.00098, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）: 消石 一名芒消
+      - {name: 芒硝, witness: yizong_jinjian.032.15126, by: annotator, date: "2026-10-14"}  # 医宗金鉴[1742]
+  # n=19 (汉–清); 桔梗 jc_c001.00129 吴普本草[220,265]; 白药 jc_c007.00212 本草衍义[1116,1116]
+  # 吴普/名医 桔梗 一名白药; 本草衍义 白药 entry = the 唐本 drug (宋以后 白药子; no non-纲目 witness equating 白药子
+  # with 白药, so 白药子 is not listed, though its passages contain the asked form). 别名录 also files 白药 under
+  # 栝楼: no store witness, not expected
+  - id: ambiguous-08
+    group: 白药
+    split: dev
+    type: ambiguous
+    pool: bielu
+    query: 白药是什么
+    asked: 白药
+    asked_cues: []
+    false_friends: [白药须, 服白药, 故名白药]
+    referents:
+      - {head: 桔梗, names: [桔梗], valid: null, witness: jc_c001.00129}
+      - {head: 白药, names: [白药], valid: null, witness: jc_c007.00212}
+    wrong: []
+    expect_candidates: [桔梗, 白药]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 桔梗, witness: jc_c001.00129, by: annotator, date: "2026-10-14"}  # 吴普本草[220,265]
+      - {name: 白药, witness: jc_c007.00212, by: annotator, date: "2026-10-14"}  # 本草衍义[1116,1116]
+  # n=13 (汉–明); 羊蹄 ws_36bca7b992.00298 神农本草经[25,220]; 石南 jc_c000a.00203 神农本草经（复古辑本）[25,220];
+  # 紫葳 jc_c000.00816 神农本草经[25,220]; 白英 jc_c000.00191 神农本草经[25,220]
+  # 本经 羊蹄 and 石南 一名鬼目; 吴普 紫威 一名鬼目; 尔雅 苻，鬼目 with 唐本注 白英: 此鬼目草也. 千金翼 禁经 鬼目 (a
+  # point on the hand) masked
+  - id: ambiguous-09
+    group: 凌霄花
+    split: dev
+    type: ambiguous
+    pool: bielu
+    query: 鬼目
+    asked: 鬼目
+    asked_cues: []
+    false_friends: [捻鬼目, 节是鬼目, 见鬼目]
+    referents:
+      - {head: 羊蹄, names: [羊蹄], valid: null, witness: ws_36bca7b992.00298}
+      - {head: 石南, names: [石南], valid: null, witness: jc_c000a.00203}
+      - {head: 紫葳, names: [紫葳, 凌霄花], valid: null, witness: jc_c000.00816}
+      - {head: 白英, names: [白英], valid: null, witness: jc_c000.00191}
+    wrong: []
+    expect_candidates: [羊蹄, 石南, 紫葳, 白英]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 羊蹄, witness: ws_36bca7b992.00298, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+      - {name: 石南, witness: jc_c000a.00203, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 紫葳, witness: jc_c000.00816, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+      - {name: 凌霄花, witness: jc_c040.00511, by: annotator, date: "2026-10-14"}  # 珍珠囊补遗药性赋[1368,1644]
+      - {name: 白英, witness: jc_c000.00191, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+  # n=10 (汉–宋金元); 石斛 ws_36bca7b992.00046 神农本草经[25,220]; 木兰 ws_36bca7b992.00202 神农本草经[25,220]
+  # 本经 石斛 and 木兰 一名林兰; 走马急疳真方 (1275) code name 林兰（即石斛）
+  - id: ambiguous-10
+    group: 林兰
+    split: heldout
+    type: ambiguous
+    pool: lexicon
+    query: 林兰是什么药
+    asked: 林兰
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 石斛, names: [石斛], valid: null, witness: ws_36bca7b992.00046}
+      - {head: 木兰, names: [木兰], valid: null, witness: ws_36bca7b992.00202}
+    wrong: []
+    expect_candidates: [石斛, 木兰]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 石斛, witness: ws_36bca7b992.00046, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+      - {name: 木兰, witness: ws_36bca7b992.00202, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+  # n=44 (汉–清); 景天 jc_d001.00209 名医别录[200,500]; 萤火 jc_c001.00209 吴普本草[220,265]
+  # 别录 景天 一名救火; 吴普 萤火 一名救火 (also 一名景天). Cue-gated: the bare word means putting out fire
+  - id: ambiguous-11
+    group: 景天
+    split: dev
+    type: ambiguous
+    pool: bielu
+    query: 救火是哪味药
+    asked: 救火
+    asked_cues: [景天, 慎火, 戒火, 据火, 萤火, 荧火, 夜照, 熠耀]
+    false_friends: []
+    referents:
+      - {head: 景天, names: [景天], valid: null, witness: jc_d001.00209}
+      - {head: 萤火, names: [萤火], valid: null, witness: jc_c001.00209}
+    wrong: []
+    expect_candidates: [景天, 萤火]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 景天, witness: jc_d001.00209, by: annotator, date: "2026-10-14"}  # 名医别录[200,500]
+      - {name: 萤火, witness: jc_c001.00209, by: annotator, date: "2026-10-14"}  # 吴普本草[220,265]
+  # n=9 (汉–宋金元); 独活 jc_c001.00048 吴普本草[220,265]; 白头翁 jc_c000a.00274 神农本草经（复古辑本）[25,220]
+  # 吴普/名医 独活 一名胡王使者; 本经 白头翁 一名胡王使者. 羌活 left out of 独活's names (a separate drug later)
+  - id: ambiguous-12
+    group: 鬼督邮
+    split: dev
+    type: ambiguous
+    pool: store
+    query: 胡王使者是哪味药
+    asked: 胡王使者
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 独活, names: [独活, 护羌使者], valid: null, witness: jc_c001.00048}
+      - {head: 白头翁, names: [白头翁, 野丈人], valid: null, witness: jc_c000a.00274}
+    wrong: []
+    expect_candidates: [独活, 白头翁]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 独活, witness: jc_c001.00048, by: annotator, date: "2026-10-14"}  # 吴普本草[220,265]
+      - {name: 护羌使者, witness: ws_36bca7b992.00049, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+      - {name: 白头翁, witness: jc_c000a.00274, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 野丈人, witness: jc_c000a.00274, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+  # n=8 (汉–隋唐五代); 甘草 jc_c000a.00008 神农本草经（复古辑本）[25,220]; 旋花 jc_d001.00203 名医别录[200,500]
+  # 本经 甘草 一名美草 (广雅 美草，甘草也); 别录 旋花 一名美草 (陶: 南人呼为美草). 山姜 (陶 东人呼为山姜) left out:
+  # also a separate drug. The 孙本 spelling 旋华 is left out (no passage equates the two spellings)
+  - id: ambiguous-13
+    group: 甘草
+    split: dev
+    type: ambiguous
+    pool: lexicon
+    query: 美草
+    asked: 美草
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 甘草, names: [甘草], valid: null, witness: jc_c000a.00008}
+      - {head: 旋花, names: [旋花, 鼓子花], valid: null, witness: jc_d001.00203}
+    wrong: []
+    expect_candidates: [甘草, 旋花]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 甘草, witness: jc_c000a.00008, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 旋花, witness: jc_d001.00203, by: annotator, date: "2026-10-14"}  # 名医别录[200,500]
+      - {name: 鼓子花, witness: jc_c007.00177, by: annotator, date: "2026-10-14"}  # 本草衍义[1116,1116]
+  # n=9 (汉–清); 玄参 jc_c000a.00134 神农本草经（复古辑本）[25,220]; 蚤休 jc_c000.01159 神农本草经[25,220]
+  # 本经 玄参 一名重台; 郑樵 (孙本 蚤休 note): 蚤休…曰重台
+  # review fix: replaces ambiguous-14 (百枝): held-out on names the design was tuned on (百枝/狗脊/防风)
+  - id: ambiguous-s03
+    group: 重台
+    split: dev
+    type: ambiguous
+    pool: bielu
+    query: 重台是什么药
+    asked: 重台
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 玄参, names: [玄参], valid: null, witness: jc_c000a.00134}
+      - {head: 蚤休, names: [蚤休], valid: null, witness: jc_c000.01159}
+    wrong: []
+    expect_candidates: [玄参, 蚤休]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 玄参, witness: jc_c000a.00134, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 蚤休, witness: jc_c000.01159, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+  # n=14 (汉–清); 藕实茎 ws_36bca7b992.00106 神农本草经[25,220]; 白瓜子 jc_c000a.00090 神农本草经（复古辑本）[25,220]
+  # 本经 藕实茎 一名水芝(丹); 本经 白瓜子 一名水芝 (千金: 即冬瓜仁也)
+  - id: ambiguous-s01
+    group: 水芝
+    split: heldout
+    type: ambiguous
+    pool: lexicon
+    query: 水芝是什么
+    asked: 水芝
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 藕实茎, names: [藕实茎], valid: null, witness: ws_36bca7b992.00106}
+      - {head: 白瓜子, names: [白瓜子, 冬瓜仁], valid: null, witness: jc_c000a.00090}
+    wrong: []
+    expect_candidates: [藕实茎, 白瓜子]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 藕实茎, witness: ws_36bca7b992.00106, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+      - {name: 白瓜子, witness: jc_c000a.00090, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 冬瓜仁, witness: qianjin_yaofang.079.05731, by: annotator, date: "2026-10-14"}  # 备急千金要方[650,659]
+  # n=5 (汉–汉); 女青 jc_c000a.00276 神农本草经（复古辑本）[25,220]; 萝摩 jc_c000.01065 神农本草经[25,220]
+  # 本经 女青 一名雀瓢; 图经 (孙本 note): 雀瓢，即是萝摩之别名
+  # review fix: replaces ambiguous-16 (马蹄香): held-out but only in the store pool: no shipped source lists a referent
+  - id: ambiguous-s07
+    group: 萝摩
+    split: heldout
+    type: ambiguous
+    pool: bielu
+    query: 雀瓢
+    asked: 雀瓢
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 女青, names: [女青], valid: null, witness: jc_c000a.00276}
+      - {head: 萝摩, names: [萝摩], valid: null, witness: jc_c000.01065}
+    wrong: []
+    expect_candidates: [女青, 萝摩]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 女青, witness: jc_c000a.00276, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 萝摩, witness: jc_c000.01065, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+  # n=3 (汉–晋南北朝); 磁石 jc_d001.00408 名医别录[200,500]; 玄石 jc_d001.00416 名医别录[200,500]
+  # 别录 磁石 and 玄石 一名处石. 外科集验方 近面处石代之 masked
+  # review fix: replaces ambiguous-17 (千里光): outside the pools (千里光 filed once)
+  - id: ambiguous-s08
+    group: 处石
+    split: dev
+    type: ambiguous
+    pool: lexicon
+    query: 处石
+    asked: 处石
+    asked_cues: []
+    false_friends: [处石代]
+    referents:
+      - {head: 磁石, names: [磁石], valid: null, witness: jc_d001.00408}
+      - {head: 玄石, names: [玄石], valid: null, witness: jc_d001.00416}
+    wrong: []
+    expect_candidates: [磁石, 玄石]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 磁石, witness: jc_d001.00408, by: annotator, date: "2026-10-14"}  # 名医别录[200,500]
+      - {name: 玄石, witness: jc_d001.00416, by: annotator, date: "2026-10-14"}  # 名医别录[200,500]
+  # n=10 (汉–清); 天名精 jc_c000a.00053 神农本草经（复古辑本）[25,220]; 蠡实 jc_c000a.00132
+  # 神农本草经（复古辑本）[25,220]
+  # 本经 天名精 and 蠡实 一名豕首
+  - id: ambiguous-s02
+    group: 豕首
+    split: heldout
+    type: ambiguous
+    pool: lexicon
+    query: 豕首
+    asked: 豕首
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 天名精, names: [天名精], valid: null, witness: jc_c000a.00053}
+      - {head: 蠡实, names: [蠡实], valid: null, witness: jc_c000a.00132}
+    wrong: []
+    expect_candidates: [天名精, 蠡实]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 天名精, witness: jc_c000a.00053, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 蠡实, witness: jc_c000a.00132, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+  # n=2 (汉–晋南北朝); 络石 jc_c000.00249 神农本草经[25,220]; 紫加石 jc_d001.00863 名医别录[200,500]
+  # 唐本注 (孙本 络石 note): 山南人谓之石血; 别录 紫加石 一名石血. 瘟疫论 如石，血凝 and 幼科 寒热石血 (淋) masked
+  - id: ambiguous-19
+    group: 石血
+    split: dev
+    type: ambiguous
+    pool: store
+    query: 石血
+    asked: 石血
+    asked_cues: []
+    false_friends: [如石血, 热石血]
+    referents:
+      - {head: 络石, names: [络石], valid: null, witness: jc_c000.00249}
+      - {head: 紫加石, names: [紫加石], valid: null, witness: jc_d001.00863}
+    wrong: []
+    expect_candidates: [络石, 紫加石]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 络石, witness: jc_c000.00249, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+      - {name: 紫加石, witness: jc_d001.00863, by: annotator, date: "2026-10-14"}  # 名医别录[200,500]
+  # n=2 (晋南北朝–晋南北朝); 理石 jc_d001.00417 名医别录[200,500]; 白肌石 jc_d001.00439 名医别录[200,500]
+  # 别录 理石 一名肌石 and 白肌石 一名肌石 (two 别录 stones). 白肌石 contains the asked form
+  - id: ambiguous-20
+    group: 肌石
+    split: dev
+    type: ambiguous
+    pool: lexicon
+    query: 肌石是什么药
+    asked: 肌石
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 理石, names: [理石], valid: null, witness: jc_d001.00417}
+      - {head: 白肌石, names: [白肌石], valid: null, witness: jc_d001.00439}
+    wrong: []
+    expect_candidates: [理石, 白肌石]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 理石, witness: jc_d001.00417, by: annotator, date: "2026-10-14"}  # 名医别录[200,500]
+      - {name: 白肌石, witness: jc_d001.00439, by: annotator, date: "2026-10-14"}  # 名医别录[200,500]
+
+  # ===== period (20): a name whose referent or currency changed: hard windows (valid) and soft floors (flags)
+  # n=802 (晋2 唐3 宋141 明258 清398); window before 618: asked 2, other-name only 37, wrong-only 0
+  # 木通 is the Song name of the 本经 通草; before 960 the drug is written 通草 (汉魏六朝 entries 一名附支/丁翁)
+  - id: period-01
+    group: 木通
+    split: dev
+    type: period
+    pool: curated
+    query: 唐以前的木通
+    asked: 木通
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 木通, names: [通草, 附支, 丁翁], valid: [null, 960], witness: jc_d025a.00026}
+    wrong: [通脱木]
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 通草, witness: jc_d025a.00026, by: annotator, date: "2026-10-14"}  # 备急千金要方[1911,1911]: 择通草者，鲜知木通之别号
+      # 神农本草经[25,220]: 吴普：通草，一名丁翁，一名附支; equates it with 通草
+      - {name: 附支, witness: jc_c000.00632, by: annotator, date: "2026-10-14"}
+      # 神农本草经[25,220]: same; equates it with 通草
+      - {name: 丁翁, witness: jc_c000.00632, by: annotator, date: "2026-10-14"}
+  # n=417 (汉12 晋22 唐191 宋43 明28 清121); window [618, 907): asked 191, other-name only 4, wrong-only 0
+  # Tang 通草 is the drug later called 木通; 通脱木 is the Song+ reading
+  - id: period-02
+    group: 木通
+    split: dev
+    type: period
+    pool: curated
+    query: 唐代的通草
+    asked: 通草
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 木通, names: [木通, 附支, 丁翁], valid: [null, 960], witness: jc_d025a.00026}
+    wrong: [通脱木]
+    expect_candidates: [木通]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 木通, witness: jc_d025a.00026, by: annotator, date: "2026-10-14"}  # 备急千金要方[1911,1911]: 择通草者，鲜知木通之别号
+      # 新修本草[659,659]: 新修本草 通草 entry: 一名附支，一名丁翁
+      - {name: 附支, witness: jc_c003.01951, by: annotator, date: "2026-10-14"}
+      - {name: 丁翁, witness: jc_c003.01951, by: annotator, date: "2026-10-14"}  # 新修本草[659,659]: same
+  # n=417 (汉12 晋22 唐191 宋43 明28 清121); window [1644, 1912): asked 121, other-name only 0, wrong-only 384
+  # Qing 通草 (白通草, 通乳) is 通脱木; 木通 is another drug in this window (伤寒 commentaries that keep 通草 for 木通 are asked
+  # hits anyway)
+  - id: period-03
+    group: 木通
+    split: dev
+    type: period
+    pool: curated
+    query: 清代的通草
+    asked: 通草
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 通脱木, names: [通脱木], valid: [960, null], witness: jc_d025a.00026}
+    wrong: [木通]
+    expect_candidates: [通脱木]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 通脱木, witness: jc_d025a.00026, by: annotator, date: "2026-10-14"}  # 备急千金要方[1911,1911]: 择通草者…皆以通脱木为名
+  # n=2 (明1 清1); window [1644, 1912): asked 1, other-name only 120, wrong-only 384
+  # rare head; Qing 通草 names it. Doubt: a few Qing 通草 passages (当归四逆汤 commentary) still mean 木通
+  - id: period-04
+    group: 木通
+    split: dev
+    type: period
+    pool: curated
+    query: 清代的通脱木
+    asked: 通脱木
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 通脱木, names: [通草], valid: [960, null], witness: jc_d025a.00026}
+    wrong: [木通]
+    expect_candidates: []
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 通草, witness: jc_d025a.00026, by: annotator, date: "2026-10-14"}  # 备急千金要方[1911,1911]: 择通草者…皆以通脱木为名
+  # n=202 (晋17 唐105 宋35 明24 清21); window [618, 907): asked 104, other-name only 12, wrong-only 1
+  # before the Song 青木香 is 木香 (昆仑青木香); 土青木香/独行根 is the 马兜铃 root, masked/wrong
+  - id: period-05
+    group: 青木香
+    split: dev
+    type: period
+    pool: curated
+    query: 唐代的青木香
+    asked: 青木香
+    asked_cues: []
+    false_friends: [土青木香]
+    referents:
+      - {head: 木香, names: [木香], valid: [null, 1100], witness: jc_d025a.00026}
+    wrong: [马兜铃, 独行根]
+    expect_candidates: [木香]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 木香, witness: jc_d025a.00026, by: annotator, date: "2026-10-14"}  # 备急千金要方[1911,1911]: 青木香，木香之佳，以土者为恶
+  # n=802 (晋2 唐3 宋141 明258 清398); window [1644, 1912): asked 398, other-name only 0, wrong-only 18
+  # mirror of period-03: 通草 must not be added (valid before 960 only); bare 通草 hits are not relevant but not
+  # labelled wrong (some Qing 伤寒 commentaries keep 通草 for 木通)
+  # review fix: replaces period-06 (山药): held-out on names the design was tuned on (宋代以前的山药: the prototype's query)
+  - id: period-s1
+    group: 木通
+    split: dev
+    type: period
+    pool: curated
+    query: 清代的木通
+    asked: 木通
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 木通, names: [], valid: null, witness: jc_c020.00372}
+    wrong: [通脱木, 白通草]
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated: []
+  # period 3-19. n=8 (先唐4 唐1 宋3); 本经 天门冬 一名颠勒, revived as a cipher name in 走马急疳真方[1275]
+  # (颠勒（即天冬…）, 国老（即甘草）…); window [960, 1279): asked 3, 天门冬 44, 天冬 2
+  # review fix: replaces period-07 (署预): held-out on names the design was tuned on (署预/山药)
+  - id: period-n1
+    group: 颠勒
+    split: heldout
+    type: period
+    pool: dated
+    query: 宋代的颠勒
+    asked: 颠勒
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 天门冬, names: [天门冬, 天冬], valid: null, witness: jc_c000a.00007}
+    wrong: []
+    expect_candidates: [天门冬]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 天门冬, witness: jc_c000a.00007, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）: 天门冬 一名颠勒
+      - {name: 天冬, witness: jc_f018.00071, by: annotator, date: "2026-10-14"}  # 走马急疳真方: 颠勒（即天冬，去心，焙）
+  # period 3-19. n=4 (明1 清3), first written 1618; 胎产指南 百草霜（即锅底煤）; window [960, 1279): asked 0, 百草霜 21
+  # review fix: replaces period-08 (署豫): held-out on names the design was tuned on (署豫/山药)
+  - id: period-n2
+    group: 锅底煤
+    split: dev
+    type: period
+    pool: dated
+    query: 宋代的锅底煤
+    asked: 锅底煤
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 百草霜, names: [百草霜], valid: null, witness: jc_g023.01245}
+    wrong: []
+    expect_candidates: [百草霜]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 百草霜, witness: jc_g023.01245, by: annotator, date: "2026-10-14"}  # 胎产指南[1856]
+  # n=335 (汉10 唐5 宋7 明25 清287 民1); window before 960: asked 15, other-name only 95, wrong-only 0, floor flags due 15
+  # taboo spelling (宋 1012, 清 1662); pre-960 元参 is the 孙星衍 辑本 and a 千金 edition
+  - id: period-09
+    group: 重台
+    split: dev
+    type: period
+    pool: taboo
+    query: 宋以前的元参
+    asked: 元参
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 玄参, names: [玄参, 黑参], valid: null, witness: jc_c000.01471}
+    wrong: []
+    expect_candidates: [玄参]
+    floor: {surface: 元参, year: 1012}  # taboo 宋 1012 (玄→元), again 清 1662
+    band: ">=20"
+    adjudicated:
+      # 备急千金要方[650,659]: parallel: 玄参（恶黄芪、干姜、大枣、山茱萸，反藜芦）= jc_c000.01471 元参 line; also jc_c026.00218 元参 entry with the
+      # 本经 玄参 text
+      - {name: 玄参, witness: jc_d025.00123, by: annotator, date: "2026-10-14", parallel: jc_c000.01471}
+      - {name: 黑参, witness: jc_c025a.00886, by: annotator, date: "2026-10-14"}  # 本草求真[1769,1769]: 玄参入肾，曰黑参
+  # n=497 (汉2 晋2 唐91 宋84 明152 清156 民10); window [1368, 1912): asked 308, other-name only 353, wrong-only 0, floor
+  # flags due 0
+  # Qing texts write 元参 (287 passages); no anachronism flag is due in this window
+  - id: period-10
+    group: 重台
+    split: dev
+    type: period
+    pool: taboo
+    query: 明清时期的玄参
+    asked: 玄参
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 玄参, names: [元参, 黑参], valid: null, witness: jc_d025.00123}
+    wrong: []
+    expect_candidates: []
+    floor: {surface: 元参, year: 1012}  # taboo 宋 1012; nothing in this window ends before it, so no flag is due
+    band: ">=20"
+    adjudicated:
+      # 神农本草经[25,220]: parallel: 元参 恶黄芪…反藜芦 = jc_d025.00123 玄参 line
+      - {name: 元参, witness: jc_c000.01471, by: annotator, date: "2026-10-14", parallel: jc_d025.00123}
+      - {name: 黑参, witness: jc_c025a.00886, by: annotator, date: "2026-10-14"}  # 本草求真[1769,1769]: 玄参入肾，曰黑参
+  # n=76 (明14 清62); window [1368, 1644): asked 14, other-name only 108, wrong-only 1, floor flags due 14
+  # Qing taboo spelling (康熙 1662); Ming-dated 元胡 is a Qing edition; 元胡久秽中土 (元 barbarians) masked
+  - id: period-11
+    group: 元胡
+    split: heldout
+    type: period
+    pool: taboo
+    query: 明代的元胡
+    asked: 元胡
+    asked_cues: []
+    false_friends: [元胡久秽]
+    referents:
+      - {head: 延胡索, names: [延胡, 玄胡索, 玄胡], valid: null, witness: jc_h013.00905}
+    wrong: []
+    expect_candidates: [延胡索]
+    floor: {surface: 元胡, year: 1662}  # taboo 清康熙 1662 (玄→元); no Song or earlier 元胡 in the store
+    band: ">=20"
+    adjudicated:
+      # 证治准绳[1602,1608]: parallel: 金铃子散 金铃子 玄胡索（各一两）…痛止与枳术丸 = jc_h013.00905 金铃子肉 元胡索（各一两）…痛止服枳术丸
+      - {name: 玄胡索, witness: zhengzhi_zhunsheng.025.02980, by: annotator, date: "2026-10-14", parallel: jc_h013.00905}
+      # 药性歌括四百味[1368,1644]: 延胡…（即玄胡索。）; equates it with 玄胡索 (延胡 covers 延胡索)
+      - {name: 延胡, witness: jc_c029.00078, by: annotator, date: "2026-10-14"}
+      # 素问病机气宜保命集[1186]: 金铃子散 金铃子 玄胡（各一两）…每服三钱酒调下 = 证治准绳's 玄胡索 line
+      - {name: 玄胡, witness: baoming_ji.002.00251, by: annotator, date: "2026-10-14", parallel: zhengzhi_zhunsheng.025.02980}
+  # n=1444 (汉1 晋2 唐13 宋407 明457 清563 民1); window before 960: asked 16, other-name only 0, wrong-only 0, floor flags
+  # due 16
+  # 沈括：六朝以前，医方唯有枳实，无枳壳 (jc_c000.00799; 苏沈良方 susheng_liangfang.003.00056 古人只谓之枳实). 枳实 not added: the old name
+  # covers both later drugs (a split, not a rename)
+  - id: period-12
+    group: 枳壳
+    split: dev
+    type: period
+    pool: curated
+    query: 宋以前的枳壳
+    asked: 枳壳
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 枳壳, names: [], valid: null, witness: jc_c000.00799}
+    wrong: []
+    expect_candidates: []
+    floor: {surface: 枳壳, year: 960}  # 沈括 (jc_c000.00799): 六朝以前，医方唯有枳实，无枳壳; the Song split, taken as 960
+    band: ">=20"
+    adjudicated: []
+  # n=220 (宋31 明66 清120 民3); window before 960: asked 0, other-name only 6, wrong-only 0
+  # no 金银花 before 960 in the store; the period's name is 忍冬 (忍冬藤 ⊃ 忍冬)
+  # review fix: replaces period-13 (苍术): held-out on names the design was tuned on (苍术: a spec first_use row)
+  - id: period-s2
+    group: 金银花
+    split: dev
+    type: period
+    pool: dated
+    query: 宋以前的金银花
+    asked: 金银花
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 金银花, names: [忍冬], valid: null, witness: yishuo.006.00645}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 忍冬, witness: yishuo.006.00645, by: annotator, date: "2026-10-14"}  # 医说[1189,1224]: 金银花又曰老翁须本草名为忍冬
+  # period 1-2. n=1, first written in 本草衍义[1116] (乌蛇脊高，世谓之剑脊乌梢); window [618, 907): asked 0, 乌蛇 5
+  # review fix: replaces period-14 (赤术): held-out on names the design was tuned on (苍术)
+  - id: period-n3
+    group: 剑脊乌梢
+    split: heldout
+    type: period
+    pool: dated
+    query: 唐代的剑脊乌梢
+    asked: 剑脊乌梢
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 乌蛇, names: [乌蛇], valid: null, witness: jc_c007.00461}
+    wrong: []
+    expect_candidates: [乌蛇]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 乌蛇, witness: jc_c007.00461, by: annotator, date: "2026-10-14"}  # 本草衍义 乌蛇
+  # n=69 (汉9 晋4 唐26 宋22 明1 清7); window [618, 907): asked 26, other-name only 42, wrong-only 0
+  # Han taboo pair; Tang 千金 writes 恒山 (26), 常山 also current; no mountain sense in the window
+  # review fix: replaces period-15 (官桂): held-out on names the design was tuned on (官桂: a spec first_use row)
+  - id: period-s3
+    group: 恒山
+    split: heldout
+    type: period
+    pool: taboo
+    query: 唐代的恒山
+    asked: 恒山
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 常山, names: [常山], valid: null, witness: jc_c000.01066}
+    wrong: []
+    expect_candidates: [常山]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 常山, witness: jc_c000.01066, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]: （旧作常山，《御览》作恒山，是）
+  # n=202 (晋17 唐105 宋35 明24 清21); window [1644, 1912): asked 21, other-name only 0, wrong-only 0
+  # doubtful: Qing 本草 read 青木香 as the 马兜铃 root (本草征要 jc_c015.01225), but Qing formula books copying 苏合香丸/五香连翘汤
+  # keep 青木香 for 木香; 木香 therefore not labelled wrong
+  # review fix: replaces period-16 (川贝): held-out on names the design was tuned on (川贝: a spec first_use row)
+  - id: period-s5
+    group: 青木香
+    split: dev
+    type: period
+    pool: curated
+    query: 清代的青木香
+    asked: 青木香
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 马兜铃, names: [独行根, 土青木香], valid: [1100, null], witness: jc_c103.00336}
+    wrong: []
+    expect_candidates: [马兜铃]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      # 妇人大全良方[1237,1237]: 本草谓之青木香，证类谓之独行根，又云土青木香
+      - {name: 独行根, witness: furen_daquan.004.00022, by: annotator, date: "2026-10-14"}
+      - {name: 土青木香, witness: furen_daquan.004.00022, by: annotator, date: "2026-10-14"}  # 妇人大全良方[1237,1237]: same
+  # n=9 (清9); window [1644, 1912): asked 9, other-name only 0, wrong-only 129, floor flags due 0
+  # first dated use 外科全生集 1740; 象贝 (30) left out for want of a store witness
+  - id: period-17
+    group: 浙贝
+    split: dev
+    type: period
+    pool: curated
+    query: 清代的浙贝
+    asked: 浙贝
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 浙贝, names: [], valid: null, witness: jc_i009.00199}
+    wrong: [川贝, 土贝母]
+    expect_candidates: []
+    floor: {surface: 浙贝, year: 1740}  # first dated use 外科全生集 1740 (jc_i009.00199)
+    band: "3-19"
+    adjudicated: []
+  # n=49 (明1 清45 民3); no window: asked 49, other-name only 0, wrong-only 7091, floor flags due 4
+  # earliest-intent question; 上党参 (本草蒙筌 = 上党 人参) masked; 人参 is another drug; 4 passages end before 1700 (肯堂医论
+  # 1602, 王氏医案绎注 store-dated 1644 ×3)
+  - id: period-18
+    group: 鬼督邮
+    split: dev
+    type: period
+    pool: curated
+    query: 党参最早见于哪部书
+    asked: 党参
+    asked_cues: []
+    false_friends: [上党参]
+    referents:
+      - {head: 党参, names: [], valid: null, witness: jc_c021.00076}
+    wrong: [人参]
+    expect_candidates: []
+    # earliest securely dated use 本草从新 1757 (jc_c021.00076: 今真党参久已难得); 1700 as investigated
+    floor: {surface: 党参, year: 1700}
+    band: ">=20"
+    adjudicated: []
+  # n=216 (晋4 唐3 宋127 明42 清40); window before 618: asked 4, other-name only 9, wrong-only 0
+  # 本经 name 虎掌; pre-618 天南星 hits are 肘后 附方 (Siku) and 证类; 广雅 虎掌，瓜属 masked
+  - id: period-19
+    group: 天南星
+    split: heldout
+    type: period
+    pool: dated
+    query: 唐以前的天南星
+    asked: 天南星
+    asked_cues: []
+    false_friends: ["虎掌，瓜属"]
+    referents:
+      - {head: 天南星, names: [虎掌], valid: null, witness: jc_c006.00457}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      # 本草图经[1061,1062]: 虎掌…今冀州人…亦呼为天南星; also jc_d025a.00026 天南星，虎掌名异而实同
+      - {name: 虎掌, witness: jc_c006.00457, by: annotator, date: "2026-10-14"}
+  # n=164 (晋2 唐6 宋69 明29 清58); window before 960: asked 8, other-name only 1, wrong-only 0, floor flags due 8
+  # doubtful floor: 宋 1012 taboo 玄→延 per taboo.yaml, yet 太平圣惠方 (992) and 海药本草 write 延胡索 (all via later editions)
+  # review fix: replaces period-20 (天麻): outside the pools (赤箭/天麻 not a mined equation)
+  - id: period-s7
+    group: 元胡
+    split: heldout
+    type: period
+    pool: taboo
+    query: 宋以前的延胡索
+    asked: 延胡索
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 延胡索, names: [延胡, 玄胡索, 玄胡], valid: null, witness: jc_d025.09610}
+    wrong: []
+    expect_candidates: []
+    floor: {surface: 延胡索, year: 1012}  # taboo 宋 1012 (玄胡索→延胡索), doubtful
+    band: ">=20"
+    adjudicated:
+      - {name: 延胡, witness: jc_c029.00078, by: annotator, date: "2026-10-14"}  # 药性歌括四百味[1368,1644]: 延胡…（即玄胡索。）
+      - {name: 玄胡索, witness: jc_c029.00078, by: annotator, date: "2026-10-14"}  # 药性歌括四百味[1368,1644]: 延胡…（即玄胡索。）
+      # 素问病机气宜保命集[1186]: 金铃子散 金铃子 玄胡（各一两）…每服三钱酒调下 = 证治准绳's 玄胡索 line
+      - {name: 玄胡, witness: baoming_ji.002.00251, by: annotator, date: "2026-10-14", parallel: zhengzhi_zhunsheng.025.02980}
+
+  # ===== trap (15): an old 一名 that is mostly an ordinary word: only the cued drug sense is relevant
+  # n=495 free of 819 (先唐28 唐五代13 宋金元107 明108 清239); drug sense 5 (share 0.01); witness jc_c000.01136
+  # 神农本草经[25,220]. 名医/吴普 鬼臼 一名解毒 (天臼, 九臼, 爵犀); elsewhere the verb (清热解毒, 解毒为主) and formulas (黄连解毒汤 182x, masked).
+  # Drug sense 5 → expect stop. lexicon-core already files 解毒 under 鬼臼, so full-corpus off expands it
+  # review fix: a stop, so its referent keeps only the head and witness (for candidate precision); the names and cues
+  # are dropped, since a passage under the head is what the forbidden expansion would add
+  - id: trap-01
+    group: 鬼臼
+    split: heldout
+    type: trap
+    pool: ordinary
+    query: 解毒
+    asked: 解毒
+    asked_cues: []
+    false_friends: [解毒汤, 解毒丸, 解毒散, 解毒丹, 解毒饮, 解毒膏, 解毒剂, 黄连解毒, 解毒子]
+    referents:
+      - {head: 鬼臼, names: [], valid: null, witness: jc_c000.01136}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated: []
+  # n=991 free of 991 (先唐93 唐五代245 宋金元191 明135 清327); drug sense 1 (share 0.00); witness jc_c000.00502
+  # 神农本草经[25,220]. 尔雅 不过，蟷蠰 (quoted in the 孙本 本经 桑螵蛸 note with the second character lost; the passage writes
+  # 螳螂子); elsewhere the adverb (不过三服) in every period. Drug sense 1 → expect stop
+  # review fix: a stop, so its referent keeps only the head and witness (for candidate precision); the names and cues
+  # are dropped, since a passage under the head is what the forbidden expansion would add
+  - id: trap-02
+    group: 不过
+    split: dev
+    type: trap
+    pool: false-friend
+    query: 不过
+    asked: 不过
+    asked_cues: []
+    false_friends: []
+    referents:
+      - {head: 螳螂, names: [], valid: null, witness: jc_c000.00502}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated: []
+  # n=52 free of 103 (先唐2 唐五代4 宋金元16 明15 清15); drug sense 8 (share 0.15); window [1368,1912): 30 free, 7 drug
+  # (share 0.23); witness jc_c029.00297 药性歌括四百味[1368,1644]. 信 split into 人言, a 宋元 隐名 of 砒: 药性歌括 1506 砒霜一名人言一名信石;
+  # 医宗金鉴 白砒（即人言）; 本草分经 砒石 …炼者名砒霜. Drug sense 8 (丹溪心法 1347 earliest), 'people say' elsewhere (与人言/古人言 masked; the
+  # rest cue-gated). Cues 人言（ and 人言烧 catch recipe lines 人言（一钱） and 医学入门 人言烧过用. The 明清 window holds 7 of 30 drug
+  # → expect 砒霜 (listed, searched only in drug context)
+  - id: trap-03
+    group: 人言
+    split: dev
+    type: trap
+    pool: ordinary
+    query: 明清方书里的人言
+    asked: 人言
+    asked_cues: [砒, 信石, "人言（", 人言烧, 一名人言]
+    false_friends: [与人言, 古人言, 其人言, 夫人言, 时人言, 越人言, 真人言, 前人言, 道人言]
+    referents:
+      - {head: 砒霜, names: [砒霜, 信石, 白砒, 砒石], valid: null, witness: jc_c029.00297}
+    wrong: []
+    expect_candidates: [砒霜]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 砒霜, witness: jc_c029.00297, by: annotator, date: "2026-10-14"}  # 药性歌括四百味[1368,1644]
+      - {name: 信石, witness: jc_c029.00297, by: annotator, date: "2026-10-14"}  # 药性歌括四百味[1368,1644]
+      - {name: 白砒, witness: jc_p0012.02329, by: annotator, date: "2026-10-14"}  # 医宗金鉴·外科心法要诀[1742,1742]
+      - {name: 砒石, witness: jc_c038.01152, by: annotator, date: "2026-10-14"}  # 本草分经[1911,1911]
+  # n=39 free of 111 (先唐1 唐五代5 宋金元2 明16 清15); drug sense 3 (share 0.08); witness jc_c000.00271 神农本草经[25,220]. 名医
+  # 续断 一名接骨; 接骨木 (another drug), 接骨丹/散/膏 formulas and 伤科 headings masked; the bone-setting verb (续筋接骨) is
+  # cue-gated. Drug sense 3 → expect stop. lexicon-core files 接骨 under 续断. wrong: 接骨木
+  # review fix: a stop, so its referent keeps only the head and witness (for candidate precision); the names and cues
+  # are dropped, since a passage under the head is what the forbidden expansion would add
+  - id: trap-04
+    group: 接骨
+    split: heldout
+    type: trap
+    pool: ordinary
+    query: 接骨
+    asked: 接骨
+    asked_cues: []
+    false_friends: [接骨木, 接骨草, 接骨丹, 接骨散, 接骨膏, 接骨入骱, 接骨紫金, 接骨药, 接骨方]
+    referents:
+      - {head: 续断, names: [], valid: null, witness: jc_c000.00271}
+    wrong: [接骨木]
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated: []
+  # n=53 free of 107 (先唐5 唐五代4 宋金元17 明10 清17); drug sense 2 (share 0.04); witness jc_c000.00036 神农本草经[25,220]. 吴普
+  # 钟乳 一名虚中; elsewhere the pathology phrase (虚中有热, 气虚中满, 虚中挟实), masked in part, cue-gated. Drug sense 2 → expect
+  # stop
+  # review fix: a stop, so its referent keeps only the head and witness (for candidate precision); the names and cues
+  # are dropped, since a passage under the head is what the forbidden expansion would add
+  - id: trap-05
+    group: 虚中
+    split: dev
+    type: trap
+    pool: ordinary
+    query: 虚中
+    asked: 虚中
+    asked_cues: []
+    false_friends: [虚中满, 虚中有, 虚中挟, 虚中夹, 虚中之, 太虚中]
+    referents:
+      - {head: 石钟乳, names: [], valid: null, witness: jc_c000.00036}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated: []
+  # n=170 free of 224 (先唐24 唐五代32 宋金元36 明33 清45); drug sense 4 (share 0.02); witness jc_d001.01007 名医别录[200,500].
+  # 别录 白蔹 一名昆仑 (and 白根); elsewhere the 足太阳 acupoint, the mountain/land (昆仑国), 昆仑青木香 (a 木香) and the Daoist 昆仑
+  # (head). 白敛 (kept apart by the normaliser) is a cue only: no store passage equates it. Drug sense 4 → expect
+  # stop. lexicon-core files 昆仑 under 白蔹 and 白敛
+  # review fix: a stop, so its referent keeps only the head and witness (for candidate precision); the names and cues
+  # are dropped, since a passage under the head is what the forbidden expansion would add
+  - id: trap-06
+    group: 昆仑
+    split: heldout
+    type: trap
+    pool: ordinary
+    query: 昆仑
+    asked: 昆仑
+    asked_cues: []
+    false_friends: [昆仑穴, 昆仑二穴, 昆仑主, 京骨昆仑, 昆仑山, 昆仑国, 昆仑青木香, 修昆仑]
+    referents:
+      - {head: 白蔹, names: [], valid: null, witness: jc_d001.01007}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated: []
+  # n=66 free of 80 (先唐3 唐五代1 宋金元5 明6 清51); drug sense 8 (share 0.12); window [1644,1912): 51 free, 2 drug (share
+  # 0.04); witness jc_c000a.00139 神农本草经（复古辑本）[25,220]. 本经 白芷 一名芳香; elsewhere the adjective (芳香化浊/逐秽, 温病, 清 51 of
+  # 66). Window 1644–1912 keeps 2 drug passages out of 51 → expect stop
+  # review fix: a stop, so its referent keeps only the head and witness (for candidate precision); the names and cues
+  # are dropped, since a passage under the head is what the forbidden expansion would add
+  - id: trap-s01
+    group: 芳香
+    split: dev
+    type: trap
+    pool: ordinary
+    query: 清代医书里的芳香
+    asked: 芳香
+    asked_cues: []
+    false_friends: [芳香化浊, 芳香逐秽, 芳香辟秽, 芳香正气, 芳香之品, 芳香之气, 芳香之物, 芳香之药]
+    referents:
+      - {head: 白芷, names: [], valid: null, witness: jc_c000a.00139}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated: []
+  # n=6 free of 13 (先唐4 唐五代1 清1); drug sense 6 (share 1.00); witness jc_c000a.00019 神农本草经（复古辑本）[25,220]. 本经 车前
+  # 一名当道 (陆玑, 广雅 too); masked: 天之当道 (素问 王冰注), 闻当道/当道皆慕名 (officials), 取当道车辗过蒺藜 (on the road). Free occurrences all
+  # drug → expect 车前
+  - id: trap-08
+    group: 当道
+    split: heldout
+    type: trap
+    pool: ordinary
+    query: 当道
+    asked: 当道
+    asked_cues: [车前, 虾蟆衣, 牛遗, 马舄, 芣苡, 一名当道]
+    false_friends: [闻当道, 天之当道, 治产当道, 当道皆, 当道车]
+    referents:
+      - {head: 车前, names: [车前, 车前子, 虾蟆衣, 牛遗], valid: null, witness: jc_c000a.00019}
+    wrong: []
+    expect_candidates: [车前]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 车前, witness: jc_c000.00160, by: annotator, date: "2026-10-14"}  # 神农本草经 note: 故曰车前当道也，今药中车前子是也
+      - {name: 车前子, witness: jc_c000a.00019, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 虾蟆衣, witness: jc_c000.00158, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+      - {name: 牛遗, witness: jc_c000.00158, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+  # n=3 free of 13 (先唐3); drug sense 3 (share 1.00); witness jc_c000a.00046 神农本草经（复古辑本）[25,220]. 本经 蒺藜 一名止行 (with
+  # 旁通, 屈人); masked: 起止行步, 止行血 (芍药汤 方论), 止行阳经, 止行两次. Free occurrences all drug → expect 蒺藜. 旁通 is a cue, not a
+  # name (an ordinary word, spare s06); 屈人兵 (孙子) masked
+  - id: trap-09
+    group: 止行
+    split: dev
+    type: trap
+    pool: ordinary
+    query: 止行是什么药
+    asked: 止行
+    asked_cues: [蒺藜, 屈人, 旁通, 一名止行]
+    false_friends: [起止行, 止行步, 止行血, 血止行, 止行两, 止行阳, 止行阴, 止行为, 屈人兵]
+    referents:
+      - {head: 蒺藜, names: [蒺藜, 屈人], valid: null, witness: jc_c000a.00046}
+    wrong: []
+    expect_candidates: [蒺藜]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 蒺藜, witness: jc_c000a.00046, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 屈人, witness: jc_c000.00250, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+  # n=5 free of 11 (先唐5); drug sense 5 (share 1.00); window [None,960): 5 free, 5 drug (share 1.00); witness
+  # jc_c000a.00160 神农本草经（复古辑本）[25,220]. 本经 防己 一名解离 (吴普: 木防己); masked: 百节解离 (阴阳易, 千金/外台/活人书), 水谷解离, 解离宫之虚火. Window
+  # before 960 (earliest intent) keeps all 5 drug passages and 4 masked ones → expect 防己
+  - id: trap-10
+    group: 解离
+    split: dev
+    type: trap
+    pool: ordinary
+    query: 宋以前的解离
+    asked: 解离
+    asked_cues: [防己, 解燕, 一名解离]
+    false_friends: [百节解离, 水谷解离, 解离宫]
+    referents:
+      - {head: 防己, names: [防己, 木防己], valid: null, witness: jc_c000a.00160}
+    wrong: []
+    expect_candidates: [防己]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 防己, witness: jc_c000a.00160, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 木防己, witness: jc_c000.00736, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+  # n=3 free of 38 (先唐2 唐五代1); drug sense 3 (share 1.00); window [None,618): 2 free, 2 drug (share 1.00); witness
+  # jc_c000.00186 神农本草经[25,220]. 名医 石斛 一名禁生; 35 of 38 passages are 禁生冷… after a decoction (伤寒论 方后, 外台, 千金),
+  # masked. Window before 618 keeps 2 drug passages and the 伤寒论 禁生冷 ones → expect 石斛. 林兰/杜兰 are cues only
+  # (ambiguous)
+  - id: trap-11
+    group: 林兰
+    split: heldout
+    type: trap
+    pool: ordinary
+    query: 唐以前的禁生
+    asked: 禁生
+    asked_cues: [石斛, 林兰, 杜兰, 一名禁生]
+    false_friends: [禁生冷, 禁生鱼, 禁生葱, 禁生食, 不禁生, 特禁生]
+    referents:
+      - {head: 石斛, names: [石斛], valid: null, witness: jc_c000.00186}
+    wrong: []
+    expect_candidates: [石斛]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 石斛, witness: jc_c000.00186, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+  # n=3 free of 15 (先唐3); drug sense 3 (share 1.00); witness jc_d001.00887 名医别录[200,500]. 别录 芫花 一名毒鱼; masked: the
+  # verb 可用/可以毒鱼 (芫花 and 莽草 entries), food taboos 忌毒鱼/毒鱼肉, 脏毒鱼口. Free occurrences all drug → expect 芫花
+  - id: trap-12
+    group: 毒鱼
+    split: heldout
+    type: trap
+    pool: ordinary
+    query: 毒鱼是什么药
+    asked: 毒鱼
+    asked_cues: [芫花, 杜芫, 牡芫, 蜀桑, 一名毒鱼]
+    false_friends: [可用毒鱼, 可以毒鱼, 忌毒鱼, 毒鱼肉, 中毒鱼, 脏毒鱼口, 灸煿毒鱼, 毒鱼湿面, "肥。毒鱼"]
+    referents:
+      - {head: 芫花, names: [芫花, 杜芫], valid: null, witness: jc_d001.00887}
+    wrong: []
+    expect_candidates: [芫花]
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 芫花, witness: jc_d001.00887, by: annotator, date: "2026-10-14"}  # 名医别录[200,500]
+      - {name: 杜芫, witness: jc_c000.01178, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+  # n=2 free of 14 (先唐1 唐五代1); drug sense 2 (share 1.00); witness jc_c000.00225 神农本草经[25,220]. 名医 卷柏 一名交时;
+  # masked: 运交时 (素问六气玄珠密语, 宋, 10 passages), 欲与交时 (摄生总要). Expect 卷柏
+  - id: trap-13
+    group: 交时
+    split: heldout
+    type: trap
+    pool: ordinary
+    query: 交时
+    asked: 交时
+    asked_cues: [卷柏, 豹足, 求股, 一名交时]
+    false_friends: [运交时, 气交时, 与交时]
+    referents:
+      - {head: 卷柏, names: [卷柏, 豹足, 求股], valid: null, witness: jc_c000.00225}
+    wrong: []
+    expect_candidates: [卷柏]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 卷柏, witness: jc_c000.00225, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+      - {name: 豹足, witness: jc_c000.00225, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+      - {name: 求股, witness: jc_c000.00225, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+  # n=2 free of 12 (先唐2); drug sense 2 (share 1.00); witness jc_c002.00758 本草经集注[480,500]. 别录 枸杞 一名却暑; masked:
+  # 却暑散/却暑丹 and 却暑 'drive off summer heat' (明清). 羊乳 and 仙人杖 are left out of names (other things). Expect 枸杞
+  - id: trap-14
+    group: 却暑
+    split: heldout
+    type: trap
+    pool: ordinary
+    query: 却暑是什么药
+    asked: 却暑
+    asked_cues: [枸杞, 杞根, 地骨, 地辅, 一名却暑]
+    false_friends: [却暑散, 却暑丹, 却暑之, 却暑清, 以却暑, 烦却暑, 瘟却暑, 表却暑]
+    referents:
+      - {head: 枸杞, names: [枸杞, 杞根, 地骨, 地辅], valid: null, witness: jc_c002.00758}
+    wrong: []
+    expect_candidates: [枸杞]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 枸杞, witness: jc_c002.00758, by: annotator, date: "2026-10-14"}  # 本草经集注[480,500]
+      - {name: 杞根, witness: jc_c000a.00071, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 地骨, witness: jc_c000a.00071, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 地辅, witness: jc_c000a.00071, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+  # n=2 free of 4 (先唐2); drug sense 2 (share 1.00); witness jc_c000.01116 神农本草经[25,220]. 本经 商陆 一名夜呼; masked:
+  # 昼夜呼吸/呼叫 (明). Expect 商陆
+  - id: trap-15
+    group: 商陆
+    split: heldout
+    type: trap
+    pool: ordinary
+    query: 夜呼
+    asked: 夜呼
+    asked_cues: [商陆, 当陆, 章柳, 一名夜呼]
+    false_friends: [昼夜呼]
+    referents:
+      - {head: 商陆, names: [商陆], valid: null, witness: jc_c000.01116}
+    wrong: []
+    expect_candidates: [商陆]
+    floor: null
+    band: "1-2"
+    adjudicated:
+      - {name: 商陆, witness: jc_c000.01116, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+
+  # ===== substring (10): a drug name written inside a longer name of another drug: the longer names are masked
+  # n=3713 of 3795 (先唐242 唐五代489 宋金元875 明925 清1147 民35); window [960, 1279): asked 620, other-only 0, wrong-only 25
+  # 胡黄连 (开宝, a different root, 137 passages) is the classic false friend; witness jc_c000a.00170 神农本草经（复古辑本）
+  # [25,220] 黄连 一名王连 (also jc_c000.00243 广雅 王连，黄连也)
+  - id: substring-01
+    group: 黄连
+    split: dev
+    type: substring
+    pool: substring
+    query: 宋代的黄连
+    asked: 黄连
+    asked_cues: []
+    false_friends: [胡黄连]
+    referents:
+      - {head: 黄连, names: [黄连, 王连], valid: null, witness: jc_c000a.00170}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 黄连, witness: jc_c000a.00170, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 王连, witness: jc_c000a.00170, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+  # n=236 of 367 (先唐19 唐五代41 宋金元41 明83 清52); window [1368, 1912): asked 135, other-only 0, wrong-only 91
+  # 石决明 (the abalone shell, 162 passages, mostly 明清 眼科 formulas) vs 决明子. Witness jc_c000.00284 神农本草经
+  # [25,220] 吴普 决明子，一名草决明，一名羊明. Doubtful edge: 本经 青葙 子名草决明 (pre-明, outside the window) still
+  # counts as asked; jc_c000.00285 (决明子 section note 石决明生豫章) is labelled wrong
+  - id: substring-02
+    group: 决明
+    split: heldout
+    type: substring
+    pool: substring
+    query: 明清的决明
+    asked: 决明
+    asked_cues: []
+    false_friends: [石决明]
+    referents:
+      - {head: 决明子, names: [决明子, 羊明], valid: null, witness: jc_c000.00284}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 决明子, witness: jc_c000.00284, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220] (entry)
+      - {name: 羊明, witness: jc_c000.00284, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
+  # n=79 of 107 (宋金元5 明28 清46); no window: asked 79, other-only 230, wrong-only 99
+  # 松香 (= 松脂: jc_c010.00065 滇南本草[1396,1476] 松香，一名松脂; jc_c029.00193 即松香) inside 甘松香 (a different root,
+  # 28 passages, 千金/外台 incense), so 甘松 is wrong. 松膏/松肪: 本经 jc_c000a.00069
+  # review fix: replaces substring-03 (荷叶): outside the pools (荷叶 is no lexicon or equated name's substring of another
+  # drug)
+  - id: substring-s1
+    group: 松香
+    split: heldout
+    type: substring
+    pool: substring
+    query: 松香
+    asked: 松香
+    asked_cues: []
+    false_friends: [甘松香]
+    referents:
+      - {head: 松脂, names: [松脂, 松膏, 松肪], valid: null, witness: jc_c010.00065}
+    wrong: [甘松]
+    expect_candidates: [松脂]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 松脂, witness: jc_c010.00065, by: annotator, date: "2026-10-14"}  # 滇南本草[1396,1476]
+      - {name: 松膏, witness: jc_c000a.00069, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 松肪, witness: jc_c000a.00069, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+  # n=24 of 76 (先唐6 唐五代5 宋金元5 明1 清7); no window: asked 24, other-only 96, wrong-only 59
+  # 本经 白胶 一名鹿角胶 (witness jc_c000a.00114 神农本草经（复古辑本）[25,220]); 白胶香 is 枫香脂 (新修本草, 49 passages),
+  # so 枫香脂 is wrong. Similes 唾如白胶/汗出如白胶/纯下白胶 masked. Doubtful: in 宋元 surgical plasters (外科精要, 仁斋直指,
+  # 瑞竹堂, 脉因证治) a bare 白胶 next to 乳香 may abbreviate 白胶香; left as asked
+  - id: substring-04
+    group: 鹿角胶
+    split: dev
+    type: substring
+    pool: substring
+    query: 白胶是什么药
+    asked: 白胶
+    asked_cues: []
+    false_friends: [白胶香, 如白胶, 下白胶]
+    referents:
+      - {head: 鹿角胶, names: [鹿角胶], valid: null, witness: jc_c000a.00114}
+    wrong: [枫香脂]
+    expect_candidates: [鹿角胶]
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 鹿角胶, witness: jc_c000a.00114, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+  # n=772 of 837 (先唐2 唐五代50 宋金元350 明181 清189); window [1115, 1368): asked 271, other-only 0, wrong-only 24
+  # 白丁香 = 雀屎 (jc_l006.00067 异授眼科: 白丁香，即麻雀粪; 62 passages, 眼科/儿科) and 苦丁香 = 甜瓜蒂 (jc_d076.00265,
+  # jc_d046.05799). 母丁香/公丁香 are the same drug and stay asked. Witness jc_c006.00579 本草图经[1061,1062] (entry)
+  - id: substring-05
+    group: 丁香
+    split: dev
+    type: substring
+    pool: substring
+    query: 金元的丁香
+    asked: 丁香
+    asked_cues: []
+    false_friends: [白丁香, 苦丁香]
+    referents:
+      - {head: 丁香, names: [丁香], valid: null, witness: jc_c006.00579}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 丁香, witness: jc_c006.00579, by: annotator, date: "2026-10-14"}  # 本草图经[1061,1062] (entry)
+  # n=3808 of 4207 (先唐504 唐五代797 宋金元896 明530 清1062 民19); window [618, 907): asked 795, other-only 0, wrong-only 21
+  # 白附子 (别录, 224 passages) and 香附子 (= 莎草根, 206) are different plants; 黑附子 is the same drug. The Tang wrong-only
+  # hits are 千金/外台 incense and 香附子 recipes. Witness jc_c000a.00240 神农本草经（复古辑本）[25,220] (entry)
+  - id: substring-06
+    group: 附子
+    split: dev
+    type: substring
+    pool: substring
+    query: 唐代的附子
+    asked: 附子
+    asked_cues: []
+    false_friends: [白附子, 香附子]
+    referents:
+      - {head: 附子, names: [附子], valid: null, witness: jc_c000a.00240}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: ">=20"
+    adjudicated:
+      - {name: 附子, witness: jc_c000a.00240, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220] (entry)
+  # n=5 of 18 (先唐1 唐五代1 明1 清2); no window: asked 5, other-only 40, wrong-only 13
+  # 本经 蛇含 (蛇衔, a herb) vs 蛇含石 (= 蛇黄, a mineral, 13 passages, 宋明 惊风 formulas). Witness jc_c000a.00253
+  # 神农本草经（复古辑本）[25,220] 蛇含 一名蛇衔
+  # review fix: replaces substring-07 (天鼠): outside the pools (天鼠/天鼠屎 not mined)
+  - id: substring-s4
+    group: 蛇含
+    split: heldout
+    type: substring
+    pool: substring
+    query: 蛇含是什么药
+    asked: 蛇含
+    asked_cues: []
+    false_friends: [蛇含石]
+    referents:
+      - {head: 蛇含, names: [蛇含, 蛇衔], valid: null, witness: jc_c000a.00253}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 蛇含, witness: jc_c000a.00253, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 蛇衔, witness: jc_c000a.00253, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+  # substring 3-19. n=3 (先唐2 清1); 本经 石蜜 一名石饴; 石饴饼 is 别录's 一名 of 太一余粮/石脑 (another drug), masked.
+  # 石蜜 is not a name: from 唐本 on it is also a sugar, so its passages are not this reading without a window
+  # review fix: replaces substring-08 (石脑): outside the pools (石脑 not inside a mined longer name)
+  - id: substring-n1
+    group: 石饴
+    split: heldout
+    type: substring
+    pool: substring
+    query: 石饴
+    asked: 石饴
+    asked_cues: []
+    false_friends: [石饴饼]
+    referents:
+      - {head: 石蜜, names: [], valid: null, witness: jc_c000a.00118}
+    wrong: []
+    expect_candidates: [石蜜]
+    floor: null
+    band: "3-19"
+    adjudicated: []
+  # n=5 of 7 (先唐4 清1); no window: asked 5, other-only 2, wrong-only 2
+  # 本经 白芝 (玉芝) vs 白芝麻 (white sesame). Formula names 玉芝丸/玉芝徐老丸/玉芝饮子 (宣明论, 医垒元戎, 外科精义) masked so
+  # they do not count as other. Witness jc_c000a.00038 神农本草经（复古辑本）[25,220] 白芝 一名玉芝
+  # review fix: replaces substring-09 (黑芝): outside the pools (黑芝 not inside a mined longer name)
+  - id: substring-s5
+    group: 白芝
+    split: heldout
+    type: substring
+    pool: substring
+    query: 白芝
+    asked: 白芝
+    asked_cues: []
+    false_friends: [白芝麻, 玉芝丸, 玉芝徐老丸, 玉芝饮子]
+    referents:
+      - {head: 白芝, names: [白芝, 玉芝], valid: null, witness: jc_c000a.00038}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: "3-19"
+    adjudicated:
+      - {name: 白芝, witness: jc_c000a.00038, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 玉芝, witness: jc_c000a.00038, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+  # substring 1-2. n=1 (宋: 太平圣惠方 猕猴粪); 猕猴桃 and 猕猴梨 (a fruit, another drug) masked (卫生易简方 猕猴梨藤汁)
+  # review fix: replaces substring-10 (鹿蹄): outside the pools (鹿蹄 not inside a mined longer name)
+  - id: substring-n2
+    group: 猕猴
+    split: heldout
+    type: substring
+    pool: substring
+    query: 猕猴
+    asked: 猕猴
+    asked_cues: []
+    false_friends: [猕猴桃, 猕猴梨]
+    referents:
+      - {head: 猕猴, names: [猕猴], valid: null, witness: jc_p0301.03725}
+    wrong: []
+    expect_candidates: []
+    floor: null
+    band: "1-2"
+    adjudicated: []
+
+resolution:
+  # ws_36bca7b992.00279 射干一名乌扇
+  - {surface: 乌扇, expect_heads: [射干], expect_action: expand, group: 乌扇, split: heldout}
+  # jc_c025a.00688 铜青即俗所云铜绿
+  - {surface: 铜青, expect_heads: [铜绿], expect_action: expand, group: 铜绿, split: dev}
+  # qianjin_yaofang.067.04694 景天一名慎火草
+  - {surface: 慎火草, expect_heads: [景天], expect_action: expand, group: 景天, split: dev}
+  # jc_c029.00242 巴豆一名江子
+  - {surface: 江子, expect_heads: [巴豆], expect_action: expand, group: 江子, split: dev}
+  # jc_c029.00230 骨碎补即猴姜
+  - {surface: 猴姜, expect_heads: [骨碎补], expect_action: expand, group: 猴姜, split: dev}
+  # jc_c000a.00332 龟甲一名神屋
+  - {surface: 神屋, expect_heads: [龟甲], expect_action: expand, group: 龟甲, split: dev}
+  # jc_c047.00627 即牛蒡子，又名鼠黏子
+  - {surface: 鼠黏子, expect_heads: [牛蒡子], expect_action: expand, group: 牛蒡子, split: dev}
+  # jc_c040.00259 轻粉即水银粉
+  - {surface: 水银粉, expect_heads: [轻粉], expect_action: expand, group: 轻粉, split: heldout}
+  # jc_c000a.00249 旋覆花一名金沸草; 金沸草散 is a formula
+  - {surface: 金沸草, expect_heads: [旋覆花], expect_action: expand, group: 甘草, split: dev}
+  # jc_c000.01204 莽草一名春草; jc_c000.00717 白薇一名春草
+  - {surface: 春草, expect_heads: [莽草, 白薇], expect_action: candidate, group: 春草, split: heldout}
+  # ws_36bca7b992.00018 云母; jc_c000.00353 云实; jc_c000.00246 吴普 络石
+  - {surface: 云英, expect_heads: [云母, 云实, 络石], expect_action: candidate, group: 石血, split: dev}
+  # jc_c000a.00242 天雄一名白幕; jc_c000.00717 白薇一名白幕
+  - {surface: 白幕, expect_heads: [天雄, 白薇], expect_action: candidate, group: 春草, split: heldout}
+  # jc_c000a.00023 泽泻一名水泻; otherwise diarrhoea
+  - {surface: 水泻, expect_heads: [], expect_action: none, group: 水泻, split: dev}
+  # ws_36bca7b992.00268 芫华一名去水; otherwise 'drain off the water'
+  - {surface: 去水, expect_heads: [], expect_action: none, group: 去水, split: dev}
+  # jc_c000.00678 吴普 黄芩一名内虚; otherwise internal deficiency
+  - {surface: 内虚, expect_heads: [], expect_action: none, group: 内虚, split: dev}
+  # jc_c000.00707 吴普 紫参一名重伤; otherwise 'severe injury'
+  - {surface: 重伤, expect_heads: [], expect_action: none, group: 重伤, split: heldout}
+  # jc_c000.00127 牛膝一名百倍; otherwise 'a hundredfold'
+  - {surface: 百倍, expect_heads: [], expect_action: none, group: 百倍, split: heldout}
+  # jc_c000.00262 防风一名屏风; otherwise 玉屏风散 and screens
+  - {surface: 屏风, expect_heads: [], expect_action: none, group: 屏风, split: dev}
+  - {surface: 国老, expect_heads: [甘草], expect_action: expand, group: 甘草, split: dev}
+  - {surface: 炙草, expect_heads: [甘草], expect_action: expand, group: 甘草, split: dev}
+  - {surface: 黄蘗, expect_heads: [黄柏], expect_action: expand, group: 黄蘗, split: dev}
+  - {surface: 薯蓣, expect_heads: [山药], expect_action: expand, group: 薯蓣, split: dev}
+  - {surface: 署预, expect_heads: [山药], expect_action: expand, group: 薯蓣, split: dev}
+  - {surface: 破故纸, expect_heads: [补骨脂], expect_action: expand, group: 补骨脂, split: heldout}
+  - {surface: 芎䓖, expect_heads: [川芎], expect_action: expand, group: 芎䓖, split: heldout}
+  - {surface: 诃黎勒, expect_heads: [诃子], expect_action: expand, group: 诃子, split: dev}
+  - {surface: 仙灵脾, expect_heads: [淫羊藿], expect_action: expand, group: 淫羊藿, split: heldout}
+  - {surface: 伏龙肝, expect_heads: [灶心土], expect_action: expand, group: 灶心土, split: heldout}
+  - {surface: 胡粉, expect_heads: [铅粉], expect_action: expand, group: 胡粉, split: dev}
+  - {surface: 腽肭脐, expect_heads: [海狗肾], expect_action: expand, group: 海狗肾, split: heldout}
+  - {surface: 无食子, expect_heads: [没食子], expect_action: expand, group: 没食子, split: dev}
+  # jc_c019.01081, jc_d002.00222
+  - {surface: 重楼, expect_heads: [蚤休, 黄精], expect_action: candidate, group: 重台, split: dev}
+  # susheng_liangfang.007.00199, jc_c007.00076
+  - {surface: 老翁须, expect_heads: [金银花, 生银], expect_action: candidate, group: 金银花, split: dev}
+  # waitai_miyao.014.02034
+  - {surface: 黄昏, expect_heads: [], expect_action: none, group: 黄昏, split: heldout}
+  # jc_c000.00354 广雅 天豆，云实也; jc_c001.00099 吴普 石龙芮 一名天豆
+  - {surface: 天豆, expect_heads: [云实, 石龙芮], expect_action: candidate, group: 石血, split: dev}
+  # jc_c000a.00358 水蛭 一名至掌; jc_c000.01274 蜈蚣 (御览引 一名至掌)
+  - {surface: 至掌, expect_heads: [水蛭, 蜈蚣], expect_action: candidate, group: 水蛭, split: dev}
+  # jc_c001.00075 吴普 白沙参 一名虎须; jc_c000a.00162 款冬花 一名虎须
+  - {surface: 虎须, expect_heads: [沙参, 款冬花], expect_action: candidate, group: 虎须, split: dev}
+  # jc_c000a.00059 地肤子 一名地葵; jc_c000a.00123 葈耳实 一名地葵
+  - {surface: 地葵, expect_heads: [地肤子, 葈耳实], expect_action: candidate, group: 地葵, split: dev}
+  # jc_c000a.00137 知母 一名野蓼; jc_c001.00223 吴普 蓼实 一名野蓼
+  - {surface: 野蓼, expect_heads: [知母, 蓼实], expect_action: candidate, group: 薯蓣, split: dev}
+  # jc_c001.00050 吴普 署豫 一名儿草; jc_c000.00661 名医 知母 一名儿草 (芫花's 儿草根 is a longer name)
+  - {surface: 儿草, expect_heads: [薯蓣, 知母], expect_action: candidate, group: 薯蓣, split: dev}
+  # jc_c000a.00351 蝼蛄 一名天蝼; jc_c000.00889 方言 (蛴螬 note) 或谓之天蝼
+  - {surface: 天蝼, expect_heads: [蝼蛄, 蛴螬], expect_action: candidate, group: 蝼蛄, split: heldout}
+  # jc_c002.01963 行夜 一名负盘; jc_c003.02944 新修 蜚蠊 一名负盘
+  - {surface: 负盘, expect_heads: [行夜, 蜚蠊], expect_action: candidate, group: 负盘, split: heldout}
+  # jc_j000.00086 乌金（即百草霜，一云京墨）; mostly 乌金散/丸/膏 formula names
+  - {surface: 乌金, expect_heads: [百草霜, 墨], expect_action: candidate, group: 锅底煤, split: dev}
+  # jc_c000a.00056 旋花 一名金沸; jc_d001.00892 别录 旋覆花 一名金沸(草)
+  - {surface: 金沸, expect_heads: [旋花, 旋覆花], expect_action: candidate, group: 甘草, split: dev}
+  # jc_d002.00238 千金翼 石斛 一名杜兰; jc_d001.00542 别录 木兰 一名杜兰
+  - {surface: 杜兰, expect_heads: [石斛, 木兰], expect_action: candidate, group: 林兰, split: heldout}
+  # ws_36bca7b992.00086 茯苓 and jc_d001.01012 飞廉 一名伏兔; 111 passages, mostly the thigh/acupoint
+  - {surface: 伏兔, expect_heads: [], expect_action: none, group: 伏兔, split: heldout}
+  # jc_c000.00335 广雅 苦心，沙参也; 119 passages, mostly 病苦心下… / 苦心痛
+  - {surface: 苦心, expect_heads: [], expect_action: none, group: 苦心, split: dev}
+  # jc_d025a.00026 择通草者，鲜知木通之别号，皆以通脱木为名 (林亿 1066): 木通 before 960, 通脱木 after
+  - {surface: 通草, expect_heads: [木通, 通脱木], expect_action: candidate, group: 木通, split: dev}
+  # jc_d025a.00026 青木香，木香之佳; jc_c103.00336 马兜铃…根名青木香: 木香 before 1100, the 马兜铃 root after
+  - {surface: 青木香, expect_heads: [木香, 马兜铃], expect_action: candidate, group: 青木香, split: dev}
+  # parallel jc_c000.01471 元参 恶黄芪、干姜、大枣、山茱萸；反藜芦 = jc_d025.00123 玄参 (taboo 宋 1012, 清 1662)
+  - {surface: 元参, expect_heads: [玄参], expect_action: expand, group: 重台, split: dev}
+  # jc_c025a.00886 玄参入肾，曰黑参
+  - {surface: 黑参, expect_heads: [玄参], expect_action: expand, group: 重台, split: dev}
+  # jc_c000.00163 旧作薯蓣，《御览》作署豫; jc_n008.00158 薯蓣…改名山药
+  - {surface: 署豫, expect_heads: [山药], expect_action: expand, group: 薯蓣, split: dev}
+  # parallel jc_h013.00905 金铃子肉 元胡索 = zhengzhi_zhunsheng.025.02980 金铃子 玄胡索 (金铃子散; taboo 清 1662)
+  - {surface: 元胡, expect_heads: [延胡索], expect_action: expand, group: 元胡, split: heldout}
+  # jc_c029.00078 延胡…（即玄胡索。）
+  - {surface: 玄胡索, expect_heads: [延胡索], expect_action: expand, group: 元胡, split: heldout}
+  # jc_c000.01066 （旧作常山，《御览》作恒山，是）
+  - {surface: 恒山, expect_heads: [常山], expect_action: expand, group: 恒山, split: heldout}
+  # jc_c006.00457 虎掌…今冀州人…亦呼为天南星; jc_d025a.00026 天南星，虎掌名异而实同
+  - {surface: 虎掌, expect_heads: [天南星], expect_action: expand, group: 天南星, split: heldout}
+  # jc_c000.00199 今医家见用天麻，即是此赤箭根; jc_c024.00068 《本经》名赤箭…《开宝本草》名天麻
+  - {surface: 赤箭, expect_heads: [天麻], expect_action: expand, group: 鬼督邮, split: dev}
+  # yishuo.006.00645 金银花又曰老翁须本草名为忍冬; jc_o073.00653 忍冬草（即金银花。）
+  - {surface: 忍冬, expect_heads: [金银花], expect_action: expand, group: 金银花, split: dev}
+  # jc_c000.00799 沈括：六朝以前，医方唯有枳实，无枳壳…小、嫩者为枳实，大者为枳壳 — never expand to 枳壳
+  - {surface: 枳实, expect_heads: [], expect_action: none, group: 枳实, split: dev}
+  # jc_n017.00120 人参（一两，如不用，以党参…代之）: a substitute, not a name of 人参 — never expand to 人参
+  - {surface: 党参, expect_heads: [], expect_action: none, group: 鬼督邮, split: dev}
+  # 覆盆 pair (尔雅 茥，蒛葐) not attested as 缺盆 outside jc_c030/纲目; 482 passages, acupoint/anatomy
+  - {surface: 缺盆, expect_heads: [], expect_action: none, group: 缺盆, split: heldout}
+  # jc_p0008a.00003 医宗金鉴 月经…又谓之月水 is the physiological thing; drug use (月经衣) rare; 266
+  - {surface: 月经, expect_heads: [], expect_action: none, group: 月经, split: dev}
+  # jc_g027.00381 达生编 天癸即经水也; drug use only 室女初行天癸 = 降雪丹 (jc_o096.01228 松崖医径) and 红铅; 117 passages, 内经 天癸至/竭
+  - {surface: 天癸, expect_heads: [], expect_action: none, group: 天癸, split: dev}
+  # no store equation; a class of drugs (脾胃论 升阳风药), 193 passages
+  - {surface: 风药, expect_heads: [], expect_action: none, group: 风药, split: heldout}
+  # no store equation; a treatment (肿皆内消) and a 消渴 type (千金), 199 passages
+  - {surface: 内消, expect_heads: [], expect_action: none, group: 内消, split: dev}
+  # jc_c012.02314 本草蒙筌 explains the formula name by 石膏, not a drug alias; 白虎汤/白虎历节/白虎精 (玉屑, 千金), 824 passages
+  - {surface: 白虎, expect_heads: [], expect_action: none, group: 白虎, split: dev}
+  # 白苣 pair only in the datasets; 忌生菜 food taboos (千金/外台), 275 passages
+  - {surface: 生菜, expect_heads: [], expect_action: none, group: 生菜, split: heldout}
+  # jc_c000.00813 山茱萸一名鸡足; else 鸡足刺 (合谷刺), 耳本鸡足青络, 乌鸡足; 4 of 36 drug
+  - {surface: 鸡足, expect_heads: [], expect_action: none, group: 鸡足, split: dev}
+  # jc_c000a.00041 卷柏一名万岁; 5 of 6 passages drug, but an ordinary word (人地万岁不朽)
+  - {surface: 万岁, expect_heads: [卷柏], expect_action: candidate, group: 交时, split: heldout}
+  # jc_c000a.00355 萤火一名夜光; jc_c001.00152 吴普 地朕 一名夜光; also the 攒竹 acupoint (甲乙经 jc_k000.00354) and 夜光丸 formulas
+  - {surface: 夜光, expect_heads: [萤火, 地朕], expect_action: candidate, group: 景天, split: dev}
+  # 137 passages; 开宝 entry of its own; xianxingzhai_biji.004.00615 先醒斋广笔记 胡黄连（似干柳枝心黑外黄…忌恶同黄连）
+  - {surface: 胡黄连, expect_heads: [], expect_action: none, group: 黄连, split: dev}
+  # 62; jc_l006.00067 异授眼科 白丁香，即麻雀粪; 雄雀屎 (别录) zhenglei_bencao.019.11898 证类本草 雄雀屎两头尖者是也
+  - {surface: 白丁香, expect_heads: [雄雀屎], expect_action: expand, group: 丁香, split: dev}
+  # 11; jc_d076.00265 类证普济本事方续集 苦丁香十个（甜瓜蒂是）; jc_d046.05799 验方新编 苦丁香（即香瓜蒂）
+  - {surface: 苦丁香, expect_heads: [瓜蒂], expect_action: expand, group: 丁香, split: dev}
+  # 49; jc_c003.02411 新修本草 (枫香脂 entry) 一名白胶香; jc_c040.00538 珍珠囊补遗药性赋 枫香，是枫树脂，即白胶香也
+  - {surface: 白胶香, expect_heads: [枫香脂], expect_action: expand, group: 鹿角胶, split: dev}
+  # 10; zhenglei_bencao.019.11945 证类本草 天鼠屎即伏翼屎也; jc_c029.00243 药性歌括四百味 夜明砂（一名伏翼粪，一名蝙蝠屎）
+  - {surface: 天鼠屎, expect_heads: [夜明砂], expect_action: expand, group: 天鼠屎, split: dev}
+  # 10; petroleum (宋 幼科 丸 binder: jc_h011.03752 幼幼新书, jc_o084.00052 御药院方); no store equation with another name
+  - {surface: 石脑油, expect_heads: [], expect_action: none, group: 石脑油, split: dev}
+  # 23; 明清 drug of its own (jc_l105.00187 银柴胡（一钱） beside 北沙参); no store equation with another name
+  - {surface: 银柴胡, expect_heads: [], expect_action: none, group: 银柴胡, split: heldout}
+  - {surface: 五爪龙, expect_heads: [乌蔹莓], expect_action: expand, group: 乌蔹莓, split: dev}
+  - {surface: 木栾, expect_heads: [栾花], expect_action: expand, group: 栾花, split: heldout}
+  - {surface: 搜山虎, expect_heads: [石南藤], expect_action: expand, group: 石南藤, split: dev}

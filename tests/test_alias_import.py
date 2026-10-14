@@ -16,6 +16,8 @@ import pytest
 from taochronos.plugins.classics.domain import DomainPack
 from taochronos.plugins.classics.ingest.aliases import (
     BOOK,
+    DOUBT_FLAGS,
+    REPAIRS,
     import_local,
     local_rows,
     parse_bielu,
@@ -27,6 +29,7 @@ from taochronos.plugins.classics.ingest.aliases import (
     summary,
     table_file,
 )
+from taochronos.plugins.classics.store import CorpusStore, StoreCorpus
 
 HOME = Path(__file__).resolve().parents[1]
 FIX = HOME / "tests" / "fixtures" / "aliases"
@@ -88,11 +91,11 @@ def test_the_normaliser_and_the_repairs_are_the_callers():
 
 def test_gb_copy_layout(gb):
     assert len(gb) == 20  # title, metadata, 目录 and 篇名 lines and the preface are no entries
-    assert gb["甘露"].ref == "line 16" and names(gb["甘露"]) == ["膏露", "天酒", "瑞露", "神浆"]
+    assert gb["甘雨"].ref == "line 16" and names(gb["甘雨"]) == ["膏雨", "天浆", "瑞雨", "神露"]
     lost = gb[" 石"]
     assert (lost.head, lost.flags, names(lost)) == ("", ["lost_head"], ["太白石", "泽乳"])
-    assert (gb["金星石"].flags, gb["仲思枣"].flags) == (["no_list"], ["no_list"])  # 仲思枣 lacks its closing \x
-    assert (gb["石南藤"].flags, names(gb["石南藤"])) == (["unbracketed"], ["丁公寄"])
+    assert (gb["银星石"].flags, gb["仲思李"].flags) == (["no_list"], ["no_list"])  # 仲思李 lacks its closing \x
+    assert (gb["石南藤"].flags, names(gb["石南藤"])) == (["unbracketed"], ["丁公寄生"])
     assert (gb["丝瓜"].flags, names(gb["丝瓜"])) == (["unclosed"], ["天丝瓜", "布瓜"])
     assert names(gb["麦门冬"]) == ["门冬", "乌韭", "马韭", "禹余粮"]  # a comma separates too
     assert summary(gb.values()) == {
@@ -108,13 +111,15 @@ def test_gb18030_and_utf8_read_alike(tmp_path):
     as_read = [(e.head, e.flags, [(t.name, t.flags, t.drop) for t in e.tokens]) for e in read_bielu_gb(original)]
     assert as_read == [(e.head, e.flags, [(t.name, t.flags, t.drop) for t in e.tokens])
                        for e in read_bielu_gb(FIX / "bielu_gb.txt")]
-    assert read_bielu_gb(original, encoding="gb18030")[0].head == "甘露"
+    assert read_bielu_gb(original, encoding="gb18030")[0].head == "甘雨"
+    with pytest.raises(ValueError, match="bencao_alias.txt: not utf-8 text; pass the file's encoding"):
+        read_bielu_gb(original, encoding="utf-8")
 
 
 def test_lost_characters_notes_repairs_and_drops(gb):
     tie, fan = gb["铁华粉"], gb["繁缕"]
     assert {t.text: (t.flags, t.drop) for t in tie.tokens} == {
-        "铁KT": (["lost_char"], "one_char"), "粉": (["lost_char"], "one_char"), "铁霜": ([], None), "铁艳粉": ([], None)}
+        "铁KT": (["lost_char"], "one_char"), "粉": (["lost_char"], "one_char"), "铁霜": ([], None), "铁锈粉": ([], None)}
     assert {t.text: (t.flags, t.drop) for t in fan.tokens} == {
         "KT": (["lost_char"], "lost"), "缕": (["lost_char"], "one_char"), "鹅肠菜": ([], None), "滋草": ([], None)}
     assert token(gb["黄瓜菜"], "蕨").flags == ["lost_char"]  # a stray bracket and a blank after it
@@ -137,6 +142,12 @@ def test_lost_characters_notes_repairs_and_drops(gb):
     assert all(not t.qualifier for t in yuli.tokens)
 
 
+def test_lost_character_marks_never_splice_a_name():
+    [e, lost] = parse_bielu("甘露（膏〓\u3000天酒\u3000山□葡萄）\n□石（太白石）")
+    assert [(t.name, t.flags) for t in e.aliases] == [("膏〓", ["lost_char"]), ("天酒", []), ("山〓葡萄", ["lost_char"])]
+    assert (lost.head, lost.flags) == ("", ["lost_head"])
+
+
 def test_wraps_join_only_when_attested(gb):
     # unattested, a wrap is left apart and its parts flagged
     assert [(t.name, t.flags, t.drop) for t in gb["黄精"].tokens][2:4] == [("野", ["wrap"], "one_char"),
@@ -145,16 +156,17 @@ def test_wraps_join_only_when_attested(gb):
     attested = {"野生姜", "生姜", "子芩", "尾芩", "文烛"}.__contains__
     joined = {e.head: e for e in read_bielu_gb(FIX / "bielu_gb.txt", attested=attested)}
     assert [(t.name, t.flags) for t in joined["黄精"].aliases] == [
-        ("黄芝", []), ("戊己芝", []), ("野生姜", ["joined"]), ("鸡格", []), ("垂珠", [])]
-    assert [(t.name, t.flags) for t in joined["黄芩"].aliases][1:3] == [("子芩", []), ("尾芩", [])]  # two names
+        ("黄芝", []), ("戊己芝", []), ("野生姜", ["joined"]), ("鸡格", []), ("龙衔", [])]
+    # two attested names whose join is not: two names, no doubt left
+    assert [(t.name, t.flags) for t in joined["黄芩"].aliases][1:3] == [("子芩", []), ("尾芩", [])]
     wenzhu = token(joined["南烛"], "文烛")  # a note's X on one line, its Y on the next
     assert (wenzhu.text, wenzhu.kind, wenzhu.qualifier, wenzhu.flags) == ("赤者名文烛", "variety", "赤者", ["joined"])
-    # two names on both sides of a wrap stay apart when each is attested by itself
     text = "\\x蚤休\\x（七叶 \n一枝花 重楼） \n"
     [e] = parse_bielu(text, attested={"七叶一枝花"}.__contains__)
     assert [(t.name, t.flags) for t in e.aliases] == [("七叶一枝花", ["joined"]), ("重楼", [])]
+    # the join and both parts attested (as a substring search finds the parts inside the join): left apart, in doubt
     [e] = parse_bielu(text, attested={"七叶一枝花", "七叶", "一枝花"}.__contains__)
-    assert [(t.name, t.flags) for t in e.aliases] == [("七叶", []), ("一枝花", []), ("重楼", [])]
+    assert [(t.name, t.flags) for t in e.aliases] == [("七叶", ["wrap"]), ("一枝花", ["wrap"]), ("重楼", [])]
 
 
 @pytest.fixture(scope="module")
@@ -201,27 +213,64 @@ def test_store_reader_takes_a_corpus_and_keeps_to_its_book():
     assert [(e.ref, e.head, names(e)) for e in entries] == [
         (f"{BOOK}.00001", "甘露", ["膏露", "天酒"]), (f"{BOOK}.00002", "明水", ["方諸水"])]
     assert [e.ref for e in read_bielu_store(passages)] == [f"{BOOK}.00001", f"{BOOK}.00002"]
+    with pytest.raises(ValueError, match=f"the store has no {BOOK}"):
+        read_bielu_store(passages[2:])
+    with pytest.raises(ValueError, match=f"head_repairs name passages the store lacks: {BOOK}.99999"):
+        read_bielu_store(passages, head_repairs={f"{BOOK}.99999": "礜石"})  # a typo is no silent no-op
+
+
+def test_store_reader_on_a_store(tmp_path):
+    db = CorpusStore(tmp_path / "tcm.sqlite", create=True)
+    for bid, texts in ((BOOK, ["（有別名者錄之無別名者未錄）", "甘露（膏露\u3000天酒）", "仲思棗\u3000杏（甜梅）"]),
+                       ("other", ["甘草一名國老"])):
+        db.put_book({"id": bid, "title": bid, "composition": [1578, 1578]}, source="test")
+        db.add_passages([{"id": f"{bid}.{n:05d}", "book_id": bid, "seq": n, "locator": {}, "temporal": {}, "text": t}
+                         for n, t in enumerate(texts)], t2s)
+    db.commit()
+    repairs = [{"passage": f"{BOOK}.00002", "head": "杏"}, {"passage": f"{BOOK}.00500", "head": "礜石"}]
+    with pytest.raises(ValueError, match=f"lacks: {BOOK}.00500"):
+        read_bielu_store(db, normalize=t2s, head_repairs=repairs)
+    db.set_meta("edition", "web")  # the site's excerpt lacks entries by design: their repairs are skipped
+    entries = read_bielu_store(db, normalize=t2s, head_repairs=repairs)
+    assert [(e.ref, e.head, e.flags, names(e)) for e in entries] == [
+        (f"{BOOK}.00001", "甘露", [], ["膏露", "天酒"]), (f"{BOOK}.00002", "杏", ["head_repaired"], ["甜梅"])]
+    corpus = StoreCorpus(db, t2s)
+    assert [e.ref for e in read_bielu_store(corpus, head_repairs=repairs)] == [e.ref for e in entries]
+    with pytest.raises(ValueError, match=f"the corpus leaves {BOOK} out"):
+        read_bielu_store(StoreCorpus(db, t2s, exclude_books=(BOOK,)))
+
+
+def test_repairs_match_the_curated_list():
+    curated = HOME / "domains" / "classics" / "aliases" / "curated.yaml"
+    if not curated.is_file():
+        pytest.skip("no curated.yaml yet")
+    import yaml
+
+    rows = (yaml.safe_load(curated.read_text(encoding="utf-8")) or {}).get("repairs") or []
+    normalize = DomainPack(HOME / "domains" / "classics").variants.normalize_text
+    assert sorted((normalize(r["from"]), normalize(r["to"])) for r in rows) == sorted(REPAIRS)
 
 
 # ------------------------------------------------------------------ hurbTable
-def test_hurb_rows_are_realigned():
+def test_hurb_rows_are_realigned(tmp_path):
     rows = read_hurb(FIX / "hurb.csv")
     assert [e.ref for e in rows] == [f"row {n}" for n in range(1, 8)]
-    gancao, qiancao, dinggong, dongfeng, zhihuangqi, yishou, zisu = rows
-    assert (gancao.flags, gancao.info["source"], names(gancao)) == (
-        ["source_in_part"], "豆科植物甘草的干燥根和根茎。", ["国老", "蜜甘", "美草"])
-    assert token(gancao, "甘草").drop == "same_as_head"
-    assert (qiancao.flags, qiancao.info["english"]) == (["latin_in_alias"], "Rubiae Radix et Rhizoma。")
-    assert qiancao.tokens == []
-    assert (dinggong.flags, names(dinggong)) == (["aliases_in_part"], ["麻辣子藤", "包公藤", "斑鱼烈"])
-    assert (dongfeng.flags, dongfeng.info) == (
-        ["source_in_english"], {"english": "Severinia buxifolia", "source": "芸香科植物酒饼筋的根。"})
-    assert (zhihuangqi.flags, zhihuangqi.info["english"]) == (["none_word", "source_in_part"], "")
-    assert zhihuangqi.tokens == []
-    assert [(t.name, t.kind, t.note, t.drop) for t in yishou.tokens] == [
-        ("棒子头", "alias", "", None), ("狮子草", "alias", "", None), ("狮子草", "alias", "", "duplicate"),
-        ("头", "alias", "", "one_char"), ("榜孜多乌", "folk", "藏药", None)]
-    assert (zisu.head, names(zisu)) == ("紫苏叶", ["苏叶"])  # no Name: the head from Medicine_Name
+    yungen, chisi, jingou, xifeng, processed, yushou, ziyun = rows
+    assert (yungen.flags, yungen.info["source"], names(yungen)) == (
+        ["source_in_part"], "豆科植物云根草的干燥根和根茎。", ["石郎", "蜜根", "白衣"])
+    assert token(yungen, "云根草").drop == "same_as_head"
+    assert (chisi.flags, chisi.info["english"], chisi.tokens) == (["latin_in_alias"], "Rubri Fili Herba。", [])
+    assert (jingou.flags, names(jingou)) == (["aliases_in_part"], ["铜钩藤", "包金藤", "斑石烈"])
+    assert (xifeng.flags, xifeng.info) == (
+        ["source_in_english"], {"english": "Citrus fictitia", "source": "芸香科植物山柑筋的根。"})
+    assert (processed.flags, processed.info["english"], processed.tokens) == (["none_word", "source_in_part"], "", [])
+    assert [(t.name, t.kind, t.note, t.drop) for t in yushou.tokens] == [
+        ("棒槌头", "alias", "", None), ("狮尾草", "alias", "", None), ("狮尾草", "alias", "", "duplicate"),
+        ("头", "alias", "", "one_char"), ("榜多吉", "folk", "藏药", None)]
+    assert (ziyun.head, names(ziyun)) == ("紫云叶", ["云叶"])  # no Name: the head from Medicine_Name
+    gbk = tmp_path / "hurb.csv"  # as Excel saves a CSV on a Chinese Windows
+    gbk.write_bytes((FIX / "hurb.csv").read_text(encoding="utf-8-sig").encode("gb18030"))
+    assert [(e.head, names(e), e.info) for e in read_hurb(gbk)] == [(e.head, names(e), e.info) for e in rows]
 
 
 def test_hurb_needs_its_columns(tmp_path):
@@ -265,6 +314,24 @@ def test_ntu_csv_with_chinese_columns():
     assert rows[2].flags == ["missing"]  # in a CSV an empty cell is a missing value
 
 
+def test_ntu_tsv_in_gb18030_with_marks(tmp_path):
+    tsv = tmp_path / "ntu.tsv"
+    tsv.write_bytes("主名\t别名\n葡萄\t山□葡萄、山(野)葡萄、*紫葡萄\n甘〓草\t国老\n".encode("gb18030"))
+    grape, lost = read_ntu(tsv)
+    assert [(t.name, t.flags) for t in grape.tokens] == [
+        ("山〓葡萄", ["lost_char"]), ("山野葡萄", ["lost_char"]), ("紫葡萄", ["marks"])]  # never 山葡萄
+    assert (lost.head, lost.flags) == ("", ["no_head"])
+    with pytest.raises(ValueError, match="ntu.tsv: not utf-8 text"):
+        read_ntu(tsv, encoding="utf-8")
+
+
+def test_reader_flags_are_classified(gb):
+    entries = [*gb.values(), *read_hurb(FIX / "hurb.csv"), *read_ntu(FIX / "ntu.tab"),
+               *parse_bielu("甘露（膏〓　山(野)葡萄）"), *read_ntu(FIX / "ntu.csv")]
+    flags = {f for e in entries for t in e.tokens for f in t.flags}
+    assert flags - {"repaired"} <= DOUBT_FLAGS  # every other token flag puts the pair in doubt (a candidate)
+
+
 def _zip(path: Path, members: dict[str, bytes]) -> Path:
     with zipfile.ZipFile(path, "w") as z:
         for name, data in members.items():
@@ -296,25 +363,25 @@ def test_ntu_download_forms(tmp_path):
 def test_import_writes_rows_and_pins(tmp_path):
     out = tmp_path / "aliases" / "local"
     data = (FIX / "hurb.csv").read_bytes()
-    hurb = import_local("hurb", FIX / "hurb.csv", out, licence="none stated", attribution="hurbTable (GitHub)",
-                        pin={"rows": 7}, imported="2026-10-14")
-    assert hurb == {"file": "hurb.csv", "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data), "rows": 7,
-                    "pairs": 11, "licence": "none stated", "attribution": "hurbTable (GitHub)",
-                    "imported": "2026-10-14"}
+    hurb = import_local("hurb", FIX / "hurb.csv", out, normalize=t2s, normalizer="t2s", licence="none stated",
+                        attribution="hurbTable (GitHub)", pin={"rows": 7}, imported="2026-10-14")
+    assert hurb == {"source": "hurb", "file": "hurb.csv", "sha256": hashlib.sha256(data).hexdigest(),
+                    "bytes": len(data), "rows": 7, "pairs": 11, "normalizer": "t2s", "licence": "none stated",
+                    "attribution": "hurbTable (GitHub)", "imported": "2026-10-14"}
     rows = [json.loads(line) for line in (out / "hurb.jsonl").read_text(encoding="utf-8").splitlines()]
-    assert rows[0] == {"h": "甘草", "s": "国老", "src": "hurb", "ref": "row 1"}
-    assert {"h": "翼首草", "s": "榜孜多乌", "k": "folk", "nt": "藏药", "src": "hurb", "ref": "row 6"} in rows
+    assert rows[0] == {"h": "云根草", "s": "石郎", "src": "hurb", "ref": "row 1"}
+    assert {"h": "羽首草", "s": "榜多吉", "k": "folk", "nt": "藏药", "src": "hurb", "ref": "row 6"} in rows
 
     zipped = _zip(tmp_path / "ntu.zip", {"MANIFEST.TXT": b"files", "ntu.tab": (FIX / "ntu.tab").read_bytes()})
-    ntu = import_local("ntu", zipped, out, normalize=t2s, licence="CC BY-NC 4.0",
+    ntu = import_local("ntu", zipped, out, normalize=t2s, normalizer="t2s", licence="CC BY-NC 4.0",
                        pin={"file": "ntu.tab", "rows": 50606, "sha256": None}, imported="2026-10-14")
-    assert (ntu["file"], ntu["from"], ntu["rows"], ntu["pairs"]) == ("ntu.tab", "ntu.zip", 8, 5)
+    assert [ntu[k] for k in ("source", "file", "from", "rows", "pairs")] == ["ntu40k", "ntu.tab", "ntu.zip", 8, 5]
     assert ntu["sha256"] == hashlib.sha256((FIX / "ntu.tab").read_bytes()).hexdigest()  # the table, not the zip
     assert ntu["warnings"] == ["rows 8 differs from the pinned 50606"]
     first = json.loads((out / "ntu.jsonl").read_text(encoding="utf-8").splitlines()[0])
     assert (first["h"], first["s"], first["src"]) == ("甘草", "国老", "ntu40k")  # the id in sources.yaml
 
-    gb = import_local("bielu-gb", FIX / "bielu_gb.txt", out, imported="2026-10-14")
+    gb = import_local("bielu-gb", FIX / "bielu_gb.txt", out, normalize=t2s, normalizer="t2s", imported="2026-10-14")
     assert (gb["rows"], gb["pairs"]) == (20, 50)  # the entry whose head was lost gives no pair
     gb_rows = [json.loads(line) for line in (out / "bielu-gb.jsonl").read_text(encoding="utf-8").splitlines()]
     assert {"h": "白茅", "s": "茹根", "k": "part_name", "q": "根", "src": "bielu-gb", "ref": "line 22"} in gb_rows
@@ -322,7 +389,8 @@ def test_import_writes_rows_and_pins(tmp_path):
 
     manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
     assert manifest == {"bielu-gb": gb, "hurb": hurb, "ntu": ntu}
-    again = import_local("hurb", FIX / "hurb.csv", out, pin={"sha256": hurb["sha256"]}, imported="2026-10-15")
+    again = import_local("hurb", FIX / "hurb.csv", out, normalize=t2s, normalizer="t2s",
+                         pin={"sha256": hurb["sha256"]}, imported="2026-10-15")
     assert again["sha256"] == hurb["sha256"] and "warnings" not in again
     with pytest.raises(ValueError, match="unknown local alias source"):
-        import_local("bielu-jc", FIX / "hurb.csv", out)
+        import_local("bielu-jc", FIX / "hurb.csv", out, normalize=t2s, normalizer="t2s")

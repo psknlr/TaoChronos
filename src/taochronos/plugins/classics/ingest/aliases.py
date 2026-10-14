@@ -4,11 +4,13 @@
 The 别名录 gives ``head（a1　a2 …）`` per drug: the store's copy one entry per passage, names separated by full-width
 spaces; the GitHub copy in the 中医世家 layout (``\\x甘露\\x（膏露 天酒 …）``, ASCII spaces, hard-wrapped at a fixed
 width).  Both lost every character outside GB2312 to a blank or ``KT`` and share word-level conversion errors (野狼 for
-狼, 浓 for 厚).  So the names next to a blank slot or a ``KT`` are flagged ``lost_char``; one-character tokens (mostly
-fragments: 鱼 of 石斑鱼), a name equal to its head and repeats are kept only as dropped tokens; an ``X名Y`` or ``X曰Y``
-note (根名茹根, 雌者曰博带) gives Y as a part, processing or variety name; a hard wrap is joined only when the joined
-form is attested and its parts are not (flag ``joined``), and its parts are flagged ``wrap`` when it stays unresolved.
-Section labels are ignored: the GitHub copy files everything after the herbs under 草部（下）.
+狼, 浓 for 厚).  So the names next to a blank slot or a ``KT``, and a name holding a lost-character mark (〓 □ ■, kept
+as 〓 so that its neighbours never run together into another name), are flagged ``lost_char``; one-character tokens
+(mostly fragments: 鱼 of 石斑鱼), a name equal to its head and repeats are kept only as dropped tokens; an ``X名Y`` or
+``X曰Y`` note (根名茹根, 雌者曰博带) gives Y as a part, processing or variety name; a hard wrap is joined only when the
+joined form is attested and its parts are not (flag ``joined``), and its parts are flagged ``wrap`` unless they are two
+attested names whose join is not (天精|地节).  Section labels are ignored: the GitHub copy files everything after the
+herbs under 草部（下）.
 
 hurbTable (scraped from zhongyoo.com) keeps the botanical source in ``Medicinal_Part`` as often as in ``Source`` and
 has a few rows shifted by a column; the NTU table comes from Dataverse as an archival ``.tab``, whose escapes Python's
@@ -35,13 +37,17 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
 from ....protocol.base import canonical_dumps
-from ..store import is_han
+from ..store import CorpusStore, is_han
 
 BOOK = "jc_c030"  # the 别名录 in the store
-# word-level conversion errors of both copies, in normalised spelling (curated.yaml ``repairs`` holds the same)
+# word-level conversion errors of both copies, in normalised spelling (curated.yaml ``repairs`` holds the same, and a
+# test holds the two equal)
 REPAIRS: tuple[tuple[str, str], ...] = (("野狼", "狼"), ("浓朴", "厚朴"), ("浓皮", "厚皮"))
 # ``taochronos aliases import <name>`` → <data>/aliases/local/<name>.jsonl, its rows under the sources.yaml id
 LOCAL_SOURCES = {"bielu-gb": "bielu-gb", "hurb": "hurb", "ntu": "ntu40k"}
+# token flags that leave a name in doubt: the build makes such a pair a candidate (ADR 0023, status rule 4)
+DOUBT_FLAGS = frozenset({"lost_char", "joined", "truncated", "wrap", "marks"})
+_LOST = re.compile("[〓□■]")  # a lost-character mark; the readers keep it as 〓
 
 Normalize = Callable[[str], str]
 Pairs = Mapping[str, str] | Iterable[tuple[str, str]] | Iterable[Mapping[str, str]]
@@ -58,7 +64,7 @@ class AliasToken:
     kind: str = "alias"  # alias, or from a note: part_name, processing_variant, variety; hurb's ethnic names: folk
     qualifier: str = ""  # the X of an X名Y note: 根, 小者, 秦
     note: str = ""  # a bracketed note (藏药) or the list's note column
-    flags: list[str] = field(default_factory=list)  # lost_char, joined, wrap, truncated, repaired, marks
+    flags: list[str] = field(default_factory=list)  # lost_char, joined, wrap, truncated, marks (DOUBT_FLAGS), repaired
     drop: str | None = None  # lost, one_char, same_as_head, duplicate
 
 
@@ -69,7 +75,7 @@ class ListEntry:
     head: str  # normalised and repaired; "" when it was lost
     head_raw: str
     tokens: list[AliasToken] = field(default_factory=list)
-    flags: list[str] = field(default_factory=list)  # lost_head, head_repaired, repaired, no_list, unclosed …
+    flags: list[str] = field(default_factory=list)  # lost_head, head_repaired, repaired, no_list, unclosed, no_head …
     ref: str = ""  # where: a passage id, "line 190", "row 12"
     info: dict[str, Any] = field(default_factory=dict)  # other cells (hurb: english, source; NTU: all four)
 
@@ -112,6 +118,18 @@ def _repair(raw: str, name: str, repairs: list[tuple[str, str]]) -> tuple[str, s
 
 def _han(text: str) -> str:
     return "".join(ch for ch in text if is_han(ch))
+
+
+def _decode(data: bytes, encoding: str | None, name: str) -> str:
+    """A downloaded file's text: in the encoding given, else UTF-8 (a BOM allowed), else GB18030 (the GB 别名录, and
+    a CSV saved by Excel on a Chinese Windows)."""
+    for enc in [encoding] if encoding else ["utf-8-sig", "gb18030"]:
+        try:
+            return data.decode(enc)
+        except UnicodeDecodeError:
+            pass
+    tried = encoding or "UTF-8 or GB18030"
+    raise ValueError(f"{name}: not {tried} text; pass the file's encoding (--encoding)")
 
 
 def _finish(tokens: list[AliasToken], head: str) -> list[AliasToken]:
@@ -194,7 +212,7 @@ class _Bielu:
         head_raw, rest = body[:cut], body[cut + 2 if end >= 0 else cut:]
         flags: list[str] = []
         head = ""
-        if not head_raw.strip(" \u3000") or "KT" in head_raw or _SEP.search(head_raw):
+        if not head_raw.strip(" \u3000") or "KT" in head_raw or _SEP.search(head_raw) or _LOST.search(head_raw):
             flags.append("lost_head")  # 「 石」 for 礜石, 「荠 」 for 荠苨, an empty head
         else:
             _, head, hit = _repair(head_raw, self.normalize(_han(head_raw)), self.repairs)
@@ -225,14 +243,15 @@ class _Bielu:
                 wraps.append(len(slots))
             slots.extend(parts)
             marks.extend(set() for _ in parts)
-        for i in reversed(wraps):  # 野|生姜 is one name, 子芩|尾芩 two
+        for i in reversed(wraps):  # 野|生姜 is one name, 天精|地节 two, 七叶|一枝花 either as far as the corpus tells
             left, right = slots[i - 1], slots[i]
             fragment = len(self.form(left)) < 2 or len(self.form(right)) < 2  # never a name by itself
             alone = self.stands(left), self.stands(right)
-            if self.attested and (fragment or not any(alone)) and self.attested(self.form(left + right)):
+            whole = bool(self.attested) and self.attested(self.form(left + right))
+            if whole and (fragment or not any(alone)):
                 slots[i - 1: i + 1] = [left + right]
                 marks[i - 1: i + 1] = [marks[i - 1] | marks[i] | {"joined"}]
-            elif not all(alone):
+            elif whole or not all(alone):
                 marks[i - 1].add("wrap")
                 marks[i].add("wrap")
         for i, slot in enumerate(slots):  # a blank slot or a KT damages the names on both sides
@@ -243,9 +262,9 @@ class _Bielu:
         return [self.token(slot, sorted(mark)) for slot, mark in zip(slots, marks) if slot]
 
     def token(self, slot: str, flags: list[str]) -> AliasToken:
-        clean = slot.replace("KT", "")
+        clean = _LOST.sub("〓", slot.replace("KT", ""))
         written = _han(clean)
-        if written != clean:  # a stray bracket: 蕨（
+        if written != clean or "〓" in written:  # a stray bracket (蕨（), a lost-character mark
             flags = sorted({*flags, "lost_char"})
         qualifier, kind, raw = "", "alias", written
         m = None if written.startswith(_NAMED) else _NOTE.fullmatch(written)
@@ -278,7 +297,9 @@ def parse_bielu(text: str, *, normalize: Normalize | None = None, attested: Call
                 repairs: Pairs | None = REPAIRS) -> list[ListEntry]:
     """Entries of the 别名录 in text, one ``head（a1　a2 …）`` per line, or the GitHub copy's ``\\x head \\x（…）`` with
     its hard wraps and its title, metadata and section lines.  ``attested(name)`` (a normalised name → whether the
-    corpus has it) decides the wraps; without it none is joined.  Each entry's ``ref`` is its line number."""
+    corpus has it) decides the wraps; without it none is joined.  It must not read the 别名录 itself (store book
+    ``jc_c030``, whose names run together once the spaces are normalised away: 猴菽草乌饭草).  Each entry's ``ref`` is
+    its line number."""
     bielu = _Bielu(normalize, attested, repairs)
     gb = "\\x" in text
     blocks: list[tuple[int, list[str]]] = []
@@ -301,32 +322,31 @@ def parse_bielu(text: str, *, normalize: Normalize | None = None, attested: Call
 def read_bielu_gb(path: Path | str, *, encoding: str | None = None, normalize: Normalize | None = None,
                   attested: Callable[[str], bool] | None = None, repairs: Pairs | None = REPAIRS) -> list[ListEntry]:
     """The GitHub copy of the 别名录 (GB18030, or its UTF-8 decoding).  Local only: the repository states no licence."""
-    data = Path(path).read_bytes()
-    if encoding:
-        text = data.decode(encoding)
-    else:
-        try:
-            text = data.decode("utf-8-sig")
-        except UnicodeDecodeError:
-            text = data.decode("gb18030")
+    text = _decode(Path(path).read_bytes(), encoding, Path(path).name)
     return parse_bielu(text, normalize=normalize, attested=attested, repairs=repairs)
 
 
 def read_bielu_store(store: Any, *, normalize: Normalize | None = None, attested: Callable[[str], bool] | None = None,
                      repairs: Pairs | None = REPAIRS, head_repairs: Pairs | None = None,
                      book: str = BOOK) -> list[ListEntry]:
-    """The 别名录 passages of a store (a ``StoreCorpus`` that does not leave the book out, or passages or their dicts,
-    e.g. read from ``corpus/web/passages.jsonl.gz``), in passage order; each entry's ``ref`` is its passage id.
+    """The 别名录 passages of a store (a ``CorpusStore``, a ``StoreCorpus`` that keeps the book, or passages or their
+    dicts, e.g. read from ``corpus/web/passages.jsonl.gz``), in passage order; each entry's ``ref`` is its passage id.
     ``head_repairs`` (passage id → head, or curated.yaml rows ``{passage, head}``) gives back the heads the
-    transcription lost or ran together (仲思棗　杏)."""
+    transcription lost or ran together (仲思棗　杏).  Raises ValueError when the store has none of the book's entries,
+    or lacks a passage ``head_repairs`` names — unless the store is the web edition, an excerpt (778 of the 1,086
+    entries) that lacks some by design: compare the ids with the entries' refs to report those."""
     bielu = _Bielu(normalize, attested, repairs)
     heads = dict(_pairs(head_repairs, "passage", "head"))
-    rows = store.iter_passages(book_ids=[book]) if hasattr(store, "iter_passages") else store
     passages = []
-    for p in rows:
+    for p in _book_rows(store, book):
         pid, bid, text = (p["id"], p["book_id"], p["text"]) if isinstance(p, Mapping) else (p.id, p.book_id, p.text)
         if bid == book and text and not _PREFACE.search(text):
             passages.append((pid, text))
+    if not passages:
+        raise ValueError(f"the store has no {book} (本草纲目别名录) entries")
+    absent = sorted(set(heads) - {pid for pid, _ in passages})
+    if absent and _edition(store) != "web":
+        raise ValueError(f"head_repairs name passages the store lacks: {', '.join(absent)}")
     out = []
     for pid, text in sorted(passages):
         e = bielu.entry([text], False, pid)
@@ -336,6 +356,25 @@ def read_bielu_store(store: Any, *, normalize: Normalize | None = None, attested
             _finish(e.tokens, e.head)
         out.append(e)
     return out
+
+
+def _book_rows(store: Any, book: str) -> Iterable[Any]:
+    if isinstance(store, CorpusStore):
+        with store.lock:
+            rows = store.db.execute("SELECT id, book_id, text FROM passages WHERE book_id=?", (book,)).fetchall()
+        return [{"id": pid, "book_id": bid, "text": text} for pid, bid, text in rows]
+    if hasattr(store, "iter_passages"):
+        if book in getattr(store, "exclude_books", ()):
+            raise ValueError(f"the corpus leaves {book} out; pass the store, or a corpus that keeps the book")
+        return store.iter_passages(book_ids=[book])
+    return store
+
+
+def _edition(store: Any) -> str | None:
+    """``web`` for the store of the published site, an excerpt; None for passages handed over as such."""
+    if isinstance(store, CorpusStore):
+        return store.meta("edition") or "full"
+    return getattr(store, "edition", None)
 
 
 # --------------------------------------------------------------------------- hurbTable
@@ -376,7 +415,9 @@ def _realign(rec: dict[str, str]) -> list[str]:
 
 
 def _name_tokens(cell: str, sep: re.Pattern[str], normalize: Normalize, note_kind: str) -> list[AliasToken]:
-    """Names of a table cell: split, 。 and quotes stripped, a bracketed note (藏药) kept as the token's note."""
+    """Names of a table cell: split, 。 and quotes stripped, a bracketed note (藏药) kept as the token's note.  Other
+    marks are dropped (flag ``marks``), but one inside a name, or a lost-character mark, makes it ``lost_char``: 山□葡萄
+    is not 山葡萄."""
     out = []
     for text in sep.split(cell.strip().rstrip("。.")):
         text = text.strip(" \u3000。“”\"'")
@@ -384,17 +425,24 @@ def _name_tokens(cell: str, sep: re.Pattern[str], normalize: Normalize, note_kin
             continue
         m = _BRACKET_NOTE.fullmatch(text)
         written, note = (m.group(1), m.group(2).strip()) if m else (text, "")
+        written = _LOST.sub("〓", written)
         raw = _han(written)
-        flags = ["marks"] if raw != written else []
+        han = [i for i, ch in enumerate(written) if is_han(ch)]
+        inner = written[han[0]: han[-1] + 1] if han else ""
+        flags = ["lost_char"] if "〓" in raw or _han(inner) != inner else ["marks"] if raw != written else []
         out.append(AliasToken(text, raw, normalize(raw), note_kind if note else "alias", note=note, flags=flags))
     return out
+
+
+def _table_head(raw: str, normalize: Normalize) -> str:
+    """A table row's head, a bracketed note dropped; "" when a character of it was lost."""
+    return "" if _LOST.search(raw) else normalize(_han(re.sub(r"[（(][^（）()]*[）)]", "", raw)))
 
 
 def read_hurb(path: Path | str, *, normalize: Normalize | None = None, encoding: str | None = None) -> list[ListEntry]:
     """hurbTable.csv, one entry per row, its cells realigned.  Local only: no data licence is stated."""
     normalize = normalize or _identity
-    with open(path, encoding=encoding or "utf-8-sig", newline="") as f:
-        rows = list(csv.reader(f))
+    rows = list(csv.reader(io.StringIO(_decode(Path(path).read_bytes(), encoding, Path(path).name), newline="")))
     if not rows:
         return []
     col = {name.strip(): i for i, name in enumerate(rows[0])}
@@ -408,7 +456,9 @@ def read_hurb(path: Path | str, *, normalize: Normalize | None = None, encoding:
         rec = {key: row[col[c]].strip() if col[c] < len(row) else "" for key, c in need.items()}
         flags = _realign(rec)
         head_raw = rec["name"] or re.match(r"[\u3400-\u9fff]*", html.unescape(rec["medicine"]).strip()).group(0)
-        head = normalize(_han(head_raw))
+        head = _table_head(head_raw, normalize)
+        if head_raw and not head:
+            flags.append("lost_head")
         tokens = _name_tokens(rec["alias"], _HURB_SEP, normalize, "folk")  # 榜孜多乌(藏药)
         out.append(ListEntry(head, head_raw, _finish(tokens, head), flags, f"row {n}",
                              {"english": rec["english"], "source": rec["source"]}))
@@ -485,11 +535,11 @@ def read_ntu(path: Path | str, *, normalize: Normalize | None = None, encoding: 
     the zip holding it), or a ``.csv``/``.tsv``; one entry per row, the columns found by name.  ``info`` keeps the four
     cells as read: None for a missing value (in a ``.csv``/``.tsv``, any empty cell), "" for an empty string.  Local
     only."""
-    return _ntu_entries(*table_file(path), normalize=normalize or _identity, encoding=encoding or "utf-8-sig")
+    return _ntu_entries(*table_file(path), normalize=normalize or _identity, encoding=encoding)
 
 
-def _ntu_entries(name: str, data: bytes, *, normalize: Normalize, encoding: str) -> list[ListEntry]:
-    text = data.decode(encoding)
+def _ntu_entries(name: str, data: bytes, *, normalize: Normalize, encoding: str | None) -> list[ListEntry]:
+    text = _decode(data, encoding, name)
     if name.lower().endswith(".tab"):
         header, rows = parse_tab(text)
     else:
@@ -501,7 +551,7 @@ def _ntu_entries(name: str, data: bytes, *, normalize: Normalize, encoding: str)
     for n, row in enumerate(rows, 1):
         cells = {role: row[i] if i < len(row) else None for role, i in cols.items()}
         head_raw = (cells["primary"] or "").strip()
-        head = normalize(_han(re.sub(r"[（(][^（）()]*[）)]", "", head_raw)))
+        head = _table_head(head_raw, normalize)
         alternate = cells["alternate"]
         flags = ["no_head"] if not head else []
         if alternate is None:
@@ -532,20 +582,21 @@ def local_rows(entries: Iterable[ListEntry], source: str) -> list[dict[str, Any]
     return out
 
 
-def import_local(source: str, path: Path | str, out_dir: Path | str, *, normalize: Normalize | None = None,
+def import_local(source: str, path: Path | str, out_dir: Path | str, *, normalize: Normalize, normalizer: str,
                  encoding: str | None = None, attested: Callable[[str], bool] | None = None,
                  repairs: Pairs | None = REPAIRS, licence: str = "", attribution: str = "",
                  pin: Mapping[str, Any] | None = None, imported: str | None = None) -> dict[str, Any]:
-    """Read a local list (``bielu-gb``, ``hurb`` or ``ntu``), write its pairs to ``<out_dir>/<source>.jsonl`` under
-    the source's id in sources.yaml, and record it in ``<out_dir>/manifest.json``: the table's file, sha256, bytes and
-    rows, the pairs written, licence, attribution, the date, and warnings where it differs from the pin (``{file,
-    rows, sha256}`` of sources.yaml).  Returns that manifest entry."""
+    """Read a local list (``bielu-gb``, ``hurb`` or ``ntu``) through the pack's normaliser (``normalizer`` its
+    fingerprint), write its pairs to ``<out_dir>/<source>.jsonl`` under the source's id in sources.yaml, and record it
+    in ``<out_dir>/manifest.json``: that id, the table's file, sha256, bytes and rows, the pairs written, the
+    normaliser, licence, attribution, the date, and warnings where it differs from the pin (``{file, rows, sha256}``
+    of sources.yaml).  Returns that manifest entry."""
     if source not in LOCAL_SOURCES:
         raise ValueError(f"unknown local alias source {source!r}; expected one of {', '.join(LOCAL_SOURCES)}")
     path = Path(path)
     name, data = table_file(path) if source == "ntu" else (path.name, path.read_bytes())
     if source == "ntu":
-        entries = _ntu_entries(name, data, normalize=normalize or _identity, encoding=encoding or "utf-8-sig")
+        entries = _ntu_entries(name, data, normalize=normalize, encoding=encoding)
     elif source == "hurb":
         entries = read_hurb(path, normalize=normalize, encoding=encoding)
     else:
@@ -554,8 +605,9 @@ def import_local(source: str, path: Path | str, out_dir: Path | str, *, normaliz
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     (out / f"{source}.jsonl").write_bytes("".join(canonical_dumps(r) + "\n" for r in rows).encode("utf-8"))
-    entry: dict[str, Any] = {"file": name, "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data),
-                             "rows": len(entries), "pairs": len(rows), "licence": licence, "attribution": attribution,
+    entry: dict[str, Any] = {"source": LOCAL_SOURCES[source], "file": name, "sha256": hashlib.sha256(data).hexdigest(),
+                             "bytes": len(data), "rows": len(entries), "pairs": len(rows), "normalizer": normalizer,
+                             "licence": licence, "attribution": attribution,
                              "imported": imported or date.today().isoformat()}
     if name != path.name:
         entry["from"] = path.name

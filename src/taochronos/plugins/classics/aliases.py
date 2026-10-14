@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -55,12 +56,14 @@ DEFAULT_ALIAS: dict[str, Any] = {
 # the drug-context patterns ``context.json`` carries (a built one overrides them), read on gate-form text; each
 # compiles alike in Python ``re`` and JS ``RegExp(…, "u")``
 CONTEXT_PATTERNS: dict[str, str] = {
-    "dose": r"^\|?[^|]{0,6}?[一二三四五六七八九十百千半两0-9]+[两钱分斤枚个升合片铢粒]",  # 将军二两 · 将军（炙）三两
+    # 将军二两 · 将军，二两 · 将军六铢 (not across a bracketed note: 将军（川者）二两 is read by none of these)
+    "dose": r"^\|?[^|]{0,6}?[一二三四五六七八九十百千半两0-9]+[两钱分斤枚个升合片铢粒]",
     "each": r"^[^|]{0,8}?各[一二三四五六七八九十百半等]",  # 将军芒硝各三两
-    "prep": r"^\|[^|]{0,8}?(?:炒|炙|去|研|制|焙|煨|洗|切|熬|烧|酒|醋|锉|碎|捣|浸|蒸)",  # 将军（酒洗）
+    "prep": r"^\|[^|]{0,8}?(?:炒|炙|去|研|制|焙|煨|洗|切|熬|烧|酒|醋|锉|碎|捣|浸|蒸)",  # 将军（酒洗） · 将军（炙）三两
     "nameof": r"(?:一名|又名|亦名|俗名|俗呼|名曰)$",  # 大黄一名将军
 }
-# source id → how an answer credits it; the CC0 别名录 always with 中醫笈成
+# source id → how an answer credits it, when the file's header carries no ``labels`` (the build writes them from
+# sources.yaml, which the Worker's ALIAS_SOURCES read too); the CC0 别名录 always with 中醫笈成
 SOURCE_LABELS: dict[str, str] = {
     "bielu-jc": "别名录（中醫笈成）", "curated": "编者审定", "store": "古籍互证", "shiming": "纲目释名", "taboo": "避讳",
     "lexicon": "词表", "bielu-gb": "别名录（GB本）", "hurb": "hurbTable", "ntu40k": "NTU 40K",
@@ -70,20 +73,68 @@ Window = tuple[int | None, int | None]  # [from, to) in years; None leaves that 
 Blocker = str | tuple[str, int | None, int | None]  # a string containing a name that is not it, with a year window
 
 
-def _window(value: Any) -> Window | None:
+# What a field holds is checked on reading and writing alike: a value of the wrong type raises ``ValueError`` (the
+# loader adds the file and line), and a whole float is written and read as the int it is, so ``1063.0`` stays 1063.
+def _bad(what: str, value: Any) -> ValueError:
+    return ValueError(f"{what} is {value!r}")
+
+
+def _text(value: Any, what: str) -> str:
+    if type(value) is not str:
+        raise _bad(what, value)
+    return value
+
+
+_STR = frozenset([str])
+
+
+def _texts(value: Any, what: str) -> list[str]:
+    if type(value) not in (list, tuple) or not _STR.issuperset(map(type, value)):
+        raise _bad(what, value)
+    return list(value)
+
+
+def _rows(value: Any, what: str) -> list[Any]:
+    if type(value) not in (list, tuple):
+        raise _bad(what, value)
+    return list(value)
+
+
+def _int(value: Any, what: str, *, null: bool = True) -> int | None:
+    """A year or a count: an int, a whole float as its int, or None where ``null`` allows it."""
+    if type(value) is int or (value is None and null):
+        return value
+    if type(value) is float and value.is_integer():
+        return int(value)
+    raise _bad(what, value)
+
+
+def _window(value: Any, what: str = "v") -> Window | None:
     """A window as stored: None when it bounds nothing."""
     if value is None:
         return None
-    lo, hi = value
+    if type(value) not in (list, tuple) or len(value) != 2:
+        raise _bad(what, value)
+    lo, hi = _int(value[0], what), _int(value[1], what)
     return None if lo is None and hi is None else (lo, hi)
 
 
 def _blocker(value: Any) -> Blocker:
     """A blocker read from or written to the file: the bare string when its window bounds nothing."""
-    if isinstance(value, str):
+    if type(value) is str:
         return value
-    text, lo, hi = value
+    if type(value) not in (list, tuple) or len(value) != 3:
+        raise _bad("b", value)
+    text, lo, hi = _text(value[0], "b"), _int(value[1], "b"), _int(value[2], "b")
     return text if lo is None and hi is None else (text, lo, hi)
+
+
+def _credit(value: Any) -> tuple[str, int | None, int | None] | None:
+    if value is None:
+        return None
+    if type(value) not in (list, tuple) or len(value) != 3:
+        raise _bad("cr", value)
+    return _text(value[0], "cr"), _int(value[1], "cr"), _int(value[2], "cr")
 
 
 # --------------------------------------------------------------------------- records
@@ -98,11 +149,17 @@ class Witness:
     web: bool = False  # the passage is in the committed web pack
 
     def to_json(self) -> list[Any]:
-        return [self.pid, self.y0, self.y1, self.kind, 1 if self.web else 0]
+        return [_text(self.pid, "w"), _int(self.y0, "w"), _int(self.y1, "w"), _text(self.kind, "w"),
+                1 if self.web else 0]
 
     @classmethod
-    def from_json(cls, row: Iterable[Any]) -> Witness:
+    def from_json(cls, row: Any) -> Witness:
+        if (type(row) is not list or len(row) != 5 or type(row[0]) is not str or type(row[3]) is not str
+                or row[4] not in (0, 1)):
+            raise _bad("w", row)
         pid, y0, y1, kind, web = row
+        if type(y0) is not int or type(y1) is not int:  # most witnesses are dated: only the rest pay for the check
+            y0, y1 = _int(y0, "w"), _int(y1, "w")
         return cls(pid, y0, y1, kind, bool(web))
 
 
@@ -129,45 +186,45 @@ class Referent:
             self.c = [self.h]
 
     def to_json(self) -> dict[str, Any]:
-        out: dict[str, Any] = {"h": self.h, "src": list(self.src)}
+        out: dict[str, Any] = {"h": _text(self.h, "h"), "src": _texts(self.src, "src")}
         if self.g != self.h:
-            out["g"] = self.g
+            out["g"] = _text(self.g, "g")
         if self.t is not None:
-            out["t"] = self.t
+            out["t"] = _text(self.t, "t")
         if self.k != "alias":
-            out["k"] = self.k
+            out["k"] = _text(self.k, "k")
         if self.st != "open":
-            out["st"] = self.st
-        if _window(self.v) is not None:
-            out["v"] = list(self.v)
+            out["st"] = _text(self.st, "st")
+        v = _window(self.v)
+        if v is not None:
+            out["v"] = list(v)
         if self.c != [self.h]:
-            out["c"] = list(self.c)
+            out["c"] = _texts(self.c, "c")
         if self.a:
-            out["a"] = list(self.a)
+            out["a"] = _texts(self.a, "a")
         if self.w:
             out["w"] = [w.to_json() for w in self.w]
-        if self.cr is not None:
-            out["cr"] = list(self.cr)
+        cr = _credit(self.cr)
+        if cr is not None:
+            out["cr"] = list(cr)
         if self.nt:
-            out["nt"] = self.nt
+            out["nt"] = _text(self.nt, "nt")
         return out
 
     @classmethod
-    def from_json(cls, d: Mapping[str, Any]) -> Referent:
-        return cls(
-            h=d.get("h") or "",
-            g=d.get("g") or "",
-            t=d.get("t"),
-            k=d.get("k", "alias"),
-            st=d.get("st", "open"),
-            v=_window(d.get("v")),
-            c=list(d["c"]) if "c" in d else None,
-            a=list(d.get("a") or ()),
-            src=list(d.get("src") or ()),
-            w=[Witness.from_json(w) for w in d.get("w") or ()],
-            cr=tuple(d["cr"]) if d.get("cr") is not None else None,
-            nt=d.get("nt") or "",
-        )
+    def from_json(cls, d: Any) -> Referent:
+        if type(d) is not dict:
+            raise _bad("r", d)
+        get = d.get
+        h, g, t, k, st, nt = get("h", ""), get("g", ""), get("t"), get("k", "alias"), get("st", "open"), get("nt", "")
+        if not (type(h) is str and type(g) is str and type(k) is str and type(st) is str and type(nt) is str
+                and (t is None or type(t) is str)):
+            for key, value in (("h", h), ("g", g), ("t", "" if t is None else t), ("k", k), ("st", st), ("nt", nt)):
+                _text(value, key)
+        c, a, w = get("c"), get("a"), get("w")  # a list left out (or null) is its default
+        return cls(h=h, g=g, t=t, k=k, st=st, v=_window(get("v")), c=None if c is None else _texts(c, "c"),
+                   a=[] if a is None else _texts(a, "a"), src=_texts(get("src", ()), "src"),
+                   w=[] if w is None else [Witness.from_json(x) for x in _rows(w, "w")], cr=_credit(get("cr")), nt=nt)
 
 
 @dataclass
@@ -182,7 +239,9 @@ class AliasRecord:
     b: list[Blocker] = field(default_factory=list)  # ordered by store frequency, ≤ 24
     fl: int | None = None  # soft first-use floor: earlier passages are flagged, never filtered
     flb: str | None = None  # the floor's basis: "taboo:<rule id>" or "curated"
-    ho: str | None = None  # the group id when s is a referent's head
+    # the group id when s is a head — every member of a same-drug group (丹砂 and 朱砂, 地肤 and 地肤子) carries it,
+    # aliases of another member or not, so that the lexicon's separate entries for them read as one drug
+    ho: str | None = None
     r: list[Referent] = field(default_factory=list)  # referents (empty when stop or a head only)
 
     def __post_init__(self) -> None:
@@ -190,41 +249,48 @@ class AliasRecord:
             self.raw = [self.s]
 
     def to_json(self) -> dict[str, Any]:
-        out: dict[str, Any] = {"s": self.s}
+        out: dict[str, Any] = {"s": _text(self.s, "s")}
         if self.raw != [self.s]:
-            out["raw"] = list(self.raw)
+            out["raw"] = _texts(self.raw, "raw")
         if self.stop:
             out["stop"] = True
         if self.n:
-            out["n"] = self.n
-        if round(self.sh, 2):
-            out["sh"] = round(self.sh, 2)
-        blockers = [_blocker(b) for b in self.b]
-        if blockers:
-            out["b"] = [b if isinstance(b, str) else list(b) for b in blockers]
+            out["n"] = _int(self.n, "n")
+        sh = round(self.sh, 2)
+        if sh:
+            out["sh"] = float(sh)
+        if self.b:
+            out["b"] = [b if type(b) is str else list(b) for b in map(_blocker, self.b)]
         if self.fl is not None:
-            out["fl"] = self.fl
+            out["fl"] = _int(self.fl, "fl")
         if self.flb is not None:
-            out["flb"] = self.flb
+            out["flb"] = _text(self.flb, "flb")
         if self.ho is not None:
-            out["ho"] = self.ho
+            out["ho"] = _text(self.ho, "ho")
         if self.r:
             out["r"] = [ref.to_json() for ref in self.r]
         return out
 
     @classmethod
     def from_json(cls, d: Mapping[str, Any]) -> AliasRecord:
+        get = d.get
+        stop, sh, flb, ho = get("stop", False), get("sh", 0), get("flb"), get("ho")
+        if type(stop) is not bool:
+            raise _bad("stop", stop)
+        if type(sh) not in (int, float):
+            raise _bad("sh", sh)
+        raw, b, r = get("raw"), get("b"), get("r")  # a list left out (or null) is its default
         return cls(
-            s=d.get("s") or "",
-            raw=list(d["raw"]) if "raw" in d else None,
-            stop=bool(d.get("stop", False)),
-            n=int(d.get("n", 0)),
-            sh=float(d.get("sh", 0)),
-            b=[_blocker(b) for b in d.get("b") or ()],
-            fl=d.get("fl"),
-            flb=d.get("flb"),
-            ho=d.get("ho"),
-            r=[Referent.from_json(ref) for ref in d.get("r") or ()],
+            s=_text(get("s", ""), "s"),
+            raw=None if raw is None else _texts(raw, "raw"),
+            stop=stop,
+            n=_int(get("n", 0), "n", null=False),
+            sh=float(sh),
+            b=[] if b is None else [_blocker(x) for x in _rows(b, "b")],
+            fl=_int(get("fl"), "fl"),
+            flb=None if flb is None else _text(flb, "flb"),
+            ho=None if ho is None else _text(ho, "ho"),
+            r=[] if r is None else [Referent.from_json(x) for x in _rows(r, "r")],
         )
 
 
@@ -240,10 +306,12 @@ class Expansion:
     kind: str = "alias"
     status: str = "open"
     valid: Window | None = None
-    shared: bool = False  # the name denotes other drugs too
+    shared: bool = False  # the name may mean another drug too within the query's window
     cues: list[str] = field(default_factory=list)
     own: list[str] = field(default_factory=list)  # the group's other names
-    rivals: list[str] = field(default_factory=list)  # names of the other drugs the name denotes
+    # the other drugs a shared name may mean: per referent, the window in which the name means it (its ``v``) and the
+    # names that tell it apart, sorted by group
+    rivals: list[tuple[Window | None, list[str]]] = field(default_factory=list)
     src: list[str] = field(default_factory=list)
     wit: list[Witness] = field(default_factory=list)
     n: int = 0
@@ -261,7 +329,8 @@ def _counts(records: list[AliasRecord]) -> dict[str, int]:
 
 def dumps_records(records: Iterable[AliasRecord], meta: Mapping[str, Any] | None = None) -> str:
     """The file's text: the header, then the records by surface in code-point order.  ``meta`` goes into the header
-    (store, normalizer, lexicon, coverage); its format, version, sources and counts are those of the records."""
+    (store, normalizer, lexicon, coverage, and the sources' ``labels``); its format, version, sources and counts are
+    those of the records."""
     recs = sorted(records, key=lambda rec: rec.s)
     for a, b in zip(recs, recs[1:]):
         if a.s == b.s:
@@ -280,13 +349,13 @@ def write_records(path: Path, records: Iterable[AliasRecord], meta: Mapping[str,
 
 
 def loads_records(text: str, origin: str = "<aliases>") -> tuple[dict[str, Any], list[AliasRecord]]:
-    """The header (empty when the text has none) and the records of an alias file.  A line that is not a record, a
-    header elsewhere than first, or another format or a newer version raises ``ValueError``; what a record says is
-    judged by :class:`AliasIndex`."""
+    """The header (empty when the text has none) and the records of an alias file.  A line that is not a record or
+    holds a value of the wrong type, a header elsewhere than first, or another format or a newer version raises
+    ``ValueError`` naming the line; what a well-formed record says is judged by :class:`AliasIndex`."""
     header: dict[str, Any] = {}
     records: list[AliasRecord] = []
-    for no, line in enumerate(text.splitlines(), 1):
-        if not line.strip():
+    for no, line in enumerate(text.split("\n"), 1):  # only "\n" ends a line: U+2028 or U+0085 may stand in a note
+        if not line.strip(" \t\r"):
             continue
         try:
             obj = json.loads(line)
@@ -297,16 +366,31 @@ def loads_records(text: str, origin: str = "<aliases>") -> tuple[dict[str, Any],
         if "_header" in obj:
             if header or records:
                 raise ValueError(f"{origin}:{no}: a header after the first line")
-            header = dict(obj["_header"])
-            if header.get("format") != FORMAT or int(header.get("version", 0)) > VERSION:
-                raise ValueError(f"{origin}: {header.get('format')} v{header.get('version')} is not {FORMAT} "
-                                 f"v{VERSION} or older")
+            header = _header(obj["_header"], f"{origin}:{no}")
             continue
         try:
             records.append(AliasRecord.from_json(obj))
-        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+        except ValueError as exc:
             raise ValueError(f"{origin}:{no}: malformed record ({exc})") from None
     return header, records
+
+
+def _header(value: Any, where: str) -> dict[str, Any]:
+    """A header line's object, checked for what the index reads of it: format, version, sources and labels."""
+    if type(value) is not dict:
+        raise ValueError(f"{where}: the header is not an object")
+    fmt, version = value.get("format"), value.get("version", 0)
+    if fmt != FORMAT or type(version) is not int or version > VERSION:
+        raise ValueError(f"{where}: {fmt} v{version} is not {FORMAT} v{VERSION} or older")
+    labels = value.get("labels", {})
+    try:
+        _texts(value.get("sources", ()), "sources")
+        if type(labels) is not dict:
+            raise _bad("labels", labels)
+        _texts(list(labels.values()), "labels")
+    except ValueError as exc:
+        raise ValueError(f"{where}: malformed header ({exc})") from None
+    return dict(value)
 
 
 # --------------------------------------------------------------------------- gates
@@ -365,6 +449,20 @@ def _params(cfg: Mapping[str, Any] | None) -> dict[str, Any]:
     return {**DEFAULT_ALIAS, **(cfg or {})}
 
 
+def _ablate(p: Mapping[str, Any]) -> set[str]:
+    """The ablations a profile or a call names: a list of them, or one as a string."""
+    value = p.get("ablate") or ()
+    return {value} if isinstance(value, str) else set(value)
+
+
+def _round4(x: float) -> float:
+    """``x`` ≥ 0 to 4 places as the Worker rounds, ``Math.round(x * 1e4) / 1e4``: halves up (0.65625 → 0.6563), where
+    ``round`` would take the even neighbour."""
+    y = x * 10000
+    f = math.floor(y)
+    return (f + 1 if y - f >= 0.5 else f) / 10000
+
+
 def _year(w: Witness) -> float | int | None:
     """A witness's year as answers show it: the middle of its range."""
     if w.y0 is None or w.y1 is None:
@@ -373,9 +471,11 @@ def _year(w: Witness) -> float | int | None:
     return int(mid) if mid == int(mid) else mid
 
 
-def source_labels(ids: Iterable[str]) -> list[str]:
-    """How an answer credits sources (:data:`SOURCE_LABELS`; an unknown id stands for itself)."""
-    return [SOURCE_LABELS.get(i, i) for i in ids]
+def source_labels(ids: Iterable[str], labels: Mapping[str, str] | None = None) -> list[str]:
+    """How an answer credits sources: by ``labels`` (an index's, from its files' headers), else
+    :data:`SOURCE_LABELS`; an unknown id stands for itself."""
+    labels = SOURCE_LABELS if labels is None else labels
+    return [labels.get(i, SOURCE_LABELS.get(i, i)) for i in ids]
 
 
 def assemble(M: list, S: list, k: int, num: int = 3, den: int = 10) -> list:
@@ -405,7 +505,9 @@ class AliasIndex:
 
     A record that cannot be used is skipped and counted, never fatal: a blank surface, a surface of fewer than two Han
     characters, a surface met again (the first kept); a referent with a blank head, an unknown kind or status (and its
-    record with it when none of its referents is left)."""
+    record with it when none of its referents is left).  A file whose values have the wrong type is refused whole
+    (:func:`loads_records`).  Answers credit sources by the labels the files' headers carry (``labels``: id → label,
+    which the build writes from sources.yaml), else by :data:`SOURCE_LABELS`."""
 
     def __init__(self, records: Iterable[AliasRecord] = (), *, context: Mapping[str, Any] | None = None,
                  headers: Iterable[Mapping[str, Any]] = (), fingerprint: str = "") -> None:
@@ -441,6 +543,7 @@ class AliasIndex:
         self.fingerprint = fingerprint
         self.sources = sorted({src for h in self.headers for src in h.get("sources") or ()}
                               | {src for rec in self.records.values() for ref in rec.r for src in ref.src})
+        self.labels = {**SOURCE_LABELS, **{i: t for h in self.headers for i, t in (h.get("labels") or {}).items()}}
         self.max_len = max(map(len, self.records), default=0)
         self.enabled = bool(self.records)
         # what the gates read of the context, and the indexes the expansion walks (surfaces in code-point order)
@@ -496,6 +599,11 @@ class AliasIndex:
     def record(self, s: str) -> AliasRecord | None:
         return self.records.get(s)
 
+    def source_labels(self, ids: Iterable[str]) -> list[str]:
+        """How an answer credits sources: the labels the files' headers carry (a later file's win), else
+        :data:`SOURCE_LABELS`."""
+        return source_labels(ids, self.labels)
+
     # ---------------------------------------------------------------- lookup
     def by_group(self, g: str) -> list[tuple[str, Referent]]:
         """Every (surface, referent) whose referent is in group ``g``, by surface."""
@@ -520,7 +628,9 @@ class AliasIndex:
 
     def referents(self, s: str, term: str | None = None, lex: Any = None) -> list[Referent]:
         """The drugs an asked surface may name: its record's referents, then the lexicon's herb entries for it (its own
-        entry first, the others by term id) whose group none of them is in, as ``lexicon`` referents (百枝 → 狗脊, 防风)."""
+        entry first, the others by term id) whose group none of them is in, as ``lexicon`` referents (百枝 → 狗脊, 防风).
+        An entry is in a group by its term id or by a head's ``ho`` — which is why every same-drug member carries one:
+        the lexicon's 地肤子 is otherwise a second drug beside the 地肤 that 地肤子 names."""
         rec = self.record(s)
         if rec is not None and rec.stop:
             return []
@@ -610,24 +720,32 @@ class AliasIndex:
     def accept(self, g: str, exp: Expansion, yr: Window, *, cfg: Mapping[str, Any] | None = None) -> tuple[bool, str]:
         """Whether a side-queue passage is taken for an expansion: boundary, context, rival and validity gates.  The
         reason is ``ok`` or the gate that refused: ``absent``, ``candidate``, ``boundary``, ``context``, ``rival``,
-        ``period``."""
+        ``period``.
+
+        The rival gate holds a name another drug may share to an own name in the passage and no rival's, and only
+        where a rival may be meant: a referent whose window the passage's range misses is none (通草 in a passage of
+        650 is 木通's, 通脱木 being 960 and later).  The ``gates`` ablation lifts the status, context and rival gates
+        alike — every pair open, as if the name were nobody else's."""
         p = _params(cfg)
-        ablate = set(p["ablate"])
+        ablate = _ablate(p)
         s = exp.surface
         if s not in g:
             return False, "absent"
-        if exp.status == "candidate" and "gates" not in ablate:
+        gates = "gates" not in ablate
+        if exp.status == "candidate" and gates:
             return False, "candidate"
         rec = self.record(s)
         offs = self.free_offsets(g, s, rec.b if rec is not None and "boundary" not in ablate else (), yr)
         if not offs:
             return False, "boundary"
-        if exp.status == "cue" and "gates" not in ablate and not self.drug_context(g, s, offs, exp.cues, cfg=p):
+        if exp.status == "cue" and gates and not self.drug_context(g, s, offs, exp.cues, cfg=p):
             return False, "context"
-        if exp.direction == DIRECTIONS[1] and exp.shared:
-            rest = g.replace(s, "|")  # names are read outside the name itself (木香 in 青木香 is no rival's)
-            if not any(n in rest for n in exp.own) or any(n in rest for n in exp.rivals):
-                return False, "rival"
+        if exp.direction == DIRECTIONS[1] and gates:
+            live = [names for window, names in exp.rivals if "period" in ablate or overlaps(window, yr)]
+            if live:
+                rest = g.replace(s, "|")  # names are read outside the name itself (木香 in 青木香 is no rival's)
+                if not any(n in rest for n in exp.own) or any(n in rest for names in live for n in names):
+                    return False, "rival"
         if "period" not in ablate and not overlaps(exp.valid, yr):
             return False, "period"
         return True, "ok"
@@ -638,7 +756,9 @@ class AliasIndex:
 
         Per referent: fit 1 when its window meets ``yr``, else max(0.15, 1 − gap/600); raw = fit · (1 + cues) ·
         0.35^anti-cues, counting those within ``reading_window`` of a free occurrence; p = raw / Σ raw, to 4 places.
-        The best referent is the reading when its p is at least 0.5 and no other referent has it; else None."""
+        The best referent is the reading when its p is at least 0.5 and no other referent has the same rounded p (two
+        at 0.5 are a tie); else None.  For the Worker's sake the arithmetic is spelled out: 0.35 multiplied in once per
+        anti-cue, Σ added left to right (``sum`` compensates), p rounded half up (:func:`_round4`)."""
         rec = self.record(s)
         if rec is None or rec.stop or not rec.r:
             return None, 0.0
@@ -648,10 +768,15 @@ class AliasIndex:
         for ref in rec.r:
             fit = 1.0 if overlaps(ref.v, yr) else max(0.15, 1.0 - _gap(ref.v, yr) / 600.0)
             cues = sum(1 for c in ref.c if c and c != s and any(c in t for t in near))
-            anti = sum(1 for c in ref.a if c and c != s and any(c in t for t in near))
-            raw.append(fit * (1.0 + cues) * (0.35 ** anti))
-        total = sum(raw) or 1.0
-        probs = [round(x / total, 4) for x in raw]
+            damp = 1.0
+            for c in ref.a:
+                if c and c != s and any(c in t for t in near):
+                    damp *= 0.35
+            raw.append(fit * (1.0 + cues) * damp)
+        total = 0.0
+        for x in raw:
+            total += x
+        probs = [_round4(x / (total or 1.0)) for x in raw]
         best = max(probs)
         if best < 0.5 or probs.count(best) > 1:
             return None, best
@@ -673,14 +798,15 @@ class AliasIndex:
         ``q`` is read for ``asked`` ({surface: term id or None}), ``after``, ``before``, ``all_surfaces()`` and
         ``groups``; ``lex`` (or None) for ``resolve`` and ``lookup``.  An asked alias reaches its referents' heads and
         their groups' spellings; an asked drug — a head, or a lexicon herb the name is not an alias of — reaches the
-        other names of its groups; never further (地精 → 何首乌, never on to 夜合 → 合欢).  Such a name is ``shared``
-        when it may also mean another drug within the query's window, whose names are then its ``rivals``.
+        other names of its groups; never further (地精 → 何首乌, never on to 夜合 → 合欢).  A stop name reaches no
+        drug, but as a head it still reaches its own names.  Such a name is ``shared`` when it may also mean another
+        drug within the query's window; that drug's window and names are then among its ``rivals``.
 
         Ordered by direction (alias→drug first), status (open first), passages (most first) and surface; the first
         ``cap`` attested ones are searched, cap = min(expansions, mask_bits − surfaces − component groups).  Names whose
         window misses the query's come last, with why ``period``."""
         p = _params(cfg)
-        ablate = set(p["ablate"])
+        ablate = _ablate(p)
         after, before = q.after, q.before
         asked = dict(getattr(q, "asked", None) or {})
         searched = list(q.all_surfaces())
@@ -694,9 +820,7 @@ class AliasIndex:
 
         for order, (s, term) in enumerate(asked.items()):
             rec = self.record(s)
-            if rec is not None and rec.stop:
-                continue
-            refs = rec.r if rec is not None else []
+            refs = rec.r if rec is not None and not rec.stop else []
             # alias → drug: the referent's head and its group's spellings (the head alone when the period is missed)
             for ref in refs:
                 if ref.st == "candidate" and "gates" not in ablate:
@@ -726,13 +850,13 @@ class AliasIndex:
                     if arec.stop or len(a) < 2 or a in taken or (ref.st == "candidate" and "gates" not in ablate):
                         continue
                     # the drugs the name may also mean here (a referent whose window misses the query's is none)
-                    others = sorted({r.g for r in arec.r
-                                     if r.g != g and ("period" in ablate or meets(r.v, after, before))})
                     own = [n for n in own_names if n != a]
-                    rivals = sorted({n for o in others for n in self.names(o)} - set(own) - {a})
+                    rivals = [(None if "period" in ablate else r.v, sorted(set(self.names(r.g)) - set(own) - {a}))
+                              for r in sorted(arec.r, key=lambda r: r.g)
+                              if r.g != g and ("period" in ablate or meets(r.v, after, before))]
                     add(Expansion(a, s, DIRECTIONS[1], g, ref.h, kind=ref.k,
                                   status="open" if "gates" in ablate else ref.st,
-                                  valid=None if "period" in ablate else ref.v, shared=bool(others), cues=list(ref.c),
+                                  valid=None if "period" in ablate else ref.v, shared=bool(rivals), cues=list(ref.c),
                                   own=own, rivals=rivals, src=list(ref.src), wit=list(ref.w), n=arec.n), order)
         out: list[Expansion] = []
         seen: set[str] = set()
@@ -788,6 +912,6 @@ class AliasIndex:
         head = self.record(ref.h)
         return {"head": ref.h, "kind": KINDS.get(ref.k, ref.k), "status": ref.st,
                 "valid": list(ref.v) if ref.v is not None else None, "floor": head.fl if head is not None else None,
-                "source": source_labels(ref.src), "witness": wit.pid if wit is not None else None,
+                "source": self.source_labels(ref.src), "witness": wit.pid if wit is not None else None,
                 "witness_year": _year(wit) if wit is not None else None,
                 "credited": list(ref.cr) if ref.cr is not None else None}
