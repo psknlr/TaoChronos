@@ -689,7 +689,7 @@ The V2 suites ([docs/evals.md](docs/evals.md)):
 | Audit (S15) | 19 claims: verdicts and kinds 1.0, false SUPPORTED 0; safety 3/3 |
 | Modern (S13–S14) | typing 10/10; cross-level guard 7/7; RWD: SQL checks pass, planted association recovered, bad SQL refused |
 | Workflow (V2) | registry valid; 8/8 questions compile to the skills they need; a rerun reads every step from its workspace |
-| Aliases ([ADR 0023](docs/adr/0023-alias-layer.md)) | 120 drug-name questions on the web store, half held out; **first held-out report, 59 items: web-canon (deployed) P@10 0.683 → 0.791**, Wrong@10 25 → 12, asked-name retention 0.589 → 0.759, leakage 0 — acceptance 6/10 (fails: least asked-name retention 0.000, other-name hits at 50 ×1.19 against ×1.5, CandRecall 0.650, SilentMerge 1); full-corpus as a proxy 0.673 → 0.805, 7/10; synthetic checks all hold |
+| Aliases ([ADR 0023](docs/adr/0023-alias-layer.md)) | 120 drug-name questions on the web store, half held out; **second held-out report, 59 items: web-canon (deployed) P@10 0.683 → 0.771**, Wrong@10 25 → 12, asked-name retention 0.589 → 0.749, leakage 0 — acceptance 6/10 (fails: least asked-name retention 0.000, other-name hits at 50 ×1.22 against ×1.5, CandRecall 0.650, SilentMerge 1); full-corpus as a proxy on the web store 0.673 → 0.795, 7/10; the first report had 0.791 and 0.805; synthetic checks all hold |
 
 The development sets of deep discovery and of the task specification were written with their rules: they show
 intended behaviour, not generalisation. Expert gold on the full corpus is on the roadmap; the benchmark table of

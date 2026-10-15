@@ -50,7 +50,10 @@ Python's.  A change of the lexicon never reaches D1; a change of the normaliser 
    dates and the query's window, so both Python profiles and the Worker's port decide alike.  Curated and source files
    (`sources.yaml`, `curated.yaml`) are YAML and never read at runtime; the build writes the sources' labels into the
    file's header, so every runtime credits a source in the same words.  The same inputs give the same bytes, and
-   `aliases check --db` refuses a committed file a build on that store would not reproduce.  What the build decides:
+   `aliases check --db` refuses a committed file a build on that store would not reproduce.  The inputs are the
+   store, the domain's files (the sources, curated, taboo and lexicon files), the normaliser and, on a full store, the
+   要籍语料's committed pack (`corpus/web/passages.jsonl.gz`), which sets each witness's `web` flag (`witness_scope:
+   web` shows only the flagged); on the web store every witness is the pack's.  What the build decides:
    * **Drugs.**  A curated `same_drug` group, or the heads the full-corpus lexicon files under one entry, are one
      drug, named by the group's first name (else the lexicon's headword).  A lexicon herb entry that files two or more
      of a drug's names again under another headword joins it (亭历 beside 葶苈, 牙子 beside 狼牙), unless a pair heads
@@ -269,30 +272,34 @@ no deeper asked search), so hits are not compared.
 
 * A question about a drug finds passages under its other names — at most 3 of 10 places, each labelled; the asked
   form keeps the others.  `taochronos eval aliases` measures it on a frozen 120-item gold with a held-out half
-  ([evals.md](../evals.md)).  **The first held-out report** (2026-10-15, 59 items, on the web store): web-canon, the
-  deployed pair, P@10 0.683 → 0.791, Wrong@10 25 → 12, AskedRet mean 0.589 → 0.759, leakage 0 — but 6 of the 10
-  acceptance checks: AskedRet min 0.000, ON@50 698 → 829 (1.19× against 1.5×), CandRecall 0.650 and SilentMerge 1 fail;
-  full-corpus as a proxy on the web store 0.673 → 0.805, 7 of 10 (ON@50 1.20×, CandRecall 0.675, SilentMerge 1 fail).
-  Most of that gain is the question's reading alone (`analysis`: 0.769 on web-canon); the other names add recall
-  (ON@50) and remove wrong hits.  Dev and held-out diverge: the curated rows that filled dev's gaps carry no further.
-* **Dev after the corrections and rebuild** (61 items, tuned on; web-canon): P@10 0.726 → 0.918, ON@50 448 → 1057,
-  CandRecall 0.963, CandPrecision 0.867; of the dev checks only SilentMerge = 0 still fails (2).  Every
-  change to the layer, the eval or the gold after the first held-out report is logged with its date in
-  [evals.md](../evals.md); no held-out run has been made since, and full-store numbers wait for a build on the site's
-  store.
+  ([evals.md](../evals.md)).  **The second held-out report** (2026-10-15, 59 items, on the web store, after the
+  changes logged since the first): web-canon, the deployed pair, P@10 0.683 → 0.771, Wrong@10 25 → 12, AskedRet mean
+  0.589 → 0.749, leakage 0 — but 6 of the 10 acceptance checks: AskedRet min 0.000, ON@50 698 → 849 (1.22× against
+  1.5×), CandRecall 0.650 and SilentMerge 1 fail; full-corpus as a proxy on the web store 0.673 → 0.795, 7 of 10
+  (ON@50 690 → 798, 1.16×; CandRecall 0.675, SilentMerge 1 fail).  The first report had 0.791 and 0.805, with the same
+  checks failing: the changes since cost P@10 on the 18 held-out alias items (0.872 → 0.806 on web-canon) and moved
+  no other type's.  Most of the gain is the question's reading alone (`analysis`: 0.758 on web-canon); the other
+  names add recall (ON@50) and remove wrong hits.  Dev and held-out diverge: the curated rows that filled dev's gaps
+  carry no further.
+* **Dev** (61 items, tuned on; web-canon, second report): P@10 0.726 → 0.918, ON@50 448 → 1057, CandRecall 0.963,
+  CandPrecision 0.867; of the dev checks only SilentMerge = 0 fails (2).  Every change to the layer, the eval or the
+  gold after the first held-out report is logged with its date in [evals.md](../evals.md); the second report was run
+  once, on the final tree, and full-store numbers wait for a build on the site's store.
 * A question naming the head gives up some of its own form by design; a question that asks no drug is answered as
   before.
 * A shared name reaches a side passage only through an own name the question did not ask (the asked forms are
   searched already, so a side passage never holds them), within the periods its rivals share.  A candidate referent
   still counts as a rival there, so a wrong list pairing can keep a drug's side passages out.
 * The data follow the store, the normaliser and the lexicon: the header records their fingerprints, and
-  `aliases check --db` finds a stale file.  The committed layer is built on the web store (553 books: 778 of the
+  `aliases check --db` finds a stale file.  On a full store they follow the web pack too (the witnesses' `web` flags),
+  which the header does not fingerprint: a `canon` run that rewrites `corpus/web` leaves such a layer to be rebuilt,
+  and `aliases check --db` finds it stale.  The committed layer is built on the web store (553 books: 778 of the
   别名录's 1,086 entries, 6 釋名 pairs): 2,724 surfaces, 2,138 pairs (734 open, 1,101 cue, 303 candidate; 63 stop
-  records), 469,984 bytes (the directory 143,504 deflated as `home.zip` stores it, of its 150,000; `aliases check`
+  records), 470,085 bytes (the directory 143,523 deflated as `home.zip` stores it, of its 150,000; `aliases check`
   measures it the same way, and a test reads `home.zip` itself).  A build on the site's store adds the rest of the 别名录 and the 釋名 credits, and may
   need the budget looked at again.
-* The Worker carries the layer in `tables.js` and a hand-written port; parity is tested on the query block and on gate
-  cases Python generates.
+* The Worker carries the layer in `tables.js` and a hand-written port; parity is tested on the query block, on the
+  labels of the passages both find, and on gate cases Python generates.
 * A shared name is never answered as one drug, and a dated name is said to be dated; the answer is longer for it.
 * Witnesses that only show a name in use are labelled `e`, as equations are: there is no kind for usage evidence yet.
   A lexicon headword gets `ho` only when some pair names it.

@@ -442,10 +442,12 @@ def meets(window: Window | None, after: float | None, before: float | None) -> b
 
 
 def _gap(window: Window, yr: Window) -> float:
-    """Years between a passage's range and a window it misses."""
+    """Years between a passage's range and a window it misses: from its last year to the window's first, or from the
+    window's last (to − 1) to its first — a passage of 960 is a year past a window to 960, as one of 959 is a year
+    before a window from 960."""
     lo, hi = window
     y0, y1 = yr
-    return lo - y1 if lo is not None and y1 is not None and y1 < lo else y0 - hi
+    return lo - y1 if lo is not None and y1 is not None and y1 < lo else y0 - hi + 1
 
 
 def _inside(g: str, i: int, s: str, b: str) -> bool:

@@ -17,8 +17,9 @@ merging two drugs that share a name and without reaching outside the period a na
   (:meth:`EvalContext.profile_harness`), so that no run reads another profile's claims or writes into the store.
 
 Labels come only from each item's own patterns (:class:`Labeller`): this module never imports or calls the layer's
-gates, which a test checks.  Held-out items are reported in aggregate only — ``details`` lists dev items — and not at
-all while the gold fails its checks (its split pin among them).  Restrict a run with ``TAOCHRONOS_ALIAS_EVAL_SPLITS``
+gates, which a test checks.  Held-out items are reported in aggregate only — ``details`` lists dev items, and a note
+on the gold's problems gives an example only on a dev item — and not at all while the gold fails its checks, on file
+(its split pin among them) or on the store.  Restrict a run with ``TAOCHRONOS_ALIAS_EVAL_SPLITS``
 (dev, heldout), ``TAOCHRONOS_ALIAS_EVAL_SYSTEMS`` and ``TAOCHRONOS_ALIAS_EVAL_VIEWS`` (main, no-gangmu), each a
 comma-separated list.
 """
@@ -493,9 +494,12 @@ def layered(system: str) -> bool:
 def run_items(items: list[dict[str, Any]], retriever: Any, corpus: Any, systems: list[str],
               texts: _Texts | None = None,
               same: dict[str, set[str]] | None = None) -> tuple[dict[str, list[dict[str, Any]]], list[dict[str, Any]]]:
-    """Every item searched by every system (k = 10, then 50); the systems' order turns with the item, so that caches
-    one call warms favour none of them in the latency.  ``same``: the gold's same-drug names (:func:`same_drug`, by
-    default the items' own).  Returns the rows per system and, per item, its counts."""
+    """Every item searched by every system (k = 10, then 50).  Latency is the k = 10 call, timed only after every
+    system has searched the item once untimed: a first call fills caches the others then read (the claims of the
+    item's passages, extracted into the harness's own cache), so that timing first calls would charge that cost to
+    whichever system ran first on the item.  The systems' order still turns with the item.  ``same``: the gold's
+    same-drug names (:func:`same_drug`, by default the items' own).  Returns the rows per system and, per item, its
+    counts."""
     texts = texts or _Texts(corpus)
     same = same_drug(items) if same is None else same
     naive = Naive(retriever) if "naive" in systems else None
@@ -508,7 +512,10 @@ def run_items(items: list[dict[str, Any]], retriever: Any, corpus: Any, systems:
         counts = store_counts(item, label, texts, q0.after, q0.before)
         info.append({"id": item["id"], "window": [q0.after, q0.before], "n": counts})
         turn = idx % len(systems)
-        for system in systems[turn:] + systems[:turn]:
+        order = systems[turn:] + systems[:turn]
+        for system in order:  # untimed: warms what any system's first call on the item fills
+            run[system](item["query"], 10)
+        for system in order:
             started = time.perf_counter()
             q, hits10 = run[system](item["query"], 10)
             ms = (time.perf_counter() - started) * 1000
@@ -883,23 +890,41 @@ def _acceptance(tables: dict[str, Any], split: str,
     return out
 
 
+def _problems_note(where: str, problems: list[str], gold: dict[str, Any]) -> str:
+    """A note on the gold's problems: their count, and an example only among those that name a dev item (a problem
+    message starts with its item's id), so that no held-out item's id or names reach the report."""
+    from .aliases_gold import split_of
+
+    dev = {i["id"] for i in gold.get("items") or [] if isinstance(i, dict) and isinstance(i.get("id"), str)
+           and i.get("split") == "dev" and isinstance(i.get("group"), str) and split_of(i["group"]) == "dev"}
+    on_dev = [p for p in problems if p.split(": ", 1)[0] in dev]
+    return f"{where}: {len(problems)} problems, {len(on_dev)} on dev items" + (f", e.g. {on_dev[0]}" if on_dev else "")
+
+
+def _refuse_heldout(splits: list[str], notes: list[str], why: str) -> list[str]:
+    if "heldout" not in splits:
+        return splits
+    notes.append(f"held-out split refused: the gold fails its checks{why} (aliases_gold.validate)")
+    return [x for x in splits if x != "heldout"]
+
+
 def store(ctx: EvalContext, gold: dict[str, Any], notes: list[str], details: list[dict[str, Any]],
           checks: dict[str, Any] | None = None, heldout: bool = True) -> dict[str, Any]:
-    """Each profile on the store, per view, system, split and item type.  ``checks`` receives the gold's checks on the
-    store: its witnesses, and on the web store (which the gold was drawn from) its pools.  Without ``heldout`` (a gold
-    that fails its checks) the held-out split is not run."""
+    """Each profile on the store, per view, system, split and item type.  The gold is checked on the store first, on
+    the first profile's harness and before any item is chosen: its witnesses, and on the web store (which the gold was
+    drawn from) its pools; ``checks`` receives the result.  Without ``heldout`` (a gold that fails its checks on file),
+    or when it fails them on the store, the held-out split is not run."""
     from ..bootstrap import Harness
 
     profiles = _env("TAOCHRONOS_ALIAS_EVAL", PROFILES, Harness.profiles(ctx.home))
     splits = _env("TAOCHRONOS_ALIAS_EVAL_SPLITS", SPLITS, SPLITS)
     systems = _env("TAOCHRONOS_ALIAS_EVAL_SYSTEMS", SYSTEMS, SYSTEMS)
     views = _env("TAOCHRONOS_ALIAS_EVAL_VIEWS", VIEWS, VIEWS)
-    if not heldout and "heldout" in splits:
-        splits = [x for x in splits if x != "heldout"]
-        notes.append("held-out split refused: the gold fails its checks (aliases_gold.validate)")
+    if not heldout:
+        splits = _refuse_heldout(splits, notes, "")
         if not splits:
             return {}
-    items = [i for i in gold.get("items") or [] if i.get("split") in splits]
+    checks = {} if checks is None else checks
     same = same_drug(gold.get("items") or [])
     excluded = list(gold.get("excluded_books") or ["jc_c030"])
     out: dict[str, Any] = {}
@@ -913,14 +938,19 @@ def store(ctx: EvalContext, gold: dict[str, Any], notes: list[str], details: lis
             return {}
         label = _store_label(main)
         edition = label.get("edition")
-        if checks is not None and "store_valid" not in checks:
+        if "store_valid" not in checks:
             from .aliases_gold import pools, validate
 
             mined = pools(main.corpus.store, ctx.home)["pools"] if edition == "web" else None
             problems = validate(gold, corpus=main.corpus, pools=mined)
             checks.update({"store_valid": not problems, "store_checks": "witnesses and pools" if mined else "witnesses"})
             if problems:
-                notes.append(f"gold on the store: {len(problems)} problems, e.g. {problems[0]}")
+                notes.append(_problems_note("gold on the store", problems, gold))
+        if checks.get("store_valid") is False:
+            splits = _refuse_heldout(splits, notes, " on the store")
+            if not splits:
+                return out
+        items = [i for i in gold.get("items") or [] if i.get("split") in splits]
         deployed = (profile == "web-canon" and edition == "web") or (profile == "full-corpus" and edition == "full")
         result: dict[str, Any] = {"store": label, "pair": "deployed" if deployed else "proxy", "splits": splits,
                                   "views": {}}
@@ -997,8 +1027,9 @@ def aliases(ctx: EvalContext) -> SuiteResult:
          "analysis = the layer's reading of the question alone (no expansions, no side queue); ablations gates, "
          "boundary, slots, period, asked_first all/off"),
         ("counts N_rel, N_asked, N_other are read in the question's window up to 50 (all that min(10, ·) and "
-         "min(50, ·) need); latency is the k = 10 call, the systems' order turning with the item; each profile "
-         "extracts its claims into a cache of its own (the store's claim cache is neither read nor written)"),
+         "min(50, ·) need); latency is the k = 10 call, timed after every system has searched the item once untimed "
+         "(the systems' order turning with the item), so that what a first call fills favours none of them; each "
+         "profile extracts its claims into a cache of its own (the store's claim cache is neither read nor written)"),
         ("candidates: the drugs query.aliases names for the asked form (a stop name's drugs, status stop, among them "
          "where the item expects candidates; for an item expecting none a stop's listing is no candidate), mapped to "
          "the item's referents by their heads and names first, then by the asked drug's own lexicon forms (none the "
@@ -1011,7 +1042,7 @@ def aliases(ctx: EvalContext) -> SuiteResult:
     metrics["gold"] = {"items": len(gold.get("items") or []), "resolution": len(gold.get("resolution") or []),
                        "valid": not problems, "split_sha256": split_digest(gold)[:12]}
     if problems:
-        notes.append(f"gold: {len(problems)} problems, e.g. {problems[0]}")
+        notes.append(_problems_note("gold", problems, gold))
     if ctx.quick:
         notes.append("store part skipped (--quick)")
     else:

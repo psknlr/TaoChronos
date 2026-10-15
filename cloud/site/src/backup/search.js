@@ -66,6 +66,11 @@ const COMMON_CUE_SH = 0.5;
 const DRUG_WORDS = ["药", "本草", "功效", "功用", "性味", "炮制", "一名", "又名", "别名", "异名", "是什么", "是哪", "方书", "方剂",
   "方中", "处方", "配伍", "用量", "剂量"];
 const RUN_STOPS = new Set("的之治论何病是与和及或吗呢么什哪怎功效用主");
+// a dose (二两, 三钱 …), which no unknown name runs over and which may stand beside one like a question word (葛二两)
+const DOSE_AT = /[一二三四五六七八九十百千半两0-9]+[两钱分斤枚个升合片铢粒]/gu;
+// what makes a drug's name a longer name of it: a part or a form after it, a preparation before it (人参叶, 酒大黄)
+const NAME_TAILS = new Set("草根子花叶皮实仁藤苗茎枝梢尾头须芦节芽蕊壳核肉膏霜油炭粉末汁浆蒂衣络米胶");
+const NAME_HEADS = new Set("酒姜盐醋蜜炙炒煅焦制生熟干鲜炮焙");
 const PERIOD_TAIL = /^[代朝]?(?:以前|之前|以后|之后|以来|以降|时期|期间|前|后|初|末|至|到)?/u;
 // domain.Periods: the expressions of time in a question, longest first; a one-character dynasty only before a cue
 const EXPR_RE = new RegExp(`(${Object.keys(EXPRESSIONS).sort((a, b) => cpLen(b) - cpLen(a)).map(escapeRe).join("|")})`, "gu");
@@ -214,7 +219,7 @@ const runsOver = (c) => isHan(c) && !RUN_STOPS.has(c);
 function analyzeAliases(lex, index, q, norm, raw0, cfg) {
   const N = [...norm];
   const n = N.length;
-  const g = gateForm(norm);
+  const g = new Cp(gateForm(norm)); // indexed once: every gate below reads the whole question (aliases.js cp())
   let spans = index.scan(norm);
   const blocked = new Set();
   const written = [];
@@ -224,6 +229,7 @@ function analyzeAliases(lex, index, q, norm, raw0, cfg) {
     blocked.add(at(i, s));
     const [k, b] = cover;
     const end = k + cpLen(b);
+    if (raw0.some((m) => !m.weak && m.start <= k && end <= m.end)) continue; // the lexicon reads the blocker (川乌头)
     if (namesDrug(lex, index, b) && !written.some(([a, z]) => a < end && k < z)) written.push([k, end, b]);
   }
   const held = (i, j) => written.some(([a, z]) => a < j && i < z);
@@ -252,10 +258,16 @@ function analyzeAliases(lex, index, q, norm, raw0, cfg) {
     const weak = mentions.filter((m) => m.weak && m.entry.cat === "herb");
     const taken = new Set([...spans, ...written].flatMap(([i, j]) => span(i, j)));
     const known = new Set(mentions.flatMap((o) => span(o.start, o.end)));
-    const outside = (lo, hi) => N.slice(0, lo).some(runsOver) || N.slice(hi).some(runsOver);
+    const dosed = new Set();
+    for (const d of norm.matchAll(DOSE_AT)) {
+      const a = cpLen(norm.slice(0, d.index));
+      for (const x of span(a, a + cpLen(d[0]))) dosed.add(x);
+    }
+    // anything beside the run but question words and a dose: it is not the question's one name (藏血 in 肝藏血)
+    const outside = (lo, hi) => N.some((c, x) => (x < lo || x >= hi) && !dosed.has(x) && runsOver(c));
     for (const m of weak) {
       if (!mentions.includes(m)) continue;
-      const others = new Set([...taken, ...mentions.filter((o) => !weak.includes(o)).flatMap((o) => span(o.start, o.end))]);
+      const others = new Set([...taken, ...dosed, ...mentions.filter((o) => !weak.includes(o)).flatMap((o) => span(o.start, o.end))]);
       let lo = m.start;
       let hi = m.end;
       while (lo > 0 && runsOver(N[lo - 1]) && !others.has(lo - 1)) lo--;
@@ -266,16 +278,24 @@ function analyzeAliases(lex, index, q, norm, raw0, cfg) {
         for (const x of span(lo, hi)) taken.add(x);
       }
     }
-    // a drug's name inside a longer one nobody knows is asked as that longer name (慎火草, not every 慎火)
+    // a drug's name inside a longer one nobody knows is asked as that longer name (慎火草, not every 慎火): a drug's
+    // name, or the name with a part or a form after it and a preparation before it, never over another lexicon mention
+    // but a weak herb's (人参叶; 甘草入脾 asks 甘草 and 脾)
     const names = mentions.filter((m) => !m.weak && m.entry.cat === "herb").map((m) => [m.start, m.end, m.surface, m.entry.id]);
     for (const [i, j, s] of spans) if (!mentions.some((m) => m.start < j && i < m.end)) names.push([i, j, s, null]);
     const heldAt = new Set([...taken, ...runs.flatMap(([i, s]) => span(i, i + cpLen(s))),
-      ...mentions.filter((o) => !o.weak).flatMap((o) => span(o.start, o.end))]);
+      ...mentions.filter((o) => !o.weak || o.entry.cat !== "herb").flatMap((o) => span(o.start, o.end))]);
     for (const [i, j, s, term] of names) {
       let lo = i;
       let hi = j;
       while (lo > 0 && runsOver(N[lo - 1]) && !heldAt.has(lo - 1)) lo--;
       while (hi < n && runsOver(N[hi]) && !heldAt.has(hi)) hi++;
+      if (!namesDrug(lex, index, N.slice(lo, hi).join(""))) {
+        lo = i;
+        hi = j;
+        while (lo > 0 && NAME_HEADS.has(N[lo - 1]) && !heldAt.has(lo - 1)) lo--;
+        while (hi < n && NAME_TAILS.has(N[hi]) && !heldAt.has(hi)) hi++;
+      }
       if (j - i < hi - lo && hi - lo <= 4 && !outside(lo, hi) && asksDrug(lex, index, N, g, i, j, s, term, strong, cfg)) {
         for (const o of mentions.filter((o) => o.weak && lo <= o.start && o.end <= hi)) drop(o);
         longer.set(s, [lo, N.slice(lo, hi).join("")]);
@@ -309,6 +329,10 @@ function analyzeAliases(lex, index, q, norm, raw0, cfg) {
   }
   q.longer = new Map([...longer].filter(([s, [, run]]) => q.drugs.includes(s) && !q.drugs.includes(run)).map(([s, [, run]]) => [s, run]));
   q.stops = stopsOf(index, norm, N, g, found.map(([i, s]) => [i, s]));
+  // a stop asked on its own that the lexicon files as a herb (救火 under 景天) is asked as that herb's name: 宋以前的救火
+  // is 救火 with the window, its hits gated (named) and labelled status stop
+  const herbs = new Set(q.stops.filter((s) => q.asked.get(s) && lex.entry(q.asked.get(s))?.cat === "herb"));
+  q.drugs = [...q.asked.keys()].filter((s) => q.drugs.includes(s) || herbs.has(s));
   q.expansions = index.expansions(drugsOf(q), lex, cfg);
   q.aliasView = index.view(drugsOf(q), cfg, lex, q.expansions);
   return q;
@@ -950,12 +974,10 @@ function tierOf(index, h, gates, cfg) {
   if (present.length) {
     const yr = rangeOf(h.c);
     let why = "";
-    for (const [s, blockers, cues, named] of present) {
-      const offs = index.freeOffsets(g, s, blockers, yr);
-      if (!offs.length) why ||= `demoted:inside ${index.covering(g, s, blockers, yr)}`;
-      else if (cues !== null && !(named ? index.named(g, s, offs, cues, cfg) : index.drugContext(g, s, offs, cues, cfg))) {
-        why ||= "demoted:no-context";
-      } else return ["A", []];
+    for (const gate of present) {
+      const failed = failsAt(index, g, yr, gate, cfg);
+      if (!failed) return ["A", []];
+      why ||= failed;
     }
     return ["D", [why]];
   }
@@ -976,6 +998,18 @@ function tierOf(index, h, gates, cfg) {
     return ["D", [`demoted:inside ${covers[0]}`]];
   }
   return ["H", []];
+}
+
+/** HybridRetriever._fails: why an asked drug's name (one gates.asked entry) written in a passage is not the drug there —
+ * its flag (demoted:inside <blocker>, demoted:no-context) — or "" when it occurs free and, where it must, in drug
+ * context. */
+function failsAt(index, g, yr, [s, blockers, cues, named], cfg) {
+  const offs = index.freeOffsets(g, s, blockers, yr);
+  if (!offs.length) return `demoted:inside ${index.covering(g, s, blockers, yr)}`;
+  if (cues !== null && !(named ? index.named(g, s, offs, cues, cfg) : index.drugContext(g, s, offs, cues, cfg))) {
+    return "demoted:no-context";
+  }
+  return "";
 }
 
 /** HybridRetriever._asked_groups: the alias groups of the drugs asked. */
@@ -1164,23 +1198,25 @@ function sideQueue(q, rows, seen, { index, cfg, exps, k, own }) {
 }
 
 /** HybridRetriever._annotate: via for the side queue's lexicon-form hits and for hits on an asked drug's name that is
- * ambiguous or needs drug context (the reading; homonym when there is none); an anachronism flag for any matched name
- * written before its floor. */
+ * ambiguous or needs drug context, where that name passes the gates (the reading; homonym when there is none); an
+ * anachronism flag for any matched name written before its floor. */
 function annotate(q, hits, alias) {
   const { index, cfg, gates } = alias;
   const noted = new Map();
   q.drugs.forEach((s, n) => {
-    const [gs, , cues, , , ambiguous] = gates.asked[n];
+    const gate = gates.asked[n];
     const rec = index.record(s);
     if (rec && rec.stop) return; // a false friend asked through the lexicon: a demoted hit's flag says why
-    if (ambiguous || cues !== null) noted.set(s, [gs, ambiguous]);
+    if (gate[5] || gate[2] !== null) noted.set(s, [gate, gate[5]]);
   });
   for (const h of hits) {
     const yr = rangeOf(h.c);
     if (h.tier === "A" && noted.size) {
       const g = gateOf(h.c);
-      for (const [s, [gs, ambiguous]] of noted) {
-        if (!g.includes(gs)) continue;
+      for (const [s, [gate, ambiguous]] of noted) {
+        // only a name that passes the gates here: a hit that is A by another asked drug and writes this one only
+        // inside a blocker (本司马大将军方) or out of drug context is no reading of it
+        if (!gate[0] || !g.includes(gate[0]) || failsAt(index, g, yr, gate, cfg)) continue;
         const [reading, p] = readingOf(index, g, s, yr, cfg);
         // the drug it heads itself is no alias pair: it has no kind, status or source of its own
         const ref = index.readings(s).find((r) => r.h === reading && r.h !== s) ?? null;

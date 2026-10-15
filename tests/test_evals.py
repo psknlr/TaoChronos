@@ -339,7 +339,70 @@ def test_alias_eval_profile_harness_leaves_the_store_alone(tmp_path, monkeypatch
     monkeypatch.setenv("TAOCHRONOS_ALIAS_EVAL", "web-canon")
     monkeypatch.setenv("TAOCHRONOS_ALIAS_EVAL_SYSTEMS", "off,on")
     monkeypatch.setenv("TAOCHRONOS_ALIAS_EVAL_VIEWS", "main")
+    gold = load_gold(HOME)
+    dev = {i["id"] for i in gold["items"] if i["split"] == "dev"}
+    # a gold that holds on file but fails on the store (the tiny store has none of its witnesses): checked before any
+    # item is chosen, it runs no held-out item, and its note gives an example on a dev item only
+    searched = []
+
+    def run_items(items, *args, **kw):
+        searched.append({i["split"] for i in items})
+        return {s: [] for s in args[2]}, []
+
+    checks, notes = {}, []
+    with monkeypatch.context() as m:
+        m.setattr(A, "run_items", run_items)
+        out = A.store(ctx, gold, notes, [], checks)["web-canon"]
+    assert checks["store_valid"] is False and checks["store_checks"] == "witnesses"
+    assert searched == [{"dev"}] and out["split"] == "dev" and out["results"]["splits"] == ["dev"]
+    assert "held-out split refused: the gold fails its checks on the store (aliases_gold.validate)" in notes
+    note = next(n for n in notes if n.startswith("gold on the store: "))
+    assert ", e.g. " in note and note.split(", e.g. ", 1)[1].split(": ", 1)[0] in dev
+    # refused by hand (a gold that fails its checks on file)
     notes, details = [], []
-    out = A.store(ctx, load_gold(HOME), notes, details, heldout=False)["web-canon"]
+    out = A.store(ctx, gold, notes, details, heldout=False)["web-canon"]
     assert out["split"] == "dev" and out["results"]["splits"] == ["dev"] and "held-out split refused" in notes[0]
-    assert {d["id"] for d in details} == {i["id"] for i in load_gold(HOME)["items"] if i["split"] == "dev"}
+    assert {d["id"] for d in details} == dev
+
+
+def test_alias_eval_problem_notes_name_no_heldout_item():
+    from taochronos.evals.aliases import _problems_note
+    from taochronos.evals.aliases_gold import split_of
+
+    groups = [f"g{k}" for k in range(40)]
+    dev_group = next(g for g in groups if split_of(g) == "dev")
+    held_group = next(g for g in groups if split_of(g) == "heldout")
+    gold = {"items": [{"id": "d-1", "group": dev_group, "split": "dev"},
+                      {"id": "h-1", "group": held_group, "split": "heldout"},
+                      {"id": "h-2", "group": held_group, "split": "dev"}]}  # a moved split: its rule says held-out
+    problems = ["h-1: witness x of 某名 is missing", "h-2: witness y of 某名 is missing", "tuned: [某名]",
+                "d-1: witness z of 甲名 is missing"]
+    assert _problems_note("gold on the store", problems, gold) == (
+        "gold on the store: 4 problems, 1 on dev items, e.g. d-1: witness z of 甲名 is missing")
+    assert _problems_note("gold", problems[:3], gold) == "gold: 3 problems, 0 on dev items"
+
+
+def test_alias_eval_times_warm_calls_only(monkeypatch):
+    """A first call on an item fills caches every system then reads (the claims of its passages): latency is timed
+    after each system has searched the item once, so the rotation's first system is not charged for it."""
+    import importlib
+    from types import SimpleNamespace
+
+    A = importlib.import_module("taochronos.evals.aliases")  # the package exports the suite under the same name
+    clock, warm, calls = [0.0], set(), []
+
+    def search(text, k, aliases=None, alias_params=None):
+        clock[0] += 0.001 if text in warm else 0.5  # seconds: a cold item costs 500 ms, a warm one 1 ms
+        warm.add(text)
+        calls.append((aliases, k))
+        return SimpleNamespace(alias_view={}, after=None, before=None), []
+
+    monkeypatch.setattr(A, "time", SimpleNamespace(perf_counter=lambda: clock[0]))
+    corpus = SimpleNamespace(normalize=lambda s: s, contains=lambda *a, **kw: [])
+    retriever = SimpleNamespace(search=search, pack=SimpleNamespace(variants=SimpleNamespace(normalize_text=str)),
+                                analyzer=SimpleNamespace(analyze=lambda text: SimpleNamespace(after=None, before=None)))
+    items = [{"id": f"i{k}", "split": "dev", "type": "alias", "query": f"问{k}", "asked": f"名{k}",
+              "referents": [{"head": f"药{k}", "names": []}]} for k in range(4)]
+    rows, _ = A.run_items(items, retriever, corpus, ["off", "on"])
+    assert [round(r["ms"], 3) for s in ("off", "on") for r in rows[s]] == [1.0] * 8
+    assert calls[:4] == [("off", 10), ("on", 10), ("off", 10), ("off", 50)]  # each system once untimed, then timed

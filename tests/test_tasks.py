@@ -448,11 +448,8 @@ def test_results_match_the_schemas_of_the_task_specification(pack, study, commen
     assert not [h for h in results["search"]["hits"] if "via" in h or "flags" in h]
 
 
-def test_search_labels_the_passages_found_under_a_drugs_other_name(tmp_path):
-    """classics.search with an alias layer (ADR 0023): asked for 国老, it fills the side places with passages that write
-    甘草, each labelled with the name, the drug, the source and the witness, and says in the query what it searched;
-    the result matches the search schema with the labels' shape; a routes list without ``alias`` leaves those places
-    out; ``aliases: off`` is today's search, and nothing else is accepted."""
+def _alias_search_harness(tmp_path):
+    """The fixture harness whose search has an alias layer (国老 is another name of 甘草), and its search without it."""
     import json
 
     from conftest import make_harness
@@ -463,9 +460,7 @@ def test_search_labels_the_passages_found_under_a_drugs_other_name(tmp_path):
         Witness,
         write_records,
     )
-    from taochronos.plugins.classics.study.schemas import STUDY_SCHEMAS
     from taochronos.plugins.retrieval import HybridRetriever
-    from taochronos.protocol.schema import validate
 
     h = make_harness(tmp_path / "data")
     (tmp_path / "layer").mkdir()
@@ -481,6 +476,18 @@ def test_search_labels_the_passages_found_under_a_drugs_other_name(tmp_path):
     h.capabilities.register("retriever", "aliases", HybridRetriever(
         DomainPack(HOME / "domains" / "classics", aliases_file=layer), h.corpus, knowledge=today.knowledge,
         embedder=today.embedder, weights=today.weights, alias={"enabled": True}), default=True)
+    return h, today
+
+
+def test_search_labels_the_passages_found_under_a_drugs_other_name(tmp_path):
+    """classics.search with an alias layer (ADR 0023): asked for 国老, it fills the side places with passages that write
+    甘草, each labelled with the name, the drug, the source and the witness, and says in the query what it searched;
+    the result matches the search schema with the labels' shape; a routes list without ``alias`` leaves those places
+    out; ``aliases: off`` is today's search, and nothing else is accepted."""
+    from taochronos.plugins.classics.study.schemas import STUDY_SCHEMAS
+    from taochronos.protocol.schema import validate
+
+    h, today = _alias_search_harness(tmp_path)
 
     def search(args: dict):
         return h.scheduler.execute(ToolCall("classics.search", args), actor=Actor.kernel())
@@ -527,6 +534,40 @@ def test_search_labels_the_passages_found_under_a_drugs_other_name(tmp_path):
     assert not [x for x in narrow["hits"] if "alias" in x["routes"]]  # the side places are the route alias
     kept = search({"query": "国老", "k": 10, "routes": ["bm25", "alias"]}).result["hits"]
     assert {x["passage_id"] for x in side} <= {x["passage_id"] for x in kept if x["routes"] == ["alias"] and x["via"]}
+
+
+def test_what_the_model_is_told_of_the_alias_layer_holds(tmp_path, harness):
+    """What classics.search's description and the standing instructions say of the alias layer (ADR 0023) is what the
+    search does.  Without the layer, or with ``aliases: off``, a term's lexicon synonyms are still searched and come
+    back unlabelled (山药 finds a passage writing 薯蓣 only): a result with neither ``query.aliases`` nor any ``via``
+    means the layer added nothing, not that no other name was searched.  With it, the labelled hits on an asked drug's
+    other lexicon forms keep their own routes, a routes list without ``alias`` keeps them, and the side queue — route
+    alias or not — takes places 4 and 7 and then every place once the main ranking runs out: more than 3 of 10."""
+    from taochronos.chat.prompt import SYSTEM_PROMPT
+
+    h, _ = _alias_search_harness(tmp_path)
+    described = h.scheduler.registry.get("classics.search").description
+
+    def search(on, args: dict) -> dict:
+        return on.scheduler.execute(ToolCall("classics.search", args), actor=Actor.kernel()).result
+
+    for res in (search(harness, {"query": "山药", "k": 10}), search(h, {"query": "山药", "k": 10, "aliases": "off"})):
+        assert "aliases" not in res["query"] and not [x for x in res["hits"] if "via" in x]
+        assert [x for x in res["hits"] if x["matched"] == ["薯蓣"]]  # another name, unlabelled
+    assert "lexicon synonyms are always searched" in described and "lexicon synonyms then come back unlabelled" in described
+    assert "the alias layer added nothing" in described and "no other name was" not in described
+    assert "asked words only" not in described
+    assert "词表自带的同义名仍会检索" in SYSTEM_PROMPT and "未另检别名" not in SYSTEM_PROMPT
+
+    forms = search(h, {"query": "地黄", "k": 10, "routes": ["bm25"]})["hits"]
+    places = [i for i, x in enumerate(forms, 1) if x.get("via")]
+    assert places[:2] == [4, 7] and len(places) > 3  # the main ranking ran out: the side queue fills every place after
+    assert all(forms[i - 1]["routes"] == ["bm25"] for i in places)  # lexicon forms keep their routes, without alias
+    early = search(h, {"query": "国老", "k": 10, "before": 300})["hits"]
+    assert len([x for x in early if x["routes"] == ["alias"]]) > 3
+    assert "take places 4, 7 and 10 of each 10 while the main ranking lasts and every place after it runs out" in described
+    assert "which keep their own routes" in described and "A routes list without alias skips only the route alias" in described
+    assert "at most 3" not in described
 
 
 def test_a_search_card_shows_where_a_long_passage_writes_the_name(harness):

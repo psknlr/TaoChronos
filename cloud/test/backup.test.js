@@ -295,6 +295,35 @@ test("a fresh isolate's first drug questions stay within a Worker's limits: the 
   for (const [query, ms] of times) assert.ok(ms < LIMIT_MS, `${query}, first: ${ms.toFixed(1)} ms`);
 });
 
+test("classics.search with the alias layer: a long question within a Worker's limits — the question's gate form indexed once", { skip }, async () => {
+  // the gates read the whole question once per name and per blocker: indexed afresh at each read, a question with a
+  // character above U+FFFF (㑮 normalises to one) rebuilt its code-point tables each time, quadratic in its length
+  const index = aliasIndex();
+  const lex = new Lexicon(new Corpus(env));
+  for (const query of ["㑮人言可畏", "大黄将军", "红豆"]) {
+    const whole = gateForm(normalize(query));
+    const read = [];
+    const spy = Object.create(index);
+    for (const m of ["covers", "drugContext", "freeOffsets", "named"]) {
+      spy[m] = function (g, ...rest) {
+        if ((g instanceof Cp ? g.text : g) === whole) read.push(g);
+        return index[m].call(this, g, ...rest);
+      };
+    }
+    await analyze(lex, query, { aliases: true, cfg: ALIAS_PARAMS, index: spy });
+    assert.ok(read.length > 0, query);
+    assert.ok(read.every((g) => g instanceof Cp), `${query}: the question's gate form read as a string`);
+    assert.equal(new Set(read).size, 1, query);
+  }
+  for (const query of ["㑮" + "人言".repeat(100), "人言𠀀".repeat(67)]) {
+    await measured("classics.search", { query, k: 10 }); // warm
+    const { out, ms, queries } = await measured("classics.search", { query, k: 10 });
+    assert.equal(out.ok, true, out.error);
+    assert.ok(queries <= 50, `${queries} D1 statements`);
+    assert.ok(ms < LIMIT_MS, `${[...query].length} characters: ${ms.toFixed(1)} ms`);
+  }
+});
+
 test("classics.search with the alias layer: the asked name keeps 7 of 10 places, the side queue takes 4, 7 and 10", { skip }, async () => {
   for (const [k, places] of [[10, [4, 7, 10]], [3, []]]) {
     const { result } = await callTool("classics.search", { query: "辰砂", k });
@@ -529,8 +558,9 @@ test("the normaliser and the index form: exactly as the databases were built (Py
   assert.equal(normalizeWithRecords("募原").normalized, "膜原");
 });
 
-test("parity: the live tools answer as the Python tools answered on the same store (a search: its query analysis)", { skip }, async () => {
+test("parity: the live tools answer as the Python tools answered on the same store (a search: its query analysis, and the labels of the passages both found)", { skip }, async () => {
   assert.ok(fixture.reference.length >= 30);
+  let labelled = 0;
   for (const ref of fixture.reference) {
     const { out } = await measured(ref.name, ref.args);
     const label = `${ref.name} ${JSON.stringify(ref.args)}`;
@@ -539,8 +569,16 @@ test("parity: the live tools answer as the Python tools answered on the same sto
     else if (ref.name === "classics.search") {
       assert.deepEqual(out.result.query, ref.result.query, label);
       assert.equal(out.result.hits.length > 0, ref.result.hits.length > 0, label);
+      // the routes differ (no dense route here), so the passages found may: those both found carry the same labels
+      const python = new Map(ref.result.hits.map((h) => [h.passage_id, h]));
+      for (const h of out.result.hits.filter((x) => python.has(x.passage_id))) {
+        const p = python.get(h.passage_id);
+        assert.deepEqual([h.via, h.flags], [p.via, p.flags], `${label}: ${h.passage_id}`);
+        if (p.via || p.flags) labelled++;
+      }
     } else assert.deepEqual(out.result, ref.result, label);
   }
+  assert.ok(labelled >= 30, `${labelled} labelled passages compared`);
 });
 
 /** The gates of aliases.js on passages, as Python gave them (d1fixture._gate_case). */

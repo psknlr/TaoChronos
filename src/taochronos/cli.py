@@ -590,7 +590,8 @@ def cmd_lexicon(args: argparse.Namespace) -> None:
 def cmd_aliases(args: argparse.Namespace) -> None:
     """The alias layer (ADR 0023).  ``import``: a local list (the NTU table, hurbTable, the GB 别名录) into
     <data>/aliases/local/ with its pin, never into the repository; ``build``: domains/classics/aliases/{aliases.jsonl,
-    context.json} from the store (``--local``: also <data>/aliases/local/aliases-local.jsonl with the local lists);
+    context.json} from the store (``--local``: also <data>/aliases/local/aliases-local.jsonl with the local lists,
+    and beside it the context.json it was counted with, the shipped one);
     ``review``: the keyword-in-context sheet editors decide stops from; ``check``: the committed layer's contract
     (with ``--db``: a build on that store must give the same bytes); ``show``: a name's record and how a profile
     resolves it."""
@@ -633,7 +634,7 @@ def cmd_aliases(args: argparse.Namespace) -> None:
         layer = aliasbuild.build_local(built, rows)
         report["local"] = {**{k: layer.report[k] for k in ("coverage", "surfaces", "pairs", "counts", "seconds")},
                            "output": str(local / aliasbuild.LOCAL_FILE),
-                           "bytes": layer.write(local, name=aliasbuild.LOCAL_FILE, context=False)}
+                           "bytes": layer.write(local, name=aliasbuild.LOCAL_FILE)}  # its context.json: the shipped
     _out(report)
 
 

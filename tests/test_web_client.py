@@ -351,6 +351,20 @@ assert.equal(notes["g.1"].labels[0].title, "此段写作「地黄」「熟地黄
 assert.deepEqual(texts(notes["h.1"]), ["别名：屏风、百枝、百蜚、茴草等→防风 · 词表"]);
 assert.equal(notes["h.1"].labels[0].title, "此段写作「屏风」「百枝」「百蜚」「茴草」「铜芸」，即防风（异名）；依据：词表");
 assert.equal(notes["c.1"].labels[0].title, "此段写作「独摇草」，即鬼督邮（异名）；依据：词表");
+// a passage writing another name of the drug an asked name names: the asked name is on the badge, after the drug, since
+// the kind is the written name's (炮制/加工名：薯蓣→山药 would be false); it is a badge of its own beside the asked name's
+// (asked and written names never share the place before the arrow), and a false friend asked says so
+const sideOf = (vias) => hitNotes({ query: { terms: [] }, hits: [{ passage_id: "x", via: vias }] }).x.labels;
+const yamWritten = viaOf({ surface: "山芋", for: ["薯蓣"], referent: "山药", direction: "drug→alias", source: ["别名录（中醫笈成）"] });
+assert.deepEqual(sideOf([yamWritten]).map((l) => [l.text, l.title]), [["别名：山芋→山药（所问薯蓣） · 别名录（中醫笈成）",
+  "此段写作「山芋」，即山药（异名）；为所问「薯蓣」检索山药；依据：别名录（中醫笈成）"]]);
+assert.equal(sideOf([{ ...yamWritten, surface: "干山药", kind: "炮制/加工名", source: ["词表"] }])[0].text, "炮制/加工名：干山药→山药（所问薯蓣） · 词表");
+assert.equal(sideOf([{ ...yamWritten, for: ["山药"] }])[0].text, "别名：山芋→山药 · 别名录（中醫笈成）"); // the drug asked
+const sedum = (surface, direction) => viaOf({ surface, for: ["救火"], referent: "景天", direction, status: "stop", source: ["词表"] });
+const friend = sideOf([sedum("景天", "alias→drug"), sedum("慎火", "drug→alias"), sedum("水母", "drug→alias")]);
+assert.deepEqual(friend.map((l) => l.text), ["别名：救火→景天 · 词表", "别名：慎火、水母→景天（所问救火） · 词表"]);
+assert.ok(friend.every((l) => l.title.includes("「救火」多作普通词语")));
+assert.equal(friend[1].title, "此段写作「慎火」「水母」，即景天（异名）；为所问「救火」检索景天；「救火」多作普通词语，罕作药名；依据：词表");
 // the kind is a relation: no label says which name is the other's
 assert.ok(Object.values(notes).every((n) => n.labels.every((l) => !/是.*的/u.test(l.title))));
 // without `for`: the expansions searched under that name, else the asked names of its drug, else the expansions' asked names

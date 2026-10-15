@@ -4,7 +4,8 @@
 decisions (``curated.yaml``, each with a witness passage), the herb pairs of ``taboo.yaml``, the 本草纲目's 释名 brackets
 (``a（唐本）`` under its drug), the full-corpus lexicon and the store's texts.  It takes no local input.
 ``build_local(open_result, local_pairs, store)`` adds the pairs imported under ``<data>/aliases/local/`` (hurbTable,
-the GB 别名录, the NTU table) and is written only under ``<data>``.
+the GB 别名录, the NTU table), counted with the shipped ``context.json`` (the herb set its profile loads), and is
+written only under ``<data>``.
 
 For every pair (name, drug) the build
 
@@ -90,7 +91,9 @@ KIND_ORDER = ("taboo_rename", "spelling", "old_name", "part_name", "processing_v
               "folk", "alias")  # the kind a referent takes when its pairs differ: the most specific
 _HAN = "\u3400-\u9fff\uf900-\ufaff\U00020000-\U0003134f\u3007\u3013"  # what is_han accepts
 _RUBRIC = ("集解", "气味", "主治", "发明", "附方", "正误", "修治", "校正", "释名")
-_SECTION_NUM = re.compile(r"^[0-9〇一二三四五六七八九十百千]+[、.．\s　]*")
+# a section's numbering: digits, or numerals before a separator or three or more of them (一八一梔子); never the
+# numeral a drug's name opens with (五味子, 百合, 三七)
+_SECTION_NUM = re.compile(r"^(?:[0-9]+|[〇一二三四五六七八九十百千]{3,}|[〇一二三四五六七八九十百千]+(?=[、.．\s　]))[、.．\s　]*")
 _LEAD = re.compile(f"^([{_HAN}]{{1,6}}?)(?:\\||味)")  # a 本草 entry that opens with its drug: 赤箭　味辛温 · 丹砂，一名朱砂
 
 
@@ -258,8 +261,8 @@ def _strings(value: Any) -> list[str]:
 
 def entry_head(section: str | None, normalize: Any) -> str | None:
     """The drug a 本草 section is headed by: the innermost heading, numbering and bracketed glosses dropped."""
-    s = normalize((section or "").split(" · ")[-1]).strip()
-    s = re.sub(r"[（(][^）)]*[）)]", "", _SECTION_NUM.sub("", s)).strip()
+    s = re.sub(r"[（(][^）)]*[）)]", "", normalize((section or "").split(" · ")[-1])).strip()
+    s = _SECTION_NUM.sub("", s).strip()
     return s if re.fullmatch(f"[{_HAN}]{{1,6}}", s) else None
 
 
@@ -657,14 +660,21 @@ class Builder:
         return sorted(wits, key=_by_date)
 
     # ---------------------------------------------------------------- the records
-    def build(self, pairs: list[Pair], *, local: bool = False) -> tuple[list[AliasRecord], dict[str, list[str]]]:
+    def build(self, pairs: list[Pair], *, local: bool = False,
+              context: dict[str, Any] | None = None) -> tuple[list[AliasRecord], dict[str, list[str]]]:
         """The records for ``pairs``: grouped, witnessed, blocked, counted and classified; and the referents of the
-        names rule 7 stopped (for the review sheet)."""
+        names rule 7 stopped (for the review sheet).  ``context``: the ``context.json`` the gates count with, when
+        not this build's own (the local build counts with the shipped one, which its profile loads)."""
         cur = self.curated
         self.notes = {"warnings": []}
         stops = {self.norm(r["s"]) for r in cur.get("stop") or []}
-        cover = {self.norm(k): sorted({self.norm(x) for x in v}) for k, v in (cur.get("cover_stops") or {}).items()}
-        unblock = {self.norm(k): {self.norm(x) for x in v} for k, v in (cur.get("unblock") or {}).items()}
+        # rows whose names normalise alike (鸡头, 雞頭) are one row: their strings merged, none lost
+        covers: dict[str, set[str]] = {}
+        unblock: dict[str, set[str]] = {}
+        for section, merged in (("cover_stops", covers), ("unblock", unblock)):
+            for k, v in (cur.get(section) or {}).items():
+                merged.setdefault(self.norm(k), set()).update(self.norm(x) for x in v)
+        cover = {s: sorted(v) for s, v in covers.items()}
         for s in sorted(unblock):  # a cover string in another spelling (validate_curated reads the rows as written)
             both = sorted(unblock[s] & set(cover.get(s, ())))
             self.notes["warnings"] += [f"unblock {s}: {x} is a cover string of it too; kept as one" for x in both]
@@ -723,7 +733,7 @@ class Builder:
         self._refs = refs
 
         # blockers, then the passages that write each name free of them
-        self.last_context = self.context(members)
+        self.last_context = context if context is not None else self.context(members)
         universe = self._longer = self._universe(surfaces, cover)
         straddlers = {u for u in set(self.herb_terms) | names if 2 <= len(u) <= MAX_NAME}
         self.concatenations = self._concatenations({u for u in set(self.herb_terms) | set(members) if len(u) >= 2},
@@ -1195,7 +1205,9 @@ def build_open(store: CorpusStore | str | Path, home: str | Path) -> BuildResult
 def build_local(open_result: BuildResult, local_pairs: Iterable[Mapping[str, Any]],
                 store: CorpusStore | str | Path | None = None) -> BuildResult:
     """The shipped pairs and the rows of the local lists (``<data>/aliases/local/*.jsonl``), classified again on the
-    store — for ``<data>/aliases/local/aliases-local.jsonl`` only, never for the domain."""
+    store — for ``<data>/aliases/local/aliases-local.jsonl`` only, never for the domain.  It counts with the shipped
+    layer's ``context.json`` (its herb set takes in no local head), the one the profile reading the local layer
+    loads."""
     t0 = time.time()
     b = open_result.builder
     if b is None:
@@ -1205,7 +1217,7 @@ def build_local(open_result: BuildResult, local_pairs: Iterable[Mapping[str, Any
     pairs, coverage = b.open_pairs()
     local = [local_pair(row) for row in local_pairs]
     coverage = {**coverage, "local_pairs": len(local)}
-    records, stopped = b.build(pairs + local, local=True)
+    records, stopped = b.build(pairs + local, local=True, context=open_result.context)
     return _result(b, records, stopped, coverage, pairs + local, t0)
 
 
@@ -1354,7 +1366,7 @@ def check(home: str | Path, *, heldout: Iterable[str] = (), store: CorpusStore |
     curated.yaml's shape (:func:`validate_curated`), a held-out gold name curated.yaml writes (normalised: as a name,
     or in a reason or note), the size budget of aliases.jsonl and of the directory; with a store, a witness from a
     ``NEVER_PACKED`` source, missing from it, or not writing the name it witnesses; with ``rebuild``, a build on the
-    store that differs from the bytes."""
+    store that differs from the bytes (none when curated.yaml's shape is wrong: the build would refuse it)."""
     home = Path(home)
     d = home / "domains" / "classics" / ALIAS_DIR
     errors: list[str] = []
@@ -1433,8 +1445,11 @@ def check(home: str | Path, *, heldout: Iterable[str] = (), store: CorpusStore |
     if folder > BUDGET["directory"]:
         errors.append(f"{d.name}/: {folder} bytes deflated is over the budget {BUDGET['directory']}")
     curated = load_yaml(d / "curated.yaml") or {}
-    errors += validate_curated(curated)
-    curated = curated if isinstance(curated, Mapping) else {}
+    shape = validate_curated(curated)
+    errors += shape
+    # what the checks below read: a section of the wrong type is reported above and read as empty
+    curated = ({k: v for k, v in curated.items() if isinstance(v, Mapping if k in CURATED_MAPS else list)}
+               if isinstance(curated, Mapping) else {})
     normalize = DomainPack(home / "domains" / "classics").variants.normalize_text
     held = heldout_in(curated, heldout, normalize)
     if held:
@@ -1442,7 +1457,7 @@ def check(home: str | Path, *, heldout: Iterable[str] = (), store: CorpusStore |
     if store is not None:
         db = store if isinstance(store, CorpusStore) else CorpusStore(store, readonly=True)
         _check_store(db, pids, curated, normalize, errors, warnings)
-        if rebuild:
+        if rebuild and not shape:  # a build refuses a malformed curated.yaml: its errors are the report's
             result = build_open(db, home)
             if result.text().encode("utf-8") != text:
                 errors.append("aliases.jsonl differs from a build on this store (run `taochronos aliases build`)")
@@ -1461,8 +1476,9 @@ def _check_store(db: CorpusStore, pids: dict[str, list[tuple[str, str, str]]], c
     web = (db.meta("edition") or "full") == "web"
     sources = dict(db.db.execute("SELECT id, source FROM books").fetchall())
     given = {p for key in CURATED for row in curated.get(key) or [] if isinstance(row, Mapping)
-             for p in row.get("wit") or [] if isinstance(p, str)}
-    repaired = {r["passage"] for r in curated.get("head_repairs") or [] if isinstance(r, Mapping) and r.get("passage")}
+             for p in _strings(row.get("wit"))}
+    repaired = {r["passage"] for r in curated.get("head_repairs") or []
+                if isinstance(r, Mapping) and isinstance(r.get("passage"), str)}
     wanted = sorted(set(pids) | given | repaired)
     rows: dict[str, tuple[str, str]] = {}
     for k in range(0, len(wanted), 500):

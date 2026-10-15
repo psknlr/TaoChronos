@@ -127,8 +127,8 @@ def _alias_harness(tmp_path):
 def test_research_evidence_says_under_which_name_a_passage_was_found(tmp_path):
     """With an alias layer the research's search fills side places with passages that write another name of the asked
     drug (国老 → passages writing 甘草).  They enter the question-level ledger — none is dropped — each with a note
-    saying the name, the drug and the source, so the Skeptic and the report see why the passage is there; a passage
-    found as asked keeps today's note."""
+    saying the name, the drug and the source, so the ledger keeps why the passage is there; a passage found as asked
+    keeps today's note."""
     h = _alias_harness(tmp_path)
     session = run_research(h, "alias", question="国老", focus_terms=[], forbidden_assumptions=[])
     ledger = [e for e in session.state.evidence.values() if e.retrieval_method == "retrieval:hybrid" and e.query == "国老"]

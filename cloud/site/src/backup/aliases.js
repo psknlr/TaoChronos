@@ -127,10 +127,12 @@ export function meets(window, after, before) {
   return (none(hi) || none(after) || after < hi) && (none(lo) || none(before) || before > lo);
 }
 
+/** aliases._gap: years between a passage's range and a window it misses — from its last year to the window's first,
+ * or from the window's last (to − 1) to its first (a passage of 960 is a year past a window to 960). */
 function gap(window, yr) {
   const [lo, hi] = window;
   const [y0, y1] = yr;
-  return !none(lo) && !none(y1) && y1 < lo ? lo - y1 : y0 - hi;
+  return !none(lo) && !none(y1) && y1 < lo ? lo - y1 : y0 - hi + 1;
 }
 
 /** Whether the occurrence of `s` at `i` lies within an occurrence of the longer `b`. */

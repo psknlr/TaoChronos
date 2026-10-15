@@ -284,7 +284,10 @@ function askedNames(v, ctx) {
 /** One `via` of a hit as the page reads it: the badge it belongs to (`key`) and what goes into it.  A name read as one
  * of its drugs is 读作：鬼督邮→徐长卿; a passage found under another name of the asked drug (or under the drug an asked
  * name is another name of) is 别名：国老→甘草 · 别名录（中醫笈成） — the kind when it is not a plain 异名, the other
- * names, the drug, the first source.  The kind is how the two names are related, not which became which. */
+ * names, the drug, the first source.  The kind is how the two names are related, not which became which.  A passage
+ * that writes another name of the drug an asked name names (鳢肠 asked, 莲子草 written, both 旱莲草) keeps the
+ * written name before the arrow, since the kind is that name's, and says the asked name after the drug, in a badge of
+ * its own: 别名：莲子草→旱莲草（所问鳢肠）.  A false friend asked (stop) says so in the title, as the evidence note does. */
 function viaEntry(v, ctx) {
   if (!v || typeof v !== "object" || typeof v.referent !== "string" || !v.referent || typeof v.surface !== "string") return null;
   const source = strings(v.source);
@@ -296,15 +299,22 @@ function viaEntry(v, ctx) {
   }
   const kind = typeof v.kind === "string" && v.kind ? v.kind : null; // none: a term the lexicon only relates
   const word = kind === null ? "相关" : kind === "异名" ? "别名" : kind;
-  const others = (v.direction === "drug→alias" ? [v.surface] : askedNames(v, ctx)).filter((s) => s !== v.referent);
-  return { key: `${word}|${v.referent}|${source[0] || ""}`, word, kind, referent: v.referent, surfaces: [v.surface],
-    others, source, witness };
+  const writes = v.direction === "drug→alias";
+  const asked = writes ? strings(v.for).filter((s) => s !== v.referent) : []; // the asked names it was searched for
+  const others = (writes ? [v.surface] : askedNames(v, ctx)).filter((s) => s !== v.referent);
+  // its status in words (evidence.py STATUS_WORDS): a false friend is the asked name's (a lexicon via's `for`), a
+  // candidate the pair's; open and cue (a gate the passage passed) say nothing
+  const concerned = asked.length ? asked : others.length ? others : [v.surface];
+  const caveat = v.status === "stop" ? `${quoted(concerned)}多作普通词语，罕作药名` : v.status === "candidate" ? "此为候选别名，未经确认" : "";
+  return { key: `${word}|${v.referent}|${source[0] || ""}|${caveat}|${asked.length > 0}`, word, kind, referent: v.referent,
+    surfaces: [v.surface], others, asked, caveat, source, witness };
 }
 
 const MAX_NAMES = 4; // other names a badge lists; its title lists all
 
 /** The badge of the vias that share a key: the names merged (别名：屏风、百枝、百蜚、茴草→防风 · 词表), the title saying
- * what the passage writes, how the names relate, the sources and witnesses. */
+ * what the passage writes, how the names relate, which asked names it was searched for, a caveat, the sources and
+ * witnesses. */
 function viaBadge(entries) {
   const [e] = entries;
   const all = (f) => [...new Set(entries.flatMap(f))];
@@ -313,14 +323,17 @@ function viaBadge(entries) {
   if (e.lead) return { text: e.label, title: [e.lead, ...tail].filter(Boolean).join("；") };
   const others = all((x) => x.others);
   const written = all((x) => x.surfaces);
+  const asked = all((x) => x.asked);
   const names = others.length > MAX_NAMES ? `${others.slice(0, MAX_NAMES).join("、")}等` : others.join("、");
   const same = others.length === written.length && others.every((s) => written.includes(s)); // the names it writes
   const who = same ? "" : others.length ? quoted(others) : "所问之名";
   const relation = e.kind === null ? `${who}与${e.referent}相关`
     : e.kind === "异名" ? `${who}即${e.referent}（异名）` : `${who}与${e.referent}：${e.kind}`;
   const lead = `此段写作${quoted(written)}`;
-  return { text: [`${e.word}：${names ? `${names}→` : ""}${e.referent}`, e.source[0]].filter(Boolean).join(" · "),
-    title: [same ? `${lead}，${relation}` : `${lead}；${relation}`, ...tail].filter(Boolean).join("；") };
+  const searched = asked.length ? `为所问${quoted(asked)}检索${e.referent}` : "";
+  const text = `${e.word}：${names ? `${names}→` : ""}${e.referent}${asked.length ? `（所问${asked.join("、")}）` : ""}`;
+  return { text: [text, e.source[0]].filter(Boolean).join(" · "),
+    title: [same ? `${lead}，${relation}` : `${lead}；${relation}`, searched, e.caveat, ...tail].filter(Boolean).join("；") };
 }
 
 /** What each passage of a search result was found under, for the page (ADR 0023): {passage_id: {labels: [{text,

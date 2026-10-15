@@ -125,6 +125,10 @@ web canon --extend` (on a machine with the store: `--data <dir>`) ranks the stor
 their order and appends ranks 351–535, writes the catalog, packs, and regenerates the D1 backup's tables; the `canon`
 workflow (`.github/workflows/canon.yml`, run by hand) does the same in CI from the site's corpus parts (the KV store of
 [cloud/](../cloud/README.md)), commits the result to the branch it runs on and, on main, starts the site's deployment.
+It leaves the alias layer (below) to be rebuilt: its witnesses' `web` flags come from the pack (built on the full
+store, from `corpus/web/passages.jsonl.gz`; on the web store, the pack is the store), so a new pack makes it stale
+(`aliases check --db` says so) until the `aliases` workflow runs again, which commits nothing if `corpus/web` changed
+while it ran.
 `--extend` is needed whenever the store at hand lacks sources of the first ranking (the KV parts never hold `NEVER_PACKED`
 sources): ranked again without them, the first 350 would move.  It ran on 2026-10-11 (757 works ranked on the parts):
 budgets are by rank, so the 185 works added came in 12 000-character excerpts — 1.9 million characters more for the

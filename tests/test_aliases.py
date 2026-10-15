@@ -492,12 +492,13 @@ TERMS = {"terms": [{"id": "鬼督邮", "senses": [
 @pytest.mark.parametrize("text,year", [
     ("鬼督邮一名徐长卿，生泰山山谷", 1100), ("鬼督邮一名徐长卿，生泰山山谷", 650), ("鬼督邮，赤箭也，一名定风草", 650),
     ("鬼督邮生山谷", 1300), ("徐长卿即鬼督邮，与赤箭相似", 400), ("鬼督邮生山谷", 100), ("鬼督邮生山谷", None),
-    ("鬼督邮，石下长卿也", 1900),
+    ("鬼督邮，石下长卿也", 1900), ("鬼督邮生山谷", 700), ("鬼督邮生山谷", 701), ("鬼督邮生山谷", 899),
 ])
 def test_reading_follows_the_terminology_formula(text, year):
+    # a sense's period is closed, [start, end]; a referent's window is [from, to): the same years are (start, end + 1)
     index = AliasIndex([AliasRecord("鬼督邮", r=[
-        Referent("徐长卿", v=(200, 700), c=["徐长卿", "石下长卿"], a=["赤箭"]),
-        Referent("天麻", g="赤箭", v=(900, 1600), c=["天麻", "赤箭", "定风草"])])])
+        Referent("徐长卿", v=(200, 701), c=["徐长卿", "石下长卿"], a=["赤箭"]),
+        Referent("天麻", g="赤箭", v=(900, 1601), c=["天麻", "赤箭", "定风草"])])])
     best, p, probs, _ = Terminology(TERMS, {}).resolve("鬼督邮", text, set(), year)
     ref, q = index.reading(gate_form(text), "鬼督邮", (year, year))
     assert q == p
@@ -523,12 +524,28 @@ def test_reading_counts_cues_near_a_free_occurrence_only():
 
 def test_reading_rounds_half_up_as_the_worker_does():
     # 0.35 / (0.35 + 0.18333…) is 0.65625 exactly: round() gives 0.6562, Math.round(x * 1e4) / 1e4 gives 0.6563
-    index = AliasIndex([AliasRecord("鬼督邮", r=[Referent("徐长卿", a=["赤箭"]), Referent("天麻", v=(None, 100))])])
+    # (天麻's window ends with 100, the year before 101: 490 years before 590)
+    index = AliasIndex([AliasRecord("鬼督邮", r=[Referent("徐长卿", a=["赤箭"]), Referent("天麻", v=(None, 101))])])
     ref, p = index.reading(gate_form("鬼督邮，赤箭"), "鬼督邮", (590, 590))
     assert (ref.h, p) == ("徐长卿", 0.6563)
     # two referents at 0.5 are a tie, so no reading
     even = AliasIndex([AliasRecord("鬼督邮", r=[Referent("徐长卿"), Referent("天麻", g="赤箭")])])
     assert even.reading("鬼督邮", "鬼督邮", (None, None)) == (None, 0.5)
+
+
+def test_a_window_ends_the_year_before_its_to():
+    # [from, to): a passage of 960 is a year past 木通's window to 960, as one of 959 is a year before 通脱木's from 960
+    # — so a passage of the year a referent changes reads the new one, never a tie of both
+    index = AliasIndex([AliasRecord("通草", r=[Referent("木通", v=(None, 960)), Referent("通脱木", v=(960, None))]),
+                        AliasRecord("青木香", r=[Referent("木香", v=(None, 1100)), Referent("马兜铃", v=(1100, None))])])
+    for s, early, late, change in (("通草", "木通", "通脱木", 960), ("青木香", "木香", "马兜铃", 1100)):
+        g = gate_form(f"{s}三两")
+        readings = {yr: index.reading(g, s, yr) for yr in [(change - 1, change - 1), (change, change),
+                                                           (change + 1, change + 1), (change, change + 40)]}
+        assert {yr: ref.h for yr, (ref, _) in readings.items()} == {
+            (change - 1, change - 1): early, (change, change): late, (change + 1, change + 1): late,
+            (change, change + 40): late}, s
+        assert readings[(change - 1, change - 1)][1] == readings[(change, change)][1] == 0.5004, s
 
 
 def test_floors_flag_and_name_the_edition_or_the_layer():

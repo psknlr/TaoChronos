@@ -32,7 +32,8 @@ KEYS: list[tuple[str, str, dict[str, Any]]] = [
     ("study.taboo", "", {}),
     ("kg.claims", "disease:消渴", {"terms": ["disease:消渴"]}),
 ]
-# the Python tools' answers on the fixture, which the backup's must equal (a search: its query analysis)
+# the Python tools' answers on the fixture, which the backup's must equal (a search: its query analysis, and the labels
+# of the passages both find)
 REFERENCE: list[tuple[str, dict[str, Any]]] = [
     ("classics.get_passage", {"passage_id": "cm_shanghan_npm.00001"}),
     ("classics.get_passage", {"passage_id": "suwen_wangbing.000.00001"}),
@@ -118,6 +119,13 @@ REFERENCE: list[tuple[str, dict[str, Any]]] = [
     ("classics.search", {"query": "“碧蝉花”"}),
     ("classics.search", {"query": "清代的蹲鸱"}),
     ("classics.search", {"query": "地精"}),
+    # a blocker the lexicon files as a whole (川乌头: its mention is asked); what a question says of a drug is no longer
+    # name of it (甘草入脾 asks 甘草 and 脾); a dose beside a weak herb's run (葛二两 asks 葛); a hit that is A by one asked
+    # drug and writes the other out of drug context, labelled with neither its reading nor homonym (阿胶与通草)
+    ("classics.search", {"query": "川乌头"}),
+    ("classics.search", {"query": "甘草入脾"}),
+    ("classics.search", {"query": "葛二两"}),
+    ("classics.search", {"query": "阿胶与通草"}),
 ]
 # the alias cases: questions read with the layer, and made-up passages for the gates ([text, the name it tests, the
 # passage's range, its edition's]) — none asks or writes a held-out gold name
@@ -146,6 +154,10 @@ ALIAS_TEXTS: list[tuple[str, str, list[int | None] | None, list[int | None] | No
     ("山药", "山药", [None, 900], [None, None]), ("元参三两", "元参", [900, 1000], None), ("国老", "国老", None, None),
     ("救火", "救火", None, None), ("抱薪救火麻黄桂枝", "救火", None, None), ("百枝", "百枝", None, None),
     ("红豆蔻 红豆二两", "红豆", None, None), ("慎火草", "慎火", None, None), ("马兜铃根名青木香", "青木香", [600, 650], None),
+    # a window ends the year before its to: a passage of the year a referent changes reads the new one
+    ("通草二两", "通草", [959, 959], None), ("通草二两", "通草", [960, 960], None), ("通草二两", "通草", [961, 961], None),
+    ("通草二两", "通草", [960, 1000], None), ("青木香二两", "青木香", [1099, 1099], None),
+    ("青木香二两", "青木香", [1100, 1100], None), ("青木香二两", "青木香", [1101, 1101], None),
 ]
 
 

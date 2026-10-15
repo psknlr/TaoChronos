@@ -19,12 +19,14 @@ name: aliases
 #   docs/evals.md quotes the numbers by hand, with whether the deployed pair meets the acceptance on the held-out split.
 # * commit (`commit`; off by default, so a run is a dry run until someone has read its numbers): the one job whose token
 #   writes.  It commits the layer and the tables to the branch the workflow runs on when they changed and the layer
-#   passes aliases check — with `eval`, only once the deployed pair has been measured on the held-out split (a layer
-#   that misses the acceptance is committed with a warning: turning `commit` on is the decision), with `eval` off
+#   passes aliases check — with `eval`, only once the deployed pair has been measured on the held-out split (the eval
+#   refuses that split while the gold fails its checks, aliases_gold.validate, and its notes say so; a layer that
+#   misses the acceptance is committed with a warning: turning `commit` on is the decision), with `eval` off
 #   unmeasured.  It commits onto the branch's head as it is then, never merging: should what the layer is built and
-#   measured from (domains/classics, src/taochronos, profiles, evals/gold, cloud/store.json) have changed there since
-#   the run started, nothing is committed and the workflow is run again; otherwise tables.js, which canon.yml commits
-#   as well, is written again on that head.
+#   measured from (domains/classics, src/taochronos, profiles, evals/gold, cloud/store.json, and corpus/web: on this
+#   full store the 要籍语料's pack sets each witness's `web` flag, and canon.yml commits it under a concurrency group of
+#   its own) have changed there since the run started, nothing is committed and the workflow is run again; otherwise
+#   tables.js, which canon.yml commits as well, is written again on that head.
 # A commit pushed by a workflow starts no other workflow: the site carries the new layer from its next deployment
 # (site.yml).  Run it: Actions → aliases → Run workflow, on the branch to commit to; or
 #   gh workflow run aliases.yml --ref <branch> [-f commit=true] [-f eval=false]
@@ -389,8 +391,9 @@ jobs:
           if not deployed:
               lines.append("- **the deployed pair has no result** (a commit waits for its held-out numbers)")
           elif not measured:
+              refused = [n for n in notes if n.startswith("held-out split refused")]  # the eval's own reason, if it gave one
               lines.append(f"- **{pair} was measured on the {', '.join(h['split'] for h in deployed.values())} split only** "
-                           "(a commit waits for its held-out numbers)")
+                           f"({''.join(f'{n}; ' for n in refused)}a commit waits for its held-out numbers)")
           else:
               lines.append(f"- {pair} {'meets' if accepted else '**does not meet**'} the acceptance on the held-out split")
           if not checked:
@@ -430,7 +433,7 @@ jobs:
           elif [ "$CHECKED" != true ]; then
             why="the layer fails taochronos aliases check"
           elif [ "$EVAL" = true ] && [ "$MEASURED" != true ]; then
-            why="the deployed pair was not measured on the held-out split (its eval did not finish, or the gold failed on the store: the report says which)"
+            why="the deployed pair was not measured on the held-out split (its eval did not finish, or the eval refused that split because the gold fails its checks, aliases_gold.validate: the report says which)"
             echo "::warning::the layer is not committed: $why"
           fi
           if [ -n "$why" ]; then
@@ -465,8 +468,9 @@ jobs:
           layer="$RUNNER_TEMP/aliases-layer"
           read -r sha surfaces < <(python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); print(r["store"]["sha"], r["surfaces"])' "$layer/aliases-build.json")
           # what the layer is built and measured from: if the branch changed any of it since the run started (the
-          # editors' curated.yaml, the code, the gold, the store), the layer is not that tree's and is not committed
-          inputs=(domains/classics src/taochronos profiles evals/gold cloud/store.json)
+          # editors' curated.yaml, the code, the gold, the store, the web pack that sets the witnesses' `web` flags on
+          # this full store, which canon.yml commits), the layer is not that tree's and is not committed
+          inputs=(domains/classics src/taochronos profiles evals/gold cloud/store.json corpus/web)
           pushed=0
           for attempt in 1 2 3; do
             git fetch -q origin "${GITHUB_REF_NAME}"

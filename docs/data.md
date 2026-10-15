@@ -524,7 +524,9 @@ before any public mention.  Only the importers and the NTU pin are committed; no
 repository, `home.zip`, the container or the Worker's `tables.js`.
 
 **Build.**  `taochronos aliases build` (`plugins/classics/aliasbuild.py`) reads the store, `sources.yaml`,
-`curated.yaml`, `taboo.yaml`, the full-corpus lexicon and the normaliser — and no local list.  It parses the 别名录
+`curated.yaml`, `taboo.yaml`, the full-corpus lexicon and the normaliser, and on a full store the 要籍语料's committed pack
+(`corpus/web/passages.jsonl.gz`, which sets each witness's `web` flag: a `canon` run that rewrites it leaves a layer
+built on the full store to be rebuilt) — and no local list.  It parses the 别名录
 (`plugins/classics/ingest/aliases.py`: blanks and `KT` mark lost characters, one-character fragments are dropped, notes
 such as 根名茹根 give part names, hard wraps are joined only where the store attests the join, the conversion errors
 野狼 → 狼 and 浓朴 → 厚朴 and the garbled heads are repaired), adds the curated, taboo and 释名 pairs, and finds up to three
@@ -539,7 +541,7 @@ a JSON report (coverage, counts, warnings, and what editors should look at).  Bu
 bytes raw and 150,000 deflated, the directory at most 150,000 deflated — measured as `home.zip`, which the browser
 downloads, stores the files (zlib's default level), by `aliases check` and by a test of `home.zip` itself
 (`tests/test_chat.py`).  The committed layer is built on the web store (553 books; 778 entries of the 别名录, 6 释名
-pairs): 2,724 names, 2,138 pairs, 469,984 bytes (103,055 deflated; the directory 143,504).  A build on the site's full store completes the 别名录 and the 释名
+pairs): 2,724 names, 2,138 pairs, 470,085 bytes (103,074 deflated; the directory 143,523).  A build on the site's full store completes the 别名录 and the 释名
 credits: `--db` on a machine that holds it, or the `aliases` workflow (`.github/workflows/aliases.yml`, run by hand),
 which fetches the site's store, builds, checks, regenerates the D1 backup's tables and measures the layer there.
 

@@ -752,11 +752,14 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
         ToolSpec("philology.inspect_page", "Resolve the provenance chain of a hypothesis/evidence/claim/passage down to page and image (Claim→Pixel).",
                  obj({"object_id": S}, ["object_id"]), _inspect, family="philology", permission="classics:read"),
         ToolSpec("classics.search", "Philology-aware temporal GraphRAG search over the classics (7 fused routes). Accepts natural-language questions with period constraints (e.g. 宋代以前). "
-                 "Where the corpus has an alias layer, a drug's other names (异名, 避讳改名, 古名) fill at most 3 of 10 "
-                 "places, each labelled with the name, the drug and its source (via), and ambiguous names are listed as "
-                 "candidates (query.aliases); those places are the route alias (a routes list without it skips them); "
-                 "aliases: off searches the asked words only.  With neither query.aliases nor any via, no other name was "
-                 "searched.",
+                 "A term's lexicon synonyms are always searched with it; a hit's matched lists the forms it was found "
+                 "under.  Where the corpus has an alias layer, passages found under another name of an asked drug "
+                 "(异名, 避讳改名, 古名), by the route alias or on the drug's other lexicon forms (which keep their own "
+                 "routes), take places 4, 7 and 10 of each 10 while the main ranking lasts and every place after it runs "
+                 "out; each is labelled with the name, the drug and its source (via), and ambiguous names are listed as "
+                 "candidates (query.aliases).  A routes list without alias skips only the route alias; aliases: off "
+                 "turns the layer off, and lexicon synonyms then come back unlabelled.  With neither query.aliases nor "
+                 "any via, the alias layer added nothing.",
                  obj({"query": S, "k": I, "after": N, "before": N, "routes": {"type": "array", "items": S},
                       "books": {"type": "array", "items": S}, "aliases": {"type": "string", "enum": ["auto", "off"]}},
                      ["query"]),

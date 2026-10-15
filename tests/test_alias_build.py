@@ -20,6 +20,7 @@ from taochronos.plugins.classics.aliasbuild import build_local, build_open, chec
 from taochronos.plugins.classics.aliases import loads_records
 from taochronos.plugins.classics.domain import DomainPack
 from taochronos.plugins.classics.store import CorpusStore
+from taochronos.protocol.yamlio import loads_yaml
 
 HOME = Path(__file__).resolve().parents[1]
 DOMAIN = HOME / "domains" / "classics"
@@ -37,11 +38,13 @@ BIELU = ["（有别名者录之无别名者未录）", "甘草（国老　蜜甘
          "芍药（白术　余容）", "知母（连母　　地参　水浚）", "大黄（将军　黄良）", "云母（去来）", "禹余粮（岩中脂　白余粮）",
          "石蜜（白沙糖）", "黄连（王连　支连　金连子）", "丹砂（朱砂　真朱）", "人尿（小便　轮回酒）", "　石（太白石　泽乳）",
          "葶苈（大室　大适　丁历）", "蚓蚯（地龙子　寒蚓）", "栝楼（地楼　泽姑）", "茯苓（茯神）", "萆薢（赤节　百枝）",
-         "狗脊（强膂　扶筋）", "紫金藤（山甘草）", "长石（方石）", "小柏（子柏）", "独活（羌青）", "天南星（虎掌）"]
+         "狗脊（强膂　扶筋）", "紫金藤（山甘草）", "长石（方石）", "小柏（子柏）", "独活（羌青）", "天南星（虎掌）",
+         "百合（强瞿）"]
 TEXTS = {
     "bc_a": [("甘草", "甘草　一名国老，一名蜜甘。味甘，平。"), ("人参", "人参　味甘。一名人衔。"),
              ("何首乌", "味苦。一名九真藤。"), ("黄连", "黄连　一名王连。"), (None, "胡黄连二两，治疳。"),
-             (None, "栝楼根　一名地楼。"), (None, "栝楼，一名泽姑。"), (None, "柳华，一本作柳花。")],
+             (None, "栝楼根　一名地楼。"), (None, "栝楼，一名泽姑。"), (None, "柳华，一本作柳花。"),
+             ("百合", "味甘，平。一名强瞿。")],  # an entry only its heading names, a numeral's (not 合's)
     "fang_b": [(None, "国老二两，大黄三两。")] + [(None, "人生去来无定")] * 25 + [(None, "岩中脂二两")] * 5
               + [(None, "岩中脂流于石上")] * 20
               + [(None, "石蜜甘草各一两"), (None, "何首乌（交藤）二两"), (None, "小便不利"), (None, "青木香二两　木香一两"),
@@ -51,7 +54,9 @@ TEXTS = {
                  (None, "常山甘草各一两"), (None, "又方石硫黄揩之"), (None, "石硫黄二两"), (None, "石硫黄一两"),
                  (None, "地肤子柏子仁各二合"),
                  # 纲目 joint headings the lexicon took for one name: 独活羌活 written as two (各), 虎掌天南星 as one
-                 (None, "独活羌活各一两"), (None, "虎掌天南星二两")],
+                 (None, "独活羌活各一两"), (None, "虎掌天南星二两"),
+                 # a local list's name written only beside two of the local lists' heads (no lexicon herb)
+                 (None, "青霞根、白露藤、金风草为末")],
     "late_c": [(None, "棒槌二钱"), (None, "大黄一名将军"), (None, "牡丹（即牡丹皮）二两")],
     "modern_d": [(None, "甜根子二钱")] + [(None, "柳花飞")] * 22,
     "aeam_x": [(None, "大黄，一名黄良。")],
@@ -208,6 +213,19 @@ def test_witnesses_are_kept_by_kind_and_date_never_from_a_never_packed_source(bu
     assert ref(recs["别仙踪"], "徐长卿").cr == ("纲目", 1578, 1578)
 
 
+@pytest.mark.parametrize("section, head", [
+    ("百合", "百合"), ("五味子", "五味子"), ("三七", "三七"), ("百合（本经中品）", "百合"), ("卷二 · 五灵脂", "五灵脂"),
+    ("一七一　五味子", "五味子"), ("十、百部", "百部"), ("12. 五倍子", "五倍子"), ("一八一梔子", "梔子"), ("二八七", None),
+])
+def test_an_entry_heading_drops_its_numbering_never_a_name_s_numeral(section, head):
+    assert aliasbuild.entry_head(section, lambda s: s) == head
+
+
+def test_an_entry_named_only_by_a_heading_that_opens_with_a_numeral_witnesses_it(built):
+    r = ref(records(built)["强瞿"], "百合")
+    assert ("bc_a.00008", "n") in [(w.pid, w.kind) for w in r.w] and "store" in r.src
+
+
 def test_blockers_floors_and_windows(built):
     recs = records(built)
     assert "胡黄连" in recs["黄连"].b  # a longer name of another drug
@@ -255,6 +273,15 @@ def test_unblock_drops_a_blocker_and_reports_a_row_that_drops_none(tmp_path, sit
     # a cover string in another spelling stays a cover string (validate_curated reads the rows as written)
     assert "unblock 将军: 将军汤 is a cover string of it too; kept as one" in result.report["warnings"]
     assert recs["将军"].b[0] == "将军汤" and "unblock 将军: 将军汤 is no blocker of it" not in result.report["warnings"]
+
+
+def test_curated_rows_whose_names_normalise_alike_are_one_row(tmp_path, site):
+    rows = "cover_stops: {黄连: [黄连根], 黃連: [黃連鬚]}\nunblock: {将军: [石将军], 將軍: [独用將軍]}"
+    curated = CURATED.replace("cover_stops: {}", rows)
+    assert aliasbuild.validate_curated(loads_yaml(curated)) == []  # the rows are read as written there
+    recs = records(build_open(site[1], make_home(tmp_path, curated)))
+    assert set(recs["黄连"].b[:2]) == {"黄连根", "黄连须"}  # both rows' cover strings, neither row lost
+    assert not {"石将军", "独用将军"} & set(recs["将军"].b)
 
 
 def test_a_floor_only_name_heads_a_drug_of_its_own(built):
@@ -348,6 +375,20 @@ def test_a_malformed_curated_file_stops_the_build_and_fails_check(tmp_path, site
     assert any("not a mapping" in e for e in check(home)["errors"])
 
 
+@pytest.mark.parametrize("curated, error", [
+    (CURATED + "stops: []\n", "unknown section stops"),
+    (CURATED.replace("stop: [{s: 小便, why: 常用词, wit: [fang_b.00053]}]", "stop: 5"), "stop: not a list"),
+    (CURATED.replace("wit: [fang_b.00053]}]", "wit: 5}]"), "no witness passage"),
+], ids=["unknown-section", "section-not-a-list", "witness-not-a-list"])
+def test_check_on_a_store_reports_a_malformed_curated_file(tmp_path, site, built, capsys, curated, error):
+    home, store = make_home(tmp_path, curated), site[1]
+    built.write(home / "domains" / "classics" / "aliases")
+    assert any(error in e for e in check(home, store=store, rebuild=True)["errors"])  # a report, not the build's refusal
+    with pytest.raises(SystemExit):
+        main(["--home", str(home), "--data", str(store.parents[1]), "aliases", "check", "--db", str(store)])
+    assert any(error in e for e in json.loads(capsys.readouterr().out)["errors"])
+
+
 def test_held_out_names_are_refused_in_any_spelling_and_in_reasons(tmp_path, built):
     curated = CURATED.replace("decisions:\n", "decisions:\n  - {s: 黃良, status: open, wit: [bc_a.00000]}\n", 1)
     home = make_home(tmp_path, curated.replace("why: 常用词", "why: 常用词，非人銜"))
@@ -375,6 +416,16 @@ def test_the_local_layer_reclassifies_and_keeps_local_pairs_out_of_the_open_buil
     header, _ = loads_records(layer.text())
     assert "hurb" in header["sources"] and header["labels"]["hurb"] == "hurbTable"
     assert build_open(store, home).text() == built.text()
+
+
+def test_the_local_layer_counts_with_the_herb_set_its_profile_loads(built):
+    rows = [{"h": "紫云藤", "s": "青霞根", "src": "hurb", "ref": "row 4"},
+            {"h": "白露藤", "s": "丹霞子", "src": "hurb", "ref": "row 5"},
+            {"h": "金风草", "s": "碧霞根", "src": "hurb", "ref": "row 6"}]
+    layer = build_local(built, rows)
+    assert layer.context == built.context and "白露藤" not in layer.context["herbs"]  # no local head
+    rec = records(layer)["青霞根"]  # beside 白露藤 and 金风草, which the profile's gates know as no herbs
+    assert rec.n == 1 and rec.sh == 0 and ref(rec, "紫云藤").st == "candidate"
 
 
 # ------------------------------------------------------------------ review and check
@@ -450,6 +501,8 @@ def test_the_command_line(tmp_path, capsys):
     report = json.loads(capsys.readouterr().out)
     local = data / "aliases" / "local"
     assert (local / aliasbuild.LOCAL_FILE).exists() and report["local"]["pairs"]["hurb"] > 0
+    # beside it the context.json it was counted with: the shipped one, which the local profile loads
+    assert (local / "context.json").read_bytes() == (folder / "context.json").read_bytes()
     assert sorted(p.name for p in folder.iterdir()) == sorted(aliasbuild.FILES)  # nothing local under the domain
     main(base + ["review", "--top", "5"])
     assert json.loads(capsys.readouterr().out)["rows"] == 5 and (local / "review.tsv").exists()

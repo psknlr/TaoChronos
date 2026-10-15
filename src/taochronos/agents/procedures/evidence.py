@@ -191,8 +191,10 @@ def _labels(hit: dict[str, Any]) -> list[str]:
 
 def hit_note(hit: dict[str, Any]) -> str:
     """Why a search hit is in the ledger: its routes, and for a hit the alias layer found under another name of a drug
-    or flagged, each ``via`` and flag (ADR 0023) — ``routes: alias; via 国老→甘草（别名录（中醫笈成））; 年代存疑（…）`` — so
-    the Skeptic and the report see the asked name, what the passage writes and why it stands for the asked drug."""
+    or flagged, each ``via`` and flag (ADR 0023) — ``routes: alias; via 国老→甘草（别名录（中醫笈成））; 年代存疑（…）``: the
+    asked name, what the passage writes and why it stands for the asked drug, or may not.  The record keeps it as its
+    note (in the EVIDENCE_RETRIEVED event); the labels are the parts after ``routes: …``, for whatever lists the record
+    to show.  A question-level record is linked to no hypothesis: the Skeptic does not see it."""
     return "; ".join(dict.fromkeys(["routes: " + ",".join(hit.get("routes") or []), *_labels(hit)]))
 
 

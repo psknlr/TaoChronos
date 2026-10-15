@@ -48,6 +48,14 @@ COMMON_N, COMMON_SH, COMMON_CUE_SH = 20, 0.10, 0.5
 DRUG_WORDS = ("药", "本草", "功效", "功用", "性味", "炮制", "一名", "又名", "别名", "异名", "是什么", "是哪", "方书", "方剂",
               "方中", "处方", "配伍", "用量", "剂量")
 RUN_STOPS = frozenset("的之治论何病是与和及或吗呢么什哪怎功效用主")  # an unknown name never runs over these (葛的功效)
+# a dose (二两, 三钱 …: the drug-context pattern's numerals and units), which reads the name before it as a drug: no
+# unknown name runs over one, and like a question word it may stand beside one (葛二两 asks 葛, 岩蜜二两 岩蜜)
+DOSE_AT = re.compile(r"[一二三四五六七八九十百千半两0-9]+[两钱分斤枚个升合片铢粒]")
+# what makes a drug's name a longer name of it, a part or a form after it and a preparation before it (人参叶, 甘草梢,
+# 黄芩炭, 酒大黄, 姜半夏): a longer name nobody knows takes in only these, never what a question says of the drug
+# (甘草入脾, 桂枝温经, 大黄攻下)
+NAME_TAILS = frozenset("草根子花叶皮实仁藤苗茎枝梢尾头须芦节芽蕊壳核肉膏霜油炭粉末汁浆蒂衣络米胶")
+NAME_HEADS = frozenset("酒姜盐醋蜜炙炒煅焦制生熟干鲜炮焙")
 # what follows a period's name in a question (宋以前的解离 asks 解离 on its own)
 PERIOD_TAIL = re.compile(r"[代朝]?(?:以前|之前|以后|之后|以来|以降|时期|期间|前|后|初|末|至|到)?")
 
@@ -70,8 +78,9 @@ class ParsedQuery:
     # the ``query.aliases`` block that shows both
     asked: dict[str, str | None] = field(default_factory=dict)
     drugs: list[str] = field(default_factory=list)
-    # an asked drug the question writes inside a longer name nobody knows → that name (慎火 → 慎火草): the passages
-    # that write the longer name are the asked drug's own, its reading and other names still the shorter one's
+    # an asked drug the question writes inside a longer name nobody knows (a part, a form or a preparation of it) → that
+    # name (慎火 → 慎火草): the passages that write the longer name are the asked drug's own, its reading and other
+    # names still the shorter one's
     longer: dict[str, str] = field(default_factory=dict)
     # curated stop names the question asks on its own (救火是哪味药): listed with their drugs, never expanded
     stops: list[str] = field(default_factory=list)
@@ -201,14 +210,18 @@ class QueryAnalyzer:
 
         1. A name written only inside one of its own blockers is not asked (将军 in 将军之官, 人言 in 古人言): an alias
            span is dropped, a lexicon mention keeps its term (today's reading) but is no asked name.  A blocker that
-           names a drug itself is asked as written in its place, the mentions inside it dropped (石南藤, not 石南).
+           names a drug itself is asked as written in its place, the mentions inside it dropped (石南藤, not 石南) —
+           unless a lexicon mention spans it (川乌头, which the lexicon files under 川乌): that mention is asked, its
+           term and forms kept as today.
         2. An alias span is kept only where the question asks it as a drug (:meth:`_asks_drug`); a dropped one gives
            the lexicon mentions it overlapped back, so a question about something else reads as today.
         3. A kept span outranks a weak or shorter lexicon mention it overlaps (山蓟 over 山).
         4. A question of four characters or fewer that is one name nobody knows, a weak herb character inside it,
-           asks that name (干葛 is not 葛); question words stay outside it (葛的功效 asks 葛, 肝藏血 asks 肝 and 血).
-           A drug's name inside such a name is asked as written there (``q.longer``: 慎火草 asks the passages that
-           write 慎火草 as 慎火's own; 慎火 still gives the reading and the other names).
+           asks that name (干葛 is not 葛); question words and a dose stay outside it (葛的功效 asks 葛, 肝藏血 asks 肝
+           and 血, 葛二两 asks 葛).  A drug's name inside such a name — a drug's name, or the name with a part or a form
+           after it and a preparation before it — is asked as written there (``q.longer``: 慎火草 asks the passages
+           that write 慎火草 as 慎火's own; 慎火 still gives the reading and the other names); what a question says of
+           a drug is no name (甘草入脾 asks 甘草 and 脾, 将军二两 asks 将军).
         The names asked go to ``q.asked`` in the order written, those asked as drugs to ``q.drugs``; only these are
         expanded and listed."""
         lex, index = self.pack.lexicon, _layer(self.pack)
@@ -223,6 +236,8 @@ class QueryAnalyzer:
                 continue
             blocked.add((i, s))
             k, b = cover
+            if any(not m.weak and m.start <= k and k + len(b) <= m.end for m in raw):
+                continue  # the lexicon reads the blocker itself (川乌头, 川乌's name): its mention keeps its term
             if self._names_drug(b) and not any(a < k + len(b) and k < z for a, z, _ in written):
                 written.append((k, k + len(b), b))
 
@@ -251,36 +266,48 @@ class QueryAnalyzer:
             weak = [m for m in mentions if m.weak and m.category == "herb"]
             taken = {x for i, j, _ in spans + written for x in range(i, j)}
             known = {x for o in mentions for x in range(o.start, o.end)}
+            dosed = {x for d in DOSE_AT.finditer(norm) for x in range(d.start(), d.end())}
+
+            def alone(lo: int, hi: int) -> bool:
+                """Nothing but question words and a dose beside the run: it is the question's one name (藏血 in 肝藏血 is
+                none)."""
+                return not any(_runs_over(norm[x]) for x in range(len(norm)) if not lo <= x < hi and x not in dosed)
+
             for m in weak:
                 if m not in mentions:
                     continue
-                others = taken | {x for o in mentions if o not in weak for x in range(o.start, o.end)}
+                others = taken | dosed | {x for o in mentions if o not in weak for x in range(o.start, o.end)}
                 lo, hi = m.start, m.end
                 while lo > 0 and _runs_over(norm[lo - 1]) and lo - 1 not in others:
                     lo -= 1
                 while hi < len(norm) and _runs_over(norm[hi]) and hi not in others:
                     hi += 1
-                # the run is the question's one name: nothing but question words beside it (藏血 in 肝藏血 is none)
-                if (2 <= hi - lo <= 4 and not any(_runs_over(c) for c in norm[:lo] + norm[hi:])
-                        and not set(range(lo, hi)) <= known):
+                if 2 <= hi - lo <= 4 and alone(lo, hi) and not set(range(lo, hi)) <= known:
                     for o in [o for o in weak if lo <= o.start and o.end <= hi and o in mentions]:
                         mentions.remove(o)
                     runs.append((lo, norm[lo:hi]))
                     taken |= set(range(lo, hi))
             # a drug's name inside a longer one nobody knows is asked as that longer name (慎火草, not every 慎火), its
-            # reading, other names and lexicon forms still the shorter name's
+            # reading, other names and lexicon forms still the shorter name's — a longer name being a drug's name, or
+            # the name with a part or a form after it and a preparation before it (:data:`NAME_TAILS`, :data:`NAME_HEADS`),
+            # never over another lexicon mention but a weak herb's (人参叶; 甘草入脾 asks 甘草 and 脾)
             names = [(m.start, m.end, m.surface, m.term_id) for m in mentions if not m.weak and m.category == "herb"]
             names += [(i, j, s, None) for i, j, s in spans if not any(m.start < j and i < m.end for m in mentions)]
             held_at = taken | {x for i, s in runs for x in range(i, i + len(s))} | {
-                x for o in mentions if not o.weak for x in range(o.start, o.end)}
+                x for o in mentions if not o.weak or o.category != "herb" for x in range(o.start, o.end)}
             for i, j, s, term in names:
                 lo, hi = i, j
                 while lo > 0 and _runs_over(norm[lo - 1]) and lo - 1 not in held_at:
                     lo -= 1
                 while hi < len(norm) and _runs_over(norm[hi]) and hi not in held_at:
                     hi += 1
-                if (j - i < hi - lo <= 4 and not any(_runs_over(c) for c in norm[:lo] + norm[hi:])
-                        and self._asks_drug(norm, g, i, j, s, term, strong, cfg)):
+                if not self._names_drug(norm[lo:hi]):
+                    lo, hi = i, j
+                    while lo > 0 and norm[lo - 1] in NAME_HEADS and lo - 1 not in held_at:
+                        lo -= 1
+                    while hi < len(norm) and norm[hi] in NAME_TAILS and hi not in held_at:
+                        hi += 1
+                if j - i < hi - lo <= 4 and alone(lo, hi) and self._asks_drug(norm, g, i, j, s, term, strong, cfg):
                     for o in [o for o in mentions if o.weak and lo <= o.start and o.end <= hi]:
                         mentions.remove(o)
                     longer[s] = (lo, norm[lo:hi])
@@ -313,6 +340,11 @@ class QueryAnalyzer:
                 q.drugs.append(s)
         q.longer = {s: run for s, (_, run) in longer.items() if s in q.drugs and run not in q.drugs}
         q.stops = self._stops(norm, g, [(i, s) for i, s, _ in found])
+        # a stop asked on its own that the lexicon files as a herb (救火 under 景天) is asked as that herb's name, a
+        # period and question words counting for nothing as they do for the listing: 宋以前的救火 is 救火 with the window,
+        # its hits gated (``named``) and labelled status stop
+        herbs = {s for s in q.stops if q.asked.get(s) and getattr(lex.entry(q.asked[s]), "category", None) == "herb"}
+        q.drugs = [s for s in q.asked if s in q.drugs or s in herbs]
         q.expansions = index.expansions(self._drugs(q), lex, cfg)
         q.alias_view = self.view(q, cfg)
         return q
@@ -972,15 +1004,11 @@ class HybridRetriever:
         if present:
             yr = self._range(self.corpus.passage(hit.passage_id))
             why = ""
-            for s, blockers, cues, named in present:
-                offs = index.free_offsets(g, s, blockers, yr)
-                context = index.named if named else index.drug_context
-                if not offs:
-                    why = why or f"demoted:inside {_covering(index, g, s, blockers, yr)}"
-                elif cues is not None and not context(g, s, offs, cues, cfg=cfg):
-                    why = why or "demoted:no-context"
-                else:
+            for gate in present:
+                failed = self._fails(g, yr, gate, cfg)
+                if not failed:
                     return "A", []
+                why = why or failed
             return "D", [why]
         forms = [m for m in hit.matched if m in gates["forms"]]
         if not forms:
@@ -1002,6 +1030,21 @@ class HybridRetriever:
             else:
                 return "D", [f"demoted:inside {covers[0]}"]
         return "H", []
+
+    def _fails(self, g: str, yr: tuple[int | None, int | None], gate: tuple[str, list[Any], list[str] | None, bool],
+               cfg: dict[str, Any]) -> str:
+        """Why an asked drug's name (one ``gates["asked"]`` entry) written in a passage is not the drug there — its flag
+        (``demoted:inside <blocker>``, ``demoted:no-context``) — or "" when it occurs free and, where it must, in drug
+        context."""
+        index = _layer(self.pack)
+        s, blockers, cues, named = gate
+        offs = index.free_offsets(g, s, blockers, yr)
+        if not offs:
+            return f"demoted:inside {_covering(index, g, s, blockers, yr)}"
+        context = index.named if named else index.drug_context
+        if cues is not None and not context(g, s, offs, cues, cfg=cfg):
+            return "demoted:no-context"
+        return ""
 
     def _asked_groups(self, q: ParsedQuery) -> set[str]:
         """The alias groups of the drugs asked."""
@@ -1147,25 +1190,27 @@ class HybridRetriever:
 
     def _annotate(self, q: ParsedQuery, hits: list[Hit], gates: dict[str, Any], cfg: dict[str, Any]) -> None:
         """``via`` for the side queue's lexicon-form hits and for hits on an asked drug's name (tier A) that is
-        ambiguous or needs drug context (the reading, and ``homonym`` when there is none); an ``anachronism`` flag for
-        any matched name written before its floor."""
+        ambiguous or needs drug context, where that name passes the gates (the reading, and ``homonym`` when there is
+        none); an ``anachronism`` flag for any matched name written before its floor."""
         index, lex = _layer(self.pack), self.pack.lexicon
         normalize = self.pack.variants.normalize_text
         noted = {}
-        for s, (gs, _, cues, _) in zip(q.drugs, gates["asked"]):
+        for s, gate in zip(q.drugs, gates["asked"]):
             rec = index.record(s)
             if rec is not None and rec.stop:
                 continue  # a false friend asked through the lexicon: a demoted hit's flag says why
             ambiguous = len({r.g for r in index.referents(s, q.asked.get(s), lex) if r.st != "candidate"}) > 1
-            if ambiguous or cues is not None:
-                noted[s] = (gs, ambiguous)
+            if ambiguous or gate[2] is not None:
+                noted[s] = (gate, ambiguous)
         for h in hits:
             passage = self.corpus.passage(h.passage_id)
             yr = self._range(passage)
             if h.tier == "A" and noted:  # a demoted hit is no reading's: its flag says why it is not the drug
                 g = gate_form(self.norm(h.passage_id))
-                for s, (gs, ambiguous) in noted.items():
-                    if gs not in g:
+                for s, (gate, ambiguous) in noted.items():
+                    # only a name that passes the gates here: a hit that is A by another asked drug and writes this
+                    # one only inside a blocker (本司马大将军方) or out of drug context is no reading of it
+                    if not gate[0] or gate[0] not in g or self._fails(g, yr, gate, cfg):
                         continue
                     reading, p = self._reading(g, s, yr, cfg)
                     # the drug it heads itself is no alias pair: it has no kind, status or source of its own

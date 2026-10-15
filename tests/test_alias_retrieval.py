@@ -64,6 +64,8 @@ RECORDS = [
     AliasRecord("云参", n=50, sh=0.76, fl=1700, flb="curated"),
     # a false friend whose record keeps the drugs it was paired with (an acupoint's name, as the corpus mostly writes it)
     AliasRecord("云门", stop=True, n=60, sh=0.05, r=[R("云根", st="candidate", src=["bielu-jc"])]),
+    # a head whose blocker names another drug that the lexicon files (川乌头, under 川乌)
+    AliasRecord("乌头", ho="乌头", n=300, sh=0.9, b=["川乌头"]),
 ]
 HERBS = ["甘草", "大黄", "芒硝", "大枣", "生姜", "人参", "桂枝", "茯苓", "黄连", "升麻", "木通", "通草", "徐长卿", "赤箭",
          "山药", "黄柏", "当归", "芍药", "干地黄", "景天", "云根", "云根藤"]
@@ -395,6 +397,26 @@ def test_a_name_written_inside_its_own_blocker_is_not_asked(retriever):
     assert set(ids(hits)) == {"y03.000", "y04.000"} and all(h.tier == "A" for h in hits)
 
 
+def mini(pack, root, books) -> HybridRetriever:
+    """The synthetic layer, on (the pack), over a test's own few passages."""
+    corpus = Corpus.load(_write_corpus(root, books, "TaoChronos test (synthetic)"))
+    corpus.normalize = pack.variants.normalize_text
+    return HybridRetriever(pack, corpus, alias={"enabled": True})
+
+
+def test_a_blocker_the_lexicon_files_is_asked_as_the_lexicon_reads_it(pack, tmp_path):
+    # 川乌头 hides 乌头 and names a drug, but the lexicon files it (under 川乌): its term and forms, as today
+    retriever = mini(pack, tmp_path, [("c01", "川乌头方", "辰", 800, "方书", ["川乌头一枚，炮。"]),
+                                      ("c02", "川乌方", "辰", 900, "方书", ["川乌三两，研末。"]),
+                                      ("c03", "乌头方", "辰", 700, "方书", ["乌头二两，附子一枚。"])])
+    off, _ = retriever.search("川乌头", k=10, aliases="off")
+    q, hits = retriever.search("川乌头", k=10)
+    assert q.terms == off.terms == ["herb:川乌"] and q.surfaces == off.surfaces
+    assert q.asked == {"川乌头": "herb:川乌"} and q.drugs == ["川乌头"] and q.quoted == []
+    assert [(h.passage_id, h.tier) for h in hits] == [("c01.000", "A"), ("c02.000", "X")]  # 川乌 alone: its other form
+    assert hits[1].via[0]["surface"] == "川乌" and hits[1].via[0]["for"] == ["川乌头"]
+
+
 def test_a_common_word_is_asked_as_a_drug_only_where_the_question_reads_as_one(retriever):
     # a head the corpus seldom writes as a drug, a cue name mostly written otherwise, a false friend: today's search
     for text in ("服后果然汗出", "行水的方法", "救火的方法"):
@@ -443,6 +465,31 @@ def test_a_drug_written_inside_a_longer_name_nobody_knows_is_asked_as_written(re
     for text in ("慎火", "慎火的功效", "景天"):  # the name alone, or beside question words: no longer name
         assert not retriever.analyzer.analyze(text, aliases=True).longer, text
     assert analyzer_terms(retriever, "桂枝汤") == ["formula:桂枝汤"]  # a known longer name is that name
+
+
+def test_a_longer_name_is_a_part_or_a_preparation_never_what_the_question_says_of_the_drug(retriever):
+    analyzer = retriever.analyzer
+    # a part or a form after the drug's name, a preparation before it: one longer name
+    for text, longer in (("慎火草", {"慎火": "慎火草"}), ("人参叶", {"人参": "人参叶"}), ("酒大黄", {"大黄": "酒大黄"})):
+        assert analyzer.analyze(text, aliases=True).longer == longer, text
+    # what the question says of the drug, a dose after it: the drug's name is asked, the question's terms as today
+    for text, drugs in (("甘草入脾", ["甘草"]), ("桂枝温经", ["桂枝"]), ("大黄攻下", ["大黄"]), ("将军二两", ["将军"])):
+        q = analyzer.analyze(text, aliases=True)
+        assert not q.longer and q.drugs == drugs and q.terms == analyzer.analyze(text).terms, text
+        assert text not in q.asked and text not in q.quoted, text
+    assert "organ:脾" in analyzer.analyze("甘草入脾", aliases=True).terms
+    q, hits = retriever.search("甘草入脾", k=10)
+    assert hits and [h.tier for h in hits[:3]] == ["A", "A", "A"]  # 甘草's own passages keep the main places
+    # a dose reads 将军 as the drug, its gates as for the name alone (将军之官, 大将军, 将军者武官 are no drug)
+    by = {h.passage_id: h for h in retriever.search("将军二两", k=10)[1]}
+    alone = {h.passage_id: h for h in retriever.search("将军", k=10)[1]}
+    assert by["j03.000"].tier == "A" and by["j03.000"].via[0]["reading"] == "大黄"
+    assert all(by[p].tier == alone[p].tier == "D" for p in ("j01.000", "j02.000", "j04.000"))
+    # nor does a weak herb's run nobody knows take in a dose, which may stand beside it: 葛二两 is 葛, as today, and
+    # 干葛二两 asks 干葛
+    q = analyzer.analyze("葛二两", aliases=True)
+    assert q.asked == {"葛": "herb:葛"} and q.terms == analyzer.analyze("葛二两").terms == ["herb:葛"]
+    assert analyzer.analyze("干葛二两", aliases=True).asked == {"干葛": None}
 
 
 def analyzer_terms(retriever, text: str) -> list[str]:
@@ -583,6 +630,35 @@ def test_a_stop_name_asked_on_its_own_lists_its_drugs_and_the_layer_searches_non
     # asked beside 景天 itself, the hits on 景天's names are that drug's own: open
     q, hits = retriever.search("救火与景天", k=10)
     assert side(hits) and all(v["status"] == "open" for h in side(hits) for v in h.via)
+
+
+def test_a_stop_asked_on_its_own_reads_alike_whatever_period_or_question_words_are_beside_it(retriever):
+    # the lexicon files 救火 under 景天: asked on its own, it is asked as that herb's name — gated (only a 一名 or 景天's
+    # other names make it the herb) and labelled status stop — with its period in the question or as a parameter
+    def seen(text, **kw):  # (以前 makes an origin question, read in order of years: the places, not their order)
+        q, hits = retriever.search(text, k=10, **kw)
+        return q.drugs, q.stops, {h.passage_id: (h.tier, h.flags, h.via) for h in hits}
+
+    for text, kw in (("宋以前的救火", {"before": 960}), ("救火吗", {}), ("什么是救火", {})):
+        drugs, stops, hits = seen(text)
+        assert (drugs, stops) == (["救火"], ["救火"]) and hits == seen("救火", **kw)[2], text
+    hits = seen("宋以前的救火")[2]
+    assert hits["z02.000"][0] == "A" and hits["z01.000"][:2] == ("D", ["demoted:no-context"])  # 抱薪救火
+    assert all(v["status"] == "stop" for tier, _, via in hits.values() if tier == "X" for v in via)
+
+
+def test_a_hit_is_labelled_only_with_the_asked_names_that_pass_there(pack, tmp_path):
+    # A by 大黄; 将军 only inside 大将军 there: no reading of 将军 for that passage, nor any flag
+    retriever = mini(pack, tmp_path, [("k01", "大将军方", "辰", 450, "方书", ["本司马大将军方：大黄四两，芒硝三合。"]),
+                                      ("k02", "承气", "辰", 400, "方书", ["将军二两，芒硝三合，煮取一升。"]),
+                                      ("k03", "武官", "辰", 400, "杂", [
+                                          "将军者，武官也，出征而还，三军随之，凯歌以归，乃治其疾：大黄四两，芒硝三合。"])])
+    q, hits = retriever.search("大黄与将军", k=10)
+    by = {h.passage_id: h for h in hits}
+    assert q.drugs == ["大黄", "将军"]
+    assert by["k01.000"].tier == "A" and by["k01.000"].via == [] and by["k01.000"].flags == []
+    assert by["k03.000"].tier == "A" and by["k03.000"].via == []  # 将军 free, but out of drug context: no reading
+    assert by["k02.000"].tier == "A" and [(v["surface"], v["reading"]) for v in by["k02.000"].via] == [("将军", "大黄")]
 
 
 def test_side_passages_that_give_the_name_nothing_follow_the_others_of_their_drug(retriever):
