@@ -1,0 +1,20 @@
+# Full corpus with the local alias lists (ADR 0023): the shipped alias layer and the pairs imported under
+# <data>/aliases/local/ — the NTU table (CC BY-NC 4.0), hurbTable and the GB 别名录 (no licence stated) — classified again
+# by `taochronos aliases build --local` into <data>/aliases/local/aliases-local.jsonl, which this profile reads in place
+# of the shipped file.  For research on this machine only: never deployed (the site builders and the Worker's tables
+# refuse a profile with `aliases_local`), and nothing it reads is published.  The alias search is on.
+name: full-corpus-local
+extends: full-corpus
+description: Full-corpus research with the local alias lists (NTU 40K, hurbTable, the GB 别名录) — this machine only, never deployed.
+bundles:
+  - {plugin: taochronos.plugins.classics, config: {domain: domains/classics, store: corpus/tcm.sqlite, lexicon_extra: [lexicon-supplement, lexicon-harvested], aliases: [aliases], aliases_local: aliases/local/aliases-local.jsonl}}
+  - {plugin: taochronos.plugins.knowledge}
+  - {plugin: taochronos.plugins.retrieval, config: {alias: {enabled: true}}}
+  - {plugin: taochronos.plugins.models.offline}
+  - {plugin: taochronos.plugins.models.anthropic_provider}
+  - {plugin: taochronos.plugins.models.openai_compat}
+  - {plugin: taochronos.plugins.models.litellm_provider}
+  - {plugin: taochronos.plugins.sandbox}
+  - {plugin: taochronos.plugins.subagents}
+  - {plugin: taochronos.plugins.modern, config: {domain: domains/modern, curated: corpus/modern/evidence.yaml, online: false}}
+  - {plugin: taochronos.plugins.storage, config: {event_store: sqlite}}

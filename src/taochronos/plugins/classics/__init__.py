@@ -26,7 +26,9 @@ def _store_path(value: str, context: Any) -> Path:
 
 def register(registry: Any, config: dict[str, Any], context: Any) -> None:
     home = Path(getattr(context, "home", "."))
-    pack = DomainPack(home / config.get("domain", "domains/classics"), extra_lexicons=config.get("lexicon_extra", ()))
+    local = config.get("aliases_local")  # a built local alias layer under the data directory (never deployed)
+    pack = DomainPack(home / config.get("domain", "domains/classics"), extra_lexicons=config.get("lexicon_extra", ()),
+                      aliases=config.get("aliases", ()), aliases_file=_store_path(local, context) if local else None)
     if config.get("corpus_object") is not None:
         corpus = config["corpus_object"]
     elif config.get("store"):

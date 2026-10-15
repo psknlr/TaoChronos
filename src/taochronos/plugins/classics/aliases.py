@@ -440,6 +440,17 @@ def _inside(g: str, i: int, s: str, b: str) -> bool:
     return False
 
 
+def _live(blockers: Iterable[Blocker], s: str, yr: Window) -> list[str]:
+    """The blockers of ``s`` that may cover it in a passage of range ``yr``: those holding it whose window meets
+    ``yr``."""
+    out = []
+    for b in blockers:
+        text, window = (b, None) if isinstance(b, str) else (b[0], (b[1], b[2]))
+        if s in text and text != s and overlaps(window, yr):
+            out.append(text)
+    return out
+
+
 def _around(g: str, i: int, j: int, width: int) -> str:
     """The ``width`` characters on each side of ``g[i:j]``, joined by a break so nothing matches across the name."""
     return g[max(0, i - width):i] + "|" + g[j:j + width]
@@ -655,13 +666,13 @@ class AliasIndex:
 
     def scan(self, norm: str) -> list[tuple[int, int, str]]:
         """Alias and head surfaces in normalised text, ``(start, end, surface)``: longest first, left to right, stop
-        names left out."""
+        names left out.  A record with only a first-use floor (党参) names a drug too."""
         out: list[tuple[int, int, str]] = []
         i, n = 0, len(norm)
         while i < n:
             for length in range(min(self.max_len, n - i), 1, -1):
                 rec = self.records.get(norm[i:i + length])
-                if rec is not None and not rec.stop and (rec.r or rec.ho is not None):
+                if rec is not None and not rec.stop and (rec.r or rec.ho is not None or rec.fl is not None):
                     out.append((i, i + length, rec.s))
                     i += length
                     break
@@ -671,19 +682,30 @@ class AliasIndex:
 
     # ---------------------------------------------------------------- gates
     def free_offsets(self, g: str, s: str, blockers: Iterable[Blocker], yr: Window) -> list[int]:
-        """Offsets of ``s`` in gate-form text ``g`` not covered by a blocker whose window overlaps ``yr``."""
-        live = []
-        for b in blockers:
-            text, window = (b, None) if isinstance(b, str) else (b[0], (b[1], b[2]))
-            if s in text and text != s and overlaps(window, yr):
-                live.append(text)
+        """Offsets of ``s`` in gate-form text ``g`` not covered by a blocker whose window overlaps ``yr``.  A blocker
+        written there only inside one of its own blockers covers nothing (one step, no further): in 大黄大戟 the 黄大戟
+        that would hide 大戟 is itself the straddle of 大黄 and 大戟."""
+        live = _live(blockers, s, yr)
         out = []
         i = g.find(s) if s else -1
         while i >= 0:
-            if not any(_inside(g, i, s, b) for b in live):
+            if all(self.covers(g, i, s, b, yr) is None for b in live):
                 out.append(i)
             i = g.find(s, i + 1)
         return out
+
+    def covers(self, g: str, i: int, s: str, b: str, yr: Window) -> int | None:
+        """The offset of an occurrence of the blocker ``b`` that covers ``s`` at ``i`` — one holding it and free of
+        ``b``'s own blockers — or None."""
+        j = b.find(s)
+        while j >= 0:
+            k = i - j
+            if j <= i and g.startswith(b, k):
+                rec = self.records.get(b)
+                if rec is None or not any(_inside(g, k, b, c) for c in _live(rec.b, b, yr)):
+                    return k
+            j = b.find(s, j + 1)
+        return None
 
     def _herb_count(self, text: str) -> int:
         """Herb-set names in ``text``, matched longest first, left to right."""
@@ -750,22 +772,36 @@ class AliasIndex:
             return False, "period"
         return True, "ok"
 
+    def readings(self, s: str) -> list[Referent]:
+        """The drugs a passage may read a name as: its record's referents that are not candidates (a doubtful pairing
+        is listed, never a reading), then — when the name heads a drug none of them is — that drug, cued by its own
+        names (乌头 is first 乌头, whatever else it may name).  Empty when no referent is left."""
+        rec = self.record(s)
+        if rec is None or rec.stop:
+            return []
+        refs = [ref for ref in rec.r if ref.st != "candidate"]
+        if refs and rec.ho is not None and all(ref.g != rec.ho for ref in refs):
+            refs.append(Referent(s, g=rec.ho, c=self.names(rec.ho)))
+        return refs
+
     def reading(self, g: str, s: str, yr: Window, *,
                 cfg: Mapping[str, Any] | None = None) -> tuple[Referent | None, float]:
         """The referent an ambiguous name reads as in a passage, by the ``Terminology.resolve`` formula, and its p.
 
-        Per referent: fit 1 when its window meets ``yr``, else max(0.15, 1 − gap/600); raw = fit · (1 + cues) ·
-        0.35^anti-cues, counting those within ``reading_window`` of a free occurrence; p = raw / Σ raw, to 4 places.
-        The best referent is the reading when its p is at least 0.5 and no other referent has the same rounded p (two
-        at 0.5 are a tie); else None.  For the Worker's sake the arithmetic is spelled out: 0.35 multiplied in once per
-        anti-cue, Σ added left to right (``sum`` compensates), p rounded half up (:func:`_round4`)."""
+        Per referent of :meth:`readings`: fit 1 when its window meets ``yr``, else max(0.15, 1 − gap/600); raw = fit ·
+        (1 + cues) · 0.35^anti-cues, counting those within ``reading_window`` of a free occurrence; p = raw / Σ raw,
+        to 4 places.  The best referent is the reading when its p is at least 0.5 and no other referent has the same
+        rounded p (two at 0.5 are a tie); else None.  For the Worker's sake the arithmetic is spelled out: 0.35
+        multiplied in once per anti-cue, Σ added left to right (``sum`` compensates), p rounded half up
+        (:func:`_round4`)."""
         rec = self.record(s)
-        if rec is None or rec.stop or not rec.r:
+        refs = self.readings(s)
+        if not refs:
             return None, 0.0
         width = _params(cfg)["reading_window"]
         near = [_around(g, i, i + len(s), width) for i in self.free_offsets(g, s, rec.b, yr)]
         raw = []
-        for ref in rec.r:
+        for ref in refs:
             fit = 1.0 if overlaps(ref.v, yr) else max(0.15, 1.0 - _gap(ref.v, yr) / 600.0)
             cues = sum(1 for c in ref.c if c and c != s and any(c in t for t in near))
             damp = 1.0
@@ -780,7 +816,7 @@ class AliasIndex:
         best = max(probs)
         if best < 0.5 or probs.count(best) > 1:
             return None, best
-        return rec.r[probs.index(best)], best
+        return refs[probs.index(best)], best
 
     def floor_flag(self, s: str, yr: Window, edition: Window | None) -> str | None:
         """``anachronism:<s><<floor>:edition|layer`` when a passage writes ``s`` before the name was in use: ``edition``

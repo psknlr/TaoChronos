@@ -25,7 +25,9 @@ from typing import Any
 
 from .base import StudyBase, dated, row_filter
 
-_EQUATE = r"(?:一名|又名|亦名|俗名|俗呼|俗谓之|今名|今呼|古名|又称|或作|一作|即是|即)"
+# the words that equate two names (A，一名B; A即B); the alias build reads its witnesses with them too (aliasbuild.py)
+EQUATE = r"(?:一名|又名|亦名|俗名|俗呼|俗谓之|今名|今呼|古名|又称|或作|一作|即是|即)"
+_EQUATE = EQUATE
 _EDGE = set("之乎者也矣焉而以于其与则乃且亦所此是故曰云谓又即皆为若或凡但一及")
 
 
@@ -230,4 +232,4 @@ class _OtherNames:
         return bool(ids) and not ids & self.own
 
 
-__all__ = ["NameStudy"]
+__all__ = ["EQUATE", "NameStudy"]

@@ -25,6 +25,7 @@ from ...protocol.concepts import (
 from ...protocol.base import stable_id
 from ...protocol.documents import YearRange
 from ...protocol.yamlio import load_yaml
+from .aliases import AliasIndex
 from .cruxes import load_cruxes
 
 CATEGORY_PRIORITY = [
@@ -583,7 +584,8 @@ def map_relation(hist_category: str, scope: str, modern_category: str) -> tuple[
 class DomainPack:
     """Everything under ``domains/<name>/``."""
 
-    def __init__(self, root: str | Path, extra_lexicons: Iterable[str] = ()) -> None:
+    def __init__(self, root: str | Path, extra_lexicons: Iterable[str] = (), aliases: Iterable[str] = (),
+                 aliases_file: str | Path | None = None) -> None:
         self.root = Path(root)
         self.extra_lexicons = list(extra_lexicons)
         self.periods = Periods(_load(self.root / "periods.yaml"))
@@ -600,6 +602,18 @@ class DomainPack:
         self.opposition_markers: list[str] = list(self.ontology.get("opposition_markers", []))
         # the textual cruxes its commentators found (校勘疑义), consulted by the support reading
         self.cruxes = load_cruxes(self.root / "cruxes.yaml", self.variants.normalize_text)
+        # the alias layer (ADR 0023), kept apart from the lexicon: the built files of the profile's alias directories,
+        # or one built file in their place (a local layer); empty — and so off — when there is none
+        dirs = list(aliases)
+        files = [Path(aliases_file)] if aliases_file else [self.root / d / "aliases.jsonl" for d in dirs]
+        contexts = [self.root / d / "context.json" for d in dirs]
+        if aliases_file:
+            if not files[0].exists():
+                raise FileNotFoundError(f"alias layer {aliases_file} not found (`taochronos aliases build --local`)")
+            contexts.append(files[0].parent / "context.json")
+        files = [f for f in files if f.exists()]
+        context = next((c for c in contexts if c.exists()), None)
+        self.aliases = AliasIndex.load(files, context=context) if files else AliasIndex.empty()
 
     def role_of(self, category: str) -> str:
         return self.ontology["categories"].get(category, {}).get("role", category)

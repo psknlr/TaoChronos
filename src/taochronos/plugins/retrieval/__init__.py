@@ -19,6 +19,7 @@ def register(registry: Any, config: dict[str, Any], context: Any) -> None:
         knowledge=registry.get("knowledge") if registry.has("knowledge") else None,
         embedder=embedder,
         weights=config.get("route_weights"),
+        alias=config.get("alias"),  # over DEFAULT_ALIAS (ADR 0023)
     )
     registry.register("retriever", "hybrid", retriever, default=True)
 
