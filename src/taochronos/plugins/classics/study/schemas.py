@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..aliases import DIRECTIONS, STATUSES
+
 S: dict[str, Any] = {"type": "string"}
 N: dict[str, Any] = {"type": "number"}
 I: dict[str, Any] = {"type": "integer"}
@@ -38,6 +40,24 @@ WITNESS = obj({"passage_id": S, "book_id": S, "title": S, "work": NS, "authors":
               ["passage_id", "book_id", "title", "years", "locator", "quote", "source", "license"])
 SHARE_ROW = obj({"item": S, "units": N, "share": N, "other_units": N, "other_share": N, "share_z": N, "z": N, "p": N,
                  "significant": B, "occurrences": arr(N)}, ["item", "share", "other_share", "z", "significant"])
+
+# what the alias layer adds to a search (ADR 0023), the shape the page reads: each hit's ``via`` (the name it was found
+# under, the asked names it stands for, the drug, the way, the sources) and the ``query.aliases`` block
+NAMES: dict[str, Any] = {"anyOf": [S, STRS]}  # ``for``: one asked name, or those whose drug the hit is
+WINDOW: dict[str, Any] = {"anyOf": [arr(NN), {"type": "null"}]}
+ALIAS_VIA = obj({"surface": S, "for": NAMES, "referent": NS, "direction": {"enum": [*DIRECTIONS, "asked"]}, "kind": NS,
+                 "status": NS, "source": STRS, "witness": NS, "reading": NS, "p": NN},
+                ["surface", "referent", "direction", "kind", "status", "source", "witness", "reading", "p"])
+ALIAS_VIEW = obj({
+    "asked": arr(obj({"surface": S, "term": NS, "ambiguous": B, "note": S,
+                      "referents": arr(obj({"head": S, "kind": S, "status": {"enum": [*STATUSES, "stop"]},
+                                            "valid": WINDOW, "floor": NN, "source": STRS, "witness": NS, "witness_year": NN,
+                                            "credited": WINDOW}, ["head", "kind", "status", "valid", "source", "witness"]))},
+                     ["surface", "ambiguous", "referents"])),
+    "expansions": arr(obj({"surface": S, "for": NAMES, "direction": {"enum": list(DIRECTIONS)}, "referent": S, "kind": S,
+                           "status": S, "searched": B, "why": NS}, ["surface", "for", "direction", "referent", "searched"])),
+    "excluded": arr(obj({"surface": S, "for": NAMES, "why": S}, ["surface", "for", "why"]))},
+    ["asked", "expansions", "excluded"])
 
 BRIDGE_RELATIONS = ["EXACT", "CLOSE", "BROADER", "NARROWER", "PARTIAL_OVERLAP", "PHENOTYPIC_SIMILARITY", "CONTEXT_DEPENDENT",
                     "HISTORICAL_SEMANTIC_SHIFT", "NO_MODERN_EQUIVALENT", "UNCERTAIN"]
@@ -253,9 +273,13 @@ STUDY_SCHEMAS: dict[str, dict[str, Any]] = {
         "term": NS, "person": NS,
         "who_rejects_whom": arr({"type": "object"}), "most_disputed": arr({"type": "object"}), "passages_scanned": I},
         []),
-    # P0 原文精确检索
-    "search": obj({"query": {"type": "object"},
-                   "hits": arr(obj({"passage_id": S, "book_id": S, "title": S, "year": NN, "locator": S, "text": S, "score": N},
+    # P0 原文精确检索 — with an alias layer, the hits found under another name carry ``via`` and ``flags`` (only when
+    # non-empty) and the query ``aliases`` (only when there is something to show)
+    "search": obj({"query": obj({"terms": STRS, "after": NN, "before": NN, "intent": S, "decomposition": {"type": "object"},
+                                 "variants": {"type": "object"}, "aliases": ALIAS_VIEW},
+                                ["terms", "after", "before", "intent", "decomposition", "variants"]),
+                   "hits": arr(obj({"passage_id": S, "book_id": S, "title": S, "year": NN, "locator": S, "text": S, "score": N,
+                                    "routes": STRS, "matched": STRS, "via": arr(ALIAS_VIA), "flags": STRS},
                                    ["passage_id", "book_id", "locator", "text"]))}, ["hits"]),
     # AMBE 古今桥接 (S10–S12): the AncientPhenotypePacket, the mapping to modern disease profiles, the way back
     "phenotype_packet": obj({
@@ -293,4 +317,4 @@ STUDY_SCHEMAS: dict[str, dict[str, Any]] = {
         ["disease", "forms", "passages", "names", "note"]),
 }
 
-__all__ = ["STUDY_SCHEMAS", "WITNESS"]
+__all__ = ["ALIAS_VIA", "ALIAS_VIEW", "STUDY_SCHEMAS", "WITNESS"]

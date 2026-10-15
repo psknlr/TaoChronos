@@ -4,6 +4,7 @@ gates and the labels — on a synthetic alias layer and corpus."""
 from __future__ import annotations
 
 import json
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,7 @@ import pytest
 from taochronos.evals.textual import _write_corpus
 from taochronos.plugins.classics import Corpus, DomainPack
 from taochronos.plugins.classics.aliases import (
+    STOP_NOTE,
     AliasIndex,
     AliasRecord,
     Referent,
@@ -18,8 +20,8 @@ from taochronos.plugins.classics.aliases import (
     gate_form,
     write_records,
 )
-from taochronos.plugins.retrieval import HybridRetriever
-from taochronos.plugins.retrieval.hybrid import Hit
+from taochronos.plugins.retrieval import HybridRetriever, hybrid
+from taochronos.plugins.retrieval.hybrid import Hit, _share
 
 HOME = Path(__file__).resolve().parents[1]
 R = Referent
@@ -59,6 +61,8 @@ RECORDS = [
     AliasRecord("景天", ho="景天", n=100, sh=0.8),
     AliasRecord("云根", ho="云根", n=60, sh=0.7, b=["云根藤"], r=[R("云实", st="candidate", src=["bielu-jc"])]),
     AliasRecord("云参", n=50, sh=0.76, fl=1700, flb="curated"),
+    # a false friend whose record keeps the drugs it was paired with (an acupoint's name, as the corpus mostly writes it)
+    AliasRecord("云门", stop=True, n=60, sh=0.05, r=[R("云根", st="candidate", src=["bielu-jc"])]),
 ]
 HERBS = ["甘草", "大黄", "芒硝", "大枣", "生姜", "人参", "桂枝", "茯苓", "黄连", "升麻", "木通", "通草", "徐长卿", "赤箭",
          "山药", "黄柏", "当归", "芍药", "干地黄", "景天", "云根", "云根藤"]
@@ -115,7 +119,10 @@ BOOKS = (
        ("q01", "枳壳方", "丑", 1100, "方书", ["枳壳二两，麸炒。"]),
        ("q02", "枳实方", "丑", 300, "方书", ["枳实三枚，炙。"]),
        ("w01", "云参古", "寅", 1600, "本草", ["云参三钱，补中气。"]),
-       ("w02", "云参清", "寅", 1800, "方书", ["云参五钱，白术三钱。"])]
+       ("w02", "云参清", "寅", 1800, "方书", ["云参五钱，白术三钱。"]),
+       # a contents line and a heading that write 甘草 and nothing else: BM25 puts them first, the side queue last
+       ("b01", "目录", "卯", 1900, "方书", ["炙甘草汤　甘草汤"]),
+       ("b02", "目录二", "卯", 1900, "方书", ["甘草散"])]
 )
 
 
@@ -247,7 +254,8 @@ def test_a_drug_is_found_under_its_other_names_with_their_labels(retriever):
     assert [h.tier for h in hits] == ["A", "A", "A", "B", "A", "A", "B", "A", "A", "B"]
     b = side(hits)
     assert {h.matched[0] for h in b} <= {"国老", "蜜甘"} and all(h.routes == {"alias": i + 1} for i, h in enumerate(b))
-    assert b[0].via == [{"surface": b[0].matched[0], "referent": "甘草", "direction": "drug→alias", "kind": "异名",
+    assert b[0].via == [{"surface": b[0].matched[0], "for": ["甘草"], "referent": "甘草", "direction": "drug→alias",
+                         "kind": "异名",
                          "status": "open", "source": ["别名录（中醫笈成）"] + (["编者审定"] if b[0].matched[0] == "国老" else []),
                          "witness": "wit.000" if b[0].matched[0] == "国老" else None, "reading": "甘草", "p": 1.0}]
     every = ids(retriever.search("甘草", k=60)[1])
@@ -406,7 +414,7 @@ def test_a_false_friend_the_lexicon_files_as_a_herb_counts_only_as_that_herb(ret
     assert by["z02.000"].tier == "A"  # 慎火草，一名救火
     assert by["z01.000"].tier == "D" and by["z01.000"].flags == ["demoted:no-context"]  # 抱薪救火
     assert by["z03.000"].tier == "X" and by["z03.000"].via == [{
-        "surface": "景天", "referent": "景天", "direction": "alias→drug", "kind": "异名", "status": "open",
+        "surface": "景天", "for": ["救火"], "referent": "景天", "direction": "alias→drug", "kind": "异名", "status": "open",
         "source": ["词表"], "witness": None, "reading": None, "p": None}]
     assert ids(hits).index("z03.000") < ids(hits).index("z01.000")  # the demoted after the side queue
     # beside 桂枝 and 人参 it is still no herb's name: only a 一名 or 景天's other names say a false friend is the drug
@@ -494,3 +502,175 @@ def test_a_reading_weighs_no_candidate_and_a_head_its_own_drug():
                                                                ("丁草", "丁草", ["丁根", "丁草"])]
     assert index.reading("丁草，一名丁根", "丁草", (None, None))[0].h == "丁草"  # its own name beside it
     assert index.reading("丁草，己根", "丁草", (None, None))[0].h == "戊草"
+
+
+# ------------------------------------------------------------------ what every label says it answers
+def test_every_label_names_the_asked_names_it_answers(retriever):
+    for text in ("甘草", "国老", "鬼督邮", "救火是哪味药", "慎火草", "山药", "将军"):
+        q, hits = retriever.search(text, k=20)
+        claims = {e.surface: [e.for_, *e.also] for e in q.expansions}
+        for h in hits:
+            for v in h.via:
+                assert v["for"] and set(v["for"]) <= set(q.asked), (text, h.passage_id, v)
+                if h.tier == "B":
+                    assert v["for"] == claims[v["surface"]], (text, h.passage_id)
+                elif v["direction"] == "asked":
+                    assert v["for"] == [v["surface"]], (text, h.passage_id)
+    by = {h.passage_id: h for h in retriever.search("慎火草", k=10)[1]}
+    assert by["z04.000"].via[0]["for"] == ["慎火"]  # the drug the longer name asks
+    by = {h.passage_id: h for h in retriever.search("鬼督邮", k=10)[1]}
+    assert by["d01.000"].via[0]["for"] == ["鬼督邮"] and by["o01.000"].via[0]["for"] == ["鬼督邮"]
+
+
+def test_a_name_reached_for_two_asked_names_answers_both(retriever):
+    q, hits = retriever.search("国老与蜜甘", k=10)
+    assert q.drugs == ["国老", "蜜甘"]
+    [e] = [e for e in q.expansions if e.surface == "甘草"]
+    assert (e.for_, e.also, e.searched) == ("国老", ["蜜甘"], True)
+    assert q.alias_view["expansions"][0]["for"] == "国老"  # the view keeps one asked name per expansion
+    b = [h for h in hits if h.tier == "B"]
+    assert b and all(h.via[0]["for"] == ["国老", "蜜甘"] for h in b)
+
+
+def test_an_expansion_without_a_side_place_is_not_searched_and_says_why(retriever):
+    for kw, why in (({"k": 3}, "share"), ({"k": 10, "alias_params": {"share": [0, 10]}}, "share"),
+                    ({"k": 10, "routes": ["bm25", "graph"]}, "routes"), ({"k": 3, "routes": ["bm25"]}, "routes")):
+        q, hits = retriever.search("国老", **kw)
+        assert [(e.surface, e.searched, e.why) for e in q.expansions] == [("甘草", False, why)], kw
+        assert [(x["surface"], x["searched"], x["why"]) for x in q.alias_view["expansions"]] == [("甘草", False, why)]
+        assert not [h for h in hits if h.tier == "B"], kw
+    q, _ = retriever.search("国老", k=4)  # ⌊3·4/10⌋ = 1: a place, so a search
+    assert [(e.searched, e.why) for e in q.expansions] == [(True, None)]
+    q, hits = retriever.search("国老", k=3, alias_params={"ablate": "slots"})  # no places to keep: one ranking
+    assert q.expansions[0].searched
+    # a period or a cap says why as before
+    q, _ = retriever.search("清代的通草", k=3)
+    assert [(e.surface, e.why) for e in q.expansions] == [("通脱木", "share"), ("木通", "period")]
+
+
+def test_a_stop_name_asked_on_its_own_lists_its_drugs_and_searches_none(retriever):
+    def listed(text):
+        q = retriever.analyzer.analyze(text, aliases=True, cfg=retriever.alias)
+        return q, [(a["surface"], [(r["head"], r["status"], r["source"]) for r in a["referents"]], a.get("note"))
+                   for a in (q.alias_view.get("asked") or [])]
+
+    # the lexicon files 救火 under 景天: that drug, of status stop, and no other name of it searched
+    for text in ("救火", "救火是哪味药", "宋以前的救火"):
+        q, rows = listed(text)
+        assert q.stops == ["救火"] and rows == [("救火", [("景天", "stop", ["词表"])], STOP_NOTE)], text
+        assert not q.expansions and q.alias_view["expansions"] == [], text
+    # the record's own pairs, which no search reads, and the lexicon's
+    q, rows = listed("云门是什么药")
+    assert q.stops == ["云门"] and rows == [("云门", [("云根", "stop", ["别名录（中醫笈成）"])], STOP_NOTE)]
+    assert not q.drugs and not q.expansions
+    # inside a phrase, or beside another name or word, it is the word: nothing listed, today's search
+    for text in ("救火的方法", "抱薪救火", "云门穴", "云门与云根", "针刺云门"):
+        q, rows = listed(text)
+        assert not q.stops and not [r for r in rows if r[2]], text
+    q, hits = retriever.search("救火是哪味药", k=10)
+    assert q.alias_view["asked"][0]["note"] == STOP_NOTE and not [h for h in hits if h.tier == "B"]
+
+
+def test_side_passages_that_give_the_name_nothing_follow_the_others_of_their_drug(retriever):
+    pack = retriever.pack
+    bm25 = [pid for pid, _ in retriever.corpus.search(["甘草"], limit=50)]
+    assert bm25.index("b02.000") < bm25.index("g00.000")  # the heading outranks every prescription on BM25
+    q, hits = retriever.search("国老", k=60)
+    b = [h.passage_id for h in hits if h.tier == "B"]
+    assert b[-2:] in (["b01.000", "b02.000"], ["b02.000", "b01.000"]) and len(b) == 27  # last, never dropped
+    assert not {"b01.000", "b02.000"} & set(ids(retriever.search("国老", k=10)[1]))
+    exp = next(e for e in q.expansions if e.surface == "甘草")
+    norm = pack.variants.normalize_text
+    assert pack.aliases.bare(gate_form(norm("炙甘草汤　甘草汤")), exp, (1900, 1900))
+    assert not pack.aliases.bare(gate_form(norm("甘草二两，大枣十二枚")), exp, (500, 500))
+
+
+# ------------------------------------------------------------------ retention, as a property of every search
+@contextmanager
+def watched(retriever):
+    """What one alias search placed: the main queue after retention (``retained``; only where the asked-first rule
+    holds), and the main and side queues the places were dealt from."""
+    seen: dict = {}
+    retain, deal = retriever._retain, hybrid.assemble
+
+    def _retain(*args, **kwargs):
+        seen["retained"] = out = retain(*args, **kwargs)
+        return out
+
+    def _assemble(M, S, k, num=3, den=10):
+        seen.update(main=list(M), side=list(S))
+        return deal(M, S, k, num, den)
+
+    retriever._retain, hybrid.assemble = _retain, _assemble
+    try:
+        yield seen
+    finally:
+        del retriever._retain
+        hybrid.assemble = deal
+
+
+def asked_form(retriever, q, hit) -> bool:
+    """Whether a hit writes an asked drug as the question writes it, outside that name's blockers."""
+    index = retriever.pack.aliases
+    g = gate_form(retriever.norm(hit.passage_id))
+    yr = retriever._range(retriever.corpus.passage(hit.passage_id))
+    for s in q.drugs:
+        form = q.longer.get(s, s)
+        rec = index.record(form)
+        if index.free_offsets(g, gate_form(form), rec.b if rec is not None else [], yr):
+            return True
+    return False
+
+
+def violations(retriever, text: str, k: int, **kw) -> list[str]:
+    """The properties one alias search breaks (ADR 0023): the asked form keeps min(|A|, k − ⌊num·k/den⌋) places, |A|
+    being the asked drugs' hits the main queue holds after the search for more; the side queue holds at most
+    ⌊num·k/den⌋ places while the main queue lasts; no passage twice; none outside the question's window."""
+    with watched(retriever) as seen:
+        q, hits = retriever.search(text, k=k, aliases="on", **kw)
+    num, den = _share({**retriever.alias, **(kw.get("alias_params") or {})}["share"])
+    share = num * k // den
+    out = []
+    if len(set(ids(hits))) < len(hits):
+        out.append("duplicates")
+    if q.after is not None or q.before is not None:
+        leaked = [h for h in hits if h.year is None or (q.after is not None and h.year < q.after)
+                  or (q.before is not None and h.year >= q.before)]
+        if leaked:
+            out.append(f"leakage {len(leaked)}")
+    if "main" in seen:
+        placed = set(ids(hits))
+        side_n = sum(h.tier in ("B", "X") for h in hits)
+        if side_n > share and not all(h.passage_id in placed for h in seen["main"]):
+            out.append(f"side {side_n} > {share} while the main queue lasts")
+    if "retained" in seen:
+        available = sum(h.tier == "A" for h in seen["retained"])
+        asked = sum(asked_form(retriever, q, h) for h in hits)
+        if asked < min(available, k - share):
+            out.append(f"asked form {asked} < min({available}, {k - share})")
+    return out
+
+
+SWEEP_FORMS = ("{}", "{}是什么药", "唐以前的{}", "明清的{}", "{}最早见于何书")
+
+
+def test_retention_holds_for_every_name_of_the_layer_and_the_herbs(retriever):
+    names = sorted({rec.s for rec in RECORDS} | set(HERBS))
+    broken = {}
+    for name in names:
+        for form in SWEEP_FORMS:
+            for k in (5, 10, 20):
+                bad = violations(retriever, form.format(name), k)
+                if bad:
+                    broken[(form.format(name), k)] = bad
+    assert broken == {}
+    # the check sees a broken search: the asked name moved behind the rest, the side queue dealt first
+    retriever._retain = lambda q, M, *args, **kwargs: [h for h in M if h.tier != "A"] + [h for h in M if h.tier == "A"]
+    assert violations(retriever, "枳壳", 1) == ["asked form 0 < min(1, 1)"]  # 枳实, the related term, took the place
+    assert not hasattr(retriever, "__dict__") or "_retain" not in retriever.__dict__
+    deal = hybrid.assemble
+    hybrid.assemble = lambda M, S, k, num=3, den=10: (S + M)[:k]
+    try:
+        assert violations(retriever, "国老", 10) == ["side 10 > 3 while the main queue lasts", "asked form 0 < min(6, 7)"]
+    finally:
+        hybrid.assemble = deal

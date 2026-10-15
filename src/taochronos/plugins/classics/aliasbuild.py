@@ -11,7 +11,8 @@ For every pair (name, drug) the build
 * groups the drugs: a curated same-drug group, or heads the full-corpus lexicon files under one entry, are one drug
   (its canonical head: the group's first name, else the lexicon's headword); a lexicon entry that files two or more of
   a drug's names again under another headword (亭历 beside 葶苈) joins it; every member's record carries the drug as
-  ``ho``, and a member no pair ties to it gets one (牡丹皮 → 牡丹), so each reaches the other;
+  ``ho``, and a member no pair ties to it gets one (牡丹皮 → 牡丹), so each reaches the other; a name with only a
+  first-use or taboo floor (党参) heads a drug of its own;
 * adds the lexicon's other herb entries for the name as rival referents (source ``lexicon``);
 * finds up to three witnesses outside ``jc_c030`` and the ``NEVER_PACKED`` sources: the earliest equation (h，一名a; a即h;
   not 一作, a variant reading), gloss (h（a）) or 本草 entry (headed by h, 一名a in its first 400 characters), each name
@@ -19,7 +20,9 @@ For every pair (name, drug) the build
   ``store`` (古籍互证) too;
 * collects blockers — the curated cover strings, then longer herb or alias names holding the name whose drug is another
   (a window where they mean the same drug in some periods only) and names that straddle an occurrence in the store
-  (石蜜|甘), ordered by how many passages write them;
+  (石蜜|甘; only the name the straddle cuts: 常山|甘草 cuts 山甘草, not 常山), ordered by how many passages write
+  them; never the strings curated.yaml unblocks for the name (青矾石 is 青矾), nor lexicon headwords that are two drug
+  names written together and nowhere one name (假苏荆芥, 防风党参);
 * counts with the runtime's own gates (``AliasIndex.free_offsets``, ``drug_context``) the passages that write the name
   free of its blockers (``n``) and the share of them that read it as a drug (``sh``), with cues that are the drug's
   head and its other names that may be read as it (no candidate, none written 20 times and mostly not as a drug);
@@ -67,10 +70,13 @@ BUDGET = {"raw": 700_000, "deflated": 150_000, "directory": 150_000}
 STOP_N, STOP_SHARE, CUE_SHARE = 20, 0.10, 0.30  # status rules 7 and 8
 LOCAL_BEFORE = 1912  # a local-only pair needs a passage before this year that reads it as a drug
 MAX_NAME = 8  # the longest name a straddle is read with
+STRADDLE_RATIO = 2  # a name standing whole beside a straddler is not cut by it unless the straddler is written this
+#                     many times as often (又方|石硫黄)
 # equation words: those of ``study names`` but 一作 and 或作 (a variant reading, not another name), and 一曰, 谓之, 呼为
 EQUATE = "(?:" + "|".join([w for w in NAMES_EQUATE[3:-1].split("|") if w not in ("一作", "或作")]
                           + ["一曰", "谓之", "呼为"]) + ")"
-# curated.yaml: each section's row keys (required, optional); cover_stops is {name: [strings holding it]}
+# curated.yaml: each section's row keys (required, optional); cover_stops and unblock are {name: [strings holding it]}
+CURATED_MAPS = ("cover_stops", "unblock")
 CURATED = {
     "repairs": ({"from", "to"}, set()),
     "head_repairs": ({"passage", "head", "wit"}, {"why"}),
@@ -143,11 +149,12 @@ def lexicon_fingerprint(root: Path) -> str:
 def validate_curated(curated: Any) -> list[str]:
     """What is wrong with curated.yaml's shape: an unknown section or row key, a missing one, a value of the wrong
     type, an unknown kind or status, a name of fewer than two characters, a row without a witness or citing the 别名录
-    itself, a cover string that does not hold its name, more cover strings than a record keeps."""
+    itself, a cover or unblock string that does not hold its name, more cover strings than a record keeps, a string
+    both a cover string and unblocked."""
     if not isinstance(curated, Mapping):
         return ["curated.yaml: not a mapping"]
     errors = [f"curated.yaml: unknown section {k}" for k in curated if k not in CURATED and k not in ("version",
-                                                                                                    "cover_stops")]
+                                                                                                    *CURATED_MAPS)]
     if curated.get("version", 1) != 1:
         errors.append("curated.yaml: version must be 1")
 
@@ -208,21 +215,30 @@ def validate_curated(curated: Any) -> list[str]:
             for key in ("cues", "anti"):
                 if key in row and (not isinstance(row[key], list) or not all(isinstance(c, str) for c in row[key])):
                     errors.append(f"{where}: {key} must list names")
-    cover = curated.get("cover_stops") or {}
-    if not isinstance(cover, Mapping):
-        errors.append("curated.yaml cover_stops: not a mapping")
-        cover = {}
-    for key, strings in cover.items():
-        where = f"curated.yaml cover_stops {key}"
-        if not isinstance(key, str) or sum(map(is_han, key)) < 2:
-            errors.append(f"{where}: the name must have two characters or more")
-        if not isinstance(strings, list) or not all(isinstance(x, str) for x in strings):
-            errors.append(f"{where}: must list strings")
-            continue
-        errors += [f"{where}: {x} does not hold {key}" for x in strings if str(key) not in x or x == key]
-        if len(set(strings)) > MAX_BLOCKERS:
-            errors.append(f"{where}: {len(set(strings))} strings, over the {MAX_BLOCKERS} blockers a record keeps")
+    maps: dict[str, Mapping[Any, Any]] = {}
+    for section in CURATED_MAPS:
+        maps[section] = curated.get(section) or {}
+        if not isinstance(maps[section], Mapping):
+            errors.append(f"curated.yaml {section}: not a mapping")
+            maps[section] = {}
+        for key, strings in maps[section].items():
+            where = f"curated.yaml {section} {key}"
+            if not isinstance(key, str) or sum(map(is_han, key)) < 2:
+                errors.append(f"{where}: the name must have two characters or more")
+            if not isinstance(strings, list) or not all(isinstance(x, str) for x in strings):
+                errors.append(f"{where}: must list strings")
+                continue
+            errors += [f"{where}: {x} does not hold {key}" for x in strings if str(key) not in x or x == key]
+            if section == "cover_stops" and len(set(strings)) > MAX_BLOCKERS:
+                errors.append(f"{where}: {len(set(strings))} strings, over the {MAX_BLOCKERS} blockers a record keeps")
+    for key, strings in maps["unblock"].items():
+        both = set(_strings(strings)) & set(_strings(maps["cover_stops"].get(key)))
+        errors += [f"curated.yaml unblock {key}: {x} is a cover string of it too" for x in sorted(both)]
     return errors
+
+
+def _strings(value: Any) -> list[str]:
+    return [x for x in value if isinstance(x, str)] if isinstance(value, list) else []
 
 
 def entry_head(section: str | None, normalize: Any) -> str | None:
@@ -363,6 +379,7 @@ class Builder:
         self._drugs: dict[str, set[str]] = {}
         self._refs: dict[str, dict[str, Referent]] = {}
         self._longer: dict[str, list[str]] = {}  # a name → the longer names holding it (the last build's)
+        self.concatenations: set[str] = set()  # lexicon headwords that are two drug names written together
         # what the last build decided, for the review and the local build
         self.members: dict[str, str] = {}  # name → the drug it heads
         self.group_term: dict[str, str | None] = {}
@@ -631,6 +648,7 @@ class Builder:
         self.notes = {"warnings": []}
         stops = {self.norm(r["s"]) for r in cur.get("stop") or []}
         cover = {self.norm(k): sorted({self.norm(x) for x in v}) for k, v in (cur.get("cover_stops") or {}).items()}
+        unblock = {self.norm(k): {self.norm(x) for x in v} for k, v in (cur.get("unblock") or {}).items()}
         decisions: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for row in cur.get("decisions") or []:
             decisions[self.norm(row["s"])].append(row)
@@ -668,27 +686,38 @@ class Builder:
                 refs[s][g] = Referent(g, t=t, k=kind if kind in KINDS else "alias", src=["lexicon"])
                 info[(s, g)] = {"pairs": [], "doubt": False, "local": False, "status": None, "cues": []}
                 members.setdefault(g, g)
+        names = set(refs) | set(members)
+        floors = self.floors(set(self.herb_terms) | names)
+        # a name with only a floor (党参, 苍术) is a drug of its own: it heads the drug of the lexicon entry it heads,
+        # else its own
+        for s in sorted(set(floors) - names - stops):
+            if len(s) >= 2 and sum(map(is_han, s)) >= 2:
+                own = sorted(self.headwords.get(s, ()))
+                members[s] = self.group_of_term(own[0]) if len(own) == 1 else s
+        names |= set(members)
         heads_of: dict[str, list[str]] = defaultdict(list)
         for m in sorted(members):
             heads_of[members[m]].append(m)
-
-        names = set(refs) | set(members)
-        floors = self.floors(set(self.herb_terms) | names)
         surfaces = sorted(s for s in names | stops | set(floors) if len(s) >= 2 and sum(map(is_han, s)) >= 2)
         self._drugs = {}
         self._refs = refs
 
         # blockers, then the passages that write each name free of them
         self.last_context = self.context(members)
-        gates = AliasIndex(context=self.last_context)
         universe = self._longer = self._universe(surfaces, cover)
         straddlers = {u for u in set(self.herb_terms) | names if 2 <= len(u) <= MAX_NAME}
-        blockers: dict[str, list[Any]] = {}
-        free: dict[str, list[str]] = {}
-        for s in surfaces:
-            blockers[s] = self._blockers(s, universe, cover.get(s, []), straddlers if s in refs else set())
-            free[s] = [pid for pid in self.passages(s)
-                       if s in self.gate(pid) and gates.free_offsets(self.gate(pid), s, blockers[s], self.yr(pid))]
+        self.concatenations = self._concatenations({u for u in set(self.herb_terms) | set(members) if len(u) >= 2})
+        blockers = {s: self._blockers(s, universe, cover.get(s, []), straddlers if s in refs else set(),
+                                      unblock.get(s, set())) for s in surfaces}
+        # the runtime's gates over the names' blockers, so that a blocker written there only inside one of its own
+        # covers nothing (常山甘草 frees 甘草 of 山甘草), as at runtime
+        gates = AliasIndex([AliasRecord(s, b=blockers[s]) for s in surfaces], context=self.last_context)
+        free = {s: [pid for pid in self.passages(s)
+                    if s in self.gate(pid) and gates.free_offsets(self.gate(pid), s, blockers[s], self.yr(pid))]
+                for s in surfaces}
+        dropped = self.notes.get("unblocked", {})
+        self.notes["warnings"] += [f"unblock {s}: {x} is no blocker of it" for s in sorted(unblock)
+                                   for x in sorted(unblock[s] - set(dropped.get(s, ())))]
 
         self.free = free
 
@@ -950,11 +979,33 @@ class Builder:
                 out[sub].append(u)
         return out
 
-    def _blockers(self, s: str, universe: dict[str, list[str]], cover: list[str], straddlers: set[str]) -> list[Any]:
+    def _concatenations(self, known: set[str]) -> set[str]:
+        """Lexicon herb headwords that are two ``known`` drug names written together (假苏荆芥, 赤箭天麻, 防风党参: the
+        harvest read a joint heading or a list as one name), which the store never writes as one drug's name: with a
+        dose after it (not 各, which shares one dose among names), or named (一名…, …之名).  They block nothing."""
+        dose, each, nameof, named = (re.compile(CONTEXT_PATTERNS[k]) for k in ("dose", "each", "nameof", "named"))
+
+        def as_one(g: str, w: str) -> bool:
+            i = g.find(w)
+            while i >= 0:
+                after = g[i + len(w):i + len(w) + 12]
+                if ((dose.match(after) and not each.match(after)) or nameof.search(g[max(0, i - 4):i])
+                        or named.match(after)):
+                    return True
+                i = g.find(w, i + 1)
+            return False
+
+        return {w for w in sorted(self.headwords) if len(w) >= 4
+                and any(w[:k] in known and w[k:] in known for k in range(2, len(w) - 1))
+                and not any(as_one(self.gate(pid), w) for pid in self.passages(w))}
+
+    def _blockers(self, s: str, universe: dict[str, list[str]], cover: list[str], straddlers: set[str],
+                  unblock: set[str]) -> list[Any]:
         """Strings that hold ``s`` and are not it (≤ 24): the curated cover strings, then longer names of another drug
         (with the years they mean another, where they mean this one in some only) and names straddling an occurrence
         of an alias in the store (石蜜|甘), each lot the most written first.  Past the cap, the least written are
-        dropped (and reported)."""
+        dropped (and reported).  Not the strings curated.yaml unblocks for ``s`` (青矾石 is 青矾, not 青|矾石), nor
+        the lexicon's headwords that are two drug names written together (:meth:`_concatenations`)."""
         mine = self.drugs_of(s)
         cands: dict[tuple[str, int | None, int | None], int] = {}
         for u in sorted(universe.get(s, ())):
@@ -962,6 +1013,12 @@ class Builder:
             theirs |= {(g, None) for g in self.drugs_of(u) - set(self._refs.get(u, {}))}
             same = [v for g, v in theirs if g in mine]
             if any(v is None for v in same):
+                continue
+            if u in unblock:
+                self._note("unblocked", s, u)
+                continue
+            if u in self.concatenations:
+                self._note("concatenations", u, s)
                 continue
             for lo, hi in (_complement(same) if same else [(None, None)]):
                 cands[(u, lo, hi)] = 0
@@ -981,19 +1038,25 @@ class Builder:
             i = g.find(s)
             while i >= 0:
                 # a name ending inside s (石蜜 of 石蜜甘), unless a name ends in its part before s (麻黄|连轺 is not
-                # 麻|黄连|轺); a name starting inside s, unless a name starts in its part after s (天麻|黄芪)
+                # 麻|黄连|轺); a name starting inside s, unless a name starts in its part after s (天麻|黄芪); either
+                # unless s stands whole beside it (熟地|黄芪, 常山|甘草: the straddle cuts the other name)
                 for j in range(max(0, i - MAX_NAME + 1), i):
                     for k in range(i + 1, min(i + n, j + MAX_NAME + 1)):
                         if (g[j:k] in straddlers and not self.drugs_of(g[j:k]) & mine
-                                and not _read_across(g, straddlers, j, i, left=True)):
+                                and not _read_across(g, straddlers, j, i, left=True)
+                                and not self._stands(g, s, i, j, k, straddlers)):
                             seen.add(g[j:i + n])
                 for j in range(i + 1, i + n):
                     for k in range(i + n + 1, min(len(g), j + MAX_NAME) + 1):
                         if (g[j:k] in straddlers and not self.drugs_of(g[j:k]) & mine
-                                and not _read_across(g, straddlers, i + n, k, left=False)):
+                                and not _read_across(g, straddlers, i + n, k, left=False)
+                                and not self._stands(g, s, i, j, k, straddlers)):
                             seen.add(g[i:k])
                 i = g.find(s, i + 1)
-            for x in seen:
+            for x in sorted(seen):
+                if x in unblock:
+                    self._note("unblocked", s, x)
+                    continue
                 key = (x, None, None)
                 cands[key] = cands.get(key, 0) + 1
         given = set(cover)
@@ -1002,6 +1065,25 @@ class Builder:
         if len(ranked) > MAX_BLOCKERS:
             self.notes.setdefault("capped", []).append((s, len(ranked)))
         return [text if lo is None and hi is None else (text, lo, hi) for (text, lo, hi), _ in ranked[:MAX_BLOCKERS]]
+
+    def _stands(self, g: str, s: str, i: int, j: int, k: int, names: set[str]) -> bool:
+        """Whether ``s`` (at ``i``) stands whole where the name ``g[j:k]`` straddles it, so that the straddle cuts that
+        name: the name's part outside ``s`` is a name of its own (常山|甘草 cuts 山甘草; 熟地|黄芪 cuts 熟地黄), no name
+        across the edge of ``s`` takes its part outside the straddler (生地|麦门冬 cuts 地麦; 地肤子|柏子仁 cuts 子柏),
+        and the straddler is not written twice as often as ``s`` (又方|石硫黄 cuts 方石; 大腹皮|消 cuts 皮消)."""
+        n = len(s)
+        if j < i:  # the straddler ends inside s: its part before s, then s's part after it
+            if g[j:i] not in names or any(g[k:y] in names for y in range(i + n, min(len(g), k + MAX_NAME) + 1)):
+                return False
+        elif g[i + n:k] not in names or any(g[x:j] in names for x in range(max(0, j - MAX_NAME), i + 1)):
+            return False
+        return len(self.passages(g[j:k])) < STRADDLE_RATIO * len(self.passages(s))
+
+    def _note(self, key: str, name: str, value: str) -> None:
+        """Keep ``value`` under ``name`` in the report's ``key`` (once)."""
+        values = self.notes.setdefault(key, {}).setdefault(name, [])
+        if value not in values:
+            values.append(value)
 
     def _share(self, s: str, free: list[str], blockers: list[Any], cues: list[str],
                gates: AliasIndex) -> tuple[float, bool]:
@@ -1027,10 +1109,11 @@ class Builder:
         listed = sorted({w.pid: w for p in ps for w in p.wit if w.kind == "l"}.values(), key=_by_date)
         names = sorted({p.h for p in ps} | set(heads) | {g})
         # the editors' witnesses, those that equate the names first; one that only shows the name in use is labelled
-        # an equation (the format has no kind for it) and counted in the report
+        # a usage witness (an equation while the format has no kind for it) and counted in the report
         read = [(w, self._kind_of(w.pid, s, names, g)) for w in {w.pid: w for p in ps if p.src == "curated"
                                                                   for w in p.wit}.values()]
-        given = [replace(w, kind=kind) for w, kind in read if kind] + [replace(w, kind="e") for w, kind in read
+        usage = usage_kind()
+        given = [replace(w, kind=kind) for w, kind in read if kind] + [replace(w, kind=usage) for w, kind in read
                                                                        if not kind]
         self.notes["usage_witnesses"] = self.notes.get("usage_witnesses", 0) + sum(not kind for _, kind in read)
         shiming = [w for p in ps if p.src == "shiming" for w in p.wit]
@@ -1059,6 +1142,11 @@ def _read_across(g: str, names: set[str], a: int, b: int, *, left: bool) -> bool
     if left:
         return any(g[x:y] in names for x in range(max(0, a - MAX_NAME + 1), a) for y in range(a + 1, b + 1))
     return any(g[x:y] in names for x in range(a, b) for y in range(b + 1, min(len(g), x + MAX_NAME) + 1))
+
+
+def usage_kind() -> str:
+    """The kind of a curated witness that only shows the name in use: ``u`` once the format has it, else ``e``."""
+    return "u" if "u" in WITNESS_KINDS else "e"
 
 
 def _kind_rank(kind: str) -> int:
@@ -1134,6 +1222,8 @@ def _result(b: Builder, records: list[AliasRecord], stopped: dict[str, list[str]
                    "attested": sum(rec.n > 0 for rec in records if rec.r),
                    "usage_witnesses": b.notes.get("usage_witnesses", 0)},
         "joined": {w: b.members.get(w) for w in sorted(b.joined)},
+        "unblocked": dict(sorted(b.notes.get("unblocked", {}).items())),
+        "concatenations": dict(sorted(b.notes.get("concatenations", {}).items())),
         "bytes": {"aliases.jsonl": {"raw": len(text), "deflated": deflated(text)},
                   "context.json": {"raw": len(ctx), "deflated": deflated(ctx)}},
         "warnings": list(dict.fromkeys(b.warnings + b.notes["warnings"])),
@@ -1160,7 +1250,7 @@ def review(result: BuildResult, *, top: int = 200, heldout: Iterable[str] = (), 
     names and drugs left out.  Rows of :data:`REVIEW_COLUMNS`."""
     b = result.builder
     held = {b.norm(h) for h in heldout}
-    gates = AliasIndex(context=result.context)
+    gates = AliasIndex(result.records, context=result.context)
     rows: list[list[str]] = []
     for rec in sorted(result.records, key=lambda r: (-r.n, r.s)):
         if not (rec.r or rec.s in result.stopped) or rec.n == 0:
@@ -1203,9 +1293,10 @@ def review_tsv(rows: list[list[str]]) -> str:
 def curated_strings(curated: Mapping[str, Any]) -> set[str]:
     """Every name curated.yaml writes (held-out gold names may be none of them), as written."""
     out: set[str] = set()
-    cover = curated.get("cover_stops")
-    for k, v in (cover.items() if isinstance(cover, Mapping) else ()):
-        out |= {k, *(v if isinstance(v, list) else [])}
+    for section in CURATED_MAPS:
+        strings = curated.get(section)
+        for k, v in (strings.items() if isinstance(strings, Mapping) else ()):
+            out |= {k, *(v if isinstance(v, list) else [])}
     for key, fields in (("stop", ("s",)), ("repairs", ("from", "to")), ("head_repairs", ("head",)),
                         ("same_drug", ("names",)), ("pairs", ("s", "head", "cues", "anti")),
                         ("first_use", ("s",)), ("decisions", ("s", "head"))):

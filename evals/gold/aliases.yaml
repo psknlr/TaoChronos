@@ -53,6 +53,10 @@
 # The comment above each item is its annotator's: counts by period, the in-window counts, witnesses and doubts.
 # Still to do (§3.10 step 4): the pooled adjudication of the top 50 hits of off, naive and on on both stores, and the
 # hand check of a 10% sample of labels; names it adds need a witness and are dated in adjudicated.
+# Corrections of 2026-10-15, after the first held-out report (logged in docs/evals.md): the names adjudicated
+# ``by: correction`` — 凌霄, 姜芥, 鹿胶, 荼草, 游冬, 鸡舌香, 硝石, 慈石 — are real other names that dev runs showed missing,
+# each with a witness in the store; they were added to dev items only (ids, groups and splits unchanged), and no
+# held-out item was changed or looked at.
 version: 1
 frozen: "2026-10-14"
 seed: 23
@@ -206,13 +210,14 @@ items:
     asked_cues: []
     false_friends: []
     referents:
-      - {head: 凌霄花, names: [凌霄花], valid: null, witness: jc_c029.00148}
+      - {head: 凌霄花, names: [凌霄花, 凌霄], valid: null, witness: jc_c029.00148}
     wrong: []
     expect_candidates: [凌霄花]
     floor: null
     band: ">=20"
     adjudicated:
       - {name: 凌霄花, witness: jc_c029.00148, by: annotator, date: "2026-10-14"}
+      - {name: 凌霄, witness: jc_c000.00819, by: correction, date: "2026-10-15"}  # 神农本草经[25,220] 紫葳: 《尔雅》注有一名凌霄四字，谓即凌霄花
   # n=24 (隋唐五代–清); era: 唐; witness qianjin_yaofang.067.04694 备急千金要方[650,659]
   # review fix: replaces alias-09 (黄檗): held-out on names the design was tuned on (黄檗/黄柏)
   - id: alias-s01
@@ -262,13 +267,14 @@ items:
     asked_cues: []
     false_friends: []
     referents:
-      - {head: 荆芥, names: [荆芥], valid: null, witness: jc_c000.00770}
+      - {head: 荆芥, names: [荆芥, 姜芥], valid: null, witness: jc_c000.00770}
     wrong: []
     expect_candidates: [荆芥]
     floor: null
     band: "3-19"
     adjudicated:
       - {name: 荆芥, witness: jc_c000.00770, by: annotator, date: "2026-10-14"}
+      - {name: 姜芥, witness: jc_c000.00770, by: correction, date: "2026-10-15"}  # 神农本草经[25,220] 假苏: 《吴普》曰：假苏…一名姜芥也…名荆芥
   # n=8 (汉–明); era: 汉（本经）; witness jc_c000.00180 神农本草经[25,220]
   # review fix: replaces alias-12 (黄良): held-out on names the design was tuned on (大黄)
   - id: alias-s07
@@ -1103,13 +1109,14 @@ items:
     asked_cues: []
     false_friends: [白胶香]
     referents:
-      - {head: 鹿角胶, names: [白胶], valid: null, witness: jc_c000a.00114}
+      - {head: 鹿角胶, names: [白胶, 鹿胶], valid: null, witness: jc_c000a.00114}
     wrong: []
     expect_candidates: []
     floor: null
     band: ">=20"
     adjudicated:
       - {name: 白胶, witness: jc_c000a.00114, by: annotator, date: "2026-10-14"}  # jc_c000a, 122
+      - {name: 鹿胶, witness: jc_c000.00468, by: correction, date: "2026-10-15"}  # 神农本草经[25,220] 白胶 (entry): 《考工记》云：鹿胶青白
 
   # ===== ambiguous (20): a name shared by several drugs: every referent is listed with its witness, none merged
   # n=29 (汉–清); 赤箭 ws_36bca7b992.00142 神农本草经[25,220]; 徐长卿 jc_c000a.00063 神农本草经（复古辑本）[25,220]
@@ -1175,7 +1182,7 @@ items:
     asked_cues: []
     false_friends: []
     referents:
-      - {head: 苦菜, names: [苦菜], valid: null, witness: jc_c000a.00091}
+      - {head: 苦菜, names: [苦菜, 荼草, 游冬], valid: null, witness: jc_c000a.00091}
       - {head: 贝母, names: [贝母], valid: null, witness: jc_c000.00664}
     wrong: []
     expect_candidates: [苦菜, 贝母]
@@ -1183,6 +1190,8 @@ items:
     band: ">=20"
     adjudicated:
       - {name: 贝母, witness: jc_c000.00664, by: annotator, date: "2026-10-14"}  # 神农本草经 贝母 section: 一名苦菜
+      - {name: 荼草, witness: jc_c000a.00091, by: correction, date: "2026-10-15"}  # 神农本草经（复古辑本）[25,220]: 苦菜 一名荼草
+      - {name: 游冬, witness: jc_c049.00078, by: correction, date: "2026-10-15"}  # 千金食治[630,702]: 苦菜…一名荼草，一名选，一名游冬
   # ambiguous >=20. n=60 (先唐10 唐30 宋11 明6 清3), mostly 千金/外台 recipes; 本经 紫参 一名牡蒙, and 陶弘景 under 王孙:
   # 今方家皆呼名黄昏，又云牡蒙.  王孙庆 (a man's name) is masked for the name 王孙
   # review fix: replaces ambiguous-04 (将军): held-out on names the design was tuned on (将军/大黄; its cues copied the
@@ -1264,7 +1273,7 @@ items:
     asked_cues: []
     false_friends: []
     referents:
-      - {head: 消石, names: [消石], valid: null, witness: jc_c000a.00098}
+      - {head: 消石, names: [消石, 硝石], valid: null, witness: jc_c000a.00098}
       - {head: 芒硝, names: [芒硝], valid: null, witness: yizong_jinjian.032.15126}
     wrong: []
     expect_candidates: [消石, 芒硝]
@@ -1273,6 +1282,7 @@ items:
     adjudicated:
       - {name: 消石, witness: jc_c000a.00098, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）: 消石 一名芒消
       - {name: 芒硝, witness: yizong_jinjian.032.15126, by: annotator, date: "2026-10-14"}  # 医宗金鉴[1742]
+      - {name: 硝石, witness: jc_c000.00047, by: correction, date: "2026-10-15"}  # 神农本草经[25,220] 硝石 (本经 消石): 据《名医》，一名芒硝
   # n=19 (汉–清); 桔梗 jc_c001.00129 吴普本草[220,265]; 白药 jc_c007.00212 本草衍义[1116,1116]
   # 吴普/名医 桔梗 一名白药; 本草衍义 白药 entry = the 唐本 drug (宋以后 白药子; no non-纲目 witness equating 白药子
   # with 白药, so 白药子 is not listed, though its passages contain the asked form). 别名录 also files 白药 under
@@ -1312,7 +1322,7 @@ items:
     referents:
       - {head: 羊蹄, names: [羊蹄], valid: null, witness: ws_36bca7b992.00298}
       - {head: 石南, names: [石南], valid: null, witness: jc_c000a.00203}
-      - {head: 紫葳, names: [紫葳, 凌霄花], valid: null, witness: jc_c000.00816}
+      - {head: 紫葳, names: [紫葳, 凌霄花, 凌霄], valid: null, witness: jc_c000.00816}
       - {head: 白英, names: [白英], valid: null, witness: jc_c000.00191}
     wrong: []
     expect_candidates: [羊蹄, 石南, 紫葳, 白英]
@@ -1323,6 +1333,7 @@ items:
       - {name: 石南, witness: jc_c000a.00203, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
       - {name: 紫葳, witness: jc_c000.00816, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
       - {name: 凌霄花, witness: jc_c040.00511, by: annotator, date: "2026-10-14"}  # 珍珠囊补遗药性赋[1368,1644]
+      - {name: 凌霄, witness: jc_c000.00819, by: correction, date: "2026-10-15"}  # 神农本草经[25,220] 紫葳: 一名凌霄…谓即凌霄花
       - {name: 白英, witness: jc_c000.00191, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
   # n=10 (汉–宋金元); 石斛 ws_36bca7b992.00046 神农本草经[25,220]; 木兰 ws_36bca7b992.00202 神农本草经[25,220]
   # 本经 石斛 and 木兰 一名林兰; 走马急疳真方 (1275) code name 林兰（即石斛）
@@ -1491,7 +1502,7 @@ items:
     asked_cues: []
     false_friends: [处石代]
     referents:
-      - {head: 磁石, names: [磁石], valid: null, witness: jc_d001.00408}
+      - {head: 磁石, names: [磁石, 慈石], valid: null, witness: jc_d001.00408}
       - {head: 玄石, names: [玄石], valid: null, witness: jc_d001.00416}
     wrong: []
     expect_candidates: [磁石, 玄石]
@@ -1500,6 +1511,7 @@ items:
     adjudicated:
       - {name: 磁石, witness: jc_d001.00408, by: annotator, date: "2026-10-14"}  # 名医别录[200,500]
       - {name: 玄石, witness: jc_d001.00416, by: annotator, date: "2026-10-14"}  # 名医别录[200,500]
+      - {name: 慈石, witness: ws_36bca7b992.00137, by: correction, date: "2026-10-15"}  # 神农本草经[25,220]: 本经's 磁石 entry, 慈石…一名玄石
   # n=10 (汉–清); 天名精 jc_c000a.00053 神农本草经（复古辑本）[25,220]; 蠡实 jc_c000a.00132
   # 神农本草经（复古辑本）[25,220]
   # 本经 天名精 and 蠡实 一名豕首
@@ -2385,13 +2397,14 @@ items:
     asked_cues: []
     false_friends: [白胶香, 如白胶, 下白胶]
     referents:
-      - {head: 鹿角胶, names: [鹿角胶], valid: null, witness: jc_c000a.00114}
+      - {head: 鹿角胶, names: [鹿角胶, 鹿胶], valid: null, witness: jc_c000a.00114}
     wrong: [枫香脂]
     expect_candidates: [鹿角胶]
     floor: null
     band: ">=20"
     adjudicated:
       - {name: 鹿角胶, witness: jc_c000a.00114, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
+      - {name: 鹿胶, witness: jc_c000.00468, by: correction, date: "2026-10-15"}  # 神农本草经[25,220] 白胶 (entry): 《考工记》云：鹿胶青白
   # n=772 of 837 (先唐2 唐五代50 宋金元350 明181 清189); window [1115, 1368): asked 271, other-only 0, wrong-only 24
   # 白丁香 = 雀屎 (jc_l006.00067 异授眼科: 白丁香，即麻雀粪; 62 passages, 眼科/儿科) and 苦丁香 = 甜瓜蒂 (jc_d076.00265,
   # jc_d046.05799). 母丁香/公丁香 are the same drug and stay asked. Witness jc_c006.00579 本草图经[1061,1062] (entry)
@@ -2405,13 +2418,14 @@ items:
     asked_cues: []
     false_friends: [白丁香, 苦丁香]
     referents:
-      - {head: 丁香, names: [丁香], valid: null, witness: jc_c006.00579}
+      - {head: 丁香, names: [丁香, 鸡舌香], valid: null, witness: jc_c006.00579}
     wrong: []
     expect_candidates: []
     floor: null
     band: ">=20"
     adjudicated:
       - {name: 丁香, witness: jc_c006.00579, by: annotator, date: "2026-10-14"}  # 本草图经[1061,1062] (entry)
+      - {name: 鸡舌香, witness: jc_c021.00807, by: correction, date: "2026-10-15"}  # 本草从新[1757] 丁香: 雌者颗大，为母丁香，即鸡舌香
   # n=3808 of 4207 (先唐504 唐五代797 宋金元896 明530 清1062 民19); window [618, 907): asked 795, other-only 0, wrong-only 21
   # 白附子 (别录, 224 passages) and 香附子 (= 莎草根, 206) are different plants; 黑附子 is the same drug. The Tang wrong-only
   # hits are 千金/外台 incense and 香附子 recipes. Witness jc_c000a.00240 神农本草经（复古辑本）[25,220] (entry)

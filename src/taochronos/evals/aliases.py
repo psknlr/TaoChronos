@@ -329,23 +329,55 @@ def _for(rows: list[dict[str, Any]], key: str, asked: str) -> list[dict[str, Any
         a[key] in asked or asked in a[key])]
 
 
-def listed(item: dict[str, Any], q: Any, same: dict[str, set[str]] | None = None) -> list[str]:
+def asked_forms(pack: Any, q: Any, asked: str) -> set[str]:
+    """The asked form and the forms of the lexicon herb entry the question reads it as (紫葳 → 紫葳, 凌霄花, 陵苕 …),
+    normalised: the names today's search already treats as the asked drug's own.  The entry is the asked form's, else
+    that of a name the question reads inside it or around it (慎火 for 慎火草)."""
+    terms = getattr(q, "asked", None) or {}
+    names = [s for s in terms if s == asked and terms[s]] or [s for s in terms if terms[s] and (
+        s in asked or asked in s)]
+    normalize = pack.variants.normalize_text
+    out = {asked}
+    for s in names:
+        entry = pack.lexicon.entry(terms[s])
+        if entry is not None and entry.category == "herb":
+            out |= {normalize(f) for f in entry.surfaces()}
+    return out
+
+
+def _stop(entry: dict[str, Any]) -> bool:
+    """Whether a ``query.aliases`` entry lists a stop name asked on its own: its drugs, each of status ``stop``, are
+    candidates shown beside a note that the name is mostly an ordinary word — never a reading of the name."""
+    refs = entry.get("referents") or []
+    return bool(refs) and all(r.get("status") == "stop" for r in refs)
+
+
+def listed(item: dict[str, Any], q: Any, same: dict[str, set[str]] | None = None,
+           forms: Iterable[str] = ()) -> list[str]:
     """The drugs ``query.aliases`` names for the asked form, as the item's referents (:func:`_drug`): the referents it
-    lists whose window meets the question's, and the drugs its drug→alias expansions show by their names (丹砂, whose
-    names include 朱砂).  The asked form itself counts only where the item expects it as a drug of its own (苦菜 beside
-    贝母): elsewhere it is the lexicon's entry for the name asked (胡王使者) or the drug a head names (铜绿 → 铜青), no
-    candidate."""
+    lists whose window meets the question's — a stop name's drugs (status ``stop``) among them, which it lists as
+    candidates when the name is asked on its own (解离 → 防己) — and the drugs its drug→alias expansions show by their
+    names (丹砂, whose names include 朱砂).  A listed drug that is the asked drug itself — the asked form or one of
+    ``forms``, the forms of the lexicon entry the question reads it as (:func:`asked_forms`) — is mapped with those
+    names too (紫葳, whose entry holds 凌霄花, names 凌霄花).  The asked form itself counts only where the item expects
+    it as a drug of its own (苦菜 beside 贝母): elsewhere it is the lexicon's entry for the name asked (胡王使者) or the
+    drug a head names (铜绿 → 铜青), no candidate."""
     view = getattr(q, "alias_view", None) or {}
     asked = item["asked"]
-    out = [_drug(item, r["head"], same=same) for a in _for(view.get("asked") or [], "surface", asked)
+    own = set(forms) | {asked}
+
+    def drug(head: str, names: Iterable[str] = ()) -> str:
+        return _drug(item, head, set(names) | (own if head in own else set()), same)
+
+    out = [drug(r["head"]) for a in _for(view.get("asked") or [], "surface", asked)
            for r in a.get("referents") or [] if _meets(r.get("valid"), q.after, q.before)]
     members: dict[str, set[str]] = defaultdict(set)
     for e in _for(view.get("expansions") or [], "for", asked):
         if e.get("direction") == "drug→alias":
             members[e["referent"]].add(e["surface"])
-    out += [_drug(item, head, names, same) for head, names in members.items()]
-    own = asked in (item.get("expect_candidates") or [])
-    return [d for d in dict.fromkeys(out) if d != asked or own]
+    out += [drug(head, names) for head, names in members.items()]
+    expected = asked in (item.get("expect_candidates") or [])
+    return [d for d in dict.fromkeys(out) if d != asked or expected]
 
 
 def _leaks(hits: list[Any], after: float | None, before: float | None) -> int:
@@ -358,11 +390,11 @@ def _leaks(hits: list[Any], after: float | None, before: float | None) -> int:
 
 def score(item: dict[str, Any], label: Labeller, texts: _Texts, counts: dict[str, int], q: Any,
           hits10: list[Any], hits50: list[Any], ms: float, *, layered: bool = True,
-          same: dict[str, set[str]] | None = None) -> dict[str, Any]:
+          same: dict[str, set[str]] | None = None, forms: Iterable[str] = ()) -> dict[str, Any]:
     """One item under one system: the §3.10 metrics of its k = 10 and k = 50 answers.  AskedRet@10 and XR@50 are not
     capped at 1, so that a count of the store that falls short shows.  Candidates and merging are None for a system
     without the layer (``layered``), which lists nothing; an ambiguous item is merged when fewer than two of its
-    expected drugs (all, when it expects one) are listed."""
+    expected drugs (all, when it expects one) are listed (``forms``: the asked drug's own, :func:`listed`)."""
     labs10 = [label(*texts(h.passage_id)) for h in hits10]
     labs50 = [label(*texts(h.passage_id)) for h in hits50]
     rel = [a or o for a, o, _ in labs10]
@@ -381,7 +413,7 @@ def score(item: dict[str, Any], label: Labeller, texts: _Texts, counts: dict[str
         "ms": ms, "type": item["type"], "n_asked": n_asked,
         "labels": "".join("a" if a else "o" if o else "w" if w else "." for a, o, w in labs10),
     }
-    have = set(listed(item, q, same)) if layered else set()
+    have = set(listed(item, q, same, forms)) if layered else set()
     expected = set(item.get("expect_candidates") or [])
     row["listed"] = sorted(have)
     row["cand"] = (len(have & expected), len(have), len(expected)) if layered else None
@@ -472,8 +504,9 @@ def run_items(items: list[dict[str, Any]], retriever: Any, corpus: Any, systems:
             q, hits10 = run[system](item["query"], 10)
             ms = (time.perf_counter() - started) * 1000
             _, hits50 = run[system](item["query"], 50)
+            forms = asked_forms(retriever.pack, q, item["asked"]) if layered(system) else set()
             rows[system].append(score(item, label, texts, counts, q, hits10, hits50, ms, layered=layered(system),
-                                      same=same))
+                                      same=same, forms=forms))
     for system in systems:
         for row, item in zip(rows[system], items):
             row["id"], row["split"] = item["id"], item.get("split")
@@ -488,9 +521,10 @@ def resolve(row: dict[str, Any], q: Any, same: dict[str, set[str]], pack: Any) -
     headed by another name); ``none`` — neither (a head reaching only its own other names); the heads it gives; and
     whether that is the row's expectation, heads matched through the gold's same-drug names.  An ``expand`` row is also
     met when the expected head is among the names the system searches as the asked drug's own (铜青, whose group holds
-    铜绿; 薯蓣, which the lexicon files under 山药)."""
+    铜绿; 薯蓣, which the lexicon files under 山药).  A stop name's listing (:func:`_stop`) is no reading of the name:
+    the candidates it shows beside its note leave the action as the rest of the answer makes it."""
     view = getattr(q, "alias_view", None) or {}
-    entries = view.get("asked") or []
+    entries = [a for a in view.get("asked") or [] if not _stop(a)]
     refs = [r for a in entries for r in a.get("referents") or []]
     exps = [e for e in q.expansions if e.why != "period"]
     reach = [e.head for e in exps if e.direction == "alias→drug"]
@@ -956,9 +990,11 @@ def aliases(ctx: EvalContext) -> SuiteResult:
         ("counts N_rel, N_asked, N_other are read in the question's window up to 50 (all that min(10, ·) and "
          "min(50, ·) need); latency is the k = 10 call, the systems' order turning with the item; each profile "
          "extracts its claims into a cache of its own (the store's claim cache is neither read nor written)"),
-        ("candidates: the drugs query.aliases names for the asked form, mapped to the item's referents through the "
-         "gold's same-drug names (the asked form itself only where the item expects it); SilentMerge = ambiguous items "
-         "with fewer than two expected drugs listed; None for systems without the layer"),
+        ("candidates: the drugs query.aliases names for the asked form (a stop name's drugs, status stop, among them), "
+         "mapped to the item's referents by the item's names — the asked drug's own lexicon forms and the asked form "
+         "counting for the asked drug — else through the gold's same-drug names (the asked form itself only where the "
+         "item expects it); SilentMerge = ambiguous items with fewer than two expected drugs listed; None for systems "
+         "without the layer"),
     ]
     gold = load_gold(ctx.home)
     problems = validate(gold)
@@ -977,5 +1013,5 @@ def aliases(ctx: EvalContext) -> SuiteResult:
     return SuiteResult("aliases", metrics, details, notes=notes)
 
 
-__all__ = ["Labeller", "Naive", "aggregate", "aliases", "answered", "listed", "resolve", "same_drug", "score",
-           "store_counts", "synthetic", "synthetic_search"]
+__all__ = ["Labeller", "Naive", "aggregate", "aliases", "answered", "asked_forms", "listed", "resolve", "same_drug",
+           "score", "store_counts", "synthetic", "synthetic_search"]

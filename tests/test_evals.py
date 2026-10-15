@@ -154,6 +154,63 @@ def test_alias_eval_lists_the_items_drugs_not_the_name_asked():
     assert row["merge"] is None and row["cand"] is None
 
 
+def test_alias_eval_maps_the_asked_drug_by_its_lexicon_forms():
+    """The asked drug's own expansions name the referent its lexicon entry holds (紫葳, filed with 凌霄花); another
+    drug listed beside it is never mapped through those forms (慈石 stays 慈石 under 处石, whose entry is 磁石's)."""
+    from types import SimpleNamespace
+
+    from taochronos.evals.aliases import asked_forms, listed
+
+    zi = {"asked": "紫葳", "expect_candidates": ["凌霄花"], "referents": [{"head": "凌霄花", "names": ["凌霄花"]}]}
+    q = _q([], [{"surface": s, "for": "紫葳", "direction": "drug→alias", "referent": "紫葳"} for s in ("凌霄", "女葳")])
+    assert listed(zi, q) == []
+    assert listed(zi, q, forms={"紫葳", "凌霄花", "陵苕"}) == ["凌霄花"]
+    chu = {"asked": "处石", "expect_candidates": ["磁石", "玄石"], "referents": [
+        {"head": "磁石", "names": ["磁石"]}, {"head": "玄石", "names": ["玄石"]}]}
+    q = _q([{"surface": "处石", "referents": [{"head": "慈石"}, {"head": "玄石"}]}])
+    assert listed(chu, q, forms={"磁石", "元石", "处石"}) == ["慈石", "玄石"]
+    # the forms: the asked form's herb entry, else that of a name read inside it (慎火 of 慎火草), normalised
+    entries = {"herb:紫葳": SimpleNamespace(category="herb", surfaces=lambda: ["紫葳", "淩霄花"]),
+               "herb:景天": SimpleNamespace(category="herb", surfaces=lambda: ["景天", "慎火"]),
+               "formula:x": SimpleNamespace(category="formula", surfaces=lambda: ["某汤"])}
+    pack = SimpleNamespace(variants=SimpleNamespace(normalize_text=lambda s: s.replace("淩", "凌")),
+                           lexicon=SimpleNamespace(entry=entries.get))
+    assert asked_forms(pack, SimpleNamespace(asked={"紫葳": "herb:紫葳"}), "紫葳") == {"紫葳", "凌霄花"}
+    assert asked_forms(pack, SimpleNamespace(asked={"慎火": "herb:景天", "慎火草": None}), "慎火草") == {
+        "慎火草", "景天", "慎火"}
+    assert asked_forms(pack, SimpleNamespace(asked={"某汤": "formula:x"}), "某汤") == {"某汤"}
+    assert asked_forms(pack, SimpleNamespace(), "国老") == {"国老"}
+
+
+def test_alias_eval_counts_a_stop_names_listed_drugs():
+    """A stop name asked on its own lists its drugs as candidates (status ``stop``): they count for the gold item that
+    expects them, and they are no reading of the name for a resolution row."""
+    from types import SimpleNamespace
+
+    from taochronos.evals.aliases import listed, resolve, score
+
+    jie = {"type": "trap", "asked": "解离", "expect_candidates": ["防己"], "referents": [
+        {"head": "防己", "names": ["防己", "木防己"]}]}
+    stop = {"surface": "解离", "term": None, "ambiguous": False, "note": "…",
+            "referents": [{"head": "防己", "status": "stop", "valid": None}]}
+    q = _q([stop], before=960)
+    assert listed(jie, q) == ["防己"]
+    row = score(jie, lambda text, yr: (False, False, False), lambda pid: ("", None), {"rel": 0, "asked": 0, "other": 0},
+                q, [], [], 1.0)
+    assert row["cand"] == (1, 1, 1) and row["merge"] is None
+    jiu = {"type": "ambiguous", "asked": "救火", "expect_candidates": ["景天", "萤火"], "referents": [
+        {"head": "景天", "names": ["景天"]}, {"head": "萤火", "names": ["萤火"]}]}
+    q = _q([{"surface": "救火", "ambiguous": True, "referents": [{"head": "景天", "status": "stop"},
+                                                                 {"head": "萤火", "status": "stop"}]}])
+    assert listed(jiu, q) == ["景天", "萤火"]
+    pack = SimpleNamespace(variants=SimpleNamespace(normalize_text=lambda s: s),
+                           lexicon=SimpleNamespace(entry=lambda term: None))
+    q = SimpleNamespace(alias_view={"asked": [{**stop, "surface": "月经", "referents": [
+        {"head": "某药", "status": "stop"}, {"head": "某草", "status": "stop"}], "ambiguous": True}]},
+                        expansions=[], asked={"月经": None})
+    assert resolve({"surface": "月经", "expect_action": "none", "expect_heads": []}, q, {}, pack) == ("none", [], True)
+
+
 def test_alias_eval_resolution_rows():
     from types import SimpleNamespace
 

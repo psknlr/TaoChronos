@@ -10,6 +10,7 @@ the ledger.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from ...protocol.claims import Claim
@@ -108,6 +109,60 @@ def _targeted(ctx: Any, ids: list[str]) -> list[EvidenceRecord]:
     return out
 
 
+# a search hit's flags (ADR 0023) in the page's words (web/js/util.js FLAG_WORDS), with the name they concern
+FLAG_WORDS: tuple[tuple[re.Pattern[str], Any], ...] = (
+    (re.compile(r"^anachronism:(.+)<(-?\d+):(?:edition|layer)$"), lambda m: f"年代存疑（{m[1]}约 {m[2]} 年后才通行）"),
+    (re.compile(r"^homonym:(.+)$"), lambda m: f"同名异物（{m[1]}未能判定所指）"),
+    (re.compile(r"^demoted:inside (.+)$"), lambda m: "仅见于他名之中" if m[1] == "?" else f"仅见于「{m[1]}」"),
+    (re.compile(r"^demoted:no-context$"), lambda m: "无药物语境"),
+    (re.compile(r"^other-referent:(.+)$"), lambda m: f"所指不同（{m[1]}在此段的年代指另一味药）"),
+)
+STATUS_WORDS = {"candidate": "候选", "stop": "多作普通词语"}  # open and cue (a gate the passage passed) say nothing
+
+
+def _strings(value: Any) -> list[str]:
+    return [x for x in (value if isinstance(value, list) else [value]) if isinstance(x, str) and x]
+
+
+def _via_note(v: Any) -> str | None:
+    """One ``via`` of a search hit, compact: 国老→甘草（别名录） — the other name, the drug, how they relate when it is not
+    a plain 异名, what the passage writes when it is neither, the sources; a name read as one of its drugs is 读作
+    鬼督邮→徐长卿（p 0.71）."""
+    if not isinstance(v, dict) or not _strings(v.get("referent")) or not _strings(v.get("surface")):
+        return None
+    name, drug = v["surface"], v["referent"]
+    if v.get("direction") == "asked":
+        p = v.get("p")
+        return f"读作 {name}→{drug}" + (f"（p {p}）" if isinstance(p, (int, float)) else "")
+    names = [name] if v.get("direction") == "drug→alias" else [s for s in _strings(v.get("for")) if s != drug]
+    kind = v.get("kind") if isinstance(v.get("kind"), str) and v.get("kind") else None
+    why = ["写作" + name] if name not in names and name != drug else []
+    why += ["相关" if kind is None else kind] if kind != "异名" else []
+    why += [STATUS_WORDS[v["status"]]] if v.get("status") in STATUS_WORDS else []
+    why += ["、".join(_strings(v.get("source")))] if _strings(v.get("source")) else []
+    return "via " + ("、".join(names) + "→" if names else "") + drug + (f"（{'；'.join(why)}）" if why else "")
+
+
+def _flag_note(flag: Any) -> str | None:
+    if not isinstance(flag, str) or not flag:
+        return None
+    for pattern, word in FLAG_WORDS:
+        m = pattern.match(flag)
+        if m:
+            return word(m)
+    return flag  # a flag without words is kept as it is: a reason not to trust the hit is never dropped
+
+
+def hit_note(hit: dict[str, Any]) -> str:
+    """Why a search hit is in the ledger: its routes, and for a hit the alias layer found under another name or
+    flagged, each ``via`` and flag (ADR 0023) — "routes: alias; via 国老→甘草（别名录）; 年代存疑（…）" — so the
+    Skeptic and the report see what the passage writes and why it stands for the asked drug."""
+    parts = ["routes: " + ",".join(hit.get("routes", []))]
+    parts += [x for x in (_via_note(v) for v in hit.get("via") or []) if x]
+    parts += [x for x in (_flag_note(f) for f in hit.get("flags") or []) if x]
+    return "; ".join(dict.fromkeys(parts))
+
+
 def _question_level(ctx: Any) -> list[EvidenceRecord]:
     retriever = ctx.cap("retriever")
     corpus = ctx.cap("corpus")
@@ -120,7 +175,7 @@ def _question_level(ctx: Any) -> list[EvidenceRecord]:
             passage = corpus.passage(hit["passage_id"])
             start, end = retriever.best_span(passage, hit.get("matched", []))
             rec = evidence_record(ctx, passage.id, start, end, method="retrieval:hybrid", stance=Stance.NEUTRAL, query=q,
-                                  score=hit.get("score"), note="routes: " + ",".join(hit.get("routes", [])))
+                                  score=hit.get("score"), note=hit_note(hit))
             rec.routes = list(hit.get("routes", []))
             out.setdefault(rec.id, rec)
     return list(out.values())

@@ -63,6 +63,13 @@ CONTEXT_PATTERNS: dict[str, str] = {
     "nameof": r"(?:一名|又名|亦名|俗名|俗呼|名曰)$",  # 大黄一名将军
     "named": r"^(?:之名|之称|之号)",  # 故有神草之名 · 并有鬼督邮之名: the name spoken of as a name
 }
+# A side passage that gives the name nothing beside it — a heading, a contents line, a list of formula names (炙甘草汤
+# 甘草汤, 人参散) — has fewer than BARE_REST Han characters outside the name and the formula names it writes (a run of
+# at most 8 characters ending in one of FORMULA_ENDS) and no drug context: it follows the others of its drug
+BARE_REST = 4
+FORMULA_ENDS = "汤散丸膏丹圆饮"
+# the note on a stop name asked on its own, whose drugs are listed as candidates (status ``stop``) and never searched
+STOP_NOTE = "此名多作普通词语，罕作药名：所列药物只是候选，未按其名检索"
 # source id → how an answer credits it, when the file's header carries no ``labels`` (the build writes them from
 # sources.yaml, which the Worker's ALIAS_SOURCES read too); the CC0 别名录 always with 中醫笈成
 SOURCE_LABELS: dict[str, str] = {
@@ -234,7 +241,9 @@ class AliasRecord:
 
     s: str  # the surface, normalised, ≥ 2 Han characters
     raw: list[str] | None = None  # raw spellings seen, ≤ 4 (default [s])
-    stop: bool = False  # a false friend (小便, 月经): never expanded, never listed
+    # a false friend (小便, 月经): never expanded; its drugs (``r``, or the lexicon's) listed only when it is asked on
+    # its own, as candidates of status ``stop``
+    stop: bool = False
     n: int = 0  # passages with a free occurrence in the build store (jc_c030 left out)
     sh: float = 0.0  # the share of those passages in drug context (2 decimals)
     b: list[Blocker] = field(default_factory=list)  # ordered by store frequency, ≤ 24
@@ -317,9 +326,11 @@ class Expansion:
     wit: list[Witness] = field(default_factory=list)
     n: int = 0
     searched: bool = False
-    # why it was not searched: "cap", "unattested", "period" (outside the query's window) or "part" (another part of
-    # the plant, a drug of its own)
+    # why it was not searched: "cap", "unattested", "period" (outside the query's window), "part" (another part of
+    # the plant, a drug of its own); the search adds "routes" (its routes leave out ``alias``) and "share" (no place is
+    # reserved for the side queue at this k: ⌊num·k/den⌋ = 0)
     why: str | None = None
+    also: list[str] = field(default_factory=list)  # the other asked surfaces the same name serves, in the order asked
 
 
 # --------------------------------------------------------------------------- the file
@@ -640,13 +651,15 @@ class AliasIndex:
                 out.add(a)
         return sorted(n for n in out if len(n) >= 2)
 
-    def referents(self, s: str, term: str | None = None, lex: Any = None) -> list[Referent]:
+    def referents(self, s: str, term: str | None = None, lex: Any = None, *, stop: bool = False) -> list[Referent]:
         """The drugs an asked surface may name: its record's referents, then the lexicon's herb entries for it (its own
-        entry first, the others by term id) whose group none of them is in, as ``lexicon`` referents (百枝 → 狗脊, 防风).
+        entry first, the others by term id) whose group none of them is in, as ``lexicon`` referents (百枝 → 狗脊, 防风)
+        headed by that group (止行, filed under 蒺藜子, names 蒺藜).
         An entry is in a group by its term id or by a head's ``ho`` — which is why every same-drug member carries one:
-        the lexicon's 地肤子 is otherwise a second drug beside the 地肤 that 地肤子 names."""
+        the lexicon's 地肤子 is otherwise a second drug beside the 地肤 that 地肤子 names.  None for a stop name, unless
+        ``stop`` asks for the drugs it is listed with when asked on its own."""
         rec = self.record(s)
-        if rec is not None and rec.stop:
+        if rec is not None and rec.stop and not stop:
             return []
         refs = list(rec.r) if rec is not None else []
         if lex is None:
@@ -663,7 +676,7 @@ class AliasIndex:
             if seen.intersection(groups):
                 continue
             g = groups[0] if groups else entry.term
-            refs.append(Referent(entry.term, g=g, t=entry.term_id, src=["lexicon"]))
+            refs.append(Referent(g, t=entry.term_id, src=["lexicon"]))  # a member's entry names its group's drug
             seen.add(g)
         return refs
 
@@ -787,6 +800,21 @@ class AliasIndex:
             return False, "period"
         return True, "ok"
 
+    def bare(self, g: str, exp: Expansion, yr: Window, *, cfg: Mapping[str, Any] | None = None) -> bool:
+        """Whether a side passage gives an expansion's name nothing beside it — a heading, a contents line, a list of
+        formula names: with the formula names it writes left out (gate-form runs of at most 8 characters ending in one
+        of :data:`FORMULA_ENDS`), fewer than :data:`BARE_REST` Han characters (or ASCII letters and digits) outside the
+        name, and the name, where it stands outside them, in no drug context (the herbs in 甘草干姜汤 are no list of
+        drugs).  An order, never a gate: such passages follow the others of their drug in the side queue."""
+        s = exp.surface
+        runs = ["|" * len(run) if 0 < len(run) <= 8 and run[-1] in FORMULA_ENDS else run for run in g.split("|")]
+        if sum(len(run.replace(s, "").replace("|", "")) for run in runs) >= BARE_REST:
+            return False
+        rest = "|".join(runs)
+        rec = self.record(s)
+        offs = self.free_offsets(rest, s, rec.b if rec is not None else (), yr)
+        return not self.drug_context(rest, s, offs, exp.cues, cfg=cfg)
+
     def readings(self, s: str) -> list[Referent]:
         """The drugs a passage may read a name as: its record's referents that are not candidates (a doubtful pairing
         is listed, never a reading), then — when the name heads a drug none of them is — that drug, cued by its own
@@ -850,8 +878,10 @@ class AliasIndex:
         ``groups``; ``lex`` (or None) for ``resolve`` and ``lookup``.  An asked alias reaches its referents' heads and
         their groups' spellings; an asked drug — a head, or a lexicon herb the name is not an alias of — reaches the
         other names of its groups; never further (地精 → 何首乌, never on to 夜合 → 合欢).  A stop name reaches no
-        drug, but as a head it still reaches its own names.  Such a name is ``shared`` when it may also mean another
-        drug within the query's window; that drug's window and names are then among its ``rivals``.
+        drug — not through its record, nor through a lexicon entry that files it as a herb (救火 under 景天) — but as a
+        head it still reaches its own names.  Such a name is ``shared`` when it may also mean another drug within the
+        query's window; that drug's window and names are then among its ``rivals``.  A name reached for two asked
+        names is one expansion, for the first, the others in ``also``.
 
         A ``part_name`` pair joins two parts of one plant that are drugs of their own (青木香, the root, and 马兜铃,
         the fruit; 鸡舌香 and 丁香) unless the part name is a member of its drug (天麻 of 赤箭, ``ho``): it is shown,
@@ -901,7 +931,7 @@ class AliasIndex:
                         part)
             # drug → alias: the other names of the groups the asked name heads
             groups = set(self.groups_for(None, [s]))
-            entry = lex.resolve(term) if lex is not None and term else None
+            entry = lex.resolve(term) if lex is not None and term and not (rec is not None and rec.stop) else None
             if entry is not None and entry.category == "herb":
                 groups |= set(self.groups_for(entry.term_id, entry.surfaces())) - {
                     ref.g for ref in refs if ref.k != "spelling"}
@@ -922,11 +952,13 @@ class AliasIndex:
                                   own=own, rivals=rivals, src=list(ref.src), wit=list(ref.w), n=arec.n), order,
                         other_part(a, ref))
         out: list[Expansion] = []
-        seen: set[str] = set()
+        seen: dict[str, Expansion] = {}
         for _, e in sorted(found, key=lambda t: t[0]):
-            if e.surface not in seen:
-                seen.add(e.surface)
+            kept = seen.setdefault(e.surface, e)
+            if kept is e:
                 out.append(e)
+            elif e.for_ != kept.for_ and e.for_ not in kept.also:
+                kept.also.append(e.for_)
         groups_n = sum(len(gs) for gs in (getattr(q, "groups", None) or {}).values())
         cap = max(0, min(int(p["expansions"]), int(p["mask_bits"]) - len(searched) - groups_n))
         used = 0
@@ -940,17 +972,22 @@ class AliasIndex:
                 e.why = "cap"
         for why, rest in (("period", excluded), ("part", parts)):
             for _, e in sorted(rest, key=lambda t: t[0]):
-                if e.surface not in seen:
-                    seen.add(e.surface)
+                if seen.setdefault(e.surface, e) is e:
                     e.why = why
                     out.append(e)
+        place = {s: i for i, s in enumerate(asked)}
+        for e in out:
+            e.also.sort(key=place.__getitem__)
         return out
 
     def view(self, q: Any, cfg: Mapping[str, Any], lex: Any = None,
              expansions: list[Expansion] | None = None) -> dict[str, Any]:
         """The ``query.aliases`` block: asked names with their referents, expansions, and what was left out; empty
         when there is nothing to show.  ``expansions`` are those :meth:`expansions` gave (computed when None).  An asked
-        name is listed when it is an alias or names several drugs, the lexicon's included."""
+        name is listed when it is an alias or names several drugs, the lexicon's included.  A stop name the question
+        asks on its own (``q.stops``: {surface: term id or None}) is listed after them with every drug its record or the
+        lexicon gives it, each of status ``stop``, and a ``note`` that the name is mostly an ordinary word; nothing is
+        searched for it."""
         p = _params(cfg)
         web = p["witness_scope"] == "web"
         exps = self.expansions(q, lex, p) if expansions is None else expansions
@@ -963,6 +1000,13 @@ class AliasIndex:
                 continue
             asked.append({"surface": s, "term": term, "ambiguous": len(groups) > 1,
                           "referents": [self._referent_view(ref, web) for ref in refs]})
+        for s, term in (getattr(q, "stops", None) or {}).items():
+            rec = self.record(s)
+            refs = self.referents(s, term, lex, stop=True) if rec is not None and rec.stop else []
+            if refs:
+                asked.append({"surface": s, "term": term, "ambiguous": len({ref.g for ref in refs}) > 1,
+                              "referents": [{**self._referent_view(ref, web), "status": "stop"} for ref in refs],
+                              "note": STOP_NOTE})
         shown = [{"surface": e.surface, "for": e.for_, "direction": e.direction, "referent": e.head,
                   "kind": KINDS.get(e.kind, e.kind), "status": e.status, "searched": e.searched, "why": e.why}
                  for e in exps if e.why != "period"]

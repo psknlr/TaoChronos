@@ -37,7 +37,7 @@ BIELU = ["（有别名者录之无别名者未录）", "甘草（国老　蜜甘
          "芍药（白术　余容）", "知母（连母　　地参　水浚）", "大黄（将军　黄良）", "云母（去来）", "禹余粮（岩中脂　白余粮）",
          "石蜜（白沙糖）", "黄连（王连　支连　金连子）", "丹砂（朱砂　真朱）", "人尿（小便　轮回酒）", "　石（太白石　泽乳）",
          "葶苈（大室　大适　丁历）", "蚓蚯（地龙子　寒蚓）", "栝楼（地楼　泽姑）", "茯苓（茯神）", "萆薢（赤节　百枝）",
-         "狗脊（强膂　扶筋）"]
+         "狗脊（强膂　扶筋）", "紫金藤（山甘草）", "长石（方石）", "小柏（子柏）", "独活（羌青）", "天南星（虎掌）"]
 TEXTS = {
     "bc_a": [("甘草", "甘草　一名国老，一名蜜甘。味甘，平。"), ("人参", "人参　味甘。一名人衔。"),
              ("何首乌", "味苦。一名九真藤。"), ("黄连", "黄连　一名王连。"), (None, "胡黄连二两，治疳。"),
@@ -45,7 +45,13 @@ TEXTS = {
     "fang_b": [(None, "国老二两，大黄三两。")] + [(None, "人生去来无定")] * 25 + [(None, "岩中脂二两")] * 5
               + [(None, "岩中脂流于石上")] * 20
               + [(None, "石蜜甘草各一两"), (None, "何首乌（交藤）二两"), (None, "小便不利"), (None, "青木香二两　木香一两"),
-                 (None, "茯苓（一作茯神）二两")],
+                 (None, "茯苓（一作茯神）二两"),
+                 # straddles: 常山|甘草 cuts 山甘草, not 常山; 又方|石硫黄 cuts 方石 (石硫黄 written three times as often);
+                 # 地肤子|柏子仁 cuts 子柏 (柏子仁 takes its 柏)
+                 (None, "常山甘草各一两"), (None, "又方石硫黄揩之"), (None, "石硫黄二两"), (None, "石硫黄一两"),
+                 (None, "地肤子柏子仁各二合"),
+                 # lexicon headwords that are two drug names: 独活羌活 written as two (各), 虎掌天南星 as one (a dose)
+                 (None, "独活羌活各一两"), (None, "虎掌天南星二两")],
     "late_c": [(None, "棒槌二钱"), (None, "大黄一名将军"), (None, "牡丹（即牡丹皮）二两")],
     "modern_d": [(None, "甜根子二钱")] + [(None, "柳花飞")] * 22,
     "aeam_x": [(None, "大黄，一名黄良。")],
@@ -214,6 +220,51 @@ def test_blockers_floors_and_windows(built):
     assert recs["国老"].n == 2 and recs["国老"].raw == ["国老"]  # written as normalised: no other spelling
 
 
+def test_a_straddle_blocks_only_the_name_it_cuts(built):
+    recs, free = records(built), built.builder.free
+    assert "常山甘草" not in recs["常山"].b and "常山甘草" in recs["山甘草"].b  # 常山|甘草: 甘草 is a name of its own
+    assert "fang_b.00056" in free["常山"] and "fang_b.00056" in free["甘草"]  # 山甘草, cut there, hides no 甘草
+    assert "方石硫黄" in recs["方石"].b  # 又方|石硫黄: the straddler is written three times as often
+    assert "地肤子柏" in recs["子柏"].b  # 地肤子|柏子仁: 柏子仁 takes the 柏 of 子柏
+
+
+def test_two_drug_names_written_together_block_nothing(built):
+    recs = records(built)
+    assert "独活羌活" not in recs["独活"].b and "fang_b.00061" in built.builder.free["独活"]  # 独活羌活各一两: two
+    assert built.report["concatenations"]["独活羌活"] == ["独活"]
+    assert built.report["concatenations"]["防风党参"] == ["党参", "防风"]  # never written
+    assert "虎掌天南星" in recs["天南星"].b and "虎掌天南星" not in built.report["concatenations"]  # 二两: one name
+
+
+def test_unblock_drops_a_blocker_and_reports_a_row_that_drops_none(tmp_path, site):
+    curated = CURATED.replace("cover_stops: {}", "cover_stops: {}\nunblock: {蜜甘: [石蜜甘], 天南星: [虎掌天南星], 国老: [国老汤]}")
+    result = build_open(site[1], make_home(tmp_path, curated))
+    recs = records(result)
+    assert "石蜜甘" not in recs["蜜甘"].b and "虎掌天南星" not in recs["天南星"].b  # a straddle, a lexicon headword
+    assert "虎掌天南星" in recs["虎掌"].b  # for the name unblocked only
+    assert result.report["unblocked"] == {"天南星": ["虎掌天南星"], "蜜甘": ["石蜜甘"]}
+    assert "unblock 国老: 国老汤 is no blocker of it" in result.report["warnings"]
+
+
+def test_a_floor_only_name_heads_a_drug_of_its_own(built):
+    recs = records(built)
+    assert recs["党参"].r == [] and recs["党参"].ho == "党参" and "党参" in built.context["herbs"]
+
+
+def test_a_witness_that_only_shows_the_name_in_use_is_a_usage_witness(tmp_path, site, built, monkeypatch):
+    home, store = site
+    usage = "u" if "u" in aliasbuild.WITNESS_KINDS else "e"  # an equation until the format has the kind
+    assert [w.kind for w in ref(records(built)["青木香"], "木香").w] == [usage]  # 青木香二两　木香一两
+    monkeypatch.setitem(aliasbuild.WITNESS_KINDS, "u", "usage")
+    result = build_open(store, home)
+    recs = records(result)
+    assert [(w.pid, w.kind) for w in ref(recs["青木香"], "木香").w] == [("fang_b.00054", "u")]
+    assert ref(recs["国老"], "甘草").w[0].kind == "e"  # 甘草　一名国老: still an equation
+    folder = make_home(tmp_path) / "domains" / "classics" / "aliases"
+    result.write(folder)
+    assert check(folder.parents[2], store=store)["errors"] == []
+
+
 def test_a_lexicon_entry_filing_a_drug_twice_joins_it(built):
     recs = records(built)
     assert {r.h for r in recs["大室"].r} == {"葶苈"} and recs["亭历"].ho == "葶苈"  # herb:亭历 files 大室, 大适 again
@@ -270,6 +321,9 @@ def test_cover_strings_are_kept_first_and_the_cap_reported(tmp_path, site, monke
     ({"first_use": [{"s": "党参", "year": "1700", "wit": ["x.1"]}]}, "whole year"),
     ({"cover_stops": {"胡豆": ["车前子"]}}, "does not hold"),
     ({"cover_stops": {"人言": [f"{c}人言" for c in "与古其越夫真学听运道已信如于昔示时外众闻妇国前后常"]}}, "over the 24"),
+    ({"unblock": ["青矾石"]}, "unblock: not a mapping"),
+    ({"unblock": {"党参": ["防风"]}}, "does not hold"),
+    ({"unblock": {"将军": ["大将军"]}, "cover_stops": {"将军": ["大将军"]}}, "a cover string of it too"),
 ])
 def test_curated_yaml_is_validated(curated, error):
     assert any(error in e for e in aliasbuild.validate_curated(curated))
@@ -289,6 +343,9 @@ def test_held_out_names_are_refused_in_any_spelling_and_in_reasons(tmp_path, bui
     built.write(home / "domains" / "classics" / "aliases")
     held = [e for e in check(home, heldout={"黄良", "人衔"})["errors"] if "held-out" in e]
     assert held and "黄良" in held[0] and "人衔" in held[0]
+    home = make_home(tmp_path / "unblock", CURATED.replace("cover_stops: {}", "unblock: {蜜甘: [石蜜甘]}"))
+    built.write(home / "domains" / "classics" / "aliases")
+    assert any("held-out" in e and "石蜜甘" in e for e in check(home, heldout={"石蜜甘"})["errors"])
     assert not any("held-out" in e for e in check(home, heldout={"甘草根"})["errors"])
 
 

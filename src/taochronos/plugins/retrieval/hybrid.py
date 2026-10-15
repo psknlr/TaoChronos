@@ -48,6 +48,8 @@ COMMON_N, COMMON_SH, COMMON_CUE_SH = 20, 0.10, 0.5
 DRUG_WORDS = ("药", "本草", "功效", "功用", "性味", "炮制", "一名", "又名", "别名", "异名", "是什么", "是哪", "方书", "方剂",
               "方中", "处方", "配伍", "用量", "剂量")
 RUN_STOPS = frozenset("的之治论何病是与和及或吗呢么什哪怎功效用主")  # an unknown name never runs over these (葛的功效)
+# what follows a period's name in a question (宋以前的解离 asks 解离 on its own)
+PERIOD_TAIL = re.compile(r"[代朝]?(?:以前|之前|以后|之后|以来|以降|时期|期间|前|后|初|末|至|到)?")
 
 
 @dataclass
@@ -71,6 +73,8 @@ class ParsedQuery:
     # an asked drug the question writes inside a longer name nobody knows → that name (慎火 → 慎火草): the passages
     # that write the longer name are the asked drug's own, its reading and other names still the shorter one's
     longer: dict[str, str] = field(default_factory=dict)
+    # curated stop names the question asks on its own (救火是哪味药): listed with their drugs, never expanded
+    stops: list[str] = field(default_factory=list)
     expansions: list[Expansion] = field(default_factory=list)
     alias_view: dict[str, Any] = field(default_factory=dict)
 
@@ -308,11 +312,43 @@ class QueryAnalyzer:
             if self._asks_drug(norm, g, i, i + len(s), s, term, strong, cfg):
                 q.drugs.append(s)
         q.longer = {s: run for s, (_, run) in longer.items() if s in q.drugs and run not in q.drugs}
-        drugs = SimpleNamespace(asked={s: q.asked[s] for s in q.drugs}, after=q.after, before=q.before,
-                                all_surfaces=q.all_surfaces, groups=q.groups)
-        q.expansions = index.expansions(drugs, lex, cfg)
-        q.alias_view = index.view(drugs, cfg, lex, q.expansions)
+        q.stops = self._stops(norm, g, [(i, s) for i, s, _ in found])
+        q.expansions = index.expansions(self._drugs(q), lex, cfg)
+        q.alias_view = self.view(q, cfg)
         return q
+
+    def _drugs(self, q: ParsedQuery) -> SimpleNamespace:
+        """What the layer's expansion and view read of a parsed question: the names asked as drugs, the stop names asked
+        on their own, the window and the surfaces searched."""
+        return SimpleNamespace(asked={s: q.asked[s] for s in q.drugs}, stops={s: q.asked.get(s) for s in q.stops},
+                               after=q.after, before=q.before, all_surfaces=q.all_surfaces, groups=q.groups)
+
+    def view(self, q: ParsedQuery, cfg: dict[str, Any]) -> dict[str, Any]:
+        """The ``query.aliases`` block of a question read with the layer, for its expansions as they now stand."""
+        return _layer(self.pack).view(self._drugs(q), cfg, self.pack.lexicon, q.expansions)
+
+    def _stops(self, norm: str, g: str, found: list[tuple[int, str]]) -> list[str]:
+        """The curated stop names the question asks on its own: written outside their blockers, holding every other
+        name the question writes (救火 holds the lexicon's 救火 and its 火), and standing alone or beside a drug word —
+        a period (宋以前的解离) and question words count for nothing.  Never expanded: :meth:`AliasIndex.view` lists
+        their drugs as candidates."""
+        index = _layer(self.pack)
+        timeless = list(norm)  # the question with its periods (and what follows them) blanked out
+        for m in self.pack.periods._expression_matches(norm):
+            end = PERIOD_TAIL.match(norm, m.end()).end()
+            timeless[m.start():end] = "|" * (end - m.start())
+        out: list[str] = []
+        for i in range(len(norm)):
+            for j in range(i + 2, min(len(norm), i + index.max_len) + 1):
+                s = norm[i:j]
+                rec = index.record(s)
+                if (rec is None or not rec.stop or s in out or self._cover(g, i, s) is not None
+                        or not all(i <= a and a + len(x) <= j for a, x in found)):
+                    continue
+                rest = "".join(timeless[:i]) + "|" * (j - i) + "".join(timeless[j:])
+                if any(w in rest for w in DRUG_WORDS) or all(not is_han(c) or c in RUN_STOPS for c in rest):
+                    out.append(s)
+        return out
 
     def _cover(self, g: str, i: int, s: str) -> tuple[int, str] | None:
         """The blocker of ``s`` the question writes it inside at ``i`` (its offset and text), or None when it is free
@@ -801,9 +837,18 @@ class HybridRetriever:
         under the expansions (B), and takes at most ⌊num·k/den⌋ reserved places while M lasts.  Demoted hits (D: the
         name only inside a longer one, or without drug context where it needs one) come after both.  An origin
         question reads each queue in order of years, in its own places.  A question that asks no drug is ranked as
-        today."""
+        today.  An expansion is not searched where the side queue has no place: ``routes`` without ``alias`` (why
+        ``routes``), or ⌊num·k/den⌋ = 0 (why ``share``)."""
         ablate = _ablations(cfg)
         q = self.analyzer.analyze(text, after=after, before=before, aliases=True, cfg=cfg)
+        num, den = cfg["share"]
+        why = ("routes" if routes is not None and "alias" not in routes
+               else "share" if (num * k) // den == 0 and "slots" not in ablate else None)
+        if why and any(e.searched for e in q.expansions):
+            for e in q.expansions:
+                if e.searched:
+                    e.searched, e.why = False, why
+            q.alias_view = self.analyzer.view(q, cfg)
         fused, ranked, pool = self._fuse(q, k=k, routes=routes, books=books, allowed=allowed)
         P = sorted(pool, key=lambda h: (-h.score, h.passage_id))
         gates = self._gates(q, cfg)
@@ -819,7 +864,6 @@ class HybridRetriever:
             pins = [fused[pid] for pid, _ in ranked["temporal"] if pid in inside and fused[pid].tier not in later][:3]
         pinned = {h.passage_id for h in pins}
         M = pins + [h for h in P if h.tier not in later and h.passage_id not in pinned]
-        num, den = cfg["share"]
         if first:
             M = self._retain(q, M, k - (num * k) // den, k, books, allowed, {h.passage_id for h in P}, gates, cfg,
                              search=routes is None or "bm25" in routes)
@@ -1018,7 +1062,9 @@ class HybridRetriever:
         """The side queue's alias hits (B): passages that write a searched expansion and none of the question's own
         surfaces, inside the query window met with the expansions' windows (widened, for passages dated by a range),
         taken by the first expansion whose gates they pass, and dealt round-robin over the drugs so that a shared name
-        never gives every place to one of them."""
+        never gives every place to one of them.  Within a drug, passages that give the name nothing beside it (a
+        heading, a contents line, a list of formula names: :meth:`AliasIndex.bare`) follow the others, BM25 order kept
+        within each; in an origin question they only follow the others of their year."""
         index = _layer(self.pack)
         exps = [e for e in q.expansions if e.searched]
         if not exps:
@@ -1041,7 +1087,7 @@ class HybridRetriever:
             self.corpus.passages_by_id(ranked)
         wanted = set(books) if books else None
         own = [x for x in (self.pack.variants.normalize_text(s) for s in q.all_surfaces()) if x]
-        claimed: dict[str, list[tuple[str, Expansion, str, tuple[int | None, int | None], float | None]]] = {}
+        claimed: dict[str, list[tuple[str, Expansion, str, tuple[int | None, int | None], float | None, bool]]] = {}
         for pid in ranked:
             passage = self.corpus.passage(pid)
             norm = self.norm(pid)
@@ -1050,21 +1096,23 @@ class HybridRetriever:
             g, yr = gate_form(norm), self._range(passage)
             for e in exps:
                 if index.accept(g, e, yr, cfg=cfg)[0]:
-                    claimed.setdefault(e.group, []).append((pid, e, g, yr, self.corpus.year(passage)))
+                    claimed.setdefault(e.group, []).append((pid, e, g, yr, self.corpus.year(passage),
+                                                            index.bare(g, e, yr, cfg=cfg)))
                     break
         queues = list(claimed.values())
+        for queue in queues:  # stable: BM25 order within each
+            queue.sort(key=(lambda t: (t[4] if t[4] is not None else 9999, t[5])) if q.intent == "earliest"
+                       else (lambda t: t[5]))
         if q.intent == "earliest":
-            for queue in queues:
-                queue.sort(key=lambda t: t[4] if t[4] is not None else 9999)
             queues.sort(key=lambda queue: queue[0][4] if queue[0][4] is not None else 9999)
         order = [queue[i] for i in range(max(map(len, queues), default=0)) for queue in queues if i < len(queue)]
         hits = []
-        for i, (pid, e, g, yr, _) in enumerate(order):
+        for i, (pid, e, g, yr, _, _) in enumerate(order):
             score = round(1000 * float(cfg["alias_score"]) / (61 + i), 4)
             hit = self._hit(q, pid, score, {"alias": i + 1}, [e.surface])
             hit.tier = "B"
             reading, p = self._reading(g, e.surface, yr, cfg)
-            hit.via = [{"surface": e.surface, "referent": e.head, "direction": e.direction,
+            hit.via = [{"surface": e.surface, "for": [e.for_, *e.also], "referent": e.head, "direction": e.direction,
                         "kind": KINDS.get(e.kind, e.kind), "status": e.status, "source": index.source_labels(e.src),
                         "witness": _witness(e.wit, cfg), "reading": reading, "p": p}]
             hits.append(hit)
@@ -1105,7 +1153,7 @@ class HybridRetriever:
                     reading, p = self._reading(g, s, yr, cfg)
                     # the drug it heads itself is no alias pair: it has no kind, status or source of its own
                     ref = next((r for r in index.readings(s) if r.h == reading and r.h != s), None)
-                    h.via.append({"surface": s, "referent": reading, "direction": "asked",
+                    h.via.append({"surface": s, "for": [s], "referent": reading, "direction": "asked",
                                   "kind": KINDS.get(ref.k, ref.k) if ref else None, "status": ref.st if ref else None,
                                   "source": index.source_labels(ref.src) if ref else [],
                                   "witness": _witness(ref.w, cfg) if ref else None, "reading": reading, "p": p})
@@ -1124,7 +1172,8 @@ class HybridRetriever:
         name is another name of (黄丹 → 铅丹: alias→drug, of the asked name's kind) or another name of an asked drug
         (山药 → 薯蓣: drug→alias, of the form's kind).  At ``asked_first: all`` a form of another term is labelled
         by its entry, a related term without a kind.  An asked name the question writes inside a longer one (慎火 of
-        慎火草) is labelled like the drug's head where it stands alone."""
+        慎火草) is labelled like the drug's head where it stands alone.  ``for``: the asked names whose entry holds the
+        form (the drugs asked first)."""
         lex, normalize = self.pack.lexicon, self.pack.variants.normalize_text
         terms = {f: tid for tid, fs in q.surfaces.items() for f in fs}
         out = []
@@ -1141,7 +1190,8 @@ class HybridRetriever:
                 if entry is None:
                     continue
                 direction, kind = DIRECTIONS[1], _lexicon_kind(entry, raw, normalize, related="")
-            out.append({"surface": normalize(raw), "referent": entry.term, "direction": direction,
+            asked = sorted((x for x, tid in q.asked.items() if tid == entry.term_id), key=lambda x: x not in q.drugs)
+            out.append({"surface": normalize(raw), "for": asked, "referent": entry.term, "direction": direction,
                         "kind": self.pack.synonym_kind_label(kind) or None, "status": "open",
                         "source": _layer(self.pack).source_labels(["lexicon"]), "witness": None, "reading": None,
                         "p": None})

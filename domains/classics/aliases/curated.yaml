@@ -131,6 +131,8 @@ pairs:
   - {s: 斑杖根, head: 虎杖, kind: folk, wit: [jc_c040.00515], why: 虎杖，俗名斑杖根}
   - {s: 锅底煤, head: 百草霜, kind: folk, wit: [jc_g023.01245, jc_o043.02164], why: 百草霜（即锅底煤）；锅底煤，即锅底烟}
   - {s: 胡王使者, head: 独活, kind: alias, wit: [jc_c000.00154], why: 吴普：独活，一名胡王使者（别名录作白头翁之名：二药同名）}
+  - {s: 独摇草, head: 独活, kind: alias, wit: [jc_c002.00736, jc_c006.00203],
+     why: 别录独活：一名胡王使者，一名独摇草；图经：此草得风不摇，无风自动，故一名独摇草（词表又归唐本鬼督邮：二药同名）}
   # names that are also other things: read as the drug only beside its cues
   - {s: 将军, head: 大黄, kind: alias, status: cue, cues: [大黄, 锦纹, 川军, 荡涤, 承气], wit: [jc_d031.00396]}
   - {s: 将军, head: 石硫黄, kind: alias, status: cue, cues: [硫黄, 阳精, 破邪归正], wit: [tangye_bencao.003.00861, jc_c103.00085]}
@@ -318,6 +320,18 @@ cover_stops:
   白姜: [白姜蚕]  # 白僵蚕 written 白姜蚕 chishui_xuanzhu.003.00765
   覆盆: [覆盆子, 如覆盆, 覆盆之形]  # the 别录 drug (its own entry); jc_o052.20530 如覆盆; jc_h014.00383 覆盆之形
   党参: [上党参]  # 产地冠名：歙白术，绵黄芪，上党参（上党之人参），交趾桂 jc_c012.00000
+
+# strings the build would take as blockers of a name though the store reads them as the name's own drug (a lexicon
+# headword, a straddle), each name's witnesses in its comment.  The build already leaves out lexicon headwords that are
+# two drug names written together and nowhere one name; a row here holds on any store.
+unblock:
+  党参: [防风党参]  # 党参之一种，非防风：肆中所卖党参……唯防风党参，性味和平 jc_c021.00076
+  # 纲目「假苏」条（即荆芥）题作一行，词表收为一名；假苏、荆芥同药（same_drug）：荆芥……（一名假苏）jc_c029.00024
+  假苏: [假苏荆芥]
+  荆芥: [假苏荆芥]
+  # 青矾石即青矾（与黄矾石、白矾石并列），非「青|矾石」：青矾石　黄矾石　白矾石（并烧令汁尽） waitai_miyao.026.04337;
+  # 青矾石（烧） waitai_miyao.029.05267; 布艾上又布青矾石末 waitai_miyao.013.01874
+  青矾: [青矾石]
 
 # gate overrides: a name's status for one drug (head), or for all of its drugs where no head is given; the first row
 # that fits wins

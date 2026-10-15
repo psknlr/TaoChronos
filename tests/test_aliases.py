@@ -15,6 +15,7 @@ from taochronos.plugins.classics.aliases import (
     FORMAT,
     KINDS,
     STATUSES,
+    STOP_NOTE,
     VERSION,
     AliasIndex,
     AliasRecord,
@@ -568,6 +569,60 @@ def test_a_stop_name_reaches_no_drug_but_heads_its_own():
     assert plan(index, ask(None, "白头")) == [("翁草", "d", True, None)]  # never 白头翁
     assert plan(index, ask(None, "白头"), ablate="period") == plan(index, ask(None, "白头"))
     assert index.view(ask(None, "白头"), {})["asked"] == []
+
+
+def test_a_stop_name_the_lexicon_files_as_a_herb_reaches_none_of_its_names(tmp_path):
+    lex = lexicon(tmp_path, {"丙草": ["丁火", "戊火"]})
+    index = AliasIndex([AliasRecord("丙草", ho="丙草", n=40), AliasRecord("丁火", stop=True, n=30, sh=0.05),
+                        AliasRecord("己火", n=6, r=[Referent("丙草", src=["bielu-jc"])])])
+    assert plan(index, ask(lex, "丁火"), lex) == []  # not 己火, though the lexicon reads 丁火 as 丙草
+    assert plan(index, ask(lex, "戊火"), lex) == [("己火", "d", True, None)]  # another of its names, no stop: as before
+
+
+def test_a_stop_name_asked_on_its_own_is_listed_with_its_drugs_as_stop(tmp_path):
+    lex = lexicon(tmp_path, {"丙草子": ["丁火"], "庚草": ["丁火"]})
+    index = AliasIndex([AliasRecord("丙草", ho="丙草", n=40),
+                        AliasRecord("丙草子", ho="丙草", n=20, r=[Referent("丙草", t="herb:丙草子", src=["curated"])]),
+                        AliasRecord("丁火", stop=True, n=30, sh=0.05, r=[Referent("辛草", st="candidate",
+                                                                                  src=["bielu-jc"])])])
+    q = ask(lex, "丁火")
+    assert index.view(q, {}, lex) == {}  # asked as a drug, a stop name lists and reaches nothing
+    q.stops = {"丁火": q.asked["丁火"]}
+    (row,) = index.view(q, {}, lex)["asked"]
+    assert (row["surface"], row["ambiguous"], row["note"]) == ("丁火", True, STOP_NOTE)
+    # its record's pairs, which nothing searches, then the lexicon's entries — a group member's under its group's head
+    assert [(r["head"], r["status"], r["source"]) for r in row["referents"]] == [
+        ("辛草", "stop", ["别名录（中醫笈成）"]), ("丙草", "stop", ["词表"]), ("庚草", "stop", ["词表"])]
+    assert index.view(q, {}, lex)["expansions"] == []
+    bare = ask(None, "小便")
+    bare.stops = {"小便": None}
+    assert layer().view(bare, {}) == {}  # no drug to list: nothing
+
+
+def test_a_name_reached_for_two_asked_names_is_one_expansion_for_both():
+    index = layer()
+    (e,) = index.expansions(ask(None, "黄良", "火参"), None, {})
+    assert (e.surface, e.for_, e.also, e.searched) == ("大黄", "黄良", ["火参"], True)
+    (e,) = index.expansions(ask(None, "火参", "黄良"), None, {})
+    assert (e.for_, e.also) == ("火参", ["黄良"])
+    assert [x["for"] for x in index.view(ask(None, "黄良", "火参"), {})["expansions"]] == ["黄良"]
+
+
+@pytest.mark.parametrize("text,bare", [
+    ("炙甘草汤|甘草汤", True),  # a contents line
+    ("甘草", True),  # a heading
+    ("《千金》甘草汤：甘草", True),
+    ("荆芥败毒散|托里透脓散|如意散|甘草散", True),  # formula names, however many
+    ("甘草干姜汤|芍药甘草汤", True),  # the herbs in a formula's name are no list of drugs
+    ("四逆汤|甘草|干姜|附子", False),  # but beside it they are
+    ("甘草二两", False),  # a dose: drug context
+    ("甘草|芒硝|大黄", False),  # two herb names beside it
+    ("甘草汤桔梗汤|治少阴咽痛先与甘草汤不瘥与", False),  # words beside the formula names
+    ("甘草醋磨|疗痈肿", False),
+])
+def test_a_bare_side_passage_gives_the_name_nothing_beside_it(text, bare):
+    exp = Expansion("甘草", "国老", "alias→drug", "甘草", "甘草", cues=["甘草"])
+    assert layer().bare(gate_form(text), exp, (500, 500)) is bare
 
 
 def test_same_drug_members_carry_their_group_so_split_lexicon_entries_are_one_drug(tmp_path):

@@ -448,44 +448,6 @@ def test_results_match_the_schemas_of_the_task_specification(pack, study, commen
     assert not [h for h in results["search"]["hits"] if "via" in h or "flags" in h]
 
 
-def _alias_search_schema() -> dict:
-    """The search schema with what the alias layer adds (ADR 0023): each hit's ``via`` (the name it was found under,
-    the drug, the way, the sources) and ``flags``, and the ``query.aliases`` block — the shape the page reads."""
-    from taochronos.plugins.classics.study.schemas import (
-        NN,
-        NS,
-        STRS,
-        STUDY_SCHEMAS,
-        B,
-        S,
-        arr,
-        obj,
-    )
-
-    way = {"enum": ["alias→drug", "drug→alias"]}
-    via = obj({"surface": S, "referent": NS, "direction": {"enum": [*way["enum"], "asked"]}, "kind": NS, "status": NS,
-               "source": STRS, "witness": NS, "reading": NS, "p": NN},
-              ["surface", "referent", "direction", "kind", "status", "source", "witness", "reading", "p"])
-    window = {"anyOf": [arr(NN), {"type": "null"}]}
-    referent = obj({"head": S, "kind": S, "status": S, "valid": window, "floor": NN, "source": STRS, "witness": NS,
-                    "witness_year": NN, "credited": window}, ["head", "kind", "status", "valid", "source", "witness"])
-    aliases = obj({
-        "asked": arr(obj({"surface": S, "term": NS, "ambiguous": B, "referents": arr(referent)},
-                         ["surface", "ambiguous", "referents"])),
-        "expansions": arr(obj({"surface": S, "for": S, "direction": way, "referent": S, "kind": S, "status": S,
-                               "searched": B, "why": NS}, ["surface", "for", "direction", "referent", "searched"])),
-        "excluded": arr(obj({"surface": S, "for": S, "why": S}, ["surface", "for", "why"]))},
-        ["asked", "expansions", "excluded"])
-    base = STUDY_SCHEMAS["search"]
-    hit = base["properties"]["hits"]["items"]
-    return {**base, "properties": {
-        **base["properties"],
-        "query": obj({"terms": STRS, "intent": S, "variants": {"type": "object"}, "aliases": aliases},
-                     ["terms", "after", "before", "intent", "decomposition", "variants"]),
-        "hits": arr({**hit, "properties": {**hit["properties"], "routes": STRS, "matched": STRS, "via": arr(via),
-                                           "flags": STRS}})}}
-
-
 def test_search_labels_the_passages_found_under_a_drugs_other_name(tmp_path):
     """classics.search with an alias layer (ADR 0023): asked for 国老, it fills the side places with passages that write
     甘草, each labelled with the name, the drug, the source and the witness, and says in the query what it searched;
@@ -523,19 +485,27 @@ def test_search_labels_the_passages_found_under_a_drugs_other_name(tmp_path):
         return h.scheduler.execute(ToolCall("classics.search", args), actor=Actor.kernel())
 
     res = search({"query": "国老", "k": 10, "aliases": "auto"}).result
-    schema = _alias_search_schema()
-    assert not validate(res, STUDY_SCHEMAS["search"]) and not validate(res, schema), validate(res, schema)[:5]
+    schema = STUDY_SCHEMAS["search"]
+    assert not validate(res, schema), validate(res, schema)[:5]
     wrong = {**res, "hits": [{**x, "via": [{**v, "direction": "sideways"} for v in x.get("via", [])]} for x in res["hits"]]}
     assert validate(wrong, schema)  # the labels' shape is checked, not only passed through
     view = res["query"]["aliases"]
+    # a stop name's drugs are listed with status stop, an expansion's ``for`` is one name or several; nothing else
+    stop = {"surface": "无此名", "term": None, "ambiguous": False, "note": "…",
+            "referents": [{**view["asked"][0]["referents"][0], "status": "stop"}]}
+    listed = {**view, "asked": view["asked"] + [stop], "expansions": [{**e, "for": [e["for"]]} for e in view["expansions"]]}
+    assert not validate({**res, "query": {**res["query"], "aliases": listed}}, schema)
+    for bad in ({**view, "asked": [{**stop, "referents": [{**stop["referents"][0], "status": "closed"}]}]},
+                {**view, "expansions": [{**e, "for": None} for e in view["expansions"]]}):
+        assert validate({**res, "query": {**res["query"], "aliases": bad}}, schema)
     assert [(a["surface"], [r["head"] for r in a["referents"]]) for a in view["asked"]] == [("国老", ["甘草"])]
     assert [(e["surface"], e["for"], e["direction"], e["searched"]) for e in view["expansions"]] == [
         ("甘草", "国老", "alias→drug", True)]
     side = [x for x in res["hits"] if x.get("via")]
     assert len(side) == 3 and all(x["routes"] == ["alias"] and x["matched"] == ["甘草"] for x in side)
-    assert side[0]["via"] == [{"surface": "甘草", "referent": "甘草", "direction": "alias→drug", "kind": "异名",
-                               "status": "open", "source": ["别名录（中醫笈成）"], "witness": "wit.000", "reading": None,
-                               "p": None}]
+    assert side[0]["via"] == [{"surface": "甘草", "for": ["国老"], "referent": "甘草", "direction": "alias→drug",
+                               "kind": "异名", "status": "open", "source": ["别名录（中醫笈成）"], "witness": "wit.000",
+                               "reading": None, "p": None}]
     assert all("甘草" in x["text"] for x in side)  # the card shows the name the passage was found under
     assert not [x for x in res["hits"] if not x.get("via") and ("via" in x or "flags" in x)]  # only when non-empty
     off = search({"query": "国老", "k": 10, "aliases": "off"}).result
