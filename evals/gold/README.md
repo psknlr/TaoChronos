@@ -66,14 +66,23 @@ a `parallel` gives the second passage of the same line or recipe written the oth
 
 **Still to do (§3.10 step 4).** The pooled adjudication of the top 50 hits of `off`, `naive` and `on` on both stores,
 and the hand check of a 10% sample of labels, run with the first eval; a name it adds needs a witness and a date in
-`adjudicated`. Until then `frozen` dates the items and splits, not the names.
+`adjudicated`. Until then `frozen` dates the items and splits, not the names. After the first held-out report, real
+other names that dev runs showed missing were added to dev items only, each `adjudicated` `by: correction` with a
+witness and its date, ids, groups and splits unchanged, and logged in `docs/evals.md`; `tests/test_evals.py` refuses
+a name added after `frozen`, or marked `correction`, on a held-out item.
 
 **Labels.** The suite labels hits from the items alone, never from the system's gates: on the normalised text with the
-false friends masked, a passage is relevant when it writes the asked form (beside a cue, when the item has cues) or a
-referent's name inside that referent's `valid` window, and wrong when it writes only a `wrong` name, a masked or an
-uncued asked form. Items of the same type differ in what they test (see the file's header): a period item lists only
-the referents valid in its window; a trap expected to stay unexpanded (a stop) lists no candidate and keeps its head
-only for candidate precision, with no names and no cues, so the passages a forbidden expansion would add do not score.
+false friends masked, a passage is relevant when it writes the asked form (and, when the item has cues, one of them
+anywhere in the passage) or a referent's name inside that referent's `valid` window, and wrong when it writes only a
+`wrong` name, a masked or an uncued asked form. Items of the same type differ in what they test (see the file's
+header): a period item lists only the referents valid in its window; a trap expected to stay unexpanded (a stop) lists
+no candidate and keeps its head only for candidate precision, with no names and no cues, so the passages a forbidden
+expansion would add do not score. A stop listing costs nothing: the layer lists a stop asked on its own with its drugs
+(status `stop`, beside a note that the name is mostly an ordinary word and nothing was searched under it — or, where
+the lexicon files it as a herb, only today's search of that entry's names), and for an item that expects no candidate
+those drugs count neither for nor against it; only reading the name as a drug, or listing its drug any other way,
+counts against candidate precision. Where an item does expect candidates (解离 → 防己), a stop's listed drugs count
+both ways.
 
 **Split and leakage.** Items that share any string — asked form, head, name, wrong name, cue or false friend — share a
 group, named by the first of them in file order (its head for an alias item, else its asked form); the split is

@@ -134,6 +134,18 @@ taochronos corpus images all --enrich                                    # 影�
 taochronos corpus status                                                 # 书数、段数、字数、分期与分层统计
 ```
 
+药物异名（别名层，[ADR 0023](docs/adr/0023-alias-layer.md)；可发布的一层已随仓库提交，以下命令用于重建、查看，以及导入不能发布的名录）：
+
+```bash
+taochronos aliases show 国老 --profile web-canon     # 某名的记录：所指药物、类别、状态、书证，以及检索时会添加什么
+taochronos aliases build && taochronos aliases check --db .taochronos/corpus/tcm.sqlite   # 在语料库上重建；输入相同则字节相同
+taochronos aliases import ntu ChineseDrugEthnonymsSynonymyTable.tab   # 仅限本地：另有 import hurb FILE、import bielu-gb FILE
+taochronos aliases build --local                     # 可发布的记录 + 本地名录 → .taochronos/aliases/local/；
+                                                     # 也按语料库（--db）重写仓库中可发布的一层（加 --out-dir DIR 则写到 DIR，仓库不动）
+taochronos research "…" --profile full-corpus-local  # 带本地名录的研究，只在本机
+taochronos eval aliases --quick                      # 别名评测的合成部分（不加 --quick 且有语料库时全部运行）
+```
+
 治学（有全量语料时自动使用 `full-corpus` 画像；默认输出 Markdown，`--json` 输出完整结果，`-o` 写文件）：
 
 ```bash
@@ -227,6 +239,12 @@ taochronos governance              # 架构策略检查
 - **规范化只用于匹配**：OpenCC 繁简 + Unihan 异体 + 医籍语境人工校订（䜴→豉、茰→萸、㪚→散……），长度不变、原文永不改动；
   四库白文在带虚拟标点的“视图”上抽取，每个引文映射回原文。
 - **检索**：SQLite 语料库 + 双字 FTS5 全文索引，任意长度的词、短语与邻近查询；研究时按问题分期分层抽样，否证检查则查询整个语料库。
+- **药物异名**（别名层，`domains/classics/aliases/`，[ADR 0023](docs/adr/0023-alias-layer.md)）：检索甘草，也能找到写作“国老”的段落；
+  检索木通，也能找到约 960 年以前写作“通草”的段落——至多占 10 条中的 3 条，每条注明命中之名、所指之药、类别（异名、避讳改名、古名……）、
+  出处与书证段落，其余位置仍归所问之名。同名异物（如鬼督邮）分列各药，绝不合并；常用词（小便、将军之官）不当作药名；只通行于某些朝代
+  的名字只在那些年代里检索，早于该名通行年代的段落另加标记。数据取自库中 CC0 的《本草纲目别名录》、编者审定与古籍互证，每条附书证；
+  自成一层，与词表并列，词表本身不变。浏览器端（web-canon）、全量语料服务（full-corpus）与 D1 备份均已启用：
+  备份端逐行移植了别名层，与 Python 的对照测试一致（评测中的 full-corpus 数值仍是在网页语料上代测）。
 
 详见 [docs/data.md](docs/data.md) 与 [ADR 0003](docs/adr/0003-corpus-store-and-scoped-research.md)。
 
@@ -591,6 +609,7 @@ V2 的套件（[docs/evals.md](docs/evals.md)）：
 | Audit（证据审计） | 19 条论断结论全对、类别全对，误判 SUPPORTED 0；安全提示 3/3 |
 | Modern（现代证据与真实世界） | 研究类型 10/10；跨层防护 7/7；真实世界：SQL 校验通过、植入关联找回、违规 SQL 拒绝 |
 | Workflow（V2 运行时） | 注册表有效；8/8 问题编译出所需技能；重跑全部读自工作区 |
+| Aliases（药物异名，[ADR 0023](docs/adr/0023-alias-layer.md)） | 网页语料上 120 个药名问题，一半留出；**首次留出报告 59 题：web-canon（已部署）P@10 0.683 → 0.791**，错误命中（Wrong@10）25 → 12，所问之名保留率 0.589 → 0.759，时代泄漏 0——验收 6/10（未达：所问之名保留率最低值 0.000、前 50 条他名命中仅为原来的 1.19 倍（要求 1.5 倍）、候选召回 0.650、误合并 1）；full-corpus（在网页语料上代测）0.673 → 0.805，7/10；合成检查全部通过 |
 
 深层发现 2.0 与任务规格的开发集与规则一起写成，数值说明规则“打算做什么”，不代表泛化能力；全量语料上的专家金标准列入路线图。各项任务的评测、指标与金标准见 [docs/tasks.md](docs/tasks.md) 的 Benchmark 表。
 
@@ -671,6 +690,15 @@ docs/                      治学、任务规格、架构、智能体、发现�
   以其为准；笈成所据今人辑校、校注本中的今人成分不在其列，二十世纪著作本身或仍在版权期内；网络文本集多为笈成本的简体转换副本，
   仓库未声明授权，与笈成本重复者不入库，所收者仅供本地研究；
   Hugging Face classical-tcm-canon 声明为 proprietary-commercial，只作本地研究、不再分发。
+- **词汇数据**——别名层（`domains/classics/aliases/`，见 [data.md](docs/data.md#alias-layer-domainsclassicsaliases)）：
+  随仓库、网站、服务器与 D1 备份发布的内容只取自库中的《本草纲目别名录》（`jc_c030`，CC0 1.0，标注为“别名录（中醫笈成）”）、
+  编者审定（本项目数据，所定的药名关系、同药之名、年代下限、常用词与状态均附书证段落）
+  与从库中古籍读出的事实（互释句、纲目释名、避讳改字、词表，附段落编号），
+  条款禁止转载的来源一字不取。另有三种名录只供本地研究、绝不发布：GitHub 上的 GB 码《别名录》与 hurbTable（均未声明授权），
+  以及南洋理工大学的 *Large List of Chinese Drug Names 40K*（CC BY-NC 4.0，DOI 10.21979/N9/V2XBOH；署名“Chong, William Eng Keat;
+  Stanley-Baker, Michael, 2019”的作者顺序与版本尚未核实，公开提及前须以其 Cite 按钮确认）。请自行下载，再用
+  `taochronos aliases import ntu FILE`（或 `hurb`、`bielu-gb`）导入：存入 `.taochronos/aliases/local/`，记下文件名、sha256 与行数并与
+  锁定值比对；`aliases build --local` 生成本地层，只有从不部署的 `full-corpus-local` 画像读取它。
 - 影像见证只收书目记录（题名、年代、藏所、索书号、IIIF 清单与授权），**不下载影像**；每条记录注明该馆的影像授权
   （如研医会 CC BY-NC 4.0、庆应 CC BY-NC-SA 4.0、柏林国家图书馆 PDM 1.0、国会图书馆仅供在线阅览）。
 - 研究数据集与报告只包含短引文（≤120 字）与出处，不包含原文。

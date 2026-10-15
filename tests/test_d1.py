@@ -436,3 +436,157 @@ def test_writing_the_tables_says_so_where_it_is_told(tmp_path, capsys):
     assert said == [f"{tmp_path / 'tables.js'}: {(tmp_path / 'tables.js').stat().st_size:,} bytes"]
     assert capsys.readouterr().out == ""
     assert write_tables(tmp_path / "tables.js", home=ROOT, check=True, log=said.append) == 0 and said[-1].endswith("up to date")
+
+
+TABLES = ROOT / "cloud" / "site" / "src" / "backup" / "tables.js"
+
+
+def _exported(name: str) -> Any:
+    """One table of tables.js (``export const NAME = <JSON>;``, a line each)."""
+    prefix = f"export const {name} = "
+    line = next(x for x in TABLES.read_text(encoding="utf-8").split("\n") if x.startswith(prefix))
+    return json.loads(line[len(prefix):-1])
+
+
+def _full_corpus_classics() -> dict[str, Any]:
+    from taochronos.protocol.yamlio import load_yaml
+
+    profile = load_yaml(ROOT / "profiles" / "full-corpus.yaml")
+    return next(b.get("config") or {} for b in profile["bundles"] if b["plugin"] == "taochronos.plugins.classics")
+
+
+def test_the_workers_tables_carry_the_alias_layer_the_full_corpus_reads():
+    """tables.js ships the full-corpus profile's alias layer (ADR 0023) as its index holds it: every record, keyed by
+    surface in code-point order, in the file's compact form less what no decision reads (raw spellings, the floor's
+    basis, a referent's note); the sources a record may credit (shippable, labelled as the layer's header labels them),
+    the gates' context and the parameters (DEFAULT_ALIAS under the profile's retrieval.alias)."""
+    from taochronos.plugins.classics.aliases import (
+        CONTEXT_PATTERNS,
+        DEFAULT_ALIAS,
+        AliasRecord,
+    )
+    from taochronos.protocol.yamlio import load_yaml
+
+    classics = _full_corpus_classics()
+    pack = DomainPack(ROOT / classics.get("domain", "domains/classics"), aliases=classics["aliases"])
+    index = pack.aliases
+    shipped = _exported("ALIASES")
+    assert index.enabled and list(shipped) == sorted(index.records)
+    for s, rec in index.records.items():
+        back = AliasRecord.from_json({**shipped[s], "s": s}).to_json()
+        full = rec.to_json()
+        for key in ("raw", "flb"):
+            full.pop(key, None)
+        back.pop("raw", None)
+        for ref in full.get("r") or ():
+            ref.pop("nt", None)
+        assert back == full, s
+    registry = {x["id"]: x for x in load_yaml(ROOT / "domains" / "classics" / "aliases" / "sources.yaml")["sources"]}
+    sources = _exported("ALIAS_SOURCES")
+    assert [x["id"] for x in sources] == [i for i, x in registry.items() if x["ship"] is True]
+    assert all(x["label"] == index.labels[x["id"]] and x["licence"] == registry[x["id"]]["licence"] for x in sources)
+    assert {src for rec in index.records.values() for ref in rec.r for src in ref.src} <= {x["id"] for x in sources}
+    assert _exported("ALIAS_CONTEXT") == {**CONTEXT_PATTERNS, **index.context}
+    profile = load_yaml(ROOT / "profiles" / "full-corpus.yaml")
+    retrieval = next(b.get("config") or {} for b in profile["bundles"] if b["plugin"] == "taochronos.plugins.retrieval")
+    assert _exported("ALIAS_PARAMS") == {**DEFAULT_ALIAS, **retrieval.get("alias", {})}
+
+
+def test_the_workers_tables_refuse_a_local_layer_and_a_source_that_may_not_ship(tmp_path):
+    """Nothing local reaches the Worker: a full-corpus profile that reads a local layer, or a layer crediting a source
+    sources.yaml does not ship, is refused."""
+    import shutil
+
+    from taochronos.chat.d1tables import _aliases
+
+    domain = tmp_path / "domains" / "classics" / "aliases"
+    shutil.copytree(ROOT / "domains" / "classics" / "aliases", domain)
+    (tmp_path / "profiles").mkdir()
+    bundle = "  - {plugin: taochronos.plugins.classics, config: {domain: domains/classics, aliases: [aliases]%s}}\n"
+    profile = tmp_path / "profiles" / "full-corpus.yaml"
+    profile.write_text("name: full-corpus\nbundles:\n" + bundle % "", encoding="utf-8")
+    assert len(_aliases(tmp_path)["ALIASES"]) == len(_exported("ALIASES"))
+    profile.write_text("name: full-corpus\nbundles:\n" + bundle % ", aliases_local: aliases/local/aliases-local.jsonl",
+                       encoding="utf-8")
+    with pytest.raises(ValueError, match="local alias layer"):
+        _aliases(tmp_path)
+    profile.write_text("name: full-corpus\nbundles:\n" + bundle % "", encoding="utf-8")
+    sources = domain / "sources.yaml"
+    sources.write_text(sources.read_text(encoding="utf-8").replace(
+        "licence: project, ship: true", "licence: project, ship: false"), encoding="utf-8")
+    with pytest.raises(ValueError, match="may not ship: curated"):
+        _aliases(tmp_path)
+
+
+def test_the_workers_lexicon_matches_names_as_long_as_the_full_corpus_lexicon_holds():
+    """lexicon.js matches at most MAX_LEN characters at a time: never fewer than the full-corpus lexicon's longest
+    surface, or the Worker would miss names the server finds."""
+    text = (ROOT / "cloud" / "site" / "src" / "backup" / "lexicon.js").read_text(encoding="utf-8")
+    max_len = int(re.search(r"const MAX_LEN = (\d+);", text).group(1))
+    classics = _full_corpus_classics()
+    pack = DomainPack(ROOT / classics.get("domain", "domains/classics"), extra_lexicons=classics.get("lexicon_extra", ()))
+    assert max_len >= pack.lexicon.max_len
+
+
+def test_the_workers_tables_stay_small():
+    """tables.js is part of the Worker's bundle: gzipped, under 400 KB (the alias layer included)."""
+    import gzip
+
+    assert len(gzip.compress(TABLES.read_bytes())) < 400_000
+
+
+SEARCH = ROOT / "cloud" / "site" / "src" / "backup" / "search.js"
+
+
+def test_the_full_corpus_searches_with_the_alias_layer_and_the_backup_alike():
+    """The full corpus finds a drug under its other names (ADR 0023, phase B), on the server and in the D1 backup at once:
+    the profile turns the layer on, tables.js hands the Worker that choice, and the fixture's reference questions — whose
+    query blocks the Worker must reproduce (cloud/test/backup.test.js) — ask what the layer reads: an alias and its drug,
+    periods, a name of two drugs, stop names, a longer name and a run nobody knows, a quoted alias, an origin question, a
+    book filter, the side queue without a place (k, routes; k = 0 too) and the layer turned off — and a variant spelling
+    written twice."""
+    from taochronos.chat.d1fixture import REFERENCE
+    from taochronos.protocol.yamlio import load_yaml
+
+    profile = load_yaml(ROOT / "profiles" / "full-corpus.yaml")
+    retrieval = next(b.get("config") or {} for b in profile["bundles"] if b["plugin"] == "taochronos.plugins.retrieval")
+    assert retrieval["alias"]["enabled"] is True and _exported("ALIAS_PARAMS")["enabled"] is True
+    searches = [args for name, args in REFERENCE if name == "classics.search"]
+    asked = {args["query"] for args in searches}
+    assert {"国老", "甘草", "唐以前的木通", "清代的通草", "鬼督邮是什么药", "救火是哪味药", "慎火草", "干葛"} <= asked
+    assert any(args.get("aliases") == "off" for args in searches)
+    assert any(args.get("routes") and "alias" not in args["routes"] for args in searches)
+    assert any(args.get("k", 10) * 3 // 10 == 0 for args in searches) and any(args.get("k", 10) < 1 for args in searches)
+    assert "人参汤即理中汤" in asked
+    assert any(args.get("books") for args in searches) and any("最早" in args["query"] for args in searches)
+
+
+def test_the_workers_search_reads_a_question_with_the_servers_rules():
+    """search.js ports QueryAnalyzer's alias reading and the alias search (hybrid.py) with their constants copied: the
+    drug words, the question words a run never takes in, the thresholds of a name asked only as a drug, what follows a
+    period's name, the routes, the modes, the mask's bits (the cap's mask_bits) and the labels of a lexicon form's kind."""
+    from taochronos.plugins.classics.aliases import DEFAULT_ALIAS
+    from taochronos.plugins.retrieval import hybrid
+    from taochronos.protocol.concepts import SynonymKind
+
+    text = SEARCH.read_text(encoding="utf-8")
+
+    def const(name: str) -> str:
+        return re.search(rf"^(?:export )?const {name} = (.+?);(?: *//[^\n]*)?$", text, re.MULTILINE | re.DOTALL).group(1)
+
+    def strings(source: str) -> list[str]:
+        return re.findall(r'"([^"]*)"', source)
+
+    assert tuple(strings(const("DRUG_WORDS"))) == hybrid.DRUG_WORDS
+    assert set(strings(const("RUN_STOPS"))[0]) == set(hybrid.RUN_STOPS)
+    assert [float(const(n)) for n in ("COMMON_N", "COMMON_SH", "COMMON_CUE_SH")] == [hybrid.COMMON_N, hybrid.COMMON_SH,
+                                                                                   hybrid.COMMON_CUE_SH]
+    assert const("PERIOD_TAIL") == f"/^{hybrid.PERIOD_TAIL.pattern}/u"
+    assert tuple(strings(const("ROUTES"))) == hybrid.ROUTES and tuple(strings(const("ALIAS_MODES"))) == hybrid.ALIAS_MODES
+    assert "alias" in strings(const("SERVED_ROUTES")) and "alias" not in hybrid.ROUTES
+    # the cap counts the profile's mask_bits: an expansion it searches beyond the Worker's bits would go unread there
+    bits = int(const("MASK_BITS"))  # an int32's bits in JavaScript
+    assert bits == DEFAULT_ALIAS["mask_bits"] and _exported("ALIAS_PARAMS")["mask_bits"] <= bits <= 31
+    labels = dict(re.findall(r'(\w+): "([^"]+)"', const("SYNONYM_LABELS")))
+    pack = DomainPack(ROOT / "domains" / "classics")
+    assert labels == {k.value: pack.synonym_kind_label(k.value) for k in SynonymKind}

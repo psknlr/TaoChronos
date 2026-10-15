@@ -5,7 +5,7 @@
 // the first chunk of each year) is read once per isolate and kept.
 
 import { cpLength, cpSlice } from "./results.js";
-import { periodLabel, periodOf, rangeLabel, temporalJson, yearOf } from "./text.js";
+import { normalize, periodLabel, periodOf, rangeLabel, temporalJson, yearOf } from "./text.js";
 
 const MARKS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const SEQMAP_PART = 30_000; // d1.SEQMAP_PART
@@ -243,8 +243,10 @@ export function locatorJson(hit, card) {
 
 export const passageYear = (hit, card) => yearOf(hit.T, card?.dating_basis || "composition");
 
-/** tools.common.passage_card: the passage as every tool cites it (the text cut at 120 characters unless full). */
-export function passageCard(hit, card, { full = false } = {}) {
+/** tools.common.passage_card: the passage as every tool cites it — its first 120 characters unless full, or, when the
+ * first of the `focus` surfaces the text writes (a search hit's matched names) starts at character 100 or later of the
+ * normalised text, the 120 from 40 before it, so that a passage found under a drug's other name shows that name. */
+export function passageCard(hit, card, { full = false, focus = null } = {}) {
   const year = passageYear(hit, card);
   const text = hit.p.t;
   const out = {
@@ -255,7 +257,7 @@ export function passageCard(hit, card, { full = false } = {}) {
     year,
     period: periodLabel(periodOf(year) || ""),
     locator: locatorLabel(hit),
-    text: full || cpLength(text) <= 120 ? text : `${cpSlice(text, 120)}…`,
+    text: full || cpLength(text) <= 120 ? text : excerpt(text, focus),
   };
   if (full) {
     const ex = hit.p.x || {};
@@ -267,6 +269,23 @@ export function passageCard(hit, card, { full = false } = {}) {
     out.temporal = temporalJson(hit.T);
   }
   return out;
+}
+
+/** common._excerpt: 120 characters of a passage longer than that, from its start, or from 40 before the first focus
+ * surface it writes (found in the normalised text, which keeps the offsets; code points) when that starts at character
+ * 100 or later. */
+function excerpt(text, focus) {
+  const norm = focus?.length ? normalize(text) : "";
+  let pos = -1;
+  for (const surface of focus || []) {
+    const u = surface ? norm.indexOf(normalize(surface)) : -1;
+    pos = u < 0 ? -1 : cpLength(norm.slice(0, u));
+    if (pos >= 0) break;
+  }
+  if (pos < 100) return `${cpSlice(text, 120)}…`;
+  const chars = Array.from(text);
+  const start = pos - 40;
+  return `…${chars.slice(start, start + 120).join("")}${start + 120 < chars.length ? "…" : ""}`;
 }
 
 /** The layer tag a passage carries (StoreCorpus: "layer:…" unless 正文). */

@@ -1,27 +1,31 @@
 // The D1 backup (cloud/site/src/backup; docs/adr/0017-d1-backup.md) against a small D1 made by the exporter itself:
-// `python -m taochronos.chat.d1 fixture cloud/.d1-fixture` (ten books of the committed 要籍 pack over three databases,
+// `python -m taochronos.chat.d1 fixture cloud/.d1-fixture` (ten books of the committed 要籍 pack over five databases,
 // seven precomputed results), read through a D1-compatible adapter over node:sqlite.  The API answers in the shapes of
 // the Python server; each call stays within a Worker's limits (its CPU time here, the SQL apart; ≤ 50 D1 statements).
 
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { handle } from "../site/src/site.js";
 import { call as backupCall, classification } from "../site/src/backup/api.js";
 import { CANON, CATALOG } from "../site/src/backup/tables.js";
-import { Corpus } from "../site/src/backup/corpus.js";
+import { Corpus, passageCard } from "../site/src/backup/corpus.js";
 import { forInterface, forModel } from "../site/src/backup/results.js";
 import { clauseKey } from "../site/src/backup/precomputed.js";
-import { ftsForm, normalize, normalizeWithRecords, parseConstraint } from "../site/src/backup/text.js";
+import { effective, ftsForm, normalize, normalizeWithRecords, parseConstraint } from "../site/src/backup/text.js";
 import { collate } from "../site/src/backup/difflib.js";
 import { ENV as MADE_UP, warmUp } from "../site/src/backup/warm.js";
-import { search } from "../site/src/backup/search.js";
+import { analyze, search, SERVED_ROUTES, warming } from "../site/src/backup/search.js";
 import { verifyQuote } from "../site/src/backup/tools.js";
 import { compoundTerms, D1Adapter, workerCpu } from "./d1-adapter.js";
 import { unionAll } from "../site/src/backup/search.js";
+import { AliasIndex, aliasIndex, assemble, Cp, gateForm, placeless, round4, unsearched } from "../site/src/backup/aliases.js";
+import { Lexicon } from "../site/src/backup/lexicon.js";
+import { ALIAS_PARAMS } from "../site/src/backup/tables.js";
 import { DatabaseSync } from "node:sqlite";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -236,6 +240,178 @@ test("classics.search: a time bound from the question or the arguments; origins 
   assert.ok(books.result.hits.length > 0 && books.result.hits.every((h) => h.book_id === "hejiju_fang"));
 });
 
+// ------------------------------------------------------------------ the alias layer in the search (ADR 0023)
+/** The places (1-based) of a result's side queue: passages found under an expansion (route alias) or on an asked drug's
+ * other lexicon form (labelled from the lexicon). */
+const sidePlaces = (hits) => hits.map((h, i) => (h.routes.includes("alias") || h.via?.some((v) => v.source.includes("词表")) ? i + 1 : 0)).filter(Boolean);
+
+test("classics.search with the alias layer: an alias's drug in the side places, labelled; within a Worker's limits", { skip }, async () => {
+  assert.equal(ALIAS_PARAMS.enabled, true); // the full-corpus profile's: the backup searches as the server does
+  assert.ok(SERVED_ROUTES.includes("alias"));
+  for (const query of ["国老", "鬼督邮是什么药"]) { // an alias, a name of two drugs
+    await measured("classics.search", { query, k: 10 }); // warm
+    const { out, ms, queries } = await measured("classics.search", { query, k: 10 });
+    assert.equal(out.ok, true, out.error);
+    assert.ok(queries <= 50, `${query}: ${queries} D1 statements`);
+    assert.ok(ms < LIMIT_MS, `${query}: ${ms.toFixed(1)} ms`);
+  }
+  const { out } = await measured("classics.search", { query: "国老", k: 10 });
+  const { query, hits } = out.result;
+  assert.deepEqual(query.aliases.expansions.map((e) => [e.surface, e.for, e.direction, e.searched]), [["甘草", "国老", "alias→drug", true]]);
+  assert.equal(hits.length, 10); // the fixture writes 国老 nowhere: the side queue fills every place
+  for (const h of hits) {
+    assert.deepEqual([h.routes, h.matched], [["alias"], ["甘草"]]);
+    const [v] = h.via;
+    assert.deepEqual([h.via.length, v.surface, v.for, v.referent, v.direction, v.kind, v.status], [1, "甘草", ["国老"], "甘草", "alias→drug", "异名", "open"]);
+    assert.ok(v.source.includes("别名录（中醫笈成）") && v.witness, JSON.stringify(v));
+    assert.ok(normalize(h.text).includes("甘草"), h.text); // the card shows the name it was found under
+  }
+  assert.deepEqual(hits.map((h) => h.score), hits.map((_, i) => Math.round(10000 * 1000 * 0.5 / (61 + i)) / 10000));
+});
+
+test("a fresh isolate's first drug questions stay within a Worker's limits: the start runs the alias search too", { skip }, async () => {
+  // what search.js runs as it loads (warm.js asks no drug): the question read as a drug's, both queues, the labels
+  const warm = await warming;
+  assert.ok(warm.questions >= 2 && warm.tiers.includes("A") && warm.tiers.includes("B") && warm.side > 0, JSON.stringify(warm));
+  // a fresh process for a fresh isolate: the modules loaded and the start's warm-ups run, a first question without the
+  // layer (the corpus's statistics and lexicon read, as any first request reads them), then the first drug question of
+  // each kind — an alias whose drug needs its context, a drug with blockers, an origin question
+  const url = (p) => JSON.stringify(pathToFileURL(resolve(here, p)).href);
+  const script = [`import { D1Adapter, workerCpu } from ${url("d1-adapter.js")};`, `import { Corpus } from ${url("../site/src/backup/corpus.js")};`,
+    `import { search, warming } from ${url("../site/src/backup/search.js")};`, `import { warmUp } from ${url("../site/src/backup/warm.js")};`,
+    "await warming; await warmUp();",
+    `const dbs = ${JSON.stringify(dbs.map((_, k) => `${dir}/db-${k}.sqlite`))}.map((f) => new D1Adapter(f, { readOnly: true }));`,
+    "const env = Object.fromEntries(dbs.map((d, k) => [`D1_${k}`, d]));",
+    "await search(new Corpus(env), { query: '消渴', aliases: 'off' });", "const out = [];",
+    "for (const query of ['将军', '甘草', '人参最早见于哪部书']) out.push([query, (await workerCpu(dbs, () => search(new Corpus(env), { query }))).ms]);",
+    "console.log(JSON.stringify(out));"].join("\n");
+  const first = () => {
+    const run = spawnSync(process.execPath, ["--no-warnings", "--input-type=module", "-e", script], { encoding: "utf8" });
+    assert.equal(run.status, 0, run.stderr);
+    return JSON.parse(run.stdout);
+  };
+  let times = first();
+  if (times.some(([, ms]) => ms >= LIMIT_MS)) times = first().map(([q, ms], i) => [q, Math.min(ms, times[i][1])]); // a shared runner's pause
+  for (const [query, ms] of times) assert.ok(ms < LIMIT_MS, `${query}, first: ${ms.toFixed(1)} ms`);
+});
+
+test("classics.search with the alias layer: the asked name keeps 7 of 10 places, the side queue takes 4, 7 and 10", { skip }, async () => {
+  for (const [k, places] of [[10, [4, 7, 10]], [3, []]]) {
+    const { result } = await callTool("classics.search", { query: "辰砂", k });
+    assert.deepEqual(sidePlaces(result.hits), places, `k ${k}`);
+    if (k === 3) assert.ok(result.query.aliases.expansions.every((e) => !e.searched && e.why === "share"));
+    for (const h of result.hits.filter((x) => !x.routes.includes("alias"))) assert.deepEqual([h.matched, h.via], [["辰砂"], undefined]);
+  }
+  const { result } = await callTool("classics.search", { query: "辰砂", k: 10 });
+  const side = result.hits.filter((h) => h.routes.includes("alias"));
+  assert.deepEqual(side.map((h) => [h.via[0].for, h.via[0].referent]), Array(3).fill([["辰砂"], "丹砂"]));
+  assert.ok(side.every((h) => ["丹砂", "朱砂"].includes(h.via[0].surface) && h.matched[0] === h.via[0].surface));
+  // a drug's other lexicon forms share the side places with the passages found under its other names, the lexicon's first
+  const yam = (await callTool("classics.search", { query: "山药", k: 10 })).result;
+  assert.deepEqual(sidePlaces(yam.hits), [4, 7, 10]);
+  const labels = yam.hits.filter((_, i) => [4, 7, 10].includes(i + 1)).map((h) => [h.via[0].surface, h.via[0].direction, h.via[0].source]);
+  assert.deepEqual(labels.map(([, , source]) => source[0] === "词表"), [true, false, true]);
+  assert.ok(labels.every(([, direction]) => direction === "drug→alias"));
+});
+
+test("classics.search with the alias layer: periods, a name of two drugs, the layer off or without its route", { skip }, async () => {
+  // an origin question within a period: the other names valid then, by year, each labelled with the drug
+  const early = (await callTool("classics.search", { query: "唐以前的木通", k: 10 })).result;
+  assert.equal(early.query.before, 618);
+  assert.ok(early.hits.length > 0 && early.hits.every((h) => h.year < 618 && h.via[0].for[0] === "木通" && h.via[0].referent === "木通"));
+  assert.deepEqual(early.hits.map((h) => h.year), [...early.hits.map((h) => h.year)].sort((a, b) => a - b));
+  // in the Qing 通草 is no 木通: left out, and the passages that write it read as 通脱木
+  const late = (await callTool("classics.search", { query: "清代的通草", k: 10 })).result;
+  assert.deepEqual(late.query.aliases.excluded, [{ surface: "木通", for: "通草", why: "period" }]);
+  assert.ok(late.hits.length > 0 && late.hits.every((h) => h.via[0].direction === "asked" && h.via[0].reading === "通脱木"));
+  // a name of two drugs: listed with both, never read as one where nothing in the passage says which
+  const ghost = (await callTool("classics.search", { query: "鬼督邮是什么药", k: 10 })).result;
+  const [asked] = ghost.query.aliases.asked;
+  assert.equal(asked.ambiguous, true);
+  assert.ok(["徐长卿", "赤箭"].every((d) => asked.referents.some((r) => r.head === d)));
+  for (const h of ghost.hits.filter((x) => x.via?.[0].direction === "asked")) {
+    assert.equal(h.flags?.includes("homonym:鬼督邮") ?? false, h.via[0].reading === null, h.passage_id);
+  }
+  const drugs = ghost.hits.filter((h) => h.routes.includes("alias")).map((h) => h.via[0].referent);
+  assert.deepEqual(new Set(drugs.slice(0, 2)), new Set(["徐长卿", "赤箭"])); // the side places dealt round-robin over the drugs
+  // off: today's search; without the alias route: no side queue, the expansions said to be unsearched for it
+  const off = (await callTool("classics.search", { query: "辰砂", k: 10, aliases: "off" })).result;
+  assert.ok(!("aliases" in off.query) && off.hits.every((h) => !h.via && !h.flags && !h.routes.includes("alias")));
+  const routes = (await callTool("classics.search", { query: "辰砂", k: 10, routes: ["bm25", "temporal"] })).result;
+  assert.ok(routes.query.aliases.expansions.every((e) => !e.searched && e.why === "routes"));
+  assert.ok(routes.hits.length > 0 && routes.hits.every((h) => !h.routes.includes("alias")));
+});
+
+test("classics.search with the alias layer: the queues — retention, round-robin, years, the demoted last, no drug as before", { skip }, async () => {
+  const run = async (args) => (await callTool("classics.search", { k: 10, ...args })).result;
+  // a drug asked beside a formula: the drug's own name keeps the first 7 places, the formula's passages follow
+  const mixed = await run({ query: "麻黄汤中的甘草" });
+  assert.ok(mixed.hits.slice(0, 7).every((h) => h.matched.includes("甘草")), JSON.stringify(mixed.hits.map((h) => h.matched)));
+  assert.ok(mixed.hits.slice(7).some((h) => !h.matched.includes("甘草")));
+  // a name of two drugs: the side places dealt round-robin over them
+  const side = (await run({ query: "百枝" })).hits.filter((h) => h.routes.includes("alias")).map((h) => h.via[0].referent);
+  assert.ok(side.length >= 4 && side.slice(1, 4).every((d, i) => d !== side[i]), side.join(" "));
+  // an origin question: each queue by year in its own places, the demoted after everything else
+  for (const query of ["人参最早见于哪部书", "唐以前的通草", "唐以前的木通"]) {
+    const { hits } = await run({ query });
+    for (const queue of [hits.filter((h) => h.routes.includes("alias")), hits.filter((h) => !h.routes.includes("alias") && !h.flags?.length)]) {
+      assert.deepEqual(queue.map((h) => h.year), queue.map((h) => h.year).sort((a, b) => a - b), query);
+    }
+  }
+  for (const query of ["唐以前的通草", "通草", "大黄", "红豆", "止行"]) {
+    const demoted = (await run({ query })).hits.map((h) => (h.flags || []).some((f) => f.startsWith("demoted:")));
+    assert.ok(!demoted.some((d, i) => d && demoted.slice(i).includes(false)), `${query}: ${demoted}`);
+  }
+  // a side passage writes none of the names asked (those are the main queue's); every card shows a name it was found under
+  for (const [query, names] of [["栝楼实的功效", ["栝楼实"]], ["流星草与甘草", ["流星草", "甘草"]], ["辰砂", ["辰砂"]], ["山药", ["山药"]], ["鬼督邮是什么药", ["鬼督邮"]]]) {
+    const { hits } = await run({ query });
+    for (const h of hits) {
+      assert.ok(h.matched.some((m) => normalize(h.text).includes(normalize(m))), `${query}: ${h.passage_id} ${h.text}`);
+      if (!h.routes.includes("alias")) continue;
+      const text = normalize((await callTool("classics.get_passage", { passage_id: h.passage_id })).result.text);
+      assert.ok(names.every((s) => !text.includes(s)), `${query}: ${h.passage_id}`);
+    }
+  }
+  // a question that asks no drug: today's answer
+  for (const query of ["宋代以前的消渴", "消渴的认识如何演变", "太阳之为病脉浮头项强痛而恶寒", "桂枝汤"]) {
+    const [on, off] = [await run({ query }), await run({ query, aliases: "off" })];
+    assert.deepEqual(on.hits.map((h) => [h.passage_id, h.score]), off.hits.map((h) => [h.passage_id, h.score]), query);
+  }
+});
+
+test("classics.search with the alias layer: a drug's side passages that give its name nothing beside it come after the others", { skip }, async () => {
+  const corpus = new Corpus(env);
+  const index = aliasIndex();
+  let bare = 0;
+  for (const query of ["辰砂", "红豆"]) {
+    const q = await analyze(new Lexicon(corpus), query, { aliases: true, cfg: ALIAS_PARAMS, index });
+    const exps = new Map(q.expansions.filter((e) => e.searched).map((e) => [e.surface, e]));
+    const byDrug = new Map();
+    for (const h of (await callTool("classics.search", { query, k: 20 })).result.hits.filter((x) => x.routes.includes("alias"))) {
+      const p = await corpus.passage(h.passage_id);
+      const yr = effective(p.T, p.card.dating_basis || "composition") ?? [null, null];
+      const flag = index.bare(gateForm(normalize(p.p.t)), exps.get(h.via[0].surface), yr, ALIAS_PARAMS); // bare: an order, never a gate
+      if (!byDrug.has(h.via[0].referent)) byDrug.set(h.via[0].referent, []);
+      byDrug.get(h.via[0].referent).push(flag);
+    }
+    for (const [drug, flags] of byDrug) assert.ok(!flags.some((b, i) => b && flags.slice(i).includes(false)), `${query} ${drug}: ${flags}`);
+    bare += [...byDrug.values()].flat().filter(Boolean).length;
+  }
+  assert.ok(bare > 0); // the fixture has some
+});
+
+test("a card centres on the name a hit was found under, as passage_card(focus=…) does", () => {
+  const hit = (t) => ({ book: "b", p: { q: 1, t }, L: [[]], T: { t_composition: [1, 2] } });
+  const card = { title: "书", dynasty: "", dating_basis: "composition" };
+  const text = `${"甲".repeat(150)}甘草${"乙".repeat(200)}`;
+  assert.equal(passageCard(hit(text), card).text, `${"甲".repeat(120)}…`);
+  assert.equal(passageCard(hit(text), card, { focus: ["国老", "甘草"] }).text, `…${"甲".repeat(40)}甘草${"乙".repeat(78)}…`);
+  assert.equal(passageCard(hit(`${"甲".repeat(99)}甘草${"乙".repeat(30)}`), card, { focus: ["甘草"] }).text, `${"甲".repeat(99)}甘草${"乙".repeat(19)}…`);
+  assert.equal(passageCard(hit(`${"甲".repeat(110)}甘草${"乙".repeat(20)}`), card, { focus: ["甘草"] }).text, `…${"甲".repeat(40)}甘草${"乙".repeat(20)}`);
+  assert.equal(passageCard(hit(`${"𠀀".repeat(110)}甘草${"乙".repeat(20)}`), card, { focus: ["甘草"] }).text, `…${"𠀀".repeat(40)}甘草${"乙".repeat(20)}`);
+  assert.equal(passageCard(hit(`${"甲".repeat(110)}甘草${"乙".repeat(20)}`), card, { focus: ["甘草"], full: true }).text.length, 132);
+});
+
 test("classics.get_passage, list_books and canon, as the server gives them", { skip }, async () => {
   const p = await callTool("classics.get_passage", { passage_id: "suwen_wangbing.000.00001" });
   assert.equal(p.ok, true, p.error);
@@ -365,6 +541,105 @@ test("parity: the live tools answer as the Python tools answered on the same sto
       assert.equal(out.result.hits.length > 0, ref.result.hits.length > 0, label);
     } else assert.deepEqual(out.result, ref.result, label);
   }
+});
+
+/** The gates of aliases.js on passages, as Python gave them (d1fixture._gate_case). */
+function aliasGates(index, cases, cfg) {
+  for (const c of cases) {
+    const G = new Cp(c.g);
+    const every = [];
+    for (let i = 0; i < G.length; i++) if (G.startsWith(c.s, i)) every.push(i);
+    const free = index.freeOffsets(c.g, c.s, c.b, c.yr);
+    const [ref, p] = index.reading(c.g, c.s, c.yr, cfg);
+    assert.deepEqual({
+      free,
+      covers: c.out.covers.map(([i, b]) => [i, b, index.covers(c.g, i, c.s, b, c.yr)]),
+      covering: index.covering(c.g, c.s, c.b, c.yr),
+      context: index.drugContext(c.g, c.s, free, c.cues, cfg),
+      named: index.named(c.g, c.s, free, c.cues, cfg),
+      context_every: index.drugContext(c.g, c.s, every, c.cues, cfg),
+      reading: [ref?.h ?? null, ref?.g ?? null, p],
+      floor: index.floorFlag(c.s, c.yr, c.edition),
+    }, c.out, `${c.s} in ${c.g} ${JSON.stringify(c.yr)}`);
+  }
+}
+
+/** The side queue's gates and order (accept, bare), and accept with the gates and windows lifted. */
+function aliasAccept(index, cases, cfg) {
+  const lifted = { ...cfg, ablate: ["gates", "period"] };
+  for (const c of cases) {
+    const label = `${c.exp.surface} (for ${c.exp.for}) in ${c.g} ${JSON.stringify(c.yr)}`;
+    assert.deepEqual(index.accept(c.g, c.exp, c.yr, cfg), c.out, label);
+    assert.deepEqual(index.accept(c.g, c.exp, c.yr, lifted), c.lifted, label);
+    assert.equal(index.bare(c.g, c.exp, c.yr, cfg), c.bare, label);
+  }
+}
+
+/** A question's expansions and query.aliases view; for a search, the searched ones unsearched where the side queue has
+ * no place (routes, share). */
+async function aliasQuestion(index, lex, c, cfg, { k = null, routes = null, load = true } = {}) {
+  if (lex && load) await lex.loadIds([...c.q.asked.flat(), ...c.q.stops.flat()]);
+  const q = { asked: c.q.asked, stops: c.q.stops, after: c.q.after, before: c.q.before, allSurfaces: c.q.surfaces, groups: c.q.groups };
+  const p = { ...cfg, ...c.cfg };
+  const exps = index.expansions(q, lex, p);
+  if (k !== null) unsearched(exps, placeless(routes, k, p));
+  const label = `${c.text} ${JSON.stringify(c.q.asked)} ${JSON.stringify(c.cfg)}`;
+  assert.deepEqual(exps, c.expansions, label);
+  assert.deepEqual(index.view(q, p, lex, exps), c.view, `${label}: view`);
+  for (const [s, stop, refs] of c.referents || []) {
+    const term = (stop ? c.q.stops : c.q.asked).find(([x]) => x === s)[1];
+    assert.deepEqual(index.referents(s, term, lex, { stop }), refs, `${label}: referents of ${s}`);
+  }
+}
+
+function aliasRecords(index, cases) {
+  for (const c of cases) {
+    assert.deepEqual(index.readings(c.s), c.readings, c.s);
+    for (const [g, names] of Object.entries(c.names)) assert.deepEqual(index.names(g), names, `${c.s}: ${g}`);
+    for (const [g, names] of Object.entries(c.by_group)) assert.deepEqual(index.byGroup(g).map(([a]) => a), names, `${c.s}: ${g}`);
+    assert.deepEqual(index.groupsFor(index.record(c.s).r[0]?.t ?? null, [c.s]), c.groups_for, c.s);
+  }
+}
+
+test("parity: the alias layer's functions (aliases.js) give what Python gave on the shipped layer", { skip }, async () => {
+  const cases = fixture.alias_cases;
+  assert.ok(cases, "no alias_cases in the fixture: python -m taochronos.chat.d1 fixture");
+  assert.deepEqual(cases.params, ALIAS_PARAMS); // tables.js is this checkout's
+  const cfg = cases.params;
+  const index = new AliasIndex();
+  for (const [x, out] of cases.gate_form) assert.equal(gateForm(x), out, x);
+  for (const [x, out] of cases.scan) assert.deepEqual(index.scan(x), out, x);
+  assert.ok(cases.gates.length >= 100 && cases.accept.length >= 100 && cases.expansions.length >= 100);
+  assert.ok(cases.accept.some((c) => c.out[1] === "rival") && cases.accept.some((c) => c.bare));
+  aliasGates(index, cases.gates, cfg);
+  aliasAccept(index, cases.accept, cfg);
+  const lex = new Lexicon(new Corpus(env));
+  for (const c of cases.expansions) await aliasQuestion(index, lex, c, cfg);
+  for (const c of cases.searches) await aliasQuestion(index, lex, c, cfg, c);
+  assert.deepEqual(cases.searches.map((c) => c.expansions[0]?.why ?? null), [null, "share", "routes", "share", null, "share", null]);
+  aliasRecords(index, cases.records);
+  for (const c of cases.assemble) assert.deepEqual(assemble(c.M, c.S, c.k, c.num, c.den), c.out, JSON.stringify(c));
+  for (const [x, out] of cases.round4) assert.equal(round4(x), out, String(x));
+});
+
+test("parity: the alias layer's functions on a made-up layer — astral names, windowed and chained blockers, stops", { skip }, async () => {
+  const cases = fixture.alias_cases;
+  const cfg = cases.params;
+  const syn = cases.synthetic;
+  const index = new AliasIndex(syn.records, syn.context, syn.sources);
+  for (const [x, out] of syn.scan) assert.deepEqual(index.scan(x), out, x);
+  aliasGates(index, syn.gates, cfg);
+  aliasAccept(index, syn.accept, cfg);
+  const lex = new Lexicon(null); // the made-up lexicon's buckets, as D1's lex table holds them
+  for (const [s, entries] of Object.entries(syn.lexicon)) {
+    const first = String.fromCodePoint(s.codePointAt(0));
+    if (!lex.buckets.has(first)) lex.buckets.set(first, {});
+    lex.buckets.get(first)[s] = entries;
+  }
+  for (const c of syn.expansions) await aliasQuestion(index, c.lexicon ? lex : null, c, cfg, { load: false });
+  aliasRecords(index, syn.record_cases);
+  assert.ok(syn.expansions.some((c) => c.expansions.some((e) => e.also.length > 1)));
+  assert.ok(syn.expansions.some((c) => c.view.asked?.some((a) => a.note)));
 });
 
 test("every live tool within a Worker's limits on the fixture", { skip }, async () => {

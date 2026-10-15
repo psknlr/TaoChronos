@@ -176,8 +176,8 @@ def test_profiles_and_plugins_hand_the_layer_and_its_parameters_on(layer, corpus
     from taochronos.kernel.profiles import load_profile
     from taochronos.kernel.registry import CapabilityRegistry
 
-    # loaded; on for the site's corpus, whose search tool shows the labels (phase A), off for the full corpus (phase B)
-    for name, enabled in (("web-canon", True), ("full-corpus", False)):
+    # loaded and on for both: the site's corpus (phase A) and the full corpus with the Worker's port (phase B)
+    for name, enabled in (("web-canon", True), ("full-corpus", True)):
         config = {b["plugin"]: b.get("config") or {} for b in load_profile(name, [HOME / "profiles"]).bundles}
         assert config["taochronos.plugins.classics"]["aliases"] == ["aliases"]
         assert "aliases_local" not in config["taochronos.plugins.classics"]

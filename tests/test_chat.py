@@ -355,6 +355,36 @@ def test_the_site_build_is_deterministic_and_complete(tmp_path):
                                                          "https://chat.impf.ai/attribution"]
 
 
+def test_home_zip_carries_the_alias_layer_and_nothing_of_a_local_one():
+    """ADR 0023: the browser reads the shipped alias layer from home.zip — never a file or a record of the local lists
+    (the NTU table, hurbTable, the GB 别名录), which stay under <data>/aliases/local/ — and the directory keeps to its
+    deflated budget as home.zip stores it (zlib's default level, as `aliases check` measures it)."""
+    from taochronos.chat.build import home_zip
+    from taochronos.plugins.classics.aliasbuild import BUDGET
+    from taochronos.protocol.yamlio import load_yaml
+
+    shipped = zipfile.ZipFile(BytesIO(home_zip(ROOT)))
+    folder = "domains/classics/aliases/"
+    members = {i.filename: i for i in shipped.infolist() if i.filename.startswith(folder)}
+    assert {folder + "aliases.jsonl", folder + "context.json"} <= set(members)
+    assert set(members) <= {folder + f for f in ("aliases.jsonl", "context.json", "curated.yaml", "sources.yaml")}
+    # no file a local layer writes: the imported lists, their manifest, the layer built of them, the review sheet
+    local = re.compile(r"(^|/)\.taochronos/|(^|/)aliases/local/|aliases-local\.jsonl$|(^|/)(ntu|hurb|bielu-gb)\.jsonl$"
+                       r"|(^|/)review\.tsv$")
+    assert not [n for n in shipped.namelist() if local.search(n)]
+    # nor a record crediting a local list
+    registry = load_yaml(ROOT / folder / "sources.yaml")["sources"]
+    local_ids = {s["id"] for s in registry if not s.get("ship")}
+    assert local_ids == {"bielu-gb", "hurb", "ntu40k"}
+    lines = shipped.read(folder + "aliases.jsonl").decode("utf-8").splitlines()
+    header = json.loads(lines[0])["_header"]
+    credited = {src for line in lines[1:] for ref in json.loads(line).get("r", ()) for src in ref.get("src", ())}
+    assert "bielu-jc" in credited and not (set(header["sources"]) | credited) & local_ids
+    assert set(header["sources"]) <= {s["id"] for s in registry if s.get("ship")}
+    # the directory as the browser downloads it: at most 150 KB deflated
+    assert sum(i.compress_size for i in members.values()) <= 150_000 == BUDGET["directory"]
+
+
 def test_the_site_names_its_relay_only_when_told(tmp_path):
     from taochronos.chat.build import build_site
 

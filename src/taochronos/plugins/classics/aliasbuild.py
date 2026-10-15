@@ -122,8 +122,9 @@ def _complement(windows: list[tuple[int | None, int | None]]) -> list[tuple[int 
 
 
 def deflated(data: bytes) -> int:
-    """Bytes ``data`` takes deflated at level 9, as ``home.zip`` stores it."""
-    z = zlib.compressobj(9, zlib.DEFLATED, -15)
+    """Bytes ``data`` takes raw-deflated at zlib's default level, as ``home.zip`` stores it (its entries are written
+    from a ``ZipInfo``, which takes the default level, not the archive's)."""
+    z = zlib.compressobj(zlib.Z_DEFAULT_COMPRESSION, zlib.DEFLATED, -15)
     return len(z.compress(data) + z.flush())
 
 
