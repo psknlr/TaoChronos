@@ -403,12 +403,29 @@ def test_free_offsets_leave_out_the_name_inside_longer_strings():
     ("芒硝、将军出征", [], False),  # one herb only
     ("芒硝厚朴，以此十余字隔开之将军", [], False),  # herbs beyond 10
     ("君为将军，臣为谋主", [], False),
+    ("故有将军之名", [], True),  # spoken of as a name
+    ("将军之官", [], False),
 ])
 def test_drug_context(text, cues, expected):
     index = layer()
     g = gate_form(text)
     offs = index.free_offsets(g, "将军", [], (None, None))
     assert offs and index.drug_context(g, "将军", offs, cues) is expected
+
+
+@pytest.mark.parametrize("text,cues,expected", [
+    ("萤火，一名救火", [], True),  # name-of
+    ("故有救火之名", [], True),  # spoken of as a name
+    ("景天，救火也", ["景天"], True),  # a cue near it
+    ("误投桂枝、人参，是抱薪救火也", [], False),  # herbs near it, a dose or a list, are no naming
+    ("救火二两", [], False),
+])
+def test_named_is_the_naming_part_of_drug_context(text, cues, expected):
+    index = layer()
+    g = gate_form(text)
+    offs = index.free_offsets(g, "救火", [], (None, None))
+    assert offs and index.named(g, "救火", offs, cues) is expected
+    assert index.drug_context(g, "救火", offs, cues) or not expected  # what names a drug is drug context
 
 
 def test_drug_context_reads_its_windows_and_patterns_from_the_profile_and_the_context():
@@ -612,6 +629,21 @@ def test_expansions_are_ordered_then_capped():
     random.Random(23).shuffle(shuffled)
     again = AliasIndex(shuffled, context=CONTEXT)
     assert plan(again, ask(None, "国老", "大黄")) == plan(index, q) == plan(index, ask(None, "大黄", "国老"))
+
+
+def test_another_part_of_the_plant_is_shown_never_searched():
+    index = layer()
+    late = ask(None, "青木香", after=1644)  # the root, after 1100: 马兜铃 is the fruit, a drug of its own
+    assert plan(index, late) == [("木香", "a", False, "period"), ("马兜铃", "a", False, "part")]
+    assert [(e["surface"], e["why"]) for e in index.view(late, {})["expansions"]] == [("马兜铃", "part")]
+    (e,) = index.expansions(ask(None, "马兜铃"), None, {})
+    assert (e.surface, e.searched, e.why) == ("青木香", False, "part")
+    assert plan(index, late, ablate=["gates"]) == [("马兜铃", "a", True, None), ("木香", "a", False, "period")]
+    # a part name that is a member of its drug (天麻 of 赤箭: one drug, ``ho``) is searched as any other name
+    member = AliasIndex([AliasRecord("赤箭", ho="赤箭", n=30),
+                         AliasRecord("天麻", ho="赤箭", n=500, r=[Referent("赤箭", k="part_name", src=["curated"])])])
+    assert plan(member, ask(None, "天麻")) == [("赤箭", "a", True, None)]
+    assert plan(member, ask(None, "赤箭")) == [("天麻", "d", True, None)]
 
 
 def test_spellings_and_heads():

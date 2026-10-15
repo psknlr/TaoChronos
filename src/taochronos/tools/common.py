@@ -84,7 +84,11 @@ def lineage_in_scope(ctx: ToolContext) -> list:
     return ctx.cap("lineage").build(scope_passages(ctx), claims_in_scope(ctx))
 
 
-def passage_card(ctx: ToolContext, passage: Passage, *, full: bool = False) -> dict[str, Any]:
+def passage_card(ctx: ToolContext, passage: Passage, *, full: bool = False,
+                 focus: list[str] | None = None) -> dict[str, Any]:
+    """A passage as tools show it: its first 120 characters — or, when the first of the ``focus`` surfaces the text
+    writes (a search hit's matched names) starts at character 100 or later of the normalised text, the 120 from 40
+    before it, so that a passage found under a drug's other name shows that name."""
     corpus = ctx.cap("corpus")
     pack = ctx.cap("domain")
     book = corpus.book(passage.book_id)
@@ -97,7 +101,7 @@ def passage_card(ctx: ToolContext, passage: Passage, *, full: bool = False) -> d
         "year": year,
         "period": pack.periods.label(pack.periods.period_of(year) or ""),
         "locator": passage.locator.label(),
-        "text": passage.text if full or len(passage.text) <= 120 else passage.text[:120] + "…",
+        "text": passage.text if full or len(passage.text) <= 120 else _excerpt(pack, passage.text, focus),
     }
     if full:
         card["variants"] = [to_jsonable(v) for v in passage.variants]
@@ -105,6 +109,21 @@ def passage_card(ctx: ToolContext, passage: Passage, *, full: bool = False) -> d
         card["notes"] = passage.notes
         card["temporal"] = to_jsonable(passage.temporal)
     return card
+
+
+def _excerpt(pack: Any, text: str, focus: list[str] | None) -> str:
+    """120 characters of a passage longer than that: from its start, or from 40 before the first focus surface it
+    writes (found in the normalised text, which keeps the offsets) when that starts at character 100 or later."""
+    norm = pack.variants.normalize_text(text) if focus else ""
+    pos = -1
+    for surface in focus or ():
+        pos = norm.find(pack.variants.normalize_text(surface)) if surface else -1
+        if pos >= 0:
+            break
+    if pos < 100:
+        return text[:120] + "…"
+    start = pos - 40
+    return "…" + text[start:start + 120] + ("…" if start + 120 < len(text) else "")
 
 
 def claim_card(claim: Claim) -> dict[str, Any]:

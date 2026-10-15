@@ -18,7 +18,7 @@ import { BrowserRuntime, probeServer, sameOriginServer, ServerRuntime } from "./
 import * as store from "./store.js";
 import {
   $, bare, copyText, dateGroup, debounce, download, fmtMs, h, icon, moveBar, passageLabel, progressBar, replace, sleep, storage,
-  throttleFrame, toast, truncate, uid, yearLabel,
+  throttleFrame, toast, truncate, uid, withFound, yearLabel,
 } from "./util.js";
 import { renderDrawer, reportNode } from "./view/drawer.js";
 import { openSettings } from "./view/settings.js";
@@ -376,7 +376,11 @@ function registerEvidence(conv, cards) {
     if (!c?.passage_id) continue;
     const old = conv.evidence[c.passage_id];
     if (!old) conv.evidence[c.passage_id] = { ...c };
-    else for (const [k, v] of Object.entries(c)) if (v !== undefined && v !== null && v !== "" && (old[k] === undefined || (k === "text" && String(v).length > String(old.text || "").length))) old[k] = v;
+    else for (const [k, v] of Object.entries(c)) if (k !== "found" && v !== undefined && v !== null && v !== "" && (old[k] === undefined || (k === "text" && String(v).length > String(old.text || "").length))) old[k] = v;
+    // what a search found it under (withFound) is the latest search's: set, or cleared by one that found it as asked
+    const card = conv.evidence[c.passage_id];
+    if (c.found) card.found = c.found;
+    else if ("found" in c) delete card.found;
   }
 }
 
@@ -598,13 +602,14 @@ function makeHooks(conv, msg) {
       c.summary = out.ok ? out.summary || "完成" : truncate(out.error || "失败", 120);
       c.error = out.ok ? null : out.error;
       c.preview = (out.text || "").slice(0, 8000);
-      c.citations = (out.citations || []).slice(0, 80);
+      const cites = out.ok ? withFound(out.citations, out.result) : out.citations; // a search's labels (via, flags)
+      c.citations = (cites || []).slice(0, 80);
       c.charts = out.ok ? chartsOf(out.result) : [];
       c.tables = out.ok ? tablesOf(out.result) : [];
       c.document = out.ok ? documentOf(out.result) : null;
       if (out.tool && out.tool !== call.name) c.resolved = out.tool;
       toolTextCache.delete(conv); // what the tools returned has grown: citations are checked against it
-      registerEvidence(conv, out.citations);
+      registerEvidence(conv, cites);
       if (out.ok && (call.name === "taochronos_research" || out.tool === "taochronos_research") && out.result?.session_id) {
         const run = addResearch(conv, out.result, c.ms);
         c.research = run.id;
@@ -714,7 +719,7 @@ async function runTool(name, args) {
   try {
     await ensureRuntime();
     const out = await routed(S.runtime).call(name, args, { maxChars: S.settings.resultChars });
-    if (out.ok && S.conv) registerEvidence(S.conv, out.citations);
+    if (out.ok && S.conv) registerEvidence(S.conv, withFound(out.citations, out.result));
     for (const c of out.citations || []) if (!S.passages.has(c.passage_id)) { /* fetched on demand */ }
     return out;
   } catch (err) {

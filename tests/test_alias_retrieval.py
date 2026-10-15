@@ -86,6 +86,8 @@ BOOKS = (
        ("d01", "督邮一", "己", 500, "本草", ["徐长卿，一名鬼督邮，味辛温。"]),
        ("d02", "督邮二", "己", 600, "本草", ["赤箭，一名鬼督邮，杀鬼精物。"]),
        ("d03", "督邮三", "己", 700, "方书", ["鬼督邮二两，治鬼疰。"]),
+       ("d04", "督邮四", "己", 750, "杂", ["鬼督邮之名，见于古书。"]),
+       ("d05", "督邮五", "己", 760, "杂", ["古书载鬼督邮，今不识。"]),
        ("e01", "长卿一", "己", 500, "本草", ["徐长卿，味辛温，主蛊毒。"]),
        ("e02", "长卿二", "己", 550, "方书", ["徐长卿三两，治疫疠。"]),
        ("f01", "赤箭一", "己", 520, "本草", ["赤箭，味辛温，主杀鬼。"]),
@@ -108,6 +110,8 @@ BOOKS = (
        ("z01", "抱薪", "子", 300, "杂", ["抱薪救火，火愈盛。"]),
        ("z02", "慎火草", "子", 500, "本草", ["慎火草，一名救火，味苦平。"]),
        ("z03", "景天方", "子", 600, "方书", ["景天三两，治火疮。"]),
+       ("z04", "慎火方", "子", 650, "方书", ["慎火三两，捣汁涂之。"]),
+       ("z05", "误治", "子", 1700, "医案", ["误投桂枝人参，是抱薪救火也。"]),
        ("q01", "枳壳方", "丑", 1100, "方书", ["枳壳二两，麸炒。"]),
        ("q02", "枳实方", "丑", 300, "方书", ["枳实三枚，炙。"]),
        ("w01", "云参古", "寅", 1600, "本草", ["云参三钱，补中气。"]),
@@ -164,8 +168,8 @@ def test_profiles_and_plugins_hand_the_layer_and_its_parameters_on(layer, corpus
     from taochronos.kernel.profiles import load_profile
     from taochronos.kernel.registry import CapabilityRegistry
 
-    # loaded, and off until the tools show the labels (U6); then the site's corpus first (phase A)
-    for name, enabled in (("web-canon", False), ("full-corpus", False)):
+    # loaded; on for the site's corpus, whose search tool shows the labels (phase A), off for the full corpus (phase B)
+    for name, enabled in (("web-canon", True), ("full-corpus", False)):
         config = {b["plugin"]: b.get("config") or {} for b in load_profile(name, [HOME / "profiles"]).bundles}
         assert config["taochronos.plugins.classics"]["aliases"] == ["aliases"]
         assert "aliases_local" not in config["taochronos.plugins.classics"]
@@ -405,6 +409,34 @@ def test_a_false_friend_the_lexicon_files_as_a_herb_counts_only_as_that_herb(ret
         "surface": "景天", "referent": "景天", "direction": "alias→drug", "kind": "异名", "status": "open",
         "source": ["词表"], "witness": None, "reading": None, "p": None}]
     assert ids(hits).index("z03.000") < ids(hits).index("z01.000")  # the demoted after the side queue
+    # beside 桂枝 and 人参 it is still no herb's name: only a 一名 or 景天's other names say a false friend is the drug
+    assert by["z05.000"].tier == "D" and by["z05.000"].flags == ["demoted:no-context"]
+    loose = {h.passage_id: h for h in retriever.search("救火是哪味药", k=10, alias_params={"ablate": "gates"})[1]}
+    assert loose["z05.000"].tier == "A"
+
+
+def test_a_shared_name_spoken_of_as_a_name_reads_as_a_drug(retriever):
+    by = {h.passage_id: h for h in retriever.search("鬼督邮", k=20)[1]}
+    assert by["d04.000"].tier == "A" and "homonym:鬼督邮" in by["d04.000"].flags  # 之名: a name, of no drug in sight
+    assert by["d05.000"].tier == "D" and by["d05.000"].flags == ["demoted:no-context"]
+    gates = retriever._gates(retriever.analyzer.analyze("鬼督邮", aliases=True, cfg=retriever.alias), retriever.alias)
+    assert gates["asked"] == [("鬼督邮", [], ["别仙踪", "天麻", "徐长卿", "赤箭"], False)]
+
+
+def test_a_drug_written_inside_a_longer_name_nobody_knows_is_asked_as_written(retriever):
+    q, hits = retriever.search("慎火草", k=10)
+    by = {h.passage_id: h for h in hits}
+    assert q.asked == {"慎火": "herb:景天", "慎火草": None} and q.drugs == ["慎火"] and q.longer == {"慎火": "慎火草"}
+    assert q.terms == ["herb:景天"] and "慎火草" in q.quoted  # 景天's forms searched as today, the name as written
+    assert by["z02.000"].tier == "A" and by["z04.000"].tier == "X"  # 慎火 alone is one of 景天's other forms
+    assert by["z04.000"].via[0]["surface"] == "慎火" and by["z04.000"].via[0]["referent"] == "景天"
+    for text in ("慎火", "慎火的功效", "景天"):  # the name alone, or beside question words: no longer name
+        assert not retriever.analyzer.analyze(text, aliases=True).longer, text
+    assert analyzer_terms(retriever, "桂枝汤") == ["formula:桂枝汤"]  # a known longer name is that name
+
+
+def analyzer_terms(retriever, text: str) -> list[str]:
+    return retriever.analyzer.analyze(text, aliases=True).terms
 
 
 def test_only_an_asked_drugs_other_names_go_to_the_side_queue(retriever):

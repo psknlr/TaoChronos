@@ -9,10 +9,9 @@ description: 要籍语料 — the openly licensed texts of the ranked works (the
 bundles:
   - {plugin: taochronos.plugins.classics, config: {domain: domains/classics, store: corpus/tcm.sqlite, lexicon_extra: [lexicon-supplement, lexicon-core], aliases: [aliases]}}
   - {plugin: taochronos.plugins.knowledge}
-  # a drug's other names (国老, 通草 before 960) fill at most 3 of 10 places beside the asked name (ADR 0023); witnesses
-  # are those of the site's corpus.  Off until the search tool shows each hit's labels (via, flags, query.aliases):
-  # turned on together with that change (phase A)
-  - {plugin: taochronos.plugins.retrieval, config: {alias: {enabled: false, witness_scope: web}}}
+  # a drug's other names (国老, 通草 before 960) fill at most 3 of 10 places beside the asked name (ADR 0023), each hit
+  # labelled by the search tool (via, flags, query.aliases); witnesses are those of the site's corpus (phase A)
+  - {plugin: taochronos.plugins.retrieval, config: {alias: {enabled: true, witness_scope: web}}}
   - {plugin: taochronos.plugins.models.offline}
   - {plugin: taochronos.plugins.models.anthropic_provider}
   - {plugin: taochronos.plugins.models.openai_compat}

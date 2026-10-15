@@ -78,6 +78,7 @@ same_drug:
   - {names: [旱莲草, 鳢肠], wit: [jc_d076.00244, jc_o059.03412], why: 莲子草（别名录鳢肠之名）即旱莲草；旱莲草即墨汁草}
   - {names: [牛蒡子, 恶实, 鼠黏子], wit: [jc_c029.00121, jc_c007.00207], why: 鼠黏子一名牛蒡子，一名大力子，一名恶实；恶实今谓之牛蒡，未去萼时又谓之鼠黏子}
   - {names: [莱菔, 萝卜], wit: [jc_c040.00658, jc_c029.00346], why: 莱菔，即萝卜也；莱菔根俗云萝卜}
+  - {names: [荆芥, 假苏], wit: [jc_c029.00024, yishuo.002.00204], why: 荆芥……（一名假苏）；假苏是荆芥（别名录本条不在本库）}
   - {names: [菟丝, 菟丝子], wit: [jc_c000.00123, jc_c000a.00011, jc_d045.00041],
      why: 吴普菟丝（一名玉女、赤网）即本经菟丝子条（一名菟芦）；方中「菟丝（子一两半）」即菟丝子}
   # animals
@@ -87,6 +88,8 @@ same_drug:
      why: 大黄䗪虫丸一作大黄蟅虫丸；䗪虫一名土鳖，伤科写作土鳖虫}
   - {names: [斑蝥, 斑猫], wit: [jc_o067.04362, jc_c000.01280], why: 同炒法一作斑蝥、一作斑猫；吴普斑猫一名斑蚝}
   - {names: [蝉蜕, 蝉壳], wit: [jc_d002.04653, jc_d001.00742], why: 别录蚱蝉条「壳名枯蝉」，食疗作「蝉壳主小儿痫」：即蚱蝉之蜕}
+  - {names: [鹿角胶, 白胶], wit: [jc_c000a.00114, ws_36bca7b992.00119], why: 本经白胶一名鹿角胶（白胶香为枫香脂，自成 blocker）}
+  - {names: [鸡内金, 鸡肫皮], wit: [jc_c021.01752, jc_o071.01222], why: 鸡肫皮（一名鸡内金）；鸡内金（即鸡肫皮，烧存性）；词表只收鸡肫皮}
 
 # pairs the lists lack or file wrongly, with their status and cues, and the years a name meant a drug where that
 # changed.  `note` is shown with the referent; `why` is for the editors only.
@@ -120,6 +123,14 @@ pairs:
   - {s: 蝉壳, head: 蝉蜕, kind: alias, status: open, wit: [jc_d002.04653, boji_fang.003.00225], why: 蚱蝉之壳；方中蝉壳（去足、微炒）皆作药}
   - {s: 鼠黏, head: 牛蒡子, kind: alias, status: open, wit: [jc_c040.00385, jc_l102.00057],
      why: 牛蒡一名恶实，又名鼠黏；痘疹方单写鼠黏（三钱）即牛蒡子；别名录归鼠妇，见 decisions}
+  # names of drugs whose 别名录 entry the site's store lacks (its excerpt holds 778 of 1,086), each read in the store
+  - {s: 大力子, head: 牛蒡子, kind: alias, wit: [jc_c029.00121], why: 鼠黏子一名牛蒡子，一名大力子；方中大力子（炒）皆此}
+  - {s: 马蝗, head: 水蛭, kind: folk, wit: [tangye_bencao.003.00937], why: 汤液本草：水蛭（一名马蝗）}
+  - {s: 节节草, head: 木贼, kind: folk, wit: [jc_c010.00040], why: 木贼，一名节节草，一名笔管草}
+  - {s: 斑杖, head: 虎杖, kind: alias, wit: [zhenglei_bencao.011.07645], why: 日华子云：斑杖者，虎杖之别名}
+  - {s: 斑杖根, head: 虎杖, kind: folk, wit: [jc_c040.00515], why: 虎杖，俗名斑杖根}
+  - {s: 锅底煤, head: 百草霜, kind: folk, wit: [jc_g023.01245, jc_o043.02164], why: 百草霜（即锅底煤）；锅底煤，即锅底烟}
+  - {s: 胡王使者, head: 独活, kind: alias, wit: [jc_c000.00154], why: 吴普：独活，一名胡王使者（别名录作白头翁之名：二药同名）}
   # names that are also other things: read as the drug only beside its cues
   - {s: 将军, head: 大黄, kind: alias, status: cue, cues: [大黄, 锦纹, 川军, 荡涤, 承气], wit: [jc_d031.00396]}
   - {s: 将军, head: 石硫黄, kind: alias, status: cue, cues: [硫黄, 阳精, 破邪归正], wit: [tangye_bencao.003.00861, jc_c103.00085]}
@@ -158,6 +169,8 @@ pairs:
      wit: [zhenglei_bencao.023.13920, jc_f011.00115], note: 图经：蓬蘽非覆盆也；明清方中覆盆即覆盆子}
   # pairs the lists lack, kept as candidates
   - {s: 鬼目, head: 石南, kind: alias, status: candidate, wit: [jc_c000a.00203], why: 本经石南一名鬼目，别名录未收}
+  - {s: 苦菜, head: 贝母, kind: alias, status: candidate, wit: [jc_c000.00664],
+     why: 别录贝母一名药实、苦花、苦菜；本库之苦菜皆苦菜（荼）本条，作贝母者只此一名句}
 
 # the year a name came into use: an earlier passage writing it is flagged (a later edition's word), never dropped
 first_use:
@@ -263,6 +276,9 @@ cover_stops:
   思仙: [思仙丹]  # 金锁思仙丹 jingyue_quanshu_skqs.039.05755
   大青: [大青龙, 大青筋]  # 大青龙汤 jinkui_yaolue.002.00280 (174 passages); 肚大青筋 jc_h014.00385
   过街: [过街笑]  # 又名过街笑（牙痛方） jc_l113.00227
+  # 明目方之名，方中无萤火、地锦：夜光丸 ruizhutang.005.00176, jc_p0801.03520, zhengzhi_zhunsheng.034.05036;
+  # 夜光散 jc_o039.01022; 洗眼药则有夜光膏 jc_f026.00212
+  夜光: [夜光丸, 夜光散, 夜光膏]
   # straddles and set phrases
   # cm_suwen_gucongde.01484 将军之官; jc_d053.01695 大将军; jc_d004a.00839 李将军; jc_c007.00078 金吾将军; jc_o034.00087 上将军;
   # chushi_yishu.002.00019 右军将军; waitai_miyao.023.03524 宝节将军; jc_d002.07399 八部将军; jc_l001.00052 十将军冲翳;
@@ -301,6 +317,7 @@ cover_stops:
   芙蓉: [哑芙蓉]  # 鸦片即哑芙蓉 jc_o097.02031
   白姜: [白姜蚕]  # 白僵蚕 written 白姜蚕 chishui_xuanzhu.003.00765
   覆盆: [覆盆子, 如覆盆, 覆盆之形]  # the 别录 drug (its own entry); jc_o052.20530 如覆盆; jc_h014.00383 覆盆之形
+  党参: [上党参]  # 产地冠名：歙白术，绵黄芪，上党参（上党之人参），交趾桂 jc_c012.00000
 
 # gate overrides: a name's status for one drug (head), or for all of its drugs where no head is given; the first row
 # that fits wins

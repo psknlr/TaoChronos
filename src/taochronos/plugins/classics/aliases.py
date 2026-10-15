@@ -61,6 +61,7 @@ CONTEXT_PATTERNS: dict[str, str] = {
     "each": r"^[^|]{0,8}?各[一二三四五六七八九十百半等]",  # 将军芒硝各三两
     "prep": r"^\|[^|]{0,8}?(?:炒|炙|去|研|制|焙|煨|洗|切|熬|烧|酒|醋|锉|碎|捣|浸|蒸)",  # 将军（酒洗） · 将军（炙）三两
     "nameof": r"(?:一名|又名|亦名|俗名|俗呼|名曰)$",  # 大黄一名将军
+    "named": r"^(?:之名|之称|之号)",  # 故有神草之名 · 并有鬼督邮之名: the name spoken of as a name
 }
 # source id → how an answer credits it, when the file's header carries no ``labels`` (the build writes them from
 # sources.yaml, which the Worker's ALIAS_SOURCES read too); the CC0 别名录 always with 中醫笈成
@@ -316,7 +317,9 @@ class Expansion:
     wit: list[Witness] = field(default_factory=list)
     n: int = 0
     searched: bool = False
-    why: str | None = None  # why it was not searched: "cap", "unattested" or "period" (outside the query's window)
+    # why it was not searched: "cap", "unattested", "period" (outside the query's window) or "part" (another part of
+    # the plant, a drug of its own)
+    why: str | None = None
 
 
 # --------------------------------------------------------------------------- the file
@@ -726,16 +729,28 @@ class AliasIndex:
         or two herb names near it."""
         p = _params(cfg)
         cues = [c for c in cues if c and c != s]
-        dose, each, prep, nameof = (self._patterns[key] for key in ("dose", "each", "prep", "nameof"))
+        dose, each, prep = (self._patterns[key] for key in ("dose", "each", "prep"))
         for i in offs:
             j = i + len(s)
             after = g[j:j + 12]
-            if dose.match(after) or each.match(after) or prep.match(after) or nameof.search(g[max(0, i - 4):i]):
-                return True
-            near = _around(g, i, j, p["cue_window"])
-            if any(c in near for c in cues):
+            if dose.match(after) or each.match(after) or prep.match(after) or self.named(g, s, [i], cues, cfg=p):
                 return True
             if self._herb_count(_around(g, i, j, p["list_window"])) >= 2:
+                return True
+        return False
+
+    def named(self, g: str, s: str, offs: Iterable[int], cues: Iterable[str], *,
+              cfg: Mapping[str, Any] | None = None) -> bool:
+        """Whether ``s`` is named as the drug at one of ``offs``: a 一名 before it, a 之名 after it or a cue near it —
+        the part of :meth:`drug_context` a false friend needs (救火 beside 麻黄 and 桂枝 in 抱薪救火 is no drug's
+        name)."""
+        p = _params(cfg)
+        cues = [c for c in cues if c and c != s]
+        nameof, named = self._patterns["nameof"], self._patterns["named"]
+        for i in offs:
+            j = i + len(s)
+            if (nameof.search(g[max(0, i - 4):i]) or named.match(g[j:j + 4])
+                    or any(c in _around(g, i, j, p["cue_window"]) for c in cues)):
                 return True
         return False
 
@@ -838,9 +853,13 @@ class AliasIndex:
         drug, but as a head it still reaches its own names.  Such a name is ``shared`` when it may also mean another
         drug within the query's window; that drug's window and names are then among its ``rivals``.
 
+        A ``part_name`` pair joins two parts of one plant that are drugs of their own (青木香, the root, and 马兜铃,
+        the fruit; 鸡舌香 and 丁香) unless the part name is a member of its drug (天麻 of 赤箭, ``ho``): it is shown,
+        never searched, with why ``part``.
+
         Ordered by direction (alias→drug first), status (open first), passages (most first) and surface; the first
         ``cap`` attested ones are searched, cap = min(expansions, mask_bits − surfaces − component groups).  Names whose
-        window misses the query's come last, with why ``period``."""
+        window misses the query's come next, with why ``period``; other parts last, with why ``part``."""
         p = _params(cfg)
         ablate = _ablate(p)
         after, before = q.after, q.before
@@ -849,10 +868,15 @@ class AliasIndex:
         taken = set(searched) | set(asked)
         found: list[tuple[tuple, Expansion]] = []
         excluded: list[tuple[tuple, Expansion]] = []
+        parts: list[tuple[tuple, Expansion]] = []
 
-        def add(e: Expansion, order: int) -> None:
+        def add(e: Expansion, order: int, part: bool = False) -> None:
             key = (DIRECTIONS.index(e.direction), STATUSES.index(e.status), -e.n, e.surface, order, e.group, e.head)
-            (found if meets(e.valid, after, before) else excluded).append((key, e))
+            (parts if part else found if meets(e.valid, after, before) else excluded).append((key, e))
+
+        def other_part(name: str, ref: Referent) -> bool:  # a part name that is not a member of its drug
+            named = self.records.get(name)
+            return ref.k == "part_name" and "gates" not in ablate and (named is None or named.ho != ref.g)
 
         for order, (s, term) in enumerate(asked.items()):
             rec = self.record(s)
@@ -863,7 +887,8 @@ class AliasIndex:
                     continue
                 valid = None if "period" in ablate else ref.v
                 pairs = [(ref.h, ref)]
-                if meets(valid, after, before):
+                part = other_part(s, ref)
+                if meets(valid, after, before) and not part:
                     pairs += [(a, other) for a, other in self._groups.get(ref.g, ())
                               if other.k == "spelling" and other.st != "candidate"]
                 for h, pair in pairs:
@@ -872,7 +897,8 @@ class AliasIndex:
                         continue
                     add(Expansion(h, s, DIRECTIONS[0], ref.g, ref.h, kind=pair.k, status="open", valid=valid,
                                   shared=hrec is not None and len({r.g for r in hrec.r}) > 1, cues=list(ref.c),
-                                  src=list(pair.src), wit=list(pair.w), n=hrec.n if hrec is not None else 0), order)
+                                  src=list(pair.src), wit=list(pair.w), n=hrec.n if hrec is not None else 0), order,
+                        part)
             # drug → alias: the other names of the groups the asked name heads
             groups = set(self.groups_for(None, [s]))
             entry = lex.resolve(term) if lex is not None and term else None
@@ -893,7 +919,8 @@ class AliasIndex:
                     add(Expansion(a, s, DIRECTIONS[1], g, ref.h, kind=ref.k,
                                   status="open" if "gates" in ablate else ref.st,
                                   valid=None if "period" in ablate else ref.v, shared=bool(rivals), cues=list(ref.c),
-                                  own=own, rivals=rivals, src=list(ref.src), wit=list(ref.w), n=arec.n), order)
+                                  own=own, rivals=rivals, src=list(ref.src), wit=list(ref.w), n=arec.n), order,
+                        other_part(a, ref))
         out: list[Expansion] = []
         seen: set[str] = set()
         for _, e in sorted(found, key=lambda t: t[0]):
@@ -911,11 +938,12 @@ class AliasIndex:
                 used += 1
             else:
                 e.why = "cap"
-        for _, e in sorted(excluded, key=lambda t: t[0]):
-            if e.surface not in seen:
-                seen.add(e.surface)
-                e.why = "period"
-                out.append(e)
+        for why, rest in (("period", excluded), ("part", parts)):
+            for _, e in sorted(rest, key=lambda t: t[0]):
+                if e.surface not in seen:
+                    seen.add(e.surface)
+                    e.why = why
+                    out.append(e)
         return out
 
     def view(self, q: Any, cfg: Mapping[str, Any], lex: Any = None,

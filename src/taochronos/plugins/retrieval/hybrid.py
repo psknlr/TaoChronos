@@ -68,6 +68,9 @@ class ParsedQuery:
     # the ``query.aliases`` block that shows both
     asked: dict[str, str | None] = field(default_factory=dict)
     drugs: list[str] = field(default_factory=list)
+    # an asked drug the question writes inside a longer name nobody knows → that name (慎火 → 慎火草): the passages
+    # that write the longer name are the asked drug's own, its reading and other names still the shorter one's
+    longer: dict[str, str] = field(default_factory=dict)
     expansions: list[Expansion] = field(default_factory=list)
     alias_view: dict[str, Any] = field(default_factory=dict)
 
@@ -200,6 +203,8 @@ class QueryAnalyzer:
         3. A kept span outranks a weak or shorter lexicon mention it overlaps (山蓟 over 山).
         4. A question of four characters or fewer that is one name nobody knows, a weak herb character inside it,
            asks that name (干葛 is not 葛); question words stay outside it (葛的功效 asks 葛, 肝藏血 asks 肝 and 血).
+           A drug's name inside such a name is asked as written there (``q.longer``: 慎火草 asks the passages that
+           write 慎火草 as 慎火's own; 慎火 still gives the reading and the other names).
         The names asked go to ``q.asked`` in the order written, those asked as drugs to ``q.drugs``; only these are
         expanded and listed."""
         lex, index = self.pack.lexicon, _layer(self.pack)
@@ -235,6 +240,7 @@ class QueryAnalyzer:
             if not m.weak or len(norm) <= 4:
                 mentions.append(m)
         runs: list[tuple[int, str]] = []
+        longer: dict[str, tuple[int, str]] = {}
         if cfg["unknown_runs"] and len(norm) <= 4:
             # a weak herb character inside a short name nobody knows is not what was asked: 干葛 is not 葛, and 斑杖根
             # is neither 斑 nor 根 (but 姜枣, all known characters, is 姜 and 枣)
@@ -257,6 +263,23 @@ class QueryAnalyzer:
                         mentions.remove(o)
                     runs.append((lo, norm[lo:hi]))
                     taken |= set(range(lo, hi))
+            # a drug's name inside a longer one nobody knows is asked as that longer name (慎火草, not every 慎火), its
+            # reading, other names and lexicon forms still the shorter name's
+            names = [(m.start, m.end, m.surface, m.term_id) for m in mentions if not m.weak and m.category == "herb"]
+            names += [(i, j, s, None) for i, j, s in spans if not any(m.start < j and i < m.end for m in mentions)]
+            held_at = taken | {x for i, s in runs for x in range(i, i + len(s))} | {
+                x for o in mentions if not o.weak for x in range(o.start, o.end)}
+            for i, j, s, term in names:
+                lo, hi = i, j
+                while lo > 0 and _runs_over(norm[lo - 1]) and lo - 1 not in held_at:
+                    lo -= 1
+                while hi < len(norm) and _runs_over(norm[hi]) and hi not in held_at:
+                    hi += 1
+                if (j - i < hi - lo <= 4 and not any(_runs_over(c) for c in norm[:lo] + norm[hi:])
+                        and self._asks_drug(norm, g, i, j, s, term, strong, cfg)):
+                    for o in [o for o in mentions if o.weak and lo <= o.start and o.end <= hi]:
+                        mentions.remove(o)
+                    longer[s] = (lo, norm[lo:hi])
         own = list(mentions)
         inner = self._terms(q, mentions)[len(own):]
         # the names asked, in the order written: the mentions (but those inside a blocker), the alias spans no mention
@@ -267,6 +290,7 @@ class QueryAnalyzer:
         found += [(i, s, None) for i, j, s in spans if not any(m.start < j and i < m.end for m in own)]
         found += [(i, s, None) for i, s in runs]
         found += [(i, s, None) for i, _, s in written]
+        found += [(i, s, None) for i, s in longer.values()]  # searched as written
         where: dict[str, int] = {}
         for i, s, term in sorted(found, key=lambda t: t[0]):
             q.asked.setdefault(s, term)
@@ -283,6 +307,7 @@ class QueryAnalyzer:
             i = where.get(s, max(0, norm.find(s)))
             if self._asks_drug(norm, g, i, i + len(s), s, term, strong, cfg):
                 q.drugs.append(s)
+        q.longer = {s: run for s, (_, run) in longer.items() if s in q.drugs and run not in q.drugs}
         drugs = SimpleNamespace(asked={s: q.asked[s] for s in q.drugs}, after=q.after, before=q.before,
                                 all_surfaces=q.all_surfaces, groups=q.groups)
         q.expansions = index.expansions(drugs, lex, cfg)
@@ -845,12 +870,14 @@ class HybridRetriever:
         return hit
 
     def _gates(self, q: ParsedQuery, cfg: dict[str, Any]) -> dict[str, Any]:
-        """What the tiers read.  ``asked``: per drug asked, what makes an occurrence count — (gate-form name, its
-        blockers, the cues of the drug context it needs, None when it needs none); a name needs drug context when every
-        drug it may be searched as is ``cue`` (将军) and it heads none itself, or when it is a false friend the lexicon
-        files as a herb (救火, cued by 景天's other names).  ``forms``: the query's own surfaces and component groups as
-        ``matched`` holds them (a sense head alone is no surface).  ``drug``: the asked drugs' lexicon forms → (their
-        entry, the asked name)."""
+        """What the tiers read.  ``asked``: per drug asked, what makes an occurrence count — (gate-form name as the
+        question writes it (``q.longer``), its blockers, the cues of the drug context it needs or None when it needs
+        none, and whether only a 一名 or a cue makes that context); a name needs drug context when every drug it may be
+        searched as is ``cue`` (将军: a dose, a list or a cue beside it shows the drug) and it heads none itself, or when
+        it is a false friend the lexicon files as a herb (救火), which only a 一名 or one of that herb's other names
+        beside it shows — 抱薪救火 beside 麻黄 and 桂枝 is no herb.  ``forms``: the query's own surfaces and component
+        groups as ``matched`` holds them (a sense head alone is no surface).  ``drug``: the asked drugs' lexicon forms →
+        (their entry, the asked name)."""
         index, lex = _layer(self.pack), self.pack.lexicon
         ablate = _ablations(cfg)
         out = []
@@ -862,7 +889,10 @@ class HybridRetriever:
                 refs = [r for r in rec.r if r.st != "candidate"]
                 if rec.stop or (rec.ho is None and rec.fl is None and refs and all(r.st == "cue" for r in refs)):
                     cues = _cues(self.pack, s, term)
-            out.append((gate_form(s), list(rec.b) if rec is not None and "boundary" not in ablate else [], cues))
+            form = q.longer.get(s, s)
+            written = rec if form == s else index.record(form)
+            blockers = list(written.b) if written is not None and "boundary" not in ablate else []
+            out.append((gate_form(form), blockers, cues, rec is not None and rec.stop))
             entry = lex.entry(term) if term else None
             if entry is not None and entry.category == "herb":
                 for f in entry.surfaces():
@@ -881,11 +911,12 @@ class HybridRetriever:
         if present:
             yr = self._range(self.corpus.passage(hit.passage_id))
             why = ""
-            for s, blockers, cues in present:
+            for s, blockers, cues, named in present:
                 offs = index.free_offsets(g, s, blockers, yr)
+                context = index.named if named else index.drug_context
                 if not offs:
                     why = why or f"demoted:inside {_covering(index, g, s, blockers, yr)}"
-                elif cues is not None and not index.drug_context(g, s, offs, cues, cfg=cfg):
+                elif cues is not None and not context(g, s, offs, cues, cfg=cfg):
                     why = why or "demoted:no-context"
                 else:
                     return "A", []
@@ -965,8 +996,8 @@ class HybridRetriever:
     def _asked_extra(self, q: ParsedQuery, k: int, books: list[str] | None, allowed: set[str] | None, seen: set[str],
                      gates: dict[str, Any], cfg: dict[str, Any]) -> list[Hit]:
         """Passages that write an asked drug as asked (tier A) and that the fused pool missed, in BM25 order."""
-        ranked = [pid for pid, _ in self.corpus.search(list(q.drugs), limit=4 * k, after=q.after, before=q.before,
-                                                       book_ids=books)]
+        ranked = [pid for pid, _ in self.corpus.search([q.longer.get(s, s) for s in q.drugs], limit=4 * k,
+                                                       after=q.after, before=q.before, book_ids=books)]
         if self.large:
             self.corpus.passages_by_id(ranked)
         wanted = set(books) if books else None
@@ -1056,7 +1087,7 @@ class HybridRetriever:
         index, lex = _layer(self.pack), self.pack.lexicon
         normalize = self.pack.variants.normalize_text
         noted = {}
-        for s, (gs, _, cues) in zip(q.drugs, gates["asked"]):
+        for s, (gs, _, cues, _) in zip(q.drugs, gates["asked"]):
             rec = index.record(s)
             if rec is not None and rec.stop:
                 continue  # a false friend asked through the lexicon: a demoted hit's flag says why
@@ -1092,16 +1123,18 @@ class HybridRetriever:
         """The labels of a side hit on lexicon forms: per form, the drug and the way it was reached — the drug an asked
         name is another name of (黄丹 → 铅丹: alias→drug, of the asked name's kind) or another name of an asked drug
         (山药 → 薯蓣: drug→alias, of the form's kind).  At ``asked_first: all`` a form of another term is labelled
-        by its entry, a related term without a kind."""
+        by its entry, a related term without a kind.  An asked name the question writes inside a longer one (慎火 of
+        慎火草) is labelled like the drug's head where it stands alone."""
         lex, normalize = self.pack.lexicon, self.pack.variants.normalize_text
         terms = {f: tid for tid, fs in q.surfaces.items() for f in fs}
         out = []
         for raw in dict.fromkeys(h.matched):
-            if normalize(raw) in q.asked:
+            if normalize(raw) in q.asked and normalize(raw) not in q.longer:
                 continue
             if raw in gates["drug"]:
                 entry, s = gates["drug"][raw]
-                name, direction = (s, DIRECTIONS[0]) if raw == entry.term else (raw, DIRECTIONS[1])
+                own = raw == entry.term or normalize(raw) == s
+                name, direction = (s, DIRECTIONS[0]) if own else (raw, DIRECTIONS[1])
                 kind = _lexicon_kind(entry, name, normalize)
             else:
                 entry = lex.entry(terms.get(raw, ""))
