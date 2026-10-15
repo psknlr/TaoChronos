@@ -474,7 +474,8 @@ def test_search_labels_the_passages_found_under_a_drugs_other_name(tmp_path):
     layer = write_records(tmp_path / "layer" / "aliases.jsonl", [
         AliasRecord("甘草", ho="甘草", n=900, sh=0.9),
         AliasRecord("国老", n=12, sh=0.5, r=[Referent("甘草", t="herb:甘草", src=["bielu-jc"],
-                                                     w=[Witness("wit.000", 1180, 1180, "e", True)])])],
+                                                     w=[Witness("wit.000", 1180, 1180, "e", True)],
+                                                     cr=("本经", 25, 220))])],
         {"labels": {"bielu-jc": "别名录（中醫笈成）"}})
     today = h.capabilities.get("retriever")
     h.capabilities.register("retriever", "aliases", HybridRetriever(
@@ -496,16 +497,24 @@ def test_search_labels_the_passages_found_under_a_drugs_other_name(tmp_path):
     listed = {**view, "asked": view["asked"] + [stop], "expansions": [{**e, "for": [e["for"]]} for e in view["expansions"]]}
     assert not validate({**res, "query": {**res["query"], "aliases": listed}}, schema)
     for bad in ({**view, "asked": [{**stop, "referents": [{**stop["referents"][0], "status": "closed"}]}]},
-                {**view, "expansions": [{**e, "for": None} for e in view["expansions"]]}):
+                {**view, "expansions": [{**e, "for": None} for e in view["expansions"]]},
+                {**view, "asked": [{**stop, "referents": [{**stop["referents"][0], "credited": "本经"}]}]}):
         assert validate({**res, "query": {**res["query"], "aliases": bad}}, schema)
-    assert [(a["surface"], [r["head"] for r in a["referents"]]) for a in view["asked"]] == [("国老", ["甘草"])]
+    # each drug with the work a 釋名 bracket credits and its years
+    assert [(a["surface"], [(r["head"], r["credited"]) for r in a["referents"]]) for a in view["asked"]] == [
+        ("国老", [("甘草", ["本经", 25, 220])])]
     assert [(e["surface"], e["for"], e["direction"], e["searched"]) for e in view["expansions"]] == [
         ("甘草", "国老", "alias→drug", True)]
     side = [x for x in res["hits"] if x.get("via")]
     assert len(side) == 3 and all(x["routes"] == ["alias"] and x["matched"] == ["甘草"] for x in side)
-    assert side[0]["via"] == [{"surface": "甘草", "for": ["国老"], "referent": "甘草", "direction": "alias→drug",
-                               "kind": "异名", "status": "open", "source": ["别名录（中醫笈成）"], "witness": "wit.000",
-                               "reading": None, "p": None}]
+    via = {"surface": "甘草", "for": ["国老"], "referent": "甘草", "direction": "alias→drug", "kind": "异名",
+           "status": "open", "source": ["别名录（中醫笈成）"], "witness": "wit.000", "reading": None, "p": None}
+    assert side[0]["via"] == [via]
+    # a via always says the asked names it stands for; its status is a pair's, stop, or none
+    vias = [{**via, "status": "stop"}, {**via, "direction": "asked", "kind": None, "status": None}]
+    assert not validate({**res, "hits": [{**side[0], "via": vias}]}, schema)
+    for wrong_via in ({k: v for k, v in via.items() if k != "for"}, {**via, "status": "closed"}):
+        assert validate({**res, "hits": [{**side[0], "via": [wrong_via]}]}, schema)
     assert all("甘草" in x["text"] for x in side)  # the card shows the name the passage was found under
     assert not [x for x in res["hits"] if not x.get("via") and ("via" in x or "flags" in x)]  # only when non-empty
     off = search({"query": "国老", "k": 10, "aliases": "off"}).result

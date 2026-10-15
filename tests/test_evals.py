@@ -99,6 +99,10 @@ def test_alias_gold_holds_its_contract():
     gold = load_gold(HOME)
     assert validate(gold) == []
     assert all(item["split"] == split_of(item["group"]) for item in gold["items"])
+    # names added after the first held-out report (2026-10-15) are corrections of dev items only, dated from it on
+    late = [(item["split"], a["date"]) for item in gold["items"] for a in item["adjudicated"]
+            if a["by"] == "correction" or a["date"] > gold["frozen"]]
+    assert late and all(split == "dev" and date >= "2026-10-15" for split, date in late)
 
 
 def test_alias_eval_retention_check_needs_the_asked_first_rule():
@@ -159,7 +163,7 @@ def test_alias_eval_maps_the_asked_drug_by_its_lexicon_forms():
     drug listed beside it is never mapped through those forms (慈石 stays 慈石 under 处石, whose entry is 磁石's)."""
     from types import SimpleNamespace
 
-    from taochronos.evals.aliases import asked_forms, listed
+    from taochronos.evals.aliases import _drug, asked_forms, listed
 
     zi = {"asked": "紫葳", "expect_candidates": ["凌霄花"], "referents": [{"head": "凌霄花", "names": ["凌霄花"]}]}
     q = _q([], [{"surface": s, "for": "紫葳", "direction": "drug→alias", "referent": "紫葳"} for s in ("凌霄", "女葳")])
@@ -169,6 +173,21 @@ def test_alias_eval_maps_the_asked_drug_by_its_lexicon_forms():
         {"head": "磁石", "names": ["磁石"]}, {"head": "玄石", "names": ["玄石"]}]}
     q = _q([{"surface": "处石", "referents": [{"head": "慈石"}, {"head": "玄石"}]}])
     assert listed(chu, q, forms={"磁石", "元石", "处石"}) == ["慈石", "玄石"]
+    # a drug the gold names maps to its referent before any forms: forms meeting two referents tell neither apart
+    # (玄石 is no 磁石 when 处石's forms hold both), and a drug named beside another's surfaces is still itself
+    q = _q([{"surface": "处石", "referents": [{"head": "磁石"}, {"head": "玄石"}]}])
+    assert listed(chu, q) == ["磁石", "玄石"] == listed(chu, q, forms={"处石", "磁石", "玄石"})
+    assert _drug(chu, "玄石", {"磁石"}) == "玄石" and _drug(chu, "慈石", {"磁石"}) == "磁石"
+    # a form the item calls wrong is no name of the asked drug: listed, it is a candidate of its own, not the referent
+    # (the lexicon entry holds a wrong drug's name, as a herb's entry can hold another's 一名)
+    mei = {"asked": "甲名", "expect_candidates": ["甲药"], "referents": [{"head": "甲药", "names": ["甲药"]}],
+           "wrong": ["乙药"]}
+    q = _q([{"surface": "甲名", "referents": [{"head": "乙药"}]}])
+    assert listed(mei, q, forms={"甲名", "甲药", "乙药"}) == ["乙药"]
+    assert listed({**mei, "wrong": []}, q, forms={"甲名", "甲药", "乙药"}) == ["甲药"]  # else the lexicon decides
+    yi = {**mei, "wrong": [], "referents": mei["referents"] + [{"head": "乙药", "names": ["乙药", "乙草"]}]}
+    q = _q([{"surface": "甲名", "referents": [{"head": "乙草"}]}])
+    assert listed(yi, q, forms={"甲名", "甲药", "乙草"}) == ["乙药"]  # another referent's name, never the asked drug
     # the forms: the asked form's herb entry, else that of a name read inside it (慎火 of 慎火草), normalised
     entries = {"herb:紫葳": SimpleNamespace(category="herb", surfaces=lambda: ["紫葳", "淩霄花"]),
                "herb:景天": SimpleNamespace(category="herb", surfaces=lambda: ["景天", "慎火"]),
@@ -184,7 +203,7 @@ def test_alias_eval_maps_the_asked_drug_by_its_lexicon_forms():
 
 def test_alias_eval_counts_a_stop_names_listed_drugs():
     """A stop name asked on its own lists its drugs as candidates (status ``stop``): they count for the gold item that
-    expects them, and they are no reading of the name for a resolution row."""
+    expects them, not against one that expects none, and they are no reading of the name for a resolution row."""
     from types import SimpleNamespace
 
     from taochronos.evals.aliases import listed, resolve, score
@@ -203,6 +222,15 @@ def test_alias_eval_counts_a_stop_names_listed_drugs():
     q = _q([{"surface": "救火", "ambiguous": True, "referents": [{"head": "景天", "status": "stop"},
                                                                  {"head": "萤火", "status": "stop"}]}])
     assert listed(jiu, q) == ["景天", "萤火"]
+    # an item that expects none reads the name as no drug, and a stop's listing beside its note agrees: no candidate,
+    # no loss of precision; a drug listed as a reading of the name still counts against it
+    trap = {"type": "trap", "asked": "某词", "expect_candidates": [], "referents": [{"head": "某虫", "names": []}]}
+    q = _q([{**stop, "surface": "某词", "referents": [{"head": "某虫", "status": "stop", "valid": None}]}])
+    assert listed(trap, q) == []
+    row = score(trap, lambda text, yr: (False, False, False), lambda pid: ("", None),
+                {"rel": 0, "asked": 0, "other": 0}, q, [], [], 1.0)
+    assert row["cand"] == (0, 0, 0)
+    assert listed(trap, _q([{"surface": "某词", "referents": [{"head": "某虫", "status": "candidate"}]}])) == ["某虫"]
     pack = SimpleNamespace(variants=SimpleNamespace(normalize_text=lambda s: s),
                            lexicon=SimpleNamespace(entry=lambda term: None))
     q = SimpleNamespace(alias_view={"asked": [{**stop, "surface": "月经", "referents": [

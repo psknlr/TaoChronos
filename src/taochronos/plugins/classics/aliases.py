@@ -65,11 +65,15 @@ CONTEXT_PATTERNS: dict[str, str] = {
 }
 # A side passage that gives the name nothing beside it — a heading, a contents line, a list of formula names (炙甘草汤
 # 甘草汤, 人参散) — has fewer than BARE_REST Han characters outside the name and the formula names it writes (a run of
-# at most 8 characters ending in one of FORMULA_ENDS) and no drug context: it follows the others of its drug
+# at most 8 characters ending in one of FORMULA_ENDS that is no drug's name: 石膏, 雷丸, 牡丹) and no drug context: it
+# follows the others of its drug
 BARE_REST = 4
 FORMULA_ENDS = "汤散丸膏丹圆饮"
-# the note on a stop name asked on its own, whose drugs are listed as candidates (status ``stop``) and never searched
+# the note on a stop name asked on its own, whose drugs are listed as candidates (status ``stop``): the layer searches
+# none of their names; the lexicon's search, as today, those of the herb entry that files the name (救火 under 景天),
+# whose hits say so (status ``stop``)
 STOP_NOTE = "此名多作普通词语，罕作药名：所列药物只是候选，未按其名检索"
+STOP_NOTE_LEXICON = "此名多作普通词语，罕作药名：所列药物只是候选，仅按词表检索其同条之名"
 # source id → how an answer credits it, when the file's header carries no ``labels`` (the build writes them from
 # sources.yaml, which the Worker's ALIAS_SOURCES read too); the CC0 别名录 always with 中醫笈成
 SOURCE_LABELS: dict[str, str] = {
@@ -676,7 +680,10 @@ class AliasIndex:
             if seen.intersection(groups):
                 continue
             g = groups[0] if groups else entry.term
-            refs.append(Referent(g, t=entry.term_id, src=["lexicon"]))  # a member's entry names its group's drug
+            # a member's entry names its group's drug, of that drug's term id (蒺藜, herb:蒺藜 — not herb:蒺藜子)
+            t = entry.term_id if g == entry.term else next(
+                (ref.t for _, ref in self._groups.get(g, ()) if ref.h == g and ref.t), None)
+            refs.append(Referent(g, t=t, src=["lexicon"]))
             seen.add(g)
         return refs
 
@@ -803,17 +810,27 @@ class AliasIndex:
     def bare(self, g: str, exp: Expansion, yr: Window, *, cfg: Mapping[str, Any] | None = None) -> bool:
         """Whether a side passage gives an expansion's name nothing beside it — a heading, a contents line, a list of
         formula names: with the formula names it writes left out (gate-form runs of at most 8 characters ending in one
-        of :data:`FORMULA_ENDS`), fewer than :data:`BARE_REST` Han characters (or ASCII letters and digits) outside the
-        name, and the name, where it stands outside them, in no drug context (the herbs in 甘草干姜汤 are no list of
-        drugs).  An order, never a gate: such passages follow the others of their drug in the side queue."""
+        of :data:`FORMULA_ENDS`, but for a run that ends in the name or is a drug's own: 黄丹（炒）, 雷丸, 石膏), fewer
+        than :data:`BARE_REST` Han characters (or ASCII letters and digits) outside the name, and the name, where it
+        stands outside them, in no drug context (the herbs in 甘草干姜汤 are no list of drugs).  An order, never a gate:
+        such passages follow the others of their drug in the side queue."""
         s = exp.surface
-        runs = ["|" * len(run) if 0 < len(run) <= 8 and run[-1] in FORMULA_ENDS else run for run in g.split("|")]
+        runs = ["|" * len(run) if self._formula(run, s) else run for run in g.split("|")]
         if sum(len(run.replace(s, "").replace("|", "")) for run in runs) >= BARE_REST:
             return False
         rest = "|".join(runs)
         rec = self.record(s)
         offs = self.free_offsets(rest, s, rec.b if rec is not None else (), yr)
         return not self.drug_context(rest, s, offs, exp.cues, cfg=cfg)
+
+    def _formula(self, run: str, s: str) -> bool:
+        """Whether a gate-form run reads as a formula's name to :meth:`bare`: at most 8 characters ending in one of
+        :data:`FORMULA_ENDS`, neither ending in the name ``s`` nor a drug's name itself (the herb set's or a record
+        that names a drug: 石膏, 牡丹, 雷丸, 铅丹)."""
+        if not (0 < len(run) <= 8 and run[-1] in FORMULA_ENDS) or run.endswith(s) or run in self._herbs:
+            return False
+        rec = self.records.get(run)
+        return rec is None or rec.stop or not (rec.r or rec.ho is not None)
 
     def readings(self, s: str) -> list[Referent]:
         """The drugs a passage may read a name as: its record's referents that are not candidates (a doubtful pairing
@@ -986,8 +1003,9 @@ class AliasIndex:
         when there is nothing to show.  ``expansions`` are those :meth:`expansions` gave (computed when None).  An asked
         name is listed when it is an alias or names several drugs, the lexicon's included.  A stop name the question
         asks on its own (``q.stops``: {surface: term id or None}) is listed after them with every drug its record or the
-        lexicon gives it, each of status ``stop``, and a ``note`` that the name is mostly an ordinary word; nothing is
-        searched for it."""
+        lexicon gives it, each of status ``stop``, and a ``note`` that the name is mostly an ordinary word: the layer
+        searches nothing for it (:data:`STOP_NOTE`) — when the lexicon files it as a herb (救火 under 景天), today's search
+        of that entry's names alone (:data:`STOP_NOTE_LEXICON`)."""
         p = _params(cfg)
         web = p["witness_scope"] == "web"
         exps = self.expansions(q, lex, p) if expansions is None else expansions
@@ -1003,10 +1021,11 @@ class AliasIndex:
         for s, term in (getattr(q, "stops", None) or {}).items():
             rec = self.record(s)
             refs = self.referents(s, term, lex, stop=True) if rec is not None and rec.stop else []
+            entry = lex.entry(term) if lex is not None and term else None
             if refs:
                 asked.append({"surface": s, "term": term, "ambiguous": len({ref.g for ref in refs}) > 1,
                               "referents": [{**self._referent_view(ref, web), "status": "stop"} for ref in refs],
-                              "note": STOP_NOTE})
+                              "note": STOP_NOTE_LEXICON if entry is not None and entry.category == "herb" else STOP_NOTE})
         shown = [{"surface": e.surface, "for": e.for_, "direction": e.direction, "referent": e.head,
                   "kind": KINDS.get(e.kind, e.kind), "status": e.status, "searched": e.searched, "why": e.why}
                  for e in exps if e.why != "period"]

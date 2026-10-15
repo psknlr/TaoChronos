@@ -21,8 +21,8 @@ For every pair (name, drug) the build
 * collects blockers — the curated cover strings, then longer herb or alias names holding the name whose drug is another
   (a window where they mean the same drug in some periods only) and names that straddle an occurrence in the store
   (石蜜|甘; only the name the straddle cuts: 常山|甘草 cuts 山甘草, not 常山), ordered by how many passages write
-  them; never the strings curated.yaml unblocks for the name (青矾石 is 青矾), nor lexicon headwords that are two drug
-  names written together and nowhere one name (假苏荆芥, 防风党参);
+  them; never the strings curated.yaml unblocks for the name (青矾石 is 青矾), nor the 本草纲目's joint headings that
+  the lexicon harvested as one name and the store nowhere writes as one (假苏荆芥, 赤箭天麻);
 * counts with the runtime's own gates (``AliasIndex.free_offsets``, ``drug_context``) the passages that write the name
   free of its blockers (``n``) and the share of them that read it as a drug (``sh``), with cues that are the drug's
   head and its other names that may be read as it (no candidate, none written 20 times and mostly not as a drug);
@@ -144,6 +144,20 @@ def lexicon_fingerprint(root: Path) -> str:
             digest.update(f"{d}/{path.name}\0".encode())
             digest.update(path.read_bytes())
     return digest.hexdigest()[:12]
+
+
+def gangmu_titles(root: Path, normalize: Any) -> set[str]:
+    """The herbs the full-corpus lexicon harvested from 本草纲目 entry titles (pattern ``gangmu-entry``), normalised:
+    where the 纲目 heads one entry with two names (赤箭天麻, 假苏荆芥), the harvest took the heading for one name."""
+    out: set[str] = set()
+    for path in (p for d in LEXICON_EXTRA for p in sorted((root / d).glob("*.yaml"))):
+        data = load_yaml(path) or {}
+        for block in data if isinstance(data, list) else [data]:
+            for e in block.get("entries") or []:
+                if (isinstance(e, dict) and e.get("category", block.get("category")) == "herb"
+                        and "gangmu-entry" in ((e.get("evidence") or {}).get("patterns") or {})):
+                    out.add(normalize(e["term"]))
+    return out
 
 
 def validate_curated(curated: Any) -> list[str]:
@@ -370,6 +384,7 @@ class Builder:
                 kind = e.synonyms.get(s)
                 if kind:
                     self.lex_kind[(ns, e.term_id)] = kind
+        self.gangmu_titles = gangmu_titles(self.root, self.norm)
         self._web: set[str] | None = None
         self._rows: dict[str, tuple[str, int | None, int | None, str | None]] = {}  # pid → book, y0, y1, 本草 heading
         self._text: dict[str, str] = {}  # pid → normalised text
@@ -379,7 +394,7 @@ class Builder:
         self._drugs: dict[str, set[str]] = {}
         self._refs: dict[str, dict[str, Referent]] = {}
         self._longer: dict[str, list[str]] = {}  # a name → the longer names holding it (the last build's)
-        self.concatenations: set[str] = set()  # lexicon headwords that are two drug names written together
+        self.concatenations: set[str] = set()  # 纲目 joint headings the lexicon harvested as one name
         # what the last build decided, for the review and the local build
         self.members: dict[str, str] = {}  # name → the drug it heads
         self.group_term: dict[str, str | None] = {}
@@ -649,6 +664,10 @@ class Builder:
         stops = {self.norm(r["s"]) for r in cur.get("stop") or []}
         cover = {self.norm(k): sorted({self.norm(x) for x in v}) for k, v in (cur.get("cover_stops") or {}).items()}
         unblock = {self.norm(k): {self.norm(x) for x in v} for k, v in (cur.get("unblock") or {}).items()}
+        for s in sorted(unblock):  # a cover string in another spelling (validate_curated reads the rows as written)
+            both = sorted(unblock[s] & set(cover.get(s, ())))
+            self.notes["warnings"] += [f"unblock {s}: {x} is a cover string of it too; kept as one" for x in both]
+            unblock[s] -= set(both)
         decisions: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for row in cur.get("decisions") or []:
             decisions[self.norm(row["s"])].append(row)
@@ -706,7 +725,8 @@ class Builder:
         self.last_context = self.context(members)
         universe = self._longer = self._universe(surfaces, cover)
         straddlers = {u for u in set(self.herb_terms) | names if 2 <= len(u) <= MAX_NAME}
-        self.concatenations = self._concatenations({u for u in set(self.herb_terms) | set(members) if len(u) >= 2})
+        self.concatenations = self._concatenations({u for u in set(self.herb_terms) | set(members) if len(u) >= 2},
+                                                   set().union(*unblock.values()))
         blockers = {s: self._blockers(s, universe, cover.get(s, []), straddlers if s in refs else set(),
                                       unblock.get(s, set())) for s in surfaces}
         # the runtime's gates over the names' blockers, so that a blocker written there only inside one of its own
@@ -979,10 +999,13 @@ class Builder:
                 out[sub].append(u)
         return out
 
-    def _concatenations(self, known: set[str]) -> set[str]:
-        """Lexicon herb headwords that are two ``known`` drug names written together (假苏荆芥, 赤箭天麻, 防风党参: the
-        harvest read a joint heading or a list as one name), which the store never writes as one drug's name: with a
-        dose after it (not 各, which shares one dose among names), or named (一名…, …之名).  They block nothing."""
+    def _concatenations(self, known: set[str], unblocked: set[str]) -> set[str]:
+        """The lexicon's herb headwords harvested from 本草纲目 entry titles that are two ``known`` names written
+        together (赤箭天麻, 假苏荆芥: the 纲目 heads one entry with two names and the harvest took the heading for one),
+        which the store never writes as one drug's name: with a dose after it (not 各, which shares one dose among
+        names), or named (一名…, …之名).  They block nothing.  Not a title an editor ``unblocked`` for a name (a
+        curated unblock row reads it as one name, that name's drug: it blocks the other), nor a headword harvested
+        from other 本草 entries, which are one drug's (防风党参 is a 党参, 乌臼木根皮 an entry of 证类)."""
         dose, each, nameof, named = (re.compile(CONTEXT_PATTERNS[k]) for k in ("dose", "each", "nameof", "named"))
 
         def as_one(g: str, w: str) -> bool:
@@ -995,7 +1018,7 @@ class Builder:
                 i = g.find(w, i + 1)
             return False
 
-        return {w for w in sorted(self.headwords) if len(w) >= 4
+        return {w for w in sorted(self.headwords) if len(w) >= 4 and w in self.gangmu_titles and w not in unblocked
                 and any(w[:k] in known and w[k:] in known for k in range(2, len(w) - 1))
                 and not any(as_one(self.gate(pid), w) for pid in self.passages(w))}
 
@@ -1005,7 +1028,7 @@ class Builder:
         (with the years they mean another, where they mean this one in some only) and names straddling an occurrence
         of an alias in the store (石蜜|甘), each lot the most written first.  Past the cap, the least written are
         dropped (and reported).  Not the strings curated.yaml unblocks for ``s`` (青矾石 is 青矾, not 青|矾石), nor
-        the lexicon's headwords that are two drug names written together (:meth:`_concatenations`)."""
+        the 纲目's joint headings the lexicon harvested as one name (:meth:`_concatenations`)."""
         mine = self.drugs_of(s)
         cands: dict[tuple[str, int | None, int | None], int] = {}
         for u in sorted(universe.get(s, ())):

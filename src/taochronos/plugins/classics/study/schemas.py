@@ -45,14 +45,16 @@ SHARE_ROW = obj({"item": S, "units": N, "share": N, "other_units": N, "other_sha
 # under, the asked names it stands for, the drug, the way, the sources) and the ``query.aliases`` block
 NAMES: dict[str, Any] = {"anyOf": [S, STRS]}  # ``for``: one asked name, or those whose drug the hit is
 WINDOW: dict[str, Any] = {"anyOf": [arr(NN), {"type": "null"}]}
+CREDIT: dict[str, Any] = {"anyOf": [arr({"type": ["string", "number", "null"]}), {"type": "null"}]}  # [work, y0, y1]
+# ``status``: the pair's, ``stop`` when each asked name is a false friend, none when a name reads as the drug it heads
 ALIAS_VIA = obj({"surface": S, "for": NAMES, "referent": NS, "direction": {"enum": [*DIRECTIONS, "asked"]}, "kind": NS,
-                 "status": NS, "source": STRS, "witness": NS, "reading": NS, "p": NN},
-                ["surface", "referent", "direction", "kind", "status", "source", "witness", "reading", "p"])
+                 "status": {"enum": [*STATUSES, "stop", None]}, "source": STRS, "witness": NS, "reading": NS, "p": NN},
+                ["surface", "for", "referent", "direction", "kind", "status", "source", "witness", "reading", "p"])
 ALIAS_VIEW = obj({
     "asked": arr(obj({"surface": S, "term": NS, "ambiguous": B, "note": S,
                       "referents": arr(obj({"head": S, "kind": S, "status": {"enum": [*STATUSES, "stop"]},
                                             "valid": WINDOW, "floor": NN, "source": STRS, "witness": NS, "witness_year": NN,
-                                            "credited": WINDOW}, ["head", "kind", "status", "valid", "source", "witness"]))},
+                                            "credited": CREDIT}, ["head", "kind", "status", "valid", "source", "witness"]))},
                      ["surface", "ambiguous", "referents"])),
     "expansions": arr(obj({"surface": S, "for": NAMES, "direction": {"enum": list(DIRECTIONS)}, "referent": S, "kind": S,
                            "status": S, "searched": B, "why": NS}, ["surface", "for", "direction", "referent", "searched"])),

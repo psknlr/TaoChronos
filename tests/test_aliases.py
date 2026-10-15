@@ -16,6 +16,7 @@ from taochronos.plugins.classics.aliases import (
     KINDS,
     STATUSES,
     STOP_NOTE,
+    STOP_NOTE_LEXICON,
     VERSION,
     AliasIndex,
     AliasRecord,
@@ -589,11 +590,17 @@ def test_a_stop_name_asked_on_its_own_is_listed_with_its_drugs_as_stop(tmp_path)
     assert index.view(q, {}, lex) == {}  # asked as a drug, a stop name lists and reaches nothing
     q.stops = {"丁火": q.asked["丁火"]}
     (row,) = index.view(q, {}, lex)["asked"]
-    assert (row["surface"], row["ambiguous"], row["note"]) == ("丁火", True, STOP_NOTE)
-    # its record's pairs, which nothing searches, then the lexicon's entries — a group member's under its group's head
+    # the lexicon files it as a herb: today's search of that entry's names is all that is searched, and the note says so
+    assert (row["surface"], row["ambiguous"], row["note"]) == ("丁火", True, STOP_NOTE_LEXICON)
+    # its record's pairs, which nothing searches, then the lexicon's entries — a group member's under its group's head,
+    # of the term id the layer gives that head
     assert [(r["head"], r["status"], r["source"]) for r in row["referents"]] == [
         ("辛草", "stop", ["别名录（中醫笈成）"]), ("丙草", "stop", ["词表"]), ("庚草", "stop", ["词表"])]
+    assert [(r.h, r.t) for r in index.referents("丁火", q.asked["丁火"], lex, stop=True)] == [
+        ("辛草", None), ("丙草", "herb:丙草子"), ("庚草", "herb:庚草")]
     assert index.view(q, {}, lex)["expansions"] == []
+    q.stops = {"丁火": None}  # read by no lexicon term: nothing searched at all
+    assert index.view(q, {}, lex)["asked"][0]["note"] == STOP_NOTE
     bare = ask(None, "小便")
     bare.stops = {"小便": None}
     assert layer().view(bare, {}) == {}  # no drug to list: nothing
@@ -623,6 +630,16 @@ def test_a_name_reached_for_two_asked_names_is_one_expansion_for_both():
 def test_a_bare_side_passage_gives_the_name_nothing_beside_it(text, bare):
     exp = Expansion("甘草", "国老", "alias→drug", "甘草", "甘草", cues=["甘草"])
     assert layer().bare(gate_form(text), exp, (500, 500)) is bare
+
+
+def test_a_drug_whose_name_ends_like_a_formula_is_no_formula_to_bare():
+    index = AliasIndex([AliasRecord("铅丹", ho="铅丹", n=300), AliasRecord("黄丹", n=357, r=[Referent("铅丹", src=["bielu-jc"])])],
+                       context={"herbs": ["石膏", "雷丸"]})
+    exp = Expansion("黄丹", "铅丹", "drug→alias", "铅丹", "铅丹", cues=["铅丹"])
+    assert index.bare(gate_form("黄丹汤|黄丹"), exp, (500, 500))  # a formula's name and a heading, as before
+    assert not index.bare(gate_form("黄丹（炒）"), exp, (500, 500))  # the drug prepared, though its name ends in 丹
+    assert not index.bare(gate_form("黄丹|石膏|雷丸"), exp, (500, 500))  # beside two drugs, whatever their names end in
+    assert index._formula("雷丸散", "黄丹") and not index._formula("铅丹", "黄丹") and not index._formula("石膏", "黄丹")
 
 
 def test_same_drug_members_carry_their_group_so_split_lexicon_entries_are_one_drug(tmp_path):

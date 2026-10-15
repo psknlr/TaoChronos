@@ -50,7 +50,7 @@ TEXTS = {
                  # 地肤子|柏子仁 cuts 子柏 (柏子仁 takes its 柏)
                  (None, "常山甘草各一两"), (None, "又方石硫黄揩之"), (None, "石硫黄二两"), (None, "石硫黄一两"),
                  (None, "地肤子柏子仁各二合"),
-                 # lexicon headwords that are two drug names: 独活羌活 written as two (各), 虎掌天南星 as one (a dose)
+                 # 纲目 joint headings the lexicon took for one name: 独活羌活 written as two (各), 虎掌天南星 as one
                  (None, "独活羌活各一两"), (None, "虎掌天南星二两")],
     "late_c": [(None, "棒槌二钱"), (None, "大黄一名将军"), (None, "牡丹（即牡丹皮）二两")],
     "modern_d": [(None, "甜根子二钱")] + [(None, "柳花飞")] * 22,
@@ -228,22 +228,33 @@ def test_a_straddle_blocks_only_the_name_it_cuts(built):
     assert "地肤子柏" in recs["子柏"].b  # 地肤子|柏子仁: 柏子仁 takes the 柏 of 子柏
 
 
-def test_two_drug_names_written_together_block_nothing(built):
+def test_the_gangmu_joint_headings_block_nothing(built):
     recs = records(built)
     assert "独活羌活" not in recs["独活"].b and "fang_b.00061" in built.builder.free["独活"]  # 独活羌活各一两: two
     assert built.report["concatenations"]["独活羌活"] == ["独活"]
-    assert built.report["concatenations"]["防风党参"] == ["党参", "防风"]  # never written
     assert "虎掌天南星" in recs["天南星"].b and "虎掌天南星" not in built.report["concatenations"]  # 二两: one name
+    # another 本草 entry's title is one drug's name, though the store never writes it and both its parts are names
+    assert "防风党参" in recs["党参"].b and "防风党参" not in built.report["concatenations"]
 
 
 def test_unblock_drops_a_blocker_and_reports_a_row_that_drops_none(tmp_path, site):
-    curated = CURATED.replace("cover_stops: {}", "cover_stops: {}\nunblock: {蜜甘: [石蜜甘], 天南星: [虎掌天南星], 国老: [国老汤]}")
+    rows = "{蜜甘: [石蜜甘], 天南星: [虎掌天南星], 国老: [国老汤], 党参: [防风党参], 独活: [独活羌活], 将军: [将军汤]}"
+    curated = (CURATED.replace("cover_stops: {}", f"cover_stops: {{将军: [将军湯]}}\nunblock: {rows}")
+               .replace("first_use: [", "first_use: [{s: 羌活, year: 1000, wit: [fang_b.00061]}, "))
     result = build_open(site[1], make_home(tmp_path, curated))
     recs = records(result)
     assert "石蜜甘" not in recs["蜜甘"].b and "虎掌天南星" not in recs["天南星"].b  # a straddle, a lexicon headword
     assert "虎掌天南星" in recs["虎掌"].b  # for the name unblocked only
-    assert result.report["unblocked"] == {"天南星": ["虎掌天南星"], "蜜甘": ["石蜜甘"]}
+    assert "防风党参" not in recs["党参"].b
+    # a joint heading a row reads as one name (its drug's) is no longer two: it blocks the other name
+    assert "独活羌活" not in recs["独活"].b and "独活羌活" in recs["羌活"].b
+    assert "独活羌活" not in result.report["concatenations"]
+    assert result.report["unblocked"] == {"天南星": ["虎掌天南星"], "蜜甘": ["石蜜甘"], "党参": ["防风党参"],
+                                          "独活": ["独活羌活"]}
     assert "unblock 国老: 国老汤 is no blocker of it" in result.report["warnings"]
+    # a cover string in another spelling stays a cover string (validate_curated reads the rows as written)
+    assert "unblock 将军: 将军汤 is a cover string of it too; kept as one" in result.report["warnings"]
+    assert recs["将军"].b[0] == "将军汤" and "unblock 将军: 将军汤 is no blocker of it" not in result.report["warnings"]
 
 
 def test_a_floor_only_name_heads_a_drug_of_its_own(built):

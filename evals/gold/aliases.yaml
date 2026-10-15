@@ -28,7 +28,8 @@
 #   adjudicated every name with the passage that witnesses it (outside jc_c030 and bencao_gangmu_*), which writes the name
 #               beside the asked form, a head or another name (in its text or its section heading): an equation, a
 #               gloss, an entry, a chain; or, with ``parallel``, for the taboo spellings 元参 and 元胡 that no passage
-#               writes beside the original: the same line or recipe written each way in two passages
+#               writes beside the original (and 硝石, 慈石, whose passages write them beside the item's other referent):
+#               the same line or recipe written each way in two passages
 # group / split  items sharing any string (asked form, head, name, wrong name, cue or false friend) share a group,
 #               named by the first of them in file order (its head for an alias item, else its asked form); split =
 #               sha1(group) % 2: 0 dev, 1 heldout (``aliases_gold.groups``, ``split_of``; the (id, group, split) list is
@@ -56,7 +57,9 @@
 # Corrections of 2026-10-15, after the first held-out report (logged in docs/evals.md): the names adjudicated
 # ``by: correction`` — 凌霄, 姜芥, 鹿胶, 荼草, 游冬, 鸡舌香, 硝石, 慈石 — are real other names that dev runs showed missing,
 # each with a witness in the store; they were added to dev items only (ids, groups and splits unchanged), and no
-# held-out item was changed or looked at.
+# held-out item was changed or looked at.  On review, 硝石 and 慈石 are witnessed by parallel rows (their passages
+# wrote them only beside the item's other referent), and two non-drug strings the new names brought in are masked
+# (凌霄观, a building, under 紫葳 and 鬼目; 姜芥水肿 under 假苏).
 version: 1
 frozen: "2026-10-14"
 seed: 23
@@ -208,7 +211,7 @@ items:
     query: 紫葳的功效
     asked: 紫葳
     asked_cues: []
-    false_friends: []
+    false_friends: [凌霄观]
     referents:
       - {head: 凌霄花, names: [凌霄花, 凌霄], valid: null, witness: jc_c029.00148}
     wrong: []
@@ -217,7 +220,10 @@ items:
     band: ">=20"
     adjudicated:
       - {name: 凌霄花, witness: jc_c029.00148, by: annotator, date: "2026-10-14"}
-      - {name: 凌霄, witness: jc_c000.00819, by: correction, date: "2026-10-15"}  # 神农本草经[25,220] 紫葳: 《尔雅》注有一名凌霄四字，谓即凌霄花
+      # 神农本草经[25,220] 紫葳: 《唐本》注引《尔雅》注有一名凌霄四字，谓即凌霄花 — the editor doubts that reading of 紫葳
+      # (疑皆非，故不采之), not that 凌霄 is 凌霄花, the head; the one passage outside 纲目 that states it (玉机微义's 凌霄散,
+      # yuji_weiyi.040.03325, writes 凌霄 beside 凌霄花 only as the name of a recipe holding it)
+      - {name: 凌霄, witness: jc_c000.00819, by: correction, date: "2026-10-15"}
   # n=24 (隋唐五代–清); era: 唐; witness qianjin_yaofang.067.04694 备急千金要方[650,659]
   # review fix: replaces alias-09 (黄檗): held-out on names the design was tuned on (黄檗/黄柏)
   - id: alias-s01
@@ -265,7 +271,7 @@ items:
     query: 假苏是什么
     asked: 假苏
     asked_cues: []
-    false_friends: []
+    false_friends: [姜芥水肿]
     referents:
       - {head: 荆芥, names: [荆芥, 姜芥], valid: null, witness: jc_c000.00770}
     wrong: []
@@ -1116,7 +1122,9 @@ items:
     band: ">=20"
     adjudicated:
       - {name: 白胶, witness: jc_c000a.00114, by: annotator, date: "2026-10-14"}  # jc_c000a, 122
-      - {name: 鹿胶, witness: jc_c000.00468, by: correction, date: "2026-10-15"}  # 神农本草经[25,220] 白胶 (entry): 《考工记》云：鹿胶青白
+      # 神农本草经[25,220] 白胶 (entry): 《考工记》云：鹿胶青白…皆谓煮，用其皮，或用角 — the craft glue the editor cites under
+      # 白胶, the only passage outside 纲目 writing 鹿胶 beside a partner (本草求真 jc_c025a.00210 由角煎熬 names none)
+      - {name: 鹿胶, witness: jc_c000.00468, by: correction, date: "2026-10-15"}
 
   # ===== ambiguous (20): a name shared by several drugs: every referent is listed with its witness, none merged
   # n=29 (汉–清); 赤箭 ws_36bca7b992.00142 神农本草经[25,220]; 徐长卿 jc_c000a.00063 神农本草经（复古辑本）[25,220]
@@ -1282,7 +1290,9 @@ items:
     adjudicated:
       - {name: 消石, witness: jc_c000a.00098, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）: 消石 一名芒消
       - {name: 芒硝, witness: yizong_jinjian.032.15126, by: annotator, date: "2026-10-14"}  # 医宗金鉴[1742]
-      - {name: 硝石, witness: jc_c000.00047, by: correction, date: "2026-10-15"}  # 神农本草经[25,220] 硝石 (本经 消石): 据《名医》，一名芒硝
+      # 名医别录[200,500]: parallel: 《本经》原文：硝石，味苦，寒。主五脏积热，胃胀闭… = ws_36bca7b992.00020 神农本草经 消石
+      # line (jc_c000.00047, 据《名医》一名芒硝, writes 硝石 beside 芒硝, the other referent; the line ties it to 消石)
+      - {name: 硝石, witness: jc_d001.00024, by: correction, date: "2026-10-15", parallel: ws_36bca7b992.00020}
   # n=19 (汉–清); 桔梗 jc_c001.00129 吴普本草[220,265]; 白药 jc_c007.00212 本草衍义[1116,1116]
   # 吴普/名医 桔梗 一名白药; 本草衍义 白药 entry = the 唐本 drug (宋以后 白药子; no non-纲目 witness equating 白药子
   # with 白药, so 白药子 is not listed, though its passages contain the asked form). 别名录 also files 白药 under
@@ -1318,7 +1328,7 @@ items:
     query: 鬼目
     asked: 鬼目
     asked_cues: []
-    false_friends: [捻鬼目, 节是鬼目, 见鬼目]
+    false_friends: [捻鬼目, 节是鬼目, 见鬼目, 凌霄观]
     referents:
       - {head: 羊蹄, names: [羊蹄], valid: null, witness: ws_36bca7b992.00298}
       - {head: 石南, names: [石南], valid: null, witness: jc_c000a.00203}
@@ -1333,7 +1343,8 @@ items:
       - {name: 石南, witness: jc_c000a.00203, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
       - {name: 紫葳, witness: jc_c000.00816, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
       - {name: 凌霄花, witness: jc_c040.00511, by: annotator, date: "2026-10-14"}  # 珍珠囊补遗药性赋[1368,1644]
-      - {name: 凌霄, witness: jc_c000.00819, by: correction, date: "2026-10-15"}  # 神农本草经[25,220] 紫葳: 一名凌霄…谓即凌霄花
+      # 神农本草经[25,220] 紫葳: 一名凌霄…谓即凌霄花 (the editor doubts that reading of 紫葳, 疑皆非, not that 凌霄 is 凌霄花)
+      - {name: 凌霄, witness: jc_c000.00819, by: correction, date: "2026-10-15"}
       - {name: 白英, witness: jc_c000.00191, by: annotator, date: "2026-10-14"}  # 神农本草经[25,220]
   # n=10 (汉–宋金元); 石斛 ws_36bca7b992.00046 神农本草经[25,220]; 木兰 ws_36bca7b992.00202 神农本草经[25,220]
   # 本经 石斛 and 木兰 一名林兰; 走马急疳真方 (1275) code name 林兰（即石斛）
@@ -1511,7 +1522,9 @@ items:
     adjudicated:
       - {name: 磁石, witness: jc_d001.00408, by: annotator, date: "2026-10-14"}  # 名医别录[200,500]
       - {name: 玄石, witness: jc_d001.00416, by: annotator, date: "2026-10-14"}  # 名医别录[200,500]
-      - {name: 慈石, witness: ws_36bca7b992.00137, by: correction, date: "2026-10-15"}  # 神农本草经[25,220]: 本经's 磁石 entry, 慈石…一名玄石
+      # 神农本草经[25,220]: parallel: 慈石…主治周痹风湿…不可持物，洗洗酸痛 = jc_d001.00409 《本经》原文：磁石 line (the
+      # passage also writes 一名玄石, the other referent; the line ties 慈石 to 磁石)
+      - {name: 慈石, witness: ws_36bca7b992.00137, by: correction, date: "2026-10-15", parallel: jc_d001.00409}
   # n=10 (汉–清); 天名精 jc_c000a.00053 神农本草经（复古辑本）[25,220]; 蠡实 jc_c000a.00132
   # 神农本草经（复古辑本）[25,220]
   # 本经 天名精 and 蠡实 一名豕首
@@ -2404,7 +2417,9 @@ items:
     band: ">=20"
     adjudicated:
       - {name: 鹿角胶, witness: jc_c000a.00114, by: annotator, date: "2026-10-14"}  # 神农本草经（复古辑本）[25,220]
-      - {name: 鹿胶, witness: jc_c000.00468, by: correction, date: "2026-10-15"}  # 神农本草经[25,220] 白胶 (entry): 《考工记》云：鹿胶青白
+      # 神农本草经[25,220] 白胶 (entry): 《考工记》云：鹿胶青白…皆谓煮，用其皮，或用角 — the craft glue the editor cites under
+      # 白胶, the only passage outside 纲目 writing 鹿胶 beside a partner (本草求真 jc_c025a.00210 由角煎熬 names none)
+      - {name: 鹿胶, witness: jc_c000.00468, by: correction, date: "2026-10-15"}
   # n=772 of 837 (先唐2 唐五代50 宋金元350 明181 清189); window [1115, 1368): asked 271, other-only 0, wrong-only 24
   # 白丁香 = 雀屎 (jc_l006.00067 异授眼科: 白丁香，即麻雀粪; 62 passages, 眼科/儿科) and 苦丁香 = 甜瓜蒂 (jc_d076.00265,
   # jc_d046.05799). 母丁香/公丁香 are the same drug and stay asked. Witness jc_c006.00579 本草图经[1061,1062] (entry)

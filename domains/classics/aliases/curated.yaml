@@ -322,8 +322,9 @@ cover_stops:
   党参: [上党参]  # 产地冠名：歙白术，绵黄芪，上党参（上党之人参），交趾桂 jc_c012.00000
 
 # strings the build would take as blockers of a name though the store reads them as the name's own drug (a lexicon
-# headword, a straddle), each name's witnesses in its comment.  The build already leaves out lexicon headwords that are
-# two drug names written together and nowhere one name; a row here holds on any store.
+# headword, a straddle), each name's witnesses in its comment.  The build already leaves out the 纲目's joint headings
+# the lexicon harvested as one name where the store nowhere writes them as one; a row here holds on any store, and the
+# string it lists stays a blocker of every name no row unblocks it for (防风党参 of 防风).
 unblock:
   党参: [防风党参]  # 党参之一种，非防风：肆中所卖党参……唯防风党参，性味和平 jc_c021.00076
   # 纲目「假苏」条（即荆芥）题作一行，词表收为一名；假苏、荆芥同药（same_drug）：荆芥……（一名假苏）jc_c029.00024

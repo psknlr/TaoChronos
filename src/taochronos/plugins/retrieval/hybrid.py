@@ -329,9 +329,9 @@ class QueryAnalyzer:
 
     def _stops(self, norm: str, g: str, found: list[tuple[int, str]]) -> list[str]:
         """The curated stop names the question asks on its own: written outside their blockers, holding every other
-        name the question writes (救火 holds the lexicon's 救火 and its 火), and standing alone or beside a drug word —
-        a period (宋以前的解离) and question words count for nothing.  Never expanded: :meth:`AliasIndex.view` lists
-        their drugs as candidates."""
+        name the question writes (救火 holds the lexicon's 救火 and its 火), a word of their own (:func:`_apart`: 救火车
+        and 救火队员 are other words), and standing alone or beside a drug word — a period (宋以前的解离) and question
+        words count for nothing.  Never expanded: :meth:`AliasIndex.view` lists their drugs as candidates."""
         index = _layer(self.pack)
         timeless = list(norm)  # the question with its periods (and what follows them) blanked out
         for m in self.pack.periods._expression_matches(norm):
@@ -345,7 +345,12 @@ class QueryAnalyzer:
                 if (rec is None or not rec.stop or s in out or self._cover(g, i, s) is not None
                         or not all(i <= a and a + len(x) <= j for a, x in found)):
                     continue
-                rest = "".join(timeless[:i]) + "|" * (j - i) + "".join(timeless[j:])
+                before, after = "".join(timeless[:i]), "".join(timeless[j:])
+                apart = (_apart(before[-1:], before.endswith(DRUG_WORDS))
+                         and _apart(after[:1], after.startswith(DRUG_WORDS)))
+                if not apart:
+                    continue
+                rest = before + "|" * (j - i) + after
                 if any(w in rest for w in DRUG_WORDS) or all(not is_han(c) or c in RUN_STOPS for c in rest):
                     out.append(s)
         return out
@@ -390,21 +395,33 @@ class QueryAnalyzer:
                    cfg: dict[str, Any]) -> bool:
         """Whether the question asks the name at ``norm[i:j]`` as a drug.  Where its reading needs the question's
         context: the name stands alone, a drug word (:data:`DRUG_WORDS`) or another drug's name (``strong``: their
-        spans) is in the question, or the name reads as a drug by the passage gate (a dose, 一名, a cue near it)."""
+        spans) is in the question, or the name reads as a drug by the passage gate (a dose, 一名, a cue near it).  A
+        false friend written into a longer word (救火车, 针刺巨骨: :func:`_apart`) is that word, whatever else the
+        question writes — the passage gate alone may still read it as a drug (救火二两)."""
         reading = self._drug_reading(s, term)
         if reading != "context":
             return reading == "drug"
-        rest = norm[:i] + "|" * (j - i) + norm[j:]
-        if not gate_form(rest).strip("|") or any(w in rest for w in DRUG_WORDS):
-            return True
-        if any(not (a < j and i < b) for a, b in strong):
-            return True
         index = _layer(self.pack)
+        rec = index.record(s)
+        apart = rec is None or not rec.stop or (_apart(norm[i - 1:i], norm[:i].endswith(DRUG_WORDS))
+                                                and _apart(norm[j:j + 1], norm[j:].startswith(DRUG_WORDS)))
+        rest = norm[:i] + "|" * (j - i) + norm[j:]
+        if apart and (not gate_form(rest).strip("|") or any(w in rest for w in DRUG_WORDS)):
+            return True
+        if apart and any(not (a < j and i < b) for a, b in strong):
+            return True
         return index.drug_context(g, gate_form(s), [i], _cues(self.pack, s, term), cfg=cfg)
 
 
 def _season(m: Mention) -> bool:
     return m.category in ("condition",) and m.entry.kind == "season"
+
+
+def _apart(c: str, word: bool) -> bool:
+    """Whether the character beside a name in a question leaves it a word of its own: none (the question's end), one no
+    name is written in (a blanked period, punctuation), a question word (:data:`RUN_STOPS`), or the edge of a drug word
+    (``word``)."""
+    return word or not c or not is_han(c) or c in RUN_STOPS
 
 
 def _runs_over(c: str) -> bool:
@@ -1173,8 +1190,9 @@ class HybridRetriever:
         (山药 → 薯蓣: drug→alias, of the form's kind).  At ``asked_first: all`` a form of another term is labelled
         by its entry, a related term without a kind.  An asked name the question writes inside a longer one (慎火 of
         慎火草) is labelled like the drug's head where it stands alone.  ``for``: the asked names whose entry holds the
-        form (the drugs asked first)."""
-        lex, normalize = self.pack.lexicon, self.pack.variants.normalize_text
+        form (the drugs asked first); ``status`` ``stop`` when each of them is a false friend (救火, which the lexicon
+        files under 景天: its listing's status)."""
+        index, lex, normalize = _layer(self.pack), self.pack.lexicon, self.pack.variants.normalize_text
         terms = {f: tid for tid, fs in q.surfaces.items() for f in fs}
         out = []
         for raw in dict.fromkeys(h.matched):
@@ -1191,9 +1209,10 @@ class HybridRetriever:
                     continue
                 direction, kind = DIRECTIONS[1], _lexicon_kind(entry, raw, normalize, related="")
             asked = sorted((x for x, tid in q.asked.items() if tid == entry.term_id), key=lambda x: x not in q.drugs)
+            stop = bool(asked) and all(getattr(index.record(x), "stop", False) for x in asked)
             out.append({"surface": normalize(raw), "for": asked, "referent": entry.term, "direction": direction,
-                        "kind": self.pack.synonym_kind_label(kind) or None, "status": "open",
-                        "source": _layer(self.pack).source_labels(["lexicon"]), "witness": None, "reading": None,
+                        "kind": self.pack.synonym_kind_label(kind) or None, "status": "stop" if stop else "open",
+                        "source": index.source_labels(["lexicon"]), "witness": None, "reading": None,
                         "p": None})
         return out
 

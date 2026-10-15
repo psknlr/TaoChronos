@@ -13,6 +13,7 @@ from taochronos.evals.textual import _write_corpus
 from taochronos.plugins.classics import Corpus, DomainPack
 from taochronos.plugins.classics.aliases import (
     STOP_NOTE,
+    STOP_NOTE_LEXICON,
     AliasIndex,
     AliasRecord,
     Referent,
@@ -413,8 +414,9 @@ def test_a_false_friend_the_lexicon_files_as_a_herb_counts_only_as_that_herb(ret
     assert q.drugs == ["救火"] and q.asked["救火"] == "herb:景天"
     assert by["z02.000"].tier == "A"  # 慎火草，一名救火
     assert by["z01.000"].tier == "D" and by["z01.000"].flags == ["demoted:no-context"]  # 抱薪救火
+    # the lexicon's search of 景天, as today, labelled with its listing's status: 救火 is mostly an ordinary word
     assert by["z03.000"].tier == "X" and by["z03.000"].via == [{
-        "surface": "景天", "for": ["救火"], "referent": "景天", "direction": "alias→drug", "kind": "异名", "status": "open",
+        "surface": "景天", "for": ["救火"], "referent": "景天", "direction": "alias→drug", "kind": "异名", "status": "stop",
         "source": ["词表"], "witness": None, "reading": None, "p": None}]
     assert ids(hits).index("z03.000") < ids(hits).index("z01.000")  # the demoted after the side queue
     # beside 桂枝 and 人参 it is still no herb's name: only a 一名 or 景天's other names say a false friend is the drug
@@ -548,27 +550,39 @@ def test_an_expansion_without_a_side_place_is_not_searched_and_says_why(retrieve
     assert [(e.surface, e.why) for e in q.expansions] == [("通脱木", "share"), ("木通", "period")]
 
 
-def test_a_stop_name_asked_on_its_own_lists_its_drugs_and_searches_none(retriever):
+def test_a_stop_name_asked_on_its_own_lists_its_drugs_and_the_layer_searches_none(retriever):
     def listed(text):
         q = retriever.analyzer.analyze(text, aliases=True, cfg=retriever.alias)
         return q, [(a["surface"], [(r["head"], r["status"], r["source"]) for r in a["referents"]], a.get("note"))
                    for a in (q.alias_view.get("asked") or [])]
 
-    # the lexicon files 救火 under 景天: that drug, of status stop, and no other name of it searched
-    for text in ("救火", "救火是哪味药", "宋以前的救火"):
+    # the lexicon files 救火 under 景天: that drug, of status stop, and no other name of it expanded — the lexicon's
+    # search of 景天's own names, as today, is all the note promises
+    for text in ("救火", "救火是哪味药", "宋以前的救火", "救火吗", "什么是救火"):
         q, rows = listed(text)
-        assert q.stops == ["救火"] and rows == [("救火", [("景天", "stop", ["词表"])], STOP_NOTE)], text
+        assert q.stops == ["救火"] and rows == [("救火", [("景天", "stop", ["词表"])], STOP_NOTE_LEXICON)], text
         assert not q.expansions and q.alias_view["expansions"] == [], text
-    # the record's own pairs, which no search reads, and the lexicon's
+    # the record's own pairs, which no search reads, and no lexicon herb: nothing searched for its drugs at all
     q, rows = listed("云门是什么药")
     assert q.stops == ["云门"] and rows == [("云门", [("云根", "stop", ["别名录（中醫笈成）"])], STOP_NOTE)]
     assert not q.drugs and not q.expansions
-    # inside a phrase, or beside another name or word, it is the word: nothing listed, today's search
-    for text in ("救火的方法", "抱薪救火", "云门穴", "云门与云根", "针刺云门"):
+    # inside a phrase or a longer word, or beside another name or word, it is the word: nothing listed, today's search
+    for text in ("救火的方法", "抱薪救火", "云门穴", "云门与云根", "针刺云门", "救火车是什么", "救火队员用什么药", "云门山是什么"):
         q, rows = listed(text)
         assert not q.stops and not [r for r in rows if r[2]], text
+    # a longer word is not asked as the drug either, whatever drug word is beside it; a dose still reads it as one
+    for text, drugs in (("救火车是什么", []), ("救火队员用什么药", []), ("救火二两", ["救火"]), ("救火是哪味药", ["救火"])):
+        assert retriever.analyzer.analyze(text, aliases=True, cfg=retriever.alias).drugs == drugs, text
+    # the side queue holds only the lexicon's forms of 景天, each labelled with the listing's status and the stop asked
     q, hits = retriever.search("救火是哪味药", k=10)
-    assert q.alias_view["asked"][0]["note"] == STOP_NOTE and not [h for h in hits if h.tier == "B"]
+    assert q.alias_view["asked"][0]["note"] == STOP_NOTE_LEXICON and not [h for h in hits if h.tier == "B"]
+    forms = set(q.surfaces["herb:景天"])
+    vias = [v for h in side(hits) for v in h.via]
+    assert {h.tier for h in side(hits)} == {"X"} and {"z03.000", "z04.000"} <= set(ids(side(hits)))
+    assert vias and all(v["surface"] in forms and v["status"] == "stop" and v["for"] == ["救火"] for v in vias)
+    # asked beside 景天 itself, the hits on 景天's names are that drug's own: open
+    q, hits = retriever.search("救火与景天", k=10)
+    assert side(hits) and all(v["status"] == "open" for h in side(hits) for v in h.via)
 
 
 def test_side_passages_that_give_the_name_nothing_follow_the_others_of_their_drug(retriever):
@@ -624,7 +638,9 @@ def asked_form(retriever, q, hit) -> bool:
 
 def violations(retriever, text: str, k: int, **kw) -> list[str]:
     """The properties one alias search breaks (ADR 0023): the asked form keeps min(|A|, k − ⌊num·k/den⌋) places, |A|
-    being the asked drugs' hits the main queue holds after the search for more; the side queue holds at most
+    being the asked drugs' hits the main queue holds after the search for more — tier A: the name free of its blockers
+    and, where it needs drug context (a cue name, a false friend), in it; a free occurrence without that context is
+    demoted (D), the drug not being read there, and is no place the asked form keeps; the side queue holds at most
     ⌊num·k/den⌋ places while the main queue lasts; no passage twice; none outside the question's window."""
     with watched(retriever) as seen:
         q, hits = retriever.search(text, k=k, aliases="on", **kw)
