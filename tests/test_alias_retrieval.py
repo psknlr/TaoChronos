@@ -417,6 +417,68 @@ def test_a_blocker_the_lexicon_files_is_asked_as_the_lexicon_reads_it(pack, tmp_
     assert hits[1].via[0]["surface"] == "川乌" and hits[1].via[0]["for"] == ["川乌头"]
 
 
+def test_a_blocker_the_lexicon_files_as_something_else_is_still_asked_as_the_drug_written(tmp_path):
+    # 蜣螂转丸 hides 蜣螂 and names a drug (the layer's herbs hold it, as the shipped context.json does), but the lexicon's
+    # matcher reads it as a formula: an entry of another kind takes no drug's name from the layer — asked as written
+    root = tmp_path / "layer"
+    root.mkdir()
+    (root / "context.json").write_text(json.dumps({"version": 1, "herbs": ["蜣螂", "蜣螂转丸"]}), encoding="utf-8")
+    layer = write_records(root / "aliases.jsonl", [AliasRecord("蜣螂", ho="蜣螂", n=40, sh=0.9, b=["蜣螂转丸"])])
+    pack = DomainPack(HOME / "domains/classics", extra_lexicons=["lexicon-supplement", "lexicon-harvested"],
+                      aliases_file=layer)
+    assert [m.term_id for m in pack.lexicon.match("蜣螂转丸")] == ["formula:蜣螂转丸"]
+    retriever = mini(pack, tmp_path / "corpus", [("t01", "转丸", "辰", 800, "本草", ["蜣螂转丸，主汤淋。"]),
+                                                  ("t02", "蜣螂", "辰", 700, "本草", ["蜣螂，味咸寒，主小儿惊痫。"])])
+    for text in ("蜣螂转丸", "蜣螂转丸是什么药"):
+        q, hits = retriever.search(text, k=10)
+        assert q.asked == {"蜣螂转丸": None} and q.drugs == ["蜣螂转丸"] and q.terms == [], text
+        assert [(h.passage_id, h.tier) for h in hits] == [("t01.000", "A")], text  # 蜣螂 alone is not what was asked
+
+
+def test_a_longer_lexicon_name_over_a_blocker_that_names_a_drug_is_read_as_today(tmp_path):
+    # 麦门冬 hides 门冬 and 五加皮 hides 五加, each naming a drug, but the lexicon reads 麦门冬汤 and 五加皮散 as formulas,
+    # longer names: the formula is asked, its term kept, nothing taken from the layer (only a non-herb entry of the
+    # blocker itself gives way, as 蜣螂转丸 does)
+    root = tmp_path / "layer"
+    root.mkdir()
+    (root / "context.json").write_text(json.dumps({"version": 1, "herbs": ["门冬", "麦门冬", "五加", "五加皮"]}),
+                                       encoding="utf-8")
+    layer = write_records(root / "aliases.jsonl", [AliasRecord("门冬", ho="门冬", n=40, sh=0.9, b=["麦门冬"]),
+                                                   AliasRecord("五加", ho="五加", n=40, sh=0.9, b=["五加皮"])])
+    pack = DomainPack(HOME / "domains/classics", extra_lexicons=["lexicon-supplement", "lexicon-harvested"],
+                      aliases_file=layer)
+    retriever = mini(pack, tmp_path / "corpus", [("m01", "汤方", "辰", 800, "方书", ["麦门冬汤，治火逆上气。"]),
+                                                  ("m02", "本草", "辰", 700, "本草", ["麦门冬，味甘平。"]),
+                                                  ("m03", "散方", "辰", 800, "方书", ["五加皮散，治脚气。"]),
+                                                  ("m04", "本草二", "辰", 700, "本草", ["五加皮，味辛温。"])])
+    for name, hit in (("麦门冬汤", "m01.000"), ("五加皮散", "m03.000")):
+        assert [m.term_id for m in pack.lexicon.match(name)] == [f"formula:{name}"]
+        for text in (name, f"{name}的组成"):
+            off, today = retriever.search(text, k=10, aliases="off")
+            q, hits = retriever.search(text, k=10)
+            assert q.asked == {name: f"formula:{name}"} and q.drugs == [] and q.quoted == [], text
+            assert q.terms == off.terms == [f"formula:{name}"], text
+            assert ids(hits) == ids(today) == [hit] and not any(h.via for h in hits), text
+
+
+def test_a_question_too_long_to_read_against_the_layer_is_read_and_ranked_as_today(retriever):
+    # a passage pasted in, a list of names: over ALIAS_MAX_CHARS normalised characters the layer reads nothing (the
+    # Worker's port counts alike, within a request's 10 ms) — no name asked, none expanded, today's terms and ranking
+    norm = retriever.pack.variants.normalize_text
+    unit = "国老二两将军三两鬼督邮一两"
+    cap = hybrid.ALIAS_MAX_CHARS
+    at, over = (unit * cap)[:cap], (unit * cap)[:cap + 1]
+    assert len(norm(at)) == cap and len(norm(over)) == cap + 1
+    q, _ = retriever.search(at, k=10)
+    assert q.drugs and q.expansions and q.alias_view  # at the cap: read with the layer
+    for text in (over, unit * 60):
+        off, today = retriever.search(text, k=10, aliases="off")
+        q, hits = retriever.search(text, k=10)
+        assert not (q.asked or q.drugs or q.longer or q.stops or q.expansions or q.alias_view)
+        assert q.terms == off.terms and q.surfaces == off.surfaces and q.quoted == off.quoted
+        assert ids(hits) == ids(today) and not any(h.via for h in hits)
+
+
 def test_a_common_word_is_asked_as_a_drug_only_where_the_question_reads_as_one(retriever):
     # a head the corpus seldom writes as a drug, a cue name mostly written otherwise, a false friend: today's search
     for text in ("服后果然汗出", "行水的方法", "救火的方法"):

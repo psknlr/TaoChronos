@@ -24,8 +24,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from ..agents.procedures.evidence import _labels as hit_labels
 from ..kernel import Actor, ToolCall
 from ..protocol.yamlio import load_yaml
+from .report import LABELS_NOTE
 
 REQUIRED_SKILLS = ("S01", "S15")
 INTENTS: dict[str, tuple[str, ...]] = {
@@ -347,15 +349,25 @@ class Executor:
                 out["results"].append({"tool": call["tool"], "args": args, "result": rec["result"], "artifact": path.name})
                 if call.get("collect") == "passages":
                     hits = (rec["result"] or {}).get("hits", [])
-                    ctx["passages"] = [{"passage_id": h.get("passage_id") or h.get("id"),
-                                        "locator": (f"《{h['title']}》" if h.get("title") else "") + (h.get("locator") or ""),
-                                        "period": h.get("period"), "quote": (h.get("quote") or h.get("text") or "")[:120]}
-                                       for h in hits if h.get("passage_id") or h.get("id")]
+                    ctx["passages"] = [_passage(h) for h in hits if isinstance(h, dict) and (h.get("passage_id") or h.get("id"))]
         if out["calls"] and not out["results"]:
             out["status"] = "failed"
         elif out["errors"] and out["status"] == "ok" and not out["results"]:
             out["status"] = "skipped"
         return out
+
+
+def _passage(hit: dict[str, Any]) -> dict[str, Any]:
+    """A search hit as a source of the answer; ``labels`` when the search found it under another name of a drug or
+    flagged it (ADR 0023): each ``via`` and flag in words, as the evidence ledger's notes say them
+    (``via 国老→甘草（别名录（中醫笈成））``, ``年代存疑（…）``)."""
+    out = {"passage_id": hit.get("passage_id") or hit.get("id"),
+           "locator": (f"《{hit['title']}》" if hit.get("title") else "") + (hit.get("locator") or ""),
+           "period": hit.get("period"), "quote": (hit.get("quote") or hit.get("text") or "")[:120]}
+    labels = hit_labels(hit)
+    if labels:
+        out["labels"] = labels
+    return out
 
 
 def _items(ctx: dict[str, Any], key: str | None) -> list[Any]:
@@ -431,9 +443,12 @@ def render_report(run: dict[str, Any]) -> str:
         step = next(s for s in run["steps"] if s["skill"] == sid)
         lines.append(f"- {sid} {step['name']}（{step['agent']}）：{step['status']}，{step['calls']} 次调用"
                      + (f"，{step['cached']} 次读自工作区" if step["cached"] else "") + f" — {plan['reasons'][sid]}")
-    passages = run["context"].get("passages") or []
+    passages = (run["context"].get("passages") or [])[:6]
     if passages:
-        lines += ["", "## 来源", ""] + [f"- {p.get('locator') or p['passage_id']}：{p.get('quote', '')[:60]}" for p in passages[:6]]
+        lines += ["", "## 来源", ""] + [f"- {p.get('locator') or p['passage_id']}：{p.get('quote', '')[:60]}"
+                                       + "".join(f" · {x}" for x in p.get("labels") or []) for p in passages]
+        if any(p.get("labels") for p in passages):
+            lines += ["", LABELS_NOTE]
     shown: set[str] = set()
     for step in run["steps"]:
         for r in step["results"]:

@@ -56,6 +56,34 @@ def test_report_sections(research):
     assert "消渴=糖尿病" in md and "不构成医学结论" in md
 
 
+def test_a_ledger_notes_labels_and_the_evidence_tables_note_column(research):
+    """note_labels: the labels of a search hit's note (agents/procedures/evidence.py hit_note) — the parts after
+    ``routes: …`` — and none of any other note.  The evidence table keeps its columns and adds each record's note last,
+    a note that would start a spreadsheet formula kept text."""
+    import csv
+    import io
+    from dataclasses import replace
+    from types import SimpleNamespace
+
+    from taochronos.engine.report import evidence_table, note_labels
+
+    assert note_labels("routes: bm25,dense") == [] and note_labels("") == [] and note_labels(None) == []
+    assert note_labels("routes: alias; via 国老→甘草（别名录（中醫笈成））; 年代存疑（甘草约 1180 年后才通行；或经后世刊本改字）") == [
+        "via 国老→甘草（别名录（中醫笈成））", "年代存疑（甘草约 1180 年后才通行；或经后世刊本改字）"]
+    assert note_labels("early attestation") == [] and note_labels("same findings, same formula; via 国老→甘草") == []
+    assert note_labels("routes: bm25; ; via 国老→甘草（词表）\n; routes: alias") == ["via 国老→甘草（词表）"]
+    h, session = research
+    rows = list(csv.reader(io.StringIO(evidence_table(h, session.state))))
+    assert rows[0] == ["evidence_id", "hypothesis_id", "stance", "book", "passage_id", "locator", "start", "end", "quote", "year",
+                       "retrieval_method", "evidence_domain", "textual", "philological", "gates", "note"]
+    notes = {r[0]: r[-1] for r in rows[1:]}
+    assert notes == {e.id: e.note for e in session.state.evidence.values()} and any(notes.values())
+    rec = next(iter(session.state.evidence.values()))
+    for note, cell in (("=HYPERLINK(1)", "'=HYPERLINK(1)"), ("-1", "'-1"), ("routes: bm25", "routes: bm25")):
+        one = SimpleNamespace(evidence={rec.id: replace(rec, note=note)}, gates={})
+        assert list(csv.reader(io.StringIO(evidence_table(h, one))))[1][-1] == cell
+
+
 def test_runs_are_deterministic_and_replayable(research, tmp_path):
     _, session = research
     again = run_research(make_harness(tmp_path), "ref")

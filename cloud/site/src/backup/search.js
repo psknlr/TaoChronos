@@ -72,6 +72,10 @@ const DOSE_AT = /[一二三四五六七八九十百千半两0-9]+[两钱分斤�
 const NAME_TAILS = new Set("草根子花叶皮实仁藤苗茎枝梢尾头须芦节芽蕊壳核肉膏霜油炭粉末汁浆蒂衣络米胶");
 const NAME_HEADS = new Set("酒姜盐醋蜜炙炒煅焦制生熟干鲜炮焙");
 const PERIOD_TAIL = /^[代朝]?(?:以前|之前|以后|之后|以来|以降|时期|期间|前|后|初|末|至|到)?/u;
+// a question longer than this (code points of the normalised text: a passage pasted in, a list of names) is read as
+// with the layer off — no name asked as a drug, none expanded, ranked as today: name by name it would cost more
+// than a request's 10 ms of CPU (hybrid.ALIAS_MAX_CHARS)
+const ALIAS_MAX_CHARS = 200;
 // domain.Periods: the expressions of time in a question, longest first; a one-character dynasty only before a cue
 const EXPR_RE = new RegExp(`(${Object.keys(EXPRESSIONS).sort((a, b) => cpLen(b) - cpLen(a)).map(escapeRe).join("|")})`, "gu");
 const SINGLE_TAIL = /^(代|朝|以前|之前|以后|之后|以来|以降|至|到|—|~|时期|初|末|医家|文献|人)/u;
@@ -121,7 +125,8 @@ export function variantSpellings(surface) {
 // ------------------------------------------------------------------ the query
 /** QueryAnalyzer.analyze: {text, terms, surfaces, variants, decomposition, groups, related, after, before, intent,
  * quoted}; with `aliases` (the layer's parameters in `cfg`) read against the alias layer too, as _analyze_aliases reads
- * it: {asked: Map name → term id or null, drugs, longer: Map, stops, expansions, aliasView} besides. */
+ * it: {asked: Map name → term id or null, drugs, longer: Map, stops, expansions, aliasView} besides — all empty for a
+ * question longer than ALIAS_MAX_CHARS, read as without the layer. */
 export async function analyze(lex, text, { after = null, before = null, aliases = false, cfg = null, index = null } = {}) {
   const norm = normalize(text);
   const [qa, qb] = parseConstraint(norm);
@@ -141,9 +146,11 @@ export async function analyze(lex, text, { after = null, before = null, aliases 
     wanted.push(e.id, ...(e.components || []), ...(e.related || []), ...(e.broader || []));
   }
   await lex.loadIds(wanted);
-  if (aliases) return analyzeAliases(lex, index ?? aliasIndex(), q, norm, raw, aliasParams(cfg));
+  if (aliases && cpLen(norm) <= ALIAS_MAX_CHARS) return analyzeAliases(lex, index ?? aliasIndex(), q, norm, raw, aliasParams(cfg));
   terms(lex, q, raw.filter((m) => !m.weak || cpLen(norm) <= 4));
   spellings(q);
+  // a question too long to read against the layer asks no drug: the alias search ranks it as today
+  if (aliases) Object.assign(q, { asked: new Map(), drugs: [], longer: new Map(), stops: [], expansions: [], aliasView: {} });
   return q;
 }
 
@@ -229,7 +236,9 @@ function analyzeAliases(lex, index, q, norm, raw0, cfg) {
     blocked.add(at(i, s));
     const [k, b] = cover;
     const end = k + cpLen(b);
-    if (raw0.some((m) => !m.weak && m.start <= k && end <= m.end)) continue; // the lexicon reads the blocker (川乌头)
+    // a lexicon herb reads the blocker as a drug (川乌头), or a longer name of any kind holds it (麦门冬汤): its mention
+    // keeps its term; a non-herb entry of the blocker itself takes no drug's name from the layer (蜣螂转丸, a formula too)
+    if (raw0.some((m) => !m.weak && (m.entry.cat === "herb" || m.end - m.start > end - k) && m.start <= k && end <= m.end)) continue;
     if (namesDrug(lex, index, b) && !written.some(([a, z]) => a < end && k < z)) written.push([k, end, b]);
   }
   const held = (i, j) => written.some(([a, z]) => a < j && i < z);

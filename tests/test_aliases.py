@@ -243,12 +243,22 @@ def test_three_thousand_records_load_quickly(tmp_path):
         Referent(rng.choice(han) + rng.choice(han), st=rng.choice(STATUSES), src=["bielu-jc"],
                  w=[Witness(f"jc_c030.{i:05d}", 1568, 1568, "l", True)])]) for i, s in enumerate(surfaces)]
     path = write_records(tmp_path / "aliases.jsonl", records)
-    best = float("inf")
-    for _ in range(3):
+
+    def parse() -> list:  # what loading cannot do without: reading the file and parsing its lines
+        return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+    # timed against the parse, each round both in turn, best of seven: a busy machine slows the two alike.  Loading
+    # takes about 3× the parse (0.05 s against 0.017 s here, 3.1–4.1× with six CPU-bound processes on four cores); a
+    # load 3× slower reads about 9×, over the bound
+    load_best = parse_best = float("inf")
+    for _ in range(7):
         start = time.perf_counter()
         index = AliasIndex.load([path])
-        best = min(best, time.perf_counter() - start)
-    assert len(index) == 3000 and best < 0.1
+        loaded = time.perf_counter()
+        parse()
+        load_best, parse_best = min(load_best, loaded - start), min(parse_best, time.perf_counter() - loaded)
+    assert len(index) == 3000
+    assert load_best < 6 * parse_best, f"{load_best:.3f} s to load, {parse_best:.3f} s to parse"
 
 
 # --------------------------------------------------------------------------- the runtime index: gates and expansion
@@ -808,15 +818,27 @@ def test_three_thousand_records_with_their_context_load_and_scan_quickly(tmp_pat
     path = write_records(tmp_path / "aliases.jsonl", records)
     context = tmp_path / "context.json"
     context.write_text(json.dumps({**CONTEXT, "herbs": surfaces}, ensure_ascii=False), encoding="utf-8")
-    best = float("inf")
-    for _ in range(3):
+
+    def parse() -> None:  # what loading cannot do without: reading the two files and parsing them
+        [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+        json.loads(context.read_text(encoding="utf-8"))
+
+    # timed against the parse, as test_three_thousand_records_load_quickly times it (about 3.5× here); the scan, best of
+    # three, takes about 2 ms
+    load_best = parse_best = scan_best = float("inf")
+    for _ in range(7):
         start = time.perf_counter()
         index = AliasIndex.load([path], context)
-        best = min(best, time.perf_counter() - start)
-    assert len(index) == 3000 and best < 0.1
+        loaded = time.perf_counter()
+        parse()
+        load_best, parse_best = min(load_best, loaded - start), min(parse_best, time.perf_counter() - loaded)
+    assert len(index) == 3000
+    assert load_best < 6 * parse_best, f"{load_best:.3f} s to load, {parse_best:.3f} s to parse"
     text = "".join(rng.choice(han) for _ in range(2000))
-    start = time.perf_counter()
-    found = index.scan(text)
-    assert time.perf_counter() - start < 0.05
+    for _ in range(3):
+        start = time.perf_counter()
+        found = index.scan(text)
+        scan_best = min(scan_best, time.perf_counter() - start)
+    assert scan_best < 0.05
     assert all(text[i:j] == s and index.record(s) is not None for i, j, s in found)
     assert sum(len(index.by_group(h)) for h in heads) == 2700

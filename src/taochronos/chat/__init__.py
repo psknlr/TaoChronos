@@ -404,15 +404,21 @@ class ChatRuntime:
 
     # ---------------------------------------------------------------- workflow
     def ask(self, question: str) -> dict[str, Any]:
-        """The V2 workflow: skills compiled into a DAG, run, audited; the report and the steps it took."""
+        """The V2 workflow: skills compiled into a DAG, run, audited; the report and the steps it took.  A source the
+        search found under another name of a drug, or flagged, carries ``labels`` (ADR 0023): each ``via`` and flag in
+        words, as the evidence ledger's notes say them (``via 国老→甘草（别名录（中醫笈成））``, ``年代存疑（…）``)."""
         from ..engine.workflow import ask
 
         run = ask(self.h, question, resume=False)
         steps = [{"skill": s.get("skill"), "name": s.get("name"), "agent": s.get("agent"), "status": s.get("status"),
                   "calls": s.get("calls")} for s in run.get("steps", [])]
+        sources = citations([s.get("results") for s in run.get("steps", [])], limit=40)
+        labels = {p["passage_id"]: p["labels"] for p in (run.get("context") or {}).get("passages") or [] if p.get("labels")}
+        for card in sources:
+            if card.get("passage_id") in labels:
+                card["labels"] = list(labels[card["passage_id"]])
         return {"run": run.get("run"), "plan": {k: run["plan"].get(k) for k in ("skills", "reasons", "by")},
-                "steps": steps, "report_markdown": run.get("report", ""),
-                "sources": citations([s.get("results") for s in run.get("steps", [])], limit=40)}
+                "steps": steps, "report_markdown": run.get("report", ""), "sources": sources}
 
 
 __all__ = ["CHAT_PERMISSIONS", "ChatRuntime", "default_profile", "shape"]

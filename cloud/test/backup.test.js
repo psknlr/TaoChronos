@@ -315,12 +315,37 @@ test("classics.search with the alias layer: a long question within a Worker's li
     assert.ok(read.every((g) => g instanceof Cp), `${query}: the question's gate form read as a string`);
     assert.equal(new Set(read).size, 1, query);
   }
-  for (const query of ["㑮" + "人言".repeat(100), "人言𠀀".repeat(67)]) {
+  // as long as the layer reads (ALIAS_MAX_CHARS, 200 code points), the reading within a Worker's limits
+  for (const query of ["㑮" + "人言".repeat(99) + "人", "人言𠀀".repeat(66) + "人言"]) {
+    assert.equal([...normalize(query)].length, 200);
     await measured("classics.search", { query, k: 10 }); // warm
     const { out, ms, queries } = await measured("classics.search", { query, k: 10 });
     assert.equal(out.ok, true, out.error);
     assert.ok(queries <= 50, `${queries} D1 statements`);
     assert.ok(ms < LIMIT_MS, `${[...query].length} characters: ${ms.toFixed(1)} ms`);
+  }
+});
+
+test("classics.search with the alias layer: a question longer than the layer reads (a prescription pasted in) is read without it, as today, within a Worker's limits", { skip }, async () => {
+  // read name by name, 400 characters of names took more than a request's 10 ms; past ALIAS_MAX_CHARS (200 code
+  // points of the normalised question, as hybrid.py counts) nothing is asked, expanded or labelled, the hits today's
+  const unit = "国老二两，将军三两，桂枝三两，人言少许，";
+  const question = (n) => [...unit.repeat(Math.ceil(n / [...unit].length))].slice(0, n).join("");
+  const at = await measured("classics.search", { query: question(200), k: 10 });
+  assert.ok(at.out.result.query.aliases?.expansions.some((e) => e.surface === "甘草" && e.for === "国老"), "read at 200");
+  for (const n of [201, 400, 800, 1200]) {
+    const query = question(n);
+    assert.equal([...normalize(query)].length, n);
+    await measured("classics.search", { query, k: 10 }); // warm
+    const { out, ms, queries } = await measured("classics.search", { query, k: 10 });
+    assert.equal(out.ok, true, out.error);
+    assert.ok(queries <= 50, `${n} characters: ${queries} D1 statements`);
+    assert.ok(ms < LIMIT_MS, `${n} characters: ${ms.toFixed(1)} ms`);
+    assert.equal(out.result.query.aliases, undefined, `${n} characters`);
+    const off = (await measured("classics.search", { query, k: 10, aliases: "off" })).out.result;
+    assert.deepEqual(out.result.query.terms, off.query.terms, `${n} characters`);
+    assert.deepEqual(out.result.hits.map((h) => h.passage_id), off.hits.map((h) => h.passage_id), `${n} characters`);
+    assert.ok(out.result.hits.every((h) => !h.via && !h.flags), `${n} characters`);
   }
 });
 

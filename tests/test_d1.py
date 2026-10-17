@@ -564,7 +564,8 @@ def test_the_full_corpus_searches_with_the_alias_layer_and_the_backup_alike():
 def test_the_workers_search_reads_a_question_with_the_servers_rules():
     """search.js ports QueryAnalyzer's alias reading and the alias search (hybrid.py) with their constants copied: the
     drug words, the question words a run never takes in, a dose, what a longer name of a drug may add to it, the
-    thresholds of a name asked only as a drug, what follows a period's name, the routes, the modes, the mask's bits (the cap's mask_bits) and the labels of a lexicon form's kind."""
+    thresholds of a name asked only as a drug, what follows a period's name, the longest question read with the layer,
+    the routes, the modes, the mask's bits (the cap's mask_bits) and the labels of a lexicon form's kind."""
     from taochronos.plugins.classics.aliases import DEFAULT_ALIAS
     from taochronos.plugins.retrieval import hybrid
     from taochronos.protocol.concepts import SynonymKind
@@ -585,6 +586,14 @@ def test_the_workers_search_reads_a_question_with_the_servers_rules():
     assert const("DOSE_AT") == f"/{hybrid.DOSE_AT.pattern}/gu"
     assert set(strings(const("NAME_TAILS"))[0]) == set(hybrid.NAME_TAILS)
     assert set(strings(const("NAME_HEADS"))[0]) == set(hybrid.NAME_HEADS)
+    assert int(const("ALIAS_MAX_CHARS")) == hybrid.ALIAS_MAX_CHARS  # longer questions are read without the layer
+    # the parity questions on either side of it (d1fixture.REFERENCE): one read with the layer, one without
+    from taochronos.chat.d1fixture import LONG_QUESTION, REFERENCE
+
+    asked = [args["query"] for name, args in REFERENCE if name == "classics.search"]
+    norm = DomainPack(ROOT / "domains" / "classics").variants.normalize_text
+    assert [len(norm(q)) for q in asked if len(q) >= hybrid.ALIAS_MAX_CHARS] == [hybrid.ALIAS_MAX_CHARS, len(LONG_QUESTION)]
+    assert len(norm(LONG_QUESTION)) > hybrid.ALIAS_MAX_CHARS
     assert tuple(strings(const("ROUTES"))) == hybrid.ROUTES and tuple(strings(const("ALIAS_MODES"))) == hybrid.ALIAS_MODES
     assert "alias" in strings(const("SERVED_ROUTES")) and "alias" not in hybrid.ROUTES
     # the cap counts the profile's mask_bits: an expansion it searches beyond the Worker's bits would go unread there

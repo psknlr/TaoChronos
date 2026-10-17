@@ -7,9 +7,13 @@ graph, temporal, citation, variant, sense) → reciprocal-rank fusion →
 citation-lineage expansion → period-grouped claim comparison.
 
 With the pack's alias layer on (ADR 0023) a drug is also found under its other
-names — 国老 for 甘草, 通草 for 木通 before 960 — in a side queue that fills at
-most 3 of 10 places, each hit labelled with the name, the drug and the source;
-the question's own spelling keeps the other places.
+names — 国老 for 甘草, 通草 for 木通 before 960 — in a side queue, each hit
+labelled with the name, the drug and the source.  At the default share of 3 in
+10 the side queue has places 4, 7 and 10 of each ten (14, 17, 20 … beyond)
+while the main queue lasts — a place it cannot fill goes back to the main
+queue — and every place after the main queue runs out; the question's own
+spelling keeps the other places.  A question longer than ALIAS_MAX_CHARS (200)
+is read and ranked as without the layer.
 """
 
 from __future__ import annotations
@@ -58,6 +62,10 @@ NAME_TAILS = frozenset("草根子花叶皮实仁藤苗茎枝梢尾头须芦节�
 NAME_HEADS = frozenset("酒姜盐醋蜜炙炒煅焦制生熟干鲜炮焙")
 # what follows a period's name in a question (宋以前的解离 asks 解离 on its own)
 PERIOD_TAIL = re.compile(r"[代朝]?(?:以前|之前|以后|之后|以来|以降|时期|期间|前|后|初|末|至|到)?")
+# a question longer than this (normalised characters: a passage pasted in, a list of names) is read as with the layer
+# off — no name asked as a drug, none expanded, ranked as today: reading it name by name would cost the Worker's port
+# more than a request's 10 ms of CPU (search.js reads by the same count, in code points)
+ALIAS_MAX_CHARS = 200
 
 
 @dataclass
@@ -144,7 +152,8 @@ class QueryAnalyzer:
         gives way to the name (干葛 is not 葛), and the names asked, those asked as drugs, their one-hop expansions and
         the ``query.aliases`` view are filled in; a name asked without a lexicon term is searched as written.  A name
         the question writes only inside a longer one is not asked, and an alias the corpus mostly writes in other
-        senses only where the question reads it as a drug (:meth:`_analyze_aliases`).  ``cfg``: the alias parameters."""
+        senses only where the question reads it as a drug (:meth:`_analyze_aliases`).  A question longer than
+        :data:`ALIAS_MAX_CHARS` is read as without the layer.  ``cfg``: the alias parameters."""
         lex = self.pack.lexicon
         norm = self.pack.variants.normalize_text(text)
         q_after, q_before = self.pack.periods.parse_constraint(norm)
@@ -156,7 +165,7 @@ class QueryAnalyzer:
             q.intent = "evolution"
         elif re.search(r"矛盾|争议|分歧|不同观点|相反", text):
             q.intent = "contradiction"
-        if aliases:
+        if aliases and len(norm) <= ALIAS_MAX_CHARS:
             return self._analyze_aliases(q, norm, {**DEFAULT_ALIAS, **(cfg or {})})
         self._terms(q, [m for m in lex.match(norm) if not m.weak or len(norm) <= 4])
         self._spellings(q)
@@ -211,8 +220,10 @@ class QueryAnalyzer:
         1. A name written only inside one of its own blockers is not asked (将军 in 将军之官, 人言 in 古人言): an alias
            span is dropped, a lexicon mention keeps its term (today's reading) but is no asked name.  A blocker that
            names a drug itself is asked as written in its place, the mentions inside it dropped (石南藤, not 石南) —
-           unless a lexicon mention spans it (川乌头, which the lexicon files under 川乌): that mention is asked, its
-           term and forms kept as today.
+           unless a lexicon mention spans it — a herb (川乌头, which the lexicon files under 川乌), or a longer name of
+           any kind (麦门冬汤, a formula, over the blocker 麦门冬): that mention is asked, its term and forms kept as
+           today.  A non-herb entry of the blocker itself does not take a drug's name from the
+           layer (蜣螂转丸, which a harvested lexicon files under a formula first, is still asked as written).
         2. An alias span is kept only where the question asks it as a drug (:meth:`_asks_drug`); a dropped one gives
            the lexicon mentions it overlapped back, so a question about something else reads as today.
         3. A kept span outranks a weak or shorter lexicon mention it overlaps (山蓟 over 山).
@@ -236,8 +247,9 @@ class QueryAnalyzer:
                 continue
             blocked.add((i, s))
             k, b = cover
-            if any(not m.weak and m.start <= k and k + len(b) <= m.end for m in raw):
-                continue  # the lexicon reads the blocker itself (川乌头, 川乌's name): its mention keeps its term
+            if any(not m.weak and (m.category == "herb" or m.end - m.start > len(b)) and m.start <= k
+                   and k + len(b) <= m.end for m in raw):
+                continue  # a lexicon herb reads the blocker (川乌头, 川乌's name), or a longer name holds it (麦门冬汤)
             if self._names_drug(b) and not any(a < k + len(b) and k < z for a, z, _ in written):
                 written.append((k, k + len(b), b))
 

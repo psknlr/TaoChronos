@@ -105,6 +105,33 @@ def test_alias_gold_holds_its_contract():
     assert late and all(split == "dev" and date >= "2026-10-15" for split, date in late)
 
 
+@pytest.mark.parametrize("section, head", [
+    ("五味子", "五味子"), ("百合（本经中品）", "百合"), ("一七一　五味子", "五味子"), ("十、百部", "百部"), ("12. 五倍子", "五倍子"),
+    ("一八一梔子", "梔子"), ("一八三　蘗（柏）木", "蘗木"), ("一○七　白石脂", "白石脂"), ("三○一 　藥實根", "藥實根"),
+    ("卷二 · 五灵脂", "五灵脂"), ("二八七", None), ("六畜毛蹄甲", None),
+])
+def test_alias_gold_reads_entry_headings_as_the_build_does(section, head):
+    """The pools' 本草 entries are headed as the build heads them: the same numbering rule (a drug's name that opens
+    with a numeral keeps it; ○ numbers as 〇 does), here of two to four characters."""
+    from taochronos.evals import aliases_gold
+    from taochronos.plugins.classics import aliasbuild
+
+    assert aliases_gold._SECTION_NUM.pattern == aliasbuild._SECTION_NUM.pattern
+    assert aliases_gold._entry_head(section, lambda s: s) == head
+    if head is not None:
+        assert aliasbuild.entry_head(section, lambda s: s) == head
+
+
+def test_alias_gold_pools_take_no_chapter_number_for_a_drug():
+    """A heading of numerals alone (a chapter's 六七, which the build keeps whole for 三七's sake) heads a pool entry
+    only as a lexicon herb."""
+    from taochronos.evals.aliases_gold import _entry_drug
+
+    herbs = {"三七", "百合"}
+    for section, head in (("六七", None), ("一一", None), ("三七", "三七"), ("一八三　百合", "百合"), ("卷二 · 六九", None)):
+        assert _entry_drug(section, lambda s: s, herbs) == head, section
+
+
 def test_alias_eval_retention_check_needs_the_asked_first_rule():
     """The planted 国老治虚劳: passages on 虚劳 outrank 国老, which keeps its places only by the asked-first rule."""
     from taochronos.evals.aliases import _checks, synthetic_search

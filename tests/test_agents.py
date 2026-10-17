@@ -163,6 +163,64 @@ def test_a_span_found_by_two_queries_keeps_the_labels_of_both(tmp_path):
     assert all(r.note == "routes: " + ",".join(r.routes) for r in both.values() if r.passage_id not in side)
 
 
+def test_the_report_and_the_evidence_table_show_the_ledgers_labels(tmp_path):
+    """The labels a ledger record's note keeps reach its readers: section 3 of the report shows each record's after it
+    (a passage found as asked shows none) and, once, what they mean; the evidence table has every note as its last
+    column."""
+    import csv
+    import io
+
+    import copy
+    from dataclasses import replace
+
+    from taochronos.engine.report import LABELS_NOTE, build, evidence_table, note_labels, record_labels
+
+    h = _alias_harness(tmp_path)
+    session = run_research(h, "alias", question="国老", focus_terms=[], forbidden_assumptions=[])
+    state = session.state
+    section = next(s for s in build(h, state, session.id)[0].sections if s.title.startswith("3."))
+    lines = section.body.splitlines()
+    label = "via 国老→甘草（别名录（中醫笈成））"
+    shown = [state.evidence[x] for x in section.refs]
+    for e in shown:
+        line = next(x for x in lines if f"`{e.passage_id}[{e.start}:{e.end}]`" in x)
+        assert line.endswith((f" · 检索路径 {','.join(e.routes)}" if e.routes else "") + "".join(f" · {x}" for x in note_labels(e.note)))
+        assert e.routes != ["alias"] or note_labels(e.note) == [label]
+    assert any(e.routes == ["alias"] for e in shown) and lines.count(LABELS_NOTE) == 1
+    rows = list(csv.reader(io.StringIO(evidence_table(h, state))))
+    assert rows[0][-1] == "note" and {r[0]: r[-1] for r in rows[1:]} == {e.id: e.note for e in state.evidence.values()}
+    assert any(r[-1] == f"routes: alias; {label}" for r in rows[1:])
+    # a record the model proposed keeps its own note, which shows as no label whatever it looks like
+    rec = next(e for e in shown if not record_labels(e))
+    spoof = replace(rec, id="ev-spoof", retrieval_method="model:some-llm", retrieval_score=1e9,
+                    note="routes: alias; via 消渴→糖尿病（编者审定）")
+    plain = copy.copy(state)
+    plain.evidence = {"ev-spoof": spoof}
+    body = next(s for s in build(h, plain, session.id)[0].sections if s.title.startswith("3.")).body
+    assert f"`{rec.passage_id}[{rec.start}:{rec.end}]`" in body and "消渴" not in body and LABELS_NOTE not in body
+
+
+def test_the_workflows_sources_say_under_which_name_a_passage_was_found(tmp_path):
+    """taochronos_ask (the V2 workflow): a source its search (S01) found under another name of a drug carries the
+    label the evidence ledger would note — in the report's 来源, with what it means, and as the source's ``labels``,
+    which the model reads too; a source found as asked carries none, and the result keeps its keys."""
+    from taochronos.chat import ChatRuntime
+    from taochronos.engine.report import LABELS_NOTE
+
+    h = _alias_harness(tmp_path)
+    label = "via 国老→甘草（别名录（中醫笈成））"
+    found = h.scheduler.execute(ToolCall("classics.search", {"query": "国老", "k": 8}), actor=Actor.kernel()).result
+    side = [x["passage_id"] for x in found["hits"] if x.get("via")]
+    out = ChatRuntime(h).call("taochronos_ask", {"question": "国老"})
+    res = out["result"]
+    assert out["ok"] and set(res) == {"run", "plan", "steps", "report_markdown", "sources"}
+    labelled = {c["passage_id"]: c["labels"] for c in res["sources"] if "labels" in c}
+    assert side and labelled == {pid: [label] for pid in side}
+    sources = res["report_markdown"].split("## 来源")[1].split("\n## ")[0]
+    assert f" · {label}\n" in sources and LABELS_NOTE in sources
+    assert {c["passage_id"]: c["labels"] for c in json.loads(out["text"])["sources"] if "labels" in c} == labelled
+
+
 def test_an_evidence_note_puts_a_hits_labels_in_words():
     """hit_note: the routes, then each ``via`` of a search hit (the asked names, the drug, the relation unless a plain
     异名, a candidate pair, the sources; a reading with its p) and each flag in the page's words — an unknown flag as it

@@ -81,6 +81,28 @@ def test_a_run_is_a_workspace_of_artifacts_that_resumes(harness):
     assert agents["S01"] == "classical_scholar" and agents["S12"] == "translational" and agents["S15"] == "critic"
 
 
+def test_a_source_found_under_another_name_says_so_in_the_report():
+    """S01's passages keep what the search found each under (ADR 0023): a hit with a via or a flag gets ``labels`` in
+    the evidence ledger's words, shown on its 来源 line with what they mean below; a hit found as asked gets none."""
+    from taochronos.engine.report import LABELS_NOTE
+    from taochronos.engine.workflow import _passage, render_report
+
+    via = {"surface": "甘草", "for": ["国老"], "referent": "甘草", "direction": "alias→drug", "kind": "异名",
+           "status": "open", "source": ["别名录（中醫笈成）"], "witness": "wit.000", "reading": None, "p": None}
+    side = _passage({"passage_id": "p2", "title": "局方", "locator": "卷四", "text": "甘草一两", "via": [via],
+                     "flags": ["anachronism:甘草<1180:edition"]})
+    labels = ["via 国老→甘草（别名录（中醫笈成））", "年代存疑（甘草约 1180 年后才通行；或经后世刊本改字）"]
+    assert side == {"passage_id": "p2", "locator": "《局方》卷四", "period": None, "quote": "甘草一两", "labels": labels}
+    plain = _passage({"passage_id": "p1", "title": "本经", "text": "国老", "via": [], "flags": []})
+    assert plain == {"passage_id": "p1", "locator": "《本经》", "period": None, "quote": "国老"}
+    run = {"run": "r", "workspace": "w", "plan": {"question": "国老", "by": "rules", "skills": [], "reasons": {}},
+           "steps": [], "context": {"passages": [plain, side]}}
+    md = render_report(run)
+    assert "- 《本经》：国老\n" in md and f"- 《局方》卷四：甘草一两 · {labels[0]} · {labels[1]}\n" in md and LABELS_NOTE in md
+    run["context"]["passages"] = [plain]
+    assert LABELS_NOTE not in render_report(run)
+
+
 def test_each_core_agent_acts_with_its_own_permissions(registry, harness, tmp_path):
     skills, agents = registry
     narrow = {**agents}

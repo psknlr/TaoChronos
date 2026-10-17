@@ -32,6 +32,8 @@ KEYS: list[tuple[str, str, dict[str, Any]]] = [
     ("study.taboo", "", {}),
     ("kg.claims", "disease:消渴", {"terms": ["disease:消渴"]}),
 ]
+# a prescription pasted in as a question (422 characters): read without the layer past hybrid.ALIAS_MAX_CHARS (200)
+LONG_QUESTION = "治伤寒中风，" + "国老二两，桂枝三两，芍药三两，生姜三两，大枣十二枚，" * 16
 # the Python tools' answers on the fixture, which the backup's must equal (a search: its query analysis, and the labels
 # of the passages both find)
 REFERENCE: list[tuple[str, dict[str, Any]]] = [
@@ -126,6 +128,14 @@ REFERENCE: list[tuple[str, dict[str, Any]]] = [
     ("classics.search", {"query": "甘草入脾"}),
     ("classics.search", {"query": "葛二两"}),
     ("classics.search", {"query": "阿胶与通草"}),
+    # a blocker the lexicon reads as a formula keeps the layer's drug, asked as written (蜣螂转丸), but a longer formula
+    # over a blocker is read as today (麦门冬汤 over 麦门冬, 五加皮散 over 五加皮); a question as long as the layer reads
+    # (hybrid.ALIAS_MAX_CHARS) and a longer one, read without the layer and ranked as today
+    ("classics.search", {"query": "蜣螂转丸"}),
+    ("classics.search", {"query": "麦门冬汤"}),
+    ("classics.search", {"query": "五加皮散的组成"}),
+    ("classics.search", {"query": LONG_QUESTION[:200]}),
+    ("classics.search", {"query": LONG_QUESTION}),
 ]
 # the alias cases: questions read with the layer, and made-up passages for the gates ([text, the name it tests, the
 # passage's range, its edition's]) — none asks or writes a held-out gold name

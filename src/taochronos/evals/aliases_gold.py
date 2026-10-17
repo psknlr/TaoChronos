@@ -20,7 +20,7 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Container, Iterable
 
 import yaml
 
@@ -71,8 +71,12 @@ _BRACKET_NAME = re.compile(f"(?:即|{EQUATE})为?({HAN}{{2,4}}?)(?=[^㐀-鿿]|{E
 _EDITORIAL = re.compile(r"〔[^〕]*〕|｛[^｝]*｝")  # 本草求真's 〔专入肝胃〕 and ｛…｝ notes
 _EQUATE_WORD = re.compile(EQUATE)
 _BEFORE = re.compile(f"{_LEFT}({HAN}{{2,4}})$")
-_SECTION_NUM = re.compile(r"^[0-9〇一二三四五六七八九十百千]+[、.．\s　]*")
+# a section's numbering, as the build reads it (aliasbuild._SECTION_NUM, a test holds the two equal): digits, or
+# numerals before a separator or three or more of them (一八一梔子, 一○七　白石脂), never the numeral a drug's name opens
+# with (五味子, 百合, 三七)
+_SECTION_NUM = re.compile(r"^(?:[0-9]+|[〇○一二三四五六七八九十百千]{3,}|[〇○一二三四五六七八九十百千]+(?=[、.．\s　]))[、.．\s　]*")
 _SECTION = re.compile(f"^({HAN}{{2,4}})$")
+_NUMERALS = re.compile("[〇○一二三四五六七八九十百千]+")  # a heading of numerals alone: a chapter's number, unless a herb (三七)
 _ENTRY_ALIAS = re.compile(f"{EQUATE}{_NAME}")
 
 
@@ -472,10 +476,19 @@ def _pairs(text: str, head: str | None = None, known: Callable[[str], bool] = la
 
 
 def _entry_head(section: str | None, normalize: Callable[[str], str]) -> str | None:
-    """The drug a 本草 section is headed by: numbering and bracketed glosses dropped (一八三　蘗（柏）木 → 蘗木)."""
-    s = re.sub(r"[（(][^）)]*[）)]", "", _SECTION_NUM.sub("", normalize(section or "").strip())).strip()
-    m = _SECTION.match(s)
+    """The drug a 本草 section is headed by, as the build reads it (``aliasbuild.entry_head``): the innermost heading,
+    bracketed glosses then numbering dropped (一八三　蘗（柏）木 → 蘗木, 一七一　五味子 → 五味子), of two to four
+    characters."""
+    s = re.sub(r"[（(][^）)]*[）)]", "", normalize((section or "").split(" · ")[-1])).strip()
+    m = _SECTION.match(_SECTION_NUM.sub("", s).strip())
     return m.group(1) if m else None
+
+
+def _entry_drug(section: str | None, normalize: Callable[[str], str], herbs: Container[str]) -> str | None:
+    """The drug a 本草 section of the pools is headed by (:func:`_entry_head`), never a chapter's number: a heading of
+    numerals alone (六七, 一一, which the build's rule keeps whole for 三七's sake) heads an entry only as a lexicon herb."""
+    head = _entry_head(section, normalize)
+    return None if head and _NUMERALS.fullmatch(head) and head not in herbs else head
 
 
 def pools(store: Any, home: str | Path | None = None) -> dict[str, Any]:
@@ -517,7 +530,7 @@ def pools(store: Any, home: str | Path | None = None) -> dict[str, Any]:
     found: dict[tuple[str, str], list[tuple[float, str, str]]] = defaultdict(list)  # (head, alias) -> (year, pid, kind)
     for p in corpus.iter_passages(book_ids=[b for b in corpus.books if not _no_witness(b)]):
         text, year = norm(p.text), corpus.year(p) or 9999.0
-        entry = _entry_head(p.locator.section, norm) if p.book_id in bencao else None
+        entry = _entry_drug(p.locator.section, norm, herbs) if p.book_id in bencao else None
         lead = next((text[:k] for k in (4, 3, 2) if text[:k] in herbs), None)  # 药性歌括: 商陆苦寒…（一名章柳。）
         pairs = set(_pairs(text, entry or lead, herbs.__contains__))
         if entry:

@@ -36,7 +36,12 @@ For every pair (name, drug) the build
 * reports what editors should look at: 别名录 heads nothing writes (garbled: 蘆藜), lexicon rivals sharing names with
   another of the name's drugs, drugs named by an unwritten name, cover strings past the cap.
 
-Everything is sorted before it is written: the same inputs give the same bytes.
+Everything is sorted before it is written: the same inputs give the same bytes.  The header fingerprints the inputs:
+the store (:func:`store_label`), the normaliser, the lexicon and, where the layer follows it, the 要籍语料's pack
+(``web_pack``, :func:`pack_fingerprint`): on a full store the pack sets each witness's ``web`` flag; the web store is
+the pack made into a store, and the header names the pack only when the store holds exactly the pack's passages, row
+for row and column for column as ``webcorpus.build_store`` writes them (a pack written again after a text or heading fix
+keeps its ids: a store made of the old one does not claim the new).
 """
 
 from __future__ import annotations
@@ -48,9 +53,12 @@ import re
 import time
 import zlib
 from collections import defaultdict
+from contextlib import nullcontext
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Iterable, Mapping
+
+import yaml
 
 from ...protocol.base import canonical_dumps
 from ...protocol.yamlio import load_yaml
@@ -64,6 +72,7 @@ from .study.names import EQUATE as NAMES_EQUATE
 ALIAS_DIR = "aliases"  # under the domain: sources.yaml, curated.yaml, aliases.jsonl, context.json
 FILES = ("aliases.jsonl", "context.json", "curated.yaml", "sources.yaml")
 LEXICON_EXTRA = ("lexicon-supplement", "lexicon-harvested")  # the full-corpus profile's lexicon
+WEB_PACK = Path("corpus") / "web" / "passages.jsonl.gz"  # the 要籍语料's pack, under the home
 LOCAL_FILE = "aliases-local.jsonl"  # <data>/aliases/local/: the shipped records and the local pairs, re-classified
 BIELU_ENTRIES = 1086  # entries of the whole 别名录 (the web store's excerpt has 778)
 # aliases.jsonl raw and deflated; the directory deflated file by file, as home.zip stores it
@@ -92,13 +101,38 @@ KIND_ORDER = ("taboo_rename", "spelling", "old_name", "part_name", "processing_v
 _HAN = "\u3400-\u9fff\uf900-\ufaff\U00020000-\U0003134f\u3007\u3013"  # what is_han accepts
 _RUBRIC = ("集解", "气味", "主治", "发明", "附方", "正误", "修治", "校正", "释名")
 # a section's numbering: digits, or numerals before a separator or three or more of them (一八一梔子); never the
-# numeral a drug's name opens with (五味子, 百合, 三七)
-_SECTION_NUM = re.compile(r"^(?:[0-9]+|[〇一二三四五六七八九十百千]{3,}|[〇一二三四五六七八九十百千]+(?=[、.．\s　]))[、.．\s　]*")
+# numeral a drug's name opens with (五味子, 百合, 三七).  Its zero is 〇 (U+3007) or ○ (U+25CB), as editions write it
+# (一○七　白石脂).  evals/aliases_gold.py reads headings with the same pattern, and a test holds the two equal
+_SECTION_NUM = re.compile(r"^(?:[0-9]+|[〇○一二三四五六七八九十百千]{3,}|[〇○一二三四五六七八九十百千]+(?=[、.．\s　]))[、.．\s　]*")
 _LEAD = re.compile(f"^([{_HAN}]{{1,6}}?)(?:\\||味)")  # a 本草 entry that opens with its drug: 赤箭　味辛温 · 丹砂，一名朱砂
 
 
 def _n(value: Any) -> str:
     return "" if value is None else str(value)
+
+
+# a passage's columns as the store holds them (``CorpusStore.add_passages``, which ``webcorpus.build_store`` writes the
+# pack with): what the web store must hold row for row to be the pack made into a store — its JSON columns last
+_PASSAGE_COLUMNS = ("id", "book_id", "edition_id", "seq", "kind", "layer", "year", "y_start", "y_end", "text",
+                    "punctuation", "locator", "temporal", "extra")
+
+
+def _is_stored(line: bytes, row: tuple[Any, ...] | None) -> bool:
+    """Whether a store's passage row (:data:`_PASSAGE_COLUMNS`) is the pack line made into one: the same values, a
+    locator and a temporal context without their empty fields, as the store keeps them."""
+    if row is None:
+        return False
+    try:
+        r = json.loads(line)
+        if row[:11] != (r["id"], r["book_id"], r.get("edition_id"), r["seq"], r.get("kind", "text"), r.get("layer"),
+                        r.get("year"), r.get("y_start"), r.get("y_end"), r["text"], r.get("punctuation", "none")):
+            return False
+        loc, tem = json.loads(row[11]), json.loads(row[12])
+        return (loc == {k: v for k, v in r["locator"].items() if v is not None}
+                and tem == {k: v for k, v in r["temporal"].items() if v is not None}
+                and json.loads(row[13]) == (r.get("extra") or {}))
+    except (ValueError, TypeError, KeyError, AttributeError):
+        return False
 
 
 def _window(value: Any) -> tuple[int | None, int | None] | None:
@@ -138,6 +172,47 @@ def store_label(db: CorpusStore) -> dict[str, Any]:
     basis = db.meta("counted") or f"{passages}:{last}"
     sha = hashlib.sha256(f"{db.meta('edition') or 'full'}\n{db.meta('normalizer')}\n{basis}".encode()).hexdigest()
     return {"sha": sha[:12], "books": books, "passages": passages}
+
+
+def pack_fingerprint(path: str | Path) -> str:
+    """sha256[:12] of the 要籍语料's pack uncompressed (``corpus/web/passages.jsonl.gz``: the digest ``taochronos web
+    pack`` reports), so that a pack written again with another zlib reads alike."""
+    digest = hashlib.sha256()
+    with gzip.open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()[:12]
+
+
+def read_yaml(path: str | Path) -> Any:
+    """A YAML file of the alias directory (curated.yaml, sources.yaml): its content, None when it is empty;
+    ``ValueError`` when it is not UTF-8 or not YAML at all, naming the file and where the parser stopped."""
+    try:
+        return load_yaml(path)
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"{Path(path).name} is not valid YAML: not UTF-8 at byte {exc.start}") from None
+    except yaml.YAMLError as exc:
+        mark = getattr(exc, "problem_mark", None)
+        where = f" at line {mark.line + 1}, column {mark.column + 1}" if mark is not None else ""
+        problem = getattr(exc, "problem", None) or " ".join(str(exc).split())
+        raise ValueError(f"{Path(path).name} is not valid YAML: {problem}{where}") from None
+
+
+def read_registry(path: str | Path) -> dict[str, Any]:
+    """sources.yaml, the source registry (``sources``: a list of mappings, ``works``: a mapping), {} when it is empty;
+    ``ValueError`` in a sentence when it is not YAML (:func:`read_yaml`) or not of that shape."""
+    data = read_yaml(path)
+    if data is None:
+        return {}
+    name = Path(path).name
+    # a file's shape, reported as its other faults are (ValueError, which the CLI says in a sentence)
+    if not isinstance(data, dict):
+        raise ValueError(f"{name}: the top level is not a mapping")  # noqa: TRY004
+    if not isinstance(data.get("sources") or [], list) or not all(isinstance(x, dict) for x in data.get("sources") or []):
+        raise ValueError(f"{name}: sources is not a list of mappings")
+    if not isinstance(data.get("works") or {}, dict):
+        raise ValueError(f"{name}: works is not a mapping")  # noqa: TRY004
+    return data
 
 
 def lexicon_fingerprint(root: Path) -> str:
@@ -353,9 +428,9 @@ class Builder:
         self.home = Path(home)
         self.root = self.home / "domains" / "classics"
         self.dir = self.root / ALIAS_DIR
-        self.registry = load_yaml(self.dir / "sources.yaml") or {}
+        self.registry = read_registry(self.dir / "sources.yaml")
         curated = self.dir / "curated.yaml"
-        self.curated: dict[str, Any] = (load_yaml(curated) or {}) if curated.exists() else {}
+        self.curated: dict[str, Any] = (read_yaml(curated) or {}) if curated.exists() else {}
         errors = validate_curated(self.curated)
         if errors:
             raise ValueError("\n".join(errors))
@@ -390,6 +465,9 @@ class Builder:
                     self.lex_kind[(ns, e.term_id)] = kind
         self.gangmu_titles = gangmu_titles(self.root, self.norm)
         self._web: set[str] | None = None
+        self._pack: tuple[str | None, bool] | None = None  # the pack's fingerprint; whether the web store is made of it
+        self._web_pack: str | None = None
+        self._web_pack_read = False
         self._rows: dict[str, tuple[str, int | None, int | None, str | None]] = {}  # pid → book, y0, y1, 本草 heading
         self._text: dict[str, str] = {}  # pid → normalised text
         self._gate: dict[str, str] = {}
@@ -455,16 +533,58 @@ class Builder:
             ids = self._ids[s] = self._open(self.corpus.contains(s, verify=False))
         return ids
 
+    def _read_pack(self) -> tuple[str | None, bool]:
+        """The committed pack (``corpus/web/passages.jsonl.gz``) read once: its fingerprint (None without one) and, on
+        the web store, whether the store holds exactly its passages — each row as ``webcorpus.build_store`` writes the
+        line (:func:`_is_stored`), in the pack's order, none more; on a full store each line is parsed for the ``web``
+        flags instead."""
+        if self._pack is None:
+            pack = self.home / WEB_PACK
+            self._web, fp, same = set(), None, False
+            if pack.exists():
+                digest = hashlib.sha256()
+                web = self.edition == "web"
+                with self.db.lock if web else nullcontext(), gzip.open(pack, "rb") as fh:
+                    held = iter(self.db.db.execute(f"SELECT {', '.join(_PASSAGE_COLUMNS)} FROM passages ORDER BY rid")
+                                if web else ())
+                    same = web
+                    for line in fh:
+                        digest.update(line)
+                        if not line.strip():
+                            continue
+                        if not web:
+                            self._web.add(json.loads(line)["id"])
+                        elif same:  # once the store differs, the rest is only fingerprinted
+                            same = _is_stored(line, next(held, None))
+                    same = same and next(held, None) is None
+                fp = digest.hexdigest()[:12]
+            self._pack = (fp, same)
+        return self._pack
+
     def web(self, pid: str) -> bool:
-        """Whether the passage is in the committed web pack (``corpus/web/passages.jsonl.gz``)."""
+        """Whether the passage is in the committed web pack (``corpus/web/passages.jsonl.gz``): on the web store every
+        passage is."""
+        if self.edition == "web":
+            return True
         if self._web is None:
-            pack = self.home / "corpus" / "web" / "passages.jsonl.gz"
-            if self.edition == "web" or not pack.exists():
-                self._web = set()
-            else:
-                with gzip.open(pack, "rt", encoding="utf-8") as fh:
-                    self._web = {json.loads(line)["id"] for line in fh if line.strip()}
-        return self.edition == "web" or pid in self._web
+            self._read_pack()
+        return pid in self._web
+
+    def web_pack(self) -> str | None:
+        """The fingerprint of the pack the layer is built against (:func:`pack_fingerprint`), for the header: on a full
+        store the pack that sets the ``web`` flags; on the web store the pack it is made of — only when the store holds
+        exactly the pack's passages, text, locators and dates as the pack has them, in its order (else None, and a
+        warning).  None without a pack."""
+        if not self._web_pack_read:
+            fp, same = self._read_pack()
+            if fp is not None and self.edition == "web" and not same:
+                fp = None
+            self._web_pack, self._web_pack_read = fp, True
+        if self._web_pack is None and self.edition == "web" and (self.home / WEB_PACK).exists():
+            note = f"the store is not the pack {WEB_PACK.as_posix()} holds: the header names no web pack"
+            if note not in self.notes["warnings"]:
+                self.notes["warnings"].append(note)
+        return self._web_pack
 
     def witness(self, pid: str, kind: str) -> Witness | None:
         self._fetch([pid])
@@ -1165,9 +1285,11 @@ class Builder:
 
     def meta(self, coverage: dict[str, Any], records: list[AliasRecord]) -> dict[str, Any]:
         used = sorted({src for rec in records for ref in rec.r for src in ref.src})
+        web_pack = self.web_pack()
         return {"store": store_label(self.db), "normalizer": self.pack.variants.fingerprint,
                 "lexicon": lexicon_fingerprint(self.root), "coverage": coverage,
-                "labels": {i: self.sources.get(i, {}).get("label", i) for i in used}}
+                "labels": {i: self.sources.get(i, {}).get("label", i) for i in used},
+                **({"web_pack": web_pack} if web_pack else {})}
 
 
 def _read_across(g: str, names: set[str], a: int, b: int, *, left: bool) -> bool:
@@ -1362,11 +1484,13 @@ def heldout_in(curated: Mapping[str, Any], heldout: Iterable[str], normalize: An
 def check(home: str | Path, *, heldout: Iterable[str] = (), store: CorpusStore | str | Path | None = None,
           rebuild: bool = False) -> dict[str, Any]:
     """What breaks the committed layer's contract, as ``errors`` (and ``warnings``): the schema, a surface under two
-    characters, an unknown kind or status, a repeated surface, a cap exceeded, a source that does not ship,
-    curated.yaml's shape (:func:`validate_curated`), a held-out gold name curated.yaml writes (normalised: as a name,
-    or in a reason or note), the size budget of aliases.jsonl and of the directory; with a store, a witness from a
-    ``NEVER_PACKED`` source, missing from it, or not writing the name it witnesses; with ``rebuild``, a build on the
-    store that differs from the bytes (none when curated.yaml's shape is wrong: the build would refuse it)."""
+    characters, an unknown kind or status, a repeated surface, a cap exceeded, a source that does not ship, a
+    sources.yaml or curated.yaml that is not YAML, sources.yaml's shape (:func:`read_registry`), curated.yaml's shape
+    (:func:`validate_curated`), a held-out gold name curated.yaml writes (normalised: as a name, or in a reason or
+    note), the size budget of aliases.jsonl and of the directory; a warning when the header names another web pack than ``corpus/web`` holds (the layer is to be
+    built again); with a store, a witness from a ``NEVER_PACKED`` source, missing from it, or not writing the name it
+    witnesses; with ``rebuild``, a build on the store that differs from the bytes (none when curated.yaml is not YAML
+    or its shape is wrong: the build would refuse it)."""
     home = Path(home)
     d = home / "domains" / "classics" / ALIAS_DIR
     errors: list[str] = []
@@ -1376,7 +1500,10 @@ def check(home: str | Path, *, heldout: Iterable[str] = (), store: CorpusStore |
     errors += [f"{d.name}/{x} is missing" for x in FILES if x not in present]
     if errors:
         return {"ok": False, "errors": errors, "warnings": warnings}
-    registry = load_yaml(d / "sources.yaml") or {}
+    try:
+        registry = read_registry(d / "sources.yaml")
+    except ValueError as exc:
+        return {"ok": False, "errors": [str(exc)], "warnings": warnings}
     sources = {s.get("id"): s for s in registry.get("sources") or []}
     for sid, s in sources.items():
         if not s.get("label") or s.get("ship") not in (True, False):
@@ -1422,6 +1549,11 @@ def check(home: str | Path, *, heldout: Iterable[str] = (), store: CorpusStore |
                 if w.kind not in WITNESS_KINDS:
                     errors.append(f"{where}: unknown witness kind {w.kind}")
                 pids[w.pid].append((where, w.kind, s))
+    pack = home / WEB_PACK
+    held = pack_fingerprint(pack) if header.get("web_pack") and pack.exists() else None
+    if held is not None and held != header["web_pack"]:
+        warnings.append(f"aliases.jsonl was built against another web pack ({header['web_pack']}) than "
+                        f"{WEB_PACK.as_posix()} ({held}): build it again on a store of this pack")
     labels = header.get("labels") or {}
     missing = sorted(used - set(labels))
     if missing:
@@ -1444,8 +1576,11 @@ def check(home: str | Path, *, heldout: Iterable[str] = (), store: CorpusStore |
         errors.append(f"aliases.jsonl: {raw} bytes ({packed} deflated) is over the budget {BUDGET}")
     if folder > BUDGET["directory"]:
         errors.append(f"{d.name}/: {folder} bytes deflated is over the budget {BUDGET['directory']}")
-    curated = load_yaml(d / "curated.yaml") or {}
-    shape = validate_curated(curated)
+    try:
+        curated = read_yaml(d / "curated.yaml") or {}
+        shape = validate_curated(curated)
+    except ValueError as exc:  # not YAML at all: nothing below reads it
+        curated, shape = {}, [str(exc)]
     errors += shape
     # what the checks below read: a section of the wrong type is reported above and read as empty
     curated = ({k: v for k, v in curated.items() if isinstance(v, Mapping if k in CURATED_MAPS else list)}

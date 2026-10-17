@@ -109,7 +109,7 @@ def _corpus_paths(args: argparse.Namespace) -> tuple[Path, Path]:
     from .config import data_dir as default_data_dir
     from .config import find_home
 
-    home = find_home(args.home)
+    home = Path(args.home).resolve() if args.home else find_home()  # --home over $TAOCHRONOS_HOME, as its help says
     data = Path(args.data) if args.data else default_data_dir(home)
     return home, data
 
@@ -607,6 +607,8 @@ def cmd_aliases(args: argparse.Namespace) -> None:
         return _aliases_show(args, home, data)
     if args.action == "check":
         db = Path(args.db) if args.db else store if store.exists() else None
+        if db is not None and not db.is_file():
+            raise SystemExit(f"no corpus store at {db}")
         result = aliasbuild.check(home, heldout=heldout_surfaces(load_gold(home)), store=db, rebuild=bool(args.db))
         _out(result)
         if not result["ok"]:
@@ -616,7 +618,7 @@ def cmd_aliases(args: argparse.Namespace) -> None:
         raise SystemExit(f"no corpus store at {store} (pass --db)")
     try:
         built = aliasbuild.build_open(store, home)
-    except ValueError as exc:  # curated.yaml's shape
+    except ValueError as exc:  # curated.yaml's or sources.yaml's shape, or not YAML at all
         raise SystemExit(str(exc)) from exc
     if args.action == "review":
         rows = aliasbuild.review(built, top=args.top, heldout=heldout_surfaces(load_gold(home)))
@@ -639,6 +641,7 @@ def cmd_aliases(args: argparse.Namespace) -> None:
 
 
 def _aliases_import(args: argparse.Namespace, home: Path, store: Path, local: Path) -> None:
+    from .plugins.classics.aliasbuild import read_registry, read_yaml
     from .plugins.classics.domain import DomainPack
     from .plugins.classics.ingest.aliases import BOOK, LOCAL_SOURCES, import_local
     from .plugins.classics.store import CorpusStore, StoreCorpus
@@ -648,9 +651,12 @@ def _aliases_import(args: argparse.Namespace, home: Path, store: Path, local: Pa
     pack = DomainPack(home / "domains" / "classics")
     normalize = pack.variants.normalize_text
     folder = home / "domains" / "classics" / "aliases"
-    registry = load_yaml(folder / "sources.yaml") or {}
+    try:
+        registry = read_registry(folder / "sources.yaml")
+        curated = (read_yaml(folder / "curated.yaml") or {}) if (folder / "curated.yaml").exists() else {}
+    except ValueError as exc:  # not YAML at all, or sources.yaml not of its shape
+        raise SystemExit(str(exc)) from exc
     source = next((s for s in registry.get("sources") or [] if s.get("id") == LOCAL_SOURCES[args.target]), {})
-    curated = load_yaml(folder / "curated.yaml") or {} if (folder / "curated.yaml").exists() else {}
     attested = None
     if args.target == "bielu-gb" and store.exists():  # a hard wrap is joined only where the store attests the join
         corpus = StoreCorpus(CorpusStore(store, readonly=True), normalize, exclude_books=(BOOK,))

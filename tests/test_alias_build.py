@@ -5,9 +5,12 @@ local layer, the review sheet and ``aliases check``.  The domain's data and lexi
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import inspect
 import json
+import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -39,12 +42,13 @@ BIELU = ["（有别名者录之无别名者未录）", "甘草（国老　蜜甘
          "石蜜（白沙糖）", "黄连（王连　支连　金连子）", "丹砂（朱砂　真朱）", "人尿（小便　轮回酒）", "　石（太白石　泽乳）",
          "葶苈（大室　大适　丁历）", "蚓蚯（地龙子　寒蚓）", "栝楼（地楼　泽姑）", "茯苓（茯神）", "萆薢（赤节　百枝）",
          "狗脊（强膂　扶筋）", "紫金藤（山甘草）", "长石（方石）", "小柏（子柏）", "独活（羌青）", "天南星（虎掌）",
-         "百合（强瞿）"]
+         "百合（强瞿）", "蔓椒（豕椒）"]
 TEXTS = {
     "bc_a": [("甘草", "甘草　一名国老，一名蜜甘。味甘，平。"), ("人参", "人参　味甘。一名人衔。"),
              ("何首乌", "味苦。一名九真藤。"), ("黄连", "黄连　一名王连。"), (None, "胡黄连二两，治疳。"),
              (None, "栝楼根　一名地楼。"), (None, "栝楼，一名泽姑。"), (None, "柳华，一本作柳花。"),
-             ("百合", "味甘，平。一名强瞿。")],  # an entry only its heading names, a numeral's (not 合's)
+             ("百合", "味甘，平。一名强瞿。"),  # an entry only its heading names, a numeral's (not 合's)
+             ("二○四　蔓椒", "味苦，温。一名豕椒。")],  # and one numbered with ○ for 〇
     "fang_b": [(None, "国老二两，大黄三两。")] + [(None, "人生去来无定")] * 25 + [(None, "岩中脂二两")] * 5
               + [(None, "岩中脂流于石上")] * 20
               + [(None, "石蜜甘草各一两"), (None, "何首乌（交藤）二两"), (None, "小便不利"), (None, "青木香二两　木香一两"),
@@ -216,6 +220,7 @@ def test_witnesses_are_kept_by_kind_and_date_never_from_a_never_packed_source(bu
 @pytest.mark.parametrize("section, head", [
     ("百合", "百合"), ("五味子", "五味子"), ("三七", "三七"), ("百合（本经中品）", "百合"), ("卷二 · 五灵脂", "五灵脂"),
     ("一七一　五味子", "五味子"), ("十、百部", "百部"), ("12. 五倍子", "五倍子"), ("一八一梔子", "梔子"), ("二八七", None),
+    ("一○七　白石脂", "白石脂"), ("三○一 　藥實根", "藥實根"), ("一〇〇　合歡", "合歡"), ("一○○", None),
 ])
 def test_an_entry_heading_drops_its_numbering_never_a_name_s_numeral(section, head):
     assert aliasbuild.entry_head(section, lambda s: s) == head
@@ -224,6 +229,82 @@ def test_an_entry_heading_drops_its_numbering_never_a_name_s_numeral(section, he
 def test_an_entry_named_only_by_a_heading_that_opens_with_a_numeral_witnesses_it(built):
     r = ref(records(built)["强瞿"], "百合")
     assert ("bc_a.00008", "n") in [(w.pid, w.kind) for w in r.w] and "store" in r.src
+    r = ref(records(built)["豕椒"], "蔓椒")  # 二○四　蔓椒: numbered with ○
+    assert ("bc_a.00009", "n") in [(w.pid, w.kind) for w in r.w] and "store" in r.src
+
+
+# ------------------------------------------------------------------ the web pack
+def write_pack(home: Path, rows: list[dict], level: int = 9) -> Path:
+    """The 要籍语料's pack as ``taochronos web pack`` writes it: a passage per line, its keys sorted."""
+    pack = home / "corpus" / "web" / "passages.jsonl.gz"
+    pack.parent.mkdir(parents=True, exist_ok=True)
+    lines = "".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n" for r in rows)
+    pack.write_bytes(gzip.compress(lines.encode("utf-8"), compresslevel=level, mtime=0))
+    return pack
+
+
+def pack_rows(store: Path) -> list[dict]:
+    """The store's passages as a pack holds them (every column ``webcorpus.build_store`` writes), in its order."""
+    db = CorpusStore(store, readonly=True)
+    cols = ("id", "book_id", "edition_id", "seq", "kind", "layer", "year", "y_start", "y_end", "locator", "temporal",
+            "text", "punctuation", "extra")
+    rows = [dict(zip(cols, r)) for r in db.db.execute(f"SELECT {', '.join(cols)} FROM passages ORDER BY rid")]
+    db.close()
+    for r in rows:
+        r.update({k: json.loads(r[k]) for k in ("locator", "temporal", "extra")})
+    return rows
+
+
+def test_the_header_fingerprints_the_web_pack_the_store_is_made_of(tmp_path, site, built):
+    home, store = make_home(tmp_path), site[1]
+    rows = pack_rows(store)
+    pack = write_pack(home, rows)
+    payload = gzip.decompress(pack.read_bytes())
+    assert aliasbuild.pack_fingerprint(pack) == hashlib.sha256(payload).hexdigest()[:12]  # as `web pack` reports it
+    result = build_open(store, home)
+    header, _ = loads_records(result.text())
+    assert header["web_pack"] == aliasbuild.pack_fingerprint(pack) and "web_pack" not in loads_records(built.text())[0]
+    assert result.text().split("\n", 1)[1] == built.text().split("\n", 1)[1]  # the records are the same
+    assert not [w for w in result.report["warnings"] if "web pack" in w]
+    # the same lines compressed otherwise are the same pack
+    assert aliasbuild.pack_fingerprint(write_pack(tmp_path / "other", rows, level=1)) == header["web_pack"]
+    # a pack the store is not made of (a passage short; a passage's text or heading fixed, its id kept) is not named,
+    # and the report says so
+    fixed_text = [dict(r, text=r["text"].replace("人衔", "人御")) if r["id"] == "bc_a.00001" else r for r in rows]
+    fixed_head = [dict(r, locator={**r["locator"], "section": "二○四"}) if r["id"] == "bc_a.00009" else r for r in rows]
+    assert fixed_text != rows and fixed_head != rows
+    for other in (rows[:-1], fixed_text, fixed_head):
+        write_pack(home, other)
+        result = build_open(store, home)
+        assert "web_pack" not in loads_records(result.text())[0]
+        assert any("header names no web pack" in w for w in result.report["warnings"])
+
+
+def test_on_a_full_store_the_header_fingerprints_the_pack_that_sets_the_web_flags(tmp_path, site):
+    home, store = make_home(tmp_path), tmp_path / "full.sqlite"
+    shutil.copyfile(site[1], store)
+    db = CorpusStore(store)
+    db.set_meta("edition", "full")
+    db.commit()
+    db.close()
+    pack = write_pack(home, [r for r in pack_rows(store) if r["id"] != "bc_a.00000"])  # an excerpt
+    header, recs = loads_records(build_open(store, home).text())
+    assert header["web_pack"] == aliasbuild.pack_fingerprint(pack)
+    flags = {w.pid: w.web for rec in recs for r in rec.r for w in r.w}
+    assert flags["bc_a.00000"] is False and flags["jc_c030.00001"] is True
+
+
+def test_check_warns_of_a_layer_built_against_another_web_pack(tmp_path, site):
+    home, store = make_home(tmp_path), site[1]
+    rows = pack_rows(store)
+    write_pack(home, rows)
+    build_open(store, home).write(home / "domains" / "classics" / "aliases")
+    result = check(home)
+    assert result["ok"] and not [w for w in result["warnings"] if "web pack" in w]
+    write_pack(home, rows[:-1])  # a canon run wrote the pack again: the layer is to be built again
+    result = check(home)
+    assert result["ok"] and any("another web pack" in w for w in result["warnings"])
+    assert any("differs from a build" in e for e in check(home, store=store, rebuild=True)["errors"])
 
 
 def test_blockers_floors_and_windows(built):
@@ -389,6 +470,29 @@ def test_check_on_a_store_reports_a_malformed_curated_file(tmp_path, site, built
     assert any(error in e for e in json.loads(capsys.readouterr().out)["errors"])
 
 
+@pytest.mark.parametrize("name, content, said", [
+    ("curated.yaml", CURATED + "pairs: [{s: 国老\n", "curated.yaml is not valid YAML: "),
+    ("curated.yaml", b"version: 1\nstop: [\xff]\n", "curated.yaml is not valid YAML: "),
+    ("sources.yaml", "sources: [{id: bielu-jc\n", "sources.yaml is not valid YAML: "),
+    ("sources.yaml", "- {id: bielu-jc}\n", "sources.yaml: the top level is not a mapping"),
+    ("sources.yaml", "sources: [bielu-jc]\n", "sources.yaml: sources is not a list of mappings"),
+], ids=["curated-unclosed", "curated-not-utf8", "sources-unclosed", "sources-a-list", "sources-of-strings"])
+def test_check_reports_a_file_that_is_not_yaml(tmp_path, site, built, capsys, name, content, said):
+    home, store = make_home(tmp_path), site[1]
+    folder = home / "domains" / "classics" / "aliases"
+    built.write(folder)
+    (folder / name).unlink()  # sources.yaml links to the repository's
+    (folder / name).write_bytes(content if isinstance(content, bytes) else content.encode("utf-8"))
+    result = check(home, store=store, rebuild=True)  # a report, not a traceback
+    assert not result["ok"] and any(e.startswith(said) for e in result["errors"])
+    with pytest.raises(SystemExit) as stop:
+        main(["--home", str(home), "--data", str(store.parents[1]), "aliases", "check", "--db", str(store)])
+    assert stop.value.code == 1 and any(e.startswith(said) for e in json.loads(capsys.readouterr().out)["errors"])
+    for action in ("build", "review"):  # the build and the review refuse it in a sentence
+        with pytest.raises(SystemExit, match=f"^{re.escape(said)}"):
+            main(["--home", str(home), "--data", str(store.parents[1]), "aliases", action])
+
+
 def test_held_out_names_are_refused_in_any_spelling_and_in_reasons(tmp_path, built):
     curated = CURATED.replace("decisions:\n", "decisions:\n  - {s: 黃良, status: open, wit: [bc_a.00000]}\n", 1)
     home = make_home(tmp_path, curated.replace("why: 常用词", "why: 常用词，非人銜"))
@@ -513,3 +617,6 @@ def test_the_command_line(tmp_path, capsys):
     with pytest.raises(SystemExit):
         main(base + ["check"])
     assert "常山" in json.loads(capsys.readouterr().out)["errors"][0]
+    for there in (tmp_path / "none.sqlite", tmp_path):  # a store that is not there, or a folder, in a sentence
+        with pytest.raises(SystemExit, match="no corpus store at"):
+            main(base + ["check", "--db", str(there)])
