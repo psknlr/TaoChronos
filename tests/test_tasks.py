@@ -449,7 +449,8 @@ def test_results_match_the_schemas_of_the_task_specification(pack, study, commen
 
 
 def _alias_search_harness(tmp_path):
-    """The fixture harness whose search has an alias layer (国老 is another name of 甘草), and its search without it."""
+    """The fixture harness whose search has an alias layer (国老 is another name of 甘草; 桂枝 has a floor no passage
+    reaches), and its search without it."""
     import json
 
     from conftest import make_harness
@@ -468,6 +469,7 @@ def _alias_search_harness(tmp_path):
                                                      encoding="utf-8")
     layer = write_records(tmp_path / "layer" / "aliases.jsonl", [
         AliasRecord("甘草", ho="甘草", n=900, sh=0.9),
+        AliasRecord("桂枝", ho="桂枝", n=500, sh=0.9, fl=3000, flb="curated"),
         AliasRecord("国老", n=12, sh=0.5, r=[Referent("甘草", t="herb:甘草", src=["bielu-jc"],
                                                      w=[Witness("wit.000", 1180, 1180, "e", True)],
                                                      cr=("本经", 25, 220))])],
@@ -568,6 +570,21 @@ def test_what_the_model_is_told_of_the_alias_layer_holds(tmp_path, harness):
     assert "take places 4, 7 and 10 of each 10 while the main ranking lasts and every place after it runs out" in described
     assert "which keep their own routes" in described and "A routes list without alias skips only the route alias" in described
     assert "at most 3" not in described
+    # a question over the cap (a passage pasted in) is searched as with aliases: off — but for the floor's flag on a
+    # passage that writes a name before it came into use — which the description says
+    from taochronos.plugins.retrieval.hybrid import ALIAS_MAX_CHARS
+
+    cap = (f"A question longer than {ALIAS_MAX_CHARS} characters (a passage pasted in) is searched as with aliases: off, "
+           "but a passage that writes a name before it came into use is still flagged (anachronism).")
+    assert cap in described
+    pasted = ("国老二两，桂枝三两。" * ALIAS_MAX_CHARS)[:ALIAS_MAX_CHARS + 1]
+    long, off = search(h, {"query": pasted, "k": 10}), search(h, {"query": pasted, "k": 10, "aliases": "off"})
+    assert "aliases" not in long["query"] and not [x for x in long["hits"] if "via" in x]
+    assert [x["passage_id"] for x in long["hits"]] == [x["passage_id"] for x in off["hits"]]
+    flagged = [x["flags"] for x in long["hits"] if "flags" in x]
+    assert flagged and all(f == ["anachronism:桂枝<3000:layer"] for f in flagged)
+    assert all(("桂枝" in x["matched"]) == ("flags" in x) for x in long["hits"]) and not [x for x in off["hits"] if "flags" in x]
+    assert "aliases" in search(h, {"query": pasted[:ALIAS_MAX_CHARS], "k": 10})["query"]  # at the cap: with the layer
 
 
 def test_a_search_card_shows_where_a_long_passage_writes_the_name(harness):

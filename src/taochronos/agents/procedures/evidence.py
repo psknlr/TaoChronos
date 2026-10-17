@@ -130,14 +130,16 @@ def _strings(value: Any) -> list[str]:
 
 
 def _via_notes(vias: Any) -> list[str]:
-    """The ``via`` of a search hit, compact: ``via 国老→甘草（别名录（中醫笈成））`` — the asked names a via stands for
-    (or, asked for the drug itself, the other name the passage writes), the drug, then what the passage writes when it is
-    neither (``via 救火→景天（写作水母；词表）``), how they relate when it is not a plain 异名, a candidate pair or a
-    false friend, the sources.  Vias of one drug, relation, status and sources share a note, the asked names and what the
-    passage writes each listed once (``via 慎火、戒火→景天（词表）``, ``via 止行→蒺藜子（写作旁通；词表）``), but asked
-    names and written ones never share the place before the arrow.  A name read as one of its drugs is
-    ``读作 鬼督邮→徐长卿（p 0.67）``; a via naming no drug (an unread name: its ``homonym`` flag says so) and stray values
-    add nothing."""
+    """The ``via`` of a search hit, compact, read one way: ``via 国老→甘草（别名录（中醫笈成））`` — the asked names a via
+    stands for, the drug, then what the passage writes when it is neither (``via 救火→景天（写作水母；词表）``), how they
+    relate when it is not a plain 异名, a candidate pair or a false friend, the sources.  Asked for the drug itself (or
+    with no asked name known) there is no arrow: the drug, then the name the passage writes
+    (``via 川楝子（写作金铃子；词表）``), so that only an asked name ever stands before an arrow and a span two queries
+    found (金铃子, then 川楝子) says of each what it asked.  Vias of one drug, relation, status and sources share a note,
+    the asked names and what the passage writes each listed once (``via 慎火、戒火→景天（词表）``,
+    ``via 止行→蒺藜子（写作旁通；词表）``), a via with asked names never with one without.  A name read as one of its
+    drugs is ``读作 鬼督邮→徐长卿（p 0.67）``; a via naming no drug (an unread name: its ``homonym`` flag says so) and
+    stray values add nothing."""
     out: list[str | tuple[str, str, bool]] = []
     names_of: dict[tuple[str, str, bool], tuple[list[str], list[str]]] = {}
     for v in vias if isinstance(vias, list) else []:
@@ -150,8 +152,7 @@ def _via_notes(vias: Any) -> list[str]:
             p = v.get("p")
             out.append(f"读作 {name}→{drug}" + (f"（p {p}）" if type(p) in (int, float) else ""))
             continue
-        asked = [s for s in _strings(v.get("for")) if s != drug]
-        names = asked or ([name] if v.get("direction") == "drug→alias" else [])  # the drug asked: the name written
+        asked = [s for s in _strings(v.get("for")) if s != drug]  # none: the drug itself asked, or no asked name told
         kind = v["kind"] if isinstance(v.get("kind"), str) and v["kind"] else None  # none: a term the lexicon relates
         why = [] if kind == "异名" else ["相关" if kind is None else kind]
         why += [STATUS_WORDS[v["status"]]] if v.get("status") in STATUS_WORDS else []
@@ -161,8 +162,8 @@ def _via_notes(vias: Any) -> list[str]:
             names_of[key] = ([], [])
             out.append(key)
         left, wrote = names_of[key]
-        left += [s for s in names if s not in left]
-        wrote += [name] if name not in names and name != drug and name not in wrote else []
+        left += [s for s in asked if s not in left]
+        wrote += [name] if name not in asked and name != drug and name not in wrote else []
     notes = []
     for x in out:
         if isinstance(x, str):

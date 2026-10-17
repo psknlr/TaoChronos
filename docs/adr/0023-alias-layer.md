@@ -54,10 +54,10 @@ Python's.  A change of the lexicon never reaches D1; a change of the normaliser 
    store, the domain's files (the sources, curated, taboo and lexicon files), the normaliser and the 要籍语料's
    committed pack (`corpus/web/passages.jsonl.gz`): on a full store it sets each witness's `web` flag (`witness_scope:
    web` shows only the flagged); the web store is the pack, every witness its own.  The header fingerprints the store,
-   the normaliser, the lexicon and the pack (`web_pack`, sha256 of the pack uncompressed) — on the web store only when
-   the store holds exactly the pack's passages, in its order, row for row and on every column `webcorpus.build_store`
-   writes (a pack written again after a text or heading fix keeps its ids), else no `web_pack` and a warning.  What
-   the build decides:
+   the normaliser, the lexicon and the pack (`web_pack`, the sha256 of the pack uncompressed, 12 hex digits) — on the
+   web store only when the store holds exactly the pack's passages, in its order, row for row and on every column
+   `webcorpus.build_store` writes (a pack written again after a text or heading fix keeps its ids), else no
+   `web_pack` and a warning.  What the build decides:
    * **Drugs.**  A curated `same_drug` group, or the heads the full-corpus lexicon files under one entry, are one
      drug, named by the group's first name (else the lexicon's headword).  A lexicon herb entry that files two or more
      of a drug's names again under another headword joins it (亭历 beside 葶苈, 牙子 beside 狼牙), unless a pair heads
@@ -98,31 +98,34 @@ Python's.  A change of the lexicon never reaches D1; a change of the normaliser 
      name written only inside one of its own blockers is not asked (将军之官, 古人言): an alias span there is dropped,
      and a lexicon mention there keeps its term, read as today, but is no asked name.  A blocker that is itself a
      drug's name is asked as written in its place, the mentions inside it dropped (石南藤, not 石南) — unless a lexicon
-     mention spans it that is a herb (川乌头, which the lexicon files under 川乌) or is longer than the blocker, of any
-     kind (麦门冬汤, a formula, over the blocker 麦门冬): that mention is asked, its term and forms as today.  A non-herb
-     entry of the blocker itself does not hold it (蜣螂转丸, which the full-corpus lexicon files under a formula first,
-     is asked as written).  A stop asked on its own (§3) that the lexicon files as a herb is asked as that herb's name,
-     a period and question words beside it counting for nothing (宋以前的救火 is 救火 with the window).  Only those
-     asked **as drugs** (`q.drugs`) are expanded, gated and listed: a name the corpus
-     mostly writes in other senses (n ≥ 20 with sh < 0.10, or < 0.5 when every drug it is searched for is `cue` and it
+     mention that is not weak spans it and is a lexicon herb (川乌头, which the lexicon files under 川乌) or a longer
+     lexicon name of any kind (麦门冬汤, a formula, over the blocker 麦门冬): that mention keeps its reading, asked with its
+     term and forms as today.  A non-herb entry of the blocker itself does not hold it (蜣螂转丸, which the full-corpus
+     lexicon files under a formula first, is asked as written, as a drug).  A stop asked on its own (§3) that the
+     lexicon files as a herb is asked as that herb's name, a period and question words beside it counting for nothing
+     (宋以前的救火 is 救火 with the window).  Only those asked **as drugs** (`q.drugs`) are expanded, gated and listed: a
+     name the corpus mostly writes in other senses (n ≥ 20 with sh < 0.10, or < 0.5 when every drug it is searched for is `cue` and it
      has neither `ho` nor a floor), a false friend the lexicon files as a herb, or a name with only candidate
      pairings, neither `ho` nor a floor, that the lexicon does not file (one it files is asked as written) is asked as
      a drug only where the question reads as one — the name alone, a drug word (药, 本草, 功效, 性味, 一名, 是什么 …), another
      drug's name, or the passage gate applied to the question (a dose, 一名, a cue); a name the lexicon reads as no
      herb, and a single character, never.  A question that asks no drug is ranked exactly as today.  A question longer
      than 200 characters (`ALIAS_MAX_CHARS`: the normalised text, in code points in both runtimes — a passage pasted
-     in, a list of names) is read as with the layer off: nothing is asked as a drug, expanded or listed, nothing is
-     labelled, and it is ranked as today; read name by name it would cost the Worker more than a request's 10 ms of CPU.
+     in, a list of names) is read as with the layer off: nothing is asked as a drug, expanded or listed, no hit has a
+     `via`, and it is ranked as today — only the floor still flags a passage that writes a name before it came into use
+     (`anachronism`), in both runtimes; read name by name it would cost the Worker more than a request's 10 ms of CPU.
    * **Reading the question.**  An alias span outranks a weak or shorter lexicon mention it overlaps (山蓟 over
      `herb:山`).  A question of four characters or fewer that is one name nobody knows, holding a weak herb character,
      asks that name (干葛 is not 葛).  Question words and a dose (`DOSE_AT`: numerals, then a unit) stay outside such a
      name, and either may stand beside it: 葛的功效 and 葛二两 ask 葛.  In such a question a drug's name inside a longer
      name is asked as written there (`q.longer`: 慎火草 keeps its places for passages that write 慎火草; 慎火 still
-     gives the reading, the other names and the listing) when the longer name is itself a drug's name, or the drug's
-     name with only part or form characters after it and preparation characters before it (`NAME_TAILS`,
-     `NAME_HEADS`: 人参叶, 甘草梢, 酒大黄).  It takes in no other lexicon mention but a weak herb's (a weak 脾 or 心
-     stops it too), so what a question says of a drug is no name: 甘草入脾 asks 甘草 and 脾, 桂枝温经 asks 桂枝, and
-     将军二两 is read as 将军.  Both rules apply only where the profile's `unknown_runs` is on (the default).
+     gives the reading, the other names and the listing).  The longer name is the run of Han characters around the
+     drug's name, question words left out, when that run is itself a drug's name; else, falling back, the drug's name
+     with only part or form characters after it and preparation characters before it (`NAME_TAILS`, `NAME_HEADS`:
+     人参叶, 甘草梢, 酒大黄) — longer than the drug's name, four characters at most, nothing but question words and a dose
+     beside it, and the drug's name asked as a drug there.  It takes in no other lexicon mention but a weak herb's (a
+     weak 脾 or 心 stops it too), so what a question says of a drug is no name: 甘草入脾 asks 甘草 and 脾, 桂枝温经 asks
+     桂枝, and 将军二两 is read as 将军.  Both rules apply only where the profile's `unknown_runs` is on (the default).
    * **Tiers.**  A hit of today's fused pool is **A** when an asked drug's name occurs free there (and in drug context
      where it needs it), **D** (demoted) when it occurs but never so (`demoted:inside <blocker>`, `demoted:no-context`),
      **O** when it matched no surface (graph, citation, sense), **H** when it matched only other lexicon forms of an
@@ -178,14 +181,17 @@ Python's.  A change of the lexicon never reaches D1; a change of the normaliser 
    (异名, 避讳改名, 药用部位名, 炮制/加工名, 简称, 品种/产地名, 异写, 古名, 俗名), the status, the sources and a witness
    passage; the query lists the asked names with their drugs, the expansions with whether each was searched, and what
    was left out and why.  Flags say what a hit is not sure of (`anachronism`, `homonym`, `demoted:…`,
-   `other-referent`).  The page shows them as badges ([web.md](../web.md)) on a search's own results.  Research
+   `other-referent`).  The page shows them as badges ([web.md](../web.md)) on a search's results.  Research
    evidence keeps them in words in its note (`routes: alias; via 国老→甘草（别名录（中醫笈成））; 年代存疑（…）`); the
    research report's corpus evidence (section 3) adds them to each record the search wrote (`retrieval:hybrid`; a
    model's note is never read as labels), with a legend, and the evidence table (`evidence.csv`) ends with the note.
    `taochronos ask` adds them, with the legend, to its report's 来源 lines, and the chat's `taochronos_ask` gives its
-   sources the same labels (`sources[].labels`).  In words a via says which pair of names found the passage, not
-   which of the two was asked (asked for the drug itself, the name the passage writes stands before the arrow): the
-   legend says so, and the passage decides.
+   sources the same labels (`sources[].labels`), which the page shows as badges on their cards.  In words only an
+   asked name stands before an arrow (`via 国老→甘草`: 国老 asked, the passage found through 甘草); a via for the drug
+   itself asked, or with no asked name known, has no arrow and says what the passage writes
+   (`via 川楝子（写作金铃子；词表）`); a passage several queries found keeps each one's label.  A search's badges on
+   the page read alike (别名：金铃子→川楝子 only for 金铃子 asked; 别名：川楝子（写作金铃子）, and
+   别名：旱莲草（写作莲子草；所问鳢肠） where the drug was searched for another asked name).
 8. **Licences.**  The open build takes no local input.  What ships — the repository, `home.zip`, the container,
    `tables.js` — comes from the CC0 别名录 (`jc_c030`, credited as 别名录（中醫笈成）), the project's curated decisions (every
    pairing, group, floor, stop and status with a witness passage) and facts derived from the store and the project's
@@ -316,7 +322,8 @@ are returned is not compared.
 * **Dev** (61 items, tuned on; web-canon, second report): P@10 0.726 → 0.918, ON@50 448 → 1057, CandRecall 0.963,
   CandPrecision 0.867; of the dev checks only SilentMerge = 0 fails (2).  Every change to the layer, the eval or the
   gold after the first held-out report is logged with its date in [evals.md](../evals.md); the second report was run
-  once, on the final tree, and full-store numbers wait for a build on the site's store.
+  once, on 5f68c03's tree — the changes logged after it (2026-10-17) touch no gold question — and full-store numbers
+  wait for a build on the site's store.
 * A question naming the head gives up some of its own form by design; a question that asks no drug is answered as
   before.
 * A shared name reaches a side passage only through an own name the question did not ask (the asked forms are

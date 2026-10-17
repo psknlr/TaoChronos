@@ -163,6 +163,28 @@ def test_a_span_found_by_two_queries_keeps_the_labels_of_both(tmp_path):
     assert all(r.note == "routes: " + ",".join(r.routes) for r in both.values() if r.passage_id not in side)
 
 
+def test_a_span_found_by_an_alias_and_by_its_drug_says_which_was_asked(tmp_path):
+    """Asked 金铃子 and then its drug 川楝子: a span that writes 金铃子, found as asked and then by 川楝子 under that
+    name, notes ``via 川楝子（写作金铃子；…）``; one that writes 川楝子, found by 金铃子 under its drug, notes
+    ``via 金铃子→川楝子（…）``.  Only an asked name stands before an arrow, so the two never read alike."""
+    h = _alias_harness(tmp_path)
+    found = h.scheduler.execute(ToolCall("classics.search", {"query": "国老", "k": PER_QUERY}), actor=Actor.kernel())
+    one, two = [x["passage_id"] for x in found.result["hits"] if x.get("via")][:2]  # two passages writing 甘草: spans
+    via = {"referent": "川楝子", "kind": "异名", "status": "open", "source": ["词表"], "witness": None, "reading": None,
+           "p": None}
+    hits = {"金铃子": [{"passage_id": one, "matched": ["甘草"], "routes": ["bm25"]},
+                    {"passage_id": two, "matched": ["甘草"], "routes": ["alias"],
+                     "via": [{**via, "surface": "川楝子", "for": ["金铃子"], "direction": "alias→drug"}]}],
+            "川楝子": [{"passage_id": one, "matched": ["甘草"], "routes": ["bm25"],
+                     "via": [{**via, "surface": "金铃子", "for": ["川楝子"], "direction": "drug→alias"}]},
+                    {"passage_id": two, "matched": ["甘草"], "routes": ["bm25"]}]}
+    ctx = SimpleNamespace(inputs={"queries": ["金铃子", "川楝子"]}, goal=None, actor=SimpleNamespace(id="evidence_retriever"),
+                          state=SimpleNamespace(philology={}), cap=h.capabilities.get,
+                          tool=lambda name, **args: {"hits": hits[args["query"]]})
+    notes = {r.passage_id: r.note for r in _question_level(ctx)}
+    assert notes == {one: "routes: bm25; via 川楝子（写作金铃子；词表）", two: "routes: alias; via 金铃子→川楝子（词表）"}
+
+
 def test_the_report_and_the_evidence_table_show_the_ledgers_labels(tmp_path):
     """The labels a ledger record's note keeps reach its readers: section 3 of the report shows each record's after it
     (a passage found as asked shows none) and, once, what they mean; the evidence table has every note as its last
@@ -219,6 +241,8 @@ def test_the_workflows_sources_say_under_which_name_a_passage_was_found(tmp_path
     sources = res["report_markdown"].split("## 来源")[1].split("\n## ")[0]
     assert f" · {label}\n" in sources and LABELS_NOTE in sources
     assert {c["passage_id"]: c["labels"] for c in json.loads(out["text"])["sources"] if "labels" in c} == labelled
+    # the page's cards carry them too (web/js/util.js withFound draws them as badges)
+    assert {c["passage_id"]: c["labels"] for c in out["citations"] if "labels" in c} == labelled
 
 
 def test_an_evidence_note_puts_a_hits_labels_in_words():
@@ -233,11 +257,12 @@ def test_an_evidence_note_puts_a_hits_labels_in_words():
     assert hit_note({"routes": ["alias"], "via": [{**via, "for": "国老", "kind": "古名", "status": "candidate"}],
                      "flags": ["anachronism:国老<-200:layer"]}) == (
         "routes: alias; via 国老→甘草（古名；候选；别名录（中醫笈成）、古籍互证）; 年代存疑（国老约 -200 年后才通行；或为后人增补）")
-    # asked for the drug, the other name the passage writes; a form the lexicon only relates; one no asked name holds
+    # asked for the drug, no arrow: the drug, then the other name the passage writes (an arrow is only ever after an
+    # asked name); a form the lexicon only relates; one no asked name holds
     assert hit_note({"routes": ["alias"], "via": [{**via, "surface": "国老", "for": ["甘草"], "direction": "drug→alias",
-                                                   "source": ["词表"]}]}) == "routes: alias; via 国老→甘草（词表）"
+                                                   "source": ["词表"]}]}) == "routes: alias; via 甘草（写作国老；词表）"
     assert hit_note({"routes": ["alias"], "via": [{**via, "surface": "国老", "for": ["甘草"], "direction": "drug→alias",
-                                                   "kind": None, "source": []}]}) == "routes: alias; via 国老→甘草（相关）"
+                                                   "kind": None, "source": []}]}) == "routes: alias; via 甘草（写作国老；相关）"
     assert hit_note({"routes": ["alias"], "via": [{**via, "surface": "粉草", "for": []}]}) == (
         "routes: alias; via 甘草（写作粉草；别名录（中醫笈成）、古籍互证）")
     # asked for another name of the drug (救火, which the lexicon files under 景天), the passage writes a third: the note
@@ -251,7 +276,7 @@ def test_an_evidence_note_puts_a_hits_labels_in_words():
     # once, and a name it writes never among the asked ones; another source is another note
     assert hit_note({"routes": ["bm25"], "via": [{**lexicon, "surface": s, "for": ["甘草"]} for s in ("国老", "美草", "国老")] + [
         {**lexicon, "surface": "蜜草", "for": ["甘草"], "source": ["别名录（中醫笈成）"]}]}) == (
-        "routes: bm25; via 国老、美草→甘草（词表）; via 蜜草→甘草（别名录（中醫笈成））")
+        "routes: bm25; via 甘草（写作国老、美草；词表）; via 甘草（写作蜜草；别名录（中醫笈成））")
     tribulus = {**lexicon, "for": ["止行"], "referent": "蒺藜子"}
     assert hit_note({"routes": ["alias"], "via": [{**tribulus, "surface": "蒺藜子", "direction": "alias→drug"},
                                                   {**tribulus, "surface": "旁通"}, {**tribulus, "surface": "屈人"},
@@ -259,7 +284,7 @@ def test_an_evidence_note_puts_a_hits_labels_in_words():
         "routes: alias; via 止行、休羽→蒺藜子（写作旁通、屈人；词表）")
     assert hit_note({"routes": ["alias"], "via": [{**tribulus, "surface": "旁通"},
                                                   {**tribulus, "surface": "屈人", "for": ["蒺藜子"]}]}) == (
-        "routes: alias; via 止行→蒺藜子（写作旁通；词表）; via 屈人→蒺藜子（词表）")
+        "routes: alias; via 止行→蒺藜子（写作旁通；词表）; via 蒺藜子（写作屈人；词表）")
     # a name read as one of its drugs; one that could not be read says so by its flag
     asked = {"surface": "鬼督邮", "for": ["鬼督邮"], "referent": "徐长卿", "direction": "asked", "kind": "异名",
              "status": "cue", "source": ["纲目释名"], "witness": None, "reading": "徐长卿", "p": 0.6667}

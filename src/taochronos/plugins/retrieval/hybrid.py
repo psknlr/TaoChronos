@@ -7,13 +7,15 @@ graph, temporal, citation, variant, sense) → reciprocal-rank fusion →
 citation-lineage expansion → period-grouped claim comparison.
 
 With the pack's alias layer on (ADR 0023) a drug is also found under its other
-names — 国老 for 甘草, 通草 for 木通 before 960 — in a side queue, each hit
-labelled with the name, the drug and the source.  At the default share of 3 in
-10 the side queue has places 4, 7 and 10 of each ten (14, 17, 20 … beyond)
-while the main queue lasts — a place it cannot fill goes back to the main
-queue — and every place after the main queue runs out; the question's own
-spelling keeps the other places.  A question longer than ALIAS_MAX_CHARS (200)
-is read and ranked as without the layer.
+names — 国老 for 甘草, 通草 for 木通 before 960.  Those passages (B) and, where
+a drug is asked, today's hits on its other lexicon forms (X) take turns in one
+side queue, X first, each hit labelled with the name, the drug and the source.
+At the default share of 3 in 10 the side queue has places 4, 7 and 10 of each
+ten (14, 17, 20 … beyond) while the main queue lasts — a place it cannot fill
+goes back to the main queue — and every place after the main queue runs out;
+the question's own spelling keeps the other places.  A question longer than
+ALIAS_MAX_CHARS (200) is read and ranked as without the layer; only the floor
+still flags a passage that writes a name before it came into use.
 """
 
 from __future__ import annotations

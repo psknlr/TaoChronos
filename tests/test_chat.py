@@ -116,6 +116,18 @@ def test_citations_are_gathered_once_with_the_fullest_text():
     assert summarize({"hits": [1, 2]}) == "2 条命中" and summarize([1, 2, 3]) == "3 项"
 
 
+def test_a_cards_labels_are_kept_as_words_for_the_page():
+    """A taochronos_ask source's ``labels`` (ADR 0023: what the search found it under, in words) reach the page's card:
+    every mention's, each once; anything but a list of words is no label."""
+    via, flag = "via 国老→甘草（别名录（中醫笈成））", "年代存疑（甘草约 1180 年后才通行；或经后世刊本改字）"
+    cards = citations({"sources": [{"passage_id": "p1", "title": "书", "labels": [via, "", 7, via]},
+                                   {"passage_id": "p1", "labels": [flag, via]}, {"passage_id": "p2", "labels": []},
+                                   {"passage_id": "p3", "labels": {"via": via}}, {"passage_id": "p4", "labels": via}]})
+    by = {c["passage_id"]: c for c in cards}
+    assert by["p1"] == {"passage_id": "p1", "title": "书", "labels": [via, flag]}
+    assert by["p2"] == {"passage_id": "p2"} and by["p3"] == {"passage_id": "p3"} and by["p4"] == {"passage_id": "p4"}
+
+
 # ------------------------------------------------------------------ engine tools
 def test_a_research_run_returns_its_hypotheses_with_evidence_and_can_be_followed_up(rt):
     out = rt.call("taochronos_research", {"question": "消渴的概念如何随时代演变？", "focus_terms": ["消渴"], "max_rounds": 1})
