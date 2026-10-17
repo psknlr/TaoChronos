@@ -53,8 +53,11 @@ from the web store: equations, glosses and entries (alias, head); names filed un
 别名录 heads, or equated with two herbs in the store (ambiguous); taboo pairs, the curated windows and first-use years
 (the spec's example until `curated.yaml` exists) and equated names first written 300 years or more apart (period); the
 datasets report's false friends and equated two-character names mostly written outside 本草 books (trap); drug names
-inside a longer name of another drug (substring). `validate(gold, pools=…)` checks that every asked form is a
-candidate of its sub-pool; `python -m taochronos.evals.aliases_gold propose [--all]` writes the pools, or a seed-23
+inside a longer name of another drug (substring). An entry's drug is its section heading read as the layer's build
+reads it (`aliasbuild.entry_head`: the innermost heading, bracketed glosses and then the numbering dropped, a zero
+written 〇 or ○; a test holds the two numbering rules equal), of two to four characters; a heading of numerals alone
+heads an entry only when it is a lexicon herb (三七, not a chapter's 六七). `validate(gold, pools=…)` checks that every
+asked form is a candidate of its sub-pool; `python -m taochronos.evals.aliases_gold propose [--all]` writes the pools, or a seed-23
 draw stratified by band, to `<data>/aliases/gold-candidates.yaml`. The pools never read the alias layer; `propose`
 reads `curated.yaml` (period windows) and the 别名录 (`jc_c030`, for its multi-head names) only to list candidates,
 never their pairs, so a pair the layer lacks still counts as a miss.

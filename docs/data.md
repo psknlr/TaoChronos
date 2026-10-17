@@ -498,9 +498,11 @@ the harvested lexicons so that their forms win.
 A drug is written under many names — 国老 for 甘草, 通草 for 木通 before about 960, 山药 for 薯蓣 after the taboo of
 1063 — and many names are written for many things.  The alias layer ([ADR 0023](adr/0023-alias-layer.md)) holds a
 drug's other names apart from the lexicon, each with its drug, kind, status, period, sources and witness passages: a
-search for a drug also finds passages under its other names, in at most 3 of 10 places and each labelled, while the
-name asked keeps the others; a name two drugs share lists both and is never merged.  The segmenter, the normaliser,
-the lexicon and D1's `lex` are unchanged, so the layer needs no re-index and no re-import.
+search for a drug also finds passages under its other names, each labelled, in places 4, 7 and 10 of each ten while
+today's ranking lasts (a place they cannot fill goes back to it) and every place after it runs out, while the name
+asked keeps the others; a name two drugs share lists both and is never merged.  A question longer than 200 characters
+(a passage pasted in) is read and ranked as without the layer.  The segmenter, the normaliser, the lexicon and D1's
+`lex` are unchanged, so the layer needs no re-index and no re-import.
 
 **Sources.**  What ships comes only from open lists, the project's own decisions and facts read off the store with their
 witness ids (the precedent of `lexicon-core`), never from a `NEVER_PACKED` source; `aliases check` refuses a shipped
@@ -524,9 +526,10 @@ before any public mention.  Only the importers and the NTU pin are committed; no
 repository, `home.zip`, the container or the Worker's `tables.js`.
 
 **Build.**  `taochronos aliases build` (`plugins/classics/aliasbuild.py`) reads the store, `sources.yaml`,
-`curated.yaml`, `taboo.yaml`, the full-corpus lexicon and the normaliser, and on a full store the 要籍语料's committed pack
-(`corpus/web/passages.jsonl.gz`, which sets each witness's `web` flag: a `canon` run that rewrites it leaves a layer
-built on the full store to be rebuilt) — and no local list.  It parses the 别名录
+`curated.yaml`, `taboo.yaml`, the full-corpus lexicon, the normaliser and the 要籍语料's committed pack
+(`corpus/web/passages.jsonl.gz`: on a full store it sets each witness's `web` flag, and the web store is that pack made
+into a store) — and no local list.  A `canon` run that rewrites the pack leaves the layer to be rebuilt: `aliases
+check` warns when the header's `web_pack` is not the pack `corpus/web` holds.  It parses the 别名录
 (`plugins/classics/ingest/aliases.py`: blanks and `KT` mark lost characters, one-character fragments are dropped, notes
 such as 根名茹根 give part names, hard wraps are joined only where the store attests the join, the conversion errors
 野狼 → 狼 and 浓朴 → 厚朴 and the garbled heads are repaired), adds the curated, taboo and 释名 pairs, and finds up to three
@@ -535,15 +538,17 @@ groups the drugs (curated `same_drug` groups, the lexicon's entries, `ho` on eve
 blockers (longer names that hold it and are not it, and strings that straddle it in the store, on the name they cut),
 counts with the runtime's own gates the passages that write the name free of them (`n`) and the share that read it as a
 drug (`sh`), and gives each pair its status.  It writes `aliases.jsonl` — compact JSON lines, a header with the store,
-normaliser and lexicon fingerprints, the sources' labels, coverage and counts, then one record per name in code-point
-order — and `context.json` (the herb set and the drug-context patterns), the same bytes for the same inputs, and prints
-a JSON report (coverage, counts, warnings, and what editors should look at).  Budgets: `aliases.jsonl` at most 700,000
+normaliser and lexicon fingerprints and the pack's (`web_pack`; on the web store only when the store holds exactly the
+pack's passages, row for row and on every column, else none and a warning), the sources' labels, coverage and counts,
+then one record per name in code-point order — and `context.json` (the herb set and the drug-context patterns), the
+same bytes for the same inputs, and prints a JSON report (coverage, counts, warnings, and what editors should look at).  Budgets: `aliases.jsonl` at most 700,000
 bytes raw and 150,000 deflated, the directory at most 150,000 deflated — measured as `home.zip`, which the browser
 downloads, stores the files (zlib's default level), by `aliases check` and by a test of `home.zip` itself
 (`tests/test_chat.py`).  The committed layer is built on the web store (553 books; 778 entries of the 别名录, 6 释名
-pairs): 2,724 names, 2,138 pairs, 470,085 bytes (103,074 deflated; the directory 143,523).  A build on the site's full store completes the 别名录 and the 释名
-credits: `--db` on a machine that holds it, or the `aliases` workflow (`.github/workflows/aliases.yml`, run by hand),
-which fetches the site's store, builds, checks, regenerates the D1 backup's tables and measures the layer there.
+pairs): 2,724 names, 2,138 pairs, 470,111 bytes (103,096 deflated; the directory 143,545).  A build on the site's full
+store completes the 别名录 and the 释名 credits: `--db` on a machine that holds it, or the `aliases` workflow
+(`.github/workflows/aliases.yml`, run by hand), which fetches the site's store, builds, checks, regenerates the D1
+backup's tables and measures the layer there.
 
 `curated.yaml` (version 1) holds the editors' decisions: `repairs` and `head_repairs` (the 别名录's transcription),
 `same_drug` (names of one drug: 丹砂/朱砂/辰砂), `pairs` (a name, its drug, kind, status, `valid` window, cues),
@@ -551,7 +556,9 @@ which fetches the site's store, builds, checks, regenerates the D1 backup's tabl
 (strings that must not: 青矾石 is 青矾) and `decisions` (a status that overrides the rules).  The rows of
 `head_repairs`, `same_drug`, `pairs`, `first_use`, `stop` and `decisions` carry witness passage ids (`wit`, never
 `jc_c030`); `repairs`, `cover_stops` and `unblock` are string rules.  No row may name a string of the alias gold's
-held-out half (`taochronos aliases check`).
+held-out half (`taochronos aliases check`).  A `sources.yaml` or `curated.yaml` that is not YAML, or not of its shape,
+stops `build` and `review` with a sentence saying why, and `check` reports it as an error; `import` stops on either file
+that is not YAML and on a `sources.yaml` not of its shape.
 
 **Statuses.**  `open` — searched as the drug; `cue` — searched, and taken only where the passage reads as a drug (a
 dose, 各, a preparation after it, 一名 before it, 之名 after it, a cue or two drug names near it); `candidate` — listed,
@@ -575,7 +582,9 @@ normaliser, licence, attribution and date, with a warning where it differs from 
 writes the shipped layer as `aliases build` does (into the repository, unless `--out-dir DIR`), then adds the local
 lists' pairs to the shipped records and classifies them again (a pair only a local list gives also needs a passage
 before 1912 that reads it as a drug) into `<data>/aliases/local/aliases-local.jsonl`, which only
-`profiles/full-corpus-local.yaml` reads, in place of the shipped file.  That profile is for research on this machine:
+`profiles/full-corpus-local.yaml` reads, in place of the shipped file.  It counts them (`n`, `sh`) with the shipped
+`context.json`, whose herb set takes in no local head — the one that profile loads — and writes a copy of it beside
+the local layer (`<data>/aliases/local/context.json`).  That profile is for research on this machine:
 the site builders and the Worker's tables never take it, and the deployed profiles (`web-canon`, `full-corpus`) may
 not name a local layer (a test checks).
 ```bash
@@ -590,4 +599,5 @@ taochronos research "…" --profile full-corpus-local                    # resea
 taochronos eval aliases --quick                                        # the synthetic part of the alias eval (docs/evals.md)
 ```
 
-`--db` defaults to `<data>/corpus/tcm.sqlite`; `--data DIR` before the command chooses the data directory.
+`--db` defaults to `<data>/corpus/tcm.sqlite`; `--data DIR` before the command chooses the data directory, and
+`--home DIR` the checkout (over `$TAOCHRONOS_HOME`).  `check --db` refuses a path that is not a file.

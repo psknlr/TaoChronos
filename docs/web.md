@@ -126,9 +126,10 @@ their order and appends ranks 351–535, writes the catalog, packs, and regenera
 workflow (`.github/workflows/canon.yml`, run by hand) does the same in CI from the site's corpus parts (the KV store of
 [cloud/](../cloud/README.md)), commits the result to the branch it runs on and, on main, starts the site's deployment.
 It leaves the alias layer (below) to be rebuilt: its witnesses' `web` flags come from the pack (built on the full
-store, from `corpus/web/passages.jsonl.gz`; on the web store, the pack is the store), so a new pack makes it stale
-(`aliases check --db` says so) until the `aliases` workflow runs again, which commits nothing if `corpus/web` changed
-while it ran.
+store, from `corpus/web/passages.jsonl.gz`; on the web store, the pack is the store), so a new pack makes it stale —
+the layer's header names the pack it was built against (`web_pack`), and `aliases check` warns when that is not the
+pack `corpus/web` holds — until the `aliases` workflow runs again, which commits nothing if `corpus/web` changed while
+it ran.
 `--extend` is needed whenever the store at hand lacks sources of the first ranking (the KV parts never hold `NEVER_PACKED`
 sources): ranked again without them, the first 350 would move.  It ran on 2026-10-11 (757 works ranked on the parts):
 budgets are by rank, so the 185 works added came in 12 000-character excerpts — 1.9 million characters more for the
@@ -226,15 +227,19 @@ this browser (IndexedDB); **设置 → 数据** exports and imports them (JSON) 
 
 `classics.search` reads a drug's other names from the alias layer ([ADR 0023](adr/0023-alias-layer.md),
 [data.md](data.md#alias-layer-domainsclassicsaliases)): asked about 甘草, it also returns passages that write 国老; asked
-about 木通 before the Song, passages that write 通草.  They take at most 3 of 10 places (4, 7 and 10), the name asked keeps
-the others, and a passage that writes the name only inside a longer one (将军 in 将军之官) or out of drug context comes last.
+about 木通 before the Song, passages that write 通草.  Places 4, 7 and 10 of each ten are theirs while today's ranking
+lasts (one they cannot fill goes back to it), and every place after it runs out; the name asked keeps the others, and
+a passage that writes the name only inside a longer one (将军 in 将军之官) or out of drug context comes last.  A
+question longer than 200 characters (a passage pasted in, a list of names) is read and ranked as without the layer:
+nothing found under another name, nothing labelled.
 A name two drugs share is listed with every drug and its sources (`query.aliases`), never answered as one.  The
 browser's runtime has it on (`web-canon`: `retrieval.alias.enabled`, and `witness_scope: web`, so a witness passage
 shown is one the 要籍语料 holds); its directory rides in `home.zip`, of which the runtime reads the two built files (a test
 keeps the directory under 150 KB deflated as `home.zip` stores it, and any file of a local list out of it).  The full-corpus profile of the
 site's server has it on too (`alias: {enabled: true}`), and so has the D1 backup, whose port of it (below) answers
-alike.  The model is told so: the tool's description says what the places and labels are and that `aliases: off`
-searches the words asked only; the standing instructions tell it that such entries say which name they were found
+alike.  The model is told so: the tool's description says what the places and labels are, that a term's lexicon
+synonyms are always searched with it, and that `aliases: off` turns the layer off, the lexicon synonyms then coming
+back unlabelled; the standing instructions tell it that such entries say which name they were found
 under, for which drug and on whose authority, to keep a shared name's drugs apart, to say when a name belongs to some
 periods only, and — when a result has neither `query.aliases` nor any `via` — to search the other name itself.
 
@@ -244,7 +249,8 @@ the witness:
 
 | Badge | Meaning |
 |---|---|
-| 别名：国老→甘草 · 别名录（中醫笈成） | found under another name of the drug asked (or under the drug an asked name names), with the first source; a kind other than a plain 异名 replaces 别名 (避讳改名：…, 古名：…), 相关 a term the lexicon only relates; several names of one drug from one source share a badge (at most four named, then 等) |
+| 别名：国老→甘草 · 别名录（中醫笈成） | found under another name of the drug asked (or under the drug an asked name names), with the first source; a kind other than a plain 异名 replaces 别名 (避讳改名：…, 古名：…), 相关 a term the lexicon only relates; several names of one drug from one source share a badge (at most four named, then 等); the title adds 此为候选别名，未经确认 for a candidate pair and 「X」多作普通词语，罕作药名 for a false friend asked |
+| 别名：莲子草→旱莲草（所问鳢肠） · 别名录（中醫笈成） | the passage writes another name (莲子草) of the drug an asked name (鳢肠) names: the written name stands before the arrow, since the kind is its own, and the asked name follows the drug, in a badge of its own (the title: 为所问「鳢肠」检索旱莲草) |
 | 读作：鬼督邮→徐长卿 | how the passage reads a name that may mean more than one drug (p in the tooltip) |
 | 年代存疑 | the passage is earlier than the name came into use: its edition may have changed the character, or it is a later layer |
 | 同名异物 | a shared name the passage does not decide |
@@ -253,7 +259,12 @@ the witness:
 
 The latest search sets or clears a passage's badges (a passage found later under the name asked shows none); a flag
 the page has no words for is not shown; badges wrap on a phone.  The research agent's evidence keeps the same labels
-in its notes (`via 国老→甘草（别名录（中醫笈成））`).
+in words in its notes (`via 国老→甘草（别名录（中醫笈成））`, `年代存疑（…）`); the research report adds them to each
+passage of its corpus evidence (section 3) that the search found, with a legend, and the evidence table
+(`evidence.csv`) ends with the note.  `taochronos_ask` gives its sources the same words (`sources[].labels`), and its
+report (`taochronos ask`'s too) adds them, with the legend, to the 来源 lines; the page draws badges only on a search's
+own results, so an ask's source cards carry none.  In words a via names the pair of names that found the passage, not which of the two was
+asked, and the legend says so.
 
 **The D1 backup.**  The Worker answers the same query block as Python: `chat/d1tables.py` writes the layer into
 `tables.js` (`ALIASES`, the records of the shippable sources keyed by name; `ALIAS_SOURCES`; `ALIAS_CONTEXT`;
@@ -261,8 +272,9 @@ in its notes (`via 国老→甘草（别名录（中醫笈成））`).
 expansions, view and places line for line, `search.js` the question rules, tiers, places and labels, and
 `corpus.js` the card centred on the name a passage was found under.  Nothing is imported into D1 again (the lexicon,
 the normaliser and the D1 version are unchanged), and the side search is one more part of statements the backup
-already runs.  The query block, and alias cases Python generates (gate inputs and verdicts, expansions and views, the
-places), are compared in `cloud/test/backup.test.js`; the hits are not, since the two candidate sets differ by design.
+already runs.  The query block and the labels (`via`, `flags`) of the passages both runtimes return for the reference
+searches, and alias cases Python generates (gate inputs and verdicts, expansions and views, the places), are compared in
+`cloud/test/backup.test.js`; which passages are returned is not, since the two candidate sets differ by design.
 
 ## 图表 — charts and their downloads
 

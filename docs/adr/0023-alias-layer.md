@@ -51,9 +51,13 @@ Python's.  A change of the lexicon never reaches D1; a change of the normaliser 
    (`sources.yaml`, `curated.yaml`) are YAML and never read at runtime; the build writes the sources' labels into the
    file's header, so every runtime credits a source in the same words.  The same inputs give the same bytes, and
    `aliases check --db` refuses a committed file a build on that store would not reproduce.  The inputs are the
-   store, the domain's files (the sources, curated, taboo and lexicon files), the normaliser and, on a full store, the
-   要籍语料's committed pack (`corpus/web/passages.jsonl.gz`), which sets each witness's `web` flag (`witness_scope:
-   web` shows only the flagged); on the web store every witness is the pack's.  What the build decides:
+   store, the domain's files (the sources, curated, taboo and lexicon files), the normaliser and the 要籍语料's
+   committed pack (`corpus/web/passages.jsonl.gz`): on a full store it sets each witness's `web` flag (`witness_scope:
+   web` shows only the flagged); the web store is the pack, every witness its own.  The header fingerprints the store,
+   the normaliser, the lexicon and the pack (`web_pack`, sha256 of the pack uncompressed) — on the web store only when
+   the store holds exactly the pack's passages, in its order, row for row and on every column `webcorpus.build_store`
+   writes (a pack written again after a text or heading fix keeps its ids), else no `web_pack` and a warning.  What
+   the build decides:
    * **Drugs.**  A curated `same_drug` group, or the heads the full-corpus lexicon files under one entry, are one
      drug, named by the group's first name (else the lexicon's headword).  A lexicon herb entry that files two or more
      of a drug's names again under another headword joins it (亭历 beside 葶苈, 牙子 beside 狼牙), unless a pair heads
@@ -90,20 +94,35 @@ Python's.  A change of the lexicon never reaches D1; a change of the normaliser 
    the name is mostly an ordinary word and that nothing was searched for it — or, where the lexicon files it as a herb
    (救火 under 景天), only today's search of that entry's names, whose hits are labelled status `stop`.
 4. **The asked form first.**
-   * **What is asked.**  The names the question writes outside their blockers (a name written only inside one of its
-     own blockers is not asked: 将军之官; a blocker that is itself a drug's name is asked as written: 石南藤), in the order
-     written (`q.asked`).  Only those asked **as drugs** (`q.drugs`) are expanded, gated and listed: a name the corpus
+   * **What is asked.**  The names the question writes outside their blockers, in the order written (`q.asked`).  A
+     name written only inside one of its own blockers is not asked (将军之官, 古人言): an alias span there is dropped,
+     and a lexicon mention there keeps its term, read as today, but is no asked name.  A blocker that is itself a
+     drug's name is asked as written in its place, the mentions inside it dropped (石南藤, not 石南) — unless a lexicon
+     mention spans it that is a herb (川乌头, which the lexicon files under 川乌) or is longer than the blocker, of any
+     kind (麦门冬汤, a formula, over the blocker 麦门冬): that mention is asked, its term and forms as today.  A non-herb
+     entry of the blocker itself does not hold it (蜣螂转丸, which the full-corpus lexicon files under a formula first,
+     is asked as written).  A stop asked on its own (§3) that the lexicon files as a herb is asked as that herb's name,
+     a period and question words beside it counting for nothing (宋以前的救火 is 救火 with the window).  Only those
+     asked **as drugs** (`q.drugs`) are expanded, gated and listed: a name the corpus
      mostly writes in other senses (n ≥ 20 with sh < 0.10, or < 0.5 when every drug it is searched for is `cue` and it
      has neither `ho` nor a floor), a false friend the lexicon files as a herb, or a name with only candidate
      pairings, neither `ho` nor a floor, that the lexicon does not file (one it files is asked as written) is asked as
      a drug only where the question reads as one — the name alone, a drug word (药, 本草, 功效, 性味, 一名, 是什么 …), another
      drug's name, or the passage gate applied to the question (a dose, 一名, a cue); a name the lexicon reads as no
-     herb, and a single character, never.  A question that asks no drug is ranked exactly as today.
+     herb, and a single character, never.  A question that asks no drug is ranked exactly as today.  A question longer
+     than 200 characters (`ALIAS_MAX_CHARS`: the normalised text, in code points in both runtimes — a passage pasted
+     in, a list of names) is read as with the layer off: nothing is asked as a drug, expanded or listed, nothing is
+     labelled, and it is ranked as today; read name by name it would cost the Worker more than a request's 10 ms of CPU.
    * **Reading the question.**  An alias span outranks a weak or shorter lexicon mention it overlaps (山蓟 over
      `herb:山`).  A question of four characters or fewer that is one name nobody knows, holding a weak herb character,
-     asks that name (干葛 is not 葛; question words stay outside it: 葛的功效 asks 葛).  A drug's name inside such a
-     longer unknown name is asked as written there (`q.longer`: 慎火草 keeps its places for passages that write
-     慎火草; 慎火 still gives the reading, the other names and the listing).
+     asks that name (干葛 is not 葛).  Question words and a dose (`DOSE_AT`: numerals, then a unit) stay outside such a
+     name, and either may stand beside it: 葛的功效 and 葛二两 ask 葛.  In such a question a drug's name inside a longer
+     name is asked as written there (`q.longer`: 慎火草 keeps its places for passages that write 慎火草; 慎火 still
+     gives the reading, the other names and the listing) when the longer name is itself a drug's name, or the drug's
+     name with only part or form characters after it and preparation characters before it (`NAME_TAILS`,
+     `NAME_HEADS`: 人参叶, 甘草梢, 酒大黄).  It takes in no other lexicon mention but a weak herb's (a weak 脾 or 心
+     stops it too), so what a question says of a drug is no name: 甘草入脾 asks 甘草 and 脾, 桂枝温经 asks 桂枝, and
+     将军二两 is read as 将军.  Both rules apply only where the profile's `unknown_runs` is on (the default).
    * **Tiers.**  A hit of today's fused pool is **A** when an asked drug's name occurs free there (and in drug context
      where it needs it), **D** (demoted) when it occurs but never so (`demoted:inside <blocker>`, `demoted:no-context`),
      **O** when it matched no surface (graph, citation, sense), **H** when it matched only other lexicon forms of an
@@ -112,8 +131,9 @@ Python's.  A change of the lexicon never reaches D1; a change of the normaliser 
      (将军); a false friend asked through the lexicon needs it named (`named`: a 一名 before it, a 之名 after it, a cue
      near it — 抱薪救火 beside 麻黄 and 桂枝 is no herb).
    * **Queues.**  The main queue M holds A, O and L in today's order.  The side queue interleaves the H hits (as X;
-     at `asked_first: all`, the L hits too) with passages found under the expansions (B), X first, and fills reserved
-     places 4, 7, 10, 14 …, at most ⌊3k/10⌋ while M lasts.  Where asked-first holds (`herbs`: a drug asked; or `all`),
+     at `asked_first: all`, the L hits too) with passages found under the expansions (B), X first.  Places 4, 7, 10,
+     14 … are reserved for it: while M lasts it takes at most those ⌊3k/10⌋, and a reserved place it cannot fill goes
+     to M; once M runs out it fills every place left.  Where asked-first holds (`herbs`: a drug asked; or `all`),
      the asked name keeps the first k − ⌊3k/10⌋ main places when it has the passages, taken from deeper in the pool or,
      when `routes` names `bm25`, from a search of the asked names; what they displace moves down, never out.  An H hit
      every form of which names an asked drug only in a window the passage misses is flagged `other-referent` and goes
@@ -151,13 +171,21 @@ Python's.  A change of the lexicon never reaches D1; a change of the normaliser 
    hit is flagged `homonym`.  Same-drug groups are curated (丹砂/朱砂/辰砂, 黄柏/黄檗/黄蘗/黄蘖 …) and carried as `ho`,
    so that the lexicon's separate entries for them read as one drug; a lexicon referent is shown under its group's
    head (止行, filed under 蒺藜子, lists 蒺藜); a name that is another entry's headword is never expanded.
-7. **Labelled.**  Each side hit, and each asked hit of an ambiguous or context-gated name that passes the gates (never
-   a demoted one), carries a `via`: the name the passage writes, `for` (the asked names it stands for: always a list),
-   the drug, the direction (`alias→drug`, `drug→alias`, or `asked` for the reading of the asked name itself), the kind
+7. **Labelled.**  Each side hit, and each asked hit of an ambiguous or context-gated name — for the asked names that
+   pass the gates in it, the same check the tiers make (never on a demoted hit, nor for a name that does not pass
+   there: 将军 written only inside 大将军, or out of drug context, gives no via) — carries a `via`: the name the
+   passage writes, `for` (the asked names it stands for: always a list), the drug, the direction (`alias→drug`, `drug→alias`, or `asked` for the reading of the asked name itself), the kind
    (异名, 避讳改名, 药用部位名, 炮制/加工名, 简称, 品种/产地名, 异写, 古名, 俗名), the status, the sources and a witness
    passage; the query lists the asked names with their drugs, the expansions with whether each was searched, and what
    was left out and why.  Flags say what a hit is not sure of (`anachronism`, `homonym`, `demoted:…`,
-   `other-referent`).  The page shows them as badges ([web.md](../web.md)); research evidence keeps them in its note.
+   `other-referent`).  The page shows them as badges ([web.md](../web.md)) on a search's own results.  Research
+   evidence keeps them in words in its note (`routes: alias; via 国老→甘草（别名录（中醫笈成））; 年代存疑（…）`); the
+   research report's corpus evidence (section 3) adds them to each record the search wrote (`retrieval:hybrid`; a
+   model's note is never read as labels), with a legend, and the evidence table (`evidence.csv`) ends with the note.
+   `taochronos ask` adds them, with the legend, to its report's 来源 lines, and the chat's `taochronos_ask` gives its
+   sources the same labels (`sources[].labels`).  In words a via says which pair of names found the passage, not
+   which of the two was asked (asked for the drug itself, the name the passage writes stands before the arrow): the
+   legend says so, and the passage decides.
 8. **Licences.**  The open build takes no local input.  What ships — the repository, `home.zip`, the container,
    `tables.js` — comes from the CC0 别名录 (`jc_c030`, credited as 别名录（中醫笈成）), the project's curated decisions (every
    pairing, group, floor, stop and status with a witness passage) and facts derived from the store and the project's
@@ -218,9 +246,10 @@ kept.  Offsets count code points.
 `reading_window` 40, `witness_scope` full (web-canon: web), `unknown_runs` true, `alias_score` 0.5, `ablate` [].
 The ablations: `gates` lifts the status, context, rival and part gates (every pair open); `boundary` ignores blockers;
 `slots` sorts main and side together by score; `period` ignores windows.  Module constants, not parameters: the
-question's thresholds and drug words (`COMMON_N` 20, `COMMON_SH` 0.10, `COMMON_CUE_SH` 0.5, `DRUG_WORDS`,
-`RUN_STOPS`), `BARE_REST` 4, `FORMULA_ENDS`, the build's `STRADDLE_RATIO` 2 and its budgets (700,000 bytes raw and
-150,000 deflated for `aliases.jsonl`, 150,000 deflated for the directory).
+question's thresholds and words (`COMMON_N` 20, `COMMON_SH` 0.10, `COMMON_CUE_SH` 0.5, `DRUG_WORDS`, `RUN_STOPS`,
+`DOSE_AT`, `NAME_TAILS`, `NAME_HEADS`, `ALIAS_MAX_CHARS` 200), `BARE_REST` 4, `FORMULA_ENDS`, the build's
+`STRADDLE_RATIO` 2 and its budgets (700,000 bytes raw and 150,000 deflated for `aliases.jsonl`, 150,000 deflated for
+the directory).
 
 ## Shapes
 
@@ -228,7 +257,8 @@ The file is compact JSON lines, keys sorted, records in code-point order of `s`,
 
 ```
 {"_header":{"format":"taochronos-aliases","version":1,"store":{"sha","books","passages"},"normalizer","lexicon",
-  "sources":[ids],"labels":{id:label},"coverage":{…},"counts":{"surfaces","pairs","open","cue","candidate","stop"}}}
+  "web_pack"?,"sources":[ids],"labels":{id:label},"coverage":{…},"counts":{"surfaces","pairs","open","cue","candidate",
+  "stop"}}}
 {"s","raw","stop","n","sh","b":[str|[str,from,to]],"fl","flb","ho","r":[{"h","g","t","k","st","v":[from,to],"c","a",
   "src","w":[[pid,y0,y1,kind,web]],"cr":[work,y0,y1],"nt"}]}
 ```
@@ -260,19 +290,21 @@ sources (`ALIAS_SOURCES`: id, label, licence), `context.json` (`ALIAS_CONTEXT`) 
 `gate_form`, `scan`, `free_offsets` with `covers` (the chained rule), `drug_context` and `named`, `accept`, `bare`,
 `readings` and `reading`, `floor_flag`, `expansions` (the part rule, `also`), `view` (the stop listing, lexicon
 referents under their group's head) and `assemble` — and `search.js` of the question rules (`q.drugs`, `q.longer`,
-the stop listing, unknown runs), the tiers with H, retention where asked-first holds, the other-referent rule, demoted
-hits last, the per-queue order of years, the `routes` and `share` marking, and `via` with `for`; `corpus.js`
+the stop listing, unknown runs and longer names, the 200-character limit), the tiers with H, retention where
+asked-first holds, the other-referent rule, demoted hits last, the per-queue order of years, the `routes` and `share`
+marking, and `via` with `for`; `corpus.js`
 `passageCard` centres a card on the name it was found under, as `passage_card(focus=…)` does.  Offsets over
 `Array.from(text)`, strings ordered by code point, ties broken on explicit keys, the slots in integer arithmetic and p
-rounded as above.  Parity is tested twice: the query block of the reference searches, and alias cases Python generates
-(gate inputs and verdicts, expansions and views, slot cases).  The candidate sets differ by design (other FTS limits,
-no deeper asked search), so hits are not compared.
+rounded as above.  Parity is tested on the reference searches — their query block, and the labels (`via`, `flags`) of
+the passages both runtimes return — and on alias cases Python generates (gate inputs and verdicts, expansions and
+views, slot cases).  The candidate sets differ by design (other FTS limits, no deeper asked search), so which passages
+are returned is not compared.
 
 ## Consequences
 
-* A question about a drug finds passages under its other names — at most 3 of 10 places, each labelled; the asked
-  form keeps the others.  `taochronos eval aliases` measures it on a frozen 120-item gold with a held-out half
-  ([evals.md](../evals.md)).  **The second held-out report** (2026-10-15, 59 items, on the web store, after the
+* A question about a drug finds passages under its other names, each labelled, in the side queue's places (4, 7 and
+  10 of each ten while the main queue lasts, every place after it runs out); the asked form keeps the others.
+  `taochronos eval aliases` measures it on a frozen 120-item gold with a held-out half ([evals.md](../evals.md)).  **The second held-out report** (2026-10-15, 59 items, on the web store, after the
   changes logged since the first): web-canon, the deployed pair, P@10 0.683 → 0.771, Wrong@10 25 → 12, AskedRet mean
   0.589 → 0.749, leakage 0 — but 6 of the 10 acceptance checks: AskedRet min 0.000, ON@50 698 → 849 (1.22× against
   1.5×), CandRecall 0.650 and SilentMerge 1 fail; full-corpus as a proxy on the web store 0.673 → 0.795, 7 of 10
@@ -290,13 +322,14 @@ no deeper asked search), so hits are not compared.
 * A shared name reaches a side passage only through an own name the question did not ask (the asked forms are
   searched already, so a side passage never holds them), within the periods its rivals share.  A candidate referent
   still counts as a rival there, so a wrong list pairing can keep a drug's side passages out.
-* The data follow the store, the normaliser and the lexicon: the header records their fingerprints, and
-  `aliases check --db` finds a stale file.  On a full store they follow the web pack too (the witnesses' `web` flags),
-  which the header does not fingerprint: a `canon` run that rewrites `corpus/web` leaves such a layer to be rebuilt,
-  and `aliases check --db` finds it stale.  The committed layer is built on the web store (553 books: 778 of the
-  别名录's 1,086 entries, 6 釋名 pairs): 2,724 surfaces, 2,138 pairs (734 open, 1,101 cue, 303 candidate; 63 stop
-  records), 470,085 bytes (the directory 143,523 deflated as `home.zip` stores it, of its 150,000; `aliases check`
-  measures it the same way, and a test reads `home.zip` itself).  A build on the site's store adds the rest of the 别名录 and the 釋名 credits, and may
+* The data follow the store, the normaliser, the lexicon and the web pack (on a full store the witnesses' `web`
+  flags; the web store is the pack): the header records their fingerprints, and `aliases check --db` finds a stale
+  file.  A `canon` run that rewrites `corpus/web` leaves the layer to be rebuilt: `aliases check` warns when the
+  header's `web_pack` is not the pack `corpus/web` holds, and `--db` finds the rebuild differs.  Reading the web store
+  row by row against the pack costs a web-store build or `check --db` about 5 s.  The committed layer is built on the
+  web store (553 books: 778 of the 别名录's 1,086 entries, 6 釋名 pairs; `web_pack` 01cae4ae63a3): 2,724 surfaces,
+  2,138 pairs (734 open, 1,101 cue, 303 candidate; 63 stop records), 470,111 bytes (the directory 143,545 deflated as
+  `home.zip` stores it, of its 150,000; `aliases check` measures it the same way, and a test reads `home.zip` itself).  A build on the site's store adds the rest of the 别名录 and the 釋名 credits, and may
   need the budget looked at again.
 * The Worker carries the layer in `tables.js` and a hand-written port; parity is tested on the query block, on the
   labels of the passages both find, and on gate cases Python generates.

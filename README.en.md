@@ -280,11 +280,12 @@ In all **966 works, ~123 million characters, 2.05 million passages**.
 - **Search**: a SQLite store with a character-bigram FTS5 index (terms of any length, phrases, proximity); research
   samples a period-stratified frame, falsification queries the whole store.
 - **Other names of a drug** (the alias layer, `domains/classics/aliases/`, [ADR 0023](docs/adr/0023-alias-layer.md)):
-  a search for 甘草 also finds the passages that write 国老, for 木通 those that write 通草 before about 960 — in at
-  most 3 of 10 places, each labelled with the name, the drug, the kind (异名, 避讳改名, 古名 …), the source and a
-  witness passage, while the name asked keeps the others.  A name two drugs share (鬼督邮) lists both and is never
-  merged; a common word (小便, 将军之官) is not taken for a drug; a name used only in some periods is searched only
-  there, and a passage written before a name came into use is flagged.  Built from the CC0 本草纲目别名录 in the
+  a search for 甘草 also finds the passages that write 国老, for 木通 those that write 通草 before about 960 — in
+  places 4, 7 and 10 of each ten while today's ranking lasts (and every place after it runs out), each labelled with
+  the name, the drug, the kind (异名, 避讳改名, 古名 …), the source and a witness passage, while the name asked keeps
+  the others.  A name two drugs share (鬼督邮) lists both and is never merged; a common word (小便, 将军之官) is not
+  taken for a drug; a name used only in some periods is searched only there, and a passage written before a name came
+  into use is flagged.  Built from the CC0 本草纲目别名录 in the
   store, the editors' decisions and equations read off the texts, each with its witness — a layer of its own beside
   the lexicon, which it leaves unchanged.  On in all three runtimes: the browser (web-canon), the full-corpus server
   and the D1 backup, whose port of it the parity tests hold to Python's (the eval's full-corpus numbers are still

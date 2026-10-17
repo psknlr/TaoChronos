@@ -278,8 +278,12 @@ TAOCHRONOS_ALIAS_EVAL_SPLITS=dev TAOCHRONOS_ALIAS_EVAL_SYSTEMS=off,naive,on taoc
   not 甘草's other names); `on` (B2); `analysis` (the layer's reading of the question alone — names asked as written,
   gated-out hits last — with no expansion, side queue or retention: what the layer gains without other names); and
   the ablations `gates`, `boundary`, `slots`, `period`, `asked_first:all` and `asked_first:off`. Each item is searched at k = 10 and at
-  k = 50; the systems' order turns with the item, so that warm caches favour none of them in the latency (the k = 10
-  call).
+  k = 50. Latency is the k = 10 call, timed only after every system has searched the item once untimed at k = 10 (the
+  systems' order still turns with the item): a first call fills caches the others then read (the claims of the item's
+  passages, extracted into the harness's own cache), and timing first calls charged that cost to whichever system ran
+  first, so the rotation decided the p95 comparison. The warm-up adds one untimed search per system and item to a run.
+  The first held-out report was timed on those first calls, cold, and on a shared machine: its p50 and p95 compare
+  fairly neither its systems nor the second report's.
 * **Labels** come only from each item's patterns, on the normalised text with every false friend masked: *asked* (the
   asked form, and one of its cues anywhere in the passage when the item has cues), *other* (a referent's name, the passage's range inside that
   referent's window), *wrong* (neither, and a wrong name, the asked form only inside a masked string, or in a passage
