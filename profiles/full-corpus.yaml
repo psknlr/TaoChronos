@@ -6,9 +6,11 @@ name: full-corpus
 extends: full-discovery
 description: Full-discovery research over the whole ingested corpus (四库全书·医家类, 笈成, McGill, 维基文库 and the web collections, deduplicated) via the corpus store.
 bundles:
-  - {plugin: taochronos.plugins.classics, config: {domain: domains/classics, store: corpus/tcm.sqlite, lexicon_extra: [lexicon-supplement, lexicon-harvested]}}
+  - {plugin: taochronos.plugins.classics, config: {domain: domains/classics, store: corpus/tcm.sqlite, lexicon_extra: [lexicon-supplement, lexicon-harvested], aliases: [aliases]}}
   - {plugin: taochronos.plugins.knowledge}
-  - {plugin: taochronos.plugins.retrieval}
+  # the alias layer on: a drug is found under its other names too, here and in the D1 backup's port, which searches
+  # alike (ADR 0023, phase B: cloud/site/src/backup/search.js, the parity tests in cloud/test/backup.test.js)
+  - {plugin: taochronos.plugins.retrieval, config: {alias: {enabled: true}}}
   - {plugin: taochronos.plugins.models.offline}
   - {plugin: taochronos.plugins.models.anthropic_provider}
   - {plugin: taochronos.plugins.models.openai_compat}

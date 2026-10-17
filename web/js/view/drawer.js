@@ -5,7 +5,7 @@ import { renderMarkdown } from "../markdown.js";
 import { chartGallery, chartsOf, documentButton, documentOf } from "../chart.js";
 import { columnsLabel, DATA_NOTICE, deidLabel, sizeLabel } from "../mydata.js";
 import { tablesOf } from "../table.js";
-import { append, bare, fmtMs, h, icon, passageLabel, prettyJSON, truncate, yearLabel } from "../util.js";
+import { append, bare, fmtMs, foundBadges, h, icon, passageLabel, prettyJSON, truncate, yearLabel } from "../util.js";
 import { FAMILY, toolFamily } from "./thread.js";
 
 export function renderDrawer(el, S, ctx) {
@@ -47,6 +47,7 @@ function evidencePane(S, ctx, evidence) {
     pane.append(h("div.section-title", `本对话的证据（${evidence.length}）`));
     for (const card of evidence) {
       const st = ctx.bestStatus(card.passage_id);
+      const found = foundBadges(card.found); // what the latest search to return it found it under
       pane.append(h("button.ev-item", {
         type: "button", class: card.passage_id === sel ? "sel" : "",
         on: { click: () => ctx.openPassage(card.passage_id, null) },
@@ -54,6 +55,7 @@ function evidencePane(S, ctx, evidence) {
       h("div.top", h("b", card.title ? bookTitle(card) : card.passage_id), h("span.grow", truncate(stripBook(card.locator), 26)),
         st ? h("span.badge", { class: st.status }, st.label) : null),
       h("div.q", card.text || ""),
+      found.length ? h("div.top", { style: { flexWrap: "wrap", marginTop: "4px" } }, found) : null,
       h("div.top", h("span", yearLabel(card)), h("span.grow"), h("span.mono", { style: { fontSize: "11px" } }, card.passage_id))));
     }
   }
@@ -100,6 +102,7 @@ function passageView(S, ctx, pid, quote) {
     h("div.status-line",
       st ? h("span.badge", { class: st.status }, st.label) : null,
       card.collation_status ? h("span.badge", card.collation_status === "unverified" ? "未经校勘" : `校勘：${card.collation_status}`) : null,
+      foundBadges(S.conv?.evidence?.[pid]?.found), // what a search found it under: a drug's other name, its flags
       h("span.badge.mono", pid)),
     text,
     quote && !range ? h("div.meta", h("b", "模型的引文："), h("span.serif", `「${quote}」`), h("div", "与此段原文未能逐字对应：可能是节引、改写或误引，请以原文为准。")) : null,

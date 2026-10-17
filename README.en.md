@@ -163,6 +163,19 @@ taochronos corpus images all --enrich                                    # image
 taochronos corpus status
 ```
 
+Other names of a drug (the alias layer, [ADR 0023](docs/adr/0023-alias-layer.md); the shipped layer is committed, these
+rebuild and inspect it, and bring in the lists that may not be published):
+
+```bash
+taochronos aliases show 国老 --profile web-canon     # a name's record: its drugs, kinds, statuses, witnesses, and what a search adds
+taochronos aliases build && taochronos aliases check --db .taochronos/corpus/tcm.sqlite   # rebuild on the store; same inputs, same bytes
+taochronos aliases import ntu ChineseDrugEthnonymsSynonymyTable.tab   # local only: also `import hurb FILE`, `import bielu-gb FILE`
+taochronos aliases build --local                     # the shipped records + the local lists → .taochronos/aliases/local/;
+                                                     # also rewrites the shipped layer from the store (--db; --out-dir DIR leaves it)
+taochronos research "…" --profile full-corpus-local  # research with the local lists, on this machine only
+taochronos eval aliases --quick                      # the alias eval's synthetic part (without --quick, on a store: all of it)
+```
+
 Study (uses the `full-corpus` profile when the store exists; Markdown by default, `--json` for the full result,
 `-o` to write a file):
 
@@ -266,6 +279,17 @@ In all **966 works, ~123 million characters, 2.05 million passages**.
   map back to the source.
 - **Search**: a SQLite store with a character-bigram FTS5 index (terms of any length, phrases, proximity); research
   samples a period-stratified frame, falsification queries the whole store.
+- **Other names of a drug** (the alias layer, `domains/classics/aliases/`, [ADR 0023](docs/adr/0023-alias-layer.md)):
+  a search for 甘草 also finds the passages that write 国老, for 木通 those that write 通草 before about 960 — in
+  places 4, 7 and 10 of each ten while today's ranking lasts (and every place after it runs out), each labelled with
+  the name, the drug, the kind (异名, 避讳改名, 古名 …), the source and a witness passage, while the name asked keeps
+  the others.  A name two drugs share (鬼督邮) lists both and is never merged; a common word (小便, 将军之官) is not
+  taken for a drug; a name used only in some periods is searched only there, and a passage written before a name came
+  into use is flagged.  Built from the CC0 本草纲目别名录 in the
+  store, the editors' decisions and equations read off the texts, each with its witness — a layer of its own beside
+  the lexicon, which it leaves unchanged.  On in all three runtimes: the browser (web-canon), the full-corpus server
+  and the D1 backup, whose port of it the parity tests hold to Python's (the eval's full-corpus numbers are still
+  measured on the web store as a proxy).
 
 See [docs/data.md](docs/data.md) and [ADR 0003](docs/adr/0003-corpus-store-and-scoped-research.md).
 
@@ -666,6 +690,7 @@ The V2 suites ([docs/evals.md](docs/evals.md)):
 | Audit (S15) | 19 claims: verdicts and kinds 1.0, false SUPPORTED 0; safety 3/3 |
 | Modern (S13–S14) | typing 10/10; cross-level guard 7/7; RWD: SQL checks pass, planted association recovered, bad SQL refused |
 | Workflow (V2) | registry valid; 8/8 questions compile to the skills they need; a rerun reads every step from its workspace |
+| Aliases ([ADR 0023](docs/adr/0023-alias-layer.md)) | 120 drug-name questions on the web store, half held out; **second held-out report, 59 items: web-canon (deployed) P@10 0.683 → 0.771**, Wrong@10 25 → 12, asked-name retention 0.589 → 0.749, leakage 0 — acceptance 6/10 (fails: least asked-name retention 0.000, other-name hits at 50 ×1.22 against ×1.5, CandRecall 0.650, SilentMerge 1); full-corpus as a proxy on the web store 0.673 → 0.795, 7/10; the first report had 0.791 and 0.805; synthetic checks all hold |
 
 The development sets of deep discovery and of the task specification were written with their rules: they show
 intended behaviour, not generalisation. Expert gold on the full corpus is on the roadmap; the benchmark table of
@@ -759,6 +784,17 @@ docs/                      study, task specification, architecture, agents, disc
   work may itself still be in copyright; the web text sets, mostly simplified copies of 笈成 texts, declare no licence of
   their own — a copy of a 笈成 text is not stored, and what is stored is for local research only; Hugging Face
   classical-tcm-canon declares proprietary-commercial terms — local research only, never redistributed.
+- **Lexical data** — the alias layer (`domains/classics/aliases/`, [data.md](docs/data.md#alias-layer-domainsclassicsaliases)):
+  what ships (the repository, the site, the server, the D1 backup) comes from the 本草纲目别名录 in the store (book
+  `jc_c030`, CC0 1.0 — credited as 别名录（中醫笈成）), the editors' decisions (project data, every pairing, group,
+  floor, stop and status with a witness passage) and facts read off the store with their passage ids (equations, the
+  本草纲目's 释名, taboo pairs, the lexicon), never from a source whose terms forbid passing it on.  Three lists are for
+  local research only and never published: the GB copy of the 别名录 on GitHub and hurbTable (no licence stated), and
+  the NTU *Large List of Chinese Drug Names 40K* (CC BY-NC 4.0, DOI 10.21979/N9/V2XBOH; its attribution — Chong,
+  William Eng Keat; Stanley-Baker, Michael, 2019 — unverified until confirmed with its Cite button).  Download them
+  yourself and import them with `taochronos aliases import ntu FILE` (`hurb`, `bielu-gb`): they go to
+  `.taochronos/aliases/local/`, recorded with their file, sha256 and rows and checked against the pin; `aliases build
+  --local` builds the local layer, and only the `full-corpus-local` profile, never deployed, reads it.
 - Image witnesses are catalogued as records only (title, date, holder, shelfmark, IIIF manifest, terms); **no image is
   downloaded**, and each record carries its holder's terms (研医会 CC BY-NC 4.0, Keio CC BY-NC-SA 4.0, Berlin PDM 1.0,
   the Library of Congress online reading only …).

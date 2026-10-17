@@ -59,7 +59,7 @@ Benchmark → Metric（当前值）→ Gold dataset → 人工复核 → 状态�
 | T6 | 篇章 · 条文结构 | L1 | ● | `study clause` / `study.clause` | philologist · extractor | clause | 片段角色准确率 0.977，macro-F1 0.917 |
 | T7 | 中医专用 NER | L2 | ● | `study entities` / `study.entities`（24 类；规则筛选 + 模型复核歧义与漏读） | extractor · philologist · semanticist | entities | 开发集 F1 0.991；留出 25 句 F1 0.776 |
 | T8 | 关系抽取 | L2 | ● | `kg.extract_claims` | extractor | claims | P 0.976 · R 0.952 · F1 0.964 |
-| T9 | 术语标准化 / Entity Linking | L2 | ● | `kg.term` · `study names` / `study.names` | semanticist · ontologist | names · anachronism | 构造例全对；全库避讳改名 2/2 |
+| T9 | 术语标准化 / Entity Linking | L2 | ● | `kg.term` · `study names` / `study.names` · `classics.search`（别名层） | semanticist · ontologist | names · anachronism · aliases | 构造例全对；全库避讳改名 2/2；别名第二次留出 P@10 0.683 → 0.771 |
 | T10 | 训诂 / 古文释义 | L2 | ● | `study glosses` · `study translate`（五层：原文 / 规范 / 句读 / 释义 / 今译；今译须引所用训释并过以今律古护栏） | philologist · semanticist · scholar | glosses · translation | 训诂准确率 1.0；护栏 24/24；原文层不变 24/24 |
 | T11 | 跨版本条文对齐 | L3 | ● | `study concordance` / `study.concordance` | scholar | commentaries · reuse | 引文召回 1.0；管线召回 1.0 |
 | T12 | 异文自动发现 | L3 | ● | `study variants` / `study.variants` | philologist | collation | 异文单位 R 0.998 · P 0.999 |
@@ -190,6 +190,35 @@ Benchmark → Metric（当前值）→ Gold dataset → 人工复核 → 状态�
 - **人工复核。** 候选别名（如“山芋”）只是读出，须专家写入词表才算数；映射一律“提议”（`kg.propose_change`）。
 - **举例（全库）。** 山药：隋唐以前通行“薯蓣”，1000–1200 年间让位于“山药”；玄参：1700 年代“元参”占上风，民国复归
   “玄参”（避讳解除）；“薯蕷，俗名山藥”（《珍珠囊补遗药性赋》）为互释之证；词表未收的“山芋”见于《本经》森立之本等 6 部书。
+- **检索中的药物异名（别名层，[ADR 0023](adr/0023-alias-layer.md)）。** `classics.search` 多一个参数 `aliases`：`auto`（默认；
+  画像开启别名层时，问到药名即另检其他名）或 `off`（关闭别名层，即原来的检索：词表自带的同义名照常检索，只是不加标注）。
+  主排序未用完时，他名命中占每 10 条中的第 4、7、10 位（填不满的位置仍归主排序），主排序用完后其后各位都归他名命中；
+  其余位置仍归所问之名。问句超过 200 字（规范化后的字数，如贴入整段原文）时按未开启别名层解读与排序。他名位置由
+  两类命中交替占用：经别名检出者路由记为 `alias`（`routes` 不含 `alias` 时不另检），所问之药在词表中的他形命中保留原路由，
+  出处为“词表”。输出（Schema `search`，`taochronos schema --study search`）
+  在原有字段外另有三项，非空时才出现：
+  - `query.aliases`：`asked[{surface, term, ambiguous, note, referents[{head, kind, status, valid, floor, source, witness,
+    witness_year, credited}]}]`——问句中作药名来问的各名及其所指之药（同名异物全部列出，`ambiguous` 为真）；`valid` 为分期窗口
+    `[from, to)`，`floor` 为通行年代的下限，`credited` 为《本草纲目》释名所注出处 `[work, y0, y1]`（书名与成书起止年，无则 null）；
+    常用词（stop）单独来问时列出其可能所指，`status` 为 `stop`，并以 `note` 说明多作普通词语、未按其名检索；
+    词表将其收为药名者（如景天条下的“救火”），`note` 改为只按词表检索其同条之名，所得命中的 `via` 状态为 `stop`。
+    `expansions[{surface, for, direction, referent, kind, status, searched, why}]`——所加之名；`searched` 为假时 `why` 说明原因：
+    `cap`（超出上限）、`unattested`（库中未见）、`part`（同株另一部位，只列不检）、`routes`、`share`（无他名位置）。
+    `excluded[{surface, for, why}]`——因年代不合未加之名（`why: period`）。
+  - `hits[].via[{surface, for, referent, direction, kind, status, source, witness, reading, p}]`：此段写作之名、`for`（所代表的
+    所问之名，恒为列表）、所指之药、方向（`alias→drug`、`drug→alias`，或 `asked`：所问之名本身在此段的读法）、类别（异名、
+    避讳改名、药用部位名、炮制/加工名、简称、品种/产地名、异写、古名、俗名）、状态（`open`、`cue`、`candidate`、`stop` 或 null）、
+    出处标签（如“别名录（中醫笈成）”“古籍互证”“词表”）、书证段落、读法及其概率 `p`。
+  - `hits[].flags`：`anachronism:<名><<年>:edition|layer`（此段早于该名通行之年：刊本改字或后人增补）、`homonym:<名>`（同名异物，
+    此段未能判定）、`demoted:inside <较长之名>`、`demoted:no-context`（只见于较长之名中或不在药物语境，排在后面）、
+    `other-referent:<名>`（此段年代该名另指他药）。
+  这些标注也以文字随研究与问答输出：证据账本在检索所得各条记录的 note 中保留
+  （`routes: alias; via 国老→甘草（别名录（中醫笈成））; 年代存疑（…）`）；研究报告第 3 节（语料证据）在这些记录之后列出标注
+  并附图例（只读检索写入的记录，`retrieval:hybrid`），证据表（`evidence.csv`）末列为 note；`taochronos ask` 的报告在“来源”
+  各行附标注与图例，对话中 `taochronos_ask` 返回的来源各带 `labels`。文字中的“via 甲→乙”只说明是哪一对名字检出此段，
+  不说明二者哪个是所问之名（问的是该药本身时，此段所写之名在箭头前）。
+  评测：`aliases` 套件（[evals.md](evals.md)），120 个药名问题、一半留出；第二次留出报告 web-canon P@10 0.683 → 0.771，验收 6/10
+  （首次报告 0.791，未达的检查相同）。
 
 ### T10 古文释义 / 训诂 ●
 
@@ -457,11 +486,11 @@ Extractor）→ 语文学评估（Philologist）→ 源流考证（Scholar：全
 
 | 路线图 P0 | 状态 | TaoChronos |
 |---|---|---|
-| 原文精确检索 + provenance | ● | `classics.search`（全文、规范化、异体扩展、时间过滤）· 见证对象 · `verify_quote` |
+| 原文精确检索 + provenance | ● | `classics.search`（全文、规范化、异体扩展、药物异名、时间过滤）· 见证对象 · `verify_quote` |
 | 自动句读 | ● | T4–T5 `study punctuate` |
 | 中医实体识别 | ● | T7 `study entities`（24 类，规则 + 模型复核；留出 F1 0.776） |
 | 实体关系抽取 | ● | T8 `kg.extract_claims` |
-| 术语/别名规范化 | ● | T9 `kg.term` · `study names` |
+| 术语/别名规范化 | ● | T9 `kg.term` · `study names` · 别名层（`classics.search` 的 `aliases`） |
 | 跨版本条文对齐 | ● | T11 `study concordance` |
 | 异文自动识别 | ● | T12–T13 `study variants` |
 | 引文 / text reuse 检测 | ● | T14 `study reuse` |

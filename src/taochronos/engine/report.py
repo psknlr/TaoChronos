@@ -77,6 +77,39 @@ def _cite(corpus: Any, rec: Any) -> str:
     return f"《{_book(corpus, rec.book_id)}》{loc}（{when}）「{rec.quote}」 `{rec.passage_id}[{rec.start}:{rec.end}]`"
 
 
+def note_labels(note: str | None) -> list[str]:
+    """What a ledger record's note says of the search hit it came from (``hit_note`` in agents/procedures/evidence.py,
+    ADR 0023): the parts after ``routes: …`` — each ``via`` (the pair of names that found the passage, what it writes,
+    how the names relate, the sources) and each flag in words (年代存疑, 同名异物 …).  [] for a note that is not a hit's (a
+    replication's reason), or a hit's found as asked.  Only a search's own record says them (:func:`record_labels`)."""
+    parts = (note or "").split("; ")
+    if not parts[0].startswith("routes:"):
+        return []
+    return [" ".join(p.split()) for p in parts[1:] if p.strip() and not p.startswith("routes:")]
+
+
+def record_labels(rec: Any) -> list[str]:
+    """The labels of a ledger record the search put there (``retrieval:hybrid``, the one path that writes
+    ``hit_note``): :func:`note_labels` of its note; [] for any other record — a model's note is its own words, whatever
+    it looks like."""
+    return note_labels(rec.note) if getattr(rec, "retrieval_method", None) == "retrieval:hybrid" else []
+
+
+# what the labels mean, under a list that shows them.  A via says which pair of names found the passage, not which of
+# the two was asked: asked for the drug itself, the name the passage writes stands before the arrow, and a span two
+# queries found (金铃子 and 川楝子) keeps the labels of both (agents/procedures/evidence.py _via_notes)
+LABELS_NOTE = ("注：「via 甲→乙」表示此段是经乙（所指之药）与它的另一名甲这一对名字检出的：或问甲而此段写乙，或问乙而此段写甲"
+               "（几个检索词都检出同一段时两种情形可能并存，以原文为准）；无箭头的「via 乙（写作丙）」为检索乙时检出、此段写作丙。"
+               "括注依次为：此段所写之名（写作，甲、乙之外者）；二名关系（未注即异名，品种/产地名、炮制/加工名等未必同物，"
+               "「相关」为词表所关联之词、并非同一味药）；「候选」为未经核定的配对，「多作普通词语」为此名多不指药；依据。"
+               "「读作 甲→乙」为多义之名甲在此段的读法（p 为其概率）。年代存疑、同名异物等标记表示此段未必指所问之药。引用前须核对原文。")
+
+
+def _cell(text: str) -> str:
+    """A free-text cell of the evidence table, kept text in a spreadsheet: one starting like a formula gets a quote."""
+    return "'" + text if text[:1] in ("=", "+", "-", "@", "\t", "\r") else text
+
+
 def _gates(state: Any, hid: str) -> str:
     g = state.gates.get(hid, {})
     return " ".join(f"{name}{MARK.get(g[name].status, '?') if name in g else '…'}" for name in GATES)
@@ -150,7 +183,10 @@ def build(harness: Any, state: Any, session_id: str) -> tuple[DiscoveryReport, s
     # 3 ----------------------------------------------------------- corpus evidence
     ledger = sorted((e for e in state.evidence.values() if e.hypothesis_id is None and e.stance == Stance.NEUTRAL),
                     key=lambda e: (-(e.retrieval_score or 0), e.id))[:12]
-    lines = [f"- {_cite(corpus, e)}" + (f" · 检索路径 {','.join(e.routes)}" if e.routes else "") for e in ledger]
+    labels = {e.id: record_labels(e) for e in ledger}  # found under another name of a drug, or flagged: says so
+    lines = [f"- {_cite(corpus, e)}" + (f" · 检索路径 {','.join(e.routes)}" if e.routes else "")
+             + "".join(f" · {x}" for x in labels[e.id]) for e in ledger]
+    lines += ["", LABELS_NOTE] if any(labels.values()) else []
     add("3. 语料证据 · Corpus Evidence", lines, [e.id for e in ledger])
 
     # 4 ----------------------------------------------------------- temporal pattern
@@ -354,17 +390,19 @@ def build(harness: Any, state: Any, session_id: str) -> tuple[DiscoveryReport, s
 
 
 def evidence_table(harness: Any, state: Any) -> str:
+    """The Evidence Ledger as CSV, one row per record; ``note`` last: why the record is there — a search hit's routes and
+    labels (``routes: alias; via 国老→甘草（别名录（中醫笈成））``, see :func:`note_labels`), a replication's reason."""
     corpus = harness.corpus
     buf = io.StringIO()
     writer = csv.writer(buf)
     writer.writerow(["evidence_id", "hypothesis_id", "stance", "book", "passage_id", "locator", "start", "end", "quote", "year",
-                     "retrieval_method", "evidence_domain", "textual", "philological", "gates"])
+                     "retrieval_method", "evidence_domain", "textual", "philological", "gates", "note"])
     for e in sorted(state.evidence.values(), key=lambda e: e.id):
         year = corpus.year(corpus.passage(e.passage_id)) if corpus.has_passage(e.passage_id) else ""
         gates = ";".join(f"{g}={r.status}" for g, r in sorted(state.gates.get(e.id, {}).items()))
         writer.writerow([e.id, e.hypothesis_id or "", e.stance.value, _book(corpus, e.book_id), e.passage_id,
                          e.locator.label() if e.locator else "", e.start, e.end, e.quote, year, e.retrieval_method,
-                         e.evidence_domain.value, e.confidence.textual, e.confidence.philological, gates])
+                         e.evidence_domain.value, e.confidence.textual, e.confidence.philological, gates, _cell(e.note or "")])
     return buf.getvalue()
 
 

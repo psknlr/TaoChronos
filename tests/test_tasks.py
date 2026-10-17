@@ -443,6 +443,150 @@ def test_results_match_the_schemas_of_the_task_specification(pack, study, commen
     assert set(results) == set(STUDY_SCHEMAS)
     for name, result in results.items():
         assert not validate(result, STUDY_SCHEMAS[name]), (name, validate(result, STUDY_SCHEMAS[name])[:5])
+    # without an alias layer the search's result is today's: no aliases block, no labels on the hits
+    assert set(results["search"]["query"]) == {"terms", "after", "before", "intent", "decomposition", "variants"}
+    assert not [h for h in results["search"]["hits"] if "via" in h or "flags" in h]
+
+
+def _alias_search_harness(tmp_path):
+    """The fixture harness whose search has an alias layer (国老 is another name of 甘草), and its search without it."""
+    import json
+
+    from conftest import make_harness
+
+    from taochronos.plugins.classics.aliases import (
+        AliasRecord,
+        Referent,
+        Witness,
+        write_records,
+    )
+    from taochronos.plugins.retrieval import HybridRetriever
+
+    h = make_harness(tmp_path / "data")
+    (tmp_path / "layer").mkdir()
+    (tmp_path / "layer" / "context.json").write_text(json.dumps({"version": 1, "herbs": ["大枣", "甘草", "生姜", "桂枝"]}),
+                                                     encoding="utf-8")
+    layer = write_records(tmp_path / "layer" / "aliases.jsonl", [
+        AliasRecord("甘草", ho="甘草", n=900, sh=0.9),
+        AliasRecord("国老", n=12, sh=0.5, r=[Referent("甘草", t="herb:甘草", src=["bielu-jc"],
+                                                     w=[Witness("wit.000", 1180, 1180, "e", True)],
+                                                     cr=("本经", 25, 220))])],
+        {"labels": {"bielu-jc": "别名录（中醫笈成）"}})
+    today = h.capabilities.get("retriever")
+    h.capabilities.register("retriever", "aliases", HybridRetriever(
+        DomainPack(HOME / "domains" / "classics", aliases_file=layer), h.corpus, knowledge=today.knowledge,
+        embedder=today.embedder, weights=today.weights, alias={"enabled": True}), default=True)
+    return h, today
+
+
+def test_search_labels_the_passages_found_under_a_drugs_other_name(tmp_path):
+    """classics.search with an alias layer (ADR 0023): asked for 国老, it fills the side places with passages that write
+    甘草, each labelled with the name, the drug, the source and the witness, and says in the query what it searched;
+    the result matches the search schema with the labels' shape; a routes list without ``alias`` leaves those places
+    out; ``aliases: off`` is today's search, and nothing else is accepted."""
+    from taochronos.plugins.classics.study.schemas import STUDY_SCHEMAS
+    from taochronos.protocol.schema import validate
+
+    h, today = _alias_search_harness(tmp_path)
+
+    def search(args: dict):
+        return h.scheduler.execute(ToolCall("classics.search", args), actor=Actor.kernel())
+
+    res = search({"query": "国老", "k": 10, "aliases": "auto"}).result
+    schema = STUDY_SCHEMAS["search"]
+    assert not validate(res, schema), validate(res, schema)[:5]
+    wrong = {**res, "hits": [{**x, "via": [{**v, "direction": "sideways"} for v in x.get("via", [])]} for x in res["hits"]]}
+    assert validate(wrong, schema)  # the labels' shape is checked, not only passed through
+    view = res["query"]["aliases"]
+    # a stop name's drugs are listed with status stop, an expansion's ``for`` is one name or several; nothing else
+    stop = {"surface": "无此名", "term": None, "ambiguous": False, "note": "…",
+            "referents": [{**view["asked"][0]["referents"][0], "status": "stop"}]}
+    listed = {**view, "asked": view["asked"] + [stop], "expansions": [{**e, "for": [e["for"]]} for e in view["expansions"]]}
+    assert not validate({**res, "query": {**res["query"], "aliases": listed}}, schema)
+    for bad in ({**view, "asked": [{**stop, "referents": [{**stop["referents"][0], "status": "closed"}]}]},
+                {**view, "expansions": [{**e, "for": None} for e in view["expansions"]]},
+                {**view, "asked": [{**stop, "referents": [{**stop["referents"][0], "credited": "本经"}]}]}):
+        assert validate({**res, "query": {**res["query"], "aliases": bad}}, schema)
+    # each drug with the work a 釋名 bracket credits and its years
+    assert [(a["surface"], [(r["head"], r["credited"]) for r in a["referents"]]) for a in view["asked"]] == [
+        ("国老", [("甘草", ["本经", 25, 220])])]
+    assert [(e["surface"], e["for"], e["direction"], e["searched"]) for e in view["expansions"]] == [
+        ("甘草", "国老", "alias→drug", True)]
+    side = [x for x in res["hits"] if x.get("via")]
+    assert len(side) == 3 and all(x["routes"] == ["alias"] and x["matched"] == ["甘草"] for x in side)
+    via = {"surface": "甘草", "for": ["国老"], "referent": "甘草", "direction": "alias→drug", "kind": "异名",
+           "status": "open", "source": ["别名录（中醫笈成）"], "witness": "wit.000", "reading": None, "p": None}
+    assert side[0]["via"] == [via]
+    # a via always says the asked names it stands for; its status is a pair's, stop, or none
+    vias = [{**via, "status": "stop"}, {**via, "direction": "asked", "kind": None, "status": None}]
+    assert not validate({**res, "hits": [{**side[0], "via": vias}]}, schema)
+    for wrong_via in ({k: v for k, v in via.items() if k != "for"}, {**via, "status": "closed"}):
+        assert validate({**res, "hits": [{**side[0], "via": [wrong_via]}]}, schema)
+    assert all("甘草" in x["text"] for x in side)  # the card shows the name the passage was found under
+    assert not [x for x in res["hits"] if not x.get("via") and ("via" in x or "flags" in x)]  # only when non-empty
+    off = search({"query": "国老", "k": 10, "aliases": "off"}).result
+    assert "aliases" not in off["query"] and not [x for x in off["hits"] if "via" in x or "flags" in x]
+    assert [(x["passage_id"], x["score"]) for x in off["hits"]] == [(x.passage_id, x.score)
+                                                                    for x in today.search("国老", k=10)[1]]
+    bad = search({"query": "国老", "aliases": "on"})
+    assert not bad.ok and "invalid arguments" in bad.error
+    narrow = search({"query": "国老", "k": 10, "routes": ["bm25", "graph"]}).result
+    assert not [x for x in narrow["hits"] if "alias" in x["routes"]]  # the side places are the route alias
+    kept = search({"query": "国老", "k": 10, "routes": ["bm25", "alias"]}).result["hits"]
+    assert {x["passage_id"] for x in side} <= {x["passage_id"] for x in kept if x["routes"] == ["alias"] and x["via"]}
+
+
+def test_what_the_model_is_told_of_the_alias_layer_holds(tmp_path, harness):
+    """What classics.search's description and the standing instructions say of the alias layer (ADR 0023) is what the
+    search does.  Without the layer, or with ``aliases: off``, a term's lexicon synonyms are still searched and come
+    back unlabelled (山药 finds a passage writing 薯蓣 only): a result with neither ``query.aliases`` nor any ``via``
+    means the layer added nothing, not that no other name was searched.  With it, the labelled hits on an asked drug's
+    other lexicon forms keep their own routes, a routes list without ``alias`` keeps them, and the side queue — route
+    alias or not — takes places 4 and 7 and then every place once the main ranking runs out: more than 3 of 10."""
+    from taochronos.chat.prompt import SYSTEM_PROMPT
+
+    h, _ = _alias_search_harness(tmp_path)
+    described = h.scheduler.registry.get("classics.search").description
+
+    def search(on, args: dict) -> dict:
+        return on.scheduler.execute(ToolCall("classics.search", args), actor=Actor.kernel()).result
+
+    for res in (search(harness, {"query": "山药", "k": 10}), search(h, {"query": "山药", "k": 10, "aliases": "off"})):
+        assert "aliases" not in res["query"] and not [x for x in res["hits"] if "via" in x]
+        assert [x for x in res["hits"] if x["matched"] == ["薯蓣"]]  # another name, unlabelled
+    assert "lexicon synonyms are always searched" in described and "lexicon synonyms then come back unlabelled" in described
+    assert "the alias layer added nothing" in described and "no other name was" not in described
+    assert "asked words only" not in described
+    assert "词表自带的同义名仍会检索" in SYSTEM_PROMPT and "未另检别名" not in SYSTEM_PROMPT
+
+    forms = search(h, {"query": "地黄", "k": 10, "routes": ["bm25"]})["hits"]
+    places = [i for i, x in enumerate(forms, 1) if x.get("via")]
+    assert places[:2] == [4, 7] and len(places) > 3  # the main ranking ran out: the side queue fills every place after
+    assert all(forms[i - 1]["routes"] == ["bm25"] for i in places)  # lexicon forms keep their routes, without alias
+    early = search(h, {"query": "国老", "k": 10, "before": 300})["hits"]
+    assert len([x for x in early if x["routes"] == ["alias"]]) > 3
+    assert "take places 4, 7 and 10 of each 10 while the main ranking lasts and every place after it runs out" in described
+    assert "which keep their own routes" in described and "A routes list without alias skips only the route alias" in described
+    assert "at most 3" not in described
+
+
+def test_a_search_card_shows_where_a_long_passage_writes_the_name(harness):
+    """The card of a passage longer than 120 characters starts at its beginning, unless the first matched name it writes
+    (in the normalised text: 國老 for 国老) starts at character 100 or later: then the 120 characters from 40 before it,
+    marked as cut."""
+    from dataclasses import replace
+
+    from taochronos.kernel.tools import ToolContext
+    from taochronos.tools.common import passage_card
+
+    ctx = ToolContext(actor=Actor.kernel(), capabilities=harness.capabilities, scheduler=None)
+    text = "太陽病，" * 30 + "國老二兩，" + "大棗十二枚。" * 20
+    passage = replace(next(iter(harness.corpus.passages())), text=text)
+    assert passage_card(ctx, passage)["text"] == text[:120] + "…"
+    assert passage_card(ctx, passage, focus=["无此名", "太阳"])["text"] == text[:120] + "…"  # the first it writes
+    assert passage_card(ctx, passage, focus=["无此名", "国老", "太阳"])["text"] == "…" + text[80:200] + "…"
+    assert passage_card(ctx, replace(passage, text=text[:150]), focus=["国老"])["text"] == "…" + text[80:150]
+    assert passage_card(ctx, passage, focus=["国老"], full=True)["text"] == text
 
 
 # ------------------------------------------------------------------ 实体识别 (T7)

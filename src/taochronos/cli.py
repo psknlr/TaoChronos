@@ -109,7 +109,7 @@ def _corpus_paths(args: argparse.Namespace) -> tuple[Path, Path]:
     from .config import data_dir as default_data_dir
     from .config import find_home
 
-    home = find_home(args.home)
+    home = Path(args.home).resolve() if args.home else find_home()  # --home over $TAOCHRONOS_HOME, as its help says
     data = Path(args.data) if args.data else default_data_dir(home)
     return home, data
 
@@ -585,6 +585,141 @@ def cmd_lexicon(args: argparse.Namespace) -> None:
                                 + yaml.safe_dump(payload, allow_unicode=True, sort_keys=False, width=200), encoding="utf-8")
     _out({"passages_scanned": n, "formulas": len(f_yaml["entries"]), "herbs": len(h_yaml["entries"]),
           "herb_aliases": sum(len(e.get("synonyms", [])) for e in h_yaml["entries"]), "output": str(out)})
+
+
+def cmd_aliases(args: argparse.Namespace) -> None:
+    """The alias layer (ADR 0023).  ``import``: a local list (the NTU table, hurbTable, the GB 别名录) into
+    <data>/aliases/local/ with its pin, never into the repository; ``build``: domains/classics/aliases/{aliases.jsonl,
+    context.json} from the store (``--local``: also <data>/aliases/local/aliases-local.jsonl with the local lists,
+    and beside it the context.json it was counted with, the shipped one);
+    ``review``: the keyword-in-context sheet editors decide stops from; ``check``: the committed layer's contract
+    (with ``--db``: a build on that store must give the same bytes); ``show``: a name's record and how a profile
+    resolves it."""
+    from .evals.aliases_gold import heldout_surfaces, load_gold
+    from .plugins.classics import aliasbuild
+
+    home, data = _corpus_paths(args)
+    local = data / "aliases" / "local"
+    store = _store_path(args, data)
+    if args.action == "import":
+        return _aliases_import(args, home, store, local)
+    if args.action == "show":
+        return _aliases_show(args, home, data)
+    if args.action == "check":
+        db = Path(args.db) if args.db else store if store.exists() else None
+        if db is not None and not db.is_file():
+            raise SystemExit(f"no corpus store at {db}")
+        result = aliasbuild.check(home, heldout=heldout_surfaces(load_gold(home)), store=db, rebuild=bool(args.db))
+        _out(result)
+        if not result["ok"]:
+            raise SystemExit(1)
+        return
+    if not store.exists():
+        raise SystemExit(f"no corpus store at {store} (pass --db)")
+    try:
+        built = aliasbuild.build_open(store, home)
+    except ValueError as exc:  # curated.yaml's or sources.yaml's shape, or not YAML at all
+        raise SystemExit(str(exc)) from exc
+    if args.action == "review":
+        rows = aliasbuild.review(built, top=args.top, heldout=heldout_surfaces(load_gold(home)))
+        target = Path(args.output) if args.output else local / "review.tsv"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(aliasbuild.review_tsv(rows), encoding="utf-8")
+        _out({"output": str(target), "rows": len(rows), "stops_proposed": sum(r[4] == "stop" for r in rows)})
+        return
+    out = Path(args.out_dir) if args.out_dir else home / "domains" / "classics" / aliasbuild.ALIAS_DIR
+    report = {**built.report, "output": str(out), "bytes": built.write(out)}
+    if args.local:
+        rows = aliasbuild.read_local(local)
+        if not rows:
+            raise SystemExit(f"no local lists under {local} (run `taochronos aliases import …` first)")
+        layer = aliasbuild.build_local(built, rows)
+        report["local"] = {**{k: layer.report[k] for k in ("coverage", "surfaces", "pairs", "counts", "seconds")},
+                           "output": str(local / aliasbuild.LOCAL_FILE),
+                           "bytes": layer.write(local, name=aliasbuild.LOCAL_FILE)}  # its context.json: the shipped
+    _out(report)
+
+
+def _aliases_import(args: argparse.Namespace, home: Path, store: Path, local: Path) -> None:
+    from .plugins.classics.aliasbuild import read_registry, read_yaml
+    from .plugins.classics.domain import DomainPack
+    from .plugins.classics.ingest.aliases import BOOK, LOCAL_SOURCES, import_local
+    from .plugins.classics.store import CorpusStore, StoreCorpus
+
+    if args.target not in LOCAL_SOURCES or not args.file:
+        raise SystemExit(f"usage: taochronos aliases import {{{'|'.join(LOCAL_SOURCES)}}} FILE [--encoding ENC]")
+    pack = DomainPack(home / "domains" / "classics")
+    normalize = pack.variants.normalize_text
+    folder = home / "domains" / "classics" / "aliases"
+    try:
+        registry = read_registry(folder / "sources.yaml")
+        curated = (read_yaml(folder / "curated.yaml") or {}) if (folder / "curated.yaml").exists() else {}
+    except ValueError as exc:  # not YAML at all, or sources.yaml not of its shape
+        raise SystemExit(str(exc)) from exc
+    source = next((s for s in registry.get("sources") or [] if s.get("id") == LOCAL_SOURCES[args.target]), {})
+    attested = None
+    if args.target == "bielu-gb" and store.exists():  # a hard wrap is joined only where the store attests the join
+        corpus = StoreCorpus(CorpusStore(store, readonly=True), normalize, exclude_books=(BOOK,))
+        attested = lambda name: corpus.count(name) > 0  # noqa: E731
+    try:
+        entry = import_local(args.target, args.file, local, normalize=normalize, normalizer=pack.variants.fingerprint,
+                             encoding=args.encoding, attested=attested, repairs=curated.get("repairs") or (),
+                             licence=source.get("licence", ""), attribution=source.get("attribution", ""),
+                             pin=source.get("pin"))
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    _out({**entry, "output": str(local / f"{args.target}.jsonl"), "attested": attested is not None})
+
+
+def _aliases_show(args: argparse.Namespace, home: Path, data: Path) -> None:
+    from types import SimpleNamespace
+
+    from .kernel.profiles import load_profile
+    from .plugins.classics.aliases import DEFAULT_ALIAS, loads_records
+    from .plugins.classics.domain import DomainPack
+
+    if not args.target:
+        raise SystemExit("usage: taochronos aliases show NAME [--profile P]")
+    profile = load_profile(args.profile or "full-corpus", [home / "profiles"])
+    bundles = {b.get("plugin"): b.get("config") or {} for b in profile.bundles}
+    cfg = bundles.get("taochronos.plugins.classics", {})
+    params = {**DEFAULT_ALIAS, **(bundles.get("taochronos.plugins.retrieval", {}).get("alias") or {})}
+    domain = home / cfg.get("domain", "domains/classics")
+    local = Path(cfg["aliases_local"]).expanduser() if cfg.get("aliases_local") else None
+    if local is not None and not local.is_absolute():
+        local = data / local
+    try:  # as the classics plugin loads it
+        pack = DomainPack(domain, extra_lexicons=cfg.get("lexicon_extra", ()), aliases=cfg.get("aliases", ()),
+                          aliases_file=local)
+    except FileNotFoundError as exc:
+        raise SystemExit(str(exc)) from exc
+    index = pack.aliases
+    files = [local] if local is not None else [domain / d / "aliases.jsonl" for d in cfg.get("aliases", ())]
+    s = pack.variants.normalize_text(args.target)
+    found = pack.lexicon.lookup(s)
+    entry = found[0][0] if found else None
+    surfaces = [s] + ([x for x in dict.fromkeys(map(pack.variants.normalize_text, entry.surfaces())) if x != s]
+                      if entry else [])
+    q = SimpleNamespace(asked={s: entry.term_id if entry else None}, after=None, before=None, groups={},
+                        all_surfaces=lambda: surfaces)
+    exps = index.expansions(q, pack.lexicon, params)
+    rec = index.record(s)
+    out: dict[str, Any] = {
+        "surface": s, "profile": profile.name, "layers": [str(f) for f in files if f.exists()],
+        "fingerprint": index.fingerprint, "enabled": params["enabled"],
+        "term": entry.term_id if entry else None, "record": rec.to_json() if rec else None,
+        "referents": [r.to_json() for r in index.referents(s, q.asked[s], pack.lexicon)],
+        "expansions": [{"surface": e.surface, "direction": e.direction, "head": e.head, "kind": e.kind,
+                        "status": e.status, "valid": e.valid, "shared": e.shared, "n": e.n, "searched": e.searched,
+                        "why": e.why} for e in exps],
+        "view": index.view(q, params, pack.lexicon, exps)}
+    if not len(index):
+        committed = domain / "aliases" / "aliases.jsonl"
+        out["note"] = "the profile loads no alias layer"
+        if committed.exists():
+            _, records = loads_records(committed.read_text(encoding="utf-8"), str(committed))
+            out["committed"] = next((r.to_json() for r in records if r.s == s), None)
+    _out(out)
 
 
 def cmd_search(args: argparse.Namespace) -> None:
@@ -1623,6 +1758,19 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--min-count", type=int, default=3)
     sp.add_argument("--herbs", type=int, help="core: how many drug names (default 800)")
     sp.add_argument("--formulas", type=int, help="core: how many formula names (default 2000)")
+    sp = add("aliases", cmd_aliases, "other names of drugs (别名, ADR 0023): import a local list, build the layer "
+                                     "from the store, the review sheet, check the committed layer, show how a profile "
+                                     "reads a name", profile=False)
+    sp.add_argument("action", choices=["import", "build", "review", "check", "show"])
+    sp.add_argument("target", nargs="?", help="import: ntu, hurb or bielu-gb; show: the name")
+    sp.add_argument("file", nargs="?", help="import: the downloaded file (.tab, .csv, .tsv, a Dataverse .zip, .txt)")
+    sp.add_argument("--encoding", help="import: the file's encoding (default UTF-8, else GB18030)")
+    sp.add_argument("--db", help="corpus store path (default: <data>/corpus/tcm.sqlite); check: build on it, compare")
+    sp.add_argument("--local", action="store_true", help="build: also <data>/aliases/local/aliases-local.jsonl")
+    sp.add_argument("--out-dir", help="build: write aliases.jsonl and context.json here instead of the domain")
+    sp.add_argument("--top", type=int, default=200, help="review: how many names (default 200)")
+    sp.add_argument("-o", "--output", help="review: the TSV (default <data>/aliases/local/review.tsv)")
+    sp.add_argument("--profile", help="show: the profile whose layers read the name (default full-corpus)")
     sp = add("search", cmd_search, "philology-aware temporal GraphRAG search")
     sp.add_argument("query")
     sp.add_argument("-k", type=int, default=8)

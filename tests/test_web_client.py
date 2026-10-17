@@ -25,7 +25,7 @@ import { publicConversation, publicError } from "./js/providers.js";
 import { answerDangling, buildHistory, userText, withoutReasoning } from "./js/agent.js";
 import { brief, dataNote, deidLabel, isMine, personal, sizeLabel } from "./js/mydata.js";
 import { extractCitations } from "./js/markdown.js";
-import { count } from "./js/util.js";
+import { count, hitNotes, withFound } from "./js/util.js";
 import { fixedReply, IDENTITY_REPLY, isIdentityQuestion, touchesIdentity } from "./js/fixed.js";
 import { ServerRuntime } from "./js/runtime.js";
 import { redact, scrub, toolWord } from "./js/redact.js";
@@ -320,6 +320,88 @@ const withData = buildHistory([{ role: "user", text: "看看", data: [shape] }, 
   { format: "openai", id: "x" });
 assert.ok(withData[0].content.includes("d1a2b3c「门诊.csv」"));
 assert.ok(isMine("mydata__describe") && isMine("mydata.read") && !isMine("study__pairs") && !isMine(undefined));
+
+// a search's hits found under another name of the asked drug, or flagged, are labelled in plain words (ADR 0023): one
+// badge per kind, drug and source, the asked name only where it is known, the kind worded as a relation
+const viaOf = (o) => ({ kind: "异名", status: "open", witness: null, reading: null, p: null, ...o });
+const lexOf = (surface, direction, o = {}) => viaOf({ surface, referent: "地黄", direction, kind: "炮制/加工名", source: ["词表"], ...o });
+const searched = {
+  query: { terms: [], aliases: { asked: [{ surface: "国老", referents: [{ head: "甘草" }] }],
+    expansions: [{ surface: "甘草", for: "国老", direction: "alias→drug", referent: "甘草", searched: true }] } },
+  hits: [
+    { passage_id: "a.1", matched: ["国老"] },
+    { passage_id: "b.1", matched: ["甘草"], routes: ["alias"], via: [viaOf({ surface: "甘草", referent: "甘草", direction: "alias→drug",
+      source: ["别名录（中醫笈成）", "编者审定"], witness: "w.1" })] },
+    { passage_id: "c.1", matched: ["独摇草"], via: [viaOf({ surface: "独摇草", referent: "鬼督邮", direction: "drug→alias", source: ["词表"] })] },
+    { passage_id: "d.1", matched: ["鬼督邮"], via: [viaOf({ surface: "鬼督邮", referent: "徐长卿", direction: "asked", status: "cue",
+      source: ["纲目释名"], reading: "徐长卿", p: 0.6667 })] },
+    { passage_id: "e.1", matched: ["鬼督邮"], via: [viaOf({ surface: "鬼督邮", referent: null, direction: "asked", kind: null, status: null,
+      source: [], p: 0.5 })], flags: ["homonym:鬼督邮"] },
+    { passage_id: "f.1", matched: ["山药"], via: [viaOf({ surface: "山药", referent: "山药", direction: "alias→drug", kind: "避讳改名",
+      source: ["避讳"] }), null, "x"], flags: ["anachronism:山药<1063:edition", "demoted:inside 大将军", "demoted:inside ?", "demoted:no-context",
+      "other-referent:通草", "new:x", null, { text: "x" }] },
+    { passage_id: "g.1", matched: ["地黄", "熟地黄", "熟地"], via: [lexOf("地黄", "alias→drug", { for: "生地" }), lexOf("熟地黄", "drug→alias"),
+      lexOf("熟地", "drug→alias"), lexOf("干地黄", "drug→alias", { kind: "异名" })] },
+    { passage_id: "h.1", matched: ["屏风"], via: ["屏风", "百枝", "百蜚", "茴草", "铜芸"].map((s) =>
+      viaOf({ surface: s, referent: "防风", direction: "drug→alias", source: ["词表"] })) },
+  ],
+};
+const notes = hitNotes(searched);
+const texts = (n) => n.labels.map((l) => l.text);
+assert.deepEqual(Object.keys(notes), ["b.1", "c.1", "d.1", "e.1", "f.1", "g.1", "h.1"]);
+assert.deepEqual(texts(notes["b.1"]), ["别名：国老→甘草 · 别名录（中醫笈成）"]);
+assert.equal(notes["b.1"].labels[0].title, "此段写作「甘草」；「国老」即甘草（异名）；依据：别名录（中醫笈成）、编者审定；书证 w.1");
+assert.deepEqual(texts(notes["c.1"]), ["别名：独摇草→鬼督邮 · 词表"]);
+assert.deepEqual(texts(notes["d.1"]), ["读作：鬼督邮→徐长卿"]);
+assert.ok(notes["d.1"].labels[0].title.includes("0.6667"));
+assert.deepEqual(texts(notes["e.1"]), []);
+assert.deepEqual(notes["e.1"].flags.map((f) => f.text), ["同名异物"]);
+// no expansion, asked name or `for` of its drug: no asked name is put on it (not every asked name of the question)
+assert.deepEqual(texts(notes["f.1"]), ["避讳改名：山药 · 避讳"]);
+assert.equal(notes["f.1"].labels[0].title, "此段写作「山药」；所问之名与山药：避讳改名；依据：避讳");
+assert.deepEqual(notes["f.1"].flags.map((f) => f.text), ["年代存疑", "仅见于「大将军」", "仅见于他名之中", "无药物语境", "所指不同"]);
+assert.ok(notes["f.1"].flags[0].title.includes("1063") && notes["f.1"].flags[0].title.includes("刊本"));
+// the via's own `for` names the asked name; vias of one kind, drug and source share a badge
+assert.deepEqual(texts(notes["g.1"]), ["炮制/加工名：生地、熟地黄、熟地→地黄 · 词表", "别名：干地黄→地黄 · 词表"]);
+assert.equal(notes["g.1"].labels[0].title, "此段写作「地黄」「熟地黄」「熟地」；「生地」「熟地黄」「熟地」与地黄：炮制/加工名；依据：词表");
+assert.deepEqual(texts(notes["h.1"]), ["别名：屏风、百枝、百蜚、茴草等→防风 · 词表"]);
+assert.equal(notes["h.1"].labels[0].title, "此段写作「屏风」「百枝」「百蜚」「茴草」「铜芸」，即防风（异名）；依据：词表");
+assert.equal(notes["c.1"].labels[0].title, "此段写作「独摇草」，即鬼督邮（异名）；依据：词表");
+// a passage writing another name of the drug an asked name names: the asked name is on the badge, after the drug, since
+// the kind is the written name's (炮制/加工名：薯蓣→山药 would be false); it is a badge of its own beside the asked name's
+// (asked and written names never share the place before the arrow), and a false friend asked says so
+const sideOf = (vias) => hitNotes({ query: { terms: [] }, hits: [{ passage_id: "x", via: vias }] }).x.labels;
+const yamWritten = viaOf({ surface: "山芋", for: ["薯蓣"], referent: "山药", direction: "drug→alias", source: ["别名录（中醫笈成）"] });
+assert.deepEqual(sideOf([yamWritten]).map((l) => [l.text, l.title]), [["别名：山芋→山药（所问薯蓣） · 别名录（中醫笈成）",
+  "此段写作「山芋」，即山药（异名）；为所问「薯蓣」检索山药；依据：别名录（中醫笈成）"]]);
+assert.equal(sideOf([{ ...yamWritten, surface: "干山药", kind: "炮制/加工名", source: ["词表"] }])[0].text, "炮制/加工名：干山药→山药（所问薯蓣） · 词表");
+assert.equal(sideOf([{ ...yamWritten, for: ["山药"] }])[0].text, "别名：山芋→山药 · 别名录（中醫笈成）"); // the drug asked
+const sedum = (surface, direction) => viaOf({ surface, for: ["救火"], referent: "景天", direction, status: "stop", source: ["词表"] });
+const friend = sideOf([sedum("景天", "alias→drug"), sedum("慎火", "drug→alias"), sedum("水母", "drug→alias")]);
+assert.deepEqual(friend.map((l) => l.text), ["别名：救火→景天 · 词表", "别名：慎火、水母→景天（所问救火） · 词表"]);
+assert.ok(friend.every((l) => l.title.includes("「救火」多作普通词语")));
+assert.equal(friend[1].title, "此段写作「慎火」「水母」，即景天（异名）；为所问「救火」检索景天；「救火」多作普通词语，罕作药名；依据：词表");
+// the kind is a relation: no label says which name is the other's
+assert.ok(Object.values(notes).every((n) => n.labels.every((l) => !/是.*的/u.test(l.title))));
+// without `for`: the expansions searched under that name, else the asked names of its drug, else the expansions' asked names
+const lexical = (aliases, via) => hitNotes({ query: { terms: [], aliases }, hits: [{ passage_id: "x", via: [via] }] }).x.labels[0].text;
+const yam = viaOf({ surface: "山药", referent: "山药", direction: "alias→drug", kind: "避讳改名", source: ["词表"] });
+assert.equal(lexical({ asked: [], expansions: [{ surface: "山芋", for: "薯蓣", direction: "drug→alias", referent: "山药" }] }, yam),
+  "避讳改名：薯蓣→山药 · 词表");
+assert.equal(lexical({ asked: [{ surface: "薯蓣", referents: [{ head: "山药" }] }, { surface: "国老", referents: [{ head: "甘草" }] }],
+  expansions: [] }, yam), "避讳改名：薯蓣→山药 · 词表");
+assert.equal(lexical(undefined, yam), "避讳改名：山药 · 词表");
+assert.deepEqual(hitNotes({ hits: [{ passage_id: "x", score: 1 }] }), {});
+assert.deepEqual(hitNotes({ rows: [] }), {});
+assert.deepEqual(hitNotes(null), {});
+// a search's hits carry what it found them under — null for one found as asked, so that a later search clears an
+// earlier one's label — and nothing else is touched
+const cards = [{ passage_id: "a.1", title: "甲" }, { passage_id: "b.1", title: "乙" }, { passage_id: "z.9", title: "丙" }];
+const marked = withFound(cards, searched);
+assert.deepEqual(marked.map((c) => c.found === undefined ? "none" : c.found === null ? "null" : texts(c.found)[0]),
+  ["null", "别名：国老→甘草 · 别名录（中醫笈成）", "none"]);
+assert.equal(withFound(cards, { rows: [] }), cards);
+assert.equal(withFound(cards, { query: "门诊", terms: [], hits: [{ passage_id: "a.1" }] }), cards); // not a classics search
 assert.equal(personal({ messages: [{ role: "user", text: "桂枝汤" }] }), false);
 assert.equal(personal({ messages: [{ role: "user", text: "看看", data: [shape] }] }), true);
 assert.equal(personal({ messages: [{ role: "assistant", segments: [{ type: "tools", calls: [{ name: "mydata__list" }] }] }] }), true);

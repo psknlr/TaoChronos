@@ -54,6 +54,7 @@ The suites form three layers ([ADR 0009](adr/0009-boundaries-contract-and-evalua
 | `schools` | Are a school's planted words found, and do the textbooks' doctrines come out as its own? | planted top-2 and significant · common words listed · citation shares · real: doctrine recall and attribution |
 | `names` | Is the change of a drug's preferred name dated, and its names equated and completed? | switch interval · nested names apart · equations · candidates · real: dated taboo renames |
 | `chain` | Does each witness of a passage hang from the witness it was copied from? | witnesses found · parent accuracy against the most-similar baseline, with and without convergent spellings |
+| `aliases` | Is a drug found under its other names (国老 for 甘草, 通草 for 木通 before 960) without losing the name asked, merging two drugs that share a name or reaching outside the years a name meant the drug? ([below](#alias-layer-aliases)) | synthetic checks; per profile, split and item type, for off, naive, on, analysis and the ablations: P@10 (and its gain where off answers) · nDCG@10 · AskedRet@10 (mean, min) · ON@10 · ON@50 · XR@50 · Wrong@10 · CandRecall · CandPrecision · SilentMerge · FlagP/FlagR · Leakage · latency p50/p95; resolution accuracy |
 
 ## Current results (demo corpus)
 
@@ -73,6 +74,11 @@ The suites form three layers ([ADR 0009](adr/0009-boundaries-contract-and-evalua
 | time_machine (1368) | a passage is on one side of the cutoff only when its whole date range is (straddling texts are in neither the past corpus nor the checking future; none at 1368); 3 decidable predictions, 2 held (taboo rename persisted; lost association stayed absent); failed: the 肾气丸-family core predicted from two members — 张景岳's 左/右归丸 dropped 泽泻·牡丹皮·茯苓 |
 | source_rediscovery | 3/3 re-inferred with consistent date bounds |
 | ablations | earliest accuracy: all 1.0 · no sense route 0.67 · BM25 only 0.67; contradiction: no sense resolution 0.83 · no philology 0.92; 1 hypothesis would pass G5 only by counting dependent books; Context OS −94% tokens; without the Skeptic 1 rejected hypothesis survives and no revisions happen |
+| aliases (synthetic) | 9 planted items on a corpus written for the eval: every check held (side places and retention at k = 5, 10, 20; no merge; gates; readings; periods; flags; no leakage; `off` = today's search); P@10 off 0.800 · naive 0.806 · on 0.933; Wrong@10 6 · 7 · 3; on: CandRecall 1.0, SilentMerge 0, FlagR 1.0, leakage 0 |
+| aliases, web-canon on the web store (deployed; [below](#alias-layer-aliases)) | **held-out, 59 items (first report, 2026-10-15): acceptance 6/10 — fails AskedRet min ≥ 0.7 (0.000), ON@50 ≥ 1.5 × off (698 → 829, 1.19×), CandRecall ≥ 0.9 (0.650), SilentMerge = 0 (1)**; holds P@10 0.683 → 0.791 (+0.108; naive 0.728; +0.065 on the 52 items `off` answers), no item type down (least change 0.000, period), AskedRet mean 0.589 → 0.759, Wrong@10 25 → 12, leakage 0, p95 965 → 833 ms. Also nDCG@10 0.658 → 0.788 · CandPrecision 0.765 · FlagP 1.0 · FlagR 0.533 · resolution 0.577 (26 rows). Without bencao_gangmu_skqs: P@10 0.679 → 0.790, the same 6/10. Ablations (held-out P@10 · Wrong@10): gates 0.763 · 26, slots 0.763 · 25, boundary 0.791 · 13, period 0.791 · 12, asked_first all 0.793 · 12, asked_first off 0.763 · 8 (AskedRet 0.622), analysis alone 0.769 · 15. Dev (61 items, tuned on): 0.718 → 0.903, 8/10 (CandRecall 0.889, SilentMerge 4) |
+| aliases, full-corpus on the web store (proxy) | **held-out, 59 items (first report): acceptance 7/10 — fails ON@50 ≥ 1.5 × off (690 → 827, 1.20×), CandRecall ≥ 0.9 (0.675), SilentMerge = 0 (1)**; holds P@10 0.673 → 0.805 (+0.132; naive 0.748; +0.105 on the 55 items `off` answers), no item type down (least change 0.000, period), AskedRet mean 0.588 → 0.778 and min 0.700, Wrong@10 32 → 23, leakage 0, p95 1066 → 821 ms. Also nDCG@10 0.658 → 0.800 · CandPrecision 0.794 · FlagR 0.533 · resolution 0.538. Without bencao_gangmu_skqs: P@10 0.669 → 0.803, the same 7/10. Dev: 0.687 → 0.902, 8/10. Two runs on fresh copies of the store (553 books) gave identical numbers, latency aside (both runs shared the machine) |
+| aliases, web-canon on the web store (deployed), second report ([below](#second-held-out-report-2026-10-15-after-the-phase-ivv-changes-logged-above)) | **held-out, 59 items (second report, 2026-10-15, after the changes in the [change log](#alias-layer-aliases)): acceptance 6/10 — fails AskedRet min ≥ 0.7 (0.000), ON@50 ≥ 1.5 × off (698 → 849, 1.22×), CandRecall ≥ 0.9 (0.650), SilentMerge = 0 (1)**; holds P@10 0.683 → 0.771 (+0.088, first report +0.108; naive 0.728; +0.042 on the 52 items `off` answers), no item type down (least change 0.000, period), AskedRet mean 0.589 → 0.749, Wrong@10 25 → 12, leakage 0, p95 1124 → 842 ms. Also nDCG@10 0.658 → 0.776 · CandPrecision 0.788 · FlagP 1.0 · FlagR 0.533 · resolution 0.577 (26 rows). Against the first report only the 18 alias items moved in P@10: `on` 0.872 → 0.806, `analysis` 0.883 → 0.844. Without bencao_gangmu_skqs: P@10 0.679 → 0.769, the same 6/10. Ablations (held-out P@10 · Wrong@10): gates 0.742 · 26, slots 0.751 · 25, boundary 0.771 · 13, period 0.771 · 12, asked_first all 0.773 · 12, asked_first off 0.751 · 8 (AskedRet 0.610), analysis alone 0.758 · 15. Dev (61 items, tuned on): 0.726 → 0.918, 9/10 (SilentMerge 2) |
+| aliases, full-corpus on the web store (proxy), second report | **held-out, 59 items (second report): acceptance 7/10 — fails ON@50 ≥ 1.5 × off (690 → 798, 1.16×), CandRecall ≥ 0.9 (0.675), SilentMerge = 0 (1)**; holds P@10 0.673 → 0.795 (+0.122, first report +0.132; naive 0.748; +0.095 on the 55 items `off` answers), no item type down (least change 0.000, period), AskedRet mean 0.588 → 0.778 and min 0.700, Wrong@10 32 → 23, leakage 0, p95 1188 → 1116 ms. Also nDCG@10 0.658 → 0.802 · CandPrecision 0.818 · FlagR 0.533 · resolution 0.538. Against the first report: alias items `on` 0.878 → 0.844, their ON@50 330 → 288. Without bencao_gangmu_skqs: P@10 0.669 → 0.793, the same 7/10. Dev: 0.693 → 0.916, 9/10 (SilentMerge 2). One run on a fresh copy of the store, alone on the machine but for its first three minutes; latency is now timed after an untimed first call (change log) |
 
 ## The first two layers
 
@@ -233,6 +239,171 @@ The suites of the V2 capabilities.  The model phases run too when `TAOCHRONOS_EV
 
 The held-out sets (NER, bridge) were annotated before the rules ran on them; the forms they miss were not added after
 scoring, so their numbers are the estimate of generalisation.  Everything else is dev: what the rules are meant to do.
+
+## Alias layer (aliases)
+
+`src/taochronos/evals/aliases.py` measures the alias layer ([ADR 0023](adr/0023-alias-layer.md)) on the frozen gold
+`evals/gold/aliases.yaml` (120 items in six types, 80 resolution rows; its construction, split and leakage rules are in
+[evals/gold/README.md](../evals/gold/README.md)).
+
+```bash
+taochronos eval aliases --quick                                   # the synthetic part only (well under 2 s)
+taochronos --data <web data> eval aliases -o aliases-web.json     # web-canon (deployed) and full-corpus (proxy) on the web store
+taochronos --data /srv/data eval aliases -o aliases-full.json     # on the site's full store: the server, or the aliases.yml workflow
+TAOCHRONOS_ALIAS_EVAL_SPLITS=dev TAOCHRONOS_ALIAS_EVAL_SYSTEMS=off,naive,on taochronos --data <data> eval aliases
+```
+
+* **Synthetic part** — always runs: a corpus and a layer written for the eval, planted with 将军 beside 大将军 and
+  将军之官, 通草 before and after 960, a name two drugs share (鬼督邮), 蜜甘 inside 石蜜甘, 黄连 inside 胡黄连, the weak 葛
+  inside 干葛, 山药 before its first use (1063), and passages on 虚劳 that outrank the asked name in 国老治虚劳 and
+  甘草治虚劳. It checks the side queue's places (at most ⌊3k/10⌋ while the main queue lasts) and the asked name's
+  retention (at least min(|A|, k − ⌊3k/10⌋), which only the asked-first rule keeps in those two questions) at k = 5, 10
+  and 20, that no ambiguous name is merged, the gates, the readings, the anachronism flags, that no hit leaves the question's window and that
+  `off` is today's search (ids and scores), and scores its nine items like the gold.
+* **Store part** (skipped with `--quick` and without a store under `--data`) — each profile of
+  `$TAOCHRONOS_ALIAS_EVAL` (default `web-canon,full-corpus`), on a harness whose corpus leaves the 别名录 (`jc_c030`) out
+  of every read path (`EvalContext.profile_harness`), and again without `bencao_gangmu_*` (view `no-gangmu`). The result
+  records the store (`sha`, books, passages, edition), the store the layer was built on, and whether the pair is
+  deployed (web-canon on the web store, full-corpus on the full store) or a proxy, and checks the gold on the store
+  first (`aliases_gold.validate` with its witnesses, and on the web store it was drawn from, its pools).
+  Each harness extracts its claims into a cache of its own (a temporary table on its connection to the store): the
+  store's claim cache is keyed by the extractor and the variants but not the lexicon, so a profile reading it would
+  get claims another profile's lexicon made (the numbers then depended on which profile ran first), and the eval would
+  write them into the store under `--data` — the site's store, for the third command. The eval writes nothing into
+  the store; its first queries pay for extracting claims, as on a fresh store.
+* **Systems** — `off` (B0, today's search); `naive` (B1: today's search with the layer's own one-hop pairs added to
+  the question as lexicon surfaces — the layer's names it writes, as written; the heads of the drugs each is an open or
+  cue name of, with their spellings; the open and cue names of the drugs each, or a lexicon herb of the question,
+  heads — at most `expansions` of them, alias→drug first, with no gates, windows or reserved places: 国老 adds 甘草,
+  not 甘草's other names); `on` (B2); `analysis` (the layer's reading of the question alone — names asked as written,
+  gated-out hits last — with no expansion, side queue or retention: what the layer gains without other names); and
+  the ablations `gates`, `boundary`, `slots`, `period`, `asked_first:all` and `asked_first:off`. Each item is searched at k = 10 and at
+  k = 50. Latency is the k = 10 call, timed only after every system has searched the item once untimed at k = 10 (the
+  systems' order still turns with the item): a first call fills caches the others then read (the claims of the item's
+  passages, extracted into the harness's own cache), and timing first calls charged that cost to whichever system ran
+  first, so the rotation decided the p95 comparison. The warm-up adds one untimed search per system and item to a run.
+  The first held-out report was timed on those first calls, cold, and on a shared machine: its p50 and p95 compare
+  fairly neither its systems nor the second report's.
+* **Labels** come only from each item's patterns, on the normalised text with every false friend masked: *asked* (the
+  asked form, and one of its cues anywhere in the passage when the item has cues), *other* (a referent's name, the passage's range inside that
+  referent's window), *wrong* (neither, and a wrong name, the asked form only inside a masked string, or in a passage
+  without a cue);
+  relevant = asked or other. The module never imports or calls the layer's gates (`tests/test_evals.py` checks).
+  N_rel, N_asked and N_other are counted in the store inside the question's window, up to 50.
+* **Metrics** (spec §3.10) per split (dev, heldout, all) and item type: P@10; nDCG@10 (binary gains, ideal over
+  min(10, N_rel)); AskedRet@10 = asked hits ÷ min(10, N_asked), its mean and its least value over the items with
+  N_asked ≥ 7, traps left out; ON@10 and ON@50 (other, not asked) and XR@50 = ON@50 ÷ min(50, N_other) (neither
+  capped at 1, so that a short count shows); Wrong@10;
+  CandRecall and CandPrecision of `expect_candidates` against the drugs `query.aliases` names for the asked form whose
+  window meets the question's (a drug→alias expansion names the drug the asked form heads: 丹砂, whose names include
+  朱砂, names 朱砂; a stop name asked on its own names the drugs it lists beside its note, status `stop`: 解离 →
+  防己 — except for an item that expects none, which reads the name as no drug, as the stop's note does), mapped to the
+  item's referents by their heads and the item's names first, then — a listed drug that is the asked drug itself, the
+  asked form or a form of the lexicon herb entry the question reads it as (`asked_forms`) — by those forms too: 紫葳,
+  whose entry holds 凌霄花, names 凌霄花 (a form the item calls wrong is none of them, and forms meeting two referents
+  map neither) — else through the gold's same-drug names
+  (`same_drug`: a name the gold gives two heads is none; the asked form is never mapped so); the asked form itself
+  counts only where the item expects it as a drug of its own (苦菜 beside 贝母), not where it is the lexicon's entry for
+  the name asked (胡王使者) or the drug a head names (铜绿 → 铜青); SilentMerge (ambiguous items with fewer than two of
+  their expected drugs named, all of them when one is expected); candidates and SilentMerge are None for `off` and
+  `naive`, which list none; FlagP and FlagR of `anachronism:` flags on the period items with a floor; Leakage (hits whose midpoint year
+  lies outside the window); latency p50 and p95. The resolution rows are scored by what the analysis answers for the
+  surface asked alone (expand, candidate or none, heads matched through the same-drug names; a stop name's listing is
+  no reading of the name and leaves the action as the rest of the answer makes it). The acceptance of §3.10
+  is computed on the main view of each profile (held-out when it ran); beside it (not a check), the P@10 gain on the
+  items `off` answers with at least one hit (`answered`), since a question today's search finds nothing for scores 0
+  under `off` and the layer gains there by searching the name as written, which `analysis` measures alone.
+* **Held-out discipline** — held-out items are reported in aggregate only (`details` lists dev items), are never
+  tuned on, and are not run at all while the gold fails `aliases_gold.validate` (its split pin among the checks). `TAOCHRONOS_ALIAS_EVAL_SPLITS`, `TAOCHRONOS_ALIAS_EVAL_SYSTEMS` and `TAOCHRONOS_ALIAS_EVAL_VIEWS` restrict
+  a run. Any parameter change after the first held-out report is logged here with its date:
+
+| date | change |
+|---|---|
+| 2026-10-15 | **Measurement correction** after the first held-out report (the eval's candidate count; no parameter or data of the layer changed). `listed` maps a drug `query.aliases` names that is the asked drug itself — the asked form or a form of the lexicon herb entry the question reads it as (`asked_forms`) — with those forms, so 凌霄花 under 紫葳 counts (紫葳's entry holds 凌霄花); and a stop name asked on its own counts the drugs it lists beside its note (status `stop`: 解离 → 防己) as candidates, which `resolve` does not read as a reading of the name. Dev alone (web-canon, `on`), on the layer of the first report (4f031b6): CandRecall 0.889 → 0.907, CandPrecision 0.828 → 0.831; on the layer of 100444a, which lists stops: 0.907 → 0.926, 0.831 → 0.833; nothing else moves. |
+| 2026-10-15 | **Gold correction** after the first held-out report, dev items only (ids, groups, splits and `SPLIT_SHA256` unchanged; no held-out item was changed or looked at): eight real other names that dev runs showed missing, each `adjudicated` `by: correction` with a witness in the store outside jc_c030 and 纲目 — 凌霄 under 紫葳/凌霄花 (alias-08, ambiguous-09), 姜芥 under 荆芥 (alias-11), 鹿胶 under 鹿角胶 (head-25, substring-04), 荼草 and 游冬 under 苦菜 (ambiguous-n1), 硝石 under 消石 (ambiguous-n3), 慈石 under 磁石 (ambiguous-s08), 鸡舌香 under 丁香 (substring-05). Not added: 地锦 for 夜光's 地朕 (no passage outside 纲目 equates them) and 马兜铃 for 清代的青木香 (the fruit, another part; no passage writes a root name beside 青木香). Dev alone (web-canon), the same on the layers of 4f031b6 and 100444a: P@10 `off` 0.718 → 0.728, `on` 0.903 → 0.918; ON@50 433 → 449 and 1039 → 1061; SilentMerge 4 → 2; AskedRet, Wrong@10, leakage and resolution unchanged; CandRecall 0.907 → 0.944 and CandPrecision 0.831 → 0.864 on 4f031b6's layer, 0.926 → 0.963 and 0.833 → 0.867 on 100444a's. |
+| 2026-10-15 | **Measurement correction** on review of the two rows above (the eval's candidate count; no parameter or data of the layer changed). A listed drug maps to the referent whose head or names it is before any names it carries (an expansion's surfaces, the asked drug's forms), so that forms holding two referents no longer make 玄石 into 磁石 under 处石; the asked drug's forms leave out the names the item calls wrong and are not used when they meet two referents; and for an item that expects no candidate (a stop the gold reads as no drug), the drugs a stop's listing shows beside its note are no candidates, so they cost no precision — where the item expects candidates they count both ways, as before. Dev (100444a's layer): no number moves (CandRecall 0.963, CandPrecision 0.867, SilentMerge 2). |
+| 2026-10-15 | **Gold correction** on review, dev items only (groups, splits and `SPLIT_SHA256` unchanged): 硝石 (ambiguous-n3) and 慈石 (ambiguous-s08), whose witnesses wrote them only beside the item's other referent (芒硝, 玄石), are witnessed by `parallel` rows that tie them to their own (jc_d001.00024 《本经》原文 硝石 ∥ ws_36bca7b992.00020 消石; ws_36bca7b992.00137 慈石 ∥ jc_d001.00409 《本经》原文 磁石); two non-drug strings the new names brought in are masked: 凌霄观 (a building; alias-08, ambiguous-09) and 姜芥水肿 (a 水痘 text; alias-11); the comments on 凌霄's and 鹿胶's witnesses say what they are. Dev (100444a's layer): P@10 `off` 0.728 → 0.726 (alias-11's 水痘 passage at rank 10), ON@50 449 → 448 and 1061 → 1059; nothing else moves. |
+| 2026-10-15 | **Rebuild** of the layer (`aliases.jsonl` f0d79c978c30 → 46d2245f0e30, `context.json`) on the web store (fe8fa73507f9): the first since the first report's layer (4f031b6), with the build and curated changes of 100444a and its review. Blockers: curated `unblock` rows free 党参 of 防风党参, 假苏 and 荆芥 of 假苏荆芥, and 青矾 of 青矾石; the 纲目 joint headings the lexicon harvested as one name block neither name (枸杞地骨皮, 独活羌活, 虎掌天南星, 赤箭天麻; 薰草零陵香 blocked nothing), while headings from other materia medica still block (防风党参 of 防风, the 根皮 titles); four straddle blockers go (常山, 恒山, 磁石, 黄芪); a string that is both a cover string and an unblocked string of a name stays a cover blocker. Pair: 独摇草 → 独活 (curated). Records: 2,723 → 2,724 (独摇草 added), 35 changed; pairs 2,136 → 2,138, cue 1,099 → 1,101; 16 blockers dropped on 16 names (blocked records 404 → 394); n rises for 独活 (993 → 995), 青矾 (15 → 18), 木香 (+4), and 常山, 磁石, 黄芪, 甘草, 甘遂 and 茴香 (+1 each); 防风 is unchanged; 党参, 官桂, 浙贝, 苍术 and 鬼督邮 gain `ho` (heads 782 → 787), so `context.json`'s herb list gains 官桂, 浙贝 and 党参; `sh` rises by 0.01–0.07 for 12 names (老米 0.36 → 0.43). 469,984 bytes (103,055 deflated; the directory 143,504 of 150,000, as `home.zip` stores them). `aliases check --db` passes, and a second build gives the same bytes. Dev only (the working tree's code, the old layer against the rebuilt one; off, naive and on; both profiles and views): one item moves, ambiguous-01 (鬼督邮是什么药). Two 纲目 passages that write 鬼督邮 enter its top 50 and push out two side hits, so ON@50 `on` in the main view goes 1059 → 1057 (web-canon) and 1061 → 1059 (full-corpus). The no-gangmu view, every other number and every item's top-10 labels are unchanged. |
+| 2026-10-15 | **Search changes of phase IV**, logged late (100444a and its review in 2bc7931; code, no profile parameter): a hit's `via` names the asked names it was found for (`for`); a stop name asked on its own (救火是哪味药, 宋以前的解离) is listed in `query.aliases` with the drugs its record and the lexicon give it (status `stop`) and is never expanded — before, the lexicon's entry for 救火 searched 护火 and 辟火; an expansion given no place says why (`routes`, `share`); a lexicon referent shows under its same-drug group's head; a bare side passage (the name and fewer than 4 other characters once formula names are set aside, without drug context) goes after the others of its drug, nothing dropped; research evidence records keep each hit's `via` and flags as their note. Dev (web-canon and full-corpus, `on`, the first report's layer, as the unit measured it): P@10 0.903 and 0.902, ON@50 1039 and 1041, Wrong@10, SilentMerge, leakage and every item's labels unchanged; bare side hits in web-canon's top 10 about 20 → 0; the candidate counts the stop listing moves are those of the first row (100444a's layer). |
+| 2026-10-15 | **Full corpus on** (bb2a948): `profiles/full-corpus.yaml` turns the layer on (`alias: {enabled: true}`) on the server, and the D1 backup searches with its port of it. The eval sets each system's mode itself, so none of its numbers moves, and its full-corpus numbers stay a proxy on the web store. The alias directory is measured at zlib's default level, as `home.zip` stores it (the budget only; the layer's bytes are unchanged). |
+| 2026-10-15 | **Review of phase V** (the working tree on bb2a948). *Question reading*: a blocker the lexicon reads itself (川乌头, filed under 川乌) keeps its lexicon mention, asked with its term and forms; a dose beside a name nobody knows (葛二两) leaves it the question's one name; a longer name nobody knows takes in only a part or form after a drug's name and a preparation before it (人参叶, 甘草梢, 酒大黄), never what a question says of the drug (甘草入脾 asks 甘草 and 脾); a stop asked on its own that the lexicon files as a herb (救火 under 景天) is asked as that herb's name, its hits gated and labelled status `stop`. *Labels*: a hit is read as an asked name's drug only where that name passes the gates in it (本司马大将军方 is no reading of 将军). *Readings*: a passage after a name's window is counted from the window's last year (to − 1), a year further than before, so its fit falls by 1/600 above the floor. *Build*: a section's numbering no longer takes the numeral a drug's name opens with (五味子, 百合, 三七); the rebuilt layer (`aliases.jsonl` 46d2245f0e30 → 74ac7543ff4f, `context.json` unchanged) changes two records' witnesses — 会及 (五味子) has two 《本经》 witnesses for one, 强瞿 (百合) gains two and the source `store` — from 469,984 to 470,085 bytes, the directory from 143,504 to 143,523 deflated; `aliases check --db` passes and a second build gives the same bytes; curated rows whose names normalise alike are one row, and the local build counts with the shipped `context.json`. *Eval*: latency is timed after every system has searched the item once untimed (a first call fills the claim cache the others read; only p50 and p95 can move), and the held-out split is refused when the gold fails its checks on the store, as on file. Dev (both profiles and views, all ten systems; bb2a948 against the final tree, on the same store): one item moves, trap-10 (宋以前的解离), now asked as the name of the herb the lexicon files it under — with `on` its asked hits rise from 3 to 5 of the top 10 (AskedRet 0.6 → 1.0, ON@10 7 → 5, P@10 1.0 unchanged), while in the `gates` ablation two wrong hits enter it (P@10 1.0 → 0.8). So dev AskedRet `on` goes 0.809 → 0.816 (web-canon) and 0.807 → 0.814 (full-corpus), ON@10 184 → 182, and `gates` P@10 0.882 → 0.879 and 0.880 → 0.877, Wrong@10 18 → 20 and 19 → 21; nothing else moves on dev, `off` included. |
+| 2026-10-15 | **Second held-out report** ([below](#second-held-out-report-2026-10-15-after-the-phase-ivv-changes-logged-above)), run once on the tree with every change above (`aliases.jsonl` 74ac7543ff4f); no change since. |
+
+### Second held-out report (2026-10-15), after the phase IV/V changes logged above
+
+Run once, on the final tree: a frozen snapshot of the working tree (bb2a948 with the review changes logged above;
+`aliases.jsonl` 74ac7543ff4f, `hybrid.py` 3f06ac1e186f by sha1), on a fresh copy of the web store (fe8fa73507f9: 553
+books, 168,278 passages), with the defaults — `taochronos --data <copy> eval aliases -o aliases-web.json`: both
+profiles, dev, held-out and all, the views main and no-gangmu, all ten systems; 98 minutes (each item's k = 10 call
+now runs twice, once untimed), alone on 4 cores but for its first three minutes. The gold validated on file and on the
+store (witnesses and pools; split pin cd186cf8937f); `aliases check --db` passes (2,724 surfaces; a rebuild gives the
+same bytes); the synthetic part holds every check with the first report's numbers; `eval --quick` gives the 35 other
+suites the same metrics, details and notes as f4f9aca, timings aside. Held-out items are reported in aggregate only:
+none was run on its own or looked at.
+
+**Acceptance on the 59 held-out items** (main view): web-canon meets 6 of 10 and full-corpus 7 of 10 — the checks
+that failed in the first report fail again, and the acceptance is not met.
+
+| check | web-canon (deployed) | full-corpus (proxy) |
+|---|---|---|
+| P@10 ≥ off + 0.03 | 0.683 → 0.771 (+0.088; first report +0.108), holds | 0.673 → 0.795 (+0.122; first +0.132), holds |
+| no item type down by more than 0.05 | least change 0.000 (period), holds | least change 0.000 (period), holds |
+| AskedRet min ≥ 0.7 | **0.000, fails** (first 0.000) | 0.700, holds |
+| AskedRet mean ≥ off | 0.749 vs 0.589 (first 0.759), holds | 0.778 vs 0.588 (first 0.778), holds |
+| ON@50 ≥ 1.5 × off | **849 vs 698, 1.22× (first 829, 1.19×), fails** | **798 vs 690, 1.16× (first 827, 1.20×), fails** |
+| Wrong@10 ≤ off | 12 vs 25, holds | 23 vs 32, holds |
+| CandRecall ≥ 0.9 | **0.650, fails** (first 0.650) | **0.675, fails** (first 0.675) |
+| SilentMerge = 0 | **1, fails** (first 1) | **1, fails** (first 1) |
+| Leakage = 0 | 0, holds | 0, holds |
+| p95 ≤ 1.5 × off | 842 vs 1124 ms, holds | 1116 vs 1188 ms, holds |
+
+Without bencao_gangmu_skqs the same checks hold and fail: web-canon P@10 0.679 → 0.769, ON@50 694 → 849, Wrong@10
+26 → 12, p95 962 vs 974 ms; full-corpus P@10 0.669 → 0.793, ON@50 688 → 798, Wrong@10 34 → 23. Beside the checks:
+nDCG@10 0.658 → 0.776 (web-canon) and 0.658 → 0.802 (full-corpus); CandPrecision 0.788 and 0.818; FlagP 1.0 and FlagR
+0.533 on both, for every layered system but `analysis`, `slots` and `asked_first:off` (FlagR 0.800); the P@10 gain on
+the items `off` answers +0.042 (52 items) and +0.095 (55); resolution accuracy 0.577 and 0.538 (26 held-out rows).
+
+**Held-out, main view, 59 items** (P@10 · Wrong@10 · AskedRet mean / min · ON@50):
+
+| system | web-canon | first report | full-corpus | first report |
+|---|---|---|---|---|
+| off | 0.683 · 25 · 0.589 / 0 · 698 | the same | 0.673 · 32 · 0.588 / 0 · 690 | the same |
+| naive | 0.728 · 21 · 0.584 / 0 · 947 | the same | 0.748 · 33 · 0.652 / 0 · 908 | the same |
+| on | 0.771 · 12 · 0.749 / 0 · 849 | 0.791 · 12 · 0.759 / 0 · 829 | 0.795 · 23 · 0.778 / 0.7 · 798 | 0.805 · 23 · 0.778 / 0.7 · 827 |
+| analysis | 0.758 · 15 · 0.649 / 0 · 713 | 0.769 · 15 · 0.661 / 0 · 698 | 0.778 · 23 · 0.686 / 0 · 705 | 0.783 · 23 · 0.672 / 0 · 703 |
+| −gates | 0.742 · 26 · 0.753 / 0 · 892 | 0.763 · 26 · 0.763 / 0 · 876 | 0.766 · 40 · 0.770 / 0.7 · 846 | 0.776 · 40 · 0.770 / 0.7 · 874 |
+| −boundary | 0.771 · 13 · 0.749 / 0 · 852 | 0.791 · 13 · 0.759 / 0 · 831 | 0.795 · 24 · 0.778 / 0.7 · 801 | 0.805 · 24 · 0.778 / 0.7 · 830 |
+| −slots | 0.751 · 25 · 0.658 / 0 · 931 | 0.763 · 25 · 0.670 / 0 · 916 | 0.768 · 33 · 0.686 / 0 · 881 | 0.773 · 33 · 0.673 / 0 · 912 |
+| −period | 0.771 · 12 · 0.749 / 0 · 849 | as `on` | 0.795 · 23 · 0.778 / 0.7 · 798 | as `on` |
+| asked_first:all | 0.773 · 12 · 0.749 / 0 · 849 | 0.793 · 12 · 0.756 / 0 · 829 | 0.793 · 23 · 0.778 / 0.7 · 815 | 0.807 · 23 · 0.775 / 0.5 · 827 |
+| asked_first:off | 0.751 · 8 · 0.610 / 0 · 973 | 0.763 · 8 · 0.622 / 0 · 953 | 0.764 · 21 · 0.637 / 0 · 930 | 0.769 · 21 · 0.623 / 0 · 946 |
+
+**By item type** (held-out, P@10 `on` − `off`; alias 18 items, head 15, ambiguous 5, period 6, trap 9, substring 6):
+web-canon +0.128, +0.073, +0.060, 0.000, +0.144, +0.033 (first report: alias +0.194, the rest the same); full-corpus
++0.233, +0.067, +0.040, 0.000, +0.167, +0.050 (first: alias +0.267). ON@50 by type on web-canon, `off` → `on`: alias
+207 → 336, head 151 → 142, ambiguous 98 → 78, period 114 → 104, trap 126 → 187, substring 2 → 2.
+
+**What moved since the first report** (aggregates only). `off` and `naive` give the same held-out numbers, latency
+aside: the held-out gold and today's search are unchanged. Every layered system lost P@10 on the 18 alias items and
+on no other type: `on` 0.872 → 0.806 on web-canon and 0.878 → 0.844 on full-corpus. `analysis`, which searches no
+other name, lost on the same items (0.883 → 0.844 and 0.883 → 0.867), so at least part of the loss lies in how the
+asked name itself is read or gated, not only in the other names. On the head items the layer now brings more
+other-name hits into the top 10 (web-canon ON@10 21 → 29, nDCG@10 0.911 → 0.954, P@10 unchanged); on full-corpus the
+alias items' ON@50 fell 330 → 288, which takes its ON@50 ratio from 1.20× to 1.16×. CandPrecision rose (0.765 →
+0.788, 0.794 → 0.818) with the measurement corrections above; CandRecall, SilentMerge, FlagP, FlagR, leakage and
+resolution are unchanged. Which of the changes logged above cost the alias items is not known: the dev runs logged
+with them show no such loss, and looking for it item by item would be tuning on the held-out half.
+
+**Dev and all items.** Dev (61 items, tuned on): web-canon P@10 0.726 → 0.918, full-corpus 0.693 → 0.916; 9 of 10
+checks hold on both, SilentMerge (2) fails; AskedRet min 0.700, CandRecall 0.963, CandPrecision 0.867, Wrong@10 20 →
+6 and 20 → 7. All 120 items: web-canon 7 of 10 (AskedRet min 0.000, CandRecall 0.830 and SilentMerge 3 fail),
+full-corpus 8 of 10 (CandRecall 0.840, SilentMerge 3). Dev and held-out still diverge: ON@50 is 2.36× `off` on dev and
+1.22× on held-out (web-canon), CandRecall 0.963 against 0.650.
+
+**Latency.** p50 and p95 are now timed after an untimed first call per system and item, and the first report's two
+runs shared the machine while this one ran alone, so neither is comparable across the reports. Within this run the
+layer is not slower at the 95th percentile: `on` 842 ms against `off` 1124 ms on web-canon, 1116 against 1188 ms on
+full-corpus (p50 71 against 65 ms, 79 against 94 ms).
 
 ## Full corpus
 

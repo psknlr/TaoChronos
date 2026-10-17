@@ -6,7 +6,7 @@ import { redact, toolWord } from "../redact.js";
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY } from "../brand.js";
 import { sizeLabel } from "../mydata.js";
 import { RELAY_ID } from "../providers.js";
-import { fmtMs, h, icon, passageLabel, prettyJSON, progressBar, replace, truncate } from "../util.js";
+import { fmtMs, foundBadges, h, icon, passageLabel, prettyJSON, progressBar, replace, truncate } from "../util.js";
 
 export const FAMILY = {
   retrieval: "检索", study: "治学", knowledge: "知识", analytics: "发现", philology: "文献", validation: "核验",
@@ -235,9 +235,17 @@ function fillDetail(el, c, ctx) {
     c.charts?.length ? [h("h5", `图（${c.charts.length}）`), h("div.muted", { style: { fontSize: "12.5px" } }, c.charts.map((x, i) => `图${i + 1} ${x.title || "图表"}`).join("；"))] : null,
     c.tables?.length ? [h("h5", `表（${c.tables.length}）`), h("div.muted", { style: { fontSize: "12.5px" } }, c.tables.map((x, i) => `表${i + 1} ${x.title || "表格"}`).join("；"))] : null,
     c.citations?.length ? [h("h5", `涉及的段落（${c.citations.length}）`),
-      h("div.cites-row", c.citations.slice(0, 40).map((card) => ctx.citeCard(card)))] : null,
+      h("div.cites-row", c.citations.slice(0, 40).map((card) => foundCard(card, ctx.citeCard(card))))] : null,
     c.research ? h("button.btn.secondary", { type: "button", style: { marginTop: "8px" }, on: { click: () => ctx.onOpenResearch(c.research) } }, icon("flask", "sm"), "在侧栏查看研究结果") : null,
   );
+}
+
+/** A passage's chip, followed — for a search hit found under another name of a drug, or flagged — by what it was
+ * found under (别名：国老→甘草 · 别名录（中醫笈成）) and its flags (年代存疑 …). */
+function foundCard(card, chip) {
+  const badges = foundBadges(card.found);
+  if (!badges.length) return chip;
+  return h("span", { style: { display: "inline-flex", alignItems: "center", flexWrap: "wrap", gap: "4px", maxWidth: "100%" } }, chip, badges);
 }
 
 /** The citations as rendered in a turn's answer: [{pid, quote}]. */

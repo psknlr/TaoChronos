@@ -6,7 +6,7 @@ import tempfile
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 from ..bootstrap import Harness
 from ..config import find_home
@@ -49,19 +49,48 @@ class EvalContext:
             self._default = self.harness()
         return self._default
 
+    def store_data(self) -> Path | None:
+        """The data directory holding the corpus store: the one given, else the default one; None without a store."""
+        from ..config import data_dir as default_data_dir
+
+        for data in (self.data_dir, default_data_dir(self.home)):
+            if (Path(data) / "corpus" / "tcm.sqlite").exists():
+                return Path(data)
+        return None
+
     def corpus_harness(self) -> Harness | None:
         """A harness on the full corpus when its store exists (in the data directory given, or the default one) —
         the real-corpus parts of some suites; None otherwise, and those parts are skipped."""
         if self._corpus is False:
-            from ..config import data_dir as default_data_dir
-
             self._corpus = None
-            for data in (self.data_dir, default_data_dir(self.home)):
-                if (Path(data) / "corpus" / "tcm.sqlite").exists():
-                    self._corpus = Harness.from_profile("full-corpus", home=self.home, data_dir=data, store=MemoryEventStore())
-                    self._corpus_data = Path(data)
-                    break
+            data = self.store_data()
+            if data is not None:
+                self._corpus = Harness.from_profile("full-corpus", home=self.home, data_dir=data, store=MemoryEventStore())
+                self._corpus_data = data
         return self._corpus  # type: ignore[return-value]
+
+    def profile_harness(self, profile: str, exclude_books: Iterable[str] = (),
+                        private_claims: bool = True) -> Harness | None:
+        """A fresh harness of ``profile`` on the corpus store (``store_data``) whose corpus leaves ``exclude_books`` out
+        on every read path (``StoreCorpus.without_books``): its retrieval, knowledge and study layers never see them.
+        With ``private_claims`` its claims are extracted into a cache of its own — a temporary table on its connection,
+        which hides the store's — so that the store is not written, and no profile reads claims another extracted:
+        the store's cache is keyed by the extractor and the variants, not by the lexicon the claims were read with.
+        None without a store."""
+        data = self.store_data()
+        if data is None:
+            return None
+        harness = Harness.from_profile(profile, home=self.home, data_dir=data, store=MemoryEventStore())
+        db = getattr(harness.corpus, "store", None)
+        if private_claims and db is not None:
+            with db.lock:
+                db.db.execute("CREATE TEMP TABLE IF NOT EXISTS claim_cache(passage_id TEXT, version TEXT, data TEXT, "
+                              "PRIMARY KEY(passage_id, version))")
+        drop = set(exclude_books)
+        if not drop:
+            return harness
+        return Harness.from_profile(profile, home=self.home, data_dir=data, store=MemoryEventStore(),
+                                    corpus=harness.corpus.without_books(drop))
 
     def corpus_view_harness(self, corpus: Any) -> Harness:
         """A fresh full-corpus harness reading a view of the store (``StoreCorpus.on_side`` …) in place of all of it:

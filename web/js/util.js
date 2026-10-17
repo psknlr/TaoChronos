@@ -245,6 +245,151 @@ export function yearLabel(card) {
   return [card.dynasty, when].filter(Boolean).join(" · ");
 }
 
+// a search hit's flags in plain words (docs/adr/0023-alias-layer.md), with what they mean as the title
+const FLAG_WORDS = [
+  [/^anachronism:(.+)<(-?\d+):(edition|layer)$/u, (m) => ({ text: "年代存疑",
+    title: `「${m[1]}」约 ${m[2]} 年后才通行，此段年代更早：${m[3] === "edition" ? "其字或经后世刊本改动" : "或为后人增补，或其年代须再考"}` })],
+  [/^homonym:(.+)$/u, (m) => ({ text: "同名异物", title: `「${m[1]}」可指不止一味药，此段未能判定所指` })],
+  [/^demoted:inside (.+)$/u, (m) => (m[1] === "?" // the longer name was not told: no name to show
+    ? { text: "仅见于他名之中", title: "此段只在另一个较长的名字中写到所问之名，未必指所问之药，排在后面" }
+    : { text: `仅见于「${m[1]}」`, title: `此段只在「${m[1]}」中写到所问之名，未必指所问之药，排在后面` })],
+  [/^demoted:no-context$/u, () => ({ text: "无药物语境",
+    title: "此段写到所问之名，但不在药物语境中（剂量、炮制、与他药并列等），未必指所问之药，排在后面" })],
+  [/^other-referent:(.+)$/u, (m) => ({ text: "所指不同", title: `「${m[1]}」在此段的年代指另一味药` })],
+];
+
+function flagWord(flag) {
+  if (typeof flag !== "string") return null; // an imported conversation's stray value
+  for (const [re, word] of FLAG_WORDS) {
+    const m = re.exec(flag);
+    if (m) return word(m);
+  }
+  return null; // a flag the page has no words for is not shown
+}
+
+const strings = (v) => (Array.isArray(v) ? v : [v]).filter((x) => typeof x === "string" && x);
+const quoted = (names) => names.map((s) => `「${s}」`).join("");
+
+/** The asked names an other-name `via` stood for: its own `for`, else those of the query's expansions searched under
+ * that name, else the asked names — then the expansions' asked names — whose drug is the via's; [] when none is known
+ * (the label then names no asked name rather than every one of them). */
+function askedNames(v, ctx) {
+  for (const names of [strings(v.for), ctx.byName.get(`${v.direction}|${v.surface}`), ctx.askedOf.get(v.referent),
+    ctx.forOf.get(v.referent)]) {
+    if (names?.length) return names;
+  }
+  return [];
+}
+
+/** One `via` of a hit as the page reads it: the badge it belongs to (`key`) and what goes into it.  A name read as one
+ * of its drugs is 读作：鬼督邮→徐长卿; a passage found under another name of the asked drug (or under the drug an asked
+ * name is another name of) is 别名：国老→甘草 · 别名录（中醫笈成） — the kind when it is not a plain 异名, the other
+ * names, the drug, the first source.  The kind is how the two names are related, not which became which.  A passage
+ * that writes another name of the drug an asked name names (鳢肠 asked, 莲子草 written, both 旱莲草) keeps the
+ * written name before the arrow, since the kind is that name's, and says the asked name after the drug, in a badge of
+ * its own: 别名：莲子草→旱莲草（所问鳢肠）.  A false friend asked (stop) says so in the title, as the evidence note does. */
+function viaEntry(v, ctx) {
+  if (!v || typeof v !== "object" || typeof v.referent !== "string" || !v.referent || typeof v.surface !== "string") return null;
+  const source = strings(v.source);
+  const witness = strings(v.witness);
+  if (v.direction === "asked") {
+    const p = typeof v.p === "number" ? `（p = ${v.p}）` : "";
+    return { key: `asked|${v.surface}|${v.referent}`, label: `读作：${v.surface}→${v.referent}`, source, witness,
+      lead: `据上下文，此段的「${v.surface}」读作${v.referent}${p}` };
+  }
+  const kind = typeof v.kind === "string" && v.kind ? v.kind : null; // none: a term the lexicon only relates
+  const word = kind === null ? "相关" : kind === "异名" ? "别名" : kind;
+  const writes = v.direction === "drug→alias";
+  const asked = writes ? strings(v.for).filter((s) => s !== v.referent) : []; // the asked names it was searched for
+  const others = (writes ? [v.surface] : askedNames(v, ctx)).filter((s) => s !== v.referent);
+  // its status in words (evidence.py STATUS_WORDS): a false friend is the asked name's (a lexicon via's `for`), a
+  // candidate the pair's; open and cue (a gate the passage passed) say nothing
+  const concerned = asked.length ? asked : others.length ? others : [v.surface];
+  const caveat = v.status === "stop" ? `${quoted(concerned)}多作普通词语，罕作药名` : v.status === "candidate" ? "此为候选别名，未经确认" : "";
+  return { key: `${word}|${v.referent}|${source[0] || ""}|${caveat}|${asked.length > 0}`, word, kind, referent: v.referent,
+    surfaces: [v.surface], others, asked, caveat, source, witness };
+}
+
+const MAX_NAMES = 4; // other names a badge lists; its title lists all
+
+/** The badge of the vias that share a key: the names merged (别名：屏风、百枝、百蜚、茴草→防风 · 词表), the title saying
+ * what the passage writes, how the names relate, which asked names it was searched for, a caveat, the sources and
+ * witnesses. */
+function viaBadge(entries) {
+  const [e] = entries;
+  const all = (f) => [...new Set(entries.flatMap(f))];
+  const from = all((x) => x.source);
+  const tail = [from.length ? `依据：${from.join("、")}` : "", all((x) => x.witness).map((w) => `书证 ${w}`).join("、")];
+  if (e.lead) return { text: e.label, title: [e.lead, ...tail].filter(Boolean).join("；") };
+  const others = all((x) => x.others);
+  const written = all((x) => x.surfaces);
+  const asked = all((x) => x.asked);
+  const names = others.length > MAX_NAMES ? `${others.slice(0, MAX_NAMES).join("、")}等` : others.join("、");
+  const same = others.length === written.length && others.every((s) => written.includes(s)); // the names it writes
+  const who = same ? "" : others.length ? quoted(others) : "所问之名";
+  const relation = e.kind === null ? `${who}与${e.referent}相关`
+    : e.kind === "异名" ? `${who}即${e.referent}（异名）` : `${who}与${e.referent}：${e.kind}`;
+  const lead = `此段写作${quoted(written)}`;
+  const searched = asked.length ? `为所问${quoted(asked)}检索${e.referent}` : "";
+  const text = `${e.word}：${names ? `${names}→` : ""}${e.referent}${asked.length ? `（所问${asked.join("、")}）` : ""}`;
+  return { text: [text, e.source[0]].filter(Boolean).join(" · "),
+    title: [same ? `${lead}，${relation}` : `${lead}；${relation}`, searched, e.caveat, ...tail].filter(Boolean).join("；") };
+}
+
+/** What each passage of a search result was found under, for the page (ADR 0023): {passage_id: {labels: [{text,
+ * title}], flags: [{text, title}]}} for the hits that carry a `via` (a drug's other name, or the reading of an
+ * ambiguous name) or flags (年代存疑, 同名异物 …) — one label per badge, vias of one kind, drug and source merged;
+ * {} for any other result. */
+export function hitNotes(result) {
+  const hits = Array.isArray(result?.hits) ? result.hits : [];
+  const view = result?.query?.aliases && typeof result.query.aliases === "object" ? result.query.aliases : {};
+  const ctx = { byName: new Map(), askedOf: new Map(), forOf: new Map() };
+  const add = (map, key, name) => map.set(key, [...new Set([...(map.get(key) || []), name])]);
+  for (const a of Array.isArray(view.asked) ? view.asked : []) {
+    if (typeof a?.surface !== "string") continue;
+    for (const r of Array.isArray(a.referents) ? a.referents : []) if (typeof r?.head === "string") add(ctx.askedOf, r.head, a.surface);
+  }
+  for (const e of Array.isArray(view.expansions) ? view.expansions : []) {
+    if (typeof e?.surface !== "string" || typeof e.for !== "string" || !e.for) continue;
+    add(ctx.byName, `${e.direction}|${e.surface}`, e.for);
+    if (typeof e.referent === "string") add(ctx.forOf, e.referent, e.for);
+  }
+  const out = {};
+  for (const hit of hits) {
+    if (!hit?.passage_id) continue;
+    const groups = new Map();
+    for (const v of Array.isArray(hit.via) ? hit.via : []) {
+      const e = viaEntry(v, ctx);
+      if (e) groups.set(e.key, [...(groups.get(e.key) || []), e]);
+    }
+    const labels = [...groups.values()].map(viaBadge);
+    const flags = (Array.isArray(hit.flags) ? hit.flags : []).map(flagWord).filter(Boolean);
+    if (labels.length || flags.length) out[hit.passage_id] = { labels, flags };
+  }
+  return out;
+}
+
+/** The passage cards of a tool's result, each hit of a search (a result with `hits` and a parsed `query`) with what
+ * the search found it under: `found` from hitNotes, or null for a hit found as asked — so that the latest search to
+ * return a passage says what it was found under.  Any other result's cards as they are. */
+export function withFound(cards, result) {
+  const query = result?.query;
+  if (!Array.isArray(result?.hits) || !query || typeof query !== "object" || !Array.isArray(query.terms)) return cards;
+  const notes = hitNotes(result);
+  const hit = new Set(result.hits.map((x) => x?.passage_id).filter(Boolean));
+  return (cards || []).map((c) => (c?.passage_id && hit.has(c.passage_id) ? { ...c, found: notes[c.passage_id] || null } : c));
+}
+
+const WRAP = { whiteSpace: "normal", maxWidth: "100%" }; // a long label wraps where a drawer or a phone is narrow
+
+/** A card's `found` as badges: each label, then each flag (warn); what they mean in their titles.  [] without one. */
+export function foundBadges(found) {
+  if (!found || typeof found !== "object") return [];
+  const items = (list) => (Array.isArray(list) ? list : []).filter((x) => x && typeof x === "object" && typeof x.text === "string" && x.text);
+  const badge = (tag) => (x) => h(tag, { title: typeof x.title === "string" && x.title ? x.title : x.text, style: WRAP }, x.text);
+  return [...items(found.labels).map(badge("span.badge")), ...items(found.flags).map(badge("span.badge.warn"))];
+}
+
 export function prettyJSON(value, limit = 60000) {
   let s;
   try { s = JSON.stringify(value, null, 2); } catch { s = String(value); }

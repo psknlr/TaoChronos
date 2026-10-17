@@ -7,7 +7,8 @@ source rediscovery and the ablations).
 
 Suites: invariants · interpretive · research_value · philology · claims · provenance · hallucination · contradiction · lineage · temporal ·
 anachronism · recovery · time_machine · source_rediscovery · ablations · collation · reuse · stratigraphy · cases · argument · senses · fragments ·
-punctuation · commentaries · disputes · variant_impact · clause · glosses · pairs · schools · names · chain · entities · places · translation · layout.
+punctuation · commentaries · disputes · variant_impact · clause · glosses · pairs · schools · names · chain · entities · places · translation · layout ·
+aliases (a drug's other names: the alias layer against today's search and a naive expansion, ADR 0023).
 Gold sets live in
 ``evals/gold`` (author-constructed for the demo corpus; see its README).
 """
@@ -19,6 +20,7 @@ import time
 from typing import Any, Callable
 
 from .ablations import ablations
+from .aliases import aliases
 from .base import EvalContext, SuiteResult
 from .boundaries import invariants
 from .interpretation import interpretive
@@ -70,10 +72,12 @@ SUITES: dict[str, Callable[[EvalContext], SuiteResult]] = {
     "audit": audit,
     "modern": modern,
     "workflow": workflow,
+    "aliases": aliases,
 }
 QUICK = ("invariants", "interpretive", "philology", "claims", "hallucination", "contradiction", "lineage", "temporal", "anachronism", "source_rediscovery",
          "collation", "reuse", "stratigraphy", "cases", "argument", "senses", "fragments", "punctuation", "commentaries",
-         "disputes", "variant_impact", "clause", "glosses", "pairs", "schools", "names", "chain", "entities", "places", "translation", "layout", "bridge", "audit", "modern", "workflow")
+         "disputes", "variant_impact", "clause", "glosses", "pairs", "schools", "names", "chain", "entities", "places", "translation", "layout", "bridge", "audit", "modern", "workflow",
+         "aliases")
 
 
 def run_suites(names: list[str] | None = None, *, home: Any = None, data_dir: Any = None, quick: bool = False) -> dict[str, Any]:

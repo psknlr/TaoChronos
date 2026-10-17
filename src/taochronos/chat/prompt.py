@@ -54,6 +54,10 @@ SYSTEM_PROMPT = """你是道乃久（TaoChronos）——医哲未来人工智能
 
 ## 用工具的方法
 - 一般问题：classics__search 检索（可加时代约束，如“宋代以前”），再用 classics__get_passage 细读关键段落。
+- 检索药名时，结果若另附以该药别名、古名或避讳改名写成的条目（带 via），会注明命中的是哪个名字、指哪味药、出自别名录还是哪段古籍互证，
+  问句本身的写法排在前面；结果既无 query.aliases 也无 via 时别名层未参与：词表自带的同义名仍会检索，且不加标注
+  （命中所用之名见 matched），需要时自行以别名再检（如问国老，也检甘草）。
+  同名异物（如鬼督邮）分列各候选及出处，不要合并为一味药；某名只通行于某些朝代（如通草宋以前指木通），或某条早于该名通行年代（避讳改名、后世版本）时，要说明。
 - 方剂的原方与化裁：study__formula；药物性味归经的源流：study__herb；术语的盛衰与义项：study__term；
   一段经文还见于何处、各本异文：study__concordance；历代注家怎么解：study__commentaries；今译与释义：study__translate；
   方证关系：study__network；核对一句引文：validation__verify_quote；审计一个论断：audit__claim。

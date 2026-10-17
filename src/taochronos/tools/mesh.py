@@ -77,17 +77,21 @@ def _search(ctx: ToolContext, a: dict) -> Any:
     books = a.get("books")
     q, hits = retriever.search(
         a["query"], k=int(a.get("k", 10)), after=a.get("after"), before=a.get("before"), routes=a.get("routes"),
-        books=books, allowed=allowed,
+        books=books, allowed=allowed, aliases=a.get("aliases") or "auto",
     )
     corpus = ctx.cap("corpus")
     if getattr(corpus, "large", False):
         ctx.cap("knowledge").touch(h.passage_id for h in hits)  # the working set of a session-less large corpus
+    query = {"terms": q.terms, "after": q.after, "before": q.before, "intent": q.intent,
+             "decomposition": q.decomposition, "variants": q.variants}
+    if q.alias_view:  # the asked names' drugs, the other names searched and those left out (ADR 0023)
+        query["aliases"] = q.alias_view
     return {
-        "query": {"terms": q.terms, "after": q.after, "before": q.before, "intent": q.intent,
-                  "decomposition": q.decomposition, "variants": q.variants},
+        "query": query,
         "hits": [
-            {**passage_card(ctx, corpus.passage(h.passage_id)), "score": h.score, "routes": sorted(h.routes), "matched": h.matched,
-             "note": h.note}
+            {**passage_card(ctx, corpus.passage(h.passage_id), focus=h.matched), "score": h.score,
+             "routes": sorted(h.routes), "matched": h.matched, "note": h.note,
+             **({"via": h.via} if h.via else {}), **({"flags": h.flags} if h.flags else {})}
             for h in hits
         ],
         "timeline": retriever.timeline(hits),
@@ -747,9 +751,21 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  obj({"passage_a": S, "passage_b": S}, ["passage_a", "passage_b"]), _collate, family="philology", permission="classics:read"),
         ToolSpec("philology.inspect_page", "Resolve the provenance chain of a hypothesis/evidence/claim/passage down to page and image (Claim→Pixel).",
                  obj({"object_id": S}, ["object_id"]), _inspect, family="philology", permission="classics:read"),
-        ToolSpec("classics.search", "Philology-aware temporal GraphRAG search over the classics (7 fused routes). Accepts natural-language questions with period constraints (e.g. 宋代以前).",
-                 obj({"query": S, "k": I, "after": N, "before": N, "routes": {"type": "array", "items": S}, "books": {"type": "array", "items": S}}, ["query"]),
-                 _search, family="retrieval", permission="classics:read", returns="hits with passage ids, periods, routes and matched surfaces"),
+        ToolSpec("classics.search", "Philology-aware temporal GraphRAG search over the classics (7 fused routes). Accepts natural-language questions with period constraints (e.g. 宋代以前). "
+                 "A term's lexicon synonyms are always searched with it; a hit's matched lists the forms it was found "
+                 "under.  Where the corpus has an alias layer, passages found under another name of an asked drug "
+                 "(异名, 避讳改名, 古名), by the route alias or on the drug's other lexicon forms (which keep their own "
+                 "routes), take places 4, 7 and 10 of each 10 while the main ranking lasts and every place after it runs "
+                 "out; each is labelled with the name, the drug and its source (via), and ambiguous names are listed as "
+                 "candidates (query.aliases).  A routes list without alias skips only the route alias; aliases: off "
+                 "turns the layer off, and lexicon synonyms then come back unlabelled.  With neither query.aliases nor "
+                 "any via, the alias layer added nothing.",
+                 obj({"query": S, "k": I, "after": N, "before": N, "routes": {"type": "array", "items": S},
+                      "books": {"type": "array", "items": S}, "aliases": {"type": "string", "enum": ["auto", "off"]}},
+                     ["query"]),
+                 _search, family="retrieval", permission="classics:read",
+                 returns="hits with passage ids, periods, routes and matched surfaces; for a drug's other names, their "
+                         "labels (via) and flags"),
         ToolSpec("classics.get_passage", "Full passage with locator, variants, temporal context and notes.",
                  obj({"passage_id": S}, ["passage_id"]), _get_passage, family="retrieval", permission="classics:read"),
         ToolSpec("classics.list_books", "Books in research scope (outside a session: every book of the corpus) with dates, "

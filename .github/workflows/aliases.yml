@@ -1,0 +1,499 @@
+name: aliases
+
+# The alias layer (别名, docs/adr/0023-alias-layer.md) built on the site's store and measured there — for when no machine
+# at hand holds the full corpus.  The layer that ships is built on the site's full store, whose 别名录 (jc_c030) is whole
+# (the web store holds an excerpt: 778 of its 1,086 entries, without the 釋名 credits).
+# * build: fetches the store cloud/store.json names from the site's KV namespace and indexes it (as canon.yml does), then
+#     taochronos aliases build --db <store>   domains/classics/aliases/{aliases.jsonl,context.json} (report aliases-build.json)
+#     taochronos aliases check --db <store>   their contract, their witnesses in the store, and a second build giving the
+#                                             same bytes (aliases-check.json); a layer that fails it is never committed,
+#                                             and is measured all the same (its numbers are what a budget is decided on)
+#     python -m taochronos.chat.d1 tables     the D1 backup's tables (cloud/site/src/backup/tables.js), which carry the layer
+#   The built files, the tables and the two reports are kept as the artifact `aliases-layer`.
+# * eval (`eval`): measures what was built — `taochronos --data <data> eval aliases` with both profiles: full-corpus on
+#   this store is the deployed pair, web-canon on it a proxy — split by profile and view (main, no-gangmu) over four
+#   runners, each fetching the store again: one run took 53 minutes on the 553-book web store, and this store holds about
+#   twelve times its passages.  The eval writes nothing into the store and gives held-out items in aggregate only.
+# * report: merges the four into aliases-full.json as one run of both profiles writes it (latency aside, each part had a
+#   runner of its own), puts the headline numbers in the run's summary and keeps the JSON as the artifact `aliases-full`;
+#   docs/evals.md quotes the numbers by hand, with whether the deployed pair meets the acceptance on the held-out split.
+# * commit (`commit`; off by default, so a run is a dry run until someone has read its numbers): the one job whose token
+#   writes.  It commits the layer and the tables to the branch the workflow runs on when they changed and the layer
+#   passes aliases check — with `eval`, only once the deployed pair has been measured on the held-out split (the eval
+#   refuses that split while the gold fails its checks, aliases_gold.validate, and its notes say so; a layer that
+#   misses the acceptance is committed with a warning: turning `commit` on is the decision), with `eval` off
+#   unmeasured.  It commits onto the branch's head as it is then, never merging: should what the layer is built and
+#   measured from (domains/classics, src/taochronos, profiles, evals/gold, cloud/store.json, and corpus/web: on this
+#   full store the 要籍语料's pack sets each witness's `web` flag, and canon.yml commits it under a concurrency group of
+#   its own) have changed there since the run started, nothing is committed and the workflow is run again; otherwise
+#   tables.js, which canon.yml commits as well, is written again on that head.
+# A commit pushed by a workflow starts no other workflow: the site carries the new layer from its next deployment
+# (site.yml).  Run it: Actions → aliases → Run workflow, on the branch to commit to; or
+#   gh workflow run aliases.yml --ref <branch> [-f commit=true] [-f eval=false]
+# Repository secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (cloud/SETUP.md).
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Commit domains/classics/aliases and the D1 backup's tables.js to this branch when they changed and the layer passes aliases check (with eval: once measured)"
+        type: boolean
+        default: false
+      eval:
+        description: "Measure the layer on the store, before any commit (taochronos eval aliases, both profiles; hours); off, a commit is made unmeasured"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read  # the commit job alone writes
+
+concurrency:
+  group: aliases
+  cancel-in-progress: false
+
+env:
+  STORE_NAMESPACE: taochronos-store
+  TAOCHRONOS_DATA: ${{ github.workspace }}/.taochronos
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    outputs:
+      built: ${{ steps.build.outputs.built }}
+      checked: ${{ steps.check.outputs.ok }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: The site's KV namespace
+        id: plan
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ]; then
+            echo "::error::the store is fetched with the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (cloud/SETUP.md)"
+            exit 1
+          fi
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT"
+          ns=$(curl -fsS --retry 4 --retry-all-errors -H "Authorization: Bearer $CF_TOKEN" "$api/storage/kv/namespaces?per_page=100" \
+                | python3 -c 'import json,sys,os; r=json.load(sys.stdin)["result"]; print(next((n["id"] for n in r if n["title"]==os.environ["STORE_NAMESPACE"]), ""))' || true)
+          if [ -z "$ns" ]; then
+            echo "::error::no KV namespace $STORE_NAMESPACE (the site's deployment creates it; the store is uploaded with taochronos web upload, cloud/README.md)"
+            exit 1
+          fi
+          echo "ns=$ns" >> "$GITHUB_OUTPUT"
+      - name: The store, from the site's KV namespace
+        id: store
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NS: ${{ steps.plan.outputs.ns }}
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces"
+          mkdir -p cloud/.store/parts
+          python3 - <<'EOF' > cloud/.store/parts.txt
+          import json, urllib.parse
+          m = json.load(open("cloud/store.json"))
+          for p in m["parts"]:
+              print(urllib.parse.quote(m["key"] + p["name"], safe=""), p["name"], p["sha256"])
+          EOF
+          while read -r key name sha; do
+            curl -fsS --retry 4 --retry-all-errors -H "Authorization: Bearer $CF_TOKEN" "$api/$NS/values/$key" -o "cloud/.store/parts/$name"
+            echo "$sha  cloud/.store/parts/$name" | sha256sum -c --quiet
+          done < cloud/.store/parts.txt
+          sha=$(python3 -c 'import json; print(json.load(open("cloud/store.json"))["sha256"])')
+          while read -r _ name _; do cat "cloud/.store/parts/$name"; done < cloud/.store/parts.txt > "cloud/.store/$sha.sqlite.xz"
+          echo "$sha  cloud/.store/$sha.sqlite.xz" | sha256sum -c --quiet
+          rm -rf cloud/.store/parts cloud/.store/parts.txt
+          echo "file=cloud/.store/$sha.sqlite.xz" >> "$GITHUB_OUTPUT"
+      - name: Unpack and index it
+        env:
+          XZ: ${{ steps.store.outputs.file }}
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          from pathlib import Path
+          from taochronos.chat.cloud import unpack
+          from taochronos.config import find_home
+          from taochronos.plugins.classics.domain import DomainPack
+          from taochronos.plugins.classics.webcorpus import index_state, index_store
+          path = Path(os.environ["TAOCHRONOS_DATA"]) / "corpus" / "tcm.sqlite"
+          unpack(Path(os.environ["XZ"]), path, json.load(open("cloud/store.json")))
+          index_store(path, DomainPack(find_home() / "domains" / "classics").variants.normalize_text, chunk=20000)
+          print(index_state(path))
+          EOF
+          rm -rf cloud/.store
+      - name: Build the layer on the store (taochronos aliases build)
+        id: build
+        run: |
+          # the report is stdout alone (what else the command says goes to stderr, into this log)
+          taochronos aliases build --db "$TAOCHRONOS_DATA/corpus/tcm.sqlite" > aliases-build.json
+          cat aliases-build.json
+          python3 - <<'EOF'
+          import json, os
+          r = json.load(open("aliases-build.json"))
+          s, c, n, b = r.get("store") or {}, r.get("coverage") or {}, r.get("counts") or {}, r.get("bytes") or {}
+          lines = [f"## 别名 · the layer built on the site's store {s.get('sha')} ({s.get('books', 0):,} books, "
+                   f"{s.get('passages', 0):,} passages)", "",
+                   f"- 别名录 entries read: {c.get('bielu_parsed')} of {c.get('bielu_entries')}; 釋名 pairs "
+                   f"{c.get('shiming_pairs')}; taboo pairs {c.get('taboo_pairs')}",
+                   f"- {r.get('surfaces')} surfaces of {r.get('heads')} drugs; by status: "
+                   + ", ".join(f"{k} {v}" for k, v in (n.get("status") or {}).items()),
+                   "- bytes (deflated): " + ", ".join(f"{k} {v.get('raw', 0):,} ({v.get('deflated', 0):,})" for k, v in b.items()),
+                   *[f"- build warning: {w}" for w in r.get("warnings") or []]]
+          open(os.environ["GITHUB_STEP_SUMMARY"], "a").write("\n".join(lines) + "\n")
+          EOF
+          echo "built=true" >> "$GITHUB_OUTPUT"
+      - name: Check it (taochronos aliases check)
+        id: check
+        run: |
+          # with --db: the files' contract (sources that ship, held-out names, size), their witnesses in the store, and a
+          # second build on it that must give the same bytes
+          status=0
+          taochronos aliases check --db "$TAOCHRONOS_DATA/corpus/tcm.sqlite" > aliases-check.json || status=$?
+          cat aliases-check.json
+          python3 - <<'EOF'
+          import json, os
+          try:
+              r = json.load(open("aliases-check.json"))
+          except ValueError:  # it stopped before its report: what it said is in this step's log
+              r = {"ok": False, "errors": ["taochronos aliases check stopped without its report (this step's log says why)"]}
+          b = r.get("bytes") or {}
+          size = (f" ({r['surfaces']} surfaces; aliases.jsonl {b.get('deflated', 0):,} bytes deflated, the directory "
+                  f"{b.get('directory', 0):,})" if "surfaces" in r else "")
+          lines = [f"- aliases check --db: {'ok' if r.get('ok') else '**fails**'}{size}",
+                   *[f"  - error: {e}" for e in r.get("errors") or []], *[f"  - warning: {w}" for w in r.get("warnings") or []]]
+          open(os.environ["GITHUB_STEP_SUMMARY"], "a").write("\n".join(lines) + "\n")
+          EOF
+          if [ "$status" != 0 ]; then
+            echo "::error::the layer built on the site's store fails taochronos aliases check: it is not committed (with eval it is measured all the same; the built files are in the artifact aliases-layer)"
+            exit 1
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+      - name: The D1 backup's tables
+        if: ${{ !cancelled() && steps.build.outputs.built == 'true' }}
+        run: |
+          python -m taochronos.chat.d1 tables
+          git status --short -- domains/classics/aliases cloud/site/src/backup/tables.js
+          changed=$(git status --porcelain -- domains/classics/aliases cloud/site/src/backup/tables.js | wc -l)
+          echo "- $changed file(s) differ from ${GITHUB_REF_NAME} at ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Keep the built layer, the tables and the reports
+        if: ${{ !cancelled() && steps.build.outputs.built == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: aliases-layer
+          path: |
+            aliases-build.json
+            aliases-check.json
+            domains/classics/aliases/aliases.jsonl
+            domains/classics/aliases/context.json
+            cloud/site/src/backup/tables.js
+          if-no-files-found: error
+
+  eval:
+    needs: build
+    # a layer that fails aliases check is measured too (the build job fails; nothing is committed)
+    if: ${{ !cancelled() && inputs.eval && needs.build.outputs.built == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [full-corpus, web-canon]
+        view: [main, no-gangmu]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: The layer the build job made
+        uses: actions/download-artifact@v4
+        with:
+          name: aliases-layer
+          path: ${{ runner.temp }}/aliases-layer
+      - name: Put it in place
+        run: |
+          cp "$RUNNER_TEMP/aliases-layer/domains/classics/aliases/aliases.jsonl" "$RUNNER_TEMP/aliases-layer/domains/classics/aliases/context.json" domains/classics/aliases/
+          sha256sum domains/classics/aliases/aliases.jsonl domains/classics/aliases/context.json
+      - name: The site's KV namespace
+        id: plan
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ]; then
+            echo "::error::the store is fetched with the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (cloud/SETUP.md)"
+            exit 1
+          fi
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT"
+          ns=$(curl -fsS --retry 4 --retry-all-errors -H "Authorization: Bearer $CF_TOKEN" "$api/storage/kv/namespaces?per_page=100" \
+                | python3 -c 'import json,sys,os; r=json.load(sys.stdin)["result"]; print(next((n["id"] for n in r if n["title"]==os.environ["STORE_NAMESPACE"]), ""))' || true)
+          if [ -z "$ns" ]; then
+            echo "::error::no KV namespace $STORE_NAMESPACE (the site's deployment creates it; the store is uploaded with taochronos web upload, cloud/README.md)"
+            exit 1
+          fi
+          echo "ns=$ns" >> "$GITHUB_OUTPUT"
+      - name: The store, from the site's KV namespace
+        id: store
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NS: ${{ steps.plan.outputs.ns }}
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces"
+          mkdir -p cloud/.store/parts
+          python3 - <<'EOF' > cloud/.store/parts.txt
+          import json, urllib.parse
+          m = json.load(open("cloud/store.json"))
+          for p in m["parts"]:
+              print(urllib.parse.quote(m["key"] + p["name"], safe=""), p["name"], p["sha256"])
+          EOF
+          while read -r key name sha; do
+            curl -fsS --retry 4 --retry-all-errors -H "Authorization: Bearer $CF_TOKEN" "$api/$NS/values/$key" -o "cloud/.store/parts/$name"
+            echo "$sha  cloud/.store/parts/$name" | sha256sum -c --quiet
+          done < cloud/.store/parts.txt
+          sha=$(python3 -c 'import json; print(json.load(open("cloud/store.json"))["sha256"])')
+          while read -r _ name _; do cat "cloud/.store/parts/$name"; done < cloud/.store/parts.txt > "cloud/.store/$sha.sqlite.xz"
+          echo "$sha  cloud/.store/$sha.sqlite.xz" | sha256sum -c --quiet
+          rm -rf cloud/.store/parts cloud/.store/parts.txt
+          echo "file=cloud/.store/$sha.sqlite.xz" >> "$GITHUB_OUTPUT"
+      - name: Unpack and index it
+        env:
+          XZ: ${{ steps.store.outputs.file }}
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          from pathlib import Path
+          from taochronos.chat.cloud import unpack
+          from taochronos.config import find_home
+          from taochronos.plugins.classics.domain import DomainPack
+          from taochronos.plugins.classics.webcorpus import index_state, index_store
+          path = Path(os.environ["TAOCHRONOS_DATA"]) / "corpus" / "tcm.sqlite"
+          unpack(Path(os.environ["XZ"]), path, json.load(open("cloud/store.json")))
+          index_store(path, DomainPack(find_home() / "domains" / "classics").variants.normalize_text, chunk=20000)
+          print(index_state(path))
+          EOF
+          rm -rf cloud/.store
+      - name: Measure it (taochronos eval aliases, ${{ matrix.profile }}, view ${{ matrix.view }})
+        env:
+          TAOCHRONOS_ALIAS_EVAL: ${{ matrix.profile }}
+          TAOCHRONOS_ALIAS_EVAL_VIEWS: ${{ matrix.view }}
+        run: |
+          # each harness extracts its claims into a cache of its own: the store is only read
+          taochronos --data "$TAOCHRONOS_DATA" eval aliases -o "aliases-full-$TAOCHRONOS_ALIAS_EVAL-$TAOCHRONOS_ALIAS_EVAL_VIEWS.json"
+      - name: Keep it
+        uses: actions/upload-artifact@v4
+        with:
+          name: aliases-eval-${{ matrix.profile }}-${{ matrix.view }}
+          path: aliases-full-${{ matrix.profile }}-${{ matrix.view }}.json
+          if-no-files-found: error
+
+  report:
+    needs: [build, eval]
+    if: ${{ !cancelled() && inputs.eval && needs.build.outputs.built == 'true' }}
+    runs-on: ubuntu-latest
+    outputs:
+      measured: ${{ steps.merge.outputs.measured }}
+      accepted: ${{ steps.merge.outputs.accepted }}
+    steps:
+      - name: The parts of the eval
+        uses: actions/download-artifact@v4
+        with:
+          pattern: aliases-eval-*
+          merge-multiple: true
+      - name: One JSON, as one run of both profiles writes it
+        id: merge
+        env:
+          CHECKED: ${{ needs.build.outputs.checked }}
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          from pathlib import Path
+          profiles, views = ("web-canon", "full-corpus"), ("main", "no-gangmu")  # the eval's default order
+          runs = {(p, v): json.loads(Path(f"aliases-full-{p}-{v}.json").read_text(encoding="utf-8"))["aliases"]
+                  for p in profiles for v in views if Path(f"aliases-full-{p}-{v}.json").exists()}
+          if not runs:
+              raise SystemExit("no part of the eval finished")
+          first = next(iter(runs.values()))
+          metrics = {k: v for k, v in first["metrics"].items() if k not in profiles}  # synthetic and gold, alike in each
+          details = [d for d in first["details"] if d.get("part") != "store"]
+          merged: list = []
+          for p in profiles:  # the main view carries the headline, the acceptance and the details; the others add a view
+              if (p, "main") not in runs:
+                  continue
+              entry = runs[p, "main"]["metrics"][p]
+              merged.append((p, "main"))
+              for v in views[1:]:
+                  if (p, v) in runs:
+                      entry["results"]["views"][v] = runs[p, v]["metrics"][p]["results"]["views"][v]
+                      merged.append((p, v))
+              metrics[p] = entry
+              details += [d for d in runs[p, "main"]["details"] if d.get("part") == "store"]
+          left = [k for k in runs if k not in merged]
+          notes: list = []
+          for r in [runs[k] for k in merged] or [first]:
+              notes += [x for x in r["notes"] if x not in notes]
+          notes.append(("merged from " + ", ".join(f"{p} {v}" for p, v in merged) + " (one runner each)" if merged
+                        else "no store part merged")
+                       + (f"; left out: {', '.join(f'{p} {v}' for p, v in left)} (the main view of its profile did not finish)"
+                          if left else ""))
+          checked = os.environ.get("CHECKED") == "true"
+          if not checked:
+              notes.append("the layer measured fails taochronos aliases check (the build job lists why): it is not committed")
+          deployed = {p: metrics[p] for p in profiles if isinstance(metrics.get(p), dict) and metrics[p].get("pair") == "deployed"}
+          measured = bool(deployed) and all(h.get("split") == "heldout" for h in deployed.values())
+          accepted = measured and all(((h.get("results") or {}).get("acceptance") or {}).get("met") is True
+                                      for h in deployed.values())
+          result = {"name": "aliases", "metrics": metrics, "details": details, "notes": notes,
+                    "seconds": max(r["seconds"] for r in runs.values())}
+          Path("aliases-full.json").write_text(json.dumps({"aliases": result}, ensure_ascii=False, indent=1, default=str),
+                                               encoding="utf-8")
+          gold = metrics.get("gold") or {}
+          syn = {k: v for k, v in (metrics.get("synthetic") or {}).items() if isinstance(v, bool)}
+          lines = [f"## 别名 · taochronos eval aliases (the longest part {result['seconds'] / 60:.0f} minutes)", "",
+                   f"- gold: {gold.get('items')} items, {gold.get('resolution')} resolution rows, split "
+                   f"{gold.get('split_sha256')}; valid: {gold.get('valid')}, on the store: {gold.get('store_valid')}",
+                   f"- synthetic checks: {sum(syn.values())}/{len(syn)}" + "".join(f"; fails {k}" for k, v in syn.items() if not v)]
+          if left:
+              lines.append(f"- left out: {', '.join(f'{p} {v}' for p, v in left)} (the main view of its profile did not finish)")
+          for p in profiles:
+              h = metrics.get(p)
+              if not isinstance(h, dict) or "pair" not in h:
+                  lines.append(f"- **{p}**: no result (its eval job of the main view did not finish)")
+                  continue
+              res = h.get("results") or {}
+              checks = (res.get("acceptance") or {}).get("checks") or {}
+              fails = [k for k, v in checks.items() if not v]
+              lines.append(
+                  f"- **{p}** ({h['pair']}, {h['split']}, store {h.get('store')}): P@10 off {h.get('P@10 off')} → on "
+                  f"{h.get('P@10 on')} (naive {h.get('P@10 naive')}, analysis {h.get('P@10 analysis')}; gain where off "
+                  f"answers {h.get('P@10 gain where off answers')}) · Wrong@10 {h.get('Wrong@10 off')} → {h.get('Wrong@10 on')} · "
+                  f"AskedRet@10 {h.get('AskedRet@10 on')} · ON@50 {h.get('ON@50 on')} · CandRecall {h.get('CandRecall on')} · "
+                  f"SilentMerge {h.get('SilentMerge on')} · Leakage {h.get('Leakage on')} · resolution {h.get('resolution on')} · "
+                  f"acceptance {len(checks) - len(fails)}/{len(checks)}" + (f" (fails: {', '.join(fails)})" if fails else ""))
+              ng = (res.get("views") or {}).get("no-gangmu")
+              if ng and {"off", "on"} <= set(ng):
+                  lines.append(f"  - without 本草纲目: P@10 off {ng['off'][h['split']]['all']['P@10']} → on "
+                               f"{ng['on'][h['split']]['all']['P@10']}")
+              else:
+                  lines.append("  - without 本草纲目: no result")
+          pair = f"{', '.join(deployed)} (the deployed pair)"
+          if not deployed:
+              lines.append("- **the deployed pair has no result** (a commit waits for its held-out numbers)")
+          elif not measured:
+              refused = [n for n in notes if n.startswith("held-out split refused")]  # the eval's own reason, if it gave one
+              lines.append(f"- **{pair} was measured on the {', '.join(h['split'] for h in deployed.values())} split only** "
+                           f"({''.join(f'{n}; ' for n in refused)}a commit waits for its held-out numbers)")
+          else:
+              lines.append(f"- {pair} {'meets' if accepted else '**does not meet**'} the acceptance on the held-out split")
+          if not checked:
+              lines.append("- **the layer fails taochronos aliases check**: measured, not committed")
+          open(os.environ["GITHUB_STEP_SUMMARY"], "a").write("\n".join(lines) + "\n")
+          open(os.environ["GITHUB_OUTPUT"], "a").write(f"measured={str(measured).lower()}\naccepted={str(accepted).lower()}\n")
+          EOF
+      - name: Keep it
+        uses: actions/upload-artifact@v4
+        with:
+          name: aliases-full
+          path: aliases-full.json
+          if-no-files-found: error
+
+  commit:
+    needs: [build, report]
+    if: ${{ !cancelled() && needs.build.outputs.built == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Whether to commit
+        id: decide
+        env:
+          COMMIT: ${{ inputs.commit }}
+          EVAL: ${{ inputs.eval }}
+          CHECKED: ${{ needs.build.outputs.checked }}
+          MEASURED: ${{ needs.report.outputs.measured }}
+          ACCEPTED: ${{ needs.report.outputs.accepted }}
+        run: |
+          why=""
+          if [ "$COMMIT" != true ]; then
+            why="commit is off (a dry run)"
+          elif [ "$GITHUB_REF_TYPE" != branch ]; then
+            why="the workflow ran on the tag ${GITHUB_REF_NAME}, not on a branch"
+          elif [ "$CHECKED" != true ]; then
+            why="the layer fails taochronos aliases check"
+          elif [ "$EVAL" = true ] && [ "$MEASURED" != true ]; then
+            why="the deployed pair was not measured on the held-out split (its eval did not finish, or the eval refused that split because the gold fails its checks, aliases_gold.validate: the report says which)"
+            echo "::warning::the layer is not committed: $why"
+          fi
+          if [ -n "$why" ]; then
+            echo "- not committed: $why; the built files are in the artifact aliases-layer" >> "$GITHUB_STEP_SUMMARY"
+            echo "go=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$EVAL" = true ] && [ "$ACCEPTED" != true ]; then
+            echo "::warning::the deployed pair does not meet the acceptance on the held-out split (the report lists the checks that fail); the layer is committed all the same: commit is on"
+          fi
+          echo "go=1" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.decide.outputs.go == '1'
+      - uses: actions/setup-python@v5
+        if: steps.decide.outputs.go == '1'
+        with:
+          python-version: "3.12"
+      - name: Install
+        if: steps.decide.outputs.go == '1'
+        run: pip install -e .
+      - name: The layer the build job made
+        if: steps.decide.outputs.go == '1'
+        uses: actions/download-artifact@v4
+        with:
+          name: aliases-layer
+          path: ${{ runner.temp }}/aliases-layer
+      - name: Commit the layer and the tables
+        if: steps.decide.outputs.go == '1'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          layer="$RUNNER_TEMP/aliases-layer"
+          read -r sha surfaces < <(python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); print(r["store"]["sha"], r["surfaces"])' "$layer/aliases-build.json")
+          # what the layer is built and measured from: if the branch changed any of it since the run started (the
+          # editors' curated.yaml, the code, the gold, the store, the web pack that sets the witnesses' `web` flags on
+          # this full store, which canon.yml commits), the layer is not that tree's and is not committed
+          inputs=(domains/classics src/taochronos profiles evals/gold cloud/store.json corpus/web)
+          pushed=0
+          for attempt in 1 2 3; do
+            git fetch -q origin "${GITHUB_REF_NAME}"
+            moved=$(git diff --name-only "$GITHUB_SHA" FETCH_HEAD -- "${inputs[@]}" | paste -sd ' ')
+            if [ -n "$moved" ]; then
+              echo "::error::${GITHUB_REF_NAME} changed what the layer is built from since ${GITHUB_SHA::7} (${moved:0:300}): nothing is committed; run the workflow again"
+              echo "- not committed: ${GITHUB_REF_NAME} changed what the layer is built from since ${GITHUB_SHA::7}; run the workflow again" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+            # the branch's head as it is now, never a merge: tables.js is generated (canon.yml commits it too), so it is
+            # written again there with the layer in place
+            git reset -q --hard FETCH_HEAD
+            cp "$layer/domains/classics/aliases/aliases.jsonl" "$layer/domains/classics/aliases/context.json" domains/classics/aliases/
+            python -m taochronos.chat.d1 tables
+            git add domains/classics/aliases cloud/site/src/backup/tables.js
+            if git diff --cached --quiet; then
+              echo "nothing changed"
+              echo "- nothing changed: the layer and the tables on ${GITHUB_REF_NAME} are this store's" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            git commit -q -m "Alias layer: built on the site's store $sha, $surfaces surfaces (taochronos aliases build, the aliases workflow)"
+            if git push -q origin "HEAD:${GITHUB_REF_NAME}"; then pushed=1; break; fi
+            sleep $((attempt * 5))
+          done
+          [ "$pushed" = 1 ] || { echo "::error::the layer and the tables could not be pushed to ${GITHUB_REF_NAME}"; exit 1; }
+          echo "- committed to ${GITHUB_REF_NAME} ($(git rev-parse --short HEAD)); the site carries the layer from its next deployment" >> "$GITHUB_STEP_SUMMARY"

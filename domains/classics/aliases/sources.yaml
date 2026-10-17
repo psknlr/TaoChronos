@@ -1,0 +1,73 @@
+# The sources of the alias layer (ADR 0023) and the years of the works the 本草纲目's 释名 brackets credit.
+#
+# `ship: true` sources may reach what is published — the repository, home.zip, the container, tables.js; `aliases
+# check` refuses a shipped record crediting any other.  `class`: open (a list released openly, or the project's own
+# decisions), derived (facts the build reads off the store's texts or the project's data, each with its witness ids),
+# local (lists without a licence that allows publishing: imported under <data>/aliases/local/ with a pin, read only by
+# profiles/full-corpus-local.yaml).  `label` is how an answer credits the source.  Never read at runtime: the build
+# writes the labels into the header of aliases.jsonl.
+version: 1
+sources:
+  - id: bielu-jc
+    title: 本草纲目别名录
+    via: 中醫笈成, store book jc_c030 (笈成檢閱系統 v1.4.8)
+    licence: CC0 1.0
+    attribution: 中醫笈成整理本（CC0 1.0），使用时请注明来自中醫笈成（https://jicheng.tw/tcm/copyright.html）
+    ship: true
+    class: open
+    store_book: jc_c030
+    label: 别名录（中醫笈成）
+  - {id: curated, title: 编者审定（domains/classics/aliases/curated.yaml，每条附见证段落）, licence: project, ship: true,
+     class: open, label: 编者审定}
+  - {id: store, title: 古籍互证（库内古籍的“一名”、注文与本草条目，附段落编号）, licence: derived, ship: true, class: derived,
+     label: 古籍互证}
+  - {id: shiming, title: 本草纲目释名（库内本草纲目各条“释名”所注出处）, licence: derived, ship: true, class: derived,
+     label: 纲目释名}
+  - {id: taboo, title: 避讳改字（domains/classics/taboo.yaml 中两侧皆为药名者）, licence: derived, ship: true, class: derived,
+     label: 避讳}
+  - {id: lexicon, title: 全库词表（lexicon、lexicon-supplement、lexicon-harvested）所收同名之他药，及同一药另立之词条名,
+     licence: derived, ship: true, class: derived, label: 词表}
+  - id: bielu-gb
+    title: 本草纲目别名录（GitHub 上的 GB18030 本）
+    licence: none stated
+    ship: false
+    class: local
+    label: 别名录（GB本）
+  - {id: hurb, title: hurbTable（据 zhongyoo.com 整理）, licence: none stated, ship: false, class: local, label: hurbTable}
+  - id: ntu40k
+    title: Large List of Chinese Drug Names 40K
+    doi: 10.21979/N9/V2XBOH
+    licence: CC BY-NC 4.0
+    attribution: >-
+      Chong, William Eng Keat; Stanley-Baker, Michael, 2019, Large List of Chinese Drug Names 40K, DR-NTU (Data), V1
+      (author order and version unverified)
+    ship: false
+    class: local
+    pin: {file: ChineseDrugEthnonymsSynonymyTable.tab, rows: 50606, sha256: null}
+    label: NTU 40K
+# the works a 释名 bracket credits (one per label of harvest.DRUG_SOURCES, and 吴普): [first, last] year of composition
+works:
+  本经: [25, 220]
+  吴普: [220, 260]
+  炮炙: [420, 479]
+  别录: [480, 500]
+  药性: [618, 643]
+  千金: [652, 682]
+  唐本: [659, 659]
+  唐本草: [659, 659]
+  食疗: [701, 741]
+  拾遗: [739, 739]
+  外台: [752, 752]
+  海药: [907, 960]
+  蜀本: [934, 965]
+  日华: [968, 976]
+  开宝: [973, 974]
+  宋本: [973, 1061]
+  嘉祐: [1061, 1061]
+  图经: [1062, 1062]
+  证类: [1082, 1108]
+  衍义: [1116, 1116]
+  日用: [1329, 1329]
+  救荒: [1406, 1406]
+  食物: [1506, 1521]
+  纲目: [1578, 1578]

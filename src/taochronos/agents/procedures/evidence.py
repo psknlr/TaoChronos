@@ -10,7 +10,8 @@ the ledger.
 
 from __future__ import annotations
 
-from typing import Any
+import re
+from typing import Any, Callable
 
 from ...protocol.claims import Claim
 from ...protocol.events import EventType
@@ -29,7 +30,10 @@ def instructions(ctx: Any) -> str:
                 "hypotheses. Use classics.search and kg.claims; return records with verbatim quotes and a stance "
                 "(supports / contradicts / context) and the hypothesis_id.")
     return ("Build the question-level evidence ledger: search the classics for the research question and focus terms "
-            "(respect the period constraints) and return the most relevant verbatim passages with stance 'neutral'.")
+            "(respect the period constraints) and return the most relevant verbatim passages with stance 'neutral'. "
+            "Keep each record's note: for a passage found under another name of a drug (a hit's via) or flagged "
+            "(年代存疑, 同名异物 …) it says the asked name, the drug, what the passage writes (写作) and why it may "
+            "not be the drug.")
 
 
 def _members(claim: Claim) -> set[str]:
@@ -108,6 +112,92 @@ def _targeted(ctx: Any, ids: list[str]) -> list[EvidenceRecord]:
     return out
 
 
+# a search hit's flags (ADR 0023) in the page's words (web/js/util.js FLAG_WORDS), with the name they concern and, for
+# an anachronism, whether the edition may have changed the character (what the Skeptic's edition check looks at)
+FLAG_WORDS: tuple[tuple[re.Pattern[str], Callable[[re.Match[str]], str]], ...] = (
+    (re.compile(r"^anachronism:(.+)<(-?\d+):(edition|layer)$"),
+     lambda m: f"年代存疑（{m[1]}约 {m[2]} 年后才通行；{'或经后世刊本改字' if m[3] == 'edition' else '或为后人增补'}）"),
+    (re.compile(r"^homonym:(.+)$"), lambda m: f"同名异物（{m[1]}未能判定所指）"),
+    (re.compile(r"^demoted:inside (.+)$"), lambda m: "仅见于他名之中" if m[1] == "?" else f"仅见于「{m[1]}」"),
+    (re.compile(r"^demoted:no-context$"), lambda m: "无药物语境"),
+    (re.compile(r"^other-referent:(.+)$"), lambda m: f"所指不同（{m[1]}在此段的年代指另一味药）"),
+)
+STATUS_WORDS = {"candidate": "候选", "stop": "多作普通词语"}  # open and cue (a gate the passage passed) say nothing
+
+
+def _strings(value: Any) -> list[str]:
+    return [x for x in (value if isinstance(value, list) else [value]) if isinstance(x, str) and x]
+
+
+def _via_notes(vias: Any) -> list[str]:
+    """The ``via`` of a search hit, compact: ``via 国老→甘草（别名录（中醫笈成））`` — the asked names a via stands for
+    (or, asked for the drug itself, the other name the passage writes), the drug, then what the passage writes when it is
+    neither (``via 救火→景天（写作水母；词表）``), how they relate when it is not a plain 异名, a candidate pair or a
+    false friend, the sources.  Vias of one drug, relation, status and sources share a note, the asked names and what the
+    passage writes each listed once (``via 慎火、戒火→景天（词表）``, ``via 止行→蒺藜子（写作旁通；词表）``), but asked
+    names and written ones never share the place before the arrow.  A name read as one of its drugs is
+    ``读作 鬼督邮→徐长卿（p 0.67）``; a via naming no drug (an unread name: its ``homonym`` flag says so) and stray values
+    add nothing."""
+    out: list[str | tuple[str, str, bool]] = []
+    names_of: dict[tuple[str, str, bool], tuple[list[str], list[str]]] = {}
+    for v in vias if isinstance(vias, list) else []:
+        if not isinstance(v, dict) or not isinstance(v.get("referent"), str) or not isinstance(v.get("surface"), str):
+            continue
+        name, drug = v["surface"], v["referent"]
+        if not (name and drug):
+            continue
+        if v.get("direction") == "asked":
+            p = v.get("p")
+            out.append(f"读作 {name}→{drug}" + (f"（p {p}）" if type(p) in (int, float) else ""))
+            continue
+        asked = [s for s in _strings(v.get("for")) if s != drug]
+        names = asked or ([name] if v.get("direction") == "drug→alias" else [])  # the drug asked: the name written
+        kind = v["kind"] if isinstance(v.get("kind"), str) and v["kind"] else None  # none: a term the lexicon relates
+        why = [] if kind == "异名" else ["相关" if kind is None else kind]
+        why += [STATUS_WORDS[v["status"]]] if v.get("status") in STATUS_WORDS else []
+        why += ["、".join(_strings(v.get("source")))] if _strings(v.get("source")) else []
+        key = (drug, "；".join(why), bool(asked))
+        if key not in names_of:
+            names_of[key] = ([], [])
+            out.append(key)
+        left, wrote = names_of[key]
+        left += [s for s in names if s not in left]
+        wrote += [name] if name not in names and name != drug and name not in wrote else []
+    notes = []
+    for x in out:
+        if isinstance(x, str):
+            notes.append(x)
+            continue
+        left, wrote = names_of[x]
+        why = "；".join([*(["写作" + "、".join(wrote)] if wrote else []), *([x[1]] if x[1] else [])])
+        notes.append("via " + ("、".join(left) + "→" if left else "") + x[0] + (f"（{why}）" if why else ""))
+    return notes
+
+
+def _flag_note(flag: Any) -> str | None:
+    if not isinstance(flag, str) or not flag:
+        return None
+    for pattern, word in FLAG_WORDS:
+        m = pattern.match(flag)
+        if m:
+            return word(m)
+    return flag  # a flag without words is kept as it is: a reason not to trust a hit is never dropped
+
+
+def _labels(hit: dict[str, Any]) -> list[str]:
+    flags = hit.get("flags")
+    return [*_via_notes(hit.get("via")), *(x for x in map(_flag_note, flags if isinstance(flags, list) else []) if x)]
+
+
+def hit_note(hit: dict[str, Any]) -> str:
+    """Why a search hit is in the ledger: its routes, and for a hit the alias layer found under another name of a drug
+    or flagged, each ``via`` and flag (ADR 0023) — ``routes: alias; via 国老→甘草（别名录（中醫笈成））; 年代存疑（…）``: the
+    asked name, what the passage writes and why it stands for the asked drug, or may not.  The record keeps it as its
+    note (in the EVIDENCE_RETRIEVED event); the labels are the parts after ``routes: …``, for whatever lists the record
+    to show.  A question-level record is linked to no hypothesis: the Skeptic does not see it."""
+    return "; ".join(dict.fromkeys(["routes: " + ",".join(hit.get("routes") or []), *_labels(hit)]))
+
+
 def _question_level(ctx: Any) -> list[EvidenceRecord]:
     retriever = ctx.cap("retriever")
     corpus = ctx.cap("corpus")
@@ -120,9 +210,11 @@ def _question_level(ctx: Any) -> list[EvidenceRecord]:
             passage = corpus.passage(hit["passage_id"])
             start, end = retriever.best_span(passage, hit.get("matched", []))
             rec = evidence_record(ctx, passage.id, start, end, method="retrieval:hybrid", stance=Stance.NEUTRAL, query=q,
-                                  score=hit.get("score"), note="routes: " + ",".join(hit.get("routes", [])))
+                                  score=hit.get("score"), note=hit_note(hit))
             rec.routes = list(hit.get("routes", []))
-            out.setdefault(rec.id, rec)
+            kept = out.setdefault(rec.id, rec)
+            if kept is not rec:  # the span found again by a later query: its labels join the note, a flag is never lost
+                kept.note = "; ".join(dict.fromkeys([*kept.note.split("; "), *_labels(hit)]))
     return list(out.values())
 
 
