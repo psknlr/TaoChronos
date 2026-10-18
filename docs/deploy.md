@@ -155,7 +155,7 @@ The full corpus is every work the project holds whose terms allow it to be publi
 | What runs | taochronos itself (Python) on the store, indexed, caches warmed | the site's Worker, on the store laid out in five D1 databases |
 | Tools | all, research runs included | 14 computed live, 16 precomputed for common entries, the rest (research, 句读, D1–D5 …) unavailable |
 | Built by | the `site` workflow (job *corpus*), or `wrangler deploy` (Route B) | the `d1` workflow, or `python -m taochronos.chat.d1 import` (Route B) |
-| Takes | ~20 min to build; tens of seconds to wake after sleeping | ~2 h to import, once |
+| Takes | ~20 min to build; tens of seconds to wake after sleeping | ~2–2½ h to import, once |
 | Costs | while running (sleeps after 15 idle minutes) | storage ~1.5 GB, reads per search |
 
 The site sends the API to the container when one is deployed; otherwise to the D1 backup when its import is complete;
@@ -183,9 +183,9 @@ Needs: Part 2.1 fixed, Part 2.2 done.
    rows.  The daily run at 00:07 UTC uses the same default, so it imports everything too; so does a run started by a
    push to `main` that changes `cloud/store.json` or the importer, once a run already going has finished.)
 2. It writes the corpus (~87,000 rows, about an hour and a half), then computes the precomputed results (~12,000 rows)
-   in as many processes as the runner has processors: about half an hour on four, two hours on one (estimates).  Ending
-   with `the run's time is up` (five hours) means it was cut short: run it again and it resumes, writing nothing twice;
-   the daily run at 00:07 UTC (08:07 SGT) resumes it too.
+   in as many processes as the runner has processors: about an hour on the two of a private repository's runner, half
+   an hour on four, two hours on one (estimates).  Ending with `the run's time is up` (five hours) means it was cut
+   short: run it again and it resumes, writing nothing twice; the daily run at 00:07 UTC (08:07 SGT) resumes it too.
 3. When complete, the run's **Summary** says `complete: yes`, it records the version in KV and starts the **site**
    workflow itself, which binds the databases.
 

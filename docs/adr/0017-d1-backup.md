@@ -120,7 +120,8 @@ the first key of a tool builds its caches (the network's harvest 2 minutes, the 
 each, the citation graph 47 s).  The first run computes only the few minutes of results the day's budget has room for.
 The daily job now computes them in as many worker processes as the runner has processors and memory for (`--workers
 0`, each with its runtime over the same store, the results imported in the same key order, the study caches written
-atomically): some half an hour on four (an estimate; each worker builds its own caches in memory).
+atomically): some half an hour on four processors, an hour on the two of a private repository's runner (estimates; each worker
+builds its own caches in memory).
 
 **The daily run, simulated** (the local emulator; `TAOCHRONOS_D1_DAY` sets the day).  Day 1: the first run was killed
 after five minutes — its whole process group, the emulator included, in the middle of a statement — having written
