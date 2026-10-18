@@ -1,9 +1,14 @@
 """The repository's side of 道乃久默认服务 (standard library only; run by .github/workflows).
 
-  pull   the conversation records the relay holds, after the cursor committed in the repository, appended to
-         data/chat-logs/YYYY/MM/DD.jsonl (by the day, UTC, the relay received them); the cursor moves with them
-  ack    the relay deletes what the repository now holds (after the commit is pushed, never before)
-  check  a deployed relay answers, and MiniMax accepts its key (one tiny call)
+  pull     the conversation records the relay holds, after the cursor committed in the repository, appended to
+           data/chat-logs/YYYY/MM/DD.jsonl (by the day, UTC, the relay received them); the cursor moves with them
+  ack      the relay deletes what the repository now holds (after the commit is pushed, never before)
+  archive  a day of the records the relay archived in its private bucket, into .archive/chat-logs/YYYY/MM/DD.jsonl
+           (a local copy to read, never committed: .gitignore)
+  check    a deployed relay answers, and MiniMax accepts its key (one tiny call)
+
+A relay with the archive's bucket (docs/adr/0023-workers-paid.md) drains its records there itself: pull then takes
+nothing (the export says so), and ack is refused (409) — one collector deletes from the relay, never two.
 
 The records are those of visitors who agreed to be recorded (the page asks first).  LOG_EXPORT_TOKEN, in the
 environment, is the collector's token (a secret of the repository and of the Worker).
@@ -14,9 +19,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -74,6 +81,9 @@ def pull(relay: str, out: Path, *, limit: int = 500, pages: int = 40) -> dict:
         status, page = _request(f"{relay}/v1/logs/export?after={last}&limit={limit}", token=token)
         if status != 200 or not isinstance(page, dict):
             raise SystemExit(f"the relay refused the export: HTTP {status} {str(page)[:300]}")
+        if page.get("archive"):
+            print(f"::notice::the relay archives its records in its own bucket ({page['archive']}): none are taken into the repository")
+            return {"new": 0, "last": last}
         by_day: dict[str, list[str]] = {}
         for item in page.get("items", []):
             received = str(item.get("received") or datetime.now(timezone.utc).isoformat())
@@ -97,9 +107,33 @@ def pull(relay: str, out: Path, *, limit: int = 500, pages: int = 40) -> dict:
 
 def ack(relay: str, through: int) -> dict:
     status, body = _request(f"{relay}/v1/logs/ack", token=_token(), data={"through": through})
+    if status == 409:  # the archive took the book over since the pull: it deletes what it archived, and only that
+        print("::notice::the relay archives its records now: it deletes them itself once archived")
+        return {"acked": 0, "remaining": None}
     if status != 200:
         raise SystemExit(f"the relay refused the acknowledgement: HTTP {status} {str(body)[:300]}")
     return {"acked": through, "remaining": body.get("remaining") if isinstance(body, dict) else None}
+
+
+def archive(relay: str, day: str, out: Path) -> dict:
+    """A day of the archived records, a page at a time, into out/YYYY/MM/DD.jsonl (written anew each time)."""
+    token = _token()
+    lines, cursor = [], ""
+    while True:
+        q = f"day={day}&limit=100" + (f"&cursor={urllib.parse.quote(cursor)}" if cursor else "")
+        status, page = _request(f"{relay}/v1/logs/archive?{q}", token=token)
+        if status == 404:
+            raise SystemExit("the relay has no archive (no ARCHIVE bucket bound: relay/SETUP.md)")
+        if status != 200 or not isinstance(page, dict):
+            raise SystemExit(f"the relay refused the archive: HTTP {status} {str(page)[:300]}")
+        lines += [json.dumps(item, ensure_ascii=False, sort_keys=True) for item in page.get("items", [])]
+        cursor = page.get("cursor") or ""
+        if not page.get("more") or not cursor:
+            break
+    path = out / day[:4] / day[5:7] / f"{day[8:10]}.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(f"{x}\n" for x in lines), encoding="utf-8")
+    return {"day": day, "records": len(lines), "file": str(path)}
 
 
 def check(relay: str, origin: str, wait: float = 240) -> dict:
@@ -131,15 +165,20 @@ def check(relay: str, origin: str, wait: float = 240) -> dict:
 
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("action", choices=["pull", "ack", "check"])
+    ap.add_argument("action", choices=["pull", "ack", "archive", "check"])
     ap.add_argument("--relay", default=os.environ.get("RELAY_URL") or "https://chat-api.impf.ai")
-    ap.add_argument("--out", default="data/chat-logs", help="pull: where the records go")
+    ap.add_argument("--out", help="pull: where the records go (data/chat-logs); archive: where the day goes (.archive/chat-logs)")
+    ap.add_argument("--day", help="archive: the day (YYYY-MM-DD, UTC)")
     ap.add_argument("--through", type=int, help="ack: the last record the repository holds")
     ap.add_argument("--origin", default="https://chat.impf.ai", help="check: the page's origin")
     args = ap.parse_args(argv)
     relay = args.relay.rstrip("/")
     if args.action == "pull":
-        _output(**pull(relay, Path(args.out)))
+        _output(**pull(relay, Path(args.out or "data/chat-logs")))
+    elif args.action == "archive":
+        if not args.day or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", args.day):
+            raise SystemExit("archive needs --day YYYY-MM-DD")
+        _output(**archive(relay, args.day, Path(args.out or ".archive/chat-logs")))
     elif args.action == "ack":
         if not args.through:
             raise SystemExit("ack needs --through")

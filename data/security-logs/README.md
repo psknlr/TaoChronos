@@ -7,6 +7,9 @@
 
 **这里有被标记请求的网络地址与请求头。仓库须保持私有。** 正常访客（分数为 0 的请求）不在这里：他们在 Worker 里只留下一个按哈希计的计数。
 
+Worker 绑定了归档存储桶后（仓库变量 `ARCHIVE_BUCKET`，[ADR 0023](../../docs/adr/0023-workers-paid.md)），它的新事件存进私有 R2 存储桶
+（`security-logs/<来源>/年/月/日/编号.json`，一个事件一个对象，字段同下），不再进入本目录；读回某天：`python3 security/collect.py archive --day …`。
+
 | 字段 | 含义 |
 |---|---|
 | `n`、`received`、`source` | Worker 的事件编号（递增，不重复）、收到的时间（UTC）、来源（`relay` / `site`） |

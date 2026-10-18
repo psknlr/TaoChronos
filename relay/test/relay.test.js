@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
+import { drain, EVENTS, RECORDS } from "../../security/archive.js";
 import { WatchCore } from "../../security/sentinel.js";
 import { config, handle, normalizeRecord, publicText, withoutReasoning } from "../src/relay.js";
 import { LimiterCore, LogBookCore } from "../src/state.js";
@@ -396,6 +397,68 @@ test("the collector: token required, records after its cursor, deleted once comm
   const weak = relay({ env: { LOG_EXPORT_TOKEN: "short" } });
   assert.equal((await weak.call("/v1/logs/export", { headers: { Authorization: "Bearer short" } })).status, 401);
 });
+
+test("with the archive's bucket the records and events go there: the repository's collector is told, and may not delete", () => quiet(async () => {
+  const objects = new Map();
+  const ARCHIVE = {
+    put: async (key, body) => { objects.set(key, body); return { key }; },
+    get: async (key) => (objects.has(key) ? { text: async () => objects.get(key) } : null),
+    list: async ({ prefix }) => ({ objects: [...objects.keys()].filter((k) => k.startsWith(prefix)).sort().map((key) => ({ key })), truncated: false }),
+  };
+  const r = relay({ env: { ARCHIVE } });
+  await r.call("/v1/chat/completions", post(PAGE_ASK));
+  assert.equal((await r.call("/v1/logs", post({ ...turn, turn: 1 }))).status, 204);
+  const auth = { Authorization: `Bearer ${TOKEN}` };
+  const page = await (await r.call("/v1/logs/export?after=0", { headers: auth })).json();
+  assert.equal(page.archive, "r2"); // the collector stands down (relay/collect.py)
+  const refused = await r.call("/v1/logs/ack", { method: "POST", headers: auth, body: JSON.stringify({ through: 1 }) });
+  assert.equal(refused.status, 409);
+  assert.equal(r.book.waiting(), 1); // still there, for the archive
+  await drain(r.book, ARCHIVE, { prefix: RECORDS, field: "record" }); // what the Durable Object's alarm does (relay/src/index.js)
+  assert.equal(r.book.waiting(), 0);
+  const day = await (await r.call("/v1/logs/archive?day=2026-09-28", { headers: auth })).json();
+  assert.deepEqual(day.items.map((i) => [i.n, i.turn, i.model]), [[1, 1, "MiniMax-M3"]]);
+  assert.equal((await r.call("/v1/logs/archive?day=2026-09-28")).status, 401);
+  // the sentinel's events: the same
+  assert.equal((await r.call("/wp-config.php", { headers: { "CF-Connecting-IP": "45.138.12.10" } })).status, 404);
+  await r.settle();
+  assert.equal((await (await r.call("/v1/security/export", { headers: auth })).json()).archive, "r2");
+  assert.equal((await r.call("/v1/security/ack", { method: "POST", headers: auth, body: JSON.stringify({ through: 1 }) })).status, 409);
+  await drain(r.watch, ARCHIVE, { prefix: EVENTS("relay"), field: "event", extra: { source: "relay" } });
+  const events = await (await r.call("/v1/security/archive?day=2026-09-28", { headers: auth })).json();
+  assert.deepEqual(events.items.map((e) => [e.source, e.kind]), [["relay", "honeypot"]]);
+  // without the bucket: as before (the repository's collector acknowledges), and no archive to read
+  const plain = relay();
+  assert.equal((await (await plain.call("/v1/logs/export?after=0", { headers: auth })).json()).archive, undefined);
+  assert.equal((await plain.call("/v1/logs/archive?day=2026-09-28", { headers: auth })).status, 404);
+}));
+
+test("a full book refuses the next record and keeps every one it took in", () => quiet(async () => {
+  const r = relay({ env: { LOG_KEEP: "3" } });
+  await r.call("/v1/chat/completions", post(PAGE_ASK));
+  for (let k = 1; k <= 3; k++) assert.equal((await r.call("/v1/logs", post({ ...turn, turn: k }))).status, 204);
+  const errors = [];
+  const log = console.error;
+  console.error = (...a) => errors.push(a.join(" "));
+  try {
+    const full = await r.call("/v1/logs", post({ ...turn, turn: 4 }));
+    assert.equal(full.status, 503);
+    assert.equal((await full.json()).error.type, "logs_full");
+  } finally { console.error = log; }
+  assert.deepEqual(errors, ["logs full 3"]); // said in the Worker's logs, where the owner's alerts look
+  assert.deepEqual(r.book.records(0, 10).items.map((i) => i.record.turn), [1, 2, 3]); // none dropped to make room
+  const auth = { Authorization: `Bearer ${TOKEN}` };
+  await r.call("/v1/logs/ack", { method: "POST", headers: auth, body: JSON.stringify({ through: 2 }) });
+  assert.equal((await r.call("/v1/logs", post({ ...turn, turn: 5 }))).status, 204); // room again once collected
+  assert.equal(r.book.waiting(), 2);
+  // LOG_KEEP = 0: no bound, and the count stays true — also for an object started again over the records it kept
+  const sql = sqlStore();
+  const before = new LogBookCore(sql);
+  for (let k = 1; k <= 3; k++) assert.equal(before.add(JSON.stringify({ ...turn, turn: k }), "2026-10-14T00:00:00Z", 0), k);
+  const restarted = new LogBookCore(sql);
+  restarted.add(JSON.stringify(turn), "2026-10-14T00:00:00Z", 0);
+  assert.equal(restarted.waiting(), 4);
+}));
 
 // ------------------------------------------------------------------ the sentinel
 const PAGE_ASK = { model: "Tao-R1", messages: [{ role: "system", content: "你是道乃久" }, { role: "user", content: "桂枝汤主治什么？" }], stream: true,

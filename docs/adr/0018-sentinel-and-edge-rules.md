@@ -1,6 +1,7 @@
 # ADR 0018 — The sentinel: what the Workers record of a request, and what refuses it at the edge
 
-**Status:** accepted · 2026-10-05
+**Status:** accepted · 2026-10-05 · amended by [ADR 0023](0023-workers-paid.md): the site answers a refusal as 403 or
+429 (not 503), and refuses calls while its object cannot be asked
 
 ## Context
 

@@ -61,7 +61,7 @@ jobs:
         with:
           node-version: "22"
       - name: Test the site's Worker, the corpus Worker and the sentinel (security/)
-        run: node --test cloud/test/site.test.js cloud/test/corpus.test.js security/test/sentinel.test.js
+        run: node --test cloud/test/site.test.js cloud/test/corpus.test.js security/test/sentinel.test.js security/test/archive.test.js
 
   # the site: chat.impf.ai, bound to what the account has
   site:
@@ -96,6 +96,7 @@ jobs:
           LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
           SENTINEL_SALT: ${{ secrets.SENTINEL_SALT }}
           STATS_TOKEN: ${{ secrets.STATS_TOKEN }}
+          ARCHIVE_BUCKET: ${{ vars.ARCHIVE_BUCKET }}
         run: bash cloud/site/deploy.sh
 
   # the full corpus: built and deployed when what it is made of changed (the code, the home, the store)
@@ -230,5 +231,6 @@ jobs:
           STORE_TOKEN_SHA256: ${{ vars.STORE_TOKEN_SHA256 }}
           LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
           SENTINEL_SALT: ${{ secrets.SENTINEL_SALT }}
+          ARCHIVE_BUCKET: ${{ vars.ARCHIVE_BUCKET }}
           CORPUS_DEPLOYED: "1"
         run: bash cloud/site/deploy.sh

@@ -772,7 +772,8 @@ docs/                      study, task specification, architecture, agents, disc
   from a source whose terms forbid passing it on (東亜医学協会, a Hugging Face dataset under a proprietary licence) is in it.
   Per-text sources and terms: [ATTRIBUTION.md](corpus/web/ATTRIBUTION.md).
 - **Conversation records** (`data/chat-logs/`): during the test period of 道乃久默认服务, the turns of visitors who agreed to
-  be recorded (no key, settings or address), held by the relay and collected hourly into this repository.  It must stay
+  be recorded (no key, settings or address), held by the relay and collected hourly into this repository — or, on Workers
+  Paid, archived by the relay in a private R2 bucket instead ([ADR 0023](docs/adr/0023-workers-paid.md)).  It must stay
   private; move the directory out before it is ever made public.  The MiniMax key exists only as an encrypted secret of
   the relay and of the repository's Actions — never in the code, the site or a log.
 - Licences are recorded per work in the catalogues and the store and travel with every witness: Kanripo and

@@ -127,6 +127,22 @@ await assert.rejects(up.passage("zz.1"), /no such passage/);
 answers["/api/call"] = [503, { error: "down" }];
 await assert.rejects(new ServerRuntime("https://example.org").call("x", {}), (e) => e.unavailable === true && /down/.test(e.message));
 assert.equal(new ServerRuntime("http://localhost:8765").label, "本地服务");
+// a refusal by the site's own server (403 for an address it restricts, 429 for the day spent) is told as one: the page
+// carries on in the browser and knows why; a minute's 429, or a 403 of another server, is the call's own error
+const refusing = (status, body) => {
+  globalThis.fetch = async () => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "X-TC-Corpus": "refused" } });
+};
+for (const [status, body, why] of [[403, { error: "该地址因异常访问已被暂时限制，请稍后再试", blocked: true }, "blocked"],
+  [429, { error: "今天的查询次数已用完，明天再来", rate_limited: true, daily: true }, "daily"]]) {
+  refusing(status, body);
+  let reason = null;
+  const refused = new ServerRuntime("https://chat.impf.ai", "", { fallback: (err) => { reason = err.refused; return inBrowser; } });
+  assert.equal((await refused.call("classics.search", {})).from, "browser");
+  assert.equal(reason, why);
+  await assert.rejects(new ServerRuntime("https://chat.impf.ai").call("x", {}), (e) => !e.unavailable && !e.refused); // a server the user chose: no stand-in
+}
+refusing(429, { error: "请求太频繁，请稍候再试", rate_limited: true });
+await assert.rejects(new ServerRuntime("https://chat.impf.ai", "", { fallback: () => inBrowser }).call("x", {}), (e) => !e.unavailable && /太频繁/.test(e.message));
 
 // the default service reaches the visitor in its own words: an error it passed on from the model behind it is a plain
 // failure; its own messages come without the model client's preamble; another provider's errors come as they are

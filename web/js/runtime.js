@@ -171,6 +171,9 @@ export class ServerRuntime {
       const r = await fetch(this.url + path, { ...init, headers: { ...tokenHeaders(this.token), ...(init.headers || {}) }, signal: init.signal || ctl.signal });
       const j = await r.json().catch(() => ({}));
       if ([502, 503, 504].includes(r.status)) throw Object.assign(new Error(j.error || `HTTP ${r.status}`), { unavailable: true });
+      // the site's own server refused this visitor (an address it restricts, or the day's reads spent): the page carries
+      // on in the browser, on its public files, and says why; the server is not asked again this visit
+      if (this.fallback && refusal(r, j)) throw Object.assign(new Error(j.error || `HTTP ${r.status}`), { unavailable: true, refused: j.blocked ? "blocked" : "daily" });
       if (r.status === 401 && j.token_required) {
         throw Object.assign(new Error(this.token
           ? "访问令牌不对：请核对 taochronos serve 启动时打印的令牌（设置 → 运行环境）"
@@ -242,6 +245,10 @@ export class ServerRuntime {
     }
   }
 }
+
+/** A refusal by the site's own server (cloud/site/src/site.js): 403 for an address it restricts, 429 for a day spent —
+ * not a minute's rate limit (that one passes), not an error of the call's own. */
+export const refusal = (r, j) => r.headers.get("X-TC-Corpus") === "refused" && ((r.status === 403 && j?.blocked === true) || (r.status === 429 && j?.daily === true));
 
 /** Bytes as base64, a slice at a time (a whole file at once would overflow the arguments of fromCharCode). */
 export function base64(buffer) {

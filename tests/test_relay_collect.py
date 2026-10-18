@@ -29,6 +29,7 @@ class FakeRelay(ThreadingHTTPServer):
         self.next_id = 1
         self.chat_status = 200
         self.chat_error = {}
+        self.archived: list[dict] | None = None  # the archive's bucket, when the relay has one: its items
 
     def add(self, received: str, question: str) -> None:
         self.rows.append({"id": self.next_id, "received": received, "record": {"v": 1, "question": question}})
@@ -60,20 +61,31 @@ class _Handler(BaseHTTPRequestHandler):
         url = urlsplit(self.path)
         if url.path == "/v1/health":
             return self._json(200, {"ok": True, "model": "Tao-R1", "logs": True, "limits": {"per_day": 600}})
-        if url.path == "/v1/logs/export":
+        if url.path in ("/v1/logs/export", "/v1/logs/archive"):
             if not self._authorized():
                 return self._json(401, {"error": {"message": "需要收集令牌"}})
         q = parse_qs(url.query)
+        if url.path == "/v1/logs/archive":
+            if self.server.archived is None:
+                return self._json(404, {"error": {"message": "没有归档"}})
+            day = [i for i in self.server.archived if i["received"].startswith(q["day"][0])]
+            start = int(q.get("cursor", ["0"])[0])
+            page = day[start:start + 2]  # two a page, to page
+            more = start + 2 < len(day)
+            return self._json(200, {"day": q["day"][0], "items": page, "cursor": str(start + 2) if more else None, "more": more})
         after, limit = int(q.get("after", ["0"])[0]), int(q.get("limit", ["500"])[0])
         rows = [r for r in self.server.rows if r["id"] > after]
         items = rows[:limit]
-        return self._json(200, {"items": items, "last": items[-1]["id"] if items else after, "more": len(rows) > limit})
+        page = {"items": items, "last": items[-1]["id"] if items else after, "more": len(rows) > limit}
+        return self._json(200, {**page, "archive": "r2"} if self.server.archived is not None else page)
 
     def do_POST(self) -> None:
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
         if self.path == "/v1/logs/ack":
             if not self._authorized():
                 return self._json(401, {"error": {"message": "需要收集令牌"}})
+            if self.server.archived is not None:
+                return self._json(409, {"error": {"message": "记录由归档取走", "type": "archived"}})
             self.server.rows = [r for r in self.server.rows if r["id"] > body["through"]]
             return self._json(200, {"remaining": len(self.server.rows)})
         if self.path == "/v1/chat/completions":
@@ -135,3 +147,19 @@ def test_a_deployment_is_checked_and_a_refused_key_explained(relay):
     relay.chat_status, relay.chat_error = 503, {"message": "默认服务暂时不可用", "type": "upstream_auth"}
     with pytest.raises(SystemExit, match="api.minimax.io"):
         collect.check(relay.url, "https://chat.impf.ai", wait=5)
+
+
+def test_a_relay_that_archives_its_records_gives_the_repository_none_and_reads_a_day_back(relay, tmp_path):
+    out = tmp_path / "data" / "chat-logs"
+    relay.add("2026-10-14T01:00:00Z", "桂枝汤主治什么？")
+    relay.archived = [{"n": k, "received": f"2026-10-14T0{k}:00:00Z", "question": f"问{k}"} for k in range(1, 4)]
+    assert collect.pull(relay.url, out) == {"new": 0, "last": 0}  # the archive collects: nothing into the repository
+    assert not (out / "2026").exists()
+    assert collect.ack(relay.url, 1) == {"acked": 0, "remaining": None}  # refused (409), told, not an error
+    assert [r["id"] for r in relay.rows] == [1]  # still there, for the archive to drain
+    got = collect.archive(relay.url, "2026-10-14", tmp_path / ".archive")
+    assert got["records"] == 3
+    assert [r["question"] for r in _lines(tmp_path / ".archive" / "2026" / "10" / "14.jsonl")] == ["问1", "问2", "问3"]
+    relay.archived = None
+    with pytest.raises(SystemExit, match="no archive"):
+        collect.archive(relay.url, "2026-10-14", tmp_path / ".archive")

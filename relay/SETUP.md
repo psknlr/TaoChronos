@@ -1,5 +1,7 @@
 # 教程：接入 MiniMax 密钥，配置 Cloudflare Worker
 
+> 账户已开通 Workers Paid（付费套餐）时，请看完整的部署指南：[English](../docs/deploy.md) · [简体中文（新加坡）](../docs/deploy.zh-SG.md)。它涵盖中转、网站、全量语料容器、D1 备份、R2 归档与边缘规则的全部步骤。
+
 道乃久默认服务的一次性配置，约 20 分钟。完成后访客打开 chat.impf.ai 就能直接提问，不用填 API Key。
 中转服务本身的说明见 [README.md](README.md)。
 
@@ -170,6 +172,31 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 - 想立即看到：**Actions → chat-logs → Run workflow**。有新记录时会出现一个提交 `chat-logs: N records through #M [skip ci]`；没有新记录就不提交。
 - 这里只有同意记录的访客的问答，字段说明见 [`data/chat-logs/README.md`](../data/chat-logs/README.md)。仓库须保持私有。
 
+## 归档：记录与安全事件改存私有 R2 存储桶（Workers 付费计划，可选）
+
+升级到 Workers 付费计划后，可以让中转与网站把对话记录和哨兵事件存进一个**私有**的 R2 存储桶，不再每小时提交进本仓库：
+存储桶里的记录可以逐条删除，仓库的历史却删不掉（设计见 [ADR 0023](../docs/adr/0023-workers-paid.md)）。不设置时一切照旧。
+
+1. **建存储桶**：Cloudflare → **R2 Object Storage** → **Create bucket**，名称如 `taochronos-archive`（小写字母、数字、连字符）。
+   建好后进入它的 **Settings**：**Public Development URL（r2.dev）保持 Disabled**，**Custom Domains 不添加**。部署时会检查这两项，
+   存储桶可能公开就不绑定。命令行也可以：`npx wrangler@4 r2 bucket create taochronos-archive`。
+2. **给部署令牌加 R2 权限**：Cloudflare → **API Tokens** → 第 2 步建的令牌 → **Edit** → **Add more** →
+   Account · **Workers R2 Storage** · **Edit** → 保存。令牌的值不变，GitHub 里不用改。
+3. **设仓库变量**：仓库 → **Settings → Secrets and variables → Actions → Variables** → **New repository variable**：
+   名称 `ARCHIVE_BUCKET`，值为存储桶名。（是 Variable 而不是 Secret：桶名不是机密。）
+4. **重新部署两个 Worker**：**Actions → relay → Run workflow**，再 **Actions → site → Run workflow**。部署日志里应有一行
+   `the archive: R2 bucket … (private)`。若是 `::warning::` 或 `::error::`，按提示处理后重跑；在此之前记录照旧进仓库，不会丢。
+5. **验证**：有新记录后约半分钟，存储桶里出现 `chat-logs/年/月/日/编号.json`（哨兵事件在 `security-logs/relay/…`、`security-logs/site/…`）；
+   chat-logs 工作流的日志里出现 `archives its records in its own bucket` 的提示，不再提交新记录。
+6. **读回某一天**：`LOG_EXPORT_TOKEN=… python3 relay/collect.py archive --day 2026-10-14` 写到 `.archive/chat-logs/2026/10/14.jsonl`；
+   `python3 security/collect.py archive --day 2026-10-14` 写到 `.archive/security-logs/…`。`.archive/` 已被 .gitignore，**不要提交**。
+7. **保存期限**（建议，由发布方决定，并写进网页的记录说明）：存储桶 **Settings → Object lifecycle rules**，前缀 `chat-logs/` 90 天后删除，
+   `security-logs/` 30 天后删除。命令行：
+   `npx wrangler@4 r2 bucket lifecycle add taochronos-archive chat-logs-90d chat-logs/ --expire-days 90`。
+
+停用：删除仓库变量 `ARCHIVE_BUCKET`，重新部署两个 Worker；chat-logs 工作流从上次的游标继续收进仓库（编号不会重复），存储桶里已有的不动。
+已提交在 `data/chat-logs/`、`data/security-logs/` 里的旧记录仍在仓库历史中，要清除须另行决定、另行操作。
+
 ## 第 10 步　为 chat.impf.ai 打开 HTTPS
 
 目前 `chat.impf.ai` 只能用 http 访问，因为 GitHub 还没签发它的证书。默认服务在 http 下也能用，但浏览器无法缓存语料，每次打开都要重新下载。
@@ -188,6 +215,7 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 | 更换收集器令牌 | 生成新串 → 更新 `LOG_EXPORT_TOKEN` → 重跑 relay，Worker 与仓库就同时换成新的 |
 | 调整限额、模型、允许的网页来源 | 改 `relay/wrangler.toml` 的 `[vars]`，合入 main 后自动重新部署。`PER_MINUTE`、`PER_DAY`、`TOTAL_PER_DAY` 分别是每人每分钟、每人每天、全体每天的模型调用次数；一个问题通常要调用好几次，每轮工具调用一次 |
 | 停止收集对话 | 把 `wrangler.toml` 里的 `LOGS` 改为 `"off"`，合入 main。网页随即不再询问，也不再上传 |
+| 记录改存 R2 / 读回某一天 | 见上文“归档”一节 |
 | 暂停默认服务 | Cloudflare → taochronos-relay → **Settings → Variables and Secrets**，删除 `MINIMAX_API_KEY`。网页检测到中转没有密钥后，自动改回“请访客填自己的 API Key”。恢复时重跑 relay 即可 |
 | 看用量 | MiniMax 控制台的用量或账单页；Cloudflare 里 Worker 的 **Metrics** |
 
@@ -210,6 +238,8 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 | 访客看到“该地址因异常访问已被暂时限制” | 哨兵拒绝了这个地址：它探测过扫描器路径，或（enforce 模式）分数超过阻断线 | 看 `data/security-logs/` 里该地址的事件；误伤时把 `BLOCK_SECONDS` 调短、`SENTINEL` 改回 `observe`，或在 `security/README.md` 的指引下调整阈值 |
 | chat-logs 报 `the records could not be pushed` | main 分支有保护规则，工作流不能直接推送 | 放宽 main 的保护规则，允许 GitHub Actions 推送。记录会留在中转，下次运行再取 |
 | chat-logs 报 `the relay refused the export: HTTP 401` | 仓库与 Worker 的 `LOG_EXPORT_TOKEN` 不一致 | 重跑 relay，用仓库里的值重写 Worker 的机密 |
+| Workers Logs 里出现 `logs full` | 记录很久没有被取走（chat-logs 工作流停了，或归档写不进存储桶），暂存已满，新记录被拒收（已收下的一条不丢） | 查 chat-logs 工作流；有归档时查日志里的 `archive … Error`；处理后积压会自动取走 |
+| 部署日志：`the archive's bucket … may be public` | 存储桶开了 r2.dev 地址或绑了自定义域名，或令牌读不到这两项 | 在存储桶 Settings 里关掉 r2.dev、移除自定义域名，确认令牌有 Workers R2 Storage 权限，重跑 |
 | 访问中转得到 Cloudflare Error 1027 | Workers 免费计划每天 10 万次请求用完了（UTC 零点重置） | 中转自己的全体日限额（默认 5000 次模型调用）远低于此，一般不会发生。发生时可调低限额，或升级 Workers 付费计划 |
 
 ## 安全须知

@@ -106,9 +106,10 @@ chat.impf.ai（网站）与 chat-api.impf.ai（道乃久默认服务的中转）
 | `GET export?after=&limit=`、`POST ack {through}` | 收集器取走事件、确认已提交后删除（Bearer `LOG_EXPORT_TOKEN`，与对话记录同一个令牌；网站的由 `deploy.sh` 写入） |
 | `GET summary` | 当前概览：按分数排列的访客（有地址的是被标记过的）、正在被拒绝的地址、未取走的事件数、见过的系统提示哈希（Bearer 令牌） |
 | `POST csp` | 浏览器上报的内容安全策略违规（不需令牌；每个地址十分钟内最多 20 条；浏览器扩展造成的不记） |
+| `GET archive?day=YYYY-MM-DD` | 绑定了归档存储桶时（仓库变量 `ARCHIVE_BUCKET`）：读回某天存进桶里的事件（Bearer 令牌）。此时 `export` 带 `"archive": "r2"`，`ack` 答 409——事件由 Worker 自己存进桶（`archive.js`），收集器不再取 |
 
 `.github/workflows/chat-logs.yml` 每小时在取对话记录之后运行 `python3 security/collect.py pull --relay … --site … --out data/security-logs`，
-推送成功后 `ack`。本机看概览：`LOG_EXPORT_TOKEN=… python3 security/collect.py summary`（`--site ""` 只看中转，`--relay ""` 只看网站）。
+推送成功后 `ack`；绑定了归档存储桶的 Worker 跳过（`relay/SETUP.md`「归档」，[ADR 0023](../docs/adr/0023-workers-paid.md)）。本机看概览：`LOG_EXPORT_TOKEN=… python3 security/collect.py summary`（`--site ""` 只看中转，`--relay ""` 只看网站）。
 
 Workers Logs（两个 Worker 都开了 observability）：分数 ≥ 1、状态 ≥ 400、被拒绝或 shadow 的请求各写一行结构化日志（字段：`tag`、`route`、`status`、`score`、`reasons`、
 `who`、`ip`（仅被标记时）、`ua`、`asn`、`cc`、`colo`、`path`、`proto`、`tls`、`ray`），在 Cloudflare 控制台 Workers → 该 Worker → Logs 里按字段筛选。免费计划保留 3 天。
@@ -231,7 +232,9 @@ data/security-logs/
 - 免费计划的速率限制只能平滑突发，挡不住一个匀速 4 次/秒的客户端耗尽 Worker 的每日 10 万次：真正的保护是第 2–4 条拦截规则、网站的每日读取上限与哨兵（被拦的请求不进 Worker）。
   **这些额度都是整个账户的、每天 UTC 零点重置**：Worker 请求 10 万次（静态文件不算；经过 Worker 的页面与 `/api/*` 超限后答 429）、Durable Object 请求 10 万次、
   Durable Object 写入 10 万行、存储 5 GB、D1 读取 500 万行、Workers Logs 20 万条（留 3 天）、KV 写入 1000 次——中转、网站、语料容器共用。
-  对象不可用时（额度用尽或故障）：网站的读取照常放行（速率限制绑定仍在，页面察觉不到），中转的模型调用答 503（不放行不计数的调用），记录丢弃。
+  对象不可用时（额度用尽或故障）：网站的读取照常放行（速率限制绑定仍在，页面察觉不到），网站的工具调用与研究、中转的模型调用答 503
+  （不放行未经核对、要花钱的调用；[ADR 0023](../docs/adr/0023-workers-paid.md)），记录丢弃。网站拒绝一个地址答 403、当天读取用完答 429
+  （都带 `X-TC-Corpus: refused`），网页改用浏览器内的要籍语料并说明原因。
   网页本身经过 Worker（`run_worker_first`）是为了安全头与哨兵的可见性，代价是每次打开页面算一次；要省，可把 `/`、`/about`、`/attribution` 从 `run_worker_first` 去掉，把这些头搬进 `_headers`。
 - 运营商 NAT：许多真实访客共用一个 IPv4。按地址计数的限额（中转每人每分钟 30 次、每天 600 次）对他们是共用的；哨兵的 `ua_rotation` 为此只给很轻的分。
 - Cloudflare WARP（ASN 13335）与各种 VPN 出口让真实访客看起来来自托管网络；`dc_asn` 只是两分，规则 5 只质询网页、不碰 API。
