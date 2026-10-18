@@ -110,13 +110,18 @@ The results are 11,763 rows (of 11,765 keys: two canon works have no witness in 
 statements, and a row recording their key list.  In all 99,107 rows as D1 reports them, and the runs' records of the
 day's use (a row every 500 statements or 5,000 rows): **two days** at 90,000 a day — the first run writes the corpus
 and the first results, the second the rest.  Through the REST API the first run should take about two hours (an
-estimate, not measured here: a request and a pause of 0.2 s for each of 11,934 statements; the emulator imports the
-corpus in five and a half minutes); the second is mostly the Python tools' time.  Computing the results from nothing
+estimate, not measured here: a request and a pause of 0.2 s for each of 11,934 statements — now a request
+started 0.3 s at least after the one before, which saves the pauses; the emulator imports the corpus in five and a half
+minutes); the second is mostly the Python tools' time.  Computing the results from nothing
 takes about two hours here (measured: the store unpacked in 19 s and indexed in 2¼ minutes, the key list in 12 s, the
 11,765 keys in 106 minutes, 7 more since the clauses are computed as punctuated): the drug pairs, 12 s a key, are an
 hour of it (`study.pairs` computes the whole table of pairs for each drug), the formulas 18 minutes, the clauses 10;
 the first key of a tool builds its caches (the network's harvest 2 minutes, the taboo survey and the schools a minute
 each, the citation graph 47 s).  The first run computes only the few minutes of results the day's budget has room for.
+The daily job now computes them in as many worker processes as the runner has processors and memory for (`--workers
+0`, each with its runtime over the same store, the results imported in the same key order, the study caches written
+atomically): some half an hour on four processors, an hour on the two of a private repository's runner (estimates; each worker
+builds its own caches in memory).
 
 **The daily run, simulated** (the local emulator; `TAOCHRONOS_D1_DAY` sets the day).  Day 1: the first run was killed
 after five minutes — its whole process group, the emulator included, in the middle of a statement — having written

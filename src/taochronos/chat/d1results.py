@@ -12,7 +12,9 @@ not precomputed).  Some tools order ties by string hashing, so the daily job run
 result computed again is the same.
 
 Computing is slow (a formula's history takes seconds): the import computes a key only when its batch is due, in key
-order, and a run stops at its time budget; the next run resumes after the last key imported.
+order, and a run stops at its time budget; the next run resumes after the last key imported.  The daily job computes
+them in worker processes side by side (``workers``), each with its own runtime over the same store, and imports them
+in the same key order; should the workers stop (a process killed for its memory), the rest are computed here.
 """
 
 from __future__ import annotations
@@ -20,7 +22,9 @@ from __future__ import annotations
 import base64
 import gzip
 import json
+import os
 import re
+from collections import deque
 from pathlib import Path
 from typing import Any, Callable, Iterator
 
@@ -35,6 +39,9 @@ FINDINGS = ("symptom", "sign", "pulse", "tongue", "disease", "pattern")
 TERM_CATEGORIES = ("disease", "pattern", "symptom", "sign", "pulse", "tongue", "pathogenesis", "etiology", "treatment_method",
                    "treatment_principle", "organ", "condition", "concept")
 HAN = re.compile(r"[㐀-鿿\U00020000-\U0002ffff〓□]")  # study/base.py, HAN
+# what a worker needs at most: the full corpus's server runtime and its caches run in a 4 GiB container
+# (cloud/corpus/wrangler.toml), the store's page cache included
+WORKER_BYTES = 2 << 30
 
 
 def pack(value: Any) -> str:
@@ -56,11 +63,15 @@ class Precompute:
     """The keys to precompute and their results, over a ChatRuntime on the full corpus (its store indexed)."""
 
     def __init__(self, runtime: Any, *, log: Callable[[str], None] = print,
-                 only: list[tuple[str, str, dict[str, Any]]] | None = None) -> None:
+                 only: list[tuple[str, str, dict[str, Any]]] | None = None, workers: int | None = None,
+                 store: str | Path | None = None, home: str | Path | None = None) -> None:
         # ``runtime``: a ChatRuntime, or a function making one (called when the first key is needed: the daily run
         # indexes the store only once the import has come to the results)
         self._runtime = runtime
         self.log = log
+        # ``workers``: the results computed by this many processes, each with its runtime over ``store`` (0: as many
+        # as the processors and the memory allow); None: here, one at a time
+        self.workers, self.store, self.home = workers, store, home
         # ``only``: these keys and no others (the test fixture)
         self._keys = sorted(only, key=lambda t: f"{t[0]}\t{t[1]}") if only is not None else None
 
@@ -165,24 +176,22 @@ class Precompute:
     # -------------------------------------------------------------- results
     def value(self, tool: str, args: dict[str, Any]) -> Any | None:
         """The tool's result as the server returns it (the ``result`` of ``ChatRuntime.call``), or None if it failed."""
-        out = self.rt.call(tool, args, max_chars=400)
-        return out.get("result") if out.get("ok") else None
+        return _value(self.rt, tool, args)
 
     def rows(self, after: str | None = None, *, deadline: Callable[[], bool] = lambda: False) -> Iterator[tuple[str, str, Any]]:
-        """(tool, key, result) after ``after`` ("<tool>\\t<key>" of the last row imported), computed one at a time (the
-        importer packs them); stops when ``deadline()`` says so."""
+        """(tool, key, result) after ``after`` ("<tool>\\t<key>" of the last row imported), in key order (the importer
+        packs them); stops when ``deadline()`` says so."""
         import time
 
         keys = self.keys()
+        todo = [(n, tool, key, args) for n, (tool, key, args) in enumerate(keys) if after is None or f"{tool}\t{key}" > after]
+        workers = workers_for(self.workers) if self.workers is not None and self.store is not None and len(todo) > 1 else 0
+        if self.workers == 0 and workers == 1:  # one process beside this one is no faster than this one
+            workers = 0
+        if workers:
+            self.log(f"  results: {len(todo):,} keys, computed by {workers} process{'es' if workers > 1 else ''} side by side")
         started, done = time.perf_counter(), 0
-        for n, (tool, key, args) in enumerate(keys):
-            k = f"{tool}\t{key}"
-            if after is not None and k <= after:
-                continue
-            if deadline():
-                self.log(f"  results: the run's time is up before {k!r}")
-                return
-            value = self.value(tool, args)
+        for n, tool, key, value in (self._side_by_side(todo, workers, deadline) if workers else self._here(todo, deadline)):
             done += 1
             if done % 250 == 0:
                 self.log(f"  results: {n + 1:,} of {len(keys):,} keys ({tool}), {time.perf_counter() - started:.0f} s this run")
@@ -190,6 +199,47 @@ class Precompute:
                 self.log(f"  results: {tool} {key!r} failed; left out")
                 continue
             yield tool, key, value
+
+    def _here(self, todo: list[tuple[int, str, str, dict[str, Any]]], deadline: Callable[[], bool]) -> Iterator[tuple[int, str, str, Any]]:
+        for n, tool, key, args in todo:
+            if deadline():
+                k = f"{tool}\t{key}"
+                self.log(f"  results: the run's time is up before {k!r}")
+                return
+            yield n, tool, key, self.value(tool, args)
+
+    def _side_by_side(self, todo: list[tuple[int, str, str, dict[str, Any]]], workers: int,
+                      deadline: Callable[[], bool]) -> Iterator[tuple[int, str, str, Any]]:
+        """The keys computed by ``workers`` processes and taken in order, a few keys ahead of the one awaited (a run its
+        deadline stops wastes little).  Each process starts afresh (``spawn``: none of this one's SQLite connections
+        carried over) once this one has made its runtime, which indexes the store: the workers only read it."""
+        import multiprocessing
+        from concurrent.futures import ProcessPoolExecutor
+        from concurrent.futures.process import BrokenProcessPool
+
+        self.rt  # noqa: B018 — made already unless the keys were given (``only``)
+        pool = ProcessPoolExecutor(workers, mp_context=multiprocessing.get_context("spawn"), initializer=_start,
+                                   initargs=(str(self.store), str(self.home) if self.home else None))
+        waiting: deque = deque()  # the futures of todo[i], todo[i + 1] …
+        i = 0
+        try:
+            while i < len(todo):
+                while len(waiting) < 4 * workers and i + len(waiting) < len(todo):
+                    _, tool, _, args = todo[i + len(waiting)]
+                    waiting.append(pool.submit(_compute, tool, args))
+                n, tool, key, _ = todo[i]
+                if deadline():
+                    k = f"{tool}\t{key}"
+                    self.log(f"  results: the run's time is up before {k!r}")
+                    return
+                value = waiting.popleft().result()
+                yield n, tool, key, value
+                i += 1
+        except BrokenProcessPool as exc:
+            self.log(f"  results: the workers have stopped ({exc}): the rest are computed here")
+            yield from self._here(todo[i:], deadline)
+        finally:
+            pool.shutdown(wait=False, cancel_futures=True)
 
     def digest(self) -> str:
         """The key list's identity: when it changes, the results are imported afresh."""
@@ -199,6 +249,36 @@ class Precompute:
         for tool, key, args in self.keys():
             h.update(f"{tool}\t{key}\t{json.dumps(args, ensure_ascii=False, sort_keys=True)}\n".encode("utf-8"))
         return h.hexdigest()[:16]
+
+
+def _value(rt: Any, tool: str, args: dict[str, Any]) -> Any | None:
+    out = rt.call(tool, args, max_chars=400)
+    return out.get("result") if out.get("ok") else None
+
+
+_worker: Any = None  # a worker process's runtime
+
+
+def _start(store: str, home: str | None) -> None:
+    global _worker
+    _worker = runtime_for(store, home, log=lambda m: None)
+
+
+def _compute(tool: str, args: dict[str, Any]) -> Any | None:
+    return _value(_worker, tool, args)
+
+
+def workers_for(wanted: int) -> int:
+    """``wanted`` processes, or (0) as many as this machine's processors and its free memory allow."""
+    if wanted > 0:
+        return wanted
+    cpus = len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else (os.cpu_count() or 1)
+    try:
+        with open("/proc/meminfo", encoding="ascii") as f:
+            free = next(int(line.split()[1]) * 1024 for line in f if line.startswith("MemAvailable:"))
+    except (OSError, StopIteration, ValueError):
+        return cpus
+    return max(1, min(cpus, free // WORKER_BYTES))
 
 
 def runtime_for(store: str | Path, home: str | Path | None = None, *, log: Callable[[str], None] = print) -> Any:
@@ -220,4 +300,4 @@ def runtime_for(store: str | Path, home: str | Path | None = None, *, log: Calla
     return ChatRuntime.create("full-corpus", home=home, data_dir=path.parent.parent, kind="server", ephemeral=True)
 
 
-__all__ = ["Precompute", "clause_key", "pack", "runtime_for", "unpack"]
+__all__ = ["Precompute", "clause_key", "pack", "runtime_for", "unpack", "workers_for"]

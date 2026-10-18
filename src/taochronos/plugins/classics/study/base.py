@@ -12,6 +12,7 @@ from contextlib import contextmanager
 import hashlib
 import json
 import math
+import os
 import re
 import sqlite3
 import threading
@@ -26,6 +27,13 @@ from ..domain import DomainPack
 
 PUNCT = set("，。；：、？！“”‘’（）《》〈〉…—·‧「」『』【】〔〕［］｛｝ 　\n\t,.;:!?()[]{}<>\"'")
 HAN = re.compile(r"[㐀-鿿\U00020000-\U0002ffff〓□]")
+
+
+def cache_tmp(path: Path) -> Path:
+    """Where a file of ``study-cache`` is written before it is put in place (``tmp.replace(path)``, one rename): beside
+    it, this process's and thread's own — so that another computing the same cache at once (the D1 import's workers,
+    chat/d1results.py) reads the whole file or none, never one half written."""
+    return path.with_name(f".{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
 
 
 def han_only(text: str) -> tuple[str, list[int]]:
@@ -295,7 +303,7 @@ class StudyBase:
             path = store.path.parent / "study-cache" / f"headings-v2-{self.signature()['corpus_digest']}.sqlite"
             if not path.exists():
                 path.parent.mkdir(parents=True, exist_ok=True)
-                tmp = path.with_suffix(".tmp")
+                tmp = cache_tmp(path)
                 tmp.unlink(missing_ok=True)
                 db = sqlite3.connect(tmp)
                 db.execute("CREATE TABLE entries(head TEXT, raw TEXT, book_id TEXT, first_seq INTEGER, last_seq INTEGER)")

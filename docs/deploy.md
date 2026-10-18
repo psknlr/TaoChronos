@@ -155,7 +155,7 @@ The full corpus is every work the project holds whose terms allow it to be publi
 | What runs | taochronos itself (Python) on the store, indexed, caches warmed | the site's Worker, on the store laid out in five D1 databases |
 | Tools | all, research runs included | 14 computed live, 16 precomputed for common entries, the rest (research, 句读, D1–D5 …) unavailable |
 | Built by | the `site` workflow (job *corpus*), or `wrangler deploy` (Route B) | the `d1` workflow, or `python -m taochronos.chat.d1 import` (Route B) |
-| Takes | ~20 min to build; tens of seconds to wake after sleeping | ~4–5 h to import, once |
+| Takes | ~20 min to build; tens of seconds to wake after sleeping | ~2–2½ h to import, once |
 | Costs | while running (sleeps after 15 idle minutes) | storage ~1.5 GB, reads per search |
 
 The site sends the API to the container when one is deployed; otherwise to the D1 backup when its import is complete;
@@ -180,10 +180,12 @@ Needs: Part 2.1 fixed, Part 2.2 done.
 **A2. The D1 backup.**
 1. **Actions → d1 → Run workflow** → branch `main` → **budget** `1000000` (the default) → **Run workflow**.  (The budget
    was the Free plan's daily cap of 100,000 rows; on Paid it is only a safety valve.  The import writes about 100,000
-   rows.  The daily run at 00:07 UTC uses the same default, so it imports everything too.)
-2. It writes the corpus (~87,000 rows, about two hours), then computes the precomputed results (~12,000 rows, about two
-   hours).  Ending with `the run's time is up` (five hours) is normal: run it again and it resumes, writing nothing twice;
-   the daily run at 00:07 UTC (08:07 SGT) resumes it too.
+   rows.  The daily run at 00:07 UTC uses the same default, so it imports everything too; so does a run started by a
+   push to `main` that changes `cloud/store.json` or the importer, once a run already going has finished.)
+2. It writes the corpus (~87,000 rows, about an hour and a half), then computes the precomputed results (~12,000 rows)
+   in as many processes as the runner has processors: about an hour on the two of a private repository's runner, half
+   an hour on four, two hours on one (estimates).  Ending with `the run's time is up` (five hours) means it was cut
+   short: run it again and it resumes, writing nothing twice; the daily run at 00:07 UTC (08:07 SGT) resumes it too.
 3. When complete, the run's **Summary** says `complete: yes`, it records the version in KV and starts the **site**
    workflow itself, which binds the databases.
 
@@ -192,7 +194,7 @@ Needs: Part 2.1 fixed, Part 2.2 done.
 ### 3.3 Route B — from your own computer
 
 Does what the workflows do, with the same commands, on a machine of yours.  Use it while GitHub Actions is blocked, or to
-save its minutes (the D1 import alone takes up to five hours of them).
+save its minutes (the D1 import alone takes about two hours of them).
 
 **B0. The machine.**
 
@@ -272,12 +274,12 @@ already has: no need to supply `LOG_EXPORT_TOKEN` and the others here (the warni
 not rewritten).  The log ends with `a search on the full corpus: …`.  The first call after a new image may take minutes
 while the container starts; `deploy.sh` waits for it.
 
-**B5. Import the D1 backup** (four to five hours; in `tmux`):
+**B5. Import the D1 backup** (about two hours with four processors; in `tmux`):
 
 ```bash
 xz="cloud/.store/$sha.sqlite.xz"
 PYTHONHASHSEED=0 python -m taochronos.chat.d1 import "$xz" --manifest cloud/store.json --work cloud/.d1 \
-  --api --budget 1000000 --reset --precompute --report cloud/.d1/report.json
+  --api --budget 1000000 --reset --precompute --workers 0 --report cloud/.d1/report.json
 python3 -c 'import json; r=json.load(open("cloud/.d1/report.json")); print(r["version"], "complete" if r["complete"] else r["stopped"])'
 ```
 
