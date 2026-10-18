@@ -136,3 +136,28 @@ def test_what_the_zone_does_not_offer_is_left_out_of_the_query(monkeypatch, tmp_
         assert next(r for r in rows if r["kind"] == "requests")["requests"] == 4  # the count as it is
     else:
         assert "requestSource" not in q and "clientRequestHTTPHost: $host" in q
+
+
+def kept(out: Path, *days: str) -> None:
+    for d in days:
+        f = out / d[:4] / d[5:7] / f"{d[8:]}.jsonl"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text("{}\n", encoding="utf-8")
+
+
+def test_a_pull_without_a_day_catches_up_the_days_no_run_kept(tmp_path):
+    # the Actions minutes ran out after the run of 10-11 (which kept 10-10): the next run, on 10-18, asks for 10-11 to 10-17
+    now = datetime(2026, 10, 18, 1, 41, tzinfo=timezone.utc)
+    kept(tmp_path, "2026-10-09", "2026-10-10")
+    assert [d.strftime("%m-%d") for d in events.days_to_pull(tmp_path, now)] == [f"10-{n}" for n in range(11, 18)]
+    # nothing kept yet, or yesterday kept already (a second run the same day): yesterday, as before
+    assert [d.strftime("%m-%d") for d in events.days_to_pull(tmp_path / "none", now)] == ["10-17"]
+    kept(tmp_path, "2026-10-17")
+    assert [d.strftime("%m-%d") for d in events.days_to_pull(tmp_path, now)] == ["10-17"]
+
+
+def test_a_catch_up_goes_no_further_back_than_the_plan_keeps(tmp_path):
+    now = datetime(2026, 10, 18, 1, 41, tzinfo=timezone.utc)
+    kept(tmp_path, "2026-07-01")
+    days = events.days_to_pull(tmp_path, now)
+    assert len(days) == events.CATCH_UP_DAYS and days[0] == datetime(2026, 9, 17, tzinfo=timezone.utc) and days[-1].strftime("%m-%d") == "10-17"
