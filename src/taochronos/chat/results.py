@@ -14,7 +14,9 @@ from typing import Any
 
 from ..protocol.base import to_jsonable
 
-CARD_FIELDS = ("passage_id", "book_id", "title", "dynasty", "year", "period", "locator")
+# ``labels``: what a taochronos_ask source was found under (ADR 0023: each via and flag in words, ``via 国老→甘草（…）``,
+# ``年代存疑（…）``), for the page's badges — kept only as a list of words (web/js/util.js withFound)
+CARD_FIELDS = ("passage_id", "book_id", "title", "dynasty", "year", "period", "locator", "labels")
 TEXT_FIELDS = ("quote", "text")
 
 # (items kept per list, characters kept per string), from loose to tight
@@ -95,8 +97,13 @@ def for_interface(value: Any, max_chars: int = 400_000) -> Any:
     return {"note": "结果过大，界面只显示摘要", "preview": dumps(data)[:4000]}
 
 
+def _labels(value: Any) -> list[str]:
+    return list(dict.fromkeys(x for x in value if isinstance(x, str) and x)) if isinstance(value, list) else []
+
+
 def citations(value: Any, limit: int = 120) -> list[dict[str, Any]]:
-    """Every passage a result names: ``{passage_id, title, dynasty, year, locator, text}`` as far as the result says."""
+    """Every passage a result names: ``{passage_id, title, dynasty, year, locator, labels, text}`` as far as the result
+    says — ``labels`` only where it is a list of words, those of every mention of the passage, each once."""
     found: dict[str, dict[str, Any]] = {}
 
     def visit(node: Any, depth: int) -> None:
@@ -105,7 +112,9 @@ def citations(value: Any, limit: int = 120) -> list[dict[str, Any]]:
         if isinstance(node, dict):
             pid = node.get("passage_id")
             if isinstance(pid, str) and pid:
-                card = {k: node[k] for k in CARD_FIELDS if node.get(k) not in (None, "")}
+                card = {k: node[k] for k in CARD_FIELDS if k != "labels" and node.get(k) not in (None, "")}
+                if _labels(node.get("labels")):
+                    card["labels"] = _labels(node["labels"])
                 for k in TEXT_FIELDS:
                     if isinstance(node.get(k), str) and node[k]:
                         card["text"] = node[k][:240]
@@ -115,7 +124,9 @@ def citations(value: Any, limit: int = 120) -> list[dict[str, Any]]:
                     found[pid] = card
                 else:  # the same passage met again: keep what was known, and the longer text
                     for k, v in card.items():
-                        if k != "text":
+                        if k == "labels":
+                            old[k] = _labels([*old.get(k, []), *v])
+                        elif k != "text":
                             old.setdefault(k, v)
                         elif len(v) > len(old.get("text", "")):
                             old["text"] = v

@@ -283,11 +283,13 @@ In all **966 works, ~123 million characters, 2.05 million passages**.
   a search for 甘草 also finds the passages that write 国老, for 木通 those that write 通草 before about 960 — in
   places 4, 7 and 10 of each ten while today's ranking lasts (and every place after it runs out), each labelled with
   the name, the drug, the kind (异名, 避讳改名, 古名 …), the source and a witness passage, while the name asked keeps
-  the others.  A name two drugs share (鬼督邮) lists both and is never merged; a common word (小便, 将军之官) is not
-  taken for a drug; a name used only in some periods is searched only there, and a passage written before a name came
-  into use is flagged.  Built from the CC0 本草纲目别名录 in the
-  store, the editors' decisions and equations read off the texts, each with its witness — a layer of its own beside
-  the lexicon, which it leaves unchanged.  On in all three runtimes: the browser (web-canon), the full-corpus server
+  the others.  The labels show as badges on the page (search results and `taochronos_ask` source cards) and in words
+  in the research report's evidence, its `evidence.csv` and the sources of `taochronos ask`.  A name two drugs share
+  (鬼督邮) lists both and is never merged; a common word (小便, 将军之官) is not taken for a drug; a name used only in
+  some periods is searched only there, and a passage written before a name came into use is flagged; a question longer
+  than 200 characters (a passage pasted in) is searched as before, only that flag kept.  Built from the CC0
+  本草纲目别名录 in the store, the editors' decisions and equations read off the texts, each with its witness — a layer
+  of its own beside the lexicon, which it leaves unchanged.  On in all three runtimes: the browser (web-canon), the full-corpus server
   and the D1 backup, whose port of it the parity tests hold to Python's (the eval's full-corpus numbers are still
   measured on the web store as a proxy).
 

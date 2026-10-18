@@ -500,9 +500,11 @@ A drug is written under many names — 国老 for 甘草, 通草 for 木通 befo
 drug's other names apart from the lexicon, each with its drug, kind, status, period, sources and witness passages: a
 search for a drug also finds passages under its other names, each labelled, in places 4, 7 and 10 of each ten while
 today's ranking lasts (a place they cannot fill goes back to it) and every place after it runs out, while the name
-asked keeps the others; a name two drugs share lists both and is never merged.  A question longer than 200 characters
-(a passage pasted in) is read and ranked as without the layer.  The segmenter, the normaliser, the lexicon and D1's
-`lex` are unchanged, so the layer needs no re-index and no re-import.
+asked keeps the others; a name two drugs share lists both and is never merged.  How a question is read — which names
+it asks, and as drugs or not — is in the ADR (§4); a question longer than 200 characters (`ALIAS_MAX_CHARS`, counted
+on the normalised text: a passage pasted in) is read and ranked as without the layer, in Python and the Worker alike,
+only a passage that writes a name before it came into use still flagged.  The segmenter, the normaliser, the lexicon
+and D1's `lex` are unchanged, so the layer needs no re-index and no re-import.
 
 **Sources.**  What ships comes only from open lists, the project's own decisions and facts read off the store with their
 witness ids (the precedent of `lexicon-core`), never from a `NEVER_PACKED` source; `aliases check` refuses a shipped

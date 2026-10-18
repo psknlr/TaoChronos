@@ -79,9 +79,10 @@ def _cite(corpus: Any, rec: Any) -> str:
 
 def note_labels(note: str | None) -> list[str]:
     """What a ledger record's note says of the search hit it came from (``hit_note`` in agents/procedures/evidence.py,
-    ADR 0023): the parts after ``routes: …`` — each ``via`` (the pair of names that found the passage, what it writes,
-    how the names relate, the sources) and each flag in words (年代存疑, 同名异物 …).  [] for a note that is not a hit's (a
-    replication's reason), or a hit's found as asked.  Only a search's own record says them (:func:`record_labels`)."""
+    ADR 0023): the parts after ``routes: …`` — each ``via`` (the asked name and the drug, or the drug and the name the
+    passage writes; how the names relate, the sources) and each flag in words (年代存疑, 同名异物 …).  [] for a note
+    that is not a hit's (a replication's reason), or a hit's found as asked.  Only a search's own record says them
+    (:func:`record_labels`)."""
     parts = (note or "").split("; ")
     if not parts[0].startswith("routes:"):
         return []
@@ -95,11 +96,11 @@ def record_labels(rec: Any) -> list[str]:
     return note_labels(rec.note) if getattr(rec, "retrieval_method", None) == "retrieval:hybrid" else []
 
 
-# what the labels mean, under a list that shows them.  A via says which pair of names found the passage, not which of
-# the two was asked: asked for the drug itself, the name the passage writes stands before the arrow, and a span two
-# queries found (金铃子 and 川楝子) keeps the labels of both (agents/procedures/evidence.py _via_notes)
-LABELS_NOTE = ("注：「via 甲→乙」表示此段是经乙（所指之药）与它的另一名甲这一对名字检出的：或问甲而此段写乙，或问乙而此段写甲"
-               "（几个检索词都检出同一段时两种情形可能并存，以原文为准）；无箭头的「via 乙（写作丙）」为检索乙时检出、此段写作丙。"
+# what the labels mean, under a list that shows them.  Only an asked name stands before an arrow; a via for the drug
+# itself (or with no asked name known) has no arrow and names what the passage writes, and a span two queries found
+# (金铃子 and 川楝子) keeps the labels of both (agents/procedures/evidence.py _via_notes)
+LABELS_NOTE = ("注：「via 甲→乙」表示问甲（乙的另一名）、经乙（所指之药）检出此段；无箭头的「via 乙（写作丙）」表示检索乙本身"
+               "（或未记所问之名）时检出、此段写作丙；几个检索词都检出同一段时，各词的标注并列。"
                "括注依次为：此段所写之名（写作，甲、乙之外者）；二名关系（未注即异名，品种/产地名、炮制/加工名等未必同物，"
                "「相关」为词表所关联之词、并非同一味药）；「候选」为未经核定的配对，「多作普通词语」为此名多不指药；依据。"
                "「读作 甲→乙」为多义之名甲在此段的读法（p 为其概率）。年代存疑、同名异物等标记表示此段未必指所问之药。引用前须核对原文。")

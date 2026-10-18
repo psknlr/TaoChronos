@@ -759,7 +759,9 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "out; each is labelled with the name, the drug and its source (via), and ambiguous names are listed as "
                  "candidates (query.aliases).  A routes list without alias skips only the route alias; aliases: off "
                  "turns the layer off, and lexicon synonyms then come back unlabelled.  With neither query.aliases nor "
-                 "any via, the alias layer added nothing.",
+                 "any via, the alias layer added nothing.  A question longer than 200 characters (a passage pasted in) "
+                 "is searched as with aliases: off, but a passage that writes a name before it came into use is still "
+                 "flagged (anachronism).",
                  obj({"query": S, "k": I, "after": N, "before": N, "routes": {"type": "array", "items": S},
                       "books": {"type": "array", "items": S}, "aliases": {"type": "string", "enum": ["auto", "off"]}},
                      ["query"]),
