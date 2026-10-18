@@ -278,13 +278,17 @@ def test_the_manifest_in_the_repository_names_the_store_it_describes():
     assert credits.count("\n| ") - len(manifest["sources"]) - 2 == manifest["books"]  # a row per book
 
 
-def test_the_site_carries_the_full_corpus_credits_beside_the_browsers(tmp_path):
+def test_the_site_carries_the_browsers_credits_and_not_the_full_corpus_list(tmp_path):
+    """The full corpus's book-by-book credits (cloud/ATTRIBUTION.md) stay in the repository, by the publisher's choice;
+    the site's attribution page is the 要籍语料's, which names every source and its terms."""
     from taochronos.chat.build import build_site
 
     os.environ.setdefault("TAOCHRONOS_WEB_XZ_PRESET", "1")
     build_site(tmp_path / "site", home=ROOT, pyodide="cdn")
-    assert (tmp_path / "site" / "ATTRIBUTION-full.md").read_text(encoding="utf-8") == (ROOT / "cloud" / "ATTRIBUTION.md").read_text(encoding="utf-8")
-    assert "corpus=full" in (tmp_path / "site" / "attribution.html").read_text(encoding="utf-8")
+    assert (tmp_path / "site" / "ATTRIBUTION.md").read_text(encoding="utf-8") == (ROOT / "corpus" / "web" / "ATTRIBUTION.md").read_text(encoding="utf-8")
+    assert not (tmp_path / "site" / "ATTRIBUTION-full.md").exists()
+    assert "corpus=full" not in (tmp_path / "site" / "attribution.html").read_text(encoding="utf-8")
+    assert "corpus=full" not in (tmp_path / "site" / "js" / "view" / "settings.js").read_text(encoding="utf-8")
 
 
 def test_the_worker_runs_only_for_the_pages_and_the_api():

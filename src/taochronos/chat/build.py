@@ -259,9 +259,7 @@ def build_site(out: Path, *, home: Path, web: Path | None = None, pyodide: str =
     credits = home / "corpus" / "web" / "ATTRIBUTION.md"
     if credits.is_file():
         shutil.copyfile(credits, out / "ATTRIBUTION.md")
-    full_credits = home / "cloud" / "ATTRIBUTION.md"  # the full corpus the site's server carries (cloud/, Cloudflare)
-    if full_credits.is_file():
-        shutil.copyfile(full_credits, out / "ATTRIBUTION-full.md")
+    # the full corpus's book-by-book credits (cloud/ATTRIBUTION.md) stay in the repository: the publisher's choice
     if relay:
         (out / "site.json").write_text(json.dumps({"relay": relay}, ensure_ascii=False, indent=1), encoding="utf-8")
     for name, text in search.items():

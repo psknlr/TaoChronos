@@ -346,9 +346,7 @@ function aboutPane(d, S) {
         h("div", h("b", "证据纪律："), "回答中的古籍原文应来自工具结果，并以 [[段落号]] 标注出处；页面会把每条引文与原文逐字核对。"),
         h("div", h("b", "非医疗建议："), "本系统不提供诊断、处方或剂量建议；历代度量衡换算只是历史读法。计算得到的关联与假说须经专家核验。"),
         info?.corpus?.kind === "full"
-          ? h("div", h("b", "语料："), `全量语料：${info.corpus.books ?? "?"} 部古籍录本的全文（`,
-            h("a", { href: "attribution.html?corpus=full", target: "_blank", rel: "noopener" }, "来源与授权"),
-            "），未经本项目逐字校勘；", S.runtime?.label === "本站服务" ? "由本站服务器提供，服务暂不可用时页面改用浏览器内的要籍语料（" : "由你接入的服务提供；浏览器内另有要籍语料（",
+          ? h("div", h("b", "语料："), `全量语料：${info.corpus.books ?? "?"} 部古籍录本的全文，未经本项目逐字校勘；`, S.runtime?.label === "本站服务" ? "由本站服务器提供，服务暂不可用时页面改用浏览器内的要籍语料（" : "由你接入的服务提供；浏览器内另有要籍语料（",
             h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, "来源与授权"), "）。")
           : h("div", h("b", "语料："), `浏览器内运行的是要籍语料：按历代引用排序的${canonCount(info)}要籍的原文（`,
             h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, "来源与授权"),
@@ -357,6 +355,6 @@ function aboutPane(d, S) {
           "只有在你同意后，每轮问答才另记录一份到", PUBLISHER, "的服务器，用于测试（设置 → 数据）。使用自己的 API Key 时，请求直接发往你选择的服务，或经你本机的服务转发。"))),
       h("div.muted", { style: { fontSize: "13px", lineHeight: "1.8" } },
         `${AGENT} · ${ASSISTANT} · ${AGENT_EN} ${info?.version || "?"} · ${PUBLISHED_BY} · 运行环境 ${info?.runtime === "server" ? S.runtime?.label || "服务" : "浏览器"} · `,
-        h("a", { href: info?.corpus?.kind === "full" ? "attribution.html?corpus=full" : "attribution.html", target: "_blank", rel: "noopener" }, "语料来源与授权"))),
+        h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, "语料来源与授权"))),
   ];
 }

@@ -24,7 +24,7 @@ Pyodide：打开即可提问，引文可在全部古籍中核对。全量语料�
 | `corpus/`（Worker `taochronos-corpus`） | Durable Object 按需启动容器（`standard-1`：1/2 vCPU、4 GiB、8 GB 磁盘），带着它为容器生成的令牌转发请求；`/api/info` 与工具目录按部署版本缓存在 Durable Object 里，容器休眠时也能立刻回答，同时唤醒容器——模型第一次调用工具时它已就绪 |
 | `corpus/Dockerfile` | 以仓库根目录为上下文构建：安装 taochronos，放入主目录（profiles、domains、catalog…），解压并校验 `store.json` 指定的全量语料，用本版代码的规范化器建全文索引，预热各工具首次使用时才构建的缓存（句读模型、引书网络、配伍、学派等）。容器每次都从镜像启动，所以这些都在构建时做好 |
 | `store.json` | 部署所用的全量语料：sha256、分片（每片 24 MiB，即一个 KV 值）、书数/段数/字数、各来源、排除的来源。`taochronos web store` 生成 |
-| `ATTRIBUTION.md` | 全量语料每部录本的来源与授权；网站以 `attribution.html?corpus=full` 展示 |
+| `ATTRIBUTION.md` | 全量语料每部录本的来源与授权；只存于仓库，不随网站发布（网站的“语料来源与授权”页是要籍语料的） |
 
 全量语料由 `taochronos web store` 从本地全量库生成：只收 `WEB_SOURCES`（开放授权来源，以及发布方决定随网站发布的笈成转录本），
 **绝不收** `NEVER_PACKED`（東亜医学協会、Hugging Face 数据集——条款禁止转载）；段落号与全量库、浏览器语料相同；不带全文索引
