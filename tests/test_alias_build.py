@@ -105,13 +105,16 @@ def make_home(root: Path, curated: str = CURATED) -> Path:
     return home
 
 
-def make_store(path: Path) -> Path:
+def make_store(path: Path, extra: dict[str, list[tuple[str | None, str]]] | None = None) -> Path:
+    """The store of :data:`TEXTS` (and the 别名录), with ``extra`` passages after each book's."""
     normalize = DomainPack(DOMAIN).variants.normalize_text
     store = CorpusStore(path, create=True)
     for bid, (source, category, years) in BOOKS.items():
         store.put_book({"id": bid, "title": bid, "category": category, "composition": years}, source)
     rows = []
     texts = {"jc_c030": [(None, t) for t in BIELU], **TEXTS}
+    for bid, items in (extra or {}).items():
+        texts[bid] = texts.get(bid, []) + items
     for bid, items in texts.items():
         y0, y1 = BOOKS[bid][2]
         for seq, (section, text) in enumerate(items):
@@ -688,6 +691,51 @@ def test_ntu_heads_kept_apart_joined_by_form_and_doubles(site, built, tmp_path):
     assert ref(recs["清心丹"], "甘草").st == "candidate"  # 5c
     assert (recs["揩之"].n, recs["揩之"].sh, ref(recs["揩之"], "胡黄连").st) == (1, 0, "candidate")  # 5b
     assert aliasbuild.apart_errors(result.records, loads_yaml(CURATED), DomainPack(DOMAIN).variants.normalize_text) == []
+
+
+# the classical corpus first (rules 5e and 5f, the blockers, the heads kept apart, the editors' members, the witnesses)
+NTU_CLASSICAL = [NTU_ROWS[0],
+                 "21\t紫云藤\t《中华本草》\t九真藤\t",  # 九真藤 is 何首乌's (the 别名录, a passage): a candidate (5e), no rival
+                 "22\t白霜草\t《中华本草》\t人衔\t《本经》",  # credited: no candidate by 5e
+                 "23\t党参\t《中华本草》\t青霞根\t",  # written only in 1100, before 党参's first use (1700): 5f
+                 "25\t女萎\t《中华本草》\t木通草\t",  # only the table makes 木通草 another drug's: it blocks no 木通
+                 "26\t木通\t《中华本草》\t丁翁\t",
+                 "27\t枫香脂\t《中华本草》\t白胶\t",  # only the table ties 白胶 to 枫香脂: 白胶香 still blocks it
+                 "27\t枫香脂\t《中华本草》\t白胶香\t",  # and the editors' member keeps its row's witness
+                 "30\t石血\t《中华本草》\t对叶肾\t",  # the editors' 络石 and the lexicon's 紫加石: kept apart
+                 "31\t羌活\t《中华本草》\t护羌使者\t"]  # 一名羌活，一名护羌使者: two names of a list, no witness
+CLASSICAL_TEXTS = {"bc_a": [("独活", "独活　味苦。一名羌活，一名护羌使者。"), ("枫香脂", "枫香脂　一名白胶香。")],
+                   "fang_b": [(None, "木通草七两，芒硝一两。")]}
+
+
+def test_the_classical_corpus_comes_first(tmp_path, built):
+    store = make_store(tmp_path / "data" / "corpus" / "tcm.sqlite", CLASSICAL_TEXTS)
+    curated = CURATED.replace("same_drug: [", "same_drug: [{names: [枫香脂, 白胶香], wit: [bc_a.00011]}, ").replace(
+        "pairs:\n", "pairs:\n  - {s: 石血, head: 络石, wit: [bc_a.00000]}\n")
+    home = ntu_home(tmp_path, rows=NTU_CLASSICAL)
+    (home / "domains" / "classics" / "aliases" / "curated.yaml").write_text(curated, encoding="utf-8")
+    result = build_open(store, home)
+    recs, before = records(result), records(built)
+    # 5e: a name that reads as another drug in the classical corpus — no witness, no credit — is a candidate there,
+    # and no rival: 九真藤 stays 何首乌's as it was without the table (open, not shared); a credited pair is no candidate
+    assert ref(recs["九真藤"], "紫云藤").st == "candidate" and ref(recs["人衔"], "白霜草").st == "cue"
+    assert ref(recs["九真藤"], "何首乌").st == ref(before["九真藤"], "何首乌").st == "open"
+    assert result.report[aliasbuild.NTU]["precedence"]["classical"] >= 1
+    # 5f: every passage that writes 青霞根 is older than 党参's first use
+    assert ref(recs["青霞根"], "党参").st == "candidate" and result.report[aliasbuild.NTU]["precedence"]["first_use"] == 1
+    # blockers: 木通草 (only the table's 女萎) blocks no 木通, whose passage stays its own; 白胶香 (the editors' 枫香脂)
+    # blocks 白胶, which only the table ties to 枫香脂
+    assert "木通草" not in [b if isinstance(b, str) else b[0] for b in recs["木通"].b] and recs["木通"].n >= 1
+    assert "白胶香" in recs["白胶"].b and ref(recs["白胶"], "枫香脂").st == "candidate"
+    # witnesses: 一名白胶香 is no witness of 白胶; 一名羌活，一名护羌使者 none of 护羌使者 → 羌活
+    assert ref(recs["白胶"], "枫香脂").w == [] and "store" not in ref(recs["白胶"], "枫香脂").src
+    assert all(w.pid != "bc_a.00010" for w in ref(recs["护羌使者"], "羌活").w)
+    # the editors' member keeps its row and witness beside the table's pair
+    member = ref(recs["白胶香"], "枫香脂")
+    assert {"curated", aliasbuild.NTU} <= set(member.src) and [w.pid for w in member.w] == ["bc_a.00011"]
+    # an NTU head the other sources give one drug and the lexicon files under another is kept apart
+    assert recs["石血"].ho is None and "对叶肾" not in recs
+    assert result.report[aliasbuild.NTU]["apart"]["heads"].get("ambiguous") == 1
 
 
 def test_check_refuses_a_split_name_the_ntu_table_joins_or_heads():

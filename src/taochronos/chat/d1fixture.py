@@ -121,6 +121,10 @@ REFERENCE: list[tuple[str, dict[str, Any]]] = [
     ("classics.search", {"query": "“碧蝉花”"}),
     ("classics.search", {"query": "清代的蹲鸱"}),
     ("classics.search", {"query": "地精"}),
+    # a name only lists give, and only as a candidate, beside another name is no name of the question (味药 in 苦菜是哪味药);
+    # a candidate only lists give is listed only where nothing else is, and is no rival (五爪龙 stays 乌蔹莓's)
+    ("classics.search", {"query": "苦菜是哪味药"}),
+    ("classics.search", {"query": "五爪龙"}),
     # a blocker the lexicon files as a whole (川乌头: its mention is asked); what a question says of a drug is no longer
     # name of it (甘草入脾 asks 甘草 and 脾); a dose beside a weak herb's run (葛二两 asks 葛); a hit that is A by one asked
     # drug and writes the other out of drug context, labelled with neither its reading nor homonym (阿胶与通草)
@@ -142,7 +146,7 @@ REFERENCE: list[tuple[str, dict[str, Any]]] = [
 ALIAS_QUESTIONS = ("国老", "甘草", "唐以前的木通", "清代的通草", "唐以前的通草", "明清的通草", "通草", "蘖木", "大黄", "将军", "大将军",
                    "大黄一名将军", "地精", "天地精", "人参", "鬼督邮是什么药", "百枝", "救火是哪味药", "宋以前的解离", "止行", "慎火草",
                    "国老与蜜甘", "山药", "元参", "党参最早见于哪部书", "红豆", "大戟", "赤箭", "马兜铃", "紫河车", "朴消", "百药煎",
-                   "桂枝汤与甘草")
+                   "桂枝汤与甘草", "苦菜是哪味药", "五爪龙", "乌蔹莓", "金沸草", "胡王使者")
 ALIAS_SAMPLE = 120  # more names of the layer, each asked alone, a third of them in a period too
 ALIAS_SEARCHES: list[tuple[str, dict[str, Any]]] = [  # searched: expansions unsearched for want of a place
     ("国老", {"k": 10}), ("国老", {"k": 3}), ("国老", {"k": 10, "routes": ["bm25"]}), ("甘草", {"k": 2}),
@@ -247,6 +251,17 @@ SYNTHETIC: list[dict[str, Any]] = [
     {"s": "酉戌", "r": [{"h": "卯辰", "src": ["syn"]}]},
     {"s": "戌亥", "n": 6, "r": [{"h": "卯辰", "v": [1100, None], "src": ["syn"]}, {"h": "甲木", "v": [None, 1100], "src": ["syn"]}]},
     {"s": "甲木花", "n": 3, "r": [{"h": "卯辰", "src": ["syn"]}, {"h": "甲木", "st": "candidate", "src": ["syn"]}]},
+    # what only a list of names gives (ntu40k): listed after the others, its candidates only where nothing else is
+    # (at most three, a credited one first) and never by a name that heads a drug; no rival of the name's other drugs
+    {"s": "亥子", "n": 5, "r": [{"h": "卯辰", "st": "candidate", "src": ["ntu40k"]}, {"h": "甲木", "src": ["syn"]},
+                               {"h": "辰巳", "st": "cue", "src": ["ntu40k"]},
+                               {"h": "未酉", "cr": ["本经", 25, 220], "src": ["ntu40k"]}]},
+    {"s": "子丑", "n": 2, "r": [{"h": "卯辰", "st": "candidate", "src": ["ntu40k"]},
+                               {"h": "甲木", "st": "candidate", "src": ["ntu40k"]},
+                               {"h": "辰午", "st": "candidate", "cr": ["本经", 25, 220], "src": ["ntu40k"]},
+                               {"h": "未酉", "st": "candidate", "src": ["ntu40k"]}]},
+    {"s": "丑午", "n": 3, "r": [{"h": "甲木", "src": ["syn"]}, {"h": "卯辰", "st": "candidate", "src": ["ntu40k"]}]},
+    {"s": "申戌", "ho": "申戌", "n": 2, "r": [{"h": "甲木", "st": "candidate", "src": ["ntu40k"]}]},
 ]
 SYNTHETIC_HERBS = ["甲木", "卯辰", "申酉", "癸子", "𪚥"]
 # its lexicon, as D1's lex table holds one ({surface: [entry …]} in lookup order): a name several entries file, out of
@@ -270,6 +285,8 @@ SYNTHETIC_QUESTIONS: list[dict[str, Any]] = [
     {"asked": [["癸子", None]]}, {"asked": [["丑寅", "herb:甲木"]]}, {"asked": [["坤乾", None]]},
     {"asked": [["甲木花", None], ["戌亥", None]], "stops": [["巳午", None]], "after": 1050, "before": 1150, "surfaces": 2},
     {"asked": [["乾坤", None], ["辰巳", None]], "surfaces": 2}, {"asked": [["卯辰甲", "formula:卯辰甲"]]}, {"asked": [["寅卯", None]]},
+    {"asked": [["亥子", None]]}, {"asked": [["子丑", None]]}, {"asked": [["申戌", None]]},
+    {"asked": [["丑午", None], ["卯辰", None]], "surfaces": 2},
 ]
 SYNTHETIC_TEXTS: list[tuple[str, str, list[int | None] | None, list[int | None] | None]] = [
     ("癸子甲木", "甲木", None, None), ("子甲木", "甲木", None, None), ("甲木丸", "甲木", [1100, 1150], None),
@@ -282,6 +299,7 @@ SYNTHETIC_TEXTS: list[tuple[str, str, list[int | None] | None, list[int | None] 
     ("卯辰汤 乙草", "乙草", None, None), ("乙草（炒）", "乙草", None, None), ("戊己庚汤 乙草", "乙草", None, None),
     ("甲木", "甲木", [990, 1000], None),
     ("甲乙丙丁戊己庚辛汤 乙草", "乙草", None, None), ("辰巳", "辰巳", None, None), ("辰巳丙花", "辰巳", [500, 600], None),
+    ("丑午三两", "丑午", None, None), ("丑午卯辰", "丑午", None, None),
 ]
 
 
@@ -371,9 +389,11 @@ def alias_cases(runtime: Any, *, home: str | Path | None = None, passages: int =
     # the made-up layer, without a lexicon
     context = {**CONTEXT_PATTERNS, "herbs": SYNTHETIC_HERBS}
     syn = AliasIndex([AliasRecord.from_json(r) for r in SYNTHETIC], context=context,
-                     headers=[{"sources": ["syn"], "labels": {"syn": "合成"}}])
+                     headers=[{"sources": ["syn", "ntu40k"], "labels": {"syn": "合成", "ntu40k": "名表"}}])
     synthetic: dict[str, Any] = {"records": {r["s"]: {k: v for k, v in r.items() if k != "s"} for r in SYNTHETIC},
-                                 "context": context, "sources": [{"id": "syn", "label": "合成"}, {"id": "lexicon", "label": "词表"}]}
+                                 "context": context, "sources": [{"id": "syn", "label": "合成"},
+                                                                  {"id": "lexicon", "label": "词表"},
+                                                                  {"id": "ntu40k", "label": "名表"}]}
     synthetic["lexicon"] = SYNTHETIC_LEXICON
     lexicon = _Lexicon(SYNTHETIC_LEXICON)
     synthetic["expansions"] = []

@@ -226,8 +226,11 @@ class QueryAnalyzer:
            any kind (麦门冬汤, a formula, over the blocker 麦门冬): that mention is asked, its term and forms kept as
            today.  A non-herb entry of the blocker itself does not take a drug's name from the
            layer (蜣螂转丸, which a harvested lexicon files under a formula first, is still asked as written).
-        2. An alias span is kept only where the question asks it as a drug (:meth:`_asks_drug`); a dropped one gives
-           the lexicon mentions it overlapped back, so a question about something else reads as today.
+        2. An alias span is kept only where the question asks it as a drug (:meth:`_asks_drug`) — a name only lists
+           of names give, as a candidate (:meth:`AliasIndex.listed_only`), only as the question's one name — nothing
+           else the question names standing beside it, and of several such names the first (味药 in 苦菜是哪味药 and in
+           支子是哪味药 is none); a dropped one gives the lexicon mentions it overlapped back, so a question about
+           something else reads as today.
         3. A kept span outranks a weak or shorter lexicon mention it overlaps (山蓟 over 山).
         4. A question of four characters or fewer that is one name nobody knows, a weak herb character inside it,
            asks that name (干葛 is not 葛); question words and a dose stay outside it (葛的功效 asks 葛, 肝藏血 asks 肝
@@ -265,6 +268,13 @@ class QueryAnalyzer:
         strong += [(m.start, m.end) for m in raw if not m.weak and (m.start, m.surface) not in blocked
                    and self._drug_reading(m.surface, m.term_id) == "drug"]
         spans = [(i, j, s) for i, j, s in spans if self._asks_drug(norm, g, i, j, s, terms.get((i, s)), strong, cfg)]
+        # a name only lists give, and only as a candidate, is asked only as the question's one name: never beside
+        # another name it writes (味药, the NTU table's name of 铁扫竹, in 苦菜是哪味药), and of several such names only
+        # the first (支子是哪味药 asks 支子, not 味药)
+        listed = {i for i, _, s in spans if index.listed_only(s)}
+        others = [(i, j) for i, j, _ in spans if i not in listed] + [(m.start, m.end) for m in raw if not m.weak]
+        lone = next((i for i, j, _ in spans if i in listed and all(a < j and i < z for a, z in others)), None)
+        spans = [(i, j, s) for i, j, s in spans if i not in listed or i == lone]
         mentions: list[Mention] = []
         for m in raw:
             over = [j - i for i, j, _ in spans if i < m.end and m.start < j]

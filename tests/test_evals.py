@@ -51,6 +51,23 @@ def test_alias_eval_synthetic_part(tmp_path):
     assert data["metrics"]["gold"]["valid"] and "store part skipped (--quick)" in data["notes"]
     assert {d["id"] for d in data["details"]} == {f"s-{x}" for x in (
         "alias", "head", "trap", "period-early", "period-late", "ambiguous", "substring", "weak", "floor")}
+    # the paired bootstrap's intervals: the differences of the aggregates, each inside its interval
+    boot = syn["bootstrap"]
+    assert boot["resamples"] == 2000 and boot["level"] == 0.95 and boot["pairs"] == ["on-off", "on-naive"]
+    assert boot["synthetic"]["items"] == 9 and set(boot) - {"synthetic"} == {"resamples", "seed", "level", "metrics",
+                                                                               "pairs"}
+    for pair, other in (("on-off", "off"), ("on-naive", "naive")):
+        got = boot["synthetic"][pair]
+        assert got["P@10"]["diff"] == pytest.approx(syn["P@10 on"] - syn[f"P@10 {other}"], abs=1e-4)
+        assert got["Wrong@10"]["diff"] == syn["Wrong@10 on"] - syn[f"Wrong@10 {other}"]
+        assert got["AskedRet@10"]["diff"] == pytest.approx(syn["AskedRet@10 on"] - syn[f"AskedRet@10 {other}"],
+                                                           abs=1e-4)
+        for key in ("P@10", "nDCG@10", "Wrong@10", "AskedRet@10"):
+            lo, hi = got[key]["ci95"]
+            assert lo <= got[key]["diff"] <= hi, (pair, key)
+    assert boot["synthetic"]["on-off"]["P@10"]["ci95"][0] > 0  # the layer's gain holds on resampled items
+    assert run_suites(["aliases"], home=HOME, data_dir=tmp_path, quick=True)["aliases"]["metrics"]["synthetic"][
+        "bootstrap"] == boot  # seeded: every run draws the same resamples
 
 
 def test_alias_labeller_reads_only_the_items_patterns():
@@ -317,6 +334,122 @@ def test_alias_eval_acceptance_and_the_gain_where_off_answers():
     assert aggregate(rows["off"])["SilentMerge"] is None and aggregate(rows["off"])["CandRecall"] is None
 
 
+def test_alias_eval_bootstrap_is_paired_seeded_and_aggregate(monkeypatch):
+    """The intervals pair the systems' rows by item, compute each metric on a resample as ``aggregate`` does (means
+    over the items that have the metric, Wrong@10 a total) and draw the same resamples on every run."""
+    from taochronos.evals.aliases import (
+        _resamples,
+        bootstrap,
+        contrasts,
+        interval_text,
+        intervals,
+    )
+
+    def row(k, split="dev"):
+        return {"id": f"i{k}", "split": split, "P@10": k / 20, "nDCG@10": k / 20, "Wrong@10": k % 3,
+                "AskedRet@10": None if k % 4 == 0 else 0.5 + k / 40}
+
+    base = [row(k) for k in range(20)]
+    shifted = [{**r, "P@10": r["P@10"] + 0.1, "nDCG@10": r["nDCG@10"] + 0.1, "Wrong@10": r["Wrong@10"] + 1}
+               for r in base]
+    # a shift on every item is no uncertainty when the items are paired — in any order of the rows
+    got = bootstrap({"off": base, "on": list(reversed(shifted))}, [("on", "off")], resamples=500)
+    assert got["items"] == 20
+    assert got["on-off"]["P@10"] == got["on-off"]["nDCG@10"] == {"diff": 0.1, "ci95": [0.1, 0.1]}
+    assert got["on-off"]["Wrong@10"] == {"diff": 20, "ci95": [20, 20]}  # a total: one more wrong hit on 20 items
+    assert got["on-off"]["AskedRet@10"] == {"diff": 0.0, "ci95": [0.0, 0.0]}  # items without it left out
+    # a difference that varies by item: an interval around it, the same on every run, another under another seed
+    noisy = [{**r, "P@10": r["P@10"] + (0.3 if k % 2 else -0.1)} for k, r in enumerate(base)]
+    rows = {"off": base, "on": noisy}
+    got = bootstrap(rows, [("on", "off")], resamples=500)
+    lo, hi = got["on-off"]["P@10"]["ci95"]
+    assert lo < got["on-off"]["P@10"]["diff"] == 0.1 < hi
+    assert got == bootstrap(rows, [("on", "off")], resamples=500)
+    assert got != bootstrap(rows, [("on", "off")], resamples=500, seed=1)
+    # the mean over the items that have the metric, as aggregate computes it
+    fewer = [{**r, "AskedRet@10": None} if k < 10 else r for k, r in enumerate(base)]
+    want = sum(r["AskedRet@10"] for r in base[10:] if r["AskedRet@10"] is not None) / 8 \
+        - sum(r["AskedRet@10"] for r in base if r["AskedRet@10"] is not None) / 15
+    assert bootstrap({"off": base, "on": fewer}, [("on", "off")])["on-off"]["AskedRet@10"]["diff"] == round(want, 4)
+    # every pair on the items all its systems scored; nothing for no resamples or no pair
+    assert bootstrap({"off": base, "on": shifted[1:], "naive": base}, [("on", "off"), ("on", "naive")])["items"] == 19
+    assert bootstrap(rows, [("on", "naive")]) == {} and bootstrap(rows, [("on", "off")], resamples=0) == {}
+    assert contrasts(["off", "naive", "on", "analysis", "on@baseline", "naive@baseline"]) == [
+        ("on", "off"), ("on", "naive"), ("on", "on@baseline"), ("naive", "naive@baseline")]
+    assert contrasts(["off", "analysis", "gates"]) == []
+    # per split, and over all of them
+    split_rows = {s: [{**r, "split": "dev" if k % 2 else "heldout"} for k, r in enumerate(rs)] for s, rs in rows.items()}
+    got = intervals(split_rows, ["dev", "heldout"], resamples=100)
+    assert got["pairs"] == ["on-off"] and [got[s]["items"] for s in ("dev", "heldout", "all")] == [10, 10, 20]
+    assert got["dev"]["on-off"]["P@10"]["diff"] == 0.3 and got["heldout"]["on-off"]["P@10"]["diff"] == -0.1
+    assert intervals(split_rows, ["dev"], resamples=0) == {}
+    assert interval_text({"diff": 0.049, "ci95": [0.012, 0.09]}, "P@10") == "+0.049 [+0.012, +0.090]"
+    assert interval_text({"diff": -9, "ci95": [-16, -3]}, "Wrong@10") == "-9 [-16, -3]"
+    assert interval_text({"diff": None, "ci95": None}, "P@10") is None
+    monkeypatch.setenv("TAOCHRONOS_ALIAS_EVAL_BOOTSTRAP", "300")
+    assert _resamples() == 300
+    monkeypatch.setenv("TAOCHRONOS_ALIAS_EVAL_BOOTSTRAP", "many")
+    with pytest.raises(ValueError, match="TAOCHRONOS_ALIAS_EVAL_BOOTSTRAP"):
+        _resamples()
+
+
+def test_alias_eval_compares_two_layers_on_the_same_items(tmp_path):
+    """A second layer searched on the same items in the same rotation (``on@baseline``, what
+    TAOCHRONOS_ALIAS_EVAL_BASELINE runs): the same layer differs in nothing; one without 国老 and 王连 loses what
+    they find, and on − on@baseline measures it with its interval."""
+    import json
+
+    from taochronos.evals.aliases import (
+        SYN_HERBS,
+        SYN_ITEMS,
+        _syn_records,
+        bootstrap,
+        contrasts,
+        layer_label,
+        layer_pack,
+        layer_retriever,
+        run_items,
+        synthetic_search,
+    )
+    from taochronos.plugins.classics.aliases import write_records
+
+    def layer(name, records):
+        folder = tmp_path / name
+        folder.mkdir()
+        (folder / "context.json").write_text(json.dumps({"version": 1, "herbs": sorted(SYN_HERBS)}, ensure_ascii=False),
+                                             encoding="utf-8")
+        write_records(folder / "aliases.jsonl", records, {"labels": {"bielu-jc": "别名录（中醫笈成）"}})
+        return folder
+
+    same = layer("same", _syn_records())
+    old = layer("old", [r for r in _syn_records() if r.s not in ("国老", "王连")])
+    systems = ["off", "on", "on@baseline"]
+    with synthetic_search(HOME) as (r, _, corpus):
+        with pytest.raises(FileNotFoundError, match="no alias layer"):
+            layer_pack(r.pack, tmp_path / "nowhere")
+        boots = {}
+        for name, folder in (("same", same), ("old", old)):
+            pack = layer_pack(r.pack, folder)
+            assert layer_label(pack)["records"] == len(list((folder / "aliases.jsonl").open(encoding="utf-8"))) - 1
+            rows, _ = run_items(SYN_ITEMS, r, corpus, systems, others={"on@baseline": layer_retriever(r, pack)})
+            assert contrasts(rows) == [("on", "off"), ("on", "on@baseline")]
+            boots[name] = bootstrap(rows, contrasts(rows), resamples=500)
+            labels = {s: [(x["id"], x["labels"], x["listed"]) for x in rows[s]] for s in systems}
+            if name == "same":
+                assert labels["on@baseline"] == labels["on"]
+            else:
+                moved = {a[0] for a, b in zip(labels["on"], labels["on@baseline"]) if a != b}
+                assert moved and moved <= {"s-alias", "s-head", "s-substring"}, moved
+    for key in ("P@10", "nDCG@10", "Wrong@10", "AskedRet@10"):
+        got = boots["same"]["on-on@baseline"][key]
+        assert got["diff"] == 0 and got["ci95"] == [0, 0], key
+        got = boots["old"]["on-on@baseline"][key]
+        assert got["ci95"][0] <= got["diff"] <= got["ci95"][1], key
+    lost = boots["old"]["on-on@baseline"]  # 国老's 甘草 passages and 黄连's 王连 passage, in place of wrong hits
+    assert lost["P@10"]["diff"] > 0 and lost["nDCG@10"]["diff"] > 0 and lost["Wrong@10"]["diff"] < 0
+    assert boots["old"]["on-off"] == boots["same"]["on-off"]  # the same resamples for every pair
+
+
 def _tiny_store(path):
     from taochronos.plugins.classics.domain import DomainPack
     from taochronos.plugins.classics.store import CorpusStore
@@ -390,6 +523,49 @@ def test_alias_eval_profile_harness_leaves_the_store_alone(tmp_path, monkeypatch
     out = A.store(ctx, gold, notes, details, heldout=False)["web-canon"]
     assert out["split"] == "dev" and out["results"]["splits"] == ["dev"] and "held-out split refused" in notes[0]
     assert {d["id"] for d in details} == dev
+
+
+def test_alias_eval_store_part_compares_a_baseline_layer(tmp_path, monkeypatch):
+    """TAOCHRONOS_ALIAS_EVAL_BASELINE on the store part: a wrong path fails before anything runs; the profile's own
+    layer as the baseline searches every item as ``on`` does, so on − on@baseline is 0 with a zero interval; the
+    baseline's tables, resolution, label and dev details sit beside the others'."""
+    import importlib
+
+    from taochronos.evals.aliases_gold import load_gold
+    from taochronos.evals.base import EvalContext
+
+    A = importlib.import_module("taochronos.evals.aliases")
+    _tiny_store(tmp_path / "corpus" / "tcm.sqlite")
+    ctx = EvalContext(HOME, data_dir=tmp_path)
+    gold = load_gold(HOME)
+    dev = [i for i in gold["items"] if i["split"] == "dev"]
+    small = {**gold, "items": [i for i in dev if i["id"] in ("alias-01", "head-11")] + dev[:2],
+             "resolution": [r for r in gold["resolution"] if r["split"] == "dev"][:4]}
+    for name, value in (("", "web-canon"), ("_SYSTEMS", "off,on"), ("_VIEWS", "main"), ("_SPLITS", "dev"),
+                        ("_BOOTSTRAP", "200"), ("_BASELINE", str(tmp_path / "nowhere"))):
+        monkeypatch.setenv(f"TAOCHRONOS_ALIAS_EVAL{name}", value)
+    with pytest.raises(FileNotFoundError, match="TAOCHRONOS_ALIAS_EVAL_BASELINE"):
+        A.store(ctx, small, [], [])
+    monkeypatch.setenv("TAOCHRONOS_ALIAS_EVAL_BASELINE", str(HOME / "domains" / "classics" / "aliases"))
+    notes, details = [], []
+    out = A.store(ctx, small, notes, details)["web-canon"]
+    res = out["results"]
+    assert set(res["views"]["main"]) == {"off", "on", "on@baseline"}
+    assert res["baseline"]["fingerprint"] == res["store"]["layer"] and res["baseline"]["records"] > 0
+    assert any(n.startswith("web-canon: baseline layer ") and "on@baseline" in n for n in notes)
+    assert res["resolution"]["on@baseline"] == res["resolution"]["on"]
+    assert out["P@10 on@baseline"] == out["P@10 on"] is not None and out["resolution on@baseline"] == out["resolution on"]
+    boot = res["bootstrap"]
+    assert boot["view"] == "main" and boot["resamples"] == 200 and boot["pairs"] == ["on-off", "on-on@baseline"]
+    assert set(boot) - {"view", "resamples", "seed", "level", "metrics", "pairs"} == {"dev"}  # one split, no "all"
+    assert boot["dev"]["items"] == 4
+    assert boot["dev"]["on-on@baseline"]["P@10"] == {"diff": 0, "ci95": [0, 0]}
+    assert boot["dev"]["on-on@baseline"]["Wrong@10"] == {"diff": 0, "ci95": [0, 0]}
+    assert out["P@10 on-on@baseline"] == "+0.000 [+0.000, +0.000]" and out["Wrong@10 on-on@baseline"] == "+0 [+0, +0]"
+    assert out["P@10 on-off"] == A.interval_text(boot["dev"]["on-off"]["P@10"], "P@10")
+    assert len(details) == 4
+    for d in details:
+        assert d["systems"]["on@baseline"]["labels"] == d["systems"]["on"]["labels"]
 
 
 def test_alias_eval_problem_notes_name_no_heldout_item():

@@ -23,9 +23,9 @@ import { analyze, search, SERVED_ROUTES, warming } from "../site/src/backup/sear
 import { verifyQuote } from "../site/src/backup/tools.js";
 import { compoundTerms, D1Adapter, workerCpu } from "./d1-adapter.js";
 import { unionAll } from "../site/src/backup/search.js";
-import { AliasIndex, aliasIndex, assemble, Cp, gateForm, placeless, round4, unsearched } from "../site/src/backup/aliases.js";
+import { AliasIndex, aliasIndex, assemble, Cp, gateForm, layout, placeless, round4, unsearched } from "../site/src/backup/aliases.js";
 import { Lexicon } from "../site/src/backup/lexicon.js";
-import { ALIAS_PARAMS } from "../site/src/backup/tables.js";
+import { ALIAS_CONTEXT, ALIAS_INDEX, ALIAS_PARAMS, ALIAS_SOURCES, ALIASES } from "../site/src/backup/tables.js";
 import { DatabaseSync } from "node:sqlite";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -278,8 +278,9 @@ test("a fresh isolate's first drug questions stay within a Worker's limits: the 
   assert.ok(warm.questions >= 2 && warm.tiers.includes("A") && warm.tiers.includes("B") && warm.side > 0, JSON.stringify(warm));
   // a fresh process for a fresh isolate: the Worker's modules evaluated (site.js, which imports the backup: tables.js,
   // the alias index built and warmed, warm.js's run) — the start, which Cloudflare allows START_LIMIT_MS of (1 s, its
-  // limit on every plan; measured 350–630 ms here as the process's CPU, its compiler and collector threads included,
-  // 160–220 ms before the NTU table) — then a first question without the layer (the corpus's statistics and lexicon
+  // limit on every plan; measured 200–275 ms here as the process's CPU, its compiler and collector threads included:
+  // the index reads no record, the warm-up about 70 of them; 380–520 ms when every record was read at the start, with
+  // the NTU table, and 160–220 ms before it) — then a first question without the layer (the corpus's statistics and lexicon
   // read, as any first request reads them), then the first drug question of each kind — an alias whose drug needs its
   // context, a drug with blockers, an origin question
   const url = (p) => JSON.stringify(pathToFileURL(resolve(here, p)).href);
@@ -725,7 +726,49 @@ test("parity: the alias layer's functions on a made-up layer — astral names, w
   aliasRecords(index, syn.record_cases);
   assert.ok(syn.expansions.some((c) => c.expansions.some((e) => e.also.length > 1)));
   assert.ok(syn.expansions.some((c) => c.view.asked?.some((a) => a.note)));
+  // what only a list of names gives (aliases.listing, list_candidate): its candidates listed only where nothing else is,
+  // at most three, a credited one first, none for a drug's own name — and no rival (丑午 stays 甲木's alone)
+  const plain = (name) => syn.expansions.find((c) => !Object.keys(c.cfg).length && c.lexicon && c.q.asked.length >= 1 && c.q.asked[0][0] === name);
+  assert.deepEqual(plain("子丑").view.asked[0].referents.map((r) => r.head), ["辰午", "卯辰", "甲木"]);
+  assert.deepEqual(plain("亥子").view.asked[0].referents.map((r) => r.head), ["甲木", "未酉", "辰巳"]);
+  assert.deepEqual(plain("申戌").view, {});
+  assert.equal(plain("甲木").expansions.find((e) => e.surface === "丑午").shared, false);
+  assert.ok(index.listedOnly("子丑") && !index.listedOnly("亥子") && !index.listedOnly("申戌"));
 });
+
+test("the shipped layer's start reads no record: its lines are read when used, its lookups read ALIAS_INDEX", () => {
+  // tables.js: a line per record ("surface\tJSON", code-point order) and Python's aliases.layout over them, which the
+  // layout made here from the records read whole gives too
+  const index = new AliasIndex();
+  assert.equal(index.records.made.filter(Boolean).length, 0);
+  assert.ok(index.size > 1000 && index.records.list.every((s, i) => i === 0 || cmpCodePoints(index.records.list[i - 1], s) < 0));
+  assert.equal(index.records.get("将军").stop, false);
+  assert.equal(index.records.made.filter(Boolean).length, 1);
+  assert.equal(index.records.get("将军").data, null); // made, not read: its surface and stop are known without it
+  assert.ok(index.records.get("将军").r.length > 0 && index.records.get("将军").data !== null);
+  const recs = [...index.records.values()];
+  const shape = layout(recs); // every record read (each checks its stop against the index's)
+  assert.deepEqual({ ...shape, groups: { ...shape.groups }, owners: { ...shape.owners } }, ALIAS_INDEX);
+  // the same layer given as objects (its index made here) answers every lookup alike
+  const objects = Object.fromEntries(ALIASES.split("\n").map((line) => [line.slice(0, line.indexOf("\t")), JSON.parse(line.slice(line.indexOf("\t") + 1))]));
+  const other = new AliasIndex(objects, ALIAS_CONTEXT, ALIAS_SOURCES);
+  assert.equal(other.maxLen, index.maxLen);
+  for (const g of Object.keys(ALIAS_INDEX.groups)) {
+    assert.deepEqual(other.byGroup(g), index.byGroup(g), g);
+    assert.deepEqual(other.names(g), index.names(g), g);
+  }
+  for (const s of index.records.list) assert.deepEqual(other.groupsFor(null, [s]), index.groupsFor(null, [s]), s);
+  for (const t of Object.keys(ALIAS_INDEX.terms)) assert.deepEqual(other.groupsFor(t, []), index.groupsFor(t, []), t);
+  assert.throws(() => new AliasIndex("甲乙\t{\"stop\":true}", ALIAS_CONTEXT, ALIAS_SOURCES, { ...ALIAS_INDEX, stops: [] }).records.get("甲乙").r,
+    /the index says 甲乙 is not a stop name/);
+});
+
+/** Python's order of strings, by code point. */
+function cmpCodePoints(a, b) {
+  const x = [...a].map((c) => c.codePointAt(0)), y = [...b].map((c) => c.codePointAt(0));
+  for (let i = 0; i < Math.min(x.length, y.length); i++) if (x[i] !== y[i]) return x[i] - y[i];
+  return x.length - y.length;
+}
 
 test("every live tool within a Worker's limits on the fixture", { skip }, async () => {
   const calls = [["classics.search", { query: "太阳病脉浮头项强痛而恶寒", k: 10 }], ["classics.search", { query: "消渴的认识如何演变", k: 10 }],

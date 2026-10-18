@@ -253,6 +253,14 @@ function analyzeAliases(lex, index, q, norm, raw0, cfg) {
     }
   }
   spans = spans.filter(([i, j, s]) => asksDrug(lex, index, N, g, i, j, s, termOf(i, s), strong, cfg));
+  // a name only lists give, and only as a candidate, is asked only as the question's one name: never beside another
+  // name it writes (味药, the NTU table's name of 铁扫竹, in 苦菜是哪味药), and of several such names only the first
+  // (支子是哪味药 asks 支子, not 味药)
+  const listed = new Set(spans.filter(([, , s]) => index.listedOnly(s)).map(([i]) => i));
+  const others = [...spans.filter(([i]) => !listed.has(i)).map(([i, j]) => [i, j]),
+    ...raw.filter((m) => !m.weak).map((m) => [m.start, m.end])];
+  const lone = spans.find(([i, j]) => listed.has(i) && others.every(([a, z]) => a < j && i < z));
+  spans = spans.filter(([i]) => !listed.has(i) || (lone !== undefined && i === lone[0]));
   const mentions = [];
   for (const m of raw) {
     const over = spans.filter(([i, j]) => i < m.end && m.start < j).map(([i, j]) => j - i);

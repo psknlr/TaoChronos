@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 import random
 import time
+import zlib
 from dataclasses import dataclass, field, replace
+from pathlib import Path
 
 import pytest
 
@@ -26,6 +28,8 @@ from taochronos.plugins.classics.aliases import (
     assemble,
     dumps_records,
     gate_form,
+    layout,
+    list_candidate,
     loads_records,
     meets,
     overlaps,
@@ -244,21 +248,31 @@ def test_three_thousand_records_load_quickly(tmp_path):
                  w=[Witness(f"jc_c030.{i:05d}", 1568, 1568, "l", True)])]) for i, s in enumerate(surfaces)]
     path = write_records(tmp_path / "aliases.jsonl", records)
 
-    def parse() -> list:  # what loading cannot do without: reading the file and parsing its lines
+    whole = tmp_path / "whole.jsonl"  # the same records, the header's index left out: read whole
+    first, rest = path.read_text(encoding="utf-8").split("\n", 1)
+    header = json.loads(first)
+    del header["_header"]["index"]
+    whole.write_text(json.dumps(header, ensure_ascii=False) + "\n" + rest, encoding="utf-8")
+
+    def parse() -> list:  # what loading a file whole cannot do without: reading it and parsing its lines
         return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
 
-    # timed against the parse, each round both in turn, best of seven: a busy machine slows the two alike.  Loading
-    # takes about 3× the parse (0.05 s against 0.017 s here, 3.1–4.1× with six CPU-bound processes on four cores); a
-    # load 3× slower reads about 9×, over the bound
-    load_best = parse_best = float("inf")
+    # timed against the parse, each round both in turn, best of seven: a busy machine slows them alike.  Read whole,
+    # loading takes about 3× the parse (0.05 s against 0.017 s here, 3.1–4.1× with six CPU-bound processes on four
+    # cores; a load 3× slower reads about 9×, over the bound); by its index, about a fifth of it, reading no record
+    load_best = whole_best = parse_best = float("inf")
     for _ in range(7):
         start = time.perf_counter()
         index = AliasIndex.load([path])
         loaded = time.perf_counter()
+        read = AliasIndex.load([whole])
+        whole_loaded = time.perf_counter()
         parse()
-        load_best, parse_best = min(load_best, loaded - start), min(parse_best, time.perf_counter() - loaded)
-    assert len(index) == 3000
-    assert load_best < 6 * parse_best, f"{load_best:.3f} s to load, {parse_best:.3f} s to parse"
+        load_best, whole_best = min(load_best, loaded - start), min(whole_best, whole_loaded - loaded)
+        parse_best = min(parse_best, time.perf_counter() - whole_loaded)
+    assert len(index) == len(read) == 3000 and not index._recs._read and len(read._recs._read) == 3000
+    assert load_best < parse_best, f"{load_best:.3f} s to load by the index, {parse_best:.3f} s to parse"
+    assert whole_best < 6 * parse_best, f"{whole_best:.3f} s to load whole, {parse_best:.3f} s to parse"
 
 
 # --------------------------------------------------------------------------- the runtime index: gates and expansion
@@ -786,6 +800,44 @@ def test_the_query_view(tmp_path):
     assert index.view(ask(None, "小便"), {}) == {}
 
 
+def test_what_only_lists_give_is_listed_last_and_capped_and_is_no_rival():
+    """A candidate only lists of names give (the NTU table) and no passage witnesses is listed after the others — none
+    beside them or for a drug's own name, at most LIST_ONLY_CAP where nothing else is, a credited one first — and is
+    no rival of the name's other drugs; a name with nothing else is a list-only name (asked alone only)."""
+    a, wit = Referent, [Witness("bc.00001", 500, 500, "e")]
+    index = AliasIndex([
+        AliasRecord("苦菜", ho="苦菜", n=27, r=[a("山莴苣", st="candidate", src=["ntu40k"]),
+                                               a("贝母", st="candidate", src=["curated"], w=wit),
+                                               a("苦芥", st="candidate", src=["ntu40k"])]),
+        AliasRecord("贝母", ho="贝母", n=300),
+        AliasRecord("一把篾", r=[a("乌蔹莓", st="candidate", src=["ntu40k"]), a("五爪金龙", st="candidate", src=["ntu40k"]),
+                                 a("九节莲", st="candidate", src=["ntu40k"], cr=("本经", 25, 220)),
+                                 a("红母猪藤", st="candidate", src=["ntu40k"])]),
+        AliasRecord("青木香", n=80, r=[a("南木香", st="candidate", src=["ntu40k"]),
+                                     a("大叶青木香", st="cue", src=["ntu40k"]),
+                                     a("土木香", st="cue", src=["ntu40k"], cr=("本草衍义", 1116, 1116)),
+                                     a("木香", v=(None, 1100), src=["curated"], w=wit)]),
+        AliasRecord("味药", n=28, sh=0.14, r=[a("铁扫竹", st="candidate", src=["ntu40k"])]),
+        AliasRecord("乌蔹莓", ho="乌蔹莓", n=1),
+        AliasRecord("五爪龙", n=2, r=[a("乌蔹莓", src=["bielu-jc"], w=wit), a("五指毛桃", st="candidate", src=["ntu40k"])]),
+        AliasRecord("龙草", n=8, r=[a("乌蔹莓", src=["bielu-jc"], w=wit), a("五指毛桃", st="candidate", src=["bielu-jc"])]),
+    ], context=CONTEXT)
+
+    def heads(name: str) -> list[str]:
+        view = index.view(ask(None, name), {})
+        return [r["head"] for r in view["asked"][0]["referents"]] if view.get("asked") else []
+
+    assert heads("苦菜") == ["贝母"]  # a drug of its own: none of the table's candidates
+    assert heads("一把篾") == ["九节莲", "乌蔹莓", "五爪金龙"]  # nothing else: three, the credited one first
+    assert heads("青木香") == ["木香", "土木香", "大叶青木香"]  # witnessed, credited, searched; the candidate left out
+    assert index.view(ask(None, "一把篾"), {})["asked"][0]["ambiguous"]
+    assert index.listed_only("味药") and not index.listed_only("苦菜") and not index.listed_only("五爪龙")
+    assert [list_candidate(r) for r in index.record("苦菜").r] == [True, False, True]
+    # 五爪龙's list candidate is no rival: it stays 乌蔹莓's alone; 龙草's candidate from the 别名录 still is one
+    shared = {e.surface: e.shared for e in index.expansions(ask(None, "乌蔹莓"), None, {})}
+    assert shared == {"五爪龙": False, "龙草": True}
+
+
 def test_windows():
     assert overlaps(None, (1, 2)) and overlaps((None, 960), (None, None)) and overlaps((960, None), (900, 1000))
     assert overlaps((None, 960), (959, 959)) and not overlaps((None, 960), (960, 960))
@@ -842,3 +894,158 @@ def test_three_thousand_records_with_their_context_load_and_scan_quickly(tmp_pat
     assert scan_best < 0.05
     assert all(text[i:j] == s and index.record(s) is not None for i, j, s in found)
     assert sum(len(index.by_group(h)) for h in heads) == 2700
+
+
+# --------------------------------------------------------------------------- the header's index and the lazy reader
+SHIPPED = Path(__file__).resolve().parents[1] / "domains" / "classics" / "aliases"
+
+
+def whole_maps(records: list[AliasRecord]) -> tuple[dict, dict, dict, dict]:
+    """The lookups as the index made them before its file carried an index, every record read: group → [(surface,
+    referent)] by surface, name → the groups it heads, group → its heads, term id → its groups."""
+    groups: dict[str, list] = {}
+    heads: dict[str, set] = {}
+    group_heads: dict[str, set] = {}
+    terms: dict[str, set] = {}
+    for rec in sorted(records, key=lambda r: r.s):
+        if rec.ho is not None:
+            heads.setdefault(rec.s, set()).add(rec.ho)
+            group_heads.setdefault(rec.ho, set()).add(rec.s)
+        for ref in rec.r:
+            groups.setdefault(ref.g, []).append((rec.s, ref))
+            heads.setdefault(ref.h, set()).add(ref.g)
+            group_heads.setdefault(ref.g, set()).add(ref.h)
+            if ref.t:
+                terms.setdefault(ref.t, set()).add(ref.g)
+    return groups, heads, group_heads, terms
+
+
+def assert_answers_as_read_whole(index: AliasIndex, records: list[AliasRecord]) -> None:
+    """Every lookup by group, head and term, and every name's readings, as the index read whole gave them."""
+    groups, heads, group_heads, terms = whole_maps(records)
+    by_s = {rec.s: rec for rec in records}
+    for g in sorted(set(groups) | set(group_heads)):
+        assert index.by_group(g) == groups.get(g, []), g
+        names = set(group_heads.get(g, ()))
+        for a, ref in groups.get(g, ()):
+            if ref.st != "candidate" and not by_s[a].stop and all(o.g == g for o in by_s[a].r):
+                names.add(a)
+        assert index.names(g) == sorted(n for n in names if len(n) >= 2), g
+    for s in sorted(set(heads) | set(by_s) | {"无此名"}):
+        assert index.groups_for(None, [s]) == sorted(heads.get(s, ())), s
+    for t in sorted(terms):
+        assert index.groups_for(t, []) == sorted(terms[t]), t
+        assert index.groups_for(t, ["无此名"]) == sorted(terms[t]), t
+    whole = AliasIndex(records)
+    for s, rec in by_s.items():
+        assert index.record(s) == rec and index.readings(s) == whole.readings(s), s
+
+
+def test_the_shipped_layer_loads_reading_no_record_and_answers_as_read_whole():
+    """The committed layer's header indexes it: loading reads no record, and every lookup answers as the records read
+    whole answer — by group, head, term, the names that tell a group apart, the readings."""
+    text = (SHIPPED / "aliases.jsonl").read_bytes()
+    header, records = loads_records(text.decode("utf-8"))
+    assert dumps_records(records, header).encode("utf-8") == text  # the index is what the writer writes for them
+    context = json.loads((SHIPPED / "context.json").read_text(encoding="utf-8"))
+    lazy = AliasIndex.load([SHIPPED / "aliases.jsonl"], SHIPPED / "context.json")
+    assert len(lazy) == len(records) and not lazy._recs._read  # nothing read
+    assert list(lazy.records) == [rec.s for rec in records] and lazy.max_len == max(len(rec.s) for rec in records)
+    whole = AliasIndex(records, context=context, headers=[header])
+    assert (lazy.sources, lazy.labels, lazy.headers, lazy.skipped, lazy.context) == (
+        whole.sources, whole.labels, whole.headers, whole.skipped, whole.context)
+    lazy.record("将军")
+    assert list(lazy._recs._read) == ["将军"]  # a record is read when asked for, alone
+    assert_answers_as_read_whole(lazy, records)
+    assert_answers_as_read_whole(whole, records)
+
+
+def test_the_header_index_is_a_reading_aid_a_reader_may_ignore(tmp_path):
+    """The writer puts the index in the header (positions, the CRC-32 of the record lines); the records read whole
+    come out the same and a header read back has no index; a file without one, or written for records a reader would
+    skip, is read whole."""
+    text = dumps_records(sample(), META)
+    first, body = text.split("\n", 1)
+    index = json.loads(first)["_header"]["index"]
+    assert index == {**layout(sorted(sample(), key=lambda r: r.s)), "lines": 7, "crc": zlib.crc32(body.encode("utf-8"))}
+    # 国老 将军 小便 山药 薯蓣 通草 鬼督邮: the records by position
+    assert index["groups"] == {"大黄": [1], "山药": [4], "徐长卿": [6], "木通": [5], "甘草": [0], "硫黄": [1],
+                               "赤箭": [6], "通脱木": [5]}
+    assert (index["headless"], index["heads"], index["owners"], index["stops"]) == (["赤箭"], {"天麻": ["赤箭"]}, {}, [2])
+    assert index["terms"] == {"herb:甘草": ["甘草"]} and index["sources"] == ["bielu-jc", "curated", "shiming", "taboo"]
+    header, records = loads_records(text)
+    assert "index" not in header and records == sorted(sample(), key=lambda r: r.s)
+    assert dumps_records(records, {**header, "index": {"groups": {}}}) == text  # written afresh, never carried over
+    # a record a reader would skip leaves the index out (the file is then read whole, skipping it)
+    skipped = dumps_records([*sample(), AliasRecord("葛", r=[Referent("葛根", src=["bielu-jc"])])])
+    assert "index" not in json.loads(skipped.split("\n", 1)[0])["_header"]
+    path = tmp_path / "a.jsonl"
+    path.write_text(skipped, encoding="utf-8")
+    assert AliasIndex.load([path]).skipped["one_char"] == 1
+
+
+def test_a_file_whose_lines_are_not_those_its_index_describes_is_read_whole(tmp_path, monkeypatch):
+    path = write_records(tmp_path / "aliases.jsonl", sample(), META)
+    lazy = AliasIndex.load([path])
+    assert not lazy._recs._read and lazy.record("将军").n == 116
+    # a line edited by hand: its CRC differs, so the file is read whole — the edit seen, a damaged one refused
+    text = path.read_text(encoding="utf-8")
+    path.write_text(text.replace('"n":116', '"n":117'), encoding="utf-8")
+    edited = AliasIndex.load([path])
+    assert len(edited._recs._read) == 7 and edited.record("将军").n == 117
+    path.write_text(text.replace('"n":116', '"n":"116"'), encoding="utf-8")
+    with pytest.raises(ValueError, match=":3: malformed record .n is '116'"):
+        AliasIndex.load([path])
+    path.write_text(text.replace("\n", "\r\n"), encoding="utf-8")  # another line ending: read whole, the same
+    assert len(AliasIndex.load([path])._recs._read) == 7
+    # a kind this reader does not know, from a writer that knew it: read whole, the referent skipped
+    monkeypatch.setitem(KINDS, "nickname", "昵称")
+    write_records(path, [*sample(), AliasRecord("干葛", r=[Referent("葛根", k="nickname", src=["hurb"])])], META)
+    monkeypatch.delitem(KINDS, "nickname")
+    assert "nickname" in json.loads(path.read_text(encoding="utf-8").split("\n", 1)[0])["_header"]["index"]["kinds"]
+    read = AliasIndex.load([path])
+    assert read.skipped["kind"] == 1 and read.record("干葛") is None and len(read) == 7
+    # an index whose positions are damaged is refused when the group is looked up
+    write_records(path, sample(), META)
+    first, body = path.read_text(encoding="utf-8").split("\n", 1)
+    header = json.loads(first)
+    header["_header"]["index"]["groups"]["甘草"] = [70]
+    path.write_text(json.dumps(header, ensure_ascii=False) + "\n" + body, encoding="utf-8")
+    damaged = AliasIndex.load([path])
+    with pytest.raises(ValueError, match="index of the records is damaged .甘草."):
+        damaged.by_group("甘草")
+    # another format or a newer version in an indexed header is refused as before
+    path.write_text(first.replace('"version":1', '"version":2') + "\n" + body, encoding="utf-8")
+    with pytest.raises(ValueError, match=":1: .* or older"):
+        AliasIndex.load([path])
+
+
+def test_files_read_by_their_index_combine_as_files_read_whole(tmp_path):
+    """Two layers, each indexed: disjoint, both read lazily; sharing a surface, the later read whole, the first's
+    record kept and the other counted — and every lookup as for the records read whole."""
+    a = Referent
+    one = write_records(tmp_path / "one.jsonl", sample(), META)
+    extra = [AliasRecord("国老", r=[a("黄芪", src=["hurb"])]), AliasRecord("蜜甘", r=[a("甘草", src=["hurb"])]),
+             AliasRecord("赤箭", ho="赤箭", n=4), AliasRecord("定风草", r=[a("天麻", g="赤箭", t="herb:天麻", src=["hurb"])])]
+    two = write_records(tmp_path / "two.jsonl", extra[1:], {"labels": {"hurb": "hurbTable"}})
+    both = AliasIndex.load([one, two])
+    assert not both._recs._read and len(both._parts) == 2 and both.sources == ["bielu-jc", "curated", "hurb", "shiming", "taboo"]
+    assert_answers_as_read_whole(both, sorted(sample() + extra[1:], key=lambda r: r.s))
+    assert both.groups_for(None, ["天麻"]) == ["赤箭"] and both.groups_for("herb:天麻", []) == ["赤箭"]
+    assert [s for s, _ in both.by_group("甘草")] == ["国老", "蜜甘"] and both.labels["hurb"] == "hurbTable"
+    three = write_records(tmp_path / "three.jsonl", extra, META)
+    shared = AliasIndex.load([one, three])
+    assert shared.skipped["duplicate"] == 1 and [ref.h for ref in shared.record("国老").r] == ["甘草"]
+    assert_answers_as_read_whole(shared, sorted(sample() + extra[1:], key=lambda r: r.s))
+
+
+def test_the_surface_check_reads_han_as_is_han_does():
+    """The lazy reader checks every surface at once (a line of at most one Han character): around each edge of the
+    ranges ``is_han`` accepts, the check and ``is_han`` agree."""
+    from taochronos.plugins.classics.aliases import _SHORT
+
+    edges = [0x3400, 0x9FFF, 0xF900, 0xFAFF, 0x20000, 0x3134F, 0x3007, 0x3013]
+    for c in sorted({c + d for c in edges for d in (-1, 0, 1)} | {0x41, 0x20, 0x4E00}):
+        ch = chr(c)
+        assert bool(_SHORT.search("甲" + ch)) == (not is_han(ch)), hex(c)
+        assert bool(_SHORT.search(ch + "x\n乙丙")) and not _SHORT.search("乙丙\n甲" + ch) == (not is_han(ch))

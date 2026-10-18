@@ -475,7 +475,8 @@ cover_stops:
 # strings the build would take as blockers of a name though the store reads them as the name's own drug (a lexicon
 # headword, a straddle), each name's witnesses in its comment.  The build already leaves out the 纲目's joint headings
 # the lexicon harvested as one name where the store nowhere writes them as one; a row here holds on any store, and the
-# string it lists stays a blocker of every name no row unblocks it for (防风党参 of 防风).
+# string it lists stays a blocker of every name no row unblocks it for (防风党参 of 防风).  A longer name that only the
+# NTU table, with no passage of the store, makes another drug's blocks nothing and needs no row (大附子, 云防风).
 unblock:
   党参: [防风党参]  # 党参之一种，非防风：肆中所卖党参……唯防风党参，性味和平 jc_c021.00076
   # 纲目「假苏」条（即荆芥）题作一行，词表收为一名；假苏、荆芥同药（same_drug）：荆芥……（一名假苏）jc_c029.00024
@@ -485,10 +486,6 @@ unblock:
   # 青矾石（烧） waitai_miyao.029.05267; 布艾上又布青矾石末 waitai_miyao.013.01874
   青矾: [青矾石]
   # NTU 40K review: a NTU or lexicon headword, a straddle or a conversion error hiding the drug's own name
-  附子: [大附子]  # 大附子一枚，炮 cm_jingui_dengzhen.00358; 大附子（一枚生削去黑皮） jc_d004.00626 (NTU 名海芋、卜芥，见 decisions)
-  半夏: [大半夏]  # 大半夏（一两每个切作二块） ruizhutang.004.00076; 大半夏汤 cm_jingui_dengzhen.00867
-  # 甘草|防风 jc_h008.00076; 洁古云|防风 yilei_yuanrong.002.00212; 滑石|防风 jc_d031.00260; 麻黄杏仁|防风 jc_d075a.00323
-  防风: [草防风, 云防风, 石防风, 杏仁防风]
   升麻: [黄升麻, 升麻根]  # 麻黄|升麻汤 cm_shanghan_npm.01541; 大黄|升麻 jc_d025a.04578; 升麻根　木香 (the drug's root) jc_g040.01677, jc_o052.09855
   龙胆: [草龙胆]  # 纲目龙胆：俗呼草龙胆 bencao_gangmu_skqs.039.01740; 草龙胆（酒洗） lanshi_micang.001.00168
   藿香: [藿香叶]  # 藿香叶（壹两） chuanxin_shiyong.002.00384; 藿香叶甘气本温 jc_o049.00052
@@ -500,7 +497,6 @@ unblock:
   枣仁: [生枣仁, 黑枣仁]  # 生枣仁（五钱） jc_d039.00129; 炒黑枣仁 jc_d033.00042
   黄卷: [豆黄卷]  # 大|豆黄卷：大豆黄卷 jc_g043.00470; 金匮薯蓣丸豆黄卷（各十分） cm_jingui_dengzhen.00417
   益母: [益母草]  # 益|母草：益母草（五月五日采） jc_p0008a.00210
-  头发: [乱头发, 人头发]  # 乱头发一握 jc_f100.00563; 妇人头发（一握烧存性） zhengzhi_zhunsheng.067.11023
 
 # gate overrides: a name's status for one drug (head), or for all of its drugs where no head is given; the first row
 # that fits wins

@@ -54,7 +54,7 @@ The suites form three layers ([ADR 0009](adr/0009-boundaries-contract-and-evalua
 | `schools` | Are a school's planted words found, and do the textbooks' doctrines come out as its own? | planted top-2 and significant · common words listed · citation shares · real: doctrine recall and attribution |
 | `names` | Is the change of a drug's preferred name dated, and its names equated and completed? | switch interval · nested names apart · equations · candidates · real: dated taboo renames |
 | `chain` | Does each witness of a passage hang from the witness it was copied from? | witnesses found · parent accuracy against the most-similar baseline, with and without convergent spellings |
-| `aliases` | Is a drug found under its other names (国老 for 甘草, 通草 for 木通 before 960) without losing the name asked, merging two drugs that share a name or reaching outside the years a name meant the drug? ([below](#alias-layer-aliases)) | synthetic checks; per profile, split and item type, for off, naive, on, analysis and the ablations: P@10 (and its gain where off answers) · nDCG@10 · AskedRet@10 (mean, min) · ON@10 · ON@50 · XR@50 · Wrong@10 · CandRecall · CandPrecision · SilentMerge · FlagP/FlagR · Leakage · latency p50/p95; resolution accuracy |
+| `aliases` | Is a drug found under its other names (国老 for 甘草, 通草 for 木通 before 960) without losing the name asked, merging two drugs that share a name or reaching outside the years a name meant the drug? ([below](#alias-layer-aliases)) | synthetic checks; per profile, split and item type, for off, naive, on, analysis and the ablations: P@10 (and its gain where off answers) · nDCG@10 · AskedRet@10 (mean, min) · ON@10 · ON@50 · XR@50 · Wrong@10 · CandRecall · CandPrecision · SilentMerge · FlagP/FlagR · Leakage · latency p50/p95; resolution accuracy; paired-bootstrap 95 % intervals of on − off, on − naive and on − on@baseline (a second layer, `TAOCHRONOS_ALIAS_EVAL_BASELINE`) |
 
 ## Current results (demo corpus)
 
@@ -253,6 +253,9 @@ taochronos eval aliases --quick                                   # the syntheti
 taochronos --data <web data> eval aliases -o aliases-web.json     # web-canon (deployed) and full-corpus (proxy) on the web store
 taochronos --data /srv/data eval aliases -o aliases-full.json     # on the site's full store: the server, or the aliases.yml workflow
 TAOCHRONOS_ALIAS_EVAL_SPLITS=dev TAOCHRONOS_ALIAS_EVAL_SYSTEMS=off,naive,on taochronos --data <data> eval aliases
+# a change of the layer, with intervals: the same items searched with an older layer too (on@baseline)
+mkdir -p old; git show <rev>:domains/classics/aliases/aliases.jsonl > old/aliases.jsonl; git show <rev>:domains/classics/aliases/context.json > old/context.json
+TAOCHRONOS_ALIAS_EVAL=web-canon TAOCHRONOS_ALIAS_EVAL_SPLITS=dev TAOCHRONOS_ALIAS_EVAL_BASELINE=old taochronos --data <data> eval aliases
 ```
 
 * **Synthetic part** — always runs: a corpus and a layer written for the eval, planted with 将军 beside 大将军 and
@@ -315,6 +318,30 @@ TAOCHRONOS_ALIAS_EVAL_SPLITS=dev TAOCHRONOS_ALIAS_EVAL_SYSTEMS=off,naive,on taoc
   is computed on the main view of each profile (held-out when it ran); beside it (not a check), the P@10 gain on the
   items `off` answers with at least one hit (`answered`), since a question today's search finds nothing for scores 0
   under `off` and the layer gains there by searching the name as written, which `analysis` measures alone.
+* **Uncertainty** — a paired bootstrap over items (`intervals`): the items of a split are resampled with replacement
+  2,000 times (`TAOCHRONOS_ALIAS_EVAL_BOOTSTRAP`, 0 for none) from a fixed seed (20261018), so that every run draws
+  the same resamples, and the same resamples serve every system, metric and pair; on each resample P@10, nDCG@10 and
+  the mean AskedRet@10 (means over the items that have them) and Wrong@10 (a total) are computed for both systems of
+  a pair as the aggregates are, and their difference. The result gives each difference on all the items and its 95 %
+  percentile interval (the 2.5th and 97.5th percentiles of the resampled differences), for on − off, on − naive and,
+  with a baseline layer, on − on@baseline (and X − X@baseline for each baseline system), per split (dev, heldout,
+  all) of the main view — `results.bootstrap` in each profile's metrics; the headline gives the reported split's P@10
+  and Wrong@10 differences as text (`+0.049 [+0.012, +0.090]`). Pairing by item takes out what the items share: a
+  gain on every item is no uncertainty, however much the items differ from one another. The intervals are
+  aggregates; nothing of a single item is in them, and nothing prints per-item records (they stay in `details`, dev
+  items only). They measure how the result moves with the choice of items from the same pool, not the labels'
+  errors: hits under names the frozen gold does not know count as not relevant in every resample. The synthetic part
+  gives the same intervals for its nine items (`synthetic.bootstrap`), as a check of the machinery, not as evidence.
+* **Comparing two layers** — `TAOCHRONOS_ALIAS_EVAL_BASELINE` names an alias layer (a directory holding its
+  `aliases.jsonl` and the `context.json` beside it, or the `aliases.jsonl` itself; a wrong path fails before anything
+  runs). Each profile's pack is loaded again with that layer in place of its own — the same domain and lexicons, as
+  the classics plugin loads a local layer (`layer_pack`) — and a retriever like the profile's (same corpus view,
+  knowledge, route weights and alias parameters) searches the same items as `on@baseline`
+  (`TAOCHRONOS_ALIAS_EVAL_BASELINE_SYSTEMS`, default `on`, chooses which systems: `naive@baseline` builds the naive
+  baseline from that layer's pairs), in the same rotation as the other systems and on the same counts; its rows join
+  the tables, the dev `details`, the resolution rows and the headline, `results.baseline` records the layer
+  (fingerprint, records, the store it was built on) beside the store's (`store.layer`), and on − on@baseline measures
+  the change of the layer alone, the search code and the gold held fixed.
 * **Held-out discipline** — held-out items are reported in aggregate only (`details` lists dev items), are never
   tuned on, and are not run at all while the gold fails `aliases_gold.validate` (its split pin among the checks). `TAOCHRONOS_ALIAS_EVAL_SPLITS`, `TAOCHRONOS_ALIAS_EVAL_SYSTEMS` and `TAOCHRONOS_ALIAS_EVAL_VIEWS` restrict
   a run. Any parameter change after the first held-out report is logged here with its date:

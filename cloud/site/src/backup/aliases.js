@@ -7,8 +7,10 @@
 // once per anti-cue.  Records, referents and expansions keep the Python field names (`for_` is `for`); a witness stays
 // the file's [pid, y0, y1, kind, web], a window [from, to) with null for an open side, a blocker a string or
 // [text, from, to].  The parity test (cloud/test/backup.test.js) replays the cases Python computed (d1fixture.py).
+// The isolate's start reads no record: tables.js holds them as lines, each read when first used, and the lookups by
+// group, head and term read ALIAS_INDEX (aliases.layout), as AliasIndex reads a file's header index.
 
-import { ALIAS_CONTEXT, ALIAS_PARAMS, ALIAS_SOURCES, ALIASES } from "./tables.js";
+import { ALIAS_CONTEXT, ALIAS_INDEX, ALIAS_PARAMS, ALIAS_SOURCES, ALIASES } from "./tables.js";
 import { surfaces as entrySurfaces } from "./lexicon.js";
 
 // kind → how an answer names it
@@ -219,16 +221,141 @@ export function unsearched(exps, why) {
   return true;
 }
 
+// ------------------------------------------------------------------ the listing
+// lists of names that cite no passage (aliases.LIST_SOURCES): a candidate only they give, no passage witnessing it, is
+// listed and nothing else — no rival; listed after the others, at most LIST_ONLY_CAP for a name that is no drug of its
+// own with no other drug to list, none beside one
+export const LIST_SOURCES = new Set(["ntu40k", "hurb", "bielu-gb"]);
+export const LIST_ONLY_CAP = 3;
+
+function listed(ref) {
+  return !ref.w.length && ref.src.length > 0 && ref.src.every((src) => LIST_SOURCES.has(src));
+}
+
+/** aliases.list_candidate: a candidate only lists give and no passage witnesses (credited or not). */
+export function listCandidate(ref) {
+  return ref.st === "candidate" && listed(ref);
+}
+
+function listingRank(ref) {
+  if (!listed(ref)) return 0;
+  return (ref.st === "candidate" ? 3 : 1) + (ref.cr === null ? 1 : 0);
+}
+
+/** aliases.listing: the referents query.aliases lists for a name, by rank (stable within each): the candidates only
+ * lists give at most LIST_ONLY_CAP, none when any other is listed or the name is a drug of its own (`headed`). */
+export function listing(refs, headed = false) {
+  const out = [0, 1, 2].flatMap((k) => refs.filter((r) => listingRank(r) === k));
+  if (out.length || headed) return out;
+  return [3, 4].flatMap((k) => refs.filter((r) => listingRank(r) === k)).slice(0, LIST_ONLY_CAP);
+}
+
 // ------------------------------------------------------------------ records
 function referent(d) {
   return { h: d.h, g: d.g || d.h, t: d.t ?? null, k: d.k || "alias", st: d.st || "open", v: d.v || null,
     c: d.c || [d.h], a: d.a || [], src: d.src || [], w: d.w || [], cr: d.cr || null };
 }
 
-function record(s, d) {
-  return { s, stop: Boolean(d.stop), n: d.n || 0, sh: d.sh || 0, b: d.b || [], fl: d.fl ?? null, ho: d.ho ?? null,
-    r: (d.r || []).map(referent) };
+/** A record (aliases.AliasRecord, less what no decision reads): `s` and `stop` are known without reading it (the
+ * index's stops), its other fields read from its line when first looked into — so that a walk over every record that
+ * looks only at those reads none (search.js's warm-up). */
+class Rec {
+  constructor(s, item, stop) {
+    this.s = s;
+    this.stop = stop;
+    this.item = item; // its line's JSON, or the compact record itself
+    this.data = null;
+  }
+
+  get fields() {
+    if (this.data === null) {
+      const d = typeof this.item === "string" ? JSON.parse(this.item) : this.item;
+      if (Boolean(d.stop) !== this.stop) throw new Error(`aliases: the index says ${this.s} is${this.stop ? "" : " not"} a stop name`);
+      this.data = { n: d.n || 0, sh: d.sh || 0, b: d.b || [], fl: d.fl ?? null, ho: d.ho ?? null, r: (d.r || []).map(referent) };
+      this.item = null;
+    }
+    return this.data;
+  }
+
+  get n() { return this.fields.n; }
+  get sh() { return this.fields.sh; }
+  get b() { return this.fields.b; }
+  get fl() { return this.fields.fl; }
+  get ho() { return this.fields.ho; }
+  get r() { return this.fields.r; }
 }
+
+/** The records by surface, in code-point order, as a Map reads them (get, has, size, keys, values, entries): each
+ * made when first asked for. */
+class Records {
+  constructor(keys, items, stops) {
+    this.list = keys;
+    this.items = items;
+    this.stops = stops; // positions
+    this.at = new Map();
+    for (let i = 0; i < keys.length; i++) this.at.set(keys[i], i);
+    this.made = new Array(keys.length);
+  }
+
+  get size() {
+    return this.list.length;
+  }
+
+  has(s) {
+    return this.at.has(s);
+  }
+
+  get(s) {
+    const i = this.at.get(s);
+    return i === undefined ? undefined : this.nth(i);
+  }
+
+  nth(i) {
+    return (this.made[i] ??= new Rec(this.list[i], this.items[i], this.stops.has(i)));
+  }
+
+  keys() {
+    return this.list.values();
+  }
+
+  *values() {
+    for (let i = 0; i < this.list.length; i++) yield this.nth(i);
+  }
+
+  *entries() {
+    for (let i = 0; i < this.list.length; i++) yield [this.list[i], this.nth(i)];
+  }
+
+  [Symbol.iterator]() {
+    return this.entries();
+  }
+}
+
+/** aliases.layout: what the lookups read of records in this order (positions count them from 0) — groups (the
+ * positions of the records with a referent in each group, ascending), headless (the groups no referent of their own
+ * id heads), heads (the groups of each other head), owners (the surfaces whose ho is another group), terms (the
+ * groups of each lexicon term id), stops; lists sorted.  For records given as objects; tables.js carries Python's. */
+export function layout(recs) {
+  const groups = Object.create(null), heads = Object.create(null), owners = Object.create(null), terms = Object.create(null);
+  const selfHeaded = new Set(), stops = [];
+  recs.forEach((rec, i) => {
+    if (rec.stop) stops.push(i);
+    if (rec.ho !== null && rec.ho !== rec.s) (owners[rec.ho] ??= []).push(rec.s);
+    for (const ref of rec.r) {
+      const at = (groups[ref.g] ??= []);
+      if (at[at.length - 1] !== i) at.push(i);
+      if (ref.h === ref.g) selfHeaded.add(ref.g);
+      else (heads[ref.h] ??= new Set()).add(ref.g);
+      if (ref.t) (terms[ref.t] ??= new Set()).add(ref.g);
+    }
+  });
+  const lists = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, sorted(v)]));
+  return { groups: { ...groups }, headless: sorted(Object.keys(groups).filter((g) => !selfHeaded.has(g))), heads: lists(heads),
+    owners: { ...owners }, terms: lists(terms), stops };
+}
+
+/** obj[key] when obj holds it (not from its prototype), else undefined. */
+const own = (obj, key) => (Object.hasOwn(obj, key) ? obj[key] : undefined);
 
 /** An expansion (aliases.Expansion), its defaults filled in. */
 export function expansion(surface, for_, direction, group, head, fields = {}) {
@@ -238,14 +365,32 @@ export function expansion(surface, for_, direction, group, head, fields = {}) {
 
 // ------------------------------------------------------------------ the index
 export class AliasIndex {
-  /** records: {surface: compact record}; context: context.json (the patterns, the herb set); sources: [{id, label}]. */
-  constructor(records = ALIASES, context = ALIAS_CONTEXT, sources = ALIAS_SOURCES) {
-    this.records = new Map();
-    for (const s of sorted(Object.keys(records))) this.records.set(s, record(s, records[s]));
+  /** records: tables.js's lines ("surface\tcompact record", in code-point order) with `index` (aliases.layout over
+   * them), or {surface: compact record} (its index made here); context: context.json (the patterns, the herb set);
+   * sources: [{id, label}]. */
+  constructor(records = ALIASES, context = ALIAS_CONTEXT, sources = ALIAS_SOURCES, index = ALIAS_INDEX) {
+    if (typeof records === "string") {
+      const lines = records ? records.split("\n") : [];
+      const keys = new Array(lines.length), items = new Array(lines.length);
+      for (let i = 0; i < lines.length; i++) {
+        const tab = lines[i].indexOf("\t");
+        keys[i] = lines[i].slice(0, tab);
+        items[i] = lines[i].slice(tab + 1);
+      }
+      this.records = new Records(keys, items, new Set(index.stops));
+      this.index = index;
+    } else {
+      const keys = sorted(Object.keys(records));
+      const items = keys.map((s) => records[s]);
+      this.records = new Records(keys, items, new Set(keys.flatMap((s, i) => (items[i].stop ? [i] : []))));
+      this.index = layout([...this.records.values()]);
+    }
+    this.headless = new Set(this.index.headless);
+    this.pairsOf = new Map(); // group → [[surface, referent]], read once
     this.context = context;
     this.labels = Object.fromEntries(sources.map((x) => [x.id, x.label]));
-    this.maxLen = 0;
-    for (const s of this.records.keys()) this.maxLen = Math.max(this.maxLen, cpLen(s));
+    this.maxLen = 0; // in code points, which a name's UTF-16 length bounds
+    for (const s of this.records.list) if (s.length > this.maxLen) this.maxLen = Math.max(this.maxLen, cpLen(s));
     this.enabled = this.records.size > 0;
     // dose, each, prep and named match where the text starts (re.match), nameof anywhere (re.search)
     const start = (p) => new RegExp(`^(?:${p})`, "u");
@@ -254,27 +399,47 @@ export class AliasIndex {
     this.herbs = new Set(context.herbs || []);
     this.herbLens = new Map(); // first character → the lengths of the herb names of two or more it starts, longest first
     for (const h of this.herbs) {
+      const len = cpLen(h);
+      if (len < 2) continue;
       const first = String.fromCodePoint(h.codePointAt(0));
-      if (cpLen(h) > 1) this.herbLens.set(first, [...new Set([...(this.herbLens.get(first) || []), cpLen(h)])].sort((a, b) => b - a));
+      (this.herbLens.get(first) || this.herbLens.set(first, new Set()).get(first)).add(len);
     }
-    this.groups = new Map(); // group → [[surface, referent]]
-    this.groupHeads = new Map(); // group → its heads
-    this.heads = new Map(); // head → its groups
-    this.terms = new Map(); // lexicon term id → its groups
-    const add = (map, key, value) => (map.get(key) || map.set(key, new Set()).get(key)).add(value);
-    for (const [s, rec] of this.records) {
-      if (rec.ho !== null) {
-        add(this.heads, s, rec.ho);
-        add(this.groupHeads, rec.ho, s);
+    for (const [first, lens] of this.herbLens) this.herbLens.set(first, [...lens].sort((a, b) => b - a));
+  }
+
+  // what the lookups read (aliases.AliasIndex._pairs, _heads_of, _group_heads_of): per group, its [surface, referent]
+  // pairs by surface; per name, the groups it heads — its record's ho, and the groups whose referents it heads; per
+  // group, its heads — the referents' and the names whose ho it is; per lexicon term id, its groups
+  pairs(g) {
+    let out = this.pairsOf.get(g);
+    if (out === undefined) {
+      out = [];
+      const n = this.records.size;
+      for (const i of own(this.index.groups, g) || []) {
+        if (!(Number.isInteger(i) && i >= 0 && i < n)) throw new Error(`aliases: the index of the records is damaged (${g})`);
+        const s = this.records.list[i];
+        for (const ref of this.records.nth(i).r) if (ref.g === g) out.push([s, ref]);
       }
-      for (const ref of rec.r) {
-        if (!this.groups.has(ref.g)) this.groups.set(ref.g, []);
-        this.groups.get(ref.g).push([s, ref]);
-        add(this.heads, ref.h, ref.g);
-        add(this.groupHeads, ref.g, ref.h);
-        if (ref.t) add(this.terms, ref.t, ref.g);
-      }
+      this.pairsOf.set(g, out);
     }
+    return out;
+  }
+
+  headsOf(s) {
+    const out = new Set();
+    const rec = this.record(s);
+    if (rec && rec.ho !== null) out.add(rec.ho);
+    if (Object.hasOwn(this.index.groups, s) && !this.headless.has(s)) out.add(s);
+    for (const g of own(this.index.heads, s) || []) out.add(g);
+    return out;
+  }
+
+  groupHeadsOf(g) {
+    const out = new Set(this.pairs(g).map(([, ref]) => ref.h));
+    const rec = this.record(g);
+    if (rec && rec.ho === g) out.add(g);
+    for (const s of own(this.index.owners, g) || []) out.add(s);
+    return out;
   }
 
   get size() {
@@ -293,20 +458,20 @@ export class AliasIndex {
   // ---------------------------------------------------------------- lookup
   /** Every [surface, referent] whose referent is in group `g`, by surface. */
   byGroup(g) {
-    return [...(this.groups.get(g) || [])];
+    return [...this.pairs(g)];
   }
 
   /** The groups an asked lexicon entry belongs to, by its term id and its surfaces, sorted. */
   groupsFor(termId, surfaces) {
-    const out = new Set(termId ? this.terms.get(termId) || [] : []);
-    for (const s of surfaces) for (const g of this.heads.get(s) || []) out.add(g);
+    const out = new Set(termId ? own(this.index.terms, termId) || [] : []);
+    for (const s of surfaces) for (const g of this.headsOf(s)) out.add(g);
     return sorted(out);
   }
 
   /** The names that tell group `g` apart, sorted: its heads and its aliases that name nothing else. */
   names(g) {
-    const out = new Set(this.groupHeads.get(g) || []);
-    for (const [a, ref] of this.groups.get(g) || []) {
+    const out = this.groupHeadsOf(g);
+    for (const [a, ref] of this.pairs(g)) {
       const rec = this.records.get(a);
       if (ref.st !== "candidate" && !rec.stop && rec.r.every((other) => other.g === g)) out.add(a);
     }
@@ -333,11 +498,19 @@ export class AliasIndex {
       if (groups.some((g) => seen.has(g))) continue;
       const g = groups.length ? groups[0] : entry.term;
       // a member's entry names its group's drug, of that drug's term id (蒺藜, herb:蒺藜 — not herb:蒺藜子)
-      const t = g === entry.term ? entry.id : ((this.groups.get(g) || []).find(([, ref]) => ref.h === g && ref.t)?.[1].t ?? null);
+      const t = g === entry.term ? entry.id : (this.pairs(g).find(([, ref]) => ref.h === g && ref.t)?.[1].t ?? null);
       refs.push(referent({ h: g, t, src: ["lexicon"] }));
       seen.add(g);
     }
     return refs;
+  }
+
+  /** Whether `s` names nothing but candidates only lists give (listCandidate): no stop, no head, no floor — a name a
+   * question asks only as its one name. */
+  listedOnly(s) {
+    const rec = this.record(s);
+    return rec !== null && !rec.stop && rec.ho === null && rec.fl === null && rec.r.length > 0 &&
+      rec.r.every(listCandidate);
   }
 
   /** Alias and head surfaces in normalised text, [start, end, surface]: longest first, left to right, stop names left
@@ -599,7 +772,7 @@ export class AliasIndex {
         const reached = [[ref.h, ref]];
         const part = otherPart(s, ref);
         if (meets(valid, after, before) && !part) {
-          for (const [a, other] of this.groups.get(ref.g) || []) {
+          for (const [a, other] of this.pairs(ref.g)) {
             if (other.k === "spelling" && other.st !== "candidate") reached.push([a, other]);
           }
         }
@@ -607,7 +780,7 @@ export class AliasIndex {
           const hrec = this.record(h);
           if (cpLen(h) < 2 || taken.has(h) || (hrec && hrec.stop)) continue;
           add(expansion(h, s, DIRECTIONS[0], ref.g, ref.h, { kind: pair.k, status: "open", valid,
-            shared: Boolean(hrec) && new Set(hrec.r.map((r) => r.g)).size > 1, cues: [...ref.c], src: [...pair.src],
+            shared: Boolean(hrec) && new Set(hrec.r.filter((r) => !listCandidate(r)).map((r) => r.g)).size > 1, cues: [...ref.c], src: [...pair.src],
             wit: [...pair.w], n: hrec ? hrec.n : 0 }), order, part);
         }
       }
@@ -620,13 +793,13 @@ export class AliasIndex {
       }
       for (const g of sorted(groups)) {
         const ownNames = this.names(g);
-        for (const [a, ref] of this.groups.get(g) || []) {
+        for (const [a, ref] of this.pairs(g)) {
           const arec = this.records.get(a);
           if (arec.stop || cpLen(a) < 2 || taken.has(a) || (ref.st === "candidate" && !ablate.has("gates"))) continue;
           // the drugs the name may also mean here (a referent whose window misses the query's is none)
           const own = ownNames.filter((n) => n !== a);
           const rivals = [...arec.r].sort((x, y) => cmp(x.g, y.g))
-            .filter((r) => r.g !== g && (ablate.has("period") || meets(r.v, after, before)))
+            .filter((r) => r.g !== g && !listCandidate(r) && (ablate.has("period") || meets(r.v, after, before)))
             .map((r) => [ablate.has("period") ? null : r.v, sorted(this.names(r.g).filter((n) => !own.includes(n) && n !== a))]);
           add(expansion(a, s, DIRECTIONS[1], g, ref.h, { kind: ref.k, status: ablate.has("gates") ? "open" : ref.st,
             valid: ablate.has("period") ? null : ref.v, shared: rivals.length > 0, cues: [...ref.c], own, rivals,
@@ -677,14 +850,14 @@ export class AliasIndex {
     const asked = [];
     for (const [s, term] of pairs(q.asked)) {
       const rec = this.record(s);
-      const refs = this.referents(s, term, lex);
+      const refs = listing(this.referents(s, term, lex), Boolean(rec) && (rec.ho !== null || rec.fl !== null));
       const groups = new Set(refs.map((ref) => ref.g));
-      if (!refs.length || ((!rec || !rec.r.length) && groups.size < 2)) continue;
+      if (!refs.length || ((!rec || !refs.some((ref) => rec.r.includes(ref))) && groups.size < 2)) continue;
       asked.push({ surface: s, term, ambiguous: groups.size > 1, referents: refs.map((ref) => this.referentView(ref, web)) });
     }
     for (const [s, term] of pairs(q.stops)) {
       const rec = this.record(s);
-      const refs = rec && rec.stop ? this.referents(s, term, lex, { stop: true }) : [];
+      const refs = rec && rec.stop ? listing(this.referents(s, term, lex, { stop: true }), rec.ho !== null || rec.fl !== null) : [];
       const entry = lex && term ? lex.entry(term) : null;
       if (refs.length) {
         asked.push({ surface: s, term, ambiguous: new Set(refs.map((ref) => ref.g)).size > 1,

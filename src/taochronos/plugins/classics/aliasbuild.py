@@ -19,17 +19,21 @@ For every pair (name, drug) the build
   ``ho``, and a member no pair ties to it gets one (牡丹皮 → 牡丹), so each reaches the other; a name with only a
   first-use or taboo floor (党参) heads a drug of its own; the NTU table's heads come after, changing none of these
   drugs: one the editors or the others tie to drugs as a part, an older name, within a window, as a cue or to two
-  drugs is kept apart, its entry giving no drug (青木香, 小草, 通草); else each joins the drug of the lexicon entry it
+  drugs — the lexicon's other entries filing it among them (石血: the editors' 络石, the lexicon's 紫加石) — is kept
+  apart, its entry giving no drug (青木香, 小草, 通草); else each joins the drug of the lexicon entry it
   heads, or the drug whose names its own share two or more of (七叶一枝花 joins 蚤休) among those that name it, that
   its lexicon entry files the head of or that it names with or without the part the drug is (牛蒡 and 牛蒡子) — only
   one the others give it when they give it any — else heads a drug of its own;
 * adds the lexicon's other herb entries for the name as rival referents (source ``lexicon``);
 * finds up to three witnesses outside ``jc_c030`` and the ``NEVER_PACKED`` sources: the earliest equation (h，一名a; a即h;
   not 一作, a variant reading), gloss (h（a）) or 本草 entry (headed by h, 一名a in its first 400 characters), each name
-  standing whole (not 栝楼|根，一名地楼), then the 别名录 entry itself; a pair a store witness confirms is credited
+  standing whole (not 栝楼|根，一名地楼; the alias inside no longer name at all: 一名白胶香 is no 白胶), an
+  equation's first name not one more name of a list (一名羌活，一名护羌使者), then the 别名录 entry itself; a pair a store witness confirms is credited
   ``store`` (古籍互证) too;
 * collects blockers — the curated cover strings, then longer herb or alias names holding the name whose drug is another
-  (a window where they mean the same drug in some periods only) and names that straddle an occurrence in the store
+  (a window where they mean the same drug in some periods only), a drug only an NTU pair no passage witnesses ties to
+  either name counting for neither (木通草, the table's 女萎, blocks no 木通; 白胶香 still blocks 白胶, which only the
+  table names 枫香脂), and names that straddle an occurrence in the store
   (石蜜|甘; only the name the straddle cuts: 常山|甘草 cuts 山甘草, not 常山), ordered by how many passages write
   them; never the strings curated.yaml unblocks for the name (青矾石 is 青矾), nor the 本草纲目's joint headings that
   the lexicon harvested as one name and the store nowhere writes as one (假苏荆芥, 赤箭天麻);
@@ -41,7 +45,11 @@ For every pair (name, drug) the build
   NTU table gives demotes only the table's own pairs); a pair only the NTU table gives, its name written in the store
   free of its blockers, under 50 % of those passages as a drug and with no store witness → candidate (5b), as is one
   whose name reads as a formula's or a class of drugs' (镇心丹, 止血药: 5c), as is one whose drug shares two names or
-  more with a drug the other sources give the name (荜澄茄 beside 毕澄茄: 5d — no rival then); two drugs or more → cue;
+  more with a drug the other sources give the name (荜澄茄 beside 毕澄茄: 5d — no rival then), as is one, no passage
+  witnessing it, whose name reads as another drug in the classical corpus — by the other sources, the lexicon, a
+  passage or a head of its own — and whose remark credits no classical work (黄参 is 人参's: 5e), or whose name the
+  store writes only before its drug's first use (the 上党人参 of 千金 is no 党参: 5f); two rivals or more → cue, a
+  candidate only the table gives that no passage witnesses being no rival (5d, 5e, 5f or any other rule);
   written 20 times or more and under 10 % as a drug → stop (for review; a candidate when the name heads the drug);
   under 30 % → cue; two characters → cue; else open.  A pair only a local list gives also needs a passage before 1912 that reads it as a
   drug, else it is a candidate;
@@ -117,6 +125,7 @@ STRADDLE_RATIO = 2  # a name standing whole beside a straddler is not cut by it 
 # equation words: those of ``study names`` but 一作 and 或作 (a variant reading, not another name), and 一曰, 谓之, 呼为
 EQUATE = "(?:" + "|".join([w for w in NAMES_EQUATE[3:-1].split("|") if w not in ("一作", "或作")]
                           + ["一曰", "谓之", "呼为"]) + ")"
+_LISTED = re.compile(EQUATE + "[，,]?$")  # a name that follows an equation word is one of a list's names
 # curated.yaml: each section's row keys (required, optional); cover_stops and unblock are {name: [strings holding it]}
 CURATED_MAPS = ("cover_stops", "unblock")
 CURATED = {
@@ -517,6 +526,11 @@ class Builder:
         self._drugs: dict[str, set[str]] = {}
         self._refs: dict[str, dict[str, Referent]] = {}
         self._longer: dict[str, list[str]] = {}  # a name → the longer names holding it (the last build's)
+        self._witnesses: dict[tuple[Any, ...], list[Witness]] = {}  # (name, heads, drug) → store_witnesses
+        # (name, drug): a pair only the NTU table gives that no passage witnesses or that is a candidate by rule —
+        # no tie of the name to the drug for its blockers (the last build's)
+        self._loose: set[tuple[str, str]] = set()
+        self._floored: set[str] = set()  # the names with a floor (the last build's)
         self.concatenations: set[str] = set()  # 纲目 joint headings the lexicon harvested as one name
         # what the last build decided, for the review and the local build
         self.members: dict[str, str] = {}  # name → the drug it heads
@@ -851,7 +865,7 @@ class Builder:
         out = {}
         for pid in pids:
             text = self.text(pid)
-            if "e" in kinds and self._found(eq, text, group):
+            if "e" in kinds and self._found(eq, text, group, sibling=True):
                 out[pid] = "e"
             elif "g" in kinds and self._found(gloss, text, group):
                 out[pid] = "g"
@@ -859,22 +873,26 @@ class Builder:
                 out[pid] = "n"
         return out
 
-    def _found(self, pattern: re.Pattern[str], text: str, group: str | None) -> bool:
-        """Whether ``pattern`` matches with each name it captures standing as a name of its own."""
+    def _found(self, pattern: re.Pattern[str], text: str, group: str | None, *, sibling: bool = False) -> bool:
+        """Whether ``pattern`` matches with each name it captures standing as a name of its own: the head inside no
+        longer name of another drug, the alias (``a``) inside no longer name at all (一名白胶香 names 白胶香, not
+        白胶); and, for an equation (``sibling``), the first name not itself one of a list's names (一名羌活，一名羌青，
+        一名胡王使者: 羌活 and 胡王使者 are two names of the entry's drug, neither the other's)."""
         pos = 0
         while (m := pattern.search(text, pos)) is not None:
-            if group is None or all(self._whole(text, m.start(k), m.end(k), group) for k in pattern.groupindex
-                                    if m.start(k) >= 0):
+            if (group is None or all(self._whole(text, m.start(k), m.end(k), None if k.startswith("a") else group)
+                                     for k in pattern.groupindex if m.start(k) >= 0)) and not (
+                    sibling and _LISTED.search(text, max(0, m.start() - 6), m.start())):
                 return True
             pos = m.start() + 1
         return False
 
-    def _whole(self, text: str, i: int, j: int, group: str) -> bool:
-        """Whether ``text[i:j]`` is not read inside a longer name (an herb or alias name) of a drug other than
-        ``group`` that runs across it."""
+    def _whole(self, text: str, i: int, j: int, group: str | None) -> bool:
+        """Whether ``text[i:j]`` is not read inside a longer name (an herb or alias name) that runs across it — of a
+        drug other than ``group``, or of any drug when ``group`` is None."""
         x = text[i:j]
         for u in self._longer.get(x, ()):
-            if group in self.drugs_of(u):
+            if group is not None and group in self.drugs_of(u):
                 continue
             o = u.find(x)
             while o >= 0:
@@ -890,7 +908,7 @@ class Builder:
             return False
         text = self.text(pid)[:400]
         i = text.find(f"一名{a}")
-        while i >= 0 and group is not None and not self._whole(text, i + 2, i + 2 + len(a), group):
+        while i >= 0 and group is not None and not self._whole(text, i + 2, i + 2 + len(a), None):
             i = text.find(f"一名{a}", i + 1)
         if i < 0:
             return False
@@ -900,6 +918,9 @@ class Builder:
     def store_witnesses(self, a: str, heads: Iterable[str], group: str | None = None) -> list[Witness]:
         """Equations, glosses and 本草 entries that tie ``a`` to one of ``heads`` (of the drug ``group``), earliest
         first."""
+        key = (a, tuple(heads), group)
+        if key in self._witnesses:
+            return list(self._witnesses[key])
         found: dict[str, str] = {}
         entry = [i for i in self._open(self.corpus.contains(f"一名{a}", verify=False)) if self.book(i) in self.bencao]
         for h in heads:
@@ -912,7 +933,8 @@ class Builder:
                 if pid not in found and self._entry(pid, a, h, group):
                     found[pid] = "n"
         wits = [w for w in (self.witness(pid, kind) for pid, kind in found.items()) if w]
-        return sorted(wits, key=_by_date)
+        self._witnesses[key] = sorted(wits, key=_by_date)
+        return list(self._witnesses[key])
 
     # ---------------------------------------------------------------- the records
     def build(self, pairs: list[Pair], *, local: bool = False,
@@ -922,6 +944,7 @@ class Builder:
         not this build's own (the local build counts with the shipped one, which its profile loads)."""
         cur = self.curated
         self.notes = {"warnings": []}
+        self._witnesses = {}
         stops = {self.norm(r["s"]) for r in cur.get("stop") or []}
         # rows whose names normalise alike (鸡头, 雞頭) are one row: their strings merged, none lost
         covers: dict[str, set[str]] = {}
@@ -982,9 +1005,12 @@ class Builder:
                 members.setdefault(g, g)
         names = set(refs) | set(members)
         floors = self.floors(set(self.herb_terms) | names)
+        self._floored = set(floors)
         # a name with only a floor (党参, 苍术) is a drug of its own: it heads the drug of the lexicon entry it heads,
-        # else its own
-        for s in sorted(set(floors) - names - stops):
+        # else its own — the NTU table's pairs aside (浙贝, first used about 1740, stays a drug of its own, its pair to
+        # the table's 浙贝母 a candidate)
+        listed = {s for s in refs if all(_ntu_only(info[(s, g)]) for g in refs[s])}
+        for s in sorted(set(floors) - (names - listed) - set(members) - stops):
             if len(s) >= 2 and sum(map(is_han, s)) >= 2:
                 own = sorted(self.headwords.get(s, ()))
                 members[s] = self.group_of_term(own[0]) if len(own) == 1 else s
@@ -996,9 +1022,52 @@ class Builder:
         self._drugs = {}
         self._refs = refs
 
-        # blockers, then the passages that write each name free of them
         self.last_context = context if context is not None else self.context(members)
         universe = self._longer = self._universe(surfaces, cover)
+
+        # rule 5d: a drug only the NTU table gives a name that the other sources give another drug sharing two names
+        # or more with it is that drug again under another head (荜澄茄 beside 毕澄茄), or a plant of today that borrows
+        # its names: its pair is a candidate, and it is no rival that makes the others' pair a cue
+        named: dict[str, set[str]] = defaultdict(set)  # a drug → its heads and the names that have it
+        for a, by_g in refs.items():
+            for g in by_g:
+                named[g].add(a)
+        for g, hs in heads_of.items():
+            named[g] |= set(hs)
+        double = {(s, g) for s, by_g in refs.items() for g in by_g if _ntu_only(info[(s, g)]) and any(
+            o != g and info[(s, o)]["pairs"] and not _ntu_only(info[(s, o)]) and len(named[g] & named[o]) >= 2
+            for o in by_g)}
+        self.notes["ntu_doubles"] = len(double)
+        # rules 5e and 5f, the classical corpus first: a pair only the NTU table gives, that no passage of the store
+        # ties to its drug, is a candidate (listed, never searched, no rival) when its name already reads as another
+        # drug there — a drug the other sources or the lexicon give it, or one it heads — and the remark credits no
+        # classical work (5e: 黄参 is 人参's, 白胶 鹿角胶's, 金沸草 旋覆花's); or when every passage that writes it is
+        # older than its drug's first use (5f: the 上党人参 of 千金 is no 党参, first used about 1700)
+        firsts = {s: y for s, (y, why) in floors.items() if why == "curated"}
+        prior, early = set(), set()
+        for s, by_g in refs.items():
+            for g in by_g:
+                inf = info[(s, g)]
+                if (s, g) in double or not _ntu_only(inf):
+                    continue
+                own = self._classical(s, refs, info, floors, heads_of)
+                if own and g not in own and not any(p.cr for p in inf["pairs"]):
+                    if not self._witnessed(s, g, inf, heads_of):
+                        prior.add((s, g))
+                elif (g not in own and g in firsts and self._older(s, firsts[g])
+                      and not self._witnessed(s, g, inf, heads_of)):
+                    early.add((s, g))
+        self.notes["ntu_precedence"] = {"classical": len(prior), "first_use": len(early)}
+        norival = double | prior | early
+        ruled = {(s, g): self._ruled(s, g, info[(s, g)], decisions.get(s, []))
+                 or ("candidate" if (s, g) in norival else None) for s, by_g in refs.items() for g in by_g}
+        # what a name is by the classical corpus, for its blockers: a pair only the NTU table gives, that no passage
+        # ties to its drug, makes it no name of that drug there (白胶 is no 枫香脂, so 白胶香 still blocks it), and a
+        # longer name no other name of that drug (木通草, the table's 女萎, blocks no 木通)
+        self._loose = {(s, g) for s, by_g in refs.items() for g in by_g if _ntu_only(info[(s, g)]) and (
+            ruled[(s, g)] == "candidate" or not self._witnessed(s, g, info[(s, g)], heads_of))}
+
+        # blockers, then the passages that write each name free of them
         straddlers = {u for u in set(self.herb_terms) | names if 2 <= len(u) <= MAX_NAME}
         self.concatenations = self._concatenations({u for u in set(self.herb_terms) | set(members) if len(u) >= 2},
                                                    set().union(*unblock.values()))
@@ -1018,22 +1087,6 @@ class Builder:
 
         # cues: the head, curated cues, then the drug's names that name nothing else and may be read as it (no
         # candidate, no stop, none written 20 times or more and mostly not as a drug), the most written first
-        # rule 5d: a drug only the NTU table gives a name that the other sources give another drug sharing two names
-        # or more with it is that drug again under another head (荜澄茄 beside 毕澄茄), or a plant of today that borrows
-        # its names: its pair is a candidate, and it is no rival that makes the others' pair a cue
-        named: dict[str, set[str]] = defaultdict(set)  # a drug → its heads and the names that have it
-        for a, by_g in refs.items():
-            for g in by_g:
-                named[g].add(a)
-        for g, hs in heads_of.items():
-            named[g] |= set(hs)
-        double = {(s, g) for s, by_g in refs.items() for g in by_g if _ntu_only(info[(s, g)]) and any(
-            o != g and info[(s, o)]["pairs"] and not _ntu_only(info[(s, o)]) and len(named[g] & named[o]) >= 2
-            for o in by_g)}
-        self.notes["ntu_doubles"] = len(double)
-        ruled = {(s, g): self._ruled(s, g, info[(s, g)], decisions.get(s, []))
-                 or ("candidate" if (s, g) in double else None) for s, by_g in refs.items() for g in by_g}
-
         def own_names(shaky: set[str]) -> dict[str, list[str]]:
             out = {}
             for g, hs in heads_of.items():
@@ -1072,9 +1125,14 @@ class Builder:
                 records.append(replace(rec, stop=True))
                 continue
             by_g = refs.get(s, {})
-            rivals = sum((s, g) not in double for g in by_g)
-            statuses = {g: ruled[(s, g)] or self._ntu_share(s, g, n, sh, info[(s, g)], heads_of)
-                        or self._status(s, n, sh, rivals >= 2) for g in sorted(by_g)}
+            # a rival makes the name shared (cue): not a double nor a candidate of rules 5e and 5f, nor any candidate
+            # only the NTU table gives that no passage witnesses (listed, nothing else: the 别名录's 五爪龙 stays
+            # 乌蔹莓's though the table names a dozen plants of today so) — as the runtime reads it (aliases.rival)
+            ruled_s = {g: ruled[(s, g)] or self._ntu_share(s, g, n, sh, info[(s, g)], heads_of) for g in by_g}
+            rivals = sum((s, g) not in norival and not (
+                ruled_s[g] == "candidate" and _ntu_only(info[(s, g)])
+                and not self._witnessed(s, g, info[(s, g)], heads_of)) for g in by_g)
+            statuses = {g: ruled_s[g] or self._status(s, n, sh, rivals >= 2) for g in sorted(by_g)}
             if "stop" in statuses.values():
                 stopped[s] = [f"{g}:{by_g[g].k}:{'+'.join(by_g[g].src)}" for g in sorted(by_g)]
                 records.append(replace(rec, stop=True))
@@ -1233,7 +1291,11 @@ class Builder:
         for h in sorted(own):
             lexical = {root[anchor[t]] for t in self.herb_terms.get(h, ()) if anchor.get(t) in root}
             mine = self._decided(rows[h], given[h] | lexical, root)  # the drugs the others give h, candidates aside
-            why = "stop" if h in stops else self._apart(rows[h], mine, kinds[h])
+            # and the lexicon's entries filing h under another headword that are no drug of theirs (石血, the 别名录's
+            # 络石 and the lexicon's 紫加石: two drugs)
+            filed = {t for t in self.herb_terms.get(h, ()) if anchor.get(t) not in root
+                     and t not in self.headwords.get(h, ())}
+            why = "stop" if h in stops else self._apart(rows[h], mine | filed, kinds[h])
             if why:
                 self.apart[h] = why
                 continue
@@ -1343,11 +1405,13 @@ class Builder:
 
     def _member_pairs(self, pairs: list[Pair], rows: list[tuple[list[str], Mapping[str, Any]]],
                       canon: dict[str, str]) -> list[Pair]:
-        """A same-drug member, or a joined lexicon headword (:meth:`_join`), that no pair ties to its drug, as a pair
+        """A same-drug member, or a joined lexicon headword (:meth:`_join`), that no pair of the other sources ties to
+        its drug (nor the NTU table's, where the row has no witness that writes it), as a pair
         of the list (curated, its witnesses the row's that write the member) or of the lexicon: so the drug reaches
         the member's passages (牡丹 → 牡丹皮, 卢会 → 芦荟) and the member the drug's.  Its kind is 异名: a list does
         not say which names are spellings (朱砂 is not one of 丹砂), a curated pair does."""
-        tied = {(p.s, canon[p.h]) for p in pairs}
+        tied = {(p.s, canon[p.h]) for p in pairs if p.src != NTU}
+        listed = {(p.s, canon[p.h]) for p in pairs if p.src == NTU}
         out = []
         for names, row in rows:
             g = canon[names[0]]
@@ -1355,6 +1419,9 @@ class Builder:
                 if m == g or len(m) < 2 or sum(map(is_han, m)) < 2 or (m, g) in tied:
                     continue
                 wit = [w for w in (self.witness(p, "e") for p in row["wit"]) if w and m in self.text(w.pid)]
+                if not wit and (m, g) in listed:
+                    continue  # the NTU table's pair ties it; the row has no witness to add (a row with one is kept:
+                    #           the editors' pair, witnessed, before the table's — 白胶 → 鹿角胶)
                 if not wit:
                     self.notes["warnings"].append(f"same_drug {g}: no witness of the list writes {m}")
                 out.append(Pair(m, g, "curated", raw=raw, wit=wit))
@@ -1369,6 +1436,12 @@ class Builder:
         """The drug a lexicon herb entry is: the group of a head filed under it, else its headword's, else itself."""
         word = self.term_head[t]
         return self.term_group.get(t) or self.members.get(word) or word
+
+    def _tied_head(self, u: str, g: str) -> bool:
+        """Whether ``u`` is the drug ``g`` by the lexicon or as a head the other sources (or a floor) give it — not by
+        the NTU table alone."""
+        return any(self.group_of_term(t) == g for t in self.herb_terms.get(u, ())) or (
+            self.members.get(u) == g and (u in self.grouped or u in self._floored))
 
     def drugs_of(self, u: str) -> set[str]:
         """The drugs a name is: its referents, the group it heads, its lexicon entries."""
@@ -1422,8 +1495,30 @@ class Builder:
         when the rule does not hold."""
         if n < 1 or sh >= LIST_SHARE or not _ntu_only(inf):
             return None
+        return None if self._witnessed(s, g, inf, heads_of) else "candidate"
+
+    def _witnessed(self, s: str, g: str, inf: dict[str, Any], heads_of: dict[str, list[str]]) -> bool:
+        """Whether a passage of the store ties ``s`` to the drug ``g`` (an equation, a gloss or a 本草 entry: by
+        :meth:`store_witnesses`, once per pair)."""
         names = sorted({p.h for p in inf["pairs"]} | set(heads_of.get(g, [g])) | {g})
-        return None if self.store_witnesses(s, names, g) else "candidate"
+        return bool(self.store_witnesses(s, names, g))
+
+    def _classical(self, s: str, refs: dict[str, dict[str, Referent]], info: dict[tuple[str, str], dict[str, Any]],
+                   floors: Mapping[str, Any], heads_of: dict[str, list[str]]) -> set[str]:
+        """The drugs a name reads as in the classical corpus (rule 5e): those the other sources' pairs or the lexicon
+        give it, those a passage of the store ties it to (an equation, a gloss, a 本草 entry), and the one it heads by
+        the other sources or by a floor."""
+        out = {g for g in refs.get(s, {}) if not _ntu_only(info[(s, g)])
+               or self._witnessed(s, g, info[(s, g)], heads_of)}
+        out |= {self.group_of_term(t) for t in self.herb_terms.get(s, ())}
+        if s in self.members and (s in self.grouped or s in floors):
+            out.add(self.members[s])
+        return out
+
+    def _older(self, s: str, year: int) -> bool:
+        """Whether the store writes ``s`` and every passage that does ends before ``year`` (rule 5f)."""
+        ends = [self.yr(pid)[1] for pid in self.passages(s) if s in self.gate(pid)]
+        return bool(ends) and all(y is not None and y < year for y in ends)
 
     def _status(self, s: str, n: int, sh: float, shared: bool) -> str:
         """Rules 6 to 10 of the status table; ``stop`` makes the record a stop — never a drug's own name's (its head's,
@@ -1471,15 +1566,19 @@ class Builder:
     def _blockers(self, s: str, universe: dict[str, list[str]], cover: list[str], straddlers: set[str],
                   unblock: set[str]) -> list[Any]:
         """Strings that hold ``s`` and are not it (≤ 24): the curated cover strings, then longer names of another drug
-        (with the years they mean another, where they mean this one in some only) and names straddling an occurrence
+        (with the years they mean another, where they mean this one in some only; a drug only an NTU pair that no
+        passage witnesses, or that is a candidate by rule, ties to either name counts for neither) and names straddling
+        an occurrence
         of an alias in the store (石蜜|甘), each lot the most written first.  Past the cap, the least written are
         dropped (and reported).  Not the strings curated.yaml unblocks for ``s`` (青矾石 is 青矾, not 青|矾石), nor
         the 纲目's joint headings the lexicon harvested as one name (:meth:`_concatenations`)."""
-        mine = self.drugs_of(s)
+        mine = self.drugs_of(s) - {g for g in self._refs.get(s, {}) if (s, g) in self._loose}
         cands: dict[tuple[str, int | None, int | None], int] = {}
         for u in sorted(universe.get(s, ())):
-            theirs = {(g, ref.v) for g, ref in self._refs.get(u, {}).items()}
-            theirs |= {(g, None) for g in self.drugs_of(u) - set(self._refs.get(u, {}))}
+            theirs = {(g, ref.v) for g, ref in self._refs.get(u, {}).items() if (u, g) not in self._loose}
+            theirs |= {(g, None) for g in self.drugs_of(u) - set(self._refs.get(u, {})) if self._tied_head(u, g)}
+            if not theirs and self.drugs_of(u):
+                continue  # only the NTU table, no passage, makes it another drug's name (木通草, the table's 女萎)
             same = [v for g, v in theirs if g in mine]
             if any(v is None for v in same):
                 continue
@@ -1719,7 +1818,8 @@ def _result(b: Builder, records: list[AliasRecord], stopped: dict[str, list[str]
         "rivals_sharing_names": b.notes.get("rivals_sharing_names", []), "seconds": round(time.time() - t0, 1)}
     if b.notes_ntu:
         result.report[NTU] = {**b.notes_ntu, **({"apart": b.notes["ntu_apart"]} if b.notes.get("ntu_apart") else {}),
-                              "attached": _tally(b.attached.values()), "doubles": b.notes.get("ntu_doubles", 0)}
+                              "attached": _tally(b.attached.values()), "doubles": b.notes.get("ntu_doubles", 0),
+                              "precedence": b.notes.get("ntu_precedence", {})}
     return result
 
 

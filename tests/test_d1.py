@@ -442,10 +442,29 @@ TABLES = ROOT / "cloud" / "site" / "src" / "backup" / "tables.js"
 
 
 def _exported(name: str) -> Any:
-    """One table of tables.js (``export const NAME = <JSON>;``, a line each)."""
+    """One table of tables.js (``export const NAME = <JSON>;``, a line each; a single-quoted string for a table of
+    ``d1tables.TEXTS``)."""
     prefix = f"export const {name} = "
     line = next(x for x in TABLES.read_text(encoding="utf-8").split("\n") if x.startswith(prefix))
-    return json.loads(line[len(prefix):-1])
+    value = line[len(prefix):-1]
+    return _unquote(value) if value.startswith("'") else json.loads(value)
+
+
+def _unquote(literal: str) -> str:
+    """A single-quoted JS string literal as d1tables writes one: a backslash, the quote and the line terminators
+    escaped, nothing else."""
+    assert literal[0] == literal[-1] == "'" and "\n" not in literal
+    escapes = {"\\\\": "\\", "\\'": "'", "\\n": "\n", "\\r": "\r", "\\u2028": "\u2028", "\\u2029": "\u2029"}
+    return re.sub(r"\\(?:u2028|u2029|[\\'nr])", lambda m: escapes[m.group()], literal[1:-1])
+
+
+def _alias_lines() -> dict[str, dict[str, Any]]:
+    """tables.js's ALIASES: a line per record, the surface, a tab, its compact JSON."""
+    out = {}
+    for line in _exported("ALIASES").split("\n"):
+        s, _, rec = line.partition("\t")
+        out[s] = json.loads(rec)
+    return out
 
 
 def _full_corpus_classics() -> dict[str, Any]:
@@ -464,13 +483,14 @@ def test_the_workers_tables_carry_the_alias_layer_the_full_corpus_reads():
         CONTEXT_PATTERNS,
         DEFAULT_ALIAS,
         AliasRecord,
+        layout,
     )
     from taochronos.protocol.yamlio import load_yaml
 
     classics = _full_corpus_classics()
     pack = DomainPack(ROOT / classics.get("domain", "domains/classics"), aliases=classics["aliases"])
     index = pack.aliases
-    shipped = _exported("ALIASES")
+    shipped = _alias_lines()
     assert index.enabled and list(shipped) == sorted(index.records)
     for s, rec in index.records.items():
         back = AliasRecord.from_json({**shipped[s], "s": s}).to_json()
@@ -481,6 +501,9 @@ def test_the_workers_tables_carry_the_alias_layer_the_full_corpus_reads():
         for ref in full.get("r") or ():
             ref.pop("nt", None)
         assert back == full, s
+    # what the Worker's lookups read without reading a record: the layout of those lines, Python's
+    shape = layout([index.records[s] for s in shipped])
+    assert _exported("ALIAS_INDEX") == {key: shape[key] for key in ("groups", "headless", "heads", "owners", "terms", "stops")}
     registry = {x["id"]: x for x in load_yaml(ROOT / "domains" / "classics" / "aliases" / "sources.yaml")["sources"]}
     sources = _exported("ALIAS_SOURCES")
     assert [x["id"] for x in sources] == [i for i, x in registry.items() if x["ship"] is True]
@@ -490,6 +513,20 @@ def test_the_workers_tables_carry_the_alias_layer_the_full_corpus_reads():
     profile = load_yaml(ROOT / "profiles" / "full-corpus.yaml")
     retrieval = next(b.get("config") or {} for b in profile["bundles"] if b["plugin"] == "taochronos.plugins.retrieval")
     assert _exported("ALIAS_PARAMS") == {**DEFAULT_ALIAS, **retrieval.get("alias", {})}
+
+
+def test_a_table_of_text_is_a_single_quoted_js_string_of_the_same_text():
+    """ALIASES is text of JSON lines: written single-quoted, its quotes need no escape (a third of its size else);
+    a backslash, the quote and the line terminators are escaped, so the literal is one line and reads back as it was.
+    A surface with a tab or a line break, which would cut its line, is refused."""
+    from taochronos.chat.d1tables import TEXTS, _js_text
+
+    assert "ALIASES" in TEXTS
+    for text in ["", '{"h":"甘草"}\t{}', "a\\b'c\nd\re\u2028f\u2029g\"h", "\\'", "𠀀\\\\n"]:
+        literal = _js_text(text)
+        assert not any(ch in literal for ch in "\n\r\u2028\u2029") and literal.count("'") - literal.count("\\'") == 2
+        assert _unquote(literal) == text
+    assert '"' in _exported("ALIASES") and '\\"' not in TABLES.read_text(encoding="utf-8").split("export const ALIASES = ")[1][:2000]
 
 
 def test_the_workers_tables_refuse_a_local_layer_and_a_source_that_may_not_ship(tmp_path):
@@ -505,7 +542,7 @@ def test_the_workers_tables_refuse_a_local_layer_and_a_source_that_may_not_ship(
     bundle = "  - {plugin: taochronos.plugins.classics, config: {domain: domains/classics, aliases: [aliases]%s}}\n"
     profile = tmp_path / "profiles" / "full-corpus.yaml"
     profile.write_text("name: full-corpus\nbundles:\n" + bundle % "", encoding="utf-8")
-    assert len(_aliases(tmp_path)["ALIASES"]) == len(_exported("ALIASES"))
+    assert _aliases(tmp_path)["ALIASES"] == _exported("ALIASES")
     profile.write_text("name: full-corpus\nbundles:\n" + bundle % ", aliases_local: aliases/local/aliases-local.jsonl",
                        encoding="utf-8")
     with pytest.raises(ValueError, match="local alias layer"):
@@ -530,10 +567,11 @@ def test_the_workers_lexicon_matches_names_as_long_as_the_full_corpus_lexicon_ho
 
 def test_the_workers_tables_stay_small():
     """tables.js is part of the Worker's bundle: gzipped, under 1,320,000 bytes, the alias layer included.  Measured
-    940,622 with the NTU table on the web store's layer (210,074 before it); the margin, 40 %, follows the layer's own
-    (aliasbuild.BUDGET): the rebuild on the full store keeps more of the table's pairs (+25–30 % expected).  The whole
-    Worker (index.js and the modules it imports, tables.js among them) stays under Workers Free's 3 MB compressed a
-    script (ADR 0017), measured here as one gzip stream of its files (about 1.04 MB today)."""
+    985,921 with the NTU table on the web store's layer and the index its lookups read (ALIAS_INDEX, about 90,000 of
+    it; 210,074 before the table); the margin follows the layer's own (aliasbuild.BUDGET): the rebuild on the full
+    store keeps more of the table's pairs (+25–30 % expected).  The whole Worker (index.js and the modules it imports,
+    tables.js among them) stays under Workers Free's 3 MB compressed a script (ADR 0017), measured here as one gzip
+    stream of its files (about 1.09 MB today)."""
     import gzip
 
     assert len(gzip.compress(TABLES.read_bytes())) < 1_320_000

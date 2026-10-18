@@ -10,7 +10,11 @@ decide alike from data alone.  Nothing here enters the ``Lexicon``.
 
 The file (``domains/classics/aliases/aliases.jsonl``) is compact JSON lines: a header line, then one record per surface
 in code-point order, keys sorted, defaults left out on writing and restored on reading.  Field names are the file's
-keys, so this module, the Worker's port and the file read alike.
+keys, so this module, the Worker's port and the file read alike.  The header carries an index of the records
+(:func:`layout`, with the CRC-32 of the record lines it describes), so that loading reads no record: each is read from
+its line when first asked for, and the lookups by group, head and term read the index.  A file without one, or whose
+lines are not those its index describes (a hand-edited one), is read whole, as before the index; a reader that knows
+no index ignores it.
 """
 
 from __future__ import annotations
@@ -19,15 +23,18 @@ import hashlib
 import json
 import math
 import re
+import zlib
+from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable, Iterator, Mapping, Sequence
 
 from ...protocol.base import canonical_dumps
 from .store import is_han
 
 FORMAT = "taochronos-aliases"
 VERSION = 1
+INDEX = "index"  # the header's key for the index of the records (:func:`layout`), which a reader may ignore
 
 # kind → how an answer names it
 KINDS: dict[str, str] = {
@@ -80,6 +87,14 @@ SOURCE_LABELS: dict[str, str] = {
     "bielu-jc": "别名录（中醫笈成）", "curated": "编者审定", "store": "古籍互证", "shiming": "纲目释名", "taboo": "避讳",
     "lexicon": "词表", "bielu-gb": "别名录（GB本）", "hurb": "hurbTable", "ntu40k": "NTU 40K",
 }
+
+# lists of names that cite no passage: the NTU table, and the local hurbTable and GB 别名录.  A candidate only they give,
+# that no passage witnesses (credited by a classical work or not: :func:`list_candidate`), is listed and nothing else:
+# no rival of the name's other drugs; listed after the others, at most LIST_ONLY_CAP of them for a name that is no drug
+# of its own and has no other drug to list, none beside one (苦菜 lists 贝母, 败酱 and 龙葵, not the table's six plants of
+# today); and a name with nothing else is asked only as the question's one name (味药 in 苦菜是哪味药 is no name)
+LIST_SOURCES = frozenset({"ntu40k", "hurb", "bielu-gb"})
+LIST_ONLY_CAP = 3
 
 Window = tuple[int | None, int | None]  # [from, to) in years; None leaves that side open
 Blocker = str | tuple[str, int | None, int | None]  # a string containing a name that is not it, with a year window
@@ -345,17 +360,69 @@ def _counts(records: list[AliasRecord]) -> dict[str, int]:
     return out
 
 
+def layout(records: Sequence[AliasRecord]) -> dict[str, Any]:
+    """What the index's lookups read of records, in this order (a position counts them from 0), so that none is read
+    for them: ``groups``, the positions of the records with a referent in each same-drug group, ascending; ``headless``,
+    the groups no referent of their own id heads (a referent's head is its group's id but in these); ``heads``, the
+    groups of each other head; ``owners``, the surfaces whose ``ho`` is another group (a head's ``ho`` is mostly its
+    own); ``terms``, the groups of each lexicon term id; ``stops``, the positions of the stop names; and the ``kinds``,
+    ``statuses`` and ``sources`` the referents use.  Lists are sorted (positions and owners in record order)."""
+    groups: dict[str, list[int]] = {}
+    heads: dict[str, set[str]] = {}
+    owners: dict[str, list[str]] = {}
+    terms: dict[str, set[str]] = {}
+    own: set[str] = set()
+    kinds: set[str] = set()
+    statuses: set[str] = set()
+    sources: set[str] = set()
+    stops: list[int] = []
+    for i, rec in enumerate(records):
+        if rec.stop:
+            stops.append(i)
+        if rec.ho is not None and rec.ho != rec.s:
+            owners.setdefault(rec.ho, []).append(rec.s)
+        for ref in rec.r:
+            at = groups.setdefault(ref.g, [])
+            if not at or at[-1] != i:
+                at.append(i)
+            if ref.h == ref.g:
+                own.add(ref.g)
+            else:
+                heads.setdefault(ref.h, set()).add(ref.g)
+            if ref.t:
+                terms.setdefault(ref.t, set()).add(ref.g)
+            kinds.add(ref.k)
+            statuses.add(ref.st)
+            sources.update(ref.src)
+    return {"groups": groups, "headless": sorted(set(groups) - own),
+            "heads": {h: sorted(gs) for h, gs in heads.items()}, "owners": owners,
+            "terms": {t: sorted(gs) for t, gs in terms.items()}, "stops": stops,
+            "kinds": sorted(kinds), "statuses": sorted(statuses), "sources": sorted(sources)}
+
+
+def _whole(records: Iterable[AliasRecord]) -> bool:
+    """Whether :class:`AliasIndex` keeps every record whole: no surface of fewer than two Han characters, no referent
+    with a blank head or an unknown kind or status — what an index may describe."""
+    return all(sum(map(is_han, rec.s)) >= 2 and all(ref.h.strip() and ref.k in KINDS and ref.st in STATUSES
+                                                      for ref in rec.r) for rec in records)
+
+
 def dumps_records(records: Iterable[AliasRecord], meta: Mapping[str, Any] | None = None) -> str:
     """The file's text: the header, then the records by surface in code-point order.  ``meta`` goes into the header
     (store, normalizer, lexicon, coverage, and the sources' ``labels``); its format, version, sources and counts are
-    those of the records."""
+    those of the records, and so is its ``index`` (:func:`layout`, with the number of record lines and their CRC-32),
+    which is left out when a reader would not keep every record whole (:func:`_whole`)."""
     recs = sorted(records, key=lambda rec: rec.s)
     for a, b in zip(recs, recs[1:]):
         if a.s == b.s:
             raise ValueError(f"duplicate alias surface {a.s}")
+    body = "".join(canonical_dumps(rec.to_json()) + "\n" for rec in recs)
     header = {**(meta or {}), "format": FORMAT, "version": VERSION,
               "sources": sorted({src for rec in recs for ref in rec.r for src in ref.src}), "counts": _counts(recs)}
-    return "".join(canonical_dumps(obj) + "\n" for obj in [{"_header": header}, *(rec.to_json() for rec in recs)])
+    header.pop(INDEX, None)
+    if _whole(recs):
+        header[INDEX] = {**layout(recs), "lines": len(recs), "crc": zlib.crc32(body.encode("utf-8"))}
+    return canonical_dumps({"_header": header}) + "\n" + body
 
 
 def write_records(path: Path, records: Iterable[AliasRecord], meta: Mapping[str, Any] | None = None) -> Path:
@@ -394,7 +461,8 @@ def loads_records(text: str, origin: str = "<aliases>") -> tuple[dict[str, Any],
 
 
 def _header(value: Any, where: str) -> dict[str, Any]:
-    """A header line's object, checked for what the index reads of it: format, version, sources and labels."""
+    """A header line's object, checked for what the index reads of it: format, version, sources and labels.  Its
+    ``index`` is left out: a reading aid, which :func:`dumps_records` writes afresh."""
     if type(value) is not dict:
         raise ValueError(f"{where}: the header is not an object")
     fmt, version = value.get("format"), value.get("version", 0)
@@ -408,7 +476,82 @@ def _header(value: Any, where: str) -> dict[str, Any]:
         _texts(list(labels.values()), "labels")
     except ValueError as exc:
         raise ValueError(f"{where}: malformed header ({exc})") from None
-    return dict(value)
+    out = dict(value)
+    out.pop(INDEX, None)
+    return out
+
+
+# Han characters as ``is_han`` reads them; a surface of fewer than two, among names one to a line
+_HAN = "㐀-鿿豈-﫿\U00020000-\U0003134f〇〓"
+_SHORT = re.compile(f"^[^\n{_HAN}]*(?:[{_HAN}][^\n{_HAN}]*)?$", re.M)
+_INDEX_SHAPE = {"groups": dict, "headless": list, "heads": dict, "owners": dict, "terms": dict, "stops": list,
+                "kinds": list, "statuses": list, "sources": list, "lines": int, "crc": int}
+
+
+class _Layer:
+    """An alias file read lazily: its header, its index, and each record's line by its surface, in the file's order."""
+
+    __slots__ = ("origin", "header", "index", "keys", "lines")
+
+    def __init__(self, origin: str, header: dict[str, Any], index: dict[str, Any], keys: list[str],
+                 lines: list[bytes]) -> None:
+        self.origin, self.header, self.index, self.keys, self.lines = origin, header, index, keys, lines
+
+    def records(self) -> list[AliasRecord]:
+        """Every record, read now (for a file whose surfaces another file loaded first already holds)."""
+        out = []
+        for no, line in enumerate(self.lines, 2):
+            try:
+                out.append(_record(json.loads(line)))
+            except ValueError as exc:
+                raise ValueError(f"{self.origin}:{no}: malformed record ({exc})") from None
+        return out
+
+
+def _record(obj: Any) -> AliasRecord:
+    if type(obj) is not dict or "_header" in obj:
+        raise _bad("a record", obj)
+    return AliasRecord.from_json(obj)
+
+
+def _layer(data: bytes, origin: str) -> _Layer | None:
+    """An alias file whose header's index describes its record lines — their number and CRC-32, kinds and statuses this
+    reader knows, a surface of two Han characters or more on each, none twice — with its lines kept by surface and
+    none read; else None, and the file is read whole (:func:`loads_records`).  A header of another format or a newer
+    version is refused here as there."""
+    end = data.find(b"\n")
+    if end < 0 or not data.startswith(b'{"_header":'):
+        return None
+    try:
+        obj = json.loads(data[:end])
+    except ValueError:
+        return None
+    head = obj.get("_header") if type(obj) is dict else None
+    index = head.get(INDEX) if type(head) is dict else None
+    if type(index) is not dict:
+        return None
+    header = _header(head, f"{origin}:1")
+    if any(type(index.get(key)) is not kind for key, kind in _INDEX_SHAPE.items()):
+        return None
+    for key in ("headless", "kinds", "statuses", "sources"):
+        if not _STR.issuperset(map(type, index[key])):
+            return None
+    if not (set(index["kinds"]) <= KINDS.keys() and set(index["statuses"]) <= set(STATUSES)):
+        return None
+    if zlib.crc32(memoryview(data)[end + 1:]) != index["crc"]:
+        return None
+    lines = data.split(b"\n")  # kept as bytes: a line is decoded when its record is read
+    del lines[0]
+    if lines.pop() != b"" or len(lines) != index["lines"]:
+        return None
+    keys = []
+    for line in lines:  # each line ends {…,"s":"<surface>"} or with "sh" and "stop" after it: keys are sorted
+        i = line.rfind(b'"s":"') + 5
+        keys.append(line[i:line.find(b'"', i)].decode("utf-8"))
+    names = "\n".join(keys)
+    if "\\" in names or _SHORT.search(names) or len(set(keys)) != len(keys):
+        return None
+    return _Layer(origin, header, index, keys, lines)
 
 
 # --------------------------------------------------------------------------- gates
@@ -502,6 +645,36 @@ def _year(w: Witness) -> float | int | None:
     return int(mid) if mid == int(mid) else mid
 
 
+def _listed(ref: Referent) -> bool:
+    """Whether only lists of names (:data:`LIST_SOURCES`) give a referent and no passage witnesses it."""
+    return not ref.w and bool(ref.src) and all(src in LIST_SOURCES for src in ref.src)
+
+
+def list_candidate(ref: Referent) -> bool:
+    """A candidate only lists give and no passage witnesses, credited by a classical work or not: listed, nothing
+    else — never a rival of the name's other drugs."""
+    return ref.st == "candidate" and _listed(ref)
+
+
+def _listing_rank(ref: Referent) -> int:
+    """0: a passage witnesses it or a source other than a list gives it; then what only lists give — 1 credited and 2
+    uncredited ones the layer may search (open, cue), 3 credited and 4 uncredited candidates."""
+    if not _listed(ref):
+        return 0
+    return (3 if ref.st == "candidate" else 1) + (ref.cr is None)
+
+
+def listing(refs: Iterable[Referent], headed: bool = False) -> list[Referent]:
+    """The referents ``query.aliases`` lists for a name, by :func:`_listing_rank` (each rank in the order given): the
+    candidates only lists give at most :data:`LIST_ONLY_CAP`, and none when any other is listed or the name is a drug
+    of its own (``headed``: it heads one, or has a floor)."""
+    refs = list(refs)
+    out = sorted((r for r in refs if _listing_rank(r) < 3), key=_listing_rank)
+    if out or headed:
+        return out
+    return sorted((r for r in refs if _listing_rank(r) >= 3), key=_listing_rank)[:LIST_ONLY_CAP]
+
+
 def source_labels(ids: Iterable[str], labels: Mapping[str, str] | None = None) -> list[str]:
     """How an answer credits sources: by ``labels`` (an index's, from its files' headers), else
     :data:`SOURCE_LABELS`; an unknown id stands for itself."""
@@ -531,6 +704,75 @@ def assemble(M: list, S: list, k: int, num: int = 3, den: int = 10) -> list:
 
 
 # --------------------------------------------------------------------------- the index
+class _Records(MappingABC):
+    """The index's records by surface, in the order loaded: a record of a file read lazily is read from its line when
+    first asked for, then kept (the first kept wins, so every caller holds the same object)."""
+
+    __slots__ = ("_lines", "_read")
+
+    def __init__(self) -> None:
+        self._lines: dict[str, bytes | AliasRecord] = {}  # surface → its line, or the record itself
+        self._read: dict[str, AliasRecord] = {}
+
+    def _put(self, rec: AliasRecord) -> None:
+        self._lines[rec.s] = self._read[rec.s] = rec
+
+    def get(self, s: str, default: Any = None) -> Any:
+        line = self._lines.get(s)
+        if line is None:
+            return default
+        rec = self._read.get(s)
+        return rec if rec is not None else self._parse(s, line)
+
+    def _parse(self, s: str, line: Any) -> AliasRecord:
+        try:
+            rec = _record(json.loads(line))
+        except ValueError as exc:
+            raise ValueError(f"aliases: the record of {s} is malformed ({exc})") from None
+        if rec.s != s:
+            raise ValueError(f"aliases: the index puts {s} where the file has {rec.s}")
+        return self._read.setdefault(s, rec)
+
+    def __getitem__(self, s: str) -> AliasRecord:
+        rec = self.get(s)
+        if rec is None:
+            raise KeyError(s)
+        return rec
+
+    def __contains__(self, s: object) -> bool:
+        return s in self._lines
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._lines)
+
+    def __len__(self) -> int:
+        return len(self._lines)
+
+
+class _Part:
+    """What the lookups read of a file read lazily (its header's index) or of the records given (:func:`layout`):
+    positions are into ``keys``."""
+
+    __slots__ = ("origin", "keys", "groups", "headless", "heads", "owners", "terms", "sources")
+
+    def __init__(self, origin: str, keys: list[str], index: Mapping[str, Any]) -> None:
+        self.origin, self.keys = origin, keys
+        self.groups: dict[str, list[int]] = index["groups"]
+        self.headless = frozenset(index["headless"])
+        self.heads: dict[str, list[str]] = index["heads"]
+        self.owners: dict[str, list[str]] = index["owners"]
+        self.terms: dict[str, list[str]] = index["terms"]
+        self.sources: list[str] = index["sources"]
+
+    def members(self, g: str) -> list[str]:
+        """The surfaces with a referent in group ``g``."""
+        at = self.groups.get(g, ())
+        n = len(self.keys)
+        if not all(type(i) is int and 0 <= i < n for i in at):
+            raise ValueError(f"{self.origin}: the header's index of the records is damaged ({g})")
+        return [self.keys[i] for i in at]
+
+
 class AliasIndex:
     """The alias records a pack loaded, by surface.  Empty — and so disabled — unless a profile names a layer.
 
@@ -538,12 +780,48 @@ class AliasIndex:
     characters, a surface met again (the first kept); a referent with a blank head, an unknown kind or status (and its
     record with it when none of its referents is left).  A file whose values have the wrong type is refused whole
     (:func:`loads_records`).  Answers credit sources by the labels the files' headers carry (``labels``: id → label,
-    which the build writes from sources.yaml), else by :data:`SOURCE_LABELS`."""
+    which the build writes from sources.yaml), else by :data:`SOURCE_LABELS`.
+
+    A file whose header's index describes its lines (:func:`_layer`) is loaded without reading a record: ``records``
+    reads each when first asked for, and the lookups by group, head and term read the index — the same answers as
+    the records read whole give (``tests/test_aliases.py`` holds them to it on the shipped layer)."""
 
     def __init__(self, records: Iterable[AliasRecord] = (), *, context: Mapping[str, Any] | None = None,
                  headers: Iterable[Mapping[str, Any]] = (), fingerprint: str = "") -> None:
-        self.records: dict[str, AliasRecord] = {}
+        self._build([records], context, headers, fingerprint)
+
+    def _build(self, layers: Iterable[_Layer | Iterable[AliasRecord]], context: Mapping[str, Any] | None,
+               headers: Iterable[Mapping[str, Any]], fingerprint: str) -> None:
+        self._recs = _Records()
+        self.records: Mapping[str, AliasRecord] = self._recs
         self.skipped = {"blank": 0, "one_char": 0, "duplicate": 0, "kind": 0, "status": 0}
+        self._parts: list[_Part] = []
+        self._pairs_of: dict[str, list[tuple[str, Referent]]] = {}  # group → (surface, referent), read once
+        for layer in layers:
+            if isinstance(layer, _Layer):
+                if self._recs._lines.keys().isdisjoint(layer.keys):
+                    self._recs._lines.update(zip(layer.keys, layer.lines))
+                    self._parts.append(_Part(layer.origin, layer.keys, layer.index))
+                    continue
+                layer = layer.records()  # a surface met again: its file read whole, the first one kept
+            self._take(layer)
+        self.headers = [dict(h) for h in headers]
+        self.context: dict[str, Any] = dict(context or {})
+        self.fingerprint = fingerprint
+        self.sources = sorted({src for h in self.headers for src in h.get("sources") or ()}
+                              | {src for part in self._parts for src in part.sources})
+        self.labels = {**SOURCE_LABELS, **{i: t for h in self.headers for i, t in (h.get("labels") or {}).items()}}
+        self.max_len = max(map(len, self.records), default=0)
+        self.enabled = bool(self.records)
+        # what the gates read of the context
+        ctx = {**CONTEXT_PATTERNS, **self.context}
+        self._patterns = {key: re.compile(ctx[key]) for key in CONTEXT_PATTERNS}
+        self._herbs = frozenset(ctx.get("herbs") or ())
+        self._herb_len = max(map(len, self._herbs), default=0)
+
+    def _take(self, records: Iterable[AliasRecord]) -> None:
+        """Records given or read whole: those that can be used kept (the others counted), and their :func:`layout`."""
+        kept: list[AliasRecord] = []
         for rec in records:
             if not rec.s.strip():
                 self.skipped["blank"] += 1
@@ -568,57 +846,39 @@ class AliasIndex:
                 if not refs and not rec.stop and rec.ho is None:
                     continue
                 rec = replace(rec, r=refs)
-            self.records[rec.s] = rec
-        self.headers = [dict(h) for h in headers]
-        self.context: dict[str, Any] = dict(context or {})
-        self.fingerprint = fingerprint
-        self.sources = sorted({src for h in self.headers for src in h.get("sources") or ()}
-                              | {src for rec in self.records.values() for ref in rec.r for src in ref.src})
-        self.labels = {**SOURCE_LABELS, **{i: t for h in self.headers for i, t in (h.get("labels") or {}).items()}}
-        self.max_len = max(map(len, self.records), default=0)
-        self.enabled = bool(self.records)
-        # what the gates read of the context, and the indexes the expansion walks (surfaces in code-point order)
-        ctx = {**CONTEXT_PATTERNS, **self.context}
-        self._patterns = {key: re.compile(ctx[key]) for key in CONTEXT_PATTERNS}
-        self._herbs = frozenset(ctx.get("herbs") or ())
-        self._herb_len = max(map(len, self._herbs), default=0)
-        self._groups: dict[str, list[tuple[str, Referent]]] = {}  # group → (surface, referent)
-        self._group_heads: dict[str, set[str]] = {}  # group → its heads
-        self._heads: dict[str, set[str]] = {}  # head → its groups
-        self._terms: dict[str, set[str]] = {}  # lexicon term id → its groups
-        for s in sorted(self.records):
-            rec = self.records[s]
-            if rec.ho is not None:
-                self._heads.setdefault(s, set()).add(rec.ho)
-                self._group_heads.setdefault(rec.ho, set()).add(s)
-            for ref in rec.r:
-                self._groups.setdefault(ref.g, []).append((s, ref))
-                self._heads.setdefault(ref.h, set()).add(ref.g)
-                self._group_heads.setdefault(ref.g, set()).add(ref.h)
-                if ref.t:
-                    self._terms.setdefault(ref.t, set()).add(ref.g)
+            self._recs._put(rec)
+            kept.append(rec)
+        if kept:
+            self._parts.append(_Part("", [rec.s for rec in kept], layout(kept)))
 
     @classmethod
     def load(cls, files: Iterable[Path | str], context: Path | str | Mapping[str, Any] | None = None) -> AliasIndex:
-        """Read alias files, in order, and the ``context.json`` the gates read.  The fingerprint covers the bytes of
-        both; it is empty when no file was read."""
+        """Read alias files, in order, and the ``context.json`` the gates read: a file whose header's index describes
+        it (:func:`_layer`) without reading its records, any other whole.  The fingerprint covers the bytes of both;
+        it is empty when no file was read."""
         digest = hashlib.sha256()
         headers: list[dict[str, Any]] = []
-        records: list[AliasRecord] = []
+        layers: list[_Layer | list[AliasRecord]] = []
         read = 0
         for path in map(Path, files):
             data = path.read_bytes()
             digest.update(data)
-            header, recs = loads_records(data.decode("utf-8"), origin=str(path))
+            layer = _layer(data, str(path))
+            if layer is not None:
+                header, recs = layer.header, layer
+            else:
+                header, recs = loads_records(data.decode("utf-8"), origin=str(path))
             if header:
                 headers.append(header)
-            records.extend(recs)
+            layers.append(recs)
             read += 1
         if context is not None and not isinstance(context, Mapping):
             data = Path(context).read_bytes()
             digest.update(data)
             context = json.loads(data.decode("utf-8"))
-        return cls(records, context=context, headers=headers, fingerprint=digest.hexdigest()[:12] if read else "")
+        index = cls.__new__(cls)
+        index._build(layers, context, headers, digest.hexdigest()[:12] if read else "")
+        return index
 
     @classmethod
     def empty(cls) -> AliasIndex:
@@ -636,22 +896,56 @@ class AliasIndex:
         return source_labels(ids, self.labels)
 
     # ---------------------------------------------------------------- lookup
+    # what the lookups read: per group, its (surface, referent) pairs by surface (``_pairs``); per name, the groups it
+    # heads — its record's ``ho``, and the groups whose referents it heads (``_heads_of``); per group, its heads — the
+    # referents' and the names whose ``ho`` it is (``_group_heads_of``); per lexicon term id, its groups — each read
+    # from the parts' indexes and the records they point to, never from every record
+    def _pairs(self, g: str) -> list[tuple[str, Referent]]:
+        """Every (surface, referent) whose referent is in group ``g``, by surface (kept: callers do not change it)."""
+        pairs = self._pairs_of.get(g)
+        if pairs is None:
+            members = sorted({s for part in self._parts for s in part.members(g)})
+            pairs = self._pairs_of.setdefault(g, [(s, ref) for s in members for ref in self.records[s].r if ref.g == g])
+        return pairs
+
+    def _heads_of(self, s: str) -> set[str]:
+        """The groups ``s`` heads: its record's ``ho``, and every group a referent headed by ``s`` is in."""
+        out = set()
+        rec = self.records.get(s)
+        if rec is not None and rec.ho is not None:
+            out.add(rec.ho)
+        for part in self._parts:
+            if s in part.groups and s not in part.headless:
+                out.add(s)
+            out.update(part.heads.get(s, ()))
+        return out
+
+    def _group_heads_of(self, g: str) -> set[str]:
+        """The heads of group ``g``: its referents' heads, and the names whose ``ho`` it is."""
+        out = {ref.h for _, ref in self._pairs(g)}
+        rec = self.records.get(g)
+        if rec is not None and rec.ho == g:
+            out.add(g)
+        for part in self._parts:
+            out.update(part.owners.get(g, ()))
+        return out
+
     def by_group(self, g: str) -> list[tuple[str, Referent]]:
         """Every (surface, referent) whose referent is in group ``g``, by surface."""
-        return list(self._groups.get(g, ()))
+        return list(self._pairs(g))
 
     def groups_for(self, term_id: str | None, surfaces: Iterable[str]) -> list[str]:
         """The groups an asked lexicon entry belongs to, by its term id and its surfaces, sorted."""
-        out = set(self._terms.get(term_id, ())) if term_id else set()
+        out = {g for part in self._parts for g in part.terms.get(term_id, ())} if term_id else set()
         for s in surfaces:
-            out |= self._heads.get(s, set())
+            out |= self._heads_of(s)
         return sorted(out)
 
     def names(self, g: str) -> list[str]:
         """The names that tell group ``g`` apart, sorted: its heads and its aliases that name nothing else (stop names
         and candidates left out)."""
-        out = set(self._group_heads.get(g, ()))
-        for a, ref in self._groups.get(g, ()):
+        out = self._group_heads_of(g)
+        for a, ref in self._pairs(g):
             rec = self.records[a]
             if ref.st != "candidate" and not rec.stop and all(other.g == g for other in rec.r):
                 out.add(a)
@@ -684,10 +978,17 @@ class AliasIndex:
             g = groups[0] if groups else entry.term
             # a member's entry names its group's drug, of that drug's term id (蒺藜, herb:蒺藜 — not herb:蒺藜子)
             t = entry.term_id if g == entry.term else next(
-                (ref.t for _, ref in self._groups.get(g, ()) if ref.h == g and ref.t), None)
+                (ref.t for _, ref in self._pairs(g) if ref.h == g and ref.t), None)
             refs.append(Referent(g, t=t, src=["lexicon"]))
             seen.add(g)
         return refs
+
+    def listed_only(self, s: str) -> bool:
+        """Whether ``s`` names nothing but candidates only lists give (:func:`list_candidate`): no stop, no head, no
+        floor — a name a question asks only as its one name."""
+        rec = self.record(s)
+        return (rec is not None and not rec.stop and rec.ho is None and rec.fl is None and bool(rec.r)
+                and all(map(list_candidate, rec.r)))
 
     def scan(self, norm: str) -> list[tuple[int, int, str]]:
         """Alias and head surfaces in normalised text, ``(start, end, surface)``: longest first, left to right, stop
@@ -938,14 +1239,15 @@ class AliasIndex:
                 pairs = [(ref.h, ref)]
                 part = other_part(s, ref)
                 if meets(valid, after, before) and not part:
-                    pairs += [(a, other) for a, other in self._groups.get(ref.g, ())
+                    pairs += [(a, other) for a, other in self._pairs(ref.g)
                               if other.k == "spelling" and other.st != "candidate"]
                 for h, pair in pairs:
                     hrec = self.record(h)
                     if len(h) < 2 or h in taken or (hrec is not None and hrec.stop):
                         continue
+                    shared = hrec is not None and len({r.g for r in hrec.r if not list_candidate(r)}) > 1
                     add(Expansion(h, s, DIRECTIONS[0], ref.g, ref.h, kind=pair.k, status="open", valid=valid,
-                                  shared=hrec is not None and len({r.g for r in hrec.r}) > 1, cues=list(ref.c),
+                                  shared=shared, cues=list(ref.c),
                                   src=list(pair.src), wit=list(pair.w), n=hrec.n if hrec is not None else 0), order,
                         part)
             # drug → alias: the other names of the groups the asked name heads
@@ -956,7 +1258,7 @@ class AliasIndex:
                     ref.g for ref in refs if ref.k != "spelling"}
             for g in sorted(groups):
                 own_names = self.names(g)
-                for a, ref in self._groups.get(g, ()):
+                for a, ref in self._pairs(g):
                     arec = self.records[a]
                     if arec.stop or len(a) < 2 or a in taken or (ref.st == "candidate" and "gates" not in ablate):
                         continue
@@ -964,7 +1266,8 @@ class AliasIndex:
                     own = [n for n in own_names if n != a]
                     rivals = [(None if "period" in ablate else r.v, sorted(set(self.names(r.g)) - set(own) - {a}))
                               for r in sorted(arec.r, key=lambda r: r.g)
-                              if r.g != g and ("period" in ablate or meets(r.v, after, before))]
+                              if r.g != g and not list_candidate(r)
+                              and ("period" in ablate or meets(r.v, after, before))]
                     add(Expansion(a, s, DIRECTIONS[1], g, ref.h, kind=ref.k,
                                   status="open" if "gates" in ablate else ref.st,
                                   valid=None if "period" in ablate else ref.v, shared=bool(rivals), cues=list(ref.c),
@@ -1014,15 +1317,16 @@ class AliasIndex:
         asked = []
         for s, term in (getattr(q, "asked", None) or {}).items():
             rec = self.record(s)
-            refs = self.referents(s, term, lex)
+            refs = listing(self.referents(s, term, lex), rec is not None and (rec.ho is not None or rec.fl is not None))
             groups = {ref.g for ref in refs}
-            if not refs or ((rec is None or not rec.r) and len(groups) < 2):
+            if not refs or ((rec is None or not any(ref is r for ref in refs for r in rec.r)) and len(groups) < 2):
                 continue
             asked.append({"surface": s, "term": term, "ambiguous": len(groups) > 1,
                           "referents": [self._referent_view(ref, web) for ref in refs]})
         for s, term in (getattr(q, "stops", None) or {}).items():
             rec = self.record(s)
-            refs = self.referents(s, term, lex, stop=True) if rec is not None and rec.stop else []
+            refs = listing(self.referents(s, term, lex, stop=True), rec.ho is not None or rec.fl is not None) \
+                if rec is not None and rec.stop else []
             entry = lex.entry(term) if lex is not None and term else None
             if refs:
                 asked.append({"surface": s, "term": term, "ambiguous": len({ref.g for ref in refs}) > 1,

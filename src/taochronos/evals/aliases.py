@@ -22,6 +22,15 @@ on the gold's problems gives an example only on a dev item — and not at all wh
 (its split pin among them) or on the store.  Restrict a run with ``TAOCHRONOS_ALIAS_EVAL_SPLITS``
 (dev, heldout), ``TAOCHRONOS_ALIAS_EVAL_SYSTEMS`` and ``TAOCHRONOS_ALIAS_EVAL_VIEWS`` (main, no-gangmu), each a
 comma-separated list.
+
+Uncertainty (:func:`intervals`): a paired bootstrap over items — seeded (:data:`SEED`), so that a run is reproduced
+exactly; ``$TAOCHRONOS_ALIAS_EVAL_BOOTSTRAP`` resamples (default :data:`RESAMPLES`, 0 for none) — gives 95 % intervals
+for on − off, on − naive and each layer comparison below, for P@10, nDCG@10, Wrong@10 and the mean AskedRet@10, per
+split of the main view (and on the synthetic items), in the metrics and as aggregates only.
+``TAOCHRONOS_ALIAS_EVAL_BASELINE`` (a directory holding an alias layer's ``aliases.jsonl`` and ``context.json``, or the
+``aliases.jsonl`` itself) searches the same items with that layer too, the profile's pack otherwise unchanged
+(:func:`layer_pack`): as ``on@baseline`` (``$TAOCHRONOS_ALIAS_EVAL_BASELINE_SYSTEMS``, default ``on``, picks which
+systems), so that a change of the layer reads as on(new) − on(old), with its interval.
 """
 
 from __future__ import annotations
@@ -29,7 +38,9 @@ from __future__ import annotations
 import copy
 import json
 import math
+import operator
 import os
+import random
 import tempfile
 import time
 from collections import defaultdict
@@ -60,6 +71,13 @@ SYSTEMS: dict[str, dict[str, Any] | None] = {
 CAP = 50  # store counts are read up to here: the metrics need min(10, ·) and min(50, ·)
 TYPES = ("alias", "head", "ambiguous", "period", "trap", "substring")
 MASK = "|"
+BASELINE = "@baseline"  # a system searched with the baseline layer (``on@baseline``)
+RESAMPLES = 2000  # bootstrap resamples over items (``$TAOCHRONOS_ALIAS_EVAL_BOOTSTRAP``)
+SEED = 20261018  # the bootstrap's seed: every run draws the same resamples
+LEVEL = 0.95
+# the metrics given intervals, each computed on a resample as :func:`aggregate` does: a mean over the items that have
+# it, or the total
+BOOT_METRICS = (("P@10", "mean"), ("nDCG@10", "mean"), ("Wrong@10", "sum"), ("AskedRet@10", "mean"))
 
 
 # ------------------------------------------------------------------ labels
@@ -278,8 +296,13 @@ class Naive:
         return self.retriever.search(text, k=k, aliases="off")
 
 
+def _base(system: str) -> str:
+    """The system a name stands for: ``on@baseline`` searches as ``on`` does, with the baseline layer."""
+    return system.split("@", 1)[0]
+
+
 def searcher(system: str, retriever: Any, naive: Naive | None = None) -> Callable[[str, int], tuple[Any, list[Any]]]:
-    spec = SYSTEMS[system]
+    spec = SYSTEMS[_base(system)]
     if spec is None:
         base = naive or Naive(retriever)
         return lambda text, k: base.search(text, k=k)
@@ -487,23 +510,25 @@ def table(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 def layered(system: str) -> bool:
     """Whether a system searches with the alias layer (and so lists candidates)."""
-    spec = SYSTEMS[system]
+    spec = SYSTEMS[_base(system)]
     return spec is not None and spec["aliases"] == "on"
 
 
 def run_items(items: list[dict[str, Any]], retriever: Any, corpus: Any, systems: list[str],
-              texts: _Texts | None = None,
-              same: dict[str, set[str]] | None = None) -> tuple[dict[str, list[dict[str, Any]]], list[dict[str, Any]]]:
+              texts: _Texts | None = None, same: dict[str, set[str]] | None = None,
+              others: dict[str, Any] | None = None) -> tuple[dict[str, list[dict[str, Any]]], list[dict[str, Any]]]:
     """Every item searched by every system (k = 10, then 50).  Latency is the k = 10 call, timed only after every
     system has searched the item once untimed: a first call fills caches the others then read (the claims of the
     item's passages, extracted into the harness's own cache), so that timing first calls would charge that cost to
     whichever system ran first on the item.  The systems' order still turns with the item.  ``same``: the gold's
-    same-drug names (:func:`same_drug`, by default the items' own).  Returns the rows per system and, per item, its
-    counts."""
+    same-drug names (:func:`same_drug`, by default the items' own).  ``others``: a retriever for a system to search
+    with in place of ``retriever`` (``on@baseline`` with the baseline layer, :func:`layer_retriever`), in the same
+    rotation, on the same counts.  Returns the rows per system and, per item, its counts."""
     texts = texts or _Texts(corpus)
     same = same_drug(items) if same is None else same
+    others = others or {}
     naive = Naive(retriever) if "naive" in systems else None
-    run = {s: searcher(s, retriever, naive) for s in systems}
+    run = {s: searcher(s, others[s]) if s in others else searcher(s, retriever, naive) for s in systems}
     rows: dict[str, list[dict[str, Any]]] = {s: [] for s in systems}
     info = []
     for idx, item in enumerate(items):
@@ -520,7 +545,7 @@ def run_items(items: list[dict[str, Any]], retriever: Any, corpus: Any, systems:
             q, hits10 = run[system](item["query"], 10)
             ms = (time.perf_counter() - started) * 1000
             _, hits50 = run[system](item["query"], 50)
-            forms = asked_forms(retriever.pack, q, item["asked"]) if layered(system) else set()
+            forms = asked_forms(others.get(system, retriever).pack, q, item["asked"]) if layered(system) else set()
             rows[system].append(score(item, label, texts, counts, q, hits10, hits50, ms, layered=layered(system),
                                       same=same, forms=forms))
     for system in systems:
@@ -581,7 +606,7 @@ def resolution(gold: dict[str, Any], retriever: Any, systems: list[str], splits:
     rows = [r for r in gold.get("resolution") or [] if r.get("split") in splits]
     out: dict[str, Any] = {}
     for system in filter(layered, systems):
-        cfg = {**retriever.alias, **(SYSTEMS[system] or {}).get("alias_params", {})}
+        cfg = {**retriever.alias, **(SYSTEMS[_base(system)] or {}).get("alias_params", {})}
         done = []
         for row in rows:
             q = retriever.analyzer.analyze(row["surface"], aliases=True, cfg=cfg)
@@ -598,6 +623,154 @@ def resolution(gold: dict[str, Any], retriever: Any, systems: list[str], splits:
                           "confusion": confusion}
         out[system] = res
     return out
+
+
+# ------------------------------------------------------------------ uncertainty
+def _draws(n: int, resamples: int, seed: int) -> list[list[int]]:
+    """``resamples`` bootstrap resamples of ``n`` items, each as how often it draws every item (drawn with
+    replacement, ``n`` draws): seeded, so that every run draws the same ones."""
+    rng = random.Random(seed)
+    out = []
+    for _ in range(resamples):
+        counts = [0] * n
+        for i in rng.choices(range(n), k=n):
+            counts[i] += 1
+        out.append(counts)
+    return out
+
+
+def _stat(counts: list[int], vals: list[float], have: list[int], how: str) -> float | None:
+    """A metric on a resample, as :func:`aggregate` computes it: the total, or the mean over the items that have it."""
+    total = sum(map(operator.mul, counts, vals))
+    if how == "sum":
+        return total
+    n = sum(map(operator.mul, counts, have))
+    return total / n if n else None
+
+
+def _quantile(values: list[float], q: float) -> float:
+    """The ``q`` quantile of sorted values: the least value with at least a share ``q`` of them at or below it."""
+    return values[max(0, math.ceil(round(q * len(values), 9)) - 1)]
+
+
+def contrasts(systems: Iterable[str]) -> list[tuple[str, str]]:
+    """The differences given intervals: on − off, on − naive, and each system searched with the baseline layer against
+    itself with the profile's (on − on@baseline: the layer's change)."""
+    systems = list(systems)
+    pairs = [("on", "off"), ("on", "naive")] + [(_base(s), s) for s in systems if s.endswith(BASELINE)]
+    return [(a, b) for a, b in pairs if a in systems and b in systems]
+
+
+def bootstrap(rows: dict[str, list[dict[str, Any]]], pairs: Iterable[tuple[str, str]], *,
+              resamples: int = RESAMPLES, seed: int = SEED) -> dict[str, Any]:
+    """A paired bootstrap of the differences ``a − b`` of :data:`BOOT_METRICS`: the items both systems scored, paired
+    by id, are resampled with replacement ``resamples`` times — the same resamples for every pair and metric — and on
+    each the metric of either system is computed as :func:`aggregate` does (the mean over the items that have it,
+    Wrong@10 the total), and the difference.  Each pair ``"a-b"`` → metric → ``diff`` (on all the items) and ``ci95``
+    (the 2.5 and 97.5 percentiles of the resampled differences; resamples on which a system has no value left out).
+    Aggregates only: nothing of a single item."""
+    pairs = [(a, b) for a, b in pairs if a in rows and b in rows]
+    if not pairs or resamples <= 0:
+        return {}
+    systems = list(dict.fromkeys(s for pair in pairs for s in pair))
+    by = {s: {r["id"]: r for r in rows[s]} for s in systems}
+    ids = [r["id"] for r in rows[systems[0]] if all(r["id"] in by[s] for s in systems)]
+    if not ids:
+        return {}
+    draws = [[1] * len(ids)] + _draws(len(ids), resamples, seed)  # the first: every item once
+    stats: dict[tuple[str, str], list[float | None]] = {}
+    for s in systems:
+        for key, how in BOOT_METRICS:
+            got = [by[s][i][key] for i in ids]
+            vals = [0 if v is None else v for v in got]
+            have = [0 if v is None else 1 for v in got]
+            stats[s, key] = [_stat(c, vals, have, how) for c in draws]
+    out: dict[str, Any] = {"items": len(ids)}
+    for a, b in pairs:
+        res: dict[str, Any] = {}
+        for key, how in BOOT_METRICS:
+            x, y = stats[a, key], stats[b, key]
+            point = None if x[0] is None or y[0] is None else x[0] - y[0]
+            diffs = sorted(p - q for p, q in zip(x[1:], y[1:]) if p is not None and q is not None)
+            ci = [_quantile(diffs, (1 - LEVEL) / 2), _quantile(diffs, 1 - (1 - LEVEL) / 2)] if diffs else None
+            if how == "sum":
+                res[key] = {"diff": point, "ci95": ci}
+            else:
+                res[key] = {"diff": _r(point), "ci95": [_r(v) for v in ci] if ci else None}
+        out[f"{a}-{b}"] = res
+    return out
+
+
+def _resamples() -> int:
+    raw = os.environ.get("TAOCHRONOS_ALIAS_EVAL_BOOTSTRAP", "").strip()
+    try:
+        n = int(raw) if raw else RESAMPLES
+    except ValueError:
+        raise ValueError(f"TAOCHRONOS_ALIAS_EVAL_BOOTSTRAP: {raw!r} is no number of resamples") from None
+    if n < 0:
+        raise ValueError(f"TAOCHRONOS_ALIAS_EVAL_BOOTSTRAP: {n} < 0")
+    return n
+
+
+def intervals(rows: dict[str, list[dict[str, Any]]], splits: list[str], *, resamples: int = RESAMPLES,
+              seed: int = SEED) -> dict[str, Any]:
+    """:func:`bootstrap` of :func:`contrasts` per split (and over all of them when there are several); empty with no
+    resamples or no pair to compare."""
+    pairs = contrasts(rows)
+    if resamples <= 0 or not pairs:
+        return {}
+    out: dict[str, Any] = {"resamples": resamples, "seed": seed, "level": LEVEL,
+                           "metrics": [key for key, _ in BOOT_METRICS], "pairs": [f"{a}-{b}" for a, b in pairs]}
+    for split in splits + (["all"] if len(splits) > 1 else []):
+        part = {s: [r for r in rs if split == "all" or r["split"] == split] for s, rs in rows.items()}
+        out[split] = bootstrap(part, pairs, resamples=resamples, seed=seed)
+    return out
+
+
+def interval_text(got: dict[str, Any] | None, key: str) -> str | None:
+    """A difference and its interval as one line: +0.049 [+0.012, +0.090]; Wrong@10 in whole passages."""
+    if not got or got.get("diff") is None or not got.get("ci95"):
+        return None
+    fmt = "{:+g}" if dict(BOOT_METRICS)[key] == "sum" else "{:+.3f}"
+    lo, hi = got["ci95"]
+    return f"{fmt.format(got['diff'])} [{fmt.format(lo)}, {fmt.format(hi)}]"
+
+
+def layer_file(layer: str | Path) -> Path:
+    """The ``aliases.jsonl`` of an alias layer given as its directory or as the file itself."""
+    path = Path(layer).expanduser()
+    file = path / "aliases.jsonl" if path.is_dir() else path
+    if not file.is_file():
+        raise FileNotFoundError(f"TAOCHRONOS_ALIAS_EVAL_BASELINE: no alias layer at {file}")
+    return file
+
+
+def layer_pack(pack: Any, layer: str | Path) -> Any:
+    """``pack`` with another alias layer in place of its own — the same domain and lexicons, the layer's
+    ``aliases.jsonl`` and the ``context.json`` beside it — loaded as the classics plugin loads a local layer
+    (``aliases_local``)."""
+    from ..plugins.classics import DomainPack
+
+    return DomainPack(pack.root, extra_lexicons=pack.extra_lexicons, aliases_file=layer_file(layer))
+
+
+def layer_retriever(retriever: Any, pack: Any) -> Any:
+    """A retriever like ``retriever`` — the same corpus, knowledge, embedder, route weights and alias parameters — on
+    ``pack`` (:func:`layer_pack`)."""
+    from ..plugins.retrieval import HybridRetriever
+
+    return HybridRetriever(pack, retriever.corpus, knowledge=retriever.knowledge, embedder=retriever.embedder,
+                           weights=retriever.weights, alias=retriever.alias)
+
+
+def layer_label(pack: Any, file: Path | None = None) -> dict[str, Any]:
+    """What identifies an alias layer: its fingerprint (of its bytes and its context's), records, and the store it was
+    built on."""
+    index = pack.aliases
+    headers = getattr(index, "headers", None) or [{}]
+    out = {"fingerprint": getattr(index, "fingerprint", None), "records": len(index),
+           "layer_store": (headers[0].get("store") or {}).get("sha")}
+    return {"file": str(file), **out} if file is not None else out
 
 
 # ------------------------------------------------------------------ the synthetic part
@@ -792,7 +965,8 @@ def synthetic_search(home: Path) -> Iterator[tuple[Any, Any, Any]]:
 
 def synthetic(ctx: EvalContext) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """The planted cases on the synthetic corpus and layer (:func:`synthetic_search`); the checks and the metrics of
-    off, naive and on on the nine synthetic items."""
+    off, naive and on on the nine synthetic items, with the paired bootstrap's intervals for on − off and on − naive
+    (:func:`intervals`)."""
     with synthetic_search(ctx.home) as (r, legacy, corpus):
         checks = _checks(r, legacy)
         rows, _ = run_items(SYN_ITEMS, r, corpus, ["off", "naive", "on"])
@@ -801,6 +975,9 @@ def synthetic(ctx: EvalContext) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         agg = aggregate(rs)
         for key in ("P@10", "AskedRet@10", "ON@10", "Wrong@10", "CandRecall", "SilentMerge", "FlagR", "Leakage"):
             metrics[f"{key} {system}"] = agg[key]
+    boot = intervals(rows, ["synthetic"], resamples=_resamples())
+    if boot:
+        metrics["bootstrap"] = boot
     details = [{"part": "synthetic", "id": rs_on["id"], "type": rs_on["type"],
                 **{s: {"P@10": _r(rows[s][k]["P@10"]), "labels": rows[s][k]["labels"]} for s in rows}}
                for k, rs_on in enumerate(rows["on"])]
@@ -826,6 +1003,7 @@ def _store_label(harness: Any) -> dict[str, Any]:
     label["edition"] = getattr(corpus, "edition", None)
     headers = getattr(harness.pack.aliases, "headers", None) or [{}]
     label["layer_store"] = (headers[0].get("store") or {}).get("sha")
+    label["layer"] = getattr(harness.pack.aliases, "fingerprint", None)
     return label
 
 
@@ -913,13 +1091,20 @@ def store(ctx: EvalContext, gold: dict[str, Any], notes: list[str], details: lis
     """Each profile on the store, per view, system, split and item type.  The gold is checked on the store first, on
     the first profile's harness and before any item is chosen: its witnesses, and on the web store (which the gold was
     drawn from) its pools; ``checks`` receives the result.  Without ``heldout`` (a gold that fails its checks on file),
-    or when it fails them on the store, the held-out split is not run."""
+    or when it fails them on the store, the held-out split is not run.  With ``$TAOCHRONOS_ALIAS_EVAL_BASELINE`` the
+    baseline systems (``on@baseline`` …) search the same items with that layer (:func:`layer_pack`), in the same
+    rotation; the paired bootstrap (:func:`intervals`) runs on the main view's rows."""
     from ..bootstrap import Harness
 
     profiles = _env("TAOCHRONOS_ALIAS_EVAL", PROFILES, Harness.profiles(ctx.home))
     splits = _env("TAOCHRONOS_ALIAS_EVAL_SPLITS", SPLITS, SPLITS)
     systems = _env("TAOCHRONOS_ALIAS_EVAL_SYSTEMS", SYSTEMS, SYSTEMS)
     views = _env("TAOCHRONOS_ALIAS_EVAL_VIEWS", VIEWS, VIEWS)
+    resamples = _resamples()
+    layer = os.environ.get("TAOCHRONOS_ALIAS_EVAL_BASELINE", "").strip()
+    base_file = layer_file(layer) if layer else None  # a wrong path fails before anything runs
+    baseline = [f"{s}{BASELINE}" for s in _env("TAOCHRONOS_ALIAS_EVAL_BASELINE_SYSTEMS", ["on"],
+                                                [s for s in SYSTEMS if s != "off"])] if layer else []
     if not heldout:
         splits = _refuse_heldout(splits, notes, "")
         if not splits:
@@ -956,11 +1141,16 @@ def store(ctx: EvalContext, gold: dict[str, Any], notes: list[str], details: lis
                                   "views": {}}
         gangmu = sorted({b for b in main.corpus.books if b.startswith(GANGMU)}
                         | set(gold.get("report_without") or []))
+        base_pack = layer_pack(main.capabilities.get("retriever").pack, base_file) if baseline else None
         main_rows: dict[str, list[dict[str, Any]]] | None = None
+        boot_view, boot_rows = None, None
         for view in views:
             harness = main if view == "main" else ctx.profile_harness(profile, exclude_books=excluded + gangmu)
             retriever = harness.capabilities.get("retriever")
-            rows, info = run_items(items, retriever, harness.corpus, systems, same=same)
+            others = dict.fromkeys(baseline, layer_retriever(retriever, base_pack)) if baseline else {}
+            rows, info = run_items(items, retriever, harness.corpus, systems + baseline, same=same, others=others)
+            if view == "main" or boot_rows is None:
+                boot_view, boot_rows = view, rows
             tables: dict[str, Any] = {}
             for system, rs in rows.items():
                 tables[system] = {split: table([r for r in rs if r["split"] == split]) for split in splits}
@@ -977,14 +1167,21 @@ def store(ctx: EvalContext, gold: dict[str, Any], notes: list[str], details: lis
                                     "systems": {s: {key: (_r(v) if isinstance(v, float) else v)
                                                     for key, v in rows[s][k].items()
                                                     if key not in ("type", "split", "id", "n_asked")}
-                                                for s in systems}})
+                                                for s in rows}})
         result["resolution"] = resolution(gold, main.capabilities.get("retriever"), systems, splits)
+        if baseline:
+            result["baseline"] = layer_label(base_pack, base_file)
+            result["resolution"].update(resolution(gold, layer_retriever(main.capabilities.get("retriever"), base_pack),
+                                                   baseline, splits))
+        boot = intervals(boot_rows, splits, resamples=resamples) if boot_rows is not None else {}
+        if boot:
+            result["bootstrap"] = {"view": boot_view, **boot}
         split = "heldout" if "heldout" in splits else splits[0]
         tables = result["views"].get("main") or next(iter(result["views"].values()))
         result["acceptance"] = _acceptance(tables, split, main_rows)
         result["answered"] = answered(main_rows, split) if main_rows is not None else {}
         headline: dict[str, Any] = {"pair": result["pair"], "split": split, "store": label.get("sha")}
-        for system in ("off", "naive", "analysis", "on"):
+        for system in ("off", "naive", "analysis", "on", *baseline):
             if system in tables:
                 a = tables[system][split]["all"]
                 headline[f"P@10 {system}"] = a["P@10"]
@@ -994,15 +1191,26 @@ def store(ctx: EvalContext, gold: dict[str, Any], notes: list[str], details: lis
             headline.update({"AskedRet@10 on": a["AskedRet@10"], "ON@50 on": a["ON@50"],
                              "CandRecall on": a["CandRecall"], "SilentMerge on": a["SilentMerge"],
                              "Leakage on": a["Leakage"]})
-        if "on" in result["resolution"]:
-            headline["resolution on"] = result["resolution"]["on"][split]["accuracy"]
+        for system in ("on", *baseline):
+            if system in result["resolution"]:
+                headline[f"resolution {system}"] = result["resolution"][system][split]["accuracy"]
         if "P@10 gain where off answers" in result["acceptance"]:
             headline["P@10 gain where off answers"] = result["acceptance"]["P@10 gain where off answers"]
+        boot = result.get("bootstrap") or {}
+        for pair in boot.get("pairs") or []:  # the split's differences with their 95 % intervals, as text
+            for key in ("P@10", "Wrong@10"):
+                text = interval_text((boot.get(split) or {}).get(pair, {}).get(key), key)
+                if text:
+                    headline[f"{key} {pair}"] = text
         out[profile] = {**headline, "results": result}
         notes.append(f"{profile}: store {label.get('sha')} ({label.get('books')} books, {label.get('passages')} "
-                     f"passages, edition {edition}; layer built on {label.get('layer_store')}) — {result['pair']}; "
-                     f"{len(items)} items ({', '.join(splits)}), views {', '.join(views)} (no-gangmu also leaves out "
-                     f"{', '.join(gangmu)})")
+                     f"passages, edition {edition}; layer {label.get('layer')} built on {label.get('layer_store')}) — "
+                     f"{result['pair']}; {len(items)} items ({', '.join(splits)}), views {', '.join(views)} (no-gangmu "
+                     f"also leaves out {', '.join(gangmu)})")
+        if baseline:
+            base = result["baseline"]
+            notes.append(f"{profile}: baseline layer {base['fingerprint']} ({base['records']} records, built on "
+                         f"{base['layer_store']}; {base['file']}) searched as {', '.join(baseline)}")
     return out
 
 
@@ -1030,6 +1238,10 @@ def aliases(ctx: EvalContext) -> SuiteResult:
          "min(50, ·) need); latency is the k = 10 call, timed after every system has searched the item once untimed "
          "(the systems' order turning with the item), so that what a first call fills favours none of them; each "
          "profile extracts its claims into a cache of its own (the store's claim cache is neither read nor written)"),
+        (f"intervals: a paired bootstrap over items ({_resamples()} resamples, seed {SEED}; the same resamples for "
+         "every system and metric): 95 % percentile intervals of on − off, on − naive and, with "
+         "TAOCHRONOS_ALIAS_EVAL_BASELINE, on − on@baseline (the same items searched with that layer), for P@10, "
+         "nDCG@10, Wrong@10 and the mean AskedRet@10, per split of the main view; aggregates only"),
         ("candidates: the drugs query.aliases names for the asked form (a stop name's drugs, status stop, among them "
          "where the item expects candidates; for an item expecting none a stop's listing is no candidate), mapped to "
          "the item's referents by their heads and names first, then by the asked drug's own lexicon forms (none the "
@@ -1054,5 +1266,6 @@ def aliases(ctx: EvalContext) -> SuiteResult:
     return SuiteResult("aliases", metrics, details, notes=notes)
 
 
-__all__ = ["Labeller", "Naive", "aggregate", "aliases", "answered", "asked_forms", "listed", "resolve", "same_drug",
-           "score", "store_counts", "synthetic", "synthetic_search"]
+__all__ = ["Labeller", "Naive", "aggregate", "aliases", "answered", "asked_forms", "bootstrap", "contrasts",
+           "intervals", "layer_pack", "layer_retriever", "listed", "resolve", "same_drug", "score", "store_counts",
+           "synthetic", "synthetic_search"]

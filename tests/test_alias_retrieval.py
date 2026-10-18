@@ -66,6 +66,8 @@ RECORDS = [
     AliasRecord("云门", stop=True, n=60, sh=0.05, r=[R("云根", st="candidate", src=["bielu-jc"])]),
     # a head whose blocker names another drug that the lexicon files (川乌头, under 川乌)
     AliasRecord("乌头", ho="乌头", n=300, sh=0.9, b=["川乌头"]),
+    # a name only a list of names gives, as a candidate (the NTU table's 味药, in 是哪味药)
+    AliasRecord("味药", n=28, sh=0.14, r=[R("铁扫竹", st="candidate", src=["ntu40k"])]),
 ]
 HERBS = ["甘草", "大黄", "芒硝", "大枣", "生姜", "人参", "桂枝", "茯苓", "黄连", "升麻", "木通", "通草", "徐长卿", "赤箭",
          "山药", "黄柏", "当归", "芍药", "干地黄", "景天", "云根", "云根藤"]
@@ -490,6 +492,17 @@ def test_a_common_word_is_asked_as_a_drug_only_where_the_question_reads_as_one(r
     for text in ("行水", "行水是什么药", "行水与当归"):  # alone, beside a drug word, beside another drug
         q = retriever.analyzer.analyze(text, aliases=True)
         assert q.drugs[0] == "行水" and [e.surface for e in q.expansions if e.searched] == ["云根"], text
+
+
+def test_a_name_only_lists_give_as_a_candidate_is_asked_only_as_the_question_s_one_name(retriever):
+    # 味药 in 是哪味药 beside another name is no name of the question: neither asked nor listed, the stop listing kept
+    for text, asked in (("甘草是哪味药", ["甘草"]), ("国老是哪味药", ["国老"])):
+        q = retriever.analyzer.analyze(text, aliases=True)
+        assert list(q.asked) == asked and "味药" not in q.drugs, text
+        assert all(a["surface"] != "味药" for a in q.alias_view.get("asked", [])), text
+    assert retriever.analyzer.analyze("救火是哪味药", aliases=True).stops == ["救火"]
+    q = retriever.analyzer.analyze("味药", aliases=True)  # alone: asked, its candidate listed
+    assert q.drugs == ["味药"] and [r["head"] for r in q.alias_view["asked"][0]["referents"]] == ["铁扫竹"]
 
 
 def test_a_false_friend_the_lexicon_files_as_a_herb_counts_only_as_that_herb(retriever):
