@@ -116,8 +116,8 @@ def main() -> dict:
         y += max(heights) + 1.3
         ax.plot([0, 179], [y - 0.65, y - 0.65], color=C["light"], lw=0.3)
     ax.text(0, y + 0.6, "Also reported, not repaired: the two unsafe readings of the held-out interpretive cases "
-            "(Fig. 4c) and the open-corpus benchmark, too small to separate the ranking from chance (Extended Data "
-            "Fig. 2).", ha="left", va="top", fontsize=5, color=C["dark"])
+            "(Fig. 4c) and the open-corpus benchmark, too small to separate the ranking from chance (its "
+            "replication of Fig. 5).", ha="left", va="top", fontsize=5, color=C["dark"])
     cv.label(2, 56, "c")
     return cv.save("suppfig1_failures", HERE / "out")
 

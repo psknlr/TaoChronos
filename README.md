@@ -754,3 +754,12 @@ docs/                      治学、任务规格、架构、智能体、发现�
 TaoChronos: a provenance-grounded research harness for the Chinese medical classics.
 https://github.com/psknlr/TaoChronos
 ```
+
+### 论文
+
+![TaoChronos 图形摘要：语料、智能体（智能体提出、验证器评分、专家裁决）与实测结果](paper/manuscript/figures/graphical_abstract.svg)
+
+**TaoChronos: A Reliable Agent for Knowledge Discovery in Traditional Chinese Medicine**——面向 *npj Digital Medicine*
+的稿件及面向 *Engineering* 的压缩版见 [paper/manuscript](paper/manuscript/README.md)（Word、PDF、LaTeX 在
+`paper/manuscript/submission/`）。六张主图、图注与源数据见 [paper](paper/README.md)；[表 1](paper/manuscript/tables/table1.md)
+列出智能体在古籍上可能出错的八种方式、本系统阻止每一种的机制，以及实测证据。

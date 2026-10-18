@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1328" height="531" viewBox="0 0 1328 531" role="img"
+     aria-label="TaoChronos graphical abstract: corpus, agent architecture and measured reliability">
+  <title>TaoChronos: a reliable agent for knowledge discovery in traditional Chinese medicine</title>
+  <style>
+    text { font-family: Arial, Helvetica, 'Liberation Sans', 'Noto Sans CJK SC', 'WenQuanYi Zen Hei', 'PingFang SC',
+           'Microsoft YaHei', sans-serif; fill: #1a1a1a; }
+    .h { font-size: 15px; font-weight: bold; fill: #0072B2; letter-spacing: 0.4px; }
+    .big { font-size: 34px; font-weight: bold; fill: #0072B2; }
+    .cap { font-size: 14px; fill: #444; }
+    .bt { font-size: 16px; font-weight: bold; }
+    .bs { font-size: 13px; fill: #444; }
+    .li { font-size: 14.5px; fill: #333; }
+  </style>
+  <rect width="1328" height="531" fill="#ffffff"/>
+
+  <!-- title -->
+  <text x="28" y="48" style="font-size:25px;font-weight:bold">TaoChronos (道乃久): a reliable agent for knowledge discovery in traditional Chinese medicine</text>
+  <text x="28" y="78" style="font-size:17px;fill:#555">Agents propose · validators grade · experts decide — every claim rests on a verbatim, dated witness</text>
+
+  <!-- panel A: corpus -->
+  <rect x="28" y="100" width="360" height="405" rx="8" fill="#F2F7FB" stroke="#C9DDEC"/>
+  <text x="48" y="130" class="h">THE CORPUS</text>
+  <text x="48" y="190" style="font-size:54px;font-weight:bold;fill:#0072B2">966</text>
+  <text x="48" y="218" style="font-size:16px">witnesses of 761 works</text>
+  <text x="48" y="248" class="li">123 M characters · 2.05 M passages</text>
+  <text x="48" y="272" class="li">475 BCE – 1949, ten sources</text>
+  <line x1="48" y1="292" x2="368" y2="292" stroke="#C9DDEC"/>
+  <text x="48" y="320" class="li">Every passage keeps its</text>
+  <text x="62" y="346" class="li">• book, edition and locator</text>
+  <text x="62" y="370" class="li">• date range and textual layer</text>
+  <text x="62" y="394" class="li">• transcription source and license</text>
+  <line x1="48" y1="414" x2="368" y2="414" stroke="#C9DDEC"/>
+  <text x="48" y="442" class="li">Commentaries dated apart from the text;</text>
+  <text x="48" y="464" class="li">an open canon of key works, ranked by</text>
+  <text x="48" y="486" class="li">the tradition's citations, runs in a browser</text>
+
+  <!-- panel B: the agent -->
+  <rect x="408" y="100" width="500" height="405" rx="8" fill="#FAFAFA" stroke="#DDDDDD"/>
+  <text x="428" y="130" class="h">THE AGENT</text>
+
+  <rect x="428" y="143" width="460" height="52" rx="5" fill="#ffffff" stroke="#888"/>
+  <text x="442" y="164" class="bt">A question becomes a research contract</text>
+  <text x="442" y="184" class="bs">focus, forbidden equivalences and acceptance criteria, hashed first</text>
+  <path d="M658 199 l0 7 M652 203 l6 6 l6 -6" stroke="#888" stroke-width="1.6" fill="none"/>
+
+  <rect x="428" y="211" width="460" height="52" rx="5" fill="#E3EFF8" stroke="#0072B2"/>
+  <text x="442" y="232" class="bt" style="fill:#0072B2">Agents propose</text>
+  <text x="442" y="252" class="bs">Director + 15 specialists, 73 permissioned tools, rules or LLMs</text>
+  <path d="M658 267 l0 7 M652 271 l6 6 l6 -6" stroke="#888" stroke-width="1.6" fill="none"/>
+
+  <rect x="428" y="279" width="460" height="52" rx="5" fill="#FDF0E8" stroke="#D55E00"/>
+  <text x="442" y="300" class="bt" style="fill:#D55E00">Hooks refuse</text>
+  <text x="442" y="320" class="bs">quotes not verbatim or contradicted · anachronisms · scope leaks</text>
+  <path d="M658 335 l0 7 M652 339 l6 6 l6 -6" stroke="#888" stroke-width="1.6" fill="none"/>
+
+  <rect x="428" y="347" width="460" height="52" rx="5" fill="#EEEEEE" stroke="#333"/>
+  <text x="442" y="368" class="bt">Validators grade</text>
+  <text x="442" y="388" class="bs">gates G0–G8 · independent sources · falsification · contract verdict</text>
+  <path d="M658 403 l0 7 M652 407 l6 6 l6 -6" stroke="#888" stroke-width="1.6" fill="none"/>
+
+  <rect x="428" y="415" width="460" height="52" rx="5" fill="#FCF3DE" stroke="#E69F00"/>
+  <text x="442" y="436" class="bt" style="fill:#9A6A00">Experts decide</text>
+  <text x="442" y="456" class="bs">only a human sets gate G7 · every event logged and replayable</text>
+
+  <text x="428" y="490" class="cap">The reducer refuses any event its principal may not emit (61 event types).</text>
+
+  <!-- panel C: evidence -->
+  <rect x="928" y="100" width="372" height="405" rx="8" fill="#F2F7FB" stroke="#C9DDEC"/>
+  <text x="948" y="130" class="h">MEASURED WITH RULES ALONE</text>
+
+  <text x="948" y="176" class="big">180/180</text>
+  <text x="948" y="198" class="cap">corrupted quotations rejected;</text>
+  <text x="948" y="216" class="cap">all 60 verbatim quotations accepted</text>
+
+  <text x="948" y="264" class="big">19/19</text>
+  <text x="948" y="286" class="cap">safety invariants held; each broke</text>
+  <text x="948" y="304" class="cap">when its safeguard was removed</text>
+
+  <text x="948" y="352" class="big">82/84</text>
+  <text x="948" y="374" class="cap">held-out hard readings correct;</text>
+  <text x="948" y="392" class="cap">2 unsafe errors reported, not patched</text>
+
+  <text x="948" y="440" class="big">0.168</text>
+  <text x="948" y="462" class="cap">precision@10 of rankings from the past</text>
+  <text x="948" y="480" class="cap">vs 0.134 popularity and 0.054 chance</text>
+
+  <text x="1300" y="524" text-anchor="end" style="font-size:12px;fill:#777">github.com/psknlr/TaoChronos</text>
+</svg>

@@ -876,3 +876,13 @@ When citing TaoChronos, cite the sources of the corpus you used (Kanseki Reposit
 TaoChronos: a provenance-grounded research harness for the Chinese medical classics.
 https://github.com/psknlr/TaoChronos
 ```
+
+### Paper
+
+![TaoChronos graphical abstract: the corpus, the agent (agents propose, validators grade, experts decide) and what was measured](paper/manuscript/figures/graphical_abstract.svg)
+
+**TaoChronos: A Reliable Agent for Knowledge Discovery in Traditional Chinese Medicine** — the manuscript, written for
+*npj Digital Medicine* with a condensed version for *Engineering*, is in [paper/manuscript](paper/manuscript/README.md)
+(Word, PDF and LaTeX under `paper/manuscript/submission/`). Its six figures, their legends and source data are in
+[paper](paper/README.md); [Table 1](paper/manuscript/tables/table1.md) lists the eight ways an agent can go wrong on the
+classical literature, the mechanism that stops each here and the measured evidence that it does.

@@ -1,0 +1,28 @@
+**Table 2 | Evaluation of TaoChronos across its three layers**
+
+| Layer | Suite | Data | Metric | Development or constructed | Held-out or real corpus |
+|---|---|---|---|---|---|
+| Boundaries | Invariants | 19 probes of the harness under test | Held | 19/19 | Each of 6 boundaries removed breaks its invariant |
+| Readings | Hard interpretive cases | 107 cases in 8 classes | Accuracy (unsafe errors) | 23/23 (0) | 82/84 = 0.976 (2) |
+| Research value† | Link anticipation | 189 topic–cutoff pairs; 29,467 candidates | Precision@10 | – | 0.168 (popularity 0.134; chance 0.054); higher average precision than popularity in 149 of 189, P = 2.4 × 10⁻¹⁶ |
+|  | End-to-end predictions | Held-out topics, cutoff 1368 | Discoveries among survivors | 1/8 | 7/19 = 0.37; leakage 0 |
+| Verification | Fabricated quotations | 60 quotations × 4 probes | Handled correctly | – | 60/60 in every probe; variant spellings accepted |
+|  | Provenance | Committed claims and evidence | Verbatim | – | 100%; mean chain depth 7.8 levels |
+|  | Claim extraction | 42 gold hyperedges | Precision / recall | 1.00 / 0.976 | – |
+|  | Temporal and anachronism guards | Constraints, earliest attestations, equations | Correct | 6/6 · 6/6 · 10/10 | Leakage 0; agent-asserted equivalence blocked |
+| Deep discovery | Collation | 5 traditions copied down a known stemma | Variant-unit recall / precision | 0.998 / 0.999 | – |
+|  | Semantic reuse | 33 typed pairs | Accuracy | 0.97 | – |
+|  | Stratigraphy | 5 composites; the Suwen | Layer accuracy | 0.955 | Yunqi chapters 7/7 in the minor layer† |
+|  | Lost-text fragments | Constructed lost work; Qianjin yaofang | Precision | 0.86 | 0.32† |
+| Task specification | Punctuation | 55 held-out works (104 k characters)† | Boundary F1 | – | 0.767 (rules 0.235); characters kept 1.000 |
+|  | Drug pairs | 66,196 compositions† | Textbook pairs significant | – | 7/7, lift > 1.5 |
+| V2 | Entities (24 types) | 41 development, 25 held-out sentences | F1 | 0.991 | 0.776 |
+|  | Ancient phenotypes → HPO | 20 development cases; 12 random passages† | F1 | 0.985 | 0.822 |
+|  | Evidence audit | 19 claims | Verdicts right (false SUPPORTED) | 19/19 (0) | – |
+
+
+Development and constructed gold sets were written by the authors with the rules they test; they are regression tests of intended behaviour, not unbiased benchmarks. Only held-out and real-corpus columns estimate generalization.
+
+†Needs the full corpus store, which is not distributed; values from docs/evals.md. All other values were reproduced for this paper by `taochronos eval` on the demonstration corpus (40 suites, 47 s).
+
+P value from a two-sided sign test of average precision over topic–cutoff pairs. HPO, Human Phenotype Ontology.
