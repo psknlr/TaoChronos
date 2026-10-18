@@ -589,7 +589,8 @@ def cmd_lexicon(args: argparse.Namespace) -> None:
 
 def cmd_aliases(args: argparse.Namespace) -> None:
     """The alias layer (ADR 0023).  ``import``: a local list (the NTU table, hurbTable, the GB 别名录) into
-    <data>/aliases/local/ with its pin, never into the repository; ``build``: domains/classics/aliases/{aliases.jsonl,
+    <data>/aliases/local/ with its pin, never into the repository — or, ``import ntu FILE --publish``, the NTU table's
+    committed extract corpus/aliases/ntu40k.tsv (CC BY-NC 4.0, credited in its header); ``build``: domains/classics/aliases/{aliases.jsonl,
     context.json} from the store (``--local``: also <data>/aliases/local/aliases-local.jsonl with the local lists,
     and beside it the context.json it was counted with, the shipped one);
     ``review``: the keyword-in-context sheet editors decide stops from; ``check``: the committed layer's contract
@@ -643,11 +644,21 @@ def cmd_aliases(args: argparse.Namespace) -> None:
 def _aliases_import(args: argparse.Namespace, home: Path, store: Path, local: Path) -> None:
     from .plugins.classics.aliasbuild import read_registry, read_yaml
     from .plugins.classics.domain import DomainPack
-    from .plugins.classics.ingest.aliases import BOOK, LOCAL_SOURCES, import_local
+    from .plugins.classics.ingest.aliases import (
+        BOOK,
+        LOCAL_SOURCES,
+        NTU_EXTRACT,
+        import_local,
+        publish_ntu,
+    )
     from .plugins.classics.store import CorpusStore, StoreCorpus
 
     if args.target not in LOCAL_SOURCES or not args.file:
-        raise SystemExit(f"usage: taochronos aliases import {{{'|'.join(LOCAL_SOURCES)}}} FILE [--encoding ENC]")
+        raise SystemExit(f"usage: taochronos aliases import {{{'|'.join(LOCAL_SOURCES)}}} FILE [--encoding ENC] "
+                         f"(ntu: [--publish [-o TSV]])")
+    if args.publish and args.target != "ntu":
+        raise SystemExit(f"only the NTU table is published (CC BY-NC 4.0); {args.target} stays local: import it "
+                         f"without --publish")
     pack = DomainPack(home / "domains" / "classics")
     normalize = pack.variants.normalize_text
     folder = home / "domains" / "classics" / "aliases"
@@ -657,6 +668,13 @@ def _aliases_import(args: argparse.Namespace, home: Path, store: Path, local: Pa
     except ValueError as exc:  # not YAML at all, or sources.yaml not of its shape
         raise SystemExit(str(exc)) from exc
     source = next((s for s in registry.get("sources") or [] if s.get("id") == LOCAL_SOURCES[args.target]), {})
+    if args.publish:  # the committed extract: the five columns as the dataset has them, the credit in its header
+        target = Path(args.output) if args.output else home / NTU_EXTRACT
+        try:
+            report = publish_ntu(args.file, target, encoding=args.encoding, normalize=normalize, pin=source.get("pin"))
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+        return _out(report)
     attested = None
     if args.target == "bielu-gb" and store.exists():  # a hard wrap is joined only where the store attests the join
         corpus = StoreCorpus(CorpusStore(store, readonly=True), normalize, exclude_books=(BOOK,))
@@ -1763,13 +1781,18 @@ def build_parser() -> argparse.ArgumentParser:
                                      "reads a name", profile=False)
     sp.add_argument("action", choices=["import", "build", "review", "check", "show"])
     sp.add_argument("target", nargs="?", help="import: ntu, hurb or bielu-gb; show: the name")
-    sp.add_argument("file", nargs="?", help="import: the downloaded file (.tab, .csv, .tsv, a Dataverse .zip, .txt)")
+    sp.add_argument("file", nargs="?", help="import: the downloaded file (.xlsx, .tab, .csv, .tsv, a Dataverse .zip, "
+                                            ".txt)")
     sp.add_argument("--encoding", help="import: the file's encoding (default UTF-8, else GB18030)")
+    sp.add_argument("--publish", action="store_true", help="import ntu: write the committed extract "
+                                                           "corpus/aliases/ntu40k.tsv (CC BY-NC 4.0) instead of the "
+                                                           "local layer")
     sp.add_argument("--db", help="corpus store path (default: <data>/corpus/tcm.sqlite); check: build on it, compare")
     sp.add_argument("--local", action="store_true", help="build: also <data>/aliases/local/aliases-local.jsonl")
     sp.add_argument("--out-dir", help="build: write aliases.jsonl and context.json here instead of the domain")
     sp.add_argument("--top", type=int, default=200, help="review: how many names (default 200)")
-    sp.add_argument("-o", "--output", help="review: the TSV (default <data>/aliases/local/review.tsv)")
+    sp.add_argument("-o", "--output", help="review: the TSV (default <data>/aliases/local/review.tsv); import "
+                                           "--publish: the extract (default corpus/aliases/ntu40k.tsv)")
     sp.add_argument("--profile", help="show: the profile whose layers read the name (default full-corpus)")
     sp = add("search", cmd_search, "philology-aware temporal GraphRAG search")
     sp.add_argument("query")

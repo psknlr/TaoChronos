@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import io
 import json
 import zipfile
 from pathlib import Path
@@ -17,17 +18,25 @@ from taochronos.plugins.classics.domain import DomainPack
 from taochronos.plugins.classics.ingest.aliases import (
     BOOK,
     DOUBT_FLAGS,
+    NTU,
+    NTU_EXTRACT,
     REPAIRS,
     import_local,
     local_rows,
+    ntu_table,
     parse_bielu,
+    parse_extract,
+    parse_remark,
     parse_tab,
+    publish_ntu,
     read_bielu_gb,
     read_bielu_store,
     read_hurb,
     read_ntu,
+    remark_counts,
     summary,
     table_file,
+    xlsx_sheets,
 )
 from taochronos.plugins.classics.store import CorpusStore, StoreCorpus
 
@@ -281,6 +290,59 @@ def test_hurb_needs_its_columns(tmp_path):
 
 
 # ------------------------------------------------------------------ NTU 40K
+NTU_HEADER = ["PrimaryDrugNameNo.", "PrimaryDrugName", "DictionarySource", "AlternateName", "Remarks"]
+NTU_ROWS = [  # synthetic: the real table's shapes, none of its rows
+    [1, "甘草", "《中华本草》", "国老", "《本经》"],
+    [1, "甘草", "《中华本草》《中药大辞典》", " 美草", None],  # a space before the name, as the table has some
+    [2, "鸡（土从）", "《中华本草》", "鸡（土从）菜", "（藏名）"],  # 鸡㙡 written by its parts: the head is lost
+    [3, "射干", "《全国中草药汇编》", "乌扇", "《本经》郭璞注）"],
+    [4, "水麻tiao", "《中华本草》", "水麻条", "[云南、四川]"],  # pinyin for a character the set lacked
+    [5, "马蔺", "《中药大辞典》", "铁木尔-地格达", "[蒙名]"],
+    [6, "钩吻", "《中华本草》", "大茶（柴）药", "line one\tcell\nline two\\end"],  # a cell with what must be escaped
+    [7, "黑果小檗", "《中药大辞典》", "则热克（维名）", "（孟诜《食疗本草》）"],
+    [8, "山楂", "《中华本草》", "野山楂又名：小叶山楂", "[浙江误称]"],
+    [18292, "祖司麻", "《中药大辞典》", "祖师麻", "（陶弘景）"],
+]
+
+
+def ntu_workbook(rows=None, *, stats_first=True, rich=True) -> bytes:
+    """The NTU workbook in small, built with tests/officefiles.py: a summary sheet first (as the dataset's workbook has
+    none, its records sheet is found by its header), the records sheet's strings shared, one of them as rich text with
+    a phonetic guide (which is not the cell's text) and one with an escaped carriage return."""
+    from officefiles import xlsx
+
+    book = xlsx([NTU_HEADER, *(NTU_ROWS if rows is None else rows)], sheets=2)
+    stats = xlsx([["Number of primary names", 9], ["Number of alternate names", 10]], inline=True)
+    parts = {}
+    with zipfile.ZipFile(io.BytesIO(book)) as z, zipfile.ZipFile(io.BytesIO(stats)) as s:
+        for info in z.infolist():
+            parts[info.filename] = z.read(info)
+        records, summary_ = parts["xl/worksheets/sheet1.xml"], s.read("xl/worksheets/sheet1.xml")
+        parts["xl/worksheets/sheet1.xml"], parts["xl/worksheets/sheet2.xml"] = (
+            (summary_, records) if stats_first else (records, summary_))
+    names = ("SimpleStats", "1-to-1 records") if stats_first else ("1-to-1 records", "SimpleStats")
+    parts["xl/workbook.xml"] = (parts["xl/workbook.xml"].decode().replace('name="Sheet1"', f'name="{names[0]}"')
+                                .replace('name="Sheet2"', f'name="{names[1]}"').encode())
+    if rich:
+        sst = parts["xl/sharedStrings.xml"].decode()
+        sst = sst.replace("<si><t>水麻tiao</t></si>", '<si><r><rPr><sz val="12"/></rPr><t>水麻</t></r><r><t>tiao</t></r>'
+                                                     '<rPh sb="0" eb="2"><t>shuima</t></rPh></si>')
+        sst = sst.replace("<si><t>祖师麻</t></si>", "<si><t>祖师_x005F_x000D_麻</t></si>")  # an escaped "_", kept
+        parts["xl/sharedStrings.xml"] = sst.encode()
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for name, data in parts.items():
+            z.writestr(name, data)
+    return buf.getvalue()
+
+
+@pytest.fixture
+def workbook(tmp_path) -> Path:
+    path = tmp_path / "ChineseDrugEthnonymsSynonymyTable.xlsx"
+    path.write_bytes(ntu_workbook())
+    return path
+
+
 def test_tab_cells_are_read_one_by_one():
     header, rows = parse_tab('A\tB\tC\tD\n"x \\"y\\"\\nz\\tw"\t\t""\tplain\r\n')
     assert header == ["A", "B", "C", "D"]
@@ -289,47 +351,202 @@ def test_tab_cells_are_read_one_by_one():
 
 def test_ntu_tab(tmp_path):
     rows = read_ntu(FIX / "ntu.tab", normalize=t2s)
-    assert len(rows) == 8
-    gancao, gancao2, renshen, huangqi, danggui, jinbuhuan, danshen, nameless = rows
+    assert len(rows) == 10
+    gancao, gancao2, renshen, huangqi, danggui, jinbuhuan, danshen, nameless, jizong, bangga = rows
     assert (gancao.head, names(gancao), gancao.info) == ("甘草", ["国老"], {
-        "primary": "甘草", "alternate": "國老", "attribution": "《神農本草經》", "note": ""})
-    assert (names(gancao2), gancao2.info["attribution"], gancao2.info["note"]) == (["美草", "蜜甘"], None, None)
-    assert renshen.info["note"] == 'a "quoted" note\nsecond line\tend'
+        "number": "1", "primary": "甘草", "dictionary": "《中華本草》", "alternate": "國老", "remarks": "《本經》",
+        "dictionaries": ["中華本草"], "remark": {"raw": "《本經》", "books": ["本經"], "regions": [], "language": "",
+                                               "persons": [], "other": []}})
+    assert (names(gancao2), gancao2.info["dictionaries"], gancao2.info["remark"]) == (
+        ["美草", "蜜甘"], ["中华本草", "中药大辞典"], None)
+    assert renshen.info["remarks"] == 'a "quoted" note\nsecond line\tend'
+    assert renshen.info["remark"]["other"] == ['a "quoted" note\nsecond line\tend']  # no Han character: kept whole
     assert (huangqi.flags, huangqi.info["alternate"], huangqi.tokens) == (["empty"], "", [])
     assert (danggui.flags, danggui.info["alternate"]) == (["missing"], None)
-    assert (jinbuhuan.head, names(jinbuhuan)) == ("金不换", ["山乌龟"])
+    assert (jinbuhuan.head, jinbuhuan.info["head_note"], names(jinbuhuan)) == ("金不换", "广西", ["山乌龟"])
+    assert jinbuhuan.info["remark"]["regions"] == ["云南"]
     assert token(danshen, "丹参").drop == "same_as_head"  # 丹參 is the head once normalised
+    assert danshen.info["remark"]["persons"] == ["陶弘景"]
     assert (nameless.head, nameless.flags) == ("", ["no_head"])
+    assert (jizong.head, jizong.flags) == ("", ["lost_head"])  # never 鸡
+    assert [(t.name, t.kind, t.note, t.flags) for t in jizong.tokens] == [("鸡〓菜", "folk", "藏名", ["lost_char"])]
+    assert [(t.name, t.kind, t.note) for t in bangga.tokens] == [("榜阿嘎保", "folk", "藏名")]
     pairs = local_rows(rows, "ntu")
     assert [(r["h"], r["s"]) for r in pairs] == [("甘草", "国老"), ("甘草", "美草"), ("甘草", "蜜甘"), ("人参", "人衔"),
-                                                 ("金不换", "山乌龟")]
-    assert pairs[0] == {"h": "甘草", "s": "国老", "raw": "國老", "src": "ntu", "ref": "row 1", "at": "《神農本草經》"}
+                                                 ("金不换", "山乌龟"), ("榜嘎", "榜阿嘎保")]
+    assert pairs[0] == {"h": "甘草", "s": "国老", "raw": "國老", "src": "ntu", "ref": "row 1", "at": "《中華本草》",
+                        "nt": "《本經》"}
     assert pairs[3]["nt"] == 'a "quoted" note\nsecond line\tend'
+    assert pairs[5] == {"h": "榜嘎", "s": "榜阿嘎保", "k": "folk", "nt": "藏名", "src": "ntu", "ref": "row 10",
+                        "at": "《中华本草》"}
 
 
 def test_ntu_csv_with_chinese_columns():
     rows = read_ntu(FIX / "ntu.csv", normalize=t2s)
-    assert [(e.head, names(e), e.info["attribution"]) for e in rows] == [
-        ("甘草", ["国老", "美草"], "《神農本草經》"), ("人参", ["人衔"], None), ("黄芪", [], None)]
-    assert rows[2].flags == ["missing"]  # in a CSV an empty cell is a missing value
+    assert [(e.head, names(e), e.info["dictionary"], e.info["remarks"]) for e in rows] == [
+        ("甘草", ["国老", "美草"], "《中华本草》", "《本经》"), ("人参", ["人衔"], None, None), ("黄芪", [], None, None)]
+    assert rows[2].flags == ["missing"] and rows[0].info["number"] is None  # in a CSV an empty cell is a missing value
+
+
+def test_ntu_columns_are_found_by_name(tmp_path):
+    odd = tmp_path / "odd.tsv"
+    odd.write_text("Remarks\tAlternate Name\tprimary_drug_name_no\tPrimary Drug Name\n[云南]\t国老\t1\t甘草\n",
+                   encoding="utf-8")
+    [e] = read_ntu(odd)
+    assert (e.head, names(e), e.info["number"], e.info["remarks"], e.info["dictionary"]) == (
+        "甘草", ["国老"], "1", "[云南]", None)  # never PrimaryDrugNameNo. for the primary name
 
 
 def test_ntu_tsv_in_gb18030_with_marks(tmp_path):
     tsv = tmp_path / "ntu.tsv"
     tsv.write_bytes("主名\t别名\n葡萄\t山□葡萄、山(野)葡萄、*紫葡萄\n甘〓草\t国老\n".encode("gb18030"))
     grape, lost = read_ntu(tsv)
-    assert [(t.name, t.flags) for t in grape.tokens] == [
-        ("山〓葡萄", ["lost_char"]), ("山野葡萄", ["lost_char"]), ("紫葡萄", ["marks"])]  # never 山葡萄
-    assert (lost.head, lost.flags) == ("", ["no_head"])
+    # a lost character never splices its neighbours (山〓葡萄, never 山葡萄); a one-character bracket inside a name is
+    # another reading of the character before it (大茶（柴）药, 钩吻's 大茶药): dropped, and the name left in doubt
+    assert [(t.name, t.flags, t.note) for t in grape.tokens] == [
+        ("山〓葡萄", ["lost_char"], ""), ("山葡萄", ["marks"], "(野)"), ("紫葡萄", ["marks"], "")]
+    assert (lost.head, lost.flags) == ("", ["lost_head"])
     with pytest.raises(ValueError, match="ntu.tsv: not utf-8 text"):
         read_ntu(tsv, encoding="utf-8")
 
 
-def test_reader_flags_are_classified(gb):
+def test_ntu_names_written_by_their_parts_in_pinyin_or_labelled(tmp_path):
+    entries = read_ntu(_tsv(tmp_path, [
+        ["鸡（土从）", "假鸡（土从）"], ["庵 （艹闾）", "（艹殿）（艹塘）"], ["红心灰", "红心灰（艹？）"],
+        ["乌鸦", "（匿/虫）鼻药"], ["水麻tiao", "紫 Z H A N木"], ["钩吻", "大茶（柴）药"], ["马蔺", "铁木尔-地格达"],
+        ["黑果小檗", "则热克（维名）"], ["榜嘎", "藏名:榜阿嘎保"], ["山楂", "野山楂又名：小叶山楂"],
+        ["乌贼鱼肉", "无针乌贼.金乌贼"], ["[檵木]继木", "继花"], ["生等[藏药名]", "生等膏"], ["鸬鹚（鸬鹚）", "鱼鹰"],
+        ["山大黄（华北大黄）", "峪黄"], ["金不换(广西)", "山乌龟"], ["蝲蛄", "东北蝲蛄"],
+    ]))
+    got = {e.head_raw: (e.head, e.flags, e.info.get("head_note"),
+                        [(t.name, t.kind, t.note, t.flags, t.drop) for t in e.tokens]) for e in entries}
+    assert got["鸡（土从）"] == ("", ["lost_head"], None, [("假鸡〓", "alias", "", ["lost_char"], None)])
+    assert got["庵 （艹闾）"] == ("", ["lost_head"], None, [("〓〓", "alias", "", ["lost_char"], None)])
+    assert got["红心灰"][3] == [("红心灰〓", "alias", "", ["lost_char"], None)]
+    assert got["乌鸦"][3] == [("〓鼻药", "alias", "", ["lost_char"], None)]
+    assert got["水麻tiao"] == ("", ["lost_head"], None, [("紫〓木", "alias", "", ["lost_char"], None)])  # never 水麻
+    assert got["钩吻"][3] == [("大茶药", "alias", "（柴）", ["marks"], None)]
+    assert got["马蔺"][3] == [("铁木尔地格达", "alias", "", ["marks"], None)]
+    assert got["黑果小檗"][3] == [("则热克", "folk", "维名", [], None)]
+    assert got["榜嘎"][3] == [("榜阿嘎保", "folk", "藏名", [], None)]
+    assert [n for n, *_ in got["山楂"][3]] == ["野山楂", "小叶山楂"]
+    assert [n for n, *_ in got["乌贼鱼肉"][3]] == ["无针乌贼", "金乌贼"]
+    assert got["[檵木]继木"][:3] == ("檵木", [], "继木")  # the bracket the spelling, 继 the GB2312 stand-in
+    assert got["生等[藏药名]"][:3] == ("生等", [], "藏药名")
+    assert got["鸬鹚（鸬鹚）"][:3] == ("鸬鹚", [], "鸬鹚")  # a repeat is a note, no lost character
+    assert got["山大黄（华北大黄）"][:3] == ("山大黄", [], "华北大黄")
+    assert got["金不换(广西)"][:3] == ("金不换", [], "广西")
+    assert got["蝲蛄"][3] == [("东北蝲蛄", "alias", "", [], None)]
+
+
+def _tsv(tmp_path, rows) -> Path:
+    path = tmp_path / "names.csv"
+    path.write_text("PrimaryDrugName,AlternateName\n" + "".join(f'"{h}","{a}"\n' for h, a in rows), encoding="utf-8")
+    return path
+
+
+@pytest.mark.parametrize(("raw", "expected"), [
+    ("《纲目》", {"books": ["纲目"]}),
+    ("（《中国高等植物图鉴》）", {"books": ["中国高等植物图鉴"]}),
+    ("《本经》《别录》", {"books": ["本经", "别录"]}),
+    ("《说文））", {"books": ["说文"]}),  # left unclosed
+    ("（伏侯《古今注", {"books": ["古今注"], "persons": ["伏侯"]}),
+    ("《尔雅》郭璞注）", {"books": ["尔雅"], "persons": ["郭璞"]}),
+    ("《庄子》司马彪注）", {"books": ["庄子"], "persons": ["司马彪"]}),
+    ("《禽经》注）", {"books": ["禽经"], "other": ["注"]}),
+    ("（孟诜《必效方》）", {"books": ["必效方"], "persons": ["孟诜"]}),
+    ("（内蒙古《中草药新医疗法资料选编》）", {"books": ["中草药新医疗法资料选编"], "regions": ["内蒙古"]}),
+    ("（广州部队《常用中草药手册》）", {"books": ["常用中草药手册"], "other": ["广州部队"]}),
+    ("《中级医刊》（5）：57，1959）", {"books": ["中级医刊"], "other": ["（5）：57，1959"]}),
+    ("《广东中药》Ⅱ）", {"books": ["广东中药"], "other": ["Ⅱ"]}),
+    ("《南方草木状》.醉草", {"books": ["南方草木状"], "other": ["醉草"]}),
+    ("[植物名实图考]", {"books": ["植物名实图考"]}),
+    ("[云南]", {"regions": ["云南"]}),
+    ("（江苏）", {"regions": ["江苏"]}),
+    ("[湖北、四川]", {"regions": ["湖北", "四川"]}),
+    ("[云南.四川]", {"regions": ["云南", "四川"]}),
+    ("[四川木里盐源]", {"regions": ["四川木里盐源"]}),
+    ("[广东吊罗山]", {"regions": ["广东吊罗山"]}),
+    ("[贵州南部]", {"regions": ["贵州南部"]}),
+    ("[浙江误称]", {"regions": ["浙江"], "other": ["误称"]}),
+    ("[树皮名—广东]", {"regions": ["广东"], "other": ["树皮名"]}),
+    ("（藏名）", {"language": "藏"}),
+    ("[傣语]", {"language": "傣"}),
+    ("[傣]", {"language": "傣"}),
+    ("（蒙名）", {"language": "蒙"}),
+    ("[蒙古]", {"language": "蒙"}),
+    ("（维名）", {"language": "维"}),
+    ("[苗族语]", {"language": "苗"}),
+    ("[藏名译音]", {"language": "藏"}),
+    ("（藏药名）", {"language": "藏"}),
+    ("[勐海傣语]", {"regions": ["勐海"], "language": "傣"}),
+    ("[懓尼]", {"language": "僾尼"}),
+    ("（陶弘景）", {"persons": ["陶弘景"]}),
+    ("（孙思邈）", {"persons": ["孙思邈"]}),
+    ("（通称）", {"other": ["通称"]}),
+    ("[孔鯆]", {"other": ["孔鯆"]}),  # a fish, in square brackets: no person
+    ("[根名]", {"other": ["根名"]}),
+    ("[土名]", {"other": ["土名"]}),  # a local name, not one in the Tu language
+    ("[♂]", {"other": ["♂"]}),
+])
+def test_remarks_are_parsed(raw, expected):
+    blank = {"books": [], "regions": [], "language": "", "persons": [], "other": []}
+    assert parse_remark(raw) == {"raw": raw, **blank, **expected}
+
+
+def test_empty_remarks_and_their_counts():
+    assert parse_remark(None) is None and parse_remark("  ") is None
+    counts = remark_counts(["《纲目》", None, "（藏名）", "[云南]（陶弘景）", "[根名]", "《本经》（傣名）"])
+    assert counts == {"rows": 5, "books": 2, "regions": 1, "language": 2, "persons": 1, "other": 1, "only_other": 1,
+                      "books_cited": 2, "distinct_books": 2, "languages": {"傣": 1, "藏": 1}}
+
+
+def test_reader_flags_are_classified(gb, tmp_path):
     entries = [*gb.values(), *read_hurb(FIX / "hurb.csv"), *read_ntu(FIX / "ntu.tab"),
-               *parse_bielu("甘露（膏〓　山(野)葡萄）"), *read_ntu(FIX / "ntu.csv")]
+               *parse_bielu("甘露（膏〓　山(野)葡萄）"), *read_ntu(FIX / "ntu.csv"), *read_ntu(_xlsx(tmp_path))]
     flags = {f for e in entries for t in e.tokens for f in t.flags}
     assert flags - {"repaired"} <= DOUBT_FLAGS  # every other token flag puts the pair in doubt (a candidate)
+
+
+def _xlsx(tmp_path) -> Path:
+    path = tmp_path / "book.xlsx"
+    path.write_bytes(ntu_workbook())
+    return path
+
+
+def test_ntu_workbook(workbook):
+    table = ntu_table(workbook)
+    assert (table.sheet, table.sheets, table.header) == ("1-to-1 records", ["SimpleStats", "1-to-1 records"],
+                                                          NTU_HEADER)
+    assert table.columns == {"number": 0, "primary": 1, "dictionary": 2, "alternate": 3, "remarks": 4}
+    # a number as the cell shows it, a missing cell None, rich text without its phonetic guide, _x005F_ an "_"
+    assert table.rows[0] == ["1", "甘草", "《中华本草》", "国老", "《本经》"]
+    assert table.rows[1] == ["1", "甘草", "《中华本草》《中药大辞典》", " 美草"]
+    assert table.rows[4][1] == "水麻tiao" and table.rows[6][4] == "line one\tcell\nline two\\end"
+    assert table.rows[9] == ["18292", "祖司麻", "《中药大辞典》", "祖师_x000D_麻", "（陶弘景）"]
+    entries = read_ntu(workbook)
+    assert [e.ref for e in entries] == [f"row {n}" for n in range(1, 11)]
+    assert [(e.head, names(e)) for e in entries][:3] == [("甘草", ["国老"]), ("甘草", ["美草"]), ("", ["鸡〓菜"])]
+    assert entries[4].flags == ["lost_head"] and entries[7].info["remark"]["persons"] == ["孟诜"]
+    first = xlsx_sheets(ntu_workbook(stats_first=False))
+    assert [name for name, _ in first] == ["1-to-1 records", "SimpleStats"]
+    assert first[1][1]() == [["Number of primary names", "9"], ["Number of alternate names", "10"]]
+
+
+def test_workbook_errors(tmp_path):
+    from officefiles import xlsx
+
+    stats = tmp_path / "stats.xlsx"
+    stats.write_bytes(xlsx([["Count", 3]], sheets=2))
+    with pytest.raises(ValueError, match="stats.xlsx: no sheet whose first row names the columns.*Sheet1, Sheet2"):
+        read_ntu(stats)
+    broken = tmp_path / "broken.xlsx"
+    broken.write_bytes(b"PK not a zip")
+    with pytest.raises(ValueError, match="broken.xlsx: not an Excel workbook"):
+        read_ntu(broken)
+    (tmp_path / "old.xls").write_bytes(b"\xd0\xcf")
+    with pytest.raises(ValueError, match="old.xls: an Excel 97-2003 workbook; save it as .xlsx"):
+        read_ntu(tmp_path / "old.xls")
 
 
 def _zip(path: Path, members: dict[str, bytes]) -> Path:
@@ -347,16 +564,132 @@ def test_ntu_download_forms(tmp_path):
     two = _zip(tmp_path / "two.zip", {"a.tab": tab, "b.tab": tab})
     with pytest.raises(ValueError, match="several .tab tables: a.tab, b.tab"):
         read_ntu(two)
-    excel = _zip(tmp_path / "excel.zip", {"MANIFEST.TXT": b"files", "table.xlsx": b"PK"})
-    with pytest.raises(ValueError, match=r"holds table.xlsx\); export the workbook as CSV"):
-        read_ntu(excel)
-    (tmp_path / "table.xlsx").write_bytes(b"PK")
-    with pytest.raises(ValueError, match="export it as CSV"):
-        read_ntu(tmp_path / "table.xlsx")
+    book = ntu_workbook()
+    excel = _zip(tmp_path / "excel.zip", {"MANIFEST.TXT": b"files", "table.xlsx": book})
+    assert table_file(excel) == ("table.xlsx", book)  # the original workbook, when the zip holds no .tab
+    assert len(read_ntu(excel)) == len(NTU_ROWS)
+    old = _zip(tmp_path / "old.zip", {"table.xls": b"\xd0\xcf"})
+    with pytest.raises(ValueError, match=r"holds table.xls\); save the workbook as .xlsx"):
+        read_ntu(old)
     odd = tmp_path / "odd.tab"
     odd.write_text("Name\tSynonym\n\"甘草\"\t\"国老\"\n", encoding="utf-8")
     with pytest.raises(ValueError, match=r"no primary or alternate name column; the header is \['Name', 'Synonym'\]"):
         read_ntu(odd)
+
+
+# ------------------------------------------------------------------ the committed extract
+def test_publish_writes_a_faithful_extract(workbook, tmp_path):
+    out = tmp_path / "corpus" / "aliases" / "ntu40k.tsv"
+    report = publish_ntu(workbook, out, normalize=t2s, pin={"file": "ChineseDrugEthnonymsSynonymyTable.tab",
+                                                            "rows": len(NTU_ROWS), "sha256": None})
+    data = workbook.read_bytes()
+    text = out.read_text(encoding="utf-8")
+    notes, header, rows = parse_extract(text)
+    assert all(line.startswith("# ") for line in notes)
+    head = "\n".join(notes)
+    for needed in ("Large List of Chinese Drug Names 40K", "https://doi.org/10.21979/N9/V2XBOH", "CC BY-NC 4.0",
+                   "https://creativecommons.org/licenses/by-nc/4.0/", "Chong, William Eng Keat; Stanley-Baker, Michael",
+                   "author order and version unverified", "ChineseDrugEthnonymsSynonymyTable.xlsx",
+                   hashlib.sha256(data).hexdigest(), f"{len(NTU_ROWS)} rows", "converted from xlsx to TSV",
+                   "columns kept; nothing else changed", 'only the sheet "1-to-1 records"', "SimpleStats"):
+        assert needed in head, needed
+    assert header == NTU_HEADER
+    # one line per row, in order, the cells as the workbook holds them; the escaped cell reads back as it was
+    lines = text.split("\n")
+    assert lines[len(notes)] == "\t".join(NTU_HEADER) and lines[-1] == ""
+    assert lines[len(notes) + 2] == "1\t甘草\t《中华本草》《中药大辞典》\t 美草\t"
+    assert lines[len(notes) + 7] == "6\t钩吻\t《中华本草》\t大茶（柴）药\tline one\\tcell\\nline two\\\\end"
+    assert len(rows) == len(NTU_ROWS) == len(lines) - len(notes) - 2
+    assert rows[6][4] == "line one\tcell\nline two\\end" and rows[1][4] is None
+    assert [r[0] for r in rows] == [str(r[0]) for r in NTU_ROWS]
+    assert report["rows"] == report["written"] == len(NTU_ROWS) and report["escaped_cells"] == 1
+    assert (report["sha256"], report["bytes"], report["file"], report["sheet"]) == (
+        hashlib.sha256(data).hexdigest(), len(data), workbook.name, "1-to-1 records")
+    assert report["extract"] == {"bytes": len(out.read_bytes()), "sha256": hashlib.sha256(out.read_bytes()).hexdigest()}
+    assert report["remarks"]["rows"] == 9 and report["remarks"]["languages"] == {"藏": 1, "蒙": 1}
+    assert report["names"]["entries"] == len(NTU_ROWS)
+    assert report["warnings"] == [("file ChineseDrugEthnonymsSynonymyTable.xlsx differs from the pinned "
+                                   "ChineseDrugEthnonymsSynonymyTable.tab")]
+    # the extract reads as the workbook does, and the same file gives the same bytes
+    view = [(e.head, e.flags, [(t.name, t.kind, t.note, t.flags, t.drop) for t in e.tokens], e.info)
+            for e in read_ntu(out, normalize=t2s)]
+    assert view == [(e.head, e.flags, [(t.name, t.kind, t.note, t.flags, t.drop) for t in e.tokens], e.info)
+                    for e in read_ntu(workbook, normalize=t2s)]
+    again = tmp_path / "again.tsv"
+    publish_ntu(workbook, again)
+    assert again.read_bytes() == out.read_bytes()
+    with pytest.raises(ValueError, match="the extract itself"):
+        publish_ntu(out, tmp_path / "third.tsv")
+
+
+def test_publish_from_the_tab(tmp_path):
+    out = tmp_path / "ntu40k.tsv"
+    report = publish_ntu(FIX / "ntu.tab", out)
+    notes, header, rows = parse_extract(out.read_text(encoding="utf-8"))
+    assert header == NTU_HEADER and len(rows) == report["written"] == 10
+    assert any("converted from tab to TSV" in n for n in notes) and not any("sheet" in n for n in notes)
+    assert rows[2][4] == 'a "quoted" note\nsecond line\tend' and report["escaped_cells"] == 1
+    assert rows[3][3] is None  # an empty string and a missing value alike: an empty cell
+
+
+def test_cli_publishes_ntu_only(workbook, tmp_path, capsys):
+    from taochronos.cli import main
+
+    out = tmp_path / "extract.tsv"
+    base = ["--home", str(HOME), "--data", str(tmp_path / "data"), "aliases", "import"]
+    main([*base, "ntu", str(workbook), "--publish", "-o", str(out)])
+    report = json.loads(capsys.readouterr().out)
+    assert report["output"] == str(out) and report["rows"] == report["written"] == len(NTU_ROWS) and out.exists()
+    assert report["names"]["entries"] == len(NTU_ROWS) and not (tmp_path / "data" / "aliases").exists()
+    with pytest.raises(SystemExit, match="only the NTU table is published"):
+        main([*base, "hurb", str(FIX / "hurb.csv"), "--publish", "-o", str(tmp_path / "hurb.tsv")])
+
+
+def test_the_extract_credits_what_sources_yaml_credits():
+    import yaml
+
+    sources = {s["id"]: s for s in yaml.safe_load((HOME / "domains" / "classics" / "aliases" / "sources.yaml")
+                                                  .read_text(encoding="utf-8"))["sources"]}
+    entry = sources[NTU["id"]]
+    assert (entry["doi"], entry["licence"], entry["title"]) == (NTU["doi"], NTU["licence"], NTU["title"])
+    assert "unverified" in entry["attribution"] and "unverified" in NTU["unverified"]
+    assert NTU["citation"].startswith("Chong, William Eng Keat; Stanley-Baker, Michael, 2019")
+
+
+EXTRACT = HOME / NTU_EXTRACT
+
+
+def test_the_committed_extract():
+    if not EXTRACT.is_file():
+        pytest.skip("no corpus/aliases/ntu40k.tsv in this checkout")
+    text = EXTRACT.read_text(encoding="utf-8")
+    notes, header, rows = parse_extract(text)
+    head = "\n".join(notes)
+    for needed in ("https://doi.org/10.21979/N9/V2XBOH", "CC BY-NC 4.0", "creativecommons.org/licenses/by-nc/4.0/",
+                   "unverified", "ChineseDrugEthnonymsSynonymyTable.xlsx", "sheet \"1-to-1 records\"",
+                   "sha256 3a4cf287234f69dea286b136a293baea85d2ad8ad9cd187b83b17b9ab981342c", "50606 rows",
+                   "converted from xlsx to TSV", "columns kept; nothing else changed"):
+        assert needed in head, needed
+    assert header == NTU_HEADER and len(rows) == 50606 and text.endswith("\n") and "\r" not in text
+    assert rows[0] == ["1", "阿尔太多榔菊", "《全国中草药汇编》", "太白菊", None]
+    assert all(len(r) == 5 for r in rows)
+    entries = read_ntu(EXTRACT)
+    assert len(entries) == 50606 and sum(e.head == "" for e in entries) == 40  # heads with a character lost
+    assert {e.info["primary"] for e in entries if "lost_head" in e.flags} >= {"鸡（土从）", "水麻tiao"}
+
+
+def test_the_extract_never_reaches_the_browser_or_the_image():
+    from taochronos.chat.build import HOME_PARTS
+
+    folder = Path(NTU_EXTRACT).parent.as_posix()
+    assert not [p for p in HOME_PARTS if folder == p or folder.startswith(p + "/") or p.startswith(folder)]
+    allowed = [line[1:].rstrip("/") for line in (HOME / ".dockerignore").read_text(encoding="utf-8").splitlines()
+               if line.startswith("!")]
+    assert not [p for p in allowed if folder == p or folder.startswith(p + "/")]
+    readme = (HOME / "corpus" / "aliases" / "README.md")
+    if readme.is_file():
+        text = readme.read_text(encoding="utf-8")
+        assert "CC BY-NC 4.0" in text and "10.21979/N9/V2XBOH" in text and "--publish" in text
 
 
 # ------------------------------------------------------------------ the local layer
@@ -375,9 +708,9 @@ def test_import_writes_rows_and_pins(tmp_path):
     zipped = _zip(tmp_path / "ntu.zip", {"MANIFEST.TXT": b"files", "ntu.tab": (FIX / "ntu.tab").read_bytes()})
     ntu = import_local("ntu", zipped, out, normalize=t2s, normalizer="t2s", licence="CC BY-NC 4.0",
                        pin={"file": "ntu.tab", "rows": 50606, "sha256": None}, imported="2026-10-14")
-    assert [ntu[k] for k in ("source", "file", "from", "rows", "pairs")] == ["ntu40k", "ntu.tab", "ntu.zip", 8, 5]
+    assert [ntu[k] for k in ("source", "file", "from", "rows", "pairs")] == ["ntu40k", "ntu.tab", "ntu.zip", 10, 6]
     assert ntu["sha256"] == hashlib.sha256((FIX / "ntu.tab").read_bytes()).hexdigest()  # the table, not the zip
-    assert ntu["warnings"] == ["rows 8 differs from the pinned 50606"]
+    assert ntu["warnings"] == ["rows 10 differs from the pinned 50606"]
     first = json.loads((out / "ntu.jsonl").read_text(encoding="utf-8").splitlines()[0])
     assert (first["h"], first["s"], first["src"]) == ("甘草", "国老", "ntu40k")  # the id in sources.yaml
 
