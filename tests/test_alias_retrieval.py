@@ -68,6 +68,7 @@ RECORDS = [
     AliasRecord("乌头", ho="乌头", n=300, sh=0.9, b=["川乌头"]),
     # a name only a list of names gives, as a candidate (the NTU table's 味药, in 是哪味药)
     AliasRecord("味药", n=28, sh=0.14, r=[R("铁扫竹", st="candidate", src=["ntu40k"])]),
+    AliasRecord("支子", n=3, r=[R("栀子", st="candidate", src=["ntu40k"], cr=("本经", 25, 220))]),  # another such name
 ]
 HERBS = ["甘草", "大黄", "芒硝", "大枣", "生姜", "人参", "桂枝", "茯苓", "黄连", "升麻", "木通", "通草", "徐长卿", "赤箭",
          "山药", "黄柏", "当归", "芍药", "干地黄", "景天", "云根", "云根藤"]
@@ -503,6 +504,12 @@ def test_a_name_only_lists_give_as_a_candidate_is_asked_only_as_the_question_s_o
     assert retriever.analyzer.analyze("救火是哪味药", aliases=True).stops == ["救火"]
     q = retriever.analyzer.analyze("味药", aliases=True)  # alone: asked, its candidate listed
     assert q.drugs == ["味药"] and [r["head"] for r in q.alias_view["asked"][0]["referents"]] == ["铁扫竹"]
+    # two such names and nothing else: the first is asked (支子 in 支子是哪味药, not 味药), neither dropping the other
+    q = retriever.analyzer.analyze("支子是哪味药", aliases=True)
+    assert list(q.asked) == ["支子"] and q.drugs == ["支子"]
+    assert [(a["surface"], [r["head"] for r in a["referents"]]) for a in q.alias_view["asked"]] == [("支子", ["栀子"])]
+    q = retriever.analyzer.analyze("甘草与支子", aliases=True)  # beside a name of the lexicon: not asked
+    assert list(q.asked) == ["甘草"]
 
 
 def test_a_false_friend_the_lexicon_files_as_a_herb_counts_only_as_that_herb(retriever):

@@ -738,6 +738,47 @@ def test_the_classical_corpus_comes_first(tmp_path, built):
     assert result.report[aliasbuild.NTU]["apart"]["heads"].get("ambiguous") == 1
 
 
+# a list's names, the blockers' drugs and a part, by the classical corpus (the second settlement of 2026-10-18)
+NTU_SETTLED = [NTU_ROWS[0],
+               "31\t羌活\t《中华本草》\t护羌使者\t",  # 一名羌活，一名护羌使者 in 独活's section: no witness
+               "40\t青蒿\t《中华本草》\t方溃\t",  # 一名青蒿，一名方溃 in 草蒿's: two names of its drug, a witness
+               "41\t半天河\t《中华本草》\t上池水\t",  # 即半天河水，一名上池水: 即 starts no list
+               "50\t皂角刺\t《中华本草》\t皂角针\t",  # the lexicon's 皂角刺 whatever the table says: it blocks 皂角
+               "51\t皂荚\t《中华本草》\t皂角\t",
+               "52\t蜀椒\t《中华本草》\t椒目\t",  # 椒目 is no 蜀椒 but by the table: 川椒目 blocks 川椒
+               "53\t蜀椒\t《中华本草》\t川椒\t",
+               "54\t草乌\t《中华本草》\t堵喇\t",  # 草乌|头 is 草乌头, the lexicon's 草乌: no blocker of 草乌
+               "56\t萍蓬草根\t《中华本草》\t水栗子\t《纲目》"]  # credited (no 5e), a part of the 别名录's 萍蓬草: 5d
+SETTLED_TEXTS = {"jc_c030": [(None, "萍蓬草（水栗子）")],
+                 "bc_a": [("草蒿", "草蒿　味苦，寒。一名青蒿，一名方溃。")],
+                 "fang_b": [("独活", "味苦甘，平。一名羌活，一名羌青，一名护羌使者。"),
+                            (None, "雨雪之水名曰天泉，即半天河水，一名上池水。"), (None, "皂角针三钱"),
+                            (None, "川椒目二钱"), (None, "草乌头一两")]}
+
+
+def test_a_list_s_names_the_blockers_and_a_part_by_the_classical_corpus(tmp_path):
+    store = make_store(tmp_path / "data" / "corpus" / "tcm.sqlite", SETTLED_TEXTS)
+    result = build_open(store, ntu_home(tmp_path, rows=NTU_SETTLED))
+    recs = records(result)
+    wit = {(s, h): [w.pid.split(".")[0] for w in ref(recs[s], h).w if w.kind != "l"]
+           for s, h in (("护羌使者", "羌活"), ("方溃", "青蒿"), ("上池水", "半天河"))}
+    # two names of a list are a witness of each other unless the first heads a drug other than the entry's — the
+    # section of a 方书 too (千金翼方's 本草 卷); 即 and 谓之 start no list
+    assert wit == {("护羌使者", "羌活"): [], ("方溃", "青蒿"): ["bc_a"], ("上池水", "半天河"): ["fang_b"]}
+    assert "store" in ref(recs["方溃"], "青蒿").src and "store" not in ref(recs["护羌使者"], "羌活").src
+
+    def blockers(s: str) -> list[str]:
+        return [b if isinstance(b, str) else b[0] for b in recs[s].b]
+
+    # an NTU pair no passage witnesses takes no lexicon tie away: 皂角针 is the lexicon's 皂角刺, and blocks 皂角;
+    # nor does it make a straddler the name's drug (椒目, by the table 蜀椒's, cuts 川椒 in 川椒目); a straddle that
+    # writes a name of every drug of the name is none (草乌|头 is 草乌头)
+    assert "皂角针" in blockers("皂角") and "川椒目" in blockers("川椒") and "草乌头" not in blockers("草乌")
+    # rule 5d: the table's drug is a part of the 别名录's (萍蓬草根 of 萍蓬草): a candidate, and no rival
+    assert ref(recs["水栗子"], "萍蓬草根").st == "candidate" and ref(recs["水栗子"], "萍蓬草").st == "open"
+    assert result.report[aliasbuild.NTU]["parts"] == 1
+
+
 def test_check_refuses_a_split_name_the_ntu_table_joins_or_heads():
     from taochronos.plugins.classics.aliases import AliasRecord, Referent
 

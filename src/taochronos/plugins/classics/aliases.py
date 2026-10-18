@@ -92,7 +92,8 @@ SOURCE_LABELS: dict[str, str] = {
 # that no passage witnesses (credited by a classical work or not: :func:`list_candidate`), is listed and nothing else:
 # no rival of the name's other drugs; listed after the others, at most LIST_ONLY_CAP of them for a name that is no drug
 # of its own and has no other drug to list, none beside one (苦菜 lists 贝母, 败酱 and 龙葵, not the table's six plants of
-# today); and a name with nothing else is asked only as the question's one name (味药 in 苦菜是哪味药 is no name)
+# today) — the name's own lexicon entry is none (彼子, the lexicon's, lists the table's 榧子 beside it: :func:`listing`);
+# and a name with nothing else is asked only as the question's one name (味药 in 苦菜是哪味药 is no name)
 LIST_SOURCES = frozenset({"ntu40k", "hurb", "bielu-gb"})
 LIST_ONLY_CAP = 3
 
@@ -664,15 +665,18 @@ def _listing_rank(ref: Referent) -> int:
     return (3 if ref.st == "candidate" else 1) + (ref.cr is None)
 
 
-def listing(refs: Iterable[Referent], headed: bool = False) -> list[Referent]:
+def listing(refs: Iterable[Referent], headed: bool = False, own: Iterable[Referent] | None = None) -> list[Referent]:
     """The referents ``query.aliases`` lists for a name, by :func:`_listing_rank` (each rank in the order given): the
-    candidates only lists give at most :data:`LIST_ONLY_CAP`, and none when any other is listed or the name is a drug
-    of its own (``headed``: it heads one, or has a floor)."""
+    candidates only lists give at most :data:`LIST_ONLY_CAP`, and none when the name is a drug of its own (``headed``:
+    it heads one, or has a floor) or another is listed that shows the name — with ``own``, the referents of the name's
+    record, one of them or two drugs (:meth:`AliasIndex.view` shows a name for nothing less): the name's own lexicon
+    entry alone shows nothing, so 彼子, the lexicon's, lists the table's 榧子 beside it; without ``own``, any."""
     refs = list(refs)
     out = sorted((r for r in refs if _listing_rank(r) < 3), key=_listing_rank)
-    if out or headed:
+    mine = None if own is None else list(own)
+    if headed or (out and (mine is None or len({r.g for r in out}) > 1 or any(r is x for r in out for x in mine))):
         return out
-    return sorted((r for r in refs if _listing_rank(r) >= 3), key=_listing_rank)[:LIST_ONLY_CAP]
+    return out + sorted((r for r in refs if _listing_rank(r) >= 3), key=_listing_rank)[:LIST_ONLY_CAP]
 
 
 def source_labels(ids: Iterable[str], labels: Mapping[str, str] | None = None) -> list[str]:
@@ -1317,7 +1321,8 @@ class AliasIndex:
         asked = []
         for s, term in (getattr(q, "asked", None) or {}).items():
             rec = self.record(s)
-            refs = listing(self.referents(s, term, lex), rec is not None and (rec.ho is not None or rec.fl is not None))
+            refs = listing(self.referents(s, term, lex), rec is not None and (rec.ho is not None or rec.fl is not None),
+                           rec.r if rec is not None else ())
             groups = {ref.g for ref in refs}
             if not refs or ((rec is None or not any(ref is r for ref in refs for r in rec.r)) and len(groups) < 2):
                 continue

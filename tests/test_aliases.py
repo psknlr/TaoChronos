@@ -30,6 +30,7 @@ from taochronos.plugins.classics.aliases import (
     gate_form,
     layout,
     list_candidate,
+    listing,
     loads_records,
     meets,
     overlaps,
@@ -836,6 +837,35 @@ def test_what_only_lists_give_is_listed_last_and_capped_and_is_no_rival():
     # 五爪龙's list candidate is no rival: it stays 乌蔹莓's alone; 龙草's candidate from the 别名录 still is one
     shared = {e.surface: e.shared for e in index.expansions(ask(None, "乌蔹莓"), None, {})}
     assert shared == {"五爪龙": False, "龙草": True}
+
+
+def test_a_name_s_own_lexicon_entry_hides_no_list_candidate(tmp_path):
+    """The view shows a name for a referent of its record or for two drugs, never for its own lexicon entry alone: so
+    that entry hides none of the candidates only lists give (彼子, the lexicon's, lists the table's 榧子 beside it),
+    where another drug of the lexicon (two then) or a name that heads a drug still does."""
+    a = Referent
+    lex = lexicon(tmp_path, {"彼子": [], "榧子": [], "香榧": ["彼子"]})
+    index = AliasIndex([
+        AliasRecord("彼子", n=3, r=[a("榧子", st="candidate", src=["ntu40k"], cr=("本经", 25, 220)),
+                                   a("粗榧", st="candidate", src=["ntu40k"])]),
+        AliasRecord("榧子", ho="榧子", n=40),
+        AliasRecord("女贞实", n=2, r=[a("女贞子", st="candidate", src=["ntu40k"])]),
+        AliasRecord("申戌", ho="申戌", n=2, r=[a("榧子", st="candidate", src=["ntu40k"])]),
+    ], context=CONTEXT)
+
+    def heads(name: str, with_lex: bool = True) -> list[str]:
+        view = index.view(ask(lex if with_lex else None, name), {}, lex if with_lex else None)
+        return [r["head"] for r in view["asked"][0]["referents"]] if view.get("asked") else []
+
+    # its own entry and the lexicon's 香榧 (two drugs): shown either way, the candidates hidden
+    assert heads("彼子") == ["彼子", "香榧"]
+    lex2 = lexicon(tmp_path, {"彼子": [], "榧子": []})
+    view = index.view(ask(lex2, "彼子"), {}, lex2)  # its own entry alone: the candidates listed beside it
+    assert [r["head"] for r in view["asked"][0]["referents"]] == ["彼子", "榧子", "粗榧"]
+    assert view["asked"][0]["ambiguous"]
+    assert heads("女贞实", with_lex=False) == ["女贞子"]  # no lexicon: its candidate alone
+    assert heads("申戌") == []  # a name that heads a drug: none
+    assert listing(index.record("彼子").r + [a("彼子", src=["lexicon"])]) == [a("彼子", src=["lexicon"])]  # no own: any
 
 
 def test_windows():

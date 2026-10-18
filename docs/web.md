@@ -288,7 +288,8 @@ passage later sets its badges as a search does.  A search hit's badge reads its 
 金铃子; its kind is how the name before the arrow, or the written one, relates to the drug.
 
 **The D1 backup.**  The Worker answers the same query block as Python: `chat/d1tables.py` writes the layer into
-`tables.js` (`ALIASES`, the records of the shippable sources keyed by name; `ALIAS_SOURCES`; `ALIAS_CONTEXT`;
+`tables.js` (`ALIASES`, the records of the shippable sources, a line per name in code-point order, each read when
+first asked for; `ALIAS_INDEX`, their index, so that the Worker starts without reading one; `ALIAS_SOURCES`; `ALIAS_CONTEXT`;
 `ALIAS_PARAMS`, the full-corpus profile's parameters), and `backup/aliases.js` ports the layer's gates, readings,
 expansions, view and places line for line, `search.js` the question rules (the 200-character limit among them),
 tiers, places and labels, and `corpus.js` the card centred on the name a passage was found under.  Nothing is imported into D1 again (the lexicon,

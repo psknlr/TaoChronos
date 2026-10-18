@@ -456,6 +456,17 @@ test("classics.search with the alias layer: the queues — retention, round-robi
   }
 });
 
+test("a name only lists give, as a candidate, is asked only as the question's one name: of two such, the first", { skip }, async () => {
+  // 味药 (the NTU table's, of 铁扫竹) is no name beside 苦菜 or 支子; 明没药 is asked whole, not the 没药 it holds
+  const lex = new Lexicon(new Corpus(env));
+  const index = aliasIndex();
+  for (const [query, asked] of [["支子是哪味药", ["支子"]], ["苦菜是哪味药", ["苦菜"]], ["明没药是哪味药", ["明没药"]], ["味药", ["味药"]]]) {
+    const q = await analyze(lex, query, { aliases: true, cfg: ALIAS_PARAMS, index });
+    assert.deepEqual([...q.asked.keys()], asked, query);
+    assert.deepEqual(q.aliasView.asked.map((a) => a.surface), asked, query);
+  }
+});
+
 test("classics.search with the alias layer: a drug's side passages that give its name nothing beside it come after the others", { skip }, async () => {
   const corpus = new Corpus(env);
   const index = aliasIndex();
@@ -732,6 +743,8 @@ test("parity: the alias layer's functions on a made-up layer — astral names, w
   assert.deepEqual(plain("子丑").view.asked[0].referents.map((r) => r.head), ["辰午", "卯辰", "甲木"]);
   assert.deepEqual(plain("亥子").view.asked[0].referents.map((r) => r.head), ["甲木", "未酉", "辰巳"]);
   assert.deepEqual(plain("申戌").view, {});
+  // a name's own lexicon entry hides none (the view would show nothing): listed beside it, the credited one first
+  assert.deepEqual(plain("寅午").view.asked[0].referents.map((r) => r.head), ["寅午", "甲木", "卯辰"]);
   assert.equal(plain("甲木").expansions.find((e) => e.surface === "丑午").shared, false);
   assert.ok(index.listedOnly("子丑") && !index.listedOnly("亥子") && !index.listedOnly("申戌"));
 });

@@ -551,10 +551,18 @@ the header's `web_pack` is not the pack `corpus/web` holds.  It parses the 别�
 such as 根名茹根 give part names, hard wraps are joined only where the store attests the join, the conversion errors
 野狼 → 狼 and 浓朴 → 厚朴 and the garbled heads are repaired), adds the curated, taboo, 释名 and NTU pairs (below; the
 释名 reader takes every dated title of `works` as a credit, 尔雅 and 说文 among them), and finds up to three witnesses
-for each pair outside `jc_c030`: the earliest equation, gloss or 本草 entry, then the 别名录's own entry.  It groups the
-drugs (curated `same_drug` groups, the lexicon's entries, `ho` on every member; the NTU table's heads last, below),
+for each pair outside `jc_c030`: the earliest equation, gloss or 本草 entry — each name standing whole (an alias
+inside no longer name at all: 一名白胶香 is no 白胶), and not two more names of a list whose first heads a drug other than
+the list's entry's (一名羌活，一名护羌使者 in the 本经's 独活; 一名青蒿，一名方溃 in its 草蒿 is a witness, as is
+即半天河水，一名上池水: 即 and 谓之 start no list) — then the 别名录's own entry.  It groups the
+drugs (curated `same_drug` groups, the lexicon's entries, `ho` on every member; a name with only a floor (党参) heads
+its lexicon entry's drug or one of its own, whatever the NTU table pairs it with — 浙贝 stays a drug beside the
+table's 浙贝母, that pair a candidate; the NTU table's heads last, below),
 collects each name's blockers (longer names that hold it and are not it, and strings that straddle it in the store, on
-the name they cut), counts with the runtime's own gates the passages that write the name free of them (`n`) and the
+the name they cut — each name's drugs read as the classical corpus has them: one only an NTU pair no passage witnesses
+gives counts for neither name unless the lexicon ties it too, so 木通草, the table's 女萎, blocks no 木通 while 皂角针,
+the lexicon's 皂角刺, blocks 皂角 and 川椒目 川椒; never a straddle that writes a name of every drug of the name: 草乌|头
+is 草乌头), counts with the runtime's own gates the passages that write the name free of them (`n`) and the
 share that read it as a drug (`sh`), and gives each pair its status.  It writes `aliases.jsonl` — compact JSON lines, a header with the store,
 normaliser and lexicon fingerprints, the pack's (`web_pack`; on the web store only when the store holds exactly the
 pack's passages, row for row and on every column, else none and a warning) and the NTU extract's (`ntu40k`), the
@@ -566,12 +574,16 @@ downloads once and keeps, stores the files (zlib's default level), by `aliases c
 itself (`tests/test_chat.py`).  They are the web store's layer and about 40 % more, for the build on the full store
 (more of the NTU table's pairs, the whole 别名录) and further curation; before the NTU table they were 700,000, 150,000
 and 150,000.  The committed layer is built on the web store (553 books; 778 entries of the 别名录, 8 释名 pairs, the NTU
-extract): 18,402 names, 19,208 pairs, 3,402,245 bytes (824,525 deflated; the directory 893,846) — before the NTU
-table 2,724 names, 2,138 pairs and 470,111 bytes (143,545 for the directory).  `AliasIndex.load` reads it in about
-0.4 s in CPython and 0.6–0.65 s in Pyodide 0.28.2 under Node 22 (0.04 s and 0.08 s before the table; measured
-2026-10-18 on this repository's 4-core machine, not in a browser); the build on the full store, which keeps more of the
-table's pairs, has not been measured against the budgets yet.  A build there, or `check --db`, takes
-about a minute and a half.  A build on the site's full store completes the 别名录 and the 释名 credits, and keeps more
+extract): 18,355 names, 19,136 pairs, 3,526,620 bytes (887,772 deflated; the directory 956,907) — before the NTU
+table 2,724 names, 2,138 pairs and 470,111 bytes (143,545 for the directory).  Its header carries an index of the
+records (`aliases.layout`: the lines and their CRC-32, the records of each drug, heads, owners, terms, stops), so that
+`AliasIndex.load` reads no record — 0.02–0.03 s in CPython and 0.05–0.09 s in Pyodide 0.28.2 under Node 22, then 0.01–0.02 s
+for five questions' lookups — and each is read from its line when first asked for; the Worker's start (its
+tables and the index) takes 215–230 ms of CPU under Node and reads 72 records.  A file without the index, or whose
+lines it does not describe, is read whole (0.4 s in CPython and 0.6–0.65 s in Pyodide, measured on the layer before
+the index).  All measured 2026-10-18 on this repository's 4-core machine, not in a browser or on Cloudflare.  The
+build on the full store, which keeps more of the table's pairs, has not been measured against the budgets yet.  A
+build there, or `check --db`, takes about a minute and a half (a minute and a quarter on the web store).  A build on the site's full store completes the 别名录 and the 释名 credits, and keeps more
 of the NTU table's pairs, since more of their names are written there: `--db` on a machine that holds it, or the
 `aliases` workflow
 (`.github/workflows/aliases.yml`, run by hand), which fetches the site's store, builds, checks, regenerates the D1
@@ -588,7 +600,7 @@ and the earliest credit.  A name in an ethnic language (（藏名）, （傣名�
 remark cites that `sources.yaml` `works` dates (纲目, 本经, 别录 …) is the pair's credit (`cr`); a modern book (`modern`
 there: 四川中药志, 广西药植名录 …) or one the list lacks credits nothing.  A pair enters only when its name, its head or a
 curated same-drug member of the head is a herb of the full-corpus lexicon or written in a passage the build reads; the
-others are left out and counted.  On the web store the 50,606 rows give 43,433 distinct pairs: 18,362 enter and 25,071
+others are left out and counted.  On the web store the 50,606 rows give 43,430 distinct pairs: 18,359 enter and 25,071
 are left out, while 40 rows whose head holds a lost character and 59 names holding one give none; a cell that cites a
 commentator instead of naming the drug (高诱注, 郭璞注: three rows) gives none either.  The table's heads are grouped
 after the other sources' drugs and change none of them.  A head the editors or the other sources tie to drugs in a way
@@ -602,9 +614,9 @@ the head of (葶苈子's files 葶苈) or that it names with or without the part
 牛蒡子, 龙眼 and 龙眼肉, 地锦 and 地锦草), the one whose names share two or more of its names in the table, and more
 than any other's (七叶一枝花 joins 蚤休; 天胡荽 stays apart though the lexicon files it under 蘩蒌) — a head the other
 sources already give as a name joins only one of those drugs, never one the editors made a candidate of it — else it
-heads a drug of its own; the table never joins two lexicon entries.  On the web store 26 heads are kept apart (12 by
-curated.yaml, 7 for two drugs, 6 as parts, 1 stop; 188 pairs), 65 join a drug by its names and 2 by the lexicon entry
-they head.  `aliases check` refuses a layer in which a name curated.yaml splits is a member (`ho`) of another drug
+heads a drug of its own; the table never joins two lexicon entries.  On the web store 33 heads are kept apart (12 by
+curated.yaml, 14 for two drugs — the other sources', or theirs and the lexicon's other entries filing the head: 石血 —
+6 as parts, 1 stop; 262 pairs), 63 join a drug by its names and 2 by the lexicon entry they head.  `aliases check` refuses a layer in which a name curated.yaml splits is a member (`ho`) of another drug
 (unless a same-drug row lists both) or heads a drug only the table gives.  A pair the store confirms (an equation, a
 gloss or a 本草 entry) credits the store too (`store`, 古籍互证) and carries those witnesses; a pair only the table
 gives has no witness passage, only its source and credit.
@@ -634,12 +646,23 @@ passages (`LIST_SHARE`) and tied to the drug by no passage of the store → cand
 five flavours, is not 石灰; 熟地 stays 地黄's; 刀斧伤 is no name of 山大刀); such a pair whose name reads as a formula's
 or a class of drugs' — at most 8 characters ending in 汤散丸膏丹圆饮 or 药, no lexicon herb and no name the other
 sources give — → candidate (5c: 镇心丹, 清凉膏, 止血药); such a pair whose drug shares two names or more with a drug the
-other sources give the name → candidate, and no rival of that drug (5d: the table's 荜澄茄 beside the 别名录's
-毕澄茄, or a plant of today borrowing a classical drug's names); two drugs or more → cue; written in 20 passages or
-more and read as a drug in under 10 % → stop (under 30 % → cue); two characters → cue; otherwise open.  A name the
-NTU table gives a second drug of its own is shared like any other: 104 of the other sources' open pairs are cues with
-it (过山龙, 血见愁, 断肠草 name a dozen plants or more in the table).  The committed layer: 7,539 open, 5,579 cue,
-6,090 candidate, 97 stop records (before the NTU table: 734, 1,101, 303 and 63).  The NTU review's same-drug rows
+other sources give the name, or that no passage nor the lexicon ties to it and that is a part of such a drug (its head
+theirs with a part's name after it, `PART_ENDS` 子仁实肉草根叶花皮茎苗藤枝核壳蒂: 水栗子's 萍蓬草根 beside the 别名录's
+萍蓬草) → candidate, and no rival of that drug (5d: the table's 荜澄茄 beside the 别名录's
+毕澄茄, or a plant of today borrowing a classical drug's names); such a pair that no passage witnesses, whose name
+reads as another drug in the classical corpus — by the other sources, the lexicon, a passage or a head of its own —
+and whose remark credits no classical work → candidate (5e: 黄参 is 人参's, 白胶 鹿角胶's, 金沸草 旋覆花's), as is one
+whose name the store writes only before its drug's first use (5f: the 上党人参 of 千金 is no 党参); two rivals or more →
+cue, a candidate only lists give that no passage witnesses being no rival; written in 20 passages or more and read as
+a drug in under 10 % → stop (under 30 % → cue); two characters → cue; otherwise open.  A name the NTU table gives a
+second drug of its own, witnessed or not a candidate, is shared like any other: of the 2,138 pairs of the layer before
+the table 4 open ones are cues with it (大腹槟榔, 草茴香: the table gives each a second drug; 104 after the first
+settlement).  What only lists give, as a candidate no passage witnesses, is listed and nothing else
+(`aliases.listing`): after a name's other drugs, at most three where nothing else shows the name (a referent of its
+record, or two drugs: the name's own lexicon entry alone hides none, so 彼子 lists the table's 榧子), none for a name
+that heads a drug or has a floor; and such a name is asked only as the question's one name (味药 in 苦菜是哪味药 is
+none; 支子是哪味药 asks 支子).  The committed layer: 7,631 open, 5,046 cue, 6,459 candidate, 98 stop records (before
+the NTU table: 734, 1,101, 303 and 63).  The NTU review's same-drug rows
 renamed four of the other sources' drugs to the spelling the texts write most (旋覆花 for 旋复花, 朴硝 for 朴消, 石韦
 for 石苇, 榆白皮 for 榆皮): their referents carry the new name, and the drug 花椒, a lexicon rival before the table,
 joined 蜀椒; no other drug of theirs was merged or lost.

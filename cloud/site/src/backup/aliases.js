@@ -224,7 +224,7 @@ export function unsearched(exps, why) {
 // ------------------------------------------------------------------ the listing
 // lists of names that cite no passage (aliases.LIST_SOURCES): a candidate only they give, no passage witnessing it, is
 // listed and nothing else — no rival; listed after the others, at most LIST_ONLY_CAP for a name that is no drug of its
-// own with no other drug to list, none beside one
+// own with no other drug to list, none beside one (its own lexicon entry is none: listing)
 export const LIST_SOURCES = new Set(["ntu40k", "hurb", "bielu-gb"]);
 export const LIST_ONLY_CAP = 3;
 
@@ -243,11 +243,13 @@ function listingRank(ref) {
 }
 
 /** aliases.listing: the referents query.aliases lists for a name, by rank (stable within each): the candidates only
- * lists give at most LIST_ONLY_CAP, none when any other is listed or the name is a drug of its own (`headed`). */
-export function listing(refs, headed = false) {
+ * lists give at most LIST_ONLY_CAP, none when the name is a drug of its own (`headed`) or another is listed that shows
+ * the name — with `own`, the referents of the name's record, one of them or two drugs (the view shows a name for
+ * nothing less: its own lexicon entry alone shows nothing, so 彼子 lists the table's 榧子 beside it); without, any. */
+export function listing(refs, headed = false, own = null) {
   const out = [0, 1, 2].flatMap((k) => refs.filter((r) => listingRank(r) === k));
-  if (out.length || headed) return out;
-  return [3, 4].flatMap((k) => refs.filter((r) => listingRank(r) === k)).slice(0, LIST_ONLY_CAP);
+  if (headed || (out.length && (own === null || new Set(out.map((r) => r.g)).size > 1 || out.some((r) => own.includes(r))))) return out;
+  return [...out, ...[3, 4].flatMap((k) => refs.filter((r) => listingRank(r) === k)).slice(0, LIST_ONLY_CAP)];
 }
 
 // ------------------------------------------------------------------ records
@@ -850,7 +852,7 @@ export class AliasIndex {
     const asked = [];
     for (const [s, term] of pairs(q.asked)) {
       const rec = this.record(s);
-      const refs = listing(this.referents(s, term, lex), Boolean(rec) && (rec.ho !== null || rec.fl !== null));
+      const refs = listing(this.referents(s, term, lex), Boolean(rec) && (rec.ho !== null || rec.fl !== null), rec ? rec.r : []);
       const groups = new Set(refs.map((ref) => ref.g));
       if (!refs.length || ((!rec || !refs.some((ref) => rec.r.includes(ref))) && groups.size < 2)) continue;
       asked.push({ surface: s, term, ambiguous: groups.size > 1, referents: refs.map((ref) => this.referentView(ref, web)) });
