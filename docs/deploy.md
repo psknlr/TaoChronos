@@ -136,6 +136,7 @@ variables in the **Variables** tab.
 | `CLOUDFLARE_ZONE_ID` | `impf.ai` → **Overview** → *API* → Zone ID | for the edge's daily events |
 | `ARCHIVE_BUCKET` | e.g. `taochronos-archive` | the archive (Part 4.2) |
 | `STORE_TOKEN_SHA256` | sha256 of a one-off upload token | only while uploading a new corpus (3.4); delete it after |
+| `D1_BUDGET` | `90000` | only on the D1 Free plan (a slice a day); unset on Paid |
 | `RELAY_URL`, `SITE_URL` | other addresses | only if not `chat-api.impf.ai` / `chat.impf.ai` |
 
 ---
@@ -177,8 +178,9 @@ Needs: Part 2.1 fixed, Part 2.2 done.
    `a search on the full corpus: …`.
 
 **A2. The D1 backup.**
-1. **Actions → d1 → Run workflow** → branch `main` → **budget** `1000000` → **Run workflow**.  (The budget was the Free
-   plan's daily cap of 100,000 rows; on Paid it is only a safety valve.  The import writes about 100,000 rows.)
+1. **Actions → d1 → Run workflow** → branch `main` → **budget** `1000000` (the default) → **Run workflow**.  (The budget
+   was the Free plan's daily cap of 100,000 rows; on Paid it is only a safety valve.  The import writes about 100,000
+   rows.  The daily run at 00:07 UTC uses the same default, so it imports everything too.)
 2. It writes the corpus (~87,000 rows, about two hours), then computes the precomputed results (~12,000 rows, about two
    hours).  Ending with `the run's time is up` (five hours) is normal: run it again and it resumes, writing nothing twice;
    the daily run at 00:07 UTC (08:07 SGT) resumes it too.
@@ -554,7 +556,7 @@ Billing alerts are not caps: set one anyway (Cloudflare **Notifications → Add 
 | B4/4.1: `Authentication error [code: 10000]` | token or Account ID wrong | 2.2's checks |
 | `No access to the specified resource` (`workers/routes`) | the token's Zone Resources lack `impf.ai` | edit the token |
 | `externally managed DNS records` | `chat` has a DNS record of the account's own | delete that one record in **impf.ai → DNS**, deploy again |
-| d1 stops: `the day's budget` | the budget given was reached (90,000 on the daily run) | run again with `1000000` |
+| d1 stops: `the day's budget` | the budget was reached (1,000,000 by default; less if `D1_BUDGET` is set) | run again with `1000000`, or delete `D1_BUDGET` |
 | d1 stops: `the run's time is up` | five hours used | run again; it resumes |
 | `/api/info` → 503, `corpus: none` | no container, no D1 bound | A1/A2 or B3–B5 |
 | visitors see 「该地址因异常访问已被暂时限制」 | the sentinel refused the address (403) | read its events; if wrong, shorten `BLOCK_SECONDS` or `SENTINEL` back to `observe` |
