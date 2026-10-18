@@ -18,7 +18,7 @@ on:
         options: [plan, apply]
         default: plan
       day:
-        description: "events: a UTC day to pull (YYYY-MM-DD; yesterday when empty)"
+        description: "events: a UTC day to pull (YYYY-MM-DD; when empty, every day after the last one kept, through yesterday)"
         type: string
         default: ""
   schedule:

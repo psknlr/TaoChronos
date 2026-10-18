@@ -2,7 +2,8 @@
 
   pull     Cloudflare's security events (what the WAF, the rate limit and the bot checks did) and the requests worth a
            look (an error, a security action, a path a scanner asks for, an agent that is not a browser, a volume no reader
-           has) from the GraphQL Analytics API, for a day (UTC; yesterday by default), appended to
+           has) from the GraphQL Analytics API, for a day (UTC; by default every day after the last one kept, through
+           yesterday — runs that did not happen are caught up — no further back than CATCH_UP_DAYS), appended to
            data/security-logs/edge/YYYY/MM/DD.jsonl (events once each, by their ray id) — and the suspects: per address,
            over the days kept, what it did (data/security-logs/edge/suspects.json)
   suspects the suspects, printed
@@ -28,6 +29,7 @@ API = "https://api.cloudflare.com/client/v4/graphql"
 UA = "taochronos-security/1"
 HOSTS = ["chat.impf.ai", "chat-api.impf.ai"]
 SUSPECT_DAYS = 30
+CATCH_UP_DAYS = 31  # the most days a pull without --day goes back for: about what the plan keeps (pull() says what is out of reach)
 
 # what is asked of each node when the zone exposes it (the first query says what it does)
 FIREWALL_FIELDS = ["datetime", "action", "source", "kind", "ruleId", "description", "matchIndex", "rayName", "clientIP", "clientIPClass", "clientAsn",
@@ -333,11 +335,24 @@ def suspects(out: Path, write: bool = False) -> dict:
     return ranked
 
 
+def days_to_pull(out: Path, now: datetime) -> list[datetime]:
+    """The days a pull without --day asks for: every day after the last one kept, through yesterday — the runs that did
+    not happen (the Actions minutes ran out, a token was unset) are caught up by the next — no further back than
+    CATCH_UP_DAYS; yesterday when none is kept, or the last one kept is yesterday or later."""
+    yesterday = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    kept = [f"{f.parts[-3]}-{f.parts[-2]}-{f.stem}" for f in out.glob("*/*/*.jsonl")]
+    start = yesterday
+    if kept:
+        start = min(datetime.strptime(max(kept), "%Y-%m-%d").replace(tzinfo=timezone.utc) + timedelta(days=1), yesterday)
+    start = max(start, yesterday - timedelta(days=CATCH_UP_DAYS - 1))
+    return [start + timedelta(days=i) for i in range((yesterday - start).days + 1)]
+
+
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("action", choices=["pull", "suspects"])
     ap.add_argument("--out", default="data/security-logs/edge")
-    ap.add_argument("--day", help="the UTC day, YYYY-MM-DD (pull; yesterday by default)")
+    ap.add_argument("--day", help="the UTC day, YYYY-MM-DD (pull; by default every day after the last one kept, through yesterday)")
     ap.add_argument("--hosts", default=",".join(HOSTS))
     ap.add_argument("--top", type=int, default=30, help="suspects: how many to print")
     args = ap.parse_args(argv)
@@ -352,16 +367,18 @@ def main(argv: list[str] | None = None) -> None:
     zone = os.environ.get("CLOUDFLARE_ZONE_ID", "").strip()
     if not token or not zone:
         raise SystemExit("CLOUDFLARE_ANALYTICS_TOKEN and CLOUDFLARE_ZONE_ID are needed (security/README.md)")
-    day = datetime.strptime(args.day, "%Y-%m-%d").replace(tzinfo=timezone.utc) if args.day else (datetime.now(timezone.utc) - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    result = pull(token, zone, day, out, [h.strip() for h in args.hosts.split(",") if h.strip()])
-    for note in result.pop("skipped"):
-        print(f"::notice::{note}")
-    line = {"day": day.strftime("%Y-%m-%d"), **result}
+    days = [datetime.strptime(args.day, "%Y-%m-%d").replace(tzinfo=timezone.utc)] if args.day else days_to_pull(out, datetime.now(timezone.utc))
+    new = 0
+    for day in days:
+        result = pull(token, zone, day, out, [h.strip() for h in args.hosts.split(",") if h.strip()])
+        for note in result.pop("skipped"):
+            print(f"::notice::{note}")
+        new += result["events"] + result["requests"]
+        print(json.dumps({"day": day.strftime("%Y-%m-%d"), **result}, ensure_ascii=False))
     path = os.environ.get("GITHUB_OUTPUT")
     if path:
         with open(path, "a", encoding="utf-8") as f:
-            f.write(f"new={result['events'] + result['requests']}\n")
-    print(json.dumps(line, ensure_ascii=False))
+            f.write(f"new={new}\n")
 
 
 if __name__ == "__main__":
