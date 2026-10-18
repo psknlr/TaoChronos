@@ -595,7 +595,8 @@ def cmd_aliases(args: argparse.Namespace) -> None:
     and beside it the context.json it was counted with, the shipped one);
     ``review``: the keyword-in-context sheet editors decide stops from; ``check``: the committed layer's contract
     (with ``--db``: a build on that store must give the same bytes); ``show``: a name's record and how a profile
-    resolves it."""
+    resolves it; ``diff OLD [NEW]``: what a rebuild changes (names joining another drug, referents lost, statuses
+    dropped; held-out rows counted, never listed)."""
     from .evals.aliases_gold import heldout_surfaces, load_gold
     from .plugins.classics import aliasbuild
 
@@ -606,6 +607,17 @@ def cmd_aliases(args: argparse.Namespace) -> None:
         return _aliases_import(args, home, store, local)
     if args.action == "show":
         return _aliases_show(args, home, data)
+    if args.action == "diff":  # what a rebuild changes: members of another drug, referents lost, statuses dropped
+        if not args.target:
+            raise SystemExit("usage: taochronos aliases diff OLD.jsonl [NEW.jsonl]")
+        after = Path(args.file) if args.file else home / "domains" / "classics" / aliasbuild.ALIAS_DIR / "aliases.jsonl"
+        try:
+            diff = aliasbuild.layer_diff(Path(args.target).read_text(encoding="utf-8"),
+                                         after.read_text(encoding="utf-8"),
+                                         heldout=heldout_surfaces(load_gold(home)), top=args.top)
+        except (OSError, ValueError) as exc:
+            raise SystemExit(str(exc)) from exc
+        return _out(diff)
     if args.action == "check":
         db = Path(args.db) if args.db else store if store.exists() else None
         if db is not None and not db.is_file():
@@ -1779,10 +1791,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp = add("aliases", cmd_aliases, "other names of drugs (别名, ADR 0023): import a local list, build the layer "
                                      "from the store, the review sheet, check the committed layer, show how a profile "
                                      "reads a name", profile=False)
-    sp.add_argument("action", choices=["import", "build", "review", "check", "show"])
-    sp.add_argument("target", nargs="?", help="import: ntu, hurb or bielu-gb; show: the name")
+    sp.add_argument("action", choices=["import", "build", "review", "check", "show", "diff"])
+    sp.add_argument("target", nargs="?", help="import: ntu, hurb or bielu-gb; show: the name; diff: the layer before "
+                                              "(an aliases.jsonl)")
     sp.add_argument("file", nargs="?", help="import: the downloaded file (.xlsx, .tab, .csv, .tsv, a Dataverse .zip, "
-                                            ".txt)")
+                                            ".txt); diff: the layer after (default: the committed one)")
     sp.add_argument("--encoding", help="import: the file's encoding (default UTF-8, else GB18030)")
     sp.add_argument("--publish", action="store_true", help="import ntu: write the committed extract "
                                                            "corpus/aliases/ntu40k.tsv (CC BY-NC 4.0) instead of the "
@@ -1790,7 +1803,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--db", help="corpus store path (default: <data>/corpus/tcm.sqlite); check: build on it, compare")
     sp.add_argument("--local", action="store_true", help="build: also <data>/aliases/local/aliases-local.jsonl")
     sp.add_argument("--out-dir", help="build: write aliases.jsonl and context.json here instead of the domain")
-    sp.add_argument("--top", type=int, default=200, help="review: how many names (default 200)")
+    sp.add_argument("--top", type=int, default=200, help="review: how many names (default 200); diff: how many rows "
+                                                         "of each kind it lists")
     sp.add_argument("-o", "--output", help="review: the TSV (default <data>/aliases/local/review.tsv); import "
                                            "--publish: the extract (default corpus/aliases/ntu40k.tsv)")
     sp.add_argument("--profile", help="show: the profile whose layers read the name (default full-corpus)")

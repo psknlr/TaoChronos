@@ -60,7 +60,9 @@ heads an entry only when it is a lexicon herb (三七, not a chapter's 六七). 
 asked form is a candidate of its sub-pool; `python -m taochronos.evals.aliases_gold propose [--all]` writes the pools, or a seed-23
 draw stratified by band, to `<data>/aliases/gold-candidates.yaml`. The pools never read the alias layer; `propose`
 reads `curated.yaml` (period windows) and the 别名录 (`jc_c030`, for its multi-head names) only to list candidates,
-never their pairs, so a pair the layer lacks still counts as a miss.
+never their pairs, so a pair the layer lacks still counts as a miss. Neither the pools nor the eval read the NTU table
+(*Large List of Chinese Drug Names 40K*), which the shipped layer reads since 2026-10-18: the gold was frozen before
+it, and no item comes from it.
 
 Every name carries a witness passage outside `jc_c030` (the 别名录, excluded from the corpus during the eval) and
 `bencao_gangmu_*` that writes it beside the asked form, a head or another name of the item (in its text, or in its

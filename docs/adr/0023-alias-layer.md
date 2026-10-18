@@ -1,6 +1,6 @@
 # ADR 0023 — Other names of a drug (别名), kept apart
 
-**Status:** accepted · 2026-10-15
+**Status:** accepted · 2026-10-15 · decision 8 amended 2026-10-18 (the NTU table ships)
 
 ## Context
 
@@ -53,18 +53,40 @@ Python's.  A change of the lexicon never reaches D1; a change of the normaliser 
    `aliases check --db` refuses a committed file a build on that store would not reproduce.  The inputs are the
    store, the domain's files (the sources, curated, taboo and lexicon files), the normaliser and the 要籍语料's
    committed pack (`corpus/web/passages.jsonl.gz`): on a full store it sets each witness's `web` flag (`witness_scope:
-   web` shows only the flagged); the web store is the pack, every witness its own.  The header fingerprints the store,
-   the normaliser, the lexicon and the pack (`web_pack`, the sha256 of the pack uncompressed, 12 hex digits) — on the
-   web store only when the store holds exactly the pack's passages, in its order, row for row and on every column
-   `webcorpus.build_store` writes (a pack written again after a text or heading fix keeps its ids), else no
-   `web_pack` and a warning.  What the build decides:
+   web` shows only the flagged); the web store is the pack, every witness its own.  Since 2026-10-18 the NTU table's
+   committed extract (`corpus/aliases/ntu40k.tsv`) is one more, read while `sources.yaml` ships it (decision 8).  The
+   header fingerprints the store, the normaliser, the lexicon and the pack (`web_pack`, the sha256 of the pack
+   uncompressed, 12 hex digits) — on the web store only when the store holds exactly the pack's passages, in its order,
+   row for row and on every column `webcorpus.build_store` writes (a pack written again after a text or heading fix
+   keeps its ids), else no `web_pack` and a warning — and the NTU extract read (`ntu40k`, 12 hex digits of its
+   sha256).  What the build decides:
    * **Drugs.**  A curated `same_drug` group, or the heads the full-corpus lexicon files under one entry, are one
      drug, named by the group's first name (else the lexicon's headword).  A lexicon herb entry that files two or more
      of a drug's names again under another headword joins it (亭历 beside 葶苈, 牙子 beside 狼牙), unless a pair heads
      its headword, files it under another drug, or a curated row decides about it.  Every member — and every name
      with only a first-use or taboo floor (党参, 官桂, 浙贝, 苍术), which heads a drug of its own — carries the drug as
      `ho`, and a member no pair ties to it gets a referent (牡丹皮 → 牡丹), so the members reach one another.  The
-     lexicon's other herb entries for a name are listed as its rival referents (source `lexicon`).
+     lexicon's other herb entries for a name are listed as its rival referents (source `lexicon`).  The NTU table's
+     heads that no other source heads or groups come last and change none of these drugs.  One that curated.yaml
+     splits (a row, not a candidate's, with a window, a part's or an older name's kind, or the status cue: 青木香, 小草,
+     通草), a curated stop, a name the other sources give as a part or an older name, or one they give two drugs is
+     kept apart: its entry gives no drug and its pairs are left out, since a member is searched as its drug's own name
+     in every period (settled 2026-10-18, after the review of the NTU change).  Any other joins the drug of the
+     lexicon entry it heads, else, of the drugs that name it, that its own lexicon entry files the head of or that it
+     names with or without the part the drug is (`SAME_FORM`: 牛蒡 and 牛蒡子, 地锦 and 地锦草), the one whose names
+     share two or more of its names in the table, and more than any other's (七叶一枝花 joins 蚤休; 天胡荽 stays apart
+     though the lexicon files it under 蘩蒌) — a head the others already give as a name joins only one of those
+     drugs — else it heads a drug of its own.  The table never joins two lexicon entries: its evidence would join
+     entries that are not one drug.  Where it enters a drug of its own that the store writes as another source's drug
+     under another name, a curated same-drug row joins them (无食子 and 没食子, 毕澄茄 and 荜澄茄, 麦芽 and 大麦芽).
+     `aliases check` refuses a layer in which a name curated.yaml splits is a member of another drug or heads a drug
+     only the table gives.
+   * **The NTU table's pairs** (PrimaryDrugName → AlternateName, normalised) enter only when the name, the head or a
+     curated same-drug member of the head is a lexicon herb or written in the store; a name or head holding a lost
+     character (〓) gives none, since it would match the store's own 〓.  The same pair from two dictionaries is one.
+     An ethnic-language name is a folk name with its language in its note (`nt`, with the places the remark names);
+     the earliest classical work the remark cites that `sources.yaml` `works` dates is its credit (`cr`), a modern book
+     (`modern` there) credits nothing.  The 释名 reader takes every dated title of `works` as a credit too.
    * **Blockers** (`b`: longer strings that hold the name and are not it, at most 24): the curated `cover_stops`
      first; then longer herb or alias names holding it whose drug is another (with a year window where they are the
      same drug in some periods only), and strings that straddle an occurrence in the store — on the name the straddle
@@ -79,11 +101,22 @@ Python's.  A change of the lexicon never reaches D1; a change of the normaliser 
    * **Counts.**  `n` (passages writing the name free of its blockers, `jc_c030` left out) and `sh` (the share of them
      that read it as a drug) are counted with the runtime's own gates, chained blockers included.
    * **Report.**  Besides counts and bytes: `joined` (lexicon entries joined to a drug), `unblocked`, `concatenations`,
-     `unattested_heads` (别名录 heads nothing writes: garbled), `rivals_sharing_names`, `counts.usage_witnesses`.
+     `unattested_heads` (别名录 heads nothing writes: garbled), `rivals_sharing_names`, `counts.usage_witnesses`, and
+     `ntu40k` (the table's pairs left out, and its remarks by the books they cite: a dated classical work, modern books
+     only, or a book `works` lacks); the coverage counts the table's rows, pairs, kept and left-out pairs, credits and
+     folk names.
 3. **Three statuses, and stop.**  `open` is searched as the drug; `cue` only where the passage reads as a drug;
    `candidate` is listed, never searched; a false friend is `stop`.  The first rule that holds: a curated decision;
    damaged (a doubt flag of the readers: `lost_char`, `joined`, `truncated`, `wrap`, `marks`) or under a one-character
-   head → candidate; another drug's headword → candidate; shared by two drugs or more → cue; 20 passages or more with
+   head → candidate; another drug's headword or head → candidate (since 2026-10-18: a name only the NTU table makes
+   another drug's head turns only the table's own pairs into candidates); a pair only the NTU table gives whose name the
+   store writes free of its blockers, read as a drug in under 50 % of those passages (`LIST_SHARE`) and tied to the
+   drug by no passage of the store → candidate (五味 is not 石灰; 熟地 stays 地黄's; 刀斧伤 is no name of 山大刀), as is
+   one whose name reads as a formula's or a class of drugs' (at most 8 characters ending in 汤散丸膏丹圆饮 or 药, no
+   lexicon herb, no name the other sources give: 镇心丹, 止血药) and one whose drug shares two names or more with a
+   drug the other sources give the name, which is then no rival of it (荜澄茄 beside 毕澄茄); until 2026-10-18's
+   settlement the first rule held only at 20 passages or more and the other two did not exist; shared by two drugs or
+   more → cue; 20 passages or more with
    under 10 % read as a drug → stop (listed for review; a drug's own name becomes a candidate instead), under 30 % →
    cue; two characters → cue; otherwise open.  A pair only a local list gives also needs a passage before 1912 that
    reads it as a drug, else it is a candidate.  A stop is never expanded — not through its record, nor through a lexicon
@@ -201,6 +234,32 @@ Python's.  A change of the lexicon never reaches D1; a change of the normaliser 
    read only by `profiles/full-corpus-local.yaml`, which is never deployed; deployed profiles may not name a local
    layer.  Only the importers and the NTU pin (DOI, file, rows) are committed, and the NTU attribution is marked
    unverified until its citation is confirmed.
+
+   **Amended 2026-10-18: the NTU table ships.**  IMPF-AI, the site's publisher, decided to publish all of the NTU
+   table's pairs, credited to NTU under CC BY-NC 4.0, the site staying non-commercial; the paragraph above holds for
+   the rest.  Why: the shipped lists gave the names of the 别名录's 1,086 entries; the table gives the other names of
+   8,240 drugs from five modern dictionaries (中华本草, 全国中草药汇编, 中药大辞典, 中国药典, 标准藏药), with the
+   books, places and languages its remarks name, and its licence lets anyone share and adapt it, credited, for a
+   non-commercial purpose, which the site's is.  What changes:
+   * **What ships** includes the table: `sources.yaml` gives `ntu40k` `ship: true` and a class of its own, `nc` (a
+     list under a non-commercial licence), with the licence, its URL, the attribution (still marked unverified) and
+     the label NTU 40K（CC BY-NC 4.0）, so every answer that credits it names the licence.  `aliases check` refuses a
+     source of no known class, a `local` source that ships, and an `nc` source without a non-commercial licence and an
+     attribution.
+   * **Its extract is committed** (`corpus/aliases/ntu40k.tsv`: the workbook's sheet "1-to-1 records", its cells
+     unchanged, credited in its header, written by `taochronos aliases import ntu FILE --publish`), pinned in
+     `sources.yaml` with the workbook it comes from, and read by every build while the table ships (decision 2).  Its
+     pairs pass the gates the others do — stop names, the cue and candidate statuses, blockers — and a relevance
+     filter: a pair neither of whose names is a lexicon herb or written in the store is left out.  Rules keep the
+     table from regrouping the other sources' drugs or demoting their pairs: its heads are grouped last, and one the
+     editors or the others split is kept apart (decision 2); a head only it gives demotes only its own pairs; a pair
+     only it gives whose name the store mostly writes in other senses, that names a formula or a class of drugs, or
+     whose drug doubles one of the others' is a candidate, the double no rival (decision 3).
+   * **What stays local**: hurbTable and the GB 别名录, as above; `import ntu` without `--publish` still writes a local
+     copy, which the local build leaves out while the table ships.
+   * **The condition travels**: the repository, `home.zip`, the container and `tables.js` carry the table's pairs,
+     and with them its non-commercial condition.  A commercial use needs a layer built without it (`ntu40k` back to
+     `ship: false`, `class: local`).
 9. **In phases.**  A: web-canon on (`witness_scope: web`); full-corpus loads the data with the feature off.  B, done
    2026-10-15: the Worker's port (`backup/aliases.js`, with `search.js` and `corpus.js`) and full-corpus on
    (`profiles/full-corpus.yaml`: `alias: {enabled: true}`), in one change, gated by the parity tests
@@ -254,8 +313,9 @@ The ablations: `gates` lifts the status, context, rival and part gates (every pa
 `slots` sorts main and side together by score; `period` ignores windows.  Module constants, not parameters: the
 question's thresholds and words (`COMMON_N` 20, `COMMON_SH` 0.10, `COMMON_CUE_SH` 0.5, `DRUG_WORDS`, `RUN_STOPS`,
 `DOSE_AT`, `NAME_TAILS`, `NAME_HEADS`, `ALIAS_MAX_CHARS` 200), `BARE_REST` 4, `FORMULA_ENDS`, the build's
-`STRADDLE_RATIO` 2 and its budgets (700,000 bytes raw and 150,000 deflated for `aliases.jsonl`, 150,000 deflated for
-the directory).
+`STRADDLE_RATIO` 2, `LIST_SHARE` 0.5 (the NTU rule of §3) and its budgets (`BUDGET`: 4,900,000 bytes raw and 1,200,000
+deflated for `aliases.jsonl`, 1,300,000 deflated for the directory, since 2026-10-18; 700,000, 150,000 and 150,000
+before the NTU table).
 
 ## Shapes
 
@@ -263,8 +323,8 @@ The file is compact JSON lines, keys sorted, records in code-point order of `s`,
 
 ```
 {"_header":{"format":"taochronos-aliases","version":1,"store":{"sha","books","passages"},"normalizer","lexicon",
-  "web_pack"?,"sources":[ids],"labels":{id:label},"coverage":{…},"counts":{"surfaces","pairs","open","cue","candidate",
-  "stop"}}}
+  "web_pack"?,"ntu40k"?,"sources":[ids],"labels":{id:label},"coverage":{…},"counts":{"surfaces","pairs","open","cue",
+  "candidate","stop"}}}
 {"s","raw","stop","n","sh","b":[str|[str,from,to]],"fl","flb","ho","r":[{"h","g","t","k","st","v":[from,to],"c","a",
   "src","w":[[pid,y0,y1,kind,web]],"cr":[work,y0,y1],"nt"}]}
 ```
@@ -310,20 +370,24 @@ are returned is not compared.
 
 * A question about a drug finds passages under its other names, each labelled, in the side queue's places (4, 7 and
   10 of each ten while the main queue lasts, every place after it runs out); the asked form keeps the others.
-  `taochronos eval aliases` measures it on a frozen 120-item gold with a held-out half ([evals.md](../evals.md)).  **The second held-out report** (2026-10-15, 59 items, on the web store, after the
-  changes logged since the first): web-canon, the deployed pair, P@10 0.683 → 0.771, Wrong@10 25 → 12, AskedRet mean
-  0.589 → 0.749, leakage 0 — but 6 of the 10 acceptance checks: AskedRet min 0.000, ON@50 698 → 849 (1.22× against
-  1.5×), CandRecall 0.650 and SilentMerge 1 fail; full-corpus as a proxy on the web store 0.673 → 0.795, 7 of 10
-  (ON@50 690 → 798, 1.16×; CandRecall 0.675, SilentMerge 1 fail).  The first report had 0.791 and 0.805, with the same
-  checks failing: the changes since cost P@10 on the 18 held-out alias items (0.872 → 0.806 on web-canon) and moved
-  no other type's.  Most of the gain is the question's reading alone (`analysis`: 0.758 on web-canon); the other
-  names add recall (ON@50) and remove wrong hits.  Dev and held-out diverge: the curated rows that filled dev's gaps
-  carry no further.
-* **Dev** (61 items, tuned on; web-canon, second report): P@10 0.726 → 0.918, ON@50 448 → 1057, CandRecall 0.963,
-  CandPrecision 0.867; of the dev checks only SilentMerge = 0 fails (2).  Every change to the layer, the eval or the
-  gold after the first held-out report is logged with its date in [evals.md](../evals.md); the second report was run
-  once, on 5f68c03's tree — the changes logged after it (2026-10-17) touch no gold question — and full-store numbers
-  wait for a build on the site's store.
+  `taochronos eval aliases` measures it on a frozen 120-item gold with a held-out half ([evals.md](../evals.md)).  **The third held-out report** (2026-10-18, 59 items, on the web store, after adding
+  the NTU table): web-canon, the deployed pair, P@10 0.683 → 0.797, Wrong@10 25 → 9, AskedRet mean 0.589 → 0.744,
+  leakage 0 — but 6 of the 10 acceptance checks: AskedRet min 0.000, ON@50 698 → 907 (1.30× against 1.5×),
+  CandRecall 0.875 and SilentMerge 1 fail; full-corpus as a proxy on the web store 0.673 → 0.805, 7 of 10 (ON@50
+  690 → 859, 1.24×; CandRecall 0.875, SilentMerge 1 fail).  The second report (before the table) had 0.771 and
+  0.795, the first 0.791 and 0.805, with the same checks failing.  Against the second, the table brought the 18
+  held-out alias items back to the first report's level (0.806 → 0.878 on web-canon), raised CandRecall (0.650 →
+  0.875) and cut wrong hits (12 → 9), and cost CandPrecision (0.788 → 0.583), resolution accuracy (0.577 → 0.385)
+  and the head items' P@10 (0.953 → 0.920).  Most of the gain is the question's reading alone (`analysis`: 0.783 on
+  web-canon); the other names add recall (ON@50) and remove wrong hits.
+* **Dev** (61 items, tuned on; web-canon, third report): P@10 0.726 → 0.861 (0.918 before the table), ON@50 448 →
+  1029, CandRecall 0.944, CandPrecision 0.395 (0.867 before); of the dev checks no item type down by more than 0.05
+  (substring, −0.075), AskedRet min ≥ 0.7 (0.100) and SilentMerge = 0 (2) fail.  Dev and held-out moved in opposite
+  directions with the table: on dev, whose gaps curated rows had filled, its new rivals and candidates cost more than
+  its names add (22 of the 61 items list other drugs, 17 lose P@10).  After the report the NTU table's settlement (2026-10-18: the heads the editors split kept apart, the table's own pairs gated harder, §2 and §3) moved dev P@10 0.861 → 0.869 on both profiles (5 items, 4 up; paired bootstrap 95 % CI −0.002 to +0.021); it changes records that 36 of the 59 held-out items write (counted, not read), and the held-out half has not been run on it.  Every
+  change to the layer, the eval or the gold after the first held-out report is logged with its date in
+  [evals.md](../evals.md); the third report was run once, on the tree with the table, and full-store numbers wait
+  for a build on the site's store.
 * A question naming the head gives up some of its own form by design; a question that asks no drug is answered as
   before.
 * A shared name reaches a side passage only through an own name the question did not ask (the asked forms are
@@ -334,10 +398,27 @@ are returned is not compared.
   file.  A `canon` run that rewrites `corpus/web` leaves the layer to be rebuilt: `aliases check` warns when the
   header's `web_pack` is not the pack `corpus/web` holds, and `--db` finds the rebuild differs.  Reading the web store
   row by row against the pack costs a web-store build or `check --db` about 5 s.  The committed layer is built on the
-  web store (553 books: 778 of the 别名录's 1,086 entries, 6 釋名 pairs; `web_pack` 01cae4ae63a3): 2,724 surfaces,
+  web store (553 books: 778 of the 别名录's 1,086 entries, 6 釋名 pairs; `web_pack` 01cae4ae63a3) before the NTU table: 2,724 surfaces,
   2,138 pairs (734 open, 1,101 cue, 303 candidate; 63 stop records), 470,111 bytes (the directory 143,545 deflated as
   `home.zip` stores it, of its 150,000; `aliases check` measures it the same way, and a test reads `home.zip` itself).  A build on the site's store adds the rest of the 别名录 and the 釋名 credits, and may
   need the budget looked at again.
+* **With the NTU table** (2026-10-18, decision 8 amended; the same web store, the extract `ntu40k` dd8544014297): of
+  the table's 43,433 distinct pairs 18,362 enter and 25,071 are left out, neither of their names being a lexicon herb
+  or written in the store; 26 heads are kept apart (188 pairs).  The layer holds 18,402 surfaces and 19,208 pairs
+  (7,539 open, 5,579 cue, 6,090 candidate; 97 stop records, 8 釋名 pairs): 3,402,245 bytes (824,525 deflated; the
+  directory 893,846 of its 1,300,000), and a build or `check --db` takes about a minute and a half; `AliasIndex.load`
+  reads it in about 0.4 s in CPython and 0.6 s in Pyodide (0.04 and 0.08 s before the table), the Worker's start
+  (tables.js and the index) about 0.3 s under Node — Cloudflare's own measure of the 1 s limit is not known here.  The
+  table neither regroups the other sources' drugs nor makes their pairs candidates (§2, §3), but a name it gives a
+  drug of its own that shares fewer than two names with theirs is shared, so 104 of their open pairs are cues now
+  (过山龙, 血见愁, 断肠草 name a dozen plants or more in it); the editors' "NTU 40K review" rows in `curated.yaml`
+  decide on the names it brings in that the store writes most.  A build on the site's store keeps more of the table,
+  whose filter reads that store: its size and load times against the budgets are not measured yet.  The first two
+  held-out reports measured the layer before the table, the third (above) the layer with it before the settlement of
+  2026-10-18, which changed it again ([evals.md](../evals.md), change log).
+* The NTU pairs carry their licence: whatever carries the layer — the repository, `home.zip`, the container,
+  `tables.js` — carries the non-commercial condition, which the site meets by staying non-commercial.  A pair only the
+  table gives has no witness passage, only its source and the classical work its remark cites, where it cites one.
 * The Worker carries the layer in `tables.js` and a hand-written port; parity is tested on the query block, on the
   labels of the passages both find, and on gate cases Python generates.
 * A shared name is never answered as one drug, and a dated name is said to be dated; the answer is longer for it.

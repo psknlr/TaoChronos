@@ -2,10 +2,14 @@
 
 ``build_open(store, home)`` reads only what may ship: the CC0 本草纲目别名录 in the store (book ``jc_c030``), the editors'
 decisions (``curated.yaml``, each with a witness passage), the herb pairs of ``taboo.yaml``, the 本草纲目's 释名 brackets
-(``a（唐本）`` under its drug), the full-corpus lexicon and the store's texts.  It takes no local input.
+(``a（唐本）`` under its drug), the NTU table (CC BY-NC 4.0) from its committed extract ``corpus/aliases/ntu40k.tsv``
+while sources.yaml ships it, the full-corpus lexicon and the store's texts.  It takes no local input.  An NTU pair
+(PrimaryDrugName → AlternateName) enters only when its head (or a curated same-drug member) or its name is a lexicon
+herb or written in the store; an ethnic-language name is a folk name (the language in its note, with the places its
+remark names), and the earliest classical work its remark cites (sources.yaml ``works``) is its credit (``cr``).
 ``build_local(open_result, local_pairs, store)`` adds the pairs imported under ``<data>/aliases/local/`` (hurbTable,
-the GB 别名录, the NTU table), counted with the shipped ``context.json`` (the herb set its profile loads), and is
-written only under ``<data>``.
+the GB 别名录; not a list that ships, which open_pairs reads), counted with the shipped ``context.json`` (the herb set
+its profile loads), and is written only under ``<data>``.
 
 For every pair (name, drug) the build
 
@@ -13,7 +17,12 @@ For every pair (name, drug) the build
   (its canonical head: the group's first name, else the lexicon's headword); a lexicon entry that files two or more of
   a drug's names again under another headword (亭历 beside 葶苈) joins it; every member's record carries the drug as
   ``ho``, and a member no pair ties to it gets one (牡丹皮 → 牡丹), so each reaches the other; a name with only a
-  first-use or taboo floor (党参) heads a drug of its own;
+  first-use or taboo floor (党参) heads a drug of its own; the NTU table's heads come after, changing none of these
+  drugs: one the editors or the others tie to drugs as a part, an older name, within a window, as a cue or to two
+  drugs is kept apart, its entry giving no drug (青木香, 小草, 通草); else each joins the drug of the lexicon entry it
+  heads, or the drug whose names its own share two or more of (七叶一枝花 joins 蚤休) among those that name it, that
+  its lexicon entry files the head of or that it names with or without the part the drug is (牛蒡 and 牛蒡子) — only
+  one the others give it when they give it any — else heads a drug of its own;
 * adds the lexicon's other herb entries for the name as rival referents (source ``lexicon``);
 * finds up to three witnesses outside ``jc_c030`` and the ``NEVER_PACKED`` sources: the earliest equation (h，一名a; a即h;
   not 一作, a variant reading), gloss (h（a）) or 本草 entry (headed by h, 一名a in its first 400 characters), each name
@@ -28,16 +37,21 @@ For every pair (name, drug) the build
   free of its blockers (``n``) and the share of them that read it as a drug (``sh``), with cues that are the drug's
   head and its other names that may be read as it (no candidate, none written 20 times and mostly not as a drug);
 * gives each pair its status by the first rule that holds: a curated decision; damaged (``DOUBT_FLAGS``) or under a
-  one-character head → candidate; another drug's headword → candidate; two drugs or more → cue; written 20 times or
-  more and under 10 % as a drug → stop (for review; a candidate when the name heads the drug); under 30 % → cue; two
-  characters → cue; else open.  A pair only a local list gives also needs a passage before 1912 that reads it as a
+  one-character head → candidate; another drug's headword → candidate (another drug's head too, but a head only the
+  NTU table gives demotes only the table's own pairs); a pair only the NTU table gives, its name written in the store
+  free of its blockers, under 50 % of those passages as a drug and with no store witness → candidate (5b), as is one
+  whose name reads as a formula's or a class of drugs' (镇心丹, 止血药: 5c), as is one whose drug shares two names or
+  more with a drug the other sources give the name (荜澄茄 beside 毕澄茄: 5d — no rival then); two drugs or more → cue;
+  written 20 times or more and under 10 % as a drug → stop (for review; a candidate when the name heads the drug);
+  under 30 % → cue; two characters → cue; else open.  A pair only a local list gives also needs a passage before 1912 that reads it as a
   drug, else it is a candidate;
 * sets soft floors (the earliest taboo year over herb pairs, else a curated first use) and hard windows (curated only);
 * reports what editors should look at: 别名录 heads nothing writes (garbled: 蘆藜), lexicon rivals sharing names with
   another of the name's drugs, drugs named by an unwritten name, cover strings past the cap.
 
 Everything is sorted before it is written: the same inputs give the same bytes.  The header fingerprints the inputs:
-the store (:func:`store_label`), the normaliser, the lexicon and, where the layer follows it, the 要籍语料's pack
+the store (:func:`store_label`), the normaliser, the lexicon, the NTU extract read (``ntu40k``) and, where the layer
+follows it, the 要籍语料's pack
 (``web_pack``, :func:`pack_fingerprint`): on a full store the pack sets each witness's ``web`` flag; the web store is
 the pack made into a store, and the header names the pack only when the store holds exactly the pack's passages, row
 for row and column for column as ``webcorpus.build_store`` writes them (a pack written again after a text or heading fix
@@ -62,10 +76,10 @@ import yaml
 
 from ...protocol.base import canonical_dumps
 from ...protocol.yamlio import load_yaml
-from .aliases import (CONTEXT_PATTERNS, KINDS, MAX_BLOCKERS, MAX_CUES, MAX_RAW, MAX_WITNESSES, STATUSES, WITNESS_KINDS,
-                      AliasIndex, AliasRecord, Referent, Witness, dumps_records, loads_records, gate_form)
+from .aliases import (CONTEXT_PATTERNS, FORMULA_ENDS, KINDS, MAX_BLOCKERS, MAX_CUES, MAX_RAW, MAX_WITNESSES, STATUSES,
+                      WITNESS_KINDS, AliasIndex, AliasRecord, Referent, Witness, dumps_records, loads_records, gate_form)
 from .domain import DomainPack
-from .ingest.aliases import BOOK, DOUBT_FLAGS, LOCAL_SOURCES, read_bielu_store
+from .ingest.aliases import BOOK, DOUBT_FLAGS, LOCAL_SOURCES, NTU_EXTRACT, read_bielu_store, read_ntu
 from .store import CorpusStore, StoreCorpus, is_han
 from .study.names import EQUATE as NAMES_EQUATE
 
@@ -75,9 +89,27 @@ LEXICON_EXTRA = ("lexicon-supplement", "lexicon-harvested")  # the full-corpus p
 WEB_PACK = Path("corpus") / "web" / "passages.jsonl.gz"  # the 要籍语料's pack, under the home
 LOCAL_FILE = "aliases-local.jsonl"  # <data>/aliases/local/: the shipped records and the local pairs, re-classified
 BIELU_ENTRIES = 1086  # entries of the whole 别名录 (the web store's excerpt has 778)
-# aliases.jsonl raw and deflated; the directory deflated file by file, as home.zip stores it
-BUDGET = {"raw": 700_000, "deflated": 150_000, "directory": 150_000}
+NTU = "ntu40k"  # the NTU table's id in sources.yaml: read from its committed extract (NTU_EXTRACT) when it ships
+CLASSES = ("open", "nc", "derived", "local")  # sources.yaml's classes; every one but local may ship
+MODERN = "modern"  # a book of sources.yaml's works that is modern: it credits nothing
+# aliases.jsonl raw and deflated; the directory deflated file by file, as home.zip stores it.  With the NTU table the
+# layer holds about 18,400 names on the web store (3,402,245 / 824,525 bytes, the directory 893,846; set at 3,461,929 /
+# 844,728 / 913,724 + 40 %), for the rebuild on the full store (more of the table's pairs, the whole 别名录: not
+# measured yet) and curation.  The browser downloads the directory once with home.zip (cached after) and reads it in
+# about 0.6 s in Pyodide (0.4 s in CPython); the Worker's tables.js carries the records the full-corpus profile reads,
+# the whole Worker within Workers Free's 3 MB compressed (tests/test_d1.py) and its start within 1 s
+# (cloud/test/backup.test.js)
+BUDGET = {"raw": 4_900_000, "deflated": 1_200_000, "directory": 1_300_000}
 STOP_N, STOP_SHARE, CUE_SHARE = 20, 0.10, 0.30  # status rules 7 and 8
+LIST_SHARE = 0.50  # a pair only the NTU table gives, its name written in the store: the share it needs (5b)
+# the NTU table's heads: a drug named with or without the part it is (牛蒡 and 牛蒡子, 龙眼 and 龙眼肉, 地锦 and 地锦草)
+# is one drug; a name the editors or the other sources tie to a drug as a part or an older name, or within a period
+# window, is never joined to it (青木香, 小草, 通草)
+SAME_FORM = "子仁实肉草"
+APART_KINDS = ("part_name", "old_name")
+# a name only the NTU table gives that reads as a formula's or a class of drugs (镇心丹, 清凉膏, 止血药): ends in one of
+# these, at most 8 characters, and no lexicon herb nor a name the other sources give → candidate (rule 5c)
+LIST_ENDS = FORMULA_ENDS + "药"
 LOCAL_BEFORE = 1912  # a local-only pair needs a passage before this year that reads it as a drug
 MAX_NAME = 8  # the longest name a straddle is read with
 STRADDLE_RATIO = 2  # a name standing whole beside a straddler is not cut by it unless the straddler is written this
@@ -199,8 +231,9 @@ def read_yaml(path: str | Path) -> Any:
 
 
 def read_registry(path: str | Path) -> dict[str, Any]:
-    """sources.yaml, the source registry (``sources``: a list of mappings, ``works``: a mapping), {} when it is empty;
-    ``ValueError`` in a sentence when it is not YAML (:func:`read_yaml`) or not of that shape."""
+    """sources.yaml, the source registry (``sources``: a list of mappings, ``works``: a mapping of a title to its
+    [first, last] years, or to ``modern``), {} when it is empty; ``ValueError`` in a sentence when it is not YAML
+    (:func:`read_yaml`) or not of that shape."""
     data = read_yaml(path)
     if data is None:
         return {}
@@ -212,6 +245,10 @@ def read_registry(path: str | Path) -> dict[str, Any]:
         raise ValueError(f"{name}: sources is not a list of mappings")
     if not isinstance(data.get("works") or {}, dict):
         raise ValueError(f"{name}: works is not a mapping")  # noqa: TRY004
+    for title, years in (data.get("works") or {}).items():
+        if not (years == MODERN or (isinstance(years, list) and len(years) == 2
+                                    and all(type(y) is int for y in years) and years[0] <= years[1])):
+            raise ValueError(f"{name}: works {title} is not [first, last] years or {MODERN}")
     return data
 
 
@@ -441,7 +478,11 @@ class Builder:
         self.corpus = StoreCorpus(self.db, self.norm, exclude_books=(BOOK,))
         self.edition = self.db.meta("edition") or "full"
         self.sources = {s["id"]: s for s in self.registry.get("sources") or []}
-        self.works = {self.norm(k): (v[0], v[1]) for k, v in (self.registry.get("works") or {}).items()}
+        works = self.registry.get("works") or {}
+        self.works = {self.norm(k): (v[0], v[1]) for k, v in works.items() if v != MODERN}  # a title → its years
+        self.modern = {self.norm(k) for k, v in works.items() if v == MODERN}
+        self.extract: str | None = None  # sha256[:12] of the NTU extract a build read
+        self.notes_ntu: dict[str, Any] = {}  # what the NTU table's reading leaves out and how its remarks cite
         from .webcorpus import NEVER_PACKED
 
         self.never = {b for b, src in self.corpus.sources.items() if src in NEVER_PACKED}
@@ -482,6 +523,10 @@ class Builder:
         self.group_term: dict[str, str | None] = {}
         self.term_group: dict[str, str] = {}
         self.joined: dict[str, str] = {}  # a lexicon headword joined to the drug it files twice → its term id
+        self.attached: dict[str, str] = {}  # an NTU head that joined another source's drug → how (_attach)
+        self.apart: dict[str, str] = {}  # an NTU head kept apart → why (_attach): its entry gives no drug
+        self.core_names: set[str] = set()  # the names the other sources give or head (rule 5c)
+        self.grouped: set[str] = set()  # the names the other sources head or group (the NTU table's heads come after)
         self.free: dict[str, list[str]] = {}  # name → the passages that write it free of its blockers
         self.last_context: dict[str, Any] = {}
         self.warnings: list[str] = []  # the inputs' (open_pairs)
@@ -634,7 +679,97 @@ class Builder:
         names = {p.s for p in pairs} | {p.h for p in pairs} | set(self.herb_terms)
         taboo = self.taboo_pairs(names)
         coverage["taboo_pairs"] = len(taboo)
-        return pairs + taboo, coverage
+        ntu, ntu_coverage = self.ntu_pairs()
+        return pairs + taboo + ntu, {**coverage, **ntu_coverage}
+
+    # ---------------------------------------------------------------- the NTU table
+    def written(self, s: str) -> bool:
+        """Whether the store writes ``s`` in a passage the build reads (not the 别名录, not NEVER_PACKED)."""
+        return any(s in self.text(pid) for pid in self.passages(s))
+
+    def credit(self, books: Iterable[str]) -> tuple[str, int, int] | None:
+        """The earliest classical work of sources.yaml's ``works`` among the books a remark cites, with its years."""
+        found = [(self.works[w][0], self.works[w][1], w) for w in map(self.norm, books) if w in self.works]
+        if not found:
+            return None
+        y0, y1, w = min(found)
+        return w, y0, y1
+
+    def ntu_pairs(self) -> tuple[list[Pair], dict[str, Any]]:
+        """The NTU table's pairs when sources.yaml ships it, read from its committed extract (``NTU_EXTRACT``): the
+        PrimaryDrugName as head, each AlternateName as a name of it, both through the pack's normaliser
+        (``ingest.aliases.read_ntu``: a head or a name with a lost character gives none, a damaged name is in doubt
+        — a candidate).  A name
+        in an ethnic language is a folk name, the language in its note; the places a remark names go into the note too;
+        the earliest classical work it cites (``works``) is the pair's credit.  A pair enters only when its head (or a
+        curated same-drug member of it) or its name is a herb of the full-corpus lexicon or written in the store: the
+        others are counted as left out.  A missing extract, or one other than the pin's, is a warning."""
+        source = self.sources.get(NTU) or {}
+        if source.get("ship") is not True:
+            return [], {}
+        path = self.home / NTU_EXTRACT
+        if not path.is_file():
+            self.warnings.append(f"{NTU} ships but {NTU_EXTRACT} is missing: none of its pairs is read")
+            return [], {f"{NTU}_rows": 0}
+        sha = hashlib.sha256(path.read_bytes()).hexdigest()
+        self.extract = sha[:12]
+        entries = read_ntu(path, normalize=self.norm)
+        pin = (source.get("pin") or {}).get("extract") or {}
+        for key, value in (("file", NTU_EXTRACT), ("sha256", sha), ("rows", len(entries))):
+            if pin.get(key) is not None and pin[key] != value:
+                self.warnings.append(f"{NTU_EXTRACT}: {key} {value} differs from the pinned {pin[key]}")
+        same: dict[str, set[str]] = defaultdict(set)  # a name → the curated same-drug members of its drug
+        for row in self.curated.get("same_drug") or []:
+            names = {self.norm(x) for x in row["names"]}
+            for x in names:
+                same[x] |= names
+        merged: dict[tuple[str, str], Pair] = {}
+        books = {"classical": 0, "modern": 0, "unlisted": 0}  # rows citing a book, by what the works table says
+        lost = lost_names = 0
+        for e in entries:
+            remark = e.info.get("remark") or {}
+            cited = [self.norm(b) for b in remark.get("books") or ()]
+            if cited:
+                kind = ("classical" if any(b in self.works for b in cited)
+                        else "modern" if all(b in self.modern for b in cited) else "unlisted")
+                books[kind] += 1
+            if not e.head:
+                lost += 1
+                continue
+            cr = self.credit(cited)
+            regions = list(remark.get("regions") or ())
+            for t in e.aliases:
+                if "〓" in t.name:  # a character lost: never asked, and the store's own 〓 would match it
+                    lost_names += 1
+                    continue
+                note = "、".join(dict.fromkeys(([t.note] if t.kind == "folk" and t.note else []) + regions))
+                p = Pair(t.name, e.head, NTU, kind=t.kind if t.kind in KINDS else "alias",
+                         doubt=bool(DOUBT_FLAGS & set(t.flags)) or "head_marks" in e.flags, raw=t.raw, note=note, cr=cr)
+                q = merged.get((p.s, p.h))
+                if q is None:
+                    merged[(p.s, p.h)] = p
+                    continue
+                # the same pair from another dictionary: the most specific kind, the earliest credit, every note
+                q.kind = min(q.kind, p.kind, key=_kind_rank)
+                q.doubt = q.doubt and p.doubt
+                q.cr = min((c for c in (q.cr, p.cr) if c), key=_credit_order, default=None)
+                q.note = "、".join(dict.fromkeys(x for n in (q.note, p.note) if n for x in n.split("、")))
+        relevant: dict[str, bool] = {}
+
+        def known(x: str) -> bool:
+            if x not in relevant:
+                relevant[x] = x in self.herb_terms or self.written(x)
+            return relevant[x]
+
+        kept = [p for _, p in sorted(merged.items())
+                if known(p.s) or any(known(m) for m in sorted(same.get(p.h, set()) | {p.h}))]
+        # left out: neither name is a lexicon herb or written in the store (nor a curated same-drug member of the head)
+        self.notes_ntu = {"books": books, "left_out": len(merged) - len(kept)}
+        return kept, {f"{NTU}_rows": len(entries), f"{NTU}_lost_heads": lost, f"{NTU}_lost_names": lost_names,
+                      f"{NTU}_pairs": len(merged),
+                      f"{NTU}_left_out": len(merged) - len(kept), f"{NTU}_kept": len(kept),
+                      f"{NTU}_credited": sum(p.cr is not None for p in kept),
+                      f"{NTU}_folk": sum(p.kind == "folk" for p in kept), f"{NTU}_doubt": sum(p.doubt for p in kept)}
 
     def _kind_of(self, pid: str, s: str, heads: list[str], g: str) -> str | None:
         """The kind of witness a curated passage is for ``s`` and the drug ``g`` (any of its ``heads``): equation (in
@@ -805,6 +940,12 @@ class Builder:
         rows = [([self.norm(x) for x in row["names"]], row) for row in cur.get("same_drug") or []]
         pairs = [p for p in pairs if len(p.s) >= 2 and p.h and p.s != p.h]
         canon, self.members, self.group_term, self.term_group = self._groups(pairs, [names for names, _ in rows])
+        # the NTU table's entries under a head kept apart give no drug (_attach)
+        apart = [p for p in pairs if p.src == NTU and p.h in self.apart]
+        if apart:
+            pairs = [p for p in pairs if not (p.src == NTU and p.h in self.apart)]
+            self.notes["ntu_apart"] = {"heads": _tally(self.apart.values()), "pairs": len(apart)}
+        self.core_names = {p.s for p in pairs if p.src != NTU} | self.grouped
         pairs += self._member_pairs(pairs, rows, canon)
         members = self.members
 
@@ -818,10 +959,13 @@ class Builder:
         for (s, g), ps in sorted(merged.items()):
             lead = next((p for p in ps if p.src == "curated"), None)
             kind = lead.kind if lead is not None else min((p.kind for p in ps), key=_kind_rank)
-            cr = min((p.cr for p in ps if p.cr), key=lambda c: (_n(c[1]).zfill(6), c[0]), default=None)
+            cr = min((p.cr for p in ps if p.cr), key=_credit_order, default=None)
+            # the note: a curated pair's, else the NTU table's (a folk name's language, the places a remark names)
+            nt = lead.note if lead else "、".join(sorted({x for p in ps if p.src == NTU and p.note
+                                                          for x in p.note.split("、")}))
             refs[s][g] = Referent(g, t=self.group_term.get(g), k=kind if kind in KINDS else "alias",
                                   src=sorted({p.src for p in ps}), v=lead.valid if lead else None,
-                                  a=list(dict.fromkeys(lead.anti)) if lead else [], cr=cr, nt=lead.note if lead else "")
+                                  a=list(dict.fromkeys(lead.anti)) if lead else [], cr=cr, nt=nt)
             info[(s, g)] = {"pairs": ps, "doubt": all(p.doubt for p in ps) or len(g) < 2,
                             "local": all(p.local for p in ps), "status": lead.status if lead else None,
                             "cues": [c for p in ps if p.src == "curated" for c in p.cues]}
@@ -874,8 +1018,21 @@ class Builder:
 
         # cues: the head, curated cues, then the drug's names that name nothing else and may be read as it (no
         # candidate, no stop, none written 20 times or more and mostly not as a drug), the most written first
+        # rule 5d: a drug only the NTU table gives a name that the other sources give another drug sharing two names
+        # or more with it is that drug again under another head (荜澄茄 beside 毕澄茄), or a plant of today that borrows
+        # its names: its pair is a candidate, and it is no rival that makes the others' pair a cue
+        named: dict[str, set[str]] = defaultdict(set)  # a drug → its heads and the names that have it
+        for a, by_g in refs.items():
+            for g in by_g:
+                named[g].add(a)
+        for g, hs in heads_of.items():
+            named[g] |= set(hs)
+        double = {(s, g) for s, by_g in refs.items() for g in by_g if _ntu_only(info[(s, g)]) and any(
+            o != g and info[(s, o)]["pairs"] and not _ntu_only(info[(s, o)]) and len(named[g] & named[o]) >= 2
+            for o in by_g)}
+        self.notes["ntu_doubles"] = len(double)
         ruled = {(s, g): self._ruled(s, g, info[(s, g)], decisions.get(s, []))
-                 for s, by_g in refs.items() for g in by_g}
+                 or ("candidate" if (s, g) in double else None) for s, by_g in refs.items() for g in by_g}
 
         def own_names(shaky: set[str]) -> dict[str, list[str]]:
             out = {}
@@ -897,7 +1054,8 @@ class Builder:
 
         cues = cue_sets(own_names(set()))
         share = {s: self._share(s, free[s], blockers[s], cues[s], gates) for s in surfaces}
-        shaky = {s for s in surfaces if len(free[s]) >= STOP_N and share[s][0] < CUE_SHARE}
+        shaky = {s for s in surfaces if (len(free[s]) >= STOP_N and share[s][0] < CUE_SHARE) or (
+            free[s] and share[s][0] < LIST_SHARE and refs.get(s) and all(_ntu_only(info[(s, g)]) for g in refs[s]))}
         again = cue_sets(own_names(shaky))
         for s in surfaces:
             if again[s] != cues[s]:
@@ -914,7 +1072,9 @@ class Builder:
                 records.append(replace(rec, stop=True))
                 continue
             by_g = refs.get(s, {})
-            statuses = {g: ruled[(s, g)] or self._status(s, n, sh, len(by_g) >= 2) for g in sorted(by_g)}
+            rivals = sum((s, g) not in double for g in by_g)
+            statuses = {g: ruled[(s, g)] or self._ntu_share(s, g, n, sh, info[(s, g)], heads_of)
+                        or self._status(s, n, sh, rivals >= 2) for g in sorted(by_g)}
             if "stop" in statuses.values():
                 stopped[s] = [f"{g}:{by_g[g].k}:{'+'.join(by_g[g].src)}" for g in sorted(by_g)]
                 records.append(replace(rec, stop=True))
@@ -979,10 +1139,13 @@ class Builder:
                                                                             dict[str, str | None], dict[str, str]]:
         """Each head's drug: heads in one curated same-drug list, or of one lexicon herb entry, are one drug, named by
         the list's first name, else the entry's headword, else the head; a lexicon entry that files a drug's names
-        again under another headword joins it (:meth:`_join`).  Returns head → drug, name → the drug it heads
-        (``ho``), drug → its lexicon term id, term id → its drug."""
+        again under another headword joins it (:meth:`_join`).  The NTU table's heads that no other source heads come
+        after, so that they change none of these drugs or names: each joins a drug or heads one of its own
+        (:meth:`_attach`).  Returns head → drug, name → the drug it heads (``ho``), drug → its lexicon term id, term id
+        → its drug."""
         uf = _Groups()
-        heads = sorted({p.h for p in pairs} | {x for row in same for x in row})
+        core = [p for p in pairs if p.src != NTU]
+        heads = sorted({p.h for p in core} | {x for row in same for x in row})
         for h in heads:
             uf.add(h)
         for row in same:
@@ -994,15 +1157,18 @@ class Builder:
         for h in heads:
             if h in term_of:
                 uf.union(first_of.setdefault(term_of[h], h), h)
-        self.joined = self._join(uf, pairs, set(heads), term_of)
+        self.joined = self._join(uf, core, set(heads), term_of)
+        self.grouped = set(uf.parent)
+        self.attached = self._attach(uf, pairs, term_of, first_of)
         canon: dict[str, str] = {}
         group_term: dict[str, str | None] = {}
         for members in uf.components().values():
             terms = sorted({term_of[m] for m in members if m in term_of and m not in self.joined})
             first = next((row[0] for row in same if row[0] in members), None)
             word = self.term_head[terms[0]] if len(terms) == 1 else None
+            pool = [m for m in members if m not in self.attached] or members  # a drug keeps the name it had
             g = first or (word if word and len(word) >= 2 else None) or min(
-                members, key=lambda m: (len(m) < 2, m in self.joined, m))
+                pool, key=lambda m: (len(m) < 2, m in self.joined, m))
             for m in members:
                 canon[m] = g
             group_term[g] = term_of.get(g) or self.joined.get(g) or (terms[0] if terms else None)
@@ -1012,6 +1178,133 @@ class Builder:
         term_of.update(self.joined)
         term_group = {t: canon[h] for h, t in sorted(term_of.items(), reverse=True)}
         return canon, ho, group_term, term_group
+
+    def _attach(self, uf: _Groups, pairs: list[Pair], term_of: dict[str, str],
+                first_of: dict[str, str]) -> dict[str, str]:
+        """The NTU table's heads that no other source heads or groups (its dictionaries' entries: one drug is often
+        entered under two names, 重楼 and 七叶一枝花), each joining a drug, heading one of its own or kept apart.
+
+        A head the editors or the other sources tie to drugs in a way a member of one drug cannot keep is kept apart
+        (:meth:`_apart`): the table's entry under it gives no drug, and its pairs are left out (青木香, the editors'
+        木香 before 1100 and 马兜铃's root after; 小草, 远志's leaves, a cue; 通草, 木通 before 960 and 通脱木 after) —
+        joined, it would be searched as the drug's own name, everywhere and in every period.  Else one that heads a
+        lexicon entry of a drug of the others joins that drug; else, of the drugs that name it — another source's (by
+        its names there and its lexicon entry's), one its own lexicon entry files the head of (葶苈子's files 葶苈), one
+        it names with or without the part the drug is (牛蒡 and 牛蒡子: ``SAME_FORM``) or a lexicon entry filing it — the
+        one whose names share two or more with its names in the table, and more than any other's, takes it (七叶一枝花,
+        whose names there are 蚤休's, joins 蚤休; 天胡荽, whose names are not 蘩蒌's, stays apart though the lexicon
+        files it there); a head the others already give as a name of drugs joins only one of those; else it heads a
+        drug of its own.  Returns each head that joined a drug of the other sources → how (``lexicon`` or ``names``);
+        ``self.apart`` keeps the heads kept apart → why."""
+        self.apart = {}
+        own: dict[str, set[str]] = defaultdict(set)  # an NTU-only head → its names in the table
+        for p in pairs:
+            if p.src == NTU and p.h not in uf.parent:
+                own[p.h] |= {p.h, p.s}
+        if not own:
+            return {}
+        names: dict[str, set[str]] = defaultdict(set)  # a drug of the other sources → its names there and its entries'
+        given: dict[str, set[str]] = defaultdict(set)  # a name → the drugs the other sources' pairs give it
+        kinds: dict[str, set[str]] = defaultdict(set)  # a name → the kinds those pairs give it
+        for p in pairs:
+            if p.src != NTU:
+                g = uf.find(p.h)
+                names[g] |= {p.s, p.h}
+                given[p.s].add(g)
+                kinds[p.s].add(p.kind)
+        for h, t in term_of.items():
+            names[uf.find(h)] |= self.term_names[t]
+        for w, t in self.joined.items():
+            names[uf.find(w)] |= self.term_names[t]
+        for x in list(uf.parent):
+            names[uf.find(x)].add(x)
+        drugs: dict[str, set[str]] = defaultdict(set)  # a name → the drugs of the other sources it is a name of
+        for g, ns in names.items():
+            for x in ns:
+                drugs[x].add(g)
+        root = {x: uf.find(x) for x in uf.parent}  # the other sources' drugs as they stand (a union may move a root)
+        anchor = {**first_of, **{t: w for w, t in self.joined.items()}}  # a term → a name of its drug
+        rows: dict[str, list[Mapping[str, Any]]] = defaultdict(list)  # a name → its curated decisions, then pairs
+        for key in ("decisions", "pairs"):
+            for row in self.curated.get(key) or []:
+                rows[self.norm(row["s"])].append(row)
+        stops = {self.norm(r["s"]) for r in self.curated.get("stop") or []}
+        out: dict[str, str] = {}
+        for h in sorted(own):
+            lexical = {root[anchor[t]] for t in self.herb_terms.get(h, ()) if anchor.get(t) in root}
+            mine = self._decided(rows[h], given[h] | lexical, root)  # the drugs the others give h, candidates aside
+            why = "stop" if h in stops else self._apart(rows[h], mine, kinds[h])
+            if why:
+                self.apart[h] = why
+                continue
+            uf.add(h)
+            heads = sorted(self.headwords.get(h, ()))
+            if len(heads) == 1 and anchor.get(heads[0]) in root and (not mine or root[anchor[heads[0]]] in mine):
+                out[h] = "lexicon"  # the entry it heads is a drug of the others
+                uf.union(anchor[heads[0]], h)
+                continue
+            options: dict[tuple[str, str], set[str]] = {}  # a drug: ("g", another source's) or ("t", an entry's own)
+            for g in sorted(drugs.get(h, set()) | self._akin(h, heads, root)):
+                options[("g", g)] = names[g]
+            if len(heads) != 1:
+                for t in heads or sorted(self.herb_terms.get(h, ())):
+                    a = anchor.get(t)
+                    if a in root:
+                        options[("g", root[a])] = names[root[a]]
+                    else:
+                        options[("t", t)] = self.term_names[t]
+            if mine:  # a name the others give for drugs joins only one of them
+                options = {k: v for k, v in options.items() if k[0] == "g" and k[1] in mine}
+            else:  # never one the editors made a candidate of it
+                options = {k: v for k, v in options.items() if not (k[0] == "g" and k[1] in given[h] | lexical)}
+            scores = sorted(((len(own[h] & ns), key) for key, ns in options.items()), key=lambda sk: (-sk[0], sk[1]))
+            entry = heads[0] if len(heads) == 1 and anchor.get(heads[0]) not in root else None
+            if not scores or scores[0][0] < 2 or (len(scores) > 1 and scores[1][0] == scores[0][0]):
+                if entry:  # the lexicon entry it heads, a drug of its own (or of a head filed there)
+                    term_of[h] = entry
+                    uf.union(anchor.setdefault(entry, h), h)
+                continue
+            kind, x = scores[0][1]
+            if kind == "g":
+                uf.union(x, h)
+                out[h] = "names"
+                if entry and entry not in anchor:  # its entry is that drug's from now on
+                    anchor[entry] = h
+                    root[h] = x
+            else:
+                term_of[h] = x
+                uf.union(anchor.setdefault(x, h), h)
+        return out
+
+    def _decided(self, rows: list[Mapping[str, Any]], drugs: set[str], root: dict[str, str]) -> set[str]:
+        """Of the drugs the other sources give a name, those its curated rows do not make candidates (the first row
+        for a drug decides, as in :meth:`_ruled`; a row without a head is for every drug)."""
+        out = set()
+        for g in drugs:
+            row = next((r for r in rows if not r.get("head") or root.get(self.norm(r["head"])) == g), None)
+            if row is None or row.get("status") != "candidate":
+                out.add(g)
+        return out
+
+    def _apart(self, rows: list[Mapping[str, Any]], mine: set[str], kinds: set[str]) -> str | None:
+        """Why an NTU head is kept apart (:meth:`_attach`), or None: a curated row (not a candidate's) that gives it a
+        period window, a part's or an older name's kind, or the status cue (``curated``); a part's or older name's
+        kind the other sources give it (``part``); two drugs of the others, candidates aside (``ambiguous``)."""
+        if any(r.get("status") != "candidate" and (r.get("valid") or r.get("kind") in APART_KINDS
+                                                   or r.get("status") == "cue") for r in rows):
+            return "curated"
+        if kinds & set(APART_KINDS):
+            return "part"
+        return "ambiguous" if len(mine) >= 2 else None
+
+    def _akin(self, h: str, heads: list[str], root: dict[str, str]) -> set[str]:
+        """The other sources' drugs an NTU head may be by its form: one headed by it with or without the part the drug
+        is (``SAME_FORM``: 牛蒡 and 牛蒡子, 地锦草 and 地锦), or whose head the lexicon entry it heads files (葶苈子's
+        entry files 葶苈)."""
+        forms = {h + c for c in SAME_FORM} | ({h[:-1]} if h[-1] in SAME_FORM and len(h) >= 3 else set())
+        if len(heads) == 1:
+            forms |= self.term_names[heads[0]] - {h}
+        return {root[x] for x in forms if x in root and len(x) >= 2}
 
     def _join(self, uf: _Groups, pairs: list[Pair], heads: set[str], term_of: dict[str, str]) -> dict[str, str]:
         """Lexicon herb entries that file a drug of the pairs a second time under another headword (亭历 beside
@@ -1105,10 +1398,32 @@ class Builder:
             return inf["status"]
         if inf["doubt"]:
             return "candidate"
+        if _ntu_only(inf) and self._listish(s):
+            return "candidate"  # rule 5c: a formula's name or a class of drugs (镇心丹, 清凉膏, 止血药)
         own = self.members.get(s)
-        if (own is not None and own != g) or any(self.group_of_term(t) != g for t in self.headwords.get(s, ())):
+        # another drug's head: for a pair only the NTU table gives, any; for the others, a head the other sources give
+        # (the table's entry 余甘子 leaves the 别名录's 余甘子 → 摩勒 alone)
+        if (own is not None and own != g and (_ntu_only(inf) or s in self.grouped)) or any(
+                self.group_of_term(t) != g for t in self.headwords.get(s, ())):
             return "candidate"  # another drug's headword or head
         return None
+
+    def _listish(self, s: str) -> bool:
+        """Whether a name reads as a formula's or a class of drugs' (rule 5c): at most 8 characters ending in one of
+        ``LIST_ENDS`` (镇心丹, 清凉膏, 止血药), and neither a herb of the lexicon (铅丹, 石膏, 芍药) nor a name the other
+        sources give or head."""
+        return len(s) <= 8 and s[-1] in LIST_ENDS and s not in self.herb_terms and s not in self.core_names
+
+    def _ntu_share(self, s: str, g: str, n: int, sh: float, inf: dict[str, Any],
+                   heads_of: dict[str, list[str]]) -> str | None:
+        """Rule 5b: a pair only the NTU table gives (a modern list) whose name the store writes free of its blockers
+        needs the store to read it as a drug in LIST_SHARE of those passages, or a witness there, else it is a
+        candidate (五味, mostly 五味子's or the five flavours, is not 石灰's; 熟地 is 地黄's); None
+        when the rule does not hold."""
+        if n < 1 or sh >= LIST_SHARE or not _ntu_only(inf):
+            return None
+        names = sorted({p.h for p in inf["pairs"]} | set(heads_of.get(g, [g])) | {g})
+        return None if self.store_witnesses(s, names, g) else "candidate"
 
     def _status(self, s: str, n: int, sh: float, shared: bool) -> str:
         """Rules 6 to 10 of the status table; ``stop`` makes the record a stop — never a drug's own name's (its head's,
@@ -1289,7 +1604,7 @@ class Builder:
         return {"store": store_label(self.db), "normalizer": self.pack.variants.fingerprint,
                 "lexicon": lexicon_fingerprint(self.root), "coverage": coverage,
                 "labels": {i: self.sources.get(i, {}).get("label", i) for i in used},
-                **({"web_pack": web_pack} if web_pack else {})}
+                **({"web_pack": web_pack} if web_pack else {}), **({NTU: self.extract} if self.extract else {})}
 
 
 def _read_across(g: str, names: set[str], a: int, b: int, *, left: bool) -> bool:
@@ -1309,14 +1624,24 @@ def _kind_rank(kind: str) -> int:
     return KIND_ORDER.index(kind) if kind in KIND_ORDER else len(KIND_ORDER)
 
 
+def _ntu_only(inf: Mapping[str, Any]) -> bool:
+    """Whether only the NTU table gives a referent's pairs (a lexicon rival has none)."""
+    return bool(inf["pairs"]) and all(p.src == NTU for p in inf["pairs"])
+
+
+def _credit_order(cr: tuple[str, int | None, int | None]) -> tuple[int, int, str]:
+    """Credits earliest first (by their first year, then their last; a year missing counts as 0), then by title."""
+    return (cr[1] if cr[1] is not None else 0, cr[2] if cr[2] is not None else 0, cr[0])
+
+
 def _by_date(w: Witness) -> tuple:
     return (w.y1 is None, w.y1 if w.y1 is not None else 0, w.y0 if w.y0 is not None else 0, w.pid)
 
 
 # --------------------------------------------------------------------------- builds
 def build_open(store: CorpusStore | str | Path, home: str | Path) -> BuildResult:
-    """The layer that ships: the open pairs (the 别名录 in the store, curated, 释名, taboo) classified on ``store``.  It
-    takes no local input."""
+    """The layer that ships: the pairs of the shipped sources (the 别名录 in the store, curated, 释名, taboo, and the NTU
+    table's extract under the home while sources.yaml ships it) classified on ``store``.  It takes no local input."""
     t0 = time.time()
     b = Builder(store, home)
     pairs, coverage = b.open_pairs()
@@ -1329,7 +1654,8 @@ def build_local(open_result: BuildResult, local_pairs: Iterable[Mapping[str, Any
     """The shipped pairs and the rows of the local lists (``<data>/aliases/local/*.jsonl``), classified again on the
     store — for ``<data>/aliases/local/aliases-local.jsonl`` only, never for the domain.  It counts with the shipped
     layer's ``context.json`` (its herb set takes in no local head), the one the profile reading the local layer
-    loads."""
+    loads.  The rows of a list sources.yaml ships (an earlier local import of the NTU table) are left out: the shipped
+    pairs read it from its extract."""
     t0 = time.time()
     b = open_result.builder
     if b is None:
@@ -1337,8 +1663,12 @@ def build_local(open_result: BuildResult, local_pairs: Iterable[Mapping[str, Any
     if store is not None and Path(store.path if isinstance(store, CorpusStore) else store) != b.db.path:
         b = Builder(store, b.home)
     pairs, coverage = b.open_pairs()
-    local = [local_pair(row) for row in local_pairs]
-    coverage = {**coverage, "local_pairs": len(local)}
+    rows = list(local_pairs)
+    # a list that now ships (the NTU table) is read from its extract by open_pairs: its local rows are left out
+    shipped = {i for i, s in b.sources.items() if s.get("ship") is True}
+    local = [local_pair(row) for row in rows if row.get("src") not in shipped]
+    coverage = {**coverage, "local_pairs": len(local), **({"local_shipped": len(rows) - len(local)}
+                                                          if len(local) < len(rows) else {})}
     records, stopped = b.build(pairs + local, local=True, context=open_result.context)
     return _result(b, records, stopped, coverage, pairs + local, t0)
 
@@ -1387,6 +1717,9 @@ def _result(b: Builder, records: list[AliasRecord], stopped: dict[str, list[str]
         "warnings": list(dict.fromkeys(b.warnings + b.notes["warnings"])),
         "unattested_heads": b.notes.get("unattested_heads", []),
         "rivals_sharing_names": b.notes.get("rivals_sharing_names", []), "seconds": round(time.time() - t0, 1)}
+    if b.notes_ntu:
+        result.report[NTU] = {**b.notes_ntu, **({"apart": b.notes["ntu_apart"]} if b.notes.get("ntu_apart") else {}),
+                              "attached": _tally(b.attached.values()), "doubles": b.notes.get("ntu_doubles", 0)}
     return result
 
 
@@ -1487,7 +1820,8 @@ def check(home: str | Path, *, heldout: Iterable[str] = (), store: CorpusStore |
     characters, an unknown kind or status, a repeated surface, a cap exceeded, a source that does not ship, a
     sources.yaml or curated.yaml that is not YAML, sources.yaml's shape (:func:`read_registry`), curated.yaml's shape
     (:func:`validate_curated`), a held-out gold name curated.yaml writes (normalised: as a name, or in a reason or
-    note), the size budget of aliases.jsonl and of the directory; a warning when the header names another web pack than ``corpus/web`` holds (the layer is to be
+    note; counted, never named), a name curated.yaml splits that the NTU table joins to a drug or heads a drug with
+    (:func:`apart_errors`), the size budget of aliases.jsonl and of the directory; a warning when the header names another web pack than ``corpus/web`` holds (the layer is to be
     built again); with a store, a witness from a ``NEVER_PACKED`` source, missing from it, or not writing the name it
     witnesses; with ``rebuild``, a build on the store that differs from the bytes (none when curated.yaml is not YAML
     or its shape is wrong: the build would refuse it)."""
@@ -1508,8 +1842,15 @@ def check(home: str | Path, *, heldout: Iterable[str] = (), store: CorpusStore |
     for sid, s in sources.items():
         if not s.get("label") or s.get("ship") not in (True, False):
             errors.append(f"sources.yaml: {sid} needs a label and ship")
+        if s.get("class") not in CLASSES:
+            errors.append(f"sources.yaml: {sid} has no class of {', '.join(CLASSES)}")
         if s.get("ship") is False and s.get("class") != "local":
             errors.append(f"sources.yaml: {sid} does not ship, so its class is local")
+        if s.get("ship") is True and s.get("class") == "local":
+            errors.append(f"sources.yaml: {sid} is local, so it does not ship")
+        if s.get("class") == "nc" and ("NC" not in str(s.get("licence") or "") or not s.get("attribution")):
+            errors.append(f"sources.yaml: {sid} ships under a non-commercial licence: it needs that licence and an "
+                          f"attribution")
     text = (d / "aliases.jsonl").read_bytes()
     try:
         header, records = loads_records(text.decode("utf-8"), origin="aliases.jsonl")
@@ -1587,8 +1928,10 @@ def check(home: str | Path, *, heldout: Iterable[str] = (), store: CorpusStore |
                if isinstance(curated, Mapping) else {})
     normalize = DomainPack(home / "domains" / "classics").variants.normalize_text
     held = heldout_in(curated, heldout, normalize)
-    if held:
-        errors.append(f"curated.yaml writes held-out gold names: {', '.join(held)}")
+    if held:  # counted, never named: whoever reads the report does not learn the held-out half
+        errors.append(f"curated.yaml writes {len(held)} held-out gold name{'' if len(held) == 1 else 's'} (counted, "
+                      f"not shown: find the rows by comparing with evals/gold/aliases.yaml outside the eval)")
+    errors += apart_errors(records, curated, normalize, heldout={normalize(h) for h in heldout if h})
     if store is not None:
         db = store if isinstance(store, CorpusStore) else CorpusStore(store, readonly=True)
         _check_store(db, pids, curated, normalize, errors, warnings)
@@ -1600,6 +1943,87 @@ def check(home: str | Path, *, heldout: Iterable[str] = (), store: CorpusStore |
                 errors.append("context.json differs from a build on this store")
     return {"ok": not errors, "errors": errors, "warnings": warnings, "surfaces": len(records),
             "bytes": {"raw": raw, "deflated": packed, "directory": folder}}
+
+
+def split_names(curated: Mapping[str, Any], normalize: Any) -> set[str]:
+    """The names curated.yaml splits — a row (not a candidate's) with a period window, a part's or an older name's
+    kind, or the status cue: 青木香 (木香 before 1100, 马兜铃's root after), 通草, 小草."""
+    return {normalize(r["s"]) for key in ("pairs", "decisions") for r in curated.get(key) or []
+            if isinstance(r, Mapping) and isinstance(r.get("s"), str) and r.get("status") != "candidate"
+            and (r.get("valid") or r.get("kind") in APART_KINDS or r.get("status") == "cue")}
+
+
+def apart_errors(records: Iterable[AliasRecord], curated: Mapping[str, Any], normalize: Any, *,
+                 heldout: Iterable[str] = ()) -> list[str]:
+    """The NTU table joins no name curated.yaml splits (:func:`split_names`) to a drug and heads no drug with it: such
+    a name is a member (``ho``) of no other drug unless a same-drug row lists both, and no referent only the table
+    gives (``ntu40k``, ``store`` beside it at most) is headed by it.  A member is searched as its drug's own name, in
+    every period: the editors' split would be lost.  A held-out gold string is not named."""
+    split = split_names(curated, normalize)
+    held = set(heldout)
+    same: dict[str, set[str]] = defaultdict(set)
+    for row in curated.get("same_drug") or []:
+        names = {normalize(x) for x in row.get("names") or [] if isinstance(x, str)} if isinstance(row, Mapping) else set()
+        for x in names:
+            same[x] |= names
+    out = []
+    headed: dict[str, int] = defaultdict(int)
+    for rec in records:
+        if rec.s in split and rec.ho is not None and rec.ho != rec.s and rec.ho not in same[rec.s]:
+            drug = "a held-out name" if rec.ho in held else rec.ho
+            out.append(f"{rec.s}: a member of {drug}, though curated.yaml splits it (a window, a part's or an older "
+                       f"name, a cue)")
+        for ref in rec.r:
+            if ref.h in split and not set(ref.src) - {NTU, "store"}:
+                headed[ref.h] += 1
+    out += [f"{h}: heads a drug of the NTU table ({k} name{'' if k == 1 else 's'}), though curated.yaml splits it"
+            for h, k in sorted(headed.items())]
+    return out
+
+
+def layer_diff(old: str, new: str, *, heldout: Iterable[str] = (), top: int = 100) -> dict[str, Any]:
+    """What a rebuild changes, for review before it ships (both ``aliases.jsonl`` texts): surfaces added and removed,
+    names that become a member of another drug (``ho``), referents lost, pairs whose status drops (open → cue or
+    candidate, cue → candidate) with the drugs new beside them, and stop names gained or lost.  Rows that write a
+    held-out gold string are counted, never listed."""
+    held = set(heldout)
+    _, a = loads_records(old, origin="old")
+    _, b = loads_records(new, origin="new")
+    was, now = {r.s: r for r in a}, {r.s: r for r in b}
+    rank = {"open": 0, "cue": 1, "candidate": 2}
+    rows: dict[str, list[Any]] = {"ho": [], "lost": [], "drops": []}
+    counts: dict[str, Any] = {"ho": 0, "lost": 0, "drops": defaultdict(int), "held_out_rows": 0}
+
+    def keep(key: str, row: list[Any], strings: Iterable[str]) -> None:
+        if held & set(strings):
+            counts["held_out_rows"] += 1
+        elif len(rows[key]) < top:
+            rows[key].append(row)
+
+    for s, r in sorted(now.items()):
+        o = was.get(s)
+        if r.ho is not None and r.ho != s and (o is None or o.ho != r.ho):
+            counts["ho"] += 1
+            keep("ho", [s, o.ho if o else None, r.ho], [s, r.ho, o.ho if o and o.ho else ""])
+        if o is None or r.stop:
+            continue
+        mine = {ref.h: ref for ref in r.r}
+        for ref in o.r:
+            new_ref = mine.get(ref.h)
+            if new_ref is None:
+                counts["lost"] += 1
+                keep("lost", [s, ref.h, ref.st, sorted(mine)], [s, ref.h, *mine])
+            elif rank[new_ref.st] > rank[ref.st]:
+                beside = sorted(set(mine) - {x.h for x in o.r})
+                counts["drops"][f"{ref.st}→{new_ref.st}"] += 1
+                keep("drops", [s, ref.h, ref.st, new_ref.st, beside], [s, ref.h, *beside])
+    counts["drops"] = dict(sorted(counts["drops"].items()))
+    stops = ({r.s for r in a if r.stop}, {r.s for r in b if r.stop})
+    return {"surfaces": {"old": len(was), "new": len(now), "added": len(set(now) - set(was)),
+                         "removed": len(set(was) - set(now))},
+            "stops": {"old": len(stops[0]), "new": len(stops[1]), "gained": len(stops[1] - stops[0]),
+                      "lost": len(stops[0] - stops[1])},
+            **counts, "rows": rows}
 
 
 def _check_store(db: CorpusStore, pids: dict[str, list[tuple[str, str, str]]], curated: Mapping[str, Any],

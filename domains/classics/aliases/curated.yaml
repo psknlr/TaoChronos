@@ -4,6 +4,9 @@
 # Names are written as the texts write them; the build normalises them.
 # Most rows are four editors' reading of `taochronos aliases review`'s sheet (240 names, 10-20 passages each, the
 # runtime's own gates splitting a name's free occurrences); names the review left to the build's rules have no row.
+# Rows under "NTU 40K review" are the same reading of the sheet's 400 names that the NTU table (CC BY-NC 4.0,
+# shipped by the decision of 2026-10-18) brings into the layer and the store writes most; ranks 2, 6 … 398 are not
+# read yet.
 version: 1
 
 # word-level conversion errors both copies of the 别名录 share (ingest/aliases.py REPAIRS holds the same; a test keeps
@@ -59,7 +62,8 @@ same_drug:
   - {names: [芜菁, 蔓菁], wit: [jc_c018a.00518, jc_l008.01350], why: 蔓菁子即芜菁；唐本北人又名蔓菁子}
   - {names: [菖蒲, 昌蒲], wit: [xiaoer_weisheng_zongwei.005.00457, jc_d025a.01389], why: 石昌蒲一寸九节者良：昌蒲即菖蒲古写}
   - {names: [莨菪, 莨菪子], wit: [jc_c006.00459], why: 图经莨菪子条：一名天仙子，本经云莨菪}
-  - {names: [蒺藜, 蒺藜子], wit: [jc_d004a.02107], why: 疗肿蒺藜散方：蒺藜子一升}
+  - {names: [蒺藜, 蒺藜子, 刺蒺藜], wit: [jc_d004a.02107, jc_c018a.00240, jc_c007.00163],
+     why: 疗肿蒺藜散方：蒺藜子一升；蒺藜子条品类：刺蒺藜三角有刺，风家宜之（与沙苑蒺藜别）；衍义：风家惟用刺蒺藜}
   - {names: [芡实, 鸡头实], wit: [jc_d005.09595, xianxingzhai_biji.004.00731], why: 服莲芡实方：取鸡头实；鸡头实条：一云芡实}
   - {names: [萎蕤, 葳蕤, 女萎萎㽔, 萎蕤女萎],
      wit: [jc_d024.00113, zhenglei_bencao.006.03890, jc_c000.00135, zhenglei_bencao.006.03886],
@@ -90,6 +94,54 @@ same_drug:
   - {names: [蝉蜕, 蝉壳], wit: [jc_d002.04653, jc_d001.00742], why: 别录蚱蝉条「壳名枯蝉」，食疗作「蝉壳主小儿痫」：即蚱蝉之蜕}
   - {names: [鹿角胶, 白胶], wit: [jc_c000a.00114, ws_36bca7b992.00119], why: 本经白胶一名鹿角胶（白胶香为枫香脂，自成 blocker）}
   - {names: [鸡内金, 鸡肫皮], wit: [jc_c021.01752, jc_o071.01222], why: 鸡肫皮（一名鸡内金）；鸡内金（即鸡肫皮，烧存性）；词表只收鸡肫皮}
+  # NTU 40K review (2026-10-18): names of one drug the lexicon or the NTU table files apart, the first naming it
+  # · minerals
+  - {names: [矾石, 白矾], wit: [shengji_zonglu_zuanyao.008.01837, waitai_miyao.026.04114],
+     why: 矾石汤（脚气冲心）方用白矾一两；外台矾石散方用吴白矾；词表白矾条兼收矾石}
+  - {names: [朴硝, 朴消], wit: [jc_c000.00023, zhenglei_bencao.003.01863], why: 本经序录作朴硝，证类本经条作朴消（一名消石朴）：消、硝异写，与芒硝、芒消同例}
+  - {names: [硝石, 消石], wit: [cm_jingui_dengzhen.00793, jc_m100.01145], why: 同一女劳疸条，金匮作消石矾石散主之，脉经作硝石矾石散主之：消、硝异写}
+  - {names: [浮石, 海浮石], wit: [yilei_yuanrong.002.00201, jc_c025a.00689, jc_d016.02340],
+     why: 夺命丹先列海浮石（醋淬七次），后云以浮石醋打面糊丸；海石即书所云浮石者，水沫结成}
+  # · plants
+  - {names: [赤芍, 赤芍药], wit: [jc_p0010a.00109, jc_p0009a.00124], why: 同一方之方歌作赤芍、方剂作赤芍药，二者同药}
+  - {names: [苏叶, 紫苏叶], wit: [cm_jingui_dengzhen.01052, quansheng_zhimi.003.00231, tab_619_0a7261aa40.00238],
+     why: 金匮半夏厚朴汤用干苏叶，全生指迷同方作紫苏叶，四七汤（即此方）又作苏叶；词表紫苏叶条兼收苏叶}
+  - {names: [灯心, 灯心草], wit: [jc_i104.00386, jc_l103.00052], why: 方中灯心（一钱）、灯心草皆灯心草茎髓，书中无他义；词表灯心草条兼收灯心}
+  - {names: [麻仁, 火麻仁], wit: [piweilun.003.00363, waitai_miyao.022.03420, jc_n009.00783],
+     why: 同方先列麻子仁，后云除麻仁另研；外台麻仁丸方用麻子仁；词表火麻仁条兼收麻子仁、麻仁}
+  - {names: [粟壳, 罂粟壳], wit: [jc_c029.00241, jc_n011.00090, puji_benshi.004.00253],
+     why: 粟壳性涩，治泄痢嗽怯，即罂粟壳之用（久痢方用罂粟壳）；方书或写作樱粟壳}
+  - {names: [莪术, 蓬莪术], wit: [jc_c025a.00883, renzhai_zhizhi.026.03025],
+     why: 蓬术与三棱并列，下文释作莪术；增损四物汤蓬莪术、京三棱并用，即三棱莪术之对；词表莪术条兼收蓬莪术、蓬术}
+  - {names: [旋覆花, 旋复花], wit: [cm_jingui_wuqian.00395, cm_jingui_dengzhen.00614, jc_b102.00613, cm_jingui_wuqian.00914],
+     why: 同一金匮肝着条、同一旋覆花汤（三两、葱十四茎、新绛少许），一本作旋覆花、一本作旋复花：复、覆异写}
+  - {names: [牵牛子, 黑牵牛], wit: [ws_f0f5addb51.00155, jc_c029.00096], why: 黑丑即黑牵牛；牵牛有黑白二种（黑者属水力速），皆牵牛子}
+  - {names: [石韦, 石苇], wit: [qianjin_yaofang.059.04009, jc_d004.11172], why: 本经石韦，方书多写作石苇（石苇散方：石苇二两去毛）：韦、苇异写}
+  - {names: [瓜蒂, 甜瓜蒂], wit: [jc_c000.00549, wenyilun_skqs.001.00054], why: 本经瓜蒂，陶弘景云甜瓜蒂也；瓜蒂散方作甜瓜蒂（一钱）、赤小豆：一药}
+  - {names: [薏苡仁, 薏苡人], wit: [yilei_yuanrong.001.00068, cm_jingui_wuqian.00066],
+     why: 同一仲景麻黄杏仁薏苡甘草汤，一书作薏苡仁，吴迁本金匮作薏苡人：人、仁古通}
+  - {names: [龙胆, 龙胆草], wit: [jc_c000a.00025, jc_o068.02448, jc_p0801.03452, jc_d075a.00544],
+     why: 本经龙胆以根入药，方书称龙胆草（龙胆草、防风等分为末；龙胆草七分），一药；龙胆泻肝汤组成作龙胆草，方义作龙胆}
+  - {names: [砂仁, 缩砂, 缩砂仁, 缩砂蜜, 缩砂蔤],
+     wit: [jc_c040.00402, hejiju_fang.005.00406, bencao_jingshu.009.01726, bencao_chengya.008.01429],
+     why: 缩砂（去皮取仁用）即缩砂仁，今称砂仁；纲目题缩砂蔤，本草经疏作缩砂蜜：一药五名，词表分立五条}
+  - {names: [桑白皮, 桑根白皮], wit: [jc_d004a.00797, waitai_miyao.033.06463], why: 同方先列桑根白皮一斤，后云先煮枣并桑白皮；桑白皮散方用桑根白皮（六两）}
+  - {names: [榆白皮, 榆皮], wit: [qianjin_yaofang.061.04176, waitai_miyao.031.05705], why: 榆皮通滑泄热煎、榆皮汤二方皆用榆白皮}
+  - {names: [蕤仁, 蕤核], wit: [jc_c104.00228, jc_c018a.00374], why: 雷公：凡使蕤核仁，以汤浸去皮尖；蕤仁条炮制：取仁，浸去皮尖——蕤核之仁即蕤仁}
+  - {names: [胡桃, 胡桃肉, 胡桃仁, 核桃仁],
+     wit: [jc_c025a.00203, jc_d057.01295, shouqin_yanglao.001.00374, jc_c028.00133, jc_c028.00134],
+     why: 胡桃肉条即称胡桃（专入命门）；补肾丸方一作胡桃肉、一作胡桃仁（并汤浸去皮）；核桃仁条：即胡桃}
+  # · animals
+  - {names: [猬皮, 刺猬皮], wit: [jc_c000a.00341, shengji_zonglu_zuanyao.021.03995], why: 本经猬皮治五痔；如神丸治肠风五痔用刺猬皮（炙黑），同一药}
+  - {names: [珍珠, 真珠], wit: [jc_c000.01428, jc_d025.00079], why: 远志同一七情文，一作畏珍珠，一作畏真珠：真、珍异写}
+  # NTU 40K settle (2026-10-18): heads the NTU table enters as drugs of their own that the store writes as the drug the
+  # other sources have under another name (the build joins a head by its form or its lexicon entry only: 牛蒡 and
+  # 牛蒡子, 葶苈子 and 葶苈)
+  - {names: [无食子, 没食子], wit: [jc_c029.00199], why: 没食子条：即无食子；无、没音近，一药}
+  - {names: [毕澄茄, 荜澄茄], wit: [jc_c029.00075, boji_fang.002.00147, boji_fang.002.00148],
+     why: 荜、毕异写（荜茇、毕茇同例）：药性歌毕澄茄除胀化食、逐寒暖胃，博济方荜澄茄散治脾元虚冷、胸膈不快，一药}
+  - {names: [麦芽, 大麦芽], wit: [furen_daquan.027.01927, renzhai_zhizhi.006.00925],
+     why: 麦蘖散方用大麦芽（不以多少，炒黄为末）：麦蘖即麦芽，大麦之芽；方中大麦芽（炒）皆此药}
 
 # pairs the lists lack or file wrongly, with their status and cues, and the years a name meant a drug where that
 # changed.  `note` is shown with the referent; `why` is for the editors only.
@@ -173,6 +225,22 @@ pairs:
   - {s: 鬼目, head: 石南, kind: alias, status: candidate, wit: [jc_c000a.00203], why: 本经石南一名鬼目，别名录未收}
   - {s: 苦菜, head: 贝母, kind: alias, status: candidate, wit: [jc_c000.00664],
      why: 别录贝母一名药实、苦花、苦菜；本库之苦菜皆苦菜（荼）本条，作贝母者只此一名句}
+  # NTU 40K review: the drug the store writes under a name the NTU table gives to another plant, or lacks
+  - {s: 川当归, head: 当归, kind: variety, status: open, wit: [ruizhutang.006.00200, jc_j000.00069, jc_j012.00098],
+     why: 川产当归（川当归（炒）、川当归去芦、川当归（十两）），方中皆作当归；NTU 以之为九眼独活之俗名，见 decisions}
+  - {s: 苦葶苈, head: 葶苈, kind: variety, status: open, wit: [jc_p0100.09125, baoming_ji.003.00457, jc_d012.03126],
+     why: 葶苈有甜、苦二种，方中甜葶苈、苦葶苈并用（各半两）；苦葶苈泻肺火，方中皆葶苈}
+  - {s: 朴消, head: 朴硝, kind: spelling, status: open, wit: [zhenglei_bencao.003.01863, cm_jingui_dengzhen.01204],
+     why: 消、硝异写（见 same_drug）；方中朴消（二两）皆此药}
+  - {s: 石苇, head: 石韦, kind: spelling, status: open, wit: [jc_d004.11172, jc_d002.01938],
+     why: 韦、苇异写（见 same_drug）；方中石苇（去毛）皆此药}
+  - {s: 荜拨, head: 荜茇, kind: spelling, status: open, wit: [renzhai_zhizhi.003.00240, waitai_miyao.035.07244],
+     why: 荜茇异写（拨、茇）；方中荜拨（各半两）皆此药}
+  - {s: 五味, head: 五味子, kind: abbreviation, status: cue, wit: [jc_c000.00305, jc_o063a.00555, jc_n009.00785],
+     why: 尔雅郭注五味也即五味子；明清方北五味（一钱）、五味（七分）皆五味子之省；右五味之类计数语与五味异功散见 cover_stops}
+  - {s: 头发, head: 乱发, kind: alias, status: cue, cues: [烧灰, 灰, 一团, 一握, 一把, 煎枯],
+     wit: [qianjin_yaofang.020.01719, waitai_miyao.029.05267, furen_daquan.012.00719],
+     why: 入药之头发即乱发（头发如鸡子大烧灰、头发灰、头发一团洗烧灰）；余为人身之发（头发焦枯、涂头发即生），从药境}
 
 # the year a name came into use: an earlier passage writing it is flagged (a later edition's word), never dropped
 first_use:
@@ -185,6 +253,7 @@ first_use:
   - {s: 天仙子, year: 1061, wit: [jc_c006.00459], why: 图经莨菪子条始见「一名天仙子」，本库无更早者}
   - {s: 党参, year: 1700, wit: [jc_c021.00076]}
   - {s: 浙贝, year: 1740, wit: [jc_i009.00199]}
+  - {s: 洋参, year: 1757, wit: [jc_c021.00090], why: 本草从新始以洋参与人参、党参、沙参并辨；本库系年更早之例（1602、1644）皆清人之笔或系年过早}
 
 # false friends, never expanded and never listed: what the store writes under these names is another thing.  Where a
 # 本经 or 吴普 一名 line names the drug, that line also writes the drug's own name.
@@ -255,6 +324,52 @@ stop:
   - {s: 合子, wit: [jc_c006.00099, jc_d004.07330], why: 盛药之盒（瓷合子中盛贮）与「槟榔合子碎」（连子）；无一处作榼藤子}
   - {s: 连珠, wit: [cm_suwen_gucongde.02677, jc_d065.00223], why: 脉象之喻（累累如连珠）、连珠甘遂、连珠发、形如连珠，未见作山丹}
   - {s: 白泽, wit: [jc_c040.00261, hejiju_fang.005.00396], why: 「细理白泽」（石膏、云母之质）、钟乳白泽丸、白泽图；甘遂一名只在吴普句}
+  # NTU 40K review: names the table gives to a drug that the store writes only as something else
+  # · formula names
+  - {s: 五香, wit: [jc_d058.01493, waitai_miyao.041.09379], why: 皆方名（五香连翘汤、五香汤、五香丸、五香散、五香膏）；未见单作木香}
+  - {s: 甘桔, wit: [jc_d031.00245, jc_o060.00916], why: 甘桔汤（甘草加桔梗）之方名与二药并称（二冬、二母、甘桔）；未见作园金柑}
+  # · similes, part and preparation words
+  - {s: 桐子, wit: [cm_jingui_wuqian.00461, jc_o041.00633, jc_l008.00137], why: 「丸如桐子大」（梧桐子之省）丸剂大小之喻；本库无一处作油桐子}
+  - {s: 双仁, wit: [jc_d053.01237, waitai_miyao.017.02484, zhouhou_beiji.004.01750],
+     why: 「去皮尖双仁」：桃仁、杏仁一壳两仁者（双仁者杀人），修治语；未见作鸡肾草}
+  - {s: 芦头, wit: [jc_p0301.20538, jc_c100.00036], why: 「去芦头」修治语（人参、防风、桔梗之根头）；未见作芦根}
+  - {s: 根皮, wit: [zhouhou_beiji.003.00959, jc_d025a.10945], why: 泛指诸木之根皮（南烛取根皮、栎根皮、五加根皮）；单言根皮未见专指桑白皮}
+  # · ordinary words, colours, illnesses and straddles
+  - {s: 芳香, wit: [jc_n036.00435, shanghan_jianzheng.001.00200, bencao_baizhonglu.000.00117],
+     why: 气味常语（芳香辛烈、芳香正气、芳香化浊）；白芷一名芳香只在本经一名句（同句即写白芷）}
+  - {s: 更生, wit: [zhouhou_beiji.003.01127, qianjin_yaofang.044.03026, waitai_miyao.041.09377],
+     why: 护命更生散之方名与「齿落更生」常语；菊花一名更生只在本经一名句}
+  - {s: 血风, wit: [furen_daquan.008.00348, jc_i017.00074, waitai_miyao.030.05433], why: 病名（妇人血风、血风头痛、冷痹血风、血风疮），未见作鸡血藤}
+  - {s: 水泉, wit: [cm_suwen_gucongde.02296, qianjin_yaofang.087.06236, mingtang_jiujing.008.00658],
+     why: 「水泉不止」（膀胱不藏）与足少阴郄穴水泉，未见作水豆瓣、水马齿苋}
+  - {s: 枯草, wit: [rumen_shiqin.009.00570, yimen_falv.002.00358, xianxingzhai_biji.003.00444],
+     why: 单言枯草为枯槁之草（枯草死木、山泽焦枯草木），余皆夏枯草之中段；未见作益母草}
+  - {s: 水石, wit: [bencao_jingshu.011.02016, jc_o041.01848], why: 单言水石为「得水石之气」常语，余皆寒水石、凝水石之中段（寒|水石）；寒水石、消石之名只在名录}
+  - {s: 伤寒头, wit: [jc_c000.00626, jc_b008.00790, cm_shanghan_npm.01776], why: 「伤寒头痛」「伤寒头疼」之跨词，非药名}
+  - {s: 凉药, wit: [jc_b038.00015, cm_mingyi_leian.01653], why: 寒凉之药的泛称（误服凉药、稍服凉药、温凉药），未见作红果楠}
+  - {s: 毒药, wit: [cm_suwen_gucongde.03716, zhenjiu_zisheng.007.01006], why: 内经「毒药攻邪」、外科「忌以毒药点蚀」：峻烈有毒之药的泛称，未见作毛冬青}
+  - {s: 红紫, wit: [jc_p0801.16040, jc_g002.00040], why: 色名（痘红紫色、审血色之红紫、花红紫），未见作巴茅根}
+  - {s: 青筋, wit: [jc_h030.01636, jc_l109.00330], why: 显露之脉络（肚多青筋、舌下刺青筋），未见作水龙骨}
+  - {s: 红丝, wit: [jc_h002.00332, jc_p0801.10079], why: 病象（红丝疔、红丝攻心腹、目中红丝），未见作石花菜}
+  - {s: 臭秽, wit: [jc_d014.01690, jc_c000.00133], why: 秽臭常语（遍身生疮臭秽不可近、口气臭秽）；作茺蔚者只在刘歆训诂一句（同句即写茺蔚）}
+  - {s: 黑疸, wit: [cm_jingui_dengzhen.00788, jc_m100a.00219], why: 五疸之一（酒疸久久为黑疸、女劳之黑疸），病名，未见作麦奴}
+  - {s: 水鸡, wit: [cm_jingui_dengzhen.00440, waitai_miyao.014.02084], why: 「喉中水鸡声」「如水鸡鸣」：咳喘痰声之喻；余为不落水鸡（未经汤烫之鸡），未见作秧鸡、鷃}
+  - {s: 气精, wit: [cm_lingshu_sibucongkan.00133, suwen_wangbing.023.01095], why: 皆跨词（营气|精神、精气|精气、毒气|精魅），未见作黄精}
+  - {s: 能消, wit: [cm_jingui_dengzhen.00626, jc_g003a.00137],
+     why: 「不能消谷」「胃不能消化」常语；威灵仙一名能消只在本草一名句（bencao_jingshu.011.01884，同句即写威灵仙）}
+  - {s: 长生, wit: [jc_d025.02526, shouqin_yanglao.003.00733], why: 「长生益寿」「长生轻举之术」常语；石长生、长生草已作 blockers；未见作菊花根}
+  - {s: 大发, wit: [jc_m100.00913, cm_lingshu_sibucongkan.00420], why: 「大发其汗」「阳气大发」常语，未见作胖大海}
+  - {s: 血通, wit: [jc_c029.00244, yuanbingshi.001.00072], why: 「破血通经」「气血通利」之跨词，未见作大血藤}
+  - {s: 利如, wit: [zhenjiu_jiayi.009.01081, jinkui_yaolue.001.00093, jc_c000.01033],
+     why: 「小便不利如癃状」「吐利如有神灵」之跨词；桔梗一名利如只在本经、吴普一名句（同句即写桔梗）}
+  - {s: 白花, wit: [jc_c010.01037, jc_c000.00383], why: 「开白花」「白花者为良」形色之语；白花蛇、白花菜等已作 blockers；未见作白花九里明}
+  - {s: 生鱼, wit: [qianjin_yaofang.033.02332, jc_d004.10945], why: 未熟之鱼（食生鱼酢、禁食生鱼），未见作乌鳢}
+  # · points and persons
+  - {s: 中庭, wit: [jc_k000a.00118, qianjin_yaofang.011.00896, zhenjiu_zisheng.005.00745],
+     why: 任脉穴名（膻中下一寸六分）与庭院（落毛羽于人中庭）；百合一名中庭只在吴普一名句}
+  - {s: 飞扬, wit: [jc_a100.00091, jc_d025.05050], why: 足太阳络穴（去踝七寸）与「魂魄飞扬」常语，未见作大飞扬草}
+  - {s: 朱丹, wit: [jc_g017.00083, hejiju_fang.001.00025], why: 多为人名朱丹溪之前二字，余为方名（雄朱丹、露朱丹），未见单作丹砂、铅丹}
+  - {s: 郭璞, wit: [jc_c000.00393, jc_c000.00579], why: 尔雅、山海经之注家（郭璞云），人名；未见作王瓜}
 
 # strings that hold a name and are not it, each name's witnesses in its comment (the format has no slot for them)
 cover_stops:
@@ -320,6 +435,42 @@ cover_stops:
   白姜: [白姜蚕]  # 白僵蚕 written 白姜蚕 chishui_xuanzhu.003.00765
   覆盆: [覆盆子, 如覆盆, 覆盆之形]  # the 别录 drug (its own entry); jc_o052.20530 如覆盆; jc_h014.00383 覆盆之形
   党参: [上党参]  # 产地冠名：歙白术，绵黄芪，上党参（上党之人参），交趾桂 jc_c012.00000
+  # NTU 40K review
+  # · similes and sizes
+  蜂房: [如蜂房, 若蜂房]  # 状如蜂房 jc_c002.00732; 渐肿若蜂房 jc_p0012.00826
+  胶饴: [如胶饴]  # 溺血……或如胶饴 jc_d025a.01596, qianjin_yaofang.005.00609
+  杏子: [如杏子, 杏子大]  # 丸如杏子大 waitai_miyao.029.05120
+  # 丸如小豆大 jc_d012.01041; 如小豆 waitai_miyao.021.03340; 大如赤小豆（听宫） qianjin_yaofang.087.06189;
+  # 下小豆许大一百二十丸 jc_d053.00684
+  小豆: [如小豆, 小豆大, 如赤小豆, 小豆许]
+  黑豆: [如黑豆]  # 翳膜突起如黑豆 yinhai_jingwei.001.00249
+  萝卜子: [如萝卜子]  # 丸如萝卜子大 hejiju_fang.010.00779, chuanxin_shiyong.002.00395
+  锦纹: [如锦纹]  # 瘾疹如锦纹 jc_d058.00864; 发斑如锦纹 sanyin_fang.004.00384
+  薏苡: [循薏苡]  # 真心脉至，如循薏苡子 cm_suwen_gucongde.02890, jc_b103.00739
+  枣子: [如枣子, 枣子大, 小枣子]  # 丸如枣子大 rumen_shiqin.015.01399, jc_p0103.00151; 丸如小枣子 jc_d004.03955
+  鸡卵: [如鸡卵]  # 大如鸡卵 lingshu_shisong.009.00260; 乱发（如鸡卵，烧）jc_d002.04096
+  # · counts and numbers
+  # counts of a recipe's ingredients: 右五味 jc_b102.01190; 上五味切 jc_d004.13885; 右十五味 qianjin_yaofang.007.00717;
+  # 鳖甲等五味散 waitai_miyao.009.00987; 右前五味 puji_benshi.010.00608; 煮五味 waitai_miyao.013.01854; the five tastes:
+  # 不知五味 qianjin_yaofang.079.05719; 酸咸甘辛苦之五味 boji_fang.005.00658; 酒食五味 jc_a500.00004; the formula:
+  # 五味异功散 xueshi_yian.054.08389; the drug 五味子 is searched by itself (as 红豆蔻 for 红豆)
+  五味: [五味子, 右五味, 上五味, 十五味, 五味异功, 五味各, 知五味, 五味所, 之五味, 和五味, 调五味, 食五味, 等五味, 前五味, 此五味,
+       煮五味, 五味并, 五味入, 其五味, 五味药, 药五味]
+  # 数词「三七」（二十一）：三七日 qianjin_yaofang.071.05041; 三七壮 jc_i004.00970; 三七枚 jc_d053.00388;
+  # 三七粒、三七个 jc_d013.00074; 三七丸 qianjin_yaofang.029.02176; 三七炷 jc_b011.00236; 三七肾气 cm_suwen_gucongde.00157;
+  # 导引三七去 zhubing_yuanhou.004.00355
+  三七: [三七日, 三七壮, 三七枚, 三七粒, 三七遍, 三七个, 三七丸, 三七炷, 三七颗, 三七二十, 三七肾气, 三七去]
+  # · other things written with the name
+  麻仁: [萆麻仁]  # 萆麻仁即蓖麻仁 zhouhou_beiji.005.01922, jc_i005.02076
+  # 青矾石　黄矾石　白矾石（并烧令汁尽）waitai_miyao.026.04337: 青矾、黄矾 are other minerals
+  矾石: [黄矾石, 青矾石]
+  # 紫苏叶……鸡苏叶（去土三两）jc_o084.00116; 用水苏叶生捣 jc_d016.02004: 水苏, another drug
+  苏叶: [鸡苏叶, 水苏叶]
+  洋参: [东洋参]  # 东洋参（日本参，别是一物） jc_n037.00173, jc_n037.00270
+  于术: [于术数]  # 法于阴阳，和于术数 cm_suwen_gucongde.00099, baoming_ji.001.00005
+  # 谷肉果菜 cm_suwen_gucongde.03439; 无与肉果 cm_lingshu_sibucongkan.00371; 忌鱼盐酒肉果木 rumen_shiqin.004.00200;
+  # 淡肉果 (烟草) jc_c023.00130
+  肉果: [谷肉果, 与肉果, 酒肉果, 淡肉果]
 
 # strings the build would take as blockers of a name though the store reads them as the name's own drug (a lexicon
 # headword, a straddle), each name's witnesses in its comment.  The build already leaves out the 纲目's joint headings
@@ -333,6 +484,23 @@ unblock:
   # 青矾石即青矾（与黄矾石、白矾石并列），非「青|矾石」：青矾石　黄矾石　白矾石（并烧令汁尽） waitai_miyao.026.04337;
   # 青矾石（烧） waitai_miyao.029.05267; 布艾上又布青矾石末 waitai_miyao.013.01874
   青矾: [青矾石]
+  # NTU 40K review: a NTU or lexicon headword, a straddle or a conversion error hiding the drug's own name
+  附子: [大附子]  # 大附子一枚，炮 cm_jingui_dengzhen.00358; 大附子（一枚生削去黑皮） jc_d004.00626 (NTU 名海芋、卜芥，见 decisions)
+  半夏: [大半夏]  # 大半夏（一两每个切作二块） ruizhutang.004.00076; 大半夏汤 cm_jingui_dengzhen.00867
+  # 甘草|防风 jc_h008.00076; 洁古云|防风 yilei_yuanrong.002.00212; 滑石|防风 jc_d031.00260; 麻黄杏仁|防风 jc_d075a.00323
+  防风: [草防风, 云防风, 石防风, 杏仁防风]
+  升麻: [黄升麻, 升麻根]  # 麻黄|升麻汤 cm_shanghan_npm.01541; 大黄|升麻 jc_d025a.04578; 升麻根　木香 (the drug's root) jc_g040.01677, jc_o052.09855
+  龙胆: [草龙胆]  # 纲目龙胆：俗呼草龙胆 bencao_gangmu_skqs.039.01740; 草龙胆（酒洗） lanshi_micang.001.00168
+  藿香: [藿香叶]  # 藿香叶（壹两） chuanxin_shiyong.002.00384; 藿香叶甘气本温 jc_o049.00052
+  砂仁: [壳砂仁]  # 壳砂仁七分 (with its shell) tab_619_0a7261aa40.00795; 带壳砂仁三分 jc_g023.00235; 枳壳|砂仁 jc_d031.00047
+  泽兰: [泽兰叶]  # 泽兰叶（三两） jc_d053.01380; 泽兰叶（二两） jc_d014.02113
+  狼毒: [野狼毒]  # 转换讹字（狼作野狼，见 repairs）：勿误用狼毒，缘真似防葵 jc_c100.00051; 野狼毒（七分） jc_d002.00041
+  三七: [三七根]  # 落得打　三七根　地鳖虫（各五钱） jc_j012.00109
+  石苇: [方石苇]  # 石苇散方|石苇（二两去毛） jc_d004.11172, jc_d004.10968
+  枣仁: [生枣仁, 黑枣仁]  # 生枣仁（五钱） jc_d039.00129; 炒黑枣仁 jc_d033.00042
+  黄卷: [豆黄卷]  # 大|豆黄卷：大豆黄卷 jc_g043.00470; 金匮薯蓣丸豆黄卷（各十分） cm_jingui_dengzhen.00417
+  益母: [益母草]  # 益|母草：益母草（五月五日采） jc_p0008a.00210
+  头发: [乱头发, 人头发]  # 乱头发一握 jc_f100.00563; 妇人头发（一握烧存性） zhengzhi_zhunsheng.067.11023
 
 # gate overrides: a name's status for one drug (head), or for all of its drugs where no head is given; the first row
 # that fits wins
@@ -369,32 +537,35 @@ decisions:
   - {s: 慎火, status: open, wit: [jc_d016.02385], why: 景天即慎火草}
   - {s: 巨胜, status: open, wit: [jc_c000a.00092, jc_c024.00065], why: 胡麻一名巨胜；巨胜子即黑脂麻}
   - {s: 脂麻, head: 胡麻, status: open, wit: [jc_d038.00058, shouqin_yanglao.004.00906], why: 胡麻，黑脂麻是也；巨胜子即黑脂麻}
-  - {s: 山芋, status: open, wit: [jc_c029.00261, puji_benshi.002.00102], why: 一名山药，一名山芋；宋方山芋即薯蓣}
-  - {s: 千金子, status: open, wit: [jc_g043.00097], why: 千金子一名续随子}
+  - {s: 山芋, head: 山药, status: open, wit: [jc_c029.00261, puji_benshi.002.00102], why: 一名山药，一名山芋；宋方山芋即薯蓣}
+  - {s: 千金子, head: 续随子, status: open, wit: [jc_g043.00097], why: 千金子一名续随子}
   - {s: 连轺, status: open, wit: [cm_shanghan_zhao_kaimei.01008], why: 连轺二两（连翘根是）；本库无他义}
   - {s: 棘针, status: open, wit: [jc_c000a.00194, waitai_miyao.034.06927], why: 白棘一名棘针；反钩棘针入药}
   - {s: 天仙子, status: open, wit: [jc_c006.00459], why: 莨菪子一名天仙子（唯 jc_i208.00480 注作朱蓼子）}
   - {s: 老米, status: open, wit: [jc_o055.00137], why: 老米即陈仓米，入方或作糊；老米醋见 cover_stops}
-  - {s: 佛耳草, status: open, wit: [xuanming_lunfang.009.00300], why: 佛耳草即鼠曲草，宋元咳嗽方用之}
+  - {s: 佛耳草, head: 鼠曲草, status: open, wit: [xuanming_lunfang.009.00300], why: 佛耳草即鼠曲草，宋元咳嗽方用之}
   - {s: 白胶香, head: 枫香脂, status: open, wit: [jc_c040.00538, qianjin_yaofang.018.01579], why: 枫树脂，方中皆作药}
   - {s: 鬼箭, head: 卫矛, status: open, wit: [jc_c000a.00199, jc_c000.00836], why: 卫矛一名鬼箭；病名鬼箭风、鬼箭打另见 cover_stops}
-  - {s: 御米, status: open, wit: [xuanming_lunfang.009.00287, chuanxin_shiyong.002.00398], why: 御米即罂粟（御米壳、御米囊），书中皆作药}
+  - {s: 御米, head: 罂粟, status: open, wit: [xuanming_lunfang.009.00287, chuanxin_shiyong.002.00398],
+     why: 御米即罂粟（御米壳、御米囊），书中皆作药}
   - {s: 猪椒, head: 蔓椒, status: open, wit: [jc_c000.01238, qianjin_yaofang.036.02551], why: 名医：一名猪椒；千金猪椒根皮皆此药}
   - {s: 瓦松, head: 昨叶何草, status: open, wit: [zhenglei_bencao.011.07637, jc_i102.09232], why: 昨叶何草一名瓦松，书中皆作药}
   - {s: 草河车, head: 蚤休, status: open, wit: [jc_l106.00062, jc_l104.00097], why: 外科方中草河车即蚤休，皆作药}
   - {s: 闹羊花, head: 羊踯躅, status: open, wit: [jc_c019.01110, jc_j012.00014], why: 羊踯躅即闹羊花，书中皆作药}
   - {s: 皂角, status: open, wit: [jc_o013.00378, jc_k104.00041], why: 同条先写皂角后称皂荚；皂角末、猪牙皂角皆药；如皂角见 cover_stops}
-  - {s: 元参, status: open, wit: [jc_c000.00651, jc_l102.00067], why: 广雅「鹿肠，元参也」；避讳改写之玄参，本库无他义}
+  - {s: 元参, head: 玄参, status: open, wit: [jc_c000.00651, jc_l102.00067], why: 广雅「鹿肠，元参也」；避讳改写之玄参，本库无他义}
   - {s: 黑参, head: 玄参, status: open, wit: [jc_c025a.00886, boji_fang.004.00519], why: 玄参入肾，曰黑参；方中黑参皆玄参}
-  - {s: 玉竹, status: open, wit: [jc_c000.00135, jc_d070.00034], why: 吴普女萎一名葳蕤、一名玉竹；葳蕤汤方歌即写玉竹；清方皆入药}
+  - {s: 玉竹, head: 萎蕤, status: open, wit: [jc_c000.00135, jc_d070.00034], why: 吴普女萎一名葳蕤、一名玉竹；葳蕤汤方歌即写玉竹；清方皆入药}
   - {s: 兰香, status: open, wit: [jc_h000a.00745, lanshi_micang.002.00262], why: 兰香叶（菜名），即罗勒；兰香子、兰香散皆此物}
   - {s: 圆眼, status: open, wit: [jc_g026.02024, jc_f013.00262], why: 圆眼肉即龙眼肉，入药；丸如圆眼大者见 cover_stops}
   - {s: 旱莲草, status: open, wit: [jc_d076.00244, jc_n022.00518], why: 莲子草即旱莲草（鳢肠一名莲子草）；本库皆入药}
+  # (NTU 40K review: the table's other drug of the name, before the row that opens the rest)
+  - {s: 孩儿茶, head: 雪山林, status: candidate, wit: [jc_c039.02335], why: 本库孩儿茶皆乌爹泥（儿茶），未见作雪山林（NTU）}
   - {s: 孩儿茶, status: open, wit: [jc_c039.02335, jc_f018.00060], why: 乌爹泥条：即孩儿茶；孩子茗即孩儿茶}
   - {s: 麻勃, status: open, wit: [jc_c000a.00215, jc_d025.05640], why: 麻蕡一名麻勃，麻花上勃勃者；七月七日麻勃，皆入药}
   - {s: 靛花, status: open, wit: [ws_36bca7b992.00070, jc_c029.00249], why: 靛花，即青黛；本库皆入药}
-  - {s: 汉椒, status: open, wit: [jc_i300.00087, boji_fang.002.00143], why: 汉椒（三分，出汗，去目），蜀椒之制法；本库皆入药}
-  - {s: 鹅不食草, status: open, wit: [jc_l008.01365, jc_l006.00071], why: 石胡荽亦名鹅不食草；本库皆入药}
+  - {s: 汉椒, head: 蜀椒, status: open, wit: [jc_i300.00087, boji_fang.002.00143], why: 汉椒（三分，出汗，去目），蜀椒之制法；本库皆入药}
+  - {s: 鹅不食草, head: 石胡荽, status: open, wit: [jc_l008.01365, jc_l006.00071], why: 石胡荽亦名鹅不食草；本库皆入药}
   - {s: 萝卜, head: 莱菔, status: open, wit: [jc_c040.00658, jc_f100.00384], why: 莱菔即萝卜（见 same_drug）；萝卜子另为一药，已作 blocker}
   - {s: 乌喙, head: 乌头, status: open, wit: [jc_c000a.00241, qianjin_yaofang.006.00700], why: 本经乌头一名乌喙；方书乌喙（炮）皆作乌头类用，书中无他义}
   - {s: 干枣, head: 大枣, status: open, wit: [jc_c000.00520, jc_d053.00032], why: 名医：大枣一名干枣；方中干枣（擘）即大枣}
@@ -405,7 +576,7 @@ decisions:
   - {s: 没石子, head: 无食子, status: open, wit: [jc_c040.00519], why: 没石子，即无食子，书中皆作药}
   - {s: 香橼, head: 枸橼, status: open, wit: [jc_c010.00432, jc_n009.01373], why: 香橼本名枸橼；陈香橼入药，书中无他义}
   # · animals
-  - {s: 红娘子, status: open, wit: [jc_c011.02690], why: 在樗木上者人呼为红娘子}
+  - {s: 红娘子, head: 樗鸡, status: open, wit: [jc_c011.02690], why: 在樗木上者人呼为红娘子}
   - {s: 晚蚕, head: 原蚕, status: open, wit: [bencao_jingshu.021.02750, hejiju_fang.009.00690],
      why: 原蚕蛾乃是晚蚕第一番出者；书中皆晚蚕砂、晚蚕蛾，无他义}
   - {s: 地鳖, head: 䗪虫, status: open, wit: [jc_c003.02946, jc_c015.00363], why: 䗪虫一名地鳖，一名土鳖；即地鳖虫，伤科皆入药}
@@ -428,6 +599,8 @@ decisions:
   - {s: 昌阳, head: 菖蒲, status: cue, wit: [jc_c000a.00004, jc_n024.00426], why: 本经菖蒲一名昌阳；昌阳泻心汤}
   - {s: 昌阳, head: 白昌, status: cue, wit: [furen_daquan.004.00023], why: 菖蒲生于泥中者名昌阳（即白昌、泥菖蒲）}
   - {s: 五花, status: cue, wit: [jc_c104.00030, jc_c100.00003], why: 雷公五花皮即五加皮；余为五花龙骨、五花八阵等}
+  # (NTU 40K review: the table's other drug of the name, before the row that opens the rest)
+  - {s: 胡豆, head: 铜罗伞, status: candidate, wit: [qianjin_yaofang.044.03017], why: 本库胡豆为丸剂大小之喻或豆类，未见作铜罗伞（NTU）}
   - {s: 胡豆, status: cue, wit: [waitai_miyao.042.09446, qianjin_yaofang.044.03017],
      why: 多为丸剂大小之喻（见 cover_stops）；作药只一方，所指豌豆、蚕豆难定}
   - {s: 铁屑, head: 铁落, status: cue, wit: [qianjin_yaofang.069.04851, jc_d078.01475], why: 锻落铁屑即铁落（铁屑散）；亦作杂质语（磁石引去铁屑），须药境}
@@ -544,3 +717,167 @@ decisions:
   - {s: 鹿骊, head: 藜芦, status: candidate, wit: [jc_c000.00275], why: 陶弘景：漏芦俗中取根名鹿骊；纲目木藜芦亦名鹿骊，皆非藜芦}
   - {s: 其子房, status: candidate, wit: [jc_c004.00190],
      why: 别名录螳螂桑螵蛸条「其子房名螵蛸」之「其子房」是「它的子房」，非药名；食疗：其子房及叶皆破血}
+  # NTU 40K review (2026-10-18)
+  # · the drug wherever the store writes the name: minerals
+  - {s: 赭石, head: 代赭石, status: open, wit: [boji_fang.003.00247, jc_h030.00697], why: 代赭石之省（谷醋淬七次），书中无他义}
+  - {s: 蛤粉, head: 蛤蜊粉, status: open, wit: [jc_c104.00284, jc_d021.09374],
+     why: 凡用蛤粉，取紫口蛤蜊壳煅成；入药或炒阿胶成珠，书中无他义；海蛤粉、青蛤粉已作 blockers}
+  # · the drug wherever the store writes the name: plants
+  - {s: 茵陈, head: 茵陈蒿, status: open, wit: [jc_o041.02501, waitai_miyao.008.00812, jc_b034.00175],
+     why: 茵陈即茵陈蒿（栀子、茵陈苦寒）；书中皆作药与茵陈蒿汤之省}
+  - {s: 萸肉, head: 山茱萸, status: open, wit: [jc_n022.00317, jc_f011.00026, jc_g040.01606],
+     why: 萸肉即山茱萸肉（熟地、萸肉、山药）；吴萸肉已作 blocker}
+  - {s: 莲肉, head: 莲子, status: open, wit: [chishui_xuanzhu.026.09601, jc_f015.00371, jc_o038.01338],
+     why: 莲肉即莲子肉（建莲肉）；石莲肉已作 blocker}
+  - {s: 胶饴, head: 饴糖, status: open, wit: [jc_c002.01738, cm_jingui_dengzhen.00411, jc_d004a.00848],
+     why: 方家用饴糖，乃云胶饴；建中汤之胶饴（一升、五两）皆此；如胶饴之喻见 cover_stops}
+  - {s: 澄茄, head: 荜澄茄, status: open, wit: [jc_c005.00096, sanyin_fang.018.02086], why: 澄茄即荜澄茄（毕澄茄）；本库无他义}
+  - {s: 陈米, head: 陈廪米, status: open, wit: [jc_d053.00354, renzhai_zhizhi.023.02693, jisheng_fang.005.00155],
+     why: 陈米即陈仓米（陈米饮调下、陈米五合）；陈米醋已作 blocker}
+  - {s: 大戟, head: 京大戟, status: open, wit: [waitai_miyao.038.08521, jc_o056.04530], why: 京大戟为本草大戟之今名；红大戟、绵大戟已作 blockers}
+  - {s: 蒺藜子, head: 蒺藜, status: open, wit: [jc_d004a.02107, qianjin_yaofang.074.05268], why: 蒺藜子即蒺藜（见 same_drug），方中皆此药}
+  - {s: 山栀, head: 栀子, status: open, wit: [puji_benshi.003.00173, jc_i002.00582], why: 山栀散用山栀子一味；山栀（炒）即栀子，本库无他义}
+  - {s: 枣仁, head: 酸枣, status: open, wit: [jc_f013.00262, jc_g023.00235], why: 枣仁即酸枣仁（枣仁各二钱、加枣仁一钱），本库无他义}
+  - {s: 柏子, head: 柏子仁, status: open, wit: [qianjin_yaofang.082.05894, jc_n016.00165],
+     why: 柏子即柏子仁（柏子仁二升、柏子霜）；侧柏子、柏子树已作 blockers}
+  - {s: 黑豆, head: 黑大豆, status: open, wit: [jc_d024.00526, jc_h000a.00880],
+     why: 日华子云黑豆调中下气（大豆条）；大豆黄卷即水浸黑豆生芽：黑豆即黑大豆；如黑豆之喻见 cover_stops}
+  - {s: 甘菊, head: 菊花, status: open, wit: [jc_p0801.03599, jc_o063a.00554], why: 甘菊花即入药之菊花，方中皆作药}
+  - {s: 萝卜子, head: 莱菔子, status: open, wit: [lanshi_micang.001.00090, yuji_weiyi.026.02570],
+     why: 萝卜子即莱菔子（炒用），方中皆作药；丸如萝卜子大见 cover_stops}
+  - {s: 诃梨, head: 诃黎勒, status: open, wit: [cm_jingui_dengzhen.00925, zhenglei_bencao.014.09537],
+     why: 诃梨勒即诃黎勒（梨、黎异写）；单言诃梨（三枚捣取皮）亦是此药}
+  - {s: 草龙胆, head: 龙胆, status: open, wit: [bencao_gangmu_skqs.039.01740, lanshi_micang.001.00168],
+     why: 纲目龙胆：俗呼草龙胆；方中草龙胆（酒洗）皆龙胆}
+  - {s: 吴萸, head: 吴茱萸, status: open, wit: [jc_g024.00179, jc_o007a.01399], why: 吴萸即吴茱萸之省（加吴萸五分），本库无他义}
+  - {s: 灵仙, head: 威灵仙, status: open, wit: [jc_o002.01762, shiyi_dexiao.006.01017], why: 灵仙即威灵仙之省（大黄　灵仙）；葳灵仙为其异写，本库无他义}
+  - {s: 槐子, head: 槐角, status: open, wit: [qianjin_yaofang.071.04964, jc_h030.00693], why: 槐子即槐实（槐角之子），方中皆作药}
+  - {s: 黄卷, head: 大豆黄卷, status: open, wit: [jc_d025.00232, jc_g043.00470], why: 黄卷即大豆黄卷之省（大豆及黄卷；去黄卷取清汁）}
+  - {s: 白檀, head: 檀香, status: open, wit: [baoming_ji.002.00097, ruizhutang.005.00193], why: 白檀即白檀香（白檀一钱半、白檀末），本库皆檀香}
+  - {s: 汉防己, head: 防己, status: open, wit: [jc_d024.00213, piweilun.001.00044], why: 药性论：汉防己，君；汉防己即防己之汉中所出者，方中皆作药}
+  - {s: 洋参, head: 西洋参, status: open, wit: [jc_l105.00192, jc_b017.01792], why: 洋参即西洋参（如用洋参一钱，即除北沙参）；东洋参见 cover_stops}
+  - {s: 熟地, head: 地黄, status: open, wit: [jc_o063a.00797, jc_d042.00054], why: 熟地即熟地黄（熟地一两、以熟地当归白术人参代饴糖），书中皆入药}
+  - {s: 生地黄, head: 地黄, status: open, wit: [cm_jingui_dengzhen.00288, jc_l200.00107],
+     why: 地黄之生者（生地黄汁一升、生地黄一钱），书中皆入药；鲜地黄之配仍从药境}
+  - {s: 鲜生地, head: 鲜地黄, status: open, wit: [jc_n009.02623, jc_d033.01405], why: 鲜生地即鲜地黄（鲜生地黄捣烂取汁），书中皆入药}
+  - {s: 银花, head: 金银花, status: open, wit: [jc_i303.00111, jc_l109.00442], why: 金银花之省（银花甘桔汤方用金银花一两）；银花露、银花藤已作 blockers}
+  - {s: 苡仁, head: 薏苡仁, status: open, wit: [jc_o003.00619, jc_n009.04037], why: 薏苡仁之省，书中皆入药}
+  - {s: 干葛, head: 葛根, status: open, wit: [zhouhou_beiji.007.02721, jc_n011.00031],
+     why: 葛根之干者（捣干葛根末、口渴加干葛），书中皆入药；干葛粉、干葛花已作 blockers}
+  - {s: 薯蓣, head: 山药, status: open, wit: [cm_jingui_dengzhen.01096, qianjin_yaofang.002.00152],
+     why: 薯蓣即山药（肾气丸、薯蓣丸），书中皆入药}
+  - {s: 川贝, head: 川贝母, status: open, wit: [jc_n020.00525, jc_n022.00176], why: 川贝母之省，书中皆入药}
+  - {s: 红枣, head: 大枣, status: open, wit: [jc_b101.00698, jc_o058.00667], why: 红枣即大枣（生姜七片、红枣二枚），书中皆入药或食}
+  - {s: 枣子, head: 大枣, status: open, wit: [jc_b003.00635, hejiju_fang.003.00206],
+     why: 枣子即大枣（生姜枣子同煎）；丸如枣子大之喻见 cover_stops}
+  - {s: 紫苑, head: 紫菀, status: open, wit: [cm_jingui_dengzhen.00442, yuji_weiyi.009.00990], why: 紫菀之异写，书中皆入药}
+  - {s: 赤苓, head: 赤茯苓, status: open, wit: [jc_o112.00809, jc_n037.00087], why: 赤茯苓之省，书中皆入药}
+  - {s: 于术, head: 白术, status: open, wit: [jc_n009.01358, jc_n016.00268],
+     why: 於潜白术（生于术、蒸于术），书中皆入药；「和于术数」之跨词见 cover_stops}
+  - {s: 白芍药, head: 芍药, status: open, wit: [jc_b036.00270, jc_b004.00003], why: 芍药之白者；加白芍药二两，注即称芍药能安中补血；方中皆入药}
+  - {s: 京三棱, head: 三棱, status: open, wit: [bencao_jingshu.009.01728, jc_d014.00647],
+     why: 与京三棱同用之良，下文即称三棱；方中与蓬莪术并用，书中皆入药}
+  - {s: 鸡苏, head: 水苏, status: open, wit: [jc_c001.00221, qianjin_yaofang.079.05744],
+     why: 吴普水苏一名鸡苏；千金：鸡苏……一名水苏也；鸡苏饮子、鸡苏丸皆入药}
+  - {s: 秦椒, head: 花椒, status: open, wit: [bencao_chengya.005.00944, jc_c000a.00190],
+     why: 秦椒，花椒也，始产于秦；拾遗以秦椒称辣椒（jc_c023.02185）仅一二见}
+  - {s: 肉果, head: 肉豆蔻, status: open, wit: [jc_c029.00080, jc_o039.00089],
+     why: 肉蔻一名肉果（面裹煨熟）；同条先言肉豆蔻、后言肉果；谷肉果菜等跨词见 cover_stops}
+  # · the drug wherever the store writes the name: animals and their products
+  - {s: 山甲, head: 穿山甲, status: open, wit: [jc_l106.00206, jc_o065.00590, jc_i303.00394], why: 山甲即穿山甲（炮山甲、山甲（炒））；本库无他义}
+  - {s: 龟板, head: 龟甲, status: open, wit: [jc_o097.02851, renzhai_zhizhi.009.01221, jc_l106.00056],
+     why: 龟甲（即龟板自败者佳）；方中龟板皆此药，龟板胶已作 blocker}
+  - {s: 蜂房, head: 露蜂房, status: open, wit: [jc_c029.00118, renzhai_zhizhi.022.02656],
+     why: 蜂房即露蜂房（蜂房咸苦、九孔蜂房炙黄）；状如蜂房之喻见 cover_stops}
+  - {s: 海蛤, head: 海蛤壳, status: open, wit: [jc_c000a.00236, jc_d004.04104], why: 本经海蛤即今海蛤壳；海蛤粉、海蛤肉已作 blockers}
+  - {s: 鸡子清, head: 鸡子白, status: open, wit: [waitai_miyao.034.07023, puji_benshi.008.00516, jc_f018.00093],
+     why: 鸡子清即鸡子白（同条一作鸡子清和涂、一作鸡子白和敷）；调敷、调下皆此物}
+  - {s: 乌贼骨, head: 海螵蛸, status: open, wit: [qianjin_yaofang.007.00710, jc_g011.00059], why: 乌贼鱼骨一名海螵蛸；方中乌贼骨（炒为末）皆此药}
+  - {s: 白蜜, head: 蜂蜜, status: open, wit: [jc_d004.04037, yizong_jinjian.051.23962], why: 白蜜即炼过之蜂蜜（白蜜二升、炼白蜜为丸），本库无他义}
+  - {s: 螵蛸, head: 桑螵蛸, status: open, wit: [qianjin_yaofang.060.04096, jc_c000.01477],
+     why: 本经桑螵蛸，单言螵蛸（二十枚、恶螵蛸）亦此药；海螵蛸已作 blocker}
+  # · names joined by same_drug above, which would otherwise be cue as two-character or shared names
+  - {s: 蓬术, status: open, wit: [jc_c025a.00883, shiyi_dexiao.003.00349, jc_o068.01088],
+     why: 蓬术即蓬莪术、莪术（见 same_drug），三棱、蓬术并用；书中无他义}
+  - {s: 蓬莪术, head: 莪术, status: open, wit: [puji_benshi.003.00197, jc_d014.00659], why: 蓬莪术即莪术（京三棱、蓬莪术并用）；词表二条并收一药}
+  - {s: 赤芍药, head: 赤芍, status: open, wit: [shengji_zonglu_zuanyao.012.02301, jc_p0009a.00124],
+     why: 赤芍药汤方中作赤芍（炒）；方歌作赤芍、方剂作赤芍药：一药二名（见 same_drug）}
+  - {s: 白矾, head: 矾石, status: open, wit: [shengji_zonglu_zuanyao.008.01837, jc_d005.02379],
+     why: 白矾即矾石（见 same_drug），书中皆入药}
+  - {s: 刺蒺藜, head: 蒺藜, status: open, wit: [jc_c018a.00240, xianxingzhai_biji.004.00630], why: 蒺藜之有刺者（见 same_drug），书中皆入药}
+  - {s: 海浮石, head: 浮石, status: open, wit: [yilei_yuanrong.002.00201, jc_l104.00117],
+     why: 海浮石即浮石（见 same_drug），痰多加海浮石，书中皆入药}
+  - {s: 浮石, head: 浮海石, status: open, wit: [jc_c025a.00689, puji_benshi.006.00397], why: 浮石即浮海石、海浮石（见 same_drug）}
+  - {s: 旋复花, head: 旋覆花, status: open, wit: [cm_jingui_wuqian.00914, jc_d004a.01613], why: 旋覆花之异写（见 same_drug），书中皆入药}
+  - {s: 黑牵牛, head: 牵牛子, status: open, wit: [ws_f0f5addb51.00155, hejiju_fang.001.00036, boji_fang.002.00128],
+     why: 黑牵牛即黑丑，牵牛子之黑者（见 same_drug），书中皆入药}
+  - {s: 缩砂, head: 砂仁, status: open, wit: [hejiju_fang.005.00406, jc_c040.00402], why: 缩砂即缩砂仁、砂仁（去皮取仁用），本库无他义}
+  - {s: 龙胆草, head: 龙胆, status: open, wit: [jc_o068.02448, jc_p0801.03452, jc_d075a.00544],
+     why: 龙胆草即龙胆（见 same_drug），方中皆作药}
+  - {s: 真珠, head: 珍珠, status: open, wit: [qianjin_yaofang.016.01455, jc_d025.00079],
+     why: 真珠即珍珠（见 same_drug），方中皆入药；真珠母、真珠兰已作 blockers}
+  - {s: 蕤核, head: 蕤仁, status: open, wit: [jc_c000a.00081, waitai_miyao.026.04184, jc_c104.00228],
+     why: 蕤核即蕤仁（见 same_drug）：本经蕤核条、方中蕤核（各二分）、雷公蕤核仁，书中皆入药}
+  # · one drug open (or cue), the table's others candidates
+  - {s: 兜铃, head: 马兜铃, status: open, wit: [jc_d072.00047, jc_g003a.00101, jc_g024.00385], why: 兜铃即马兜铃（兜铃、花粉、杏仁），本库无他义}
+  - {s: 兜铃, status: candidate, wit: [jc_d072.00047, jc_c029.00125], why: 本库兜铃皆马兜铃，未见作木蝴蝶}
+  - {s: 蒙花, head: 密蒙花, status: open, wit: [jc_o032.00368, jc_p0801.03562, yinhai_jingwei.002.00391],
+     why: 蒙花即密蒙花之省；蜜蒙花、土蒙花已作 blockers}
+  - {s: 蒙花, status: candidate, wit: [jc_o006.00466, renduan_lu.009.01214], why: 本库蒙花皆密蒙花，未见作梦花、莸叶醉鱼草}
+  - {s: 乌豆, head: 黑大豆, status: open, wit: [jc_d025a.01325, jc_c100.00256, waitai_miyao.039.08846],
+     why: 乌豆即黑豆，雷公修治与方中皆用之，本库无他义}
+  - {s: 乌豆, status: candidate, wit: [jc_j000.00139], why: 本库乌豆皆黑大豆，未见作野大豆}
+  - {s: 香白芷, head: 白芷, status: open, wit: [cishi_nanzhi.001.00100, jc_d021.09371, lvshe_beiyao.001.00042],
+     why: 香白芷即白芷（治阳明头痛在额），方中皆作白芷}
+  - {s: 香白芷, status: candidate, wit: [lvshe_beiyao.001.00042, renzhai_zhizhi.003.00313],
+     why: 本库香白芷皆白芷；滇白芷、白云花根、白独活、隔山香未见}
+  - {s: 苦葶苈, head: 葶苈, status: open, wit: [jc_p0100.09125, jc_d012.03126, jc_o056.03504], why: 见 pairs}
+  - {s: 苦葶苈, status: candidate, wit: [jc_o041.02363, jc_o056.03504], why: 本库苦葶苈皆葶苈；桂竹糖芥、糖荠、芝麻菜为今之代用种子，未见}
+  - {s: 贝齿, head: 贝子, status: open, wit: [jc_c000a.00363, waitai_miyao.025.03950, jc_c000.01284], why: 贝子一名贝齿；方中贝齿皆此}
+  - {s: 贝齿, head: 紫贝, status: candidate, wit: [jc_c007.00476, shengji_zonglu_zuanyao.015.02797],
+     why: 贝齿亦如紫贝而长寸余，二物有别；书中贝齿皆贝子（贝齿汤治淋）}
+  - {s: 川当归, head: 九眼独活, status: candidate, wit: [chanbao_zhufang.000.00027, jc_j000.00069],
+     why: 本库川当归皆川产当归（芎归同用），未见作九眼独活}
+  - {s: 汉防己, head: 北豆根, status: candidate, wit: [jc_p0301.00162], why: 本库汉防己皆防己，未见作北豆根}
+  - {s: 洋参, head: 山海螺, status: candidate, wit: [jc_n021.00037], why: 本库洋参皆西洋参，未见作山海螺}
+  - {s: 胆草, head: 龙胆, status: open, wit: [jc_o004.02488, jc_d053.00399], why: 龙胆草之省（胆草为使），书中皆入药；地胆草等已作 blockers}
+  - {s: 胆草, status: candidate, wit: [jc_o003.00396], why: 书中胆草皆龙胆草，未见作厚叶素馨、小龙胆草、山苦草、青鱼胆草}
+  - {s: 鲜生地, head: 浙地黄, status: candidate, wit: [jc_b035.00534], why: 书中鲜生地皆鲜地黄，未见作浙地黄（今之产地名）}
+  # · also other things: the drug only beside its cues
+  - {s: 寄生, head: 桑寄生, status: cue, wit: [jc_c000.00023, jiaoqi_zhifa.001.00007],
+     why: 本库寄生皆桑上寄生（桑寄生、独活寄生汤）；亦作「随母寄生」常语，从药境}
+  - {s: 寄生, status: candidate, wit: [qianjin_yaofang.042.02922, jc_g043.00475],
+     why: 本库寄生皆桑寄生（桑上寄生之省）；五瓣寄生、卵叶寄生、槲寄生为今之别种，未见}
+  - {s: 白蒺藜, head: 蒺藜, status: cue, wit: [jc_d004a.01619, jc_p0801.03610, jc_c007.00163],
+     why: 方书白蒺藜（炒去刺）即刺蒺藜（见 same_drug）；衍义又以白蒺藜称沙苑所出者（补肾药），从药境}
+  - {s: 蚯蚓, head: 地龙, status: cue, wit: [jc_d046.00360, zhouhou_beiji.002.00700], why: 地龙又名蚯蚓；入药者从药境，余为蚯蚓咬、蚯蚓毒、蚯蚓鸣之虫}
+  - {s: 金沸草, head: 旋覆花, status: cue, wit: [jc_c029.00130, jc_b102.00613],
+     why: 金沸草一名旋覆花；旋覆花（三两即金沸草）；词表旋复花条之读，旋复花并入旋覆花后由此行保留}
+  - {s: 杏子, head: 杏仁, status: cue, wit: [jinkui_yaolue.002.00339, cm_shanghan_npm.00595],
+     why: 杏子汤（恐是麻黄杏仁甘草石膏汤）、桂枝汤加厚朴杏子：伤寒方之杏子即杏仁；杏子亦果名，丸如杏子大见 cover_stops}
+  - {s: 小豆, head: 赤小豆, status: cue, wit: [jc_d004a.02134, zhouhou_beiji.001.00169],
+     why: 本草之小豆即赤小豆（大黄、石灰、小豆三味等分）；丸如小豆大之喻见 cover_stops，小豆藿、小豆花已作 blockers}
+  - {s: 益母, head: 益母草, status: cue, wit: [jc_o068.00070, jc_o024.00372], why: 方中益母（紫花）、益母（三分）即益母草；益母丸、益母膏亦是}
+  - {s: 豆豉, head: 淡豆豉, status: cue, wit: [shanghan_zhige.003.00381, jc_b012.00068],
+     why: 香豉即豆豉（香豉半合，豆豉也），栀子豉汤类方入药；亦作食品（豆豉饼、食忌），从药境}
+  - {s: 柏叶, head: 侧柏叶, status: cue, wit: [jc_c024.00223, cm_jingui_dengzhen.00830],
+     why: 本草崇原同条先称柏叶、后称侧柏叶；金匮柏叶汤即此；「叶似柏叶」之喻从药境}
+  - {s: 鸡卵, head: 鸡子, status: cue, wit: [jc_c021.01752, waitai_miyao.037.08095],
+     why: 鸡子条注：今俗每产后即啖鸡卵；方中新鸡卵一枚入药；大如鸡卵之喻见 cover_stops}
+  # · candidates: the store's name is another drug than the table's
+  - {s: 五味, head: 石灰, status: candidate, wit: [jc_d004.13885, jc_a500.00004], why: 书中五味为五味子之省、计数语（上五味）或五味（酸苦甘辛咸），未见作石灰}
+  - {s: 大附子, status: candidate, wit: [cm_jingui_dengzhen.00358, jc_d004.00626], why: 本库大附子皆附子之大者（一枚，炮），未见作海芋、卜芥}
+  - {s: 脑子, head: 樟脑, status: candidate, wit: [jc_h000a.00896, rumen_shiqin.015.01366],
+     why: 本库脑子为宋元方中少许研入、与麝香同用之香药，或兽脑；未见作樟脑（樟脑自以樟脑、潮脑为名）}
+  - {s: 葵子, head: 向日葵子, status: candidate, wit: [cm_jingui_dengzhen.01001, jisheng_fang.005.00165],
+     why: 书中葵子皆冬葵子（金匮葵子茯苓散，济生同证作冬葵子散），未见作向日葵子}
+  # · names of rows above (now with the head their witnesses read): the table's other drugs of the name
+  - {s: 玉竹, status: candidate, wit: [jc_n022.00129], why: 本库玉竹皆萎蕤，未见作竹根七、黄脚鸡}
+  - {s: 山芋, status: candidate, wit: [jc_c029.00261, puji_benshi.002.00102], why: 本库山芋皆薯蓣（宋方），未见作番薯、卜芥（NTU）}
+  - {s: 千金子, status: candidate, wit: [jc_g043.00097], why: 本库千金子皆续随子，未见作油草（NTU）}
+  - {s: 御米, status: candidate, wit: [xuanming_lunfang.009.00287, chuanxin_shiyong.002.00398], why: 本库御米皆罂粟，未见作玉蜀黍（NTU）}
+  - {s: 佛耳草, status: candidate, wit: [xuanming_lunfang.009.00300], why: 本库佛耳草皆鼠曲草，未见作虎耳草（NTU）}
+  - {s: 元参, status: candidate, wit: [jc_c000.00651, jc_l102.00067], why: 本库元参皆玄参，未见作大山玄参（NTU，今之地方种）}
+  - {s: 汉椒, status: candidate, wit: [jc_i300.00087, boji_fang.002.00143], why: 汉椒即蜀椒；NTU 以为花椒，本草花椒属秦椒，与蜀椒别（如川椒）}
+  - {s: 鹅不食草, status: candidate, wit: [jc_l008.01365, jc_l006.00071], why: 本库鹅不食草皆石胡荽；NTU 所收同名之今地方种五种未见}
+  - {s: 红娘子, status: candidate, wit: [jc_c011.02690], why: 本库红娘子皆樗鸡（虫），未见作叶底红、酸浆（NTU）}

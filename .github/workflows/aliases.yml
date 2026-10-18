@@ -9,7 +9,7 @@ name: aliases
 #                                             same bytes (aliases-check.json); a layer that fails it is never committed,
 #                                             and is measured all the same (its numbers are what a budget is decided on)
 #     python -m taochronos.chat.d1 tables     the D1 backup's tables (cloud/site/src/backup/tables.js), which carry the layer
-#   The built files, the tables and the two reports are kept as the artifact `aliases-layer`.
+#   The built files, the tables and the reports (build, check, diff) are kept as the artifact `aliases-layer`.
 # * eval (`eval`): measures what was built — `taochronos --data <data> eval aliases` with both profiles: full-corpus on
 #   this store is the deployed pair, web-canon on it a proxy — split by profile and view (main, no-gangmu) over four
 #   runners, each fetching the store again: one run took 53 minutes on the 553-book web store, and this store holds about
@@ -23,10 +23,13 @@ name: aliases
 #   refuses that split while the gold fails its checks, aliases_gold.validate, and its notes say so; a layer that
 #   misses the acceptance is committed with a warning: turning `commit` on is the decision), with `eval` off
 #   unmeasured.  It commits onto the branch's head as it is then, never merging: should what the layer is built and
-#   measured from (domains/classics, src/taochronos, profiles, evals/gold, cloud/store.json, and corpus/web: on this
+#   measured from (domains/classics, src/taochronos, profiles, evals/gold, cloud/store.json, corpus/web: on this
 #   full store the 要籍语料's pack sets each witness's `web` flag, and canon.yml commits it under a concurrency group of
-#   its own) have changed there since the run started, nothing is committed and the workflow is run again; otherwise
-#   tables.js, which canon.yml commits as well, is written again on that head.
+#   its own, and corpus/aliases, the NTU table's extract the build reads while sources.yaml ships it) have changed
+#   there since the run started, nothing is committed and the workflow is run again; otherwise tables.js, which
+#   canon.yml commits as well, is written again on that head.  The build's report is compared with the branch's layer
+#   (`taochronos aliases diff`, aliases-diff.json: names joining another drug, referents lost, statuses dropped) in the
+#   run's summary; aliases check is the gate.
 # A commit pushed by a workflow starts no other workflow: the site carries the new layer from its next deployment
 # (site.yml).  Run it: Actions → aliases → Run workflow, on the branch to commit to; or
 #   gh workflow run aliases.yml --ref <branch> [-f commit=true] [-f eval=false]
@@ -133,8 +136,12 @@ jobs:
         id: build
         run: |
           # the report is stdout alone (what else the command says goes to stderr, into this log)
+          cp domains/classics/aliases/aliases.jsonl "$RUNNER_TEMP/aliases-before.jsonl"
           taochronos aliases build --db "$TAOCHRONOS_DATA/corpus/tcm.sqlite" > aliases-build.json
           cat aliases-build.json
+          # the audit of what the rebuild changes against the branch's layer: names joining another drug, referents
+          # lost, statuses dropped (held-out rows counted, never listed); aliases check below is the gate
+          taochronos aliases diff "$RUNNER_TEMP/aliases-before.jsonl" --top 30 > aliases-diff.json
           python3 - <<'EOF'
           import json, os
           r = json.load(open("aliases-build.json"))
@@ -147,6 +154,12 @@ jobs:
                    + ", ".join(f"{k} {v}" for k, v in (n.get("status") or {}).items()),
                    "- bytes (deflated): " + ", ".join(f"{k} {v.get('raw', 0):,} ({v.get('deflated', 0):,})" for k, v in b.items()),
                    *[f"- build warning: {w}" for w in r.get("warnings") or []]]
+          d = json.load(open("aliases-diff.json"))
+          lines += [f"- against the branch's layer: {d['surfaces']['added']} surfaces added, {d['surfaces']['removed']} "
+                    f"removed; {d['ho']} names now members of another drug, {d['lost']} referents lost, statuses dropped "
+                    + (", ".join(f"{k} {v}" for k, v in d["drops"].items()) or "none")
+                    + f" ({d['held_out_rows']} of these rows write a held-out name: counted only; aliases-diff.json lists "
+                      f"the others)"]
           open(os.environ["GITHUB_STEP_SUMMARY"], "a").write("\n".join(lines) + "\n")
           EOF
           echo "built=true" >> "$GITHUB_OUTPUT"
@@ -191,6 +204,7 @@ jobs:
           path: |
             aliases-build.json
             aliases-check.json
+            aliases-diff.json
             domains/classics/aliases/aliases.jsonl
             domains/classics/aliases/context.json
             cloud/site/src/backup/tables.js
@@ -469,8 +483,9 @@ jobs:
           read -r sha surfaces < <(python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); print(r["store"]["sha"], r["surfaces"])' "$layer/aliases-build.json")
           # what the layer is built and measured from: if the branch changed any of it since the run started (the
           # editors' curated.yaml, the code, the gold, the store, the web pack that sets the witnesses' `web` flags on
-          # this full store, which canon.yml commits), the layer is not that tree's and is not committed
-          inputs=(domains/classics src/taochronos profiles evals/gold cloud/store.json corpus/web)
+          # this full store, which canon.yml commits, the NTU table's extract the build reads), the layer is not that
+          # tree's and is not committed
+          inputs=(domains/classics src/taochronos profiles evals/gold cloud/store.json corpus/web corpus/aliases)
           pushed=0
           for attempt in 1 2 3; do
             git fetch -q origin "${GITHUB_REF_NAME}"

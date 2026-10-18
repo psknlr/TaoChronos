@@ -16,12 +16,14 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 from taochronos.cli import main
 from taochronos.plugins.classics import aliasbuild
 from taochronos.plugins.classics.aliasbuild import build_local, build_open, check, review, review_tsv
 from taochronos.plugins.classics.aliases import loads_records
 from taochronos.plugins.classics.domain import DomainPack
+from taochronos.plugins.classics.ingest.aliases import NTU_EXTRACT
 from taochronos.plugins.classics.store import CorpusStore
 from taochronos.protocol.yamlio import loads_yaml
 
@@ -498,10 +500,12 @@ def test_held_out_names_are_refused_in_any_spelling_and_in_reasons(tmp_path, bui
     home = make_home(tmp_path, curated.replace("why: 常用词", "why: 常用词，非人銜"))
     built.write(home / "domains" / "classics" / "aliases")
     held = [e for e in check(home, heldout={"黄良", "人衔"})["errors"] if "held-out" in e]
-    assert held and "黄良" in held[0] and "人衔" in held[0]
+    # counted, never named: the report does not teach its reader the held-out half
+    assert held == ["curated.yaml writes 2 held-out gold names (counted, not shown: find the rows by comparing with "
+                    "evals/gold/aliases.yaml outside the eval)"]
     home = make_home(tmp_path / "unblock", CURATED.replace("cover_stops: {}", "unblock: {蜜甘: [石蜜甘]}"))
     built.write(home / "domains" / "classics" / "aliases")
-    assert any("held-out" in e and "石蜜甘" in e for e in check(home, heldout={"石蜜甘"})["errors"])
+    assert any("1 held-out gold name " in e and "石蜜甘" not in e for e in check(home, heldout={"石蜜甘"})["errors"])
     assert not any("held-out" in e for e in check(home, heldout={"甘草根"})["errors"])
 
 
@@ -530,6 +534,203 @@ def test_the_local_layer_counts_with_the_herb_set_its_profile_loads(built):
     assert layer.context == built.context and "白露藤" not in layer.context["herbs"]  # no local head
     rec = records(layer)["青霞根"]  # beside 白露藤 and 金风草, which the profile's gates know as no herbs
     assert rec.n == 1 and rec.sh == 0 and ref(rec, "紫云藤").st == "candidate"
+
+
+# ------------------------------------------------------------------ the NTU table (CC BY-NC 4.0), shipped
+NTU_ROWS = ["PrimaryDrugNameNo.\tPrimaryDrugName\tDictionarySource\tAlternateName\tRemarks",
+            "1\t甘草\t《中华本草》\t国老\t（《别录》）",  # an open pair the table confirms, credited
+            "1\t甘草\t《中华本草》\t甜根子\t[四川]",  # written once, in 1950, as a drug
+            "2\t甘草\t《中药大辞典》\t甜根子\t[陕西]《四川中药志》",  # the same pair again: a modern book credits nothing
+            "3\t人参\t《中华本草》\t仁森嘎布\t（藏名）",  # a folk name in Tibetan the store never writes
+            "3\t人参\t《中华本草》\t棒槌\t",
+            "4\t金霞果\t《全国中草药汇编》\t棒槌\t《纲目拾遗》",  # a head nothing writes, its name written: shared
+            "5\t紫霄藤\t《全国中草药汇编》\t碧云根\t",  # neither name a herb or written: left out
+            "6\t鸡（土从）\t《中华本草》\t土鸡\t",  # a head with a lost character: none
+            "7\t黄连\t《中华本草》\t水麻tiao\t",  # a lost character (in pinyin): no name
+            "7\t黄连\t《中华本草》\t黄连须-根\t《纲目》、《本经》",  # a mark dropped: in doubt; the earliest book
+            "8\t黄连\t《中华本草》\t王连\t《摘元方》"]  # a book the works table does not list
+
+
+def ntu_home(root: Path, *, ship: bool = True, pin: bool = True, rows: list[str] = NTU_ROWS) -> Path:
+    """A home with a synthetic NTU extract (corpus/aliases/ntu40k.tsv) and the repository's sources.yaml, the
+    extract's pin made this one's (``pin``) and the table shipped or local (``ship``)."""
+    home = make_home(root)
+    extract = home / NTU_EXTRACT
+    extract.parent.mkdir(parents=True)
+    extract.write_text("# a synthetic extract of the NTU table\n" + "\n".join(rows) + "\n", encoding="utf-8")
+    registry = loads_yaml((DOMAIN / "aliases" / "sources.yaml").read_text(encoding="utf-8"))
+    ntu = next(s for s in registry["sources"] if s["id"] == aliasbuild.NTU)
+    if pin:
+        ntu["pin"]["extract"].update(sha256=hashlib.sha256(extract.read_bytes()).hexdigest(), rows=len(rows) - 1)
+    if not ship:
+        ntu.update({"ship": False, "class": "local"})
+    target = home / "domains" / "classics" / "aliases" / "sources.yaml"
+    target.unlink()
+    target.write_text(yaml.safe_dump(registry, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    return home
+
+
+@pytest.fixture(scope="module")
+def ntu_built(site, tmp_path_factory):
+    home = ntu_home(tmp_path_factory.mktemp("ntu"))
+    return home, build_open(site[1], home)
+
+
+def test_without_the_extract_the_build_reads_no_ntu_pair_and_says_so(built):
+    header, _ = loads_records(built.text())
+    assert aliasbuild.NTU not in header["sources"] and aliasbuild.NTU not in header
+    assert f"{aliasbuild.NTU} ships but {NTU_EXTRACT} is missing: none of its pairs is read" in built.report["warnings"]
+    assert built.report["coverage"][f"{aliasbuild.NTU}_rows"] == 0
+
+
+def test_the_ntu_pairs_ship_through_the_usual_gates(site, ntu_built):
+    home, result = ntu_built
+    recs = records(result)
+    guolao = ref(recs["国老"], "甘草")  # curated, the 别名录's and the table's: the curated status, the table's credit
+    assert {"curated", "bielu-jc", aliasbuild.NTU} <= set(guolao.src) and guolao.st == "open"
+    assert guolao.cr == ("别录", 480, 500)
+    tian = ref(recs["甜根子"], "甘草")  # not a local pair: no early passage needed (the local layer's is a candidate)
+    assert (tian.src, tian.st, tian.k, tian.nt, tian.cr) == ([aliasbuild.NTU], "open", "alias", "四川、陕西", None)
+    folk = ref(recs["仁森嘎布"], "人参")
+    assert (folk.k, folk.nt, folk.st, recs["仁森嘎布"].n) == ("folk", "藏名", "open", 0)
+    assert {r.h: r.st for r in recs["棒槌"].r} == {"人参": "cue", "金霞果": "cue"}  # one name, two drugs: shared
+    assert ref(recs["棒槌"], "金霞果").cr == ("纲目拾遗", 1765, 1765)
+    assert recs["金霞果"].ho == "金霞果" and "金霞果" in result.context["herbs"]  # a head the store never writes
+    marked = ref(recs["黄连须根"], "黄连")
+    assert marked.st == "candidate" and marked.cr == ("本经", 25, 220)  # in doubt; the earliest book its remark cites
+    assert not [s for s in recs if "〓" in s]
+    assert aliasbuild.NTU in ref(recs["王连"], "黄连").src and ref(recs["王连"], "黄连").cr is None
+    assert "碧云根" not in recs and "紫霄藤" not in recs and "土鸡" not in recs and "鸡" not in recs
+    cov = result.report["coverage"]
+    assert {k[len(aliasbuild.NTU) + 1:]: v for k, v in cov.items() if k.startswith(aliasbuild.NTU)} == {
+        "rows": 11, "lost_heads": 1, "lost_names": 1, "pairs": 8, "left_out": 1, "kept": 7, "credited": 3, "folk": 1,
+        "doubt": 1}
+    assert result.report[aliasbuild.NTU]["books"] == {"classical": 3, "modern": 1, "unlisted": 1}
+    assert result.report[aliasbuild.NTU]["left_out"] == 1
+    header, _ = loads_records(result.text())
+    assert header[aliasbuild.NTU] == hashlib.sha256((home / NTU_EXTRACT).read_bytes()).hexdigest()[:12]
+    assert header["labels"][aliasbuild.NTU] == "NTU 40K（CC BY-NC 4.0）" and aliasbuild.NTU in header["sources"]
+    assert not [w for w in result.report["warnings"] if NTU_EXTRACT in w]  # the extract is the pinned one
+    assert build_open(site[1], home).text() == result.text()  # the same bytes again
+
+
+def test_the_ntu_extract_is_read_only_while_it_ships_and_checked_against_its_pin(site, tmp_path):
+    result = build_open(site[1], ntu_home(tmp_path / "local", ship=False))
+    header, _ = loads_records(result.text())
+    assert aliasbuild.NTU not in header["sources"] and aliasbuild.NTU not in header
+    assert not [k for k in result.report["coverage"] if k.startswith(aliasbuild.NTU)]
+    result = build_open(site[1], ntu_home(tmp_path / "other", pin=False))  # the repository's pin: the real extract's
+    assert any(w.startswith(f"{NTU_EXTRACT}: sha256 ") and "differs from the pinned" in w
+               for w in result.report["warnings"])
+    assert aliasbuild.NTU in loads_records(result.text())[0]["sources"]
+
+
+def test_the_local_layer_leaves_out_the_rows_of_a_list_that_ships(ntu_built):
+    _, result = ntu_built
+    rows = [{"h": "紫霄藤", "s": "碧云根", "src": aliasbuild.NTU, "ref": "row 7"},
+            {"h": "人参", "s": "棒槌", "src": "hurb", "ref": "row 2"}]
+    layer = build_local(result, rows)
+    recs = records(layer)
+    assert "碧云根" not in recs and "hurb" in ref(recs["棒槌"], "人参").src
+    assert layer.report["coverage"]["local_pairs"] == 1 and layer.report["coverage"]["local_shipped"] == 1
+
+
+def test_the_layer_with_the_ntu_table_passes_check_and_its_sources_are_checked(site, ntu_built):
+    home, result = ntu_built
+    folder = home / "domains" / "classics" / "aliases"
+    result.write(folder)
+    assert check(home, store=site[1], rebuild=True)["errors"] == []
+    text = (folder / "sources.yaml").read_text(encoding="utf-8")
+    try:
+        registry = loads_yaml(text)
+        ntu = next(s for s in registry["sources"] if s["id"] == aliasbuild.NTU)
+        ntu.pop("attribution")
+        (folder / "sources.yaml").write_text(yaml.safe_dump(registry, allow_unicode=True), encoding="utf-8")
+        assert any("non-commercial licence" in e for e in check(home)["errors"])
+        ntu.update({"attribution": "x", "class": "local"})
+        (folder / "sources.yaml").write_text(yaml.safe_dump(registry, allow_unicode=True), encoding="utf-8")
+        errors = check(home)["errors"]
+        assert any("is local, so it does not ship" in e for e in errors)
+        ntu["class"] = "shared"
+        (folder / "sources.yaml").write_text(yaml.safe_dump(registry, allow_unicode=True), encoding="utf-8")
+        assert any(f"{aliasbuild.NTU} has no class of open, nc, derived, local" in e for e in check(home)["errors"])
+    finally:
+        (folder / "sources.yaml").write_text(text, encoding="utf-8")
+
+
+NTU_SETTLE = [NTU_ROWS[0],
+              "11\t青木香\t《中国药典》\t兜铃根\t",  # a head curated.yaml splits by period: kept apart
+              "11\t青木香\t《中国药典》\t木香\t",
+              "12\t葶苈子\t《中华本草》\t大室\t",  # 葶苈 with the part it is, two of its names: one drug
+              "12\t葶苈子\t《中华本草》\t丁历\t",
+              "13\t云端草\t《全国中草药汇编》\t地楼\t",  # another head for 栝楼实's two names: a double, no rival
+              "13\t云端草\t《全国中草药汇编》\t泽姑\t",
+              "14\t甘草\t《中华本草》\t清心丹\t",  # a formula's name: a candidate (5c)
+              "15\t胡黄连\t《中华本草》\t揩之\t"]  # written once, not as a drug, no witness: a candidate (5b)
+
+
+def test_ntu_heads_kept_apart_joined_by_form_and_doubles(site, built, tmp_path):
+    result = build_open(site[1], ntu_home(tmp_path, rows=NTU_SETTLE))
+    recs, before = records(result), records(built)
+    # 青木香: the editors' 木香 before 1100 and 马兜铃 after; the table's entry under it gives no drug
+    assert recs["青木香"].ho is None and "兜铃根" not in recs
+    assert {r.h: r.v for r in recs["青木香"].r} == {r.h: r.v for r in before["青木香"].r}
+    assert result.report[aliasbuild.NTU]["apart"] == {"heads": {"curated": 1}, "pairs": 2}
+    # 葶苈子 joins 葶苈 (its form, and the lexicon's 葶苈子 files 葶苈): 大室 still names one drug
+    assert recs["葶苈子"].ho == "葶苈" and {r.h for r in recs["大室"].r} == {"葶苈"}
+    assert ref(recs["大室"], "葶苈").st == ref(before["大室"], "葶苈").st
+    assert result.report[aliasbuild.NTU]["attached"] == {"names": 1}
+    # 云端草 shares 地楼 and 泽姑 with 栝楼 (the drug 栝楼实): its pairs are candidates, the others' keep their status
+    for name in ("地楼", "泽姑"):
+        assert ref(recs[name], "云端草").st == "candidate"
+        assert ref(recs[name], "栝楼实").st == ref(before[name], "栝楼实").st
+    assert result.report[aliasbuild.NTU]["doubles"] == 2
+    assert ref(recs["清心丹"], "甘草").st == "candidate"  # 5c
+    assert (recs["揩之"].n, recs["揩之"].sh, ref(recs["揩之"], "胡黄连").st) == (1, 0, "candidate")  # 5b
+    assert aliasbuild.apart_errors(result.records, loads_yaml(CURATED), DomainPack(DOMAIN).variants.normalize_text) == []
+
+
+def test_check_refuses_a_split_name_the_ntu_table_joins_or_heads():
+    from taochronos.plugins.classics.aliases import AliasRecord, Referent
+
+    norm = DomainPack(DOMAIN).variants.normalize_text
+    curated = loads_yaml(CURATED)
+    joined = [AliasRecord("青木香", ho="马兜铃"), AliasRecord("兜铃根", r=[Referent("青木香", src=[aliasbuild.NTU])])]
+    assert aliasbuild.apart_errors(joined, curated, norm) == [
+        "青木香: a member of 马兜铃, though curated.yaml splits it (a window, a part's or an older name, a cue)",
+        "青木香: heads a drug of the NTU table (1 name), though curated.yaml splits it"]
+    assert aliasbuild.apart_errors(joined, curated, norm, heldout={"马兜铃"})[0].startswith(
+        "青木香: a member of a held-out name,")
+    curated["same_drug"].append({"names": ["马兜铃", "青木香"], "wit": ["bc_a.00000"]})  # the editors join them
+    listed = [AliasRecord("青木香", ho="马兜铃"), AliasRecord("兜铃根", r=[Referent("青木香", src=["curated"])])]
+    assert aliasbuild.apart_errors(listed, curated, norm) == []
+
+
+def test_the_layer_diff_lists_what_a_rebuild_changes():
+    from taochronos.plugins.classics.aliases import AliasRecord, Referent, dumps_records
+
+    old = dumps_records([AliasRecord("大室", r=[Referent("葶苈", st="open")]), AliasRecord("葶苈子", ho="葶苈子"),
+                         AliasRecord("丁历", r=[Referent("葶苈", st="cue"), Referent("亭历", st="cue")])], {})
+    new = dumps_records([AliasRecord("大室", r=[Referent("葶苈", st="cue"), Referent("葶苈子", st="cue")]),
+                         AliasRecord("葶苈子", ho="葶苈"), AliasRecord("丁历", r=[Referent("葶苈", st="cue")]),
+                         AliasRecord("大适", r=[Referent("葶苈", st="open")])], {})
+    diff = aliasbuild.layer_diff(old, new)
+    assert diff["surfaces"] == {"old": 3, "new": 4, "added": 1, "removed": 0}
+    assert (diff["ho"], diff["lost"], diff["drops"], diff["held_out_rows"]) == (1, 1, {"open→cue": 1}, 0)
+    assert diff["rows"] == {"ho": [["葶苈子", "葶苈子", "葶苈"]], "lost": [["丁历", "亭历", "cue", ["葶苈"]]],
+                            "drops": [["大室", "葶苈", "open", "cue", ["葶苈子"]]]}
+    hidden = aliasbuild.layer_diff(old, new, heldout={"大室"})
+    assert hidden["held_out_rows"] == 1 and hidden["rows"]["drops"] == [] and hidden["drops"] == {"open→cue": 1}
+
+
+def test_works_give_years_or_say_modern(tmp_path):
+    path = tmp_path / "sources.yaml"
+    path.write_text("version: 1\nworks: {纲目: [1578, 1578], 尔雅: [-300, 0], 四川中药志: modern}\n", encoding="utf-8")
+    assert aliasbuild.read_registry(path)["works"]["四川中药志"] == aliasbuild.MODERN
+    for bad in ("[1578]", "[1600, 1578]", "old", "[1578.5, 1600]", "null"):
+        path.write_text(f"version: 1\nworks: {{纲目: {bad}}}\n", encoding="utf-8")
+        with pytest.raises(ValueError, match="works 纲目 is not"):
+            aliasbuild.read_registry(path)
 
 
 # ------------------------------------------------------------------ review and check
@@ -616,7 +817,8 @@ def test_the_command_line(tmp_path, capsys):
     (folder / "curated.yaml").write_text(CURATED.replace("国老, head: 甘草", "常山, head: 甘草"), encoding="utf-8")
     with pytest.raises(SystemExit):
         main(base + ["check"])
-    assert "常山" in json.loads(capsys.readouterr().out)["errors"][0]
+    said = json.loads(capsys.readouterr().out)["errors"][0]  # a held-out name: counted, not named
+    assert said.startswith("curated.yaml writes 1 held-out gold name ") and "常山" not in said
     for there in (tmp_path / "none.sqlite", tmp_path):  # a store that is not there, or a folder, in a sentence
         with pytest.raises(SystemExit, match="no corpus store at"):
             main(base + ["check", "--db", str(there)])

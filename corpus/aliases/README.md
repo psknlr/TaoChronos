@@ -19,8 +19,8 @@ are **unverified**. Confirm them with the Cite button of the dataset's page befo
 workbook's metadata names Gail Chen as its creator.
 
 **Licence.** [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/): non-commercial use only, with credit.
-This extract is shared under the same licence. It was added to the repository at the maintainer's request on
-2026-10-18, credited to NTU, with the site staying non-commercial. Anything built on this file inherits the
+This extract is shared under the same licence. It was added to the repository by the decision of IMPF-AI, the site's
+publisher, on 2026-10-18, credited to NTU, with the site staying non-commercial. Anything built on this file inherits the
 non-commercial condition. The licensor offers the dataset as-is, without warranties (section 5 of the licence).
 
 **What was changed.** The file was converted from the dataset's workbook (`ChineseDrugEthnonymsSynonymyTable.xlsx`,
@@ -54,6 +54,10 @@ reads it like the workbook and gives one entry per row:
 - **Remarks.** These are parsed into `books`, `regions`, `language`, `persons` and `other`. A language label makes the
   row's name a folk name in that language.
 
+A cell that cites a commentator instead of naming the drug (高诱注, 郭璞注: three rows) gives no name. A `.tsv` other
+than the extract is read without quoting, a table with two columns of one role is refused, and an extract cut short
+or with a cell lost is refused, not read in part.
+
 The alias build then takes the pairs through its usual gates: stop names, the cue and candidate statuses, and blockers.
 
 **Regenerating.** Run this from the repository, with the dataset's workbook or its Dataverse `.tab` or `.zip`:
@@ -62,7 +66,8 @@ The alias build then takes the pairs through its usual gates: stop names, the cu
 taochronos aliases import ntu ChineseDrugEthnonymsSynonymyTable.xlsx --publish   # -o PATH writes elsewhere
 ```
 
-The same workbook gives the same bytes. The command reports the rows read and written, the extract's size and
+The same workbook gives the same bytes, whatever name it was saved under or whatever zip it came in: when its sha256
+is the one `sources.yaml` pins, the header names it by the pinned file name. The command reports the rows read and written, the extract's size and
 sha256, how the Remarks parse and the names the rows give. It refuses the extract itself as input. Without
 `--publish`, `aliases import ntu` writes only the local layer (`<data>/aliases/local/ntu.jsonl` and its manifest).
 
@@ -70,4 +75,4 @@ sha256, how the Remarks parse and the names the rows give. It refuses the extrac
 packs only `corpus/demo`, `corpus/catalog` and `corpus/modern` of `corpus/` into `home.zip`. It is not part of the
 corpus server's image either, because `.dockerignore` admits the same three folders. The site serves only what the
 alias build writes into `domains/classics/aliases/`, where `sources.yaml` decides whether the `ntu40k` pairs ship
-(credited as "NTU 40K").
+(credited as "NTU 40K（CC BY-NC 4.0）").

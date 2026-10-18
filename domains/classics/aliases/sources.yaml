@@ -1,11 +1,14 @@
-# The sources of the alias layer (ADR 0023) and the years of the works the 本草纲目's 释名 brackets credit.
+# The sources of the alias layer (ADR 0023), and the years of the works a name is credited to: those the 本草纲目's 释名
+# brackets credit and the classical books the NTU table's remarks cite.
 #
 # `ship: true` sources may reach what is published — the repository, home.zip, the container, tables.js; `aliases
 # check` refuses a shipped record crediting any other.  `class`: open (a list released openly, or the project's own
-# decisions), derived (facts the build reads off the store's texts or the project's data, each with its witness ids),
-# local (lists without a licence that allows publishing: imported under <data>/aliases/local/ with a pin, read only by
-# profiles/full-corpus-local.yaml).  `label` is how an answer credits the source.  Never read at runtime: the build
-# writes the labels into the header of aliases.jsonl.
+# decisions), nc (a list released under a non-commercial licence, shipped credited while the site stays non-commercial:
+# the NTU table, CC BY-NC 4.0, by IMPF-AI's decision of 2026-10-18 — its faithful extract under corpus/aliases/,
+# pinned, read by every build), derived (facts the build reads off the store's texts or the project's data, each with
+# its witness ids), local (lists without a licence that allows publishing: imported under <data>/aliases/local/ with a
+# pin, read only by profiles/full-corpus-local.yaml).  `label` is how an answer credits the source.  Never read at
+# runtime: the build writes the labels into the header of aliases.jsonl.
 version: 1
 sources:
   - id: bielu-jc
@@ -38,14 +41,27 @@ sources:
     title: Large List of Chinese Drug Names 40K
     doi: 10.21979/N9/V2XBOH
     licence: CC BY-NC 4.0
+    licence_uri: https://creativecommons.org/licenses/by-nc/4.0/
     attribution: >-
       Chong, William Eng Keat; Stanley-Baker, Michael, 2019, Large List of Chinese Drug Names 40K, DR-NTU (Data), V1
-      (author order and version unverified)
-    ship: false
-    class: local
-    pin: {file: ChineseDrugEthnonymsSynonymyTable.tab, rows: 50606, sha256: null}
-    label: NTU 40K
-# the works a 释名 bracket credits (one per label of harvest.DRUG_SOURCES, and 吴普): [first, last] year of composition
+      (author order and version unverified), https://doi.org/10.21979/N9/V2XBOH, CC BY-NC 4.0: non-commercial use, with
+      credit
+    ship: true
+    class: nc
+    # the dataset's workbook (`taochronos aliases import ntu FILE` warns when another is read) and the committed extract
+    # the build reads (it warns when the extract is not this one)
+    pin:
+      file: ChineseDrugEthnonymsSynonymyTable.xlsx
+      rows: 50606
+      sha256: 3a4cf287234f69dea286b136a293baea85d2ad8ad9cd187b83b17b9ab981342c
+      extract: {file: corpus/aliases/ntu40k.tsv, rows: 50606,
+                sha256: dd85440142977877991110f127a7d284c54f74a46104c4a1542b3ba027ea5641}
+    label: NTU 40K（CC BY-NC 4.0）
+# works: [first, last] year of composition.  First the works a 释名 bracket credits (one per label of
+# harvest.DRUG_SOURCES, and 吴普), then the classical books the NTU table's remarks cite five times or more (a pair is
+# credited to the earliest one its remark cites): the years of the work's abbreviation above, else corpus/catalog's, else
+# as noted.  `modern` marks a book the remarks cite ten times or more that is modern (after 1911): it credits nothing.
+# Titles are compared normalised (嘉祐 is 嘉佑).  A book cited and not here credits nothing either.
 works:
   本经: [25, 220]
   吴普: [220, 260]
@@ -71,3 +87,112 @@ works:
   救荒: [1406, 1406]
   食物: [1506, 1521]
   纲目: [1578, 1578]
+  # the classical books the NTU remarks cite (count): the years of the abbreviation above
+  本草拾遗: [739, 739]        # 41
+  本草图经: [1062, 1062]      # 39
+  日华子本草: [968, 976]      # 32
+  药性论: [618, 643]          # 20
+  雷公炮炙论: [420, 479]      # 16
+  食疗本草: [701, 741]        # 15
+  本草衍义: [1116, 1116]      # 14
+  吴普本草: [220, 260]        # 11
+  日用本草: [1329, 1329]      # 10
+  开宝本草: [973, 974]        # 9
+  嘉祐本草: [1061, 1061]      # 6 (written 嘉佑本草)
+  救荒本草: [1406, 1406]      # 6
+  食物本草: [1506, 1521]      # 6
+  蜀本草: [934, 965]          # 5
+  海药本草: [907, 960]        # 5
+  # corpus/catalog's years (canon, jicheng, external-works, kanripo)
+  纲目拾遗: [1765, 1765]      # 44, 本草纲目拾遗
+  滇南本草: [1396, 1476]      # 41
+  本草经集注: [480, 500]      # 30
+  尔雅: [-300, 0]             # 25
+  千金方: [650, 659]          # 23
+  千金·食治: [650, 659]       # 13, 千金方 卷二十六
+  圣惠方: [978, 992]          # 22, 太平圣惠方
+  圣济总录: [1111, 1117]      # 16
+  本经逢原: [1695, 1695]      # 15
+  普济方: [1390, 1406]        # 14
+  肘后方: [306, 363]          # 13
+  金匮要略: [200, 219]        # 9
+  本草从新: [1757, 1757]      # 9
+  说文: [100, 121]            # 8
+  本草便读: [1887, 1887]      # 8
+  丹溪心法: [1347, 1347]      # 8
+  东医宝鉴: [1611, 1611]      # 8
+  酉阳杂俎: [850, 860]        # 8
+  本草求真: [1769, 1769]      # 7
+  饮膳正要: [1330, 1330]      # 6
+  本草备要: [1694, 1694]      # 6
+  汉书: [58, 82]              # 6
+  伤寒论: [200, 219]          # 6
+  广雅: [227, 232]            # 6
+  庄子: [-350, -250]          # 6
+  山海经: [-400, 0]           # 5
+  周礼: [-400, -200]          # 5
+  医学入门: [1575, 1575]      # 5
+  # the year a book was finished or first printed, where corpus/catalog has none or only its dynasty
+  植物名实图考: [1848, 1848]  # 34, 吴其濬
+  本草求原: [1848, 1848]      # 33, 赵其光
+  生草药性备要: [1711, 1711]  # 28, 何谏
+  医林纂要: [1758, 1758]      # 19, 汪绂《医林纂要探源》
+  草木便方: [1870, 1870]      # 18, 刘善述
+  本草蒙筌: [1565, 1565]      # 16, 陈嘉谟 (catalog: the Ming, 1368–1644)
+  石药尔雅: [806, 806]        # 13, 梅彪
+  随息居饮食谱: [1861, 1861]  # 11, 王士雄
+  补缺肘后方: [500, 500]      # 8, 陶弘景《补阙肘后百一方》
+  品汇精要: [1505, 1505]      # 8, 《本草品汇精要》
+  履巉岩本草: [1220, 1220]    # 6, 王介
+  桂海虞衡志: [1175, 1175]    # 6, 范成大
+  群芳谱: [1621, 1621]        # 6, 王象晋
+  本草汇言: [1624, 1624]      # 6, 倪朱谟
+  本草原始: [1612, 1612]      # 6, 李中立
+  # modern books the NTU remarks cite ten times or more
+  四川中药志: modern
+  广西药植名录: modern
+  中药志: modern
+  云南中草药: modern
+  贵州草药: modern
+  陕西中草药: modern
+  贵州民间药物: modern
+  岭南采药录: modern
+  药材学: modern
+  药材资料汇编: modern
+  广西中药志: modern
+  广州植物志: modern
+  民间常用草药汇编: modern
+  云南中草药选: modern
+  浙江天目山药植志: modern
+  江苏植药志: modern
+  中药材手册: modern
+  现代实用中药: modern
+  四川常用中草药: modern
+  陆川本草: modern
+  湖南药物志: modern
+  南宁市药物志: modern
+  云南思茅中草药选: modern
+  昆明民间常用草药: modern
+  常用中草药手册: modern
+  贵州民间方药集: modern
+  中国高等植物图鉴: modern
+  吉林中草药: modern
+  重庆草药: modern
+  岭南草药志: modern
+  饮片新参: modern
+  浙江民间常用草药: modern
+  广西植物名录: modern
+  中国树木分类学: modern
+  河北药材: modern
+  中国药植图鉴: modern
+  山东中药: modern
+  泉州本草: modern
+  中药形性经验鉴别法: modern
+  中国医学大辞典: modern
+  广东中药: modern
+  福建民间草药: modern
+  中国经济植物志: modern
+  贵州药植目录: modern
+  福建中草药: modern
+  贵阳民间药草: modern
+  江西草药: modern

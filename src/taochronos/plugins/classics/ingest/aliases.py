@@ -20,7 +20,7 @@ The NTU table (CC BY-NC 4.0) comes as an Excel workbook, which a standard-librar
 archival ``.tab``, whose escapes Python's csv module misreads.  Its Remarks name the books a name is cited from, a
 place, an ethnic language (a folk name in it) or a person (:func:`parse_remark`); its names write a character the
 GB2312 set lacked by its parts in brackets (鸡（土从）) or in pinyin (水麻tiao), read as a lost character, never as 鸡 or
-水麻.  By the maintainer's decision of 2026-10-18 it is published, credited, as the committed extract
+水麻.  By IMPF-AI's decision of 2026-10-18 it is published, credited, as the committed extract
 ``corpus/aliases/ntu40k.tsv`` (:func:`publish_ntu`, ``taochronos aliases import ntu FILE --publish``), which
 :func:`read_ntu` reads like the original; :func:`import_local` still writes its pairs for the local layer.
 
@@ -38,7 +38,7 @@ import json
 import re
 import zipfile
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
@@ -693,7 +693,8 @@ def tsv_unescape(cell: str) -> str:
 
 def parse_extract(text: str) -> tuple[list[str], list[str], list[list[str | None]]]:
     """The '#' lines, the header and the rows of an extract written by :func:`publish_ntu` (a tab-separated file with
-    the escapes of :func:`tsv_escape`, no quoting); an empty cell is a missing value (None)."""
+    the escapes of :func:`tsv_escape`, no quoting); an empty cell is a missing value (None).  ``ValueError`` when it
+    does not end with a line end or a row has not the header's cells (a file cut short or edited)."""
     lines = text.split("\n")
     i = 0
     while i < len(lines) and lines[i].startswith("#"):
@@ -703,6 +704,12 @@ def parse_extract(text: str) -> tuple[list[str], list[str], list[list[str | None
         return notes, [], []
     header = [tsv_unescape(c) for c in lines[i].rstrip("\r").split("\t")]
     rows = [[tsv_unescape(c) or None for c in line.rstrip("\r").split("\t")] for line in lines[i + 1:] if line]
+    if lines[-1]:
+        raise ValueError(f"the extract does not end with a line end: cut short after {len(rows)} rows?")
+    short = next((n for n, row in enumerate(rows, 1) if len(row) != len(header)), None)
+    if short is not None:
+        raise ValueError(f"the extract's row {short} has {len(rows[short - 1])} cells, its header {len(header)}: "
+                         f"cut short or edited by hand?")
     return notes, header, rows
 
 
@@ -727,7 +734,9 @@ def _ntu_columns(header: list[str], name: str) -> dict[str, int]:
     for i, h in enumerate(header):
         key = re.sub(r"[\W_]+", "", h or "").lower()
         for role, names in _NTU_HEADERS.items():
-            if key in names and role not in cols:
+            if key in names:
+                if role in cols:  # which of the two holds the names is not for the reader to guess
+                    raise ValueError(f"{name}: two {role} columns, {header[cols[role]]!r} and {h!r}")
                 cols[role] = i
     missing = [role for role in ("primary", "alternate") if role not in cols]
     if missing:
@@ -765,8 +774,9 @@ def _ntu_table(name: str, data: bytes, *, encoding: str | None = None) -> Source
     elif ext == ".tsv" and text.startswith("#"):  # the committed extract
         notes, header, rows = parse_extract(text)
     else:
-        delimiter = "\t" if ext == ".tsv" else ","
-        table = list(csv.reader(io.StringIO(text, newline=""), delimiter=delimiter))
+        # a .tsv has no quoting (a stray " is a character of its cell); a .csv quotes cells that hold a comma
+        options: dict[str, Any] = {"delimiter": "\t", "quoting": csv.QUOTE_NONE} if ext == ".tsv" else {}
+        table = list(csv.reader(io.StringIO(text, newline=""), **options))
         header, rows = (table[0] if table else []), [[c or None for c in r] for r in table[1:] if r]
     header = [h.strip() for h in header]
     return SourceTable(name, data, header, rows, _ntu_columns(header, name), notes=notes)
@@ -804,6 +814,7 @@ _SURNAMES = frozenset("赵钱孙李周吴郑王冯陈褚卫蒋沈韩杨朱秦尤
                       "蒲邰鄂赖卓屠乔胥党翟谭冉桑寿燕冀尚温庄晏柴瞿阎慕连艾容向易廖耿匡寇聂晁辛饶曾沙鞠巢")
 _BOOK_TITLE = re.compile(r"《([^《》]*)》|《([^《》]*?)(?=[）)\]】]|$)")  # 《纲目》, and 《说文）） or 《尔雅 unclosed
 _COMMENTATOR = re.compile(f"\\s*([{_HAN_CLASS}]{{2,4}})注(?=[）)\\]】]|$)")  # 《尔雅》郭璞注）
+_COMMENTATOR_CELL = re.compile(f"([{_HAN_CLASS}]{{2,3}})注")  # an AlternateName cell that cites a commentator: 高诱注
 _REMARK_GROUP = re.compile(r"[（(]([^（）()]*)[）)]?|[\[［【]([^\[\]［］【】]*)[\]］】]?|([^（）()\[\]［］【】]+)")
 _ONE_GROUP = re.compile(r"[（(\[［【]([^（）()\[\]［］【】]*)[）)\]］】]")
 _REMARK_SEP = re.compile(r"[、，,；;.．:：—\-－/／\s]+")
@@ -1045,7 +1056,12 @@ def _ntu_entries(table: SourceTable, *, normalize: Normalize) -> list[ListEntry]
         elif not alternate.strip():
             flags.append("empty")
         remark = parse_remark(cells.get("remarks"))
-        tokens = _ntu_tokens(alternate or "", normalize, remark["language"] if remark else "")
+        cited = _COMMENTATOR_CELL.fullmatch((alternate or "").strip())
+        if cited and _is_person(cited.group(1)):  # 高诱注, 郭璞注: a commentator the cell cites, no name of the drug
+            flags.append("commentator")
+            tokens = []
+        else:
+            tokens = _ntu_tokens(alternate or "", normalize, remark["language"] if remark else "")
         info: dict[str, Any] = {role: cells.get(role) for role in NTU_COLUMNS}
         info["dictionaries"] = dictionaries(cells.get("dictionary"))
         info["remark"] = remark
@@ -1118,13 +1134,18 @@ def publish_ntu(path: Path | str, out: Path | str, *, encoding: str | None = Non
     """Write the committed extract of the NTU table (``corpus/aliases/ntu40k.tsv``, CC BY-NC 4.0, credited in its
     '#' lines) from the dataset's file — the workbook, the Dataverse .tab or its zip — and report it: the file read,
     its sha256 and rows, the lines written, the extract's bytes and sha256, how the remarks parse, and (with
-    ``normalize``) the names it gives.  Byte for byte the same on the same file.  Refuses the extract itself."""
+    ``normalize``) the names it gives.  Byte for byte the same on the same file: the pinned one (``pin``'s sha256) is
+    named in the header by the pin's file name, whatever the name it was saved under.  Refuses the extract itself."""
     path = Path(path)
     name, data = table_file(path)
     table = _ntu_table(name, data, encoding=encoding)
     if table.notes:
         raise ValueError(f"{path.name}: the extract itself; publish from the dataset's file (the .xlsx or .tab)")
-    text, escaped = extract_text(table, original=path.name)
+    sha = hashlib.sha256(data).hexdigest()
+    pinned = (pin or {}).get("file") if (pin or {}).get("sha256") == sha else None
+    # the pinned workbook, under whatever name or in whatever zip it was saved: the header names it as the pin does,
+    # so that the same workbook gives the same bytes
+    text, escaped = extract_text(replace(table, file=pinned) if pinned else table, original=pinned or path.name)
     _, header, written = parse_extract(text)  # read back: the extract holds the table's cells, every one
     width = len(table.header)
     if header != table.header or written != [[c or None for c in (row + [None] * width)[:width]] for row in table.rows]:
@@ -1153,8 +1174,10 @@ def publish_ntu(path: Path | str, out: Path | str, *, encoding: str | None = Non
 
 
 def _pin_warnings(entry: Mapping[str, Any], pin: Mapping[str, Any] | None) -> list[str]:
+    """Where a file read differs from the pin; not by its name alone when its bytes are the pinned ones."""
+    same = bool(pin) and pin.get("sha256") == entry.get("sha256")
     return [f"{key} {entry[key]} differs from the pinned {pin[key]}" for key in ("file", "rows", "sha256")
-            if pin and pin.get(key) is not None and pin[key] != entry[key]]
+            if pin and pin.get(key) is not None and pin[key] != entry[key] and not (key == "file" and same)]
 
 
 # --------------------------------------------------------------------------- the local layer

@@ -241,10 +241,10 @@ flagged (年代存疑).
 A name two drugs share is listed with every drug and its sources (`query.aliases`), never answered as one.  The
 browser's runtime has it on (`web-canon`: `retrieval.alias.enabled`, and `witness_scope: web`, so a witness passage
 shown is one the 要籍语料 holds); its directory rides in `home.zip`, of which the runtime reads the two built files (a test
-keeps the directory under 150 KB deflated as `home.zip` stores it, and any file of a local list out of it).  The full-corpus profile of the
-site's server has it on too (`alias: {enabled: true}`), and so has the D1 backup, whose port of it (below) answers
-alike.  The model is told so: the tool's description says what the places and labels are, that a term's lexicon
-synonyms are always searched with it, that `aliases: off` turns the layer off, the lexicon synonyms then coming back
+keeps the directory within the build's budget, 1.3 MB deflated as `home.zip` stores it — about 0.9 MB since the NTU
+table ships — and any file of a local list out of it).  The full-corpus profile of the site's server has it on too
+(`alias: {enabled: true}`), and so has the D1 backup, whose port of it (below) answers alike.  The model is told so:
+the tool's description says what the places and labels are, that a term's lexicon synonyms are always searched with it, that `aliases: off` turns the layer off, the lexicon synonyms then coming back
 unlabelled, and that a question longer than 200 characters is searched as with `aliases: off` but for that flag; the standing
 instructions tell it that such entries say which name they were found under, for which drug and on whose authority, to
 keep a shared name's drugs apart, to say when a name belongs to some periods only, and — when a result has neither
@@ -265,6 +265,13 @@ the witness:
 | 同名异物 | a shared name the passage does not decide |
 | 仅见于「X」 · 无药物语境 | the name asked occurs only inside X, or not as a drug: ranked after the others |
 | 所指不同 | in this passage's years the name meant another drug |
+
+A badge names the first of the via's sources by the label `sources.yaml` gives it — 别名录（中醫笈成）, 编者审定,
+古籍互证, 纲目释名, 避讳, 词表 or, since 2026-10-18, NTU 40K（CC BY-NC 4.0） — and its title lists all of them after
+依据, then the witnesses (书证).  A pair only the NTU table gives reads 别名：山栀→栀子 · NTU 40K（CC BY-NC 4.0）: its
+label carries the licence wherever it is shown; it has no witness passage, so its title names none.  The about page
+(`about.html`, 药名别名数据的来源与授权) credits the lists the layer is drawn from, the NTU table with its DOI, licence,
+citation (marked unverified), changes and non-commercial condition.
 
 The latest search sets or clears a passage's badges (a passage found later under the name asked shows none); a flag
 the page has no words for is not shown; badges wrap on a phone.  The research agent's evidence keeps the same labels
@@ -572,7 +579,7 @@ their sessions, the V2 workflow, every server endpoint, CORS and Private Network
 (the server's own pages on any address), the access token (refused without it, the proxy too; generated for any address
 but loopback), the proxy (streaming, allow-list, the SDK path form, `--env-keys`, `--allow-host`), background research, the
 site build (with the corpus store), and `home.zip` carrying the alias layer (its two built files, no file or record of a local
-list, the directory under 150 KB deflated).  `tests/test_web_corpus.py` — the 要籍 list (ranked, metadata only, the classics first,
+list, the NTU table credited under its licence, the directory within its 1.3 MB budget deflated).  `tests/test_web_corpus.py` — the 要籍 list (ranked, metadata only, the classics first,
 nothing modern, open where a source is openly licensed, its open witness the pack's first), the choice of witnesses
 (openly licensed first, 笈成 last among them, never a source in `NEVER_PACKED`), budgets kept as whole chapters spread
 through a book, the pack → a store with the same bytes → indexed once → read by the harness, the index in two phases

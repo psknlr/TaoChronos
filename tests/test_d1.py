@@ -529,10 +529,24 @@ def test_the_workers_lexicon_matches_names_as_long_as_the_full_corpus_lexicon_ho
 
 
 def test_the_workers_tables_stay_small():
-    """tables.js is part of the Worker's bundle: gzipped, under 400 KB (the alias layer included)."""
+    """tables.js is part of the Worker's bundle: gzipped, under 1,320,000 bytes, the alias layer included.  Measured
+    940,622 with the NTU table on the web store's layer (210,074 before it); the margin, 40 %, follows the layer's own
+    (aliasbuild.BUDGET): the rebuild on the full store keeps more of the table's pairs (+25–30 % expected).  The whole
+    Worker (index.js and the modules it imports, tables.js among them) stays under Workers Free's 3 MB compressed a
+    script (ADR 0017), measured here as one gzip stream of its files (about 1.04 MB today)."""
     import gzip
 
-    assert len(gzip.compress(TABLES.read_bytes())) < 400_000
+    assert len(gzip.compress(TABLES.read_bytes())) < 1_320_000
+    src = ROOT / "cloud" / "site" / "src"
+    files, todo = [], [src / "index.js"]
+    while todo:  # the Worker's module graph, by its relative imports
+        path = todo.pop().resolve()
+        if path in files or not path.is_file():
+            continue
+        files.append(path)
+        text = path.read_text(encoding="utf-8")
+        todo += [path.parent / m for m in re.findall(r'^\s*(?:import|export)\b[^;]*?\bfrom\s+"(\.[^"]+)"', text, re.MULTILINE)]
+    assert TABLES.resolve() in files and len(gzip.compress(b"".join(p.read_bytes() for p in files))) < 3_000_000
 
 
 SEARCH = ROOT / "cloud" / "site" / "src" / "backup" / "search.js"

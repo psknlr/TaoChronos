@@ -369,8 +369,12 @@ def test_the_site_build_is_deterministic_and_complete(tmp_path):
 
 def test_home_zip_carries_the_alias_layer_and_nothing_of_a_local_one():
     """ADR 0023: the browser reads the shipped alias layer from home.zip — never a file or a record of the local lists
-    (the NTU table, hurbTable, the GB 别名录), which stay under <data>/aliases/local/ — and the directory keeps to its
-    deflated budget as home.zip stores it (zlib's default level, as `aliases check` measures it)."""
+    (hurbTable, the GB 别名录), which stay under <data>/aliases/local/; the NTU table ships (CC BY-NC 4.0, credited, by
+    IMPF-AI's decision of 2026-10-18) — and the directory keeps to its deflated budget as home.zip stores it
+    (zlib's default level, as `aliases check` measures it): 1,300,000 bytes, aliasbuild.BUDGET's.  Measured 893,846
+    with the NTU table on the web store (143,545 before it); the margin is for the rebuild on the full store, which
+    keeps more of the table's pairs and the whole 别名录 (not measured yet), and curation.  The browser downloads the
+    directory once, with home.zip, and keeps it cached."""
     from taochronos.chat.build import home_zip
     from taochronos.plugins.classics.aliasbuild import BUDGET
     from taochronos.protocol.yamlio import load_yaml
@@ -387,14 +391,18 @@ def test_home_zip_carries_the_alias_layer_and_nothing_of_a_local_one():
     # nor a record crediting a local list
     registry = load_yaml(ROOT / folder / "sources.yaml")["sources"]
     local_ids = {s["id"] for s in registry if not s.get("ship")}
-    assert local_ids == {"bielu-gb", "hurb", "ntu40k"}
+    assert local_ids == {"bielu-gb", "hurb"} == {s["id"] for s in registry if s.get("class") == "local"}
     lines = shipped.read(folder + "aliases.jsonl").decode("utf-8").splitlines()
     header = json.loads(lines[0])["_header"]
     credited = {src for line in lines[1:] for ref in json.loads(line).get("r", ()) for src in ref.get("src", ())}
     assert "bielu-jc" in credited and not (set(header["sources"]) | credited) & local_ids
     assert set(header["sources"]) <= {s["id"] for s in registry if s.get("ship")}
-    # the directory as the browser downloads it: at most 150 KB deflated
-    assert sum(i.compress_size for i in members.values()) <= 150_000 == BUDGET["directory"]
+    # the NTU table ships under its non-commercial licence, credited as the header labels it
+    ntu = next(s for s in registry if s["id"] == "ntu40k")
+    assert (ntu["ship"], ntu["class"], ntu["licence"]) == (True, "nc", "CC BY-NC 4.0") and "ntu40k" in credited
+    assert "CC BY-NC 4.0" in header["labels"]["ntu40k"]
+    # the directory as the browser downloads it: at most 1.3 MB deflated
+    assert sum(i.compress_size for i in members.values()) <= 1_300_000 == BUDGET["directory"]
 
 
 def test_the_site_names_its_relay_only_when_told(tmp_path):

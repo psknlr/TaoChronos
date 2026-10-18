@@ -622,6 +622,44 @@ def test_publish_writes_a_faithful_extract(workbook, tmp_path):
         publish_ntu(out, tmp_path / "third.tsv")
 
 
+def test_publish_names_the_pinned_workbook_whatever_it_was_saved_as(workbook, tmp_path):
+    data = workbook.read_bytes()
+    pin = {"file": workbook.name, "rows": len(NTU_ROWS), "sha256": hashlib.sha256(data).hexdigest()}
+    renamed = tmp_path / "8d6447e5-ChineseDrugEthnonymsSynonymyTable.xlsx"  # as an upload saves it
+    renamed.write_bytes(data)
+    zipped = _zip(tmp_path / "dataverse.zip", {"ChineseDrugEthnonymsSynonymyTable.xlsx": data, "MANIFEST.TXT": b"x"})
+    outs = [tmp_path / f"{i}.tsv" for i in range(3)]
+    reports = [publish_ntu(src, out, pin=pin) for src, out in zip((workbook, renamed, zipped), outs)]
+    assert outs[0].read_bytes() == outs[1].read_bytes() == outs[2].read_bytes()  # the same workbook, the same bytes
+    assert "8d6447e5" not in outs[1].read_text(encoding="utf-8") and "dataverse" not in outs[2].read_text(encoding="utf-8")
+    assert reports[1]["file"] == renamed.name and "warnings" not in reports[1]  # its bytes are the pinned ones
+    other = tmp_path / "other.tsv"  # another workbook (or none pinned) is named as it was read
+    publish_ntu(renamed, other, pin={**pin, "sha256": "0" * 64})
+    assert f"# Original file: {renamed.name}," in other.read_text(encoding="utf-8")
+
+
+def test_malformed_tables_are_refused_or_read_as_written(workbook, tmp_path):
+    quoted = tmp_path / "quoted.tsv"  # a .tsv has no quoting: a stray " never swallows the rows after it
+    quoted.write_text('PrimaryDrugName\tAlternateName\n甘草\t"国老\n黄连\t王连\n', encoding="utf-8")
+    assert [(e.head, names(e)) for e in read_ntu(quoted)] == [("甘草", ["国老"]), ("黄连", ["王连"])]
+    twice = tmp_path / "twice.csv"
+    twice.write_text("PrimaryDrugNameNo.,PrimaryDrugName,AlternateName,AlternateName\n1,甘草,国老,蜜草\n",
+                     encoding="utf-8")
+    with pytest.raises(ValueError, match="twice.csv: two alternate columns, 'AlternateName' and 'AlternateName'"):
+        read_ntu(twice)
+    cited = tmp_path / "cited.tsv"  # a cell that cites a commentator (《中华本草》's 马蔺: 高诱注) names no drug
+    cited.write_text("PrimaryDrugName\tAlternateName\n马蔺\t高诱注\n马蔺\t马薤\n", encoding="utf-8")
+    note, name = read_ntu(cited)
+    assert (note.flags, names(note), names(name)) == (["commentator"], [], ["马薤"])
+    out = tmp_path / "ntu40k.tsv"
+    publish_ntu(workbook, out)
+    text = out.read_text(encoding="utf-8")
+    for cut, said in ((text[:-1], "does not end with a line end"), (text[:text.rindex("\t")] + "\n", "has 4 cells")):
+        out.write_text(cut, encoding="utf-8")  # cut short, or a cell lost
+        with pytest.raises(ValueError, match=said):
+            read_ntu(out)
+
+
 def test_publish_from_the_tab(tmp_path):
     out = tmp_path / "ntu40k.tsv"
     report = publish_ntu(FIX / "ntu.tab", out)

@@ -48,6 +48,9 @@ if (present) {
 }
 
 const LIMIT_MS = Number(process.env.CPU_LIMIT_MS || 25); // generous for shared CI machines: the budget measured is 10 ms
+// an isolate's start (its global scope evaluated: every module, tables.js and the alias index with them): Cloudflare's
+// limit, 1 s on every plan since 2025-10 (a Worker over it is refused at upload, the whole site with it)
+const START_LIMIT_MS = Number(process.env.START_LIMIT_MS || 1000);
 const site = (path, init = {}) => handle(new Request(`https://chat.impf.ai${path}`, init), env, {});
 const post = (path, body) => site(path, { method: "POST", headers: { "Content-Type": "application/json", Origin: "https://chat.impf.ai" }, body: JSON.stringify(body) });
 
@@ -273,25 +276,35 @@ test("a fresh isolate's first drug questions stay within a Worker's limits: the 
   // what search.js runs as it loads (warm.js asks no drug): the question read as a drug's, both queues, the labels
   const warm = await warming;
   assert.ok(warm.questions >= 2 && warm.tiers.includes("A") && warm.tiers.includes("B") && warm.side > 0, JSON.stringify(warm));
-  // a fresh process for a fresh isolate: the modules loaded and the start's warm-ups run, a first question without the
-  // layer (the corpus's statistics and lexicon read, as any first request reads them), then the first drug question of
-  // each kind — an alias whose drug needs its context, a drug with blockers, an origin question
+  // a fresh process for a fresh isolate: the Worker's modules evaluated (site.js, which imports the backup: tables.js,
+  // the alias index built and warmed, warm.js's run) — the start, which Cloudflare allows START_LIMIT_MS of (1 s, its
+  // limit on every plan; measured 350–630 ms here as the process's CPU, its compiler and collector threads included,
+  // 160–220 ms before the NTU table) — then a first question without the layer (the corpus's statistics and lexicon
+  // read, as any first request reads them), then the first drug question of each kind — an alias whose drug needs its
+  // context, a drug with blockers, an origin question
   const url = (p) => JSON.stringify(pathToFileURL(resolve(here, p)).href);
-  const script = [`import { D1Adapter, workerCpu } from ${url("d1-adapter.js")};`, `import { Corpus } from ${url("../site/src/backup/corpus.js")};`,
-    `import { search, warming } from ${url("../site/src/backup/search.js")};`, `import { warmUp } from ${url("../site/src/backup/warm.js")};`,
-    "await warming; await warmUp();",
+  const script = [`import { D1Adapter, workerCpu } from ${url("d1-adapter.js")};`,
+    "const cpu = () => { const u = process.cpuUsage(); return (u.user + u.system) / 1000; };", "const c0 = cpu();",
+    `await import(${url("../site/src/site.js")});`, `const { Corpus } = await import(${url("../site/src/backup/corpus.js")});`,
+    `const { search, warming } = await import(${url("../site/src/backup/search.js")});`, `const { warmUp } = await import(${url("../site/src/backup/warm.js")});`,
+    "await warming; await new Promise((r) => setTimeout(r, 0));", "const start = cpu() - c0;", "await warmUp();",
     `const dbs = ${JSON.stringify(dbs.map((_, k) => `${dir}/db-${k}.sqlite`))}.map((f) => new D1Adapter(f, { readOnly: true }));`,
     "const env = Object.fromEntries(dbs.map((d, k) => [`D1_${k}`, d]));",
     "await search(new Corpus(env), { query: '消渴', aliases: 'off' });", "const out = [];",
     "for (const query of ['将军', '甘草', '人参最早见于哪部书']) out.push([query, (await workerCpu(dbs, () => search(new Corpus(env), { query }))).ms]);",
-    "console.log(JSON.stringify(out));"].join("\n");
+    "console.log(JSON.stringify({ start, out }));"].join("\n");
   const first = () => {
     const run = spawnSync(process.execPath, ["--no-warnings", "--input-type=module", "-e", script], { encoding: "utf8" });
     assert.equal(run.status, 0, run.stderr);
     return JSON.parse(run.stdout);
   };
-  let times = first();
-  if (times.some(([, ms]) => ms >= LIMIT_MS)) times = first().map(([q, ms], i) => [q, Math.min(ms, times[i][1])]); // a shared runner's pause
+  let { start, out: times } = first();
+  if (start >= START_LIMIT_MS || times.some(([, ms]) => ms >= LIMIT_MS)) { // a shared runner's pause
+    const again = first();
+    start = Math.min(start, again.start);
+    times = again.out.map(([q, ms], i) => [q, Math.min(ms, times[i][1])]);
+  }
+  assert.ok(start < START_LIMIT_MS, `the start: ${start.toFixed(0)} ms`);
   for (const [query, ms] of times) assert.ok(ms < LIMIT_MS, `${query}, first: ${ms.toFixed(1)} ms`);
 });
 
@@ -353,19 +366,26 @@ test("classics.search with the alias layer: the asked name keeps 7 of 10 places,
   for (const [k, places] of [[10, [4, 7, 10]], [3, []]]) {
     const { result } = await callTool("classics.search", { query: "辰砂", k });
     assert.deepEqual(sidePlaces(result.hits), places, `k ${k}`);
-    if (k === 3) assert.ok(result.query.aliases.expansions.every((e) => !e.searched && e.why === "share"));
+    if (k === 3) { // no side place: every expansion unsearched — for want of a place, or (an NTU name the corpus never writes) unattested
+      const why = result.query.aliases.expansions.map((e) => [e.searched, e.why]);
+      assert.ok(why.every(([searched, w]) => !searched && ["share", "unattested"].includes(w)) && why.some(([, w]) => w === "share"), JSON.stringify(why));
+    }
     for (const h of result.hits.filter((x) => !x.routes.includes("alias"))) assert.deepEqual([h.matched, h.via], [["辰砂"], undefined]);
   }
   const { result } = await callTool("classics.search", { query: "辰砂", k: 10 });
   const side = result.hits.filter((h) => h.routes.includes("alias"));
   assert.deepEqual(side.map((h) => [h.via[0].for, h.via[0].referent]), Array(3).fill([["辰砂"], "丹砂"]));
   assert.ok(side.every((h) => ["丹砂", "朱砂"].includes(h.via[0].surface) && h.matched[0] === h.via[0].surface));
-  // a drug's other lexicon forms share the side places with the passages found under its other names, the lexicon's first
+  // a drug's other lexicon forms share the side places with the passages found under its other names, the lexicon's
+  // first (肉苁蓉: 苁蓉 from the lexicon, 肉松容 from the 别名录; 山药's passage under 山芋 needs its context since the
+  // NTU table gave 山芋 other drugs, and its side places are the lexicon's 薯蓣 and 署豫 alone)
   const yam = (await callTool("classics.search", { query: "山药", k: 10 })).result;
   assert.deepEqual(sidePlaces(yam.hits), [4, 7, 10]);
-  const labels = yam.hits.filter((_, i) => [4, 7, 10].includes(i + 1)).map((h) => [h.via[0].surface, h.via[0].direction, h.via[0].source]);
+  const drug = (await callTool("classics.search", { query: "肉苁蓉", k: 10 })).result;
+  assert.deepEqual(sidePlaces(drug.hits), [4, 7, 10]);
+  const labels = drug.hits.filter((_, i) => [4, 7, 10].includes(i + 1)).map((h) => [h.via[0].surface, h.via[0].direction, h.via[0].source]);
   assert.deepEqual(labels.map(([, , source]) => source[0] === "词表"), [true, false, true]);
-  assert.ok(labels.every(([, direction]) => direction === "drug→alias"));
+  assert.ok([yam, drug].every((r) => r.hits.filter((_, i) => [4, 7, 10].includes(i + 1)).every((h) => h.via[0].direction === "drug→alias")));
 });
 
 test("classics.search with the alias layer: periods, a name of two drugs, the layer off or without its route", { skip }, async () => {
@@ -374,7 +394,8 @@ test("classics.search with the alias layer: periods, a name of two drugs, the la
   assert.equal(early.query.before, 618);
   assert.ok(early.hits.length > 0 && early.hits.every((h) => h.year < 618 && h.via[0].for[0] === "木通" && h.via[0].referent === "木通"));
   assert.deepEqual(early.hits.map((h) => h.year), [...early.hits.map((h) => h.year)].sort((a, b) => a - b));
-  // in the Qing 通草 is no 木通: left out, and the passages that write it read as 通脱木
+  // in the Qing 通草 is no 木通: left out, and the passages that write it read as 通脱木 (the NTU table's entry under
+  // 通草, a name the editors split by period, gives no drug: aliasbuild keeps it apart)
   const late = (await callTool("classics.search", { query: "清代的通草", k: 10 })).result;
   assert.deepEqual(late.query.aliases.excluded, [{ surface: "木通", for: "通草", why: "period" }]);
   assert.ok(late.hits.length > 0 && late.hits.every((h) => h.via[0].direction === "asked" && h.via[0].reading === "通脱木"));
@@ -392,7 +413,8 @@ test("classics.search with the alias layer: periods, a name of two drugs, the la
   const off = (await callTool("classics.search", { query: "辰砂", k: 10, aliases: "off" })).result;
   assert.ok(!("aliases" in off.query) && off.hits.every((h) => !h.via && !h.flags && !h.routes.includes("alias")));
   const routes = (await callTool("classics.search", { query: "辰砂", k: 10, routes: ["bm25", "temporal"] })).result;
-  assert.ok(routes.query.aliases.expansions.every((e) => !e.searched && e.why === "routes"));
+  const why = routes.query.aliases.expansions.map((e) => [e.searched, e.why]); // an NTU name the corpus never writes: unattested first
+  assert.ok(why.every(([searched, w]) => !searched && ["routes", "unattested"].includes(w)) && why.some(([, w]) => w === "routes"), JSON.stringify(why));
   assert.ok(routes.hits.length > 0 && routes.hits.every((h) => !h.routes.includes("alias")));
 });
 

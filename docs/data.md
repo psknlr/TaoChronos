@@ -65,7 +65,7 @@ historical evidence.
 | `drug_families.yaml` | drugs compared as one in formula compositions (桂枝/桂心/肉桂 → 桂; 山药/薯蓣; 陈皮/橘皮 …) |
 | `incompatibility.yaml` | 十八反 and 十九畏 for `study incompat`: the groups of each verse and the names each drug goes by, the verse, its probes (lines searched as written) and the usual attribution, with the notice that this is a history of texts, not guidance |
 | `lexicon-supplement/` · `lexicon-core/` | lexicons loaded after the curated one by the `web-canon` profile (`lexicon_extra`; `full-corpus` loads the supplement and the whole harvest): common drugs neither the curated lexicon nor the core of the harvest names, curated by hand; and the 800 drugs and 2 000 formulas of the harvest the full corpus attests most (`taochronos lexicon core`), still candidates — they never shadow a curated term |
-| `aliases/` | the alias layer ([below](#alias-layer-domainsclassicsaliases), [ADR 0023](adr/0023-alias-layer.md)): a drug's other names with their drugs, kinds, statuses, periods, sources and witness passages — `sources.yaml` (the sources, their licences and labels, the years of the works the 本草纲目's 释名 credits) and `curated.yaml` (the editors' decisions, with their witness passages), never read at runtime; `aliases.jsonl` and `context.json`, written by `taochronos aliases build`, which the profiles load (`aliases: [aliases]`) beside the lexicon, never into it |
+| `aliases/` | the alias layer ([below](#alias-layer-domainsclassicsaliases), [ADR 0023](adr/0023-alias-layer.md)): a drug's other names with their drugs, kinds, statuses, periods, sources and witness passages — `sources.yaml` (the sources, their licences, pins and labels, the years of the works a name is credited to: those the 本草纲目's 释名 credits and the classical books the NTU table's remarks cite) and `curated.yaml` (the editors' decisions, with their witness passages), never read at runtime; `aliases.jsonl` and `context.json`, written by `taochronos aliases build`, which the profiles load (`aliases: [aliases]`) beside the lexicon, never into it |
 
 ## Adding a real corpus
 
@@ -506,9 +506,13 @@ on the normalised text: a passage pasted in) is read and ranked as without the l
 only a passage that writes a name before it came into use still flagged.  The segmenter, the normaliser, the lexicon
 and D1's `lex` are unchanged, so the layer needs no re-index and no re-import.
 
-**Sources.**  What ships comes only from open lists, the project's own decisions and facts read off the store with their
-witness ids (the precedent of `lexicon-core`), never from a `NEVER_PACKED` source; `aliases check` refuses a shipped
-record that credits any other.  `sources.yaml` holds the registry; an answer credits each source by its label.
+**Sources.**  What ships comes only from open lists, one list released under a non-commercial licence (the NTU table,
+below), the project's own decisions and facts read off the store with their witness ids (the precedent of
+`lexicon-core`), never from a `NEVER_PACKED` source; `aliases check` refuses a shipped record that credits any other.
+`sources.yaml` holds the registry, each source with a `class`: `open`, `nc` (non-commercial), `derived` or `local`.
+`check` also refuses a source of no such class, a `local` source that ships, one that does not ship and is not
+`local`, and an `nc` source without its non-commercial licence and an attribution.  An answer credits each source by
+its label.
 
 | Source (`id`) | What | Licence | Shipped | Label |
 |---|---|---|---|---|
@@ -518,49 +522,104 @@ record that credits any other.  `sources.yaml` holds the registry; an answer cre
 | `shiming` | the 本草纲目's 释名 brackets (a（唐本） under its drug), with the work they credit (`[work, y0, y1]`, years from `sources.yaml` `works`) | derived | yes | 纲目释名 |
 | `taboo` | the pairs of `taboo.yaml` whose two sides are drug names (薯蓣/山药): soft floors | derived | yes | 避讳 |
 | `lexicon` | the full-corpus lexicon's other herb entries for a name (its rival drugs) and the entries joined to a drug | derived | yes | 词表 |
+| `ntu40k` | *Large List of Chinese Drug Names 40K*, DR-NTU (Data), DOI [10.21979/N9/V2XBOH](https://doi.org/10.21979/N9/V2XBOH): 50,606 one-to-one records pairing 8,240 primary names with their other names, from 《中华本草》, 《全国中草药汇编》, 《中药大辞典》, 《中国药典》 and 《标准藏药》, with remarks citing books, places and languages; read from its committed extract `corpus/aliases/ntu40k.tsv`; pinned to the workbook `ChineseDrugEthnonymsSynonymyTable.xlsx` (sha256 `3a4cf287…`) and to the extract (`dd854401…`), 50,606 rows each | [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/): non-commercial use only, with credit (`class: nc`) | **yes**, since 2026-10-18, by IMPF-AI's decision, the site staying non-commercial | NTU 40K（CC BY-NC 4.0） |
 | `bielu-gb` | the GB18030 copy of the 别名录 on GitHub | none stated | **no** — local research use | 别名录（GB本） |
 | `hurb` | hurbTable (879 rows, compiled from zhongyoo.com) | none stated | **no** — local research use | hurbTable |
-| `ntu40k` | *Large List of Chinese Drug Names 40K*, DR-NTU (Data), DOI [10.21979/N9/V2XBOH](https://doi.org/10.21979/N9/V2XBOH); pinned to `ChineseDrugEthnonymsSynonymyTable.tab`, 50,606 rows | CC BY-NC 4.0 | **no** — local research use | NTU 40K |
 
 The NTU table's attribution, *Chong, William Eng Keat; Stanley-Baker, Michael, 2019, Large List of Chinese Drug Names
-40K, DR-NTU (Data), V1*, is **unverified** (author order and version): confirm it with the dataset page's Cite button
-before any public mention.  Only the importers and the NTU pin are committed; no row of a local list enters the
-repository, `home.zip`, the container or the Worker's `tables.js`.
+40K, DR-NTU (Data), V1*, is **unverified** (author order and version; the workbook's metadata names Gail Chen as its
+creator): `sources.yaml` and the extract's header mark it so, the label an answer shows names only the table and its
+licence, and it is to be confirmed with the dataset page's Cite button before it is quoted anywhere else.  Until
+2026-10-18 the table was a local list like the other two; IMPF-AI then decided to publish it (ADR 0023, decision 8 and
+its amendment).  Its extract is committed: [`corpus/aliases/README.md`](../corpus/aliases/README.md) says what it
+holds, what was changed, how it was made and how to make it again.  Of hurbTable and the GB 别名录 only the importers are
+committed: no row of theirs enters the repository, `home.zip`, the container or the Worker's `tables.js`.
+
+**The non-commercial condition.**  CC BY-NC 4.0 lets anyone share and adapt the table, credited, for non-commercial
+purposes only.  The site, its server and the D1 backup are non-commercial, and they carry the NTU pairs credited as
+NTU 40K（CC BY-NC 4.0）; whatever carries the layer — `aliases.jsonl`, `home.zip`, the container, `tables.js` — carries
+the condition with it.  A commercial use needs a layer built without the table: `ntu40k` set to `ship: false` and
+`class: local` in `sources.yaml`, then `aliases build`.
 
 **Build.**  `taochronos aliases build` (`plugins/classics/aliasbuild.py`) reads the store, `sources.yaml`,
-`curated.yaml`, `taboo.yaml`, the full-corpus lexicon, the normaliser and the 要籍语料's committed pack
+`curated.yaml`, `taboo.yaml`, the full-corpus lexicon, the normaliser, the 要籍语料's committed pack
 (`corpus/web/passages.jsonl.gz`: on a full store it sets each witness's `web` flag, and the web store is that pack made
-into a store) — and no local list.  A `canon` run that rewrites the pack leaves the layer to be rebuilt: `aliases
-check` warns when the header's `web_pack` is not the pack `corpus/web` holds.  It parses the 别名录
+into a store) and, while `sources.yaml` ships it, the NTU table's committed extract (`corpus/aliases/ntu40k.tsv`) —
+and no local list.  A `canon` run that rewrites the pack leaves the layer to be rebuilt: `aliases check` warns when
+the header's `web_pack` is not the pack `corpus/web` holds.  It parses the 别名录
 (`plugins/classics/ingest/aliases.py`: blanks and `KT` mark lost characters, one-character fragments are dropped, notes
 such as 根名茹根 give part names, hard wraps are joined only where the store attests the join, the conversion errors
-野狼 → 狼 and 浓朴 → 厚朴 and the garbled heads are repaired), adds the curated, taboo and 释名 pairs, and finds up to three
-witnesses for each pair outside `jc_c030`: the earliest equation, gloss or 本草 entry, then the 别名录's own entry.  It
-groups the drugs (curated `same_drug` groups, the lexicon's entries, `ho` on every member), collects each name's
-blockers (longer names that hold it and are not it, and strings that straddle it in the store, on the name they cut),
-counts with the runtime's own gates the passages that write the name free of them (`n`) and the share that read it as a
-drug (`sh`), and gives each pair its status.  It writes `aliases.jsonl` — compact JSON lines, a header with the store,
-normaliser and lexicon fingerprints and the pack's (`web_pack`; on the web store only when the store holds exactly the
-pack's passages, row for row and on every column, else none and a warning), the sources' labels, coverage and counts,
-then one record per name in code-point order — and `context.json` (the herb set and the drug-context patterns), the
-same bytes for the same inputs, and prints a JSON report (coverage, counts, warnings, and what editors should look at).  Budgets: `aliases.jsonl` at most 700,000
-bytes raw and 150,000 deflated, the directory at most 150,000 deflated — measured as `home.zip`, which the browser
-downloads, stores the files (zlib's default level), by `aliases check` and by a test of `home.zip` itself
-(`tests/test_chat.py`).  The committed layer is built on the web store (553 books; 778 entries of the 别名录, 6 释名
-pairs): 2,724 names, 2,138 pairs, 470,111 bytes (103,096 deflated; the directory 143,545).  A build on the site's full
-store completes the 别名录 and the 释名 credits: `--db` on a machine that holds it, or the `aliases` workflow
+野狼 → 狼 and 浓朴 → 厚朴 and the garbled heads are repaired), adds the curated, taboo, 释名 and NTU pairs (below; the
+释名 reader takes every dated title of `works` as a credit, 尔雅 and 说文 among them), and finds up to three witnesses
+for each pair outside `jc_c030`: the earliest equation, gloss or 本草 entry, then the 别名录's own entry.  It groups the
+drugs (curated `same_drug` groups, the lexicon's entries, `ho` on every member; the NTU table's heads last, below),
+collects each name's blockers (longer names that hold it and are not it, and strings that straddle it in the store, on
+the name they cut), counts with the runtime's own gates the passages that write the name free of them (`n`) and the
+share that read it as a drug (`sh`), and gives each pair its status.  It writes `aliases.jsonl` — compact JSON lines, a header with the store,
+normaliser and lexicon fingerprints, the pack's (`web_pack`; on the web store only when the store holds exactly the
+pack's passages, row for row and on every column, else none and a warning) and the NTU extract's (`ntu40k`), the
+sources' labels, coverage and counts, then one record per name in code-point order — and `context.json` (the herb set
+and the drug-context patterns), the same bytes for the same inputs, and prints a JSON report (coverage, counts,
+warnings, and what editors should look at).  Budgets (`aliasbuild.BUDGET`): `aliases.jsonl` at most 4,900,000 bytes
+raw and 1,200,000 deflated, the directory at most 1,300,000 deflated — measured as `home.zip`, which the browser
+downloads once and keeps, stores the files (zlib's default level), by `aliases check` and by a test of `home.zip`
+itself (`tests/test_chat.py`).  They are the web store's layer and about 40 % more, for the build on the full store
+(more of the NTU table's pairs, the whole 别名录) and further curation; before the NTU table they were 700,000, 150,000
+and 150,000.  The committed layer is built on the web store (553 books; 778 entries of the 别名录, 8 释名 pairs, the NTU
+extract): 18,402 names, 19,208 pairs, 3,402,245 bytes (824,525 deflated; the directory 893,846) — before the NTU
+table 2,724 names, 2,138 pairs and 470,111 bytes (143,545 for the directory).  `AliasIndex.load` reads it in about
+0.4 s in CPython and 0.6–0.65 s in Pyodide 0.28.2 under Node 22 (0.04 s and 0.08 s before the table; measured
+2026-10-18 on this repository's 4-core machine, not in a browser); the build on the full store, which keeps more of the
+table's pairs, has not been measured against the budgets yet.  A build there, or `check --db`, takes
+about a minute and a half.  A build on the site's full store completes the 别名录 and the 释名 credits, and keeps more
+of the NTU table's pairs, since more of their names are written there: `--db` on a machine that holds it, or the
+`aliases` workflow
 (`.github/workflows/aliases.yml`, run by hand), which fetches the site's store, builds, checks, regenerates the D1
 backup's tables and measures the layer there.
+
+**The NTU table in the build.**  The build reads the extract (`read_ntu`, `plugins/classics/ingest/aliases.py`) only
+while `sources.yaml` ships `ntu40k`; a missing extract, or one other than the pin's, is a warning, and the header
+records the extract read (`ntu40k`: its sha256, 12 hex digits).  Each row's PrimaryDrugName is the head and its
+AlternateName a name of it, both through the normaliser.  A head or a name holding a lost character (〓: a character
+the dictionaries spelt by its parts or in pinyin) gives no pair, since it would match the store's own 〓; a damaged
+name is in doubt, a candidate.  The same pair from two dictionaries is one, with the more specific kind, every note
+and the earliest credit.  A name in an ethnic language (（藏名）, （傣名）, （蒙名）, （维名） …) is a folk name (`k`
+`folk`) with its language in the note (`nt`), where the places a remark names go too.  The earliest classical work the
+remark cites that `sources.yaml` `works` dates (纲目, 本经, 别录 …) is the pair's credit (`cr`); a modern book (`modern`
+there: 四川中药志, 广西药植名录 …) or one the list lacks credits nothing.  A pair enters only when its name, its head or a
+curated same-drug member of the head is a herb of the full-corpus lexicon or written in a passage the build reads; the
+others are left out and counted.  On the web store the 50,606 rows give 43,433 distinct pairs: 18,362 enter and 25,071
+are left out, while 40 rows whose head holds a lost character and 59 names holding one give none; a cell that cites a
+commentator instead of naming the drug (高诱注, 郭璞注: three rows) gives none either.  The table's heads are grouped
+after the other sources' drugs and change none of them.  A head the editors or the other sources tie to drugs in a way
+no member of one drug can keep is *kept apart*: its entry gives no drug and its pairs are left out (counted under
+`ntu40k.apart` in the report) — a name curated.yaml splits (a row, not a candidate's, with a period window, a part's or
+an older name's kind, or the status cue: 青木香, 木香 before 1100 and 马兜铃's root after; 小草, 远志's leaves; 通草), a
+curated stop, a name the other sources give as a part or an older name, or one they give two drugs (candidates aside).
+Joined, such a name would be searched as its drug's own name in every period.  Any other head no other source heads or
+groups joins the drug of the lexicon entry it heads, else, of the drugs that name it, that its own lexicon entry files
+the head of (葶苈子's files 葶苈) or that it names with or without the part the drug is (`SAME_FORM` 子仁实肉草: 牛蒡 and
+牛蒡子, 龙眼 and 龙眼肉, 地锦 and 地锦草), the one whose names share two or more of its names in the table, and more
+than any other's (七叶一枝花 joins 蚤休; 天胡荽 stays apart though the lexicon files it under 蘩蒌) — a head the other
+sources already give as a name joins only one of those drugs, never one the editors made a candidate of it — else it
+heads a drug of its own; the table never joins two lexicon entries.  On the web store 26 heads are kept apart (12 by
+curated.yaml, 7 for two drugs, 6 as parts, 1 stop; 188 pairs), 65 join a drug by its names and 2 by the lexicon entry
+they head.  `aliases check` refuses a layer in which a name curated.yaml splits is a member (`ho`) of another drug
+(unless a same-drug row lists both) or heads a drug only the table gives.  A pair the store confirms (an equation, a
+gloss or a 本草 entry) credits the store too (`store`, 古籍互证) and carries those witnesses; a pair only the table
+gives has no witness passage, only its source and credit.
 
 `curated.yaml` (version 1) holds the editors' decisions: `repairs` and `head_repairs` (the 别名录's transcription),
 `same_drug` (names of one drug: 丹砂/朱砂/辰砂), `pairs` (a name, its drug, kind, status, `valid` window, cues),
 `first_use` (soft floors), `stop` (false friends), `cover_stops` (strings that hide a name: 将军之官), `unblock`
 (strings that must not: 青矾石 is 青矾) and `decisions` (a status that overrides the rules).  The rows of
 `head_repairs`, `same_drug`, `pairs`, `first_use`, `stop` and `decisions` carry witness passage ids (`wit`, never
-`jc_c030`); `repairs`, `cover_stops` and `unblock` are string rules.  No row may name a string of the alias gold's
-held-out half (`taochronos aliases check`).  A `sources.yaml` or `curated.yaml` that is not YAML, or not of its shape,
-stops `build` and `review` with a sentence saying why, and `check` reports it as an error; `import` stops on either file
-that is not YAML and on a `sources.yaml` not of its shape.
+`jc_c030`); `repairs`, `cover_stops` and `unblock` are string rules.  The rows under "NTU 40K review" are the editors'
+reading of the review sheet's 400 names that the NTU table brings in and the store writes most (the file's header
+says which are still unread).  No row may name a string of the alias gold's held-out half (`taochronos aliases
+check`).  A `sources.yaml` or `curated.yaml` that is not YAML, or not of its shape, stops `build` and `review` with a
+sentence saying why, and `check` reports it as an error; `import` stops on either file that is not YAML and on a
+`sources.yaml` not of its shape.
 
 **Statuses.**  `open` — searched as the drug; `cue` — searched, and taken only where the passage reads as a drug (a
 dose, 各, a preparation after it, 一名 before it, 之名 after it, a cue or two drug names near it); `candidate` — listed,
@@ -568,9 +627,25 @@ never searched (a damaged entry, another drug's headword, a doubtful pairing); `
 expanded; asked on its own, it is listed with its drugs and a note that it is mostly an ordinary word and that nothing
 was searched for it — or, where the lexicon files it as a herb (救火 under 景天), that only today's search of that entry's
 names ran, whose hits carry status `stop`.  The first rule that holds decides: a curated decision; damaged or under a
-one-character head → candidate; another drug's headword → candidate; two drugs or more → cue; written in 20 passages
-or more and read as a drug in under 10 % → stop (under 30 % → cue); two characters → cue; otherwise open.  The
-committed layer: 734 open, 1,101 cue, 303 candidate, 63 stop records.
+one-character head → candidate; another drug's headword or head → candidate (a name only the NTU table makes another
+drug's head turns only the table's own pairs into candidates: its entry 余甘子 leaves the 别名录's 余甘子 → 摩勒 alone); a
+pair only the NTU table gives whose name the store writes free of its blockers, read as a drug in under 50 % of those
+passages (`LIST_SHARE`) and tied to the drug by no passage of the store → candidate (5b: 五味, mostly 五味子 or the
+five flavours, is not 石灰; 熟地 stays 地黄's; 刀斧伤 is no name of 山大刀); such a pair whose name reads as a formula's
+or a class of drugs' — at most 8 characters ending in 汤散丸膏丹圆饮 or 药, no lexicon herb and no name the other
+sources give — → candidate (5c: 镇心丹, 清凉膏, 止血药); such a pair whose drug shares two names or more with a drug the
+other sources give the name → candidate, and no rival of that drug (5d: the table's 荜澄茄 beside the 别名录's
+毕澄茄, or a plant of today borrowing a classical drug's names); two drugs or more → cue; written in 20 passages or
+more and read as a drug in under 10 % → stop (under 30 % → cue); two characters → cue; otherwise open.  A name the
+NTU table gives a second drug of its own is shared like any other: 104 of the other sources' open pairs are cues with
+it (过山龙, 血见愁, 断肠草 name a dozen plants or more in the table).  The committed layer: 7,539 open, 5,579 cue,
+6,090 candidate, 97 stop records (before the NTU table: 734, 1,101, 303 and 63).  The NTU review's same-drug rows
+renamed four of the other sources' drugs to the spelling the texts write most (旋覆花 for 旋复花, 朴硝 for 朴消, 石韦
+for 石苇, 榆白皮 for 榆皮): their referents carry the new name, and the drug 花椒, a lexicon rival before the table,
+joined 蜀椒; no other drug of theirs was merged or lost.
+`taochronos aliases diff OLD [NEW]` lists what a rebuild changes against another layer — names that become members of
+another drug, referents lost, statuses dropped (held-out rows counted, never listed); the `aliases` workflow writes it
+into its summary, and `aliases check` is the gate.
 **Periods.**  A hard window only where an editor records a change of referent (`valid`, [from, to)): 通草 is 木通
 before 960 and 通脱木 from 960, 青木香 木香 before 1100 and the root of 马兜铃 from 1100.  A passage is tested by the
 overlap of its composition range: outside the window a passage is never taken for that drug under the name, and a
@@ -578,9 +653,12 @@ hit on a lexicon form that names the asked drug only there is flagged `other-ref
 soft floors (`fl`: 山药 1063, 党参 1700, 枳壳 960): a passage earlier than the floor is flagged `anachronism` —
 `edition` when its edition is late enough to have changed the character, `layer` otherwise — and never filtered.
 
-**Local layers.**  The three local lists are imported under `<data>/aliases/local/` (`.taochronos/`, git-ignored):
-each as `<source>.jsonl` of normalised pairs, and `manifest.json` recording its file, sha256, bytes, rows, pairs,
-normaliser, licence, attribution and date, with a warning where it differs from the pin.  `aliases build --local`
+**Local layers.**  The two lists that do not ship, hurbTable and the GB 别名录, are imported under
+`<data>/aliases/local/` (`.taochronos/`, git-ignored): each as `<source>.jsonl` of normalised pairs, and
+`manifest.json` recording its file, sha256, bytes, rows, pairs, normaliser, licence, attribution and date, with a
+warning where it differs from the pin.  `aliases import ntu FILE` without `--publish` still writes `ntu.jsonl` there,
+but while the table ships `aliases build --local` leaves those rows out (`local_shipped` in its coverage): the shipped
+pairs already read the table from its extract.  `aliases build --local`
 writes the shipped layer as `aliases build` does (into the repository, unless `--out-dir DIR`), then adds the local
 lists' pairs to the shipped records and classifies them again (a pair only a local list gives also needs a passage
 before 1912 that reads it as a drug) into `<data>/aliases/local/aliases-local.jsonl`, which only
@@ -590,7 +668,7 @@ the local layer (`<data>/aliases/local/context.json`).  That profile is for rese
 the site builders and the Worker's tables never take it, and the deployed profiles (`web-canon`, `full-corpus`) may
 not name a local layer (a test checks).
 ```bash
-taochronos aliases import ntu ChineseDrugEthnonymsSynonymyTable.tab   # .tab, .csv, .tsv or the Dataverse .zip (an .xlsx: export as CSV)
+taochronos aliases import ntu ChineseDrugEthnonymsSynonymyTable.xlsx --publish   # the committed extract corpus/aliases/ntu40k.tsv (-o PATH: elsewhere)
 taochronos aliases import hurb hurbTable.csv                           # --encoding when neither UTF-8 nor GB18030
 taochronos aliases import bielu-gb bencao_alias.txt                    # the GB 别名录; a wrap is joined where the store attests it
 taochronos aliases build [--db PATH] [--local] [--out-dir DIR]          # the shipped layer (and with --local the local one)
