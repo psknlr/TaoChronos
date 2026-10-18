@@ -128,6 +128,7 @@ D1 · Edit；`r2/buckets`：缺 R2 权限（只有归档需要）。这些正是
 | `CLOUDFLARE_ZONE_ID` | `impf.ai` → **Overview** → *API* → Zone ID | 每天取回边缘事件 |
 | `ARCHIVE_BUCKET` | 如 `taochronos-archive` | 归档（4.2） |
 | `STORE_TOKEN_SHA256` | 一次性上载令牌的 sha256 | 只在上载新语料期间（3.4），完成后删除 |
+| `D1_BUDGET` | `90000` | 只在 D1 免费配套（每天导入一段）；付费配套不要设 |
 | `RELAY_URL`、`SITE_URL` | 其他地址 | 只在不用 `chat-api.impf.ai` / `chat.impf.ai` 时 |
 
 ---
@@ -165,8 +166,8 @@ sha256 `ef628936…`；来源与授权见 [cloud/ATTRIBUTION.md](../cloud/ATTRIB
 3. 接着任务 **bind** 再部署一次网站、绑定容器，并在全量语料上做一次检索；日志最后是 `a search on the full corpus: …`。
 
 **A2. D1 备份。**
-1. **Actions → d1 → Run workflow** → 分支选 `main` → **budget** 填 `1000000` → **Run workflow**。（budget 原是免费配套每天
-   10 万行的上限，在付费配套上只是安全阀。导入约写 10 万行。）
+1. **Actions → d1 → Run workflow** → 分支选 `main` → **budget** 填 `1000000`（默认值）→ **Run workflow**。（budget 原是免费
+   配套每天 10 万行的上限，在付费配套上只是安全阀。导入约写 10 万行。每天 00:07 UTC 的定时运行用同一个默认值，也会一次导完。）
 2. 先写入语料（约 87,000 行，约两小时），再计算预先算好的结果（约 12,000 行，约两小时）。以 `the run's time is up`（五小时）
    结束是正常的：再运行一次就会从断点继续，不会重复写入；每天 00:07 UTC（新加坡时间 08:07）的定时运行也会接着导入。
 3. 完成时，该次运行的 **Summary** 写着 `complete: yes`；它在 KV 里记下版本，并自动启动 **site** 工作流，绑定数据库。
@@ -528,7 +529,7 @@ MiniMax 余额维持在愿意花费的数目。
 | B4/4.1：`Authentication error [code: 10000]` | 令牌或 Account ID 不对 | 2.2 的检查 |
 | `No access to the specified resource`（含 `workers/routes`） | 令牌的 Zone Resources 没有 `impf.ai` | 修改令牌 |
 | `externally managed DNS records` | `chat` 有一条账户自建的 DNS 记录 | 在 **impf.ai → DNS** 删除那一条，再部署 |
-| d1 停在 `the day's budget` | 达到了给定的 budget（定时运行为 90,000） | 以 `1000000` 再运行 |
+| d1 停在 `the day's budget` | 达到了 budget（默认 1,000,000；设了 `D1_BUDGET` 则较少） | 以 `1000000` 再运行，或删除 `D1_BUDGET` |
 | d1 停在 `the run's time is up` | 用完了五小时 | 再运行，会从断点继续 |
 | `/api/info` 返回 503、`corpus: none` | 没有容器，也没有绑定 D1 | A1/A2 或 B3–B5 |
 | 访客看到「该地址因异常访问已被暂时限制」 | 哨兵拒绝了这个地址（403） | 查看它的事件；若是误判，调短 `BLOCK_SECONDS` 或把 `SENTINEL` 改回 `observe` |

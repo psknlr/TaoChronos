@@ -1,10 +1,12 @@
 name: d1
 
-# The D1 backup of the full corpus (docs/adr/0017-d1-backup.md, cloud/README.md): on the Workers Free plan there are no
-# Containers, so the site's own Worker answers the page from Cloudflare D1.  D1 Free writes at most 100,000 rows a day,
-# so the corpus is imported a slice a day: every day shortly after 00:00 UTC (when the allowance is renewed), and on
-# "Run workflow", this job fetches the store cloud/store.json names from the site's KV namespace (as the corpus job of
-# site.yml does), and imports the next statements until the day's budget; where the import has got to is read from the
+# The D1 backup of the full corpus (docs/adr/0017-d1-backup.md, cloud/README.md): the site's own Worker answers the page
+# from Cloudflare D1 when no container is bound.  Every day shortly after 00:00 UTC, and on "Run workflow", this job
+# fetches the store cloud/store.json names from the site's KV namespace (as the corpus job of site.yml does), and imports
+# the next statements until the day's budget.  On Workers Paid D1 has no daily cap, and the budget (1,000,000 rows; the
+# import writes about 100,000) is only a safety valve: one run imports it all, a second resumes one the time limit cut
+# short.  D1 Free writes at most 100,000 rows a day: there, the repository variable D1_BUDGET = 90000 imports a slice a
+# day, as before (docs/adr/0023-workers-paid.md).  Where the import has got to is read from the
 # databases themselves, each statement is atomic, and an interrupted run resumes without writing anything twice.  The
 # tools a Worker cannot compute are computed here by the Python tools and imported with it.  When all is imported, the
 # version is recorded in the KV namespace (deployed/d1) and the site is deployed again, bound to the databases; from
@@ -16,9 +18,9 @@ on:
   workflow_dispatch:
     inputs:
       budget:
-        description: "Rows to write at most in this run (D1 Free: 100,000 a day; runs of the same day count together)"
+        description: "Rows to write at most today (Workers Paid: no cap, ~100,000 needed; D1 Free: 90000; runs of one UTC day count together)"
         type: number
-        default: 90000
+        default: 1000000
 
 permissions:
   contents: read
@@ -110,7 +112,8 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          BUDGET: ${{ inputs.budget || 90000 }}
+          # Run workflow's input; else the repository variable D1_BUDGET (90000 on D1 Free); else the Paid default
+          BUDGET: ${{ inputs.budget || vars.D1_BUDGET || 1000000 }}
           # some study tools order ties by string hashing (study.senses): fixed, a result computed again is the same
           PYTHONHASHSEED: "0"
         run: |
