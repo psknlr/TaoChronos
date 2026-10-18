@@ -23,7 +23,7 @@ from typing import Any
 
 from ....science.semantic_reuse import LABELS, classify, intermediaries, transmission_network
 from ..intertext import IntertextAnalyzer, Prepared
-from .base import StudyBase, dated
+from .base import StudyBase, cache_tmp, dated
 
 _CLAUSE_END = re.compile(r"[。；！？]")
 MAX_CONCEPT_DF = 60000  # a concept this common finds everything and proves nothing
@@ -204,7 +204,9 @@ class IntertextStudy:
         }
         if path is not None:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+            tmp = cache_tmp(path)
+            tmp.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(path)
         return out
 
 

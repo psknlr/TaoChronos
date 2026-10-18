@@ -33,7 +33,7 @@ from typing import Any, Iterable
 
 from ..collation import align, matched
 from ..segment import Segmenter, is_unpunctuated
-from .base import row_filter
+from .base import cache_tmp, row_filter
 
 MODEL_VERSION = "judou-ngram@1"
 MAJOR = "。；？！"
@@ -380,7 +380,7 @@ class PunctuationModel:
         seg, self.segmenter = self.segmenter, None
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = path.with_suffix(".tmp")
+            tmp = cache_tmp(path)
             with gzip.open(tmp, "wb") as f:
                 pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
             tmp.replace(path)

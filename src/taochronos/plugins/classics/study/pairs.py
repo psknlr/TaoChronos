@@ -38,7 +38,7 @@ from typing import Any, Iterable
 
 from ....science.association import CooccurrenceGraph, communities
 from ....science.stats import average_linkage, benjamini_hochberg, cut_tree, fisher_exact_greater, largest_gap, leaf_order, odds_ratio
-from .base import StudyBase, dated
+from .base import StudyBase, cache_tmp, dated
 from .formulas import _LEADS_ON
 from .usage import prepared_form
 
@@ -157,8 +157,10 @@ class FormulaHarvest:
         built = {"key": self.key(), "scanned": scanned, "compositions": list(comps.values()), "indications": list(inds.values())}
         if path is not None:
             path.parent.mkdir(parents=True, exist_ok=True)
-            with gzip.open(path, "wt", encoding="utf-8") as f:
+            tmp = cache_tmp(path)
+            with gzip.open(tmp, "wt", encoding="utf-8") as f:
                 json.dump(built, f, ensure_ascii=False)
+            tmp.replace(path)
             for old in path.parent.glob("harvest-*.json.gz"):
                 if old != path:
                     old.unlink(missing_ok=True)

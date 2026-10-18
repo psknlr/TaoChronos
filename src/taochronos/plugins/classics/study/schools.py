@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from ....science.stats import benjamini_hochberg
-from .base import StudyBase, dated, normal_sf, row_filter
+from .base import StudyBase, cache_tmp, dated, normal_sf, row_filter
 
 VERSION = "schools@2"
 ATTRIBUTIONS = ("traditional", "compiled")
@@ -443,7 +443,9 @@ class SchoolStudy:
             self._survey(cap=cap, window=window, top=top, probes=probes)
         if path is not None:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+            tmp = cache_tmp(path)
+            tmp.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(path)
         return out
 
     def _key(self, params: list[Any]) -> str:

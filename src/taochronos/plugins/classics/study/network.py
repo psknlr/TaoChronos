@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Iterator
 
 from ..citations import CitationExtractor
-from .base import StudyBase, dated
+from .base import StudyBase, cache_tmp, dated
 
 _TITLE = re.compile(r"《([^》]{1,14})》")
 _GENERIC = re.compile(r"(经)(?:曰|云)|(经言)")
@@ -156,7 +156,9 @@ class CitationNetwork:
                  "unresolved": dict(unresolved.most_common(300)), "examples": examples}
         if cache is not None:
             Path(cache).mkdir(parents=True, exist_ok=True)
-            (Path(cache) / f"citations-{key}.json").write_text(json.dumps(built, ensure_ascii=False), encoding="utf-8")
+            tmp = cache_tmp(Path(cache) / f"citations-{key}.json")
+            tmp.write_text(json.dumps(built, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(Path(cache) / f"citations-{key}.json")
             for old in Path(cache).glob("citations-*.json"):  # earlier scans of the corpus
                 if old.name != f"citations-{key}.json":
                     old.unlink()

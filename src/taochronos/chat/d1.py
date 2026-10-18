@@ -674,13 +674,16 @@ class BridgeTarget:
 
 class ApiTarget:
     """Cloudflare D1 through its REST API (``/accounts/{account}/d1/database``), with the account's API token: the
-    databases are found (or created) by name; a statement is one ``/query`` request."""
+    databases are found (or created) by name; a statement is one ``/query`` request, started ``interval`` seconds at
+    least after the one before (Cloudflare's API takes 1,200 requests in five minutes from a user, four a second: a
+    statement that takes longer than the interval waits for nothing)."""
 
     API = "https://api.cloudflare.com/client/v4"
 
-    def __init__(self, account: str, token: str, *, location: str = "apac", pause: float = 0.2, log: Callable[[str], None] = print) -> None:
-        self.account, self.token, self.location, self.pause, self.log = account, token, location, pause, log
+    def __init__(self, account: str, token: str, *, location: str = "apac", interval: float = 0.3, log: Callable[[str], None] = print) -> None:
+        self.account, self.token, self.location, self.interval, self.log = account, token, location, interval, log
         self.ids: dict[int, str] = {}
+        self._next = 0.0  # when the next statement may start (time.monotonic)
 
     def _request(self, method: str, path: str, body: Any = None, *, timeout: float = 120) -> Any:
         import urllib.error
@@ -728,8 +731,11 @@ class ApiTarget:
         return self.ids
 
     def _query(self, db: int, sql: str, params: list[Any]) -> dict[str, Any]:
+        wait = self._next - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        self._next = time.monotonic() + self.interval
         result = self._request("POST", f"/d1/database/{self.ids[db]}/query", {"sql": sql, "params": params})
-        time.sleep(self.pause)
         return (result or [{}])[0]
 
     def run(self, batch: Batch) -> dict[str, Any]:
@@ -1059,6 +1065,8 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("--stop-after", type=int, help="stop after this many statements (tests)")
     sp.add_argument("--precompute", action="store_true", help="also compute the precomputed results with the Python tools "
                                                               "(the store is indexed for them when the import comes to them)")
+    sp.add_argument("--workers", type=int, help="compute them in this many processes side by side (0: as many as the "
+                                                "processors and the memory allow; default: here, one at a time)")
     sp.add_argument("--report", help="also write the report (JSON) to this file")
     sp = sub.add_parser("version", help="the version the databases should hold for this checkout (cloud/store.json …)")
     sp.add_argument("--manifest", default=None, help="default: cloud/store.json")
@@ -1109,7 +1117,7 @@ def main(argv: list[str] | None = None) -> int:
     if getattr(args, "precompute", False):
         from .d1results import Precompute, runtime_for
 
-        results = Precompute(lambda: runtime_for(path, log=log), log=log)
+        results = Precompute(lambda: runtime_for(path, log=log), log=log, workers=args.workers, store=path)
     plan = make_plan(path, version=version, results=results)
     if args.cmd == "plan":
         print(json.dumps(summary(plan), ensure_ascii=False, indent=1))

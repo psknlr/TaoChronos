@@ -5,6 +5,7 @@ statement — without writing anything twice."""
 
 from __future__ import annotations
 
+import gzip
 import json
 import re
 import sqlite3
@@ -417,6 +418,80 @@ def test_a_clause_is_computed_as_its_witness_punctuates_it():
     key = clause_key(written[0], norm)
     assert pre._clauses(canon, norm) == {key: norm(written[0])}  # 太陽病，發熱: too short; the unpunctuated copy: the first kept
     assert norm(written[0]) == "太阳之为病，脉浮，头项强痛而恶寒。"
+
+
+@pytest.fixture(scope="module")
+def pack_store(tmp_path_factory) -> Path:
+    """The store the backup's fixture is made of (d1fixture.BOOKS: ten books of the committed 要籍 pack), indexed."""
+    from taochronos.chat.d1fixture import BOOKS
+    from taochronos.plugins.classics.webcorpus import build_store
+
+    out = tmp_path_factory.mktemp("pack")
+    books = [b for b in json.loads((ROOT / "corpus" / "web" / "books.json").read_text(encoding="utf-8")) if b["id"] in BOOKS]
+    (out / "books.json").write_text(json.dumps(books, ensure_ascii=False), encoding="utf-8")
+    with gzip.open(ROOT / "corpus" / "web" / "passages.jsonl.gz", "rt", encoding="utf-8") as f:
+        lines = [line for line in f if json.loads(line)["book_id"] in BOOKS]
+    (out / "passages.jsonl.gz").write_bytes(gzip.compress("".join(lines).encode("utf-8"), mtime=0))
+    pack_ = DomainPack(ROOT / "domains" / "classics")
+    path = out / "data" / "corpus" / "tcm.sqlite"
+    path.parent.mkdir(parents=True)
+    build_store(out, path, pack_.variants.normalize_text, pack_.variants.fingerprint, index=True)
+    return path
+
+
+def test_the_results_are_the_same_whichever_process_computes_them(pack_store, monkeypatch):
+    """The daily job computes the results in worker processes (--workers 0): one worker or three — each with its own
+    runtime, its own keys, the caches written side by side into one study-cache — give the same results in the same key
+    order, and resume after the last key imported; workers that cannot start leave the results to this process."""
+    from taochronos.chat.d1fixture import KEYS
+    from taochronos.chat.d1results import runtime_for
+
+    monkeypatch.setenv("PYTHONHASHSEED", "0")  # the workers' interpreters, as the daily job's (some tools order ties by hash)
+    runtime = runtime_for(pack_store, home=ROOT, log=lambda m: None)
+    logs: list[str] = []
+
+    def rows(workers: int, after: str | None = None, home: Path | str = ROOT) -> list[tuple[str, str, str]]:
+        pre = Precompute(runtime, only=KEYS, workers=workers, store=pack_store, home=home, log=logs.append)
+        return [(tool, key, pack(value)) for tool, key, value in pre.rows(after)]
+
+    one = rows(1)
+    assert [(t, k) for t, k, _ in one] == sorted(((t, k) for t, k, _ in KEYS), key=lambda tk: f"{tk[0]}\t{tk[1]}")
+    assert rows(3) == one
+    assert logs[-1] == "  results: 6 keys, computed by 3 processes side by side"
+    assert rows(2, after=f"{one[2][0]}\t{one[2][1]}") == one[3:]
+    assert sorted(p.name.split("-")[0] for p in (pack_store.parent / "study-cache").iterdir()) == ["harvest", "headings"]
+    logs.clear()
+    assert [(t, k) for t, k, _ in rows(2, home="/nonexistent-home")] == [(t, k) for t, k, _ in one]
+    assert logs[-1].startswith("  results: the workers have stopped (") and logs[-1].endswith("the rest are computed here")
+
+
+def test_requests_to_the_api_are_spaced_not_paused(monkeypatch):
+    """A statement starts 0.3 s at least after the one before (Cloudflare's API: four requests a second from a user); one
+    that took longer waits for nothing."""
+    clock, slept = [1000.0], []
+
+    def sleep(s: float) -> None:
+        slept.append(round(s, 3))
+        clock[0] += s
+
+    monkeypatch.setattr(d1.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(d1.time, "sleep", sleep)
+    api = ApiTarget("account", "token", log=lambda m: None)
+    api.ids = {0: "db"}
+    took = [0.1]
+
+    def request(method: str, path: str, body: Any = None, *, timeout: float = 120) -> Any:
+        clock[0] += took[0]
+        return [{"results": [], "meta": {"rows_written": 1}}]
+
+    api._request = request
+    for _ in range(3):
+        api.run(d1.Batch(0, "lex", "k", "INSERT INTO lex(k, v) VALUES (?, ?)", ["k", "v"], 1))
+    assert slept == [0.2, 0.2]
+    took[0] = 0.5
+    api.query(0, "SELECT 1")
+    api.query(0, "SELECT 1")
+    assert slept == [0.2, 0.2, 0.2]  # the first waits for the 0.1 s the one before left; the second, for nothing
 
 
 def test_the_workers_tables_are_those_of_this_checkout():
