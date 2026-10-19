@@ -89,13 +89,21 @@ def _log_comb(n: int, k: int) -> float:
 
 
 def fisher_exact_greater(a: int, b: int, c: int, d: int) -> float:
-    """One-sided Fisher exact test p-value for over-representation of cell ``a`` in [[a, b], [c, d]]."""
+    """One-sided Fisher exact test p-value for over-representation of cell ``a`` in [[a, b], [c, d]].
+
+    Past the mode the terms only fall: once one is below 1e-17 of the sum, it and every later one leave the sum unchanged
+    in double precision (each under half its last place), so the loop stops there — the same value, without the
+    hundreds of vanishing terms a large table has."""
     row1, col1, n = a + b, a + c, a + b + c + d
     lo, hi = max(0, row1 + col1 - n), min(row1, col1)
     denom = _log_comb(n, col1)
+    mode = (row1 + 1) * (col1 + 1) // (n + 2)
     p = 0.0
     for x in range(a, hi + 1):
-        p += math.exp(_log_comb(row1, x) + _log_comb(n - row1, col1 - x) - denom)
+        term = math.exp(_log_comb(row1, x) + _log_comb(n - row1, col1 - x) - denom)
+        if x > mode and term <= p * 1e-17:
+            break
+        p += term
     return min(1.0, p)
 
 

@@ -22,7 +22,7 @@ Pyodide：打开即可提问，引文可在全部古籍中核对。全量语料�
 |---|---|
 | `site/`（Worker `taochronos-site`） | 以 Workers Static Assets 提供网页：只有网页（`/`、`/attribution`）和 `/api/*` 先经过 Worker（`run_worker_first`；http→https（301）、HSTS、`nosniff`、`Permissions-Policy`、可选的只报告不执行的 CSP），其余文件由 Cloudflare 直接提供（免费、不计次数；安全头见 `site/_headers`）；只放行 `GET /api/info`、`/api/catalog`、`/api/passage`、`/api/research/<job>`、`/api/session/<id>` 与 `POST /api/call`、`/api/research`，只转发路径、查询与请求体（不转发 Cookie、IP 等），每位访客每分钟调用 120 次、读取 600 次（`[[ratelimits]]`，按 Cloudflare 节点计）；`taochronos serve` 的模型代理（`/api/llm`）不开放。**哨兵**（[`security/`](../security/README.md)）看网页、API 与找不到的路径：扫描器路径的地址被拒绝 API 一天，不是网页发出的 API 调用被打分、达到标记线的连同地址记下（`/api/security/*`，由 chat-logs 工作流取回到 `data/security-logs/`）；`SENTINEL = "enforce"` 时超过阻断分数的地址被拒绝 API 六小时。**统计**：浏览器打开的网页按天、国家与省份计数（访客按日去重，不记地址），`GET /api/stats` 供网页「设置 → 统计」读取（需 `STATS_TOKEN`；见 [docs/web.md](../docs/web.md)） |
 | `corpus/`（Worker `taochronos-corpus`） | Durable Object 按需启动容器（`standard-1`：1/2 vCPU、4 GiB、8 GB 磁盘），带着它为容器生成的令牌转发请求；`/api/info` 与工具目录按部署版本缓存在 Durable Object 里，容器休眠时也能立刻回答，同时唤醒容器——模型第一次调用工具时它已就绪 |
-| `corpus/Dockerfile` | 以仓库根目录为上下文构建：安装 taochronos，放入主目录（profiles、domains、catalog…），解压并校验 `store.json` 指定的全量语料，用本版代码的规范化器建全文索引，预热各工具首次使用时才构建的缓存（句读模型、引书网络、配伍、学派等）。容器每次都从镜像启动，所以这些都在构建时做好 |
+| `corpus/Dockerfile` | 以仓库根目录为上下文构建：安装 taochronos，放入主目录（profiles、domains、catalog…），解压并校验 `store.json` 指定的全量语料，用本版代码的规范化器建全文索引，预热各工具首次使用时才构建的缓存（句读模型、引书网络、配伍、学派、全部医案集逐诊解析的结果等）。容器每次都从镜像启动，所以这些都在构建时做好；容器启动后另在后台载入医案缓存，医案工具的第一次调用无需等待 |
 | `store.json` | 部署所用的全量语料：sha256、分片（每片 24 MiB，即一个 KV 值）、书数/段数/字数、各来源、排除的来源。`taochronos web store` 生成 |
 | `ATTRIBUTION.md` | 全量语料每部录本的来源与授权；网站以 `attribution.html?corpus=full` 展示 |
 

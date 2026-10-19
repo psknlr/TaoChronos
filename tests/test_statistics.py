@@ -166,3 +166,24 @@ def test_average_linkage_its_order_and_its_cut():
     assert leaf_order(merges, 5) == [0, 1, 2, 3, 4]  # the cluster holding the first item first
     assert cut_tree(merges, 5, 2) == [0, 0, 0, 0, 1] and cut_tree(merges, 5, 3) == [0, 0, 1, 1, 2]
     assert largest_gap(merges, 5) == 2  # 5 → 17 is the longest branch
+
+
+def test_fisher_stops_where_the_terms_no_longer_change_the_sum():
+    """The one-sided Fisher test stops once a term past the mode is below 1e-17 of the sum: the value is the full sum's,
+    bit for bit (each later term is under half the sum's last place)."""
+    import math
+    import random
+
+    from taochronos.science.stats import fisher_exact_greater
+
+    def full(a: int, b: int, c: int, d: int) -> float:  # every term, added in order (as the test always added them)
+        row1, col1, n = a + b, a + c, a + b + c + d
+        lc = lambda m, k: math.lgamma(m + 1) - math.lgamma(k + 1) - math.lgamma(m - k + 1)  # noqa: E731
+        p = 0.0
+        for x in range(a, min(row1, col1) + 1):
+            p += math.exp(lc(row1, x) + lc(n - row1, col1 - x) - lc(n, col1))
+        return min(1.0, p)
+
+    rnd = random.Random(3)
+    tables = [tuple(rnd.randint(0, rnd.choice([4, 40, 400, 4000])) for _ in range(4)) for _ in range(3000)]
+    assert all(fisher_exact_greater(*t) == full(*t) for t in tables)

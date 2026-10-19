@@ -290,7 +290,7 @@ def stratigraphy(ctx: EvalContext) -> SuiteResult:
     return SuiteResult("stratigraphy", metrics, details, notes=notes)
 
 
-CASE_FIELDS = ("pulse", "formulas", "added", "removed", "principles", "doses")
+CASE_FIELDS = ("pulse", "formulas", "added", "removed", "principles", "doses", "prior")
 
 
 def _visit_values(v: Any, field: str) -> list[str]:
@@ -298,6 +298,8 @@ def _visit_values(v: Any, field: str) -> list[str]:
         return list(v.findings.get("pulse", []))
     if field == "doses":
         return [v.doses] if v.doses else []
+    if field == "prior":  # what earlier physicians gave or diagnosed, every kind together
+        return [x for names in v.prior.values() for x in names]
     return list(getattr(v, field))
 
 
@@ -318,7 +320,7 @@ def cases(ctx: EvalContext) -> SuiteResult:
     for g in gold.get("cases", []):
         by_book.setdefault(g["book"], []).append(g)
     counts = {f: [0, 0, 0] for f in CASE_FIELDS}  # tp, fp, fn
-    visit_ok = response_ok = response_n = outcome_ok = patient_ok = patient_n = 0
+    visit_ok = response_ok = response_n = outcome_ok = patient_ok = patient_n = prior_ok = 0
     details = []
     for bid, gcases in by_book.items():
         pcases = predicted.get(bid, [])
@@ -338,6 +340,7 @@ def cases(ctx: EvalContext) -> SuiteResult:
                     counts[f][1] += sum(1 for y in pvals if not any(_match(x, y) for x in gvals))
                 response_n += 1
                 response_ok += (gv.get("response") or "") == pv.response
+                prior_ok += (gv.get("prior_response") or "") == pv.prior_response
             details.append({"book": bid, "patient": p.patient, "visits": [len(g["visits"]), len(p.visits)],
                             "outcome": [g.get("outcome"), p.outcome],
                             "responses": [[gv.get("response") or "" for gv in g["visits"]], [pv.response for pv in p.visits]]})
@@ -348,13 +351,16 @@ def cases(ctx: EvalContext) -> SuiteResult:
                                    max(1, len(by_book)), 4),
         "visit_segmentation": round(visit_ok / n_cases, 4) if n_cases else None,
         "response_accuracy": round(response_ok / response_n, 4) if response_n else None,
+        "prior_response_accuracy": round(prior_ok / response_n, 4) if response_n else None,
         "outcome_accuracy": round(outcome_ok / n_cases, 4) if n_cases else None,
         "patient_accuracy": round(patient_ok / patient_n, 4) if patient_n else None,
         "fields": {f: prf(*c) for f, c in counts.items()},
     }
     notes = ["constructed records in the two manners of the literature (successive visits under a heading; narratives), a "
              "development set written with the rules: it shows what they are meant to do, not how they generalise; case "
-             "segmentation = books whose number of cases is right; fields compared as sets, one value containing the other"]
+             "segmentation = books whose number of cases is right; fields compared as sets, one value containing the other; "
+             "prior = what the record says earlier physicians gave or diagnosed (前医…, 误投…), which must not leak into "
+             "the visit's own fields"]
     corpus = None if ctx.quick else ctx.corpus_harness()
     if corpus is not None:  # two independent transcriptions of one case collection should be read alike
         cs = corpus.capabilities.get("study")._cases

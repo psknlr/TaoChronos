@@ -64,7 +64,7 @@ need.
 |---|---|
 | Philologist | `study.variants`, `study.stemma`, `study.witnesses`, `study.layers`, `study.dating`, `study.authorship` |
 | Skeptic | `study.reuse`, `study.dating`, `study.argument` |
-| Evidence | `study.cases`, `study.trajectories`, `study.argument` |
+| Evidence | `study.cases`, `study.trajectories`, `study.casefind`, `study.similar`, `study.casecompare`, `study.treatments`, `study.argument` |
 | Semanticist | `study.term`, `study.senses` |
 | Scholar | `study.senses` (in its procedure) |
 

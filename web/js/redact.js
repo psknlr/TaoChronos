@@ -25,6 +25,8 @@ export const TOOL_WORDS = {
   "study.transmission": "思想传播", "study.variants": "异文校勘", "study.witnesses": "版本与影像见证",
   "study.compare": "方剂比较", "study.family": "类方", "study.usage": "药物用量与配伍", "study.properties": "性味归经对照",
   "study.incompat": "配伍禁忌", "study.protocol": "研究方案设计",
+  "study.casefind": "医案检索", "study.similar": "类案", "study.case": "医案详解", "study.casecompare": "医家与时代比较",
+  "study.modifications": "随证加减", "study.treatments": "同病异治·异病同治",
   "philology.assess_passage": "文献评估", "philology.collate": "校勘", "philology.inspect_page": "页面溯源",
   "philology.normalize": "异体规范", "vision.layout": "版面理解", "vision.compare": "OCR 核对",
   "validation.verify_quote": "引文核验", "validation.gates": "门控核验", "validation.provenance_chain": "溯源链",
