@@ -683,8 +683,12 @@ is the physician's (`physician`), never the patient's, and the patient is read f
 
 **Read once.** Each book is read whole once and kept, so a case has the same id whichever function found it; on a
 store, all the case collections are cached together (`study-cache/cases-<key>.json.gz`, keyed by the corpus, the
-lexicon, the rules and the reading's own code) — the 39 collections of the 要籍语料 store read in 1.8 s, and in 0.2 s
-from the cache.
+lexicon, the rules and the reading's own code), and any first case question — one book, one disease or all of them —
+reads that cache rather than the books: the 39 collections of the 要籍语料 store read in 1.8 s, and in 0.2 s from the
+cache. The site's full-corpus server reads every case collection while its image is built (`chat/cloud.py`, `WARM`),
+so the cache ships in the image, and loads it in the background as the container starts. Measured on 21,175 cases (the
+要籍语料 cases 25 times over): loading 4–5 s; casefind, similar and case under 0.3 s; casecompare, modifications and
+treatments 0.2–1.3 s.
 
 **Trajectories.** Each case becomes a sequence of visits, each a set of items (`principle:清热`, `formula:银翘散`,
 `added:麦冬`, `finding:脉数`): sequential patterns across visits (PrefixSpan; support = cases), transitions from one visit
@@ -724,7 +728,8 @@ gives him (丹溪, 朱丹溪 → 朱震亨; 叶天士 → 叶桂).
   treatment, principles, formulas and drugs with doses, the changes the record states and those the drugs listed
   imply when two visits list them, doses, response), the passages it rests on (with their licences) and its five
   nearest like cases.
-- **医家与时代比较** `casecompare`: groups by collection, physician, period or author (`--by`); per group the cases,
+- **医家与时代比较** `casecompare`: groups by collection, physician, period or author (`--by`) — the 30 largest of at
+  least five cases (`max_groups`, `--min-cases`), the others listed as left out; per group the cases,
   visits (x̄ ± s), outcomes and the recovery rate among the cases recording one (Wilson interval), the death rate, the
   share of women among the cases recording sex, the share with an account of earlier treatment, the principles,
   formulas and drugs used most; what each group favours against the others (one-sided Fisher, odds ratio,

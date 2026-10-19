@@ -269,6 +269,11 @@ class StudyService(StudyBase):
         """Sequences, transitions and outcome associations of treatment across case records."""
         return self._cases.trajectories(disease, **kw)
 
+    def warm_cases(self) -> int:
+        """Every case collection read — or, on a store, loaded from its cache — once; the number of cases.  A server
+        calls it as it starts, so that its first case question waits for nothing."""
+        return len(self._cases.pool())
+
     def casefind(self, **kw: Any) -> dict[str, Any]:
         """医案检索: the cases that fit every facet given (disease, findings, formula, herb, principle, outcome, sex,
         age_min/age_max, after/before, period, books, prior, text), oldest first, with what matched and the facets of

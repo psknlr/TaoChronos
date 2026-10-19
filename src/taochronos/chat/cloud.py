@@ -23,6 +23,7 @@ import os
 import shutil
 import sqlite3
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Any, Callable
@@ -43,6 +44,10 @@ WARM: list[tuple[str, dict[str, Any]]] = [
     ("study.network", {"target": "桂枝汤"}),
     ("study.pairs", {"herb": "桂枝"}),
     ("study.schools", {}),
+    # every case collection read once and kept beside the store (study-cache/cases-*.json.gz): the case tools then load
+    # it in seconds instead of reading tens of thousands of records again
+    ("study.casefind", {"findings": ["脉浮数"]}),
+    ("study.similar", {"text": "发热，咳嗽，脉浮数"}),
 ]
 
 
@@ -183,6 +188,17 @@ def upload(path: Path, manifest: dict[str, Any], site: str, token: str, *, log: 
     return {"key": manifest["key"], "parts": len(manifest["parts"]), "sent": sent, "already": kept, "bytes": manifest["bytes"]}
 
 
+def _preload(runtime: Any) -> None:
+    """The case collections loaded from the image's cache while the first requests are answered: a case tool asked
+    soon after the container wakes waits for nothing (a failure only means the tool loads them on first use)."""
+    started = time.perf_counter()
+    try:
+        n = runtime.h.capabilities.get("study").warm_cases()
+        _log(f"case records ready: {n:,} ({time.perf_counter() - started:.1f} s)")
+    except Exception as exc:  # noqa: BLE001 - a preload never stops the server
+        _log(f"case records not preloaded: {type(exc).__name__}: {exc}")
+
+
 def serve(port: int = 8080) -> None:
     from .server import ChatServer
     from . import ChatRuntime
@@ -193,6 +209,7 @@ def serve(port: int = 8080) -> None:
     runtime = ChatRuntime.create("full-corpus", kind="server")
     info = runtime.info()  # counted before the port opens: the first request answers at once
     server = ChatServer(("0.0.0.0", port), runtime, web_root=None, proxy=False, token=token)
+    threading.Thread(target=_preload, args=(runtime,), name="case-records", daemon=True).start()
     _log(f"TaoChronos {info['version']} · {info['profile']} · {info['corpus']['books']} 部书 · "
          f"{info['corpus']['passages']} 段 · {info['tools']['offered']} 个工具 · :{port}")
     try:

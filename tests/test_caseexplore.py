@@ -95,6 +95,28 @@ def test_each_book_is_read_once_and_a_case_keeps_its_id(study):
     assert study._cases.find_case(pool[0].id) is pool[0] and study._cases.find_case("case_none") is None
 
 
+def test_every_case_collection_is_cached_once_and_read_back_whole(tmp_path, monkeypatch):
+    """The pool written to its cache (on a store, beside it) is read back whole by a new service — the first question
+    of a waking container, even about one book, reads no book again — and the cached cases are the cases."""
+    pack = DomainPack(HOME / "domains" / "classics")
+
+    def service() -> StudyService:
+        corpus = Corpus.load(HOME / "tests" / "fixtures" / "cases")
+        corpus.normalize = pack.variants.normalize_text
+        s = StudyService(pack, corpus)
+        monkeypatch.setattr(s._cases, "_cache_path", lambda: tmp_path / "cases-test.json.gz")
+        return s
+
+    first = service()
+    written = {c.id: c.to_dict() for c in first._cases.pool()}
+    assert (tmp_path / "cases-test.json.gz").exists() and len(written) == 18
+    second = service()
+    monkeypatch.setattr(second._cases, "parse", lambda *a, **k: pytest.fail("a book was read again"))
+    assert {c.id for c in second._cases.book_cases("jia")} == {i for i, d in written.items() if d["book_id"] == "jia"}
+    assert {c.id: c.to_dict() for c in second._cases.pool()} == written
+    assert second.casefind(disease="咳嗽")["count"] == 11
+
+
 # ------------------------------------------------------------------ 医案检索
 def test_casefind_filters_every_facet_oldest_first(study):
     count = lambda **kw: study.casefind(**kw)["count"]  # noqa: E731
@@ -171,6 +193,8 @@ def test_groups_of_cases_compared_by_period_collection_and_physician(study):
     assert {g["group"]: g["cases"] for g in by_physician["groups"]} == {"甲医": 6, "乙医": 7, "丁翁": 2, "武医": 2}
     assert by_physician["left_out"] == {"纪生": 1}
     assert [g["group"] for g in study.casecompare(by="book", groups=["丙编类案"], min_cases=1)["groups"]] == ["丙编类案"]
+    capped = study.casecompare(by="physician", min_cases=1, max_groups=2)  # the largest groups compared, the rest listed
+    assert [g["group"] for g in capped["groups"]] == ["甲医", "乙医"] and capped["left_out"] == {"丁翁": 2, "武医": 2, "纪生": 1}
     with pytest.raises(ValueError):
         study.casecompare(by="dynasty")
 
@@ -273,6 +297,26 @@ def test_the_case_tools_run_on_a_corpus_without_case_collections(harness):
         assert out.ok, (name, out.error)
     assert run("study.casefind", {"disease": "咳嗽"}).result["count"] == 0  # the demo corpus has no case collections
     assert not run("study.case", {"case_id": "case_none"}).ok
+
+
+def test_the_full_corpus_server_warms_and_preloads_the_case_records(harness, capsys):
+    """The image's warm-up reads every case collection (casefind without a disease, similar) so that their cache is in
+    the image; a waking container preloads it beside its first requests, and a failure there never stops it."""
+    from types import SimpleNamespace
+
+    from taochronos.chat import cloud
+
+    warmed = {name for name, _ in cloud.WARM}
+    assert {"study.casefind", "study.similar"} <= warmed
+    assert not next(args for name, args in cloud.WARM if name == "study.casefind").get("disease")  # the whole pool
+    cloud._preload(SimpleNamespace(h=harness))
+    assert "case records ready: 0" in capsys.readouterr().err  # the demo corpus has no case collections
+
+    def broken() -> int:
+        raise OSError("disk")
+
+    cloud._preload(SimpleNamespace(h=SimpleNamespace(capabilities={"study": SimpleNamespace(warm_cases=broken)})))
+    assert "case records not preloaded: OSError: disk" in capsys.readouterr().err
 
 
 def test_the_case_commands(capsys, tmp_path):

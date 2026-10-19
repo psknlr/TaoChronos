@@ -442,9 +442,10 @@ class CaseExplorer:
 
     # ------------------------------------------------------------ 医家与时代比较
     def compare(self, *, by: str = "book", disease: str | None = None, books: list[str] | None = None,
-                groups: list[str] | None = None, min_cases: int = 5, top: int = 8) -> dict[str, Any]:
+                groups: list[str] | None = None, min_cases: int = 5, max_groups: int = 30, top: int = 8) -> dict[str, Any]:
         """Groups of cases side by side — by collection (``book``), ``physician`` (the one the record names, as in a
-        compilation's 丹溪治…, else the collection's author), ``period`` or ``author`` (of the collection)."""
+        compilation's 丹溪治…, else the collection's author), ``period`` or ``author`` (of the collection).  The
+        ``max_groups`` largest groups of at least ``min_cases`` cases are compared; the others are listed as left out."""
         if by not in ("book", "physician", "period", "author"):
             raise ValueError("by: book, physician, period or author")
         pool = self._pool(disease, books)
@@ -466,7 +467,8 @@ class CaseExplorer:
             wanted = {self.b.normalize(g) for g in groups}
             ids = {self.b.book_title(b) for b in (self._books(groups) or [])} if by == "book" else set()
             grouped = {g: cs for g, cs in grouped.items() if self.b.normalize(g) in wanted or g in ids}
-        kept = {g: cs for g, cs in grouped.items() if len(cs) >= min_cases}
+        large = sorted((g for g, cs in grouped.items() if len(cs) >= min_cases), key=lambda g: (-len(grouped[g]), g))
+        kept = {g: grouped[g] for g in large[:max_groups]}
         if by == "period":
             order = [g for g in self._period_order() if g in kept]
         else:
@@ -491,9 +493,10 @@ class CaseExplorer:
                                 for i, a in enumerate(order) for b in order[i + 1:]]
         if by == "period" and len(order) >= 3:
             out["trends"] = self._trends(kept, order, top=12)
-        out["note"] = ("groups with fewer than {} cases are left out; distinctive: items over-represented in a group's cases "
+        out["note"] = ("groups with fewer than {} cases, and those past the {} largest, are left out; distinctive: items "
+                       "over-represented in a group's cases "
                        "against the other groups' (one-sided Fisher, Benjamini–Hochberg); recovery rate among the cases "
-                       "whose outcome is recorded (Wilson interval); outcome χ² over the four recorded outcomes; ".format(min_cases)
+                       "whose outcome is recorded (Wilson interval); outcome χ² over the four recorded outcomes; ".format(min_cases, max_groups)
                        + NOTE)
         return out
 

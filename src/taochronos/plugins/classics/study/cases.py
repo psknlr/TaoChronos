@@ -22,6 +22,7 @@ efficacy.
 
 from __future__ import annotations
 
+import dataclasses
 import gzip
 import hashlib
 import json
@@ -61,7 +62,9 @@ class CaseStudy:
         self._rules = d
         self._parsed: dict[str, list[CaseRecord]] = {}
         self._pool_loaded = False
-        self._lock = threading.Lock()
+        self._cache_read = False
+        self._lock = threading.Lock()  # the books read so far
+        self._loading = threading.RLock()  # reading the disk cache, or every collection, happens once
         self.openers = [re.compile(n(p)) for p in d.get("case_openers", [])]
         self.visits = [re.compile(n(p)) for p in d.get("visit_markers", [])]
         self.passage_visits = [re.compile(n(p)) for p in d.get("passage_visit_markers", [])]
@@ -96,7 +99,9 @@ class CaseStudy:
         return hashlib.sha1(raw.encode()).hexdigest()[:12]
 
     def book_cases(self, book_id: str) -> list[CaseRecord]:
-        """Every case of a book, read once and kept (the callers filter; they never change a case)."""
+        """Every case of a book, read once and kept (the callers filter; they never change a case) — from the disk cache
+        of all the collections when there is one, so that a container's first question reads no book again."""
+        self._read_cache()
         with self._lock:
             got = self._parsed.get(book_id)
         if got is None:
@@ -112,32 +117,53 @@ class CaseStudy:
             self._load_pool()
         return [c for bid in (books or self.case_books()) for c in self.book_cases(bid)]
 
+    def _cache_path(self) -> Path | None:
+        store = getattr(self.b.corpus, "store", None)
+        return store.path.parent / "study-cache" / f"cases-{self.key()}.json.gz" if store is not None else None
+
+    def _read_cache(self) -> bool:
+        """Every collection's cases from the disk cache, once, if it is there; whether the pool is now whole.  Callers
+        arriving together (a container's preload and its first question) wait for one reading."""
+        with self._loading:
+            if not self._cache_read:
+                self._cache_read = True
+                path = self._cache_path()
+                if path is not None and path.exists():
+                    with gzip.open(path, "rt", encoding="utf-8") as f:
+                        cached = json.load(f)
+                    with self._lock:
+                        for bid, rows in cached["books"].items():
+                            self._parsed.setdefault(bid, [_record(r) for r in rows])
+                    self._pool_loaded = True
+            return self._pool_loaded
+
     def _load_pool(self) -> None:
-        with self._lock:
+        """All the collections, once: from the disk cache, else read — and, on a store, written there."""
+        if self._read_cache():
+            return
+        with self._loading:
             if self._pool_loaded:
                 return
-        store = getattr(self.b.corpus, "store", None)
-        path = store.path.parent / "study-cache" / f"cases-{self.key()}.json.gz" if store is not None else None
-        if path is not None and path.exists():
-            with gzip.open(path, "rt", encoding="utf-8") as f:
-                cached = json.load(f)
-            with self._lock:
-                for bid, rows in cached["books"].items():
-                    self._parsed.setdefault(bid, [CaseRecord.from_dict(r) for r in rows])
-                self._pool_loaded = True
-            return
-        books = {bid: self.book_cases(bid) for bid in self.case_books()}
-        if path is not None:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = cache_tmp(path)
-            with gzip.open(tmp, "wt", encoding="utf-8") as f:
-                json.dump({"key": self.key(), "books": {b: [c.to_dict() for c in cs] for b, cs in books.items()}}, f,
-                          ensure_ascii=False)
-            tmp.replace(path)
-            for old in path.parent.glob("cases-*.json.gz"):
-                if old != path:
-                    old.unlink(missing_ok=True)
-        with self._lock:
+            books: dict[str, list[CaseRecord]] = {}
+            for bid in self.case_books():
+                with self._lock:
+                    got = self._parsed.get(bid)
+                if got is None:
+                    got = self.parse(bid)
+                    with self._lock:
+                        got = self._parsed.setdefault(bid, got)
+                books[bid] = got
+            path = self._cache_path()
+            if path is not None:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                tmp = cache_tmp(path)
+                with gzip.open(tmp, "wt", encoding="utf-8") as f:
+                    json.dump({"key": self.key(), "books": {b: [c.to_dict() for c in cs] for b, cs in books.items()}}, f,
+                              ensure_ascii=False)
+                tmp.replace(path)
+                for old in path.parent.glob("cases-*.json.gz"):
+                    if old != path:
+                        old.unlink(missing_ok=True)
             self._pool_loaded = True
 
     def find_case(self, case_id: str) -> CaseRecord | None:
@@ -547,6 +573,17 @@ class CaseStudy:
                     "record (Fisher, Benjamini–Hochberg) — physicians chose which cases to record, so these are "
                     "associations in a biased record, never evidence of efficacy",
         }
+
+
+_CASE_FIELDS = {f.name for f in dataclasses.fields(CaseRecord)} - {"visits"}
+_VISIT_FIELDS = {f.name for f in dataclasses.fields(Visit)}
+
+
+def _record(row: dict[str, Any]) -> CaseRecord:
+    """A case as the cache wrote it (``to_dict``): built directly — the generic ``from_dict`` reads the type hints of
+    every field of every visit, several times slower over the tens of thousands of cases of the full corpus."""
+    visits = [Visit(**{k: v for k, v in x.items() if k in _VISIT_FIELDS}) for x in row.get("visits") or []]
+    return CaseRecord(**{k: v for k, v in row.items() if k in _CASE_FIELDS}, visits=visits)
 
 
 _TREATS = re.compile(r"^([一-鿿]{2,5}?)治(?=[一-鿿])")  # 丹溪治一妇 · 喻嘉言治石开晓: the physician, then the patient

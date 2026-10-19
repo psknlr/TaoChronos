@@ -196,9 +196,12 @@ def group_contrasts(groups: dict[str, list[set[str]]], *, min_cases: int = 3, q:
         if not size or size == n:
             continue
         for item, k in c.items():
+            out_k = total[item] - k
             if k < min_cases:
                 continue
-            out_k = total[item] - k
+            if k * (n - size) <= out_k * size:  # held no more often than elsewhere: one-sided p ≥ ½, never significant —
+                pvals[(g, item)] = 1.0         # counted for Benjamini–Hochberg as before, its exact test spared
+                continue
             p = fisher_exact_greater(k, size - k, out_k, n - size - out_k)
             ratio = odds_ratio(k, size - k, out_k, n - size - out_k)
             rows[(g, item)] = {"item": item, "cases": k, "share": round(k / size, 3),
