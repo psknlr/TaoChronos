@@ -8,9 +8,9 @@
 What comes from where:
 
 * the corpus catalogs (``corpus/catalog/*.yaml``): the 966 admitted witnesses, their dates, categories and dating basis;
-* ``corpus/catalog/canon.yaml``: the 350 works of the canon ranked by the citation network;
+* ``corpus/catalog/canon.yaml``: the works of the canon (535) ranked by the citation network;
 * ``corpus/catalog/images/*.csv``: the 10 001 image-witness records of eleven collections;
-* ``corpus/web``: the 要籍语料 (348 works, 368 witnesses, 135 083 passages) the site carries, built into a store on which
+* ``corpus/web``: the 要籍语料 (533 works, 553 witnesses, 168 278 passages) the site carries, built into a store on which
   the study layer runs (``study names`` · ``study term`` · ``study pairs`` · ``study citations``);
 * ``taochronos eval`` on the demonstration corpus: invariants, hard interpretive cases, hallucination probes and the other
   suites (``eval_demo_corpus.json``);
@@ -132,7 +132,7 @@ def canon_works() -> None:
                      "dynasty": w["dynasty"], "comp_lo": lo, "comp_hi": hi, "year_mid": (lo + hi) / 2,
                      "category": w["category"], "score": w["score"], "cited_by": w["cited_by"], "periods": w["periods"],
                      "citations": w["citations"], "witnesses": w["witnesses"], "siku": w["siku"], "open": w["open"]})
-    write_csv("fig2_canon_350.csv", rows)
+    write_csv("fig2_canon.csv", rows)
 
 
 def image_collections() -> None:

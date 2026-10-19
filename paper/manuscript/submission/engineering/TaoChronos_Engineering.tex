@@ -263,9 +263,9 @@ layer, transcription source and license; normalization of variant forms
 is used for matching only. A work's influence is 10 log₂(1 + citing
 works) + 2 × (periods citing it) + 2 log₂(1 + citations) + 3 log₂(1 +
 witnesses) + 6 × (inclusion in the \emph{Siku quanshu}); the openly
-licensed witnesses of the 350 highest-ranked works form the web corpus
-(348 works, 368 witnesses, 8.51 million characters) used in Figs. 2e and
-3.
+licensed witnesses of the 535 ranked works (533 have one) form the web
+corpus (553 witnesses, 10.46 million characters, 168,278 passages) used
+in Figs. 2e and 3.
 
 \hypertarget{agent-architecture}{%
 \subsection{Agent architecture}\label{agent-architecture}}
@@ -281,7 +281,7 @@ Sixteen agents (a Director and fifteen specialists, from Curator and
 Philologist to Hypothesis agent and Skeptic) are configurations naming
 permissions, tools, context view, output schema, model tier and budget;
 a deterministic procedure and a model produce the same typed output,
-verified by one commit function. Each of 73 tools needs one of seven
+verified by one commit function. Each of 85 tools needs one of eight
 permissions; a scope guard and a result firewall wrap every call;
 receipts form a hash chain. The state hash covers scientific fields
 only, so reruns, resumed and parallel runs agree.
@@ -343,7 +343,9 @@ The store holds 966 witnesses, 537 dated to a single year; the basis of
 each date is recorded, from curation (329) to signed prefaces (139); 104
 undated witnesses are counted as Qing (Fig. 2). Records of 10,001
 printed and manuscript copies in eleven digitized collections link 179
-works to physical witnesses (Supplementary Fig. 4).
+works to physical witnesses (Supplementary Fig. 4). The openly licensed
+texts of 533 of the 535 canon works form a web corpus of 553 witnesses
+that runs in the browser (Fig. 2e).
 
 \hypertarget{one-research-question-end-to-end}{%
 \subsection{One research question, end to
@@ -351,27 +353,35 @@ end}\label{one-research-question-end-to-end}}
 
 We asked how the composition and indications of Shenqi wan changed over
 time, with Shenqi wan and Liuwei dihuang wan as focus terms and 消渴 =
-diabetes forbidden, on the open corpus (206 books, 1,399 passages; Fig.
-3a). The run planned 30 tasks in three rounds, wrote 734 events, called
-156 tools (none refused) and no model; it extracted 777 claims and
-recorded 87 evidence and 22 counter-evidence records (Fig. 3b). Of 14
-hypotheses, the Skeptic kept 3, sent 10 to be narrowed and rejected 1,
-raising 117 objections (Fig. 3c). One hypothesis (restlessness 烦躁 as
-an indication of Liuwei dihuang wan) met every machine-checkable
-criterion on two independent source families and awaits an expert;
-twelve were inconclusive, all short of two independent families; one, a
-`lost' association of Lizhong wan with fever, was rejected because a
-later book restates it (Fig. 3d,e). A second run wrote the same report.
+diabetes forbidden, on the open canon corpus (273 books, 1,620 passages;
+Fig. 3a). The run planned 30 tasks in three rounds, wrote 678 events,
+called 143 tools (none refused) and no model; it extracted 935 claims
+and recorded 80 evidence and 13 counter-evidence records (Fig. 3b). Of
+14 hypotheses, the Skeptic kept 2, sent 11 to be narrowed and rejected
+1, raising 102 objections (Fig. 3c). Four await an expert: two meet
+every machine-checkable criterion --- restlessness (烦躁) with strangury
+(淋) as an indication of Liuwei dihuang wan, on two independent families
+of Qing books (H1), and a Ming-to-Qing shift of 中风 from wind attack to
+stroke (H2) --- and two rest in part on a quotation that does not
+clearly state its claim. Nine were inconclusive, all short of two
+independent families; the association of copious drinking and urine with
+Shenqi wan (H5) rests on six books that all carry one \emph{Jingui
+yaolüe} clause (Fig. 1c). One, that heat (热) and counterflow qi (上气)
+were not linked after 960 (R1), was rejected because three later books
+state the link (Fig. 3d,e). A second run wrote the same report.
 
-Reading every hypothesis against its evidence found five failure modes
+Reading every hypothesis against its evidence found six failure modes
 (Supplementary Fig. 1). The independence gate merged books linked by any
-transcription or rephrasing, transitively, putting 35 of the 38 evidence
-books in one family; with transcription links only, five failed
-hypotheses would rest on two to four families. The rules also read
-co-occurrence as association, dated a commentary of 1547 with its base
-text of 1237, stated one contradiction twice and, on the sampled open
-corpus, missed the 1119 first record of Liuwei dihuang wan. None
-concerned the hypothesis that passed, and the largest made the gate
+transcription or rephrasing, transitively, putting 36 of the 46 evidence
+books in one family; with transcription links only, four failed
+hypotheses would rest on two or three families, though two (H5, H13) do
+rest on copies of one clause. The rules read two items of one list as an
+association (R1), took drift evidence from passages not naming 中风 and
+let three drifts whose permutation tests failed (\emph{P} = 0.66--0.98)
+reach the expert as `exploratory', read Xue Ji's records of failed
+treatments as doctrine, did not merge hypotheses sharing evidence and,
+on the sampled open corpus, missed the 1119 first record of Liuwei
+dihuang wan. None led to acceptance, and the largest made the gate
 stricter, not looser; we report them unrepaired.
 
 \hypertarget{quotations-boundaries-and-hard-readings}{%
@@ -403,10 +413,10 @@ and 0.054 for chance, and mean average precision 0.199 against 0.143 and
 view at 1368, the pipeline's surviving held-out predictions were
 discoveries (true and new) in 7 of 19 (0.37; 95\% CI 0.19--0.59), after
 absence checks rejected two wrong `lost' and two already-written
-`hidden' associations and no discovery (Fig. 5d). On the open corpus
-alone (30 pairs) Adamic--Adar beat popularity (24/6, \emph{P} = 0.0014)
-but not chance (13/17, \emph{P} = 0.58; Supplementary Fig. 3): the
-benchmark needs the full corpus.
+`hidden' associations and no discovery (Fig. 5d). On the open canon
+corpus alone (51 pairs, 109 true links) Adamic--Adar beat popularity
+(37/14, \emph{P} = 0.0018) but not chance (19/32, \emph{P} = 0.092;
+Supplementary Fig. 3): the benchmark needs the full corpus.
 
 \hypertarget{generalization-the-study-layer-and-the-bridge}{%
 \subsection{Generalization, the study layer and the
@@ -419,7 +429,7 @@ learned punctuation model reached boundary F1 0.767 on 55 held-out works
 (rules 0.235) without changing a character. The deterministic study
 layer recovers dated taboo renamings (薯蓣 → 山药, 1000--1200; 玄参 →
 元参, 1600--1800), the Qing rise of warm disease (Cochran--Armitage
-\emph{z} = 6.62 {[}\protect\hyperlink{ref-armitage1955tests}{26}{]}) and
+\emph{z} = 7.30 {[}\protect\hyperlink{ref-armitage1955tests}{26}{]}) and
 the drug cores of classical formulas (Supplementary Fig. 5). The
 ancient--modern bridge maps 168 ancient phenotypes onto 213 HPO terms
 with typed relations and 64 disease profiles at qualitative levels; on
@@ -463,11 +473,13 @@ anticipation is not efficacy, and about a third of surviving predictions
 were discoveries. Limitations: most gold sets were written by the
 authors with the rules they test, and held-out samples are small;
 model-assisted modes were not evaluated; the independence gate
-over-merges source families (independence should be judged per claim);
-the full corpus cannot be redistributed and the open subset is too small
-for the benchmark; levels and verdicts are ordinal, not calibrated; and
-the transcriptions were not collated by this project. TaoChronos gives
-no clinical or dosage advice.
+over-merges source families (independence should be judged per claim),
+and a failed test of a hypothesis's own statistic should be a hard
+objection rather than narrowed away; the full corpus cannot be
+redistributed and the open subset is too small for the benchmark; levels
+and verdicts are ordinal, not calibrated; and the transcriptions were
+not collated by this project. TaoChronos gives no clinical or dosage
+advice.
 
 \hypertarget{conclusions}{%
 \section{Conclusions}\label{conclusions}}
@@ -497,7 +509,7 @@ chain of one witness from claim to license.
 \includegraphics[width=1\textwidth,height=\textheight]{../../../figures/out/fig2_corpus.pdf}
 
 \textbf{Fig. 2.} The corpus. (a) Construction from ten sources. (b)
-Witnesses per 25-year bin (n = 966; blue, the 531 witnesses of the 350
+Witnesses per 25-year bin (n = 966; blue, the 740 witnesses of the 535
 canon works). (c) Basis of dating; undated witnesses counted as Qing.
 (d) Influence score of the canon works against composition date. (e)
 Characters kept per witness of the open web corpus against canon rank.
@@ -507,7 +519,7 @@ Characters kept per witness of the open web corpus against canon rank.
 \textbf{Fig. 3.} One research question end to end (rules only). (a)
 Question and contract. (b) The 30 tasks by round and agent; numbers,
 tool calls. (c) The 14 hypotheses through the Skeptic and the
-validators, and the 117 objections by check. (d) Final hypotheses
+validators, and the 102 objections by check. (d) Final hypotheses
 against gates and contract criteria. (e) Three outcomes with verbatim
 evidence. D1--D5, discovery tracks.
 
@@ -569,7 +581,7 @@ Copies counted as independent testimony & Five witnesses of one clause
 of the Jingui yaolüe and its copy in the Maijing & Gate G5 counts
 independent source families (author and transcription clusters), not
 books; the Skeptic checks transcription dependence and single sources &
-H2 held inconclusive on one family (Fig. 3e); an over-merging of
+H5 held inconclusive on one family (Fig. 3e); an over-merging of
 families reported (Supplementary Fig. 1) \\
 Anachronism (presentism) & Xiaoke 消渴 read as diabetes mellitus;
 shanghan 伤寒 read as typhoid & Anachronism guard at claim, hypothesis

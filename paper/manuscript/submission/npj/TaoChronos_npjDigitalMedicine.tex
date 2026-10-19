@@ -154,9 +154,9 @@ quote. On 966 witnesses (123 million characters, 475 BCE--1949),
 TaoChronos rejected 180 of 180 corrupted quotations, kept 19 of 19
 safety invariants, each broken when its safeguard was removed, and read
 82 of 84 held-out hard interpretive cases correctly. In a blind temporal
-benchmark, rankings from earlier texts alone anticipated links that
-later physicians wrote (precision@10 0.168 versus 0.134 for popularity
-and 0.054 for chance; \emph{P} = 2.4 × 10⁻¹⁶).
+benchmark, rankings from earlier texts anticipated links later
+physicians wrote (precision@10 0.168 versus 0.134 for popularity and
+0.054 for chance; \emph{P} = 2.4 × 10⁻¹⁶).
 
 \hypertarget{introduction}{%
 \section{Introduction}\label{introduction}}
@@ -324,7 +324,7 @@ Agents may plan, read, extract, propose and review; only validators
 grade gates, scores, rankings and the contract; only a human expert may
 approve or reject a hypothesis (gate G7) or steer a research; an
 objection is closed only by a validator's passing re-run of its check or
-by an expert, never by a model. Each of the 73 tools needs one of seven
+by an expert, never by a model. Each of the 85 tools needs one of eight
 permissions, and every call passes a scope guard before it runs and a
 result firewall after it, so material withheld from a research does not
 exist for its agents (Supplementary Tables 5 and 6). Claims pass three
@@ -367,12 +367,12 @@ matching only; the transcription is never altered.
 The tradition's own citations define its canon. An influence score
 combines the works that cite a work, the periods in which it is cited,
 its citations, its witnesses and its inclusion in the \emph{Siku
-quanshu} (Fig. 2d). The openly licensed texts of the 350 highest-ranked
-works form a web corpus of 348 works and 368 witnesses (8.51 million
-characters) that runs in the browser, whole for the first classics and
-by chapters for the rest (Fig. 2e). Catalogue records of 10,001 printed
-and manuscript copies in eleven digitized collections link 179 works to
-physical witnesses (Supplementary Fig. 4).
+quanshu} (Fig. 2d). The openly licensed texts of 533 of the 535 ranked
+works form a web corpus of 553 witnesses (10.46 million characters,
+168,278 passages) that runs in the browser, whole for the first classics
+and by chapters for the rest (Fig. 2e). Catalogue records of 10,001
+printed and manuscript copies in eleven digitized collections link 179
+works to physical witnesses (Supplementary Fig. 4).
 
 \hypertarget{one-research-question-end-to-end}{%
 \subsection{One research question, end to
@@ -387,44 +387,57 @@ from at least two independent source families, gates G0--G6 to pass on
 the current version of each hypothesis (G4--G6 strictly), no open hard
 or critical objection, rival explanations addressed and expert review
 before publication; the run would stop after two rounds or when new
-evidence added less than 5\%. The scope held 206 books and 1,399
+evidence added less than 5\%. The scope held 273 books and 1,620
 passages naming a focus term.
 
-The run planned 30 tasks in three rounds and wrote 734 events (agents
-477, validators 124, kernel 133); it called 156 tools, none refused, and
-no language model (Fig. 3b). It extracted 777 claims and recorded 87
-evidence and 22 counter-evidence records. Of 14 hypotheses proposed in
-round 1, the Skeptic kept 3, sent 10 back to be narrowed and rejected 1,
-raising 117 objections (Fig. 3c, Supplementary Table 10). The run
-stopped in round 2 when new evidence fell to 4.6\%. The contract's
-verdict (Fig. 3d,e): one hypothesis, that restlessness (烦躁) is a
-characteristic indication of Liuwei dihuang wan, met every criterion a
-machine can check, resting on two independent families of Qing books,
-and waits for an expert; twelve were inconclusive, all of them short of
-two independent source families and six also failing other criteria; and
-one, that the association of Lizhong wan with fever was lost after 960,
-was rejected because a later book restates it. A second run wrote the
-same report. The report, the event log and every hypothesis and
-objection are released (Supplementary Data 1 and 2, Supplementary Tables
-9 and 10).
+The run planned 30 tasks in three rounds and wrote 678 events (agents
+442, validators 103, kernel 133); it called 143 tools, none refused, and
+no language model (Fig. 3b). It extracted 935 claims and recorded 80
+evidence and 13 counter-evidence records. Of 14 hypotheses proposed in
+round 1, the Skeptic kept 2, sent 11 back to be narrowed and rejected 1,
+raising 102 objections (Fig. 3c, Supplementary Table 10). The run
+stopped after round 2, which added no evidence. The contract's verdict
+(Fig. 3d,e): four hypotheses wait for an expert. Two meet every
+criterion a machine can check --- that restlessness (烦躁) with
+strangury (淋) is a characteristic indication of Liuwei dihuang wan,
+resting on two independent families of Qing books (H1), and that the
+dominant sense of 中风 shifted from wind attack to stroke between the
+Ming and the Qing (H2) --- and two (H3, H4) rest in part on a quotation
+that does not clearly state its claim, a judgement the contract leaves
+to an expert. Nine were inconclusive, all short of two independent
+source families; the clearest case, the association of copious drinking
+and urine with Shenqi wan (H5), rests on six books that all carry one
+clause of the \emph{Jingui yaolüe} --- the clause of Fig. 1c --- or copy
+or cite it. One hypothesis, that heat (热) and counterflow qi (上气),
+associated before 960, were not linked afterwards (R1), was rejected
+because three later books state the link. A second run wrote the same
+report. The report, the event log and every hypothesis and objection are
+released (Supplementary Data 1 and 2, Supplementary Tables 9 and 10).
 
-Reading every surviving hypothesis against its evidence found five
-failure modes (Supplementary Fig. 1). The largest is in the independence
-gate: merging books linked by any transcription or rephrasing link,
-closed transitively, put 35 of the 38 books that supplied evidence, and
-182 of the 368 books of the corpus, into one source family; with
-transcription links only, five of the hypotheses that failed G5 would
-rest on two to four families. The rules also read co-occurrence in a
-passage as association (R1's evidence and the later passage that refuted
-it both name Lizhong wan beside fever without giving it for fever),
-dated Xue Ji's case notes of 1547 with the text of 1237 they annotate,
-stated one contradiction twice, and found the earliest Liuwei dihuang
-wan in 1638 because the open corpus keeps 8 of the 24 chapters of the
-1119 work that first records it. We report these failures unrepaired.
-None of them concerned the one hypothesis that met every machine
-criterion, and the largest made the independence gate stricter rather
-than looser; but the misreadings behind H2, H10 and H11 show why the
-final judgement, gate G7, belongs to an expert.
+Reading every hypothesis against its evidence found six failure modes
+(Supplementary Fig. 1). The independence gate merges books linked by any
+transcription or rephrasing link, closed transitively, and so put 36 of
+the 46 books that supplied evidence, and 233 of the 553 books of the
+corpus, into one source family; with transcription links only, four
+hypotheses that failed G5 would rest on two or three families, although
+for two of them (H5, H13) the evidence is indeed copies of one clause.
+The rules read two findings of one list as an association: R1 rests on
+口熱 and 上氣 in the \emph{Maijing}'s list of the kidney channel's
+illnesses, and the later books that refuted it copy the same list. The
+evidence for the drift of 中风 includes passages that do not name 中风
+at all, and the three drift hypotheses (H2--H4) failed their own
+permutation tests (\emph{P} = 0.66, 0.89 and 0.98); narrowing them to
+`exploratory' closed the objection, which is how they reached the
+expert's queue. Three contradictions (H9--H11) rest on Xue Ji's records
+of treatments that failed, read as doctrine, and his notes in his
+editions of earlier works carry the dates of those works. Hypotheses
+that share their evidence were not merged, and because the open corpus
+keeps 8 of the 24 chapters of the work of 1119 that first records Liuwei
+dihuang wan, the earliest composition found was of 1564. We report these
+failures unrepaired. None led the contract to accept a hypothesis, and
+the largest made the independence gate stricter rather than looser; but
+they show that `waits for an expert' is a queue, not a finding, and why
+the final judgement, gate G7, belongs to an expert.
 
 \hypertarget{quotations-stay-verbatim-boundaries-hold-and-hard-readings-stay-safe}{%
 \subsection{Quotations stay verbatim, boundaries hold and hard readings
@@ -513,11 +526,11 @@ share of surviving predictions that were discoveries, true and new, from
 the ranking anticipates later links well above popularity and chance,
 while the pipeline's hypotheses, judged one by one, come true about as
 often as not. Re-run with identical rules on the open canon corpus, the
-benchmark had only 30 pairs with a true link (56 among 6,178
-candidates): Adamic--Adar still ranked above popularity (24 of 30,
-\emph{P} = 0.0014) but could not be told from chance (13 better, 17
-worse, \emph{P} = 0.58) (Supplementary Fig. 3, Supplementary Tables 11
-and 12). The benchmark needs the full corpus.
+benchmark had 51 pairs with a true link (109 among 10,115 candidates; 28
+pairs with a single one): Adamic--Adar still ranked above popularity (37
+of 51, \emph{P} = 0.0018) but could not be told from chance (19 better,
+32 worse, \emph{P} = 0.092) (Supplementary Fig. 3, Supplementary Tables
+11 and 12). The benchmark needs the full corpus.
 
 \hypertarget{the-study-layer-recovers-history-written-into-the-texts}{%
 \subsection{The study layer recovers history written into the
@@ -530,19 +543,23 @@ history of medicine already holds (Fig. 6). The share of works writing
 taboos on the names of the Tang emperor Daizong (762) and the Song
 emperor Yingzong (1063), and 元参 replaces 玄参 between 1600 and 1800,
 after the taboo on the Kangxi emperor's name (1662) (Fig. 6a,b).
-Passages on warm disease (温病) per 10,000 passages stay between 25 and
-36 from the Han to the Ming and rise to 66 in the Qing
-(Cochran--Armitage \emph{z} = 6.62, \emph{P} = 3.6 × 10⁻¹¹), when the
+Passages on warm disease (温病) per 10,000 passages stay between 21 and
+36 from the Han to the Ming and rise to 61 in the Qing
+(Cochran--Armitage \emph{z} = 7.30, \emph{P} = 2.8 × 10⁻¹³), when the
 doctrine of warm diseases grew into a school of its own (Fig. 6c). Drug
-pairs that co-occur beyond chance in 303 compositions (one-sided Fisher
-exact tests, Benjamini--Hochberg \emph{q} \textless{}
+pairs that co-occur beyond chance in 4,554 compositions (1,184 pairs;
+one-sided Fisher exact tests, Benjamini--Hochberg \emph{q} \textless{}
 0.05\textsuperscript{\protect\hyperlink{ref-benjamini1995fdr}{44}}) form
-groups that coincide with the cores of classical formulas --- Liuwei
-dihuang wan, Guizhi tang, the Mahuang tang family, Xiao chaihu tang and
-Baihu tang --- found without formula names (Fig. 6d); on the full store
-all seven textbook pairs tested were significant with lift above 1.5. Of
-1,279 citations between 72 physicians, 511 (40\%) cite Zhang Ji, the
-author of the \emph{Shanghan lun} (Fig. 6e).
+communities found without formula names; of the twelve largest, the five
+whose drugs hold together most tightly are the cores of classical
+formulas --- 乳香, 没药 and 血竭 of Qili san, 大戟, 甘遂 and 芫花 of
+Shizao tang, 水蛭, 虻虫, 桃仁 and 大黄 of Didang tang, 连翘, 薄荷 and
+栀子 of Liangge san, and 牛黄, 麝香, 冰片, 朱砂 and 雄黄 of Angong
+niuhuang wan --- while liquorice, in 43\% of compositions, joins none
+(Fig. 6d); on the full store all seven textbook pairs tested were
+significant with lift above 1.5. Of 1,446 citations between 78
+physicians, 569 (39\%) cite Zhang Ji, the author of the \emph{Shanghan
+lun} (Fig. 6e).
 
 \hypertarget{generalization-and-the-bridge-to-modern-medicine}{%
 \subsection{Generalization and the bridge to modern
@@ -589,8 +606,10 @@ diagnosis.
 TaoChronos also runs as a conversation agent in the browser (Pyodide) on
 the open canon corpus, where a user's chosen model answers through 79
 tools and the page checks every cited passage word for word (verbatim,
-misquoted or no such passage). Conversation records were not used in
-this study.
+misquoted or no such passage). The same tools read a user's own records,
+such as a clinic's prescriptions or case notes, made anonymous as they
+are read and never recorded; this path was not evaluated here.
+Conversation records were not used in this study.
 
 \hypertarget{discussion}{%
 \section{Discussion}\label{discussion}}
@@ -648,19 +667,21 @@ interpretive cases). Expert-annotated gold on the full corpus is needed.
 Second, every number was obtained with rules alone; model-assisted modes
 are implemented, with recorded and replayable responses, but not
 evaluated here. Third, the end-to-end run exposed an over-merging of
-source families that makes the independence gate too strict; judging
-independence per claim, from the passages that support it, is the fix we
-propose. Fourth, the full corpus cannot be redistributed because some
-sources forbid it; the open canon corpus reproduces the end-to-end run
-and the study layer but is too small for the temporal benchmark, whose
-full-corpus values are documented runs. Fifth, levels, verdicts and
-gates are ordinal labels, not calibrated probabilities, and the 64
-disease profiles need clinical review. Sixth, the transcriptions were
-not collated by this project, Siku texts carry Qing alterations, and
-undated texts can only be placed `Qing or earlier'. Finally, an
-alias-aware search added since met six or seven of ten pre-specified
-acceptance checks on its held-out set, depending on the profile, and is
-reported as such.
+source families that makes the independence gate too strict, and a
+narrowing that lets hypotheses whose own test failed reach the expert as
+`exploratory'; judging independence per claim, from the passages that
+support it, and treating a hypothesis's failed test as a hard objection
+are the fixes we propose. Fourth, the full corpus cannot be
+redistributed because some sources forbid it; the open canon corpus
+reproduces the end-to-end run and the study layer but is too small for
+the temporal benchmark, whose full-corpus values are documented runs.
+Fifth, levels, verdicts and gates are ordinal labels, not calibrated
+probabilities, and the 64 disease profiles need clinical review. Sixth,
+the transcriptions were not collated by this project, Siku texts carry
+Qing alterations, and undated texts can only be placed `Qing or
+earlier'. Finally, an alias-aware search added since met six or seven of
+ten pre-specified acceptance checks on its held-out set, depending on
+the profile, and is reported as such.
 
 Reliability, in this sense, is not a claim that the agent is right. It
 is a guarantee about what the agent cannot do, a record from which every
@@ -721,14 +742,12 @@ The influence of a work is 10 log₂(1 + citing works not older than it) +
 2 × (periods in which it is cited) + 2 log₂(1 + citations) + 3 log₂(1 +
 witnesses) + 6 × (inclusion in the \emph{Siku quanshu}), computed on the
 citation network the study layer resolves. The openly licensed witnesses
-of the 350 highest-ranked works form the web corpus used for Figs. 2e, 3
-and 6 and Supplementary Fig. 3: a work's first witness kept up to
-350,000 characters for ranks 1--10, then 50,000, 25,000 and 12,000,
-whole where shorter and by sampled chapters otherwise, and second and
-third witnesses for the ten highest-ranked works. The figures were built
-on this snapshot (348 works, 368 witnesses, 8.51 million characters,
-135,083 passages); the distributed corpus has since been extended to 533
-of 535 ranked works.
+of the 535 ranked works (533 have one) form the web corpus used for
+Figs. 2e, 3 and 6 and Supplementary Fig. 3 (553 witnesses, 10.46 million
+characters, 168,278 passages): a work's first witness kept up to 350,000
+characters for ranks 1--10, then 50,000 (to rank 40), 25,000 (to rank
+120) and 12,000, whole where shorter and by sampled chapters otherwise,
+and second and third witnesses for the ten highest-ranked works.
 
 \hypertarget{claims-readings-and-the-claim-hypergraph}{%
 \subsection{Claims, readings and the claim
@@ -890,7 +909,10 @@ Drug pairs (Fig. 6d) count a composition repeated in copies of one work
 once, test pairs present in at least ten works with one-sided Fisher
 exact tests and Benjamini--Hochberg control, and rank significant pairs
 by normalized pointwise mutual
-information\textsuperscript{\protect\hyperlink{ref-bouma2009npmi}{52}}.
+information\textsuperscript{\protect\hyperlink{ref-bouma2009npmi}{52}};
+groups are communities of the graph of strong pairs (significant, NPMI ≥
+0.3, at least ten works), and the panel shows the five of the twelve
+largest with the highest mean NPMI among their significant pairs.
 Citations (Fig. 6e) are resolved from explicit attributions to
 physicians; links whose cited physician lived after the citing one (five
 links, 28 citations) were omitted as chronologically impossible.
@@ -1412,11 +1434,11 @@ commentaries, editors' notes and later additions dated apart; undated
 material counted as Qing, never earlier) and normalization used for
 matching only. \textbf{b}, Witnesses per 25-year bin by composition
 date; each witness counts once, its weight spread evenly over its date
-range (n = 966; blue, the 531 witnesses of the 350 canon works). Bands
+range (n = 966; blue, the 740 witnesses of the 535 canon works). Bands
 mark the analysis periods; the last, unlabelled band is the Republican
 period (1912--1949). \textbf{c}, Basis on which each witness was dated;
 the 104 undated witnesses are counted as Qing (vermillion), never
-earlier. \textbf{d}, Influence score of the 350 canon works against the
+earlier. \textbf{d}, Influence score of the 535 canon works against the
 midpoint of their composition range; point area, witnesses in the corpus
 (capped at 10). Score = 10 log₂(1 + citing works not older than it) + 2
 × periods in which it is cited + 2 log₂(1 + citations) + 3 log₂(1 +
@@ -1438,27 +1460,28 @@ catalogues (\texttt{corpus/catalog}) and the web corpus pack
 (web-canon profile; rules only, no model called), and the contract fixed
 before the first task. \textbf{b}, The 30 tasks in the order the
 Director planned them over three rounds: agent tasks (blue), validator
-tasks (grey); numbers, tool calls (the Skeptic's are quotation checks).
-Below each round, the evidence records, new books and hypotheses it
-added; the run stopped when new evidence fell below 5\% in the last
-round the contract allowed. \textbf{c}, The 14 hypotheses proposed in
-round 1 (bands, one per hypothesis): the Skeptic kept 3, sent 10 back to
-be narrowed and rejected 1; validators then judged the 13 candidates
-against the contract. Below, the Skeptic's 117 objections by check:
-closed by a validator once the claim was narrowed, left open (minor or
-interpretive) or critical. \textbf{d}, The final hypotheses against the
-gates and the contract's criteria. Twelve fail on independent sources
-(G5): passage reuse, closed transitively, puts 35 of the 38 books that
-supplied evidence into one source family (Supplementary Fig. 1).
-\textbf{e}, Three outcomes with their verbatim evidence. H1 meets every
-criterion a machine can check and waits for an expert. H2 rests on five
-witnesses of one clause, which the source-dependence check counts once.
-R1 is rejected because a later book restates the link, although neither
-passage gives 理中 for fever itself: the rules read co-occurrence in a
-passage as association. A second run writes the same report; the report,
-the event log and every hypothesis and objection are Supplementary Data
-1--2 and Supplementary Tables 9--10. D1--D5, discovery tracks: lost
-knowledge, concept evolution, formula evolution, hidden associations,
+tasks (grey); numbers, tool calls. Below each round, the evidence
+records, new books and hypotheses it added; the run stopped after the
+last round the contract allowed, which added no evidence. \textbf{c},
+The 14 hypotheses proposed in round 1: the Skeptic kept 2, sent 11 back
+to be narrowed and rejected 1; validators then judged the 13 candidates.
+Below, the Skeptic's 102 objections by check: closed by a validator once
+the claim was narrowed, left open, or critical. \textbf{d}, The final
+hypotheses against the gates and the contract's criteria. H1 and H2 meet
+every criterion a machine can check; H3 and H4 rest in part on a
+quotation that does not clearly state its claim, which the contract
+leaves to an expert. Nine fail on independent sources (G5): passage
+reuse, closed transitively, puts 36 of the 46 evidence books into one
+source family (Supplementary Fig. 1). \textbf{e}, Three outcomes with
+their verbatim evidence. H1 waits for an expert. H5 rests on six books
+of one family: the 消渴 clause of the \emph{Jingui yaolüe}, its
+witnesses and copies. R1 is rejected because three later books state the
+link; they copy the canonical list of the kidney channel's illnesses
+that the earlier passage holds, and the rules read two findings of one
+list as an association. A second run writes the same report; report,
+event log, hypotheses and objections: Supplementary Data 1--2 and
+Supplementary Tables 9--10. D1--D5, discovery tracks: lost knowledge,
+concept evolution, formula evolution, hidden associations,
 contradictions.
 
 \includegraphics[width=1\textwidth,height=\textheight]{../../../figures/out/fig4_verification.pdf}
@@ -1519,7 +1542,7 @@ on the open corpus.
 
 \textbf{Fig. 6 \textbar{} On the open canon corpus, the study layer
 recovers history written into the texts.} All panels are computed by the
-deterministic study layer on the open web corpus (348 works, 135,083
+deterministic study layer on the open web corpus (533 works, 168,278
 passages). \textbf{a}, \textbf{b}, Share of works per century writing an
 original drug name and the name a naming taboo imposed: 薯蓣 and 山药
 (\textbf{a}), 玄参 and 元参 (\textbf{b}). Dashed lines, the years from
@@ -1533,16 +1556,18 @@ for both. \textbf{c}, Passages mentioning 温病 (warm disease) per 10,000
 passages by period, with Wilson 95\% confidence intervals; numbers,
 passages with the term. Two-sided Cochran--Armitage test for trend
 across the ordered periods. \textbf{d}, Normalized pointwise mutual
-information (NPMI) of drug pairs co-occurring significantly in 303
+information (NPMI) of drug pairs co-occurring significantly in 4,554
 compositions (a composition repeated in copies of one work counted once;
 pairs in at least ten works tested; one-sided Fisher exact test,
-Benjamini--Hochberg q \textless{} 0.05; 63 pairs). The groups the tool
-finds without formula names (outlined) coincide with the cores of
-classical formulas (right); liquorice (甘草), present in most formulas,
-joins none. \textbf{e}, Citations between physicians: arcs join citing
-and cited physicians placed at the midpoints of their dates; width ∝
-√citations; blue, citations of Zhang Ji (张机). Five links whose cited
-physician lived after the citing one (28 citations) are omitted as
+Benjamini--Hochberg q \textless{} 0.05; 1,184 pairs). Groups are
+communities of the strong pairs (NPMI ≥ 0.3), found without formula
+names; shown (outlined) are the five of twelve whose drugs hold together
+most tightly (mean NPMI of their significant pairs). Each holds the core
+of a classical formula (right); liquorice (甘草), present in 43\% of
+compositions, joins none. \textbf{e}, Citations between physicians: arcs
+join citing and cited physicians placed at the midpoints of their dates;
+width ∝ √citations; blue, citations of Zhang Ji (张机). Five links whose
+cited physician lived after the citing one (28 citations) are omitted as
 chronologically impossible.
 
 \hypertarget{tables}{%
@@ -1588,7 +1613,7 @@ Copies counted as independent testimony & Five witnesses of one clause
 of the Jingui yaolüe and its copy in the Maijing & Gate G5 counts
 independent source families (author and transcription clusters), not
 books; the Skeptic checks transcription dependence and single sources &
-H2 held inconclusive on one family (Fig. 3e); an over-merging of
+H5 held inconclusive on one family (Fig. 3e); an over-merging of
 families reported (Supplementary Fig. 1) \\
 Anachronism (presentism) & Xiaoke 消渴 read as diabetes mellitus;
 shanghan 伤寒 read as typhoid & Anachronism guard at claim, hypothesis

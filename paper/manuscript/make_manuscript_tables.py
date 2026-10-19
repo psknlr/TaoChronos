@@ -49,7 +49,7 @@ def table1() -> dict:
          "Five witnesses of one clause of the Jingui yaolüe and its copy in the Maijing",
          "Gate G5 counts independent source families (author and transcription clusters), not books; the Skeptic "
          "checks transcription dependence and single sources",
-         "H2 held inconclusive on one family (Fig. 3e); an over-merging of families reported (Supplementary Fig. 1)"],
+         "H5 held inconclusive on one family (Fig. 3e); an over-merging of families reported (Supplementary Fig. 1)"],
         ["Anachronism (presentism)",
          "Xiaoke 消渴 read as diabetes mellitus; shanghan 伤寒 read as typhoid",
          "Anachronism guard at claim, hypothesis and graph-write hooks; the contract's forbidden equivalences; the "

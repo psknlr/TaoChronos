@@ -167,7 +167,7 @@
    "Each invariant is a probe run against the harness under evaluation; the unit tests (tests/test_boundaries.py) check the same boundaries on the default harness.",
    "A probe that cannot run here is reported as not exercised, never as held."
   ],
-  "seconds": 3.19
+  "seconds": 3.64
  },
  "interpretive": {
   "name": "interpretive",
@@ -1513,7 +1513,7 @@
    "unsafe = a misreading that lets a false claim through: a contradicted claim read as supported, a rejected or reported view read as the author's, a mixed witness verified, a disputed order asserted, a text that may be later put before a cutoff, a condition dropped.",
    "Only the held-out score estimates anything; the dev cases were used to make the rules they test."
   ],
-  "seconds": 0.07
+  "seconds": 0.32
  },
  "research_value": {
   "name": "research_value",
@@ -1768,7 +1768,7 @@
    }
   ],
   "notes": [],
-  "seconds": 0.01
+  "seconds": 0.02
  },
  "provenance": {
   "name": "provenance",
@@ -1813,7 +1813,7 @@
   "notes": [
    "perturbed = one character replaced; fabricated = random characters; wrong span = verbatim quote at shifted offsets"
   ],
-  "seconds": 0.17
+  "seconds": 0.19
  },
  "contradiction": {
   "name": "contradiction",
@@ -1938,7 +1938,7 @@
    }
   ],
   "notes": [],
-  "seconds": 0.66
+  "seconds": 0.76
  },
  "lineage": {
   "name": "lineage",
@@ -2218,7 +2218,7 @@
    }
   ],
   "notes": [],
-  "seconds": 0.04
+  "seconds": 0.08
  },
  "anachronism": {
   "name": "anachronism",
@@ -2381,7 +2381,7 @@
    }
   ],
   "notes": [],
-  "seconds": 20.95
+  "seconds": 23.79
  },
  "time_machine": {
   "name": "time_machine",
@@ -2568,7 +2568,7 @@
   "notes": [
    "Link-level hold-out needs a large corpus: the demo corpus has very few links that first appear after the cutoff, so the baseline table documents the protocol, not a result."
   ],
-  "seconds": 1.86
+  "seconds": 2.27
  },
  "source_rediscovery": {
   "name": "source_rediscovery",
@@ -2622,7 +2622,7 @@
    }
   ],
   "notes": [],
-  "seconds": 1.9
+  "seconds": 2.24
  },
  "ablations": {
   "name": "ablations",
@@ -2663,7 +2663,7 @@
   },
   "details": [],
   "notes": [],
-  "seconds": 2.68
+  "seconds": 3.32
  },
  "collation": {
   "name": "collation",
@@ -2957,7 +2957,7 @@
   "notes": [
    "artificial traditions copied from the demo corpus down a known stemma (two branches, a contaminated witness); base = witness C, as in real use; a change counts as found when a variant unit covers it; the tree is scored on the uncontaminated witnesses (a contaminated one has no single place in a tree)"
   ],
-  "seconds": 0.35
+  "seconds": 0.42
  },
  "reuse": {
   "name": "reuse",
@@ -3680,14 +3680,14 @@
   "notes": [
    "author-constructed pairs (gold/reuse.yaml): a development set for the transparent rules, not an independent benchmark; mode = retained / transformed / disputed / none; pipeline_recall = lineage gold transcriptions and rephrasings that study.reuse finds in the demo corpus"
   ],
-  "seconds": 0.11
+  "seconds": 0.13
  },
  "stratigraphy": {
   "name": "stratigraphy",
   "metrics": {
    "layer_accuracy": 0.955,
    "split_supported": 1.0,
-   "change_point_recall": 0.4524,
+   "change_point_recall": 0.3667,
    "change_point_precision": 1.0,
    "boundary_recall": 0.9048,
    "boundary_precision": 0.925,
@@ -3737,11 +3737,7 @@
      33,
      39
     ],
-    "change_points": [
-     22,
-     26,
-     33
-    ],
+    "change_points": [],
     "layer_runs": [
      4,
      10,
@@ -3828,7 +3824,7 @@
   "notes": [
    "composites: 16 000 characters drawn clause by clause from the demo corpus, in 400-character chunks, blocks of 4–8 chunks rewritten with a second author's function characters (half of them), so the layers differ in style only; function-character profiles; a change point counts within one chunk of a boundary"
   ],
-  "seconds": 2.03
+  "seconds": 2.86
  },
  "cases": {
   "name": "cases",
@@ -4051,7 +4047,7 @@
   "notes": [
    "constructed records in the two manners of the literature (successive visits under a heading; narratives), a development set written with the rules: it shows what they are meant to do, not how they generalise; case segmentation = books whose number of cases is right; fields compared as sets, one value containing the other"
   ],
-  "seconds": 0.0
+  "seconds": 0.01
  },
  "argument": {
   "name": "argument",
@@ -4658,7 +4654,7 @@
   "notes": [
    "synthetic occurrences (600 per trial): sense B's share rises from 15% to 75% in the year 1000, a sense C that no cue names appears from 1300 (30%); change_year_error in years; hidden_sense_found = a candidate cluster with 3 of its top 5 words from C; exemplars: the curated exemplar passages of 消渴 in the demo corpus labelled with their curated sense"
   ],
-  "seconds": 1.55
+  "seconds": 1.73
  },
  "fragments": {
   "name": "fragments",
@@ -4744,7 +4740,7 @@
   "notes": [
    "demo corpus: 22 works in 4 folds, each punctuated by a model trained on the other folds (a few thousand characters of training text: the scores show the method works, not how well it works)"
   ],
-  "seconds": 0.34
+  "seconds": 0.35
  },
  "commentaries": {
   "name": "commentaries",
@@ -4835,7 +4831,7 @@
   "notes": [
    "constructed corpus (gold/commentaries): four layouts — the row after the clause, rows of a layer of their own, run on in the clause's paragraph, 白文 with notes after each clause; text_f1 = character F1 of the text taken as a commentary (the lemma's own characters left out) against the gold commentary"
   ],
-  "seconds": 0.02
+  "seconds": 0.04
  },
  "disputes": {
   "name": "disputes",
@@ -4882,7 +4878,7 @@
   "notes": [
    "constructed sentences (gold/disputes.yaml) with known hard cases; the misses listed in the details are the limits of a marker-and-name reading"
   ],
-  "seconds": 0.01
+  "seconds": 0.02
  },
  "variant_impact": {
   "name": "variant_impact",
@@ -4911,7 +4907,7 @@
   "notes": [
    "constructed pairs (gold/variant_impact.yaml); high_impact = dose, negation, prescription or clinical — the variants a physician should see first"
   ],
-  "seconds": 0.0
+  "seconds": 0.01
  },
  "clause": {
   "name": "clause",
@@ -5004,7 +5000,7 @@
    "synthetic: 600 compositions of 30 drugs with three planted pairs; false_significant = share of the other pairs passing Benjamini–Hochberg at q=0.05",
    "demo: compositions after a formula's name and treatment sentences (…主之) read from the demo corpus"
   ],
-  "seconds": 0.05
+  "seconds": 0.06
  },
  "schools": {
   "name": "schools",
@@ -5022,7 +5018,7 @@
   "notes": [
    "synthetic: 5 温病 physicians and 16 other authors (1650–1800); planted words in several phrases (so the word, not one phrase, must be found); common_words_listed = findings every author writes found significant"
   ],
-  "seconds": 0.12
+  "seconds": 0.29
  },
  "names": {
   "name": "names",
@@ -5050,7 +5046,7 @@
   "notes": [
    "synthetic: 8 works write 薯蓣 (450–690), 8 write 山药 (1110–1390), one Tang work already 山药 (a blip), 干山药 once, two passages equate the names and give 山芋"
   ],
-  "seconds": 0.03
+  "seconds": 0.06
  },
  "chain": {
   "name": "chain",
@@ -5072,7 +5068,7 @@
   "notes": [
    "synthetic: 6 traditions × 12 witnesses of an 80-character passage; each copies an earlier witness at random and adds one content change (30%: two); convergent: each copy also flips each of eight spellings of collation.yaml (沉/沈, 涩/濇, 肢/支, 膈/鬲, 痰/淡, 硬/鞕, 咳/欬, 藏/脏) with p=0.3, independently of its model; judged = found witnesses whose model was found too; baseline = the most similar earlier witness among those found"
   ],
-  "seconds": 0.29
+  "seconds": 0.51
  },
  "entities": {
   "name": "entities",
@@ -5352,7 +5348,7 @@
    "gold/ner.yaml is the development set; gold/ner_heldout.yaml was annotated before the recognizer ran on it (first measured F1 0.757; 0.776 after fixing two bugs it revealed — chained processing words, 破八片 read as a dose — with no rule added for its content)",
    "no model measured (set TAOCHRONOS_EVAL_LLM=provider:model to measure the rule + model pipeline)"
   ],
-  "seconds": 0.25
+  "seconds": 0.2
  },
  "places": {
   "name": "places",
@@ -5408,7 +5404,7 @@
   "notes": [
    "gold/places.yaml: signatures and statements written in the forms of real prefaces and biographies, with traps"
   ],
-  "seconds": 0.02
+  "seconds": 0.01
  },
  "translation": {
   "name": "translation",
@@ -5434,7 +5430,7 @@
    "gold/presentism.yaml: equations, retrospective diagnoses, modern names a translation adds, and bounded comparisons that must pass",
    "grounding: a synthetic 注解伤寒论 glossing the doublets of the 桂枝汤 clause"
   ],
-  "seconds": 0.35
+  "seconds": 0.41
  },
  "layout": {
   "name": "layout",
@@ -5493,7 +5489,7 @@
    "synthetic pages from the demo corpus (notes planted at random, 版心 and 书眉 added); an engine's lines or characters, boxes jittered by 5 % (12 % noisy) of a character and shuffled",
    "a page carrying more than nine characters of note for one of text is read as all text (the main size cannot be told), the known limit of reading layout from boxes alone"
   ],
-  "seconds": 0.71
+  "seconds": 0.7
  },
  "bridge": {
   "name": "bridge",
@@ -5568,7 +5564,7 @@
   "notes": [
    "phenotypes and mapping: dev cases written while the reader was built (gold/bridge.yaml); levels are not calibrated and the mapping cases test the construct, not a diagnosis"
   ],
-  "seconds": 0.14
+  "seconds": 0.21
  },
  "audit": {
   "name": "audit",
@@ -5584,7 +5580,7 @@
   "notes": [
    "dev cases written with the checks (gold/audit.yaml); offline: no modern evidence"
   ],
-  "seconds": 0.02
+  "seconds": 0.03
  },
  "modern": {
   "name": "modern",
@@ -5611,7 +5607,7 @@
    "dev cases (gold/modern.yaml); PubMed is not queried by the suite",
    "RWD on synthetic people: a check of the compiler, not a finding"
   ],
-  "seconds": 0.05
+  "seconds": 0.06
  },
  "workflow": {
   "name": "workflow",
@@ -5636,6 +5632,217 @@
   "notes": [
    "dev questions (gold/workflow.yaml); the run uses the demo corpus and the rules only"
   ],
-  "seconds": 0.13
+  "seconds": 0.18
+ },
+ "aliases": {
+  "name": "aliases",
+  "metrics": {
+   "synthetic": {
+    "off_is_legacy": true,
+    "places_and_retention": true,
+    "no_merge": true,
+    "readings": true,
+    "gates": true,
+    "periods": true,
+    "flags": true,
+    "no_leakage": true,
+    "P@10 off": 0.8,
+    "AskedRet@10 off": 0.9861,
+    "ON@10 off": 1,
+    "Wrong@10 off": 6,
+    "CandRecall off": null,
+    "SilentMerge off": null,
+    "FlagR off": 0.0,
+    "Leakage off": 0,
+    "P@10 naive": 0.8056,
+    "AskedRet@10 naive": 0.9472,
+    "ON@10 naive": 15,
+    "Wrong@10 naive": 7,
+    "CandRecall naive": null,
+    "SilentMerge naive": null,
+    "FlagR naive": 0.0,
+    "Leakage naive": 0,
+    "P@10 on": 0.9333,
+    "AskedRet@10 on": 0.9667,
+    "ON@10 on": 18,
+    "Wrong@10 on": 3,
+    "CandRecall on": 1.0,
+    "SilentMerge on": 0,
+    "FlagR on": 1.0,
+    "Leakage on": 0,
+    "seconds": 0.98
+   },
+   "gold": {
+    "items": 120,
+    "resolution": 80,
+    "valid": true,
+    "split_sha256": "cd186cf8937f"
+   }
+  },
+  "details": [
+   {
+    "part": "synthetic",
+    "id": "s-alias",
+    "type": "alias",
+    "off": {
+     "P@10": 0.75,
+     "labels": "aaaaaa.."
+    },
+    "naive": {
+     "P@10": 1.0,
+     "labels": "aaaaaaoooo"
+    },
+    "on": {
+     "P@10": 1.0,
+     "labels": "aaaoaaoaoo"
+    }
+   },
+   {
+    "part": "synthetic",
+    "id": "s-head",
+    "type": "head",
+    "off": {
+     "P@10": 1.0,
+     "labels": "aaaaaaaaaa"
+    },
+    "naive": {
+     "P@10": 0.9,
+     "labels": ".aaaaaaaaa"
+    },
+    "on": {
+     "P@10": 1.0,
+     "labels": "aaaoaaoaao"
+    }
+   },
+   {
+    "part": "synthetic",
+    "id": "s-trap",
+    "type": "trap",
+    "off": {
+     "P@10": 0.25,
+     "labels": "wwwa"
+    },
+    "naive": {
+     "P@10": 0.4,
+     "labels": "wwwao"
+    },
+    "on": {
+     "P@10": 0.4,
+     "labels": "aowww"
+    }
+   },
+   {
+    "part": "synthetic",
+    "id": "s-period-early",
+    "type": "period",
+    "off": {
+     "P@10": 1.0,
+     "labels": "a"
+    },
+    "naive": {
+     "P@10": 1.0,
+     "labels": "aoo"
+    },
+    "on": {
+     "P@10": 1.0,
+     "labels": "aoo"
+    }
+   },
+   {
+    "part": "synthetic",
+    "id": "s-period-late",
+    "type": "period",
+    "off": {
+     "P@10": 1.0,
+     "labels": "aa"
+    },
+    "naive": {
+     "P@10": 0.75,
+     "labels": "aowa"
+    },
+    "on": {
+     "P@10": 1.0,
+     "labels": "aao"
+    }
+   },
+   {
+    "part": "synthetic",
+    "id": "s-ambiguous",
+    "type": "ambiguous",
+    "off": {
+     "P@10": 1.0,
+     "labels": "aaa"
+    },
+    "naive": {
+     "P@10": 1.0,
+     "labels": "aaaoooo"
+    },
+    "on": {
+     "P@10": 1.0,
+     "labels": "aaaoooo"
+    }
+   },
+   {
+    "part": "synthetic",
+    "id": "s-substring",
+    "type": "substring",
+    "off": {
+     "P@10": 0.7,
+     "labels": "wwwaaaaaaa"
+    },
+    "naive": {
+     "P@10": 0.7,
+     "labels": "wwwooaaaaa"
+    },
+    "on": {
+     "P@10": 1.0,
+     "labels": "aaaoaaoaaa"
+    }
+   },
+   {
+    "part": "synthetic",
+    "id": "s-weak",
+    "type": "head",
+    "off": {
+     "P@10": 0.5,
+     "labels": "a."
+    },
+    "naive": {
+     "P@10": 0.5,
+     "labels": "a."
+    },
+    "on": {
+     "P@10": 1.0,
+     "labels": "a"
+    }
+   },
+   {
+    "part": "synthetic",
+    "id": "s-floor",
+    "type": "period",
+    "off": {
+     "P@10": 1.0,
+     "labels": "aao"
+    },
+    "naive": {
+     "P@10": 1.0,
+     "labels": "aao"
+    },
+    "on": {
+     "P@10": 1.0,
+     "labels": "aao"
+    }
+   }
+  ],
+  "notes": [
+   "synthetic: 将军/大将军/将军之官, 通草 before and after 960, 鬼督邮 (two drugs, cue names), 蜜甘 in 石蜜甘, 黄连 in 胡黄连, the weak 葛 in 干葛, 山药 before 1063; checks: places (side ≤ ⌊3k/10⌋ while the main queue lasts) and retention (asked ≥ min(|A|, k − ⌊3k/10⌋)) at k = 5, 10, 20, no merging, gates, readings, flags, no leakage, off = today's search",
+   "labels: each item's own patterns on normalised text, false friends masked — asked (with a cue when the item has cues), other (a referent's name, the passage inside its window), wrong (neither, and a wrong name, the asked form only masked, or without a cue); rel = asked or other; the layer's gates are never used",
+   "systems: off = today's search; naive = today's search with the layer's one-hop pairs (alias→drug, and the open and cue names of the drugs asked) as lexicon surfaces, no gates, windows or places; on = the layer; analysis = the layer's reading of the question alone (no expansions, no side queue); ablations gates, boundary, slots, period, asked_first all/off",
+   "counts N_rel, N_asked, N_other are read in the question's window up to 50 (all that min(10, ·) and min(50, ·) need); latency is the k = 10 call, timed after every system has searched the item once untimed (the systems' order turning with the item), so that what a first call fills favours none of them; each profile extracts its claims into a cache of its own (the store's claim cache is neither read nor written)",
+   "candidates: the drugs query.aliases names for the asked form (a stop name's drugs, status stop, among them where the item expects candidates; for an item expecting none a stop's listing is no candidate), mapped to the item's referents by their heads and names first, then by the asked drug's own lexicon forms (none the item calls wrong; none when they meet two referents) and the asked form, else through the gold's same-drug names (the asked form itself only where the item expects it); SilentMerge = ambiguous items with fewer than two expected drugs listed; None for systems without the layer",
+   "store part skipped: no corpus store under --data",
+   "held-out items are reported in aggregate only: details list dev items"
+  ],
+  "seconds": 1.01
  }
 }

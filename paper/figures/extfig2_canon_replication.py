@@ -1,5 +1,5 @@
-"""Extended Data Fig. 2 | The research-value benchmark re-run on the openly distributed canon corpus (348 works, 8.5 M
-characters): the ranking still beats popularity, but with 56 links that come true it cannot be told from chance.
+"""Extended Data Fig. 2 | The research-value benchmark re-run on the openly distributed canon corpus (533 works, 10.5 M
+characters): the ranking still beats popularity, but with 109 links that come true it cannot be told from chance.
 
 Panel a shows every topic–cutoff pair behind the pooled numbers (`details` of the research_value run); the paired sign
 tests of panel c compare average precision pair by pair, as `evals/research_value.py` does."""
@@ -24,7 +24,9 @@ TOPIC_EN = {"中风": "zhongfeng", "伤寒": "shanghan", "疮": "sores", "下利
             "发热": "fever", "呕吐": "vomiting", "咳": "cough", "喘": "panting", "头痛": "headache",
             "寒热": "chills and fever", "小便不利": "difficult urination", "心烦": "vexation", "无汗": "no sweating",
             "汗出": "sweating", "浊": "turbid urine", "渴": "thirst", "腹满": "abdominal fullness", "谵语": "delirium",
-            "淋": "strangury"}
+            "淋": "strangury", "不渴": "no thirst", "恶寒": "aversion to cold", "拘急": "cramping", "热病": "heat disease",
+            "疟": "intermittent fever", "痈": "abscess", "痹": "impediment", "结胸": "chest bind",
+            "腹痛": "abdominal pain", "身疼痛": "body pain", "霍乱": "sudden turmoil"}
 
 
 def main() -> dict:
@@ -33,13 +35,13 @@ def main() -> dict:
     pooled = rv["link_anticipation"]["pooled"]
     pairs = [r for r in data["details"] if r["part"] == "link_anticipation" and not r.get("skipped")
              and r.get("came_true")]
-    cv = Canvas("double", 80)
+    rh = 1.8
+    y0 = 11.0
+    cv = Canvas("double", max(80, round(y0 + len(pairs) * rh + 12)))
 
     # a — every topic–cutoff pair with a link that came true: average precision of three rankers --------------------------
     pairs.sort(key=lambda r: (r["cutoff"], -(r["adamic_adar"]["ap"] - r["popularity"]["ap"])))
     n = len(pairs)
-    rh = 2.0
-    y0 = 11.0
     ax = cv.ax(40, y0, 50, n * rh)
     for i, r in enumerate(pairs):
         aa, pop, rnd = r["adamic_adar"]["ap"], r["popularity"]["ap"], r["random"]["ap"]
@@ -48,9 +50,9 @@ def main() -> dict:
         ax.plot([pop], [i], "o", ms=2.6, color=C["grey"], mec="none", zorder=3)
         ax.plot([aa], [i], "o", ms=2.6, color=C["blue"], mec="none", zorder=4)
     ax.set_xscale("log")
-    ax.set_xlim(0.002, 0.5)
-    ax.set_xticks([0.003, 0.01, 0.03, 0.1, 0.3])
-    ax.set_xticklabels(["0.003", "0.01", "0.03", "0.1", "0.3"])
+    ax.set_xlim(0.002, 1.2)
+    ax.set_xticks([0.003, 0.01, 0.03, 0.1, 0.3, 1])
+    ax.set_xticklabels(["0.003", "0.01", "0.03", "0.1", "0.3", "1"])
     ax.minorticks_off()
     ax.set_ylim(n - 0.5, -0.5)
     ax.set_yticks(range(n))
@@ -62,7 +64,7 @@ def main() -> dict:
     k1127 = sum(1 for r in pairs if r["cutoff"] == 1127)
     ax.axhline(k1127 - 0.5, color=C["black"], lw=0.4)
     for lab, lo, hi in (("before 1127", 0, k1127), ("before 1368", k1127, n)):
-        ax.text(0.47, (lo + hi - 1) / 2, lab, rotation=-90, ha="left", va="center", fontsize=5, color=C["dark"])
+        ax.text(1.15, (lo + hi - 1) / 2, lab, rotation=-90, ha="left", va="center", fontsize=5, color=C["dark"])
     # the links that came true in each pair
     axn = cv.ax(92, y0, 5, n * rh)
     axn.set_xlim(0, 1)
@@ -117,9 +119,13 @@ def main() -> dict:
         ax.barh(y, d["wins"], height=0.55, color=C["blue"] if lab.startswith("AA") else C["dark"], lw=0)
         ax.barh(y, -d["losses"], height=0.55, color=C["light"], lw=0)
     ax.axvline(0, color=C["black"], lw=0.6)
-    ax.set_xlim(-26, 26)
-    ax.set_xticks([-20, -10, 0, 10, 20])
-    ax.set_xticklabels(["20", "10", "0", "10", "20"])
+    top = max(max(d["wins"], d["losses"]) for _, d in rows)
+    lim = 10 * (top // 10 + 1)
+    step = 10 if lim <= 30 else 20
+    ticks = list(range(-lim + lim % step, lim, step)) if lim % step else list(range(-lim, lim + 1, step))
+    ax.set_xlim(-lim, lim)
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([str(abs(t)) for t in ticks])
     ax.set_yticks(ys)
     ax.set_yticklabels([f"{lab}\n{d['wins']} better, {d['losses']} worse\n{pval(d['sign_test_p'])}" for lab, d in rows],
                        fontsize=5, linespacing=1.1)

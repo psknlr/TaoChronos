@@ -11,7 +11,7 @@ full-corpus runs in [`docs/evals.md`](../../docs/evals.md). No language model wa
 | File | What it is |
 |---|---|
 | [`manuscript.md`](manuscript.md) | npj Digital Medicine Article: abstract (150 words), Introduction with the four contributions, Results, Discussion, Methods, statements |
-| [`engineering.md`](engineering.md) · [`highlights.md`](highlights.md) | Engineering Research Article (numbered sections, American spelling, about 4,300 words with references, captions and Table 1, plus five figures), highlights, keywords |
+| [`engineering.md`](engineering.md) · [`highlights.md`](highlights.md) | Engineering Research Article (numbered sections, American spelling, about 4,400 words with references, captions and Table 1, plus five figures), highlights, keywords |
 | [`references.bib`](references.bib) | one bibliography (53 entries, each checked against an online record on 2026-10-18); `csl/` holds the Nature and Elsevier–Vancouver styles |
 | [`tables/`](tables/) | Table 1 (new) and Table 2 as Markdown, LaTeX, CSV and Word (three-line tables), from `make_manuscript_tables.py` |
 | [`figures/graphical_abstract.svg`](figures/graphical_abstract.svg) | graphical abstract (1328 × 531 px; PNG at twice that) — also usable in the repository's README |
@@ -43,7 +43,7 @@ The full table, with its notes, is [`tables/table1.md`](tables/table1.md).
 |---|---|---|
 | Fabricated or altered quotation | the harness, not the producer, locates every quote at commit; the chat client checks every cited passage | 180/180 corrupted quotations rejected, 60/60 verbatim accepted (Fig. 4a) |
 | True quote, false reading | semantic-support hook reads speaker, stance, conditions and negations; crux registry | 82/84 held-out hard cases, 2 unsafe; four blind rounds (Fig. 4c,d) |
-| Copies counted as independent testimony | G5 counts source families, not books | H2 held inconclusive on one family (Fig. 3e) |
+| Copies counted as independent testimony | G5 counts source families, not books | H5 held inconclusive on one family (Fig. 3e) |
 | Anachronism | guard at claim, hypothesis and graph-write hooks; bridge states similarity only | statements 10/10, mappings 8/8, translations 24/24 |
 | Arguments from silence | Skeptic searches the whole scope for explicit later or earlier statements | 4 wrong predictions rejected, no discovery (Fig. 5d) |
 | Self-grading, premature acceptance | event authority by principal; only validators grade; only a human sets G7; executable contract | 19/19 invariants; each of 6 boundaries removed broke its own (Fig. 4b) |
@@ -103,12 +103,12 @@ LaTeX output compiles with xelatex (xeCJK for the Chinese) and takes the vector 
 4. **Title and npj's punctuation rule.** The title has a colon; npj's content-type page asks for titles of at most
    15 words without punctuation. If the editors insist: "A reliable agent for knowledge discovery in traditional
    Chinese medicine" (TaoChronos named in the abstract).
-5. **Corpus snapshot.** Figs. 2e, 3 and 6 and Supplementary Fig. 3 were built on the open corpus of 350 canon works
-   (348 works, 368 witnesses, 8.51 M characters); the distributed corpus has since grown to 533 of 535 ranked works.
-   The Methods say so. Either keep that statement or rerun `bash paper/make_all.sh` and update the numbers in both
-   manuscripts and in `paper/legends.md`.
-6. **Re-render Supplementary Fig. 1** (`python3 paper/figures/suppfig1_failures.py`, on a machine with Arial and
-   Noto Sans CJK): its footnote no longer names "Extended Data Fig. 2", which would be wrong in both journals.
+5. **Corpus.** Every figure, table and number built on the open canon corpus (Figs. 2e, 3 and 6, Supplementary
+   Figs. 1 and 3, Supplementary Tables 9–12, Supplementary Data 1–2) was rebuilt on 2026-10-19 on the corpus as now
+   distributed: 533 of the 535 ranked works, 553 witnesses, 10.46 M characters. `bash paper/make_all.sh` rebuilds
+   them; if the corpus changes again, rerun it and update the numbers in both manuscripts and `paper/legends.md`.
+6. **Fonts.** The figures were rendered with Arial and Noto Sans CJK SC (QC report: `paper/figures/out/qc`); render
+   on a machine with both, or the figure script substitutes a fallback and the QC report says so.
 7. **Full-corpus values** (Fig. 5, parts of Table 2) come from documented runs on a store that cannot be
    redistributed; offer reviewers access to the store or to the run outputs.
 8. **References to confirm:** the volume and pages of the Virtual Lab paper (DOI is authoritative), and whether the
@@ -124,4 +124,4 @@ LaTeX output compiles with xelatex (xeCJK for the Chinese) and takes the vector 
 Medicine》的投稿稿件。`manuscript.md` 面向 *npj Digital Medicine*（摘要 150 词，引言含四项贡献，并将 ZhongJingGPT
 介绍为首个中医大语言模型），`engineering.md` 是面向 *Engineering* 的压缩版（约 6,000 词限额内）。运行
 `python3 paper/manuscript/build.py` 生成 Word、PDF 和 LaTeX。投稿前请完成上面"Before submission"清单：作者与利益冲突、
-AI 辅助声明、代码许可证、语料快照说明、补充图 1 重新出图等。
+AI 辅助声明、代码许可证、等。全部图表已于 2026-10-19 在当前完整开放语料（535 部要籍中的 533 部，553 个版本）上重建。

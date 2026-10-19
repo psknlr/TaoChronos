@@ -22,7 +22,7 @@ COL = {"human": C["orange"], "agent": C["blue"], "validator": C["black"], "kerne
 FILL = {"human": tint(C["orange"], 0.22), "agent": tint(C["blue"], 0.10), "validator": tint(C["black"], 0.07),
         "kernel": tint(C["grey"], 0.22), "tools": "white"}
 PERM = {"classics:read": "C", "kg:read": "K", "kg:propose": "P", "analysis:run": "A", "literature:read": "L",
-        "codemode:exec": "X", "validation:run": "V"}
+        "codemode:exec": "X", "validation:run": "V", "mydata:read": "M"}
 JOB = {"director": "plans rounds, picks agents", "meta_reviewer": "weak points, next round",
        "curator": "freezes scope and coverage", "philologist": "readings, variants, collation",
        "semanticist": "period-bound senses of terms", "extractor": "claims with verbatim spans",
@@ -195,7 +195,7 @@ def main() -> dict:
              ("knowledge", "kg:propose", "propose a change"), ("analytics", "analysis:run", "D1–D5 engines"),
              ("validation", "classics:read", "quote checks, audit"), ("validation", "validation:run", "gates"),
              ("bridge", "classics:read", "ancient phenotypes"), ("literature", "literature:read", "modern evidence"),
-             ("research", "codemode:exec", "sandboxed code")]
+             ("research", "codemode:exec", "sandboxed code"), ("mydata", "mydata:read", "the user's own data")]
     assert sum(len(v) for v in fam.values()) == len(tools) and len(fam) == len(chips)
     tx0 = S[1][0]
     ax.text(tx0 + 0.2, ty + 0.7, f"Tool mesh: {len(tools)} tools, each behind one permission; every call passes the "
@@ -221,7 +221,7 @@ def main() -> dict:
     ax.text(x2 + 1.2, ly, "rules only", ha="left", va="center", fontsize=5)
     x3 = x2 + 1.2 + text_width_mm("rules only", 5) + 3.5
     ax.text(x3, ly, "Permissions: C classics:read · K kg:read · P kg:propose · A analysis:run · L literature:read · "
-            "X codemode:exec · V validation:run", ha="left", va="center", fontsize=5, color=C["dark"])
+            "X codemode:exec · V validation:run · M mydata:read", ha="left", va="center", fontsize=5, color=C["dark"])
     g = arch["gates"]
     gate_names = {"G1": "transcription", "G3": "sense", "G5": "independent sources", "G8": "modern evidence"}
     ax.text(1.0, ly + 2.6, "Gates: " + ", ".join(f"{k} {gate_names.get(k, v.lower())}" for k, v in g.items()),

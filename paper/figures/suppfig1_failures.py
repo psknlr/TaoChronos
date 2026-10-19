@@ -23,35 +23,45 @@ RULES = [("harness", "Harness: same work or author, or any transcription or reph
          ("work_author_only", "Same work or author only", C["grey"])]
 # failure modes read off the run, each with where it was seen, what it did and what would catch it
 MODES = [
-    ("Source families over-merged", "12 of 13 candidates (Fig. 3d)",
-     "one rephrased passage merges two whole books, and the closure chains 182 of 368 books into one family; G5 then "
-     "fails five hypotheses that rest on two to four families without the rephrasing links",
+    ("Source families over-merged", "H5, H7, H12, H13 (Fig. 3d)",
+     "the transitive closure chains 233 of 553 books into one family; with transcription links only, the four "
+     "would rest on two or three families, but H5 and H13 rest on copies of one Jingui clause each, so one family is "
+     "right for them",
      "judge independence per claim, from the passages that support it, not per book"),
-    ("Co-occurrence read as association", "R1; H2",
-     "R1: 理中 and fever share a passage but not a prescription, in the Song text and in the later book alike; H2 reads "
-     "煩熱 (vexing heat) as 心烦",
-     "require the relation to be stated (indication, not co-mention) before a lost or restated link counts"),
-    ("Commentary dated with its base text", "H10, H11",
-     "the passages of 校注妇人良方 are Xue Ji's case notes (1547), dated with Chen Ziming's text (1237); the '301-year' "
-     "contradiction is one physician against himself (Xue Ji also wrote 内科摘要)",
-     "mark editors' notes and case records as a later layer when the transcription does not"),
-    ("Duplicate statements", "H10 = H11", "two passage pairs of the same two books give one statement twice",
-     "merge hypotheses whose statements and terms coincide"),
+    ("Co-listing read as association", "R1; H8",
+     "R1: 口熱 and 上氣 are two items of the kidney channel's list of illnesses, which later books copy; H8: 小腹痛 "
+     "belongs to the 尺脈伏 sentence, which gives 大平胃丸, not to 肾气丸",
+     "require the relation to be stated (indication, cause), not co-mention, before a lost or restated link counts"),
+    ("Concept drift on loose evidence", "H2–H4",
+     "the evidence includes passages that do not name 中风 (迎風, 風氣百疾) and one Shanghan lun clause (傷寒中風) in "
+     "four witnesses; the drifts' own permutation tests fail (P = 0.66, 0.89, 0.98), yet narrowing to 'exploratory' "
+     "closes the objection and all three reach the expert",
+     "take drift evidence only from passages naming the term, copies once; make a failed test of the hypothesis's own "
+     "statistic a hard objection"),
+    ("Case records read as doctrine", "H9–H11",
+     "the 内科摘要 sentence and the 外科精要 passage are Xue Ji's records of treatments that failed (不應; 愈甚), not "
+     "views; the 外科精要 and 校注妇人良方 witnesses are Xue Ji's editions (1547), whose notes and cases take the dates of "
+     "the base texts (1263, 1248), so H9 sets Xue Ji against himself",
+     "read case records as records of practice; date editors' notes and cases as a later layer"),
+    ("Overlapping hypotheses", "H2–H4; H9–H11",
+     "three drifts share the four witnesses of one clause, and three contradictions share one 内科摘要 passage",
+     "group hypotheses whose evidence overlaps before they are reviewed"),
     ("Coverage of the open corpus", "sources dossier",
      "the open corpus keeps 8 of 24 chapters of 小儿药证直诀 (1119), none with 地黄丸, so the earliest composition of "
-     "六味地黄丸 found is of 1638", "state the sampled share beside every earliest attestation; rerun on the full store"),
+     "六味地黄丸 found is of 1564; the 地黄丸 of 978–992 is another formula of the same name",
+     "state the sampled share beside every earliest attestation; rerun on the full store"),
 ]
 
 
 def main() -> dict:
     fam = pd.read_csv(SD / "fig3_e2e_families.csv", keep_default_na=False)
     comp = json.loads((SD / "fig3_e2e_family_components.json").read_text(encoding="utf-8"))
-    cv = Canvas("double", 112)
+    cv = Canvas("double", 122)
 
     # a — how many families the evidence books form under each rule ----------------------------------------------------
     ax = cv.ax(8, 12, 50, 26)
-    labels = ["Families among the\n38 evidence books", "Largest family\n(books)", "Families in the\ncorpus (368 books)",
-              "Largest family in\nthe corpus (books)"]
+    labels = [f"Families among the\n{comp['evidence_books']} evidence books", "Largest family\n(books)",
+              f"Families in the\ncorpus ({comp['corpus_books']} books)", "Largest family in\nthe corpus (books)"]
     keys = ["families_among_evidence_books", "largest_among_evidence_books", "families_in_corpus", "largest_in_corpus"]
     h = 0.24
     for j, (rule, _, col) in enumerate(RULES):
@@ -62,15 +72,15 @@ def main() -> dict:
             ax.text(v + 4, y, str(v), va="center", ha="left", fontsize=5)
     ax.set_yticks(range(len(keys)), labels, fontsize=5)
     ax.set_ylim(len(keys) - 0.5, -0.5)
-    ax.set_xlim(0, 300)
-    ax.set_xticks([0, 100, 200, 300])
+    ax.set_xlim(0, 400)
+    ax.set_xticks([0, 100, 200, 300, 400])
     ax.set_xlabel("Count")
     ax.tick_params(axis="y", length=0, pad=1.5)
     ax.spines["left"].set_visible(False)
     ax.set_position(cv.rect(34, 21, 34, 27))
     cv.label(2, 3, "a")
     handles = [Line2D([], [], ls="", marker="s", ms=3.2, color=col, label=lab) for _, lab, col in RULES]
-    cv.fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(4 / 183, 1 - 7.5 / 112), fontsize=5,
+    cv.fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(4 / 183, 1 - 7.5 / 122), fontsize=5,
                   handletextpad=0.3, labelspacing=0.35, borderaxespad=0, frameon=False, title="Books merged into one "
                   "source family when they share", title_fontsize=5, alignment="left")
 
@@ -100,7 +110,7 @@ def main() -> dict:
     cv.label(100, 3, "b")
 
     # c — the failure modes -----------------------------------------------------------------------------------------------
-    ax = cv.blank(2, 60, 179, 58)
+    ax = cv.blank(2, 60, 179, 61)
     cols = [(0, 30, "Failure"), (31, 26, "Where"), (58, 70, "What it did"), (130, 49, "What would catch it")]
     for x, w, t in cols:
         ax.text(x, 0.5, t, ha="left", va="top", fontsize=5.5, fontweight="bold")

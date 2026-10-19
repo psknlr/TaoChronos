@@ -76,7 +76,7 @@ def pipeline(cv, wit, web) -> None:
                                    "2.05 M passages; periods 475 BCE–1949", ha="center", va="top", fontsize=5,
             linespacing=1.2)
     ax.plot([ox + 3, ox + ow - 3], [by + 11.9, by + 11.9], color=C["blue"], lw=0.4)
-    ax.text(ox + ow / 2, by + 12.8, f"canon of 350 works → open\nweb corpus of {web.work.nunique()} works,\n"
+    ax.text(ox + ow / 2, by + 12.8, f"canon of {web['rank'].max()} works → open\nweb corpus of {web.work.nunique()} works,\n"
                                     f"{web.chars_kept.sum() / 1e6:.1f} M characters, in the browser", ha="center",
             va="top", fontsize=5, linespacing=1.2)
     ax.text(0.5, by + bh + 3.3, "Every passage keeps its book, edition, volume · chapter · page, date range, textual "
@@ -108,7 +108,7 @@ def period_bands(ax, ymax: float, labels: bool = True) -> None:
 
 def main() -> dict:
     wit = pd.read_csv(SD / "fig2_corpus_witnesses.csv")
-    canon = pd.read_csv(SD / "fig2_canon_350.csv")
+    canon = pd.read_csv(SD / "fig2_canon.csv")
     web = pd.read_csv(SD / "extfig_web_canon_witnesses.csv")
     wit["in_canon"] = wit.work.isin(set(canon.work))
 
@@ -126,7 +126,7 @@ def main() -> dict:
     ax.bar(edges[:-1], allw, width=width, align="edge", color=C["grey"], lw=0, label=f"All witnesses (n = {len(wit)})",
            zorder=2)
     ax.bar(edges[:-1], canw, width=width, align="edge", color=C["blue"], lw=0,
-           label=f"Witnesses of the 350 canon works (n = {int(wit.in_canon.sum())})", zorder=3)
+           label=f"Witnesses of the {len(canon)} canon works (n = {int(wit.in_canon.sum())})", zorder=3)
     ax.set_xlim(X0, X1)
     ax.set_ylim(0, ymax)
     ax.set_xticks([-400, 0, 400, 800, 1200, 1600, 1900])
@@ -184,8 +184,8 @@ def main() -> dict:
         ax.text(x_num, 95, nums, fontsize=5.5, va="top", ha="right", linespacing=1.35, color=C["blue"], fontweight="bold")
         ax.text(x_num + 25, 95, names, fontsize=5.5, va="top", ha="left", linespacing=1.35)
     ax.set_xlim(X0, X1)
-    ax.set_ylim(20, 160)
-    ax.set_yticks([20, 60, 100, 140])
+    ax.set_ylim(0, 160)
+    ax.set_yticks([0, 40, 80, 120, 160])
     ax.set_xticks([-400, 0, 400, 800, 1200, 1600, 1900])
     ax.set_xticklabels(["400 BCE", "1 CE", "400", "800", "1200", "1600", "1900"])
     ax.set_xlabel("Composition date (year; midpoint of range)")
@@ -204,22 +204,23 @@ def main() -> dict:
         ax.scatter(sub["rank"], sub.chars_kept / 1000, s=4, color=col, lw=0, label=lab, zorder=3)
     ax.scatter(rest["rank"], rest.chars_kept / 1000, s=6, marker="^", facecolor="none", edgecolor=C["dark"], lw=0.4,
                label="Further witness (top 10)", zorder=3)
-    budget_x = [1, 10, 10, 40, 40, 120, 120, 350]
+    last = int(web["rank"].max())
+    budget_x = [1, 10, 10, 40, 40, 120, 120, last]
     budget_y = [350, 350, 50, 50, 25, 25, 12, 12]
     ax.plot(budget_x, budget_y, color=C["vermillion"], lw=0.7, ls=(0, (3, 1.5)), label="Budget per first witness", zorder=2)
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlim(0.8, 420)
+    ax.set_xlim(0.8, last * 1.2)
     ax.set_ylim(0.8, 700)
-    ax.set_xticks([1, 10, 100, 350])
-    ax.set_xticklabels(["1", "10", "100", "350"])
+    ax.set_xticks([1, 10, 100, last])
+    ax.set_xticklabels(["1", "10", "100", str(last)])
     ax.set_yticks([1, 10, 100])
     ax.set_yticklabels(["1", "10", "100"])
     ax.minorticks_off()
     ax.set_xlabel("Canon rank")
     ax.set_ylabel("Characters kept (×10$^3$)")
     ax.legend(loc="lower left", handletextpad=0.2, borderaxespad=0.1, labelspacing=0.2, fontsize=5.5)
-    ax.text(420, 700, f"{web.work.nunique()} works · {len(web)} witnesses\n{web.chars_kept.sum() / 1e6:.2f} M characters",
+    ax.text(last * 1.2, 700, f"{web.work.nunique()} works · {len(web)} witnesses\n{web.chars_kept.sum() / 1e6:.2f} M characters",
             ha="right", va="top", fontsize=5.5)
     cv.label(121, 64 + DY, "e")
 

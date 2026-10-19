@@ -29,9 +29,9 @@ de-duplication against more trusted sources (normalized 12-character shingles; i
 are kept as separate witnesses), layer-aware dating (main text, commentaries, editors' notes and later additions dated
 apart; undated material counted as Qing, never earlier) and normalization used for matching only. **b**, Witnesses per
 25-year bin by composition date; each witness counts once, its weight spread evenly over its date range (n = 966;
-blue, the 531 witnesses of the 350 canon works). Bands mark the analysis periods; the last, unlabelled band is the
+blue, the 740 witnesses of the 535 canon works). Bands mark the analysis periods; the last, unlabelled band is the
 Republican period (1912–1949). **c**, Basis on which each witness was dated; the 104 undated witnesses are counted as
-Qing (vermillion), never earlier. **d**, Influence score of the 350 canon works against the midpoint of their
+Qing (vermillion), never earlier. **d**, Influence score of the 535 canon works against the midpoint of their
 composition range; point area, witnesses in the corpus (capped at 10). Score = 10 log₂(1 + citing works not older than
 it) + 2 × periods in which it is cited + 2 log₂(1 + citations) + 3 log₂(1 + witnesses) + 6 × inclusion in the *Siku
 quanshu*; the ten highest (blue) are keyed by rank. Later works have had fewer chances to be cited: the score describes
@@ -44,19 +44,20 @@ highest-ranked works. Data: corpus catalogues (`corpus/catalog`) and the web cor
 
 **a**, The question, put to the harness on the open canon corpus (web-canon profile; rules only, no model called), and
 the contract fixed before the first task. **b**, The 30 tasks in the order the Director planned them over three rounds:
-agent tasks (blue), validator tasks (grey); numbers, tool calls (the Skeptic's are quotation checks). Below each round,
-the evidence records, new books and hypotheses it added; the run stopped when new evidence fell below 5% in the last
-round the contract allowed. **c**, The 14 hypotheses proposed in round 1 (bands, one per hypothesis): the Skeptic kept
-3, sent 10 back to be narrowed and rejected 1; validators then judged the 13 candidates against the contract. Below,
-the Skeptic's 117 objections by check: closed by a validator once the claim was narrowed, left open (minor or
-interpretive) or critical. **d**, The final hypotheses against the gates and the contract's criteria. Twelve fail on
-independent sources (G5): passage reuse, closed transitively, puts 35 of the 38 books that supplied evidence into one
-source family (Supplementary Fig. 1). **e**, Three outcomes with their verbatim evidence. H1 meets every criterion a
-machine can check and waits for an expert. H2 rests on five witnesses of one clause, which the source-dependence check
-counts once. R1 is rejected because a later book restates the link, although neither passage gives 理中 for fever
-itself: the rules read co-occurrence in a passage as association. A second run writes the same report; the report, the
-event log and every hypothesis and objection are Supplementary Data 1–2 and Supplementary Tables 9–10. D1–D5,
-discovery tracks: lost knowledge, concept evolution, formula evolution, hidden associations, contradictions.
+agent tasks (blue), validator tasks (grey); numbers, tool calls. Below each round, the evidence records, new books and
+hypotheses it added; the run stopped after the last round the contract allowed, which added no evidence. **c**, The 14
+hypotheses proposed in round 1: the Skeptic kept 2, sent 11 back to be narrowed and rejected 1; validators then judged
+the 13 candidates. Below, the Skeptic's 102 objections by check: closed by a validator once the claim was narrowed,
+left open, or critical. **d**, The final hypotheses against the gates and the contract's criteria. H1 and H2 meet every
+criterion a machine can check; H3 and H4 rest in part on a quotation that does not clearly state its claim, which the
+contract leaves to an expert. Nine fail on independent sources (G5): passage reuse, closed transitively, puts 36 of the
+46 evidence books into one source family (Supplementary Fig. 1). **e**, Three outcomes with their verbatim evidence. H1
+waits for an expert. H5 rests on six books of one family: the 消渴 clause of the *Jingui yaolüe*, its witnesses and
+copies. R1 is rejected because three later books state the link; they copy the canonical list of the kidney channel's
+illnesses that the earlier passage holds, and the rules read two findings of one list as an association. A second run
+writes the same report; report, event log, hypotheses and objections: Supplementary Data 1–2 and Supplementary Tables
+9–10. D1–D5, discovery tracks: lost knowledge, concept evolution, formula evolution, hidden associations,
+contradictions.
 
 ## Fig. 4 | Quotations stay verbatim, the harness's boundaries hold, and hard readings stay safe.
 
@@ -92,7 +93,7 @@ distributed, and Extended Data Fig. 2 repeats the benchmark on the open corpus.
 
 ## Fig. 6 | On the open canon corpus, the study layer recovers history written into the texts.
 
-All panels are computed by the deterministic study layer on the open web corpus (348 works, 135,083 passages).
+All panels are computed by the deterministic study layer on the open web corpus (533 works, 168,278 passages).
 **a**, **b**, Share of works per century writing an original drug name and the name a naming taboo imposed: 薯蓣 and
 山药 (**a**), 玄参 and 元参 (**b**). Dashed lines, the years from which the names were avoided: Tang Daizong (李豫, 762) and
 Song Yingzong (赵曙, 1063) in **a**; the Song ancestor Shengzu (赵玄朗, 1012) and the Kangxi emperor (玄烨, 1662)
@@ -101,10 +102,11 @@ the century; open markers, centuries with fewer than three works or only undated
 1911. A work writing both names counts for both. **c**, Passages mentioning 温病 (warm disease) per 10,000 passages by
 period, with Wilson 95% confidence intervals; numbers, passages with the term. Two-sided Cochran–Armitage test for trend
 across the ordered periods. **d**, Normalized pointwise mutual information (NPMI) of drug pairs co-occurring
-significantly in 303 compositions (a composition repeated in copies of one work counted once; pairs in at least ten
-works tested; one-sided Fisher exact test, Benjamini–Hochberg q < 0.05; 63 pairs).
-The groups the tool finds without formula names (outlined) coincide with the cores of classical formulas (right);
-liquorice (甘草), present in most formulas, joins none. **e**, Citations between physicians: arcs join citing and cited
+significantly in 4,554 compositions (a composition repeated in copies of one work counted once; pairs in at least ten
+works tested; one-sided Fisher exact test, Benjamini–Hochberg q < 0.05; 1,184 pairs). Groups are communities of the
+strong pairs (NPMI ≥ 0.3), found without formula names; shown (outlined) are the five of twelve whose drugs hold
+together most tightly (mean NPMI of their significant pairs). Each holds the core of a classical formula (right);
+liquorice (甘草), present in 43% of compositions, joins none. **e**, Citations between physicians: arcs join citing and cited
 physicians placed at the midpoints of their dates; width ∝ √citations; blue, citations of Zhang Ji (张机). Five links
 whose cited physician lived after the citing one (28 citations) are omitted as chronologically impossible.
 
@@ -121,17 +123,17 @@ review without the Skeptic.
 
 ## Extended Data Fig. 2 | The research-value benchmark on the open canon corpus.
 
-The benchmark of Fig. 5 re-run with identical rules on the open web corpus (348 works, most sampled by chapters).
+The benchmark of Fig. 5 re-run with identical rules on the open web corpus (533 works, most sampled by chapters).
 **a**, Average precision of Adamic–Adar (blue), popularity (grey) and the expectation under chance (open circles) in
-each of the 30 topic–cutoff pairs in which at least one link came true (18 at 1127, 12 at 1368; log scale); lines join
-Adamic–Adar to popularity, blue where Adamic–Adar is higher; right, links that came true in the pair. Most pairs have
-one or two true links (56 among 6,178 candidates), so a single hit moves a ranking. **b**, Precision@10 and mean
-average precision of the five rankers, both cutoffs pooled (n = 30 pairs); dots, means; lines, 95% confidence
-intervals; dashed line, base rate (0.91%). **c**, Paired comparisons of average precision, two-sided sign tests.
-Adamic–Adar still ranks above popularity (24 of 30 pairs, P = 0.0014) but cannot be told from chance (13 better,
-17 worse, P = 0.58), and popularity falls below chance (6 better, 24 worse, P = 0.0014). The benchmark needs the full
-corpus; the replication is reported as a limit of the open subset. Every pair and every prediction: Supplementary
-Tables 11 and 12.
+each of the 51 topic–cutoff pairs in which at least one link came true (24 at 1127, 27 at 1368; log scale); lines join
+Adamic–Adar to popularity, blue where Adamic–Adar is higher; right, links that came true in the pair. More than half
+of the pairs have a single true link (28 of 51; 109 among 10,115 candidates), so one hit moves a ranking. **b**,
+Precision@10 and mean average precision of the five rankers, both cutoffs pooled (n = 51 pairs); dots, means; lines,
+95% confidence intervals; dashed line, base rate (1.08%). **c**, Paired comparisons of average precision, two-sided
+sign tests. Adamic–Adar still ranks above popularity (37 of 51 pairs, P = 0.0018) but cannot be told from chance (19
+better, 32 worse, P = 0.092), and popularity falls below chance (7 better, 44 worse, P = 1.2 × 10⁻⁷). The benchmark
+needs the full corpus; the replication is reported as a limit of the open subset. Every pair and every prediction:
+Supplementary Tables 11 and 12.
 
 ## Extended Data Fig. 3 | The witnesses behind the texts.
 

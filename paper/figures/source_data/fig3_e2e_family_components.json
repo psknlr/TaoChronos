@@ -1,29 +1,30 @@
 {
  "lineage_edges": {
-  "cites": 30,
-  "rephrases": 1117,
-  "transcribes": 75,
-  "inherits": 61
+  "cites": 51,
+  "rephrases": 1134,
+  "inherits": 81,
+  "transcribes": 72,
+  "formula_derived_from": 1
  },
- "corpus_books": 368,
- "evidence_books": 38,
+ "corpus_books": 553,
+ "evidence_books": 46,
  "rules": {
   "harness": {
-   "families_in_corpus": 160,
-   "largest_in_corpus": 182,
-   "families_among_evidence_books": 4,
-   "largest_among_evidence_books": 35
+   "families_in_corpus": 278,
+   "largest_in_corpus": 233,
+   "families_among_evidence_books": 11,
+   "largest_among_evidence_books": 36
   },
   "transcription_only": {
-   "families_in_corpus": 235,
-   "largest_in_corpus": 24,
-   "families_among_evidence_books": 18,
-   "largest_among_evidence_books": 11
+   "families_in_corpus": 364,
+   "largest_in_corpus": 30,
+   "families_among_evidence_books": 28,
+   "largest_among_evidence_books": 9
   },
   "work_author_only": {
-   "families_in_corpus": 252,
-   "largest_in_corpus": 11,
-   "families_among_evidence_books": 27,
+   "families_in_corpus": 384,
+   "largest_in_corpus": 12,
+   "families_among_evidence_books": 35,
    "largest_among_evidence_books": 5
   }
  }

@@ -13,7 +13,7 @@
   0.5,
   0.6
  ],
- "n_texts": 235,
+ "n_texts": 234,
  "width_mm": 183.0,
  "height_mm": 168.0,
  "fonts": [
@@ -22,7 +22,7 @@
   "NotoSansCJKsc-Bold",
   "NotoSansCJKsc-Regular"
  ],
- "live_text_chars": 4466,
+ "live_text_chars": 4589,
  "files": [
   "/home/user/TaoChronos/paper/figures/out/fig3_end_to_end.pdf",
   "/home/user/TaoChronos/paper/figures/out/fig3_end_to_end.svg",

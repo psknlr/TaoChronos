@@ -1,57 +1,57 @@
 {
  "status": "max_rounds",
  "round": 2,
- "claims": 777,
+ "claims": 935,
  "rejected_claims": 2,
- "evidence_count": 87,
- "counter_evidence": 22,
- "observations": 43,
- "contradictions": 40,
- "lineage_edges": 1283,
- "hypotheses": 24,
- "hypothesis_survival": 0.5417,
+ "evidence_count": 80,
+ "counter_evidence": 13,
+ "observations": 41,
+ "contradictions": 30,
+ "lineage_edges": 1339,
+ "hypotheses": 25,
+ "hypothesis_survival": 0.52,
  "source_diversity": {
-  "books": 38,
-  "normalised_entropy": 0.9422
+  "books": 46,
+  "normalised_entropy": 0.966
  },
  "knowledge_gain": {
   "0": {
-   "new_evidence": 16,
+   "new_evidence": 17,
    "new_sources": 12,
    "new_hypotheses": 0
   },
   "1": {
-   "new_evidence": 67,
-   "new_sources": 25,
-   "new_hypotheses": 24
+   "new_evidence": 63,
+   "new_sources": 34,
+   "new_hypotheses": 25
   },
   "2": {
-   "new_evidence": 4,
-   "new_sources": 1,
+   "new_evidence": 0,
+   "new_sources": 0,
    "new_hypotheses": 0
   }
  },
  "gates": {
   "G0": {
-   "pass": 878
+   "pass": 1029
   },
   "G1": {
-   "warn": 878
+   "warn": 1029
   },
   "G2": {
-   "warn": 878
+   "warn": 1029
   },
   "G3": {
-   "warn": 186,
-   "pass": 605
+   "warn": 204,
+   "pass": 745
   },
   "G4": {
-   "pass": 690,
-   "warn": 188
+   "pass": 826,
+   "warn": 203
   },
   "G5": {
-   "warn": 13,
-   "pass": 1
+   "warn": 10,
+   "pass": 4
   },
   "G6": {
    "pass": 13,
@@ -67,7 +67,7 @@
  "input_tokens": 0,
  "output_tokens": 0,
  "cost_usd": 0.0,
- "tool_calls": 156,
+ "tool_calls": 143,
  "tool_errors": 0,
  "tool_denials": 0,
  "hook_blocks": 2,
@@ -80,15 +80,16 @@
   "analysis.lost_knowledge": 1,
   "analysis.missing_sources": 1,
   "classics.search": 3,
-  "study.formula": 2,
-  "validation.verify_quote": 136
+  "study.formula": 1,
+  "validation.verify_quote": 124
  },
  "changes_proposed": 0,
  "artifacts": 6,
  "stop": {
   "status": "max_rounds",
   "reasons": [
-   "evidence saturation (0.046 < 0.05)",
+   "evidence saturation (0.000 < 0.05)",
+   "novel source gain 0 < 1",
    "reached max_rounds=2"
   ]
  }

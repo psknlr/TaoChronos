@@ -19,12 +19,17 @@ from nature_style import C, Canvas, pval, tint
 HERE = Path(__file__).resolve().parent
 SD = HERE / "source_data"
 
-HERB = {"地黄": "Dihuang", "山茱萸": "Shanzhuyu", "山药": "Shanyao", "泽泻": "Zexie", "牡丹皮": "Mudanpi",
-        "茯苓": "Fuling", "桂": "Gui", "芍药": "Shaoyao", "生姜": "Shengjiang", "大枣": "Dazao", "麻黄": "Mahuang",
-        "杏仁": "Xingren", "葛根": "Gegen", "柴胡": "Chaihu", "黄芩": "Huangqin", "人参": "Renshen", "知母": "Zhimu",
-        "石膏": "Shigao", "粳米": "Jingmi"}
-GROUP_FORMULA = ["Liuwei dihuang wan\n六味地黄丸", "Guizhi tang\n桂枝汤", "Mahuang tang\nfamily 麻黄汤类",
-                 "Xiao chaihu tang\n小柴胡汤", "Baihu tang\n白虎汤"]
+HERB = {"乳香": "Ruxiang", "没药": "Moyao", "血竭": "Xuejie", "骨碎补": "Gusuibu", "大戟": "Daji", "甘遂": "Gansui",
+        "芒硝": "Mangxiao", "芫花": "Yuanhua", "葶苈子": "Tinglizi", "防己": "Fangji", "大黄": "Dahuang",
+        "朴硝": "Poxiao", "桃仁": "Taoren", "水蛭": "Shuizhi", "虻虫": "Mengchong", "山栀子": "Shanzhizi",
+        "玄参": "Xuanshen", "荆芥": "Jingjie", "薄荷": "Bohe", "连翘": "Lianqiao", "冰片": "Bingpian", "巴豆": "Badou",
+        "朱砂": "Zhusha", "牛黄": "Niuhuang", "雄黄": "Xionghuang", "麝香": "Shexiang"}
+# the classical formula whose core a group holds, named by a drug the group must contain (the group is found without
+# formula names; this only labels it)
+GROUP_FORMULA = {"乳香": "Qili san 七厘散\n(wounds, fractures)", "甘遂": "Shizao tang 十枣汤\n(expels water)",
+                 "水蛭": "Didang tang 抵当汤\n(blood stasis)", "连翘": "Liangge san 凉膈散\n(heat above)",
+                 "牛黄": "Angong niuhuang wan\n安宫牛黄丸 (aromatic)"}
+N_GROUPS = 5  # the groups shown: those whose drugs hold together most tightly (mean NPMI of their significant pairs)
 PHYS = {"扁鹊": "Bian Que", "张机": "Zhang Ji", "陶弘景": "Tao Hongjing", "孙思邈": "Sun Simiao", "许叔微": "Xu Shuwei",
         "李杲": "Li Gao", "朱震亨": "Zhu Zhenheng", "李时珍": "Li Shizhen", "吴谦": "Wu Qian"}
 PERIOD_EN = {"先秦两汉": "Qin–Han", "魏晋南北朝": "Wei–Jin", "隋唐五代": "Sui–Tang", "宋金元": "Song–Jin–Yuan",
@@ -122,7 +127,13 @@ def main() -> dict:
 
     # d — co-occurrence recovers the cores of classical formulas ----------------------------------------------------------
     pr_ = json.loads((SD / "pairs.json").read_text(encoding="utf-8"))
-    groups = [g["drugs"] for g in pr_["groups"] if g["size"] >= 3]
+    sig = {frozenset((p["a_name"], p["b_name"])): p["npmi"] for p in pr_["pairs"] if p["significant"]}
+
+    def cohesion(g: list[str]) -> float:
+        vals = [sig[frozenset((a, b))] for i, a in enumerate(g) for b in g[i + 1:] if frozenset((a, b)) in sig]
+        return sum(vals) / len(vals) if vals else 0.0
+
+    groups = sorted((g["drugs"] for g in pr_["groups"] if g["size"] >= 3), key=cohesion, reverse=True)[:N_GROUPS]
     order = [h for g in groups for h in g]
     idx = {h: i for i, h in enumerate(order)}
     n = len(order)
@@ -131,8 +142,8 @@ def main() -> dict:
         a, b = p["a_name"], p["b_name"]
         if a in idx and b in idx and p["significant"]:
             M[idx[a], idx[b]] = M[idx[b], idx[a]] = p["npmi"]
-    cell = 2.5
-    X0, Y0 = 33.0, 63.0
+    cell = 2.0
+    X0, Y0 = 30.0, 63.0
     axm = cv.blank(X0, Y0, cell * n, cell * n)
     vmax = 0.9
     cmap = mcolors.LinearSegmentedColormap.from_list("w2b", ["#FFFFFF", tint(C["blue"], 0.35), C["blue"], "#023858"])
@@ -145,8 +156,9 @@ def main() -> dict:
                                         edgecolor="white", lw=0.25))
     axm.add_patch(Rectangle((0, 0), n * cell, n * cell, facecolor="none", edgecolor=C["grey"], lw=0.4))
     start = 0
-    for g, fname in zip(groups, GROUP_FORMULA):
+    for g in groups:
         k = len(g)
+        fname = next((GROUP_FORMULA[d] for d in g if d in GROUP_FORMULA), "")
         axm.add_patch(Rectangle((start * cell, start * cell), k * cell, k * cell, facecolor="none",
                                 edgecolor=C["black"], lw=0.6))
         cv.text(X0 + n * cell + 1.5, Y0 + (start + k / 2) * cell, fname, ha="left", va="center", fontsize=5,
