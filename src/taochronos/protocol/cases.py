@@ -2,9 +2,10 @@
 
 A case record tells what the physician saw (symptoms, signs, pulse, tongue), how he read it (disease, pattern), what
 he meant to do (the principle of treatment) and did (formula, drugs, doses, changes to the last prescription), and
-what happened (the response after so many doses, the outcome).  Structured this way, the records of many physicians
-become comparable trajectories — which principle follows which, which changes precede recovery — while every field
-keeps the passage it was read from.
+what happened (the response after so many doses, the outcome).  Many records also tell what other physicians had done
+before (前医用…, 误投…) and how the patient fared on it — kept apart, so that an earlier physician's formula is never
+read as this one's.  Structured this way, the records of many physicians become comparable trajectories — which
+principle follows which, which changes precede recovery — while every field keeps the passage it was read from.
 """
 
 from __future__ import annotations
@@ -28,6 +29,11 @@ class Visit(Model):
     doses: str = ""  # 服二剂, 连进三帖 …
     response: str = ""  # improved | unchanged | worse | died (after this visit's treatment), or ""
     response_words: list[str] = field_list()
+    # what earlier physicians did, as the record tells it (前医用…, 诸医作…治, 误投…): diagnosis, principles, formulas, herbs
+    prior: dict[str, list[str]] = field_dict()
+    prior_response: str = ""  # how the patient fared on it: improved | unchanged | worse | died, or ""
+    prior_words: list[str] = field_list()  # the words that said so (前医, 误投 …)
+    prior_quote: str = ""  # the first account of it, ≤ 60 characters
     passage_ids: list[str] = field_list()
     quote: str = ""  # the start of the visit, ≤ 120 characters
 
@@ -38,6 +44,7 @@ class CaseRecord(Model):
     book_id: str
     section: str = ""  # the heading the record is filed under (风温, 中风 …)
     patient: dict[str, str] = field_dict()  # name, sex, age — as written
+    physician: str = ""  # who treated, where the record names him (丹溪治一妇 → 丹溪: a compilation's cases); else ""
     opener: str = ""  # the words that opened the case
     visits: list[Visit] = field_list()
     outcome: str = ""  # the last response recorded: improved | unchanged | worse | died, or ""

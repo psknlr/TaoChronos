@@ -9,14 +9,25 @@ A case is a sequence of visits, each a set of items (``principle:清热``, ``for
 * **outcome associations** — items used in cases that ended in recovery more (or less) often than the rest, with
   one-sided Fisher tests and Benjamini–Hochberg control.  Case records are written by their physicians and
   selected for publication: these are associations in a biased record, never evidence of efficacy.
+
+And three for exploring many cases at once:
+
+* **weighted similarity** — two cases' presentations (sets of findings) compared by the cosine of their binary vectors
+  weighted by inverse document frequency, so that a shared rare finding (脉代) counts for more than a shared common one
+  (发热): the 类案 a reader looks for;
+* **cross associations** — a left item and a right item in the same unit (a finding at a visit, a drug added at it)
+  more often than chance: count, P(right | left), lift, one-sided Fisher, Benjamini–Hochberg;
+* **group contrasts** — the items over-represented in one group of cases against the rest (a physician's cases, a
+  period's, those treated with one formula): shares in and out, odds ratio, one-sided Fisher, Benjamini–Hochberg.
 """
 
 from __future__ import annotations
 
+import math
 from collections import Counter, defaultdict
 from typing import Any, Hashable
 
-from .stats import benjamini_hochberg, fisher_exact_greater
+from .stats import benjamini_hochberg, fisher_exact_greater, odds_ratio
 
 Sequence_ = list[set[str]]
 
@@ -112,4 +123,97 @@ def outcome_associations(cases: list[tuple[set[str], str]], *, positive: str = "
     return out[:top]
 
 
-__all__ = ["outcome_associations", "prefixspan", "transitions"]
+def idf_weights(sets: list[set[str]]) -> dict[str, float]:
+    """Each item's inverse document frequency over the sets, ln((N + 1) / (df + 1)) + 1: rare items weigh more."""
+    df: Counter = Counter()
+    for s in sets:
+        df.update(s)
+    n = len(sets)
+    return {k: math.log((n + 1) / (v + 1)) + 1 for k, v in df.items()}
+
+
+def weighted_cosine(a: set[str], b: set[str], idf: dict[str, float]) -> float:
+    """The cosine of two sets as binary vectors weighted by ``idf`` (an item it lacks weighs as the rarest)."""
+    if not a or not b:
+        return 0.0
+    top = max(idf.values(), default=1.0)
+    w = lambda k: idf.get(k, top)  # noqa: E731
+    shared = sum(w(k) ** 2 for k in a & b)
+    if not shared:
+        return 0.0
+    return shared / math.sqrt(sum(w(k) ** 2 for k in a) * sum(w(k) ** 2 for k in b))
+
+
+def cross_associations(units: list[tuple[set[str], set[str]]], *, min_count: int = 3, q: float = 0.1,
+                       top: int = 40) -> list[dict[str, Any]]:
+    """Left item a and right item b in the same unit: the count, P(b | a), the lift P(b | a) / P(b) and a one-sided
+    Fisher test of b's over-representation among the units with a; significance after Benjamini–Hochberg (q)."""
+    n = len(units)
+    left: Counter = Counter()
+    right: Counter = Counter()
+    pair: Counter = Counter()
+    for ls, rs in units:
+        left.update(ls)
+        right.update(rs)
+        for a in ls:
+            for b in rs:
+                pair[(a, b)] += 1
+    rows: dict[tuple[str, str], dict[str, Any]] = {}
+    pvals: dict[tuple[str, str], float] = {}
+    for (a, b), k in pair.items():
+        if k < min_count or a == b:
+            continue
+        na, nb = left[a], right[b]
+        p = fisher_exact_greater(k, na - k, nb - k, n - na - nb + k)
+        rows[(a, b)] = {"left": a, "right": b, "count": k, "left_units": na, "right_units": nb,
+                        "p_right_given_left": round(k / na, 3), "lift": round(k * n / (na * nb), 3), "p": round(p, 6)}
+        pvals[(a, b)] = p
+    keep = benjamini_hochberg(pvals, q) if pvals else {}
+    out = [r | {"significant": keep.get(key, False)} for key, r in rows.items()]
+    out.sort(key=lambda r: (not r["significant"], -r["lift"] * min(1.0, r["count"] / 10), r["p"], r["left"], r["right"]))
+    return out[:top]
+
+
+def group_contrasts(groups: dict[str, list[set[str]]], *, min_cases: int = 3, q: float = 0.1,
+                    top: int = 8) -> dict[str, list[dict[str, Any]]]:
+    """For each group, the items its cases hold more often than the other groups' cases: cases with the item in and
+    out of the group, the shares, the odds ratio (Woolf interval) and a one-sided Fisher test; significance after
+    Benjamini–Hochberg over every group and item together (q)."""
+    total: Counter = Counter()
+    sizes = {g: len(cases) for g, cases in groups.items()}
+    per: dict[str, Counter] = {}
+    for g, cases in groups.items():
+        c: Counter = Counter()
+        for s in cases:
+            c.update(s)
+        per[g] = c
+        total.update(c)
+    n = sum(sizes.values())
+    rows: dict[tuple[str, str], dict[str, Any]] = {}
+    pvals: dict[tuple[str, str], float] = {}
+    for g, c in per.items():
+        size = sizes[g]
+        if not size or size == n:
+            continue
+        for item, k in c.items():
+            if k < min_cases:
+                continue
+            out_k = total[item] - k
+            p = fisher_exact_greater(k, size - k, out_k, n - size - out_k)
+            ratio = odds_ratio(k, size - k, out_k, n - size - out_k)
+            rows[(g, item)] = {"item": item, "cases": k, "share": round(k / size, 3),
+                               "share_elsewhere": round(out_k / (n - size), 3), "or": round(ratio["or"], 3),
+                               "or_ci": [round(ratio["lo"], 3), round(ratio["hi"], 3)], "p": round(p, 6)}
+            pvals[(g, item)] = p
+    keep = benjamini_hochberg(pvals, q) if pvals else {}
+    out: dict[str, list[dict[str, Any]]] = {g: [] for g in groups}
+    for (g, item), r in rows.items():
+        out[g].append(r | {"significant": keep.get((g, item), False)})
+    for g in out:
+        out[g] = sorted((r for r in out[g] if r["share"] > r["share_elsewhere"]),
+                        key=lambda r: (not r["significant"], r["p"], -r["cases"], r["item"]))[:top]
+    return out
+
+
+__all__ = ["cross_associations", "group_contrasts", "idf_weights", "outcome_associations", "prefixspan", "transitions",
+           "weighted_cosine"]

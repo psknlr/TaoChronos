@@ -388,8 +388,10 @@ OUTCOMES = {"improved": "好转/愈", "unchanged": "未效", "worse": "加重", 
 
 
 def cases(r: dict[str, Any]) -> list[str]:
+    prior = sum(1 for c in r.get("cases", []) if any(v.get("prior_words") for v in c["visits"]))
     out = [f"# 医案：{r.get('book') or r.get('disease') or ''}", "", f"{r.get('count', 0)} 案；转归："
-           + "，".join(f"{OUTCOMES.get(k, k)} {v}" for k, v in (r.get("outcomes") or {}).items()), "",
+           + "，".join(f"{OUTCOMES.get(k, k)} {v}" for k, v in (r.get("outcomes") or {}).items())
+           + (f"；记前医误治者 {prior} 案" if prior else ""), "",
            "| 案 | 病家 | 诊次 | 转归 | 首诊脉 | 方 | 首诊 |", "|---|---|---|---|---|---|---|"]
     for c in r.get("cases", [])[:60]:
         v0 = c["visits"][0] if c["visits"] else {}
@@ -413,6 +415,181 @@ def trajectories(r: dict[str, Any]) -> list[str]:
             "|---|---|---|---|---|---|---|"]
     out += [f"| {a['item']} | {a['cases']} | {a['rate']:.0%} | {a['rate_without']:.0%} | {a['direction']} | {a['p']} | "
             f"{'是' if a['significant'] else ''} |" for a in r.get("associations", [])[:15]]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+# ------------------------------------------------------------------ 医案探索
+def _patient(p: dict[str, Any]) -> str:
+    sex = {"male": "男", "female": "女"}.get(p.get("sex", ""), "")
+    return "".join(x for x in (p.get("name", ""), sex, f"{p['age']}岁" if p.get("age") else "") if x)
+
+
+def _case_row(c: dict[str, Any], extra: str = "") -> str:
+    prior = "；".join("、".join(v) for v in (c.get("prior") or {}).values())
+    return (f"| {c.get('period') or ''} | {c.get('physician', '')} | {c.get('title', '')}·{_q(c.get('section', ''), 10)} | "
+            f"{_patient(c.get('patient') or {})} | "
+            f"{c.get('visits', 0)} | {OUTCOMES.get(c.get('outcome', ''), '')} | {_q('、'.join(c.get('formulas', [])), 24)} | "
+            f"{_q(prior, 16)} | {extra}{_q(c.get('quote', ''), 30)} | `{c.get('id', '')}` |")
+
+
+CASE_HEAD = ["| 时期 | 医家 | 出处 | 病家 | 诊次 | 转归 | 方 | 前医所用 | 首诊 | 案号 |", "|---|---|---|---|---|---|---|---|---|---|"]
+
+
+def _facets(f: dict[str, Any]) -> list[str]:
+    def pairs(xs: list[list[Any]]) -> str:
+        return "、".join(f"{k}（{v}）" for k, v in xs) or "—"
+
+    return ["## 分面", "",
+            "- 出处：" + ("、".join(f"{b['title']}（{b['cases']}）" for b in f.get("books", [])) or "—"),
+            "- 时期：" + ("、".join(f"{k}（{v}）" for k, v in (f.get("periods") or {}).items()) or "—"),
+            "- 转归：" + ("、".join(f"{OUTCOMES.get(k, k)}（{v}）" for k, v in (f.get("outcomes") or {}).items()) or "—"),
+            f"- 方：{pairs(f.get('formulas', []))}", f"- 治法：{pairs(f.get('principles', []))}",
+            f"- 药：{pairs(f.get('herbs', []))}", f"- 症：{pairs(f.get('findings', []))}", f"- 脉：{pairs(f.get('pulse', []))}",
+            f"- 记前医误治：{f.get('prior', 0)} 案"]
+
+
+def casefind(r: dict[str, Any]) -> list[str]:
+    q = "；".join(f"{k}={'、'.join(map(str, v)) if isinstance(v, list) else v}" for k, v in (r.get("query") or {}).items())
+    out = [f"# 医案检索：{q or '全部'}", "", f"检索 {r.get('scanned', 0)} 案，合于条件者 {r.get('count', 0)} 案（按年代先后）。", ""]
+    out += CASE_HEAD
+    for c in r.get("cases", []):
+        m = c.get("matched") or {}
+        out.append(_case_row(c, ("〔" + "；".join(f"{v}" for v in m.values()) + "〕") if m else ""))
+    return out + [""] + _facets(r.get("facets") or {}) + ["", f"> {r.get('note', '')}"]
+
+
+def similar(r: dict[str, Any]) -> list[str]:
+    q = r.get("query") or {}
+    head = q.get("text") or (q.get("case") or {}).get("id", "")
+    out = [f"# 类案：{_q(head, 40)}", "", f"所读特征：{'、'.join(q.get('features', [])) or '（未读出所见）'}", "",
+           f"候选 {r.get('candidates', 0)} 案，共有所见者 {r.get('matched', 0)} 案。", "",
+           "| 相似度 | 时期 | 出处 | 转归 | 共有 | 彼案另见 | 所治（诊次：治法、方、药） | 案号 |", "|---|---|---|---|---|---|---|---|"]
+    for c in r.get("results", []):
+        t = c.get("treated") or {}
+        did = f"{t.get('visit', '')}：" + "、".join(t.get("principles", []) + t.get("formulas", []) + t.get("herbs", [])[:4]) if t else ""
+        out.append(f"| {c['score']:.2f} | {c.get('period') or ''} | {c.get('title', '')}·{_q(c.get('section', ''), 8)} | "
+                   f"{OUTCOMES.get(c.get('outcome', ''), '')} | {'、'.join(c.get('shared', []))} | {'、'.join(c.get('only_here', [])[:4])} | "
+                   f"{_q(did, 40)} | `{c.get('id', '')}` |")
+    p = r.get("practice")
+    if p:
+        out += ["", f"## 相近 {p['cases']} 案的治法与方（每案计一次，附其转归）", ""]
+        for key, name in (("formulas", "方"), ("principles", "治法"), ("herbs", "药")):
+            rows = p.get(key) or []
+            if rows:
+                out.append(f"- {name}：" + "；".join(f"{x['name']} {x['cases']} 案（" + "，".join(
+                    f"{OUTCOMES.get(k, k)} {v}" for k, v in x["outcomes"].items()) + f"；{'、'.join(x['periods'])}）" for x in rows[:8]))
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+def case(r: dict[str, Any]) -> list[str]:
+    year = f"（{int(r['year'])}）" if r.get("year") is not None else ""
+    patient = _patient(r.get("patient") or {}) or "未记"
+    out = [f"# 医案详解：{r.get('title', '')}·{r.get('section', '')}", "",
+           f"{r.get('period') or ''}{year}；医家 {r.get('physician') or '未记'}；病家 {patient}；{r.get('visits', 0)} 诊；"
+           f"转归 {OUTCOMES.get(r.get('outcome', ''), '')}；"
+           f"案号 `{r.get('id')}`", ""]
+    for v in r.get("course", []):
+        out += [f"## {v['label']}{('（' + v['marker'] + '）') if v.get('marker') else ''}", ""]
+        f = v.get("findings") or {}
+        if f:
+            out.append("- 所见：" + "；".join(f"{k} " + "、".join(x) for k, x in f.items()))
+        if v.get("diagnosis"):
+            out.append("- 病证：" + "、".join(v["diagnosis"]))
+        if v.get("prior"):
+            out.append("- 前医所为：" + "；".join("、".join(x) for x in v["prior"].values())
+                       + (f"（{OUTCOMES.get(v['prior_response'], v['prior_response'])}）" if v.get("prior_response") else "")
+                       + f" —— {_q(v.get('prior_quote', ''), 40)}")
+        if v.get("principles"):
+            out.append("- 治法：" + "、".join(v["principles"]))
+        if v.get("formulas") or v.get("herbs"):
+            out.append("- 方药：" + "、".join(v.get("formulas", [])) + ("；" if v.get("formulas") and v.get("herbs") else "")
+                       + "、".join(h["name"] + (f"（{h['dose']}）" if h.get("dose") else "") for h in v.get("herbs", [])))
+        changes = [f"加 {'、'.join(v['added'])}" if v.get("added") else "", f"去 {'、'.join(v['removed'])}" if v.get("removed") else ""]
+        comp = v.get("computed_changes") or {}
+        if any(changes) or comp.get("added") or comp.get("removed"):
+            out.append("- 加减：" + ("；".join(x for x in changes if x) or "（未言）")
+                       + (f"；据所列药计：增 {'、'.join(comp.get('added', [])) or '—'}，减 {'、'.join(comp.get('removed', [])) or '—'}" if comp else ""))
+        if v.get("doses") or v.get("response"):
+            out.append(f"- 服法与反应：{v.get('doses', '')} {OUTCOMES.get(v.get('response', ''), '')}"
+                       + (f"（{'、'.join(v.get('response_words', []))}）" if v.get("response_words") else ""))
+        out.append("")
+    out += ["## 原文", ""] + [_cite(w, 300) for w in r.get("witnesses", [])]
+    if r.get("similar"):
+        out += ["", "## 类案", ""] + [f"- {s['score']:.2f} {s.get('period') or ''} {s['title']}·{s.get('section', '')}（"
+                                     f"{OUTCOMES.get(s.get('outcome', ''), '')}）共有 {'、'.join(s['shared'])} `{s['id']}`" for s in r["similar"]]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+def casecompare(r: dict[str, Any]) -> list[str]:
+    label = {"book": "医案集", "physician": "医家", "period": "时期", "author": "著者"}.get(r.get("by"), "组")
+    out = [f"# 医家与时代比较（按{label}）" + (f"：{r['disease']}" if r.get("disease") else ""), "",
+           f"{r.get('cases', 0)} 案（检索 {r.get('scanned', 0)} 案）。", "",
+           f"| {label} | 医案 | 诊次 x̄±s | 好转率（95% CI） | 死亡率 | 女性 | 记前医误治 | 常用方 | 所偏重（对其余各组） |",
+           "|---|---|---|---|---|---|---|---|---|"]
+    pc = lambda x: "" if x is None else f"{x:.0%}"  # noqa: E731
+    for g in r.get("groups", []):
+        ci = g.get("improved_ci")
+        rate = f"{pc(g.get('improved_rate'))}（{pc(ci[0])}–{pc(ci[1])}）" if ci else ""
+        female = f"{pc(g['female_share'])}（n={g.get('sex_recorded', '')}）" if g.get("female_share") is not None else ""
+        out.append(f"| {g['group']} | {g['cases']} | {g['visits']['mean']}±{g['visits']['sd']} | {rate} | {pc(g.get('died_rate'))} | "
+                   f"{female} | {pc(g.get('prior_share'))} | {'、'.join(f['name'] for f in g.get('formulas', [])[:3])} | "
+                   f"{'、'.join(d['item'] + ('*' if d['significant'] else '') for d in g.get('distinctive', [])[:5])} |")
+    t = r.get("tests") or {}
+    if t.get("outcome"):
+        o = t["outcome"]
+        out += ["", f"转归 × {label}：χ² = {o['chi2']}，df = {o['df']}，p = {o['p']:.3g}，Cramér's V = {o['cramers_v']}"
+                + ("（最小期望频数 < 5）" if o.get("min_expected", 5) < 5 else "")]
+    if t.get("visits"):
+        k = t["visits"]
+        out.append(f"诊次 × {label}：Kruskal–Wallis H = {k['h']}，df = {k['df']}，p = {k['p']:.3g}")
+    if r.get("trends"):
+        out += ["", "## 历代趋势（各时期用之者的比例；Cochran–Armitage）", "",
+                "| 项 | " + " | ".join(r["trends"][0]["shares"]) + " | z | p |", "|---|" + "---|" * (len(r["trends"][0]["shares"]) + 2)]
+        out += [f"| {x['item']} | " + " | ".join(f"{v:.0%}" for v in x["shares"].values()) + f" | {x['trend_z'] if x['trend_z'] is not None else ''} | "
+                f"{x['p'] if x['p'] is not None else ''} |" for x in r["trends"]]
+    if r.get("distances"):
+        out += ["", "治法与方的分布之差（Jensen–Shannon）：" + "；".join(f"{d['a']}—{d['b']} {d['jsd']}" for d in r["distances"])]
+    out += ["", "*：经 Benjamini–Hochberg 校正后显著。"]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+def modifications(r: dict[str, Any]) -> list[str]:
+    head = "；".join(x for x in (r.get("disease"), r.get("formula")) if x) or "全部医案"
+    out = [f"# 随证加减：{head}", "", f"检索 {r.get('scanned', 0)} 案；有加减者 {r.get('cases', 0)} 案、{r.get('visits', 0)} 诊。", "",
+           "- 常加：" + "、".join(f"{k}（{v}）" for k, v in r.get("added", [])[:20]),
+           "- 常去：" + "、".join(f"{k}（{v}）" for k, v in r.get("removed", [])[:20]), "",
+           "## 所见与所加之药", "", "| 所见 | 加 | 次数 | P(加｜见) | 提升度 | p | 显著(BH) |", "|---|---|---|---|---|---|---|"]
+    out += [f"| {a['left']} | {a['right']} | {a['count']} | {a['p_right_given_left']} | {a['lift']} | {a['p']} | {'是' if a['significant'] else ''} |"
+            for a in r.get("finding_added", [])[:20]]
+    if r.get("finding_removed"):
+        out += ["", "## 所见与所去之药", "", "| 所见 | 去 | 次数 | 提升度 | p |", "|---|---|---|---|---|"]
+        out += [f"| {a['left']} | {a['right']} | {a['count']} | {a['lift']} | {a['p']} |" for a in r["finding_removed"][:12]]
+    if r.get("bases"):
+        out += ["", "## 主方与其加减", "", "| 主方 | 诊次 | 加 | 去 |", "|---|---|---|---|"]
+        out += [f"| {b['formula']} | {b['visits']} | {'、'.join(f'{k}（{v}）' for k, v in b['added'])} | "
+                f"{'、'.join(f'{k}（{v}）' for k, v in b['removed'])} |" for b in r["bases"]]
+    if r.get("examples"):
+        out += ["", "## 例", ""] + [f"- {e['title']}（{e['period']}）{e['visit']}：主方 {e.get('base') or '—'}；加 {'、'.join(e['added']) or '—'}；"
+                                     f"去 {'、'.join(e['removed']) or '—'} —— {_q(e['quote'], 50)} `{e['passage_id']}`" for e in r["examples"]]
+    return out + ["", f"> {r.get('note', '')}"]
+
+
+def treatments(r: dict[str, Any]) -> list[str]:
+    out = [f"# {r.get('label')}：{r.get('target')}", "",
+           f"相关医案 {r.get('cases', 0)} 案（检索 {r.get('scanned', 0)} 案）；成组 {len(r.get('groups', []))}，未成组 {r.get('left_out', 0)} 案。", "",
+           "| 组 | 医案 | 好转率 | 转归 | 时期 | 出处 | 所见之特出者（对其余各组） |", "|---|---|---|---|---|---|---|"]
+    for g in r.get("groups", []):
+        rate = "" if g.get("improved_rate") is None else f"{g['improved_rate']:.0%}"
+        out.append(f"| {g['group']} | {g['cases']} | {rate} | {'，'.join(f'{OUTCOMES.get(k, k)} {v}' for k, v in g['outcomes'].items())} | "
+                   f"{'、'.join(f'{k}（{v}）' for k, v in g['periods'].items())} | {'、'.join(g['books'])} | "
+                   f"{'、'.join(f['item'] + ('*' if f['significant'] else '') for f in g.get('findings', [])[:5])} |")
+    if r.get("shared"):
+        out += ["", "## 诸病所共之所见（异病同治之“同”）", "", "| 所见 | 医案 | 占比 | 全部医案中 | 提升度 | 见于几组 |", "|---|---|---|---|---|---|"]
+        out += [f"| {s['feature']} | {s['cases']} | {s['share']:.0%} | {s['share_all']:.0%} | {s['lift']} | {s['groups']} |" for s in r["shared"]]
+    t = r.get("outcome_test")
+    if t:
+        out += ["", f"转归 × 组：χ² = {t['chi2']}，df = {t['df']}，p = {t['p']:.3g}" + ("（最小期望频数 < 5）" if t.get("min_expected", 5) < 5 else "")]
+    out += ["", "*：经 Benjamini–Hochberg 校正后显著。"]
     return out + ["", f"> {r.get('note', '')}"]
 
 
@@ -1222,7 +1399,9 @@ PAGES = {"canon": canon, "concordance": concordance, "formula": formula, "herb":
          "trajectories": trajectories, "argument": argument, "senses": senses, "fragments": fragments, "witnesses": witnesses,
          "punctuate": punctuate, "commentaries": commentaries, "disputes": disputes, "clause": clause, "glosses": glosses,
          "pairs": pairs, "network": network, "schools": schools, "names": names, "chain": chain, "entities": entities, "places": places, "translate": translate,
-         "compare": compare, "family": family, "usage": usage, "properties": properties, "incompat": incompat, "protocol": protocol}
+         "compare": compare, "family": family, "usage": usage, "properties": properties, "incompat": incompat, "protocol": protocol,
+         "casefind": casefind, "similar": similar, "case": case, "casecompare": casecompare, "modifications": modifications,
+         "treatments": treatments}
 
 
 def _model_sections(result: dict[str, Any]) -> list[str]:

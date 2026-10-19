@@ -1,0 +1,18 @@
+# Synthetic case collections for the exploration of case records (tests/test_caseexplore.py): records written in the
+# manners of the literature — successive visits under a heading (明 甲氏医案, 清 乙氏医案) and a compilation whose cases
+# name the physician who treated (清 丙编类案: 丁翁治一妇…, 武医治一人…) — arranged so that every exploration has something to find:
+# one disease treated two ways (咳嗽: 银翘散 for 发热 脉浮数, 沙参麦冬汤 for 口干 脉细), one formula for two diseases
+# (小柴胡汤: 疟, 伤寒), changes to a prescription (加杏仁 when 咳甚), earlier physicians' treatment (前医…, 医以…), deaths,
+# patients' sex and age, two periods.  Not a transcription of any edition; never cite it.
+defaults:
+  source: &src
+    origin: TaoChronos test fixture (synthetic)
+    license: CC0-1.0
+    acquisition: written for the test suite
+    transcription: synthetic
+    verified: false
+books:
+  - {id: jia, title: 甲氏医案, authors: [甲医], dynasty: 明, composition: [1550, 1550], category: 医案, source: *src}
+  - {id: yi, title: 乙氏医案, authors: [乙医], dynasty: 清, composition: [1760, 1760], category: 医案, source: *src}
+  - {id: bing, title: 丙编类案, authors: [丙编者], dynasty: 清, composition: [1780, 1780], category: 医案, source: *src}
+  - {id: fang, title: 某方书, authors: [佚名], dynasty: 清, composition: [1700, 1700], category: 方书, source: *src}

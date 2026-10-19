@@ -56,7 +56,8 @@ const UNAVAILABLE = Object.fromEntries([
   ["passages", ["study.authorship", "study.cards", "study.cases", "study.chain", "study.compare", "study.dating", "study.disputes",
     "study.family", "study.incompat", "study.properties", "study.usage",
     "study.fragments", "study.glosses", "study.layers", "study.places", "study.reuse", "study.stemma", "study.trajectories",
-    "study.transmission", "study.variants"]],
+    "study.transmission", "study.variants", "study.casefind", "study.similar", "study.case", "study.casecompare",
+    "study.modifications", "study.treatments"]],
   ["mine", ["mydata.list", "mydata.read", "mydata.search", "mydata.describe", "mydata.compare", "mydata.prescriptions"]],
 ].flatMap(([why, names]) => names.map((n) => [n, WHY[why]])));
 
