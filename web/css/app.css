@@ -295,7 +295,7 @@ kbd { font: 11px var(--font-mono); color: var(--ink-3); border: 1px solid var(--
 .site-switch a.on { color: var(--ochre); background: var(--ochre-soft); }
 .site-switch a::after {
   content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
-  width: max-content; max-width: min(360px, 80vw); white-space: normal; text-align: center;
+  width: max-content; max-width: min(360px, 80vw); white-space: pre-line; text-align: center;
   padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 500; letter-spacing: 0; line-height: 1.4;
   color: var(--surface); background: var(--ink); box-shadow: 0 4px 14px rgb(0 0 0 / .18);
   opacity: 0; visibility: hidden; transition: opacity .12s; pointer-events: none; z-index: 10;
