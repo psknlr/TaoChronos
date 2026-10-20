@@ -7,6 +7,7 @@
 // to api.anthropic.com.
 
 import { ProviderError, proxyHeaders } from "./openai.js";
+import { T } from "../i18n.js";
 
 const SDK_URL = "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm";
 const FALLBACK_BETA = "server-side-fallback-2026-07-01";
@@ -18,7 +19,7 @@ async function loadSDK() {
     try {
       sdk = (await import(/* @vite-ignore */ SDK_URL)).default;
     } catch (err) {
-      throw new ProviderError(`无法载入 Anthropic SDK（${err.message}）。请检查网络，或改用 OpenRouter / Poe / LiteLLM 等 OpenAI 兼容通道。`);
+      throw new ProviderError(T`无法载入 Anthropic SDK（${err.message}）。请检查网络，或改用 OpenRouter / Poe / LiteLLM 等 OpenAI 兼容通道。`);
     }
   }
   return sdk;
@@ -35,7 +36,7 @@ export async function streamClaude({ provider, system, messages, tools, settings
     dangerouslyAllowBrowser: true,
     maxRetries: 2,
   });
-  if (!provider.apiKey && !viaProxy) throw new ProviderError("请先在设置中填写 Anthropic API Key");
+  if (!provider.apiKey && !viaProxy) throw new ProviderError(T("请先在设置中填写 Anthropic API Key"));
 
   const params = {
     model: provider.model,
@@ -78,15 +79,15 @@ export async function streamClaude({ provider, system, messages, tools, settings
     const toolUses = content.filter((b) => b.type === "tool_use");
     if (final.stop_reason === "refusal") {
       const cat = final.stop_details?.category;
-      throw new ProviderError(`Claude 拒绝了这次请求${cat ? `（类别：${cat}）` : ""}。可改写问题后重试。`);
+      throw new ProviderError(T`Claude 拒绝了这次请求${cat ? T`（类别：${cat}）` : ""}。可改写问题后重试。`);
     }
     if (final.stop_reason === "max_tokens" && toolUses.length) {
-      throw new ProviderError("工具参数在输出上限处被截断，未执行。请在设置中调高“最大输出”后重试。");
+      throw new ProviderError(T("工具参数在输出上限处被截断，未执行。请在设置中调高“最大输出”后重试。"));
     }
     const toolCalls = toolUses.map((b) => ({
       id: b.id, name: b.name, arguments: b.input && typeof b.input === "object" && !Array.isArray(b.input) ? b.input : {},
       rawArguments: JSON.stringify(b.input ?? {}),
-      error: b.input && typeof b.input === "object" && !Array.isArray(b.input) ? null : "参数必须是 JSON 对象",
+      error: b.input && typeof b.input === "object" && !Array.isArray(b.input) ? null : T("参数必须是 JSON 对象"),
     }));
     const answer = content.filter((b) => b.type === "text").map((b) => b.text).join("\n\n");
     const shownThinking = thinking || content.filter((b) => b.type === "thinking").map((b) => b.thinking || "").join("\n");
@@ -104,11 +105,11 @@ export async function streamClaude({ provider, system, messages, tools, settings
     if (err instanceof ProviderError) throw err;
     if (err instanceof Anthropic.APIError) {
       const status = err.status || 0;
-      const hint = status === 401 ? "（API Key 无效）" : status === 429 ? "（请求过于频繁）" : status >= 500 ? "（服务端暂时不可用）" : "";
-      throw new ProviderError(`Claude API 返回 ${status}${hint}：${err.message}`, { status, retryable: status === 429 || status >= 500 });
+      const hint = status === 401 ? T("（API Key 无效）") : status === 429 ? T("（请求过于频繁）") : status >= 500 ? T("（服务端暂时不可用）") : "";
+      throw new ProviderError(T`Claude API 返回 ${status}${hint}：${err.message}`, { status, retryable: status === 429 || status >= 500 });
     }
     // with eager input streaming, a tool input that is not valid JSON rejects the stream
-    throw new ProviderError(`Claude 回复无法解析：${err?.message || err}`, { retryable: true });
+    throw new ProviderError(T`Claude 回复无法解析：${err?.message || err}`, { retryable: true });
   }
 }
 

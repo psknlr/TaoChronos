@@ -18,6 +18,7 @@
 import { pngWithDpi, tiff } from "./bytes.js";
 import { cachedTable, defuse, menuButton, saveTables } from "./table.js";
 import { download, downloadBlob, h, icon, storage, toast } from "./util.js";
+import { T } from "./i18n.js";
 
 const SVG = "http://www.w3.org/2000/svg";
 export const TYPES = ["line", "bar", "hbar", "stack", "heatmap", "range", "box", "forest", "scatter", "dendrogram", "timeline", "network"];
@@ -44,30 +45,30 @@ let J = false; // drawing for a journal (figureNode, panelsNode): L axes, outwar
 // ------------------------------------------------------------------ checking a specification
 /** null when the specification can be drawn, else why not (a model's ```chart block is checked before it is drawn). */
 export function invalid(spec) {
-  if (!spec || typeof spec !== "object" || Array.isArray(spec)) return "图表规格应为 JSON 对象";
-  if (!TYPES.includes(spec.type)) return `不支持的图表类型：${spec.type}（可用 ${TYPES.join("、")}）`;
+  if (!spec || typeof spec !== "object" || Array.isArray(spec)) return T("图表规格应为 JSON 对象");
+  if (!TYPES.includes(spec.type)) return T`不支持的图表类型：${spec.type}（可用 ${TYPES.join(T("、"))}）`;
   if (spec.type === "network") {
-    if (!Array.isArray(spec.nodes) || !spec.nodes.length) return "网络图需要 nodes";
-    if (spec.nodes.length > 400 || (spec.edges || []).length > 4000) return "网络过大（至多 400 个节点、4000 条边）";
+    if (!Array.isArray(spec.nodes) || !spec.nodes.length) return T("网络图需要 nodes");
+    if (spec.nodes.length > 400 || (spec.edges || []).length > 4000) return T("网络过大（至多 400 个节点、4000 条边）");
     return null;
   }
   if (spec.type === "dendrogram") {
     const n = Array.isArray(spec.labels) ? spec.labels.length : 0;
-    if (n < 2 || n > 200) return "树状图需要 labels（2 至 200 项）";
-    if (!Array.isArray(spec.merges) || spec.merges.length !== n - 1) return "树状图需要 merges（n − 1 次合并）";
-    if (!spec.merges.every((m, i) => Array.isArray(m) && m.length >= 3 && [m[0], m[1]].every((c) => Number.isInteger(c) && c >= 0 && c < n + i) && num(m[2]) !== null)) return "树状图的 merges 不合法";
+    if (n < 2 || n > 200) return T("树状图需要 labels（2 至 200 项）");
+    if (!Array.isArray(spec.merges) || spec.merges.length !== n - 1) return T("树状图需要 merges（n − 1 次合并）");
+    if (!spec.merges.every((m, i) => Array.isArray(m) && m.length >= 3 && [m[0], m[1]].every((c) => Number.isInteger(c) && c >= 0 && c < n + i) && num(m[2]) !== null)) return T("树状图的 merges 不合法");
     return null;
   }
-  if (!Array.isArray(spec.rows) || !spec.rows.length) return "图表需要 rows（数据行）";
-  if (spec.rows.length > 2000) return "数据行过多（至多 2000 行）";
-  if (["line", "bar", "hbar", "stack", "range", "box"].includes(spec.type) && !spec.x?.key) return "需要 x.key（类别字段）";
-  if (["line", "bar", "hbar", "stack"].includes(spec.type) && !(Array.isArray(spec.series) && spec.series.length)) return "需要 series（数值字段）";
-  if (spec.type === "heatmap" && !(spec.x?.key && spec.y?.key && spec.value?.key)) return "热图需要 x.key、y.key 与 value.key";
-  if (spec.type === "range" && !spec.range?.median) return "区间图需要 range.median 等字段";
-  if (spec.type === "box" && !boxRows(spec).length) return "箱线图需要每行的 q1、median、q3，或 values（数值数组）";
-  if (spec.type === "forest" && !(spec.y?.key && spec.estimate?.key)) return "森林图需要 y.key 与 estimate.key（及 estimate.lo、estimate.hi）";
-  if (spec.type === "scatter" && !(spec.x?.key && spec.y?.key)) return "散点图需要 x.key 与 y.key";
-  if (spec.type === "timeline" && !spec.rows.some((r) => num(r.start) !== null)) return "时间线需要 rows[].start（年份）";
+  if (!Array.isArray(spec.rows) || !spec.rows.length) return T("图表需要 rows（数据行）");
+  if (spec.rows.length > 2000) return T("数据行过多（至多 2000 行）");
+  if (["line", "bar", "hbar", "stack", "range", "box"].includes(spec.type) && !spec.x?.key) return T("需要 x.key（类别字段）");
+  if (["line", "bar", "hbar", "stack"].includes(spec.type) && !(Array.isArray(spec.series) && spec.series.length)) return T("需要 series（数值字段）");
+  if (spec.type === "heatmap" && !(spec.x?.key && spec.y?.key && spec.value?.key)) return T("热图需要 x.key、y.key 与 value.key");
+  if (spec.type === "range" && !spec.range?.median) return T("区间图需要 range.median 等字段");
+  if (spec.type === "box" && !boxRows(spec).length) return T("箱线图需要每行的 q1、median、q3，或 values（数值数组）");
+  if (spec.type === "forest" && !(spec.y?.key && spec.estimate?.key)) return T("森林图需要 y.key 与 estimate.key（及 estimate.lo、estimate.hi）");
+  if (spec.type === "scatter" && !(spec.x?.key && spec.y?.key)) return T("散点图需要 x.key 与 y.key");
+  if (spec.type === "timeline" && !spec.rows.some((r) => num(r.start) !== null)) return T("时间线需要 rows[].start（年份）");
   return null;
 }
 
@@ -104,7 +105,7 @@ export function fmtEst(x) {
   return a >= 100 ? n.toFixed(0) : a >= 10 ? n.toFixed(1) : a >= 0.01 || a === 0 ? n.toFixed(2) : n.toFixed(3);
 }
 
-const yearText = (t) => (t < 0 ? `前${Math.round(-t)}` : String(Math.round(t)));
+const yearText = (t) => (t < 0 ? T`前${Math.round(-t)}` : String(Math.round(t)));
 
 const WIDE = new Set(["…", "—"]); // as wide as a CJK character in the fonts a figure names
 
@@ -167,7 +168,7 @@ export function logTicks(lo, hi) {
 /** The categorical tokens in order, 其他 in the de-emphasis grey (never a ninth hue). */
 export function seriesColors(labels) {
   let k = 0;
-  return labels.map((l) => (l === "其他" ? v("viz-other") : k < 8 ? v(`viz-${++k}`) : v("viz-other")));
+  return labels.map((l) => (l === "其他" || l === T("其他") ? v("viz-other") : k < 8 ? v(`viz-${++k}`) : v("viz-other")));
 }
 
 /** Colours by group: by its place in the order the specification gives (groups), so that a category keeps its colour in
@@ -377,7 +378,7 @@ function series(spec, width) {
     });
     if (!J) g.append(...endLabels(ends, lines, top)); // each line's end value, where it clears the other labels, dots and lines
     rows.forEach((r, j) => targets.push({ x: xs[j], y: top, crosshair: true, title: String(r[xkey] ?? ""),
-      lines: list.map((s) => [fmt(r[s.key], percent) + (s.lo && s.hi && num(r[s.lo]) !== null ? `（${fmt(r[s.lo], percent)}–${fmt(r[s.hi], percent)}）` : ""), s.label]) }));
+      lines: list.map((s) => [fmt(r[s.key], percent) + (s.lo && s.hi && num(r[s.lo]) !== null ? T`（${fmt(r[s.lo], percent)}–${fmt(r[s.hi], percent)}）` : ""), s.label]) }));
   } else if (kind === "bar") {
     const n = Math.max(list.length, 1);
     const bw = Math.max(3, Math.min(24, (band - 8) / n - 2));
@@ -639,13 +640,13 @@ function box(spec, width) {
     }
     if (above) g.append(text(x, top - 8, `▲${above}`, { size: 9.5, fill: "viz-muted", anchor: "middle" }));
     targets.push({ x, y: scale(Math.min(med ?? 0, hi)), col: band / 2, title: String(r[xkey] ?? ""),
-      lines: [[fmt(r.n), "n"], [fmt(med), "中位数"], [`${fmt(q1)}–${fmt(q3)}`, "四分位距"], [`${fmt(wlo)}–${fmt(whi)}`, "须线"], ...(mean !== null ? [[fmt(mean), "均数"]] : [])] });
+      lines: [[fmt(r.n), "n"], [fmt(med), T("中位数")], [`${fmt(q1)}–${fmt(q3)}`, T("四分位距")], [`${fmt(wlo)}–${fmt(whi)}`, T("须线")], ...(mean !== null ? [[fmt(mean), T("均数")]] : [])] });
   });
   let end = xLabels(g, rows.map((r) => String(r[xkey] ?? "")), xs, bottom, band, null);
   rows.forEach((r, i) => { if (num(r.n) !== null) g.append(text(xs[i], end + 8, `n = ${num(r.n)}`, { size: 9.5, fill: "viz-muted", anchor: "middle" })); });
   end += 12;
   if (J && spec.x.label) { g.append(text((left + right) / 2, end + 12, spec.x.label, { size: 11, fill: "viz-ink", anchor: "middle" })); end += 16; }
-  if (over) g.append(text(right, 12, "▲：超出纵轴的值的个数", { size: 9.5, fill: "viz-muted", anchor: "end" }));
+  if (over) g.append(text(right, 12, T("▲：超出纵轴的值的个数"), { size: 9.5, fill: "viz-muted", anchor: "end" }));
   return { svg: g, height: end + 4, targets };
 }
 
@@ -673,7 +674,7 @@ function forest(spec, width) {
   const left = labelW, right = width - textW;
   const g = el("g");
   const grey = rows.some((r) => r.sig === false) && rows.some((r) => r.sig !== false);
-  const lg = grey ? legend([["显著", v("viz-1")], ["未达显著", v("viz-other")]], width) : { nodes: [], height: 0 };
+  const lg = grey ? legend([[T("显著"), v("viz-1")], [T("未达显著"), v("viz-other")]], width) : { nodes: [], height: 0 };
   g.append(...lg.nodes);
   const top = lg.height + 22, step = 20;
   g.append(text(left - 8, top - 8, clipText(spec.y.label || "", 10.5, left - 10), { size: 10.5, fill: J ? "viz-ink" : "viz-muted", anchor: "end", weight: J ? 600 : null }),
@@ -739,11 +740,11 @@ function scatter(spec, width) {
     const cx = xscale(a), cy = yscale(Math.min(b, yhi));
     g.append(el("circle", { cx: cx.toFixed(1), cy: cy.toFixed(1), r: rad(r).toFixed(1), fill: c, "fill-opacity": dense ? 0.35 : 0.6, ...(dense ? {} : { stroke: v("viz-surface"), "stroke-width": 1 }) }));
     const extra = (spec.columns || []).filter((col) => ![ax.key, ay.key, spec.label].includes(col.key)).map((col) => [fmt(r[col.key]), col.label]).filter(([t]) => t);
-    targets.push({ x: cx, y: cy, title: spec.label ? String(r[spec.label] ?? "") : `${fmt(a, ax.percent)}，${fmt(b, ay.percent)}`,
+    targets.push({ x: cx, y: cy, title: spec.label ? String(r[spec.label] ?? "") : T`${fmt(a, ax.percent)}，${fmt(b, ay.percent)}`,
       lines: [[ax.year ? yearText(a) : fmt(a, ax.percent), ax.label || ax.key], [fmt(b, ay.percent), ay.label || ay.key], ...extra] });
   }
   if (fit.length >= 2) g.append(el("polyline", { points: fit.map(([a, b]) => `${xscale(a).toFixed(1)},${yscale(Math.min(Math.max(b, ylo), yhi)).toFixed(1)}`).join(" "), fill: "none", stroke: v("viz-ink"), "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
-  if (sk && pts.length) g.append(text(right, top - head, `点的大小：${spec.size.label || sk}（最大 ${fmt(smax)}）`, { size: 10, fill: "viz-muted", anchor: "end" }));
+  if (sk && pts.length) g.append(text(right, top - head, T`点的大小：${spec.size.label || sk}（最大 ${fmt(smax)}）`, { size: 10, fill: "viz-muted", anchor: "end" }));
   return { svg: g, height: end + 4, targets };
 }
 
@@ -784,7 +785,7 @@ function dendrogram(spec, width) {
     const y = ypos.get(item);
     g.append(el("rect", { x: left - 13, y: y - 4, width: 8, height: 8, fill: colorOf(member[item]) }), text(left - 18, y + 4, clipText(labels[item], 11, left - 20), { size: 11, anchor: "end" }));
     const r = freq.get(labels[item]) || {};
-    targets.push({ x: left, y, row: step / 2, title: labels[item], lines: [[nameOf(member[item]), "类别"], ...(spec.columns || []).filter((c) => !["drug", "label", "cluster"].includes(c.key)).map((c) => [fmt(r[c.key]), c.label]).filter(([t]) => t)] });
+    targets.push({ x: left, y, row: step / 2, title: labels[item], lines: [[nameOf(member[item]), T("类别")], ...(spec.columns || []).filter((c) => !["drug", "label", "cluster"].includes(c.key)).map((c) => [fmt(r[c.key]), c.label]).filter(([t]) => t)] });
   }
   const bottom = top + step * n + 4;
   if (cut !== null) g.append(line(xscale(cut), top, xscale(cut), bottom, "viz-muted"));
@@ -885,7 +886,7 @@ function timeline(spec, width) {
     targets.push({ x: xs[i], y: ys[i], title: String(r.label ?? ""), lines: (spec.columns || []).filter((col) => col.key !== "label").map((col) => [fmt(r[col.key]), col.label]).filter(([s]) => s) });
   });
   let end = axis + 24;
-  if (J) { g.append(text((left + right) / 2, end + 6, spec.x?.label || "年代", { size: 11, fill: "viz-ink", anchor: "middle" })); end += 16; }
+  if (J) { g.append(text((left + right) / 2, end + 6, spec.x?.label || T("年代"), { size: 11, fill: "viz-ink", anchor: "middle" })); end += 16; }
   return { svg: g, height: end, targets };
 }
 
@@ -924,7 +925,7 @@ function network(spec, width) {
         el("circle", { cx: col, cy: y, r: rad(n), fill: colors.get(String(n.group ?? "")), stroke: v("viz-surface"), "stroke-width": 2 }),
         text(col + 14, y + 4, name, { size: 11, fill: "viz-ink" }));
       if (e.label && col + 24 + textWidth(name, 11) + textWidth(e.label, 10) < width) g.append(text(col + 24 + textWidth(name, 11), y + 4, e.label, { size: 10, fill: "viz-muted" }));
-      targets.push({ x: col, y, title: String(n.label ?? n.id), lines: [[String(n.group ?? ""), "关系"], [fmt(n.size), "权重"], ...(e.label ? [[e.label, "说明"]] : [])] });
+      targets.push({ x: col, y, title: String(n.label ?? n.id), lines: [[String(n.group ?? ""), T("关系")], [fmt(n.size), T("权重")], ...(e.label ? [[e.label, T("说明")]] : [])] });
     });
     g.append(el("circle", { cx: hx, cy: hy, r: rad(centre) + 2, fill: colors.get(String(centre.group ?? "")), stroke: v("viz-surface"), "stroke-width": 2 }),
       text(hx - rad(centre) - 8, hy + 5, hubLabel, { size: 13, fill: "viz-ink", anchor: "end", weight: 600 }));
@@ -952,7 +953,7 @@ function network(spec, width) {
     const turn = Math.round(((a * 180) / Math.PI + (rightHalf ? 0 : 180)) * 100) / 100;
     g.append(el("circle", { cx: x, cy: y, r: rad(n), fill: colors.get(String(n.group ?? "")), stroke: v("viz-surface"), "stroke-width": 2 }),
       text(cx + d * Math.cos(a) + 3.6 * ox, cy + d * Math.sin(a) + 3.6 * oy, names.get(n.id), { size: 10.5, fill: "viz-ink", anchor: rightHalf ? "start" : "end", rotate: turn }));
-    targets.push({ x, y, title: String(n.label ?? n.id), lines: [[String(n.group ?? ""), "类"], [fmt(n.size), "权重"]] });
+    targets.push({ x, y, title: String(n.label ?? n.id), lines: [[String(n.group ?? ""), T("类")], [fmt(n.size), T("权重")]] });
   }
   return { svg: g, height: cy + R + reach + 8, targets };
 }
@@ -972,14 +973,14 @@ function wrap(s, width, size) {
 
 /** A figure's caption after its number: the title and what the subtitle says, as a sentence. */
 export function captionText(spec) {
-  const title = String(spec.title || "").replace(" · ", "：");
+  const title = String(spec.title || "").replace(" · ", T("："));
   const sub = String(spec.subtitle || "").replace(/。$/, "");
-  return title + (sub ? `。${sub}。` : "");
+  return title + (sub ? T`。${sub}。` : "");
 }
 
 /** The caption under a journal figure: 图 n (bold) and its text, then the notes; {nodes, height}. */
 function captionNodes(width, number, body, notes) {
-  const head = number !== undefined && number !== null && number !== "" ? `图${number}　` : "";
+  const head = number !== undefined && number !== null && number !== "" ? T`图${number}　` : "";
   const nodes = [];
   let y = 0;
   wrap(head + body, width - 12, 11).forEach((ln, i) => {
@@ -1076,11 +1077,11 @@ export function panelsNode(specs, { number = null, caption = true, width = "doub
       y += rh + 14;
     }
     if (caption) {
-      const pieces = specs.map((s, i) => `（${letter(i)}）${short(s)}`).join("；");
+      const pieces = specs.map((s, i) => T`（${letter(i)}）${short(s)}`).join(T("；"));
       let notes = [...new Set(specs.map((s) => s.note).filter(Boolean))];
       notes = notes.filter((x) => !notes.some((o) => o !== x && o.includes(x)));
       const sources = [...new Set(specs.map((s) => s.source).filter(Boolean))];
-      const cap = captionNodes(w - 2 * pad, number, `${head ? `${head}。` : ""}${pieces}。`, [...notes, ...(sources.length ? [sources.join("；")] : [])]);
+      const cap = captionNodes(w - 2 * pad, number, T`${head ? T`${head}。` : ""}${pieces}。`, [...notes, ...(sources.length ? [sources.join(T("；"))] : [])]);
       parts.push(el("g", { transform: `translate(${pad} ${Math.round(y - 6)})` }, ...cap.nodes));
       y += cap.height;
     }
@@ -1111,7 +1112,7 @@ export function toCSV(spec, bom = true) {
   let lines;
   if (spec.type === "network" && spec.edges?.length) {
     const label = new Map((spec.nodes || []).map((n) => [n.id, n.label ?? n.id]));
-    lines = [["来源", "目标", "权重", "说明"], ...spec.edges.map((e) => [label.get(e.source) ?? e.source, label.get(e.target) ?? e.target, e.weight ?? "", e.label ?? ""])];
+    lines = [[T("来源"), T("目标"), T("权重"), T("说明")], ...spec.edges.map((e) => [label.get(e.source) ?? e.source, label.get(e.target) ?? e.target, e.weight ?? "", e.label ?? ""])];
   } else {
     const cols = spec.columns?.length ? spec.columns : Object.keys(spec.rows?.[0] || {}).map((k) => ({ key: k, label: k }));
     lines = [cols.map((c) => c.label), ...(spec.rows || []).map((r) => cols.map((c) => r[c.key]))];
@@ -1121,7 +1122,7 @@ export function toCSV(spec, bom = true) {
 
 function tableView(spec) {
   const net = spec.type === "network" && spec.edges?.length;
-  const cols = net ? [{ key: "source", label: "来源" }, { key: "target", label: "目标" }, { key: "weight", label: "权重" }, { key: "label", label: "说明" }]
+  const cols = net ? [{ key: "source", label: T("来源") }, { key: "target", label: T("目标") }, { key: "weight", label: T("权重") }, { key: "label", label: T("说明") }]
     : (spec.columns?.length ? spec.columns : Object.keys(spec.rows?.[0] || {}).map((k) => ({ key: k, label: k })));
   const label = new Map((spec.nodes || []).map((n) => [n.id, n.label ?? n.id]));
   const rows = net ? spec.edges.map((e) => ({ ...e, source: label.get(e.source), target: label.get(e.target) })) : spec.rows;
@@ -1139,13 +1140,13 @@ async function rasterize(svgText, pixelWidth) {
   const url = URL.createObjectURL(new Blob([svgText], { type: "image/svg+xml;charset=utf-8" }));
   try {
     const img = new Image();
-    await new Promise((ok, fail) => { img.onload = ok; img.onerror = () => fail(new Error("图像生成失败")); img.src = url; });
+    await new Promise((ok, fail) => { img.onload = ok; img.onerror = () => fail(new Error(T("图像生成失败"))); img.src = url; });
     const box = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svgText);
     const [vw, vh] = box ? [Number(box[1]), Number(box[2])] : [img.width, img.height];
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(pixelWidth);
     canvas.height = Math.round((pixelWidth * vh) / vw);
-    if (canvas.width * canvas.height > 120e6) throw new Error("图像过大：请选较小的宽度或分辨率");
+    if (canvas.width * canvas.height > 120e6) throw new Error(T("图像过大：请选较小的宽度或分辨率"));
     const g = canvas.getContext("2d");
     g.fillStyle = "#ffffff";
     g.fillRect(0, 0, canvas.width, canvas.height);
@@ -1156,7 +1157,7 @@ async function rasterize(svgText, pixelWidth) {
   }
 }
 
-const canvasBytes = (canvas) => new Promise((ok, fail) => canvas.toBlob((b) => (b ? b.arrayBuffer().then((a) => ok(new Uint8Array(a)), fail) : fail(new Error("图像生成失败"))), "image/png"));
+const canvasBytes = (canvas) => new Promise((ok, fail) => canvas.toBlob((b) => (b ? b.arrayBuffer().then((a) => ok(new Uint8Array(a)), fail) : fail(new Error(T("图像生成失败")))), "image/png"));
 
 /** The figure as PNG at twice its size (the page's figure). */
 export async function pngBlob(svgText, scale = 2) {
@@ -1185,7 +1186,7 @@ export async function save(spec, kind, settings = exportSettings(), number = nul
   const panels = Array.isArray(spec);
   const first = panels ? spec[0] : spec;
   const journal = panels || settings.style === "journal";
-  const name = safeName(panels ? (commonTitle(spec) || "组图") : `${number ? `图${number}-` : ""}${first.title}`);
+  const name = safeName(panels ? (commonTitle(spec) || T("组图")) : `${number ? T`图${number}-` : ""}${first.title}`);
   try {
     if (kind === "csv") return download(`${safeName(first.title)}.csv`, toCSV(first), "text/csv");
     if (kind === "json") return download(`${safeName(first.title)}.json`, JSON.stringify(first, null, 2), "application/json");
@@ -1196,7 +1197,7 @@ export async function save(spec, kind, settings = exportSettings(), number = nul
     else if (kind === "png") downloadBlob(`${name}.png`, journal ? await pngAtDpi(svgText, mm, settings.dpi) : await pngBlob(svgText, 2));
     else if (kind === "tiff") downloadBlob(`${name}.tif`, await tiffAtDpi(svgText, mm, settings.dpi));
   } catch (err) {
-    toast(`下载失败：${err.message || err}`, "err");
+    toast(T`下载失败：${err.message || err}`, "err");
   }
 }
 
@@ -1210,22 +1211,22 @@ function exportPanel(specOrList, { number = null, onChange = null } = {}) {
   const radio = (name, value, label, checked) => h("label.opt", h("input", { type: "radio", name: `${id}-${name}`, value, checked }), label);
   const field = (label, ...opts) => h("div.field", { role: "radiogroup", "aria-label": label }, h("span.lbl", label), h("div.opts", ...opts));
   const form = h("form.viz-export-form", { on: { submit: (e) => e.preventDefault() } },
-    panels ? h("p.hint", `${specOrList.length} 幅图合为一图（A–${String.fromCharCode(64 + Math.min(specOrList.length, 26))}），双栏 175 mm，期刊样式`) : field("样式", radio("style", "journal", "期刊", s.style === "journal"), radio("style", "screen", "屏幕", s.style !== "journal")),
-    panels ? null : field("宽度", radio("width", "single", "单栏 85 mm", s.width === "single"), radio("width", "onehalf", "1.5 栏 120 mm", s.width === "onehalf"), radio("width", "double", "双栏 175 mm", s.width === "double")),
-    field("分辨率", radio("dpi", "300", "300 dpi", Number(s.dpi) !== 600), radio("dpi", "600", "600 dpi", Number(s.dpi) === 600)),
-    h("div.field", h("span.lbl"), h("div.opts", h("label.opt", h("input", { type: "checkbox", name: `${id}-caption`, checked: s.caption !== false }), "含图号与图注"))));
+    panels ? h("p.hint", T`${specOrList.length} 幅图合为一图（A–${String.fromCharCode(64 + Math.min(specOrList.length, 26))}），双栏 175 mm，期刊样式`) : field(T("样式"), radio("style", "journal", T("期刊"), s.style === "journal"), radio("style", "screen", T("屏幕"), s.style !== "journal")),
+    panels ? null : field(T("宽度"), radio("width", "single", T("单栏 85 mm"), s.width === "single"), radio("width", "onehalf", T("1.5 栏 120 mm"), s.width === "onehalf"), radio("width", "double", T("双栏 175 mm"), s.width === "double")),
+    field(T("分辨率"), radio("dpi", "300", "300 dpi", Number(s.dpi) !== 600), radio("dpi", "600", "600 dpi", Number(s.dpi) === 600)),
+    h("div.field", h("span.lbl"), h("div.opts", h("label.opt", h("input", { type: "checkbox", name: `${id}-caption`, checked: s.caption !== false }), T("含图号与图注")))));
   const read = () => {
     const pick = (name, fallback) => form.querySelector(`input[name="${id}-${name}"]:checked`)?.value ?? fallback;
     return { style: panels ? "journal" : pick("style", s.style), width: panels ? s.width : pick("width", s.width), dpi: Number(pick("dpi", s.dpi)), caption: form.querySelector(`input[name="${id}-caption"]`).checked };
   };
   form.addEventListener("change", () => { const now = read(); keepSettings(panels ? { ...exportSettings(), dpi: now.dpi, caption: now.caption } : now); onChange?.(now); });
   const fmtBtn = (kind, label, title) => h("button.btn.secondary", { type: "button", title, on: { click: () => save(specOrList, kind, read(), number) } }, label);
-  const box = h("div.viz-export", { hidden: true, role: "dialog", "aria-label": panels ? "导出组图" : "导出图表" },
+  const box = h("div.viz-export", { hidden: true, role: "dialog", "aria-label": panels ? T("导出组图") : T("导出图表") },
     form,
-    h("div.viz-export-row", h("span.lbl", "图片"), fmtBtn("svg", "SVG", "矢量图，可无损缩放与编辑"), fmtBtn("png", "PNG", "位图，写明分辨率"), fmtBtn("tiff", "TIFF", "位图，期刊投稿常用")),
-    panels ? null : h("div.viz-export-row", h("span.lbl", "数据"), fmtBtn("csv", "CSV", "图中的数据（Excel 可直接打开）"), fmtBtn("json", "JSON", "图表规格")));
-  const btn = h("button.btn-ghost.viz-toggle", { type: "button", "aria-haspopup": "dialog", "aria-expanded": "false", title: panels ? "把这些图合为一幅组图导出" : "导出图片或数据" },
-    icon("download", "sm"), panels ? "导出组图" : "导出");
+    h("div.viz-export-row", h("span.lbl", T("图片")), fmtBtn("svg", "SVG", T("矢量图，可无损缩放与编辑")), fmtBtn("png", "PNG", T("位图，写明分辨率")), fmtBtn("tiff", "TIFF", T("位图，期刊投稿常用"))),
+    panels ? null : h("div.viz-export-row", h("span.lbl", T("数据")), fmtBtn("csv", "CSV", T("图中的数据（Excel 可直接打开）")), fmtBtn("json", "JSON", T("图表规格"))));
+  const btn = h("button.btn-ghost.viz-toggle", { type: "button", "aria-haspopup": "dialog", "aria-expanded": "false", title: panels ? T("把这些图合为一幅组图导出") : T("导出图片或数据") },
+    icon("download", "sm"), panels ? T("导出组图") : T("导出"));
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     const open = box.hidden;
@@ -1279,7 +1280,7 @@ function drawInto(host, spec) {
   host.dataset.w = String(width);
   const p = plot(spec, width);
   const svg = el("svg", { width, height: Math.ceil(p.height), viewBox: `0 0 ${width} ${Math.ceil(p.height)}`, role: "img", tabindex: 0, class: "viz-svg",
-    "aria-label": `${spec.title || "图表"}；可切换为表格查看全部数字` }, p.svg);
+    "aria-label": T`${spec.title || T("图表")}；可切换为表格查看全部数字` }, p.svg);
   const cross = el("line", { y1: p.plotTop ?? 0, y2: p.plotBottom ?? 0, stroke: v("viz-muted"), "stroke-width": 1, visibility: "hidden" });
   svg.append(cross);
   host.replaceChildren(svg);
@@ -1334,8 +1335,8 @@ export function chartCard(raw, number) {
   const host = h("div.viz-plot");
   let view = "chart"; // chart, table, paper
   const body = h("div.viz-body");
-  const tableBtn = h("button.btn-ghost.viz-toggle", { type: "button", "aria-pressed": "false", title: "以表格查看全部数字" }, "表格");
-  const paperBtn = h("button.btn-ghost.viz-toggle", { type: "button", "aria-pressed": "false", title: "按期刊样式显示（即导出所得）" }, "期刊样式");
+  const tableBtn = h("button.btn-ghost.viz-toggle", { type: "button", "aria-pressed": "false", title: T("以表格查看全部数字") }, T("表格"));
+  const paperBtn = h("button.btn-ghost.viz-toggle", { type: "button", "aria-pressed": "false", title: T("按期刊样式显示（即导出所得）") }, T("期刊样式"));
   const watch = new ResizeObserver(() => { if (host.isConnected && view === "chart") drawInto(host, spec); });
   const render = () => {
     body.replaceChildren(view === "table" ? tableView(spec) : view === "paper" ? journalPreview(spec, number, exportSettings()) : host);
@@ -1348,7 +1349,7 @@ export function chartCard(raw, number) {
   paperBtn.addEventListener("click", () => { view = view === "paper" ? "chart" : "paper"; render(); });
   watch.observe(host);
   const card = h("figure.viz-card.chart",
-    h("figcaption", h("div.cap", h("span.title", number ? h("b", `图${number}`) : null, number ? "　" : "", spec.title || "图表"), spec.subtitle ? h("span.sub", spec.subtitle) : null),
+    h("figcaption", h("div.cap", h("span.title", number ? h("b", T`图${number}`) : null, number ? T("　") : "", spec.title || T("图表")), spec.subtitle ? h("span.sub", spec.subtitle) : null),
       h("div.tools", tableBtn, paperBtn, exportPanel(spec, { number, onChange: () => { if (view === "paper") render(); } }))),
     body,
     spec.note || spec.source ? h("div.viz-foot", [spec.note, spec.source].filter(Boolean).join(" · ")) : null);
@@ -1375,7 +1376,7 @@ export function documentOf(result) {
 }
 
 /** A button that saves a result's document as a file. */
-export function documentButton(doc, label = "下载研究方案（Markdown）") {
+export function documentButton(doc, label = T("下载研究方案（Markdown）")) {
   if (!doc) return null;
   return h("button.btn.secondary.doc-dl", { type: "button", title: doc.name, on: { click: () => download(doc.name, doc.text, "text/markdown") } },
     icon("download", "sm"), label);
@@ -1391,16 +1392,16 @@ export function chartsOf(result, limit = 8) {
  * exports of them all (the figures as one figure in panels, the tables in one Word document); ``state.at`` keeps the
  * choice when the turn is drawn again.  One of them alone: its card. */
 export function chartGallery(specs, state = { at: 0 }, tables = []) {
-  const charts = (specs || []).map((s, i) => ({ s, n: i + 1, card: cachedCard(s, i + 1), kind: "图" })).filter((x) => x.card);
-  const tbls = (tables || []).map((t, i) => ({ s: t, n: i + 1, card: cachedTable(t, i + 1), kind: "表" })).filter((x) => x.card);
+  const charts = (specs || []).map((s, i) => ({ s, n: i + 1, card: cachedCard(s, i + 1), kind: T("图") })).filter((x) => x.card);
+  const tbls = (tables || []).map((t, i) => ({ s: t, n: i + 1, card: cachedTable(t, i + 1), kind: T("表") })).filter((x) => x.card);
   const items = [...charts, ...tbls];
   if (!items.length) return null;
   const extras = [];
   if (charts.length >= 2) extras.push(exportPanel(charts.map((x) => x.s), { number: 1 }));
-  if (tbls.length >= 2) extras.push(h("button.btn-ghost.viz-toggle", { type: "button", title: "全部表格存为一个 Word 文档", on: { click: () => saveTables(tbls.map((x) => x.s), `${commonTitle(charts.map((x) => x.s)) || "研究"}-表格`) } }, icon("download", "sm"), "全部表格（Word）"));
+  if (tbls.length >= 2) extras.push(h("button.btn-ghost.viz-toggle", { type: "button", title: T("全部表格存为一个 Word 文档"), on: { click: () => saveTables(tbls.map((x) => x.s), T`${commonTitle(charts.map((x) => x.s)) || T("研究")}-表格`) } }, icon("download", "sm"), T("全部表格（Word）")));
   if (items.length === 1) return h("div.charts", items[0].card);
   const slot = h("div.chart-slot");
-  const tabs = items.map((x) => h("button", { type: "button", role: "tab", title: x.s.title || `${x.kind}${x.n}` }, `${x.kind}${x.n} ${x.s.title || (x.kind === "图" ? "图表" : "表格")}`));
+  const tabs = items.map((x) => h("button", { type: "button", role: "tab", title: x.s.title || `${x.kind}${x.n}` }, `${x.kind}${x.n} ${x.s.title || (x.kind === T("图") ? T("图表") : T("表格"))}`));
   const pick = (i, focus = false) => {
     state.at = (i + items.length) % items.length;
     tabs.forEach((t, k) => { t.setAttribute("aria-selected", String(k === state.at)); t.tabIndex = k === state.at ? 0 : -1; });
@@ -1408,8 +1409,8 @@ export function chartGallery(specs, state = { at: 0 }, tables = []) {
     if (focus) tabs[state.at].focus();
   };
   tabs.forEach((t, i) => t.addEventListener("click", () => pick(i)));
-  const label = [charts.length ? `图 ${charts.length}` : "", tbls.length ? `表 ${tbls.length}` : ""].filter(Boolean).join(" · ");
-  const row = h("div.chart-tabs", { role: "tablist", "aria-label": `图表（${label}）` }, h("span.count", label), ...tabs);
+  const label = [charts.length ? T`图 ${charts.length}` : "", tbls.length ? T`表 ${tbls.length}` : ""].filter(Boolean).join(" · ");
+  const row = h("div.chart-tabs", { role: "tablist", "aria-label": T`图表（${label}）` }, h("span.count", label), ...tabs);
   row.addEventListener("keydown", (e) => {
     if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); pick(state.at + (e.key === "ArrowRight" ? 1 : -1), true); }
   });
@@ -1419,12 +1420,12 @@ export function chartGallery(specs, state = { at: 0 }, tables = []) {
 
 /** The table behind a chart in Markdown (for a conversation exported as Markdown): at most ``limit`` rows. */
 export function toMarkdown(spec, limit = 60) {
-  const lines = [`**${spec.title || "图表"}**${spec.subtitle ? `　${spec.subtitle}` : ""}`, ""];
+  const lines = [`**${spec.title || T("图表")}**${spec.subtitle ? T`　${spec.subtitle}` : ""}`, ""];
   const cell = (x) => String(x ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ");
   let cols, rows;
   if (spec.type === "network" && spec.edges?.length) {
     const label = new Map((spec.nodes || []).map((n) => [n.id, n.label ?? n.id]));
-    cols = ["来源", "目标", "权重", "说明"];
+    cols = [T("来源"), T("目标"), T("权重"), T("说明")];
     rows = spec.edges.map((e) => [label.get(e.source) ?? e.source, label.get(e.target) ?? e.target, e.weight ?? "", e.label ?? ""]);
   } else {
     const c = spec.columns?.length ? spec.columns : Object.keys(spec.rows?.[0] || {}).map((k) => ({ key: k, label: k }));
@@ -1434,7 +1435,7 @@ export function toMarkdown(spec, limit = 60) {
   if (!cols.length) return "";
   lines.push(`| ${cols.map(cell).join(" | ")} |`, `| ${cols.map(() => "---").join(" | ")} |`);
   for (const r of rows.slice(0, limit)) lines.push(`| ${r.map(cell).join(" | ")} |`);
-  if (rows.length > limit) lines.push("", `（共 ${rows.length} 行，此处列出前 ${limit} 行）`);
+  if (rows.length > limit) lines.push("", T`（共 ${rows.length} 行，此处列出前 ${limit} 行）`);
   const foot = [spec.note, spec.source].filter(Boolean).join(" · ");
   if (foot) lines.push("", `*${foot}*`);
   return lines.join("\n");

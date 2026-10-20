@@ -6,6 +6,7 @@
 // because some providers require it back verbatim in the history.
 
 import { publicError } from "../providers.js";
+import { T } from "../i18n.js";
 
 export class Accum {
   constructor() { this.text = ""; this.mode = null; }
@@ -53,9 +54,9 @@ function errorMessage(status, body) {
     const j = JSON.parse(body);
     msg = j.error?.message || j.error?.msg || (typeof j.error === "string" ? j.error : "") || j.base_resp?.status_msg || j.message || body;
   } catch { /* not JSON */ }
-  const hint = status === 401 || status === 403 ? "（API Key 无效或无权限）" : status === 404 ? "（地址或模型名有误）"
-    : status === 429 ? "（请求过于频繁或额度不足）" : status >= 500 ? "（服务端暂时不可用）" : "";
-  return `模型服务返回 ${status}${hint}：${String(msg).slice(0, 400)}`;
+  const hint = status === 401 || status === 403 ? T("（API Key 无效或无权限）") : status === 404 ? T("（地址或模型名有误）")
+    : status === 429 ? T("（请求过于频繁或额度不足）") : status >= 500 ? T("（服务端暂时不可用）") : "";
+  return T`模型服务返回 ${status}${hint}：${String(msg).slice(0, 400)}`;
 }
 
 /** Where a request goes: straight to the provider, or through the local server's proxy. */
@@ -73,7 +74,7 @@ export const proxyHeaders = (route) => (route?.kind === "proxy" && route.token ?
  */
 export async function streamChat({ provider, messages, tools, settings, route, signal, onEvent = () => {} }) {
   const url = provider.full_url ? provider.baseUrl : `${provider.baseUrl}/chat/completions`;
-  if (!/^https?:\/\//.test(url)) throw new ProviderError(`接口地址无效：${url || "（未填写）"}`);
+  if (!/^https?:\/\//.test(url)) throw new ProviderError(T`接口地址无效：${url || T("（未填写）")}`);
   const body = { model: provider.model, messages, stream: true };
   if (tools && tools.length) {
     body.tools = tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } }));
@@ -103,10 +104,10 @@ export async function streamChat({ provider, messages, tools, settings, route, s
     if (err.name === "AbortError") throw err;
     throw new ProviderError(
       provider.relay
-        ? "无法连接道乃久默认服务：网络不通或服务暂时不可用，请稍后再试，或在“设置 → 模型”里改用自己的 API Key。"
+        ? T("无法连接道乃久默认服务：网络不通或服务暂时不可用，请稍后再试，或在“设置 → 模型”里改用自己的 API Key。")
         : route?.kind === "proxy"
-        ? `无法连接 TaoChronos 服务 ${route.serverUrl}：请确认 taochronos serve 正在运行`
-        : `无法连接 ${new URL(url).host}：网络不通，或该服务不允许浏览器直接访问（CORS）。可在设置中改为“经本地服务转发”。`,
+        ? T`无法连接 TaoChronos 服务 ${route.serverUrl}：请确认 taochronos serve 正在运行`
+        : T`无法连接 ${new URL(url).host}：网络不通，或该服务不允许浏览器直接访问（CORS）。可在设置中改为“经本地服务转发”。`,
       { retryable: true });
   }
   if (!resp.ok) {
@@ -126,7 +127,7 @@ export async function streamChat({ provider, messages, tools, settings, route, s
       // a provider that ignored stream: true (or an error delivered with status 200)
       const text = await resp.text();
       let j;
-      try { j = JSON.parse(text); } catch { throw new ProviderError(`无法解析模型服务的回复：${text.slice(0, 300)}`); }
+      try { j = JSON.parse(text); } catch { throw new ProviderError(T`无法解析模型服务的回复：${text.slice(0, 300)}`); }
       handleChunk(j, state, onEvent, true);
     } else {
       await readSSE(resp.body, signal, (data) => {
@@ -182,7 +183,7 @@ async function readSSE(stream, signal, onData) {
 function handleChunk(j, state, onEvent, whole) {
   if (j.error || (j.base_resp && j.base_resp.status_code)) {
     const msg = j.error?.message || j.error?.msg || (typeof j.error === "string" ? j.error : "") || j.base_resp?.status_msg || "unknown error";
-    throw new ProviderError(`模型服务报错：${msg}`, { status: j.base_resp?.status_code || 0, body: JSON.stringify(j).slice(0, 2000) });
+    throw new ProviderError(T`模型服务报错：${msg}`, { status: j.base_resp?.status_code || 0, body: JSON.stringify(j).slice(0, 2000) });
   }
   if (j.usage) state.usage = j.usage;
   const choice = j.choices?.[0];
@@ -251,9 +252,9 @@ function finish(state, provider) {
     if (raw) {
       try {
         args = JSON.parse(raw);
-        if (typeof args !== "object" || args === null || Array.isArray(args)) { error = "参数必须是 JSON 对象"; args = {}; }
+        if (typeof args !== "object" || args === null || Array.isArray(args)) { error = T("参数必须是 JSON 对象"); args = {}; }
       } catch (e) {
-        error = `参数不是合法的 JSON：${e.message}`;
+        error = T`参数不是合法的 JSON：${e.message}`;
       }
     }
     return { id, name: c.name, arguments: args, rawArguments: raw || "{}", error };

@@ -1,5 +1,7 @@
 // Small helpers shared by the client: DOM building, icons, formatting, storage-safe wrappers.
 
+import { EN_PAGE, T } from "./i18n.js";
+
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
@@ -44,7 +46,7 @@ export function append(el, children) {
 
 /** A progress bar at `pct` (0–100). */
 export const progressBar = (pct) =>
-  moveBar(h("span.progress", { role: "progressbar", "aria-label": "加载进度", "aria-valuemin": "0", "aria-valuemax": "100" }, h("i")), pct);
+  moveBar(h("span.progress", { role: "progressbar", "aria-label": T("加载进度"), "aria-valuemin": "0", "aria-valuemax": "100" }, h("i")), pct);
 
 /** Move the progress bar in `root` (or `root` itself) to `pct` where it is, so that it slides there (its CSS transition)
  * instead of being drawn anew; null when there is none. */
@@ -126,15 +128,16 @@ export const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 export function fmtMs(ms) {
   if (ms == null) return "";
   if (ms < 1000) return `${Math.round(ms)} ms`;
-  if (ms < 60000) return `${(ms / 1000).toFixed(ms < 10000 ? 1 : 0)} 秒`;
-  return `${Math.floor(ms / 60000)} 分 ${Math.round((ms % 60000) / 1000)} 秒`;
+  if (ms < 60000) return T`${(ms / 1000).toFixed(ms < 10000 ? 1 : 0)} 秒`;
+  return T`${Math.floor(ms / 60000)} 分 ${Math.round((ms % 60000) / 1000)} 秒`;
 }
 
 /** A count with its unit, large ones in 万 and 亿: count(2053597, "段") → "205 万段". */
 export function count(n, unit = "") {
   if (n === null || n === undefined || n === "" || Number.isNaN(Number(n))) return `? ${unit}`.trim();
   n = Number(n);
-  const [v, big] = n >= 1e8 ? [n / 1e8, "亿"] : n >= 1e4 ? [n / 1e4, "万"] : [n, ""];
+  if (EN_PAGE) return `${new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(n)} ${unit}`.trim();
+  const [v, big] = n >= 1e8 ? [n / 1e8, T("亿")] : n >= 1e4 ? [n / 1e4, T("万")] : [n, ""];
   return `${big ? Number(v.toFixed(v >= 100 ? 0 : 1)) : n} ${big}${unit}`.trim();
 }
 
@@ -142,11 +145,11 @@ export function dateGroup(ts) {
   const d = new Date(ts), now = new Date();
   const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const diff = (day(now) - day(d)) / 86400000;
-  if (diff < 1) return "今天";
-  if (diff < 2) return "昨天";
-  if (diff < 7) return "近 7 天";
-  if (diff < 30) return "近 30 天";
-  return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月`;
+  if (diff < 1) return T("今天");
+  if (diff < 2) return T("昨天");
+  if (diff < 7) return T("近 7 天");
+  if (diff < 30) return T("近 30 天");
+  return T`${d.getFullYear()} 年 ${d.getMonth() + 1} 月`;
 }
 
 export function throttleFrame(fn) {
@@ -241,21 +244,21 @@ export function passageLabel(card, pid) {
 export function yearLabel(card) {
   if (!card) return "";
   const y = card.year;
-  const when = typeof y === "number" ? (y < 0 ? `前 ${Math.round(-y)} 年` : `约 ${Math.round(y)} 年`) : "";
+  const when = typeof y === "number" ? (y < 0 ? T`前 ${Math.round(-y)} 年` : T`约 ${Math.round(y)} 年`) : "";
   return [card.dynasty, when].filter(Boolean).join(" · ");
 }
 
 // a search hit's flags in plain words (docs/adr/0023-alias-layer.md), with what they mean as the title
 const FLAG_WORDS = [
-  [/^anachronism:(.+)<(-?\d+):(edition|layer)$/u, (m) => ({ text: "年代存疑",
-    title: `「${m[1]}」约 ${m[2]} 年后才通行，此段年代更早：${m[3] === "edition" ? "其字或经后世刊本改动" : "或为后人增补，或其年代须再考"}` })],
-  [/^homonym:(.+)$/u, (m) => ({ text: "同名异物", title: `「${m[1]}」可指不止一味药，此段未能判定所指` })],
+  [/^anachronism:(.+)<(-?\d+):(edition|layer)$/u, (m) => ({ text: T("年代存疑"),
+    title: T`「${m[1]}」约 ${m[2]} 年后才通行，此段年代更早：${m[3] === "edition" ? T("其字或经后世刊本改动") : T("或为后人增补，或其年代须再考")}` })],
+  [/^homonym:(.+)$/u, (m) => ({ text: T("同名异物"), title: T`「${m[1]}」可指不止一味药，此段未能判定所指` })],
   [/^demoted:inside (.+)$/u, (m) => (m[1] === "?" // the longer name was not told: no name to show
-    ? { text: "仅见于他名之中", title: "此段只在另一个较长的名字中写到所问之名，未必指所问之药，排在后面" }
-    : { text: `仅见于「${m[1]}」`, title: `此段只在「${m[1]}」中写到所问之名，未必指所问之药，排在后面` })],
-  [/^demoted:no-context$/u, () => ({ text: "无药物语境",
-    title: "此段写到所问之名，但不在药物语境中（剂量、炮制、与他药并列等），未必指所问之药，排在后面" })],
-  [/^other-referent:(.+)$/u, (m) => ({ text: "所指不同", title: `「${m[1]}」在此段的年代指另一味药` })],
+    ? { text: T("仅见于他名之中"), title: T("此段只在另一个较长的名字中写到所问之名，未必指所问之药，排在后面") }
+    : { text: T`仅见于「${m[1]}」`, title: T`此段只在「${m[1]}」中写到所问之名，未必指所问之药，排在后面` })],
+  [/^demoted:no-context$/u, () => ({ text: T("无药物语境"),
+    title: T("此段写到所问之名，但不在药物语境中（剂量、炮制、与他药并列等），未必指所问之药，排在后面") })],
+  [/^other-referent:(.+)$/u, (m) => ({ text: T("所指不同"), title: T`「${m[1]}」在此段的年代指另一味药` })],
 ];
 
 function flagWord(flag) {
@@ -268,7 +271,7 @@ function flagWord(flag) {
 }
 
 const strings = (v) => (Array.isArray(v) ? v : [v]).filter((x) => typeof x === "string" && x);
-const quoted = (names) => names.map((s) => `「${s}」`).join("");
+const quoted = (names) => names.map((s) => T`「${s}」`).join("");
 
 /** The asked names an other-name `via` stood for: its own `for`, else those of the query's expansions searched under
  * that name, else the asked names — then the expansions' asked names — whose drug is the via's; [] when none is known
@@ -295,19 +298,19 @@ function viaEntry(v, ctx) {
   const source = strings(v.source);
   const witness = strings(v.witness);
   if (v.direction === "asked") {
-    const p = typeof v.p === "number" ? `（p = ${v.p}）` : "";
-    return { key: `asked|${v.surface}|${v.referent}`, label: `读作：${v.surface}→${v.referent}`, source, witness,
-      lead: `据上下文，此段的「${v.surface}」读作${v.referent}${p}` };
+    const p = typeof v.p === "number" ? T`（p = ${v.p}）` : "";
+    return { key: `asked|${v.surface}|${v.referent}`, label: T`读作：${v.surface}→${v.referent}`, source, witness,
+      lead: T`据上下文，此段的「${v.surface}」读作${v.referent}${p}` };
   }
   const kind = typeof v.kind === "string" && v.kind ? v.kind : null; // none: a term the lexicon only relates
-  const word = kind === null ? "相关" : kind === "异名" ? "别名" : kind;
+  const word = kind === null ? T("相关") : kind === "异名" ? T("别名") : kind;
   const writes = v.direction === "drug→alias";
   const asked = writes ? strings(v.for).filter((s) => s !== v.referent) : []; // the asked names it was searched for
   const others = (writes ? [v.surface] : askedNames(v, ctx)).filter((s) => s !== v.referent);
   // its status in words (evidence.py STATUS_WORDS): a false friend is the asked name's (a lexicon via's `for`), a
   // candidate the pair's; open and cue (a gate the passage passed) say nothing
   const concerned = asked.length ? asked : others.length ? others : [v.surface];
-  const caveat = v.status === "stop" ? `${quoted(concerned)}多作普通词语，罕作药名` : v.status === "candidate" ? "此为候选别名，未经确认" : "";
+  const caveat = v.status === "stop" ? T`${quoted(concerned)}多作普通词语，罕作药名` : v.status === "candidate" ? T("此为候选别名，未经确认") : "";
   // the asked names before an arrow, or the drug with what the passage writes (and the asked names): never one badge
   const form = writes ? (asked.length ? "writes-asked" : "writes") : "asked";
   return { key: `${word}|${v.referent}|${source[0] || ""}|${caveat}|${form}`, word, kind, referent: v.referent, writes,
@@ -323,22 +326,22 @@ function viaBadge(entries) {
   const [e] = entries;
   const all = (f) => [...new Set(entries.flatMap(f))];
   const from = all((x) => x.source);
-  const tail = [from.length ? `依据：${from.join("、")}` : "", all((x) => x.witness).map((w) => `书证 ${w}`).join("、")];
-  if (e.lead) return { text: e.label, title: [e.lead, ...tail].filter(Boolean).join("；") };
+  const tail = [from.length ? T`依据：${from.join(T("、"))}` : "", all((x) => x.witness).map((w) => T`书证 ${w}`).join(T("、"))];
+  if (e.lead) return { text: e.label, title: [e.lead, ...tail].filter(Boolean).join(T("；")) };
   const others = all((x) => x.others);
   const written = all((x) => x.surfaces);
   const asked = all((x) => x.asked);
-  const names = others.length > MAX_NAMES ? `${others.slice(0, MAX_NAMES).join("、")}等` : others.join("、");
+  const names = others.length > MAX_NAMES ? T`${others.slice(0, MAX_NAMES).join(T("、"))}等` : others.join(T("、"));
   const same = others.length === written.length && others.every((s) => written.includes(s)); // the names it writes
-  const who = same ? "" : others.length ? quoted(others) : "所问之名";
-  const relation = e.kind === null ? `${who}与${e.referent}相关`
-    : e.kind === "异名" ? `${who}即${e.referent}（异名）` : `${who}与${e.referent}：${e.kind}`;
-  const lead = `此段写作${quoted(written)}`;
-  const searched = asked.length ? `为所问${quoted(asked)}检索${e.referent}` : "";
-  const told = [names ? `写作${names}` : "", asked.length ? `所问${asked.join("、")}` : ""].filter(Boolean).join("；");
-  const text = e.writes ? `${e.word}：${e.referent}${told ? `（${told}）` : ""}` : `${e.word}：${names ? `${names}→` : ""}${e.referent}`;
+  const who = same ? "" : others.length ? quoted(others) : T("所问之名");
+  const relation = e.kind === null ? T`${who}与${e.referent}相关`
+    : e.kind === "异名" ? T`${who}即${e.referent}（异名）` : T`${who}与${e.referent}：${e.kind}`;
+  const lead = T`此段写作${quoted(written)}`;
+  const searched = asked.length ? T`为所问${quoted(asked)}检索${e.referent}` : "";
+  const told = [names ? T`写作${names}` : "", asked.length ? T`所问${asked.join(T("、"))}` : ""].filter(Boolean).join(T("；"));
+  const text = e.writes ? T`${e.word}：${e.referent}${told ? T`（${told}）` : ""}` : T`${e.word}：${names ? `${names}→` : ""}${e.referent}`;
   return { text: [text, e.source[0]].filter(Boolean).join(" · "),
-    title: [same ? `${lead}，${relation}` : `${lead}；${relation}`, searched, e.caveat, ...tail].filter(Boolean).join("；") };
+    title: [same ? T`${lead}，${relation}` : T`${lead}；${relation}`, searched, e.caveat, ...tail].filter(Boolean).join(T("；")) };
 }
 
 /** What each passage of a search result was found under, for the page (ADR 0023): {passage_id: {labels: [{text,
@@ -383,10 +386,10 @@ const FLAG_HEAD = /^(年代存疑|同名异物|所指不同)（/u; // a flag's w
 function labelsFound(labels) {
   const all = strings(labels);
   if (!all.length) return null;
-  const legend = "via 甲→乙：所问为甲，经乙（所指之药）检出；via 乙（写作丙）：检索乙本身（或未记所问之名）时检出，此段写作丙；"
-    + "读作 甲→乙：多义之名甲在此段的读法";
+  const legend = T("via 甲→乙：所问为甲，经乙（所指之药）检出；via 乙（写作丙）：检索乙本身（或未记所问之名）时检出，此段写作丙；")
+    + T("读作 甲→乙：多义之名甲在此段的读法");
   return {
-    labels: all.filter((s) => VIA_LABEL.test(s)).map((s) => ({ text: s, title: `${s}。${legend}` })),
+    labels: all.filter((s) => VIA_LABEL.test(s)).map((s) => ({ text: s, title: T`${s}。${legend}` })),
     flags: all.filter((s) => !VIA_LABEL.test(s)).map((s) => ({ text: FLAG_HEAD.exec(s)?.[1] || s, title: s })),
   };
 }
@@ -425,5 +428,5 @@ export function foundBadges(found) {
 export function prettyJSON(value, limit = 60000) {
   let s;
   try { s = JSON.stringify(value, null, 2); } catch { s = String(value); }
-  return s && s.length > limit ? s.slice(0, limit) + `\n…（已截断，共 ${s.length} 字符）` : s;
+  return s && s.length > limit ? s.slice(0, limit) + T`\n…（已截断，共 ${s.length} 字符）` : s;
 }

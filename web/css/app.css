@@ -282,6 +282,27 @@ kbd { font: 11px var(--font-mono); color: var(--ink-3); border: 1px solid var(--
   position: relative; z-index: 3;
 }
 .main.scrolled .topbar { border-bottom-color: var(--line); background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(8px); }
+/* the site switch: TaoChronos (this site) | TCMScience; it gives way to the conversation's title once one is open */
+.topbar-center { flex: 1; min-width: 0; display: flex; justify-content: center; }
+.topbar-center:has(.title:not(:empty)) .site-switch { display: none; }
+.topbar-center .title:empty { display: none; }
+.site-switch { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; }
+.site-switch a {
+  position: relative; padding: 4px 12px; border-radius: 999px;
+  font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--ink-2); text-decoration: none; white-space: nowrap;
+}
+.site-switch a:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.site-switch a.on { color: var(--ochre); background: var(--ochre-soft); }
+.site-switch a::after {
+  content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: min(360px, 80vw); white-space: pre-line; text-align: center;
+  padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 500; letter-spacing: 0; line-height: 1.4;
+  color: var(--surface); background: var(--ink); box-shadow: 0 4px 14px rgb(0 0 0 / .18);
+  opacity: 0; visibility: hidden; transition: opacity .12s; pointer-events: none; z-index: 10;
+}
+.site-switch a:hover::after, .site-switch a:focus-visible::after { opacity: 1; visibility: visible; }
+.lang-btn { padding: 4px 9px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.lang-btn:hover { color: var(--ink); border-color: var(--line-2); }
 .topbar .title { flex: 1; min-width: 0; text-align: center; font-weight: 560; font-size: 14.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 8px; }
 .model-chip {
   display: inline-flex; align-items: center; gap: 8px;
@@ -776,7 +797,14 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(2px); }
   .thread-inner { padding: 12px 16px 200px; }
   .topbar { padding: 0 8px; }
   .topbar .title { display: none; }
-  .model-chip { max-width: 58vw; }
+  /* the site switch on a row of its own under the buttons, always shown (the title is not) */
+  .topbar { flex-wrap: wrap; height: auto; min-height: 54px; row-gap: 0; }
+  .topbar > :not(.topbar-center) { margin-block: 9px; }
+  .topbar-center { order: 1; flex-basis: 100%; padding-bottom: 8px; }
+  .topbar-center:has(.title:not(:empty)) .site-switch { display: inline-flex; }
+  .lang-btn { margin-left: auto; }
+  .model-chip { min-width: 0; max-width: calc(100vw - 190px); }
+  .model-chip .icon { display: none; }
   .starters { grid-template-columns: minmax(0, 1fr); }
   .starter:nth-child(n+5) { display: none; }
   .msg.assistant { grid-template-columns: minmax(0, 1fr); gap: 6px; }

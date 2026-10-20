@@ -67,7 +67,14 @@
     <header class="topbar">
       <button id="toggle-sidebar" class="icon-btn" type="button" title="侧栏" aria-label="打开或收起对话列表"></button>
       <button id="model-chip" class="model-chip" type="button" title="Tao-R1 · 模型设置"><img class="seal" src="assets/logo.svg" alt=""><span class="nm">Tao-R1</span></button>
-      <div id="conv-title" class="title"></div>
+      <div class="topbar-center">
+        <nav class="site-switch" aria-label="切换站点 · Switch site">
+          <a class="on" href="https://chat.impf.ai/" aria-current="page" data-tip="中医古籍科学知识发现&#10;Scientific Knowledge Discovery from Ancient TCM Texts">TaoChronos</a>
+          <a href="https://science.impf.ai/" data-tip="中医药科学研究平台&#10;Scientific Research Platform for Traditional Chinese Medicine">TCMScience</a>
+        </nav>
+        <div id="conv-title" class="title"></div>
+      </div>
+      <button id="lang-btn" class="lang-btn" type="button" title="切换为 English" aria-label="切换为 English" lang="en">EN</button>
       <button id="toggle-drawer" class="icon-btn" type="button" title="证据 · 研究 · 工具台 (Ctrl+J)" aria-label="证据、研究与工具台"></button>
       <button id="new-chat-top" class="icon-btn" type="button" title="新对话" aria-label="新对话"></button>
     </header>

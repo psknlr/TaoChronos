@@ -1,5 +1,7 @@
 // Downloading and unpacking the 要籍语料 (xz): shared by the runtime's worker and the worker that unpacks for it.
 
+import { T } from "./i18n.js";
+
 /** The response body read at full speed into memory, as a stream its consumer drains whenever it is ready: the download
  * never waits for the unpacking. */
 export function spool(body, onBytes) {
@@ -54,11 +56,11 @@ export async function readAll(stream, size, onBytes) {
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
-    if (pos + value.length > size) throw new Error("要籍语料比清单所记的大：请刷新重试");
+    if (pos + value.length > size) throw new Error(T("要籍语料比清单所记的大：请刷新重试"));
     buf.set(value, pos);
     pos += value.length;
     onBytes?.(pos);
   }
-  if (pos !== size) throw new Error(`要籍语料不完整（${pos} / ${size} 字节）：请刷新重试`);
+  if (pos !== size) throw new Error(T`要籍语料不完整（${pos} / ${size} 字节）：请刷新重试`);
   return buf;
 }
