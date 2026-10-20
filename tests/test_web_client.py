@@ -833,7 +833,7 @@ def test_claude_through_the_official_sdk(tmp_path):
                 browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
             except Error as exc:
                 pytest.skip(f"no Chromium for Playwright: {exc}")
-            ctx = browser.new_context(viewport={"width": 1280, "height": 860})
+            ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN")
             ctx.route("https://cdn.jsdelivr.net/**", via_python)
             ctx.add_init_script(f"localStorage.setItem('tc.settings', {json.dumps(json.dumps(settings))});")
             page = ctx.new_page()
@@ -891,7 +891,7 @@ def test_a_published_page_connects_to_a_server_and_remembers_it(tmp_path):
                 browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
             except Error as exc:
                 pytest.skip(f"no Chromium for Playwright: {exc}")
-            page = browser.new_context(viewport={"width": 1280, "height": 860}).new_page()
+            page = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN").new_page()
             errors: list[str] = []
             page.on("pageerror", lambda e: errors.append(str(e)))
             page.goto(f"http://127.0.0.1:{pages.server_address[1]}/")
@@ -916,19 +916,19 @@ def test_a_published_page_connects_to_a_server_and_remembers_it(tmp_path):
             page.click(".modal-foot .btn.secondary")
             assert json.loads(page.evaluate("localStorage.getItem('tc.settings')"))["runtime"] == "auto"
 
-            page = browser.new_context(viewport={"width": 1280, "height": 860}).new_page()
+            page = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN").new_page()
             page.on("pageerror", lambda e: errors.append(str(e)))
             page.goto(f"http://127.0.0.1:{locked.server_address[1]}/#token=t0ken")
             page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
             assert "token" not in page.url
             assert json.loads(page.evaluate("localStorage.getItem('tc.settings')"))["serverToken"] == "t0ken"
-            page = browser.new_context(viewport={"width": 1280, "height": 860}).new_page()
+            page = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN").new_page()
             page.goto(f"http://127.0.0.1:{locked.server_address[1]}/")
             page.wait_for_selector(".runtime-pill .dot.bad", timeout=30000)
             assert "访问令牌" in page.inner_text(".hero .status")  # what went wrong is said, and how to put it right
 
             # the server this browser knew is down, so the browser's own runtime takes over: the bar never goes back
-            ctx = browser.new_context(viewport={"width": 1280, "height": 860})
+            ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN")
             ctx.add_init_script("""localStorage.setItem('tc.server', JSON.stringify('http://127.0.0.1:9'));
               window.__bars = [];
               const seen = (n) => n.nodeType === 1 && [n, ...n.querySelectorAll('[role=progressbar]')]
@@ -989,7 +989,7 @@ def test_an_api_set_by_hand(tmp_path):
                 browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
             except Error as exc:
                 pytest.skip(f"no Chromium for Playwright: {exc}")
-            page = browser.new_context(viewport={"width": 1280, "height": 860}).new_page()
+            page = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN").new_page()
             errors: list[str] = []
             page.on("pageerror", lambda e: errors.append(str(e)))
             page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
@@ -1308,7 +1308,7 @@ def test_the_published_site_runs_on_the_canon_corpus_in_the_browser(tmp_path):
         with sync_playwright() as p:
             browser = p.chromium.launch(**({"executable_path": exe} if exe else {}),
                                         args=["--host-resolver-rules=MAP taochronos.test 127.0.0.1"])
-            ctx = browser.new_context(viewport={"width": 1280, "height": 860})
+            ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN")
             ctx.add_init_script(f"localStorage.setItem('tc.settings', {json.dumps(json.dumps(settings))});")
             page = ctx.new_page()
             fetched = []
@@ -1700,3 +1700,51 @@ def test_my_data_stays_in_the_browser_when_the_site_answers(tmp_path):
         srv.server_close()
         python.shutdown()
         mock.shutdown()
+
+
+def test_the_page_in_english(tmp_path):
+    """A browser not set to Chinese reads the page in English, and the switch in the top bar changes it back and forth
+    (web/js/i18n.js); a browser set to Chinese, as the tests above, reads it in Chinese."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=ROOT / "web", home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            page = browser.new_context(viewport={"width": 1280, "height": 860}, locale="en-SG").new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            assert page.evaluate("document.documentElement.lang") == "en"
+            assert page.inner_text("#new-chat").startswith("New chat")
+            assert page.get_attribute("#input", "placeholder").startswith("Ask a question")
+            assert page.inner_text(".runtime-pill") == "Runtime\nReady"
+            assert "Formula origins" in page.inner_text(".starters")  # the server's starters, in English
+            page.click("#settings-btn")
+            assert "Model" in page.inner_text(".settings-pane")
+            page.keyboard.press("Escape")
+            assert page.inner_text("#lang-btn") == "中文"
+            page.click("#lang-btn")  # to Chinese, kept in this browser
+            page.wait_for_function("document.documentElement.lang === 'zh-CN'", timeout=30000)
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            assert "新对话" in page.inner_text("#new-chat") and page.inner_text("#lang-btn") == "EN"
+            assert page.evaluate("localStorage.getItem('tc.lang')") == '"zh"'
+            page.goto(f"http://127.0.0.1:{srv.server_address[1]}/?lang=en")  # a link can ask for English
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            assert page.inner_text("#new-chat").startswith("New chat")
+            assert not errors, errors
+            browser.close()
+    finally:
+        srv.shutdown()

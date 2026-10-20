@@ -9,6 +9,7 @@
 import { chartCard, invalid } from "./chart.js";
 import { specFromTable, tableTools } from "./table.js";
 import { append, h, icon } from "./util.js";
+import { T } from "./i18n.js";
 
 const FENCE = /^(\s{0,3})(`{3,}|~{3,})\s*([\w+#.-]*)\s*$/;
 const HEADING = /^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$/;
@@ -111,7 +112,7 @@ function startsBlock(line, next) {
 function codeBlock(code, lang) {
   const pre = h("pre", h("code", { dataset: { lang: lang || "" } }, code));
   if (lang) pre.append(h("span.lang", lang));
-  pre.append(h("button.icon-btn.copy", { type: "button", title: "复制代码", "aria-label": "复制代码", dataset: { copy: "code" } }, icon("copy", "sm")));
+  pre.append(h("button.icon-btn.copy", { type: "button", title: T("复制代码"), "aria-label": T("复制代码"), dataset: { copy: "code" } }, icon("copy", "sm")));
   return pre;
 }
 
@@ -119,10 +120,10 @@ function codeBlock(code, lang) {
 const drawn = new Map();
 
 function chartBlock(code, closed, opts) {
-  if (!closed && opts.streaming) return [h("div.chart-wait", h("span.spinner"), "正在绘制图表…")];
+  if (!closed && opts.streaming) return [h("div.chart-wait", h("span.spinner"), T("正在绘制图表…"))];
   let spec = null, why;
-  try { spec = JSON.parse(code); why = invalid(spec); } catch (err) { why = `规格不是合法的 JSON（${err.message}）`; }
-  if (why) return [codeBlock(code, "chart"), h("p.viz-note", `未能绘制此图：${why}`)];
+  try { spec = JSON.parse(code); why = invalid(spec); } catch (err) { why = T`规格不是合法的 JSON（${err.message}）`; }
+  if (why) return [codeBlock(code, "chart"), h("p.viz-note", T`未能绘制此图：${why}`)];
   let card = drawn.get(code);
   if (!card || card.isConnected) { // the same chart twice on the page: a second card
     card = chartCard(spec);

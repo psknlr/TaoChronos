@@ -8,6 +8,8 @@
 // user's machine: in this browser, or in a server on this machine (`local`).  The page reads the data with a runtime
 // that is (app.js, dataRuntime).
 
+import { LANG, T } from "./i18n.js";
+
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
 export function isLoopback(url) {
@@ -17,10 +19,10 @@ export function isLoopback(url) {
 /** Why this page cannot reach a server at `url` at all, if it cannot. */
 export function unreachable(url) {
   let u;
-  try { u = new URL(url); } catch { return `服务地址无效：${url}`; }
-  if (!/^https?:$/.test(u.protocol)) return `服务地址须以 http:// 或 https:// 开头：${url}`;
+  try { u = new URL(url); } catch { return T`服务地址无效：${url}`; }
+  if (!/^https?:$/.test(u.protocol)) return T`服务地址须以 http:// 或 https:// 开头：${url}`;
   if (location.protocol === "https:" && u.protocol === "http:" && !LOOPBACK.has(u.hostname)) {
-    return `本页经 HTTPS 打开，浏览器不允许它访问其他机器上的 http:// 地址：请直接打开该服务自己的网页（${u.origin}/），或为服务配置 HTTPS`;
+    return T`本页经 HTTPS 打开，浏览器不允许它访问其他机器上的 http:// 地址：请直接打开该服务自己的网页（${u.origin}/），或为服务配置 HTTPS`;
   }
   return null;
 }
@@ -46,7 +48,7 @@ export async function probeServer(url, token = "", timeout = 2500) {
 export class BrowserRuntime {
   constructor() {
     this.kind = "browser";
-    this.label = "浏览器内";
+    this.label = T("浏览器内");
     this.worker = null;
     this.pending = new Map();
     this.seq = 0;
@@ -61,10 +63,10 @@ export class BrowserRuntime {
 
   start() {
     if (this.ready) return this.ready;
-    this._status({ status: "loading", progress: 2, message: "启动运行环境" });
+    this._status({ status: "loading", progress: 2, message: T("启动运行环境") });
     this.boot ||= fetch(new URL("../runtime/boot.json", import.meta.url), { cache: "no-cache" })
       .then((r) => (r.ok ? r.json() : null)).catch(() => null);
-    this.worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module", name: "taochronos" });
+    this.worker = new Worker(new URL(`./worker.js?lang=${LANG}`, import.meta.url), { type: "module", name: "taochronos" });
     this.worker.onmessage = (e) => {
       const msg = e.data || {};
       if (msg.type === "progress") { this._status({ status: "loading", progress: msg.progress, message: msg.message }); return; }
@@ -76,7 +78,7 @@ export class BrowserRuntime {
       else p.resolve(msg.result);
     };
     this.worker.onerror = (e) => {
-      this._status({ status: "error", message: e.message || "运行环境出错" });
+      this._status({ status: "error", message: e.message || T("运行环境出错") });
       for (const p of this.pending.values()) p.reject(new Error(e.message || "worker error"));
       this.pending.clear();
     };
@@ -89,7 +91,7 @@ export class BrowserRuntime {
   stop() {
     this.worker?.terminate();
     this.worker = null;
-    for (const p of this.pending.values()) p.reject(new Error("运行环境已切换"));
+    for (const p of this.pending.values()) p.reject(new Error(T("运行环境已切换")));
     this.pending.clear();
     this.ready = null;
   }
@@ -142,7 +144,7 @@ export class ServerRuntime {
     this.kind = "server";
     this.url = url.replace(/\/+$/, "");
     this.token = token || "";
-    this.label = label || (isLoopback(this.url) ? "本地服务" : "远程服务");
+    this.label = label || (isLoopback(this.url) ? T("本地服务") : T("远程服务"));
     this.state = { status: "idle", progress: 0, message: "" };
     this.listeners = new Set();
     this.ready = null;
@@ -176,15 +178,15 @@ export class ServerRuntime {
       if (this.fallback && refusal(r, j)) throw Object.assign(new Error(j.error || `HTTP ${r.status}`), { unavailable: true, refused: j.blocked ? "blocked" : "daily" });
       if (r.status === 401 && j.token_required) {
         throw Object.assign(new Error(this.token
-          ? "访问令牌不对：请核对 taochronos serve 启动时打印的令牌（设置 → 运行环境）"
-          : "这个服务需要访问令牌：请填写 taochronos serve 启动时打印的令牌（设置 → 运行环境）"), { tokenRequired: true });
+          ? T("访问令牌不对：请核对 taochronos serve 启动时打印的令牌（设置 → 运行环境）")
+          : T("这个服务需要访问令牌：请填写 taochronos serve 启动时打印的令牌（设置 → 运行环境）")), { tokenRequired: true });
       }
       if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
       return j;
     } catch (err) {
-      if (err.name === "AbortError" && !init.signal) throw Object.assign(new Error(`连接 ${this.url} 超时`), { unavailable: true });
+      if (err.name === "AbortError" && !init.signal) throw Object.assign(new Error(T`连接 ${this.url} 超时`), { unavailable: true });
       if (err instanceof TypeError) {
-        throw Object.assign(new Error(this.fallback ? `无法连接 ${this.url}` : `无法连接 ${this.url}：请确认 taochronos serve 正在运行（网页由 HTTPS 打开时，浏览器可能会询问是否允许访问本机网络）`), { unavailable: true });
+        throw Object.assign(new Error(this.fallback ? T`无法连接 ${this.url}` : T`无法连接 ${this.url}：请确认 taochronos serve 正在运行（网页由 HTTPS 打开时，浏览器可能会询问是否允许访问本机网络）`), { unavailable: true });
       }
       throw err;
     } finally {
@@ -194,7 +196,7 @@ export class ServerRuntime {
 
   start() {
     if (this.ready) return this.ready;
-    this._status({ status: "loading", progress: 30, message: `连接${this.label}` });
+    this._status({ status: "loading", progress: 30, message: T`连接${this.label}` });
     this.ready = this._fetch("/api/info", {}, 30000)
       .then((info) => { this.info_ = info; this._status({ status: "ready", progress: 100, message: "" }); return info; })
       .catch((err) => { this._status({ status: "error", message: err.message }); this.ready = null; throw err; });
@@ -241,7 +243,7 @@ export class ServerRuntime {
       const st = await this._fetch(`/api/research/${job}`);
       onProgress?.(st);
       if (st.status === "done" || st.status === "error") return st.outcome;
-      if (st.status === "unknown") throw new Error("研究任务已丢失（服务是否重启过？）");
+      if (st.status === "unknown") throw new Error(T("研究任务已丢失（服务是否重启过？）"));
     }
   }
 }

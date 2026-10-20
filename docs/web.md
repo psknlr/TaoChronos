@@ -223,6 +223,17 @@ Keyboard: Enter sends, Shift+Enter breaks the line (input methods are respected)
 conversation, Ctrl/⌘+B the conversation list, Ctrl/⌘+J the side panel, `/` focuses the input.  Conversations are kept in
 this browser (IndexedDB); **设置 → 数据** exports and imports them (JSON) or one as Markdown.
 
+### 中文 · English
+
+The page is in Chinese for a browser set to Chinese and in English for any other; the **EN / 中文** button in the top
+bar switches it (kept in this browser as `tc.lang`), and a link can ask for one with `?lang=en` or `?lang=zh`.  The
+code is written in Chinese: every string a visitor reads goes through `T` (`web/js/i18n.js`), which looks its English up
+in `web/js/i18n-en.js` by the Chinese (a template's `{0}`, `{1}`… are its values); a string with no English there is
+shown in Chinese, and a Chinese page does not fetch the English at all.  On an English page the model is asked to answer
+in English, quoting the classics in the original Chinese with a translation; the corpus is searched in Chinese as
+always.  The About page (`about.html`) carries both languages.  The top bar's **TaoChronos | TCMScience** switch links
+this site (chat.impf.ai) and TCMScience (science.impf.ai), each with its description in both languages on hover.
+
 ## 别名 — a drug's other names
 
 `classics.search` reads a drug's other names from the alias layer ([ADR 0023](adr/0023-alias-layer.md),

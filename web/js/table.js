@@ -7,6 +7,7 @@
 
 import { zip } from "./bytes.js";
 import { downloadBlob, download, h, icon, toast } from "./util.js";
+import { T } from "./i18n.js";
 
 const SYMBOL = /(?<![A-Za-z])(P|n|z|H|t|r|q|s|x̄|ρ)(?![A-Za-z̄])/g;
 
@@ -26,10 +27,10 @@ export function runs(text) {
 
 /** null when the specification can be printed, else why not. */
 export function invalidTable(spec) {
-  if (!spec || typeof spec !== "object" || Array.isArray(spec)) return "表格规格应为 JSON 对象";
-  if (!Array.isArray(spec.columns) || !spec.columns.length || !spec.columns.every((c) => c && typeof c.key === "string")) return "表格需要 columns";
-  if (!Array.isArray(spec.rows) || !spec.rows.length) return "表格需要 rows";
-  if (spec.rows.length > 2000 || spec.columns.length > 40) return "表格过大";
+  if (!spec || typeof spec !== "object" || Array.isArray(spec)) return T("表格规格应为 JSON 对象");
+  if (!Array.isArray(spec.columns) || !spec.columns.length || !spec.columns.every((c) => c && typeof c.key === "string")) return T("表格需要 columns");
+  if (!Array.isArray(spec.rows) || !spec.rows.length) return T("表格需要 rows");
+  if (spec.rows.length > 2000 || spec.columns.length > 40) return T("表格过大");
   return null;
 }
 
@@ -39,11 +40,11 @@ export function tablesOf(result, limit = 8) {
   return list.filter((t) => !invalidTable(t)).slice(0, limit);
 }
 
-export const caption = (spec, number) => (number !== undefined && number !== null && number !== "" ? `表${number}　${spec.title || ""}` : String(spec.title || ""));
+export const caption = (spec, number) => (number !== undefined && number !== null && number !== "" ? T`表${number}　${spec.title || ""}` : String(spec.title || ""));
 
 const cells = (spec) => spec.rows.map((r) => spec.columns.map((c) => String(r[c.key] ?? "")));
 const flatHeads = (spec) => spec.columns.map((c) => (c.group ? `${c.group} · ${c.label}` : c.label));
-const notesOf = (spec) => [...(spec.notes || []).map((n, i) => (i ? n : `注：${n}`)), ...(spec.source ? [`资料来源：${spec.source}`] : [])];
+const notesOf = (spec) => [...(spec.notes || []).map((n, i) => (i ? n : T`注：${n}`)), ...(spec.source ? [T`资料来源：${spec.source}`] : [])];
 
 /** The column heads as rows of cells {label, span, rows, col, group}: one row, or two when columns have groups. */
 export function headRows(spec) {
@@ -100,7 +101,7 @@ export function tex(text) {
 export function toLaTeX(spec, number) {
   const cols = spec.columns;
   const heads = headRows(spec);
-  const lines = [`% ${caption(spec, number)} — 需 \\usepackage{booktabs}${heads.length === 2 ? "、\\usepackage{multirow}" : ""}；中文用 ctex 宏包，以 XeLaTeX 编译`,
+  const lines = [T`% ${caption(spec, number)} — 需 \\usepackage{booktabs}${heads.length === 2 ? T("、\\usepackage{multirow}") : ""}；中文用 ctex 宏包，以 XeLaTeX 编译`,
     "\\begin{table}[htbp]", "\\centering", `\\caption{${tex(spec.title || "")}}`, `\\label{tab:${String(spec.id || "table").replace(/[^A-Za-z0-9-]/g, "-")}}`,
     `\\begin{tabular}{${cols.map((c) => ({ left: "l", right: "r", center: "c" })[c.align] || "l").join("")}}`, "\\toprule"];
   if (heads.length === 2) {
@@ -229,13 +230,13 @@ export function saveTable(spec, kind, number) {
     else if (kind === "csv") download(`${name}.csv`, toCSV(spec), "text/csv");
     else if (kind === "md") download(`${name}.md`, toMarkdown(spec, number), "text/markdown");
   } catch (err) {
-    toast(`下载失败：${err.message || err}`, "err");
+    toast(T`下载失败：${err.message || err}`, "err");
   }
 }
 
 /** All the tables of a result in one Word document. */
-export function saveTables(specs, name = "表格") {
-  try { downloadBlob(`${safeName(name)}.docx`, new Blob([docxBytes(specs)], { type: DOCX })); } catch (err) { toast(`下载失败：${err.message || err}`, "err"); }
+export function saveTables(specs, name = T("表格")) {
+  try { downloadBlob(`${safeName(name)}.docx`, new Blob([docxBytes(specs)], { type: DOCX })); } catch (err) { toast(T`下载失败：${err.message || err}`, "err"); }
 }
 
 /** Copy the table as HTML with its rules (Word, WPS) and as tab-separated text (Excel, plain text). */
@@ -245,9 +246,9 @@ export async function copyTable(spec, number) {
     if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined") {
       await navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([html], { type: "text/html" }), "text/plain": new Blob([text], { type: "text/plain" }) })]);
     } else await navigator.clipboard.writeText(text);
-    toast("已复制：粘贴到 Word 为三线表，粘贴到 Excel 为单元格");
+    toast(T("已复制：粘贴到 Word 为三线表，粘贴到 Excel 为单元格"));
   } catch {
-    toast("复制失败：浏览器未允许访问剪贴板，可改用下载", "err");
+    toast(T("复制失败：浏览器未允许访问剪贴板，可改用下载"), "err");
   }
 }
 
@@ -294,9 +295,9 @@ export function menuButton(label, items, title) {
 /** The downloads and copy of a table. */
 export function tableTools(spec, number) {
   return [
-    h("button.btn-ghost.viz-toggle", { type: "button", title: "复制：粘贴到 Word 为三线表，粘贴到 Excel 为单元格", on: { click: () => copyTable(spec, number) } }, icon("copy", "sm"), "复制"),
-    menuButton("下载", [["Word 文档（.docx）", () => saveTable(spec, "docx", number)], ["LaTeX（booktabs）", () => saveTable(spec, "tex", number)],
-      ["CSV 数据", () => saveTable(spec, "csv", number)], ["Markdown", () => saveTable(spec, "md", number)]], "下载表格"),
+    h("button.btn-ghost.viz-toggle", { type: "button", title: T("复制：粘贴到 Word 为三线表，粘贴到 Excel 为单元格"), on: { click: () => copyTable(spec, number) } }, icon("copy", "sm"), T("复制")),
+    menuButton(T("下载"), [[T("Word 文档（.docx）"), () => saveTable(spec, "docx", number)], [T("LaTeX（booktabs）"), () => saveTable(spec, "tex", number)],
+      [T("CSV 数据"), () => saveTable(spec, "csv", number)], ["Markdown", () => saveTable(spec, "md", number)]], T("下载表格")),
   ];
 }
 
@@ -304,7 +305,7 @@ export function tableTools(spec, number) {
 export function tableCard(spec, number) {
   if (invalidTable(spec)) return null;
   return h("figure.tbl-card",
-    h("figcaption", h("div.cap", h("span.title", number !== undefined ? h("b", `表${number}`) : null, number !== undefined ? "　" : "", spec.title || "表格")),
+    h("figcaption", h("div.cap", h("span.title", number !== undefined ? h("b", T`表${number}`) : null, number !== undefined ? T("　") : "", spec.title || T("表格"))),
       h("div.tools", ...tableTools(spec, number))),
     h("div.tbl-wrap", { tabindex: 0, role: "region", "aria-label": caption(spec, number) }, sciTable(spec)),
     notesOf(spec).length ? h("div.tbl-notes", ...notesOf(spec).map((n) => h("p", italic(n)))) : null);

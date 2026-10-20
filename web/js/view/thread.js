@@ -7,10 +7,11 @@ import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY } from "../brand.js";
 import { sizeLabel } from "../mydata.js";
 import { RELAY_ID } from "../providers.js";
 import { fmtMs, foundBadges, h, icon, passageLabel, prettyJSON, progressBar, replace, truncate } from "../util.js";
+import { T } from "../i18n.js";
 
 export const FAMILY = {
-  retrieval: "检索", study: "治学", knowledge: "知识", analytics: "发现", philology: "文献", validation: "核验",
-  bridge: "古今", literature: "现代", engine: "研究", meta: "目录", research: "代码", mydata: "我的资料",
+  retrieval: T("检索"), study: T("治学"), knowledge: T("知识"), analytics: T("发现"), philology: T("文献"), validation: T("核验"),
+  bridge: T("古今"), literature: T("现代"), engine: T("研究"), meta: T("目录"), research: T("代码"), mydata: T("我的资料"),
 };
 
 export function toolFamily(name, catalogIndex) {
@@ -46,34 +47,34 @@ function hero(ctx) {
   // while the runtime loads, 加载中 and one bar for the whole load; once it answers, nothing (what runs, on which corpus,
   // is in the settings' 运行环境); what went wrong, when something did, with the way to the settings
   const status = st.status === "ready" && info ? null : failed
-    ? h("div.status", h("span.dot.bad"), `运行环境未就绪：${truncate(st.message || "", 60)}`)
-    : h("div.status.loading", h("span.dot.busy"), "加载中", progressBar(st.bar));
+    ? h("div.status", h("span.dot.bad"), T`运行环境未就绪：${truncate(st.message || "", 60)}`)
+    : h("div.status.loading", h("span.dot.busy"), T("加载中"), progressBar(st.bar));
   const action = failed
-    ? h("button.hero-action", { type: "button", on: { click: ctx.onOpenRuntime } }, icon("server", "sm"), h("span", h("b", "设置运行环境")), icon("chev", "sm"))
+    ? h("button.hero-action", { type: "button", on: { click: ctx.onOpenRuntime } }, icon("server", "sm"), h("span", h("b", T("设置运行环境"))), icon("chev", "sm"))
     : null;
   return h("div.hero",
     h("img.seal", { src: "assets/logo.svg", alt: "" }),
     h("h1", AGENT),
-    h("div.model-badge", h("b", ASSISTANT), h("span", `${AGENT_EN} · 中医古籍研究智能体`)),
-    h("p.sub", "问古籍，得原文——每一条引文都可溯源、可逐字核对"),
+    h("div.model-badge", h("b", ASSISTANT), h("span", T`${AGENT_EN} · 中医古籍研究智能体`)),
+    h("p.sub", T("问古籍，得原文——每一条引文都可溯源、可逐字核对")),
     status,
     action,
     h("div.starters", (info?.starters || DEFAULT_STARTERS).map((s) =>
-      h("button.starter", { type: "button", on: { click: () => ctx.onStarter(s.prompt) } }, h("b", s.title), s.prompt))),
+      h("button.starter", { type: "button", on: { click: () => ctx.onStarter(T(s.prompt)) } }, h("b", T(s.title)), T(s.prompt)))),
     ctx.needsKey
-      ? h("p.keyhint", "开始前请先为 ", ASSISTANT, " ", h("button", { type: "button", on: { click: ctx.onOpenSettings } }, "配置底层模型的 API"),
-        "。也可以不配置模型，直接在右侧“工具台”使用全部功能。")
+      ? h("p.keyhint", T`开始前请先为 ${ASSISTANT} `, h("button", { type: "button", on: { click: ctx.onOpenSettings } }, T("配置底层模型的 API")),
+        T("。也可以不配置模型，直接在右侧“工具台”使用全部功能。"))
       : ctx.relayActive
-        ? h("p.keyhint", "已接入道乃久默认服务：无需设置，直接提问 · Enter 发送 · Shift+Enter 换行")
-        : h("p.keyhint", "Enter 发送 · Shift+Enter 换行 · ", h("kbd", "Ctrl"), " ", h("kbd", "K"), " 新对话"),
+        ? h("p.keyhint", T("已接入道乃久默认服务：无需设置，直接提问 · Enter 发送 · Shift+Enter 换行"))
+        : h("p.keyhint", T("Enter 发送 · Shift+Enter 换行 · "), h("kbd", "Ctrl"), " ", h("kbd", "K"), T(" 新对话")),
     h("p.publisher", PUBLISHED_BY),
   );
 }
 
 const DEFAULT_STARTERS = [
-  { title: "方源考", prompt: "桂枝汤的原方组成与剂量出自哪里？后世有哪些重要的加减化裁？" },
-  { title: "术语源流", prompt: "「消渴」一词在历代文献中的含义与用法如何演变？请给出各时期的原文证据。" },
-  { title: "集注比较", prompt: "比较历代注家对「太阳之为病，脉浮，头项强痛而恶寒」的解释，有哪些分歧？" },
+  { title: T("方源考"), prompt: T("桂枝汤的原方组成与剂量出自哪里？后世有哪些重要的加减化裁？") },
+  { title: T("术语源流"), prompt: T("「消渴」一词在历代文献中的含义与用法如何演变？请给出各时期的原文证据。") },
+  { title: T("集注比较"), prompt: T("比较历代注家对「太阳之为病，脉浮，头项强痛而恶寒」的解释，有哪些分歧？") },
 ];
 
 export function messageNode(m, ctx, last = false) {
@@ -83,22 +84,22 @@ export function messageNode(m, ctx, last = false) {
 function userNode(m, ctx, last) {
   const el = h("div.msg.user", { dataset: { id: m.id }, class: last ? "last" : "" });
   if (ctx.editing === m.id) {
-    const ta = h("textarea", { "aria-label": "编辑消息" }, m.text);
+    const ta = h("textarea", { "aria-label": T("编辑消息") }, m.text);
     el.append(h("div.edit-box", ta, h("div.row",
-      h("button.btn.secondary", { type: "button", on: { click: () => ctx.onEditCancel() } }, "取消"),
-      h("button.btn", { type: "button", on: { click: () => ctx.onEditSubmit(m.id, ta.value) } }, "发送"))));
+      h("button.btn.secondary", { type: "button", on: { click: () => ctx.onEditCancel() } }, T("取消")),
+      h("button.btn", { type: "button", on: { click: () => ctx.onEditSubmit(m.id, ta.value) } }, T("发送")))));
     requestAnimationFrame(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); });
     return el;
   }
-  if (m.images?.length) el.append(h("div.imgs", m.images.map((src) => h("img", { src, alt: "附图" }))));
+  if (m.images?.length) el.append(h("div.imgs", m.images.map((src) => h("img", { src, alt: T("附图") }))));
   if (m.data?.length) {
-    el.append(h("div.data-chips", m.data.map((d) => h("div.data-chip", { title: `${d.name} · ${sizeLabel(d)} · 已脱敏` },
+    el.append(h("div.data-chips", m.data.map((d) => h("div.data-chip", { title: T`${d.name} · ${sizeLabel(d)} · 已脱敏` },
       icon(d.kind === "table" ? "table" : "file", "sm"), h("span.nm", truncate(d.name, 28)), h("span.sz", sizeLabel(d))))));
   }
   el.append(h("div.bubble", m.text));
   el.append(h("div.actions",
-    h("button.icon-btn", { type: "button", title: "复制", "aria-label": "复制", on: { click: () => ctx.onCopy(m.text) } }, icon("copy", "sm")),
-    ctx.running ? null : h("button.icon-btn", { type: "button", title: "编辑后重新发送", "aria-label": "编辑", on: { click: () => ctx.onEdit(m.id) } }, icon("edit", "sm"))));
+    h("button.icon-btn", { type: "button", title: T("复制"), "aria-label": T("复制"), on: { click: () => ctx.onCopy(m.text) } }, icon("copy", "sm")),
+    ctx.running ? null : h("button.icon-btn", { type: "button", title: T("编辑后重新发送"), "aria-label": T("编辑"), on: { click: () => ctx.onEdit(m.id) } }, icon("edit", "sm"))));
   return el;
 }
 
@@ -131,21 +132,21 @@ export function fillAssistant(body, m, ctx, last) {
       body.append(md);
     }
   });
-  if (live && !segs.length) body.append(h("div.think.live", h("summary", h("span.lbl", "正在思考…"))));
+  if (live && !segs.length) body.append(h("div.think.live", h("summary", h("span.lbl", T("正在思考…")))));
   if (m.error) {
     body.append(h("div.notice.err", icon("warn"), h("div.grow", redact(m.error)),
-      ctx.running ? null : h("button.btn.secondary", { type: "button", on: { click: () => ctx.onRegenerate(m.id) } }, "重试")));
+      ctx.running ? null : h("button.btn.secondary", { type: "button", on: { click: () => ctx.onRegenerate(m.id) } }, T("重试"))));
   }
-  if (m.status === "stopped") body.append(h("div.notice.warn", icon("info"), h("div.grow", "已停止生成。")));
+  if (m.status === "stopped") body.append(h("div.notice.warn", icon("info"), h("div.grow", T("已停止生成。"))));
   if (!live) {
     const bar = verifyBar(m, ctx, renderedCites(body));
     if (bar) body.append(bar);
-    const meta = [ASSISTANT, m.rounds > 1 ? `${m.rounds} 轮` : null, m.toolCount ? `${m.toolCount} 次工具调用` : null,
+    const meta = [ASSISTANT, m.rounds > 1 ? T`${m.rounds} 轮` : null, m.toolCount ? T`${m.toolCount} 次工具调用` : null,
       m.ms ? fmtMs(m.ms) : null, m.usage?.output ? `${m.usage.input || 0}→${m.usage.output} tokens` : null].filter(Boolean).join(" · ");
     body.append(h("div.actions",
-      h("button.icon-btn", { type: "button", title: "复制回答", "aria-label": "复制回答", on: { click: () => ctx.onCopy(answerText(m)) } }, icon("copy", "sm")),
-      last && !ctx.running ? h("button.icon-btn", { type: "button", title: "重新生成", "aria-label": "重新生成", on: { click: () => ctx.onRegenerate(m.id) } }, icon("redo", "sm")) : null,
-      h("span.meta", { title: m.provider === RELAY_ID ? "道乃久默认服务" : m.model ? `底层模型 ${m.model}` : null }, meta)));
+      h("button.icon-btn", { type: "button", title: T("复制回答"), "aria-label": T("复制回答"), on: { click: () => ctx.onCopy(answerText(m)) } }, icon("copy", "sm")),
+      last && !ctx.running ? h("button.icon-btn", { type: "button", title: T("重新生成"), "aria-label": T("重新生成"), on: { click: () => ctx.onRegenerate(m.id) } }, icon("redo", "sm")) : null,
+      h("span.meta", { title: m.provider === RELAY_ID ? T("道乃久默认服务") : m.model ? T`底层模型 ${m.model}` : null }, meta)));
   }
 }
 
@@ -165,7 +166,7 @@ function thinkingNode(m, seg, k, ctx, live) {
   if (ctx.openThink.has(key)) d.open = true;
   d.addEventListener("toggle", () => { if (d.open) ctx.openThink.add(key); else ctx.openThink.delete(key); });
   const secs = seg.ms ? ` · ${fmtMs(seg.ms)}` : "";
-  d.append(h("summary", icon("chev", "sm chev"), h("span.lbl", live ? "思考中…" : "思考过程"), h("span", secs)),
+  d.append(h("summary", icon("chev", "sm chev"), h("span.lbl", live ? T("思考中…") : T("思考过程")), h("span", secs)),
     h("div.tx", redact(seg.text, { streaming: live }) || "…"));
   return d;
 }
@@ -178,8 +179,8 @@ function stepsNode(m, seg, k, ctx, live) {
   const box = h("div.steps", { class: open ? "open" : "" });
   const fams = [...new Set(calls.map((c) => c.family))].map((f) => h("span.fam", { class: f }, FAMILY[f] || f));
   const errs = calls.filter((c) => c.status === "error").length;
-  const label = running ? `正在调用工具（${calls.filter((c) => c.status === "ok" || c.status === "error").length}/${calls.length}）`
-    : `调用了 ${calls.length} 个工具${errs ? `，${errs} 个出错` : ""}`;
+  const label = running ? T`正在调用工具（${calls.filter((c) => c.status === "ok" || c.status === "error").length}/${calls.length}）`
+    : T`调用了 ${calls.length} 个工具${errs ? T`，${errs} 个出错` : ""}`;
   const head = h("button.head", { type: "button", "aria-expanded": String(open) },
     running ? h("span.spinner") : icon("tools", "sm"), h("span", label), ...fams, icon("chev", "sm chev"));
   head.addEventListener("click", () => {
@@ -211,7 +212,7 @@ function toolNode(m, c, key, ctx) {
   const t = h("div.tool", { class: open ? "open" : "" });
   const status = c.status === "running" || c.status === "preparing" ? h("span.st", h("span.spinner"))
     : c.status === "error" ? h("span.st.err", icon("x", "sm")) : h("span.st.ok", icon("check", "sm"));
-  const summary = c.status === "preparing" ? "准备参数…" : c.status === "running" ? (c.progress || "运行中…") : (c.summary || "");
+  const summary = c.status === "preparing" ? T("准备参数…") : c.status === "running" ? (c.progress || T("运行中…")) : (c.summary || "");
   const row = h("button.row", { type: "button" },
     status, h("span.fam", { class: c.family }, FAMILY[c.family] || c.family), h("span.nm", displayName(c.name)),
     h("span.sm", redact(summary)), h("span.ms", c.ms ? fmtMs(c.ms) : ""));
@@ -229,14 +230,14 @@ function toolNode(m, c, key, ctx) {
 
 function fillDetail(el, c, ctx) {
   replace(el,
-    h("h5", "参数"), h("pre.json", prettyJSON(c.args ?? {})),
-    c.error ? [h("h5", "错误"), h("pre.json", c.error)] : null,
-    c.preview ? [h("h5", "结果（模型读到的内容）"), h("pre.json", readable(c.preview))] : null,
-    c.charts?.length ? [h("h5", `图（${c.charts.length}）`), h("div.muted", { style: { fontSize: "12.5px" } }, c.charts.map((x, i) => `图${i + 1} ${x.title || "图表"}`).join("；"))] : null,
-    c.tables?.length ? [h("h5", `表（${c.tables.length}）`), h("div.muted", { style: { fontSize: "12.5px" } }, c.tables.map((x, i) => `表${i + 1} ${x.title || "表格"}`).join("；"))] : null,
-    c.citations?.length ? [h("h5", `涉及的段落（${c.citations.length}）`),
+    h("h5", T("参数")), h("pre.json", prettyJSON(c.args ?? {})),
+    c.error ? [h("h5", T("错误")), h("pre.json", c.error)] : null,
+    c.preview ? [h("h5", T("结果（模型读到的内容）")), h("pre.json", readable(c.preview))] : null,
+    c.charts?.length ? [h("h5", T`图（${c.charts.length}）`), h("div.muted", { style: { fontSize: "12.5px" } }, c.charts.map((x, i) => T`图${i + 1} ${x.title || T("图表")}`).join(T("；")))] : null,
+    c.tables?.length ? [h("h5", T`表（${c.tables.length}）`), h("div.muted", { style: { fontSize: "12.5px" } }, c.tables.map((x, i) => T`表${i + 1} ${x.title || T("表格")}`).join(T("；")))] : null,
+    c.citations?.length ? [h("h5", T`涉及的段落（${c.citations.length}）`),
       h("div.cites-row", c.citations.slice(0, 40).map((card) => foundCard(card, ctx.citeCard(card))))] : null,
-    c.research ? h("button.btn.secondary", { type: "button", style: { marginTop: "8px" }, on: { click: () => ctx.onOpenResearch(c.research) } }, icon("flask", "sm"), "在侧栏查看研究结果") : null,
+    c.research ? h("button.btn.secondary", { type: "button", style: { marginTop: "8px" }, on: { click: () => ctx.onOpenResearch(c.research) } }, icon("flask", "sm"), T("在侧栏查看研究结果")) : null,
   );
 }
 
@@ -258,11 +259,11 @@ export function verifyBar(m, ctx, ids) {
   const counts = { ok: 0, warn: 0, bad: 0, pending: 0 };
   for (const r of ids) counts[ctx.citeStatus(r.pid, r.quote)?.status || "pending"]++;
   return h("div.verify-bar", { dataset: { verify: m.id } },
-    icon("quote", "sm"), "引文核对：",
-    counts.ok ? h("span.b.ok", icon("check", "sm"), `${counts.ok} 条与原文一致`) : null,
-    counts.warn ? h("span.b.warn", icon("warn", "sm"), `${counts.warn} 条存疑`) : null,
-    counts.bad ? h("span.b.bad", icon("x", "sm"), `${counts.bad} 条查无此段`) : null,
-    counts.pending ? h("span.b", `${counts.pending} 条核对中`) : null);
+    icon("quote", "sm"), T("引文核对："),
+    counts.ok ? h("span.b.ok", icon("check", "sm"), T`${counts.ok} 条与原文一致`) : null,
+    counts.warn ? h("span.b.warn", icon("warn", "sm"), T`${counts.warn} 条存疑`) : null,
+    counts.bad ? h("span.b.bad", icon("x", "sm"), T`${counts.bad} 条查无此段`) : null,
+    counts.pending ? h("span.b", T`${counts.pending} 条核对中`) : null);
 }
 
 export function citeLabel(card, pid) {

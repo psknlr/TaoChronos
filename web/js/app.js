@@ -23,6 +23,7 @@ import {
 import { renderDrawer, reportNode } from "./view/drawer.js";
 import { openSettings } from "./view/settings.js";
 import { answerText, displayName, fillAssistant, rawAnswer, renderedCites, renderThread, toolFamily, verifyBar } from "./view/thread.js";
+import { EN_PAGE, LOCALE, setLang, T, translatePage } from "./i18n.js";
 
 // ------------------------------------------------------------------ state
 const S = {
@@ -55,7 +56,7 @@ const el = {
   app: $("#app"), sidebar: $("#sidebar"), convs: $("#convs"), search: $("#search"), pill: $("#runtime-pill"), theme: $("#theme-btn"),
   settingsBtn: $("#settings-btn"), newChat: $("#new-chat"), newChatTop: $("#new-chat-top"), collapse: $("#collapse-sidebar"),
   main: $("#main"), toggleSidebar: $("#toggle-sidebar"), modelChip: $("#model-chip"), title: $("#conv-title"),
-  toggleDrawer: $("#toggle-drawer"), thread: $("#thread"), inner: $("#thread-inner"), toBottom: $("#to-bottom"),
+  toggleDrawer: $("#toggle-drawer"), lang: $("#lang-btn"), thread: $("#thread"), inner: $("#thread-inner"), toBottom: $("#to-bottom"),
   composer: $("#composer"), input: $("#input"), send: $("#send"), attach: $("#attach"), file: $("#file"), attachments: $("#attachments"),
   attachData: $("#attach-data"), dataFile: $("#data-file"),
   hint: $("#hint"), drawer: $("#drawer"), scrim: $("#scrim"), settings: $("#settings"), report: $("#report"), consent: $("#consent"),
@@ -74,10 +75,10 @@ async function chooseRuntime() {
   if (pref === "server") return new ServerRuntime(serverUrl, token);
   if (pref === "browser") return new BrowserRuntime();
   S.here = await sameOriginServer(token);
-  if (S.here) return new ServerRuntime(S.here, token, { label: siteServer() ? "本站服务" : "", fallback: inBrowserInstead });
+  if (S.here) return new ServerRuntime(S.here, token, { label: siteServer() ? T("本站服务") : "", fallback: inBrowserInstead });
   const known = storage.get(KNOWN_SERVER, null);
   if (known) {
-    showState({ status: "loading", progress: 12, message: `寻找 TaoChronos 服务 ${known.replace(/^https?:\/\//, "")}` });
+    showState({ status: "loading", progress: 12, message: T`寻找 TaoChronos 服务 ${known.replace(/^https?:\/\//, "")}` });
     renderPill();
     if (await probeServer(known, token)) return new ServerRuntime(known, token);
   }
@@ -97,8 +98,8 @@ function inBrowserInstead(err) {
   const rt = new BrowserRuntime();
   switchRuntime(rt);
   if (err?.refused) {
-    toast(err.refused === "daily" ? "今天在本站全量语料上的查询次数已用完：改用浏览器内的要籍语料，明天恢复"
-      : "本站暂时限制了这个网络地址使用全量语料：改用浏览器内的要籍语料", "", 8000);
+    toast(err.refused === "daily" ? T("今天在本站全量语料上的查询次数已用完：改用浏览器内的要籍语料，明天恢复")
+      : T("本站暂时限制了这个网络地址使用全量语料：改用浏览器内的要籍语料"), "", 8000);
   }
   return rt;
 }
@@ -158,7 +159,7 @@ async function ensureRuntime() {
     await S.runtime.start();
   } catch (err) {
     if (await fellBack(err)) return ensureRuntime();
-    throw new Error(`TaoChronos 运行环境不可用：${err.message}`);
+    throw new Error(T`TaoChronos 运行环境不可用：${err.message}`);
   }
   S.runtimeInfo = await S.runtime.info();
   return S.runtime;
@@ -182,7 +183,7 @@ async function turnRuntime() {
       await S.runtime.start();
     } catch (err) {
       if (await fellBack(err)) return turnRuntime();
-      throw new Error(`TaoChronos 运行环境不可用：${err.message}`);
+      throw new Error(T`TaoChronos 运行环境不可用：${err.message}`);
     }
     S.runtimeInfo = await S.runtime.info();
     return S.runtime;
@@ -220,10 +221,16 @@ function needsKey() {
 
 /** The runtime's standing instructions (they end with 运行环境) and the user's own instructions.  The model underneath is
  * not named in them: asked what it is built on, 道乃久 neither names nor denies it (fixed.js, 身份). */
+// a visitor reading the page in English is answered in English; the classics are still searched, and quoted, in Chinese
+const ENGLISH = "\n\n## Answer in English\nThe user is reading this site in English. Write your answers (and any figure or table titles) in "
+  + "English. Search the corpus with Chinese terms as usual. Quote the classics in the original Chinese with their [[…]] "
+  + "citations exactly as the tools return them, and follow each quotation with an English translation. Give Chinese "
+  + "terms, formulas and herbs in pinyin with the characters, e.g. Guizhi Tang (桂枝汤).";
+
 function systemPrompt() {
   const base = S.runtimeInfo?.system_prompt || "";
   const extra = (S.settings.instructions || "").trim();
-  return `${base}${extra ? `\n\n## 用户的附加指令\n${extra}` : ""}`;
+  return `${base}${extra ? `\n\n## 用户的附加指令\n${extra}` : ""}${EN_PAGE ? ENGLISH : ""}`;
 }
 
 // ------------------------------------------------------------------ passages and citations
@@ -291,7 +298,7 @@ function queueVerify(pid, quote) {
     const card = await getPassage(pid);
     let res;
     if (!card?.ok) {
-      res = { status: "bad", label: "查无此段", mark: "✕", title: "当前语料中没有这个段落号：可能是模型编造的出处，或它来自另一个语料" };
+      res = { status: "bad", label: T("查无此段"), mark: "✕", title: T("当前语料中没有这个段落号：可能是模型编造的出处，或它来自另一个语料") };
     } else {
       const grounded = toolText(conv).includes(pid);
       if (quote && S.settings.verifyQuotes !== false) {
@@ -302,14 +309,14 @@ function queueVerify(pid, quote) {
           const [q, t] = await Promise.all([normalized(quote, null, mine), normalized(card.text, pid, mine)]);
           folded = ok = Boolean(q && t && bare(t).includes(bare(q)));
         }
-        const unseen = grounded ? "" : "（此段未经本轮工具返回）";
+        const unseen = grounded ? "" : T("（此段未经本轮工具返回）");
         res = ok
-          ? { status: "ok", label: "原文一致", mark: "✓", title: folded ? `引文与《${card.title}》原文在繁简、异体归一后一致${unseen}` : `引文与《${card.title}》原文逐字一致${unseen}` }
-          : { status: "warn", label: "与原文不符", mark: "≠", title: "引文与原文未能逐字对应（繁简、异体归一后亦然）：可能是节引、改写或误引，请点开核对" };
+          ? { status: "ok", label: T("原文一致"), mark: "✓", title: folded ? T`引文与《${card.title}》原文在繁简、异体归一后一致${unseen}` : T`引文与《${card.title}》原文逐字一致${unseen}` }
+          : { status: "warn", label: T("与原文不符"), mark: "≠", title: T("引文与原文未能逐字对应（繁简、异体归一后亦然）：可能是节引、改写或误引，请点开核对") };
       } else {
         res = grounded
-          ? { status: "ok", label: "出处已检", mark: "○", title: "出处经本轮工具返回（没有直接引文可逐字核对）" }
-          : { status: "warn", label: "未经检索", mark: "?", title: "出处存在于语料，但未经本轮工具返回" };
+          ? { status: "ok", label: T("出处已检"), mark: "○", title: T("出处经本轮工具返回（没有直接引文可逐字核对）") }
+          : { status: "warn", label: T("未经检索"), mark: "?", title: T("出处存在于语料，但未经本轮工具返回") };
       }
     }
     S.verify.set(key, res);
@@ -324,7 +331,7 @@ function citeChip(pid, quote, card) {
   const st = quote === undefined ? null : statusFor(pid, quote);
   const b = h("button.cite", {
     type: "button", class: st?.status || (quote === undefined ? "" : "pending"),
-    title: st?.title || (quote === undefined ? "查看原文" : "核对中…"),
+    title: st?.title || (quote === undefined ? T("查看原文") : T("核对中…")),
     dataset: { pid, quote: quote || "", cite: quote === undefined ? "card" : "text" },
   }, st ? h("span.mk", st.mark) : null, passageLabel(card?.ok === false ? null : card, pid));
   b.addEventListener("click", (e) => { e.stopPropagation(); openPassage(pid, quote || null); });
@@ -390,7 +397,7 @@ function registerEvidence(conv, cards) {
 }
 
 // ------------------------------------------------------------------ conversations
-function newConversation(title = "新对话") {
+function newConversation(title = T("新对话")) {
   return { id: uid("c_"), title, created: Date.now(), updated: Date.now(), pinned: false, messages: [], evidence: {}, research: [] };
 }
 
@@ -399,7 +406,7 @@ const persistNow = async (conv) => {
   try {
     await store.putConversation(conv);
   } catch (err) {
-    toast(`保存失败：${err.message}`, "err");
+    toast(T`保存失败：${err.message}`, "err");
   }
 };
 const persistSoon = debounce((conv) => persistNow(conv), 600);
@@ -435,7 +442,7 @@ function newChat() {
 }
 
 async function deleteConversation(conv) {
-  if (!confirm(`删除对话「${truncate(conv.title, 30)}」？此操作不可撤销。`)) return;
+  if (!confirm(T`删除对话「${truncate(conv.title, 30)}」？此操作不可撤销。`)) return;
   if (S.running?.convId === conv.id) stop();
   await store.deleteConversation(conv.id);
   S.list = S.list.filter((c) => c !== conv);
@@ -446,7 +453,7 @@ async function deleteConversation(conv) {
 async function send(text, images = []) {
   text = (text || "").trim();
   const data = S.ui.data.map((id) => S.data.list.find((d) => d.id === id)).filter(Boolean).map(brief);
-  if (!text && data.length) text = "请先概述我上传的资料，再建议可以做哪些分析。";
+  if (!text && data.length) text = T("请先概述我上传的资料，再建议可以做哪些分析。");
   if (!text && !images.length) return;
   if (S.running) return;
   if (!fixedReply(text, images)) { // a question the page answers itself needs no model, so no key
@@ -455,7 +462,7 @@ async function send(text, images = []) {
     if (needsKey()) {
       el.input.value = text;
       autosize();
-      toast(`请先为 ${ASSISTANT} 配置底层模型的 API Key`);
+      toast(T`请先为 ${ASSISTANT} 配置底层模型的 API Key`);
       openSettings(S, settingsCtx, "model");
       return;
     }
@@ -463,7 +470,7 @@ async function send(text, images = []) {
   if (S.relay?.ok && S.relay.logs && consent() === null) await askConsent();
   let conv = S.conv;
   if (!conv) {
-    conv = newConversation(truncate(text.replace(/\s+/g, " "), 30) || "图片");
+    conv = newConversation(truncate(text.replace(/\s+/g, " "), 30) || T("图片"));
     S.conv = conv;
     location.hash = `#/c/${conv.id}`;
   }
@@ -522,7 +529,7 @@ async function runAssistant(conv, msg) {
   } finally {
     msg.ms = Date.now() - started;
     if (hidden) msg.wire = withoutReasoning(sink);
-    for (const seg of msg.segments) for (const c of seg.calls || []) if (c.status === "running" || c.status === "preparing") { c.status = "error"; c.summary = "已停止"; }
+    for (const seg of msg.segments) for (const c of seg.calls || []) if (c.status === "running" || c.status === "preparing") { c.status = "error"; c.summary = T("已停止"); }
     S.running = null;
     touch(conv);
     await persistNow(conv);
@@ -596,7 +603,7 @@ function makeHooks(conv, msg) {
       const c = findCall(call.id);
       if (!c) return;
       const pr = p?.progress || {};
-      c.progress = `研究进行中${pr.round ? ` · 第 ${pr.round} 轮` : ""}${pr.hypotheses != null ? ` · ${pr.hypotheses} 个假说` : ""}${pr.claims != null ? ` · ${pr.claims} 条主张` : ""} · ${Math.round(p?.elapsed_s || 0)} 秒`;
+      c.progress = T`研究进行中${pr.round ? T` · 第 ${pr.round} 轮` : ""}${pr.hypotheses != null ? T` · ${pr.hypotheses} 个假说` : ""}${pr.claims != null ? T` · ${pr.claims} 条主张` : ""} · ${Math.round(p?.elapsed_s || 0)} 秒`;
       update();
     },
     toolEnd(call, out) {
@@ -604,7 +611,7 @@ function makeHooks(conv, msg) {
       if (!c) return;
       c.status = out.ok ? "ok" : "error";
       c.ms = Date.now() - (c.started || Date.now());
-      c.summary = out.ok ? out.summary || "完成" : truncate(out.error || "失败", 120);
+      c.summary = out.ok ? out.summary || T("完成") : truncate(out.error || T("失败"), 120);
       c.error = out.ok ? null : out.error;
       c.preview = (out.text || "").slice(0, 8000);
       const cites = out.ok ? withFound(out.citations, out.result) : out.citations; // a search's labels (via, flags)
@@ -626,7 +633,7 @@ function makeHooks(conv, msg) {
     retry(attempt) {
       msg.segments = msg.segments.filter((s) => s.round !== round || s.type === "tools");
       refs = Object.fromEntries(Object.entries(refs).filter(([k]) => k === "tools"));
-      toast(`连接中断，正在重试（第 ${attempt} 次）…`);
+      toast(T`连接中断，正在重试（第 ${attempt} 次）…`);
       update();
     },
     usage(u) { msg.usage = { ...u }; },
@@ -635,7 +642,7 @@ function makeHooks(conv, msg) {
       if (res.text && (!refs.text || refs.text.text !== res.text)) segment("text").text = res.text;
       update();
     },
-    limit(max) { msg.error = `已达到每轮最多 ${max} 步工具调用的上限，回答可能不完整。可在设置中调高上限。`; },
+    limit(max) { msg.error = T`已达到每轮最多 ${max} 步工具调用的上限，回答可能不完整。可在设置中调高上限。`; },
   };
 }
 
@@ -689,13 +696,13 @@ async function runResearchDirect(args) {
   if (S.researchRunning) return;
   let conv = S.conv;
   if (!conv) {
-    conv = newConversation(`研究：${truncate(args.question, 24)}`);
+    conv = newConversation(T`研究：${truncate(args.question, 24)}`);
     S.conv = conv;
     touch(conv);
     location.hash = `#/c/${conv.id}`;
   }
   const started = Date.now();
-  S.researchRunning = "研究进行中…";
+  S.researchRunning = T("研究进行中…");
   renderDrawerSoon();
   try {
     await ensureRuntime();
@@ -703,15 +710,15 @@ async function runResearchDirect(args) {
       maxChars: S.settings.resultChars,
       onProgress: (p) => {
         const pr = p?.progress || {};
-        S.researchRunning = `研究进行中${pr.round ? ` · 第 ${pr.round} 轮` : ""}${pr.hypotheses != null ? ` · ${pr.hypotheses} 个假说` : ""} · ${Math.round(p?.elapsed_s || 0)} 秒`;
+        S.researchRunning = T`研究进行中${pr.round ? T` · 第 ${pr.round} 轮` : ""}${pr.hypotheses != null ? T` · ${pr.hypotheses} 个假说` : ""} · ${Math.round(p?.elapsed_s || 0)} 秒`;
         renderDrawerSoon();
       },
     });
-    if (!out?.ok) throw new Error(out?.error || "研究失败");
+    if (!out?.ok) throw new Error(out?.error || T("研究失败"));
     addResearch(conv, out.result, Date.now() - started);
     touch(conv);
     await persistNow(conv);
-    toast("研究完成");
+    toast(T("研究完成"));
   } catch (err) {
     toast(err.message, "err", 5000);
   } finally {
@@ -793,17 +800,17 @@ const renderDataSoon = throttleFrame(() => { if (S.drawer.open && S.drawer.tab =
 function dataNotice() {
   if (noticeSeen()) return Promise.resolve(true);
   return new Promise((resolve) => {
-    const dlg = document.body.appendChild(h("dialog.data-notice", { "aria-label": "上传个人资料之前" }));
+    const dlg = document.body.appendChild(h("dialog.data-notice", { "aria-label": T("上传个人资料之前") }));
     const done = (ok) => { if (ok) setNoticeSeen(); dlg.close(); dlg.remove(); resolve(ok); };
     dlg.oncancel = (e) => { e.preventDefault(); done(false); };
     dlg.append(h("div.modal.consent", { role: "document" },
-      h("div.modal-head", icon("shield"), h("h2", "上传个人资料之前")),
-      h("div.consent-body", h("p", "你可以上传自己的资料（病案、处方、调查表、笔记……），让道乃久读取、统计和分析："),
+      h("div.modal-head", icon("shield"), h("h2", T("上传个人资料之前"))),
+      h("div.consent-body", h("p", T("你可以上传自己的资料（病案、处方、调查表、笔记……），让道乃久读取、统计和分析：")),
         h("dl.notice-list", DATA_NOTICE.flatMap(([k, v]) => [h("dt", k), h("dd", v)])),
-        h("p.muted", `支持 CSV、TSV、Excel（.xlsx）、Word（.docx）、TXT、Markdown 与 JSON，单个文件至多 ${MAX_BYTES / 1048576} MB。`)),
+        h("p.muted", T`支持 CSV、TSV、Excel（.xlsx）、Word（.docx）、TXT、Markdown 与 JSON，单个文件至多 ${MAX_BYTES / 1048576} MB。`)),
       h("div.modal-foot",
-        h("button.btn.secondary", { type: "button", on: { click: () => done(false) } }, "取消"),
-        h("button.btn", { type: "button", on: { click: () => done(true) } }, "我已了解，继续"))));
+        h("button.btn.secondary", { type: "button", on: { click: () => done(false) } }, T("取消")),
+        h("button.btn", { type: "button", on: { click: () => done(true) } }, T("我已了解，继续")))));
     dlg.showModal();
   });
 }
@@ -819,21 +826,21 @@ async function addData(files) {
   if (!files.length || S.data.busy) return;
   if (!(await dataNotice())) return;
   const rt = dataRuntime();
-  S.data.busy = files.length > 1 ? `正在读取 ${files.length} 个文件…` : `正在读取「${truncate(files[0].name, 24)}」…`;
+  S.data.busy = files.length > 1 ? T`正在读取 ${files.length} 个文件…` : T`正在读取「${truncate(files[0].name, 24)}」…`;
   renderAttachments();
   renderDataSoon();
   try {
     await rt.start();
     for (const f of files) {
-      if (f.size > MAX_BYTES) { toast(`「${f.name}」过大：单个文件至多 ${MAX_BYTES / 1048576} MB`, "err", 5000); continue; }
+      if (f.size > MAX_BYTES) { toast(T`「${f.name}」过大：单个文件至多 ${MAX_BYTES / 1048576} MB`, "err", 5000); continue; }
       const out = await rt.addData(f.name, await f.arrayBuffer());
-      if (!out?.ok) { toast(`未能读取「${f.name}」：${out?.error || "未知原因"}`, "err", 7000); continue; }
+      if (!out?.ok) { toast(T`未能读取「${f.name}」：${out?.error || T("未知原因")}`, "err", 7000); continue; }
       S.ui.data.push(out.dataset.id);
-      toast(`已读取「${truncate(f.name, 24)}」：${sizeLabel(out.dataset)}，已脱敏`);
-      if (out.kept === false) toast("此浏览器无法保存资料（隐私模式？）：关闭页面后需重新上传", "", 6000);
+      toast(T`已读取「${truncate(f.name, 24)}」：${sizeLabel(out.dataset)}，已脱敏`);
+      if (out.kept === false) toast(T("此浏览器无法保存资料（隐私模式？）：关闭页面后需重新上传"), "", 6000);
     }
   } catch (err) {
-    toast(`读取资料失败：${err.message}`, "err", 6000);
+    toast(T`读取资料失败：${err.message}`, "err", 6000);
   } finally {
     S.data.busy = null;
     await refreshData();
@@ -851,11 +858,11 @@ function attachData(id) {
 
 async function removeData(id) {
   const d = S.data.list.find((x) => x.id === id);
-  if (!confirm(`删除资料「${truncate(d?.name || id, 30)}」？对话中引用它的行与段落将无法再打开。`)) return;
+  if (!confirm(T`删除资料「${truncate(d?.name || id, 30)}」？对话中引用它的行与段落将无法再打开。`)) return;
   try {
     const out = await dataRuntime().removeData(id);
-    if (!out?.ok) throw new Error(out?.error || "删除失败");
-    toast("已删除");
+    if (!out?.ok) throw new Error(out?.error || T("删除失败"));
+    toast(T("已删除"));
   } catch (err) {
     toast(err.message, "err");
   }
@@ -864,10 +871,10 @@ async function removeData(id) {
 }
 
 async function clearData() {
-  if (!confirm("删除本浏览器中的全部资料？此操作不可撤销。")) return;
+  if (!confirm(T("删除本浏览器中的全部资料？此操作不可撤销。"))) return;
   try {
     await dataRuntime().clearData();
-    toast("已删除全部资料");
+    toast(T("已删除全部资料"));
   } catch (err) {
     toast(err.message, "err");
   }
@@ -892,19 +899,19 @@ const renderDrawerSoon = throttleFrame(() => { if (S.drawer.open) renderDrawer(e
 function openReport(run) {
   const body = h("div.modal-body", reportNode(run, threadCtx));
   el.report.replaceChildren(h("div.modal.wide",
-    h("div.modal-head", icon("scroll"), h("h2", truncate(run.result?.question || "研究报告", 60)),
-      h("button.icon-btn", { type: "button", "aria-label": "关闭", on: { click: () => el.report.close() } }, icon("x"))),
+    h("div.modal-head", icon("scroll"), h("h2", truncate(run.result?.question || T("研究报告"), 60)),
+      h("button.icon-btn", { type: "button", "aria-label": T("关闭"), on: { click: () => el.report.close() } }, icon("x"))),
     body,
     h("div.modal-foot",
-      h("span.muted", { style: { flex: 1, fontSize: "12.5px", alignSelf: "center" } }, "假说是计算推断，须经专家核验（G7）；不构成医学结论。"),
-      h("button.btn.secondary", { type: "button", on: { click: () => downloadReport(run) } }, icon("download", "sm"), "下载 Markdown"),
-      h("button.btn", { type: "button", on: { click: () => el.report.close() } }, "关闭"))));
+      h("span.muted", { style: { flex: 1, fontSize: "12.5px", alignSelf: "center" } }, T("假说是计算推断，须经专家核验（G7）；不构成医学结论。")),
+      h("button.btn.secondary", { type: "button", on: { click: () => downloadReport(run) } }, icon("download", "sm"), T("下载 Markdown")),
+      h("button.btn", { type: "button", on: { click: () => el.report.close() } }, T("关闭")))));
   el.report.onclick = (e) => { if (e.target === el.report) el.report.close(); };
   el.report.showModal();
 }
 
 function downloadReport(run) {
-  download(`TaoChronos-研究-${run.result?.session_id || run.id}.md`, run.result?.report_markdown || "", "text/markdown");
+  download(T`TaoChronos-研究-${run.result?.session_id || run.id}.md`, run.result?.report_markdown || "", "text/markdown");
 }
 
 const drawerCtx = {
@@ -918,12 +925,12 @@ const drawerCtx = {
   citeStatus: statusFor,
   bestStatus,
   toggleVertical() { S.drawer.vertical = !S.drawer.vertical; renderDrawer(el.drawer, S, drawerCtx); },
-  copy: (text) => copyText(text).then((ok) => toast(ok ? "已复制" : "复制失败")),
+  copy: (text) => copyText(text).then((ok) => toast(ok ? T("已复制") : T("复制失败"))),
   runResearch: runResearchDirect,
   openReport,
   downloadReport,
   askAbout(run) {
-    el.input.value = `关于研究会话 ${run.result?.session_id}（${run.result?.question}）：`;
+    el.input.value = T`关于研究会话 ${run.result?.session_id}（${run.result?.question}）：`;
     autosize();
     el.input.focus();
     if (mobile()) { S.drawer.open = false; renderLayout(); }
@@ -978,7 +985,7 @@ const threadCtx = {
   },
   onOpenSettings: () => openSettings(S, settingsCtx, "model"),
   onOpenRuntime: () => openSettings(S, settingsCtx, "runtime"),
-  onCopy: (text) => copyText(text).then((ok) => toast(ok ? "已复制" : "复制失败")),
+  onCopy: (text) => copyText(text).then((ok) => toast(ok ? T("已复制") : T("复制失败"))),
   onEdit(id) { S.ui.editing = id; renderMain(); },
   onEditCancel() { S.ui.editing = null; renderMain(); },
   onEditSubmit: submitEdit,
@@ -1041,11 +1048,11 @@ function renderTopbar() {
   const p = activeProvider(S.settings);
   const warn = needsKey();
   el.modelChip.classList.toggle("warn", warn);
-  replace(el.modelChip, h("img.seal", { src: "assets/logo.svg", alt: "" }), h("span.nm", ASSISTANT), warn ? h("span.tag", "未配置") : null, icon("chevdown", "sm"));
-  el.modelChip.title = `${ASSISTANT} · ${modelLabel(p)}${warn ? " · 尚未配置 API Key" : ""}`;
-  el.modelChip.setAttribute("aria-label", `${ASSISTANT} 的模型设置`);
+  replace(el.modelChip, h("img.seal", { src: "assets/logo.svg", alt: "" }), h("span.nm", ASSISTANT), warn ? h("span.tag", T("未配置")) : null, icon("chevdown", "sm"));
+  el.modelChip.title = `${ASSISTANT} · ${modelLabel(p)}${warn ? T(" · 尚未配置 API Key") : ""}`;
+  el.modelChip.setAttribute("aria-label", T`${ASSISTANT} 的模型设置`);
   el.title.textContent = S.conv?.title || "";
-  document.title = S.conv?.title ? `${S.conv.title} · ${AGENT}` : `${AGENT} · 中医古籍研究智能体`;
+  document.title = S.conv?.title ? `${S.conv.title} · ${AGENT}` : T`${AGENT} · 中医古籍研究智能体`;
 }
 
 function renderSidebar() {
@@ -1055,12 +1062,12 @@ function renderSidebar() {
     c.messages.some((m) => (m.text || answerText(m)).toLowerCase().includes(q)));
   el.convs.replaceChildren();
   if (!list.length) {
-    el.convs.append(h("div.empty-convs", q ? "没有匹配的对话" : "还没有对话。问一个问题开始吧。"));
+    el.convs.append(h("div.empty-convs", q ? T("没有匹配的对话") : T("还没有对话。问一个问题开始吧。")));
     return;
   }
   let group = null;
   for (const c of list) {
-    const g = c.pinned ? "置顶" : dateGroup(c.updated);
+    const g = c.pinned ? T("置顶") : dateGroup(c.updated);
     if (g !== group) { group = g; el.convs.append(h("div.group-label", g)); }
     el.convs.append(convItem(c));
   }
@@ -1073,7 +1080,7 @@ function convItem(c) {
     c.pinned ? icon("pin", "sm pin") : null,
     h("span.t", c.title),
     running ? h("span.spinner") : null);
-  const more = h("button.more", { type: "button", "aria-label": "更多操作", "aria-haspopup": "menu" }, icon("dots", "sm"));
+  const more = h("button.more", { type: "button", "aria-label": T("更多操作"), "aria-haspopup": "menu" }, icon("dots", "sm"));
   more.addEventListener("click", (e) => { e.stopPropagation(); convMenu(c, more, item); });
   item.append(more);
   item.addEventListener("click", () => openConversation(c.id));
@@ -1087,18 +1094,18 @@ function convMenu(c, anchor, item) {
   closeMenu();
   const r = anchor.getBoundingClientRect();
   const menu = h("div.menu", { role: "menu", style: { top: `${Math.min(r.bottom + 4, innerHeight - 200)}px`, left: `${Math.min(r.left, innerWidth - 190)}px` } },
-    h("button", { type: "button", role: "menuitem", on: { click: () => { closeMenu(); rename(c, item); } } }, icon("edit", "sm"), "重命名"),
-    h("button", { type: "button", role: "menuitem", on: { click: async () => { closeMenu(); c.pinned = !c.pinned; await persistNow(c); S.list.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.updated - a.updated); renderSidebar(); } } }, icon("pin", "sm"), c.pinned ? "取消置顶" : "置顶"),
-    h("button", { type: "button", role: "menuitem", on: { click: () => { closeMenu(); exportMarkdown(c); } } }, icon("download", "sm"), "导出 Markdown"),
+    h("button", { type: "button", role: "menuitem", on: { click: () => { closeMenu(); rename(c, item); } } }, icon("edit", "sm"), T("重命名")),
+    h("button", { type: "button", role: "menuitem", on: { click: async () => { closeMenu(); c.pinned = !c.pinned; await persistNow(c); S.list.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.updated - a.updated); renderSidebar(); } } }, icon("pin", "sm"), c.pinned ? T("取消置顶") : T("置顶")),
+    h("button", { type: "button", role: "menuitem", on: { click: () => { closeMenu(); exportMarkdown(c); } } }, icon("download", "sm"), T("导出 Markdown")),
     h("hr"),
-    h("button.danger", { type: "button", role: "menuitem", on: { click: () => { closeMenu(); deleteConversation(c); } } }, icon("trash", "sm"), "删除"));
+    h("button.danger", { type: "button", role: "menuitem", on: { click: () => { closeMenu(); deleteConversation(c); } } }, icon("trash", "sm"), T("删除")));
   document.body.append(menu);
   openMenu = menu;
   menu.querySelector("button")?.focus();
 }
 
 function rename(c, item) {
-  const input = h("input", { value: c.title, "aria-label": "对话标题" });
+  const input = h("input", { value: c.title, "aria-label": T("对话标题") });
   const t = item.querySelector(".t");
   t.replaceWith(input);
   input.focus();
@@ -1124,18 +1131,18 @@ function renderPill() {
   if (shown === "loading" && el.pill.dataset.status === "loading" && moveBar(el.pill, st.bar)) return;
   el.pill.dataset.status = shown;
   el.pill.replaceChildren(h("span.dot", { class: { ready: "ok", error: "bad", loading: "busy" }[shown] }),
-    h("span.rt", shown === "ready" ? [h("b", "运行环境"), h("span", "已就绪")]
-      : shown === "error" ? [h("b", `${S.runtime?.label || "运行环境"} · 未就绪`), h("span", truncate(st.message || "出错", 40))]
-      : [h("b", "加载中"), progressBar(st.bar)]));
-  el.pill.title = shown === "error" ? st.message || "" : "运行环境设置";
+    h("span.rt", shown === "ready" ? [h("b", T("运行环境")), h("span", T("已就绪"))]
+      : shown === "error" ? [h("b", T`${S.runtime?.label || T("运行环境")} · 未就绪`), h("span", truncate(st.message || T("出错"), 40))]
+      : [h("b", T("加载中")), progressBar(st.bar)]));
+  el.pill.title = shown === "error" ? st.message || "" : T("运行环境设置");
 }
 
 function renderComposer() {
   const running = Boolean(S.running);
   el.send.classList.toggle("stop", running);
   el.send.replaceChildren(running ? h("span.sq") : icon("up"));
-  el.send.title = running ? "停止 (Esc)" : "发送 (Enter)";
-  el.send.setAttribute("aria-label", running ? "停止生成" : "发送");
+  el.send.title = running ? T("停止 (Esc)") : T("发送 (Enter)");
+  el.send.setAttribute("aria-label", running ? T("停止生成") : T("发送"));
   el.send.disabled = !running && !el.input.value.trim() && !S.ui.attachments.length && !S.ui.data.length;
   const p = activeProvider(S.settings);
   el.attach.hidden = !p.vision;
@@ -1151,13 +1158,13 @@ function renderAttachments() {
   const data = S.ui.data.map((id) => S.data.list.find((d) => d.id === id)).filter(Boolean);
   el.attachments.hidden = !S.ui.attachments.length && !data.length && !S.data.busy;
   el.attachments.replaceChildren(
-    ...S.ui.attachments.map((src, k) => h("div.attachment", h("img", { src, alt: "附图" }),
-      h("button", { type: "button", "aria-label": "移除图片", on: { click: () => { S.ui.attachments.splice(k, 1); renderAttachments(); renderComposer(); } } }, "×"))),
-    ...data.map((d) => h("div.data-chip", { title: `${d.name} · ${sizeLabel(d)} · 已脱敏` }, icon(d.kind === "table" ? "table" : "file", "sm"),
+    ...S.ui.attachments.map((src, k) => h("div.attachment", h("img", { src, alt: T("附图") }),
+      h("button", { type: "button", "aria-label": T("移除图片"), on: { click: () => { S.ui.attachments.splice(k, 1); renderAttachments(); renderComposer(); } } }, "×"))),
+    ...data.map((d) => h("div.data-chip", { title: T`${d.name} · ${sizeLabel(d)} · 已脱敏` }, icon(d.kind === "table" ? "table" : "file", "sm"),
       h("span.nm", truncate(d.name, 28)), h("span.sz", sizeLabel(d)),
-      h("button", { type: "button", "aria-label": `不附上「${d.name}」`, on: { click: () => { S.ui.data = S.ui.data.filter((x) => x !== d.id); renderAttachments(); renderComposer(); } } }, "×"))),
+      h("button", { type: "button", "aria-label": T`不附上「${d.name}」`, on: { click: () => { S.ui.data = S.ui.data.filter((x) => x !== d.id); renderAttachments(); renderComposer(); } } }, "×"))),
     ...(S.data.busy ? [h("div.data-chip.busy", h("span.spinner"), h("span.nm", S.data.busy),
-      S.data.loading ? h("span.sz", truncate(S.data.loading.message || "准备本机运行环境", 30)) : null)] : []));
+      S.data.loading ? h("span.sz", truncate(S.data.loading.message || T("准备本机运行环境"), 30)) : null)] : []));
 }
 
 // ------------------------------------------------------------------ scrolling
@@ -1182,9 +1189,9 @@ function autosize() {
 
 async function addImages(files) {
   const p = activeProvider(S.settings);
-  if (!p.vision) { toast("当前模型不支持图片输入"); return; }
+  if (!p.vision) { toast(T("当前模型不支持图片输入")); return; }
   for (const f of [...files].filter((x) => x.type.startsWith("image/")).slice(0, 4)) {
-    try { S.ui.attachments.push(await shrink(f)); } catch { toast(`无法读取图片 ${f.name}`, "err"); }
+    try { S.ui.attachments.push(await shrink(f)); } catch { toast(T`无法读取图片 ${f.name}`, "err"); }
   }
   renderAttachments();
   renderComposer();
@@ -1299,21 +1306,21 @@ async function checkRelay(timeouts) {
 
 function askConsent() {
   return new Promise((resolve) => {
-    const dlg = el.consent ||= document.body.appendChild(h("dialog#consent", { "aria-label": "对话记录说明" })); // an index.html cached from before
+    const dlg = el.consent ||= document.body.appendChild(h("dialog#consent", { "aria-label": T("对话记录说明") })); // an index.html cached from before
     const done = (agreed) => {
       setConsent(agreed);
       dlg.close();
-      toast(agreed ? "已同意记录。可随时在“设置 → 数据”里更改" : "不记录。可随时在“设置 → 数据”里更改");
+      toast(agreed ? T("已同意记录。可随时在“设置 → 数据”里更改") : T("不记录。可随时在“设置 → 数据”里更改"));
       resolve(agreed);
     };
     dlg.oncancel = (e) => { e.preventDefault(); done(false); };
     dlg.replaceChildren(h("div.modal.consent", { role: "document" },
-      h("div.modal-head", h("h2", "对话记录说明")),
+      h("div.modal-head", h("h2", T("对话记录说明"))),
       h("div.consent-body", ...NOTICE.map((t) => h("p", t)),
-        h("p.muted", "你的选择只保存在本浏览器，可随时在“设置 → 数据”里更改；不记录也可以照常使用。")),
+        h("p.muted", T("你的选择只保存在本浏览器，可随时在“设置 → 数据”里更改；不记录也可以照常使用。"))),
       h("div.modal-foot",
-        h("button.btn.secondary", { type: "button", on: { click: () => done(false) } }, "不记录"),
-        h("button.btn", { type: "button", on: { click: () => done(true) } }, "同意并继续"))));
+        h("button.btn.secondary", { type: "button", on: { click: () => done(false) } }, T("不记录")),
+        h("button.btn", { type: "button", on: { click: () => done(true) } }, T("同意并继续")))));
     dlg.showModal();
   });
 }
@@ -1376,24 +1383,24 @@ const settingsCtx = {
     if (before.runtime !== draft.runtime || before.serverUrl !== draft.serverUrl || before.serverToken !== draft.serverToken) switchRuntime();
     if (before.verifyQuotes !== draft.verifyQuotes) S.verify.clear();
     renderAll();
-    toast("设置已保存");
+    toast(T("设置已保存"));
   },
   async testModel(draft) {
     const p = activeProvider(draft);
-    if (!p.apiKey && !p.key_optional && !(draft.route === "proxy" && S.runtimeInfo?.env_keys)) return { ok: false, message: "请先填写 API Key" };
+    if (!p.apiKey && !p.key_optional && !(draft.route === "proxy" && S.runtimeInfo?.env_keys)) return { ok: false, message: T("请先填写 API Key") };
     const started = Date.now();
     const settings = { ...draft, maxTokens: 400, thinking: false };
     const route = routeFor(draft);
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 45000);
     try {
-      const messages = [{ role: "user", content: "请只回复两个字：可以" }];
+      const messages = [{ role: "user", content: T("请只回复两个字：可以") }];
       const res = p.format === "anthropic"
-        ? await streamClaude({ provider: p, system: "你是一个连接测试。", messages, tools: [], settings, route, signal: ctl.signal })
-        : await streamChat({ provider: p, messages: [{ role: "system", content: "你是一个连接测试。" }, ...messages], tools: [], settings, route, signal: ctl.signal });
-      return { ok: true, message: `连接成功 · ${p.relay ? p.label : res.model || p.model} · ${fmtMs(Date.now() - started)} · 回复「${truncate(res.text || res.thinking || "（空）", 40)}」` };
+        ? await streamClaude({ provider: p, system: T("你是一个连接测试。"), messages, tools: [], settings, route, signal: ctl.signal })
+        : await streamChat({ provider: p, messages: [{ role: "system", content: T("你是一个连接测试。") }, ...messages], tools: [], settings, route, signal: ctl.signal });
+      return { ok: true, message: T`连接成功 · ${p.relay ? p.label : res.model || p.model} · ${fmtMs(Date.now() - started)} · 回复「${truncate(res.text || res.thinking || T("（空）"), 40)}」` };
     } catch (err) {
-      return { ok: false, message: err.name === "AbortError" ? "请求超时" : err.message };
+      return { ok: false, message: err.name === "AbortError" ? T("请求超时") : err.message };
     } finally {
       clearTimeout(timer);
     }
@@ -1419,15 +1426,15 @@ const settingsCtx = {
     }
   },
   consent,
-  setConsent(agreed) { setConsent(agreed); toast(agreed ? "已同意记录" : "已停止记录"); },
+  setConsent(agreed) { setConsent(agreed); toast(agreed ? T("已同意记录") : T("已停止记录")); },
   exportAll() {
-    download(`TaoChronos-对话-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ app: "TaoChronos", version: 1, exported: new Date().toISOString(), conversations: S.list }, null, 1), "application/json");
+    download(T`TaoChronos-对话-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ app: "TaoChronos", version: 1, exported: new Date().toISOString(), conversations: S.list }, null, 1), "application/json");
   },
   async importAll(text) {
     try {
       const data = JSON.parse(text);
       const list = Array.isArray(data) ? data : data.conversations;
-      if (!Array.isArray(list)) throw new Error("文件里没有对话列表");
+      if (!Array.isArray(list)) throw new Error(T("文件里没有对话列表"));
       let n = 0;
       for (const c of list) {
         if (!c?.id || !Array.isArray(c.messages)) continue;
@@ -1441,47 +1448,47 @@ const settingsCtx = {
       }
       S.list.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.updated - a.updated);
       renderSidebar();
-      toast(`已导入 ${n} 个对话`);
+      toast(T`已导入 ${n} 个对话`);
     } catch (err) {
-      toast(`导入失败：${err.message}`, "err");
+      toast(T`导入失败：${err.message}`, "err");
     }
   },
   exportMarkdown,
   async clearAll() {
-    if (!confirm("删除本浏览器中的全部对话？此操作不可撤销。")) return;
+    if (!confirm(T("删除本浏览器中的全部对话？此操作不可撤销。"))) return;
     stop();
     await store.clearConversations();
     S.list = [];
     el.settings.close();
     newChat();
-    toast("已删除全部对话");
+    toast(T("已删除全部对话"));
   },
   toast,
 };
 
 function exportMarkdown(conv) {
-  const lines = [`# ${conv.title}`, "", `> 导出自${AGENT}（${ASSISTANT}）· ${PUBLISHER}（${PUBLISHER_EN}）· ${new Date(conv.updated).toLocaleString("zh-CN")}`, ""];
+  const lines = [`# ${conv.title}`, "", T`> 导出自${AGENT}（${ASSISTANT}）· ${PUBLISHER}（${PUBLISHER_EN}）· ${new Date(conv.updated).toLocaleString(LOCALE)}`, ""];
   for (const m of conv.messages) {
-    if (m.role === "user") lines.push("## 问", "", m.text, "");
+    if (m.role === "user") lines.push(T("## 问"), "", m.text, "");
     else {
       const tools = (m.segments || []).flatMap((s) => s.calls || []).map((c) => displayName(c.name));
       lines.push(`## ${AGENT}`, "");
-      const about = [m.provider === RELAY_ID ? "道乃久默认服务" : m.model ? `底层模型 ${m.model}` : null,
-        tools.length ? `工具 ${[...new Set(tools)].join("、")}` : null].filter(Boolean);
-      if (about.length) lines.push(`*${about.join("；")}*`, "");
-      lines.push(answerText(m) || "（无回答）", "");
+      const about = [m.provider === RELAY_ID ? T("道乃久默认服务") : m.model ? T`底层模型 ${m.model}` : null,
+        tools.length ? T`工具 ${[...new Set(tools)].join(T("、"))}` : null].filter(Boolean);
+      if (about.length) lines.push(`*${about.join(T("；"))}*`, "");
+      lines.push(answerText(m) || T("（无回答）"), "");
       const charts = (m.segments || []).flatMap((s) => (s.calls || []).flatMap((c) => c.charts || []));
-      if (charts.length) lines.push("### 图表数据", "", ...charts.flatMap((spec) => [toMarkdown(spec), ""]));
+      if (charts.length) lines.push(T("### 图表数据"), "", ...charts.flatMap((spec) => [toMarkdown(spec), ""]));
       const tables = (m.segments || []).flatMap((s) => (s.calls || []).flatMap((c) => c.tables || []));
-      if (tables.length) lines.push("### 表格", "", ...tables.flatMap((spec, i) => [tableMarkdown(spec, i + 1), ""]));
+      if (tables.length) lines.push(T("### 表格"), "", ...tables.flatMap((spec, i) => [tableMarkdown(spec, i + 1), ""]));
     }
   }
   const cited = new Set(conv.messages.flatMap((m) => extractCitations(answerText(m)).map((c) => c.pid)));
   if (cited.size) {
-    lines.push("## 引用的段落", "");
+    lines.push(T("## 引用的段落"), "");
     for (const pid of cited) {
       const c = conv.evidence?.[pid] || passageNow(pid);
-      lines.push(`- **[[${pid}]]** ${c?.title ? `《${c.title}》` : ""}${String(c?.locator || "").replace(/^《[^》]*》/, "")}${yearLabel(c) ? `（${yearLabel(c)}）` : ""}${c?.text ? `：${c.text}` : ""}`);
+      lines.push(`- **[[${pid}]]** ${c?.title ? T`《${c.title}》` : ""}${String(c?.locator || "").replace(/^《[^》]*》/, "")}${yearLabel(c) ? T`（${yearLabel(c)}）` : ""}${c?.text ? T`：${c.text}` : ""}`);
     }
     lines.push("");
   }
@@ -1493,7 +1500,7 @@ function applyTheme() {
   const t = S.settings.theme || "system";
   if (t === "system") delete document.documentElement.dataset.theme;
   else document.documentElement.dataset.theme = t;
-  const next = { system: ["monitor", "跟随系统"], light: ["sun", "浅色"], dark: ["moon", "深色"] }[t];
+  const next = { system: ["monitor", T("跟随系统")], light: ["sun", T("浅色")], dark: ["moon", T("深色")] }[t];
   el.theme.replaceChildren(icon(next[0], "sm"), next[1]);
 }
 
@@ -1525,7 +1532,8 @@ function wireChrome() {
   el.attach.append(icon("image"));
   el.attachData?.append(icon("file"));
   if (el.dataFile) el.dataFile.accept = ACCEPT;
-  el.settingsBtn.append(icon("gear", "sm"), "设置");
+  el.settingsBtn.append(icon("gear", "sm"), T("设置"));
+  if (EN_PAGE) { el.lang.textContent = "中文"; el.lang.lang = "zh-CN"; }
 
   el.newChat.addEventListener("click", newChat);
   el.newChatTop.addEventListener("click", newChat);
@@ -1543,12 +1551,13 @@ function wireChrome() {
     applyTheme();
   });
   el.toBottom.addEventListener("click", () => scrollToBottom(true));
+  el.lang.addEventListener("click", () => setLang(EN_PAGE ? "zh" : "en"));
   el.search.addEventListener("input", debounce(() => { S.ui.search = el.search.value; renderSidebar(); }, 120));
 
   // code blocks' copy buttons, anywhere in the thread or a report
   document.addEventListener("click", (e) => {
     const btn = e.target.closest?.("[data-copy='code']");
-    if (btn) copyText(btn.parentElement.querySelector("code")?.textContent || "").then((ok) => toast(ok ? "已复制代码" : "复制失败"));
+    if (btn) copyText(btn.parentElement.querySelector("code")?.textContent || "").then((ok) => toast(ok ? T("已复制代码") : T("复制失败")));
     if (openMenu && !openMenu.contains(e.target)) closeMenu();
   });
   document.addEventListener("keydown", (e) => {
@@ -1586,6 +1595,7 @@ async function main() {
   takeToken();
   switchRuntime(); // at once: Python and the corpus load in the worker while the page sets itself up
   if (document.documentElement.classList.contains("pre-collapsed")) el.app.classList.add("sidebar-collapsed");
+  translatePage();
   applyTheme();
   wireChrome();
   await loadProviders();
@@ -1600,11 +1610,11 @@ async function main() {
   S.conv = m ? S.list.find((c) => c.id === m[1]) || null : null;
   renderAll();
   scrollToBottom(false);
-  if (!(await store.persistent())) toast("此浏览器无法保存对话（隐私模式？）：关闭页面后对话将丢失", "", 5000);
+  if (!(await store.persistent())) toast(T("此浏览器无法保存对话（隐私模式？）：关闭页面后对话将丢失"), "", 5000);
   el.input.focus();
 }
 
 main().catch((err) => {
   console.error(err);
-  toast(`启动失败：${err.message}`, "err", 8000);
+  toast(T`启动失败：${err.message}`, "err", 8000);
 });

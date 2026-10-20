@@ -6,7 +6,9 @@
 // block only these names are replaced, not every identifier.  (The tools run in the visitor's browser, so their names
 // are in the page's code and requests: what is kept from the visitor is the answer that names them.)
 
-/** Each tool by its catalog name (on the wire, `__` for `.`): the plain words the page shows for it. */
+import { T } from "./i18n.js";
+
+/** Each tool by its catalog name (on the wire, `__` for `.`): the plain words the page shows for it (in English: T). */
 export const TOOL_WORDS = {
   "classics.search": "古籍检索", "classics.get_passage": "原文细读", "classics.list_books": "书目", "classics.canon": "要籍目录",
   "classics.lineage": "知识谱系",
@@ -39,30 +41,30 @@ export const TOOL_WORDS = {
   taochronos_research: "发现研究", taochronos_session: "研究会话", taochronos_ask: "技能工作流",
   taochronos_catalog: "工具目录", taochronos_call: "调用工具",
 };
-const FAMILY_WORDS = { classics: "检索", kg: "知识", analysis: "发现", study: "治学", philology: "文献", vision: "文献",
-  validation: "核验", audit: "核验", graph: "核验", bridge: "古今", modern: "现代", literature: "现代", rwd: "现代", research: "代码",
-  mydata: "我的资料" };
-const FIELD_WORDS = { passage_id: "段落编号", book_id: "录本编号", session_id: "研究会话编号", claim_id: "主张编号",
-  hypothesis_id: "假说编号", evidence_id: "证据编号", work_id: "书目编号" };
+const FAMILY_WORDS = { classics: T("检索"), kg: T("知识"), analysis: T("发现"), study: T("治学"), philology: T("文献"), vision: T("文献"),
+  validation: T("核验"), audit: T("核验"), graph: T("核验"), bridge: T("古今"), modern: T("现代"), literature: T("现代"), rwd: T("现代"), research: T("代码"),
+  mydata: T("我的资料") };
+const FIELD_WORDS = { passage_id: T("段落编号"), book_id: T("录本编号"), session_id: T("研究会话编号"), claim_id: T("主张编号"),
+  hypothesis_id: T("假说编号"), evidence_id: T("证据编号"), work_id: T("书目编号") };
 // the labels the tools grade with — an audit's verdict, who asserts a link, modern evidence by its design and by what
 // it claims (src/taochronos/protocol: assertions.py, modern.py) — as a reader says them
 const LABEL_WORDS = {
-  SUPPORTED: "有据", PARTIALLY_SUPPORTED: "部分有据", CONTESTED: "有争议", INSUFFICIENT_EVIDENCE: "证据不足", UNSUPPORTED: "无据",
-  SOURCE_ASSERTED: "原文所言", SCHOLAR_INTERPRETED: "注家解释", MODEL_EXTRACTED: "模型抽取", MODEL_INFERRED: "模型推断",
-  MODERN_EVIDENCE_SUPPORTED: "现代证据支持", HYPOTHESIS: "假说",
-  systematic_review: "系统综述", case_control: "病例对照研究", cross_sectional: "横断面研究", case_series: "病例系列",
-  case_report: "病例报告", narrative_review: "叙述性综述", in_vitro: "体外研究", in_silico: "计算预测", expert_opinion: "专家意见",
-  human_efficacy: "人体疗效", human_association: "人群关联", tcm_semantic: "中医语义",
+  SUPPORTED: T("有据"), PARTIALLY_SUPPORTED: T("部分有据"), CONTESTED: T("有争议"), INSUFFICIENT_EVIDENCE: T("证据不足"), UNSUPPORTED: T("无据"),
+  SOURCE_ASSERTED: T("原文所言"), SCHOLAR_INTERPRETED: T("注家解释"), MODEL_EXTRACTED: T("模型抽取"), MODEL_INFERRED: T("模型推断"),
+  MODERN_EVIDENCE_SUPPORTED: T("现代证据支持"), HYPOTHESIS: T("假说"),
+  systematic_review: T("系统综述"), case_control: T("病例对照研究"), cross_sectional: T("横断面研究"), case_series: T("病例系列"),
+  case_report: T("病例报告"), narrative_review: T("叙述性综述"), in_vitro: T("体外研究"), in_silico: T("计算预测"), expert_opinion: T("专家意见"),
+  human_efficacy: T("人体疗效"), human_association: T("人群关联"), tcm_semantic: T("中医语义"),
 };
-const TRACKS = ["失传关联", "概念漂移", "方剂演化", "关联规则与隐含关联", "矛盾"]; // D1–D5
-const GATES = ["来源", "录文", "文献", "语义", "主张溯源", "跨源互证", "证伪", "专家核验", "生物医学证据"]; // G0–G8
+const TRACKS = [T("失传关联"), T("概念漂移"), T("方剂演化"), T("关联规则与隐含关联"), T("矛盾")]; // D1–D5
+const GATES = [T("来源"), T("录文"), T("文献"), T("语义"), T("主张溯源"), T("跨源互证"), T("证伪"), T("专家核验"), T("生物医学证据")]; // G0–G8
 
 /** A tool as the page names it: its plain words, else its family's (a tool this page does not know yet). */
 export function toolWord(name) {
   if (!name || name === "…") return name || "…";
   const key = String(name).replace(/__/g, ".");
   const family = FAMILY_WORDS[key.split(".")[0]];
-  return TOOL_WORDS[key] || TOOL_WORDS[name] || (family ? `${family}工具` : "工具");
+  return T(TOOL_WORDS[key] || TOOL_WORDS[name]) || (family ? T`${family}工具` : T("工具"));
 }
 
 const PREFIXES = Object.keys(FAMILY_WORDS).join("|");
@@ -75,13 +77,13 @@ const track = (n) => TRACKS[Number(n) - 1];
 const NAMES = [
   // the project's files, first (classics.py is a file, not a tool)
   [/(^|[^\w/.-])((?:src|web|docs|cloud|relay|security|agents|profiles|domains|corpus|skills|evals|tests|scripts|paper|data)\/[\w./-]*\w)/g,
-    (m, lead) => lead + put("内部文件")],
-  [/(^|[^\w/.-])[\w-]+\.(?:py|mjs|toml|ya?ml|sql|sh)\b/g, (m, lead) => lead + put("内部文件")],
+    (m, lead) => lead + put(T("内部文件"))],
+  [/(^|[^\w/.-])[\w-]+\.(?:py|mjs|toml|ya?ml|sql|sh)\b/g, (m, lead) => lead + put(T("内部文件"))],
   // the local service and its commands: taochronos serve …, python -m taochronos …, pip install taochronos
-  [/\b(?:python3?\s+-m\s+|pip3?\s+install\s+(?:-e\s+)?)taochronos\b(?:\[[\w,]*\])?(?:\s+(?:--?[a-z][\w-]*|[a-z0-9][\w.:/=-]*))*/g, "本地服务"],
-  [/\btaochronos(?:\s+(?:--?[a-z][\w-]*(?:=[^\s`，。；、）)]+)?|[a-z0-9][\w.:/-]*))+/g, "本地服务"],
-  [/\btaochronos_(research|session|ask|catalog|call)\b/g, (m) => put(TOOL_WORDS[m])],
-  [/\btaochronos(?:[._][a-z]\w*)+/g, "内部模块"],
+  [/\b(?:python3?\s+-m\s+|pip3?\s+install\s+(?:-e\s+)?)taochronos\b(?:\[[\w,]*\])?(?:\s+(?:--?[a-z][\w-]*|[a-z0-9][\w.:/=-]*))*/g, T("本地服务")],
+  [/\btaochronos(?:\s+(?:--?[a-z][\w-]*(?:=[^\s`，。；、）)]+)?|[a-z0-9][\w.:/-]*))+/g, T("本地服务")],
+  [/\btaochronos_(research|session|ask|catalog|call)\b/g, (m) => put(T(TOOL_WORDS[m]))],
+  [/\btaochronos(?:[._][a-z]\w*)+/g, T("内部模块")],
   // tools, as the model calls them (classics__search) and as the catalog names them (classics.search)
   [/\b([a-z][a-z0-9]*)__([a-z][a-z0-9_]*)\b/g, (m, a, b) => put(toolWord(`${a}.${b}`))],
   [new RegExp(String.raw`(^|[^\w.@-])((?:${PREFIXES})\.[a-z][a-z0-9_]*)(?![\w@-]|\.[a-z])`, "g"), (m, lead, name) => lead + put(toolWord(name))],
@@ -92,23 +94,23 @@ const NAMES = [
   // codes: of a step in parentheses — （G7）、(S15)、(AMBE S11–S12)、(T10) — gone; the discovery tracks D1–D5, the gates
   // G0–G8 and the skills S01–S15 told by what they are
   [new RegExp(String.raw`\s*[（(]\s*(?:AMBE\s*)?${CODE}(?:\s*[,，、/]\s*${CODE})*\s*[）)]`, "g"), ""],
-  [new RegExp(String.raw`\bD[1-5]${DASH}D?[1-5]\b`, "g"), "知识发现"],
-  [new RegExp(String.raw`(?:门控\s*)?\bG[0-8]${DASH}G?[0-8]\b(?:\s*门控)?`, "g"), "各级门控"],
-  [new RegExp(String.raw`(?:技能\s*)?\bS(?:0[1-9]|1[0-5])${DASH}S?(?:0[1-9]|1[0-5])\b`, "g"), "各项技能"],
+  [new RegExp(String.raw`\bD[1-5]${DASH}D?[1-5]\b`, "g"), T("知识发现")],
+  [new RegExp(String.raw`(?:门控\s*)?\bG[0-8]${DASH}G?[0-8]\b(?:\s*门控)?`, "g"), T("各级门控")],
+  [new RegExp(String.raw`(?:技能\s*)?\bS(?:0[1-9]|1[0-5])${DASH}S?(?:0[1-9]|1[0-5])\b`, "g"), T("各项技能")],
   [/\bD[1-5](?:\s*(?:[、，,和与及])\s*D[1-5])+\b/g, (m) => put(m.replace(/D([1-5])/g, (x, n) => track(n)).replace(/\s+/g, ""))],
   [/\bD([1-5])\s*(?=失传|概念|方剂|关联|隐含|矛盾)/g, ""],
   [/\bD([1-5])(?=\s*(?:分析|轨道|发现|任务|模块))/g, (m, n) => put(track(n))],
   [/\bG([0-8])(?=\s*(?:门控|关口|核验))/g, (m, n) => put(GATES[n])],
   [/(门控\s*)G([0-8])\b/g, (m, lead, n) => lead + put(GATES[n])],
-  [/(?:技能\s*)?\bS(?:0[1-9]|1[0-5])\b/g, "相应技能"],
-  [/\bAMBE\b/g, "古今桥接"],
+  [/(?:技能\s*)?\bS(?:0[1-9]|1[0-5])\b/g, T("相应技能")],
+  [/\bAMBE\b/g, T("古今桥接")],
   [/\bV2\s*(?=技能|工作流)/g, ""],
-  [/\bCode Mode\b/gi, "代码研究"],
+  [/\bCode Mode\b/gi, T("代码研究")],
 ];
 // outside code blocks: any setting (UPPER_SNAKE) and any identifier (snake_case) is one of the page's own
 const IDENTIFIERS = [
-  [/\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g, "内部配置"],
-  [/(^|[^\w./@-])[a-z][a-z0-9]*(?:_[a-z0-9]+)+(?![\w@-]|\.[a-z])(?:\s*(?:参数|字段))?/g, (m, lead) => lead + put("相应参数")],
+  [/\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g, T("内部配置")],
+  [/(^|[^\w./@-])[a-z][a-z0-9]*(?:_[a-z0-9]+)+(?![\w@-]|\.[a-z])(?:\s*(?:参数|字段))?/g, (m, lead) => lead + put(T("相应参数"))],
 ];
 // kept as they are: a citation's mark, a link, a link's target
 const KEEP = /\[\[[^\]\n]*\]\]|https?:\/\/[^\s<>()（）「」"]+|\]\([^)\s]+\)/g;

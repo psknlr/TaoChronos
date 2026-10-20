@@ -11,6 +11,7 @@ import * as openai from "./llm/openai.js";
 import * as claude from "./llm/anthropic.js";
 import { dataNote } from "./mydata.js";
 import { sleep } from "./util.js";
+import { T } from "./i18n.js";
 
 const OLD_RESULT_CHARS = 2500;
 const MAX_EXTRA_ROUNDS = 1;
@@ -57,7 +58,7 @@ function prepareWire(wire, format, sameProvider) {
 
 function shorten(text) {
   if (typeof text !== "string" || text.length <= OLD_RESULT_CHARS) return text;
-  return text.slice(0, OLD_RESULT_CHARS) + `…［早先的工具结果已截短，原长 ${text.length} 字符；需要细节时请重新调用工具］`;
+  return text.slice(0, OLD_RESULT_CHARS) + T`…［早先的工具结果已截短，原长 ${text.length} 字符；需要细节时请重新调用工具］`;
 }
 
 /** A turn's messages without the model's reasoning: reasoning fields, thinking blocks, a leading <think>…</think>. */
@@ -83,7 +84,7 @@ export function answerDangling(msgs, format) {
       const answered = new Set();
       let j = i + 1;
       while (j < msgs.length && msgs[j].role === "tool") { answered.add(msgs[j].tool_call_id); out.push(msgs[j]); j++; }
-      for (const tc of msg.tool_calls) if (!answered.has(tc.id)) out.push({ role: "tool", tool_call_id: tc.id, content: "（此调用已中止，没有结果）" });
+      for (const tc of msg.tool_calls) if (!answered.has(tc.id)) out.push({ role: "tool", tool_call_id: tc.id, content: T("（此调用已中止，没有结果）") });
       i = j - 1;
     }
     if (format === "anthropic" && msg.role === "assistant" && Array.isArray(msg.content)) {
@@ -93,7 +94,7 @@ export function answerDangling(msgs, format) {
       const got = new Set(next?.role === "user" && Array.isArray(next.content) ? next.content.filter((b) => b.type === "tool_result").map((b) => b.tool_use_id) : []);
       const missing = ids.filter((id) => !got.has(id));
       if (!missing.length) continue;
-      const blocks = missing.map((id) => ({ type: "tool_result", tool_use_id: id, content: "（此调用已中止，没有结果）", is_error: true }));
+      const blocks = missing.map((id) => ({ type: "tool_result", tool_use_id: id, content: T("（此调用已中止，没有结果）"), is_error: true }));
       if (next?.role === "user" && Array.isArray(next.content)) next.content = [...next.content, ...blocks];
       else out.push({ role: "user", content: blocks });
     }
@@ -168,9 +169,9 @@ async function execute(tc, { runtime, settings, hooks, signal, over }) {
   let out;
   try {
     if (over) {
-      out = { ok: false, error: "已达到本轮工具调用的上限：请根据已有结果直接作答。", text: "ERROR: 已达到本轮工具调用的上限：请根据已有结果直接作答。" };
+      out = { ok: false, error: T("已达到本轮工具调用的上限：请根据已有结果直接作答。"), text: T("ERROR: 已达到本轮工具调用的上限：请根据已有结果直接作答。") };
     } else if (tc.error) {
-      out = { ok: false, error: tc.error, text: `ERROR: ${tc.error}（原始参数：${tc.rawArguments.slice(0, 300)}）` };
+      out = { ok: false, error: tc.error, text: T`ERROR: ${tc.error}（原始参数：${tc.rawArguments.slice(0, 300)}）` };
     } else if (tc.name === "taochronos_research") {
       out = await runtime.research(tc.arguments, {
         maxChars: settings.resultChars, signal,
@@ -180,10 +181,10 @@ async function execute(tc, { runtime, settings, hooks, signal, over }) {
       out = await runtime.call(tc.name, tc.arguments, { maxChars: settings.resultChars, signal });
     }
   } catch (err) {
-    if (err?.name === "AbortError") out = { ok: false, error: "已停止", text: "ERROR: 调用已停止" };
+    if (err?.name === "AbortError") out = { ok: false, error: T("已停止"), text: T("ERROR: 调用已停止") };
     else out = { ok: false, error: err.message || String(err), text: `ERROR: ${err.message || err}` };
   }
-  out ||= { ok: false, error: "没有结果", text: "ERROR: 没有结果" };
+  out ||= { ok: false, error: T("没有结果"), text: T("ERROR: 没有结果") };
   hooks.toolEnd?.(call, out);
   return { id: tc.id, ok: Boolean(out.ok), text: out.text || (out.ok ? "{}" : `ERROR: ${out.error}`) };
 }

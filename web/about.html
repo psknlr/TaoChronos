@@ -27,8 +27,24 @@
   .nav { font-size: 14px; color: var(--ink-3); }
   .start { display: inline-block; margin: 14px 0 4px; padding: 8px 18px; border-radius: 999px; background: var(--accent); color: #fff8f0; text-decoration: none; }
   li { margin: 4px 0; }
+  /* the page in 中文 or English: the visitor's choice (?lang=, or the switch on the site, kept as tc.lang), else the browser's */
+  html[lang="en"] main.zh, html:not([lang="en"]) main.en { display: none; }
   .muted { color: var(--ink-3); font-size: 14px; }
 </style>
+<script>
+  (function () {
+    var lang = null;
+    try { lang = new URLSearchParams(location.search).get("lang"); } catch (e) { /* old browser */ }
+    if (lang !== "zh" && lang !== "en") try { lang = JSON.parse(localStorage.getItem("tc.lang") || "null"); } catch (e) { /* storage unavailable */ }
+    if (lang !== "zh" && lang !== "en") lang = /^zh\b/i.test(navigator.language || "") ? "zh" : "en";
+    document.documentElement.lang = lang === "en" ? "en" : "zh-CN";
+    if (lang === "en") document.title = "About TaoChronos · Scientific Knowledge Discovery from Ancient TCM Texts";
+  })();
+  function setLang(lang) {
+    try { localStorage.setItem("tc.lang", JSON.stringify(lang)); } catch (e) { /* this visit only */ }
+    location.replace(location.pathname);
+  }
+</script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -47,8 +63,8 @@
 </script>
 </head>
 <body>
-<main>
-  <p class="nav"><a href="./">道乃久</a> · 关于 · <a href="attribution">语料来源与授权</a></p>
+<main class="zh">
+  <p class="nav"><a href="./">道乃久</a> · 关于 · <a href="attribution">语料来源与授权</a> · <a href="?lang=en" lang="en" onclick="setLang('en'); return false;">English</a></p>
 
   <h1>道乃久 · 中医古籍科学知识发现智能体平台</h1>
   <p class="lead">道乃久（TaoChronos）是医哲未来人工智能研究院（IMPF-AI）研发的中医古籍科学知识发现智能体平台。
@@ -89,6 +105,57 @@
     涉及身体健康的问题，请咨询合格的医生。</p>
 
   <p class="muted">道乃久 · 医哲未来人工智能研究院（IMPF-AI）研发 · <a href="./">chat.impf.ai</a></p>
+</main>
+
+<main class="en" lang="en">
+  <p class="nav"><a href="./">TaoChronos</a> · About · <a href="attribution">Corpus sources and licences</a> · <a href="?lang=zh" lang="zh-CN" onclick="setLang('zh'); return false;">中文</a></p>
+
+  <h1>TaoChronos · Scientific Knowledge Discovery from Ancient TCM Texts</h1>
+  <p class="lead">TaoChronos (道乃久) is a platform of AI agents for scientific knowledge discovery from the classical texts of
+    Chinese medicine, developed by IMPF-AI (医哲未来人工智能研究院). It supports traceable research: it first retrieves the
+    original text from the classics, then answers from it, and every quotation names its source and is checked against the
+    original character by character. The name comes from the Daodejing: “天乃道，道乃久” (Heaven accords with the Dao; the Dao endures).</p>
+  <a class="start" href="./">Start asking</a>
+
+  <h2>What it can do</h2>
+  <ul>
+    <li><strong>Search and close reading</strong>: search the classics of Chinese medicine across the dynasties, limit by period, and read each passage in context.</li>
+    <li><strong>Textual scholarship</strong>: the origins and modifications of formulas, how herb properties and channel tropisms changed, the senses and fortunes of terms, parallel passages and variants, collected commentaries, glosses, punctuation, editions, taboo characters, and historical weights and measures.</li>
+    <li><strong>Knowledge discovery</strong>: uncover lost associations, shifts in concepts, the evolution of formulas, hidden links and contradictions between texts; propose research hypotheses and test them against the original texts.</li>
+    <li><strong>Evidence checking</strong>: quotations in answers are compared with the source character by character and marked as matching, in doubt or not found; you can also audit whether a claim has textual support.</li>
+    <li><strong>Bridging past and present</strong>: compare the phenotypes of historical disorders with modern medicine, without retrospective diagnosis.</li>
+    <li><strong>Analyse my data</strong>: upload your own clinic prescriptions, case records or survey forms (CSV, Excel, Word and more) for descriptive statistics, group comparisons and prescription analysis, compared with classical formulas. The data is read and de-identified on your device, never sent to TaoChronos's servers, and those conversations are not recorded.</li>
+  </ul>
+
+  <h2>Questions you can ask</h2>
+  <ul>
+    <li>Where do the original ingredients and doses of Guizhi Tang (桂枝汤) come from? What important modifications did later physicians make?</li>
+    <li>How did the meaning and use of the term 消渴 (xiaoke) change across the historical literature? Give textual evidence from each period.</li>
+    <li>Compare how commentators through the ages explained “太阳之为病，脉浮，头项强痛而恶寒”. Where do they disagree?</li>
+    <li>In which book do the properties, channel tropism and indications of Huanglian (黄连, coptis) first appear? How did they change later?</li>
+    <li>Please audit this claim: “Liuwei Dihuang Wan (六味地黄丸) was created by Zhang Zhongjing in the Shanghan Lun (伤寒论).”</li>
+  </ul>
+  <p>Answers are in English; the classics are quoted in the original Chinese, each with an English translation.</p>
+
+  <h2>Which books it reads</h2>
+  <p>The site's server holds the full corpus: more than 900 classics of Chinese medicine, about 120 million characters,
+    including the Huangdi Neijing (Suwen and Lingshu), Nanjing, Shanghan Lun, Jingui Yaolue, Shennong Bencao Jing, Beiji Qianjin
+    Yaofang, Waitai Miyao and Bencao Gangmu. When the server is unavailable, the page runs the core classics, ranked by how often
+    they were cited over the centuries, in your browser. For the source, edition and licence of each work, see
+    <a href="attribution">Corpus sources and licences</a>.</p>
+
+  <h2>Evidence discipline</h2>
+  <p>What the classics say is settled by the retrieved original text, never filled in from memory. The original text,
+    commentators and later interpretation, computational inference, and modern medicine are kept as four separate layers.
+    Search rankings, association rules and research hypotheses are computational inferences still to be tested, and must be
+    checked by experts.</p>
+
+  <h2>Terms of use</h2>
+  <p>TaoChronos is for research on and study of the classical texts of Chinese medicine. It does not give diagnoses,
+    prescriptions or medication advice; conversions of historical weights and measures are historical readings, not doses.
+    For questions about your health, please consult a qualified doctor.</p>
+
+  <p class="muted">TaoChronos · developed by IMPF-AI (医哲未来人工智能研究院) · <a href="./">chat.impf.ai</a></p>
 </main>
 </body>
 </html>

@@ -4,6 +4,7 @@
 // which conversations touch them (their turns are never recorded).
 
 import { storage } from "./util.js";
+import { T } from "./i18n.js";
 
 const KEY = "tc.mydata.notice";
 const VERSION = 1;
@@ -13,14 +14,14 @@ export const ACCEPT = ".csv,.tsv,.xlsx,.xlsm,.docx,.txt,.md,.json";
 export const MAX_BYTES = 10 * 1024 * 1024;
 
 export const DATA_NOTICE = [
-  ["在本机处理", "文件在你的浏览器里读取（若连接的是本机的 TaoChronos 服务，则在本机读取），不上传到道乃久的服务器。"],
-  ["读取时即脱敏", "姓名、医生姓名换成化名（P0001、D0001…），身份证号、病历号等换成编号，电话、地址、邮箱删去，出生日期只留年份；"
-    + "文中写出的身份证号、手机号、“姓名：××”等也会替换。自由书写的人名未必都能识别，请先检查原文件。"],
-  ["模型读到什么", "模型只读到它调用工具时得到的内容：统计结果，以及它要求阅读的行或段落（已脱敏）。这些内容会随对话发给你所选的模型服务。"
-    + "文件名也会告诉模型，请不要在文件名里写姓名。"],
-  ["不记录", "涉及上传资料的对话，不发送任何对话记录。"],
-  ["保存与删除", "脱敏后的资料只保存在本浏览器，下次打开仍在；可在侧栏“资料”里随时删除一份或全部。"],
-  ["统计的边界", "统计只描述这份数据，不推断因果，也不构成诊疗建议。"],
+  [T("在本机处理"), T("文件在你的浏览器里读取（若连接的是本机的 TaoChronos 服务，则在本机读取），不上传到道乃久的服务器。")],
+  [T("读取时即脱敏"), T("姓名、医生姓名换成化名（P0001、D0001…），身份证号、病历号等换成编号，电话、地址、邮箱删去，出生日期只留年份；")
+    + T("文中写出的身份证号、手机号、“姓名：××”等也会替换。自由书写的人名未必都能识别，请先检查原文件。")],
+  [T("模型读到什么"), T("模型只读到它调用工具时得到的内容：统计结果，以及它要求阅读的行或段落（已脱敏）。这些内容会随对话发给你所选的模型服务。")
+    + T("文件名也会告诉模型，请不要在文件名里写姓名。")],
+  [T("不记录"), T("涉及上传资料的对话，不发送任何对话记录。")],
+  [T("保存与删除"), T("脱敏后的资料只保存在本浏览器，下次打开仍在；可在侧栏“资料”里随时删除一份或全部。")],
+  [T("统计的边界"), T("统计只描述这份数据，不推断因果，也不构成诊疗建议。")],
 ];
 
 /** Has this browser been shown the notice (its current version)? */
@@ -58,25 +59,25 @@ export function brief(d) {
   return out;
 }
 
-const TYPE_WORDS = { number: "数值", date: "日期", category: "分类", text: "文本", prescription: "处方", empty: "空" };
+const TYPE_WORDS = { number: T("数值"), date: T("日期"), category: T("分类"), text: T("文本"), prescription: T("处方"), empty: T("空") };
 
 /** A dataset in a few words: 表格 120 行 · 9 列 / 文本 35 段. */
 export function sizeLabel(d) {
-  return d.kind === "table" ? `表格 ${d.rows} 行 · ${d.columns?.length || 0} 列` : `文本 ${d.passages} 段`;
+  return d.kind === "table" ? T`表格 ${d.rows} 行 · ${d.columns?.length || 0} 列` : T`文本 ${d.passages} 段`;
 }
 
 export function columnsLabel(d, max = 12) {
   const cols = (d.columns || []).filter((c) => c.type !== "empty");
-  const shown = cols.slice(0, max).map((c) => `${c.name}（${TYPE_WORDS[c.type] || c.type}）`).join("、");
-  return shown + (cols.length > max ? ` 等 ${cols.length} 列` : "");
+  const shown = cols.slice(0, max).map((c) => T`${c.name}（${TYPE_WORDS[c.type] || c.type}）`).join(T("、"));
+  return shown + (cols.length > max ? T` 等 ${cols.length} 列` : "");
 }
 
 /** What was taken out, in a line: 姓名→化名；手机已删除；文中手机号 3 处. */
 export function deidLabel(d) {
   const r = d.deidentified || {};
   const parts = Object.entries(r.columns || {}).map(([c, what]) => `${c}${what.startsWith("以") ? "：" : ""}${what}`);
-  for (const [kind, n] of Object.entries(r.masked || {})) parts.push(`文中${kind} ${n} 处`);
-  return parts.length ? parts.join("；") : "未发现需要去除的个人信息（自由书写的人名未必能识别）";
+  for (const [kind, n] of Object.entries(r.masked || {})) parts.push(T`文中${kind} ${n} 处`);
+  return parts.length ? parts.join(T("；")) : T("未发现需要去除的个人信息（自由书写的人名未必能识别）");
 }
 
 /** What the model reads with a user message that carries datasets (the page shows chips instead). */
