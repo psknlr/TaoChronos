@@ -31,20 +31,7 @@
   html[lang="en"] main.zh, html:not([lang="en"]) main.en { display: none; }
   .muted { color: var(--ink-3); font-size: 14px; }
 </style>
-<script>
-  (function () {
-    var lang = null;
-    try { lang = new URLSearchParams(location.search).get("lang"); } catch (e) { /* old browser */ }
-    if (lang !== "zh" && lang !== "en") try { lang = JSON.parse(localStorage.getItem("tc.lang") || "null"); } catch (e) { /* storage unavailable */ }
-    if (lang !== "zh" && lang !== "en") lang = /^zh\b/i.test(navigator.language || "") ? "zh" : "en";
-    document.documentElement.lang = lang === "en" ? "en" : "zh-CN";
-    if (lang === "en") document.title = "About TaoChronos · Scientific Knowledge Discovery from Ancient TCM Texts";
-  })();
-  function setLang(lang) {
-    try { localStorage.setItem("tc.lang", JSON.stringify(lang)); } catch (e) { /* this visit only */ }
-    location.replace(location.pathname);
-  }
-</script>
+<script src="js/about-lang.js"></script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -64,7 +51,7 @@
 </head>
 <body>
 <main class="zh">
-  <p class="nav"><a href="./">道乃久</a> · 关于 · <a href="attribution">语料来源与授权</a> · <a href="?lang=en" lang="en" onclick="setLang('en'); return false;">English</a></p>
+  <p class="nav"><a href="./">道乃久</a> · 关于 · <a href="attribution">语料来源与授权</a> · <a href="?lang=en" lang="en" data-lang="en">English</a></p>
 
   <h1>道乃久 · 中医古籍科学知识发现智能体平台</h1>
   <p class="lead">道乃久（TaoChronos）是医哲未来人工智能研究院（IMPF-AI）研发的中医古籍科学知识发现智能体平台。
@@ -108,7 +95,7 @@
 </main>
 
 <main class="en" lang="en">
-  <p class="nav"><a href="./">TaoChronos</a> · About · <a href="attribution">Corpus sources and licences</a> · <a href="?lang=zh" lang="zh-CN" onclick="setLang('zh'); return false;">中文</a></p>
+  <p class="nav"><a href="./">TaoChronos</a> · About · <a href="attribution">Corpus sources and licences</a> · <a href="?lang=zh" lang="zh-CN" data-lang="zh">中文</a></p>
 
   <h1>TaoChronos · Scientific Knowledge Discovery from Ancient TCM Texts</h1>
   <p class="lead">TaoChronos (道乃久) is a platform of AI agents for scientific knowledge discovery from the classical texts of
