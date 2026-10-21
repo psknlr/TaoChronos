@@ -25,11 +25,11 @@ from ..kernel.hooks import HookContext, HookPoint, HookRegistry, HookResult
 from ..kernel.policy import Actor, PolicyEngine
 from ..kernel.session import kernel_session
 from ..kernel.store import SimulatedCrash
-from ..kernel.tools import ToolCall, ToolOutcome, ToolRegistry, ToolScheduler, ToolSpec
+from ..kernel.tools import ToolCall, ToolOutcome, ToolRegistry, ToolScheduler, ToolSpec, closest_names, resolve_name
 from ..protocol.base import stable_id
 from ..protocol.events import EventType
 from ..protocol.research import AgentInstance, Decision, TaskNode
-from ..protocol.schema import validate
+from ..protocol.schema import fit_arguments, validate
 from ..verification.scope import scoped_capability
 from .context_views import ViewInput, build_sections
 from .paging import PAGE_SCHEMA, PAGE_TOOL, ResultPager, compile_messages
@@ -398,11 +398,20 @@ class AgentRuntime:
                         content, is_error = pager.page(dict(use.input or {}))
                         results.append(ToolResultBlock(use.id, content, is_error))
                         continue
-                    spec_ = exposed.get(use.name)
+                    # the model's call as it wrote it: a name in another form is the tool's it denotes, arguments whose form
+                    # only is wrong are repaired, and one that still does not fit is answered with what the tool takes
+                    spec_ = exposed.get(use.name) or exposed.get(resolve_name(use.name, exposed) or "")
                     if spec_ is None:
-                        results.append(ToolResultBlock(use.id, f"ERROR: tool {use.name} is not available to {spec.name}", True))
+                        near = ", ".join(closest_names(use.name, [(t.llm_name, t.family) for t in tool_specs]))
+                        results.append(ToolResultBlock(use.id, f"ERROR: tool {use.name} is not available to {spec.name}; closest: {near}",
+                                                       True))
                         continue
-                    calls.append(ToolCall(spec_.name, dict(use.input or {}), id=use.id))
+                    arguments, _, problem = fit_arguments(use.input if use.input is not None else {}, spec_.input_schema,
+                                                          tool=spec_.llm_name)
+                    if problem:
+                        results.append(ToolResultBlock(use.id, f"ERROR: {problem}", True))
+                        continue
+                    calls.append(ToolCall(spec_.name, arguments, id=use.id))
                     slots.append(use.id)
                 outcomes = self.scheduler.execute_batch(calls, actor=ctx.actor, session=ctx.session, task_id=ctx.task.id,
                                                         budget=ctx.budget, tx=ctx.tx) if calls else []

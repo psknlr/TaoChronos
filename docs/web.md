@@ -417,6 +417,21 @@ local server is started with `--code-mode`.  Every call passes the scheduler's g
 receipts).  Results reach the model trimmed evenly to a budget (16 000 characters by default: long lists keep their
 head and say how many were left out); results of earlier turns are shortened further.
 
+**A call is read as the model wrote it**, at the model's side of the scheduler (`ChatRuntime.call`, and the research
+agents' model loop): a tool's name in another case or with other separators (`classics__get_passage`,
+`Classics.Get-Passage`), with something before it, or without its family where only one tool has what follows
+(`get_passage`), is that tool's (`resolve_name`); arguments whose form only is wrong are repaired (`fit_arguments`: a
+number or a boolean written as text, a whole float where an integer is expected and a number where a string is, a list
+or an object written as JSON text, a list or a value wrapped as `{"item": …}`, one value where a list is expected — a
+text without list marks, 「消渴」 and never 「消渴、口渴」 — a list of one value where that value is, and an enumerated word in
+another case), and the outcome's `repaired` says how.  A call that still does not fit is answered so that the model can
+correct it in one step: a name no tool has with the three closest tools offered and what they take (`closest_names`),
+never one the model is not offered; a parameter the tool does not take — which the tool would ignore, so that the model
+read an answer to a question it did not ask — or a value that is not of its type with what the tool takes (`study.herb
+takes: name (string, required); items (integer)`).  The meaning of a call is never guessed, and what runs passes the
+scheduler's gauntlet as before.  The D1 backup reads calls alike (`backup/catalog.js`, compared with the Python on the
+fixture), suggesting only the tools it serves.
+
 The standing instructions (`taochronos.chat.prompt`) carry the harness's evidence discipline into the conversation:
 quote only what a tool returned, verbatim, with its `[[passage_id]]`; say "本语料未检得" rather than supply a text;
 keep the text, its commentators, computation and modern medicine apart (no 消渴＝糖尿病); no diagnosis, prescription
@@ -585,7 +600,8 @@ request indexing of the home page.
 ## Tests
 
 `tests/test_chat.py` — the catalog (what is offered, what never is, valid names and schemas), calls by either name,
-failures as results, meta-tools, the system prompt and the identity (道乃久, Tao-R1, IMPF-AI; the platform introduced as the fixed reply does, no model named or denied), trimming and citations, research runs and
+a call as the model wrote it (a name in another form, arguments repaired, a parameter the tool does not take refused,
+the closest tools for an unknown name and never one the model is not offered), failures as results, meta-tools, the system prompt and the identity (道乃久, Tao-R1, IMPF-AI; the platform introduced as the fixed reply does, no model named or denied), trimming and citations, research runs and
 their sessions, the V2 workflow, every server endpoint, CORS and Private Network Access, the origin and host checks
 (the server's own pages on any address), the access token (refused without it, the proxy too; generated for any address
 but loopback), the proxy (streaming, allow-list, the SDK path form, `--env-keys`, `--allow-host`), background research, the

@@ -117,6 +117,10 @@ META_TOOLS: list[dict[str, Any]] = [
 ]
 
 
+# the parameters of the engine and the meta-tools, by name: a model's arguments for them are read against these
+PARAMETERS: dict[str, dict[str, Any]] = {t["name"]: t["parameters"] for t in (*ENGINE_TOOLS, *META_TOOLS)}
+
+
 def llm_name(name: str) -> str:
     """The name a model calls a tool by (dots are not allowed in most tool-name grammars)."""
     return name.replace(".", "__")
