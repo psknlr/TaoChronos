@@ -1702,9 +1702,11 @@ def test_my_data_stays_in_the_browser_when_the_site_answers(tmp_path):
         mock.shutdown()
 
 
-def test_the_page_in_english(tmp_path):
-    """A browser not set to Chinese reads the page in English, and the switch in the top bar changes it back and forth
-    (web/js/i18n.js); a browser set to Chinese, as the tests above, reads it in Chinese."""
+def test_the_page_in_eight_languages(tmp_path):
+    """A browser not set to Chinese reads the page in its own language if the page has it (the six of the United Nations,
+    Traditional Chinese and Malay), else in English; the menu in the top bar changes it, and the choice is kept
+    (web/js/i18n.js).  Arabic is laid out right to left.  A browser set to Chinese, as the tests above, reads it in
+    Chinese."""
     exe = _chromium()
     if exe is None:
         pytest.skip("playwright is not installed")
@@ -1716,18 +1718,24 @@ def test_the_page_in_english(tmp_path):
     rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
     srv = ChatServer(("127.0.0.1", 0), rt, web_root=ROOT / "web", home=ROOT)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{srv.server_address[1]}/"
     try:
         with sync_playwright() as p:
             try:
                 browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
             except Error as exc:
                 pytest.skip(f"no Chromium for Playwright: {exc}")
-            page = browser.new_context(viewport={"width": 1280, "height": 860}, locale="en-SG").new_page()
             errors: list[str] = []
-            page.on("pageerror", lambda e: errors.append(str(e)))
-            page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
-            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
-            assert page.evaluate("document.documentElement.lang") == "en"
+
+            def opened(locale: str, path: str = ""):
+                page = browser.new_context(viewport={"width": 1280, "height": 860}, locale=locale).new_page()
+                page.on("pageerror", lambda e: errors.append(str(e)))
+                page.goto(url + path)
+                page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+                return page
+
+            page = opened("en-SG")
+            assert page.evaluate("[document.documentElement.lang, document.documentElement.dir]") == ["en", "ltr"]
             assert page.inner_text("#new-chat").startswith("New chat")
             assert page.get_attribute("#input", "placeholder").startswith("Ask a question")
             assert page.inner_text(".runtime-pill") == "Runtime\nReady"
@@ -1735,15 +1743,32 @@ def test_the_page_in_english(tmp_path):
             page.click("#settings-btn")
             assert "Model" in page.inner_text(".settings-pane")
             page.keyboard.press("Escape")
-            assert page.inner_text("#lang-btn") == "中文"
-            page.click("#lang-btn")  # to Chinese, kept in this browser
+            # the menu: every language by its own name, the page's chosen
+            assert page.eval_on_selector_all("#lang-select option", "os => os.map((o) => o.textContent)") == [
+                "简体中文", "繁體中文", "English", "Français", "Español", "Русский", "العربية", "Bahasa Melayu"]
+            assert page.input_value("#lang-select") == "en" and page.inner_text(".lang-short") == "EN"
+            page.select_option("#lang-select", "zh")  # to Chinese, kept in this browser
             page.wait_for_function("document.documentElement.lang === 'zh-CN'", timeout=30000)
             page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
-            assert "新对话" in page.inner_text("#new-chat") and page.inner_text("#lang-btn") == "EN"
+            assert "新对话" in page.inner_text("#new-chat") and page.inner_text(".lang-short") == "简"
             assert page.evaluate("localStorage.getItem('tc.lang')") == '"zh"'
-            page.goto(f"http://127.0.0.1:{srv.server_address[1]}/?lang=en")  # a link can ask for English
+            page.goto(url + "?lang=fr")  # a link can ask for a language
             page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
-            assert page.inner_text("#new-chat").startswith("New chat")
+            assert page.inner_text("#new-chat").startswith("Nouvelle conversation")
+            assert page.inner_text(".runtime-pill") == "Environnement\nPrêt"
+
+            # the browser's own language, where the page has it; Traditional Chinese for Taiwan, Hong Kong and Macau
+            for locale, lang, new_chat in [("zh-TW", "zh-Hant", "新對話"), ("es-ES", "es", "Nueva conversación"),
+                                           ("ru-RU", "ru", "Новый чат"), ("ms-SG", "ms", "Sembang baharu"), ("de-DE", "en", "New chat")]:
+                page = opened(locale)
+                assert page.evaluate("document.documentElement.lang") == lang, locale
+                assert page.inner_text("#new-chat").startswith(new_chat), locale
+            page = opened("ar-EG")
+            assert page.evaluate("[document.documentElement.lang, document.documentElement.dir]") == ["ar", "rtl"]
+            assert page.inner_text("#new-chat").startswith("محادثة جديدة")
+            # right to left: the conversation list on the right
+            sidebar, main = page.eval_on_selector_all("#sidebar, #main", "es => es.map((e) => e.getBoundingClientRect().x)")
+            assert sidebar > main
             assert not errors, errors
             browser.close()
     finally:
