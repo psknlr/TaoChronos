@@ -346,18 +346,9 @@ function aboutPane(d, S) {
       h("div.notice", icon("info"), h("div.grow",
         h("div", h("b", T("证据纪律：")), T("回答中的古籍原文应来自工具结果，并以 [[段落号]] 标注出处；页面会把每条引文与原文逐字核对。")),
         h("div", h("b", T("非医疗建议：")), T("本系统不提供诊断、处方或剂量建议；历代度量衡换算只是历史读法。计算得到的关联与假说须经专家核验。")),
-        info?.corpus?.kind === "full"
-          ? h("div", h("b", T("语料：")), T`全量语料：${info.corpus.books ?? "?"} 部古籍录本的全文（`,
-            h("a", { href: "attribution.html?corpus=full", target: "_blank", rel: "noopener" }, T("来源与授权")),
-            T("），未经本项目逐字校勘；"), S.runtime?.label === T("本站服务") ? T("由本站服务器提供，服务暂不可用时页面改用浏览器内的要籍语料（") : T("由你接入的服务提供；浏览器内另有要籍语料（"),
-            h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, T("来源与授权")), T("）。"))
-          : h("div", h("b", T("语料：")), T`浏览器内运行的是要籍语料：按历代引用排序的${canonCount(info)}要籍的原文（`,
-            h("a", { href: "attribution.html", target: "_blank", rel: "noopener" }, T("来源与授权")),
-            T("），重要典籍多为全书，其余为章节节选，未经本项目逐字校勘；各书全文与全部古籍（全量语料）由本站服务器或你接入的服务提供（设置 → 运行环境）。")),
         h("div", h("b", T("隐私：")), T("对话与密钥保存在本浏览器。使用道乃久默认服务时，你的问题经"), PUBLISHER, T("的服务交由大语言模型处理，该服务不保存请求内容；"),
           T("只有在你同意后，每轮问答才另记录一份到"), PUBLISHER, T("的服务器，用于测试（设置 → 数据）。使用自己的 API Key 时，请求直接发往你选择的服务，或经你本机的服务转发。")))),
       h("div.muted", { style: { fontSize: "13px", lineHeight: "1.8" } },
-        T`${AGENT} · ${ASSISTANT} · ${AGENT_EN} ${info?.version || "?"} · ${PUBLISHED_BY} · 运行环境 ${info?.runtime === "server" ? S.runtime?.label || T("服务") : T("浏览器")} · `,
-        h("a", { href: info?.corpus?.kind === "full" ? "attribution.html?corpus=full" : "attribution.html", target: "_blank", rel: "noopener" }, T("语料来源与授权")))),
+        T`${AGENT} · ${ASSISTANT} · ${AGENT_EN} ${info?.version || "?"} · ${PUBLISHED_BY} · 运行环境 ${info?.runtime === "server" ? S.runtime?.label || T("服务") : T("浏览器")}`)),
   ];
 }
