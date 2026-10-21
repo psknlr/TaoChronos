@@ -1,14 +1,14 @@
 {
  "relay": {
-  "last": 79,
-  "pulled": 0,
-  "total": 79,
-  "updated": "2026-10-20T23:24:48+00:00"
+  "last": 80,
+  "pulled": 1,
+  "total": 80,
+  "updated": "2026-10-21T17:39:34+00:00"
  },
  "site": {
-  "last": 555,
-  "pulled": 2,
-  "total": 555,
-  "updated": "2026-10-20T23:55:28+00:00"
+  "last": 594,
+  "pulled": 39,
+  "total": 594,
+  "updated": "2026-10-21T17:39:35+00:00"
  }
 }
