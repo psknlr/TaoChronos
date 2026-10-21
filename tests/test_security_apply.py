@@ -163,8 +163,9 @@ TOKEN = __import__("re").compile(r'\s*(?:(?P<str>"(?:[^"\\]|\\.)*")|(?P<num>\d+)
 
 
 def evaluate(expression: str, request: dict) -> bool:
-    """A rule's expression evaluated against a request — the part of Cloudflare's rules language these rules use: fields,
-    strings, numbers and sets, eq / ne / contains / in, lower() / len() / starts_with() / ends_with(), not / and / or."""
+    """A rule's expression evaluated against a request — the part of Cloudflare's rules language these rules use: fields
+    (a header map indexed as field["name"][0]: a header the request lacks is missing, and compares false), strings,
+    numbers and sets, eq / ne / contains / in, lower() / len() / starts_with() / ends_with(), not / and / or."""
     import json as _json
 
     tokens, at = [], 0
@@ -214,7 +215,13 @@ def evaluate(expression: str, request: dict) -> bool:
                     "ends_with": lambda s, p: s.endswith(p)}[v](*args)
         if v in ("true", "false"):
             return v == "true"
-        return request[v]  # a field
+        out = request[v]  # a field
+        while peek()[1] == "[":
+            take("[")
+            key = value()
+            take("]")
+            out = out.get(key) if isinstance(out, dict) else out[key] if isinstance(out, list) and key < len(out) else None
+        return out
 
     def comparison():
         left = value()
@@ -307,3 +314,28 @@ def test_search_engines_pass_the_edge_and_crawlers_for_ai_training_do_not():
     path = lambda p: {"http.request.uri.path": p, "http.request.uri": p, "http.host": "chat.impf.ai",  # noqa: E731
                       "http.user_agent": CHROME, "http.request.uri.query": "", "http.request.method": "GET", "cf.client.bot": False}
     assert evaluate(r2, path("/.env")) and evaluate(r2, path("/.git/config")) and not evaluate(r2, path("/js/app.js"))
+
+
+def test_the_relays_take_nothing_another_zones_worker_forwards():
+    """R3: the relay (chat-api.impf.ai) takes a model call or a record only from the page's origins; and neither relay
+    (chat-api.impf.ai, science.impf.ai's Tao-S1) takes anything a Worker of another zone forwards.  A Worker writes any
+    Origin it likes, and every cross-zone subrequest comes from 2a06:98c0:3600::103, Cloudflare's own address (never on
+    the block list): 2,225 model calls in the owner's report of 2026-10-21.  The page's calls (no upstream zone), our own
+    Workers' (impf.ai), a page or the site's API fetched by a Worker, and a health check pass."""
+    r3 = rendered_rule("tc-relay-origin")
+    page = yaml.safe_load(RULES.read_text(encoding="utf-8"))["origins"][0]
+
+    def req(host: str, path: str = "/v1/chat/completions", method: str = "POST", origin: str = page, zone: str = "") -> dict:
+        return {"http.host": host, "http.request.uri.path": path, "http.request.method": method,
+                "http.request.headers": {"origin": [origin]} if origin else {}, "cf.worker.upstream_zone": zone}
+
+    passes = [req("chat-api.impf.ai"), req("chat-api.impf.ai", "/v1/logs"), req("science.impf.ai", origin="https://science.impf.ai"),
+              req("chat-api.impf.ai", zone="impf.ai"), req("chat-api.impf.ai", "/v1/health", "GET", origin=""),
+              req("science.impf.ai", "/v1/health", "GET", origin=""), req("chat.impf.ai", "/", "GET", origin="", zone="someone.workers.dev"),
+              req("chat.impf.ai", "/api/call", origin="https://chat.impf.ai", zone="someone.workers.dev")]
+    blocked = [req("chat-api.impf.ai", origin="https://example.com"), req("chat-api.impf.ai", origin=""),
+               req("chat-api.impf.ai", "/v1/logs", origin="https://example.com"), req("chat-api.impf.ai", zone="someone.workers.dev"),
+               req("science.impf.ai", origin="https://science.impf.ai", zone="proxy.example.com"),
+               req("science.impf.ai", "/v1/models", "GET", origin="", zone="someone.workers.dev")]
+    assert [(r["http.host"], r["http.request.uri.path"]) for r in passes if evaluate(r3, r)] == []
+    assert [(r["http.host"], r["http.request.uri.path"]) for r in blocked if not evaluate(r3, r)] == []
