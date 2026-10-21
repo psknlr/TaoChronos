@@ -4,7 +4,7 @@ chat.impf.ai（网站）与 chat-api.impf.ai（道乃久默认服务的中转）
 
 ```
 请求 ──▶ ① Cloudflare 边缘：WAF 自定义规则、速率限制、区域与机器人设置        （rules.yaml → apply.py → Cloudflare）
-            扫描器路径、伪装的爬虫、抓取库、非网页来源的中转调用在这里被拒，不进 Worker、不计入 Worker 的每日次数
+            扫描器路径、伪装的爬虫、抓取库、非网页来源与别的区域的 Worker 转发的中转调用在这里被拒，不进 Worker、不计入 Worker 的每日次数
        ──▶ ② Worker 里的哨兵（sentinel.js，两个 Worker 共用）：
             每个请求的指纹与分数；扫描器路径的地址拒绝一天；可疑请求连同地址整条记下；enforce 模式下超分的地址拒绝六小时；
             中转还把回答的 token 用量计入访客当天的额度
@@ -149,7 +149,7 @@ Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView
 |---|---|---|---|---|
 | 1 | `tc-own-clients` | skip（只跳过浏览器完整性检查） | 仓库自己的客户端：`taochronos-collector/1`（收集器）、`taochronos-deploy/1`（`deploy.sh` 的检查） | 冒充这个 UA 只能绕过这一项（突发限制也不免：自己的客户端一小时只发几十个请求），其余规则照常 |
 | 2 | `tc-scanner-paths` | block | `wp-`、`/.git`、`/.env`、`.php`、`xmlrpc`、`/../`…… 这两个主机上根本不存在的路径（与哨兵的列表同源） | 无：网站没有这些路径；`/.well-known/` 除外 |
-| 3 | `tc-relay-origin` | block | 向中转 `POST /v1/chat/…`、`/v1/logs` 而 `Origin` 不是网页的来源——中转自己也会拒，但在边缘拒绝**不进 Worker、不计次数** | 无：浏览器一定带 Origin；来源表与 `relay/wrangler.toml` 一致，改一处要改另一处 |
+| 3 | `tc-relay-origin` | block | 向中转 `POST /v1/chat/…`、`/v1/logs` 而 `Origin` 不是网页的来源——中转自己也会拒，但在边缘拒绝**不进 Worker、不计次数**；以及**别的区域的 Worker 转发**到两个中转（`chat-api.impf.ai`、science.impf.ai 的 Tao-S1）`/v1/*` 的请求（`cf.worker.upstream_zone` 既不为空、也不是 `impf.ai`）：Worker 可以随意填写 Origin，来源检查拦不住它（见下文「封禁名单」里的 2a06:98c0:3600::103） | 无：浏览器一定带 Origin，网页的请求也从不经 Worker 转发；本区域自己的 Worker 放行；来源表与 `relay/wrangler.toml` 一致，改一处要改另一处 |
 | 4 | `tc-tooling-and-spoofed-crawlers` | block | 只为训练模型抓取的爬虫（`training_agents`：GPTBot、ClaudeBot、CCBot、meta-externalagent……，**验证与否都拦**，与站点 robots.txt 的名单一致）；没有 UA；`python*`、`Go-http-client`、`Java/`、扫描器名；以及自称 Googlebot、bingbot、ChatGPT-User、PerplexityBot…… 却**没有通过 Cloudflare 验证**（`not cf.client.bot`）的 | 真正的搜索引擎与 AI 助手（验证通过）放行；`curl`、`wget` 不拦（站长自己会用）；`/.well-known/acme-challenge/` 除外 |
 | 5 | `tc-block-list` | block | 列表 `taochronos_block` 里的地址与网段（全站），由 `security/blocklist.yaml` 管理，见下文「封禁名单」。没有列表时这条省略 | 只拦名单上的 |
 | 速率 | `tc-api-burst` | block 10 秒 | `/api/*`、`/v1/*`（两个主机共用计数；`/api/security/csp` 除外）每个地址每个节点 10 秒 240 次 | 网页核对引文时几秒内最多取 60 段原文、再做最多 60 次规范化调用，仍在其下 |
@@ -200,6 +200,11 @@ Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView
   iPhone UA、会执行页面脚本）、360 浏览器的网址检测（`180.163.*`）也长这样，封掉它们网站会在微信里打不开、在 360 里报风险。
 - **永不封禁**（`never`）：Cloudflare 自己的网段、Googlebot、360 的爬虫与检测、Anthropic 的出口（本项目在 Claude Code 里的检查与测试）。
   名单里任何一条与之重叠，整份名单都不写入、运行失败，直到改正；`tests/test_security_apply.py` 在 CI 里先查一遍。
+- **2a06:98c0:3600::103 不是一个访客**：别的 Cloudflare 区域里的 Worker 发来的子请求，地址一律是它（Cloudflare 为跨区域子请求固定填写；
+  同一区域的子请求带访客的真实地址），所以它在报告里会是“一个地址”的大量请求。它在 Cloudflare 的网段里（`never`），封它等于封掉所有
+  经 Worker 来的请求，也写不进名单；把中转当免费模型接口转发的 Worker 由第 3 条按 `cf.worker.upstream_zone` 拒绝（只管两个中转的
+  `/v1/*`）。2026-10-15 至 10-21 它向 `/v1/chat/completions` 发了 2225 次（站长 10-21 的报告），哨兵在中转上一次也没见过它，所以
+  多半是 science.impf.ai 的 Tao-S1。
 - **控制台里手动加的地址**（应急，立即生效）不带 `[taochronos]` 标记，写入名单时保留；事后照样补进 `blocklist.yaml`。
 - 候选从 `data/security-logs/edge/suspects.json`（边缘）与 `data/security-logs/{site,relay}/` 里哨兵标记的事件（`fp.ip`、`reasons`、`state.paths`）来。
 
