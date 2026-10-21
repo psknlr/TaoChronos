@@ -62,7 +62,8 @@ export async function loadProviders() {
     const r = await fetch("providers.json", { cache: "no-cache" });
     if (r.ok) {
       const list = await r.json();
-      if (Array.isArray(list) && list.length) providers = list;
+      // their names and notes are written in Chinese (src/taochronos/chat/providers.py): shown in the page's language
+      if (Array.isArray(list) && list.length) providers = list.map((x) => ({ ...x, label: T(x.label), note: x.note && T(x.note) }));
     }
   } catch { /* the embedded preset is enough to start */ }
   return providers;

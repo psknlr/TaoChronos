@@ -1,6 +1,6 @@
 // Small helpers shared by the client: DOM building, icons, formatting, storage-safe wrappers.
 
-import { EN_PAGE, T } from "./i18n.js";
+import { LANG, LOCALE, T } from "./i18n.js";
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -97,6 +97,7 @@ const PATHS = {
   server: "M4 4h16v6H4zM4 14h16v6H4zM8 7h.01M8 17h.01",
   chip: "M7 7h10v10H7zM9.5 2v3M14.5 2v3M9.5 19v3M14.5 19v3M2 9.5h3M2 14.5h3M19 9.5h3M19 14.5h3",
   chart: "M4 20h16M7 16v-5M12 16V6M17 16v-8",
+  globe: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20",
   info: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01",
   warn: "M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01",
   scroll: "M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4M19 17V5a2 2 0 0 0-2-2H4",
@@ -136,7 +137,7 @@ export function fmtMs(ms) {
 export function count(n, unit = "") {
   if (n === null || n === undefined || n === "" || Number.isNaN(Number(n))) return `? ${unit}`.trim();
   n = Number(n);
-  if (EN_PAGE) return `${new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(n)} ${unit}`.trim();
+  if (!LANG.startsWith("zh")) return `${new Intl.NumberFormat(LOCALE, { notation: "compact", maximumFractionDigits: 1 }).format(n)} ${unit}`.trim();
   const [v, big] = n >= 1e8 ? [n / 1e8, T("亿")] : n >= 1e4 ? [n / 1e4, T("万")] : [n, ""];
   return `${big ? Number(v.toFixed(v >= 100 ? 0 : 1)) : n} ${big}${unit}`.trim();
 }

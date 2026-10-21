@@ -646,7 +646,16 @@ function box(spec, width) {
   rows.forEach((r, i) => { if (num(r.n) !== null) g.append(text(xs[i], end + 8, `n = ${num(r.n)}`, { size: 9.5, fill: "viz-muted", anchor: "middle" })); });
   end += 12;
   if (J && spec.x.label) { g.append(text((left + right) / 2, end + 12, spec.x.label, { size: 11, fill: "viz-ink", anchor: "middle" })); end += 16; }
-  if (over) g.append(text(right, 12, T("▲：超出纵轴的值的个数"), { size: 9.5, fill: "viz-muted", anchor: "end" }));
+  if (over) {
+    // the key to ▲ over the plot, right of the axis title; under it when the two would meet (a language that says it longer)
+    const key = T("▲：超出纵轴的值的个数");
+    if (J || !y.label || left + textWidth(y.label, 10.5) + 12 < right - textWidth(key, 9.5)) {
+      g.append(text(right, 12, key, { size: 9.5, fill: "viz-muted", anchor: "end" }));
+    } else {
+      g.append(text(right, end + 12, key, { size: 9.5, fill: "viz-muted", anchor: "end" }));
+      end += 16;
+    }
+  }
   return { svg: g, height: end + 4, targets };
 }
 

@@ -23,7 +23,7 @@ import {
 import { renderDrawer, reportNode } from "./view/drawer.js";
 import { openSettings } from "./view/settings.js";
 import { answerText, displayName, fillAssistant, rawAnswer, renderedCites, renderThread, toolFamily, verifyBar } from "./view/thread.js";
-import { EN_PAGE, LOCALE, setLang, T, translatePage } from "./i18n.js";
+import { LANG, LANGUAGE, LANGUAGES, LOCALE, setLang, SOURCE_PAGE, T, translatePage } from "./i18n.js";
 
 // ------------------------------------------------------------------ state
 const S = {
@@ -56,7 +56,7 @@ const el = {
   app: $("#app"), sidebar: $("#sidebar"), convs: $("#convs"), search: $("#search"), pill: $("#runtime-pill"), theme: $("#theme-btn"),
   settingsBtn: $("#settings-btn"), newChat: $("#new-chat"), newChatTop: $("#new-chat-top"), collapse: $("#collapse-sidebar"),
   main: $("#main"), toggleSidebar: $("#toggle-sidebar"), modelChip: $("#model-chip"), title: $("#conv-title"),
-  toggleDrawer: $("#toggle-drawer"), lang: $("#lang-btn"), thread: $("#thread"), inner: $("#thread-inner"), toBottom: $("#to-bottom"),
+  toggleDrawer: $("#toggle-drawer"), lang: $("#lang-select"), thread: $("#thread"), inner: $("#thread-inner"), toBottom: $("#to-bottom"),
   composer: $("#composer"), input: $("#input"), send: $("#send"), attach: $("#attach"), file: $("#file"), attachments: $("#attachments"),
   attachData: $("#attach-data"), dataFile: $("#data-file"),
   hint: $("#hint"), drawer: $("#drawer"), scrim: $("#scrim"), settings: $("#settings"), report: $("#report"), consent: $("#consent"),
@@ -221,16 +221,27 @@ function needsKey() {
 
 /** The runtime's standing instructions (they end with 运行环境) and the user's own instructions.  The model underneath is
  * not named in them: asked what it is built on, 道乃久 neither names nor denies it (fixed.js, 身份). */
-// a visitor reading the page in English is answered in English; the classics are still searched, and quoted, in Chinese
-const ENGLISH = "\n\n## Answer in English\nThe user is reading this site in English. Write your answers (and any figure or table titles) in "
-  + "English. Search the corpus with Chinese terms as usual. Quote the classics in the original Chinese with their [[…]] "
-  + "citations exactly as the tools return them, and follow each quotation with an English translation. Give Chinese "
-  + "terms, formulas and herbs in pinyin with the characters, e.g. Guizhi Tang (桂枝汤).";
+// a visitor reading the page in another language is answered in it; the classics are still searched, and quoted, in
+// the Chinese the tools return (each quotation is checked against the source character by character)
+function languageNote() {
+  if (SOURCE_PAGE) return "";
+  const name = LANGUAGE.english;
+  if (LANG === "zh-Hant") {
+    return "\n\n## Answer in Traditional Chinese\nThe user is reading this site in Traditional Chinese (繁體中文). Write your "
+      + "answers (and any figure or table titles) in Traditional Chinese characters. Search the corpus as usual. Quote the "
+      + "classics with their [[…]] citations exactly as the tools return them, character for character: do not convert a "
+      + "quotation to Traditional characters.";
+  }
+  return `\n\n## Answer in ${name}\nThe user is reading this site in ${name}. Write your answers (and any figure or table `
+    + `titles) in ${name}. Search the corpus with Chinese terms as usual. Quote the classics in the original Chinese with `
+    + `their [[…]] citations exactly as the tools return them, and follow each quotation with a ${name} translation. Give `
+    + "Chinese terms, formulas and herbs with their Chinese characters, e.g. Guizhi Tang (桂枝汤).";
+}
 
 function systemPrompt() {
   const base = S.runtimeInfo?.system_prompt || "";
   const extra = (S.settings.instructions || "").trim();
-  return `${base}${extra ? `\n\n## 用户的附加指令\n${extra}` : ""}${EN_PAGE ? ENGLISH : ""}`;
+  return `${base}${extra ? `\n\n## 用户的附加指令\n${extra}` : ""}${languageNote()}`;
 }
 
 // ------------------------------------------------------------------ passages and citations
@@ -1533,7 +1544,8 @@ function wireChrome() {
   el.attachData?.append(icon("file"));
   if (el.dataFile) el.dataFile.accept = ACCEPT;
   el.settingsBtn.append(icon("gear", "sm"), T("设置"));
-  if (EN_PAGE) { el.lang.textContent = "中文"; el.lang.lang = "zh-CN"; }
+  $("#lang-short").replaceWith(icon("globe"), h("span", { class: "lang-short" }, LANGUAGE.short), icon("chevdown", "sm"));
+  el.lang.append(...LANGUAGES.map((l) => h("option", { value: l.code, lang: l.code === "zh" ? "zh-CN" : l.code, selected: l.code === LANG }, l.name)));
 
   el.newChat.addEventListener("click", newChat);
   el.newChatTop.addEventListener("click", newChat);
@@ -1551,7 +1563,7 @@ function wireChrome() {
     applyTheme();
   });
   el.toBottom.addEventListener("click", () => scrollToBottom(true));
-  el.lang.addEventListener("click", () => setLang(EN_PAGE ? "zh" : "en"));
+  el.lang.addEventListener("change", () => setLang(el.lang.value));
   el.search.addEventListener("input", debounce(() => { S.ui.search = el.search.value; renderSidebar(); }, 120));
 
   // code blocks' copy buttons, anywhere in the thread or a report
