@@ -28,6 +28,7 @@ export const DEFAULTS = {
   toolMode: "core",        // core (a dozen tools + catalog/call) | all (every tool directly)
   maxSteps: 16,
   resultChars: 16000,
+  contextTokens: null,     // what a request may send the model, in tokens, room for its reply included; null: as contextBudget decides (context.js)
   instructions: "",
   theme: "system",
   verifyQuotes: true,

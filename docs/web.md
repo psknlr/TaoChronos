@@ -415,7 +415,16 @@ agent holds: a research run never reads the user's data).  It is never offered
 `kg.propose_change` (a proposal to canonical knowledge is a person's act) or Code Mode (`research.run_code`) unless the
 local server is started with `--code-mode`.  Every call passes the scheduler's gauntlet (permission, schema, hooks,
 receipts).  Results reach the model trimmed evenly to a budget (16 000 characters by default: long lists keep their
-head and say how many were left out); results of earlier turns are shortened further.
+head and say how many were left out); those of earlier turns, and a turn's own when its requests would go past the
+context budget, are made compact (below, *上下文预算*).
+
+**A lookup asked again in a turn is answered from the first.**  A call of a tool that reads the corpus or reckons from it
+(`classics`, `kg`, `study`, `validation`, `audit`, `modern`; directly or through `taochronos_call`) with the same
+arguments, in whatever order, on the same runtime, version, profile and corpus as one that gave a result earlier in the
+turn is not run again: the model gets that result whole, with a note saying it is the same as that round's, and the
+step says so too (its figures stay under the first).  Any other call runs each time: one that failed, and those of the
+other tools (the analyses, images, a research run, Code Mode, 我的资料).  So a model whose result was made compact has it
+whole again by asking for it again.
 
 **A call is read as the model wrote it**, at the model's side of the scheduler (`ChatRuntime.call`, and the research
 agents' model loop): a tool's name in another case or with other separators (`classics__get_passage`,
@@ -476,6 +485,28 @@ allows: the default service's own ceiling (the relay's `MAX_OUTPUT_TOKENS`, 32,7
 64,000 with Claude (what Anthropic advises for a streamed reply), and 16,000 from any other service or an API set by
 hand.  A number set there is kept within the default service's ceiling, so the relay forwards the request unchanged; the
 settings show the ceiling and what 自动 comes to.  The 16,000 an older page kept as everyone's number is read as no number.
+
+**上下文预算 — what a request may send** (设置 → 模型, under 最大输出).  Each request of a turn sends the instructions, the
+tools, the conversation so far, the question and the turn's own calls and results, and leaves room for the reply: a turn
+of many rounds grows with every result, a conversation with every turn.  The budget bounds all of it, in tokens
+estimated high (a Chinese character one, three others one, an image 1,600 whatever its size as data; `web/js/context.js`).
+Left empty, it is 200,000 with Claude and 128,000 from any other service or an API set by hand; the settings show what
+自动 comes to.  The room kept for the reply is what 最大输出 allows, at most half the budget, and the request asks for no
+more.  Past the budget, a request gives up, in this order, until it fits: the calls and results of earlier turns,
+oldest first (those turns go as their question and answer); the turn's earlier results, oldest round first, made
+compact; earlier turns, oldest first, which the model is told were left out (and asked to say so when the visitor speaks
+of them); and last the last round's results.  What a request gave up stays given up for the rest of the turn, so that
+each request differs from the one before only where it must, and the record of the turn notes each one that gave up
+more (`compacted`).  A result made compact keeps its shape: every field (one that says what the result means or lacks —
+a note, a caveat, a summary, a verdict — keeps more of its words), its numbers, an identifier whole, a short list (a range
+of years) whole, a long list its head and how many were left out, a long text its start and its length, a passage met
+again by its id and place with what is said of it there.  A note follows: how long the result was, the passages it named
+that the compact form no longer shows, and that a passage can be read by its id or the call asked again with the same
+arguments (answered whole, as above); the notes the page had added to it stay after.  Earlier turns' results are made
+compact so too, to about 2,500 characters each (they were cut at that length).  Calls and their results keep their ids
+and pairs, the model's reasoning in the turn goes as it was, and the page keeps everything whole: its steps show the
+results, citations are checked against them, and 继续作答 and later turns read them.  A service whose context is smaller
+than its default (a local model, say) needs its number here.
 
 **A reply that breaks off is asked again.**  A reply is finished only when the service says so — a `finish_reason` or
 `[DONE]` in an OpenAI-compatible stream, a stop reason from Claude — and a stream that simply ends is a reply that broke
@@ -748,7 +779,13 @@ and how they ended (not one asked again that then answered), a service that refu
 without it and not asked so again, a service that calls tools anyway refused and the turn ended unanswered, a turn taken up again with every call given its result and the note after them, no call run and its
 rounds going on, and which turns can be taken up (Claude's too); a service paused until the time its refusal named (a
 day at most, only one that named one, the others not paused, kept across a reload, and held in memory where the browser
-keeps nothing); the browser runtime's queue (a call not yet begun never sent, a late result dropped, a runtime
+keeps nothing); a turn within its context budget (the budget for each service and one set, tokens estimated and an image
+counted as one, the reply's room half of it at most; a result made compact — still JSON, every field, notes kept longer,
+identifiers whole, a passage met again by its id and place, short lists whole, the passages it named listed, the page's
+notes after; a text cut to its start, one that trimming would not shorten as it was; each step of the order in turn,
+what was given up staying given up, pairs and thinking as they were, nothing given changed; a turn's requests within it
+and its record whole; the oldest turns left out, the model told; a lookup asked again answered from the first, another,
+a failed one, one on another runtime and the user's data run again); the browser runtime's queue (a call not yet begun never sent, a late result dropped, a runtime
 held up started again, Python interrupted where the page shares memory), a server's calls four at a time, its research
 looked at within limits and lost after five failed looks; where a turn's time goes — each model request's times and
 end (a stall, a stop, a refusal kept as its status and not its words), each call's waiting and running, a cut answer
@@ -765,7 +802,7 @@ answer cut at the output limit written on and shown as one, and a reply that onl
 without thinking, Claude at low effort), and Claude's stream that ends part-way or without a stop reason asked again; a chart drawn
 while the search beside it is held — the steps counting, 不再等待 offered and taken, the search skipped and the
 answer noted as perhaps incomplete, a search past its deadline ended, a stop that leaves the page usable, and two
-rounds' calls under one id each shown with its own end; the answer asked for with no tool to call once 不再等待 is taken
+rounds' calls under one id each shown with its own end (the second, the same search, answered from the first); the answer asked for with no tool to call once 不再等待 is taken
 or the rounds are used, a stopped turn taken up again by 继续作答 with no call run again, and a model that keeps calling
 tools ending with a notice, taken up again and still running none, and a turn whose day's free calls run out while its
 search runs, failing once, the service paused until the hour the relay named (the composer saying so; a question,
@@ -774,7 +811,8 @@ search not run again; Claude's answer stopped
 part-way and taken up again (the part shown dropped, `tool_choice` `none`, the page's note after the results, both runs' records); and
 a page served elsewhere (as on GitHub Pages) connecting to a server in one step, using it again after a reload, and a
 token taken from the address (and its absence reported); an API set by hand (address, model, key, headers, parameters —
-checked in the request it makes); the default service (a stand-in relay): asked at once without a key, no key sent by the
+checked in the request it makes — and its context budget: 自动 the general one, a number set kept, the reply's room
+half of it, an earlier turn that does not fit left out and the model told, the page keeping it, and emptied again as it was); the default service (a stand-in relay): asked at once without a key, no key sent by the
 page, the consent question once, a turn recorded only after 同意 (its fields and times, no key or settings), none after 不记录 or
 once switched off under 设置 → 数据, a relay slow to answer (6 s) or missed once still found, and the page asking for a
 key while the relay is down; a question about the assistant answered by the page (no model called, no key needed, the
@@ -783,7 +821,8 @@ more goes to the model, asked for no thinking, showing and storing none; a study
 图 1 … 表 1 …, a chart as its table and in the journal style, exported as PNG at 300 dpi and TIFF at 600 dpi read back with
 their resolution, an 85 mm SVG, CSV; all the figures in panels, all the tables in one Word document; a table downloaded as
 LaTeX and copied as HTML), a ```chart block drawn in the answer and a table it writes (its caption and notes gathered, saved
-as Word and read back), the model told only the titles, and the 工具台's charts; and, with
+as Word and read back), the model told only the titles, the same comparison asked again answered from the first (its step
+and the model told, its figures not shown twice), and the 工具台's charts; and, with
 我的资料 (`tests/test_userdata.py` too): the notice, a GB18030 CSV uploaded to a server on this machine, made anonymous,
 analysed, a `mine:` row cited and checked, nothing naming a patient sent to the model and no record sent; the browser's
 own runtime (the worker's code and IndexedDB, with a stand-in for Pyodide whose Python runs in the test) keeping a

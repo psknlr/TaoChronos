@@ -2,6 +2,7 @@
 // the conversations' data, the site's usage (统计: stats.js), and what this page is.
 
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY, PUBLISHER, PUBLISHER_EN } from "../brand.js";
+import { contextBudget } from "../context.js";
 import { allProviders, customPreset, DEFAULTS, newCustomProvider, outputLimit, providerById } from "../providers.js";
 import { NOTICE } from "../records.js";
 import { h, icon, replace } from "../util.js";
@@ -98,6 +99,10 @@ function modelPane(d, S, ctx, redraw) {
   // left empty, a reply may use what outputLimit decides: the default service's own ceiling, or a default per service
   const maxTok = h("input", { type: "number", min: 256, step: 256, value: d.maxTokens ?? "", placeholder: T`自动（${outputLimit({}, p)}）` });
   maxTok.addEventListener("input", () => { d.maxTokens = Number(maxTok.value) || null; });
+  // left empty, a request keeps within what contextBudget decides for the service (context.js)
+  const budget = h("input", { type: "number", min: 8000, max: 2000000, step: 1000, value: d.contextTokens ?? "",
+    placeholder: T`自动（${contextBudget({}, p)}）`, "aria-label": T("上下文预算（tokens）") });
+  budget.addEventListener("input", () => { d.contextTokens = Math.floor(Number(budget.value)) || null; });
   const think = h("input", { type: "checkbox", checked: d.thinking !== false });
   think.addEventListener("change", () => { d.thinking = think.checked; });
   const result = h("div.test-result");
@@ -130,6 +135,7 @@ function modelPane(d, S, ctx, redraw) {
       h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" } },
         field(T("温度"), temp, T("留空使用服务商默认值")),
         field(T("最大输出（tokens）"), maxTok, p.max_output ? T`含思考内容；${p.label}每次回复最多 ${p.max_output}` : T("含思考内容"))),
+      field(T("上下文预算（tokens）"), budget, T("每次请求发给模型的全部内容（含为回答留的空间）不超过此数；超出时先精简较早的内容，完整结果仍留在页面上")),
       h("div", test, result)),
   ];
 }

@@ -224,7 +224,7 @@ assert.deepEqual([3, 2, 1, 0, -1].map((n) => budgetNote(n) !== ""), [false, true
 const askedFor = [];
 globalThis.fetch = async (url, init) => {
   askedFor.push(JSON.parse(init.body).messages);
-  const call = { index: 0, id: `c${askedFor.length}`, function: { name: "classics__search", arguments: '{"query":"桂枝汤"}' } };
+  const call = { index: 0, id: `c${askedFor.length}`, function: { name: "classics__search", arguments: `{"query":"桂枝汤","page":${askedFor.length}}` } };
   return streamed(sse(`data: ${JSON.stringify({ choices: [{ delta: { tool_calls: [call] }, finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`));
 };
 const stoppedAt = [];
@@ -1242,12 +1242,12 @@ assert.deepEqual(bodies.map((b) => [b.tool_choice, b.tools.length]), [["auto", 1
 assert.equal(told(bodies[2]).at(-1), `{}${budgetNote(0)}`);
 assert.deepEqual([done.wire.at(-1).content, done.unanswered, limited.splice(0), ran.splice(0)], ["答", false, [], ["桂枝", "麻黄"]]);
 // a service that calls tools however it is asked: its calls are not run, and after two refusals the turn ends without an
-// answer, told
+// answer, told (the same search asked again in its second round is answered from the first, not run again)
 bodies = scripted(calls(search("桂枝")));
 done = await turn();
 assert.deepEqual(bodies.map((b) => b.tool_choice), ["auto", "auto", "none", "none"]);
 assert.equal(told(bodies[3]).at(-1), "ERROR: 已达到本轮工具调用的上限：请根据已有结果直接作答。");
-assert.deepEqual([done.unanswered, done.rounds, limited.splice(0), ran.splice(0)], [true, 4, ["steps"], ["桂枝", "桂枝"]]);
+assert.deepEqual([done.unanswered, done.rounds, limited.splice(0), ran.splice(0)], [true, 4, ["steps"], ["桂枝"]]);
 // a service that refuses a request asking for no tool call (HTTP 400): that one is asked again as before, the tools
 // offered (a call would be refused), and the service is not asked so again — others still are
 const picky = { ...relayP, id: "picky" };
@@ -1442,6 +1442,290 @@ def test_a_service_that_says_when_to_come_back_is_paused_under_node(tmp_path):
     (tmp_path / "package.json").write_text('{"type": "module"}')
     (tmp_path / "t.mjs").write_text(NODE_PAUSE, encoding="utf-8")
     run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=120, env={**os.environ, "TZ": "Asia/Shanghai"})
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
+
+
+NODE_CONTEXT = r"""
+import assert from "node:assert/strict";
+import { compactResult, CONTEXT_TOKENS, contextBudget, fitRequest, messageTokens, QUESTION, tokensOf } from "./js/context.js";
+import { buildHistory, runTurn } from "./js/agent.js";
+
+const size = (msgs) => msgs.reduce((a, m) => a + messageTokens(m), 0);
+const said = (text) => text.slice(text.indexOf("\n\n［") + 2); // what a compact result says of itself, and what follows
+const bodyOf = (text) => JSON.parse(text.slice(0, text.indexOf("\n\n［")));
+const LONE = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/;
+
+// the budget: the visitor's number (8000 at least), else one for the service
+assert.deepEqual(CONTEXT_TOKENS, { claude: 200000, other: 128000 });
+assert.deepEqual([contextBudget({}, { format: "anthropic" }), contextBudget({ contextTokens: null }, { format: "openai" }),
+  contextBudget({}, { format: "anthropic", custom: true }), contextBudget({ contextTokens: 50000 }, {}), contextBudget({ contextTokens: 100 }, {}),
+  contextBudget({ contextTokens: "x" }, { format: "anthropic" })], [200000, 128000, 128000, 50000, 8000, 200000]);
+// tokens, estimated high: a Chinese character one, three others one; an image as an image, however long its data
+assert.deepEqual([tokensOf("桂枝汤"), tokensOf("abcdef"), tokensOf("桂枝 ab"), tokensOf({ a: 1 })], [3, 2, 3, 3]);
+const picture = (n) => ({ role: "user", content: [{ type: "text", text: "看图" }, { type: "image_url", image_url: { url: `data:image/png;base64,${"A".repeat(n)}` } }] });
+const claudePicture = { role: "user", content: [{ type: "image", source: { type: "base64", media_type: "image/png", data: "A".repeat(300000) } },
+  { type: "text", text: "看图" }] };
+assert.equal(messageTokens(picture(10)), messageTokens(picture(300000)));
+for (const m of [picture(300000), claudePicture]) assert.ok(messageTokens(m) > 1600 && messageTokens(m) < 1700, messageTokens(m));
+
+// a result made compact: still JSON, every field, its numbers, short lists whole, its notes longer than other words, a
+// passage met again by its id and place with what is said of it there, and every passage it named, kept or listed
+const LICENSE = "Underlying works are pre-1900 public-domain texts; this excerpt transcription is released under CC0-1.0";
+const card = (i, more = {}) => ({ passage_id: `shanghanlun.c${String(i).padStart(3, "0")}`, book_id: "shanghanlun", title: "伤寒论",
+  dynasty: "东汉", years: [200, 219], locator: `《伤寒论》第${i}条`, quote: "太阳之为病，脉浮，头项强痛而恶寒。".repeat(3),
+  source: "TaoChronos demonstration corpus", license: LICENSE, ...more });
+const NOTE = `按成书年代排列；${"只统计写出组成的条文，".repeat(25)}`;
+const found = { query: { q: "太阳病" }, hits: Array.from({ length: 30 }, (_, i) => card(i + 1)), earliest: card(1, { name_form: "桂枝汤方" }),
+  quoted: card(1, { quote: "太阳中风" }), years: [200, 219], books: ["shanghanlun", "jingui", "wenbing"], total: 30, note: NOTE };
+const text = JSON.stringify(found);
+const short = compactResult(text);
+const kept = bodyOf(short);
+assert.ok(JSON.stringify(kept).length <= 1500 && short.length < text.length / 3, `${short.length} of ${text.length}`);
+assert.deepEqual(Object.keys(kept), Object.keys(found));
+assert.deepEqual([kept.total, kept.years, kept.books, kept.query], [30, [200, 219], found.books, { q: "太阳病" }]);
+assert.ok(kept.note.startsWith(NOTE.slice(0, 240)) && NOTE.length > 250, kept.note);
+assert.match(kept.hits.at(-1), /^…（另有 \d+ 项未显示）$/);
+assert.deepEqual([kept.earliest, kept.quoted], [{ passage_id: "shanghanlun.c001", locator: "《伤寒论》第1条", name_form: "桂枝汤方" },
+  { passage_id: "shanghanlun.c001", locator: "《伤寒论》第1条", quote: "太阳中风" }]);
+const shown = kept.hits.filter((c) => typeof c === "object").map((c) => c.passage_id);
+const others = found.hits.map((c) => c.passage_id).filter((id) => !shown.includes(id));
+assert.ok(shown.length && others.length);
+assert.equal(said(short), `［这条工具结果为节省上下文已精简：原长 ${text.length} 字符；上面保留了它的结构，长的列表和文字只留开头；其中还提到这些段落：`
+  + `${others.join("、")}。需要细节时，可按段落号读原文，或以同样的参数再调用一次］`);
+// the notes the page added to it are kept as they were, after its own
+const told = `${text}\n\n［提示：回答这个问题还可再调用 1 轮工具，请在用完之前作答］`;
+assert.equal(compactResult(told), `${short}\n\n［提示：回答这个问题还可再调用 1 轮工具，请在用完之前作答］`);
+// a record keeps every field (a note a little over its words whole); a list's passage ids are passages it names; it is
+// trimmed no more than it must be
+const record = { ...Object.fromEntries(Array.from({ length: 16 }, (_, i) => [`f${i}`, "字".repeat(300)])), note: "注".repeat(245) };
+const fields = bodyOf(compactResult(JSON.stringify(record)));
+assert.deepEqual([Object.keys(fields), fields.note, fields.f0.length > 40], [Object.keys(record), record.note, true]);
+const evidence = { passage_ids: Array.from({ length: 300 }, (_, i) => `shanghanlun.c${String(i).padStart(3, "0")}`) };
+assert.ok(said(compactResult(JSON.stringify(evidence))).includes("、shanghanlun.c299") === false
+  && said(compactResult(JSON.stringify(evidence))).includes("shanghanlun.c012、shanghanlun.c013"));
+const loose = JSON.stringify({ hits: [0, 1, 2].map((i) => ({ passage_id: `p${i}`, quote: "字".repeat(500) })) });
+assert.ok(loose.length > 1500 && bodyOf(compactResult(loose)).hits.every((c) => c.quote === `${"字".repeat(400)}…（共 500 字）`));
+const within = `${JSON.stringify({ t: "x".repeat(450) })}\n\n［提示：${"很".repeat(2000)}］`;
+assert.equal(compactResult(within), within);
+// an identifier is never cut; more passages than it lists, counted; a table (more fields than a record has) trimmed like
+// a list; a character written as two never split
+const long = "zhongyi.collection.mingqing-reprint.volume12.chapter3.section2.passage";
+const ids = bodyOf(compactResult(JSON.stringify({ hits: Array.from({ length: 100 }, (_, i) => card(i, { passage_id: `${long}${i}` })) }), 600));
+assert.ok(ids.hits[0].quote.length < 50 && ids.hits[0].passage_id === `${long}0`, JSON.stringify(ids.hits[0])); // its words cut, its id whole
+const many = compactResult(JSON.stringify({ hits: Array.from({ length: 100 }, (_, i) => card(i + 1)) }));
+const listed = bodyOf(many).hits.length - 1;
+assert.ok(many.includes(`等 ${100 - listed} 段。`) && said(many).split("、").length === 60, said(many));
+const table = bodyOf(compactResult(JSON.stringify({ doses: Object.fromEntries(Array.from({ length: 300 }, (_, i) => [`${i + 1}两`, i])) })));
+assert.deepEqual([Object.keys(table.doses).length, table.doses["…"]], [13, "另有 288 个字段未显示"]);
+for (const rare of [JSON.stringify({ hits: Array.from({ length: 20 }, () => ({ quote: `a${"𠀀".repeat(300)}` })) }), `a${"𠀀".repeat(1000)}`]) {
+  assert.ok(!LONE.test(compactResult(rare)));
+}
+// a text that is not JSON: its start; a result within its room, or one that trimming would not shorten, as it was
+const error = `ERROR: ${"运行时出错。".repeat(400)}`;
+assert.equal(compactResult(error), `${error.slice(0, 1500)}\n\n［这条工具结果为节省上下文已截短：原长 ${error.length} 字符，上面是它的开头。需要细节时，请以同样的参数再调用一次］`);
+const dense = JSON.stringify(Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`f${i}`, Object.fromEntries(Array.from({ length: 20 }, (_, j) => [`g${j}`, i * 100 + j]))])));
+assert.ok(dense.length > 1500);
+for (const same of ['{"a":1}', dense]) assert.equal(compactResult(same), same);
+assert.equal(compactResult(text, 100000), text);
+
+// the conversation so far: its questions marked (never sent), its results made compact by their shape
+const relayP = { id: "impf", relay: true, baseUrl: "https://relay.example/v1", model: "Tao-R1", extra_body: {},
+  max_tokens_param: "max_completion_tokens", reasoning: "reasoning_details" };
+const big = (k) => JSON.stringify({ query: { q: `问${k}` }, hits: Array.from({ length: 30 }, (_, i) => card(100 * k + i)), total: 30 });
+const wireOf = (k, answer) => [
+  { role: "assistant", content: "", tool_calls: [{ id: `t${k}`, type: "function", function: { name: "classics__search", arguments: "{}" } }] },
+  { role: "tool", tool_call_id: `t${k}`, content: big(k) },
+  { role: "assistant", content: `<think>想一想</think>${answer}` },
+];
+const conversation = (answer) => [1, 2, 3].flatMap((k) => [{ role: "user", text: `问${k}` },
+  { role: "assistant", wire: wireOf(k, answer(k)), wireFormat: "openai", wireProvider: "impf" }]);
+const history = buildHistory(conversation((k) => `答${k}`), relayP);
+assert.deepEqual(history.map((m) => Boolean(m[QUESTION])), [1, 2, 3].flatMap(() => [true, false, false, false]));
+assert.equal(JSON.stringify(history[0]), '{"role":"user","content":"问1"}');
+assert.ok(history[2].content.length < 3500 && said(history[2].content).startsWith(`［这条工具结果为节省上下文已精简：原长 ${big(1).length} 字符`));
+assert.equal(bodyOf(history[2].content).total, 30);
+
+// a request within the budget sends all; past it, in order: earlier turns as their questions and answers, the turn's
+// earlier results made compact, the oldest turns left out (and the model told), the last round's results
+// one result trimming leaves long (numbers that cannot be trimmed): made compact once, from its own text (made compact
+// again, its lists would say they left out fewer than they did)
+const stubborn = JSON.stringify(Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`f${i}`,
+  { n: Array.from({ length: 50 }, (_, k) => ({ k, v: 1000 + k, w: 2000 + k })), ...Object.fromEntries(Array.from({ length: 20 }, (_, k) => [`g${k}`, 1000 + k])) }])));
+assert.ok(compactResult(stubborn) !== stubborn && JSON.stringify(bodyOf(compactResult(stubborn))).length > 1500);
+assert.ok(bodyOf(compactResult(stubborn)).f0.n[1] === "…（另有 49 项未显示）" && compactResult(compactResult(stubborn)) !== compactResult(stubborn));
+const round = (r) => [
+  { role: "assistant", content: "", tool_calls: [0, 1].map((j) => ({ id: `r${r}c${j}`, type: "function", function: { name: "classics__search", arguments: `{"q":"${r}${j}"}` } })) },
+  ...[0, 1].map((j) => ({ role: "tool", tool_call_id: `r${r}c${j}`, content: r === 1 && j === 1 ? stubborn : big(10 * r + j) })),
+];
+const turn = [1, 2, 3].flatMap(round);
+const before = JSON.stringify([history, turn]);
+const plain = (k) => [history[4 * (k - 1)], { role: "assistant", content: `答${k}` }];
+const upTo = (n) => turn.map((m) => (m.role === "tool" && Number(m.tool_call_id[1]) <= n ? { ...m, content: compactResult(m.content) } : m));
+const P = size([...plain(1), ...plain(2), ...plain(3)]);
+const fits = (room, state = {}) => fitRequest({ history, turn, format: "openai", budget: 100000, fixed: 95000 - room, state });
+const paired = (msgs) => {
+  const open = new Set();
+  for (const m of msgs) {
+    for (const c of m.tool_calls || []) open.add(c.id);
+    if (m.role === "tool") assert.ok(open.delete(m.tool_call_id), m.tool_call_id);
+  }
+  assert.equal(open.size, 0);
+};
+const whole = size(history) + size(turn);
+let state = {};
+let view = fits(whole, state);
+assert.ok(view.turn === turn && view.history.length === history.length && view.history.every((m, i) => m === history[i]));
+assert.deepEqual([view.note, view.more, view.tokens, state], ["", false, 95000, { plain: 0, upTo: 0, dropped: 0 }]);
+const steps = [
+  [whole - 1, { plain: 1, upTo: 0, dropped: 0 }, [...plain(1), ...history.slice(4)], turn],
+  [P + size(turn), { plain: 3, upTo: 0, dropped: 0 }, [...plain(1), ...plain(2), ...plain(3)], turn],
+  [P + size(upTo(1)), { plain: 3, upTo: 1, dropped: 0 }, [...plain(1), ...plain(2), ...plain(3)], upTo(1)],
+  [P + size(upTo(2)), { plain: 3, upTo: 2, dropped: 0 }, [...plain(1), ...plain(2), ...plain(3)], upTo(2)],
+  [size([...plain(2), ...plain(3), ...upTo(2)]), { plain: 3, upTo: 2, dropped: 1 }, [...plain(2), ...plain(3)], upTo(2)],
+  [size(upTo(2)), { plain: 3, upTo: 2, dropped: 3 }, [], upTo(2)],
+  [size(upTo(3)), { plain: 3, upTo: 3, dropped: 3 }, [], upTo(3)],
+  [1, { plain: 3, upTo: 3, dropped: 3 }, [], upTo(3)],
+];
+for (const [room, want, wantHistory, wantTurn] of steps) {
+  state = {};
+  view = fits(room, state);
+  assert.deepEqual(state, want, `${room}`);
+  assert.deepEqual([view.history, view.turn, view.more], [wantHistory, wantTurn, true], `${room}`);
+  assert.ok(view.tokens <= 95000 || room === 1, `${room}: ${view.tokens}`);
+  assert.equal(view.note, want.dropped ? `［对话较长：为节省上下文，最早的 ${want.dropped} 轮问答这次没有发送给你。用户提到其中的内容时，请说明你看不到那部分］` : "");
+  paired([...view.history, ...view.turn]);
+  view.turn.forEach((m, i) => assert.ok(m === turn[i] || m.role === "tool", i)); // a result made compact is a copy
+}
+assert.equal(JSON.stringify([history, turn]), before); // what was given is not changed
+// what a turn's requests gave up stays given up, so that each differs from the one before only where it must
+state = {};
+const tight = size([...plain(2), ...plain(3), ...upTo(2)]);
+fits(tight, state);
+for (const room of [tight, whole]) { // the next request, with as little room or more: as the last, and reckoned as it is
+  view = fits(room, state);
+  assert.deepEqual([state, view.history, view.turn, view.more, view.tokens],
+    [{ plain: 3, upTo: 2, dropped: 1 }, [...plain(2), ...plain(3)], upTo(2), false, 95000 - room + tight], `${room}`);
+}
+// an earlier turn with nothing said: as one; Claude's: its words, not its thinking; the turn's results compact in their
+// blocks, the rest as it was
+const silent = buildHistory([{ role: "user", text: "问" }, { role: "assistant", wire: wireOf(9, ""), wireFormat: "openai", wireProvider: "impf" }], relayP);
+const nothing = [silent[0], { role: "assistant", content: "（这一轮没有留下回答）" }];
+assert.deepEqual(fitRequest({ history: silent, turn: [], format: "openai", budget: 100000, fixed: 95000 - size(nothing) }).history, nothing);
+const claudeP = { id: "anthropic", format: "anthropic", baseUrl: "https://api.anthropic.com", model: "claude" };
+const claudeWire = [{ role: "assistant", content: [{ type: "thinking", thinking: "想", signature: "s" }, { type: "text", text: "先查。" },
+  { type: "tool_use", id: "u0", name: "classics__search", input: {} }] },
+{ role: "user", content: [{ type: "tool_result", tool_use_id: "u0", content: big(5) }] },
+{ role: "assistant", content: [{ type: "thinking", thinking: "再想", signature: "s" }, { type: "text", text: "答。" }] }];
+const claudeHistory = buildHistory([{ role: "user", text: "问" }, { role: "assistant", wire: claudeWire, wireFormat: "anthropic", wireProvider: "anthropic" }], claudeP);
+const cround = (r) => [
+  { role: "assistant", content: [{ type: "thinking", thinking: "想", signature: "s" }, { type: "tool_use", id: `u${r}`, name: "classics__search", input: { r } }] },
+  { role: "user", content: [{ type: "text", text: "附注" }, { type: "tool_result", tool_use_id: `u${r}`, content: big(r) }] },
+];
+const cturn = [1, 2].flatMap(cround);
+view = fitRequest({ history: claudeHistory, turn: cturn, format: "anthropic", budget: 100000,
+  fixed: 95000 - size([claudeHistory[0], { role: "assistant", content: "先查。\n\n答。" }, ...cturn]) + 1 });
+assert.deepEqual(view.history, [claudeHistory[0], { role: "assistant", content: "先查。\n\n答。" }]);
+assert.ok(view.turn[0] === cturn[0] && view.turn[2] === cturn[2] && view.turn[3] === cturn[3]);
+assert.deepEqual(view.turn[1], { role: "user", content: [{ type: "text", text: "附注" }, { type: "tool_result", tool_use_id: "u1", content: compactResult(big(1)) }] });
+
+// in a turn: each request within the budget, the reply's room in it (half at most, and asked for no more); the page's
+// record of the turn keeps every result whole
+const enc = new TextEncoder();
+const sse = (body) => new Response(new ReadableStream({ start(c) { c.enqueue(enc.encode(body)); c.close(); } }),
+  { status: 200, headers: { "Content-Type": "text/event-stream" } });
+const delta = (content, finish = null) => `data: ${JSON.stringify({ choices: [{ delta: { content }, finish_reason: finish }] })}\n\n`;
+let n = 0;
+const calls = (...cs) => `data: ${JSON.stringify({ choices: [{ delta: { tool_calls: cs.map(([name, args], i) => (
+  { index: i, id: `k${++n}`, function: { name, arguments: JSON.stringify(args) } })) }, finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`;
+const scripted = (...replies) => {
+  const bodies = [];
+  globalThis.fetch = async (url, init) => { bodies.push(JSON.parse(init.body)); return sse(replies.length > 1 ? replies.shift() : replies[0]); };
+  return bodies;
+};
+const tools = ["classics__search", "kg__term", "taochronos_call", "mydata__read"].map((name) => ({ name, description: name, parameters: { type: "object", properties: {} } }));
+let ran = [];
+const runtime = {
+  call: async (name, args) => {
+    ran.push(name === "taochronos_call" ? args.tool : `${name} ${args.q ?? args.surface ?? ""}`.trim());
+    if (args.surface === "无") return { ok: false, error: "没有这个词条", text: "ERROR: 没有这个词条" };
+    return { ok: true, text: big(ran.length), summary: "找到 30 段", duration_ms: 12, result: { charts: [] } };
+  },
+};
+const turnWith = (extra) => {
+  const trace = {};
+  const ends = [];
+  return { trace, ends, done: runTurn({ provider: relayP, settings: { maxSteps: 8 }, route: null, runtime, tools, system: "s", history: [],
+    user: { text: "问" }, signal: new AbortController().signal, trace, hooks: { toolEnd: (call, out) => ends.push(out) }, ...extra }) };
+};
+let bodies = scripted(calls(["classics__search", { q: "甲" }]), calls(["classics__search", { q: "乙" }]), calls(["classics__search", { q: "丙" }]),
+  delta("答", "stop"));
+let t = turnWith({ settings: { maxSteps: 8, contextTokens: 20000 } });
+let done = await t.done;
+const results = (b) => b.messages.filter((m) => m.role === "tool").map((m) => m.content);
+assert.deepEqual(bodies.map((b) => b.max_completion_tokens), [10000, 10000, 10000, 10000]);
+assert.deepEqual(results(bodies[1]), [big(1)]);
+assert.deepEqual(results(bodies[2]), [compactResult(big(1)), big(2)]);
+assert.deepEqual(results(bodies[3]), [compactResult(big(1)), compactResult(big(2)), big(3)]);
+for (const b of bodies) assert.ok(size(b.messages) + tokensOf(tools) + 10000 <= 20000, size(b.messages));
+assert.deepEqual(done.wire.filter((m) => m.role === "tool").map((m) => m.content), [big(1), big(2), big(3)]);
+assert.deepEqual(t.trace.events.map((e) => e.what), ["compacted", "compacted"]);
+// a conversation too long for it: the oldest turns are left out, and the model is told
+const talk = buildHistory(conversation((k) => `答${k}${"论".repeat(1500)}`), relayP);
+for (const [instructions, left] of [["s", 1], ["规".repeat(2500), 3]]) { // the instructions count: longer ones leave less room
+  bodies = scripted(delta("答", "stop"));
+  t = turnWith({ settings: { maxSteps: 8, contextTokens: 8000 }, history: talk, system: instructions });
+  await t.done;
+  const [system, ...sent] = bodies[0].messages;
+  assert.ok(bodies[0].max_completion_tokens === 4000 && (left === 3 || size(bodies[0].messages) + tokensOf(tools) + 4000 <= 8000));
+  assert.equal(system.content, `${instructions}\n\n［对话较长：为节省上下文，最早的 ${left} 轮问答这次没有发送给你。用户提到其中的内容时，请说明你看不到那部分］`);
+  assert.deepEqual(sent.map((m) => m.content).filter((c) => /^问\d$/.test(c)), ["问1", "问2", "问3"].slice(left));
+  assert.ok(sent.every((m) => m.role !== "tool") && sent.at(-1).content === "问");
+  assert.deepEqual(t.trace.events.map((e) => e.what), ["compacted"]);
+}
+
+// a lookup asked again in the turn, its arguments in another order, directly or through the catalog: answered from the
+// first, not run again, and the model told so; another, a failed one, one on another runtime, or one that is not a
+// lookup of the corpus (the user's data) runs again
+ran = [];
+let where = "a"; // the runtime and corpus the turn's lookups are asked of: another once 麻黄汤 has been looked up
+const moving = { call: async (name, args) => { const out = await runtime.call(name, args); if (args.q === "麻黄汤") where = "b"; return out; } };
+bodies = scripted(
+  calls(["classics__search", { q: "桂枝汤", books: ["shanghanlun"] }], ["taochronos_call", { tool: "study.formula", arguments: { name: "桂枝汤" } }],
+    ["kg__term", { surface: "无" }], ["mydata__read", {}]),
+  calls(["classics__search", { books: ["shanghanlun"], q: "桂枝汤" }], ["taochronos_call", { arguments: { name: "桂枝汤" }, tool: "study.formula" }],
+    ["kg__term", { surface: "无" }], ["mydata__read", {}], ["classics__search", { q: "麻黄汤" }]),
+  calls(["classics__search", { q: "桂枝汤", books: ["shanghanlun"] }]),
+  delta("答", "stop"));
+t = turnWith({ scope: () => where, runtime: moving });
+done = await t.done;
+assert.deepEqual(ran, ["classics__search 桂枝汤", "study.formula", "kg__term 无", "mydata__read", "kg__term 无", "mydata__read",
+  "classics__search 麻黄汤", "classics__search 桂枝汤"]);
+const again = results(bodies[2]).slice(4);
+assert.deepEqual(again.slice(0, 2), [`${big(1)}\n\n［与本轮第 1 轮的同一调用相同：结果取自那一次，没有重新运行］`,
+  `${big(2)}\n\n［与本轮第 1 轮的同一调用相同：结果取自那一次，没有重新运行］`]);
+assert.deepEqual(again.slice(2), ["ERROR: 没有这个词条", big(6), big(7)]);
+assert.deepEqual(t.ends.map((o) => o.reused ?? null), [null, null, null, null, 1, 1, null, null, null, null]);
+assert.deepEqual(t.trace.events.map((e) => e.what), ["reused", "reused"]);
+assert.deepEqual(t.trace.tools.map((e) => e.compute ?? null), [12, 12, null, 12, null, null, null, 12, 12, 12]);
+assert.equal(bodies[0].max_completion_tokens, 16000); // within its budget, the reply's room as it would be
+console.log("ok");
+"""
+
+
+def test_a_turn_keeps_within_its_context_budget_under_node(tmp_path):
+    """A request's context budget (web/js/context.js): the visitor's, or one for the service, with the reply's room in it;
+    tokens estimated high, an image counted as one; a result made compact keeping its shape, every field and the passages
+    it named; past the budget, earlier turns as their questions and answers, the turn's earlier results compact, the
+    oldest turns left out (the model told), the last round's results — what was given up staying given up, pairs and
+    thinking as they were, the page's record whole; and a lookup asked again in a turn answered from the first where
+    that is safe."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_CONTEXT, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=120)
     assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
 
 
@@ -1767,6 +2051,17 @@ def test_charts_in_the_browser(tmp_path):
             told = next(m["content"] for m in mock.requests[1]["body"]["messages"] if m["role"] == "tool")
             assert '"charts_shown":["配伍比例对照","方剂相似度"]' in told and '"heatmap"' not in told
             assert '"tables_shown":["桂枝汤、麻黄汤的组成与剂量","方剂两两比较"]' in told and '"columns"' not in told
+            # the same comparison asked again in the turn's next round is answered from the first, not run again: its
+            # step says so, the model is told so, and its figures are not shown a second time
+            page.fill("#input", "用图表比较桂枝汤与麻黄汤，再查一遍。")
+            page.keyboard.press("Enter")
+            page.wait_for_function("document.querySelectorAll('.msg.assistant .actions .meta').length >= 2", timeout=60000)
+            again = page.locator(".msg.assistant").nth(1)
+            said = again.locator(".steps .tool .row > .sm").all_inner_texts()
+            assert len(said) == 2 and said[1] == f"{said[0]}（与先前的同一调用相同，没有重新运行）", said
+            assert again.locator(".charts .chart-tabs").count() == 1 and again.locator(".charts .viz-card").count() == 1
+            last = [m["content"] for m in mock.requests[-1]["body"]["messages"] if m["role"] == "tool"]
+            assert last[-1] == f"{last[-2]}\n\n［与本轮第 1 轮的同一调用相同：结果取自那一次，没有重新运行］"
             # the tool console draws the charts of what it runs
             page.click("#toggle-drawer")
             page.click(".drawer .tab >> text=工具台")
@@ -1930,8 +2225,9 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
             assert [m["tool_call_id"] for m in told()][-2:] == ["call_1", "call_2"] and told()[-1]["content"] == f"ERROR: 调用已停止\n\n{RESUMED}"
             assert not third.locator(".notice").count() and third.locator(".steps .tool .st.ok").count() == 1
             # and the next question is answered — one the model searches for twice, in two rounds, each call under the
-            # same id (a service that numbers its calls afresh in each reply): each step ends as its own; its two rounds
-            # used, the answer is asked for with no tool to call
+            # same id (a service that numbers its calls afresh in each reply): each step ends as its own, the second
+            # answered from the first, not run again; its two rounds used, the answer is asked for with no tool to call
+            ran.clear()
             asked = len(mock.requests)
             page.fill("#input", "桂枝汤主治什么？请再查一遍原文。")
             page.keyboard.press("Enter")
@@ -1940,7 +2236,9 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
             assert [m["tool_call_id"] for m in mock.requests[-1]["body"]["messages"] if m["role"] == "tool"][-2:] == ["call_1", "call_1"]
             assert [r["body"]["tool_choice"] for r in mock.requests[asked:]] == ["auto", "auto", "none"]
             assert fourth.locator(".steps .tool .st.ok").count() == 2 and not fourth.locator(".notice").count()
-            assert fourth.locator(".steps .tool .row > .sm").all_inner_texts() == ["3 条命中", "3 条命中"]
+            assert fourth.locator(".steps .tool .row > .sm").all_inner_texts() == ["3 条命中", "3 条命中（与先前的同一调用相同，没有重新运行）"]
+            assert ran == ["classics__search"] and told()[-1]["content"].endswith(
+                "［与本轮第 1 轮的同一调用相同：结果取自那一次，没有重新运行］\n\n［提示：回答这个问题的工具调用已用完，请根据已有结果直接作答，不要再调用工具］")
             # a model that calls tools however it is asked: once its rounds are used its calls are not run, and its turn
             # ends saying it gave no answer; taken up again, it is asked twice more — no call runs, and it ends so again
             ran.clear()
@@ -1951,13 +2249,13 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
             ended()
             fifth = page.locator(".msg.assistant").nth(4)
             assert [r["body"]["tool_choice"] for r in mock.requests[asked:]] == ["auto", "auto", "none", "none"]
-            assert ran == ["classics__search"] * 2 and fifth.locator(".steps .tool .st.ok").count() == 2
+            assert ran == ["classics__search"] and fifth.locator(".steps .tool .st.ok").count() == 2  # the second from the first
             assert "工具已经停止调用，模型却仍要调用，没有给出回答。" in fifth.locator(".notice.err").inner_text()
             asked = len(mock.requests)
             fifth.locator(".notice.err button.resume").click()
             ended()
             page.wait_for_function("document.querySelectorAll('.msg.assistant')[4]?.querySelector('.notice.err button.resume')", timeout=10000)
-            assert [r["body"]["tool_choice"] for r in mock.requests[asked:]] == ["none", "none"] and len(ran) == 2
+            assert [r["body"]["tool_choice"] for r in mock.requests[asked:]] == ["none", "none"] and len(ran) == 1
             assert told()[-2]["content"].endswith(RESUMED) and "工具已经停止调用" in fifth.locator(".notice.err").inner_text()
             # the day's free calls run out while the next question's search runs: the turn fails saying so, asked once (a
             # spent day is not asked again); once the conversation goes on, a turn before the last is not taken up again
@@ -2335,6 +2633,38 @@ def test_an_api_set_by_hand(tmp_path):
             assert "my-model" not in req["body"]["messages"][0]["content"]  # the instructions name no model, the visitor's own included
             saved = json.loads(page.evaluate("localStorage.getItem('tc.settings')"))
             assert saved["provider"].startswith("custom-") and saved["customProviders"][0]["headers"] == {"X-Gateway": "tc-test"}
+            assert req["body"]["max_tokens"] == 16000 and saved["contextTokens"] is None
+
+            # its context budget: left empty, the one for a service other than Claude; set, each request keeps within it,
+            # the room for its reply half of it at most and asked for no more — here, the conversation so far does not
+            # fit, and its earlier turn is left out, the model told; the page keeps all of it
+            def budget(value: str) -> None:
+                page.click("#model-chip")
+                field = page.get_by_label("上下文预算（tokens）")
+                assert field.get_attribute("placeholder") == "自动（128000）"
+                field.fill(value)
+                page.click(".modal-foot .btn:not(.secondary)")
+
+            def asked(question: str, n: int) -> dict:
+                before = len(mock.requests)
+                page.fill("#input", question)
+                page.keyboard.press("Enter")
+                page.wait_for_function(f"document.querySelectorAll('.msg.assistant .verify-bar').length >= {n}", timeout=60000)
+                return mock.requests[before]["body"]
+
+            budget("8000")
+            assert json.loads(page.evaluate("localStorage.getItem('tc.settings')"))["contextTokens"] == 8000
+            body = asked("它的组成呢？", 2)
+            assert body["max_tokens"] == 4000 and [m["role"] for m in body["messages"]] == ["system", "user"]
+            assert body["messages"][0]["content"].endswith(
+                "［对话较长：为节省上下文，最早的 1 轮问答这次没有发送给你。用户提到其中的内容时，请说明你看不到那部分］")
+            assert page.locator(".msg.user").all_inner_texts() == ["桂枝汤主治什么？", "它的组成呢？"]
+            # left empty again: as it was
+            budget("")
+            assert json.loads(page.evaluate("localStorage.getItem('tc.settings')"))["contextTokens"] is None
+            body = asked("麻黄汤呢？", 3)
+            assert body["max_tokens"] == 16000 and "对话较长" not in body["messages"][0]["content"]
+            assert [m["role"] for m in body["messages"]] == ["system"] + ["user", "assistant", "tool", "assistant"] * 2 + ["user"]
             assert not errors, errors
             browser.close()
     finally:
