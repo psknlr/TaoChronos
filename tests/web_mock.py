@@ -5,8 +5,10 @@ and ``delta.content`` as cumulative text; tool-call arguments arrive in pieces. 
 ``classics__search``; once the turn holds a tool result, the reply is an answer with four citations — one quoted
 verbatim, one misquoted, one to a passage that does not exist and one quoted in the traditional script — and, as a model
 forgetting its instructions would, the names of the tools and fields it worked with, which the page tells in plain words
-(web/js/redact.js).  A message carrying the user's data (我的资料: the page's note on it) is answered by analysing its
-prescriptions (``mydata__prescriptions``) and citing its first row.  Every request is recorded for the test to inspect.
+(web/js/redact.js).  The page's self-check (自查, web/js/agent.js) names the passage that does not exist; asked so, the
+model searches again and answers without it.  A message carrying the user's data (我的资料: the page's note on it) is
+answered by analysing its prescriptions (``mydata__prescriptions``) and citing its first row.  Every request is recorded
+for the test to inspect.
 """
 
 from __future__ import annotations
@@ -26,6 +28,10 @@ ANSWER = ("## 结论\n\n《伤寒论》以桂枝汤治太阳中风。\n\n"
           "| 书 | 朝代 |\n|---|---|\n| 伤寒论 | 东汉 |\n\n"
           "以上经 classics__search 检得，可用 `validation__verify_quote` 复核，出处附 passage_id。\n\n"
           "这是计算与文献检索的结果，不构成医疗建议。")
+# the answer again, once the page's self-check named the passage it cited that the corpus has not: that line dropped
+MENDED = ANSWER.replace("- 一个不存在的出处[[fake.999]]\n", "")
+assert MENDED != ANSWER
+SELF_CHECK = "［自查："  # how the page's self-check note to the model begins (web/js/agent.js, reviewNote)
 THINKING = ["用户问桂枝汤", "用户问桂枝汤的主治，先检索原文。"]
 # a question asking for 图表: the model compares two formulas (a study whose result carries charts and tables), then
 # draws a chart of its own in a ```chart block and writes a table with its caption and notes
@@ -87,12 +93,13 @@ class _Handler(BaseHTTPRequestHandler):
         asked = asked if isinstance(asked, str) else json.dumps(asked, ensure_ascii=False)
         mine = DATA_ID.search(asked)
         charting = mine.group(1) if mine else "图表" in asked
+        mended = asked.startswith(SELF_CHECK)
         self.send_response(200)
         self._cors()
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Transfer-Encoding", "chunked")
         self.end_headers()
-        for chunk in (self._answer(charting) if answered else self._tool_call(charting)) if body.get("tools") else self._answer():
+        for chunk in (self._answer(charting, mended) if answered else self._tool_call(charting)) if body.get("tools") else self._answer():
             chunk = {"id": "mock-1", "object": "chat.completion.chunk", "model": body.get("model") or "", **chunk}
             self._write(f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n")
         self._write("data: [DONE]\n\n")
@@ -121,9 +128,10 @@ class _Handler(BaseHTTPRequestHandler):
             yield {"choices": [{"index": 0, "delta": {"tool_calls": [{"index": 0, "function": {"arguments": piece}}]}}]}
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]}
 
-    def _answer(self, charting: bool | str = False):
+    def _answer(self, charting: bool | str = False, mended: bool = False):
         yield self._reasoning("classics__search 检索到了原文，整理作答。")
-        text = DATA_ANSWER.format(id=charting) if isinstance(charting, str) else CHART_ANSWER if charting else ANSWER
+        text = DATA_ANSWER.format(id=charting) if isinstance(charting, str) else CHART_ANSWER if charting else \
+            MENDED if mended else ANSWER
         for cut in (8, 40, 90, 160, len(text)):  # cumulative, as in MiniMax's own streaming example
             yield {"choices": [{"index": 0, "delta": {"content": text[:cut]}}]}
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
@@ -131,7 +139,8 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 class MockAnthropic(ThreadingHTTPServer):
-    """The same two replies in the Anthropic Messages stream: thinking (with a signature), a tool_use, then text."""
+    """The same two replies in the Anthropic Messages stream: thinking (with a signature), a tool_use, then text — the
+    answer without the passage that does not exist once the page's self-check has named it."""
 
     daemon_threads = True
 
@@ -156,12 +165,14 @@ class _AnthropicHandler(_Handler):
         self.server.requests.append({"path": self.path, "headers": dict(self.headers), "body": body})
         last = body["messages"][-1]
         answered = isinstance(last.get("content"), list) and any(b.get("type") == "tool_result" for b in last["content"])
+        said = [m["content"] for m in body["messages"] if m.get("role") == "user" and isinstance(m.get("content"), str)]
+        mended = bool(said) and said[-1].startswith(SELF_CHECK)
         self.send_response(200)
         self._cors()
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Transfer-Encoding", "chunked")
         self.end_headers()
-        for event in (self._text() if answered else self._tool()):
+        for event in (self._text(mended) if answered else self._tool()):
             self._write(f"event: {event['type']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n")
         self.wfile.write(b"0\r\n\r\n")
 
@@ -184,10 +195,11 @@ class _AnthropicHandler(_Handler):
         yield {"type": "message_delta", "delta": {"stop_reason": "tool_use", "stop_sequence": None}, "usage": {"output_tokens": 40}}
         yield {"type": "message_stop"}
 
-    def _text(self):
+    def _text(self, mended: bool = False):
+        text = MENDED if mended else ANSWER
         yield self._start()
         yield {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}}
-        for piece in (ANSWER[:30], ANSWER[30:]):
+        for piece in (text[:30], text[30:]):
             yield {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": piece}}
         yield {"type": "content_block_stop", "index": 0}
         yield {"type": "message_delta", "delta": {"stop_reason": "end_turn", "stop_sequence": None}, "usage": {"output_tokens": 120}}

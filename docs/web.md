@@ -211,6 +211,17 @@ missing character is never accepted).
 
    Clicking a chip opens the passage in the side panel with the quotation highlighted, in horizontal or vertical
    (竖排) reading, with its variants and notes.  A line under each answer counts the results.
+
+   Before an answer stands, the page checks it itself (**自查**, `web/js/agent.js` and `missingCites` in `app.js`): each
+   passage it cites that no tool returned in this conversation is looked up, and one the corpus answers it does not hold
+   (`classics.get_passage`'s `KeyError` or `PassageNotFound` — never a lookup that failed otherwise, as on a network
+   error, and never a row of 我的资料) is named back to the model — once a turn, and only while it has two rounds of tools
+   left — with what to do: look it up with the tools and cite the passage they return, quoted as it is, or drop what
+   rests on it (本语料未检得), then answer again, whole.  The first answer stays, folded (初稿（自查后已重新作答）), its
+   chips checked as anywhere but not counted in the line under the answer, and a note names the passages that were not
+   found.  A rewrite that does not come — an error, a stop, the limit of rounds — is taken out of the turn, and the
+   first answer stands, the note saying so.  The answer that stands is what is copied, exported, recorded and replayed
+   to the model; its own chips are checked as any answer's, so whatever it still gets wrong shows.
 4. The side panel: **证据** (every passage the conversation touched), **研究** (research runs: verdict, metrics,
    hypotheses with their supporting and contradicting quotations, the full report), **资料** (the user's own files:
    [below](#我的资料--the-users-own-data)), **工具台** (every tool, with a form generated from its schema — no model
@@ -620,11 +631,14 @@ client's logic under Node (cumulative and incremental streams, history rules, da
 questions get the fixed reply and which go to the model; the alias badges — labels, the names merged, the asked name found
 for a hit, the flags' words, every card of a search marked with its badges or with none; the charts' checks, CSV, Markdown tables, colours and axes; a box
 plot's numbers, a forest plot's log axis, a tree's checks; CRC-32, PackBits, a TIFF's directory, a PNG's pHYs and a ZIP;
-three-line tables' heads, italics, LaTeX, CSV, Markdown and Word XML) and
+three-line tables' heads, italics, LaTeX, CSV, Markdown and Word XML; the self-check's loop: asked again once, with the
+passages named, only while rounds of tools are left, a rewrite that fails or is stopped taken out of the turn) and
 the page in Chromium against scripted providers (`tests/web_mock.py`): a MiniMax-style stream (cumulative
 `reasoning_details` and content, streamed tool arguments) and a Claude stream through the real SDK, checking the
 requests (`reasoning_split`, `max_completion_tokens`, `reasoning_details` and thinking signatures replayed, fallbacks),
-the chip states, the highlighted passage, Tao-R1 in the chip and under the answer, and persistence across a reload; and
+the chip states, the self-check (the passage that does not exist named to the model, looked for again, the answer given
+without it, the first answer folded with its chips and not counted, the note replayed in the next turn), the highlighted
+passage, Tao-R1 in the chip and under the answer, and persistence across a reload; and
 a page served elsewhere (as on GitHub Pages) connecting to a server in one step, using it again after a reload, and a
 token taken from the address (and its absence reported); an API set by hand (address, model, key, headers, parameters —
 checked in the request it makes); the default service (a stand-in relay): asked at once without a key, no key sent by the

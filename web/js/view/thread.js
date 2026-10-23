@@ -126,6 +126,8 @@ export function fillAssistant(body, m, ctx, last) {
       const docs = (seg.calls || []).map((c) => documentButton(c.document)).filter(Boolean);
       if (docs.length) body.append(h("div.docs", docs));
     }
+    else if (seg.type === "check") body.append(checkNode(seg));
+    else if (seg.type === "text" && seg.superseded) { if (seg.text) body.append(draftNode(m, seg, k, ctx)); }
     else if (seg.type === "text" && (seg.text || (live && isLast))) {
       const md = h("div.md");
       md.append(renderMarkdown(redact(seg.text, { streaming: live && isLast }), { streaming: live && isLast, cite: ctx.cite }));
@@ -150,14 +152,41 @@ export function fillAssistant(body, m, ctx, last) {
   }
 }
 
-/** The answer as the model wrote it — for the model only; what anyone reads of it is answerText. */
+/** The answer as the model wrote it — for the model only; what anyone reads of it is answerText.  An answer the
+ * self-check had rewritten (自查) is not part of it: the rewrite stands. */
 export function rawAnswer(m) {
-  return (m.segments || []).filter((s) => s.type === "text").map((s) => s.text).join("\n\n").trim();
+  return (m.segments || []).filter((s) => s.type === "text" && !s.superseded).map((s) => s.text).join("\n\n").trim();
 }
 
 /** The answer as a visitor reads it, copies it and the record keeps it: in plain words (redact.js). */
 export function answerText(m) {
   return redact(rawAnswer(m));
+}
+
+/** The self-check's note (自查): the passages the answer cited that the corpus has not, and what came of asking again. */
+function checkNode(seg) {
+  const ids = (seg.missing || []).join(T("、"));
+  const text = !seg.cut ? T`自查：初稿所引的 ${ids} 在语料中查无此段，已请模型检索核实后重新作答。`
+    : seg.error ? T`自查：初稿所引的 ${ids} 在语料中查无此段；重新作答未能完成（${seg.error}），上面的回答未经更正。`
+      : T`自查：初稿所引的 ${ids} 在语料中查无此段；重新作答未能完成，上面的回答未经更正。`;
+  return h("div.notice.check", icon("info"), h("div.grow", text));
+}
+
+/** An answer the self-check had rewritten, folded: drawn only when opened, its citations checked as anywhere but not
+ * counted under the answer (renderedCites). */
+function draftNode(m, seg, k, ctx) {
+  const key = `${m.id}:${k}`;
+  const d = h("details.draft");
+  d.append(h("summary", icon("chev", "sm chev"), h("span.lbl", T("初稿（自查后已重新作答）"))));
+  const fill = () => {
+    if (d.querySelector(".md")) return;
+    const md = h("div.md.superseded");
+    md.append(renderMarkdown(redact(seg.text), { cite: ctx.cite }));
+    d.append(md);
+  };
+  if (ctx.openThink.has(key)) { d.open = true; fill(); }
+  d.addEventListener("toggle", () => { if (d.open) { ctx.openThink.add(key); fill(); } else ctx.openThink.delete(key); });
+  return d;
 }
 
 function thinkingNode(m, seg, k, ctx, live) {
@@ -249,9 +278,9 @@ function foundCard(card, chip) {
   return h("span", { style: { display: "inline-flex", alignItems: "center", flexWrap: "wrap", gap: "4px", maxWidth: "100%" } }, chip, badges);
 }
 
-/** The citations as rendered in a turn's answer: [{pid, quote}]. */
+/** The citations as rendered in a turn's answer — not in a draft the self-check had rewritten: [{pid, quote}]. */
 export function renderedCites(body) {
-  return [...body.querySelectorAll(".md .cite[data-cite='text']")].map((b) => ({ pid: b.dataset.pid, quote: b.dataset.quote || null }));
+  return [...body.querySelectorAll(".md:not(.superseded) .cite[data-cite='text']")].map((b) => ({ pid: b.dataset.pid, quote: b.dataset.quote || null }));
 }
 
 export function verifyBar(m, ctx, ids) {

@@ -32,8 +32,8 @@ export function buildHistory(messages, provider) {
     if (m.role !== "assistant") continue;
     if (m.wire?.length && m.wireFormat === format) {
       out.push(...prepareWire(m.wire, format, m.wireProvider === provider.id ? provider : null));
-    } else {
-      const text = (m.segments || []).filter((s) => s.type === "text").map((s) => s.text).join("\n\n").trim();
+    } else { // the answer that stands: not one the self-check had rewritten (自查)
+      const text = (m.segments || []).filter((s) => s.type === "text" && !s.superseded).map((s) => s.text).join("\n\n").trim();
       if (text) out.push({ role: "assistant", content: text });
     }
   }
@@ -102,13 +102,25 @@ export function answerDangling(msgs, format) {
   return out;
 }
 
+// the self-check (自查) asks for a rewrite only while the turn has this many rounds of tools left: room to look it up
+const REVIEW_ROOM = 2;
+
+/** The self-check's note to the model: the passages its answer cites that the corpus has not, and what to do with
+ * them — look each up with the tools, or drop what rests on it — before it answers again, whole. */
+export function reviewNote(missing) {
+  return T`［自查：回答所引的 ${missing.map((pid) => `[[${pid}]]`).join(T("、"))} 在语料中查无此段。请用工具检索核实：找到原文的，改引工具返回的段落号，并照原文引用；找不到的，删去依据它的论断，或说明本语料未检得。然后重新给出完整的回答。］`;
+}
+
 /**
  * Run one user turn.  `hooks` receive the answer as it forms:
  *   round(n) · thinking(delta) · text(fullText) · toolPending(index, name) · toolStart(call) · toolProgress(call, p) ·
- *   toolEnd(call, outcome) · retry(attempt, error) · usage(u)
+ *   toolEnd(call, outcome) · retry(attempt, error) · usage(u) · review(missing) · reviewCut(error)
+ * `review(text)`, when given, is the page's self-check of an answer (自查): the passages it cites that the corpus has
+ * not.  Once a turn, while REVIEW_ROOM rounds of tools are left, the model is told of them and answers again; a rewrite
+ * that does not come — an error, a stop, the limit — is taken out of the turn, and the answer it was about stands.
  * Returns {wire, rounds, usage, model}.
  */
-export async function runTurn({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink }) {
+export async function runTurn({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, review }) {
   const format = formatOf(provider);
   const L = lib(format);
   const userWire = L.userMessage(userText(user), user.images || []);
@@ -117,6 +129,8 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
   let round = 0;
   let model = provider.model;
   const maxSteps = Math.max(1, Number(settings.maxSteps) || 16);
+  let checked = -1; // while the model rewrites an answer for the self-check: where the note to it went into the turn
+  const cut = (err) => { turn.length = checked; checked = -1; hooks.reviewCut?.(err); };
 
   for (;;) {
     if (signal.aborted) break;
@@ -125,18 +139,37 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
     const messages = format === "openai"
       ? [{ role: "system", content: system }, ...history, userWire, ...turn]
       : [...history, userWire, ...turn];
-    const res = await withRetry(() => (format === "anthropic" ? claude.streamClaude : openai.streamChat)({
-      provider, system, messages, tools, settings, route, signal,
-      onEvent: (ev) => {
-        if (ev.type === "thinking") hooks.thinking?.(ev.delta);
-        else if (ev.type === "text") hooks.text?.(ev.text);
-        else if (ev.type === "tool") hooks.toolPending?.(ev.index, ev.name);
-      },
-    }), { signal, onRetry: hooks.retry });
+    let res;
+    try {
+      res = await withRetry(() => (format === "anthropic" ? claude.streamClaude : openai.streamChat)({
+        provider, system, messages, tools, settings, route, signal,
+        onEvent: (ev) => {
+          if (ev.type === "thinking") hooks.thinking?.(ev.delta);
+          else if (ev.type === "text") hooks.text?.(ev.text);
+          else if (ev.type === "tool") hooks.toolPending?.(ev.index, ev.name);
+        },
+      }), { signal, onRetry: hooks.retry });
+    } catch (err) {
+      if (checked < 0) throw err;
+      const stopped = err?.name === "AbortError" || signal.aborted;
+      cut(stopped ? null : err); // a rewrite that failed ends the turn with the answer it was about
+      if (stopped) throw err;
+      break;
+    }
     turn.push(res.message);
     if (res.model) model = res.model;
     if (res.usage) { usage.input += res.usage.input || 0; usage.output += res.usage.output || 0; hooks.usage?.(usage); }
     hooks.assistant?.(res, round);
+    if (!res.toolCalls.length && !signal.aborted) {
+      if (checked >= 0) { checked = -1; break; } // rewritten
+      const missing = review && maxSteps - round >= REVIEW_ROOM ? (await review(res.text || "").catch(() => null)) || [] : [];
+      if (missing.length && !signal.aborted) {
+        checked = turn.length;
+        hooks.review?.(missing);
+        turn.push(L.userMessage(reviewNote(missing)));
+        continue;
+      }
+    }
     if (!res.toolCalls.length || signal.aborted) break;
 
     const over = round > maxSteps;
@@ -147,6 +180,7 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
       break;
     }
   }
+  if (checked >= 0) cut(null); // stopped, or out of rounds, before the rewrite came
   return { wire: turn, rounds: round, usage, model };
 }
 

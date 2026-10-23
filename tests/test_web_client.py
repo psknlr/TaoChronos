@@ -67,6 +67,71 @@ assert.deepEqual(d.map((m) => m.tool_call_id ?? m.role), ["assistant", "a", "b"]
 const da = answerDangling([{ role: "assistant", content: [{ type: "tool_use", id: "t1" }] }], "anthropic");
 assert.equal(da[1].content[0].tool_use_id, "t1");
 
+// the self-check (自查): an answer citing passages the corpus has not is asked again, once, with them named — while the
+// turn has rounds of tools left; a rewrite that fails or is stopped is taken out of the turn, and the answer stands
+{
+  const { reviewNote, runTurn } = await import("./js/agent.js");
+  const { rawAnswer } = await import("./js/view/thread.js");
+  // an answer the self-check had rewritten is not the turn's: neither replayed to another provider nor read
+  const rewritten = { role: "assistant", segments: [{ type: "text", text: "初稿[[x.1]]", superseded: true },
+    { type: "check", missing: ["x.1"] }, { type: "text", text: "重写" }] };
+  assert.deepEqual(buildHistory([{ role: "user", text: "问" }, rewritten], { id: "anthropic", format: "anthropic" }),
+    [{ role: "user", content: "问" }, { role: "assistant", content: "重写" }]);
+  assert.equal(rawAnswer(rewritten), "重写");
+  const model = { id: "deepseek", format: "openai", baseUrl: "https://model.example/v1", model: "m", apiKey: "k" };
+  let replies = [];
+  const bodies = [];
+  globalThis.fetch = async (url, init) => {
+    bodies.push(JSON.parse(init.body));
+    const next = replies.shift();
+    if (typeof next === "function") return next();
+    const [status, content] = next;
+    const body = status === 200 ? { choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: "stop" }] }
+      : { error: { message: content } };
+    return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+  };
+  const turn = (answers, missing, { settings = {}, signal = new AbortController().signal } = {}) => {
+    replies = answers;
+    bodies.length = 0;
+    const seen = [], reviewed = [], sink = [];
+    const review = async (text) => { reviewed.push(text); return missing(text); };
+    const hooks = { review: (m) => seen.push(["review", m]), reviewCut: (err) => seen.push(["cut", err ? err.message : null]) };
+    const done = runTurn({ provider: model, settings, route: { kind: "direct" }, runtime: {}, tools: [], system: "s", history: [],
+      user: { text: "问" }, signal, hooks, sink, review });
+    return { done, seen, reviewed, sink };
+  };
+  const cited = (text) => (text.includes("[[x.1]]") ? ["x.1"] : []);
+  const said = (wire) => wire.map((m) => `${m.role}:${m.content}`);
+  // named, asked again, and the rewrite stands — itself not checked again
+  let t = turn([[200, "甲[[x.1]]"], [200, "乙"]], cited);
+  let r = await t.done;
+  assert.deepEqual(said(r.wire), ["assistant:甲[[x.1]]", `user:${reviewNote(["x.1"])}`, "assistant:乙"]);
+  assert.equal(r.wire, t.sink);
+  assert.deepEqual(t.reviewed, ["甲[[x.1]]"]);
+  assert.deepEqual(t.seen, [["review", ["x.1"]]]);
+  assert.equal(bodies[1].messages.at(-1).content, reviewNote(["x.1"]));
+  assert.ok(reviewNote(["x.1"]).startsWith("［自查：回答所引的 [[x.1]] 在语料中查无此段。"));
+  assert.ok(reviewNote(["x.1", "y.2"]).includes("[[x.1]]、[[y.2]]"));
+  // nothing missing: the answer stands as it came
+  t = turn([[200, "甲[[x.1]]"]], () => []);
+  assert.deepEqual(said((await t.done).wire), ["assistant:甲[[x.1]]"]);
+  assert.deepEqual(t.seen, []);
+  // too few rounds of tools left to look anything up: not asked
+  t = turn([[200, "甲[[x.1]]"]], cited, { settings: { maxSteps: 2 } });
+  assert.deepEqual(said((await t.done).wire), ["assistant:甲[[x.1]]"]);
+  assert.deepEqual(t.reviewed, []);
+  // the rewrite fails: the turn ends with the answer it was about, and says why
+  t = turn([[200, "甲[[x.1]]"], [400, "invalid params"]], cited);
+  assert.deepEqual(said((await t.done).wire), ["assistant:甲[[x.1]]"]);
+  assert.deepEqual(t.seen, [["review", ["x.1"]], ["cut", "模型服务返回 400：invalid params"]]);
+  // stopped during the rewrite: stopped, with the answer it was about
+  const stop = new AbortController();
+  t = turn([[200, "甲[[x.1]]"], () => { stop.abort(); throw new DOMException("aborted", "AbortError"); }], cited, { signal: stop.signal });
+  await assert.rejects(t.done, (e) => e.name === "AbortError");
+  assert.deepEqual(said(t.sink), ["assistant:甲[[x.1]]"]);
+  assert.deepEqual(t.seen, [["review", ["x.1"]], ["cut", null]]);
+}
+
 // citations pair with the quotation just before them, never across lines
 assert.deepEqual(extractCitations("- 「甲乙」[[a.1]]\n- 无引文[[b.2]]\n\n「丙」[[c.3]][[d.4]] `[[e.5]]`"), [
   { pid: "a.1", quote: "甲乙" }, { pid: "b.2", quote: null }, { pid: "c.3", quote: "丙" }, { pid: "d.4", quote: "丙" }]);
@@ -561,9 +626,25 @@ def test_a_conversation_in_the_browser(tmp_path):
             page.keyboard.press("Enter")
             page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
             page.wait_for_function("document.querySelectorAll('.md .cite.pending').length === 0", timeout=15000)
+            # the answer cited a passage the corpus has not: the self-check named it to the model, which looked again and
+            # answered without it; the first answer is kept, folded, its citations not counted under the answer
             cites = page.eval_on_selector_all(".md .cite", "els => els.map(e => [e.dataset.pid, e.className])")
-            assert cites == [["shanghanlun.c013", "cite ok"], ["shanghanlun.c012", "cite warn"], ["fake.999", "cite bad"],
+            assert cites == [["shanghanlun.c013", "cite ok"], ["shanghanlun.c012", "cite warn"],
                              ["shanghanlun.c013", "cite ok"]]  # the last quoted in the traditional script
+            note = page.inner_text(".msg.assistant .notice.check")
+            assert "fake.999" in note and "查无此段" in note and "shanghanlun" not in note
+            bar = page.inner_text(".msg.assistant .verify-bar")
+            assert "2 条与原文一致" in bar and "1 条存疑" in bar and "查无此段" not in bar
+            told = mock.requests[2]["body"]["messages"][-1]
+            assert told["role"] == "user" and told["content"].startswith("［自查：") and "[[fake.999]]" in told["content"]
+            assert "shanghanlun" not in told["content"]  # only the passage the corpus has not
+            assert mock.requests[3]["body"]["messages"][-1]["role"] == "tool"  # looked up again before answering
+            page.click(".msg.assistant details.draft summary")
+            page.wait_for_function("document.querySelectorAll('.draft .md .cite.pending').length === 0", timeout=15000)
+            assert page.eval_on_selector_all(".draft .md .cite", "els => els.map(e => [e.dataset.pid, e.className])") == [
+                ["shanghanlun.c013", "cite ok"], ["shanghanlun.c012", "cite warn"], ["fake.999", "cite bad"], ["shanghanlun.c013", "cite ok"]]
+            assert page.inner_text(".msg.assistant .verify-bar") == bar  # the answer's own still
+            page.click(".msg.assistant details.draft summary")
             assert page.inner_text("#model-chip .nm") == "Tao-R1" and page.get_attribute("#model-chip", "title") == "Tao-R1 · 道乃久默认服务"
             assert page.inner_text(".msg.assistant .meta").startswith("Tao-R1 · ")
             assert page.get_attribute(".msg.assistant .meta", "title") == "道乃久默认服务"
@@ -578,11 +659,11 @@ def test_a_conversation_in_the_browser(tmp_path):
             steps = page.inner_text(".steps .list")
             assert "古籍检索" in steps and "classics" not in steps  # a tool by its plain words
             # the names the model worked with, told in plain words: in the answer and in its thinking, wherever it put them
-            assert "以上经古籍检索检得，可用引文核验复核，出处附段落编号。" in page.inner_text(".msg.assistant .md")
+            assert "以上经古籍检索检得，可用引文核验复核，出处附段落编号。" in page.inner_text(".msg.assistant .md:not(.superseded)")
             said = "".join(page.eval_on_selector_all(".msg.assistant", "els => els.map(e => e.textContent)"))
             assert "古籍检索检索到了原文" in said and not re.search(r"classics|validation|passage_id|__", said)
-            assert "繁简" in page.eval_on_selector_all(".md .cite.ok", "els => els[1].title")
-            page.click(".md .cite.ok >> nth=0")
+            assert "繁简" in page.eval_on_selector_all(".md:not(.superseded) .cite.ok", "els => els[1].title")
+            page.click(".md:not(.superseded) .cite.ok >> nth=0")
             assert page.inner_text(".passage-view .text mark") == "太阳病，头痛，发热，汗出，恶风，桂枝汤主之"
             # a second turn replays the first verbatim: tool call, reasoning_details, tool result
             page.fill("#input", "它的组成呢？")
@@ -602,8 +683,10 @@ def test_a_conversation_in_the_browser(tmp_path):
             assert replay["reasoning_details"][0]["text"] == "用户问桂枝汤的主治，先检索原文。"
             assert replay["reasoning_details"][0]["format"] == "MiniMax-response-v1"  # the page kept it as Tao-…; the relay restores it
             assert second["messages"][3]["role"] == "tool" and "shanghanlun.c013" in second["messages"][3]["content"]
-            later = mock.requests[2]["body"]["messages"]
-            assert [m["role"] for m in later] == ["system", "user", "assistant", "tool", "assistant", "user"]
+            later = mock.requests[4]["body"]["messages"]  # the first turn whole, the self-check's note in it
+            assert [m["role"] for m in later] == ["system", "user", "assistant", "tool", "assistant", "user", "assistant", "tool",
+                                                  "assistant", "user"]
+            assert later[5]["content"] == told["content"] and "fake.999" not in later[8]["content"]
             # the conversation survives a reload, and keeps nothing of the upstream
             page.reload()
             page.wait_for_selector(".conv.active", timeout=15000)
@@ -852,7 +935,11 @@ def test_claude_through_the_official_sdk(tmp_path):
             assert replay[1]["type"] == "tool_use" and replay[1]["input"] == {"query": "桂枝汤 主之", "k": 3}
             assert second["body"]["messages"][2]["content"][0]["tool_use_id"] == "toolu_1"
             page.wait_for_function("document.querySelectorAll('.md .cite.pending').length === 0", timeout=15000)
-            assert page.eval_on_selector_all(".md .cite", "els => els.map(e => e.className)") == ["cite ok", "cite warn", "cite bad", "cite ok"]
+            # the passage that does not exist, named by the self-check: looked for again, and the answer is given without it
+            told = mock.requests[2]["body"]["messages"][-1]
+            assert told["role"] == "user" and told["content"].startswith("［自查：") and "[[fake.999]]" in told["content"]
+            assert mock.requests[3]["body"]["messages"][-1]["content"][0]["type"] == "tool_result"
+            assert page.eval_on_selector_all(".md .cite", "els => els.map(e => e.className)") == ["cite ok", "cite warn", "cite ok"]
             browser.close()
     finally:
         srv.shutdown()
@@ -1097,8 +1184,10 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
             # the answer as the visitor read it, and how many inside names it was spared (redact.js)
             assert "以上经古籍检索检得，可用引文核验复核，出处附段落编号。" in rec["answer"] and rec["redacted"] == 3
             assert rec["tools"] and rec["tools"][0]["name"].startswith("classics") and rec["tools"][0]["ok"]
-            assert rec["citations"]["total"] == 4 and rec["citations"]["bad"] == 1 and rec["citations"]["pending"] == 0
-            assert rec["usage"] == {"input": 1200, "output": 180} and rec["rounds"] == 2
+            # the answer that stands (the self-check had the one citing a passage the corpus has not answered again), and
+            # every round the turn took
+            assert rec["citations"]["total"] == 3 and rec["citations"]["bad"] == 0 and rec["citations"]["pending"] == 0
+            assert rec["usage"] == {"input": 2400, "output": 360} and rec["rounds"] == 4 and len(rec["tools"]) == 2
             assert not {"apiKey", "keys", "settings"} & set(rec) and MockRelay.SECRET not in json.dumps(rec)
             assert relay.chat and all("authorization" not in {k.lower() for k in c["headers"]} for c in relay.chat)  # no key from the page
             assert all(r["headers"].get("Authorization") == f"Bearer {MockRelay.SECRET}" for r in mock.requests)

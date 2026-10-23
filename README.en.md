@@ -62,8 +62,9 @@ and decide.
 > settings (DeepSeek, Qwen, Kimi, GLM, Doubao, SiliconFlow, OpenRouter, Poe, LiteLLM, Claude and others are
 > listed; any other endpoint can be set by hand under **自定义 API** — address, model, key, headers) and hold a multi-turn
 > conversation as in ChatGPT or Claude.  The model answers through all 79 of TaoChronos's tools, and the page checks every
-> `[[passage_id]]` it cites word for word (✓ matches the passage · ≠ misquoted · ✕ no such passage); evidence, research runs
-> and a tool console (any tool, no model needed) sit in the side panel.  In the browser TaoChronos runs with Pyodide on the
+> `[[passage_id]]` it cites word for word (✓ matches the passage · ≠ misquoted · ✕ no such passage) — and an answer that
+> cites a passage the corpus does not hold is first sent back to the model to look it up and answer again (自查);
+> evidence, research runs and a tool console (any tool, no model needed) sit in the side panel.  In the browser TaoChronos runs with Pyodide on the
 > **要籍语料**: 533 of the **535 key works** ranked by how the tradition cited them ([list](corpus/catalog/canon.yaml))
 > (553 witnesses, 10.5 million characters; the first classics whole, the 素问, 灵枢, 伤寒论 and 金匮 with two or three
 > witnesses to collate, the others in chapters; [sources and terms](corpus/web/ATTRIBUTION.md)), kept in the browser after the

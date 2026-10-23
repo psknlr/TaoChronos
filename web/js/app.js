@@ -392,6 +392,20 @@ function citesOf(m) {
   return extractCitations(answerText(m));
 }
 
+// what the runtime answers for a passage the corpus has not (classics.get_passage, the backup's passage)
+const NOT_HELD = /^(?:KeyError|PassageNotFound)\b/;
+
+/** The passages an answer cites that the corpus has not, for the self-check (自查): only those the runtime answers it
+ * has no such passage for — never one a tool returned in this conversation (it may come from another corpus), one whose
+ * lookup failed otherwise (a network error), or a row of the user's data (`mine:`). */
+async function missingCites(conv, text) {
+  const returned = toolText(conv);
+  const pids = [...new Set(extractCitations(text).map((c) => c.pid))]
+    .filter((pid) => !pid.startsWith("mine:") && !conv.evidence?.[pid] && !returned.includes(pid));
+  const cards = await Promise.all(pids.map((pid) => getPassage(pid)));
+  return pids.filter((pid, i) => cards[i]?.ok === false && NOT_HELD.test(cards[i].error || ""));
+}
+
 function registerEvidence(conv, cards) {
   if (!conv || !cards?.length) return;
   conv.evidence ||= {};
@@ -529,6 +543,7 @@ async function runAssistant(conv, msg) {
     const result = await runTurn({
       provider, settings: hidden ? { ...S.settings, thinking: false } : S.settings, route: routeFor(), runtime: routed(runtime),
       tools, system: systemPrompt(), history, user, signal: controller.signal, hooks: makeHooks(conv, msg), sink,
+      review: (text) => missingCites(conv, text),
     });
     msg.rounds = result.rounds;
     msg.usage = result.usage;
@@ -654,6 +669,20 @@ function makeHooks(conv, msg) {
       update();
     },
     limit(max) { msg.error = T`已达到每轮最多 ${max} 步工具调用的上限，回答可能不完整。可在设置中调高上限。`; },
+    review(missing) { // the answer cites passages the corpus has not (自查): folded, while the model answers again
+      for (const s of msg.segments) if (s.type === "text") s.superseded = true;
+      msg.segments.push({ type: "check", round, missing });
+      update();
+    },
+    reviewCut(err) { // no rewrite came: what it had begun goes, and the answer the self-check was about stands
+      const at = msg.segments.findIndex((s) => s.type === "check");
+      if (at >= 0) {
+        msg.segments = msg.segments.filter((s, k) => k <= at || s.type !== "text");
+        Object.assign(msg.segments[at], { cut: true }, err ? { error: truncate(err.message || String(err), 160) } : {});
+      }
+      for (const s of msg.segments) delete s.superseded;
+      update();
+    },
   };
 }
 
