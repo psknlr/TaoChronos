@@ -133,10 +133,23 @@ export function answerDangling(msgs, format) {
  * model answers from what it has; so it does when the turn has run its time (limits.turn).  limit(maxSteps, why) tells
  * that the turn's tools came to an end before its answer: "asked" or "time" as they do, "steps" (all its rounds used)
  * when the model asks for more anyway.  `limits`: limits.js's, or some of them changed.
+ * `trace` (an object), when given, is filled as the turn runs with where its time went, for the page's record of the turn
+ * (the caller keeps it, even if the turn is stopped); its times are the page's clock (Date.now()):
+ *   requests — each model request: its round and attempt; when it was sent, its reply began (`open`), its first part,
+ *     its first answer text and its last part came, and it ended; how it finished (`finish`, the service's reason) or why
+ *     it failed (`failed`: "stopped", "timeout" with the limit that ended it in `expired`, or the service's error kind or
+ *     status — never its words — with its HTTP status in `status`); its tokens (`input`, `output`);
+ *   tools — each call: its round, id and tool; how it ended (`status`: ok, error, timeout, stopped, skipped, background,
+ *     or refused: not run); when it began, began to wait for its runtime or its turn (`waiting`), began to run, and ended;
+ *     how long the runtime says its work took (`compute`);
+ *   events — `{at, what}`: a cut answer written on ("continued"), a round asked again with less thinking ("lighter"), the
+ *     turn's tools come to an end ("asked", "time", "steps"), a reply cut ("cut:answer", "cut:thinking", "cut:context",
+ *     "cut:filtered").
  * Returns {wire, rounds, usage, model}.
  */
-export async function runTurn({ provider, settings, route, runtime, tools, system, history, user, signal, hurry, limits, hooks, sink }) {
+export async function runTurn({ provider, settings, route, runtime, tools, system, history, user, signal, hurry, limits, hooks, sink, trace }) {
   const lim = { ...LIMITS, ...limits };
+  if (trace) for (const k of ["requests", "tools", "events"]) trace[k] ||= [];
   const quick = new AbortController(); // the turn's tools end early: the user asked for the answer, or its time is up
   let quickWhy = null;
   const answerNow = (why) => { if (!quick.signal.aborted) { quickWhy = why; quick.abort(); } };
@@ -145,7 +158,7 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
   else hurry?.addEventListener("abort", asked, { once: true });
   const clock = limit(lim.turn, () => answerNow("time"));
   try {
-    return await turnOf({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, lim,
+    return await turnOf({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, trace, lim,
       quick: quick.signal, quickWhy: () => quickWhy });
   } finally {
     clock.stop();
@@ -153,7 +166,7 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
   }
 }
 
-async function turnOf({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, lim, quick, quickWhy }) {
+async function turnOf({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, trace, lim, quick, quickWhy }) {
   const format = formatOf(provider);
   const L = lib(format);
   const userWire = L.userMessage(userText(user), user.images || []);
@@ -168,8 +181,11 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
   let closedAt = 0;   // the round of tools after which they did
   const close = (why, at) => {
     [closing, closedAt] = [why, at];
+    note(why);
     if (why !== "steps") hooks.limit?.(maxSteps, why);
   };
+  const note = (what) => { trace?.events.push({ at: Date.now(), what }); };
+  const cutShort = (why) => { note(`cut:${why}`); hooks.cut?.(why); };
 
   for (;;) {
     if (signal.aborted) break;
@@ -180,14 +196,19 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
     const messages = format === "openai"
       ? [{ role: "system", content: system }, ...history, userWire, ...turn]
       : [...history, userWire, ...turn];
-    const res = await withRetry(() => (format === "anthropic" ? claude.streamClaude : openai.streamChat)({
-      provider, system, messages, tools, settings: asked, route, signal, limits: lim,
-      onEvent: (ev) => {
-        if (ev.type === "thinking") hooks.thinking?.(ev.delta);
-        else if (ev.type === "text") hooks.text?.(ev.text);
-        else if (ev.type === "tool") hooks.toolPending?.(ev.index, ev.name);
-      },
-    }), { signal, onRetry: hooks.retry });
+    let attempt = 0;
+    const res = await withRetry(() => {
+      const mark = trace ? { round, attempt: ++attempt } : null; // where this request's time went
+      if (mark) trace.requests.push(mark);
+      return measured(mark, (format === "anthropic" ? claude.streamClaude : openai.streamChat)({
+        provider, system, messages, tools, settings: asked, route, signal, limits: lim, mark,
+        onEvent: (ev) => {
+          if (ev.type === "thinking") hooks.thinking?.(ev.delta);
+          else if (ev.type === "text") { if (mark && !mark.text) mark.text = Date.now(); hooks.text?.(ev.text); }
+          else if (ev.type === "tool") hooks.toolPending?.(ev.index, ev.name);
+        },
+      }));
+    }, { signal, onRetry: hooks.retry });
     if (res.model) model = res.model;
     if (res.usage) { usage.input += res.usage.input || 0; usage.output += res.usage.output || 0; hooks.usage?.(usage); }
     const full = res.finishReason === FULL;
@@ -199,9 +220,11 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
       if (answered) {
         turn.push(res.message, L.userMessage(T("［提示：上面的回答在输出上限处被截断了。请从截断处接着写下去：不要重复已写的内容，不要加开场白，也不要从头再来。］")));
         hooks.assistant?.(res, round);
+        note("continued");
         hooks.continued?.("answer");
       } else {
         lighter = less; // the reply is not kept: its round is asked again
+        note("lighter");
         hooks.continued?.("thinking");
       }
       continue;
@@ -210,11 +233,11 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
     hooks.assistant?.(res, round);
     // the content filter stopped it, or nothing more fits: its calls do not run, and the turn ends with what it has
     if (res.finishReason === "content_filter" || full) {
-      hooks.cut?.(full ? "context" : "filtered");
+      cutShort(full ? "context" : "filtered");
       break;
     }
     if (!res.toolCalls.length || signal.aborted) {
-      if (cut) hooks.cut?.(answered ? "answer" : "thinking");
+      if (cut) cutShort(answered ? "answer" : "thinking");
       break;
     }
 
@@ -222,7 +245,7 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
     // before these calls run: all the turn's rounds are used, or the user asked for the answer, or its time ran out
     if (!closing && (steps > maxSteps || quick.aborted)) close(steps > maxSteps ? "steps" : quickWhy(), steps - 1);
     const results = await Promise.all(res.toolCalls.map((tc) => execute(tc, {
-      runtime, settings, hooks, signal, quick, quickWhy, limits: lim, closing, cut })));
+      runtime, settings, hooks, signal, quick, quickWhy, limits: lim, closing, cut, trace, round })));
     if (!closing && quick.aborted) { // while they ran
       close(quickWhy(), steps);
       results[results.length - 1].text += closingNote(closing, lim);
@@ -236,6 +259,26 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
     }
   }
   return { wire: turn, rounds: round, usage, model };
+}
+
+/** A model request, its end told to its `mark` (when it has one): how it finished and its tokens, or why it failed. */
+async function measured(mark, request) {
+  try {
+    const res = await request;
+    if (mark) Object.assign(mark, { end: Date.now(), finish: res.finishReason || "", input: res.usage?.input, output: res.usage?.output });
+    return res;
+  } catch (err) {
+    if (mark) Object.assign(mark, { end: Date.now(), failed: failure(err), status: err?.status || undefined });
+    throw err;
+  }
+}
+
+/** Why a model request failed, in a word for the record — the stop, a limit, the service's error kind or its status;
+ * never the service's own words. */
+function failure(err) {
+  if (err?.name === "AbortError") return "stopped";
+  if (err?.kind) return String(err.kind).slice(0, 40);
+  return err?.status ? `http ${err.status}` : "network";
 }
 
 /** The settings to ask a round again with when its reply spent all of its output on thinking — none where it cannot be
@@ -294,10 +337,13 @@ async function withRetry(fn, { signal, onRetry }) {
  * the turn's tools came to an end before (`closing`), of a cut reply (`cut`), or with arguments that did not parse, do
  * not run. */
 async function execute(tc, ctx) {
-  const { hooks, closing, cut } = ctx;
+  const { hooks, closing, cut, trace, round } = ctx;
   const call = { id: tc.id, name: tc.name, args: tc.arguments, started: Date.now(), status: "running" };
+  const entry = trace ? { round, id: tc.id, name: tc.name, args: tc.arguments, start: call.started } : null; // its times
+  if (entry) trace.tools.push(entry);
   hooks.toolStart?.(call);
   let out;
+  let ran = false;
   if (closing) {
     out = refused(closing);
   } else if (cut) {
@@ -307,9 +353,14 @@ async function execute(tc, ctx) {
   } else if (tc.error) {
     out = { ok: false, error: tc.error, text: T`ERROR: ${tc.error}（原始参数：${tc.rawArguments.slice(0, 300)}）` };
   } else {
-    out = await follow(tc, call, ctx);
+    ran = true;
+    out = await follow(tc, call, { ...ctx, entry });
   }
   out ||= { ok: false, error: T("没有结果"), text: T("ERROR: 没有结果") };
+  if (entry) {
+    Object.assign(entry, { end: Date.now(), name: out.tool || tc.name, status: out.ok ? "ok" : out.status || (ran ? "error" : "refused") });
+    if (Number.isFinite(out.duration_ms)) entry.compute = Math.round(out.duration_ms); // as long as the runtime says it took
+  }
   hooks.toolEnd?.(call, out);
   return { id: tc.id, ok: Boolean(out.ok), text: out.text || (out.ok ? "{}" : `ERROR: ${out.error}`) };
 }
@@ -329,7 +380,7 @@ function refused(why) {
  * is not waited for any more (its signal), and when it may give way to others (`giving`: a research run going on by
  * itself); however it behaves, the call ends here at its deadline.
  */
-function follow(tc, call, { runtime, settings, hooks, signal, quick, quickWhy, limits }) {
+function follow(tc, call, { runtime, settings, hooks, signal, quick, quickWhy, limits, entry }) {
   const research = tc.name === "taochronos_research";
   const ms = research ? limits.research : limits.tool;
   const own = new AbortController();    // the runtime stops its work on the call, or its wait for it
@@ -346,8 +397,8 @@ function follow(tc, call, { runtime, settings, hooks, signal, quick, quickWhy, l
   }
   const options = {
     maxChars: settings.resultChars, signal: own.signal, giving: giving.signal, limits,
-    onWait: (why) => { deadline.pause(); hooks.toolWaiting?.(call, why); },
-    onStart: () => { deadline.resume(); hooks.toolRunning?.(call); },
+    onWait: (why) => { deadline.pause(); if (entry) entry.waiting ||= Date.now(); hooks.toolWaiting?.(call, why); },
+    onStart: () => { deadline.resume(); if (entry) entry.run ||= Date.now(); hooks.toolRunning?.(call); },
   };
   try {
     const work = research

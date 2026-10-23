@@ -589,7 +589,17 @@ send it in clear to the provider, where any visitor can read it — so the relay
   and why, and asks — 同意并继续 or 不记录; the choice stays in that browser and can be changed at any time under
   设置 → 数据.  A visitor who agreed sends, after each finished turn, one compact record to the relay: the question, the
   answer, the tools called, how the citations were checked, the model, token usage and timings — never a key, the
-  settings or an address (`web/js/records.js`, `relay/src/relay.js` keeps only those fields).  The relay holds the records
+  settings or an address (`web/js/records.js`, `relay/src/relay.js` keeps only those fields).  The timings say where the
+  turn's time went, each in milliseconds from its start: each model request's — sent, its reply begun, its first part,
+  its answer's first text, its end, how it finished or why it failed (a kind or a status, never the service's words), its
+  tokens —, each call's — begun, waiting for its runtime or its turn, how long the runtime says it took, how it ended —,
+  what happened between them (an answer written on, 不再等待, the turn's time up, a server given up for the browser), and
+  how long the page was hidden or did not run at all (`web/js/records.js`, `timings`; the fields in
+  [`data/chat-logs/README.md`](../data/chat-logs/README.md)).  The output limit a reply was asked within is not among
+  them, since it comes from the visitor's settings: a reply cut there shows as `finish: length`, with the tokens it
+  wrote.  `taochronos records` sums the records up, in counts and times only: the time from a turn's last tool result to
+  its answer's first text and what it went on, how often a model request broke off and the turn still answered whole,
+  how many answers came whole, with nothing flagged ✕, and verified.  The relay holds the records
   until `.github/workflows/chat-logs.yml` collects them, every hour, into `data/chat-logs/YYYY/MM/DD.jsonl` in this private
   repository, and deletes them once the commit is pushed (`relay/collect.py`).  The records never enter the published
   site.  If the repository is ever made public, `data/chat-logs/` must be moved out first.  A conversation that touches
@@ -704,7 +714,9 @@ failure left unhandled, a chart answered while the search beside it stalls to it
 its turn not counted, the answer asked for while calls run and a model that keeps calling told no, a research run left
 to go on and ended later, the browser runtime's queue (a call not yet begun never sent, a late result dropped, a runtime
 held up started again, Python interrupted where the page shares memory), a server's calls four at a time, its research
-looked at within limits and lost after five failed looks; history rules, dangling tool calls, citation pairing, which
+looked at within limits and lost after five failed looks; where a turn's time goes — each model request's times and
+end (a stall, a stop, a refusal kept as its status and not its words), each call's waiting and running, a cut answer
+written on, the tools' end, the page hidden and asleep; history rules, dangling tool calls, citation pairing, which
 questions get the fixed reply and which go to the model; the alias badges — labels, the names merged, the asked name found
 for a hit, the flags' words, every card of a search marked with its badges or with none; the charts' checks, CSV, Markdown tables, colours and axes; a box
 plot's numbers, a forest plot's log axis, a tree's checks; CRC-32, PackBits, a TIFF's directory, a PNG's pHYs and a ZIP;
@@ -721,7 +733,7 @@ rounds' calls under one id each shown with its own end; and
 a page served elsewhere (as on GitHub Pages) connecting to a server in one step, using it again after a reload, and a
 token taken from the address (and its absence reported); an API set by hand (address, model, key, headers, parameters —
 checked in the request it makes); the default service (a stand-in relay): asked at once without a key, no key sent by the
-page, the consent question once, a turn recorded only after 同意 (its fields, no key or settings), none after 不记录 or
+page, the consent question once, a turn recorded only after 同意 (its fields and times, no key or settings), none after 不记录 or
 once switched off under 设置 → 数据, a relay slow to answer (6 s) or missed once still found, and the page asking for a
 key while the relay is down; a question about the assistant answered by the page (no model called, no key needed, the
 same words when regenerated, recorded as `fixed`, replayed to the model when the conversation goes on) while one that asks
