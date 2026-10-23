@@ -18,7 +18,11 @@
 // the runtime when it starts at the next visit, until the page removes it (data_remove, data_clear).
 //
 // Messages: {id, method, params} → {id, result} | {id, error}; while loading {type: "progress", progress, message}; while
-// the rest is indexed {type: "index", indexed, total, done, kept}.
+// the rest is indexed {type: "index", indexed, total, done, kept}.  The page sends one call at a time (runtime.js).
+//
+// Where the page is cross-origin isolated (it can share memory with this worker), Python can be interrupted: the worker
+// hands the page a flag ({type: "interrupt", buffer}), and a call the page no longer waits for is stopped when Python
+// next looks at it (KeyboardInterrupt).  Elsewhere a call runs to its end, and the page drops what it returns.
 
 import { readAll, spool, unxz } from "./unpack.js";
 import { LANG, T } from "./i18n.js";
@@ -30,6 +34,7 @@ const PART = 16 * 1048576;   // bytes per IndexedDB record of the kept store
 let py = null;
 let rpc = null;
 let ready = null;
+let interrupt = null; // the flag the page sets to interrupt Python (SIGINT, 2), where it can share it
 
 const progress = (p, message) => self.postMessage({ type: "progress", progress: Math.round(p), message });
 const mb = (n) => (n / 1048576).toFixed(1);
@@ -264,6 +269,7 @@ async function keepBytecode(key) {
 /** The rest of the corpus indexed in slices, between the questions the runtime answers; kept once it is all indexed. */
 async function indexRest(sha, then) {
   const step = py.globals.get("_index");
+  let again = false;
   try {
     for (;;) {
       await new Promise((r) => setTimeout(r, 30)); // a question waiting is answered first
@@ -275,10 +281,13 @@ async function indexRest(sha, then) {
     const keptNow = await keepCorpus(sha);
     self.postMessage({ type: "index", done: true, kept: keptNow });
   } catch (err) {
-    self.postMessage({ type: "index", error: String(err?.message || err) });
+    // an interrupt meant for a call that ended as this slice began: the slice, not committed, is indexed again
+    if (/KeyboardInterrupt/.test(String(err?.message || err))) again = true;
+    else self.postMessage({ type: "index", error: String(err?.message || err) });
   } finally {
     step.destroy?.();
-    then?.();
+    if (again) setTimeout(() => indexRest(sha, then), 0);
+    else then?.();
   }
 }
 
@@ -356,6 +365,11 @@ async function init({ base }) {
 
   show();
   py = await loadPython(base, manifest);
+  if (self.crossOriginIsolated && typeof SharedArrayBuffer === "function") {
+    interrupt = new Int32Array(new SharedArrayBuffer(4));
+    py.setInterruptBuffer(interrupt);
+    self.postMessage({ type: "interrupt", buffer: interrupt.buffer });
+  }
   view.step = T("载入 PyYAML 与 SQLite"); view.frac = 0.6; show();
   await py.loadPackage(["pyyaml", "sqlite3"], { messageCallback: () => {}, errorCallback: () => {} });
   view.step = T("载入 TaoChronos"); view.frac = 0.8; show();
@@ -420,6 +434,7 @@ self.onmessage = async (e) => {
     } else {
       if (!ready) throw new Error(T("运行环境尚未启动"));
       await ready;
+      if (interrupt) Atomics.store(interrupt, 0, 0); // one set for the call before this one is not for this one
       const local = { data_add: addData, data_remove: removeData, data_clear: clearData }[method];
       result = local ? await local(params || {}) : JSON.parse(rpc(method, JSON.stringify(params || {})));
     }

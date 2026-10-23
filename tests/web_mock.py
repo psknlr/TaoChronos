@@ -8,8 +8,9 @@ forgetting its instructions would, the names of the tools and fields it worked w
 (web/js/redact.js).  A message carrying the user's data (我的资料: the page's note on it) is answered by analysing its
 prescriptions (``mydata__prescriptions``) and citing its first row.  A question asking for 长篇 is answered at the
 output limit (``finish_reason: length``) part-way, and the rest when the page asks it to write on; one asking it to
-想得很久 spends the limit on its thinking, and answers when asked again without.  Every request is recorded for the test
-to inspect.
+想得很久 spends the limit on its thinking, and answers when asked again without.  One asking for 图表与原文 compares two
+formulas and searches the classics in the same round, and answers with what the round gave it (the test may hold the
+search).  Every request is recorded for the test to inspect.
 """
 
 from __future__ import annotations
@@ -40,6 +41,9 @@ CHART_ANSWER = ("两方的对照见上方图表。合两方的共有药味作图
                 "注：剂量照原书所写；n = 2。")
 
 
+# a question asking for 图表与原文: a comparison and a search in one round; the answer says what it could not use
+BOTH = "图表与原文"
+PARTIAL_ANSWER = "两方的对照见上方图表。原文的检索没有等到结果，这里没有引用原文；需要时可以再问一次。"
 # a message carrying the user's data: its prescriptions analysed by diagnosis, its first row quoted
 DATA_ANSWER = ("## 用药规律\n\n高频药物、药对与各组用药见上方图表。\n\n"
                "- 第一张处方：「处方：柴胡12g 黄芩9g」[[mine:{id}.r1]]\n\n统计只描述这份资料，不构成诊疗建议。")
@@ -106,6 +110,8 @@ class _Handler(BaseHTTPRequestHandler):
             chunks = self._long(said[-1].startswith(WRITE_ON))
         elif body.get("tools") and answered and "想得很久" in asked:
             chunks = self._answer() if body.get("thinking") == {"type": "disabled"} else self._overthought()
+        elif body.get("tools") and BOTH in asked:
+            chunks = self._said(PARTIAL_ANSWER) if answered else self._two_calls()
         else:
             chunks = (self._answer(charting) if answered else self._tool_call(charting)) if body.get("tools") else self._answer()
         for chunk in chunks:
@@ -142,6 +148,21 @@ class _Handler(BaseHTTPRequestHandler):
         text = DATA_ANSWER.format(id=charting) if isinstance(charting, str) else CHART_ANSWER if charting else ANSWER
         for cut in (8, 40, 90, 160, len(text)):  # cumulative, as in MiniMax's own streaming example
             yield {"choices": [{"index": 0, "delta": {"content": text[:cut]}}]}
+        yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}], "usage": USAGE}
+
+    def _two_calls(self):
+        """A comparison of two formulas and a search of the classics, in one round."""
+        yield {"choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}}]}
+        yield self._reasoning("先作图，同时检索原文。")
+        for i, (name, args) in enumerate((("study__compare", '{"formulas": ["桂枝汤", "麻黄汤"]}'),
+                                          ("classics__search", '{"query": "桂枝汤 主之", "k": 3}'))):
+            yield {"choices": [{"index": 0, "delta": {"tool_calls": [
+                {"index": i, "id": f"call_{i + 1}", "type": "function", "function": {"name": name, "arguments": args}}]}}]}
+        yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]}
+
+    @staticmethod
+    def _said(text: str):
+        yield {"choices": [{"index": 0, "delta": {"content": text}}]}
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}], "usage": USAGE}
 
     def _long(self, writing_on: bool):
