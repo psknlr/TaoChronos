@@ -10,11 +10,22 @@
 import * as openai from "./llm/openai.js";
 import * as claude from "./llm/anthropic.js";
 import { dataNote } from "./mydata.js";
-import { sleep } from "./util.js";
 import { T } from "./i18n.js";
 
 const OLD_RESULT_CHARS = 2500;
 const MAX_EXTRA_ROUNDS = 1;
+// the last rounds of tools a turn may run are named to the model, with what it has left, so that it answers in time
+const BUDGET_ROUNDS = 3;
+// a reply that broke off, a service busy for a moment: the round is asked again, after these waits (or as long as the
+// service asks, up to MAX_RETRY_WAIT: a refusal that asks for longer is not waited for)
+const RETRY_WAITS = [1500, 4000, 10000];
+const MAX_RETRY_WAIT = 30000;
+// a reply that stopped at its output limit (finish_reason length, stop_reason max_tokens): an answer is written on from
+// where it stopped, and one that spent all of it on thinking is asked again with less of it — this many times a turn
+const CUT = new Set(["length", "max_tokens"]);
+const MAX_CONTINUATIONS = 2;
+// Claude's word for a reply that filled the model's context window: no more of it would fit, so it is not written on
+const FULL = "model_context_window_exceeded";
 
 export const formatOf = (provider) => (provider.format === "anthropic" ? "anthropic" : "openai");
 
@@ -114,10 +125,17 @@ export function reviewNote(missing) {
 /**
  * Run one user turn.  `hooks` receive the answer as it forms:
  *   round(n) · thinking(delta) · text(fullText) · toolPending(index, name) · toolStart(call) · toolProgress(call, p) ·
- *   toolEnd(call, outcome) · retry(attempt, error) · usage(u) · review(missing) · reviewCut(error)
+ *   toolEnd(call, outcome) · retry(attempt, error) · usage(u) · continued(what) · cut(why) · review(missing) ·
+ *   reviewCut(error)
+ * A turn ends on a reply the service says is complete; a reply cut at the output limit is written on ("answer": the next
+ * round's text continues this one's) or asked again with less thinking ("thinking": what the round showed goes), up to
+ * MAX_CONTINUATIONS times, and is told by cut("answer" | "thinking") when it still stops there; cut("context") tells a
+ * reply that filled the model's context window, cut("filtered") one the service's content filter stopped.  No call of a
+ * cut reply runs.
  * `review(text)`, when given, is the page's self-check of an answer (自查): the passages it cites that the corpus has
- * not.  Once a turn, while REVIEW_ROOM rounds of tools are left, the model is told of them and answers again; a rewrite
- * that does not come — an error, a stop, the limit — is taken out of the turn, and the answer it was about stands.
+ * not — in the whole answer, when it was written on in parts.  Once a turn, while REVIEW_ROOM rounds of tools are left,
+ * the model is told of them and answers again; a rewrite that does not come whole — an error, a stop, the limit, a cut
+ * at the output limit, the content filter — is taken out of the turn, and the answer it was about stands.
  * Returns {wire, rounds, usage, model}.
  */
 export async function runTurn({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, review }) {
@@ -129,20 +147,25 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
   let round = 0;
   let model = provider.model;
   const maxSteps = Math.max(1, Number(settings.maxSteps) || 16);
+  let continued = 0; // rounds that took up a reply cut at the output limit: they spend none of the turn's rounds of tools
+  let lighter = null; // the settings a round is asked again with: the last reply spent its whole output on thinking
+  let written = ""; // what an answer cut at the output limit said in the rounds before the one writing it on
   let checked = -1; // while the model rewrites an answer for the self-check: where the note to it went into the turn
-  const cut = (err) => { turn.length = checked; checked = -1; hooks.reviewCut?.(err); };
+  const uncheck = (err) => { turn.length = checked; checked = -1; hooks.reviewCut?.(err); };
 
   for (;;) {
     if (signal.aborted) break;
     round++;
     hooks.round?.(round);
+    const asked = lighter || settings;
+    lighter = null;
     const messages = format === "openai"
       ? [{ role: "system", content: system }, ...history, userWire, ...turn]
       : [...history, userWire, ...turn];
     let res;
     try {
       res = await withRetry(() => (format === "anthropic" ? claude.streamClaude : openai.streamChat)({
-        provider, system, messages, tools, settings, route, signal,
+        provider, system, messages, tools, settings: asked, route, signal,
         onEvent: (ev) => {
           if (ev.type === "thinking") hooks.thinking?.(ev.delta);
           else if (ev.type === "text") hooks.text?.(ev.text);
@@ -152,36 +175,102 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
     } catch (err) {
       if (checked < 0) throw err;
       const stopped = err?.name === "AbortError" || signal.aborted;
-      cut(stopped ? null : err); // a rewrite that failed ends the turn with the answer it was about
+      uncheck(stopped ? null : err); // a rewrite that failed ends the turn with the answer it was about
       if (stopped) throw err;
       break;
     }
-    turn.push(res.message);
     if (res.model) model = res.model;
     if (res.usage) { usage.input += res.usage.input || 0; usage.output += res.usage.output || 0; hooks.usage?.(usage); }
-    hooks.assistant?.(res, round);
-    if (!res.toolCalls.length && !signal.aborted) {
-      if (checked >= 0) { checked = -1; break; } // rewritten
-      const missing = review && maxSteps - round >= REVIEW_ROOM ? (await review(res.text || "").catch(() => null)) || [] : [];
-      if (missing.length && !signal.aborted) {
-        checked = turn.length;
-        hooks.review?.(missing);
-        turn.push(L.userMessage(reviewNote(missing)));
-        continue;
+    const full = res.finishReason === FULL;
+    const cut = full || CUT.has(res.finishReason);
+    const answered = Boolean((res.text || "").trim());
+    const less = answered ? null : lessThinking(format, provider, asked);
+    if (cut && !full && !res.toolCalls.length && !signal.aborted && continued < MAX_CONTINUATIONS && (answered || less)) {
+      continued++;
+      if (answered) {
+        written += res.text || "";
+        turn.push(res.message, L.userMessage(T("［提示：上面的回答在输出上限处被截断了。请从截断处接着写下去：不要重复已写的内容，不要加开场白，也不要从头再来。］")));
+        hooks.assistant?.(res, round);
+        hooks.continued?.("answer");
+      } else {
+        lighter = less; // the reply is not kept: its round is asked again
+        hooks.continued?.("thinking");
       }
+      continue;
     }
-    if (!res.toolCalls.length || signal.aborted) break;
+    turn.push(res.message);
+    hooks.assistant?.(res, round);
+    const filtered = res.finishReason === "content_filter";
+    if (checked >= 0 && (filtered || full || !res.toolCalls.length || signal.aborted)) {
+      // the rewrite's end: it stands when it came whole; one cut short, stopped or filtered is taken out, and the answer
+      // it was about stands
+      if (cut || filtered || signal.aborted) uncheck(null);
+      else checked = -1;
+      break;
+    }
+    // the content filter stopped it, or nothing more fits: its calls do not run, and the turn ends with what it has
+    if (filtered || full) {
+      hooks.cut?.(full ? "context" : "filtered");
+      break;
+    }
+    if (!res.toolCalls.length || signal.aborted) {
+      if (cut) {
+        hooks.cut?.(answered ? "answer" : "thinking");
+      } else if (review && !signal.aborted && maxSteps - (round - continued) >= REVIEW_ROOM) {
+        // the self-check, of the whole answer: one that cites passages the corpus has not is told of them, and answers
+        // again
+        const missing = (await review(written + (res.text || "")).catch(() => null)) || [];
+        if (missing.length && !signal.aborted) {
+          checked = turn.length;
+          written = "";
+          hooks.review?.(missing);
+          turn.push(L.userMessage(reviewNote(missing)));
+          continue;
+        }
+      }
+      break;
+    }
+    written = "";
 
-    const over = round > maxSteps;
-    const results = await Promise.all(res.toolCalls.map((tc) => execute(tc, { runtime, settings, hooks, signal, over })));
+    const steps = round - continued;
+    const over = steps > maxSteps;
+    const results = await Promise.all(res.toolCalls.map((tc) => execute(tc, { runtime, settings, hooks, signal, over, cut })));
+    if (!over) results[results.length - 1].text += budgetNote(maxSteps - steps);
     turn.push(...L.toolResultMessages(results));
-    if (round > maxSteps + MAX_EXTRA_ROUNDS) {
+    if (steps > maxSteps + MAX_EXTRA_ROUNDS) {
       hooks.limit?.(maxSteps);
       break;
     }
   }
-  if (checked >= 0) cut(null); // stopped, or out of rounds, before the rewrite came
+  if (checked >= 0) uncheck(null); // stopped, or out of rounds, before the rewrite came
   return { wire: turn, rounds: round, usage, model };
+}
+
+/** The settings to ask a round again with when its reply spent all of its output on thinking — none where it cannot be
+ * asked with less: a service with its own field for no thinking is asked without it; Claude, which thinks whether asked
+ * to or not on its newer models, at low effort. */
+export function lessThinking(format, provider, settings) {
+  if (format === "anthropic") return settings.effort === "low" ? null : { ...settings, effort: "low" };
+  return settings.thinking !== false && provider.thinking_off ? { ...settings, thinking: false } : null;
+}
+
+/** What the model is told after a round of tools with `left` rounds of tools to come: nothing before the last
+ * BUDGET_ROUNDS, then how many it has left, and at the last that it is to answer. */
+export function budgetNote(left) {
+  if (left < 0 || left >= BUDGET_ROUNDS) return "";
+  return `\n\n${left ? T`［提示：回答这个问题还可再调用 ${left} 轮工具，请在用完之前作答］`
+    : T("［提示：回答这个问题的工具调用已用完，请根据已有结果直接作答，不要再调用工具］")}`;
+}
+
+/** The milliseconds to wait before asking again after the attempt-th failure (from 0), `err`; null when it is not
+ * asked again — it is not retryable, the attempts are spent, or the service asks to wait longer than MAX_RETRY_WAIT.
+ * A wait is spread over a quarter either way (`rand`, in [0, 1)), so that pages one failure struck together do not ask
+ * again together; never shorter than the service asks. */
+export function retryWait(err, attempt, rand = Math.random) {
+  if (!err?.retryable || attempt >= RETRY_WAITS.length) return null;
+  const asked = Number(err.retryAfter) * 1000 || 0;
+  if (asked > MAX_RETRY_WAIT) return null;
+  return Math.max(Math.round(RETRY_WAITS[attempt] * (0.75 + 0.5 * rand())), asked);
 }
 
 async function withRetry(fn, { signal, onRetry }) {
@@ -190,20 +279,40 @@ async function withRetry(fn, { signal, onRetry }) {
       return await fn();
     } catch (err) {
       if (err?.name === "AbortError" || signal.aborted) throw err;
-      if (!err?.retryable || attempt >= 2) throw err;
+      const wait = retryWait(err, attempt);
+      if (wait === null) throw err;
       onRetry?.(attempt + 1, err);
-      await sleep(attempt ? 4000 : 1500);
+      await pause(wait, signal);
+      if (signal.aborted) throw new DOMException("aborted", "AbortError"); // stopped while it waited: not asked again
     }
   }
 }
 
-async function execute(tc, { runtime, settings, hooks, signal, over }) {
+/** A wait that ends early when the turn is stopped. */
+function pause(ms, signal) {
+  return new Promise((resolve) => {
+    if (signal?.aborted) return resolve();
+    const done = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", done);
+      resolve();
+    };
+    const timer = setTimeout(done, ms);
+    signal?.addEventListener("abort", done, { once: true });
+  });
+}
+
+async function execute(tc, { runtime, settings, hooks, signal, over, cut }) {
   const call = { id: tc.id, name: tc.name, args: tc.arguments, started: Date.now(), status: "running" };
   hooks.toolStart?.(call);
   let out;
   try {
     if (over) {
       out = { ok: false, error: T("已达到本轮工具调用的上限：请根据已有结果直接作答。"), text: T("ERROR: 已达到本轮工具调用的上限：请根据已有结果直接作答。") };
+    } else if (cut) {
+      // its arguments may have been cut with the reply: never run
+      out = { ok: false, error: T("回复在输出上限处被截断，参数可能不完整，没有执行"),
+        text: T("ERROR: 这次回复在输出上限处被截断，调用的参数可能不完整，没有执行。请缩短参数重新调用，或分几次调用。") };
     } else if (tc.error) {
       out = { ok: false, error: tc.error, text: T`ERROR: ${tc.error}（原始参数：${tc.rawArguments.slice(0, 300)}）` };
     } else if (tc.name === "taochronos_research") {

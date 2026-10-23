@@ -219,8 +219,9 @@ missing character is never accepted).
    left — with what to do: look it up with the tools and cite the passage they return, quoted as it is, or drop what
    rests on it (本语料未检得), then answer again, whole.  The first answer stays, folded (初稿（自查后已重新作答）), its
    chips checked as anywhere but not counted in the line under the answer, and a note names the passages that were not
-   found.  A rewrite that does not come — an error, a stop, the limit of rounds — is taken out of the turn, and the
-   first answer stands, the note saying so.  The answer that stands is what is copied, exported, recorded and replayed
+   found.  An answer written on after a cut at the output limit is checked whole, and the rounds that wrote it on are
+   not among the two.  A rewrite that does not come whole — an error, a stop, the limit of rounds, a cut it could not
+   be written on past, the content filter — is taken out of the turn, and the first answer stands, the note saying so.  The answer that stands is what is copied, exported, recorded and replayed
    to the model; its own chips are checked as any answer's, so whatever it still gets wrong shows.
 4. The side panel: **证据** (every passage the conversation touched), **研究** (research runs: verdict, metrics,
    hypotheses with their supporting and contradicting quotations, the full report), **资料** (the user's own files:
@@ -479,7 +480,39 @@ The page speaks two wire formats:
 * **Claude**, through the official Anthropic TypeScript SDK (pinned, loaded from jsDelivr on first use): adaptive
   thinking shown as a summary, server-side refusal fallbacks (`fallbacks: "default"`) on Claude Opus 5 and Fable 5.1 as
   in the harness's own provider, tool inputs streamed eagerly, the stop reason checked before any tool runs (a refusal or
-  a `max_tokens` cut never runs a tool), assistant content replayed verbatim so thinking blocks round-trip.
+  a `max_tokens` cut never runs a tool; a stream that ends without one is asked again), assistant content replayed
+  verbatim so thinking blocks round-trip.
+
+**最大输出** (设置 → 模型) is what a reply may use, its thinking included.  Left empty, the page asks for what the service
+allows: the default service's own ceiling (the relay's `MAX_OUTPUT_TOKENS`, 32,768, which it names in `/v1/health`),
+64,000 with Claude (what Anthropic advises for a streamed reply), and 16,000 from any other service or an API set by
+hand.  A number set there is kept within the default service's ceiling, so the relay forwards the request unchanged; the
+settings show the ceiling and what 自动 comes to.  The 16,000 an older page kept as everyone's number is read as no number.
+
+**A reply that breaks off is asked again.**  A reply is finished only when the service says so — a `finish_reason` or
+`[DONE]` in an OpenAI-compatible stream, a stop reason from Claude — and a stream that simply ends is a reply that broke
+off.  A connection that fails, or breaks off while the reply streams (Chrome's "network error", Safari's "Load failed":
+38 of the first 105 failed turns, some twenty minutes into one), a stream that ends unfinished, a service busy for a
+moment (429, 5xx, DeepSeek's `insufficient_system_resource`) are retried up to three times, after about 1.5, 4 and 10
+seconds (spread a quarter either way, so that pages one failure struck together do not ask again together), or after as
+long as the service's `Retry-After` asks, up to 30 seconds (the relay exposes the header to the page); the round is asked
+again from its start, since no tool ran on what it had said, and what it had shown goes.  A refusal that asking again soon does
+not change is told at once: the visitor's or the service's allowance for the day (`daily_limit`, `total_limit`), an
+address blocked, the service not set up, its own key refused or its quota spent, a provider's quota spent.  A browser that has no
+body to read a reply from as it arrives (an older Safari) reads it whole.  In the last three rounds of tools a turn may
+run (设置 → 运行环境 → 每轮最多工具步数, 16 by default), the model is told after each how many it has left, and at the last that it is
+to answer from what it has.
+
+**A reply cut at its output limit is written on.**  An answer that stops at the limit (`finish_reason: length`, Claude's
+`max_tokens`) is kept, and the model is asked, in a note after it, to write on from where it stopped — not to repeat
+itself or start over; the page shows the two as one answer.  A reply that spent the whole limit on thinking, with no
+answer, is asked again with less of it: without thinking where the service has a field for that (the default service,
+MiniMax), at low effort with Claude (its newer models think whether thinking is asked for or not, and effort is what
+makes them think less); what it had shown goes.  Either happens at most twice a turn, and neither counts as one of the
+turn's rounds of tools.  No tool call of a cut reply runs, since its arguments may have been cut too: the model is told
+so, and can call again with shorter ones.  An answer still cut after that, one the service's content filter stopped
+(`content_filter`), and one that filled the model's context window (Claude's `model_context_window_exceeded`, which no
+writing on would fit) end the turn with a note under the answer saying so, and 重试 next to it.
 
 **自定义 API** — an endpoint not in the list, set by hand (**设置 → 模型 → ＋ 自定义 API**; several can be kept): a name, the
 wire format (OpenAI-compatible, or Anthropic Messages through the SDK), the base URL (the page appends `/chat/completions`,
@@ -627,18 +660,26 @@ terms the site carries it under; a 宋本 found for a punctuated 伤寒论 claus
 `tests/test_corpus_store.py` — on a store: a quotation found whatever its punctuation and in either script, across a
 witness's own marks, never with a changed or missing character; outside a session `classics.list_books` lists every
 book with its filters and `kg.claims` / `kg.neighbors` read the passages that write the term.  `tests/test_web_client.py` — the
-client's logic under Node (cumulative and incremental streams, history rules, dangling tool calls, citation pairing, which
+client's logic under Node (cumulative and incremental streams, a reply that breaks off asked again and one read whole,
+a stream that ends without a finish reason or `[DONE]` asked again, which refusals are retried and how long after, the
+spread of the waits, what a reply may use, an answer cut at the output limit written on, one that only thought asked
+again without thinking, no call of a cut reply run, the content filter and a full context told, the rounds of tools left
+named to the model, history rules, dangling tool calls, citation pairing, which
 questions get the fixed reply and which go to the model; the alias badges — labels, the names merged, the asked name found
 for a hit, the flags' words, every card of a search marked with its badges or with none; the charts' checks, CSV, Markdown tables, colours and axes; a box
 plot's numbers, a forest plot's log axis, a tree's checks; CRC-32, PackBits, a TIFF's directory, a PNG's pHYs and a ZIP;
 three-line tables' heads, italics, LaTeX, CSV, Markdown and Word XML; the self-check's loop: asked again once, with the
-passages named, only while rounds of tools are left, a rewrite that fails or is stopped taken out of the turn) and
+passages named, only while rounds of tools are left, an answer written on read whole, a rewrite that fails, is stopped
+or is cut short taken out of the turn) and
 the page in Chromium against scripted providers (`tests/web_mock.py`): a MiniMax-style stream (cumulative
 `reasoning_details` and content, streamed tool arguments) and a Claude stream through the real SDK, checking the
 requests (`reasoning_split`, `max_completion_tokens`, `reasoning_details` and thinking signatures replayed, fallbacks),
 the chip states, the self-check (the passage that does not exist named to the model, looked for again, the answer given
-without it, the first answer folded with its chips and not counted, the note replayed in the next turn), the highlighted
-passage, Tao-R1 in the chip and under the answer, and persistence across a reload; and
+without it, the first answer folded with its chips and not counted, the note replayed in the next turn, an answer written
+on after a cut checked whole), the highlighted passage, Tao-R1 in the chip and under the answer, persistence across a
+reload, an answer cut at the output limit written on and shown as one, and a reply that only thought asked again with
+less (MiniMax without thinking, Claude at low effort), and Claude's stream that ends part-way or without a stop reason
+asked again; and
 a page served elsewhere (as on GitHub Pages) connecting to a server in one step, using it again after a reload, and a
 token taken from the address (and its absence reported); an API set by hand (address, model, key, headers, parameters —
 checked in the request it makes); the default service (a stand-in relay): asked at once without a key, no key sent by the
