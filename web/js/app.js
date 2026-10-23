@@ -1,6 +1,6 @@
 // TaoChronos web client: conversations with a model that uses TaoChronos's tools, every quotation checked.
 
-import { buildHistory, formatOf, resumable, runTurn, toolDefs, withoutReasoning } from "./agent.js";
+import { buildHistory, formatOf, lateResult, resumable, runTurn, toolDefs, withoutReasoning } from "./agent.js";
 import { chartsOf, documentOf, toMarkdown } from "./chart.js";
 import { tablesOf, toMarkdown as tableMarkdown } from "./table.js";
 import { streamClaude } from "./llm/anthropic.js";
@@ -14,7 +14,7 @@ import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, 
 import { ACCEPT, brief, cacheList, cachedList, DATA_NOTICE, isMine, MAX_BYTES, noticeSeen, personal, setNoticeSeen, sizeLabel }
   from "./mydata.js";
 import { consent, NOTICE, setConsent, timings } from "./records.js";
-import { BrowserRuntime, probeServer, sameOriginServer, ServerRuntime } from "./runtime.js";
+import { BrowserRuntime, probeServer, researchText, sameOriginServer, ServerRuntime, turnInstructions } from "./runtime.js";
 import { LIMITS, pageClock } from "./limits.js";
 import { pause, pausedNow, pauseText } from "./pause.js";
 import * as store from "./store.js";
@@ -242,10 +242,10 @@ function languageNote() {
     + "Chinese terms, formulas and herbs with their Chinese characters, e.g. Guizhi Tang (桂枝汤).";
 }
 
-function systemPrompt() {
-  const base = S.runtimeInfo?.system_prompt || "";
+function systemPrompt(info = S.runtimeInfo, change = "") {
+  const base = info?.system_prompt || "";
   const extra = (S.settings.instructions || "").trim();
-  return `${base}${extra ? `\n\n## 用户的附加指令\n${extra}` : ""}${languageNote()}`;
+  return `${base}${change}${extra ? `\n\n## 用户的附加指令\n${extra}` : ""}${languageNote()}`;
 }
 
 // ------------------------------------------------------------------ passages and citations
@@ -436,7 +436,9 @@ async function openConversation(id) {
   const conv = S.list.find((c) => c.id === id) || (await store.getConversation(id));
   if (!conv) return newChat();
   const renamed = publicConversation(conv); // one another tab kept
-  if (settleCalls(conv) || renamed) store.putConversation(conv).catch(() => {});
+  const busy = await heldNow();
+  if (settleCalls(conv, busy) || renamed) store.putConversation(conv).catch(() => {});
+  runtimeSwitch?.then(() => followAgain(conv, busy), () => {});
   S.conv = conv;
   S.ui.editing = null;
   S.drawer.pid = null;
@@ -519,6 +521,7 @@ async function runAssistant(conv, msg, { resume = null } = {}) {
   const trace = { requests: [], tools: [], events: [] }; // where the turn's time went, for its record
   const before = resume ? { rounds: msg.rounds || 0, usage: msg.usage || null, ms: msg.ms || 0 } : null; // taken up again
   S.running = { controller, hurry, trace, convId: conv.id, msgId: msg.id };
+  const release = hold(msg.id); // a page opened meanwhile leaves the turn to this one (settleCalls)
   renderComposer();
   const provider = activeProvider(S.settings);
   msg.model = provider.relay ? ASSISTANT : provider.model; // the default service by its own model name only
@@ -542,7 +545,7 @@ async function runAssistant(conv, msg, { resume = null } = {}) {
     const history = buildHistory(conv.messages.slice(0, idx - 1), provider);
     const result = await runTurn({
       provider, settings: hidden ? { ...S.settings, thinking: false } : S.settings, route: routeFor(), runtime: routed(runtime),
-      tools, system: systemPrompt(), history, user, signal: controller.signal, hurry: hurry.signal,
+      tools, system: turnInstructions(runtime, S.runtimeInfo, systemPrompt), history, user, signal: controller.signal, hurry: hurry.signal,
       hooks: makeHooks(conv, msg, before?.usage), sink, trace, resume, rounds: before?.rounds,
       scope: lookupScope,
     });
@@ -572,6 +575,7 @@ async function runAssistant(conv, msg, { resume = null } = {}) {
       for (const c of seg.calls || []) if (WAITING.has(c.status)) { c.status = "stopped"; c.summary = T("已停止"); }
     }
     S.running = null;
+    release();
     touch(conv);
     await persistNow(conv);
     if (S.conv === conv) {
@@ -642,8 +646,34 @@ async function answerFixed(conv, msg, text) {
 
 // the states of a call the turn still waits for (a research run left to go on by itself, "background", it does not)
 const WAITING = new Set(["preparing", "loading", "queued", "running"]);
-// the calls of research runs this page left to go on by themselves, until they end
-const LATER = new Set();
+// the research runs this page follows to their end without a turn waiting for them — calls it left to go on by
+// themselves, or an earlier page did (followAgain), and runs begun from the research panel (conv.jobs) —, until they end
+const LATER = new WeakSet();
+
+// A page holds a lock named by a turn's message while it runs the turn or follows a research run of it, and one named by
+// a run begun from the research panel while it follows that (Web Locks, where the browser has them; shared, as a page
+// may hold one more than once): a page opened later — a reload, another tab — tells what another page still runs from
+// what none runs any more.
+const LOCKS = globalThis.navigator?.locks || null;
+
+/** Hold the lock named `name` until the function returned is called. */
+function hold(name) {
+  if (!LOCKS) return () => {};
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  LOCKS.request(`tc:${name}`, { mode: "shared" }, () => held).catch(() => {});
+  return release;
+}
+
+/** The names of the locks the pages of this site hold, or ask for, now (none known without Web Locks). */
+async function heldNow() {
+  try {
+    const q = (await LOCKS?.query()) || {};
+    return new Set([...(q.held || []), ...(q.pending || [])].map((l) => String(l.name).replace(/^tc:/, "")));
+  } catch {
+    return new Set();
+  }
+}
 
 function makeHooks(conv, msg, usageBefore = null) {
   let round = 0;
@@ -675,29 +705,7 @@ function makeHooks(conv, msg, usageBefore = null) {
   };
   const end = (call, out, later = false) => {
     const c = findCall(call);
-    if (!c) return;
-    c.status = out.ok ? "ok" : out.status || "error";
-    c.ms = Date.now() - (c.started || Date.now());
-    c.summary = out.ok ? `${out.summary || T("完成")}${out.reused ? T("（与先前的同一调用相同，没有重新运行）") : ""}` : truncate(out.error || T("失败"), 120);
-    c.error = out.ok ? null : out.error;
-    c.preview = (out.text || "").slice(0, 8000);
-    const cites = out.ok ? withFound(out.citations, out.result) : out.citations; // a search's labels (via, flags)
-    c.citations = (cites || []).slice(0, 80);
-    const own = out.ok && !out.reused; // a call answered from the same one before: its figures are under that one
-    c.charts = own ? chartsOf(out.result) : [];
-    c.tables = own ? tablesOf(out.result) : [];
-    c.document = own ? documentOf(out.result) : null;
-    if (out.tool && out.tool !== call.name) c.resolved = out.tool;
-    toolTextCache.delete(conv); // what the tools returned has grown: citations are checked against it
-    registerEvidence(conv, cites);
-    if (out.ok && (call.name === "taochronos_research" || out.tool === "taochronos_research") && out.result?.session_id) {
-      const run = addResearch(conv, out.result, c.ms);
-      c.research = run.id;
-      if (!later && !mobile() && S.conv === conv) { S.drawer.open = true; S.drawer.tab = "research"; renderLayout(); renderDrawerSoon(); }
-    }
-    for (const seg of msg.segments) if (seg.calls?.includes(c) && !seg.calls.some((x) => WAITING.has(x.status))) seg.offer = false;
-    update();
-    if (S.drawer.open && S.conv === conv) renderDrawerSoon();
+    if (c) callEnded(conv, msg, c, out, later);
   };
   // what this round had shown goes: the round is asked again.  A round writing on a cut answer leaves that answer as it
   // was (and the next asking writes on it again)
@@ -762,20 +770,28 @@ function makeHooks(conv, msg, usageBefore = null) {
     toolProgress(call, p) {
       const c = findCall(call);
       if (!c) return;
-      const pr = p?.progress || {};
-      c.progress = p?.status === "queued" ? T`排队中：服务正在完成另一项研究 · ${Math.round(p?.elapsed_s || 0)} 秒`
-        : T`研究进行中${pr.round ? T` · 第 ${pr.round} 轮` : ""}${pr.hypotheses != null ? T` · ${pr.hypotheses} 个假说` : ""}${pr.claims != null ? T` · ${pr.claims} 条主张` : ""} · ${Math.round(p?.elapsed_s || 0)} 秒`;
+      c.progress = researchText(p);
       update();
+    },
+    // a research run a server began: kept with the call at once, for a page opened again to follow it (followAgain)
+    toolJob(call, job) {
+      const c = findCall(call);
+      if (!c) return;
+      c.job = job;
+      persistNow(conv);
     },
     toolEnd: (call, out) => end(call, out),
     // a research run the turn did not wait for: its end comes later, to the research panel
     toolLater(call, ending) {
-      LATER.add(call.id);
+      const c = findCall(call);
+      if (!c) return;
+      LATER.add(c);
+      const release = hold(msg.id);
       ending.then((out) => {
-        LATER.delete(call.id);
+        release();
+        LATER.delete(c);
         end(call, out, true);
-        if (out.ok) toast(T("后台的研究已完成：结果在研究面板中"));
-        else toast(T`后台的研究没有完成：${truncate(out.error || T("失败"), 60)}`, "err", 5000);
+        laterToast(out);
       });
     },
     retry(attempt) {
@@ -816,6 +832,40 @@ function makeHooks(conv, msg, usageBefore = null) {
   };
 }
 
+/** A call's end as its step shows it, from its outcome; `later`: a research run's that went on without its turn (its
+ * results come to the research panel, which is not opened for them). */
+function callEnded(conv, msg, c, out, later = false) {
+  c.status = out.ok ? "ok" : out.status || "error";
+  c.ms = Date.now() - (c.started || Date.now());
+  c.summary = out.ok ? `${out.summary || T("完成")}${out.reused ? T("（与先前的同一调用相同，没有重新运行）") : ""}` : truncate(out.error || T("失败"), 120);
+  c.error = out.ok ? null : out.error;
+  c.preview = (out.text || "").slice(0, 8000);
+  const cites = out.ok ? withFound(out.citations, out.result) : out.citations; // a search's labels (via, flags)
+  c.citations = (cites || []).slice(0, 80);
+  const own = out.ok && !out.reused; // a call answered from the same one before: its figures are under that one
+  c.charts = own ? chartsOf(out.result) : [];
+  c.tables = own ? tablesOf(out.result) : [];
+  c.document = own ? documentOf(out.result) : null;
+  if (out.tool && out.tool !== c.name) c.resolved = out.tool;
+  toolTextCache.delete(conv); // what the tools returned has grown: citations are checked against it
+  registerEvidence(conv, cites);
+  if (out.ok && (c.name === "taochronos_research" || out.tool === "taochronos_research") && out.result?.session_id) {
+    const run = addResearch(conv, out.result, c.ms);
+    c.research = run.id;
+    if (!later && !mobile() && S.conv === conv) { S.drawer.open = true; S.drawer.tab = "research"; renderLayout(); renderDrawerSoon(); }
+  }
+  for (const seg of msg.segments) if (seg.calls?.includes(c) && !seg.calls.some((x) => WAITING.has(x.status))) seg.offer = false;
+  if (S.conv === conv) renderMessageSoon(msg);
+  persistSoon(conv);
+  if (S.drawer.open && S.conv === conv) renderDrawerSoon();
+}
+
+/** How a research run that went on without its turn ended, told. */
+function laterToast(out) {
+  if (out.ok) toast(T("后台的研究已完成：结果在研究面板中"));
+  else toast(T`后台的研究没有完成：${truncate(out.error || T("失败"), 60)}`, "err", 5000);
+}
+
 function addResearch(conv, result, ms) {
   conv.research ||= [];
   const run = { id: uid("r_"), session_id: result.session_id, question: result.question, created: Date.now(), ms, result };
@@ -829,22 +879,95 @@ function stop() {
   S.running?.controller.abort();
 }
 
-/** Calls an earlier page left without an end: a research run it left to go on by itself never came back to it (one
- * this page left goes on).  Returns whether any changed, for the caller to store the conversation again. */
-function settleCalls(conv) {
+/** What an earlier page left without an end — it was closed, or reloaded, as it ran — and no page runs now (`busy`, the
+ * locks held: heldNow): a turn ends with what it had (继续作答 can take it up from its results), and its calls with it;
+ * a research run, one such a turn waited for or one it left to go on by itself, is followed again where the page has its
+ * id (followAgain), and ends without its result where it has not.  Returns whether any changed, for the caller to store
+ * the conversation again. */
+function settleCalls(conv, busy = new Set()) {
   let changed = false;
   for (const m of conv?.messages || []) {
-    if (m.status === "streaming") continue;
+    if (m.role !== "assistant" || S.running?.msgId === m.id || busy.has(m.id)) continue;
+    const left = m.status === "streaming";
+    if (left) {
+      m.status = "error";
+      m.error = T("这一轮没有答完：页面在作答时关闭或刷新了");
+      changed = true;
+    }
     for (const seg of m.segments || []) {
+      if (left) seg.offer = false;
       for (const c of seg.calls || []) {
-        if (c.status !== "background" || LATER.has(c.id)) continue;
-        c.status = "error";
-        c.summary = T("页面关闭时这次研究还没有完成，结果没有收到");
+        if (LATER.has(c) || !(c.status === "background" || (left && WAITING.has(c.status)))) continue;
+        if (c.job) { // followed again; one the turn waited for gives the turn its result (继续作答 answers from it)
+          if (c.status !== "background") Object.assign(c, { status: "background", late: true });
+          changed ||= Boolean(c.late);
+          continue;
+        }
+        c.summary = c.status === "background" ? T("页面关闭时这次研究还没有完成，结果没有收到") : T("已停止");
+        c.status = c.status === "background" ? "error" : "stopped";
         changed = true;
       }
     }
   }
   return changed;
+}
+
+/** Follow again the research runs of `conv` an earlier page left going on (settleCalls) and no page follows now (`busy`),
+ * each to its end, on the server that runs them: its step says meanwhile how it goes — queued, running, awaiting
+ * recovery —, and its results come to the research panel.  So do the runs begun from the research panel (conv.jobs). */
+function followAgain(conv, busy = new Set()) {
+  for (const m of conv?.messages || []) {
+    if (busy.has(m.id)) continue;
+    for (const seg of m.segments || []) {
+      for (const c of seg.calls || []) {
+        if (c.status !== "background" || !c.job || LATER.has(c)) continue;
+        LATER.add(c);
+        followJob(c.job, m.id, (text) => { c.progress = text; if (S.conv === conv) renderMessageSoon(m); }).then((out) => {
+          LATER.delete(c);
+          if (c.late && S.running?.msgId !== m.id && m.status !== "streaming") {
+            m.wire = lateResult(m.wire, m.wireFormat, c.id, out.text || (out.ok ? "{}" : `ERROR: ${out.error}`));
+          }
+          delete c.late;
+          callEnded(conv, m, c, out, true);
+          persistNow(conv);
+          laterToast(out);
+        });
+      }
+    }
+  }
+  for (const job of conv?.jobs || []) {
+    if (LATER.has(job) || busy.has(job.id)) continue;
+    LATER.add(job);
+    S.researchRunning ||= T("研究进行中…");
+    renderDrawerSoon();
+    followJob(job, job.id, (text) => { S.researchRunning = text; renderDrawerSoon(); }).then(async (out) => {
+      LATER.delete(job);
+      conv.jobs = (conv.jobs || []).filter((j) => j !== job);
+      if (out.ok && out.result?.session_id) addResearch(conv, out.result, Date.now() - job.started);
+      S.researchRunning = null;
+      renderAll();
+      await persistNow(conv);
+      if (out.ok) toast(T("研究完成"));
+      else toast(out.error || T("研究失败"), "err", 5000);
+    });
+  }
+}
+
+/** A research run a server began for an earlier page, followed to its end on that server — when this page works with it
+ * — holding the lock `lock` meanwhile, and saying how it goes (`progress(text)`): its outcome, or why it has none. */
+async function followJob(job, lock, progress) {
+  const rt = S.runtime;
+  if (rt?.kind !== "server" || rt.backup || rt.url !== job.url) {
+    return { ok: false, error: T("这次研究在另一个运行环境中进行，这个页面现在连接不到它，结果没有收到") };
+  }
+  const release = hold(lock);
+  try {
+    return (await rt.followResearch(job.id, { onProgress: (p) => progress(researchText(p)) })) || { ok: false, error: T("研究失败") };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
+  } finally {
+    release();
+  }
 }
 
 /** The user asks for the answer without the tools still running: they are not waited for, and no more run. */
@@ -899,24 +1022,31 @@ async function runResearchDirect(args) {
   const started = Date.now();
   S.researchRunning = T("研究进行中…");
   renderDrawerSoon();
+  let job = null; // a run a server began: kept with the conversation while it runs, for a page opened again to follow it
+  let release = null;
   try {
     await ensureRuntime();
     const out = await S.runtime.research(args, {
       maxChars: S.settings.resultChars,
-      onProgress: (p) => {
-        const pr = p?.progress || {};
-        S.researchRunning = T`研究进行中${pr.round ? T` · 第 ${pr.round} 轮` : ""}${pr.hypotheses != null ? T` · ${pr.hypotheses} 个假说` : ""} · ${Math.round(p?.elapsed_s || 0)} 秒`;
-        renderDrawerSoon();
+      onJob: (j) => {
+        job = { ...j, question: args.question, started };
+        LATER.add(job);
+        release = hold(job.id);
+        conv.jobs = [...(conv.jobs || []), job];
+        persistNow(conv);
       },
+      onProgress: (p) => { S.researchRunning = researchText(p); renderDrawerSoon(); },
     });
     if (!out?.ok) throw new Error(out?.error || T("研究失败"));
     addResearch(conv, out.result, Date.now() - started);
     touch(conv);
-    await persistNow(conv);
     toast(T("研究完成"));
   } catch (err) {
     toast(err.message, "err", 5000);
   } finally {
+    if (job) conv.jobs = (conv.jobs || []).filter((j) => j !== job);
+    release?.();
+    await persistNow(conv);
     S.researchRunning = null;
     renderAll();
   }
@@ -1835,12 +1965,15 @@ async function main() {
     S.settings.provider = allProviders(S.settings).find((p) => !p.relay)?.id || allProviders(S.settings)[0].id;
   }
   S.list = await store.listConversations().catch(() => []);
-  // conversations kept by an older page, as the default service presents itself now, and with the research runs it left
-  // to go on by themselves ended
+  // conversations kept by an earlier page, as the default service presents itself now, and with what it left without an
+  // end settled — a turn, a research run —, but for what another tab still runs; the research runs it left going on are
+  // followed again once the page has its runtime
+  const busy = await heldNow();
   for (const c of S.list) {
     const renamed = publicConversation(c);
-    if (settleCalls(c) || renamed) store.putConversation(c).catch(() => {});
+    if (settleCalls(c, busy) || renamed) store.putConversation(c).catch(() => {});
   }
+  runtimeSwitch.then(() => { for (const c of S.list) followAgain(c, busy); }, () => {});
   const m = /^#\/c\/(.+)$/.exec(location.hash);
   S.conv = m ? S.list.find((c) => c.id === m[1]) || null : null;
   renderAll();

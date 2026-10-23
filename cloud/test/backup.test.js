@@ -168,6 +168,11 @@ test("research and sessions need the server: the page is told why, without leavi
   const out = await callTool("taochronos_research", { question: "消渴" });
   assert.equal(out.ok, false);
   assert.match(out.error, /备份服务/);
+  // a run the container started is not known here: as a run the page has lost, in the words of either version
+  assert.deepEqual(await (await site("/api/research/job_1")).json(), { id: "job_1", state: "unknown", status: "unknown" });
+  for (const act of ["cancel", "resume"]) {
+    assert.deepEqual(await (await post(`/api/research/job_1/${act}`, {})).json(), { id: "job_1", state: "unknown", status: "unknown" });
+  }
 });
 
 test("without the import complete (or with another version) the site says 503, and the page runs the browser corpus", { skip }, async () => {

@@ -12,7 +12,8 @@ output limit (``finish_reason: length``) part-way, and the rest when the page as
 formulas and searches the classics in the same round, and answers with what the round gave it (the test may hold the
 search); one asking it to 再查一遍 searches twice (with 图表, compares twice), in two rounds, each call under the same id
 (as a service that numbers its calls afresh in each reply does); one asking it to 不停地查 searches in every reply,
-however it is asked (as a service that drops ``tool_choice`` would).  Every request is recorded for the test to inspect.
+however it is asked (as a service that drops ``tool_choice`` would); one asking it to 做一次研究 asks for a research run
+(``taochronos_research``), and answers once it has its result.  Every request is recorded for the test to inspect.
 """
 
 from __future__ import annotations
@@ -50,6 +51,8 @@ PARTIAL_ANSWER = "两方的对照见上方图表。原文的检索没有等到�
 AGAIN = "再查一遍"
 # a question asking to search on and on: a search in every reply, even one asked with no tool to call
 KEEP_CALLING = "不停地查"
+# a question asking for a research run (taochronos_research): a server runs it in the background
+RESEARCH = "做一次研究"
 # the page's note on a turn taken up again (继续作答, web/js/agent.js resumeNote), after the last of its tool results
 RESUMED = "［提示：上一次作答没有完成，工具不再调用。请根据上面已有的工具结果直接作答；没有得到的结果，请在回答中说明缺了什么，不要编造］"
 # a message carrying the user's data: its prescriptions analysed by diagnosis, its first row quoted
@@ -122,6 +125,8 @@ class _Handler(BaseHTTPRequestHandler):
             chunks = self._said(PARTIAL_ANSWER) if answered else self._two_calls()
         elif body.get("tools") and KEEP_CALLING in asked:
             chunks = self._tool_call()
+        elif body.get("tools") and RESEARCH in asked:
+            chunks = self._answer() if answered else self._research()
         elif body.get("tools") and AGAIN in asked:
             searched = sum(m.get("role") == "tool" for m in messages[last_user + 1:])
             chunks = self._answer(charting) if searched >= 2 else self._tool_call(charting)
@@ -162,6 +167,14 @@ class _Handler(BaseHTTPRequestHandler):
         for cut in (8, 40, 90, 160, len(text)):  # cumulative, as in MiniMax's own streaming example
             yield {"choices": [{"index": 0, "delta": {"content": text[:cut]}}]}
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}], "usage": USAGE}
+
+    def _research(self):
+        """A research run of one round."""
+        yield {"choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}}]}
+        yield self._reasoning("先做一次多智能体研究。")
+        yield {"choices": [{"index": 0, "delta": {"tool_calls": [{"index": 0, "id": "call_r", "type": "function", "function": {
+            "name": "taochronos_research", "arguments": '{"question": "桂枝汤的源流", "max_rounds": 1}'}}]}}]}
+        yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]}
 
     def _two_calls(self):
         """A comparison of two formulas and a search of the classics, in one round."""

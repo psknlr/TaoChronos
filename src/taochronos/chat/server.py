@@ -4,7 +4,10 @@ It serves the web client (``web/``) and a small JSON API over :class:`~taochrono
 
 * ``GET  /api/info`` — corpus, tools, the system prompt;  ``GET /api/catalog?mode=core|all`` — tool definitions;
 * ``POST /api/call`` ``{name, arguments, max_chars}`` — run one tool;  ``GET /api/passage?id=`` — a passage in full;
-* ``POST /api/research`` — start a research run in the background;  ``GET /api/research/<job>`` — its progress and outcome;
+* ``POST /api/research`` — start a research run in the background;  ``GET /api/research/<job>`` — its state (queued, running,
+  cancel_requested, completed, failed, cancelled, interrupted), place in the queue, times, heartbeat and outcome;
+  ``POST /api/research/<job>/cancel`` — stop it;  ``POST /api/research/<job>/resume`` — go on with one the server
+  stopped, from its last checkpoint (``taochronos.chat.jobs``);
 * ``POST /api/data`` ``{name, data}`` (the file's bytes in base64) — add a file to 我的资料;  ``GET /api/data`` — the
   datasets;  ``POST /api/data/remove`` ``{id}``, ``POST /api/data/clear`` — remove one, or all.  Only a server bound to
   this machine takes a user's data: one other machines reach would mix its visitors' data in one runtime;
@@ -226,6 +229,9 @@ class Handler(BaseHTTPRequestHandler):
                                           max_chars=int(data.get("max_chars") or 16000)))
             if path.startswith("/api/data"):
                 return self._data(path, data)
+            if path.startswith("/api/research/") and path.endswith(("/cancel", "/resume")):
+                job, _, act = path[len("/api/research/"):].rpartition("/")
+                return self._json(rt.cancel_research(job) if act == "cancel" else rt.resume_research(job))
             if path == "/api/research":
                 args = dict(data.get("arguments") or data)
                 question = str(args.pop("question", "") or "").strip()
