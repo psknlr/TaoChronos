@@ -314,8 +314,10 @@ class _AnthropicHandler(_Handler):
 
 PUBLIC_MODEL = "Tao-R1"          # the default service's model, as the page knows it (relay/src/relay.js: PUBLIC_MODEL)
 UPSTREAM_MODEL = "MiniMax-M3"    # the model behind it (relay.js: MODELS)
-# the relay's refusal once a visitor's free calls for the day are spent (relay.js: its gate's "day")
+# the relay's refusal once a visitor's free calls for the day are spent (relay.js: its gate's "day"), and the seconds it
+# asks the page to wait: to its midnight
 SPENT = "今天的免费额度已用完（每人每天 600 次模型调用），明天再来，或在“设置 → 模型”里填入自己的 API Key"
+SPENT_FOR = 3600
 _MODEL_FIELD = re.compile(r'"model"\s*:\s*"(?:[^"\\]|\\.)*"')
 _FORMAT_FIELD = re.compile(r'"format"\s*:\s*"MiniMax-')
 
@@ -342,7 +344,8 @@ class MockRelay(ThreadingHTTPServer):
     """道乃久默认服务 as the page sees it (relay/src/relay.js): health, the model calls forwarded to ``upstream`` with the
     relay's own key (in the upstream's terms, the reply in the service's own), and the conversation records.  Records
     what the browser sent — the page never sends a key.  With ``spent``, the day's free calls are used up: each model
-    call is refused as the relay refuses it (429, ``daily_limit``)."""
+    call is refused as the relay refuses it (429, ``daily_limit``, and ``Retry-After``: the seconds to its midnight,
+    here ``SPENT_FOR``)."""
 
     daemon_threads = True
     SECRET = "relay-held-secret"
@@ -377,12 +380,15 @@ class _RelayHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", self.headers.get("Origin") or "*")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Expose-Headers", "Retry-After")  # as relay.js: the page reads it
         self.send_header("Vary", "Origin")
 
-    def _json(self, status: int, data) -> None:
+    def _json(self, status: int, data, headers: dict | None = None) -> None:
         raw = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self._cors()
+        for k, v in (headers or {}).items():
+            self.send_header(k, v)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(raw)))
         self.end_headers()
@@ -417,7 +423,7 @@ class _RelayHandler(BaseHTTPRequestHandler):
             return
         self.server.chat.append({"headers": dict(self.headers), "body": json.loads(raw or b"{}")})
         if self.server.spent:
-            self._json(429, {"error": {"message": SPENT, "type": "daily_limit"}})
+            self._json(429, {"error": {"message": SPENT, "type": "daily_limit"}}, {"Retry-After": str(SPENT_FOR)})
             return
         import urllib.request
 

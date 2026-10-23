@@ -1380,6 +1380,71 @@ def test_the_answer_once_the_tools_stop_under_node(tmp_path):
     assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
 
 
+NODE_PAUSE = r"""
+import assert from "node:assert/strict";
+import { ProviderError } from "./js/llm/openai.js";
+import { pause, pausedNow, pauseText, pauseUntil, untilText } from "./js/pause.js";
+
+// this browser's storage
+const kept = new Map();
+globalThis.localStorage = { getItem: (k) => (kept.has(k) ? kept.get(k) : null), setItem: (k, v) => void kept.set(k, String(v)),
+  removeItem: (k) => void kept.delete(k) };
+const now = Date.UTC(2026, 9, 23, 8, 0);
+const spent = (s) => new ProviderError("今天的免费额度已用完", { status: 429, kind: "daily_limit", retryAfter: s });
+
+// a refusal that says when to come back pauses its service until then, a day at most; one that does not, none
+assert.deepEqual([pauseUntil(spent(3600), now), pauseUntil(spent(90000), now), pauseUntil(spent(null), now), pauseUntil(spent(0), now),
+  pauseUntil(new Error("x"), now)], [now + 3600000, now + 86400000, null, null, null]);
+assert.equal(pause("default", spent(null), "额度已用完", now), null);
+assert.equal(pausedNow("default", now), null);
+assert.deepEqual(pause("default", spent(3600), "额度已用完", now), { until: now + 3600000, message: "额度已用完" });
+// the service's alone, while it lasts
+assert.deepEqual([pausedNow("default", now + 3599999), pausedNow("openai", now)], [{ until: now + 3600000, message: "额度已用完" }, null]);
+pause("openai", spent(60), "请求太频繁", now);
+assert.deepEqual(Object.keys(JSON.parse(kept.get("tc.pause"))), ["default", "openai"]);
+// an ended pause goes, the other stays; the last gone, nothing is kept
+assert.equal(pausedNow("openai", now + 60000), null);
+assert.deepEqual(Object.keys(JSON.parse(kept.get("tc.pause"))), ["default"]);
+assert.ok(pausedNow("default", now + 60000));
+// kept in this browser: a page opened again (the module loaded afresh) is still paused
+const reloaded = await import("./js/pause.js?reloaded");
+assert.deepEqual(reloaded.pausedNow("default", now + 60000), { until: now + 3600000, message: "额度已用完" });
+assert.equal(reloaded.pausedNow("default", now + 3600000), null);
+assert.equal(kept.has("tc.pause"), false);
+// what an older or another page left there that is no pause is none
+kept.set("tc.pause", JSON.stringify("暂停"));
+assert.equal((await import("./js/pause.js?garbled")).pausedNow("default", now), null);
+// a browser that keeps nothing (private mode): the pause holds while the page is open
+globalThis.localStorage = { getItem() { throw new Error("denied"); }, setItem() { throw new Error("denied"); }, removeItem() { throw new Error("denied"); } };
+const kept_nothing = await import("./js/pause.js?private");
+kept_nothing.pause("default", spent(600), "额度已用完", now);
+assert.equal(kept_nothing.pausedNow("default", now + 1000)?.until, now + 600000);
+// until when, as a visitor reads it: the time, and the day when it is not today
+const at = now + 3600000;
+const time = new Date(at).toLocaleString("zh-CN", { hour: "2-digit", minute: "2-digit" });
+const day = new Date(at).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+assert.deepEqual([untilText(at, at - 60000), untilText(at, at - 86400000)], [time, day]);
+assert.equal(pauseText({ until: at, message: "额度已用完" }, at - 60000), `暂停到 ${time}，不再发送请求：额度已用完`);
+// a long refusal (a provider's own words) is cut short: the turn's notice has it whole
+assert.equal(pauseText({ until: at, message: "长".repeat(300) }, at - 60000), `暂停到 ${time}，不再发送请求：${"长".repeat(199)}…`);
+console.log("ok");
+"""
+
+
+def test_a_service_that_says_when_to_come_back_is_paused_under_node(tmp_path):
+    """A refusal that says when to come back (Retry-After) pauses its service until then, a day at most, and one that
+    does not, none; the pause is that service's alone, kept in this browser across a reload (in memory where the browser
+    keeps nothing), gone once over; the page says until when."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_PAUSE, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=120, env={**os.environ, "TZ": "Asia/Shanghai"})
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
+
+
 def test_every_tool_the_model_can_call_has_plain_words_on_the_page():
     """The tool steps and the answers name a tool in plain words, never by its inside name (web/js/redact.js): there are
     words for every tool the model can be offered, and none of them is an identifier."""
@@ -1739,8 +1804,10 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
     ready for the next question, and the turn can be taken up again (继续作答) from what its calls gave, none of them run
     again.  The rounds used, the answer is asked for with no tool to call; a model that calls tools all the same gets no
     call run, and its turn ends saying so — taken up again, it is asked again, and still no call runs.  The day's free
-    calls running out while a search runs, the turn fails saying so, asked once; taken up again once they are back, it
-    is answered from the search, which does not run again."""
+    calls running out while a search runs, the turn fails saying so, asked once, and the service is paused until the
+    hour the relay named: the composer says so, a question, 继续作答 and 重试 are held back and nothing is sent, and a page
+    opened again is still paused; once the hour is past, the turn taken up again is answered from the search, which
+    does not run again."""
     exe = _chromium()
     if exe is None:
         pytest.skip("playwright is not installed")
@@ -1748,7 +1815,7 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
 
     from taochronos.chat import ChatRuntime
     from taochronos.chat.server import ChatServer
-    from web_mock import BOTH, KEEP_CALLING, PARTIAL_ANSWER, RESUMED, SPENT, MockProvider, MockRelay
+    from web_mock import BOTH, KEEP_CALLING, PARTIAL_ANSWER, RESUMED, SPENT, SPENT_FOR, MockProvider, MockRelay
 
     mock = MockProvider().start()
     relay = MockRelay(mock.base_url).start()
@@ -1906,7 +1973,39 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
             assert sixth.locator(".notice.err .grow").inner_text() == SPENT and len(relay.chat) == chats + 2
             assert ran == ["classics__search"] and sixth.locator(".steps .tool .st.ok").count() == 1
             assert not fifth.locator("button.resume").count() and fifth.locator(".notice.err").count() == 1
-            # they are back: taken up again, the turn is answered from the search, which does not run again
+            # the relay said when they come back (Retry-After): until then nothing is sent to it — the composer says until
+            # when, and a question, 继续作答, 重试 and a question edited are held back with a note, the question left where
+            # it was typed
+            paused = page.locator("#pause")
+            assert paused.is_visible() and paused.inner_text().startswith("暂停到 ") and paused.inner_text().endswith(f"，不再发送请求：{SPENT}")
+            page.evaluate("""() => { window.notes = [];
+              new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => n.classList?.contains("toast") && window.notes.push(n.textContent))))
+                .observe(document.body, { childList: true, subtree: true }); }""")
+            page.fill("#input", "麻黄汤主治什么？")
+            page.keyboard.press("Enter")
+            sixth.locator(".notice.err button.resume").click()
+            sixth.locator(".notice.err button", has_text="重试").click()
+            asked_last = page.locator(".msg.user").nth(5)
+            asked_last.hover()
+            asked_last.locator("button[aria-label='编辑']").click()
+            asked_last.locator(".edit-box textarea").fill("麻黄汤的组成是什么？")
+            asked_last.locator(".edit-box button", has_text="发送").click()
+            page.wait_for_function("window.notes.length >= 4", timeout=10000)
+            assert len(page.evaluate("window.notes")) == 4 and all(x.endswith(SPENT) for x in page.evaluate("window.notes"))
+            asked_last.locator(".edit-box button", has_text="取消").click()
+            assert len(relay.chat) == chats + 2 and page.locator(".msg.assistant").count() == 6 and page.input_value("#input") == "麻黄汤主治什么？"
+            assert asked_last.locator(".bubble").inner_text() == "桂枝汤主治什么？" and sixth.locator(".notice.err .grow").inner_text() == SPENT
+            # a page opened again is still paused
+            again = ctx.new_page()
+            again.goto(page.url)
+            again.wait_for_selector("#pause:not([hidden])", timeout=30000)
+            assert again.locator("#pause").inner_text() == paused.inner_text()
+            again.close()
+            # the hour past, the pause is over; taken up again, the turn is answered from the search, which does not run
+            # again
+            page.fill("#input", "")
+            page.clock.fast_forward(SPENT_FOR * 1000)
+            page.wait_for_selector("#pause", state="hidden", timeout=10000)
             relay.spent = False
             asked = len(mock.requests)
             sixth.locator(".notice.err button.resume").click()

@@ -491,6 +491,15 @@ body to read a reply from as it arrives (an older Safari) reads it whole.  In th
 run (设置 → 运行环境 → 每轮最多工具步数, 16 by default), the model is told after each how many it has left, and at the last that it is
 to answer from what it has; it is then asked with no tool to call (below, *The answer once the tools stop*).
 
+**A service that says when to come back is paused until then.**  A refusal with a `Retry-After` the turn did not wait
+out — the visitor's free calls for the day used up (the relay's `Retry-After` is the seconds to its midnight), a limit per
+minute that asks for more than 30 seconds, an address held back a while — pauses that service until the time it named
+(`web/js/pause.js`).  The composer says until when, in the service's own words, and a question, 继续作答, 重试 or a
+question edited is held back with a note rather than sent to meet the same refusal; the question stays where it was
+typed.  The pause is the chosen service's alone (one's own API Key is asked at once), is kept in this browser so that a
+reload does not ask again, and lasts a day at most, whatever a service asks.  A turn the refusal stopped after its tools
+ran is answered from them by 继续作答 once the pause is over (below).
+
 **A reply cut at its output limit is written on.**  An answer that stops at the limit (`finish_reason: length`, Claude's
 `max_tokens`) is kept, and the model is asked, in a note after it, to write on from where it stopped — not to repeat
 itself or start over; the page shows the two as one answer.  A reply that spent the whole limit on thinking, with no
@@ -737,7 +746,9 @@ its turn not counted, the answer asked for while calls run and a model that keep
 to go on and ended later; the answer once the tools stop — asked with no tool to call, told which calls have no result
 and how they ended (not one asked again that then answered), a service that refuses tool choice `none` asked again
 without it and not asked so again, a service that calls tools anyway refused and the turn ended unanswered, a turn taken up again with every call given its result and the note after them, no call run and its
-rounds going on, and which turns can be taken up (Claude's too); the browser runtime's queue (a call not yet begun never sent, a late result dropped, a runtime
+rounds going on, and which turns can be taken up (Claude's too); a service paused until the time its refusal named (a
+day at most, only one that named one, the others not paused, kept across a reload, and held in memory where the browser
+keeps nothing); the browser runtime's queue (a call not yet begun never sent, a late result dropped, a runtime
 held up started again, Python interrupted where the page shares memory), a server's calls four at a time, its research
 looked at within limits and lost after five failed looks; where a turn's time goes — each model request's times and
 end (a stall, a stop, a refusal kept as its status and not its words), each call's waiting and running, a cut answer
@@ -757,7 +768,9 @@ answer noted as perhaps incomplete, a search past its deadline ended, a stop tha
 rounds' calls under one id each shown with its own end; the answer asked for with no tool to call once 不再等待 is taken
 or the rounds are used, a stopped turn taken up again by 继续作答 with no call run again, and a model that keeps calling
 tools ending with a notice, taken up again and still running none, and a turn whose day's free calls run out while its
-search runs, failing once and answered by 继续作答 once they are back, its search not run again; Claude's answer stopped
+search runs, failing once, the service paused until the hour the relay named (the composer saying so; a question,
+继续作答 and 重试 held back, nothing sent; a page opened again still paused) and answered by 继续作答 once it is over, its
+search not run again; Claude's answer stopped
 part-way and taken up again (the part shown dropped, `tool_choice` `none`, the page's note after the results, both runs' records); and
 a page served elsewhere (as on GitHub Pages) connecting to a server in one step, using it again after a reload, and a
 token taken from the address (and its absence reported); an API set by hand (address, model, key, headers, parameters —

@@ -16,6 +16,7 @@ import { ACCEPT, brief, cacheList, cachedList, DATA_NOTICE, isMine, MAX_BYTES, n
 import { consent, NOTICE, setConsent, timings } from "./records.js";
 import { BrowserRuntime, probeServer, sameOriginServer, ServerRuntime } from "./runtime.js";
 import { LIMITS, pageClock } from "./limits.js";
+import { pause, pausedNow, pauseText } from "./pause.js";
 import * as store from "./store.js";
 import {
   $, bare, copyText, dateGroup, debounce, download, fmtMs, h, icon, moveBar, passageLabel, progressBar, replace, sleep, storage,
@@ -58,7 +59,8 @@ const el = {
   settingsBtn: $("#settings-btn"), newChat: $("#new-chat"), newChatTop: $("#new-chat-top"), collapse: $("#collapse-sidebar"),
   main: $("#main"), toggleSidebar: $("#toggle-sidebar"), modelChip: $("#model-chip"), title: $("#conv-title"),
   toggleDrawer: $("#toggle-drawer"), lang: $("#lang-select"), thread: $("#thread"), inner: $("#thread-inner"), toBottom: $("#to-bottom"),
-  composer: $("#composer"), input: $("#input"), send: $("#send"), attach: $("#attach"), file: $("#file"), attachments: $("#attachments"),
+  composer: $("#composer"), pause: $("#pause"), input: $("#input"), send: $("#send"), attach: $("#attach"), file: $("#file"),
+  attachments: $("#attachments"),
   attachData: $("#attach-data"), dataFile: $("#data-file"),
   hint: $("#hint"), drawer: $("#drawer"), scrim: $("#scrim"), settings: $("#settings"), report: $("#report"), consent: $("#consent"),
 };
@@ -480,6 +482,7 @@ async function send(text, images = []) {
       openSettings(S, settingsCtx, "model");
       return;
     }
+    if (heldBack()) return; // the question stays where it was typed
   }
   if (S.relay?.ok && S.relay.logs && consent() === null) await askConsent();
   let conv = S.conv;
@@ -552,7 +555,11 @@ async function runAssistant(conv, msg, { resume = null } = {}) {
     }
   } catch (err) {
     if (err?.name === "AbortError" || controller.signal.aborted) msg.status = "stopped";
-    else { msg.status = "error"; msg.error = err?.message || String(err); }
+    else {
+      msg.status = "error";
+      msg.error = err?.message || String(err);
+      pause(provider.id, err, msg.error); // it said when to come back: nothing more is sent to it before (pause.js)
+    }
   } finally {
     const page = clock.stop();
     msg.ms = (before?.ms || 0) + Date.now() - started;
@@ -595,7 +602,7 @@ function canResume(m) {
 async function resumeAnswer(msgId) {
   const conv = S.conv;
   const msg = conv?.messages.at(-1);
-  if (!msg || msg.id !== msgId || !canResume(msg)) return;
+  if (!msg || msg.id !== msgId || !canResume(msg) || heldBack()) return;
   const resume = msg.wire;
   // what a round whose reply did not come whole had shown goes: the answer is asked for again
   if (Number.isFinite(msg.heard)) msg.segments = msg.segments.filter((s) => !(s.round > msg.heard));
@@ -840,7 +847,7 @@ function answerNow(msgId) {
 
 async function regenerate(msgId) {
   const conv = S.conv;
-  if (!conv || S.running) return;
+  if (!conv || S.running || heldBack()) return;
   const idx = conv.messages.findIndex((m) => m.id === msgId);
   if (idx < 1) return;
   conv.messages.splice(idx);
@@ -854,7 +861,7 @@ async function regenerate(msgId) {
 
 async function submitEdit(msgId, text) {
   const conv = S.conv;
-  if (!conv || S.running) return;
+  if (!conv || S.running || heldBack()) return;
   text = text.trim();
   if (!text) return;
   const idx = conv.messages.findIndex((m) => m.id === msgId);
@@ -1328,7 +1335,26 @@ function renderComposer() {
   el.send.disabled = !running && !el.input.value.trim() && !S.ui.attachments.length && !S.ui.data.length;
   const p = activeProvider(S.settings);
   el.attach.hidden = !p.vision;
+  renderPause(p);
   renderComposerHint();
+}
+
+/** The model service chosen, while it is paused (pause.js): what it said, and until when; the line goes when it ends. */
+let pauseEnd = null;
+function renderPause(provider) {
+  const p = pausedNow(provider.id);
+  el.pause.hidden = !p;
+  clearTimeout(pauseEnd);
+  if (!p) return el.pause.replaceChildren();
+  el.pause.replaceChildren(icon("info"), h("div.grow", pauseText(p)));
+  pauseEnd = setTimeout(renderComposer, Math.min(p.until - Date.now() + 250, 2 ** 31 - 1));
+}
+
+/** While the model service chosen is paused, nothing is sent to it: the user is told until when.  Returns whether it is. */
+function heldBack() {
+  const p = pausedNow(activeProvider(S.settings).id);
+  if (p) toast(pauseText(p), "", 6000);
+  return Boolean(p);
 }
 
 function renderComposerHint() {

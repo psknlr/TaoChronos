@@ -51,6 +51,7 @@ export default {
   "删除对话「{0}」？此操作不可撤销。": "¿Eliminar la conversación «{0}»? Esta acción no se puede deshacer. ",
   "请先概述我上传的资料，再建议可以做哪些分析。": "Primero resume los datos que he subido y luego sugiere qué análisis se pueden hacer. ",
   "请先为 {0} 配置底层模型的 API Key": "Configura primero una clave API para el modelo subyacente de {0}",
+  "暂停到 {0}，不再发送请求：{1}": "En pausa hasta {0}, sin enviar solicitudes hasta entonces: {1}",
   "图片": "Imagen",
   " · 第 {0} 轮": " · ronda {0}",
   " · {0} 个假说": " · {0} hipótesis",
