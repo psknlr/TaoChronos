@@ -153,7 +153,7 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 1. 用浏览器打开 <https://chat-api.impf.ai/v1/health>，应看到：
 
    ```json
-   {"ok":true,"service":"taochronos-relay","version":"1","model":"Tao-R1","models":["Tao-R1"],"logs":true,"max_output_tokens":8192,"limits":{"per_minute":30,"per_day":600}}
+   {"ok":true,"service":"taochronos-relay","version":"1","model":"Tao-R1","models":["Tao-R1"],"logs":true,"max_output_tokens":32768,"limits":{"per_minute":30,"per_day":600}}
    ```
 
    如果是 `"ok":false`，说明 Worker 已上线但没有密钥，重跑一次 relay 工作流即可。

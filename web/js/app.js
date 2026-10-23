@@ -572,6 +572,10 @@ async function answerFixed(conv, msg, text) {
 function makeHooks(conv, msg) {
   let round = 0;
   let refs = {};
+  // a round that writes on an answer cut at the output limit goes on in the segments the cut one wrote (one answer, no
+  // seam); `base`: what they held before it
+  let joining = false;
+  let base = null;
   const update = () => { if (S.conv === conv) renderMessageSoon(msg); persistSoon(conv); };
   const segment = (type) => {
     if (!refs[type]) {
@@ -584,8 +588,23 @@ function makeHooks(conv, msg) {
     for (const seg of msg.segments) for (const c of seg.calls || []) if (c.id === id) return c;
     return null;
   };
+  // what this round had shown goes: the round is asked again.  A round writing on a cut answer leaves that answer as it
+  // was (and the next asking writes on it again)
+  const drop = () => {
+    msg.segments = msg.segments.filter((s) => s.round !== round);
+    if (!base) { refs = {}; return; }
+    refs = Object.fromEntries(Object.entries(refs).filter(([, s]) => s.round !== round));
+    if (refs.text) refs.text.text = base.text;
+    if (refs.thinking) refs.thinking.text = base.thinking;
+  };
   return {
-    round(n) { round = n; refs = {}; msg.rounds = n; },
+    round(n) {
+      round = n;
+      if (joining) base = { text: refs.text?.text || "", thinking: refs.thinking?.text || "" };
+      else { refs = {}; base = null; }
+      joining = false;
+      msg.rounds = n;
+    },
     thinking(delta) {
       if (msg.hideThinking) return;
       const s = segment("thinking");
@@ -594,7 +613,7 @@ function makeHooks(conv, msg) {
       s.ms = Date.now() - s.started;
       update();
     },
-    text(full) { segment("text").text = full; update(); },
+    text(full) { segment("text").text = (base?.text || "") + full; update(); },
     toolPending(index, name) {
       const s = segment("tools");
       const key = `p${index}`;
@@ -642,18 +661,33 @@ function makeHooks(conv, msg) {
       if (S.drawer.open && S.conv === conv) renderDrawerSoon();
     },
     retry(attempt) {
-      // what the reply had shown of this round goes — its thinking, its text and the calls it was writing (none had run):
-      // the round is asked again
-      msg.segments = msg.segments.filter((s) => s.round !== round);
-      refs = {};
+      // its thinking, its text and the calls it was writing (none had run)
+      drop();
       toast(T`连接中断，正在重试（第 ${attempt} 次）…`);
       update();
     },
     usage(u) { msg.usage = { ...u }; },
     assistant(res) {
       if (res.thinking && !refs.thinking && !msg.hideThinking) segment("thinking").text = res.thinking;
-      if (res.text && (!refs.text || refs.text.text !== res.text)) segment("text").text = res.text;
+      const text = (base?.text || "") + (res.text || "");
+      if (res.text && (!refs.text || refs.text.text !== text)) segment("text").text = text;
       update();
+    },
+    continued(what) {
+      if (what === "answer") { joining = true; return; } // the next round writes on from where it stopped
+      // all of the reply went on thinking: what it showed goes, and the round is asked again without
+      drop();
+      joining = Boolean(base);
+      toast(T("思考用完了输出上限：正在请它少想一些，直接作答…"));
+      update();
+    },
+    cut(why) {
+      msg.error = {
+        answer: T("回答在输出上限处被截断，续写后仍未写完。可在设置中调高“最大输出”后重新生成。"),
+        thinking: T("回复在思考时就用完了输出上限，没有写出回答。可在设置中调高“最大输出”，或关闭“启用思考”后重新生成。"),
+        context: T("回复写满了模型能读的上下文，没能写完：这个对话太长了。可以开一个新对话接着问。"),
+        filtered: T("回复被模型服务的内容审核中止，回答可能不完整。"),
+      }[why];
     },
     limit(max) { msg.error = T`已达到每轮最多 ${max} 步工具调用的上限，回答可能不完整。可在设置中调高上限。`; },
   };

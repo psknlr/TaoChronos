@@ -93,7 +93,7 @@ const post = (body, headers = {}) => ({
   body: typeof body === "string" ? body : JSON.stringify(body),
 });
 
-const ask = { model: "MiniMax-M3", messages: [{ role: "user", content: "桂枝汤主治什么？" }], stream: true, max_completion_tokens: 16000, n: 3 };
+const ask = { model: "MiniMax-M3", messages: [{ role: "user", content: "桂枝汤主治什么？" }], stream: true, max_completion_tokens: 100000, n: 3 };
 
 // ------------------------------------------------------------------ the model calls
 test("the key is added by the relay, the page never has it; the stream passes through", async () => {
@@ -106,7 +106,7 @@ test("the key is added by the relay, the page never has it; the stream passes th
   const [c] = r.calls;
   assert.equal(c.url, "https://api.minimax.cn/v1/chat/completions");
   assert.equal(c.init.headers.Authorization, `Bearer ${KEY}`);
-  assert.equal(c.body.max_completion_tokens, 8192); // capped
+  assert.equal(c.body.max_completion_tokens, 32768); // capped
   assert.equal(c.body.n, undefined);
   assert.equal(c.body.reasoning_split, true); // the upstream's own parameter, added here: the page sends none
   for (const [, v] of res.headers) assert.ok(!v.includes(KEY));
@@ -174,7 +174,7 @@ test("only the page's origins, only the allowed models, bodies within the limit"
   const noModel = relay();
   await noModel.call("/v1/chat/completions", post({ messages: ask.messages }));
   assert.equal(noModel.calls[0].body.model, "MiniMax-M3");
-  assert.equal(noModel.calls[0].body.max_completion_tokens, 8192);
+  assert.equal(noModel.calls[0].body.max_completion_tokens, 32768);
 });
 
 test("a visitor sees none of the upstream: its model, its reasoning formats, its fields, its errors", async () => {

@@ -36,7 +36,7 @@ export const DEFAULTS = {
   PUBLIC_MODEL: "Tao-R1",
   UPSTREAM_FIELDS: '{"reasoning_split":true}',
   FORMAT_PREFIX: "MiniMax-",
-  MAX_OUTPUT_TOKENS: "8192",
+  MAX_OUTPUT_TOKENS: "32768",                 // per reply, its reasoning included (MiniMax-M3 itself takes far more)
   MAX_BODY_BYTES: "2000000",
   PER_MINUTE: "30",                           // model calls per visitor (one question takes several: the tools)
   PER_DAY: "600",

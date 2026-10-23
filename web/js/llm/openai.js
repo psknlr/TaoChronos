@@ -5,7 +5,7 @@
 // accepts either.  The assistant message is returned whole — content, tool_calls and the provider's reasoning field —
 // because some providers require it back verbatim in the history.
 
-import { publicError } from "../providers.js";
+import { outputLimit, publicError } from "../providers.js";
 import { T } from "../i18n.js";
 
 export class Accum {
@@ -81,6 +81,10 @@ function brokenOff(err, signal) {
   return new ProviderError(T`连接在回复途中断开（${err?.message || err}）`, { retryable: true });
 }
 
+/** A reply whose stream ended before the service said it was complete — no finish_reason, no [DONE], no stop_reason: the
+ * connection closing is not the answer's end, and the round is asked again like one that broke off. */
+export const unfinished = () => new ProviderError(T("回复没有完整到达：连接在模型说完之前就结束了"), { retryable: true });
+
 function errorMessage(status, body) {
   let msg = body;
   try {
@@ -113,11 +117,8 @@ export async function streamChat({ provider, messages, tools, settings, route, s
     body.tools = tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } }));
     body.tool_choice = "auto";
   }
-  if (settings.maxTokens) {
-    // a service with its own ceiling (the default service) is asked within it, so it forwards the request unchanged
-    const max = provider.max_output ? Math.min(Number(settings.maxTokens), provider.max_output) : Number(settings.maxTokens);
-    body[provider.max_tokens_param || "max_tokens"] = max;
-  }
+  // a service with its own ceiling (the default service) is asked within it, so it forwards the request unchanged
+  body[provider.max_tokens_param || "max_tokens"] = outputLimit(settings, provider);
   if (settings.temperature !== null && settings.temperature !== "" && settings.temperature !== undefined) body.temperature = Number(settings.temperature);
   Object.assign(body, provider.extra_body || {});
   if (settings.thinking === false && provider.thinking_off) Object.assign(body, provider.thinking_off); // what asks for no thinking
@@ -165,12 +166,15 @@ export async function streamChat({ provider, messages, tools, settings, route, s
       try { j = JSON.parse(text); } catch { throw new ProviderError(T`无法解析模型服务的回复：${text.slice(0, 300)}`); }
       handleChunk(j, state, onEvent, true);
     } else {
-      await readSSE(resp, signal, (data) => {
+      const done = await readSSE(resp, signal, (data) => {
         let j;
         try { j = JSON.parse(data); } catch { return; }
         handleChunk(j, state, onEvent, false);
       });
+      if (!done && !state.finishReason) throw unfinished();
     }
+    // DeepSeek's word for a reply its servers stopped part-way
+    if (state.finishReason === "insufficient_system_resource") throw new ProviderError(T("模型服务资源不足，回复中途停止"), { retryable: true });
   } catch (err) {
     if (provider.relay && err instanceof ProviderError) { err.message = publicError(err.message); err.body = ""; }
     throw err;
@@ -187,7 +191,7 @@ async function whole(resp, signal) {
 }
 
 /** The events of a streamed reply, as they arrive; read whole where the browser cannot read a reply as it arrives (an
- * older Safari has no body to read from). */
+ * older Safari has no body to read from).  Returns whether the stream said it was done ([DONE]). */
 async function readSSE(resp, signal, onData) {
   const decoder = new TextDecoder();
   let buf = "";
@@ -215,12 +219,11 @@ async function readSSE(resp, signal, onData) {
   };
   const end = () => {
     if (buf.startsWith("data:")) data.push(buf.slice(buf[5] === " " ? 6 : 5));
-    dispatch();
+    return dispatch();
   };
   if (typeof resp.body?.getReader !== "function") {
     buf = await whole(resp, signal);
-    if (!lines()) end();
-    return;
+    return lines() || end();
   }
   const reader = resp.body.getReader();
   try {
@@ -234,10 +237,10 @@ async function readSSE(resp, signal, onData) {
       }
       if (chunk.done) break;
       buf += decoder.decode(chunk.value, { stream: true });
-      if (lines()) return;
+      if (lines()) return true;
     }
     buf += decoder.decode();
-    end();
+    return end();
   } finally {
     try { reader.releaseLock(); } catch { /* already released */ }
   }
