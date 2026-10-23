@@ -171,16 +171,21 @@ function thinkingNode(m, seg, k, ctx, live) {
   return d;
 }
 
+// a call the turn still waits for; and one it no longer waits for that still runs (a research run going on by itself)
+const WAITING = new Set(["preparing", "loading", "queued", "running"]);
+const BUSY = new Set([...WAITING, "background"]);
+
 function stepsNode(m, seg, k, ctx, live) {
   const key = `${m.id}:${k}`;
   const calls = seg.calls || [];
-  const running = calls.some((c) => c.status === "running" || c.status === "preparing");
+  const running = calls.some((c) => WAITING.has(c.status));
   const open = ctx.openSteps.has(key) || (live && running && !ctx.closedSteps.has(key));
   const box = h("div.steps", { class: open ? "open" : "" });
   const fams = [...new Set(calls.map((c) => c.family))].map((f) => h("span.fam", { class: f }, FAMILY[f] || f));
-  const errs = calls.filter((c) => c.status === "error").length;
-  const label = running ? T`正在调用工具（${calls.filter((c) => c.status === "ok" || c.status === "error").length}/${calls.length}）`
-    : T`调用了 ${calls.length} 个工具${errs ? T`，${errs} 个出错` : ""}`;
+  const errs = calls.filter((c) => c.status === "error" || c.status === "timeout").length;
+  const later = calls.filter((c) => c.status === "background").length;
+  const label = running ? T`正在调用工具（${calls.filter((c) => !BUSY.has(c.status)).length}/${calls.length}）`
+    : T`调用了 ${calls.length} 个工具${(errs ? T`，${errs} 个出错` : "") + (later ? T`，${later} 个仍在后台进行` : "")}`;
   const head = h("button.head", { type: "button", "aria-expanded": String(open) },
     running ? h("span.spinner") : icon("tools", "sm"), h("span", label), ...fams, icon("chev", "sm chev"));
   head.addEventListener("click", () => {
@@ -191,7 +196,12 @@ function stepsNode(m, seg, k, ctx, live) {
   });
   const list = h("div.list");
   calls.forEach((c, j) => list.append(toolNode(m, c, `${key}:${j}`, ctx)));
-  box.append(head, list);
+  // waited on a while: the answer can be had without the calls still running
+  const offer = live && running && seg.offer && ctx.onAnswerNow
+    ? h("div.offer", h("span", T("还有工具在运行。")),
+      h("button.btn.secondary", { type: "button", on: { click: () => ctx.onAnswerNow(m.id) } }, T("不再等待，根据已有结果作答")))
+    : null;
+  box.append(head, offer, list);
   return box;
 }
 
@@ -210,12 +220,24 @@ function chartsNode(seg) {
 function toolNode(m, c, key, ctx) {
   const open = ctx.openTools.has(key);
   const t = h("div.tool", { class: open ? "open" : "" });
-  const status = c.status === "running" || c.status === "preparing" ? h("span.st", h("span.spinner"))
-    : c.status === "error" ? h("span.st.err", icon("x", "sm")) : h("span.st.ok", icon("check", "sm"));
-  const summary = c.status === "preparing" ? T("准备参数…") : c.status === "running" ? (c.progress || T("运行中…")) : (c.summary || "");
+  // ok · error · timeout (not waited for past its deadline) · skipped (not waited for: the answer was asked for) ·
+  // stopped · background (a research run going on by itself); and, while it is waited for, its state
+  const status = BUSY.has(c.status) ? h("span.st", h("span.spinner"))
+    : c.status === "error" ? h("span.st.err", icon("x", "sm"))
+    : c.status === "timeout" || c.status === "skipped" ? h("span.st.warn", icon("warn", "sm"))
+    : c.status === "stopped" ? h("span.st.off", icon("stop", "sm"))
+    : h("span.st.ok", icon("check", "sm"));
+  const summary = c.status === "preparing" ? T("准备参数…")
+    : c.status === "loading" ? T("等待运行环境载入…")
+    : c.status === "queued" ? (c.progress || T("排队中：等前面的调用完成…"))
+    : c.status === "running" ? (c.progress || T("运行中…"))
+    : c.status === "background" && c.progress ? T`后台继续 · ${c.progress}`
+    : (c.summary || "");
+  // how long it has run, while it runs (drawn again each second by the page)
+  const since = c.status === "running" && c.since ? { dataset: { since: String(c.since) } } : {};
   const row = h("button.row", { type: "button" },
     status, h("span.fam", { class: c.family }, FAMILY[c.family] || c.family), h("span.nm", displayName(c.name)),
-    h("span.sm", redact(summary)), h("span.ms", c.ms ? fmtMs(c.ms) : ""));
+    h("span.sm", redact(summary)), h("span.ms", since, c.ms ? fmtMs(c.ms) : c.status === "running" && c.since ? fmtMs(Date.now() - c.since) : ""));
   row.addEventListener("click", () => {
     const now = !t.classList.contains("open");
     t.classList.toggle("open", now);

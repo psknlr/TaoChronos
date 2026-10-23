@@ -516,6 +516,52 @@ tooltip, under each answer); the instructions name no model ([ADR 0014](adr/0014
 (through the proxy when the page is connected to a local server; an API set by hand goes direct, since the proxy forwards
 only to listed hosts — `taochronos serve --allow-host api.example.com` adds one).  **测试连接** sends one short request.
 
+## Waiting — deadlines, stops, and an answer from what is there
+
+Each thing a turn waits on has a limit of its own (`web/js/limits.js`), so that a search that does not come back cannot
+keep the model from explaining a chart that already has:
+
+| What is waited on | Limit | When it is used up |
+|---|---|---|
+| a model's reply, to its first byte | 2 min | the round is asked again, like a reply that broke off |
+| a streamed reply that sends nothing more (a model thinking without showing it may be silent for minutes) | 5 min | the same |
+| a reply read whole, where the browser cannot read one as it arrives | 10 min | the same |
+| a tool call, from when it runs | 2 min | the call ends `timeout`: the model is told it has no result, and to say what it lacks |
+| a research run, from when it runs | 30 min | the same |
+| one look at a research run on a server | 20 s | the next look; five failed looks in a row lose the run |
+| a round's tools | 20 s | the page offers 不再等待 (below) |
+| the turn | 30 min | no more tools run, and the model answers from what it has |
+
+A limit counts the time the page runs, by a clock it looks at every second: a phone asleep or a tab the browser froze
+uses none of it (a gap between two looks counts as 65 seconds at most — a hidden tab's timers may run once a minute, and
+that minute counts).  A call's limit counts while it runs, not while it waits for the browser's runtime to load or for
+its turn: the browser's runtime runs one call at a time, a server four, and a server's research one run at a time.
+Requests through the Claude SDK are watched the same way: the SDK asks nothing again itself (the loop does, for every
+service alike), its requests go through a fetch that watches them, and its ping events count as something heard.
+
+**Every call ends**, with a status the model is told and the page shows: ok, error, timeout, stopped (the turn was),
+skipped (not waited for: the user asked for the answer, or the turn ran its time), or, for a research run the turn did
+not wait for, going on in the background.  The model is asked again only once every call of the round has its end, and
+every call keeps its place, with its result, in the messages it is sent.  While a round runs, its steps show how many
+calls are done and each call's state — waiting for the runtime to load, waiting for its turn, running (and for how long),
+a research run's progress — and an icon for each end.
+
+**不再等待，根据已有结果作答** appears under a round's steps once its calls have been waited on for 20 seconds.  Pressed,
+the calls still running are not waited for (they end skipped), any call the model asks for next is not run (one that
+keeps asking is told no twice, and the turn ends), and the model is told to answer from what it has and to say what it
+did not get; a note under the answer says it may be incomplete.  A research run is not dropped: it goes on, the model is told so, and its result comes to the 研究 panel when
+it is done (a notice says so, and how one that did not finish ended).  The turn's own limit does the same when it runs
+out.  Stopping the turn ends every call under way, marked stopped, and the page is ready for the next question.
+
+**Where the work goes.**  A call the browser's runtime has not begun is never sent to it.  One it runs is interrupted
+where the page is cross-origin isolated (Python raises `KeyboardInterrupt` when it next looks) and otherwise runs to its
+end, what it returns dropped; if such a call holds up another for a minute, the runtime is started again — what it held
+only in memory (research sessions, and data this browser could not keep) goes with it, what it kept is read again (the
+corpus, from IndexedDB), and the call waiting runs.  A research run left to go on in the background gives way the same way to a call
+waiting behind it.  A request to a server is cut off (the server finishes the call; its answer is not read).  A research
+run on a server goes on there when the page stops waiting for it, since the server cannot yet be asked to stop one; its
+start has no limit of its own, so that a run a slow server may have begun is not begun again in the browser.
+
 ## 道乃久默认服务 — asking without a key, and conversation records
 
 The published page lets a visitor ask at once: **道乃久默认服务** is MiniMax-M3 behind a relay of IMPF-AI's
@@ -652,7 +698,13 @@ client's logic under Node (cumulative and incremental streams, a reply that brea
 a stream that ends without a finish reason or `[DONE]` asked again, which refusals are retried and how long after, the
 spread of the waits, what a reply may use, an answer cut at the output limit written on, one that only thought asked
 again without thinking, no call of a cut reply run, the content filter and a full context told, the rounds of tools left
-named to the model, history rules, dangling tool calls, citation pairing, which
+named to the model; the waits — each limit counted in the time the page ran, a reply that sends nothing at first,
+falls silent or takes too long read whole asked again, a stop and a limit told apart, every listener removed and no
+failure left unhandled, a chart answered while the search beside it stalls to its deadline, the time a call waits for
+its turn not counted, the answer asked for while calls run and a model that keeps calling told no, a research run left
+to go on and ended later, the browser runtime's queue (a call not yet begun never sent, a late result dropped, a runtime
+held up started again, Python interrupted where the page shares memory), a server's calls four at a time, its research
+looked at within limits and lost after five failed looks; history rules, dangling tool calls, citation pairing, which
 questions get the fixed reply and which go to the model; the alias badges — labels, the names merged, the asked name found
 for a hit, the flags' words, every card of a search marked with its badges or with none; the charts' checks, CSV, Markdown tables, colours and axes; a box
 plot's numbers, a forest plot's log axis, a tree's checks; CRC-32, PackBits, a TIFF's directory, a PNG's pHYs and a ZIP;
@@ -662,7 +714,10 @@ the page in Chromium against scripted providers (`tests/web_mock.py`): a MiniMax
 requests (`reasoning_split`, `max_completion_tokens`, `reasoning_details` and thinking signatures replayed, fallbacks),
 the chip states, the highlighted passage, Tao-R1 in the chip and under the answer, persistence across a reload, an
 answer cut at the output limit written on and shown as one, and a reply that only thought asked again with less (MiniMax
-without thinking, Claude at low effort), and Claude's stream that ends part-way or without a stop reason asked again; and
+without thinking, Claude at low effort), and Claude's stream that ends part-way or without a stop reason asked again; a chart drawn
+while the search beside it is held — the steps counting, 不再等待 offered and taken, the search skipped and the
+answer noted as perhaps incomplete, a search past its deadline ended, a stop that leaves the page usable, and two
+rounds' calls under one id each shown with its own end; and
 a page served elsewhere (as on GitHub Pages) connecting to a server in one step, using it again after a reload, and a
 token taken from the address (and its absence reported); an API set by hand (address, model, key, headers, parameters —
 checked in the request it makes); the default service (a stand-in relay): asked at once without a key, no key sent by the
@@ -704,6 +759,10 @@ committed with them, deleted only once held, a deployment checked (and a refused
 * Research in the browser runs the deterministic procedures (no model inside the harness); on the local server
   `--llm` gives its judgement roles a model.
 * A provider that does not allow browser requests needs the local server's proxy.
+* Python in the browser can be interrupted only where the page is cross-origin isolated (served with
+  `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy`); the site sends the first only, so there a call the page
+  no longer waits for runs to its end, and the runtime is started again if it holds up another.  A research run on a
+  server cannot be stopped from the page: it goes on, and its result is not read.
 * 我的资料 reads no PDF, scanned image, .xls or .doc (it says what to save them as); it finds the names a table's heads
   or a label (姓名：) mark, not a name written freely in a text; a server's data lives in its memory (gone when it
   stops); with the site's server, the first upload starts the browser's runtime, which downloads it on a first visit.

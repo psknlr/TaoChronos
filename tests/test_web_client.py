@@ -632,6 +632,405 @@ def test_the_client_logic_under_node(tmp_path):
         assert check.returncode == 0, (js, check.stderr[-1000:])
 
 
+# the waits of a turn (web/js/limits.js, agent.js, runtime.js): each with its limit, each call to an end
+NODE_WAITS = r"""
+import assert from "node:assert/strict";
+import { limit } from "./js/limits.js";
+import { ProviderError, streamChat } from "./js/llm/openai.js";
+import { closingNote, runTurn } from "./js/agent.js";
+import { BrowserRuntime, ServerRuntime } from "./js/runtime.js";
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const abortError = () => new DOMException("aborted", "AbortError");
+// a promise that never settles by itself; with a signal, one that ends when it does (as fetch does)
+const hang = (signal) => new Promise((resolve, reject) => signal?.addEventListener("abort", () => reject(abortError())));
+// a signal whose listeners are counted: what a request adds to it, it takes away when it is done
+let listening = 0;
+const counted = () => {
+  const c = new AbortController();
+  const add = c.signal.addEventListener.bind(c.signal);
+  const remove = c.signal.removeEventListener.bind(c.signal);
+  c.signal.addEventListener = (...a) => { listening++; add(...a); };
+  c.signal.removeEventListener = (...a) => { listening--; remove(...a); };
+  return c;
+};
+
+// a limit counts the time the page runs: once used up it says so, once; a pause does not count, and a restart begins
+// the count again
+let fired = 0;
+limit(100, () => fired++);
+await sleep(400);
+assert.equal(fired, 1);
+let l = limit(150, () => fired++);
+l.pause();
+await sleep(400);
+assert.equal(fired, 1);
+l.resume();
+await sleep(500);
+assert.equal(fired, 2);
+l = limit(500, () => fired++);
+await sleep(300);
+l.restart();
+await sleep(300);
+assert.equal(fired, 2);
+await sleep(500);
+assert.equal(fired, 3);
+// a long gap between two looks at the clock is a page that did not run (a phone asleep, a tab the browser froze): it
+// counts no more than a hidden tab's minute between looks
+const realNow = Date.now;
+let skew = 0;
+Date.now = () => realNow() + skew;
+l = limit(100000, () => fired++);
+skew += 3600000;
+await sleep(1300);
+assert.equal(fired, 3);
+assert.ok(l.spent >= 60000 && l.spent < 70000, String(l.spent));
+skew += 3600000;
+await sleep(1100);
+assert.equal(fired, 4);
+Date.now = realNow;
+
+// a model's reply: its first byte waited for so long, then its silences — each ends the request, which is asked again
+// like one that broke off; the caller's stop ends it too, as a stop
+const relayP = { id: "impf", relay: true, baseUrl: "https://relay.example/v1", model: "Tao-R1", extra_body: {},
+  max_tokens_param: "max_completion_tokens", thinking_off: { thinking: { type: "disabled" } }, reasoning: "reasoning_details" };
+const enc = new TextEncoder();
+const delta = (content, finish = null) => `data: ${JSON.stringify({ choices: [{ delta: { content }, finish_reason: finish }] })}\n\n`;
+const streamed = (body) => new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+const sse = (text) => new ReadableStream({ start(c) { c.enqueue(enc.encode(text)); c.close(); } });
+const silent = (text) => new ReadableStream({ start(c) { c.enqueue(enc.encode(text)); } }); // says this, then nothing
+const ask = (extra) => streamChat({ provider: relayP, messages: [], tools: [], settings: {}, ...extra });
+globalThis.fetch = () => new Promise(() => {}); // a service that never answers, and does not heed the signal either
+await assert.rejects(ask({ limits: { firstReply: 150 } }),
+  (e) => e instanceof ProviderError && e.retryable && e.kind === "timeout" && e.message === "模型服务 0 秒没有回应");
+globalThis.fetch = async () => streamed(silent(delta("桂枝")));
+await assert.rejects(ask({ limits: { silence: 150 } }),
+  (e) => e instanceof ProviderError && e.retryable && e.kind === "timeout" && e.message === "回复中断：模型服务 0 秒没有再发来内容");
+globalThis.fetch = async () => streamed(new ReadableStream({ async start(c) { // one that keeps talking is not cut
+  for (let i = 0; i < 8; i++) { c.enqueue(enc.encode(delta("字"))); await sleep(60); }
+  c.enqueue(enc.encode(delta("。", "stop")));
+  c.close();
+} }));
+assert.equal((await ask({ limits: { silence: 200 } })).text, "字字字字字字字字。");
+globalThis.fetch = async () => ({ ok: true, status: 200, headers: new Headers({ "Content-Type": "text/event-stream" }), body: undefined,
+  text: () => new Promise(() => {}) }); // read whole, and never done
+await assert.rejects(ask({ limits: { whole: 150 } }), (e) => e.retryable && e.message === "回复 0 秒还没有读完");
+// a request with both the caller's stop and a limit: either ends it, and it leaves no listener behind
+for (const [after, limits, check] of [[60, { silence: 5000 }, (e) => e.name === "AbortError"],
+  [5000, { silence: 150 }, (e) => e.kind === "timeout"]]) {
+  const stop = counted();
+  const timer = setTimeout(() => stop.abort(), after);
+  globalThis.fetch = async () => streamed(silent(delta("桂枝")));
+  await assert.rejects(ask({ signal: stop.signal, limits }), check);
+  clearTimeout(timer);
+  assert.equal(listening, 0);
+}
+// a request stopped as it is sent: a stop, and the fetch's own failure is not left unhandled
+let unhandled = 0;
+const unhandledSeen = () => unhandled++;
+process.on("unhandledRejection", unhandledSeen);
+const stopNow = new AbortController();
+globalThis.fetch = async () => { stopNow.abort(); throw abortError(); };
+await assert.rejects(ask({ signal: stopNow.signal }), (e) => e.name === "AbortError");
+await sleep(30);
+process.off("unhandledRejection", unhandledSeen);
+assert.equal(unhandled, 0);
+// a reply that stalled is asked again, and what it had shown goes
+let asked = 0;
+globalThis.fetch = async () => streamed(++asked === 1 ? silent(delta("半")) : sse(delta("答", "stop")));
+const seen = [];
+const res = await runTurn({ provider: relayP, settings: {}, route: null, runtime: null, tools: [], system: "s", history: [],
+  user: { text: "问" }, signal: new AbortController().signal, limits: { silence: 150 },
+  hooks: { retry: (n, e) => seen.push(n, e.message), text: (t) => seen.push(t) } });
+assert.deepEqual([seen, res.wire.at(-1).content, asked], [["半", 1, "回复中断：模型服务 0 秒没有再发来内容", "答"], "答", 2]);
+
+// a round's tools: each call ends — ok, error, timeout, stopped, skipped — and the model is asked again once every one
+// of them has, with each call's result in its place
+const calls = (...cs) => `data: ${JSON.stringify({ choices: [{ delta: { tool_calls: cs.map(([name, args], i) => (
+  { index: i, id: `c${i}`, function: { name, arguments: JSON.stringify(args) } })) }, finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`;
+const scripted = (...replies) => {
+  const bodies = [];
+  globalThis.fetch = async (url, init) => { bodies.push(JSON.parse(init.body)); return streamed(sse(replies.shift())); };
+  return bodies;
+};
+const told = (body) => body.messages.filter((m) => m.role === "tool").map((m) => [m.tool_call_id, m.content]);
+const log = [];
+const hooks = {
+  toolWaiting: (c, why) => log.push(`${c.name} ${why}`), toolRunning: (c) => log.push(`${c.name} runs`),
+  toolEnd: (c, o) => log.push(`${c.name} ${o.ok ? "ok" : o.status || "error"}`),
+  toolLater: (c, ending) => { log.push(`${c.name} later`); ending.then((o) => log.push(`${c.name} ended ${o.ok ? "ok" : o.status}`)); },
+  limit: (n, why) => log.push(`limit ${why}`),
+};
+const turn = (runtime, extra = {}) => runTurn({ provider: relayP, settings: {}, route: null, runtime, tools: [], system: "s",
+  history: [], user: { text: "问" }, signal: new AbortController().signal, hooks, ...extra });
+const CHART = '{"chart": 1}';
+// a chart that is done, and a search that never ends (nor heeds its stop): the chart's end is shown at once, the search
+// is not waited for past its deadline, and the model explains the chart without it
+let stopped = null;
+let bodies = scripted(calls(["analysis__chart", {}], ["classics__search", { query: "桂枝" }]), delta("答", "stop"));
+let rt = { call: (name, args, o) => {
+  if (name === "analysis__chart") return Promise.resolve({ ok: true, text: CHART });
+  stopped = o.signal;
+  return new Promise(() => {});
+} };
+let from = Date.now();
+let done = await turn(rt, { limits: { tool: 300 } });
+assert.ok(Date.now() - from < 2000);
+assert.deepEqual(log.splice(0), ["analysis__chart ok", "classics__search timeout"]);
+assert.ok(stopped.aborted); // the runtime is told it is not waited for
+assert.deepEqual(told(bodies[1]), [["c0", CHART],
+  ["c1", "ERROR: 这个调用运行了 0 秒还没有完成，页面不再等待，结果不可用。请根据已有结果作答，并在回答中说明缺少这一项；需要时可以缩小范围再调用一次。"]]);
+assert.equal(done.wire.at(-1).content, "答");
+// the time a call waits — for the runtime to load, or for its turn — does not count towards its deadline
+bodies = scripted(calls(["classics__search", {}]), delta("答", "stop"));
+rt = { call: (name, args, o) => new Promise((resolve) => {
+  o.onWait("loading");
+  setTimeout(() => o.onWait("queued"), 150);
+  setTimeout(() => { o.onStart(); setTimeout(() => resolve({ ok: true, text: "{}" }), 100); }, 500);
+}) };
+await turn(rt, { limits: { tool: 300 } });
+assert.deepEqual(log.splice(0), ["classics__search loading", "classics__search queued", "classics__search runs", "classics__search ok"]);
+assert.deepEqual(told(bodies[1]), [["c0", "{}"]]);
+// a runtime that fails, or throws before it begins: an error the model reads
+bodies = scripted(calls(["a__x", {}], ["b__y", {}]), delta("答", "stop"));
+rt = { call: (name) => { if (name === "b__y") throw new Error("坏了"); return Promise.reject(new Error("出错了")); } };
+await turn(rt);
+assert.deepEqual(log.splice(0).sort(), ["a__x error", "b__y error"]);
+assert.deepEqual(told(bodies[1]), [["c0", "ERROR: 出错了"], ["c1", "ERROR: 坏了"]]);
+// a stop while a call runs: it ends as stopped, its runtime is told, and the model is not asked again
+let stop = new AbortController();
+bodies = scripted(calls(["classics__search", {}]), delta("不该", "stop"));
+rt = { call: (name, args, o) => { stopped = o.signal; return hang(o.signal); } };
+setTimeout(() => stop.abort(), 100);
+done = await turn(rt, { signal: stop.signal });
+assert.deepEqual([log.splice(0), bodies.length, stopped.aborted, done.wire.at(-1).content], [["classics__search stopped"], 1, true, "ERROR: 调用已停止"]);
+// the user asks for the answer while a search runs: the search is not waited for, no more calls run, the model is told to
+// answer from what it has and to say what it lacks — and when it asks for another call anyway, that one is refused
+let hurry = new AbortController();
+bodies = scripted(calls(["analysis__chart", {}], ["classics__search", {}]), calls(["classics__search", {}]), delta("答", "stop"));
+rt = { call: (name, args, o) => (name === "analysis__chart" ? Promise.resolve({ ok: true, text: CHART }) : hang(o.signal)) };
+setTimeout(() => hurry.abort(), 100);
+done = await turn(rt, { hurry: hurry.signal });
+assert.deepEqual(log.splice(0), ["analysis__chart ok", "classics__search skipped", "limit asked", "classics__search skipped"]);
+assert.deepEqual(told(bodies[1]), [["c0", CHART], ["c1", `ERROR: 用户想先看到回答，这个调用没有等到结果。请根据已有结果作答，并在回答中说明缺少这一项。${closingNote("asked")}`]]);
+assert.equal(told(bodies[2]).at(-1)[1], "ERROR: 用户想先看到回答，不再调用工具：请根据已有结果直接作答。");
+assert.equal(done.wire.at(-1).content, "答");
+assert.equal(closingNote("asked"), "\n\n［提示：用户想先看到回答，请根据已有结果直接作答，不要再调用工具；没有等到的结果，请在回答中说明缺了什么］");
+// …and a model that keeps asking is stopped, as at the end of its rounds
+scripted(calls(["classics__search", {}]), calls(["classics__search", {}]), calls(["classics__search", {}]), delta("不该", "stop"));
+hurry = new AbortController();
+setTimeout(() => hurry.abort(), 100);
+done = await turn(rt, { hurry: hurry.signal });
+assert.deepEqual(log.splice(0), ["classics__search skipped", "limit asked", "classics__search skipped", "classics__search skipped", "limit asked"]);
+// a research run the user does not wait for goes on by itself: the turn answers without it, and its end comes later
+hurry = new AbortController();
+bodies = scripted(calls(["taochronos_research", { question: "q" }]), delta("答", "stop"));
+let giving = null;
+rt = { research: (args, o) => new Promise((resolve) => {
+  o.onStart();
+  giving = o.giving;
+  setTimeout(() => resolve({ ok: true, text: '{"report": 1}' }), 500);
+}) };
+setTimeout(() => hurry.abort(), 100);
+done = await turn(rt, { hurry: hurry.signal });
+assert.deepEqual(log.splice(0), ["taochronos_research runs", "taochronos_research later", "taochronos_research background", "limit asked"]);
+assert.ok(giving.aborted); // it may give way to the calls behind it
+assert.match(told(bodies[1])[0][1], /^ERROR: 这次研究仍在后台进行，结果现在还不能用/);
+await sleep(900);
+assert.deepEqual(log.splice(0), ["taochronos_research ended ok"]);
+// a research run past its own deadline ends as one, later too
+hurry = new AbortController();
+scripted(calls(["taochronos_research", { question: "q" }]), delta("答", "stop"));
+rt = { research: (args, o) => { o.onStart(); return new Promise(() => {}); } };
+setTimeout(() => hurry.abort(), 100);
+await turn(rt, { hurry: hurry.signal, limits: { research: 400 } });
+await sleep(1500);
+assert.deepEqual(log.splice(0), ["taochronos_research runs", "taochronos_research later", "taochronos_research background", "limit asked",
+  "taochronos_research ended timeout"]);
+// the turn runs its time: the call under way is not waited for, and the model answers from what it has
+bodies = scripted(calls(["classics__search", {}]), delta("答", "stop"));
+rt = { call: (name, args, o) => hang(o.signal) };
+from = Date.now();
+done = await turn(rt, { limits: { turn: 300 } });
+assert.ok(Date.now() - from < 2000);
+assert.deepEqual(log.splice(0), ["classics__search skipped", "limit time"]);
+assert.equal(told(bodies[1])[0][1], "ERROR: 这一轮回答的时间已用完，这个调用没有等到结果。请根据已有结果作答，并在回答中说明缺少这一项。"
+  + "\n\n［提示：这一轮回答已经用了 0 分钟，请根据已有结果直接作答，不要再调用工具；没有拿到的结果，请在回答中说明缺了什么］");
+assert.equal(done.wire.at(-1).content, "答");
+
+// the browser's runtime: a worker that runs one call at a time.  This one answers each call after `took` ms (never, when
+// it is below 0), and can be interrupted when the page is cross-origin isolated
+const workers = [];
+globalThis.Worker = class {
+  constructor() { this.posted = []; this.ended = false; workers.push(this); }
+  postMessage(msg) {
+    this.posted.push(msg.params?.name || msg.method);
+    const say = (data, after = 0) => setTimeout(() => !this.ended && this.onmessage?.({ data }), after);
+    if (msg.method === "init") {
+      if (globalThis.SHARED) say({ type: "interrupt", buffer: globalThis.SHARED });
+      return say({ id: msg.id, result: { name: "TaoChronos" } }, 50);
+    }
+    const took = msg.params?.arguments?.took ?? 20;
+    if (took >= 0) say({ id: msg.id, result: { ok: true, text: msg.params.name } }, took);
+  }
+  terminate() { this.ended = true; }
+};
+globalThis.fetch = async () => new Response("null", { status: 404 }); // no boot file
+const browser = new BrowserRuntime();
+const events = [];
+const watched = (tag, extra = {}) => ({ onWait: (why) => events.push(`${tag} ${why}`), onStart: () => events.push(`${tag} runs`), ...extra });
+// a call made while it loads waits for it, then for the calls before it
+const a = browser.call("a", { took: 100 }, watched("a"));
+const b = browser.call("b", { took: 10 }, watched("b"));
+assert.deepEqual((await Promise.all([a, b])).map((r) => r.text), ["a", "b"]);
+assert.deepEqual(events.splice(0), ["a loading", "b loading", "a runs", "b queued", "b runs"]);
+// a call no longer waited for while it waits is never sent; one the worker runs ends at once for its caller, and what it
+// returns later is dropped — the next call gets its own result
+const stopD = counted();
+const c = browser.call("c", { took: 150 }, watched("c"));
+const d = browser.call("d", { took: 10 }, watched("d", { signal: stopD.signal }));
+const e = browser.call("e", { took: 10 }, watched("e"));
+await sleep(5); // d waits behind c
+stopD.abort();
+await assert.rejects(d, (x) => x.name === "AbortError");
+assert.deepEqual(browser.queue.map((j) => j.params.name), ["e"]);
+const stopF = counted();
+const f = browser.call("f", { took: 200 }, watched("f", { signal: stopF.signal }));
+await Promise.all([c, e]);
+await sleep(10);
+from = Date.now();
+stopF.abort();
+await assert.rejects(f, (x) => x.name === "AbortError");
+assert.ok(Date.now() - from < 50);
+assert.equal((await browser.call("g", { took: 10 }, watched("g"))).text, "g");
+assert.deepEqual(workers[0].posted, ["init", "a", "b", "c", "e", "f", "g"]);
+assert.deepEqual([browser.queue.length, browser.busy, listening], [0, null, 0]); // nothing left waiting, no listener left
+events.length = 0;
+// a call no one waits for, which never ends, holding up one that waits: the worker is started again, and the call
+// waiting runs on the new one
+browser.stuckMs = 200;
+const stopH = new AbortController();
+const held = browser.call("h", { took: -1 }, { signal: stopH.signal });
+await sleep(20);
+stopH.abort();
+await assert.rejects(held, (x) => x.name === "AbortError");
+const i = browser.call("i", { took: 10 }, watched("i"));
+assert.equal((await i).text, "i");
+assert.deepEqual([workers.length, workers[0].ended, workers[1].posted], [2, true, ["init", "i"]]);
+assert.deepEqual(events.splice(0), ["i queued", "i runs"]);
+// a call that may give way (a research run going on by itself) is let run while no one waits behind it
+const giveWay = new AbortController();
+const j = browser.call("j", { took: 300 }, { giving: giveWay.signal });
+giveWay.abort();
+assert.equal((await j).text, "j");
+assert.equal(workers.length, 2);
+// where the page is cross-origin isolated, a call no one waits for is interrupted (SIGINT), and the flag is cleared for
+// the next call
+globalThis.SHARED = new SharedArrayBuffer(4);
+const isolated = new BrowserRuntime();
+await isolated.start();
+await sleep(10);
+const stopK = new AbortController();
+const k = isolated.call("k", { took: -1 }, { signal: stopK.signal });
+await sleep(10);
+stopK.abort();
+await assert.rejects(k);
+assert.equal(new Int32Array(globalThis.SHARED)[0], 2);
+delete globalThis.SHARED;
+isolated.stop();
+browser.stop();
+
+// a server: a request ends at the caller's stop or at its own limit, whichever comes first, and leaves no listener behind
+globalThis.location = { protocol: "https:", hostname: "chat.impf.ai", href: "https://chat.impf.ai/" };
+const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+globalThis.fetch = (url, init) => hang(init.signal);
+const srv = new ServerRuntime("https://chat.impf.ai");
+await assert.rejects(srv._fetch("/api/info", { signal: counted().signal }, 150), (x) => x.unavailable && x.message === "连接 https://chat.impf.ai 超时");
+assert.equal(listening, 0);
+const stopL = counted();
+setTimeout(() => stopL.abort(), 60);
+await assert.rejects(srv._fetch("/api/info", { signal: stopL.signal }, 5000), (x) => x.name === "AbortError");
+assert.equal(listening, 0);
+globalThis.fetch = async () => json({ ok: true });
+await srv._fetch("/api/info", { signal: counted().signal }, 5000);
+assert.equal(listening, 0);
+// a few calls at once, the rest waiting their turn (as "queued"), and a call stopped while it waits leaves its place
+let inFlight = 0;
+let most = 0;
+globalThis.fetch = async () => { inFlight++; most = Math.max(most, inFlight); await sleep(50); inFlight--; return json({ ok: true, text: "{}" }); };
+const queued = [];
+await Promise.all([...Array(7)].map((_, n) => srv.call("x", {}, { onWait: () => queued.push(n) })));
+assert.deepEqual([most, queued, srv.running, srv.waiting.length], [4, [4, 5, 6], 0, 0]);
+const stopM = new AbortController();
+const four = [...Array(4)].map(() => srv.call("x", {}));
+const fifth = srv.call("x", {}, { signal: stopM.signal });
+stopM.abort();
+await assert.rejects(fifth, (x) => x.name === "AbortError");
+await Promise.all(four);
+assert.deepEqual([srv.running, srv.waiting.length], [0, 0]);
+// a research run on a server: queued while the server finishes another, then running; a look that hangs is given up at
+// its own limit and the next one made
+srv.pollEvery = 20;
+let looks = 0;
+globalThis.fetch = async (url, init) => {
+  if (new URL(url).pathname === "/api/research") return json({ job: "j1" });
+  looks++;
+  if (looks === 2) return hang(init.signal);
+  return json(looks < 3 ? { status: "queued", elapsed_s: 1 } : looks < 5 ? { status: "running", progress: { round: 1 } }
+    : { status: "done", outcome: { ok: true, text: "R" } });
+};
+const heard = [];
+const outcome = await srv.research({ question: "q" }, { onWait: (w) => heard.push(w), onStart: () => heard.push("runs"),
+  onProgress: (p) => heard.push(p.status), limits: { poll: 150 } });
+assert.deepEqual([outcome, looks], [{ ok: true, text: "R" }, 5]);
+assert.deepEqual(heard, ["queued", "queued", "runs", "running", "running", "done"]);
+// looks that keep failing (five in a row) lose the run — not as an unavailable server: the run is not started again in
+// the browser — and a refusal loses it at once
+const site = (fetcher) => {
+  globalThis.fetch = fetcher;
+  const s = new ServerRuntime("https://chat.impf.ai", "", { fallback: () => { throw new Error("not started again"); } });
+  s.pollEvery = 20;
+  return s;
+};
+looks = 0;
+let s = site(async (url) => (new URL(url).pathname === "/api/research" ? json({ job: "j2" }) : (looks++, json({ error: "bad gateway" }, 502))));
+await assert.rejects(s.research({ question: "q" }, {}), (x) => !x.unavailable && x.message === "与研究任务失去联系：bad gateway");
+assert.equal(looks, 5);
+looks = 0;
+s = site(async (url) => (new URL(url).pathname === "/api/research" ? json({ job: "j3" })
+  : (looks++, new Response(JSON.stringify({ error: "今天的查询次数已用完", daily: true }),
+    { status: 429, headers: { "Content-Type": "application/json", "X-TC-Corpus": "refused" } }))));
+await assert.rejects(s.research({ question: "q" }, {}), (x) => !x.unavailable && /^与研究任务失去联系：今天的查询次数已用完/.test(x.message));
+assert.equal(looks, 1);
+// a stop while it is looked at ends it at once; one while it is started, too
+for (const hangs of ["/api/research/j4", "/api/research"]) {
+  globalThis.fetch = (url, init) => (new URL(url).pathname === hangs ? hang(init.signal) : Promise.resolve(json({ job: "j4" })));
+  const stopR = counted();
+  setTimeout(() => stopR.abort(), 200);
+  from = Date.now();
+  await assert.rejects(srv.research({ question: "q" }, { signal: stopR.signal }), (x) => x.name === "AbortError");
+  assert.ok(Date.now() - from < 1000);
+  assert.equal(listening, 0);
+}
+console.log("ok");
+"""
+
+
+def test_waits_and_stops_under_node(tmp_path):
+    """A reply that stalls asked again; a search that never returns ended at its deadline while the chart beside it is
+    explained; a stop, the answer asked for, a research run left to go on and the turn's own time; the browser
+    runtime's queue, a late result dropped and a runtime held up started again; a server's calls four at a time and
+    its research looked at within limits — every listener removed and nothing left waiting."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_WAITS, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=120)
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
+
+
 def test_every_tool_the_model_can_call_has_plain_words_on_the_page():
     """The tool steps and the answers name a tool in plain words, never by its inside name (web/js/redact.js): there are
     words for every tool the model can be offered, and none of them is an identifier."""
@@ -979,6 +1378,121 @@ def test_charts_in_the_browser(tmp_path):
             browser.close()
     finally:
         srv.shutdown()
+        relay.shutdown()
+        mock.shutdown()
+
+
+def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
+    """A comparison and a search in one round, the search held: the steps count the comparison done and the search
+    running, and after a while offer 不再等待 — taken, the search is not waited for, the model answers from the comparison
+    with both calls in their places, and the answer says it may be incomplete; a search held past its deadline ends
+    without anyone asking; a stop while one is held leaves the page ready for the next question."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import BOTH, PARTIAL_ANSWER, MockProvider, MockRelay
+
+    mock = MockProvider().start()
+    relay = MockRelay(mock.base_url).start()
+    web = tmp_path / "web"
+    _published(web, relay.url)
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    consent = {"v": 1, "logs": False, "at": "2026-09-28T00:00:00Z"}
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            ctx = browser.new_context(viewport={"width": 1280, "height": 900}, locale="zh-CN")
+            ctx.add_init_script(f"localStorage.setItem('tc.consent', {json.dumps(json.dumps(consent))});")
+            page = ctx.new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            held: list = []
+
+            def hold_the_search(route) -> None:  # a search never comes back; every other call does
+                if json.loads(route.request.post_data or "{}").get("name") == "classics__search":
+                    held.append(route)
+                else:
+                    route.continue_()
+
+            page.route("**/api/call", hold_the_search)
+            page.clock.install()  # the page's own time, which the test moves on
+            page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+
+            def held_round(n: int):
+                """The n-th answer's round of tools under way: the comparison done, the search held."""
+                page.fill("#input", f"用{BOTH}比较桂枝汤与麻黄汤")
+                page.keyboard.press("Enter")
+                page.wait_for_function(f"document.querySelectorAll('.msg.assistant')[{n}]?.querySelector('.steps .head')"
+                                       "?.textContent.includes('正在调用工具（1/2）')", timeout=60000)
+                return page.locator(".msg.assistant").nth(n)
+
+            def told() -> list[dict]:
+                """What the model was told of the calls, in the last request."""
+                return [m for m in mock.requests[-1]["body"]["messages"] if m["role"] == "tool"]
+
+            # the comparison done, the search running: so the steps say, and after a while the page offers the answer
+            first = held_round(0)
+            assert first.locator(".steps .tool .st.ok").count() == 1 and first.locator(".steps .tool .st .spinner").count() == 1
+            assert first.locator(".steps .tool .row > .sm").nth(1).text_content() == "运行中…" and not first.locator(".steps .offer").count()
+            page.clock.fast_forward(21000)
+            page.wait_for_selector(".msg.assistant .steps .offer button", timeout=10000)
+            assert first.locator(".steps .tool .row > .ms").nth(1).text_content().endswith("秒")  # how long the search has run
+            # taken: the search is not waited for, and the model answers from the comparison, told what it did not get
+            asked = len(mock.requests)
+            page.click(".msg.assistant .steps .offer button")
+            page.wait_for_selector(".msg.assistant .actions .meta", timeout=60000)
+            assert PARTIAL_ANSWER in first.locator(".md").inner_text()
+            assert "你选择了不再等待工具，回答可能不完整。" in first.locator(".notice.err").inner_text()
+            assert first.locator(".steps .tool .st.ok").count() == 1 and first.locator(".steps .tool .st.warn").count() == 1
+            assert first.locator(".steps .tool .row > .sm").nth(1).text_content() == "没有等它：你选择了先看回答"
+            assert len(mock.requests) == asked + 1 and [m["tool_call_id"] for m in told()] == ["call_1", "call_2"]
+            assert not told()[0]["content"].startswith("ERROR") and "桂枝汤" in told()[0]["content"]
+            assert told()[1]["content"].startswith("ERROR: 用户想先看到回答，这个调用没有等到结果。")
+            assert "［提示：用户想先看到回答，请根据已有结果直接作答" in told()[1]["content"]
+            # held past its deadline — two minutes of the page's time — the search ends, and the model is asked without it
+            second = held_round(1)
+            page.clock.fast_forward(61000)
+            page.clock.fast_forward(61000)
+            page.wait_for_function("document.querySelectorAll('.msg.assistant .actions .meta').length >= 2", timeout=60000)
+            assert second.locator(".steps .tool .st.warn").count() == 1 and not second.locator(".notice").count()
+            assert second.locator(".steps .tool .row > .sm").nth(1).text_content() == "运行了 120 秒还没有完成，不再等待"
+            assert told()[-1]["content"].startswith("ERROR: 这个调用运行了 120 秒还没有完成，页面不再等待，结果不可用。")
+            # a stop while it is held: the call ends as stopped, and the page is ready for the next question
+            third = held_round(2)
+            page.click("#send.stop")
+            page.wait_for_function("!document.querySelector('#send').classList.contains('stop')", timeout=10000)
+            assert third.locator(".steps .tool .st.off").count() == 1 and third.locator(".notice.warn").count() == 1
+            assert len(held) == 3
+            page.unroute("**/api/call")
+            for route in held:
+                try:
+                    route.abort()
+                except Error:
+                    pass  # the page has given it up already
+            # and the next question is answered — one the model searches for twice, in two rounds, each call under the
+            # same id (a service that numbers its calls afresh in each reply): each step ends as its own
+            page.fill("#input", "桂枝汤主治什么？请再查一遍原文。")
+            page.keyboard.press("Enter")
+            page.wait_for_function("document.querySelectorAll('.msg.assistant')[3]?.querySelector('.verify-bar')", timeout=60000)
+            fourth = page.locator(".msg.assistant").nth(3)
+            assert [m["tool_call_id"] for m in mock.requests[-1]["body"]["messages"] if m["role"] == "tool"][-2:] == ["call_1", "call_1"]
+            assert fourth.locator(".steps .tool .st.ok").count() == 2
+            assert fourth.locator(".steps .tool .row > .sm").all_inner_texts() == ["3 条命中", "3 条命中"]
+            assert not errors, errors
+            browser.close()
+    finally:
+        srv.shutdown()
+        srv.server_close()
         relay.shutdown()
         mock.shutdown()
 

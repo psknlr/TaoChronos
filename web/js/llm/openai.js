@@ -6,6 +6,7 @@
 // because some providers require it back verbatim in the history.
 
 import { outputLimit, publicError } from "../providers.js";
+import { aborted, until, watch } from "../limits.js";
 import { T } from "../i18n.js";
 
 export class Accum {
@@ -74,11 +75,22 @@ export function retryAfter(headers) {
   return Number.isFinite(s) ? Math.max(0, s) : null;
 }
 
-/** A connection that broke off while the reply was read (Chrome's "network error", Safari's "Load failed"): the round is
- * asked again from its start, since no tool has run on what it had said. */
-function brokenOff(err, signal) {
-  if (err?.name === "AbortError" || signal?.aborted) return err?.name === "AbortError" ? err : new DOMException("aborted", "AbortError");
+/** A connection that broke off while the reply was read (Chrome's "network error", Safari's "Load failed"), or one a
+ * limit of the request's watch ended (`w`, limits.js): the round is asked again from its start, since no tool has run
+ * on what it had said. */
+function brokenOff(err, w) {
+  if (w.expired) return stalled(w);
+  if (err?.name === "AbortError" || w.signal.aborted) return err?.name === "AbortError" ? err : aborted();
   return new ProviderError(T`连接在回复途中断开（${err?.message || err}）`, { retryable: true });
+}
+
+/** A reply a limit ended: no first byte, a stream that went silent, or one read whole that took too long — asked again
+ * like one that broke off. */
+export function stalled(w) {
+  const s = Math.round(w.ms / 1000);
+  const message = w.expired === "firstReply" ? T`模型服务 ${s} 秒没有回应`
+    : w.expired === "silence" ? T`回复中断：模型服务 ${s} 秒没有再发来内容` : T`回复 ${s} 秒还没有读完`;
+  return new ProviderError(message, { retryable: true, kind: "timeout" });
 }
 
 /** A reply whose stream ended before the service said it was complete — no finish_reason, no [DONE], no stop_reason: the
@@ -107,9 +119,10 @@ export const proxyHeaders = (route) => (route?.kind === "proxy" && route.token ?
 
 /**
  * Stream one completion.  Returns {message, text, thinking, toolCalls, finishReason, usage}; calls onEvent with
- * {type: "text" | "thinking" | "tool", ...} as the answer arrives.
+ * {type: "text" | "thinking" | "tool", ...} as the answer arrives.  `limits` (limits.js): how long its first reply, and
+ * a silence while it streams, are waited for.
  */
-export async function streamChat({ provider, messages, tools, settings, route, signal, onEvent = () => {} }) {
+export async function streamChat({ provider, messages, tools, settings, route, signal, limits, onEvent = () => {} }) {
   const url = provider.full_url ? provider.baseUrl : `${provider.baseUrl}/chat/completions`;
   if (!/^https?:\/\//.test(url)) throw new ProviderError(T`接口地址无效：${url || T("（未填写）")}`);
   const body = { model: provider.model, messages, stream: true };
@@ -131,10 +144,22 @@ export async function streamChat({ provider, messages, tools, settings, route, s
   Object.assign(headers, provider.headers || {}); // a hand-set endpoint's own headers (api-key: …, a gateway's routing header)
   if (provider.id === "openrouter") { headers["HTTP-Referer"] = location.origin; headers["X-Title"] = "TaoChronos"; }
 
+  const w = watch(signal, limits);
+  try {
+    return await send({ provider, route, url, target, headers, body, onEvent }, w);
+  } finally {
+    w.close();
+  }
+}
+
+/** The request sent and its reply read, within the limits of its watch `w`. */
+async function send({ provider, route, url, target, headers, body, onEvent }, w) {
   let resp;
   try {
-    resp = await fetch(target.url, { method: "POST", headers, body: JSON.stringify(body), signal });
+    w.sent();
+    resp = await until(fetch(target.url, { method: "POST", headers, body: JSON.stringify(body), signal: w.signal }), w.signal);
   } catch (err) {
+    if (w.expired) throw stalled(w);
     if (err.name === "AbortError") throw err;
     throw new ProviderError(
       provider.relay
@@ -145,7 +170,7 @@ export async function streamChat({ provider, messages, tools, settings, route, s
       { retryable: true });
   }
   if (!resp.ok) {
-    const text = await resp.text().catch(() => "");
+    const text = await until(resp.text(), w.signal).catch(() => "");
     const message = errorMessage(resp.status, text);
     const kind = errorKind(text);
     throw new ProviderError(provider.relay ? publicError(message) : message, {
@@ -161,12 +186,12 @@ export async function streamChat({ provider, messages, tools, settings, route, s
   try {
     if (!type.includes("event-stream")) {
       // a provider that ignored stream: true (or an error delivered with status 200)
-      const text = await whole(resp, signal);
+      const text = await whole(resp, w);
       let j;
       try { j = JSON.parse(text); } catch { throw new ProviderError(T`无法解析模型服务的回复：${text.slice(0, 300)}`); }
       handleChunk(j, state, onEvent, true);
     } else {
-      const done = await readSSE(resp, signal, (data) => {
+      const done = await readSSE(resp, w, (data) => {
         let j;
         try { j = JSON.parse(data); } catch { return; }
         handleChunk(j, state, onEvent, false);
@@ -182,17 +207,20 @@ export async function streamChat({ provider, messages, tools, settings, route, s
   return finish(state, provider);
 }
 
-async function whole(resp, signal) {
+/** A reply's body read whole: it says nothing until it is complete, so it has the time for that, not a silence. */
+async function whole(resp, w) {
+  w.whole();
   try {
-    return await resp.text();
+    return await until(resp.text(), w.signal);
   } catch (err) {
-    throw brokenOff(err, signal);
+    throw brokenOff(err, w);
   }
 }
 
 /** The events of a streamed reply, as they arrive; read whole where the browser cannot read a reply as it arrives (an
- * older Safari has no body to read from).  Returns whether the stream said it was done ([DONE]). */
-async function readSSE(resp, signal, onData) {
+ * older Safari has no body to read from).  Returns whether the stream said it was done ([DONE]).  `w`: the request's
+ * watch, told of everything that arrives (a silence ends the request). */
+async function readSSE(resp, w, onData) {
   const decoder = new TextDecoder();
   let buf = "";
   let data = [];
@@ -222,26 +250,29 @@ async function readSSE(resp, signal, onData) {
     return dispatch();
   };
   if (typeof resp.body?.getReader !== "function") {
-    buf = await whole(resp, signal);
+    buf = await whole(resp, w);
     return lines() || end();
   }
   const reader = resp.body.getReader();
+  w.streaming();
   try {
     for (;;) {
-      if (signal?.aborted) throw new DOMException("aborted", "AbortError");
+      if (w.signal.aborted) throw brokenOff(null, w);
       let chunk;
       try {
-        chunk = await reader.read();
+        chunk = await until(reader.read(), w.signal);
       } catch (err) {
-        throw brokenOff(err, signal);
+        throw brokenOff(err, w);
       }
       if (chunk.done) break;
+      w.heard();
       buf += decoder.decode(chunk.value, { stream: true });
       if (lines()) return true;
     }
     buf += decoder.decode();
     return end();
   } finally {
+    if (w.signal.aborted) reader.cancel().catch(() => {}); // stopped, or stalled: the rest is not read
     try { reader.releaseLock(); } catch { /* already released */ }
   }
 }
