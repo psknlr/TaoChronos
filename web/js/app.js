@@ -642,8 +642,10 @@ function makeHooks(conv, msg) {
       if (S.drawer.open && S.conv === conv) renderDrawerSoon();
     },
     retry(attempt) {
-      msg.segments = msg.segments.filter((s) => s.round !== round || s.type === "tools");
-      refs = Object.fromEntries(Object.entries(refs).filter(([k]) => k === "tools"));
+      // what the reply had shown of this round goes — its thinking, its text and the calls it was writing (none had run):
+      // the round is asked again
+      msg.segments = msg.segments.filter((s) => s.round !== round);
+      refs = {};
       toast(T`连接中断，正在重试（第 ${attempt} 次）…`);
       update();
     },

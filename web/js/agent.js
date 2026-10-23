@@ -10,11 +10,16 @@
 import * as openai from "./llm/openai.js";
 import * as claude from "./llm/anthropic.js";
 import { dataNote } from "./mydata.js";
-import { sleep } from "./util.js";
 import { T } from "./i18n.js";
 
 const OLD_RESULT_CHARS = 2500;
 const MAX_EXTRA_ROUNDS = 1;
+// the last rounds of tools a turn may run are named to the model, with what it has left, so that it answers in time
+const BUDGET_ROUNDS = 3;
+// a reply that broke off, a service busy for a moment: the round is asked again, after these waits (or as long as the
+// service asks, up to MAX_RETRY_WAIT: a refusal that asks for longer is not waited for)
+const RETRY_WAITS = [1500, 4000, 10000];
+const MAX_RETRY_WAIT = 30000;
 
 export const formatOf = (provider) => (provider.format === "anthropic" ? "anthropic" : "openai");
 
@@ -141,6 +146,7 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
 
     const over = round > maxSteps;
     const results = await Promise.all(res.toolCalls.map((tc) => execute(tc, { runtime, settings, hooks, signal, over })));
+    if (!over) results[results.length - 1].text += budgetNote(maxSteps - round);
     turn.push(...L.toolResultMessages(results));
     if (round > maxSteps + MAX_EXTRA_ROUNDS) {
       hooks.limit?.(maxSteps);
@@ -150,17 +156,49 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
   return { wire: turn, rounds: round, usage, model };
 }
 
+/** What the model is told after a round of tools with `left` rounds of tools to come: nothing before the last
+ * BUDGET_ROUNDS, then how many it has left, and at the last that it is to answer. */
+export function budgetNote(left) {
+  if (left < 0 || left >= BUDGET_ROUNDS) return "";
+  return `\n\n${left ? T`［提示：回答这个问题还可再调用 ${left} 轮工具，请在用完之前作答］`
+    : T("［提示：回答这个问题的工具调用已用完，请根据已有结果直接作答，不要再调用工具］")}`;
+}
+
+/** The milliseconds to wait before asking again after the attempt-th failure (from 0), `err`; null when it is not
+ * asked again — it is not retryable, the attempts are spent, or the service asks to wait longer than MAX_RETRY_WAIT. */
+export function retryWait(err, attempt) {
+  if (!err?.retryable || attempt >= RETRY_WAITS.length) return null;
+  const asked = Number(err.retryAfter) * 1000 || 0;
+  return asked > MAX_RETRY_WAIT ? null : Math.max(RETRY_WAITS[attempt], asked);
+}
+
 async function withRetry(fn, { signal, onRetry }) {
   for (let attempt = 0; ; attempt++) {
     try {
       return await fn();
     } catch (err) {
       if (err?.name === "AbortError" || signal.aborted) throw err;
-      if (!err?.retryable || attempt >= 2) throw err;
+      const wait = retryWait(err, attempt);
+      if (wait === null) throw err;
       onRetry?.(attempt + 1, err);
-      await sleep(attempt ? 4000 : 1500);
+      await pause(wait, signal);
+      if (signal.aborted) throw new DOMException("aborted", "AbortError"); // stopped while it waited: not asked again
     }
   }
+}
+
+/** A wait that ends early when the turn is stopped. */
+function pause(ms, signal) {
+  return new Promise((resolve) => {
+    if (signal?.aborted) return resolve();
+    const done = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", done);
+      resolve();
+    };
+    const timer = setTimeout(done, ms);
+    signal?.addEventListener("abort", done, { once: true });
+  });
 }
 
 async function execute(tc, { runtime, settings, hooks, signal, over }) {

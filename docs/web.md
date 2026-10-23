@@ -470,6 +470,17 @@ The page speaks two wire formats:
   in the harness's own provider, tool inputs streamed eagerly, the stop reason checked before any tool runs (a refusal or
   a `max_tokens` cut never runs a tool), assistant content replayed verbatim so thinking blocks round-trip.
 
+**A reply that breaks off is asked again.**  A connection that fails, or breaks off while the reply streams (Chrome's
+"network error", Safari's "Load failed": 38 of the first 105 failed turns, some twenty minutes into one), and a service
+busy for a moment (429, 5xx) are retried up to three times, after 1.5, 4 and 10 seconds, or after as long as the
+service's `Retry-After` asks, up to 30 seconds (the relay exposes the header to the page); the round is asked again from
+its start, since no tool ran on what it had said, and what it had shown goes.  A refusal that asking again soon does
+not change is told at once: the visitor's or the service's allowance for the day (`daily_limit`, `total_limit`), an
+address blocked, the service not set up, its own key refused or its quota spent, a provider's quota spent.  A browser that has no
+body to read a reply from as it arrives (an older Safari) reads it whole.  In the last three rounds of tools a turn may
+run (设置 → 运行环境 → 每轮最多工具步数, 16 by default), the model is told after each how many it has left, and at the last that it is
+to answer from what it has.
+
 **自定义 API** — an endpoint not in the list, set by hand (**设置 → 模型 → ＋ 自定义 API**; several can be kept): a name, the
 wire format (OpenAI-compatible, or Anthropic Messages through the SDK), the base URL (the page appends `/chat/completions`,
 or, ticked, calls the address as given — e.g. Azure's `…/chat/completions?api-version=…`), the model, the key (sent as
@@ -616,7 +627,9 @@ terms the site carries it under; a 宋本 found for a punctuated 伤寒论 claus
 `tests/test_corpus_store.py` — on a store: a quotation found whatever its punctuation and in either script, across a
 witness's own marks, never with a changed or missing character; outside a session `classics.list_books` lists every
 book with its filters and `kg.claims` / `kg.neighbors` read the passages that write the term.  `tests/test_web_client.py` — the
-client's logic under Node (cumulative and incremental streams, history rules, dangling tool calls, citation pairing, which
+client's logic under Node (cumulative and incremental streams, a reply that breaks off asked again and one read whole,
+which refusals are retried and how long after, the rounds of tools left named to the model, history rules, dangling
+tool calls, citation pairing, which
 questions get the fixed reply and which go to the model; the alias badges — labels, the names merged, the asked name found
 for a hit, the flags' words, every card of a search marked with its badges or with none; the charts' checks, CSV, Markdown tables, colours and axes; a box
 plot's numbers, a forest plot's log axis, a tree's checks; CRC-32, PackBits, a TIFF's directory, a PNG's pHYs and a ZIP;

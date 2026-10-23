@@ -89,7 +89,8 @@ export async function handle(request, env, deps) {
   const url = new URL(request.url);
   const origin = request.headers.get("Origin") || "";
   const allowed = cfg.origins.includes(origin);
-  const cors = allowed ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" } : { Vary: "Origin" };
+  // the page reads how long a refusal asks it to wait (Retry-After), and asks again no sooner
+  const cors = allowed ? { "Access-Control-Allow-Origin": origin, "Access-Control-Expose-Headers": "Retry-After", Vary: "Origin" } : { Vary: "Origin" };
   // the sentinel: the request as seen at the edge, and a note of it when it is worth one (security/sentinel.js)
   const scfg = sentinelConfig(env);
   const s = scfg.mode === "off" ? null : { cfg: scfg, fp: fingerprint(request, deps.now()), origins: cfg.origins, deps };

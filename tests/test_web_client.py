@@ -20,9 +20,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 NODE_TEST = r"""
 import assert from "node:assert/strict";
-import { Accum, splitThink, streamChat } from "./js/llm/openai.js";
+import { Accum, ProviderError, splitThink, streamChat } from "./js/llm/openai.js";
 import { publicConversation, publicError } from "./js/providers.js";
-import { answerDangling, buildHistory, userText, withoutReasoning } from "./js/agent.js";
+import { answerDangling, budgetNote, buildHistory, retryWait, runTurn, userText, withoutReasoning } from "./js/agent.js";
 import { brief, dataNote, deidLabel, isMine, personal, sizeLabel } from "./js/mydata.js";
 import { extractCitations } from "./js/markdown.js";
 import { count, hitNotes, withFound } from "./js/util.js";
@@ -166,6 +166,69 @@ reply(400, JSON.stringify({ error: { message: "invalid params" } }));
 await assert.rejects(streamChat({ provider: { ...relayP, id: "deepseek", relay: false, thinking_off: null }, messages: [], tools: [],
   settings: { thinking: false } }), (e) => e.message === "模型服务返回 400：invalid params");
 assert.equal(sent.thinking, undefined);
+
+// a reply that breaks off while it streams (Chrome's "network error", Safari's "Load failed") is asked again from the
+// start of its round: what it had shown goes; a browser with no body to read a reply from as it arrives reads it whole
+const enc = new TextEncoder();
+const sse = (text) => new ReadableStream({ start(c) { c.enqueue(enc.encode(text)); c.close(); } });
+const brokenOff = (text) => new ReadableStream({ start(c) { c.enqueue(enc.encode(text)); }, pull(c) { c.error(new TypeError("network error")); } });
+const delta = (content, finish = null) => `data: ${JSON.stringify({ choices: [{ delta: { content }, finish_reason: finish }] })}\n\n`;
+const streamed = (body) => new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+globalThis.fetch = async () => streamed(brokenOff(delta("桂枝")));
+await assert.rejects(streamChat({ provider: relayP, messages: [], tools: [], settings: {} }),
+  (e) => e instanceof ProviderError && e.retryable && e.message === "连接在回复途中断开（network error）");
+globalThis.fetch = async () => ({ ok: true, status: 200, headers: new Headers({ "Content-Type": "text/event-stream" }), body: undefined,
+  text: async () => delta("桂枝汤") + delta("主之", "stop") + "data: [DONE]\n\n" });
+assert.equal((await streamChat({ provider: relayP, messages: [], tools: [], settings: {} })).text, "桂枝汤主之");
+let attempts = 0;
+globalThis.fetch = async () => streamed(++attempts === 1 ? brokenOff(delta("半")) : sse(delta("答", "stop") + "data: [DONE]\n\n"));
+const seen = [];
+const resumed = await runTurn({ provider: relayP, settings: {}, route: null, runtime: null, tools: [], system: "s", history: [],
+  user: { text: "问" }, signal: new AbortController().signal, hooks: { retry: (n) => seen.push(n), text: (t) => seen.push(t) } });
+assert.deepEqual([seen, resumed.wire.at(-1).content, attempts], [["半", 1, "答"], "答", 2]);
+// a refusal that asking again soon does not change is told at once (the day's allowance, the service's); one that asks
+// to wait is waited for as long as it asks, up to half a minute
+for (const [status, kind] of [[429, "daily_limit"], [429, "total_limit"], [503, "not_configured"]]) {
+  reply(status, JSON.stringify({ error: { message: "今天的免费额度已用完，明天再来", type: kind } }));
+  await assert.rejects(streamChat({ provider: relayP, messages: [], tools: [], settings: {} }), (e) => !e.retryable && e.kind === kind);
+}
+reply(503, JSON.stringify({ error: { message: "默认服务暂时连不上模型服务", type: "upstream_unreachable" } }));
+await assert.rejects(streamChat({ provider: relayP, messages: [], tools: [], settings: {} }), (e) => e.retryable && e.retryAfter === null);
+globalThis.fetch = async () => new Response(JSON.stringify({ error: { message: "请求太频繁：每分钟最多 10 次，请 12 秒后再试", type: "rate_limited" } }),
+  { status: 429, headers: { "Content-Type": "application/json", "Retry-After": "12" } });
+await assert.rejects(streamChat({ provider: relayP, messages: [], tools: [], settings: {} }),
+  (e) => e.retryable && e.retryAfter === 12 && e.kind === "rate_limited" && /每分钟最多 10 次/.test(e.message));
+assert.deepEqual([0, 1, 2, 3].map((n) => retryWait({ retryable: true }, n)), [1500, 4000, 10000, null]);
+assert.deepEqual([retryWait({ retryable: false }, 0), retryWait({ retryable: true, retryAfter: 12 }, 0), retryWait({ retryable: true, retryAfter: 60 }, 0)],
+  [null, 12000, null]);
+// a stop while the turn waits to ask again (or as it begins to) ends the turn there, not asked again
+for (const after of [30, 0]) {
+  let asked = 0;
+  const stop = new AbortController();
+  globalThis.fetch = async () => (asked++, new Response(JSON.stringify({ error: { message: "请求太频繁", type: "rate_limited" } }),
+    { status: 429, headers: { "Content-Type": "application/json", "Retry-After": "20" } }));
+  const from = Date.now();
+  await assert.rejects(runTurn({ provider: relayP, settings: {}, route: null, runtime: null, tools: [], system: "s", history: [],
+    user: { text: "问" }, signal: stop.signal, hooks: { retry: () => (after ? setTimeout(() => stop.abort(), after) : stop.abort()) } }),
+  (e) => e.name === "AbortError");
+  assert.ok(asked === 1 && Date.now() - from < 5000, `${after}: asked ${asked} times, ${Date.now() - from} ms`);
+}
+
+// the last rounds of tools a turn may run are named to the model with what it has left, and the last that it is to answer
+assert.deepEqual([3, 2, 1, 0, -1].map((n) => budgetNote(n) !== ""), [false, true, true, true, false]);
+const askedFor = [];
+globalThis.fetch = async (url, init) => {
+  askedFor.push(JSON.parse(init.body).messages);
+  const call = { index: 0, id: `c${askedFor.length}`, function: { name: "classics__search", arguments: '{"query":"桂枝汤"}' } };
+  return streamed(sse(`data: ${JSON.stringify({ choices: [{ delta: { tool_calls: [call] }, finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`));
+};
+const stoppedAt = [];
+await runTurn({ provider: relayP, settings: { maxSteps: 2 }, route: null, runtime: { call: async () => ({ ok: true, text: "{}" }) }, tools: [],
+  system: "s", history: [], user: { text: "问" }, signal: new AbortController().signal, hooks: { limit: (n) => stoppedAt.push(n) } });
+const budgetTold = askedFor.slice(1).map((m) => m.filter((x) => x.role === "tool").at(-1).content);
+assert.deepEqual(budgetTold, ["{}\n\n［提示：回答这个问题还可再调用 1 轮工具，请在用完之前作答］",
+  "{}\n\n［提示：回答这个问题的工具调用已用完，请根据已有结果直接作答，不要再调用工具］", "ERROR: 已达到本轮工具调用的上限：请根据已有结果直接作答。"]);
+assert.deepEqual(stoppedAt, [2]);
 
 // conversations an older page kept: the default service's turns as it presents itself now; nothing else is touched
 const kept = { messages: [

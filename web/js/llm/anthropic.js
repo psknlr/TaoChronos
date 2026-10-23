@@ -6,7 +6,7 @@
 // replayed verbatim so thinking blocks round-trip.  Through the local server the SDK talks to its proxy, which forwards
 // to api.anthropic.com.
 
-import { ProviderError, proxyHeaders } from "./openai.js";
+import { ProviderError, proxyHeaders, retryAfter } from "./openai.js";
 import { T } from "../i18n.js";
 
 const SDK_URL = "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm";
@@ -105,8 +105,11 @@ export async function streamClaude({ provider, system, messages, tools, settings
     if (err instanceof ProviderError) throw err;
     if (err instanceof Anthropic.APIError) {
       const status = err.status || 0;
+      // no status: the connection failed or broke off (APIConnectionError), and the round is asked again
+      if (!status) throw new ProviderError(T`无法连接 Claude API：${err.message}`, { retryable: true });
       const hint = status === 401 ? T("（API Key 无效）") : status === 429 ? T("（请求过于频繁）") : status >= 500 ? T("（服务端暂时不可用）") : "";
-      throw new ProviderError(T`Claude API 返回 ${status}${hint}：${err.message}`, { status, retryable: status === 429 || status >= 500 });
+      throw new ProviderError(T`Claude API 返回 ${status}${hint}：${err.message}`,
+        { status, kind: err.error?.error?.type || "", retryAfter: retryAfter(err.headers), retryable: status === 429 || status >= 500 });
     }
     // with eager input streaming, a tool input that is not valid JSON rejects the stream
     throw new ProviderError(T`Claude 回复无法解析：${err?.message || err}`, { retryable: true });

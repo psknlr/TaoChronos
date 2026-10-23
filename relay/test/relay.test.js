@@ -262,6 +262,7 @@ test("limits: per visitor per minute, per visitor per day, all visitors per day"
   const minute = await r.call("/v1/chat/completions", post(ask));
   assert.equal(minute.status, 429);
   assert.ok(Number(minute.headers.get("Retry-After")) > 0);
+  assert.equal(minute.headers.get("Access-Control-Expose-Headers"), "Retry-After"); // the page waits as long as it is asked
   assert.match((await minute.json()).error.message, /每分钟最多 2 次/);
   let t = Date.UTC(2026, 8, 28, 12, 5, 0);
   const later = relay({ env: { PER_MINUTE: "10", PER_DAY: "2", TOTAL_PER_DAY: "3" }, now: () => t });
