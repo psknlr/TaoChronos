@@ -27,6 +27,14 @@ from ..domain import DomainPack
 
 PUNCT = set("，。；：、？！“”‘’（）《》〈〉…—·‧「」『』【】〔〕［］｛｝ 　\n\t,.;:!?()[]{}<>\"'")
 HAN = re.compile(r"[㐀-鿿\U00020000-\U0002ffff〓□]")
+# a kind of the lexicon in words, and the studies that read a name of that kind (any other kind: study.term), named
+# when a study is asked for a name it does not take (方证网络 for a drug)
+KIND_WORDS = {"herb": "drug", "tongue": "tongue finding", "treatment_principle": "treatment principle",
+              "treatment_method": "treatment method"}
+READ_BY = {"formula": "study.formula, study.network and study.family",
+           "herb": "study.usage, study.pairs and study.herb",
+           **dict.fromkeys(("symptom", "sign", "tongue", "pulse", "pattern", "pathogenesis", "disease"),
+                           "study.network and study.term")}
 
 
 def cache_tmp(path: Path) -> Path:
@@ -198,6 +206,32 @@ class StudyBase:
             seen.add(key)
             out.append((f, kind))
         return entry.term_id, out
+
+    def not_taken(self, name: str, takes: tuple[str, ...], said: str) -> ValueError:
+        """The error for a name a study does not take — ``said``, what it takes, as the message begins (``is not a
+        drug of the lexicon``) — with the step to take next: what the lexicon holds the name as, and the studies that
+        read that; else the names of the kinds it takes written in it; else, should it be miswritten, the nearest names
+        of those kinds (another name may be another drug: they are offered, not taken), and the studies that read any
+        name."""
+        lex, norm = self.pack.lexicon, self.normalize(name)
+        head = f"{name!r} {said}"
+
+        def kind(e: Any) -> str:
+            return KIND_WORDS.get(e.category, e.category)
+
+        other = [e for e, _ in lex.lookup(name) or lex.lookup(norm) if e.category not in takes]
+        if other:
+            word = kind(other[0])
+            return ValueError(f"{head}: it is {'an' if word[0] in 'aeiou' else 'a'} {word} ({other[0].term}), read by "
+                              f"{READ_BY.get(other[0].category, 'study.term')}")
+        held = list(dict.fromkeys(f"{m.entry.term} ({kind(m.entry)})" for m in lex.match(norm)
+                                  if m.entry.category in takes and len(m.surface) >= 2))
+        if held:
+            return ValueError(f"{head}; written in it: {', '.join(held[:4])}")
+        near = ", ".join(f"{e.term} ({kind(e)})" for e in lex.nearest(norm, takes))
+        found = f"; if it was miswritten, the nearest it has: {near}" if near else ""
+        anyway = "study.herb reads the 本草 entries under any name, and study.term" if "herb" in takes else "study.term reads"
+        return ValueError(f"{head}{found}; {anyway} any word by its passages")
 
     def find(self, surface: str, *, book_ids: Iterable[str] | None = None, limit: int | None = None) -> list[str]:
         if getattr(self.corpus, "large", False):
