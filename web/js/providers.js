@@ -19,7 +19,7 @@ export const DEFAULTS = {
   baseUrls: {},            // provider id → base URL override
   keys: {},                // provider id → API key (this browser only)
   temperature: null,       // null: the provider's default
-  maxTokens: 16000,
+  maxTokens: null,         // tokens a reply may use, its thinking included; null: as outputLimit decides
   thinking: true,
   route: "auto",           // auto | direct | proxy (through the local server)
   runtime: "auto",         // auto | browser | server
@@ -35,6 +35,21 @@ export const DEFAULTS = {
 };
 
 let providers = FALLBACK;
+
+// what a reply may use where the visitor set no number and the service names no ceiling of its own: Claude (the
+// Anthropic preset), which the page always streams, what Anthropic advises for a streamed reply; any other service, and
+// an endpoint set by hand, a number most of them accept
+const AUTO_TOKENS = { claude: 64000, other: 16000 };
+const OLD_DEFAULT = 16000; // what an older page kept as the visitor's number when they had set none
+
+/** The tokens a reply may use, its thinking included: the number the visitor set, within the service's own ceiling (the
+ * default service's); with none set, that ceiling, or AUTO_TOKENS for a service that names none. */
+export function outputLimit(settings, provider) {
+  const set = Math.floor(Number(settings?.maxTokens)) || 0;
+  const ceiling = Math.floor(Number(provider?.max_output)) || 0;
+  if (ceiling) return set > 0 ? Math.min(set, ceiling) : ceiling;
+  return set > 0 ? set : AUTO_TOKENS[provider?.format === "anthropic" && !provider.custom ? "claude" : "other"];
+}
 
 export const RELAY_ID = "impf";
 let relay = null; // {url, ok, model, models, logs, limits} once the site's relay has answered (or failed to)
@@ -94,6 +109,7 @@ export const providerById = (id, settings) => allProviders(settings).find((p) =>
 
 export function loadSettings() {
   const saved = storage.get("tc.settings", {}) || {};
+  if (saved.maxTokens === OLD_DEFAULT) delete saved.maxTokens; // the old default, kept by an older page: as outputLimit decides
   return { ...DEFAULTS, ...saved, models: { ...(saved.models || {}) }, baseUrls: { ...(saved.baseUrls || {}) }, keys: { ...(saved.keys || {}) },
     customProviders: Array.isArray(saved.customProviders) ? saved.customProviders.map((c) => ({ ...c })) : [] };
 }

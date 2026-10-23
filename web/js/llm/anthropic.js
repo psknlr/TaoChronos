@@ -2,11 +2,13 @@
 //
 // Adaptive thinking (summarised, so it can be shown) on models that support it; server-side refusal fallbacks
 // (fallbacks: "default") on Claude Opus 5 and Fable 5.1, as the harness's own provider does; the stop reason is checked
-// before any tool runs (a refusal or a max_tokens cut can leave a tool input incomplete); the assistant content is
-// replayed verbatim so thinking blocks round-trip.  Through the local server the SDK talks to its proxy, which forwards
-// to api.anthropic.com.
+// before any tool runs: a refusal is told, a reply the stream ended without one is asked again, and a max_tokens (or
+// context window) cut goes to the agent loop, which runs no call of a cut reply; the assistant content is replayed
+// verbatim so thinking blocks round-trip.  Through the local server the SDK talks to its proxy, which forwards to
+// api.anthropic.com.
 
-import { ProviderError, proxyHeaders } from "./openai.js";
+import { ProviderError, proxyHeaders, retryAfter, unfinished } from "./openai.js";
+import { outputLimit } from "../providers.js";
 import { T } from "../i18n.js";
 
 const SDK_URL = "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm";
@@ -40,7 +42,7 @@ export async function streamClaude({ provider, system, messages, tools, settings
 
   const params = {
     model: provider.model,
-    max_tokens: Number(settings.maxTokens) || 16000,
+    max_tokens: outputLimit(settings, provider),
     system,
     messages,
   };
@@ -48,6 +50,9 @@ export async function streamClaude({ provider, system, messages, tools, settings
     params.tools = tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters, eager_input_streaming: true }));
   }
   if (settings.thinking !== false && !/haiku/.test(provider.model)) params.thinking = { type: "adaptive", display: "summarized" };
+  // a reply that spent all of its output on thinking is asked again at low effort (agent.js lessThinking): newer models
+  // think whether thinking is asked for or not, and effort is what makes them think less
+  if (settings.effort) params.output_config = { effort: settings.effort };
   if (settings.temperature !== null && settings.temperature !== "" && settings.temperature !== undefined && !params.thinking) {
     params.temperature = Number(settings.temperature);
   }
@@ -75,14 +80,13 @@ export async function streamClaude({ provider, system, messages, tools, settings
       }
     }
     const final = await stream.finalMessage();
+    // message_stop with no message_delta before it: the SDK hands back the reply without a stop reason
+    if (!final.stop_reason) throw unfinished();
     const content = final.content || [];
     const toolUses = content.filter((b) => b.type === "tool_use");
     if (final.stop_reason === "refusal") {
       const cat = final.stop_details?.category;
       throw new ProviderError(T`Claude 拒绝了这次请求${cat ? T`（类别：${cat}）` : ""}。可改写问题后重试。`);
-    }
-    if (final.stop_reason === "max_tokens" && toolUses.length) {
-      throw new ProviderError(T("工具参数在输出上限处被截断，未执行。请在设置中调高“最大输出”后重试。"));
     }
     const toolCalls = toolUses.map((b) => ({
       id: b.id, name: b.name, arguments: b.input && typeof b.input === "object" && !Array.isArray(b.input) ? b.input : {},
@@ -103,10 +107,15 @@ export async function streamClaude({ provider, system, messages, tools, settings
   } catch (err) {
     if (err?.name === "AbortError" || signal?.aborted) throw new DOMException("aborted", "AbortError");
     if (err instanceof ProviderError) throw err;
+    // the SDK's word for a stream that ended before message_stop: as one that never said why it stopped
+    if (err instanceof Anthropic.AnthropicError && /stream ended without producing/.test(err.message || "")) throw unfinished();
     if (err instanceof Anthropic.APIError) {
       const status = err.status || 0;
+      // no status: the connection failed or broke off (APIConnectionError), and the round is asked again
+      if (!status) throw new ProviderError(T`无法连接 Claude API：${err.message}`, { retryable: true });
       const hint = status === 401 ? T("（API Key 无效）") : status === 429 ? T("（请求过于频繁）") : status >= 500 ? T("（服务端暂时不可用）") : "";
-      throw new ProviderError(T`Claude API 返回 ${status}${hint}：${err.message}`, { status, retryable: status === 429 || status >= 500 });
+      throw new ProviderError(T`Claude API 返回 ${status}${hint}：${err.message}`,
+        { status, kind: err.error?.error?.type || "", retryAfter: retryAfter(err.headers), retryable: status === 429 || status >= 500 });
     }
     // with eager input streaming, a tool input that is not valid JSON rejects the stream
     throw new ProviderError(T`Claude 回复无法解析：${err?.message || err}`, { retryable: true });

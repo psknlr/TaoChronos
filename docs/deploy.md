@@ -452,6 +452,7 @@ The rules fit the zone's own plan (Free: 5 custom rules, one 10-second rate limi
 | Sentinel | `SENTINEL` in `relay/wrangler.toml`, `cloud/site/wrangler.toml` | after two weeks of `observe` with no genuine visitor among the `shadow` events, `"enforce"` in both |
 | Model spend per address | `TOKENS_PER_DAY`, `PER_DAY` (relay) | 10 M tokens, 600 calls a day; many people behind one hospital or office address share them — raise if they run out |
 | Model spend in all | `TOTAL_TOKENS_PER_DAY`, `TOTAL_PER_DAY` (relay) | the ceiling on a bad day: set it from your MiniMax budget |
+| Reply length | `MAX_OUTPUT_TOKENS` (relay) | 32,768 tokens a reply, its reasoning included; the page writes on an answer cut there (twice at most), so raise it only if the records show many cut answers — the day's token budgets above bound what replies cost |
 | Site's daily caps | `API_READS_PER_DAY`, `API_CALLS_PER_DAY` (site) | 6,000 / 3,000 per address, wide on purpose |
 | Records waiting | `LOG_KEEP` (relay) | 50,000; beyond, new records are refused (`logs full` logged), none dropped |
 | Container | `SLEEP_AFTER`, `instance_type`, `LOCATION_HINT` (`cloud/corpus/wrangler.toml`) | `15m`, `standard-1`, `apac` (right for Singapore and East Asia; fixed when first created) |

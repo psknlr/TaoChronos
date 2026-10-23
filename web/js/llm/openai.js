@@ -5,7 +5,7 @@
 // accepts either.  The assistant message is returned whole — content, tool_calls and the provider's reasoning field —
 // because some providers require it back verbatim in the history.
 
-import { publicError } from "../providers.js";
+import { outputLimit, publicError } from "../providers.js";
 import { T } from "../i18n.js";
 
 export class Accum {
@@ -40,13 +40,50 @@ export function splitThink(text) {
 }
 
 export class ProviderError extends Error {
-  constructor(message, { status = 0, body = "", retryable = false } = {}) {
+  /** kind: the error's type as the service names it (the default service's daily_limit, rate_limited …); retryAfter: the
+   * seconds its refusal asks to wait (Retry-After), or null. */
+  constructor(message, { status = 0, body = "", retryable = false, kind = "", retryAfter = null } = {}) {
     super(message);
     this.status = status;
     this.body = body;
     this.retryable = retryable;
+    this.kind = kind;
+    this.retryAfter = retryAfter;
   }
 }
+
+// refusals that asking again soon does not change: the visitor's or the service's allowance for the day spent, an address
+// blocked, the default service not set up, its own key refused or its quota spent, a provider's quota spent
+const FINAL = new Set(["daily_limit", "total_limit", "blocked", "not_configured", "upstream_auth", "upstream_quota", "insufficient_quota"]);
+
+/** The error's type in a provider's error body ({error: {type}}; the default service's are FINAL's and rate_limited …). */
+function errorKind(body) {
+  try {
+    const j = JSON.parse(body);
+    return String(j.error?.type || j.error?.code || "");
+  } catch {
+    return "";
+  }
+}
+
+/** The seconds a refusal asks to wait (Retry-After: seconds, or a date), or null. */
+export function retryAfter(headers) {
+  const v = String(headers?.get?.("Retry-After") ?? "").trim();
+  if (!v) return null;
+  const s = /^\d+$/.test(v) ? Number(v) : (Date.parse(v) - Date.now()) / 1000;
+  return Number.isFinite(s) ? Math.max(0, s) : null;
+}
+
+/** A connection that broke off while the reply was read (Chrome's "network error", Safari's "Load failed"): the round is
+ * asked again from its start, since no tool has run on what it had said. */
+function brokenOff(err, signal) {
+  if (err?.name === "AbortError" || signal?.aborted) return err?.name === "AbortError" ? err : new DOMException("aborted", "AbortError");
+  return new ProviderError(T`连接在回复途中断开（${err?.message || err}）`, { retryable: true });
+}
+
+/** A reply whose stream ended before the service said it was complete — no finish_reason, no [DONE], no stop_reason: the
+ * connection closing is not the answer's end, and the round is asked again like one that broke off. */
+export const unfinished = () => new ProviderError(T("回复没有完整到达：连接在模型说完之前就结束了"), { retryable: true });
 
 function errorMessage(status, body) {
   let msg = body;
@@ -80,11 +117,8 @@ export async function streamChat({ provider, messages, tools, settings, route, s
     body.tools = tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } }));
     body.tool_choice = "auto";
   }
-  if (settings.maxTokens) {
-    // a service with its own ceiling (the default service) is asked within it, so it forwards the request unchanged
-    const max = provider.max_output ? Math.min(Number(settings.maxTokens), provider.max_output) : Number(settings.maxTokens);
-    body[provider.max_tokens_param || "max_tokens"] = max;
-  }
+  // a service with its own ceiling (the default service) is asked within it, so it forwards the request unchanged
+  body[provider.max_tokens_param || "max_tokens"] = outputLimit(settings, provider);
   if (settings.temperature !== null && settings.temperature !== "" && settings.temperature !== undefined) body.temperature = Number(settings.temperature);
   Object.assign(body, provider.extra_body || {});
   if (settings.thinking === false && provider.thinking_off) Object.assign(body, provider.thinking_off); // what asks for no thinking
@@ -113,8 +147,10 @@ export async function streamChat({ provider, messages, tools, settings, route, s
   if (!resp.ok) {
     const text = await resp.text().catch(() => "");
     const message = errorMessage(resp.status, text);
-    throw new ProviderError(provider.relay ? publicError(message) : message,
-      { status: resp.status, body: provider.relay ? "" : text, retryable: resp.status === 429 || resp.status >= 500 });
+    const kind = errorKind(text);
+    throw new ProviderError(provider.relay ? publicError(message) : message, {
+      status: resp.status, body: provider.relay ? "" : text, kind, retryAfter: retryAfter(resp.headers),
+      retryable: (resp.status === 429 || resp.status >= 500) && !FINAL.has(kind) });
   }
 
   const state = {
@@ -125,17 +161,20 @@ export async function streamChat({ provider, messages, tools, settings, route, s
   try {
     if (!type.includes("event-stream")) {
       // a provider that ignored stream: true (or an error delivered with status 200)
-      const text = await resp.text();
+      const text = await whole(resp, signal);
       let j;
       try { j = JSON.parse(text); } catch { throw new ProviderError(T`无法解析模型服务的回复：${text.slice(0, 300)}`); }
       handleChunk(j, state, onEvent, true);
     } else {
-      await readSSE(resp.body, signal, (data) => {
+      const done = await readSSE(resp, signal, (data) => {
         let j;
         try { j = JSON.parse(data); } catch { return; }
         handleChunk(j, state, onEvent, false);
       });
+      if (!done && !state.finishReason) throw unfinished();
     }
+    // DeepSeek's word for a reply its servers stopped part-way
+    if (state.finishReason === "insufficient_system_resource") throw new ProviderError(T("模型服务资源不足，回复中途停止"), { retryable: true });
   } catch (err) {
     if (provider.relay && err instanceof ProviderError) { err.message = publicError(err.message); err.body = ""; }
     throw err;
@@ -143,8 +182,17 @@ export async function streamChat({ provider, messages, tools, settings, route, s
   return finish(state, provider);
 }
 
-async function readSSE(stream, signal, onData) {
-  const reader = stream.getReader();
+async function whole(resp, signal) {
+  try {
+    return await resp.text();
+  } catch (err) {
+    throw brokenOff(err, signal);
+  }
+}
+
+/** The events of a streamed reply, as they arrive; read whole where the browser cannot read a reply as it arrives (an
+ * older Safari has no body to read from).  Returns whether the stream said it was done ([DONE]). */
+async function readSSE(resp, signal, onData) {
   const decoder = new TextDecoder();
   let buf = "";
   let data = [];
@@ -156,25 +204,43 @@ async function readSSE(stream, signal, onData) {
     onData(payload);
     return false;
   };
+  // the complete lines read so far, an event dispatched at each blank line; true at [DONE]
+  const lines = () => {
+    let nl;
+    while ((nl = buf.search(/\r?\n/)) >= 0) {
+      const line = buf.slice(0, nl);
+      buf = buf.slice(buf[nl] === "\r" ? nl + 2 : nl + 1);
+      if (line === "") { if (dispatch()) return true; continue; }
+      if (line.startsWith(":")) continue;
+      if (line.startsWith("data:")) data.push(line.slice(line[5] === " " ? 6 : 5));
+      else if (line.startsWith("{")) data.push(line); // a provider that streams bare JSON lines
+    }
+    return false;
+  };
+  const end = () => {
+    if (buf.startsWith("data:")) data.push(buf.slice(buf[5] === " " ? 6 : 5));
+    return dispatch();
+  };
+  if (typeof resp.body?.getReader !== "function") {
+    buf = await whole(resp, signal);
+    return lines() || end();
+  }
+  const reader = resp.body.getReader();
   try {
     for (;;) {
       if (signal?.aborted) throw new DOMException("aborted", "AbortError");
-      const { value, done } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      let nl;
-      while ((nl = buf.search(/\r?\n/)) >= 0) {
-        const line = buf.slice(0, nl);
-        buf = buf.slice(buf[nl] === "\r" ? nl + 2 : nl + 1);
-        if (line === "") { if (dispatch()) return; continue; }
-        if (line.startsWith(":")) continue;
-        if (line.startsWith("data:")) data.push(line.slice(line[5] === " " ? 6 : 5));
-        else if (line.startsWith("{")) data.push(line); // a provider that streams bare JSON lines
+      let chunk;
+      try {
+        chunk = await reader.read();
+      } catch (err) {
+        throw brokenOff(err, signal);
       }
+      if (chunk.done) break;
+      buf += decoder.decode(chunk.value, { stream: true });
+      if (lines()) return true;
     }
     buf += decoder.decode();
-    if (buf.startsWith("data:")) data.push(buf.slice(buf[5] === " " ? 6 : 5));
-    dispatch();
+    return end();
   } finally {
     try { reader.releaseLock(); } catch { /* already released */ }
   }

@@ -20,7 +20,9 @@ UPSTREAM_BASE = "https://api.minimax.cn/v1"
 MODELS = "MiniMax-M3"
 # the model's name on the page (and in everything a visitor can see): the upstream is never named there
 PUBLIC_MODEL = "Tao-R1"
-MAX_OUTPUT_TOKENS = "8192"
+# tokens a reply may use, its reasoning included (MiniMax-M3 counts it; the page asks up to this when the visitor set
+# no number): the day's token budgets below bound what replies cost, not this
+MAX_OUTPUT_TOKENS = "32768"
 # model calls (a question takes several: one per round of tool use)
 PER_MINUTE = "30"
 PER_DAY = "600"

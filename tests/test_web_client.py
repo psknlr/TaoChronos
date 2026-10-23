@@ -20,9 +20,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 NODE_TEST = r"""
 import assert from "node:assert/strict";
-import { Accum, splitThink, streamChat } from "./js/llm/openai.js";
-import { publicConversation, publicError } from "./js/providers.js";
-import { answerDangling, buildHistory, userText, withoutReasoning } from "./js/agent.js";
+import { Accum, ProviderError, splitThink, streamChat } from "./js/llm/openai.js";
+import { loadSettings, outputLimit, publicConversation, publicError } from "./js/providers.js";
+import { answerDangling, budgetNote, buildHistory, lessThinking, retryWait, runTurn, userText, withoutReasoning } from "./js/agent.js";
 import { brief, dataNote, deidLabel, isMine, personal, sizeLabel } from "./js/mydata.js";
 import { extractCitations } from "./js/markdown.js";
 import { count, hitNotes, withFound } from "./js/util.js";
@@ -166,6 +166,172 @@ reply(400, JSON.stringify({ error: { message: "invalid params" } }));
 await assert.rejects(streamChat({ provider: { ...relayP, id: "deepseek", relay: false, thinking_off: null }, messages: [], tools: [],
   settings: { thinking: false } }), (e) => e.message === "模型服务返回 400：invalid params");
 assert.equal(sent.thinking, undefined);
+
+// a reply that breaks off while it streams (Chrome's "network error", Safari's "Load failed") is asked again from the
+// start of its round: what it had shown goes; a browser with no body to read a reply from as it arrives reads it whole
+const enc = new TextEncoder();
+const sse = (text) => new ReadableStream({ start(c) { c.enqueue(enc.encode(text)); c.close(); } });
+const brokenOff = (text) => new ReadableStream({ start(c) { c.enqueue(enc.encode(text)); }, pull(c) { c.error(new TypeError("network error")); } });
+const delta = (content, finish = null) => `data: ${JSON.stringify({ choices: [{ delta: { content }, finish_reason: finish }] })}\n\n`;
+const streamed = (body) => new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+globalThis.fetch = async () => streamed(brokenOff(delta("桂枝")));
+await assert.rejects(streamChat({ provider: relayP, messages: [], tools: [], settings: {} }),
+  (e) => e instanceof ProviderError && e.retryable && e.message === "连接在回复途中断开（network error）");
+globalThis.fetch = async () => ({ ok: true, status: 200, headers: new Headers({ "Content-Type": "text/event-stream" }), body: undefined,
+  text: async () => delta("桂枝汤") + delta("主之", "stop") + "data: [DONE]\n\n" });
+assert.equal((await streamChat({ provider: relayP, messages: [], tools: [], settings: {} })).text, "桂枝汤主之");
+let attempts = 0;
+globalThis.fetch = async () => streamed(++attempts === 1 ? brokenOff(delta("半")) : sse(delta("答", "stop") + "data: [DONE]\n\n"));
+const seen = [];
+const resumed = await runTurn({ provider: relayP, settings: {}, route: null, runtime: null, tools: [], system: "s", history: [],
+  user: { text: "问" }, signal: new AbortController().signal, hooks: { retry: (n) => seen.push(n), text: (t) => seen.push(t) } });
+assert.deepEqual([seen, resumed.wire.at(-1).content, attempts], [["半", 1, "答"], "答", 2]);
+// a refusal that asking again soon does not change is told at once (the day's allowance, the service's); one that asks
+// to wait is waited for as long as it asks, up to half a minute
+for (const [status, kind] of [[429, "daily_limit"], [429, "total_limit"], [503, "not_configured"]]) {
+  reply(status, JSON.stringify({ error: { message: "今天的免费额度已用完，明天再来", type: kind } }));
+  await assert.rejects(streamChat({ provider: relayP, messages: [], tools: [], settings: {} }), (e) => !e.retryable && e.kind === kind);
+}
+reply(503, JSON.stringify({ error: { message: "默认服务暂时连不上模型服务", type: "upstream_unreachable" } }));
+await assert.rejects(streamChat({ provider: relayP, messages: [], tools: [], settings: {} }), (e) => e.retryable && e.retryAfter === null);
+globalThis.fetch = async () => new Response(JSON.stringify({ error: { message: "请求太频繁：每分钟最多 10 次，请 12 秒后再试", type: "rate_limited" } }),
+  { status: 429, headers: { "Content-Type": "application/json", "Retry-After": "12" } });
+await assert.rejects(streamChat({ provider: relayP, messages: [], tools: [], settings: {} }),
+  (e) => e.retryable && e.retryAfter === 12 && e.kind === "rate_limited" && /每分钟最多 10 次/.test(e.message));
+const even = () => 0.5;
+assert.deepEqual([0, 1, 2, 3].map((n) => retryWait({ retryable: true }, n, even)), [1500, 4000, 10000, null]);
+assert.deepEqual([retryWait({ retryable: false }, 0, even), retryWait({ retryable: true, retryAfter: 12 }, 0, even),
+  retryWait({ retryable: true, retryAfter: 60 }, 0, even)], [null, 12000, null]);
+// pages a failure struck together do not ask again together: a wait is spread over a quarter either way, never below
+// what the service asks
+assert.deepEqual([retryWait({ retryable: true }, 1, () => 0), retryWait({ retryable: true }, 1, () => 0.999999)], [3000, 5000]);
+assert.equal(retryWait({ retryable: true, retryAfter: 4 }, 1, () => 0), 4000);
+// a stop while the turn waits to ask again (or as it begins to) ends the turn there, not asked again
+for (const after of [30, 0]) {
+  let asked = 0;
+  const stop = new AbortController();
+  globalThis.fetch = async () => (asked++, new Response(JSON.stringify({ error: { message: "请求太频繁", type: "rate_limited" } }),
+    { status: 429, headers: { "Content-Type": "application/json", "Retry-After": "20" } }));
+  const from = Date.now();
+  await assert.rejects(runTurn({ provider: relayP, settings: {}, route: null, runtime: null, tools: [], system: "s", history: [],
+    user: { text: "问" }, signal: stop.signal, hooks: { retry: () => (after ? setTimeout(() => stop.abort(), after) : stop.abort()) } }),
+  (e) => e.name === "AbortError");
+  assert.ok(asked === 1 && Date.now() - from < 5000, `${after}: asked ${asked} times, ${Date.now() - from} ms`);
+}
+
+// the last rounds of tools a turn may run are named to the model with what it has left, and the last that it is to answer
+assert.deepEqual([3, 2, 1, 0, -1].map((n) => budgetNote(n) !== ""), [false, true, true, true, false]);
+const askedFor = [];
+globalThis.fetch = async (url, init) => {
+  askedFor.push(JSON.parse(init.body).messages);
+  const call = { index: 0, id: `c${askedFor.length}`, function: { name: "classics__search", arguments: '{"query":"桂枝汤"}' } };
+  return streamed(sse(`data: ${JSON.stringify({ choices: [{ delta: { tool_calls: [call] }, finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`));
+};
+const stoppedAt = [];
+await runTurn({ provider: relayP, settings: { maxSteps: 2 }, route: null, runtime: { call: async () => ({ ok: true, text: "{}" }) }, tools: [],
+  system: "s", history: [], user: { text: "问" }, signal: new AbortController().signal, hooks: { limit: (n) => stoppedAt.push(n) } });
+const budgetTold = askedFor.slice(1).map((m) => m.filter((x) => x.role === "tool").at(-1).content);
+assert.deepEqual(budgetTold, ["{}\n\n［提示：回答这个问题还可再调用 1 轮工具，请在用完之前作答］",
+  "{}\n\n［提示：回答这个问题的工具调用已用完，请根据已有结果直接作答，不要再调用工具］", "ERROR: 已达到本轮工具调用的上限：请根据已有结果直接作答。"]);
+assert.deepEqual(stoppedAt, [2]);
+
+// a reply is complete when the service says so: a stream that ends with neither a finish_reason nor [DONE] broke off
+// and is asked again; either one is enough, streamed or read whole
+const readWhole = (text) => async () => ({ ok: true, status: 200, headers: new Headers({ "Content-Type": "text/event-stream" }),
+  body: undefined, text: async () => text });
+for (const [fetcher, complete] of [[() => streamed(sse(delta("桂枝"))), false], [readWhole(delta("桂枝")), false],
+  [() => streamed(sse(delta("桂枝") + "data: [DONE]\n\n")), true], [() => streamed(sse(delta("桂枝", "stop"))), true],
+  [readWhole(delta("桂枝") + "data: [DONE]"), true], [readWhole(delta("桂枝", "stop")), true]]) {
+  globalThis.fetch = fetcher;
+  const asking = streamChat({ provider: relayP, messages: [], tools: [], settings: {} });
+  if (complete) assert.equal((await asking).text, "桂枝");
+  else await assert.rejects(asking, (e) => e instanceof ProviderError && e.retryable && e.message === "回复没有完整到达：连接在模型说完之前就结束了");
+}
+globalThis.fetch = async () => streamed(sse(delta("桂", "insufficient_system_resource") + "data: [DONE]\n\n")); // DeepSeek's servers
+await assert.rejects(streamChat({ provider: { ...relayP, relay: false }, messages: [], tools: [], settings: {} }),
+  (e) => e.retryable && e.message === "模型服务资源不足，回复中途停止");
+
+// what a reply may use: the visitor's number within the service's own ceiling; with none, that ceiling, or a default
+// (Claude's larger, as Anthropic advises for a streamed reply; an endpoint set by hand keeps the general one)
+assert.deepEqual([outputLimit({}, { max_output: 32768 }), outputLimit({ maxTokens: 50000 }, { max_output: 32768 }),
+  outputLimit({ maxTokens: 4096 }, { max_output: 32768 }), outputLimit({}, { format: "anthropic" }),
+  outputLimit({ maxTokens: "8000" }, { format: "anthropic" }), outputLimit({}, { format: "anthropic", custom: true }),
+  outputLimit({ maxTokens: null }, { format: "openai" })], [32768, 32768, 4096, 64000, 8000, 16000, 16000]);
+reply(200, delta("答", "stop"), "text/event-stream");
+await streamChat({ provider: relayP, messages: [], tools: [], settings: { maxTokens: null } });
+assert.equal(sent.max_completion_tokens, 16000);
+await streamChat({ provider: { ...relayP, max_output: 32768 }, messages: [], tools: [], settings: {} });
+assert.equal(sent.max_completion_tokens, 32768);
+// the old default an older page kept as the visitor's own number is read as no number
+const shelf = new Map();
+globalThis.localStorage = { getItem: (k) => shelf.get(k) ?? null, setItem: (k, v) => shelf.set(k, String(v)), removeItem: (k) => shelf.delete(k) };
+shelf.set("tc.settings", JSON.stringify({ maxTokens: 16000, thinking: false }));
+assert.deepEqual([loadSettings().maxTokens, loadSettings().thinking], [null, false]);
+shelf.set("tc.settings", JSON.stringify({ maxTokens: 12000 }));
+assert.equal(loadSettings().maxTokens, 12000);
+delete globalThis.localStorage;
+
+// a reply cut at the output limit: an answer is written on from where it stopped — the cut answer, then the page's
+// note, in the turn — and a round that writes on spends none of the turn's rounds of tools
+const scripted = (...replies) => {
+  const bodies = [];
+  globalThis.fetch = async (url, init) => { bodies.push(JSON.parse(init.body)); return streamed(sse(replies.shift())); };
+  return bodies;
+};
+const thought = (text, finish = null) => `data: ${JSON.stringify({ choices: [{ delta: { reasoning_details: [
+  { type: "reasoning.text", id: "r1", index: 0, text }] }, finish_reason: finish }] })}\n\n`;
+const calling = (args, finish) => `data: ${JSON.stringify({ choices: [{ delta: { tool_calls: [
+  { index: 0, id: `c${args.length}`, function: { name: "classics__search", arguments: args } }] }, finish_reason: finish }] })}\n\n`;
+const heard = [];
+const listen = { continued: (w) => heard.push(`continued:${w}`), cut: (w) => heard.push(`cut:${w}`), assistant: (r) => heard.push(r.text) };
+const turnWith = (provider, extra = {}) => runTurn({ provider, settings: {}, route: null, runtime: null, tools: [], system: "s",
+  history: [], user: { text: "问" }, signal: new AbortController().signal, hooks: listen, ...extra });
+let bodies = scripted(delta("桂枝汤主", "length"), delta("之。", "stop"));
+let done = await turnWith(relayP);
+assert.deepEqual(heard.splice(0), ["桂枝汤主", "continued:answer", "之。"]);
+assert.deepEqual(done.wire.map((m) => [m.role, m.content.slice(0, 12)]), [["assistant", "桂枝汤主"], ["user", "［提示：上面的回答在输出"], ["assistant", "之。"]]);
+assert.equal(bodies[1].messages.at(-1).content, "［提示：上面的回答在输出上限处被截断了。请从截断处接着写下去：不要重复已写的内容，不要加开场白，也不要从头再来。］");
+// cut again and again: written on twice, then told
+scripted(delta("一", "length"), delta("二", "length"), delta("三", "length"));
+await turnWith(relayP);
+assert.deepEqual(heard.splice(0), ["一", "continued:answer", "二", "continued:answer", "三", "cut:answer"]);
+// all of it spent on thinking: asked again without (the service's own field), the cut reply not kept; told when that too
+// only thinks, and at once where the service cannot be asked without
+bodies = scripted(thought("想", "length"), delta("答", "stop"));
+done = await turnWith(relayP);
+assert.deepEqual(heard.splice(0), ["continued:thinking", "答"]);
+assert.deepEqual([bodies[0].thinking, bodies[1].thinking, bodies[1].messages], [undefined, { type: "disabled" }, bodies[0].messages]);
+assert.deepEqual(done.wire.map((m) => m.content), ["答"]);
+scripted(thought("想", "length"), thought("又想", "length"));
+await turnWith(relayP);
+assert.deepEqual(heard.splice(0), ["continued:thinking", "", "cut:thinking"]);
+scripted(thought("想", "length"));
+await turnWith({ ...relayP, thinking_off: null });
+assert.deepEqual(heard.splice(0), ["", "cut:thinking"]);
+assert.deepEqual([lessThinking("anthropic", {}, {}), lessThinking("anthropic", {}, { effort: "low" }), lessThinking("openai", relayP, {}),
+  lessThinking("openai", relayP, { thinking: false }), lessThinking("openai", { thinking_off: null }, {})],
+  [{ effort: "low" }, null, { thinking: false }, null, null]); // Claude thinks less at low effort
+// a call written into a cut reply never runs (its arguments may be cut too): the model is told, and the turn goes on
+let ran = 0;
+const runtime = { call: async () => (ran++, { ok: true, text: "{}" }) };
+bodies = scripted(calling('{"query": "桂枝', "length"), delta("答", "stop"));
+await turnWith(relayP, { runtime });
+assert.equal(ran, 0);
+assert.match(bodies[1].messages.at(-1).content, /^ERROR: 这次回复在输出上限处被截断，调用的参数可能不完整，没有执行。/);
+assert.deepEqual(heard.splice(0), ["", "答"]);
+// the content filter stopped it, or (Claude) it filled the model's context window: told, its calls not run, the turn over
+for (const [why, told] of [["content_filter", "cut:filtered"], ["model_context_window_exceeded", "cut:context"]]) {
+  bodies = scripted(delta("部分", null) + calling('{"query": "桂枝汤"}', why), delta("不该再问", "stop"));
+  done = await turnWith(relayP, { runtime });
+  assert.deepEqual([heard.splice(0), bodies.length, ran, done.wire.length], [["部分", told], 1, 0, 1]);
+}
+// a round that wrote on a cut answer is not one of the turn's rounds of tools: the next call still runs
+bodies = scripted(calling('{"query": "桂枝汤"}', "tool_calls"), delta("先", "length"), calling('{"query": "麻黄汤"}', "tool_calls"),
+  delta("答", "stop"));
+await turnWith(relayP, { runtime, settings: { maxSteps: 2 } });
+assert.equal(ran, 2);
+assert.match(bodies[3].messages.at(-1).content, /^\{\}\n\n［提示：回答这个问题的工具调用已用完/);
+heard.splice(0);
 
 // conversations an older page kept: the default service's turns as it presents itself now; nothing else is touched
 const kept = { messages: [
@@ -510,7 +676,7 @@ def test_a_conversation_in_the_browser(tmp_path):
 
     from taochronos.chat import ChatRuntime
     from taochronos.chat.server import ChatServer
-    from web_mock import MockProvider, MockRelay
+    from web_mock import ANSWER, LONG_CUT, MockProvider, MockRelay
 
     mock = MockProvider().start()
     relay = MockRelay(mock.base_url).start()
@@ -589,7 +755,7 @@ def test_a_conversation_in_the_browser(tmp_path):
             page.keyboard.press("Enter")
             page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 2", timeout=60000)
             first, second = mock.requests[0]["body"], mock.requests[1]["body"]
-            assert first["max_completion_tokens"] == 8192 and first["reasoning_split"] is True and first["tools"]  # within the relay's ceiling
+            assert first["max_completion_tokens"] == 32768 and first["reasoning_split"] is True and first["tools"]  # the relay's ceiling
             # the page asks in the default service's own terms (the relay adds the upstream's), and reads them back
             asked = relay.chat[0]["body"]
             assert asked["model"] == "Tao-R1" and "reasoning_split" not in asked and first["model"] == "MiniMax-M3"
@@ -610,6 +776,26 @@ def test_a_conversation_in_the_browser(tmp_path):
             assert page.locator(".msg.assistant").count() == 2
             stored = page.evaluate("import('./js/store.js').then((s) => s.listConversations()).then((l) => JSON.stringify(l))")
             assert "MiniMax" not in stored and '"model":"Tao-R1"' in stored and '"format":"Tao-response-v1"' in stored
+            # an answer cut at the output limit is written on from where it stopped, and reads as one answer
+            asked_before = len(mock.requests)
+            page.fill("#input", "请写一篇长篇的桂枝汤论述。")
+            page.keyboard.press("Enter")
+            page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 3", timeout=60000)
+            long = page.locator(".msg.assistant").nth(2)
+            assert long.locator(".md").count() == 1 and long.locator(".notice").count() == 0
+            assert "《伤寒论》以桂枝汤治太阳中风" in long.inner_text() and "不构成医疗建议" in long.inner_text()
+            on = mock.requests[-1]["body"]["messages"]  # the round asked to write on: the cut answer, then the page's note
+            assert len(mock.requests) - asked_before == 3 and on[-1]["role"] == "user" and on[-1]["content"].startswith("［提示：上面的回答")
+            assert on[-2]["role"] == "assistant" and on[-2]["content"] == ANSWER[:LONG_CUT]
+            # one that spent all of it on thinking is asked again without: what it showed of that goes
+            page.fill("#input", "这个问题请想得很久再答。")
+            page.keyboard.press("Enter")
+            page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 4", timeout=60000)
+            thought = page.locator(".msg.assistant").nth(3)
+            assert "想了又想" not in thought.inner_text() and thought.locator(".md").count() == 1
+            assert thought.locator(".notice").count() == 0
+            again, cut = mock.requests[-1]["body"], mock.requests[-2]["body"]
+            assert again["thinking"] == {"type": "disabled"} and "thinking" not in cut and again["messages"] == cut["messages"]
             assert not errors, errors
             browser.close()
     finally:
@@ -809,7 +995,7 @@ def test_claude_through_the_official_sdk(tmp_path):
 
     from taochronos.chat import ChatRuntime
     from taochronos.chat.server import ChatServer
-    from web_mock import MockAnthropic
+    from web_mock import ANSWER, LONG_CUT, MockAnthropic
 
     sdk = "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm"
     try:
@@ -853,6 +1039,33 @@ def test_claude_through_the_official_sdk(tmp_path):
             assert second["body"]["messages"][2]["content"][0]["tool_use_id"] == "toolu_1"
             page.wait_for_function("document.querySelectorAll('.md .cite.pending').length === 0", timeout=15000)
             assert page.eval_on_selector_all(".md .cite", "els => els.map(e => e.className)") == ["cite ok", "cite warn", "cite bad", "cite ok"]
+            assert first["body"]["max_tokens"] == 64000  # no number set: what Anthropic advises for a streamed reply
+
+            def turn(question: str, n: int) -> list[dict]:
+                """Ask, wait for the n-th answer, and return the requests the turn made."""
+                before = len(mock.requests)
+                page.fill("#input", question)
+                page.keyboard.press("Enter")
+                page.wait_for_function(f"document.querySelectorAll('.msg.assistant .verify-bar').length >= {n}", timeout=60000)
+                return [r["body"] for r in mock.requests[before:]]
+
+            # a reply whose stream ended part-way, or stopped without saying why, is asked again, not taken as the answer
+            asked = turn("断流也请答：桂枝汤主治什么？", 2)
+            assert len(asked) == 4 and asked[1] == asked[2] == asked[3]
+            broken = page.locator(".msg.assistant").nth(1)
+            assert broken.locator(".notice").count() == 0 and "不构成医疗建议" in broken.inner_text()
+            # an answer cut at max_tokens is written on from where it stopped, as one answer
+            asked = turn("请写一篇长篇的桂枝汤论述。", 3)
+            assert len(asked) == 3 and asked[2]["messages"][-1]["content"].startswith("［提示：上面的回答在输出上限处被截断了")
+            assert asked[2]["messages"][-2]["content"][-1]["text"] == ANSWER[:LONG_CUT]
+            long = page.locator(".msg.assistant").nth(2)
+            assert long.locator(".md").count() == 1 and long.locator(".notice").count() == 0 and "不构成医疗建议" in long.inner_text()
+            # one that spent all of it on thinking is asked again at low effort, still thinking (newer models always do)
+            asked = turn("这个问题请想得很久再答。", 4)
+            assert len(asked) == 3 and asked[2]["output_config"] == {"effort": "low"} and "output_config" not in asked[1]
+            assert asked[2]["thinking"] == asked[1]["thinking"] and asked[2]["messages"] == asked[1]["messages"]
+            thought = page.locator(".msg.assistant").nth(3)
+            assert "想了又想" not in thought.inner_text() and thought.locator(".notice").count() == 0
             browser.close()
     finally:
         srv.shutdown()
@@ -1103,7 +1316,7 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
             assert relay.chat and all("authorization" not in {k.lower() for k in c["headers"]} for c in relay.chat)  # no key from the page
             assert all(r["headers"].get("Authorization") == f"Bearer {MockRelay.SECRET}" for r in mock.requests)
             assert relay.chat[0]["body"]["model"] == "Tao-R1"
-            assert relay.chat[0]["body"]["max_completion_tokens"] == 8192  # within the relay's ceiling: forwarded unchanged
+            assert relay.chat[0]["body"]["max_completion_tokens"] == 32768  # the relay's ceiling (no number set): forwarded unchanged
             assert relay.record_types[0].startswith("text/plain")  # a simple request: no preflight
             # the choice is kept: a follow-up asks nothing and is recorded as the conversation's second turn
             ask(page, "它的剂量出自哪里？", 2)

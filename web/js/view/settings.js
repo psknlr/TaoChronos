@@ -2,7 +2,7 @@
 // the conversations' data, the site's usage (统计: stats.js), and what this page is.
 
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY, PUBLISHER, PUBLISHER_EN } from "../brand.js";
-import { allProviders, customPreset, DEFAULTS, newCustomProvider, providerById } from "../providers.js";
+import { allProviders, customPreset, DEFAULTS, newCustomProvider, outputLimit, providerById } from "../providers.js";
 import { NOTICE } from "../records.js";
 import { h, icon, replace } from "../util.js";
 import { statsPane } from "./stats.js";
@@ -95,8 +95,9 @@ function modelPane(d, S, ctx, redraw) {
       : custom ? T("以 Authorization: Bearer 发送；服务要求别的请求头时（如 api-key），在“高级”里填请求头，这里留空。") : ""));
   const temp = h("input", { type: "number", min: 0, max: 2, step: 0.1, value: d.temperature ?? "", placeholder: T("默认") });
   temp.addEventListener("input", () => { d.temperature = temp.value === "" ? null : Number(temp.value); });
-  const maxTok = h("input", { type: "number", min: 256, step: 256, value: d.maxTokens });
-  maxTok.addEventListener("input", () => { d.maxTokens = Number(maxTok.value) || DEFAULTS.maxTokens; });
+  // left empty, a reply may use what outputLimit decides: the default service's own ceiling, or a default per service
+  const maxTok = h("input", { type: "number", min: 256, step: 256, value: d.maxTokens ?? "", placeholder: T`自动（${outputLimit({}, p)}）` });
+  maxTok.addEventListener("input", () => { d.maxTokens = Number(maxTok.value) || null; });
   const think = h("input", { type: "checkbox", checked: d.thinking !== false });
   think.addEventListener("change", () => { d.thinking = think.checked; });
   const result = h("div.test-result");
@@ -128,7 +129,7 @@ function modelPane(d, S, ctx, redraw) {
       h("label.check", think, h("span", T("启用思考（支持的模型先思考再作答；Claude 使用 adaptive thinking）"))),
       h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" } },
         field(T("温度"), temp, T("留空使用服务商默认值")),
-        field(T("最大输出（tokens）"), maxTok, T("含思考内容"))),
+        field(T("最大输出（tokens）"), maxTok, p.max_output ? T`含思考内容；${p.label}每次回复最多 ${p.max_output}` : T("含思考内容"))),
       h("div", test, result)),
   ];
 }
