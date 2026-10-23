@@ -6,10 +6,16 @@
 // turn made by another provider is replayed as plain text; reasoning fields a provider does not understand are dropped;
 // a tool call that never got its result (a stopped turn) is answered with a note; and tool results of earlier turns are
 // shortened.
+//
+// Waiting.  Each thing a turn waits on has a limit of its own (limits.js): a reply's first byte and its silences, each
+// tool call (counted while it runs, not while it waits for its runtime or its turn), a research run, and the turn.  A
+// call always ends — ok, error, timeout, stopped, skipped, or (a research run) left to go on by itself — so a round of
+// tools never waits on one that will not; and the user can ask for the answer before the calls under way are done.
 
 import * as openai from "./llm/openai.js";
 import * as claude from "./llm/anthropic.js";
 import { dataNote } from "./mydata.js";
+import { LIMITS, limit, pause, until } from "./limits.js";
 import { T } from "./i18n.js";
 
 const OLD_RESULT_CHARS = 2500;
@@ -124,21 +130,44 @@ export function reviewNote(missing) {
 
 /**
  * Run one user turn.  `hooks` receive the answer as it forms:
- *   round(n) · thinking(delta) · text(fullText) · toolPending(index, name) · toolStart(call) · toolProgress(call, p) ·
- *   toolEnd(call, outcome) · retry(attempt, error) · usage(u) · continued(what) · cut(why) · review(missing) ·
- *   reviewCut(error)
+ *   round(n) · thinking(delta) · text(fullText) · toolPending(index, name) · toolStart(call) · toolWaiting(call, why) ·
+ *   toolRunning(call) · toolProgress(call, p) · toolEnd(call, outcome) · toolLater(call, ending) · retry(attempt, error) ·
+ *   usage(u) · continued(what) · cut(why) · limit(maxSteps, why) · review(missing) · reviewCut(error)
  * A turn ends on a reply the service says is complete; a reply cut at the output limit is written on ("answer": the next
  * round's text continues this one's) or asked again with less thinking ("thinking": what the round showed goes), up to
  * MAX_CONTINUATIONS times, and is told by cut("answer" | "thinking") when it still stops there; cut("context") tells a
  * reply that filled the model's context window, cut("filtered") one the service's content filter stopped.  No call of a
  * cut reply runs.
+ * `hurry` (a signal): the user asks for the answer now — the calls under way are not waited for, no more run, and the
+ * model answers from what it has; so it does when the turn has run its time (limits.turn).  limit(maxSteps, why) tells
+ * that the turn's tools came to an end before its answer: "asked" or "time" as they do, "steps" (all its rounds used)
+ * when the model asks for more anyway.  `limits`: limits.js's, or some of them changed.
  * `review(text)`, when given, is the page's self-check of an answer (自查): the passages it cites that the corpus has
- * not — in the whole answer, when it was written on in parts.  Once a turn, while REVIEW_ROOM rounds of tools are left,
- * the model is told of them and answers again; a rewrite that does not come whole — an error, a stop, the limit, a cut
- * at the output limit, the content filter — is taken out of the turn, and the answer it was about stands.
+ * not — in the whole answer, when it was written on in parts.  Once a turn, while REVIEW_ROOM rounds of tools are left
+ * and the turn's tools have not come to an end (it could look nothing up), the model is told of them and answers again;
+ * a rewrite that does not come whole — an error, a stop, the limit, a cut at the output limit, the content filter — is
+ * taken out of the turn, and the answer it was about stands.
  * Returns {wire, rounds, usage, model}.
  */
-export async function runTurn({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, review }) {
+export async function runTurn({ provider, settings, route, runtime, tools, system, history, user, signal, hurry, limits, hooks, sink, review }) {
+  const lim = { ...LIMITS, ...limits };
+  const quick = new AbortController(); // the turn's tools end early: the user asked for the answer, or its time is up
+  let quickWhy = null;
+  const answerNow = (why) => { if (!quick.signal.aborted) { quickWhy = why; quick.abort(); } };
+  const asked = () => answerNow("asked");
+  if (hurry?.aborted) asked();
+  else hurry?.addEventListener("abort", asked, { once: true });
+  const clock = limit(lim.turn, () => answerNow("time"));
+  try {
+    return await turnOf({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, review, lim,
+      quick: quick.signal, quickWhy: () => quickWhy });
+  } finally {
+    clock.stop();
+    hurry?.removeEventListener("abort", asked);
+  }
+}
+
+async function turnOf({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, review, lim, quick, quickWhy }) {
   const format = formatOf(provider);
   const L = lib(format);
   const userWire = L.userMessage(userText(user), user.images || []);
@@ -149,6 +178,12 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
   const maxSteps = Math.max(1, Number(settings.maxSteps) || 16);
   let continued = 0; // rounds that took up a reply cut at the output limit: they spend none of the turn's rounds of tools
   let lighter = null; // the settings a round is asked again with: the last reply spent its whole output on thinking
+  let closing = null; // why the turn's tools came to an end: "steps" (all its rounds used), "asked", "time"
+  let closedAt = 0;   // the round of tools after which they did
+  const close = (why, at) => {
+    [closing, closedAt] = [why, at];
+    if (why !== "steps") hooks.limit?.(maxSteps, why);
+  };
   let written = ""; // what an answer cut at the output limit said in the rounds before the one writing it on
   let checked = -1; // while the model rewrites an answer for the self-check: where the note to it went into the turn
   const uncheck = (err) => { turn.length = checked; checked = -1; hooks.reviewCut?.(err); };
@@ -165,7 +200,7 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
     let res;
     try {
       res = await withRetry(() => (format === "anthropic" ? claude.streamClaude : openai.streamChat)({
-        provider, system, messages, tools, settings: asked, route, signal,
+        provider, system, messages, tools, settings: asked, route, signal, limits: lim,
         onEvent: (ev) => {
           if (ev.type === "thinking") hooks.thinking?.(ev.delta);
           else if (ev.type === "text") hooks.text?.(ev.text);
@@ -216,10 +251,10 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
     if (!res.toolCalls.length || signal.aborted) {
       if (cut) {
         hooks.cut?.(answered ? "answer" : "thinking");
-      } else if (review && !signal.aborted && maxSteps - (round - continued) >= REVIEW_ROOM) {
+      } else if (review && !signal.aborted && !quick.aborted && maxSteps - (round - continued) >= REVIEW_ROOM) {
         // the self-check, of the whole answer: one that cites passages the corpus has not is told of them, and answers
         // again
-        const missing = (await review(written + (res.text || "")).catch(() => null)) || [];
+        const missing = (await reviewWithin(review, written + (res.text || ""), lim.tool, signal)) || [];
         if (missing.length && !signal.aborted) {
           checked = turn.length;
           written = "";
@@ -233,17 +268,41 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
     written = "";
 
     const steps = round - continued;
-    const over = steps > maxSteps;
-    const results = await Promise.all(res.toolCalls.map((tc) => execute(tc, { runtime, settings, hooks, signal, over, cut })));
-    if (!over) results[results.length - 1].text += budgetNote(maxSteps - steps);
+    // before these calls run: all the turn's rounds are used, or the user asked for the answer, or its time ran out
+    if (!closing && (steps > maxSteps || quick.aborted)) close(steps > maxSteps ? "steps" : quickWhy(), steps - 1);
+    const results = await Promise.all(res.toolCalls.map((tc) => execute(tc, {
+      runtime, settings, hooks, signal, quick, quickWhy, limits: lim, closing, cut })));
+    if (!closing && quick.aborted) { // while they ran
+      close(quickWhy(), steps);
+      results[results.length - 1].text += closingNote(closing, lim);
+    } else if (!closing) {
+      results[results.length - 1].text += budgetNote(maxSteps - steps);
+    }
     turn.push(...L.toolResultMessages(results));
-    if (steps > maxSteps + MAX_EXTRA_ROUNDS) {
-      hooks.limit?.(maxSteps);
+    if (closing && steps > closedAt + MAX_EXTRA_ROUNDS) {
+      hooks.limit?.(maxSteps, closing);
       break;
     }
   }
   if (checked >= 0) uncheck(null); // stopped, or out of rounds, before the rewrite came
   return { wire: turn, rounds: round, usage, model };
+}
+
+/** The self-check's answer (the passages missing), or null when its lookups do not come back within `ms` of the page's
+ * time, or the turn is stopped: an answer the page could not check stands as it is. */
+async function reviewWithin(review, text, ms, signal) {
+  const ctl = new AbortController();
+  const end = () => ctl.abort();
+  const deadline = limit(ms, end);
+  signal.addEventListener("abort", end, { once: true });
+  try {
+    return await until(Promise.resolve().then(() => review(text)), ctl.signal);
+  } catch {
+    return null;
+  } finally {
+    deadline.stop();
+    signal.removeEventListener("abort", end);
+  }
 }
 
 /** The settings to ask a round again with when its reply spent all of its output on thinking — none where it cannot be
@@ -260,6 +319,14 @@ export function budgetNote(left) {
   if (left < 0 || left >= BUDGET_ROUNDS) return "";
   return `\n\n${left ? T`［提示：回答这个问题还可再调用 ${left} 轮工具，请在用完之前作答］`
     : T("［提示：回答这个问题的工具调用已用完，请根据已有结果直接作答，不要再调用工具］")}`;
+}
+
+/** What the model is told after the round of tools in which the turn's tools came to an end before their rounds did:
+ * the user asked for the answer ("asked"), or the turn ran its time ("time") — it is to answer from what it has, and
+ * to say what it is missing. */
+export function closingNote(why, limits = LIMITS) {
+  return `\n\n${why === "time" ? T`［提示：这一轮回答已经用了 ${Math.round(limits.turn / 60000)} 分钟，请根据已有结果直接作答，不要再调用工具；没有拿到的结果，请在回答中说明缺了什么］`
+    : T("［提示：用户想先看到回答，请根据已有结果直接作答，不要再调用工具；没有等到的结果，请在回答中说明缺了什么］")}`;
 }
 
 /** The milliseconds to wait before asking again after the attempt-th failure (from 0), `err`; null when it is not
@@ -288,49 +355,128 @@ async function withRetry(fn, { signal, onRetry }) {
   }
 }
 
-/** A wait that ends early when the turn is stopped. */
-function pause(ms, signal) {
-  return new Promise((resolve) => {
-    if (signal?.aborted) return resolve();
-    const done = () => {
-      clearTimeout(timer);
-      signal?.removeEventListener("abort", done);
-      resolve();
-    };
-    const timer = setTimeout(done, ms);
-    signal?.addEventListener("abort", done, { once: true });
-  });
-}
-
-async function execute(tc, { runtime, settings, hooks, signal, over, cut }) {
+/** One tool call, to an end the model is told: ok or error (the runtime's), timeout (its deadline passed), stopped (the
+ * turn was), skipped (the turn did not wait for it: the user asked for the answer, or the turn ran its time), or
+ * background (a research run the turn did not wait for, which goes on by itself: hooks.toolLater has its end).  Calls
+ * the turn's tools came to an end before (`closing`), of a cut reply (`cut`), or with arguments that did not parse, do
+ * not run. */
+async function execute(tc, ctx) {
+  const { hooks, closing, cut } = ctx;
   const call = { id: tc.id, name: tc.name, args: tc.arguments, started: Date.now(), status: "running" };
   hooks.toolStart?.(call);
   let out;
-  try {
-    if (over) {
-      out = { ok: false, error: T("已达到本轮工具调用的上限：请根据已有结果直接作答。"), text: T("ERROR: 已达到本轮工具调用的上限：请根据已有结果直接作答。") };
-    } else if (cut) {
-      // its arguments may have been cut with the reply: never run
-      out = { ok: false, error: T("回复在输出上限处被截断，参数可能不完整，没有执行"),
-        text: T("ERROR: 这次回复在输出上限处被截断，调用的参数可能不完整，没有执行。请缩短参数重新调用，或分几次调用。") };
-    } else if (tc.error) {
-      out = { ok: false, error: tc.error, text: T`ERROR: ${tc.error}（原始参数：${tc.rawArguments.slice(0, 300)}）` };
-    } else if (tc.name === "taochronos_research") {
-      out = await runtime.research(tc.arguments, {
-        maxChars: settings.resultChars, signal,
-        onProgress: (p) => hooks.toolProgress?.(call, p),
-      });
-    } else {
-      out = await runtime.call(tc.name, tc.arguments, { maxChars: settings.resultChars, signal });
-    }
-  } catch (err) {
-    if (err?.name === "AbortError") out = { ok: false, error: T("已停止"), text: T("ERROR: 调用已停止") };
-    else out = { ok: false, error: err.message || String(err), text: `ERROR: ${err.message || err}` };
+  if (closing) {
+    out = refused(closing);
+  } else if (cut) {
+    // its arguments may have been cut with the reply: never run
+    out = { ok: false, error: T("回复在输出上限处被截断，参数可能不完整，没有执行"),
+      text: T("ERROR: 这次回复在输出上限处被截断，调用的参数可能不完整，没有执行。请缩短参数重新调用，或分几次调用。") };
+  } else if (tc.error) {
+    out = { ok: false, error: tc.error, text: T`ERROR: ${tc.error}（原始参数：${tc.rawArguments.slice(0, 300)}）` };
+  } else {
+    out = await follow(tc, call, ctx);
   }
   out ||= { ok: false, error: T("没有结果"), text: T("ERROR: 没有结果") };
   hooks.toolEnd?.(call, out);
   return { id: tc.id, ok: Boolean(out.ok), text: out.text || (out.ok ? "{}" : `ERROR: ${out.error}`) };
 }
+
+/** A call after the turn's tools came to an end: not run, and the model told why. */
+function refused(why) {
+  if (why === "steps") return { ok: false, error: T("已达到本轮工具调用的上限：请根据已有结果直接作答。"), text: T("ERROR: 已达到本轮工具调用的上限：请根据已有结果直接作答。") };
+  const error = why === "time" ? T("这一轮回答的时间已用完，不再调用工具：请根据已有结果直接作答。")
+    : T("用户想先看到回答，不再调用工具：请根据已有结果直接作答。");
+  return { ok: false, status: "skipped", error, text: `ERROR: ${error}` };
+}
+
+/**
+ * A call the runtime runs, waited for within its limits: its deadline (limits.tool, or limits.research for a research
+ * run), counted while it runs — not while the runtime loads, or the call waits for its turn (the runtime tells,
+ * onWait/onStart) —, the turn's stop, and the turn's wish to answer now (`quick`).  The runtime is told when the call
+ * is not waited for any more (its signal), and when it may give way to others (`giving`: a research run going on by
+ * itself); however it behaves, the call ends here at its deadline.
+ */
+function follow(tc, call, { runtime, settings, hooks, signal, quick, quickWhy, limits }) {
+  const research = tc.name === "taochronos_research";
+  const ms = research ? limits.research : limits.tool;
+  const own = new AbortController();    // the runtime stops its work on the call, or its wait for it
+  const giving = new AbortController(); // no one waits for it now: the runtime may let others go first
+  let settle;
+  const ending = new Promise((resolve) => { settle = resolve; }); // how the work ended, by its deadline at the latest
+  let ended = false;
+  const deadline = limit(ms, () => { end(overdue(ms, research)); own.abort(); });
+  function end(out) {
+    if (ended) return;
+    ended = true;
+    deadline.stop();
+    settle(out);
+  }
+  const options = {
+    maxChars: settings.resultChars, signal: own.signal, giving: giving.signal, limits,
+    onWait: (why) => { deadline.pause(); hooks.toolWaiting?.(call, why); },
+    onStart: () => { deadline.resume(); hooks.toolRunning?.(call); },
+  };
+  try {
+    const work = research
+      ? runtime.research(tc.arguments, { ...options, onProgress: (p) => hooks.toolProgress?.(call, p) })
+      : runtime.call(tc.name, tc.arguments, options);
+    Promise.resolve(work).then((out) => end(out), (err) => end(err?.name === "AbortError" ? halted() : failed(err)));
+  } catch (err) {
+    end(failed(err)); // a runtime that throws before it begins
+  }
+
+  // the turn's wait: the work's end, the turn's stop, or its wish to answer now
+  return new Promise((resolve) => {
+    let waited = false;
+    const done = (out) => {
+      if (waited) return;
+      waited = true;
+      signal.removeEventListener("abort", stop);
+      quick?.removeEventListener("abort", hurry);
+      resolve(out);
+    };
+    const stop = () => { end(halted()); own.abort(); };
+    const hurry = () => {
+      if (ended) return; // it has its end already: the turn has it next
+      if (!research) { end(passed(quickWhy())); own.abort(); return; }
+      // a research run goes on by itself, and comes to the page when it is done; the turn answers without it
+      giving.abort();
+      hooks.toolLater?.(call, ending);
+      done(later());
+    };
+    ending.then(done);
+    if (signal.aborted) stop();
+    else signal.addEventListener("abort", stop, { once: true });
+    if (quick?.aborted) hurry();
+    else quick?.addEventListener("abort", hurry, { once: true });
+  });
+}
+
+const halted = () => ({ ok: false, status: "stopped", error: T("已停止"), text: T("ERROR: 调用已停止") });
+const failed = (err) => ({ ok: false, error: err?.message || String(err), text: `ERROR: ${err?.message || err}` });
+
+/** A call past its deadline: not waited for any more, and the model told to answer without it, and to say so. */
+function overdue(ms, research) {
+  if (research) {
+    const m = Math.round(ms / 60000);
+    return { ok: false, status: "timeout", error: T`研究运行了 ${m} 分钟还没有完成，不再等待`,
+      text: `ERROR: ${T`这次研究运行了 ${m} 分钟还没有完成，页面不再等待，结果不可用。请根据已有结果作答，并在回答中说明这项研究没有完成。`}` };
+  }
+  const s = Math.round(ms / 1000);
+  return { ok: false, status: "timeout", error: T`运行了 ${s} 秒还没有完成，不再等待`,
+    text: `ERROR: ${T`这个调用运行了 ${s} 秒还没有完成，页面不再等待，结果不可用。请根据已有结果作答，并在回答中说明缺少这一项；需要时可以缩小范围再调用一次。`}` };
+}
+
+/** A call the turn did not wait for: the user asked for the answer ("asked"), or the turn ran its time ("time"). */
+function passed(why) {
+  const text = why === "time" ? T("这一轮回答的时间已用完，这个调用没有等到结果。请根据已有结果作答，并在回答中说明缺少这一项。")
+    : T("用户想先看到回答，这个调用没有等到结果。请根据已有结果作答，并在回答中说明缺少这一项。");
+  return { ok: false, status: "skipped", error: why === "time" ? T("这一轮的时间已用完，没有等它") : T("没有等它：你选择了先看回答"), text: `ERROR: ${text}` };
+}
+
+/** A research run the turn did not wait for: it goes on, and its result comes to the page's research panel. */
+const later = () => ({ ok: false, status: "background", error: T("研究在后台继续，完成后显示在研究面板中"),
+  text: `ERROR: ${T("这次研究仍在后台进行，结果现在还不能用，完成后会出现在页面的研究面板中。请根据已有结果作答，并告诉用户研究仍在进行、稍后可在研究面板中查看。")}` });
 
 /** Tool definitions in the neutral form both clients take: {name, description, parameters}. */
 export function toolDefs(catalog) {

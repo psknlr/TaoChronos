@@ -5,10 +5,13 @@
 // before any tool runs: a refusal is told, a reply the stream ended without one is asked again, and a max_tokens (or
 // context window) cut goes to the agent loop, which runs no call of a cut reply; the assistant content is replayed
 // verbatim so thinking blocks round-trip.  Through the local server the SDK talks to its proxy, which forwards to
-// api.anthropic.com.
+// api.anthropic.com.  The SDK asks nothing again itself (the agent loop does, for every service alike), and its
+// requests go through a fetch that watches them (limits.js): a first reply, and a silence while the reply streams, are
+// waited for so long; its own ping events, which it does not pass on, count as something heard.
 
-import { ProviderError, proxyHeaders, retryAfter, unfinished } from "./openai.js";
+import { ProviderError, proxyHeaders, retryAfter, stalled, unfinished } from "./openai.js";
 import { outputLimit } from "../providers.js";
+import { aborted, watch } from "../limits.js";
 import { T } from "../i18n.js";
 
 const SDK_URL = "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm";
@@ -27,8 +30,31 @@ async function loadSDK() {
   return sdk;
 }
 
-export async function streamClaude({ provider, system, messages, tools, settings, route, signal, onEvent = () => {} }) {
+export async function streamClaude({ provider, system, messages, tools, settings, route, signal, limits, onEvent = () => {} }) {
   const Anthropic = await loadSDK();
+  const w = watch(signal, limits);
+  try {
+    return await ask(Anthropic, { provider, system, messages, tools, settings, route, onEvent }, w);
+  } catch (err) {
+    if (w.expired) throw stalled(w);
+    throw err;
+  } finally {
+    w.close();
+  }
+}
+
+/** fetch, with what it brings told to the watch `w`: the response, then each part of its body as it arrives. */
+const watchedFetch = (w) => async (url, init) => {
+  w.sent();
+  const resp = await fetch(url, init);
+  if (!resp.body) return resp;
+  w.streaming();
+  const body = resp.body.pipeThrough(new TransformStream({ transform(chunk, out) { w.heard(); out.enqueue(chunk); } }));
+  return new Response(body, { status: resp.status, statusText: resp.statusText, headers: resp.headers });
+};
+
+async function ask(Anthropic, { provider, system, messages, tools, settings, route, onEvent }, w) {
+  const signal = w.signal;
   const base = provider.baseUrl.replace(/\/v1\/?$/, "");
   const viaProxy = route?.kind === "proxy";
   const client = new Anthropic({
@@ -36,7 +62,8 @@ export async function streamClaude({ provider, system, messages, tools, settings
     baseURL: viaProxy ? `${route.serverUrl.replace(/\/+$/, "")}/api/llm` : base,
     defaultHeaders: { ...(provider.headers || {}), ...(viaProxy ? { "X-TC-Target": base, ...proxyHeaders(route) } : {}) },
     dangerouslyAllowBrowser: true,
-    maxRetries: 2,
+    maxRetries: 0,
+    fetch: watchedFetch(w),
   });
   if (!provider.apiKey && !viaProxy) throw new ProviderError(T("请先在设置中填写 Anthropic API Key"));
 
@@ -105,7 +132,8 @@ export async function streamClaude({ provider, system, messages, tools, settings
       model: final.model,
     };
   } catch (err) {
-    if (err?.name === "AbortError" || signal?.aborted) throw new DOMException("aborted", "AbortError");
+    if (w.expired) throw stalled(w);
+    if (err?.name === "AbortError" || signal?.aborted) throw aborted();
     if (err instanceof ProviderError) throw err;
     // the SDK's word for a stream that ended before message_stop: as one that never said why it stopped
     if (err instanceof Anthropic.AnthropicError && /stream ended without producing/.test(err.message || "")) throw unfinished();
