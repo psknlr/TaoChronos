@@ -36,6 +36,8 @@ from ...protocol.documents import (
     VariantKind,
     VariantReading,
     YearRange,
+    book_of,
+    passage_number,
 )
 from .corpus import Corpus, ExternalWork
 
@@ -411,6 +413,26 @@ class StoreCorpus:
         extra, params = self._book_filter()
         with self.store.lock:
             return [r[0] for r in self.store.db.execute(f"SELECT p.id FROM passages p WHERE 1{extra} ORDER BY p.year, p.id", params)]
+
+    def around(self, passage_id: str) -> tuple[str | None, str | None, str | None]:
+        """In the book ``passage_id`` names (``book_of``), the passage before it, the one at its place and the one after
+        it in the book's order (seq), each None where this corpus has none: for a passage it has, its neighbours and
+        itself; for an id it has not, the ones its number falls between and the one its number names (an id ends in its
+        seq: cm_shanghan_npm.13 names cm_shanghan_npm.00013).  A view's bounds and excluded books apply."""
+        extra, params = self._book_filter()
+        with self.store.lock:
+            db = self.store.db
+            row = db.execute(f"SELECT p.book_id, p.seq FROM passages p WHERE p.id=?{extra}", [passage_id, *params]).fetchone()
+            book, seq = row if row else (book_of(self.books, passage_id), passage_number(passage_id))
+            if book is None or seq is None:
+                return None, None, None
+
+            def first(cond: str, order: str) -> str | None:
+                got = db.execute(f"SELECT p.id FROM passages p WHERE p.book_id=? AND p.seq{cond}?{extra} ORDER BY p.seq {order} "
+                                 "LIMIT 1", [book, seq, *params]).fetchone()
+                return got[0] if got else None
+
+            return first("<", "DESC"), passage_id if row else first("=", "ASC"), first(">", "ASC")
 
     def __len__(self) -> int:
         if self._count is None:

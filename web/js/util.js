@@ -228,6 +228,14 @@ export function bare(text) {
     .toLowerCase();
 }
 
+/** What a tool's text returned, for a citation to be checked against: nothing of an error's (an error returns no
+ * passage, though it may name some: those nearest an id that is none), nor the ids a passage names to read on
+ * (get_passage's prev and next), which were not read. */
+export function returnedText(text) {
+  if (typeof text !== "string" || text.startsWith("ERROR")) return "";
+  return text.replace(/"(?:prev|next)":"[^"]*"?/g, "");
+}
+
 export function truncate(s, n) {
   s = String(s ?? "");
   return s.length > n ? s.slice(0, n - 1) + "…" : s;

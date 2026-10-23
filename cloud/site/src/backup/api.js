@@ -5,7 +5,7 @@
 
 import { canonical, catalog, catalogView, closest, engineNames, fitArguments, LIVE, parametersOf, PRECOMPUTED, pyRepr,
   served } from "./catalog.js";
-import { Corpus, CorpusError, passageCard } from "./corpus.js";
+import { Corpus, CorpusError } from "./corpus.js";
 import { precomputed } from "./precomputed.js";
 import { shape } from "./results.js";
 import { INFO, PROMPT } from "./tables.js";
@@ -149,9 +149,8 @@ function backupNote(pre) {
 // ------------------------------------------------------------------ passages
 async function passage(corpus, pid) {
   try {
-    const hit = await corpus.passage(pid);
-    if (!hit) return { ok: false, passage_id: pid, error: `KeyError: '${pid}'` };
-    return { ok: true, ...passageCard(hit, hit.card, { full: true }) };
+    // ChatRuntime.passage: classics.get_passage, as the evidence drawer and the citation check ask for it
+    return { ok: true, ...(await tools.getPassage(corpus, { passage_id: pid })) };
   } catch (err) {
     return { ok: false, passage_id: pid, error: `${err.kind || err.name || "Error"}: ${err.message}` };
   }

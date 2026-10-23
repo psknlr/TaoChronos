@@ -78,6 +78,18 @@ def test_p01_withheld_passages_are_unreachable_through_every_read_path(harness):
     assert scope_for(s.state, "human").permits(held.id) and not scope_for(s.state, "validator").permits(held.id)
 
 
+def test_p01_reading_on_names_no_passage_the_reader_may_not_read(harness):
+    """get_passage's prev and next name only passages the reader may read: a neighbour held out is None, and the passage
+    is read — the result firewall finds nothing to withhold."""
+    h = harness
+    s = _session(h, "p01-reading-on", keep=1)
+    seen = list(h.corpus.passages())[0]
+    before, _, after = h.corpus.around(seen.id)
+    assert {before, after} - {None} and {before, after} - {None} <= set(s.state.corpus.holdout_passage_ids)
+    out = h.scheduler.execute(ToolCall("classics.get_passage", {"passage_id": seen.id}), actor=AGENT, session=s.view(AGENT))
+    assert out.ok and (out.result["prev"], out.result["next"]) == (None, None)
+
+
 def test_p01_the_result_firewall_withholds_any_tool_output_naming_withheld_material(harness):
     h = harness
     s = _session(h, "p01b", keep=1)

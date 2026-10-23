@@ -7,9 +7,10 @@ textual witnesses that every downstream claim must trace back to
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, Mapping
 
 from .base import Model, field_list
 
@@ -249,3 +250,27 @@ class Passage(Model):
 
     def year(self, basis: str = "composition") -> float | None:
         return self.temporal.year(basis)
+
+
+_NUMBER = re.compile(r"[0-9]+$")
+
+
+def book_of(books: Mapping[str, Any], passage_id: str) -> str | None:
+    """The book a passage id names: its longest head, up to a ".", that is one of ``books`` (None where none is)."""
+    pid = str(passage_id)
+    at = pid.rfind(".")
+    while at > 0:
+        if pid[:at] in books:
+            return pid[:at]
+        at = pid.rfind(".", 0, at)
+    return None
+
+
+def passage_number(passage_id: str) -> int | None:
+    """The number a passage id ends in, or None: a store's ids end in the passage's seq (cm_shanghan_npm.00013 is 13,
+    and so is cm_shanghan_npm.13).  A number of more than 18 digits is 10¹⁸, past any book's end."""
+    m = _NUMBER.search(str(passage_id))
+    if not m:
+        return None
+    digits = m.group().lstrip("0") or "0"
+    return int(digits) if len(digits) <= 18 else 10**18

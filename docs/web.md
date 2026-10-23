@@ -191,6 +191,20 @@ quotation in every witness whatever its punctuation: as written, by its runs of 
 runs across a witness's own marks — by its 3-grams, each candidate then checked character by character (a changed or
 missing character is never accepted).
 
+**Reading on, and an id that is no passage.**  `classics.get_passage` gives with a passage the ids of the passages
+before and after it in its book (`prev`, `next`: `around` on the corpus).  The 要籍语料 the page carries keeps most of
+its books (461 of 553) as whole chapters spread through the book, so that the passage after one is often not the next
+number, and a model that guessed it read nothing: 117 of the first 2,723 passages asked for were none, most of them in
+the browser, each answered with a bare `KeyError`.  An id that is no passage is now answered with what its book has
+there (`PassageNotFound`): the passage its number names where only the id's form is off (`cm_shanghan_npm.13`, or
+`suwen_wangbing.00044` for `suwen_wangbing.000.00044`: a store's ids end in the passage's seq), else the nearest before
+and after it, else how many passages the book has here; or, where it names no book, where to look.  The tools that read
+a passage by its id (`classics.get_passage`, `philology.assess_passage`, `philology.collate`, `kg.extract_claims`) and
+the evidence drawer say the same, never naming a passage the reader's scope withholds; the backup answers alike
+(`backup/corpus.js`, compared with the Python on the fixture).  A passage named only so — as `prev` or `next`, or in an
+error — was not read, and the page does not count it as returned (`returnedText` in `web/js/util.js`, checked under
+Node in `tests/test_web_client.py`): cited without a quotation, its chip is ? until a tool returns it.
+
 ## Using it
 
 1. Open the page and ask: **道乃久默认服务** needs no key (below).  To use a model of your own, choose **设置 → 模型** and
@@ -613,7 +627,9 @@ through a book, the pack → a store with the same bytes → indexed once → re
 (the first-ranked works first, the rest in slices, seen by a connection already reading) and the shipped pack under the
 `web-canon` profile (533 works in rank order, an openly licensed transcription with its own terms, any other with the
 terms the site carries it under; a 宋本 found for a punctuated 伤寒论 clause; `classics.canon` for what it lacks).
-`tests/test_corpus_store.py` — on a store: a quotation found whatever its punctuation and in either script, across a
+`tests/test_corpus_store.py` — on a store: a passage's neighbours in its book (over the chapters a pack leaves out,
+within a view's bounds, none a scope withholds; through the tools in `tests/test_chat.py`, in a research session in
+`tests/test_boundaries.py`) and what an id that is no passage names; a quotation found whatever its punctuation and in either script, across a
 witness's own marks, never with a changed or missing character; outside a session `classics.list_books` lists every
 book with its filters and `kg.claims` / `kg.neighbors` read the passages that write the term.  `tests/test_web_client.py` — the
 client's logic under Node (cumulative and incremental streams, history rules, dangling tool calls, citation pairing, which

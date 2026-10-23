@@ -3,8 +3,9 @@
 // (corpus.js), what they compute costs a Worker little.  The tools a Worker cannot compute are served from `results`
 // (precomputed.js) or not at all (catalog.js says which).
 
+import { pyRepr } from "./catalog.js";
 import { collate as collateTexts } from "./difflib.js";
-import { Corpus, CorpusError, layerOf, locatorJson, passageCard, passageId } from "./corpus.js";
+import { Corpus, CorpusError, layerOf, locatorJson, passageCard, passageId, passageNumber } from "./corpus.js";
 import { entryView, Lexicon } from "./lexicon.js";
 import * as metrology from "./metrology.js";
 import { cpLength, cpSlice } from "./results.js";
@@ -20,22 +21,46 @@ export class ToolError extends Error {
   }
 }
 
-const keyError = (key) => new ToolError("KeyError", `'${key}'`);
 const need = (a, ...keys) => {
   for (const k of keys) if (a[k] === undefined || a[k] === null) throw new ToolError("KeyError", `'${k}'`);
 };
 
+/** common.find_passage: the passage `pid` names, else PassageNotFound, naming what its book has there. */
 async function passageOrThrow(corpus, pid) {
   const hit = await corpus.passage(pid);
-  if (!hit) throw keyError(pid);
+  if (!hit) throw await passageNotFound(corpus, String(pid));
   return hit;
+}
+
+/** PassageNotFound: the passage its number names where only the id's form is off (cm_shanghan_npm.13), else the
+ * nearest before and after it in its book — or that it names no book here.  `near`: corpus.around(pid), if read. */
+async function passageNotFound(corpus, pid, near) {
+  near ??= await corpus.around(pid);
+  const said = (text) => new ToolError("PassageNotFound", text);
+  if (!near) {
+    return said(`no passage ${pyRepr(pid)}: it names no book of this corpus (an id begins with its book's id); ` +
+      "classics.list_books lists the books, and classics.search finds passages by their words");
+  }
+  const { book, card } = near;
+  const [before, at, after] = [near.before, near.at, near.after].map((hit) => (hit ? passageId(book, hit.p) : null));
+  if (at !== null) {
+    return said(`no passage ${pyRepr(pid)} in this corpus; the passage of ${book} (${card.title}) numbered ${passageNumber(pid)} is ${at}`);
+  }
+  const has = `no passage ${pyRepr(pid)} in this corpus; ${book} (${card.title}) has ${card.passages} passages here`;
+  if (before !== null && after !== null) return said(`${has}, the nearest ${before} (before) and ${after} (after)`);
+  if (before !== null) return said(`${has}, the nearest ${before} (before; none after it)`);
+  if (after !== null) return said(`${has}, the nearest ${after} (after; none before it)`);
+  return said(`${has}; classics.search finds them by their words`);
 }
 
 // ------------------------------------------------------------------ retrieval
 export async function getPassage(corpus, a) {
   need(a, "passage_id");
-  const hit = await passageOrThrow(corpus, a.passage_id);
-  return passageCard(hit, hit.card, { full: true });
+  const near = await corpus.around(String(a.passage_id));
+  if (!near?.exact) throw await passageNotFound(corpus, String(a.passage_id), near);
+  // to read on: the passages before and after it in its book
+  const [prev, next] = [near.before, near.after].map((hit) => (hit ? passageId(near.book, hit.p) : null));
+  return { ...passageCard(near.exact, near.card, { full: true }), prev, next };
 }
 
 export async function listBooks(corpus, a) {
