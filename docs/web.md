@@ -489,7 +489,7 @@ not change is told at once: the visitor's or the service's allowance for the day
 address blocked, the service not set up, its own key refused or its quota spent, a provider's quota spent.  A browser that has no
 body to read a reply from as it arrives (an older Safari) reads it whole.  In the last three rounds of tools a turn may
 run (设置 → 运行环境 → 每轮最多工具步数, 16 by default), the model is told after each how many it has left, and at the last that it is
-to answer from what it has.
+to answer from what it has; it is then asked with no tool to call (below, *The answer once the tools stop*).
 
 **A reply cut at its output limit is written on.**  An answer that stops at the limit (`finish_reason: length`, Claude's
 `max_tokens`) is kept, and the model is asked, in a note after it, to write on from where it stopped — not to repeat
@@ -547,11 +547,31 @@ calls are done and each call's state — waiting for the runtime to load, waitin
 a research run's progress — and an icon for each end.
 
 **不再等待，根据已有结果作答** appears under a round's steps once its calls have been waited on for 20 seconds.  Pressed,
-the calls still running are not waited for (they end skipped), any call the model asks for next is not run (one that
-keeps asking is told no twice, and the turn ends), and the model is told to answer from what it has and to say what it
-did not get; a note under the answer says it may be incomplete.  A research run is not dropped: it goes on, the model is told so, and its result comes to the 研究 panel when
+the calls still running are not waited for (they end skipped), any call the model asks for next is not run, and the
+model is told to answer from what it has and to say what it did not get; a note under the answer says it may be
+incomplete.  A research run is not dropped: it goes on, the model is told so, and its result comes to the 研究 panel when
 it is done (a notice says so, and how one that did not finish ended).  The turn's own limit does the same when it runs
 out.  Stopping the turn ends every call under way, marked stopped, and the page is ready for the next question.
+
+**The answer once the tools stop.**  When a turn's tools come to an end — its rounds used (设置 → 运行环境 → 每轮最多工具步数),
+不再等待, or its time up — the model is asked for its answer with no tool to call (tool choice `none`; the tools stay in
+the request, since the turn's calls refer to them), and told, after the last result, which of the turn's calls have no
+result: each by its name, what it asked (cut short) and how it ended — timed out, not waited for, still running in the
+background, stopped — and that it is to say what is missing rather than make it up.  A call asked again with the same
+arguments that then answered is not among them.  Not every service takes tool choice `none`: one that refuses a request
+asking it (HTTP 400 or 422) is asked again as before, with its tools to call, and is not asked so again while the page is
+open.  A service that calls tools all the same is told no and its calls are not run; told twice, the turn ends with a
+notice that the model gave no answer, and 继续作答.
+
+**继续作答 — a turn taken up again.**  A turn that did not get its answer — it failed, was stopped, or its model kept
+calling tools after they stopped — but whose messages end on its tools' results shows **继续作答** beside 重试, while it
+is the last of its conversation and the model that ran it is still the one chosen.  Pressed, none of its calls runs
+again: the model is sent the turn's messages as the page kept them, every call with its result (one left without is
+told so), and after the last a note asking for the answer from them, with no tool to call (`web/js/agent.js`, `runTurn`'s
+`resume`).  What a round whose reply did not come whole had shown goes, and the answer is written anew; the steps the turn
+took stay.  Its rounds, tokens and time are added to, and its record says it was taken up again.  A turn whose service
+failed once its tools had run (the day's free calls used up, for one, which the page does not ask again) is so answered
+from them once the service answers again.  重试 begins the turn again, its calls with it.
 
 **Where the work goes.**  A call the browser's runtime has not begun is never sent to it.  One it runs is interrupted
 where the page is cross-origin isolated (Python raises `KeyboardInterrupt` when it next looks) and otherwise runs to its
@@ -593,13 +613,15 @@ send it in clear to the provider, where any visitor can read it — so the relay
   turn's time went, each in milliseconds from its start: each model request's — sent, its reply begun, its first part,
   its answer's first text, its end, how it finished or why it failed (a kind or a status, never the service's words), its
   tokens —, each call's — begun, waiting for its runtime or its turn, how long the runtime says it took, how it ended —,
-  what happened between them (an answer written on, 不再等待, the turn's time up, a server given up for the browser), and
+  what happened between them (an answer written on, 不再等待, the turn's time up, a server given up for the browser, the
+  turn taken up again by 继续作答 — each time it runs it sends its own record, under the same id), and
   how long the page was hidden or did not run at all (`web/js/records.js`, `timings`; the fields in
   [`data/chat-logs/README.md`](../data/chat-logs/README.md)).  The output limit a reply was asked within is not among
   them, since it comes from the visitor's settings: a reply cut there shows as `finish: length`, with the tokens it
   wrote.  `taochronos records` sums the records up, in counts and times only: the time from a turn's last tool result to
   its answer's first text and what it went on, how often a model request broke off and the turn still answered whole,
-  how many answers came whole, with nothing flagged ✕, and verified.  The relay holds the records
+  how many answers came whole, with nothing flagged ✕, and verified — a turn taken up again counted once, as it ended,
+  and how many were.  The relay holds the records
   until `.github/workflows/chat-logs.yml` collects them, every hour, into `data/chat-logs/YYYY/MM/DD.jsonl` in this private
   repository, and deletes them once the commit is pushed (`relay/collect.py`).  The records never enter the published
   site.  If the repository is ever made public, `data/chat-logs/` must be moved out first.  A conversation that touches
@@ -712,7 +734,10 @@ named to the model; the waits — each limit counted in the time the page ran, a
 falls silent or takes too long read whole asked again, a stop and a limit told apart, every listener removed and no
 failure left unhandled, a chart answered while the search beside it stalls to its deadline, the time a call waits for
 its turn not counted, the answer asked for while calls run and a model that keeps calling told no, a research run left
-to go on and ended later, the browser runtime's queue (a call not yet begun never sent, a late result dropped, a runtime
+to go on and ended later; the answer once the tools stop — asked with no tool to call, told which calls have no result
+and how they ended (not one asked again that then answered), a service that refuses tool choice `none` asked again
+without it and not asked so again, a service that calls tools anyway refused and the turn ended unanswered, a turn taken up again with every call given its result and the note after them, no call run and its
+rounds going on, and which turns can be taken up (Claude's too); the browser runtime's queue (a call not yet begun never sent, a late result dropped, a runtime
 held up started again, Python interrupted where the page shares memory), a server's calls four at a time, its research
 looked at within limits and lost after five failed looks; where a turn's time goes — each model request's times and
 end (a stall, a stop, a refusal kept as its status and not its words), each call's waiting and running, a cut answer
@@ -729,7 +754,11 @@ answer cut at the output limit written on and shown as one, and a reply that onl
 without thinking, Claude at low effort), and Claude's stream that ends part-way or without a stop reason asked again; a chart drawn
 while the search beside it is held — the steps counting, 不再等待 offered and taken, the search skipped and the
 answer noted as perhaps incomplete, a search past its deadline ended, a stop that leaves the page usable, and two
-rounds' calls under one id each shown with its own end; and
+rounds' calls under one id each shown with its own end; the answer asked for with no tool to call once 不再等待 is taken
+or the rounds are used, a stopped turn taken up again by 继续作答 with no call run again, and a model that keeps calling
+tools ending with a notice, taken up again and still running none, and a turn whose day's free calls run out while its
+search runs, failing once and answered by 继续作答 once they are back, its search not run again; Claude's answer stopped
+part-way and taken up again (the part shown dropped, `tool_choice` `none`, the page's note after the results, both runs' records); and
 a page served elsewhere (as on GitHub Pages) connecting to a server in one step, using it again after a reload, and a
 token taken from the address (and its absence reported); an API set by hand (address, model, key, headers, parameters —
 checked in the request it makes); the default service (a stand-in relay): asked at once without a key, no key sent by the

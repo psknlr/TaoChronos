@@ -120,15 +120,16 @@ export const proxyHeaders = (route) => (route?.kind === "proxy" && route.token ?
 /**
  * Stream one completion.  Returns {message, text, thinking, toolCalls, finishReason, usage}; calls onEvent with
  * {type: "text" | "thinking" | "tool", ...} as the answer arrives.  `limits` (limits.js): how long its first reply, and
- * a silence while it streams, are waited for; `mark`: told when it was sent and its parts came (limits.js, watch).
+ * a silence while it streams, are waited for; `mark`: told when it was sent and its parts came (limits.js, watch);
+ * `toolChoice` "none": the tools are there (the turn's calls refer to them), and none is to be called.
  */
-export async function streamChat({ provider, messages, tools, settings, route, signal, limits, mark, onEvent = () => {} }) {
+export async function streamChat({ provider, messages, tools, settings, route, signal, limits, mark, toolChoice, onEvent = () => {} }) {
   const url = provider.full_url ? provider.baseUrl : `${provider.baseUrl}/chat/completions`;
   if (!/^https?:\/\//.test(url)) throw new ProviderError(T`接口地址无效：${url || T("（未填写）")}`);
   const body = { model: provider.model, messages, stream: true };
   if (tools && tools.length) {
     body.tools = tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } }));
-    body.tool_choice = "auto";
+    body.tool_choice = toolChoice === "none" ? "none" : "auto";
   }
   // a service with its own ceiling (the default service) is asked within it, so it forwards the request unchanged
   body[provider.max_tokens_param || "max_tokens"] = outputLimit(settings, provider);

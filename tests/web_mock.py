@@ -11,7 +11,8 @@ output limit (``finish_reason: length``) part-way, and the rest when the page as
 想得很久 spends the limit on its thinking, and answers when asked again without.  One asking for 图表与原文 compares two
 formulas and searches the classics in the same round, and answers with what the round gave it (the test may hold the
 search); one asking it to 再查一遍 searches twice, in two rounds, each call under the same id (as a service that numbers
-its calls afresh in each reply does).  Every request is recorded for the test to inspect.
+its calls afresh in each reply does); one asking it to 不停地查 searches in every reply, however it is asked (as a service
+that drops ``tool_choice`` would).  Every request is recorded for the test to inspect.
 """
 
 from __future__ import annotations
@@ -47,6 +48,10 @@ BOTH = "图表与原文"
 PARTIAL_ANSWER = "两方的对照见上方图表。原文的检索没有等到结果，这里没有引用原文；需要时可以再问一次。"
 # a question asking to search again: the same search in two rounds, both calls under one id
 AGAIN = "再查一遍"
+# a question asking to search on and on: a search in every reply, even one asked with no tool to call
+KEEP_CALLING = "不停地查"
+# the page's note on a turn taken up again (继续作答, web/js/agent.js resumeNote), after the last of its tool results
+RESUMED = "［提示：上一次作答没有完成，工具不再调用。请根据上面已有的工具结果直接作答；没有得到的结果，请在回答中说明缺了什么，不要编造］"
 # a message carrying the user's data: its prescriptions analysed by diagnosis, its first row quoted
 DATA_ANSWER = ("## 用药规律\n\n高频药物、药对与各组用药见上方图表。\n\n"
                "- 第一张处方：「处方：柴胡12g 黄芩9g」[[mine:{id}.r1]]\n\n统计只描述这份资料，不构成诊疗建议。")
@@ -115,6 +120,8 @@ class _Handler(BaseHTTPRequestHandler):
             chunks = self._answer() if body.get("thinking") == {"type": "disabled"} else self._overthought()
         elif body.get("tools") and BOTH in asked:
             chunks = self._said(PARTIAL_ANSWER) if answered else self._two_calls()
+        elif body.get("tools") and KEEP_CALLING in asked:
+            chunks = self._tool_call()
         elif body.get("tools") and AGAIN in asked:
             searched = sum(m.get("role") == "tool" for m in messages[last_user + 1:])
             chunks = self._answer() if searched >= 2 else self._tool_call()
@@ -188,7 +195,8 @@ class MockAnthropic(ThreadingHTTPServer):
     """The same two replies in the Anthropic Messages stream: thinking (with a signature), a tool_use, then text.  As the
     OpenAI-compatible one does, it cuts a 长篇 answer at ``max_tokens`` and spends the limit on thinking for 想得很久
     (answering when asked again at low effort); asked to 断流, its stream ends part-way the first time, and the second
-    stops without saying why (``message_stop`` with no ``message_delta``)."""
+    stops without saying why (``message_stop`` with no ``message_delta``); asked to 慢慢 answer, it begins and then sends
+    nothing but pings, until the turn is taken up again (the page's note after its tool results)."""
 
     daemon_threads = True
 
@@ -231,11 +239,16 @@ class _AnthropicHandler(_Handler):
         elif answered and "断流" in asked and self.server.broken < 2:
             self.server.broken += 1
             events = self._text(broken="early" if self.server.broken == 1 else "unsaid")
+        elif answered and "慢慢" in asked and not str(last["content"][-1].get("content")).endswith(RESUMED):
+            events = self._held()
         else:
             events = self._text() if answered else self._tool()
-        for event in events:
-            self._write(f"event: {event['type']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n")
-        self.wfile.write(b"0\r\n\r\n")
+        try:
+            for event in events:
+                self._write(f"event: {event['type']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n")
+            self.wfile.write(b"0\r\n\r\n")
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # the page let go of it (a stop)
 
     @staticmethod
     def _start(stop=None):
@@ -269,6 +282,15 @@ class _AnthropicHandler(_Handler):
             yield {"type": "message_delta", "delta": {"stop_reason": "end_turn", "stop_sequence": None}, "usage": {"output_tokens": 120}}
         yield {"type": "message_stop"}
 
+    def _held(self):
+        """The answer begun, then pings only (for half a minute at most), until the page lets go of it."""
+        yield self._start()
+        yield {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}}
+        yield {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": ANSWER[:30]}}
+        for _ in range(300):
+            time.sleep(0.1)
+            yield {"type": "ping"}
+
     def _long(self, writing_on: bool):
         """The answer cut at max_tokens part-way; asked to write on, the rest."""
         yield self._start()
@@ -292,6 +314,8 @@ class _AnthropicHandler(_Handler):
 
 PUBLIC_MODEL = "Tao-R1"          # the default service's model, as the page knows it (relay/src/relay.js: PUBLIC_MODEL)
 UPSTREAM_MODEL = "MiniMax-M3"    # the model behind it (relay.js: MODELS)
+# the relay's refusal once a visitor's free calls for the day are spent (relay.js: its gate's "day")
+SPENT = "今天的免费额度已用完（每人每天 600 次模型调用），明天再来，或在“设置 → 模型”里填入自己的 API Key"
 _MODEL_FIELD = re.compile(r'"model"\s*:\s*"(?:[^"\\]|\\.)*"')
 _FORMAT_FIELD = re.compile(r'"format"\s*:\s*"MiniMax-')
 
@@ -317,7 +341,8 @@ def _public_event(text: str) -> str:
 class MockRelay(ThreadingHTTPServer):
     """道乃久默认服务 as the page sees it (relay/src/relay.js): health, the model calls forwarded to ``upstream`` with the
     relay's own key (in the upstream's terms, the reply in the service's own), and the conversation records.  Records
-    what the browser sent — the page never sends a key."""
+    what the browser sent — the page never sends a key.  With ``spent``, the day's free calls are used up: each model
+    call is refused as the relay refuses it (429, ``daily_limit``)."""
 
     daemon_threads = True
     SECRET = "relay-held-secret"
@@ -330,6 +355,7 @@ class MockRelay(ThreadingHTTPServer):
         self.records: list[dict] = []  # the records the page sent
         self.record_types: list[str] = []
         self.health_delay = 0.0        # seconds before /v1/health answers: a slow link
+        self.spent = False             # the day's free calls used up
 
     @property
     def url(self) -> str:
@@ -390,6 +416,9 @@ class _RelayHandler(BaseHTTPRequestHandler):
             self._json(404, {"error": {"message": "not found"}})
             return
         self.server.chat.append({"headers": dict(self.headers), "body": json.loads(raw or b"{}")})
+        if self.server.spent:
+            self._json(429, {"error": {"message": SPENT, "type": "daily_limit"}})
+            return
         import urllib.request
 
         req = urllib.request.Request(f"{self.server.upstream}/chat/completions", data=_upstream_request(raw), method="POST",

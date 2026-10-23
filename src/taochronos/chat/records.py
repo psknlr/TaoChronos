@@ -6,7 +6,8 @@ A visitor who agreed has each finished turn recorded (web/js/records.js, relay/R
 tools, how its citations were checked and, from the page that times them (web/js/records.js, ``timings``), each model
 request's times and end, each call's waiting and running, and how long the page was hidden or did not run — each time
 in milliseconds from the turn's start.  :func:`summary` reads records of either kind: one without the times counts
-towards the answers' completion only.
+towards the answers' completion only.  A turn taken up again (继续作答) is recorded again, its times from then on: the
+summary counts it once, as its last record ended, with the failures and the time of all of them.
 """
 
 from __future__ import annotations
@@ -113,6 +114,16 @@ def _rounds_span(tools: list[dict[str, Any]]) -> float:
     return sum(max(e for _, e in spans) - min(s for s, _ in spans) for spans in by_round.values())
 
 
+def _turns(records: Iterable[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    """The records by turn, in the order the turns were first recorded: a turn taken up again has one record for each
+    time it ran (the same message id in the same conversation)."""
+    turns: dict[Any, list[dict[str, Any]]] = {}
+    for k, r in enumerate(records):
+        key = (r.get("conversation"), r["id"]) if isinstance(r.get("id"), str) and r["id"] else k
+        turns.setdefault(key, []).append(r)
+    return list(turns.values())
+
+
 def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: str | None = None) -> dict[str, Any]:
     """The records' numbers (turns begun from *since* to *until*, ``YYYY-MM-DD``, both included):
 
@@ -124,7 +135,8 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
     * ``completion`` — of the turns a model answered: the answer came whole (:func:`whole`); whole, with no citation the
       corpus lacks (✕) or left unchecked; whole and verified (it cites, and every citation is ✓); whole, citing nothing;
     * ``time`` — per timed turn: in model requests, in rounds of calls, the page hidden, the page asleep (seconds);
-      and of the calls' own time, how much went on waiting for their runtime or their turn.
+      and of the calls' own time, how much went on waiting for their runtime or their turn;
+    * ``resumed`` — the turns taken up again (继续作答), and how many of them then answered whole.
     """
     turns = timed = fixed = 0
     after: dict[str, list[float]] = {"total": [], "before": [], "reply": [], "thinking": []}
@@ -133,8 +145,10 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
     done = unflagged = verified = uncited = 0
     spent: dict[str, list[float]] = {"model": [], "tools": [], "hidden": [], "asleep": []}
     waited = ran = 0.0
-    for r in records:
-        day = str(r.get("started") or r.get("received") or "")[:10]
+    resumed = resumed_whole = 0
+    for runs in _turns(records):
+        r = runs[-1]  # as the turn ended
+        day = str(runs[0].get("started") or runs[0].get("received") or "")[:10]
         if (since and day < since) or (until and day > until):
             continue
         if r.get("provider") == FIXED:
@@ -147,25 +161,29 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
         unflagged += ok and not c.get("bad") and not c.get("pending")
         verified += ok and bool(c.get("total")) and c.get("ok") == c.get("total")
         uncited += ok and not c.get("total")
-        requests = [q for q in r.get("requests") or [] if isinstance(q, dict)]
-        if not requests:
+        if len(runs) > 1 or _n(r.get("resumed")):
+            resumed += 1
+            resumed_whole += ok
+        timed_runs = [x for x in runs if any(isinstance(q, dict) for q in x.get("requests") or [])]
+        if not timed_runs:
             continue
         timed += 1
-        parts = answer_after_tools(r)
+        parts = next((p for p in map(answer_after_tools, timed_runs) if p), None)
         for k, v in (parts or {}).items():
             after[k].append(v)
+        requests = [q for x in timed_runs for q in x.get("requests") or [] if isinstance(q, dict)]
         failures = [q for q in requests if _failed(q)]
         kinds.update(map(_failed, failures))
         if any(map(_broke_off, failures)):
             broke += 1
             recovered += ok
-        tools = [t for t in r.get("tools") or [] if isinstance(t, dict)]
         spent["model"].append(sum(q["end"] - q["sent"] for q in requests if _n(q.get("end")) is not None and _n(q.get("sent")) is not None))
-        spent["tools"].append(_rounds_span(tools))
+        spent["tools"].append(sum(_rounds_span([t for t in x.get("tools") or [] if isinstance(t, dict)]) for x in timed_runs))
         for k in ("hidden", "asleep"):
-            if _n(r.get(k)) is not None:
-                spent[k].append(r[k])
-        for t in tools:
+            got = [x[k] for x in timed_runs if _n(x.get(k)) is not None]
+            if got:
+                spent[k].append(sum(got))
+        for t in (t for x in timed_runs for t in x.get("tools") or [] if isinstance(t, dict)):
             if _n(t.get("ms")) is not None:
                 w = min(_n(t.get("wait")) or 0, t["ms"])
                 waited += w
@@ -178,4 +196,5 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
                        "whole_verified": _share(verified, turns), "whole_uncited": _share(uncited, turns)},
         "time": {**{k: _seconds(v) for k, v in spent.items()},
                  "calls_waiting": round(waited / (waited + ran), 3) if waited + ran else None},
+        "resumed": {"n": resumed, "whole": resumed_whole},
     }

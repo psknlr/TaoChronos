@@ -587,7 +587,7 @@ export function normalizeRecord(r) {
   if (!question && !num(r.images)) return null;
   const out = {
     v: 1, id: str(r.id, 64), conversation: str(r.conversation, 64), turn: num(r.turn),
-    started: str(r.started, 40), finished: str(r.finished, 40), ms: num(r.ms), rounds: num(r.rounds),
+    started: str(r.started, 40), finished: str(r.finished, 40), ms: num(r.ms), rounds: num(r.rounds), resumed: num(r.resumed),
     question: question || "", images: num(r.images), answer: str(r.answer, 20000), redacted: num(r.redacted),
     status: str(r.status, 20), error: str(r.error, 500),
     model: str(r.model, 80), provider: str(r.provider, 80), runtime: str(r.runtime, 40), corpus: str(r.corpus, 40), app: str(r.app, 40),

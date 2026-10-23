@@ -384,7 +384,7 @@ test("a record is kept only as its known fields, from the page, within its limit
       ...Array.from({ length: 60 }, (_, i) => ({ round: 2, attempt: i + 1, failed: "timeout".repeat(20), expired: "silence", sent: "5", status: "503" })),
     ],
     events: [{ at: 1500, what: "asked" }, { at: "soon", what: { no: 1 } }, null],
-    hidden: 2000, asleep: "0", was: { runtime: "server", corpus: "full", url: "https://x.example" },
+    hidden: 2000, asleep: "0", was: { runtime: "server", corpus: "full", url: "https://x.example" }, resumed: 2,
   });
   assert.deepEqual(timed.tools[0], { name: "classics.search", ok: false, ms: 80, args: "{\"query\":\"桂枝汤\"}", id: "call_1", round: 1,
     status: "timeout", at: 1200, wait: 300, compute: 80 });
@@ -395,8 +395,10 @@ test("a record is kept only as its known fields, from the page, within its limit
   assert.deepEqual(timed.requests[2], { round: 2, attempt: 1, failed: "timeout".repeat(20).slice(0, 40), expired: "silence" });
   assert.deepEqual(timed.events, [{ at: 1500, what: "asked" }, {}, {}]);
   assert.deepEqual([timed.hidden, timed.asleep, timed.was], [2000, undefined, { runtime: "server", corpus: "full" }]);
+  // a turn taken up again (继续作答): how many times, as a number
+  assert.deepEqual([timed.resumed, normalizeRecord({ ...turn, resumed: "2" }).resumed], [2, undefined]);
   // an older page's record has none of them
-  assert.deepEqual(Object.keys(normalizeRecord(turn)).filter((k) => ["requests", "events", "hidden", "asleep", "was"].includes(k)), []);
+  assert.deepEqual(Object.keys(normalizeRecord(turn)).filter((k) => ["requests", "events", "hidden", "asleep", "was", "resumed"].includes(k)), []);
 });
 
 test("the collector: token required, records after its cursor, deleted once committed, ids never reused", async () => {
