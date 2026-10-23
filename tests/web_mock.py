@@ -10,7 +10,8 @@ prescriptions (``mydata__prescriptions``) and citing its first row.  A question 
 output limit (``finish_reason: length``) part-way, and the rest when the page asks it to write on; one asking it to
 想得很久 spends the limit on its thinking, and answers when asked again without.  One asking for 图表与原文 compares two
 formulas and searches the classics in the same round, and answers with what the round gave it (the test may hold the
-search).  Every request is recorded for the test to inspect.
+search); one asking it to 再查一遍 searches twice, in two rounds, each call under the same id (as a service that numbers
+its calls afresh in each reply does).  Every request is recorded for the test to inspect.
 """
 
 from __future__ import annotations
@@ -44,6 +45,8 @@ CHART_ANSWER = ("两方的对照见上方图表。合两方的共有药味作图
 # a question asking for 图表与原文: a comparison and a search in one round; the answer says what it could not use
 BOTH = "图表与原文"
 PARTIAL_ANSWER = "两方的对照见上方图表。原文的检索没有等到结果，这里没有引用原文；需要时可以再问一次。"
+# a question asking to search again: the same search in two rounds, both calls under one id
+AGAIN = "再查一遍"
 # a message carrying the user's data: its prescriptions analysed by diagnosis, its first row quoted
 DATA_ANSWER = ("## 用药规律\n\n高频药物、药对与各组用药见上方图表。\n\n"
                "- 第一张处方：「处方：柴胡12g 黄芩9g」[[mine:{id}.r1]]\n\n统计只描述这份资料，不构成诊疗建议。")
@@ -112,6 +115,9 @@ class _Handler(BaseHTTPRequestHandler):
             chunks = self._answer() if body.get("thinking") == {"type": "disabled"} else self._overthought()
         elif body.get("tools") and BOTH in asked:
             chunks = self._said(PARTIAL_ANSWER) if answered else self._two_calls()
+        elif body.get("tools") and AGAIN in asked:
+            searched = sum(m.get("role") == "tool" for m in messages[last_user + 1:])
+            chunks = self._answer() if searched >= 2 else self._tool_call()
         else:
             chunks = (self._answer(charting) if answered else self._tool_call(charting)) if body.get("tools") else self._answer()
         for chunk in chunks:

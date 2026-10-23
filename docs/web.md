@@ -699,12 +699,12 @@ a stream that ends without a finish reason or `[DONE]` asked again, which refusa
 spread of the waits, what a reply may use, an answer cut at the output limit written on, one that only thought asked
 again without thinking, no call of a cut reply run, the content filter and a full context told, the rounds of tools left
 named to the model; the waits — each limit counted in the time the page ran, a reply that sends nothing at first,
-falls silent or takes too long read whole asked again, a stop and a limit told apart and every listener removed, a
-chart answered while the search beside it stalls to its deadline, the time a call waits for its turn not counted,
-the answer asked for while calls run and a model that keeps calling told no, a research run left to go on and ended
-later, the browser runtime's queue (a call not yet begun never sent, a late result dropped, a runtime held up started
-again, Python interrupted where the page shares memory), a server's calls four at a time, its research looked at
-within limits and lost after five failed looks; history rules, dangling tool calls, citation pairing, which
+falls silent or takes too long read whole asked again, a stop and a limit told apart, every listener removed and no
+failure left unhandled, a chart answered while the search beside it stalls to its deadline, the time a call waits for
+its turn not counted, the answer asked for while calls run and a model that keeps calling told no, a research run left
+to go on and ended later, the browser runtime's queue (a call not yet begun never sent, a late result dropped, a runtime
+held up started again, Python interrupted where the page shares memory), a server's calls four at a time, its research
+looked at within limits and lost after five failed looks; history rules, dangling tool calls, citation pairing, which
 questions get the fixed reply and which go to the model; the alias badges — labels, the names merged, the asked name found
 for a hit, the flags' words, every card of a search marked with its badges or with none; the charts' checks, CSV, Markdown tables, colours and axes; a box
 plot's numbers, a forest plot's log axis, a tree's checks; CRC-32, PackBits, a TIFF's directory, a PNG's pHYs and a ZIP;
@@ -716,7 +716,8 @@ the chip states, the highlighted passage, Tao-R1 in the chip and under the answe
 answer cut at the output limit written on and shown as one, and a reply that only thought asked again with less (MiniMax
 without thinking, Claude at low effort), and Claude's stream that ends part-way or without a stop reason asked again; a chart drawn
 while the search beside it is held — the steps counting, 不再等待 offered and taken, the search skipped and the
-answer noted as perhaps incomplete, a search past its deadline ended, and a stop that leaves the page usable; and
+answer noted as perhaps incomplete, a search past its deadline ended, a stop that leaves the page usable, and two
+rounds' calls under one id each shown with its own end; and
 a page served elsewhere (as on GitHub Pages) connecting to a server in one step, using it again after a reload, and a
 token taken from the address (and its absence reported); an API set by hand (address, model, key, headers, parameters —
 checked in the request it makes); the default service (a stand-in relay): asked at once without a key, no key sent by the

@@ -725,6 +725,16 @@ for (const [after, limits, check] of [[60, { silence: 5000 }, (e) => e.name === 
   clearTimeout(timer);
   assert.equal(listening, 0);
 }
+// a request stopped as it is sent: a stop, and the fetch's own failure is not left unhandled
+let unhandled = 0;
+const unhandledSeen = () => unhandled++;
+process.on("unhandledRejection", unhandledSeen);
+const stopNow = new AbortController();
+globalThis.fetch = async () => { stopNow.abort(); throw abortError(); };
+await assert.rejects(ask({ signal: stopNow.signal }), (e) => e.name === "AbortError");
+await sleep(30);
+process.off("unhandledRejection", unhandledSeen);
+assert.equal(unhandled, 0);
 // a reply that stalled is asked again, and what it had shown goes
 let asked = 0;
 globalThis.fetch = async () => streamed(++asked === 1 ? silent(delta("半")) : sse(delta("答", "stop")));
@@ -1469,10 +1479,15 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
                     route.abort()
                 except Error:
                     pass  # the page has given it up already
-            page.fill("#input", "桂枝汤主治什么？请给出原文。")
+            # and the next question is answered — one the model searches for twice, in two rounds, each call under the
+            # same id (a service that numbers its calls afresh in each reply): each step ends as its own
+            page.fill("#input", "桂枝汤主治什么？请再查一遍原文。")
             page.keyboard.press("Enter")
             page.wait_for_function("document.querySelectorAll('.msg.assistant')[3]?.querySelector('.verify-bar')", timeout=60000)
-            assert page.locator(".msg.assistant").nth(3).locator(".steps .tool .st.ok").count() == 1
+            fourth = page.locator(".msg.assistant").nth(3)
+            assert [m["tool_call_id"] for m in mock.requests[-1]["body"]["messages"] if m["role"] == "tool"][-2:] == ["call_1", "call_1"]
+            assert fourth.locator(".steps .tool .st.ok").count() == 2
+            assert fourth.locator(".steps .tool .row > .sm").all_inner_texts() == ["3 条命中", "3 条命中"]
             assert not errors, errors
             browser.close()
     finally:

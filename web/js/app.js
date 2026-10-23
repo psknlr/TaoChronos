@@ -596,10 +596,10 @@ function makeHooks(conv, msg) {
     }
     return refs[type];
   };
-  const findCall = (id) => {
-    for (const seg of msg.segments) for (const c of seg.calls || []) if (c.id === id) return c;
-    return null;
-  };
+  // what the page shows of each call, by the turn's own record of it: two calls of a turn may share an id (a service
+  // that numbers its calls afresh in each reply)
+  const shown = new Map();
+  const findCall = (call) => shown.get(call) || null;
   // a round's tools waited on for LIMITS.offer: the page offers to answer with what it has
   const offerLater = (s) => {
     if (offer || s.offer) return;
@@ -609,7 +609,7 @@ function makeHooks(conv, msg) {
     }, LIMITS.offer);
   };
   const end = (call, out, later = false) => {
-    const c = findCall(call.id);
+    const c = findCall(call);
     if (!c) return;
     c.status = out.ok ? "ok" : out.status || "error";
     c.ms = Date.now() - (c.started || Date.now());
@@ -672,27 +672,29 @@ function makeHooks(conv, msg) {
     toolStart(call) {
       const s = segment("tools");
       s.calls = s.calls.filter((c) => !c.pending);
-      s.calls.push({ id: call.id, name: call.name, args: call.args, status: "running", family: toolFamily(call.name, S.catalogIndex), started: call.started, since: call.started });
+      const c = { id: call.id, name: call.name, args: call.args, status: "running", family: toolFamily(call.name, S.catalogIndex), started: call.started, since: call.started };
+      s.calls.push(c);
+      shown.set(call, c);
       msg.toolCount = (msg.toolCount || 0) + 1;
       offerLater(s);
       update();
     },
     // it waits for the runtime to load ("loading"), or for its turn ("queued"); then it runs
     toolWaiting(call, why) {
-      const c = findCall(call.id);
+      const c = findCall(call);
       if (!c || !WAITING.has(c.status)) return;
       c.status = why === "loading" ? "loading" : "queued";
       update();
     },
     toolRunning(call) {
-      const c = findCall(call.id);
+      const c = findCall(call);
       if (!c || !WAITING.has(c.status)) return;
       c.status = "running";
       c.since = Date.now();
       update();
     },
     toolProgress(call, p) {
-      const c = findCall(call.id);
+      const c = findCall(call);
       if (!c) return;
       const pr = p?.progress || {};
       c.progress = p?.status === "queued" ? T`排队中：服务正在完成另一项研究 · ${Math.round(p?.elapsed_s || 0)} 秒`

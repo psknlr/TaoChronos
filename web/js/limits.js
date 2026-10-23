@@ -92,11 +92,15 @@ export function watch(outer, limits = {}) {
 /** A promise's result (or a value's), or an AbortError as soon as `signal` ends the wait (the promise itself goes on). */
 export function until(promise, signal) {
   if (!signal) return promise;
-  if (signal.aborted) return Promise.reject(aborted());
+  const waited = Promise.resolve(promise);
+  if (signal.aborted) {
+    waited.catch(() => {}); // nothing waits for it: its failure (a fetch given a stopped signal) is not left unhandled
+    return Promise.reject(aborted());
+  }
   return new Promise((resolve, reject) => {
     const stop = () => reject(aborted());
     signal.addEventListener("abort", stop, { once: true });
-    Promise.resolve(promise).then(resolve, reject).finally(() => signal.removeEventListener("abort", stop));
+    waited.then(resolve, reject).finally(() => signal.removeEventListener("abort", stop));
   });
 }
 
