@@ -14,6 +14,11 @@ The model acts as an agent-principal actor holding read and analysis permissions
 canonical knowledge and, unless the runtime was started with Code Mode, run no code.  The same module serves the
 local server (``taochronos serve``, the full corpus) and the browser (Pyodide, the demonstration corpus), so both
 answer alike.
+
+The model writes its calls itself, and they are read here, at its side of the scheduler: a tool's name written in
+another form is that tool's, arguments whose form only is wrong are repaired, and a call that still does not fit — a
+name no tool has, a parameter the tool does not take — is answered with what exists, for the model to correct in one
+step.  What then runs passes the scheduler's gauntlet like any call.
 """
 
 from __future__ import annotations
@@ -26,12 +31,14 @@ from typing import Any
 
 from .. import AGENT_NAME, __version__
 from ..kernel.policy import Actor
-from ..kernel.tools import ToolCall
+from ..kernel.tools import ToolCall, closest_names, resolve_name
 from ..protocol.base import to_jsonable
+from ..protocol.schema import fit_arguments, signature
 from ..plugins.userdata.formats import ACCEPTED, MAX_BYTES, Unreadable
 from ..plugins.userdata.service import MyData
 from ..plugins.userdata.store import MAX_DATASETS
-from .catalog import CODE_MODE, ENGINE_TOOLS, META_TOOLS, NEVER, catalog_view, family_counts, llm_tools, offered, tool_entry
+from .catalog import (CODE_MODE, ENGINE_TOOLS, META_TOOLS, NEVER, PARAMETERS, catalog_view, family_counts, llm_tools, offered,
+                      tool_entry)
 from .prompt import AGENT_NAME as AGENT_NAME_ZH
 from .prompt import ASSISTANT_NAME, PUBLISHER, STARTERS, system_prompt
 from .results import citations, compact, for_interface, for_model, summarize
@@ -53,6 +60,10 @@ def default_profile(home: str | Path | None = None, data_dir: str | Path | None 
 
 
 class UnknownTool(LookupError):
+    pass
+
+
+class InvalidArguments(ValueError):
     pass
 
 
@@ -148,30 +159,64 @@ class ChatRuntime:
             raise PermissionError("Code Mode is off in this runtime (start the local server with --code-mode to allow it)")
         return spec.name
 
+    def _names(self) -> list[tuple[str, str]]:
+        """Every tool a model may call here, with its family: the mesh tools offered, the engine and the meta-tools."""
+        return ([(s.name, s.family) for s in offered(self.h.tools, code_mode=self.code_mode)]
+                + [(t["name"], t["family"]) for t in (*ENGINE_TOOLS, *META_TOOLS)])
+
+    def _schema(self, name: str) -> dict[str, Any]:
+        return PARAMETERS[name] if name in PARAMETERS else self.h.tools.get(name).input_schema
+
+    def _canonical(self, name: str) -> str:
+        """The tool a model's name denotes: the name itself (a mesh tool's model name too), or the one tool offered whose
+        name it writes in another form (``get_passage``, ``taochronos.catalog``); else :class:`UnknownTool`, which names
+        the closest tools offered and what they take."""
+        name = str(name or "")
+        if name in ENGINE_NAMES or self.h.tools.has(name):
+            return name
+        names = self._names()
+        found = resolve_name(name, [n for n, _ in names])
+        if found is not None:
+            return found
+        near = " · ".join(f"{n} {{{signature(self._schema(n), limit=6)}}}" for n in closest_names(name, names))
+        raise UnknownTool(f"unknown tool {name!r}; closest: {near}; use taochronos_catalog to see what exists")
+
     def call(self, name: str, arguments: dict[str, Any] | None = None, *, max_chars: int = 16000) -> dict[str, Any]:
-        """Run one tool the model asked for; never raises — a failure is a result the model can read."""
-        arguments = dict(arguments or {})
+        """Run one tool the model asked for; never raises — a failure is a result the model can read.  A name written in
+        another form is the tool's it denotes; arguments are read against the tool's parameters (``fit_arguments``): their
+        form repaired where only that was wrong (the outcome's ``repaired`` says how), and a call they still do not fit —
+        a parameter the tool does not take, which it would otherwise ignore — answered with what the tool takes."""
         started = time.perf_counter()
-        tool, ok, result, error, receipt = name, False, None, None, {}
+        tool, ok, result, error, receipt, repaired = name, False, None, None, {}, []
         try:
+            name = self._canonical(name)
             if name == "taochronos_call":
+                arguments, _, problem = fit_arguments(arguments if arguments is not None else {}, PARAMETERS[name], tool=name)
+                if problem:
+                    raise InvalidArguments(problem)
                 inner = str(arguments.get("tool") or "")
                 if not inner:
                     raise ValueError("taochronos_call needs {\"tool\": <name>, \"arguments\": {...}}")
+                inner = self._canonical(inner)
                 if inner in ENGINE_NAMES:
                     return {**self.call(inner, arguments.get("arguments") or {}, max_chars=max_chars), "via": "taochronos_call"}
-                name, arguments = inner, dict(arguments.get("arguments") or {})
-            if name in ENGINE_NAMES:
-                tool, result, ok = name, self._engine_tool(name, arguments), True
+                name, arguments = inner, arguments.get("arguments") or {}
+            tool = name if name in ENGINE_NAMES else self._resolve(name)
+            arguments, repaired, problem = fit_arguments(arguments if arguments is not None else {}, self._schema(tool), tool=tool)
+            if problem:
+                raise InvalidArguments(problem)
+            if tool in ENGINE_NAMES:
+                result, ok = self._engine_tool(tool, arguments), True
             else:
-                tool = self._resolve(name)
                 outcome = self.h.scheduler.execute(ToolCall(tool, arguments), actor=self.actor)
                 ok, result, error, receipt = outcome.ok, outcome.result, outcome.error, outcome.receipt
-        except UnknownTool as exc:
+        except (UnknownTool, InvalidArguments) as exc:
             error = str(exc)
         except Exception as exc:  # a failing tool is data for the model, not a crash of the conversation
             error = f"{type(exc).__name__}: {exc}"
         out = shape(tool, ok, result, error, receipt, duration_ms=(time.perf_counter() - started) * 1000, max_chars=max_chars)
+        if repaired:
+            out["repaired"] = repaired
         for card in out.get("citations") or []:  # a row or passage of the user's data, as the page names it (for the page only)
             if str(card.get("passage_id", "")).startswith("mine:"):
                 try:

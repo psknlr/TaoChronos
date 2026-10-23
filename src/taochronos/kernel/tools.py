@@ -24,10 +24,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from difflib import SequenceMatcher
+from typing import Any, Callable, Iterable
 
 from ..protocol.base import stable_id, to_jsonable
 from ..protocol.events import EventType
@@ -167,6 +169,53 @@ class ToolRegistry:
         if family:
             specs = [s for s in specs if s.family == family]
         return specs
+
+
+# ------------------------------------------------------------------ a model's names for tools
+def name_key(name: str) -> str:
+    """A tool's name with case and separators set aside: ``classics__get_passage``, ``Classics.Get-Passage`` and
+    ``classics.get_passage`` are all ``classics.get.passage``."""
+    return ".".join(part for part in re.split(r"[^0-9a-z]+", name.lower()) if part)
+
+
+def resolve_name(name: str, names: Iterable[str]) -> str | None:
+    """The one of ``names`` that a model's name for a tool denotes by its form alone: the name in another case or with
+    other separators; with something written before it (``get_classics__get_passage``); without its family
+    (``get_passage``) or under another one (``study__get_passage``), where only one tool has what follows the family.
+    None where none fits, or more than one does: such a name is the model's to correct (:func:`closest_names`)."""
+    key = name_key(name)
+    keys = {n: name_key(n) for n in names}
+    rest = {n: k.partition(".")[2] for n, k in keys.items()}
+    after = key.partition(".")[2]
+    rules = (lambda n: keys[n] == key, lambda n: key.endswith("." + keys[n]), lambda n: rest[n] == key,
+             lambda n: bool(after) and rest[n] == after)
+    for rule in rules if key else ():
+        found = [n for n in keys if rule(n)]
+        if found:
+            return found[0] if len(found) == 1 else None
+    return None
+
+
+def _ratio(a: str, b: str) -> float:
+    return SequenceMatcher(None, a, b, autojunk=False).ratio()
+
+
+def closest_names(name: str, entries: Iterable[tuple[str, str]], n: int = 3) -> list[str]:
+    """The ``n`` names of ``entries`` (name, family) closest to a name no tool has: by the whole name or what follows its
+    family, whichever is nearer, and nearer still in the family the name begins with (``literature.search`` →
+    ``modern.search``, of the family literature)."""
+    key = name_key(name)
+    head, _, verb = key.partition(".")
+    verb = verb or head
+
+    def score(entry: tuple[str, str]) -> float:
+        cand = name_key(entry[0])
+        chead, _, cverb = cand.partition(".")
+        near = max(_ratio(key, cand), _ratio(verb, cverb or chead))
+        return near + (0.2 if head and head in (chead, name_key(entry[1])) else 0.0)
+
+    ranked = sorted(entries, key=lambda e: (-score(e), e[0]))
+    return [name_ for name_, _ in ranked[:n]]
 
 
 class ToolScheduler:

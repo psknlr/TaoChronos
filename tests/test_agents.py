@@ -97,6 +97,26 @@ def test_llm_loop_verifies_model_output_and_falls_back_on_refusal(tmp_path):
     assert "You are TaoChronos-Hypothesis" in scripted.requests[0].system
 
 
+def test_the_llm_loop_reads_a_models_call_as_written(tmp_path):
+    """A model's call is read at its side of the scheduler: a name in another form is the tool's, arguments whose form
+    only is wrong are repaired, a parameter the tool does not take is refused with what it takes, and a name no tool of
+    the agent has is answered with the closest it has."""
+    scripted = ScriptedProvider([
+        {"tool_uses": [{"id": "tu_a", "name": "classics.search", "input": {"query": "消渴", "k": "2"}},
+                       {"id": "tu_b", "name": "classics__search", "input": {"query": "消渴", "limit": 2}},
+                       {"id": "tu_c", "name": "classics__serch", "input": {"query": "消渴"}}]},
+        _hypothesis_step,
+    ], name="scripted")
+    h = make_harness(tmp_path, providers={"scripted": scripted},
+                     overrides={"routing": {"roles": {"hypothesis": {"provider": "scripted"}}}, "stop": {"max_rounds": 1}})
+    run_research(h, "llm-calls")
+    results = {r.tool_use_id: r for m in scripted.requests[1].messages for r in m.tool_results}
+    assert not results["tu_a"].is_error and len(json.loads(results["tu_a"].content)["hits"]) == 2
+    assert results["tu_b"].is_error and results["tu_b"].content.startswith("ERROR: invalid arguments: $: unknown parameter 'limit'")
+    assert "classics__search takes: query (string, required); k (integer)" in results["tu_b"].content
+    assert results["tu_c"].is_error and "is not available to TaoChronos-Hypothesis; closest: classics__search" in results["tu_c"].content
+
+
 def test_command_subagent_provider(tmp_path):
     script = tmp_path / "agent.py"
     script.write_text("import json,sys\npayload=json.load(sys.stdin)\nprint(json.dumps({'result': json.dumps({'echo': payload['role']})}))\n")

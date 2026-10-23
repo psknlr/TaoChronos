@@ -10,6 +10,10 @@ give in Python on the layer the Worker ships, which the port must reproduce exac
 expansion goes unsearched), the gates on the fixture's passages and on made-up ones (将军 and 大将军, 天地精, a
 straddle, 青木香's window, 通草's periods, ties), the slots and the rounding.  No held-out gold name is asked or tested
 (``aliases_gold.heldout_surfaces``).
+
+It carries ``calls`` too: what the protocol's reading of a model's calls gives in Python (``coerce``, ``fit_arguments``,
+``resolve_name``, ``closest_names``), which ``backup/catalog.js`` must reproduce exactly — arguments against a schema of
+every kind the catalog's parameters use, and names against every tool a model may call.
 """
 
 from __future__ import annotations
@@ -136,7 +140,56 @@ REFERENCE: list[tuple[str, dict[str, Any]]] = [
     ("classics.search", {"query": "五加皮散的组成"}),
     ("classics.search", {"query": LONG_QUESTION[:200]}),
     ("classics.search", {"query": LONG_QUESTION}),
+    # a model's call as it wrote it (ChatRuntime.call): a name in another form; arguments whose form only is wrong,
+    # repaired (the outcome's ``repaired``); a parameter the tool does not take, a value that is not of its type and a
+    # text listing several values, refused with what the tool takes
+    ("get_passage", {"passage_id": "cm_shanghan_npm.00001"}),
+    ("Classics.Get-Passage", {"passage_id": ["cm_shanghan_npm.00001"]}),
+    ("classics.get_passage", {}),
+    ("classics.get_passage", {"passage_id": "cm_shanghan_npm.00001", "full": True}),
+    ("classics.list_books", {"dynasty": "宋", "limit": "3"}),
+    ("classics.canon", {"held": "TRUE", "limit": {"item": "5"}}),
+    ("kg.term", {"surface": {"item": "消渴"}}),
+    ("study.metrology", {"dose": "三两", "year": "200"}),
+    ("classics.search", {"query": "桂枝汤", "aliases": "OFF", "books": "cm_shanghan_npm"}),
+    ("classics.search", {"query": "桂枝汤", "books": "cm_shanghan_npm、jc_o056"}),
+    ("classics.search", {"query": "桂枝汤", "aliases": "none"}),
+    ("validation.verify_quote", {"text": "桂枝湯主之"}),
+    ("taochronos_call", {"tool": "classics.list_books", "arguments": '{"query": "伤寒", "limit": "2"}'}),
 ]
+# the protocol's reading of a model's calls (fixture.json ``calls``): arguments against a schema of every kind the
+# catalog's parameters use, as they are written well, in another form only, or wrongly; and names for tools
+CALL_SCHEMA: dict[str, Any] = {"type": "object", "properties": {
+    "term": {"type": "string"}, "terms": {"type": "array", "items": {"type": "string"}}, "limit": {"type": "integer"},
+    "share": {"type": "number"}, "whole": {"type": "boolean"}, "aliases": {"type": "string", "enum": ["auto", "off"]},
+    "years": {"type": "array", "items": {"type": "integer"}}, "opts": {"type": "object", "properties": {"n": {"type": "integer"}}},
+    "year": {"anyOf": [{"type": "integer"}, {"type": "null"}]}}, "required": ["term"]}
+CALL_ARGUMENTS: list[Any] = [
+    {"term": "消渴", "limit": 40}, {"term": "消渴", "limit": "40"}, {"term": "x", "limit": "  12.000 "}, {"term": "x", "limit": "+7"},
+    {"term": "x", "share": "0.6", "whole": "TRUE", "aliases": "Off"}, {"term": "x", "share": " .5 "}, {"term": "x", "share": "-2."},
+    {"term": "x", "terms": {"item": "脱疽"}}, {"term": "x", "terms": {"item": ["脱疽", "脱骨疽"]}}, {"term": "x", "terms": "脱疽"},
+    {"term": "x", "terms": '["脱疽", "脱骨疽"]'}, {"term": "x", "terms": " [1, 2] "}, {"term": "x", "terms": 3},
+    {"term": "x", "terms": [3, "4"]}, {"term": "x", "years": ["1368", 960]}, {"term": "x", "opts": '{"n": "3"}'},
+    {"term": "x", "opts": '{"n": 1, "m": 2}'}, {"term": "x", "year": "1368"}, {"term": "x", "year": None},
+    {"term": "x", "whole": [" false "]}, {"term": "x", "aliases": "  AUTO "}, {"term": ["消渴"]}, {"term": {"item": "消渴"}},
+    {"term": 1368}, {"term": 0.5}, {"term": "长" * 70}, {"term": ["长" * 70]},
+    # what only a guess would repair is left as it is, for validation to report
+    {"term": "x", "limit": "forty"}, {"term": "x", "limit": 4.5}, {"term": "x", "limit": True}, {"term": "x", "terms": "脱疽、脱骨疽"},
+    {"term": "x", "terms": "脱疽,脱骨疽"}, {"term": "x", "terms": ""}, {"term": "x", "whole": "yes"}, {"term": "x", "aliases": "none"},
+    {"term": "x", "aliases": "it's"}, {"term": "x", "aliases": "a\"b'c\n\u3000\u00a0"}, {"term": ["消渴", "口渴"]}, {"term": None},
+    {"term": "x", "limit": "1e400"}, {"term": "x", "limit": "Infinity"}, {"term": "x", "opts": "{oops"},
+    {"term": "x", "year": "null"}, {"term": "x", "unknown": "40"}, {"name": "x"},
+    # not an object at all
+    ["x"], "x", 3, True, 1.5,
+]
+CALL_NAMES: tuple[str, ...] = (
+    "classics.get_passage", "classics__get_passage", "get_passage", "study__get_passage", "get_classics__get_passage",
+    "Classics.Get-Passage", "taochronos.catalog", "Taochronos_Call", "herb", "study_herb", "verifyQuote", "search",
+    "literature.search", "kg.terms", "study.formulas", "classics.get-passage-text", "mydata__serch", "taochronos-research",
+    "nothing.here", "x", "a.b.c.d", "", "___",
+    # what a chat model is never offered: never reached by another form of its name, nor suggested
+    "kg.propose_change", "KG.Propose-Change", "propose_change", "kg.propose", "research.run_code", "run_code", "research.run-code",
+)
 # the alias cases: questions read with the layer, and made-up passages for the gates ([text, the name it tests, the
 # passage's range, its edition's]) — none asks or writes a held-out gold name
 ALIAS_QUESTIONS = ("国老", "甘草", "唐以前的木通", "清代的通草", "唐以前的通草", "明清的通草", "通草", "蘖木", "大黄", "将军", "大将军",
@@ -205,14 +258,34 @@ def build_fixture(out: str | Path, *, home: str | Path | None = None, log: Any =
     reference = []
     for name, args in REFERENCE:
         r = runtime.call(name, args, max_chars=16000)
-        reference.append({"name": name, "args": args, "ok": r["ok"], "result": r.get("result"), "error": r.get("error")})
+        reference.append({"name": name, "args": args, "ok": r["ok"], "result": r.get("result"), "error": r.get("error"),
+                          "repaired": r.get("repaired")})
     cases = alias_cases(runtime, home=root)
+    calls = call_cases(runtime._names())
     runtime.h.corpus.store.close()
     info = {"report": report, "summary": summary(plan, statements=False), "clause": CLAUSE, "keys": [[t, k] for t, k, _ in keys],
-            "reference": reference, "alias_cases": cases}
+            "reference": reference, "alias_cases": cases, "calls": calls}
     (out / "fixture.json").write_text(json.dumps(info, ensure_ascii=False, indent=1), encoding="utf-8")
     log(f"fixture: {report['statements']} statements, {plan.databases} databases, {len(plan.chunks)} chunks, complete={report['complete']}")
     return info
+
+
+def call_cases(entries: list[tuple[str, str]]) -> dict[str, Any]:
+    """What the protocol's reading of a model's calls gives in Python, for ``backup/catalog.js`` to reproduce: each of
+    :data:`CALL_ARGUMENTS` coerced and fitted to :data:`CALL_SCHEMA`, and each of :data:`CALL_NAMES` resolved among
+    ``entries`` (name, family: every tool a model may call), with all of them ranked by how close they are to it."""
+    from ..kernel.tools import closest_names, resolve_name
+    from ..protocol.schema import coerce, fit_arguments
+
+    names = [n for n, _ in entries]
+    return {
+        "schema": CALL_SCHEMA,
+        "arguments": [{"args": a, "coerced": list(coerce(a, CALL_SCHEMA)), "fitted": list(fit_arguments(a, CALL_SCHEMA, tool="t"))}
+                      for a in CALL_ARGUMENTS],
+        "entries": [list(e) for e in entries],
+        "names": [{"name": n, "resolved": resolve_name(n, names), "ranked": closest_names(n, entries, n=len(entries))}
+                  for n in CALL_NAMES],
+    }
 
 
 # ------------------------------------------------------------------ the alias layer's cases

@@ -3,7 +3,8 @@
 // container, and its runtime label says it is the backup.  Research runs and sessions need the server: POST
 // /api/research answers 501 with the reason (the page shows it and stays on the site's server).
 
-import { catalog, catalogView, engineNames, LIVE, PRECOMPUTED, served, toolEntry, validate } from "./catalog.js";
+import { canonical, catalog, catalogView, closest, engineNames, fitArguments, LIVE, parametersOf, PRECOMPUTED, pyRepr,
+  served } from "./catalog.js";
 import { Corpus, CorpusError, passageCard } from "./corpus.js";
 import { precomputed } from "./precomputed.js";
 import { shape } from "./results.js";
@@ -159,38 +160,56 @@ async function passage(corpus, pid) {
 // ------------------------------------------------------------------ calls
 const ENGINE = new Set(engineNames());
 
-/** ChatRuntime.call: one tool the model asked for; never throws — a failure is a result the model can read. */
+/** ChatRuntime.call: one tool the model asked for; never throws — a failure is a result the model can read.  A name written
+ * in another form is the tool's it denotes; the arguments are read against its parameters (fitArguments): their form
+ * repaired where only that was wrong (the outcome's `repaired` says how), and a call they still do not fit — a parameter
+ * the tool does not take, which it would otherwise ignore — answered with what the tool takes. */
 export async function call(corpus, name, args, maxChars = 16000, pre = new Set()) {
   const started = Date.now();
   let tool = name;
-  let a = args && typeof args === "object" ? args : {};
+  let a = args ?? {};
   let via = null;
+  let repaired = [];
+  const done = (out) => withVia(repaired.length ? { ...out, repaired } : out, via);
   try {
-    if (name === "taochronos_call") {
-      const inner = String(a.tool || "");
+    tool = named(name, pre);
+    while (tool === "taochronos_call") {
+      const fit = fitArguments(a, parametersOf(tool), tool);
+      if (fit.problem) throw new ToolError("invalid", fit.problem);
+      const inner = String(fit.args.tool || "");
       if (!inner) throw new ToolError("ValueError", 'taochronos_call needs {"tool": <name>, "arguments": {...}}');
       via = "taochronos_call";
-      tool = inner;
-      a = a.arguments && typeof a.arguments === "object" ? a.arguments : {};
+      tool = named(inner, pre);
+      a = fit.args.arguments || {};
     }
-    if (tool === "taochronos_catalog") {
+    if (ENGINE.has(tool)) throw new ToolError("Unavailable", unavailable(tool));
+    const meta = tool === "taochronos_catalog";
+    if (!meta && !LIVE.has(tool) && !(PRECOMPUTED.has(tool) && pre.has(tool))) throw new ToolError("Unavailable", unavailable(tool));
+    const fit = fitArguments(a, parametersOf(tool), tool);
+    repaired = fit.repaired;
+    if (fit.problem) throw new ToolError("invalid", fit.problem);
+    a = fit.args;
+    if (meta) {
       const result = catalogView(pre, { family: a.family || null, query: a.query || null });
-      return withVia(shape(tool, true, result, null, { durationMs: Date.now() - started, maxChars, receipt: await receipt(tool, a, result) }), via);
+      return done(shape(tool, true, result, null, { durationMs: Date.now() - started, maxChars, receipt: await receipt(tool, a, result) }));
     }
-    if (ENGINE.has(tool) || tool === "taochronos_call") throw new ToolError("Unavailable", unavailable(tool));
-    const spec = toolEntry(tool) || toolEntry(tool.replaceAll("__", "."));
-    if (!spec) throw new ToolError("UnknownTool", `unknown tool '${tool}'; use taochronos_catalog to see what exists`);
-    tool = spec.tool;
-    if (!LIVE.has(tool) && !(PRECOMPUTED.has(tool) && pre.has(tool))) throw new ToolError("Unavailable", unavailable(tool));
-    const errors = validate(a, spec.parameters);
-    if (errors.length) throw new ToolError("invalid", `invalid arguments: ${errors.slice(0, 5).join("; ")}`);
     const result = LIVE.has(tool) ? await RUN[tool](corpus, a) : await precomputed(corpus, tool, a);
     const dumped = JSON.stringify(result ?? null);
-    return withVia(shape(tool, true, result, null, { durationMs: Date.now() - started, maxChars, dumped,
-      receipt: await receipt(tool, a, result, dumped) }), via);
+    return done(shape(tool, true, result, null, { durationMs: Date.now() - started, maxChars, dumped,
+      receipt: await receipt(tool, a, result, dumped) }));
   } catch (err) {
-    return withVia(shape(tool, false, null, errorText(err), { durationMs: Date.now() - started }), via);
+    return done(shape(tool, false, null, errorText(err), { durationMs: Date.now() - started }));
   }
+}
+
+/** The tool a model's name denotes (catalog.js canonical); else UnknownTool, naming the closest tools served. */
+function named(name, pre) {
+  const text = String(name ?? "");
+  const tool = canonical(text);
+  if (tool === null) {
+    throw new ToolError("UnknownTool", `unknown tool ${pyRepr(text)}; closest: ${closest(text, pre)}; use taochronos_catalog to see what exists`);
+  }
+  return tool;
 }
 
 const withVia = (out, via) => (via ? { ...out, via } : out);

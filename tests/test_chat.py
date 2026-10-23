@@ -48,10 +48,63 @@ def test_tools_are_called_by_either_name_and_failures_are_results_not_crashes(rt
     assert json.loads(by_model_name["text"])["hits"]
     assert rt.call("classics.get_passage", {"passage_id": "shanghanlun.c013"})["ok"]
     for name, args, needle in [("kg.propose_change", {}, "people"), ("research.run_code", {"code": "1"}, "Code Mode"),
-                               ("no.such_tool", {}, "unknown tool"), ("taochronos_session", {}, "needs session_id"),
+                               ("no.such_tool", {}, "unknown tool"),
+                               ("taochronos_session", {}, "missing required property 'session_id'"),
+                               ("taochronos_session", {"session_id": ""}, "needs session_id"),
                                ("classics.search", {}, "invalid arguments")]:
         out = rt.call(name, args)
         assert not out["ok"] and needle in out["error"] and out["text"].startswith("ERROR:")
+
+
+def test_a_models_arguments_are_repaired_where_only_their_form_is_wrong(rt):
+    """A number written as text, a list wrapped as {"item": …} (how some models' tool grammars write one), one value where
+    a list is expected, a list or an object written as JSON text: the call runs, and says what was repaired."""
+    out = rt.call("classics__search", {"query": "桂枝汤", "k": "3"})
+    assert out["ok"] and len(out["result"]["hits"]) == 3 and out["repaired"] == ['$.k: "3" → 3']
+    wrapped = rt.call("kg.claims", {"terms": {"item": "消渴"}, "limit": "5"})
+    assert wrapped["ok"] and wrapped["repaired"] == ['$.terms: {"item":"消渴"} → ["消渴"]', '$.limit: "5" → 5']
+    assert wrapped["result"] == rt.call("kg.claims", {"terms": ["消渴"], "limit": 5})["result"]
+    assert rt.call("kg.claims", {"terms": "消渴"})["repaired"] == ['$.terms: "消渴" → ["消渴"]']
+    via = rt.call("taochronos_call", {"tool": "study.herb", "arguments": '{"name": "黄连", "items": "2"}'})
+    assert via["ok"] and via["tool"] == "study.herb" and via["repaired"] == ['$.items: "2" → 2']
+    meta = rt.call("taochronos_catalog", {"family": ["study"]})
+    assert meta["ok"] and meta["repaired"] == ['$.family: ["study"] → "study"'] and meta["result"]["matched"]
+    # a well-formed call is left exactly as it is; a text that lists several values is not taken for one value
+    assert "repaired" not in rt.call("classics.search", {"query": "桂枝汤", "k": 3})
+    listed = rt.call("kg.claims", {"terms": "消渴、口渴"})
+    assert not listed["ok"] and "$.terms: expected array, got str" in listed["error"]
+    assert not rt.call("classics.search", {"query": "桂枝汤", "k": "three"})["ok"]
+
+
+def test_a_parameter_the_tool_does_not_take_is_refused_with_what_it_takes(rt):
+    """A call naming a parameter the tool does not have would run without it — a case search for 耳鸣 written with
+    ``query`` returned every case — so it is refused, with the tool's parameters, for the model to correct in one step."""
+    out = rt.call("study.herb", {"surface": "黄连"})
+    assert not out["ok"] and out["error"] == ("invalid arguments: $: missing required property 'name'; $: unknown parameter "
+                                              "'surface' · study.herb takes: name (string, required); items (integer)")
+    extra = rt.call("classics.get_passage", {"passage_id": "shanghanlun.c013", "chars": 500})
+    assert not extra["ok"] and "unknown parameter 'chars'" in extra["error"] and "passage_id (string, required)" in extra["error"]
+    research = rt.call("taochronos_research", {"question": "消渴", "depth": "deep"})
+    assert not research["ok"] and "unknown parameter 'depth'" in research["error"] and "question (string, required)" in research["error"]
+    assert not rt.call("taochronos_call", {"name": "study.herb", "args": {"name": "黄连"}})["ok"]
+
+
+def test_a_tool_named_in_another_form_is_that_tool_and_an_unknown_one_is_answered_with_the_closest(rt):
+    for written in ("get_passage", "study__get_passage", "get_classics__get_passage", "Classics.Get_Passage"):
+        out = rt.call(written, {"passage_id": "shanghanlun.c013"})
+        assert out["ok"] and out["tool"] == "classics.get_passage", written
+    assert rt.call("taochronos.catalog", {})["tool"] == "taochronos_catalog"
+    assert rt.call("taochronos_call", {"tool": "get_passage", "arguments": {"passage_id": "shanghanlun.c013"}})["ok"]
+    ambiguous = rt.call("search", {"query": "桂枝汤"})  # classics, modern and mydata each have a search: not guessed
+    assert not ambiguous["ok"] and ambiguous["error"].startswith("unknown tool 'search'; closest: classics.search {query (string, required)")
+    assert ambiguous["error"].endswith("; use taochronos_catalog to see what exists")
+    other = rt.call("literature.search", {"query": "x"})
+    assert other["error"].startswith("unknown tool 'literature.search'; closest: modern.search {subject (string, required)")
+    # what a chat model is never offered is never reached by another form of its name, nor suggested
+    for written in ("KG.Propose-Change", "propose_change", "kg.propose", "run_code", "research.run-code"):
+        out = rt.call(written, {})
+        closest = out["error"].split("; closest: ", 1)[1]
+        assert not out["ok"] and "propose_change" not in closest and "run_code" not in closest, written
 
 
 def test_meta_tools_list_and_call_the_rest(rt):
