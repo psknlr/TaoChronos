@@ -48,7 +48,7 @@
       <button id="collapse-sidebar" class="icon-btn" type="button" title="收起侧栏 (Ctrl+B)" aria-label="收起侧栏"></button>
     </div>
     <div class="side-actions">
-      <button id="new-chat" class="new-chat" type="button"><span id="new-chat-icon"></span>新对话<kbd>Ctrl K</kbd></button>
+      <button id="new-chat" class="new-chat" type="button"><span id="new-chat-icon"></span><span class="nm">新对话</span><kbd>Ctrl K</kbd></button>
       <label class="search"><span class="sr-only">搜索对话</span><span id="search-icon"></span><input id="search" type="search" placeholder="搜索对话" autocomplete="off"></label>
     </div>
     <nav id="convs" class="convs" aria-label="历史对话"></nav>
@@ -67,7 +67,14 @@
     <header class="topbar">
       <button id="toggle-sidebar" class="icon-btn" type="button" title="侧栏" aria-label="打开或收起对话列表"></button>
       <button id="model-chip" class="model-chip" type="button" title="Tao-R1 · 模型设置"><img class="seal" src="assets/logo.svg" alt=""><span class="nm">Tao-R1</span></button>
-      <div id="conv-title" class="title"></div>
+      <div class="topbar-center">
+        <nav class="site-switch" aria-label="切换站点 · Switch site">
+          <a class="on" href="https://chat.impf.ai/" aria-current="page" data-tip="中医古籍科学知识发现&#10;Scientific Knowledge Discovery from Ancient TCM Texts">TaoChronos</a>
+          <a href="https://science.impf.ai/" data-tip="中医药科学研究平台&#10;Scientific Research Platform for Traditional Chinese Medicine">TCMScience</a>
+        </nav>
+        <div id="conv-title" class="title"></div>
+      </div>
+      <label class="lang-pick" title="语言 · Language"><span id="lang-short" class="lang-short">简</span><select id="lang-select" aria-label="语言 · Language"></select></label>
       <button id="toggle-drawer" class="icon-btn" type="button" title="证据 · 研究 · 工具台 (Ctrl+J)" aria-label="证据、研究与工具台"></button>
       <button id="new-chat-top" class="icon-btn" type="button" title="新对话" aria-label="新对话"></button>
     </header>
@@ -86,13 +93,14 @@
             <li>分析我的资料：上传门诊处方、病案或调查表，做统计与处方用药分析；资料在本机读取并脱敏。</li>
           </ul>
           <p>例如：桂枝汤的原方组成与剂量出自哪里？「消渴」一词在历代文献中的含义如何演变？</p>
-          <p><a href="about">关于道乃久</a> · <a href="attribution">语料来源与授权</a></p>
+          <p><a href="about">关于道乃久</a></p>
         </section>
       </div>
     </div>
     <button id="to-bottom" class="to-bottom" type="button" aria-label="滚动到底部"></button>
     <div class="composer-wrap">
       <form id="composer" class="composer" autocomplete="off">
+        <div id="pause" class="notice warn pause" role="status" hidden></div>
         <div id="attachments" class="attachments" hidden></div>
         <label class="sr-only" for="input">输入问题</label>
         <textarea id="input" rows="1" placeholder="问一个关于中医古籍的问题……" enterkeyhint="send"></textarea>

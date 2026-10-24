@@ -488,9 +488,39 @@ def senses(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
                          if cp.get("year") is not None and cp.get("p") is not None else None])]
 
 
+def casecompare(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
+    groups = r.get("groups") or []
+    if not groups:
+        return []
+    label = {"book": "医案集", "physician": "医家", "period": "时期", "author": "著者"}.get(r.get("by"), "组")
+    rows = []
+    for g in groups:
+        o, rec = g.get("outcomes") or {}, g.get("recorded") or 0
+        rows.append({"group": g["group"], "n": g["cases"], "visits": mean_sd(g.get("visits"), 2),
+                     "improved": n_pct(o.get("improved", 0), rec), "ci": ci_pct(*(g.get("improved_ci") or (None, None))),
+                     "died": n_pct(o.get("died", 0), rec),
+                     "female": n_pct(round(g["female_share"] * g["sex_recorded"]), g["sex_recorded"])
+                     if g.get("female_share") is not None else "",
+                     "prior": pct(g.get("prior_share")),
+                     "formulas": "、".join(f["name"] for f in (g.get("formulas") or [])[:3])})
+    tests = r.get("tests") or {}
+    oc, vk = tests.get("outcome") or {}, tests.get("visits") or {}
+    return [table("casecompare-profile", f"各{label}医案概况", [
+        ("group", label, "l"), ("n", "医案（案）", "r"), ("visits", "诊次 x̄ ± s", "r"),
+        ("improved", "好转 n (%)", "r", "转归（记有转归者）"), ("ci", "好转率 95% CI", "r", "转归（记有转归者）"),
+        ("died", "死亡 n (%)", "r", "转归（记有转归者）"), ("female", "女性 n (%)", "r", "病家（记有性别者）"), ("prior", "记前医误治 %", "r"),
+        ("formulas", "常用方", "l")], rows, notes=[
+        "x̄ ± s：均数 ± 标准差；转归的百分比以记有转归的医案为分母，女性以记有性别的医案为分母；95% CI 为 Wilson 区间。",
+        f"转归（好转、未效、加重、死亡）× 组：χ² = {oc['chi2']:.2f}，df = {oc['df']}，{p_eq(oc['p'])}，Cramér's V = {oc['cramers_v']:.2f}"
+        + ("（最小期望频数 < 5，结果宜慎读）" if oc.get("min_expected", 5) < 5 else "") + "。" if oc else None,
+        f"诊次 × 组：Kruskal–Wallis H = {vk['h']:.2f}，df = {vk['df']}，{p_eq(vk['p'])}。" if vk else None,
+        "医案为医家所记、编者所选：所示为记录中的分布，非疗效证据。"])]
+
+
 BUILDERS: dict[str, Callable[[dict[str, Any], Any], list[dict[str, Any]]]] = {
     "usage": usage, "pairs": pairs, "compare": compare, "family": family, "term": term, "herb": herb, "properties": properties,
     "incompat": incompat, "network": network, "formula": formula, "names": names, "senses": senses,
+    "casecompare": casecompare,
 }
 
 

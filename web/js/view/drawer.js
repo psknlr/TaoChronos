@@ -7,6 +7,7 @@ import { columnsLabel, DATA_NOTICE, deidLabel, sizeLabel } from "../mydata.js";
 import { tablesOf } from "../table.js";
 import { append, bare, fmtMs, foundBadges, h, icon, passageLabel, prettyJSON, truncate, yearLabel } from "../util.js";
 import { FAMILY, toolFamily } from "./thread.js";
+import { T } from "../i18n.js";
 
 export function renderDrawer(el, S, ctx) {
   const conv = S.conv;
@@ -14,17 +15,17 @@ export function renderDrawer(el, S, ctx) {
   const runs = conv?.research || [];
   const tab = S.drawer.tab;
   const tabs = [
-    ["evidence", "证据", evidence.length],
-    ["research", "研究", runs.length],
-    ["data", "资料", S.data?.list?.length || null],
-    ["tools", "工具台", null],
+    ["evidence", T("证据"), evidence.length],
+    ["research", T("研究"), runs.length],
+    ["data", T("资料"), S.data?.list?.length || null],
+    ["tools", T("工具台"), null],
   ];
   const head = h("div.drawer-head",
     h("div.tabs", { role: "tablist" }, tabs.map(([id, label, n]) => h("button.tab", {
       type: "button", role: "tab", "aria-selected": String(tab === id), class: tab === id ? "on" : "",
       on: { click: () => ctx.setTab(id) },
     }, label, n ? h("span.n", String(n)) : null))),
-    h("button.icon-btn", { type: "button", title: "关闭侧栏", "aria-label": "关闭侧栏", on: { click: ctx.close } }, icon("x")));
+    h("button.icon-btn", { type: "button", title: T("关闭侧栏"), "aria-label": T("关闭侧栏"), on: { click: ctx.close } }, icon("x")));
   const body = h("div.drawer-body");
   if (tab === "evidence") body.append(evidencePane(S, ctx, evidence));
   else if (tab === "research") body.append(researchPane(S, ctx, runs));
@@ -39,12 +40,12 @@ function evidencePane(S, ctx, evidence) {
   const sel = S.drawer.pid;
   if (sel) pane.append(passageView(S, ctx, sel, S.drawer.quote));
   if (!evidence.length && !sel) {
-    pane.append(h("div.pane-empty", icon("book"), h("div", "对话中检索到、引用到的古籍段落会出现在这里。"),
-      h("div", "点击回答中的出处标记，可在此阅读全文、逐字核对。")));
+    pane.append(h("div.pane-empty", icon("book"), h("div", T("对话中检索到、引用到的古籍段落会出现在这里。")),
+      h("div", T("点击回答中的出处标记，可在此阅读全文、逐字核对。"))));
     return pane;
   }
   if (evidence.length) {
-    pane.append(h("div.section-title", `本对话的证据（${evidence.length}）`));
+    pane.append(h("div.section-title", T`本对话的证据（${evidence.length}）`));
     for (const card of evidence) {
       const st = ctx.bestStatus(card.passage_id);
       const found = foundBadges(card.found); // what the latest search to return it found it under
@@ -64,24 +65,24 @@ function evidencePane(S, ctx, evidence) {
 
 const stripBook = (loc) => String(loc || "").replace(/^《[^》]*》/, "");
 /** A book's title in 《》; a file of the user's as it is named. */
-const bookTitle = (card) => (card.mine || String(card.passage_id || "").startsWith("mine:") ? card.title : `《${card.title}》`);
+const bookTitle = (card) => (card.mine || String(card.passage_id || "").startsWith("mine:") ? card.title : T`《${card.title}》`);
 
 function passageView(S, ctx, pid, quote) {
   const box = h("div.passage-view", { class: S.drawer.vertical ? "vertical" : "" });
   const card = ctx.passageNow(pid);
   if (!card) {
-    box.append(h("div.ph", h("div.ti", h("b", pid), h("div.loc", "正在读取原文…"))), h("div.text", h("span.spinner")));
+    box.append(h("div.ph", h("div.ti", h("b", pid), h("div.loc", T("正在读取原文…")))), h("div.text", h("span.spinner")));
     ctx.loadPassage(pid);
     return box;
   }
   if (!card.ok && pid.startsWith("mine:")) {
-    box.append(h("div.ph", h("div.ti", h("b", pid), h("div.loc", "我的资料中没有这一行或这一段"))),
-      h("div.meta", "这份资料可能已被删除，或模型写错了编号。", card.error ? h("div.mono", truncate(card.error, 200)) : null));
+    box.append(h("div.ph", h("div.ti", h("b", pid), h("div.loc", T("我的资料中没有这一行或这一段")))),
+      h("div.meta", T("这份资料可能已被删除，或模型写错了编号。"), card.error ? h("div.mono", truncate(card.error, 200)) : null));
     return box;
   }
   if (!card.ok) {
-    box.append(h("div.ph", h("div.ti", h("b", pid), h("div.loc", "语料中没有这个段落"))),
-      h("div.meta", "模型写出的这个出处在当前语料中不存在：可能是编造的段落号，或它来自另一个语料（例如全量语料）。",
+    box.append(h("div.ph", h("div.ti", h("b", pid), h("div.loc", T("语料中没有这个段落")))),
+      h("div.meta", T("模型写出的这个出处在当前语料中不存在：可能是编造的段落号，或它来自另一个语料（例如全量语料）。"),
         card.error ? h("div.mono", truncate(card.error, 200)) : null));
     return box;
   }
@@ -97,17 +98,17 @@ function passageView(S, ctx, pid, quote) {
   append(box, [
     h("div.ph",
       h("div.ti", h("b", bookTitle(card)), h("div.loc", stripBook(card.locator)), h("div.loc", [yearLabel(card), card.period].filter(Boolean).join(" · "))),
-      h("button.icon-btn", { type: "button", title: S.drawer.vertical ? "横排" : "竖排", "aria-label": "切换横排竖排", on: { click: ctx.toggleVertical } }, icon(S.drawer.vertical ? "text" : "vertical")),
-      h("button.icon-btn", { type: "button", title: "复制原文与出处", "aria-label": "复制原文", on: { click: () => ctx.copy(`${card.text}\n——${bookTitle(card)}${stripBook(card.locator)}（${card.passage_id}）`) } }, icon("copy"))),
+      h("button.icon-btn", { type: "button", title: S.drawer.vertical ? T("横排") : T("竖排"), "aria-label": T("切换横排竖排"), on: { click: ctx.toggleVertical } }, icon(S.drawer.vertical ? "text" : "vertical")),
+      h("button.icon-btn", { type: "button", title: T("复制原文与出处"), "aria-label": T("复制原文"), on: { click: () => ctx.copy(T`${card.text}\n——${bookTitle(card)}${stripBook(card.locator)}（${card.passage_id}）`) } }, icon("copy"))),
     h("div.status-line",
       st ? h("span.badge", { class: st.status }, st.label) : null,
-      card.collation_status ? h("span.badge", card.collation_status === "unverified" ? "未经校勘" : `校勘：${card.collation_status}`) : null,
+      card.collation_status ? h("span.badge", card.collation_status === "unverified" ? T("未经校勘") : T`校勘：${card.collation_status}`) : null,
       foundBadges(S.conv?.evidence?.[pid]?.found), // what a search found it under: a drug's other name, its flags
       h("span.badge.mono", pid)),
     text,
-    quote && !range ? h("div.meta", h("b", "模型的引文："), h("span.serif", `「${quote}」`), h("div", "与此段原文未能逐字对应：可能是节引、改写或误引，请以原文为准。")) : null,
-    card.variants?.length ? h("div.meta", h("b", "异文："), card.variants.slice(0, 6).map((v) => h("div", `${v.reading ?? v.text ?? ""}${v.witness ? `（${v.witness}）` : ""}${v.note ? ` · ${v.note}` : ""}`))) : null,
-    card.notes ? h("div.meta", h("b", "注："), typeof card.notes === "string" ? card.notes : prettyJSON(card.notes, 800)) : null,
+    quote && !range ? h("div.meta", h("b", T("模型的引文：")), h("span.serif", T`「${quote}」`), h("div", T("与此段原文未能逐字对应：可能是节引、改写或误引，请以原文为准。"))) : null,
+    card.variants?.length ? h("div.meta", h("b", T("异文：")), card.variants.slice(0, 6).map((v) => h("div", `${v.reading ?? v.text ?? ""}${v.witness ? T`（${v.witness}）` : ""}${v.note ? ` · ${v.note}` : ""}`))) : null,
+    card.notes ? h("div.meta", h("b", T("注：")), typeof card.notes === "string" ? card.notes : prettyJSON(card.notes, 800)) : null,
   ]);
   return box;
 }
@@ -132,18 +133,18 @@ function dataPane(S, ctx) {
   const pane = h("div.pane.data-pane");
   const list = S.data?.list || [];
   pane.append(h("div.data-head",
-    h("button.btn", { type: "button", disabled: Boolean(S.data?.busy), on: { click: () => ctx.pickData() } }, icon("upload", "sm"), "上传资料"),
-    h("span.muted", "CSV、Excel、Word、TXT、JSON · 每个至多 10 MB")));
+    h("button.btn", { type: "button", disabled: Boolean(S.data?.busy), on: { click: () => ctx.pickData() } }, icon("upload", "sm"), T("上传资料")),
+    h("span.muted", T("CSV、Excel、Word、TXT、JSON · 每个至多 10 MB"))));
   if (S.data?.busy) {
     pane.append(h("div.data-status", h("span.spinner"), h("span", S.data.busy),
       S.data.loading ? h("span.muted", S.data.loading.message || "") : null));
   } else if (S.data?.error && !list.length) {
     pane.append(h("div.data-status.err", icon("warn", "sm"), h("span", truncate(S.data.error, 160)),
-      h("button.btn.secondary", { type: "button", on: { click: () => ctx.refreshData() } }, "重试")));
+      h("button.btn.secondary", { type: "button", on: { click: () => ctx.refreshData() } }, T("重试"))));
   }
   if (!list.length) {
-    pane.append(h("div.pane-empty", icon("table"), h("div", "上传自己的资料——门诊处方、病案、调查表、读书笔记——请道乃久读取、统计和分析。"),
-      h("div", "例如：“统计这批处方的高频药物和药对，并与经典方比较”“比较两组患者的年龄和疗效”。")));
+    pane.append(h("div.pane-empty", icon("table"), h("div", T("上传自己的资料——门诊处方、病案、调查表、读书笔记——请道乃久读取、统计和分析。")),
+      h("div", T("例如：“统计这批处方的高频药物和药对，并与经典方比较”“比较两组患者的年龄和疗效”。"))));
   }
   for (const d of list) {
     pane.append(h("div.data-card",
@@ -151,17 +152,17 @@ function dataPane(S, ctx) {
         h("span.muted", sizeLabel(d))),
       d.kind === "table" && d.columns?.length ? h("div.cols", columnsLabel(d, 10)) : null,
       h("div.deid", icon("shield", "sm"), h("span", deidLabel(d))),
-      d.notes?.length ? h("div.notes", d.notes.join("；")) : null,
+      d.notes?.length ? h("div.notes", d.notes.join(T("；"))) : null,
       h("div.row",
         h("span.mono", d.id),
         h("span.grow"),
-        h("button.btn.secondary", { type: "button", title: "把这份资料附到下一条消息", on: { click: () => ctx.attachData(d.id) } }, "附到消息"),
-        h("button.icon-btn", { type: "button", title: "删除这份资料", "aria-label": `删除「${d.name}」`, on: { click: () => ctx.removeData(d.id) } }, icon("trash", "sm")))));
+        h("button.btn.secondary", { type: "button", title: T("把这份资料附到下一条消息"), on: { click: () => ctx.attachData(d.id) } }, T("附到消息")),
+        h("button.icon-btn", { type: "button", title: T("删除这份资料"), "aria-label": T`删除「${d.name}」`, on: { click: () => ctx.removeData(d.id) } }, icon("trash", "sm")))));
   }
   if (list.length > 1) {
-    pane.append(h("div.data-foot", h("button.btn.secondary.danger", { type: "button", on: { click: () => ctx.clearData() } }, icon("trash", "sm"), "全部删除")));
+    pane.append(h("div.data-foot", h("button.btn.secondary.danger", { type: "button", on: { click: () => ctx.clearData() } }, icon("trash", "sm"), T("全部删除"))));
   }
-  const about = h("details.data-about", h("summary", icon("shield", "sm"), "资料如何处理"),
+  const about = h("details.data-about", h("summary", icon("shield", "sm"), T("资料如何处理")),
     h("dl.notice-list", DATA_NOTICE.flatMap(([k, v]) => [h("dt", k), h("dd", v)])));
   pane.append(about);
   return pane;
@@ -172,8 +173,8 @@ function researchPane(S, ctx, runs) {
   const pane = h("div.pane");
   pane.append(researchForm(S, ctx));
   if (!runs.length) {
-    pane.append(h("div.pane-empty", icon("flask"), h("div", "多智能体发现研究：研究契约 → 证据 → 模式挖掘（D1–D5）→ 假说 → 证伪 → 门控。"),
-      h("div", "可以在对话中请模型发起，也可以用上面的表单直接运行（无需模型）。")));
+    pane.append(h("div.pane-empty", icon("flask"), h("div", T("多智能体发现研究：研究契约 → 证据 → 模式挖掘（D1–D5）→ 假说 → 证伪 → 门控。")),
+      h("div", T("可以在对话中请模型发起，也可以用上面的表单直接运行（无需模型）。"))));
     return pane;
   }
   for (const run of [...runs].reverse()) pane.append(runCard(run, ctx));
@@ -183,12 +184,12 @@ function researchPane(S, ctx, runs) {
 function researchForm(S, ctx) {
   const d = h("details.console-form", { open: S.drawer.researchFormOpen || false });
   d.addEventListener("toggle", () => { S.drawer.researchFormOpen = d.open; });
-  const q = h("textarea", { rows: 2, placeholder: "研究问题，如：胸痹的认识与治疗在明代以前如何演变？" });
-  const focus = h("input", { type: "text", placeholder: "焦点术语（可选），如：胸痹" });
+  const q = h("textarea", { rows: 2, placeholder: T("研究问题，如：胸痹的认识与治疗在明代以前如何演变？") });
+  const focus = h("input", { type: "text", placeholder: T("焦点术语（可选），如：胸痹") });
   const tracks = ["D1", "D2", "D3", "D4", "D5"].map((t) => h("label.check", h("input", { type: "checkbox", checked: true, value: t }), t));
   const rounds = h("input", { type: "number", min: 1, max: 6, value: 2 });
-  const forbid = h("input", { type: "text", placeholder: "禁止的时代错置假设（可选），如：胸痹=冠心病" });
-  const run = h("button.btn", { type: "button" }, icon("play", "sm"), "运行研究");
+  const forbid = h("input", { type: "text", placeholder: T("禁止的时代错置假设（可选），如：胸痹=冠心病") });
+  const run = h("button.btn", { type: "button" }, icon("play", "sm"), T("运行研究"));
   run.addEventListener("click", () => {
     const question = q.value.trim();
     if (!question) { q.focus(); return; }
@@ -201,29 +202,29 @@ function researchForm(S, ctx) {
     if (fb.length) args.forbidden_assumptions = fb;
     ctx.runResearch(args);
   });
-  d.append(h("summary", { style: { cursor: "pointer", fontWeight: 600, fontSize: "13.5px" } }, "直接发起一次研究"),
+  d.append(h("summary", { style: { cursor: "pointer", fontWeight: 600, fontSize: "13.5px" } }, T("直接发起一次研究")),
     h("div.form-grid", { style: { marginTop: "10px" } },
-      h("div.field", h("label", "研究问题"), q),
-      h("div.field", h("label", "焦点术语"), focus),
-      h("div.field", h("span.lb", "发现轨道"), h("div.chips", tracks),
-        h("div.help", "D1 失传关联 · D2 概念漂移 · D3 方剂演化 · D4 隐含关联 · D5 矛盾")),
-      h("div.field", h("label", "轮次"), rounds),
-      h("div.field", h("label", "禁止假设"), forbid),
+      h("div.field", h("label", T("研究问题")), q),
+      h("div.field", h("label", T("焦点术语")), focus),
+      h("div.field", h("span.lb", T("发现轨道")), h("div.chips", tracks),
+        h("div.help", T("D1 失传关联 · D2 概念漂移 · D3 方剂演化 · D4 隐含关联 · D5 矛盾"))),
+      h("div.field", h("label", T("轮次")), rounds),
+      h("div.field", h("label", T("禁止假设")), forbid),
       h("div", run, S.researchRunning ? h("span.muted", { style: { marginLeft: "10px", fontSize: "13px" } }, h("span.spinner", { style: { display: "inline-block", verticalAlign: "-2px", marginRight: "6px" } }), S.researchRunning) : null)));
   return d;
 }
 
 const VERDICT = {
-  accepted: ["已接受", "ok"], needs_expert: ["需专家判定", "warn"], inconclusive: ["不确定", "warn"], rejected: ["未通过", "bad"],
-  execution_finished: ["执行完毕", ""],
+  accepted: [T("已接受"), "ok"], needs_expert: [T("需专家判定"), "warn"], inconclusive: [T("不确定"), "warn"], rejected: [T("未通过"), "bad"],
+  execution_finished: [T("执行完毕"), ""],
 };
 const STATUS = {
-  survived: ["经受证伪", "ok"], proposed: ["提出", ""], needs_revision: ["需修订", "warn"], rejected: ["被证伪", "bad"],
-  expert_approved: ["专家认可", "ok"], expert_rejected: ["专家否决", "bad"],
+  survived: [T("经受证伪"), "ok"], proposed: [T("提出"), ""], needs_revision: [T("需修订"), "warn"], rejected: [T("被证伪"), "bad"],
+  expert_approved: [T("专家认可"), "ok"], expert_rejected: [T("专家否决"), "bad"],
 };
 const KIND = {
-  lost_knowledge: "D1 失传关联", concept_drift: "D2 概念漂移", formula_evolution: "D3 方剂演化", association_rule: "D4 关联规则",
-  hidden_association: "D4 隐含关联", contradiction: "D5 矛盾", concept_timeline: "概念演变",
+  lost_knowledge: T("D1 失传关联"), concept_drift: T("D2 概念漂移"), formula_evolution: T("D3 方剂演化"), association_rule: T("D4 关联规则"),
+  hidden_association: T("D4 隐含关联"), contradiction: T("D5 矛盾"), concept_timeline: T("概念演变"),
 };
 
 function runCard(run, ctx) {
@@ -235,21 +236,21 @@ function runCard(run, ctx) {
     h("div.q", r.question || run.question),
     h("div.row",
       h("span.badge", { class: vCls }, vLabel),
-      h("span.badge", `执行：${r.status || ""}`),
-      h("span.badge", `${r.rounds ?? "?"} 轮`),
+      h("span.badge", T`执行：${r.status || ""}`),
+      h("span.badge", T`${r.rounds ?? "?"} 轮`),
       run.ms ? h("span.badge", fmtMs(run.ms)) : null,
       h("span.badge.mono", r.session_id || "")),
     h("div.metric-grid",
-      metric(m.claims, "主张"), metric(m.evidence_count, "证据"), metric(m.counter_evidence, "反证"),
-      metric(m.hypotheses, "假说"), metric(m.hypothesis_survival != null ? `${Math.round(m.hypothesis_survival * 100)}%` : "–", "存活率"),
-      metric(m.agents_spawned, "智能体")),
-    (r.acceptance_reasons || []).length ? h("div.muted", { style: { fontSize: "12.5px", marginTop: "8px", lineHeight: "1.6" } }, r.acceptance_reasons.join("；")) : null,
+      metric(m.claims, T("主张")), metric(m.evidence_count, T("证据")), metric(m.counter_evidence, T("反证")),
+      metric(m.hypotheses, T("假说")), metric(m.hypothesis_survival != null ? `${Math.round(m.hypothesis_survival * 100)}%` : "–", T("存活率")),
+      metric(m.agents_spawned, T("智能体"))),
+    (r.acceptance_reasons || []).length ? h("div.muted", { style: { fontSize: "12.5px", marginTop: "8px", lineHeight: "1.6" } }, r.acceptance_reasons.join(T("；"))) : null,
     h("div.row",
-      r.report_markdown ? h("button.btn.secondary", { type: "button", on: { click: () => ctx.openReport(run) } }, icon("scroll", "sm"), "完整报告") : null,
-      r.report_markdown ? h("button.btn-ghost", { type: "button", on: { click: () => ctx.downloadReport(run) } }, icon("download", "sm"), "下载") : null,
-      h("button.btn-ghost", { type: "button", on: { click: () => ctx.askAbout(run) } }, icon("sparkle", "sm"), "就此追问"))));
+      r.report_markdown ? h("button.btn.secondary", { type: "button", on: { click: () => ctx.openReport(run) } }, icon("scroll", "sm"), T("完整报告")) : null,
+      r.report_markdown ? h("button.btn-ghost", { type: "button", on: { click: () => ctx.downloadReport(run) } }, icon("download", "sm"), T("下载")) : null,
+      h("button.btn-ghost", { type: "button", on: { click: () => ctx.askAbout(run) } }, icon("sparkle", "sm"), T("就此追问")))));
   for (const hy of r.hypotheses || []) wrap.append(hypCard(hy, ctx));
-  if (r.rejected) wrap.append(h("div.muted", { style: { fontSize: "12.5px", margin: "4px 2px 16px" } }, `另有 ${r.rejected} 个假说在证伪中被否决（见完整报告）。`));
+  if (r.rejected) wrap.append(h("div.muted", { style: { fontSize: "12.5px", margin: "4px 2px 16px" } }, T`另有 ${r.rejected} 个假说在证伪中被否决（见完整报告）。`));
   if (r.note) wrap.append(h("div.notice", icon("info"), h("div.grow", r.note)));
   return wrap;
 }
@@ -262,18 +263,18 @@ function hypCard(hy, ctx) {
   const [sLabel, sCls] = STATUS[hy.status] || [hy.status || "", ""];
   const score = Number(hy.discovery_score) || 0;
   const ev = (list, cls) => (list || []).map((e) => h("div.evq", { class: cls },
-    `「${truncate(e.quote, 90)}」`, ctx.citeCard({ passage_id: e.passage_id, title: e.title, locator: e.locator, dynasty: e.dynasty, year: e.year })));
+    T`「${truncate(e.quote, 90)}」`, ctx.citeCard({ passage_id: e.passage_id, title: e.title, locator: e.locator, dynasty: e.dynasty, year: e.year })));
   return h("div.hyp",
     h("div.top", h("span.lbl", hy.label), h("span", KIND[hy.kind] || hy.kind || ""), h("span", { style: { flex: 1 } }),
       h("span.badge", { class: sCls }, sLabel), hy.acceptance ? h("span.badge", (VERDICT[hy.acceptance] || [hy.acceptance])[0]) : null),
     h("div.st", hy.statement),
-    h("div.bar", { title: `发现分 D = ${score.toFixed(3)}（优先级，不是真值）` }, h("i", { style: { width: `${Math.round(Math.min(1, score) * 100)}%` } })),
+    h("div.bar", { title: T`发现分 D = ${score.toFixed(3)}（优先级，不是真值）` }, h("i", { style: { width: `${Math.round(Math.min(1, score) * 100)}%` } })),
     h("details",
-      h("summary", `证据 ${hy.supporting?.length || 0} · 反证 ${hy.contradicting?.length || 0} · 替代解释 ${hy.alternatives?.length || 0}`),
+      h("summary", T`证据 ${hy.supporting?.length || 0} · 反证 ${hy.contradicting?.length || 0} · 替代解释 ${hy.alternatives?.length || 0}`),
       ev(hy.supporting, ""), ev(hy.contradicting, "con"),
-      hy.alternatives?.length ? h("div", { style: { marginTop: "6px" } }, h("b", "替代解释："), hy.alternatives.join("；")) : null,
-      hy.prediction ? h("div", { style: { marginTop: "6px" } }, h("b", "可检验预测："), hy.prediction) : null,
-      hy.risks ? h("div.muted", { style: { marginTop: "6px" } }, `文献学风险 ${hy.risks.philological || "?"} · 时代错置风险 ${hy.risks.anachronism || "?"}`) : null));
+      hy.alternatives?.length ? h("div", { style: { marginTop: "6px" } }, h("b", T("替代解释：")), hy.alternatives.join(T("；"))) : null,
+      hy.prediction ? h("div", { style: { marginTop: "6px" } }, h("b", T("可检验预测：")), hy.prediction) : null,
+      hy.risks ? h("div.muted", { style: { marginTop: "6px" } }, T`文献学风险 ${hy.risks.philological || "?"} · 时代错置风险 ${hy.risks.anachronism || "?"}`) : null));
 }
 
 export function reportNode(run, ctx) {
@@ -287,15 +288,15 @@ function toolsPane(S, ctx) {
   const pane = h("div.pane");
   const cat = S.catalogAll;
   if (!cat) {
-    pane.append(h("div.pane-empty", h("span.spinner", { style: { display: "inline-block" } }), h("div", "正在读取工具目录…")));
+    pane.append(h("div.pane-empty", h("span.spinner", { style: { display: "inline-block" } }), h("div", T("正在读取工具目录…"))));
     ctx.loadCatalogAll();
     return pane;
   }
   pane.append(h("div.muted", { style: { fontSize: "12.5px", lineHeight: "1.7", marginBottom: "10px" } },
-    `TaoChronos 的全部 ${cat.tools.length} 项能力。选一项、填参数、运行——无需模型；结果中的段落可在“证据”中阅读。`));
+    T`TaoChronos 的全部 ${cat.tools.length} 项能力。选一项、填参数、运行——无需模型；结果中的段落可在“证据”中阅读。`));
   const picked = S.drawer.tool && cat.tools.find((t) => t.name === S.drawer.tool);
   if (picked) pane.append(consoleForm(S, ctx, picked));
-  const search = h("input.input", { type: "search", placeholder: "查找工具：配伍、避讳、stemma、今译……", value: S.drawer.toolQuery || "" });
+  const search = h("input.input", { type: "search", placeholder: T("查找工具：配伍、避讳、stemma、今译……"), value: S.drawer.toolQuery || "" });
   search.addEventListener("input", () => { S.drawer.toolQuery = search.value; ctx.rerenderTools(); });
   pane.append(h("div", { style: { margin: "4px 0 10px" } }, search));
   const q = (S.drawer.toolQuery || "").trim().toLowerCase();
@@ -340,10 +341,10 @@ function consoleForm(S, ctx, tool) {
   const fields = Object.entries(props).map(([name, sch]) => {
     let input;
     const saved = S.drawer.toolArgs?.[tool.name]?.[name];
-    if (sch.enum) input = h("select", h("option", { value: "" }, "（默认）"), sch.enum.map((v) => h("option", { value: v, selected: saved === v }, v)));
+    if (sch.enum) input = h("select", h("option", { value: "" }, T("（默认）")), sch.enum.map((v) => h("option", { value: v, selected: saved === v }, v)));
     else if (sch.type === "boolean") input = h("input", { type: "checkbox", checked: Boolean(saved) });
     else if (sch.type === "integer" || sch.type === "number") input = h("input", { type: "number", step: sch.type === "integer" ? 1 : "any", value: saved ?? "" });
-    else if (sch.type === "array" && (sch.items?.type === "string" || !sch.items)) input = h("input", { type: "text", placeholder: "多个值以逗号或顿号分隔", value: saved ?? "" });
+    else if (sch.type === "array" && (sch.items?.type === "string" || !sch.items)) input = h("input", { type: "text", placeholder: T("多个值以逗号或顿号分隔"), value: saved ?? "" });
     else if (sch.type === "array" || sch.type === "object") input = h("textarea", { rows: 3, placeholder: "JSON" }, saved ?? "");
     else if (LONG.has(name)) input = h("textarea", { rows: 3 }, saved ?? "");
     else input = h("input", { type: "text", value: saved ?? "" });
@@ -353,7 +354,7 @@ function consoleForm(S, ctx, tool) {
     input, sch.description ? h("div.help", sch.description) : null);
   });
   const out = h("div");
-  const run = h("button.btn", { type: "button" }, icon("play", "sm"), "运行");
+  const run = h("button.btn", { type: "button" }, icon("play", "sm"), T("运行"));
   const collect = () => {
     const args = {}, raw = {};
     for (const [name, { input, sch }] of Object.entries(inputs)) {
@@ -377,13 +378,13 @@ function consoleForm(S, ctx, tool) {
       S.drawer.toolArgs ||= {};
       S.drawer.toolArgs[tool.name] = c.raw;
     } catch (e) {
-      out.replaceChildren(h("div.notice.err", icon("warn"), h("div.grow", `参数不是合法的 JSON：${e.message}`)));
+      out.replaceChildren(h("div.notice.err", icon("warn"), h("div.grow", T`参数不是合法的 JSON：${e.message}`)));
       return;
     }
     const missing = [...required].filter((k) => args[k] === undefined);
-    if (missing.length) { out.replaceChildren(h("div.notice.warn", icon("info"), h("div.grow", `请填写：${missing.join("、")}`))); return; }
+    if (missing.length) { out.replaceChildren(h("div.notice.warn", icon("info"), h("div.grow", T`请填写：${missing.join(T("、"))}`))); return; }
     run.disabled = true;
-    out.replaceChildren(h("div.muted", { style: { fontSize: "13px" } }, h("span.spinner", { style: { display: "inline-block", verticalAlign: "-2px", marginRight: "6px" } }), "运行中…"));
+    out.replaceChildren(h("div.muted", { style: { fontSize: "13px" } }, h("span.spinner", { style: { display: "inline-block", verticalAlign: "-2px", marginRight: "6px" } }), T("运行中…")));
     const res = await ctx.runTool(tool.name, args);
     run.disabled = false;
     out.replaceChildren(resultView(res, ctx));
@@ -391,17 +392,17 @@ function consoleForm(S, ctx, tool) {
   return h("div.console-form",
     h("div", { style: { display: "flex", alignItems: "center", gap: "8px" } },
       h("span.fam", { class: tool.family }, FAMILY[tool.family] || tool.family), h("code.mono", { style: { fontSize: "13px", flex: 1 } }, tool.tool || tool.name),
-      h("button.icon-btn", { type: "button", title: "关闭", "aria-label": "关闭", on: { click: () => ctx.pickTool(null) } }, icon("x", "sm"))),
+      h("button.icon-btn", { type: "button", title: T("关闭"), "aria-label": T("关闭"), on: { click: () => ctx.pickTool(null) } }, icon("x", "sm"))),
     h("div.desc", tool.description),
-    h("div.form-grid", fields.length ? fields : h("div.muted", { style: { fontSize: "13px" } }, "此工具没有参数。")),
+    h("div.form-grid", fields.length ? fields : h("div.muted", { style: { fontSize: "13px" } }, T("此工具没有参数。"))),
     h("div", { style: { marginTop: "10px" } }, run),
     out);
 }
 
 function resultView(res, ctx) {
-  if (!res.ok) return h("div.notice.err", { style: { marginTop: "10px" } }, icon("warn"), h("div.grow", res.error || "失败"));
+  if (!res.ok) return h("div.notice.err", { style: { marginTop: "10px" } }, icon("warn"), h("div.grow", res.error || T("失败")));
   return h("div", { style: { marginTop: "10px" } },
-    h("div.muted", { style: { fontSize: "12.5px", marginBottom: "6px" } }, `${res.summary || "完成"} · ${fmtMs(res.duration_ms)}`),
+    h("div.muted", { style: { fontSize: "12.5px", marginBottom: "6px" } }, `${res.summary || T("完成")} · ${fmtMs(res.duration_ms)}`),
     res.citations?.length ? h("div.cites-row", { style: { marginBottom: "8px" } }, res.citations.slice(0, 30).map((c) => ctx.citeCard(c))) : null,
     chartGallery(chartsOf(res.result), { at: 0 }, tablesOf(res.result)),
     documentOf(res.result) ? h("div.docs", documentButton(documentOf(res.result))) : null,

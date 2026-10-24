@@ -124,6 +124,10 @@ class ScopedCorpusView:
     def passage_ids(self) -> list[str]:
         return [i for i in self._corpus.passage_ids() if self._scope.permits(i)]
 
+    def around(self, passage_id: str) -> tuple[str | None, str | None, str | None]:
+        before, at, after = (x if x is not None and self._scope.permits(x) else None for x in self._corpus.around(passage_id))
+        return before, at, after
+
     def passages(self, *args: Any, **kwargs: Any) -> list[Any]:
         return [p for p in self._corpus.passages(*args, **kwargs) if self._scope.permits(p.id)]
 

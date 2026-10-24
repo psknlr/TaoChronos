@@ -13,7 +13,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { handle } from "../site/src/site.js";
 import { call as backupCall, classification } from "../site/src/backup/api.js";
 import { CANON, CATALOG } from "../site/src/backup/tables.js";
-import { Corpus, passageCard } from "../site/src/backup/corpus.js";
+import { closestNames, coerce, fitArguments, resolveName, signature } from "../site/src/backup/catalog.js";
+import { Corpus, passageCard, passageId } from "../site/src/backup/corpus.js";
 import { forInterface, forModel } from "../site/src/backup/results.js";
 import { clauseKey } from "../site/src/backup/precomputed.js";
 import { effective, ftsForm, normalize, normalizeWithRecords, parseConstraint } from "../site/src/backup/text.js";
@@ -124,6 +125,51 @@ test("the start's warm-up runs the tools over made-up databases and leaves the i
   assert.ok(quote.length > 0);
 });
 
+test("around: a book's left-out passages read across the parts of its seqmap, the parts not yet read read when needed", async () => {
+  // a made-up book of 60010 seqs in one temporal group, with seqs 29991–30004 left out: its seqmap in three parts
+  // (d1.SEQMAP_PART: 30000 seqs a part)
+  const marks = ["0".repeat(29_991) + "-".repeat(9), "-".repeat(5) + "0".repeat(29_995), "0".repeat(10)];
+  const counts = [[0], [29_991], [29_991 + 29_995]];
+  const seqOf = (rank) => (rank < 29_991 ? rank : rank + 14);
+  const statements = [];
+  const answer = (sql, params) => {
+    statements.push(sql);
+    if (sql.includes("FROM meta WHERE k IN")) {
+      return [{ k: "stats", v: JSON.stringify({ chunks: 1, databases: 1, ranges: [[1, 1]], years: [] }) }, { k: "complete", v: "x" }];
+    }
+    if (sql.startsWith("SELECT id, card, map FROM books")) {
+      return [{ id: "far", card: JSON.stringify({ title: "远", passages: 59_996, span: 60_010 }), map: JSON.stringify({ C: [[[0, 1]]], S: 1 }) }];
+    }
+    if (sql.includes("FROM seqmap WHERE book IN")) {
+      return marks.map((m, k) => ({ book: "far", part: k, marks: m, counts: JSON.stringify(counts[k]) })).filter((r) => r.part === params[1]);
+    }
+    if (sql.includes("FROM seqmap WHERE book = ?")) return marks[params[1]] ? [{ marks: marks[params[1]], counts: JSON.stringify(counts[params[1]]) }] : [];
+    if (sql.includes("json_extract(c.body")) {
+      return JSON.parse(params[0]).map(([cid, i]) => ({ cid, i, book: "far", year: 1000, p: JSON.stringify({ t: "文", q: seqOf(i) }),
+        T: "{}", L: "[]", Y: "[]" }));
+    }
+    return [];
+  };
+  const statement = (sql, params = []) => ({ bind: (...p) => statement(sql, p), all: async () => ({ results: answer(sql, params) }),
+    first: async () => answer(sql, params)[0] ?? null, sql, params });
+  const db = { prepare: (sql) => statement(sql), batch: async (list) => list.map((x) => ({ results: answer(x.sql, x.params) })) };
+  const corpus = new Corpus({ D1_0: db }, { cache: { kept: null } });
+  await corpus.stats();
+  const ids = async (pid) => {
+    const near = await corpus.around(pid);
+    return ["exact", "at", "before", "after"].map((k) => (near[k] ? `far.${String(near[k].p.q).padStart(5, "0")}` : null));
+  };
+  assert.deepEqual(await ids("far.29995"), [null, null, "far.29990", "far.30005"]); // into the next part
+  assert.deepEqual(await ids("far.30005"), ["far.30005", "far.30005", "far.29990", "far.30006"]); // back into the one before
+  statements.length = 0;
+  assert.deepEqual(await ids("far.150000"), [null, null, "far.60009", null]); // past the end: its last part read when needed
+  assert.equal(statements.filter((x) => x.includes("FROM seqmap WHERE book = ?")).length, 1);
+  assert.deepEqual(await ids("far.00009"), ["far.00009", "far.00009", "far.00008", "far.00010"]);
+  statements.length = 0;
+  assert.equal(passageId("far", (await corpus.passage("far.30005")).p), "far.30005"); // a passage alone: its own part only
+  assert.equal(statements.filter((x) => x.includes("FROM seqmap")).length, 1);
+});
+
 test("D1's own limits (five terms a compound SELECT, found in the emulator): the adapter holds the tools to them", () => {
   const parts = Array.from({ length: 23 }, (_, i) => `SELECT ${i} AS x FROM (SELECT 1 UNION ALL SELECT 2)`);
   assert.equal(compoundTerms(parts.join(" UNION ALL ")), 23);
@@ -135,14 +181,14 @@ test("D1's own limits (five terms a compound SELECT, found in the emulator): the
   assert.equal(db.prepare(`SELECT sum(x) AS s FROM (${nested})`).get().s, 22 * 23); // every part, in any order
 });
 
-test("every tool of the server's catalog (86) is live, precomputed, or unavailable with its reason — once", () => {
+test("every tool of the server's catalog (92) is live, precomputed, or unavailable with its reason — once", () => {
   const { live, precomputed, unavailable } = classification();
   const every = [...CATALOG.tools.map((t) => t.tool), ...CATALOG.engine.map((e) => e.name)];
   const classed = [...live, ...precomputed, ...Object.keys(unavailable)];
-  assert.equal(every.length, 86);
+  assert.equal(every.length, 92);
   assert.deepEqual([...classed].sort(), [...every].sort());
   assert.equal(new Set(classed).size, classed.length);
-  assert.deepEqual([live.length, precomputed.length, Object.keys(unavailable).length], [14, 16, 56]);
+  assert.deepEqual([live.length, precomputed.length, Object.keys(unavailable).length], [14, 16, 62]);
   assert.ok(Object.keys(unavailable).filter((t) => t.startsWith("mydata.")).every((t) => unavailable[t].includes("本机"))); // never the site's
   assert.ok(Object.values(unavailable).every((why) => why.length > 10));
 });
@@ -154,8 +200,10 @@ test("passage: a passage in full (the page checks quotations against it); an unk
   assert.equal(p.passage_id, known);
   assert.equal(p.book_id, "cm_shanghan_npm");
   assert.ok(p.text.length > 0 && p.title && "temporal" in p && Array.isArray(p.variants));
+  assert.deepEqual([p.prev, p.next], ["cm_shanghan_npm.00278", "cm_shanghan_npm.00280"]);
   const bad = await (await site("/api/passage?id=cm_shanghan_npm.99999")).json();
-  assert.deepEqual([bad.ok, bad.error], [false, "KeyError: 'cm_shanghan_npm.99999'"]);
+  assert.deepEqual([bad.ok, bad.error], [false, "PassageNotFound: no passage 'cm_shanghan_npm.99999' in this corpus; " +
+    "cm_shanghan_npm (伤寒论（宋本·台北故宫）) has 2549 passages here, the nearest cm_shanghan_npm.02548 (before; none after it)"]);
   const kanripo = await callTool("classics.list_books", { query: "素问" });
   assert.ok(kanripo.result.some((b) => b.book_id === "suwen_wangbing"));
 });
@@ -167,6 +215,11 @@ test("research and sessions need the server: the page is told why, without leavi
   const out = await callTool("taochronos_research", { question: "消渴" });
   assert.equal(out.ok, false);
   assert.match(out.error, /备份服务/);
+  // a run the container started is not known here: as a run the page has lost, in the words of either version
+  assert.deepEqual(await (await site("/api/research/job_1")).json(), { id: "job_1", state: "unknown", status: "unknown" });
+  for (const act of ["cancel", "resume"]) {
+    assert.deepEqual(await (await post(`/api/research/job_1/${act}`, {})).json(), { id: "job_1", state: "unknown", status: "unknown" });
+  }
 });
 
 test("without the import complete (or with another version) the site says 503, and the page runs the browser corpus", { skip }, async () => {
@@ -471,11 +524,21 @@ test("classics.get_passage, list_books and canon, as the server gives them", { s
   assert.equal(p.ok, true, p.error);
   assert.equal(p.result.passage_id, "suwen_wangbing.000.00001");
   assert.deepEqual(Object.keys(p.result), ["passage_id", "book_id", "title", "dynasty", "year", "period", "locator", "text", "variants",
-    "collation_status", "notes", "temporal"]);
+    "collation_status", "notes", "temporal", "prev", "next"]);
+  assert.deepEqual([p.result.prev, p.result.next], ["suwen_wangbing.000.00000", "suwen_wangbing.000.00002"]);
+  // the next passage the pack keeps, over the chapters it leaves out, and back
+  const on = await callTool("classics.get_passage", { passage_id: "suwen_wangbing.000.00044" });
+  const back = await callTool("classics.get_passage", { passage_id: on.result.next });
+  assert.deepEqual([on.result.next, back.result.prev], ["suwen_wangbing.001.00076", "suwen_wangbing.000.00044"]);
   const missing = await callTool("classics.get_passage", { passage_id: "nothing.00001" });
-  assert.deepEqual([missing.ok, missing.error], [false, "KeyError: 'nothing.00001'"]);
+  assert.deepEqual([missing.ok, missing.error], [false, "PassageNotFound: no passage 'nothing.00001': it names no book of this corpus " +
+    "(an id begins with its book's id); classics.list_books lists the books, and classics.search finds passages by their words"]);
+  const left = await callTool("classics.get_passage", { passage_id: "suwen_wangbing.000.00050" });
+  assert.match(left.error, /the nearest suwen_wangbing\.000\.00044 \(before\) and suwen_wangbing\.001\.00076 \(after\)$/);
+  const form = await callTool("classics.get_passage", { passage_id: "suwen_wangbing.00044" });
+  assert.match(form.error, /numbered 44 is suwen_wangbing\.000\.00044$/);
   const invalid = await callTool("classics.get_passage", {});
-  assert.equal(invalid.error, "invalid arguments: $: missing required property 'passage_id'");
+  assert.equal(invalid.error, "invalid arguments: $: missing required property 'passage_id' · classics.get_passage takes: passage_id (string, required)");
   const books = await callTool("classics.list_books", {});
   assert.equal(books.result.length, 10);
   const sorted = books.result.map((b) => [b.composition || "", b.book_id]);
@@ -560,8 +623,64 @@ test("taochronos_call and taochronos_catalog; an unknown tool; a model's name fo
   assert.equal(modelName.tool, "classics.get_passage");
   const cat = await callTool("taochronos_catalog", { query: "配伍" });
   assert.ok("families" in cat.result && Array.isArray(cat.result.matched));
-  const unknown = await callTool("nothing.here", {});
-  assert.equal(unknown.error, "unknown tool 'nothing.here'; use taochronos_catalog to see what exists");
+  const unknown = await callTool("classics.get_pasage", {});
+  assert.ok(unknown.error.startsWith("unknown tool 'classics.get_pasage'; closest: classics.get_passage {passage_id (string, required)} · "));
+  assert.ok(unknown.error.endsWith("; use taochronos_catalog to see what exists"));
+});
+
+test("a model's call as it wrote it: a name in another form, arguments repaired, refused with what the tool takes", { skip }, async () => {
+  for (const written of ["get_passage", "classics__get_passage", "Classics.Get-Passage", "study__get_passage"]) {
+    const out = await callTool(written, { passage_id: "cm_shanghan_npm.00279" });
+    assert.deepEqual([out.ok, out.tool], [true, "classics.get_passage"], written);
+  }
+  const repaired = await callTool("classics.list_books", { dynasty: "清", limit: "2" });
+  assert.deepEqual([repaired.ok, repaired.result.length, repaired.repaired], [true, 2, ['$.limit: "2" → 2']]);
+  assert.equal((await callTool("classics.list_books", { dynasty: "清", limit: 2 })).repaired, undefined);
+  const meta = await callTool("taochronos.catalog", { family: ["classics"] });
+  assert.deepEqual([meta.ok, meta.tool, meta.repaired], [true, "taochronos_catalog", ['$.family: ["classics"] → "classics"']]);
+  assert.ok(meta.result.matched.every((t) => t.tool.startsWith("classics.")));
+  const via = await callTool("taochronos_call", { tool: "get_passage", arguments: '{"passage_id": ["cm_shanghan_npm.00279"]}' });
+  assert.deepEqual([via.ok, via.tool, via.via, via.repaired], [true, "classics.get_passage", "taochronos_call", ['$.passage_id: ["cm_shanghan_npm.00279"] → "cm_shanghan_npm.00279"']]);
+  const nested = await callTool("taochronos_call", { tool: "taochronos_call", arguments: { tool: "classics.list_books", arguments: { limit: 1 } } });
+  assert.deepEqual([nested.ok, nested.result.length], [true, 1]);
+  // a parameter the tool does not take was ignored before: now it is refused, with what the tool takes
+  const extra = await callTool("kg.term", { surface: "消渴", lang: "en" });
+  assert.equal(extra.error, "invalid arguments: $: unknown parameter 'lang' · kg.term takes: surface (string, required)");
+  const wrong = await callTool("taochronos_call", { name: "kg.term", args: { surface: "消渴" } });
+  assert.ok(wrong.error.startsWith("invalid arguments: $: missing required property 'tool'; $: unknown parameter 'name'; $: unknown parameter 'args' · taochronos_call takes: tool (string, required); arguments (object)"));
+  assert.equal((await callTool("kg.term", ["消渴"])).error, "invalid arguments: $: expected object, got list · kg.term takes: surface (string, required)");
+  // what the backup does not serve is said so, under any name; an unknown name is answered with tools it serves
+  assert.match((await callTool("taochronos.research", { question: "消渴" })).error, /taochronos_research 在本站的备份服务/);
+  assert.match((await callTool("study__casefind", { query: "耳鸣" })).error, /study\.casefind 在本站的备份服务/);
+  const served = new Set((await (await site("/api/catalog?mode=all")).json()).tools.map((t) => t.tool));
+  for (const written of ["search", "nothing.here", "kg.propose_change", "KG.Propose-Change", "propose_change", "kg.propose", "run_code", "research.run-code"]) {
+    const out = await callTool(written, {});
+    const [, near] = out.error.split("; closest: ");
+    const suggested = near.split(" · ").map((x) => x.split(" {")[0]);
+    assert.equal(out.ok, false, written);
+    assert.ok(suggested.length === 3 && suggested.every((t) => served.has(t) || ["taochronos_catalog", "taochronos_call"].includes(t)), `${written}: ${suggested}`);
+    assert.ok(!/propose_change|run_code/.test(near), written);
+  }
+});
+
+test("a model's calls are read as protocol/schema.py and kernel/tools.py read them (Python's answers in the fixture)", { skip }, () => {
+  const { schema, arguments: args, entries, names } = fixture.calls;
+  assert.ok(args.length >= 40 && names.length >= 25);
+  for (const c of args) {
+    const { value, repairs } = coerce(c.args, schema);
+    assert.deepEqual([value, repairs], c.coerced, JSON.stringify(c.args));
+    const fit = fitArguments(c.args, schema, "t");
+    assert.deepEqual([fit.args, fit.repaired, fit.problem], c.fitted, JSON.stringify(c.args));
+  }
+  const all = entries.map(([name]) => name);
+  for (const c of names) {
+    assert.equal(resolveName(c.name, all), c.resolved, c.name);
+    assert.deepEqual(closestNames(c.name, entries, entries.length), c.ranked, c.name);
+  }
+  // and what the catalog's own tools take, as the server's errors say it
+  assert.equal(signature(CATALOG.tools.find((t) => t.tool === "classics.search").parameters), "query (string, required); k (integer); " +
+    "after (number); before (number); routes (list of string); books (list of string); aliases (string: auto | off)");
+  assert.equal(signature({ type: "object", properties: {} }), "no parameters");
 });
 
 // ------------------------------------------------------------------ the text as the index reads it
@@ -590,6 +709,7 @@ test("parity: the live tools answer as the Python tools answered on the same sto
     const { out } = await measured(ref.name, ref.args);
     const label = `${ref.name} ${JSON.stringify(ref.args)}`;
     assert.equal(out.ok, ref.ok, `${label}: ${out.error}`);
+    assert.deepEqual(out.repaired ?? null, ref.repaired ?? null, label);
     if (!ref.ok) assert.equal(out.error, ref.error, label);
     else if (ref.name === "classics.search") {
       assert.deepEqual(out.result.query, ref.result.query, label);

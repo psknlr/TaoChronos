@@ -28,13 +28,15 @@
 </main>
 <script type="module">
   import { renderMarkdown } from "./js/markdown.js";
+  import { T, translatePage } from "./js/i18n.js";
+  translatePage();
   const doc = document.getElementById("doc");
   try {
     const r = await fetch("ATTRIBUTION.md", { cache: "no-cache" });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     doc.replaceChildren(renderMarkdown(await r.text()));
   } catch (err) {
-    doc.textContent = `来源与授权说明未能载入（${err.message}）。`;
+    doc.textContent = T`来源与授权说明未能载入（${err.message}）。`;
   }
 </script>
 </body>

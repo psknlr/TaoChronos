@@ -7,7 +7,9 @@
 # and the outcome.  Field values are compared as sets of normalised strings (a predicted value counts when it
 # contains the gold value, e.g. 脉浮数 for 浮数, or the other way round).  Every scored field of a visit is annotated
 # in full — a field left out is empty.  The response of a visit is the response to its treatment, wherever the
-# record reports it (热已减 at the next visit answers this visit's prescription).
+# record reports it (热已减 at the next visit answers this visit's prescription).  `prior` is what the record says
+# earlier physicians gave or diagnosed (前医作伤寒治，用麻黄汤 · 医以大黄、巴豆下之), scored like the other fields, with
+# `prior_response` the response to it; neither may leak into the visit's own formulas or response.
 books:
   - id: visits
     heading: 风温
@@ -25,6 +27,12 @@ books:
       - "一妇人年四十，患泄泻，脉沉迟，四肢厥冷。予以附子理中汤，连进三帖，泻止而安。"
       - "张孝廉，患疟，寒热往来，脉弦。用小柴胡汤，服二剂，热退。越三日复发，加常山，又二剂而愈。"
       - "某，咳嗽吐血，脉虚数。治以养阴清肺，用百合固金汤，服之罔效，病势危笃。"
+  - id: prior
+    heading: 误治
+    passages:
+      - "张　五十岁　前医作伤寒治，用麻黄汤，汗出而热不退。脉虚数，舌红。治宜甘寒养阴，用竹叶石膏汤。"
+      - "二诊　热退，脉和。仍用前方，服二剂而愈。"
+      - "一男子年三十，腹胀，医以大黄、巴豆下之，增剧。脉沉细，予以理中汤，连进二帖而安。"
 cases:
   - book: visits
     patient: {name: 王, age: 十}
@@ -61,3 +69,14 @@ cases:
     outcome: worse
     visits:
       - {pulse: [虚数], formulas: [百合固金汤], principles: [养阴清肺], response: worse}
+  - book: prior
+    patient: {name: 张, age: 五十}
+    outcome: improved
+    visits:
+      - {pulse: [虚数], formulas: [竹叶石膏汤], principles: [甘寒养阴], prior: [伤寒, 麻黄汤], response: improved}
+      - {pulse: [和], doses: 服二剂, response: improved}
+  - book: prior
+    patient: {sex: male, age: 三十}
+    outcome: improved
+    visits:
+      - {pulse: [沉细], formulas: [理中汤], doses: 连进二帖, prior: [下法, 大黄, 巴豆], prior_response: worse, response: improved}

@@ -18,9 +18,14 @@
 // the runtime when it starts at the next visit, until the page removes it (data_remove, data_clear).
 //
 // Messages: {id, method, params} → {id, result} | {id, error}; while loading {type: "progress", progress, message}; while
-// the rest is indexed {type: "index", indexed, total, done, kept}.
+// the rest is indexed {type: "index", indexed, total, done, kept}.  The page sends one call at a time (runtime.js).
+//
+// Where the page is cross-origin isolated (it can share memory with this worker), Python can be interrupted: the worker
+// hands the page a flag ({type: "interrupt", buffer}), and a call the page no longer waits for is stopped when Python
+// next looks at it (KeyboardInterrupt).  Elsewhere a call runs to its end, and the page drops what it returns.
 
 import { readAll, spool, unxz } from "./unpack.js";
+import { LANG, T } from "./i18n.js";
 
 const CDN = "https://cdn.jsdelivr.net/pyodide/v0.28.2/full/";
 const CORPUS = "/home/pyodide/data/corpus/tcm.sqlite";
@@ -29,6 +34,7 @@ const PART = 16 * 1048576;   // bytes per IndexedDB record of the kept store
 let py = null;
 let rpc = null;
 let ready = null;
+let interrupt = null; // the flag the page sets to interrupt Python (SIGINT, 2), where it can share it
 
 const progress = (p, message) => self.postMessage({ type: "progress", progress: Math.round(p), message });
 const mb = (n) => (n / 1048576).toFixed(1);
@@ -73,7 +79,7 @@ async function archive(base, name, sha) {
   if (sha && hit?.sha === sha && hit.blob instanceof Blob) return new Uint8Array(await hit.blob.arrayBuffer());
   const url = new URL(`runtime/${name}`, base).href;
   const r = await fetch(url, { cache: "no-cache" });
-  if (!r.ok) throw new Error(`下载 ${url} 失败（HTTP ${r.status}）`);
+  if (!r.ok) throw new Error(T`下载 ${url} 失败（HTTP ${r.status}）`);
   const buf = new Uint8Array(await r.arrayBuffer());
   if (sha) kept.put(`zip:${name}`, { sha, blob: new Blob([buf]) }); // best effort, not waited for
   return buf;
@@ -125,18 +131,18 @@ function unpackCorpus(url, size, onGot, onUnpacked) {
     let helper = null;
     const here = async () => {
       const r = await fetch(url, { cache: "no-cache" });
-      if (!r.ok || !r.body) throw new Error(`下载 ${url} 失败（HTTP ${r.status}）`);
+      if (!r.ok || !r.body) throw new Error(T`下载 ${url} 失败（HTTP ${r.status}）`);
       return readAll(await unxz(spool(r.body, onGot)), size, onUnpacked);
     };
     const fallback = () => { helper?.terminate(); helper = null; here().then(resolve, reject); };
     try {
-      helper = new Worker(new URL("./unpack-worker.js", import.meta.url), { type: "module", name: "taochronos-unpack" });
+      helper = new Worker(new URL(`./unpack-worker.js?lang=${LANG}`, import.meta.url), { type: "module", name: "taochronos-unpack" });
     } catch {
       fallback();
       return;
     }
     let heard = false;
-    helper.onerror = (e) => { e.preventDefault?.(); if (!heard) fallback(); else { helper?.terminate(); reject(new Error("解压要籍语料失败：请刷新重试")); } };
+    helper.onerror = (e) => { e.preventDefault?.(); if (!heard) fallback(); else { helper?.terminate(); reject(new Error(T("解压要籍语料失败：请刷新重试"))); } };
     helper.onmessage = ({ data }) => {
       heard = true;
       if (data.got !== undefined) onGot?.(data.got);
@@ -172,7 +178,7 @@ async function loadPython(base, manifest) {
       lastErr = err;
     }
   }
-  throw new Error(`无法载入 Python 运行时（${lastErr?.message || lastErr}）`);
+  throw new Error(T`无法载入 Python 运行时（${lastErr?.message || lastErr}）`);
 }
 
 const ENV = `
@@ -263,6 +269,7 @@ async function keepBytecode(key) {
 /** The rest of the corpus indexed in slices, between the questions the runtime answers; kept once it is all indexed. */
 async function indexRest(sha, then) {
   const step = py.globals.get("_index");
+  let again = false;
   try {
     for (;;) {
       await new Promise((r) => setTimeout(r, 30)); // a question waiting is answered first
@@ -274,10 +281,13 @@ async function indexRest(sha, then) {
     const keptNow = await keepCorpus(sha);
     self.postMessage({ type: "index", done: true, kept: keptNow });
   } catch (err) {
-    self.postMessage({ type: "index", error: String(err?.message || err) });
+    // an interrupt meant for a call that ended as this slice began: the slice, not committed, is indexed again
+    if (/KeyboardInterrupt/.test(String(err?.message || err))) again = true;
+    else self.postMessage({ type: "index", error: String(err?.message || err) });
   } finally {
     step.destroy?.();
-    then?.();
+    if (again) setTimeout(() => indexRest(sha, then), 0);
+    else then?.();
   }
 }
 
@@ -321,17 +331,17 @@ async function clearData() {
 
 async function init({ base }) {
   const t0 = performance.now();
-  progress(3, "读取运行清单");
+  progress(3, T("读取运行清单"));
   const got = await fetch(new URL("runtime/manifest.json", base), { cache: "no-cache" });
-  if (!got.ok) throw new Error(`这里没有浏览器内运行环境（runtime/manifest.json：HTTP ${got.status}）：请用 taochronos web build 构建站点，或连接 taochronos serve`);
+  if (!got.ok) throw new Error(T`这里没有浏览器内运行环境（runtime/manifest.json：HTTP ${got.status}）：请用 taochronos web build 构建站点，或连接 taochronos serve`);
   const manifest = await got.json();
   const files = manifest.files || {};
   const meta = files["corpus.sqlite.xz"];
 
   // Python and the corpus at the same time: the status line shows both
-  const view = { step: "载入 Python 运行时", frac: 0, got: 0, total: meta?.bytes || 0, downloading: false };
+  const view = { step: T("载入 Python 运行时"), frac: 0, got: 0, total: meta?.bytes || 0, downloading: false };
   const show = () => {
-    const dl = view.downloading && view.got < view.total ? ` · 下载要籍语料 ${mb(view.got)} / ${mb(view.total)} MB（仅首次）` : "";
+    const dl = view.downloading && view.got < view.total ? T` · 下载要籍语料 ${mb(view.got)} / ${mb(view.total)} MB（仅首次）` : "";
     const f = view.downloading ? 0.5 * view.frac + 0.5 * (view.got / view.total) : view.frac;
     progress(5 + 55 * f, view.step + dl);
   };
@@ -355,9 +365,14 @@ async function init({ base }) {
 
   show();
   py = await loadPython(base, manifest);
-  view.step = "载入 PyYAML 与 SQLite"; view.frac = 0.6; show();
+  if (self.crossOriginIsolated && typeof SharedArrayBuffer === "function") {
+    interrupt = new Int32Array(new SharedArrayBuffer(4));
+    py.setInterruptBuffer(interrupt);
+    self.postMessage({ type: "interrupt", buffer: interrupt.buffer });
+  }
+  view.step = T("载入 PyYAML 与 SQLite"); view.frac = 0.6; show();
   await py.loadPackage(["pyyaml", "sqlite3"], { messageCallback: () => {}, errorCallback: () => {} });
-  view.step = "载入 TaoChronos"; view.frac = 0.8; show();
+  view.step = T("载入 TaoChronos"); view.frac = 0.8; show();
   const [pkg, home] = await archives;
   const site = py.runPython("import sysconfig; sysconfig.get_paths()['purelib']");
   py.unpackArchive(pkg, "zip", { extractDir: site });
@@ -368,41 +383,41 @@ async function init({ base }) {
   py.FS.mkdirTree("/home/pyodide/data");
   py.unpackArchive(home, "zip", { extractDir: "/home/pyodide/taochronos" });
   py.runPython(ENV); // before anything reads the home: the indexer below loads the domain pack
-  view.step = "载入 TaoChronos"; view.frac = 1; show();
+  view.step = T("载入 TaoChronos"); view.frac = 1; show();
 
   let rest = false;
   if (meta) {
     const src = await corpusSource;
     if (src.kept) {
-      progress(62, "载入本机保存的要籍语料");
+      progress(62, T("载入本机保存的要籍语料"));
       ownCorpus(await src.whole);
     } else {
       py.runPython(INDEX); // the indexer's code, while the download may still be running
       const unpacking = setInterval(() => {
-        const dl = view.got < view.total ? `下载要籍语料 ${mb(view.got)} / ${mb(view.total)} MB · ` : "";
-        progress(60 + 6 * (view.unpacked || 0) / meta.raw_bytes, `${dl}解压（仅首次）`);
+        const dl = view.got < view.total ? T`下载要籍语料 ${mb(view.got)} / ${mb(view.total)} MB · ` : "";
+        progress(60 + 6 * (view.unpacked || 0) / meta.raw_bytes, T`${dl}解压（仅首次）`);
       }, 200);
       try {
         ownCorpus(await src.whole);
       } finally {
         clearInterval(unpacking);
       }
-      const what = meta.core_rank && meta.core_passages < meta.passages ? `前 ${meta.core_rank} 部要籍` : "要籍语料";
+      const what = meta.core_rank && meta.core_passages < meta.passages ? T`前 ${meta.core_rank} 部要籍` : T("要籍语料");
       py.globals.set("_index_progress", (done, total) => progress(66 + 22 * done / total,
-        `为${what}建立全文索引 ${Math.round(100 * done / total)}%（仅首次）`));
+        T`为${what}建立全文索引 ${Math.round(100 * done / total)}%（仅首次）`));
       py.runPython(`_index("core", progress=lambda done, total: _index_progress(done, total))`);
       rest = true;
     }
   }
   py.globals.set("_profile", meta ? meta.profile || "web-canon" : "full-discovery");
-  progress(90, "建立工具网格");
+  progress(90, T("建立工具网格"));
   py.runPython(BOOT);
   rpc = py.globals.get("_rpc");
   await restoreData();
   const info = JSON.parse(rpc("info", "{}"));
   info.load_ms = Math.round(performance.now() - t0);
   info.version_manifest = manifest.version;
-  progress(100, "就绪");
+  progress(100, T("就绪"));
   const compile = pyc || !files["taochronos.zip"]?.sha256 ? null : () => setTimeout(() => keepBytecode(pycKey), 1000);
   if (rest) setTimeout(() => indexRest(meta.sha256, compile), 0);
   else compile?.();
@@ -417,8 +432,9 @@ self.onmessage = async (e) => {
       ready ||= init(params || {});
       result = await ready;
     } else {
-      if (!ready) throw new Error("运行环境尚未启动");
+      if (!ready) throw new Error(T("运行环境尚未启动"));
       await ready;
+      if (interrupt) Atomics.store(interrupt, 0, 0); // one set for the call before this one is not for this one
       const local = { data_add: addData, data_remove: removeData, data_clear: clearData }[method];
       result = local ? await local(params || {}) : JSON.parse(rpc(method, JSON.stringify(params || {})));
     }

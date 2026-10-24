@@ -28,8 +28,8 @@ from ..science import (
 from ..science.temporal import coverage
 from ..verification.provenance import find_quote, provenance_chain
 from .adapters import SenseOracle, author_clusters, binner, claim_year_fn, contradiction_context
-from .common import (claim_card, claims_in_scope, lineage_in_scope, passage_card, scope_ids, scope_passages, term_passages,
-                     whole_store)
+from .common import (claim_card, claims_in_scope, find_passage, lineage_in_scope, neighbours, passage_card, scope_ids,
+                     scope_passages, term_passages, whole_store)
 
 S = {"type": "string"}
 I = {"type": "integer"}
@@ -50,12 +50,11 @@ def _normalize(ctx: ToolContext, a: dict) -> Any:
 
 
 def _assess(ctx: ToolContext, a: dict) -> Any:
-    return to_jsonable(ctx.cap("philology").assess(ctx.cap("corpus").passage(a["passage_id"])))
+    return to_jsonable(ctx.cap("philology").assess(find_passage(ctx, a["passage_id"])))
 
 
 def _collate(ctx: ToolContext, a: dict) -> Any:
-    corpus = ctx.cap("corpus")
-    pa, pb = corpus.passage(a["passage_a"]), corpus.passage(a["passage_b"])
+    pa, pb = find_passage(ctx, a["passage_a"]), find_passage(ctx, a["passage_b"])
     return {"a": pa.id, "b": pb.id, "operations": ctx.cap("philology").collate(pa.text, pb.text)}
 
 
@@ -102,7 +101,9 @@ def _get_passage(ctx: ToolContext, a: dict) -> Any:
     allowed = scope_ids(ctx)
     if allowed is not None and a["passage_id"] not in allowed:
         raise PermissionError(f"passage {a['passage_id']} is outside the research scope (e.g. temporal hold-out)")
-    return passage_card(ctx, ctx.cap("corpus").passage(a["passage_id"]), full=True)
+    passage = find_passage(ctx, a["passage_id"])
+    before, _, after = neighbours(ctx, passage.id)  # to read on: the passages before and after it in its book
+    return {**passage_card(ctx, passage, full=True), "prev": before, "next": after}
 
 
 def _list_books(ctx: ToolContext, a: dict) -> Any:
@@ -142,8 +143,7 @@ def _lineage(ctx: ToolContext, a: dict) -> Any:
 
 # ------------------------------------------------------------------ knowledge
 def _extract(ctx: ToolContext, a: dict) -> Any:
-    corpus = ctx.cap("corpus")
-    passage = corpus.passage(a["passage_id"])
+    passage = find_passage(ctx, a["passage_id"])
     allowed = scope_ids(ctx)
     if allowed is not None and passage.id not in allowed:
         raise PermissionError("passage outside research scope")
@@ -520,6 +520,44 @@ def _study_trajectories(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief({k: v for k, v in res.items() if k != "examples"}, int(a.get("items", 15)))
 
 
+def _study_casefind(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    kw = {k: a[k] for k in ("disease", "formula", "herb", "principle", "outcome", "sex", "period", "physician", "text") if a.get(k)}
+    kw.update({k: float(a[k]) for k in ("age_min", "age_max", "after", "before") if a.get(k) is not None})
+    if a.get("prior") is not None:
+        kw["prior"] = bool(a["prior"])
+    res = _study(ctx).casefind(findings=a.get("findings") or (), books=a.get("books"),
+                               limit=int(a.get("limit", 30)), **kw)
+    return _brief(res, int(a.get("items", 15)))
+
+
+def _study_similar(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).similar(a.get("text"), case_id=a.get("case_id"), disease=a.get("disease"), books=a.get("books"),
+                              k=int(a.get("k", 10)), scope=a.get("scope", "first"))
+    return _brief(res, int(a.get("items", 12)))
+
+
+def _study_case(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).case(a["case_id"], similar=int(a.get("similar", 5))), int(a.get("items", 12)), chars=600)
+
+
+def _study_casecompare(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).casecompare(by=a.get("by", "book"), disease=a.get("disease"), books=a.get("books"),
+                                  groups=a.get("groups"), min_cases=int(a.get("min_cases", 5)))
+    return _brief(res, int(a.get("items", 12)))
+
+
+def _study_modifications(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).modifications(disease=a.get("disease"), formula=a.get("formula"), books=a.get("books"),
+                                    findings=a.get("findings", "visit"))
+    return _brief(res, int(a.get("items", 15)))
+
+
+def _study_treatments(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    res = _study(ctx).treatments(a["target"], mode=a.get("mode"), by=a.get("by", "formula"), books=a.get("books"),
+                                 min_cases=int(a.get("min_cases", 3)))
+    return _brief(res, int(a.get("items", 12)))
+
+
 def _study_argument(ctx: ToolContext, a: dict[str, Any]) -> Any:
     study = _study(ctx)
     if a.get("work"):
@@ -768,7 +806,8 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  _search, family="retrieval", permission="classics:read",
                  returns="hits with passage ids, periods, routes and matched surfaces; for a drug's other names, their "
                          "labels (via) and flags"),
-        ToolSpec("classics.get_passage", "Full passage with locator, variants, temporal context and notes.",
+        ToolSpec("classics.get_passage", "Full passage with locator, variants, temporal context and notes, and the ids of "
+                 "the passages before and after it in its book (prev, next), to read on.",
                  obj({"passage_id": S}, ["passage_id"]), _get_passage, family="retrieval", permission="classics:read"),
         ToolSpec("classics.list_books", "Books in research scope (outside a session: every book of the corpus) with dates, "
                  "attribution and passage counts; filter by title/author words, dynasty or category.",
@@ -897,6 +936,50 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "with recovery in the record (associations in a selected record, never evidence of efficacy).",
                  obj({"disease": S, "book": S, "limit": I, "items": I}), _study_trajectories, family="study",
                  permission="classics:read", expensive=True, returns="patterns, transitions, outcome associations"),
+        ToolSpec("study.casefind", "医案检索: the case records (across every case collection, oldest first) that fit a query of "
+                 "many facets — disease, findings (symptoms, pulse such as 浮数, tongue such as 苔黄), formula, herb, principle, "
+                 "outcome (improved/unchanged/worse/died), sex, age range, period or years, collections (books), the "
+                 "physician (丹溪, 叶天士: named in the record, else the collection's author), whether "
+                 "an earlier physician's treatment is recorded (prior: 误治), words of the text — each with what matched, "
+                 "and the facets of all matches (collections, periods, outcomes, formulas, principles, drugs, findings).",
+                 obj({"disease": S, "findings": {"type": "array", "items": S}, "formula": S, "herb": S, "principle": S,
+                      "outcome": S, "sex": S, "age_min": N, "age_max": N, "after": N, "before": N, "period": S, "physician": S,
+                      "books": {"type": "array", "items": S}, "prior": {"type": "boolean"}, "text": S, "limit": I, "items": I}),
+                 _study_casefind, family="study", permission="classics:read", expensive=True,
+                 returns="cases (id, book, period, patient, visits, outcome, formulas, prior, matched), facets"),
+        ToolSpec("study.similar", "类案: the historical case records whose presentation is most like a given one — a text such as "
+                 "“发热，咳嗽，脉浮数，舌红苔黄” (read as a first visit) or a case_id — by shared findings weighted by "
+                 "rarity (cosine); what each like case did and how it ended, and what the nearest did together with their "
+                 "outcomes. What physicians recorded doing, never advice for a patient.",
+                 obj({"text": S, "case_id": S, "disease": S, "books": {"type": "array", "items": S}, "k": I, "scope": S,
+                      "items": I}), _study_similar, family="study", permission="classics:read", expensive=True,
+                 returns="features read, results (score, shared, treated, outcome), practice (formulas, principles, herbs)"),
+        ToolSpec("study.case", "医案详解: one case record in full by its case_id (from study.casefind, study.similar or study.cases) "
+                 "— its course visit by visit (findings, diagnosis, earlier physicians' treatment, principle, formulas and "
+                 "drugs with doses, 加减 as stated and as computed from the drugs listed, doses, response), the passages it "
+                 "rests on, and its like cases.",
+                 obj({"case_id": S, "similar": I, "items": I}, ["case_id"]), _study_case, family="study",
+                 permission="classics:read", expensive=True, returns="course, witnesses, formulas named, similar cases"),
+        ToolSpec("study.casecompare", "医家与时代比较: groups of case records side by side — by collection (by=book), by "
+                 "physician (by=physician: the one the record names, as a compilation's 丹溪治…, else the collection's "
+                 "author), by period or by author; optionally for one disease — visits, outcome rates with intervals, the "
+                 "patients each saw, the principles, formulas and drugs each favours against the others (Fisher + BH), "
+                 "χ² and Kruskal–Wallis across groups, and by period Cochran–Armitage trends.",
+                 obj({"by": S, "disease": S, "books": {"type": "array", "items": S}, "groups": {"type": "array", "items": S},
+                      "min_cases": I, "items": I}), _study_casecompare, family="study", permission="classics:read",
+                 expensive=True, returns="group profiles with distinctive items, tests, distances, trends"),
+        ToolSpec("study.modifications", "随证加减: at the visits of case records that add to or take from the last prescription, the "
+                 "findings that go with each drug added or removed (lift, Fisher + BH), the drugs most often added and "
+                 "removed, and what is added to each base formula; optionally for a disease or a base formula.",
+                 obj({"disease": S, "formula": S, "books": {"type": "array", "items": S}, "findings": S, "items": I}),
+                 _study_modifications, family="study", permission="classics:read", expensive=True,
+                 returns="finding → drug added/removed associations, bases with their additions, examples"),
+        ToolSpec("study.treatments", "同病异治 · 异病同治 in the case records: for a disease, the different treatments its cases "
+                 "received (grouped by formula or principle) and the findings that set each group apart; for a formula, "
+                 "the diseases it treated and the findings those cases share (the common pattern) and those that differ.",
+                 obj({"target": S, "mode": S, "by": S, "books": {"type": "array", "items": S}, "min_cases": I, "items": I},
+                     ["target"]), _study_treatments, family="study", permission="classics:read", expensive=True,
+                 returns="groups with outcomes and distinctive findings; shared findings (formula mode)"),
         ToolSpec("study.argument", "医理论证: the reasoning of a passage as a graph of clauses (with their concepts) and the steps its "
                  "discourse markers state (条件, 则, 故, 因, 所致, 主之, 界说, 转折, 取象比类, 驳斥, 盖); with work, a work's way of "
                  "reasoning (relations per 1 000 clauses, concept triples, chains); with work and against, two works compared.",

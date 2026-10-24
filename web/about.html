@@ -27,8 +27,20 @@
   .nav { font-size: 14px; color: var(--ink-3); }
   .start { display: inline-block; margin: 14px 0 4px; padding: 8px 18px; border-radius: 999px; background: var(--accent); color: #fff8f0; text-decoration: none; }
   li { margin: 4px 0; }
+  /* the page in the site's eight languages: the visitor's choice (?lang=, or the menu on the site, kept as tc.lang), else
+     the browser's (js/about-lang.js); without the script, 简体中文 */
+  main { display: none; }
+  html:not([data-lang]) main[data-lang="zh"], html[data-lang="zh"] main[data-lang="zh"],
+  html[data-lang="zh-Hant"] main[data-lang="zh-Hant"], html[data-lang="en"] main[data-lang="en"],
+  html[data-lang="fr"] main[data-lang="fr"], html[data-lang="es"] main[data-lang="es"], html[data-lang="ru"] main[data-lang="ru"],
+  html[data-lang="ar"] main[data-lang="ar"], html[data-lang="ms"] main[data-lang="ms"] { display: block; }
+  .langs { max-width: 760px; margin: 0 auto; padding: 16px 16px 0; display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 13px; }
+  .langs a { color: var(--ink-3); text-decoration: none; }
+  .langs a:hover { color: var(--accent); text-decoration: underline; }
+  .langs a[aria-current] { color: var(--ink); font-weight: 600; }
   .muted { color: var(--ink-3); font-size: 14px; }
 </style>
+<script src="js/about-lang.js"></script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -47,7 +59,17 @@
 </script>
 </head>
 <body>
-<main>
+<nav class="langs" aria-label="语言 · Language">
+  <a href="?lang=zh" lang="zh-CN" data-lang="zh">简体中文</a>
+  <a href="?lang=zh-Hant" lang="zh-Hant" data-lang="zh-Hant">繁體中文</a>
+  <a href="?lang=en" lang="en" data-lang="en">English</a>
+  <a href="?lang=fr" lang="fr" data-lang="fr">Français</a>
+  <a href="?lang=es" lang="es" data-lang="es">Español</a>
+  <a href="?lang=ru" lang="ru" data-lang="ru">Русский</a>
+  <a href="?lang=ar" lang="ar" data-lang="ar">العربية</a>
+  <a href="?lang=ms" lang="ms" data-lang="ms">Bahasa Melayu</a>
+</nav>
+<main data-lang="zh">
   <p class="nav"><a href="./">道乃久</a> · 关于 · <a href="attribution">语料来源与授权</a></p>
 
   <h1>道乃久 · 中医古籍科学知识发现智能体平台</h1>
@@ -89,6 +111,356 @@
     涉及身体健康的问题，请咨询合格的医生。</p>
 
   <p class="muted">道乃久 · 医哲未来人工智能研究院（IMPF-AI）研发 · <a href="./">chat.impf.ai</a></p>
+</main>
+
+<main data-lang="zh-Hant" lang="zh-Hant">
+  <p class="nav"><a href="./">道乃久</a> · 關於 · <a href="attribution">語料來源與授權</a></p>
+
+  <h1>道乃久 · 中醫古籍科學知識發現智慧體平臺</h1>
+  <p class="lead">道乃久（TaoChronos）是醫哲未來人工智慧研究院（IMPF-AI）研發的中醫古籍科學知識發現智慧體平臺。
+    它面向中醫古籍的可溯源研究：先從古籍中檢得原文，再據原文作答，每一條引文都註明出處，並與原文逐字核對。
+    名字取《道德經》「天乃道，道乃久」。</p>
+  <a class="start" href="./">開始提問</a>
+
+  <h2>能做什麼</h2>
+  <ul>
+    <li><strong>檢索與細讀原文</strong>：在歷代中醫古籍中檢索原文，可限定時代，逐段細讀上下文。</li>
+    <li><strong>考據與治學</strong>：方劑源流與加減化裁、藥物性味歸經的演變、術語的義項與盛衰、經文互見與異文、歷代注家集註、訓詁、句讀、版本、避諱、度量衡。</li>
+    <li><strong>知識發現</strong>：發掘失傳的關聯、概念的演變、方劑的演化、隱含的關聯與文獻間的矛盾，提出研究假說，並用原文檢驗。</li>
+    <li><strong>證據核驗</strong>：回答中的引文與原文逐字比對，標出一致、存疑與查無此段；也可以審計一個說法有沒有文獻依據。</li>
+    <li><strong>古今橋接</strong>：比較古代病證與現代醫學在表型上的異同，不做回溯診斷。</li>
+    <li><strong>分析我的資料</strong>：上傳自己的門診處方、病案或調查表（CSV、Excel、Word 等），做描述統計、組間比較與處方用藥分析，並與經典方比較。資料在本機讀取並脫敏，不傳到道乃久的伺服器，相關對話不記錄。</li>
+  </ul>
+
+  <h2>可以這樣問</h2>
+  <ul>
+    <li>桂枝湯的原方組成與劑量出自哪裡？後世有哪些重要的加減化裁？</li>
+    <li>「消渴」一詞在歷代文獻中的含義與用法如何演變？請給出各時期的原文證據。</li>
+    <li>比較歷代注家對「太陽之為病，脈浮，頭項強痛而惡寒」的解釋，有哪些分歧？</li>
+    <li>黃連的性味、歸經與主治最早見於哪部書？後世有何變化？</li>
+    <li>請審計這個說法：「六味地黃丸是張仲景在《傷寒論》中創制的」。</li>
+  </ul>
+
+  <h2>讀哪些書</h2>
+  <p>網站伺服器載有全量語料：歷代中醫古籍九百餘部，約 1.2 億字，包括《黃帝內經》（素問、靈樞）、《難經》、《傷寒論》、
+    《金匱要略》、《神農本草經》、《備急千金要方》、《外臺秘要》、《本草綱目》等。伺服器暫不可用時，網頁在瀏覽器內執行
+    按歷代引用排序的要籍。各部古籍的來源、版本與授權，見<a href="attribution">語料來源與授權</a>。</p>
+
+  <h2>證據紀律</h2>
+  <p>古籍說了什麼，以檢得的原文為準，不憑記憶補寫；原文、注家與後世解釋、計算推斷、現代醫學四個層次分開表述。
+    檢索排序、關聯規則與研究假說都是待檢驗的計算推斷，須經專家核驗。</p>
+
+  <h2>使用須知</h2>
+  <p>道乃久用於中醫古籍的研究與學習，不提供診斷、處方或用藥建議；歷代度量衡的換算只是歷史讀法，不是劑量。
+    涉及身體健康的問題，請諮詢合格的醫生。</p>
+
+  <p class="muted">道乃久 · 醫哲未來人工智慧研究院（IMPF-AI）研發 · <a href="./">chat.impf.ai</a></p>
+</main>
+
+<main data-lang="en" lang="en">
+  <p class="nav"><a href="./">TaoChronos</a> · About · <a href="attribution">Corpus sources and licences</a></p>
+
+  <h1>TaoChronos · Scientific Knowledge Discovery from Ancient TCM Texts</h1>
+  <p class="lead">TaoChronos (道乃久) is a platform of AI agents for scientific knowledge discovery from the classical texts of
+    Chinese medicine, developed by IMPF-AI (医哲未来人工智能研究院). It supports traceable research: it first retrieves the
+    original text from the classics, then answers from it, and every quotation names its source and is checked against the
+    original character by character. The name comes from the Daodejing: “天乃道，道乃久” (Heaven accords with the Dao; the Dao endures).</p>
+  <a class="start" href="./">Start asking</a>
+
+  <h2>What it can do</h2>
+  <ul>
+    <li><strong>Search and close reading</strong>: search the classics of Chinese medicine across the dynasties, limit by period, and read each passage in context.</li>
+    <li><strong>Textual scholarship</strong>: the origins and modifications of formulas, how herb properties and channel tropisms changed, the senses and fortunes of terms, parallel passages and variants, collected commentaries, glosses, punctuation, editions, taboo characters, and historical weights and measures.</li>
+    <li><strong>Knowledge discovery</strong>: uncover lost associations, shifts in concepts, the evolution of formulas, hidden links and contradictions between texts; propose research hypotheses and test them against the original texts.</li>
+    <li><strong>Evidence checking</strong>: quotations in answers are compared with the source character by character and marked as matching, in doubt or not found; you can also audit whether a claim has textual support.</li>
+    <li><strong>Bridging past and present</strong>: compare the phenotypes of historical disorders with modern medicine, without retrospective diagnosis.</li>
+    <li><strong>Analyse my data</strong>: upload your own clinic prescriptions, case records or survey forms (CSV, Excel, Word and more) for descriptive statistics, group comparisons and prescription analysis, compared with classical formulas. The data is read and de-identified on your device, never sent to TaoChronos's servers, and those conversations are not recorded.</li>
+  </ul>
+
+  <h2>Questions you can ask</h2>
+  <ul>
+    <li>Where do the original ingredients and doses of Guizhi Tang (桂枝汤) come from? What important modifications did later physicians make?</li>
+    <li>How did the meaning and use of the term 消渴 (xiaoke) change across the historical literature? Give textual evidence from each period.</li>
+    <li>Compare how commentators through the ages explained “太阳之为病，脉浮，头项强痛而恶寒”. Where do they disagree?</li>
+    <li>In which book do the properties, channel tropism and indications of Huanglian (黄连, coptis) first appear? How did they change later?</li>
+    <li>Please audit this claim: “Liuwei Dihuang Wan (六味地黄丸) was created by Zhang Zhongjing in the Shanghan Lun (伤寒论).”</li>
+  </ul>
+  <p>Answers are in English; the classics are quoted in the original Chinese, each with an English translation.</p>
+
+  <h2>Which books it reads</h2>
+  <p>The site's server holds the full corpus: more than 900 classics of Chinese medicine, about 120 million characters,
+    including the Huangdi Neijing (Suwen and Lingshu), Nanjing, Shanghan Lun, Jingui Yaolue, Shennong Bencao Jing, Beiji Qianjin
+    Yaofang, Waitai Miyao and Bencao Gangmu. When the server is unavailable, the page runs the core classics, ranked by how often
+    they were cited over the centuries, in your browser. For the source, edition and licence of each work, see
+    <a href="attribution">Corpus sources and licences</a>.</p>
+
+  <h2>Evidence discipline</h2>
+  <p>What the classics say is settled by the retrieved original text, never filled in from memory. The original text,
+    commentators and later interpretation, computational inference, and modern medicine are kept as four separate layers.
+    Search rankings, association rules and research hypotheses are computational inferences still to be tested, and must be
+    checked by experts.</p>
+
+  <h2>Terms of use</h2>
+  <p>TaoChronos is for research on and study of the classical texts of Chinese medicine. It does not give diagnoses,
+    prescriptions or medication advice; conversions of historical weights and measures are historical readings, not doses.
+    For questions about your health, please consult a qualified doctor.</p>
+
+  <p class="muted">TaoChronos · developed by IMPF-AI (医哲未来人工智能研究院) · <a href="./">chat.impf.ai</a></p>
+</main>
+
+<main data-lang="fr" lang="fr">
+  <p class="nav"><a href="./">TaoChronos</a> · À propos · <a href="attribution">Sources et licences du corpus</a></p>
+
+  <h1>TaoChronos · Découverte de connaissances scientifiques dans les textes anciens de MTC</h1>
+  <p class="lead">TaoChronos (道乃久) est une plateforme d'agents d'IA pour la découverte de connaissances scientifiques dans les
+    textes classiques de la médecine chinoise, développée par l'IMPF-AI (医哲未来人工智能研究院). Elle accompagne une recherche
+    traçable : elle retrouve d'abord le texte original dans les classiques, puis répond à partir de celui-ci, et chaque citation
+    indique sa source et est vérifiée caractère pour caractère contre l'original. Le nom vient du Daodejing : « 天乃道，道乃久 »
+    (le Ciel s'accorde au Dao ; le Dao perdure).</p>
+  <a class="start" href="./">Poser une question</a>
+
+  <h2>Ce qu'elle sait faire</h2>
+  <ul>
+    <li><strong>Recherche et lecture attentive</strong> : chercher dans les classiques de la médecine chinoise à travers les dynasties, limiter par période et lire chaque passage dans son contexte.</li>
+    <li><strong>Érudition textuelle</strong> : origines et modifications des formules, évolution des propriétés et des tropismes méridiens des plantes, sens et fortune des termes, passages parallèles et variantes, commentaires réunis, gloses, ponctuation, éditions, caractères tabous, poids et mesures historiques.</li>
+    <li><strong>Découverte de connaissances</strong> : mettre au jour des associations perdues, l'évolution des concepts et des formules, des liens cachés et des contradictions entre textes ; proposer des hypothèses de recherche et les tester contre les textes originaux.</li>
+    <li><strong>Vérification des preuves</strong> : les citations des réponses sont comparées à la source caractère pour caractère et marquées comme conformes, douteuses ou introuvables ; vous pouvez aussi vérifier si une affirmation a un appui textuel.</li>
+    <li><strong>Passerelle entre passé et présent</strong> : comparer les phénotypes des troubles historiques avec la médecine moderne, sans diagnostic rétrospectif.</li>
+    <li><strong>Analyser mes données</strong> : importez vos propres prescriptions de consultation, dossiers cliniques ou questionnaires (CSV, Excel, Word, etc.) pour des statistiques descriptives, des comparaisons de groupes et une analyse des prescriptions, comparées aux formules classiques. Les données sont lues et anonymisées sur votre appareil, jamais envoyées aux serveurs de TaoChronos, et ces conversations ne sont pas enregistrées.</li>
+  </ul>
+
+  <h2>Questions possibles</h2>
+  <ul>
+    <li>D'où viennent la composition et les doses d'origine de Guizhi Tang (桂枝汤) ? Quelles modifications importantes les médecins ultérieurs ont-ils apportées ?</li>
+    <li>Comment le sens et l'usage du terme 消渴 (xiaoke) ont-ils évolué dans la littérature historique ? Donnez des preuves textuelles de chaque période.</li>
+    <li>Comparez la façon dont les commentateurs au fil des siècles ont expliqué « 太阳之为病，脉浮，头项强痛而恶寒 ». Où divergent-ils ?</li>
+    <li>Dans quel livre les propriétés, le tropisme méridien et les indications de Huanglian (黄连, coptis) apparaissent-ils pour la première fois ? Comment ont-ils changé ensuite ?</li>
+    <li>Veuillez auditer cette affirmation : « Liuwei Dihuang Wan (六味地黄丸) a été créé par Zhang Zhongjing dans le Shanghan Lun (伤寒论). »</li>
+  </ul>
+  <p>Les réponses sont en français ; les classiques sont cités dans le chinois original, chaque citation suivie d'une traduction française.</p>
+
+  <h2>Quels livres elle lit</h2>
+  <p>Le serveur du site contient le corpus complet : plus de 900 classiques de la médecine chinoise, environ 120 millions de
+    caractères, dont le Huangdi Neijing (Suwen et Lingshu), le Nanjing, le Shanghan Lun, le Jingui Yaolue, le Shennong Bencao
+    Jing, le Beiji Qianjin Yaofang, le Waitai Miyao et le Bencao Gangmu. Quand le serveur est indisponible, la page exécute dans
+    votre navigateur les classiques de base, classés selon leur fréquence de citation au fil des siècles. Pour la source,
+    l'édition et la licence de chaque œuvre, voir <a href="attribution">Sources et licences du corpus</a>.</p>
+
+  <h2>Discipline de preuve</h2>
+  <p>Ce que disent les classiques est établi par le texte original retrouvé, jamais complété de mémoire. Le texte original,
+    les commentateurs et les interprétations ultérieures, l'inférence calculée et la médecine moderne sont présentés comme
+    quatre niveaux distincts. Les classements de recherche, les règles d'association et les hypothèses de recherche sont des
+    inférences calculées encore à tester, qui doivent être vérifiées par des experts.</p>
+
+  <h2>Conditions d'utilisation</h2>
+  <p>TaoChronos sert à la recherche et à l'étude des textes classiques de la médecine chinoise. Il ne donne ni diagnostic, ni
+    prescription, ni conseil médicamenteux ; les conversions des poids et mesures historiques sont des lectures historiques, pas
+    des doses. Pour toute question concernant votre santé, consultez un médecin qualifié.</p>
+
+  <p class="muted">TaoChronos · développé par l'IMPF-AI (医哲未来人工智能研究院) · <a href="./">chat.impf.ai</a></p>
+</main>
+
+<main data-lang="es" lang="es">
+  <p class="nav"><a href="./">TaoChronos</a> · Acerca de · <a href="attribution">Fuentes y licencias del corpus</a></p>
+
+  <h1>TaoChronos · Descubrimiento de conocimiento científico en textos antiguos de MTC</h1>
+  <p class="lead">TaoChronos (道乃久) es una plataforma de agentes de IA para el descubrimiento de conocimiento científico en los
+    textos clásicos de la medicina china, desarrollada por IMPF-AI (医哲未来人工智能研究院). Apoya una investigación trazable:
+    primero recupera el texto original de los clásicos, luego responde a partir de él, y cada cita indica su fuente y se coteja
+    carácter por carácter con el original. El nombre procede del Daodejing: «天乃道，道乃久» (el Cielo concuerda con el Dao; el
+    Dao perdura).</p>
+  <a class="start" href="./">Empezar a preguntar</a>
+
+  <h2>Qué puede hacer</h2>
+  <ul>
+    <li><strong>Búsqueda y lectura atenta</strong>: buscar en los clásicos de la medicina china de todas las dinastías, limitar por época y leer cada pasaje en su contexto.</li>
+    <li><strong>Erudición textual</strong>: orígenes y modificaciones de las fórmulas, evolución de las propiedades y tropismos de canal de las hierbas, sentidos y fortuna de los términos, pasajes paralelos y variantes, comentarios reunidos, glosas, puntuación, ediciones, caracteres tabú y pesos y medidas históricos.</li>
+    <li><strong>Descubrimiento de conocimiento</strong>: sacar a la luz asociaciones perdidas, la evolución de conceptos y fórmulas, vínculos ocultos y contradicciones entre textos; proponer hipótesis de investigación y ponerlas a prueba con los textos originales.</li>
+    <li><strong>Verificación de la evidencia</strong>: las citas de las respuestas se cotejan con la fuente carácter por carácter y se marcan como coincidentes, dudosas o no encontradas; también puedes auditar si una afirmación tiene respaldo textual.</li>
+    <li><strong>Puente entre pasado y presente</strong>: comparar los fenotipos de trastornos históricos con la medicina moderna, sin diagnóstico retrospectivo.</li>
+    <li><strong>Analizar mis datos</strong>: sube tus propias recetas de consulta, historias clínicas o cuestionarios (CSV, Excel, Word y más) para obtener estadística descriptiva, comparaciones de grupos y análisis de recetas, comparadas con las fórmulas clásicas. Los datos se leen y anonimizan en tu dispositivo, nunca se envían a los servidores de TaoChronos y esas conversaciones no se registran.</li>
+  </ul>
+
+  <h2>Preguntas que puedes hacer</h2>
+  <ul>
+    <li>¿De dónde proceden la composición y las dosis originales de Guizhi Tang (桂枝汤)? ¿Qué modificaciones importantes hicieron los médicos posteriores?</li>
+    <li>¿Cómo cambiaron el significado y el uso del término 消渴 (xiaoke) a lo largo de la literatura histórica? Da evidencia textual de cada época.</li>
+    <li>Compara cómo explicaron los comentaristas de distintas épocas «太阳之为病，脉浮，头项强痛而恶寒». ¿En qué discrepan?</li>
+    <li>¿En qué libro aparecen por primera vez las propiedades, el tropismo de canal y las indicaciones de Huanglian (黄连, coptis)? ¿Cómo cambiaron después?</li>
+    <li>Audita esta afirmación: «Liuwei Dihuang Wan (六味地黄丸) fue creada por Zhang Zhongjing en el Shanghan Lun (伤寒论)».</li>
+  </ul>
+  <p>Las respuestas están en español; los clásicos se citan en el chino original, cada cita con su traducción al español.</p>
+
+  <h2>Qué libros lee</h2>
+  <p>El servidor del sitio contiene el corpus completo: más de 900 clásicos de la medicina china, unos 120 millones de
+    caracteres, entre ellos el Huangdi Neijing (Suwen y Lingshu), el Nanjing, el Shanghan Lun, el Jingui Yaolue, el Shennong
+    Bencao Jing, el Beiji Qianjin Yaofang, el Waitai Miyao y el Bencao Gangmu. Cuando el servidor no está disponible, la página
+    ejecuta en tu navegador los clásicos básicos, ordenados por la frecuencia con que se citaron a lo largo de los siglos. Para
+    la fuente, la edición y la licencia de cada obra, consulta <a href="attribution">Fuentes y licencias del corpus</a>.</p>
+
+  <h2>Disciplina de la evidencia</h2>
+  <p>Lo que dicen los clásicos lo establece el texto original recuperado, nunca se completa de memoria. El texto original, los
+    comentaristas y las interpretaciones posteriores, la inferencia computacional y la medicina moderna se presentan como cuatro
+    niveles separados. Las clasificaciones de búsqueda, las reglas de asociación y las hipótesis de investigación son inferencias
+    computacionales aún por comprobar, y deben verificarlas expertos.</p>
+
+  <h2>Condiciones de uso</h2>
+  <p>TaoChronos sirve para la investigación y el estudio de los textos clásicos de la medicina china. No ofrece diagnósticos,
+    recetas ni consejos sobre medicación; las conversiones de pesos y medidas históricos son lecturas históricas, no dosis. Para
+    cuestiones sobre tu salud, consulta a un médico cualificado.</p>
+
+  <p class="muted">TaoChronos · desarrollado por IMPF-AI (医哲未来人工智能研究院) · <a href="./">chat.impf.ai</a></p>
+</main>
+
+<main data-lang="ru" lang="ru">
+  <p class="nav"><a href="./">TaoChronos</a> · О сервисе · <a href="attribution">Источники и лицензии корпуса</a></p>
+
+  <h1>TaoChronos · Научное открытие знаний в древних текстах ТКМ</h1>
+  <p class="lead">TaoChronos (道乃久) — платформа ИИ-агентов для научного открытия знаний в классических текстах китайской
+    медицины, разработанная IMPF-AI (医哲未来人工智能研究院). Она поддерживает прослеживаемые исследования: сначала находит
+    исходный текст в классических трудах, затем отвечает на его основе, и у каждой цитаты указан источник, а сама она сверяется
+    с оригиналом знак в знак. Название взято из «Дао дэ цзин»: «天乃道，道乃久» (Небо следует Дао; Дао долговечно).</p>
+  <a class="start" href="./">Задать вопрос</a>
+
+  <h2>Что она умеет</h2>
+  <ul>
+    <li><strong>Поиск и внимательное чтение</strong>: поиск по классическим трудам китайской медицины всех династий с ограничением по эпохе и чтение каждого фрагмента в контексте.</li>
+    <li><strong>Текстология</strong>: происхождение и модификации рецептов, изменение свойств и тропности к каналам лекарственных средств, значения и судьба терминов, параллельные места и разночтения, своды комментариев, глоссы, пунктуация, издания, табуированные знаки, исторические меры и веса.</li>
+    <li><strong>Открытие знаний</strong>: выявление утраченных связей, эволюции понятий и рецептов, скрытых связей и противоречий между текстами; выдвижение исследовательских гипотез и их проверка по исходным текстам.</li>
+    <li><strong>Проверка доказательств</strong>: цитаты в ответах сверяются с источником знак в знак и помечаются как совпадающие, сомнительные или ненайденные; можно также проверить, есть ли у утверждения текстовая опора.</li>
+    <li><strong>Мост между прошлым и настоящим</strong>: сравнение фенотипов исторических болезней с современной медициной без ретроспективной диагностики.</li>
+    <li><strong>Анализ моих данных</strong>: загрузите свои амбулаторные рецепты, истории болезни или анкеты (CSV, Excel, Word и др.) для описательной статистики, сравнения групп и анализа назначений в сопоставлении с классическими рецептами. Данные читаются и обезличиваются на вашем устройстве, никогда не отправляются на серверы TaoChronos, а такие беседы не записываются.</li>
+  </ul>
+
+  <h2>Какие вопросы можно задать</h2>
+  <ul>
+    <li>Откуда происходят исходный состав и дозы Гуйчжи Тан (桂枝汤)? Какие важные модификации внесли позднейшие врачи?</li>
+    <li>Как менялись значение и употребление термина 消渴 (сяокэ) в исторической литературе? Приведите текстовые свидетельства каждой эпохи.</li>
+    <li>Сравните, как комментаторы разных эпох объясняли «太阳之为病，脉浮，头项强痛而恶寒». В чём они расходятся?</li>
+    <li>В какой книге впервые появляются свойства, тропность к каналам и показания Хуанлянь (黄连, коптис)? Как они менялись позже?</li>
+    <li>Проверьте это утверждение: «Лювэй Дихуан Вань (六味地黄丸) создал Чжан Чжунцзин в „Шанхань лунь“ (伤寒论)».</li>
+  </ul>
+  <p>Ответы даются на русском языке; классические тексты цитируются на языке оригинала, и за каждой цитатой следует русский перевод.</p>
+
+  <h2>Какие книги она читает</h2>
+  <p>На сервере сайта находится полный корпус: более 900 классических трудов китайской медицины, около 120 миллионов знаков,
+    в том числе «Хуанди нэйцзин» («Су вэнь» и «Лин шу»), «Нань цзин», «Шанхань лунь», «Цзиньгуй яолюэ», «Шэньнун бэньцао
+    цзин», «Бэйцзи цяньцзинь яофан», «Вайтай мияо» и «Бэньцао ганму». Когда сервер недоступен, страница запускает в вашем
+    браузере основные классические труды, упорядоченные по частоте цитирования на протяжении веков. Об источнике, издании и
+    лицензии каждого труда см. <a href="attribution">Источники и лицензии корпуса</a>.</p>
+
+  <h2>Дисциплина доказательств</h2>
+  <p>То, что говорят классики, устанавливается по найденному исходному тексту и никогда не дополняется по памяти. Исходный
+    текст, комментаторы и позднейшие толкования, вычисленные выводы и современная медицина излагаются как четыре отдельных
+    уровня. Ранжирование поиска, ассоциативные правила и исследовательские гипотезы — это вычисленные выводы, которые ещё
+    предстоит проверить, и их должны проверять специалисты.</p>
+
+  <h2>Условия использования</h2>
+  <p>TaoChronos предназначен для исследования и изучения классических текстов китайской медицины. Он не ставит диагнозов, не
+    назначает рецептов и не даёт советов по приёму лекарств; пересчёт исторических мер и весов — это историческое прочтение, а
+    не дозировка. По вопросам здоровья обращайтесь к квалифицированному врачу.</p>
+
+  <p class="muted">TaoChronos · разработан IMPF-AI (医哲未来人工智能研究院) · <a href="./">chat.impf.ai</a></p>
+</main>
+
+<main data-lang="ar" lang="ar" dir="rtl">
+  <p class="nav"><a href="./">TaoChronos</a> · حول · <a href="attribution">مصادر المدوّنة وتراخيصها</a></p>
+
+  <h1>TaoChronos · اكتشاف المعرفة العلمية من نصوص الطب الصيني التقليدي القديمة</h1>
+  <p class="lead">‏TaoChronos (道乃久) منصة وكلاء ذكاء اصطناعي لاكتشاف المعرفة العلمية من النصوص الكلاسيكية للطب الصيني، من
+    تطوير IMPF-AI (医哲未来人工智能研究院). وهي تدعم البحث القابل للتتبّع: تسترجع أولًا النص الأصلي من الكتب الكلاسيكية، ثم
+    تجيب بالاستناد إليه، ويذكر كل اقتباس مصدره ويُطابَق مع الأصل حرفًا بحرف. والاسم مأخوذ من كتاب «داو دي جينغ»:
+    «天乃道，道乃久» (السماء توافق الطاو؛ والطاو يدوم).</p>
+  <a class="start" href="./">ابدأ بالسؤال</a>
+
+  <h2>ما الذي تستطيع فعله</h2>
+  <ul>
+    <li><strong>البحث والقراءة المتأنية</strong>: البحث في كتب الطب الصيني الكلاسيكية عبر السلالات، والتقييد بحقبة، وقراءة كل مقطع في سياقه.</li>
+    <li><strong>التحقيق النصي</strong>: أصول الوصفات وتعديلاتها، وتطوّر خصائص الأعشاب وانتماءاتها إلى المسارات، ومعاني المصطلحات وتقلّباتها، والمواضع المتوازية والاختلافات النصية، والشروح المجموعة، والتفسير اللغوي، وعلامات الوقف، والطبعات، والحروف المحظورة، والأوزان والمقاييس التاريخية.</li>
+    <li><strong>اكتشاف المعرفة</strong>: الكشف عن الروابط المفقودة، وتطوّر المفاهيم والوصفات، والصلات الخفية والتناقضات بين النصوص؛ واقتراح فرضيات بحثية واختبارها على النصوص الأصلية.</li>
+    <li><strong>التحقق من الأدلة</strong>: تُقارَن الاقتباسات في الإجابات بالمصدر حرفًا بحرف وتُعلَّم بأنها مطابقة أو مشكوك فيها أو غير موجودة؛ ويمكنك أيضًا التدقيق في ما إذا كان لقول ما سند نصي.</li>
+    <li><strong>الجسر بين الماضي والحاضر</strong>: مقارنة أنماط الأمراض التاريخية بالطب الحديث، دون تشخيص بأثر رجعي.</li>
+    <li><strong>تحليل بياناتي</strong>: ارفع وصفات عيادتك أو سجلات الحالات أو الاستبيانات (CSV وExcel وWord وغيرها) لإجراء الإحصاء الوصفي ومقارنة المجموعات وتحليل الوصفات ومقارنتها بالوصفات الكلاسيكية. تُقرأ البيانات وتُزال منها المعرِّفات على جهازك، ولا تُرسَل أبدًا إلى خوادم TaoChronos، ولا تُسجَّل تلك المحادثات.</li>
+  </ul>
+
+  <h2>أسئلة يمكنك طرحها</h2>
+  <ul>
+    <li>من أين جاءت المكونات والجرعات الأصلية لوصفة غويجي تانغ (桂枝汤)؟ وما التعديلات المهمة التي أدخلها الأطباء اللاحقون؟</li>
+    <li>كيف تغيّر معنى مصطلح 消渴 (شياوكه) واستعماله عبر الأدبيات التاريخية؟ قدّم أدلة نصية من كل حقبة.</li>
+    <li>قارن كيف شرح الشرّاح عبر العصور «太阳之为病，脉浮，头项强痛而恶寒». أين يختلفون؟</li>
+    <li>في أي كتاب ظهرت أولًا خصائص هوانغليان (黄连، الكوبتيس) وانتماؤها إلى المسارات ودواعي استعمالها؟ وكيف تغيّرت لاحقًا؟</li>
+    <li>يرجى تدقيق هذا القول: «ابتكر تشانغ تشونغجينغ وصفة ليووي ديهوانغ وان (六味地黄丸) في كتاب شانغهان لون (伤寒论)».</li>
+  </ul>
+  <p>تأتي الإجابات بالعربية؛ وتُقتبس الكتب الكلاسيكية بلغتها الصينية الأصلية، ويتبع كل اقتباس ترجمة عربية.</p>
+
+  <h2>ما الكتب التي تقرؤها</h2>
+  <p>يحمل خادم الموقع المدوّنة الكاملة: أكثر من 900 كتاب كلاسيكي في الطب الصيني، نحو 120 مليون حرف، منها «هوانغدي نيجينغ»
+    (سووين ولينغشو) و«نانجينغ» و«شانغهان لون» و«جينغوي ياولوي» و«شننونغ بنتساو جينغ» و«بيجي تشيانجين ياوفانغ» و«وايتاي
+    ميياو» و«بنتساو قانغمو». وعندما يكون الخادم غير متاح تشغّل الصفحة في متصفحك الكتب الأساسية مرتّبة حسب كثرة الاستشهاد بها
+    عبر القرون. لمعرفة مصدر كل عمل وطبعته وترخيصه، انظر <a href="attribution">مصادر المدوّنة وتراخيصها</a>.</p>
+
+  <h2>انضباط الأدلة</h2>
+  <p>ما تقوله الكتب الكلاسيكية يحسمه النص الأصلي المسترجَع، ولا يُستكمل أبدًا من الذاكرة. ويُعرض النص الأصلي، والشرّاح
+    والتفسيرات اللاحقة، والاستنتاج الحسابي، والطب الحديث بوصفها أربعة مستويات منفصلة. وترتيب نتائج البحث وقواعد الارتباط
+    والفرضيات البحثية استنتاجات حسابية لم تُختبر بعد، ويجب أن يتحقق منها الخبراء.</p>
+
+  <h2>شروط الاستخدام</h2>
+  <p>‏TaoChronos مخصّص للبحث في النصوص الكلاسيكية للطب الصيني ودراستها. ولا يقدّم تشخيصًا أو وصفات أو نصائح دوائية؛ وتحويلات
+    الأوزان والمقاييس التاريخية قراءات تاريخية وليست جرعات. وللأسئلة المتعلقة بصحتك يرجى استشارة طبيب مؤهَّل.</p>
+
+  <p class="muted">TaoChronos · من تطوير IMPF-AI (医哲未来人工智能研究院) · <a href="./">chat.impf.ai</a></p>
+</main>
+
+<main data-lang="ms" lang="ms">
+  <p class="nav"><a href="./">TaoChronos</a> · Perihal · <a href="attribution">Sumber dan lesen korpus</a></p>
+
+  <h1>TaoChronos · Penemuan Pengetahuan Saintifik daripada Teks Purba PTC</h1>
+  <p class="lead">TaoChronos (道乃久) ialah platform ejen AI untuk penemuan pengetahuan saintifik daripada teks klasik perubatan
+    Cina, dibangunkan oleh IMPF-AI (医哲未来人工智能研究院). Ia menyokong penyelidikan yang boleh dijejak: ia mula-mula
+    mendapatkan teks asal daripada kitab klasik, kemudian menjawab berdasarkannya, dan setiap kutipan menyatakan sumbernya serta
+    disemak dengan teks asal aksara demi aksara. Nama ini diambil daripada Daodejing: “天乃道，道乃久” (Langit selaras dengan
+    Dao; Dao kekal).</p>
+  <a class="start" href="./">Mula bertanya</a>
+
+  <h2>Apa yang boleh dilakukannya</h2>
+  <ul>
+    <li><strong>Carian dan bacaan teliti</strong>: cari dalam kitab klasik perubatan Cina merentas dinasti, hadkan mengikut zaman, dan baca setiap petikan dalam konteksnya.</li>
+    <li><strong>Kesarjanaan teks</strong>: asal usul dan ubah suai formula, perubahan sifat dan kecenderungan meridian herba, makna dan nasib istilah, petikan selari dan varian, himpunan ulasan, glos, tanda baca, edisi, aksara pantang, serta sukatan dan timbangan sejarah.</li>
+    <li><strong>Penemuan pengetahuan</strong>: menyingkap perkaitan yang hilang, evolusi konsep dan formula, perkaitan tersembunyi dan percanggahan antara teks; mencadangkan hipotesis penyelidikan dan mengujinya dengan teks asal.</li>
+    <li><strong>Semakan bukti</strong>: kutipan dalam jawapan dibandingkan dengan sumber aksara demi aksara dan ditandakan sebagai sepadan, diragui atau tidak ditemui; anda juga boleh mengaudit sama ada sesuatu dakwaan mempunyai sokongan teks.</li>
+    <li><strong>Jambatan dahulu dan kini</strong>: bandingkan fenotip penyakit sejarah dengan perubatan moden, tanpa diagnosis retrospektif.</li>
+    <li><strong>Analisis data saya</strong>: muat naik preskripsi klinik, rekod kes atau borang tinjauan anda sendiri (CSV, Excel, Word dan lain-lain) untuk statistik deskriptif, perbandingan kumpulan dan analisis preskripsi, dibandingkan dengan formula klasik. Data dibaca dan dinyahkenal pasti pada peranti anda, tidak pernah dihantar ke pelayan TaoChronos, dan perbualan tersebut tidak dirakam.</li>
+  </ul>
+
+  <h2>Soalan yang boleh anda tanya</h2>
+  <ul>
+    <li>Dari mana datangnya ramuan dan dos asal Guizhi Tang (桂枝汤)? Apakah ubah suai penting yang dibuat oleh tabib kemudian?</li>
+    <li>Bagaimana makna dan penggunaan istilah 消渴 (xiaoke) berubah dalam kesusasteraan sejarah? Berikan bukti teks daripada setiap zaman.</li>
+    <li>Bandingkan cara pengulas sepanjang zaman menerangkan “太阳之为病，脉浮，头项强痛而恶寒”. Di manakah mereka berbeza pendapat?</li>
+    <li>Dalam kitab manakah sifat, kecenderungan meridian dan indikasi Huanglian (黄连, coptis) mula-mula muncul? Bagaimana ia berubah kemudian?</li>
+    <li>Sila audit dakwaan ini: “Liuwei Dihuang Wan (六味地黄丸) dicipta oleh Zhang Zhongjing dalam Shanghan Lun (伤寒论).”</li>
+  </ul>
+  <p>Jawapan diberikan dalam bahasa Melayu; kitab klasik dikutip dalam bahasa Cina asal, setiap satu diikuti terjemahan bahasa Melayu.</p>
+
+  <h2>Kitab yang dibacanya</h2>
+  <p>Pelayan laman menyimpan korpus penuh: lebih 900 kitab klasik perubatan Cina, kira-kira 120 juta aksara, termasuk Huangdi
+    Neijing (Suwen dan Lingshu), Nanjing, Shanghan Lun, Jingui Yaolue, Shennong Bencao Jing, Beiji Qianjin Yaofang, Waitai Miyao
+    dan Bencao Gangmu. Apabila pelayan tidak tersedia, halaman menjalankan kitab-kitab teras dalam pelayar anda, disusun mengikut
+    kekerapan dikutip sepanjang zaman. Untuk sumber, edisi dan lesen setiap karya, lihat
+    <a href="attribution">Sumber dan lesen korpus</a>.</p>
+
+  <h2>Disiplin bukti</h2>
+  <p>Apa yang dikatakan oleh kitab klasik ditentukan oleh teks asal yang didapatkan, tidak sekali-kali diisi daripada ingatan.
+    Teks asal, pengulas dan tafsiran kemudian, inferens pengiraan, dan perubatan moden dikekalkan sebagai empat lapisan yang
+    berasingan. Kedudukan carian, peraturan perkaitan dan hipotesis penyelidikan ialah inferens pengiraan yang belum diuji, dan
+    mesti disemak oleh pakar.</p>
+
+  <h2>Syarat penggunaan</h2>
+  <p>TaoChronos adalah untuk penyelidikan dan pengajian teks klasik perubatan Cina. Ia tidak memberikan diagnosis, preskripsi
+    atau nasihat ubat; penukaran sukatan dan timbangan sejarah ialah bacaan sejarah, bukan dos. Untuk soalan tentang kesihatan
+    anda, sila rujuk doktor yang bertauliah.</p>
+
+  <p class="muted">TaoChronos · dibangunkan oleh IMPF-AI (医哲未来人工智能研究院) · <a href="./">chat.impf.ai</a></p>
 </main>
 </body>
 </html>

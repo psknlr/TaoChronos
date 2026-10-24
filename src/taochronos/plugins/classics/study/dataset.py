@@ -37,6 +37,21 @@ SCHEMAS: dict[str, list[tuple[str, str, str]]] = {
                      ("ci_high", "number", "95%区间上限（每万段）")],
     "citation_edges": [("period", "string", "引用所在时期"), ("kind", "string", "book|person"), ("cited", "string", "被引著作或医家"),
                        ("citations", "number", "引用次数（按候选权重）")],
+    # 医案 (study cases / casefind --dataset): one row per case, per visit, and per item a visit records
+    "cases": [("case_id", "string", "案号"), ("book_id", "string", ""), ("title", "string", "书名"), ("authors", "string", "著者"),
+              ("physician", "string", "医家（案中所记，如丹溪治…；未记则为著者）"),
+              ("year", "number", "成书年（书之年代）"), ("period", "string", "时期"), ("section", "string", "所在门类（标题）"),
+              ("patient_name", "string", "病家（如原文）"), ("sex", "string", "male|female"), ("age", "string", "年龄（如原文）"),
+              ("age_years", "number", "年龄（数）"), ("visits", "integer", "诊次"),
+              ("outcome", "string", "转归：improved|unchanged|worse|died，空为未记"),
+              ("prior", "boolean", "是否记有前医之治（误治）"), ("passage_id", "string", "首段"), ("license", "string", "录文授权")],
+    "case_visits": [("case_id", "string", ""), ("visit", "integer", "诊次（1 起）"), ("marker", "string", "诊次标记（二诊、次日……）"),
+                    ("doses", "string", "服药剂数"), ("response", "string", "本诊之治的反应"),
+                    ("prior_response", "string", "前医之治的反应"), ("passage_ids", "string", "段落（；分隔）"),
+                    ("quote", "string", "本诊起首（节录）")],
+    "case_items": [("case_id", "string", ""), ("visit", "integer", ""),
+                   ("kind", "string", "symptom|sign|pulse|tongue|diagnosis|principle|formula|herb|added|removed|prior_*"),
+                   ("item", "string", "所记之项（规范名或原文）"), ("dose", "string", "剂量（药）")],
 }
 
 

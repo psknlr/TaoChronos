@@ -3,8 +3,9 @@
 // container, and its runtime label says it is the backup.  Research runs and sessions need the server: POST
 // /api/research answers 501 with the reason (the page shows it and stays on the site's server).
 
-import { catalog, catalogView, engineNames, LIVE, PRECOMPUTED, served, toolEntry, validate } from "./catalog.js";
-import { Corpus, CorpusError, passageCard } from "./corpus.js";
+import { canonical, catalog, catalogView, closest, engineNames, fitArguments, LIVE, parametersOf, PRECOMPUTED, pyRepr,
+  served } from "./catalog.js";
+import { Corpus, CorpusError } from "./corpus.js";
 import { precomputed } from "./precomputed.js";
 import { shape } from "./results.js";
 import { INFO, PROMPT } from "./tables.js";
@@ -56,7 +57,8 @@ const UNAVAILABLE = Object.fromEntries([
   ["passages", ["study.authorship", "study.cards", "study.cases", "study.chain", "study.compare", "study.dating", "study.disputes",
     "study.family", "study.incompat", "study.properties", "study.usage",
     "study.fragments", "study.glosses", "study.layers", "study.places", "study.reuse", "study.stemma", "study.trajectories",
-    "study.transmission", "study.variants"]],
+    "study.transmission", "study.variants", "study.casefind", "study.similar", "study.case", "study.casecompare",
+    "study.modifications", "study.treatments"]],
   ["mine", ["mydata.list", "mydata.read", "mydata.search", "mydata.describe", "mydata.compare", "mydata.prescriptions"]],
 ].flatMap(([why, names]) => names.map((n) => [n, WHY[why]])));
 
@@ -98,7 +100,7 @@ export async function answer(method, url, body, env) {
       const out = await passage(corpus, url.searchParams.get("id") || "");
       return out.ok || !unavailableError(out.error) ? json(out, 200, headers) : json(DOWN, 503, { "X-TC-Corpus": "none" });
     }
-    if (path.startsWith("/api/research/")) return json({ id: path.split("/").pop(), status: "unknown" }, 200, headers);
+    if (path.startsWith("/api/research/")) return json({ id: path.split("/").pop(), state: "unknown", status: "unknown" }, 200, headers);
     if (path.startsWith("/api/session/")) return json({ error: `本站的备份服务没有研究会话：${WHY.engine}` }, 501, headers);
   }
   if (method === "POST") {
@@ -113,6 +115,8 @@ export async function answer(method, url, body, env) {
       return out.ok || !unavailableError(out.error) ? json(out, 200, headers) : json(DOWN, 503, { "X-TC-Corpus": "none" });
     }
     if (path === "/api/research") return json({ error: `本站的备份服务不能运行多智能体研究：${WHY.engine}。可改用检索与治学工具分步研究。` }, 501, headers);
+    const job = path.match(/^\/api\/research\/([^/]+)\/(?:cancel|resume)$/); // a run the container started: not known here
+    if (job) return json({ id: job[1], state: "unknown", status: "unknown" }, 200, headers);
   }
   return json({ error: `no such endpoint ${path}` }, 404, headers);
 }
@@ -147,9 +151,8 @@ function backupNote(pre) {
 // ------------------------------------------------------------------ passages
 async function passage(corpus, pid) {
   try {
-    const hit = await corpus.passage(pid);
-    if (!hit) return { ok: false, passage_id: pid, error: `KeyError: '${pid}'` };
-    return { ok: true, ...passageCard(hit, hit.card, { full: true }) };
+    // ChatRuntime.passage: classics.get_passage, as the evidence drawer and the citation check ask for it
+    return { ok: true, ...(await tools.getPassage(corpus, { passage_id: pid })) };
   } catch (err) {
     return { ok: false, passage_id: pid, error: `${err.kind || err.name || "Error"}: ${err.message}` };
   }
@@ -158,38 +161,56 @@ async function passage(corpus, pid) {
 // ------------------------------------------------------------------ calls
 const ENGINE = new Set(engineNames());
 
-/** ChatRuntime.call: one tool the model asked for; never throws — a failure is a result the model can read. */
+/** ChatRuntime.call: one tool the model asked for; never throws — a failure is a result the model can read.  A name written
+ * in another form is the tool's it denotes; the arguments are read against its parameters (fitArguments): their form
+ * repaired where only that was wrong (the outcome's `repaired` says how), and a call they still do not fit — a parameter
+ * the tool does not take, which it would otherwise ignore — answered with what the tool takes. */
 export async function call(corpus, name, args, maxChars = 16000, pre = new Set()) {
   const started = Date.now();
   let tool = name;
-  let a = args && typeof args === "object" ? args : {};
+  let a = args ?? {};
   let via = null;
+  let repaired = [];
+  const done = (out) => withVia(repaired.length ? { ...out, repaired } : out, via);
   try {
-    if (name === "taochronos_call") {
-      const inner = String(a.tool || "");
+    tool = named(name, pre);
+    while (tool === "taochronos_call") {
+      const fit = fitArguments(a, parametersOf(tool), tool);
+      if (fit.problem) throw new ToolError("invalid", fit.problem);
+      const inner = String(fit.args.tool || "");
       if (!inner) throw new ToolError("ValueError", 'taochronos_call needs {"tool": <name>, "arguments": {...}}');
       via = "taochronos_call";
-      tool = inner;
-      a = a.arguments && typeof a.arguments === "object" ? a.arguments : {};
+      tool = named(inner, pre);
+      a = fit.args.arguments || {};
     }
-    if (tool === "taochronos_catalog") {
+    if (ENGINE.has(tool)) throw new ToolError("Unavailable", unavailable(tool));
+    const meta = tool === "taochronos_catalog";
+    if (!meta && !LIVE.has(tool) && !(PRECOMPUTED.has(tool) && pre.has(tool))) throw new ToolError("Unavailable", unavailable(tool));
+    const fit = fitArguments(a, parametersOf(tool), tool);
+    repaired = fit.repaired;
+    if (fit.problem) throw new ToolError("invalid", fit.problem);
+    a = fit.args;
+    if (meta) {
       const result = catalogView(pre, { family: a.family || null, query: a.query || null });
-      return withVia(shape(tool, true, result, null, { durationMs: Date.now() - started, maxChars, receipt: await receipt(tool, a, result) }), via);
+      return done(shape(tool, true, result, null, { durationMs: Date.now() - started, maxChars, receipt: await receipt(tool, a, result) }));
     }
-    if (ENGINE.has(tool) || tool === "taochronos_call") throw new ToolError("Unavailable", unavailable(tool));
-    const spec = toolEntry(tool) || toolEntry(tool.replaceAll("__", "."));
-    if (!spec) throw new ToolError("UnknownTool", `unknown tool '${tool}'; use taochronos_catalog to see what exists`);
-    tool = spec.tool;
-    if (!LIVE.has(tool) && !(PRECOMPUTED.has(tool) && pre.has(tool))) throw new ToolError("Unavailable", unavailable(tool));
-    const errors = validate(a, spec.parameters);
-    if (errors.length) throw new ToolError("invalid", `invalid arguments: ${errors.slice(0, 5).join("; ")}`);
     const result = LIVE.has(tool) ? await RUN[tool](corpus, a) : await precomputed(corpus, tool, a);
     const dumped = JSON.stringify(result ?? null);
-    return withVia(shape(tool, true, result, null, { durationMs: Date.now() - started, maxChars, dumped,
-      receipt: await receipt(tool, a, result, dumped) }), via);
+    return done(shape(tool, true, result, null, { durationMs: Date.now() - started, maxChars, dumped,
+      receipt: await receipt(tool, a, result, dumped) }));
   } catch (err) {
-    return withVia(shape(tool, false, null, errorText(err), { durationMs: Date.now() - started }), via);
+    return done(shape(tool, false, null, errorText(err), { durationMs: Date.now() - started }));
   }
+}
+
+/** The tool a model's name denotes (catalog.js canonical); else UnknownTool, naming the closest tools served. */
+function named(name, pre) {
+  const text = String(name ?? "");
+  const tool = canonical(text);
+  if (tool === null) {
+    throw new ToolError("UnknownTool", `unknown tool ${pyRepr(text)}; closest: ${closest(text, pre)}; use taochronos_catalog to see what exists`);
+  }
+  return tool;
 }
 
 const withVia = (out, via) => (via ? { ...out, via } : out);

@@ -486,9 +486,69 @@ def incompat(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
     return out
 
 
+# ------------------------------------------------------------------ 医案探索
+OUTCOMES = [("improved", "好转/愈"), ("unchanged", "未效"), ("worse", "加重"), ("died", "死亡"), ("unrecorded", "未记")]
+CASES_NOTE = "医案为医家所记、编者所选：图示记录中的分布，非疗效证据。"
+
+
+def _outcome_stack(groups: list[tuple[str, dict[str, int]]], title: str, cid: str, label: str, *,
+                   percent: bool) -> dict[str, Any]:
+    rows = [{"group": g, **{k: o.get(k, 0) for k, _ in OUTCOMES}} for g, o in groups]
+    keys = [(k, lab) for k, lab in OUTCOMES if any(r[k] for r in rows)]
+    y: dict[str, Any] = {"label": "份额", "percent": True} if percent else {"label": "医案（案）", "min": 0}
+    return chart("stack", title, rows, [("group", label)] + keys, id=cid, percent=percent or None,
+                 subtitle="各组医案所记转归（每案计一次，转归未记者另列）", x={"key": "group", "label": label}, y=y,
+                 series=[{"key": k, "label": lab} for k, lab in keys], note=CASES_NOTE)
+
+
+def casefind(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
+    crossed = (r.get("facets") or {}).get("period_outcomes") or {}
+    if not crossed or r.get("count", 0) < 2:
+        return []
+    return [_outcome_stack(list(crossed.items()), "检索所得医案 · 各时期的转归", "casefind-periods", "时期", percent=False)]
+
+
+def casecompare(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
+    groups = r.get("groups") or []
+    if len(groups) < 2:
+        return []
+    label = {"book": "医案集", "physician": "医家", "period": "时期", "author": "著者"}.get(r.get("by"), "组")
+    out = [_outcome_stack([(g["group"], g["outcomes"]) for g in groups], f"医案比较 · 各{label}的转归", "casecompare-outcomes",
+                          label, percent=True)]
+    forest = [{"group": g["group"], "rate": g["improved_rate"], "lo": g["improved_ci"][0], "hi": g["improved_ci"][1],
+               "recorded": g["recorded"], "cases": g["cases"]} for g in groups if g.get("improved_ci")]
+    if len(forest) >= 2:
+        out.append(chart("forest", f"医案比较 · 各{label}记为好转者的比例", forest,
+                         [("group", label), ("rate", "好转率"), ("lo", "95% CI 下限"), ("hi", "95% CI 上限"), ("recorded", "记转归（案）"),
+                          ("cases", "医案（案）")],
+                         id="casecompare-improved", subtitle="分母为记有转归的医案；Wilson 95% 置信区间",
+                         y={"key": "group", "label": label}, estimate={"key": "rate", "lo": "lo", "hi": "hi", "label": "好转率"},
+                         x={"label": "好转率（95% CI）"}, note=CASES_NOTE))
+    trends = r.get("trends") or []
+    if trends:
+        items = [t["item"] for t in trends[:MAX_SERIES]]
+        periods = list(trends[0]["shares"])
+        rows = [{"period": p, **{t["item"]: t["shares"][p] for t in trends[:MAX_SERIES]}} for p in periods]
+        out.append(chart("line", "医案比较 · 常用治法与方的历代份额", rows, [("period", "时期")] + [(i, i) for i in items],
+                         id="casecompare-trends", subtitle="各时期医案中用之者的比例（每案计一次）；趋势检验见表",
+                         x={"key": "period", "label": "时期"}, y={"label": "份额", "percent": True, "min": 0},
+                         series=[{"key": i, "label": i} for i in items], note=CASES_NOTE))
+    return out
+
+
+def treatments(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
+    groups = r.get("groups") or []
+    if len(groups) < 2:
+        return []
+    label = "治法与方" if r.get("mode") == "disease" else "病证"
+    return [_outcome_stack([(g["group"], g["outcomes"]) for g in groups], f"{r.get('target')} · {r.get('label')}：各组医案的转归",
+                           "treatments-outcomes", label, percent=False)]
+
+
 BUILDERS: dict[str, Callable[[dict[str, Any], Any], list[dict[str, Any]]]] = {
     "term": term, "herb": herb, "formula": formula, "pairs": pairs, "network": network, "names": names, "senses": senses,
     "compare": compare, "family": family, "usage": usage, "properties": properties, "incompat": incompat,
+    "casefind": casefind, "casecompare": casecompare, "treatments": treatments,
 }
 
 
@@ -496,7 +556,7 @@ BUILDERS: dict[str, Callable[[dict[str, Any], Any], list[dict[str, Any]]]] = {
 # platform, its inside names stay
 WORDS = {"formula": "方源考", "herb": "药性源流", "term": "术语源流", "pairs": "配伍规律", "network": "方证网络", "names": "名称",
          "senses": "语义演变", "compare": "方剂比较", "family": "类方", "usage": "药物用量与配伍", "properties": "性味归经对照",
-         "incompat": "配伍禁忌"}
+         "incompat": "配伍禁忌", "casefind": "医案检索", "casecompare": "医家与时代比较", "treatments": "同病异治·异病同治"}
 
 
 def build(kind: str, result: dict[str, Any], base: Any) -> list[dict[str, Any]]:

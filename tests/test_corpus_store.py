@@ -3,6 +3,8 @@ the lexicon harvester, and a research run over a store (synthetic texts in the K
 
 from __future__ import annotations
 
+import gzip
+import json
 import shutil
 from pathlib import Path
 
@@ -18,6 +20,7 @@ from taochronos.plugins.classics.segment import Segmenter, is_unpunctuated
 from taochronos.plugins.classics.store import CorpusStore, StoreCorpus, fts_phrase, grams
 from taochronos.plugins.knowledge.extraction import ClaimExtractor
 from taochronos.verification.provenance import find_quote, verify_claim
+from taochronos.verification.scope import ReadingScope, ScopedCorpusView
 
 HOME = Path(__file__).resolve().parents[1]
 FIXTURES = HOME / "tests" / "fixtures" / "kanripo"
@@ -299,3 +302,45 @@ def test_the_normaliser_fingerprint_is_the_same_under_every_python(pack):
     assert _stable_repr([(ext_h, "丁")]) == f"[('{ext_h}', '丁')]"
     assert _stable_repr(["a\\U00031f5a"]) == repr(["a\\U00031f5a"])  # a backslash of the text itself is left as it is
     assert ext_h in pack.variants.script.map or any(ext_h in (k, v) for k, v in pack.variants.chars.items())
+
+
+def test_a_passage_knows_the_ones_before_and_after_it_and_an_id_that_is_none_what_is_there(tmp_path, pack):
+    """``around`` on two books of the committed 要籍 pack: 素问, whole chapters of it (seq 44 is followed by 76, under
+    another volume's code), and 伤寒论 whole, in five temporal groups.  A passage's neighbours are those of its book in
+    seq order — over a left-out chapter, within a view's bounds, never one a reader's scope withholds; an id that is no
+    passage is answered with the passage its number names (an id ends in its seq) and those it falls between."""
+    from taochronos.plugins.classics.webcorpus import build_store
+
+    keep = {"suwen_wangbing", "cm_shanghan_npm"}
+    books = [b for b in json.loads((HOME / "corpus" / "web" / "books.json").read_text(encoding="utf-8")) if b["id"] in keep]
+    (tmp_path / "books.json").write_text(json.dumps(books, ensure_ascii=False), encoding="utf-8")
+    with gzip.open(HOME / "corpus" / "web" / "passages.jsonl.gz", "rt", encoding="utf-8") as f:
+        lines = [line for line in f if json.loads(line)["book_id"] in keep]
+    (tmp_path / "passages.jsonl.gz").write_bytes(gzip.compress("".join(lines).encode("utf-8"), mtime=0))
+    build_store(tmp_path, tmp_path / "tcm.sqlite", pack.variants.normalize_text, pack.variants.fingerprint, index=False)
+    corpus = StoreCorpus(CorpusStore(tmp_path / "tcm.sqlite"), pack.variants.normalize_text)
+
+    def in_order(view, book):  # the book's passages in seq order, as the view has them
+        ids = [i for i in view.passage_ids() if i.startswith(f"{book}.")]
+        return sorted(ids, key=lambda i: int(i.rsplit(".", 1)[1]))
+
+    for view in (corpus, corpus.on_side(700, "before")):
+        for book in sorted(keep):
+            ids = in_order(view, book)
+            assert ids and [view.around(i) for i in ids] == [(a, i, b) for a, i, b in zip([None, *ids], ids, [*ids[1:], None])]
+    assert corpus.on_side(700, "before").around("cm_shanghan_npm.00000")[2] != corpus.around("cm_shanghan_npm.00000")[2]
+    assert corpus.around("suwen_wangbing.000.00044") == ("suwen_wangbing.000.00043", "suwen_wangbing.000.00044",
+                                                         "suwen_wangbing.001.00076")
+    # ids that are not passages: in a left-out chapter, under another volume's code or none, unpadded, past the end
+    assert corpus.around("suwen_wangbing.000.00050") == ("suwen_wangbing.000.00044", None, "suwen_wangbing.001.00076")
+    for written in ("suwen_wangbing.001.00044", "suwen_wangbing.00044", "suwen_wangbing.44"):
+        assert corpus.around(written) == ("suwen_wangbing.000.00043", "suwen_wangbing.000.00044", "suwen_wangbing.001.00076")
+    assert corpus.around("cm_shanghan_npm.99999") == ("cm_shanghan_npm.02548", None, None)
+    assert corpus.around("cm_shanghan_npm." + "9" * 40) == ("cm_shanghan_npm.02548", None, None)
+    for nothing in ("cm_shanghan_npm.preface", "nothing.00001", "cm_shanghan_npm", ""):
+        assert corpus.around(nothing) == (None, None, None)
+    assert corpus.without_books(["suwen_wangbing"]).around("suwen_wangbing.000.00044") == (None, None, None)
+    # a reader's scope: what it withholds is not named
+    scoped = ScopedCorpusView(corpus, ReadingScope(allowed=None, withheld={"suwen_wangbing.000.00043": "holdout"}))
+    assert scoped.around("suwen_wangbing.000.00044") == (None, "suwen_wangbing.000.00044", "suwen_wangbing.001.00076")
+

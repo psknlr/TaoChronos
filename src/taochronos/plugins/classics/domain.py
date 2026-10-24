@@ -6,6 +6,7 @@ data (``domains/classics/*.yaml``) — not inside agent prompts.
 
 from __future__ import annotations
 
+import difflib
 import hashlib
 import re
 from dataclasses import dataclass, field
@@ -436,6 +437,27 @@ class Lexicon:
 
     def by_category(self, *categories: str) -> list[LexEntry]:
         return [e for e in self.entries.values() if e.category in categories]
+
+    def nearest(self, surface: str, categories: Iterable[str], n: int = 5) -> list[LexEntry]:
+        """The entries of ``categories`` whose names come nearest ``surface``, a name the lexicon does not hold: those
+        sharing two of its characters at least, in order, the nearest first (difflib's ratio; of those as near, the
+        curated before the harvested) — each entry once."""
+        want, chars = set(categories), set(surface)
+        best: dict[str, tuple[float, LexEntry]] = {}
+        for form, bucket in self._by_surface.items():
+            entries = [e for e, _ in bucket if e.category in want]
+            if len(form) < 2 or not entries or len(chars & set(form)) < 2:
+                continue
+            sm = difflib.SequenceMatcher(None, surface, form, autojunk=False)
+            if sum(b.size for b in sm.get_matching_blocks()) < 2:
+                continue
+            ratio = sm.ratio()
+            for e in entries:
+                if e.term_id not in best or ratio > best[e.term_id][0]:
+                    best[e.term_id] = (ratio, e)
+        ranked = sorted(best.values(), key=lambda t: (-t[0], t[1].kind == "harvested", self._rank.get(t[1].category, 99),
+                                                      t[1].term))
+        return [e for _, e in ranked[:n]]
 
     def match(self, text: str, *, include_weak: bool = True) -> list[Mention]:
         """Longest-first, left-to-right matching on (already normalised) text."""

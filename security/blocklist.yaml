@@ -117,6 +117,28 @@ block:
   - ip: 165.154.24.148
     why: "据站长 2026-10-13 的安全报告：在中转上成批探测 App 与卖家后台接口（/api/seller/index/GetSellerConfigAll、/queryVersion.php 等二十余个），150 余次，轮换 UA；UCloud 香港"
     seen: 2026-10-13
+  # 2026-10-21：站长当天的安全报告（Cloudflare，10-15 至 10-21）与 data/security-logs（边缘至 10-19、两个哨兵至 10-20）
+  - ip: 165.154.24.203
+    why: "据站长 2026-10-21 的安全报告：PHP 后门扫描（/leftDao.php、/CCB/ccb.php、/user/reg.php），1155 次；哨兵 10-20 在中转上见过；UCloud 香港，与已封的 165.154.24.148 同一网段"
+    seen: 2026-10-20
+  - ip: 152.32.186.154
+    why: "据站长 2026-10-21 的安全报告：PHP 与 ASPX 后门扫描（/AppInfo.aspx、/Public/initJs.php），1095 次；UCloud，与已封的 152.32.187.66 相邻"
+    seen: 2026-10-21
+  - ip: 165.154.72.119
+    why: "在中转上找 PHP 后门、管理后台与 App 接口（/leftDao.php、/admin/webadmin.php、/AppInfo.aspx、/main/config/getkefuData……），一天 3814 次请求；站长 2026-10-21 的报告另记 .env 探测；UCloud 香港"
+    seen: 2026-10-15
+  - ip: 34.77.137.207
+    why: "在 science.impf.ai 上找 .env 的各种变体（/.env~、/staging/.env、/.env.development、/cms/.env……），报告约 60 次；Google Cloud"
+    seen: 2026-10-16
+  - ip: 2a0c:b641:b0:a1a1::/64
+    why: "在 science.impf.ai 的 80、443 端口上找密钥与配置（/.git/config、/.env.*、/wp-config.php.old、/actuator/env、/phpinfo.php），报告约 70 次；Zkillu SAS（AS215599）"
+    seen: 2026-10-16
+  - ip: 87.120.186.178
+    why: "据站长 2026-10-21 的安全报告：找 /twilio/bin/.env，10 次"
+    seen: 2026-10-21
+  - ip: 93.123.109.152
+    why: "在 science.impf.ai 上找 .git/config（/.git/config、/app/.git/config、/backend/.git/config……），18 次；TECHOFF SRV（AS48090），与已封的 93.123.109.101 同一网段"
+    seen: 2026-10-17
   - ip: 147.185.132.0/24
     why: "按站长要求封禁：Palo Alto Networks Cortex Xpanse 的互联网扫描（UA 自报身份），本网段见过 .24、.69、.115，只请求首页"
     seen: 2026-10-06

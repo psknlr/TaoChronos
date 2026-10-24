@@ -110,7 +110,7 @@ class DrugUsage:
     def usage(self, name: str, *, top: int = 20) -> dict[str, Any]:
         key = self.pairs._key_of(name)
         if key is None:
-            raise ValueError(f"{name!r} is not a drug of the lexicon")
+            raise self.b.not_taken(name, ("herb",), "is not a drug of the lexicon")
         built = self.pairs.h.build(self.pairs._cache())
         comps = built["compositions"]
         mine = [c for c in comps if key in c[2]]

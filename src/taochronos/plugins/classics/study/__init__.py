@@ -14,7 +14,18 @@ transmission       思想传播: a work's reception — which later works carry 
 layers / dating    文本地层: style layers of a work's chapters, change points, outlying chapters; dating evidence per chapter
 authorship         (cited works, late vocabulary, taboo); Burrows' Delta against candidate authors
 cases              医案轨迹: case records read visit by visit (findings, diagnosis, principle, formula, 加减, doses,
-trajectories       response, outcome); the sequences, transitions and outcome associations common to many cases
+trajectories       response, outcome, what earlier physicians gave); the sequences, transitions and outcome associations
+                   common to many cases
+casefind           医案检索: the cases that fit a query of many facets (disease, findings, pulse, tongue, formula, drug,
+                   principle, outcome, sex, age, period, collections, earlier physicians' treatment, words), with facets
+similar / case     类案 and 医案详解: the cases whose presentation is most like a text or a case (rarity-weighted shared
+                   findings) and what they did; one case in full — its course, passages, formulas, like cases
+casecompare        医家与时代比较: case collections, periods or authors side by side — visits, outcomes, patients, the
+                   principles, formulas and drugs each favours (Fisher + BH), tests across groups, trends by period
+modifications      随证加减: at the visits that change the last prescription, the findings that go with each drug added
+                   or taken away, and what is added to each base formula
+treatments         同病异治 · 异病同治: a disease's different treatments and the findings that set them apart; a
+                   formula's diseases and the findings they share
 argument           医理论证: a passage's reasoning as a graph of marked steps; a work's way of reasoning, compared
 senses             语义演变: a term's senses by period, the date its meaning shifted, candidate senses the curation lacks
 fragments          佚书辑佚: a lost work's fragments gathered from the books that quote it, merged and ordered by volume
@@ -70,6 +81,7 @@ from .argument import ArgumentStudy
 from .base import StudyBase
 from . import charts as _charts
 from .canon import CANON_SIZE, CanonStudy
+from .caseexplore import CaseExplorer
 from .cases import CaseStudy
 from .chain import ChainStudy
 from .clause import ClauseStructure
@@ -121,6 +133,7 @@ class StudyService(StudyBase):
         self._intertext = IntertextStudy(self, self._concordance, self._stemma)
         self._strata = StratigraphyStudy(self, self._stemma, self._taboo)
         self._cases = CaseStudy(self)
+        self._explore = CaseExplorer(self, self._cases)
         self._argument = ArgumentStudy(self, self._stemma)
         self._senses = SenseStudy(self)
         self._fragments = FragmentStudy(self)
@@ -255,6 +268,52 @@ class StudyService(StudyBase):
     def trajectories(self, disease: str | None = None, **kw: Any) -> dict[str, Any]:
         """Sequences, transitions and outcome associations of treatment across case records."""
         return self._cases.trajectories(disease, **kw)
+
+    def warm_cases(self) -> int:
+        """Every case collection read — or, on a store, loaded from its cache — once; the number of cases.  A server
+        calls it as it starts, so that its first case question waits for nothing."""
+        return len(self._cases.pool())
+
+    def casefind(self, **kw: Any) -> dict[str, Any]:
+        """医案检索: the cases that fit every facet given (disease, findings, formula, herb, principle, outcome, sex,
+        age_min/age_max, after/before, period, books, prior, text), oldest first, with what matched and the facets of
+        all the matches."""
+        return _charts.attach("casefind", self._explore.find(**kw), self)
+
+    def similar(self, text: str | None = None, **kw: Any) -> dict[str, Any]:
+        """类案: the cases whose presentation is most like a text (read as a first visit) or a case (``case_id``) — the
+        shared findings weighted by rarity — what each did and how it ended, and what the nearest did together."""
+        return self._explore.similar(text, **kw)
+
+    def case(self, case_id: str, **kw: Any) -> dict[str, Any]:
+        """医案详解: one case in full — its course visit by visit, the passages it rests on, its formulas, like cases."""
+        return self._explore.case(case_id, **kw)
+
+    def casecompare(self, **kw: Any) -> dict[str, Any]:
+        """医家与时代比较: groups of cases by collection (``by='book'``), ``period`` or ``author`` — visits, outcomes,
+        patients, what each favours against the rest, tests across groups and, by period, trends."""
+        return _charts.attach("casecompare", self._explore.compare(**kw), self)
+
+    def modifications(self, **kw: Any) -> dict[str, Any]:
+        """随证加减: the findings that go with each drug added to or taken from the last prescription, the drugs most
+        often added and taken away, and what is added to each base formula."""
+        return self._explore.modifications(**kw)
+
+    def case_dataset(self, *, book: str | None = None, disease: str | None = None,
+                     query: dict[str, Any] | None = None) -> dict[str, Any]:
+        """The cases of a book, of a disease, or of a ``casefind`` query as three tables (cases, case_visits, case_items),
+        each row with its case id and passages, for a Frictionless data package."""
+        from .caseexplore import NOTE
+
+        records = self._explore.records(**query) if query else self._cases.cases(book, disease=disease, limit=10 ** 6)
+        rows = self._explore.dataset(records)
+        licences = sorted({r["license"] for r in rows["cases"] if r.get("license")})
+        return {"tables": rows, "licenses": licences, "signature": self.signature(), "notice": NOTE}
+
+    def treatments(self, target: str, **kw: Any) -> dict[str, Any]:
+        """同病异治 · 异病同治: a disease's treatments and the findings that set each apart, or a formula's diseases and
+        the findings they share (the mode follows the lexicon)."""
+        return _charts.attach("treatments", self._explore.treatments(target, **kw), self)
 
     def argument(self, text: str | None = None, passage_id: str | None = None, *, work: str | None = None,
                  against: str | None = None, **kw: Any) -> dict[str, Any]:

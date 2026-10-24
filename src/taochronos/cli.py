@@ -965,6 +965,14 @@ def cmd_schema(args: argparse.Namespace) -> None:
         _out(bundle_schema(list(PROTOCOL_TYPES)))
 
 
+def cmd_records(args: argparse.Namespace) -> None:
+    from .chat.records import read, summary
+    from .config import find_home
+
+    paths = [Path(p) for p in args.paths] or [(Path(args.home).resolve() if args.home else find_home()) / "data" / "chat-logs"]
+    _out(summary(read(paths), since=args.since, until=args.until))
+
+
 def cmd_governance(args: argparse.Namespace) -> None:
     from .governance import check
 
@@ -989,7 +997,8 @@ STUDY = ("canon", "concordance", "formula", "herb", "term", "taboo", "citations"
          "variants", "stemma", "edition", "tei", "reuse", "transmission", "layers", "dating", "authorship", "cases",
          "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate", "commentaries", "disputes",
          "clause", "glosses", "pairs", "network", "schools", "names", "chain", "entities", "places", "translate", "cruxes",
-         "compare", "family", "usage", "properties", "incompat", "protocol")
+         "compare", "family", "usage", "properties", "incompat", "protocol", "casefind", "similar", "case", "casecompare",
+         "modifications", "treatments")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -1046,7 +1055,17 @@ def cmd_study(args: argparse.Namespace) -> None:
     elif what == "cases":
         if not (target or args.book):
             raise SystemExit("taochronos study cases: give a disease (e.g. 风温) or --book <id>")
+        if args.dataset:
+            _case_dataset(study, args.dataset, slug=args.book or target, book=args.book, disease=None if args.book else target)
+            return
         res = study.cases(args.book, disease=None if args.book else target, limit=args.limit or 200)
+    elif what in ("casefind", "similar", "case", "casecompare", "modifications", "treatments"):
+        try:
+            res = _case_explore(study, what, target, args)
+        except ValueError as e:
+            raise SystemExit(f"taochronos study {what}: {e}") from None
+        if res is None:
+            return
     elif what == "trajectories":
         if not (target or args.book):
             raise SystemExit("taochronos study trajectories: give a disease (e.g. 咳嗽) or --book <id>")
@@ -1226,6 +1245,56 @@ def cmd_study(args: argparse.Namespace) -> None:
         _out(f"wrote {args.output}")
     else:
         _out(text)
+
+
+def _case_query(target: str | None, args: argparse.Namespace) -> dict[str, Any]:
+    """The facets of ``study casefind`` from the command line (the target is the disease)."""
+    q: dict[str, Any] = {"disease": target, "findings": args.finding or (), "formula": (args.formula or [None])[0],
+                         "herb": (args.herb or [None])[0], "principle": args.principle, "outcome": args.outcome, "sex": args.sex,
+                         "age_min": args.age_min, "age_max": args.age_max, "after": args.after, "before": args.before,
+                         "period": args.period, "books": args.books, "physician": args.person, "text": args.text,
+                         "prior": True if args.prior else (False if args.no_prior else None)}
+    return {k: v for k, v in q.items() if v not in (None, (), [])}
+
+
+def _case_dataset(study: Any, out: str, *, slug: str | None, **kw: Any) -> None:
+    import re
+
+    from .plugins.classics.study.dataset import write_datapackage
+
+    res = study.case_dataset(**kw)
+    name = re.sub(r"[^\w一-鿿]+", "-", slug or "cases").strip("-") or "cases"
+    pkg = write_datapackage(out, res["tables"], name=f"taochronos-cases-{name}".lower(), title=f"TaoChronos 医案数据集：{name}",
+                            signature=res["signature"], licenses=res["licenses"], notice=res["notice"])
+    _out({"path": str(out), "resources": {r["name"]: r["rows"] for r in pkg["resources"]}, "licenses": res["licenses"]})
+
+
+def _case_explore(study: Any, what: str, target: str | None, args: argparse.Namespace) -> dict[str, Any] | None:
+    """医案探索 from the command line: casefind, similar, case, casecompare, modifications, treatments."""
+    if what == "casefind":
+        query = _case_query(target, args)
+        if args.dataset:
+            _case_dataset(study, args.dataset, slug=target or "query", query=query)
+            return None
+        return study.casefind(limit=args.limit or 50, **query)
+    if what == "similar":
+        if not (target or args.case_id):
+            raise ValueError("give a presentation (e.g. 发热，咳嗽，脉浮数，舌红苔黄) or --case-id <id>")
+        return study.similar(target, case_id=args.case_id, disease=args.disease_filter, books=args.books, k=args.limit or 10,
+                             scope="all" if args.all_visits else "first")
+    if what == "case":
+        if not (target or args.case_id):
+            raise ValueError("give a case id (from casefind, similar or cases)")
+        return study.case(target or args.case_id)
+    if what == "casecompare":
+        return study.casecompare(by=args.by or "book", disease=target, books=args.books, groups=args.group,
+                                 min_cases=args.min_cases or 5)
+    if what == "modifications":
+        return study.modifications(disease=target, formula=(args.formula or [None])[0], books=args.books,
+                                   findings="new" if args.new_findings else "visit")
+    if not target:
+        raise ValueError("give a disease (同病异治, e.g. 咳嗽) or a formula (异病同治, e.g. 小柴胡汤)")
+    return study.treatments(target, mode=args.mode, by=args.by or "formula", books=args.books, min_cases=args.min_cases or 3)
 
 
 def cmd_demo(args: argparse.Namespace) -> None:
@@ -1857,7 +1926,9 @@ def build_parser() -> argparse.ArgumentParser:
                                       "语义演变 (senses), 佚书辑佚 (fragments), 句读 (punctuate), 集注 (commentaries), 争议 (disputes), "
                                       "条文结构 (clause), 训诂 (glosses), 配伍 (pairs), 方证网络 (network), 学派 (schools), 名称 (names), "
                                       "传播链 (chain), 实体识别 (entities), 地域 (places), 释义与今译 (translate), 方剂比较 (compare), "
-                                      "类方 (family), 用药谱 (usage), 药性谱 (properties), 配伍禁忌 (incompat), 研究方案 (protocol)")
+                                      "类方 (family), 用药谱 (usage), 药性谱 (properties), 配伍禁忌 (incompat), 研究方案 (protocol), "
+                                      "医案探索: 医案检索 (casefind), 类案 (similar), 医案详解 (case), 医家与时代比较 (casecompare), "
+                                      "随证加减 (modifications), 同病异治·异病同治 (treatments)")
     sp.set_defaults(fn=cmd_study)
     sp.add_argument("what", choices=STUDY)
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
@@ -1865,10 +1936,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--provider", help=argparse.SUPPRESS)
     sp.add_argument("--passage", help="concordance/reuse/argument/punctuate/chain: a passage id instead of a text")
     sp.add_argument("--input", help="punctuate/entities/translate: read the text from this file")
-    sp.add_argument("--person", help="disputes: the physician whose views are disputed (e.g. 丹溪); places: a physician")
+    sp.add_argument("--person", help="disputes: the physician whose views are disputed (e.g. 丹溪); places: a physician; "
+                                     "casefind: the physician who treated (named in the record, else the collection's author)")
     sp.add_argument("--school", help="places: where a school's physicians came from (e.g. 温病)")
     sp.add_argument("--geojson", help="places: also write the map points (GeoJSON) to this file")
-    sp.add_argument("--period", help="pairs: only the compositions of this period (e.g. 宋金元)")
+    sp.add_argument("--period", help="pairs: only the compositions of this period (e.g. 宋金元); casefind: only its cases")
     sp.add_argument("--which", choices=["original", "current"], default="original",
                     help="compare: each formula as its earliest tradition (原方, default) or its most witnessed (通行方)")
     sp.add_argument("--min-share", type=float, default=0.75, help="family: share of the formula's core a member must hold")
@@ -1887,7 +1959,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--year", type=float, help="metrology: the year whose measures to read the dose in")
     sp.add_argument("--limit", type=int)
     sp.add_argument("--anki", help="cards: also write an Anki import file (TSV)")
-    sp.add_argument("--books", action="append", help="variants/stemma/edition/tei: a witness book id (repeatable; a+b joins volumes)")
+    sp.add_argument("--books", action="append", help="variants/stemma/edition/tei: a witness book id (repeatable; a+b joins volumes); "
+                                                      "casefind, similar, casecompare, modifications, treatments: a case collection "
+                                                      "(id, title or work; repeatable)")
     sp.add_argument("--base", help="variants/stemma: the base witness (book id or siglum; default: the one the others carry most)")
     sp.add_argument("--chapter", help="variants/stemma: collate only locators matching this pattern (e.g. 辨太阳病)")
     sp.add_argument("--max-chars", type=int, help="variants/stemma: longest base to collate (default 60000)")
@@ -1911,6 +1985,30 @@ def build_parser() -> argparse.ArgumentParser:
                                                           "and append the next (for a store without some sources, e.g. the site's)")
     sp.add_argument("--against-work", help="argument: … compared with another work")
     sp.add_argument("--candidate", action="append", help="authorship: a candidate work or book id (repeatable)")
+    case = sp.add_argument_group("医案探索 (casefind, similar, case, casecompare, modifications, treatments)")
+    case.add_argument("--finding", action="append", help="casefind: a finding the case records — symptom, pulse (浮数), tongue "
+                                                         "(苔黄) (repeatable; all must match)")
+    case.add_argument("--principle", help="casefind: a principle of treatment (e.g. 清热)")
+    case.add_argument("--outcome", help="casefind: improved (愈), unchanged (未效), worse (加重), died (死), unrecorded")
+    case.add_argument("--sex", help="casefind: male (男) or female (女)")
+    case.add_argument("--age-min", type=float, help="casefind: the patient's age, at least")
+    case.add_argument("--age-max", type=float, help="casefind: the patient's age, at most")
+    case.add_argument("--after", type=float, help="casefind: books dated this year or later")
+    case.add_argument("--before", type=float, help="casefind: books dated before this year")
+    case.add_argument("--prior", action="store_true", help="casefind: only cases recording an earlier physician's treatment (误治)")
+    case.add_argument("--no-prior", action="store_true", help="casefind: only cases recording none")
+    case.add_argument("--text", help="casefind: words the case's text holds")
+    case.add_argument("--case-id", help="similar: the case whose like cases to find; case: the case to read")
+    case.add_argument("--disease-filter", help="similar: only cases of this disease")
+    case.add_argument("--all-visits", action="store_true", help="similar: compare every visit's findings, not the first visit's")
+    case.add_argument("--by", help="casecompare: book (collection), physician, period or author; treatments: formula or principle")
+    case.add_argument("--group", action="append", help="casecompare: only this group (a collection, period or author; repeatable)")
+    case.add_argument("--min-cases", type=int, help="casecompare (default 5) and treatments (default 3): smallest group shown")
+    case.add_argument("--mode", choices=["disease", "formula"], help="treatments: 同病异治 (disease) or 异病同治 (formula); "
+                                                                       "default: as the lexicon reads the target")
+    case.add_argument("--new-findings", action="store_true", help="modifications: only the findings the last visit did not record")
+    case.add_argument("--dataset", metavar="DIR", help="cases, casefind: write the cases as a data package (cases, case_visits, "
+                                                       "case_items CSV and datapackage.json) to DIR")
     sp.add_argument("--json", action="store_true", help="print the full result as JSON")
     sp.add_argument("-o", "--output", help="write to this file (dataset: this directory)")
     sp.add_argument("--charts", metavar="DIR", help="also write the result's figures and tables to DIR: figures as SVG in the "
@@ -1966,6 +2064,12 @@ def build_parser() -> argparse.ArgumentParser:
                                     "$TAOCHRONOS_RELAY_URL); none: the visitor's own key, as before")
     sp.add_argument("--unlist", action="append", metavar="IDS",
                     help="build: provider presets the page does not offer (comma-separated ids; repeatable)")
+    sp = add("records", cmd_records, "对话记录的统计 (data/chat-logs/): the time from a turn's last tool result to its answer's "
+             "first text, recovery from a model request that broke off, answers whole and verified — counts and times only",
+             profile=False)
+    sp.add_argument("paths", nargs="*", help="JSON-lines files, or directories of them (default: <home>/data/chat-logs)")
+    sp.add_argument("--since", help="YYYY-MM-DD: the turns begun on or after it")
+    sp.add_argument("--until", help="YYYY-MM-DD: the turns begun on or before it")
     add("governance", cmd_governance, "check the architecture policy", profile=False)
     sp = add("eval", cmd_eval, "run TaoChronos-Eval suites", profile=False)
     sp.add_argument("suites", nargs="*")

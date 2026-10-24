@@ -20,7 +20,11 @@ the way the 考据 tradition answers them: from the texts, witness by witness.
 | `study witnesses` | 版本与影像见证 — which editions of this work can I read, and where can I see its prints and manuscripts? | the transcriptions in the store (edition, year, holder, source, licence, page images); the digitised copies in libraries (holder, shelfmark, IIIF manifest, terms), linked by title |
 | `study reuse` · `transmission` | 语义复用与思想传播 — what did later books do with this passage, and how was this work taken up? | typed reuses (直接引用 / 近似转录 / 节略 / 撮要 / 转述 / 解释性改写 / 引而驳之 / 套语相似) with the rule that fired and the values it read; a work's reception by period, and its channels |
 | `study layers` · `dating` · `authorship` | 文本地层 — which chapters of a classic belong together, and when can each have been written? | style layers with membership probabilities and a permutation test, change points, outlying chapters; cited works, late vocabulary and taboo per chapter; Burrows' Delta to candidate works |
-| `study cases` · `trajectories` | 医案轨迹 — what did physicians do, visit after visit? | case records as visits (findings, diagnosis, principle, formula, drugs and doses, changes, response, outcome); sequential patterns, transitions, associations with outcome |
+| `study cases` · `trajectories` | 医案轨迹 — what did physicians do, visit after visit? | case records as visits (findings, diagnosis, principle, formula, drugs and doses, changes, response, outcome, what earlier physicians had given — kept apart); sequential patterns, transitions, associations with outcome |
+| `study casefind` | 医案检索 — which cases, in every collection, fit these facets? | the cases matching disease, findings (symptom, pulse, tongue), formula, drug, principle, outcome, sex, age, period or years, collections, physician, earlier physicians' treatment (误治) and words, oldest first, each with what matched; the facets of the matches; `--dataset` exports them |
+| `study similar` · `case` | 类案 · 医案详解 — which historical cases are like this one, and what did they do? | the cases sharing the most findings, weighted by rarity, with what each did and how it ended, and what the nearest did together; one case in full — course, changes as stated and as computed, passages, like cases |
+| `study casecompare` | 医家与时代比较 — how did physicians and periods treat differently? | groups by collection, physician, period or author: visits, outcome rates (Wilson), the patients they saw, what each favours (Fisher + BH), χ², Kruskal–Wallis, trends by period; charts and a three-line table |
+| `study modifications` · `treatments` | 随证加减 · 同病异治 · 异病同治 — which finding brought which change; one disease, many treatments; one formula, many diseases | finding → drug added or removed (lift, Fisher + BH), what is added to each base formula; a disease's treatment groups and the findings that set them apart; a formula's diseases and the findings they share |
 | `study argument` | 医理论证 — how does this passage, or this work, reason? | clauses with their concepts and typed edges (condition, consequence, cause, inference, contrast, analogy, rebuttal, definition, treatment …); a work's profile; two works compared |
 | `study senses` | 语义演变 — what did this term mean, and when did its meaning shift? | sense shares by period, change points, candidate senses the curation lacks, the term's neighbourhood by period, a check against the curated exemplars |
 | `study fragments` | 佚书辑佚 — what survives of a lost work in the books that quote it? | fragments ordered by the volume the source notes give, each with its quoting witnesses and parallels; the method verified on works that survive |
@@ -87,8 +91,14 @@ taochronos study transmission 伤寒论 --clauses 40
 taochronos study layers 素问 --k 2                                 # --features function
 taochronos study dating 素问
 taochronos study authorship --book 伤寒论 --chapter-name 辨脉法 --candidate 脉经 --candidate 金匮要略
-taochronos study cases 风温                                        # or --book <id>
+taochronos study cases 风温                                        # or --book <id>; --dataset <dir>: a data package
 taochronos study trajectories 咳嗽
+taochronos study casefind 咳嗽 --outcome died --finding 脉浮数      # --sex 女 --age-min 60 --period 清 --person 丹溪 --prior --text …
+taochronos study similar "发热，咳嗽，口渴，脉浮数，舌红苔黄"        # or --case-id <id>; --all-visits
+taochronos study case <case_id>                                   # one case in full (ids from casefind, similar, cases)
+taochronos study casecompare --by physician                       # book · period · author; [disease] --group … --charts figs
+taochronos study modifications 咳嗽 --formula 银翘散               # --new-findings
+taochronos study treatments 咳嗽 --by principle                   # 同病异治; a formula (小柴胡汤): 异病同治
 taochronos study argument --work 伤寒论 --against-work 温热论       # or a text, or --passage <id>
 taochronos study senses 消渴
 taochronos study fragments 小品方                                  # --verify: test the method on a surviving work
@@ -482,7 +492,10 @@ word changed its meaning, and what survives of the books that were lost. Three r
   `study.dating`, `study.authorship`, `study.cases`, `study.trajectories`, `study.argument`, `study.senses`,
   `study.fragments` — permission `classics:read`) and a CLI command. The existing agents call them: the Philologist
   (collation, witnesses, layers, dating, authorship), the Skeptic (reuse, dating, argument), the Evidence agent (cases, trajectories, argument), the
-  Semanticist (terms, senses) and the Scholar, whose term dossiers now carry 语义演变. No agent was added.
+  Semanticist (terms, senses) and the Scholar, whose term dossiers now carry 语义演变. No agent was added. The case
+  exploration added since (`study.casefind`, `study.similar`, `study.case`, `study.casecompare`, `study.modifications`,
+  `study.treatments`; [医案探索](#医案探索-case-exploration)) follows the same rules; the Evidence agent may call
+  casefind, similar, casecompare and treatments.
 - **Candidates are not proof.** Whatever proposes with high recall — character probes, co-occurring concepts,
   clusters, an encoder's similarity — only proposes. Transparent rules over measured features decide, and every label
   carries the rule that fired and the values it read. An encoder's similarity is reported beside the features; no rule
@@ -653,6 +666,30 @@ diagnosis (diseases, patterns), the principle of treatment (explicit constructio
 response before a visit's own prescription answer the previous visit). The outcome is the last response recorded.
 Every field keeps its passage id. The rules and vocabularies are in `cases.yaml`.
 
+**Earlier physicians.** Records often tell what other physicians had done first (前医作伤寒治，用麻黄汤 · 医以大黄、巴豆下之 ·
+诸医作惊风治 · 误投…). Such an account opens at those words — a physician followed by a verb of treatment, or 误 with one
+— and runs to the end of its sentence, or to a clause that turns back to the recording physician (余诊之, 项诊之, 予以…,
+改用…, 此…也); in 白文 without punctuation, to the first word that does (邀予诊之). What it names — diagnosis, principles,
+formulas, drugs, the response — is the visit's `prior`, and the visit's own reading sees blanks there: an earlier
+physician's 麻黄汤 is never this physician's, and the 病势危笃 that followed it is not the response to this treatment. A
+warning (若误作中风治之立毙), a maxim (误治杀人多矣), the opening of a compilation's case (钱医治一人) and the patient's own
+course (已服二剂) are no accounts. On the 要籍语料 store, 101 of 847 cases carry one; two random samples of 25 accounts
+read by hand held 19 and 21 genuine accounts of earlier treatment (40/50): the rest were a quoted 伤寒论 rule, general
+remarks, and opinions without a treatment.
+
+**The physician.** A compilation's case names who treated it (丹溪治一妇 · 子和治一妇 · 项彦章治一女): the name before 治
+is the physician's (`physician`), never the patient's, and the patient is read from what follows. A name is kept when
+`physicians.yaml` knows it or it looks like one (a common surname, two to four characters), never 一方治… or 二妙散治….
+
+**Read once.** Each book is read whole once and kept, so a case has the same id whichever function found it; on a
+store, all the case collections are cached together (`study-cache/cases-<key>.json.gz`, keyed by the corpus, the
+lexicon, the rules and the reading's own code), and any first case question — one book, one disease or all of them —
+reads that cache rather than the books: the 39 collections of the 要籍语料 store read in 1.8 s, and in 0.2 s from the
+cache. The site's full-corpus server reads every case collection while its image is built (`chat/cloud.py`, `WARM`),
+so the cache ships in the image, and loads it in the background as the container starts. Measured on 21,175 cases (the
+要籍语料 cases 25 times over): loading 4–5 s; casefind, similar and case under 0.3 s; casecompare, modifications and
+treatments 0.2–1.3 s.
+
 **Trajectories.** Each case becomes a sequence of visits, each a set of items (`principle:清热`, `formula:银翘散`,
 `added:麦冬`, `finding:脉数`): sequential patterns across visits (PrefixSpan; support = cases), transitions from one visit
 to the next (changes first, then continuations; lift over the next visit's baseline), and associations with the
@@ -662,6 +699,65 @@ publication: these are associations in a biased record, never evidence of effica
 **Example (full corpus).** 吴鞠通医案: 285 and 290 cases in its two transcriptions, read independently (case counts agree
 to 0.98, outcomes to 0.92). 续名医类案: 3 246 cases, 151 of them ending in death. 咳嗽: 818 cases across the collections;
 中风: 287, with sequences such as 苦寒 → 下法 and 益气 → 地黄饮.
+
+## 医案探索 (case exploration)
+
+The case records of every collection are one body of clinical record; six functions explore it (`caseexplore.py`). A
+case's presentation is a set of features — `症:` the lexicon's symptoms and signs (咳嗽 as the lexicon's 咳), `脉:` each
+pulse quality (脉浮数 → 脉:浮, 脉:数), `舌:` / `苔:` the tongue body and coating (舌红苔黄 → 舌:红, 苔:黄), `证:` the
+diseases and patterns named — and its treatment `治法:`, `方:` (under the lexicon's name: 理中汤 counts as 理中丸), `药:`.
+The physician of a case is the one its record names, else its collection's author, under the name `physicians.yaml`
+gives him (丹溪, 朱丹溪 → 朱震亨; 叶天士 → 叶桂).
+
+- **医案检索** `casefind`: every facet given must match — disease (the cases filed under it or naming it), findings (each
+  in some visit), formula (any of its names), drug (listed or added), principle, outcome (improved/愈, unchanged/未效,
+  worse/加重, died/死, unrecorded), sex, age range, period or years, collections, physician, an account of earlier
+  treatment (`--prior`, or none) and words of the text (found through the store's index). Matches come oldest first,
+  each with what matched and where (脉浮数（第2诊）); the facets count the matches once per case — collections,
+  periods (crossed with outcomes, drawn as a figure), outcomes, sex, formulas, principles, drugs, findings, pulse
+  qualities, visits, accounts of earlier treatment. `--dataset <dir>` (and `study cases --dataset`) writes the cases as
+  a data package: `cases`, `case_visits`, `case_items` (one row per finding, diagnosis, principle, formula, drug,
+  change and prior item), each row with its case id and passages.
+- **类案** `similar`: a presentation given as text is read as a first visit (the same rules); the cases are compared by
+  the cosine of their presentation features weighted by inverse document frequency, so that a shared 脉代 counts for
+  more than a shared 发热, with at least two shared. Each like case comes with what it shares, what it has besides,
+  what was done at its first treated visit and how it ended; `practice` counts what the 30 nearest did (formulas,
+  principles, drugs), each with the outcomes of the cases that did it. `--case-id` starts from a case; `--all-visits`
+  compares every visit's findings.
+- **医案详解** `case`: one case in full — its course visit by visit (findings, diagnosis, the account of earlier
+  treatment, principles, formulas and drugs with doses, the changes the record states and those the drugs listed
+  imply when two visits list them, doses, response), the passages it rests on (with their licences) and its five
+  nearest like cases.
+- **医家与时代比较** `casecompare`: groups by collection, physician, period or author (`--by`) — the 30 largest of at
+  least five cases (`max_groups`, `--min-cases`), the others listed as left out; per group the cases,
+  visits (x̄ ± s), outcomes and the recovery rate among the cases recording one (Wilson interval), the death rate, the
+  share of women among the cases recording sex, the share with an account of earlier treatment, the principles,
+  formulas and drugs used most; what each group favours against the others (one-sided Fisher, odds ratio,
+  Benjamini–Hochberg over every group and item) and the presentations it saw; χ² of outcome by group, Kruskal–Wallis of
+  visits, Jensen–Shannon distances between the groups' treatments; by period, the share of the most used principles
+  and formulas period by period with a Cochran–Armitage trend test. Figures: outcomes by group, recovery rates with
+  their intervals (a forest plot), trends; a three-line table of the groups.
+- **随证加减** `modifications`: the units are the visits that add to or take from the last prescription; the base is the
+  visit's own formula, else the last one named. For each finding and each drug added (or removed): the count, P(drug |
+  finding) among those visits, the lift, a one-sided Fisher test, Benjamini–Hochberg; the drugs most often added and
+  removed; what is added to and taken from each base formula. `--formula` keeps the visits on one base; `--new-findings`
+  counts only the findings the last visit did not record.
+- **同病异治 · 异病同治** `treatments`: for a disease, each case is grouped by the first formula (or, `--by principle`, the
+  first principle) of its first treated visit — the visit's own, never an earlier physician's — and the presentation
+  features over-represented in each group against the others are its distinctive findings: what the physicians saw
+  that called for one treatment rather than another. For a formula, its cases are grouped by the disease their visit
+  names (else their heading); the findings common to the groups (with their lift over every case) are the shared
+  pattern on which 异病同治 rests, and each group's distinctive findings what still sets it apart.
+
+**Example (要籍语料 store: excerpts of 39 case collections, 847 cases).** By period, the recorded recovery rate falls
+from 92 % (宋金元, 38 cases; 95 % CI 67–99 %) to 85 % (明, 172; 77–90 %) and 72 % (清, 637; 67–77 %), outcome by period
+χ² p = 0.12; the 宋金元 cases (丹溪) favour 苍术, 香附 and 神曲, the 明 白芍药 and 六味地黄丸, the 清 杏仁, 茯神 and 桑叶.
+By physician, 朱震亨's 48 cases come together from five collections (丹溪治法心要 and the compilations), 叶桂's 97 from
+临证指南医案 and 未刻本叶氏医案, 徐大椿's 40 from 洄溪医案 and 慎疾刍言. 咳嗽: 144 cases (6 deaths); grouped by principle,
+补中 (6 cases) goes with 下血 and 身肿, 苦寒 (5) with a weak pulse. At the 352 visits that change a prescription, 苔黄
+goes with 沙参 added (5 visits, lift 20); 补中益气汤 is most often given 木香. A case of 丹溪's in 名医类案 shows an account
+read apart: 「医以参、术、川芎、陈皮、茯苓服之愈重」 is the earlier physician's (加重), 茯苓汤 丹溪's own. These are the
+excerpts the site ships, not whole collections: the numbers show what the functions do, not what the literature holds.
 
 ## 医理论证 (argument graphs)
 
@@ -805,6 +901,11 @@ that rare drugs do not come first), a one-sided Fisher test with Benjamini–Hoc
 period; the communities of the significant pairs are the groups of drugs that hold together (六味, 四物, 攻逐, 破血, 理气,
 消导 …). Network: a formula's findings by lift against how often each finding is named, its drugs; a finding's formulas.
 A finding named before a formula is not proof that the formula treats it: each link carries examples.
+A name a study does not take — a drug asked of 方证网络 (11 of its 26 failures in the visitor records), a formula of 用药谱
+or 配伍 — is answered with what the lexicon holds it as and the studies that read that; a name the lexicon does not hold,
+with the names of the kinds the study takes written in it (桂枝汤证: 桂枝汤), else, should it be miswritten, the nearest of
+them (sharing two of its characters at least, the curated before the harvested; offered, never taken for it, since
+another name may be another drug), and the studies that read any name (`study.term`; for a drug, `study.herb` too).
 
 ### 学派 (schools)
 
@@ -857,7 +958,7 @@ own, against 0.87 for the most similar earlier witness).
 | `corpus/catalog/external-works.yaml` | works known through citations, including lost works known only through them |
 | `domains/classics/collation.yaml` | orthographic equivalences for collation (沉/沈, 藏/脏, 鞕/硬, 耆/芪 …): variants in the apparatus, never grouping evidence; graphic confusions (已/巳/己) deliberately left out |
 | `domains/classics/intertext.yaml` | citation, dialogue, refutation and explanation markers, and the stock phrases of the genre (以水七升，煮取三升，去滓 …) |
-| `domains/classics/cases.yaml` | case and visit openers, day markers, sections that file no cases, pulse and tongue patterns, principles, changes, doses, words of response |
+| `domains/classics/cases.yaml` | case and visit openers, day markers, sections that file no cases, pulse and tongue patterns, principles, changes, doses, words of response; accounts of earlier physicians' treatment (what opens one, what turns back to the recording physician, warnings and maxims, the diagnosis it names) |
 | `domains/classics/argument.yaml` | discourse markers of reasoning by relation (lead / tail, direction), the markers that split a clause (则, 故) and their exceptions |
 | `domains/classics/clause.yaml` | the roles of a clause (condition, disease, findings, pulse, pattern, principle, contraindication, formula, composition, preparation, administration, modification, prognosis) as patterns tried in order |
 | `domains/classics/exegesis.yaml` | the concepts commentators explain the classics with (forms, group), the words of stance towards another commentator, the forms of a gloss |
@@ -888,7 +989,17 @@ own, against 0.87 for the most similar earlier witness).
 - 文本地层: style separates chapters by topic as well as by author (运气 chapters are about 运气); the dating evidence
   depends on the dates of the catalog and on how thin the early corpus is. Neither proves an addition alone.
 - 医案轨迹: the parser follows the manners of the collections it was written for (visits under a heading, narratives);
-  other layouts can merge or split cases. Outcomes are what the physician recorded.
+  other layouts can merge or split cases. Outcomes are what the physician recorded. About one account of earlier
+  treatment in five is not one (a quoted rule, a general remark); 白文 can carry an account past its end. The
+  full-corpus figures quoted for 吴鞠通医案 and the collections were measured before such accounts were read apart: on
+  the 要籍语料 store that change moved 12 outcomes and 27 sets of formulas in about 800 cases (corrections, chiefly an
+  earlier physician's formula or response no longer credited to the recording physician) and dropped 8 cases whose
+  only treatment was another physician's.
+- 医案探索: everything is computed on the cases the rules read, so their errors carry through; a physician chose which
+  cases to record, an editor which to keep, and the words of response are the physician's own — recovery rates and
+  associations describe a selected record, never the efficacy of a treatment, and nothing here is advice for a
+  patient. Similarity is by shared findings only (not their severity or order); small groups give wide intervals, and
+  the tests make no allowance for cases copied from one collection into another.
 - 医理论证: only explicit markers make edges, so terse texts look less argued than they are; the counts compare
   manners of writing as much as ways of reasoning.
 - 语义演变: senses are only as good as their curated cues; candidate senses are clusters of context words, not

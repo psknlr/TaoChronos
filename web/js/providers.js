@@ -4,6 +4,7 @@
 
 import { MODEL, PUBLISHER } from "./brand.js";
 import { storage } from "./util.js";
+import { T } from "./i18n.js";
 
 
 const FALLBACK = [{
@@ -18,7 +19,7 @@ export const DEFAULTS = {
   baseUrls: {},            // provider id → base URL override
   keys: {},                // provider id → API key (this browser only)
   temperature: null,       // null: the provider's default
-  maxTokens: 16000,
+  maxTokens: null,         // tokens a reply may use, its thinking included; null: as outputLimit decides
   thinking: true,
   route: "auto",           // auto | direct | proxy (through the local server)
   runtime: "auto",         // auto | browser | server
@@ -27,6 +28,7 @@ export const DEFAULTS = {
   toolMode: "core",        // core (a dozen tools + catalog/call) | all (every tool directly)
   maxSteps: 16,
   resultChars: 16000,
+  contextTokens: null,     // what a request may send the model, in tokens, room for its reply included; null: as contextBudget decides (context.js)
   instructions: "",
   theme: "system",
   verifyQuotes: true,
@@ -34,6 +36,21 @@ export const DEFAULTS = {
 };
 
 let providers = FALLBACK;
+
+// what a reply may use where the visitor set no number and the service names no ceiling of its own: Claude (the
+// Anthropic preset), which the page always streams, what Anthropic advises for a streamed reply; any other service, and
+// an endpoint set by hand, a number most of them accept
+const AUTO_TOKENS = { claude: 64000, other: 16000 };
+const OLD_DEFAULT = 16000; // what an older page kept as the visitor's number when they had set none
+
+/** The tokens a reply may use, its thinking included: the number the visitor set, within the service's own ceiling (the
+ * default service's); with none set, that ceiling, or AUTO_TOKENS for a service that names none. */
+export function outputLimit(settings, provider) {
+  const set = Math.floor(Number(settings?.maxTokens)) || 0;
+  const ceiling = Math.floor(Number(provider?.max_output)) || 0;
+  if (ceiling) return set > 0 ? Math.min(set, ceiling) : ceiling;
+  return set > 0 ? set : AUTO_TOKENS[provider?.format === "anthropic" && !provider.custom ? "claude" : "other"];
+}
 
 export const RELAY_ID = "impf";
 let relay = null; // {url, ok, model, models, logs, limits} once the site's relay has answered (or failed to)
@@ -46,13 +63,13 @@ function relayPreset() {
   if (!relay?.url) return null;
   const models = relay.models?.length ? relay.models : relay.model ? [relay.model] : [];
   return {
-    id: RELAY_ID, label: "道乃久默认服务", format: "openai", base_url: `${relay.url}/v1`, key_optional: true, relay: true,
+    id: RELAY_ID, label: T("道乃久默认服务"), format: "openai", base_url: `${relay.url}/v1`, key_optional: true, relay: true,
     max_tokens_param: "max_completion_tokens", extra_body: {}, thinking_off: { thinking: { type: "disabled" } }, examples: models,
     default_model: relay.model || models[0] || "", reasoning: "reasoning_details", vision: true, stream_usage: true,
     unavailable: !relay.ok, max_output: relay.maxOutput || null,
     note: relay.ok
-      ? `${PUBLISHER}提供，无需 API Key，直接提问${relay.limits?.per_day ? `；测试期间每人每天约 ${relay.limits.per_day} 次模型调用（一个问题通常用几次）` : ""}。`
-      : "默认服务暂时连不上：请稍后再试，或选择其他服务并填入自己的 API Key。",
+      ? T`${PUBLISHER}提供，无需 API Key，直接提问${relay.limits?.per_day ? T`；测试期间每人每天约 ${relay.limits.per_day} 次模型调用（一个问题通常用几次）` : ""}。`
+      : T("默认服务暂时连不上：请稍后再试，或选择其他服务并填入自己的 API Key。"),
   };
 }
 
@@ -61,7 +78,8 @@ export async function loadProviders() {
     const r = await fetch("providers.json", { cache: "no-cache" });
     if (r.ok) {
       const list = await r.json();
-      if (Array.isArray(list) && list.length) providers = list;
+      // their names and notes are written in Chinese (src/taochronos/chat/providers.py): shown in the page's language
+      if (Array.isArray(list) && list.length) providers = list.map((x) => ({ ...x, label: T(x.label), note: x.note && T(x.note) }));
     }
   } catch { /* the embedded preset is enough to start */ }
   return providers;
@@ -71,7 +89,7 @@ export async function loadProviders() {
 export function customPreset(c) {
   const anthropic = c.format === "anthropic";
   return {
-    id: c.id, label: c.label || "自定义 API", format: anthropic ? "anthropic" : "openai", base_url: c.base_url || "",
+    id: c.id, label: c.label || T("自定义 API"), format: anthropic ? "anthropic" : "openai", base_url: c.base_url || "",
     full_url: Boolean(c.full_url) && !anthropic, key_optional: true, max_tokens_param: c.max_tokens_param || "max_tokens",
     extra_body: c.extra_body || {}, headers: c.headers || {}, examples: c.model ? [c.model] : [], default_model: c.model || "",
     reasoning: anthropic ? "thinking" : c.reasoning || null, vision: Boolean(c.vision), stream_usage: c.stream_usage !== false,
@@ -80,7 +98,7 @@ export function customPreset(c) {
 }
 
 export function newCustomProvider(n = 1) {
-  return { id: `custom-${Date.now().toString(36)}`, label: `我的 API ${n}`, format: "openai", base_url: "", full_url: false, model: "",
+  return { id: `custom-${Date.now().toString(36)}`, label: T`我的 API ${n}`, format: "openai", base_url: "", full_url: false, model: "",
     headers: {}, extra_body: {}, max_tokens_param: "max_tokens", reasoning: null, vision: false };
 }
 
@@ -92,6 +110,7 @@ export const providerById = (id, settings) => allProviders(settings).find((p) =>
 
 export function loadSettings() {
   const saved = storage.get("tc.settings", {}) || {};
+  if (saved.maxTokens === OLD_DEFAULT) delete saved.maxTokens; // the old default, kept by an older page: as outputLimit decides
   return { ...DEFAULTS, ...saved, models: { ...(saved.models || {}) }, baseUrls: { ...(saved.baseUrls || {}) }, keys: { ...(saved.keys || {}) },
     customProviders: Array.isArray(saved.customProviders) ? saved.customProviders.map((c) => ({ ...c })) : [] };
 }
@@ -101,7 +120,7 @@ export function saveSettings(settings) {
 }
 
 /** How a provider is named on the page: the default service by its own name (the page names no vendor behind it). */
-export const modelLabel = (p) => (p.relay ? p.label : `底层模型 ${p.model || "未选"}（${p.label}）`);
+export const modelLabel = (p) => (p.relay ? p.label : T`底层模型 ${p.model || T("未选")}（${p.label}）`);
 
 /** The provider as configured now: preset + the user's model, base URL and key. */
 export function activeProvider(settings) {
@@ -119,8 +138,8 @@ export function activeProvider(settings) {
 const PUBLIC_FORMAT = "Tao-";
 // the default service words its errors itself, for the visitor; a turn made by an older page may keep other words
 const OWN_WORDS = /默认服务|道乃久|对话太长|请求不是有效的 JSON|请求缺少 messages|没有这个接口|太频繁|免费额度/;
-const SERVICE_FAILED = "默认服务出错了，请稍后再试，或在“设置 → 模型”里填入自己的 API Key";
-const MODEL_REFUSED = "默认服务不提供这个模型：请在“设置 → 模型”里选用道乃久默认服务，或改用自己的 API Key";
+const SERVICE_FAILED = T("默认服务出错了，请稍后再试，或在“设置 → 模型”里填入自己的 API Key");
+const MODEL_REFUSED = T("默认服务不提供这个模型：请在“设置 → 模型”里选用道乃久默认服务，或改用自己的 API Key");
 
 /** An error of a default-service turn as the page shows it: the service's own words, without the model client's
  * preamble; anything else (what an older relay passed on) as a plain failure. */

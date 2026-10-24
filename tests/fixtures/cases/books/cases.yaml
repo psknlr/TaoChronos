@@ -1,0 +1,37 @@
+# Synthetic (see ../books.yaml): never cite it.
+- book: jia
+  defaults: {locator: {volume: 卷上}}
+  passages:
+    - {id: jia.01, locator: {section: 咳嗽}, text: 王　三十岁　风温发热，咳嗽，口渴，脉浮数。治宜辛凉解表，银翘散主之。}
+    - {id: jia.02, locator: {section: 咳嗽}, text: 二诊　热退，咳甚，脉数。前方加杏仁。服二剂。}
+    - {id: jia.03, locator: {section: 咳嗽}, text: 三诊　咳减，知饥。前方去薄荷。服二剂而愈。}
+    - {id: jia.04, locator: {section: 咳嗽}, text: 李　四十岁　咳嗽，发热，脉浮数，舌红苔黄。治宜辛凉，用银翘散。服二剂，热不退，咳甚。}
+    - {id: jia.05, locator: {section: 咳嗽}, text: 二诊　咳甚，痰黄。前方加杏仁、黄芩。服三剂而安。}
+    - {id: jia.06, locator: {section: 咳嗽}, text: 某氏　咳嗽日久，口干，盗汗，脉细数。治宜养阴，用沙参麦冬汤。服五剂，咳减。}
+    - {id: jia.07, locator: {section: 咳嗽}, text: 赵　五十岁　咳嗽，口干，脉细。治宜养阴，用沙参麦冬汤。服三剂，不效，遂死。}
+    - {id: jia.08, locator: {section: 泄泻}, text: 孙　六十岁　泄泻，腹痛，脉沉迟。治宜温中，用理中汤。服三剂，泻止而安。}
+    - {id: jia.09, locator: {section: 泄泻}, text: 一妇人年三十，泄泻，腹痛，脉沉。医以大黄下之，增剧。予以理中汤，连进二帖而安。}
+- book: yi
+  defaults: {locator: {volume: 卷一}}
+  passages:
+    - {id: yi.01, locator: {section: 咳嗽}, text: 张　二十岁　风温发热，咳嗽，脉浮数。治宜辛凉，用银翘散。}
+    - {id: yi.02, locator: {section: 咳嗽}, text: 二诊　咳甚，前方加杏仁。服二剂。}
+    - {id: yi.03, locator: {section: 咳嗽}, text: 三诊　咳止而愈。}
+    - {id: yi.04, locator: {section: 咳嗽}, text: 周　三十五岁　咳嗽，发热，口渴，脉浮数，舌红。治宜辛凉解表，银翘散主之。服二剂，热退。}
+    - {id: yi.05, locator: {section: 咳嗽}, text: 吴氏　咳嗽，口干，脉细数。治宜养阴，用沙参麦冬汤。服三剂，咳减。}
+    - {id: yi.06, locator: {section: 咳嗽}, text: 郑　七十岁　咳嗽，喘，汗出，脉微。前医作伤寒治，用麻黄汤，汗出不止，病势危笃。予以独参汤，不应，遂死。}
+    - {id: yi.07, locator: {section: 咳嗽}, text: 钱　二十五岁　咳嗽，发热，脉浮数。用银翘散：连翘（三钱）　金银花（三钱）　薄荷（一钱）　甘草（一钱）。}
+    - {id: yi.08, locator: {section: 咳嗽}, text: 二诊　热退，咳减。连翘（三钱）　金银花（三钱）　杏仁（三钱）　甘草（一钱）。服二剂而愈。}
+    - {id: yi.09, locator: {section: 疟}, text: 冯　四十岁　疟，寒热往来，口苦，脉弦。用小柴胡汤，服二剂，寒热止。}
+    - {id: yi.10, locator: {section: 疟}, text: 陈　三十岁　疟，寒热往来，口苦，脉弦数。用小柴胡汤加常山，服二剂而愈。}
+- book: bing
+  defaults: {locator: {volume: 卷三}}
+  passages:
+    - {id: bing.01, locator: {section: 咳嗽}, text: 丁翁治一妇，年四十，咳嗽，口干，盗汗，脉细数。治宜养阴，用沙参麦冬汤，服十剂而愈。}
+    - {id: bing.02, locator: {section: 咳嗽}, text: 丁翁治一男子，咳嗽，发热，脉浮数。用银翘散，服二剂，热退咳减。}
+    - {id: bing.03, locator: {section: 疟}, text: 武医治一人，疟，寒热往来，口苦，脉弦。用小柴胡汤，服三剂而愈。}
+    - {id: bing.04, locator: {section: 伤寒}, text: 武医治一男子，伤寒，寒热往来，口苦，胸闷，脉弦。用小柴胡汤，服二剂而安。}
+    - {id: bing.05, locator: {section: 泄泻}, text: 纪生治一妇人，泄泻，腹痛，脉沉迟。医以黄连止之，不效。纪生诊之，用理中汤，服三剂而愈。}
+- book: fang
+  passages:
+    - {id: fang.01, locator: {section: 咳嗽}, text: 治咳嗽发热，脉浮数，银翘散主之。}
