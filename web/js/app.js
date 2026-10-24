@@ -544,6 +544,7 @@ async function runAssistant(conv, msg, { resume = null } = {}) {
       provider, settings: hidden ? { ...S.settings, thinking: false } : S.settings, route: routeFor(), runtime: routed(runtime),
       tools, system: systemPrompt(), history, user, signal: controller.signal, hurry: hurry.signal,
       hooks: makeHooks(conv, msg, before?.usage), sink, trace, resume, rounds: before?.rounds,
+      scope: lookupScope,
     });
     msg.rounds = result.rounds;
     msg.usage = addUsage(before?.usage, result.usage);
@@ -617,6 +618,13 @@ async function resumeAnswer(msgId) {
 
 /** The runtime that answers now, and its corpus, as a turn's record names them. */
 const runtimeNow = () => ({ runtime: S.runtimeInfo?.runtime || S.runtime?.kind, corpus: S.runtimeInfo?.corpus?.kind });
+/** What a lookup's result depends on besides what it asks: the runtime, its version and profile, the corpus it reads (a
+ * turn answers a lookup from the same one made before only where these are the same: agent.js, execute). */
+function lookupScope() {
+  const info = S.runtimeInfo || {};
+  const c = info.corpus || {};
+  return JSON.stringify([info.runtime || S.runtime?.kind, info.version, info.profile, c.kind, c.books, c.passages, c.characters]);
+}
 
 /** A question the page answers itself (fixed.js): the same reply every time, without a model or tools. */
 async function answerFixed(conv, msg, text) {
@@ -670,14 +678,15 @@ function makeHooks(conv, msg, usageBefore = null) {
     if (!c) return;
     c.status = out.ok ? "ok" : out.status || "error";
     c.ms = Date.now() - (c.started || Date.now());
-    c.summary = out.ok ? out.summary || T("完成") : truncate(out.error || T("失败"), 120);
+    c.summary = out.ok ? `${out.summary || T("完成")}${out.reused ? T("（与先前的同一调用相同，没有重新运行）") : ""}` : truncate(out.error || T("失败"), 120);
     c.error = out.ok ? null : out.error;
     c.preview = (out.text || "").slice(0, 8000);
     const cites = out.ok ? withFound(out.citations, out.result) : out.citations; // a search's labels (via, flags)
     c.citations = (cites || []).slice(0, 80);
-    c.charts = out.ok ? chartsOf(out.result) : [];
-    c.tables = out.ok ? tablesOf(out.result) : [];
-    c.document = out.ok ? documentOf(out.result) : null;
+    const own = out.ok && !out.reused; // a call answered from the same one before: its figures are under that one
+    c.charts = own ? chartsOf(out.result) : [];
+    c.tables = own ? tablesOf(out.result) : [];
+    c.document = own ? documentOf(out.result) : null;
     if (out.tool && out.tool !== call.name) c.resolved = out.tool;
     toolTextCache.delete(conv); // what the tools returned has grown: citations are checked against it
     registerEvidence(conv, cites);

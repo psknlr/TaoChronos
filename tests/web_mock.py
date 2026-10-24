@@ -10,9 +10,9 @@ prescriptions (``mydata__prescriptions``) and citing its first row.  A question 
 output limit (``finish_reason: length``) part-way, and the rest when the page asks it to write on; one asking it to
 想得很久 spends the limit on its thinking, and answers when asked again without.  One asking for 图表与原文 compares two
 formulas and searches the classics in the same round, and answers with what the round gave it (the test may hold the
-search); one asking it to 再查一遍 searches twice, in two rounds, each call under the same id (as a service that numbers
-its calls afresh in each reply does); one asking it to 不停地查 searches in every reply, however it is asked (as a service
-that drops ``tool_choice`` would).  Every request is recorded for the test to inspect.
+search); one asking it to 再查一遍 searches twice (with 图表, compares twice), in two rounds, each call under the same id
+(as a service that numbers its calls afresh in each reply does); one asking it to 不停地查 searches in every reply,
+however it is asked (as a service that drops ``tool_choice`` would).  Every request is recorded for the test to inspect.
 """
 
 from __future__ import annotations
@@ -124,7 +124,7 @@ class _Handler(BaseHTTPRequestHandler):
             chunks = self._tool_call()
         elif body.get("tools") and AGAIN in asked:
             searched = sum(m.get("role") == "tool" for m in messages[last_user + 1:])
-            chunks = self._answer() if searched >= 2 else self._tool_call()
+            chunks = self._answer(charting) if searched >= 2 else self._tool_call(charting)
         else:
             chunks = (self._answer(charting) if answered else self._tool_call(charting)) if body.get("tools") else self._answer()
         for chunk in chunks:
