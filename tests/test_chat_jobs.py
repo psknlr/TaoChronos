@@ -143,7 +143,9 @@ def test_a_run_stops_at_once_while_it_waits_and_once_its_task_ends_while_it_runs
                                                                                    "RuntimeError: boom"]
 
 
-def test_a_running_run_beats_and_says_when_it_last_made_progress():
+def test_a_running_run_beats_and_says_when_it_last_made_progress(monkeypatch):
+    slept, sleep = [], time.sleep  # who sleeps (time.sleep, as a test may stub it): not the heartbeat
+    monkeypatch.setattr(time, "sleep", lambda s: (slept.append(threading.current_thread().name), sleep(s)))
     runs = Runs()
     jobs = Jobs(runs, lock=threading.Lock(), heartbeat=0.02)
     j = jobs.start("a")
@@ -159,8 +161,18 @@ def test_a_running_run_beats_and_says_when_it_last_made_progress():
     until(lambda: jobs.records[j]["progress_at"] > first["progress_at"])
     v = jobs.view(j)
     assert [v["progress"]["events"], v["progress"]["round"], v["progress"]["hypotheses"]] == [7, 1, 1] and v["progress_s"] < 1
+    pulse = jobs.pulse
     runs.let("a")
     until(lambda: state(jobs, j) == "completed")
+    # the heartbeat ends with the last run, and the next starts it again
+    until(lambda: jobs.pulse is None and not pulse.is_alive())
+    k = jobs.start("b")
+    until(lambda: state(jobs, k) == "running")
+    beat = jobs.records[k]["heartbeat"]
+    until(lambda: jobs.records[k]["heartbeat"] > beat)
+    runs.let("b")
+    until(lambda: state(jobs, k) == "completed" and jobs.pulse is None)
+    assert slept and "research-heartbeat" not in slept
 
 
 def test_records_are_kept_and_a_run_the_server_stopped_goes_on_when_asked(tmp_path):

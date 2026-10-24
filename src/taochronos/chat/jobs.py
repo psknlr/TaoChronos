@@ -198,16 +198,20 @@ class Jobs:
         self._prune(now)
 
     def _pulse(self) -> None:
-        """The heartbeat of the run going on, while there is one."""
+        """The heartbeat of the run going on, while one runs or waits: it ends after the last (the next starts it again)."""
+        tick = threading.Event()  # never set: a timed wait that a stubbed time.sleep does not turn into a busy loop
         while True:
-            time.sleep(self.beat)
+            tick.wait(self.beat)
             with self.mu:
                 now = self.clock()
-                for rec in self.records.values():
-                    if rec["state"] in ("running", "cancel_requested"):
-                        rec["heartbeat"] = now
-                        self._progress(rec, now)
-                        self._save(rec)
+                going = [rec for rec in self.records.values() if rec["state"] in ("running", "cancel_requested")]
+                for rec in going:
+                    rec["heartbeat"] = now
+                    self._progress(rec, now)
+                    self._save(rec)
+                if not going and not self.queue:
+                    self.pulse = None
+                    return
 
     def _progress(self, rec: dict[str, Any], now: float, session: Any = None) -> None:
         """What its session has done so far, and when it last logged something new."""
