@@ -126,6 +126,8 @@ export function fillAssistant(body, m, ctx, last) {
       const docs = (seg.calls || []).map((c) => documentButton(c.document)).filter(Boolean);
       if (docs.length) body.append(h("div.docs", docs));
     }
+    else if (seg.type === "check") body.append(checkNode(seg));
+    else if (seg.type === "text" && seg.superseded) { if (seg.text) body.append(draftNode(m, seg, k, ctx)); }
     else if (seg.type === "text" && (seg.text || (live && isLast))) {
       const md = h("div.md");
       md.append(renderMarkdown(redact(seg.text, { streaming: live && isLast }), { streaming: live && isLast, cite: ctx.cite }));
@@ -133,11 +135,16 @@ export function fillAssistant(body, m, ctx, last) {
     }
   });
   if (live && !segs.length) body.append(h("div.think.live", h("summary", h("span.lbl", T("正在思考…")))));
+  // 继续作答: a turn that did not get its answer, taken up again from what its tools gave (not begun again, as 重试 is)
+  const resume = () => (ctx.canResume?.(m)
+    ? h("button.btn.secondary.resume", { type: "button", title: T("根据已经得到的工具结果接着作答，不再重新调用工具"),
+      on: { click: () => ctx.onResume(m.id) } }, T("继续作答"))
+    : null);
   if (m.error) {
-    body.append(h("div.notice.err", icon("warn"), h("div.grow", redact(m.error)),
+    body.append(h("div.notice.err", icon("warn"), h("div.grow", redact(m.error)), resume(),
       ctx.running ? null : h("button.btn.secondary", { type: "button", on: { click: () => ctx.onRegenerate(m.id) } }, T("重试"))));
   }
-  if (m.status === "stopped") body.append(h("div.notice.warn", icon("info"), h("div.grow", T("已停止生成。"))));
+  if (m.status === "stopped") body.append(h("div.notice.warn", icon("info"), h("div.grow", T("已停止生成。")), resume()));
   if (!live) {
     const bar = verifyBar(m, ctx, renderedCites(body));
     if (bar) body.append(bar);
@@ -150,14 +157,41 @@ export function fillAssistant(body, m, ctx, last) {
   }
 }
 
-/** The answer as the model wrote it — for the model only; what anyone reads of it is answerText. */
+/** The answer as the model wrote it — for the model only; what anyone reads of it is answerText.  An answer the
+ * self-check had rewritten (自查) is not part of it: the rewrite stands. */
 export function rawAnswer(m) {
-  return (m.segments || []).filter((s) => s.type === "text").map((s) => s.text).join("\n\n").trim();
+  return (m.segments || []).filter((s) => s.type === "text" && !s.superseded).map((s) => s.text).join("\n\n").trim();
 }
 
 /** The answer as a visitor reads it, copies it and the record keeps it: in plain words (redact.js). */
 export function answerText(m) {
   return redact(rawAnswer(m));
+}
+
+/** The self-check's note (自查): the passages the answer cited that the corpus has not, and what came of asking again. */
+function checkNode(seg) {
+  const ids = (seg.missing || []).join(T("、"));
+  const text = !seg.cut ? T`自查：初稿所引的 ${ids} 在语料中查无此段，已请模型检索核实后重新作答。`
+    : seg.error ? T`自查：初稿所引的 ${ids} 在语料中查无此段；重新作答未能完成（${seg.error}），上面的回答未经更正。`
+      : T`自查：初稿所引的 ${ids} 在语料中查无此段；重新作答未能完成，上面的回答未经更正。`;
+  return h("div.notice.check", icon("info"), h("div.grow", text));
+}
+
+/** An answer the self-check had rewritten, folded: drawn only when opened, its citations checked as anywhere but not
+ * counted under the answer (renderedCites). */
+function draftNode(m, seg, k, ctx) {
+  const key = `${m.id}:${k}`;
+  const d = h("details.draft");
+  d.append(h("summary", icon("chev", "sm chev"), h("span.lbl", T("初稿（自查后已重新作答）"))));
+  const fill = () => {
+    if (d.querySelector(".md")) return;
+    const md = h("div.md.superseded");
+    md.append(renderMarkdown(redact(seg.text), { cite: ctx.cite }));
+    d.append(md);
+  };
+  if (ctx.openThink.has(key)) { d.open = true; fill(); }
+  d.addEventListener("toggle", () => { if (d.open) { ctx.openThink.add(key); fill(); } else ctx.openThink.delete(key); });
+  return d;
 }
 
 function thinkingNode(m, seg, k, ctx, live) {
@@ -171,16 +205,21 @@ function thinkingNode(m, seg, k, ctx, live) {
   return d;
 }
 
+// a call the turn still waits for; and one it no longer waits for that still runs (a research run going on by itself)
+const WAITING = new Set(["preparing", "loading", "queued", "running"]);
+const BUSY = new Set([...WAITING, "background"]);
+
 function stepsNode(m, seg, k, ctx, live) {
   const key = `${m.id}:${k}`;
   const calls = seg.calls || [];
-  const running = calls.some((c) => c.status === "running" || c.status === "preparing");
+  const running = calls.some((c) => WAITING.has(c.status));
   const open = ctx.openSteps.has(key) || (live && running && !ctx.closedSteps.has(key));
   const box = h("div.steps", { class: open ? "open" : "" });
   const fams = [...new Set(calls.map((c) => c.family))].map((f) => h("span.fam", { class: f }, FAMILY[f] || f));
-  const errs = calls.filter((c) => c.status === "error").length;
-  const label = running ? T`正在调用工具（${calls.filter((c) => c.status === "ok" || c.status === "error").length}/${calls.length}）`
-    : T`调用了 ${calls.length} 个工具${errs ? T`，${errs} 个出错` : ""}`;
+  const errs = calls.filter((c) => c.status === "error" || c.status === "timeout").length;
+  const later = calls.filter((c) => c.status === "background").length;
+  const label = running ? T`正在调用工具（${calls.filter((c) => !BUSY.has(c.status)).length}/${calls.length}）`
+    : T`调用了 ${calls.length} 个工具${(errs ? T`，${errs} 个出错` : "") + (later ? T`，${later} 个仍在后台进行` : "")}`;
   const head = h("button.head", { type: "button", "aria-expanded": String(open) },
     running ? h("span.spinner") : icon("tools", "sm"), h("span", label), ...fams, icon("chev", "sm chev"));
   head.addEventListener("click", () => {
@@ -191,7 +230,12 @@ function stepsNode(m, seg, k, ctx, live) {
   });
   const list = h("div.list");
   calls.forEach((c, j) => list.append(toolNode(m, c, `${key}:${j}`, ctx)));
-  box.append(head, list);
+  // waited on a while: the answer can be had without the calls still running
+  const offer = live && running && seg.offer && ctx.onAnswerNow
+    ? h("div.offer", h("span", T("还有工具在运行。")),
+      h("button.btn.secondary", { type: "button", on: { click: () => ctx.onAnswerNow(m.id) } }, T("不再等待，根据已有结果作答")))
+    : null;
+  box.append(head, offer, list);
   return box;
 }
 
@@ -210,12 +254,24 @@ function chartsNode(seg) {
 function toolNode(m, c, key, ctx) {
   const open = ctx.openTools.has(key);
   const t = h("div.tool", { class: open ? "open" : "" });
-  const status = c.status === "running" || c.status === "preparing" ? h("span.st", h("span.spinner"))
-    : c.status === "error" ? h("span.st.err", icon("x", "sm")) : h("span.st.ok", icon("check", "sm"));
-  const summary = c.status === "preparing" ? T("准备参数…") : c.status === "running" ? (c.progress || T("运行中…")) : (c.summary || "");
+  // ok · error · timeout (not waited for past its deadline) · skipped (not waited for: the answer was asked for) ·
+  // stopped · background (a research run going on by itself); and, while it is waited for, its state
+  const status = BUSY.has(c.status) ? h("span.st", h("span.spinner"))
+    : c.status === "error" ? h("span.st.err", icon("x", "sm"))
+    : c.status === "timeout" || c.status === "skipped" ? h("span.st.warn", icon("warn", "sm"))
+    : c.status === "stopped" ? h("span.st.off", icon("stop", "sm"))
+    : h("span.st.ok", icon("check", "sm"));
+  const summary = c.status === "preparing" ? T("准备参数…")
+    : c.status === "loading" ? T("等待运行环境载入…")
+    : c.status === "queued" ? (c.progress || T("排队中：等前面的调用完成…"))
+    : c.status === "running" ? (c.progress || T("运行中…"))
+    : c.status === "background" && c.progress ? T`后台继续 · ${c.progress}`
+    : (c.summary || "");
+  // how long it has run, while it runs (drawn again each second by the page)
+  const since = c.status === "running" && c.since ? { dataset: { since: String(c.since) } } : {};
   const row = h("button.row", { type: "button" },
     status, h("span.fam", { class: c.family }, FAMILY[c.family] || c.family), h("span.nm", displayName(c.name)),
-    h("span.sm", redact(summary)), h("span.ms", c.ms ? fmtMs(c.ms) : ""));
+    h("span.sm", redact(summary)), h("span.ms", since, c.ms ? fmtMs(c.ms) : c.status === "running" && c.since ? fmtMs(Date.now() - c.since) : ""));
   row.addEventListener("click", () => {
     const now = !t.classList.contains("open");
     t.classList.toggle("open", now);
@@ -249,9 +305,9 @@ function foundCard(card, chip) {
   return h("span", { style: { display: "inline-flex", alignItems: "center", flexWrap: "wrap", gap: "4px", maxWidth: "100%" } }, chip, badges);
 }
 
-/** The citations as rendered in a turn's answer: [{pid, quote}]. */
+/** The citations as rendered in a turn's answer — not in a draft the self-check had rewritten: [{pid, quote}]. */
 export function renderedCites(body) {
-  return [...body.querySelectorAll(".md .cite[data-cite='text']")].map((b) => ({ pid: b.dataset.pid, quote: b.dataset.quote || null }));
+  return [...body.querySelectorAll(".md:not(.superseded) .cite[data-cite='text']")].map((b) => ({ pid: b.dataset.pid, quote: b.dataset.quote || null }));
 }
 
 export function verifyBar(m, ctx, ids) {

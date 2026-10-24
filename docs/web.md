@@ -225,6 +225,22 @@ Node in `tests/test_web_client.py`): cited without a quotation, its chip is ? un
 
    Clicking a chip opens the passage in the side panel with the quotation highlighted, in horizontal or vertical
    (竖排) reading, with its variants and notes.  A line under each answer counts the results.
+
+   Before an answer stands, the page checks it itself (**自查**, `web/js/agent.js` and `missingCites` in `app.js`): each
+   passage it cites that no tool returned in this conversation is looked up, and one the corpus answers it does not hold
+   (`classics.get_passage`'s `KeyError` or `PassageNotFound` — never a lookup that failed otherwise, as on a network
+   error, and never a row of 我的资料) is named back to the model — once a turn, and only while it has two rounds of tools
+   left and its tools have not come to an end (不再等待, the turn's time, or a turn taken up again by 继续作答) — with what to
+   do: look it up with the tools and cite the passage they return, quoted as it is, or drop what rests on it (本语料未检得),
+   then answer again, whole.  Its lookups are waited for no longer than a tool call; an answer they could not check
+   stands as it is.  The first answer stays, folded (初稿（自查后已重新作答）), its chips checked as anywhere but not counted in the
+   line under the answer, and a note names the passages that were not found.  An answer written on after a cut at the
+   output limit is checked whole, and the rounds that wrote it on are not among the two.  A rewrite that does not come
+   whole — an error, a stop, the limit of rounds, a model that calls tools once they have come to an end, a cut it could
+   not be written on past, the content filter, the page closed as it ran — is taken out of the turn, and the first
+   answer stands, the note saying so.  A rewrite the service refuses with a time to come back pauses it until then, as a
+   turn it refuses does (below).  The answer that stands is what is copied, exported, recorded and replayed to the
+   model; its own chips are checked as any answer's, so whatever it still gets wrong shows.
 4. The side panel: **证据** (every passage the conversation touched), **研究** (research runs: verdict, metrics,
    hypotheses with their supporting and contradicting quotations, the full report), **资料** (the user's own files:
    [below](#我的资料--the-users-own-data)), **工具台** (every tool, with a form generated from its schema — no model
@@ -429,7 +445,16 @@ agent holds: a research run never reads the user's data).  It is never offered
 `kg.propose_change` (a proposal to canonical knowledge is a person's act) or Code Mode (`research.run_code`) unless the
 local server is started with `--code-mode`.  Every call passes the scheduler's gauntlet (permission, schema, hooks,
 receipts).  Results reach the model trimmed evenly to a budget (16 000 characters by default: long lists keep their
-head and say how many were left out); results of earlier turns are shortened further.
+head and say how many were left out); those of earlier turns, and a turn's own when its requests would go past the
+context budget, are made compact (below, *上下文预算*).
+
+**A lookup asked again in a turn is answered from the first.**  A call of a tool that reads the corpus or reckons from it
+(`classics`, `kg`, `study`, `validation`, `audit`, `modern`; directly or through `taochronos_call`) with the same
+arguments, in whatever order, on the same runtime, version, profile and corpus as one that gave a result earlier in the
+turn is not run again: the model gets that result whole, with a note saying it is the same as that round's, and the
+step says so too (its figures stay under the first).  Any other call runs each time: one that failed, and those of the
+other tools (the analyses, images, a research run, Code Mode, 我的资料).  So a model whose result was made compact has it
+whole again by asking for it again.
 
 **A call is read as the model wrote it**, at the model's side of the scheduler (`ChatRuntime.call`, and the research
 agents' model loop): a tool's name in another case or with other separators (`classics__get_passage`,
@@ -482,7 +507,71 @@ The page speaks two wire formats:
 * **Claude**, through the official Anthropic TypeScript SDK (pinned, loaded from jsDelivr on first use): adaptive
   thinking shown as a summary, server-side refusal fallbacks (`fallbacks: "default"`) on Claude Opus 5 and Fable 5.1 as
   in the harness's own provider, tool inputs streamed eagerly, the stop reason checked before any tool runs (a refusal or
-  a `max_tokens` cut never runs a tool), assistant content replayed verbatim so thinking blocks round-trip.
+  a `max_tokens` cut never runs a tool; a stream that ends without one is asked again), assistant content replayed
+  verbatim so thinking blocks round-trip.
+
+**最大输出** (设置 → 模型) is what a reply may use, its thinking included.  Left empty, the page asks for what the service
+allows: the default service's own ceiling (the relay's `MAX_OUTPUT_TOKENS`, 32,768, which it names in `/v1/health`),
+64,000 with Claude (what Anthropic advises for a streamed reply), and 16,000 from any other service or an API set by
+hand.  A number set there is kept within the default service's ceiling, so the relay forwards the request unchanged; the
+settings show the ceiling and what 自动 comes to.  The 16,000 an older page kept as everyone's number is read as no number.
+
+**上下文预算 — what a request may send** (设置 → 模型, under 最大输出).  Each request of a turn sends the instructions, the
+tools, the conversation so far, the question and the turn's own calls and results, and leaves room for the reply: a turn
+of many rounds grows with every result, a conversation with every turn.  The budget bounds all of it, in tokens
+estimated high (a Chinese character one, three others one, an image 1,600 whatever its size as data; `web/js/context.js`).
+Left empty, it is 200,000 with Claude and 128,000 from any other service or an API set by hand; the settings show what
+自动 comes to.  The room kept for the reply is what 最大输出 allows, at most half the budget, and the request asks for no
+more.  Past the budget, a request gives up, in this order, until it fits: the calls and results of earlier turns,
+oldest first (those turns go as their question and the answer that stands, as the page shows it: not a first answer the
+self-check had rewritten); the turn's earlier results, oldest round first, made compact; earlier turns, oldest first,
+which the model is told were left out (and asked to say so when the visitor speaks of them); and last the last round's
+results.  What a request gave up stays given up for the rest of the turn, so that each request differs from the one
+before only where it must, and the record of the turn notes each one that gave up more (`compacted`).  A result made
+compact keeps its shape: every field (one that says what the result means or lacks — a note, a caveat, a summary, a
+verdict — keeps more of its words), its numbers, an identifier whole, a short list (a range of years) whole, a long list
+its head and how many were left out, a long text its start and its length, a passage met again by its id and place with
+what is said of it there.  A note follows: how long the result was, the passages it named that the compact form no
+longer shows, and that a passage can be read by its id or the call asked again with the same arguments (answered whole,
+as above); the notes the page had added to it stay after.  Earlier turns' results are made compact so too, to about
+2,500 characters each (they were cut at that length).  Calls and their results keep their ids and pairs, the model's
+reasoning in the turn goes as it was, and the page keeps everything whole: its steps show the results, citations are
+checked against them, and 继续作答 and later turns read them.  A service whose context is smaller than its default (a local
+model, say) needs its number here.
+
+**A reply that breaks off is asked again.**  A reply is finished only when the service says so — a `finish_reason` or
+`[DONE]` in an OpenAI-compatible stream, a stop reason from Claude — and a stream that simply ends is a reply that broke
+off.  A connection that fails, or breaks off while the reply streams (Chrome's "network error", Safari's "Load failed":
+38 of the first 105 failed turns, some twenty minutes into one), a stream that ends unfinished, a service busy for a
+moment (429, 5xx, DeepSeek's `insufficient_system_resource`) are retried up to three times, after about 1.5, 4 and 10
+seconds (spread a quarter either way, so that pages one failure struck together do not ask again together), or after as
+long as the service's `Retry-After` asks, up to 30 seconds (the relay exposes the header to the page); the round is asked
+again from its start, since no tool ran on what it had said, and what it had shown goes.  A refusal that asking again soon does
+not change is told at once: the visitor's or the service's allowance for the day (`daily_limit`, `total_limit`), an
+address blocked, the service not set up, its own key refused or its quota spent, a provider's quota spent.  A browser that has no
+body to read a reply from as it arrives (an older Safari) reads it whole.  In the last three rounds of tools a turn may
+run (设置 → 运行环境 → 每轮最多工具步数, 16 by default), the model is told after each how many it has left, and at the last that it is
+to answer from what it has; it is then asked with no tool to call (below, *The answer once the tools stop*).
+
+**A service that says when to come back is paused until then.**  A refusal with a `Retry-After` the turn did not wait
+out — the visitor's free calls for the day used up (the relay's `Retry-After` is the seconds to its midnight), a limit per
+minute that asks for more than 30 seconds, an address held back a while — pauses that service until the time it named
+(`web/js/pause.js`).  The composer says until when, in the service's own words, and a question, 继续作答, 重试 or a
+question edited is held back with a note rather than sent to meet the same refusal; the question stays where it was
+typed.  The pause is the chosen service's alone (one's own API Key is asked at once), is kept in this browser so that a
+reload does not ask again, and lasts a day at most, whatever a service asks.  A turn the refusal stopped after its tools
+ran is answered from them by 继续作答 once the pause is over (below).
+
+**A reply cut at its output limit is written on.**  An answer that stops at the limit (`finish_reason: length`, Claude's
+`max_tokens`) is kept, and the model is asked, in a note after it, to write on from where it stopped — not to repeat
+itself or start over; the page shows the two as one answer.  A reply that spent the whole limit on thinking, with no
+answer, is asked again with less of it: without thinking where the service has a field for that (the default service,
+MiniMax), at low effort with Claude (its newer models think whether thinking is asked for or not, and effort is what
+makes them think less); what it had shown goes.  Either happens at most twice a turn, and neither counts as one of the
+turn's rounds of tools.  No tool call of a cut reply runs, since its arguments may have been cut too: the model is told
+so, and can call again with shorter ones.  An answer still cut after that, one the service's content filter stopped
+(`content_filter`), and one that filled the model's context window (Claude's `model_context_window_exceeded`, which no
+writing on would fit) end the turn with a note under the answer saying so, and 重试 next to it.
 
 **自定义 API** — an endpoint not in the list, set by hand (**设置 → 模型 → ＋ 自定义 API**; several can be kept): a name, the
 wire format (OpenAI-compatible, or Anthropic Messages through the SDK), the base URL (the page appends `/chat/completions`,
@@ -497,6 +586,117 @@ tooltip, under each answer); the instructions name no model ([ADR 0014](adr/0014
 *经本地服务转发* (through `taochronos serve`'s proxy), or *自动*
 (through the proxy when the page is connected to a local server; an API set by hand goes direct, since the proxy forwards
 only to listed hosts — `taochronos serve --allow-host api.example.com` adds one).  **测试连接** sends one short request.
+
+## Waiting — deadlines, stops, and an answer from what is there
+
+Each thing a turn waits on has a limit of its own (`web/js/limits.js`), so that a search that does not come back cannot
+keep the model from explaining a chart that already has:
+
+| What is waited on | Limit | When it is used up |
+|---|---|---|
+| a model's reply, to its first byte | 2 min | the round is asked again, like a reply that broke off |
+| a streamed reply that sends nothing more (a model thinking without showing it may be silent for minutes) | 5 min | the same |
+| a reply read whole, where the browser cannot read one as it arrives | 10 min | the same |
+| a tool call, from when it runs | 2 min | the call ends `timeout`: the model is told it has no result, and to say what it lacks |
+| a research run, from when it runs | 30 min | the same |
+| one look at a research run on a server | 20 s | the next look, later and later (15 s apart at most); looks that fail for 2 min lose the run |
+| a round's tools | 20 s | the page offers 不再等待 (below) |
+| the turn | 30 min | no more tools run, and the model answers from what it has |
+
+A limit counts the time the page runs, by a clock it looks at every second: a phone asleep or a tab the browser froze
+uses none of it (a gap between two looks counts as 65 seconds at most — a hidden tab's timers may run once a minute, and
+that minute counts).  A call's limit counts while it runs, not while it waits for the browser's runtime to load or for
+its turn: the browser's runtime runs one call at a time, a server four, and a server's research one run at a time.
+Requests through the Claude SDK are watched the same way: the SDK asks nothing again itself (the loop does, for every
+service alike), its requests go through a fetch that watches them, and its ping events count as something heard.
+
+**Every call ends**, with a status the model is told and the page shows: ok, error, timeout, stopped (the turn was),
+skipped (not waited for: the user asked for the answer, or the turn ran its time), or, for a research run the turn did
+not wait for, going on in the background.  The model is asked again only once every call of the round has its end, and
+every call keeps its place, with its result, in the messages it is sent.  While a round runs, its steps show how many
+calls are done and each call's state — waiting for the runtime to load, waiting for its turn, running (and for how long),
+a research run's progress — and an icon for each end.
+
+**不再等待，根据已有结果作答** appears under a round's steps once its calls have been waited on for 20 seconds.  Pressed,
+the calls still running are not waited for (they end skipped), any call the model asks for next is not run, and the
+model is told to answer from what it has and to say what it did not get; a note under the answer says it may be
+incomplete.  A research run is not dropped: it goes on, the model is told so, and its result comes to the 研究 panel when
+it is done (a notice says so, and how one that did not finish ended).  The turn's own limit does the same when it runs
+out.  Stopping the turn ends every call under way, marked stopped, and the page is ready for the next question.
+
+**The answer once the tools stop.**  When a turn's tools come to an end — its rounds used (设置 → 运行环境 → 每轮最多工具步数),
+不再等待, or its time up — the model is asked for its answer with no tool to call (tool choice `none`; the tools stay in
+the request, since the turn's calls refer to them), and told, after the last result, which of the turn's calls have no
+result: each by its name, what it asked (cut short) and how it ended — timed out, not waited for, still running in the
+background, stopped — and that it is to say what is missing rather than make it up.  A call asked again with the same
+arguments that then answered is not among them.  Not every service takes tool choice `none`: one that refuses a request
+asking it (HTTP 400 or 422) is asked again as before, with its tools to call, and is not asked so again while the page is
+open.  A service that calls tools all the same is told no and its calls are not run; told twice, the turn ends with a
+notice that the model gave no answer, and 继续作答.
+
+**继续作答 — a turn taken up again.**  A turn that did not get its answer — it failed, was stopped, or its model kept
+calling tools after they stopped — but whose messages end on its tools' results shows **继续作答** beside 重试, while it
+is the last of its conversation and the model that ran it is still the one chosen.  Pressed, none of its calls runs
+again: the model is sent the turn's messages as the page kept them, every call with its result (one left without is
+told so), and after the last a note asking for the answer from them, with no tool to call (`web/js/agent.js`, `runTurn`'s
+`resume`).  What a round whose reply did not come whole had shown goes, and the answer is written anew; the steps the turn
+took stay.  Its rounds, tokens and time are added to, and its record says it was taken up again.  A turn whose service
+failed once its tools had run (the day's free calls used up, for one, which the page does not ask again) is so answered
+from them once the service answers again.  重试 begins the turn again, its calls with it.
+
+**Where the work goes.**  A call the browser's runtime has not begun is never sent to it.  One it runs is interrupted
+where the page is cross-origin isolated (Python raises `KeyboardInterrupt` when it next looks) and otherwise runs to its
+end, what it returns dropped; if such a call holds up another for a minute, the runtime is started again — what it held
+only in memory (research sessions, and data this browser could not keep) goes with it, what it kept is read again (the
+corpus, from IndexedDB), and the call waiting runs.  A research run left to go on in the background gives way the same way to a call
+waiting behind it.  A request to a server is cut off (the server finishes the call; its answer is not read).  A research
+run on a server the page stops waiting for — the turn stopped, or the run past its deadline — is stopped there too (it
+ends after the task it is running); one left to go on by itself goes on.  Its start has no limit of its own, so that a
+run a slow server may have begun is not begun again in the browser.
+
+**A research run on a server** (`taochronos serve`, the site's server) runs in the background, one at a time, first
+come first served (`src/taochronos/chat/jobs.py`).  One at a time because a run puts its contract's forbidden
+assumptions into the anachronism guard, which the harness holds for every session: two at once would check each other's
+claims against the wrong contract, so they wait their turn instead, and say where they are.  The page follows a run by
+its id (`GET /api/research/<job>`, about once a second), and its step says what the server says of it:
+
+- **queued** — how many runs are ahead, the one running among them, and how long it has waited
+  (`排队中：前面还有 2 项研究 · 已等 14 秒`; first in line, `排队中：服务正在完成另一项研究`);
+- **running** — its round, hypotheses and claims so far, and how long it has run, its wait not counted.  A heartbeat
+  every 5 seconds says the server is still at it: the step says when one is 30 seconds late (`服务 45 秒没有回应`), or when
+  the run has logged nothing new for a minute (`70 秒没有新进展`);
+- **stopping** (`cancel_requested`) — asked to stop, it ends after the task it is running, what it found kept in its
+  session;
+- **awaiting recovery** — looks that fail (the network gone, the server restarting) are borne for two minutes, made later
+  and later, the step saying so; a run the server was running when it stopped is `interrupted` once it is back, and the
+  page asks for it to go on from its session's last checkpoint (twice at most);
+- **completed**, **failed** or **cancelled**, with its outcome.  A run the server has no record of is lost, and the step
+  says so.
+
+A server keeps its runs' records with its sessions (`<data>/chat/jobs`, a JSON file each: the question, the state, the
+times, the progress, the heartbeat and the outcome; an ended run's for three days, 200 at most), so one started again
+knows them: a run it left unfinished is `interrupted`, and goes on when the page asks.  The site's server keeps them on
+its container's disk, which a container started again from its image does not have: a run the container stopped with is
+lost.  A server of an earlier version is read by its words (`status`: queued, running, done, error).
+
+**A page closed while it works.**  The page keeps a research run's id with its call — or, for one begun from the 研究
+panel, with its conversation — as soon as it has it.  Opened again (reloaded, or later in another tab), it settles what
+the page before left without an end: a turn it was answering ends with what it had (`这一轮没有答完：页面在作答时关闭或刷新了`), with 继续作答
+where its messages allow — or, left as the self-check's rewrite ran (自查), with the answer it was about, the rewrite
+taken out as one that fails is; a call it was waiting on is stopped; and a research run is followed again on the server
+that runs it, its step saying `后台继续 · …` as it goes, until its results come to the 研究 panel — and, for a run the turn
+was waiting on, to the turn, which 继续作答 then answers from.  A run on another runtime than the page's now ends without
+its result, saying so.  A turn another tab is still answering is left to it: a page holds a lock named by a turn (Web
+Locks) while it answers it or follows a run of it, and a page opened meanwhile leaves alone what is held.  Where the
+browser has no Web Locks (a page on http:// from another machine), what an earlier page left is settled as if no page
+held it.
+
+**The site's server stopping in the middle of a turn.**  When the browser takes over from the site's server during a
+turn, the turn's next request carries the browser runtime's instructions, whose 运行环境 describes the corpus the calls
+read from then on (the 要籍语料), and a note: the runtime and corpus the turn began on, that the results so far stand,
+and that what later searches do not find may simply not be in this corpus, which the answer is to say.  The tools stay
+the same: both runtimes offer the same ones.  The turn's record has `fallback` when it happened, and `instructions` when
+a request first carried the change.
 
 ## 道乃久默认服务 — asking without a key, and conversation records
 
@@ -525,7 +725,20 @@ send it in clear to the provider, where any visitor can read it — so the relay
   and why, and asks — 同意并继续 or 不记录; the choice stays in that browser and can be changed at any time under
   设置 → 数据.  A visitor who agreed sends, after each finished turn, one compact record to the relay: the question, the
   answer, the tools called, how the citations were checked, the model, token usage and timings — never a key, the
-  settings or an address (`web/js/records.js`, `relay/src/relay.js` keeps only those fields).  The relay holds the records
+  settings or an address (`web/js/records.js`, `relay/src/relay.js` keeps only those fields).  The timings say where the
+  turn's time went, each in milliseconds from its start: each model request's — sent, its reply begun, its first part,
+  its answer's first text, its end, how it finished or why it failed (a kind or a status, never the service's words), its
+  tokens —, each call's — begun, waiting for its runtime or its turn, how long the runtime says it took, how it ended —,
+  what happened between them (an answer written on, 不再等待, the turn's time up, the self-check's rewrite asked for or
+  taken out, a server given up for the browser, the turn taken up again by 继续作答 — each time it runs it sends its own
+  record, under the same id), and
+  how long the page was hidden or did not run at all (`web/js/records.js`, `timings`; the fields in
+  [`data/chat-logs/README.md`](../data/chat-logs/README.md)).  The output limit a reply was asked within is not among
+  them, since it comes from the visitor's settings: a reply cut there shows as `finish: length`, with the tokens it
+  wrote.  `taochronos records` sums the records up, in counts and times only: the time from a turn's last tool result to
+  its answer's first text and what it went on, how often a model request broke off and the turn still answered whole,
+  how many answers came whole, with nothing flagged ✕, and verified — a turn taken up again counted once, as it ended,
+  and how many were.  The relay holds the records
   until `.github/workflows/chat-logs.yml` collects them, every hour, into `data/chat-logs/YYYY/MM/DD.jsonl` in this private
   repository, and deletes them once the commit is pushed (`relay/collect.py`).  The records never enter the published
   site.  If the repository is ever made public, `data/chat-logs/` must be moved out first.  A conversation that touches
@@ -563,8 +776,9 @@ taochronos serve --allow-host https://gw.example.com:8443   # the proxy may also
 ```
 
 Endpoints: `GET /api/info`, `GET /api/catalog?mode=core|all`, `POST /api/call {name, arguments, max_chars}`,
-`GET /api/passage?id=`, `POST /api/research` → `{job}`, `GET /api/research/<job>` (progress: round, claims, hypotheses;
-then the outcome), `GET /api/session/<id>?what=summary|report|hypothesis|evidence`, `POST /api/llm` (model proxy),
+`GET /api/passage?id=`, `POST /api/research` → `{job}`, `GET /api/research/<job>` (`state`, `position` while queued,
+`queued_s`, `run_s`, `heartbeat_s`, `progress_s`, `progress` — round, hypotheses, claims, events —, then the outcome),
+`POST /api/research/<job>/cancel` · `POST /api/research/<job>/resume`, `GET /api/session/<id>?what=summary|report|hypothesis|evidence`, `POST /api/llm` (model proxy),
 `POST /api/data {name, data}` (a file of the user's in base64) · `GET /api/data` · `POST /api/data/remove {id}` ·
 `POST /api/data/clear` (我的资料 — only when the server is bound to this machine: one other machines reach answers 403).
 
@@ -574,7 +788,7 @@ headers so the HTTPS page may reach it — the browser may ask for permission); 
 so a rebound DNS name cannot reach it.  Bound to any other address it requires its access token (above).  The
 proxy forwards only to the hosts of the listed providers and streams the answer back; keys pass through and are never
 stored or logged, and requests are not logged at all unless `--verbose` (paths only).  Research runs one at a time in a
-background thread (a run installs its contract's guards harness-wide).  When the page is served from here and the site
+background thread, its record kept with the sessions (above, *A research run on a server*).  When the page is served from here and the site
 was not built, the in-browser runtime's archives are made from the checkout on first use.
 
 ## Publishing
@@ -618,9 +832,16 @@ a call as the model wrote it (a name in another form, arguments repaired, a para
 the closest tools for an unknown name and never one the model is not offered), failures as results, meta-tools, the system prompt and the identity (道乃久, Tao-R1, IMPF-AI; the platform introduced as the fixed reply does, no model named or denied), trimming and citations, research runs and
 their sessions, the V2 workflow, every server endpoint, CORS and Private Network Access, the origin and host checks
 (the server's own pages on any address), the access token (refused without it, the proxy too; generated for any address
-but loopback), the proxy (streaming, allow-list, the SDK path form, `--env-keys`, `--allow-host`), background research, the
+but loopback), the proxy (streaming, allow-list, the SDK path form, `--env-keys`, `--allow-host`), background research
+(its state and times, a run stopped while it waits and while it runs, and the site's server passing on the stop and
+resume endpoints), the
 site build (with the corpus store), and `home.zip` carrying the alias layer (its two built files, no file or record of a local
-list, the directory under 150 KB deflated).  `tests/test_web_corpus.py` — the 要籍 list (ranked, metadata only, the classics first,
+list, the directory under 150 KB deflated).  `tests/test_chat_jobs.py` — background research runs: one at a time, first
+come first served, each saying its place; one asked for directly keeping the next waiting first in line; a run stopped
+at once while it waits and after its task while it runs, its session finished `stopped`; a heartbeat, and when it last
+made progress; records kept, a run a server left unfinished `interrupted` and going on when asked; ended runs kept three
+days and 200 at most; a run the server stopped mid-way taken up from its log after a restart; an ephemeral runtime's in
+memory.  `tests/test_web_corpus.py` — the 要籍 list (ranked, metadata only, the classics first,
 nothing modern, open where a source is openly licensed, its open witness the pack's first), the choice of witnesses
 (openly licensed first, 笈成 last among them, never a source in `NEVER_PACKED`), budgets kept as whole chapters spread
 through a book, the pack → a store with the same bytes → indexed once → read by the harness, the index in two phases
@@ -632,19 +853,70 @@ within a view's bounds, none a scope withholds; through the tools in `tests/test
 `tests/test_boundaries.py`) and what an id that is no passage names; a quotation found whatever its punctuation and in either script, across a
 witness's own marks, never with a changed or missing character; outside a session `classics.list_books` lists every
 book with its filters and `kg.claims` / `kg.neighbors` read the passages that write the term.  `tests/test_web_client.py` — the
-client's logic under Node (cumulative and incremental streams, history rules, dangling tool calls, citation pairing, which
+client's logic under Node (cumulative and incremental streams, a reply that breaks off asked again and one read whole,
+a stream that ends without a finish reason or `[DONE]` asked again, which refusals are retried and how long after, the
+spread of the waits, what a reply may use, an answer cut at the output limit written on, one that only thought asked
+again without thinking, no call of a cut reply run, the content filter and a full context told, the rounds of tools left
+named to the model; the waits — each limit counted in the time the page ran, a reply that sends nothing at first,
+falls silent or takes too long read whole asked again, a stop and a limit told apart, every listener removed and no
+failure left unhandled, a chart answered while the search beside it stalls to its deadline, the time a call waits for
+its turn not counted, the answer asked for while calls run and a model that keeps calling told no, a research run left
+to go on and ended later; the answer once the tools stop — asked with no tool to call, told which calls have no result
+and how they ended (not one asked again that then answered), a service that refuses tool choice `none` asked again
+without it and not asked so again, a service that calls tools anyway refused and the turn ended unanswered, a turn taken up again with every call given its result and the note after them, no call run and its
+rounds going on, and which turns can be taken up (Claude's too); a service paused until the time its refusal named (a
+day at most, only one that named one, the others not paused, kept across a reload, and held in memory where the browser
+keeps nothing); a turn within its context budget (the budget for each service and one set, tokens estimated and an image
+counted as one, the reply's room half of it at most; a result made compact — still JSON, every field, notes kept longer,
+identifiers whole, a passage met again by its id and place, short lists whole, the passages it named listed, the page's
+notes after; a text cut to its start, one that trimming would not shorten as it was; each step of the order in turn,
+what was given up staying given up, pairs and thinking as they were, nothing given changed; an earlier turn condensed to
+the answer that stands (not a first answer the self-check had rewritten, and one written on whole); a turn's requests
+within it and its record whole; the oldest turns left out, the model told; a lookup asked again answered from the first,
+another, a failed one, one on another runtime and the user's data run again); the browser runtime's queue (a call not
+yet begun never sent, a late result dropped, a runtime
+held up started again, Python interrupted where the page shares memory), a server's calls four at a time, its research
+looked at within limits — failed looks borne for a while, later and later, a run the server stopped as it restarted taken
+up again twice at most, one it has no record of lost, one followed again by its id, one no one waits for stopped there;
+a research run's step from the server's view of it (queued with its place, running with its progress, a heartbeat or
+progress long in coming, stopping, awaiting recovery, an earlier server's words), and a turn's instructions asked for
+before each request, the browser's with a note once it takes over from the site's server; where a turn's time goes — each model request's times and
+end (a stall, a stop, a refusal kept as its status and not its words), each call's waiting and running, a cut answer
+written on, the tools' end, the page hidden and asleep; history rules, dangling tool calls, citation pairing, which
 questions get the fixed reply and which go to the model; the alias badges — labels, the names merged, the asked name found
 for a hit, the flags' words, every card of a search marked with its badges or with none; the charts' checks, CSV, Markdown tables, colours and axes; a box
 plot's numbers, a forest plot's log axis, a tree's checks; CRC-32, PackBits, a TIFF's directory, a PNG's pHYs and a ZIP;
-three-line tables' heads, italics, LaTeX, CSV, Markdown and Word XML) and
+three-line tables' heads, italics, LaTeX, CSV, Markdown and Word XML; the self-check's loop: asked again once, with the
+passages named, only while rounds of tools are left, an answer written on read whole, a rewrite that fails, is stopped
+or is cut short taken out of the turn, the page told where the answer it was about ends) and
 the page in Chromium against scripted providers (`tests/web_mock.py`): a MiniMax-style stream (cumulative
 `reasoning_details` and content, streamed tool arguments) and a Claude stream through the real SDK, checking the
 requests (`reasoning_split`, `max_completion_tokens`, `reasoning_details` and thinking signatures replayed, fallbacks),
-the chip states, the highlighted passage, Tao-R1 in the chip and under the answer, and persistence across a reload; and
+the chip states, the self-check (the passage that does not exist named to the model, looked for again, the answer given
+without it, the first answer folded with its chips and not counted, the note replayed in the next turn, an answer
+written on after a cut checked whole, a page reloaded as the rewrite ran keeping the first answer and sending it in the
+next turn, a rewrite the day's free calls ran out before leaving the first answer and pausing the service), the
+highlighted passage, Tao-R1 in the chip and under the answer, persistence across a reload, an answer cut at the output
+limit written on and shown as one, and a reply that only thought asked again with less (MiniMax without thinking, Claude
+at low effort), and Claude's stream that ends part-way or without a stop reason asked again; a chart drawn while the
+search beside it is held — the steps counting, 不再等待 offered and taken, the search skipped and the answer noted as
+perhaps incomplete, a search past its deadline ended, a stop that leaves the page usable, and two rounds' calls under
+one id each shown with its own end (the second, the same search, answered from the first); the answer asked for with no
+tool to call once 不再等待 is taken or the rounds are used, a stopped turn taken up again by 继续作答 with no call run again,
+and a model that keeps calling tools ending with a notice, taken up again and still running none, and a turn whose day's
+free calls run out while its search runs, failing once, the service paused until the hour the relay named (the composer
+saying so; a question, 继续作答 and 重试 held back, nothing sent; a page opened again still paused) and answered by 继续作答 once
+it is over, its search not run again; a research run on the server queued behind another, then running, a second tab
+leaving the turn to the first, the page closed and opened again — the turn ended with what it had, the run followed
+again to its end, its results in the 研究 panel and in the turn, which 继续作答 answers from —, a stop stopping the run on the
+server, and a run begun from the 研究 panel followed again after a reload; Claude's answer stopped part-way and taken up
+again (the part shown dropped, `tool_choice` `none`, the page's note after the results, no self-check, both runs'
+records); and
 a page served elsewhere (as on GitHub Pages) connecting to a server in one step, using it again after a reload, and a
 token taken from the address (and its absence reported); an API set by hand (address, model, key, headers, parameters —
-checked in the request it makes); the default service (a stand-in relay): asked at once without a key, no key sent by the
-page, the consent question once, a turn recorded only after 同意 (its fields, no key or settings), none after 不记录 or
+checked in the request it makes — and its context budget: 自动 the general one, a number set kept, the reply's room
+half of it, an earlier turn that does not fit left out and the model told, the page keeping it, and emptied again as it was); the default service (a stand-in relay): asked at once without a key, no key sent by the
+page, the consent question once, a turn recorded only after 同意 (its fields and times, no key or settings), none after 不记录 or
 once switched off under 设置 → 数据, a relay slow to answer (6 s) or missed once still found, and the page asking for a
 key while the relay is down; a question about the assistant answered by the page (no model called, no key needed, the
 same words when regenerated, recorded as `fixed`, replayed to the model when the conversation goes on) while one that asks
@@ -652,7 +924,8 @@ more goes to the model, asked for no thinking, showing and storing none; a study
 图 1 … 表 1 …, a chart as its table and in the journal style, exported as PNG at 300 dpi and TIFF at 600 dpi read back with
 their resolution, an 85 mm SVG, CSV; all the figures in panels, all the tables in one Word document; a table downloaded as
 LaTeX and copied as HTML), a ```chart block drawn in the answer and a table it writes (its caption and notes gathered, saved
-as Word and read back), the model told only the titles, and the 工具台's charts; and, with
+as Word and read back), the model told only the titles, the same comparison asked again answered from the first (its step
+and the model told, its figures not shown twice), and the 工具台's charts; and, with
 我的资料 (`tests/test_userdata.py` too): the notice, a GB18030 CSV uploaded to a server on this machine, made anonymous,
 analysed, a `mine:` row cited and checked, nothing naming a patient sent to the model and no record sent; the browser's
 own runtime (the worker's code and IndexedDB, with a stand-in for Pyodide whose Python runs in the test) keeping a
@@ -682,6 +955,12 @@ committed with them, deleted only once held, a deployment checked (and a refused
 * Research in the browser runs the deterministic procedures (no model inside the harness); on the local server
   `--llm` gives its judgement roles a model.
 * A provider that does not allow browser requests needs the local server's proxy.
+* Python in the browser can be interrupted only where the page is cross-origin isolated (served with
+  `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy`); the site sends the first only, so there a call the page
+  no longer waits for runs to its end, and the runtime is started again if it holds up another.
+* The site's server keeps its research runs on its container's disk, which does not outlast the container: a run the
+  container stopped with (asleep, or replaced) is lost, and the page says so; `taochronos serve` keeps them across a
+  restart.
 * 我的资料 reads no PDF, scanned image, .xls or .doc (it says what to save them as); it finds the names a table's heads
   or a label (姓名：) mark, not a name written freely in a text; a server's data lives in its memory (gone when it
   stops); with the site's server, the first upload starts the browser's runtime, which downloads it on a first visit.

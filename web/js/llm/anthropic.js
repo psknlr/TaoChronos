@@ -2,11 +2,16 @@
 //
 // Adaptive thinking (summarised, so it can be shown) on models that support it; server-side refusal fallbacks
 // (fallbacks: "default") on Claude Opus 5 and Fable 5.1, as the harness's own provider does; the stop reason is checked
-// before any tool runs (a refusal or a max_tokens cut can leave a tool input incomplete); the assistant content is
-// replayed verbatim so thinking blocks round-trip.  Through the local server the SDK talks to its proxy, which forwards
-// to api.anthropic.com.
+// before any tool runs: a refusal is told, a reply the stream ended without one is asked again, and a max_tokens (or
+// context window) cut goes to the agent loop, which runs no call of a cut reply; the assistant content is replayed
+// verbatim so thinking blocks round-trip.  Through the local server the SDK talks to its proxy, which forwards to
+// api.anthropic.com.  The SDK asks nothing again itself (the agent loop does, for every service alike), and its
+// requests go through a fetch that watches them (limits.js): a first reply, and a silence while the reply streams, are
+// waited for so long; its own ping events, which it does not pass on, count as something heard.
 
-import { ProviderError, proxyHeaders } from "./openai.js";
+import { ProviderError, proxyHeaders, retryAfter, stalled, unfinished } from "./openai.js";
+import { outputLimit } from "../providers.js";
+import { aborted, watch } from "../limits.js";
 import { T } from "../i18n.js";
 
 const SDK_URL = "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm";
@@ -25,8 +30,31 @@ async function loadSDK() {
   return sdk;
 }
 
-export async function streamClaude({ provider, system, messages, tools, settings, route, signal, onEvent = () => {} }) {
+export async function streamClaude({ provider, system, messages, tools, settings, route, signal, limits, mark, toolChoice, onEvent = () => {} }) {
   const Anthropic = await loadSDK();
+  const w = watch(signal, limits, mark);
+  try {
+    return await ask(Anthropic, { provider, system, messages, tools, settings, route, toolChoice, onEvent }, w);
+  } catch (err) {
+    if (w.expired) throw stalled(w);
+    throw err;
+  } finally {
+    w.close();
+  }
+}
+
+/** fetch, with what it brings told to the watch `w`: the response, then each part of its body as it arrives. */
+const watchedFetch = (w) => async (url, init) => {
+  w.sent();
+  const resp = await fetch(url, init);
+  if (!resp.body) return resp;
+  w.streaming();
+  const body = resp.body.pipeThrough(new TransformStream({ transform(chunk, out) { w.heard(); out.enqueue(chunk); } }));
+  return new Response(body, { status: resp.status, statusText: resp.statusText, headers: resp.headers });
+};
+
+async function ask(Anthropic, { provider, system, messages, tools, settings, route, toolChoice, onEvent }, w) {
+  const signal = w.signal;
   const base = provider.baseUrl.replace(/\/v1\/?$/, "");
   const viaProxy = route?.kind === "proxy";
   const client = new Anthropic({
@@ -34,20 +62,26 @@ export async function streamClaude({ provider, system, messages, tools, settings
     baseURL: viaProxy ? `${route.serverUrl.replace(/\/+$/, "")}/api/llm` : base,
     defaultHeaders: { ...(provider.headers || {}), ...(viaProxy ? { "X-TC-Target": base, ...proxyHeaders(route) } : {}) },
     dangerouslyAllowBrowser: true,
-    maxRetries: 2,
+    maxRetries: 0,
+    fetch: watchedFetch(w),
   });
   if (!provider.apiKey && !viaProxy) throw new ProviderError(T("请先在设置中填写 Anthropic API Key"));
 
   const params = {
     model: provider.model,
-    max_tokens: Number(settings.maxTokens) || 16000,
+    max_tokens: outputLimit(settings, provider),
     system,
     messages,
   };
   if (tools && tools.length) {
     params.tools = tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters, eager_input_streaming: true }));
+    // the answer, with none of them to call: they stay, since the turn's tool_use blocks refer to them
+    if (toolChoice === "none") params.tool_choice = { type: "none" };
   }
   if (settings.thinking !== false && !/haiku/.test(provider.model)) params.thinking = { type: "adaptive", display: "summarized" };
+  // a reply that spent all of its output on thinking is asked again at low effort (agent.js lessThinking): newer models
+  // think whether thinking is asked for or not, and effort is what makes them think less
+  if (settings.effort) params.output_config = { effort: settings.effort };
   if (settings.temperature !== null && settings.temperature !== "" && settings.temperature !== undefined && !params.thinking) {
     params.temperature = Number(settings.temperature);
   }
@@ -75,14 +109,13 @@ export async function streamClaude({ provider, system, messages, tools, settings
       }
     }
     const final = await stream.finalMessage();
+    // message_stop with no message_delta before it: the SDK hands back the reply without a stop reason
+    if (!final.stop_reason) throw unfinished();
     const content = final.content || [];
     const toolUses = content.filter((b) => b.type === "tool_use");
     if (final.stop_reason === "refusal") {
       const cat = final.stop_details?.category;
       throw new ProviderError(T`Claude 拒绝了这次请求${cat ? T`（类别：${cat}）` : ""}。可改写问题后重试。`);
-    }
-    if (final.stop_reason === "max_tokens" && toolUses.length) {
-      throw new ProviderError(T("工具参数在输出上限处被截断，未执行。请在设置中调高“最大输出”后重试。"));
     }
     const toolCalls = toolUses.map((b) => ({
       id: b.id, name: b.name, arguments: b.input && typeof b.input === "object" && !Array.isArray(b.input) ? b.input : {},
@@ -101,12 +134,18 @@ export async function streamClaude({ provider, system, messages, tools, settings
       model: final.model,
     };
   } catch (err) {
-    if (err?.name === "AbortError" || signal?.aborted) throw new DOMException("aborted", "AbortError");
+    if (w.expired) throw stalled(w);
+    if (err?.name === "AbortError" || signal?.aborted) throw aborted();
     if (err instanceof ProviderError) throw err;
+    // the SDK's word for a stream that ended before message_stop: as one that never said why it stopped
+    if (err instanceof Anthropic.AnthropicError && /stream ended without producing/.test(err.message || "")) throw unfinished();
     if (err instanceof Anthropic.APIError) {
       const status = err.status || 0;
+      // no status: the connection failed or broke off (APIConnectionError), and the round is asked again
+      if (!status) throw new ProviderError(T`无法连接 Claude API：${err.message}`, { retryable: true });
       const hint = status === 401 ? T("（API Key 无效）") : status === 429 ? T("（请求过于频繁）") : status >= 500 ? T("（服务端暂时不可用）") : "";
-      throw new ProviderError(T`Claude API 返回 ${status}${hint}：${err.message}`, { status, retryable: status === 429 || status >= 500 });
+      throw new ProviderError(T`Claude API 返回 ${status}${hint}：${err.message}`,
+        { status, kind: err.error?.error?.type || "", retryAfter: retryAfter(err.headers), retryable: status === 429 || status >= 500 });
     }
     // with eager input streaming, a tool input that is not valid JSON rejects the stream
     throw new ProviderError(T`Claude 回复无法解析：${err?.message || err}`, { retryable: true });
