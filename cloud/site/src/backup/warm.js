@@ -56,8 +56,10 @@ function answer(sql, params) {
     return JSON.parse(params[0]).map(([cid, i]) => ({ cid, i, book: "warm", year: yearOf(cid), p: JSON.stringify(passage(cid, i)),
       T: JSON.stringify(chunk(cid).T), L: JSON.stringify(chunk(cid).L), Y: JSON.stringify(chunk(cid).Y) }));
   }
+  if (sql.startsWith("SELECT id, card, map FROM books")) {
+    return [{ id: "warm", card: JSON.stringify(CARD), map: JSON.stringify({ C: [[[0, 1], [8, 2], [16, 3], [24, 4]]] }) }];
+  }
   if (sql.includes("FROM books WHERE id IN")) return [{ id: "warm", card: JSON.stringify(CARD) }];
-  if (sql.startsWith("SELECT card, map FROM books")) return [{ card: JSON.stringify(CARD), map: JSON.stringify({ C: [[[0, 1], [8, 2], [16, 3], [24, 4]]] }) }];
   if (sql.startsWith("WITH RECURSIVE")) {
     const out = [];
     for (let cid = params[0]; cid <= params[1]; cid++) {

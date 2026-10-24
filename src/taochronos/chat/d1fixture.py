@@ -156,6 +156,29 @@ REFERENCE: list[tuple[str, dict[str, Any]]] = [
     ("classics.search", {"query": "桂枝汤", "aliases": "none"}),
     ("validation.verify_quote", {"text": "桂枝湯主之"}),
     ("taochronos_call", {"tool": "classics.list_books", "arguments": '{"query": "伤寒", "limit": "2"}'}),
+    # reading on (prev, next): from a book's first passage and to its last, into another temporal group, over the
+    # chapters the pack leaves out (with and without a volume's code); and an id that is not a passage, answered with
+    # what its book has there: the passage its number names (another volume's code, none, its number unpadded or
+    # padded further), the nearest on either side of a left-out chapter or before the book's end, its passage count
+    # where the id ends in no number, no book, no id
+    ("classics.get_passage", {"passage_id": "cm_shanghan_npm.00000"}),
+    ("classics.get_passage", {"passage_id": "cm_shanghan_npm.00006"}),
+    ("classics.get_passage", {"passage_id": "cm_shanghan_npm.02548"}),
+    ("classics.get_passage", {"passage_id": "suwen_wangbing.000.00044"}),
+    ("classics.get_passage", {"passage_id": "suwen_wangbing.001.00076"}),
+    ("classics.get_passage", {"passage_id": "jc_o056.00003"}),
+    ("classics.get_passage", {"passage_id": "suwen_wangbing.001.00044"}),
+    ("classics.get_passage", {"passage_id": "suwen_wangbing.00044"}),
+    ("classics.get_passage", {"passage_id": "cm_shanghan_npm.279"}),
+    ("classics.get_passage", {"passage_id": "cm_shanghan_npm.000279"}),
+    ("classics.get_passage", {"passage_id": "suwen_wangbing.000.00050"}),
+    ("classics.get_passage", {"passage_id": "yimen_falv.000.00001"}),
+    ("classics.get_passage", {"passage_id": "cm_shanghan_npm.99999999999999999999999"}),
+    ("classics.get_passage", {"passage_id": "cm_shanghan_npm.preface"}),
+    ("classics.get_passage", {"passage_id": "nothing.00001"}),
+    ("classics.get_passage", {"passage_id": ""}),
+    ("philology.assess_passage", {"passage_id": "cm_shanghan_npm.279"}),
+    ("philology.collate", {"passage_a": "cm_shanghan_npm.00279", "passage_b": "tab_277.00050"}),
 ]
 # the protocol's reading of a model's calls (fixture.json ``calls``): arguments against a schema of every kind the
 # catalog's parameters use, as they are written well, in another form only, or wrongly; and names for tools

@@ -7,7 +7,7 @@ from typing import Any
 from ..kernel.tools import ToolContext
 from ..protocol.base import to_jsonable
 from ..protocol.claims import Claim
-from ..protocol.documents import Passage
+from ..protocol.documents import Passage, book_of, passage_number
 from ..verification.scope import context_scope
 
 
@@ -82,6 +82,53 @@ def lineage_in_scope(ctx: ToolContext) -> list:
     if scope_ids(ctx) is None:
         return ctx.cap("knowledge").lineage()
     return ctx.cap("lineage").build(scope_passages(ctx), claims_in_scope(ctx))
+
+
+class PassageNotFound(KeyError):
+    """A passage id the corpus has not, said with what its book has there, so that the model reads the right one in one
+    step.  A KeyError, as the corpus's own; its str is the message itself, not KeyError's quoted one."""
+
+    def __str__(self) -> str:
+        return str(self.args[0]) if self.args else ""
+
+
+def neighbours(ctx: ToolContext, passage_id: str) -> tuple[str | None, str | None, str | None]:
+    """In ``passage_id``'s book, the passage before it, the one at its place and the one after it (``corpus.around``):
+    those the caller may read, else None."""
+    around = getattr(ctx.cap("corpus"), "around", None)
+    if around is None:
+        return None, None, None
+    allowed = scope_ids(ctx)
+    before, at, after = (x if x is not None and (allowed is None or x in allowed) else None for x in around(passage_id))
+    return before, at, after
+
+
+def find_passage(ctx: ToolContext, passage_id: str) -> Passage:
+    """The passage ``passage_id`` names; else :class:`PassageNotFound`, naming what its book has there — the passage its
+    number names where only the id's form is off (cm_shanghan_npm.13), else the nearest before and after it."""
+    corpus = ctx.cap("corpus")
+    try:
+        return corpus.passage(passage_id)
+    except KeyError:
+        pass
+    pid = str(passage_id)
+    book = book_of(corpus.books, pid)
+    if book is None:
+        raise PassageNotFound(f"no passage {pid!r}: it names no book of this corpus (an id begins with its book's id); "
+                              "classics.list_books lists the books, and classics.search finds passages by their words")
+    before, at, after = neighbours(ctx, pid)
+    title = corpus.books[book].title
+    if at is not None:
+        raise PassageNotFound(f"no passage {pid!r} in this corpus; the passage of {book} ({title}) numbered "
+                              f"{passage_number(pid)} is {at}")
+    has = f"no passage {pid!r} in this corpus; {book} ({title}) has {corpus.book_passage_count(book)} passages here"
+    if before is not None and after is not None:
+        raise PassageNotFound(f"{has}, the nearest {before} (before) and {after} (after)")
+    if before is not None:
+        raise PassageNotFound(f"{has}, the nearest {before} (before; none after it)")
+    if after is not None:
+        raise PassageNotFound(f"{has}, the nearest {after} (after; none before it)")
+    raise PassageNotFound(f"{has}; classics.search finds them by their words")
 
 
 def passage_card(ctx: ToolContext, passage: Passage, *, full: bool = False,

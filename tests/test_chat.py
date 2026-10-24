@@ -107,6 +107,43 @@ def test_a_tool_named_in_another_form_is_that_tool_and_an_unknown_one_is_answere
         assert not out["ok"] and "propose_change" not in closest and "run_code" not in closest, written
 
 
+def test_a_passage_names_the_ones_around_it_and_an_id_that_is_none_is_answered_with_what_its_book_has(rt):
+    """Reading on: a passage's prev and next walk its book, each passage once, and back.  An id that is no passage says
+    what its book has there (the passage its number names, else the nearest), or that it names no book — for every tool
+    that reads a passage by its id, and for the page's evidence drawer."""
+    corpus = rt.h.corpus
+    book = corpus.passage("shanghanlun.c013").book_id
+    first = next(i for i in corpus.passage_ids() if corpus.passage(i).book_id == book and corpus.around(i)[0] is None)
+    walk, at = [], first
+    while at:
+        card = rt.call("classics.get_passage", {"passage_id": at})["result"]
+        walk.append(at)
+        at = card["next"]
+    assert len(walk) == len(set(walk)) == corpus.book_passage_count(book) > 1
+    back, at = [], walk[-1]
+    while at:
+        back.append(at)
+        at = rt.call("classics.get_passage", {"passage_id": at})["result"]["prev"]
+    assert back == walk[::-1]
+    for args, said in [({"passage_id": "shanghanlun.c13"}, "PassageNotFound: no passage 'shanghanlun.c13' in this corpus; the "
+                                                           "passage of shanghanlun (伤寒论) numbered 13 is shanghanlun.c013"),
+                       ({"passage_id": "nosuch.c001"}, "PassageNotFound: no passage 'nosuch.c001': it names no book of this "
+                                                       "corpus (an id begins with its book's id); classics.list_books lists the "
+                                                       "books, and classics.search finds passages by their words")]:
+        out = rt.call("classics.get_passage", args)
+        assert not out["ok"] and out["error"] == said and out["text"].startswith("ERROR: PassageNotFound")
+    unnumbered = rt.call("classics.get_passage", {"passage_id": "shanghanlun.preface"})["error"]
+    assert unnumbered == (f"PassageNotFound: no passage 'shanghanlun.preface' in this corpus; shanghanlun (伤寒论) has "
+                          f"{corpus.book_passage_count(book)} passages here; classics.search finds them by their words")
+    assert "the nearest shanghanlun.c" in rt.call("classics.get_passage", {"passage_id": "shanghanlun.c0135"})["error"]
+    assert rt.call("philology.assess_passage", {"passage_id": "shanghanlun.c13"})["error"].endswith("is shanghanlun.c013")
+    assert rt.call("philology.collate", {"passage_a": "shanghanlun.c013", "passage_b": "shanghanlun.c13"})["error"].endswith(
+        "is shanghanlun.c013")
+    drawer = rt.passage("shanghanlun.c13")
+    assert not drawer["ok"] and drawer["error"].endswith("numbered 13 is shanghanlun.c013")
+    assert {"prev", "next"} <= set(rt.passage("shanghanlun.c013"))
+
+
 def test_meta_tools_list_and_call_the_rest(rt):
     cat = rt.call("taochronos_catalog", {"query": "配伍"})
     assert cat["ok"] and any(m["tool"] == "study.pairs" for m in cat["result"]["matched"])

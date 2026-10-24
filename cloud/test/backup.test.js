@@ -14,7 +14,7 @@ import { handle } from "../site/src/site.js";
 import { call as backupCall, classification } from "../site/src/backup/api.js";
 import { CANON, CATALOG } from "../site/src/backup/tables.js";
 import { closestNames, coerce, fitArguments, resolveName, signature } from "../site/src/backup/catalog.js";
-import { Corpus, passageCard } from "../site/src/backup/corpus.js";
+import { Corpus, passageCard, passageId } from "../site/src/backup/corpus.js";
 import { forInterface, forModel } from "../site/src/backup/results.js";
 import { clauseKey } from "../site/src/backup/precomputed.js";
 import { effective, ftsForm, normalize, normalizeWithRecords, parseConstraint } from "../site/src/backup/text.js";
@@ -125,6 +125,51 @@ test("the start's warm-up runs the tools over made-up databases and leaves the i
   assert.ok(quote.length > 0);
 });
 
+test("around: a book's left-out passages read across the parts of its seqmap, the parts not yet read read when needed", async () => {
+  // a made-up book of 60010 seqs in one temporal group, with seqs 29991–30004 left out: its seqmap in three parts
+  // (d1.SEQMAP_PART: 30000 seqs a part)
+  const marks = ["0".repeat(29_991) + "-".repeat(9), "-".repeat(5) + "0".repeat(29_995), "0".repeat(10)];
+  const counts = [[0], [29_991], [29_991 + 29_995]];
+  const seqOf = (rank) => (rank < 29_991 ? rank : rank + 14);
+  const statements = [];
+  const answer = (sql, params) => {
+    statements.push(sql);
+    if (sql.includes("FROM meta WHERE k IN")) {
+      return [{ k: "stats", v: JSON.stringify({ chunks: 1, databases: 1, ranges: [[1, 1]], years: [] }) }, { k: "complete", v: "x" }];
+    }
+    if (sql.startsWith("SELECT id, card, map FROM books")) {
+      return [{ id: "far", card: JSON.stringify({ title: "远", passages: 59_996, span: 60_010 }), map: JSON.stringify({ C: [[[0, 1]]], S: 1 }) }];
+    }
+    if (sql.includes("FROM seqmap WHERE book IN")) {
+      return marks.map((m, k) => ({ book: "far", part: k, marks: m, counts: JSON.stringify(counts[k]) })).filter((r) => r.part === params[1]);
+    }
+    if (sql.includes("FROM seqmap WHERE book = ?")) return marks[params[1]] ? [{ marks: marks[params[1]], counts: JSON.stringify(counts[params[1]]) }] : [];
+    if (sql.includes("json_extract(c.body")) {
+      return JSON.parse(params[0]).map(([cid, i]) => ({ cid, i, book: "far", year: 1000, p: JSON.stringify({ t: "文", q: seqOf(i) }),
+        T: "{}", L: "[]", Y: "[]" }));
+    }
+    return [];
+  };
+  const statement = (sql, params = []) => ({ bind: (...p) => statement(sql, p), all: async () => ({ results: answer(sql, params) }),
+    first: async () => answer(sql, params)[0] ?? null, sql, params });
+  const db = { prepare: (sql) => statement(sql), batch: async (list) => list.map((x) => ({ results: answer(x.sql, x.params) })) };
+  const corpus = new Corpus({ D1_0: db }, { cache: { kept: null } });
+  await corpus.stats();
+  const ids = async (pid) => {
+    const near = await corpus.around(pid);
+    return ["exact", "at", "before", "after"].map((k) => (near[k] ? `far.${String(near[k].p.q).padStart(5, "0")}` : null));
+  };
+  assert.deepEqual(await ids("far.29995"), [null, null, "far.29990", "far.30005"]); // into the next part
+  assert.deepEqual(await ids("far.30005"), ["far.30005", "far.30005", "far.29990", "far.30006"]); // back into the one before
+  statements.length = 0;
+  assert.deepEqual(await ids("far.150000"), [null, null, "far.60009", null]); // past the end: its last part read when needed
+  assert.equal(statements.filter((x) => x.includes("FROM seqmap WHERE book = ?")).length, 1);
+  assert.deepEqual(await ids("far.00009"), ["far.00009", "far.00009", "far.00008", "far.00010"]);
+  statements.length = 0;
+  assert.equal(passageId("far", (await corpus.passage("far.30005")).p), "far.30005"); // a passage alone: its own part only
+  assert.equal(statements.filter((x) => x.includes("FROM seqmap")).length, 1);
+});
+
 test("D1's own limits (five terms a compound SELECT, found in the emulator): the adapter holds the tools to them", () => {
   const parts = Array.from({ length: 23 }, (_, i) => `SELECT ${i} AS x FROM (SELECT 1 UNION ALL SELECT 2)`);
   assert.equal(compoundTerms(parts.join(" UNION ALL ")), 23);
@@ -155,8 +200,10 @@ test("passage: a passage in full (the page checks quotations against it); an unk
   assert.equal(p.passage_id, known);
   assert.equal(p.book_id, "cm_shanghan_npm");
   assert.ok(p.text.length > 0 && p.title && "temporal" in p && Array.isArray(p.variants));
+  assert.deepEqual([p.prev, p.next], ["cm_shanghan_npm.00278", "cm_shanghan_npm.00280"]);
   const bad = await (await site("/api/passage?id=cm_shanghan_npm.99999")).json();
-  assert.deepEqual([bad.ok, bad.error], [false, "KeyError: 'cm_shanghan_npm.99999'"]);
+  assert.deepEqual([bad.ok, bad.error], [false, "PassageNotFound: no passage 'cm_shanghan_npm.99999' in this corpus; " +
+    "cm_shanghan_npm (伤寒论（宋本·台北故宫）) has 2549 passages here, the nearest cm_shanghan_npm.02548 (before; none after it)"]);
   const kanripo = await callTool("classics.list_books", { query: "素问" });
   assert.ok(kanripo.result.some((b) => b.book_id === "suwen_wangbing"));
 });
@@ -477,9 +524,19 @@ test("classics.get_passage, list_books and canon, as the server gives them", { s
   assert.equal(p.ok, true, p.error);
   assert.equal(p.result.passage_id, "suwen_wangbing.000.00001");
   assert.deepEqual(Object.keys(p.result), ["passage_id", "book_id", "title", "dynasty", "year", "period", "locator", "text", "variants",
-    "collation_status", "notes", "temporal"]);
+    "collation_status", "notes", "temporal", "prev", "next"]);
+  assert.deepEqual([p.result.prev, p.result.next], ["suwen_wangbing.000.00000", "suwen_wangbing.000.00002"]);
+  // the next passage the pack keeps, over the chapters it leaves out, and back
+  const on = await callTool("classics.get_passage", { passage_id: "suwen_wangbing.000.00044" });
+  const back = await callTool("classics.get_passage", { passage_id: on.result.next });
+  assert.deepEqual([on.result.next, back.result.prev], ["suwen_wangbing.001.00076", "suwen_wangbing.000.00044"]);
   const missing = await callTool("classics.get_passage", { passage_id: "nothing.00001" });
-  assert.deepEqual([missing.ok, missing.error], [false, "KeyError: 'nothing.00001'"]);
+  assert.deepEqual([missing.ok, missing.error], [false, "PassageNotFound: no passage 'nothing.00001': it names no book of this corpus " +
+    "(an id begins with its book's id); classics.list_books lists the books, and classics.search finds passages by their words"]);
+  const left = await callTool("classics.get_passage", { passage_id: "suwen_wangbing.000.00050" });
+  assert.match(left.error, /the nearest suwen_wangbing\.000\.00044 \(before\) and suwen_wangbing\.001\.00076 \(after\)$/);
+  const form = await callTool("classics.get_passage", { passage_id: "suwen_wangbing.00044" });
+  assert.match(form.error, /numbered 44 is suwen_wangbing\.000\.00044$/);
   const invalid = await callTool("classics.get_passage", {});
   assert.equal(invalid.error, "invalid arguments: $: missing required property 'passage_id' · classics.get_passage takes: passage_id (string, required)");
   const books = await callTool("classics.list_books", {});

@@ -25,7 +25,7 @@ import { loadSettings, outputLimit, publicConversation, publicError } from "./js
 import { answerDangling, budgetNote, buildHistory, lessThinking, retryWait, runTurn, userText, withoutReasoning } from "./js/agent.js";
 import { brief, dataNote, deidLabel, isMine, personal, sizeLabel } from "./js/mydata.js";
 import { extractCitations } from "./js/markdown.js";
-import { count, hitNotes, withFound } from "./js/util.js";
+import { count, hitNotes, returnedText, withFound } from "./js/util.js";
 import { fixedReply, IDENTITY_REPLY, isIdentityQuestion, touchesIdentity } from "./js/fixed.js";
 import { ServerRuntime } from "./js/runtime.js";
 import { redact, scrub, toolWord } from "./js/redact.js";
@@ -708,6 +708,13 @@ assert.ok(!("found" in ask[3]) && ask[3].passage_id === "y.1");
 // a search's hit is found by the search, whatever else the card says
 assert.deepEqual(withFound([{ passage_id: "b.1", labels: ["via 国老→甘草（词表）"] }], searched).map((c) => [texts(c.found), "labels" in c]),
   [[["别名：国老→甘草 · 别名录（中醫笈成）"], false]]);
+// a citation is checked against what the tools returned: not the ids a passage names to read on (get_passage's prev and
+// next), which were not read, nor an error's text, which returned no passage though it may name the nearest ones
+const read = '{"passage_id":"b.00279","title":"乙","text":"太阳病","prev":"b.00278","next":"b.00280"}\n\n［提示：…］';
+assert.equal(returnedText(read), '{"passage_id":"b.00279","title":"乙","text":"太阳病",,}\n\n［提示：…］');
+assert.equal(returnedText('{"passage_id":"b.00001","prev":null,"next":"b.000'), '{"passage_id":"b.00001","prev":null,'); // cut short
+assert.equal(returnedText("ERROR: PassageNotFound: no passage 'b.99999' in this corpus; 乙 has 2549 passages here, the nearest b.02548"), "");
+assert.equal(returnedText(undefined), "");
 assert.equal(personal({ messages: [{ role: "user", text: "桂枝汤" }] }), false);
 assert.equal(personal({ messages: [{ role: "user", text: "看看", data: [shape] }] }), true);
 assert.equal(personal({ messages: [{ role: "assistant", segments: [{ type: "tools", calls: [{ name: "mydata__list" }] }] }] }), true);

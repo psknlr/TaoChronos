@@ -19,8 +19,8 @@ import { LIMITS, pageClock } from "./limits.js";
 import { pause, pausedNow, pauseText } from "./pause.js";
 import * as store from "./store.js";
 import {
-  $, bare, copyText, dateGroup, debounce, download, fmtMs, h, icon, moveBar, passageLabel, progressBar, replace, sleep, storage,
-  throttleFrame, toast, truncate, uid, withFound, yearLabel,
+  $, bare, copyText, dateGroup, debounce, download, fmtMs, h, icon, moveBar, passageLabel, progressBar, replace, returnedText, sleep,
+  storage, throttleFrame, toast, truncate, uid, withFound, yearLabel,
 } from "./util.js";
 import { renderDrawer, reportNode } from "./view/drawer.js";
 import { openSettings } from "./view/settings.js";
@@ -273,10 +273,10 @@ function toolText(conv) {
   const parts = [];
   for (const m of conv.messages) {
     for (const w of m.wire || []) {
-      if (w.role === "tool" && typeof w.content === "string") parts.push(w.content);
-      if (Array.isArray(w.content)) for (const b of w.content) if (b.type === "tool_result") parts.push(typeof b.content === "string" ? b.content : JSON.stringify(b.content));
+      if (w.role === "tool" && typeof w.content === "string") parts.push(returnedText(w.content));
+      if (Array.isArray(w.content)) for (const b of w.content) if (b.type === "tool_result" && !b.is_error) parts.push(returnedText(typeof b.content === "string" ? b.content : JSON.stringify(b.content)));
     }
-    for (const seg of m.segments || []) for (const c of seg.calls || []) if (c.preview) parts.push(c.preview);
+    for (const seg of m.segments || []) for (const c of seg.calls || []) if (c.preview) parts.push(returnedText(c.preview));
   }
   for (const r of conv.research || []) parts.push(JSON.stringify(r.result?.hypotheses || []));
   const text = parts.join("\n");

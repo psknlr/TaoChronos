@@ -28,8 +28,8 @@ from ..science import (
 from ..science.temporal import coverage
 from ..verification.provenance import find_quote, provenance_chain
 from .adapters import SenseOracle, author_clusters, binner, claim_year_fn, contradiction_context
-from .common import (claim_card, claims_in_scope, lineage_in_scope, passage_card, scope_ids, scope_passages, term_passages,
-                     whole_store)
+from .common import (claim_card, claims_in_scope, find_passage, lineage_in_scope, neighbours, passage_card, scope_ids,
+                     scope_passages, term_passages, whole_store)
 
 S = {"type": "string"}
 I = {"type": "integer"}
@@ -50,12 +50,11 @@ def _normalize(ctx: ToolContext, a: dict) -> Any:
 
 
 def _assess(ctx: ToolContext, a: dict) -> Any:
-    return to_jsonable(ctx.cap("philology").assess(ctx.cap("corpus").passage(a["passage_id"])))
+    return to_jsonable(ctx.cap("philology").assess(find_passage(ctx, a["passage_id"])))
 
 
 def _collate(ctx: ToolContext, a: dict) -> Any:
-    corpus = ctx.cap("corpus")
-    pa, pb = corpus.passage(a["passage_a"]), corpus.passage(a["passage_b"])
+    pa, pb = find_passage(ctx, a["passage_a"]), find_passage(ctx, a["passage_b"])
     return {"a": pa.id, "b": pb.id, "operations": ctx.cap("philology").collate(pa.text, pb.text)}
 
 
@@ -102,7 +101,9 @@ def _get_passage(ctx: ToolContext, a: dict) -> Any:
     allowed = scope_ids(ctx)
     if allowed is not None and a["passage_id"] not in allowed:
         raise PermissionError(f"passage {a['passage_id']} is outside the research scope (e.g. temporal hold-out)")
-    return passage_card(ctx, ctx.cap("corpus").passage(a["passage_id"]), full=True)
+    passage = find_passage(ctx, a["passage_id"])
+    before, _, after = neighbours(ctx, passage.id)  # to read on: the passages before and after it in its book
+    return {**passage_card(ctx, passage, full=True), "prev": before, "next": after}
 
 
 def _list_books(ctx: ToolContext, a: dict) -> Any:
@@ -142,8 +143,7 @@ def _lineage(ctx: ToolContext, a: dict) -> Any:
 
 # ------------------------------------------------------------------ knowledge
 def _extract(ctx: ToolContext, a: dict) -> Any:
-    corpus = ctx.cap("corpus")
-    passage = corpus.passage(a["passage_id"])
+    passage = find_passage(ctx, a["passage_id"])
     allowed = scope_ids(ctx)
     if allowed is not None and passage.id not in allowed:
         raise PermissionError("passage outside research scope")
@@ -806,7 +806,8 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  _search, family="retrieval", permission="classics:read",
                  returns="hits with passage ids, periods, routes and matched surfaces; for a drug's other names, their "
                          "labels (via) and flags"),
-        ToolSpec("classics.get_passage", "Full passage with locator, variants, temporal context and notes.",
+        ToolSpec("classics.get_passage", "Full passage with locator, variants, temporal context and notes, and the ids of "
+                 "the passages before and after it in its book (prev, next), to read on.",
                  obj({"passage_id": S}, ["passage_id"]), _get_passage, family="retrieval", permission="classics:read"),
         ToolSpec("classics.list_books", "Books in research scope (outside a session: every book of the corpus) with dates, "
                  "attribution and passage counts; filter by title/author words, dynasty or category.",

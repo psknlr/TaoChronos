@@ -150,52 +150,100 @@ export class Corpus {
   // -------------------------------------------------------------- passages
   /** A passage by id: {pid, book, card, p, T, L, Y, cid, year} or null (no such passage). */
   async passage(pid) {
-    const m = /^([^.\s]+)\.(?:(\d+)\.)?(\d{5,})$/.exec(String(pid || ""));
-    if (!m) return null;
-    const [, bookId, mid, seqText] = m;
-    const seq = Number(seqText);
-    const part = Math.floor(seq / SEQMAP_PART);
+    return (await this.around(pid, { neighbours: false }))?.exact ?? null;
+  }
+
+  /** StoreCorpus.around: in the book `pid` names (documents.book_of: its longest head, up to a ".", that is a book
+   * here), the passage at its place — its seq: the passage's own, or the number the id ends in — and the nearest before
+   * and after it: {book, card, exact, at, before, after}, each a passage as `passage` gives it or null, `exact` the
+   * passage `pid` is; null where `pid` names no book here.  With `neighbours: false`, `at` and `exact` only. */
+  async around(pid, { neighbours = true } = {}) {
+    const id = String(pid ?? "");
+    const heads = [];
+    for (let at = id.lastIndexOf("."); at > 0; at = id.lastIndexOf(".", at - 1)) heads.push(id.slice(0, at));
+    if (!heads.length) return null;
+    const seq = passageNumber(id);
+    const pivot = seq === null ? 0 : Math.floor(Math.min(seq, Number.MAX_SAFE_INTEGER) / SEQMAP_PART);
     const [books, seqmap] = await this.batch(0, [
-      ["SELECT card, map FROM books WHERE id = ?", [bookId]],
-      ["SELECT marks, counts FROM seqmap WHERE book = ? AND part = ?", [bookId, part]],
+      ["SELECT id, card, map FROM books WHERE id IN (SELECT value FROM json_each(?))", [JSON.stringify(heads)]],
+      ["SELECT book, part, marks, counts FROM seqmap WHERE book IN (SELECT value FROM json_each(?)) AND part = ?",
+        [JSON.stringify(heads), pivot]],
     ]);
-    if (!books.length) return null;
-    const card = { id: bookId, ...JSON.parse(books[0].card) };
-    if (seq >= (card.span ?? card.passages)) return null;
-    const map = JSON.parse(books[0].map);
-    const groups = map.C;
-    let g = 0;
-    let rank = seq;
-    if (map.S) {
-      // several temporal groups, or gaps: which group the passage is in, and how many of that group come before it
-      if (!seqmap.length) return null;
-      const marks = seqmap[0].marks;
-      const at = seq - part * SEQMAP_PART;
-      const ch = marks[at];
-      g = ch ? MARKS.indexOf(ch) : -1;
-      if (g < 0) return null;
-      rank = JSON.parse(seqmap[0].counts)[g];
-      const code = ch.charCodeAt(0);
-      for (let i = 0; i < at; i++) if (marks.charCodeAt(i) === code) rank++;
+    const row = heads.map((h) => books.find((b) => b.id === h)).find(Boolean);
+    if (!row) return null;
+    const book = row.id;
+    const card = { id: book, ...JSON.parse(row.card) };
+    const out = { book, card, exact: null, at: null, before: null, after: null };
+    if (seq === null) return out;
+    const map = JSON.parse(row.map);
+    const span = card.span ?? card.passages;
+    // a book of several temporal groups, or with gaps: which group each seq's passage is in ("-": none), by part — the
+    // part of `pid`'s seq read with the book, any other (a neighbour across a part's edge) when it is needed
+    const parts = new Map(seqmap.filter((r) => r.book === book).map((r) => [r.part, r]));
+    const part = async (k) => {
+      if (!parts.has(k)) parts.set(k, await this.first(0, "SELECT marks, counts FROM seqmap WHERE book = ? AND part = ?", [book, k]));
+      return parts.get(k);
+    };
+    const has = async (q) => {
+      if (q < 0 || q >= span) return false;
+      if (!map.S) return true;
+      const ch = (await part(Math.floor(q / SEQMAP_PART)))?.marks[q % SEQMAP_PART];
+      return Boolean(ch) && ch !== "-";
+    };
+    // the first passage numbered q, q + step, q + 2·step … in the book, or null
+    const nearest = async (q, step) => {
+      if (!map.S) return q >= 0 && q < span ? q : null;
+      while (q >= 0 && q < span) {
+        const k = Math.floor(q / SEQMAP_PART);
+        const marks = (await part(k))?.marks || "";
+        for (let i = q - k * SEQMAP_PART; i >= 0 && i < SEQMAP_PART; i += step, q += step) {
+          if (q < 0 || q >= span) return null;
+          if (marks[i] && marks[i] !== "-") return q;
+        }
+      }
+      return null;
+    };
+    // where the passage numbered q is: [cid, its index in the chunk] (its group's chunks, by its rank in the group)
+    const locate = async (q) => {
+      let g = 0;
+      let rank = q;
+      if (map.S) {
+        const k = Math.floor(q / SEQMAP_PART);
+        const { marks, counts } = await part(k);
+        const at = q - k * SEQMAP_PART;
+        const code = marks.charCodeAt(at);
+        g = MARKS.indexOf(marks[at]);
+        rank = JSON.parse(counts)[g];
+        for (let i = 0; i < at; i++) if (marks.charCodeAt(i) === code) rank++;
+      }
+      const chunks = map.C[g] || [];
+      let lo = 0;
+      let hi = chunks.length - 1;
+      let found = -1;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (chunks[mid][0] <= rank) {
+          found = mid;
+          lo = mid + 1;
+        } else hi = mid - 1;
+      }
+      return found < 0 ? null : [chunks[found][1], rank - chunks[found][0]];
+    };
+    const want = {
+      at: (await has(seq)) ? seq : null,
+      before: neighbours ? await nearest(Math.min(seq, span) - 1, -1) : null,
+      after: neighbours ? await nearest(seq + 1, 1) : null,
+    };
+    const where = {};
+    for (const [k, q] of Object.entries(want)) if (q !== null) where[k] = await locate(q);
+    const got = await this.fetch(Object.values(where).filter(Boolean));
+    for (const [k, w] of Object.entries(where)) {
+      const hit = w && got.get(`${w[0]}:${w[1]}`);
+      if (hit && hit.book === book && hit.p.q === want[k]) out[k] = { ...hit, card };
     }
-    const chunks = groups[g] || [];
-    let lo = 0;
-    let hi = chunks.length - 1;
-    let found = -1;
-    while (lo <= hi) {
-      const mid2 = (lo + hi) >> 1;
-      if (chunks[mid2][0] <= rank) {
-        found = mid2;
-        lo = mid2 + 1;
-      } else hi = mid2 - 1;
-    }
-    if (found < 0) return null;
-    const [rank0, cid] = chunks[found];
-    const got = await this.fetch([[cid, rank - rank0]]);
-    const hit = got.get(`${cid}:${rank - rank0}`);
-    if (!hit || hit.p.q !== seq || (hit.p.m || undefined) !== (mid || undefined) || hit.book !== bookId) return null;
-    this.cache.kept.cards.set(bookId, card);
-    return { ...hit, card };
+    if (out.at && passageId(book, out.at.p) === id) out.exact = out.at;
+    if (out.exact) this.cache.kept?.cards.set(book, card);
+    return out;
   }
 
   /** Passages by (cid, index in the chunk), from their databases: Map "cid:i" → {cid, i, book, year, p, T, L, Y}. */
@@ -226,6 +274,15 @@ export class Corpus {
 
 // ------------------------------------------------------------------ a passage as the tools cite it
 export const passageId = (book, p) => `${book}.${p.m ? `${p.m}.` : ""}${String(p.q).padStart(5, "0")}`;
+
+/** documents.passage_number: the number a passage id ends in — a store's ids end in the passage's seq — or null; one
+ * of more than 18 digits is 10¹⁸, past any book's end. */
+export function passageNumber(pid) {
+  const m = /[0-9]+$/.exec(String(pid));
+  if (!m) return null;
+  const digits = m[0].replace(/^0+/, "") || "0";
+  return digits.length <= 18 ? Number(digits) : 1e18;
+}
 
 /** Locator.label: 卷 · 篇 · 节, or the book's id. */
 export function locatorLabel(hit) {

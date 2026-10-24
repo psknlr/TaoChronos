@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+from bisect import bisect_left, bisect_right
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -17,8 +19,19 @@ from ...protocol.documents import (
     VariantKind,
     VariantReading,
     YearRange,
+    book_of,
+    passage_number,
 )
 from ...protocol.yamlio import load_yaml
+
+_DIGITS = re.compile(r"([0-9]+)")
+
+
+def _natural(passage_id: str) -> list[Any]:
+    """An id with its numbers read as numbers (``c13`` and ``c013`` alike), to place an id among a book's ids."""
+    parts: list[Any] = _DIGITS.split(passage_id)
+    parts[1::2] = [int(x) if len(x.lstrip("0")) <= 18 else 10**18 for x in parts[1::2]]
+    return parts
 
 
 @dataclass
@@ -67,6 +80,7 @@ class Corpus:
         self.external = external or {}
         self.root = root
         self._order = sorted(passages, key=lambda pid: (self.year(passages[pid]) or 0, pid))
+        self._book_order: dict[str, list[str]] | None = None  # book → its passages in the book's order (around)
 
     # ------------------------------------------------------------------ load
     @classmethod
@@ -202,6 +216,30 @@ class Corpus:
 
     def passage_ids(self) -> list[str]:
         return list(self._order)
+
+    def around(self, passage_id: str) -> tuple[str | None, str | None, str | None]:
+        """In the book ``passage_id`` names (``book_of``), the passage before it, the one at its place and the one after
+        it, each None where there is none: for a passage of this corpus, its neighbours in the book's order (as it was
+        read) and itself; for an id it has not that ends in a number, placed by its numbers among the book's ids, the
+        ones it falls between and the one it names in another form (``c13`` for ``c013``)."""
+        if self._book_order is None:
+            order: dict[str, list[str]] = {}
+            for pid, p in self._passages.items():
+                order.setdefault(p.book_id, []).append(pid)
+            self._book_order = order
+        p = self._passages.get(passage_id)
+        if p is not None:
+            ids = self._book_order[p.book_id]
+            i = ids.index(passage_id)
+            return ids[i - 1] if i else None, passage_id, ids[i + 1] if i + 1 < len(ids) else None
+        book = book_of(self.books, passage_id)
+        if book is None or passage_number(passage_id) is None:
+            return None, None, None
+        ids = sorted(self._book_order.get(book, []), key=_natural)
+        keys = [_natural(x) for x in ids]
+        key = _natural(str(passage_id))
+        lo, hi = bisect_left(keys, key), bisect_right(keys, key)
+        return ids[lo - 1] if lo else None, ids[lo] if hi > lo else None, ids[hi] if hi < len(ids) else None
 
     def __len__(self) -> int:
         return len(self._passages)
