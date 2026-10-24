@@ -135,11 +135,16 @@ export function fillAssistant(body, m, ctx, last) {
     }
   });
   if (live && !segs.length) body.append(h("div.think.live", h("summary", h("span.lbl", T("正在思考…")))));
+  // 继续作答: a turn that did not get its answer, taken up again from what its tools gave (not begun again, as 重试 is)
+  const resume = () => (ctx.canResume?.(m)
+    ? h("button.btn.secondary.resume", { type: "button", title: T("根据已经得到的工具结果接着作答，不再重新调用工具"),
+      on: { click: () => ctx.onResume(m.id) } }, T("继续作答"))
+    : null);
   if (m.error) {
-    body.append(h("div.notice.err", icon("warn"), h("div.grow", redact(m.error)),
+    body.append(h("div.notice.err", icon("warn"), h("div.grow", redact(m.error)), resume(),
       ctx.running ? null : h("button.btn.secondary", { type: "button", on: { click: () => ctx.onRegenerate(m.id) } }, T("重试"))));
   }
-  if (m.status === "stopped") body.append(h("div.notice.warn", icon("info"), h("div.grow", T("已停止生成。"))));
+  if (m.status === "stopped") body.append(h("div.notice.warn", icon("info"), h("div.grow", T("已停止生成。")), resume()));
   if (!live) {
     const bar = verifyBar(m, ctx, renderedCites(body));
     if (bar) body.append(bar);

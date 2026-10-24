@@ -1,6 +1,6 @@
 // TaoChronos web client: conversations with a model that uses TaoChronos's tools, every quotation checked.
 
-import { buildHistory, formatOf, runTurn, toolDefs, withoutReasoning } from "./agent.js";
+import { buildHistory, formatOf, resumable, runTurn, toolDefs, withoutReasoning } from "./agent.js";
 import { chartsOf, documentOf, toMarkdown } from "./chart.js";
 import { tablesOf, toMarkdown as tableMarkdown } from "./table.js";
 import { streamClaude } from "./llm/anthropic.js";
@@ -516,7 +516,9 @@ async function send(text, images = []) {
   await runAssistant(conv, msg);
 }
 
-async function runAssistant(conv, msg) {
+/** Answer the user's question in `msg` — or, with `resume` (the messages of a turn that did not get its answer), take
+ * that turn up again: none of its tools runs again, and what it had already taken (rounds, tokens, time) is added to. */
+async function runAssistant(conv, msg, { resume = null } = {}) {
   const idx = conv.messages.indexOf(msg);
   const user = conv.messages[idx - 1];
   const fixed = fixedReply(user.text, user.images);
@@ -526,6 +528,7 @@ async function runAssistant(conv, msg) {
   const controller = new AbortController();
   const hurry = new AbortController(); // the user asks for the answer without the tools still running
   const trace = { requests: [], tools: [], events: [] }; // where the turn's time went, for its record
+  const before = resume ? { rounds: msg.rounds || 0, usage: msg.usage || null, ms: msg.ms || 0 } : null; // taken up again
   S.running = { controller, hurry, trace, convId: conv.id, msgId: msg.id };
   renderComposer();
   const provider = activeProvider(S.settings);
@@ -550,20 +553,26 @@ async function runAssistant(conv, msg) {
     const history = buildHistory(conv.messages.slice(0, idx - 1), provider);
     const result = await runTurn({
       provider, settings: hidden ? { ...S.settings, thinking: false } : S.settings, route: routeFor(), runtime: routed(runtime),
-      tools, system: systemPrompt(), history, user, signal: controller.signal, hurry: hurry.signal, hooks: makeHooks(conv, msg), sink,
+      tools, system: systemPrompt(), history, user, signal: controller.signal, hurry: hurry.signal,
+      hooks: makeHooks(conv, msg, before?.usage), sink, trace, resume, rounds: before?.rounds,
       review: (text) => missingCites(conv, text),
-      trace,
     });
     msg.rounds = result.rounds;
-    msg.usage = result.usage;
+    msg.usage = addUsage(before?.usage, result.usage);
     if (result.model && !provider.relay) msg.model = result.model;
     msg.status = controller.signal.aborted ? "stopped" : "done";
+    if (result.unanswered && msg.status === "done") { // its model kept calling tools after they came to an end
+      msg.unanswered = true;
+      msg.error = T("工具已经停止调用，模型却仍要调用，没有给出回答。可以点“继续作答”，请它根据已有结果再答一次。");
+    }
   } catch (err) {
     if (err?.name === "AbortError" || controller.signal.aborted) msg.status = "stopped";
     else { msg.status = "error"; msg.error = err?.message || String(err); }
   } finally {
     const page = clock.stop();
-    msg.ms = Date.now() - started;
+    msg.ms = (before?.ms || 0) + Date.now() - started;
+    if (resume) msg.resumed = (msg.resumed || 0) + 1;
+    if (resume && !sink.length) sink.push(...resume); // taken up again, but stopped before it began: what it had stays
     if (hidden) msg.wire = withoutReasoning(sink);
     for (const seg of msg.segments) {
       seg.offer = false;
@@ -581,6 +590,37 @@ async function runAssistant(conv, msg) {
     renderComposer();
     recordTurn(conv, msg, { started, trace, was, ...page });
   }
+}
+
+/** Two turns' tokens (or one's, the other none) added up. */
+const addUsage = (a, b) => (a && b ? { input: (a.input || 0) + (b.input || 0), output: (a.output || 0) + (b.output || 0) } : b || a || null);
+
+/** A turn that did not get its answer — it failed, was stopped, or its model kept calling tools — but whose tools gave
+ * results: the last of its conversation, it can be taken up again from them by the provider that ran it. */
+function canResume(m) {
+  const conv = S.conv;
+  if (!conv || S.running || conv.messages.at(-1) !== m || m.role !== "assistant") return false;
+  if (m.status !== "error" && m.status !== "stopped" && !m.unanswered) return false;
+  const provider = activeProvider(S.settings);
+  return m.wireFormat === formatOf(provider) && m.wireProvider === provider.id && resumable(m.wire, m.wireFormat);
+}
+
+/** 继续作答: the user takes up a turn that did not get its answer — none of its tools runs again, and the model is asked
+ * for the answer from what they gave (agent.js, runTurn's `resume`).  Not 重试, which begins the turn again. */
+async function resumeAnswer(msgId) {
+  const conv = S.conv;
+  const msg = conv?.messages.at(-1);
+  if (!msg || msg.id !== msgId || !canResume(msg)) return;
+  const resume = msg.wire;
+  // what a round whose reply did not come whole had shown goes: the answer is asked for again
+  if (Number.isFinite(msg.heard)) msg.segments = msg.segments.filter((s) => !(s.round > msg.heard));
+  delete msg.error;
+  delete msg.unanswered;
+  msg.status = "streaming";
+  touch(conv);
+  renderAll();
+  scrollToBottom(true);
+  await runAssistant(conv, msg, { resume });
 }
 
 /** The runtime that answers now, and its corpus, as a turn's record names them. */
@@ -605,7 +645,7 @@ const WAITING = new Set(["preparing", "loading", "queued", "running"]);
 // the calls of research runs this page left to go on by themselves, until they end
 const LATER = new Set();
 
-function makeHooks(conv, msg) {
+function makeHooks(conv, msg, usageBefore = null) {
   let round = 0;
   let refs = {};
   let offer = null; // the wait after which the page offers to answer with what it has
@@ -743,8 +783,9 @@ function makeHooks(conv, msg) {
       toast(T`连接中断，正在重试（第 ${attempt} 次）…`);
       update();
     },
-    usage(u) { msg.usage = { ...u }; },
+    usage(u) { msg.usage = addUsage(usageBefore, u); },
     assistant(res) {
+      msg.heard = round; // the last round whose reply came whole: what a later one showed goes if the turn is taken up again
       if (res.thinking && !refs.thinking && !msg.hideThinking) segment("thinking").text = res.thinking;
       const text = (base?.text || "") + (res.text || "");
       if (res.text && (!refs.text || refs.text.text !== text)) segment("text").text = text;
@@ -1157,6 +1198,8 @@ const threadCtx = {
   onEditCancel() { S.ui.editing = null; renderMain(); },
   onEditSubmit: submitEdit,
   onRegenerate: regenerate,
+  onResume: resumeAnswer,
+  canResume,
   onAnswerNow: answerNow,
   onOpenResearch(runId) {
     const run = S.conv?.research?.find((r) => r.id === runId);
@@ -1536,6 +1579,7 @@ async function recordTurn(conv, msg, diag = null) {
     const record = {
       v: 1, id: msg.id, conversation: conv.id, turn: conv.messages.slice(0, idx).filter((m) => m.role === "user").length,
       started: new Date(msg.created).toISOString(), finished: new Date().toISOString(), ms: msg.ms, rounds: msg.rounds,
+      resumed: msg.resumed || undefined, // taken up again (继续作答): its times are from the last time it was
       question: (user.text || "").slice(0, 4000), images: user.images?.length || undefined, answer: said.text.slice(0, 12000),
       redacted: said.hits || undefined, status: msg.status, error: msg.error ? String(msg.error).slice(0, 500) : undefined,
       model: msg.model, provider: msg.provider, runtime: S.runtimeInfo?.runtime || S.runtime?.kind, corpus: S.runtimeInfo?.corpus?.kind,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import json
 
 from taochronos.chat.records import answer_after_tools, read, summary, whole
@@ -9,13 +10,14 @@ from taochronos.cli import main
 
 QUESTION = "桂枝汤主治什么？"
 ANSWER = "太阳中风，桂枝汤主之。[[a.1]]"
+IDS = itertools.count(1)  # each made-up turn its own message
 
 
 def timed(**kw):
     """A turn as a page that times it records it: a chart and a search in round 1 (the search waits 600 ms for its
     turn), then the answer — its reply begun 590 ms after it was asked for, its first text 1.41 s after that."""
     r = {
-        "v": 1, "id": "m1", "conversation": "c1", "turn": 1, "started": "2026-10-23T08:00:00.000Z", "status": "done",
+        "v": 1, "id": f"m{next(IDS)}", "conversation": "c1", "turn": 1, "started": "2026-10-23T08:00:00.000Z", "status": "done",
         "provider": "impf", "model": "Tao-R1", "question": QUESTION, "answer": ANSWER, "ms": 6100, "rounds": 2,
         "citations": {"total": 1, "ok": 1, "warn": 0, "bad": 0, "pending": 0},
         "requests": [
@@ -102,6 +104,22 @@ def test_the_summary():
     # by the day the turn began
     assert summary([timed(), old()], since="2026-10-21")["turns"] == 1
     assert summary([timed(), old()], until="2026-10-21")["turns"] == 1
+
+
+def test_a_turn_taken_up_again_counts_once_as_it_ended():
+    # the turn's answer could not be had (the connection, three times), and the user took it up again (继续作答)
+    first = timed(id="m-again", status="error", error="无法连接", answer="", requests=[
+        {"round": 2, "attempt": n, "sent": 2010, "end": 2510, "failed": "network"} for n in (1, 2, 3)])
+    again = timed(id="m-again", resumed=1, tools=[], hidden=0, asleep=0, requests=[
+        {"round": 3, "attempt": 1, "sent": 5, "open": 400, "first": 410, "text": 800, "last": 1500, "end": 1505, "finish": "stop"}])
+    out = summary([first, again, timed()])
+    assert (out["turns"], out["timed"], out["resumed"]) == (2, 2, {"n": 1, "whole": 1})
+    assert out["completion"]["whole"]["n"] == 2  # as it ended: whole
+    assert out["recovery"] == {"n": 1, "of": 1, "share": 1.0, "failed": {"network": 3}}
+    # each run is timed from its own start: no time from a tool result to an answer across them (the user's pause between
+    # them is no wait of the page's), and the model's time in both adds up (1.5 s and 1.5 s)
+    assert out["answer_after_tools"]["total"]["n"] == 1 and out["time"]["model"]["p50"] == 3.0
+    assert summary([again])["resumed"] == {"n": 1, "whole": 1}  # its first record not collected (yet)
 
 
 def test_the_command_reads_the_collected_days_and_says_no_word_of_them(tmp_path, capsys):
