@@ -5,7 +5,8 @@
 // require their reasoning_details back, Claude its thinking blocks — and is replayed verbatim to the same provider.  A
 // turn made by another provider is replayed as plain text; reasoning fields a provider does not understand are dropped;
 // a tool call that never got its result (a stopped turn) is answered with a note; and tool results of earlier turns are
-// shortened.
+// made compact (context.js: their shape and the passages they name kept), as are the turn's own when its requests would
+// go past the context budget.
 //
 // Waiting.  Each thing a turn waits on has a limit of its own (limits.js): a reply's first byte and its silences, each
 // tool call (counted while it runs, not while it waits for its runtime or its turn), a research run, and the turn.  A
@@ -15,11 +16,13 @@
 import * as openai from "./llm/openai.js";
 import * as claude from "./llm/anthropic.js";
 import { dataNote } from "./mydata.js";
+import { ANSWER, compactResult, contextBudget, fitRequest, messageTokens, QUESTION, tokensOf } from "./context.js";
 import { LIMITS, limit, pause, until } from "./limits.js";
+import { outputLimit } from "./providers.js";
 import { truncate } from "./util.js";
 import { T } from "./i18n.js";
 
-const OLD_RESULT_CHARS = 2500;
+const OLD_RESULT_CHARS = 2500; // about, of an earlier turn's tool result
 const MAX_EXTRA_ROUNDS = 1;
 // the last rounds of tools a turn may run are named to the model, with what it has left, so that it answers in time
 const BUDGET_ROUNDS = 3;
@@ -46,13 +49,20 @@ export function buildHistory(messages, provider) {
   const format = formatOf(provider);
   const out = [];
   for (const m of messages) {
-    if (m.role === "user") { out.push(lib(format).userMessage(userText(m), m.images || [])); continue; }
+    if (m.role === "user") { // marked as a question (context.js), unseen by what reads or sends the message
+      out.push(Object.defineProperty(lib(format).userMessage(userText(m), m.images || []), QUESTION, { value: true }));
+      continue;
+    }
     if (m.role !== "assistant") continue;
+    // the answer that stands: not one the self-check had rewritten (自查), and one written on in parts whole
+    const text = (m.segments || []).filter((s) => s.type === "text" && !s.superseded).map((s) => s.text).join("\n\n").trim();
     if (m.wire?.length && m.wireFormat === format) {
-      out.push(...prepareWire(m.wire, format, m.wireProvider === provider.id ? provider : null));
-    } else { // the answer that stands: not one the self-check had rewritten (自查)
-      const text = (m.segments || []).filter((s) => s.type === "text" && !s.superseded).map((s) => s.text).join("\n\n").trim();
-      if (text) out.push({ role: "assistant", content: text });
+      const wire = prepareWire(m.wire, format, m.wireProvider === provider.id ? provider : null);
+      // what the turn says when it goes as its question and answer (context.js): that answer, as the page shows it
+      if (m.segments && wire.length) Object.defineProperty(wire[0], ANSWER, { value: text });
+      out.push(...wire);
+    } else if (text) {
+      out.push({ role: "assistant", content: text });
     }
   }
   return out;
@@ -66,17 +76,14 @@ function prepareWire(wire, format, sameProvider) {
       delete msg.reasoning_content; // earlier turns' reasoning is not sent back (DeepSeek requires this)
       delete msg.reasoning;
     }
-    if (format === "openai" && msg.role === "tool") msg.content = shorten(msg.content);
+    if (format === "openai" && msg.role === "tool") msg.content = compactResult(msg.content, OLD_RESULT_CHARS);
     if (format === "anthropic" && msg.role === "user" && Array.isArray(msg.content)) {
-      for (const block of msg.content) if (block.type === "tool_result" && typeof block.content === "string") block.content = shorten(block.content);
+      for (const block of msg.content) {
+        if (block.type === "tool_result" && typeof block.content === "string") block.content = compactResult(block.content, OLD_RESULT_CHARS);
+      }
     }
   }
   return answerDangling(copy, format);
-}
-
-function shorten(text) {
-  if (typeof text !== "string" || text.length <= OLD_RESULT_CHARS) return text;
-  return text.slice(0, OLD_RESULT_CHARS) + T`…［早先的工具结果已截短，原长 ${text.length} 字符；需要细节时请重新调用工具］`;
 }
 
 /** A turn's messages without the model's reasoning: reasoning fields, thinking blocks, a leading <think>…</think>. */
@@ -132,8 +139,14 @@ export function reviewNote(missing) {
 /**
  * Run one user turn.  `hooks` receive the answer as it forms:
  *   round(n) · thinking(delta) · text(fullText) · toolPending(index, name) · toolStart(call) · toolWaiting(call, why) ·
- *   toolRunning(call) · toolProgress(call, p) · toolEnd(call, outcome) · toolLater(call, ending) · retry(attempt, error) ·
- *   usage(u) · continued(what) · cut(why) · limit(maxSteps, why) · review(missing) · reviewCut(error)
+ *   toolRunning(call) · toolProgress(call, p) · toolJob(call, job) · toolEnd(call, outcome) · toolLater(call, ending) ·
+ *   retry(attempt, error) · usage(u) · continued(what) · cut(why) · limit(maxSteps, why) · review(missing, at) ·
+ *   reviewCut(error)
+ * (toolJob: a research run a server began — `{id, url}`, its id and the server's address —, by which the page can follow
+ * it again, after a reload too; review: `at`, how many of the turn's messages (`sink`) come before the self-check's
+ * note — those of the answer it is about, which stand if no rewrite comes)
+ * `system`: the instructions, or a function giving them (perhaps a promise), asked for before each request — they may
+ * change during the turn, as its runtime does.
  * A turn ends on a reply the service says is complete; a reply cut at the output limit is written on ("answer": the next
  * round's text continues this one's) or asked again with less thinking ("thinking": what the round showed goes), up to
  * MAX_CONTINUATIONS times, and is told by cut("answer" | "thinking") when it still stops there; cut("context") tells a
@@ -155,6 +168,12 @@ export function reviewNote(missing) {
  * is told of them and answers again; a rewrite that does not come whole — an error, a stop, the limit, a model that
  * calls tools once they have come to an end, a cut at the output limit, the content filter — is taken out of the turn,
  * and the answer it was about stands.
+ * Each request, with the room its reply has (at most half), keeps within the turn's context budget (context.js:
+ * settings.contextTokens, or one for its service): past it, earlier turns go as their questions and the answers that
+ * stand (not a first answer the self-check had rewritten), the turn's earlier results go compactly, then earlier turns
+ * are left out, and last the last round's results go compactly.  A lookup of the corpus (REUSABLE) the turn already
+ * made with the same arguments, on the same runtime and corpus (`scope()`, a string naming them), is answered from that
+ * call and not run again — so the model has a result made compact whole again by asking for it again.
  * `trace` (an object), when given, is filled as the turn runs with where its time went, for the page's record of the turn
  * (the caller keeps it, even if the turn is stopped); its times are the page's clock (Date.now()):
  *   requests — each model request: its round and attempt; when it was sent, its reply began (`open`), its first part,
@@ -166,11 +185,13 @@ export function reviewNote(missing) {
  *     how long the runtime says its work took (`compute`);
  *   events — `{at, what}`: a cut answer written on ("continued"), a round asked again with less thinking ("lighter"), the
  *     turn's tools come to an end ("asked", "time", "steps"), a reply cut ("cut:answer", "cut:thinking", "cut:context",
- *     "cut:filtered"), the self-check's note asking for a rewrite ("review"), and that rewrite taken out ("unchecked").
+ *     "cut:filtered"), a request that gave up more to keep within the budget ("compacted"), a call answered from the
+ *     same call before ("reused"), instructions that changed during the turn ("instructions"), the self-check's note
+ *     asking for a rewrite ("review"), and that rewrite taken out ("unchecked").
  * Returns {wire, rounds, usage, model, unanswered}.
  */
 export async function runTurn({ provider, settings, route, runtime, tools, system, history, user, signal, hurry, limits, hooks, sink, review,
-  trace, resume, rounds }) {
+  trace, resume, rounds, scope }) {
   const lim = { ...LIMITS, ...limits };
   if (trace) for (const k of ["requests", "tools", "events"]) trace[k] ||= [];
   const quick = new AbortController(); // the turn's tools end early: the user asked for the answer, or its time is up
@@ -182,15 +203,15 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
   const clock = limit(lim.turn, () => answerNow("time"));
   try {
     return await turnOf({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, review, trace, lim,
-      quick: quick.signal, quickWhy: () => quickWhy, resume, rounds });
+      quick: quick.signal, quickWhy: () => quickWhy, resume, rounds, scope });
   } finally {
     clock.stop();
     hurry?.removeEventListener("abort", asked);
   }
 }
 
-async function turnOf({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, review, trace, lim,
-  quick, quickWhy, resume, rounds }) {
+async function turnOf({ provider, settings, route, runtime, tools, system, history = [], user, signal, hooks, sink, review, trace,
+  lim, quick, quickWhy, resume, rounds, scope }) {
   const format = formatOf(provider);
   const L = lib(format);
   const userWire = L.userMessage(userText(user), user.images || []);
@@ -214,6 +235,14 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
   // the calls of the turn that have no result (they ran out of time, were not waited for, went on in the background or
   // were stopped), by what they asked: one run again with the same arguments that then gave one has its result
   const lacking = new Map();
+  // the context budget: what the turn's requests gave up to keep within it, and what each sends besides the
+  // conversation and the turn's messages (instructions, tools, question; the reply's room is added as each is asked)
+  const budget = contextBudget(settings, provider);
+  const fit = {};
+  const instructionsNow = typeof system === "function" ? system : () => system;
+  let standing = null; // the instructions of the last request
+  let fixed = 0;
+  const reuse = new Map(); // the lookups the turn made that gave a result, by what they asked (execute)
   const note = (what) => { trace?.events.push({ at: Date.now(), what }); };
   const cutShort = (why) => { note(`cut:${why}`); hooks.cut?.(why); };
   const uncheck = (err) => { turn.length = checked; checked = -1; note("unchecked"); hooks.reviewCut?.(err); };
@@ -228,9 +257,22 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
     hooks.round?.(round);
     const asked = lighter || settings;
     lighter = null;
+    // the room left for the reply: what it may write, within half the budget (and asked for no more), so that the
+    // request and its reply keep within the budget together
+    const reply = outputLimit(asked, provider);
+    const room = Math.min(reply, Math.floor(budget / 2));
+    const now = await instructionsNow();
+    if (now !== standing) {
+      if (standing !== null) note("instructions");
+      standing = now;
+      fixed = tokensOf(now) + tokensOf(tools) + messageTokens(userWire);
+    }
+    const view = fitRequest({ history, turn, format, budget, fixed: fixed + room, state: fit });
+    if (view.more) note("compacted");
+    const instructions = view.note ? `${standing}\n\n${view.note}` : standing;
     const messages = format === "openai"
-      ? [{ role: "system", content: system }, ...history, userWire, ...turn]
-      : [...history, userWire, ...turn];
+      ? [{ role: "system", content: instructions }, ...view.history, userWire, ...view.turn]
+      : [...view.history, userWire, ...view.turn];
     let res;
     let attempt = 0;
     const service = `${provider.id} ${provider.baseUrl}`;
@@ -238,7 +280,8 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
       const mark = trace ? { round, attempt: ++attempt } : null; // where this request's time went
       if (mark) trace.requests.push(mark);
       return measured(mark, (format === "anthropic" ? claude.streamClaude : openai.streamChat)({
-        provider, system, messages, tools, settings: asked, route, signal, limits: lim, mark,
+        provider, system: instructions, messages, tools, settings: room < reply ? { ...asked, maxTokens: room } : asked, route, signal,
+        limits: lim, mark,
         toolChoice: closing && !NO_NONE.has(service) ? "none" : undefined,
         onEvent: (ev) => {
           if (ev.type === "thinking") hooks.thinking?.(ev.delta);
@@ -308,7 +351,7 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
           checked = turn.length;
           written = "";
           note("review");
-          hooks.review?.(missing);
+          hooks.review?.(missing, checked);
           turn.push(L.userMessage(reviewNote(missing)));
           continue;
         }
@@ -322,7 +365,7 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
     if (!closing && (steps > maxSteps || quick.aborted)) close(steps > maxSteps ? "steps" : quickWhy(), steps - 1);
     const closed = closing; // the calls of a round asked for after the turn's tools came to an end are not run
     const results = await Promise.all(res.toolCalls.map((tc) => execute(tc, {
-      runtime, settings, hooks, signal, quick, quickWhy, limits: lim, closing, cut, trace, round })));
+      runtime, settings, hooks, signal, quick, quickWhy, limits: lim, closing, cut, trace, round, reuse, scope, note })));
     res.toolCalls.forEach((tc, k) => {
       const key = `${tc.name}\u0000${JSON.stringify(tc.arguments ?? null)}`;
       if (results[k].ok) lacking.delete(key);
@@ -354,6 +397,17 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
 // how a call ends with no result the model can answer from: it ran out of time, was not waited for, goes on by itself
 // in the background, or was stopped (execute)
 const LACKING = new Set(["timeout", "skipped", "background", "stopped"]);
+// the lookups a turn may answer from the same call made before (execute): they read the corpus, or reckon from it, and
+// change nothing — not the analyses, images, a research run or its sessions, the catalog, Code Mode, or the user's data
+// (我的资料), which run each time
+const REUSABLE = /^(classics|kg|study|validation|audit|modern)(__|\.)/;
+/** A call's arguments as JSON, the fields of each object in order: the same arguments, however a model orders them. */
+const stable = (args) => JSON.stringify(args ?? null, (k, v) => (v && typeof v === "object" && !Array.isArray(v)
+  ? Object.fromEntries(Object.keys(v).sort().map((f) => [f, v[f]])) : v));
+/** What a call asks, when it is a lookup a turn may answer from the same one made before (REUSABLE, called directly or
+ * through taochronos_call): its name and arguments; null for any other call. */
+const lookupOf = (tc) => (REUSABLE.test(tc.name === "taochronos_call" ? String(tc.arguments?.tool ?? "") : tc.name)
+  ? `${tc.name}\u0000${stable(tc.arguments)}` : null);
 // the services (by id and address) that refused a request asking for no tool call, while the page is open — not every
 // one takes tool choice "none" — and the statuses a request's refusal comes with
 const NO_NONE = new Set();
@@ -379,6 +433,28 @@ export function resumable(wire, format) {
     return Array.isArray(last?.content) && last.content.some((b) => b.type === (last.role === "user" ? "tool_result" : "tool_use"));
   }
   return last?.role === "tool" || Boolean(last?.role === "assistant" && last.tool_calls?.length);
+}
+
+/** A turn's messages as the page kept them, with `text` as the result of the call `id` of its last reply, which had none:
+ * a research run the turn waited for when its page was closed, followed to its end since (app.js, followAgain) — so
+ * that the turn taken up again (resumed) answers from it.  The same messages when that reply is not the last, or the
+ * call has its result. */
+export function lateResult(wire, format, id, text) {
+  const msgs = wire || [];
+  const i = msgs.findLastIndex((m) => m.role === "assistant");
+  const reply = msgs[i];
+  const after = msgs.slice(i + 1);
+  if (format === "anthropic") {
+    if (!Array.isArray(reply?.content) || !reply.content.some((b) => b.type === "tool_use" && b.id === id)) return wire;
+    const next = after[0];
+    if (after.length > 1 || (next && !(next.role === "user" && Array.isArray(next.content)))) return wire;
+    if (next?.content.some((b) => b.type === "tool_result" && b.tool_use_id === id)) return wire;
+    const block = { type: "tool_result", tool_use_id: id, content: text };
+    return [...msgs.slice(0, i + 1), next ? { ...next, content: [...next.content, block] } : { role: "user", content: [block] }];
+  }
+  if (!reply?.tool_calls?.some((tc) => tc.id === id) || !after.every((m) => m.role === "tool")) return wire;
+  if (after.some((m) => m.tool_call_id === id)) return wire;
+  return [...msgs, { role: "tool", tool_call_id: id, content: text }];
 }
 
 /** A turn's messages as the page kept them (resumable), taken up again: every call with its result (answerDangling),
@@ -489,7 +565,7 @@ async function withRetry(fn, { signal, onRetry }) {
  * the turn's tools came to an end before (`closing`), of a cut reply (`cut`), or with arguments that did not parse, do
  * not run.  Returns {id, ok, status, text}. */
 async function execute(tc, ctx) {
-  const { hooks, closing, cut, trace, round } = ctx;
+  const { hooks, closing, cut, trace, round, reuse } = ctx;
   const call = { id: tc.id, name: tc.name, args: tc.arguments, started: Date.now(), status: "running" };
   const entry = trace ? { round, id: tc.id, name: tc.name, args: tc.arguments, start: call.started } : null; // its times
   if (entry) trace.tools.push(entry);
@@ -505,14 +581,24 @@ async function execute(tc, ctx) {
   } else if (tc.error) {
     out = { ok: false, error: tc.error, text: T`ERROR: ${tc.error}（原始参数：${tc.rawArguments.slice(0, 300)}）` };
   } else {
-    ran = true;
-    out = await follow(tc, call, { ...ctx, entry });
+    const asks = reuse ? lookupOf(tc) : null;
+    const key = asks && `${asks}\u0000${ctx.scope?.() ?? ""}`; // on the same runtime and corpus only
+    const was = key ? reuse.get(key) : null;
+    if (was) { // the same lookup, made before in the turn: answered from it, not run again
+      const note = T`［与本轮第 ${was.round} 轮的同一调用相同：结果取自那一次，没有重新运行］`;
+      out = { ...was.out, reused: was.round, text: `${was.out.text || "{}"}\n\n${note}` };
+      ctx.note?.("reused");
+    } else {
+      ran = true;
+      out = await follow(tc, call, { ...ctx, entry });
+      if (key && out?.ok) reuse.set(key, { out, round });
+    }
   }
   out ||= { ok: false, error: T("没有结果"), text: T("ERROR: 没有结果") };
   const status = out.ok ? "ok" : out.status || (ran ? "error" : "refused");
   if (entry) {
     Object.assign(entry, { end: Date.now(), name: out.tool || tc.name, status });
-    if (Number.isFinite(out.duration_ms)) entry.compute = Math.round(out.duration_ms); // as long as the runtime says it took
+    if (Number.isFinite(out.duration_ms) && ran) entry.compute = Math.round(out.duration_ms); // as long as the runtime says it took
   }
   hooks.toolEnd?.(call, out);
   return { id: tc.id, ok: Boolean(out.ok), status, text: out.text || (out.ok ? "{}" : `ERROR: ${out.error}`) };
@@ -556,7 +642,7 @@ function follow(tc, call, { runtime, settings, hooks, signal, quick, quickWhy, l
   };
   try {
     const work = research
-      ? runtime.research(tc.arguments, { ...options, onProgress: (p) => hooks.toolProgress?.(call, p) })
+      ? runtime.research(tc.arguments, { ...options, onProgress: (p) => hooks.toolProgress?.(call, p), onJob: (job) => hooks.toolJob?.(call, job) })
       : runtime.call(tc.name, tc.arguments, options);
     Promise.resolve(work).then((out) => end(out), (err) => end(err?.name === "AbortError" ? halted() : failed(err)));
   } catch (err) {

@@ -7,7 +7,7 @@
 //   GET  /api/passage         has one; else by the D1 backup (./backup: the full corpus in D1, the tools in this Worker)
 //   POST /api/call            once its import is complete (D1_BACKUP); without either these answer 503 and the page runs
 //   POST /api/research, …     the 要籍语料 in the browser
-//   GET  /api/research/<job>, GET /api/session/<id>
+//   GET  /api/research/<job>, POST /api/research/<job>/cancel|resume, GET /api/session/<id>
 //   PUT  /api/store/<sha256>/part-NNN   the full corpus store, uploaded part by part into the site's Workers KV namespace,
 //   HEAD /api/store/<sha256>/part-NNN   with the token whose sha256 is STORE_TOKEN_SHA256 (`taochronos web upload`); the
 //                                       deploy workflow reads it from there to build the container
@@ -51,7 +51,7 @@ export const DEFAULTS = {
 };
 
 const GETS = /^\/api\/(?:info|catalog|passage|research\/[A-Za-z0-9_.:-]{1,100}|session\/[A-Za-z0-9_.:-]{1,100})$/;
-const POSTS = /^\/api\/(?:call|research)$/;
+const POSTS = /^\/api\/(?:call|research(?:\/[A-Za-z0-9_.:-]{1,100}\/(?:cancel|resume))?)$/;
 const STORE = /^\/api\/(store\/[0-9a-f]{64}\/part-\d{3})$/;
 const HEX64 = /^[0-9a-f]{64}$/;
 const LOCAL = new Set(["localhost", "127.0.0.1", "[::1]"]);

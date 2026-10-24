@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable
 
 from ..agents.planning import KERNEL_ROLES, ORDER, plan_task, task_id, wire
 from ..agents.runtime import TaskResult
@@ -119,7 +119,10 @@ class ResearchEngine:
                 used["cost_usd"] += float(est.get("cost_usd", 0.0))
         return used
 
-    def run(self, session: Session, *, budget: Budget | None = None) -> RunResult:
+    def run(self, session: Session, *, budget: Budget | None = None, stop: Callable[[], str | None] | None = None) -> RunResult:
+        """Run the session until it ends.  `stop`, asked before each task: a reason to stop (a person asked to), and
+        then the task running ends the run — its round closes with what it has, as when the budget runs out, and the
+        session finishes ``stopped`` with that reason (its report and the contract's evaluation of what it found)."""
         state = session.state
         if state.goal is None:
             raise ValueError("session has no research contract")
@@ -128,24 +131,29 @@ class ResearchEngine:
             budget.seed(**self.spent(state))  # a resumed run does not get its budget back
         evaluator = StopEvaluator(state.goal.stop, list(state.goal.required_validation))
         while state.status not in FINAL:
-            self._drain(session, budget)
+            self._drain(session, budget, stop)
             r = self._open_round(state)
             if r is None:
                 self._begin_round(session, 0)
                 continue
             if str(r) in state.rounds:  # resumed after the round closed but before the next began
-                self._after_round(session, r, evaluator, budget, closed=True)
+                self._after_round(session, r, evaluator, budget, closed=True, stop=stop)
                 continue
             stats = self._round_stats(state, r)
             session.emit(EventType.ROUND_COMPLETED, {"round": r, **stats})
             self._verify_integrity(session)
             session.checkpoint()
-            self._after_round(session, r, evaluator, budget, closed=False)
+            self._after_round(session, r, evaluator, budget, closed=False, stop=stop)
         return self._result(session)
 
-    def _after_round(self, session: Session, r: int, evaluator: StopEvaluator, budget: Budget, *, closed: bool) -> None:
+    def _after_round(self, session: Session, r: int, evaluator: StopEvaluator, budget: Budget, *, closed: bool,
+                     stop: Callable[[], str | None] | None = None) -> None:
         state = session.state
         goal = state.goal
+        why = stop() if stop else None
+        if why:
+            self._finish(session, StopDecision(True, "stopped", [why], {}))
+            return
         if r == 0:
             if goal.stop.max_rounds <= 0:
                 self._finish(session, StopDecision(True, "completed", ["foundation-only contract (max_rounds = 0)"], {}))
@@ -205,10 +213,10 @@ class ResearchEngine:
             ready.append(t)
         return ready
 
-    def _drain(self, session: Session, budget: Budget) -> None:
+    def _drain(self, session: Session, budget: Budget, stop: Callable[[], str | None] | None = None) -> None:
         parallel = int(self.h.profile.context.get("max_parallel_agents", 1))
         while True:
-            if budget.exhausted():
+            if budget.exhausted() or (stop is not None and stop()):
                 return
             ready = self._ready(session)
             if not ready:

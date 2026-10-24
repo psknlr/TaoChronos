@@ -69,7 +69,7 @@ assert.equal(da[1].content[0].tool_use_id, "t1");
 
 // the self-check (自查): an answer citing passages the corpus has not is asked again, once, with them named — while the
 // turn has rounds of tools left, the whole of it when it was written on; a rewrite that fails, is stopped or is cut short
-// is taken out of the turn, and the answer stands
+// is taken out of the turn, and the answer stands — the page told where it ends in the turn's messages (`at`)
 {
   const { reviewNote, runTurn } = await import("./js/agent.js");
   const { rawAnswer } = await import("./js/view/thread.js");
@@ -96,7 +96,7 @@ assert.equal(da[1].content[0].tool_use_id, "t1");
     bodies.length = 0;
     const seen = [], reviewed = [], sink = [];
     const review = async (text) => { reviewed.push(text); return missing(text); };
-    const hooks = { review: (m) => seen.push(["review", m]), reviewCut: (err) => seen.push(["cut", err ? err.message : null]) };
+    const hooks = { review: (m, at) => seen.push(["review", m, at]), reviewCut: (err) => seen.push(["cut", err ? err.message : null]) };
     const done = runTurn({ provider: model, settings, route: { kind: "direct" }, runtime: {}, tools: [], system: "s", history: [],
       user: { text: "问" }, signal, hurry, limits, hooks, sink, review, resume, rounds });
     return { done, seen, reviewed, sink };
@@ -109,7 +109,7 @@ assert.equal(da[1].content[0].tool_use_id, "t1");
   assert.deepEqual(said(r.wire), ["assistant:甲[[x.1]]", `user:${reviewNote(["x.1"])}`, "assistant:乙"]);
   assert.equal(r.wire, t.sink);
   assert.deepEqual(t.reviewed, ["甲[[x.1]]"]);
-  assert.deepEqual(t.seen, [["review", ["x.1"]]]);
+  assert.deepEqual(t.seen, [["review", ["x.1"], 1]]);
   assert.equal(bodies[1].messages.at(-1).content, reviewNote(["x.1"]));
   assert.ok(reviewNote(["x.1"]).startsWith("［自查：回答所引的 [[x.1]] 在语料中查无此段。"));
   assert.ok(reviewNote(["x.1", "y.2"]).includes("[[x.1]]、[[y.2]]"));
@@ -124,17 +124,17 @@ assert.equal(da[1].content[0].tool_use_id, "t1");
   // the rewrite fails: the turn ends with the answer it was about, and says why
   t = turn([[200, "甲[[x.1]]"], [400, "invalid params"]], cited);
   assert.deepEqual(said((await t.done).wire), ["assistant:甲[[x.1]]"]);
-  assert.deepEqual(t.seen, [["review", ["x.1"]], ["cut", "模型服务返回 400：invalid params"]]);
+  assert.deepEqual(t.seen, [["review", ["x.1"], 1], ["cut", "模型服务返回 400：invalid params"]]);
   // an answer cut at the output limit and written on is checked whole — the round that wrote it on spends none of the
   // rounds the self-check needs
   t = turn([[200, "甲[[x", "length"], [200, ".1]]乙"], [200, "丙"]], cited, { settings: { maxSteps: 3 } });
   r = await t.done;
   assert.deepEqual(t.reviewed, ["甲[[x.1]]乙"]);
-  assert.deepEqual([t.seen, said(r.wire).at(-2), said(r.wire).at(-1)], [[["review", ["x.1"]]], `user:${reviewNote(["x.1"])}`, "assistant:丙"]);
+  assert.deepEqual([t.seen, said(r.wire).at(-2), said(r.wire).at(-1)], [[["review", ["x.1"], 3]], `user:${reviewNote(["x.1"])}`, "assistant:丙"]);
   // a rewrite cut at the output limit past what can be written on: taken out, and the answer it was about stands
   t = turn([[200, "甲[[x.1]]"], [200, "乙", "length"], [200, "乙", "length"], [200, "乙", "length"]], cited);
   assert.deepEqual(said((await t.done).wire), ["assistant:甲[[x.1]]"]);
-  assert.deepEqual(t.seen, [["review", ["x.1"]], ["cut", null]]);
+  assert.deepEqual(t.seen, [["review", ["x.1"], 1], ["cut", null]]);
   // the user asked for the answer (or the turn ran its time): nothing is asked — the model could look nothing up
   const hurried = new AbortController();
   hurried.abort();
@@ -154,7 +154,7 @@ assert.equal(da[1].content[0].tool_use_id, "t1");
     { status: 200, headers: { "Content-Type": "application/json" } });
   t = turn([[200, "甲[[x.1]]"], calls, calls], (text) => { later.abort(); return cited(text); }, { settings: { maxSteps: 3 }, hurry: later.signal });
   r = await t.done;
-  assert.deepEqual([said(r.wire), r.unanswered, t.seen, bodies.length], [["assistant:甲[[x.1]]"], false, [["review", ["x.1"]], ["cut", null]], 3]);
+  assert.deepEqual([said(r.wire), r.unanswered, t.seen, bodies.length], [["assistant:甲[[x.1]]"], false, [["review", ["x.1"], 1], ["cut", null]], 3]);
   // lookups that do not come back: waited for no longer than a tool call, and the answer stands as it is
   t = turn([[200, "甲[[x.1]]"]], () => new Promise(() => {}), { limits: { tool: 150 } });
   assert.deepEqual([said((await t.done).wire), t.reviewed, t.seen], [["assistant:甲[[x.1]]"], ["甲[[x.1]]"], []]);
@@ -163,7 +163,7 @@ assert.equal(da[1].content[0].tool_use_id, "t1");
   t = turn([[200, "甲[[x.1]]"], () => { stop.abort(); throw new DOMException("aborted", "AbortError"); }], cited, { signal: stop.signal });
   await assert.rejects(t.done, (e) => e.name === "AbortError");
   assert.deepEqual(said(t.sink), ["assistant:甲[[x.1]]"]);
-  assert.deepEqual(t.seen, [["review", ["x.1"]], ["cut", null]]);
+  assert.deepEqual(t.seen, [["review", ["x.1"], 1], ["cut", null]]);
 }
 
 // citations pair with the quotation just before them, never across lines
@@ -323,7 +323,7 @@ assert.deepEqual([3, 2, 1, 0, -1].map((n) => budgetNote(n) !== ""), [false, true
 const askedFor = [];
 globalThis.fetch = async (url, init) => {
   askedFor.push(JSON.parse(init.body).messages);
-  const call = { index: 0, id: `c${askedFor.length}`, function: { name: "classics__search", arguments: '{"query":"桂枝汤"}' } };
+  const call = { index: 0, id: `c${askedFor.length}`, function: { name: "classics__search", arguments: `{"query":"桂枝汤","page":${askedFor.length}}` } };
   return streamed(sse(`data: ${JSON.stringify({ choices: [{ delta: { tool_calls: [call] }, finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`));
 };
 const stoppedAt = [];
@@ -737,7 +737,7 @@ import assert from "node:assert/strict";
 import { limit } from "./js/limits.js";
 import { ProviderError, streamChat } from "./js/llm/openai.js";
 import { closingNote, lackingNote, runTurn } from "./js/agent.js";
-import { BrowserRuntime, ServerRuntime } from "./js/runtime.js";
+import { BrowserRuntime, jobState, ServerRuntime } from "./js/runtime.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const abortError = () => new DOMException("aborted", "AbortError");
@@ -1069,8 +1069,9 @@ stopM.abort();
 await assert.rejects(fifth, (x) => x.name === "AbortError");
 await Promise.all(four);
 assert.deepEqual([srv.running, srv.waiting.length], [0, 0]);
-// a research run on a server: queued while the server finishes another, then running; a look that hangs is given up at
-// its own limit and the next one made
+// a research run on a server (the words of a server of an earlier version: its status, no state): queued while the
+// server finishes another, then running; a look that hangs is given up at its own limit, the run said meanwhile to
+// await recovery, and the next one made
 srv.pollEvery = 20;
 let looks = 0;
 globalThis.fetch = async (url, init) => {
@@ -1081,31 +1082,80 @@ globalThis.fetch = async (url, init) => {
     : { status: "done", outcome: { ok: true, text: "R" } });
 };
 const heard = [];
+const jobs = [];
 const outcome = await srv.research({ question: "q" }, { onWait: (w) => heard.push(w), onStart: () => heard.push("runs"),
-  onProgress: (p) => heard.push(p.status), limits: { poll: 150 } });
-assert.deepEqual([outcome, looks], [{ ok: true, text: "R" }, 5]);
-assert.deepEqual(heard, ["queued", "queued", "runs", "running", "running", "done"]);
-// looks that keep failing (five in a row) lose the run — not as an unavailable server: the run is not started again in
-// the browser — and a refusal loses it at once
+  onProgress: (p) => heard.push(jobState(p)), onJob: (j) => jobs.push(j), limits: { poll: 150 } });
+assert.deepEqual([outcome, looks, jobs], [{ ok: true, text: "R" }, 5, [{ id: "j1", url: "https://chat.impf.ai" }]]);
+assert.deepEqual(heard, ["queued", "queued", "lost", "runs", "running", "running", "completed"]);
+// looks that keep failing are borne for lostAfter, each made later than the one before, the run said meanwhile to await
+// recovery; then the run is lost — not as an unavailable server: the run is not started again in the browser —, and a
+// refusal loses it at once
 const site = (fetcher) => {
   globalThis.fetch = fetcher;
   const s = new ServerRuntime("https://chat.impf.ai", "", { fallback: () => { throw new Error("not started again"); } });
   s.pollEvery = 20;
+  s.lostAfter = 200;
   return s;
 };
-looks = 0;
-let s = site(async (url) => (new URL(url).pathname === "/api/research" ? json({ job: "j2" }) : (looks++, json({ error: "bad gateway" }, 502))));
-await assert.rejects(s.research({ question: "q" }, {}), (x) => !x.unavailable && x.message === "与研究任务失去联系：bad gateway");
-assert.equal(looks, 5);
+const at = [];
+const lost = [];
+let s = site(async (url) => (new URL(url).pathname === "/api/research" ? json({ job: "j2" }) : (at.push(Date.now()), json({ error: "bad gateway" }, 502))));
+await assert.rejects(s.research({ question: "q" }, { onProgress: (p) => lost.push([jobState(p), p.lost_s >= 0]) }),
+  (x) => !x.unavailable && x.message === "与研究任务失去联系：bad gateway");
+const gaps = at.slice(1).map((t, k) => t - at[k]);
+assert.ok(at.length === 4 && gaps[0] >= 38 && gaps[1] >= 78 && gaps[2] >= 158, String(gaps)); // 40, 80, 160 ms
+assert.deepEqual(lost, [["lost", true], ["lost", true], ["lost", true]]);
+// looks that fail a while and then answer: the run goes on, looked at as often as before, and a later loss is counted
+// from its own start
+const flaky = ["x", "x", ...Array(10).fill({ state: "running" }), "x", "x", { state: "completed", outcome: { ok: true, text: "R9" } }];
+const looked = [];
+s = site(async (url) => {
+  if (new URL(url).pathname === "/api/research") return json({ job: "j9" });
+  looked.push(Date.now());
+  const next = flaky[Math.min(looked.length - 1, flaky.length - 1)];
+  return next === "x" ? json({ error: "bad gateway" }, 502) : json(next);
+});
+assert.deepEqual(await s.research({ question: "q" }, {}), { ok: true, text: "R9" });
+assert.ok(looked[4] - looked[3] < 60, String(looked[4] - looked[3])); // 20 ms again once it answers
 looks = 0;
 s = site(async (url) => (new URL(url).pathname === "/api/research" ? json({ job: "j3" })
   : (looks++, new Response(JSON.stringify({ error: "今天的查询次数已用完", daily: true }),
     { status: 429, headers: { "Content-Type": "application/json", "X-TC-Corpus": "refused" } }))));
 await assert.rejects(s.research({ question: "q" }, {}), (x) => !x.unavailable && /^与研究任务失去联系：今天的查询次数已用完/.test(x.message));
 assert.equal(looks, 1);
-// a stop while it is looked at ends it at once; one while it is started, too
+// a run the server stopped as it restarted ("interrupted") is taken up again from its last checkpoint, twice at most —
+// then it ends with what the server says of it —; a run the server has no record of is lost
+const resumes = [];
+const restarted = (states) => site(async (url) => {
+  const path = new URL(url).pathname;
+  if (path === "/api/research") return json({ job: "j5" });
+  if (path.endsWith("/resume")) { resumes.push(path); return json({ id: "j5", state: "queued", position: 1 }); }
+  return json(states.length > 1 ? states.shift() : states[0]);
+});
+const restart = { state: "interrupted", outcome: { ok: false, error: "服务在这次研究进行时停止了" } };
+s = restarted([{ state: "running", progress: { round: 1 } }, restart, { state: "queued", position: 1 }, { state: "completed", outcome: { ok: true, text: "R5" } }]);
+assert.deepEqual(await s.research({ question: "q" }, {}), { ok: true, text: "R5" });
+assert.deepEqual(resumes.splice(0), ["/api/research/j5/resume"]);
+s = restarted([restart]);
+assert.deepEqual(await s.research({ question: "q" }, {}), restart.outcome);
+assert.equal(resumes.splice(0).length, 2);
+s = site(async (url) => (new URL(url).pathname === "/api/research" ? json({ job: "j6" }) : json({ id: "j6", state: "unknown", status: "unknown" })));
+await assert.rejects(s.research({ question: "q" }, {}), (x) => x.message === "研究任务已丢失（服务是否重启过？）");
+// a run begun before (by a page closed since) followed again by its id: no run is begun, and onJob is not told again
+const paths = [];
+s = site(async (url) => { paths.push(new URL(url).pathname); return json({ state: "completed", outcome: { ok: true, text: "R7" } }); });
+jobs.length = 0;
+assert.deepEqual(await s.followResearch("j7", { onJob: (j) => jobs.push(j) }), { ok: true, text: "R7" });
+assert.deepEqual([paths, jobs], [["/api/research/j7"], []]);
+// a stop while it is looked at ends it at once, and the server is asked to stop the run, which no one waits for now; one
+// while it is started, too, with no run to stop yet
+const cancels = [];
 for (const hangs of ["/api/research/j4", "/api/research"]) {
-  globalThis.fetch = (url, init) => (new URL(url).pathname === hangs ? hang(init.signal) : Promise.resolve(json({ job: "j4" })));
+  globalThis.fetch = (url, init) => {
+    const path = new URL(url).pathname;
+    if (path.endsWith("/cancel")) { cancels.push([path, init.method]); return Promise.resolve(json({ id: "j4", state: "cancel_requested" })); }
+    return path === hangs ? hang(init.signal) : Promise.resolve(json({ job: "j4" }));
+  };
   const stopR = counted();
   setTimeout(() => stopR.abort(), 200);
   from = Date.now();
@@ -1113,6 +1163,10 @@ for (const hangs of ["/api/research/j4", "/api/research"]) {
   assert.ok(Date.now() - from < 1000);
   assert.equal(listening, 0);
 }
+assert.deepEqual(cancels, [["/api/research/j4/cancel", "POST"]]);
+// a server that cannot be reached, or of an earlier version (no such endpoint), asked to stop one: nothing more is said
+globalThis.fetch = async () => json({ error: "no such endpoint" }, 404);
+assert.equal(await srv.cancelResearch("j4"), null);
 console.log("ok");
 """
 
@@ -1121,13 +1175,146 @@ def test_waits_and_stops_under_node(tmp_path):
     """A reply that stalls asked again; a search that never returns ended at its deadline while the chart beside it is
     explained; a stop, the answer asked for, a research run left to go on and the turn's own time; the browser
     runtime's queue, a late result dropped and a runtime held up started again; a server's calls four at a time and
-    its research looked at within limits — every listener removed and nothing left waiting."""
+    its research looked at within limits — a network gone borne a while, a run the server stopped as it restarted taken
+    up again, one no one waits for any more stopped on the server — every listener removed and nothing left waiting."""
     node = shutil.which("node")
     if not node:
         pytest.skip("node is not installed")
     shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
     (tmp_path / "package.json").write_text('{"type": "module"}')
     (tmp_path / "t.mjs").write_text(NODE_WAITS, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=120)
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
+
+
+# a research run on a server as its step says it (web/js/runtime.js researchText), and a turn's instructions when its
+# runtime changes during it (turnInstructions; agent.js runTurn's `system`)
+NODE_JOBS = r"""
+import assert from "node:assert/strict";
+import { lateResult, runTurn } from "./js/agent.js";
+import { jobState, researchText, ServerRuntime, turnInstructions } from "./js/runtime.js";
+
+// its state: as the server names it, or as an earlier server's words mean it
+assert.deepEqual([{ state: "cancel_requested", status: "running" }, { status: "done" }, { status: "error" }, { status: "queued" }, {}, null]
+  .map(jobState), ["cancel_requested", "completed", "failed", "queued", "unknown", "unknown"]);
+// queued — first in line, the server finishing another, or behind others (the one running ahead of them all) —, running
+// with what it has done so far, a heartbeat or progress long in coming, stopping, awaiting recovery
+assert.deepEqual([
+  { state: "queued", position: 1, queued_s: 4.4, elapsed_s: 9 },
+  { state: "queued", position: 3, queued_s: 12.6 },
+  { status: "queued", elapsed_s: 4 },
+  { state: "running", run_s: 12.4, heartbeat_s: 2, progress_s: 3, progress: { round: 2, hypotheses: 3, claims: 5, events: 40 } },
+  { state: "running", run_s: 0.4, progress: { round: 0, hypotheses: 0, claims: 0 } },
+  { status: "running", elapsed_s: 7, progress: { round: 1 } },
+  { state: "running", run_s: 80, heartbeat_s: 45, progress_s: 70, progress: { round: 1 } },
+  { state: "running", run_s: 80, heartbeat_s: 3, progress_s: 70, progress: { round: 1 } },
+  { state: "cancel_requested", run_s: 30 },
+  { state: "lost", lost_s: 8.6 },
+  { state: "interrupted" },
+].map(researchText), [
+  "排队中：服务正在完成另一项研究 · 已等 4 秒",
+  "排队中：前面还有 3 项研究 · 已等 13 秒",
+  "排队中：服务正在完成另一项研究 · 已等 4 秒",
+  "研究进行中 · 第 2 轮 · 3 个假说 · 5 条主张 · 已运行 12 秒",
+  "研究进行中 · 已运行 0 秒",
+  "研究进行中 · 第 1 轮 · 已运行 7 秒",
+  "研究进行中 · 第 1 轮 · 已运行 80 秒 · 服务 45 秒没有回应",
+  "研究进行中 · 第 1 轮 · 已运行 80 秒 · 70 秒没有新进展",
+  "正在停止：等当前这一步完成",
+  "等待恢复：与服务的连接中断，正在重新连接（已 9 秒）",
+  "等待恢复：服务重启过，正在从上次的检查点继续",
+]);
+
+// a turn's instructions: its runtime's, until the site's server cannot answer and the browser takes over; from then on
+// the browser's, with a word of the change — asked for once, however many requests follow
+const began = { system_prompt: "SERVER", corpus: { kind: "full" } };
+const prompt = (info, change) => `${info?.system_prompt}${change}|mine`;
+let infos = 0;
+const browser = { info: async () => { infos++; return { system_prompt: "BROWSER", corpus: { kind: "canon" } }; } };
+const site = new ServerRuntime("https://chat.impf.ai", "", { label: "本站服务", fallback: () => browser });
+const now = turnInstructions(site, began, prompt);
+assert.equal(await now(), "SERVER|mine");
+await site._or(Object.assign(new Error("down"), { unavailable: true }), () => null); // a call the server could not answer
+const moved = await now();
+assert.equal(moved, "BROWSER\n\n## 运行环境在本轮中的变化\n本轮开始时，工具调用由本站服务回答，读全量语料；它现在不能回答，此后的调用改在这个浏览器里运行，"
+  + "读要籍语料（见上面的“运行环境”）。此前得到的工具结果仍然有效，照常引用；此后的检索只覆盖这个语料，没有检得的内容可能只是不在其中，回答时请说明。|mine");
+assert.ok((await now()) === moved && infos === 1);
+// a browser that cannot say what it reads: the instructions the turn began with, and the word of the change
+const broken = new ServerRuntime("https://chat.impf.ai", "", { label: "本站服务", fallback: () => ({ info: async () => { throw new Error("no"); } }) });
+const later = turnInstructions(broken, began, prompt);
+await broken._or(Object.assign(new Error("down"), { unavailable: true }), () => null);
+assert.ok((await later()).startsWith("SERVER\n\n## 运行环境在本轮中的变化\n本轮开始时") && (await later()).includes("读要籍语料"));
+assert.equal(await turnInstructions(new ServerRuntime("https://x.example"), began, prompt)(), "SERVER|mine"); // none to fall back on
+// the corpora named as each runtime says it reads them
+const small = new ServerRuntime("http://127.0.0.1:8770", "", { label: "本机服务", fallback: () => ({ info: async () => ({ system_prompt: "B", corpus: { kind: "demo" } }) }) });
+const told = turnInstructions(small, { system_prompt: "S", corpus: { kind: "canon" } }, prompt);
+await small._or(Object.assign(new Error("down"), { unavailable: true }), () => null);
+assert.ok((await told()).includes("工具调用由本机服务回答，读要籍语料；它现在不能回答，此后的调用改在这个浏览器里运行，读演示语料（"));
+
+// a research run's result that came after its page was closed: given to the turn as that call's result where the turn's
+// messages wait for it (after the reply that asked for it, with the round's other results), so that 继续作答 answers from
+// it; the same messages where they do not — a call the reply did not make, a result already there, a turn gone on
+const fn = (id) => ({ id, type: "function", function: { name: "taochronos_research", arguments: "{}" } });
+const askedO = [{ role: "user", content: "问" }, { role: "assistant", content: null, tool_calls: [fn("r"), fn("k")] }];
+const keptO = [...askedO, { role: "tool", tool_call_id: "k", content: "K" }];
+const roundsO = [askedO[0], { role: "assistant", content: null, tool_calls: [fn("a")] }, { role: "tool", tool_call_id: "a", content: "A" }, askedO[1]];
+assert.deepEqual(lateResult(roundsO, "openai", "r", "R"), [...roundsO, { role: "tool", tool_call_id: "r", content: "R" }]);
+assert.deepEqual(lateResult(askedO, "openai", "r", "R"), [...askedO, { role: "tool", tool_call_id: "r", content: "R" }]);
+assert.deepEqual(lateResult(keptO, "openai", "r", "R"), [...keptO, { role: "tool", tool_call_id: "r", content: "R" }]);
+for (const [w, id] of [[keptO, "x"], [[...askedO, { role: "tool", tool_call_id: "r", content: "R0" }], "r"],
+  [[...keptO, { role: "assistant", content: "答" }], "r"], [[...keptO, { role: "user", content: "再问" }], "r"], [null, "r"]]) {
+  assert.equal(lateResult(w, "openai", id, "R"), w);
+}
+const use = (id) => ({ type: "tool_use", id, name: "taochronos_research", input: {} });
+const res = (id, content) => ({ type: "tool_result", tool_use_id: id, content });
+const askedA = [{ role: "user", content: "问" }, { role: "assistant", content: [{ type: "thinking", thinking: "想", signature: "s" }, use("r"), use("k")] }];
+const keptA = [...askedA, { role: "user", content: [res("k", "K")] }];
+const roundsA = [askedA[0], { role: "assistant", content: [use("a")] }, { role: "user", content: [res("a", "A")] }, askedA[1]];
+assert.deepEqual(lateResult(roundsA, "anthropic", "r", "R"), [...roundsA, { role: "user", content: [res("r", "R")] }]);
+assert.deepEqual(lateResult(askedA, "anthropic", "r", "R"), [...askedA, { role: "user", content: [res("r", "R")] }]);
+assert.deepEqual(lateResult(keptA, "anthropic", "r", "R"), [...askedA, { role: "user", content: [res("k", "K"), res("r", "R")] }]);
+assert.deepEqual(keptA.at(-1).content, [res("k", "K")]); // the messages given are not changed
+for (const [w, id] of [[keptA, "x"], [[...askedA, { role: "user", content: [res("r", "R0")] }], "r"],
+  [[...keptA, { role: "assistant", content: [{ type: "text", text: "答" }] }], "r"], [[...askedA, { role: "user", content: "再问" }], "r"],
+  [[...keptA, { role: "user", content: [{ type: "text", text: "再问" }] }], "r"], [null, "r"]]) {
+  assert.equal(lateResult(w, "anthropic", id, "R"), w);
+}
+
+// a turn asks for its instructions before each request: each request has those of its moment, and the turn's record
+// says when they changed
+const enc = new TextEncoder();
+const relayP = { id: "impf", relay: true, baseUrl: "https://relay.example/v1", model: "Tao-R1", extra_body: {},
+  max_tokens_param: "max_completion_tokens", thinking_off: { thinking: { type: "disabled" } }, reasoning: "reasoning_details" };
+const sse = (text) => new Response(new ReadableStream({ start(c) { c.enqueue(enc.encode(text)); c.close(); } }),
+  { status: 200, headers: { "Content-Type": "text/event-stream" } });
+const call = (n) => `data: ${JSON.stringify({ choices: [{ delta: { tool_calls: [{ index: 0, id: `c${n}`, function: { name: "classics__search", arguments: `{"q":${n}}` } }] },
+  finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`;
+const answer = `data: ${JSON.stringify({ choices: [{ delta: { content: "答" }, finish_reason: "stop" }] })}\n\ndata: [DONE]\n\n`;
+const sent = [];
+let n = 0;
+globalThis.fetch = async (url, init) => { sent.push(JSON.parse(init.body).messages[0].content); return sse(++n < 3 ? call(n) : answer); };
+const said = ["一", "一", "二"];
+const trace = {};
+const done = await runTurn({ provider: relayP, settings: {}, route: null, runtime: { call: async () => ({ ok: true, text: "{}" }) },
+  tools: [], system: async () => said.shift(), history: [], user: { text: "问" }, signal: new AbortController().signal, hooks: {}, trace });
+assert.equal(done.wire.at(-1).content, "答");
+assert.deepEqual([sent, trace.events.map((e) => e.what)], [["一", "一", "二"], ["instructions"]]);
+console.log("ok");
+"""
+
+
+def test_a_research_run_on_a_server_under_node(tmp_path):
+    """A research run's step from the server's view of it: queued with its place, running with its rounds, hypotheses
+    and claims, a heartbeat or progress long in coming, stopping, awaiting recovery (the network gone, the server
+    restarted), the words of an earlier server too; a run's result that came after its page was closed, given to the turn
+    where it waits for it; and a turn whose server falls back to the browser told of it in its instructions, which each
+    request asks for anew."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_JOBS, encoding="utf-8")
     run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=120)
     assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
 
@@ -1349,12 +1536,12 @@ assert.deepEqual(bodies.map((b) => [b.tool_choice, b.tools.length]), [["auto", 1
 assert.equal(told(bodies[2]).at(-1), `{}${budgetNote(0)}`);
 assert.deepEqual([done.wire.at(-1).content, done.unanswered, limited.splice(0), ran.splice(0)], ["答", false, [], ["桂枝", "麻黄"]]);
 // a service that calls tools however it is asked: its calls are not run, and after two refusals the turn ends without an
-// answer, told
+// answer, told (the same search asked again in its second round is answered from the first, not run again)
 bodies = scripted(calls(search("桂枝")));
 done = await turn();
 assert.deepEqual(bodies.map((b) => b.tool_choice), ["auto", "auto", "none", "none"]);
 assert.equal(told(bodies[3]).at(-1), "ERROR: 已达到本轮工具调用的上限：请根据已有结果直接作答。");
-assert.deepEqual([done.unanswered, done.rounds, limited.splice(0), ran.splice(0)], [true, 4, ["steps"], ["桂枝", "桂枝"]]);
+assert.deepEqual([done.unanswered, done.rounds, limited.splice(0), ran.splice(0)], [true, 4, ["steps"], ["桂枝"]]);
 // a service that refuses a request asking for no tool call (HTTP 400): that one is asked again as before, the tools
 // offered (a call would be refused), and the service is not asked so again — others still are
 const picky = { ...relayP, id: "picky" };
@@ -1487,6 +1674,368 @@ def test_the_answer_once_the_tools_stop_under_node(tmp_path):
     assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
 
 
+NODE_PAUSE = r"""
+import assert from "node:assert/strict";
+import { ProviderError } from "./js/llm/openai.js";
+import { pause, pausedNow, pauseText, pauseUntil, untilText } from "./js/pause.js";
+
+// this browser's storage
+const kept = new Map();
+globalThis.localStorage = { getItem: (k) => (kept.has(k) ? kept.get(k) : null), setItem: (k, v) => void kept.set(k, String(v)),
+  removeItem: (k) => void kept.delete(k) };
+const now = Date.UTC(2026, 9, 23, 8, 0);
+const spent = (s) => new ProviderError("今天的免费额度已用完", { status: 429, kind: "daily_limit", retryAfter: s });
+
+// a refusal that says when to come back pauses its service until then, a day at most; one that does not, none
+assert.deepEqual([pauseUntil(spent(3600), now), pauseUntil(spent(90000), now), pauseUntil(spent(null), now), pauseUntil(spent(0), now),
+  pauseUntil(new Error("x"), now)], [now + 3600000, now + 86400000, null, null, null]);
+assert.equal(pause("default", spent(null), "额度已用完", now), null);
+assert.equal(pausedNow("default", now), null);
+assert.deepEqual(pause("default", spent(3600), "额度已用完", now), { until: now + 3600000, message: "额度已用完" });
+// the service's alone, while it lasts
+assert.deepEqual([pausedNow("default", now + 3599999), pausedNow("openai", now)], [{ until: now + 3600000, message: "额度已用完" }, null]);
+pause("openai", spent(60), "请求太频繁", now);
+assert.deepEqual(Object.keys(JSON.parse(kept.get("tc.pause"))), ["default", "openai"]);
+// an ended pause goes, the other stays; the last gone, nothing is kept
+assert.equal(pausedNow("openai", now + 60000), null);
+assert.deepEqual(Object.keys(JSON.parse(kept.get("tc.pause"))), ["default"]);
+assert.ok(pausedNow("default", now + 60000));
+// kept in this browser: a page opened again (the module loaded afresh) is still paused
+const reloaded = await import("./js/pause.js?reloaded");
+assert.deepEqual(reloaded.pausedNow("default", now + 60000), { until: now + 3600000, message: "额度已用完" });
+assert.equal(reloaded.pausedNow("default", now + 3600000), null);
+assert.equal(kept.has("tc.pause"), false);
+// what an older or another page left there that is no pause is none
+kept.set("tc.pause", JSON.stringify("暂停"));
+assert.equal((await import("./js/pause.js?garbled")).pausedNow("default", now), null);
+// a browser that keeps nothing (private mode): the pause holds while the page is open
+globalThis.localStorage = { getItem() { throw new Error("denied"); }, setItem() { throw new Error("denied"); }, removeItem() { throw new Error("denied"); } };
+const kept_nothing = await import("./js/pause.js?private");
+kept_nothing.pause("default", spent(600), "额度已用完", now);
+assert.equal(kept_nothing.pausedNow("default", now + 1000)?.until, now + 600000);
+// until when, as a visitor reads it: the time, and the day when it is not today
+const at = now + 3600000;
+const time = new Date(at).toLocaleString("zh-CN", { hour: "2-digit", minute: "2-digit" });
+const day = new Date(at).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+assert.deepEqual([untilText(at, at - 60000), untilText(at, at - 86400000)], [time, day]);
+assert.equal(pauseText({ until: at, message: "额度已用完" }, at - 60000), `暂停到 ${time}，不再发送请求：额度已用完`);
+// a long refusal (a provider's own words) is cut short: the turn's notice has it whole
+assert.equal(pauseText({ until: at, message: "长".repeat(300) }, at - 60000), `暂停到 ${time}，不再发送请求：${"长".repeat(199)}…`);
+console.log("ok");
+"""
+
+
+def test_a_service_that_says_when_to_come_back_is_paused_under_node(tmp_path):
+    """A refusal that says when to come back (Retry-After) pauses its service until then, a day at most, and one that
+    does not, none; the pause is that service's alone, kept in this browser across a reload (in memory where the browser
+    keeps nothing), gone once over; the page says until when."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_PAUSE, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=120, env={**os.environ, "TZ": "Asia/Shanghai"})
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
+
+
+NODE_CONTEXT = r"""
+import assert from "node:assert/strict";
+import { compactResult, CONTEXT_TOKENS, contextBudget, fitRequest, messageTokens, QUESTION, tokensOf } from "./js/context.js";
+import { buildHistory, reviewNote, runTurn } from "./js/agent.js";
+
+const size = (msgs) => msgs.reduce((a, m) => a + messageTokens(m), 0);
+const said = (text) => text.slice(text.indexOf("\n\n［") + 2); // what a compact result says of itself, and what follows
+const bodyOf = (text) => JSON.parse(text.slice(0, text.indexOf("\n\n［")));
+const LONE = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/;
+
+// the budget: the visitor's number (8000 at least), else one for the service
+assert.deepEqual(CONTEXT_TOKENS, { claude: 200000, other: 128000 });
+assert.deepEqual([contextBudget({}, { format: "anthropic" }), contextBudget({ contextTokens: null }, { format: "openai" }),
+  contextBudget({}, { format: "anthropic", custom: true }), contextBudget({ contextTokens: 50000 }, {}), contextBudget({ contextTokens: 100 }, {}),
+  contextBudget({ contextTokens: "x" }, { format: "anthropic" })], [200000, 128000, 128000, 50000, 8000, 200000]);
+// tokens, estimated high: a Chinese character one, three others one; an image as an image, however long its data
+assert.deepEqual([tokensOf("桂枝汤"), tokensOf("abcdef"), tokensOf("桂枝 ab"), tokensOf({ a: 1 })], [3, 2, 3, 3]);
+const picture = (n) => ({ role: "user", content: [{ type: "text", text: "看图" }, { type: "image_url", image_url: { url: `data:image/png;base64,${"A".repeat(n)}` } }] });
+const claudePicture = { role: "user", content: [{ type: "image", source: { type: "base64", media_type: "image/png", data: "A".repeat(300000) } },
+  { type: "text", text: "看图" }] };
+assert.equal(messageTokens(picture(10)), messageTokens(picture(300000)));
+for (const m of [picture(300000), claudePicture]) assert.ok(messageTokens(m) > 1600 && messageTokens(m) < 1700, messageTokens(m));
+
+// a result made compact: still JSON, every field, its numbers, short lists whole, its notes longer than other words, a
+// passage met again by its id and place with what is said of it there, and every passage it named, kept or listed
+const LICENSE = "Underlying works are pre-1900 public-domain texts; this excerpt transcription is released under CC0-1.0";
+const card = (i, more = {}) => ({ passage_id: `shanghanlun.c${String(i).padStart(3, "0")}`, book_id: "shanghanlun", title: "伤寒论",
+  dynasty: "东汉", years: [200, 219], locator: `《伤寒论》第${i}条`, quote: "太阳之为病，脉浮，头项强痛而恶寒。".repeat(3),
+  source: "TaoChronos demonstration corpus", license: LICENSE, ...more });
+const NOTE = `按成书年代排列；${"只统计写出组成的条文，".repeat(25)}`;
+const found = { query: { q: "太阳病" }, hits: Array.from({ length: 30 }, (_, i) => card(i + 1)), earliest: card(1, { name_form: "桂枝汤方" }),
+  quoted: card(1, { quote: "太阳中风" }), years: [200, 219], books: ["shanghanlun", "jingui", "wenbing"], total: 30, note: NOTE };
+const text = JSON.stringify(found);
+const short = compactResult(text);
+const kept = bodyOf(short);
+assert.ok(JSON.stringify(kept).length <= 1500 && short.length < text.length / 3, `${short.length} of ${text.length}`);
+assert.deepEqual(Object.keys(kept), Object.keys(found));
+assert.deepEqual([kept.total, kept.years, kept.books, kept.query], [30, [200, 219], found.books, { q: "太阳病" }]);
+assert.ok(kept.note.startsWith(NOTE.slice(0, 240)) && NOTE.length > 250, kept.note);
+assert.match(kept.hits.at(-1), /^…（另有 \d+ 项未显示）$/);
+assert.deepEqual([kept.earliest, kept.quoted], [{ passage_id: "shanghanlun.c001", locator: "《伤寒论》第1条", name_form: "桂枝汤方" },
+  { passage_id: "shanghanlun.c001", locator: "《伤寒论》第1条", quote: "太阳中风" }]);
+const shown = kept.hits.filter((c) => typeof c === "object").map((c) => c.passage_id);
+const others = found.hits.map((c) => c.passage_id).filter((id) => !shown.includes(id));
+assert.ok(shown.length && others.length);
+assert.equal(said(short), `［这条工具结果为节省上下文已精简：原长 ${text.length} 字符；上面保留了它的结构，长的列表和文字只留开头；其中还提到这些段落：`
+  + `${others.join("、")}。需要细节时，可按段落号读原文，或以同样的参数再调用一次］`);
+// the notes the page added to it are kept as they were, after its own
+const told = `${text}\n\n［提示：回答这个问题还可再调用 1 轮工具，请在用完之前作答］`;
+assert.equal(compactResult(told), `${short}\n\n［提示：回答这个问题还可再调用 1 轮工具，请在用完之前作答］`);
+// a record keeps every field (a note a little over its words whole); a list's passage ids are passages it names; it is
+// trimmed no more than it must be
+const record = { ...Object.fromEntries(Array.from({ length: 16 }, (_, i) => [`f${i}`, "字".repeat(300)])), note: "注".repeat(245) };
+const fields = bodyOf(compactResult(JSON.stringify(record)));
+assert.deepEqual([Object.keys(fields), fields.note, fields.f0.length > 40], [Object.keys(record), record.note, true]);
+const evidence = { passage_ids: Array.from({ length: 300 }, (_, i) => `shanghanlun.c${String(i).padStart(3, "0")}`) };
+assert.ok(said(compactResult(JSON.stringify(evidence))).includes("、shanghanlun.c299") === false
+  && said(compactResult(JSON.stringify(evidence))).includes("shanghanlun.c012、shanghanlun.c013"));
+const loose = JSON.stringify({ hits: [0, 1, 2].map((i) => ({ passage_id: `p${i}`, quote: "字".repeat(500) })) });
+assert.ok(loose.length > 1500 && bodyOf(compactResult(loose)).hits.every((c) => c.quote === `${"字".repeat(400)}…（共 500 字）`));
+const within = `${JSON.stringify({ t: "x".repeat(450) })}\n\n［提示：${"很".repeat(2000)}］`;
+assert.equal(compactResult(within), within);
+// an identifier is never cut; more passages than it lists, counted; a table (more fields than a record has) trimmed like
+// a list; a character written as two never split
+const long = "zhongyi.collection.mingqing-reprint.volume12.chapter3.section2.passage";
+const ids = bodyOf(compactResult(JSON.stringify({ hits: Array.from({ length: 100 }, (_, i) => card(i, { passage_id: `${long}${i}` })) }), 600));
+assert.ok(ids.hits[0].quote.length < 50 && ids.hits[0].passage_id === `${long}0`, JSON.stringify(ids.hits[0])); // its words cut, its id whole
+const many = compactResult(JSON.stringify({ hits: Array.from({ length: 100 }, (_, i) => card(i + 1)) }));
+const listed = bodyOf(many).hits.length - 1;
+assert.ok(many.includes(`等 ${100 - listed} 段。`) && said(many).split("、").length === 60, said(many));
+const table = bodyOf(compactResult(JSON.stringify({ doses: Object.fromEntries(Array.from({ length: 300 }, (_, i) => [`${i + 1}两`, i])) })));
+assert.deepEqual([Object.keys(table.doses).length, table.doses["…"]], [13, "另有 288 个字段未显示"]);
+for (const rare of [JSON.stringify({ hits: Array.from({ length: 20 }, () => ({ quote: `a${"𠀀".repeat(300)}` })) }), `a${"𠀀".repeat(1000)}`]) {
+  assert.ok(!LONE.test(compactResult(rare)));
+}
+// a text that is not JSON: its start; a result within its room, or one that trimming would not shorten, as it was
+const error = `ERROR: ${"运行时出错。".repeat(400)}`;
+assert.equal(compactResult(error), `${error.slice(0, 1500)}\n\n［这条工具结果为节省上下文已截短：原长 ${error.length} 字符，上面是它的开头。需要细节时，请以同样的参数再调用一次］`);
+const dense = JSON.stringify(Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`f${i}`, Object.fromEntries(Array.from({ length: 20 }, (_, j) => [`g${j}`, i * 100 + j]))])));
+assert.ok(dense.length > 1500);
+for (const same of ['{"a":1}', dense]) assert.equal(compactResult(same), same);
+assert.equal(compactResult(text, 100000), text);
+
+// the conversation so far: its questions marked (never sent), its results made compact by their shape
+const relayP = { id: "impf", relay: true, baseUrl: "https://relay.example/v1", model: "Tao-R1", extra_body: {},
+  max_tokens_param: "max_completion_tokens", reasoning: "reasoning_details" };
+const big = (k) => JSON.stringify({ query: { q: `问${k}` }, hits: Array.from({ length: 30 }, (_, i) => card(100 * k + i)), total: 30 });
+const wireOf = (k, answer) => [
+  { role: "assistant", content: "", tool_calls: [{ id: `t${k}`, type: "function", function: { name: "classics__search", arguments: "{}" } }] },
+  { role: "tool", tool_call_id: `t${k}`, content: big(k) },
+  { role: "assistant", content: `<think>想一想</think>${answer}` },
+];
+const conversation = (answer) => [1, 2, 3].flatMap((k) => [{ role: "user", text: `问${k}` },
+  { role: "assistant", wire: wireOf(k, answer(k)), wireFormat: "openai", wireProvider: "impf" }]);
+const history = buildHistory(conversation((k) => `答${k}`), relayP);
+assert.deepEqual(history.map((m) => Boolean(m[QUESTION])), [1, 2, 3].flatMap(() => [true, false, false, false]));
+assert.equal(JSON.stringify(history[0]), '{"role":"user","content":"问1"}');
+assert.ok(history[2].content.length < 3500 && said(history[2].content).startsWith(`［这条工具结果为节省上下文已精简：原长 ${big(1).length} 字符`));
+assert.equal(bodyOf(history[2].content).total, 30);
+
+// a request within the budget sends all; past it, in order: earlier turns as their questions and answers, the turn's
+// earlier results made compact, the oldest turns left out (and the model told), the last round's results
+// one result trimming leaves long (numbers that cannot be trimmed): made compact once, from its own text (made compact
+// again, its lists would say they left out fewer than they did)
+const stubborn = JSON.stringify(Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`f${i}`,
+  { n: Array.from({ length: 50 }, (_, k) => ({ k, v: 1000 + k, w: 2000 + k })), ...Object.fromEntries(Array.from({ length: 20 }, (_, k) => [`g${k}`, 1000 + k])) }])));
+assert.ok(compactResult(stubborn) !== stubborn && JSON.stringify(bodyOf(compactResult(stubborn))).length > 1500);
+assert.ok(bodyOf(compactResult(stubborn)).f0.n[1] === "…（另有 49 项未显示）" && compactResult(compactResult(stubborn)) !== compactResult(stubborn));
+const round = (r) => [
+  { role: "assistant", content: "", tool_calls: [0, 1].map((j) => ({ id: `r${r}c${j}`, type: "function", function: { name: "classics__search", arguments: `{"q":"${r}${j}"}` } })) },
+  ...[0, 1].map((j) => ({ role: "tool", tool_call_id: `r${r}c${j}`, content: r === 1 && j === 1 ? stubborn : big(10 * r + j) })),
+];
+const turn = [1, 2, 3].flatMap(round);
+const before = JSON.stringify([history, turn]);
+const plain = (k) => [history[4 * (k - 1)], { role: "assistant", content: `答${k}` }];
+const upTo = (n) => turn.map((m) => (m.role === "tool" && Number(m.tool_call_id[1]) <= n ? { ...m, content: compactResult(m.content) } : m));
+const P = size([...plain(1), ...plain(2), ...plain(3)]);
+const fits = (room, state = {}) => fitRequest({ history, turn, format: "openai", budget: 100000, fixed: 95000 - room, state });
+const paired = (msgs) => {
+  const open = new Set();
+  for (const m of msgs) {
+    for (const c of m.tool_calls || []) open.add(c.id);
+    if (m.role === "tool") assert.ok(open.delete(m.tool_call_id), m.tool_call_id);
+  }
+  assert.equal(open.size, 0);
+};
+const whole = size(history) + size(turn);
+let state = {};
+let view = fits(whole, state);
+assert.ok(view.turn === turn && view.history.length === history.length && view.history.every((m, i) => m === history[i]));
+assert.deepEqual([view.note, view.more, view.tokens, state], ["", false, 95000, { plain: 0, upTo: 0, dropped: 0 }]);
+const steps = [
+  [whole - 1, { plain: 1, upTo: 0, dropped: 0 }, [...plain(1), ...history.slice(4)], turn],
+  [P + size(turn), { plain: 3, upTo: 0, dropped: 0 }, [...plain(1), ...plain(2), ...plain(3)], turn],
+  [P + size(upTo(1)), { plain: 3, upTo: 1, dropped: 0 }, [...plain(1), ...plain(2), ...plain(3)], upTo(1)],
+  [P + size(upTo(2)), { plain: 3, upTo: 2, dropped: 0 }, [...plain(1), ...plain(2), ...plain(3)], upTo(2)],
+  [size([...plain(2), ...plain(3), ...upTo(2)]), { plain: 3, upTo: 2, dropped: 1 }, [...plain(2), ...plain(3)], upTo(2)],
+  [size(upTo(2)), { plain: 3, upTo: 2, dropped: 3 }, [], upTo(2)],
+  [size(upTo(3)), { plain: 3, upTo: 3, dropped: 3 }, [], upTo(3)],
+  [1, { plain: 3, upTo: 3, dropped: 3 }, [], upTo(3)],
+];
+for (const [room, want, wantHistory, wantTurn] of steps) {
+  state = {};
+  view = fits(room, state);
+  assert.deepEqual(state, want, `${room}`);
+  assert.deepEqual([view.history, view.turn, view.more], [wantHistory, wantTurn, true], `${room}`);
+  assert.ok(view.tokens <= 95000 || room === 1, `${room}: ${view.tokens}`);
+  assert.equal(view.note, want.dropped ? `［对话较长：为节省上下文，最早的 ${want.dropped} 轮问答这次没有发送给你。用户提到其中的内容时，请说明你看不到那部分］` : "");
+  paired([...view.history, ...view.turn]);
+  view.turn.forEach((m, i) => assert.ok(m === turn[i] || m.role === "tool", i)); // a result made compact is a copy
+}
+assert.equal(JSON.stringify([history, turn]), before); // what was given is not changed
+// what a turn's requests gave up stays given up, so that each differs from the one before only where it must
+state = {};
+const tight = size([...plain(2), ...plain(3), ...upTo(2)]);
+fits(tight, state);
+for (const room of [tight, whole]) { // the next request, with as little room or more: as the last, and reckoned as it is
+  view = fits(room, state);
+  assert.deepEqual([state, view.history, view.turn, view.more, view.tokens],
+    [{ plain: 3, upTo: 2, dropped: 1 }, [...plain(2), ...plain(3)], upTo(2), false, 95000 - room + tight], `${room}`);
+}
+// an earlier turn with nothing said: as one; Claude's: its words, not its thinking; the turn's results compact in their
+// blocks, the rest as it was
+const silent = buildHistory([{ role: "user", text: "问" }, { role: "assistant", wire: wireOf(9, ""), wireFormat: "openai", wireProvider: "impf" }], relayP);
+const nothing = [silent[0], { role: "assistant", content: "（这一轮没有留下回答）" }];
+assert.deepEqual(fitRequest({ history: silent, turn: [], format: "openai", budget: 100000, fixed: 95000 - size(nothing) }).history, nothing);
+// condensed, a turn says the answer that stands, as the page shows it: not the first answer the self-check had rewritten
+// (自查), and one written on in parts whole; its messages sent carry no mark of it
+const plainOf = (h) => fitRequest({ history: h, turn: [], format: "openai", budget: 100000, fixed: 95000 - size([h[0], { role: "assistant", content: "改稿" }]) }).history;
+const checkedWire = [...wireOf(7, "初稿[[fake.1]]"), { role: "user", content: reviewNote(["fake.1"]) }, ...wireOf(8, "改稿")];
+const rewritten = buildHistory([{ role: "user", text: "问" }, { role: "assistant", wire: checkedWire, wireFormat: "openai", wireProvider: "impf",
+  segments: [{ type: "tools", round: 1, calls: [] }, { type: "text", round: 2, text: "初稿[[fake.1]]", superseded: true },
+    { type: "check", missing: ["fake.1"] }, { type: "tools", round: 3, calls: [] }, { type: "text", round: 4, text: "改稿" }] }], relayP);
+assert.deepEqual(plainOf(rewritten), [rewritten[0], { role: "assistant", content: "改稿" }]);
+assert.equal(JSON.stringify(rewritten[1]), JSON.stringify(checkedWire[0]));
+const writtenOn = buildHistory([{ role: "user", text: "问" }, { role: "assistant", wireFormat: "openai", wireProvider: "impf",
+  wire: [{ role: "assistant", content: "改" }, { role: "user", content: "［提示：上面的回答在输出上限处被截断了］" }, { role: "assistant", content: "稿" }],
+  segments: [{ type: "text", round: 1, text: "改稿" }] }], relayP);
+assert.deepEqual(plainOf(writtenOn), [writtenOn[0], { role: "assistant", content: "改稿" }]);
+const claudeP = { id: "anthropic", format: "anthropic", baseUrl: "https://api.anthropic.com", model: "claude" };
+const claudeWire = [{ role: "assistant", content: [{ type: "thinking", thinking: "想", signature: "s" }, { type: "text", text: "先查。" },
+  { type: "tool_use", id: "u0", name: "classics__search", input: {} }] },
+{ role: "user", content: [{ type: "tool_result", tool_use_id: "u0", content: big(5) }] },
+{ role: "assistant", content: [{ type: "thinking", thinking: "再想", signature: "s" }, { type: "text", text: "答。" }] }];
+const claudeHistory = buildHistory([{ role: "user", text: "问" }, { role: "assistant", wire: claudeWire, wireFormat: "anthropic", wireProvider: "anthropic" }], claudeP);
+const cround = (r) => [
+  { role: "assistant", content: [{ type: "thinking", thinking: "想", signature: "s" }, { type: "tool_use", id: `u${r}`, name: "classics__search", input: { r } }] },
+  { role: "user", content: [{ type: "text", text: "附注" }, { type: "tool_result", tool_use_id: `u${r}`, content: big(r) }] },
+];
+const cturn = [1, 2].flatMap(cround);
+view = fitRequest({ history: claudeHistory, turn: cturn, format: "anthropic", budget: 100000,
+  fixed: 95000 - size([claudeHistory[0], { role: "assistant", content: "先查。\n\n答。" }, ...cturn]) + 1 });
+assert.deepEqual(view.history, [claudeHistory[0], { role: "assistant", content: "先查。\n\n答。" }]);
+assert.ok(view.turn[0] === cturn[0] && view.turn[2] === cturn[2] && view.turn[3] === cturn[3]);
+assert.deepEqual(view.turn[1], { role: "user", content: [{ type: "text", text: "附注" }, { type: "tool_result", tool_use_id: "u1", content: compactResult(big(1)) }] });
+
+// in a turn: each request within the budget, the reply's room in it (half at most, and asked for no more); the page's
+// record of the turn keeps every result whole
+const enc = new TextEncoder();
+const sse = (body) => new Response(new ReadableStream({ start(c) { c.enqueue(enc.encode(body)); c.close(); } }),
+  { status: 200, headers: { "Content-Type": "text/event-stream" } });
+const delta = (content, finish = null) => `data: ${JSON.stringify({ choices: [{ delta: { content }, finish_reason: finish }] })}\n\n`;
+let n = 0;
+const calls = (...cs) => `data: ${JSON.stringify({ choices: [{ delta: { tool_calls: cs.map(([name, args], i) => (
+  { index: i, id: `k${++n}`, function: { name, arguments: JSON.stringify(args) } })) }, finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`;
+const scripted = (...replies) => {
+  const bodies = [];
+  globalThis.fetch = async (url, init) => { bodies.push(JSON.parse(init.body)); return sse(replies.length > 1 ? replies.shift() : replies[0]); };
+  return bodies;
+};
+const tools = ["classics__search", "kg__term", "taochronos_call", "mydata__read"].map((name) => ({ name, description: name, parameters: { type: "object", properties: {} } }));
+let ran = [];
+const runtime = {
+  call: async (name, args) => {
+    ran.push(name === "taochronos_call" ? args.tool : `${name} ${args.q ?? args.surface ?? ""}`.trim());
+    if (args.surface === "无") return { ok: false, error: "没有这个词条", text: "ERROR: 没有这个词条" };
+    return { ok: true, text: big(ran.length), summary: "找到 30 段", duration_ms: 12, result: { charts: [] } };
+  },
+};
+const turnWith = (extra) => {
+  const trace = {};
+  const ends = [];
+  return { trace, ends, done: runTurn({ provider: relayP, settings: { maxSteps: 8 }, route: null, runtime, tools, system: "s", history: [],
+    user: { text: "问" }, signal: new AbortController().signal, trace, hooks: { toolEnd: (call, out) => ends.push(out) }, ...extra }) };
+};
+let bodies = scripted(calls(["classics__search", { q: "甲" }]), calls(["classics__search", { q: "乙" }]), calls(["classics__search", { q: "丙" }]),
+  delta("答", "stop"));
+let t = turnWith({ settings: { maxSteps: 8, contextTokens: 20000 } });
+let done = await t.done;
+const results = (b) => b.messages.filter((m) => m.role === "tool").map((m) => m.content);
+assert.deepEqual(bodies.map((b) => b.max_completion_tokens), [10000, 10000, 10000, 10000]);
+assert.deepEqual(results(bodies[1]), [big(1)]);
+assert.deepEqual(results(bodies[2]), [compactResult(big(1)), big(2)]);
+assert.deepEqual(results(bodies[3]), [compactResult(big(1)), compactResult(big(2)), big(3)]);
+for (const b of bodies) assert.ok(size(b.messages) + tokensOf(tools) + 10000 <= 20000, size(b.messages));
+assert.deepEqual(done.wire.filter((m) => m.role === "tool").map((m) => m.content), [big(1), big(2), big(3)]);
+assert.deepEqual(t.trace.events.map((e) => e.what), ["compacted", "compacted"]);
+// a conversation too long for it: the oldest turns are left out, and the model is told
+const talk = buildHistory(conversation((k) => `答${k}${"论".repeat(1500)}`), relayP);
+for (const [instructions, left] of [["s", 1], ["规".repeat(2500), 3]]) { // the instructions count: longer ones leave less room
+  bodies = scripted(delta("答", "stop"));
+  t = turnWith({ settings: { maxSteps: 8, contextTokens: 8000 }, history: talk, system: instructions });
+  await t.done;
+  const [system, ...sent] = bodies[0].messages;
+  assert.ok(bodies[0].max_completion_tokens === 4000 && (left === 3 || size(bodies[0].messages) + tokensOf(tools) + 4000 <= 8000));
+  assert.equal(system.content, `${instructions}\n\n［对话较长：为节省上下文，最早的 ${left} 轮问答这次没有发送给你。用户提到其中的内容时，请说明你看不到那部分］`);
+  assert.deepEqual(sent.map((m) => m.content).filter((c) => /^问\d$/.test(c)), ["问1", "问2", "问3"].slice(left));
+  assert.ok(sent.every((m) => m.role !== "tool") && sent.at(-1).content === "问");
+  assert.deepEqual(t.trace.events.map((e) => e.what), ["compacted"]);
+}
+
+// a lookup asked again in the turn, its arguments in another order, directly or through the catalog: answered from the
+// first, not run again, and the model told so; another, a failed one, one on another runtime, or one that is not a
+// lookup of the corpus (the user's data) runs again
+ran = [];
+let where = "a"; // the runtime and corpus the turn's lookups are asked of: another once 麻黄汤 has been looked up
+const moving = { call: async (name, args) => { const out = await runtime.call(name, args); if (args.q === "麻黄汤") where = "b"; return out; } };
+bodies = scripted(
+  calls(["classics__search", { q: "桂枝汤", books: ["shanghanlun"] }], ["taochronos_call", { tool: "study.formula", arguments: { name: "桂枝汤" } }],
+    ["kg__term", { surface: "无" }], ["mydata__read", {}]),
+  calls(["classics__search", { books: ["shanghanlun"], q: "桂枝汤" }], ["taochronos_call", { arguments: { name: "桂枝汤" }, tool: "study.formula" }],
+    ["kg__term", { surface: "无" }], ["mydata__read", {}], ["classics__search", { q: "麻黄汤" }]),
+  calls(["classics__search", { q: "桂枝汤", books: ["shanghanlun"] }]),
+  delta("答", "stop"));
+t = turnWith({ scope: () => where, runtime: moving });
+done = await t.done;
+assert.deepEqual(ran, ["classics__search 桂枝汤", "study.formula", "kg__term 无", "mydata__read", "kg__term 无", "mydata__read",
+  "classics__search 麻黄汤", "classics__search 桂枝汤"]);
+const again = results(bodies[2]).slice(4);
+assert.deepEqual(again.slice(0, 2), [`${big(1)}\n\n［与本轮第 1 轮的同一调用相同：结果取自那一次，没有重新运行］`,
+  `${big(2)}\n\n［与本轮第 1 轮的同一调用相同：结果取自那一次，没有重新运行］`]);
+assert.deepEqual(again.slice(2), ["ERROR: 没有这个词条", big(6), big(7)]);
+assert.deepEqual(t.ends.map((o) => o.reused ?? null), [null, null, null, null, 1, 1, null, null, null, null]);
+assert.deepEqual(t.trace.events.map((e) => e.what), ["reused", "reused"]);
+assert.deepEqual(t.trace.tools.map((e) => e.compute ?? null), [12, 12, null, 12, null, null, null, 12, 12, 12]);
+assert.equal(bodies[0].max_completion_tokens, 16000); // within its budget, the reply's room as it would be
+console.log("ok");
+"""
+
+
+def test_a_turn_keeps_within_its_context_budget_under_node(tmp_path):
+    """A request's context budget (web/js/context.js): the visitor's, or one for the service, with the reply's room in it;
+    tokens estimated high, an image counted as one; a result made compact keeping its shape, every field and the passages
+    it named; past the budget, earlier turns as their questions and answers, the turn's earlier results compact, the
+    oldest turns left out (the model told), the last round's results — what was given up staying given up, pairs and
+    thinking as they were, the page's record whole; and a lookup asked again in a turn answered from the first where
+    that is safe."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_CONTEXT, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=120)
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
+
+
 def test_every_tool_the_model_can_call_has_plain_words_on_the_page():
     """The tool steps and the answers name a tool in plain words, never by its inside name (web/js/redact.js): there are
     words for every tool the model can be offered, and none of them is an identifier."""
@@ -1531,7 +2080,7 @@ def test_a_conversation_in_the_browser(tmp_path):
 
     from taochronos.chat import ChatRuntime
     from taochronos.chat.server import ChatServer
-    from web_mock import ANSWER, LONG_CUT, MockProvider, MockRelay
+    from web_mock import ANSWER, LONG_CUT, SELF_CHECK, SPENT, MockProvider, MockRelay
 
     mock = MockProvider().start()
     relay = MockRelay(mock.base_url).start()
@@ -1674,6 +2223,63 @@ def test_a_conversation_in_the_browser(tmp_path):
             assert thought.locator(".notice:not(.check)").count() == 0
             again, cut = mock.requests[asked_before + 2]["body"], mock.requests[asked_before + 1]["body"]
             assert again["thinking"] == {"type": "disabled"} and "thinking" not in cut and again["messages"] == cut["messages"]
+            # the page reloaded while the self-check's rewrite is asked for: opened again, it takes the rewrite out, and the
+            # answer it was about stands, the note saying so, as when a rewrite fails — not a turn left without its answer
+            held_rewrites: list = []
+
+            def hold_the_rewrite(route) -> None:
+                said = (json.loads(route.request.post_data or "{}").get("messages") or [{}])[-1].get("content")
+                if str(said or "").startswith(SELF_CHECK):
+                    held_rewrites.append(route)  # not answered: the page is reloaded meanwhile
+                else:
+                    route.continue_()
+
+            page.route(f"{relay.url}/v1/chat/completions", hold_the_rewrite)
+            page.fill("#input", "桂枝汤的配伍如何？")
+            page.keyboard.press("Enter")
+            # the turn as the page keeps it, as it runs too
+            kept = """() => import('./js/store.js').then((s) => s.listConversations())
+                .then((l) => l.map((c) => c.messages.filter((m) => m.role === 'assistant')[4]).find(Boolean) || {})"""
+            for _ in range(150):  # kept while the rewrite is asked for: the answer folded, the self-check's note under it
+                if any(s["type"] == "check" for s in page.evaluate(kept).get("segments", [])):
+                    break
+                page.wait_for_timeout(200)
+            assert len(held_rewrites) == 1 and page.evaluate(kept)["status"] == "streaming"
+            page.reload()
+            page.wait_for_selector(".conv.active", timeout=15000)
+            page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 5", timeout=30000)
+            page.wait_for_function("document.querySelectorAll('.md .cite.pending').length === 0", timeout=15000)
+            closed = page.locator(".msg.assistant").nth(4)
+            assert closed.locator(".notice.check").inner_text() == "自查：初稿所引的 fake.999 在语料中查无此段；重新作答未能完成，上面的回答未经更正。"
+            assert closed.locator(".md .cite.bad").count() == 1 and not closed.locator("details.draft").count()
+            assert not closed.locator(".notice.err").count() and not closed.locator("button.resume").count()
+            assert page.evaluate(kept)["status"] == "done"  # and kept so
+            page.unroute(f"{relay.url}/v1/chat/completions", hold_the_rewrite)
+            # the day's free calls run out as the self-check asks for a rewrite: the answer it was about stands, the
+            # note says why, and the service is paused until the hour the relay named, as after a turn it refused
+            def spend_at_the_rewrite(route) -> None:
+                said = (json.loads(route.request.post_data or "{}").get("messages") or [{}])[-1].get("content")
+                if str(said or "").startswith(SELF_CHECK):
+                    relay.spent = True
+                route.continue_()
+
+            page.route(f"{relay.url}/v1/chat/completions", spend_at_the_rewrite)
+            asked_before, chats = len(mock.requests), len(relay.chat)
+            page.fill("#input", "桂枝汤的方义是什么？")
+            page.keyboard.press("Enter")
+            page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 6", timeout=60000)
+            page.wait_for_function("document.querySelectorAll('.md .cite.pending').length === 0", timeout=15000)
+            # the turn before it goes as it stands: its answer last, not the self-check's note to rewrite it
+            sent = mock.requests[asked_before]["body"]["messages"]
+            assert sent[-3]["role"] == "tool" and sent[-2]["role"] == "assistant" and "[[fake.999]]" in sent[-2]["content"]
+            refused = page.locator(".msg.assistant").nth(5)
+            assert refused.locator(".notice.check").inner_text() == (
+                f"自查：初稿所引的 fake.999 在语料中查无此段；重新作答未能完成（{SPENT}），上面的回答未经更正。")
+            assert refused.locator(".md .cite.bad").count() == 1 and not refused.locator("details.draft").count()
+            assert not refused.locator(".notice.err").count() and "查无此段" in refused.locator(".verify-bar").inner_text()
+            assert len(mock.requests) - asked_before == 2 and len(relay.chat) - chats == 3  # the rewrite refused, once
+            paused = page.locator("#pause")
+            assert paused.is_visible() and paused.inner_text().startswith("暂停到 ") and paused.inner_text().endswith(f"，不再发送请求：{SPENT}")
             assert not errors, errors
             browser.close()
     finally:
@@ -1832,6 +2438,17 @@ def test_charts_in_the_browser(tmp_path):
             told = next(m["content"] for m in mock.requests[1]["body"]["messages"] if m["role"] == "tool")
             assert '"charts_shown":["配伍比例对照","方剂相似度"]' in told and '"heatmap"' not in told
             assert '"tables_shown":["桂枝汤、麻黄汤的组成与剂量","方剂两两比较"]' in told and '"columns"' not in told
+            # the same comparison asked again in the turn's next round is answered from the first, not run again: its
+            # step says so, the model is told so, and its figures are not shown a second time
+            page.fill("#input", "用图表比较桂枝汤与麻黄汤，再查一遍。")
+            page.keyboard.press("Enter")
+            page.wait_for_function("document.querySelectorAll('.msg.assistant .actions .meta').length >= 2", timeout=60000)
+            again = page.locator(".msg.assistant").nth(1)
+            said = again.locator(".steps .tool .row > .sm").all_inner_texts()
+            assert len(said) == 2 and said[1] == f"{said[0]}（与先前的同一调用相同，没有重新运行）", said
+            assert again.locator(".charts .chart-tabs").count() == 1 and again.locator(".charts .viz-card").count() == 1
+            last = [m["content"] for m in mock.requests[-1]["body"]["messages"] if m["role"] == "tool"]
+            assert last[-1] == f"{last[-2]}\n\n［与本轮第 1 轮的同一调用相同：结果取自那一次，没有重新运行］"
             # the tool console draws the charts of what it runs
             page.click("#toggle-drawer")
             page.click(".drawer .tab >> text=工具台")
@@ -1869,8 +2486,10 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
     ready for the next question, and the turn can be taken up again (继续作答) from what its calls gave, none of them run
     again.  The rounds used, the answer is asked for with no tool to call; a model that calls tools all the same gets no
     call run, and its turn ends saying so — taken up again, it is asked again, and still no call runs.  The day's free
-    calls running out while a search runs, the turn fails saying so, asked once; taken up again once they are back, it
-    is answered from the search, which does not run again."""
+    calls running out while a search runs, the turn fails saying so, asked once, and the service is paused until the
+    hour the relay named: the composer says so, a question, 继续作答 and 重试 are held back and nothing is sent, and a page
+    opened again is still paused; once the hour is past, the turn taken up again is answered from the search, which
+    does not run again."""
     exe = _chromium()
     if exe is None:
         pytest.skip("playwright is not installed")
@@ -1878,7 +2497,7 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
 
     from taochronos.chat import ChatRuntime
     from taochronos.chat.server import ChatServer
-    from web_mock import BOTH, KEEP_CALLING, PARTIAL_ANSWER, RESUMED, SPENT, MockProvider, MockRelay
+    from web_mock import BOTH, KEEP_CALLING, PARTIAL_ANSWER, RESUMED, SPENT, SPENT_FOR, MockProvider, MockRelay
 
     mock = MockProvider().start()
     relay = MockRelay(mock.base_url).start()
@@ -1993,8 +2612,9 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
             assert [m["tool_call_id"] for m in told()][-2:] == ["call_1", "call_2"] and told()[-1]["content"] == f"ERROR: 调用已停止\n\n{RESUMED}"
             assert not third.locator(".notice").count() and third.locator(".steps .tool .st.ok").count() == 1
             # and the next question is answered — one the model searches for twice, in two rounds, each call under the
-            # same id (a service that numbers its calls afresh in each reply): each step ends as its own; its two rounds
-            # used, the answer is asked for with no tool to call
+            # same id (a service that numbers its calls afresh in each reply): each step ends as its own, the second
+            # answered from the first, not run again; its two rounds used, the answer is asked for with no tool to call
+            ran.clear()
             asked = len(mock.requests)
             page.fill("#input", "桂枝汤主治什么？请再查一遍原文。")
             page.keyboard.press("Enter")
@@ -2003,7 +2623,9 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
             assert [m["tool_call_id"] for m in mock.requests[-1]["body"]["messages"] if m["role"] == "tool"][-2:] == ["call_1", "call_1"]
             assert [r["body"]["tool_choice"] for r in mock.requests[asked:]] == ["auto", "auto", "none"]
             assert fourth.locator(".steps .tool .st.ok").count() == 2 and not fourth.locator(".notice").count()
-            assert fourth.locator(".steps .tool .row > .sm").all_inner_texts() == ["3 条命中", "3 条命中"]
+            assert fourth.locator(".steps .tool .row > .sm").all_inner_texts() == ["3 条命中", "3 条命中（与先前的同一调用相同，没有重新运行）"]
+            assert ran == ["classics__search"] and told()[-1]["content"].endswith(
+                "［与本轮第 1 轮的同一调用相同：结果取自那一次，没有重新运行］\n\n［提示：回答这个问题的工具调用已用完，请根据已有结果直接作答，不要再调用工具］")
             # a model that calls tools however it is asked: once its rounds are used its calls are not run, and its turn
             # ends saying it gave no answer; taken up again, it is asked twice more — no call runs, and it ends so again
             ran.clear()
@@ -2014,13 +2636,13 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
             ended()
             fifth = page.locator(".msg.assistant").nth(4)
             assert [r["body"]["tool_choice"] for r in mock.requests[asked:]] == ["auto", "auto", "none", "none"]
-            assert ran == ["classics__search"] * 2 and fifth.locator(".steps .tool .st.ok").count() == 2
+            assert ran == ["classics__search"] and fifth.locator(".steps .tool .st.ok").count() == 2  # the second from the first
             assert "工具已经停止调用，模型却仍要调用，没有给出回答。" in fifth.locator(".notice.err").inner_text()
             asked = len(mock.requests)
             fifth.locator(".notice.err button.resume").click()
             ended()
             page.wait_for_function("document.querySelectorAll('.msg.assistant')[4]?.querySelector('.notice.err button.resume')", timeout=10000)
-            assert [r["body"]["tool_choice"] for r in mock.requests[asked:]] == ["none", "none"] and len(ran) == 2
+            assert [r["body"]["tool_choice"] for r in mock.requests[asked:]] == ["none", "none"] and len(ran) == 1
             assert told()[-2]["content"].endswith(RESUMED) and "工具已经停止调用" in fifth.locator(".notice.err").inner_text()
             # the day's free calls run out while the next question's search runs: the turn fails saying so, asked once (a
             # spent day is not asked again); once the conversation goes on, a turn before the last is not taken up again
@@ -2036,7 +2658,39 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
             assert sixth.locator(".notice.err .grow").inner_text() == SPENT and len(relay.chat) == chats + 2
             assert ran == ["classics__search"] and sixth.locator(".steps .tool .st.ok").count() == 1
             assert not fifth.locator("button.resume").count() and fifth.locator(".notice.err").count() == 1
-            # they are back: taken up again, the turn is answered from the search, which does not run again
+            # the relay said when they come back (Retry-After): until then nothing is sent to it — the composer says until
+            # when, and a question, 继续作答, 重试 and a question edited are held back with a note, the question left where
+            # it was typed
+            paused = page.locator("#pause")
+            assert paused.is_visible() and paused.inner_text().startswith("暂停到 ") and paused.inner_text().endswith(f"，不再发送请求：{SPENT}")
+            page.evaluate("""() => { window.notes = [];
+              new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => n.classList?.contains("toast") && window.notes.push(n.textContent))))
+                .observe(document.body, { childList: true, subtree: true }); }""")
+            page.fill("#input", "麻黄汤主治什么？")
+            page.keyboard.press("Enter")
+            sixth.locator(".notice.err button.resume").click()
+            sixth.locator(".notice.err button", has_text="重试").click()
+            asked_last = page.locator(".msg.user").nth(5)
+            asked_last.hover()
+            asked_last.locator("button[aria-label='编辑']").click()
+            asked_last.locator(".edit-box textarea").fill("麻黄汤的组成是什么？")
+            asked_last.locator(".edit-box button", has_text="发送").click()
+            page.wait_for_function("window.notes.length >= 4", timeout=10000)
+            assert len(page.evaluate("window.notes")) == 4 and all(x.endswith(SPENT) for x in page.evaluate("window.notes"))
+            asked_last.locator(".edit-box button", has_text="取消").click()
+            assert len(relay.chat) == chats + 2 and page.locator(".msg.assistant").count() == 6 and page.input_value("#input") == "麻黄汤主治什么？"
+            assert asked_last.locator(".bubble").inner_text() == "桂枝汤主治什么？" and sixth.locator(".notice.err .grow").inner_text() == SPENT
+            # a page opened again is still paused
+            again = ctx.new_page()
+            again.goto(page.url)
+            again.wait_for_selector("#pause:not([hidden])", timeout=30000)
+            assert again.locator("#pause").inner_text() == paused.inner_text()
+            again.close()
+            # the hour past, the pause is over; taken up again, the turn is answered from the search, which does not run
+            # again
+            page.fill("#input", "")
+            page.clock.fast_forward(SPENT_FOR * 1000)
+            page.wait_for_selector("#pause", state="hidden", timeout=10000)
             relay.spent = False
             asked = len(mock.requests)
             sixth.locator(".notice.err button.resume").click()
@@ -2052,6 +2706,149 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
         relay.shutdown()
         mock.shutdown()
 
+
+def test_a_research_run_on_the_server_is_followed_again_after_a_reload(tmp_path):
+    """A research run the model asks for runs on the server in the background, its step saying how it goes: queued while
+    the server finishes another, then running.  A second tab opened meanwhile leaves the turn to the first.  The page
+    closed while the run goes on and opened again: the turn ends with what it had, and the run is followed again by its
+    id, its step saying so, until its results come to the research panel and to the turn, which 继续作答 then answers
+    from.  A stop asks the server to stop the run.  A run begun from the research panel is followed again after a
+    reload too."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    import time
+
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import RESEARCH, RESUMED, MockProvider, MockRelay
+
+    mock = MockProvider().start()
+    relay = MockRelay(mock.base_url).start()
+    web = tmp_path / "web"
+    _published(web, relay.url)
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    gates: dict[str, threading.Event] = {}
+    work = rt.jobs.work
+
+    def held(job, stop, attach):  # each run waits until the test lets it go on
+        gates.setdefault(job["id"], threading.Event()).wait(120)
+        return work(job, stop, attach)
+
+    rt.jobs.work = held
+    go = lambda job: gates.setdefault(job, threading.Event()).set()  # noqa: E731
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{srv.server_address[1]}/"
+    consent = {"v": 1, "logs": False, "at": "2026-09-28T00:00:00Z"}
+
+    def state(job: str, want: str) -> None:
+        """The server's run reaches `want`."""
+        deadline = time.time() + 60
+        while rt.job(job)["state"] != want:
+            assert time.time() < deadline, rt.job(job)
+            time.sleep(0.1)
+
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            ctx = browser.new_context(viewport={"width": 1280, "height": 900}, locale="zh-CN")
+            ctx.add_init_script(f"localStorage.setItem('tc.consent', {json.dumps(json.dumps(consent))});")
+            errors: list[str] = []
+
+            def opened(path: str = ""):
+                page = ctx.new_page()
+                page.on("pageerror", lambda e: errors.append(str(e)))
+                page.goto(url + path)
+                page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+                return page
+
+            def says(page, n: int, start: str) -> None:
+                """The research step of the n-th answer says `start`…"""
+                page.wait_for_function("([n, start]) => document.querySelectorAll('.msg.assistant')[n]"
+                                       "?.querySelector('.steps .tool .row > .sm')?.textContent.startsWith(start)", arg=[n, start],
+                                       timeout=60000)
+
+            # another visitor's run goes on: the page's waits behind it, then runs
+            ahead = rt.start_research("麻黄汤的源流", max_rounds=1)
+            page = opened()
+            page.fill("#input", f"{RESEARCH}：桂枝汤的源流")
+            page.keyboard.press("Enter")
+            says(page, 0, "排队中：服务正在完成另一项研究 · 已等 ")
+            mine = next(j for j in rt.jobs.records if j != ahead)
+            here = page.evaluate("location.hash")
+            # a second tab leaves the turn to the first: it does not end it, and does not follow its run
+            other = opened(here)
+            other.wait_for_selector(".msg.assistant .steps", timeout=30000)
+            assert not other.locator(".msg.assistant .notice").count()
+            other.click(".conv.active")  # opened again from the list
+            other.wait_for_timeout(500)
+            assert not other.locator(".msg.assistant .notice").count()
+            other.close()
+            go(ahead)
+            says(page, 0, "研究进行中 · 已运行 ")
+            assert rt.job(mine)["state"] == "running"
+            # the page closed while the run goes on, and opened again: the turn ends with what it had, its run followed
+            page.close()
+            page = opened(here)
+            turn = page.locator(".msg.assistant").nth(0)
+            assert turn.locator(".notice.err").inner_text().startswith("这一轮没有答完：页面在作答时关闭或刷新了")
+            assert turn.locator(".notice.err button.resume").count() == 1
+            assert turn.locator(".steps .head").inner_text().startswith("调用了 1 个工具，1 个仍在后台进行")
+            says(page, 0, "后台继续 · 研究进行中 · 已运行 ")
+            go(mine)
+            page.wait_for_selector(".toast >> text=后台的研究已完成：结果在研究面板中", timeout=60000)
+            assert turn.locator(".steps .tool .st.ok").count() == 1 and rt.job(mine)["state"] == "completed"
+            page.click("#toggle-drawer")
+            page.click(".drawer .tab:has-text('研究')")
+            assert page.locator(".drawer .run-card").count() == 1
+            # taken up again, the turn answers from the run's result, which the page now has
+            asked = len(mock.requests)
+            turn.locator(".notice.err button.resume").click()
+            page.wait_for_function("document.querySelector('.msg.assistant .verify-bar')", timeout=60000)
+            told = [m for m in mock.requests[-1]["body"]["messages"] if m["role"] == "tool"]
+            assert len(mock.requests) == asked + 1 and [m["tool_call_id"] for m in told] == ["call_r"]
+            assert told[0]["content"].startswith("{") and told[0]["content"].endswith(RESUMED)
+            # a stop: the server is asked to stop the run, which ends after the task it runs
+            page.fill("#input", f"{RESEARCH}：再看一次")
+            page.keyboard.press("Enter")
+            says(page, 1, "研究进行中 · 已运行 ")
+            third = next(j for j in rt.jobs.records if j not in (ahead, mine))
+            page.click("#send.stop")
+            state(third, "cancel_requested")
+            go(third)
+            state(third, "cancelled")
+            # a run begun from the research panel, the page reloaded meanwhile: followed again, its result in the panel
+            page.click(".drawer .console-form summary")
+            page.fill(".drawer .console-form textarea", "桂枝汤的加减")
+            page.click(".drawer .console-form .btn >> text=运行研究")
+            page.wait_for_function("document.querySelector('.drawer .console-form .muted')?.textContent.startsWith('研究进行中 · 已运行 ')",
+                                   timeout=60000)
+            fourth = next(j for j in rt.jobs.records if j not in (ahead, mine, third))
+            page.reload()
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            page.click("#toggle-drawer")
+            page.click(".drawer .tab:has-text('研究')")
+            page.click(".drawer .console-form summary")
+            page.wait_for_function("document.querySelector('.drawer .console-form .muted')?.textContent.startsWith('研究进行中 · 已运行 ')",
+                                   timeout=60000)
+            go(fourth)
+            page.wait_for_selector(".toast >> text=研究完成", timeout=60000)
+            assert page.locator(".drawer .run-card").count() == 2 and "桂枝汤的加减" in page.locator(".drawer .run-card").nth(0).inner_text()
+            assert not errors, errors
+            browser.close()
+    finally:
+        for gate in gates.values():
+            gate.set()
+        srv.shutdown()
+        srv.server_close()
+        relay.shutdown()
+        mock.shutdown()
 
 def test_claude_through_the_official_sdk(tmp_path):
     """The Claude adapter loads the pinned SDK from jsDelivr (fetched here by Python, TLS verified, and handed to the
@@ -2142,12 +2939,12 @@ def test_claude_through_the_official_sdk(tmp_path):
             assert page.eval_on_selector_all(".md .cite", "els => els.map(e => e.className)") == ["cite ok", "cite warn", "cite ok"]
             assert first["body"]["max_tokens"] == 64000  # no number set: what Anthropic advises for a streamed reply
             # its record: Claude's requests, each timed through the fetch the SDK was given — the answer's text in the second,
-            # the self-check's note after it, and the rewrite's two
+            # the self-check's note after it, and the rewrite's two, its search the first's again and answered from it
             rec = record(1)
             assert rec["provider"] == "anthropic" and ends(rec) == [(1, "tool_use"), (2, "end_turn"), (3, "tool_use"), (4, "end_turn")]
             assert "text" not in rec["requests"][0] and "text" in rec["requests"][1] and rec["requests"][1]["output"] > 0
             assert [(t["round"], t["status"]) for t in rec["tools"]] == [(1, "ok"), (3, "ok")] and rec["tools"][0]["id"] == "toolu_1"
-            assert [e["what"] for e in rec["events"]] == ["review"]
+            assert [e["what"] for e in rec["events"]] == ["review", "reused"]
 
             def turn(question: str, n: int) -> list[dict]:
                 """Ask, wait for the n-th answer, and return the requests the turn made."""
@@ -2178,7 +2975,7 @@ def test_claude_through_the_official_sdk(tmp_path):
             assert "不构成医疗建议" in long.inner_text()
             rec = record(3)
             assert ends(rec) == [(1, "tool_use"), (2, "max_tokens"), (3, "end_turn"), (4, "tool_use"), (5, "end_turn")]
-            assert [e["what"] for e in rec["events"]] == ["continued", "review"]
+            assert [e["what"] for e in rec["events"]] == ["continued", "review", "reused"]
             # one that spent all of it on thinking is asked again at low effort, still thinking (newer models always do)
             asked = turn("这个问题请想得很久再答。", 4)
             assert asked[2]["output_config"] == {"effort": "low"} and "output_config" not in asked[1] and self_checked(asked, 3)
@@ -2187,7 +2984,7 @@ def test_claude_through_the_official_sdk(tmp_path):
             assert "想了又想" not in thought.inner_text() and thought.locator(".notice:not(.check)").count() == 0
             rec = record(4)
             assert ends(rec) == [(1, "tool_use"), (2, "max_tokens"), (3, "end_turn"), (4, "tool_use"), (5, "end_turn")]
-            assert [e["what"] for e in rec["events"]] == ["lighter", "review"]
+            assert [e["what"] for e in rec["events"]] == ["lighter", "review", "reused"]
             # stopped while its answer is being written, the turn is taken up again (继续作答): what that answer had shown
             # goes, no call runs again, and Claude is asked with no tool to call, from the results with the page's note
             # after them — its answer, though it cites the passage that does not exist, not self-checked, since it could
@@ -2382,6 +3179,39 @@ def test_an_api_set_by_hand(tmp_path):
             assert "my-model" not in req["body"]["messages"][0]["content"]  # the instructions name no model, the visitor's own included
             saved = json.loads(page.evaluate("localStorage.getItem('tc.settings')"))
             assert saved["provider"].startswith("custom-") and saved["customProviders"][0]["headers"] == {"X-Gateway": "tc-test"}
+            assert req["body"]["max_tokens"] == 16000 and saved["contextTokens"] is None
+
+            # its context budget: left empty, the one for a service other than Claude; set, each request keeps within it,
+            # the room for its reply half of it at most and asked for no more — here, the conversation so far does not
+            # fit, and its earlier turn is left out, the model told; the page keeps all of it
+            def budget(value: str) -> None:
+                page.click("#model-chip")
+                field = page.get_by_label("上下文预算（tokens）")
+                assert field.get_attribute("placeholder") == "自动（128000）"
+                field.fill(value)
+                page.click(".modal-foot .btn:not(.secondary)")
+
+            def asked(question: str, n: int) -> dict:
+                before = len(mock.requests)
+                page.fill("#input", question)
+                page.keyboard.press("Enter")
+                page.wait_for_function(f"document.querySelectorAll('.msg.assistant .verify-bar').length >= {n}", timeout=60000)
+                return mock.requests[before]["body"]
+
+            budget("8000")
+            assert json.loads(page.evaluate("localStorage.getItem('tc.settings')"))["contextTokens"] == 8000
+            body = asked("它的组成呢？", 2)
+            assert body["max_tokens"] == 4000 and [m["role"] for m in body["messages"]] == ["system", "user"]
+            assert body["messages"][0]["content"].endswith(
+                "［对话较长：为节省上下文，最早的 1 轮问答这次没有发送给你。用户提到其中的内容时，请说明你看不到那部分］")
+            assert page.locator(".msg.user").all_inner_texts() == ["桂枝汤主治什么？", "它的组成呢？"]
+            # left empty again: as it was
+            budget("")
+            assert json.loads(page.evaluate("localStorage.getItem('tc.settings')"))["contextTokens"] is None
+            body = asked("麻黄汤呢？", 3)
+            assert body["max_tokens"] == 16000 and "对话较长" not in body["messages"][0]["content"]
+            whole = ["user", "assistant", "tool", "assistant", "user", "assistant", "tool", "assistant"]  # the self-check's note and rewrite in it
+            assert [m["role"] for m in body["messages"]] == ["system"] + whole * 2 + ["user"]
             assert not errors, errors
             browser.close()
     finally:
@@ -2466,8 +3296,8 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
             assert rec["citations"]["total"] == 3 and rec["citations"]["bad"] == 0 and rec["citations"]["pending"] == 0
             assert rec["usage"] == {"input": 2400, "output": 360} and rec["rounds"] == 4 and len(rec["tools"]) == 2
             # where its time went, in milliseconds from the turn's start: each model request — its times in order, how it
-            # finished, its tokens —, each call — its round, how it ended, how long it waited and ran —, and the self-check's
-            # note between the answer and its rewrite
+            # finished, its tokens —, each call — its round, how it ended, how long it waited and ran —, the self-check's
+            # note between the answer and its rewrite, and the rewrite's search, the first's again, answered from it
             asks = rec["requests"]
             assert [(q["round"], q["attempt"], q["finish"]) for q in asks] == [(1, 1, "tool_calls"), (2, 1, "stop"), (3, 1, "tool_calls"),
                                                                               (4, 1, "stop")]
@@ -2478,7 +3308,8 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
             assert (call["round"], call["status"], call["id"]) == (1, "ok", "call_1") and call["wait"] >= 0
             assert asks[0]["end"] <= call["at"] and call["at"] + call["ms"] <= asks[1]["sent"]
             assert [(t["round"], t["status"]) for t in rec["tools"]] == [(1, "ok"), (3, "ok")]
-            assert [e["what"] for e in rec["events"]] == ["review"] and asks[1]["end"] <= rec["events"][0]["at"] <= asks[2]["sent"]
+            assert [e["what"] for e in rec["events"]] == ["review", "reused"] and asks[1]["end"] <= rec["events"][0]["at"] <= asks[2]["sent"]
+            assert asks[2]["end"] <= rec["events"][1]["at"] <= asks[3]["sent"]
             assert rec["hidden"] == 0 and rec["asleep"] == 0 and "was" not in rec
             assert not {"apiKey", "keys", "settings"} & set(rec) and MockRelay.SECRET not in json.dumps(rec)
             assert relay.chat and all("authorization" not in {k.lower() for k in c["headers"]} for c in relay.chat)  # no key from the page

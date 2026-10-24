@@ -7,13 +7,14 @@ verbatim, one misquoted, one to a passage that does not exist and one quoted in 
 forgetting its instructions would, the names of the tools and fields it worked with, which the page tells in plain words
 (web/js/redact.js).  The page's self-check (自查, web/js/agent.js) names the passage that does not exist; asked so, the
 model searches again and answers without it.  A message carrying the user's data (我的资料: the page's note on it) is
-answered by analysing its prescriptions (``mydata__prescriptions``) and citing its first row.  A question asking for
-长篇 is answered at the output limit (``finish_reason: length``) part-way, and the rest when the page asks it to write
-on; one asking it to 想得很久 spends the limit on its thinking, and answers when asked again without.  One asking for
-图表与原文 compares two formulas and searches the classics in the same round, and answers with what the round gave it (the
-test may hold the search); one asking it to 再查一遍 searches twice, in two rounds, each call under the same id (as a
-service that numbers its calls afresh in each reply does); one asking it to 不停地查 searches in every reply, however it
-is asked (as a service that drops ``tool_choice`` would).  Every request is recorded for the test to inspect.
+answered by analysing its prescriptions (``mydata__prescriptions``) and citing its first row.  A question asking for 长篇
+is answered at the output limit (``finish_reason: length``) part-way, and the rest when the page asks it to write on;
+one asking it to 想得很久 spends the limit on its thinking, and answers when asked again without.  One asking for 图表与原文
+compares two formulas and searches the classics in the same round, and answers with what the round gave it (the test may
+hold the search); one asking it to 再查一遍 searches twice (with 图表, compares twice), in two rounds, each call under the
+same id (as a service that numbers its calls afresh in each reply does); one asking it to 不停地查 searches in every reply,
+however it is asked (as a service that drops ``tool_choice`` would); one asking it to 做一次研究 asks for a research run
+(``taochronos_research``), and answers once it has its result.  Every request is recorded for the test to inspect.
 """
 
 from __future__ import annotations
@@ -55,6 +56,8 @@ PARTIAL_ANSWER = "两方的对照见上方图表。原文的检索没有等到�
 AGAIN = "再查一遍"
 # a question asking to search on and on: a search in every reply, even one asked with no tool to call
 KEEP_CALLING = "不停地查"
+# a question asking for a research run (taochronos_research): a server runs it in the background
+RESEARCH = "做一次研究"
 # the page's note on a turn taken up again (继续作答, web/js/agent.js resumeNote), after the last of its tool results
 RESUMED = "［提示：上一次作答没有完成，工具不再调用。请根据上面已有的工具结果直接作答；没有得到的结果，请在回答中说明缺了什么，不要编造］"
 # a message carrying the user's data: its prescriptions analysed by diagnosis, its first row quoted
@@ -128,9 +131,11 @@ class _Handler(BaseHTTPRequestHandler):
             chunks = self._said(PARTIAL_ANSWER) if answered else self._two_calls()
         elif body.get("tools") and KEEP_CALLING in asked:
             chunks = self._tool_call()
+        elif body.get("tools") and RESEARCH in asked:
+            chunks = self._answer() if answered else self._research()
         elif body.get("tools") and AGAIN in asked:
             searched = sum(m.get("role") == "tool" for m in messages[last_user + 1:])
-            chunks = self._answer() if searched >= 2 else self._tool_call()
+            chunks = self._answer(charting) if searched >= 2 else self._tool_call(charting)
         else:
             chunks = (self._answer(charting, mended) if answered else self._tool_call(charting)) if body.get("tools") else self._answer()
         for chunk in chunks:
@@ -169,6 +174,14 @@ class _Handler(BaseHTTPRequestHandler):
         for cut in (8, 40, 90, 160, len(text)):  # cumulative, as in MiniMax's own streaming example
             yield {"choices": [{"index": 0, "delta": {"content": text[:cut]}}]}
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}], "usage": USAGE}
+
+    def _research(self):
+        """A research run of one round."""
+        yield {"choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}}]}
+        yield self._reasoning("先做一次多智能体研究。")
+        yield {"choices": [{"index": 0, "delta": {"tool_calls": [{"index": 0, "id": "call_r", "type": "function", "function": {
+            "name": "taochronos_research", "arguments": '{"question": "桂枝汤的源流", "max_rounds": 1}'}}]}}]}
+        yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]}
 
     def _two_calls(self):
         """A comparison of two formulas and a search of the classics, in one round."""
@@ -325,8 +338,10 @@ class _AnthropicHandler(_Handler):
 
 PUBLIC_MODEL = "Tao-R1"          # the default service's model, as the page knows it (relay/src/relay.js: PUBLIC_MODEL)
 UPSTREAM_MODEL = "MiniMax-M3"    # the model behind it (relay.js: MODELS)
-# the relay's refusal once a visitor's free calls for the day are spent (relay.js: its gate's "day")
+# the relay's refusal once a visitor's free calls for the day are spent (relay.js: its gate's "day"), and the seconds it
+# asks the page to wait: to its midnight
 SPENT = "今天的免费额度已用完（每人每天 600 次模型调用），明天再来，或在“设置 → 模型”里填入自己的 API Key"
+SPENT_FOR = 3600
 _MODEL_FIELD = re.compile(r'"model"\s*:\s*"(?:[^"\\]|\\.)*"')
 _FORMAT_FIELD = re.compile(r'"format"\s*:\s*"MiniMax-')
 
@@ -353,7 +368,8 @@ class MockRelay(ThreadingHTTPServer):
     """道乃久默认服务 as the page sees it (relay/src/relay.js): health, the model calls forwarded to ``upstream`` with the
     relay's own key (in the upstream's terms, the reply in the service's own), and the conversation records.  Records
     what the browser sent — the page never sends a key.  With ``spent``, the day's free calls are used up: each model
-    call is refused as the relay refuses it (429, ``daily_limit``)."""
+    call is refused as the relay refuses it (429, ``daily_limit``, and ``Retry-After``: the seconds to its midnight,
+    here ``SPENT_FOR``)."""
 
     daemon_threads = True
     SECRET = "relay-held-secret"
@@ -388,12 +404,15 @@ class _RelayHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", self.headers.get("Origin") or "*")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Expose-Headers", "Retry-After")  # as relay.js: the page reads it
         self.send_header("Vary", "Origin")
 
-    def _json(self, status: int, data) -> None:
+    def _json(self, status: int, data, headers: dict | None = None) -> None:
         raw = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self._cors()
+        for k, v in (headers or {}).items():
+            self.send_header(k, v)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(raw)))
         self.end_headers()
@@ -428,7 +447,7 @@ class _RelayHandler(BaseHTTPRequestHandler):
             return
         self.server.chat.append({"headers": dict(self.headers), "body": json.loads(raw or b"{}")})
         if self.server.spent:
-            self._json(429, {"error": {"message": SPENT, "type": "daily_limit"}})
+            self._json(429, {"error": {"message": SPENT, "type": "daily_limit"}}, {"Retry-After": str(SPENT_FOR)})
             return
         import urllib.request
 

@@ -22,10 +22,62 @@ import { LIMITS, aborted, limit, pause, until } from "./limits.js";
 const STUCK_MS = 60000;
 // a server's calls at once (a round of tools may ask for many)
 const SERVER_SLOTS = 4;
-// a research run on a server: looked at this often; this many looks in a row that failed (a network gone for a while)
-// lose it
+// a research run on a server: looked at this often; looks that fail (a network gone a while, a server restarting) less
+// and less often, up to POLL_SLOWEST apart, and for LOST_MS in all before the run is given up; a run the server stopped
+// (it restarted) taken up again so many times at most
 const POLL_EVERY = 900;
-const POLL_MISSES = 5;
+const POLL_SLOWEST = 15000;
+const LOST_MS = 120000;
+const RESUMES = 2;
+// a research run's states on a server (taochronos.chat.jobs), and those an earlier server named by its words
+const ENDED = new Set(["completed", "failed", "cancelled"]);
+const LEGACY = { done: "completed", error: "failed" };
+
+/** A research run's state, from how a server describes it: its `state`, or what the words of an earlier one mean. */
+export const jobState = (st) => st?.state || LEGACY[st?.status] || st?.status || "unknown";
+
+/** What a research run's step says while it goes on: from the server's view of it (its state, its place in the queue,
+ * how long it waited and ran, its progress and heartbeat), or the page's own (`lost`: it cannot reach the server). */
+export function researchText(p) {
+  const s = (n) => Math.round(Number(n) || 0);
+  const state = jobState(p);
+  if (state === "lost") return T`等待恢复：与服务的连接中断，正在重新连接（已 ${s(p.lost_s)} 秒）`;
+  if (state === "interrupted") return T("等待恢复：服务重启过，正在从上次的检查点继续");
+  if (state === "cancel_requested") return T("正在停止：等当前这一步完成");
+  if (state === "queued") { // its place among those waiting: the one running is ahead of them all
+    return p.position > 1 ? T`排队中：前面还有 ${p.position} 项研究 · 已等 ${s(p.queued_s ?? p.elapsed_s)} 秒`
+      : T`排队中：服务正在完成另一项研究 · 已等 ${s(p.queued_s ?? p.elapsed_s)} 秒`;
+  }
+  const pr = p?.progress || {};
+  const done = [pr.round ? T`第 ${pr.round} 轮` : "", pr.hypotheses ? T`${pr.hypotheses} 个假说` : "", pr.claims ? T`${pr.claims} 条主张` : ""];
+  const quiet = p?.heartbeat_s > 30 ? T` · 服务 ${s(p.heartbeat_s)} 秒没有回应`
+    : p?.progress_s > 60 ? T` · ${s(p.progress_s)} 秒没有新进展` : "";
+  return `${T("研究进行中")}${done.filter(Boolean).map((x) => ` · ${x}`).join("")}${T` · 已运行 ${s(p?.run_s ?? p?.elapsed_s)} 秒`}${quiet}`;
+}
+
+// a corpus by its kind (a runtime's info)
+const CORPUS = { full: T("全量语料"), canon: T("要籍语料"), demo: T("演示语料") };
+
+/** A turn's instructions, asked for before each of its requests (agent.js, runTurn's `system`): `prompt(info, change)`
+ * for the runtime it began on (`began`: its info) — and from when that runtime could not answer and the browser took
+ * over (it has a `backup`: the site's server, app.js inBrowserInstead), for the browser's info, which describes the
+ * corpus the calls read from then on, with a word to the model of the change.  The tools stay as they were: both
+ * runtimes offer the same ones (the same Python module, taochronos.chat). */
+export function turnInstructions(runtime, began, prompt) {
+  const first = prompt(began, "");
+  let moved = null;
+  return async () => {
+    const now = runtime?.backup;
+    if (!now) return first;
+    if (moved?.rt !== now) {
+      const info = await now.info().catch(() => null); // (a browser that cannot start fails the calls: they say so)
+      const [from, to] = [CORPUS[began?.corpus?.kind] || CORPUS.full, CORPUS[info?.corpus?.kind] || CORPUS.canon];
+      const change = T`本轮开始时，工具调用由${runtime.label}回答，读${from}；它现在不能回答，此后的调用改在这个浏览器里运行，读${to}（见上面的“运行环境”）。此前得到的工具结果仍然有效，照常引用；此后的检索只覆盖这个语料，没有检得的内容可能只是不在其中，回答时请说明。`;
+      moved = { rt: now, text: prompt(info || began, `\n\n## 运行环境在本轮中的变化\n${change}`) };
+    }
+    return moved.text;
+  };
+}
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
@@ -289,6 +341,7 @@ export class ServerRuntime {
     this.running = 0;  // calls under way
     this.waiting = []; // calls waiting for one of SERVER_SLOTS
     this.pollEvery = POLL_EVERY;
+    this.lostAfter = LOST_MS;
   }
 
   /** Answer with the fallback runtime when this server is unavailable (not for an error the server itself reports). */
@@ -417,34 +470,62 @@ export class ServerRuntime {
       return this._or(err, (rt) => rt.research(args, options));
     }
   }
-  /** A research run on the server: started, then looked at until it is done.  Each look has a limit of its own
-   * (limits.poll), and a few that fail in a row are borne (a network gone for a moment); the run is "queued" while the
-   * server finishes another (one at a time), and runs once it says so (onWait / onStart).  Its start has none: a server
-   * slow to answer it may have begun the run, which is not begun again in the browser — the run's own deadline, and a
-   * stop, end the wait. */
-  async _research(args, { onProgress, signal, onWait, onStart, limits } = {}) {
+  /** A research run this server began before — the page that asked for it was closed, or reloaded — followed again to
+   * its end, as `research` follows one (its options; `job`: the run's id, as onJob gave it). */
+  followResearch(job, options = {}) { return this._research(null, { ...options, job }); }
+  /** Ask the server to stop a run: no one waits for it, and it would hold the queue of runs behind it. */
+  cancelResearch(job) {
+    return this._fetch(`/api/research/${encodeURIComponent(job)}/cancel`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }, 10000)
+      .catch(() => null); // a server that cannot be reached, or of an earlier version: the run ends by its own limits
+  }
+  /** A research run on the server: started (`onJob({id, url})` once it has an id, by which the page can follow it again on
+   * this server), or, given `job`, one started before; then looked at until it ends.  Each look has a limit of its own
+   * (limits.poll); looks that fail — a network gone a while, a server restarting — are borne for lostAfter, less and
+   * less often, the run said meanwhile to await recovery (onProgress({state: "lost"})), and a run the server stopped as
+   * it restarted is taken up again from its last checkpoint.  The run is "queued" while it waits for its turn, and runs once the server says so (onWait / onStart).
+   * Its start has no limit: a server slow to answer may have begun the run, which is not begun again in the browser.
+   * The run's own deadline and a stop end the wait, and the server is asked to stop the run: no one waits for it. */
+  async _research(args, { onProgress, signal, onWait, onStart, limits, onJob, job: given } = {}) {
     const lim = { ...LIMITS, ...limits };
-    const { job } = await this._fetch("/api/research", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(args), signal });
+    const job = given || (await this._fetch("/api/research", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(args), signal })).job;
+    if (!given) onJob?.({ id: job, url: this.url });
     let running = false;
-    let misses = 0;
-    for (;;) {
-      await pause(this.pollEvery, signal);
-      if (signal?.aborted) throw aborted();
-      let st;
-      try {
-        st = await this._fetch(`/api/research/${job}`, { signal }, lim.poll);
-        misses = 0;
-      } catch (err) {
-        if (signal?.aborted) throw aborted();
-        // not "unavailable": the run is the server's, and is not started again in the browser; a refusal is not borne
-        if (err.tokenRequired || err.refused || ++misses >= POLL_MISSES) throw new Error(T`与研究任务失去联系：${err.message}`);
-        continue;
+    let lost = 0; // since when the looks fail
+    let wait = this.pollEvery;
+    let resumed = 0;
+    try {
+      for (;;) {
+        await pause(wait, signal);
+        let st;
+        try {
+          st = await this._fetch(`/api/research/${encodeURIComponent(job)}`, { signal }, lim.poll);
+        } catch (err) {
+          if (signal?.aborted) throw aborted();
+          // not "unavailable": the run is the server's, and is not started again in the browser; a refusal is not borne
+          lost ||= Date.now();
+          if (err.tokenRequired || err.refused || Date.now() - lost >= this.lostAfter) throw new Error(T`与研究任务失去联系：${err.message}`);
+          wait = Math.min(wait * 2, POLL_SLOWEST);
+          onProgress?.({ state: "lost", lost_s: (Date.now() - lost) / 1000 });
+          continue;
+        }
+        lost = 0;
+        wait = this.pollEvery;
+        const state = jobState(st);
+        if (state === "queued") onWait?.("queued");
+        else if (!running && (state === "running" || state === "cancel_requested")) { running = true; onStart?.(); }
+        onProgress?.(st);
+        if (state === "interrupted" && resumed < RESUMES) { // the server restarted: from its last checkpoint
+          resumed++;
+          await this._fetch(`/api/research/${encodeURIComponent(job)}/resume`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", signal }, lim.poll)
+            .catch(() => { if (signal?.aborted) throw aborted(); });
+          continue;
+        }
+        if (ENDED.has(state) || state === "interrupted") return st.outcome;
+        if (state === "unknown") throw new Error(T("研究任务已丢失（服务是否重启过？）"));
       }
-      if (st.status === "queued") onWait?.("queued");
-      else if (!running && st.status === "running") { running = true; onStart?.(); }
-      onProgress?.(st);
-      if (st.status === "done" || st.status === "error") return st.outcome;
-      if (st.status === "unknown") throw new Error(T("研究任务已丢失（服务是否重启过？）"));
+    } catch (err) {
+      if (signal?.aborted && err?.name === "AbortError") this.cancelResearch(job);
+      throw err;
     }
   }
 }
