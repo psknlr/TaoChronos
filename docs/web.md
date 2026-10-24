@@ -568,7 +568,7 @@ keep the model from explaining a chart that already has:
 | a reply read whole, where the browser cannot read one as it arrives | 10 min | the same |
 | a tool call, from when it runs | 2 min | the call ends `timeout`: the model is told it has no result, and to say what it lacks |
 | a research run, from when it runs | 30 min | the same |
-| one look at a research run on a server | 20 s | the next look; five failed looks in a row lose the run |
+| one look at a research run on a server | 20 s | the next look, later and later (15 s apart at most); looks that fail for 2 min lose the run |
 | a round's tools | 20 s | the page offers 不再等待 (below) |
 | the turn | 30 min | no more tools run, and the model answers from what it has |
 
@@ -619,8 +619,52 @@ end, what it returns dropped; if such a call holds up another for a minute, the 
 only in memory (research sessions, and data this browser could not keep) goes with it, what it kept is read again (the
 corpus, from IndexedDB), and the call waiting runs.  A research run left to go on in the background gives way the same way to a call
 waiting behind it.  A request to a server is cut off (the server finishes the call; its answer is not read).  A research
-run on a server goes on there when the page stops waiting for it, since the server cannot yet be asked to stop one; its
-start has no limit of its own, so that a run a slow server may have begun is not begun again in the browser.
+run on a server the page stops waiting for — the turn stopped, or the run past its deadline — is stopped there too (it
+ends after the task it is running); one left to go on by itself goes on.  Its start has no limit of its own, so that a
+run a slow server may have begun is not begun again in the browser.
+
+**A research run on a server** (`taochronos serve`, the site's server) runs in the background, one at a time, first
+come first served (`src/taochronos/chat/jobs.py`).  One at a time because a run puts its contract's forbidden
+assumptions into the anachronism guard, which the harness holds for every session: two at once would check each other's
+claims against the wrong contract, so they wait their turn instead, and say where they are.  The page follows a run by
+its id (`GET /api/research/<job>`, about once a second), and its step says what the server says of it:
+
+- **queued** — how many runs are ahead, the one running among them, and how long it has waited
+  (`排队中：前面还有 2 项研究 · 已等 14 秒`; first in line, `排队中：服务正在完成另一项研究`);
+- **running** — its round, hypotheses and claims so far, and how long it has run, its wait not counted.  A heartbeat
+  every 5 seconds says the server is still at it: the step says when one is 30 seconds late (`服务 45 秒没有回应`), or when
+  the run has logged nothing new for a minute (`70 秒没有新进展`);
+- **stopping** (`cancel_requested`) — asked to stop, it ends after the task it is running, what it found kept in its
+  session;
+- **awaiting recovery** — looks that fail (the network gone, the server restarting) are borne for two minutes, made later
+  and later, the step saying so; a run the server was running when it stopped is `interrupted` once it is back, and the
+  page asks for it to go on from its session's last checkpoint (twice at most);
+- **completed**, **failed** or **cancelled**, with its outcome.  A run the server has no record of is lost, and the step
+  says so.
+
+A server keeps its runs' records with its sessions (`<data>/chat/jobs`, a JSON file each: the question, the state, the
+times, the progress, the heartbeat and the outcome; an ended run's for three days, 200 at most), so one started again
+knows them: a run it left unfinished is `interrupted`, and goes on when the page asks.  The site's server keeps them on
+its container's disk, which a container started again from its image does not have: a run the container stopped with is
+lost.  A server of an earlier version is read by its words (`status`: queued, running, done, error).
+
+**A page closed while it works.**  The page keeps a research run's id with its call — or, for one begun from the 研究
+panel, with its conversation — as soon as it has it.  Opened again (reloaded, or later in another tab), it settles what
+the page before left without an end: a turn it was answering ends with what it had (`这一轮没有答完：页面在作答时关闭或刷新了`),
+with 继续作答 where its messages allow; a call it was waiting on is stopped; and a research run is followed again on the
+server that runs it, its step saying `后台继续 · …` as it goes, until its results come to the 研究 panel — and, for a run
+the turn was waiting on, to the turn, which 继续作答 then answers from.  A run on another runtime than the page's now ends
+without its result, saying so.  A turn another tab is still answering is left to it: a page holds a lock named by a turn
+(Web Locks) while it answers it or follows a run of it, and a page opened meanwhile leaves alone what is held.  Where the
+browser has no Web Locks (a page on http:// from another machine), what an earlier page left is settled as if no page
+held it.
+
+**The site's server stopping in the middle of a turn.**  When the browser takes over from the site's server during a
+turn, the turn's next request carries the browser runtime's instructions, whose 运行环境 describes the corpus the calls
+read from then on (the 要籍语料), and a note: the runtime and corpus the turn began on, that the results so far stand,
+and that what later searches do not find may simply not be in this corpus, which the answer is to say.  The tools stay
+the same: both runtimes offer the same ones.  The turn's record has `fallback` when it happened, and `instructions` when
+a request first carried the change.
 
 ## 道乃久默认服务 — asking without a key, and conversation records
 
@@ -699,8 +743,9 @@ taochronos serve --allow-host https://gw.example.com:8443   # the proxy may also
 ```
 
 Endpoints: `GET /api/info`, `GET /api/catalog?mode=core|all`, `POST /api/call {name, arguments, max_chars}`,
-`GET /api/passage?id=`, `POST /api/research` → `{job}`, `GET /api/research/<job>` (progress: round, claims, hypotheses;
-then the outcome), `GET /api/session/<id>?what=summary|report|hypothesis|evidence`, `POST /api/llm` (model proxy),
+`GET /api/passage?id=`, `POST /api/research` → `{job}`, `GET /api/research/<job>` (`state`, `position` while queued,
+`queued_s`, `run_s`, `heartbeat_s`, `progress_s`, `progress` — round, hypotheses, claims, events —, then the outcome),
+`POST /api/research/<job>/cancel` · `POST /api/research/<job>/resume`, `GET /api/session/<id>?what=summary|report|hypothesis|evidence`, `POST /api/llm` (model proxy),
 `POST /api/data {name, data}` (a file of the user's in base64) · `GET /api/data` · `POST /api/data/remove {id}` ·
 `POST /api/data/clear` (我的资料 — only when the server is bound to this machine: one other machines reach answers 403).
 
@@ -710,7 +755,7 @@ headers so the HTTPS page may reach it — the browser may ask for permission); 
 so a rebound DNS name cannot reach it.  Bound to any other address it requires its access token (above).  The
 proxy forwards only to the hosts of the listed providers and streams the answer back; keys pass through and are never
 stored or logged, and requests are not logged at all unless `--verbose` (paths only).  Research runs one at a time in a
-background thread (a run installs its contract's guards harness-wide).  When the page is served from here and the site
+background thread, its record kept with the sessions (above, *A research run on a server*).  When the page is served from here and the site
 was not built, the in-browser runtime's archives are made from the checkout on first use.
 
 ## Publishing
@@ -754,9 +799,16 @@ a call as the model wrote it (a name in another form, arguments repaired, a para
 the closest tools for an unknown name and never one the model is not offered), failures as results, meta-tools, the system prompt and the identity (道乃久, Tao-R1, IMPF-AI; the platform introduced as the fixed reply does, no model named or denied), trimming and citations, research runs and
 their sessions, the V2 workflow, every server endpoint, CORS and Private Network Access, the origin and host checks
 (the server's own pages on any address), the access token (refused without it, the proxy too; generated for any address
-but loopback), the proxy (streaming, allow-list, the SDK path form, `--env-keys`, `--allow-host`), background research, the
+but loopback), the proxy (streaming, allow-list, the SDK path form, `--env-keys`, `--allow-host`), background research
+(its state and times, a run stopped while it waits and while it runs, and the site's server passing on the stop and
+resume endpoints), the
 site build (with the corpus store), and `home.zip` carrying the alias layer (its two built files, no file or record of a local
-list, the directory under 150 KB deflated).  `tests/test_web_corpus.py` — the 要籍 list (ranked, metadata only, the classics first,
+list, the directory under 150 KB deflated).  `tests/test_chat_jobs.py` — background research runs: one at a time, first
+come first served, each saying its place; one asked for directly keeping the next waiting first in line; a run stopped
+at once while it waits and after its task while it runs, its session finished `stopped`; a heartbeat, and when it last
+made progress; records kept, a run a server left unfinished `interrupted` and going on when asked; ended runs kept three
+days and 200 at most; a run the server stopped mid-way taken up from its log after a restart; an ephemeral runtime's in
+memory.  `tests/test_web_corpus.py` — the 要籍 list (ranked, metadata only, the classics first,
 nothing modern, open where a source is openly licensed, its open witness the pack's first), the choice of witnesses
 (openly licensed first, 笈成 last among them, never a source in `NEVER_PACKED`), budgets kept as whole chapters spread
 through a book, the pack → a store with the same bytes → indexed once → read by the harness, the index in two phases
@@ -787,7 +839,11 @@ what was given up staying given up, pairs and thinking as they were, nothing giv
 and its record whole; the oldest turns left out, the model told; a lookup asked again answered from the first, another,
 a failed one, one on another runtime and the user's data run again); the browser runtime's queue (a call not yet begun never sent, a late result dropped, a runtime
 held up started again, Python interrupted where the page shares memory), a server's calls four at a time, its research
-looked at within limits and lost after five failed looks; where a turn's time goes — each model request's times and
+looked at within limits — failed looks borne for a while, later and later, a run the server stopped as it restarted taken
+up again twice at most, one it has no record of lost, one followed again by its id, one no one waits for stopped there;
+a research run's step from the server's view of it (queued with its place, running with its progress, a heartbeat or
+progress long in coming, stopping, awaiting recovery, an earlier server's words), and a turn's instructions asked for
+before each request, the browser's with a note once it takes over from the site's server; where a turn's time goes — each model request's times and
 end (a stall, a stop, a refusal kept as its status and not its words), each call's waiting and running, a cut answer
 written on, the tools' end, the page hidden and asleep; history rules, dangling tool calls, citation pairing, which
 questions get the fixed reply and which go to the model; the alias badges — labels, the names merged, the asked name found
@@ -807,7 +863,10 @@ or the rounds are used, a stopped turn taken up again by 继续作答 with no ca
 tools ending with a notice, taken up again and still running none, and a turn whose day's free calls run out while its
 search runs, failing once, the service paused until the hour the relay named (the composer saying so; a question,
 继续作答 and 重试 held back, nothing sent; a page opened again still paused) and answered by 继续作答 once it is over, its
-search not run again; Claude's answer stopped
+search not run again; a research run on the server queued behind another, then running, a second tab leaving the turn
+to the first, the page closed and opened again — the turn ended with what it had, the run followed again to its end, its
+results in the 研究 panel and in the turn, which 继续作答 answers from —, a stop stopping the run on the server, and a
+run begun from the 研究 panel followed again after a reload; Claude's answer stopped
 part-way and taken up again (the part shown dropped, `tool_choice` `none`, the page's note after the results, both runs' records); and
 a page served elsewhere (as on GitHub Pages) connecting to a server in one step, using it again after a reload, and a
 token taken from the address (and its absence reported); an API set by hand (address, model, key, headers, parameters —
@@ -854,8 +913,10 @@ committed with them, deleted only once held, a deployment checked (and a refused
 * A provider that does not allow browser requests needs the local server's proxy.
 * Python in the browser can be interrupted only where the page is cross-origin isolated (served with
   `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy`); the site sends the first only, so there a call the page
-  no longer waits for runs to its end, and the runtime is started again if it holds up another.  A research run on a
-  server cannot be stopped from the page: it goes on, and its result is not read.
+  no longer waits for runs to its end, and the runtime is started again if it holds up another.
+* The site's server keeps its research runs on its container's disk, which does not outlast the container: a run the
+  container stopped with (asleep, or replaced) is lost, and the page says so; `taochronos serve` keeps them across a
+  restart.
 * 我的资料 reads no PDF, scanned image, .xls or .doc (it says what to save them as); it finds the names a table's heads
   or a label (姓名：) mark, not a name written freely in a text; a server's data lives in its memory (gone when it
   stops); with the site's server, the first upload starts the browser's runtime, which downloads it on a first visit.

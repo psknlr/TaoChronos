@@ -161,15 +161,21 @@ test("the API's reads and calls reach the corpus with only their path, query and
   const last = seen.corpus.at(-1);
   assert.equal(last.method, "POST");
   assert.equal(last.body, body);
+  for (const act of ["cancel", "resume"]) { // a research run stopped, or taken up again after the container restarted
+    const res = await call(`${PAGE}/api/research/job_0123456789ab/${act}`, { method: "POST", body: "{}", headers: { "Content-Type": "application/json", Origin: PAGE } });
+    assert.equal(res.status, 200, act);
+  }
   assert.deepEqual(seen.corpus.map((c) => new URL(c.url).pathname + new URL(c.url).search), [
-    "/api/info", "/api/catalog?mode=all", "/api/passage?id=jc_a000.12", "/api/research/job-1a2b", "/api/session/s_42?what=summary", "/api/call"]);
+    "/api/info", "/api/catalog?mode=all", "/api/passage?id=jc_a000.12", "/api/research/job-1a2b", "/api/session/s_42?what=summary", "/api/call",
+    "/api/research/job_0123456789ab/cancel", "/api/research/job_0123456789ab/resume"]);
 });
 
 test("nothing else reaches the corpus: no model proxy, no other endpoint or method", async () => {
   const { call, seen } = site();
   for (const [path, init] of [["/api/llm", { method: "POST", body: "{}" }], ["/api/llm/chat/completions", { method: "POST", body: "{}" }],
     ["/api/providers", {}], ["/api/info", { method: "POST", body: "{}" }], ["/api/call", {}], ["/api/session/a/b", {}],
-    ["/api/research/a%2Fb", {}], ["/api", {}]]) {
+    ["/api/research/a%2Fb", {}], ["/api", {}], ["/api/research/job_1/cancel", {}], ["/api/research/job_1/delete", { method: "POST", body: "{}" }],
+    ["/api/research/a/b/cancel", { method: "POST", body: "{}" }]]) {
     const res = await call(`${PAGE}${path}`, init);
     assert.equal(res.status, 404, path);
   }

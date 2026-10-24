@@ -126,8 +126,12 @@ export function answerDangling(msgs, format) {
 /**
  * Run one user turn.  `hooks` receive the answer as it forms:
  *   round(n) · thinking(delta) · text(fullText) · toolPending(index, name) · toolStart(call) · toolWaiting(call, why) ·
- *   toolRunning(call) · toolProgress(call, p) · toolEnd(call, outcome) · toolLater(call, ending) · retry(attempt, error) ·
- *   usage(u) · continued(what) · cut(why) · limit(maxSteps, why)
+ *   toolRunning(call) · toolProgress(call, p) · toolJob(call, job) · toolEnd(call, outcome) · toolLater(call, ending) ·
+ *   retry(attempt, error) · usage(u) · continued(what) · cut(why) · limit(maxSteps, why)
+ * (toolJob: a research run a server began — `{id, url}`, its id and the server's address —, by which the page can follow
+ * it again, after a reload too)
+ * `system`: the instructions, or a function giving them (perhaps a promise), asked for before each request — they may
+ * change during the turn, as its runtime does.
  * A turn ends on a reply the service says is complete; a reply cut at the output limit is written on ("answer": the next
  * round's text continues this one's) or asked again with less thinking ("thinking": what the round showed goes), up to
  * MAX_CONTINUATIONS times, and is told by cut("answer" | "thinking") when it still stops there; cut("context") tells a
@@ -161,7 +165,7 @@ export function answerDangling(msgs, format) {
  *   events — `{at, what}`: a cut answer written on ("continued"), a round asked again with less thinking ("lighter"), the
  *     turn's tools come to an end ("asked", "time", "steps"), a reply cut ("cut:answer", "cut:thinking", "cut:context",
  *     "cut:filtered"), a request that gave up more to keep within the budget ("compacted"), a call answered from the
- *     same call before ("reused").
+ *     same call before ("reused"), instructions that changed during the turn ("instructions").
  * Returns {wire, rounds, usage, model, unanswered}.
  */
 export async function runTurn({ provider, settings, route, runtime, tools, system, history, user, signal, hurry, limits, hooks, sink, trace,
@@ -211,7 +215,9 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
   // conversation and the turn's messages (instructions, tools, question; the reply's room is added as each is asked)
   const budget = contextBudget(settings, provider);
   const fit = {};
-  const fixed = tokensOf(system) + tokensOf(tools) + messageTokens(userWire);
+  const instructionsNow = typeof system === "function" ? system : () => system;
+  let standing = null; // the instructions of the last request
+  let fixed = 0;
   const reuse = new Map(); // the lookups the turn made that gave a result, by what they asked (execute)
   const note = (what) => { trace?.events.push({ at: Date.now(), what }); };
   const cutShort = (why) => { note(`cut:${why}`); hooks.cut?.(why); };
@@ -230,9 +236,15 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
     // request and its reply keep within the budget together
     const reply = outputLimit(asked, provider);
     const room = Math.min(reply, Math.floor(budget / 2));
+    const now = await instructionsNow();
+    if (now !== standing) {
+      if (standing !== null) note("instructions");
+      standing = now;
+      fixed = tokensOf(now) + tokensOf(tools) + messageTokens(userWire);
+    }
     const view = fitRequest({ history, turn, format, budget, fixed: fixed + room, state: fit });
     if (view.more) note("compacted");
-    const instructions = view.note ? `${system}\n\n${view.note}` : system;
+    const instructions = view.note ? `${standing}\n\n${view.note}` : standing;
     const messages = format === "openai"
       ? [{ role: "system", content: instructions }, ...view.history, userWire, ...view.turn]
       : [...view.history, userWire, ...view.turn];
@@ -364,6 +376,28 @@ export function resumable(wire, format) {
     return Array.isArray(last?.content) && last.content.some((b) => b.type === (last.role === "user" ? "tool_result" : "tool_use"));
   }
   return last?.role === "tool" || Boolean(last?.role === "assistant" && last.tool_calls?.length);
+}
+
+/** A turn's messages as the page kept them, with `text` as the result of the call `id` of its last reply, which had none:
+ * a research run the turn waited for when its page was closed, followed to its end since (app.js, followAgain) — so
+ * that the turn taken up again (resumed) answers from it.  The same messages when that reply is not the last, or the
+ * call has its result. */
+export function lateResult(wire, format, id, text) {
+  const msgs = wire || [];
+  const i = msgs.findLastIndex((m) => m.role === "assistant");
+  const reply = msgs[i];
+  const after = msgs.slice(i + 1);
+  if (format === "anthropic") {
+    if (!Array.isArray(reply?.content) || !reply.content.some((b) => b.type === "tool_use" && b.id === id)) return wire;
+    const next = after[0];
+    if (after.length > 1 || (next && !(next.role === "user" && Array.isArray(next.content)))) return wire;
+    if (next?.content.some((b) => b.type === "tool_result" && b.tool_use_id === id)) return wire;
+    const block = { type: "tool_result", tool_use_id: id, content: text };
+    return [...msgs.slice(0, i + 1), next ? { ...next, content: [...next.content, block] } : { role: "user", content: [block] }];
+  }
+  if (!reply?.tool_calls?.some((tc) => tc.id === id) || !after.every((m) => m.role === "tool")) return wire;
+  if (after.some((m) => m.tool_call_id === id)) return wire;
+  return [...msgs, { role: "tool", tool_call_id: id, content: text }];
 }
 
 /** A turn's messages as the page kept them (resumable), taken up again: every call with its result (answerDangling),
@@ -534,7 +568,7 @@ function follow(tc, call, { runtime, settings, hooks, signal, quick, quickWhy, l
   };
   try {
     const work = research
-      ? runtime.research(tc.arguments, { ...options, onProgress: (p) => hooks.toolProgress?.(call, p) })
+      ? runtime.research(tc.arguments, { ...options, onProgress: (p) => hooks.toolProgress?.(call, p), onJob: (job) => hooks.toolJob?.(call, job) })
       : runtime.call(tc.name, tc.arguments, options);
     Promise.resolve(work).then((out) => end(out), (err) => end(err?.name === "AbortError" ? halted() : failed(err)));
   } catch (err) {

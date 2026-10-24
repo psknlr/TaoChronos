@@ -638,7 +638,7 @@ import assert from "node:assert/strict";
 import { limit } from "./js/limits.js";
 import { ProviderError, streamChat } from "./js/llm/openai.js";
 import { closingNote, lackingNote, runTurn } from "./js/agent.js";
-import { BrowserRuntime, ServerRuntime } from "./js/runtime.js";
+import { BrowserRuntime, jobState, ServerRuntime } from "./js/runtime.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const abortError = () => new DOMException("aborted", "AbortError");
@@ -970,8 +970,9 @@ stopM.abort();
 await assert.rejects(fifth, (x) => x.name === "AbortError");
 await Promise.all(four);
 assert.deepEqual([srv.running, srv.waiting.length], [0, 0]);
-// a research run on a server: queued while the server finishes another, then running; a look that hangs is given up at
-// its own limit and the next one made
+// a research run on a server (the words of a server of an earlier version: its status, no state): queued while the
+// server finishes another, then running; a look that hangs is given up at its own limit, the run said meanwhile to
+// await recovery, and the next one made
 srv.pollEvery = 20;
 let looks = 0;
 globalThis.fetch = async (url, init) => {
@@ -982,31 +983,80 @@ globalThis.fetch = async (url, init) => {
     : { status: "done", outcome: { ok: true, text: "R" } });
 };
 const heard = [];
+const jobs = [];
 const outcome = await srv.research({ question: "q" }, { onWait: (w) => heard.push(w), onStart: () => heard.push("runs"),
-  onProgress: (p) => heard.push(p.status), limits: { poll: 150 } });
-assert.deepEqual([outcome, looks], [{ ok: true, text: "R" }, 5]);
-assert.deepEqual(heard, ["queued", "queued", "runs", "running", "running", "done"]);
-// looks that keep failing (five in a row) lose the run — not as an unavailable server: the run is not started again in
-// the browser — and a refusal loses it at once
+  onProgress: (p) => heard.push(jobState(p)), onJob: (j) => jobs.push(j), limits: { poll: 150 } });
+assert.deepEqual([outcome, looks, jobs], [{ ok: true, text: "R" }, 5, [{ id: "j1", url: "https://chat.impf.ai" }]]);
+assert.deepEqual(heard, ["queued", "queued", "lost", "runs", "running", "running", "completed"]);
+// looks that keep failing are borne for lostAfter, each made later than the one before, the run said meanwhile to await
+// recovery; then the run is lost — not as an unavailable server: the run is not started again in the browser —, and a
+// refusal loses it at once
 const site = (fetcher) => {
   globalThis.fetch = fetcher;
   const s = new ServerRuntime("https://chat.impf.ai", "", { fallback: () => { throw new Error("not started again"); } });
   s.pollEvery = 20;
+  s.lostAfter = 200;
   return s;
 };
-looks = 0;
-let s = site(async (url) => (new URL(url).pathname === "/api/research" ? json({ job: "j2" }) : (looks++, json({ error: "bad gateway" }, 502))));
-await assert.rejects(s.research({ question: "q" }, {}), (x) => !x.unavailable && x.message === "与研究任务失去联系：bad gateway");
-assert.equal(looks, 5);
+const at = [];
+const lost = [];
+let s = site(async (url) => (new URL(url).pathname === "/api/research" ? json({ job: "j2" }) : (at.push(Date.now()), json({ error: "bad gateway" }, 502))));
+await assert.rejects(s.research({ question: "q" }, { onProgress: (p) => lost.push([jobState(p), p.lost_s >= 0]) }),
+  (x) => !x.unavailable && x.message === "与研究任务失去联系：bad gateway");
+const gaps = at.slice(1).map((t, k) => t - at[k]);
+assert.ok(at.length === 4 && gaps[0] >= 38 && gaps[1] >= 78 && gaps[2] >= 158, String(gaps)); // 40, 80, 160 ms
+assert.deepEqual(lost, [["lost", true], ["lost", true], ["lost", true]]);
+// looks that fail a while and then answer: the run goes on, looked at as often as before, and a later loss is counted
+// from its own start
+const flaky = ["x", "x", ...Array(10).fill({ state: "running" }), "x", "x", { state: "completed", outcome: { ok: true, text: "R9" } }];
+const looked = [];
+s = site(async (url) => {
+  if (new URL(url).pathname === "/api/research") return json({ job: "j9" });
+  looked.push(Date.now());
+  const next = flaky[Math.min(looked.length - 1, flaky.length - 1)];
+  return next === "x" ? json({ error: "bad gateway" }, 502) : json(next);
+});
+assert.deepEqual(await s.research({ question: "q" }, {}), { ok: true, text: "R9" });
+assert.ok(looked[4] - looked[3] < 60, String(looked[4] - looked[3])); // 20 ms again once it answers
 looks = 0;
 s = site(async (url) => (new URL(url).pathname === "/api/research" ? json({ job: "j3" })
   : (looks++, new Response(JSON.stringify({ error: "今天的查询次数已用完", daily: true }),
     { status: 429, headers: { "Content-Type": "application/json", "X-TC-Corpus": "refused" } }))));
 await assert.rejects(s.research({ question: "q" }, {}), (x) => !x.unavailable && /^与研究任务失去联系：今天的查询次数已用完/.test(x.message));
 assert.equal(looks, 1);
-// a stop while it is looked at ends it at once; one while it is started, too
+// a run the server stopped as it restarted ("interrupted") is taken up again from its last checkpoint, twice at most —
+// then it ends with what the server says of it —; a run the server has no record of is lost
+const resumes = [];
+const restarted = (states) => site(async (url) => {
+  const path = new URL(url).pathname;
+  if (path === "/api/research") return json({ job: "j5" });
+  if (path.endsWith("/resume")) { resumes.push(path); return json({ id: "j5", state: "queued", position: 1 }); }
+  return json(states.length > 1 ? states.shift() : states[0]);
+});
+const restart = { state: "interrupted", outcome: { ok: false, error: "服务在这次研究进行时停止了" } };
+s = restarted([{ state: "running", progress: { round: 1 } }, restart, { state: "queued", position: 1 }, { state: "completed", outcome: { ok: true, text: "R5" } }]);
+assert.deepEqual(await s.research({ question: "q" }, {}), { ok: true, text: "R5" });
+assert.deepEqual(resumes.splice(0), ["/api/research/j5/resume"]);
+s = restarted([restart]);
+assert.deepEqual(await s.research({ question: "q" }, {}), restart.outcome);
+assert.equal(resumes.splice(0).length, 2);
+s = site(async (url) => (new URL(url).pathname === "/api/research" ? json({ job: "j6" }) : json({ id: "j6", state: "unknown", status: "unknown" })));
+await assert.rejects(s.research({ question: "q" }, {}), (x) => x.message === "研究任务已丢失（服务是否重启过？）");
+// a run begun before (by a page closed since) followed again by its id: no run is begun, and onJob is not told again
+const paths = [];
+s = site(async (url) => { paths.push(new URL(url).pathname); return json({ state: "completed", outcome: { ok: true, text: "R7" } }); });
+jobs.length = 0;
+assert.deepEqual(await s.followResearch("j7", { onJob: (j) => jobs.push(j) }), { ok: true, text: "R7" });
+assert.deepEqual([paths, jobs], [["/api/research/j7"], []]);
+// a stop while it is looked at ends it at once, and the server is asked to stop the run, which no one waits for now; one
+// while it is started, too, with no run to stop yet
+const cancels = [];
 for (const hangs of ["/api/research/j4", "/api/research"]) {
-  globalThis.fetch = (url, init) => (new URL(url).pathname === hangs ? hang(init.signal) : Promise.resolve(json({ job: "j4" })));
+  globalThis.fetch = (url, init) => {
+    const path = new URL(url).pathname;
+    if (path.endsWith("/cancel")) { cancels.push([path, init.method]); return Promise.resolve(json({ id: "j4", state: "cancel_requested" })); }
+    return path === hangs ? hang(init.signal) : Promise.resolve(json({ job: "j4" }));
+  };
   const stopR = counted();
   setTimeout(() => stopR.abort(), 200);
   from = Date.now();
@@ -1014,6 +1064,10 @@ for (const hangs of ["/api/research/j4", "/api/research"]) {
   assert.ok(Date.now() - from < 1000);
   assert.equal(listening, 0);
 }
+assert.deepEqual(cancels, [["/api/research/j4/cancel", "POST"]]);
+// a server that cannot be reached, or of an earlier version (no such endpoint), asked to stop one: nothing more is said
+globalThis.fetch = async () => json({ error: "no such endpoint" }, 404);
+assert.equal(await srv.cancelResearch("j4"), null);
 console.log("ok");
 """
 
@@ -1022,13 +1076,146 @@ def test_waits_and_stops_under_node(tmp_path):
     """A reply that stalls asked again; a search that never returns ended at its deadline while the chart beside it is
     explained; a stop, the answer asked for, a research run left to go on and the turn's own time; the browser
     runtime's queue, a late result dropped and a runtime held up started again; a server's calls four at a time and
-    its research looked at within limits — every listener removed and nothing left waiting."""
+    its research looked at within limits — a network gone borne a while, a run the server stopped as it restarted taken
+    up again, one no one waits for any more stopped on the server — every listener removed and nothing left waiting."""
     node = shutil.which("node")
     if not node:
         pytest.skip("node is not installed")
     shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
     (tmp_path / "package.json").write_text('{"type": "module"}')
     (tmp_path / "t.mjs").write_text(NODE_WAITS, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=120)
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
+
+
+# a research run on a server as its step says it (web/js/runtime.js researchText), and a turn's instructions when its
+# runtime changes during it (turnInstructions; agent.js runTurn's `system`)
+NODE_JOBS = r"""
+import assert from "node:assert/strict";
+import { lateResult, runTurn } from "./js/agent.js";
+import { jobState, researchText, ServerRuntime, turnInstructions } from "./js/runtime.js";
+
+// its state: as the server names it, or as an earlier server's words mean it
+assert.deepEqual([{ state: "cancel_requested", status: "running" }, { status: "done" }, { status: "error" }, { status: "queued" }, {}, null]
+  .map(jobState), ["cancel_requested", "completed", "failed", "queued", "unknown", "unknown"]);
+// queued — first in line, the server finishing another, or behind others (the one running ahead of them all) —, running
+// with what it has done so far, a heartbeat or progress long in coming, stopping, awaiting recovery
+assert.deepEqual([
+  { state: "queued", position: 1, queued_s: 4.4, elapsed_s: 9 },
+  { state: "queued", position: 3, queued_s: 12.6 },
+  { status: "queued", elapsed_s: 4 },
+  { state: "running", run_s: 12.4, heartbeat_s: 2, progress_s: 3, progress: { round: 2, hypotheses: 3, claims: 5, events: 40 } },
+  { state: "running", run_s: 0.4, progress: { round: 0, hypotheses: 0, claims: 0 } },
+  { status: "running", elapsed_s: 7, progress: { round: 1 } },
+  { state: "running", run_s: 80, heartbeat_s: 45, progress_s: 70, progress: { round: 1 } },
+  { state: "running", run_s: 80, heartbeat_s: 3, progress_s: 70, progress: { round: 1 } },
+  { state: "cancel_requested", run_s: 30 },
+  { state: "lost", lost_s: 8.6 },
+  { state: "interrupted" },
+].map(researchText), [
+  "排队中：服务正在完成另一项研究 · 已等 4 秒",
+  "排队中：前面还有 3 项研究 · 已等 13 秒",
+  "排队中：服务正在完成另一项研究 · 已等 4 秒",
+  "研究进行中 · 第 2 轮 · 3 个假说 · 5 条主张 · 已运行 12 秒",
+  "研究进行中 · 已运行 0 秒",
+  "研究进行中 · 第 1 轮 · 已运行 7 秒",
+  "研究进行中 · 第 1 轮 · 已运行 80 秒 · 服务 45 秒没有回应",
+  "研究进行中 · 第 1 轮 · 已运行 80 秒 · 70 秒没有新进展",
+  "正在停止：等当前这一步完成",
+  "等待恢复：与服务的连接中断，正在重新连接（已 9 秒）",
+  "等待恢复：服务重启过，正在从上次的检查点继续",
+]);
+
+// a turn's instructions: its runtime's, until the site's server cannot answer and the browser takes over; from then on
+// the browser's, with a word of the change — asked for once, however many requests follow
+const began = { system_prompt: "SERVER", corpus: { kind: "full" } };
+const prompt = (info, change) => `${info?.system_prompt}${change}|mine`;
+let infos = 0;
+const browser = { info: async () => { infos++; return { system_prompt: "BROWSER", corpus: { kind: "canon" } }; } };
+const site = new ServerRuntime("https://chat.impf.ai", "", { label: "本站服务", fallback: () => browser });
+const now = turnInstructions(site, began, prompt);
+assert.equal(await now(), "SERVER|mine");
+await site._or(Object.assign(new Error("down"), { unavailable: true }), () => null); // a call the server could not answer
+const moved = await now();
+assert.equal(moved, "BROWSER\n\n## 运行环境在本轮中的变化\n本轮开始时，工具调用由本站服务回答，读全量语料；它现在不能回答，此后的调用改在这个浏览器里运行，"
+  + "读要籍语料（见上面的“运行环境”）。此前得到的工具结果仍然有效，照常引用；此后的检索只覆盖这个语料，没有检得的内容可能只是不在其中，回答时请说明。|mine");
+assert.ok((await now()) === moved && infos === 1);
+// a browser that cannot say what it reads: the instructions the turn began with, and the word of the change
+const broken = new ServerRuntime("https://chat.impf.ai", "", { label: "本站服务", fallback: () => ({ info: async () => { throw new Error("no"); } }) });
+const later = turnInstructions(broken, began, prompt);
+await broken._or(Object.assign(new Error("down"), { unavailable: true }), () => null);
+assert.ok((await later()).startsWith("SERVER\n\n## 运行环境在本轮中的变化\n本轮开始时") && (await later()).includes("读要籍语料"));
+assert.equal(await turnInstructions(new ServerRuntime("https://x.example"), began, prompt)(), "SERVER|mine"); // none to fall back on
+// the corpora named as each runtime says it reads them
+const small = new ServerRuntime("http://127.0.0.1:8770", "", { label: "本机服务", fallback: () => ({ info: async () => ({ system_prompt: "B", corpus: { kind: "demo" } }) }) });
+const told = turnInstructions(small, { system_prompt: "S", corpus: { kind: "canon" } }, prompt);
+await small._or(Object.assign(new Error("down"), { unavailable: true }), () => null);
+assert.ok((await told()).includes("工具调用由本机服务回答，读要籍语料；它现在不能回答，此后的调用改在这个浏览器里运行，读演示语料（"));
+
+// a research run's result that came after its page was closed: given to the turn as that call's result where the turn's
+// messages wait for it (after the reply that asked for it, with the round's other results), so that 继续作答 answers from
+// it; the same messages where they do not — a call the reply did not make, a result already there, a turn gone on
+const fn = (id) => ({ id, type: "function", function: { name: "taochronos_research", arguments: "{}" } });
+const askedO = [{ role: "user", content: "问" }, { role: "assistant", content: null, tool_calls: [fn("r"), fn("k")] }];
+const keptO = [...askedO, { role: "tool", tool_call_id: "k", content: "K" }];
+const roundsO = [askedO[0], { role: "assistant", content: null, tool_calls: [fn("a")] }, { role: "tool", tool_call_id: "a", content: "A" }, askedO[1]];
+assert.deepEqual(lateResult(roundsO, "openai", "r", "R"), [...roundsO, { role: "tool", tool_call_id: "r", content: "R" }]);
+assert.deepEqual(lateResult(askedO, "openai", "r", "R"), [...askedO, { role: "tool", tool_call_id: "r", content: "R" }]);
+assert.deepEqual(lateResult(keptO, "openai", "r", "R"), [...keptO, { role: "tool", tool_call_id: "r", content: "R" }]);
+for (const [w, id] of [[keptO, "x"], [[...askedO, { role: "tool", tool_call_id: "r", content: "R0" }], "r"],
+  [[...keptO, { role: "assistant", content: "答" }], "r"], [[...keptO, { role: "user", content: "再问" }], "r"], [null, "r"]]) {
+  assert.equal(lateResult(w, "openai", id, "R"), w);
+}
+const use = (id) => ({ type: "tool_use", id, name: "taochronos_research", input: {} });
+const res = (id, content) => ({ type: "tool_result", tool_use_id: id, content });
+const askedA = [{ role: "user", content: "问" }, { role: "assistant", content: [{ type: "thinking", thinking: "想", signature: "s" }, use("r"), use("k")] }];
+const keptA = [...askedA, { role: "user", content: [res("k", "K")] }];
+const roundsA = [askedA[0], { role: "assistant", content: [use("a")] }, { role: "user", content: [res("a", "A")] }, askedA[1]];
+assert.deepEqual(lateResult(roundsA, "anthropic", "r", "R"), [...roundsA, { role: "user", content: [res("r", "R")] }]);
+assert.deepEqual(lateResult(askedA, "anthropic", "r", "R"), [...askedA, { role: "user", content: [res("r", "R")] }]);
+assert.deepEqual(lateResult(keptA, "anthropic", "r", "R"), [...askedA, { role: "user", content: [res("k", "K"), res("r", "R")] }]);
+assert.deepEqual(keptA.at(-1).content, [res("k", "K")]); // the messages given are not changed
+for (const [w, id] of [[keptA, "x"], [[...askedA, { role: "user", content: [res("r", "R0")] }], "r"],
+  [[...keptA, { role: "assistant", content: [{ type: "text", text: "答" }] }], "r"], [[...askedA, { role: "user", content: "再问" }], "r"],
+  [[...keptA, { role: "user", content: [{ type: "text", text: "再问" }] }], "r"], [null, "r"]]) {
+  assert.equal(lateResult(w, "anthropic", id, "R"), w);
+}
+
+// a turn asks for its instructions before each request: each request has those of its moment, and the turn's record
+// says when they changed
+const enc = new TextEncoder();
+const relayP = { id: "impf", relay: true, baseUrl: "https://relay.example/v1", model: "Tao-R1", extra_body: {},
+  max_tokens_param: "max_completion_tokens", thinking_off: { thinking: { type: "disabled" } }, reasoning: "reasoning_details" };
+const sse = (text) => new Response(new ReadableStream({ start(c) { c.enqueue(enc.encode(text)); c.close(); } }),
+  { status: 200, headers: { "Content-Type": "text/event-stream" } });
+const call = (n) => `data: ${JSON.stringify({ choices: [{ delta: { tool_calls: [{ index: 0, id: `c${n}`, function: { name: "classics__search", arguments: `{"q":${n}}` } }] },
+  finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`;
+const answer = `data: ${JSON.stringify({ choices: [{ delta: { content: "答" }, finish_reason: "stop" }] })}\n\ndata: [DONE]\n\n`;
+const sent = [];
+let n = 0;
+globalThis.fetch = async (url, init) => { sent.push(JSON.parse(init.body).messages[0].content); return sse(++n < 3 ? call(n) : answer); };
+const said = ["一", "一", "二"];
+const trace = {};
+const done = await runTurn({ provider: relayP, settings: {}, route: null, runtime: { call: async () => ({ ok: true, text: "{}" }) },
+  tools: [], system: async () => said.shift(), history: [], user: { text: "问" }, signal: new AbortController().signal, hooks: {}, trace });
+assert.equal(done.wire.at(-1).content, "答");
+assert.deepEqual([sent, trace.events.map((e) => e.what)], [["一", "一", "二"], ["instructions"]]);
+console.log("ok");
+"""
+
+
+def test_a_research_run_on_a_server_under_node(tmp_path):
+    """A research run's step from the server's view of it: queued with its place, running with its rounds, hypotheses
+    and claims, a heartbeat or progress long in coming, stopping, awaiting recovery (the network gone, the server
+    restarted), the words of an earlier server too; a run's result that came after its page was closed, given to the turn
+    where it waits for it; and a turn whose server falls back to the browser told of it in its instructions, which each
+    request asks for anew."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_JOBS, encoding="utf-8")
     run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=120)
     assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
 
@@ -2319,6 +2506,149 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
         relay.shutdown()
         mock.shutdown()
 
+
+def test_a_research_run_on_the_server_is_followed_again_after_a_reload(tmp_path):
+    """A research run the model asks for runs on the server in the background, its step saying how it goes: queued while
+    the server finishes another, then running.  A second tab opened meanwhile leaves the turn to the first.  The page
+    closed while the run goes on and opened again: the turn ends with what it had, and the run is followed again by its
+    id, its step saying so, until its results come to the research panel and to the turn, which 继续作答 then answers
+    from.  A stop asks the server to stop the run.  A run begun from the research panel is followed again after a
+    reload too."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    import time
+
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import RESEARCH, RESUMED, MockProvider, MockRelay
+
+    mock = MockProvider().start()
+    relay = MockRelay(mock.base_url).start()
+    web = tmp_path / "web"
+    _published(web, relay.url)
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    gates: dict[str, threading.Event] = {}
+    work = rt.jobs.work
+
+    def held(job, stop, attach):  # each run waits until the test lets it go on
+        gates.setdefault(job["id"], threading.Event()).wait(120)
+        return work(job, stop, attach)
+
+    rt.jobs.work = held
+    go = lambda job: gates.setdefault(job, threading.Event()).set()  # noqa: E731
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{srv.server_address[1]}/"
+    consent = {"v": 1, "logs": False, "at": "2026-09-28T00:00:00Z"}
+
+    def state(job: str, want: str) -> None:
+        """The server's run reaches `want`."""
+        deadline = time.time() + 60
+        while rt.job(job)["state"] != want:
+            assert time.time() < deadline, rt.job(job)
+            time.sleep(0.1)
+
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            ctx = browser.new_context(viewport={"width": 1280, "height": 900}, locale="zh-CN")
+            ctx.add_init_script(f"localStorage.setItem('tc.consent', {json.dumps(json.dumps(consent))});")
+            errors: list[str] = []
+
+            def opened(path: str = ""):
+                page = ctx.new_page()
+                page.on("pageerror", lambda e: errors.append(str(e)))
+                page.goto(url + path)
+                page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+                return page
+
+            def says(page, n: int, start: str) -> None:
+                """The research step of the n-th answer says `start`…"""
+                page.wait_for_function("([n, start]) => document.querySelectorAll('.msg.assistant')[n]"
+                                       "?.querySelector('.steps .tool .row > .sm')?.textContent.startsWith(start)", arg=[n, start],
+                                       timeout=60000)
+
+            # another visitor's run goes on: the page's waits behind it, then runs
+            ahead = rt.start_research("麻黄汤的源流", max_rounds=1)
+            page = opened()
+            page.fill("#input", f"{RESEARCH}：桂枝汤的源流")
+            page.keyboard.press("Enter")
+            says(page, 0, "排队中：服务正在完成另一项研究 · 已等 ")
+            mine = next(j for j in rt.jobs.records if j != ahead)
+            here = page.evaluate("location.hash")
+            # a second tab leaves the turn to the first: it does not end it, and does not follow its run
+            other = opened(here)
+            other.wait_for_selector(".msg.assistant .steps", timeout=30000)
+            assert not other.locator(".msg.assistant .notice").count()
+            other.click(".conv.active")  # opened again from the list
+            other.wait_for_timeout(500)
+            assert not other.locator(".msg.assistant .notice").count()
+            other.close()
+            go(ahead)
+            says(page, 0, "研究进行中 · 已运行 ")
+            assert rt.job(mine)["state"] == "running"
+            # the page closed while the run goes on, and opened again: the turn ends with what it had, its run followed
+            page.close()
+            page = opened(here)
+            turn = page.locator(".msg.assistant").nth(0)
+            assert turn.locator(".notice.err").inner_text().startswith("这一轮没有答完：页面在作答时关闭或刷新了")
+            assert turn.locator(".notice.err button.resume").count() == 1
+            assert turn.locator(".steps .head").inner_text().startswith("调用了 1 个工具，1 个仍在后台进行")
+            says(page, 0, "后台继续 · 研究进行中 · 已运行 ")
+            go(mine)
+            page.wait_for_selector(".toast >> text=后台的研究已完成：结果在研究面板中", timeout=60000)
+            assert turn.locator(".steps .tool .st.ok").count() == 1 and rt.job(mine)["state"] == "completed"
+            page.click("#toggle-drawer")
+            page.click(".drawer .tab:has-text('研究')")
+            assert page.locator(".drawer .run-card").count() == 1
+            # taken up again, the turn answers from the run's result, which the page now has
+            asked = len(mock.requests)
+            turn.locator(".notice.err button.resume").click()
+            page.wait_for_function("document.querySelector('.msg.assistant .verify-bar')", timeout=60000)
+            told = [m for m in mock.requests[-1]["body"]["messages"] if m["role"] == "tool"]
+            assert len(mock.requests) == asked + 1 and [m["tool_call_id"] for m in told] == ["call_r"]
+            assert told[0]["content"].startswith("{") and told[0]["content"].endswith(RESUMED)
+            # a stop: the server is asked to stop the run, which ends after the task it runs
+            page.fill("#input", f"{RESEARCH}：再看一次")
+            page.keyboard.press("Enter")
+            says(page, 1, "研究进行中 · 已运行 ")
+            third = next(j for j in rt.jobs.records if j not in (ahead, mine))
+            page.click("#send.stop")
+            state(third, "cancel_requested")
+            go(third)
+            state(third, "cancelled")
+            # a run begun from the research panel, the page reloaded meanwhile: followed again, its result in the panel
+            page.click(".drawer .console-form summary")
+            page.fill(".drawer .console-form textarea", "桂枝汤的加减")
+            page.click(".drawer .console-form .btn >> text=运行研究")
+            page.wait_for_function("document.querySelector('.drawer .console-form .muted')?.textContent.startsWith('研究进行中 · 已运行 ')",
+                                   timeout=60000)
+            fourth = next(j for j in rt.jobs.records if j not in (ahead, mine, third))
+            page.reload()
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            page.click("#toggle-drawer")
+            page.click(".drawer .tab:has-text('研究')")
+            page.click(".drawer .console-form summary")
+            page.wait_for_function("document.querySelector('.drawer .console-form .muted')?.textContent.startsWith('研究进行中 · 已运行 ')",
+                                   timeout=60000)
+            go(fourth)
+            page.wait_for_selector(".toast >> text=研究完成", timeout=60000)
+            assert page.locator(".drawer .run-card").count() == 2 and "桂枝汤的加减" in page.locator(".drawer .run-card").nth(0).inner_text()
+            assert not errors, errors
+            browser.close()
+    finally:
+        for gate in gates.values():
+            gate.set()
+        srv.shutdown()
+        srv.server_close()
+        relay.shutdown()
+        mock.shutdown()
 
 def test_claude_through_the_official_sdk(tmp_path):
     """The Claude adapter loads the pinned SDK from jsDelivr (fetched here by Python, TLS verified, and handed to the
