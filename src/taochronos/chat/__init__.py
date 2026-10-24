@@ -25,12 +25,12 @@ from __future__ import annotations
 
 import threading
 import time
-import uuid
 from pathlib import Path
 from typing import Any
 
 from .. import AGENT_NAME, __version__
 from ..kernel.policy import Actor
+from ..kernel.store import MemoryEventStore
 from ..kernel.tools import ToolCall, closest_names, resolve_name
 from ..protocol.base import to_jsonable
 from ..protocol.schema import fit_arguments, signature
@@ -39,6 +39,7 @@ from ..plugins.userdata.service import MyData
 from ..plugins.userdata.store import MAX_DATASETS
 from .catalog import (CODE_MODE, ENGINE_TOOLS, META_TOOLS, NEVER, PARAMETERS, catalog_view, family_counts, llm_tools, offered,
                       tool_entry)
+from .jobs import Jobs
 from .prompt import AGENT_NAME as AGENT_NAME_ZH
 from .prompt import ASSISTANT_NAME, PUBLISHER, STARTERS, system_prompt
 from .results import citations, compact, for_interface, for_model, summarize
@@ -89,8 +90,10 @@ class ChatRuntime:
         permissions = CHAT_PERMISSIONS | ({"codemode:exec"} if code_mode else frozenset())
         self.actor = Actor(id="agent:chat", role="chat", principal="agent", permissions=frozenset(permissions), name="chat")
         self.sessions: dict[str, Any] = {}
-        self.jobs: dict[str, dict[str, Any]] = {}
         self._research = threading.Lock()  # one research run at a time: a run installs its contract's guards harness-wide
+        # the runs a server started in the background (chat/jobs.py), kept on disk where the sessions are
+        kept = None if isinstance(harness.store, MemoryEventStore) else Path(harness.data_dir) / "chat" / "jobs"
+        self.jobs = Jobs(self._work, lock=self._research, folder=kept)
         self._info: dict[str, Any] | None = None
         caps = harness.capabilities
         self.mydata = MyData(caps.get("study") if caps.has("study") else None)  # 我的资料: the classics read its prescriptions
@@ -318,44 +321,33 @@ class ChatRuntime:
         return self.summary(session)
 
     def start_research(self, question: str, **fields: Any) -> str:
-        """The same run in a background thread (the local server): a job id to poll with :meth:`job`."""
-        job_id = "job_" + uuid.uuid4().hex[:12]
-        job: dict[str, Any] = {"id": job_id, "status": "queued", "question": question, "started": time.time(), "session": None}
-        self.jobs[job_id] = job
-
-        def work() -> None:
-            try:
-                with self._research:
-                    engine = self.h.engine()
-                    session = engine.start(self._goal(question, **fields))
-                    self.sessions[session.id] = session
-                    job.update(status="running", session=session.id)
-                    engine.run(session)
-                job.update(status="done", outcome=shape("taochronos_research", True, self.summary(session),
-                                                        duration_ms=(time.time() - job["started"]) * 1000),
-                           finished=time.time())
-            except Exception as exc:
-                error = f"{type(exc).__name__}: {exc}"
-                job.update(status="error", error=error, outcome=shape("taochronos_research", False, None, error),
-                           finished=time.time())
-
-        threading.Thread(target=work, name=job_id, daemon=True).start()
-        return job_id
+        """The same run in the background (a server): queued, and a job id to follow with :meth:`job` (chat/jobs.py)."""
+        return self.jobs.start(question, fields)
 
     def job(self, job_id: str) -> dict[str, Any]:
-        job = self.jobs.get(job_id)
-        if job is None:
-            return {"id": job_id, "status": "unknown"}
-        out = {k: v for k, v in job.items() if k != "outcome"}
-        session = self.sessions.get(job.get("session") or "")
-        if session is not None and job["status"] == "running":
-            m = session.state.metrics or {}
-            out["progress"] = {"round": session.state.round, "status": session.state.status,
-                               **{k: m.get(k) for k in ("claims", "evidence_count", "hypotheses", "tool_calls", "agents_spawned")}}
-        out["elapsed_s"] = round((job.get("finished") or time.time()) - job["started"], 1)
-        if job["status"] in ("done", "error"):
-            out["outcome"] = job["outcome"]
-        return out
+        """A background run: its state, its place in the queue, its times, heartbeat and progress, and its outcome."""
+        return self.jobs.view(job_id)
+
+    def cancel_research(self, job_id: str) -> dict[str, Any]:
+        """Stop a background run: at once while it waits, at the end of the task it runs once it has begun."""
+        return self.jobs.cancel(job_id)
+
+    def resume_research(self, job_id: str) -> dict[str, Any]:
+        """Queue again a run the server stopped while it went on: from its session's last checkpoint."""
+        return self.jobs.resume(job_id)
+
+    def _work(self, job: dict[str, Any], stop: Any, attach: Any) -> dict[str, Any]:
+        """A background run of the job's question, or of its session again (resumed), until it ends or `stop` says to."""
+        started = time.time()
+        engine = self.h.engine()
+        if job.get("session"):
+            session = engine.open(job["session"])  # its log, from the store: the run goes on from its last checkpoint
+        else:
+            session = engine.start(self._goal(job["question"], **job.get("arguments", {})))
+        self.sessions[session.id] = session
+        attach(session)
+        engine.run(session, stop=stop)
+        return shape("taochronos_research", True, self.summary(session), duration_ms=(time.time() - started) * 1000)
 
     def _session(self, session_id: str) -> Any:
         session = self.sessions.get(session_id)

@@ -965,6 +965,14 @@ def cmd_schema(args: argparse.Namespace) -> None:
         _out(bundle_schema(list(PROTOCOL_TYPES)))
 
 
+def cmd_records(args: argparse.Namespace) -> None:
+    from .chat.records import read, summary
+    from .config import find_home
+
+    paths = [Path(p) for p in args.paths] or [(Path(args.home).resolve() if args.home else find_home()) / "data" / "chat-logs"]
+    _out(summary(read(paths), since=args.since, until=args.until))
+
+
 def cmd_governance(args: argparse.Namespace) -> None:
     from .governance import check
 
@@ -2056,6 +2064,12 @@ def build_parser() -> argparse.ArgumentParser:
                                     "$TAOCHRONOS_RELAY_URL); none: the visitor's own key, as before")
     sp.add_argument("--unlist", action="append", metavar="IDS",
                     help="build: provider presets the page does not offer (comma-separated ids; repeatable)")
+    sp = add("records", cmd_records, "对话记录的统计 (data/chat-logs/): the time from a turn's last tool result to its answer's "
+             "first text, recovery from a model request that broke off, answers whole and verified — counts and times only",
+             profile=False)
+    sp.add_argument("paths", nargs="*", help="JSON-lines files, or directories of them (default: <home>/data/chat-logs)")
+    sp.add_argument("--since", help="YYYY-MM-DD: the turns begun on or after it")
+    sp.add_argument("--until", help="YYYY-MM-DD: the turns begun on or before it")
     add("governance", cmd_governance, "check the architecture policy", profile=False)
     sp = add("eval", cmd_eval, "run TaoChronos-Eval suites", profile=False)
     sp.add_argument("suites", nargs="*")

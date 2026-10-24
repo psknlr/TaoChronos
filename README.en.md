@@ -62,8 +62,9 @@ and decide.
 > settings (DeepSeek, Qwen, Kimi, GLM, Doubao, SiliconFlow, OpenRouter, Poe, LiteLLM, Claude and others are
 > listed; any other endpoint can be set by hand under **自定义 API** — address, model, key, headers) and hold a multi-turn
 > conversation as in ChatGPT or Claude.  The model answers through all 79 of TaoChronos's tools, and the page checks every
-> `[[passage_id]]` it cites word for word (✓ matches the passage · ≠ misquoted · ✕ no such passage); evidence, research runs
-> and a tool console (any tool, no model needed) sit in the side panel.  In the browser TaoChronos runs with Pyodide on the
+> `[[passage_id]]` it cites word for word (✓ matches the passage · ≠ misquoted · ✕ no such passage) — and an answer that
+> cites a passage the corpus does not hold is first sent back to the model to look it up and answer again (自查);
+> evidence, research runs and a tool console (any tool, no model needed) sit in the side panel.  In the browser TaoChronos runs with Pyodide on the
 > **要籍语料**: 533 of the **535 key works** ranked by how the tradition cited them ([list](corpus/catalog/canon.yaml))
 > (553 witnesses, 10.5 million characters; the first classics whole, the 素问, 灵枢, 伤寒论 and 金匮 with two or three
 > witnesses to collate, the others in chapters; [sources and terms](corpus/web/ATTRIBUTION.md)), kept in the browser after the
@@ -782,7 +783,9 @@ docs/                      study, task specification, architecture, agents, disc
   be recorded (no key, settings or address), held by the relay and collected hourly into this repository — or, on Workers
   Paid, archived by the relay in a private R2 bucket instead ([ADR 0023](docs/adr/0023-workers-paid.md)).  It must stay
   private; move the directory out before it is ever made public.  The MiniMax key exists only as an encrypted secret of
-  the relay and of the repository's Actions — never in the code, the site or a log.
+  the relay and of the repository's Actions — never in the code, the site or a log.  `taochronos records` sums them up —
+  the time from a turn's last tool result to its answer's first text, how often a model request that broke off was
+  recovered from, how many answers came whole and verified — in counts and times only, never a word of a record.
 - Licences are recorded per work in the catalogues and the store and travel with every witness: Kanripo and
   Wikisource CC BY-SA 4.0; McGill public domain; CMETA's collation and editing CC BY 4.0 (attribution: 數位中醫校書郎
   CMETA), the texts public domain; the 東亜医学協会's transcriptions © the association, non-commercial personal use

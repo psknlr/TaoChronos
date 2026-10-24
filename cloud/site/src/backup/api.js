@@ -100,7 +100,7 @@ export async function answer(method, url, body, env) {
       const out = await passage(corpus, url.searchParams.get("id") || "");
       return out.ok || !unavailableError(out.error) ? json(out, 200, headers) : json(DOWN, 503, { "X-TC-Corpus": "none" });
     }
-    if (path.startsWith("/api/research/")) return json({ id: path.split("/").pop(), status: "unknown" }, 200, headers);
+    if (path.startsWith("/api/research/")) return json({ id: path.split("/").pop(), state: "unknown", status: "unknown" }, 200, headers);
     if (path.startsWith("/api/session/")) return json({ error: `本站的备份服务没有研究会话：${WHY.engine}` }, 501, headers);
   }
   if (method === "POST") {
@@ -115,6 +115,8 @@ export async function answer(method, url, body, env) {
       return out.ok || !unavailableError(out.error) ? json(out, 200, headers) : json(DOWN, 503, { "X-TC-Corpus": "none" });
     }
     if (path === "/api/research") return json({ error: `本站的备份服务不能运行多智能体研究：${WHY.engine}。可改用检索与治学工具分步研究。` }, 501, headers);
+    const job = path.match(/^\/api\/research\/([^/]+)\/(?:cancel|resume)$/); // a run the container started: not known here
+    if (job) return json({ id: job[1], state: "unknown", status: "unknown" }, 200, headers);
   }
   return json({ error: `no such endpoint ${path}` }, 404, headers);
 }

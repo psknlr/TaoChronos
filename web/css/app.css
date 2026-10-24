@@ -400,16 +400,17 @@ kbd { white-space: nowrap; font: 11px var(--font-mono); color: var(--ink-3); bor
 .msg.assistant .avatar { width: 28px; height: 28px; border-radius: 8px; margin-top: 3px; box-shadow: var(--shadow-sm); }
 .msg.assistant .body { min-width: 0; }
 
-/* thinking */
-.think { margin: 2px 0 12px; }
-.think summary {
+/* thinking, and an answer the self-check had rewritten (自查) */
+.think, .draft { margin: 2px 0 12px; }
+.think summary, .draft summary {
   list-style: none; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none;
   font-size: 13px; color: var(--ink-3); padding: 3px 10px 3px 8px; border-radius: 8px;
 }
-.think summary::-webkit-details-marker { display: none; }
-.think summary:hover { color: var(--ink-2); background: color-mix(in srgb, var(--ink) 5%, transparent); }
-.think summary .chev { transition: rotate .2s; }
-.think[open] summary .chev { rotate: 90deg; }
+.think summary::-webkit-details-marker, .draft summary::-webkit-details-marker { display: none; }
+.think summary:hover, .draft summary:hover { color: var(--ink-2); background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.think summary .chev, .draft summary .chev { transition: rotate .2s; }
+.think[open] summary .chev, .draft[open] summary .chev { rotate: 90deg; }
+.draft .md { margin: 6px 0 0 6px; padding-inline-start: 16px; border-inline-start: 2px solid var(--line-2); color: var(--ink-2); }
 .think .tx {
   margin: 6px 0 0 6px; padding: 2px 0; padding-inline-start: 16px; border-inline-start: 2px solid var(--line-2);
   color: var(--ink-3); font-size: 13.5px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere;
@@ -440,6 +441,9 @@ kbd { white-space: nowrap; font: 11px var(--font-mono); color: var(--ink-3); bor
 .tool .st { width: 16px; height: 16px; flex: none; display: grid; place-items: center; }
 .tool .st.ok { color: var(--jade); }
 .tool .st.err { color: var(--danger); }
+.tool .st.warn { color: var(--ochre); }
+.tool .st.off { color: var(--ink-3); }
+.steps > .offer { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 7px 12px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-3); }
 .spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line-2); border-top-color: var(--accent); animation: spin .8s linear infinite; }
 .tool > .detail { display: none; padding: 2px 12px 12px 12px; }
 .tool.open > .detail { display: block; }
@@ -550,6 +554,7 @@ pre.json { margin: 0; max-height: 280px; overflow: auto; background: var(--code-
 .send.stop { background: var(--ink); color: var(--paper); }
 .send.stop .sq { width: 11px; height: 11px; border-radius: 3px; background: currentColor; }
 .attachments { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px 0; }
+.composer .pause { margin: 10px 12px 0; }
 .attachment { position: relative; width: 58px; height: 58px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
 .attachment img { width: 100%; height: 100%; object-fit: cover; }
 .attachment button { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: 0; background: rgba(0, 0, 0, .6); color: #fff; font-size: 12px; line-height: 18px; padding: 0; }

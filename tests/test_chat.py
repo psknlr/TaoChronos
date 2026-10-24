@@ -325,6 +325,32 @@ def test_research_runs_in_the_background_and_is_polled(server):
             break
         time.sleep(0.5)
     assert st["status"] == "done" and st["outcome"]["ok"] and st["outcome"]["result"]["hypotheses"]
+    # its state, how long it waited and ran, what its session did
+    assert [st["state"], st["position"], st["heartbeat_s"], st["session"]] == ["completed", None, None, st["outcome"]["result"]["session_id"]]
+    assert st["queued_s"] >= 0 and st["run_s"] > 0 and st["progress"]["events"] > 0 and st["progress"]["hypotheses"]
+
+
+def test_a_research_run_on_the_server_can_be_stopped(server):
+    """POST …/cancel: a run stops at once while it waits, after the task it runs once it has begun; …/resume takes
+    up only a run the server stopped; and the site lets both through to its corpus server (cloud/site/src/site.js)."""
+    import time
+
+    starts = [json.loads(request(server, "POST", "/api/research", {"question": q, "focus_terms": ["消渴"], "max_rounds": 1})[1])["job"]
+              for q in ("消渴何以为病？", "消渴之名何来？")]
+    views = [json.loads(request(server, "POST", f"/api/research/{job}/cancel", b"{}")[1]) for job in reversed(starts)]
+    assert views[0]["state"] == "cancelled" and views[0]["position"] is None  # the second was waiting: stopped at once
+    for _ in range(240):
+        st = json.loads(request(server, "GET", f"/api/research/{starts[0]}")[1])
+        if st["state"] in ("cancelled", "completed", "failed"):
+            break
+        time.sleep(0.25)
+    assert st["state"] == "cancelled" and st["status"] == "error" and not st["outcome"]["ok"], st
+    assert json.loads(request(server, "POST", f"/api/research/{starts[0]}/resume", b"{}")[1])["state"] == "cancelled"
+    assert json.loads(request(server, "POST", "/api/research/job_none/cancel", b"{}")[1])["state"] == "unknown"
+    site = (ROOT / "cloud" / "site" / "src" / "site.js").read_text(encoding="utf-8")
+    posts = re.search(r"const POSTS = /(.+)/;", site).group(1).replace("\\/", "/")
+    assert all(re.match(posts, p) for p in ("/api/research", "/api/research/job_0123456789ab/cancel", "/api/research/job_x/resume"))
+    assert not any(re.match(posts, p) for p in ("/api/research/job_x", "/api/research/job_x/delete", "/api/research/a/b/cancel"))
 
 
 def test_the_model_proxy_streams_and_can_add_this_machines_key(server, monkeypatch):
