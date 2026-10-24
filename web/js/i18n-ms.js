@@ -51,6 +51,7 @@ export default {
   "删除对话「{0}」？此操作不可撤销。": "Padam perbualan “{0}”? Tindakan ini tidak boleh dibuat asal. ",
   "请先概述我上传的资料，再建议可以做哪些分析。": "Mula-mula ringkaskan data yang saya muat naik, kemudian cadangkan analisis yang boleh dilakukan. ",
   "请先为 {0} 配置底层模型的 API Key": "Sila sediakan kunci API untuk model asas {0} dahulu",
+  "暂停到 {0}，不再发送请求：{1}": "Dijeda sehingga {0}, tiada permintaan dihantar sebelum itu: {1}",
   "图片": "Imej",
   " · 第 {0} 轮": " · pusingan {0}",
   " · {0} 个假说": " · {0} hipotesis",
