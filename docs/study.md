@@ -901,6 +901,11 @@ that rare drugs do not come first), a one-sided Fisher test with Benjamini–Hoc
 period; the communities of the significant pairs are the groups of drugs that hold together (六味, 四物, 攻逐, 破血, 理气,
 消导 …). Network: a formula's findings by lift against how often each finding is named, its drugs; a finding's formulas.
 A finding named before a formula is not proof that the formula treats it: each link carries examples.
+A name a study does not take — a drug asked of 方证网络 (11 of its 26 failures in the visitor records), a formula of 用药谱
+or 配伍 — is answered with what the lexicon holds it as and the studies that read that; a name the lexicon does not hold,
+with the names of the kinds the study takes written in it (桂枝汤证: 桂枝汤), else, should it be miswritten, the nearest of
+them (sharing two of its characters at least, the curated before the harvested; offered, never taken for it, since
+another name may be another drug), and the studies that read any name (`study.term`; for a drug, `study.herb` too).
 
 ### 学派 (schools)
 

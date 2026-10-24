@@ -240,7 +240,7 @@ class PairsStudy:
         table = self.pair_table(transactions, min_support=min_support)
         target = self._key_of(herb) if herb else None
         if herb and target is None:
-            raise ValueError(f"{herb!r} is not a drug of the lexicon")
+            raise self.b.not_taken(herb, ("herb",), "is not a drug of the lexicon")
         rows = [r for r in table if target in (r["a"], r["b"])] if target else table
         for r in rows:
             r["a_name"], r["b_name"] = self._label(r["a"]), self._label(r["b"])
@@ -394,7 +394,8 @@ class PairsStudy:
         entry = next((lex.resolve(target, c) for c in FINDINGS + CONTEXT if lex.resolve(target, c)), None) or \
             next((lex.resolve(self.b.normalize(target), c) for c in FINDINGS + CONTEXT if lex.resolve(self.b.normalize(target), c)), None)
         if entry is None:
-            raise ValueError(f"{target!r} is neither a formula nor a finding of the lexicon")
+            raise self.b.not_taken(target, ("formula", *FINDINGS, *CONTEXT),
+                                   "is neither a formula nor a finding of the lexicon")
         xid = entry.term_id
         mine = [i for i in inds if xid in i[2]]
         got = Counter(i[1] for i in mine)

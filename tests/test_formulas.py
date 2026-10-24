@@ -100,6 +100,40 @@ def test_usage_counts_per_work_and_compares_the_doses_of_decoctions(study):
         study.usage("不是药")
 
 
+def test_a_name_a_study_does_not_take_is_answered_with_the_step_to_take(study):
+    """方证网络 takes the lexicon's formulas and findings, 用药谱 and 配伍 its drugs.  A name of another kind is said to be
+    one, with the studies that read it (方证网络 was asked for a drug in 11 of its 26 failures in the visitor records); a
+    name holding one the study takes is answered with it; one near such names with the nearest, should it be miswritten
+    (the curated first); and every miss with the studies that read any name."""
+
+    def said(study_fn, name):
+        with pytest.raises(ValueError) as caught:
+            study_fn(name)
+        return str(caught.value)
+
+    assert said(study.network, "甘草") == ("'甘草' is neither a formula nor a finding of the lexicon: it is a drug (甘草), "
+                                           "read by study.usage, study.pairs and study.herb")
+    assert said(study.usage, "桂枝汤") == ("'桂枝汤' is not a drug of the lexicon: it is a formula (桂枝汤), read by "
+                                         "study.formula, study.network and study.family")
+    assert said(study.pairs, "发热") == ("'发热' is not a drug of the lexicon: it is a symptom (发热), read by study.network "
+                                       "and study.term")
+    assert said(study.network, "肺").endswith(": it is an organ (肺), read by study.term")
+    assert said(study.network, "桂枝汤证") == ("'桂枝汤证' is neither a formula nor a finding of the lexicon; written in it: "
+                                             "桂枝汤 (formula)")
+    near = said(study.network, "桂支汤")  # as near as 桂心汤 and 桂附汤, which the harvest adds: the curated first
+    assert near.startswith("'桂支汤' is neither a formula nor a finding of the lexicon; if it was miswritten, the nearest it "
+                           "has: 桂枝汤 (formula), ")
+    assert near.endswith("; study.term reads any word by its passages") and near.count("(formula)") == 5
+    # another name may be another drug: offered should the name be miswritten, never taken for it
+    assert said(study.usage, "黄药子") == ("'黄药子' is not a drug of the lexicon; if it was miswritten, the nearest it has: "
+                                         "黄药根 (drug), 石中黄子 (drug); study.herb reads the 本草 entries under any name, "
+                                         "and study.term any word by its passages")
+    assert said(study.usage, "不是药") == ("'不是药' is not a drug of the lexicon; study.herb reads the 本草 entries under any "
+                                         "name, and study.term any word by its passages")
+    assert said(study.network, "不是方") == ("'不是方' is neither a formula nor a finding of the lexicon; study.term reads any "
+                                           "word by its passages")
+
+
 def test_properties_profile_natures_flavours_and_channels(study):
     r = study.properties(["黄连", "黄芩", "甘草"])
     d = {x["drug"]: x for x in r["drugs"]}
