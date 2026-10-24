@@ -30,11 +30,11 @@ async function loadSDK() {
   return sdk;
 }
 
-export async function streamClaude({ provider, system, messages, tools, settings, route, signal, limits, mark, onEvent = () => {} }) {
+export async function streamClaude({ provider, system, messages, tools, settings, route, signal, limits, mark, toolChoice, onEvent = () => {} }) {
   const Anthropic = await loadSDK();
   const w = watch(signal, limits, mark);
   try {
-    return await ask(Anthropic, { provider, system, messages, tools, settings, route, onEvent }, w);
+    return await ask(Anthropic, { provider, system, messages, tools, settings, route, toolChoice, onEvent }, w);
   } catch (err) {
     if (w.expired) throw stalled(w);
     throw err;
@@ -53,7 +53,7 @@ const watchedFetch = (w) => async (url, init) => {
   return new Response(body, { status: resp.status, statusText: resp.statusText, headers: resp.headers });
 };
 
-async function ask(Anthropic, { provider, system, messages, tools, settings, route, onEvent }, w) {
+async function ask(Anthropic, { provider, system, messages, tools, settings, route, toolChoice, onEvent }, w) {
   const signal = w.signal;
   const base = provider.baseUrl.replace(/\/v1\/?$/, "");
   const viaProxy = route?.kind === "proxy";
@@ -75,6 +75,8 @@ async function ask(Anthropic, { provider, system, messages, tools, settings, rou
   };
   if (tools && tools.length) {
     params.tools = tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters, eager_input_streaming: true }));
+    // the answer, with none of them to call: they stay, since the turn's tool_use blocks refer to them
+    if (toolChoice === "none") params.tool_choice = { type: "none" };
   }
   if (settings.thinking !== false && !/haiku/.test(provider.model)) params.thinking = { type: "adaptive", display: "summarized" };
   // a reply that spent all of its output on thinking is asked again at low effort (agent.js lessThinking): newer models

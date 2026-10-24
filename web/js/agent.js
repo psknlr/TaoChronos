@@ -16,6 +16,7 @@ import * as openai from "./llm/openai.js";
 import * as claude from "./llm/anthropic.js";
 import { dataNote } from "./mydata.js";
 import { LIMITS, limit, pause } from "./limits.js";
+import { truncate } from "./util.js";
 import { T } from "./i18n.js";
 
 const OLD_RESULT_CHARS = 2500;
@@ -133,6 +134,12 @@ export function answerDangling(msgs, format) {
  * model answers from what it has; so it does when the turn has run its time (limits.turn).  limit(maxSteps, why) tells
  * that the turn's tools came to an end before its answer: "asked" or "time" as they do, "steps" (all its rounds used)
  * when the model asks for more anyway.  `limits`: limits.js's, or some of them changed.
+ * Once the turn's tools have come to an end — its rounds used, the answer asked for, its time up — the model is asked
+ * for its answer with no tool to call (tool choice "none": a service that refuses a request asking it is asked again
+ * without, and not asked so again while the page is open), told which of its calls have no result; a service that calls
+ * tools all the same is told no, and the turn ends `unanswered` when it still has not answered.  `resume`: the messages
+ * of a turn that did not get its answer (an error, a stop), as the page kept them, taken up again after its `rounds` —
+ * no tool runs again, and the model is asked for the answer from the results it has.
  * `trace` (an object), when given, is filled as the turn runs with where its time went, for the page's record of the turn
  * (the caller keeps it, even if the turn is stopped); its times are the page's clock (Date.now()):
  *   requests — each model request: its round and attempt; when it was sent, its reply began (`open`), its first part,
@@ -145,9 +152,10 @@ export function answerDangling(msgs, format) {
  *   events — `{at, what}`: a cut answer written on ("continued"), a round asked again with less thinking ("lighter"), the
  *     turn's tools come to an end ("asked", "time", "steps"), a reply cut ("cut:answer", "cut:thinking", "cut:context",
  *     "cut:filtered").
- * Returns {wire, rounds, usage, model}.
+ * Returns {wire, rounds, usage, model, unanswered}.
  */
-export async function runTurn({ provider, settings, route, runtime, tools, system, history, user, signal, hurry, limits, hooks, sink, trace }) {
+export async function runTurn({ provider, settings, route, runtime, tools, system, history, user, signal, hurry, limits, hooks, sink, trace,
+  resume, rounds }) {
   const lim = { ...LIMITS, ...limits };
   if (trace) for (const k of ["requests", "tools", "events"]) trace[k] ||= [];
   const quick = new AbortController(); // the turn's tools end early: the user asked for the answer, or its time is up
@@ -159,33 +167,42 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
   const clock = limit(lim.turn, () => answerNow("time"));
   try {
     return await turnOf({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, trace, lim,
-      quick: quick.signal, quickWhy: () => quickWhy });
+      quick: quick.signal, quickWhy: () => quickWhy, resume, rounds });
   } finally {
     clock.stop();
     hurry?.removeEventListener("abort", asked);
   }
 }
 
-async function turnOf({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, trace, lim, quick, quickWhy }) {
+async function turnOf({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, trace, lim, quick, quickWhy,
+  resume, rounds }) {
   const format = formatOf(provider);
   const L = lib(format);
   const userWire = L.userMessage(userText(user), user.images || []);
   const turn = sink || []; // the caller keeps what finished, even if the turn is stopped
   const usage = { input: 0, output: 0 };
-  let round = 0;
+  let round = resume?.length ? Math.max(0, Number(rounds) || 0) : 0; // a turn taken up again goes on from its rounds
   let model = provider.model;
   const maxSteps = Math.max(1, Number(settings.maxSteps) || 16);
   let continued = 0; // rounds that took up a reply cut at the output limit: they spend none of the turn's rounds of tools
   let lighter = null; // the settings a round is asked again with: the last reply spent its whole output on thinking
-  let closing = null; // why the turn's tools came to an end: "steps" (all its rounds used), "asked", "time"
+  let closing = null; // why the turn's tools came to an end: "steps" (all its rounds used), "asked", "time", "resume"
   let closedAt = 0;   // the round of tools after which they did
+  let told = false;   // the model has been told which of its calls have no result
   const close = (why, at) => {
     [closing, closedAt] = [why, at];
     note(why);
-    if (why !== "steps") hooks.limit?.(maxSteps, why);
+    if (why === "asked" || why === "time") hooks.limit?.(maxSteps, why);
   };
+  // the calls of the turn that have no result (they ran out of time, were not waited for, went on in the background or
+  // were stopped), by what they asked: one run again with the same arguments that then gave one has its result
+  const lacking = new Map();
   const note = (what) => { trace?.events.push({ at: Date.now(), what }); };
   const cutShort = (why) => { note(`cut:${why}`); hooks.cut?.(why); };
+  if (resume?.length && !signal.aborted) { // the turn taken up again: what it had, every call with its result, and its answer asked for
+    for (const m of resumed(resume, format)) turn.push(m);
+    close("resume", round);
+  }
 
   for (;;) {
     if (signal.aborted) break;
@@ -197,11 +214,13 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
       ? [{ role: "system", content: system }, ...history, userWire, ...turn]
       : [...history, userWire, ...turn];
     let attempt = 0;
-    const res = await withRetry(() => {
+    const service = `${provider.id} ${provider.baseUrl}`;
+    const ask = () => withRetry(() => {
       const mark = trace ? { round, attempt: ++attempt } : null; // where this request's time went
       if (mark) trace.requests.push(mark);
       return measured(mark, (format === "anthropic" ? claude.streamClaude : openai.streamChat)({
         provider, system, messages, tools, settings: asked, route, signal, limits: lim, mark,
+        toolChoice: closing && !NO_NONE.has(service) ? "none" : undefined,
         onEvent: (ev) => {
           if (ev.type === "thinking") hooks.thinking?.(ev.delta);
           else if (ev.type === "text") { if (mark && !mark.text) mark.text = Date.now(); hooks.text?.(ev.text); }
@@ -209,6 +228,15 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
         },
       }));
     }, { signal, onRetry: hooks.retry });
+    let res;
+    try {
+      res = await ask();
+    } catch (err) {
+      // a service that refuses a request asking for no tool call: asked again as before (its calls refused instead)
+      if (!closing || NO_NONE.has(service) || !(err instanceof openai.ProviderError && REFUSED.has(err.status))) throw err;
+      NO_NONE.add(service);
+      res = await ask();
+    }
     if (res.model) model = res.model;
     if (res.usage) { usage.input += res.usage.input || 0; usage.output += res.usage.output || 0; hooks.usage?.(usage); }
     const full = res.finishReason === FULL;
@@ -244,21 +272,78 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
     const steps = round - continued;
     // before these calls run: all the turn's rounds are used, or the user asked for the answer, or its time ran out
     if (!closing && (steps > maxSteps || quick.aborted)) close(steps > maxSteps ? "steps" : quickWhy(), steps - 1);
+    const closed = closing; // the calls of a round asked for after the turn's tools came to an end are not run
     const results = await Promise.all(res.toolCalls.map((tc) => execute(tc, {
       runtime, settings, hooks, signal, quick, quickWhy, limits: lim, closing, cut, trace, round })));
+    res.toolCalls.forEach((tc, k) => {
+      const key = `${tc.name}\u0000${JSON.stringify(tc.arguments ?? null)}`;
+      if (results[k].ok) lacking.delete(key);
+      else if (LACKING.has(results[k].status) && !closed) lacking.set(key, { name: tc.name, args: tc.arguments, status: results[k].status });
+    });
+    const last = results[results.length - 1];
     if (!closing && quick.aborted) { // while they ran
       close(quickWhy(), steps);
-      results[results.length - 1].text += closingNote(closing, lim);
-    } else if (!closing) {
-      results[results.length - 1].text += budgetNote(maxSteps - steps);
+      last.text += closingNote(closing, lim);
+    } else if (!closing && !signal.aborted) { // (a turn stopped is told nothing: it asks no more)
+      last.text += budgetNote(maxSteps - steps);
+      if (steps >= maxSteps) close("steps", steps); // all its rounds of tools used: the answer comes next, with none to call
+    }
+    if (closing && !told) { // the answer is asked for next: what it lacks
+      told = true;
+      last.text += lackingNote([...lacking.values()]);
     }
     turn.push(...L.toolResultMessages(results));
-    if (closing && steps > closedAt + MAX_EXTRA_ROUNDS) {
-      hooks.limit?.(maxSteps, closing);
-      break;
+    if (closing && steps > closedAt + MAX_EXTRA_ROUNDS) { // a service that calls tools however it is asked
+      if (closing !== "resume") hooks.limit?.(maxSteps, closing);
+      return { wire: turn, rounds: round, usage, model, unanswered: true };
     }
   }
-  return { wire: turn, rounds: round, usage, model };
+  return { wire: turn, rounds: round, usage, model, unanswered: false };
+}
+
+// how a call ends with no result the model can answer from: it ran out of time, was not waited for, goes on by itself
+// in the background, or was stopped (execute)
+const LACKING = new Set(["timeout", "skipped", "background", "stopped"]);
+// the services (by id and address) that refused a request asking for no tool call, while the page is open — not every
+// one takes tool choice "none" — and the statuses a request's refusal comes with
+const NO_NONE = new Set();
+const REFUSED = new Set([400, 422]);
+
+/** What the model is told, as its answer is asked for, of its calls that have no result: each by its name, what it
+ * asked (cut short) and how it ended, and that it is to say what is missing rather than make it up. */
+export function lackingNote(calls) {
+  if (!calls.length) return "";
+  const word = (status) => ({ timeout: T("超时"), skipped: T("没有等到"), background: T("仍在后台运行"), stopped: T("已停止") })[status];
+  const named = (c) => T`${`${c.name} ${truncate(JSON.stringify(c.args ?? {}), 80)}`}（${word(c.status)}）`;
+  return `\n\n${T`［这些调用没有得到结果：${calls.map(named).join(T("、"))}。回答时请说明缺了哪些结果，不要编造它们的内容］`}`;
+}
+
+/** What the model is told when the user takes up a turn that did not get its answer (resume). */
+export const resumeNote = () => T("［提示：上一次作答没有完成，工具不再调用。请根据上面已有的工具结果直接作答；没有得到的结果，请在回答中说明缺了什么，不要编造］");
+
+/** A turn's messages end on its tools' results (or on a reply whose calls have none, which answerDangling gives them):
+ * its answer can be asked for from them (resume). */
+export function resumable(wire, format) {
+  const last = (wire || []).at(-1);
+  if (format === "anthropic") {
+    return Array.isArray(last?.content) && last.content.some((b) => b.type === (last.role === "user" ? "tool_result" : "tool_use"));
+  }
+  return last?.role === "tool" || Boolean(last?.role === "assistant" && last.tool_calls?.length);
+}
+
+/** A turn's messages as the page kept them (resumable), taken up again: every call with its result (answerDangling),
+ * and after the last of them the note asking for the answer.  What the page kept is not changed. */
+export function resumed(wire, format) {
+  const msgs = answerDangling(structuredClone(wire), format);
+  const note = `\n\n${resumeNote()}`;
+  const last = msgs.at(-1);
+  if (format === "anthropic") {
+    const block = last.content.at(-1);
+    block.content = typeof block.content === "string" ? block.content + note : [...(block.content || []), { type: "text", text: note }];
+  } else {
+    last.content = `${last.content ?? ""}${note}`;
+  }
+  return msgs;
 }
 
 /** A model request, its end told to its `mark` (when it has one): how it finished and its tokens, or why it failed. */
@@ -335,7 +420,7 @@ async function withRetry(fn, { signal, onRetry }) {
  * turn was), skipped (the turn did not wait for it: the user asked for the answer, or the turn ran its time), or
  * background (a research run the turn did not wait for, which goes on by itself: hooks.toolLater has its end).  Calls
  * the turn's tools came to an end before (`closing`), of a cut reply (`cut`), or with arguments that did not parse, do
- * not run. */
+ * not run.  Returns {id, ok, status, text}. */
 async function execute(tc, ctx) {
   const { hooks, closing, cut, trace, round } = ctx;
   const call = { id: tc.id, name: tc.name, args: tc.arguments, started: Date.now(), status: "running" };
@@ -357,15 +442,17 @@ async function execute(tc, ctx) {
     out = await follow(tc, call, { ...ctx, entry });
   }
   out ||= { ok: false, error: T("没有结果"), text: T("ERROR: 没有结果") };
+  const status = out.ok ? "ok" : out.status || (ran ? "error" : "refused");
   if (entry) {
-    Object.assign(entry, { end: Date.now(), name: out.tool || tc.name, status: out.ok ? "ok" : out.status || (ran ? "error" : "refused") });
+    Object.assign(entry, { end: Date.now(), name: out.tool || tc.name, status });
     if (Number.isFinite(out.duration_ms)) entry.compute = Math.round(out.duration_ms); // as long as the runtime says it took
   }
   hooks.toolEnd?.(call, out);
-  return { id: tc.id, ok: Boolean(out.ok), text: out.text || (out.ok ? "{}" : `ERROR: ${out.error}`) };
+  return { id: tc.id, ok: Boolean(out.ok), status, text: out.text || (out.ok ? "{}" : `ERROR: ${out.error}`) };
 }
 
-/** A call after the turn's tools came to an end: not run, and the model told why. */
+/** A call after the turn's tools came to an end: not run, and the model told why (a turn taken up again, as when the
+ * user asked for the answer). */
 function refused(why) {
   if (why === "steps") return { ok: false, error: T("已达到本轮工具调用的上限：请根据已有结果直接作答。"), text: T("ERROR: 已达到本轮工具调用的上限：请根据已有结果直接作答。") };
   const error = why === "time" ? T("这一轮回答的时间已用完，不再调用工具：请根据已有结果直接作答。")
