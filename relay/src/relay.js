@@ -575,8 +575,12 @@ export function reasoningFilter() {
 const RELAY_PROVIDER = "impf"; // the page's id for the default service (web/js/providers.js)
 const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : undefined);
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+const obj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : null);
+const list = (v, n, each) => (Array.isArray(v) ? v.slice(0, n).map((x) => each(obj(x) || {})) : undefined);
 
-/** A turn as the page sends it, reduced to the known fields and their limits (anything else is dropped). */
+/** A turn as the page sends it, reduced to the known fields and their limits (anything else is dropped).  Where its time
+ * went (web/js/records.js, timings): its model requests, its calls' times and ends, what happened between them, how long the
+ * page was hidden or did not run, and the runtime it began on — numbers and short words only. */
 export function normalizeRecord(r) {
   if (!r || typeof r !== "object" || Array.isArray(r) || r.v !== 1) return null;
   const question = str(r.question, 4000);
@@ -587,9 +591,18 @@ export function normalizeRecord(r) {
     question: question || "", images: num(r.images), answer: str(r.answer, 20000), redacted: num(r.redacted),
     status: str(r.status, 20), error: str(r.error, 500),
     model: str(r.model, 80), provider: str(r.provider, 80), runtime: str(r.runtime, 40), corpus: str(r.corpus, 40), app: str(r.app, 40),
-    tools: Array.isArray(r.tools)
-      ? r.tools.slice(0, 40).map((t) => ({ name: str(t?.name, 80), ok: t?.ok === true, ms: num(t?.ms), args: str(t?.args, 300) }))
-      : [],
+    tools: list(r.tools, 40, (t) => ({
+      name: str(t.name, 80), ok: t.ok === true, ms: num(t.ms), args: str(t.args, 300),
+      id: str(t.id, 64), round: num(t.round), status: str(t.status, 20), at: num(t.at), wait: num(t.wait), compute: num(t.compute),
+    })) || [],
+    requests: list(r.requests, 48, (q) => ({
+      round: num(q.round), attempt: num(q.attempt), sent: num(q.sent), open: num(q.open), first: num(q.first), text: num(q.text),
+      last: num(q.last), end: num(q.end), finish: str(q.finish, 40), failed: str(q.failed, 40), expired: str(q.expired, 20),
+      status: num(q.status), input: num(q.input), output: num(q.output),
+    })),
+    events: list(r.events, 40, (e) => ({ at: num(e.at), what: str(e.what, 40) })),
+    hidden: num(r.hidden), asleep: num(r.asleep),
+    was: obj(r.was) ? { runtime: str(r.was.runtime, 40), corpus: str(r.was.corpus, 40) } : undefined,
   };
   const u = r.usage;
   if (u && typeof u === "object" && !Array.isArray(u)) {

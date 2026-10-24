@@ -783,7 +783,9 @@ docs/                      study, task specification, architecture, agents, disc
   be recorded (no key, settings or address), held by the relay and collected hourly into this repository — or, on Workers
   Paid, archived by the relay in a private R2 bucket instead ([ADR 0023](docs/adr/0023-workers-paid.md)).  It must stay
   private; move the directory out before it is ever made public.  The MiniMax key exists only as an encrypted secret of
-  the relay and of the repository's Actions — never in the code, the site or a log.
+  the relay and of the repository's Actions — never in the code, the site or a log.  `taochronos records` sums them up —
+  the time from a turn's last tool result to its answer's first text, how often a model request that broke off was
+  recovered from, how many answers came whole and verified — in counts and times only, never a word of a record.
 - Licences are recorded per work in the catalogues and the store and travel with every witness: Kanripo and
   Wikisource CC BY-SA 4.0; McGill public domain; CMETA's collation and editing CC BY 4.0 (attribution: 數位中醫校書郎
   CMETA), the texts public domain; the 東亜医学協会's transcriptions © the association, non-commercial personal use

@@ -95,7 +95,7 @@ export function stalled(w) {
 
 /** A reply whose stream ended before the service said it was complete — no finish_reason, no [DONE], no stop_reason: the
  * connection closing is not the answer's end, and the round is asked again like one that broke off. */
-export const unfinished = () => new ProviderError(T("回复没有完整到达：连接在模型说完之前就结束了"), { retryable: true });
+export const unfinished = () => new ProviderError(T("回复没有完整到达：连接在模型说完之前就结束了"), { retryable: true, kind: "unfinished" });
 
 function errorMessage(status, body) {
   let msg = body;
@@ -120,9 +120,9 @@ export const proxyHeaders = (route) => (route?.kind === "proxy" && route.token ?
 /**
  * Stream one completion.  Returns {message, text, thinking, toolCalls, finishReason, usage}; calls onEvent with
  * {type: "text" | "thinking" | "tool", ...} as the answer arrives.  `limits` (limits.js): how long its first reply, and
- * a silence while it streams, are waited for.
+ * a silence while it streams, are waited for; `mark`: told when it was sent and its parts came (limits.js, watch).
  */
-export async function streamChat({ provider, messages, tools, settings, route, signal, limits, onEvent = () => {} }) {
+export async function streamChat({ provider, messages, tools, settings, route, signal, limits, mark, onEvent = () => {} }) {
   const url = provider.full_url ? provider.baseUrl : `${provider.baseUrl}/chat/completions`;
   if (!/^https?:\/\//.test(url)) throw new ProviderError(T`接口地址无效：${url || T("（未填写）")}`);
   const body = { model: provider.model, messages, stream: true };
@@ -144,7 +144,7 @@ export async function streamChat({ provider, messages, tools, settings, route, s
   Object.assign(headers, provider.headers || {}); // a hand-set endpoint's own headers (api-key: …, a gateway's routing header)
   if (provider.id === "openrouter") { headers["HTTP-Referer"] = location.origin; headers["X-Title"] = "TaoChronos"; }
 
-  const w = watch(signal, limits);
+  const w = watch(signal, limits, mark);
   try {
     return await send({ provider, route, url, target, headers, body, onEvent }, w);
   } finally {
@@ -210,11 +210,14 @@ async function send({ provider, route, url, target, headers, body, onEvent }, w)
 /** A reply's body read whole: it says nothing until it is complete, so it has the time for that, not a silence. */
 async function whole(resp, w) {
   w.whole();
+  let text;
   try {
-    return await until(resp.text(), w.signal);
+    text = await until(resp.text(), w.signal);
   } catch (err) {
     throw brokenOff(err, w);
   }
+  w.heard();
+  return text;
 }
 
 /** The events of a streamed reply, as they arrive; read whole where the browser cannot read a reply as it arrives (an

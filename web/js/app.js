@@ -13,9 +13,9 @@ import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, 
   from "./providers.js";
 import { ACCEPT, brief, cacheList, cachedList, DATA_NOTICE, isMine, MAX_BYTES, noticeSeen, personal, setNoticeSeen, sizeLabel }
   from "./mydata.js";
-import { consent, NOTICE, setConsent } from "./records.js";
+import { consent, NOTICE, setConsent, timings } from "./records.js";
 import { BrowserRuntime, probeServer, sameOriginServer, ServerRuntime } from "./runtime.js";
-import { LIMITS } from "./limits.js";
+import { LIMITS, pageClock } from "./limits.js";
 import * as store from "./store.js";
 import {
   $, bare, copyText, dateGroup, debounce, download, fmtMs, h, icon, moveBar, passageLabel, progressBar, replace, sleep, storage,
@@ -97,6 +97,7 @@ const isLoopbackHost = (host) => ["localhost", "127.0.0.1", "[::1]", "::1"].incl
  * visitor is told why: a restriction is not the corpus being away. */
 function inBrowserInstead(err) {
   const rt = new BrowserRuntime();
+  S.running?.trace?.events.push({ at: Date.now(), what: err?.refused ? `fallback:${err.refused}` : "fallback" }); // for its record
   switchRuntime(rt);
   if (err?.refused) {
     toast(err.refused === "daily" ? T("今天在本站全量语料上的查询次数已用完：改用浏览器内的要籍语料，明天恢复")
@@ -524,7 +525,8 @@ async function runAssistant(conv, msg) {
   const hidden = touchesIdentity(user.text);
   const controller = new AbortController();
   const hurry = new AbortController(); // the user asks for the answer without the tools still running
-  S.running = { controller, hurry, convId: conv.id, msgId: msg.id };
+  const trace = { requests: [], tools: [], events: [] }; // where the turn's time went, for its record
+  S.running = { controller, hurry, trace, convId: conv.id, msgId: msg.id };
   renderComposer();
   const provider = activeProvider(S.settings);
   msg.model = provider.relay ? ASSISTANT : provider.model; // the default service by its own model name only
@@ -535,8 +537,11 @@ async function runAssistant(conv, msg) {
   if (hidden) msg.hideThinking = true;
   msg.wireFormat = formatOf(provider);
   msg.wireProvider = provider.id;
+  let was = null; // the runtime and corpus the turn began on
+  const clock = pageClock(); // how long the page is hidden, or does not run, while the turn does
   try {
     const runtime = await turnRuntime();
+    was = runtimeNow();
     const catalog = await getCatalog(S.settings.toolMode);
     const tools = toolDefs(catalog);
     if (S.data.list.length || personal(conv)) { // the 我的资料 tools, while there is data to read
@@ -547,6 +552,7 @@ async function runAssistant(conv, msg) {
       provider, settings: hidden ? { ...S.settings, thinking: false } : S.settings, route: routeFor(), runtime: routed(runtime),
       tools, system: systemPrompt(), history, user, signal: controller.signal, hurry: hurry.signal, hooks: makeHooks(conv, msg), sink,
       review: (text) => missingCites(conv, text),
+      trace,
     });
     msg.rounds = result.rounds;
     msg.usage = result.usage;
@@ -556,6 +562,7 @@ async function runAssistant(conv, msg) {
     if (err?.name === "AbortError" || controller.signal.aborted) msg.status = "stopped";
     else { msg.status = "error"; msg.error = err?.message || String(err); }
   } finally {
+    const page = clock.stop();
     msg.ms = Date.now() - started;
     if (hidden) msg.wire = withoutReasoning(sink);
     for (const seg of msg.segments) {
@@ -572,9 +579,12 @@ async function runAssistant(conv, msg) {
       renderSidebar();
     }
     renderComposer();
-    recordTurn(conv, msg);
+    recordTurn(conv, msg, { started, trace, was, ...page });
   }
 }
+
+/** The runtime that answers now, and its corpus, as a turn's record names them. */
+const runtimeNow = () => ({ runtime: S.runtimeInfo?.runtime || S.runtime?.kind, corpus: S.runtimeInfo?.corpus?.kind });
 
 /** A question the page answers itself (fixed.js): the same reply every time, without a model or tools. */
 async function answerFixed(conv, msg, text) {
@@ -1504,17 +1514,22 @@ async function citationSummary(conv, msg) {
   return out;
 }
 
-/** One finished turn, compact (no key, no settings, no address), to the relay — only when the visitor agreed. */
-async function recordTurn(conv, msg) {
+/** One finished turn, compact (no key, no settings, no address), to the relay — only when the visitor agreed.  `diag`:
+ * where its time went (runAssistant) — when it began, its trace (agent.js, runTurn), the runtime it began on, and how
+ * long the page was hidden or did not run. */
+async function recordTurn(conv, msg, diag = null) {
   if (!recording() || personal(conv)) return; // a conversation that touches the user's own data is never recorded
   try {
     const idx = conv.messages.indexOf(msg);
     const user = conv.messages[idx - 1];
     if (!user || user.role !== "user") return;
-    const tools = [];
-    for (const seg of msg.segments || []) {
-      for (const c of seg.calls || []) {
-        tools.push({ name: c.resolved || c.name, ok: c.status === "ok", ms: c.ms, args: truncate(JSON.stringify(c.args ?? {}), 300) });
+    const times = diag ? timings({ ...diag, now: runtimeNow() }) : null;
+    const tools = times?.tools || [];
+    if (!times) {
+      for (const seg of msg.segments || []) {
+        for (const c of seg.calls || []) {
+          tools.push({ name: c.resolved || c.name, ok: c.status === "ok", ms: c.ms, args: truncate(JSON.stringify(c.args ?? {}), 300) });
+        }
       }
     }
     const said = scrub(rawAnswer(msg)); // as the visitor read it, and how many inside names were told in plain words
@@ -1525,6 +1540,7 @@ async function recordTurn(conv, msg) {
       redacted: said.hits || undefined, status: msg.status, error: msg.error ? String(msg.error).slice(0, 500) : undefined,
       model: msg.model, provider: msg.provider, runtime: S.runtimeInfo?.runtime || S.runtime?.kind, corpus: S.runtimeInfo?.corpus?.kind,
       app: S.runtimeInfo?.version, usage: msg.usage || undefined, tools: tools.slice(0, 40), citations: await citationSummary(conv, msg),
+      requests: times?.requests, events: times?.events, hidden: times?.hidden, asleep: times?.asleep, was: times?.was,
     };
     let body = JSON.stringify(record);
     const size = () => new TextEncoder().encode(body).length;
