@@ -374,6 +374,29 @@ test("a record is kept only as its known fields, from the page, within its limit
   assert.equal(long.question.length, 4000);
   assert.equal(normalizeRecord({ v: 1, question: "" }), null);
   assert.equal(normalizeRecord([1]), null);
+  // where the turn's time went (web/js/records.js, timings): numbers and short words only, within their limits
+  const timed = normalizeRecord({
+    ...turn,
+    tools: [{ ...turn.tools[0], ok: false, id: "call_1", round: 1, status: "timeout", at: 1200, wait: 300, compute: 80 }],
+    requests: [
+      { round: 1, attempt: 1, sent: 5, open: 400, first: 410, text: 900, last: 1100, end: 1101, finish: "tool_calls", input: 1200, output: 80, body: "dropped" },
+      { round: 1, attempt: 2, sent: 1200, end: 1300, failed: "overloaded_error", status: 529 },
+      ...Array.from({ length: 60 }, (_, i) => ({ round: 2, attempt: i + 1, failed: "timeout".repeat(20), expired: "silence", sent: "5", status: "503" })),
+    ],
+    events: [{ at: 1500, what: "asked" }, { at: "soon", what: { no: 1 } }, null],
+    hidden: 2000, asleep: "0", was: { runtime: "server", corpus: "full", url: "https://x.example" },
+  });
+  assert.deepEqual(timed.tools[0], { name: "classics.search", ok: false, ms: 80, args: "{\"query\":\"桂枝汤\"}", id: "call_1", round: 1,
+    status: "timeout", at: 1200, wait: 300, compute: 80 });
+  assert.deepEqual(timed.requests[0], { round: 1, attempt: 1, sent: 5, open: 400, first: 410, text: 900, last: 1100, end: 1101,
+    finish: "tool_calls", input: 1200, output: 80 });
+  assert.equal(timed.requests.length, 48);
+  assert.deepEqual(timed.requests[1], { round: 1, attempt: 2, sent: 1200, end: 1300, failed: "overloaded_error", status: 529 });
+  assert.deepEqual(timed.requests[2], { round: 2, attempt: 1, failed: "timeout".repeat(20).slice(0, 40), expired: "silence" });
+  assert.deepEqual(timed.events, [{ at: 1500, what: "asked" }, {}, {}]);
+  assert.deepEqual([timed.hidden, timed.asleep, timed.was], [2000, undefined, { runtime: "server", corpus: "full" }]);
+  // an older page's record has none of them
+  assert.deepEqual(Object.keys(normalizeRecord(turn)).filter((k) => ["requests", "events", "hidden", "asleep", "was"].includes(k)), []);
 });
 
 test("the collector: token required, records after its cursor, deleted once committed, ids never reused", async () => {

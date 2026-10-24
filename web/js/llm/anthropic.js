@@ -30,9 +30,9 @@ async function loadSDK() {
   return sdk;
 }
 
-export async function streamClaude({ provider, system, messages, tools, settings, route, signal, limits, onEvent = () => {} }) {
+export async function streamClaude({ provider, system, messages, tools, settings, route, signal, limits, mark, onEvent = () => {} }) {
   const Anthropic = await loadSDK();
-  const w = watch(signal, limits);
+  const w = watch(signal, limits, mark);
   try {
     return await ask(Anthropic, { provider, system, messages, tools, settings, route, onEvent }, w);
   } catch (err) {

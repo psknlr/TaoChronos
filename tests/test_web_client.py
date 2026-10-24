@@ -1031,6 +1031,165 @@ def test_waits_and_stops_under_node(tmp_path):
     assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
 
 
+# where a turn's time goes (web/js/agent.js runTurn's trace, limits.js watch and pageClock): for the page's record of it
+NODE_TRACE = r"""
+import assert from "node:assert/strict";
+import { pageClock } from "./js/limits.js";
+import { runTurn } from "./js/agent.js";
+import { timings } from "./js/records.js";
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const enc = new TextEncoder();
+const relayP = { id: "impf", relay: true, baseUrl: "https://relay.example/v1", model: "Tao-R1", extra_body: {},
+  max_tokens_param: "max_completion_tokens", thinking_off: { thinking: { type: "disabled" } }, reasoning: "reasoning_details" };
+const delta = (content, finish = null) => `data: ${JSON.stringify({ choices: [{ delta: { content }, finish_reason: finish }] })}\n\n`;
+const calls = (...cs) => `data: ${JSON.stringify({ choices: [{ delta: { tool_calls: cs.map(([name, args], i) => (
+  { index: i, id: `c${i}`, function: { name, arguments: JSON.stringify(args) } })) }, finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`;
+const streamed = (body) => new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+const sse = (text) => new ReadableStream({ start(c) { c.enqueue(enc.encode(text)); c.close(); } });
+const silent = (text) => new ReadableStream({ start(c) { c.enqueue(enc.encode(text)); } }); // says this, then nothing
+const hang = (signal) => new Promise((resolve, reject) => signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError"))));
+const turn = (extra) => runTurn({ provider: relayP, settings: {}, route: null, runtime: null, tools: [], system: "s", history: [],
+  user: { text: "问" }, signal: new AbortController().signal, hooks: {}, ...extra });
+
+// a round of calls — a chart at once, a search that waits for its turn and then runs —, then an answer that falls
+// silent once and is asked again: each request's times in order, how each ended, and each call's waiting and running
+let trace = {};
+let n = 0;
+globalThis.fetch = async () => (++n === 1 ? streamed(sse(calls(["analysis__chart", {}], ["classics__search", { query: "桂枝" }])))
+  : n === 2 ? streamed(silent(delta("半"))) : streamed(sse(delta("答", "stop"))));
+let runtime = { call: (name, args, o) => new Promise((resolve) => {
+  if (name === "analysis__chart") return resolve({ ok: true, text: "{}", tool: "analysis.chart", duration_ms: 12.4 });
+  o.onWait("queued");
+  setTimeout(() => { o.onStart(); setTimeout(() => resolve({ ok: true, text: "{}", tool: "classics.search", duration_ms: 40 }), 120); }, 200);
+}) };
+let done = await turn({ runtime, limits: { silence: 150 }, trace });
+assert.equal(done.wire.at(-1).content, "答");
+assert.deepEqual(trace.requests.map((q) => [q.round, q.attempt, q.finish, q.failed, q.expired]),
+  [[1, 1, "tool_calls", undefined, undefined], [2, 1, undefined, "timeout", "silence"], [2, 2, "stop", undefined, undefined]]);
+for (const q of trace.requests) assert.ok(q.sent <= q.open && q.open <= q.first && q.first <= q.last && q.last <= q.end, JSON.stringify(q));
+const [ask1, ask2, ask3] = trace.requests;
+assert.ok(ask1.text === undefined && ask2.text >= ask2.first && ask3.text >= ask3.first); // a round of calls has no answer text
+assert.ok(ask2.end - ask2.last >= 140); // the silence that ended it
+assert.deepEqual(trace.tools.map((c) => [c.round, c.id, c.name, c.status, Boolean(c.waiting), c.compute, c.args]),
+  [[1, "c0", "analysis.chart", "ok", false, 12, {}], [1, "c1", "classics.search", "ok", true, 40, { query: "桂枝" }]]);
+const search = trace.tools[1];
+assert.ok(search.run - search.waiting >= 180 && search.end - search.run >= 100, JSON.stringify(search));
+assert.ok(trace.tools.every((c) => c.end <= ask2.sent)); // the model is asked again once both have ended
+assert.deepEqual(trace.events, []);
+// as the turn's record carries it (records.js, timings): each time from the turn's start, how long a call waited for its
+// turn, and the runtime the turn began on only when it ended on another
+const started = ask1.sent - 5;
+const rec = timings({ started, trace, was: { runtime: "server", corpus: "full" }, now: { runtime: "browser", corpus: "canon" },
+  hidden: 12.4, asleep: 0 });
+assert.deepEqual(rec.requests.map((q) => [q.round, q.attempt, q.sent, q.end, q.finish, q.failed, q.expired]),
+  trace.requests.map((q) => [q.round, q.attempt, q.sent - started, q.end - started, q.finish, q.failed, q.expired]));
+assert.equal(rec.requests[0].sent, 5);
+assert.deepEqual(rec.tools.map((c) => [c.name, c.ok, c.status, c.id, c.round, c.args, c.at, c.ms, c.compute]),
+  trace.tools.map((c) => [c.name, true, "ok", c.id, 1, JSON.stringify(c.args), c.start - started, c.end - c.start, c.compute]));
+assert.deepEqual(rec.tools.map((c) => c.wait), [0, search.run - search.start]);
+assert.deepEqual([rec.events, rec.hidden, rec.asleep, rec.was], [[], 12, 0, { runtime: "server", corpus: "full" }]);
+assert.equal(timings({ started, trace, was: { runtime: "browser", corpus: "canon" }, now: { runtime: "browser", corpus: "canon" },
+  hidden: 0, asleep: 0 }).was, undefined);
+
+// a stream that ends before the model is done: "unfinished", and asked again; a reply read whole (a service that ignored
+// stream: true): begun when its body was, its one part when that was read
+trace = {};
+n = 0;
+globalThis.fetch = async () => (++n === 1 ? streamed(sse(delta("半")))
+  : new Response(JSON.stringify({ choices: [{ message: { content: "答" }, finish_reason: "stop" }] }),
+    { status: 200, headers: { "Content-Type": "application/json" } }));
+await turn({ trace });
+assert.deepEqual(trace.requests.map((q) => [q.failed, q.finish]), [["unfinished", undefined], [undefined, "stop"]]);
+const read = trace.requests[1];
+assert.ok(read.sent <= read.open && read.open <= read.first && read.first === read.last && read.last <= read.text
+  && read.text <= read.end, JSON.stringify(read));
+
+// what happened between them: an answer cut at the output limit and written on; the tools' end when the user asked for
+// the answer, a call after it not run
+trace = {};
+n = 0;
+globalThis.fetch = async () => streamed(sse(++n === 1 ? delta("甲", "length") : delta("乙", "stop")));
+await turn({ trace });
+assert.deepEqual([trace.events.map((e) => e.what), trace.requests.map((q) => q.finish)], [["continued"], ["length", "stop"]]);
+// all of it spent on thinking: asked again with less, and cut when that too only thinks; the content filter's stop
+const thought = (text, finish = null) => `data: ${JSON.stringify({ choices: [{ delta: { reasoning_details: [
+  { type: "reasoning.text", id: "r1", index: 0, text }] }, finish_reason: finish }] })}\n\n`;
+trace = {};
+globalThis.fetch = async () => streamed(sse(thought("想", "length")));
+await turn({ trace });
+assert.deepEqual(trace.events.map((e) => e.what), ["lighter", "cut:thinking"]);
+trace = {};
+globalThis.fetch = async () => streamed(sse(delta("答", "content_filter")));
+await turn({ trace });
+assert.deepEqual(trace.events.map((e) => e.what), ["cut:filtered"]);
+// a call whose arguments do not parse is not run: refused
+trace = {};
+n = 0;
+const garbled = `data: ${JSON.stringify({ choices: [{ delta: { tool_calls: [
+  { index: 0, id: "c0", function: { name: "classics__search", arguments: "{不是" } }] }, finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`;
+globalThis.fetch = async () => streamed(sse(++n === 1 ? garbled : delta("答", "stop")));
+await turn({ trace, runtime: { call: () => assert.fail("not run") } });
+assert.deepEqual(trace.tools.map((c) => [c.status, c.run, Boolean(c.end)]), [["refused", undefined, true]]);
+trace = {};
+n = 0;
+globalThis.fetch = async () => streamed(sse(++n === 1 ? calls(["classics__search", {}]) : delta("答", "stop")));
+const hurried = new AbortController();
+hurried.abort();
+await turn({ trace, hurry: hurried.signal, runtime: { call: () => Promise.resolve({ ok: true, text: "{}" }) } });
+assert.deepEqual([trace.events.map((e) => e.what), trace.tools.map((c) => c.status)], [["asked"], ["skipped"]]);
+// a request stopped while it waits: stopped, and never begun to reply; one the service refuses: its status, not its words
+trace = {};
+const stop = new AbortController();
+globalThis.fetch = (url, init) => hang(init.signal);
+setTimeout(() => stop.abort(), 60);
+await assert.rejects(turn({ trace, signal: stop.signal }), (e) => e.name === "AbortError");
+assert.deepEqual(trace.requests.map((q) => [q.failed, Boolean(q.sent), q.open, Boolean(q.end)]), [["stopped", true, undefined, true]]);
+trace = {};
+globalThis.fetch = async () => new Response(JSON.stringify({ error: { message: "密钥 sk-123 无效" } }), { status: 401 });
+await assert.rejects(turn({ trace }));
+assert.deepEqual(trace.requests.map((q) => [q.failed, q.status]), [["http 401", 401]]);
+assert.ok(!JSON.stringify(trace).includes("sk-123"));
+
+// the page's clock: hidden while its document is, asleep for what a gap between two looks has past 65 seconds
+const realNow = Date.now;
+let skew = 0;
+Date.now = () => realNow() + skew;
+let listener = null;
+globalThis.document = { visibilityState: "visible", addEventListener: (t, f) => { listener = f; }, removeEventListener: () => { listener = null; } };
+const clock = pageClock();
+document.visibilityState = "hidden";
+listener();
+await sleep(300);
+document.visibilityState = "visible";
+listener();
+await sleep(1100);
+skew += 100000; // the phone slept for 100 s
+await sleep(1100);
+const { hidden, asleep } = clock.stop();
+Date.now = realNow;
+assert.ok(hidden >= 280 && hidden < 1000, hidden);
+assert.ok(asleep >= 34000 && asleep <= 38000, asleep);
+assert.equal(listener, null); // it stopped listening
+delete globalThis.document;
+assert.deepEqual(pageClock().stop(), { hidden: 0, asleep: 0 }); // no document: never hidden
+console.log("ok");
+"""
+
+
+def test_where_a_turns_time_goes_under_node(tmp_path):
+    """The turn's trace for its record: each model request's times and end (a stall, a stop, a refusal), each call's
+    waiting and running, a cut answer written on and the tools' end, and the page's own clock — hidden, asleep."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_TRACE, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=120)
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
+
+
 def test_every_tool_the_model_can_call_has_plain_words_on_the_page():
     """The tool steps and the answers name a tool in plain words, never by its inside name (web/js/redact.js): there are
     words for every tool the model can be offered, and none of them is an identifier."""
@@ -1499,7 +1658,8 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
 
 def test_claude_through_the_official_sdk(tmp_path):
     """The Claude adapter loads the pinned SDK from jsDelivr (fetched here by Python, TLS verified, and handed to the
-    page), asks with adaptive thinking and server-side fallbacks, and replays the thinking block verbatim."""
+    page), asks with adaptive thinking and server-side fallbacks, and replays the thinking block verbatim; a visitor who
+    agreed to the records has each turn's requests timed in its record, as the SDK made them."""
     exe = _chromium()
     if exe is None:
         pytest.skip("playwright is not installed")
@@ -1509,7 +1669,7 @@ def test_claude_through_the_official_sdk(tmp_path):
 
     from taochronos.chat import ChatRuntime
     from taochronos.chat.server import ChatServer
-    from web_mock import ANSWER, LONG_CUT, MockAnthropic
+    from web_mock import ANSWER, LONG_CUT, MockAnthropic, MockRelay
 
     sdk = "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm"
     try:
@@ -1522,11 +1682,31 @@ def test_claude_through_the_official_sdk(tmp_path):
             route.fulfill(status=r.status, body=r.read(), headers={"content-type": r.headers.get("content-type", "text/javascript"),
                                                                     "access-control-allow-origin": "*"})
 
-    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
-    srv = ChatServer(("127.0.0.1", 0), rt, web_root=ROOT / "web", home=ROOT)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
     mock = MockAnthropic().start()
+    relay = MockRelay(mock.base_url).start()  # the site's relay, for the records only: the visitor asks with their own key
+    web = tmp_path / "web"
+    _published(web, relay.url)
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
     settings = {"provider": "anthropic", "baseUrls": {"anthropic": mock.base_url}, "keys": {"anthropic": "sk-test"}, "route": "direct"}
+    agreed = {"v": 1, "logs": True, "at": "2026-10-23T08:00:00Z"}
+
+    def record(turn: int, wait: float = 25.0) -> dict:
+        """The record of the conversation's turn-th question, once the page has sent it."""
+        end = time.time() + wait
+        while time.time() < end:
+            found = [r for r in relay.records if r.get("turn") == turn]
+            if found:
+                return found[0]
+            time.sleep(0.2)
+        raise AssertionError(f"no record of turn {turn}")
+
+    def ends(rec: dict) -> list:
+        """Each of a record's model requests: its round, how it finished or why it failed; and that its times are in order."""
+        for q in rec["requests"]:
+            assert q["sent"] <= q["end"] and all(q["sent"] <= q[k] <= q["end"] for k in ("open", "first", "text", "last") if k in q), q
+        return [(q["round"], q.get("finish") or q.get("failed")) for q in rec["requests"]]
     try:
         with sync_playwright() as p:
             try:
@@ -1535,7 +1715,8 @@ def test_claude_through_the_official_sdk(tmp_path):
                 pytest.skip(f"no Chromium for Playwright: {exc}")
             ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN")
             ctx.route("https://cdn.jsdelivr.net/**", via_python)
-            ctx.add_init_script(f"localStorage.setItem('tc.settings', {json.dumps(json.dumps(settings))});")
+            ctx.add_init_script(f"localStorage.setItem('tc.settings', {json.dumps(json.dumps(settings))});"
+                                f"localStorage.setItem('tc.consent', {json.dumps(json.dumps(agreed))});")
             page = ctx.new_page()
             page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
             page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
@@ -1554,6 +1735,11 @@ def test_claude_through_the_official_sdk(tmp_path):
             page.wait_for_function("document.querySelectorAll('.md .cite.pending').length === 0", timeout=15000)
             assert page.eval_on_selector_all(".md .cite", "els => els.map(e => e.className)") == ["cite ok", "cite warn", "cite bad", "cite ok"]
             assert first["body"]["max_tokens"] == 64000  # no number set: what Anthropic advises for a streamed reply
+            # its record: Claude's two requests, each timed through the fetch the SDK was given, the answer's text in the second
+            rec = record(1)
+            assert rec["provider"] == "anthropic" and ends(rec) == [(1, "tool_use"), (2, "end_turn")]
+            assert "text" not in rec["requests"][0] and "text" in rec["requests"][1] and rec["requests"][1]["output"] > 0
+            assert [(t["round"], t["status"], t["id"]) for t in rec["tools"]] == [(1, "ok", "toolu_1")] and rec["events"] == []
 
             def turn(question: str, n: int) -> list[dict]:
                 """Ask, wait for the n-th answer, and return the requests the turn made."""
@@ -1568,22 +1754,28 @@ def test_claude_through_the_official_sdk(tmp_path):
             assert len(asked) == 4 and asked[1] == asked[2] == asked[3]
             broken = page.locator(".msg.assistant").nth(1)
             assert broken.locator(".notice").count() == 0 and "不构成医疗建议" in broken.inner_text()
+            assert ends(record(2)) == [(1, "tool_use"), (2, "unfinished"), (2, "unfinished"), (2, "end_turn")]
             # an answer cut at max_tokens is written on from where it stopped, as one answer
             asked = turn("请写一篇长篇的桂枝汤论述。", 3)
             assert len(asked) == 3 and asked[2]["messages"][-1]["content"].startswith("［提示：上面的回答在输出上限处被截断了")
             assert asked[2]["messages"][-2]["content"][-1]["text"] == ANSWER[:LONG_CUT]
             long = page.locator(".msg.assistant").nth(2)
             assert long.locator(".md").count() == 1 and long.locator(".notice").count() == 0 and "不构成医疗建议" in long.inner_text()
+            rec = record(3)
+            assert ends(rec) == [(1, "tool_use"), (2, "max_tokens"), (3, "end_turn")] and [e["what"] for e in rec["events"]] == ["continued"]
             # one that spent all of it on thinking is asked again at low effort, still thinking (newer models always do)
             asked = turn("这个问题请想得很久再答。", 4)
             assert len(asked) == 3 and asked[2]["output_config"] == {"effort": "low"} and "output_config" not in asked[1]
             assert asked[2]["thinking"] == asked[1]["thinking"] and asked[2]["messages"] == asked[1]["messages"]
             thought = page.locator(".msg.assistant").nth(3)
             assert "想了又想" not in thought.inner_text() and thought.locator(".notice").count() == 0
+            rec = record(4)
+            assert ends(rec) == [(1, "tool_use"), (2, "max_tokens"), (3, "end_turn")] and [e["what"] for e in rec["events"]] == ["lighter"]
             browser.close()
     finally:
         srv.shutdown()
         srv.server_close()
+        relay.shutdown()
         mock.shutdown()
 
 
@@ -1826,6 +2018,17 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
             assert rec["tools"] and rec["tools"][0]["name"].startswith("classics") and rec["tools"][0]["ok"]
             assert rec["citations"]["total"] == 4 and rec["citations"]["bad"] == 1 and rec["citations"]["pending"] == 0
             assert rec["usage"] == {"input": 1200, "output": 180} and rec["rounds"] == 2
+            # where its time went, in milliseconds from the turn's start: each model request — its times in order, how it
+            # finished, its tokens — and each call: its round, how it ended, how long it waited and ran
+            asks = rec["requests"]
+            assert [(q["round"], q["attempt"], q["finish"]) for q in asks] == [(1, 1, "tool_calls"), (2, 1, "stop")]
+            assert all(q["sent"] <= q["open"] <= q["first"] <= q["last"] <= q["end"] <= rec["ms"] for q in asks)
+            assert "text" not in asks[0] and asks[1]["first"] <= asks[1]["text"] <= asks[1]["end"]
+            assert "input" not in asks[0] and (asks[1]["input"], asks[1]["output"]) == (1200, 180)
+            call = rec["tools"][0]
+            assert (call["round"], call["status"], call["id"]) == (1, "ok", "call_1") and call["wait"] >= 0
+            assert asks[0]["end"] <= call["at"] and call["at"] + call["ms"] <= asks[1]["sent"]
+            assert rec["events"] == [] and rec["hidden"] == 0 and rec["asleep"] == 0 and "was" not in rec
             assert not {"apiKey", "keys", "settings"} & set(rec) and MockRelay.SECRET not in json.dumps(rec)
             assert relay.chat and all("authorization" not in {k.lower() for k in c["headers"]} for c in relay.chat)  # no key from the page
             assert all(r["headers"].get("Authorization") == f"Bearer {MockRelay.SECRET}" for r in mock.requests)
