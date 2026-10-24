@@ -80,10 +80,15 @@ def answer_after_tools(r: dict[str, Any]) -> dict[str, float] | None:
 
 def whole(r: dict[str, Any]) -> bool:
     """The answer came whole: the turn is done, with an answer and no notice under it (a cut, a limit, the content
-    filter, the user's 不再等待) — and, where the record times its requests, the last of them to finish said it was done."""
+    filter, the user's 不再等待) — and, where the record times its requests, the last of them to finish said it was done:
+    of those before the self-check's note, when the rewrite it asked for was taken out and the answer before it stands."""
     if r.get("status") != "done" or r.get("error") or not str(r.get("answer") or "").strip():
         return False
     requests = [q for q in r.get("requests") or [] if isinstance(q, dict)]
+    events = [e for e in r.get("events") or [] if isinstance(e, dict)]
+    noted = next((e.get("at") for e in events if e.get("what") == "review"), None)
+    if _n(noted) is not None and any(e.get("what") == "unchecked" for e in events):
+        requests = [q for q in requests if _n(q.get("sent")) is not None and q["sent"] < noted]
     finished = [q for q in requests if q.get("finish")]  # a request that failed after the answer (a rewrite) is not it
     return not requests or bool(finished) and finished[-1]["finish"] in FINISHED
 

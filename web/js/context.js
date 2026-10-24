@@ -36,6 +36,9 @@ const CARD = new Set(["passage_id", "book_id", "title", "work", "authors", "dyna
 
 /** Marks the question that begins an earlier turn in a history (agent.js, buildHistory); a symbol, so never sent. */
 export const QUESTION = Symbol("question");
+/** Marks an earlier turn's first message with the answer that stands, as the page shows it (agent.js, buildHistory): what
+ * the turn says as its question and answer — not a first answer the self-check had rewritten (自查). */
+export const ANSWER = Symbol("answer");
 
 /** The budget a turn's requests keep within: the number the visitor set, else CONTEXT_TOKENS for its service. */
 export function contextBudget(settings, provider) {
@@ -157,9 +160,12 @@ function turnsOf(history) {
 const answerOf = (m) => (typeof m.content === "string" ? m.content.replace(/^\s*<think>[\s\S]*?(<\/think>\s*|$)/, "")
   : Array.isArray(m.content) ? m.content.filter((b) => b.type === "text").map((b) => b.text).join("") : "");
 
-/** An earlier turn as its question and what its model answered, without its calls, their results or its reasoning. */
+/** An earlier turn as its question and what its model answered, without its calls, their results or its reasoning:
+ * the answer that stands, where the page said it (ANSWER), else what the model said in it. */
 function plainTurn([question, ...rest]) {
-  const said = rest.filter((m) => m.role === "assistant").map(answerOf).filter((s) => s.trim()).join("\n\n").trim();
+  const stands = rest.find((m) => typeof m[ANSWER] === "string");
+  const said = stands ? stands[ANSWER]
+    : rest.filter((m) => m.role === "assistant").map(answerOf).filter((s) => s.trim()).join("\n\n").trim();
   return [question, { role: "assistant", content: said || T("（这一轮没有留下回答）") }];
 }
 

@@ -5,13 +5,14 @@ and ``delta.content`` as cumulative text; tool-call arguments arrive in pieces. 
 ``classics__search``; once the turn holds a tool result, the reply is an answer with four citations — one quoted
 verbatim, one misquoted, one to a passage that does not exist and one quoted in the traditional script — and, as a model
 forgetting its instructions would, the names of the tools and fields it worked with, which the page tells in plain words
-(web/js/redact.js).  A message carrying the user's data (我的资料: the page's note on it) is answered by analysing its
-prescriptions (``mydata__prescriptions``) and citing its first row.  A question asking for 长篇 is answered at the
-output limit (``finish_reason: length``) part-way, and the rest when the page asks it to write on; one asking it to
-想得很久 spends the limit on its thinking, and answers when asked again without.  One asking for 图表与原文 compares two
-formulas and searches the classics in the same round, and answers with what the round gave it (the test may hold the
-search); one asking it to 再查一遍 searches twice (with 图表, compares twice), in two rounds, each call under the same id
-(as a service that numbers its calls afresh in each reply does); one asking it to 不停地查 searches in every reply,
+(web/js/redact.js).  The page's self-check (自查, web/js/agent.js) names the passage that does not exist; asked so, the
+model searches again and answers without it.  A message carrying the user's data (我的资料: the page's note on it) is
+answered by analysing its prescriptions (``mydata__prescriptions``) and citing its first row.  A question asking for 长篇
+is answered at the output limit (``finish_reason: length``) part-way, and the rest when the page asks it to write on;
+one asking it to 想得很久 spends the limit on its thinking, and answers when asked again without.  One asking for 图表与原文
+compares two formulas and searches the classics in the same round, and answers with what the round gave it (the test may
+hold the search); one asking it to 再查一遍 searches twice (with 图表, compares twice), in two rounds, each call under the
+same id (as a service that numbers its calls afresh in each reply does); one asking it to 不停地查 searches in every reply,
 however it is asked (as a service that drops ``tool_choice`` would); one asking it to 做一次研究 asks for a research run
 (``taochronos_research``), and answers once it has its result.  Every request is recorded for the test to inspect.
 """
@@ -33,6 +34,10 @@ ANSWER = ("## 结论\n\n《伤寒论》以桂枝汤治太阳中风。\n\n"
           "| 书 | 朝代 |\n|---|---|\n| 伤寒论 | 东汉 |\n\n"
           "以上经 classics__search 检得，可用 `validation__verify_quote` 复核，出处附 passage_id。\n\n"
           "这是计算与文献检索的结果，不构成医疗建议。")
+# the answer again, once the page's self-check named the passage it cited that the corpus has not: that line dropped
+MENDED = ANSWER.replace("- 一个不存在的出处[[fake.999]]\n", "")
+assert MENDED != ANSWER
+SELF_CHECK = "［自查："  # how the page's self-check note to the model begins (web/js/agent.js, reviewNote)
 THINKING = ["用户问桂枝汤", "用户问桂枝汤的主治，先检索原文。"]
 # a question asking for 图表: the model compares two formulas (a study whose result carries charts and tables), then
 # draws a chart of its own in a ```chart block and writes a table with its caption and notes
@@ -112,6 +117,7 @@ class _Handler(BaseHTTPRequestHandler):
         asked = said[last_user] if last_user >= 0 else ""
         mine = DATA_ID.search(asked)
         charting = mine.group(1) if mine else "图表" in asked
+        mended = asked.startswith(SELF_CHECK)
         self.send_response(200)
         self._cors()
         self.send_header("Content-Type", "text/event-stream")
@@ -131,7 +137,7 @@ class _Handler(BaseHTTPRequestHandler):
             searched = sum(m.get("role") == "tool" for m in messages[last_user + 1:])
             chunks = self._answer(charting) if searched >= 2 else self._tool_call(charting)
         else:
-            chunks = (self._answer(charting) if answered else self._tool_call(charting)) if body.get("tools") else self._answer()
+            chunks = (self._answer(charting, mended) if answered else self._tool_call(charting)) if body.get("tools") else self._answer()
         for chunk in chunks:
             chunk = {"id": "mock-1", "object": "chat.completion.chunk", "model": body.get("model") or "", **chunk}
             self._write(f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n")
@@ -161,9 +167,10 @@ class _Handler(BaseHTTPRequestHandler):
             yield {"choices": [{"index": 0, "delta": {"tool_calls": [{"index": 0, "function": {"arguments": piece}}]}}]}
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]}
 
-    def _answer(self, charting: bool | str = False):
+    def _answer(self, charting: bool | str = False, mended: bool = False):
         yield self._reasoning("classics__search 检索到了原文，整理作答。")
-        text = DATA_ANSWER.format(id=charting) if isinstance(charting, str) else CHART_ANSWER if charting else ANSWER
+        text = DATA_ANSWER.format(id=charting) if isinstance(charting, str) else CHART_ANSWER if charting else \
+            MENDED if mended else ANSWER
         for cut in (8, 40, 90, 160, len(text)):  # cumulative, as in MiniMax's own streaming example
             yield {"choices": [{"index": 0, "delta": {"content": text[:cut]}}]}
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}], "usage": USAGE}
@@ -205,11 +212,12 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 class MockAnthropic(ThreadingHTTPServer):
-    """The same two replies in the Anthropic Messages stream: thinking (with a signature), a tool_use, then text.  As the
-    OpenAI-compatible one does, it cuts a 长篇 answer at ``max_tokens`` and spends the limit on thinking for 想得很久
-    (answering when asked again at low effort); asked to 断流, its stream ends part-way the first time, and the second
-    stops without saying why (``message_stop`` with no ``message_delta``); asked to 慢慢 answer, it begins and then sends
-    nothing but pings, until the turn is taken up again (the page's note after its tool results)."""
+    """The same two replies in the Anthropic Messages stream: thinking (with a signature), a tool_use, then text — the
+    answer without the passage that does not exist once the page's self-check has named it.  As the OpenAI-compatible
+    one does, it cuts a 长篇 answer at ``max_tokens`` and spends the limit on thinking for 想得很久 (answering when asked
+    again at low effort); asked to 断流, its stream ends part-way the first time, and the second stops without saying why
+    (``message_stop`` with no ``message_delta``); asked to 慢慢 answer, it begins and then sends nothing but pings, until
+    the turn is taken up again (the page's note after its tool results)."""
 
     daemon_threads = True
 
@@ -237,9 +245,10 @@ class _AnthropicHandler(_Handler):
         last = messages[-1]
         answered = isinstance(last.get("content"), list) and any(b.get("type") == "tool_result" for b in last["content"])
         writing_on = isinstance(last.get("content"), str) and last["content"].startswith(WRITE_ON)
-        # the question: the last user message in words, not the page's note
+        # the question: the last user message in words, not the page's note — or the self-check's note, once it is asked
         asked = next((m["content"] for m in reversed(messages) if m["role"] == "user" and isinstance(m["content"], str)
                       and not m["content"].startswith(WRITE_ON)), "")
+        mended = asked.startswith(SELF_CHECK)
         self.send_response(200)
         self._cors()
         self.send_header("Content-Type", "text/event-stream")
@@ -255,7 +264,7 @@ class _AnthropicHandler(_Handler):
         elif answered and "慢慢" in asked and not str(last["content"][-1].get("content")).endswith(RESUMED):
             events = self._held()
         else:
-            events = self._text() if answered else self._tool()
+            events = self._text(mended) if answered else self._tool()
         try:
             for event in events:
                 self._write(f"event: {event['type']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n")
@@ -282,11 +291,13 @@ class _AnthropicHandler(_Handler):
         yield {"type": "message_delta", "delta": {"stop_reason": "tool_use", "stop_sequence": None}, "usage": {"output_tokens": 40}}
         yield {"type": "message_stop"}
 
-    def _text(self, broken: str = ""):
-        """The answer; ``broken``: "early", the stream ends part-way; "unsaid", it stops without a stop reason."""
+    def _text(self, mended: bool = False, broken: str = ""):
+        """The answer (without the passage that does not exist, `mended`, once the self-check has named it); ``broken``:
+        "early", the stream ends part-way; "unsaid", it stops without a stop reason."""
+        text = MENDED if mended else ANSWER
         yield self._start()
         yield {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}}
-        for piece in (ANSWER[:30],) if broken else (ANSWER[:30], ANSWER[30:]):
+        for piece in (text[:30],) if broken else (text[:30], text[30:]):
             yield {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": piece}}
         if broken == "early":
             return

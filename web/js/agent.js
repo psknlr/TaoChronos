@@ -16,8 +16,8 @@
 import * as openai from "./llm/openai.js";
 import * as claude from "./llm/anthropic.js";
 import { dataNote } from "./mydata.js";
-import { compactResult, contextBudget, fitRequest, messageTokens, QUESTION, tokensOf } from "./context.js";
-import { LIMITS, limit, pause } from "./limits.js";
+import { ANSWER, compactResult, contextBudget, fitRequest, messageTokens, QUESTION, tokensOf } from "./context.js";
+import { LIMITS, limit, pause, until } from "./limits.js";
 import { outputLimit } from "./providers.js";
 import { truncate } from "./util.js";
 import { T } from "./i18n.js";
@@ -54,11 +54,15 @@ export function buildHistory(messages, provider) {
       continue;
     }
     if (m.role !== "assistant") continue;
+    // the answer that stands: not one the self-check had rewritten (自查), and one written on in parts whole
+    const text = (m.segments || []).filter((s) => s.type === "text" && !s.superseded).map((s) => s.text).join("\n\n").trim();
     if (m.wire?.length && m.wireFormat === format) {
-      out.push(...prepareWire(m.wire, format, m.wireProvider === provider.id ? provider : null));
-    } else {
-      const text = (m.segments || []).filter((s) => s.type === "text").map((s) => s.text).join("\n\n").trim();
-      if (text) out.push({ role: "assistant", content: text });
+      const wire = prepareWire(m.wire, format, m.wireProvider === provider.id ? provider : null);
+      // what the turn says when it goes as its question and answer (context.js): that answer, as the page shows it
+      if (m.segments && wire.length) Object.defineProperty(wire[0], ANSWER, { value: text });
+      out.push(...wire);
+    } else if (text) {
+      out.push({ role: "assistant", content: text });
     }
   }
   return out;
@@ -123,13 +127,24 @@ export function answerDangling(msgs, format) {
   return out;
 }
 
+// the self-check (自查) asks for a rewrite only while the turn has this many rounds of tools left: room to look it up
+const REVIEW_ROOM = 2;
+
+/** The self-check's note to the model: the passages its answer cites that the corpus has not, and what to do with
+ * them — look each up with the tools, or drop what rests on it — before it answers again, whole. */
+export function reviewNote(missing) {
+  return T`［自查：回答所引的 ${missing.map((pid) => `[[${pid}]]`).join(T("、"))} 在语料中查无此段。请用工具检索核实：找到原文的，改引工具返回的段落号，并照原文引用；找不到的，删去依据它的论断，或说明本语料未检得。然后重新给出完整的回答。］`;
+}
+
 /**
  * Run one user turn.  `hooks` receive the answer as it forms:
  *   round(n) · thinking(delta) · text(fullText) · toolPending(index, name) · toolStart(call) · toolWaiting(call, why) ·
  *   toolRunning(call) · toolProgress(call, p) · toolJob(call, job) · toolEnd(call, outcome) · toolLater(call, ending) ·
- *   retry(attempt, error) · usage(u) · continued(what) · cut(why) · limit(maxSteps, why)
+ *   retry(attempt, error) · usage(u) · continued(what) · cut(why) · limit(maxSteps, why) · review(missing, at) ·
+ *   reviewCut(error)
  * (toolJob: a research run a server began — `{id, url}`, its id and the server's address —, by which the page can follow
- * it again, after a reload too)
+ * it again, after a reload too; review: `at`, how many of the turn's messages (`sink`) come before the self-check's
+ * note — those of the answer it is about, which stand if no rewrite comes)
  * `system`: the instructions, or a function giving them (perhaps a promise), asked for before each request — they may
  * change during the turn, as its runtime does.
  * A turn ends on a reply the service says is complete; a reply cut at the output limit is written on ("answer": the next
@@ -147,12 +162,18 @@ export function answerDangling(msgs, format) {
  * tools all the same is told no, and the turn ends `unanswered` when it still has not answered.  `resume`: the messages
  * of a turn that did not get its answer (an error, a stop), as the page kept them, taken up again after its `rounds` —
  * no tool runs again, and the model is asked for the answer from the results it has.
+ * `review(text)`, when given, is the page's self-check of an answer (自查): the passages it cites that the corpus has
+ * not — in the whole answer, when it was written on in parts.  Once a turn, while REVIEW_ROOM rounds of tools are left
+ * and the turn's tools have not come to an end (it could look nothing up: so never in a turn taken up again), the model
+ * is told of them and answers again; a rewrite that does not come whole — an error, a stop, the limit, a model that
+ * calls tools once they have come to an end, a cut at the output limit, the content filter — is taken out of the turn,
+ * and the answer it was about stands.
  * Each request, with the room its reply has (at most half), keeps within the turn's context budget (context.js:
- * settings.contextTokens, or one for its service): past it, earlier turns go as their questions and answers, the turn's
- * earlier results go compactly, then earlier turns are left out, and last the last round's results go compactly.  A
- * lookup of the corpus (REUSABLE) the turn already made with the same arguments, on the same runtime and corpus
- * (`scope()`, a string naming them), is answered from that call and not run again — so the model has a result made
- * compact whole again by asking for it again.
+ * settings.contextTokens, or one for its service): past it, earlier turns go as their questions and the answers that
+ * stand (not a first answer the self-check had rewritten), the turn's earlier results go compactly, then earlier turns
+ * are left out, and last the last round's results go compactly.  A lookup of the corpus (REUSABLE) the turn already
+ * made with the same arguments, on the same runtime and corpus (`scope()`, a string naming them), is answered from that
+ * call and not run again — so the model has a result made compact whole again by asking for it again.
  * `trace` (an object), when given, is filled as the turn runs with where its time went, for the page's record of the turn
  * (the caller keeps it, even if the turn is stopped); its times are the page's clock (Date.now()):
  *   requests — each model request: its round and attempt; when it was sent, its reply began (`open`), its first part,
@@ -165,11 +186,12 @@ export function answerDangling(msgs, format) {
  *   events — `{at, what}`: a cut answer written on ("continued"), a round asked again with less thinking ("lighter"), the
  *     turn's tools come to an end ("asked", "time", "steps"), a reply cut ("cut:answer", "cut:thinking", "cut:context",
  *     "cut:filtered"), a request that gave up more to keep within the budget ("compacted"), a call answered from the
- *     same call before ("reused"), instructions that changed during the turn ("instructions").
+ *     same call before ("reused"), instructions that changed during the turn ("instructions"), the self-check's note
+ *     asking for a rewrite ("review"), and that rewrite taken out ("unchecked").
  * Returns {wire, rounds, usage, model, unanswered}.
  */
-export async function runTurn({ provider, settings, route, runtime, tools, system, history, user, signal, hurry, limits, hooks, sink, trace,
-  resume, rounds, scope }) {
+export async function runTurn({ provider, settings, route, runtime, tools, system, history, user, signal, hurry, limits, hooks, sink, review,
+  trace, resume, rounds, scope }) {
   const lim = { ...LIMITS, ...limits };
   if (trace) for (const k of ["requests", "tools", "events"]) trace[k] ||= [];
   const quick = new AbortController(); // the turn's tools end early: the user asked for the answer, or its time is up
@@ -180,7 +202,7 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
   else hurry?.addEventListener("abort", asked, { once: true });
   const clock = limit(lim.turn, () => answerNow("time"));
   try {
-    return await turnOf({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, trace, lim,
+    return await turnOf({ provider, settings, route, runtime, tools, system, history, user, signal, hooks, sink, review, trace, lim,
       quick: quick.signal, quickWhy: () => quickWhy, resume, rounds, scope });
   } finally {
     clock.stop();
@@ -188,8 +210,8 @@ export async function runTurn({ provider, settings, route, runtime, tools, syste
   }
 }
 
-async function turnOf({ provider, settings, route, runtime, tools, system, history = [], user, signal, hooks, sink, trace, lim, quick,
-  quickWhy, resume, rounds, scope }) {
+async function turnOf({ provider, settings, route, runtime, tools, system, history = [], user, signal, hooks, sink, review, trace,
+  lim, quick, quickWhy, resume, rounds, scope }) {
   const format = formatOf(provider);
   const L = lib(format);
   const userWire = L.userMessage(userText(user), user.images || []);
@@ -208,6 +230,8 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
     note(why);
     if (why === "asked" || why === "time") hooks.limit?.(maxSteps, why);
   };
+  let written = ""; // what an answer cut at the output limit said in the rounds before the one writing it on
+  let checked = -1; // while the model rewrites an answer for the self-check: where the note to it went into the turn
   // the calls of the turn that have no result (they ran out of time, were not waited for, went on in the background or
   // were stopped), by what they asked: one run again with the same arguments that then gave one has its result
   const lacking = new Map();
@@ -221,6 +245,7 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
   const reuse = new Map(); // the lookups the turn made that gave a result, by what they asked (execute)
   const note = (what) => { trace?.events.push({ at: Date.now(), what }); };
   const cutShort = (why) => { note(`cut:${why}`); hooks.cut?.(why); };
+  const uncheck = (err) => { turn.length = checked; checked = -1; note("unchecked"); hooks.reviewCut?.(err); };
   if (resume?.length && !signal.aborted) { // the turn taken up again: what it had, every call with its result, and its answer asked for
     for (const m of resumed(resume, format)) turn.push(m);
     close("resume", round);
@@ -248,6 +273,7 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
     const messages = format === "openai"
       ? [{ role: "system", content: instructions }, ...view.history, userWire, ...view.turn]
       : [...view.history, userWire, ...view.turn];
+    let res;
     let attempt = 0;
     const service = `${provider.id} ${provider.baseUrl}`;
     const ask = () => withRetry(() => {
@@ -264,14 +290,19 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
         },
       }));
     }, { signal, onRetry: hooks.retry });
-    let res;
     try {
-      res = await ask();
+      res = await ask().catch((err) => {
+        // a service that refuses a request asking for no tool call: asked again as before (its calls refused instead)
+        if (!closing || NO_NONE.has(service) || !(err instanceof openai.ProviderError && REFUSED.has(err.status))) throw err;
+        NO_NONE.add(service);
+        return ask();
+      });
     } catch (err) {
-      // a service that refuses a request asking for no tool call: asked again as before (its calls refused instead)
-      if (!closing || NO_NONE.has(service) || !(err instanceof openai.ProviderError && REFUSED.has(err.status))) throw err;
-      NO_NONE.add(service);
-      res = await ask();
+      if (checked < 0) throw err;
+      const stopped = err?.name === "AbortError" || signal.aborted;
+      uncheck(stopped ? null : err); // a rewrite that failed ends the turn with the answer it was about
+      if (stopped) throw err;
+      break;
     }
     if (res.model) model = res.model;
     if (res.usage) { usage.input += res.usage.input || 0; usage.output += res.usage.output || 0; hooks.usage?.(usage); }
@@ -282,6 +313,7 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
     if (cut && !full && !res.toolCalls.length && !signal.aborted && continued < MAX_CONTINUATIONS && (answered || less)) {
       continued++;
       if (answered) {
+        written += res.text || "";
         turn.push(res.message, L.userMessage(T("［提示：上面的回答在输出上限处被截断了。请从截断处接着写下去：不要重复已写的内容，不要加开场白，也不要从头再来。］")));
         hooks.assistant?.(res, round);
         note("continued");
@@ -295,15 +327,38 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
     }
     turn.push(res.message);
     hooks.assistant?.(res, round);
+    const filtered = res.finishReason === "content_filter";
+    if (checked >= 0 && (filtered || full || !res.toolCalls.length || signal.aborted)) {
+      // the rewrite's end: it stands when it came whole; one cut short, stopped or filtered is taken out, and the answer
+      // it was about stands
+      if (cut || filtered || signal.aborted) uncheck(null);
+      else checked = -1;
+      break;
+    }
     // the content filter stopped it, or nothing more fits: its calls do not run, and the turn ends with what it has
-    if (res.finishReason === "content_filter" || full) {
+    if (filtered || full) {
       cutShort(full ? "context" : "filtered");
       break;
     }
     if (!res.toolCalls.length || signal.aborted) {
-      if (cut) cutShort(answered ? "answer" : "thinking");
+      if (cut) {
+        cutShort(answered ? "answer" : "thinking");
+      } else if (review && !closing && !signal.aborted && !quick.aborted && maxSteps - (round - continued) >= REVIEW_ROOM) {
+        // the self-check, of the whole answer: one that cites passages the corpus has not is told of them, and answers
+        // again
+        const missing = (await reviewWithin(review, written + (res.text || ""), lim.tool, signal)) || [];
+        if (missing.length && !signal.aborted) {
+          checked = turn.length;
+          written = "";
+          note("review");
+          hooks.review?.(missing, checked);
+          turn.push(L.userMessage(reviewNote(missing)));
+          continue;
+        }
+      }
       break;
     }
+    written = "";
 
     const steps = round - continued;
     // before these calls run: all the turn's rounds are used, or the user asked for the answer, or its time ran out
@@ -331,9 +386,11 @@ async function turnOf({ provider, settings, route, runtime, tools, system, histo
     turn.push(...L.toolResultMessages(results));
     if (closing && steps > closedAt + MAX_EXTRA_ROUNDS) { // a service that calls tools however it is asked
       if (closing !== "resume") hooks.limit?.(maxSteps, closing);
+      if (checked >= 0) break; // in a rewrite: it is taken out, and the answer it was about stands
       return { wire: turn, rounds: round, usage, model, unanswered: true };
     }
   }
+  if (checked >= 0) uncheck(null); // stopped, or out of rounds, before the rewrite came
   return { wire: turn, rounds: round, usage, model, unanswered: false };
 }
 
@@ -413,6 +470,23 @@ export function resumed(wire, format) {
     last.content = `${last.content ?? ""}${note}`;
   }
   return msgs;
+}
+
+/** The self-check's answer (the passages missing), or null when its lookups do not come back within `ms` of the page's
+ * time, or the turn is stopped: an answer the page could not check stands as it is. */
+async function reviewWithin(review, text, ms, signal) {
+  const ctl = new AbortController();
+  const end = () => ctl.abort();
+  const deadline = limit(ms, end);
+  signal.addEventListener("abort", end, { once: true });
+  try {
+    return await until(Promise.resolve().then(() => review(text)), ctl.signal);
+  } catch {
+    return null;
+  } finally {
+    deadline.stop();
+    signal.removeEventListener("abort", end);
+  }
 }
 
 /** A model request, its end told to its `mark` (when it has one): how it finished and its tokens, or why it failed. */

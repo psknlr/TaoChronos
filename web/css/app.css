@@ -400,16 +400,17 @@ kbd { white-space: nowrap; font: 11px var(--font-mono); color: var(--ink-3); bor
 .msg.assistant .avatar { width: 28px; height: 28px; border-radius: 8px; margin-top: 3px; box-shadow: var(--shadow-sm); }
 .msg.assistant .body { min-width: 0; }
 
-/* thinking */
-.think { margin: 2px 0 12px; }
-.think summary {
+/* thinking, and an answer the self-check had rewritten (自查) */
+.think, .draft { margin: 2px 0 12px; }
+.think summary, .draft summary {
   list-style: none; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none;
   font-size: 13px; color: var(--ink-3); padding: 3px 10px 3px 8px; border-radius: 8px;
 }
-.think summary::-webkit-details-marker { display: none; }
-.think summary:hover { color: var(--ink-2); background: color-mix(in srgb, var(--ink) 5%, transparent); }
-.think summary .chev { transition: rotate .2s; }
-.think[open] summary .chev { rotate: 90deg; }
+.think summary::-webkit-details-marker, .draft summary::-webkit-details-marker { display: none; }
+.think summary:hover, .draft summary:hover { color: var(--ink-2); background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.think summary .chev, .draft summary .chev { transition: rotate .2s; }
+.think[open] summary .chev, .draft[open] summary .chev { rotate: 90deg; }
+.draft .md { margin: 6px 0 0 6px; padding-inline-start: 16px; border-inline-start: 2px solid var(--line-2); color: var(--ink-2); }
 .think .tx {
   margin: 6px 0 0 6px; padding: 2px 0; padding-inline-start: 16px; border-inline-start: 2px solid var(--line-2);
   color: var(--ink-3); font-size: 13.5px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere;

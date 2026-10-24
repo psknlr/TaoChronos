@@ -66,6 +66,11 @@ def test_a_whole_answer():
     after = timed()
     after["requests"].append({"round": 3, "attempt": 1, "sent": 6100, "end": 6200, "failed": "http 500"})
     assert whole(after)
+    # the self-check's rewrite, cut at the output limit, taken out: the answer before its note stands, and came whole
+    taken = timed(events=[{"at": 6010, "what": "review"}, {"at": 9000, "what": "unchecked"}])
+    taken["requests"].append({"round": 3, "attempt": 1, "sent": 6020, "end": 8900, "finish": "length"})
+    assert whole(taken)
+    assert not whole({**taken, "events": taken["events"][:1]})  # a rewrite that stands, cut: not whole
 
 
 def test_the_summary():

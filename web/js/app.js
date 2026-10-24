@@ -396,6 +396,20 @@ function citesOf(m) {
   return extractCitations(answerText(m));
 }
 
+// what the runtime answers for a passage the corpus has not (classics.get_passage, the backup's passage)
+const NOT_HELD = /^(?:KeyError|PassageNotFound)\b/;
+
+/** The passages an answer cites that the corpus has not, for the self-check (自查): only those the runtime answers it
+ * has no such passage for — never one a tool returned in this conversation (it may come from another corpus), one whose
+ * lookup failed otherwise (a network error), or a row of the user's data (`mine:`). */
+async function missingCites(conv, text) {
+  const returned = toolText(conv);
+  const pids = [...new Set(extractCitations(text).map((c) => c.pid))]
+    .filter((pid) => !pid.startsWith("mine:") && !conv.evidence?.[pid] && !returned.includes(pid));
+  const cards = await Promise.all(pids.map((pid) => getPassage(pid)));
+  return pids.filter((pid, i) => cards[i]?.ok === false && NOT_HELD.test(cards[i].error || ""));
+}
+
 function registerEvidence(conv, cards) {
   if (!conv || !cards?.length) return;
   conv.evidence ||= {};
@@ -547,7 +561,7 @@ async function runAssistant(conv, msg, { resume = null } = {}) {
       provider, settings: hidden ? { ...S.settings, thinking: false } : S.settings, route: routeFor(), runtime: routed(runtime),
       tools, system: turnInstructions(runtime, S.runtimeInfo, systemPrompt), history, user, signal: controller.signal, hurry: hurry.signal,
       hooks: makeHooks(conv, msg, before?.usage), sink, trace, resume, rounds: before?.rounds,
-      scope: lookupScope,
+      review: (text) => missingCites(conv, text), scope: lookupScope,
     });
     msg.rounds = result.rounds;
     msg.usage = addUsage(before?.usage, result.usage);
@@ -829,7 +843,29 @@ function makeHooks(conv, msg, usageBefore = null) {
         : why === "asked" ? T("你选择了不再等待工具，回答可能不完整。")
         : T`已达到每轮最多 ${max} 步工具调用的上限，回答可能不完整。可在设置中调高上限。`;
     },
+    review(missing, at) { // the answer cites passages the corpus has not (自查): folded, while the model answers again
+      for (const s of msg.segments) if (s.type === "text") s.superseded = true;
+      // `wireAt`: where the answer ends in the turn's messages, for a page opened again while it is rewritten (settleCalls)
+      msg.segments.push({ type: "check", round, missing, wireAt: at });
+      update();
+    },
+    reviewCut(err) { // no rewrite came: what it had begun goes, and the answer the self-check was about stands
+      unrewrite(msg, err);
+      if (err) pause(msg.provider, err, err.message || String(err)); // refused with a time to come back: paused, as after a turn
+      update();
+    },
   };
+}
+
+/** The self-check's rewrite of `msg` taken out (自查): what it had begun to write goes, its note says it did not come
+ * (and why: `err`), and the answer it was about stands. */
+function unrewrite(msg, err = null) {
+  const at = msg.segments.findIndex((s) => s.type === "check");
+  if (at >= 0) {
+    msg.segments = msg.segments.filter((s, k) => k <= at || s.type !== "text");
+    Object.assign(msg.segments[at], { cut: true }, err ? { error: truncate(err.message || String(err), 160) } : {});
+  }
+  for (const s of msg.segments) delete s.superseded;
 }
 
 /** A call's end as its step shows it, from its outcome; `later`: a research run's that went on without its turn (its
@@ -880,16 +916,25 @@ function stop() {
 }
 
 /** What an earlier page left without an end — it was closed, or reloaded, as it ran — and no page runs now (`busy`, the
- * locks held: heldNow): a turn ends with what it had (继续作答 can take it up from its results), and its calls with it;
- * a research run, one such a turn waited for or one it left to go on by itself, is followed again where the page has its
- * id (followAgain), and ends without its result where it has not.  Returns whether any changed, for the caller to store
- * the conversation again. */
+ * locks held: heldNow): a turn ends with what it had (继续作答 can take it up from its results) — one left as the
+ * self-check's rewrite ran (自查), with the answer it was about, as a rewrite that does not come whole leaves it —, and
+ * its calls with it; a research run, one such a turn waited for or one it left to go on by itself, is followed again
+ * where the page has its id (followAgain), and ends without its result where it has not.  Returns whether any changed,
+ * for the caller to store the conversation again. */
 function settleCalls(conv, busy = new Set()) {
   let changed = false;
   for (const m of conv?.messages || []) {
     if (m.role !== "assistant" || S.running?.msgId === m.id || busy.has(m.id)) continue;
     const left = m.status === "streaming";
-    if (left) {
+    // left as the self-check's rewrite ran (自查): the rewrite, which had not come, is taken out, its messages too, and
+    // the answer it was about stands (a check kept by a page that did not say where that answer ends: as any turn left)
+    const check = left && m.segments?.find((s) => s.type === "check" && Number.isInteger(s.wireAt));
+    if (check) {
+      if (m.wire?.length > check.wireAt) m.wire.length = check.wireAt;
+      unrewrite(m);
+      m.status = "done";
+      changed = true;
+    } else if (left) {
       m.status = "error";
       m.error = T("这一轮没有答完：页面在作答时关闭或刷新了");
       changed = true;

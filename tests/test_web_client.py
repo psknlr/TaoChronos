@@ -67,6 +67,105 @@ assert.deepEqual(d.map((m) => m.tool_call_id ?? m.role), ["assistant", "a", "b"]
 const da = answerDangling([{ role: "assistant", content: [{ type: "tool_use", id: "t1" }] }], "anthropic");
 assert.equal(da[1].content[0].tool_use_id, "t1");
 
+// the self-check (自查): an answer citing passages the corpus has not is asked again, once, with them named — while the
+// turn has rounds of tools left, the whole of it when it was written on; a rewrite that fails, is stopped or is cut short
+// is taken out of the turn, and the answer stands — the page told where it ends in the turn's messages (`at`)
+{
+  const { reviewNote, runTurn } = await import("./js/agent.js");
+  const { rawAnswer } = await import("./js/view/thread.js");
+  // an answer the self-check had rewritten is not the turn's: neither replayed to another provider nor read
+  const rewritten = { role: "assistant", segments: [{ type: "text", text: "初稿[[x.1]]", superseded: true },
+    { type: "check", missing: ["x.1"] }, { type: "text", text: "重写" }] };
+  assert.deepEqual(buildHistory([{ role: "user", text: "问" }, rewritten], { id: "anthropic", format: "anthropic" }),
+    [{ role: "user", content: "问" }, { role: "assistant", content: "重写" }]);
+  assert.equal(rawAnswer(rewritten), "重写");
+  const model = { id: "deepseek", format: "openai", baseUrl: "https://model.example/v1", model: "m", apiKey: "k" };
+  let replies = [];
+  const bodies = [];
+  globalThis.fetch = async (url, init) => {
+    bodies.push(JSON.parse(init.body));
+    const next = replies.shift();
+    if (typeof next === "function") return next();
+    const [status, content, finish = "stop"] = next;
+    const body = status === 200 ? { choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: finish }] }
+      : { error: { message: content } };
+    return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+  };
+  const turn = (answers, missing, { settings = {}, signal = new AbortController().signal, hurry, limits, resume, rounds } = {}) => {
+    replies = answers;
+    bodies.length = 0;
+    const seen = [], reviewed = [], sink = [];
+    const review = async (text) => { reviewed.push(text); return missing(text); };
+    const hooks = { review: (m, at) => seen.push(["review", m, at]), reviewCut: (err) => seen.push(["cut", err ? err.message : null]) };
+    const done = runTurn({ provider: model, settings, route: { kind: "direct" }, runtime: {}, tools: [], system: "s", history: [],
+      user: { text: "问" }, signal, hurry, limits, hooks, sink, review, resume, rounds });
+    return { done, seen, reviewed, sink };
+  };
+  const cited = (text) => (text.includes("[[x.1]]") ? ["x.1"] : []);
+  const said = (wire) => wire.map((m) => `${m.role}:${m.content}`);
+  // named, asked again, and the rewrite stands — itself not checked again
+  let t = turn([[200, "甲[[x.1]]"], [200, "乙"]], cited);
+  let r = await t.done;
+  assert.deepEqual(said(r.wire), ["assistant:甲[[x.1]]", `user:${reviewNote(["x.1"])}`, "assistant:乙"]);
+  assert.equal(r.wire, t.sink);
+  assert.deepEqual(t.reviewed, ["甲[[x.1]]"]);
+  assert.deepEqual(t.seen, [["review", ["x.1"], 1]]);
+  assert.equal(bodies[1].messages.at(-1).content, reviewNote(["x.1"]));
+  assert.ok(reviewNote(["x.1"]).startsWith("［自查：回答所引的 [[x.1]] 在语料中查无此段。"));
+  assert.ok(reviewNote(["x.1", "y.2"]).includes("[[x.1]]、[[y.2]]"));
+  // nothing missing: the answer stands as it came
+  t = turn([[200, "甲[[x.1]]"]], () => []);
+  assert.deepEqual(said((await t.done).wire), ["assistant:甲[[x.1]]"]);
+  assert.deepEqual(t.seen, []);
+  // too few rounds of tools left to look anything up: not asked
+  t = turn([[200, "甲[[x.1]]"]], cited, { settings: { maxSteps: 2 } });
+  assert.deepEqual(said((await t.done).wire), ["assistant:甲[[x.1]]"]);
+  assert.deepEqual(t.reviewed, []);
+  // the rewrite fails: the turn ends with the answer it was about, and says why
+  t = turn([[200, "甲[[x.1]]"], [400, "invalid params"]], cited);
+  assert.deepEqual(said((await t.done).wire), ["assistant:甲[[x.1]]"]);
+  assert.deepEqual(t.seen, [["review", ["x.1"], 1], ["cut", "模型服务返回 400：invalid params"]]);
+  // an answer cut at the output limit and written on is checked whole — the round that wrote it on spends none of the
+  // rounds the self-check needs
+  t = turn([[200, "甲[[x", "length"], [200, ".1]]乙"], [200, "丙"]], cited, { settings: { maxSteps: 3 } });
+  r = await t.done;
+  assert.deepEqual(t.reviewed, ["甲[[x.1]]乙"]);
+  assert.deepEqual([t.seen, said(r.wire).at(-2), said(r.wire).at(-1)], [[["review", ["x.1"], 3]], `user:${reviewNote(["x.1"])}`, "assistant:丙"]);
+  // a rewrite cut at the output limit past what can be written on: taken out, and the answer it was about stands
+  t = turn([[200, "甲[[x.1]]"], [200, "乙", "length"], [200, "乙", "length"], [200, "乙", "length"]], cited);
+  assert.deepEqual(said((await t.done).wire), ["assistant:甲[[x.1]]"]);
+  assert.deepEqual(t.seen, [["review", ["x.1"], 1], ["cut", null]]);
+  // the user asked for the answer (or the turn ran its time): nothing is asked — the model could look nothing up
+  const hurried = new AbortController();
+  hurried.abort();
+  t = turn([[200, "甲[[x.1]]"]], cited, { hurry: hurried.signal });
+  assert.deepEqual([said((await t.done).wire), t.reviewed], [["assistant:甲[[x.1]]"], []]);
+  // a turn taken up again (继续作答), its answer asked for from the results it has: nothing is asked — no tool runs again,
+  // so it could look nothing up
+  const ran = [{ role: "assistant", content: null, tool_calls: [{ id: "c1", type: "function", function: { name: "classics__search", arguments: "{}" } }] },
+    { role: "tool", tool_call_id: "c1", content: "{}" }];
+  t = turn([[200, "甲[[x.1]]"]], cited, { resume: ran, rounds: 1 });
+  assert.deepEqual([said((await t.done).wire).at(-1), t.reviewed, t.seen, bodies.length], ["assistant:甲[[x.1]]", [], [], 1]);
+  // the user asks for the answer while the rewrite is asked for, and the model calls tools all the same: the rewrite is
+  // taken out, and the answer it was about stands — the turn is not left unanswered
+  const later = new AbortController();
+  const calls = () => new Response(JSON.stringify({ choices: [{ index: 0, finish_reason: "tool_calls", message: { role: "assistant",
+    content: null, tool_calls: [{ id: "c9", type: "function", function: { name: "classics__search", arguments: "{}" } }] } }] }),
+    { status: 200, headers: { "Content-Type": "application/json" } });
+  t = turn([[200, "甲[[x.1]]"], calls, calls], (text) => { later.abort(); return cited(text); }, { settings: { maxSteps: 3 }, hurry: later.signal });
+  r = await t.done;
+  assert.deepEqual([said(r.wire), r.unanswered, t.seen, bodies.length], [["assistant:甲[[x.1]]"], false, [["review", ["x.1"], 1], ["cut", null]], 3]);
+  // lookups that do not come back: waited for no longer than a tool call, and the answer stands as it is
+  t = turn([[200, "甲[[x.1]]"]], () => new Promise(() => {}), { limits: { tool: 150 } });
+  assert.deepEqual([said((await t.done).wire), t.reviewed, t.seen], [["assistant:甲[[x.1]]"], ["甲[[x.1]]"], []]);
+  // stopped during the rewrite: stopped, with the answer it was about
+  const stop = new AbortController();
+  t = turn([[200, "甲[[x.1]]"], () => { stop.abort(); throw new DOMException("aborted", "AbortError"); }], cited, { signal: stop.signal });
+  await assert.rejects(t.done, (e) => e.name === "AbortError");
+  assert.deepEqual(said(t.sink), ["assistant:甲[[x.1]]"]);
+  assert.deepEqual(t.seen, [["review", ["x.1"], 1], ["cut", null]]);
+}
+
 // citations pair with the quotation just before them, never across lines
 assert.deepEqual(extractCitations("- 「甲乙」[[a.1]]\n- 无引文[[b.2]]\n\n「丙」[[c.3]][[d.4]] `[[e.5]]`"), [
   { pid: "a.1", quote: "甲乙" }, { pid: "b.2", quote: null }, { pid: "c.3", quote: "丙" }, { pid: "d.4", quote: "丙" }]);
@@ -1312,6 +1411,14 @@ trace = {};
 globalThis.fetch = async () => streamed(sse(delta("答", "content_filter")));
 await turn({ trace });
 assert.deepEqual(trace.events.map((e) => e.what), ["cut:filtered"]);
+// the self-check (自查): its note asking for a rewrite; a rewrite the content filter stopped is taken out
+trace = {};
+n = 0;
+globalThis.fetch = async () => streamed(sse(++n === 1 ? delta("甲[[x.1]]", "stop") : delta("乙", "content_filter")));
+const reviewed = await turn({ trace, review: async (text) => (text.includes("[[x.1]]") ? ["x.1"] : []) });
+assert.deepEqual(reviewed.wire.map((m) => m.content), ["甲[[x.1]]"]);
+assert.deepEqual([trace.events.map((e) => e.what), trace.requests.map((q) => q.finish)], [["review", "unchecked"], ["stop", "content_filter"]]);
+assert.ok(trace.requests[0].end <= trace.events[0].at && trace.events[0].at <= trace.requests[1].sent);
 // a call whose arguments do not parse is not run: refused
 trace = {};
 n = 0;
@@ -1635,7 +1742,7 @@ def test_a_service_that_says_when_to_come_back_is_paused_under_node(tmp_path):
 NODE_CONTEXT = r"""
 import assert from "node:assert/strict";
 import { compactResult, CONTEXT_TOKENS, contextBudget, fitRequest, messageTokens, QUESTION, tokensOf } from "./js/context.js";
-import { buildHistory, runTurn } from "./js/agent.js";
+import { buildHistory, reviewNote, runTurn } from "./js/agent.js";
 
 const size = (msgs) => msgs.reduce((a, m) => a + messageTokens(m), 0);
 const said = (text) => text.slice(text.indexOf("\n\n［") + 2); // what a compact result says of itself, and what follows
@@ -1798,6 +1905,19 @@ for (const room of [tight, whole]) { // the next request, with as little room or
 const silent = buildHistory([{ role: "user", text: "问" }, { role: "assistant", wire: wireOf(9, ""), wireFormat: "openai", wireProvider: "impf" }], relayP);
 const nothing = [silent[0], { role: "assistant", content: "（这一轮没有留下回答）" }];
 assert.deepEqual(fitRequest({ history: silent, turn: [], format: "openai", budget: 100000, fixed: 95000 - size(nothing) }).history, nothing);
+// condensed, a turn says the answer that stands, as the page shows it: not the first answer the self-check had rewritten
+// (自查), and one written on in parts whole; its messages sent carry no mark of it
+const plainOf = (h) => fitRequest({ history: h, turn: [], format: "openai", budget: 100000, fixed: 95000 - size([h[0], { role: "assistant", content: "改稿" }]) }).history;
+const checkedWire = [...wireOf(7, "初稿[[fake.1]]"), { role: "user", content: reviewNote(["fake.1"]) }, ...wireOf(8, "改稿")];
+const rewritten = buildHistory([{ role: "user", text: "问" }, { role: "assistant", wire: checkedWire, wireFormat: "openai", wireProvider: "impf",
+  segments: [{ type: "tools", round: 1, calls: [] }, { type: "text", round: 2, text: "初稿[[fake.1]]", superseded: true },
+    { type: "check", missing: ["fake.1"] }, { type: "tools", round: 3, calls: [] }, { type: "text", round: 4, text: "改稿" }] }], relayP);
+assert.deepEqual(plainOf(rewritten), [rewritten[0], { role: "assistant", content: "改稿" }]);
+assert.equal(JSON.stringify(rewritten[1]), JSON.stringify(checkedWire[0]));
+const writtenOn = buildHistory([{ role: "user", text: "问" }, { role: "assistant", wireFormat: "openai", wireProvider: "impf",
+  wire: [{ role: "assistant", content: "改" }, { role: "user", content: "［提示：上面的回答在输出上限处被截断了］" }, { role: "assistant", content: "稿" }],
+  segments: [{ type: "text", round: 1, text: "改稿" }] }], relayP);
+assert.deepEqual(plainOf(writtenOn), [writtenOn[0], { role: "assistant", content: "改稿" }]);
 const claudeP = { id: "anthropic", format: "anthropic", baseUrl: "https://api.anthropic.com", model: "claude" };
 const claudeWire = [{ role: "assistant", content: [{ type: "thinking", thinking: "想", signature: "s" }, { type: "text", text: "先查。" },
   { type: "tool_use", id: "u0", name: "classics__search", input: {} }] },
@@ -1960,7 +2080,7 @@ def test_a_conversation_in_the_browser(tmp_path):
 
     from taochronos.chat import ChatRuntime
     from taochronos.chat.server import ChatServer
-    from web_mock import ANSWER, LONG_CUT, MockProvider, MockRelay
+    from web_mock import ANSWER, LONG_CUT, SELF_CHECK, SPENT, MockProvider, MockRelay
 
     mock = MockProvider().start()
     relay = MockRelay(mock.base_url).start()
@@ -2011,9 +2131,25 @@ def test_a_conversation_in_the_browser(tmp_path):
             page.keyboard.press("Enter")
             page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
             page.wait_for_function("document.querySelectorAll('.md .cite.pending').length === 0", timeout=15000)
+            # the answer cited a passage the corpus has not: the self-check named it to the model, which looked again and
+            # answered without it; the first answer is kept, folded, its citations not counted under the answer
             cites = page.eval_on_selector_all(".md .cite", "els => els.map(e => [e.dataset.pid, e.className])")
-            assert cites == [["shanghanlun.c013", "cite ok"], ["shanghanlun.c012", "cite warn"], ["fake.999", "cite bad"],
+            assert cites == [["shanghanlun.c013", "cite ok"], ["shanghanlun.c012", "cite warn"],
                              ["shanghanlun.c013", "cite ok"]]  # the last quoted in the traditional script
+            note = page.inner_text(".msg.assistant .notice.check")
+            assert "fake.999" in note and "查无此段" in note and "shanghanlun" not in note
+            bar = page.inner_text(".msg.assistant .verify-bar")
+            assert "2 条与原文一致" in bar and "1 条存疑" in bar and "查无此段" not in bar
+            told = mock.requests[2]["body"]["messages"][-1]
+            assert told["role"] == "user" and told["content"].startswith("［自查：") and "[[fake.999]]" in told["content"]
+            assert "shanghanlun" not in told["content"]  # only the passage the corpus has not
+            assert mock.requests[3]["body"]["messages"][-1]["role"] == "tool"  # looked up again before answering
+            page.click(".msg.assistant details.draft summary")
+            page.wait_for_function("document.querySelectorAll('.draft .md .cite.pending').length === 0", timeout=15000)
+            assert page.eval_on_selector_all(".draft .md .cite", "els => els.map(e => [e.dataset.pid, e.className])") == [
+                ["shanghanlun.c013", "cite ok"], ["shanghanlun.c012", "cite warn"], ["fake.999", "cite bad"], ["shanghanlun.c013", "cite ok"]]
+            assert page.inner_text(".msg.assistant .verify-bar") == bar  # the answer's own still
+            page.click(".msg.assistant details.draft summary")
             assert page.inner_text("#model-chip .nm") == "Tao-R1" and page.get_attribute("#model-chip", "title") == "Tao-R1 · 道乃久默认服务"
             assert page.inner_text(".msg.assistant .meta").startswith("Tao-R1 · ")
             assert page.get_attribute(".msg.assistant .meta", "title") == "道乃久默认服务"
@@ -2028,11 +2164,11 @@ def test_a_conversation_in_the_browser(tmp_path):
             steps = page.inner_text(".steps .list")
             assert "古籍检索" in steps and "classics" not in steps  # a tool by its plain words
             # the names the model worked with, told in plain words: in the answer and in its thinking, wherever it put them
-            assert "以上经古籍检索检得，可用引文核验复核，出处附段落编号。" in page.inner_text(".msg.assistant .md")
+            assert "以上经古籍检索检得，可用引文核验复核，出处附段落编号。" in page.inner_text(".msg.assistant .md:not(.superseded)")
             said = "".join(page.eval_on_selector_all(".msg.assistant", "els => els.map(e => e.textContent)"))
             assert "古籍检索检索到了原文" in said and not re.search(r"classics|validation|passage_id|__", said)
-            assert "繁简" in page.eval_on_selector_all(".md .cite.ok", "els => els[1].title")
-            page.click(".md .cite.ok >> nth=0")
+            assert "繁简" in page.eval_on_selector_all(".md:not(.superseded) .cite.ok", "els => els[1].title")
+            page.click(".md:not(.superseded) .cite.ok >> nth=0")
             assert page.inner_text(".passage-view .text mark") == "太阳病，头痛，发热，汗出，恶风，桂枝汤主之"
             # a second turn replays the first verbatim: tool call, reasoning_details, tool result
             page.fill("#input", "它的组成呢？")
@@ -2052,8 +2188,10 @@ def test_a_conversation_in_the_browser(tmp_path):
             assert replay["reasoning_details"][0]["text"] == "用户问桂枝汤的主治，先检索原文。"
             assert replay["reasoning_details"][0]["format"] == "MiniMax-response-v1"  # the page kept it as Tao-…; the relay restores it
             assert second["messages"][3]["role"] == "tool" and "shanghanlun.c013" in second["messages"][3]["content"]
-            later = mock.requests[2]["body"]["messages"]
-            assert [m["role"] for m in later] == ["system", "user", "assistant", "tool", "assistant", "user"]
+            later = mock.requests[4]["body"]["messages"]  # the first turn whole, the self-check's note in it
+            assert [m["role"] for m in later] == ["system", "user", "assistant", "tool", "assistant", "user", "assistant", "tool",
+                                                  "assistant", "user"]
+            assert later[5]["content"] == told["content"] and "fake.999" not in later[8]["content"]
             # the conversation survives a reload, and keeps nothing of the upstream
             page.reload()
             page.wait_for_selector(".conv.active", timeout=15000)
@@ -2066,20 +2204,82 @@ def test_a_conversation_in_the_browser(tmp_path):
             page.keyboard.press("Enter")
             page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 3", timeout=60000)
             long = page.locator(".msg.assistant").nth(2)
-            assert long.locator(".md").count() == 1 and long.locator(".notice").count() == 0
+            assert long.locator(".md").count() == 1 and long.locator(".notice:not(.check)").count() == 0
             assert "《伤寒论》以桂枝汤治太阳中风" in long.inner_text() and "不构成医疗建议" in long.inner_text()
-            on = mock.requests[-1]["body"]["messages"]  # the round asked to write on: the cut answer, then the page's note
-            assert len(mock.requests) - asked_before == 3 and on[-1]["role"] == "user" and on[-1]["content"].startswith("［提示：上面的回答")
+            on = mock.requests[asked_before + 2]["body"]["messages"]  # the round asked to write on: the cut answer, the note
+            assert on[-1]["role"] == "user" and on[-1]["content"].startswith("［提示：上面的回答")
             assert on[-2]["role"] == "assistant" and on[-2]["content"] == ANSWER[:LONG_CUT]
+            # the answer, written on, self-checked whole: the passage that does not exist named, looked for, and dropped
+            told = mock.requests[asked_before + 3]["body"]["messages"][-1]["content"]
+            assert len(mock.requests) - asked_before == 5 and told.startswith("［自查：") and "[[fake.999]]" in told
+            assert "fake.999" in long.locator(".notice.check").inner_text()
             # one that spent all of it on thinking is asked again without: what it showed of that goes
+            asked_before = len(mock.requests)
             page.fill("#input", "这个问题请想得很久再答。")
             page.keyboard.press("Enter")
             page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 4", timeout=60000)
             thought = page.locator(".msg.assistant").nth(3)
             assert "想了又想" not in thought.inner_text() and thought.locator(".md").count() == 1
-            assert thought.locator(".notice").count() == 0
-            again, cut = mock.requests[-1]["body"], mock.requests[-2]["body"]
+            assert thought.locator(".notice:not(.check)").count() == 0
+            again, cut = mock.requests[asked_before + 2]["body"], mock.requests[asked_before + 1]["body"]
             assert again["thinking"] == {"type": "disabled"} and "thinking" not in cut and again["messages"] == cut["messages"]
+            # the page reloaded while the self-check's rewrite is asked for: opened again, it takes the rewrite out, and the
+            # answer it was about stands, the note saying so, as when a rewrite fails — not a turn left without its answer
+            held_rewrites: list = []
+
+            def hold_the_rewrite(route) -> None:
+                said = (json.loads(route.request.post_data or "{}").get("messages") or [{}])[-1].get("content")
+                if str(said or "").startswith(SELF_CHECK):
+                    held_rewrites.append(route)  # not answered: the page is reloaded meanwhile
+                else:
+                    route.continue_()
+
+            page.route(f"{relay.url}/v1/chat/completions", hold_the_rewrite)
+            page.fill("#input", "桂枝汤的配伍如何？")
+            page.keyboard.press("Enter")
+            # the turn as the page keeps it, as it runs too
+            kept = """() => import('./js/store.js').then((s) => s.listConversations())
+                .then((l) => l.map((c) => c.messages.filter((m) => m.role === 'assistant')[4]).find(Boolean) || {})"""
+            for _ in range(150):  # kept while the rewrite is asked for: the answer folded, the self-check's note under it
+                if any(s["type"] == "check" for s in page.evaluate(kept).get("segments", [])):
+                    break
+                page.wait_for_timeout(200)
+            assert len(held_rewrites) == 1 and page.evaluate(kept)["status"] == "streaming"
+            page.reload()
+            page.wait_for_selector(".conv.active", timeout=15000)
+            page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 5", timeout=30000)
+            page.wait_for_function("document.querySelectorAll('.md .cite.pending').length === 0", timeout=15000)
+            closed = page.locator(".msg.assistant").nth(4)
+            assert closed.locator(".notice.check").inner_text() == "自查：初稿所引的 fake.999 在语料中查无此段；重新作答未能完成，上面的回答未经更正。"
+            assert closed.locator(".md .cite.bad").count() == 1 and not closed.locator("details.draft").count()
+            assert not closed.locator(".notice.err").count() and not closed.locator("button.resume").count()
+            assert page.evaluate(kept)["status"] == "done"  # and kept so
+            page.unroute(f"{relay.url}/v1/chat/completions", hold_the_rewrite)
+            # the day's free calls run out as the self-check asks for a rewrite: the answer it was about stands, the
+            # note says why, and the service is paused until the hour the relay named, as after a turn it refused
+            def spend_at_the_rewrite(route) -> None:
+                said = (json.loads(route.request.post_data or "{}").get("messages") or [{}])[-1].get("content")
+                if str(said or "").startswith(SELF_CHECK):
+                    relay.spent = True
+                route.continue_()
+
+            page.route(f"{relay.url}/v1/chat/completions", spend_at_the_rewrite)
+            asked_before, chats = len(mock.requests), len(relay.chat)
+            page.fill("#input", "桂枝汤的方义是什么？")
+            page.keyboard.press("Enter")
+            page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 6", timeout=60000)
+            page.wait_for_function("document.querySelectorAll('.md .cite.pending').length === 0", timeout=15000)
+            # the turn before it goes as it stands: its answer last, not the self-check's note to rewrite it
+            sent = mock.requests[asked_before]["body"]["messages"]
+            assert sent[-3]["role"] == "tool" and sent[-2]["role"] == "assistant" and "[[fake.999]]" in sent[-2]["content"]
+            refused = page.locator(".msg.assistant").nth(5)
+            assert refused.locator(".notice.check").inner_text() == (
+                f"自查：初稿所引的 fake.999 在语料中查无此段；重新作答未能完成（{SPENT}），上面的回答未经更正。")
+            assert refused.locator(".md .cite.bad").count() == 1 and not refused.locator("details.draft").count()
+            assert not refused.locator(".notice.err").count() and "查无此段" in refused.locator(".verify-bar").inner_text()
+            assert len(mock.requests) - asked_before == 2 and len(relay.chat) - chats == 3  # the rewrite refused, once
+            paused = page.locator("#pause")
+            assert paused.is_visible() and paused.inner_text().startswith("暂停到 ") and paused.inner_text().endswith(f"，不再发送请求：{SPENT}")
             assert not errors, errors
             browser.close()
     finally:
@@ -2732,13 +2932,19 @@ def test_claude_through_the_official_sdk(tmp_path):
             assert replay[1]["type"] == "tool_use" and replay[1]["input"] == {"query": "桂枝汤 主之", "k": 3}
             assert second["body"]["messages"][2]["content"][0]["tool_use_id"] == "toolu_1"
             page.wait_for_function("document.querySelectorAll('.md .cite.pending').length === 0", timeout=15000)
-            assert page.eval_on_selector_all(".md .cite", "els => els.map(e => e.className)") == ["cite ok", "cite warn", "cite bad", "cite ok"]
+            # the passage that does not exist, named by the self-check: looked for again, and the answer is given without it
+            told = mock.requests[2]["body"]["messages"][-1]
+            assert told["role"] == "user" and told["content"].startswith("［自查：") and "[[fake.999]]" in told["content"]
+            assert mock.requests[3]["body"]["messages"][-1]["content"][0]["type"] == "tool_result"
+            assert page.eval_on_selector_all(".md .cite", "els => els.map(e => e.className)") == ["cite ok", "cite warn", "cite ok"]
             assert first["body"]["max_tokens"] == 64000  # no number set: what Anthropic advises for a streamed reply
-            # its record: Claude's two requests, each timed through the fetch the SDK was given, the answer's text in the second
+            # its record: Claude's requests, each timed through the fetch the SDK was given — the answer's text in the second,
+            # the self-check's note after it, and the rewrite's two, its search the first's again and answered from it
             rec = record(1)
-            assert rec["provider"] == "anthropic" and ends(rec) == [(1, "tool_use"), (2, "end_turn")]
+            assert rec["provider"] == "anthropic" and ends(rec) == [(1, "tool_use"), (2, "end_turn"), (3, "tool_use"), (4, "end_turn")]
             assert "text" not in rec["requests"][0] and "text" in rec["requests"][1] and rec["requests"][1]["output"] > 0
-            assert [(t["round"], t["status"], t["id"]) for t in rec["tools"]] == [(1, "ok", "toolu_1")] and rec["events"] == []
+            assert [(t["round"], t["status"]) for t in rec["tools"]] == [(1, "ok"), (3, "ok")] and rec["tools"][0]["id"] == "toolu_1"
+            assert [e["what"] for e in rec["events"]] == ["review", "reused"]
 
             def turn(question: str, n: int) -> list[dict]:
                 """Ask, wait for the n-th answer, and return the requests the turn made."""
@@ -2748,31 +2954,41 @@ def test_claude_through_the_official_sdk(tmp_path):
                 page.wait_for_function(f"document.querySelectorAll('.msg.assistant .verify-bar').length >= {n}", timeout=60000)
                 return [r["body"] for r in mock.requests[before:]]
 
+            def self_checked(asked: list[dict], at: int) -> bool:
+                """The at-th request is the self-check's note on the passage that does not exist; the next, its search."""
+                note = asked[at]["messages"][-1]["content"]
+                return note.startswith("［自查：") and "[[fake.999]]" in note and len(asked) == at + 2
+
             # a reply whose stream ended part-way, or stopped without saying why, is asked again, not taken as the answer
+            # (which, citing the passage that does not exist, the self-check then has rewritten)
             asked = turn("断流也请答：桂枝汤主治什么？", 2)
-            assert len(asked) == 4 and asked[1] == asked[2] == asked[3]
+            assert asked[1] == asked[2] == asked[3] and self_checked(asked, 4)
             broken = page.locator(".msg.assistant").nth(1)
-            assert broken.locator(".notice").count() == 0 and "不构成医疗建议" in broken.inner_text()
-            assert ends(record(2)) == [(1, "tool_use"), (2, "unfinished"), (2, "unfinished"), (2, "end_turn")]
-            # an answer cut at max_tokens is written on from where it stopped, as one answer
+            assert broken.locator(".notice:not(.check)").count() == 0 and "不构成医疗建议" in broken.inner_text()
+            assert ends(record(2)) == [(1, "tool_use"), (2, "unfinished"), (2, "unfinished"), (2, "end_turn"), (3, "tool_use"), (4, "end_turn")]
+            # an answer cut at max_tokens is written on from where it stopped, as one answer, and is self-checked whole
             asked = turn("请写一篇长篇的桂枝汤论述。", 3)
-            assert len(asked) == 3 and asked[2]["messages"][-1]["content"].startswith("［提示：上面的回答在输出上限处被截断了")
-            assert asked[2]["messages"][-2]["content"][-1]["text"] == ANSWER[:LONG_CUT]
+            assert asked[2]["messages"][-1]["content"].startswith("［提示：上面的回答在输出上限处被截断了")
+            assert asked[2]["messages"][-2]["content"][-1]["text"] == ANSWER[:LONG_CUT] and self_checked(asked, 3)
             long = page.locator(".msg.assistant").nth(2)
-            assert long.locator(".md").count() == 1 and long.locator(".notice").count() == 0 and "不构成医疗建议" in long.inner_text()
+            assert long.locator(".md").count() == 1 and long.locator(".notice:not(.check)").count() == 0
+            assert "不构成医疗建议" in long.inner_text()
             rec = record(3)
-            assert ends(rec) == [(1, "tool_use"), (2, "max_tokens"), (3, "end_turn")] and [e["what"] for e in rec["events"]] == ["continued"]
+            assert ends(rec) == [(1, "tool_use"), (2, "max_tokens"), (3, "end_turn"), (4, "tool_use"), (5, "end_turn")]
+            assert [e["what"] for e in rec["events"]] == ["continued", "review", "reused"]
             # one that spent all of it on thinking is asked again at low effort, still thinking (newer models always do)
             asked = turn("这个问题请想得很久再答。", 4)
-            assert len(asked) == 3 and asked[2]["output_config"] == {"effort": "low"} and "output_config" not in asked[1]
+            assert asked[2]["output_config"] == {"effort": "low"} and "output_config" not in asked[1] and self_checked(asked, 3)
             assert asked[2]["thinking"] == asked[1]["thinking"] and asked[2]["messages"] == asked[1]["messages"]
             thought = page.locator(".msg.assistant").nth(3)
-            assert "想了又想" not in thought.inner_text() and thought.locator(".notice").count() == 0
+            assert "想了又想" not in thought.inner_text() and thought.locator(".notice:not(.check)").count() == 0
             rec = record(4)
-            assert ends(rec) == [(1, "tool_use"), (2, "max_tokens"), (3, "end_turn")] and [e["what"] for e in rec["events"]] == ["lighter"]
+            assert ends(rec) == [(1, "tool_use"), (2, "max_tokens"), (3, "end_turn"), (4, "tool_use"), (5, "end_turn")]
+            assert [e["what"] for e in rec["events"]] == ["lighter", "review", "reused"]
             # stopped while its answer is being written, the turn is taken up again (继续作答): what that answer had shown
             # goes, no call runs again, and Claude is asked with no tool to call, from the results with the page's note
-            # after them; each time the turn ran has its record, the second saying it was taken up again
+            # after them — its answer, though it cites the passage that does not exist, not self-checked, since it could
+            # look nothing up; each time the turn ran has its record, the second saying it was taken up again
             before = len(mock.requests)
             page.fill("#input", "请慢慢答：桂枝汤主治什么？")
             page.keyboard.press("Enter")
@@ -2994,7 +3210,8 @@ def test_an_api_set_by_hand(tmp_path):
             assert json.loads(page.evaluate("localStorage.getItem('tc.settings')"))["contextTokens"] is None
             body = asked("麻黄汤呢？", 3)
             assert body["max_tokens"] == 16000 and "对话较长" not in body["messages"][0]["content"]
-            assert [m["role"] for m in body["messages"]] == ["system"] + ["user", "assistant", "tool", "assistant"] * 2 + ["user"]
+            whole = ["user", "assistant", "tool", "assistant", "user", "assistant", "tool", "assistant"]  # the self-check's note and rewrite in it
+            assert [m["role"] for m in body["messages"]] == ["system"] + whole * 2 + ["user"]
             assert not errors, errors
             browser.close()
     finally:
@@ -3074,19 +3291,26 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
             # the answer as the visitor read it, and how many inside names it was spared (redact.js)
             assert "以上经古籍检索检得，可用引文核验复核，出处附段落编号。" in rec["answer"] and rec["redacted"] == 3
             assert rec["tools"] and rec["tools"][0]["name"].startswith("classics") and rec["tools"][0]["ok"]
-            assert rec["citations"]["total"] == 4 and rec["citations"]["bad"] == 1 and rec["citations"]["pending"] == 0
-            assert rec["usage"] == {"input": 1200, "output": 180} and rec["rounds"] == 2
+            # the answer that stands (the self-check had the one citing a passage the corpus has not answered again), and
+            # every round the turn took
+            assert rec["citations"]["total"] == 3 and rec["citations"]["bad"] == 0 and rec["citations"]["pending"] == 0
+            assert rec["usage"] == {"input": 2400, "output": 360} and rec["rounds"] == 4 and len(rec["tools"]) == 2
             # where its time went, in milliseconds from the turn's start: each model request — its times in order, how it
-            # finished, its tokens — and each call: its round, how it ended, how long it waited and ran
+            # finished, its tokens —, each call — its round, how it ended, how long it waited and ran —, the self-check's
+            # note between the answer and its rewrite, and the rewrite's search, the first's again, answered from it
             asks = rec["requests"]
-            assert [(q["round"], q["attempt"], q["finish"]) for q in asks] == [(1, 1, "tool_calls"), (2, 1, "stop")]
+            assert [(q["round"], q["attempt"], q["finish"]) for q in asks] == [(1, 1, "tool_calls"), (2, 1, "stop"), (3, 1, "tool_calls"),
+                                                                              (4, 1, "stop")]
             assert all(q["sent"] <= q["open"] <= q["first"] <= q["last"] <= q["end"] <= rec["ms"] for q in asks)
             assert "text" not in asks[0] and asks[1]["first"] <= asks[1]["text"] <= asks[1]["end"]
             assert "input" not in asks[0] and (asks[1]["input"], asks[1]["output"]) == (1200, 180)
             call = rec["tools"][0]
             assert (call["round"], call["status"], call["id"]) == (1, "ok", "call_1") and call["wait"] >= 0
             assert asks[0]["end"] <= call["at"] and call["at"] + call["ms"] <= asks[1]["sent"]
-            assert rec["events"] == [] and rec["hidden"] == 0 and rec["asleep"] == 0 and "was" not in rec
+            assert [(t["round"], t["status"]) for t in rec["tools"]] == [(1, "ok"), (3, "ok")]
+            assert [e["what"] for e in rec["events"]] == ["review", "reused"] and asks[1]["end"] <= rec["events"][0]["at"] <= asks[2]["sent"]
+            assert asks[2]["end"] <= rec["events"][1]["at"] <= asks[3]["sent"]
+            assert rec["hidden"] == 0 and rec["asleep"] == 0 and "was" not in rec
             assert not {"apiKey", "keys", "settings"} & set(rec) and MockRelay.SECRET not in json.dumps(rec)
             assert relay.chat and all("authorization" not in {k.lower() for k in c["headers"]} for c in relay.chat)  # no key from the page
             assert all(r["headers"].get("Authorization") == f"Bearer {MockRelay.SECRET}" for r in mock.requests)

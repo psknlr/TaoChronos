@@ -20,7 +20,7 @@
 | `runtime`、`corpus` | 运行环境（browser / server）与语料（canon 要籍语料 / full 全量 / demo） |
 | `tools` | 调用的工具：名称、是否成功、耗时、参数（≤300 字）；记录时间的网页另记 `id`、第几轮 `round`、结局 `status`（ok / error / timeout / stopped / skipped / background / refused）、开始于第几毫秒 `at`、等运行环境或排队的毫秒数 `wait`、运行环境自报的计算耗时 `compute` |
 | `requests` | 每次模型请求（记录时间的网页才有）：第几轮 `round`、第几次 `attempt`；从本轮开始起算的毫秒数——发出 `sent`、回复开始 `open`、第一段 `first`、回答的第一个字 `text`、最后一段 `last`、结束 `end`；结束方式 `finish`（服务给的原因，如 stop / length / tool_calls）或失败原因 `failed`（stopped / timeout / unfinished / network / 服务的错误类型或 `http 状态码`，不含服务的原话）及 HTTP 状态码 `status`，超时时 `expired` 为哪一个时限（firstReply / silence / whole）；`input` / `output` token |
-| `events` | 请求之间发生的事：`continued`（在输出上限处截断的回答接着写）、`lighter`（少想一些重问）、`asked` / `time` / `steps`（工具到此为止：访客按了“不再等待”、本轮时间用完、轮数用完）、`resume`（访客按了“继续作答”：根据已有的工具结果接着作答，不再调用工具）、`cut:…`（回复被截断）、`fallback`（站点服务不可用，改在浏览器里运行），各带毫秒数 `at` |
+| `events` | 请求之间发生的事：`continued`（在输出上限处截断的回答接着写）、`lighter`（少想一些重问）、`asked` / `time` / `steps`（工具到此为止：访客按了“不再等待”、本轮时间用完、轮数用完）、`resume`（访客按了“继续作答”：根据已有的工具结果接着作答，不再调用工具）、`cut:…`（回复被截断）、`compacted`（为不超出上下文预算，这次请求比上一次少发了内容）、`reused`（同一检索本轮已做过，结果取自那一次，没有重新运行）、`review`（自查：回答所引段落查无此段，请模型重写）、`unchecked`（重写没有完整给出，撤下，原回答保留）、`fallback`（站点服务不可用，改在浏览器里运行），各带毫秒数 `at` |
 | `hidden`、`asleep`、`was` | 本轮中网页隐藏的毫秒数，网页完全没有运行的毫秒数（手机休眠、标签页被冻结），以及本轮开始时的运行环境与语料（结束时已换了才有） |
 | `citations` | 引文核对：总数与 ok（与原文一致）/ warn（存疑）/ bad（查无此段）/ pending，及所引段落号 |
 | `usage`、`rounds`、`ms` | 本轮的 token 用量（input / output）、模型调用次数、总耗时（毫秒） |
