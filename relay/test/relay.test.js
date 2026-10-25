@@ -380,7 +380,7 @@ test("a record is kept only as its known fields, from the page, within its limit
     tools: [{ ...turn.tools[0], ok: false, id: "call_1", round: 1, status: "timeout", at: 1200, wait: 300, compute: 80 }],
     requests: [
       { round: 1, attempt: 1, sent: 5, open: 400, first: 410, text: 900, last: 1100, end: 1101, finish: "tool_calls", input: 1200, output: 80, body: "dropped" },
-      { round: 1, attempt: 2, sent: 1200, end: 1300, failed: "overloaded_error", status: 529 },
+      { round: 1, attempt: 2, sent: 1200, end: 1300, failed: "overloaded_error", status: 529, hidden: 40, asleep: "0" },
       ...Array.from({ length: 60 }, (_, i) => ({ round: 2, attempt: i + 1, failed: "timeout".repeat(20), expired: "silence", sent: "5", status: "503" })),
     ],
     events: [{ at: 1500, what: "asked" }, { at: "soon", what: { no: 1 } }, null],
@@ -391,7 +391,8 @@ test("a record is kept only as its known fields, from the page, within its limit
   assert.deepEqual(timed.requests[0], { round: 1, attempt: 1, sent: 5, open: 400, first: 410, text: 900, last: 1100, end: 1101,
     finish: "tool_calls", input: 1200, output: 80 });
   assert.equal(timed.requests.length, 48);
-  assert.deepEqual(timed.requests[1], { round: 1, attempt: 2, sent: 1200, end: 1300, failed: "overloaded_error", status: 529 });
+  // and how long the page was hidden, or did not run, while it was asked: numbers only
+  assert.deepEqual(timed.requests[1], { round: 1, attempt: 2, sent: 1200, end: 1300, failed: "overloaded_error", status: 529, hidden: 40 });
   assert.deepEqual(timed.requests[2], { round: 2, attempt: 1, failed: "timeout".repeat(20).slice(0, 40), expired: "silence" });
   assert.deepEqual(timed.events, [{ at: 1500, what: "asked" }, {}, {}]);
   assert.deepEqual([timed.hidden, timed.asleep, timed.was], [2000, undefined, { runtime: "server", corpus: "full" }]);

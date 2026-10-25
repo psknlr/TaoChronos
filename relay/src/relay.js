@@ -598,7 +598,7 @@ export function normalizeRecord(r) {
     requests: list(r.requests, 48, (q) => ({
       round: num(q.round), attempt: num(q.attempt), sent: num(q.sent), open: num(q.open), first: num(q.first), text: num(q.text),
       last: num(q.last), end: num(q.end), finish: str(q.finish, 40), failed: str(q.failed, 40), expired: str(q.expired, 20),
-      status: num(q.status), input: num(q.input), output: num(q.output),
+      status: num(q.status), input: num(q.input), output: num(q.output), hidden: num(q.hidden), asleep: num(q.asleep),
     })),
     events: list(r.events, 40, (e) => ({ at: num(e.at), what: str(e.what, 40) })),
     hidden: num(r.hidden), asleep: num(r.asleep),

@@ -732,16 +732,18 @@ send it in clear to the provider, where any visitor can read it — so the relay
   settings or an address (`web/js/records.js`, `relay/src/relay.js` keeps only those fields).  The timings say where the
   turn's time went, each in milliseconds from its start: each model request's — sent, its reply begun, its first part,
   its answer's first text, its end, how it finished or why it failed (a kind or a status, never the service's words), its
-  tokens —, each call's — begun, waiting for its runtime or its turn, how long the runtime says it took, how it ended —,
-  what happened between them (an answer written on, 不再等待, the turn's time up, the self-check's rewrite asked for or
-  taken out, a server given up for the browser, the turn taken up again by 继续作答 — each time it runs it sends its own
-  record, under the same id), and
-  how long the page was hidden or did not run at all (`web/js/records.js`, `timings`; the fields in
+  tokens, how long the page was hidden or did not run while it was asked (a reply that broke off while no one could see
+  the page may have been cut by the browser, not by the service) —, each call's — begun, waiting for its runtime or its
+  turn, how long the runtime says it took, how it ended —, what happened between them (an answer written on, 不再等待,
+  the turn's time up, the self-check's rewrite asked for or taken out, a server given up for the browser, the turn taken
+  up again by 继续作答 — each time it runs it sends its own record, under the same id), and how long the page was hidden
+  or did not run at all (`web/js/records.js`, `timings`; the fields in
   [`data/chat-logs/README.md`](../data/chat-logs/README.md)).  The output limit a reply was asked within is not among
   them, since it comes from the visitor's settings: a reply cut there shows as `finish: length`, with the tokens it
   wrote.  `taochronos records` sums the records up, in counts and times only: the time from a turn's last tool result to
-  its answer's first text and what it went on, how often a model request broke off and the turn still answered whole,
-  how many answers came whole, with nothing flagged ✕, and verified — a turn taken up again counted once, as it ended,
+  its answer's first text and what it went on, how often a model request broke off and the turn still answered whole
+  (and how many of the requests that broke off were asked while the page was hidden or asleep), how many answers came
+  whole, with nothing flagged ✕, and verified — a turn taken up again counted once, as it ended,
   and how many were.  The relay holds the records
   until `.github/workflows/chat-logs.yml` collects them, every hour, into `data/chat-logs/YYYY/MM/DD.jsonl` in this private
   repository, and deletes them once the commit is pushed (`relay/collect.py`).  The records never enter the published
@@ -887,7 +889,7 @@ a research run's step from the server's view of it (queued with its place, runni
 progress long in coming, stopping, awaiting recovery, an earlier server's words), and a turn's instructions asked for
 before each request, the browser's with a note once it takes over from the site's server; where a turn's time goes — each model request's times and
 end (a stall, a stop, a refusal kept as its status and not its words), each call's waiting and running, a cut answer
-written on, the tools' end, the page hidden and asleep; history rules, dangling tool calls, citation pairing, which
+written on, the tools' end, the page hidden and asleep (in the turn, and while each model request was asked); history rules, dangling tool calls, citation pairing, which
 questions get the fixed reply and which go to the model; the alias badges — labels, the names merged, the asked name found
 for a hit, the flags' words, every card of a search marked with its badges or with none; the charts' checks, CSV, Markdown tables, colours and axes; a box
 plot's numbers, a forest plot's log axis, a tree's checks; CRC-32, PackBits, a TIFF's directory, a PNG's pHYs and a ZIP;

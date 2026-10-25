@@ -4,10 +4,11 @@ a record.
 
 A visitor who agreed has each finished turn recorded (web/js/records.js, relay/README.md): its question and answer, its
 tools, how its citations were checked and, from the page that times them (web/js/records.js, ``timings``), each model
-request's times and end, each call's waiting and running, and how long the page was hidden or did not run — each time
-in milliseconds from the turn's start.  :func:`summary` reads records of either kind: one without the times counts
-towards the answers' completion only.  A turn taken up again (继续作答) is recorded again, its times from then on: the
-summary counts it once, as its last record ended, with the failures and the time of all of them.
+request's times and end, each call's waiting and running, and how long the page was hidden or did not run — in the turn,
+and while each model request was asked — each time in milliseconds from the turn's start.  :func:`summary` reads
+records of either kind: one without the times counts towards the answers' completion only.  A turn taken up again
+(继续作答) is recorded again, its times from then on: the summary counts it once, as its last record ended, with the
+failures and the time of all of them.
 """
 
 from __future__ import annotations
@@ -110,6 +111,16 @@ def _broke_off(q: dict[str, Any]) -> bool:
     return q.get("failed") in BROKE_OFF or (_n(q.get("status")) or 0) >= 500
 
 
+def _unseen(q: dict[str, Any]) -> bool | None:
+    """Was the page hidden, or not running at all, for some of the time a model request was asked?  None for a request a
+    page did not time so (an earlier page's): a reply that broke off while no one could see the page may have been cut by
+    the browser (a tab in the background, a phone asleep), not by the service."""
+    hidden, asleep = _n(q.get("hidden")), _n(q.get("asleep"))
+    if hidden is None and asleep is None:
+        return None
+    return (hidden or 0) > 0 or (asleep or 0) > 0
+
+
 def _rounds_span(tools: list[dict[str, Any]]) -> float:
     """The time a turn's rounds of calls took, each round from its first call's start to its last call's end."""
     by_round: dict[Any, list[tuple[float, float]]] = {}
@@ -135,8 +146,9 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
     * ``answer_after_tools`` — the time from a turn's last tool result to the first text of its answer, and its parts
       (:func:`answer_after_tools`), in seconds;
     * ``recovery`` — of the turns in which a model request broke off (it stalled, never answered, ended before the model
-      was done, or the connection or the service failed), those that still ended with a whole answer; and how the
-      requests failed, by kind;
+      was done, or the connection or the service failed), those that still ended with a whole answer; how the requests
+      failed, by kind; and of the requests that broke off, timed by the page's own clock, those asked while the page was
+      hidden or not running for some of the time (``unseen``);
     * ``completion`` — of the turns a model answered: the answer came whole (:func:`whole`); whole, with no citation the
       corpus lacks (✕) or left unchecked; whole and verified (it cites, and every citation is ✓); whole, citing nothing;
     * ``time`` — per timed turn: in model requests, in rounds of calls, the page hidden, the page asleep (seconds);
@@ -147,6 +159,7 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
     after: dict[str, list[float]] = {"total": [], "before": [], "reply": [], "thinking": []}
     broke = recovered = 0
     kinds: Counter[str] = Counter()
+    clocked = unseen = 0  # the requests that broke off with the page's own times; of them, while it was not seen
     done = unflagged = verified = uncited = 0
     spent: dict[str, list[float]] = {"model": [], "tools": [], "hidden": [], "asleep": []}
     waited = ran = 0.0
@@ -182,6 +195,9 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
         if any(map(_broke_off, failures)):
             broke += 1
             recovered += ok
+        seen = [_unseen(q) for q in failures if _broke_off(q)]
+        clocked += sum(v is not None for v in seen)
+        unseen += sum(v is True for v in seen)
         spent["model"].append(sum(q["end"] - q["sent"] for q in requests if _n(q.get("end")) is not None and _n(q.get("sent")) is not None))
         spent["tools"].append(sum(_rounds_span([t for t in x.get("tools") or [] if isinstance(t, dict)]) for x in timed_runs))
         for k in ("hidden", "asleep"):
@@ -196,7 +212,7 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
     return {
         "turns": turns, "timed": timed, "fixed": fixed,
         "answer_after_tools": {k: _seconds(v) for k, v in after.items()},
-        "recovery": {**_share(recovered, broke), "failed": dict(kinds.most_common())},
+        "recovery": {**_share(recovered, broke), "failed": dict(kinds.most_common()), "unseen": _share(unseen, clocked)},
         "completion": {"whole": _share(done, turns), "whole_unflagged": _share(unflagged, turns),
                        "whole_verified": _share(verified, turns), "whole_uncited": _share(uncited, turns)},
         "time": {**{k: _seconds(v) for k, v in spent.items()},

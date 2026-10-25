@@ -17,7 +17,7 @@ import * as openai from "./llm/openai.js";
 import * as claude from "./llm/anthropic.js";
 import { dataNote } from "./mydata.js";
 import { ANSWER, compactResult, contextBudget, fitRequest, messageTokens, QUESTION, tokensOf } from "./context.js";
-import { LIMITS, limit, pause, until } from "./limits.js";
+import { LIMITS, limit, pageClock, pause, until } from "./limits.js";
 import { outputLimit } from "./providers.js";
 import { truncate } from "./util.js";
 import { T } from "./i18n.js";
@@ -489,8 +489,11 @@ async function reviewWithin(review, text, ms, signal) {
   }
 }
 
-/** A model request, its end told to its `mark` (when it has one): how it finished and its tokens, or why it failed. */
+/** A model request, its end told to its `mark` (when it has one): how it finished and its tokens, or why it failed — and
+ * how long the page was hidden, or did not run at all, while it was asked (pageClock): a reply that broke off while no
+ * one could see the page may have been cut by the browser, not by the service. */
 async function measured(mark, request) {
+  const clock = mark ? pageClock() : null;
   try {
     const res = await request;
     if (mark) Object.assign(mark, { end: Date.now(), finish: res.finishReason || "", input: res.usage?.input, output: res.usage?.output });
@@ -498,6 +501,8 @@ async function measured(mark, request) {
   } catch (err) {
     if (mark) Object.assign(mark, { end: Date.now(), failed: failure(err), status: err?.status || undefined });
     throw err;
+  } finally {
+    if (clock) Object.assign(mark, clock.stop());
   }
 }
 
