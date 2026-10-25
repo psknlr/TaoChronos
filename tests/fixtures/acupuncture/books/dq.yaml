@@ -1,0 +1,4 @@
+- book: dq
+  passages:
+    - {id: dq.1, locator: {volume: 卷四, chapter: 八脉交会八穴歌}, text: 公孙冲脉胃心胸，内关阴维下总同；临泣胆经连带脉，阳维目锐外关逢；后溪督脉内眦颈，申脉阳跷络亦通；列缺任脉行肺系，阴跷照海膈喉咙。}
+    - {id: dq.2, locator: {volume: 卷二, chapter: 标幽赋}, text: 拘挛闭塞，遣八邪而去矣；寒热痹痛，开四关而已之。胸满腹痛刺内关。}

@@ -1,0 +1,84 @@
+# 针灸选穴配穴 gold (taochronos eval acupuncture): the tables and teaching examples of a review of meridian-based point
+# selection (the Nanjing, the Lingshu, university teaching materials, GB/T 12346—2021), written out here by hand — not
+# read from acupuncture.yaml — so that the data and the reasoning over it are checked against an independent statement.
+# The selection cases are the review's own examples and textbook prescriptions: what a prescription must hold and what it
+# must not; they show intended behaviour, not clinical validity.
+five_shu:  # 井 荥 输 经 合
+  LU: [LU11, LU10, LU9, LU8, LU5]
+  LI: [LI1, LI2, LI3, LI5, LI11]
+  ST: [ST45, ST44, ST43, ST41, ST36]
+  SP: [SP1, SP2, SP3, SP5, SP9]
+  HT: [HT9, HT8, HT7, HT4, HT3]
+  SI: [SI1, SI2, SI3, SI5, SI8]
+  BL: [BL67, BL66, BL65, BL60, BL40]
+  KI: [KI1, KI2, KI3, KI7, KI10]
+  PC: [PC9, PC8, PC7, PC5, PC3]
+  TE: [TE1, TE2, TE3, TE6, TE10]
+  GB: [GB44, GB43, GB41, GB38, GB34]
+  LR: [LR1, LR2, LR3, LR4, LR8]
+phases: {LU10: 火, ST44: 水, LU5: 水, ST36: 土, LU9: 土, LU8: 金, LR8: 水, LR2: 火, SP3: 土, KI10: 水, HT8: 火, SP2: 火}
+yuan_luo_xi:  # 原 络 郄
+  LU: [LU9, LU7, LU6]
+  LI: [LI4, LI6, LI7]
+  ST: [ST42, ST40, ST34]
+  SP: [SP3, SP4, SP8]
+  HT: [HT7, HT5, HT6]
+  SI: [SI4, SI7, SI6]
+  BL: [BL64, BL58, BL63]
+  KI: [KI3, KI4, KI5]
+  PC: [PC7, PC6, PC4]
+  TE: [TE4, TE5, TE7]
+  GB: [GB40, GB37, GB36]
+  LR: [LR3, LR5, LR6]
+extra_luo: {CV: CV15, GV: GV1, 脾之大络: SP21}
+extra_xi: {阴跷脉: KI8, 阳跷脉: BL59, 阴维脉: KI9, 阳维脉: GB35}
+shu_mu:  # 背俞, 募
+  肺: [BL13, LU1]
+  大肠: [BL25, ST25]
+  胃: [BL21, CV12]
+  脾: [BL20, LR13]
+  心: [BL15, CV14]
+  小肠: [BL27, CV4]
+  膀胱: [BL28, CV3]
+  肾: [BL23, GB25]
+  心包: [BL14, CV17]
+  三焦: [BL22, CV5]
+  胆: [BL19, GB24]
+  肝: [BL18, LR14]
+hui: {脏: LR13, 腑: CV12, 气: CV17, 血: BL17, 筋: GB34, 脉: LU9, 骨: BL11, 髓: GB39}
+confluent_pairs: [[SP4, PC6], [SI3, BL62], [GB41, TE5], [LU7, KI6]]
+lower_he: {胃: ST36, 大肠: ST37, 小肠: ST39, 三焦: BL39, 膀胱: BL40, 胆: GB34}
+mother_child:  # channel: [same-channel mother, cross-channel mother, same-channel child, cross-channel child]
+  LU: [LU9, SP3, LU5, KI10]
+  LR: [LR8, KI10, LR2, HT8]
+combinations:  # the points, the methods they must form, and those they must not
+  - {points: [CV12, ST36], region: 胃脘, expect: [lowerhe_mu, local_distal, upper_lower]}
+  - {points: [ST37, ST25], expect: [lowerhe_mu, same_channel]}
+  - {points: [CV12, BL21], region: 胃脘, expect: [shu_mu, anterior_posterior]}
+  - {points: [BL13, LU9], expect: [shu_yuan]}
+  - {points: [ST34, CV12], expect: [xi_hui]}
+  - {points: [LU9, LI6], expect: [yuan_luo]}
+  - {points: [LI4, LU7], expect: [yuan_luo, interior_exterior]}
+  - {points: [HT7, SI7], expect: [yuan_luo]}
+  - {points: [KI3, BL58], expect: [yuan_luo]}
+  - {points: [LU9, LU7], expect: [same_channel], classical_yuan_luo: false}
+  - {points: [LI4, LR3], expect: [four_gates, upper_lower], forbid: [yuan_luo, interior_exterior]}
+  - {points: [LR3, GB34], expect: [interior_exterior]}
+  - {points: [LI4, ST44], expect: [same_name]}
+  - {points: [ST36, ST44], expect: [same_channel]}
+  - {points: [PC6, ST36], expect: [upper_lower]}
+  - {points: [SP4, PC6], expect: [confluent_pair]}
+  - {points: [SI3, BL62], expect: [confluent_pair, same_name]}
+selection:  # a presentation; points it must choose (core: among the core); points it must not
+  - {id: epigastric_nausea, text: 胃脘胀满，恶心, core: [CV12, ST36, PC6], forbid: []}
+  - {id: neck_posterior, regions: [颈项], symptoms: [项强], must: [SI3, BL62], any: [BL10, GB20], forbid: [LI4]}
+  - {id: headache_frontal, text: 前额头痛, must: [LI4], any: [GV29, GB14, ST8], forbid: [GV20, GB20]}
+  - {id: headache_temporal, text: 偏头痛，两侧头痛, any: [EX-HN5, GB8, GB20], must_any_distal: [TE5, GB41, GB43]}
+  - {id: headache_occipital, text: 后头痛, any: [BL10, GB20], must_any_distal: [SI3, BL62, BL60]}
+  - {id: headache_vertex, text: 巅顶痛, must: [GV20], must_any_distal: [LR3, PC6]}
+  - {id: low_back, text: 腰痛, any: [BL23, BL25, GV3], must: [BL40]}
+  - {id: insomnia, text: 失眠, core: [HT7], any: [SP6, PC6]}
+  - {id: lung_deficiency, organs: [肺], natures: [虚], symptoms: [咳嗽], must: [LU9], any: [BL13, LU1]}
+  - {id: liver_excess, organs: [肝], natures: [实], must: [LR2], any: [BL18, LR14, LR3]}
+  - {id: host_guest, organs: [肺, 大肠], must: [LU9, LI6]}
+  - {id: pregnancy, symptoms: [痛经], pregnant: true, forbid: [SP6, LI4, CV3, CV4, BL32, BL60, BL67, GB21]}

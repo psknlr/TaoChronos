@@ -46,6 +46,8 @@ the way the 考据 tradition answers them: from the texts, witness by witness.
 | `study usage` | 用药谱 — how was this drug prescribed through the periods? | its share of the compositions by period (Wilson intervals, trend test); decoction doses by period in 两 and grams (M (P25, P75), x̄ ± s, a Kruskal–Wallis test across periods, Spearman's ρ with the year; a box plot and a scatter with its LOESS curve), the batch doses of pills, powders and 煮散 apart; how often it is the largest dose; preparation notes; partners with lift; formulas |
 | `study properties` | 药性谱 — what did the 本草 say of these drugs, side by side? | flavours, natures, toxicity and channels (as organs), the share of works stating each and the first to state it; a formula's 原方 profile weighted by dose |
 | `study incompat` | 配伍禁忌 — who said which drugs are 反 or 畏, and which formulas still write them together? | statements of 反 / 畏 with their earliest witness and works by period; where the verses of 十八反 and 十九畏 are written; compositions holding both drugs of a pair; a formula or a list of drugs checked against the pairs |
+| `study acupoints` | 选穴配穴 — which points would the tradition choose here, and why each? | the presentation read into objectives (location, organ system, each symptom, nature); core and supplementary points, each with its purposes and rules; the combinations they form (local–distal, upper–lower, Shu–Mu, Lower He–Mu, Yuan–Luo host–guest …, and what they are not); mother–child points; technique principles; a record to fill; cautions; each rule's classical witness; the classics' indications for the findings; the modern evidence apart. `--framework`: the specific-point tables |
+| `study point` | 腧穴考 — what do the classics say of this point? | its channel, specific-point attributes, mother–child roles, standard location and cautions; the entries of the acupuncture books (phase, kind, Mu, Xi, Luo, meeting, other names, location, needling, moxibustion, prohibitions) checked against the attributes, with the witnesses that differ; the findings its indication sentences name, by work |
 | `study protocol` | 研究方案 — how would one research this question? | the question read into kinds and entities; hypotheses with prediction, test, falsification and rivals; scope, variables, methods (each a tool with its command), analysis, the figures planned (图 1 … with their form) and the tables (表 1 …: three-line tables filled with the pilot's numbers, or shells with placeholders and their statistics where the pilot did not run the step), quality, limitations, ethics, timeline; a research contract; a pilot run with its charts |
 
 Page images and OCR output (T1–T2) are read by `taochronos vision` (layout, a model's reading, comparison with the
@@ -79,6 +81,13 @@ taochronos study usage 半夏 --charts figures
 taochronos study properties 黄连 黄芩 黄柏                        # or --formula 小柴胡汤
 taochronos study incompat 甘草                                     # a drug, a formula, --herb 甘草 --herb 甘遂, or nothing: the whole rules
 taochronos study protocol "十八反之说何时形成？后世何方仍将反药同用？"  # --no-pilot: the protocol without its pilot run
+
+# 针灸: 选穴配穴 and 腧穴考 (the tradition's reasoning and the texts' record — not a diagnosis or a prescription)
+taochronos study acupoints 胃脘胀满，恶心                          # a text, or --region 胃脘 --symptom 恶心 --organ 胃 --nature 实
+taochronos study acupoints --region 颈项 --symptom 项强 --acute --side 右 --charts figures
+taochronos study acupoints --symptom 痛经 --pregnant              # the points not to be needled in pregnancy are left out
+taochronos study acupoints --framework                            # the specific-point tables and the mother and child points
+taochronos study point 太渊                                       # a code (LU9), name, alias (太泉) or pinyin
 
 # 深层发现 2.0
 taochronos study stemma 伤寒论                                     # --books <id> --books <id>+<id> · --chapter 辨太阳病
@@ -329,6 +338,60 @@ and in the browser's corpus the supplement and the core of the harvested lexicon
 All five read what the texts write, not what was done or whether it was sound: a composition counts once per work, what
 was not written down is not counted, and a 反 written in a book is a text, not a pharmacological finding — the modern
 warnings are `modern.safety`'s.
+
+## 针灸：选穴配穴与腧穴考 (acupuncture)
+
+The central principle of point selection — find where the disorder is and what it is, set a treatment principle, take
+points by their channel relations and their specific-point attributes, and combine them into a prescription whose every
+point says what it is for — is written as reviewable data in `acupuncture.yaml` ([ADR 0024](adr/0024-acupuncture-point-selection.md)):
+the fourteen channels (organ, limb, six-channel name, phase, interior–exterior and same-name partners), 181 points with
+their codes, names, the aliases a text may give them (太泉 for 太渊 under the Tang taboo, 鬲俞, 巨虚上廉, 委中央 …) and their
+standard locations (GB/T 12346—2021), the specific-point tables (Five-Shu, Yuan, the fifteen Luo, the sixteen Xi, Back-Shu,
+Front-Mu, the six Lower He-Sea, the Eight Influential and Eight Confluent points, crossing points, the Four Command
+points), 26 regions with their channels and local and distal points, 32 symptoms with the points the teaching takes and the
+words the classics write them with, the natures and courses of a pattern, and 43 rules — each with its level (classical,
+teaching, empirical, standard), its statement, its source and its **probes**, the classical sentences searched as written.
+
+* **选穴配穴 (`acupoints`).** A presentation (a text read for the names of regions, symptoms, organs, channels, natures,
+  course and side — what it inferred and what it could not read are said) becomes objectives: the location, the organ
+  system or channel, each prominent symptom, the nature.  Each rule that applies proposes points for an objective with a
+  weight — local points (以痛为输) and the back or front points of a trunk region (偶刺); distal points on a connected
+  channel (病在上者下取之) and the Four Command points; the Back-Shu (heavier for a zang), Front-Mu and Lower He-Sea (for a
+  fu), the Yuan (五藏有疾，当取之十二原); Xi points when acute (yang channels: acute pain; yin: blood); the Hui point of qi,
+  blood or the sinews; the confluent pair whose region or symptom matches; mother and child points (Nanjing 69, by the
+  phases of Nanjing 64: same channel, and the mother's or child's channel's own-phase point — Taibai for the Lung is the
+  Spleen's Earth point, not the Spleen's mother point); the Five-Shu indications of Nanjing 68 and Lingshu 44 on the
+  affected channel only; the points the teaching takes for a symptom; and, lightly, the classics' own statement that a
+  point treats the finding.  A point's score sums, over the objectives, its best reason for each; the core serves the
+  principal objective, every objective is then served once, a location gets a local and a distal point, and nothing is
+  added for its category alone.  The result names every combination the chosen points form — and flags what is no
+  Yuan–Luo pair (合谷 + 太冲, the Four Gates: an empirical, upper–lower, yin–yang pair; 太渊 + 列缺: one channel's Yuan and
+  Luo) — gives the technique principles as principles (补母泻子, 寒则留之, 热则疾之; a category never fixes the technique),
+  a record whose modality, stimulation, frequency and course are left for the practitioner, the cautions (thorax, nape,
+  eye, arteries, the umbilicus; in pregnancy the points the teaching lists and those of the lower abdomen and the
+  lumbosacral region are left out of the choice), the rules used with their earliest witness in the corpus, the points
+  the classics say treat each symptom (one per work, the earliest), and the modern evidence kept apart: what it shows of
+  which population, and that it validates no selection rule.  Every chosen point carries the record the review asks for:
+  point and attributes → condition → rationale → implementation → classical source → modern evidence.
+* **腧穴考 (`point`).** One point in the classics.  The passages of the acupuncture books naming it (and the indication
+  sentences elsewhere: 千金, 外台, 资生经) are read with every point name of the data, longest first (手三里 is not 三里), a
+  name in the chapter of another channel given to that channel's point that ends with it (「三里在曲池下二寸」 under
+  手阳明 is 手三里), across the spaces of a page break (鬲　俞) and across the end of a passage (an entry's location here,
+  its needling in the next).  **Entries** — a name at the head of a statement with its location or a prohibition and its
+  needling or moxibustion — are read for what they state: the phase (「太渊者，土也」), the kind (为俞, 之所注), the Mu, Xi,
+  Luo and meeting (「足太阴、厥阴、少阴之会」), other names (一名), the location, the depth, the retention, the cones, the
+  prohibitions (禁不可刺, 不可灸); each is checked against the point's attributes, and a witness that differs is quoted.
+  **Indications** — 「……三里主之」 (the points before 主之, a list of them included: 尺泽、曲泽主之), 「太泉主心痛」 (主, 主治,
+  治, 疗 after the name), 「胃病者……取三里」 (取, 刺, 灸 before it, where a sentence begins within forty characters) — give
+  the findings each names, by work and period.
+* On the 要籍语料 (553 witnesses), 56 of the 60 Five-Shu points have an entry stating their phase and kind; all 56 agree
+  with the data in at least one witness, and three witnesses differ — 太渊 水 in the Siku 甲乙经 against 土 in the 笈成
+  text, 涌泉 水 in one 笈成 甲乙经 against 木 in the other, 曲池 木 in the 铜人针灸经: variant readings for a person to weigh
+  (`taochronos eval acupuncture`).  The four not stated are the points whose usual name two points share (临泣, 通谷, 窍阴)
+  and are not read.
+
+What these functions give is the tradition's reasoning and the texts' record.  They make no diagnosis and prescribe
+nothing: whether and how to needle is for a qualified practitioner after examination.
 
 ## 研究方案 (research protocols)
 
@@ -962,6 +1025,7 @@ own, against 0.87 for the most similar earlier witness).
 | `domains/classics/argument.yaml` | discourse markers of reasoning by relation (lead / tail, direction), the markers that split a clause (则, 故) and their exceptions |
 | `domains/classics/clause.yaml` | the roles of a clause (condition, disease, findings, pulse, pattern, principle, contraindication, formula, composition, preparation, administration, modification, prognosis) as patterns tried in order |
 | `domains/classics/exegesis.yaml` | the concepts commentators explain the classics with (forms, group), the words of stance towards another commentator, the forms of a gloss |
+| `domains/classics/acupuncture.yaml` | 针灸: the fourteen channels, 181 points (codes, names, aliases, part, standard location, cautions), the specific-point tables, regions, symptoms (with their classical wordings), natures, courses, sides, the rules of selection and combination (level, statement, source, probes), modern evidence records, cautions |
 | `domains/classics/cruxes.yaml` | the textual cruxes (校勘疑义) harvested from the commentaries: clause, kinds, target words, proposed reading, commentators with short quotes (generated by `study cruxes --write-registry`) |
 | `<data>/corpus/study-cache/` | the entry-heading index, the citation network and transmission results, the 句读 model, the harvested formula compositions and the school comparisons, keyed by a digest of the store, the normaliser, the book records and the data files they read |
 
@@ -969,6 +1033,12 @@ own, against 0.87 for the most similar earlier witness).
 
 - Extraction is rule-based: formula lists, drug entries and properties are read with patterns and a lexicon. Groups of
   one witness (孤例) and unusual layouts need checking by hand; every output quotes what it read.
+- 针灸: the selection is the tradition's reasoning written as rules with weights chosen by hand, measured against the
+  review's tables and examples (`eval acupuncture`), not against outcomes; the regions, symptoms and their points are a
+  teaching selection that does not cover every presentation, and pattern differentiation remains the practitioner's.
+  Entries and indications are read by rules: only the points of the data are recognised, names two points share are left
+  out, list layouts the rules were not written for can run one entry into the next, and a condition before 主之 may hold
+  another point the data lacks.  The modern records are few and checked; `modern.search` reaches the rest.
 - The lexicon decides what counts as a drug: a missing name (a rare drug, a regional name) leaves a composition
   incomplete; harvested names are candidates.
 - Citations in undated notes inherit the date of the text they annotate unless they are anachronistic; the 孙星衍

@@ -428,6 +428,8 @@ export default {
   "性味归经对照": "Propiedades y canales comparados",
   "配伍禁忌": "Combinaciones incompatibles",
   "研究方案设计": "Diseño de un protocolo de investigación",
+  "选穴配穴": "Selección y combinación de puntos de acupuntura",
+  "腧穴考": "El punto de acupuntura en los clásicos",
   "医案检索": "Búsqueda de casos",
   "类案": "Casos similares",
   "医案详解": "Caso en detalle",

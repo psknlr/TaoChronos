@@ -1,0 +1,4 @@
+- book: jq
+  passages:
+    - {id: jq.1, locator: {volume: 卷下, chapter: 四总穴歌}, text: 肚腹三里留，腰背委中求，头项寻列缺，面口合谷收。}
+    - {id: jq.2, locator: {volume: 卷上, chapter: 标幽赋注}, text: 四关者五脏有六腑六腑有十二原十二原出于四关太冲合谷是也}

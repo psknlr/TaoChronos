@@ -52,6 +52,7 @@ const UNAVAILABLE = Object.fromEntries([
     "analysis.formula_evolution", "analysis.link_prediction", "analysis.lost_knowledge", "analysis.missing_sources",
     "analysis.temporal_profile", "classics.lineage"]],
   ["data", ["study.punctuate", "study.translate", "study.entities", "study.clause", "study.argument", "study.protocol", "kg.extract_claims",
+    "study.acupoints", "study.point",
     "bridge.map", "bridge.phenotype", "bridge.reverse", "modern.search", "rwd.ask", "vision.compare", "vision.layout",
     "audit.claim", "graph.evidence"]],
   ["passages", ["study.authorship", "study.cards", "study.cases", "study.chain", "study.compare", "study.dating", "study.disputes",

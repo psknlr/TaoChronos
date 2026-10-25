@@ -428,6 +428,8 @@ export default {
   "性味归经对照": "Perbandingan sifat dan meridian",
   "配伍禁忌": "Gabungan yang tidak serasi",
   "研究方案设计": "Reka bentuk protokol penyelidikan",
+  "选穴配穴": "Pemilihan dan gabungan titik akupunktur",
+  "腧穴考": "Titik akupunktur dalam teks klasik",
   "医案检索": "Carian kes",
   "类案": "Kes serupa",
   "医案详解": "Kes secara terperinci",
