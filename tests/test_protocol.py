@@ -101,3 +101,26 @@ def test_fit_arguments_says_what_the_tool_takes():
     # a schema that takes other properties (or names none) refuses none
     assert fit_arguments({"a": 1}, {"type": "object"}, tool="t")[2] is None
     assert fit_arguments({"a": 1}, {"type": "object", "properties": {}, "additionalProperties": {"type": "integer"}}, tool="t")[2] is None
+
+
+def test_coerce_leaves_out_a_parameter_not_set_written_as_null():
+    """``null`` where the schema neither requires a parameter nor takes ``null`` for it is a parameter not set, as some
+    models write each one: it is left out, and said to be — never a required one, an item of a list, or a value the
+    schema takes as ``null``; nor is the text ``"null"`` taken for it."""
+    from taochronos.protocol.schema import coerce, fit_arguments
+
+    fixed, repairs = coerce({"term": "x", "limit": None, "terms": None, "aliases": None, "year": None}, ARGS)
+    assert fixed == {"term": "x", "year": None}  # year takes null
+    assert repairs == ["$.limit: null → left out", "$.terms: null → left out", "$.aliases: null → left out"]
+    assert coerce({"term": "x", "opts": {"n": None}}, ARGS) == ({"term": "x", "opts": {}}, ["$.opts.n: null → left out"])
+    assert coerce({"term": "x", "limit": None, "share": "0.5"}, ARGS)[0] == {"term": "x", "share": 0.5}
+    assert fit_arguments({"term": "x", "unknown": None}, ARGS, tool="t") == ({"term": "x"}, ["$.unknown: null → left out"], None)
+    for given in ({"term": None}, {"term": "x", "terms": [None]}, {"term": "x", "limit": "null"}, {"term": "x", "year": None}):
+        fixed, repairs = coerce(given, ARGS)
+        assert fixed is given and not repairs, given
+    refused = fit_arguments({"term": None, "limit": None}, ARGS, tool="t")[2]
+    assert refused.startswith("invalid arguments: $.term: expected string, got NoneType")
+    # a schema that takes other properties may take null for them: theirs is left as it is
+    for schema in ({"type": "object"}, {"type": "object", "properties": {}, "additionalProperties": {"type": "integer"}},
+                   {"type": "object", "properties": {"b": {"type": "string"}}, "additionalProperties": True}):
+        assert coerce({"a": None}, schema) == ({"a": None}, []), schema

@@ -462,14 +462,18 @@ agents' model loop): a tool's name in another case or with other separators (`cl
 (`get_passage`), is that tool's (`resolve_name`); arguments whose form only is wrong are repaired (`fit_arguments`: a
 number or a boolean written as text, a whole float where an integer is expected and a number where a string is, a list
 or an object written as JSON text, a list or a value wrapped as `{"item": …}`, one value where a list is expected — a
-text without list marks, 「消渴」 and never 「消渴、口渴」 — a list of one value where that value is, and an enumerated word in
-another case), and the outcome's `repaired` says how.  A call that still does not fit is answered so that the model can
+text without list marks, 「消渴」 and never 「消渴、口渴」 — a list of one value where that value is, an enumerated word in
+another case, and `null` for a parameter the model did not set — strict function calling has some models write every
+parameter, `null` for those they leave out — which is left out where the tool neither requires it nor takes `null` for
+it: `$.k: null → left out`), and the outcome's `repaired` says how.  A required parameter written as `null` is still
+asked for, and the text `"null"` is not taken for it.  A call that still does not fit is answered so that the model can
 correct it in one step: a name no tool has with the three closest tools offered and what they take (`closest_names`),
 never one the model is not offered; a parameter the tool does not take — which the tool would ignore, so that the model
 read an answer to a question it did not ask — or a value that is not of its type with what the tool takes (`study.herb
 takes: name (string, required); items (integer)`).  The meaning of a call is never guessed, and what runs passes the
 scheduler's gauntlet as before.  The D1 backup reads calls alike (`backup/catalog.js`, compared with the Python on the
-fixture), suggesting only the tools it serves.
+fixture), suggesting only the tools it serves, and so does a server for a research run it starts in the background
+(`POST /api/research`): one whose arguments do not fit is answered at once (400, with what the tool takes), not started.
 
 The standing instructions (`taochronos.chat.prompt`) carry the harness's evidence discipline into the conversation:
 quote only what a tool returned, verbatim, with its `[[passage_id]]`; say "本语料未检得" rather than supply a text;
@@ -829,12 +833,13 @@ request indexing of the home page.
 
 `tests/test_chat.py` — the catalog (what is offered, what never is, valid names and schemas), calls by either name,
 a call as the model wrote it (a name in another form, arguments repaired, a parameter the tool does not take refused,
-the closest tools for an unknown name and never one the model is not offered), failures as results, meta-tools, the system prompt and the identity (道乃久, Tao-R1, IMPF-AI; the platform introduced as the fixed reply does, no model named or denied), trimming and citations, research runs and
+`null` for a parameter not set left out and a required one still asked for, the closest tools for an unknown name and
+never one the model is not offered), failures as results, meta-tools, the system prompt and the identity (道乃久, Tao-R1, IMPF-AI; the platform introduced as the fixed reply does, no model named or denied), trimming and citations, research runs and
 their sessions, the V2 workflow, every server endpoint, CORS and Private Network Access, the origin and host checks
 (the server's own pages on any address), the access token (refused without it, the proxy too; generated for any address
 but loopback), the proxy (streaming, allow-list, the SDK path form, `--env-keys`, `--allow-host`), background research
-(its state and times, a run stopped while it waits and while it runs, and the site's server passing on the stop and
-resume endpoints), the
+(its state and times, its arguments read as a call's — a run that does not fit refused at once, none started —, a run
+stopped while it waits and while it runs, and the site's server passing on the stop and resume endpoints), the
 site build (with the corpus store), and `home.zip` carrying the alias layer (its two built files, no file or record of a local
 list, the directory under 150 KB deflated).  `tests/test_chat_jobs.py` — background research runs: one at a time, first
 come first served, each saying its place; one asked for directly keeping the next waiting first in line; a run stopped

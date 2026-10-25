@@ -41,6 +41,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlsplit
 
+from . import InvalidArguments
 from .providers import key_env_for, proxy_hosts, web_providers
 
 PAGES_ORIGIN = "https://chat.impf.ai"  # the published client (GitHub Pages under IMPF-AI's domain)
@@ -233,13 +234,13 @@ class Handler(BaseHTTPRequestHandler):
                 job, _, act = path[len("/api/research/"):].rpartition("/")
                 return self._json(rt.cancel_research(job) if act == "cancel" else rt.resume_research(job))
             if path == "/api/research":
-                args = dict(data.get("arguments") or data)
-                question = str(args.pop("question", "") or "").strip()
-                if not question:
-                    return self._json({"error": "a research run needs a question"}, 400)
-                keep = ("focus_terms", "tracks", "max_rounds", "forbidden_assumptions", "holdout_after", "books")
-                job = rt.start_research(question, **{k: args[k] for k in keep if args.get(k) not in (None, "", [])})
-                return self._json({"job": job})
+                # the model's arguments, read as its call of the tool is read (a list for a list, null for a field not set):
+                # a run that would fail later, or ignore what it was asked, is answered at once with what the tool takes
+                try:
+                    fields = rt.research_arguments((data.get("arguments") or data) if isinstance(data, dict) else data)
+                except InvalidArguments as exc:
+                    return self._json({"error": str(exc)}, 400)
+                return self._json({"job": rt.start_research(str(fields.pop("question")).strip(), **fields)})
         except Exception as exc:
             return self._json({"error": f"{type(exc).__name__}: {exc}"}, 500)
         return self._json({"error": f"no such endpoint {path}"}, 404)

@@ -89,6 +89,28 @@ def test_a_parameter_the_tool_does_not_take_is_refused_with_what_it_takes(rt):
     assert not rt.call("taochronos_call", {"name": "study.herb", "args": {"name": "黄连"}})["ok"]
 
 
+def test_a_parameter_written_as_null_is_one_the_model_did_not_set(rt):
+    """Some models write every parameter they do not set as ``null`` (strict function calling has them write each one):
+    the call runs as it would without them, and says so — for the mesh, the meta-tools and the engine alike; a required
+    parameter written as ``null`` is still asked for."""
+    unset = {"k": None, "after": None, "before": None, "routes": None, "books": None, "aliases": None}
+    out = rt.call("classics.search", {"query": "桂枝汤", **unset})
+    assert out["ok"] and out["repaired"] == [f"$.{k}: null → left out" for k in unset]
+    plain = rt.call("classics.search", {"query": "桂枝汤"})
+    assert [h["passage_id"] for h in out["result"]["hits"]] == [h["passage_id"] for h in plain["result"]["hits"]]
+    via = rt.call("taochronos_call", {"tool": "study.herb", "arguments": {"name": "黄连", "items": None}})
+    assert via["ok"] and via["tool"] == "study.herb" and via["repaired"] == ["$.items: null → left out"]
+    meta = rt.call("taochronos_catalog", {"family": "study", "query": None})
+    assert meta["ok"] and meta["repaired"] == ["$.query: null → left out"] and meta["result"]["matched"]
+    assert rt.call("taochronos_call", {"tool": "taochronos_catalog", "arguments": None})["ok"]
+    # a parameter the tool does not have, written as null, asks for nothing: left out too
+    assert rt.call("study.herb", {"name": "黄连", "surface": None})["repaired"] == ["$.surface: null → left out"]
+    missing = rt.call("study.herb", {"name": None, "items": None})
+    assert not missing["ok"] and missing["error"] == ("invalid arguments: $.name: expected string, got NoneType · study.herb "
+                                                      "takes: name (string, required); items (integer)")
+    assert not rt.call("taochronos_session", {"session_id": None})["ok"]
+
+
 def test_a_tool_named_in_another_form_is_that_tool_and_an_unknown_one_is_answered_with_the_closest(rt):
     for written in ("get_passage", "study__get_passage", "get_classics__get_passage", "Classics.Get_Passage"):
         out = rt.call(written, {"passage_id": "shanghanlun.c013"})
@@ -365,6 +387,33 @@ def test_research_runs_in_the_background_and_is_polled(server):
     # its state, how long it waited and ran, what its session did
     assert [st["state"], st["position"], st["heartbeat_s"], st["session"]] == ["completed", None, None, st["outcome"]["result"]["session_id"]]
     assert st["queued_s"] >= 0 and st["run_s"] > 0 and st["progress"]["events"] > 0 and st["progress"]["hypotheses"]
+
+
+def test_a_research_run_on_the_server_reads_its_arguments_as_a_call_does(rt, server):
+    """POST /api/research reads the model's arguments as its call of taochronos_research is read (ChatRuntime.call): a
+    run whose arguments do not fit is not started — it is answered at once, with what the tool takes, rather than run
+    without what it was asked (a parameter it does not have) or fail as it starts (a value not of its type) — and one
+    whose form only is wrong runs as asked: one term for a list of them, null for a field not set."""
+    from taochronos.chat import InvalidArguments
+
+    given = {"question": "消渴何以为病？", "focus_terms": "消渴", "max_rounds": "1", "tracks": None, "books": [], "holdout_after": None}
+    assert rt.research_arguments(given) == {"question": "消渴何以为病？", "focus_terms": ["消渴"], "max_rounds": 1}
+    assert rt.research_arguments({"arguments": None, "question": "消渴"}) == {"question": "消渴"}
+    jobs = len(rt.jobs.records)
+    for args, needle in [({"question": "消渴", "focus_terms": "消渴、口渴"}, "$.focus_terms: expected array, got str"),
+                         ({"question": "消渴", "depth": "deep"}, "$: unknown parameter 'depth'"),
+                         ({"question": "消渴", "max_rounds": "two"}, "$.max_rounds: expected integer, got str"),
+                         ({"focus_terms": ["消渴"]}, "$: missing required property 'question'"),
+                         ({"question": None}, "$.question: expected string, got NoneType"),
+                         (["消渴"], "$: expected object, got list")]:
+        with pytest.raises(InvalidArguments, match=re.escape(needle)):
+            rt.research_arguments(args)
+        resp, raw = request(server, "POST", "/api/research", json.dumps(args).encode())
+        error = json.loads(raw)["error"]
+        assert resp.status == 400 and needle in error and "taochronos_research takes: question (string, required)" in error, error
+    resp, raw = request(server, "POST", "/api/research", {"question": "  "})
+    assert resp.status == 400 and json.loads(raw)["error"] == "a research run needs a question"
+    assert len(rt.jobs.records) == jobs  # none of them was started
 
 
 def test_a_research_run_on_the_server_can_be_stopped(server):
