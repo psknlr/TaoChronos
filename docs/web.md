@@ -462,14 +462,18 @@ agents' model loop): a tool's name in another case or with other separators (`cl
 (`get_passage`), is that tool's (`resolve_name`); arguments whose form only is wrong are repaired (`fit_arguments`: a
 number or a boolean written as text, a whole float where an integer is expected and a number where a string is, a list
 or an object written as JSON text, a list or a value wrapped as `{"item": …}`, one value where a list is expected — a
-text without list marks, 「消渴」 and never 「消渴、口渴」 — a list of one value where that value is, and an enumerated word in
-another case), and the outcome's `repaired` says how.  A call that still does not fit is answered so that the model can
+text without list marks, 「消渴」 and never 「消渴、口渴」 — a list of one value where that value is, an enumerated word in
+another case, and `null` for a parameter the model did not set — strict function calling has some models write every
+parameter, `null` for those they leave out — which is left out where the tool neither requires it nor takes `null` for
+it: `$.k: null → left out`), and the outcome's `repaired` says how.  A required parameter written as `null` is still
+asked for, and the text `"null"` is not taken for it.  A call that still does not fit is answered so that the model can
 correct it in one step: a name no tool has with the three closest tools offered and what they take (`closest_names`),
 never one the model is not offered; a parameter the tool does not take — which the tool would ignore, so that the model
 read an answer to a question it did not ask — or a value that is not of its type with what the tool takes (`study.herb
 takes: name (string, required); items (integer)`).  The meaning of a call is never guessed, and what runs passes the
 scheduler's gauntlet as before.  The D1 backup reads calls alike (`backup/catalog.js`, compared with the Python on the
-fixture), suggesting only the tools it serves.
+fixture), suggesting only the tools it serves, and so does a server for a research run it starts in the background
+(`POST /api/research`): one whose arguments do not fit is answered at once (400, with what the tool takes), not started.
 
 The standing instructions (`taochronos.chat.prompt`) carry the harness's evidence discipline into the conversation:
 quote only what a tool returned, verbatim, with its `[[passage_id]]`; say "本语料未检得" rather than supply a text;
@@ -728,16 +732,18 @@ send it in clear to the provider, where any visitor can read it — so the relay
   settings or an address (`web/js/records.js`, `relay/src/relay.js` keeps only those fields).  The timings say where the
   turn's time went, each in milliseconds from its start: each model request's — sent, its reply begun, its first part,
   its answer's first text, its end, how it finished or why it failed (a kind or a status, never the service's words), its
-  tokens —, each call's — begun, waiting for its runtime or its turn, how long the runtime says it took, how it ended —,
-  what happened between them (an answer written on, 不再等待, the turn's time up, the self-check's rewrite asked for or
-  taken out, a server given up for the browser, the turn taken up again by 继续作答 — each time it runs it sends its own
-  record, under the same id), and
-  how long the page was hidden or did not run at all (`web/js/records.js`, `timings`; the fields in
+  tokens, how long the page was hidden or did not run while it was asked (a reply that broke off while no one could see
+  the page may have been cut by the browser, not by the service) —, each call's — begun, waiting for its runtime or its
+  turn, how long the runtime says it took, how it ended —, what happened between them (an answer written on, 不再等待,
+  the turn's time up, the self-check's rewrite asked for or taken out, a server given up for the browser, the turn taken
+  up again by 继续作答 — each time it runs it sends its own record, under the same id), and how long the page was hidden
+  or did not run at all (`web/js/records.js`, `timings`; the fields in
   [`data/chat-logs/README.md`](../data/chat-logs/README.md)).  The output limit a reply was asked within is not among
   them, since it comes from the visitor's settings: a reply cut there shows as `finish: length`, with the tokens it
   wrote.  `taochronos records` sums the records up, in counts and times only: the time from a turn's last tool result to
-  its answer's first text and what it went on, how often a model request broke off and the turn still answered whole,
-  how many answers came whole, with nothing flagged ✕, and verified — a turn taken up again counted once, as it ended,
+  its answer's first text and what it went on, how often a model request broke off and the turn still answered whole
+  (and how many of the requests that broke off were asked while the page was hidden or asleep), how many answers came
+  whole, with nothing flagged ✕, and verified — a turn taken up again counted once, as it ended,
   and how many were.  The relay holds the records
   until `.github/workflows/chat-logs.yml` collects them, every hour, into `data/chat-logs/YYYY/MM/DD.jsonl` in this private
   repository, and deletes them once the commit is pushed (`relay/collect.py`).  The records never enter the published
@@ -829,12 +835,13 @@ request indexing of the home page.
 
 `tests/test_chat.py` — the catalog (what is offered, what never is, valid names and schemas), calls by either name,
 a call as the model wrote it (a name in another form, arguments repaired, a parameter the tool does not take refused,
-the closest tools for an unknown name and never one the model is not offered), failures as results, meta-tools, the system prompt and the identity (道乃久, Tao-R1, IMPF-AI; the platform introduced as the fixed reply does, no model named or denied), trimming and citations, research runs and
+`null` for a parameter not set left out and a required one still asked for, the closest tools for an unknown name and
+never one the model is not offered), failures as results, meta-tools, the system prompt and the identity (道乃久, Tao-R1, IMPF-AI; the platform introduced as the fixed reply does, no model named or denied), trimming and citations, research runs and
 their sessions, the V2 workflow, every server endpoint, CORS and Private Network Access, the origin and host checks
 (the server's own pages on any address), the access token (refused without it, the proxy too; generated for any address
 but loopback), the proxy (streaming, allow-list, the SDK path form, `--env-keys`, `--allow-host`), background research
-(its state and times, a run stopped while it waits and while it runs, and the site's server passing on the stop and
-resume endpoints), the
+(its state and times, its arguments read as a call's — a run that does not fit refused at once, none started —, a run
+stopped while it waits and while it runs, and the site's server passing on the stop and resume endpoints), the
 site build (with the corpus store), and `home.zip` carrying the alias layer (its two built files, no file or record of a local
 list, the directory under 150 KB deflated).  `tests/test_chat_jobs.py` — background research runs: one at a time, first
 come first served, each saying its place; one asked for directly keeping the next waiting first in line; a run stopped
@@ -882,7 +889,7 @@ a research run's step from the server's view of it (queued with its place, runni
 progress long in coming, stopping, awaiting recovery, an earlier server's words), and a turn's instructions asked for
 before each request, the browser's with a note once it takes over from the site's server; where a turn's time goes — each model request's times and
 end (a stall, a stop, a refusal kept as its status and not its words), each call's waiting and running, a cut answer
-written on, the tools' end, the page hidden and asleep; history rules, dangling tool calls, citation pairing, which
+written on, the tools' end, the page hidden and asleep (in the turn, and while each model request was asked); history rules, dangling tool calls, citation pairing, which
 questions get the fixed reply and which go to the model; the alias badges — labels, the names merged, the asked name found
 for a hit, the flags' words, every card of a search marked with its badges or with none; the charts' checks, CSV, Markdown tables, colours and axes; a box
 plot's numbers, a forest plot's log axis, a tree's checks; CRC-32, PackBits, a TIFF's directory, a PNG's pHYs and a ZIP;

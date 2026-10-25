@@ -26,15 +26,16 @@ export function setConsent(logs) {
 
 /** Where a turn's time went, as its record carries it, each time in milliseconds from the turn's start (`started`): its
  * model requests and tool calls (agent.js, runTurn's trace), what happened between them, the runtime it began on when
- * it ended on another (`was`; `now`: the one it ended on), and how long the page was hidden or did not run.  Never a
- * request's or a result's content: a call's arguments are kept as the records always kept them, shortened. */
+ * it ended on another (`was`; `now`: the one it ended on), and how long the page was hidden or did not run — in the
+ * turn, and while each model request was asked (`hidden`, `asleep`: milliseconds, not times).  Never a request's or a
+ * result's content: a call's arguments are kept as the records always kept them, shortened. */
 export function timings({ started, trace, was, now, hidden, asleep }) {
   const at = (t) => (Number.isFinite(t) ? Math.max(0, Math.round(t - started)) : undefined);
   return {
     requests: trace.requests.slice(0, 48).map((q) => ({
       round: q.round, attempt: q.attempt, sent: at(q.sent), open: at(q.open), first: at(q.first), text: at(q.text),
       last: at(q.last), end: at(q.end), finish: q.finish, failed: q.failed, expired: q.expired, status: q.status,
-      input: q.input, output: q.output,
+      input: q.input, output: q.output, hidden: q.hidden, asleep: q.asleep,
     })),
     tools: trace.tools.slice(0, 40).map((c) => ({
       name: c.name, ok: c.status === "ok", ms: c.end ? c.end - c.start : undefined, args: truncate(JSON.stringify(c.args ?? {}), 300),

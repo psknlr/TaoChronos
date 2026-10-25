@@ -5,9 +5,10 @@ the single source of truth; other runtimes (a TypeScript kernel, a web UI, an
 MCP server) consume ``taochronos schema`` output.
 
 The arguments a model writes for a tool are read at the model's side with three more functions: :func:`coerce`
-repairs a value whose form differs from the schema's (a number written as text, a list wrapped as ``{"item": …}``),
-never its meaning; :func:`signature` says what a tool takes; :func:`fit_arguments` puts them together, and refuses a
-parameter the tool does not have, which would otherwise be ignored without a word.
+repairs a value whose form differs from the schema's (a number written as text, a list wrapped as ``{"item": …}``, a
+parameter not set written as ``null``), never its meaning; :func:`signature` says what a tool takes;
+:func:`fit_arguments` puts them together, and refuses a parameter the tool does not have, which would otherwise be
+ignored without a word.
 """
 
 from __future__ import annotations
@@ -275,13 +276,31 @@ def _enum(value: Any, schema: dict[str, Any], path: str, repairs: list[str]) -> 
     return same[0]
 
 
+def _unset(key: str, schema: dict[str, Any], root: dict[str, Any]) -> bool:
+    """Is ``null`` for ``key`` of an object a parameter left out, as some models write every parameter they do not set?
+    So it is where the schema does not require ``key`` and either names it without taking ``null`` for it, or names its
+    properties without it and takes no others (:func:`unknown_properties`)."""
+    if key in (schema.get("required") or []):
+        return False
+    props = schema.get("properties")
+    if isinstance(props, dict) and key in props:
+        return isinstance(props[key], dict) and bool(validate(None, props[key], root=root))
+    return isinstance(props, dict) and schema.get("additionalProperties") in (None, False)
+
+
 def _inner(value: Any, schema: dict[str, Any], root: dict[str, Any], path: str, repairs: list[str]) -> Any:
-    """``value`` with its properties or items coerced (the same object when none changes)."""
+    """``value`` with its properties or items coerced (the same object when none changes); of an object, a parameter
+    written as ``null`` where that means it was not set (:func:`_unset`) is left out."""
     if isinstance(value, dict):
         props = schema.get("properties") or {}
         extra = schema.get("additionalProperties")
         out = None
         for key, item in value.items():
+            if item is None and _unset(key, schema, root):
+                out = dict(value) if out is None else out
+                del out[key]
+                repairs.append(f"{path}.{key}: null → left out")
+                continue
             sub = props[key] if key in props else extra if isinstance(extra, dict) else None
             if sub is None:
                 continue
@@ -339,9 +358,11 @@ def coerce(instance: Any, schema: dict[str, Any], *, root: dict[str, Any] | None
     (``$.limit: "40" → 40``).  The meaning is never changed: repaired are a number or a boolean written as text, a whole
     float where an integer is expected and a number where a string is, a list or an object written as JSON text, a list
     or a value wrapped as ``{"item": …}``, one value where a list of them is expected (a text without list marks:
-    「消渴」, not 「消渴、口渴」), a list of one value where that value is, an enumerated word in another case.  A repair is
-    made only where it makes that value valid; whatever else is wrong is left as it is (the same object when nothing
-    changes), for :func:`validate` to report."""
+    「消渴」, not 「消渴、口渴」), a list of one value where that value is, an enumerated word in another case; and a parameter
+    written as ``null`` that the schema neither requires nor takes as ``null`` is left out (``$.limit: null → left
+    out``), as a model writes one it does not set — a required one stays.  A repair is made only where it makes that
+    value valid; whatever else is wrong is left as it is (the same object when nothing changes), for :func:`validate` to
+    report."""
     repairs: list[str] = []
     return _coerce(instance, schema, root or schema, "$", repairs), repairs
 

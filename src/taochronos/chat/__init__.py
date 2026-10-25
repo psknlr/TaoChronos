@@ -48,6 +48,8 @@ CORPUS_LABELS = {"demo": "演示语料", "canon": "要籍语料", "full": "全�
 CHAT_PERMISSIONS = frozenset({"classics:read", "kg:read", "analysis:run", "literature:read", "validation:run", "mydata:read"})
 ENGINE_NAMES = {t["name"] for t in ENGINE_TOOLS} | {t["name"] for t in META_TOOLS}
 MAX_ROUNDS = 6
+# what a research run takes (taochronos_research), as research() and start_research() take it
+RESEARCH_FIELDS = ("question", "focus_terms", "tracks", "max_rounds", "forbidden_assumptions", "holdout_after", "books")
 
 
 def default_profile(home: str | Path | None = None, data_dir: str | Path | None = None) -> str:
@@ -237,8 +239,7 @@ class ChatRuntime:
         if name == "taochronos_catalog":
             return catalog_view(self.h.tools, family=a.get("family"), query=a.get("query"), code_mode=self.code_mode)
         if name == "taochronos_research":
-            return self.research(**{k: a[k] for k in ("question", "focus_terms", "tracks", "max_rounds", "forbidden_assumptions",
-                                                      "holdout_after", "books") if a.get(k) not in (None, "", [])})
+            return self.research(**{k: a[k] for k in RESEARCH_FIELDS if a.get(k) not in (None, "", [])})
         if name == "taochronos_session":
             return self.session_view(a["session_id"], what=a.get("what", "summary"), hypothesis=a.get("hypothesis"),
                                      section=a.get("section"))
@@ -323,6 +324,19 @@ class ChatRuntime:
     def start_research(self, question: str, **fields: Any) -> str:
         """The same run in the background (a server): queued, and a job id to follow with :meth:`job` (chat/jobs.py)."""
         return self.jobs.start(question, fields)
+
+    def research_arguments(self, arguments: Any) -> dict[str, Any]:
+        """A model's arguments for a research run a server starts in the background (``POST /api/research``), read as its
+        call of ``taochronos_research`` is read here (:meth:`call`): their form repaired, and :class:`InvalidArguments`
+        where they still do not fit, with what the tool takes.  Returns the question and the fields given, as
+        :meth:`start_research` takes them."""
+        fitted, _, problem = fit_arguments(arguments if arguments is not None else {}, PARAMETERS["taochronos_research"],
+                                           tool="taochronos_research")
+        if problem:
+            raise InvalidArguments(problem)
+        if not str(fitted.get("question") or "").strip():
+            raise InvalidArguments("a research run needs a question")
+        return {k: fitted[k] for k in RESEARCH_FIELDS if fitted.get(k) not in (None, "", [])}
 
     def job(self, job_id: str) -> dict[str, Any]:
         """A background run: its state, its place in the queue, its times, heartbeat and progress, and its outcome."""

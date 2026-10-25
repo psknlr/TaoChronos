@@ -94,7 +94,8 @@ def test_the_summary():
     assert out["answer_after_tools"]["reply"]["p50"] == 0.6 and out["answer_after_tools"]["thinking"]["p50"] == 1.4
     # of the two turns a model request broke off in, one still answered whole; the visitor's daily limit is not a break
     assert out["recovery"] == {"n": 1, "of": 2, "share": 0.5, "failed": {
-        "overloaded_error 529": 3, "timeout:silence": 1, "network": 1, "daily_limit 429": 1}}
+        "overloaded_error 529": 3, "timeout:silence": 1, "network": 1, "daily_limit 429": 1},
+        "unseen": {"n": 0, "of": 0, "share": None}}  # no request timed by the page's own clock
     assert out["completion"] == {
         "whole": {"n": 6, "of": 9, "share": 0.667}, "whole_unflagged": {"n": 5, "of": 9, "share": 0.556},
         "whole_verified": {"n": 3, "of": 9, "share": 0.333}, "whole_uncited": {"n": 1, "of": 9, "share": 0.111}}
@@ -106,6 +107,23 @@ def test_the_summary():
     assert summary([timed(), old()], until="2026-10-21")["turns"] == 1
 
 
+def test_the_requests_that_broke_off_while_the_page_was_not_seen():
+    """A page that times each model request with its own clock says how long it was hidden, or not running, while each was
+    asked: of the requests that broke off, those asked while no one could see the page may have been cut by the browser."""
+    behind = timed(requests=[
+        {"round": 1, "attempt": 1, "sent": 10, "open": 50, "first": 60, "last": 9000, "end": 9010, "failed": "network",
+         "hidden": 4000, "asleep": 0},
+        {"round": 1, "attempt": 2, "sent": 9100, "end": 9200, "failed": "network", "hidden": 0, "asleep": 0},
+        {"round": 1, "attempt": 3, "sent": 9500, "end": 69500, "failed": "timeout", "expired": "firstReply", "hidden": 0,
+         "asleep": 90000},
+        {"round": 1, "attempt": 4, "sent": 70000, "open": 70100, "first": 70110, "text": 70200, "end": 70900, "finish": "stop",
+         "hidden": 0, "asleep": 0}], tools=[])
+    refused = timed(requests=[{"round": 1, "attempt": 1, "sent": 10, "end": 20, "failed": "daily_limit", "status": 429,
+                               "hidden": 5, "asleep": 0}], tools=[])
+    out = summary([behind, refused, timed()])
+    assert out["recovery"]["unseen"] == {"n": 2, "of": 3, "share": 0.667}  # a refusal is no break
+
+
 def test_a_turn_taken_up_again_counts_once_as_it_ended():
     # the turn's answer could not be had (the connection, three times), and the user took it up again (继续作答)
     first = timed(id="m-again", status="error", error="无法连接", answer="", requests=[
@@ -115,7 +133,7 @@ def test_a_turn_taken_up_again_counts_once_as_it_ended():
     out = summary([first, again, timed()])
     assert (out["turns"], out["timed"], out["resumed"]) == (2, 2, {"n": 1, "whole": 1})
     assert out["completion"]["whole"]["n"] == 2  # as it ended: whole
-    assert out["recovery"] == {"n": 1, "of": 1, "share": 1.0, "failed": {"network": 3}}
+    assert out["recovery"] == {"n": 1, "of": 1, "share": 1.0, "failed": {"network": 3}, "unseen": {"n": 0, "of": 0, "share": None}}
     # each run is timed from its own start: no time from a tool result to an answer across them (the user's pause between
     # them is no wait of the page's), and the model's time in both adds up (1.5 s and 1.5 s)
     assert out["answer_after_tools"]["total"]["n"] == 1 and out["time"]["model"]["p50"] == 3.0

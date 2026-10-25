@@ -1363,6 +1363,8 @@ assert.equal(done.wire.at(-1).content, "答");
 assert.deepEqual(trace.requests.map((q) => [q.round, q.attempt, q.finish, q.failed, q.expired]),
   [[1, 1, "tool_calls", undefined, undefined], [2, 1, undefined, "timeout", "silence"], [2, 2, "stop", undefined, undefined]]);
 for (const q of trace.requests) assert.ok(q.sent <= q.open && q.open <= q.first && q.first <= q.last && q.last <= q.end, JSON.stringify(q));
+// and how long the page was hidden, or did not run, while each was asked (no document here: never)
+assert.deepEqual(trace.requests.map((q) => [q.hidden, q.asleep]), [[0, 0], [0, 0], [0, 0]]);
 const [ask1, ask2, ask3] = trace.requests;
 assert.ok(ask1.text === undefined && ask2.text >= ask2.first && ask3.text >= ask3.first); // a round of calls has no answer text
 assert.ok(ask2.end - ask2.last >= 140); // the silence that ended it
@@ -1377,8 +1379,8 @@ assert.deepEqual(trace.events, []);
 const started = ask1.sent - 5;
 const rec = timings({ started, trace, was: { runtime: "server", corpus: "full" }, now: { runtime: "browser", corpus: "canon" },
   hidden: 12.4, asleep: 0 });
-assert.deepEqual(rec.requests.map((q) => [q.round, q.attempt, q.sent, q.end, q.finish, q.failed, q.expired]),
-  trace.requests.map((q) => [q.round, q.attempt, q.sent - started, q.end - started, q.finish, q.failed, q.expired]));
+assert.deepEqual(rec.requests.map((q) => [q.round, q.attempt, q.sent, q.end, q.finish, q.failed, q.expired, q.hidden, q.asleep]),
+  trace.requests.map((q) => [q.round, q.attempt, q.sent - started, q.end - started, q.finish, q.failed, q.expired, 0, 0]));
 assert.equal(rec.requests[0].sent, 5);
 assert.deepEqual(rec.tools.map((c) => [c.name, c.ok, c.status, c.id, c.round, c.args, c.at, c.ms, c.compute]),
   trace.tools.map((c) => [c.name, true, "ok", c.id, 1, JSON.stringify(c.args), c.start - started, c.end - c.start, c.compute]));
@@ -1476,6 +1478,16 @@ assert.ok(asleep >= 34000 && asleep <= 38000, asleep);
 assert.equal(listener, null); // it stopped listening
 delete globalThis.document;
 assert.deepEqual(pageClock().stop(), { hidden: 0, asleep: 0 }); // no document: never hidden
+// a model request asked while the page was hidden says how long, in its own times: one that broke off then may have been
+// cut by the browser (a tab in the background, a phone asleep), not by the service
+globalThis.document = { visibilityState: "hidden", addEventListener: () => {}, removeEventListener: () => {} };
+trace = {};
+n = 0;
+globalThis.fetch = async () => { await sleep(150); return streamed(sse(++n === 1 ? delta("半") : delta("答", "stop"))); };
+await turn({ trace });
+delete globalThis.document;
+assert.deepEqual(trace.requests.map((q) => [q.failed, q.finish]), [["unfinished", undefined], [undefined, "stop"]]);
+assert.ok(trace.requests.every((q) => q.hidden >= 140 && q.hidden <= q.end - q.sent + 5 && q.asleep === 0), JSON.stringify(trace.requests));
 console.log("ok");
 """
 

@@ -196,12 +196,17 @@ CALL_ARGUMENTS: list[Any] = [
     {"term": "x", "opts": '{"n": 1, "m": 2}'}, {"term": "x", "year": "1368"}, {"term": "x", "year": None},
     {"term": "x", "whole": [" false "]}, {"term": "x", "aliases": "  AUTO "}, {"term": ["消渴"]}, {"term": {"item": "消渴"}},
     {"term": 1368}, {"term": 0.5}, {"term": "长" * 70}, {"term": ["长" * 70]},
+    # a parameter not set, written as null: left out (where the schema does not take null for it, nor require it)
+    {"term": "x", "limit": None}, {"term": "x", "terms": None, "whole": None, "aliases": None, "year": None},
+    {"term": "x", "unknown": None}, {"term": "x", "opts": {"n": None}}, {"term": "x", "opts": '{"n": null}'},
+    {"term": "x", "limit": None, "share": "0.5"},
     # what only a guess would repair is left as it is, for validation to report
     {"term": "x", "limit": "forty"}, {"term": "x", "limit": 4.5}, {"term": "x", "limit": True}, {"term": "x", "terms": "脱疽、脱骨疽"},
     {"term": "x", "terms": "脱疽,脱骨疽"}, {"term": "x", "terms": ""}, {"term": "x", "whole": "yes"}, {"term": "x", "aliases": "none"},
     {"term": "x", "aliases": "it's"}, {"term": "x", "aliases": "a\"b'c\n\u3000\u00a0"}, {"term": ["消渴", "口渴"]}, {"term": None},
     {"term": "x", "limit": "1e400"}, {"term": "x", "limit": "Infinity"}, {"term": "x", "opts": "{oops"},
-    {"term": "x", "year": "null"}, {"term": "x", "unknown": "40"}, {"name": "x"},
+    {"term": "x", "year": "null"}, {"term": "x", "limit": "null"}, {"term": "x", "unknown": "40"}, {"name": "x"},
+    {"term": None, "limit": None}, {"term": "x", "terms": [None]}, {"name": None},
     # not an object at all
     ["x"], "x", 3, True, 1.5,
 ]

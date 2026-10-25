@@ -289,13 +289,29 @@ function enumerated(value, schema, path, repairs) {
   return same[0];
 }
 
-/** `value` with its properties or items coerced (the same object when none changes). */
+/** Is null for `key` of an object a parameter left out, as some models write every parameter they do not set?  So it is
+ * where the schema does not require `key` and either names it without taking null for it, or names its properties
+ * without it and takes no others (unknownProperties). */
+function unset(key, schema) {
+  if ((schema.required || []).includes(key)) return false;
+  const props = schema.properties;
+  if (TYPES.object(props) && Object.hasOwn(props, key)) return TYPES.object(props[key]) && validate(null, props[key]).length > 0;
+  return TYPES.object(props) && [undefined, null, false].includes(schema.additionalProperties);
+}
+
+/** `value` with its properties or items coerced (the same object when none changes); of an object, a parameter written
+ * as null where that means it was not set (unset) is left out. */
 function within(value, schema, path, repairs) {
   if (TYPES.object(value)) {
     const props = schema.properties || {};
     const extra = schema.additionalProperties;
     let out = null;
     for (const [key, item] of Object.entries(value)) {
+      if (item === null && unset(key, schema)) {
+        delete (out ||= { ...value })[key];
+        repairs.push(`${path}.${key}: null → left out`);
+        continue;
+      }
       const sub = Object.hasOwn(props, key) ? props[key] : TYPES.object(extra) ? extra : null;
       if (sub === null) continue;
       const fixed = coerceAt(item, sub, `${path}.${key}`, repairs);
