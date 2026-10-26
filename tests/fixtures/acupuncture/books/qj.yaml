@@ -1,0 +1,5 @@
+- book: qj
+  passages:
+    - {id: qj.1, locator: {volume: 卷三十, chapter: 心腹第二}, text: 太泉主心痛，肺胀，胃气上逆。}
+    - {id: qj.2, locator: {volume: 卷三十, chapter: 心腹第二}, text: 中管主腹胀不通，呕逆。}
+    - {id: qj.3, locator: {volume: 卷二十九, chapter: 灸例第六}, text: 有阿是之法，言人有病痛，即令捏其上，若里当其处，不问孔穴，即得便快成痛处，即云阿是。}

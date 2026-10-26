@@ -108,6 +108,7 @@ and decide.
 | **Commentators and schools** | the commentaries on a clause aligned and compared (照录, 承袭, 同解, 增益, 异解, 驳, 从); disputes (who rejects whom, on what, and who reports it); schools (the words, drugs, formulas and citations a school uses more than the other works of its time); names (a drug's names, the change of its preferred name, names the lexicon lacks) | `study commentaries` · `study disputes` · `study schools` · `study names` |
 | **Historians of formulas, materia medica and medicine** | formula provenance (original and current compositions, 加减, 同名异方, 同方异名, dose ratios, doses in the measures of their period, indications, verses); drug-property histories (flavour, toxicity, 归经, 升降浮沉 — first statements and changes); term histories (shares by period with intervals, trend test, first attestations, collocates, senses); drug pairs (NPMI, Fisher with Benjamini–Hochberg, groups of drugs) and the formula–finding network | `study formula` · `study herb` · `study term` · `study pairs` · `study network` |
 | **Herb and formula research** | formulas compared drug by drug (original or current witness: drugs, doses, ratios, dose-weighted overlap; 同方 / 同药异量 / 加减化裁 / 异方); the formulas made from a base (加味, 减味, 加减, 同药异量, 合方); a drug's use through the periods (share of compositions with a trend test, decoction doses by period, pills, powders and 煮散 apart, the largest-dose clue, preparation, partners); the 本草's natures, flavours and channels of several drugs side by side; 十八反 and 十九畏 in the texts (statements, verses, formulas that still write a pair) | `study compare` · `study family` · `study usage` · `study properties` · `study incompat` |
+| **Acupuncture** | 选穴配穴: points chosen as the tradition reasons from a presentation (region, symptoms, organ system or channel, nature, course, side) — core and supplementary points each with its purposes, the combinations they form (local–distal, upper–lower, Shu–Mu, Lower He–Mu, Yuan–Luo host–guest … and what they are not: 合谷 + 太冲 is no Yuan–Luo pair), mother–child points (Nanjing 64, 69), technique principles, a record to fill, cautions (pregnancy leaves points out), every rule with its earliest witness in the corpus, the classics' indications for the findings, the modern evidence apart; 腧穴考: a point's entries in the acupuncture books (phase, kind, location, needling, prohibitions) checked against its attributes — the witnesses that differ quoted — and the findings its indication sentences name. The tradition's reasoning and the texts' record, not a prescription | `study acupoints` · `study point` |
 | **Research design** | a question turned into a protocol: kinds and objects, falsifiable hypotheses (prediction, test, refutation, rivals), scope and the works to read first, operational variables, methods (each a tool with a command to rerun it), analysis, figures, quality, limitations, ethics, timeline and a research contract — with a pilot run that says whether the corpus holds enough | `study protocol` |
 | **Scientific charts** | results carry chart specifications (lines with interval bands, grouped bars, horizontal bars, stacks, heatmaps, Tukey box plots, forest plots, scatters with LOESS, cluster dendrograms, timelines, networks): drawn on the page with hover and keyboard read-outs and a table view; exported in a journal's style (85 or 175 mm wide, SVG, PNG and TIFF at 300 or 600 dpi, numbered with a caption) and several as one figure in panels; written by the CLI as journal SVG, CSV and JSON | `--charts DIR` · [web](docs/web.md#图表--charts-and-their-downloads) |
 | **Three-line tables** | results carry numbered three-line tables: grouped heads; n (%), M (P25, P75), x̄ ± s, 95% CI, OR (95% CI) and P as journals write them, the notes naming the abbreviations and tests (Kruskal–Wallis, Spearman, Fisher + BH); copied into Word or Excel in one click, downloaded as Word (.docx), LaTeX (booktabs), CSV or Markdown; an answer's Markdown tables shown the same way | `--charts DIR` · [web](docs/web.md#图表--charts-and-their-downloads) |
@@ -445,6 +446,23 @@ Excel or download as Word, LaTeX, CSV or Markdown; `--charts DIR` writes the sam
 [docs/study.md](docs/study.md#表格-three-line-tables), [ADR 0019](docs/adr/0019-herb-formula-research-protocols-charts.md),
 [ADR 0020](docs/adr/0020-figures-and-tables-for-a-paper.md) and [ADR 0021](docs/adr/0021-labels-that-keep-apart-and-tables-with-numbers.md)
 (labels that never overlap; a protocol's tables filled with its pilot's numbers).
+
+### Acupuncture: point selection and the points in the classics
+
+**`study acupoints`** writes meridian-based point selection as reviewable rules (`domains/classics/acupuncture.yaml`:
+the fourteen channels, 181 points with their GB/T 12346—2021 codes and locations, the specific-point tables, regions,
+symptoms, natures and 43 rules with their sources; [ADR 0024](docs/adr/0024-acupuncture-point-selection.md)): a
+presentation becomes objectives — the location, the organ system, each symptom, the nature — and each rule that applies
+proposes points for one (local and distal, the Four Command points, Back-Shu, Front-Mu, Yuan, Lower He-Sea, Xi, Hui,
+confluent pairs, mother–child by the phases of Nanjing 64, the Five-Shu indications of Nanjing 68 and Lingshu 44, the
+teaching's points for a symptom, and lightly what the classics say a point treats).  Epigastric fullness with nausea gives
+中脘, 足三里 and 内关 as core (a Lower He–Mu and a local–distal combination), with 公孙 and 胃俞; every point says what it is
+for, every rule gives its earliest witness in the corpus (合治内府 in the 灵枢), and the modern evidence is kept apart
+(acupuncture for chronic pain, PC6 for postoperative nausea: what they show of which population, never a validation of a
+rule).  **`study point`** reads a point in the acupuncture books: on the 要籍语料, 56 of the 60 Five-Shu points have an entry
+stating their phase and kind, all agree with the data in at least one witness, and three witnesses differ (太渊 水 in the
+Siku 甲乙经 against 土 in the 笈成 text; 涌泉 水 in one 笈成 甲乙经; 曲池 木 in the 铜人针灸经).  Neither diagnoses or prescribes:
+whether and how to needle is for a qualified practitioner after examination.
 
 The study layer is part of research too: under `full-corpus`, **TaoChronos-Scholar** traces the focus formulas, drugs
 and terms through the whole store in round 0, and the dossiers become the report's appendix "源流考证 · Sources
@@ -873,8 +891,9 @@ See [docs/roadmap.md](docs/roadmap.md), and the tasks not yet done in [docs/task
 lexicons, senses and gold sets; gold sets for formula parsing and property extraction and for the capabilities of deep
 discovery and of the task specification on the full corpus; collation of whole works and a variant-reading dataset; a
 corpus-wide reuse graph; regions (physicians' native places, places of practice and printing, T27) and schools and
-drug pairs compared by region; dose-aware formula phenotypes; the historical identity of drugs; acupuncture and
-non-drug therapies; illustrations and their lineage; a missingness-aware Bayesian D1; temporal hypergraph embeddings
+drug pairs compared by region; dose-aware formula phenotypes; the historical identity of drugs; for acupuncture,
+moxibustion as a modality of its own, the points beyond the 181 and an expert gold of entries and indications, and the
+other non-drug therapies; illustrations and their lineage; a missingness-aware Bayesian D1; temporal hypergraph embeddings
 (for candidate generation only); for V2, a layout gold on real pages, a larger held-out sample and wider form map for
 the bridge, clinical review of the profiles and more ontologies (ISPO, Mondo, SNOMED CT, LOINC), an expert gold for the
 audit, adjusted analyses on a real OMOP database, and a human-in-the-loop review interface.

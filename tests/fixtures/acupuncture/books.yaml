@@ -1,0 +1,21 @@
+# Synthetic test corpus for the acupuncture studies (tests/test_acupuncture.py): short passages modelled on the wording of
+# public-domain classics, arranged so that each reading has something to find — the rules of the Five-Shu, the Yuan, the
+# Lower He-Sea and the Hui points in a 灵枢 and a 难经; two witnesses of a 甲乙经 whose entries disagree on 太渊's phase
+# (土 / 水), one entry running over the end of its passage, a 三里 written under 手阳明, a prohibition; indications in three
+# forms (……主之, X主……, 取X), a list of points before 主之, a Tang taboo name (太泉); the verses of the Eight Confluent and
+# the Four Command points, and two readings of 四关.  Not a transcription of any edition; never cite it.
+defaults:
+  source: &src
+    origin: TaoChronos test fixture (synthetic)
+    license: CC0-1.0
+    acquisition: written for the test suite
+    transcription: synthetic
+    verified: false
+books:
+  - {id: ls, title: 灵枢经, authors: [佚名], dynasty: 战国—西汉, composition: [-300, 25], category: 医经, work: lingshu, source: *src}
+  - {id: nj, title: 难经, authors: [佚名], dynasty: 东汉, composition: [0, 200], category: 医经, work: nanjing, source: *src}
+  - {id: jy_a, title: 针灸甲乙经, authors: [皇甫谧], dynasty: 西晋, composition: [256, 282], category: 针灸, work: jiayi, source: *src}
+  - {id: jy_b, title: 针灸甲乙经（四库本）, authors: [皇甫谧], dynasty: 西晋, composition: [256, 282], category: 针灸, work: jiayi, source: *src}
+  - {id: qj, title: 备急千金要方, authors: [孙思邈], dynasty: 唐, composition: [652, 652], category: 方书, source: *src}
+  - {id: dq, title: 针灸大全, authors: [徐凤], dynasty: 明, composition: [1439, 1439], category: 针灸, source: *src}
+  - {id: jq, title: 杨敬斋针灸全书, authors: [陈言], dynasty: 明, composition: [1591, 1591], category: 针灸, source: *src}

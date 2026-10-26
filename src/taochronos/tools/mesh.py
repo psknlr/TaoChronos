@@ -645,6 +645,32 @@ def _study_incompat(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(_study(ctx).incompat(a.get("target"), drugs=_names(a.get("herbs")) or None), int(a.get("items", 25)))
 
 
+def _terms(value: Any) -> list[str]:
+    """A list argument given as a list or as one string, split at Chinese and Western list marks but not at spaces (an
+    English term may have several words: low back pain)."""
+    if isinstance(value, str):
+        import re
+
+        return [x.strip() for x in re.split(r"[、，,；;]+", value) if x.strip()]
+    return [str(x) for x in value or [] if str(x).strip()]
+
+
+def _study_acupoints(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    study = _study(ctx)
+    if a.get("framework"):
+        return _brief(study.acupoints(framework=True), int(a.get("items", 20)))
+    acute = a.get("acute")
+    res = study.acupoints(a.get("text"), regions=_terms(a.get("regions")), symptoms=_terms(a.get("symptoms")),
+                          organs=_terms(a.get("organs")), channels=_terms(a.get("channels")), natures=_terms(a.get("natures")),
+                          acute=None if acute is None else bool(acute), side=a.get("side"), pregnant=bool(a.get("pregnant")),
+                          max_points=int(a.get("max_points", 6)))
+    return _brief(res, int(a.get("items", 12)))
+
+
+def _study_point(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).point(a["point"]), int(a.get("items", 12)))
+
+
 def _study_protocol(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(_study(ctx).protocol(a["question"], pilot=bool(a.get("pilot", True))), int(a.get("items", 30)), chars=600)
 
@@ -1076,6 +1102,32 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  obj({"target": S, "herbs": {"type": "array", "items": S}, "items": I}), _study_incompat, family="study",
                  permission="classics:read", expensive=True,
                  returns="rules, check, statements with earliest witnesses, verses, compositions writing a pair together"),
+        ToolSpec("study.acupoints", "选穴配穴: acupuncture points chosen as the tradition reasons, from a presentation — text (e.g. "
+                 "胃脘胀满，恶心) and/or regions (胃脘, 腰, 颈项, 前额 …), symptoms (恶心, 失眠, 头痛 …), organs (胃, 肝 …), channels "
+                 "(足阳明 …), natures (虚, 实, 寒, 热, 气滞, 血瘀 …), acute, side, pregnant. Objectives (location, pattern, each "
+                 "symptom) get points by the rules that apply — local, distal, Four Command, Back-Shu, Front-Mu, Yuan, Lower "
+                 "He-Sea, Xi, Hui, confluent pairs, mother–child (Nanjing 69), the Five-Shu indications (Nanjing 68, Lingshu 44), "
+                 "the teaching's points for a symptom — and the classics' own indications (…主之) for the findings. Returns core and "
+                 "supplementary points each with its purposes, the combinations they form (local–distal, upper–lower, Shu–Mu, "
+                 "Lower He–Mu, Yuan–Luo host–guest …; 合谷+太冲 is no Yuan–Luo pair), technique principles, a record to fill, "
+                 "cautions (pregnancy excludes points), the classical witness of each rule, modern evidence kept apart. "
+                 "framework=true: the specific-point tables and every channel's mother and child points. Traditional reasoning "
+                 "and textual research — not a diagnosis or a prescription.",
+                 obj({"text": S, "regions": {"type": "array", "items": S}, "symptoms": {"type": "array", "items": S},
+                      "organs": {"type": "array", "items": S}, "channels": {"type": "array", "items": S},
+                      "natures": {"type": "array", "items": S}, "acute": {"type": "boolean"}, "side": S,
+                      "pregnant": {"type": "boolean"}, "max_points": I, "framework": {"type": "boolean"}, "items": I}),
+                 _study_acupoints, family="study", permission="classics:read", expensive=True,
+                 returns="presentation, objectives, channels, prescription (core, supplementary, Ashi), combinations, mother-child, "
+                         "technique, implementation record, cautions, classical indications, rules with witnesses, evidence"),
+        ToolSpec("study.point", "腧穴考: one acupuncture point (code ST36, name 足三里, alias 三里, or pinyin) — channel, specific-point "
+                 "attributes (Five-Shu and phase, Yuan, Luo, Xi, Back-Shu, Front-Mu, Lower He-Sea, Hui, confluent, crossing), "
+                 "mother–child roles, standard location (GB/T 12346—2021) and cautions; the classics' entries for it (甲乙经 …) with "
+                 "what they state — phase, kind, Mu, Xi, Luo, meeting, other names, location, needling, moxibustion, "
+                 "prohibitions — checked against the attributes (agree / differ, with witnesses); the findings its indication "
+                 "sentences name (…主之, X主…, 取X), work by work and by period.",
+                 obj({"point": S, "items": I}, ["point"]), _study_point, family="study", permission="classics:read", expensive=True,
+                 returns="point attributes, names, entries with checks, prohibitions, indications by work, rules with witnesses"),
         ToolSpec("study.protocol", "研究方案: turn a research question (especially on formulas and drugs: 方源, 方剂比较/同药异量, 类方, "
                  "药性, 用药, 配伍, 十八反十九畏, 方证, 术语, 名称) into a research protocol — what it names (formulas, drugs, "
                  "findings, terms, period), objectives, questions, hypotheses each with prediction, test, refutation and "

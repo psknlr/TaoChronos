@@ -1,0 +1,542 @@
+# 针灸选穴配穴 —— 经络腧穴的特定穴体系、选穴原则与配穴方法，供 taochronos study acupoints（选穴配穴）与 study point（腧穴考）。
+#
+# 这份数据把选穴的推理写成可审阅的规则：先定病位与病性、立治则，再按经络关系与特定穴属性取穴，组合成方，并说明每一穴的
+# 用意。每条规则都标明它属于哪一层知识 —— 经典与教材的理论（为什么这样取）、术语与定位标准（怎样统一地描述与施行）、
+# 临床研究（对特定人群是否有益）—— 三层分开记，不相混同。经典出处附 `probes`（原文语句，按原样检索）：工具在语料中实际
+# 找到的见证另行列出，最早见证以检得者为准，`source` 只是通行说法。
+#
+# 特定穴的归属（五输、原、络、郄、背俞、募、下合、八会、八脉交会、交会）据《灵枢》《难经》《针灸甲乙经》与现行教材；
+# 腧穴名称、代码与定位据 GB/T 12346—2021《经穴名称与定位》（经外奇穴用 WHO 2008 代码）。定位文字为标准定位的概述，
+# 施术时以标准原文与体表标志为准。“经穴的经脉归属”与“特定穴的功能归属”分开记：章门是脾之募穴，却在足厥阴经上。
+#
+# 这里没有任何治疗建议：所述主治是传统理论中的“主治”，配穴是推理的结构，不是处方；是否针刺、如何施术，须由合格的
+# 执业人员在诊察之后决定。
+version: 1
+notice: >-
+  以下是针灸学传统理论中的选穴与配穴推理（经典与教材所述的“为什么取此穴”），及其文献出处与现代证据的分层说明——
+  不是诊断，不是处方，也不是疗效结论。是否针灸、取何穴、如何施术，须由合格的执业人员诊察后决定；胸背、颈项、眼区等处
+  针刺不当可致气胸、脏器或神经损伤，孕妇、出血倾向者与安装起搏器者（电针）尤须谨慎。
+
+# ------------------------------------------------------------------ 十四经
+# phase：脏腑所属五行（心包、三焦为相火，五行属火）；partner：表里经；same_name：手足同名经；six：六经名
+channels:
+  LU: {name: 手太阴肺经, short: 肺经, en: Lung channel, organ: 肺, limb: 手, yin: true, six: 太阴, phase: 金, partner: LI, same_name: SP, names: [手太阴, 手太阴肺经, 肺经, 肺]}
+  LI: {name: 手阳明大肠经, short: 大肠经, en: Large Intestine channel, organ: 大肠, limb: 手, yin: false, six: 阳明, phase: 金, partner: LU, same_name: ST, names: [手阳明, 手阳明大肠经, 大肠经, 大肠]}
+  ST: {name: 足阳明胃经, short: 胃经, en: Stomach channel, organ: 胃, limb: 足, yin: false, six: 阳明, phase: 土, partner: SP, same_name: LI, names: [足阳明, 足阳明胃经, 胃经, 胃]}
+  SP: {name: 足太阴脾经, short: 脾经, en: Spleen channel, organ: 脾, limb: 足, yin: true, six: 太阴, phase: 土, partner: ST, same_name: LU, names: [足太阴, 足太阴脾经, 脾经, 脾]}
+  HT: {name: 手少阴心经, short: 心经, en: Heart channel, organ: 心, limb: 手, yin: true, six: 少阴, phase: 火, partner: SI, same_name: KI, names: [手少阴, 手少阴心经, 心经, 心]}
+  SI: {name: 手太阳小肠经, short: 小肠经, en: Small Intestine channel, organ: 小肠, limb: 手, yin: false, six: 太阳, phase: 火, partner: HT, same_name: BL, names: [手太阳, 手太阳小肠经, 小肠经, 小肠]}
+  BL: {name: 足太阳膀胱经, short: 膀胱经, en: Bladder channel, organ: 膀胱, limb: 足, yin: false, six: 太阳, phase: 水, partner: KI, same_name: SI, names: [足太阳, 足太阳膀胱经, 膀胱经, 膀胱]}
+  KI: {name: 足少阴肾经, short: 肾经, en: Kidney channel, organ: 肾, limb: 足, yin: true, six: 少阴, phase: 水, partner: BL, same_name: HT, names: [足少阴, 足少阴肾经, 肾经, 肾]}
+  PC: {name: 手厥阴心包经, short: 心包经, en: Pericardium channel, organ: 心包, limb: 手, yin: true, six: 厥阴, phase: 火, partner: TE, same_name: LR, names: [手厥阴, 手厥阴心包经, 心包经, 心包, 心主]}
+  TE: {name: 手少阳三焦经, short: 三焦经, en: Sanjiao channel, organ: 三焦, limb: 手, yin: false, six: 少阳, phase: 火, partner: PC, same_name: GB, names: [手少阳, 手少阳三焦经, 三焦经, 三焦]}
+  GB: {name: 足少阳胆经, short: 胆经, en: Gallbladder channel, organ: 胆, limb: 足, yin: false, six: 少阳, phase: 木, partner: LR, same_name: TE, names: [足少阳, 足少阳胆经, 胆经, 胆]}
+  LR: {name: 足厥阴肝经, short: 肝经, en: Liver channel, organ: 肝, limb: 足, yin: true, six: 厥阴, phase: 木, partner: GB, same_name: PC, names: [足厥阴, 足厥阴肝经, 肝经, 肝]}
+  CV: {name: 任脉, short: 任脉, en: Conception Vessel, names: [任脉]}
+  GV: {name: 督脉, short: 督脉, en: Governing Vessel, names: [督脉]}
+  EX: {name: 经外奇穴, short: 奇穴, en: extra points, names: [经外奇穴, 奇穴]}
+
+# 脏腑（藏象系统）：所属之经；zang / fu
+organs:
+  肺: {channel: LU, kind: zang, en: Lung, names: [肺, 肺系, lung, lungs]}
+  大肠: {channel: LI, kind: fu, en: Large Intestine, names: [大肠, 肠道, large intestine, colon]}
+  胃: {channel: ST, kind: fu, en: Stomach, names: [胃, stomach]}
+  脾: {channel: SP, kind: zang, en: Spleen, names: [脾, spleen]}
+  心: {channel: HT, kind: zang, en: Heart, names: [心, heart]}
+  小肠: {channel: SI, kind: fu, en: Small Intestine, names: [小肠, small intestine]}
+  膀胱: {channel: BL, kind: fu, en: Bladder, names: [膀胱, bladder]}
+  肾: {channel: KI, kind: zang, en: Kidney, names: [肾, kidney, kidneys]}
+  心包: {channel: PC, kind: zang, en: Pericardium, names: [心包, 心主, pericardium]}
+  三焦: {channel: TE, kind: fu, en: Sanjiao, names: [三焦, sanjiao, triple energizer, triple burner]}
+  胆: {channel: GB, kind: fu, en: Gallbladder, names: [胆, gallbladder]}
+  肝: {channel: LR, kind: zang, en: Liver, names: [肝, liver]}
+
+# 奇经八脉（郄穴与八脉交会穴所系）
+vessels:
+  冲脉: {en: Chong Mai, names: [冲脉]}
+  阴维脉: {en: Yin Wei Mai, names: [阴维脉, 阴维]}
+  督脉: {en: Du Mai, names: [督脉]}
+  阳跷脉: {en: Yang Qiao Mai, names: [阳跷脉, 阳跷]}
+  带脉: {en: Dai Mai, names: [带脉]}
+  阳维脉: {en: Yang Wei Mai, names: [阳维脉, 阳维]}
+  任脉: {en: Ren Mai, names: [任脉]}
+  阴跷脉: {en: Yin Qiao Mai, names: [阴跷脉, 阴跷]}
+
+# ------------------------------------------------------------------ 腧穴
+# part：所在部位（判断上下、前后、局部与远部）；aliases：古籍中的别名（用于在原文中识别同一穴，最长者优先：
+# “手三里”不作“三里”读）；also_called：亦有他义、不用于原文识别的别称；cautions：见下文 cautions。
+# 一名两穴者（临泣：头临泣与足临泣；通谷：腹通谷与足通谷；窍阴：头窍阴与足窍阴；五里：手五里、足五里与劳宫）不作别名。
+points:
+  # 手太阴肺经
+  - {code: LU1, name: 中府, pinyin: Zhongfu, part: chest, aliases: [膺中俞, 膺俞], cautions: [thorax], location: 在胸部，横平第1肋间隙，锁骨下窝外侧，前正中线旁开6寸。}
+  - {code: LU5, name: 尺泽, pinyin: Chize, part: upper_limb, location: 在肘区，肘横纹上，肱二头肌腱桡侧缘凹陷中。}
+  - {code: LU6, name: 孔最, pinyin: Kongzui, part: upper_limb, location: 在前臂前区，腕掌侧远端横纹上7寸，尺泽与太渊连线上。}
+  - {code: LU7, name: 列缺, pinyin: Lieque, part: upper_limb, location: 在前臂，腕掌侧远端横纹上1.5寸，拇短伸肌腱与拇长展肌腱之间，拇长展肌腱沟的凹陷中。}
+  - {code: LU8, name: 经渠, pinyin: Jingqu, part: upper_limb, cautions: [artery], location: 在前臂前区，腕掌侧远端横纹上1寸，桡骨茎突与桡动脉之间。}
+  - {code: LU9, name: 太渊, pinyin: Taiyuan, part: upper_limb, aliases: [太泉], cautions: [artery], location: 在腕前区，桡骨茎突与舟状骨之间，拇长展肌腱尺侧凹陷中。, note: 唐人避高祖讳，书作太泉}
+  - {code: LU10, name: 鱼际, pinyin: Yuji, part: upper_limb, location: 在手外侧，第1掌骨桡侧中点赤白肉际处。}
+  - {code: LU11, name: 少商, pinyin: Shaoshang, part: upper_limb, location: 在手指，拇指末节桡侧，指甲根角侧上方0.1寸（指寸）。}
+  # 手阳明大肠经
+  - {code: LI1, name: 商阳, pinyin: Shangyang, part: upper_limb, aliases: [绝阳], location: 在手指，食指末节桡侧，指甲根角侧上方0.1寸（指寸）。}
+  - {code: LI2, name: 二间, pinyin: Erjian, part: upper_limb, aliases: [间谷], location: 在手指，第2掌指关节桡侧远端赤白肉际处。}
+  - {code: LI3, name: 三间, pinyin: Sanjian, part: upper_limb, aliases: [少谷], location: 在手背，第2掌指关节桡侧近端凹陷中。}
+  - {code: LI4, name: 合谷, pinyin: Hegu, part: upper_limb, aliases: [虎口], cautions: [pregnancy], location: 在手背，第2掌骨桡侧的中点处。}
+  - {code: LI5, name: 阳溪, pinyin: Yangxi, part: upper_limb, aliases: [中魁], location: 在腕区，腕背侧远端横纹桡侧，桡骨茎突远端，解剖学“鼻烟窝”凹陷中。}
+  - {code: LI6, name: 偏历, pinyin: Pianli, part: upper_limb, location: 在前臂，腕背侧远端横纹上3寸，阳溪与曲池连线上。}
+  - {code: LI7, name: 温溜, pinyin: Wenliu, part: upper_limb, aliases: [逆注, 蛇头], location: 在前臂，腕背侧远端横纹上5寸，阳溪与曲池连线上。}
+  - {code: LI10, name: 手三里, pinyin: Shousanli, part: upper_limb, location: 在前臂，肘横纹下2寸，阳溪与曲池连线上。}
+  - {code: LI11, name: 曲池, pinyin: Quchi, part: upper_limb, location: 在肘区，尺泽与肱骨外上髁连线的中点处。}
+  - {code: LI15, name: 肩髃, pinyin: Jianyu, part: shoulder, location: 在三角肌区，肩峰外侧缘前端与肱骨大结节两骨间凹陷中。}
+  - {code: LI20, name: 迎香, pinyin: Yingxiang, part: face, location: 在面部，鼻翼外缘中点旁，鼻唇沟中。}
+  # 足阳明胃经
+  - {code: ST1, name: 承泣, pinyin: Chengqi, part: face, cautions: [eye], location: 在面部，眼球与眶下缘之间，瞳孔直下。}
+  - {code: ST2, name: 四白, pinyin: Sibai, part: face, location: 在面部，眶下孔处。}
+  - {code: ST4, name: 地仓, pinyin: Dicang, part: face, location: 在面部，口角旁开0.4寸（指寸）。}
+  - {code: ST6, name: 颊车, pinyin: Jiache, part: face, location: 在面部，下颌角前上方一横指（中指）。}
+  - {code: ST7, name: 下关, pinyin: Xiaguan, part: face, location: 在面部，颧弓下缘中央与下颌切迹之间凹陷中。}
+  - {code: ST8, name: 头维, pinyin: Touwei, part: head, location: 在头部，额角发际直上0.5寸，头正中线旁开4.5寸。}
+  - {code: ST25, name: 天枢, pinyin: Tianshu, part: abdomen, aliases: [长溪, 谷门], location: 在腹部，横平脐中，前正中线旁开2寸。}
+  - {code: ST34, name: 梁丘, pinyin: Liangqiu, part: lower_limb, location: 在股前区，髌底上2寸，股外侧肌与股直肌肌腱之间。, note: 郄穴之中唯梁丘在膝上}
+  - {code: ST35, name: 犊鼻, pinyin: Dubi, part: lower_limb, aliases: [外膝眼], location: 在膝前区，髌韧带外侧凹陷中。}
+  - {code: ST36, name: 足三里, pinyin: Zusanli, part: lower_limb, aliases: [三里, 下陵], location: 在小腿外侧，犊鼻下3寸，犊鼻与解溪连线上。}
+  - {code: ST37, name: 上巨虚, pinyin: Shangjuxu, part: lower_limb, aliases: [巨虚上廉], location: 在小腿外侧，犊鼻下6寸，犊鼻与解溪连线上。}
+  - {code: ST38, name: 条口, pinyin: Tiaokou, part: lower_limb, location: 在小腿外侧，犊鼻下8寸，犊鼻与解溪连线上。}
+  - {code: ST39, name: 下巨虚, pinyin: Xiajuxu, part: lower_limb, aliases: [巨虚下廉], location: 在小腿外侧，犊鼻下9寸，犊鼻与解溪连线上。}
+  - {code: ST40, name: 丰隆, pinyin: Fenglong, part: lower_limb, location: 在小腿外侧，外踝尖上8寸，胫骨前肌的外缘。}
+  - {code: ST41, name: 解溪, pinyin: Jiexi, part: lower_limb, location: 在踝区，踝关节前面中央凹陷中，拇长伸肌腱与趾长伸肌腱之间。}
+  - {code: ST42, name: 冲阳, pinyin: Chongyang, part: lower_limb, aliases: [会原], cautions: [artery], location: 在足背，第2跖骨基底部与中间楔状骨关节处，可触及足背动脉。}
+  - {code: ST43, name: 陷谷, pinyin: Xiangu, part: lower_limb, location: 在足背，第2、3跖骨间，第2跖趾关节近端凹陷中。}
+  - {code: ST44, name: 内庭, pinyin: Neiting, part: lower_limb, location: 在足背，第2、3趾间，趾蹼缘后方赤白肉际处。}
+  - {code: ST45, name: 厉兑, pinyin: Lidui, part: lower_limb, location: 在足趾，第2趾末节外侧，趾甲根角侧后方0.1寸（指寸）。}
+  # 足太阴脾经
+  - {code: SP1, name: 隐白, pinyin: Yinbai, part: lower_limb, location: 在足趾，大趾末节内侧，趾甲根角侧后方0.1寸（指寸）。}
+  - {code: SP2, name: 大都, pinyin: Dadu, part: lower_limb, location: 在足趾，第1跖趾关节远端赤白肉际凹陷中。}
+  - {code: SP3, name: 太白, pinyin: Taibai, part: lower_limb, location: 在跖区，第1跖趾关节近端赤白肉际凹陷中。}
+  - {code: SP4, name: 公孙, pinyin: Gongsun, part: lower_limb, location: 在跖区，第1跖骨底的前下缘赤白肉际处。}
+  - {code: SP5, name: 商丘, pinyin: Shangqiu, part: lower_limb, location: 在踝区，内踝前下方，舟骨粗隆与内踝尖连线中点凹陷中。}
+  - {code: SP6, name: 三阴交, pinyin: Sanyinjiao, part: lower_limb, cautions: [pregnancy], location: 在小腿内侧，内踝尖上3寸，胫骨内侧缘后际。}
+  - {code: SP8, name: 地机, pinyin: Diji, part: lower_limb, aliases: [脾舍], location: 在小腿内侧，阴陵泉下3寸，胫骨内侧缘后际。}
+  - {code: SP9, name: 阴陵泉, pinyin: Yinlingquan, part: lower_limb, aliases: [阴之陵泉], location: 在小腿内侧，胫骨内侧髁下缘与胫骨内侧缘之间的凹陷中。}
+  - {code: SP10, name: 血海, pinyin: Xuehai, part: lower_limb, location: 在股前区，髌底内侧端上2寸，股内侧肌隆起处。}
+  - {code: SP21, name: 大包, pinyin: Dabao, part: chest, cautions: [thorax], location: 在胸外侧区，第6肋间隙，在腋中线上。}
+  # 手少阴心经
+  - {code: HT3, name: 少海, pinyin: Shaohai, part: upper_limb, aliases: [曲节], location: 在肘前区，横平肘横纹，肱骨内上髁前缘。}
+  - {code: HT4, name: 灵道, pinyin: Lingdao, part: upper_limb, location: 在前臂前区，腕掌侧远端横纹上1.5寸，尺侧腕屈肌腱的桡侧缘。}
+  - {code: HT5, name: 通里, pinyin: Tongli, part: upper_limb, location: 在前臂前区，腕掌侧远端横纹上1寸，尺侧腕屈肌腱的桡侧缘。}
+  - {code: HT6, name: 阴郄, pinyin: Yinxi, part: upper_limb, aliases: [手少阴郄], location: 在前臂前区，腕掌侧远端横纹上0.5寸，尺侧腕屈肌腱的桡侧缘。}
+  - {code: HT7, name: 神门, pinyin: Shenmen, part: upper_limb, aliases: [兑冲], location: 在腕前区，腕掌侧远端横纹尺侧端，尺侧腕屈肌腱的桡侧缘。}
+  - {code: HT8, name: 少府, pinyin: Shaofu, part: upper_limb, location: 在手掌，横平第5掌指关节近端，第4、5掌骨之间。}
+  - {code: HT9, name: 少冲, pinyin: Shaochong, part: upper_limb, aliases: [经始], location: 在手指，小指末节桡侧，指甲根角侧上方0.1寸（指寸）。}
+  # 手太阳小肠经
+  - {code: SI1, name: 少泽, pinyin: Shaoze, part: upper_limb, aliases: [小吉], location: 在手指，小指末节尺侧，指甲根角侧上方0.1寸（指寸）。}
+  - {code: SI2, name: 前谷, pinyin: Qiangu, part: upper_limb, location: 在手指，第5掌指关节尺侧远端赤白肉际凹陷中。}
+  - {code: SI3, name: 后溪, pinyin: Houxi, part: upper_limb, location: 在手内侧，第5掌指关节尺侧近端赤白肉际凹陷中。}
+  - {code: SI4, name: 腕骨, pinyin: Wangu, part: upper_limb, location: 在腕区，第5掌骨底与三角骨之间的赤白肉际凹陷中。}
+  - {code: SI5, name: 阳谷, pinyin: Yanggu, part: upper_limb, location: 在腕后区，尺骨茎突与三角骨之间的凹陷中。}
+  - {code: SI6, name: 养老, pinyin: Yanglao, part: upper_limb, location: 在前臂后区，腕背横纹上1寸，尺骨头桡侧凹陷中。}
+  - {code: SI7, name: 支正, pinyin: Zhizheng, part: upper_limb, location: 在前臂后区，腕背侧远端横纹上5寸，尺骨尺侧与尺侧腕屈肌之间。}
+  - {code: SI8, name: 小海, pinyin: Xiaohai, part: upper_limb, location: 在肘后区，尺骨鹰嘴与肱骨内上髁之间凹陷中。}
+  - {code: SI9, name: 肩贞, pinyin: Jianzhen, part: shoulder, location: 在肩胛区，肩关节后下方，腋后纹头直上1寸。}
+  - {code: SI11, name: 天宗, pinyin: Tianzong, part: upper_back, location: 在肩胛区，肩胛冈中点与肩胛骨下角连线上1/3与下2/3交点凹陷中。}
+  - {code: SI19, name: 听宫, pinyin: Tinggong, part: face, aliases: [多所闻], location: 在面部，耳屏正中与下颌骨髁突之间的凹陷中。}
+  # 足太阳膀胱经
+  - {code: BL1, name: 睛明, pinyin: Jingming, part: face, aliases: [泪孔], cautions: [eye], location: 在面部，目内眦内上方眶内侧壁凹陷中。}
+  - {code: BL2, name: 攒竹, pinyin: Cuanzhu, part: face, location: 在面部，眉头凹陷中，额切迹处。}
+  - {code: BL10, name: 天柱, pinyin: Tianzhu, part: neck, cautions: [nape], location: 在颈后区，横平第2颈椎棘突上际，斜方肌外缘凹陷中。}
+  - {code: BL11, name: 大杼, pinyin: Dazhu, part: upper_back, cautions: [thorax], location: 在脊柱区，第1胸椎棘突下，后正中线旁开1.5寸。}
+  - {code: BL13, name: 肺俞, pinyin: Feishu, part: upper_back, cautions: [thorax], location: 在脊柱区，第3胸椎棘突下，后正中线旁开1.5寸。}
+  - {code: BL14, name: 厥阴俞, pinyin: Jueyinshu, part: upper_back, cautions: [thorax], location: 在脊柱区，第4胸椎棘突下，后正中线旁开1.5寸。}
+  - {code: BL15, name: 心俞, pinyin: Xinshu, part: upper_back, cautions: [thorax], location: 在脊柱区，第5胸椎棘突下，后正中线旁开1.5寸。}
+  - {code: BL17, name: 膈俞, pinyin: Geshu, part: upper_back, aliases: [鬲俞], cautions: [thorax], location: 在脊柱区，第7胸椎棘突下，后正中线旁开1.5寸。}
+  - {code: BL18, name: 肝俞, pinyin: Ganshu, part: upper_back, cautions: [thorax], location: 在脊柱区，第9胸椎棘突下，后正中线旁开1.5寸。}
+  - {code: BL19, name: 胆俞, pinyin: Danshu, part: upper_back, cautions: [thorax], location: 在脊柱区，第10胸椎棘突下，后正中线旁开1.5寸。}
+  - {code: BL20, name: 脾俞, pinyin: Pishu, part: upper_back, cautions: [thorax], location: 在脊柱区，第11胸椎棘突下，后正中线旁开1.5寸。}
+  - {code: BL21, name: 胃俞, pinyin: Weishu, part: upper_back, cautions: [thorax], location: 在脊柱区，第12胸椎棘突下，后正中线旁开1.5寸。}
+  - {code: BL22, name: 三焦俞, pinyin: Sanjiaoshu, part: lower_back, location: 在脊柱区，第1腰椎棘突下，后正中线旁开1.5寸。}
+  - {code: BL23, name: 肾俞, pinyin: Shenshu, part: lower_back, location: 在脊柱区，第2腰椎棘突下，后正中线旁开1.5寸。}
+  - {code: BL25, name: 大肠俞, pinyin: Dachangshu, part: lower_back, location: 在脊柱区，第4腰椎棘突下，后正中线旁开1.5寸。}
+  - {code: BL27, name: 小肠俞, pinyin: Xiaochangshu, part: sacrum, location: 在骶区，横平第1骶后孔，骶正中嵴旁开1.5寸。}
+  - {code: BL28, name: 膀胱俞, pinyin: Pangguangshu, part: sacrum, location: 在骶区，横平第2骶后孔，骶正中嵴旁开1.5寸。}
+  - {code: BL32, name: 次髎, pinyin: Ciliao, part: sacrum, aliases: [次窌], cautions: [pregnancy], location: 在骶区，正对第2骶后孔中。}
+  - {code: BL39, name: 委阳, pinyin: Weiyang, part: lower_limb, location: 在膝部，腘横纹上，股二头肌腱的内侧缘。}
+  - {code: BL40, name: 委中, pinyin: Weizhong, part: lower_limb, aliases: [委中央, 血郄], cautions: [artery], location: 在膝后区，腘横纹中点。}
+  - {code: BL57, name: 承山, pinyin: Chengshan, part: lower_limb, aliases: [鱼腹, 肉柱], location: 在小腿后区，腓肠肌两肌腹与肌腱交角处。}
+  - {code: BL58, name: 飞扬, pinyin: Feiyang, part: lower_limb, aliases: [厥阳], location: 在小腿后区，昆仑直上7寸，腓肠肌外下缘与跟腱移行处。}
+  - {code: BL59, name: 跗阳, pinyin: Fuyang, part: lower_limb, aliases: [付阳], location: 在小腿后区，昆仑直上3寸，腓骨与跟腱之间。}
+  - {code: BL60, name: 昆仑, pinyin: Kunlun, part: lower_limb, cautions: [pregnancy], location: 在踝区，外踝尖与跟腱之间的凹陷中。}
+  - {code: BL62, name: 申脉, pinyin: Shenmai, part: lower_limb, location: 在踝区，外踝尖直下，外踝下缘与跟骨之间凹陷中。}
+  - {code: BL63, name: 金门, pinyin: Jinmen, part: lower_limb, aliases: [关梁], location: 在足背，外踝前缘直下，第5跖骨粗隆后方，骰骨下缘凹陷中。}
+  - {code: BL64, name: 京骨, pinyin: Jinggu, part: lower_limb, location: 在跖区，第5跖骨粗隆前下方，赤白肉际处。}
+  - {code: BL65, name: 束骨, pinyin: Shugu, part: lower_limb, location: 在跖区，第5跖趾关节的近端，赤白肉际处。}
+  - {code: BL66, name: 足通谷, pinyin: Zutonggu, part: lower_limb, location: 在足趾，第5跖趾关节的远端，赤白肉际处。}
+  - {code: BL67, name: 至阴, pinyin: Zhiyin, part: lower_limb, cautions: [pregnancy], location: 在足趾，小趾末节外侧，趾甲根角侧后方0.1寸（指寸）。}
+  # 足少阴肾经
+  - {code: KI1, name: 涌泉, pinyin: Yongquan, part: lower_limb, aliases: [地冲], location: 在足底，屈足卷趾时足心最凹陷中。}
+  - {code: KI2, name: 然谷, pinyin: Rangu, part: lower_limb, aliases: [龙渊, 然骨], location: 在足内侧，足舟骨粗隆下方，赤白肉际处。}
+  - {code: KI3, name: 太溪, pinyin: Taixi, part: lower_limb, aliases: [吕细], location: 在踝区，内踝尖与跟腱之间的凹陷中。}
+  - {code: KI4, name: 大钟, pinyin: Dazhong, part: lower_limb, aliases: [太钟], location: 在跟区，内踝后下方，跟骨上缘，跟腱附着部前缘凹陷中。}
+  - {code: KI5, name: 水泉, pinyin: Shuiquan, part: lower_limb, location: 在跟区，太溪直下1寸，跟骨结节内侧凹陷中。}
+  - {code: KI6, name: 照海, pinyin: Zhaohai, part: lower_limb, location: 在踝区，内踝尖下1寸，内踝下缘边际凹陷中。}
+  - {code: KI7, name: 复溜, pinyin: Fuliu, part: lower_limb, aliases: [复留, 伏白, 昌阳], location: 在小腿内侧，内踝尖上2寸，跟腱的前缘。}
+  - {code: KI8, name: 交信, pinyin: Jiaoxin, part: lower_limb, location: 在小腿内侧，内踝尖上2寸，胫骨内侧缘后际凹陷中。}
+  - {code: KI9, name: 筑宾, pinyin: Zhubin, part: lower_limb, location: 在小腿内侧，太溪直上5寸，比目鱼肌与跟腱之间。}
+  - {code: KI10, name: 阴谷, pinyin: Yingu, part: lower_limb, location: 在膝后区，腘横纹上，半腱肌肌腱外侧缘。}
+  # 手厥阴心包经
+  - {code: PC3, name: 曲泽, pinyin: Quze, part: upper_limb, location: 在肘前区，肘横纹上，肱二头肌腱的尺侧缘凹陷中。}
+  - {code: PC4, name: 郄门, pinyin: Ximen, part: upper_limb, location: 在前臂前区，腕掌侧远端横纹上5寸，掌长肌腱与桡侧腕屈肌腱之间。}
+  - {code: PC5, name: 间使, pinyin: Jianshi, part: upper_limb, location: 在前臂前区，腕掌侧远端横纹上3寸，掌长肌腱与桡侧腕屈肌腱之间。}
+  - {code: PC6, name: 内关, pinyin: Neiguan, part: upper_limb, location: 在前臂前区，腕掌侧远端横纹上2寸，掌长肌腱与桡侧腕屈肌腱之间。}
+  - {code: PC7, name: 大陵, pinyin: Daling, part: upper_limb, aliases: [太陵], location: 在腕前区，腕掌侧远端横纹中，掌长肌腱与桡侧腕屈肌腱之间。}
+  - {code: PC8, name: 劳宫, pinyin: Laogong, part: upper_limb, aliases: [掌中], location: 在掌区，横平第3掌指关节近端，第2、3掌骨之间偏于第3掌骨。}
+  - {code: PC9, name: 中冲, pinyin: Zhongchong, part: upper_limb, location: 在手指，中指末端最高点。}
+  # 手少阳三焦经
+  - {code: TE1, name: 关冲, pinyin: Guanchong, part: upper_limb, location: 在手指，第4指末节尺侧，指甲根角侧上方0.1寸（指寸）。}
+  - {code: TE2, name: 液门, pinyin: Yemen, part: upper_limb, aliases: [掖门], location: 在手背，第4、5指间，指蹼缘上方赤白肉际凹陷中。}
+  - {code: TE3, name: 中渚, pinyin: Zhongzhu, part: upper_limb, location: 在手背，第4、5掌骨间，第4掌指关节近端凹陷中。}
+  - {code: TE4, name: 阳池, pinyin: Yangchi, part: upper_limb, location: 在腕后区，腕背侧远端横纹上，指伸肌腱的尺侧缘凹陷中。}
+  - {code: TE5, name: 外关, pinyin: Waiguan, part: upper_limb, location: 在前臂后区，腕背侧远端横纹上2寸，尺骨与桡骨间隙中点。}
+  - {code: TE6, name: 支沟, pinyin: Zhigou, part: upper_limb, aliases: [飞虎], location: 在前臂后区，腕背侧远端横纹上3寸，尺骨与桡骨间隙中点。}
+  - {code: TE7, name: 会宗, pinyin: Huizong, part: upper_limb, location: 在前臂后区，腕背侧远端横纹上3寸，尺骨的桡侧缘。}
+  - {code: TE10, name: 天井, pinyin: Tianjing, part: upper_limb, location: 在肘后区，肘尖上1寸凹陷中。}
+  - {code: TE14, name: 肩髎, pinyin: Jianliao, part: shoulder, location: 在三角肌区，肩峰角与肱骨大结节两骨间凹陷中。}
+  - {code: TE17, name: 翳风, pinyin: Yifeng, part: neck, location: 在颈部，耳垂后方，乳突下端前方凹陷中。}
+  - {code: TE21, name: 耳门, pinyin: Ermen, part: face, location: 在耳区，耳屏上切迹与下颌骨髁突之间的凹陷中。}
+  - {code: TE23, name: 丝竹空, pinyin: Sizhukong, part: face, aliases: [目髎], location: 在面部，眉梢凹陷中。}
+  # 足少阳胆经
+  - {code: GB2, name: 听会, pinyin: Tinghui, part: face, aliases: [听呵], location: 在面部，耳屏间切迹与下颌骨髁突之间的凹陷中。}
+  - {code: GB8, name: 率谷, pinyin: Shuaigu, part: head, location: 在头部，耳尖直上入发际1.5寸。}
+  - {code: GB14, name: 阳白, pinyin: Yangbai, part: head, location: 在头部，眉上1寸，瞳孔直上。}
+  - {code: GB20, name: 风池, pinyin: Fengchi, part: neck, cautions: [nape], location: 在颈后区，枕骨之下，胸锁乳突肌上端与斜方肌上端之间的凹陷中。}
+  - {code: GB21, name: 肩井, pinyin: Jianjing, part: shoulder, aliases: [膊井], cautions: [thorax, pregnancy], location: 在肩胛区，第7颈椎棘突与肩峰最外侧点连线的中点。}
+  - {code: GB24, name: 日月, pinyin: Riyue, part: chest, aliases: [神光], cautions: [thorax], location: 在胸部，第7肋间隙中，前正中线旁开4寸。}
+  - {code: GB25, name: 京门, pinyin: Jingmen, part: upper_abdomen, aliases: [气府, 气俞], cautions: [viscera], location: 在上腹部，第12肋骨游离端的下际。}
+  - {code: GB30, name: 环跳, pinyin: Huantiao, part: hip, location: 在臀区，股骨大转子最凸点与骶管裂孔连线上的外1/3与2/3交点处。}
+  - {code: GB34, name: 阳陵泉, pinyin: Yanglingquan, part: lower_limb, aliases: [阳之陵泉], location: 在小腿外侧，腓骨头前下方凹陷中。}
+  - {code: GB35, name: 阳交, pinyin: Yangjiao, part: lower_limb, location: 在小腿外侧，外踝尖上7寸，腓骨后缘。}
+  - {code: GB36, name: 外丘, pinyin: Waiqiu, part: lower_limb, location: 在小腿外侧，外踝尖上7寸，腓骨前缘。}
+  - {code: GB37, name: 光明, pinyin: Guangming, part: lower_limb, location: 在小腿外侧，外踝尖上5寸，腓骨前缘。}
+  - {code: GB38, name: 阳辅, pinyin: Yangfu, part: lower_limb, aliases: [分肉], location: 在小腿外侧，外踝尖上4寸，腓骨前缘。}
+  - {code: GB39, name: 悬钟, pinyin: Xuanzhong, part: lower_limb, aliases: [绝骨], location: 在小腿外侧，外踝尖上3寸，腓骨前缘。}
+  - {code: GB40, name: 丘墟, pinyin: Qiuxu, part: lower_limb, location: 在踝区，外踝的前下方，趾长伸肌腱的外侧凹陷中。}
+  - {code: GB41, name: 足临泣, pinyin: Zulinqi, part: lower_limb, location: 在足背，第4、5跖骨底结合部的前方，第5趾长伸肌腱外侧凹陷中。, note: 古书多只作“临泣”，与头临泣同名，原文识别只取“足临泣”}
+  - {code: GB43, name: 侠溪, pinyin: Xiaxi, part: lower_limb, aliases: [夹溪], location: 在足背，第4、5趾间，趾蹼缘后方赤白肉际处。}
+  - {code: GB44, name: 足窍阴, pinyin: Zuqiaoyin, part: lower_limb, location: 在足趾，第4趾末节外侧，趾甲根角侧后方0.1寸（指寸）。}
+  # 足厥阴肝经
+  - {code: LR1, name: 大敦, pinyin: Dadun, part: lower_limb, location: 在足趾，大趾末节外侧，趾甲根角侧后方0.1寸（指寸）。}
+  - {code: LR2, name: 行间, pinyin: Xingjian, part: lower_limb, location: 在足背，第1、2趾间，趾蹼缘后方赤白肉际处。}
+  - {code: LR3, name: 太冲, pinyin: Taichong, part: lower_limb, cautions: [artery], location: 在足背，第1、2跖骨间，跖骨底结合部前方凹陷中，或触及动脉搏动。}
+  - {code: LR4, name: 中封, pinyin: Zhongfeng, part: lower_limb, aliases: [悬泉], location: 在踝区，内踝前，胫骨前肌肌腱的内侧缘凹陷中。}
+  - {code: LR5, name: 蠡沟, pinyin: Ligou, part: lower_limb, aliases: [交仪], location: 在小腿内侧，内踝尖上5寸，胫骨内侧面的中央。}
+  - {code: LR6, name: 中都, pinyin: Zhongdu, part: lower_limb, aliases: [中郄], location: 在小腿内侧，内踝尖上7寸，胫骨内侧面的中央。}
+  - {code: LR8, name: 曲泉, pinyin: Ququan, part: lower_limb, location: 在膝部，腘横纹内侧端，半腱肌肌腱内缘凹陷中。}
+  - {code: LR13, name: 章门, pinyin: Zhangmen, part: upper_abdomen, aliases: [长平], also_called: [季胁], cautions: [viscera], location: 在侧腹部，在第11肋游离端的下际。}
+  - {code: LR14, name: 期门, pinyin: Qimen, part: chest, cautions: [thorax], location: 在胸部，第6肋间隙，前正中线旁开4寸。}
+  # 任脉
+  - {code: CV3, name: 中极, pinyin: Zhongji, part: lower_abdomen, aliases: [玉泉, 气原], cautions: [lower_abdomen, pregnancy], location: 在下腹部，脐中下4寸，前正中线上。}
+  - {code: CV4, name: 关元, pinyin: Guanyuan, part: lower_abdomen, also_called: [丹田], cautions: [lower_abdomen, pregnancy], location: 在下腹部，脐中下3寸，前正中线上。}
+  - {code: CV5, name: 石门, pinyin: Shimen, part: lower_abdomen, also_called: [丹田], cautions: [lower_abdomen, pregnancy], location: 在下腹部，脐中下2寸，前正中线上。}
+  - {code: CV6, name: 气海, pinyin: Qihai, part: lower_abdomen, aliases: [脖胦], cautions: [lower_abdomen, pregnancy], location: 在下腹部，脐中下1.5寸，前正中线上。}
+  - {code: CV8, name: 神阙, pinyin: Shenque, part: abdomen, aliases: [脐中], cautions: [umbilicus], location: 在脐区，脐中央。}
+  - {code: CV9, name: 水分, pinyin: Shuifen, part: upper_abdomen, aliases: [分水], location: 在上腹部，脐中上1寸，前正中线上。}
+  - {code: CV12, name: 中脘, pinyin: Zhongwan, part: upper_abdomen, aliases: [中管, 太仓], also_called: [胃脘], cautions: [viscera], location: 在上腹部，脐中上4寸，前正中线上。}
+  - {code: CV14, name: 巨阙, pinyin: Juque, part: upper_abdomen, cautions: [viscera], location: 在上腹部，脐中上6寸，前正中线上。}
+  - {code: CV15, name: 鸠尾, pinyin: Jiuwei, part: upper_abdomen, aliases: [尾翳], cautions: [viscera], location: 在上腹部，剑胸结合下1寸，前正中线上。}
+  - {code: CV17, name: 膻中, pinyin: Danzhong, part: chest, aliases: [元儿, 亶中], also_called: [三焦外一筋直两乳内], location: 在胸部，横平第4肋间隙，前正中线上。, note: 亦读 Shanzhong}
+  - {code: CV22, name: 天突, pinyin: Tiantu, part: neck, aliases: [玉户], cautions: [throat], location: 在颈前区，胸骨上窝中央，前正中线上。}
+  - {code: CV23, name: 廉泉, pinyin: Lianquan, part: neck, aliases: [本池], location: 在颈前区，喉结上方，舌骨上缘凹陷中，前正中线上。}
+  # 督脉
+  - {code: GV1, name: 长强, pinyin: Changqiang, part: sacrum, aliases: [气之阴郄, 橛骨], location: 在会阴区，尾骨下方，尾骨端与肛门连线的中点处。}
+  - {code: GV3, name: 腰阳关, pinyin: Yaoyangguan, part: lower_back, location: 在脊柱区，第4腰椎棘突下凹陷中，后正中线上。}
+  - {code: GV4, name: 命门, pinyin: Mingmen, part: lower_back, aliases: [属累], location: 在脊柱区，第2腰椎棘突下凹陷中，后正中线上。}
+  - {code: GV14, name: 大椎, pinyin: Dazhui, part: upper_back, location: 在脊柱区，第7颈椎棘突下凹陷中，后正中线上。}
+  - {code: GV16, name: 风府, pinyin: Fengfu, part: neck, cautions: [nape], location: 在颈后区，枕外隆凸直下，两侧斜方肌之间凹陷中。}
+  - {code: GV20, name: 百会, pinyin: Baihui, part: head, aliases: [三阳五会, 巅上], location: 在头部，前发际正中直上5寸。}
+  - {code: GV23, name: 上星, pinyin: Shangxing, part: head, location: 在头部，前发际正中直上1寸。}
+  - {code: GV29, name: 印堂, pinyin: Yintang, part: head, other_codes: [EX-HN3], location: 在头部，两眉毛内侧端中间的凹陷中。, note: GB/T 12346—2006 起归督脉（GV29）；WHO 2008 标准为经外奇穴 EX-HN3}
+  # 经外奇穴
+  - {code: EX-HN1, name: 四神聪, pinyin: Sishencong, part: head, location: 在头部，百会前后左右各旁开1寸，共4穴。}
+  - {code: EX-HN5, name: 太阳, pinyin: Taiyang, part: head, location: 在头部，眉梢与目外眦之间，向后约一横指的凹陷中。}
+  - {code: EX-B1, name: 定喘, pinyin: Dingchuan, part: upper_back, location: 在脊柱区，横平第7颈椎棘突下，后正中线旁开0.5寸。}
+  - {code: EX-B2, name: 夹脊, pinyin: Jiaji, part: lower_back, aliases: [华佗夹脊], location: 在脊柱区，第1胸椎至第5腰椎棘突下两侧，后正中线旁开0.5寸，一侧17穴。, note: 胸段夹脊亦在胸背部，按其所在节段施术}
+  - {code: EX-UE7, name: 腰痛点, pinyin: Yaotongdian, part: upper_limb, location: 在手背，第2、3掌骨间及第4、5掌骨间，腕背侧远端横纹与掌指关节中点处，一手2穴。}
+  - {code: EX-UE8, name: 外劳宫, pinyin: Wailaogong, part: upper_limb, also_called: [落枕穴], location: 在手背，第2、3掌骨间，掌指关节后0.5寸（指寸）凹陷中。}
+  - {code: EX-LE2, name: 鹤顶, pinyin: Heding, part: lower_limb, location: 在膝前区，髌底中点的上方凹陷中。}
+  - {code: EX-LE4, name: 内膝眼, pinyin: Neixiyan, part: lower_limb, location: 在膝部，髌韧带内侧凹陷处的中央。}
+  - {code: EX-CA1, name: 子宫, pinyin: Zigong, part: lower_abdomen, cautions: [lower_abdomen, pregnancy], location: 在下腹部，脐中下4寸，前正中线旁开3寸。}
+
+# ------------------------------------------------------------------ 特定穴
+# 五输穴：每经自井至合（自肢端向肘膝），五行属性按《难经·六十四难》由阴经、阳经分别推出（不在此逐穴书写）
+five_shu:
+  kinds: [jing_well, ying_spring, shu_stream, jing_river, he_sea]
+  labels: {jing_well: 井, ying_spring: 荥, shu_stream: 输, jing_river: 经, he_sea: 合}
+  en: {jing_well: Jing-Well, ying_spring: Ying-Spring, shu_stream: Shu-Stream, jing_river: Jing-River, he_sea: He-Sea}
+  phases: {yin: [木, 火, 土, 金, 水], yang: [金, 水, 木, 火, 土]}
+  points:
+    LU: [LU11, LU10, LU9, LU8, LU5]
+    LI: [LI1, LI2, LI3, LI5, LI11]
+    ST: [ST45, ST44, ST43, ST41, ST36]
+    SP: [SP1, SP2, SP3, SP5, SP9]
+    HT: [HT9, HT8, HT7, HT4, HT3]
+    SI: [SI1, SI2, SI3, SI5, SI8]
+    BL: [BL67, BL66, BL65, BL60, BL40]
+    KI: [KI1, KI2, KI3, KI7, KI10]
+    PC: [PC9, PC8, PC7, PC5, PC3]
+    TE: [TE1, TE2, TE3, TE6, TE10]
+    GB: [GB44, GB43, GB41, GB38, GB34]
+    LR: [LR1, LR2, LR3, LR4, LR8]
+# 原穴：阴经以输为原，阳经别置一原
+yuan: {LU: LU9, LI: LI4, ST: ST42, SP: SP3, HT: HT7, SI: SI4, BL: BL64, KI: KI3, PC: PC7, TE: TE4, GB: GB40, LR: LR3}
+# 十五络穴：十二经各一，任脉、督脉之络与脾之大络
+luo: {LU: LU7, LI: LI6, ST: ST40, SP: SP4, HT: HT5, SI: SI7, BL: BL58, KI: KI4, PC: PC6, TE: TE5, GB: GB37, LR: LR5, CV: CV15, GV: GV1, 脾之大络: SP21}
+# 十六郄穴：十二经各一，阴阳跷、阴阳维各一
+xi: {LU: LU6, LI: LI7, ST: ST34, SP: SP8, HT: HT6, SI: SI6, BL: BL63, KI: KI5, PC: PC4, TE: TE7, GB: GB36, LR: LR6,
+     阴跷脉: KI8, 阳跷脉: BL59, 阴维脉: KI9, 阳维脉: GB35}
+back_shu: {肺: BL13, 大肠: BL25, 胃: BL21, 脾: BL20, 心: BL15, 小肠: BL27, 膀胱: BL28, 肾: BL23, 心包: BL14, 三焦: BL22, 胆: BL19, 肝: BL18}
+front_mu: {肺: LU1, 大肠: ST25, 胃: CV12, 脾: LR13, 心: CV14, 小肠: CV4, 膀胱: CV3, 肾: GB25, 心包: CV17, 三焦: CV5, 胆: GB24, 肝: LR14}
+# 六腑下合穴（与各经自身的合穴不同：足三阳经二者相同，手三阳经不同）
+lower_he: {胃: ST36, 大肠: ST37, 小肠: ST39, 三焦: BL39, 膀胱: BL40, 胆: GB34}
+# 八会穴
+hui:
+  脏: {point: LR13, en: zang organ systems, names: [脏, 藏, 五脏]}
+  腑: {point: CV12, en: fu organ systems, names: [腑, 府, 六腑]}
+  气: {point: CV17, en: qi, names: [气]}
+  血: {point: BL17, en: blood, names: [血]}
+  筋: {point: GB34, en: sinews, names: [筋]}
+  脉: {point: LU9, en: vessels, names: [脉]}
+  骨: {point: BL11, en: bones, names: [骨]}
+  髓: {point: GB39, en: marrow, names: [髓]}
+# 八脉交会穴与其传统配对；regions：所主部位（选穴时与病位相合者方取）
+confluent:
+  points: {SP4: 冲脉, PC6: 阴维脉, SI3: 督脉, BL62: 阳跷脉, GB41: 带脉, TE5: 阳维脉, LU7: 任脉, KI6: 阴跷脉}
+  pairs:
+    - {points: [SP4, PC6], emphasis: 心、胸、胃, en: "heart, chest and stomach regions", regions: [chest, epigastrium], symptoms: [nausea_vomiting, epigastric_pain, epigastric_fullness, palpitation]}
+    - {points: [SI3, BL62], emphasis: 目内眦、颈项、耳、肩、腰背, en: "neck, spine, back and shoulder regions", regions: [neck_posterior, occiput, shoulder, lumbar], symptoms: [neck_stiffness, low_back_pain]}
+    - {points: [GB41, TE5], emphasis: 目锐眦、耳后、颊、颈、肩, en: "lateral head, retroauricular, neck and shoulder regions", regions: [temple, ear, neck_lateral, shoulder], symptoms: []}
+    - {points: [LU7, KI6], emphasis: 肺系、咽喉、胸膈, en: "lung-related, throat, chest and diaphragmatic regions", regions: [throat, chest], symptoms: [cough, wheezing, sore_throat]}
+# 交会穴（《针灸甲乙经》卷三各穴下所言“某某之会”的通行读法；工具另检原文核对）
+crossing:
+  SP6: {channels: [SP, LR, KI], statement: 足太阴、厥阴、少阴之会}
+  GV14: {channels: [GV, LI, SI, TE, ST, BL, GB], statement: 三阳、督脉之会}
+  CV4: {channels: [CV, SP, LR, KI], statement: 足三阴、任脉之会}
+  CV3: {channels: [CV, SP, LR, KI], statement: 足三阴、任脉之会}
+  CV12: {channels: [CV, SI, TE, ST], statement: 手太阳、少阳、足阳明所生，任脉之会}
+  GV20: {channels: [GV, BL], statement: 督脉、足太阳之会}
+  GB20: {channels: [GB], vessels: [阳维脉], statement: 足少阳、阳维之会}
+  GV16: {channels: [GV], vessels: [阳维脉], statement: 督脉、阳维之会}
+  BL11: {channels: [BL, SI], statement: 足太阳、手太阳之会}
+  LR13: {channels: [LR, GB], statement: 足厥阴、少阳之会}
+  LR14: {channels: [SP, LR], vessels: [阴维脉], statement: 足太阴、厥阴、阴维之会}
+  GB24: {channels: [SP, GB], statement: 足太阴、少阳之会}
+# 四总穴
+four_command:
+  ST36: {area: 肚腹, regions: [epigastrium, abdomen, lower_abdomen]}
+  BL40: {area: 腰背, regions: [lumbar, hip]}
+  LU7: {area: 头项, regions: [head, forehead, temple, occiput, vertex, neck_posterior, neck_lateral]}
+  LI4: {area: 面口, regions: [face, teeth, nose]}
+# 经验配穴：不按特定穴类别归类者
+empirical_pairs:
+  - {id: four_gates, points: [LI4, LR3], name: 四关穴, en: the Four Gates, rule: four_gates,
+     note: 今多指双侧合谷、太冲；合谷为大肠经原穴，太冲为肝经输穴、原穴，大肠与肝不是表里经，二者都不是络穴——可称经验配穴、上下配穴或阴阳配穴，不是原络配穴}
+
+# ------------------------------------------------------------------ 病位
+# channels：传统上与此部相关之经（选经的线索，不是诊断）；local：近部之穴；distal：远部之穴（经络上相连，多在肘膝以下）；
+# back / front：胸腹之病位对应的背部穴、腰背之病位对应的胸腹穴（前后配穴）；rule：选经所据
+regions:
+  vertex: {name: 巅顶, en: vertex, names: [巅顶, 头顶, 颠顶, 厥阴头痛, vertex, top of the head], part: head, within: head, channels: [LR, GV], local: [GV20, EX-HN1], distal: [LR3, PC6], rule: headache_channels}
+  forehead: {name: 前额, en: forehead, names: [前额, 额部, 前头, 眉棱骨, 阳明头痛, forehead, frontal], part: head, within: head, channels: [ST, LI], local: [GV29, GB14, ST8, BL2], distal: [LI4, ST44], rule: headache_channels}
+  temple: {name: 侧头, en: lateral head, names: [侧头, 颞部, 头侧, 偏头, 两侧头, 少阳头痛, temple, temporal, lateral head, side of the head], part: head, within: head, channels: [GB, TE], local: [EX-HN5, GB8, GB20], distal: [TE5, GB41, GB43], rule: headache_channels}
+  occiput: {name: 后头, en: occiput, names: [后头, 枕部, 后脑, 头后, 太阳头痛, occiput, occipital, back of the head], part: head, within: head, channels: [BL, SI, GV], local: [BL10, GB20, GV16], distal: [SI3, BL62, BL60], rule: headache_channels}
+  head: {name: 头部, en: head, names: [头部, 头面, head], part: head, channels: [], local: [GV20, GB20, EX-HN5], distal: [LI4, LU7], rule: local, note: 头痛之部位（前额、侧头、后头、巅顶）可缩小选经的范围}
+  face: {name: 面部, en: face, names: [面部, 面颊, 颜面, 口角, 面口, face, cheek, mouth], part: face, channels: [ST, LI], local: [ST4, ST6, ST7, ST2], distal: [LI4, ST44], rule: local}
+  teeth: {name: 齿, en: teeth, names: [齿, 牙, 牙齿, 牙龈, teeth, tooth, gums], part: face, channels: [ST, LI], local: [ST6, ST7], distal: [LI4, ST44], rule: channel_course, note: 《灵枢·经脉》大肠手阳明“入下齿中”，胃足阳明“入上齿中”}
+  eye: {name: 目, en: eye, names: [目, 眼, 眼睛, 眼部, eye, eyes], part: face, channels: [LR, GB, BL, ST, TE], local: [BL2, EX-HN5, TE23, BL1], distal: [LI4, LR3, GB37], rule: channel_course}
+  nose: {name: 鼻, en: nose, names: [鼻, 鼻部, 鼻腔, nose, nasal], part: face, channels: [LI, ST, GV, LU], local: [LI20, GV29, GV23], distal: [LI4, LU7], rule: channel_course}
+  ear: {name: 耳, en: ear, names: [耳, 耳部, ear, ears], part: face, channels: [TE, SI, GB], local: [SI19, TE21, GB2, TE17], distal: [TE3, TE5, GB43], rule: channel_course}
+  throat: {name: 咽喉, en: throat, names: [咽喉, 咽, 喉, 嗌, 喉咙, throat, pharynx, larynx], part: neck, channels: [LU, KI, LI, ST, CV], local: [CV22, CV23], distal: [LU11, LI4, KI6, LU7], rule: channel_course}
+  neck_posterior: {name: 颈项, en: posterior neck, names: [颈项, 项, 项部, 后颈, 颈后, 后项, nape, back of the neck, posterior neck, neck], part: neck, channels: [BL, SI, GV], local: [BL10, GB20, GV14], distal: [SI3, BL62, EX-UE8, BL60], rule: channel_course}
+  neck_lateral: {name: 颈侧, en: lateral neck, names: [颈侧, 侧颈, 颈部两侧, 颈肩, side of the neck, lateral neck], part: neck, channels: [GB, TE], local: [GB20, GB21], distal: [TE5, GB39, GB41], rule: channel_course}
+  shoulder: {name: 肩, en: shoulder, names: [肩, 肩部, 肩关节, 肩背, shoulder, shoulders], part: shoulder, channels: [LI, TE, SI], local: [LI15, TE14, SI9, SI11], distal: [GB34, ST38, LI4, TE5, SI3], rule: channel_course, note: 肩前属手阳明，肩外属手少阳，肩后属手太阳}
+  elbow: {name: 肘, en: elbow, names: [肘, 肘部, 肘关节, 肘外侧, elbow], part: upper_limb, channels: [LI, TE, SI], local: [LI11, LI10, TE10, SI8], distal: [LI4], rule: channel_course, note: 肘外侧痛（肘劳）多责手阳明}
+  wrist: {name: 腕, en: wrist, names: [腕, 腕部, 腕关节, 手腕, wrist], part: upper_limb, channels: [LI, TE, SI, PC, LU, HT], local: [TE4, LI5, SI4, PC7], distal: [], rule: local}
+  chest: {name: 胸, en: chest, names: [胸, 胸部, 胸闷, 心胸, 胸膺, 膻中部, chest, thorax], part: chest, channels: [CV, PC, LU, HT, KI], local: [CV17, LU1, CV14], distal: [PC6, PC4, LU7], back: [BL15, BL14, BL13], rule: channel_course}
+  hypochondrium: {name: 胁肋, en: hypochondrium, names: [胁, 胁肋, 两胁, 胁下, 胁部, hypochondrium, flank, ribs, costal region], part: chest, channels: [LR, GB], local: [LR14, GB24, LR13], distal: [TE6, GB34, LR3], back: [BL18, BL19], rule: channel_course}
+  epigastrium: {name: 胃脘, en: epigastrium, names: [胃脘, 脘, 脘腹, 上腹, 上腹部, 心下, 中脘部, 胃部, epigastrium, epigastric, upper abdomen, stomach area], part: upper_abdomen, channels: [ST, SP, CV, PC], local: [CV12], distal: [ST36, PC6, SP4, ST34], back: [BL21, BL20], organs: [胃], rule: channel_course}
+  abdomen: {name: 腹, en: abdomen, names: [腹, 腹部, 大腹, 脐腹, 脐周, 肚腹, abdomen, abdominal, belly, periumbilical], part: abdomen, channels: [ST, SP, CV, KI], local: [ST25, CV6], distal: [ST36, ST37, ST39], back: [BL25, BL27], rule: channel_course}
+  lower_abdomen: {name: 小腹, en: lower abdomen, names: [小腹, 少腹, 下腹, 下腹部, 胞宫, 小腹部, lower abdomen, pelvis, pelvic, suprapubic], part: lower_abdomen, channels: [CV, LR, KI, SP, BL], local: [CV4, CV3, CV6], distal: [SP6, LR3, KI3], back: [BL23, BL32, BL28], rule: channel_course}
+  lumbar: {name: 腰, en: low back, names: [腰, 腰部, 腰背, 腰骶, 腰脊, 下背, low back, lower back, lumbar, lumbosacral, back], part: lower_back, channels: [BL, GV, KI], local: [BL23, BL25, GV3, EX-B2], distal: [BL40, EX-UE7, SI3, BL60], front: [CV4, CV6], rule: channel_course}
+  hip: {name: 髋臀, en: hip and buttock, names: [髋, 臀, 臀部, 髋部, 环跳部, hip, buttock, gluteal], part: hip, channels: [GB, BL], local: [GB30], distal: [GB34, BL40, GB39], rule: channel_course}
+  knee: {name: 膝, en: knee, names: [膝, 膝部, 膝关节, 膝盖, knee, knees], part: lower_limb, channels: [ST, SP, GB, LR, KI, BL], local: [ST35, EX-LE4, ST34, SP10, EX-LE2, GB34, SP9], distal: [], rule: local}
+  calf: {name: 小腿, en: calf, names: [小腿, 腓肠, 小腿肚, 腿肚, calf, calves], part: lower_limb, channels: [BL], local: [BL57], distal: [BL40], rule: channel_course}
+  ankle: {name: 踝, en: ankle, names: [踝, 踝部, 踝关节, 脚踝, ankle], part: lower_limb, channels: [ST, GB, BL, KI, SP], local: [ST41, GB40, BL62, KI6, BL60, KI3, SP5], distal: [], rule: local}
+
+# ------------------------------------------------------------------ 症状（对症选穴）
+# points：首选在前；classical：古籍中写此症的常见字面（用于在原文的主治语句中检索）；five_shu：《难经·六十八难》以此类症归之的
+# 五输类别（只在病经已知时提示其该类穴，不意味着凡有此症皆取该类穴）；region：此症通常所在之部（未给病位时用）；
+# organs：教材通常归之的脏腑（同上，只作提示）；generic：此组之穴只在病位未具体时取（头痛：部位已明则按部位选穴）
+symptoms:
+  nausea_vomiting: {name: 恶心呕吐, en: nausea and vomiting, names: [恶心, 呕吐, 呕, 吐, 欲呕, 干呕, 呕恶, 反胃, nausea, vomiting, emesis], classical: [呕, 欲呕, 呕逆, 吐逆, 呕吐], channels: [PC, ST], points: [PC6, ST36, CV12], five_shu: he_sea, organs: [胃], note: 胃气上逆（逆气）}
+  hiccup: {name: 呃逆, en: hiccup, names: [呃逆, 打嗝, 呃, hiccup, hiccups, singultus], classical: [哕, 呃逆, 呃], channels: [ST, PC], points: [BL17, PC6, CV12, ST36], five_shu: he_sea, organs: [胃]}
+  epigastric_pain: {name: 胃痛, en: epigastric pain, names: [胃痛, 胃脘痛, 心下痛, 脘痛, 胃疼, stomach ache, epigastric pain, stomachache], classical: [胃脘痛, 心下痛, 胃脘当心而痛], channels: [ST, PC, SP], points: [CV12, ST36, PC6], acute: [ST34], region: epigastrium, organs: [胃]}
+  epigastric_fullness: {name: 胃脘痞满, en: epigastric fullness, names: [心下满, 心下痞, 脘痞, 痞满, 胃脘胀满, 脘腹胀满, 胃胀, 胀满, epigastric fullness, fullness, distension], classical: [心下满, 心下痞, 胀满], channels: [ST, SP], points: [CV12, ST36, SP4], five_shu: jing_well, region: epigastrium, organs: [胃]}
+  abdominal_distension: {name: 腹胀, en: abdominal distension, names: [腹胀, 腹满, 肚胀, bloating, abdominal distension], classical: [腹胀, 腹满, 胪胀, 腹䐜胀], channels: [ST, SP], points: [ST25, ST36, CV6, ST37], region: abdomen}
+  diarrhea: {name: 泄泻, en: diarrhoea, names: [泄泻, 腹泻, 泄, 溏泄, 便溏, 大便溏, 下利, 拉肚子, diarrhea, diarrhoea, loose stools], classical: [泄, 溏, 飧泄, 下利, 洞泄, 肠澼], channels: [ST, SP, LI], points: [ST25, ST37, ST36, SP9], five_shu: he_sea, region: abdomen}
+  constipation: {name: 便秘, en: constipation, names: [便秘, 大便难, 大便不通, 大便秘结, 大便干, constipation], classical: [大便难, 大便不通, 不得大便, 大便坚, 大便不利], channels: [LI, ST, TE], points: [ST25, TE6, ST37, BL25], region: abdomen, organs: [大肠]}
+  insomnia: {name: 失眠, en: insomnia, names: [失眠, 不寐, 不得眠, 不得卧, 入睡困难, 多梦, 睡眠不安, 睡不着, insomnia, sleeplessness, poor sleep, disturbed sleep], classical: [不得眠, 不寐, 目不瞑, 不能眠], channels: [HT, PC, KI, BL], points: [HT7, SP6, PC6, GV20, KI6, BL62], note: 照海、申脉分属阴跷、阳跷，传统以跷脉主目之开阖与寤寐}
+  palpitation: {name: 心悸, en: palpitations, names: [心悸, 心慌, 惊悸, 怔忡, palpitation, palpitations], classical: [心悸, 惊悸, 心澹澹, 心中憺憺], channels: [PC, HT], points: [PC6, HT7, BL15, CV14, CV17], organs: [心]}
+  mood: {name: 情志失调, en: "low mood, anxiety or irritability", names: [焦虑, 抑郁, 郁闷, 烦躁, 情绪低落, 易怒, 善怒, 心烦, 紧张, anxiety, low mood, irritability, stress, depression], classical: [善怒, 善悲, 烦心, 善恐, 心烦], channels: [LR, PC, HT, GV], points: [LR3, LI4, PC6, HT7, GV20, GV29]}
+  cough: {name: 咳嗽, en: cough, names: [咳嗽, 咳, 嗽, 欬, 干咳, cough, coughing], classical: [咳, 欬, 嗽], channels: [LU], points: [LU7, BL13, LU5, LU9, LU1], five_shu: jing_river, region: chest, organs: [肺]}
+  wheezing: {name: 喘, en: wheezing, names: [哮喘, 喘, 气喘, 喘息, 哮, 气急, 气短喘促, wheeze, wheezing, asthma, breathlessness], classical: [喘, 喘息, 上气], channels: [LU, CV, KI], points: [EX-B1, BL13, CV17, LU7, LU1, CV22], five_shu: jing_river, region: chest, organs: [肺]}
+  fever: {name: 发热, en: fever, names: [发热, 身热, 高热, 热病, 发烧, 壮热, fever, pyrexia], classical: [身热, 热病, 发热], channels: [GV, LI], points: [GV14, LI11, LI4], five_shu: ying_spring}
+  sore_throat: {name: 咽痛, en: sore throat, names: [咽痛, 咽喉肿痛, 喉痹, 嗌痛, 咽干, 咽喉痛, sore throat, pharyngitis, throat pain], classical: [喉痹, 嗌痛, 咽痛, 嗌干, 咽肿, 喉中肿], channels: [LU, KI, LI], points: [LU11, LI4, KI6, LU10, CV22], region: throat}
+  toothache: {name: 牙痛, en: toothache, names: [牙痛, 齿痛, 牙疼, 龋, toothache, dental pain], classical: [齿痛, 齿龋, 龋, 齿龈痛], channels: [LI, ST], points: [LI4, ST44, ST6, ST7], region: teeth}
+  headache: {name: 头痛, en: headache, names: [头痛, 头疼, 偏头痛, 头风, headache, headaches, migraine], classical: [头痛, 头重, 偏头痛, 头风], channels: [], points: [GV20, GB20, EX-HN5, LI4, LU7], region: head, generic: true, note: 头痛之部位决定选经（见病位：前额、侧头、后头、巅顶）；部位已明者不取此组通用之穴}
+  dizziness: {name: 眩晕, en: dizziness, names: [眩晕, 头晕, 目眩, 头眩, 头昏, dizziness, vertigo, lightheadedness], classical: [眩, 头眩, 目眩, 眩冒], channels: [GB, LR, GV], points: [GB20, GV20, LR3, PC6, ST40], region: head}
+  red_eyes: {name: 目赤肿痛, en: "red, painful eyes", names: [目赤, 目赤肿痛, 眼红, 目痛, 眼痛, red eyes, eye pain, conjunctivitis], classical: [目赤, 目痛, 目中赤痛, 目赤痛], channels: [LR, GB, BL], points: [LI4, LR2, GB20, EX-HN5, BL2], region: eye}
+  tinnitus: {name: 耳鸣耳聋, en: tinnitus or hearing loss, names: [耳鸣, 耳聋, 听力下降, 重听, tinnitus, hearing loss, deafness], classical: [耳鸣, 聋, 暴聋, 耳中鸣], channels: [TE, SI, GB, KI], points: [SI19, GB2, TE17, TE3, TE5, KI3], region: ear}
+  nasal_congestion: {name: 鼻塞, en: nasal congestion, names: [鼻塞, 鼻流清涕, 流涕, 鼻渊, 鼻炎, 鼻不通, nasal congestion, blocked nose, rhinitis, runny nose], classical: [鼻塞, 鼽, 鼻不利, 鼻窒], channels: [LI, LU, GV], points: [LI20, GV29, LI4, GV23, LU7], region: nose}
+  facial_palsy: {name: 口眼㖞斜, en: facial palsy, names: [面瘫, 口眼歪斜, 口眼㖞斜, 口僻, 口歪, facial palsy, facial paralysis, Bell's palsy], classical: [口僻, 口㖞, 口喎, 口眼㖞斜], channels: [ST, LI, GB, TE], points: [ST4, ST6, GB14, ST2, TE17, LI4], region: face}
+  neck_stiffness: {name: 项强, en: neck stiffness or pain, names: [项强, 颈项强痛, 落枕, 颈痛, 颈项痛, 颈部僵硬, 脖子痛, stiff neck, neck pain, torticollis], classical: [项强, 项痛, 不可以顾, 项如拔, 颈项强], channels: [BL, SI, GB, GV], points: [EX-UE8, SI3, GB39, BL10, GB20], region: neck_posterior}
+  low_back_pain: {name: 腰痛, en: low back pain, names: [腰痛, 腰酸, 腰背痛, 腰疼, 腰酸痛, low back pain, lumbago, backache, back pain], classical: [腰痛, 腰脊痛, 腰似折, 腰脊强], channels: [BL, GV, KI], points: [BL23, BL40, BL25, GV3, EX-UE7], region: lumbar}
+  hypochondriac_pain: {name: 胁痛, en: hypochondriac pain, names: [胁痛, 胁肋痛, 两胁胀痛, 胁胀, hypochondriac pain, flank pain, rib pain], classical: [胁痛, 胁下痛, 胸胁痛, 胁满], channels: [LR, GB], points: [TE6, GB34, LR14, LR3], region: hypochondrium, organs: [肝]}
+  joint_pain: {name: 肢节疼痛, en: joint pain or heaviness, names: [关节痛, 关节疼痛, 痹痛, 痹证, 肢体重痛, 身体沉重, 体重, 节痛, joint pain, arthralgia, heaviness], classical: [节痛, 体重, 身重, 痹痛, 骨节痛, 关节痛], channels: [], points: [], five_shu: shu_stream, note: 病位定局部之穴，并取阿是穴}
+  dysmenorrhea: {name: 痛经, en: dysmenorrhoea, names: [痛经, 经行腹痛, 月经痛, dysmenorrhea, dysmenorrhoea, period pain, menstrual pain], classical: [经行腹痛, 月水来腹痛, 痛经], channels: [SP, LR, CV], points: [SP6, CV3, SP8, BL32, CV4], region: lower_abdomen}
+  irregular_menses: {name: 月经不调, en: irregular menstruation, names: [月经不调, 月经先期, 月经后期, 经乱, 经期紊乱, irregular menstruation, irregular periods], classical: [月事不调, 月水不调, 月事不以时, 经水不调], channels: [SP, LR, KI, CV], points: [SP6, CV4, SP10, LR3, KI3], region: lower_abdomen}
+  urinary: {name: 小便不利, en: difficult or frequent urination, names: [小便不利, 癃闭, 尿潴留, 尿少, 遗尿, 尿频, 小便频数, 排尿困难, urinary retention, difficult urination, enuresis, frequent urination], classical: [癃, 不得小便, 小便不利, 遗溺, 遗尿], channels: [BL, KI, CV, TE], points: [CV3, BL28, SP9, SP6, BL39], region: lower_abdomen, organs: [膀胱], note: 委阳为三焦下合穴，传统以三焦主通调水道}
+  edema: {name: 水肿, en: oedema, names: [水肿, 浮肿, 肿胀, edema, oedema, swelling], classical: [水肿, 面胕肿, 水胀, 肤胀], channels: [SP, KI, TE], points: [SP9, CV9, KI7, BL22, ST36]}
+  fatigue: {name: 乏力, en: fatigue, names: [乏力, 疲乏, 倦怠, 神疲, 气短, 少气, 疲劳, fatigue, tiredness, weakness, exhaustion], classical: [少气, 倦, 懈惰, 嗜卧], channels: [ST, SP, CV], points: [ST36, CV6, CV4, BL20]}
+  sweating: {name: 汗出异常, en: abnormal sweating, names: [自汗, 盗汗, 多汗, 汗多, 无汗, 汗出, sweating, night sweats, hyperhidrosis], classical: [汗出, 盗汗, 汗不出], channels: [LI, KI, HT], points: [LI4, KI7, HT6], note: 合谷、复溜相配为传统调汗之法；阴郄、复溜相配多用于盗汗}
+  cramp: {name: 转筋, en: muscle cramp or spasm, names: [抽筋, 转筋, 小腿抽筋, 筋急, 拘挛, 痉挛, cramp, cramps, spasm, muscle spasm], classical: [转筋, 筋挛, 拘挛, 筋急], channels: [BL, GB], points: [BL57, GB34], region: calf}
+
+# ------------------------------------------------------------------ 病性与病机（辨证选穴）
+# principle：治则；technique：传统施术原则（是原则，不是参数）；mother_child：虚补其母、实泻其子；hui：相应之八会；points：
+# 教材常用之穴；five_shu：《灵枢·顺气一日分为四时》或《难经·六十八难》所言之五输类别；xi：郄穴之倾向
+natures:
+  deficiency: {name: 虚, en: deficiency, names: [虚, 虚证, 不足, 气虚, 血虚, 阳虚, 阴虚, 亏虚, 虚弱, deficiency, deficient], principle: 补虚, technique: 补法；虚则补之, mother_child: mother, rule: mother_child}
+  excess: {name: 实, en: excess, names: [实, 实证, 有余, 邪实, 壅实, excess], principle: 泻实, technique: 泻法；盛则泻之, mother_child: child, rule: mother_child}
+  cold: {name: 寒, en: cold, names: [寒, 寒证, 虚寒, 寒凝, 受寒, 畏寒, 怕冷, 畏冷, 冷痛, 喜温, 遇寒加重, cold, chill], principle: 温寒, technique: 寒则留之，陷下则灸之（留针、艾灸）, rule: pattern}
+  heat: {name: 热, en: heat, names: [热, 热证, 实热, 内热, 郁热, 火旺, 火热, heat, fire], principle: 清热, technique: 热则疾之（疾刺不留；井、荥点刺出血为传统之法）, five_shu: ying_spring, rule: pattern}
+  qi_stagnation: {name: 气滞, en: qi stagnation, names: [气滞, 气郁, 肝郁, 肝气郁结, 郁, 气机郁滞, qi stagnation, stagnation], principle: 行气, points: [LR3, PC6], hui: 气, rule: pattern}
+  blood_stasis: {name: 血瘀, en: blood stasis, names: [血瘀, 瘀血, 瘀, 瘀阻, 刺痛, blood stasis, stasis], principle: 活血, points: [SP10], hui: 血, xi: yin, rule: pattern}
+  phlegm_damp: {name: 痰湿, en: phlegm-damp, names: [痰, 痰湿, 湿浊, 湿盛, 痰浊, 水湿, 痰饮, phlegm, dampness, damp], principle: 化痰祛湿, points: [ST40, SP9], rule: pattern}
+  food_retention: {name: 食积, en: food retention, names: [食积, 食滞, 伤食, 饮食不节, 积滞, 暴饮暴食, food retention, overeating, dietary irregularity], principle: 消食导滞, points: [ST36, CV12], five_shu: he_sea, rule: lingshu44}
+  wind: {name: 风, en: wind, names: [外风, 风寒, 风热, 风邪, 外感, 感冒, wind, common cold], principle: 祛风解表, points: [LU7, LI4, GB20], rule: pattern}
+  sinew: {name: 筋急, en: sinew tightness, names: [筋急, 拘急, 屈伸不利, 筋脉拘急, 活动受限, 僵硬, tightness, stiffness, restricted movement], principle: 舒筋, hui: 筋, rule: hui}
+  # 《灵枢·顺气一日分为四时》的五输取法
+  in_zang: {name: 病在藏, en: disorder in a zang system, names: [病在脏, 病在藏, 脏病, 藏病], five_shu: jing_well, rule: lingshu44}
+  complexion: {name: 病变于色, en: change in complexion, names: [面色改变, 面色异常, 色变, 病变于色, complexion change], five_shu: ying_spring, rule: lingshu44}
+  fluctuating: {name: 病时间时甚, en: fluctuating severity, names: [时轻时重, 时作时止, 时发时止, 时间时甚, 反复发作, fluctuating, intermittent], five_shu: shu_stream, rule: lingshu44}
+  voice: {name: 病变于音, en: change in voice, names: [声音改变, 声嘶, 音哑, 失音, 声音嘶哑, 病变于音, hoarseness, voice change], five_shu: jing_river, rule: lingshu44}
+# 病程：急者取郄（阳经郄穴多用于急性痛证，阴经郄穴多用于血证）
+acuity:
+  acute: {name: 急性, en: acute, names: [急性, 暴发, 卒发, 突发, 新病, 初起, acute, sudden]}
+  chronic: {name: 慢性, en: chronic, names: [慢性, 久病, 日久, 反复, 迁延, chronic, long-standing]}
+# 左右
+sides:
+  left: {name: 左, names: [左, 左侧, left]}
+  right: {name: 右, names: [右, 右侧, right]}
+  both: {name: 双侧, names: [双侧, 两侧, 双, bilateral, both sides]}
+
+# ------------------------------------------------------------------ 规则：每一条选穴、配穴、施术的依据
+# level：classical（经典）· teaching（现代教材）· empirical（经验配穴）· standard（标准与规范）；probes：原文语句（按原样检索，
+# 不含标点），reading：同一术语的不同读法；modern：现代证据（见 modern）
+rules:
+  # 选穴原则
+  local: {name: 近部选穴, en: local point selection, kind: principle, level: classical, statement: 在病痛所在或其邻近取穴；“近部”以病位而言，兼顾所及组织、与运动有关的症状、压痛与检查所见。, source: 《灵枢·经筋》“以痛为输”, probes: [以痛为输]}
+  ashi: {name: 阿是穴, en: Ashi points, kind: principle, level: classical, statement: 以压痛或局部反应定其处，无固定的名称与定位，依个体检查而取。, source: 《备急千金要方·灸例》“阿是之法”, probes: [阿是]}
+  distal: {name: 远部选穴, en: distal point selection, kind: principle, level: classical, statement: 取远离病位、而经络上与之相连之穴，多在肘膝前后。, source: 《灵枢·终始》“病在上者下取之，病在下者高取之，病在头者取之足，病在腰者取之腘”；《灵枢·官针》“远道刺”, probes: [病在上者下取之, 病在头者取之足, 远道刺者]}
+  channel_course: {name: 循经取穴, en: selection by channel course, kind: principle, level: classical, statement: 病位所过之经即选经的线索：经脉、经筋的分布与走向，运动与压痛所见，伴随的脏腑、官窍与全身之候，三者合参。, source: 《灵枢·经脉》《灵枢·经筋》, probes: [经脉者所以能决死生]}
+  headache_channels: {name: 头痛分经, en: headache differentiated by channel, kind: principle, level: teaching, statement: 前额属阳明，侧头属少阳，后头属太阳，巅顶属厥阴——是选穴的线索；诊断仍须病史、检查与伴随之候。, source: 现代针灸学教材（承六经头痛之说）}
+  four_command: {name: 四总穴, en: Four Command Points, kind: principle, level: classical, statement: 肚腹三里留，腰背委中求，头项寻列缺，面口合谷收。, source: 《四总穴歌》（通行说法出明代针灸书，如《针灸聚英》；语料中的最早见证以所检为准）, probes: [肚腹三里留, 腰背委中求, 头项寻列缺, 面口合谷收]}
+  pattern: {name: 辨证选穴, en: pattern-based selection, kind: principle, level: classical, statement: 病位定经与部，病性与病机定治则与加减：补虚泻实，清热温寒，标本缓急，因人制宜。, source: 《灵枢·经脉》“盛则泻之，虚则补之，热则疾之，寒则留之，陷下则灸之”, probes: [盛则泻之, 陷下则灸之]}
+  symptom: {name: 对症选穴, en: symptom-oriented selection, kind: principle, level: teaching, statement: 针对突出的症状取穴，与辨证并用，不替代辨证。, source: 现代针灸学教材}
+  classical_indication: {name: 古籍主治, en: classical indications, kind: principle, level: classical, statement: 古籍言某穴“主之”某症者，是该穴的文献主治；本工具据语料中“……某穴主之”“某穴主……”“取某穴”等语句检得，每条附原文。, source: 《针灸甲乙经》卷七至卷十二等}
+  # 特定穴类别
+  five_shu: {name: 五输穴, en: Five-Shu points, kind: category, level: classical, statement: 所出为井，所溜为荥，所注为腧，所行为经，所入为合。, source: 《灵枢·九针十二原》《灵枢·本输》, probes: [所出为井, 所溜为荥]}
+  five_phase: {name: 五输配五行, en: Five-Phase correspondence of the Five-Shu points, kind: category, level: classical, statement: 阴井木，阳井金；阴荥火，阳荥水；阴俞土，阳俞木；阴经金，阳经火；阴合水，阳合土。, source: 《难经·六十四难》, probes: [阴井木, 阳荥水]}
+  nanjing68: {name: 五输主病（难经）, en: Five-Shu indications (Nanjing 68), kind: category, level: classical, statement: 井主心下满，荥主身热，俞主体重节痛，经主喘咳寒热，合主逆气而泄。, source: 《难经·六十八难》, probes: [井主心下满, 荥主身热]}
+  lingshu44: {name: 五输取法（灵枢）, en: Five-Shu selection criteria (Lingshu 44), kind: category, level: classical, statement: 病在藏者取之井，病变于色者取之荥，病时间时甚者取之输，病变于音者取之经，经满而血者、病在胃及以饮食不节得病者取之于合。, source: 《灵枢·顺气一日分为四时》, probes: [病在藏者取之井, 病变于色者取之荥, 经满而血者]}
+  yuan: {name: 原穴, en: Yuan-Source points, kind: category, level: classical, statement: 五藏有疾，当取之十二原；阴经以输为原，阳经别置一原（“三焦行于诸阳，故置一俞，名曰原”）。, source: 《灵枢·九针十二原》；《难经·六十二难》《六十六难》, probes: [五藏有疾当取之十二原, 三焦行于诸阳, 肺之原出于太渊]}
+  luo: {name: 络穴, en: Luo-Connecting points, kind: category, level: classical, statement: 十五络：十二经各一，任脉、督脉之络与脾之大络；络穴兼及表里两经。, source: 《灵枢·经脉》；《难经·二十六难》“络有十五”, probes: [名曰列缺, 络有十五]}
+  xi: {name: 郄穴, en: Xi-Cleft points, kind: category, level: classical, statement: 经气深聚之处；教学上阴经郄穴多用于血证，阳经郄穴多用于急性痛证——是倾向，不是排他之规。, source: 《针灸甲乙经》卷三（“手太阴之郄”等）, probes: [手太阴之郄]}
+  back_shu: {name: 背俞穴, en: Back-Shu points, kind: category, level: classical, statement: 脏腑之气输注于背部之穴；教学上脏病多用背俞，而不排他。, source: 《难经·六十七难》“五藏募皆在阴，而俞皆在阳”, probes: [五藏募皆在阴, 阴病行阳]}
+  front_mu: {name: 募穴, en: Front-Mu points, kind: category, level: classical, statement: 脏腑之气汇聚于胸腹之穴；教学上腑病多用募穴，而不排他。募穴未必在本脏腑之经（章门在肝经而为脾募）。, source: 《难经·六十七难》, probes: [五藏募皆在阴]}
+  lower_he: {name: 下合穴, en: Lower He-Sea points, kind: category, level: classical, statement: 合治内府；胃合于三里，大肠合入于巨虚上廉，小肠合入于巨虚下廉，三焦合入于委阳，膀胱合入于委中央，胆合入于阳陵泉。, source: 《灵枢·邪气藏府病形》, probes: [合治内府, 胃合于三里]}
+  hui: {name: 八会穴, en: Eight Influential Points, kind: category, level: classical, statement: 府会太仓，藏会季胁，筋会阳陵泉，髓会绝骨，血会鬲俞，骨会大杼，脉会太渊，气会三焦外一筋直两乳内也。, source: 《难经·四十五难》, probes: [府会太仓, 脉会太渊, 髓会绝骨]}
+  confluent: {name: 八脉交会穴, en: Eight Confluent Points, kind: category, level: classical, statement: 公孙冲脉胃心胸，内关阴维下总同；临泣胆经连带脉，阳维目锐外关逢；后溪督脉内眦颈，申脉阳跷络亦通；列缺任脉行肺系，阴跷照海膈喉咙。, source: 《八脉交会八穴歌》（窦汉卿所传，见《针经指南》《针灸大全》）, probes: [公孙冲脉胃心胸, 内关阴维下总同, 临泣胆经连带脉, 列缺任脉行肺系]}
+  crossing: {name: 交会穴, en: Crossing points, kind: category, level: classical, statement: 两经或数经相交会之穴，其传统主治可兼及所会诸经。, source: 《针灸甲乙经》卷三各穴下“某某之会”, probes: [足太阴厥阴少阴之会]}
+  extra: {name: 经外奇穴, en: extra points, kind: category, level: standard, statement: 有定名、定位，而未归入或不便归入十四经的腧穴；与阿是穴不同。, source: WHO 2008《标准针灸穴位》；GB/T 12346—2021}
+  # 配穴方法
+  local_distal: {name: 近远配穴, en: local–distal combination, kind: combination, level: teaching, statement: 病位附近之穴配经络上相连的远部之穴。, source: 《灵枢·终始》；现代教材, probes: [病在上者下取之]}
+  upper_lower: {name: 上下配穴, en: upper–lower combination, kind: combination, level: classical, statement: 上部之穴与下部之穴相配。, source: 《灵枢·终始》“病在上者下取之，病在下者高取之”, probes: [病在下者高取之]}
+  anterior_posterior: {name: 前后配穴, en: anterior–posterior combination, kind: combination, level: classical, statement: 胸腹之穴与背部之穴相配（偶刺之法）。, source: 《灵枢·官针》“偶刺者，以手直心若背，直痛所，一刺前，一刺后”, probes: [偶刺者]}
+  left_right: {name: 左右配穴, en: left–right combination, kind: combination, level: classical, statement: 两侧同取，或左病取右、右病取左（巨刺、缪刺），按病情而定。, source: 《素问·阴阳应象大论》“以右治左，以左治右”；《灵枢·官针》巨刺, probes: [以右治左, 巨刺]}
+  same_channel: {name: 本经配穴, en: same-channel combination, kind: combination, level: teaching, statement: 同一经的穴相配。, source: 现代教材}
+  interior_exterior: {name: 表里经配穴, en: interior–exterior channel combination, kind: combination, level: classical, statement: 互为表里的阴经与阳经之穴相配（肺与大肠、脾与胃、心与小肠、肾与膀胱、心包与三焦、肝与胆）。, source: 《素问·血气形志》“足太阳与少阴为表里”, probes: [足太阳与少阴为表里]}
+  same_name: {name: 同名经配穴, en: same-name channel combination, kind: combination, level: teaching, statement: 手足同名经（太阴、少阴、厥阴、阳明、太阳、少阳）之穴相配。, source: 现代教材}
+  yuan_luo: {name: 原络配穴（主客原络）, en: Yuan–Luo (host–guest) combination, kind: combination, level: classical, statement: 先病之经（主）取其原穴，后病的表里经（客）取其络穴。主客是处方的道理，不规定进针的先后。, source: 明·杨继洲《针灸大成》“十二经治症主客原络”；现代教材, probes: [主客原络]}
+  shu_mu: {name: 俞募配穴, en: Back-Shu–Front-Mu combination, kind: combination, level: classical, statement: 同一脏腑的背俞穴与募穴相配。, source: 《难经·六十七难》“阴病行阳，阳病行阴，故令募在阴，俞在阳”, probes: [阴病行阳]}
+  shu_yuan: {name: 俞原配穴, en: Back-Shu–Yuan combination, kind: combination, level: teaching, statement: 同一脏腑的背俞穴与其经之原穴相配。, source: 现代教材}
+  lowerhe_mu: {name: 合募配穴, en: Lower He-Sea–Front-Mu combination, kind: combination, level: teaching, statement: 六腑的下合穴与募穴相配。, source: 现代教材；“合治内府”（《灵枢·邪气藏府病形》）, probes: [合治内府]}
+  xi_hui: {name: 郄会配穴, en: Xi-Cleft–Influential combination, kind: combination, level: teaching, statement: 相关之经的郄穴配以相应的八会穴（如梁丘配中脘：中脘为腑会）。, source: 现代教材}
+  confluent_pair: {name: 八脉交会配穴, en: confluent-point pair, kind: combination, level: classical, statement: 八脉交会穴两两相配，主其相合之部；可单用亦可成对，不必八穴尽用。, source: 《八脉交会八穴歌》, probes: [公孙冲脉胃心胸]}
+  mother_child_cross: {name: 他经补母泻子, en: cross-channel mother–child, kind: combination, level: teaching, statement: 虚补母经之本穴（与之同五行之穴），实泻子经之本穴；母、子以病经之五行而定。, source: 《难经·六十九难》；现代教材, probes: [虚者补其母]}
+  four_gates: {name: 四关穴, en: the Four Gates, kind: combination, level: empirical, statement: 今多指双侧合谷、太冲；“四关”一词历代所指不一，宜就原文读其义。, source: 《灵枢·九针十二原》；《标幽赋》；明清针灸书,
+               probes: [{text: 十二原出于四关, reading: 《灵枢》：十二原出于四关——四关为肘膝四关节}, {text: 开四关而已之, reading: 《标幽赋》：寒热痹痛，开四关而已之}, {text: 四关者两手两足, reading: 四关为两手两足}, {text: 太冲合谷是也, reading: 四关为太冲、合谷}, {text: 所谓开四关者, reading: 开四关即合谷、太冲}]}
+  # 施术
+  mother_child: {name: 补母泻子, en: mother–child tonification and reduction, kind: technique, level: classical, statement: 虚者补其母，实者泻其子；母、子以病经的五行而定。选穴与补泻相关而各自为一事：原穴不当只视为补穴。, source: 《难经·六十九难》, probes: [虚者补其母, 实者泻其子]}
+  own_phase: {name: 本穴, en: own-phase point, kind: technique, level: teaching, statement: 本经与本经五行相同之穴（如肺金之经渠），其理与取母穴、子穴不同。, source: 现代教材}
+  localization: {name: 腧穴定位, en: point localization, kind: standard, level: standard, statement: 以体表解剖标志与骨度折量为主，指寸为辅；寸是比例单位，不是固定的厘米数，医者手指不能代替病人的比例。, source: GB/T 12346—2021《经穴名称与定位》}
+  safety: {name: 针刺安全, en: needling safety, kind: caution, level: standard, statement: 胸背、颈项、眼区等处针刺不当可致气胸、脏器与神经损伤、出血与感染；须由合格人员按规范施术。, source: NCCIH 针灸疗效与安全说明；WHO 针灸实践与安全文件}
+  record: {name: 处方记录, en: prescription record, kind: standard, level: teaching, statement: 处方包括穴位、左右、施术方式、刺激方法、治疗频次与疗程；据症状与功能的变化、耐受与不良反应而调整。, source: 现代教材；WHO 针灸实践文件}
+
+# ------------------------------------------------------------------ 现代证据（与理论分开）
+# 只记载经过核对的系统评价；它们说明的是“针灸（按所研究的方式）对特定人群是否有益”，不验证五输、原络、补母泻子等规则
+modern:
+  vickers2018:
+    citation: "Vickers AJ, Vertosick EA, Lewith G, et al.; Acupuncture Trialists' Collaboration. Acupuncture for Chronic Pain: Update of an Individual Patient Data Meta-Analysis. J Pain. 2018;19(5):455–474."
+    pmid: "29198932"
+    design: 个体病例数据荟萃分析（IPD meta-analysis）
+    population: 慢性疼痛（肌肉骨骼痛、骨关节炎、慢性头痛、肩痛）
+    size: 39 项试验，20 827 例
+    finding: 针灸优于假针刺与不针刺对照，疗效随时间大部分保持；与假针刺的差别小于与不针刺的差别。
+    limits: 是“针灸”整体在这些人群中的证据，不验证任何具体的选穴或配穴规则。
+    applies: {regions: [lumbar, neck_posterior, neck_lateral, knee, shoulder, head, forehead, temple, occiput, vertex], symptoms: [low_back_pain, neck_stiffness, headache, joint_pain]}
+  macpherson2013:
+    citation: "MacPherson H, Maschino AC, Lewith G, et al. Characteristics of acupuncture treatment associated with outcome: an individual patient meta-analysis of 17,922 patients with chronic pain in randomised controlled trials. PLoS One. 2013;8(10):e77438."
+    doi: 10.1371/journal.pone.0077438
+    design: 个体病例数据荟萃分析
+    population: 慢性疼痛的随机对照试验
+    size: 29 项试验，17 922 例
+    finding: 针刺风格、选穴方式（固定、半固定或个体化）、针数、治疗频次等多数特征与疗效差别的关联证据有限。
+    limits: 数据、统计效能与混杂所限，且缺少辨证的信息；“某种配穴更优”须有专门设计的比较研究。
+    applies: all
+  lee2015:
+    citation: "Lee A, Chan SKC, Fan LTY. Stimulation of the wrist acupuncture point PC6 for preventing postoperative nausea and vomiting. Cochrane Database Syst Rev. 2015;(11):CD003281."
+    doi: 10.1002/14651858.CD003281.pub4
+    design: Cochrane 系统评价
+    population: 术后恶心呕吐的预防
+    size: 59 项试验，7 667 例
+    finding: 与假刺激相比，刺激内关可减少术后恶心与呕吐；评价者将证据质量评为低。
+    limits: 限于术后恶心呕吐的预防，不推及其他原因的恶心呕吐，也不验证“胃气上逆”的理论解释。
+    applies: {points: [PC6], symptoms: [nausea_vomiting]}
+# 三层知识（第 9 节）
+evidence_levels:
+  - {level: classical, name: 经典与教材理论, establishes: 为什么传统上这样取穴、这样配穴}
+  - {level: standard, name: 术语、定位与操作规范, establishes: 怎样一致地描述与施行（GB/T 12346—2021；WHO 2022 中医药术语国际标准）}
+  - {level: clinical, name: 临床研究, establishes: 对一定的人群是否有益、一种方法是否优于另一种}
+
+# ------------------------------------------------------------------ 安全
+cautions:
+  thorax: {name: 胸背部, text: 深部为胸膜与肺，直刺过深可致气胸；宜平刺或斜刺、浅刺。}
+  viscera: {name: 胁腹部, text: 深部为肝、胃、脾、肾等脏器，不宜深刺；脏器肿大者尤须谨慎。}
+  lower_abdomen: {name: 下腹部, text: 针刺前宜排空小便；孕妇慎用。}
+  nape: {name: 项部, text: 深部近延髓与椎动脉：风府不可向上深刺，风池针尖朝向鼻尖、不可向内上方深刺。}
+  throat: {name: 天突, text: 先直刺浅入，再沿胸骨柄后缘向下，不可过深或偏斜，以免伤及气管与大血管。}
+  eye: {name: 眼区, text: 血管丰富：轻缓进针，不提插捻转，出针按压，防止出血。}
+  artery: {name: 动脉旁, text: 近动脉，进针时避开动脉搏动处。}
+  umbilicus: {name: 神阙, text: 传统禁针，多用灸法。}
+  pregnancy: {name: 孕期, text: 教材列为孕妇不宜针刺之穴（合谷、三阴交、昆仑、至阴、肩井等，以及下腹部、腰骶部腧穴）。}
+general_cautions:
+  - 由合格的执业人员在诊察之后施术；使用无菌一次性针具。
+  - 出血倾向或服用抗凝药者、孕妇、安装心脏起搏器者（电针）须事先说明并评估。
+  - 晕针、疼痛、出血、感染等不良反应须记录，并据以调整方案。

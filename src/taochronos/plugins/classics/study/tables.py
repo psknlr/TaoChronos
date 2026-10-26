@@ -350,6 +350,86 @@ def incompat(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
     return out
 
 
+def acupoints(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
+    if r.get("five_shu"):
+        return _acu_framework(r)
+    pres = r.get("prescription") or {}
+    points = (pres.get("core") or []) + (pres.get("supplementary") or [])
+    out = []
+    if points:
+        rows = [{"point": f"{p['name']} {p['code']}", "role": "主穴" if p["core"] else "配穴", "channel": p["channel_name"],
+                 "attrs": "、".join(c["label"] for c in p.get("categories") or []),
+                 "purposes": "；".join(pur["label"].split("：", 1)[-1] for pur in p.get("purposes") or []),
+                 "rationale": p["record"]["rationale"], "classics": _book((p.get("classical") or {}).get("earliest"))
+                 or _book(((p.get("classics") or {}).get("entry") or {}).get("witness")),
+                 "modern": p["record"].get("modern_evidence") or ""} for p in points]
+        out.append(table("acupoints-prescription", "选穴配穴表", [
+            ("point", "穴位", "l"), ("role", "主配", "c"), ("channel", "经脉", "l"), ("attrs", "特定穴属性", "l"),
+            ("purposes", "用意", "l"), ("rationale", "依据", "l"), ("classics", "古籍见证", "l"), ("modern", "现代证据", "l")], rows,
+            notes=["依据为传统理论中的选穴、配穴之理；古籍见证为本语料中最早言其主治所问之症或载其定位的著作；现代证据另列，"
+                   "说明针灸对一定人群的研究，不验证此处的选穴规则。", "施术方式、刺激方法、频次与疗程须由执业人员确定。"]))
+    combos = r.get("combinations") or []
+    if combos:
+        out.append(table("acupoints-combinations", "配穴方法", [("name", "方法", "l"), ("points", "穴位", "l"), ("text", "说明", "l")],
+                         [{"name": c["name"], "points": "、".join(c["points"]), "text": c["text"]} for c in combos]))
+    rows = []
+    for f in (r.get("classical") or {}).get("findings") or []:
+        for x in f.get("points", [])[:6]:
+            rows.append({"finding": f["name"], "point": f"{x['name']} {x['code']}", "works": x["works"], "earliest": _book(x.get("earliest")),
+                         "year": _years(x.get("earliest")), "chosen": "是" if x.get("candidate") else ""})
+    if rows:
+        out.append(table("acupoints-classical", "古籍所言主治所问之症的腧穴", [
+            ("finding", "症状", "l"), ("point", "穴位", "l"), ("works", "著作（部）", "c"), ("earliest", "最早见证", "l"),
+            ("year", "成书年代", "c"), ("chosen", "规则亦取", "c")], rows,
+            notes=["据“……某穴主之”“某穴主……”“取某穴”等语句读出；一部著作计一次；文献所言之主治，不是疗效证据。"]))
+    return out
+
+
+def _acu_framework(r: dict[str, Any]) -> list[dict[str, Any]]:
+    out = []
+    kinds = [("jing_well", "井"), ("ying_spring", "荥"), ("shu_stream", "输"), ("jing_river", "经"), ("he_sea", "合")]
+    rows = [{"channel": x["name"], **{k: f"{x[k]['name']} {x[k]['code']}（{x[k]['phase']}）" for k, _ in kinds}} for x in r["five_shu"]]
+    out.append(table("acupoints-five-shu", "十二经五输穴及其五行", [("channel", "经脉", "l")] + [(k, label, "l") for k, label in kinds], rows,
+                     notes=["五行：阴经井木、荥火、输土、经金、合水；阳经井金、荥水、输木、经火、合土（《难经·六十四难》）。"]))
+    out.append(table("acupoints-yuan-luo-xi", "原穴、络穴与郄穴", [("channel", "经脉", "l"), ("yuan", "原穴", "l"), ("luo", "络穴", "l"),
+                                                          ("xi", "郄穴", "l")],
+                     [{"channel": x["name"], "yuan": x["yuan"] + ("（以输为原）" if x["yuan_is_shu"] else ""), "luo": x["luo"], "xi": x["xi"]}
+                      for x in r["yuan_luo_xi"]],
+                     notes=["另有络穴：" + "、".join(f"{k} {v}" for k, v in r.get("extra_luo", {}).items()) + "；郄穴："
+                            + "、".join(f"{k} {v}" for k, v in r.get("extra_xi", {}).items()) + "。"]))
+    out.append(table("acupoints-shu-mu", "背俞穴与募穴", [("organ", "脏腑", "l"), ("back_shu", "背俞穴", "l"), ("front_mu", "募穴", "l")],
+                     [{"organ": x["organ"], "back_shu": x["back_shu"], "front_mu": x["front_mu"]} for x in r["shu_mu"]],
+                     notes=["募穴未必在本脏腑之经：章门在肝经而为脾募，京门在胆经而为肾募，天枢在胃经而为大肠募。"]))
+    out.append(table("acupoints-lower-he", "六腑下合穴", [("organ", "腑", "l"), ("he_sea", "本经合穴", "l"), ("lower_he", "下合穴", "l")],
+                     [{k: x[k] for k in ("organ", "he_sea", "lower_he")} for x in r["lower_he"]]))
+    out.append(table("acupoints-hui", "八会穴", [("of", "所会", "l"), ("point", "穴位", "l")], [{"of": x["of"], "point": x["point"]} for x in r["hui"]],
+                     notes=["“骨”“髓”之会是传统理论中的归类，不意味着对骨骼、骨髓或神经疾病的疗效。"]))
+    out.append(table("acupoints-confluent", "八脉交会穴", [("points", "穴位", "l"), ("vessels", "所通之脉", "l"), ("emphasis", "所主部位", "l")],
+                     [{"points": " + ".join(x["points"]), "vessels": " + ".join(x["vessels"]), "emphasis": x["emphasis"]} for x in r["confluent"]]))
+    out.append(table("acupoints-mother-child", "补母泻子", [("channel", "经脉", "l"), ("phase", "五行", "c"), ("mother", "本经母穴（补）", "l"),
+                                                     ("cross_mother", "他经补母", "l"), ("child", "本经子穴（泻）", "l"),
+                                                     ("cross_child", "他经泻子", "l"), ("own", "本穴", "l")],
+                     [{"channel": x["name"], "phase": x["phase"], **x["labels"]} for x in r["mother_child"]],
+                     notes=["母、子以病经之五行而定；他经补母泻子取母经、子经之本穴（与之同五行之穴），不是母经的母穴（《难经·六十九难》）。"]))
+    return out
+
+
+def point(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
+    out = []
+    checks = r.get("checks") or []
+    if checks:
+        rows = [{"attr": c["label"], "data": "、".join(c["data"]), "agree": c["agree"], "differ": len(c["differ"]),
+                 "where": "；".join(f"{_book(d['witness'])}作“{'、'.join(d['stated'])}”" for d in c["differ"][:3])} for c in checks]
+        out.append(table("point-checks", f"{(r.get('point') or {}).get('name', '')}：原文所载与通行归属", [
+            ("attr", "属性", "l"), ("data", "通行归属", "l"), ("agree", "相合（条）", "c"), ("differ", "相异（条）", "c"),
+            ("where", "相异之见证", "l")], rows, notes=["条目由规则读出（机器阅读）；相异者或为异文，或为读取之误，须回查原文。"]))
+    found = ((r.get("indications") or {}).get("findings") or [])[:20]
+    if found:
+        out.append(table("point-findings", f"{(r.get('point') or {}).get('name', '')}：古籍主治所见", [("finding", "所见", "l"), ("works", "著作（部）", "c")],
+                         [{"finding": f["finding"], "works": f["works"]} for f in found], notes=["一部著作计一次；文献所言之主治，不是疗效证据。"]))
+    return out
+
+
 def network(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
     target = r.get("target") or ""
     if r.get("findings"):
@@ -520,7 +600,7 @@ def casecompare(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
 BUILDERS: dict[str, Callable[[dict[str, Any], Any], list[dict[str, Any]]]] = {
     "usage": usage, "pairs": pairs, "compare": compare, "family": family, "term": term, "herb": herb, "properties": properties,
     "incompat": incompat, "network": network, "formula": formula, "names": names, "senses": senses,
-    "casecompare": casecompare,
+    "casecompare": casecompare, "acupoints": acupoints, "point": point,
 }
 
 

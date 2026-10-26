@@ -1316,6 +1316,142 @@ def incompat(r: dict[str, Any]) -> list[str]:
     return out + ["", f"> {r.get('notice', '')}"]
 
 
+def _witnessed(rule: dict[str, Any]) -> str:
+    firsts = [w for w in rule.get("witnesses") or [] if w.get("earliest")]
+    if not firsts:
+        return "本语料未检得" if rule.get("witnesses") else ""
+    return "；".join(f"「{w['probe']}」{w['works']} 部，最早 {w['earliest']['locator']}（{_years(w['earliest'])}）`{w['earliest']['passage_id']}`"
+                     + (f"——{w['reading']}" if w.get("reading") else "") for w in firsts[:4])
+
+
+def acupoints(r: dict[str, Any]) -> list[str]:
+    if r.get("five_shu"):
+        return _acu_framework(r)
+    pres = r.get("presentation", {})
+    labels = pres.get("labels", {})
+    out = ["# 选穴配穴：" + ("、".join(labels.get("regions", []) + labels.get("symptoms", [])) or "、".join(labels.get("organs", [])) or "—"), ""]
+    if pres.get("text"):
+        out += [f"> {_q(pres['text'], 200)}", ""]
+    if pres.get("unread"):
+        out += ["未能识别：" + "、".join(pres["unread"]), ""]
+    for st in r.get("steps", []):
+        out.append(f"{st['step']}. **{st['title']}**：{st['text']}")
+    out += ["", "## 处方", "", "| 穴位 | 主配 | 经脉 | 特定穴属性 | 用意 | 左右 |", "|---|---|---|---|---|---|"]
+    pres_points = (r.get("prescription") or {})
+    for pt in pres_points.get("core", []) + pres_points.get("supplementary", []):
+        out.append(f"| {pt['name']} {pt['code']} | {'主穴' if pt['core'] else '配穴'} | {pt['channel_name']} | "
+                   f"{'、'.join(c['label'] for c in pt['categories']) or '—'} | "
+                   f"{'；'.join(dict.fromkeys(x['text'] for pur in pt['purposes'] for x in pur['reasons']))} | {pt['laterality']} |")
+    if pres_points.get("ashi"):
+        out += ["", f"另：{pres_points['ashi']['text']}"]
+    out += ["", "## 定位（GB/T 12346—2021）", ""]
+    for pt in pres_points.get("core", []) + pres_points.get("supplementary", []):
+        entry = (pt.get("classics") or {}).get("entry")
+        out.append(f"- **{pt['name']}**：{pt.get('location') or ''}" + (f" 古书：{entry['witness']['locator']}「在{entry['location']}」" if entry and entry.get("location") else ""))
+    if r.get("combinations"):
+        out += ["", "## 配穴方法", ""] + [f"- **{c['name']}**（{c['en']}）：{c['text']}" for c in r["combinations"]]
+    if r.get("mother_child"):
+        out += ["", "## 补母泻子", ""] + [f"- {m['text']}" for m in r["mother_child"]]
+    if r.get("technique"):
+        out += ["", "## 施术原则（传统理论，不是参数）", ""] + [f"- {t['nature'] + '：' if t.get('nature') else ''}{t.get('principle') or ''}"
+                                                          f"{'；' if t.get('principle') else ''}{t.get('technique') or ''}" for t in r["technique"]]
+    imp = r.get("implementation") or {}
+    if imp:
+        out += ["", "## 处方记录（待医者填写）", "", "| 项目 | 内容 |", "|---|---|",
+                "| 穴位与左右 | " + "；".join(f"{x['name']}（{x['laterality']}）" for x in imp.get("points", [])) + " |",
+                "| 施术方式 | |", "| 刺激方法 | |", "| 频次 | |", "| 疗程 | |",
+                "| 观察指标 | " + "、".join(imp.get("outcomes", [])) + " |", "", imp.get("note", "")]
+    if r.get("excluded"):
+        out += ["", "## 未取之穴", ""] + [f"- {x['name']} {x['code']}：{x['why']}" for x in r["excluded"]]
+    if r.get("cautions"):
+        out += ["", "## 安全提示", ""] + [f"- {'⚠️ ' if c.get('severity') == 'high' else ''}{c['name']}" + (f"（{'、'.join(c['points'])}）" if c["points"] else "")
+                                          + f"：{c['text']}" + (f" `{c['witness']['passage_id']}`" if c.get("witness") else "") for c in r["cautions"]]
+    found = (r.get("classical") or {}).get("findings") or []
+    if found:
+        out += ["", "## 古籍所言主治（文献，不是疗效）", ""]
+        for f in found:
+            out.append(f"- **{f['name']}**：" + ("；".join(f"{x['name']} {x['works']} 部（最早 {x['earliest']['locator']}，{_years(x['earliest'])}）"
+                                                         for x in f["points"][:6]) or "未检得"))
+        out.append(f"  > {(r.get('classical') or {}).get('note', '')}")
+    if r.get("rules"):
+        out += ["", "## 依据与原文见证", "", "| 规则 | 层级 | 出处 | 本语料见证 |", "|---|---|---|---|"]
+        out += [f"| {x['name']} | {x.get('level') or ''} | {_q(x.get('source') or '', 60)} | {_witnessed(x)} |" for x in r["rules"]]
+    ev = r.get("evidence") or {}
+    out += ["", "## 证据的三个层次", ""] + [f"- **{x['name']}**：{x['establishes']}" for x in ev.get("levels", [])]
+    if ev.get("modern"):
+        out += [""] + [f"- {m['citation']}（{m.get('design')}；{m.get('population')}；{m.get('size')}）：{m.get('finding')} 限度：{m.get('limits')} "
+                       f"—— 关涉：{'、'.join(m.get('bears_on', []))}" for m in ev["modern"]]
+    out += ["", f"> {ev.get('note', '')}"] if ev.get("note") else []
+    if r.get("alternatives"):
+        out += ["", "## 其他候选", ""] + [f"- {a['name']} {a['code']}：{'；'.join(a['reasons'])}" for a in r["alternatives"][:8]]
+    if r.get("notes"):
+        out += [""] + [f"> {n}" for n in r["notes"]]
+    return out + ["", f"> {r.get('notice', '')}"]
+
+
+def _acu_framework(r: dict[str, Any]) -> list[str]:
+    kinds = [("jing_well", "井"), ("ying_spring", "荥"), ("shu_stream", "输"), ("jing_river", "经"), ("he_sea", "合")]
+    out = ["# 针灸特定穴与补母泻子", "", "## 五输穴（五行据《难经·六十四难》）", "", "| 经脉 | 井 | 荥 | 输 | 经 | 合 |", "|---|---|---|---|---|---|"]
+    out += [f"| {x['name']} | " + " | ".join(f"{x[k]['name']} {x[k]['code']}（{x[k]['phase']}）" for k, _ in kinds) + " |" for x in r["five_shu"]]
+    out += ["", "## 原穴、络穴、郄穴", "", "| 经脉 | 原 | 络 | 郄 |", "|---|---|---|---|"]
+    out += [f"| {x['name']} | {x['yuan']}{'（以输为原）' if x['yuan_is_shu'] else ''} | {x['luo']} | {x['xi']} |" for x in r["yuan_luo_xi"]]
+    out += ["", "另有络穴：" + "、".join(f"{k} {v}" for k, v in r["extra_luo"].items()) + "；郄穴：" + "、".join(f"{k} {v}" for k, v in r["extra_xi"].items())]
+    out += ["", "## 背俞穴与募穴", "", "| 脏腑 | 背俞 | 募 |", "|---|---|---|"] + [f"| {x['organ']} | {x['back_shu']} | {x['front_mu']} |" for x in r["shu_mu"]]
+    out += ["", "## 下合穴", "", "| 腑 | 本经合穴 | 下合穴 |", "|---|---|---|"] + [f"| {x['organ']} | {x['he_sea']} | {x['lower_he']} |" for x in r["lower_he"]]
+    out += ["", "## 八会穴", ""] + [f"- {x['of']}会：{x['point']}" for x in r["hui"]]
+    out += ["", "## 八脉交会穴", ""] + [f"- {' + '.join(x['points'])}（{' + '.join(x['vessels'])}）：{x['emphasis']}" for x in r["confluent"]]
+    out += ["", "## 补母泻子", "", "| 经脉 | 五行 | 本经母穴（补） | 他经补母 | 本经子穴（泻） | 他经泻子 | 本穴 |", "|---|---|---|---|---|---|---|"]
+    out += [f"| {x['name']} | {x['phase']} | {x['labels']['mother']} | {x['labels']['cross_mother']} | {x['labels']['child']} | "
+            f"{x['labels']['cross_child']} | {x['labels']['own']} |" for x in r["mother_child"]]
+    out += ["", "## 依据与原文见证", ""] + [f"- **{x['name']}**：{x.get('statement', '')}（{x.get('source', '')}）{('　' + _witnessed(x)) if x.get('witnesses') else ''}"
+                                         for x in r.get("rules", [])]
+    return out + ["", f"> {r.get('notice', '')}"]
+
+
+def point(r: dict[str, Any]) -> list[str]:
+    pt = r["point"]
+    out = [f"# 腧穴考：{pt['name']} {pt['code']}（{pt.get('pinyin') or ''}）", "",
+           f"{pt['channel_name']}；" + ("、".join(c["label"] for c in pt["categories"]) or "非特定穴"), ""]
+    if pt.get("mother_child"):
+        out += ["五行之用：" + "；".join(pt["mother_child"]), ""]
+    out += [f"**定位**（{pt['standard']}）：{pt.get('location') or ''}", ""]
+    names = [n for n in r.get("names", []) if n != pt["name"]]
+    if names or pt.get("also_called"):
+        out += ["别名：" + "、".join(names + [f"{x}（亦有他义，不据以识别）" for x in pt.get("also_called", [])]), ""]
+    if pt.get("note"):
+        out += [f"> {pt['note']}", ""]
+    if r.get("checks"):
+        out += ["## 原文所载与通行归属", ""]
+        for c in r["checks"]:
+            line = f"- {c['label']}：通行作 {'、'.join(c['data'])}；相合 {c['agree']} 条"
+            if c["differ"]:
+                line += "；相异：" + "；".join(f"{d['witness']['locator']}作“{'、'.join(d['stated'])}”`{d['witness']['passage_id']}`" for d in c["differ"])
+            out.append(line)
+        out.append("")
+    if r.get("entries"):
+        out += ["## 古书条目（定位、刺灸）", ""]
+        for e in r["entries"][:12]:
+            st = e["stated"]
+            bits = [f"在{st['location']}" if st.get("location") else "", f"刺入{st['needle']}" if st.get("needle") else "",
+                    f"留{st['retain']}" if st.get("retain") else "", f"灸{st['moxa']}" if st.get("moxa") else ""]
+            out.append(f"- {_cite(e['witness'], 120)}" + (f"\n  读出：{'，'.join(b for b in bits if b)}" if any(bits) else ""))
+        out.append("")
+    if r.get("prohibitions"):
+        out += ["## 禁忌（古书所言）", ""] + [f"- {x['text']}：{x['witness']['locator']}（{_years(x['witness'])}）`{x['witness']['passage_id']}`" for x in r["prohibitions"]] + [""]
+    ind = r.get("indications") or {}
+    if ind.get("works"):
+        out += [f"## 主治（{ind['works']} 部著作，{ind['statements']} 条语句）", ""]
+        if ind.get("findings"):
+            out += ["所见：" + "，".join(f"{f['finding']} {f['works']}" for f in ind["findings"][:20]), ""]
+        out += [f"- {x['witness']['locator']}（{_years(x['witness'])}）〔{x['form']}〕{_q(x['condition'], 80)} `{x['witness']['passage_id']}`" for x in ind.get("examples", [])[:20]]
+    if r.get("rules"):
+        out += ["", "## 依据与原文见证", ""] + [f"- **{x['name']}**：{x.get('statement', '')}（{x.get('source', '')}）{('　' + _witnessed(x)) if x.get('witnesses') else ''}"
+                                             for x in r["rules"]]
+    if pt.get("cautions"):
+        out += ["", "## 安全提示", ""] + [f"- {c.get('name')}：{c.get('text')}" for c in pt["cautions"]]
+    return out + ["", f"> {r.get('note', '')}", "", f"> {r.get('notice', '')}"]
+
+
 def _cn_ordinal(n: int) -> str:
     digits = "一二三四五六七八九"
     return digits[n - 1] if n < 10 else "十" + (digits[n - 11] if n > 10 else "")
@@ -1401,7 +1537,7 @@ PAGES = {"canon": canon, "concordance": concordance, "formula": formula, "herb":
          "pairs": pairs, "network": network, "schools": schools, "names": names, "chain": chain, "entities": entities, "places": places, "translate": translate,
          "compare": compare, "family": family, "usage": usage, "properties": properties, "incompat": incompat, "protocol": protocol,
          "casefind": casefind, "similar": similar, "case": case, "casecompare": casecompare, "modifications": modifications,
-         "treatments": treatments}
+         "treatments": treatments, "acupoints": acupoints, "point": point}
 
 
 def _model_sections(result: dict[str, Any]) -> list[str]:

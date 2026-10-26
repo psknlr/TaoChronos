@@ -428,6 +428,8 @@ export default {
   "性味归经对照": "Properties and channels compared",
   "配伍禁忌": "Incompatible combinations",
   "研究方案设计": "Research protocol design",
+  "选穴配穴": "Acupoint selection and combination",
+  "腧穴考": "Acupoint in the classics",
   "医案检索": "Case search",
   "类案": "Similar cases",
   "医案详解": "Case in detail",

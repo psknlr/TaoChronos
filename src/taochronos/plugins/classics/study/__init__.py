@@ -45,6 +45,12 @@ properties         药性谱: what the 本草 say of several drugs (or a formula
                    each with its share of works and first statement; a formula's profile weighted by dose
 incompat           配伍禁忌: 十八反 and 十九畏 — the statements of 反 / 畏 in the texts and their earliest witnesses, the
                    verses, the compositions that still write a pair together; a formula's or drugs' check
+acupoints          选穴配穴: acupuncture points chosen as the tradition reasons — objectives from a presentation (region,
+                   symptoms, organ system, nature), points by the rules that apply (local, distal, specific points, the
+                   Five-Shu, mother–child), their combinations, cautions and a record to fill, each rule with its classical
+                   witness, the classics' indications for the findings asked about, and the modern evidence kept apart
+point              腧穴考: one point through the classics — its names, its attributes against what the entries state, the
+                   location, needling and prohibitions they give, the findings they say it treats, work by work
 protocol           研究方案: a research question turned into a protocol — questions, hypotheses with their tests and what
                    refutes them, scope, variables, methods (the capabilities to run), analysis, figures, quality checks,
                    limitations, ethics, timeline and a research contract — with a pilot run of its main steps
@@ -77,6 +83,7 @@ from collections import Counter
 from typing import Any
 
 from ..domain import DomainPack
+from .acupuncture import AcupunctureStudy
 from .argument import ArgumentStudy
 from .base import StudyBase
 from . import charts as _charts
@@ -156,6 +163,7 @@ class StudyService(StudyBase):
         self._entities = EntityRecognizer(self)
         self._places = PlaceStudy(self, self._network)
         self._translate = TranslationStudy(self, self._punct, self._glosses, self._entities)
+        self._acupuncture = AcupunctureStudy(self)
 
     @property
     def metrology(self) -> Any:
@@ -426,6 +434,22 @@ class StudyService(StudyBase):
         name = re.sub(r'[\\/:*?"<>|\s]+', "_", r.get("title") or "研究方案")[:60] + ".md"
         r["document"] = {"name": name, "format": "markdown", "text": _markdown("protocol", r, self.signature(), r.get("notice", ""))}
         return r
+
+    def acupoints(self, text: str | None = None, *, framework: bool = False, **kw: Any) -> dict[str, Any]:
+        """选穴配穴: a presentation — a text, or regions, symptoms, organs, channels, natures, ``acute``, ``side``,
+        ``pregnant`` — read into objectives, the points the rules propose for each and those chosen (core and
+        supplementary, each with its purposes), the combinations they form, the technique principles, a record to fill, the
+        cautions, the classical witness of each rule used, the classics' indications for the findings asked about and the
+        modern evidence apart; with ``framework``, the specific-point tables and every channel's mother and child points."""
+        if framework:
+            return _charts.attach("acupoints", self._acupuncture.framework(), self)
+        return _charts.attach("acupoints", self._acupuncture.select(text, **kw), self)
+
+    def point(self, name: str, **kw: Any) -> dict[str, Any]:
+        """腧穴考: one point (a code, name, alias or pinyin) — its channel, specific-point attributes, standard location and
+        cautions; the classics' entries for it with what they state (phase, kind, Mu, Xi, Luo, meeting, location, needling,
+        prohibitions) checked against the attributes; the findings its indication sentences name, work by work."""
+        return _charts.attach("point", self._acupuncture.point(name, **kw), self)
 
     def schools(self, school: str | None = None, **kw: Any) -> dict[str, Any]:
         """学派: what a school's works share against the other works of their time (words, formulas), whom they cite,
