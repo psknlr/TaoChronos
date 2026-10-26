@@ -6,7 +6,7 @@ import { redact, toolWord } from "../redact.js";
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY } from "../brand.js";
 import { sizeLabel } from "../mydata.js";
 import { RELAY_ID } from "../providers.js";
-import { fmtMs, foundBadges, h, icon, passageLabel, prettyJSON, progressBar, replace, truncate } from "../util.js";
+import { append, fmtMs, foundBadges, h, icon, passageLabel, prettyJSON, progressBar, replace, truncate } from "../util.js";
 import { T } from "../i18n.js";
 
 export const FAMILY = {
@@ -235,7 +235,7 @@ function stepsNode(m, seg, k, ctx, live) {
     ? h("div.offer", h("span", T("还有工具在运行。")),
       h("button.btn.secondary", { type: "button", on: { click: () => ctx.onAnswerNow(m.id) } }, T("不再等待，根据已有结果作答")))
     : null;
-  box.append(head, offer, list);
+  append(box, [head, offer, list]); // no offer, none drawn: box.append would write it as "null"
   return box;
 }
 
