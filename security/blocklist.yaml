@@ -145,6 +145,37 @@ block:
   - ip: 198.235.24.0/24
     why: "按站长要求封禁：Palo Alto Networks Cortex Xpanse 的扫描网段（同上），见过 .86、.146、.195，只请求首页"
     seen: 2026-10-07
+  # 2026-10-26：data/security-logs（边缘至 10-24、两个哨兵至 10-25）中尚未封禁、有攻击意图的地址
+  - ip: 35.252.159.8
+    why: "在 science.impf.ai 上做 WordPress 扫描：在十余个目录下找 wp-includes/wlwmanifest.xml，17 次；Google Cloud 美国"
+    seen: 2026-10-11
+  - ip: 203.159.90.90
+    why: "在 science.impf.ai 上做 WordPress 扫描：在十余个目录下找 wp-includes/wlwmanifest.xml，12 次；1337 Services（AS210558）"
+    seen: 2026-10-11
+  - ip: 2a0f:ca80:b00b:d666::/64
+    why: "在中转的 80、443 端口上找密钥与配置（/.git/config、/.env.*、/wp-config.php.old、/actuator/env、/.kube/config），17 次；TechTies（AS197170），与已封的 eff9::/64 同一网络"
+    seen: 2026-10-12
+  - ip: 82.102.18.188
+    why: "WordPress 扫描：在十个目录下找 wp-includes/wlwmanifest.xml 与 /xmlrpc.php，56 次；M247（AS9009），与已封的 82.102.18.116 同一网段"
+    seen: 2026-10-14
+  - ip: 185.218.86.21
+    why: "UA 自称 SecurityResearch/1.0，在中转上探测 WordPress 插件 Gravity SMTP 的接口（/wp-json/gravitysmtp/v1/tests/mock-data）；TC DATACENTER（AS218785），与已封的 185.218.86.27 同一网段"
+    seen: 2026-10-14
+  - ip: 35.205.254.119
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.aws/credentials、/.git/index、/database.sql、/_profiler/phpinfo），60 次；Google Cloud 比利时"
+    seen: 2026-10-17
+  - ip: 34.34.160.116
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.aws/config、/.git/config、/phpinfo），56 次；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-10-20
+  - ip: 152.32.131.140
+    why: "在 science.impf.ai 上做 PHP 后门与管理后台扫描（/leftDao.php、/admin/webadmin.php、/CCB/ccb.php、/AppInfo.aspx），并探测 App 与交易所接口，45 次；UCloud 香港"
+    seen: 2026-10-22
+  - ip: 34.78.213.249
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.aws/credentials.bak、/wp-config.php.bak、/.git/index），51 次；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-10-22
+  - ip: 34.79.12.228
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.git-credentials、/.git/logs/refs/heads/main、/config.php），55 次；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-10-24
 
 # 永不封禁：与这些网段重叠的条目 apply 拒绝写入（整份名单都不写，直到改正）。
 never:
