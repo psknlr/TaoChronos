@@ -2079,6 +2079,11 @@ def _published(web: Path, relay: str) -> None:
     (web / "providers.json").write_text(json.dumps(web_providers(["minimax", "minimax-global"]), ensure_ascii=False), encoding="utf-8")
 
 
+# the text a tool steps box holds itself, beside its head, its list and an offer to answer: none (an offer not made is not
+# written as "null")
+STRAY_TEXT = "els => els.flatMap((e) => [...e.childNodes].filter((n) => n.nodeType !== Node.ELEMENT_NODE).map((n) => n.textContent))"
+
+
 def _chromium():
     try:
         from playwright.sync_api import sync_playwright  # noqa: F401
@@ -2163,8 +2168,9 @@ def test_a_conversation_in_the_browser(tmp_path):
             assert told["role"] == "user" and told["content"].startswith("［自查：") and "[[fake.999]]" in told["content"]
             assert "shanghanlun" not in told["content"]  # only the passage the corpus has not
             assert mock.requests[3]["body"]["messages"][-1]["role"] == "tool"  # looked up again before answering
-            page.click(".msg.assistant details.draft summary")
-            page.wait_for_function("document.querySelectorAll('.draft .md .cite.pending').length === 0", timeout=15000)
+            page.click(".msg.assistant details.draft summary")  # drawn once opened (its toggle event, a task after the click)
+            page.wait_for_function("document.querySelector('.draft .md') && document.querySelectorAll('.draft .md .cite.pending').length === 0",
+                                   timeout=15000)
             assert page.eval_on_selector_all(".draft .md .cite", "els => els.map(e => [e.dataset.pid, e.className])") == [
                 ["shanghanlun.c013", "cite ok"], ["shanghanlun.c012", "cite warn"], ["fake.999", "cite bad"], ["shanghanlun.c013", "cite ok"]]
             assert page.inner_text(".msg.assistant .verify-bar") == bar  # the answer's own still
@@ -2182,6 +2188,7 @@ def test_a_conversation_in_the_browser(tmp_path):
             page.click(".steps .head")  # the finished steps are folded
             steps = page.inner_text(".steps .list")
             assert "古籍检索" in steps and "classics" not in steps  # a tool by its plain words
+            assert page.eval_on_selector_all(".steps", STRAY_TEXT) == []
             # the names the model worked with, told in plain words: in the answer and in its thinking, wherever it put them
             assert "以上经古籍检索检得，可用引文核验复核，出处附段落编号。" in page.inner_text(".msg.assistant .md:not(.superseded)")
             said = "".join(page.eval_on_selector_all(".msg.assistant", "els => els.map(e => e.textContent)"))
@@ -2582,6 +2589,7 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
             first = held_round(0)
             assert first.locator(".steps .tool .st.ok").count() == 1 and first.locator(".steps .tool .st .spinner").count() == 1
             assert first.locator(".steps .tool .row > .sm").nth(1).text_content() == "运行中…" and not first.locator(".steps .offer").count()
+            assert first.locator(".steps").evaluate_all(STRAY_TEXT) == []  # the offer not made yet, nor written as "null"
             page.clock.fast_forward(21000)
             page.wait_for_selector(".msg.assistant .steps .offer button", timeout=10000)
             assert first.locator(".steps .tool .row > .ms").nth(1).text_content().endswith("秒")  # how long the search has run
