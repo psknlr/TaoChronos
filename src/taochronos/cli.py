@@ -998,7 +998,7 @@ STUDY = ("canon", "concordance", "formula", "herb", "term", "taboo", "citations"
          "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate", "commentaries", "disputes",
          "clause", "glosses", "pairs", "network", "schools", "names", "chain", "entities", "places", "translate", "cruxes",
          "compare", "family", "usage", "properties", "incompat", "protocol", "casefind", "similar", "case", "casecompare",
-         "modifications", "treatments", "acupoints", "point")
+         "modifications", "treatments", "acupoints", "point", "wuxing")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -1157,6 +1157,11 @@ def cmd_study(args: argparse.Namespace) -> None:
         if not target:
             raise SystemExit("taochronos study point: give a point (e.g. 足三里, ST36)")
         res = study.point(target)
+        notice = res.get("notice", "")
+    elif what == "wuxing":
+        if not (target or args.state):
+            raise SystemExit("taochronos study wuxing: give Five-Phase states (e.g. 木实 土虚 金虚; 肝郁脾虚; --state 肝虚)")
+        res = study.wuxing(target, states=args.state or (), methods=args.method or ())
         notice = res.get("notice", "")
     elif what == "protocol":
         if not target:
@@ -1943,7 +1948,7 @@ def build_parser() -> argparse.ArgumentParser:
                                       "类方 (family), 用药谱 (usage), 药性谱 (properties), 配伍禁忌 (incompat), 研究方案 (protocol), "
                                       "医案探索: 医案检索 (casefind), 类案 (similar), 医案详解 (case), 医家与时代比较 (casecompare), "
                                       "随证加减 (modifications), 同病异治·异病同治 (treatments), "
-                                      "针灸: 选穴配穴 (acupoints), 腧穴考 (point)")
+                                      "针灸: 选穴配穴 (acupoints), 腧穴考 (point), 五行选穴 (wuxing)")
     sp.set_defaults(fn=cmd_study)
     sp.add_argument("what", choices=STUDY)
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
@@ -2024,7 +2029,7 @@ def build_parser() -> argparse.ArgumentParser:
     case.add_argument("--new-findings", action="store_true", help="modifications: only the findings the last visit did not record")
     case.add_argument("--dataset", metavar="DIR", help="cases, casefind: write the cases as a data package (cases, case_visits, "
                                                        "case_items CSV and datapackage.json) to DIR")
-    acu = sp.add_argument_group("针灸 (acupoints, point)")
+    acu = sp.add_argument_group("针灸 (acupoints, point, wuxing)")
     acu.add_argument("--region", action="append", help="acupoints: where the disorder is (e.g. 胃脘, 腰, 颈项, 前额; repeatable)")
     acu.add_argument("--symptom", action="append", help="acupoints: a prominent symptom (e.g. 恶心, 失眠; repeatable)")
     acu.add_argument("--organ", action="append", help="acupoints: the organ system (e.g. 胃, 肝; repeatable; the first named is the host)")
@@ -2036,13 +2041,16 @@ def build_parser() -> argparse.ArgumentParser:
     acu.add_argument("--pregnant", action="store_true", help="acupoints: in pregnancy — the points not to be needled then are left out")
     acu.add_argument("--max-points", type=int, default=6, help="acupoints: most points to choose (default 6; Ashi points apart)")
     acu.add_argument("--framework", action="store_true", help="acupoints: print the specific-point tables and the mother and child points")
+    acu.add_argument("--state", action="append", help="wuxing: a Five-Phase state (肝实, 土虚, Wood excess, 肝郁脾虚; repeatable)")
+    acu.add_argument("--method", action="append", help="wuxing: keep only these methods (nanjing69, nanjing69_cross, own_channel, "
+                                                       "nanjing79, saam, interior_exterior, same_name; repeatable)")
     sp.add_argument("--json", action="store_true", help="print the full result as JSON")
     sp.add_argument("-o", "--output", help="write to this file (dataset: this directory)")
     sp.add_argument("--charts", metavar="DIR", help="also write the result's figures and tables to DIR: figures as SVG in the "
                                                     "journal style (numbered, captioned, with all of them as one figure in panels), "
                                                     "CSV and JSON; three-line tables as Word (.docx), LaTeX (booktabs), CSV and "
                                                     "Markdown (term, herb, formula, pairs, network, names, senses, compare, family, "
-                                                    "usage, properties, incompat, protocol, acupoints, point)")
+                                                    "usage, properties, incompat, protocol, acupoints, point, wuxing)")
     _llm_args(sp)
     sp = add("codemode", cmd_codemode, "run a Research Code Mode program against the SDK")
     sp.add_argument("file", nargs="?")

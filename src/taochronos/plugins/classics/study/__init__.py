@@ -50,7 +50,14 @@ acupoints          选穴配穴: acupuncture points chosen as the tradition reas
                    Five-Shu, mother–child), their combinations, cautions and a record to fill, each rule with its classical
                    witness, the classics' indications for the findings asked about, and the modern evidence kept apart
 point              腧穴考: one point through the classics — its names, its attributes against what the entries state, the
-                   location, needling and prohibitions they give, the findings they say it treats, work by work
+                   location, needling and prohibitions they give, the findings they say it treats, work by work; its
+                   Five-Phase attributes (channel phase, point phase, their relation) and the methods taking it
+wuxing             五行选穴: Five-Phase relations read into point selection through the two decisions between them (the
+                   pattern, the method) — states (肝实 土虚 金虚, 肝郁脾虚) into the patterns to tell apart, the relations
+                   (mother–child, overacting, counteracting) with the Nanjing 50 names, the classical statements that apply,
+                   the named strategies, every method's points with phase and intention (Nanjing 69 same and cross channel,
+                   Nanjing 79, Saam, paired and same-name deductions), the points two methods treat oppositely, and the
+                   conclusions that do not follow — each a record of six elements, the levels kept apart
 protocol           研究方案: a research question turned into a protocol — questions, hypotheses with their tests and what
                    refutes them, scope, variables, methods (the capabilities to run), analysis, figures, quality checks,
                    limitations, ethics, timeline and a research contract — with a pilot run of its main steps
@@ -450,6 +457,14 @@ class StudyService(StudyBase):
         cautions; the classics' entries for it with what they state (phase, kind, Mu, Xi, Luo, meeting, location, needling,
         prohibitions) checked against the attributes; the findings its indication sentences name, work by work."""
         return _charts.attach("point", self._acupuncture.point(name, **kw), self)
+
+    def wuxing(self, text: str | None = None, **kw: Any) -> dict[str, Any]:
+        """五行选穴: Five-Phase states — a text (木实 土虚 金虚; 肝郁脾虚; Liver deficiency) or ``states`` — read into the
+        patterns still to tell apart, the pathological relations among them, the classical statements that apply, the named
+        strategies, every method's points (``methods`` to keep some: nanjing69, nanjing69_cross, own_channel, nanjing79,
+        saam, interior_exterior, same_name) with their phase and intention, the points two methods treat oppositely, the
+        conclusions that do not follow, the rules with their witnesses and the modern evidence apart."""
+        return _charts.attach("wuxing", self._acupuncture.wuxing(text, **kw), self)
 
     def schools(self, school: str | None = None, **kw: Any) -> dict[str, Any]:
         """学派: what a school's works share against the other works of their time (words, formulas), whom they cite,

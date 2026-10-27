@@ -488,7 +488,7 @@ def incompat(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
 
 # ------------------------------------------------------------------ 针灸
 ROLES = ["主穴", "配穴"]
-LEVELS = {"classical": "经典", "teaching": "教材", "empirical": "经验", "standard": "标准"}
+LEVELS = {"classical": "经典", "teaching": "教材", "school": "流派", "deduction": "推演", "empirical": "经验", "standard": "标准"}
 PAIRWISE = ("interior_exterior", "same_name", "yuan_luo", "shu_mu", "shu_yuan", "lowerhe_mu", "xi_hui", "confluent_pair", "four_gates",
             "anterior_posterior")
 
@@ -515,6 +515,11 @@ def acupoints(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
         out.append(chart("network", "选穴配穴关系", rows, [("point", "穴位"), ("role", "主配"), ("channel", "经脉"), ("purposes", "用意")],
                          id="acupoints-network", subtitle="节点：所选之穴（大小：所主之目标数）；边：两穴之间的配穴方法", nodes=nodes,
                          edges=edges, groups=ROLES, note="传统理论的选穴配穴推理，不是诊断或处方；施术须由执业人员诊察后决定。"))
+    out += _rule_sources(r, "acupoints-sources")
+    return out
+
+
+def _rule_sources(r: dict[str, Any], id: str) -> list[dict[str, Any]]:
     rows = []
     for rule in r.get("rules") or []:
         firsts = [w["earliest"] for w in rule.get("witnesses") or [] if w.get("earliest") and w["earliest"].get("years")]
@@ -522,11 +527,48 @@ def acupoints(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
             e = min(firsts, key=lambda w: (w["years"][1], w["years"][0]))
             rows.append({"label": rule["name"], "start": e["years"][1], "group": LEVELS.get(rule.get("level") or "", rule.get("level") or ""),
                          "where": e.get("locator", ""), "passage_id": e.get("passage_id", "")})
-    if rows:
-        out.append(chart("timeline", "所用规则在语料中的最早见证", rows, [("label", "规则"), ("start", "年代（下限）"), ("group", "层级"),
-                                                                ("where", "出处"), ("passage_id", "段落号")],
-                         id="acupoints-sources", subtitle="每条规则所据原文在本语料中最早的见证（成书年代的下限）", x={"key": "start", "label": "年代"}))
-    return out
+    if not rows:
+        return []
+    return [chart("timeline", "所用规则在语料中的最早见证", rows, [("label", "规则"), ("start", "年代（下限）"), ("group", "层级"),
+                                                            ("where", "出处"), ("passage_id", "段落号")],
+                  id=id, subtitle="每条规则所据原文在本语料中最早的见证（成书年代的下限）", x={"key": "start", "label": "年代"})]
+
+
+PHASES = ("木", "火", "土", "金", "水")
+ZANG = {"木": "肝", "火": "心", "土": "脾", "金": "肺", "水": "肾"}
+STATE_GROUPS = ["实", "虚", "虚实未定", "未给"]
+
+
+def wuxing(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
+    states = r.get("states") or []
+    if not states:
+        return []
+    given: dict[str, list[dict[str, Any]]] = {}
+    for st in states:
+        given.setdefault(st["phase"], []).append(st)
+    nodes = []
+    for ph in PHASES:
+        mine = given.get(ph) or []
+        group = mine[0]["state_name"] if len(mine) == 1 else ("虚实未定" if mine else "未给")
+        nodes.append({"id": ph, "label": f"{ph}（{'、'.join(dict.fromkeys(x['organ'] for x in mine)) or ZANG[ph]}）", "group": group,
+                      "size": 2 if mine else 1})
+    edges = []
+    for i, ph in enumerate(PHASES):
+        edges.append({"source": ph, "target": PHASES[(i + 1) % 5], "weight": 1, "label": "生"})
+        edges.append({"source": ph, "target": PHASES[(i + 2) % 5], "weight": 1, "label": "克"})
+    rows = []
+    for x in r.get("relations") or []:
+        for y in x["readings"]:
+            src = next((s["phase"] for s in states if s["organ"] == y["from"]), None)
+            dst = next((s["phase"] for s in states if s["organ"] == y["to"]), None)
+            if src and dst:
+                edges.append({"source": src, "target": dst, "weight": 3, "label": y["name"]})
+            rows.append({"from": y["from"], "to": y["to"], "reading": y["name"], "pathogen": y["pathogen"]["name"]})
+    out = [chart("network", "五行关系", rows or [{"from": "", "to": "", "reading": "", "pathogen": ""}],
+                 [("from", "自"), ("to", "至"), ("reading", "读法"), ("pathogen", "五邪")], id="wuxing-network",
+                 subtitle="节点：五行（所给之态）；细边：相生、相克之序；粗边：所给之态之间的母子相及、相乘、相侮（所给不足以定者两读并列）",
+                 nodes=nodes, edges=edges, groups=STATE_GROUPS, note="传统理论中的五行推理：一个五行之态不能代替证候的辨别。")]
+    return out + _rule_sources(r, "wuxing-sources")
 
 
 def point(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
@@ -603,6 +645,7 @@ BUILDERS: dict[str, Callable[[dict[str, Any], Any], list[dict[str, Any]]]] = {
     "term": term, "herb": herb, "formula": formula, "pairs": pairs, "network": network, "names": names, "senses": senses,
     "compare": compare, "family": family, "usage": usage, "properties": properties, "incompat": incompat,
     "casefind": casefind, "casecompare": casecompare, "treatments": treatments, "acupoints": acupoints, "point": point,
+    "wuxing": wuxing,
 }
 
 
@@ -611,7 +654,7 @@ BUILDERS: dict[str, Callable[[dict[str, Any], Any], list[dict[str, Any]]]] = {
 WORDS = {"formula": "方源考", "herb": "药性源流", "term": "术语源流", "pairs": "配伍规律", "network": "方证网络", "names": "名称",
          "senses": "语义演变", "compare": "方剂比较", "family": "类方", "usage": "药物用量与配伍", "properties": "性味归经对照",
          "incompat": "配伍禁忌", "casefind": "医案检索", "casecompare": "医家与时代比较", "treatments": "同病异治·异病同治",
-         "acupoints": "选穴配穴", "point": "腧穴考"}
+         "acupoints": "选穴配穴", "point": "腧穴考", "wuxing": "五行选穴"}
 
 
 def build(kind: str, result: dict[str, Any], base: Any) -> list[dict[str, Any]]:

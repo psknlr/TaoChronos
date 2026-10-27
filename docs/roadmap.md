@@ -57,7 +57,7 @@
   illustrations and places of origin in the 本草.
 - 针灸与非药物疗法: points and channels are in (`study acupoints`, `study point`, ADR 0024: the specific-point system, the
   selection and combination rules with their classical witnesses, the entries and indications of the acupuncture books
-  read and checked); still to do — the points of the data beyond the 181 (and the names two points share, by context),
+  read and checked; `study wuxing`, ADR 0025: the Five Phases in selection, levels apart); still to do — the points of the data beyond the 181 (and the names two points share, by context),
   moxibustion as a modality of its own, 导引 and diet; an expert gold of entries and indications on the full corpus;
   time-based selection (子午流注, 灵龟八法) read as the texts compute it.
 - 多模态与图像谱系: page images, OCR confidence, and the lineage of illustrations (本草图, 经络图) across editions.

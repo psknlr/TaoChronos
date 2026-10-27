@@ -9,6 +9,9 @@ classics' own entries state.
   Yuan–Luo pair, 太渊 + 列缺 not the host–guest structure);
 * **selection** — the review's examples and textbook prescriptions: the points a presentation must choose (in its core,
   or among all), the distal point a located headache needs, and the points it must not (in pregnancy);
+* **five phases** — the Liver's points against Liver Wood, the Saam templates of the twelve channels, the paired
+  deductions, and Five-Phase states (木实 土虚 金虚, 肝虚, 心实, 肝郁脾虚 …) against the relations, strategies, classical
+  statements, opposite intentions, method points and the claims the reasoning must answer (``wuxing``);
 * **real** (the full corpus) — for every Five-Shu point, the entries of the acupuncture books that state its phase and its
   kind (「太渊者，土也……为俞」): how many points are stated, the share agreeing with the data, and every witness that
   differs, to be read (an error of the data, a variant reading — the Siku 甲乙经's 太渊者水也 — or a misreading).
@@ -50,6 +53,14 @@ def acupuncture(ctx: EvalContext) -> SuiteResult:
         m = fw.mother_child(ch)
         mc.append((ch, want, [m["same"]["mother"], m["cross"]["mother"], m["same"]["child"], m["cross"]["child"]]))
     tables["mother_child"] = _match(mc)
+    tables["channel_relations"] = _match([(code, want, [fw.shu_phase(code), fw.relation(fw.shu_phase(code), fw.channels[fw.points[code]["channel"]]["phase"])])
+                                          for code, want in gold["channel_relations"].items()])
+    tables["saam"] = _match([(ch, [sorted(x) for x in want],
+                              [sorted(fw.saam(ch)[st][act]["points"]) for st, act in (("deficiency", "tonify"), ("deficiency", "sedate"),
+                                                                                       ("excess", "tonify"), ("excess", "sedate"))])
+                             for ch, want in gold["saam"].items()])
+    tables["paired"] = _match([(f"{ch}:{via}", pts, [fw.paired(ch)[via]["mother"], fw.paired(ch)[via]["child"]])
+                               for ch, vias in gold["paired"].items() for via, pts in vias.items()])
     details: list[dict[str, Any]] = []
     # combinations
     ok_c = 0
@@ -82,13 +93,31 @@ def acupuncture(ctx: EvalContext) -> SuiteResult:
         ok_s += ok
         details.append({"case": f"selection:{g['id']}", "pass": ok, "chosen": every, "core": core,
                         "failed": [k for k, v in checks.items() if not v]})
+    # Five Phases
+    ok_w = 0
+    for g in gold["wuxing"]:
+        r = study.wuxing(g["text"])
+        pts = {m["method"]: [p["code"] for p in m["points"]] for m in r["methods"]}
+        checks = {"relations": set(g.get("relations") or []) <= {x["kind"] for x in r["relations"]},
+                  "strategies": set(g.get("strategies") or []) <= {s["name"] for s in r["strategies"] if s["fit"] == "full"},
+                  "classical": all({c["rule"]: c["status"] for c in r["classical"]}.get(k) == v for k, v in (g.get("classical") or {}).items()),
+                  "conflicts": set(g.get("conflicts") or []) <= {c["code"] for c in r["conflicts"]},
+                  "guards": set(g.get("guards") or []) <= {x["id"] for x in r["guards"]},
+                  "claims": set(g.get("claims") or []) <= {x["id"] for x in r["guards"] if x["claim"]},
+                  "points": all(pts.get(m) == want for m, want in (g.get("points") or {}).items())}
+        ok = all(checks.values())
+        ok_w += ok
+        details.append({"case": f"wuxing:{g['id']}", "pass": ok, "failed": [k for k, v in checks.items() if not v]})
     metrics: dict[str, Any] = {"tables": {k: v["matched"] for k, v in tables.items()},
-                               "combinations": f"{ok_c}/{len(gold['combinations'])}", "selection": f"{ok_s}/{len(gold['selection'])}"}
+                               "combinations": f"{ok_c}/{len(gold['combinations'])}", "selection": f"{ok_s}/{len(gold['selection'])}",
+                               "wuxing": f"{ok_w}/{len(gold['wuxing'])}"}
     wrong = [{"table": k, **w} for k, v in tables.items() for w in v["wrong"]]
     if wrong:
         details += [{"case": f"table:{w['table']}:{w['what']}", "pass": False, "gold": w["gold"], "data": w["data"]} for w in wrong]
     notes = ["tables, combinations and selection on the data and the reasoning (no corpus needed); the gold is the review's "
-             "own tables and examples, written out by hand"]
+             "own tables and examples, written out by hand",
+             "wuxing: Five-Phase states against the relations, strategies, classical statements, opposite intentions, guards "
+             "and method points the reasoning must give; the Saam table as its tradition prints it (a school's templates)"]
     big = None if ctx.quick else ctx.corpus_harness()
     if big is not None:
         bst = big.capabilities.get("study")._acupuncture

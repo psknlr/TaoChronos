@@ -1,9 +1,9 @@
 ---
 name: acupoint-selection
 description: Reason a choice of acupuncture points as the tradition does (选穴配穴) — location and nature, channels, core points, the purpose of every added point, the record — each rule with its classical witness and the modern evidence apart.
-tools: [study.acupoints, study.point, classics.search, classics.get_passage, validation.verify_quote, modern.search]
+tools: [study.acupoints, study.point, study.wuxing, classics.search, classics.get_passage, validation.verify_quote, modern.search]
 applies_to: [scholar, evidence, skeptic]
-tags: [针灸, 选穴, 配穴, 特定穴, 腧穴]
+tags: [针灸, 选穴, 配穴, 特定穴, 腧穴, 五行, 五输穴]
 ---
 ## Method
 1. **Location and nature first.** Name where the disorder is (胃脘, 腰, 颈项, 前额 …), its prominent symptoms, the organ system
@@ -24,6 +24,32 @@ tags: [针灸, 选穴, 配穴, 特定穴, 腧穴]
    are one channel's Yuan and Luo, not the host–guest structure.
 6. **Record and reassess.** Laterality, modality, stimulation, frequency and course are the practitioner's to fill; outcomes,
    tolerance and adverse effects decide the changes.
+
+## Five Phases (Wu Xing 五行) and the Five-Shu points (Wu Shu Xue 五输穴): `study.wuxing`
+- **Two decisions stand between a phase relation and a point**: identify the pattern (木实 does not tell 肝火上炎, 肝阳上亢,
+  肝气郁结 and 肝郁脾虚 apart — the tool lists what is still to be told apart), then state the method of selection.
+- **Three attributes, kept apart**: the channel's phase, the point's phase, the reinforcing or reducing intention. 行间 is a Fire
+  point reduced under 实者泻其子; 太冲 is an Earth point that stays a Liver point (and is the Yuan point, not the Liver's
+  same-phase point, which is 大敦); 太溪 is Earth, not Water; 中府 and 肺俞 are no Metal points. Jing-Well (井) and Jing-River (经)
+  are two categories; Shu-Stream (输) is not Back-Shu (背俞); yin and yang channels both have all five.
+- **Relations beyond generation and control**: mother affecting child, child affecting mother, overacting and counteracting
+  — each overacting or counteracting by excess of one side or deficiency of the other, with a different emphasis. The
+  *Nanjing* 50 terms (虚邪 from the mother, 实邪 from the child, 贼邪 from the controller, 微邪 from the controlled, 正邪 its own)
+  say where a pathogen comes from, not whether the pattern is deficient or excess.
+- **Methods, each with its level**: *Nanjing* 69 on the channel (the mother or child point) and across channels (the
+  same-phase point of the mother or child channel; either or both); *Nanjing* 79 for the Heart (泻手心主俞, 补手心主井); Saam
+  four-needle templates (a Korean school's method, not a universal rule); the interior–exterior and same-name extensions (a
+  deduction in two steps: the channel relation, then the phase — the Pericardium is not the Liver's mother channel).
+- **Named strategies** (滋水涵木, 培土生金, 金水相生, 益火补土, 抑木扶土, 培土制水, 佐金平木, 泻南补北) need their pattern premise
+  first; 益火补土's Fire is usually Kidney Yang, not a Fire point; 泻南补北 comes from *Nanjing* 75 (East excess, West
+  deficiency) before its later Heart–Kidney use. 见肝之病，知肝传脾，当先实脾 carries its condition (四季脾王不受邪，即勿补之):
+  never add Spleen points to every Liver prescription.
+- **What does not follow**: reinforcing the child is not reducing it; Wood excess does not imply Water excess; the cycle is no
+  conservation equation; a trigram or a day's stems and branches neither changes a point's Five-Shu class nor decides
+  deficiency or excess. Where excess and deficiency are found in different organs, the tool lists the points two methods
+  treat oppositely — say so, and leave the priority to the practitioner.
+- **Record six elements**: pattern premise → channels → Five-Phase relation → selection rule → intention → textual or
+  empirical source. The Saam trial (Kim 2015) is evidence about one intervention in one population, not about the rules.
 
 ## The classics as data
 - `study.point` reads a point in the classics: the entries (甲乙经 卷三: 「太渊者，土也……为俞」) with what they state checked

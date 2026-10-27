@@ -671,6 +671,11 @@ def _study_point(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(_study(ctx).point(a["point"]), int(a.get("items", 12)))
 
 
+def _study_wuxing(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    return _brief(_study(ctx).wuxing(a.get("text"), states=_terms(a.get("states")), methods=_terms(a.get("methods"))),
+                  int(a.get("items", 20)))
+
+
 def _study_protocol(ctx: ToolContext, a: dict[str, Any]) -> Any:
     return _brief(_study(ctx).protocol(a["question"], pilot=bool(a.get("pilot", True))), int(a.get("items", 30)), chars=600)
 
@@ -1128,6 +1133,23 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "sentences name (…主之, X主…, 取X), work by work and by period.",
                  obj({"point": S, "items": I}, ["point"]), _study_point, family="study", permission="classics:read", expensive=True,
                  returns="point attributes, names, entries with checks, prohibitions, indications by work, rules with witnesses"),
+        ToolSpec("study.wuxing", "五行选穴: Five-Phase (Wu Xing) relations read into acupoint selection through the two decisions "
+                 "between them — identify the pattern, then specify the selection method. text: states written organ by organ or "
+                 "phase by phase (木实 土虚 金虚; 肝实脾虚; Wood excess, Earth deficiency; Liver deficiency) or an identified pattern "
+                 "(肝郁脾虚, 肝肾阴虚, 心肾不交 …); states: the same as a list; methods: keep some of nanjing69, nanjing69_cross, "
+                 "own_channel, nanjing79, saam, interior_exterior, same_name. Returns the patterns a state does not tell apart, the "
+                 "relations among the states (mother–child, overacting and counteracting, each in its two readings, with the "
+                 "Nanjing 50 name of what the receiving organ suffers), the classical statements that apply (Nanjing 75 泻南补北 "
+                 "for Wood excess with Metal deficiency; the Jin Gui's condition on strengthening the Spleen; Nanjing 79), the "
+                 "named strategies (滋水涵木, 培土生金, 抑木扶土 …) fitted or conditional, every method's points with Five-Shu "
+                 "category, point phase, its relation to the channel's phase and the intention (补/泻) — classical, school "
+                 "(Saam) and deduction levels apart — the points two methods treat oppositely, the conclusions that do not follow "
+                 "(a Fire point is not tonifying Fire; 太溪 is Earth; reinforcing the child is not reducing it …), each a record "
+                 "of six elements, rules with witnesses, modern evidence apart. Traditional reasoning — not a prescription.",
+                 obj({"text": S, "states": {"type": "array", "items": S}, "methods": {"type": "array", "items": S}, "items": I}),
+                 _study_wuxing, family="study", permission="classics:read", expensive=True,
+                 returns="states, clarify, relations, pathogens, classical, strategies, methods (six-element records), conflicts, "
+                         "branches, guards, rules with witnesses, evidence, steps"),
         ToolSpec("study.protocol", "研究方案: turn a research question (especially on formulas and drugs: 方源, 方剂比较/同药异量, 类方, "
                  "药性, 用药, 配伍, 十八反十九畏, 方证, 术语, 名称) into a research protocol — what it names (formulas, drugs, "
                  "findings, terms, period), objectives, questions, hypotheses each with prediction, test, refutation and "

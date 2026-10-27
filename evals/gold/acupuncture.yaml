@@ -51,6 +51,44 @@ lower_he: {胃: ST36, 大肠: ST37, 小肠: ST39, 三焦: BL39, 膀胱: BL40, �
 mother_child:  # channel: [same-channel mother, cross-channel mother, same-channel child, cross-channel child]
   LU: [LU9, SP3, LU5, KI10]
   LR: [LR8, KI10, LR2, HT8]
+  HT: [HT9, LR1, HT7, SP3]
+  SP: [SP2, HT8, SP5, LU8]
+  KI: [KI7, LU8, KI1, LR1]
+# 五行（Five Phases）: the Liver's points against Liver Wood (the review's table)
+channel_relations: {LR1: [木, same], LR2: [火, child], LR3: [土, controlled], LR4: [金, controller], LR8: [水, mother]}
+# 舍岩针法 (Saam), as its tables give them — channel: [正格 tonify, 正格 sedate, 胜格 tonify, 胜格 sedate]
+saam:
+  LU: [[LU9, SP3], [LU10, HT8], [LU10, HT8], [LU5, KI10]]
+  LI: [[LI11, ST36], [LI5, SI5], [LI5, SI5], [LI2, BL66]]
+  ST: [[ST41, SI5], [ST43, GB41], [ST43, GB41], [ST45, LI1]]
+  SP: [[SP2, HT8], [SP1, LR1], [SP1, LR1], [SP5, LU8]]
+  HT: [[HT9, LR1], [HT3, KI10], [HT3, KI10], [HT7, SP3]]
+  SI: [[SI3, GB41], [SI2, BL66], [SI2, BL66], [SI8, ST36]]
+  BL: [[BL67, LI1], [BL40, ST36], [BL40, ST36], [BL65, GB41]]
+  KI: [[KI7, LU8], [KI3, SP3], [KI3, SP3], [KI1, LR1]]
+  PC: [[PC9, LR1], [PC3, KI10], [PC3, KI10], [PC7, SP3]]
+  TE: [[TE3, GB41], [TE2, BL66], [TE2, BL66], [TE10, ST36]]
+  GB: [[GB43, BL66], [GB44, LI1], [GB44, LI1], [GB38, SI5]]
+  LR: [[LR8, KI10], [LR4, LU8], [LR4, LU8], [LR2, HT8]]
+# the paired deductions of the 2024 paper's examples — channel: {via: [deficiency (mother phase), excess (child phase)]}
+paired: {HT: {interior_exterior: [SI3, SI8]}, LR: {same_name: [PC3, PC8]}}
+# Five-Phase states → what the reasoning must give (and the claims it must answer)
+wuxing:
+  - {id: wood_excess_earth_metal_deficiency, text: 木实 土虚 金虚, relations: [overacting, counteracting, mother_child],
+     strategies: [培土生金, 抑木扶土, 佐金平木], classical: {nanjing75: applies, prevent_transmission: met}, conflicts: [HT8],
+     guards: [mixed, reinforce_child, no_fixed_arrangement, spleen_first]}
+  - {id: liver_deficiency, text: 肝虚, points: {nanjing69: [LR8], nanjing69_cross: [KI10], same_name: [PC3], interior_exterior: [GB43]},
+     classical: {prevent_transmission: not_given}}
+  - {id: liver_excess, text: 肝实, points: {nanjing69: [LR2], nanjing69_cross: [HT8], saam: [LR4, LU8, LR2, HT8]}}
+  - {id: heart_deficiency, text: 心虚, points: {nanjing69: [HT9], nanjing69_cross: [LR1], interior_exterior: [SI3], nanjing79: [PC9]}}
+  - {id: heart_excess, text: 心实, points: {nanjing69: [HT7], nanjing69_cross: [SP3], interior_exterior: [SI8], nanjing79: [PC7]}}
+  - {id: spleen_lung_deficiency, text: 脾肺气虚, strategies: [培土生金], relations: [mother_child]}
+  - {id: liver_kidney_yin_deficiency, text: 肝肾阴虚, strategies: [滋水涵木], relations: [mother_child]}
+  - {id: heart_kidney, text: 心肾不交, strategies: [泻南补北]}
+  - {id: spleen_kidney_yang, text: 脾肾阳虚, strategies: [益火补土]}
+  - {id: liver_spleen, text: 肝郁脾虚, strategies: [抑木扶土], relations: [overacting], conflicts: [HT8]}
+  - {id: claims_child, text: 肝实，补火以泄木；木实则水实, claims: [reinforce_child, no_fixed_arrangement]}
+  - {id: claims_taixi, text: 肾虚，太溪是水穴, claims: [taixi_earth]}
 combinations:  # the points, the methods they must form, and those they must not
   - {points: [CV12, ST36], region: 胃脘, expect: [lowerhe_mu, local_distal, upper_lower]}
   - {points: [ST37, ST25], expect: [lowerhe_mu, same_channel]}
