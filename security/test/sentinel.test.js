@@ -395,6 +395,21 @@ test("the endpoints: the token for export, ack and summary; csp reports from any
   assert.equal(w.records().items.length, 20); // the batch above, and nothing from a sentinel that is off
 });
 
+test("a violation of both policies is kept as both: what the enforced one refused is not folded into a report", async () => {
+  const w = new WatchCore(sqlStore());
+  const cfg = cfgOf();
+  const watch = { observe: (...a) => w.observe(...a) };
+  const post = (reports) => {
+    const req = new Request("https://chat.impf.ai/api/security/csp", { method: "POST", headers: { "CF-Connecting-IP": "198.51.100.61", "Content-Type": "application/reports+json" },
+      body: JSON.stringify(reports.map((disposition) => ({ type: "csp-violation", body: { effectiveDirective: "script-src-elem", blockedURL: "https://evil.example/x.js", documentURL: "https://chat.impf.ai/", disposition } }))) });
+    return serveSecurity(req, new URL(req.url), { prefix: "/api/security", token: "export-token-0123456789abcdef", watch, cfg, fp: fingerprint(req, T0), now: T0 });
+  };
+  assert.equal((await post(["enforce", "report"])).status, 204);
+  assert.deepEqual(w.records().items[0].event.reports.map((r) => r.disposition), ["enforce", "report"]);
+  assert.equal((await post(["enforce"])).status, 204);
+  assert.equal(w.records().items.length, 1); // the same refusal again, in the same ten minutes: not kept
+});
+
 test("config, and the log lines: only requests worth a look, the address only when flagged", () => {
   const c = sentinelConfig({ SENTINEL: "Enforce", HONEYPOT: "observe", FLAG_SCORE: "3", KNOWN_PROMPTS: "AB12, cd34", SENTINEL_SALT: "x" });
   assert.deepEqual([c.mode, c.honeypot, c.flagScore, c.blockScore, c.knownPrompts, c.salt, c.ownPrefix], ["enforce", "observe", 3, 10, ["ab12", "cd34"], "x", "taochronos-"]);

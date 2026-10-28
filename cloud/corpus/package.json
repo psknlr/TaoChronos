@@ -4,9 +4,12 @@
   "type": "module",
   "description": "道乃久: the full corpus's server on Cloudflare — a Durable Object starting a container (see ../README.md)",
   "scripts": {
-    "deploy": "npx wrangler@4 deploy"
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
     "@cloudflare/containers": "0.3.7"
+  },
+  "devDependencies": {
+    "wrangler": "4.153.0"
   }
 }

@@ -2,13 +2,16 @@
 # Deploys the site's Worker (taochronos-site, https://chat.impf.ai) with the bindings the account has, then checks the
 # site.  Run by .github/workflows/site.yml from the repository's root, once the site is built into _site.
 #
-# Environment: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID; WRANGLER (the wrangler to run, e.g. wrangler@4.142.0);
-# STORE_NAMESPACE (the Workers KV namespace the full corpus store is uploaded into); SITE_URL; STORE_TOKEN_SHA256
-# (optional: the sha256 of a store upload token, in place of wrangler.toml's); CORPUS_DEPLOYED=1 when the corpus's
-# container has just been deployed (otherwise the KV namespace says whether it is); ARCHIVE_BUCKET (optional: the
-# private R2 bucket the sentinel's events are drained into instead of the repository — security/bind-archive.sh).
+# Environment: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID; STORE_NAMESPACE (the Workers KV namespace the full corpus
+# store is uploaded into); SITE_URL; STORE_TOKEN_SHA256 (optional: the sha256 of a store upload token, in place of
+# wrangler.toml's); CORPUS_DEPLOYED=1 when the corpus's container has just been deployed (otherwise the KV namespace says
+# whether it is); ARCHIVE_BUCKET (optional: the private R2 bucket the sentinel's events are drained into instead of the
+# repository — security/bind-archive.sh).  The wrangler it runs is the one package-lock.json names, installed here.
 set -euo pipefail
 cd "$(dirname "$0")"
+# wrangler and every package under it exactly as package-lock.json has them (versions and integrity hashes), with no
+# install script run; `npx --no` below runs that copy and never fetches another
+npm ci --ignore-scripts --no-audit --no-fund
 api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID"
 auth="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
 # the checks below name themselves: the edge rules spare the name the browser integrity check, and the sentinel labels
@@ -82,7 +85,7 @@ UA="$UA" bash ../../security/bind-archive.sh wrangler.deploy.toml
 
 # ---------------------------------------------------------------- deploy
 set +e
-npx --yes "$WRANGLER" deploy --config wrangler.deploy.toml 2>&1 | tee "$work/deploy.log"
+npx --no -- wrangler deploy --config wrangler.deploy.toml 2>&1 | tee "$work/deploy.log"
 status=${PIPESTATUS[0]}
 set -e
 if [ "$status" != 0 ]; then
@@ -95,17 +98,17 @@ fi
 # (without it the security endpoints answer 401 and the events wait), and the salt that keeps a visitor's key the same
 # across months (optional).  A space or line break pasted with a secret is not part of it.
 if [ -n "${LOG_EXPORT_TOKEN:-}" ]; then
-  printf '%s' "$LOG_EXPORT_TOKEN" | tr -d '[:space:]' | npx --yes "$WRANGLER" secret put LOG_EXPORT_TOKEN --config wrangler.deploy.toml
+  printf '%s' "$LOG_EXPORT_TOKEN" | tr -d '[:space:]' | npx --no -- wrangler secret put LOG_EXPORT_TOKEN --config wrangler.deploy.toml
 else
   echo "::warning::LOG_EXPORT_TOKEN is not set: the site's sentinel keeps its events until the chat-logs workflow can take them (security/README.md)"
 fi
 if [ -n "${SENTINEL_SALT:-}" ]; then
-  printf '%s' "$SENTINEL_SALT" | tr -d '[:space:]' | npx --yes "$WRANGLER" secret put SENTINEL_SALT --config wrangler.deploy.toml
+  printf '%s' "$SENTINEL_SALT" | tr -d '[:space:]' | npx --no -- wrangler secret put SENTINEL_SALT --config wrangler.deploy.toml
 fi
 # the token that reads the counts in the page's settings (统计; docs/web.md): optional, 16 characters or more
 stats="$(printf '%s' "${STATS_TOKEN:-}" | tr -d '[:space:]')"
 if [ "${#stats}" -ge 16 ]; then
-  printf '%s' "$stats" | npx --yes "$WRANGLER" secret put STATS_TOKEN --config wrangler.deploy.toml
+  printf '%s' "$stats" | npx --no -- wrangler secret put STATS_TOKEN --config wrangler.deploy.toml
 elif [ -n "$stats" ]; then
   echo "::warning::STATS_TOKEN is shorter than 16 characters: not set, the counts stay closed (docs/web.md)"
 fi

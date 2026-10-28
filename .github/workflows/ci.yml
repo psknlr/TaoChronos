@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+# the tests only read the repository
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -11,12 +15,14 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install
-        run: pip install -e ".[dev,anthropic]"
+      - name: Install (the hashed lockfiles in requirements/)
+        run: pip install --require-hashes -r requirements/build.txt -r requirements/dev.txt && pip install --no-deps --no-build-isolation -e .
       - name: Architecture governance
         run: taochronos governance
       - name: Tests
@@ -29,8 +35,10 @@ jobs:
   relay:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
       - name: The relay (道乃久默认服务) and the sentinel both Workers share (security/)
@@ -39,16 +47,18 @@ jobs:
   cloud:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
       - name: A small D1 backup for its tests (ten books, made by the D1 exporter; docs/adr/0017-d1-backup.md)
         run: |
-          pip install -e .
+          pip install --require-hashes -r requirements/build.txt -r requirements/runtime.txt && pip install --no-deps --no-build-isolation -e .
           python -m taochronos.chat.d1 fixture cloud/.d1-fixture
       - name: The site's Worker (and its D1 backup) and the corpus Worker (cloud/)
         run: REQUIRE_D1_FIXTURE=1 node --test cloud/test/site.test.js cloud/test/corpus.test.js cloud/test/backup.test.js

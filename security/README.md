@@ -117,15 +117,25 @@ Workers Logs（两个 Worker 都开了 observability）：分数 ≥ 1、状态 
 ### 网页的安全头与内容安全策略（网站 Worker）
 
 页面（`/`、`/about`、`/attribution`）带：HSTS、`nosniff`、`Referrer-Policy`、`X-Frame-Options: SAMEORIGIN`、`Permissions-Policy`（关掉页面用不到的设备能力；剪贴板保留）、
-`Cross-Origin-Opener-Policy: same-origin`、`Cross-Origin-Resource-Policy: same-origin`，以及 **只报告、不执行** 的 `Content-Security-Policy-Report-Only`
-（`cloud/site/wrangler.toml` 的 `CSP_REPORT_ONLY`；报告发到 `/api/security/csp`，随哨兵事件取回）。策略按页面实际加载的东西写成：自己的文件；两段内联脚本与两段内联样式按
-**哈希**放行（`cloud/test/site.test.js` 核对哈希与 `web/` 一致：改了内联脚本就要更新策略）；jsDelivr 上的 Anthropic SDK；Cloudflare Web Analytics 的统计脚本
-（`static.cloudflareinsights.com`：由边缘插入每个页面，仓库里没有；关掉 Web Analytics 后可从策略里删去）；访客填的任何 https 模型服务与本机服务
-（`https:`、`http://localhost:*`）；附图的 `data:`/`blob:`。浏览器内运行环境的两个 Worker 脚本有自己的策略（`cloud/site/_headers`：WebAssembly 需要 `'wasm-unsafe-eval'`）。
-报告只留目录、被拦的来源与出处（不留查询串与页面文字），同一访客的同一违规十分钟内只记一次。看报告先按浏览器内核分组：Chromium < 97、Firefox < 102、
-Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView）会为此报 script-src——那不是策略的错。
-两周内没有现代浏览器的真实访客的报告（`data/security-logs/site/` 里 `kind: csp` 的事件），就可以把 `CSP_REPORT_ONLY` 的值改成 `Content-Security-Policy` 执行
-（在 `site.js` 的 `secure()` 里换头名）；两个 Worker 脚本的策略要更谨慎——强制后旧内核上的浏览器内运行环境会失效。
+`Cross-Origin-Opener-Policy: same-origin`、`Cross-Origin-Resource-Policy: same-origin`，以及两份内容安全策略（`cloud/site/wrangler.toml`；报告都发到 `/api/security/csp`，随哨兵事件取回）：
+
+- **执行**的 `Content-Security-Policy`（`CSP`，2026-10-28 起）：管住不是页面自己的脚本——`script-src`（内联脚本只放行按哈希列出的两段，不许 eval）、`object-src 'none'`、
+  `base-uri 'none'`——以及脚本能把页面数据送出去或显示出去的途径：`connect-src`、`img-src`、`worker-src`、`form-action`、`frame-ancestors`。
+- **只报告**的 `Content-Security-Policy-Report-Only`（`CSP_REPORT_ONLY`）：整份策略，另外还管样式、字体、媒体与框架。这几项不执行，因为浏览器扩展与应用内浏览器
+  正是在这里加它们自己的东西（深色模式或翻译插件的 `<style>`、图标字体、钉钉等 WebView 桥接用的 `<iframe>`）；拦下它们只会让访客的扩展失灵，保护不了页面。
+
+策略按页面实际加载的东西写成：自己的文件；两段内联脚本与两段内联样式按**哈希**放行（`cloud/test/site.test.js` 核对哈希与 `web/` 一致、两份策略的 `script-src` 相同：
+改了内联脚本就要更新两份策略，否则页面启动不了）；jsDelivr 上 npm 包的文件（`https://cdn.jsdelivr.net/npm/`：Anthropic SDK 与它 `+esm` 引入的依赖；不含 `/gh/`，那里能取到任何公开仓库的文件）；
+Cloudflare Web Analytics 的统计脚本（`static.cloudflareinsights.com`：由边缘插入每个页面，仓库里没有；关掉 Web Analytics 后可从策略里删去）；访客填的任何 https 模型服务与本机服务
+（`https:`、`http://localhost:*`）；附图的 `data:`/`blob:`。浏览器内运行环境的两个 Worker 脚本有自己的策略（`cloud/site/_headers`：WebAssembly 需要 `'wasm-unsafe-eval'`），仍只报告。
+报告只留目录、被拦的来源与出处（不留查询串与页面文字），同一访客的同一违规十分钟内只记一次；同一违规的「执行」（`disposition: enforce`，真被拦下了）与「报告」分开记。
+看报告先按浏览器内核分组：Chromium < 97、Firefox < 102、Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView）会为此报 script-src——那不是策略的错。
+
+**为什么可以执行**（[ADR 0026](../docs/adr/0026-pinned-supply-chain-and-enforced-policies.md)）：2026-10-06 至 10-28 整份策略只报告，收到 144 条报告，落在执行的这几项上的 13 条
+没有一条出自页面自己的代码：5 条是浏览器扩展（其中一条是 iPhone 上应用内浏览器的桥接脚本），8 条是 Cloudflare 的统计脚本在少数浏览器里被拦（执行后这些访问不进
+Web Analytics，访客看不出差别）。上线前用 Chromium 在本地按部署的配置跑过一遍：打开页面、设置、主题、经默认服务的一轮对话、英文界面、关于页与出处页，没有一条违规；
+再往页面里注入一段内联脚本和一张外链图片，二者都被拦下，页面照常可用。**出了问题**：把 `wrangler.toml` 里 `CSP` 的值清空合入 main，就回到只报告（`CSP_REPORT_ONLY` 不变）。
+两个 Worker 脚本的策略要更谨慎——强制后旧内核上的浏览器内运行环境会失效。
 
 ## 二、边缘（Cloudflare 免费计划）
 
@@ -230,6 +240,9 @@ data/security-logs/
 - **每周看一眼**：`python3 security/events.py suspects`（按分数排）；`LOG_EXPORT_TOKEN=… python3 security/collect.py summary`（哨兵现在看到什么）。
 - **从 observe 到 enforce**：看两周的 `shadow` 事件（本应拒绝的）。如果没有一条是真实访客（真实访客的特征：浏览器 UA、Sec-Fetch 齐全、中文或英文的 Accept-Language、
   运营商网络、网页形状的请求体），把两个 `wrangler.toml` 的 `SENTINEL` 改为 `"enforce"` 合入 main。如果有：提高 `BLOCK_SCORE`，或把误判的理由在 `assess()` 里调轻。
+  **2026-10-28 已改为 enforce**：此前 22 天（10-06 至 10-28）只有 7 条 `shadow` 事件，全是扫描器——每个地址的请求全部 404（10 到 671 次）、多数来自托管网络、
+  没有浏览器的 Sec-Fetch 头（UCLOUD 香港的 4 条、长春的 1 条，以及 Anthropic 出口上两次路径穿越的探测）（[ADR 0026](../docs/adr/0026-pinned-supply-chain-and-enforced-policies.md)）。
+  之后若有真实访客被拒（403「该地址因异常访问已被暂时限制」），先看它的事件，再提高 `BLOCK_SCORE` 或改回 `"observe"`。
 - **设 `KNOWN_PROMPTS`**：`summary` 的 `prompts` 里次数最多的哈希就是网页自己的系统提示（网页版本更新时会换），抄前 16 位填进中转的 `KNOWN_PROMPTS`。
 - **阈值的依据**：`TOKENS_PER_DAY`、速率限制、`BLOCK_SCORE` 的默认值都标注了记录里见到的基线；基线变了（比如语料变大、一轮的 token 翻倍）就按比例调。
 
@@ -247,5 +260,5 @@ data/security-logs/
 - Cloudflare WARP（ASN 13335）与各种 VPN 出口让真实访客看起来来自托管网络；`dc_asn` 只是两分，规则 5 只质询网页、不碰 API。
 - 中转的计数对象（Durable Object）在首次创建的节点上不会迁移；中国访客每次调用多一次跨洋往返（几十到两百毫秒），远小于模型本身的耗时。
   token 额度在调用放行时先按请求大小（约三字节一个 token）预扣，回答末尾的用量再结清：三十个并发调用也透支不了多少。
-- 内容安全策略尚在只报告阶段；执行前要确认报告为零。
+- 页面的内容安全策略只执行管脚本与数据外送的几项；样式、字体、媒体、框架与两个 Worker 脚本的策略仍只报告（见上文「网页的安全头与内容安全策略」）。
 - 哨兵的记忆在 Durable Object 里：十分钟窗口在内存中，对象被回收时丢失（最坏少算一段突发）；行与事件在 SQLite 里。

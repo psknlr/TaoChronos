@@ -1,6 +1,8 @@
 # The image of the full corpus's server (cloud/corpus/Dockerfile) is built from the repository's root: only what it copies.
 *
 !pyproject.toml
+!requirements/build.txt
+!requirements/runtime.txt
 !README.md
 !src/
 !architecture-policy.yaml

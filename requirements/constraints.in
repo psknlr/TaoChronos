@@ -1,0 +1,9 @@
+# Constraints every lockfile here is compiled under (requirements/lock.sh): a version a dependency's own range allows
+# but a published advisory rules out, and that its range keeps us from leaving upwards.  Remove an entry once the
+# dependency that holds it back allows the fixed release.
+
+# filelock 3.20.4–4.2.0: GHSA-v4x8-3wr5-3wq8 (CVE-2026-112940, high: ReadWriteLock on POSIX), GHSA-9vhv-jxww-xfm5 and
+# GHSA-567q-5qvw-pf92 (low, Windows); fixed in 4.2.1.  litellm (up to 1.106.5, 2026-10) requires filelock<4.0, and
+# releases before 3.20.3 have GHSA-w853-jp5j-5j7f and GHSA-qmgc-5h2g-mvrw: 3.20.3 is the one release with neither.
+# Only the LiteLLM provider's environment (litellm.txt) has filelock.
+filelock<3.20.4

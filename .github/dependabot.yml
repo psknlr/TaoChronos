@@ -1,0 +1,31 @@
+# Keeps the pins current (docs/adr/0026-pinned-supply-chain-and-enforced-policies.md): the Actions by commit, each
+# Worker's wrangler by its lockfile, the full corpus's base image by digest.  A pull request each week at most per
+# group; the tests (tests/test_supply_chain.py) check that whatever it changes is still pinned.  The Python lockfiles
+# (requirements/) are regenerated with requirements/lock.sh, and the audit workflow reads them every week.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # the Workers' toolchain: wrangler, and under it undici, sharp, workerd (the deployment's P1 of 2026-10-26)
+  - package-ecosystem: npm
+    directories: ["/relay", "/cloud/site", "/cloud/corpus"]
+    schedule:
+      interval: weekly
+    groups:
+      workers:
+        patterns: ["*"]
+
+  # the digest of python:3.12-slim; the image stays on Python 3.12 (a new minor is a change of its own)
+  - package-ecosystem: docker
+    directory: /cloud/corpus
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]

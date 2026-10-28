@@ -125,6 +125,9 @@ taochronos study formula 六味地黄丸 # 治学：方源考（没有全量语�
 taochronos agents                  # 16 个智能体及其当前路由
 ```
 
+CI 与各部署安装的版本——每个包都固定版本、带其文件的哈希——是 [requirements/](requirements/README.md) 里的锁定文件：
+`pip install --require-hashes -r requirements/build.txt -r requirements/dev.txt`，再 `pip install --no-deps --no-build-isolation -e .`。
+
 接入全量语料（原文不进入 git；各来源的抓取、编目、入库都可复现，见[第三节](#三语料)）：
 
 ```bash

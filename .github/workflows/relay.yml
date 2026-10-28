@@ -23,15 +23,16 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  WRANGLER: wrangler@4.142.0
   RELAY_URL: ${{ vars.RELAY_URL || 'https://chat-api.impf.ai' }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
       - name: Test the relay and the sentinel
@@ -59,6 +60,12 @@ jobs:
           else
             echo "ready=1" >> "$GITHUB_OUTPUT"
           fi
+      # wrangler and every package under it, exactly as relay/package-lock.json has them (versions and integrity
+      # hashes); no install script runs, and no secret is in this step's environment
+      - name: Install wrangler from the lockfile
+        if: steps.secrets.outputs.ready == '1'
+        working-directory: relay
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Deploy the Worker, then give it its secrets
         if: steps.secrets.outputs.ready == '1'
         working-directory: relay
@@ -76,13 +83,13 @@ jobs:
           # the archive's private bucket, when the owner named one and it is private (security/bind-archive.sh)
           cp wrangler.toml wrangler.deploy.toml
           bash ../security/bind-archive.sh wrangler.deploy.toml
-          npx --yes "$WRANGLER" deploy --config wrangler.deploy.toml
-          printf '%s' "$MINIMAX_API_KEY" | tr -d '[:space:]' | npx --yes "$WRANGLER" secret put MINIMAX_API_KEY --config wrangler.deploy.toml
-          printf '%s' "$LOG_EXPORT_TOKEN" | tr -d '[:space:]' | npx --yes "$WRANGLER" secret put LOG_EXPORT_TOKEN --config wrangler.deploy.toml
-          if [ -n "$SENTINEL_SALT" ]; then printf '%s' "$SENTINEL_SALT" | tr -d '[:space:]' | npx --yes "$WRANGLER" secret put SENTINEL_SALT --config wrangler.deploy.toml; fi
+          npx --no -- wrangler deploy --config wrangler.deploy.toml
+          printf '%s' "$MINIMAX_API_KEY" | tr -d '[:space:]' | npx --no -- wrangler secret put MINIMAX_API_KEY --config wrangler.deploy.toml
+          printf '%s' "$LOG_EXPORT_TOKEN" | tr -d '[:space:]' | npx --no -- wrangler secret put LOG_EXPORT_TOKEN --config wrangler.deploy.toml
+          if [ -n "$SENTINEL_SALT" ]; then printf '%s' "$SENTINEL_SALT" | tr -d '[:space:]' | npx --no -- wrangler secret put SENTINEL_SALT --config wrangler.deploy.toml; fi
           # the token that reads the counts in the page's settings (统计; docs/web.md): optional, 16 characters or more
           stats="$(printf '%s' "$STATS_TOKEN" | tr -d '[:space:]')"
-          if [ "${#stats}" -ge 16 ]; then printf '%s' "$stats" | npx --yes "$WRANGLER" secret put STATS_TOKEN --config wrangler.deploy.toml
+          if [ "${#stats}" -ge 16 ]; then printf '%s' "$stats" | npx --no -- wrangler secret put STATS_TOKEN --config wrangler.deploy.toml
           elif [ -n "$stats" ]; then echo "::warning::STATS_TOKEN is shorter than 16 characters: not set, the counts stay closed (docs/web.md)"; fi
       - name: Check it answers, and that MiniMax takes its key (one tiny call)
         if: steps.secrets.outputs.ready == '1'

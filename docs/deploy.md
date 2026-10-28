@@ -214,7 +214,7 @@ Long steps (B3, B5) survive a closed laptop lid only in `tmux` or `screen`; star
 git clone https://github.com/psknlr/TaoChronos.git && cd TaoChronos     # main, with PR #35
 python3 -m venv .venv && . .venv/bin/activate && pip install -e .
 export CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=…
-export WRANGLER=wrangler@4.142.0 WRANGLER_SEND_METRICS=false
+export WRANGLER_SEND_METRICS=false                                      # wrangler: the version each Worker's package-lock.json names, installed by npm ci where it is run
 export STORE_NAMESPACE=taochronos-store SITE_URL=https://chat.impf.ai RELAY_URL=https://chat-api.impf.ai
 export ARCHIVE_BUCKET=                                                  # the bucket's name once the archive is set up (4.2)
 api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID"
@@ -250,10 +250,11 @@ The last check prints `… OK`.  A `curl: (22) … 404` means a part is not in K
 ```bash
 # the version the workflow would give this commit: the store and every file the image is built from
 store=$(python3 -c 'import json; print(json.load(open("cloud/store.json"))["sha256"])')
-tree=$(git ls-tree -r HEAD -- pyproject.toml README.md src architecture-policy.yaml profiles domains corpus/catalog corpus/demo \
-         corpus/modern agents skills evals/gold cloud/corpus cloud/store.json .dockerignore | sha256sum | cut -c1-12)
+tree=$(git ls-tree -r HEAD -- pyproject.toml requirements/build.txt requirements/runtime.txt README.md src \
+         architecture-policy.yaml profiles domains corpus/catalog corpus/demo corpus/modern agents skills evals/gold \
+         cloud/corpus cloud/store.json .dockerignore | sha256sum | cut -c1-12)
 VERSION="${store:0:12}-${tree}"; echo "$VERSION"
-(cd cloud/corpus && npm ci --no-audit --no-fund && npx --yes "$WRANGLER" deploy --var "VERSION:$VERSION")
+(cd cloud/corpus && npm ci --ignore-scripts --no-audit --no-fund && npx --no -- wrangler deploy --var "VERSION:$VERSION")
 # recorded as deployed, as the workflow does — only after the deploy succeeded
 curl -fsS -X PUT -H "$auth" -H "Content-Type: text/plain" --data-binary "$VERSION" "$api/storage/kv/namespaces/$NS/values/deployed%2Fcorpus" >/dev/null && echo recorded
 ```
@@ -379,13 +380,14 @@ time they take to type a question.
 **By GitHub Actions:** re-run **relay** (Part 2.1).  **From your computer** (after B1):
 
 ```bash
-cd relay && cp wrangler.toml wrangler.deploy.toml && bash ../security/bind-archive.sh wrangler.deploy.toml
-npx --yes "$WRANGLER" deploy --config wrangler.deploy.toml && cd ..
+cd relay && npm ci --ignore-scripts --no-audit --no-fund
+cp wrangler.toml wrangler.deploy.toml && bash ../security/bind-archive.sh wrangler.deploy.toml
+npx --no -- wrangler deploy --config wrangler.deploy.toml && cd ..
 python3 relay/collect.py check                              # one tiny model call through the relay: ends with "call": "ok"
 ```
 
 The Worker keeps its secrets (`MINIMAX_API_KEY`, `LOG_EXPORT_TOKEN`, …) across deploys.  To change one:
-`printf %s "$VALUE" | npx --yes "$WRANGLER" secret put NAME --config relay/wrangler.deploy.toml`, and update the GitHub
+`(cd relay && printf %s "$VALUE" | npx --no -- wrangler secret put NAME --config wrangler.deploy.toml)`, and update the GitHub
 secret of the same name.
 
 **MiniMax key from the international platform** (platform.minimax.io — the usual case outside mainland China):
@@ -449,7 +451,7 @@ The rules fit the zone's own plan (Free: 5 custom rules, one 10-second rate limi
 
 | What | Where | Recommendation |
 |---|---|---|
-| Sentinel | `SENTINEL` in `relay/wrangler.toml`, `cloud/site/wrangler.toml` | after two weeks of `observe` with no genuine visitor among the `shadow` events, `"enforce"` in both |
+| Sentinel | `SENTINEL` in `relay/wrangler.toml`, `cloud/site/wrangler.toml` | `"enforce"` in both since 2026-10-28, after 22 days of `observe` whose 7 `shadow` events were all scanners (ADR 0026); back to `"observe"` if a genuine visitor is refused |
 | Model spend per address | `TOKENS_PER_DAY`, `PER_DAY` (relay) | 10 M tokens, 600 calls a day; many people behind one hospital or office address share them — raise if they run out |
 | Model spend in all | `TOTAL_TOKENS_PER_DAY`, `TOTAL_PER_DAY` (relay) | the ceiling on a bad day: set it from your MiniMax budget |
 | Reply length | `MAX_OUTPUT_TOKENS` (relay) | 32,768 tokens a reply, its reasoning included; the page writes on an answer cut there (twice at most), so raise it only if the records show many cut answers — the day's token budgets above bound what replies cost |
@@ -469,7 +471,7 @@ Change on `main` (a pull request), then deploy (Actions, or Route B).
 6. ☐ D1 imported and bound (A2, or B5)
 7. ☐ Archive bucket and `ARCHIVE_BUCKET`; both Workers deployed; `chat-logs` disabled (4.2)
 8. ☐ Edge rules applied (4.3)
-9. ☐ After two weeks: sentinel to `enforce` (4.4)
+9. ☑ After two weeks: sentinel to `enforce` (4.4; done 2026-10-28)
 
 ---
 
