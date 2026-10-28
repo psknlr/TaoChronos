@@ -39,7 +39,7 @@ jobs:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Is the security token set?
@@ -78,7 +78,7 @@ jobs:
           # the daily run waits quietly until they are set; a run by hand fails
           if [ "$EVENT" = workflow_dispatch ]; then echo "::error::not set: $missing. The edge's events are not collected (security/README.md)"; exit 1; fi
           echo "::notice::not set: $missing. The edge's events are not collected (security/README.md)"; echo "go=0" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.ready.outputs.go == '1'
       - name: Pull the day's security events and the requests worth a look
         id: pull
