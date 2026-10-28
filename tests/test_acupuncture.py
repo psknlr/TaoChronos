@@ -354,8 +354,8 @@ def test_one_state_and_the_methods_it_takes(study):
     assert [(p["code"], p["intent"]) for m in heart["methods"] if m["method"] == "nanjing79" for p in m["points"]] == [("PC7", "泻")]
     only = study.wuxing("肺虚", methods=["nanjing69"])
     assert [m["method"] for m in only["methods"]] == ["nanjing69"]
-    with pytest.raises(ValueError):
-        study.wuxing("头痛")
+    unclear = study.wuxing("头痛")
+    assert unclear["status"] == "needs_clarification" and not unclear["methods"]
 
 
 def test_conclusions_that_do_not_follow(study):
@@ -388,6 +388,137 @@ def test_selection_reads_excess_and_deficiency_organ_by_organ(study):
     assert r["five_phase"]["strategies"] == ["抑木扶土"] and r["five_phase"]["conflicts"]
 
 
+# Symptoms are hypotheses, not asserted diagnoses. These are regression examples,
+# not a clinical-validation dataset or estimates of diagnostic accuracy.
+@pytest.mark.parametrize("text,pattern,expected", [
+    ("食欲差，大便不成形，容易累", "脾气虚", {("SP2", "补")}),
+    ("胁胀，爱叹气，食欲差，便溏", "肝郁脾虚", {("LR2", "泻"), ("SP2", "补")}),
+    ("头痛，口苦，眼红，易怒", "肝火上炎", {("LR2", "泻")}),
+    ("咳嗽，气短，乏力，食少", "脾肺气虚", {("SP2", "补"), ("LU9", "补")}),
+    ("腰膝酸软，眼干涩，五心烦热", "肝肾阴虚", {("LR8", "补"), ("KI7", "补")}),
+    ("凌晨腹泻，腰酸，手脚冰凉", "脾肾阳虚", {("SP2", "补"), ("KI7", "补")}),
+    ("失眠，心慌，食欲差，乏力", "心脾两虚", {("HT9", "补"), ("SP2", "补")}),
+    ("腰膝酸软，口干，手足心热", "肾阴虚", {("KI7", "补")}),
+    ("腰酸，怕冷，热敷缓解", "肾阳虚", {("KI7", "补")}),
+    ("干咳少痰，咽干，夜间咳嗽加重", "肺阴虚", {("LU9", "补")}),
+])
+def test_symptoms_offer_separate_conditional_selections(study, text, pattern, expected):
+    r = study.wuxing(text)
+    assert r["input_mode"] == "symptoms" and r["states"] == [] and r["methods"] == []
+    a = r["assessment"]
+    assert a["status"] == "conditional_candidates" and len(a["questions"]) <= 2
+    c = next(c for c in a["candidates"] if c["pattern"] == pattern)
+    assert c["requires_confirmation"] and c["sources"] and c["selection"]["conditional"]
+    assert {(p["code"], p["intent"]) for m in c["selection"]["methods"] for p in m["points"]} == expected
+    assert all("若经辨证确认" in m["premise"] for m in c["selection"]["methods"])
+    assert r["tables"] and r["charts"]
+
+
+@pytest.mark.parametrize("text", ["头痛", "失眠", "腰痛", "食欲差", "月经不调", "", "   "])
+def test_insufficient_symptoms_do_not_create_points(study, text):
+    if not text.strip():
+        with pytest.raises(ValueError):
+            study.wuxing(text)
+        return
+    r = study.wuxing(text)
+    assert r["status"] == "needs_clarification" and not r["methods"]
+    assert all(c["selection"] is None for c in r["assessment"]["candidates"])
+    assert 1 <= len(r["assessment"]["questions"]) <= 2
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("不是肝实，而是肝虚", [("肝", "deficiency")]),
+    ("无肝郁脾虚，仅肺气虚", [("肺", "deficiency")]),
+    ("肝虚尚待排除", []),
+    ("可能肝郁脾虚", []),
+    ("既往肝实，现在肝虚", [("肝", "deficiency")]),
+    ("not Liver excess, Liver deficiency", [("肝", "deficiency")]),
+    ("肝经虚", [("肝", "deficiency")]),
+])
+def test_states_respect_assertion_status(study, text, expected):
+    r = study.wuxing(text)
+    assert [(e["organ"], e["state"]) for e in r["states"]] == expected
+    if not expected:
+        assert not r["methods"]
+
+
+def test_negated_and_uncertain_symptoms_do_not_satisfy_a_group(study):
+    for text in ("食欲差，乏力，无便溏", "食欲差，乏力，便溏待查", "食欲差，乏力，既往便溏"):
+        r = study.wuxing(text)
+        assert all(c["selection"] is None for c in r["assessment"]["candidates"])
+    r = study.wuxing("无头痛、目赤，口苦，易怒")
+    assert all(c["selection"] is None for c in r["assessment"]["candidates"])
+    r = study.wuxing("食欲差，乏力，便溏，但否认便溏")
+    assert r["assessment"]["contradictory_findings"] and all(c["selection"] is None for c in r["assessment"]["candidates"])
+    r = study.wuxing("排除肝郁脾虚；胁胀，爱叹气，便溏")
+    assert all(c["pattern"] != "肝郁脾虚" for c in r["assessment"]["candidates"])
+
+
+def test_unknown_is_not_neutral_and_fu_is_not_zang(study):
+    for text, organ in (("肝火犯肺", "肺"), ("肝胃不和", "胃")):
+        r = study.wuxing(text)
+        assert not any(m["organ"] == organ for m in r["methods"])
+        assert not any(c["rule"] == "own_phase" for c in r["classical"])
+    r = study.wuxing("肝不实不虚")
+    assert [(m["method"], m["points"][0]["code"]) for m in r["methods"]] == [("own_channel", "LR1")]
+    r = study.wuxing("肝实胃虚")
+    assert next(c for c in r["classical"] if c["rule"] == "prevent_transmission")["status"] == "not_given"
+    assert next(c for c in r["clarify"] if c["organ"] == "胃")["candidates"] == []
+    assert not any(s["id"] == "yimu_futu" and s["fit"] == "full" for s in r["strategies"])
+    assert not any(c["rule"] == "nanjing75" for c in study.wuxing("胆实大肠虚")["classical"])
+
+
+def test_methods_are_validated_and_candidates_keep_requested_methods(study):
+    with pytest.raises(ValueError, match="unknown methods"):
+        study.wuxing("肝虚", methods=["nanjing_69"])
+    with pytest.raises(ValueError, match="unknown methods"):
+        study.wuxing("头痛", methods=["nanjing69", "oops"])
+    r = study.wuxing(symptoms=["食欲差", "便溏", "乏力"], methods=["saam"])
+    c = next(c for c in r["assessment"]["candidates"] if c["pattern"] == "脾气虚")
+    assert {m["method"] for m in c["selection"]["methods"]} == {"saam"}
+
+
+@pytest.mark.parametrize("text,pregnant,status", [
+    ("突发剧烈头痛，口苦，易怒", False, "urgent"),
+    ("胸痛，大汗淋漓，肝虚", False, "urgent"),
+    ("呼吸困难，食少，乏力", False, "urgent"),
+    ("食欲差，便溏，乏力", True, "pregnancy_review"),
+    ("怀孕，肝虚", False, "pregnancy_review"),
+    ("可能怀孕，食欲差，便溏，乏力", False, "pregnancy_review"),
+    ("无明显诱因突发剧烈头痛，口苦，易怒", False, "urgent"),
+    ("可能胸痛，肝虚", False, "urgent"),
+    ("肝实，肝虚", False, "needs_clarification"),
+])
+def test_review_gates_withhold_all_points(study, text, pregnant, status):
+    r = study.wuxing(text, pregnant=pregnant)
+    assert r["status"] == status and not r["methods"] and not r["strategies"]
+    assert all(c["selection"] is None for c in r["assessment"]["candidates"])
+    assert not r.get("charts")
+
+
+def test_no_false_urgent_or_pregnancy_gate(study):
+    r = study.wuxing("未怀孕，无胸痛；食欲差，便溏，乏力")
+    assert r["status"] == "conditional_candidates"
+    assert not r["assessment"]["alerts"]
+    r = study.wuxing("非常乏力，食欲差，便溏")
+    assert r["status"] == "conditional_candidates"
+
+
+def test_symptom_pages_and_data_are_traceable(study):
+    data = study.data("wuxing-symptoms.yaml")
+    for pattern, spec in data["patterns"].items():
+        assert pattern in study._acupuncture.fw.wx["named"]
+        assert len(spec["groups"]) >= 3 and spec["sources"]
+        assert all(s in data["sources"] for s in spec["sources"])
+        assert all(f in data["features"] for g in spec["groups"] for f in g["any"])
+    r = study.wuxing("胁胀，爱叹气，便溏")
+    page = markdown("wuxing", r, study.signature())
+    assert "候选：肝郁脾虚" in page and "尚待辨证确认" in page and "行间" in page and "大都" in page
+    assert "症状线索来源" in page and "gzszyy.com" in page
+    page = markdown("wuxing", study.wuxing("头痛"), study.signature())
+    assert "先补充" in page and "当前不生成" in page
+
+
 # ------------------------------------------------------------------ tools, page and CLI (the demonstration corpus)
 def test_the_tools_through_the_scheduler(harness):
     call = lambda tool, **a: harness.scheduler.execute(ToolCall(tool, a), actor=Actor.kernel())  # noqa: E731
@@ -404,7 +535,14 @@ def test_the_tools_through_the_scheduler(harness):
     assert out.ok and out.result["strategies"][0]["name"] == "抑木扶土" and out.result["tables"]
     out = call("study.wuxing", states=["肝虚"], methods=["saam"])
     assert out.ok and [m["method"] for m in out.result["methods"]] == ["saam"]
-    assert not call("study.wuxing", text="头痛").ok
+    out = call("study.wuxing", text="头痛")
+    assert out.ok and out.result["status"] == "needs_clarification"
+    out = call("study.wuxing", symptoms=["食欲差", "便溏", "乏力"], methods=["nanjing69"])
+    assert out.ok and out.result["status"] == "conditional_candidates"
+    assert out.result["assessment"]["candidates"][0]["selection"]["methods"][0]["points"][0]["code"] == "SP2"
+    out = call("study.wuxing", symptoms=["食欲差", "便溏", "乏力"], pregnant=True)
+    assert out.ok and out.result["status"] == "pregnancy_review" and not out.result["methods"]
+    assert not call("study.wuxing", text="肝虚", methods=["typo"]).ok
 
 
 def test_the_pages(study):
@@ -434,3 +572,9 @@ def test_cli_acupoints_and_point(capsys, tmp_path):
     assert capsys.readouterr().out.startswith("# 五行选穴：肝（木）实")
     assert main(["--data", str(tmp_path), "study", "wuxing", "--state", "肝虚", "--method", "nanjing69"]) == 0
     assert "曲泉" in capsys.readouterr().out
+    assert main(["--data", str(tmp_path), "study", "wuxing", "食欲差，便溏，乏力"]) == 0
+    assert "候选：脾气虚" in capsys.readouterr().out
+    assert main(["--data", str(tmp_path), "study", "wuxing", "--symptom", "食欲差", "--symptom", "便溏", "--symptom", "乏力"]) == 0
+    assert "大都" in capsys.readouterr().out
+    assert main(["--data", str(tmp_path), "study", "wuxing", "肝虚", "--pregnant"]) == 0
+    assert "暂停候选取穴" in capsys.readouterr().out

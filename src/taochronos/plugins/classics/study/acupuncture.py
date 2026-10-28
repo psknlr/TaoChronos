@@ -38,6 +38,7 @@ from collections import Counter, defaultdict
 from typing import Any, Iterable
 
 from .base import HAN, StudyBase, dated
+from .wuxing_symptoms import assess as assess_symptoms, mention_status
 
 GENERATES = {"木": "火", "火": "土", "土": "金", "金": "水", "水": "木"}  # the generating cycle (相生)
 MOTHER = {child: mother for mother, child in GENERATES.items()}
@@ -288,6 +289,13 @@ class Framework:
         notes: list[dict[str, str]] = []
 
         def add(phase: str, organ: str, state: str, written: str, at: tuple[int, int], pattern: str | None = None, note: str | None = None) -> None:
+            status = mention_status(norm, *at)
+            if status != "present":
+                item = {"text": written, "status": status, "note": {"negated": "已否定，不作为当前证候",
+                        "uncertain": "尚待确认，不作为已成立的证候", "historical": "既往记录，不作为当前证候"}[status]}
+                if item not in notes:
+                    notes.append(item)
+                return
             if any(f["phase"] == phase and f["organ"] == organ and f["state"] == state for f in found):
                 return
             found.append({"phase": phase, "organ": organ, "channel": self.organs[organ]["channel"], "state": state, "written": written,
@@ -325,7 +333,7 @@ class Framework:
         alt = lambda xs: "|".join(re.escape(x) for x in sorted(xs, key=len, reverse=True))  # noqa: E731
         cn_words = [w for w in words if not w.isascii()]
         en_words = [w for w in words if w.isascii()]
-        cn = re.compile(rf"((?:{alt(cn_org)}){{1,3}})(?:两|俱|皆|同|之)?(?:气|阴|阳|血|精)?({alt(cn_words)})")
+        cn = re.compile(rf"((?:{alt(cn_org)}){{1,3}})(?:经)?(?:两|俱|皆|同|之)?(?:气|阴|阳|血|精)?({alt(cn_words)})")
         organ_re = re.compile(alt(cn_org))
 
         def organ_for(x: str) -> tuple[str, str]:
@@ -1345,8 +1353,8 @@ class AcupunctureStudy:
         return rows
 
     # ============================================================ the Five Phases in point selection
-    def wuxing(self, text: str | None = None, *, states: Iterable[str] = (), methods: Iterable[str] = (),
-               classical: bool = True) -> dict[str, Any]:
+    def wuxing(self, text: str | None = None, *, states: Iterable[str] = (), symptoms: Iterable[str] = (),
+               methods: Iterable[str] = (), pregnant: bool = False, classical: bool = True) -> dict[str, Any]:
         """五行选穴: Five-Phase relations read into point selection, through the two decisions between them — the pattern
         (a phase's state does not name it) and the method of selection (each with its level: classical, school,
         deduction).  States (肝实 土虚 金虚, 肝郁脾虚, Wood excess …) become: the patterns still to tell apart; the
@@ -1358,7 +1366,16 @@ class AcupunctureStudy:
         methods would treat oppositely; the conclusions that do not follow; each as the record of six elements."""
         fw = self.fw
         wx = fw.wx
+        states, symptoms, methods = list(states or []), list(symptoms or []), list(methods or [])
+        unknown_methods = [m for m in methods if m not in wx.get("methods", {})]
+        if unknown_methods:
+            raise ValueError("study.wuxing: unknown methods " + ", ".join(unknown_methods) + "; choose " + ", ".join(wx.get("methods", {})))
+        if not any(str(x).strip() for x in [text or "", *states, *symptoms]):
+            raise ValueError("study.wuxing: give symptoms or Five-Phase states (食欲差、便溏、乏力; 肝虚; 木实 土虚)")
         given = [text or ""] + [re.sub(r"[:=：＝]", " ", str(s)) for s in states or []]
+        symptom_text = "；".join([*given, *symptoms])
+        assessment = assess_symptoms(symptom_text, self.b.data("wuxing-symptoms.yaml"), self.b.normalize)
+        pregnant = pregnant or any(f["id"] == "pregnancy" and f["status"] in ("present", "uncertain") for f in assessment["findings"])
         read = [fw.phase_states(t) for t in given if t]
         entries: list[dict[str, Any]] = []
         for r in read:
@@ -1366,26 +1383,31 @@ class AcupunctureStudy:
                 if not any(x["phase"] == e["phase"] and x["organ"] == e["organ"] and x["state"] == e["state"] for x in entries):
                     entries.append(e)
         notes = [n for r in read for n in r["notes"]]
-        if not entries:
-            raise ValueError("study.wuxing: " + "".join(f"「{n['text']}」：{n['note']}；" for n in notes) + "name a Five-Phase state — an organ or a phase with excess or deficiency (肝实, 脾虚, "
-                             "木实 土虚 金虚, Wood excess, Liver deficiency) or an identified pattern (肝郁脾虚, 肝肾阴虚, 心肾不交 …)")
-        wanted = [m for m in (methods or []) if m in (wx.get("methods") or {})] or list(wx.get("methods") or {})
+        wanted = methods or list(wx.get("methods") or {})
+        state_conflicts = [o for o in dict.fromkeys(e["organ"] for e in entries)
+                          if len({e["state"] for e in entries if e["organ"] == o and e["state"] in (*STATES, "neutral")}) > 1]
+        blocked = bool(assessment["alerts"] or pregnant or state_conflicts or assessment["contradictory_findings"])
         for e in entries:
             e["channel_name"] = fw.channels[e["channel"]]["name"]
             e["state_name"] = ((wx.get("states") or {}).get(e["state"]) or {}).get("name", "虚实未定")
             e["phase_en"] = (wx["phases"][e["phase"]] or {}).get("en")
-        records = [r for e in entries for r in self._wx_methods(e, wanted)]
+        active = [] if blocked else entries
+        records = [r for e in active for r in self._wx_methods(e, wanted)]
         relations = self._wx_relations(entries)
-        strategies = self._wx_strategies(entries)
+        strategies = self._wx_strategies(active)
         used_methods = sorted({r["method"] for r in records})
         guards = self._wx_guards(entries, used_methods, " ".join(given))
         conflicts = self._wx_conflicts(records)
-        classical_rows = self._wx_classical(entries)
+        classical_rows = self._wx_classical(active)
         rules = ["five_phase", "five_phase_cycles", "five_pathogens", "mother_child"] + [r["rule"] for r in records] \
             + [c["rule"] for c in classical_rows] + [s["rule"] for s in strategies if s["fit"] == "full"] + ["wuxing_record"]
         rules = [r for r in dict.fromkeys(rules) if r in fw.rules]
         out: dict[str, Any] = {
-            "input": {"text": text or "", "states": list(states or []), "read": [s for r in read for s in r["spans"]], "notes": notes},
+            "input": {"text": text or "", "states": states, "symptoms": symptoms, "pregnant": pregnant,
+                      "read": [s for r in read for s in r["spans"]], "notes": notes},
+            "input_mode": "states" if entries else "symptoms",
+            "status": "given_states" if entries else assessment["status"],
+            "state_conflicts": state_conflicts,
             "states": [{k: e.get(k) for k in ("phase", "phase_en", "organ", "channel", "channel_name", "state", "state_name", "written",
                                               "pattern", "note")} for e in entries],
             "clarify": self._wx_clarify(entries),
@@ -1395,7 +1417,7 @@ class AcupunctureStudy:
             "strategies": strategies,
             "methods": records,
             "conflicts": conflicts,
-            "branches": self._wx_branches(entries, strategies),
+            "branches": self._wx_branches(active, strategies),
             "guards": guards,
             "rules": [self._rule_card(r) if classical else {"id": r, **{k: fw.rules[r].get(k) for k in ("name", "en", "kind", "level", "statement", "source")}}
                       for r in rules],
@@ -1407,6 +1429,33 @@ class AcupunctureStudy:
         out["steps"] = self._wx_steps(out)
         out["summary"] = {"states": len(entries), "relations": len(relations), "strategies": sum(1 for s in strategies if s["fit"] == "full"),
                           "methods": len(records), "conflicts": len(conflicts), "guards": len(guards)}
+        if not entries or blocked:
+            if assessment["alerts"]:
+                assessment["status"] = "urgent"
+            elif pregnant:
+                assessment["status"] = "pregnancy_review"
+                assessment["questions"] = ["目前孕几周，症状持续多久？"]
+                assessment["note"] = "孕期需先评估针灸适宜性；当前仅保留症状线索，暂停候选取穴及补泻推演。"
+            elif state_conflicts:
+                assessment["status"] = "needs_clarification"
+                assessment["questions"] = ["请明确" + "、".join(state_conflicts) + "当前的虚实，或区分不同证候层次？"]
+            if not blocked:
+                for candidate in assessment["candidates"]:
+                    if candidate["status"] != "conditional":
+                        continue
+                    # An inference is kept inside its hypothesis, never promoted to top-level states.
+                    result = self.wuxing(candidate["pattern"], methods=methods or ["nanjing69"], classical=classical)
+                    candidate["selection"] = {k: result[k] for k in ("states", "relations", "methods", "conflicts", "rules", "evidence")}
+                    for record in candidate["selection"]["methods"]:
+                        record["premise"] = "若经辨证确认" + candidate["pattern"] + "；由症状提出的候选，尚未确诊"
+                    candidate["selection"]["conditional"] = True
+            else:
+                for candidate in assessment["candidates"]:
+                    candidate["status"] = "withheld"
+            out["assessment"] = assessment
+            out["status"] = assessment["status"]
+            out["summary"]["candidates"] = len(assessment["candidates"])
+            out["summary"]["conditional_candidates"] = sum(c["selection"] is not None for c in assessment["candidates"])
         return out
 
     def _wx_point(self, code: str, intent: str | None) -> dict[str, Any]:
@@ -1414,6 +1463,7 @@ class AcupunctureStudy:
         p = fw.points[code]
         ch = p["channel"]
         out: dict[str, Any] = {"code": code, "name": p["name"], "channel": ch, "channel_short": fw.channels[ch]["short"], "intent": intent}
+        out["cautions"] = [fw.d["cautions"][key]["text"] for key in p.get("cautions", [])]
         cat = next((c for c in fw.categories(code) if c["type"] == "five_shu"), None)
         if cat:
             out |= {"label": fw.kind_label[cat["kind"]], "en": fw.kind_en[cat["kind"]], "phase": cat["phase"],
@@ -1423,7 +1473,7 @@ class AcupunctureStudy:
     def _wx_premise(self, e: dict[str, Any]) -> str:
         if e.get("pattern"):
             return f"{e['pattern']}（所给之证）" + (f"；{e['note']}" if e.get("note") else "")
-        cands = (((self.fw.wx.get("patterns") or {}).get(e["phase"]) or {}).get(e["state"]) or [])
+        cands = self._wx_pattern_options(e)
         return f"{e['organ']}{e.get('state_name', '')}——证候待辨" + (f"（{'、'.join(cands)}……）" if cands else "")
 
     def _wx_record(self, method: str, e: dict[str, Any], points: list[dict[str, Any]], relationship: str, selection: str,
@@ -1445,11 +1495,13 @@ class AcupunctureStudy:
         short = c["short"]
         nm = lambda code: f"{fw.points[code]['name']}（{fw.kind_label.get(next((x['kind'] for x in fw.categories(code) if x['type'] == 'five_shu'), ''), '')}，{fw.shu_phase(code)}）"  # noqa: E731
         out: list[dict[str, Any]] = []
-        if state not in STATES:
+        if state == "neutral":
             code = fw.phase_point(ch, own)
             if "own_channel" in wanted and code:
-                out.append(self._wx_record("own_channel", e, [self._wx_point(code, None)], f"{organ}属{own}；虚实未定",
+                out.append(self._wx_record("own_channel", e, [self._wx_point(code, None)], f"{organ}属{own}；明确不实不虚",
                                            f"不实不虚，以经取之：取本经；后世读作取本经同气之穴{nm(code)}——补泻据所辨之证", None))
+            return out
+        if state not in STATES:  # unknown is not the positive finding "neither excess nor deficiency"
             return out
         mother = state == "deficiency"
         target = MOTHER[own] if mother else GENERATES[own]
@@ -1572,23 +1624,31 @@ class AcupunctureStudy:
         for e in entries:
             p = pats.get(e["phase"]) or {}
             out.append({"phase": e["phase"], "organ": e["organ"], "state": e["state"], "given": e.get("pattern"),
-                        "candidates": [] if e.get("pattern") else list(p.get(e["state"]) or (p.get("excess", []) + p.get("deficiency", []))),
-                        "note": p.get("note")})
+                        "candidates": [] if e.get("pattern") else self._wx_pattern_options(e),
+                        "note": ("虚实尚未确定，不能据此套用“不实不虚”之法。" if e["state"] == "any" else p.get("note"))
+                        if self.fw.organs[e["organ"]]["kind"] == "zang" else f"须辨明{e['organ']}本身的证候，不以同五行的脏替代。"})
         return out
+
+    def _wx_pattern_options(self, e: dict[str, Any]) -> list[str]:
+        # The existing phase tables describe the representative zang, not every organ of that phase.
+        if e["state"] == "neutral" or e["organ"] != self.fw.wx["phases"][e["phase"]]["zang"]:
+            return []
+        p = (self.fw.wx.get("patterns") or {}).get(e["phase"]) or {}
+        return list(p.get(e["state"]) or (p.get("excess", []) + p.get("deficiency", [])))
 
     def _wx_classical(self, entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """The classical statements the states bear on, and whether their condition is met."""
         fw = self.fw
         out = []
-        st = lambda phase: [e["state"] for e in entries if e["phase"] == phase]  # noqa: E731
-        if "excess" in st("木") and "deficiency" in st("金"):
+        st = lambda organ: [e["state"] for e in entries if e["organ"] == organ]  # noqa: E731
+        if "excess" in st("肝") and "deficiency" in st("肺"):
             out.append({"rule": "nanjing75", "name": fw.rules["nanjing75"]["name"], "status": "applies",
                         "text": "东方（木、肝）实而西方（金、肺）虚：《难经·七十五难》泻南方火（木之子）、补北方水（木之母）——原文言方位与五行，"
                                 "取何经何穴是后人的读法"})
         for e in entries:
-            if e["phase"] != "木":
+            if e["organ"] != "肝":
                 continue
-            earth = st("土")
+            earth = st("脾")
             status = "met" if "deficiency" in earth else ("not_needed" if "excess" in earth else "not_given")
             text = {"met": "脾（土）之虚已见：扶脾有据——仍据所辨之证取穴",
                     "not_needed": "所给之土非虚：四季脾王不受邪，即勿补之",
@@ -1598,17 +1658,20 @@ class AcupunctureStudy:
         if any(e["organ"] == "心" and e["state"] in STATES for e in entries):
             out.append({"rule": "nanjing79", "name": fw.rules["nanjing79"]["name"], "status": "applies",
                         "text": "《难经·七十九难》心病取手心主：泻手心主俞（大陵），补手心主井（中冲）——另一经典取法，与取心经本经之穴并列"})
-        if any(e["state"] not in STATES for e in entries):
+        if any(e["state"] == "neutral" for e in entries):
             out.append({"rule": "own_phase", "name": fw.rules["own_phase"]["name"], "status": "applies",
-                        "text": "虚实未定者，《难经·六十九难》“不实不虚，以经取之”"})
+                        "text": "所给明确不实不虚者，《难经·六十九难》“不实不虚，以经取之”；虚实未定不满足此条件"})
         return out
 
     def _wx_strategies(self, entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """The named strategies whose premise the states fit (full), or would with one more state (conditional)."""
         fw = self.fw
         wx = fw.wx
-        have = {(e["phase"], e["state"]) for e in entries}
-        phases = {e["phase"] for e in entries}
+        # These strategies name the five zang. A fu sharing a phase does not
+        # establish its paired zang's state (e.g. 胃虚 does not establish 脾虚).
+        zang = [e for e in entries if e["organ"] == fw.phase_organ(e["phase"])]
+        have = {(e["phase"], e["state"]) for e in zang}
+        phases = {e["phase"] for e in zang}
         sname = lambda s: ((wx.get("states") or {}).get(s) or {}).get("name", "")  # noqa: E731
         out = []
         for sid, s in (wx.get("strategies") or {}).items():

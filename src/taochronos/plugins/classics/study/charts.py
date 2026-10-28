@@ -540,6 +540,16 @@ STATE_GROUPS = ["实", "虚", "虚实未定", "未给"]
 
 
 def wuxing(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
+    if r.get("assessment"):
+        out = []
+        for i, candidate in enumerate(r["assessment"]["candidates"]):
+            if not candidate.get("selection"):
+                continue
+            for spec in wuxing(candidate["selection"], base):
+                spec["id"] = f"symptom-{i}-" + spec["id"]
+                spec["title"] = f"若确认{candidate['pattern']}：" + spec["title"]
+                out.append(spec)
+        return out
     states = r.get("states") or []
     if not states:
         return []

@@ -459,7 +459,10 @@ class StudyService(StudyBase):
         return _charts.attach("point", self._acupuncture.point(name, **kw), self)
 
     def wuxing(self, text: str | None = None, **kw: Any) -> dict[str, Any]:
-        """五行选穴: Five-Phase states — a text (木实 土虚 金虚; 肝郁脾虚; Liver deficiency) or ``states`` — read into the
+        """五行选穴: symptoms (``text`` or ``symptoms``) produce separate, unconfirmed pattern candidates,
+        matched/missing evidence and up to two questions; conditional selections require all feature groups.
+        ``pregnant`` and urgent findings withhold points. Five-Phase states — a text
+        (木实 土虚 金虚; 肝郁脾虚; Liver deficiency) or ``states`` — read into the
         patterns still to tell apart, the pathological relations among them, the classical statements that apply, the named
         strategies, every method's points (``methods`` to keep some: nanjing69, nanjing69_cross, own_channel, nanjing79,
         saam, interior_exterior, same_name) with their phase and intention, the points two methods treat oppositely, the

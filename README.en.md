@@ -468,6 +468,13 @@ still to tell apart, overacting and counteracting each in both readings and moth
 75's 泻南方补北方, the Jin Gui's 当先实脾 with its condition, the named strategies, every method's points with phase and
 intention (Nanjing 69 on the channel and across, Nanjing 79, Saam, the paired deductions — levels apart), the points two
 methods treat oppositely (少府: the Liver's child to reduce, the Spleen's mother to reinforce), and what does not follow.
+It also accepts symptoms: `taochronos study wuxing "食欲差，便溏，乏力"`, repeated `--symptom` arguments, or `text`/`symptoms`
+on the chat tool ([ADR 0026](docs/adr/0026-symptoms-to-five-phase-hypotheses.md)). Ten source-labelled pattern profiles return
+separate hypotheses, matched/missing/conflicting findings and at most two questions. Only profiles meeting every symptom
+group show conditional points, defaulting to same-channel Nanjing 69; `--method` selects another method. A lone headache
+does not generate points. Negated, uncertain and historical findings do not establish a pattern; urgent signals,
+pregnancy and conflicting states withhold selection. These limited matching rules have not undergone diagnostic validation
+and are not a comprehensive triage system. Candidates must not be combined into a prescription.
 None of them diagnoses or prescribes: whether and how to needle is for a qualified practitioner after examination.
 
 The study layer is part of research too: under `full-corpus`, **TaoChronos-Scholar** traces the focus formulas, drugs

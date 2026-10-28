@@ -1,0 +1,141 @@
+# Symptom-to-pattern hypotheses for study.wuxing, not diagnostic criteria.
+# Every independent group must have an affirmative finding before conditional points
+# are shown. The gates/aliases are engineering choices requiring clinical review.
+# Disease-specific source contexts are retained; no disease is inferred from them.
+version: 1
+sources:
+  liver_nursing:
+    title: 广州医科大学附属中医医院《积聚（肝硬化）中医护理方案》
+    url: https://m.gzszyy.com/characteristic_nursing/2016/KQe13qbJ.html
+    scope: 原文为肝硬化护理中的证候要点；这里只借用症状线索，不据此诊断肝硬化。
+  liver_education:
+    title: 国家卫生健康委2025年7月23日新闻发布会
+    url: https://www.nhc.gov.cn/xcs/c100122/202507/7dfe2bbc60604ed2bd15bec34f7ada64.shtml
+    scope: 养肝科普中的火热、气郁及脾虚线索；不是诊断标准或五行配穴疗效证据。
+  lung_spleen:
+    title: 北京市新型冠状病毒肺炎恢复期中医康复指导建议（试行）
+    url: https://zyj.beijing.gov.cn/sy/tzgg/202003/t20200314_1706179.html
+    scope: 原文适用于新冠肺炎恢复期；只引用肺脾气虚的证候线索，不迁用病种诊断或处方。
+  palpitation:
+    title: 北京中医医院怀柔医院《从中医角度认识心律失常》
+    url: https://wjw.beijing.gov.cn/bmfw_20143/jkzs/jbzs/202308/t20230808_3218221.html
+    scope: 心悸科普中的心脾两虚线索；症状匹配不诊断心律失常。
+  lumbar:
+    title: 人民卫生出版社·人卫中医助手《腰痛》肾虚腰痛条
+    url: https://rwzyzs.pmphai.com/gdsdetail/625283-299881
+    scope: 腰痛辨证中的肾阴虚、肾阳虚要点；本版核对可检索的该条摘要，未核对整部教材。
+  cough:
+    title: 国家卫生健康委2026年3月18日新闻发布会
+    url: https://www.nhc.gov.cn/xcs/c100122/202603/c59335ec83d4498db23acd303a1a14f0.shtml
+    scope: 久咳与肺阴亏虚的科普线索；不替代咳嗽病因排查。
+  stroke:
+    title: CDC · Signs and Symptoms of Stroke
+    url: https://www.cdc.gov/stroke/signs-symptoms/
+    scope: 突发神经系统症状的紧急评估提示；本地规则不是完整分诊系统。
+  heart:
+    title: American Heart Association · Warning Signs of a Heart Attack
+    url: https://www.heart.org/health-topics/heart-attack/warning-signs-of-a-heart-attack
+    scope: 胸部不适及呼吸困难等紧急评估提示；本地规则不是完整分诊系统。
+features:
+  hypochondrium: {name: 胁部胀痛, forms: [胁肋胀痛, 两胁胀痛, 胁胀, 胁痛, 胸胁胀满]}
+  sigh: {name: 常叹气, forms: [善太息, 喜太息, 爱叹气, 经常叹气, 总叹气]}
+  mood: {name: 情志不畅, forms: [情绪低落, 情绪抑郁, 心情不好, 生气后加重, 情绪紧张后加重]}
+  bloating: {name: 腹部胀满, forms: [腹胀, 肚子胀, 饭后胀, 食后胀, 胃脘胀满]}
+  appetite: {name: 食欲减退, forms: [食欲差, 食欲不振, 纳差, 纳呆, 食少, 吃不下饭]}
+  loose_stool: {name: 稀软便或腹泻, forms: [便溏, 大便稀, 腹泻, 拉肚子, 大便不成形]}
+  fatigue: {name: 疲乏, forms: [乏力, 疲倦, 疲乏, 容易累, 神疲, 没力气]}
+  headache: {name: 头部疼痛, forms: [头痛, 头疼, headache]}
+  red_eyes: {name: 眼睛发红, forms: [目赤, 眼红, 眼睛红]}
+  bitter: {name: 口中苦味, forms: [口苦, 嘴苦]}
+  irritability: {name: 易怒烦躁, forms: [易怒, 急躁, 烦躁, 爱发火, 容易发火]}
+  cough: {name: 咳嗽, forms: [咳嗽, 咳喘, cough]}
+  breathless: {name: 气短, forms: [气短, 少气, 动则气促]}
+  dry_cough: {name: 少痰干咳, forms: [干咳, 干咳少痰, 咳嗽少痰]}
+  dry_mouth: {name: 口咽干燥, forms: [口干, 咽干, 嗓子干, 口燥咽干, 口干舌燥]}
+  afternoon: {name: 下午或夜间咳嗽加重, forms: [下午咳嗽加重, 夜间咳嗽加重, 下午加重, 夜间加重]}
+  lumbar: {name: 腰膝酸软, forms: [腰膝酸软, 腰酸膝软, 腰酸, 腰部酸软, 腰痛, 腰疼]}
+  eyes_dry: {name: 眼部干涩, forms: [眼干, 眼睛干涩, 目涩]}
+  tinnitus: {name: 耳中鸣响, forms: [耳鸣, 耳朵响, tinnitus]}
+  empty_heat: {name: 手足心热或夜间汗出, forms: [五心烦热, 手足心热, 手心脚心热, 盗汗, 潮热]}
+  cold: {name: 怕冷或肢冷, forms: [畏寒, 怕冷, 形寒, 肢冷, 手脚冰凉, 腰部发凉]}
+  warmth: {name: 喜温或温暖后减轻, forms: [喜温, 热敷缓解, 温暖后减轻, 遇冷加重]}
+  dawn_diarrhea: {name: 黎明腹泻, forms: [五更泄, 五更泻, 天亮前腹泻, 凌晨腹泻]}
+  insomnia: {name: 睡眠困难, forms: [失眠, 难入睡, 入睡困难, 多梦, 易醒, insomnia]}
+  palpitation: {name: 心悸, forms: [心悸, 心慌, 心中悸动]}
+  pregnancy: {name: 孕期, forms: [怀孕, 妊娠, 孕妇, 孕期, pregnant]}
+  sudden_headache: {name: 突发剧烈头痛, forms: [突发剧烈头痛, 突然剧烈头痛, 雷击样头痛, 突然头痛欲裂, sudden severe headache]}
+  sudden_weakness: {name: 突发单侧无力, forms: [突发单侧肢体无力, 突然一侧无力, 突然半身无力, sudden one-sided weakness]}
+  sudden_speech: {name: 突发言语障碍, forms: [突发言语不清, 突然说话不清, 突然口齿不清, sudden slurred speech]}
+  chest_pain: {name: 胸痛, forms: [胸痛, 胸部压榨感, 胸口疼, chest pain]}
+  severe_breathing: {name: 明显呼吸困难, forms: [呼吸困难, 喘不过气, shortness of breath]}
+  cold_sweat: {name: 冷汗, forms: [冷汗, 大汗淋漓, cold sweat]}
+urgent:
+  - {id: stroke, all: [[sudden_headache, sudden_weakness, sudden_speech]], source: stroke, text: 出现突发神经系统危险信号，应立即急诊评估或联系当地急救服务；暂停五行取穴推演。}
+  - {id: chest, all: [[chest_pain]], source: heart, text: 胸痛或胸部压榨感需要优先排查急症；及时急诊评估，暂停五行取穴推演。}
+  - {id: breathing, all: [[severe_breathing]], source: heart, text: 明显呼吸困难需要优先评估，尤其合并胸痛或冷汗时；暂停五行取穴推演。}
+patterns:
+  肝郁脾虚:
+    sources: [liver_nursing]
+    groups:
+      - {name: 肝系线索, any: [hypochondrium], question: 胁部是否胀痛？}
+      - {name: 情志气滞线索, any: [sigh, mood], question: 是否常叹气，或情绪紧张后加重？}
+      - {name: 脾系线索, any: [loose_stool, appetite, bloating], question: 食欲、大便和饭后腹胀情况怎样？}
+  肝火上炎:
+    sources: [liver_education]
+    groups:
+      - {name: 头目线索, any: [headache, red_eyes], question: 是否头痛或眼睛发红？}
+      - {name: 口苦线索, any: [bitter], question: 是否口苦？}
+      - {name: 烦躁线索, any: [irritability], question: 是否明显烦躁、易怒？}
+  脾气虚:
+    sources: [liver_education]
+    groups:
+      - {name: 食欲线索, any: [appetite], question: 食欲是否减退？}
+      - {name: 大便线索, any: [loose_stool], question: 大便是否稀软或不成形？}
+      - {name: 乏力线索, any: [fatigue], question: 是否容易疲乏？}
+  脾肺气虚:
+    sources: [lung_spleen]
+    groups:
+      - {name: 肺系线索, any: [cough, breathless], question: 是否咳嗽或气短？}
+      - {name: 脾系线索, any: [appetite, loose_stool, bloating], question: 是否食少、腹胀或便溏？}
+      - {name: 乏力线索, any: [fatigue], question: 是否容易疲乏？}
+  肝肾阴虚:
+    sources: [liver_nursing]
+    against: [cold]
+    groups:
+      - {name: 腰膝线索, any: [lumbar], question: 是否腰膝酸软？}
+      - {name: 目耳线索, any: [eyes_dry, tinnitus], question: 是否眼干涩或耳鸣？}
+      - {name: 阴虚热象, any: [empty_heat], question: 是否手足心热、潮热或夜间盗汗？}
+  脾肾阳虚:
+    sources: [liver_nursing]
+    against: [empty_heat]
+    groups:
+      - {name: 黎明泄泻线索, any: [dawn_diarrhea], question: 是否常在天亮前腹泻？}
+      - {name: 腰膝线索, any: [lumbar], question: 是否腰膝酸软？}
+      - {name: 寒象, any: [cold], question: 是否怕冷、手脚冷？}
+  心脾两虚:
+    sources: [palpitation]
+    groups:
+      - {name: 睡眠线索, any: [insomnia], question: 是否难入睡、多梦或易醒？}
+      - {name: 心悸线索, any: [palpitation], question: 是否心慌、心悸？}
+      - {name: 脾系线索, any: [appetite, bloating], question: 是否食欲减退或腹胀？}
+      - {name: 乏力线索, any: [fatigue], question: 是否容易疲乏？}
+  肾阴虚:
+    sources: [lumbar]
+    against: [cold]
+    groups:
+      - {name: 腰膝线索, any: [lumbar], question: 是否腰膝酸软？}
+      - {name: 阴虚热象, any: [empty_heat], question: 是否手足心热或夜间盗汗？}
+      - {name: 津液线索, any: [dry_mouth], question: 是否口干、咽干？}
+  肾阳虚:
+    sources: [lumbar]
+    against: [empty_heat]
+    groups:
+      - {name: 腰膝线索, any: [lumbar], question: 是否腰膝酸软或腰部冷痛？}
+      - {name: 寒象, any: [cold], question: 是否怕冷、手脚冷？}
+      - {name: 温暖反应, any: [warmth], question: 温暖或热敷后是否减轻？}
+  肺阴虚:
+    sources: [cough]
+    groups:
+      - {name: 干咳线索, any: [dry_cough], question: 咳嗽是否以干咳少痰为主？}
+      - {name: 津液线索, any: [dry_mouth], question: 是否口干、咽干？}
+      - {name: 时间线索, any: [afternoon], question: 咳嗽是否在下午或夜间加重？}

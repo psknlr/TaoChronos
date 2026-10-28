@@ -672,7 +672,8 @@ def _study_point(ctx: ToolContext, a: dict[str, Any]) -> Any:
 
 
 def _study_wuxing(ctx: ToolContext, a: dict[str, Any]) -> Any:
-    return _brief(_study(ctx).wuxing(a.get("text"), states=_terms(a.get("states")), methods=_terms(a.get("methods"))),
+    return _brief(_study(ctx).wuxing(a.get("text"), states=_terms(a.get("states")), symptoms=_terms(a.get("symptoms")),
+                                   methods=_terms(a.get("methods")), pregnant=bool(a.get("pregnant"))),
                   int(a.get("items", 20)))
 
 
@@ -1134,7 +1135,12 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  obj({"point": S, "items": I}, ["point"]), _study_point, family="study", permission="classics:read", expensive=True,
                  returns="point attributes, names, entries with checks, prohibitions, indications by work, rules with witnesses"),
         ToolSpec("study.wuxing", "五行选穴: Five-Phase (Wu Xing) relations read into acupoint selection through the two decisions "
-                 "between them — identify the pattern, then specify the selection method. text: states written organ by organ or "
+                 "between them — identify the pattern, then specify the selection method. text or symptoms can describe symptoms "
+                 "(食欲差、便溏、乏力): returns separate, unconfirmed pattern candidates with matched/missing findings, sources, "
+                 "at most two follow-up questions, and conditional points only when all symptom groups match. Never merge "
+                 "candidates or treat a match as a diagnosis. A lone headache asks for clarification without points. Negated, "
+                 "uncertain and historical findings do not establish a state. Urgent symptoms or pregnancy withhold points. "
+                 "Symptom candidates default to nanjing69; methods can select other methods. text also accepts states organ by organ or "
                  "phase by phase (木实 土虚 金虚; 肝实脾虚; Wood excess, Earth deficiency; Liver deficiency) or an identified pattern "
                  "(肝郁脾虚, 肝肾阴虚, 心肾不交 …); states: the same as a list; methods: keep some of nanjing69, nanjing69_cross, "
                  "own_channel, nanjing79, saam, interior_exterior, same_name. Returns the patterns a state does not tell apart, the "
@@ -1146,9 +1152,12 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "(Saam) and deduction levels apart — the points two methods treat oppositely, the conclusions that do not follow "
                  "(a Fire point is not tonifying Fire; 太溪 is Earth; reinforcing the child is not reducing it …), each a record "
                  "of six elements, rules with witnesses, modern evidence apart. Traditional reasoning — not a prescription.",
-                 obj({"text": S, "states": {"type": "array", "items": S}, "methods": {"type": "array", "items": S}, "items": I}),
+                 obj({"text": S, "states": {"type": "array", "items": S}, "symptoms": {"type": "array", "items": S},
+                      "pregnant": {"type": "boolean"}, "methods": {"type": "array", "items": {"type": "string", "enum": ["nanjing69", "nanjing69_cross",
+                          "own_channel", "nanjing79", "saam", "interior_exterior", "same_name"]}}, "items": I}),
                  _study_wuxing, family="study", permission="classics:read", expensive=True,
-                 returns="states, clarify, relations, pathogens, classical, strategies, methods (six-element records), conflicts, "
+                 returns="status, assessment (symptom findings, separate candidates, conditional selection, questions, sources, alerts), "
+                         "states, clarify, relations, pathogens, classical, strategies, methods (six-element records), conflicts, "
                          "branches, guards, rules with witnesses, evidence, steps"),
         ToolSpec("study.protocol", "研究方案: turn a research question (especially on formulas and drugs: 方源, 方剂比较/同药异量, 类方, "
                  "药性, 用药, 配伍, 十八反十九畏, 方证, 术语, 名称) into a research protocol — what it names (formulas, drugs, "

@@ -366,6 +366,7 @@ five_phases:
   states:
     excess: {name: 实, en: excess, names: [实, 盛, 旺, 亢, 有余, 太过, 亢盛, 偏亢, 实证, excess, excessive, hyperactive]}
     deficiency: {name: 虚, en: deficiency, names: [虚, 不足, 不及, 亏, 衰, 弱, 虚弱, 虚证, 亏虚, deficiency, deficient, insufficient, weak]}
+    neutral: {name: 不实不虚, en: neither excess nor deficiency, names: [不实不虚, neither excess nor deficiency]}
   # 生克之外的病理传变（中医基础理论；《素问·五运行大论》“气有余，则制己所胜而侮所不胜；其不及，则己所不胜侮而乘之，
   # 己所胜轻而侮之”）。pathogen：受病之脏所受之邪，按《难经·五十难》
   pathology:
