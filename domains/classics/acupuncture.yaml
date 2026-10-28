@@ -338,6 +338,172 @@ empirical_pairs:
   - {id: four_gates, points: [LI4, LR3], name: 四关穴, en: the Four Gates, rule: four_gates,
      note: 今多指双侧合谷、太冲；合谷为大肠经原穴，太冲为肝经输穴、原穴，大肠与肝不是表里经，二者都不是络穴——可称经验配穴、上下配穴或阴阳配穴，不是原络配穴}
 
+# ------------------------------------------------------------------ 五行（Five Phases, Wu Xing）与五输穴（Five-Shu points, Wu Shu Xue）
+# 五行关系转为选穴，要经过两个中间决定：先辨明证候，再指明取穴之法。“木实”本身不分肝火上炎、肝阳上亢、肝气郁结与
+# 肝郁脾虚。经脉的五行、穴的五行、补泻的意图是三种属性，分开记；生克之外有母子相及、相乘、相侮；《难经·五十难》的五邪
+# 分的是邪之所从来，不是虚证、实证。经典之规（classical）、流派之法（school：舍岩针法）、教学推演与近人推论（deduction）
+# 分层标明；所举配穴说明选穴的推理，不是个体化的处方，也不是操作规程。生克的次序（木火土金水；木土水火金）写在代码里。
+five_phases:
+  terms:
+    - {zh: 五行, en: Five Phases (Wu Xing), note: 亦译 Five Elements；本工具用 Five Phases}
+    - {zh: 五输穴, en: Five-Shu points (Wu Shu Xue), note: 井 Jing-Well、荥 Ying-Spring、输 Shu-Stream、经 Jing-River、合 He-Sea}
+    - {zh: 井 / 经, en: Jing-Well / Jing-River, note: 两个字、两类穴：井为所出，经为所行}
+    - {zh: 输 / 背俞, en: Shu-Stream / Back-Shu, note: 英文拼写相近而归类不同：输是五输之一，背俞是脏腑之气输注于背部之穴}
+    - {zh: 阴经、阳经, en: Yin and Yang channels, note: 阴经、阳经都有井荥输经合五类，不分“阴三类、阳二类”；五类在阴经配木火土金水，在阳经配金水木火土}
+  phases:
+    木: {en: Wood, zang: 肝, fu: 胆, direction: 东方}
+    火: {en: Fire, zang: 心, fu: 小肠, direction: 南方, also: [心包, 三焦]}
+    土: {en: Earth, zang: 脾, fu: 胃, direction: 中央}
+    金: {en: Metal, zang: 肺, fu: 大肠, direction: 西方}
+    水: {en: Water, zang: 肾, fu: 膀胱, direction: 北方}
+  # 一穴的五行对其所在之经的五行：五种关系
+  relations:
+    same: {name: 同气, en: same phase, text: 与本经同一五行——本经的同气之穴（本穴）}
+    child: {name: 子, en: child, text: 本经五行之所生（我生者）}
+    controlled: {name: 所胜, en: controlled, text: 本经五行之所克（我克者）}
+    controller: {name: 所不胜, en: controller, text: 克本经五行者（克我者）}
+    mother: {name: 母, en: mother, text: 生本经五行者（生我者）}
+  states:
+    excess: {name: 实, en: excess, names: [实, 盛, 旺, 亢, 有余, 太过, 亢盛, 偏亢, 实证, excess, excessive, hyperactive]}
+    deficiency: {name: 虚, en: deficiency, names: [虚, 不足, 不及, 亏, 衰, 弱, 虚弱, 虚证, 亏虚, deficiency, deficient, insufficient, weak]}
+  # 生克之外的病理传变（中医基础理论；《素问·五运行大论》“气有余，则制己所胜而侮所不胜；其不及，则己所不胜侮而乘之，
+  # 己所胜轻而侮之”）。pathogen：受病之脏所受之邪，按《难经·五十难》
+  pathology:
+    mother_to_child: {name: 母病及子, en: mother affecting child, meaning: 母行之病累及子行, example: 肾阴虚不能滋养肝阴（水不涵木）, implication: 母、子二脏同参, pathogen: deficiency}
+    child_to_mother: {name: 子病犯母, en: child affecting mother, meaning: 子行之病累及母行（子盗母气）, example: 心血虚累及肝血, implication: 相关之脏同参，不只看最显之候, pathogen: excess}
+    overacting_excess: {name: 相乘（太过）, en: overacting due to excess, meaning: 克者太过，乘其所胜, example: 肝木太过乘脾土, implication: 以调肝为主，按需扶助运化, pathogen: thieving}
+    overacting_deficiency: {name: 相乘（不及）, en: overacting due to deficiency, meaning: 被克者不足，克者乘其虚, example: 脾土虚而肝木乘之, implication: 以扶脾为主；过泻肝木未必相宜, pathogen: thieving}
+    counteracting_excess: {name: 相侮（太过）, en: counteracting due to excess, meaning: 被克者太过，反侮克者, example: 肝火犯肺（木火刑金）, implication: 肝、肺同参, pathogen: slight}
+    counteracting_deficiency: {name: 相侮（不及）, en: counteracting due to deficiency, meaning: 克者不足，不能制其所胜而反受其侮, example: 肺虚而肝木反侮, implication: 重新权衡补肺与平肝, pathogen: slight}
+  # 《难经·五十难》五邪：以受病之脏为本，言邪之所从来（不是证的虚实）
+  pathogens:
+    deficiency: {name: 虚邪, en: deficiency pathogen (xu xie), from: mother, statement: 从后来者为虚邪}
+    excess: {name: 实邪, en: excess pathogen (shi xie), from: child, statement: 从前来者为实邪}
+    thieving: {name: 贼邪, en: thieving pathogen (zei xie), from: controller, statement: 从所不胜来者为贼邪}
+    slight: {name: 微邪, en: slight pathogen (wei xie), from: controlled, statement: 从所胜来者为微邪}
+    direct: {name: 正邪, en: direct pathogen (zheng xie), from: same, statement: 自病者为正邪}
+  # 一个“五行状态”不能区分的证候（教材所列常见证型，不全）：须由诊察辨明，才知取哪一法
+  patterns:
+    木: {excess: [肝火上炎, 肝阳上亢, 肝气郁结, 肝胆湿热, 肝郁脾虚（虚实夹杂）], deficiency: [肝血虚, 肝阴虚, 肝肾阴虚]}
+    火: {excess: [心火亢盛, 痰火扰心, 心肾不交（心火旺而肾阴虚）], deficiency: [心气虚, 心阳虚, 心血虚, 心阴虚], note: 益火补土之“火”多指肾阳（命门之火），不即心经或五输的火穴}
+    土: {excess: [湿热蕴脾, 胃热, 食滞胃脘], deficiency: [脾气虚, 脾阳虚, 脾虚湿盛, 脾不统血]}
+    金: {excess: [痰热壅肺, 风寒束肺, 痰湿阻肺], deficiency: [肺气虚, 肺阴虚]}
+    水: {excess: [水湿泛滥（多兼脾肾阳虚）], deficiency: [肾阴虚, 肾阳虚, 肾精不足, 肾气不固], note: 教材多言肾无实证；所谓“水实”多指水液停聚}
+  # 已经辨明的证候：直接给出所涉之行与虚实（any：所涉而虚实未定）
+  named:
+    肝火上炎: {木: excess}
+    肝火: {木: excess}
+    肝阳上亢: {木: excess, note: 本虚标实，多兼肝肾阴虚}
+    肝气郁结: {木: excess}
+    肝郁气滞: {木: excess}
+    肝郁: {木: excess}
+    肝气犯胃: {木: excess, 土: any}
+    阴虚火旺: {note: 虚火：阴虚而火旺，不是“火”行之实——须先辨明何脏之阴虚（肾、肝、肺、心）}
+    虚火: {note: 虚火不是“火”行之实——须先辨明何脏之阴虚}
+    肝胆湿热: {木: excess}
+    肝郁脾虚: {木: excess, 土: deficiency}
+    肝脾不和: {木: excess, 土: deficiency}
+    肝胃不和: {木: excess, 土: any}
+    肝血虚: {木: deficiency}
+    肝阴虚: {木: deficiency}
+    肝肾阴虚: {木: deficiency, 水: deficiency}
+    水不涵木: {水: deficiency, 木: excess}
+    肝火犯肺: {木: excess, 金: any}
+    木火刑金: {木: excess, 金: any}
+    心火亢盛: {火: excess}
+    心火: {火: excess}
+    痰火扰心: {火: excess}
+    心肾不交: {火: excess, 水: deficiency}
+    心脾两虚: {火: deficiency, 土: deficiency}
+    心气虚: {火: deficiency}
+    心阳虚: {火: deficiency}
+    心血虚: {火: deficiency}
+    心阴虚: {火: deficiency}
+    脾气虚: {土: deficiency}
+    脾阳虚: {土: deficiency}
+    脾虚湿盛: {土: deficiency}
+    脾不统血: {土: deficiency}
+    湿热蕴脾: {土: excess}
+    脾肺气虚: {土: deficiency, 金: deficiency}
+    肺脾气虚: {土: deficiency, 金: deficiency}
+    脾肾阳虚: {土: deficiency, 水: deficiency, note: 肾阳即命门之火}
+    肺气虚: {金: deficiency}
+    肺阴虚: {金: deficiency}
+    痰热壅肺: {金: excess}
+    肺肾阴虚: {金: deficiency, 水: deficiency}
+    肾阴虚: {水: deficiency}
+    肾阳虚: {水: deficiency}
+    肾精不足: {水: deficiency}
+    肾气不固: {水: deficiency}
+  # 以五行立名的治法（教材）：premise 是其证候前提，须先确认；when：所涉之行的虚实（任一组合相合即可；any 不论虚实）；
+  # derive：据五输之理推出的取穴（take mother：补母；take child：泻子；本经与他经各一），与文献所举之例（examples，出处据所引）分开记
+  strategies:
+    zishui_hanmu: {name: 滋水涵木, en: nourish Water to support Wood, rule: zishui_hanmu, when: [{水: deficiency, 木: any}], premise: 肝肾阴虚（水不涵木）, organs: [肾, 肝], implication: 滋养肝肾之阴；兼肝阳上亢者并平肝潜阳,
+                   derive: [{organ: 肝, take: mother}],
+                   examples: [{points: [LR3, SP6], context: 相应证型的头痛, source: 北京中医药大学继续教育学院《针灸学》课件, url: "https://jxjyxb.bucm.edu.cn/BZYAttachs/courseware/zhenjiuxue/c2/c2_16b_2.htm",
+                               note: 三阴交不是五输的水穴：取之以其为足三阴之会与传统主治——与曲泉配阴谷的补母之理不同}]}
+    peitu_shengjin: {name: 培土生金, en: cultivate Earth to generate Metal, rule: peitu_shengjin, when: [{土: deficiency, 金: deficiency}], premise: 脾肺气虚, organs: [脾, 肺], implication: 扶脾与补肺相合,
+                     derive: [{organ: 肺, take: mother}],
+                     examples: [{points: [SP3, ST36, BL20, LU9, BL13], context: 临床教学, source: 广东省中医院临床教学, url: "https://www.gztcm.com.cn/zdh/dzyj/dzgw/1fcij4ah2tb9p.shtml",
+                                 note: 太白—太渊可按五输的母子关系读；脾俞—肺俞则是脾、肺的背俞穴相配，另是一理}]}
+    jinshui_xiangsheng: {name: 金水相生, en: mutually nourish Metal and Water, rule: jinshui_xiangsheng, when: [{金: deficiency, 水: deficiency}], premise: 肺肾阴虚, organs: [肺, 肾], implication: 肺、肾之阴同调,
+                         derive: [{organ: 肾, take: mother}]}
+    yihuo_butu: {name: 益火补土, en: reinforce Fire to support Earth, rule: yihuo_butu, when: [{土: deficiency, 火: deficiency}, {土: deficiency, 水: deficiency}], premise: 多为脾肾阳虚, organs: [肾, 脾],
+                 implication: 温补肾阳以暖脾阳, note: 此“火”多指肾阳、命门之火，不即心经，也不即五输的火穴——据五输之理推出的脾经火穴、心经火穴，取的是另一种“火”,
+                 derive: [{organ: 脾, take: mother}]}
+    yimu_futu: {name: 抑木扶土, en: restrain Wood and support Earth, rule: yimu_futu, when: [{木: excess, 土: any}], premise: 肝脾不和或肝胃不和（如肝郁脾虚）, organs: [肝, 脾], implication: 调肝与扶助运化相合,
+                derive: [{organ: 肝, take: child}, {organ: 脾, take: mother}],
+                examples: [{points: [LR3, SP6, ST25, ST36, ST37, CV12], context: 腹泻型肠易激综合征（肝郁脾虚证）的临床研究, source: 《重庆医科大学学报》, url: "https://cjournal.hep.com.cn/0253-3626/CN/10.13406/j.cnki.cyxb.004096", doi: 10.13406/j.cnki.cyxb.004096,
+                            note: 以证立方，兼用数类特定穴，不是单一的五行取穴}]}
+    peitu_zhishui: {name: 培土制水, en: cultivate Earth to control Water, rule: peitu_zhishui, when: [{土: deficiency, 水: excess}], premise: 脾虚而水湿停聚, organs: [脾, 肾], implication: 扶脾与调理水液相合,
+                    derive: [{organ: 脾, take: mother}]}
+    zuojin_pingmu: {name: 佐金平木, en: assist Metal to balance Wood, rule: zuojin_pingmu, when: [{木: excess, 金: any}], premise: 肝肺不调（如肝火犯肺）, organs: [肝, 肺], implication: 调理肺之功能，兼平肝之扰,
+                    derive: [{organ: 肝, take: child}]}
+    xienan_bubei: {name: 泻南补北, en: drain the South and nourish the North, rule: xienan_bubei, when: [{火: excess, 水: deficiency}], premise: 心肾不交（心火亢而肾阴虚）, organs: [心, 肾], implication: 清心火与滋肾阴相合,
+                   note: 这是后世之用；语出《难经·七十五难》“泻南方，补北方”，原文所论是东方（肝）实、西方（肺）虚,
+                   derive: [{organ: 心, take: child}, {organ: 肾, take: mother}]}
+    nanjing75: {name: 泻南方补北方（难经·七十五难）, en: "drain the South, nourish the North (Nanjing 75)", rule: nanjing75, when: [{木: excess, 金: deficiency}], premise: 东方实、西方虚——肝实而肺虚, organs: [肝, 肺],
+                implication: 泻火（木之子）、补水（木之母，水胜火），欲令金不得平木——原文言方位与五行，不言何经何穴,
+                note: 取何经何穴是后人的读法，注家所说不一；这里按五输之理列出的火穴、水穴只是一种推演,
+                derive: [{organ: 肝, take: child}, {organ: 肝, take: mother}]}
+  # 取穴之法（病经属某行、其证或虚或实）：本工具按五输之理逐一推出，分层标明
+  methods:
+    nanjing69: {name: 本经补母泻子, en: mother–child points on the affected channel, level: classical, rule: mother_child}
+    nanjing69_cross: {name: 他经补母泻子, en: same-phase point of the mother or child channel, level: teaching, rule: mother_child_cross,
+                      note: 与本经之法可合用，也可只用其一；文献另有他种取法（如取母经之母穴），须分别标明}
+    own_channel: {name: 不实不虚，以经取之, en: neither excess nor deficiency — take the channel itself, level: classical, rule: own_phase}
+    nanjing79: {name: 心病取手心主, en: Heart disorders through the Pericardium channel (Nanjing 79), level: classical, rule: nanjing79}
+    saam: {name: 舍岩针法, en: Saam four-needle acupuncture, level: school, rule: saam,
+           templates: {deficiency: {name: 正格, en: deficiency template, tonify: mother, sedate: controller}, excess: {name: 胜格, en: excess template, tonify: controller, sedate: child}}}
+    interior_exterior: {name: 表里经补母泻子, en: mother–child points on the interior–exterior partner, level: deduction, rule: pair_mother_child}
+    same_name: {name: 同名经补母泻子, en: mother–child points on the same-name channel, level: deduction, rule: pair_mother_child}
+  # 不能由五行之式推出的结论：when 是适用之时（always；phase；state；method；text）；claims：原文中一望而知的这类推论
+  guards:
+    two_decisions: {when: always, level: teaching, statement: 五行关系转为选穴，须经两个中间决定：辨明证候，指明取穴之法；“木实”本身不分肝火上炎、肝阳上亢、肝气郁结与肝郁脾虚。}
+    three_attributes: {when: always, level: classical, statement: 经脉的五行、穴的五行、补泻的意图是三种属性：选火穴不等于补火——行间是火穴，可按“实者泻其子”用于泻；土穴不等于补脾——太冲仍是肝经之穴，其解读兼及所在之经、原穴之位、传统主治与刺激方式。}
+    same_phase_not_yuan: {when: always, level: classical, statement: 本经的同气之穴不必是原穴：肝经的同气之穴是大敦（井，木），原穴是太冲（输，土）。《难经》六十四难言五输的五行，六十六难言原穴，六十九难言补母泻子——相关而各为一类。}
+    pathogen_terms: {when: always, level: classical, statement: 《难经·五十难》的“虚邪”“实邪”说的是邪之所从来（母、子），不是虚证、实证；病人的虚实寒热须另行判断。}
+    no_conservation: {when: always, level: deduction, statement: 相生之序（木生火，火生土）不说明刺激一穴的大小、时机与净效应，不能当作守恒方程，推出补火必同时泻木、益土。}
+    reinforce_child: {when: {state: excess}, level: classical, statement: 补子与泻子是两种干预：“补火以泄木”不能改称《难经·六十九难》的“实者泻其子”；若“火虚”确是证候的一部分，须指明是心气虚、心阳虚，还是命门火衰——三者不可互换。}
+    no_fixed_arrangement: {when: {states: 2}, level: teaching, statement: 木实不意味着水实；“二实三虚”之类的固定格局不是普遍的诊断规则——所提出的每一种关系都须有证候的依据。}
+    mixed: {when: {mixed: true}, level: deduction, statement: 实与虚并见于不同之脏：先定主次，补泻相合；单一的“泻木”之式不能代表整个证候。}
+    spleen_first: {when: {phase: 木}, level: classical, statement: 《金匮要略》“见肝之病，知肝传脾，当先实脾；四季脾王不受邪，即勿补之”：防传有其条件——脾已足者不须再补；不据此在每一个肝病处方里都加补脾之穴（太白、足三里、脾俞……），是否取之看所辨之证。}
+    taixi_earth: {when: {phase: 水}, level: classical, statement: 太溪是肾经的输穴，五行属土——不因其在肾经而改称水穴；以太溪补肾，据的是其原穴之位与传统主治，是另一理。}
+    lung_points: {when: {phase: 金}, level: classical, statement: 中府（肺之募）、肺俞（肺之背俞）并不因与肺相关而成为五输的金穴；太渊是输穴（土）、肺经的母穴与原穴。}
+    saam_school: {when: {method: saam}, level: school, statement: 舍岩针法是朝鲜半岛形成的一家之法：其正格、胜格是流派的模板，不是“肝虚即泻肺、肝实即补肺”的普遍之规；兼有肺虚、肾虚或虚实夹杂者须另作解读。}
+    pair_steps: {when: {method: same_name}, level: deduction, statement: 心包经不是肝经的母经：取曲泽是先因手足厥阴同名而及心包经，再按水为木之母取其水穴——两步都须写明；表里经之法同此。}
+    mu_shu: {when: always, level: classical, statement: “募在阴，俞在阳”（《难经·六十七难》）不立“募穴只针、背俞只灸”之规；“阴穴（井、输、合）宜针、阳穴（荥、经、背俞）宜灸”也不是五输的通则——穴的归类、证候的判断与用针或用灸是三个决定。}
+    separate_systems: {when: {text: "卦|周易|易经|易学|八卦|干支|天干|地支|子午流注|灵龟|飞腾|纳甲|纳子|trigram|hexagram|i ching|yi jing|stems|branches"}, level: teaching,
+                       statement: 经脉的五行、五输穴的五行、易学（卦象）或按时取穴体系中的配属，可以并存而不互换：卦象不改变一穴的五输归类；年、日的天干地支本身不能判断一人的虚实，也不能决定补、泻或灸。用某一家的卦象或按时取穴之法，须按其本身的文献与规则另行研究。}
+    evidence_apart: {when: always, level: teaching, statement: 理论推理与临床证据分开评价：文献支持把这些方法当作可追溯的传统选穴体系来研究，其临床效果仍须就具体病证与处方评价。}
+  claims:
+    - {guard: reinforce_child, pattern: "补火.{0,4}[泄泻抑]木|补子.{0,4}[泄泻]母|reinforc\\w* (?:the )?fire to (?:drain|draw|reduce|sedate) (?:the )?wood"}
+    - {guard: no_fixed_arrangement, pattern: "木实.{0,8}水实|木旺.{0,8}水旺|木盛.{0,8}水盛|二实三虚|两实三虚|wood excess.{0,40}water excess|two excess.{0,30}three defici"}
+    - {guard: mu_shu, pattern: "阴穴.{0,12}针.{0,16}阳穴.{0,12}灸|募.{0,8}针.{0,12}俞.{0,8}灸|needle (?:the )?yin points|moxibustion (?:to|on) (?:the )?yang points"}
+    - {guard: taixi_earth, pattern: "太溪.{0,8}水穴|taixi.{0,24}water point"}
+    - {guard: lung_points, pattern: "(?:中府|肺俞).{0,8}金穴|(?:zhongfu|feishu).{0,24}metal point"}
+    - {guard: spleen_first, pattern: "(?:肝病|肝实|肝虚|肝郁).{0,12}(?:必|都|皆|一律).{0,4}(?:加|补)脾"}
+
 # ------------------------------------------------------------------ 病位
 # channels：传统上与此部相关之经（选经的线索，不是诊断）；local：近部之穴；distal：远部之穴（经络上相连，多在肘膝以下）；
 # back / front：胸腹之病位对应的背部穴、腰背之病位对应的胸腹穴（前后配穴）；rule：选经所据
@@ -437,7 +603,8 @@ sides:
   both: {name: 双侧, names: [双侧, 两侧, 双, bilateral, both sides]}
 
 # ------------------------------------------------------------------ 规则：每一条选穴、配穴、施术的依据
-# level：classical（经典）· teaching（现代教材）· empirical（经验配穴）· standard（标准与规范）；probes：原文语句（按原样检索，
+# level：classical（经典）· teaching（现代教材）· school（流派之法，如舍岩针法）· deduction（教学推演与近人推论）·
+# empirical（经验配穴）· standard（标准与规范）；probes：原文语句（按原样检索，
 # 不含标点），reading：同一术语的不同读法；modern：现代证据（见 modern）
 rules:
   # 选穴原则
@@ -479,14 +646,31 @@ rules:
   lowerhe_mu: {name: 合募配穴, en: Lower He-Sea–Front-Mu combination, kind: combination, level: teaching, statement: 六腑的下合穴与募穴相配。, source: 现代教材；“合治内府”（《灵枢·邪气藏府病形》）, probes: [合治内府]}
   xi_hui: {name: 郄会配穴, en: Xi-Cleft–Influential combination, kind: combination, level: teaching, statement: 相关之经的郄穴配以相应的八会穴（如梁丘配中脘：中脘为腑会）。, source: 现代教材}
   confluent_pair: {name: 八脉交会配穴, en: confluent-point pair, kind: combination, level: classical, statement: 八脉交会穴两两相配，主其相合之部；可单用亦可成对，不必八穴尽用。, source: 《八脉交会八穴歌》, probes: [公孙冲脉胃心胸]}
-  mother_child_cross: {name: 他经补母泻子, en: cross-channel mother–child, kind: combination, level: teaching, statement: 虚补母经之本穴（与之同五行之穴），实泻子经之本穴；母、子以病经之五行而定。, source: 《难经·六十九难》；现代教材, probes: [虚者补其母]}
+  mother_child_cross: {name: 他经补母泻子, en: cross-channel mother–child, kind: combination, level: teaching, statement: 虚补母经之同气之穴（母经自身五行之穴），实泻子经之同气之穴；母、子以病经之五行而定。与本经之法可合用，也可只用其一；文献另有他种取法，须分别标明。, source: 《难经·六十九难》；现代教材, probes: [虚者补其母]}
   four_gates: {name: 四关穴, en: the Four Gates, kind: combination, level: empirical, statement: 今多指双侧合谷、太冲；“四关”一词历代所指不一，宜就原文读其义。, source: 《灵枢·九针十二原》；《标幽赋》；明清针灸书,
                probes: [{text: 十二原出于四关, reading: 《灵枢》：十二原出于四关——四关为肘膝四关节}, {text: 开四关而已之, reading: 《标幽赋》：寒热痹痛，开四关而已之}, {text: 四关者两手两足, reading: 四关为两手两足}, {text: 太冲合谷是也, reading: 四关为太冲、合谷}, {text: 所谓开四关者, reading: 开四关即合谷、太冲}]}
   # 施术
   mother_child: {name: 补母泻子, en: mother–child tonification and reduction, kind: technique, level: classical, statement: 虚者补其母，实者泻其子；母、子以病经的五行而定。选穴与补泻相关而各自为一事：原穴不当只视为补穴。, source: 《难经·六十九难》, probes: [虚者补其母, 实者泻其子]}
-  own_phase: {name: 本穴, en: own-phase point, kind: technique, level: teaching, statement: 本经与本经五行相同之穴（如肺金之经渠），其理与取母穴、子穴不同。, source: 现代教材}
+  own_phase: {name: 不实不虚，以经取之, en: neither excess nor deficiency — the channel itself, kind: technique, level: classical, statement: 不实不虚，以经取之者，是正经自生病，不中他邪也，当自取其经。后世多读作取本经与本经同五行之穴（同气之穴，如肺金之经渠）——其理与取母穴、子穴不同；同气之穴不必是原穴。, source: 《难经·六十九难》；现代教材, probes: [不实不虚以经取之]}
   localization: {name: 腧穴定位, en: point localization, kind: standard, level: standard, statement: 以体表解剖标志与骨度折量为主，指寸为辅；寸是比例单位，不是固定的厘米数，医者手指不能代替病人的比例。, source: GB/T 12346—2021《经穴名称与定位》}
   safety: {name: 针刺安全, en: needling safety, kind: caution, level: standard, statement: 胸背、颈项、眼区等处针刺不当可致气胸、脏器与神经损伤、出血与感染；须由合格人员按规范施术。, source: NCCIH 针灸疗效与安全说明；WHO 针灸实践与安全文件}
+  # 五行之用
+  five_phase_cycles: {name: 生克乘侮, en: "generation, control, overacting and counteracting", kind: principle, level: classical, statement: 气有余，则制己所胜而侮所不胜；其不及，则己所不胜侮而乘之，己所胜轻而侮之。教材据此言母病及子、子病犯母、相乘与相侮，乘、侮又各有太过、不及两种来由。, source: 《素问·五运行大论》；中医基础理论教材, probes: [制己所胜, 己所胜轻而侮之]}
+  five_pathogens: {name: 五邪（难经·五十难）, en: the five pathogenic influences (Nanjing 50), kind: principle, level: classical, statement: 从后来者为虚邪，从前来者为实邪，从所不胜来者为贼邪，从所胜来者为微邪，自病者为正邪。假令心病，中风得之为虚邪，伤暑得之为正邪，饮食劳倦得之为实邪，伤寒得之为微邪，中湿得之为贼邪。——以邪之所从来分类，不是虚证、实证。, source: 《难经·五十难》, probes: [从后来者为虚邪, 从所不胜来者为贼邪, 自病者为正邪]}
+  nanjing75: {name: 泻南方补北方, en: "drain the South, nourish the North (Nanjing 75)", kind: strategy, level: classical, statement: 东方实，西方虚，泻南方，补北方……南方火，火者，木之子也；北方水，水者，木之母也。水胜火。子能令母实，母能令子虚，故泻火补水，欲令金不得平木也。——言方位与五行，不言何经何穴；取何穴是后人的读法，注家所说不一。, source: 《难经·七十五难》, probes: [东方实西方虚, 泻南方补北方, 子能令母实, 不能治其虚何问其余]}
+  prevent_transmission: {name: 见肝之病，当先实脾, en: strengthen the Spleen before Liver disease transmits to it, kind: principle, level: classical, statement: 上工治未病……见肝之病，知肝传脾，当先实脾；四季脾王不受邪，即勿补之。——治已病而顾及将传之脏；是否补之，据其脏的实际情况。, source: 《难经·七十七难》；《金匮要略·脏腑经络先后病脉证第一》, probes: [知肝当传之与脾, 当先实脾, 四季脾王不受邪, 即勿补之]}
+  nanjing79: {name: 心病取手心主, en: Heart disorders through the Pericardium channel (Nanjing 79), kind: technique, level: classical, statement: 假令心病，泻手心主俞，是谓迎而夺之者也；补手心主井，是谓随而济之者也。——心病取手心主（心包）之经：泻其输（大陵，土，为火之子），补其井（中冲，木，为火之母）。, source: 《难经·七十九难》, probes: [泻手心主俞, 补手心主井]}
+  saam: {name: 舍岩针法, en: Saam four-needle acupuncture, kind: technique, level: school, statement: 虚证之正格补其母、泻克我者；实证之胜格补克我者、泻其子；每一行于病经与该行之经各取一穴，共四穴（如肝虚：补曲泉、阴谷，泻中封、经渠；肝实：补中封、经渠，泻行间、少府）。是一家的模板，不是普遍之规。, source: "朝鲜半岛针法（传为舍岩道人所创）；Ahn C-B, A Study of Sa-Ahm Five Element Theory (Saam)"}
+  pair_mother_child: {name: 表里经、同名经补母泻子, en: mother–child points through the paired or same-name channel, kind: technique, level: deduction, statement: 先由表里或手足同名之关系及于他经，再按母子之理取该经的五行之穴：心虚取小肠经木穴后溪、心实取小肠经土穴小海；肝虚取心包经水穴曲泽、肝实取心包经火穴劳宫。两步都须写明。, source: 张嘉程、苏志超、白雪、王金贵《五输穴子母补泻法及其临床应用探讨》，《天津中医药》2024;41(4):436-439（举例据所引，未在此核对全文）}
+  wuxing_record: {name: 五行选穴记录, en: Five-Phase selection record, kind: standard, level: teaching, statement: 证候前提 → 所涉之经 → 五行关系 → 取穴之规 → 补泻意图 → 文献或经验出处；如此推理可以复核，并看清经典之规止于何处、另加的临床或理论假定从何处开始。, source: 选穴推理的记录方法}
+  zishui_hanmu: {name: 滋水涵木, en: nourish Water to support Wood, kind: strategy, level: teaching, statement: 肝肾阴虚（水不涵木）：滋养肝肾之阴；兼肝阳上亢者并平肝潜阳。, source: 中医基础理论教材（五行学说的应用）, probes: [滋水涵木, {text: 水不涵木, reading: 病机之语}]}
+  peitu_shengjin: {name: 培土生金, en: cultivate Earth to generate Metal, kind: strategy, level: teaching, statement: 脾肺气虚：扶脾与补肺相合。, source: 中医基础理论教材（五行学说的应用）, probes: [培土生金]}
+  jinshui_xiangsheng: {name: 金水相生, en: mutually nourish Metal and Water, kind: strategy, level: teaching, statement: 肺肾阴虚：肺、肾之阴同调。, source: 中医基础理论教材（五行学说的应用）, probes: [金水相生]}
+  yihuo_butu: {name: 益火补土, en: reinforce Fire to support Earth, kind: strategy, level: teaching, statement: 多为脾肾阳虚：温补肾阳以暖脾阳。此“火”多指肾阳、命门之火，不即心经或五输的火穴。, source: 中医基础理论教材（五行学说的应用）, probes: [益火补土, {text: 火不生土, reading: 病机之语}]}
+  yimu_futu: {name: 抑木扶土, en: restrain Wood and support Earth, kind: strategy, level: teaching, statement: 肝脾不和或肝胃不和：调肝与扶助运化相合。, source: 中医基础理论教材（五行学说的应用）, probes: [抑木扶土, {text: 木乘土, reading: 病机之语}]}
+  peitu_zhishui: {name: 培土制水, en: cultivate Earth to control Water, kind: strategy, level: teaching, statement: 脾虚而水湿停聚：扶脾与调理水液相合。, source: 中医基础理论教材（五行学说的应用）, probes: [培土制水]}
+  zuojin_pingmu: {name: 佐金平木, en: assist Metal to balance Wood, kind: strategy, level: teaching, statement: 肝肺不调（如肝火犯肺）：调理肺之功能，兼平肝之扰。, source: 中医基础理论教材（五行学说的应用）, probes: [佐金平木, {text: 木火刑金, reading: 病机之语}]}
+  xienan_bubei: {name: 泻南补北, en: drain the South and nourish the North, kind: strategy, level: teaching, statement: 心肾不交（心火亢于上、肾阴亏于下）：清心火、滋肾阴。此为后世之用；语出《难经·七十五难》“泻南方，补北方”，原文所论是东方（肝）实、西方（肺）虚。, source: 中医基础理论教材；《难经·七十五难》, probes: [泻南补北]}
   record: {name: 处方记录, en: prescription record, kind: standard, level: teaching, statement: 处方包括穴位、左右、施术方式、刺激方法、治疗频次与疗程；据症状与功能的变化、耐受与不良反应而调整。, source: 现代教材；WHO 针灸实践文件}
 
 # ------------------------------------------------------------------ 现代证据（与理论分开）
@@ -519,6 +703,16 @@ modern:
     finding: 与假刺激相比，刺激内关可减少术后恶心与呕吐；评价者将证据质量评为低。
     limits: 限于术后恶心呕吐的预防，不推及其他原因的恶心呕吐，也不验证“胃气上逆”的理论解释。
     applies: {points: [PC6], symptoms: [nausea_vomiting]}
+  kim2015:
+    citation: "Kim JE, et al. Acupuncture for chronic fatigue syndrome and idiopathic chronic fatigue: a multicenter, nonblinded, randomized controlled trial. Trials. 2015;16:314."
+    pmid: "26211002"
+    doi: 10.1186/s13063-015-0857-0
+    design: 多中心、非盲、三组平行的随机对照试验（体针加常规治疗、舍岩针加常规治疗、单用常规治疗）
+    population: 慢性疲劳综合征与特发性慢性疲劳
+    size: 150 例，四家医院
+    finding: 主要结局（第 5 周疲劳严重度量表）：体针组低于常规治疗组（P = 0.023），舍岩针组未见显著差别；次要结局中，两治疗组的应激反应量表在第 5、13 周低于对照，舍岩针组的贝克抑郁量表在第 13 周低于对照。
+    limits: 非盲，以常规治疗为对照（无假针刺），不逐一检验舍岩针法的各个四针组合；既不证明五行取穴的全部配方，也不否定任何一个具体组合。
+    applies: {methods: [saam]}
 # 三层知识（第 9 节）
 evidence_levels:
   - {level: classical, name: 经典与教材理论, establishes: 为什么传统上这样取穴、这样配穴}

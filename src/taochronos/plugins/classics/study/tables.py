@@ -411,6 +411,56 @@ def _acu_framework(r: dict[str, Any]) -> list[dict[str, Any]]:
                                                      ("cross_child", "他经泻子", "l"), ("own", "本穴", "l")],
                      [{"channel": x["name"], "phase": x["phase"], **x["labels"]} for x in r["mother_child"]],
                      notes=["母、子以病经之五行而定；他经补母泻子取母经、子经之本穴（与之同五行之穴），不是母经的母穴（《难经·六十九难》）。"]))
+    fp = r.get("five_phases") or {}
+    if fp.get("channel_phases"):
+        rows = [{"channel": f"{x['name']}（{x['phase']}）", **{p["kind"]: f"{p['name']}（{p['phase']}；{p['relation_text']}）" for p in x["points"]}}
+                for x in fp["channel_phases"]]
+        out.append(table("acupoints-five-shu-relations", "五输穴的五行对本经五行", [("channel", "经脉（经属）", "l")]
+                         + [(k, f"{label} {en}", "l") for (k, label), en in zip(kinds, ("Jing-Well", "Ying-Spring", "Shu-Stream", "Jing-River", "He-Sea"))],
+                         rows, notes=["经脉的五行、穴的五行、补泻的意图是三种属性：同气之穴不必是原穴（肝经同气之穴大敦，原穴太冲）；"
+                                      "取火穴不等于补火，取土穴不等于补脾。"]))
+    if fp.get("saam"):
+        rows = [{"channel": x["name"], **{f"{st}_{act}": f"{x[st][act]['phase']}：{'、'.join(x[st][act]['points'])}"
+                                         for st in ("deficiency", "excess") for act in ("tonify", "sedate")}} for x in fp["saam"]]
+        out.append(table("acupoints-saam", "舍岩针法的正格与胜格（流派之法）", [
+            ("channel", "经脉", "l"), ("deficiency_tonify", "正格：补", "l"), ("deficiency_sedate", "正格：泻", "l"),
+            ("excess_tonify", "胜格：补", "l"), ("excess_sedate", "胜格：泻", "l")], rows,
+            notes=["正格补母、泻克我者，胜格补克我者、泻子；每一行于本经与该行之经各取一穴。是一家之法的模板，不是普遍之规。"]))
+    return out
+
+
+def wuxing(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
+    out = []
+    methods = r.get("methods") or []
+    if methods:
+        rows = []
+        for m in methods:
+            rows.append({"state": f"{m['organ']}{'虚' if m['state'] == 'deficiency' else ('实' if m['state'] == 'excess' else '')}",
+                         "premise": m["premise"], "channels": "、".join(m["channels"]), "relation": m["relationship"], "method": m["name"],
+                         "level": m["level_name"],
+                         "points": "；".join(f"{p['name']} {p['code']}（{p.get('label', '')}·{p.get('phase', '')}{'·' + p['intent'] if p.get('intent') else ''}）"
+                                            for p in m["points"]),
+                         "source": m.get("source") or ""})
+        out.append(table("wuxing-record", "五行选穴记录", [
+            ("state", "状态", "c"), ("premise", "证候前提", "l"), ("channels", "所涉之经", "l"), ("relation", "五行关系", "l"),
+            ("method", "取穴之规", "l"), ("level", "层级", "c"), ("points", "穴位（五输·五行·意图）", "l"), ("source", "出处", "l")], rows,
+            notes=["证候前提 → 所涉之经 → 五行关系 → 取穴之规 → 补泻意图 → 出处；层级分经典之规、教材、流派之法与教学推演。",
+                   "所举配穴说明选穴的推理，不是个体化的处方，也不是操作规程。"]))
+    if r.get("relations"):
+        rows = [{"between": "、".join(x["between"]), "cycle": x["cycle"], "reading": y["name"], "meaning": y["meaning"],
+                 "implication": y.get("implication") or "", "pathogen": y["pathogen"]["name"] + f"（于{y['pathogen']['organ']}）"}
+                for x in r["relations"] for y in x["readings"]]
+        out.append(table("wuxing-relations", "五行关系的读法", [("between", "所涉之态", "l"), ("cycle", "生克", "c"), ("reading", "读法", "l"),
+                                                         ("meaning", "含义", "l"), ("implication", "取穴之意", "l"), ("pathogen", "五邪（难经·五十难）", "l")],
+                         rows, notes=["相乘、相侮各有太过、不及两种来由，所给不足以定者两读并列；五邪言邪之所从来，不是虚证、实证。"]))
+    strat = [s for s in r.get("strategies") or [] if s["fit"] == "full"]
+    if strat:
+        rows = [{"name": s["name"], "premise": s["premise"], "implication": s["implication"],
+                 "derived": "、".join(dict.fromkeys(f"{p['name']}（{p['intent']}）" for d in s["derived"] for p in d["points"])),
+                 "conflicts": "；".join(c["name"] for c in s.get("conflicts") or [])} for s in strat]
+        out.append(table("wuxing-strategies", "以五行立名的治法", [("name", "治法", "l"), ("premise", "证候前提", "l"), ("implication", "取穴之意", "l"),
+                                                          ("derived", "按五输之理推出", "l"), ("conflicts", "意图相反之穴", "l")], rows,
+                         notes=["治法须先确认其证候前提；按五输之理推出的取穴是一种推演，与文献所举之例分开记。"]))
     return out
 
 
@@ -600,7 +650,7 @@ def casecompare(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
 BUILDERS: dict[str, Callable[[dict[str, Any], Any], list[dict[str, Any]]]] = {
     "usage": usage, "pairs": pairs, "compare": compare, "family": family, "term": term, "herb": herb, "properties": properties,
     "incompat": incompat, "network": network, "formula": formula, "names": names, "senses": senses,
-    "casecompare": casecompare, "acupoints": acupoints, "point": point,
+    "casecompare": casecompare, "acupoints": acupoints, "point": point, "wuxing": wuxing,
 }
 
 

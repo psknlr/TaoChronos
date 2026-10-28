@@ -430,6 +430,7 @@ export default {
   "研究方案设计": "Research protocol design",
   "选穴配穴": "Acupoint selection and combination",
   "腧穴考": "Acupoint in the classics",
+  "五行选穴": "Five-Phase point selection",
   "医案检索": "Case search",
   "类案": "Similar cases",
   "医案详解": "Case in detail",

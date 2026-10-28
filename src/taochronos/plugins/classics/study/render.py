@@ -1352,6 +1352,13 @@ def acupoints(r: dict[str, Any]) -> list[str]:
         out += ["", "## 配穴方法", ""] + [f"- **{c['name']}**（{c['en']}）：{c['text']}" for c in r["combinations"]]
     if r.get("mother_child"):
         out += ["", "## 补母泻子", ""] + [f"- {m['text']}" for m in r["mother_child"]]
+    fp = r.get("five_phase") or {}
+    if fp:
+        out += ["", "## 五行之读（分脏而言的虚实）", "", "状态：" + "、".join(fp.get("states", []))]
+        out += [f"- {x}" for x in fp.get("relations", []) + fp.get("conflicts", [])]
+        if fp.get("strategies"):
+            out.append("- 治法：" + "、".join(fp["strategies"]))
+        out += [f"- {g}" for g in fp.get("guards", [])] + [f"> {fp.get('see', '')}"]
     if r.get("technique"):
         out += ["", "## 施术原则（传统理论，不是参数）", ""] + [f"- {t['nature'] + '：' if t.get('nature') else ''}{t.get('principle') or ''}"
                                                           f"{'；' if t.get('principle') else ''}{t.get('technique') or ''}" for t in r["technique"]]
@@ -1403,8 +1410,99 @@ def _acu_framework(r: dict[str, Any]) -> list[str]:
     out += ["", "## 补母泻子", "", "| 经脉 | 五行 | 本经母穴（补） | 他经补母 | 本经子穴（泻） | 他经泻子 | 本穴 |", "|---|---|---|---|---|---|---|"]
     out += [f"| {x['name']} | {x['phase']} | {x['labels']['mother']} | {x['labels']['cross_mother']} | {x['labels']['child']} | "
             f"{x['labels']['cross_child']} | {x['labels']['own']} |" for x in r["mother_child"]]
-    out += ["", "## 依据与原文见证", ""] + [f"- **{x['name']}**：{x.get('statement', '')}（{x.get('source', '')}）{('　' + _witnessed(x)) if x.get('witnesses') else ''}"
-                                         for x in r.get("rules", [])]
+    fp = r.get("five_phases") or {}
+    if fp:
+        out += ["", "## 五输穴的五行对本经五行（经脉的五行、穴的五行、补泻的意图是三件事）", "",
+                "| 经脉 | 经属 | 井 Jing-Well | 荥 Ying-Spring | 输 Shu-Stream | 经 Jing-River | 合 He-Sea |", "|---|---|---|---|---|---|---|"]
+        out += [f"| {x['name']} | {x['phase']} | " + " | ".join(f"{p['name']}（{p['phase']}；{p['relation_text']}{'；原' if p['yuan'] else ''}）" for p in x["points"]) + " |"
+                for x in fp.get("channel_phases", [])]
+        out += ["", "## 舍岩针法（流派之法）", "", "| 经脉 | 正格（虚）：补 | 正格：泻 | 胜格（实）：补 | 胜格：泻 |", "|---|---|---|---|---|"]
+        out += [f"| {x['name']} | {x['deficiency']['tonify']['phase']}：{'、'.join(x['deficiency']['tonify']['points'])} | "
+                f"{x['deficiency']['sedate']['phase']}：{'、'.join(x['deficiency']['sedate']['points'])} | "
+                f"{x['excess']['tonify']['phase']}：{'、'.join(x['excess']['tonify']['points'])} | "
+                f"{x['excess']['sedate']['phase']}：{'、'.join(x['excess']['sedate']['points'])} |" for x in fp.get("saam", [])]
+        out += ["", "## 表里经、同名经补母泻子（教学推演：先及他经，再取其五行之穴）", "",
+                "| 经脉 | 表里经 | 虚：母穴 | 实：子穴 | 同名经 | 虚：母穴 | 实：子穴 |", "|---|---|---|---|---|---|---|"]
+        out += [f"| {x['name']} | {x.get('interior_exterior', {}).get('channel', '')} | {x.get('interior_exterior', {}).get('mother', '')} | "
+                f"{x.get('interior_exterior', {}).get('child', '')} | {x.get('same_name', {}).get('channel', '')} | {x.get('same_name', {}).get('mother', '')} | "
+                f"{x.get('same_name', {}).get('child', '')} |" for x in fp.get("paired", [])]
+        out += ["", "## 病理传变与《难经·五十难》五邪", ""] + [f"- **{x['name']}**（{x['en']}）：{x['meaning']}；例：{x.get('example', '')}" for x in fp.get("pathology", [])]
+        out += [""] + [f"- **{x['name']}**（{x['en']}）：{x['statement']}" for x in fp.get("pathogens", [])]
+        out += ["", "## 以五行立名的治法", ""] + [f"- **{x['name']}**（{x['en']}）：{x['premise']}——{x['implication']}" + (f"（{x['note']}）" if x.get("note") else "")
+                                             for x in fp.get("strategies", [])]
+        out += ["", "## 不能由五行之式推出的结论", ""] + [f"- {g['statement']}" for g in fp.get("guards", [])]
+    out += ["", "## 依据与原文见证", ""] + [f"- **{x['name']}**〔{_LEVEL.get(x.get('level') or '', x.get('level') or '')}〕：{x.get('statement', '')}（{x.get('source', '')}）"
+                                         f"{('　' + _witnessed(x)) if x.get('witnesses') else ''}" for x in r.get("rules", [])]
+    return out + ["", f"> {r.get('notice', '')}"]
+
+
+_LEVEL = {"classical": "经典之规", "teaching": "教材", "school": "流派之法", "deduction": "教学推演", "empirical": "经验", "standard": "标准"}
+
+
+def wuxing(r: dict[str, Any]) -> list[str]:
+    states = "、".join(f"{s['organ']}（{s['phase']}）{s['state_name']}" for s in r.get("states", []))
+    out = ["# 五行选穴：" + (states or "—"), ""]
+    if (r.get("input") or {}).get("text"):
+        out += [f"> {_q(r['input']['text'], 200)}", ""]
+    out += [f"> {n['text']}：{n['note']}" for n in (r.get("input") or {}).get("notes", [])]
+    out += ["从五行关系到选穴，中间有两个决定：**辨明证候**，**指明取穴之法**。以下是传统理论中的推理，各标其层（经典之规、教材、流派之法、"
+            "教学推演），所举配穴说明推理，不是个体化的处方。", ""]
+    for st in r.get("steps", []):
+        out.append(f"{st['step']}. **{st['title']}**：{st['text']}")
+    claims = [g for g in r.get("guards", []) if g.get("claim")]
+    if claims:
+        out += ["", "## 所给推论之辨", ""] + [f"- ⚠️ {g['why']}：{g['statement']}" for g in claims]
+    out += ["", "## 证候前提：一个五行之态不能区分的证候", ""]
+    for c in r.get("clarify", []):
+        out.append(f"- {c['organ']}（{c['phase']}）：" + (f"所给为{c['given']}" if c.get("given") else "须辨明——" + "、".join(c["candidates"]))
+                   + (f"（{c['note']}）" if c.get("note") else ""))
+    if r.get("relations"):
+        out += ["", "## 五行关系", ""]
+        for x in r["relations"]:
+            out.append(f"- {x['text']}")
+            out += [f"  - {y['name']}（{y['en']}）：{y['meaning']}；取穴之意：{y.get('implication', '')}；{y['pathogen']['text']}" for y in x["readings"]]
+    if r.get("classical"):
+        out += ["", "## 经典之所言", ""] + [f"- **{c['name']}**：{c['text']}" for c in r["classical"]]
+    full = [s for s in r.get("strategies", []) if s["fit"] == "full"]
+    cond = [s for s in r.get("strategies", []) if s["fit"] != "full"]
+    if full:
+        out += ["", "## 以五行立名的治法（证候前提须先确认）", ""]
+        for s in full:
+            out.append(f"- **{s['name']}**（{s['en']}）：前提 {s['premise']}；{s['implication']}" + (f"。{s['note']}" if s.get("note") else ""))
+            pts = "、".join(dict.fromkeys(f"{p['name']}{p['code']}（{p['intent']}）" for d in s["derived"] for p in d["points"]))
+            if pts:
+                out.append(f"  - 按五输之理推出：{pts}")
+            out += [f"  - ⚠️ {c['text']}" for c in s.get("conflicts", [])]
+            for ex in s.get("examples", []):
+                out.append(f"  - 文献之例（{ex.get('context', '')}；{ex.get('source', '')}，出处据所引）：" + "；".join(f"{p['name']} {p['code']}——{p['reading']}" for p in ex["points"])
+                           + (f"。{ex['note']}" if ex.get("note") else ""))
+    if cond:
+        out += ["", "若再辨得一态：" + "；".join(f"{s['name']}（若兼{'、'.join(s['missing'])}）" for s in cond)]
+    out += ["", "## 取穴之法（证候前提 → 所涉之经 → 五行关系 → 取穴之规 → 补泻意图 → 出处）", "",
+            "| 状态 | 取法 | 层级 | 五行关系 | 取穴之规 | 穴位（五输、五行、意图） | 出处 |", "|---|---|---|---|---|---|---|"]
+    for m in r.get("methods", []):
+        pts = "；".join(f"{p['name']}{p['code']}（{p.get('label', '')}，{p.get('phase', '')}{'，' + p['intent'] if p.get('intent') else ''}）" for p in m["points"])
+        out.append(f"| {m['organ']}{'虚' if m['state'] == 'deficiency' else ('实' if m['state'] == 'excess' else '')} | {m['name']} | {m['level_name']} | "
+                   f"{m['relationship']} | {_q(m['selection'], 90)} | {pts} | {_q(m.get('source') or '', 40)} |")
+    if r.get("conflicts"):
+        out += ["", "## 意图相反之穴（须先定主次）", ""] + [f"- {c['text']}" for c in r["conflicts"]]
+    if r.get("branches"):
+        out += ["", "## 推理的分支（教学推演，不是由五行之态自动推出的结论）", "", "| 再辨之证 | 治法 | 选穴之解 |", "|---|---|---|"]
+        out += [f"| {b['clarification']} | {b['concept']} | {b['interpretation']} |" for b in r["branches"]]
+    if r.get("pathogens"):
+        out += ["", "## 《难经·五十难》五邪（言邪之所从来，不是虚证、实证）", ""]
+        out += [f"- {x['organ']}（{x['phase']}）：" + "；".join(f"{y['name']}（自病）" if y["from_phase"] == x["phase"] else f"{y['name']}从{y['from_organ']}（{y['from_phase']}）" for y in x["rows"]) for x in r["pathogens"]]
+    rest = [g for g in r.get("guards", []) if not g.get("claim")]
+    if rest:
+        out += ["", "## 不能由五行之式推出的结论", ""] + [f"- {g['statement']}" for g in rest]
+    if r.get("rules"):
+        out += ["", "## 依据与原文见证", "", "| 规则 | 层级 | 出处 | 本语料见证 |", "|---|---|---|---|"]
+        out += [f"| {x['name']} | {_LEVEL.get(x.get('level') or '', x.get('level') or '')} | {_q(x.get('source') or '', 60)} | {_witnessed(x)} |" for x in r["rules"]]
+    ev = r.get("evidence") or {}
+    if ev.get("modern"):
+        out += ["", "## 现代证据（与理论分开）", ""] + [f"- {m['citation']}（{m.get('design')}；{m.get('population')}；{m.get('size')}）：{m.get('finding')} 限度：{m.get('limits')}"
+                                                for m in ev["modern"]]
+    out += ["", f"> {ev.get('note', '')}"] if ev.get("note") else []
     return out + ["", f"> {r.get('notice', '')}"]
 
 
@@ -1414,6 +1512,16 @@ def point(r: dict[str, Any]) -> list[str]:
            f"{pt['channel_name']}；" + ("、".join(c["label"] for c in pt["categories"]) or "非特定穴"), ""]
     if pt.get("mother_child"):
         out += ["五行之用：" + "；".join(pt["mother_child"]), ""]
+    fp = pt.get("five_phase") or {}
+    if fp.get("five_shu") or fp.get("notes"):
+        fs = fp.get("five_shu")
+        out += ["## 五行属性（三者分开）", ""]
+        if fs:
+            out += [f"- 所在之经属{fp['channel_phase']}；五输：{fs['label']}（{fs['en']}），穴属{fs['phase']}；对本经为{fs['relation_text']}"]
+        out += [f"- {n}" for n in fp.get("notes", [])]
+        if fp.get("roles"):
+            out += ["- 取此穴之法：" + "；".join(f"{x['text']}〔{_LEVEL.get(x['level'], x['level'])}〕" for x in fp["roles"])]
+        out.append("")
     out += [f"**定位**（{pt['standard']}）：{pt.get('location') or ''}", ""]
     names = [n for n in r.get("names", []) if n != pt["name"]]
     if names or pt.get("also_called"):
@@ -1537,7 +1645,7 @@ PAGES = {"canon": canon, "concordance": concordance, "formula": formula, "herb":
          "pairs": pairs, "network": network, "schools": schools, "names": names, "chain": chain, "entities": entities, "places": places, "translate": translate,
          "compare": compare, "family": family, "usage": usage, "properties": properties, "incompat": incompat, "protocol": protocol,
          "casefind": casefind, "similar": similar, "case": case, "casecompare": casecompare, "modifications": modifications,
-         "treatments": treatments, "acupoints": acupoints, "point": point}
+         "treatments": treatments, "acupoints": acupoints, "point": point, "wuxing": wuxing}
 
 
 def _model_sections(result: dict[str, Any]) -> list[str]:

@@ -47,7 +47,8 @@ the way the 考据 tradition answers them: from the texts, witness by witness.
 | `study properties` | 药性谱 — what did the 本草 say of these drugs, side by side? | flavours, natures, toxicity and channels (as organs), the share of works stating each and the first to state it; a formula's 原方 profile weighted by dose |
 | `study incompat` | 配伍禁忌 — who said which drugs are 反 or 畏, and which formulas still write them together? | statements of 反 / 畏 with their earliest witness and works by period; where the verses of 十八反 and 十九畏 are written; compositions holding both drugs of a pair; a formula or a list of drugs checked against the pairs |
 | `study acupoints` | 选穴配穴 — which points would the tradition choose here, and why each? | the presentation read into objectives (location, organ system, each symptom, nature); core and supplementary points, each with its purposes and rules; the combinations they form (local–distal, upper–lower, Shu–Mu, Lower He–Mu, Yuan–Luo host–guest …, and what they are not); mother–child points; technique principles; a record to fill; cautions; each rule's classical witness; the classics' indications for the findings; the modern evidence apart. `--framework`: the specific-point tables |
-| `study point` | 腧穴考 — what do the classics say of this point? | its channel, specific-point attributes, mother–child roles, standard location and cautions; the entries of the acupuncture books (phase, kind, Mu, Xi, Luo, meeting, other names, location, needling, moxibustion, prohibitions) checked against the attributes, with the witnesses that differ; the findings its indication sentences name, by work |
+| `study point` | 腧穴考 — what do the classics say of this point? | its channel, specific-point attributes, mother–child roles, standard location and cautions; its Five-Phase attributes kept apart (the channel's phase, the point's phase and what it is to the channel's) and the methods that take it; the entries of the acupuncture books (phase, kind, Mu, Xi, Luo, meeting, other names, location, needling, moxibustion, prohibitions) checked against the attributes, with the witnesses that differ; the findings its indication sentences name, by work |
+| `study wuxing` | 五行选穴 — what do these Five-Phase states lead to, and what do they not? | the patterns a state does not tell apart; the relations among the states (mother–child, overacting, counteracting, each in its readings) with the Nanjing 50 name of what the receiving organ suffers; the classical statements that apply (Nanjing 75, the Jin Gui's condition on the Spleen, Nanjing 79); the named strategies fitted or conditional, with the points the Five-Shu give and the sources' examples read against the tables; every method's points with phase and intention (Nanjing 69 on the channel and across, Nanjing 79, Saam, the paired deductions — levels apart); the points two methods treat oppositely; the conclusions that do not follow; a record of six elements |
 | `study protocol` | 研究方案 — how would one research this question? | the question read into kinds and entities; hypotheses with prediction, test, falsification and rivals; scope, variables, methods (each a tool with its command), analysis, the figures planned (图 1 … with their form) and the tables (表 1 …: three-line tables filled with the pilot's numbers, or shells with placeholders and their statistics where the pilot did not run the step), quality, limitations, ethics, timeline; a research contract; a pilot run with its charts |
 
 Page images and OCR output (T1–T2) are read by `taochronos vision` (layout, a model's reading, comparison with the
@@ -88,6 +89,7 @@ taochronos study acupoints --region 颈项 --symptom 项强 --acute --side 右 -
 taochronos study acupoints --symptom 痛经 --pregnant              # the points not to be needled in pregnancy are left out
 taochronos study acupoints --framework                            # the specific-point tables and the mother and child points
 taochronos study point 太渊                                       # a code (LU9), name, alias (太泉) or pinyin
+taochronos study wuxing 木实 土虚 金虚                            # or 肝郁脾虚, "Wood excess, Earth deficiency", --state 肝虚 --method saam
 
 # 深层发现 2.0
 taochronos study stemma 伤寒论                                     # --books <id> --books <id>+<id> · --chapter 辨太阳病
@@ -349,8 +351,12 @@ their codes, names, the aliases a text may give them (太泉 for 太渊 under th
 standard locations (GB/T 12346—2021), the specific-point tables (Five-Shu, Yuan, the fifteen Luo, the sixteen Xi, Back-Shu,
 Front-Mu, the six Lower He-Sea, the Eight Influential and Eight Confluent points, crossing points, the Four Command
 points), 26 regions with their channels and local and distal points, 32 symptoms with the points the teaching takes and the
-words the classics write them with, the natures and courses of a pattern, and 43 rules — each with its level (classical,
-teaching, empirical, standard), its statement, its source and its **probes**, the classical sentences searched as written.
+words the classics write them with, the natures and courses of a pattern, the Five Phases in selection (`five_phases`:
+terms, the relations of a point's phase to its channel's, the pathological relations, the five pathogens of Nanjing 50,
+the patterns a state does not tell apart, identified patterns, the named strategies, the methods with their levels, the
+conclusions that do not follow — [ADR 0025](adr/0025-five-phases-in-point-selection.md)), and 59 rules — each with its level
+(classical, teaching, school, deduction, empirical, standard), its statement, its source and its **probes**, the classical
+sentences searched as written.
 
 * **选穴配穴 (`acupoints`).** A presentation (a text read for the names of regions, symptoms, organs, channels, natures,
   course and side — what it inferred and what it could not read are said) becomes objectives: the location, the organ
@@ -389,6 +395,28 @@ teaching, empirical, standard), its statement, its source and its **probes**, th
   text, 涌泉 水 in one 笈成 甲乙经 against 木 in the other, 曲池 木 in the 铜人针灸经: variant readings for a person to weigh
   (`taochronos eval acupuncture`).  The four not stated are the points whose usual name two points share (临泣, 通谷, 窍阴)
   and are not read.
+
+* **五行选穴 (`wuxing`).** Translating a Five-Phase relation into points takes two decisions in between: the pattern (木实
+  does not tell 肝火上炎, 肝阳上亢, 肝气郁结 and 肝郁脾虚 apart) and the method.  States written organ by organ or phase by
+  phase (肝实 土虚, Wood excess, deficient Earth) or an identified pattern (肝郁脾虚, 肝肾阴虚, 心肾不交; 阴虚火旺 is read as no
+  Fire excess) become: the patterns still to tell apart; the relations among them — mother–child either way, overacting
+  and counteracting each by excess of one side or deficiency of the other, both readings listed when the states cannot
+  decide — with the Nanjing 50 term for what the receiving organ suffers (贼邪 for the Spleen from Wood: where it comes
+  from, not a deficiency or an excess); the classical statements that bear on them (Nanjing 75 when the East is excess and
+  the West deficient; the Jin Gui's 当先实脾 with its condition 四季脾王不受邪，即勿补之 — met, not given, or not needed;
+  Nanjing 79's Heart through the Pericardium); the named strategies (滋水涵木, 培土生金, 金水相生, 益火补土 — whose Fire is
+  usually Kidney Yang —, 抑木扶土, 培土制水, 佐金平木, 泻南补北 and its Nanjing 75 source) whose premise the states fit, or
+  would with one more state, with the points the Five-Shu give and the sources' own examples read against the tables
+  (太白—太渊 a mother–child pairing; 脾俞—肺俞 another reason; 三阴交 no Water point); for every state each method's points
+  with category, phase, its relation to the channel and the intention — Nanjing 69 on the channel (classical) and across
+  (the same-phase point of the mother or child channel; teaching), Nanjing 79, the Saam four-needle templates (a school's),
+  the interior–exterior and same-name extensions (a deduction in two steps) —; the points two methods treat oppositely
+  (肝实 with 脾虚: 少府 is the Liver's child to reduce and the Spleen's mother to reinforce); the conclusions that do not
+  follow, and the claims in the text that make them (补火以泄木 is not 实者泻其子; 太溪 is Earth; Wood excess is not Water
+  excess); each method a record of pattern premise → channels → relation → rule → intention → source.  `point` gives the
+  same attributes for one point, `acupoints --framework` the tables (every channel's points against its phase, the Saam
+  templates, the paired points), and `acupoints` reads states organ by organ too (肝实脾虚: the Liver's child, the
+  Spleen's mother — not both for both).
 
 What these functions give is the tradition's reasoning and the texts' record.  They make no diagnosis and prescribe
 nothing: whether and how to needle is for a qualified practitioner after examination.

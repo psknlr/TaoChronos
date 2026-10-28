@@ -430,6 +430,7 @@ export default {
   "研究方案设计": "Diseño de un protocolo de investigación",
   "选穴配穴": "Selección y combinación de puntos de acupuntura",
   "腧穴考": "El punto de acupuntura en los clásicos",
+  "五行选穴": "Selección de puntos según las Cinco Fases",
   "医案检索": "Búsqueda de casos",
   "类案": "Casos similares",
   "医案详解": "Caso en detalle",

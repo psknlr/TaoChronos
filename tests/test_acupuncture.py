@@ -1,7 +1,10 @@
 """针灸选穴配穴 · 腧穴考 — the specific-point tables and what follows from them (the phases of Nanjing 64, the mother and
 child points of Nanjing 69), the selection reasoned for the review's teaching examples, the combinations named for what
 they are (and what they are not), the cautions, and the classics read for their entries and indications on a synthetic
-corpus (tests/fixtures/acupuncture): two witnesses that disagree, an entry over two passages, a 三里 under 手阳明."""
+corpus (tests/fixtures/acupuncture): two witnesses that disagree, an entry over two passages, a 三里 under 手阳明; and the Five
+Phases read into selection — a channel's phase, a point's phase and the intention apart, the relations among states, the
+methods by level (Nanjing 69, Nanjing 79, Saam, the paired deductions), the points two methods treat oppositely, and the
+conclusions that do not follow."""
 
 from __future__ import annotations
 
@@ -236,6 +239,155 @@ def test_four_gates_read_in_two_senses(study):
     assert rows["太冲合谷是也"]["earliest"]["book_id"] == "jq" and rows["四关者两手两足"]["works"] == 0
 
 
+# ------------------------------------------------------------------ the Five Phases (五行) in point selection
+def test_the_five_phase_data_is_consistent(fw):
+    import re
+
+    wx = fw.wx
+    for sid, s in wx["strategies"].items():
+        assert s["rule"] in fw.rules, sid
+        for alt in s["when"]:
+            assert set(alt) <= set("木火土金水") and set(alt.values()) <= {"excess", "deficiency", "any"}, sid
+        for d in s.get("derive") or []:
+            assert d["organ"] in fw.organs and d["take"] in ("mother", "child"), sid
+        for ex in s.get("examples") or []:
+            assert set(ex["points"]) <= set(fw.points), sid
+    for name, spec in wx["named"].items():
+        assert set(spec) - {"note"} <= set("木火土金水") and set(v for k, v in spec.items() if k != "note") <= {"excess", "deficiency", "any"}, name
+    for m in wx["methods"].values():
+        assert m["rule"] in fw.rules and m["level"] in ("classical", "teaching", "school", "deduction")
+    for c in wx["claims"]:
+        assert c["guard"] in wx["guards"] and re.compile(c["pattern"])
+    assert set(wx["pathology"]) == {"mother_to_child", "child_to_mother", "overacting_excess", "overacting_deficiency",
+                                    "counteracting_excess", "counteracting_deficiency"}
+    assert {p["name"] for p in wx["pathogens"].values()} == {"虚邪", "实邪", "贼邪", "微邪", "正邪"}
+
+
+def test_a_channels_phase_a_points_phase_and_the_intention_are_apart(fw):
+    rows = {r["code"]: r for r in fw.channel_phases("LR")}
+    assert [(c, rows[c]["phase"], rows[c]["relation"]) for c in ("LR1", "LR2", "LR3", "LR4", "LR8")] == [
+        ("LR1", "木", "same"), ("LR2", "火", "child"), ("LR3", "土", "controlled"), ("LR4", "金", "controller"), ("LR8", "水", "mother")]
+    assert rows["LR3"]["yuan"] and not rows["LR1"]["yuan"]  # the same-phase point is not the Yuan point
+    assert [rows[c]["en"] for c in ("LR1", "LR4")] == ["Jing-Well", "Jing-River"]  # 井 and 经: two characters, two categories
+    for ch in ("LU", "LI", "HT", "SI", "PC", "TE", "SP", "ST", "LR", "GB", "KI", "BL"):  # yin and yang channels: all five
+        assert len(fw.channel_phases(ch)) == 5 and len({r["phase"] for r in fw.channel_phases(ch)}) == 5
+    assert fw.shu_phase("KI3") == "土"  # 太溪 is Earth, though on the Water channel
+    assert fw.relation_text("火", "木") == "子：木生火" and fw.relation_text("金", "木") == "所不胜：金克木"
+
+
+def test_mother_child_on_the_channel_and_across(fw):
+    """The review's table: deficiency — the mother point on the channel, or the same-phase point of the mother channel; excess —
+    the child point, or the same-phase point of the child channel."""
+    want = {"LR": ("LR8", "KI10", "LR2", "HT8"), "HT": ("HT9", "LR1", "HT7", "SP3"), "SP": ("SP2", "HT8", "SP5", "LU8"),
+            "LU": ("LU9", "SP3", "LU5", "KI10"), "KI": ("KI7", "LU8", "KI1", "LR1")}
+    for ch, w in want.items():
+        m = fw.mother_child(ch)
+        assert (m["same"]["mother"], m["cross"]["mother"], m["same"]["child"], m["cross"]["child"]) == w, ch
+
+
+def test_saam_templates_and_the_paired_deductions(fw):
+    liver = fw.saam("LR")
+    assert liver["deficiency"]["tonify"]["points"] == ["LR8", "KI10"] and liver["deficiency"]["sedate"]["points"] == ["LR4", "LU8"]
+    assert liver["excess"]["tonify"]["points"] == ["LR4", "LU8"] and liver["excess"]["sedate"]["points"] == ["LR2", "HT8"]
+    assert fw.saam("GB")["deficiency"]["tonify"]["points"] == ["GB43", "BL66"] and fw.saam("GB")["deficiency"]["sedate"]["points"] == ["GB44", "LI1"]
+    assert fw.saam("PC")["deficiency"]["tonify"]["points"] == ["PC9", "LR1"] and fw.saam("PC")["deficiency"]["sedate"]["points"] == ["PC3", "KI10"]
+    assert fw.saam("TE")["excess"]["sedate"]["points"] == ["TE10", "ST36"]
+    heart, liver = fw.paired("HT"), fw.paired("LR")
+    assert (heart["interior_exterior"]["mother"], heart["interior_exterior"]["child"]) == ("SI3", "SI8")  # 后溪, 小海
+    assert (liver["same_name"]["channel"], liver["same_name"]["mother"], liver["same_name"]["child"]) == ("PC", "PC3", "PC8")  # 曲泽, 劳宫
+
+
+def test_reading_five_phase_states(fw):
+    st = lambda t: [(e["phase"], e["organ"], e["state"]) for e in fw.phase_states(t)["states"]]  # noqa: E731
+    want = [("木", "肝", "excess"), ("土", "脾", "deficiency"), ("金", "肺", "deficiency")]
+    assert st("木实 土虚 金虚") == want and st("Wood excess, Earth deficiency, and Metal deficiency") == want
+    assert st("肝郁脾虚") == [("木", "肝", "excess"), ("土", "脾", "deficiency")]
+    assert st("肝胃不和") == [("木", "肝", "excess"), ("土", "胃", "any")]
+    assert st("脾肺两虚，deficient kidney") == [("土", "脾", "deficiency"), ("金", "肺", "deficiency"), ("水", "肾", "deficiency")]
+    assert st("胃火旺") == [("土", "胃", "excess")] and st("木火俱旺") == [("木", "肝", "excess"), ("火", "心", "excess")]
+    r = fw.phase_states("阴虚火旺")
+    assert r["states"] == [] and "不是“火”行之实" in r["notes"][0]["note"]  # 虚火 is no Fire excess
+
+
+def test_wood_excess_earth_and_metal_deficiency(study):
+    """The review's example: the relations it allows (each in its readings), the classical statements, the strategies, the
+    points two methods treat oppositely, and what does not follow."""
+    r = study.wuxing("木实 土虚 金虚")
+    kinds = {x["kind"]: x for x in r["relations"]}
+    assert set(kinds) == {"overacting", "counteracting", "mother_child"}
+    assert [y["id"] for y in kinds["overacting"]["readings"]] == ["overacting_excess", "overacting_deficiency"]
+    assert kinds["overacting"]["readings"][0]["pathogen"]["name"] == "贼邪"  # what the Spleen suffers from Wood: from its controller
+    assert kinds["counteracting"]["readings"][0]["pathogen"]["name"] == "微邪"
+    assert {c["rule"]: c["status"] for c in r["classical"]} == {"nanjing75": "applies", "prevent_transmission": "met"}
+    full = [s["name"] for s in r["strategies"] if s["fit"] == "full"]
+    assert {"培土生金", "抑木扶土", "佐金平木"} <= set(full) and any("七十五" in n for n in full)
+    peitu = next(s for s in r["strategies"] if s["id"] == "peitu_shengjin")
+    assert [p["code"] for d in peitu["derived"] for p in d["points"]] == ["LU9", "SP3"]  # 太渊—太白: one mother–child pairing
+    ex = {p["code"]: p for p in peitu["examples"][0]["points"]}
+    assert "母：土生金（对肺）" in ex["SP3"]["reading"] and ex["BL20"]["reading"].startswith("不是五输穴") and not peitu["examples"][0]["checked"]
+    cond = {s["name"]: s["missing"] for s in r["strategies"] if s["fit"] == "conditional"}
+    assert cond["滋水涵木"] == ["水（肾）虚"]
+    assert any(c["code"] == "HT8" for c in r["conflicts"])  # 少府: the Liver's child to reduce, the Spleen's mother to reinforce
+    guards = {g["id"] for g in r["guards"]}
+    assert {"two_decisions", "three_attributes", "reinforce_child", "no_fixed_arrangement", "mixed", "spleen_first"} <= guards
+    assert any(b["kind"] == "mixed" for b in r["branches"])
+    methods = {(m["organ"], m["method"]): m for m in r["methods"]}
+    assert [p["code"] for p in methods[("肝", "nanjing69")]["points"]] == ["LR2"] and methods[("肝", "nanjing69")]["level"] == "classical"
+    assert methods[("肝", "saam")]["level"] == "school" and methods[("肝", "same_name")]["level"] == "deduction"
+    rec = methods[("脾", "nanjing69_cross")]
+    assert set(rec) >= {"premise", "channels", "relationship", "selection", "intent", "source"} and rec["intent"] == "补"
+    assert [s["title"] for s in r["steps"]] == ["证候前提", "所涉之经", "五行关系", "取穴之规", "补泻意图", "文献或经验出处"]
+    witnesses = {w["id"]: w for w in r["rules"]}
+    assert {w["probe"]: (w["earliest"] or {}).get("book_id") for w in witnesses["nanjing75"]["witnesses"]}["子能令母实"] == "nj"
+
+
+def test_one_state_and_the_methods_it_takes(study):
+    liver = study.wuxing(states=["肝虚"])
+    pts = {m["method"]: [(p["code"], p["intent"]) for p in m["points"]] for m in liver["methods"]}
+    assert pts["nanjing69"] == [("LR8", "补")] and pts["nanjing69_cross"] == [("KI10", "补")]
+    assert pts["saam"] == [("LR8", "补"), ("KI10", "补"), ("LR4", "泻"), ("LU8", "泻")]
+    assert pts["interior_exterior"] == [("GB43", "补")] and pts["same_name"] == [("PC3", "补")]
+    assert liver["classical"] == [{"rule": "prevent_transmission", "name": "见肝之病，当先实脾", "status": "not_given",
+                                   "text": liver["classical"][0]["text"]}] and "不据此自动加补脾之穴" in liver["classical"][0]["text"]
+    assert "肝血虚" in liver["clarify"][0]["candidates"]
+    heart = study.wuxing("心实")
+    assert [(p["code"], p["intent"]) for m in heart["methods"] if m["method"] == "nanjing79" for p in m["points"]] == [("PC7", "泻")]
+    only = study.wuxing("肺虚", methods=["nanjing69"])
+    assert [m["method"] for m in only["methods"]] == ["nanjing69"]
+    with pytest.raises(ValueError):
+        study.wuxing("头痛")
+
+
+def test_conclusions_that_do_not_follow(study):
+    claims = lambda t: {g["id"] for g in study.wuxing(t)["guards"] if g["claim"]}  # noqa: E731
+    assert claims("肝实，补火以泄木") == {"reinforce_child"}
+    assert claims("肾虚，太溪是水穴") == {"taixi_earth"}
+    assert claims("木实所以水实") == {"no_fixed_arrangement"}
+    assert "separate_systems" in {g["id"] for g in study.wuxing("肝虚，按卦象取穴")["guards"]}
+    yihuo = study.wuxing("脾肾阳虚")
+    s = next(x for x in yihuo["strategies"] if x["id"] == "yihuo_butu")
+    assert s["fit"] == "full" and "命门" in s["note"]
+
+
+def test_a_point_in_the_five_phases(study):
+    taichong = study.point("太冲")["point"]["five_phase"]
+    assert taichong["five_shu"]["relation_text"] == "所胜：木克土" and any("大敦" in n for n in taichong["notes"])
+    assert any("不即是补脾之穴" in n for n in taichong["notes"])
+    assert any("不是五输穴" in n for n in study.point("肺俞")["point"]["five_phase"]["notes"])
+    daling = study.point("大陵")["point"]["five_phase"]["roles"]
+    assert any(r["method"] == "nanjing79" and r["intent"] == "泻" for r in daling)
+    assert any(r["method"] == "saam" and r["channel"] == "LR" and r["intent"] == "补" for r in study.point("经渠")["point"]["five_phase"]["roles"])
+
+
+def test_selection_reads_excess_and_deficiency_organ_by_organ(study):
+    r = study.acupoints("肝实脾虚，胁痛")
+    assert {m["channel"]: m["applies"] for m in r["mother_child"]} == {"LR": ["child"], "SP": ["mother"]}
+    texts = [t for c in r["prescription"]["core"] + r["prescription"]["supplementary"] for pur in c["purposes"] for t in
+             (x["text"] for x in pur["reasons"])] + [t for a in r["alternatives"] for t in a["reasons"]]
+    assert not any(t.startswith("虚者补其母：肝") or t.startswith("实者泻其子：脾") for t in texts)
+    assert r["five_phase"]["strategies"] == ["抑木扶土"] and r["five_phase"]["conflicts"]
+
+
 # ------------------------------------------------------------------ tools, page and CLI (the demonstration corpus)
 def test_the_tools_through_the_scheduler(harness):
     call = lambda tool, **a: harness.scheduler.execute(ToolCall(tool, a), actor=Actor.kernel())  # noqa: E731
@@ -248,6 +400,11 @@ def test_the_tools_through_the_scheduler(harness):
     out = call("study.point", point="ST36")
     assert out.ok and out.result["point"]["name"] == "足三里"
     assert not call("study.acupoints").ok and not call("study.point", point="不是穴").ok
+    out = call("study.wuxing", text="肝郁脾虚")
+    assert out.ok and out.result["strategies"][0]["name"] == "抑木扶土" and out.result["tables"]
+    out = call("study.wuxing", states=["肝虚"], methods=["saam"])
+    assert out.ok and [m["method"] for m in out.result["methods"]] == ["saam"]
+    assert not call("study.wuxing", text="头痛").ok
 
 
 def test_the_pages(study):
@@ -257,7 +414,11 @@ def test_the_pages(study):
     assert "不是诊断" in page or "不是处方" in page
     page = markdown("point", study.point("太渊"), sig)
     assert page.startswith("# 腧穴考：太渊 LU9") and "相异" in page and "jy_b.1" in page
-    assert markdown("acupoints", study.acupoints(framework=True), sig).startswith("# 针灸特定穴与补母泻子")
+    page = markdown("acupoints", study.acupoints(framework=True), sig)
+    assert page.startswith("# 针灸特定穴与补母泻子") and "## 舍岩针法（流派之法）" in page and "大敦（木；同气：同属木）" in page
+    page = markdown("wuxing", study.wuxing("木实 土虚 金虚"), sig)
+    assert page.startswith("# 五行选穴：肝（木）实") and "## 取穴之法" in page and "## 意图相反之穴" in page and "## 推理的分支" in page
+    assert "## 五行属性（三者分开）" in markdown("point", study.point("太冲"), sig)
 
 
 def test_cli_acupoints_and_point(capsys, tmp_path):
@@ -269,3 +430,7 @@ def test_cli_acupoints_and_point(capsys, tmp_path):
     assert main(["--data", str(tmp_path), "study", "acupoints", "--framework", "--charts", str(figures)]) == 0
     capsys.readouterr()
     assert any(p.suffix == ".docx" for p in figures.iterdir())
+    assert main(["--data", str(tmp_path), "study", "wuxing", "木实", "土虚", "金虚"]) == 0
+    assert capsys.readouterr().out.startswith("# 五行选穴：肝（木）实")
+    assert main(["--data", str(tmp_path), "study", "wuxing", "--state", "肝虚", "--method", "nanjing69"]) == 0
+    assert "曲泉" in capsys.readouterr().out

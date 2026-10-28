@@ -26,7 +26,7 @@ export const TOOL_WORDS = {
   "study.senses": "语义演变", "study.stemma": "版本谱系", "study.taboo": "避讳断代", "study.trajectories": "医案轨迹",
   "study.transmission": "思想传播", "study.variants": "异文校勘", "study.witnesses": "版本与影像见证",
   "study.compare": "方剂比较", "study.family": "类方", "study.usage": "药物用量与配伍", "study.properties": "性味归经对照",
-  "study.incompat": "配伍禁忌", "study.protocol": "研究方案设计", "study.acupoints": "选穴配穴", "study.point": "腧穴考",
+  "study.incompat": "配伍禁忌", "study.protocol": "研究方案设计", "study.acupoints": "选穴配穴", "study.point": "腧穴考", "study.wuxing": "五行选穴",
   "study.casefind": "医案检索", "study.similar": "类案", "study.case": "医案详解", "study.casecompare": "医家与时代比较",
   "study.modifications": "随证加减", "study.treatments": "同病异治·异病同治",
   "philology.assess_passage": "文献评估", "philology.collate": "校勘", "philology.inspect_page": "页面溯源",
