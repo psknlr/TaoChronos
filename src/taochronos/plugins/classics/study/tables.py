@@ -431,6 +431,21 @@ def _acu_framework(r: dict[str, Any]) -> list[dict[str, Any]]:
 
 def wuxing(r: dict[str, Any], base: Any) -> list[dict[str, Any]]:
     out = []
+    assessment = r.get("assessment")
+    if assessment:
+        candidates = assessment["candidates"]
+        rows = [{"pattern": c["pattern"], "matched": "；".join("、".join(g["findings"]) for g in c["matched"]),
+                 "missing": "、".join(g["group"] for g in c["missing"]) or "仍须四诊确认",
+                 "conflicts": "、".join(c["contradictions"]),
+                 "points": "；".join(f"{m['name']}：" + "、".join(f"{p['name']} {p['code']}（{p.get('phase', '')}·{p.get('intent') or '待定'}）"
+                         for p in m["points"]) for m in (c.get("selection") or {}).get("methods", [])) or "暂不生成",
+                 "sources": "；".join(s["title"] + " " + s["url"] for s in c["sources"])} for c in candidates]
+        if rows:
+            out.append(table("wuxing-symptoms", "症状支持的候选证候与条件性取穴", [
+                ("pattern", "待辨证候", "l"), ("matched", "已述线索", "l"), ("missing", "尚缺信息", "l"),
+                ("conflicts", "不一致线索", "l"), ("points", "证候确认后方可考虑的取穴", "l"), ("sources", "症状来源", "l")], rows,
+                notes=[assessment["note"], "各行是独立假设，不能将各候选穴位相加。"] + [x["text"] for x in assessment["alerts"]]))
+        return out
     methods = r.get("methods") or []
     if methods:
         rows = []

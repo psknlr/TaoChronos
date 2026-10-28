@@ -1440,6 +1440,8 @@ _LEVEL = {"classical": "经典之规", "teaching": "教材", "school": "流派�
 
 
 def wuxing(r: dict[str, Any]) -> list[str]:
+    if r.get("assessment"):
+        return _wuxing_symptoms(r)
     states = "、".join(f"{s['organ']}（{s['phase']}）{s['state_name']}" for s in r.get("states", []))
     out = ["# 五行选穴：" + (states or "—"), ""]
     if (r.get("input") or {}).get("text"):
@@ -1503,6 +1505,47 @@ def wuxing(r: dict[str, Any]) -> list[str]:
         out += ["", "## 现代证据（与理论分开）", ""] + [f"- {m['citation']}（{m.get('design')}；{m.get('population')}；{m.get('size')}）：{m.get('finding')} 限度：{m.get('limits')}"
                                                 for m in ev["modern"]]
     out += ["", f"> {ev.get('note', '')}"] if ev.get("note") else []
+    return out + ["", f"> {r.get('notice', '')}"]
+
+
+def _wuxing_symptoms(r: dict[str, Any]) -> list[str]:
+    a = r["assessment"]
+    out = ["# 症状与五行选穴：待辨证候", "", a["note"], ""]
+    text = "；".join([r["input"].get("text", ""), *r["input"].get("symptoms", [])]).strip("；")
+    if text:
+        out += [f"> {_q(text, 500)}", ""]
+    out += [f"- {n['text']}：{n['note']}" for n in r["input"].get("notes", [])]
+    out += [f"- **优先处理**：{alert['text']}" for alert in a["alerts"]]
+    if a["findings"]:
+        labels = {"present": "已述", "negated": "否认", "uncertain": "待确认", "historical": "既往"}
+        out += ["## 已读到的症状", "", "；".join(dict.fromkeys(f"{f['name']}（{labels[f['status']]}）" for f in a["findings"])), ""]
+    if a["questions"]:
+        out += ["## 先补充", ""] + [f"{i}. {q}" for i, q in enumerate(a["questions"], 1)]
+    for c in a["candidates"]:
+        out += ["", f"## 候选：{c['pattern']}（尚待辨证确认）", "",
+                "支持线索：" + "；".join("、".join(g["findings"]) for g in c["matched"])]
+        if c["missing"]:
+            out.append("尚缺信息：" + "、".join(g["group"] for g in c["missing"]))
+        if c["contradictions"]:
+            out.append("需先澄清的不一致：" + "、".join(c["contradictions"]))
+        sel = c.get("selection")
+        if sel:
+            out += ["", "以下仅在该候选证候确认后成立：", "",
+                    "五行状态：" + "、".join(f"{s['organ']}（{s['phase']}）{s['state_name']}" for s in sel["states"]),
+                    "；".join(x["text"] for x in sel["relations"]), "",
+                    "| 取法 | 脏腑 | 候选穴位与意图 | 依据 |", "|---|---|---|---|"]
+            for m in sel["methods"]:
+                pts = "；".join(f"{p['name']} {p['code']}（{p.get('label', '')}·{p.get('phase', '')}·{p.get('intent') or '待定'}）" for p in m["points"])
+                out.append(f"| {m['name']} | {m['organ']} | {pts} | {m['relationship']}；{m.get('source') or ''} |")
+            out += [f"- 补泻冲突：{x['text']}" for x in sel["conflicts"]]
+            cautions = list(dict.fromkeys(t for m in sel["methods"] for p in m["points"] for t in p.get("cautions", [])))
+            out += [f"- 穴位提示：{t}" for t in cautions]
+            out += [f"- 取穴规则见证：{rule['name']} {_witnessed(rule)}" for rule in sel["rules"] if rule.get("witnesses")]
+        else:
+            out.append("当前不生成此候选的取穴与补泻推演。")
+        out += [f"- 症状线索来源：[{s['title']}]({s['url']})。{s['scope']}" for s in c["sources"]]
+    if not a["candidates"] and not a["alerts"]:
+        out += ["", "现有信息未能匹配到已收录的症状组合，不能据此确定五行状态或取穴。"]
     return out + ["", f"> {r.get('notice', '')}"]
 
 

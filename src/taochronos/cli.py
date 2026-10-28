@@ -1159,9 +1159,9 @@ def cmd_study(args: argparse.Namespace) -> None:
         res = study.point(target)
         notice = res.get("notice", "")
     elif what == "wuxing":
-        if not (target or args.state):
-            raise SystemExit("taochronos study wuxing: give Five-Phase states (e.g. 木实 土虚 金虚; 肝郁脾虚; --state 肝虚)")
-        res = study.wuxing(target, states=args.state or (), methods=args.method or ())
+        if not (target or args.state or args.symptom):
+            raise SystemExit("taochronos study wuxing: give symptoms or Five-Phase states (食欲差、便溏、乏力; --state 肝虚)")
+        res = study.wuxing(target, states=args.state or (), symptoms=args.symptom or (), methods=args.method or (), pregnant=args.pregnant)
         notice = res.get("notice", "")
     elif what == "protocol":
         if not target:
@@ -2031,18 +2031,19 @@ def build_parser() -> argparse.ArgumentParser:
                                                        "case_items CSV and datapackage.json) to DIR")
     acu = sp.add_argument_group("针灸 (acupoints, point, wuxing)")
     acu.add_argument("--region", action="append", help="acupoints: where the disorder is (e.g. 胃脘, 腰, 颈项, 前额; repeatable)")
-    acu.add_argument("--symptom", action="append", help="acupoints: a prominent symptom (e.g. 恶心, 失眠; repeatable)")
+    acu.add_argument("--symptom", action="append", help="acupoints/wuxing: a prominent symptom (e.g. 恶心, 失眠; repeatable)")
     acu.add_argument("--organ", action="append", help="acupoints: the organ system (e.g. 胃, 肝; repeatable; the first named is the host)")
     acu.add_argument("--channel", action="append", help="acupoints: a channel (e.g. 足阳明, ST; repeatable)")
     acu.add_argument("--nature", action="append", help="acupoints: the nature of the pattern (虚, 实, 寒, 热, 气滞, 血瘀, 痰湿 …; repeatable)")
     acu.add_argument("--acute", action="store_true", help="acupoints: an acute presentation (Xi-Cleft points come in)")
     acu.add_argument("--chronic", action="store_true", help="acupoints: a chronic presentation")
     acu.add_argument("--side", help="acupoints: the side affected (左 / 右, left / right)")
-    acu.add_argument("--pregnant", action="store_true", help="acupoints: in pregnancy — the points not to be needled then are left out")
+    acu.add_argument("--pregnant", action="store_true", help="acupoints: leave pregnancy-contraindicated points out; wuxing: withhold point suggestions pending pregnancy review")
     acu.add_argument("--max-points", type=int, default=6, help="acupoints: most points to choose (default 6; Ashi points apart)")
     acu.add_argument("--framework", action="store_true", help="acupoints: print the specific-point tables and the mother and child points")
     acu.add_argument("--state", action="append", help="wuxing: a Five-Phase state (肝实, 土虚, Wood excess, 肝郁脾虚; repeatable)")
-    acu.add_argument("--method", action="append", help="wuxing: keep only these methods (nanjing69, nanjing69_cross, own_channel, "
+    acu.add_argument("--method", action="append", choices=["nanjing69", "nanjing69_cross", "own_channel", "nanjing79", "saam", "interior_exterior", "same_name"],
+                     help="wuxing: keep only these methods (nanjing69, nanjing69_cross, own_channel, "
                                                        "nanjing79, saam, interior_exterior, same_name; repeatable)")
     sp.add_argument("--json", action="store_true", help="print the full result as JSON")
     sp.add_argument("-o", "--output", help="write to this file (dataset: this directory)")
