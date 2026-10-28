@@ -1,0 +1,4 @@
+# What builds taochronos: pyproject.toml's [build-system] requires, word for word (tests/test_supply_chain.py checks).
+# Installed from build.txt before `pip install --no-build-isolation`, so that the build too runs on hashed packages.
+setuptools>=84.1.0
+wheel>=0.46.2

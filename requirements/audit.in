@@ -1,0 +1,2 @@
+# What the audit workflow (.github/workflows/audit.yml) reads the lockfiles with: pip-audit, from audit.txt (hashed).
+pip-audit>=2.9

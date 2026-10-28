@@ -62,14 +62,14 @@ jobs:
       built: ${{ steps.build.outputs.built }}
       checked: ${{ steps.check.outputs.ok }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
-      - name: Install
-        run: pip install -e .
+      - name: Install (the hashed lockfiles in requirements/)
+        run: pip install --require-hashes -r requirements/build.txt -r requirements/runtime.txt && pip install --no-deps --no-build-isolation -e .
       - name: The site's KV namespace
         id: plan
         env:
@@ -185,7 +185,7 @@ jobs:
           echo "- $changed file(s) differ from ${GITHUB_REF_NAME} at ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
       - name: Keep the built layer, the tables and the reports
         if: ${{ !cancelled() && steps.build.outputs.built == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: aliases-layer
           path: |
@@ -208,16 +208,16 @@ jobs:
         profile: [full-corpus, web-canon]
         view: [main, no-gangmu]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
-      - name: Install
-        run: pip install -e .
+      - name: Install (the hashed lockfiles in requirements/)
+        run: pip install --require-hashes -r requirements/build.txt -r requirements/runtime.txt && pip install --no-deps --no-build-isolation -e .
       - name: The layer the build job made
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: aliases-layer
           path: ${{ runner.temp }}/aliases-layer
@@ -292,7 +292,7 @@ jobs:
           # each harness extracts its claims into a cache of its own: the store is only read
           taochronos --data "$TAOCHRONOS_DATA" eval aliases -o "aliases-full-$TAOCHRONOS_ALIAS_EVAL-$TAOCHRONOS_ALIAS_EVAL_VIEWS.json"
       - name: Keep it
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: aliases-eval-${{ matrix.profile }}-${{ matrix.view }}
           path: aliases-full-${{ matrix.profile }}-${{ matrix.view }}.json
@@ -307,7 +307,7 @@ jobs:
       accepted: ${{ steps.merge.outputs.accepted }}
     steps:
       - name: The parts of the eval
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: aliases-eval-*
           merge-multiple: true
@@ -402,7 +402,7 @@ jobs:
           open(os.environ["GITHUB_OUTPUT"], "a").write(f"measured={str(measured).lower()}\naccepted={str(accepted).lower()}\n")
           EOF
       - name: Keep it
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: aliases-full
           path: aliases-full.json
@@ -445,18 +445,18 @@ jobs:
             echo "::warning::the deployed pair does not meet the acceptance on the held-out split (the report lists the checks that fail); the layer is committed all the same: commit is on"
           fi
           echo "go=1" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         if: steps.decide.outputs.go == '1'
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         if: steps.decide.outputs.go == '1'
         with:
           python-version: "3.12"
-      - name: Install
+      - name: Install (the hashed lockfiles in requirements/)
         if: steps.decide.outputs.go == '1'
-        run: pip install -e .
+        run: pip install --require-hashes -r requirements/build.txt -r requirements/runtime.txt && pip install --no-deps --no-build-isolation -e .
       - name: The layer the build job made
         if: steps.decide.outputs.go == '1'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: aliases-layer
           path: ${{ runner.temp }}/aliases-layer

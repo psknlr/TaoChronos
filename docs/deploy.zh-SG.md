@@ -198,7 +198,7 @@ sha256 `ef628936…`；来源与授权见 [cloud/ATTRIBUTION.md](../cloud/ATTRIB
 git clone https://github.com/psknlr/TaoChronos.git && cd TaoChronos     # main，含 PR #35
 python3 -m venv .venv && . .venv/bin/activate && pip install -e .
 export CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=…
-export WRANGLER=wrangler@4.142.0 WRANGLER_SEND_METRICS=false
+export WRANGLER_SEND_METRICS=false                                      # wrangler：各 Worker 的 package-lock.json 所定的版本，在运行处由 npm ci 安装
 export STORE_NAMESPACE=taochronos-store SITE_URL=https://chat.impf.ai RELAY_URL=https://chat-api.impf.ai
 export ARCHIVE_BUCKET=                                                  # 设好归档后填存储桶名称（4.2）
 api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID"
@@ -234,10 +234,11 @@ echo "$sha  cloud/.store/$sha.sqlite.xz" | sha256sum -c && rm -rf cloud/.store/p
 ```bash
 # 工作流会给这个提交的版本：语料，加上构建映像所用的每一个文件
 store=$(python3 -c 'import json; print(json.load(open("cloud/store.json"))["sha256"])')
-tree=$(git ls-tree -r HEAD -- pyproject.toml README.md src architecture-policy.yaml profiles domains corpus/catalog corpus/demo \
-         corpus/modern agents skills evals/gold cloud/corpus cloud/store.json .dockerignore | sha256sum | cut -c1-12)
+tree=$(git ls-tree -r HEAD -- pyproject.toml requirements/build.txt requirements/runtime.txt README.md src \
+         architecture-policy.yaml profiles domains corpus/catalog corpus/demo corpus/modern agents skills evals/gold \
+         cloud/corpus cloud/store.json .dockerignore | sha256sum | cut -c1-12)
 VERSION="${store:0:12}-${tree}"; echo "$VERSION"
-(cd cloud/corpus && npm ci --no-audit --no-fund && npx --yes "$WRANGLER" deploy --var "VERSION:$VERSION")
+(cd cloud/corpus && npm ci --ignore-scripts --no-audit --no-fund && npx --no -- wrangler deploy --var "VERSION:$VERSION")
 # 部署成功之后，才像工作流那样记下“已部署”
 curl -fsS -X PUT -H "$auth" -H "Content-Type: text/plain" --data-binary "$VERSION" "$api/storage/kv/namespaces/$NS/values/deployed%2Fcorpus" >/dev/null && echo recorded
 ```
@@ -356,13 +357,14 @@ curl -s -X POST -H "Content-Type: application/json" -H "Origin: https://chat.imp
 **经 GitHub Actions：** 重新运行 **relay**（2.1）。**从自己的电脑**（做完 B1 之后）：
 
 ```bash
-cd relay && cp wrangler.toml wrangler.deploy.toml && bash ../security/bind-archive.sh wrangler.deploy.toml
-npx --yes "$WRANGLER" deploy --config wrangler.deploy.toml && cd ..
+cd relay && npm ci --ignore-scripts --no-audit --no-fund
+cp wrangler.toml wrangler.deploy.toml && bash ../security/bind-archive.sh wrangler.deploy.toml
+npx --no -- wrangler deploy --config wrangler.deploy.toml && cd ..
 python3 relay/collect.py check                              # 经中转做一次极小的模型调用：最后显示 "call": "ok"
 ```
 
 Worker 的机密（`MINIMAX_API_KEY`、`LOG_EXPORT_TOKEN`……）在部署之间保留。要更改某一个：
-`printf %s "$VALUE" | npx --yes "$WRANGLER" secret put NAME --config relay/wrangler.deploy.toml`，并更新 GitHub 里同名的机密。
+`(cd relay && printf %s "$VALUE" | npx --no -- wrangler secret put NAME --config wrangler.deploy.toml)`，并更新 GitHub 里同名的机密。
 
 **MiniMax 密钥来自国际站**（platform.minimax.io，中国大陆以外通常如此）：`relay/wrangler.toml` 须写
 `UPSTREAM_BASE = "https://api.minimax.io/v1"`；否则检查会报 `MiniMax refused the key … api.minimax.io`。
@@ -422,7 +424,7 @@ git add data/chat-logs && git commit -m "chat-logs: through #$LAST" && git push 
 
 | 项目 | 位置 | 建议 |
 |---|---|---|
-| 哨兵 | `relay/wrangler.toml`、`cloud/site/wrangler.toml` 的 `SENTINEL` | `observe` 两周后，若 `shadow` 事件里没有真实访客，两处都改为 `"enforce"` |
+| 哨兵 | `relay/wrangler.toml`、`cloud/site/wrangler.toml` 的 `SENTINEL` | 2026-10-28 起两处都是 `"enforce"`：此前 22 天 `observe` 的 7 条 `shadow` 事件全是扫描器（ADR 0026）；若有真实访客被拒，改回 `"observe"` |
 | 每个地址的模型费用 | 中转的 `TOKENS_PER_DAY`、`PER_DAY` | 每天 1,000 万 token、600 次调用；同一医院或办公室地址后面的许多人共用，不够就调高 |
 | 全体的模型费用 | 中转的 `TOTAL_TOKENS_PER_DAY`、`TOTAL_PER_DAY` | 最坏一天的上限：按 MiniMax 预算设定 |
 | 每次回复的长度 | 中转的 `MAX_OUTPUT_TOKENS` | 每次回复 32,768 token（含思考）；在此处截断的回答由网页接着续写（至多两次），记录里截断的回答多了再调高；回复的花费由上面两项每日 token 额度约束 |
@@ -442,7 +444,7 @@ git add data/chat-logs && git commit -m "chat-logs: through #$LAST" && git push 
 6. ☐ D1 已导入并绑定（A2，或 B5）
 7. ☐ 归档存储桶与 `ARCHIVE_BUCKET`；两个 Worker 已部署；`chat-logs` 已停用（4.2）
 8. ☐ 边缘规则已写入（4.3）
-9. ☐ 两周后：哨兵改为 `enforce`（4.4）
+9. ☑ 两周后：哨兵改为 `enforce`（4.4；2026-10-28 已完成）
 
 ---
 

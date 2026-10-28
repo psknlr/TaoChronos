@@ -425,7 +425,8 @@ export class WatchCore {
     const fresh = [];
     if (extra.kind === "csp") { // the reports not seen from this visitor in the window, within the window's allowance
       for (const report of Array.isArray(extra.reports) ? extra.reports : []) {
-        const key = `${report?.directive}|${report?.blocked}|${report?.source}`;
+        // a violation of both policies comes twice, once enforced and once reported: what was refused is kept apart
+        const key = `${report?.directive}|${report?.blocked}|${report?.source}|${report?.disposition}`;
         if (r.seen.has(key)) continue;
         keep(r.csp);
         if (r.csp.length >= 20) break;

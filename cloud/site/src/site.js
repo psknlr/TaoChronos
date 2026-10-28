@@ -37,7 +37,9 @@ export const DEFAULTS = {
   HSTS_MAX_AGE: "86400",
   MAX_BODY_BYTES: "262144",
   STORE_MAX_PART_BYTES: "26214400", // a Workers KV value is at most 25 MiB
-  // the pages' Content-Security-Policy, reported and not enforced (security/README.md): empty, none is sent
+  // the pages' Content-Security-Policy (security/README.md): CSP enforced, CSP_REPORT_ONLY reported and not enforced;
+  // empty, none is sent
+  CSP: "",
   CSP_REPORT_ONLY: "",
   // per visitor (an IPv6 address by its /64) per day: reads (passages, catalogs, polls) and calls (tools, research).
   // A reader of a citation-heavy answer takes some 60 passages; the heaviest day seen was 7 turns of 40 tool calls.
@@ -64,7 +66,8 @@ export function config(env = {}) {
     maxBody: Number(get("MAX_BODY_BYTES")),
     maxPart: Number(get("STORE_MAX_PART_BYTES")),
     storeToken: String(env.STORE_TOKEN_SHA256 || "").trim().toLowerCase(),
-    csp: get("CSP_REPORT_ONLY").trim(),
+    csp: get("CSP").trim(),
+    cspReportOnly: get("CSP_REPORT_ONLY").trim(),
     permissions: get("PERMISSIONS_POLICY").trim(),
     readsPerDay: Number(get("API_READS_PER_DAY")),
     callsPerDay: Number(get("API_CALLS_PER_DAY")),
@@ -188,8 +191,8 @@ function tally(s, env) {
 }
 
 /** The headers every answer carries: https from now on, no sniffing, no framing by other sites, no device features;
- * on the pages, their own browsing context (no other page holds a handle to them) and the policy reported on
- * (CSP_REPORT_ONLY) with where to report it. */
+ * on the pages, their own browsing context (no other page holds a handle to them), the policy enforced (CSP) and the
+ * stricter one reported on (CSP_REPORT_ONLY), with where to report them. */
 function secure(response, cfg, origin) {
   const res = new Response(response.body, response);
   if (cfg.hsts > 0) res.headers.set("Strict-Transport-Security", `max-age=${cfg.hsts}`);
@@ -200,9 +203,10 @@ function secure(response, cfg, origin) {
     res.headers.set("X-Frame-Options", "SAMEORIGIN");
     res.headers.set("Cross-Origin-Opener-Policy", "same-origin");
     res.headers.set("Cross-Origin-Resource-Policy", "same-origin");
-    if (cfg.csp) {
-      res.headers.set("Content-Security-Policy-Report-Only", cfg.csp);
-      if (/report-to\s+csp\b/.test(cfg.csp)) res.headers.set("Reporting-Endpoints", `csp="${origin}/api/security/csp"`);
+    if (cfg.csp) res.headers.set("Content-Security-Policy", cfg.csp);
+    if (cfg.cspReportOnly) res.headers.set("Content-Security-Policy-Report-Only", cfg.cspReportOnly);
+    if ([cfg.csp, cfg.cspReportOnly].some((p) => /report-to\s+csp\b/.test(p))) {
+      res.headers.set("Reporting-Endpoints", `csp="${origin}/api/security/csp"`);
     }
   }
   return res;

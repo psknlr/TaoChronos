@@ -154,6 +154,10 @@ taochronos study formula 六味地黄丸 # study: formula provenance (on the dem
 taochronos agents                  # the 16 agents and their current routes
 ```
 
+The versions CI and the deployments install — every package pinned, with the hashes of its files — are the lockfiles in
+[requirements/](requirements/README.md): `pip install --require-hashes -r requirements/build.txt -r requirements/dev.txt`,
+then `pip install --no-deps --no-build-isolation -e .`.
+
 The full corpus (texts never enter git; fetching, cataloguing and ingestion are reproducible — see [§3](#3-corpus)):
 
 ```bash

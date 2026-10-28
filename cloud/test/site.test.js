@@ -428,29 +428,37 @@ test("an API call that is not the page's is scored: served and flagged in observ
   assert.equal((await plain.call(`${PAGE}/api/security/summary`, { headers: { Authorization: `Bearer ${EXPORT}` } })).status, 404);
 }));
 
-test("the pages' headers: no device features; the reported policy and where to report it", async () => {
-  const { call } = site({ env: { CSP_REPORT_ONLY: "default-src 'self'; report-to csp" } });
+test("the pages' headers: no device features; the policy enforced, the one reported, and where to report them", async () => {
+  const { call } = site({ env: { CSP: "script-src 'self'; report-to csp", CSP_REPORT_ONLY: "default-src 'self'; report-to csp" } });
   const page = await call(`${PAGE}/`);
   const script = await call(`${PAGE}/js/app.js`);
   assert.equal(page.headers.get("Permissions-Policy"), DEFAULTS.PERMISSIONS_POLICY);
+  assert.equal(page.headers.get("Content-Security-Policy"), "script-src 'self'; report-to csp");
   assert.equal(page.headers.get("Content-Security-Policy-Report-Only"), "default-src 'self'; report-to csp");
   assert.equal(page.headers.get("Reporting-Endpoints"), 'csp="https://chat.impf.ai/api/security/csp"');
   assert.equal(page.headers.get("X-Frame-Options"), "SAMEORIGIN");
   assert.equal(page.headers.get("Cross-Origin-Opener-Policy"), "same-origin");
   assert.equal(page.headers.get("Cross-Origin-Resource-Policy"), "same-origin");
   assert.equal(script.headers.get("Cross-Origin-Opener-Policy"), null);
+  assert.equal(script.headers.get("Content-Security-Policy"), null);
   assert.equal(script.headers.get("Content-Security-Policy-Report-Only"), null);
   assert.equal(script.headers.get("Permissions-Policy"), DEFAULTS.PERMISSIONS_POLICY);
   const uri = site({ env: { CSP_REPORT_ONLY: "default-src 'self'; report-uri /api/security/csp" } });
   assert.equal((await uri.call(`${PAGE}/`)).headers.get("Reporting-Endpoints"), null);
+  const enforcedOnly = site({ env: { CSP: "script-src 'self'; report-to csp" } });
+  const alone = await enforcedOnly.call(`${PAGE}/`);
+  assert.equal(alone.headers.get("Content-Security-Policy-Report-Only"), null);
+  assert.equal(alone.headers.get("Reporting-Endpoints"), 'csp="https://chat.impf.ai/api/security/csp"'); // the enforced policy's reports go there too
   const none = site();
+  assert.equal((await none.call(`${PAGE}/`)).headers.get("Content-Security-Policy"), null);
   assert.equal((await none.call(`${PAGE}/`)).headers.get("Content-Security-Policy-Report-Only"), null);
   assert.equal((await none.call(`${PAGE}/`)).headers.get("Reporting-Endpoints"), null);
 });
 
-test("the policy deployed names the pages' inline scripts and styles by their hashes, as web/ has them", () => {
+test("the policies deployed name the pages' inline scripts and styles by their hashes, as web/ has them", () => {
   const toml = readFileSync(new URL("../site/wrangler.toml", import.meta.url), "utf-8");
   const policy = /^CSP_REPORT_ONLY = "(.*)"$/m.exec(toml)[1];
+  const enforced = /^CSP = "(.*)"$/m.exec(toml)[1];
   const hash = (text) => `'sha256-${createHash("sha256").update(text).digest("base64")}'`;
   const inline = { scripts: [], styles: [], attrs: [] };
   for (const file of ["index.html", "about.html", "attribution.html"]) {
@@ -460,8 +468,19 @@ test("the policy deployed names the pages' inline scripts and styles by their ha
     for (const m of html.matchAll(/ style="([^"]*)"/g)) inline.attrs.push(hash(m[1]));
   }
   assert.deepEqual([inline.scripts.length, inline.styles.length, inline.attrs.length], [2, 2, 1]); // an inline block added to a page needs its hash in the policy
-  const directive = (name) => (new RegExp(`(?:^|; )${name} ([^;]*)`).exec(policy) || [])[1] || "";
+  const directive = (name, of = policy) => (new RegExp(`(?:^|; )${name} ([^;]*)`).exec(of) || [])[1] || "";
   for (const h of inline.scripts) assert.ok(directive("script-src").includes(h), `script-src lacks ${h}`);
+  // the enforced policy: the same scripts (a page whose inline script lost its hash would not start), and what keeps
+  // out a script that is not the page's and where one could send what it read
+  assert.equal(directive("script-src", enforced), directive("script-src"));
+  assert.deepEqual(["object-src", "base-uri", "form-action", "frame-ancestors", "worker-src", "img-src", "connect-src"].map((d) => directive(d, enforced)),
+    ["'none'", "'none'", "'self'", "'self'", "'self'", "'self' data: blob:", "'self' https: http://localhost:* http://127.0.0.1:*"]);
+  assert.doesNotMatch(enforced, /default-src|style-src|font-src|media-src|frame-src/); // reported only: extensions add their own (wrangler.toml)
+  assert.match(enforced, /report-uri \/api\/security\/csp; report-to csp$/);
+  assert.doesNotMatch(enforced, /unsafe-inline|unsafe-eval|unsafe-hashes/); // (and so no wasm-unsafe-eval: the page compiles none)
+  // jsDelivr's npm files only (the SDK and what its +esm imports), not its /gh/ files: any public repository's
+  assert.ok(directive("script-src").split(" ").includes("https://cdn.jsdelivr.net/npm/"), "script-src names jsDelivr's npm path");
+  assert.doesNotMatch(directive("script-src"), /https:\/\/cdn\.jsdelivr\.net(?:\s|$)/);
   for (const h of inline.styles) assert.ok(directive("style-src").includes(h), `style-src lacks ${h}`);
   for (const h of inline.attrs) assert.ok(directive("style-src-attr").includes(h), `style-src-attr lacks ${h}`);
   // the edge adds Cloudflare Web Analytics' beacon to every page: without it, each visit would file a report

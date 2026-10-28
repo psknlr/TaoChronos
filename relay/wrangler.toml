@@ -34,7 +34,11 @@ TOKENS_PER_DAY = "10000000"
 TOTAL_TOKENS_PER_DAY = "200000000"
 # the sentinel (security/README.md): observe — every request scored and, flagged, recorded with its address, never
 # refused; enforce — an address over the block score is refused for six hours; off — nothing recorded
-SENTINEL = "observe"
+# enforce since 2026-10-28: in the 22 days of observe before (2026-10-06 to 10-28) the requests it would have refused
+# (`shadow` events, data/security-logs/) were 7, all scanners — every request of theirs a 404, most from hosting
+# networks, none with a browser's Sec-Fetch headers (docs/adr/0026-pinned-supply-chain-and-enforced-policies.md).  A
+# visitor wrongly refused: BLOCK_SCORE up, or SENTINEL back to "observe" (security/README.md)
+SENTINEL = "enforce"
 # a scanner path (/wp-config.php, /.git/HEAD, /xmlrpc.php, …) refuses its address for a day, in observe mode too: block | observe
 HONEYPOT = "block"
 # the counts behind the page's 统计 pane in the settings (security/usage.js, docs/web.md): read with the secret
