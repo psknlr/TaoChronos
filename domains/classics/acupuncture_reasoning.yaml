@@ -1,0 +1,694 @@
+# 针灸推理的协调与审核 —— study.acupuncture_reason 与 study.acupuncture_audit 的规则包（ADR 0027）
+#
+# 依《TaoChronos 针灸选穴工具设计包 1.0》（2026-10-29）实现：类比、脏腑官窍与经脉、气机升降出入、阴阳虚实、五行生克、五输
+# 母子、表里·原络·脏腑别通七种推理，各有其可接受的输入、可给出的输出与必须停下之处。事实是四态的观察（present / absent /
+# unknown / conflicting），保留其主体、时间、侧别与原文位置；规则只用有限的条件算子（all、any、eq、in、present），不执行任何
+# 自由文本或脚本；一个理论关系不能自己变成病人的事实，一个候选穴也不能变成已获批准的处方或已完成的治疗。
+#
+# 契约（参数与返回）在 acupuncture_contracts.schema.json；本文件是其“规则包”：来源、概念、分流规则、推断护栏、类型化的关系、
+# 类比、个人假说（默认停用）、耳鸣的证候比较与追问。分流规则只是例子：不穷尽临床急症、禁忌与评估路径，须由临床人员复核。
+version: 1.0.0
+contracts: acupuncture_contracts.schema.json
+notice: "以下是传统针灸理论中的推理结构与其文献出处，以及对所给信息的整理——不是诊断，不是处方，也不是疗效结论。候选穴只供有相应资格的人员复核；是否针灸、取何穴、如何施术，须在诊察之后决定。遇所列须及时评估的情况，先就医评估。"
+
+# ------------------------------------------------------------------ 来源：每条记其所支持与所不支持；能在语料中检得者附 probes
+# verification：cited（据设计包所引，未在此核对全文）· checked（已核对）· corpus（在本语料中检得原文，见 probes）
+sources:
+  src_nanjing:
+    kind: classical_text
+    title: 《难经》六十四难、六十九难、七十五难
+    url: https://zh.wikisource.org/zh-hans/難經
+    probes: [虚者补其母, 实者泻其子, 不实不虚以经取之]
+    supports: [五输穴的五行属性与补母泻子的传统依据]
+    does_not_establish: [对耳鸣的疗效, 某一病人当前的虚实]
+  src_five_shu_2024:
+    kind: theory_paper
+    title: 张嘉程等《五输穴子母补泻法及其临床应用探讨》，《天津中医药》2024;41(4):436-439
+    url: https://tjzhongyiyao.tjutcm.edu.cn/html/tjzyy/2024/4/20240407.htm
+    doi: 10.11656/j.issn.1672-1519.2024.04.07
+    verification: cited
+    supports: [肝实泻行间、肝虚补曲泉的本经子母补泻对应]
+    does_not_establish: [本设计用于耳鸣的疗效]
+  src_yixue_rumen:
+    kind: classical_text
+    title: 《医学入门》脏腑条分（引《五脏穿凿论》）
+    url: https://www.cntcm.org/shu/346-4-2.html
+    verification: cited
+    probes: [心与胆相通, 肝与大肠相通, 肾与三焦相通]
+    supports: [心与胆、肝与大肠、脾与小肠、肺与膀胱、肾与三焦相通（脏腑别通）]
+    does_not_establish: [别通即表里或原络, 沿别通任意传递的推断]
+  src_cijiu_xinfa:
+    kind: classical_text
+    title: 《刺灸心法要诀》原络穴（主客原络之配）
+    verification: cited
+    supports: [原络相配用于互为表里的两经：主经取原、客经取络]
+    does_not_establish: [以别通代表里配原络]
+  src_lingshu_maidu:
+    kind: classical_text
+    title: 《灵枢·脉度》
+    probes: [肾气通于耳]
+    supports: [肾与耳的传统关联（官窍）]
+    does_not_establish: [凡耳鸣皆属肾虚]
+  src_suwen_yingxiang:
+    kind: classical_text
+    title: 《素问·阴阳应象大论》
+    probes: [在窍为耳]
+    supports: [肾在窍为耳]
+    does_not_establish: [凡耳鸣皆属肾虚]
+  src_lingshu_jingmai:
+    kind: classical_text
+    title: 《灵枢·经脉》
+    probes: [从耳后入耳中, 却入耳中]
+    supports: [手足少阳、手太阳之脉入耳（经脉循行）]
+    does_not_establish: [经脉循行即病因]
+  src_lingshu_nishun:
+    kind: classical_text
+    title: 《灵枢·逆顺肥瘦》
+    probes: [从手走头, 从头走足, 从足走腹]
+    supports: [十二经的走向（经脉循行的方向）]
+    does_not_establish: [走向即气机的升降或中耳的压力]
+  src_suwen_liuwei:
+    kind: classical_text
+    title: 《素问·六微旨大论》
+    probes: [升降出入]
+    supports: [升降出入为气机之常（功能的方向）]
+    does_not_establish: [功能的方向即经脉走向或物理压力]
+  src_suwen_jinkui:
+    kind: classical_text
+    title: 《素问·金匮真言论》
+    probes: [阴中之阴肾也, 阴中之阳肝也]
+    supports: [脏腑阴阳的分类：肾为阴中之阴，肝为阴中之阳]
+    does_not_establish: [“水阳木阴”之类未定参照系的命题]
+  src_lingshu_hailun:
+    kind: classical_text
+    title: 《灵枢·海论》
+    probes: [髓海不足则脑转耳鸣]
+    supports: [髓海不足与耳鸣相关的传统论述]
+    does_not_establish: [某一病人的耳鸣属髓海不足]
+  src_lingshu_kouwen:
+    kind: classical_text
+    title: 《灵枢·口问》
+    probes: [耳为之苦鸣]
+    supports: [上气不足、耳为之苦鸣的传统论述]
+    does_not_establish: [某一病人的耳鸣属上气不足]
+  src_yinyang:
+    kind: institutional_explanation
+    title: 中国中医科学院中医基础理论研究所：阴阳
+    url: https://www.ibtcm.ac.cn/detail.thtml?contentId=8409
+    verification: cited
+    supports: [阴阳属性须说明其层次与参照]
+    does_not_establish: [任何未定参照系的阴阳命题]
+  src_nidcd:
+    kind: institutional_explanation
+    title: NIDCD：Tinnitus
+    url: https://www.nidcd.nih.gov/health/tinnitus
+    verification: cited
+    supports: [耳鸣的机制涉及听觉系统；鼓膜的类比不能确定病因]
+    does_not_establish: [负压的五行机制]
+  src_etd_2015:
+    kind: consensus
+    title: Eustachian tube dysfunction consensus statement (2015; doi 10.1111/coa.12475)
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC4600223/
+    verification: cited
+    supports: [中耳负压之类须有相应的症状与客观检查（耳镜、鼓室图）]
+    does_not_establish: [中耳负压等同五行的“水实”]
+  src_nice_ng155:
+    kind: clinical_guideline
+    title: NICE NG155：Tinnitus assessment and management（2020）
+    url: https://www.nice.org.uk/guidance/ng155/chapter/Recommendations
+    verification: cited
+    supports: [伴突发听力下降（3 天内形成、在过去 30 天内）的耳鸣须在 24 小时内评估, 听力评估与病因的检查]
+    does_not_establish: [任何针灸取穴]
+  src_vadod_2024:
+    kind: clinical_guideline
+    title: VA/DoD Clinical Practice Guideline for Tinnitus（2024，Recommendation 23）
+    url: https://healthquality.va.gov/HEALTHQUALITY/guidelines/CD/tinnitus/VADoD-CPG-Tinnitus-Full-CPG-2024_Final_508.pdf
+    verification: cited
+    supports: [当时对针灸用于耳鸣的证据评为不足以推荐或反对]
+    does_not_establish: [五行取穴的机制或疗效]
+  src_textbook:
+    kind: teaching
+    title: 针灸学教材（耳鸣耳聋）
+    verification: cited
+    supports: [耳鸣耳聋的常见证型（肝胆火盛、痰火郁结、肾精亏损、脾胃虚弱）与其辨别要点]
+    does_not_establish: [某一病人属何证型]
+  src_adr0025:
+    kind: repository_design
+    title: ADR 0025 —— 五行选穴
+    path: docs/adr/0025-five-phases-in-point-selection.md
+    supports: [study.wuxing 的方法、层级与护栏]
+    does_not_establish: [对病人的适用]
+
+# ------------------------------------------------------------------ 观察的概念：一个所见一个 concept_id，四态，不互相替代
+# names：原文写法（最长者优先读）；derived：由别的所见与时间、起病之词推出（只推出确有其词者，未说者仍为未知）
+concepts:
+  symptom.tinnitus: {zh: 耳鸣, en: tinnitus, kind: symptom, names: [耳鸣, 耳中鸣, 耳内鸣, 耳朵嗡嗡响, 耳朵响, tinnitus, ringing in the ears, ringing ears]}
+  hearing.loss: {zh: 听力下降, en: hearing loss, kind: symptom, pattern: "听力[^，。；,;！？!?\\s]{1,4}?(?:下降|减退|变差|不好|不如以前)",
+                 denials: ["听力(?:(?<!有)没有|并没有|并无|未|(?<!有)无)(?:明显)?(?:下降|减退|变差|变化|问题)", "听力(?:正常|没问题|还好|很好)", "听得(?:清楚|见)", "hearing is (?:normal|fine)", "no (?:change in )?hearing (?:loss|change)"],
+                 names: [听力下降, 听力减退, 听力变差, 听不清楚, 听不清, 听不见, 耳聋, 重听, 失聪, hearing loss, difficulty hearing, could not hear, cannot hear, deafness]}
+  hearing.sudden_loss: {zh: 突发听力下降, en: sudden hearing loss, kind: symptom, derived: true,
+                        names: [突发性耳聋, 突发耳聋, 暴聋, 突发听力下降, 突然听力下降, 听力突然下降, 突然听不见, 突然听不清, sudden hearing loss, sudden deafness],
+                        denials: ["听力(?:(?<!有)没有|并没有|并无|未|(?<!是)不是)(?:突然|一下子)(?:下降|减退|变差)", "(?:(?<!是)不是|并非|(?<!有)没有)突然(?:下降|听不见|听不清)", "hearing (?:did not|didn't) (?:suddenly )?(?:drop|get worse)"]}
+  hearing.developed_within_72_hours: {zh: 听力下降在 3 天内形成, en: hearing loss developed within 72 hours, kind: timing, derived: true}
+  hearing.onset_within_past_30_days: {zh: 听力下降起于 30 天内, en: hearing loss began within the past 30 days, kind: timing, derived: true}
+  tinnitus.pulsatile: {zh: 搏动性耳鸣, en: pulsatile tinnitus, kind: symptom, pattern: "(?:跟|与|随|和)着?(?:心跳|脉搏)(?:同步|一致|一起|一样)",
+                       denials: ["(?:(?<![是有])不|(?<!有)没有|并不|并没有)(?:跟|与|随|和)(?:着)?(?:心跳|脉搏)(?:同步|一致|一起)", "(?:(?<!是)不是|并非|(?<!有)没有|(?<!是)非)搏动", "not (?:pulsatile|in time with)"],
+                       names: [与心跳同步, 随心跳, 跟心跳一致, 跟着心跳, 随脉搏, 搏动性, 搏动样, pulsatile, in time with the heartbeat, with each heartbeat]}
+  tinnitus.persistent_unilateral: {zh: 持续单侧耳鸣, en: persistent unilateral tinnitus, kind: symptom, derived: true}
+  tinnitus.sudden_onset: {zh: 耳鸣突发, en: sudden-onset tinnitus, kind: timing, derived: true}
+  neuro.acute_deficit: {zh: 急性神经系统表现, en: acute neurological features, kind: sign,
+                        denials: ["(?:(?<!有)没有|(?<!有)无|未见|并无)(?:口角歪斜|面瘫|肢体无力|言语不清|说话不清|神经系统的?(?:异常|表现|症状))", "no (?:facial droop|weakness|slurred speech|neurological)"],
+                        names: [口角歪斜, 面瘫, 半身无力, 肢体无力, 一侧无力, 言语不清, 说话不清, 口齿不清, 复视, 剧烈头痛, facial droop, facial weakness, slurred speech, limb weakness]}
+  symptom.ear_fullness: {zh: 耳闷胀, en: ear fullness, kind: symptom, names: [耳内胀闷, 耳胀, 耳闷, 耳堵, 闷塞感, 耳朵发闷, ear fullness, blocked ear, pressure in the ear]}
+  symptom.vertigo: {zh: 眩晕, en: vertigo, kind: symptom, names: [天旋地转, 眩晕, vertigo]}
+  symptom.abdominal_distension: {zh: 胃脘或腹部胀满, en: abdominal distension, kind: symptom, names: [胃胀, 腹胀, 脘腹胀满, 胃脘胀满, 胀满, bloating, abdominal distension]}
+  trigger.anger: {zh: 恼怒之后, en: after anger, kind: context, names: [生气后, 生气, 发怒, 恼怒, 大怒, 动怒, 吵架后, after becoming angry, after anger, became angry, angry]}
+  context.age_young: {zh: 年轻, en: young, kind: context, names: [年轻人, 青年, 年轻, 少年, young adult, young person, young]}
+  context.age_older: {zh: 年老, en: older, kind: context, names: [老年人, 老人, 年老, 高龄, 老年, older adult, older person, elderly], pattern: "(?:[6-9][0-9]|1[0-2][0-9])岁"}
+  report.reduced_vitality: {zh: 所说的“外在活力减弱”, en: reported loss of outward vitality, kind: report, names: [外在活力减弱, 精神不振, 没精神, 精力差, 活力下降, 神疲, 阳气外显不足, reduced outward vitality, loss of vitality, low energy]}
+  sign.tongue: {zh: 舌象, en: tongue, kind: sign, pattern: "舌(?:质)?(?:淡|红|暗|紫|胖|瘦|边)|苔(?:薄|白|黄|腻|少|无)"}
+  sign.pulse: {zh: 脉象, en: pulse, kind: sign, pattern: "脉(?:象)?(?:弦|数|细|沉|滑|弱|浮|迟|涩|缓|紧)"}
+  symptom.bitter_taste: {zh: 口苦, en: bitter taste, kind: symptom, names: [口苦, bitter taste]}
+  symptom.irritability: {zh: 烦躁易怒, en: irritability, kind: symptom, names: [烦躁易怒, 急躁易怒, 心烦易怒, 易怒, 烦躁, irritable, irritability]}
+  symptom.hypochondriac_pain: {zh: 胁肋胀痛, en: hypochondriac pain, kind: symptom, names: [胁肋胀痛, 胁痛, 胁胀, hypochondriac pain]}
+  symptom.red_face_eyes: {zh: 面红目赤, en: red face and eyes, kind: symptom, names: [面红目赤, 面红, 目赤, red face]}
+  symptom.chest_oppression: {zh: 胸闷, en: chest oppression, kind: symptom, names: [胸闷, chest tightness]}
+  symptom.phlegm: {zh: 痰多, en: much phlegm, kind: symptom, names: [痰多, 咳痰, 多痰, phlegm]}
+  symptom.low_back_weakness: {zh: 腰膝酸软, en: sore weak lower back and knees, kind: symptom, names: [腰膝酸软, 腰酸, 腰膝无力, sore lower back]}
+  symptom.fatigue: {zh: 倦怠乏力, en: fatigue, kind: symptom, names: [倦怠乏力, 神疲乏力, 乏力, 倦怠, 疲倦, fatigue, tiredness]}
+  symptom.poor_appetite: {zh: 纳少, en: poor appetite, kind: symptom, names: [纳少, 纳差, 食欲不振, 不想吃饭, poor appetite]}
+  symptom.loose_stool: {zh: 便溏, en: loose stools, kind: symptom, names: [便溏, 大便稀, 稀便, loose stools]}
+  tinnitus.worse_with_fatigue: {zh: 劳累后加重, en: worse with exertion, kind: symptom, names: [劳累后加重, 劳则加重, 劳累加重, 累了加重, worse when tired]}
+  tinnitus.pressing_relieves: {zh: 按之鸣减, en: relieved by pressing the ear, kind: symptom, names: [按之鸣减, 按压后减轻, 按住耳朵减轻, 按住耳朵会减轻, pressing relieves]}
+  tinnitus.thin_high_pitched: {zh: 鸣声细如蝉, en: thin high-pitched sound, kind: symptom, names: [如蝉鸣, 蝉鸣, 鸣声细, 声细, cicada-like]}
+  tinnitus.loud_roaring: {zh: 鸣声大如潮如雷, en: loud roaring sound, kind: symptom, names: [如潮, 如雷, 轰鸣, 声大, roaring]}
+
+# 起病与时间之词（用于推出 derived 概念；只有原文写到的才推出）
+timing:
+  sudden: [突然, 突发, 骤然, 骤发, 暴发, 一夜之间, 忽然, 一下子, sudden, suddenly, abrupt, abruptly, overnight]
+  gradual: [逐渐, 慢慢, 缓慢, 渐渐, 日渐, 渐进, gradually, slowly, gradual]
+  within_72_hours: [一天内, 一日内, 两天内, 三天内, 72小时内, 24小时内, 一夜之间, 几个小时内, within a day, within one day, within two days, within three days, within hours, overnight]
+  # 近期之词与其“至多是几小时前”（用于“过去 30 天内”与“3 天内形成”的判断）
+  recent: {今天: 12, 今晨: 12, 今早: 12, 今天早上: 12, 昨天: 36, 昨晚: 36, 昨日: 36, 前天: 60, 这两天: 48, 这几天: 120, 最近几天: 120,
+           本周: 168, 这周: 168, 上周: 336, today: 12, this morning: 12, yesterday: 36, last night: 36, this week: 168, last week: 336}
+  remote: [去年, 前年, 半年前, 几个月前, 数月前, 多年前, 年前, last year, months ago, years ago]
+  persistent: [持续, 一直, 长期, 数周, 几周, 几个月, 数月, persistent, constant, constantly, for weeks, for months]
+  persistent_hours: 336  # 写明的时长达两周，亦作“持续”
+
+# ------------------------------------------------------------------ 主诉的决策要点：缺之则先问（每轮至多两问），不以未知为阴性
+# 一个所见为当前（present）或矛盾（conflicting）时，其 decision_critical 中未定者即“仍缺”；突发的听力下降再问其时间
+complaints:
+  symptom.tinnitus:
+    decision_critical: [hearing.sudden_loss, tinnitus.pulsatile]
+    patterns: tinnitus
+  hearing.loss:
+    decision_critical: [hearing.sudden_loss]
+  hearing.sudden_loss:
+    decision_critical: [hearing.developed_within_72_hours, hearing.onset_within_past_30_days, neuro.acute_deficit]
+
+# ------------------------------------------------------------------ 分流规则与推断护栏：只用 all / any / eq / in / present
+# present：present 为真、absent 为假、unknown 与 conflicting 为“未定”；未定的条件不触发规则，也不当作阴性
+operators: [all, any, eq, in, present]
+rules:
+  - id: route.sudden_hearing_loss
+    version: 1
+    kind: routing_guard
+    priority: 1000
+    when: {all: [{eq: {fact: control.clinical_case_route_required, value: true}}, {present: hearing.sudden_loss},
+                 {present: hearing.developed_within_72_hours}, {present: hearing.onset_within_past_30_days}]}
+    effect: {code: URGENT_HEARING_ASSESSMENT, status: needs_urgent_assessment, severity: block,
+             message: "突发的听力下降（3 天内形成、在过去 30 天内）：NICE NG155 建议 24 小时内由耳科或听力专科评估——先就医评估，此处不给出针对此人的候选穴。"}
+    sources: [src_nice_ng155]
+    note: 时间条件须有原文的时间信息；未知不当作阴性
+  - id: route.acute_neurological
+    version: 1
+    kind: routing_guard
+    priority: 1000
+    when: {all: [{eq: {fact: control.clinical_case_route_required, value: true}}, {present: neuro.acute_deficit}]}
+    effect: {code: URGENT_NEUROLOGICAL_ASSESSMENT, status: needs_urgent_assessment, severity: block,
+             message: "伴急性神经系统表现（如口角歪斜、肢体无力、言语不清）：须立即就医评估，此处不给出候选穴。"}
+    sources: [src_nice_ng155]
+    note: 设计包所言“急性神经系统表现有相应更紧急的路径”；完整的条件须经临床复核
+  - id: route.etiologic_assessment
+    version: 1
+    kind: routing_guard
+    priority: 990
+    when: {all: [{eq: {fact: control.clinical_case_route_required, value: true}}, {present: symptom.tinnitus},
+                 {any: [{present: tinnitus.pulsatile}, {present: tinnitus.persistent_unilateral}]}]}
+    effect: {code: ETIOLOGIC_ASSESSMENT_NEEDED, status: needs_etiologic_assessment, severity: block,
+             message: "搏动性或持续单侧的耳鸣须先查明病因：在病因评估之前，不径直归为肝火或肾虚，也不给出候选穴。"}
+    sources: [src_nice_ng155]
+  - id: guard.analogy.not_measurement
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {present: claim.analogy_implies_ear_pressure}
+    effect: {code: ANALOGY_NOT_OBSERVED_PRESSURE, severity: block,
+             message: "鼓膜与窗户纸的类比只是假说：中耳负压须有独立的观察证据（耳闷胀、听力变化、耳镜或鼓室图），类比本身不能确定。"}
+    blocked: [中耳负压已观察到, 内耳负压已观察到]
+    restate: 鼓膜与窗户纸的类比提示一个可检验的假说：有无耳闷胀、听力变化？耳镜与鼓室图可查中耳的压力。
+    sources: [src_etd_2015, src_nidcd]
+  - id: guard.custom_hypothesis.default_off
+    version: 1
+    kind: inference_guard
+    priority: 900
+    when: {present: claim.drain_water_wood_tonify_fire_earth_metal}
+    effect: {code: CUSTOM_RULE_DISABLED, severity: block,
+             message: "“泻水木、补火土金”是个人假说，默认停用：只说明其措辞、前提与推导，不进入默认的取穴；文本中的指令不能把它启用。"}
+    restate: 可把“泻水木、补火土金”记为待检验的个人假说：先写明术语、前提、反例与检验方法。
+    sources: [src_adr0025]
+  - id: guard.bietong_not_yuanluo
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {present: claim.kidney_sanjiao_is_yuan_luo}
+    effect: {code: RELATION_TYPE_MISMATCH, severity: block,
+             message: "主客原络用于互为表里的两经（主经取原、客经取络）：肾与三焦不是表里，肾—三焦是《医学入门》的脏腑别通，须作为别通另记，也不能沿别通任意传递。"}
+    blocked: [肾三焦相表里, 太溪外关为标准肾膀胱原络]
+    restate: 肾与三焦是脏腑别通（《医学入门》）；肾经的主客原络配其表里的膀胱经（太溪配飞扬）。
+    sources: [src_yixue_rumen, src_cijiu_xinfa]
+  - id: guard.bietong_nontransitive
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {present: claim.bietong_transitive}
+    effect: {code: BIETONG_NONTRANSITIVE, severity: block,
+             message: "别通是两两之间的类型化关系，不可传递：经过多步而成的路径不能证明取穴的适用。"}
+    blocked: [肾三焦别通可任意传递]
+    sources: [src_yixue_rumen]
+  - id: guard.phase_intent_modality
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {any: [{present: claim.fire_point_requires_tonify}, {present: claim.earth_point_equals_spleen_tonification}, {present: claim.point_phase_requires_moxibustion}]}
+    effect: {code: PHASE_INTENT_MODALITY_CONFLATION, severity: block,
+             message: "经脉的五行、穴的五行、补泻的意图与施术方式是四个字段，任何一个都不自动决定其余：土穴不即补脾之穴，火穴不即宜补、宜灸。"}
+    blocked: [补太冲自动等于补脾, 土金穴自动宜灸]
+    restate: 太冲是肝经的输穴（属土）：补太冲是对肝经施补，补脾须另有其据；施术方式另行评估。
+    sources: [src_nanjing]
+  - id: guard.fluid_vs_yin
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {present: claim.fluid_retention_equals_kidney_yin_excess}
+    effect: {code: FLUID_YIN_CONFLATION, severity: block,
+             message: "水湿停聚是病理之物，不等于肾阴充盛：水液停聚、肾阴、肾阳与中耳的测量分开记。"}
+    blocked: [水湿停聚等于肾阴充盛]
+    restate: 水湿停聚与肾阴的盛衰分开记：前者是病理产物，后者是脏腑的一个方面。
+    sources: [src_adr0025]
+  - id: guard.age
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {present: claim.age_implies_pattern}
+    effect: {code: AGE_NOT_PATTERN, severity: block,
+             message: "年龄是背景信息，不能独自确立证型，也不能独自满足灸法的条件。"}
+    blocked: [高龄已经确认阳虚]
+    restate: 年龄可作为辨证的背景；阳虚须由所见（畏寒、肢冷、舌脉等）辨别。
+    sources: [src_textbook]
+  - id: guard.evidence_scope
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {present: claim.classical_source_proves_clinical_efficacy}
+    effect: {code: EVIDENCE_SCOPE_MISMATCH, severity: block,
+             message: "经典的记载说明一个方法曾被提出，不说明其现代临床疗效：理论出处与临床疗效分开记。"}
+    blocked: [经典出处证明现代疗效]
+    restate: 《难经》记载了这一方法；它对耳鸣的现代临床疗效须另有临床研究的证据。
+    sources: [src_vadod_2024]
+  - id: guard.organ_identity
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {present: claim.organ_phase_substitution}
+    effect: {code: ORGAN_PHASE_SUBSTITUTION, severity: block,
+             message: "同属一行的脏腑不能互代：胃与脾、大肠与肺、肾阴与肾阳各自为一。"}
+    restate: 胃虚与脾虚、大肠虚与肺虚分开记。
+    sources: [src_adr0025]
+  - id: guard.yin_yang
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {present: claim.yin_yang_aspect_collapse}
+    effect: {code: YIN_YANG_ASPECT_COLLAPSE, severity: block,
+             message: "肾阳虚不满足滋水涵木所需的肾阴虚：同一脏的阴、阳是不同的方面，须分别核对。"}
+    blocked: [滋水涵木前提完整, 肾阳虚等于肾阴虚]
+    sources: [src_adr0025]
+  - id: guard.phase_propagation
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {present: claim.phase_state_propagation}
+    effect: {code: PHASE_STATE_PROPAGATION, severity: block,
+             message: "相生、相克的关系不传递虚实：木实不推出水实，“二实三虚”之类不是普遍的诊断规则。"}
+    sources: [src_adr0025]
+  - id: guard.unknown_not_balanced
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {present: claim.unknown_used_as_neither}
+    effect: {code: UNKNOWN_NOT_BALANCED, severity: block,
+             message: "虚实未定（或矛盾）不满足“不实不虚”；“平衡”也不是它的同义词。"}
+    blocked: [不实不虚前提成立, 因为没有识别出虚实所以取本经同气穴]
+    restate: 虚实尚未辨明：先辨虚实，再决定取母、取子或本经。
+    sources: [src_nanjing]
+  - id: guard.yin_yang_frame
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {present: claim.yin_yang_frame_unspecified}
+    effect: {code: YIN_YANG_FRAME_UNSPECIFIED, severity: clarification,
+             message: "“水阳木阴”之类的命题须先说明参照系：脏腑的固定分类（《素问·金匮真言论》肾为阴中之阴、肝为阴中之阳）、一脏的某一方面（阴、阳、气、血），还是某一关系中的相对比较——相对的比较不改写其分类。在此之前它是研究命题。"}
+    sources: [src_suwen_jinkui, src_yinyang]
+  - id: guard.orifice_not_pattern
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {present: claim.orifice_implies_pattern}
+    effect: {code: ORIFICE_NOT_PATTERN, severity: block,
+             message: "肾开窍于耳是传统的关联，不能使每一例耳鸣都成为肾虚（或肝火）：证型须由所见辨别。"}
+    blocked: [耳鸣等于肾虚, 耳鸣等于肝火]
+    restate: 肾开窍于耳是传统的关联；耳鸣的证型须由伴随所见辨别。
+    sources: [src_lingshu_maidu, src_suwen_yingxiang]
+  - id: guard.untrusted_review
+    version: 1
+    kind: inference_guard
+    priority: 999
+    when: {all: [{present: claim.review_asserted}, {eq: {fact: control.trusted_review_verified, value: false}}]}
+    effect: {code: UNTRUSTED_REVIEW_CLAIM, severity: clarification,
+             message: "请求中的“已审阅”“已确认”（premise_claims 中的 claimed_accepted 亦然）仅为声明：不能产生已审阅的前提；须由服务器端可核验的审阅记录（review_context_ref）另行授权。"}
+    blocked: [模型自填reviewer_kind即可通过, 模型有权自行签署临床审阅]
+    sources: []
+
+  # ---- 由服务器端的控制器给出的事实（control.*，见下 controls）：文本与请求中的标记不能产生它们
+  - id: route.case_gap
+    version: 1
+    kind: routing_guard
+    priority: 980
+    when: {all: [{eq: {fact: control.clinical_case_route_required, value: true}}, {present: control.missing_decision_critical_information},
+                 {eq: {fact: control.routing_decided, value: false}}]}
+    effect: {code: MISSING_DECISION_CRITICAL_INFORMATION, status: needs_information, severity: clarification,
+             message: "个案复核仍缺决定下一步的信息：未知不当作阴性，先问清，再谈证型或取穴。"}
+    sources: [src_nice_ng155]
+  - id: guard.review.unverified
+    version: 1
+    kind: inference_guard
+    priority: 999
+    when: {present: control.review_context_unverified}
+    effect: {code: REVIEW_CONTEXT_UNVERIFIED, status: needs_information, severity: block,
+             message: "review_context_ref 未能在服务器端核验（没有这条记录，或其签名、结构不符）：不产生已审阅的前提。"}
+    sources: []
+  - id: guard.review.stale
+    version: 1
+    kind: inference_guard
+    priority: 999
+    when: {present: control.stale_review_context}
+    effect: {code: STALE_REVIEW_CONTEXT, status: needs_information, severity: block,
+             message: "所引的审阅记录与本次请求不符（个案、个案版本、观察的摘要、知识或规则的版本）：旧的审阅不能沿用于新的个案版本。"}
+    sources: []
+  - id: guard.review.not_authorized
+    version: 1
+    kind: inference_guard
+    priority: 999
+    when: {present: control.review_not_authorized}
+    effect: {code: REVIEW_NOT_AUTHORIZED, status: needs_information, severity: block,
+             message: "所引的审阅记录未授权此用途：domain_reviewer 只能授权教学的方法比较，个案复核须 clinician 的审阅。"}
+    sources: []
+  - id: guard.candidate_requires_review
+    version: 1
+    kind: inference_guard
+    priority: 970
+    when: {present: control.candidate_requires_review}
+    effect: {code: CANDIDATE_REQUIRES_REVIEW, severity: clarification,
+             message: "候选穴须以服务器端已审阅、且与此个案的脏腑、方面与虚实一致的前提为据：所请求的方法此处只说明其要求，不给出候选。"}
+    blocked: [已完成临床前提审阅]
+    sources: []
+  - id: guard.method_premise_unmet
+    version: 1
+    kind: inference_guard
+    priority: 960
+    when: {present: control.method_premise_unmet}
+    effect: {code: METHOD_PREMISE_NOT_MET, status: needs_information, severity: clarification,
+             message: "所请求的方法要求明确的实、虚，或明言的“不实不虚”：未知、矛盾、“平衡”与虚实夹杂都不满足，须先辨明。"}
+    blocked: [不实不虚前提成立, 已明确不实不虚, 因为没有识别出虚实所以取本经同气穴]
+    restate: 虚实尚未辨明：先辨虚实，再决定取母、取子，或明言不实不虚而取本经。
+    sources: [src_nanjing]
+  - id: guard.method_policy
+    version: 1
+    kind: inference_guard
+    priority: 400
+    when: {present: control.method_not_allowed}
+    effect: {code: METHOD_NOT_ALLOWED_BY_POLICY, severity: information,
+             message: "流派之法（舍岩）与推演之法（表里、同名经）须由 policy 明确允许（allow_school_methods、allow_deduction_methods）：此处未运行。"}
+    sources: [src_adr0025]
+  - id: guard.relation_only
+    version: 1
+    kind: inference_guard
+    priority: 400
+    when: {present: control.relation_only_method}
+    effect: {code: RELATION_ONLY_METHOD, severity: information,
+             message: "脏腑别通与主客原络在此只列出类型化的关系：别通不是取穴之法；主客原络须先定主经与客经（先病者为主），都不直接给穴。"}
+    sources: [src_yixue_rumen, src_cijiu_xinfa]
+  - id: guard.method_conflict
+    version: 1
+    kind: inference_guard
+    priority: 950
+    when: {present: control.opposed_intentions}
+    effect: {code: OPPOSED_INTENTIONS, status: rule_conflict, severity: block,
+             message: "同一穴在同一方案中被要求既补又泻：不平均、不抵消，也不默默择一——须回到前提与方法，分别说明。"}
+    sources: [src_nanjing]
+  - id: guard.method_intents_differ
+    version: 1
+    kind: inference_guard
+    priority: 300
+    when: {present: control.methods_differ_in_intent}
+    effect: {code: METHODS_DIFFER_IN_INTENT, severity: information,
+             message: "两种方法对同一穴的补泻意图相反：这是方法之间的差异，须分别列出，不能合并为一个方案。"}
+    sources: [src_adr0025]
+  - id: guard.phase_label_only
+    version: 1
+    kind: inference_guard
+    priority: 450
+    when: {present: control.phase_label_assumed}
+    effect: {code: PHASE_LABEL_ONLY, severity: information,
+             message: "所写只是五行之名（如“木实”）：由“木”推定为肝，这一推定不是诊察所见，也不确定是肝火、肝阳还是肝气。"}
+    blocked: [肝火已确认]
+    sources: [src_adr0025]
+  - id: guard.scope_kept_apart
+    version: 1
+    kind: inference_guard
+    priority: 450
+    when: {present: control.noncurrent_facts_kept_apart}
+    effect: {code: SUBJECT_OR_TIME_SCOPE_KEPT_APART, severity: information,
+             message: "他人（如家人）的所见与既往的所见作为背景保留，不作为当前个案的事实，也不触发当前的分流或取穴。"}
+    sources: []
+  - id: guard.case_in_knowledge_mode
+    version: 1
+    kind: inference_guard
+    priority: 970
+    when: {present: control.case_content_in_knowledge_mode}
+    effect: {code: CASE_CONTENT_IN_KNOWLEDGE_MODE, severity: clarification,
+             message: "问题中有关于某个人当前情况的陈述：知识问答不对此人作判断，也不给教学的取穴示例——个案请以 case_review 提交。"}
+    sources: []
+  - id: guard.out_of_scope
+    version: 1
+    kind: inference_guard
+    priority: 300
+    when: {present: control.complaint_out_of_scope}
+    effect: {code: OUT_OF_RULEPACK_SCOPE, severity: information,
+             message: "此规则包的分流与证型比较只覆盖耳鸣与听力下降：所给的不适不在其内，这里不作分流判断；study.acupoints 可作传统选穴的文献研究。"}
+    sources: []
+  - id: guard.strategy_premise
+    version: 1
+    kind: inference_guard
+    priority: 450
+    when: {present: control.strategy_premise_incomplete}
+    effect: {code: STRATEGY_PREMISE_INCOMPLETE, severity: clarification,
+             message: "文本所写的治法，其前提须由所给的脏腑、方面与虚实满足（不由同属一行代替）：此处尚未完整。"}
+    sources: [src_adr0025]
+  - id: guard.version_mismatch
+    version: 1
+    kind: inference_guard
+    priority: 300
+    when: {present: control.version_mismatch}
+    effect: {code: VERSION_MISMATCH, severity: information,
+             message: "请求所写的知识或规则版本与服务器当前的不同：结果按当前版本给出（见 knowledge_version、rulepack_version）。"}
+    sources: []
+  - id: guard.point.unknown
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {present: control.unknown_point}
+    effect: {code: UNKNOWN_POINT, severity: block,
+             message: "方案中有穴的编号不在固定的穴位表中：不能核对其经脉、五输与五行。"}
+    sources: []
+  - id: guard.point.attribute_mismatch
+    version: 1
+    kind: inference_guard
+    priority: 500
+    when: {present: control.point_attribute_mismatch}
+    effect: {code: POINT_ATTRIBUTE_MISMATCH, severity: block,
+             message: "方案所写的穴的属性（经脉、经脉的五行或穴的五行）与固定的穴位表不符：以表为准，见 plan_review。"}
+    sources: [src_nanjing]
+  - id: guard.point.alias
+    version: 1
+    kind: inference_guard
+    priority: 300
+    when: {present: control.alias_normalized}
+    effect: {code: POINT_ALIAS_NORMALIZED, severity: information,
+             message: "SJ 是手少阳三焦经的旧写法：统一为 TE，穴位本身不变，也不是另一条经。"}
+    blocked: [新建一条SJ与TE并列的不同经脉]
+    sources: []
+
+# 文本中的主张（claim.*）：只是“有人这样说”，用于护栏；与病人的事实分开
+claims:
+  claim.analogy_implies_ear_pressure: ["(?:鼓膜|耳膜).{0,16}(?:窗户纸|窗纸|纸).{0,24}(?:负压|压力|压)", "(?:eardrum|tympanic membrane).{0,40}(?:window paper|paper).{0,60}(?:negative )?pressure"]
+  claim.drain_water_wood_tonify_fire_earth_metal: ["泻水[、和与及]?木.{0,8}补火[、和与及]?土[、和与及]?金", "reduc\\w* water and wood.{0,40}tonif\\w* fire,? earth,? and metal"]
+  claim.kidney_sanjiao_is_yuan_luo: ["(?:肾|太溪).{0,10}(?:三焦|外关).{0,10}(?:原络|表里)", "(?:太溪|KI3).{0,6}(?:配|与|和|\\+).{0,4}(?:外关|TE5|SJ5).{0,10}原络", "kidney.{0,20}(?:sanjiao|triple energizer).{0,30}yuan.?luo"]
+  claim.bietong_transitive: ["(?:一直|任意|无限|层层|逐层|继续|依次)传递", "(?:再经|又经|经由).{0,8}(?:可|能)?.{0,6}(?:传|通)", "transitive(?:ly)?"]
+  claim.fire_point_requires_tonify: ["火穴.{0,8}(?:就|即|必|应|宜|要).{0,4}补", "fire point.{0,30}(?:must|should) be tonif"]
+  claim.earth_point_equals_spleen_tonification: ["(?:属土|土穴).{0,16}补\\S{0,6}(?:就是|即|等于|也就是)\\S{0,3}补脾", "补\\S{1,4}(?:就是|即|等于)补脾", "earth point.{0,40}tonif\\w* the spleen"]
+  claim.point_phase_requires_moxibustion: ["灸\\S{0,2}(?:火|土|金|水|木)[、和与]?(?:火|土|金|水|木)?[、和与]?(?:火|土|金|水|木)?穴", "(?:火|土|金|水|木)穴.{0,6}(?:宜|应|要|就)灸", "(?:fire|earth|metal) points?.{0,20}moxibustion"]
+  claim.fluid_retention_equals_kidney_yin_excess: ["(?:水湿|水饮|痰饮|水肿|停饮|水湿停聚).{0,12}肾阴.{0,8}(?:旺|盛|充|实|有余)", "fluid.{0,30}kidney yin.{0,20}(?:excess|abundant)"]
+  claim.age_implies_pattern: ["(?:[0-9]{2,3}岁|高龄|年老|老年|年轻|年少).{0,10}(?:因此|所以|故|必然|一定|必定|就是).{0,6}(?:阳虚|阴虚|肾虚|肝火|肝实|虚|实)", "(?:because|since).{0,20}(?:old|young).{0,30}(?:must|necessarily) be (?:yang|yin)"]
+  claim.classical_source_proves_clinical_efficacy: ["(?:难经|内经|灵枢|素问|经典|古籍).{0,20}(?:记载|有载|说过).{0,24}(?:证实|证明|有效|疗效)", "classic.{0,40}(?:proves|proven|establish).{0,30}(?:efficacy|effective)"]
+  claim.organ_phase_substitution: ["(?:胃虚|大肠虚|胃实|大肠实).{0,6}(?:等于|即|就是|也就是)(?:脾虚|肺虚|脾实|肺实)"]
+  claim.yin_yang_aspect_collapse: ["肾阳虚.{0,6}(?:等于|即|就是|也是)肾阴虚", "肾阳虚.{0,12}滋水涵木.{0,8}(?:完整|成立|满足)"]
+  claim.phase_state_propagation: ["木实.{0,8}(?:所以|故|则|因此|必然).{0,4}水实", "二实三虚|两实三虚", "wood excess.{0,30}(?:means|implies).{0,10}water excess"]
+  claim.unknown_used_as_neither: ["(?:没有|未)识别出虚实.{0,12}(?:不实不虚|本经|同气)", "虚实(?:不清|未定|不明).{0,10}(?:所以|故|因此).{0,8}(?:本经|同气|不实不虚)"]
+  claim.yin_yang_frame_unspecified: ["水阳木阴|水为阳.{0,4}木为阴|water (?:is )?yang.{0,20}wood (?:is )?yin"]
+  claim.orifice_implies_pattern: ["耳鸣.{0,4}(?:等于|就是|即是|必是|必属|属于|都是).{0,2}(?:肾虚|肝火)", "tinnitus.{0,20}(?:is|means|equals) kidney deficiency"]
+  claim.review_asserted: ["已经?审阅|已经?审核|已经?核实|已经?确认|已确诊|宣布.{0,4}确认|reviewed|verified|confirmed by"]
+
+# 控制事实：只由服务器端的控制器按请求的结构、个案的主体与时间、核验过的审阅记录给出（见 ADR 0027）
+controls:
+  control.clinical_case_route_required: 个案复核，或方法比较中有关于当前个案主体的当前所见
+  control.trusted_review_verified: 有 review_context_ref，且其记录在服务器端核验通过、与本次请求绑定
+  control.review_context_unverified: 有 review_context_ref，但服务器端没有这条记录，或其签名、结构不符
+  control.stale_review_context: 记录与本次请求的个案、个案版本、观察摘要、知识或规则版本不符
+  control.review_not_authorized: 记录的模式或角色不授权本次的用途
+  control.routing_decided: 已有须及时评估（急诊或病因）的分流成立：此时不再追问，也不比较证型
+  control.missing_decision_critical_information: 个案没有当前的主诉，或主诉的决策要点仍未定，或所请求的方法缺已审阅的前提
+  control.candidate_requires_review: 请求了方法，且须给个案候选（个案、或给了 review_context_ref），但没有已审阅且相符的前提
+  control.method_premise_unmet: 请求了方法，但没有一个状态满足其前提（未知、矛盾、平衡、虚实夹杂，或未给状态）
+  control.method_not_allowed: 请求了 policy 未允许的流派之法或推演之法
+  control.relation_only_method: 请求了只列关系的方法（bietong、yuan_luo）
+  control.opposed_intentions: 同一方案（或合并的候选）中同一穴既补又泻
+  control.methods_differ_in_intent: 不同方法对同一穴的意图相反（教学比较中分别列出）
+  control.phase_label_assumed: 所写只是五行之名，脏腑由其推定
+  control.noncurrent_facts_kept_apart: 有他人或既往的所见
+  control.case_content_in_knowledge_mode: 知识问答中有关于某人当前情况的陈述
+  control.complaint_out_of_scope: 个案的当前不适不在此规则包的分流范围内
+  control.strategy_premise_incomplete: 文本所写的治法（滋水涵木、培土生金……），其前提在所给的脏腑与方面上未完整满足
+  control.version_mismatch: 请求所写的版本与服务器当前的版本不同
+  control.unknown_point: 方案中有不在穴位表中的穴
+  control.point_attribute_mismatch: 方案所写的穴的属性与穴位表不符
+  control.alias_normalized: 方案或文本中的 SJ 编号已统一为 TE
+
+# ------------------------------------------------------------------ 类型化的关系：类型不互代，也不传递
+relations:
+  bietong:  # 脏腑别通（《医学入门》引《五脏穿凿论》）——不是表里，也不是原络
+    - {from: heart, to: gallbladder}
+    - {from: liver, to: large_intestine}
+    - {from: spleen, to: small_intestine}
+    - {from: lung, to: bladder}
+    - {from: kidney, to: sanjiao}
+  organ_orifice:  # 官窍（举耳为例）
+    - {from: kidney, to: ear, sources: [src_lingshu_maidu, src_suwen_yingxiang]}
+  channel_course:  # 入耳之经（《灵枢·经脉》）
+    - {from: sanjiao, to: ear, sources: [src_lingshu_jingmai]}
+    - {from: gallbladder, to: ear, sources: [src_lingshu_jingmai]}
+    - {from: small_intestine, to: ear, sources: [src_lingshu_jingmai]}
+
+# ------------------------------------------------------------------ 类比：只产生假说、可观察之处与追问，不产生事实
+analogies:
+  - id: analogy.eardrum_window_paper
+    source_terms: [窗户纸, 窗纸, window paper]
+    target_terms: [鼓膜, 耳膜, eardrum, tympanic membrane]
+    hypothesis: 与压力有关的机制（如中耳负压）或许相关——用户的假说
+    observations_needed: [symptom.ear_fullness, hearing.loss, exam.otoscopy, exam.tympanometry]
+    cannot_establish: [中耳负压, 鼓膜内陷, 水湿停聚, 水实, 阳虚阴盛, 温灸补火]
+    sources: [src_etd_2015, src_nidcd]
+
+# 方向的三个参照系：功能的方向（气机升降出入）、经脉的走向、物理的压力——不互换
+directions:
+  functional_direction: {names: [上逆, 上扰, 上冲, 上炎, 下陷, 升降, 升清, 降浊, 往下, 往上, 下行, 上行, 向下, 向上, downward, upward, ascending, descending], sources: [src_suwen_liuwei]}
+  channel_course: {names: [从手走头, 从头走足, 从足走腹, 从胸走手, 循行, 走向], sources: [src_lingshu_nishun]}
+  physical_pressure: {names: [负压, 正压, 气压, 压力, negative pressure, pressure], sources: [src_etd_2015]}
+
+# ------------------------------------------------------------------ 个人假说：默认停用；只在方法比较中、经请求说明其推导
+hypotheses:
+  - id: hypothesis.drain_water_wood.tonify_rest
+    claim: claim.drain_water_wood_tonify_fire_earth_metal
+    wording: 泻水木、补火土金
+    level: personal_hypothesis
+    status: disabled
+    premise: 肝实（木实）
+    channel: LR
+    mapping: {LR8: reduce, LR1: reduce, LR2: tonify, LR3: tonify, LR4: tonify}
+    differs_from: 本经补母泻子（《难经·六十九难》）于肝实泻行间（火，子）——此假说补行间，二者对行间意图相反；《难经·七十五难》泻火补水——对火、水二者也相反
+    validation: 未经审阅：须先定义术语、前提、反例、出处与独立的检验方法
+  - id: hypothesis.water_yang_wood_yin
+    claim: claim.yin_yang_frame_unspecified
+    wording: 水阳木阴
+    level: personal_hypothesis
+    status: disabled
+    validation: 参照系未定——见 guard.yin_yang_frame
+
+# ------------------------------------------------------------------ 耳鸣的证型比较（教材）：只列支持、反对与仍缺的所见，不给概率
+# clue：只是线索（年龄、诱因），不能独自使一证成立
+patterns:
+  tinnitus:
+    - {id: tcm.pattern.liver_gallbladder_fire, zh: 肝胆火盛, organs: [liver, gallbladder], aspects: [unspecified], state: excess,
+       supports: [tinnitus.sudden_onset, symptom.bitter_taste, symptom.irritability, symptom.red_face_eyes, symptom.hypochondriac_pain, tinnitus.loud_roaring],
+       clues: [trigger.anger, context.age_young], opposes: [tinnitus.pressing_relieves, tinnitus.worse_with_fatigue], sources: [src_textbook]}
+    - {id: tcm.pattern.phlegm_fire, zh: 痰火郁结, organs: [], aspects: [unspecified], state: excess,
+       supports: [symptom.chest_oppression, symptom.phlegm, symptom.ear_fullness, tinnitus.loud_roaring], clues: [],
+       opposes: [tinnitus.pressing_relieves], sources: [src_textbook]}
+    - {id: tcm.pattern.kidney_essence_deficiency, zh: 肾精亏损, organs: [kidney], aspects: [essence], state: deficiency,
+       supports: [symptom.low_back_weakness, tinnitus.thin_high_pitched, tinnitus.pressing_relieves, symptom.vertigo],
+       clues: [context.age_older, report.reduced_vitality], opposes: [tinnitus.loud_roaring, tinnitus.sudden_onset], sources: [src_textbook, src_lingshu_hailun]}
+    - {id: tcm.pattern.spleen_stomach_deficiency, zh: 脾胃虚弱（清气不升）, organs: [spleen, stomach], aspects: [qi], state: deficiency,
+       supports: [tinnitus.worse_with_fatigue, symptom.fatigue, symptom.poor_appetite, symptom.loose_stool],
+       clues: [report.reduced_vitality], opposes: [tinnitus.loud_roaring], sources: [src_textbook, src_lingshu_kouwen]}
+
+# ------------------------------------------------------------------ 追问：按其改变下一步的可能排序；每轮至多两问
+questions:
+  - {id: q.hearing_sudden, targets: [hearing.sudden_loss, hearing.loss], priority: 100, zh: 听力有没有突然下降？如果有，是从什么时候开始的？, en: "Has your hearing suddenly got worse? If so, when did it start?",
+     reason: 突发的听力下降须先及时评估（分流）}
+  - {id: q.hearing_onset, targets: [hearing.onset_within_past_30_days, hearing.developed_within_72_hours], priority: 95, zh: 听力下降是哪天开始的？是几天之内形成的吗？, en: "When did the hearing loss begin, and did it develop within a few days?",
+     reason: 决定是否属于须在 24 小时内评估的情况}
+  - {id: q.pulsatile, targets: [tinnitus.pulsatile], priority: 90, zh: 耳鸣是否跟心跳同步（一下一下的搏动声）？, en: "Does the sound beat in time with your heartbeat?",
+     reason: 搏动性耳鸣须先查明病因}
+  - {id: q.neuro, targets: [neuro.acute_deficit], priority: 85, zh: 有没有突然出现口角歪斜、肢体无力或说话不清？, en: "Any sudden facial droop, limb weakness or slurred speech?",
+     reason: 急性神经系统表现须立即评估}
+  - {id: q.complaint, targets: [complaint], priority: 80, zh: 现在最主要的不适是什么？从什么时候开始的？, en: "What is the main problem now, and when did it start?",
+     reason: 个案复核须先有当前的主诉}
+  - {id: q.premise, targets: [premise], priority: 75, zh: 哪些诊察所见支持这一判断（如舌、脉、伴随症状）？是否已由执业者辨证？, en: "Which examination findings support this judgement, and has a practitioner assessed it?",
+     reason: 取穴的前提须有诊察的依据，不能只凭五行之名}
+  - {id: q.state, targets: [state], priority: 70, zh: 所假设的是该经实、虚，还是明言不实不虚？, en: "Is the assumed state excess, deficiency, or explicitly neither?",
+     reason: 未知、平衡与虚实夹杂都不满足方法的前提}
+  - {id: q.vitality, targets: [report.reduced_vitality], priority: 60, zh: 您说的精神或活力减弱具体指什么：乏力、怕冷、少气，还是情绪低落？, en: "What do you mean by reduced vitality — fatigue, feeling cold, shortness of breath, or low mood?",
+     reason: 一个描述不能直接当作肾阳虚，须先弄清其所指}
+  - {id: q.liver_signs, targets: [symptom.bitter_taste, symptom.irritability, symptom.hypochondriac_pain], priority: 50, zh: 有没有口苦、烦躁易怒或胁肋胀痛？, en: "Any bitter taste, irritability or rib-side distension?",
+     reason: 辨别肝胆火盛与其他证型}
+  - {id: q.deficiency_signs, targets: [tinnitus.pressing_relieves, tinnitus.worse_with_fatigue], priority: 48, zh: 按住耳朵时耳鸣会减轻吗？劳累后会加重吗？, en: "Does pressing on the ear ease it? Is it worse when tired?",
+     reason: 辨别虚证与实证}
+  - {id: q.kidney_signs, targets: [symptom.low_back_weakness, tinnitus.thin_high_pitched], priority: 46, zh: 有没有腰膝酸软？鸣声是细如蝉鸣，还是大如潮声？, en: "Any sore weak lower back or knees? Is the sound thin like cicadas or loud like surf?",
+     reason: 辨别肾精亏损}
+  - {id: q.phlegm_signs, targets: [symptom.chest_oppression, symptom.phlegm, symptom.ear_fullness], priority: 44, zh: 有没有胸闷、痰多或耳内胀闷？, en: "Any chest oppression, much phlegm or ear fullness?",
+     reason: 辨别痰火郁结}
+  - {id: q.spleen_signs, targets: [symptom.fatigue, symptom.poor_appetite, symptom.loose_stool], priority: 42, zh: 有没有倦怠乏力、纳少或便溏？, en: "Any fatigue, poor appetite or loose stools?",
+     reason: 辨别脾胃虚弱}
+
+# ------------------------------------------------------------------ 方法的层级与默认（policy 未允许者不运行）
+methods:
+  nanjing69: {level: classical, rule_source: [src_nanjing, src_five_shu_2024]}
+  nanjing69_cross: {level: teaching, rule_source: [src_nanjing]}
+  own_channel: {level: classical, rule_source: [src_nanjing]}
+  nanjing79: {level: classical, rule_source: [src_nanjing]}
+  saam: {level: school, rule_source: [src_adr0025], policy: allow_school_methods}
+  interior_exterior: {level: deduction, rule_source: [src_five_shu_2024], policy: allow_deduction_methods}
+  same_name: {level: deduction, rule_source: [src_five_shu_2024], policy: allow_deduction_methods}
+  yuan_luo: {level: classical, rule_source: [src_cijiu_xinfa]}
+  bietong: {level: classical, rule_source: [src_yixue_rumen], relation_only: true}

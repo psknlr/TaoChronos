@@ -998,7 +998,7 @@ STUDY = ("canon", "concordance", "formula", "herb", "term", "taboo", "citations"
          "trajectories", "argument", "senses", "fragments", "witnesses", "punctuate", "commentaries", "disputes",
          "clause", "glosses", "pairs", "network", "schools", "names", "chain", "entities", "places", "translate", "cruxes",
          "compare", "family", "usage", "properties", "incompat", "protocol", "casefind", "similar", "case", "casecompare",
-         "modifications", "treatments", "acupoints", "point", "wuxing")
+         "modifications", "treatments", "acupoints", "point", "wuxing", "acupuncture-reason", "acupuncture-audit")
 
 
 def cmd_study(args: argparse.Namespace) -> None:
@@ -1151,7 +1151,7 @@ def cmd_study(args: argparse.Namespace) -> None:
             res = study.acupoints(target, regions=args.region or (), symptoms=args.symptom or (), organs=args.organ or (),
                                   channels=args.channel or (), natures=args.nature or (),
                                   acute=True if args.acute else (False if args.chronic else None), side=args.side,
-                                  pregnant=args.pregnant, max_points=args.max_points)
+                                  pregnant=True if args.pregnant else None, max_points=args.max_points)
         notice = res.get("notice", "")
     elif what == "point":
         if not target:
@@ -1161,7 +1161,11 @@ def cmd_study(args: argparse.Namespace) -> None:
     elif what == "wuxing":
         if not (target or args.state):
             raise SystemExit("taochronos study wuxing: give Five-Phase states (e.g. 木实 土虚 金虚; 肝郁脾虚; --state 肝虚)")
-        res = study.wuxing(target, states=args.state or (), methods=args.method or ())
+        res = study.wuxing(target, states=args.state or (), methods=args.method)  # no --method: every method (v1 default)
+        notice = res.get("notice", "")
+    elif what in ("acupuncture-reason", "acupuncture-audit"):
+        a = _acupuncture_arguments(what, target, args)
+        res = study.acupuncture_reason(a) if what == "acupuncture-reason" else study.acupuncture_audit(a)
         notice = res.get("notice", "")
     elif what == "protocol":
         if not target:
@@ -1264,6 +1268,42 @@ def cmd_study(args: argparse.Namespace) -> None:
         _out(f"wrote {args.output}")
     else:
         _out(text)
+
+
+def _acupuncture_arguments(what: str, target: str | None, args: argparse.Namespace) -> dict[str, Any]:
+    """The arguments of study.acupuncture_reason / _audit from the command line: a JSON file of them as they are
+    (--arguments), or the query with --reason-mode, --case (a JSON case; without one a case_review query becomes a case of
+    one message), --method, --allow-school / --allow-deduction, --review-ref, and for the audit --claim and --plan
+    (LR2:reduce).  The contracts are checked by the tool itself: what is invalid is answered as invalid, not repaired."""
+    if args.arguments:
+        return json.loads(Path(args.arguments).read_text(encoding="utf-8"))
+    query = target or ""
+    mode = args.reason_mode or ("case_review" if args.case else "knowledge")
+    a: dict[str, Any] = {"mode": mode, "query": query}
+    if args.case:
+        a["case"] = json.loads(Path(args.case).read_text(encoding="utf-8"))
+    elif mode == "case_review" and query:
+        a["case"] = {"case_id": "cli.case", "case_version": 1, "is_synthetic": False, "observations": [], "organ_states": [], "premise_claims": [],
+                     "source_messages": [{"message_id": "cli.message", "text": query, "actor_kind": "patient"}], "case_subject_ref": "subject.cli"}
+    if args.method is not None:
+        a["requested_methods"] = list(dict.fromkeys(args.method))
+    policy = {k: True for k, on in (("allow_school_methods", args.allow_school), ("allow_deduction_methods", args.allow_deduction)) if on}
+    if policy:
+        a["policy"] = policy
+    if args.review_ref:
+        a["review_context_ref"] = args.review_ref
+    if what == "acupuncture-audit":
+        if args.claim:
+            a["proposed_claims"] = list(args.claim)
+        plan = []
+        for x in args.plan or []:
+            code, _, intent = x.partition(":")
+            plan.append({"point_id": code.strip(), **({"intent": intent.strip()} if intent.strip() else {})})
+        if plan:
+            a["proposed_plan"] = plan
+        if not (args.claim or plan) and query:
+            a["proposed_claims"] = [query]
+    return a
 
 
 def _case_query(target: str | None, args: argparse.Namespace) -> dict[str, Any]:
@@ -1948,7 +1988,8 @@ def build_parser() -> argparse.ArgumentParser:
                                       "类方 (family), 用药谱 (usage), 药性谱 (properties), 配伍禁忌 (incompat), 研究方案 (protocol), "
                                       "医案探索: 医案检索 (casefind), 类案 (similar), 医案详解 (case), 医家与时代比较 (casecompare), "
                                       "随证加减 (modifications), 同病异治·异病同治 (treatments), "
-                                      "针灸: 选穴配穴 (acupoints), 腧穴考 (point), 五行选穴 (wuxing)")
+                                      "针灸: 选穴配穴 (acupoints), 腧穴考 (point), 五行选穴 (wuxing), 针灸推理的协调与审核 "
+                                      "(acupuncture-reason, acupuncture-audit)")
     sp.set_defaults(fn=cmd_study)
     sp.add_argument("what", choices=STUDY)
     sp.add_argument("target", nargs="*", help="the formula, drug, term, topic, text, book id or dose")
@@ -2029,7 +2070,7 @@ def build_parser() -> argparse.ArgumentParser:
     case.add_argument("--new-findings", action="store_true", help="modifications: only the findings the last visit did not record")
     case.add_argument("--dataset", metavar="DIR", help="cases, casefind: write the cases as a data package (cases, case_visits, "
                                                        "case_items CSV and datapackage.json) to DIR")
-    acu = sp.add_argument_group("针灸 (acupoints, point, wuxing)")
+    acu = sp.add_argument_group("针灸 (acupoints, point, wuxing, acupuncture-reason, acupuncture-audit)")
     acu.add_argument("--region", action="append", help="acupoints: where the disorder is (e.g. 胃脘, 腰, 颈项, 前额; repeatable)")
     acu.add_argument("--symptom", action="append", help="acupoints: a prominent symptom (e.g. 恶心, 失眠; repeatable)")
     acu.add_argument("--organ", action="append", help="acupoints: the organ system (e.g. 胃, 肝; repeatable; the first named is the host)")
@@ -2043,7 +2084,17 @@ def build_parser() -> argparse.ArgumentParser:
     acu.add_argument("--framework", action="store_true", help="acupoints: print the specific-point tables and the mother and child points")
     acu.add_argument("--state", action="append", help="wuxing: a Five-Phase state (肝实, 土虚, Wood excess, 肝郁脾虚; repeatable)")
     acu.add_argument("--method", action="append", help="wuxing: keep only these methods (nanjing69, nanjing69_cross, own_channel, "
-                                                       "nanjing79, saam, interior_exterior, same_name; repeatable)")
+                                                       "nanjing79, saam, interior_exterior, same_name; repeatable); acupuncture-reason / "
+                                                       "-audit: the requested methods (also yuan_luo, bietong; none given: none run)")
+    acu.add_argument("--reason-mode", choices=["knowledge", "case_review", "method_compare"],
+                     help="acupuncture-reason / -audit: the mode (default: case_review with --case, else knowledge)")
+    acu.add_argument("--case", metavar="FILE", help="acupuncture-reason / -audit: the case as JSON (acupuncture_contracts.schema.json#case)")
+    acu.add_argument("--arguments", metavar="FILE", help="acupuncture-reason / -audit: the tool's arguments as JSON, as they are")
+    acu.add_argument("--claim", action="append", help="acupuncture-audit: a claim to check (repeatable)")
+    acu.add_argument("--plan", action="append", help="acupuncture-audit: a point of a proposed plan, as CODE or CODE:intent (LR2:reduce; repeatable)")
+    acu.add_argument("--allow-school", action="store_true", help="acupuncture-reason: allow the school methods (Saam)")
+    acu.add_argument("--allow-deduction", action="store_true", help="acupuncture-reason: allow the deduction methods (interior–exterior, same-name)")
+    acu.add_argument("--review-ref", help="acupuncture-reason: a review_context_ref (a server-side record; verified by the server)")
     sp.add_argument("--json", action="store_true", help="print the full result as JSON")
     sp.add_argument("-o", "--output", help="write to this file (dataset: this directory)")
     sp.add_argument("--charts", metavar="DIR", help="also write the result's figures and tables to DIR: figures as SVG in the "

@@ -246,14 +246,20 @@ def test_the_five_phase_data_is_consistent(fw):
     wx = fw.wx
     for sid, s in wx["strategies"].items():
         assert s["rule"] in fw.rules, sid
-        for alt in s["when"]:
-            assert set(alt) <= set("木火土金水") and set(alt.values()) <= {"excess", "deficiency", "any"}, sid
+        for alt in s["when"]:  # premises on organ entities (and aspects, factors), never on a phase
+            for cond in alt:
+                assert set(cond) <= {"organ", "state", "aspect", "factor"}, sid
+                assert cond.get("factor") in wx["factors"] if "factor" in cond else cond["organ"] in fw.organs, sid
+                assert cond.get("state", "excess") in ("excess", "deficiency") and set(cond.get("aspect", [])) <= {"qi", "yin", "yang", "blood", "essence"}, sid
         for d in s.get("derive") or []:
             assert d["organ"] in fw.organs and d["take"] in ("mother", "child"), sid
         for ex in s.get("examples") or []:
             assert set(ex["points"]) <= set(fw.points), sid
     for name, spec in wx["named"].items():
-        assert set(spec) - {"note"} <= set("木火土金水") and set(v for k, v in spec.items() if k != "note") <= {"excess", "deficiency", "any"}, name
+        assert set(spec) - {"note", "aspect"} <= set("木火土金水"), name
+        assert {v for k, v in spec.items() if k in "木火土金水"} <= {"excess", "deficiency", "unknown"}, name
+        asp = spec.get("aspect")
+        assert asp is None or (set(asp.values()) if isinstance(asp, dict) else {asp}) <= {"qi", "yin", "yang", "blood", "essence"}, name
     for m in wx["methods"].values():
         assert m["rule"] in fw.rules and m["level"] in ("classical", "teaching", "school", "deduction")
     for c in wx["claims"]:
@@ -302,7 +308,16 @@ def test_reading_five_phase_states(fw):
     want = [("木", "肝", "excess"), ("土", "脾", "deficiency"), ("金", "肺", "deficiency")]
     assert st("木实 土虚 金虚") == want and st("Wood excess, Earth deficiency, and Metal deficiency") == want
     assert st("肝郁脾虚") == [("木", "肝", "excess"), ("土", "脾", "deficiency")]
-    assert st("肝胃不和") == [("木", "肝", "excess"), ("土", "胃", "any")]
+    assert st("肝胃不和") == [("木", "肝", "excess"), ("土", "胃", "unknown")]
+    full = lambda t: [(e["organ"], e["state"], e["aspect"], e["assumed"]) for e in fw.phase_states(t)["states"]]  # noqa: E731
+    assert full("肝实，胃虚") == [("肝", "excess", "unspecified", False), ("胃", "deficiency", "unspecified", False)]  # no 脾 for 胃
+    assert full("肾阳虚") == [("肾", "deficiency", "yang", False)] and full("kidney yin deficiency") == [("肾", "deficiency", "yin", False)]
+    assert full("木实")[0][3] is True  # a phase alone stands for its zang only by assumption
+    assert [e["state"] for e in fw.phase_states("肝经虚实尚不清楚；心经大致平衡；脾经虚实夹杂；肺经不虚不实")["states"]] == ["unknown", "balanced", "mixed", "neither"]
+    denied = fw.phase_states("不是肝实，是脾虚。我父亲肝阳上亢。")
+    assert st("不是肝实，是脾虚") == [("土", "脾", "deficiency")] and len(denied["notes"]) == 2  # denied; another person's
+    assert fw.phase_states("肝火尚不能确定")["states"][0]["state"] == "unknown"  # uncertain is not excess
+    assert [f["factor"] for f in fw.phase_states("水湿停聚，脾虚")["factors"]] == ["fluid_retention"]  # a factor, not Water excess
     assert st("脾肺两虚，deficient kidney") == [("土", "脾", "deficiency"), ("金", "肺", "deficiency"), ("水", "肾", "deficiency")]
     assert st("胃火旺") == [("土", "胃", "excess")] and st("木火俱旺") == [("木", "肝", "excess"), ("火", "心", "excess")]
     r = fw.phase_states("阴虚火旺")
@@ -312,7 +327,7 @@ def test_reading_five_phase_states(fw):
 def test_wood_excess_earth_and_metal_deficiency(study):
     """The review's example: the relations it allows (each in its readings), the classical statements, the strategies, the
     points two methods treat oppositely, and what does not follow."""
-    r = study.wuxing("木实 土虚 金虚")
+    r = study.wuxing("肝实 脾气虚 肺气虚")
     kinds = {x["kind"]: x for x in r["relations"]}
     assert set(kinds) == {"overacting", "counteracting", "mother_child"}
     assert [y["id"] for y in kinds["overacting"]["readings"]] == ["overacting_excess", "overacting_deficiency"]
@@ -326,11 +341,14 @@ def test_wood_excess_earth_and_metal_deficiency(study):
     ex = {p["code"]: p for p in peitu["examples"][0]["points"]}
     assert "母：土生金（对肺）" in ex["SP3"]["reading"] and ex["BL20"]["reading"].startswith("不是五输穴") and not peitu["examples"][0]["checked"]
     cond = {s["name"]: s["missing"] for s in r["strategies"] if s["fit"] == "conditional"}
-    assert cond["滋水涵木"] == ["水（肾）虚"]
+    assert cond["滋水涵木"] == ["肾阴虚"]  # the premise names the Kidney and its yin
     assert any(c["code"] == "HT8" for c in r["conflicts"])  # 少府: the Liver's child to reduce, the Spleen's mother to reinforce
     guards = {g["id"] for g in r["guards"]}
     assert {"two_decisions", "three_attributes", "reinforce_child", "no_fixed_arrangement", "mixed", "spleen_first"} <= guards
     assert any(b["kind"] == "mixed" for b in r["branches"])
+    phases = study.wuxing("木实 土虚 金虚")  # phases alone: the organs are assumed, so the premises only conditionally met
+    assert {c["rule"]: c["status"] for c in phases["classical"]}["nanjing75"] == "conditional"
+    assert all(x["fit"] == "conditional" for x in phases["strategies"]) and "assumed_organ" in {g["id"] for g in phases["guards"]}
     methods = {(m["organ"], m["method"]): m for m in r["methods"]}
     assert [p["code"] for p in methods[("肝", "nanjing69")]["points"]] == ["LR2"] and methods[("肝", "nanjing69")]["level"] == "classical"
     assert methods[("肝", "saam")]["level"] == "school" and methods[("肝", "same_name")]["level"] == "deduction"

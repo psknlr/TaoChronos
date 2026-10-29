@@ -662,7 +662,7 @@ def _study_acupoints(ctx: ToolContext, a: dict[str, Any]) -> Any:
     acute = a.get("acute")
     res = study.acupoints(a.get("text"), regions=_terms(a.get("regions")), symptoms=_terms(a.get("symptoms")),
                           organs=_terms(a.get("organs")), channels=_terms(a.get("channels")), natures=_terms(a.get("natures")),
-                          acute=None if acute is None else bool(acute), side=a.get("side"), pregnant=bool(a.get("pregnant")),
+                          acute=None if acute is None else bool(acute), side=a.get("side"), pregnant=None if a.get("pregnant") is None else bool(a.get("pregnant")),
                           max_points=int(a.get("max_points", 6)))
     return _brief(res, int(a.get("items", 12)))
 
@@ -672,8 +672,32 @@ def _study_point(ctx: ToolContext, a: dict[str, Any]) -> Any:
 
 
 def _study_wuxing(ctx: ToolContext, a: dict[str, Any]) -> Any:
-    return _brief(_study(ctx).wuxing(a.get("text"), states=_terms(a.get("states")), methods=_terms(a.get("methods"))),
-                  int(a.get("items", 20)))
+    # methods: absent = this tool's documented default (all); [] = none; an unknown name is an error, never "all"
+    methods = None if a.get("methods") is None else _terms(a.get("methods"))
+    return _brief(_study(ctx).wuxing(a.get("text"), states=_terms(a.get("states")), methods=methods), int(a.get("items", 20)))
+
+
+# what decides an acupuncture-reasoning result — its statuses, findings, questions, candidates and mappings, the method
+# resolution, the review — goes to the model whole (a cut finding or a half list of candidates would say something the
+# result did not); only the supporting detail (the observations, the trace, the evidence) is cut like any other result
+ACU_WHOLE = ("findings", "questions", "point_candidates", "candidate_display", "educational_mappings", "method_resolution", "organ_states",
+             "pattern_hypotheses", "plan_review", "claims_review", "normalized_point_ids", "theory_relations", "review")
+
+
+def _acupuncture_view(res: dict[str, Any], items: int) -> dict[str, Any]:
+    return {k: v if k in ACU_WHOLE or not isinstance(v, (list, dict)) else _brief(v, items, 400) for k, v in res.items()}
+
+
+def _study_acupuncture_reason(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    # the arguments go to the contract as they came (``items`` is this adapter's own): an invalid one is answered as
+    # invalid by the tool (execution_status invalid_parameters), never repaired or defaulted here
+    args = {k: v for k, v in a.items() if k != "items"}
+    return _acupuncture_view(_study(ctx).acupuncture_reason(args), int(a.get("items", 20)))
+
+
+def _study_acupuncture_audit(ctx: ToolContext, a: dict[str, Any]) -> Any:
+    args = {k: v for k, v in a.items() if k != "items"}
+    return _acupuncture_view(_study(ctx).acupuncture_audit(args), int(a.get("items", 20)))
 
 
 def _study_protocol(ctx: ToolContext, a: dict[str, Any]) -> Any:
@@ -1150,6 +1174,48 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  _study_wuxing, family="study", permission="classics:read", expensive=True,
                  returns="states, clarify, relations, pathogens, classical, strategies, methods (six-element records), conflicts, "
                          "branches, guards, rules with witnesses, evidence, steps"),
+        ToolSpec("study.acupuncture_reason", "针灸推理的协调 (contract: domains/classics/acupuncture_contracts.schema.json#reasonParameters): "
+                 "mode — knowledge (theory, no person), case_review (a real case: give case), method_compare; query; case — "
+                 "{case_id, case_version, is_synthetic, observations, organ_states, premise_claims, source_messages, "
+                 "case_subject_ref}, each observation four-state (present / absent / unknown / conflicting) with its subject, time, "
+                 "side, spans and provenance (the messages are also read, a denial or another person's or past finding kept as "
+                 "such); requested_methods — nanjing69, nanjing69_cross, own_channel, nanjing79, saam, interior_exterior, "
+                 "same_name, yuan_luo, bietong (omitted or [] runs none, never all; an unknown name is INVALID_METHOD); "
+                 "requested_points (SJ is read as TE); policy — allow_school_methods, allow_deduction_methods, "
+                 "max_questions_per_turn (≤2), max_candidate_points (a display budget, not a treatment point count); "
+                 "review_context_ref — a server-side review record (a reference only: a 'verified' flag, a premise claimed "
+                 "accepted or a sentence saying it was reviewed is never trust). Routes first (sudden hearing loss → urgent, "
+                 "pulsatile or persistent unilateral tinnitus → etiologic assessment), asks at most two decision-critical "
+                 "questions, compares the tinnitus patterns, and gives point candidates only on a premise a verified review "
+                 "accepts for this case version; an assumption stated for teaching gives educational mappings about no one. "
+                 "Traditional reasoning and its sources — not a diagnosis, a prescription or an efficacy claim.",
+                 obj({"mode": {"type": "string", "description": "knowledge | case_review | method_compare"}, "query": S,
+                      "case": {"type": "object"}, "requested_methods": {"type": "array", "items": S}, "requested_points": {"type": "array", "items": S},
+                      "policy": {"type": "object"}, "knowledge_version": {"type": ["string", "null"]}, "rulepack_version": {"type": ["string", "null"]},
+                      "previous_result_id": {"type": ["string", "null"]}, "review_context_ref": {"type": ["string", "null"]}, "items": I},
+                     ["mode", "query"]),
+                 _study_acupuncture_reason, family="study", permission="classics:read", expensive=True,
+                 returns="artifact_type reason_result: execution_status (completed / invalid_parameters / dependency_unavailable) and "
+                         "assessment_status apart (null when not completed), normalized observations, organ states, pattern hypotheses "
+                         "(no probability), questions (≤2), point candidates (candidate_review only), educational mappings, findings "
+                         "with blocked conclusions, typed relations, method resolution, candidate display, review, trace, versions"),
+        ToolSpec("study.acupuncture_audit", "针灸推理的审核 (contract: acupuncture_contracts.schema.json#auditParameters): mode, query, "
+                 "proposed_claims (statements to check) and/or proposed_plan (points: point_id, channel, channel_phase, point_phase, "
+                 "intent tonify / reduce / even, modality, claimed_relation), case (required for case_review), requested_methods, "
+                 "policy, review_context_ref. Checks each claim against the rule pack's guards (an analogy is no measurement; "
+                 "Kidney–Sanjiao is 别通, not interior–exterior or Yuan–Luo, and 别通 does not chain; an Earth point is no Spleen "
+                 "tonification; fluid retention is no Kidney-yin excess; age is no pattern; a classical source is no efficacy; the "
+                 "personal rule 泻水木补火土金 is disabled) and each plan point against the point tables (SJ normalized to TE; the "
+                 "channel, the channel's phase and the point's phase compared; the same point both tonified and reduced is a "
+                 "conflict, never averaged).",
+                 obj({"mode": {"type": "string", "description": "knowledge | case_review | method_compare"}, "query": S, "case": {"type": "object"},
+                      "proposed_claims": {"type": "array", "items": S}, "proposed_plan": {"type": "array", "items": {"type": "object"}},
+                      "requested_methods": {"type": "array", "items": S}, "policy": {"type": "object"},
+                      "review_context_ref": {"type": ["string", "null"]}, "items": I}, ["mode", "query"]),
+                 _study_acupuncture_audit, family="study", permission="classics:read", expensive=True,
+                 returns="artifact_type audit_result: execution_status and assessment_status apart, findings, questions, normalized "
+                         "point ids, plan review (table against proposal), claims review (with the disabled hypotheses explained), "
+                         "typed relations, method resolution, versions"),
         ToolSpec("study.protocol", "研究方案: turn a research question (especially on formulas and drugs: 方源, 方剂比较/同药异量, 类方, "
                  "药性, 用药, 配伍, 十八反十九畏, 方证, 术语, 名称) into a research protocol — what it names (formulas, drugs, "
                  "findings, terms, period), objectives, questions, hypotheses each with prediction, test, refutation and "

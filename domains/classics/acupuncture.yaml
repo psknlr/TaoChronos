@@ -338,6 +338,27 @@ empirical_pairs:
   - {id: four_gates, points: [LI4, LR3], name: 四关穴, en: the Four Gates, rule: four_gates,
      note: 今多指双侧合谷、太冲；合谷为大肠经原穴，太冲为肝经输穴、原穴，大肠与肝不是表里经，二者都不是络穴——可称经验配穴、上下配穴或阴阳配穴，不是原络配穴}
 
+# ------------------------------------------------------------------ 读文本：否定、未说明、不确定、他人、既往、假设
+# study.acupoints、study.wuxing 与 study.acupuncture_reason 共用。一个所见在其从句中读语境：否定与“未说明”之词在它之前，
+# “不能确定”“随后又否认”之类在它之后；所说的是谁、是何时、是不是假设，以句为界。未提及者是“未知”，不是“没有”；
+# 未说明的不改作否认，可能的不改作已有，他人的、既往的不算作本人当前的所见。
+reading:
+  clause_marks: "，,；;：:、"
+  sentence_marks: "。！？!?\n"
+  unstated: [未说明, 未提及, 未述, 未问, 没说, 没提, 不详, 尚不清楚, 不清楚, 不明确, 是否, 有没有, 有无, 是不是, 未知, whether, not stated, not mentioned, not said, unclear, unknown whether]
+  negation: [没有, 并无, 未见, 未有, 未曾, 否认, 不伴有, 不伴, 排除, 并非, 不是, 没, 无, 未, 非, without, denies, denied, never, negative for, free of, "no", not]
+  not_negation: [无明显诱因, 无诱因, 无特殊, 无论, 不论, 非常, 未成年, 无力]
+  uncertain_before: [可能, 疑似, 似乎, 或许, 也许, 大概, 好像, 不排除, 疑, maybe, possibly, perhaps, probably, suspected, might]
+  uncertain_after: [不能确定, 不能确立, 无法确定, 未能确定, 尚未确定, 尚待确认, 待确认, 待查, 待排, 未确认, 未确定, 不确定, 不能成立, cannot be established, not established, unconfirmed, to be confirmed]
+  conflict_after: [随后又否认, 后又否认, 又否认, 随后否认, 改口, 前后矛盾, 说法不一, then denied, later denied]
+  resolved_after: [现已恢复, 已恢复, 现已消失, 已消失, 已经好了, 已好转, 已痊愈, resolved, recovered, has gone]
+  other_subject: [父亲, 母亲, 爸爸, 妈妈, 哥哥, 姐姐, 弟弟, 妹妹, 丈夫, 妻子, 老公, 老婆, 儿子, 女儿, 孩子, 家人, 亲戚, 朋友, 同事, 邻居, 祖父, 祖母, 爷爷, 奶奶, 外公, 外婆, my father, my mother, my wife, my husband, my son, my daughter, my friend, a friend, a relative]
+  self_subject: [我, 本人, 自己, 患者, 病人, myself, the patient]
+  past: [去年, 前年, 以前, 过去, 曾经, 既往, 小时候, 多年前, 年前, 以往, 当年, 曾, last year, years ago, previously, used to, in the past, history of]
+  current: [现在, 目前, 近来, 最近, 这几天, 今天, 昨天, 前天, 本周, 现, now, currently, at present, today, yesterday]
+  hypothetical: [假设, 假如, 假定, 设若, 倘若, 如果, 纯理论, 教学, 理论上, assume, suppose, hypothetical, hypothetically, in theory, for teaching]
+  laterality: {left: [左侧, 左耳, 左, left], right: [右侧, 右耳, 右, right], bilateral: [双侧, 两侧, 双耳, 两耳, 双, both ears, bilateral]}
+
 # ------------------------------------------------------------------ 五行（Five Phases, Wu Xing）与五输穴（Five-Shu points, Wu Shu Xue）
 # 五行关系转为选穴，要经过两个中间决定：先辨明证候，再指明取穴之法。“木实”本身不分肝火上炎、肝阳上亢、肝气郁结与
 # 肝郁脾虚。经脉的五行、穴的五行、补泻的意图是三种属性，分开记；生克之外有母子相及、相乘、相侮；《难经·五十难》的五邪
@@ -366,6 +387,14 @@ five_phases:
   states:
     excess: {name: 实, en: excess, names: [实, 盛, 旺, 亢, 有余, 太过, 亢盛, 偏亢, 实证, excess, excessive, hyperactive]}
     deficiency: {name: 虚, en: deficiency, names: [虚, 不足, 不及, 亏, 衰, 弱, 虚弱, 虚证, 亏虚, deficiency, deficient, insufficient, weak]}
+    # 以下四态各自为一：虚实夹杂不是平衡；“大致平衡”不是《难经·六十九难》“不实不虚”的明确前提；虚实未定更不是不实不虚
+    mixed: {name: 虚实夹杂, en: mixed, names: [虚实夹杂, 本虚标实, 虚中夹实, 实中夹虚, mixed excess and deficiency]}
+    neither: {name: 不虚不实, en: neither excess nor deficiency, names: [不虚不实, 不实不虚, 非虚非实, neither excess nor deficiency]}
+    balanced: {name: 平衡, en: balanced, names: [大致平衡, 基本平衡, 平衡, balanced]}
+    unknown: {name: 虚实未定, en: unknown, names: [虚实尚不清楚, 虚实不清楚, 虚实不清, 虚实未定, 虚实不明, 虚实待定, excess or deficiency unknown]}
+  # 病理之物（不是某一行的虚实）：水湿停聚不等于“水实”，更不等于肾阴充盛
+  factors:
+    fluid_retention: {name: 水湿停聚, en: fluid retention, names: [水湿停聚, 水液停聚, 水湿, 水饮, 痰饮, 停饮, 水肿, fluid retention, water retention, edema, oedema]}
   # 生克之外的病理传变（中医基础理论；《素问·五运行大论》“气有余，则制己所胜而侮所不胜；其不及，则己所不胜侮而乘之，
   # 己所胜轻而侮之”）。pathogen：受病之脏所受之邪，按《难经·五十难》
   pathology:
@@ -389,80 +418,82 @@ five_phases:
     土: {excess: [湿热蕴脾, 胃热, 食滞胃脘], deficiency: [脾气虚, 脾阳虚, 脾虚湿盛, 脾不统血]}
     金: {excess: [痰热壅肺, 风寒束肺, 痰湿阻肺], deficiency: [肺气虚, 肺阴虚]}
     水: {excess: [水湿泛滥（多兼脾肾阳虚）], deficiency: [肾阴虚, 肾阳虚, 肾精不足, 肾气不固], note: 教材多言肾无实证；所谓“水实”多指水液停聚}
-  # 已经辨明的证候：直接给出所涉之行与虚实（any：所涉而虚实未定）
+  # 已经辨明的证候：所涉之行与虚实（unknown：所涉而虚实未言）、所属之“方面”（aspect：气 qi、血 blood、阴 yin、阳 yang、精 essence；
+  # 一种或按行分别给出；未给者为 unspecified）——肾阳虚不即肾阴虚，二者是同一脏的两个方面
   named:
     肝火上炎: {木: excess}
     肝火: {木: excess}
-    肝阳上亢: {木: excess, note: 本虚标实，多兼肝肾阴虚}
-    肝气郁结: {木: excess}
-    肝郁气滞: {木: excess}
-    肝郁: {木: excess}
-    肝气犯胃: {木: excess, 土: any}
+    肝阳上亢: {木: excess, note: 本虚标实，多兼肝肾阴虚, aspect: {木: yang}}
+    肝气郁结: {木: excess, aspect: qi}
+    肝郁气滞: {木: excess, aspect: qi}
+    肝郁: {木: excess, aspect: qi}
+    肝气犯胃: {木: excess, 土: unknown, aspect: {木: qi}}
     阴虚火旺: {note: 虚火：阴虚而火旺，不是“火”行之实——须先辨明何脏之阴虚（肾、肝、肺、心）}
     虚火: {note: 虚火不是“火”行之实——须先辨明何脏之阴虚}
     肝胆湿热: {木: excess}
-    肝郁脾虚: {木: excess, 土: deficiency}
-    肝脾不和: {木: excess, 土: deficiency}
-    肝胃不和: {木: excess, 土: any}
-    肝血虚: {木: deficiency}
-    肝阴虚: {木: deficiency}
-    肝肾阴虚: {木: deficiency, 水: deficiency}
-    水不涵木: {水: deficiency, 木: excess}
-    肝火犯肺: {木: excess, 金: any}
-    木火刑金: {木: excess, 金: any}
+    肝郁脾虚: {木: excess, 土: deficiency, aspect: qi}
+    肝脾不和: {木: excess, 土: deficiency, aspect: qi}
+    肝胃不和: {木: excess, 土: unknown}
+    肝血虚: {木: deficiency, aspect: blood}
+    肝阴虚: {木: deficiency, aspect: yin}
+    肝肾阴虚: {木: deficiency, 水: deficiency, aspect: yin}
+    水不涵木: {水: deficiency, 木: excess, aspect: {水: yin}}
+    肝火犯肺: {木: excess, 金: unknown}
+    木火刑金: {木: excess, 金: unknown}
     心火亢盛: {火: excess}
     心火: {火: excess}
     痰火扰心: {火: excess}
-    心肾不交: {火: excess, 水: deficiency}
-    心脾两虚: {火: deficiency, 土: deficiency}
-    心气虚: {火: deficiency}
-    心阳虚: {火: deficiency}
-    心血虚: {火: deficiency}
-    心阴虚: {火: deficiency}
-    脾气虚: {土: deficiency}
-    脾阳虚: {土: deficiency}
+    心肾不交: {火: excess, 水: deficiency, aspect: {水: yin}}
+    心脾两虚: {火: deficiency, 土: deficiency, aspect: {火: blood, 土: qi}}
+    心气虚: {火: deficiency, aspect: qi}
+    心阳虚: {火: deficiency, aspect: yang}
+    心血虚: {火: deficiency, aspect: blood}
+    心阴虚: {火: deficiency, aspect: yin}
+    脾气虚: {土: deficiency, aspect: qi}
+    脾阳虚: {土: deficiency, aspect: yang}
     脾虚湿盛: {土: deficiency}
     脾不统血: {土: deficiency}
     湿热蕴脾: {土: excess}
-    脾肺气虚: {土: deficiency, 金: deficiency}
-    肺脾气虚: {土: deficiency, 金: deficiency}
-    脾肾阳虚: {土: deficiency, 水: deficiency, note: 肾阳即命门之火}
-    肺气虚: {金: deficiency}
-    肺阴虚: {金: deficiency}
+    脾肺气虚: {土: deficiency, 金: deficiency, aspect: qi}
+    肺脾气虚: {土: deficiency, 金: deficiency, aspect: qi}
+    脾肾阳虚: {土: deficiency, 水: deficiency, note: 肾阳即命门之火, aspect: yang}
+    肺气虚: {金: deficiency, aspect: qi}
+    肺阴虚: {金: deficiency, aspect: yin}
     痰热壅肺: {金: excess}
-    肺肾阴虚: {金: deficiency, 水: deficiency}
-    肾阴虚: {水: deficiency}
-    肾阳虚: {水: deficiency}
-    肾精不足: {水: deficiency}
-    肾气不固: {水: deficiency}
-  # 以五行立名的治法（教材）：premise 是其证候前提，须先确认；when：所涉之行的虚实（任一组合相合即可；any 不论虚实）；
+    肺肾阴虚: {金: deficiency, 水: deficiency, aspect: yin}
+    肾阴虚: {水: deficiency, aspect: yin}
+    肾阳虚: {水: deficiency, aspect: yang}
+    肾精不足: {水: deficiency, aspect: essence}
+    肾气不固: {水: deficiency, aspect: qi}
+  # 以五行立名的治法（教材）：premise 是其证候前提，须先确认；when：前提所要求的脏腑实体、虚实与方面（任一组相合即可；
+  # 只写 organ 者，所涉即可，不论虚实）——同属一行不能互代：胃虚不满足脾虚，大肠虚不满足肺虚，肾阳虚不满足肾阴虚；
   # derive：据五输之理推出的取穴（take mother：补母；take child：泻子；本经与他经各一），与文献所举之例（examples，出处据所引）分开记
   strategies:
-    zishui_hanmu: {name: 滋水涵木, en: nourish Water to support Wood, rule: zishui_hanmu, when: [{水: deficiency, 木: any}], premise: 肝肾阴虚（水不涵木）, organs: [肾, 肝], implication: 滋养肝肾之阴；兼肝阳上亢者并平肝潜阳,
+    zishui_hanmu: {name: 滋水涵木, en: nourish Water to support Wood, rule: zishui_hanmu, when: [[{organ: 肾, state: deficiency, aspect: [yin]}, {organ: 肝}]], premise: 肝肾阴虚（水不涵木）, organs: [肾, 肝], implication: 滋养肝肾之阴；兼肝阳上亢者并平肝潜阳,
                    derive: [{organ: 肝, take: mother}],
                    examples: [{points: [LR3, SP6], context: 相应证型的头痛, source: 北京中医药大学继续教育学院《针灸学》课件, url: "https://jxjyxb.bucm.edu.cn/BZYAttachs/courseware/zhenjiuxue/c2/c2_16b_2.htm",
                                note: 三阴交不是五输的水穴：取之以其为足三阴之会与传统主治——与曲泉配阴谷的补母之理不同}]}
-    peitu_shengjin: {name: 培土生金, en: cultivate Earth to generate Metal, rule: peitu_shengjin, when: [{土: deficiency, 金: deficiency}], premise: 脾肺气虚, organs: [脾, 肺], implication: 扶脾与补肺相合,
+    peitu_shengjin: {name: 培土生金, en: cultivate Earth to generate Metal, rule: peitu_shengjin, when: [[{organ: 脾, state: deficiency, aspect: [qi]}, {organ: 肺, state: deficiency, aspect: [qi]}]], premise: 脾肺气虚, organs: [脾, 肺], implication: 扶脾与补肺相合,
                      derive: [{organ: 肺, take: mother}],
                      examples: [{points: [SP3, ST36, BL20, LU9, BL13], context: 临床教学, source: 广东省中医院临床教学, url: "https://www.gztcm.com.cn/zdh/dzyj/dzgw/1fcij4ah2tb9p.shtml",
                                  note: 太白—太渊可按五输的母子关系读；脾俞—肺俞则是脾、肺的背俞穴相配，另是一理}]}
-    jinshui_xiangsheng: {name: 金水相生, en: mutually nourish Metal and Water, rule: jinshui_xiangsheng, when: [{金: deficiency, 水: deficiency}], premise: 肺肾阴虚, organs: [肺, 肾], implication: 肺、肾之阴同调,
+    jinshui_xiangsheng: {name: 金水相生, en: mutually nourish Metal and Water, rule: jinshui_xiangsheng, when: [[{organ: 肺, state: deficiency, aspect: [yin]}, {organ: 肾, state: deficiency, aspect: [yin]}]], premise: 肺肾阴虚, organs: [肺, 肾], implication: 肺、肾之阴同调,
                          derive: [{organ: 肾, take: mother}]}
-    yihuo_butu: {name: 益火补土, en: reinforce Fire to support Earth, rule: yihuo_butu, when: [{土: deficiency, 火: deficiency}, {土: deficiency, 水: deficiency}], premise: 多为脾肾阳虚, organs: [肾, 脾],
+    yihuo_butu: {name: 益火补土, en: reinforce Fire to support Earth, rule: yihuo_butu, when: [[{organ: 脾, state: deficiency, aspect: [yang]}, {organ: 肾, state: deficiency, aspect: [yang]}]], premise: 多为脾肾阳虚, organs: [肾, 脾],
                  implication: 温补肾阳以暖脾阳, note: 此“火”多指肾阳、命门之火，不即心经，也不即五输的火穴——据五输之理推出的脾经火穴、心经火穴，取的是另一种“火”,
                  derive: [{organ: 脾, take: mother}]}
-    yimu_futu: {name: 抑木扶土, en: restrain Wood and support Earth, rule: yimu_futu, when: [{木: excess, 土: any}], premise: 肝脾不和或肝胃不和（如肝郁脾虚）, organs: [肝, 脾], implication: 调肝与扶助运化相合,
+    yimu_futu: {name: 抑木扶土, en: restrain Wood and support Earth, rule: yimu_futu, when: [[{organ: 肝, state: excess}, {organ: 脾}], [{organ: 肝, state: excess}, {organ: 胃}]], premise: 肝脾不和或肝胃不和（如肝郁脾虚）, organs: [肝, 脾], implication: 调肝与扶助运化相合,
                 derive: [{organ: 肝, take: child}, {organ: 脾, take: mother}],
                 examples: [{points: [LR3, SP6, ST25, ST36, ST37, CV12], context: 腹泻型肠易激综合征（肝郁脾虚证）的临床研究, source: 《重庆医科大学学报》, url: "https://cjournal.hep.com.cn/0253-3626/CN/10.13406/j.cnki.cyxb.004096", doi: 10.13406/j.cnki.cyxb.004096,
                             note: 以证立方，兼用数类特定穴，不是单一的五行取穴}]}
-    peitu_zhishui: {name: 培土制水, en: cultivate Earth to control Water, rule: peitu_zhishui, when: [{土: deficiency, 水: excess}], premise: 脾虚而水湿停聚, organs: [脾, 肾], implication: 扶脾与调理水液相合,
+    peitu_zhishui: {name: 培土制水, en: cultivate Earth to control Water, rule: peitu_zhishui, when: [[{organ: 脾, state: deficiency}, {factor: fluid_retention}]], premise: 脾虚而水湿停聚, organs: [脾, 肾], implication: 扶脾与调理水液相合,
                     derive: [{organ: 脾, take: mother}]}
-    zuojin_pingmu: {name: 佐金平木, en: assist Metal to balance Wood, rule: zuojin_pingmu, when: [{木: excess, 金: any}], premise: 肝肺不调（如肝火犯肺）, organs: [肝, 肺], implication: 调理肺之功能，兼平肝之扰,
+    zuojin_pingmu: {name: 佐金平木, en: assist Metal to balance Wood, rule: zuojin_pingmu, when: [[{organ: 肝, state: excess}, {organ: 肺}]], premise: 肝肺不调（如肝火犯肺）, organs: [肝, 肺], implication: 调理肺之功能，兼平肝之扰,
                     derive: [{organ: 肝, take: child}]}
-    xienan_bubei: {name: 泻南补北, en: drain the South and nourish the North, rule: xienan_bubei, when: [{火: excess, 水: deficiency}], premise: 心肾不交（心火亢而肾阴虚）, organs: [心, 肾], implication: 清心火与滋肾阴相合,
+    xienan_bubei: {name: 泻南补北, en: drain the South and nourish the North, rule: xienan_bubei, when: [[{organ: 心, state: excess}, {organ: 肾, state: deficiency, aspect: [yin]}]], premise: 心肾不交（心火亢而肾阴虚）, organs: [心, 肾], implication: 清心火与滋肾阴相合,
                    note: 这是后世之用；语出《难经·七十五难》“泻南方，补北方”，原文所论是东方（肝）实、西方（肺）虚,
                    derive: [{organ: 心, take: child}, {organ: 肾, take: mother}]}
-    nanjing75: {name: 泻南方补北方（难经·七十五难）, en: "drain the South, nourish the North (Nanjing 75)", rule: nanjing75, when: [{木: excess, 金: deficiency}], premise: 东方实、西方虚——肝实而肺虚, organs: [肝, 肺],
+    nanjing75: {name: 泻南方补北方（难经·七十五难）, en: "drain the South, nourish the North (Nanjing 75)", rule: nanjing75, when: [[{organ: 肝, state: excess}, {organ: 肺, state: deficiency}]], premise: 东方实、西方虚——肝实而肺虚, organs: [肝, 肺],
                 implication: 泻火（木之子）、补水（木之母，水胜火），欲令金不得平木——原文言方位与五行，不言何经何穴,
                 note: 取何经何穴是后人的读法，注家所说不一；这里按五输之理列出的火穴、水穴只是一种推演,
                 derive: [{organ: 肝, take: child}, {organ: 肝, take: mother}]}
@@ -495,6 +526,11 @@ five_phases:
     mu_shu: {when: always, level: classical, statement: “募在阴，俞在阳”（《难经·六十七难》）不立“募穴只针、背俞只灸”之规；“阴穴（井、输、合）宜针、阳穴（荥、经、背俞）宜灸”也不是五输的通则——穴的归类、证候的判断与用针或用灸是三个决定。}
     separate_systems: {when: {text: "卦|周易|易经|易学|八卦|干支|天干|地支|子午流注|灵龟|飞腾|纳甲|纳子|trigram|hexagram|i ching|yi jing|stems|branches"}, level: teaching,
                        statement: 经脉的五行、五输穴的五行、易学（卦象）或按时取穴体系中的配属，可以并存而不互换：卦象不改变一穴的五输归类；年、日的天干地支本身不能判断一人的虚实，也不能决定补、泻或灸。用某一家的卦象或按时取穴之法，须按其本身的文献与规则另行研究。}
+    organ_identity: {when: {organs_share_phase: true}, level: teaching, statement: 同属一行的脏腑不能互代：胃虚不满足脾虚，大肠虚不满足肺虚；脏腑所属的五行是由表推出的注记，不替代脏腑本身。}
+    assumed_organ: {when: {assumed: true}, level: teaching, statement: 只写五行（木实、土虚）时，所指何脏何腑尚未确定：这里按脏推定（木作肝、土作脾……），由此推出的前提只是条件性的。}
+    aspect_distinct: {when: {aspect: true}, level: teaching, statement: 同一脏的阴、阳、气、血、精是不同的方面：肾阳虚不满足滋水涵木所需的肾阴虚；方面未言者，前提只是条件性的。}
+    unknown_not_neither: {when: {held: true}, level: classical, statement: 虚实未定不是“不实不虚”，“大致平衡”也不是；虚实夹杂须先分清——三者都不取本经同气之穴，也不归为单一的补或泻。}
+    fluid_not_yin: {when: {factor: true}, level: teaching, statement: 水湿停聚是病理之物，不是“水”行之实，更不等于肾阴充盛；肾阴、肾阳与水液之停聚分开记。}
     evidence_apart: {when: always, level: teaching, statement: 理论推理与临床证据分开评价：文献支持把这些方法当作可追溯的传统选穴体系来研究，其临床效果仍须就具体病证与处方评价。}
   claims:
     - {guard: reinforce_child, pattern: "补火.{0,4}[泄泻抑]木|补子.{0,4}[泄泻]母|reinforc\\w* (?:the )?fire to (?:drain|draw|reduce|sedate) (?:the )?wood"}
@@ -503,6 +539,10 @@ five_phases:
     - {guard: taixi_earth, pattern: "太溪.{0,8}水穴|taixi.{0,24}water point"}
     - {guard: lung_points, pattern: "(?:中府|肺俞).{0,8}金穴|(?:zhongfu|feishu).{0,24}metal point"}
     - {guard: spleen_first, pattern: "(?:肝病|肝实|肝虚|肝郁).{0,12}(?:必|都|皆|一律).{0,4}(?:加|补)脾"}
+    - {guard: fluid_not_yin, pattern: "(?:水湿|水饮|痰饮|水肿|停饮).{0,10}肾阴.{0,6}(?:旺|盛|充|实|有余)|fluid.{0,30}kidney yin.{0,20}(?:excess|abundant)"}
+    - {guard: aspect_distinct, pattern: "肾阳虚.{0,6}(?:等于|即|就是|也是)肾阴虚|kidney yang deficiency.{0,20}(?:is|equals) kidney yin deficiency"}
+    - {guard: organ_identity, pattern: "(?:胃虚|大肠虚|胃实|大肠实).{0,6}(?:等于|即|就是|也就是)(?:脾虚|肺虚|脾实|肺实)"}
+    - {guard: unknown_not_neither, pattern: "(?:没有|未)识别出虚实.{0,12}(?:不实不虚|本经|同气)|虚实(?:不清|未定).{0,10}(?:所以|故|因此).{0,8}(?:本经|同气|不实不虚)"}
 
 # ------------------------------------------------------------------ 病位
 # channels：传统上与此部相关之经（选经的线索，不是诊断）；local：近部之穴；distal：远部之穴（经络上相连，多在肘膝以下）；
@@ -558,7 +598,9 @@ symptoms:
   headache: {name: 头痛, en: headache, names: [头痛, 头疼, 偏头痛, 头风, headache, headaches, migraine], classical: [头痛, 头重, 偏头痛, 头风], channels: [], points: [GV20, GB20, EX-HN5, LI4, LU7], region: head, generic: true, note: 头痛之部位决定选经（见病位：前额、侧头、后头、巅顶）；部位已明者不取此组通用之穴}
   dizziness: {name: 眩晕, en: dizziness, names: [眩晕, 头晕, 目眩, 头眩, 头昏, dizziness, vertigo, lightheadedness], classical: [眩, 头眩, 目眩, 眩冒], channels: [GB, LR, GV], points: [GB20, GV20, LR3, PC6, ST40], region: head}
   red_eyes: {name: 目赤肿痛, en: "red, painful eyes", names: [目赤, 目赤肿痛, 眼红, 目痛, 眼痛, red eyes, eye pain, conjunctivitis], classical: [目赤, 目痛, 目中赤痛, 目赤痛], channels: [LR, GB, BL], points: [LI4, LR2, GB20, EX-HN5, BL2], region: eye}
-  tinnitus: {name: 耳鸣耳聋, en: tinnitus or hearing loss, names: [耳鸣, 耳聋, 听力下降, 重听, tinnitus, hearing loss, deafness], classical: [耳鸣, 聋, 暴聋, 耳中鸣], channels: [TE, SI, GB, KI], points: [SI19, GB2, TE17, TE3, TE5, KI3], region: ear}
+  tinnitus: {name: 耳鸣, en: tinnitus, names: [耳鸣, 耳中鸣, 耳内鸣, tinnitus, ringing in the ears], classical: [耳鸣, 耳中鸣, 苦鸣], channels: [TE, SI, GB, KI], points: [SI19, GB2, TE17, TE3, TE5, KI3], region: ear}
+  # 耳聋与耳鸣分开记：突发的听力下降先须及时评估（study.acupuncture_reason 的分流规则），不以耳鸣代之
+  hearing_loss: {name: 耳聋, en: hearing loss, names: [耳聋, 听力下降, 听力减退, 重听, 听不清, hearing loss, deafness, difficulty hearing], classical: [聋, 暴聋, 耳聋], channels: [TE, SI, GB, KI], points: [SI19, GB2, TE21, TE17, TE3, KI3], region: ear}
   nasal_congestion: {name: 鼻塞, en: nasal congestion, names: [鼻塞, 鼻流清涕, 流涕, 鼻渊, 鼻炎, 鼻不通, nasal congestion, blocked nose, rhinitis, runny nose], classical: [鼻塞, 鼽, 鼻不利, 鼻窒], channels: [LI, LU, GV], points: [LI20, GV29, LI4, GV23, LU7], region: nose}
   facial_palsy: {name: 口眼㖞斜, en: facial palsy, names: [面瘫, 口眼歪斜, 口眼㖞斜, 口僻, 口歪, facial palsy, facial paralysis, Bell's palsy], classical: [口僻, 口㖞, 口喎, 口眼㖞斜], channels: [ST, LI, GB, TE], points: [ST4, ST6, GB14, ST2, TE17, LI4], region: face}
   neck_stiffness: {name: 项强, en: neck stiffness or pain, names: [项强, 颈项强痛, 落枕, 颈痛, 颈项痛, 颈部僵硬, 脖子痛, stiff neck, neck pain, torticollis], classical: [项强, 项痛, 不可以顾, 项如拔, 颈项强], channels: [BL, SI, GB, GV], points: [EX-UE8, SI3, GB39, BL10, GB20], region: neck_posterior}

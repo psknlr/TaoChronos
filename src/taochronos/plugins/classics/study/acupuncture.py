@@ -268,6 +268,62 @@ class Framework:
                 out[via] = {"channel": other, "mother": self.phase_point(other, MOTHER[own]), "child": self.phase_point(other, GENERATES[own])}
         return out
 
+    # ------------------------------------------------------------ the context of a finding in a text
+    @staticmethod
+    def _cue(words: Iterable[str], text: str, last: bool = False) -> tuple[str, int] | None:
+        """The first (or last) of ``words`` written in ``text`` and where: an English word as a whole word."""
+        best: tuple[str, int] | None = None
+        for w in words:
+            w = w.lower()
+            if w.isascii():
+                hits = [m.start() for m in re.finditer(rf"(?<![a-z]){re.escape(w)}(?![a-z])", text)]
+            else:
+                hits = [m.start() for m in re.finditer(re.escape(w), text)]
+            if hits:
+                at = hits[-1] if last else hits[0]
+                if best is None or (at > best[1] if last else at < best[1]) or (at == best[1] and len(w) > len(best[0])):
+                    best = (w, at)
+        return best
+
+    def scope(self, norm: str, start: int, end: int) -> dict[str, Any]:
+        """What a text says of the finding it writes at ``norm[start:end]`` (normalised, lower-case): present, absent (a
+        denial before it in its clause), unknown (not stated, or uncertain), conflicting (stated, then denied); whose (the
+        person the case is about, or another named before it in the sentence); when (current, past — a past time before
+        it, or 已恢复 after it —, or hypothetical); and the side.  Cues come from ``reading`` in acupuncture.yaml."""
+        rd = self.d.get("reading") or {}
+        marks_c, marks_s = rd.get("clause_marks", ""), rd.get("sentence_marks", "")
+        before_at = lambda marks: max([norm.rfind(c, 0, start) for c in marks] + [-1]) + 1  # noqa: E731
+        after_at = lambda marks: min([i for i in (norm.find(c, end) for c in marks) if i >= 0] + [len(norm)])  # noqa: E731
+        cs, ce = before_at(marks_c + marks_s), after_at(marks_c + marks_s)
+        ss, se = before_at(marks_s), after_at(marks_s)
+        before, after = norm[cs:start], norm[end:ce]
+        for w in rd.get("not_negation") or []:  # 无明显诱因, 非常: no denial of what follows
+            before = before.replace(w, " " * len(w))
+        out: dict[str, Any] = {"status": "present", "certainty": "firm", "subject": "self", "time": "current", "laterality": "unknown", "cue": None}
+        if cue := (self._cue(rd.get("unstated") or [], before) or self._cue(rd.get("unstated") or [], after)):
+            out.update(status="unknown", cue=cue[0])
+        elif cue := self._cue(rd.get("conflict_after") or [], norm[end:se]):
+            out.update(status="conflicting", cue=cue[0])
+        elif (neg := self._cue(rd.get("negation") or [], before, last=True)) and not re.search(r"但|却|而|只有|仅|but|only", before[neg[1]:]):
+            out.update(status="absent", cue=neg[0])
+        elif cue := (self._cue(rd.get("uncertain_before") or [], before) or self._cue(rd.get("uncertain_after") or [], after)):
+            out.update(status="unknown", certainty="uncertain", cue=cue[0])
+        sentence = norm[ss:start]
+        other = self._cue(rd.get("other_subject") or [], sentence, last=True)
+        if other and not self._cue(rd.get("self_subject") or [], sentence[other[1] + len(other[0]):]):
+            out["subject"] = "other"
+        if self._cue(rd.get("hypothetical") or [], sentence):
+            out["time"] = "hypothetical"
+        else:
+            past = self._cue(rd.get("past") or [], sentence, last=True)
+            now = self._cue(rd.get("current") or [], sentence, last=True)
+            if (past and not (now and now[1] > past[1])) or self._cue(rd.get("resolved_after") or [], norm[end:se]):
+                out["time"] = "past"
+        clause = norm[cs:ce]
+        sides = [k for k, words in (rd.get("laterality") or {}).items() if self._cue(words, clause)]
+        out["laterality"] = sides[0] if len(sides) == 1 else ("conflicting" if len(sides) > 1 else "unknown")
+        return out
+
     def phase_organ(self, phase: str, hint: str = "") -> str:
         """The organ that stands for a phase: the one the hint writes (胃 in 肝胃不和), else its zang."""
         info = (self.wx.get("phases") or {})[phase]
@@ -277,21 +333,38 @@ class Framework:
         return info["zang"]
 
     def phase_states(self, text: str) -> dict[str, Any]:
-        """The Five-Phase states a text names: a pattern already identified (肝郁脾虚 — Wood excess, Earth deficiency), or an
-        organ, a phase or its English name with a word of excess or deficiency (肝实, 土虚, 脾肺气虚, Wood excess, deficient
-        Earth).  Each state: its phase, organ, channel, excess / deficiency / any, and what the text wrote."""
+        """The Five-Phase states a text names: a pattern already identified (肝郁脾虚 — Liver excess of qi, Spleen deficiency of
+        qi), or an organ, a phase or its English name with a word of excess, deficiency, mixed, neither, balanced or
+        unknown (肝实, 肾阳虚, 脾肺气虚, 肝经虚实夹杂, Liver-channel excess).  Each state keeps its organ entity and its aspect
+        (气 qi, 血 blood, 阴 yin, 阳 yang, 精 essence; unspecified): a phase written alone (木实) stands for its zang only as
+        an assumption, said so (``assumed``).  A state the text denies, attributes to another person or to the past is not
+        read as one (``notes`` say why); one it calls uncertain is read as unknown.  Pathological factors (水湿停聚) are
+        read apart (``factors``): fluid retention is no Water excess."""
         wx = self.wx
         norm = self.normalize(text or "").lower()
         taken = [False] * len(norm)
         found: list[dict[str, Any]] = []
         spans: list[dict[str, Any]] = []
         notes: list[dict[str, str]] = []
+        factors: list[dict[str, Any]] = []
+        aspect_of = {"气": "qi", "阴": "yin", "阳": "yang", "血": "blood", "精": "essence"}
 
-        def add(phase: str, organ: str, state: str, written: str, at: tuple[int, int], pattern: str | None = None, note: str | None = None) -> None:
-            if any(f["phase"] == phase and f["organ"] == organ and f["state"] == state for f in found):
+        def add(phase: str, organ: str, state: str, aspect: str, at: tuple[int, int], pattern: str | None = None, note: str | None = None,
+                assumed: bool = False) -> None:
+            written = text[at[0]:at[1]]
+            sc = self.scope(norm, *at)
+            if sc["status"] == "absent" or sc["subject"] == "other" or sc["time"] == "past":
+                why = "否认" if sc["status"] == "absent" else ("所说是他人" if sc["subject"] == "other" else "所说是既往")
+                notes.append({"text": written, "note": why + (f"（{sc['cue']}）" if sc["status"] == "absent" and sc["cue"] else "") + "：不作为当前的状态读入"})
                 return
-            found.append({"phase": phase, "organ": organ, "channel": self.organs[organ]["channel"], "state": state, "written": written,
-                          "pattern": pattern, "note": note})
+            if sc["status"] in ("unknown", "conflicting") and state in ("excess", "deficiency"):
+                notes.append({"text": written, "note": f"{'不确定' if sc['status'] == 'unknown' else '前后矛盾'}（{sc['cue']}）：读作虚实未定"})
+                state = "unknown" if sc["status"] == "unknown" else "conflicting"
+            if any(f["organ"] == organ and f["state"] == state and f["aspect"] == aspect for f in found):
+                return
+            found.append({"phase": phase, "organ": organ, "channel": self.organs[organ]["channel"], "state": state, "aspect": aspect,
+                          "written": written, "pattern": pattern, "note": note, "assumed": assumed, "span": list(at),
+                          "time": sc["time"]})
             spans.append({"text": written, "span": list(at)})
 
         def free(a: int, b: int) -> bool:
@@ -309,12 +382,21 @@ class Framework:
                 take(m.start(), m.end())
                 if not any(k in GENERATES for k in spec):  # 阴虚火旺: no phase's own excess
                     notes.append({"text": text[m.start():m.end()], "note": spec.get("note") or ""})
+                asp = spec.get("aspect")
                 for phase, state in spec.items():
                     if phase in GENERATES:
-                        add(phase, self.phase_organ(phase, name), state, text[m.start():m.end()], (m.start(), m.end()), name, spec.get("note"))
+                        a = (asp.get(phase) if isinstance(asp, dict) else asp) or "unspecified"
+                        add(phase, self.phase_organ(phase, name), state, a, (m.start(), m.end()), name, spec.get("note"))
+        for fid, f in (wx.get("factors") or {}).items():
+            for n in sorted(f.get("names") or [], key=len, reverse=True):
+                for m in re.finditer(re.escape(self.normalize(n).lower()), norm):
+                    if free(m.start(), m.end()) and self.scope(norm, m.start(), m.end())["status"] == "present":
+                        take(m.start(), m.end())
+                        if not any(x["factor"] == fid for x in factors):
+                            factors.append({"factor": fid, "name": f["name"], "en": f["en"], "written": text[m.start():m.end()], "span": [m.start(), m.end()]})
         words: dict[str, str] = {}
-        for sid, s in (wx.get("states") or {}).items():
-            for n in s.get("names") or []:
+        for sid, st in (wx.get("states") or {}).items():
+            for n in st.get("names") or []:
                 words[self.normalize(n).lower()] = sid
         cn_org = {o: o for o in self.organs} | {p: p for p in GENERATES}
         en_org = {p["en"].lower(): ph for ph, p in (wx.get("phases") or {}).items()}
@@ -325,13 +407,13 @@ class Framework:
         alt = lambda xs: "|".join(re.escape(x) for x in sorted(xs, key=len, reverse=True))  # noqa: E731
         cn_words = [w for w in words if not w.isascii()]
         en_words = [w for w in words if w.isascii()]
-        cn = re.compile(rf"((?:{alt(cn_org)}){{1,3}})(?:两|俱|皆|同|之)?(?:气|阴|阳|血|精)?({alt(cn_words)})")
+        cn = re.compile(rf"((?:{alt(cn_org)}){{1,3}})(?:两|俱|皆|同|之)?(经)?(气|阴|阳|血|精)?({alt(cn_words)})")
         organ_re = re.compile(alt(cn_org))
 
-        def organ_for(x: str) -> tuple[str, str]:
+        def organ_for(x: str) -> tuple[str, str, bool]:
             if x in GENERATES:
-                return x, self.phase_organ(x)
-            return self.channels[self.organs[x]["channel"]]["phase"], x
+                return x, self.phase_organ(x), True
+            return self.channels[self.organs[x]["channel"]]["phase"], x, False
 
         for m in cn.finditer(norm):
             if not free(m.start(), m.end()):
@@ -341,21 +423,20 @@ class Framework:
             if any(o not in GENERATES for o in named):  # 胃火旺, 肝木虚: a phase after an organ qualifies it, it is no second organ
                 named = [o for o in named if o not in GENERATES]
             for o in named:
-                phase, organ = organ_for(o)
-                add(phase, organ, words[m.group(2)], text[m.start():m.end()], (m.start(), m.end()))
+                phase, organ, assumed = organ_for(o)
+                add(phase, organ, words[m.group(4)], aspect_of.get(m.group(3) or "", "unspecified"), (m.start(), m.end()), assumed=assumed)
         if en_words:
             org = alt(en_org)
             st = alt(en_words)
-            for rx, oi, si in ((rf"(?<![a-z])({org})\s+(?:qi\s+|yin\s+|yang\s+|blood\s+)?({st})(?![a-z])", 1, 2),
-                               (rf"(?<![a-z])({st})(?:\s+of|\s+in)?\s+(?:the\s+)?({org})(?![a-z])", 2, 1)):
+            for rx, oi, ai, si in ((rf"(?<![a-z])({org})(?:[- ](?:channel|meridian))?\s+(?:(qi|yin|yang|blood|essence)\s+)?({st})(?![a-z])", 1, 2, 3),
+                                   (rf"(?<![a-z])({st})(?:\s+of|\s+in)?\s+(?:the\s+)?({org})(?:[- ](?:channel|meridian))?(?:\s+(qi|yin|yang|blood|essence))?(?![a-z])", 2, 3, 1)):
                 for m in re.finditer(rx, norm):
                     if not free(m.start(), m.end()):
                         continue
                     take(m.start(), m.end())
-                    x = en_org[m.group(oi)]
-                    phase, organ = organ_for(x)
-                    add(phase, organ, words[m.group(si)], text[m.start():m.end()], (m.start(), m.end()))
-        return {"states": found, "spans": sorted(spans, key=lambda s: s["span"][0]), "notes": notes}
+                    phase, organ, assumed = organ_for(en_org[m.group(oi)])
+                    add(phase, organ, words[m.group(si)], m.group(ai) or "unspecified", (m.start(), m.end()), assumed=assumed)
+        return {"states": found, "spans": sorted(spans, key=lambda s: s["span"][0]), "notes": notes, "factors": factors}
 
     def point_of(self, code: str) -> dict[str, Any]:
         return self.points[code]
@@ -363,7 +444,7 @@ class Framework:
     def resolve(self, name: str) -> str | None:
         """A point by its code (ST36, st-36), name, an alias or its pinyin."""
         raw = (name or "").strip()
-        key = re.sub(r"[\s\-_.]", "", raw).upper()
+        key = re.sub(r"^SJ(?=\d)", "TE", re.sub(r"[\s\-_.]", "", raw).upper())  # SJ: the Sanjiao channel's old abbreviation
         for code in self.points:
             if re.sub(r"[\s\-_.]", "", code).upper() == key:
                 return code
@@ -416,11 +497,13 @@ class Framework:
 
     def read(self, text: str) -> dict[str, Any]:
         """The regions, symptoms, organs, channels, natures, course and side a text names (longest name first; English
-        names as whole words), and what it says that none of them is."""
+        names as whole words), and what it says that none of them is.  A region, symptom or nature the text denies (没有耳鸣),
+        leaves unstated or uncertain, gives as another person's or as past is read but not taken (``scoped``, with why)."""
         norm = self.normalize(text or "").lower()
         taken = [False] * len(norm)
         found: dict[str, list[str]] = defaultdict(list)
         spans: list[dict[str, Any]] = []
+        scoped: list[dict[str, Any]] = []
         for name, kind, key in self.vocabulary():
             ascii_name = name.isascii()
             pattern = (r"(?<![a-z])" + re.escape(name) + r"(?![a-z])") if ascii_name else re.escape(name)
@@ -429,12 +512,19 @@ class Framework:
                     continue
                 for i in range(m.start(), m.end()):
                     taken[i] = True
+                if kind in ("region", "symptom", "nature"):
+                    sc = self.scope(norm, m.start(), m.end())
+                    if sc["status"] != "present" or sc["subject"] == "other" or sc["time"] == "past":
+                        scoped.append({"text": text[m.start():m.end()], "kind": kind, "id": key, "span": [m.start(), m.end()],
+                                       "status": sc["status"], "subject": sc["subject"], "time": sc["time"], "cue": sc["cue"]})
+                        continue
                 if key not in found[kind]:
                     found[kind].append(key)
                 spans.append({"text": text[m.start():m.end()], "kind": kind, "id": key, "span": [m.start(), m.end()]})
         rest = "".join(ch if not taken[i] else " " for i, ch in enumerate(norm))
         unread = [w for w in re.split(r"[\s，。、；;,.:：！!？?（）()【】\[\]“”\"'/]+", rest) if _han(w) and len(w) >= 2]
-        return {"found": dict(found), "spans": sorted(spans, key=lambda s: s["span"][0]), "unread": unread}
+        return {"found": dict(found), "spans": sorted(spans, key=lambda s: s["span"][0]), "unread": unread,
+                "scoped": sorted(scoped, key=lambda s: s["span"][0])}
 
     def lookup(self, kind: str, value: str) -> str | None:
         """An id of the given kind for a value written as its id, its name or one of its names."""
@@ -553,7 +643,7 @@ class AcupunctureStudy:
     # ============================================================ selection
     def select(self, text: str | None = None, *, regions: Iterable[str] = (), symptoms: Iterable[str] = (),
                organs: Iterable[str] = (), channels: Iterable[str] = (), natures: Iterable[str] = (), acute: bool | None = None,
-               side: str | None = None, pregnant: bool = False, max_points: int = 6, classical: bool = True) -> dict[str, Any]:
+               side: str | None = None, pregnant: bool | None = None, max_points: int = 6, classical: bool = True) -> dict[str, Any]:
         fw = self.fw
         pres = self._presentation(text, regions, symptoms, organs, channels, natures, acute, side, pregnant)
         if not (pres["regions"] or pres["symptoms"] or pres["organs"] or pres["channels"]):
@@ -566,7 +656,7 @@ class AcupunctureStudy:
         self._propose(pres, objectives, cands, notes)
         attest = self._attest(pres, cands) if classical else {"findings": [], "searched": False}
         excluded = self._excluded(cands, pres)
-        chosen, core = self._choose(objectives, {k: v for k, v in cands.items() if k not in excluded}, max_points)
+        chosen, core, deferred = self._choose(objectives, {k: v for k, v in cands.items() if k not in excluded}, max_points)
         labels = {o["id"]: o["label"] for o in objectives}
         points = [self._point_out(code, cands[code], code in core, pres, labels) for code in chosen]
         combos = self._combinations(chosen, cands, pres)
@@ -579,7 +669,8 @@ class AcupunctureStudy:
             "objectives": [{k: o.get(k) for k in ("id", "kind", "label", "principal", "inferred", "via")} for o in objectives],
             "channels": self._channels_read(pres, objectives),
             "prescription": {"core": [p for p in points if p["core"]], "supplementary": [p for p in points if not p["core"]],
-                             "ashi": self._ashi(pres)},
+                             "ashi": self._ashi(pres), "deferred_pairs": deferred,
+                             "budget": {"max_points": max(1, int(max_points)), "is_not_treatment_point_count": True}},
             "combinations": combos,
             "alternatives": self._alternatives({k: v for k, v in cands.items() if k not in excluded}, chosen),
             "excluded": [{"code": c, "name": fw.points[c]["name"], "why": why} for c, why in excluded.items()],
@@ -620,7 +711,7 @@ class AcupunctureStudy:
     # ------------------------------------------------------------ step 1: the presentation
     def _presentation(self, text: str | None, regions: Iterable[str], symptoms: Iterable[str], organs: Iterable[str],
                       channels: Iterable[str], natures: Iterable[str], acute: bool | None, side: str | None,
-                      pregnant: bool) -> dict[str, Any]:
+                      pregnant: bool | None) -> dict[str, Any]:
         fw = self.fw
         got: dict[str, list[str]] = {k: [] for k in ("region", "symptom", "organ", "channel", "nature", "acuity", "side")}
         unknown: list[str] = []
@@ -675,7 +766,8 @@ class AcupunctureStudy:
         organ_channels = {fw.organs[o]["channel"] for o in got["organ"]}
         return {"text": text or "", "regions": got["region"], "symptoms": got["symptom"], "organs": got["organ"],
                 "channels": [c for c in got["channel"] if c not in organ_channels], "natures": got["nature"], "acuity": acuity,
-                "side": (got["side"] or [None])[0], "pregnant": bool(pregnant), "inferred": inferred, "states": states,
+                "side": (got["side"] or [None])[0], "pregnant": None if pregnant is None else bool(pregnant), "inferred": inferred, "states": states,
+                "scoped": read.get("scoped", []),
                 "read": read.get("spans", []), "unread": read.get("unread", []) + unknown,
                 "labels": {"regions": [fw.regions[r]["name"] for r in got["region"]],
                            "symptoms": [fw.symptoms[s]["name"] for s in got["symptom"]],
@@ -934,7 +1026,7 @@ class AcupunctureStudy:
     def _excluded(self, cands: dict[str, dict[str, Any]], pres: dict[str, Any]) -> dict[str, str]:
         """Candidates left out before choosing: in pregnancy, the points the teaching lists as not to be needled then and
         the points of the lower abdomen and the lumbosacral region."""
-        if not pres["pregnant"]:
+        if pres["pregnant"] is not True:  # unknown is not "not pregnant": the points stay, with their caution
             return {}
         out = {}
         for code in cands:
@@ -951,7 +1043,8 @@ class AcupunctureStudy:
             s += 0.5
         return s
 
-    def _choose(self, objectives: list[dict[str, Any]], cands: dict[str, dict[str, Any]], max_points: int) -> tuple[list[str], set[str]]:
+    def _choose(self, objectives: list[dict[str, Any]], cands: dict[str, dict[str, Any]],
+                max_points: int) -> tuple[list[str], set[str], list[dict[str, Any]]]:
         fw = self.fw
         principal = next((o["id"] for o in objectives if o["principal"]), None)
         key = lambda code: (-self._score(cands[code], principal), -sum(1 for w in cands[code]["by"].values() if w >= SERVES),  # noqa: E731
@@ -989,12 +1082,18 @@ class AcupunctureStudy:
                 break
             if code not in chosen and self._score(cands[code], principal) >= 2 * SERVES:
                 chosen.append(code)
-        for code in list(chosen):  # a conventional pair is taken whole when one of its points was taken for it
+        deferred: list[dict[str, Any]] = []
+        for code in list(chosen):  # a conventional pair is taken whole when one of its points was taken for it — within the budget
             for r in cands[code]["reasons"]:
                 for other in r.get("pair") or []:
-                    if other not in chosen and other in cands and len(chosen) < max_points + 1:
+                    if other in chosen or other not in cands:
+                        continue
+                    if len(chosen) < max_points:
                         chosen.append(other)
-        return chosen, core
+                    elif not any(d["point"] == other for d in deferred):
+                        deferred.append({"point": other, "name": fw.points[other]["name"], "pair": [code, other], "why":
+                                         f"与{fw.points[code]['name']}成对（{r['text']}），已到所设的 {max_points} 穴：未加入——提高 max_points 可取全"})
+        return chosen, core, deferred
 
     def _point_out(self, code: str, c: dict[str, Any], core: bool, pres: dict[str, Any], labels: dict[str, str]) -> dict[str, Any]:
         fw = self.fw
@@ -1018,7 +1117,7 @@ class AcupunctureStudy:
                               "conflict": "此穴为一经之母（补）又为另一经之子（泻）：意图相反，须先定主次，不能由五行之式自动合并"}) if intents else None,
                "laterality": self._laterality(code, pres), "location": p.get("location"),
                "cautions": [{"id": k, **(fw.d["cautions"].get(k) or {})} for k in p.get("cautions") or []
-                            if k != "pregnancy" or pres["pregnant"]],
+                            if k != "pregnancy" or pres["pregnant"] is not False],
                "classical": {"works": classical["works"], "earliest": classical["witness"]} if classical else None,
                "classics": self._classics(code)}
         out["record"] = self._record(out)
@@ -1229,13 +1328,13 @@ class AcupunctureStudy:
                 by[k].append(c)
         out = []
         for k, codes in by.items():
-            if k == "pregnancy" and not pres["pregnant"]:
-                text = fw.d["cautions"][k]["text"] + "（若为孕妇须避开或慎用。）"
+            if k == "pregnancy" and pres["pregnant"] is not True:
+                text = fw.d["cautions"][k]["text"] + ("（是否妊娠未给：若为孕妇须避开或慎用。）" if pres["pregnant"] is None else "（若为孕妇须避开或慎用。）")
             else:
                 text = fw.d["cautions"][k]["text"]
             out.append({"kind": k, "name": fw.d["cautions"][k]["name"], "points": codes, "text": text,
-                        "severity": "high" if (k == "pregnancy" and pres["pregnant"]) or k in ("thorax", "nape", "eye", "throat") else "note"})
-        if pres["pregnant"]:
+                        "severity": "high" if (k == "pregnancy" and pres["pregnant"] is True) or k in ("thorax", "nape", "eye", "throat") else "note"})
+        if pres["pregnant"] is True:
             ab = [c for c in chosen if fw.points[c].get("part") in ("lower_abdomen", "abdomen", "sacrum", "lower_back") and c not in by.get("pregnancy", [])]
             if ab:
                 out.append({"kind": "pregnancy", "name": "孕期", "points": ab, "severity": "high",
@@ -1345,7 +1444,7 @@ class AcupunctureStudy:
         return rows
 
     # ============================================================ the Five Phases in point selection
-    def wuxing(self, text: str | None = None, *, states: Iterable[str] = (), methods: Iterable[str] = (),
+    def wuxing(self, text: str | None = None, *, states: Iterable[str] = (), methods: Iterable[str] | None = None,
                classical: bool = True) -> dict[str, Any]:
         """五行选穴: Five-Phase relations read into point selection, through the two decisions between them — the pattern
         (a phase's state does not name it) and the method of selection (each with its level: classical, school,
@@ -1355,30 +1454,46 @@ class AcupunctureStudy:
         excess with West deficiency, the Jin Gui's condition on strengthening the Spleen, Nanjing 79 for the Heart); the
         named strategies whose premise the states fit (or would, with one more); for every state the points each method
         takes, with their phase, the relation of that phase to their channel and the intention — and the points two
-        methods would treat oppositely; the conclusions that do not follow; each as the record of six elements."""
+        methods would treat oppositely; the conclusions that do not follow; each as the record of six elements.
+
+        A premise is met by the organ entity and the aspect it names, never by a phase they share (胃虚 does not satisfy 脾虚,
+        肾阳虚 not 肾阴虚); a state that is unknown, mixed or only "balanced" takes no method (``held``) — 不实不虚 must be
+        stated.  ``methods``: None runs every method (this tool's default, kept as v1 of its interface and said so in
+        ``method_resolution``); [] runs none; an unknown name is an error (INVALID_METHOD), never a reason to run them all."""
         fw = self.fw
         wx = fw.wx
+        valid = list(wx.get("methods") or {})
+        if methods is None:
+            wanted = valid
+            resolution = {"parameter_was_provided": False, "effective_methods": wanted, "legacy_default": "all (study.wuxing v1)"}
+        else:
+            wanted = [str(m) for m in methods]
+            unknown = [m for m in wanted if m not in valid]
+            if unknown:
+                raise ValueError(f"INVALID_METHOD: {', '.join(unknown)} — the methods are {', '.join(valid)}; [] runs none")
+            resolution = {"parameter_was_provided": True, "effective_methods": list(dict.fromkeys(wanted))}
         given = [text or ""] + [re.sub(r"[:=：＝]", " ", str(s)) for s in states or []]
         read = [fw.phase_states(t) for t in given if t]
         entries: list[dict[str, Any]] = []
         for r in read:
             for e in r["states"]:
-                if not any(x["phase"] == e["phase"] and x["organ"] == e["organ"] and x["state"] == e["state"] for x in entries):
+                if not any(x["organ"] == e["organ"] and x["state"] == e["state"] and x["aspect"] == e["aspect"] for x in entries):
                     entries.append(e)
+        factors = list({f["factor"]: f for r in read for f in r["factors"]}.values())
         notes = [n for r in read for n in r["notes"]]
         if not entries:
             raise ValueError("study.wuxing: " + "".join(f"「{n['text']}」：{n['note']}；" for n in notes) + "name a Five-Phase state — an organ or a phase with excess or deficiency (肝实, 脾虚, "
                              "木实 土虚 金虚, Wood excess, Liver deficiency) or an identified pattern (肝郁脾虚, 肝肾阴虚, 心肾不交 …)")
-        wanted = [m for m in (methods or []) if m in (wx.get("methods") or {})] or list(wx.get("methods") or {})
         for e in entries:
             e["channel_name"] = fw.channels[e["channel"]]["name"]
             e["state_name"] = ((wx.get("states") or {}).get(e["state"]) or {}).get("name", "虚实未定")
             e["phase_en"] = (wx["phases"][e["phase"]] or {}).get("en")
         records = [r for e in entries for r in self._wx_methods(e, wanted)]
+        held = self._wx_held(entries)
         relations = self._wx_relations(entries)
-        strategies = self._wx_strategies(entries)
+        strategies = self._wx_strategies(entries, factors)
         used_methods = sorted({r["method"] for r in records})
-        guards = self._wx_guards(entries, used_methods, " ".join(given))
+        guards = self._wx_guards(entries, used_methods, " ".join(given), factors=factors, held=held, strategies=strategies)
         conflicts = self._wx_conflicts(records)
         classical_rows = self._wx_classical(entries)
         rules = ["five_phase", "five_phase_cycles", "five_pathogens", "mother_child"] + [r["rule"] for r in records] \
@@ -1386,8 +1501,11 @@ class AcupunctureStudy:
         rules = [r for r in dict.fromkeys(rules) if r in fw.rules]
         out: dict[str, Any] = {
             "input": {"text": text or "", "states": list(states or []), "read": [s for r in read for s in r["spans"]], "notes": notes},
-            "states": [{k: e.get(k) for k in ("phase", "phase_en", "organ", "channel", "channel_name", "state", "state_name", "written",
-                                              "pattern", "note")} for e in entries],
+            "states": [{k: e.get(k) for k in ("phase", "phase_en", "organ", "channel", "channel_name", "state", "state_name", "aspect",
+                                              "assumed", "written", "pattern", "note")} for e in entries],
+            "factors": factors,
+            "held": held,
+            "method_resolution": resolution,
             "clarify": self._wx_clarify(entries),
             "relations": relations,
             "pathogens": self._wx_pathogens(entries),
@@ -1445,10 +1563,10 @@ class AcupunctureStudy:
         short = c["short"]
         nm = lambda code: f"{fw.points[code]['name']}（{fw.kind_label.get(next((x['kind'] for x in fw.categories(code) if x['type'] == 'five_shu'), ''), '')}，{fw.shu_phase(code)}）"  # noqa: E731
         out: list[dict[str, Any]] = []
-        if state not in STATES:
+        if state not in STATES:  # only a stated 不实不虚 takes the channel itself; unknown, mixed, balanced take nothing
             code = fw.phase_point(ch, own)
-            if "own_channel" in wanted and code:
-                out.append(self._wx_record("own_channel", e, [self._wx_point(code, None)], f"{organ}属{own}；虚实未定",
+            if state == "neither" and "own_channel" in wanted and code:
+                out.append(self._wx_record("own_channel", e, [self._wx_point(code, None)], f"{organ}属{own}；明言不实不虚",
                                            f"不实不虚，以经取之：取本经；后世读作取本经同气之穴{nm(code)}——补泻据所辨之证", None))
             return out
         mother = state == "deficiency"
@@ -1525,15 +1643,15 @@ class AcupunctureStudy:
                     elif CONTROLS[X] == Y:  # x controls y
                         if sx == "excess" and sy == "deficiency":
                             kind, rows = "overacting", [reading("overacting_excess", x, y), reading("overacting_deficiency", x, y)]
-                        elif sx == "excess" and sy == "any":
+                        elif sx == "excess" and sy == "unknown":
                             kind, rows = "overacting", [reading("overacting_excess", x, y)]
-                        elif sx == "any" and sy == "deficiency":
+                        elif sx == "unknown" and sy == "deficiency":
                             kind, rows = "overacting", [reading("overacting_deficiency", x, y)]
                         elif sy == "excess" and sx == "deficiency":
                             kind, rows = "counteracting", [reading("counteracting_excess", y, x), reading("counteracting_deficiency", y, x)]
-                        elif sy == "excess" and sx == "any":
+                        elif sy == "excess" and sx == "unknown":
                             kind, rows = "counteracting", [reading("counteracting_excess", y, x)]
-                        elif sy == "any" and sx == "deficiency":
+                        elif sy == "unknown" and sx == "deficiency":
                             kind, rows = "counteracting", [reading("counteracting_deficiency", y, x)]
                     if rows:
                         cycle = f"{X}生{Y}" if kind == "mother_child" else f"{X}克{Y}"
@@ -1576,62 +1694,110 @@ class AcupunctureStudy:
                         "note": p.get("note")})
         return out
 
+    def _wx_held(self, entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """The states that take no method, and why: unknown is not 不实不虚; balanced is not its explicit premise; mixed must
+        first be told apart; conflicting must first be checked."""
+        why = {"unknown": "虚实未定：未知不能当作《难经·六十九难》的“不实不虚”，不取本经同气之穴，也不取母穴、子穴",
+               "balanced": "“平衡”是一般的描述，不是“不实不虚”的明确前提：不取本经同气之穴",
+               "mixed": "虚实夹杂：须先分清何者为虚、何者为实，不能归为单一的补或泻，也不是不实不虚",
+               "conflicting": "前后矛盾：须先核对，既不满足肯定的前提，也不满足否定的前提"}
+        return [{"organ": e["organ"], "state": e["state"], "state_name": e.get("state_name"), "why": why[e["state"]]}
+                for e in entries if e["state"] in why]
+
     def _wx_classical(self, entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """The classical statements the states bear on, and whether their condition is met."""
+        """The classical statements the states bear on, and whether their condition is met — by the organ each names
+        (Nanjing 75: the Liver excess and the Lung deficient; the Large Intestine is not the Lung)."""
         fw = self.fw
         out = []
-        st = lambda phase: [e["state"] for e in entries if e["phase"] == phase]  # noqa: E731
-        if "excess" in st("木") and "deficiency" in st("金"):
-            out.append({"rule": "nanjing75", "name": fw.rules["nanjing75"]["name"], "status": "applies",
+        of = lambda organ: [e for e in entries if e["organ"] == organ]  # noqa: E731
+        liver_ex = [e for e in of("肝") if e["state"] == "excess"]
+        lung_def = [e for e in of("肺") if e["state"] == "deficiency"]
+        if liver_ex and lung_def:
+            assumed = any(e.get("assumed") for e in liver_ex + lung_def)
+            out.append({"rule": "nanjing75", "name": fw.rules["nanjing75"]["name"], "status": "conditional" if assumed else "applies",
                         "text": "东方（木、肝）实而西方（金、肺）虚：《难经·七十五难》泻南方火（木之子）、补北方水（木之母）——原文言方位与五行，"
-                                "取何经何穴是后人的读法"})
-        for e in entries:
-            if e["phase"] != "木":
-                continue
-            earth = st("土")
-            status = "met" if "deficiency" in earth else ("not_needed" if "excess" in earth else "not_given")
-            text = {"met": "脾（土）之虚已见：扶脾有据——仍据所辨之证取穴",
-                    "not_needed": "所给之土非虚：四季脾王不受邪，即勿补之",
+                                "取何经何穴是后人的读法" + ("；所给只写五行，肝、肺是由木、金推定的" if assumed else "")})
+        elif liver_ex and any(e["state"] == "deficiency" for e in of("大肠")):
+            out.append({"rule": "nanjing75", "name": fw.rules["nanjing75"]["name"], "status": "not_met",
+                        "text": "《难经·七十五难》所论是肝实而肺虚：大肠虚不即肺虚，此前提未满足"})
+        if of("肝"):
+            spleen = [e["state"] for e in of("脾")]
+            status = "met" if "deficiency" in spleen else ("not_needed" if "excess" in spleen else "not_given")
+            text = {"met": "脾之虚已见：扶脾有据——仍据所辨之证取穴",
+                    "not_needed": "所给之脾非虚：四季脾王不受邪，即勿补之",
                     "not_given": "脾的状况未给：防传须考虑，但不据此自动加补脾之穴；脾已足者即勿补之"}[status]
+            if status == "not_given" and any(e["state"] == "deficiency" for e in of("胃")):
+                text += "；所给的是胃虚——胃虚不即脾虚"
             out.append({"rule": "prevent_transmission", "name": fw.rules["prevent_transmission"]["name"], "status": status, "text": text})
-            break
         if any(e["organ"] == "心" and e["state"] in STATES for e in entries):
             out.append({"rule": "nanjing79", "name": fw.rules["nanjing79"]["name"], "status": "applies",
                         "text": "《难经·七十九难》心病取手心主：泻手心主俞（大陵），补手心主井（中冲）——另一经典取法，与取心经本经之穴并列"})
-        if any(e["state"] not in STATES for e in entries):
+        if any(e["state"] == "neither" for e in entries):
             out.append({"rule": "own_phase", "name": fw.rules["own_phase"]["name"], "status": "applies",
-                        "text": "虚实未定者，《难经·六十九难》“不实不虚，以经取之”"})
+                        "text": "明言不实不虚者，《难经·六十九难》“不实不虚，以经取之”"})
         return out
 
-    def _wx_strategies(self, entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """The named strategies whose premise the states fit (full), or would with one more state (conditional)."""
+    _ASPECT_ZH = {"qi": "气", "yin": "阴", "yang": "阳", "blood": "血", "essence": "精"}
+
+    def _wx_condition(self, cond: dict[str, Any], entries: list[dict[str, Any]], factors: list[dict[str, Any]]) -> tuple[str, str]:
+        """How one premise of a strategy is met: ``met``; ``partial`` (the organ is only assumed from a phase, or the aspect
+        is not stated); ``missing`` (no such state — with why, when another state of the same organ is there)."""
+        wx = self.fw.wx
+        sname = lambda st: ((wx.get("states") or {}).get(st) or {}).get("name", "")  # noqa: E731
+        if cond.get("factor"):
+            f = (wx.get("factors") or {}).get(cond["factor"]) or {}
+            return ("met", f.get("name", "")) if any(x["factor"] == cond["factor"] for x in factors) else ("missing", f.get("name", ""))
+        organ, want, aspects = cond["organ"], cond.get("state"), cond.get("aspect") or []
+        label = organ + "".join(self._ASPECT_ZH.get(a, "") for a in aspects[:1]) + (sname(want) if want else "")
+        best, why = "missing", label
+        for e in (x for x in entries if x["organ"] == organ):
+            if want and e["state"] != want:
+                why = f"{label}（所给为{organ}{e.get('state_name') or sname(e['state'])}）"
+                continue
+            if aspects and e["aspect"] not in aspects and e["aspect"] != "unspecified":
+                why = f"{label}（所给为{organ}{self._ASPECT_ZH.get(e['aspect'], '')}{sname(e['state'])}——{self._ASPECT_ZH.get(e['aspect'], e['aspect'])}" \
+                      f"不满足{''.join(self._ASPECT_ZH.get(a, a) for a in aspects)}）"
+                continue
+            gaps = []
+            if e.get("assumed"):
+                gaps.append(f"由“{e['phase']}”推定为{organ}")
+            if aspects and e["aspect"] == "unspecified":
+                gaps.append(f"{''.join(self._ASPECT_ZH.get(a, a) for a in aspects)}未言")
+            if not gaps:
+                return "met", label
+            best, why = "partial", f"{label}（{'；'.join(gaps)}）"
+        return best, why
+
+    def _wx_strategies(self, entries: list[dict[str, Any]], factors: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+        """The named strategies whose premise the states meet (full), or would with one more state or one more fact
+        (conditional) — premises on organ entities, aspects and factors, never on a phase they share."""
         fw = self.fw
         wx = fw.wx
-        have = {(e["phase"], e["state"]) for e in entries}
-        phases = {e["phase"] for e in entries}
+        factors = factors or []
         sname = lambda s: ((wx.get("states") or {}).get(s) or {}).get("name", "")  # noqa: E731
         out = []
         for sid, s in (wx.get("strategies") or {}).items():
-            best = None
+            best: tuple[int, int, list[str]] | None = None
             for alt in s.get("when") or []:
-                missing = [(ph, want) for ph, want in alt.items()
-                           if not (ph in phases if want == "any" else (ph, want) in have)]
-                if missing and len(missing) >= len(alt):
+                results = [self._wx_condition(c, entries, factors) for c in alt]
+                met = sum(1 for k, _ in results if k == "met")
+                missing = sum(1 for k, _ in results if k == "missing")
+                if met + sum(1 for k, _ in results if k == "partial") == 0 or missing > 1:
                     continue
-                if best is None or len(missing) < len(best):
-                    best = missing
-            if best is None or len(best) > 1:
+                gaps = [w for k, w in results if k != "met"]
+                if best is None or (len(gaps), -met) < (len(best[2]), -best[0]):
+                    best = (met, missing, gaps)
+            if best is None:
                 continue
             rule = fw.rules.get(s["rule"]) or {}
             row = {"id": sid, "name": s["name"], "en": s["en"], "rule": s["rule"], "level": rule.get("level", "teaching"),
-                   "fit": "full" if not best else "conditional",
-                   "missing": [f"{ph}（{fw.phase_organ(ph)}）{'' if w == 'any' else sname(w)}" for ph, w in best],
+                   "fit": "full" if not best[2] else "conditional", "missing": best[2],
                    "premise": s["premise"], "implication": s["implication"], "note": s.get("note"),
                    "derived": [], "conflicts": [], "examples": []}
             for d in s.get("derive") or []:
                 organ = d["organ"]
                 phase = fw.channels[fw.organs[organ]["channel"]]["phase"]
-                e = {"organ": organ, "channel": fw.organs[organ]["channel"], "phase": phase,
+                e = {"organ": organ, "channel": fw.organs[organ]["channel"], "phase": phase, "aspect": "unspecified",
                      "state": "deficiency" if d["take"] == "mother" else "excess", "pattern": s["premise"],
                      "state_name": sname("deficiency" if d["take"] == "mother" else "excess")}
                 row["derived"] += self._wx_methods(e, ["nanjing69", "nanjing69_cross"])
@@ -1693,7 +1859,8 @@ class AcupunctureStudy:
                         "interpretation": f"单一的“泻{'、'.join(ex)}”之式不能代表整个证候"})
         return out
 
-    def _wx_guards(self, entries: list[dict[str, Any]], used: list[str], text: str) -> list[dict[str, Any]]:
+    def _wx_guards(self, entries: list[dict[str, Any]], used: list[str], text: str, *, factors: list[dict[str, Any]] | None = None,
+                   held: list[dict[str, Any]] | None = None, strategies: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
         fw = self.fw
         wx = fw.wx
         low = self.b.normalize(text).lower()
@@ -1726,6 +1893,16 @@ class AcupunctureStudy:
                     why = "method"
                 elif w.get("text") and re.search(w["text"], low):
                     why = "text"
+                elif w.get("held") and held:
+                    why = "held"
+                elif w.get("assumed") and any(e.get("assumed") for e in entries):
+                    why = "assumed"
+                elif w.get("factor") and factors:
+                    why = "factor"
+                elif w.get("aspect") and any("不满足" in m or "未言" in m for st in strategies or [] for m in st["missing"]):
+                    why = "aspect"
+                elif w.get("organs_share_phase") and len({(e["phase"], e["organ"]) for e in entries}) > len({e["phase"] for e in entries}):
+                    why = "organs_share_phase"
             if why:
                 out.append({"id": gid, "statement": g["statement"], "level": g.get("level"), "why": why, "claim": gid in claims})
         out.sort(key=lambda g: not g["claim"])

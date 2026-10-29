@@ -9,7 +9,8 @@ mode: procedure
 procedure: taochronos.agents.procedures.scholar
 skills: [source-criticism, acupoint-selection]
 tools: [study.formula, study.herb, study.term, study.senses, study.concordance, study.taboo, study.metrology, study.commentaries, study.disputes,
-        study.network, study.schools, study.names, study.places, study.translate, study.point, study.acupoints, study.wuxing]
+        study.network, study.schools, study.names, study.places, study.translate, study.point, study.acupoints, study.wuxing,
+        study.acupuncture_reason, study.acupuncture_audit]
 context_view: sources
 permissions: [classics:read]
 output_schema: SourcesDossier

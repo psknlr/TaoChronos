@@ -49,6 +49,8 @@ the way the 考据 tradition answers them: from the texts, witness by witness.
 | `study acupoints` | 选穴配穴 — which points would the tradition choose here, and why each? | the presentation read into objectives (location, organ system, each symptom, nature); core and supplementary points, each with its purposes and rules; the combinations they form (local–distal, upper–lower, Shu–Mu, Lower He–Mu, Yuan–Luo host–guest …, and what they are not); mother–child points; technique principles; a record to fill; cautions; each rule's classical witness; the classics' indications for the findings; the modern evidence apart. `--framework`: the specific-point tables |
 | `study point` | 腧穴考 — what do the classics say of this point? | its channel, specific-point attributes, mother–child roles, standard location and cautions; its Five-Phase attributes kept apart (the channel's phase, the point's phase and what it is to the channel's) and the methods that take it; the entries of the acupuncture books (phase, kind, Mu, Xi, Luo, meeting, other names, location, needling, moxibustion, prohibitions) checked against the attributes, with the witnesses that differ; the findings its indication sentences name, by work |
 | `study wuxing` | 五行选穴 — what do these Five-Phase states lead to, and what do they not? | the patterns a state does not tell apart; the relations among the states (mother–child, overacting, counteracting, each in its readings) with the Nanjing 50 name of what the receiving organ suffers; the classical statements that apply (Nanjing 75, the Jin Gui's condition on the Spleen, Nanjing 79); the named strategies fitted or conditional, with the points the Five-Shu give and the sources' examples read against the tables; every method's points with phase and intention (Nanjing 69 on the channel and across, Nanjing 79, Saam, the paired deductions — levels apart); the points two methods treat oppositely; the conclusions that do not follow; a record of six elements |
+| `study acupuncture-reason` | 针灸推理 — what may be said of this case, or of this assumption, and what must come first? | the execution and the assessment status apart; the observations as four states with subject, time, side and the words they came from (a denial, another person's or a past finding kept as such); organ states by entity and aspect; the routing first (sudden hearing loss → assessment within 24 hours, pulsatile or persistent unilateral tinnitus → the cause first); at most two questions; the tinnitus patterns compared (no probability); candidates only on a premise a server-side review accepts for this case version; educational mappings for a stated assumption; findings with the conclusions they block; typed relations; a trace ([ADR 0027](adr/0027-acupuncture-reasoning-contracts.md)) |
+| `study acupuncture-audit` | 针灸推理的审核 — does this claim or plan hold? | each claim against the guards (an analogy is no measurement; 别通 is neither 表里 nor 原络 and does not chain; an Earth point is no Spleen tonification; fluid retention is no Kidney-yin excess; age is no pattern; a classical source is no efficacy; personal rules disabled); each plan point against the tables (SJ → TE; channel, channel phase, point phase); one point tonified and reduced is a conflict |
 | `study protocol` | 研究方案 — how would one research this question? | the question read into kinds and entities; hypotheses with prediction, test, falsification and rivals; scope, variables, methods (each a tool with its command), analysis, the figures planned (图 1 … with their form) and the tables (表 1 …: three-line tables filled with the pilot's numbers, or shells with placeholders and their statistics where the pilot did not run the step), quality, limitations, ethics, timeline; a research contract; a pilot run with its charts |
 
 Page images and OCR output (T1–T2) are read by `taochronos vision` (layout, a model's reading, comparison with the
@@ -90,6 +92,9 @@ taochronos study acupoints --symptom 痛经 --pregnant              # the points
 taochronos study acupoints --framework                            # the specific-point tables and the mother and child points
 taochronos study point 太渊                                       # a code (LU9), name, alias (太泉) or pinyin
 taochronos study wuxing 木实 土虚 金虚                            # or 肝郁脾虚, "Wood excess, Earth deficiency", --state 肝虚 --method saam
+taochronos study acupuncture-reason 耳鸣两周，没有听力下降 --reason-mode case_review   # routes, asks; --case case.json, --method nanjing69
+taochronos study acupuncture-reason 假设肝经实 --method nanjing69   # knowledge: an educational mapping (LR2, reduce) about no one
+taochronos study acupuncture-audit 太冲属土，补太冲就是补脾 --plan LR3:tonify --plan SJ5   # or --arguments args.json
 
 # 深层发现 2.0
 taochronos study stemma 伤寒论                                     # --books <id> --books <id>+<id> · --chapter 辨太阳病
@@ -417,6 +422,20 @@ sentences searched as written.
   same attributes for one point, `acupoints --framework` the tables (every channel's points against its phase, the Saam
   templates, the paired points), and `acupoints` reads states organ by organ too (肝实脾虚: the Liver's child, the
   Spleen's mother — not both for both).
+* **针灸推理 (`acupuncture-reason`, `acupuncture-audit`).** The coordinator answers a request in the form of
+  `domains/classics/acupuncture_contracts.schema.json` (checked on the way in and on the way out: what is invalid is
+  answered as invalid, assessment null, never repaired or defaulted) with the rule pack
+  `domains/classics/acupuncture_reasoning.yaml`.  A fact is one of four states — present, absent, unknown, conflicting —
+  about one subject at one time; what was not said stays unknown and is asked about, never taken as absent.  Routing comes
+  first, then at most two questions, then the comparison of the tinnitus patterns; a method runs only when named (none
+  when omitted or `[]`), only on a stated excess, deficiency or 不实不虚 (not on unknown, balanced or mixed), and on a real
+  case gives candidates only where a server-side review record (`review_context_ref`, HMAC-signed, bound to the case id
+  and version, the digest of its observations and the versions) accepts that very organ, aspect and state — a `verified`
+  flag, a premise claimed accepted or a sentence saying it was reviewed authorizes nothing.  A teaching assumption (假设肝经实)
+  gives educational mappings that are about no one.  Points two methods tonify and reduce are a conflict, never averaged.
+  The audit checks claims and plans against the same guards and the point tables.  `acupoints` and `wuxing` run the same
+  screen on their text: for tinnitus or hearing loss, an urgent or etiologic route — or, for `acupoints`, missing
+  decision-critical facts — withholds the case-specific points ([ADR 0027](adr/0027-acupuncture-reasoning-contracts.md)).
 
 What these functions give is the tradition's reasoning and the texts' record.  They make no diagnosis and prescribe
 nothing: whether and how to needle is for a qualified practitioner after examination.

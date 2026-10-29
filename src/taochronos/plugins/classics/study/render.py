@@ -1324,6 +1324,26 @@ def _witnessed(rule: dict[str, Any]) -> str:
                      + (f"——{w['reading']}" if w.get("reading") else "") for w in firsts[:4])
 
 
+_STATUS = {"educational_only": "仅作知识说明", "needs_information": "须先补充信息", "needs_urgent_assessment": "须及时就医评估",
+           "needs_etiologic_assessment": "须先查明病因", "pattern_comparison": "证型比较", "candidate_review": "候选供复核",
+           "rule_conflict": "规则冲突", "no_applicable_rule": "无适用的规则", None: "未作评估"}
+_SEVERITY = {"block": "⛔", "clarification": "⚠️", "information": "ℹ️"}
+
+
+def _validation(r: dict[str, Any]) -> list[str]:
+    """The shared validation of a legacy path (study.acupuncture_reason's screen), first — when it bears on the text."""
+    v = r.get("validation") or {}
+    if not (v.get("in_scope") or v.get("withhold") or v.get("findings")):
+        return []
+    out = [f"## 共享校验：{_STATUS.get(v.get('assessment_status'), v.get('assessment_status'))}", ""]
+    out += [f"- {_SEVERITY.get(f['severity'], '')} {f['message']}" for f in v.get("findings", [])]
+    out += [f"- ❓ {q['text']}" for q in v.get("questions", [])]
+    withheld = (r.get("prescription") or {}).get("withheld") or r.get("withheld")
+    if withheld:
+        out += ["", f"> {withheld['text']}"]
+    return out + [""]
+
+
 def acupoints(r: dict[str, Any]) -> list[str]:
     if r.get("five_shu"):
         return _acu_framework(r)
@@ -1332,6 +1352,7 @@ def acupoints(r: dict[str, Any]) -> list[str]:
     out = ["# 选穴配穴：" + ("、".join(labels.get("regions", []) + labels.get("symptoms", [])) or "、".join(labels.get("organs", [])) or "—"), ""]
     if pres.get("text"):
         out += [f"> {_q(pres['text'], 200)}", ""]
+    out += _validation(r)
     if pres.get("unread"):
         out += ["未能识别：" + "、".join(pres["unread"]), ""]
     for st in r.get("steps", []):
@@ -1445,6 +1466,7 @@ def wuxing(r: dict[str, Any]) -> list[str]:
     if (r.get("input") or {}).get("text"):
         out += [f"> {_q(r['input']['text'], 200)}", ""]
     out += [f"> {n['text']}：{n['note']}" for n in (r.get("input") or {}).get("notes", [])]
+    out += _validation(r)
     out += ["从五行关系到选穴，中间有两个决定：**辨明证候**，**指明取穴之法**。以下是传统理论中的推理，各标其层（经典之规、教材、流派之法、"
             "教学推演），所举配穴说明推理，不是个体化的处方。", ""]
     for st in r.get("steps", []):
@@ -1503,6 +1525,105 @@ def wuxing(r: dict[str, Any]) -> list[str]:
         out += ["", "## 现代证据（与理论分开）", ""] + [f"- {m['citation']}（{m.get('design')}；{m.get('population')}；{m.get('size')}）：{m.get('finding')} 限度：{m.get('limits')}"
                                                 for m in ev["modern"]]
     out += ["", f"> {ev.get('note', '')}"] if ev.get("note") else []
+    return out + ["", f"> {r.get('notice', '')}"]
+
+
+def _findings(r: dict[str, Any]) -> list[str]:
+    out = []
+    for f in r.get("findings", []):
+        out.append(f"- {_SEVERITY.get(f['severity'], '')} **{f['code']}**：{f['message']}")
+        if f.get("blocked_conclusions"):
+            out.append("  - 不能得出：" + "；".join(f["blocked_conclusions"]))
+        if f.get("suggested_restatement"):
+            out.append(f"  - 可改写为：{f['suggested_restatement']}")
+    return out
+
+
+def _observations(r: dict[str, Any]) -> list[str]:
+    obs = r.get("normalized_observations") or []
+    if not obs:
+        return []
+    out = ["", "## 观察（四态；主体、时间与原文分别保留）", "", "| 概念 | 状态 | 值 | 主体 | 时间 | 侧别 | 原文 | 来源 |", "|---|---|---|---|---|---|---|---|"]
+    for o in obs:
+        out.append(f"| {o['concept_id']} | {o['status']} | {o['value'] if o['value'] is not None else '—'} | {o['subject_scope']} | "
+                   f"{o['time']['temporal_scope']} | {o['laterality']} | {_q('、'.join(s['text'] for s in o['original_spans']), 40) or '—'} | "
+                   f"{o['provenance']['kind']}{'（推出）' if o['provenance']['is_inference'] else ''} |")
+    return out
+
+
+def _relations(r: dict[str, Any]) -> list[str]:
+    rel = r.get("theory_relations") or []
+    if not rel:
+        return []
+    return ["", "## 类型化的关系（不传递；没有独立的选穴规则即不产生取穴）", ""] + [
+        f"- {x['relation_type']}：{x['from_entity']} → {x['to_entity']}" + (f"（{'、'.join(x['source_refs'])}）" if x["source_refs"] else "") for x in rel]
+
+
+def _head(r: dict[str, Any], title: str) -> list[str]:
+    out = [f"# {title}：{_STATUS.get(r.get('assessment_status'), r.get('assessment_status'))}", "",
+           f"执行：{r.get('execution_status')}；模式：{r.get('mode') or '—'}；个案：{r.get('case_id') or '—'}（版本 {r.get('case_version') or '—'}）；"
+           f"知识 {r.get('knowledge_version')}，规则 {r.get('rulepack_version')}；结果 {r.get('result_id')}", ""]
+    if r.get("questions"):
+        out += ["## 先请回答（每轮至多两问）", ""] + [f"{i + 1}. {q['text']}（{q['reason']}）" for i, q in enumerate(r["questions"])] + [""]
+    if r.get("findings"):
+        out += ["## 所见与护栏", ""] + _findings(r) + [""]
+    mr = r.get("method_resolution") or {}
+    out.append("方法：" + ("、".join(mr.get("effective_methods") or []) or "未运行任何取穴方法（省略与 [] 相同，不回退到全部）"))
+    return out
+
+
+def acupuncture_reason(r: dict[str, Any]) -> list[str]:
+    out = _head(r, "针灸推理")
+    cd = r.get("candidate_display") or {}
+    if r.get("point_candidates"):
+        out += ["", f"## 候选穴（只供复核；显示 {cd.get('displayed_count')} / {cd.get('total_validated_candidates')}，预算不是治疗的穴数）", "",
+                "| 穴位 | 经脉（五行） | 穴的五行 | 五输 | 意图 | 方法 | 前提 | 施术方式 |", "|---|---|---|---|---|---|---|---|"]
+        for c in r["point_candidates"]:
+            out.append(f"| {c['name_zh']} {c['point_id']} | {c['channel']}（{c['channel_phase'] or '—'}） | {c['point_phase'] or '—'} | {c['five_shu_class'] or '—'} | "
+                       f"{c['intent']['traditional_manipulation']} | {c['method_id']}（{c['theory_support']['level']}） | {'、'.join(c['premise_refs'])} | {c['modality_status']} |")
+    if r.get("educational_mappings"):
+        out += ["", "## 教学映射（假设的前提，不涉及任何人，不是处方）", "", "| 假设 | 穴位 | 经脉（五行） | 穴的五行 | 意图 | 方法 |", "|---|---|---|---|---|---|"]
+        for m in r["educational_mappings"]:
+            h = m["hypothetical_premise"]
+            out.append(f"| {h['organ_entity']}·{h['yin_yang_aspect']}·{h['state']}（“{h['original_spans'][0]['text']}”） | {m['name_zh']} {m['point_id']} | "
+                       f"{m['channel']}（{m['channel_phase'] or '—'}） | {m['point_phase'] or '—'} | {m['intent']['traditional_manipulation']} | {m['method_id']} |")
+    if r.get("pattern_hypotheses"):
+        out += ["", "## 证型比较（教材；不是诊断，不给概率）", "", "| 证型 | 状态 | 支持 | 反对 | 仍缺 |", "|---|---|---|---|---|"]
+        out += [f"| {p['clinical_condition']} | {p['status']} | {'、'.join(p['supporting_observation_refs']) or '—'} | {'、'.join(p['opposing_observation_refs']) or '—'} | "
+                f"{'、'.join(p['missing_concepts'][:6]) or '—'} |" for p in r["pattern_hypotheses"]]
+    if r.get("organ_states"):
+        out += ["", "## 脏腑状态（脏腑与其方面分别保留；五行只是注记）", ""]
+        out += [f"- {s['organ_entity']}·{s['yin_yang_aspect']}：{s['state']}（{s['observation_status']}；{s['phase_annotation'] or '—'}）" for s in r["organ_states"]]
+    out += _observations(r) + _relations(r)
+    for a in r.get("analogies") or []:
+        out += ["", f"## 类比（只是假说）：{'、'.join(a['source_terms'])} ↔ {'、'.join(a['target_terms'])}", "",
+                f"- {a['hypothesis']}；须观察：" + "、".join(f"{x['concept_id']}（{x['status']}）" for x in a["observations_needed"]),
+                "- 不能确定：" + "、".join(a["cannot_establish"])]
+    if r.get("trace"):
+        out += ["", "## 依据的摘要（不是隐藏的推理过程）", ""] + [f"- {t['module']}：{t['summary']}" for t in r["trace"]]
+    out += ["", *[f"> {x}" for x in r.get("limits") or []]]
+    return out + ["", f"> {r.get('notice', '')}"]
+
+
+def acupuncture_audit(r: dict[str, Any]) -> list[str]:
+    out = _head(r, "针灸推理的审核")
+    if r.get("normalized_point_ids"):
+        out += ["", "穴位（统一编号）：" + "、".join(r["normalized_point_ids"])]
+    if r.get("plan_review"):
+        out += ["", "## 方案逐穴核对（经脉、经脉的五行、穴的五行、意图、施术方式各自独立）", "", "| 所给 | 统一为 | 穴表 | 不符 |", "|---|---|---|---|"]
+        for x in r["plan_review"]:
+            t = x.get("table") or {}
+            out.append(f"| {x['input_point_id']} | {x['normalized_point_id']}{'' if x['known'] else '（不在穴表中）'} | "
+                       f"{t.get('name_zh', '—')}；{t.get('channel', '—')}（{t.get('channel_phase') or '—'}）；穴 {t.get('point_phase') or '—'}；{t.get('five_shu_class') or '—'} | "
+                       f"{'、'.join(x.get('mismatches') or []) or '—'} |")
+    if r.get("claims_review"):
+        out += ["", "## 主张逐条", ""]
+        for c in r["claims_review"]:
+            out.append(f"- “{_q(c['claim'], 80)}”：" + ("、".join(c["codes"]) if c["codes"] else c.get("note", "—")))
+            if c.get("hypothesis"):
+                h = c["hypothesis"]
+                out.append(f"  - 个人假说“{h['wording']}”（{h['status']}）：前提 {h.get('premise') or '—'}；{h.get('differs_from') or ''}；{h.get('validation') or ''}")
+    out += _relations(r)
     return out + ["", f"> {r.get('notice', '')}"]
 
 
@@ -1645,7 +1766,8 @@ PAGES = {"canon": canon, "concordance": concordance, "formula": formula, "herb":
          "pairs": pairs, "network": network, "schools": schools, "names": names, "chain": chain, "entities": entities, "places": places, "translate": translate,
          "compare": compare, "family": family, "usage": usage, "properties": properties, "incompat": incompat, "protocol": protocol,
          "casefind": casefind, "similar": similar, "case": case, "casecompare": casecompare, "modifications": modifications,
-         "treatments": treatments, "acupoints": acupoints, "point": point, "wuxing": wuxing}
+         "treatments": treatments, "acupoints": acupoints, "point": point, "wuxing": wuxing,
+         "acupuncture-reason": acupuncture_reason, "acupuncture-audit": acupuncture_audit}
 
 
 def _model_sections(result: dict[str, Any]) -> list[str]:

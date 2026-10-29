@@ -58,6 +58,13 @@ wuxing             五行选穴: Five-Phase relations read into point selection 
                    the named strategies, every method's points with phase and intention (Nanjing 69 same and cross channel,
                    Nanjing 79, Saam, paired and same-name deductions), the points two methods treat oppositely, and the
                    conclusions that do not follow — each a record of six elements, the levels kept apart
+acupuncture_reason 针灸推理的协调: a request whose facts are kept apart (four-state observations with subject, time,
+                   side and the words they came from; organ states by entity and aspect) routed first (sudden hearing
+                   loss, pulsatile or persistent unilateral tinnitus), then asked about (two questions at most), the
+                   patterns compared, and candidate points given only on a premise a server-side review record accepts
+                   for this case version — an assumption stated for teaching gives mappings that are about no one
+acupuncture_audit  针灸推理的审核: claims and a proposed plan checked against the same rules and the point tables (an
+                   analogy is no measurement, 别通 is no 原络, an Earth point no Spleen tonification, SJ is TE …)
 protocol           研究方案: a research question turned into a protocol — questions, hypotheses with their tests and what
                    refutes them, scope, variables, methods (the capabilities to run), analysis, figures, quality checks,
                    limitations, ethics, timeline and a research contract — with a pilot run of its main steps
@@ -91,6 +98,7 @@ from typing import Any
 
 from ..domain import DomainPack
 from .acupuncture import AcupunctureStudy
+from .acupuncture_reasoning import AcupunctureReasoning
 from .argument import ArgumentStudy
 from .base import StudyBase
 from . import charts as _charts
@@ -171,6 +179,7 @@ class StudyService(StudyBase):
         self._places = PlaceStudy(self, self._network)
         self._translate = TranslationStudy(self, self._punct, self._glosses, self._entities)
         self._acupuncture = AcupunctureStudy(self)
+        self._reasoning = AcupunctureReasoning(self._acupuncture)
 
     @property
     def metrology(self) -> Any:
@@ -450,7 +459,9 @@ class StudyService(StudyBase):
         modern evidence apart; with ``framework``, the specific-point tables and every channel's mother and child points."""
         if framework:
             return _charts.attach("acupoints", self._acupuncture.framework(), self)
-        return _charts.attach("acupoints", self._acupuncture.select(text, **kw), self)
+        res = self._acupuncture.select(text, **kw)
+        written = "，".join([text or ""] + [str(x) for k in ("symptoms", "regions") for x in kw.get(k) or ()])
+        return _charts.attach("acupoints", self._reasoning.guard_selection(res, written.strip("，")), self)
 
     def point(self, name: str, **kw: Any) -> dict[str, Any]:
         """腧穴考: one point (a code, name, alias or pinyin) — its channel, specific-point attributes, standard location and
@@ -464,7 +475,29 @@ class StudyService(StudyBase):
         strategies, every method's points (``methods`` to keep some: nanjing69, nanjing69_cross, own_channel, nanjing79,
         saam, interior_exterior, same_name) with their phase and intention, the points two methods treat oppositely, the
         conclusions that do not follow, the rules with their witnesses and the modern evidence apart."""
-        return _charts.attach("wuxing", self._acupuncture.wuxing(text, **kw), self)
+        res = self._acupuncture.wuxing(text, **kw)
+        v = self._reasoning.screen("，".join([text or ""] + [str(x) for x in kw.get("states") or ()]).strip("，"))
+        res["validation"] = v  # the same screen as study.acupoints: an urgent or etiologic assessment comes before any method
+        if v["assessment_status"] in ("needs_urgent_assessment", "needs_etiologic_assessment"):
+            res["withheld"] = {"methods": len(res.get("methods") or []), "why": v["assessment_status"],
+                               "text": "共享的校验：须先就医评估——此处不列各方法的取穴"}
+            res["methods"], res["conflicts"] = [], []
+        return _charts.attach("wuxing", res, self)
+
+    def acupuncture_reason(self, arguments: Any) -> dict[str, Any]:
+        """针灸推理的协调 (study.acupuncture_reason): the arguments of acupuncture_contracts.schema.json#reasonParameters —
+        a mode (knowledge, case_review, method_compare), a query, a case of four-state observations, the requested
+        methods (omitted or [] runs none), a policy, a review_context_ref — answered by a reasonReturn: the execution
+        and the assessment status apart, the observations and organ states as kept, the questions (two at most), the
+        pattern comparison, candidates only on a premise a server-side review accepts, educational mappings, findings,
+        the typed relations, and a trace of what was used."""
+        return self._reasoning.reason(arguments)
+
+    def acupuncture_audit(self, arguments: Any) -> dict[str, Any]:
+        """针灸推理的审核 (study.acupuncture_audit): claims and a proposed plan (auditParameters) checked against the rule
+        pack and the point tables — the findings, the points normalized (SJ → TE), each point's attributes against the
+        table, the conflicts, the typed relations, the questions a case still needs."""
+        return self._reasoning.audit(arguments)
 
     def schools(self, school: str | None = None, **kw: Any) -> dict[str, Any]:
         """学派: what a school's works share against the other works of their time (words, formulas), whom they cite,

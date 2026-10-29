@@ -12,6 +12,10 @@ classics' own entries state.
 * **five phases** — the Liver's points against Liver Wood, the Saam templates of the twelve channels, the paired
   deductions, and Five-Phase states (木实 土虚 金虚, 肝虚, 心实, 肝郁脾虚 …) against the relations, strategies, classical
   statements, opposite intentions, method points and the claims the reasoning must answer (``wuxing``);
+* **reasoning** — study.acupuncture_reason on text alone (ADR 0027): the routing status, the findings, what is read as
+  absent and what must not be, the patterns, the educational mappings; **audit** — study.acupuncture_audit on claims and
+  plans; **acceptance** — the design package's 39 acceptance cases (tests/fixtures/acupuncture_reasoning, where the
+  checkout has them), with the two positive review cases issued through a signed store of this run's own;
 * **real** (the full corpus) — for every Five-Shu point, the entries of the acupuncture books that state its phase and its
   kind (「太渊者，土也……为俞」): how many points are stated, the share agreeing with the data, and every witness that
   differs, to be read (an error of the data, a variant reading — the Siku 甲乙经's 太渊者水也 — or a misreading).
@@ -19,6 +23,8 @@ classics' own entries state.
 
 from __future__ import annotations
 
+import json
+from copy import deepcopy
 from typing import Any
 
 from .base import EvalContext, SuiteResult
@@ -104,20 +110,24 @@ def acupuncture(ctx: EvalContext) -> SuiteResult:
                   "conflicts": set(g.get("conflicts") or []) <= {c["code"] for c in r["conflicts"]},
                   "guards": set(g.get("guards") or []) <= {x["id"] for x in r["guards"]},
                   "claims": set(g.get("claims") or []) <= {x["id"] for x in r["guards"] if x["claim"]},
-                  "points": all(pts.get(m) == want for m, want in (g.get("points") or {}).items())}
+                  "points": all(pts.get(m) == want for m, want in (g.get("points") or {}).items()) and (g.get("points") != {} or not pts)}
         ok = all(checks.values())
         ok_w += ok
         details.append({"case": f"wuxing:{g['id']}", "pass": ok, "failed": [k for k, v in checks.items() if not v]})
+    ok_r, ok_a, acceptance = _reasoning(study, gold, details), _audit(study, gold, details), _acceptance(ctx, study, details)
     metrics: dict[str, Any] = {"tables": {k: v["matched"] for k, v in tables.items()},
                                "combinations": f"{ok_c}/{len(gold['combinations'])}", "selection": f"{ok_s}/{len(gold['selection'])}",
-                               "wuxing": f"{ok_w}/{len(gold['wuxing'])}"}
+                               "wuxing": f"{ok_w}/{len(gold['wuxing'])}", "reasoning": f"{ok_r}/{len(gold.get('reasoning') or [])}",
+                               "audit": f"{ok_a}/{len(gold.get('audit') or [])}", **({"acceptance": acceptance} if acceptance else {})}
     wrong = [{"table": k, **w} for k, v in tables.items() for w in v["wrong"]]
     if wrong:
         details += [{"case": f"table:{w['table']}:{w['what']}", "pass": False, "gold": w["gold"], "data": w["data"]} for w in wrong]
     notes = ["tables, combinations and selection on the data and the reasoning (no corpus needed); the gold is the review's "
              "own tables and examples, written out by hand",
              "wuxing: Five-Phase states against the relations, strategies, classical statements, opposite intentions, guards "
-             "and method points the reasoning must give; the Saam table as its tradition prints it (a school's templates)"]
+             "and method points the reasoning must give; the Saam table as its tradition prints it (a school's templates)",
+             "reasoning, audit, acceptance: the coordinator's routing, questions, premises and mappings and the audit's guards; "
+             "every result also checked against its return contract — the routing rules are examples, not a clinical pathway"]
     big = None if ctx.quick else ctx.corpus_harness()
     if big is not None:
         bst = big.capabilities.get("study")._acupuncture
@@ -143,6 +153,92 @@ def acupuncture(ctx: EvalContext) -> SuiteResult:
         notes.append("real: a point agrees when at least one entry states its phase (kind) as the data does; every differing "
                      "witness is listed — a variant reading, an error of the data or a misreading, for a person to decide")
     return SuiteResult("acupuncture", metrics, details, notes=notes)
+
+
+def _reasoning(study: Any, gold: dict[str, Any], details: list[dict[str, Any]]) -> int:
+    ok_n = 0
+    eng = study._reasoning
+    for g in gold.get("reasoning") or []:
+        a: dict[str, Any] = {"mode": g["mode"], "query": g["text"]}
+        if g["mode"] == "case_review":
+            a["case"] = {"case_id": f"eval.{g['id']}", "case_version": 1, "is_synthetic": True, "observations": [], "organ_states": [],
+                         "premise_claims": [], "source_messages": [{"message_id": "eval.message", "text": g["text"], "actor_kind": "synthetic_fixture"}],
+                         "case_subject_ref": "subject.eval"}
+        if "methods" in g:
+            a["requested_methods"] = g["methods"]
+        r = eng.reason(a)
+        now = {o["concept_id"]: o["status"] for o in r["normalized_observations"]
+               if o["subject_scope"] == "current_case_subject" and o["time"]["temporal_scope"] == "current"}
+        codes = {f["code"] for f in r["findings"]}
+        maps = sorted(f"{m['point_id']}:{m['intent']['traditional_manipulation']}" for m in r["educational_mappings"])
+        checks = {"contract": not eng.contracts.errors(r, "reasonReturn"), "status": r["assessment_status"] == g["status"],
+                  "codes": set(g.get("codes") or []) <= codes, "absent": all(now.get(c) == "absent" for c in g.get("absent") or []),
+                  "not_absent": all(now.get(c) != "absent" for c in g.get("not_absent") or []),
+                  "questions": [q["question_id"] for q in r["questions"]][:len(g.get("questions") or [])] == list(g.get("questions") or []),
+                  "plausible": set(g.get("plausible") or []) <= {p["clinical_condition"] for p in r["pattern_hypotheses"] if p["status"] == "plausible"},
+                  "mappings": "mappings" not in g or maps == sorted(g["mappings"]), "no_candidates": not r["point_candidates"],
+                  "two_questions": len(r["questions"]) <= 2}
+        ok = all(checks.values())
+        ok_n += ok
+        details.append({"case": f"reasoning:{g['id']}", "pass": ok, "status": r["assessment_status"], "codes": sorted(codes),
+                        "failed": [k for k, v in checks.items() if not v]})
+    return ok_n
+
+
+def _audit(study: Any, gold: dict[str, Any], details: list[dict[str, Any]]) -> int:
+    ok_n = 0
+    eng = study._reasoning
+    for g in gold.get("audit") or []:
+        plan = list(g.get("plan_full") or []) + [{"point_id": x.partition(":")[0], **({"intent": x.partition(":")[2]} if ":" in x else {})}
+                                                for x in g.get("plan") or []]
+        a: dict[str, Any] = {"mode": g.get("mode", "knowledge"), "query": "；".join(g.get("claims") or []) or "核对方案",
+                             **({"proposed_claims": g["claims"]} if g.get("claims") else {}), **({"proposed_plan": plan} if plan else {})}
+        r = eng.audit(a)
+        codes = {f["code"] for f in r["findings"]}
+        checks = {"contract": not eng.contracts.errors(r, "auditReturn"), "codes": set(g.get("codes") or []) <= codes,
+                  "status": r["assessment_status"] == g.get("status", "educational_only"),
+                  "points": "points" not in g or r["normalized_point_ids"] == g["points"]}
+        ok = all(checks.values())
+        ok_n += ok
+        details.append({"case": f"audit:{g['id']}", "pass": ok, "codes": sorted(codes), "failed": [k for k, v in checks.items() if not v]})
+    return ok_n
+
+
+def _acceptance(ctx: EvalContext, study: Any, details: list[dict[str, Any]]) -> str | None:
+    """The design package's acceptance cases, where the checkout has them: the status, the findings, the candidates and the
+    mappings each must (not) give, two questions at most, the contract — the review fixtures issued server side here."""
+    from ..plugins.classics.study.acupuncture_reasoning import AcupunctureReasoning, ReviewStore
+
+    path = ctx.home / "tests" / "fixtures" / "acupuncture_reasoning" / "acceptance_cases.json"
+    if not path.exists():
+        return None
+    suite = json.loads(path.read_text(encoding="utf-8"))
+    store = ReviewStore(b"eval-run-review-key")
+    eng = AcupunctureReasoning(study._acupuncture, reviews=store)
+    for c in suite["cases"]:
+        if c.get("trusted_server_fixture"):
+            store.issue({**c["trusted_server_fixture"], "knowledge_version": eng.knowledge_version, "rulepack_version": eng.rulepack_version})
+    ok_n = 0
+    for c in suite["cases"]:
+        req, exp = c["request"], c["expected"]
+        reason = req["tool"] == "study.acupuncture_reason"
+        r = (eng.reason if reason else eng.audit)(deepcopy(req["arguments"]))
+        pair = lambda xs: {(x["point_id"], x["intent"]["traditional_manipulation"]) for x in xs}  # noqa: E731
+        want = lambda xs: {(x["point_id"], x["intent"]) for x in xs}  # noqa: E731
+        codes = {f["code"] for f in r["findings"]}
+        checks = {"contract": not eng.contracts.errors(r, "reasonReturn" if reason else "auditReturn"),
+                  "executed": (r["execution_status"] == "completed") == exp["request_schema_valid"],
+                  "status": r["assessment_status"] in exp["assessment_status_any_of"],
+                  "findings": set(exp["must_include_findings"]) <= codes and not set(exp["must_not_include_findings"]) & codes,
+                  "candidates": want(exp["must_include_candidates"]) <= pair(r.get("point_candidates") or [])
+                  and not want(exp["must_not_include_candidates"]) & pair(r.get("point_candidates") or []),
+                  "mappings": want(exp.get("must_include_educational_mappings") or []) <= pair(r.get("educational_mappings") or []),
+                  "questions": len(r["questions"]) <= exp["questions_maximum"]}
+        ok = all(checks.values())
+        ok_n += ok
+        details.append({"case": f"acceptance:{c['case_id']}", "pass": ok, "status": r["assessment_status"],
+                        "failed": [k for k, v in checks.items() if not v]})
+    return f"{ok_n}/{len(suite['cases'])}"
 
 
 __all__ = ["acupuncture"]

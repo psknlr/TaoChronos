@@ -1,0 +1,3420 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "taochronos:acupuncture-reasoning-contracts:1",
+ "title": "TaoChronos acupuncture reasoning and audit contracts (study.acupuncture_reason, study.acupuncture_audit)",
+ "description": "Parameter and return contracts of the two tools, adopted from the TaoChronos Acupuncture Tool Design Package 1.0 (29 October 2026) and adapted for the integrated implementation (docs/adr/0026-acupuncture-reasoning-contracts.md): the tools are registered; artifact_type, production_integration and source_registry_ref name this implementation; mode may be null when the call is rejected; returns may carry the TaoChronos additions notice, evidence, analogies, directions, limits, review, summary (reason) and plan_review, claims_review, evidence, notice, summary (audit); relation_type adds organ_orifice, channel_course, functional_direction and analogy.  Everything else is the package's.",
+ "oneOf": [
+  {
+   "$ref": "#/$defs/reasonRequest"
+  },
+  {
+   "$ref": "#/$defs/reasonResponse"
+  },
+  {
+   "$ref": "#/$defs/auditRequest"
+  },
+  {
+   "$ref": "#/$defs/auditResponse"
+  },
+  {
+   "$ref": "#/$defs/rulePack"
+  },
+  {
+   "$ref": "#/$defs/acceptanceSuite"
+  }
+ ],
+ "$defs": {
+  "phase": {
+   "enum": [
+    "wood",
+    "fire",
+    "earth",
+    "metal",
+    "water",
+    null
+   ]
+  },
+  "observationStatus": {
+   "type": "string",
+   "enum": [
+    "present",
+    "absent",
+    "unknown",
+    "conflicting"
+   ]
+  },
+  "assessmentStatus": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "enum": [
+    "educational_only",
+    "needs_information",
+    "needs_urgent_assessment",
+    "needs_etiologic_assessment",
+    "pattern_comparison",
+    "candidate_review",
+    "rule_conflict",
+    "no_applicable_rule",
+    null
+   ],
+   "description": "null indicates that execution has not completed and no assessment has been made; no_applicable_rule must not substitute for invalid parameters or an unavailable dependency."
+  },
+  "methodId": {
+   "type": "string",
+   "enum": [
+    "nanjing69",
+    "nanjing69_cross",
+    "own_channel",
+    "nanjing79",
+    "saam",
+    "interior_exterior",
+    "same_name",
+    "yuan_luo",
+    "bietong"
+   ]
+  },
+  "pointId": {
+   "type": "string",
+   "pattern": "^(?:(?:LU|LI|ST|SP|HT|SI|BL|KI|PC|TE|GB|LR|CV|GV)[0-9]{1,3}|EX-[A-Z]+[0-9]{1,3})$"
+  },
+  "inputPointId": {
+   "type": "string",
+   "pattern": "^(?:(?:LU|LI|ST|SP|HT|SI|BL|KI|PC|TE|SJ|GB|LR|CV|GV)[0-9]{1,3}|EX-[A-Z]+[0-9]{1,3})$"
+  },
+  "span": {
+   "type": "object",
+   "properties": {
+    "source_message_id": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "text": {
+     "type": "string"
+    },
+    "start": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 0
+    },
+    "end": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 0
+    },
+    "offset_unit": {
+     "const": "unicode_code_points"
+    }
+   },
+   "required": [
+    "source_message_id",
+    "text",
+    "start",
+    "end",
+    "offset_unit"
+   ],
+   "additionalProperties": false
+  },
+  "timeContext": {
+   "type": "object",
+   "properties": {
+    "observed_at": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "onset_at": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "duration_hours": {
+     "type": [
+      "number",
+      "null"
+     ],
+     "minimum": 0
+    },
+    "timezone": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "temporal_scope": {
+     "type": "string",
+     "enum": [
+      "current",
+      "past",
+      "hypothetical",
+      "unknown"
+     ]
+    },
+    "recorded_at": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Record a timestamp with its time zone when known; retain null when unknown."
+    },
+    "valid_from": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Record a timestamp with its time zone when known; retain null when unknown."
+    },
+    "valid_until": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Record a timestamp with its time zone when known; retain null when unknown."
+    }
+   },
+   "required": [
+    "observed_at",
+    "onset_at",
+    "duration_hours",
+    "timezone",
+    "temporal_scope"
+   ],
+   "additionalProperties": false
+  },
+  "provenance": {
+   "type": "object",
+   "properties": {
+    "kind": {
+     "type": "string",
+     "enum": [
+      "patient_report",
+      "clinician_input",
+      "examination",
+      "measurement",
+      "literature",
+      "user_metaphor",
+      "model_extraction",
+      "deterministic_control",
+      "synthetic_fixture"
+     ]
+    },
+    "actor_id": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "source_message_id": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "source_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     },
+     "uniqueItems": true
+    },
+    "is_inference": {
+     "type": "boolean"
+    },
+    "extraction_method": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "kind",
+    "actor_id",
+    "source_message_id",
+    "source_refs",
+    "is_inference",
+    "extraction_method"
+   ],
+   "additionalProperties": false
+  },
+  "entity": {
+   "type": "object",
+   "properties": {
+    "entity_kind": {
+     "type": "string",
+     "enum": [
+      "zangfu",
+      "meridian",
+      "symptom",
+      "sign",
+      "measurement",
+      "body_region",
+      "functional_aspect",
+      "context",
+      "metaphor",
+      "claim"
+     ]
+    },
+    "entity_id": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "organ_entity": {
+     "enum": [
+      "liver",
+      "gallbladder",
+      "heart",
+      "small_intestine",
+      "spleen",
+      "stomach",
+      "lung",
+      "large_intestine",
+      "kidney",
+      "bladder",
+      "pericardium",
+      "sanjiao",
+      null
+     ]
+    },
+    "yin_yang_aspect": {
+     "enum": [
+      "yin",
+      "yang",
+      "qi",
+      "blood",
+      "essence",
+      "fluid_processing",
+      "unspecified",
+      null
+     ]
+    }
+   },
+   "required": [
+    "entity_kind",
+    "entity_id",
+    "organ_entity",
+    "yin_yang_aspect"
+   ],
+   "additionalProperties": false,
+   "description": "Record the zang-fu entity separately from its yin, yang, or other functional aspect; a Five-Phase label must not replace the entity identifier."
+  },
+  "observation": {
+   "type": "object",
+   "properties": {
+    "observation_id": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "concept_id": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "status": {
+     "$ref": "#/$defs/observationStatus"
+    },
+    "value": {
+     "type": [
+      "string",
+      "number",
+      "boolean",
+      "null"
+     ]
+    },
+    "entity": {
+     "$ref": "#/$defs/entity"
+    },
+    "time": {
+     "$ref": "#/$defs/timeContext"
+    },
+    "context": {
+     "type": "object",
+     "properties": {
+      "scope": {
+       "type": "string",
+       "enum": [
+        "current_case",
+        "past_history",
+        "hypothetical",
+        "quoted_claim"
+       ]
+      },
+      "setting": {
+       "type": [
+        "string",
+        "null"
+       ]
+      },
+      "note": {
+       "type": [
+        "string",
+        "null"
+       ]
+      }
+     },
+     "required": [
+      "scope",
+      "setting",
+      "note"
+     ],
+     "additionalProperties": false
+    },
+    "original_spans": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/span"
+     }
+    },
+    "provenance": {
+     "$ref": "#/$defs/provenance"
+    },
+    "subject_ref": {
+     "type": "string",
+     "minLength": 1,
+     "description": "Compare with case.case_subject_ref; facts about a relative, a literature case, or another person must not be attributed to this case."
+    },
+    "subject_scope": {
+     "enum": [
+      "current_case_subject",
+      "other_person",
+      "quoted_or_literature",
+      "hypothetical_subject",
+      "unknown"
+     ]
+    },
+    "laterality": {
+     "enum": [
+      "left",
+      "right",
+      "bilateral",
+      "midline",
+      "not_applicable",
+      "unknown",
+      "conflicting"
+     ]
+    }
+   },
+   "required": [
+    "observation_id",
+    "concept_id",
+    "status",
+    "value",
+    "entity",
+    "time",
+    "context",
+    "original_spans",
+    "provenance",
+    "subject_ref",
+    "subject_scope",
+    "laterality"
+   ],
+   "additionalProperties": false,
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "status": {
+        "const": "unknown"
+       }
+      },
+      "required": [
+       "status"
+      ]
+     },
+     "then": {
+      "properties": {
+       "value": {
+        "const": null
+       }
+      }
+     }
+    }
+   ]
+  },
+  "organState": {
+   "type": "object",
+   "properties": {
+    "organ_entity": {
+     "type": "string",
+     "enum": [
+      "liver",
+      "gallbladder",
+      "heart",
+      "small_intestine",
+      "spleen",
+      "stomach",
+      "lung",
+      "large_intestine",
+      "kidney",
+      "bladder",
+      "pericardium",
+      "sanjiao"
+     ]
+    },
+    "yin_yang_aspect": {
+     "type": "string",
+     "enum": [
+      "yin",
+      "yang",
+      "qi",
+      "blood",
+      "essence",
+      "fluid_processing",
+      "unspecified"
+     ]
+    },
+    "state": {
+     "type": "string",
+     "enum": [
+      "excess",
+      "deficiency",
+      "mixed",
+      "neither_excess_nor_deficiency",
+      "balanced",
+      "unknown",
+      "conflicting"
+     ],
+     "description": "mixed preserves coexisting excess and deficiency; neither_excess_nor_deficiency must be explicitly established. balanced is a general description of balance and does not automatically satisfy the neither-excess-nor-deficiency premise in Difficulty 69 of the Nanjing."
+    },
+    "observation_status": {
+     "$ref": "#/$defs/observationStatus"
+    },
+    "observation_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     }
+    },
+    "phase_annotation": {
+     "$ref": "#/$defs/phase"
+    },
+    "phase_annotation_origin": {
+     "type": "string",
+     "enum": [
+      "study.acupoints_framework",
+      "unresolved"
+     ]
+    }
+   },
+   "required": [
+    "organ_entity",
+    "yin_yang_aspect",
+    "state",
+    "observation_status",
+    "observation_refs",
+    "phase_annotation",
+    "phase_annotation_origin"
+   ],
+   "additionalProperties": false,
+   "description": "phase_annotation is a lookup annotation only; organ_entity and yin_yang_aspect must not be discarded when matching clinical premises."
+  },
+  "case": {
+   "type": "object",
+   "properties": {
+    "case_id": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "case_version": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "is_synthetic": {
+     "type": "boolean"
+    },
+    "observations": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/observation"
+     }
+    },
+    "organ_states": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/organState"
+     }
+    },
+    "source_messages": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "message_id": {
+        "type": "string",
+        "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+        "minLength": 1,
+        "maxLength": 200
+       },
+       "text": {
+        "type": "string"
+       },
+       "actor_kind": {
+        "type": "string",
+        "enum": [
+         "patient",
+         "clinician",
+         "researcher",
+         "synthetic_fixture"
+        ]
+       }
+      },
+      "required": [
+       "message_id",
+       "text",
+       "actor_kind"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "premise_claims": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/premiseClaim"
+     }
+    },
+    "case_subject_ref": {
+     "type": "string",
+     "minLength": 1
+    }
+   },
+   "required": [
+    "case_id",
+    "case_version",
+    "is_synthetic",
+    "observations",
+    "organ_states",
+    "premise_claims",
+    "source_messages",
+    "case_subject_ref"
+   ],
+   "additionalProperties": false
+  },
+  "policy": {
+   "type": "object",
+   "properties": {
+    "allow_school_methods": {
+     "type": "boolean",
+     "default": false
+    },
+    "allow_deduction_methods": {
+     "type": "boolean",
+     "default": false
+    },
+    "unvalidated_hypotheses": {
+     "type": "string",
+     "enum": [
+      "exclude",
+      "explanation_only"
+     ],
+     "default": "exclude"
+    },
+    "allow_custom_unvalidated_rules": {
+     "const": false
+    },
+    "max_questions_per_turn": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 2,
+     "default": 2
+    },
+    "include_procedure_parameters": {
+     "const": false
+    },
+    "max_candidate_points": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 30,
+     "default": 6,
+     "description": "A candidate display budget only, not a treatment point count or clinical limit. Complete guard and conflict checks before paginating or truncating eligible candidates; retain the count of undisplayed candidates and do not truncate safety findings."
+    }
+   },
+   "required": [],
+   "additionalProperties": false
+  },
+  "reasonParameters": {
+   "type": "object",
+   "properties": {
+    "mode": {
+     "type": "string",
+     "enum": [
+      "knowledge",
+      "case_review",
+      "method_compare"
+     ]
+    },
+    "query": {
+     "type": "string",
+     "minLength": 1
+    },
+    "case": {
+     "$ref": "#/$defs/case"
+    },
+    "requested_methods": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/methodId"
+     },
+     "uniqueItems": true,
+     "default": [],
+     "description": "Omission and [] both mean that no point-selection method will run for this request; neither falls back to all. Knowledge lookup, case routing, and claim auditing may continue. An empty value does not by itself trigger a question asking the user to select a method. If the natural-language request explicitly specifies a method, the caller should place the confirmed method ID in this array; query must not override an explicitly empty array."
+    },
+    "requested_points": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/inputPointId"
+     },
+     "uniqueItems": true
+    },
+    "policy": {
+     "$ref": "#/$defs/policy"
+    },
+    "knowledge_version": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "rulepack_version": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "previous_result_id": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "review_context_ref": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "An opaque reference to a server-side record. Accept the reference only, not client-supplied trust flags, signature results, or verified states. The server must check the requesting principal, case version and digest, and authorized purpose."
+    }
+   },
+   "required": [
+    "mode",
+    "query"
+   ],
+   "additionalProperties": false,
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "mode": {
+        "const": "case_review"
+       }
+      },
+      "required": [
+       "mode"
+      ]
+     },
+     "then": {
+      "required": [
+       "case"
+      ]
+     }
+    }
+   ],
+   "description": "requested_methods rejects unknown values; invalid filters must not fall back to all. Normalize the input alias SJ to TE."
+  },
+  "proposedPoint": {
+   "type": "object",
+   "properties": {
+    "point_id": {
+     "$ref": "#/$defs/inputPointId"
+    },
+    "channel": {
+     "type": "string",
+     "enum": [
+      "LU",
+      "LI",
+      "ST",
+      "SP",
+      "HT",
+      "SI",
+      "BL",
+      "KI",
+      "PC",
+      "TE",
+      "GB",
+      "LR",
+      "CV",
+      "GV",
+      "EX",
+      "SJ"
+     ]
+    },
+    "channel_phase": {
+     "$ref": "#/$defs/phase"
+    },
+    "point_phase": {
+     "$ref": "#/$defs/phase"
+    },
+    "intent": {
+     "type": "string",
+     "enum": [
+      "tonify",
+      "reduce",
+      "even",
+      "undetermined"
+     ]
+    },
+    "modality": {
+     "type": "string",
+     "enum": [
+      "needle",
+      "moxibustion",
+      "electroacupuncture",
+      "acupressure",
+      "undetermined"
+     ]
+    },
+    "claimed_relation": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "point_id"
+   ],
+   "additionalProperties": false
+  },
+  "auditParameters": {
+   "type": "object",
+   "properties": {
+    "mode": {
+     "type": "string",
+     "enum": [
+      "knowledge",
+      "case_review",
+      "method_compare"
+     ]
+    },
+    "query": {
+     "type": "string",
+     "minLength": 1
+    },
+    "case": {
+     "$ref": "#/$defs/case"
+    },
+    "proposed_claims": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "minLength": 1
+     }
+    },
+    "proposed_plan": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/proposedPoint"
+     }
+    },
+    "requested_methods": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/methodId"
+     },
+     "uniqueItems": true,
+     "default": [],
+     "description": "Omission and [] both mean that no point-selection method will run for this request; neither falls back to all. Knowledge lookup, case routing, and claim auditing may continue. An empty value does not by itself trigger a question asking the user to select a method. If the natural-language request explicitly specifies a method, the caller should place the confirmed method ID in this array; query must not override an explicitly empty array."
+    },
+    "policy": {
+     "$ref": "#/$defs/policy"
+    },
+    "review_context_ref": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "An opaque reference to a server-side record. Accept the reference only, not client-supplied trust flags, signature results, or verified states. The server must check the requesting principal, case version and digest, and authorized purpose."
+    }
+   },
+   "required": [
+    "mode",
+    "query"
+   ],
+   "additionalProperties": false,
+   "anyOf": [
+    {
+     "required": [
+      "proposed_claims"
+     ],
+     "properties": {
+      "proposed_claims": {
+       "minItems": 1
+      }
+     }
+    },
+    {
+     "required": [
+      "proposed_plan"
+     ],
+     "properties": {
+      "proposed_plan": {
+       "minItems": 1
+      }
+     }
+    }
+   ],
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "mode": {
+        "const": "case_review"
+       }
+      },
+      "required": [
+       "mode"
+      ]
+     },
+     "then": {
+      "required": [
+       "case"
+      ]
+     }
+    }
+   ]
+  },
+  "question": {
+   "type": "object",
+   "properties": {
+    "question_id": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "text": {
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 100
+    },
+    "target_concepts": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     },
+     "minItems": 1
+    },
+    "reason": {
+     "type": "string",
+     "minLength": 1
+    }
+   },
+   "required": [
+    "question_id",
+    "text",
+    "target_concepts",
+    "reason"
+   ],
+   "additionalProperties": false
+  },
+  "clinicalEfficacy": {
+   "type": "object",
+   "properties": {
+    "status": {
+     "type": "string",
+     "enum": [
+      "not_established_for_rule",
+      "not_applicable",
+      "direct_evidence_identified",
+      "indirect_evidence_only",
+      "unresolved"
+     ]
+    },
+    "source_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     },
+     "uniqueItems": true
+    },
+    "applicability_note": {
+     "type": "string"
+    },
+    "does_not_validate_theory_automatically": {
+     "const": true
+    }
+   },
+   "required": [
+    "status",
+    "source_refs",
+    "applicability_note",
+    "does_not_validate_theory_automatically"
+   ],
+   "additionalProperties": false
+  },
+  "theorySupport": {
+   "type": "object",
+   "properties": {
+    "level": {
+     "type": "string",
+     "enum": [
+      "classical",
+      "standard",
+      "teaching",
+      "school",
+      "deduction",
+      "empirical",
+      "personal_hypothesis"
+     ]
+    },
+    "source_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     },
+     "uniqueItems": true
+    },
+    "rule_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     },
+     "uniqueItems": true
+    },
+    "scope_note": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "level",
+    "source_refs",
+    "rule_refs",
+    "scope_note"
+   ],
+   "additionalProperties": false
+  },
+  "patternHypothesis": {
+   "type": "object",
+   "properties": {
+    "hypothesis_id": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "clinical_condition": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "status": {
+     "type": "string",
+     "enum": [
+      "insufficient_information",
+      "plausible",
+      "contradicted",
+      "reviewed_premise"
+     ]
+    },
+    "supporting_observation_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     }
+    },
+    "opposing_observation_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     }
+    },
+    "missing_concepts": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     }
+    },
+    "organ_entities": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "enum": [
+       "liver",
+       "gallbladder",
+       "heart",
+       "small_intestine",
+       "spleen",
+       "stomach",
+       "lung",
+       "large_intestine",
+       "kidney",
+       "bladder",
+       "pericardium",
+       "sanjiao"
+      ]
+     },
+     "uniqueItems": true
+    },
+    "yin_yang_aspects": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "enum": [
+       "yin",
+       "yang",
+       "qi",
+       "blood",
+       "essence",
+       "fluid_processing",
+       "unspecified"
+      ]
+     },
+     "uniqueItems": true
+    },
+    "theory_support": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/theorySupport"
+     }
+    },
+    "clinical_efficacy": {
+     "$ref": "#/$defs/clinicalEfficacy"
+    }
+   },
+   "required": [
+    "hypothesis_id",
+    "clinical_condition",
+    "status",
+    "supporting_observation_refs",
+    "opposing_observation_refs",
+    "missing_concepts",
+    "organ_entities",
+    "yin_yang_aspects",
+    "theory_support",
+    "clinical_efficacy"
+   ],
+   "additionalProperties": false,
+   "description": "No diagnosis_probability is provided; rule-match strength must not be represented as a clinical probability."
+  },
+  "candidatePoint": {
+   "type": "object",
+   "properties": {
+    "point_id": {
+     "$ref": "#/$defs/pointId"
+    },
+    "name_zh": {
+     "type": "string"
+    },
+    "input_aliases": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "uniqueItems": true
+    },
+    "channel": {
+     "type": "string",
+     "enum": [
+      "LU",
+      "LI",
+      "ST",
+      "SP",
+      "HT",
+      "SI",
+      "BL",
+      "KI",
+      "PC",
+      "TE",
+      "GB",
+      "LR",
+      "CV",
+      "GV",
+      "EX"
+     ]
+    },
+    "channel_phase": {
+     "$ref": "#/$defs/phase"
+    },
+    "point_phase": {
+     "$ref": "#/$defs/phase"
+    },
+    "five_shu_class": {
+     "enum": [
+      "jing_well",
+      "ying_spring",
+      "shu_stream",
+      "jing_river",
+      "he_sea",
+      null
+     ]
+    },
+    "intent": {
+     "type": "object",
+     "properties": {
+      "traditional_manipulation": {
+       "type": "string",
+       "enum": [
+        "tonify",
+        "reduce",
+        "even",
+        "undetermined"
+       ]
+      },
+      "treatment_principle": {
+       "type": "string",
+       "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+       "minLength": 1,
+       "maxLength": 200
+      },
+      "not_a_procedure_order": {
+       "const": true
+      }
+     },
+     "required": [
+      "traditional_manipulation",
+      "treatment_principle",
+      "not_a_procedure_order"
+     ],
+     "additionalProperties": false
+    },
+    "modality": {
+     "type": "string",
+     "enum": [
+      "needle",
+      "moxibustion",
+      "electroacupuncture",
+      "acupressure",
+      "undetermined"
+     ]
+    },
+    "modality_status": {
+     "type": "string",
+     "enum": [
+      "not_determined",
+      "requires_separate_assessment",
+      "excluded",
+      "educational_only"
+     ]
+    },
+    "method_id": {
+     "$ref": "#/$defs/methodId"
+    },
+    "premise_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     },
+     "minItems": 1
+    },
+    "theory_support": {
+     "$ref": "#/$defs/theorySupport"
+    },
+    "clinical_efficacy": {
+     "$ref": "#/$defs/clinicalEfficacy"
+    },
+    "lookup_tool": {
+     "const": "study.point"
+    },
+    "usage_scope": {
+     "const": "candidate_review_only"
+    }
+   },
+   "required": [
+    "point_id",
+    "name_zh",
+    "input_aliases",
+    "channel",
+    "channel_phase",
+    "point_phase",
+    "five_shu_class",
+    "intent",
+    "modality",
+    "modality_status",
+    "method_id",
+    "premise_refs",
+    "theory_support",
+    "clinical_efficacy",
+    "lookup_tool",
+    "usage_scope"
+   ],
+   "additionalProperties": false,
+   "description": "channel_phase, point_phase, intent, and modality are independent fields. Use TE as the canonical Sanjiao channel code in point identifiers."
+  },
+  "finding": {
+   "type": "object",
+   "properties": {
+    "code": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "severity": {
+     "type": "string",
+     "enum": [
+      "information",
+      "clarification",
+      "block"
+     ]
+    },
+    "message": {
+     "type": "string"
+    },
+    "observation_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     }
+    },
+    "candidate_refs": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/pointId"
+     }
+    },
+    "blocked_conclusions": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "suggested_restatement": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "source_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     }
+    }
+   },
+   "required": [
+    "code",
+    "severity",
+    "message",
+    "observation_refs",
+    "candidate_refs",
+    "blocked_conclusions",
+    "suggested_restatement",
+    "source_refs"
+   ],
+   "additionalProperties": false
+  },
+  "traceStep": {
+   "type": "object",
+   "properties": {
+    "step_id": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "module": {
+     "type": "string",
+     "enum": [
+      "normalize",
+      "clinical_route",
+      "pattern_review",
+      "method_selection",
+      "legacy_lookup",
+      "constraint_audit",
+      "response"
+     ]
+    },
+    "input_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     }
+    },
+    "rule_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     }
+    },
+    "source_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     }
+    },
+    "summary": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "step_id",
+    "module",
+    "input_refs",
+    "rule_refs",
+    "source_refs",
+    "summary"
+   ],
+   "additionalProperties": false,
+   "description": "An auditable summary of supporting information, not the model's hidden reasoning process."
+  },
+  "reasonReturn": {
+   "type": "object",
+   "properties": {
+    "artifact_type": {
+     "const": "reason_result"
+    },
+    "execution_status": {
+     "type": "string",
+     "enum": [
+      "completed",
+      "invalid_parameters",
+      "dependency_unavailable"
+     ]
+    },
+    "assessment_status": {
+     "$ref": "#/$defs/assessmentStatus"
+    },
+    "result_id": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "mode": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "knowledge",
+      "case_review",
+      "method_compare",
+      null
+     ]
+    },
+    "case_id": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "case_version": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 1
+    },
+    "normalized_observations": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/observation"
+     }
+    },
+    "organ_states": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/organState"
+     }
+    },
+    "pattern_hypotheses": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/patternHypothesis"
+     }
+    },
+    "questions": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/question"
+     },
+     "maxItems": 2
+    },
+    "point_candidates": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/candidatePoint"
+     }
+    },
+    "findings": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/finding"
+     }
+    },
+    "trace": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/traceStep"
+     }
+    },
+    "knowledge_version": {
+     "type": "string"
+    },
+    "rulepack_version": {
+     "type": "string"
+    },
+    "source_registry_ref": {
+     "const": "acupuncture_reasoning.yaml#/sources"
+    },
+    "clinical_condition_is_not_diagnosis_probability": {
+     "const": true
+    },
+    "production_integration": {
+     "const": "taochronos.study"
+    },
+    "educational_mappings": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/educationalMapping"
+     }
+    },
+    "method_resolution": {
+     "$ref": "#/$defs/methodResolution"
+    },
+    "candidate_display": {
+     "type": "object",
+     "properties": {
+      "budget": {
+       "type": "integer",
+       "minimum": 1,
+       "maximum": 30
+      },
+      "total_validated_candidates": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "displayed_count": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "remaining_count": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "budget_is_not_treatment_point_count": {
+       "const": true
+      }
+     },
+     "required": [
+      "budget",
+      "total_validated_candidates",
+      "displayed_count",
+      "remaining_count",
+      "budget_is_not_treatment_point_count"
+     ],
+     "additionalProperties": false
+    },
+    "theory_relations": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/relation"
+     }
+    },
+    "notice": {
+     "type": "string"
+    },
+    "evidence": {
+     "type": "object"
+    },
+    "analogies": {
+     "type": "array",
+     "items": {
+      "type": "object"
+     }
+    },
+    "directions": {
+     "type": "array",
+     "items": {
+      "type": "object"
+     }
+    },
+    "limits": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "review": {
+     "type": "object"
+    },
+    "summary": {
+     "type": "object"
+    }
+   },
+   "required": [
+    "artifact_type",
+    "execution_status",
+    "assessment_status",
+    "result_id",
+    "mode",
+    "case_id",
+    "case_version",
+    "normalized_observations",
+    "organ_states",
+    "pattern_hypotheses",
+    "questions",
+    "point_candidates",
+    "findings",
+    "trace",
+    "knowledge_version",
+    "rulepack_version",
+    "source_registry_ref",
+    "clinical_condition_is_not_diagnosis_probability",
+    "production_integration",
+    "educational_mappings",
+    "method_resolution",
+    "candidate_display",
+    "theory_relations"
+   ],
+   "additionalProperties": false,
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "assessment_status": {
+        "enum": [
+         "educational_only",
+         "needs_information",
+         "needs_urgent_assessment",
+         "needs_etiologic_assessment",
+         "pattern_comparison",
+         "rule_conflict",
+         "no_applicable_rule",
+         null
+        ]
+       }
+      },
+      "required": [
+       "assessment_status"
+      ]
+     },
+     "then": {
+      "properties": {
+       "point_candidates": {
+        "maxItems": 0
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "mode": {
+        "const": "knowledge"
+       },
+       "execution_status": {
+        "const": "completed"
+       }
+      },
+      "required": [
+       "mode",
+       "execution_status"
+      ]
+     },
+     "then": {
+      "properties": {
+       "assessment_status": {
+        "enum": [
+         "educational_only",
+         "no_applicable_rule"
+        ]
+       },
+       "point_candidates": {
+        "maxItems": 0
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "mode": {
+        "const": "case_review"
+       }
+      },
+      "required": [
+       "mode"
+      ]
+     },
+     "then": {
+      "properties": {
+       "educational_mappings": {
+        "maxItems": 0
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "execution_status": {
+        "const": "completed"
+       }
+      },
+      "required": [
+       "execution_status"
+      ]
+     },
+     "then": {
+      "properties": {
+       "assessment_status": {
+        "$ref": "#/$defs/evaluatedAssessmentStatus"
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "execution_status": {
+        "enum": [
+         "invalid_parameters",
+         "dependency_unavailable"
+        ]
+       }
+      },
+      "required": [
+       "execution_status"
+      ]
+     },
+     "then": {
+      "properties": {
+       "assessment_status": {
+        "const": null
+       },
+       "point_candidates": {
+        "maxItems": 0
+       },
+       "educational_mappings": {
+        "maxItems": 0
+       }
+      }
+     }
+    }
+   ]
+  },
+  "auditReturn": {
+   "type": "object",
+   "properties": {
+    "artifact_type": {
+     "const": "audit_result"
+    },
+    "execution_status": {
+     "type": "string",
+     "enum": [
+      "completed",
+      "invalid_parameters",
+      "dependency_unavailable"
+     ]
+    },
+    "assessment_status": {
+     "$ref": "#/$defs/assessmentStatus"
+    },
+    "findings": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/finding"
+     }
+    },
+    "questions": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/question"
+     },
+     "maxItems": 2
+    },
+    "normalized_point_ids": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/pointId"
+     },
+     "uniqueItems": true
+    },
+    "production_integration": {
+     "const": "taochronos.study"
+    },
+    "method_resolution": {
+     "$ref": "#/$defs/methodResolution"
+    },
+    "theory_relations": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/relation"
+     }
+    },
+    "result_id": {
+     "type": "string",
+     "minLength": 1
+    },
+    "case_id": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "case_version": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 1
+    },
+    "knowledge_version": {
+     "type": "string"
+    },
+    "rulepack_version": {
+     "type": "string"
+    },
+    "notice": {
+     "type": "string"
+    },
+    "evidence": {
+     "type": "object"
+    },
+    "plan_review": {
+     "type": "array",
+     "items": {
+      "type": "object"
+     }
+    },
+    "claims_review": {
+     "type": "array",
+     "items": {
+      "type": "object"
+     }
+    },
+    "summary": {
+     "type": "object"
+    },
+    "mode": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "knowledge",
+      "case_review",
+      "method_compare",
+      null
+     ]
+    },
+    "organ_states": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/organState"
+     }
+    },
+    "normalized_observations": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/observation"
+     }
+    }
+   },
+   "required": [
+    "artifact_type",
+    "execution_status",
+    "assessment_status",
+    "findings",
+    "questions",
+    "normalized_point_ids",
+    "production_integration",
+    "method_resolution",
+    "theory_relations",
+    "result_id",
+    "case_id",
+    "case_version",
+    "knowledge_version",
+    "rulepack_version"
+   ],
+   "additionalProperties": false,
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "execution_status": {
+        "const": "completed"
+       }
+      },
+      "required": [
+       "execution_status"
+      ]
+     },
+     "then": {
+      "properties": {
+       "assessment_status": {
+        "$ref": "#/$defs/evaluatedAssessmentStatus"
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "execution_status": {
+        "enum": [
+         "invalid_parameters",
+         "dependency_unavailable"
+        ]
+       }
+      },
+      "required": [
+       "execution_status"
+      ]
+     },
+     "then": {
+      "properties": {
+       "assessment_status": {
+        "const": null
+       }
+      }
+     }
+    }
+   ]
+  },
+  "reasonRequest": {
+   "type": "object",
+   "properties": {
+    "tool": {
+     "const": "study.acupuncture_reason"
+    },
+    "arguments": {
+     "$ref": "#/$defs/reasonParameters"
+    }
+   },
+   "required": [
+    "tool",
+    "arguments"
+   ],
+   "additionalProperties": false
+  },
+  "reasonResponse": {
+   "type": "object",
+   "properties": {
+    "tool": {
+     "const": "study.acupuncture_reason"
+    },
+    "result": {
+     "$ref": "#/$defs/reasonReturn"
+    }
+   },
+   "required": [
+    "tool",
+    "result"
+   ],
+   "additionalProperties": false
+  },
+  "auditRequest": {
+   "type": "object",
+   "properties": {
+    "tool": {
+     "const": "study.acupuncture_audit"
+    },
+    "arguments": {
+     "$ref": "#/$defs/auditParameters"
+    }
+   },
+   "required": [
+    "tool",
+    "arguments"
+   ],
+   "additionalProperties": false
+  },
+  "auditResponse": {
+   "type": "object",
+   "properties": {
+    "tool": {
+     "const": "study.acupuncture_audit"
+    },
+    "result": {
+     "$ref": "#/$defs/auditReturn"
+    }
+   },
+   "required": [
+    "tool",
+    "result"
+   ],
+   "additionalProperties": false
+  },
+  "factRef": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_.-]*$",
+   "maxLength": 180
+  },
+  "dslExpression": {
+   "oneOf": [
+    {
+     "type": "object",
+     "properties": {
+      "all": {
+       "type": "array",
+       "items": {
+        "$ref": "#/$defs/dslExpression"
+       },
+       "minItems": 1,
+       "maxItems": 32
+      }
+     },
+     "required": [
+      "all"
+     ],
+     "additionalProperties": false
+    },
+    {
+     "type": "object",
+     "properties": {
+      "any": {
+       "type": "array",
+       "items": {
+        "$ref": "#/$defs/dslExpression"
+       },
+       "minItems": 1,
+       "maxItems": 32
+      }
+     },
+     "required": [
+      "any"
+     ],
+     "additionalProperties": false
+    },
+    {
+     "type": "object",
+     "properties": {
+      "eq": {
+       "type": "object",
+       "properties": {
+        "fact": {
+         "$ref": "#/$defs/factRef"
+        },
+        "value": {
+         "type": [
+          "string",
+          "number",
+          "boolean",
+          "null"
+         ]
+        }
+       },
+       "required": [
+        "fact",
+        "value"
+       ],
+       "additionalProperties": false
+      }
+     },
+     "required": [
+      "eq"
+     ],
+     "additionalProperties": false
+    },
+    {
+     "type": "object",
+     "properties": {
+      "in": {
+       "type": "object",
+       "properties": {
+        "fact": {
+         "$ref": "#/$defs/factRef"
+        },
+        "values": {
+         "type": "array",
+         "items": {
+          "type": [
+           "string",
+           "number",
+           "boolean",
+           "null"
+          ]
+         },
+         "minItems": 1,
+         "maxItems": 64,
+         "uniqueItems": true
+        }
+       },
+       "required": [
+        "fact",
+        "values"
+       ],
+       "additionalProperties": false
+      }
+     },
+     "required": [
+      "in"
+     ],
+     "additionalProperties": false
+    },
+    {
+     "type": "object",
+     "properties": {
+      "present": {
+       "$ref": "#/$defs/factRef"
+      }
+     },
+     "required": [
+      "present"
+     ],
+     "additionalProperties": false
+    }
+   ]
+  },
+  "relation": {
+   "type": "object",
+   "properties": {
+    "relation_id": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "relation_type": {
+     "type": "string",
+     "enum": [
+      "interior_exterior",
+      "yuan_luo",
+      "bietong",
+      "generates",
+      "controls",
+      "same_name",
+      "organ_orifice",
+      "channel_course",
+      "functional_direction",
+      "analogy"
+     ]
+    },
+    "from_entity": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "to_entity": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "transitive": {
+     "const": false
+    },
+    "clinical_action": {
+     "const": "none_without_independent_selection_rule"
+    },
+    "source_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     }
+    }
+   },
+   "required": [
+    "relation_id",
+    "relation_type",
+    "from_entity",
+    "to_entity",
+    "transitive",
+    "clinical_action",
+    "source_refs"
+   ],
+   "additionalProperties": false
+  },
+  "effect": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "type": "string",
+     "enum": [
+      "emit_candidate",
+      "emit_relation",
+      "reject_inference",
+      "set_assessment_status",
+      "mark_hypothesis",
+      "require_clarification",
+      "disable_custom_rule",
+      "emit_educational_mapping"
+     ]
+    },
+    "code": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "message": {
+     "type": "string"
+    },
+    "assessment_status": {
+     "$ref": "#/$defs/evaluatedAssessmentStatus"
+    },
+    "candidate": {
+     "$ref": "#/$defs/candidatePoint"
+    },
+    "relation": {
+     "$ref": "#/$defs/relation"
+    },
+    "blocked_conclusions": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "educational_mapping": {
+     "$ref": "#/$defs/educationalMapping"
+    }
+   },
+   "required": [
+    "type",
+    "code",
+    "message"
+   ],
+   "additionalProperties": false,
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "emit_candidate"
+       }
+      },
+      "required": [
+       "type"
+      ]
+     },
+     "then": {
+      "required": [
+       "candidate"
+      ]
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "emit_relation"
+       }
+      },
+      "required": [
+       "type"
+      ]
+     },
+     "then": {
+      "required": [
+       "relation"
+      ]
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "set_assessment_status"
+       }
+      },
+      "required": [
+       "type"
+      ]
+     },
+     "then": {
+      "required": [
+       "assessment_status"
+      ]
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "emit_educational_mapping"
+       }
+      },
+      "required": [
+       "type"
+      ]
+     },
+     "then": {
+      "required": [
+       "educational_mapping"
+      ]
+     }
+    }
+   ]
+  },
+  "rule": {
+   "type": "object",
+   "properties": {
+    "rule_id": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "title": {
+     "type": "string"
+    },
+    "rule_kind": {
+     "type": "string",
+     "enum": [
+      "conditional_selection",
+      "typed_relation",
+      "inference_guard",
+      "routing_guard",
+      "disabled_hypothesis",
+      "educational_mapping"
+     ]
+    },
+    "enabled_in_proposed_policy": {
+     "type": "boolean"
+    },
+    "executable_in_current_release": {
+     "const": false
+    },
+    "allowed_modes": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "enum": [
+       "knowledge",
+       "case_review",
+       "method_compare"
+      ]
+     },
+     "minItems": 1,
+     "uniqueItems": true
+    },
+    "priority": {
+     "type": "integer",
+     "minimum": 0,
+     "maximum": 1000
+    },
+    "when": {
+     "$ref": "#/$defs/dslExpression"
+    },
+    "effects": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/effect"
+     },
+     "minItems": 1
+    },
+    "theory_support": {
+     "$ref": "#/$defs/theorySupport"
+    },
+    "clinical_efficacy": {
+     "$ref": "#/$defs/clinicalEfficacy"
+    },
+    "review_status": {
+     "const": "proposal_requires_implementation_and_validation"
+    },
+    "notes": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   },
+   "required": [
+    "rule_id",
+    "title",
+    "rule_kind",
+    "enabled_in_proposed_policy",
+    "executable_in_current_release",
+    "allowed_modes",
+    "priority",
+    "when",
+    "effects",
+    "theory_support",
+    "clinical_efficacy",
+    "review_status",
+    "notes"
+   ],
+   "additionalProperties": false
+  },
+  "source": {
+   "type": "object",
+   "properties": {
+    "source_id": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "source_kind": {
+     "type": "string",
+     "enum": [
+      "classical_text",
+      "theory_paper",
+      "institutional_explanation",
+      "clinical_guideline",
+      "consensus",
+      "clinical_trial",
+      "repository_design"
+     ]
+    },
+    "title": {
+     "type": "string"
+    },
+    "url": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri"
+    },
+    "repository_path": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "verification": {
+     "type": "string",
+     "enum": [
+      "retrieved_in_conversation",
+      "read_in_repository",
+      "metadata_only"
+     ]
+    },
+    "locator": {
+     "type": "object",
+     "properties": {
+      "status": {
+       "type": "string",
+       "enum": [
+        "unresolved",
+        "document_level_only"
+       ]
+      },
+      "human_reference": {
+       "type": "string"
+      },
+      "corpus_passage_id": {
+       "const": null
+      }
+     },
+     "required": [
+      "status",
+      "human_reference",
+      "corpus_passage_id"
+     ],
+     "additionalProperties": false
+    },
+    "supports": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "does_not_establish": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   },
+   "required": [
+    "source_id",
+    "source_kind",
+    "title",
+    "url",
+    "repository_path",
+    "verification",
+    "locator",
+    "supports",
+    "does_not_establish"
+   ],
+   "additionalProperties": false
+  },
+  "rulePack": {
+   "type": "object",
+   "properties": {
+    "$schema": {
+     "const": "contracts.schema.json#/$defs/rulePack"
+    },
+    "artifact_type": {
+     "const": "rule_pack_proposal"
+    },
+    "version": {
+     "type": "string"
+    },
+    "baseline_commit": {
+     "type": "string"
+    },
+    "integration_status": {
+     "const": "not_registered_not_executed"
+    },
+    "scope_note": {
+     "type": "string"
+    },
+    "source_registry": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/source"
+     },
+     "minItems": 1
+    },
+    "dsl_semantics": {
+     "type": "object",
+     "properties": {
+      "allowed_operators": {
+       "const": [
+        "all",
+        "any",
+        "eq",
+        "in",
+        "present"
+       ]
+      },
+      "value_domain": {
+       "type": "string"
+      },
+      "observation_gate": {
+       "type": "string"
+      },
+      "negative_evidence": {
+       "type": "string"
+      },
+      "all_semantics": {
+       "type": "string"
+      },
+      "any_semantics": {
+       "type": "string"
+      },
+      "present_semantics": {
+       "type": "string"
+      },
+      "unresolved_semantics": {
+       "type": "string"
+      },
+      "control_facts": {
+       "type": "string"
+      },
+      "execution_prohibition": {
+       "type": "string"
+      },
+      "priority_semantics": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "allowed_operators",
+      "value_domain",
+      "observation_gate",
+      "negative_evidence",
+      "all_semantics",
+      "any_semantics",
+      "present_semantics",
+      "unresolved_semantics",
+      "control_facts",
+      "execution_prohibition",
+      "priority_semantics"
+     ],
+     "additionalProperties": false
+    },
+    "compatibility": {
+     "type": "object",
+     "properties": {
+      "existing_tools": {
+       "const": [
+        "study.acupoints",
+        "study.point",
+        "study.wuxing"
+       ]
+      },
+      "new_tools": {
+       "const": [
+        "study.acupuncture_reason",
+        "study.acupuncture_audit"
+       ]
+      },
+      "canonical_sanjiao_code": {
+       "const": "TE"
+      },
+      "accepted_aliases": {
+       "type": "object",
+       "properties": {
+        "SJ": {
+         "const": "TE"
+        }
+       },
+       "required": [
+        "SJ"
+       ],
+       "additionalProperties": false
+      },
+      "method_routing": {
+       "type": "object",
+       "properties": {
+        "legacy_wuxing_methods": {
+         "type": "array",
+         "items": {
+          "type": "string"
+         },
+         "uniqueItems": true
+        },
+        "new_facade_only_methods": {
+         "type": "array",
+         "items": {
+          "type": "string"
+         },
+         "uniqueItems": true
+        },
+        "invalid_method_behavior": {
+         "const": "reject_without_fallback"
+        },
+        "omitted_methods_behavior": {
+         "const": "no_selection_method_execution"
+        },
+        "empty_methods_behavior": {
+         "const": "no_selection_method_execution"
+        }
+       },
+       "required": [
+        "legacy_wuxing_methods",
+        "new_facade_only_methods",
+        "invalid_method_behavior",
+        "omitted_methods_behavior",
+        "empty_methods_behavior"
+       ],
+       "additionalProperties": false
+      }
+     },
+     "required": [
+      "existing_tools",
+      "new_tools",
+      "canonical_sanjiao_code",
+      "accepted_aliases",
+      "method_routing"
+     ],
+     "additionalProperties": false
+    },
+    "rules": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/rule"
+     },
+     "minItems": 1
+    },
+    "validation_boundary": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "minItems": 1
+    }
+   },
+   "required": [
+    "$schema",
+    "artifact_type",
+    "version",
+    "baseline_commit",
+    "integration_status",
+    "scope_note",
+    "source_registry",
+    "dsl_semantics",
+    "compatibility",
+    "rules",
+    "validation_boundary"
+   ],
+   "additionalProperties": false
+  },
+  "candidateExpectation": {
+   "type": "object",
+   "properties": {
+    "point_id": {
+     "$ref": "#/$defs/pointId"
+    },
+    "intent": {
+     "type": "string",
+     "enum": [
+      "tonify",
+      "reduce",
+      "even",
+      "undetermined"
+     ]
+    }
+   },
+   "required": [
+    "point_id",
+    "intent"
+   ],
+   "additionalProperties": false
+  },
+  "expectedBehavior": {
+   "type": "object",
+   "properties": {
+    "request_schema_valid": {
+     "type": "boolean"
+    },
+    "assessment_status_any_of": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/assessmentStatus"
+     },
+     "minItems": 1,
+     "uniqueItems": true
+    },
+    "must_include_findings": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     },
+     "uniqueItems": true
+    },
+    "must_not_include_findings": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     },
+     "uniqueItems": true
+    },
+    "must_include_candidates": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/candidateExpectation"
+     }
+    },
+    "must_not_include_candidates": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/candidateExpectation"
+     }
+    },
+    "must_preserve": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "must_not_assert": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "questions_maximum": {
+     "const": 2
+    },
+    "other_checks": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "must_include_educational_mappings": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/candidateExpectation"
+     },
+     "description": "A summary of the point and intention in an educational mapping; distinct from must_include_candidates."
+    }
+   },
+   "required": [
+    "request_schema_valid",
+    "assessment_status_any_of",
+    "must_include_findings",
+    "must_not_include_findings",
+    "must_include_candidates",
+    "must_not_include_candidates",
+    "must_preserve",
+    "must_not_assert",
+    "questions_maximum",
+    "other_checks"
+   ],
+   "additionalProperties": false
+  },
+  "acceptanceCase": {
+   "type": "object",
+   "properties": {
+    "case_id": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "title": {
+     "type": "string"
+    },
+    "kind": {
+     "type": "string",
+     "enum": [
+      "regression",
+      "contract",
+      "clinical_routing",
+      "theory_guard",
+      "normalization"
+     ]
+    },
+    "regression_origin": {
+     "type": "string",
+     "enum": [
+      "parent_reported_reproduced_on_baseline",
+      "new_expected_behavior"
+     ]
+    },
+    "request": {
+     "type": "object",
+     "properties": {
+      "tool": {
+       "type": "string",
+       "enum": [
+        "study.acupuncture_reason",
+        "study.acupuncture_audit"
+       ]
+      },
+      "arguments": {
+       "type": "object"
+      }
+     },
+     "required": [
+      "tool",
+      "arguments"
+     ],
+     "additionalProperties": false
+    },
+    "expected": {
+     "$ref": "#/$defs/expectedBehavior"
+    },
+    "execution_state": {
+     "const": "not_run_expected_behavior_only"
+    },
+    "trusted_server_fixture": {
+     "$ref": "#/$defs/trustedReviewRecord"
+    }
+   },
+   "required": [
+    "case_id",
+    "title",
+    "kind",
+    "regression_origin",
+    "request",
+    "expected",
+    "execution_state"
+   ],
+   "additionalProperties": false,
+   "description": "request.arguments intentionally permits invalid-contract fixtures; expected.request_schema_valid specifies whether the request should be accepted or rejected."
+  },
+  "acceptanceSuite": {
+   "type": "object",
+   "properties": {
+    "$schema": {
+     "const": "contracts.schema.json#/$defs/acceptanceSuite"
+    },
+    "artifact_type": {
+     "const": "acceptance_suite_proposal"
+    },
+    "version": {
+     "type": "string"
+    },
+    "baseline_commit": {
+     "type": "string"
+    },
+    "contracts_ref": {
+     "const": "contracts.schema.json"
+    },
+    "rules_ref": {
+     "const": "rules.example.json"
+    },
+    "execution_state": {
+     "const": "not_run_expected_behavior_only"
+    },
+    "notes": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "cases": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/acceptanceCase"
+     },
+     "minItems": 16
+    }
+   },
+   "required": [
+    "$schema",
+    "artifact_type",
+    "version",
+    "baseline_commit",
+    "contracts_ref",
+    "rules_ref",
+    "execution_state",
+    "notes",
+    "cases"
+   ],
+   "additionalProperties": false
+  },
+  "premiseClaim": {
+   "type": "object",
+   "properties": {
+    "premise_id": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "clinical_condition": {
+     "type": "string",
+     "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "organ_entity": {
+     "enum": [
+      "liver",
+      "gallbladder",
+      "heart",
+      "small_intestine",
+      "spleen",
+      "stomach",
+      "lung",
+      "large_intestine",
+      "kidney",
+      "bladder",
+      "pericardium",
+      "sanjiao",
+      null
+     ]
+    },
+    "yin_yang_aspect": {
+     "type": "string",
+     "enum": [
+      "yin",
+      "yang",
+      "qi",
+      "blood",
+      "essence",
+      "fluid_processing",
+      "unspecified"
+     ]
+    },
+    "state": {
+     "type": "string",
+     "enum": [
+      "excess",
+      "deficiency",
+      "mixed",
+      "neither_excess_nor_deficiency",
+      "balanced",
+      "unknown",
+      "conflicting"
+     ],
+     "description": "mixed preserves coexisting excess and deficiency; neither_excess_nor_deficiency must be explicitly established. balanced is a general description of balance and does not automatically satisfy the neither-excess-nor-deficiency premise in Difficulty 69 of the Nanjing."
+    },
+    "review_status": {
+     "type": "string",
+     "enum": [
+      "claimed_accepted",
+      "not_reviewed",
+      "claimed_rejected",
+      "conflicting"
+     ]
+    },
+    "reviewer_kind": {
+     "type": "string",
+     "enum": [
+      "clinician",
+      "domain_reviewer",
+      "none"
+     ]
+    },
+    "observation_refs": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+      "minLength": 1,
+      "maxLength": 200
+     }
+    },
+    "provenance": {
+     "$ref": "#/$defs/provenance"
+    }
+   },
+   "required": [
+    "premise_id",
+    "clinical_condition",
+    "organ_entity",
+    "yin_yang_aspect",
+    "state",
+    "review_status",
+    "reviewer_kind",
+    "observation_refs",
+    "provenance"
+   ],
+   "additionalProperties": false,
+   "description": "An unverified premise claim supplied in a request. reviewer_kind and claimed_accepted retain the user's statements only and cannot authorize execution. Trusted review must be loaded and verified through the server-side review_context_ref."
+  },
+  "trustedReviewRecord": {
+   "type": "object",
+   "properties": {
+    "trust_boundary": {
+     "const": "server_loaded_not_model_argument"
+    },
+    "review_context_ref": {
+     "type": "string"
+    },
+    "case_id": {
+     "type": "string"
+    },
+    "case_version": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "normalized_observations_sha256": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{64}$"
+    },
+    "knowledge_version": {
+     "type": "string"
+    },
+    "rulepack_version": {
+     "type": "string"
+    },
+    "issuer_principal_ref": {
+     "type": "string"
+    },
+    "authorized_role": {
+     "type": "string",
+     "enum": [
+      "clinician",
+      "domain_reviewer"
+     ]
+    },
+    "authorized_modes": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "knowledge",
+       "case_review",
+       "method_compare"
+      ]
+     },
+     "minItems": 1,
+     "uniqueItems": true
+    },
+    "reviewed_conditions": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "premise_id": {
+        "type": "string"
+       },
+       "clinical_condition": {
+        "type": "string"
+       },
+       "organ_entity": {
+        "enum": [
+         "liver",
+         "gallbladder",
+         "heart",
+         "small_intestine",
+         "spleen",
+         "stomach",
+         "lung",
+         "large_intestine",
+         "kidney",
+         "bladder",
+         "pericardium",
+         "sanjiao"
+        ]
+       },
+       "yin_yang_aspect": {
+        "enum": [
+         "yin",
+         "yang",
+         "qi",
+         "blood",
+         "essence",
+         "fluid_processing",
+         "unspecified"
+        ]
+       },
+       "state": {
+        "enum": [
+         "excess",
+         "deficiency",
+         "mixed",
+         "neither_excess_nor_deficiency",
+         "balanced"
+        ]
+       },
+       "decision": {
+        "const": "accepted_for_candidate_reasoning"
+       }
+      },
+      "required": [
+       "premise_id",
+       "clinical_condition",
+       "organ_entity",
+       "yin_yang_aspect",
+       "state",
+       "decision"
+      ],
+      "additionalProperties": false
+     },
+     "minItems": 1
+    },
+    "provenance_verification": {
+     "const": "requires_server_verification_not_a_client_boolean"
+    }
+   },
+   "required": [
+    "trust_boundary",
+    "review_context_ref",
+    "case_id",
+    "case_version",
+    "normalized_observations_sha256",
+    "knowledge_version",
+    "rulepack_version",
+    "issuer_principal_ref",
+    "authorized_role",
+    "authorized_modes",
+    "reviewed_conditions",
+    "provenance_verification"
+   ],
+   "additionalProperties": false,
+   "description": "Defines an internal server-side record structure for implementers only; it is not part of any public tool.parameters. The server must load an authorized persistent record and verify identity and record integrity. String constants do not themselves establish trust. domain_reviewer may authorize educational use only."
+  },
+  "methodResolution": {
+   "type": "object",
+   "properties": {
+    "parameter_was_provided": {
+     "type": "boolean"
+    },
+    "effective_methods": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/methodId"
+     },
+     "uniqueItems": true
+    },
+    "empty_semantics": {
+     "const": "no_selection_method_execution"
+    },
+    "query_does_not_override_explicit_empty": {
+     "const": true
+    }
+   },
+   "required": [
+    "parameter_was_provided",
+    "effective_methods",
+    "empty_semantics",
+    "query_does_not_override_explicit_empty"
+   ],
+   "additionalProperties": false
+  },
+  "educationalPremise": {
+   "type": "object",
+   "properties": {
+    "organ_entity": {
+     "enum": [
+      "liver",
+      "gallbladder",
+      "heart",
+      "small_intestine",
+      "spleen",
+      "stomach",
+      "lung",
+      "large_intestine",
+      "kidney",
+      "bladder",
+      "pericardium",
+      "sanjiao"
+     ]
+    },
+    "yin_yang_aspect": {
+     "enum": [
+      "yin",
+      "yang",
+      "qi",
+      "blood",
+      "essence",
+      "fluid_processing",
+      "unspecified"
+     ]
+    },
+    "state": {
+     "enum": [
+      "excess",
+      "deficiency",
+      "mixed",
+      "neither_excess_nor_deficiency",
+      "balanced",
+      "unknown",
+      "conflicting"
+     ]
+    },
+    "assertion_kind": {
+     "const": "explicit_educational_hypothesis"
+    },
+    "clinical_truth_status": {
+     "const": "not_asserted"
+    },
+    "original_spans": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/span"
+     },
+     "minItems": 1
+    }
+   },
+   "required": [
+    "organ_entity",
+    "yin_yang_aspect",
+    "state",
+    "assertion_kind",
+    "clinical_truth_status",
+    "original_spans"
+   ],
+   "additionalProperties": false
+  },
+  "educationalMapping": {
+   "type": "object",
+   "properties": {
+    "mapping_id": {
+     "type": "string"
+    },
+    "hypothetical_premise": {
+     "$ref": "#/$defs/educationalPremise"
+    },
+    "point_id": {
+     "$ref": "#/$defs/pointId"
+    },
+    "name_zh": {
+     "type": "string"
+    },
+    "channel": {
+     "enum": [
+      "LU",
+      "LI",
+      "ST",
+      "SP",
+      "HT",
+      "SI",
+      "BL",
+      "KI",
+      "PC",
+      "TE",
+      "GB",
+      "LR",
+      "CV",
+      "GV",
+      "EX"
+     ]
+    },
+    "channel_phase": {
+     "$ref": "#/$defs/phase"
+    },
+    "point_phase": {
+     "$ref": "#/$defs/phase"
+    },
+    "five_shu_class": {
+     "enum": [
+      "jing_well",
+      "ying_spring",
+      "shu_stream",
+      "jing_river",
+      "he_sea",
+      null
+     ]
+    },
+    "intent": {
+     "type": "object",
+     "properties": {
+      "traditional_manipulation": {
+       "type": "string",
+       "enum": [
+        "tonify",
+        "reduce",
+        "even",
+        "undetermined"
+       ]
+      },
+      "treatment_principle": {
+       "type": "string",
+       "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$",
+       "minLength": 1,
+       "maxLength": 200
+      },
+      "not_a_procedure_order": {
+       "const": true
+      }
+     },
+     "required": [
+      "traditional_manipulation",
+      "treatment_principle",
+      "not_a_procedure_order"
+     ],
+     "additionalProperties": false
+    },
+    "modality": {
+     "const": "undetermined"
+    },
+    "method_id": {
+     "$ref": "#/$defs/methodId"
+    },
+    "theory_support": {
+     "$ref": "#/$defs/theorySupport"
+    },
+    "clinical_efficacy": {
+     "$ref": "#/$defs/clinicalEfficacy"
+    },
+    "usage_scope": {
+     "const": "educational_mapping_only"
+    },
+    "runtime_clinical_action": {
+     "const": "none"
+    },
+    "not_patient_specific": {
+     "const": true
+    }
+   },
+   "required": [
+    "mapping_id",
+    "hypothetical_premise",
+    "point_id",
+    "name_zh",
+    "channel",
+    "channel_phase",
+    "point_phase",
+    "five_shu_class",
+    "intent",
+    "modality",
+    "method_id",
+    "theory_support",
+    "clinical_efficacy",
+    "usage_scope",
+    "runtime_clinical_action",
+    "not_patient_specific"
+   ],
+   "additionalProperties": false,
+   "description": "A separate educational mapping: an explicitly hypothetical premise and an explicit method are sufficient, without clinical review. It must not be recorded as a real-case candidate, clinical evidence, or a procedure order."
+  },
+  "evaluatedAssessmentStatus": {
+   "type": "string",
+   "enum": [
+    "educational_only",
+    "needs_information",
+    "needs_urgent_assessment",
+    "needs_etiologic_assessment",
+    "pattern_comparison",
+    "candidate_review",
+    "rule_conflict",
+    "no_applicable_rule"
+   ]
+  }
+ },
+ "x-tool-contracts": [
+  {
+   "name": "study.acupuncture_reason",
+   "status": "registered",
+   "parameters": {
+    "$ref": "#/$defs/reasonParameters"
+   },
+   "returns": {
+    "$ref": "#/$defs/reasonReturn"
+   },
+   "delegates_to": [
+    "study.acupoints",
+    "study.point",
+    "study.wuxing"
+   ]
+  },
+  {
+   "name": "study.acupuncture_audit",
+   "status": "registered",
+   "parameters": {
+    "$ref": "#/$defs/auditParameters"
+   },
+   "returns": {
+    "$ref": "#/$defs/auditReturn"
+   },
+   "delegates_to": [
+    "study.point",
+    "study.wuxing"
+   ]
+  }
+ ],
+ "x-validation-boundary": [
+  "JSON Schema validates structure; it cannot establish that a clinical premise is true, a relationship is correct, or a treatment is effective.",
+  "Additional structural checks are required for end>=start in original-text spans, consistency between text and offsets, and source foreign keys.",
+  "The rule DSL contains no eval, scripts, arbitrary functions, or dynamic network calls.",
+  "clinical_condition identifiers are explicitly separate from diagnosis_probability; this contract provides no probability field.",
+  "trustedReviewRecord is an internal server-only structure. Attempts to inject trusted_server_fixture or verified=true into ordinary tool arguments must be rejected by additionalProperties=false. The existence of a reference does not establish authorization.",
+  "Only assessment_status=candidate_review may contain nonempty point_candidates. Mappings in knowledge mode belong in educational_mappings, with clinical truth status not_asserted.",
+  "The max_candidate_points default of 6 is a display budget only. Count consistency, pagination, and truncation require implementation-level checks; this does not recommend using six points for treatment.",
+  "When execution is incomplete, return assessment_status=null. Separate validation records report full Draft 2020-12 validation and runtime rule verification; this deliverable does not presume the validation environment's outcome."
+ ]
+}
