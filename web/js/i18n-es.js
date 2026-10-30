@@ -431,6 +431,8 @@ export default {
   "选穴配穴": "Selección y combinación de puntos de acupuntura",
   "腧穴考": "El punto de acupuntura en los clásicos",
   "五行选穴": "Selección de puntos según las Cinco Fases",
+  "针灸推理": "Razonamiento en acupuntura",
+  "针灸推理审核": "Auditoría del razonamiento en acupuntura",
   "医案检索": "Búsqueda de casos",
   "类案": "Casos similares",
   "医案详解": "Caso en detalle",

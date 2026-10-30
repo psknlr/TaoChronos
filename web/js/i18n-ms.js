@@ -431,6 +431,8 @@ export default {
   "选穴配穴": "Pemilihan dan gabungan titik akupunktur",
   "腧穴考": "Titik akupunktur dalam teks klasik",
   "五行选穴": "Pemilihan titik mengikut Lima Fasa",
+  "针灸推理": "Penaakulan akupunktur",
+  "针灸推理审核": "Audit penaakulan akupunktur",
   "医案检索": "Carian kes",
   "类案": "Kes serupa",
   "医案详解": "Kes secara terperinci",

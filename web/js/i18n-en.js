@@ -431,6 +431,8 @@ export default {
   "选穴配穴": "Acupoint selection and combination",
   "腧穴考": "Acupoint in the classics",
   "五行选穴": "Five-Phase point selection",
+  "针灸推理": "Acupuncture reasoning",
+  "针灸推理审核": "Acupuncture reasoning audit",
   "医案检索": "Case search",
   "类案": "Similar cases",
   "医案详解": "Case in detail",

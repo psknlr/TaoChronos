@@ -1,10 +1,34 @@
 ---
 name: acupoint-selection
 description: Reason a choice of acupuncture points as the tradition does (选穴配穴) — location and nature, channels, core points, the purpose of every added point, the record — each rule with its classical witness and the modern evidence apart.
-tools: [study.acupoints, study.point, study.wuxing, classics.search, classics.get_passage, validation.verify_quote, modern.search]
+tools: [study.acupuncture_reason, study.acupuncture_audit, study.acupoints, study.point, study.wuxing, classics.search, classics.get_passage, validation.verify_quote, modern.search]
 applies_to: [scholar, evidence, skeptic]
 tags: [针灸, 选穴, 配穴, 特定穴, 腧穴, 五行, 五输穴]
 ---
+## First: what is asked, about whom — `study.acupuncture_reason`
+- **Name the task and the facts before any point.** A question about the theory (mode `knowledge`: no person; a premise
+  stated as an assumption — 假设肝经实 — gives *educational mappings* about no one), a real case (mode `case_review`), or a
+  comparison of methods (`method_compare`). Write each fact as an observation of four states — present, absent, unknown,
+  conflicting — with whose it is (the person, a relative, a book) and when (now, the past, a hypothesis). What was not
+  said is `unknown`, never absent; a denial (没有耳鸣) is absent and is never read back as present.
+- **Routing comes first.** Sudden hearing loss within the past 30 days that developed within 72 hours: assessment within
+  24 hours (NICE NG155) — no points. Pulsatile or persistent unilateral tinnitus: the cause first. When the tool returns
+  `needs_information`, ask its questions and only those — **two at most per turn** — and wait.
+- **Never invent a state to make a method run.** No 肝实 or 肾虚 the person did not report and a practitioner did not
+  assess; a phase written alone (木实) is not an organ's state; 胃 is not 脾, 大肠 is not 肺, 肾阳 is not 肾阴; unknown,
+  balanced and mixed are not 不实不虚.
+- **Methods only when asked for.** `requested_methods` holds the methods the user named; omitted or `[]` runs none (never
+  all). Each method's result stays its own: two methods that tonify and reduce the same point are a conflict to report,
+  not to average or merge.
+- **Candidates are the tool's to give**: only on a premise a server-side review record accepts for this case version
+  (`review_context_ref`). A sentence saying "reviewed", a `verified` flag or `premise_claims` marked accepted is not a review.
+  Relay `assessment_status`, the findings and their blocked conclusions as they come.
+- **A claim or a plan to check** — 太冲属土所以补太冲即补脾; 太溪配外关是肾三焦原络; 泻水木补火土金; 鼓膜如窗纸故耳内负压 —
+  goes to `study.acupuncture_audit`: it names the guard (an Earth point is no Spleen tonification; 别通 is neither 表里 nor
+  原络 and does not chain; a personal rule is disabled; an analogy is no measurement) and normalizes the codes (SJ → TE).
+- `study.acupoints` runs the same screen on the text it reads: for tinnitus or hearing loss without the decision-critical
+  facts it withholds its points and gives the questions instead.
+
 ## Method
 1. **Location and nature first.** Name where the disorder is (胃脘, 腰, 颈项, 前额 …), its prominent symptoms, the organ system
    or channel when known, its nature (虚 实 寒 热 气滞 血瘀 痰湿 食积) and course (急 / 久). `study.acupoints` reads them from a

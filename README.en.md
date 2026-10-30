@@ -472,6 +472,15 @@ still to tell apart, overacting and counteracting each in both readings and moth
 75's 泻南方补北方, the Jin Gui's 当先实脾 with its condition, the named strategies, every method's points with phase and
 intention (Nanjing 69 on the channel and across, Nanjing 79, Saam, the paired deductions — levels apart), the points two
 methods treat oppositely (少府: the Liver's child to reduce, the Spleen's mother to reinforce), and what does not follow.
+**`study acupuncture-reason`** and **`study acupuncture-audit`** ([ADR 0027](docs/adr/0027-acupuncture-reasoning-contracts.md))
+answer requests in a contract (`domains/classics/acupuncture_contracts.schema.json`) with a rule pack
+(`acupuncture_reasoning.yaml`): every fact one of four states (present, absent, unknown, conflicting) with its subject,
+time and words; routing first (sudden hearing loss: assessment within 24 hours; pulsatile or persistent unilateral
+tinnitus: the cause first), then at most two questions, then the patterns compared; a method only when named, and
+candidate points for a case only on a premise a server-side review record bound to this case version accepts (a
+`verified` flag or a sentence saying "reviewed" is no review) — a teaching assumption gives mappings about no one.  The
+audit checks claims and plans (an Earth point is no Spleen tonification; Kidney–Sanjiao is 别通, not Yuan–Luo; SJ is TE),
+and `study acupoints` runs the same screen for tinnitus and hearing loss.
 None of them diagnoses or prescribes: whether and how to needle is for a qualified practitioner after examination.
 
 The study layer is part of research too: under `full-corpus`, **TaoChronos-Scholar** traces the focus formulas, drugs
