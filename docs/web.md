@@ -749,6 +749,22 @@ send it in clear to the provider, where any visitor can read it — so the relay
   repository, and deletes them once the commit is pushed (`relay/collect.py`).  The records never enter the published
   site.  If the repository is ever made public, `data/chat-logs/` must be moved out first.  A conversation that touches
   the visitor's own data (我的资料) is never recorded, whatever they chose.
+* **Feedback on answers** (`web/js/records.js`, `REASONS` and `feedbackRecord`; [ADR 0028](adr/0028-feedback-on-answers.md)):
+  under each answer, beside 复制, 👍 有帮助 and 👎 有问题 — shown when the relay's health says it takes feedback.  Either
+  opens a dialog: what was good or what was wrong, several may be ticked (under 👎 引文有误或查无出处, 内容不准确, 回答不完整,
+  没有回答我的问题, 太慢, 其他; under 👍 内容准确, 引文可靠、出处清楚, 条理清楚, 资料全面, 有新的发现), and a few words.
+  Nothing is sent before 提交, and a dialog dismissed sends nothing.  Feedback is the visitor's own act, so it does not
+  wait on the records' consent — what goes with it does: a turn already recorded is named by its ids (`recorded`: its
+  record holds the question and answer); any other turn's question and answer go only when the visitor ticks
+  附上这一轮的问题和回答; a conversation that touches 我的资料 sends no word of itself.  The relay (`POST /v1/feedback`)
+  keeps the known fields only — the turn's message and conversation ids, the rating, the reasons as short words, at most
+  2 000 characters of what was written, the question and answer when attached — under limits of its own (`FEEDBACK_PER_MINUTE`,
+  `FEEDBACK_PER_DAY`), with the records, so that the hourly collector brings both into `data/chat-logs/` (`"kind":
+  "feedback"`).  The rating stays on the answer, kept with the conversation in the browser; pressed again, it is taken
+  back (a feedback with `rating: null`): the last word on each turn stands.  A refusal — too often, the relay away — is
+  said in the dialog, which stays open to try again.  `taochronos records` counts the ratings apart from the turns: how
+  many turns are rated, 👍 and 👎, the reasons ticked, how many came with words or with the turn attached — never what
+  anyone wrote.  `FEEDBACK = "off"` in `relay/wrangler.toml` takes the thumbs off the page.
 
 **The page names no vendor, and nothing it receives does.**  The default service appears as 道乃久默认服务 and its
 answers as Tao-R1 — on its tile (免密钥 · 直接提问, with no model to choose), in the chip's and the composer's tooltips,
@@ -925,7 +941,10 @@ checked in the request it makes — and its context budget: 自动 the general o
 half of it, an earlier turn that does not fit left out and the model told, the page keeping it, and emptied again as it was); the default service (a stand-in relay): asked at once without a key, no key sent by the
 page, the consent question once, a turn recorded only after 同意 (its fields and times, no key or settings), none after 不记录 or
 once switched off under 设置 → 数据, a relay slow to answer (6 s) or missed once still found, and the page asking for a
-key while the relay is down; a question about the assistant answered by the page (no model called, no key needed, the
+key while the relay is down; an answer rated (👎 dismissed and nothing sent; then reasons ticked and unticked, a few words,
+the turn attached; still pressed after a reload, taken back when pressed again; 👍 refused once and said in the dialog,
+then sent without the turn; on a recorded turn, named by its ids and carrying none of it; no thumbs from a relay that takes
+no feedback); a question about the assistant answered by the page (no model called, no key needed, the
 same words when regenerated, recorded as `fixed`, replayed to the model when the conversation goes on) while one that asks
 more goes to the model, asked for no thinking, showing and storing none; a study's figures and tables under its step (tabs
 图 1 … 表 1 …, a chart as its table and in the journal style, exported as PNG at 300 dpi and TIFF at 600 dpi read back with
@@ -942,7 +961,8 @@ Pyodide, the 要籍语料 downloaded, the first-ranked works indexed before it a
 store kept in IndexedDB and a reload that downloads no corpus, a turn answered on it.  The browser tests are skipped where Playwright or Chromium is missing.  `relay/test/relay.test.js`
 (`node --test`, in CI) — the Worker's handler and its two stores on SQLite: the key added by the relay and never shown,
 origins, models, output cap and body size, the three limits and a new day, MiniMax's refusals turned into plain messages, no reasoning let through when the page asks for none (however the stream is cut),
-the records reduced to their fields, and the collector's token, cursor, deletion and ids never reused.
+the records reduced to their fields, feedback taken from any visitor on its own limits and reduced to its fields, and the
+collector's token, cursor, deletion and ids never reused.
 `tests/test_relay_collect.py` — `relay/collect.py` against a stand-in relay: records pulled once, by day, the cursor
 committed with them, deleted only once held, a deployment checked (and a refused key explained).  The site build writes
 `site.json` only when given a relay, carries the texts' attribution, and never a conversation record or a key.

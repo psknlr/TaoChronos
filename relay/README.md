@@ -7,13 +7,15 @@
 ```
 浏览器（chat.impf.ai） ──无密钥──▶ chat-api.impf.ai（本 Worker：加上密钥、限流） ──▶ MiniMax
         └─ 访客同意后：每轮问答一条记录 ──▶ Worker 暂存 ◀── 仓库的 chat-logs 工作流每小时取走，提交到 data/chat-logs/
+        └─ 访客提交时：对回答的评价与反馈 ──┘
 ```
 
 | 接口 | 作用 |
 |---|---|
 | `POST /v1/chat/completions` | 转发网页的模型调用（流式）；只接受网页来源（`ALLOWED_ORIGINS`）、只接受默认服务的模型（公开名 `PUBLIC_MODEL`，即 Tao-R1）、输出上限 `MAX_OUTPUT_TOKENS`（默认每次回复 32,768 token，含思考）；网页要求不思考（`thinking: disabled`，涉及模型与智能体身份的提问）时，流中的思考内容一律去掉再转发；每人每分钟 `PER_MINUTE`、每天 `PER_DAY` 次，全体每天 `TOTAL_PER_DAY` 次 |
-| `GET /v1/health` | 是否配置好、模型的公开名、是否收集记录、限额（网页据此决定用不用默认服务） |
+| `GET /v1/health` | 是否配置好、模型的公开名、是否收集记录与反馈、限额（网页据此决定用不用默认服务、显不显示评价按钮） |
 | `POST /v1/logs` | 网页在访客**同意后**发来的一轮问答记录（只保留已知字段，截断过长内容；不含密钥、设置、IP）。默认服务自己的记录（`provider: impf`）只收自中转在前 26 小时内答过的地址；访客用自己 Key 的对话记录只看来源 |
+| `POST /v1/feedback` | 访客对一条回答的评价（有帮助 / 有问题）、勾选的原因、写下的说明，以及**访客勾选附上时**这一轮的问题和回答；只保留已知字段（说明 ≤2000 字），与对话记录存在一起、一起被取走。不需要访客同意记录（反馈是访客自己提交的），也不要求这一轮经过中转；每人每分钟 `FEEDBACK_PER_MINUTE`、每天 `FEEDBACK_PER_DAY` 条，与记录分开计数 |
 | `GET /v1/logs/export`、`POST /v1/logs/ack` | 仓库的收集器取走记录、确认已提交后删除（需 `LOG_EXPORT_TOKEN`） |
 | `GET /v1/security/export`、`POST /v1/security/ack`、`GET /v1/security/summary` | 哨兵记下的可疑请求事件（取走、确认删除）与当前概览（按分数排列的访客、正在被拒绝的地址）；需 `LOG_EXPORT_TOKEN` |
 | `POST /v1/security/csp` | 浏览器上报的内容安全策略违规（存为事件） |
@@ -58,6 +60,9 @@
 - **chat-logs** 工作流每小时（也可手动运行）取走新记录，按接收日期（UTC）追加到 `data/chat-logs/年/月/日.jsonl`，游标在
   `data/chat-logs/cursor.json`；推送成功后才通知中转删除。字段见 [`data/chat-logs/README.md`](../data/chat-logs/README.md)。
 - 记录只在这个**私有仓库**里；仓库若要公开，先把 `data/chat-logs/` 移走。停止收集：`wrangler.toml` 里 `LOGS = "off"` 并重新部署。
+- **对回答的反馈**：每条回答下有“有帮助 / 有问题”两个按钮，点开后可勾选原因、写几句说明，按“提交”才发送；再点一次已选的按钮即撤回
+  （发一条 `rating: null`）。反馈与记录存在一起，`"kind": "feedback"`，字段见 [`data/chat-logs/README.md`](../data/chat-logs/README.md)；
+  `taochronos records` 只统计条数与原因，不输出访客写的字。停止收集：`wrangler.toml` 里 `FEEDBACK = "off"` 并重新部署（网页随之不再显示按钮）。
 - 付费计划下可改存私有 R2 存储桶（仓库变量 `ARCHIVE_BUCKET`）：记录由中转自己存进去，不再提交到仓库，可逐条删除；暂存满时拒收新记录，
   不丢弃已收下的。步骤见 [SETUP.md](SETUP.md)「归档」，设计见 [ADR 0023](../docs/adr/0023-workers-paid.md)。
 

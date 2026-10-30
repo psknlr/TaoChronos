@@ -47,6 +47,9 @@ STATS_PUBLIC = "0"
 STATS_UTC_OFFSET = "8"
 # conversation records, sent only by visitors who agreed; "off" stops collecting them
 LOGS = "on"
+# visitors' ratings of answers and what they wrote of them, sent only when they submit, kept with the records; "off"
+# stops collecting them (and the page shows no thumbs).  FEEDBACK_PER_MINUTE / FEEDBACK_PER_DAY: per visitor (10, 100)
+FEEDBACK = "on"
 ALLOWED_ORIGINS = "https://chat.impf.ai,http://chat.impf.ai,https://psknlr.github.io"
 
 # per visitor and Cloudflare location, over ten seconds: the first gate on a model call or a record, before the counters

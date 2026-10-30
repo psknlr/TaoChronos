@@ -534,6 +534,7 @@ Billing alerts are not caps: set one anyway (Cloudflare **Notifications → Add 
 | Update the corpus | 3.4, then A1+A2 or B2–B5 |
 | Change limits or modes | `[vars]` in the Worker's `wrangler.toml`, through a pull request |
 | Stop recording conversations | `LOGS = "off"` in `relay/wrangler.toml` |
+| Stop collecting feedback on answers (the 👍 / 👎 under each answer) | `FEEDBACK = "off"` in `relay/wrangler.toml` |
 | Pause the default service | Dashboard → `taochronos-relay` → **Settings → Variables and Secrets** → delete `MINIMAX_API_KEY` |
 | Block an address now | **Manage Account → Configurations → Lists → `taochronos_block`**, then `security/blocklist.yaml` |
 

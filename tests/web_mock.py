@@ -366,20 +366,24 @@ def _public_event(text: str) -> str:
 
 class MockRelay(ThreadingHTTPServer):
     """道乃久默认服务 as the page sees it (relay/src/relay.js): health, the model calls forwarded to ``upstream`` with the
-    relay's own key (in the upstream's terms, the reply in the service's own), and the conversation records.  Records
-    what the browser sent — the page never sends a key.  With ``spent``, the day's free calls are used up: each model
+    relay's own key (in the upstream's terms, the reply in the service's own), the conversation records and the feedback
+    on answers.  Records what the browser sent — the page never sends a key.  With ``refuse_feedback`` (a status), the
+    next feedback is refused so.  With ``spent``, the day's free calls are used up: each model
     call is refused as the relay refuses it (429, ``daily_limit``, and ``Retry-After``: the seconds to its midnight,
     here ``SPENT_FOR``)."""
 
     daemon_threads = True
     SECRET = "relay-held-secret"
 
-    def __init__(self, upstream: str, port: int = 0, logs: bool = True) -> None:
+    def __init__(self, upstream: str, port: int = 0, logs: bool = True, feedback: bool = True) -> None:
         super().__init__(("127.0.0.1", port), _RelayHandler)
         self.upstream = upstream.rstrip("/")
         self.logs = logs
+        self.takes_feedback = feedback
         self.chat: list[dict] = []     # the browser's requests to the relay
         self.records: list[dict] = []  # the records the page sent
+        self.feedback: list[dict] = []  # the feedback the page sent
+        self.refuse_feedback = 0
         self.record_types: list[str] = []
         self.health_delay = 0.0        # seconds before /v1/health answers: a slow link
         self.spent = False             # the day's free calls used up
@@ -428,7 +432,8 @@ class _RelayHandler(BaseHTTPRequestHandler):
         if self.path == "/v1/health":
             time.sleep(self.server.health_delay)
             self._json(200, {"ok": True, "service": "taochronos-relay", "model": PUBLIC_MODEL, "models": [PUBLIC_MODEL],
-                             "logs": self.server.logs, "max_output_tokens": 32768, "limits": {"per_minute": 30, "per_day": 600}})
+                             "logs": self.server.logs, "feedback": self.server.takes_feedback, "max_output_tokens": 32768,
+                             "limits": {"per_minute": 30, "per_day": 600}})
         else:
             self._json(404, {"error": {"message": "not found"}})
 
@@ -437,6 +442,17 @@ class _RelayHandler(BaseHTTPRequestHandler):
         if self.path == "/v1/logs":
             self.server.records.append(json.loads(raw or b"{}"))
             self.server.record_types.append(self.headers.get("Content-Type", ""))
+            self.send_response(204)
+            self._cors()
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        if self.path == "/v1/feedback":
+            if self.server.refuse_feedback:
+                status, self.server.refuse_feedback = self.server.refuse_feedback, 0
+                self._json(status, {"error": {"message": "反馈太频繁，请稍后再试", "type": "rate_limited"}}, {"Retry-After": "10"})
+                return
+            self.server.feedback.append({"type": self.headers.get("Content-Type", ""), **json.loads(raw or b"{}")})
             self.send_response(204)
             self._cors()
             self.send_header("Content-Length", "0")

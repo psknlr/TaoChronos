@@ -13,7 +13,7 @@ import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, 
   from "./providers.js";
 import { ACCEPT, brief, cacheList, cachedList, DATA_NOTICE, isMine, MAX_BYTES, noticeSeen, personal, setNoticeSeen, sizeLabel }
   from "./mydata.js";
-import { consent, NOTICE, setConsent, timings } from "./records.js";
+import { consent, feedbackRecord, NOTICE, REASONS, setConsent, timings } from "./records.js";
 import { BrowserRuntime, probeServer, researchText, sameOriginServer, ServerRuntime, turnInstructions } from "./runtime.js";
 import { LIMITS, pageClock } from "./limits.js";
 import { pause, pausedNow, pauseText } from "./pause.js";
@@ -34,7 +34,7 @@ const S = {
   here: null,              // the TaoChronos server that served this page, if one did
   runtimeInfo: null,
   runtimeState: { status: "idle", progress: 0, message: "" },
-  relay: null,             // 道乃久默认服务: {url, ok, model, models, logs, limits, pending} when the site has one (site.json)
+  relay: null,             // 道乃久默认服务: {url, ok, model, models, logs, feedback, limits, pending} when the site has one (site.json)
   relayReady: null,
   relayRetry: null,
   catalogs: {},
@@ -63,6 +63,7 @@ const el = {
   attachments: $("#attachments"),
   attachData: $("#attach-data"), dataFile: $("#data-file"),
   hint: $("#hint"), drawer: $("#drawer"), scrim: $("#scrim"), settings: $("#settings"), report: $("#report"), consent: $("#consent"),
+  feedback: $("#feedback"),
 };
 
 const mobile = () => matchMedia("(max-width: 980px)").matches;
@@ -1363,6 +1364,8 @@ const threadCtx = {
   onResume: resumeAnswer,
   canResume,
   onAnswerNow: answerNow,
+  canRate,
+  onRate: rate,
   onOpenResearch(runId) {
     const run = S.conv?.research?.find((r) => r.id === runId);
     S.drawer.open = true;
@@ -1692,7 +1695,7 @@ async function checkRelay(timeouts) {
     clearTimeout(timer);
   }
   if (j?.ok) {
-    Object.assign(S.relay, { ok: true, model: j.model, models: j.models, logs: Boolean(j.logs), limits: j.limits,
+    Object.assign(S.relay, { ok: true, model: j.model, models: j.models, logs: Boolean(j.logs), feedback: Boolean(j.feedback), limits: j.limits,
       maxOutput: Number(j.max_output_tokens) || null });
   }
   delete S.relay.pending;
@@ -1774,8 +1777,116 @@ async function recordTurn(conv, msg, diag = null) {
       body = JSON.stringify(record);
     }
     // text/plain: a simple request, no preflight (the relay reads the body as JSON whatever its type)
-    await fetch(`${S.relay.url}/v1/logs`, { method: "POST", headers: { "Content-Type": "text/plain;charset=UTF-8" }, body, keepalive: true });
+    const res = await fetch(`${S.relay.url}/v1/logs`, { method: "POST", headers: { "Content-Type": "text/plain;charset=UTF-8" }, body, keepalive: true });
+    // its record holds the question and answer: a feedback on it need not carry them (a conversation deleted meanwhile
+    // is not written back)
+    if (res.ok && !msg.recorded && S.list.includes(conv)) {
+      msg.recorded = true;
+      persistSoon(conv);
+    }
   } catch { /* a record that did not arrive is not the visitor's concern */ }
+}
+
+// ------------------------------------------------------------------ feedback on answers
+/** Can this answer be rated?  When the site's relay takes feedback (its health says so), once the turn is written. */
+function canRate(m) {
+  return Boolean(S.relay?.ok && S.relay.feedback && m?.role === "assistant" && m.status !== "streaming");
+}
+
+/** 👍 / 👎 under an answer: the dialog for what was good or wrong, and a few words.  The rating pressed again is taken
+ * back.  Nothing is sent before the visitor submits. */
+async function rate(msgId, rating) {
+  const conv = S.conv;
+  const msg = conv?.messages.find((m) => m.id === msgId);
+  if (!msg || !canRate(msg)) return;
+  if (msg.feedback?.rating !== rating) return openFeedback(conv, msg, rating);
+  const res = await sendFeedback(feedbackRecord({ conv, msg, rating: null, runtime: feedbackRuntime() }));
+  if (!res.ok) return toast(res.message, "err");
+  delete msg.feedback;
+  renderMessageSoon(msg);
+  toast(T("已撤回评价"));
+  await persistNow(conv);
+}
+
+const feedbackRuntime = () => ({ ...runtimeNow(), app: S.runtimeInfo?.version });
+
+function openFeedback(conv, msg, rating) {
+  const dlg = el.feedback ||= document.body.appendChild(h("dialog#feedback", { "aria-label": T("反馈") })); // an index.html cached from before
+  const up = rating === "up";
+  const ticked = new Set();
+  const chips = REASONS[rating].map(([code, label]) => {
+    const chip = h("button.chip", { type: "button", "aria-pressed": "false", dataset: { reason: code } }, label);
+    chip.addEventListener("click", () => {
+      const on = !ticked.has(code);
+      if (on) ticked.add(code); else ticked.delete(code);
+      chip.classList.toggle("on", on);
+      chip.setAttribute("aria-pressed", String(on));
+    });
+    return chip;
+  });
+  const words = h("textarea", { rows: 4, maxLength: 2000, "aria-label": T("补充说明"),
+    placeholder: up ? T("哪里对你有帮助？（可选）") : T("哪里有问题？你期望怎样的回答？（可选）") });
+  // what goes with it: never a word of a conversation that touches the user's own data; nothing more of a turn already
+  // recorded (its record has it); else the question and answer only when the visitor ticks the box
+  const mine = personal(conv);
+  const attach = h("input", { type: "checkbox" });
+  const what = mine ? h("p.muted", T("这段对话用到了你的资料：反馈不附带对话内容。"))
+    : msg.recorded ? h("p.muted", T("这一轮问答已按你的同意记录，反馈会与那条记录一并保存。"))
+      : h("label.check", attach, h("span", T("附上这一轮的问题和回答，帮助我们找到问题所在（不勾选则只发送评价和你写的说明）")));
+  const status = h("div.feedback-status", { role: "status" });
+  const submit = h("button.btn", { type: "button" }, T("提交"));
+  submit.addEventListener("click", async () => {
+    submit.disabled = true;
+    submit.textContent = T("提交中…");
+    status.replaceChildren();
+    const user = conv.messages[conv.messages.indexOf(msg) - 1];
+    const record = feedbackRecord({ conv, msg, rating, reasons: [...ticked], comment: words.value, runtime: feedbackRuntime(),
+      attach: !mine && !msg.recorded && attach.checked ? { question: user?.role === "user" ? user.text : "", answer: answerText(msg) } : null });
+    const res = await sendFeedback(record);
+    if (!res.ok) {
+      submit.disabled = false;
+      submit.textContent = T("提交");
+      status.replaceChildren(h("div.notice.err", icon("warn"), h("div.grow", res.message)));
+      return;
+    }
+    msg.feedback = { rating, reasons: record.reasons, comment: record.comment, at: record.given };
+    renderMessageSoon(msg);
+    dlg.close();
+    toast(T("感谢你的反馈"));
+    await persistNow(conv);
+  });
+  dlg.onclick = (e) => { if (e.target === dlg) dlg.close(); };
+  dlg.replaceChildren(h("div.modal.feedback", { role: "document", dataset: { rating } },
+    h("div.modal-head", icon(up ? "thumbup" : "thumbdown"), h("h2", up ? T("这个回答有帮助") : T("这个回答有问题")),
+      h("button.icon-btn", { type: "button", "aria-label": T("关闭"), on: { click: () => dlg.close() } }, icon("x"))),
+    h("div.feedback-body",
+      h("p.lb", up ? T("好在哪里？（可多选）") : T("问题在哪里？（可多选）")),
+      h("div.chips", chips),
+      words,
+      what,
+      h("p.muted", T`反馈只在你提交时发送到${PUBLISHER}，用于改进${AGENT}。请不要写入姓名、联系方式、病历等个人信息。`),
+      status),
+    h("div.modal-foot",
+      h("button.btn.secondary", { type: "button", on: { click: () => dlg.close() } }, T("取消")),
+      submit)));
+  dlg.showModal();
+}
+
+/** A feedback to the relay — the visitor waits for it: {ok}, or {ok: false, message} in the page's words. */
+async function sendFeedback(record) {
+  let body = JSON.stringify(record);
+  while (new TextEncoder().encode(body).length > 60000 && record.answer?.length > 400) { // within the relay's limit
+    record.answer = record.answer.slice(0, Math.floor(record.answer.length * 0.7));
+    body = JSON.stringify(record);
+  }
+  try {
+    // text/plain: a simple request, no preflight, as the records
+    const res = await fetch(`${S.relay.url}/v1/feedback`, { method: "POST", headers: { "Content-Type": "text/plain;charset=UTF-8" }, body });
+    if (res.ok) return { ok: true };
+    return { ok: false, message: res.status === 429 ? T("提交太频繁，请稍后再试") : T`反馈未能提交（${res.status}），请稍后再试` };
+  } catch {
+    return { ok: false, message: T("网络不通，反馈未能提交，请稍后再试") };
+  }
 }
 
 // ------------------------------------------------------------------ settings
