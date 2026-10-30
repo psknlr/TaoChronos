@@ -394,6 +394,7 @@ kbd { white-space: nowrap; font: 11px var(--font-mono); color: var(--ink-3); bor
 .msg .actions { display: flex; gap: 2px; opacity: 0; transition: opacity .15s; margin-top: 4px; }
 .msg:hover .actions, .msg:focus-within .actions, .msg.last .actions { opacity: 1; }
 .msg .actions .icon-btn { padding: 5px; }
+.msg .actions .icon-btn.on .icon { fill: currentColor; fill-opacity: .22; } /* the visitor's rating (👍 / 👎) */
 .msg .actions .meta { font-size: 12px; color: var(--ink-3); align-self: center; margin-left: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .msg.assistant { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 14px; }
@@ -713,7 +714,16 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(2px); }
   display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; animation: pop .22s var(--ease) both;
 }
 .modal.wide { width: min(980px, calc(100vw - 32px)); }
-.modal.consent { width: min(520px, calc(100vw - 32px)); }
+.modal.consent, .modal.feedback { width: min(520px, calc(100vw - 32px)); }
+.modal.feedback[data-rating="down"] .modal-head > .icon { color: var(--accent); }
+.feedback-body { padding: 16px 20px 8px; display: grid; gap: 12px; font-size: 14px; line-height: 1.7; overflow: auto; }
+.feedback-body p { margin: 0; }
+.feedback-body .lb { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.feedback-body .chip { padding: 5px 12px; font-size: 13px; }
+.feedback-body textarea { width: 100%; min-height: 96px; border: 1px solid var(--line-2); border-radius: 12px; padding: 10px 12px; background: var(--surface); resize: vertical; line-height: 1.6; }
+.feedback-body textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.feedback-body .muted { font-size: 12.5px; line-height: 1.65; }
+.feedback-body .notice { margin: 0; }
 .modal-head .icon { color: var(--jade); }
 .notice-list { margin: 4px 0 12px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; font-size: 13.5px; line-height: 1.7; }
 .notice-list dt { font-weight: 650; color: var(--ink); white-space: nowrap; }

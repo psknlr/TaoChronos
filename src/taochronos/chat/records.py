@@ -9,6 +9,10 @@ and while each model request was asked — each time in milliseconds from the tu
 records of either kind: one without the times counts towards the answers' completion only.  A turn taken up again
 (继续作答) is recorded again, its times from then on: the summary counts it once, as its last record ended, with the
 failures and the time of all of them.
+
+The same files hold the visitors' feedback on answers (``"kind": "feedback"``: 👍 or 👎, the reasons ticked, what they
+wrote; web/js/records.js), sent by any visitor who chose to give it, whether or not their turns are recorded.  They are
+not turns: :func:`summary` counts them apart (:func:`ratings`), the last word on each turn standing.
 """
 
 from __future__ import annotations
@@ -26,6 +30,7 @@ FINISHED = frozenset({"stop", "end_turn", "stop_sequence"})
 # stream ended before the model said it was done, the connection failed — or the service did (its HTTP status a 5xx)
 BROKE_OFF = frozenset({"timeout", "unfinished", "network"})
 FIXED = "fixed"  # the page's own fixed reply (web/js/fixed.js): no model, nothing to time
+FEEDBACK = "feedback"  # a visitor's feedback on an answer, not a turn
 
 
 def read(paths: Iterable[Path]) -> Iterator[dict[str, Any]]:
@@ -130,13 +135,45 @@ def _rounds_span(tools: list[dict[str, Any]]) -> float:
     return sum(max(e for _, e in spans) - min(s for s, _ in spans) for spans in by_round.values())
 
 
+def _key(r: dict[str, Any], k: int) -> Any:
+    """A turn's key: its message id in its conversation (the turn's records and the feedback on it share it)."""
+    return (r.get("conversation"), r["id"]) if isinstance(r.get("id"), str) and r["id"] else k
+
+
+def ratings(feedback: Iterable[dict[str, Any]], since: str | None = None, until: str | None = None) -> dict[str, Any]:
+    """The feedback on answers given from *since* to *until* (``YYYY-MM-DD``, both included), each turn's last word
+    standing — a rating given again replaces the one before it, one taken back (``rating`` null) leaves the turn
+    unrated: how many turns are rated, 👍 and 👎 and the share of 👍, the reasons ticked under each, and how many of the
+    ratings came with written words, with the turn's question and answer attached, or on a turn whose record is here
+    (``recorded``).  Counts only, never a word of what anyone wrote."""
+    last: dict[Any, dict[str, Any]] = {}
+    for k, r in enumerate(feedback):
+        day = str(r.get("given") or r.get("received") or "")[:10]
+        if (since and day < since) or (until and day > until):
+            continue
+        last[_key(r, k)] = r
+    standing = [r for r in last.values() if r.get("rating") in ("up", "down")]
+    up = sum(r["rating"] == "up" for r in standing)
+    reasons: dict[str, Counter[str]] = {"up": Counter(), "down": Counter()}
+    for r in standing:
+        reasons[r["rating"]].update(x for x in r.get("reasons") or [] if isinstance(x, str))
+    return {
+        "rated": len(standing), "up": up, "down": len(standing) - up,
+        "share_up": round(up / len(standing), 3) if standing else None,
+        "taken_back": len(last) - len(standing),
+        "reasons": {k: dict(v.most_common()) for k, v in reasons.items()},
+        "commented": sum(bool(str(r.get("comment") or "").strip()) for r in standing),
+        "attached": sum(bool(r.get("question") or r.get("answer")) for r in standing),
+        "recorded": sum(r.get("recorded") is True for r in standing),
+    }
+
+
 def _turns(records: Iterable[dict[str, Any]]) -> list[list[dict[str, Any]]]:
     """The records by turn, in the order the turns were first recorded: a turn taken up again has one record for each
     time it ran (the same message id in the same conversation)."""
     turns: dict[Any, list[dict[str, Any]]] = {}
     for k, r in enumerate(records):
-        key = (r.get("conversation"), r["id"]) if isinstance(r.get("id"), str) and r["id"] else k
-        turns.setdefault(key, []).append(r)
+        turns.setdefault(_key(r, k), []).append(r)
     return list(turns.values())
 
 
@@ -153,8 +190,11 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
       corpus lacks (✕) or left unchecked; whole and verified (it cites, and every citation is ✓); whole, citing nothing;
     * ``time`` — per timed turn: in model requests, in rounds of calls, the page hidden, the page asleep (seconds);
       and of the calls' own time, how much went on waiting for their runtime or their turn;
-    * ``resumed`` — the turns taken up again (继续作答), and how many of them then answered whole.
+    * ``resumed`` — the turns taken up again (继续作答), and how many of them then answered whole;
+    * ``feedback`` — the visitors' ratings of answers (:func:`ratings`), given from *since* to *until*.
     """
+    records = list(records)
+    feedback = [r for r in records if r.get("kind") == FEEDBACK]
     turns = timed = fixed = 0
     after: dict[str, list[float]] = {"total": [], "before": [], "reply": [], "thinking": []}
     broke = recovered = 0
@@ -164,7 +204,7 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
     spent: dict[str, list[float]] = {"model": [], "tools": [], "hidden": [], "asleep": []}
     waited = ran = 0.0
     resumed = resumed_whole = 0
-    for runs in _turns(records):
+    for runs in _turns(r for r in records if r.get("kind") != FEEDBACK):
         r = runs[-1]  # as the turn ended
         day = str(runs[0].get("started") or runs[0].get("received") or "")[:10]
         if (since and day < since) or (until and day > until):
@@ -218,4 +258,5 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
         "time": {**{k: _seconds(v) for k, v in spent.items()},
                  "calls_waiting": round(waited / (waited + ran), 3) if waited + ran else None},
         "resumed": {"n": resumed, "whole": resumed_whole},
+        "feedback": ratings(feedback, since, until),
     }

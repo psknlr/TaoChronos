@@ -215,6 +215,7 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 | 更换收集器令牌 | 生成新串 → 更新 `LOG_EXPORT_TOKEN` → 重跑 relay，Worker 与仓库就同时换成新的 |
 | 调整限额、模型、允许的网页来源 | 改 `relay/wrangler.toml` 的 `[vars]`，合入 main 后自动重新部署。`PER_MINUTE`、`PER_DAY`、`TOTAL_PER_DAY` 分别是每人每分钟、每人每天、全体每天的模型调用次数；一个问题通常要调用好几次，每轮工具调用一次 |
 | 停止收集对话 | 把 `wrangler.toml` 里的 `LOGS` 改为 `"off"`，合入 main。网页随即不再询问，也不再上传 |
+| 停止收集对回答的反馈 | 把 `wrangler.toml` 里的 `FEEDBACK` 改为 `"off"`，合入 main。网页随即不再显示“有帮助 / 有问题”按钮 |
 | 记录改存 R2 / 读回某一天 | 见上文“归档”一节 |
 | 暂停默认服务 | Cloudflare → taochronos-relay → **Settings → Variables and Secrets**，删除 `MINIMAX_API_KEY`。网页检测到中转没有密钥后，自动改回“请访客填自己的 API Key”。恢复时重跑 relay 即可 |
 | 看用量 | MiniMax 控制台的用量或账单页；Cloudflare 里 Worker 的 **Metrics** |

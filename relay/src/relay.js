@@ -6,6 +6,8 @@
 //                               all per day
 //   GET  /v1/health             whether the service is configured, its model, whether records are collected, the limits
 //   POST /v1/logs               one turn of a conversation, sent by the page only when the visitor agreed to it
+//   POST /v1/feedback           a visitor's rating of an answer (👍 / 👎), what they wrote of it, and — only when they chose
+//                               to attach it — the turn's question and answer; kept with the records
 //   GET  /v1/logs/export        the records waiting, for the repository's collector (Authorization: Bearer LOG_EXPORT_TOKEN)
 //   POST /v1/logs/ack           the collector has committed them: they are deleted here (409 while the archive collects)
 //   GET  /v1/logs/archive       a day of the records archived in the private bucket ARCHIVE (Bearer LOG_EXPORT_TOKEN), when
@@ -48,6 +50,9 @@ export const DEFAULTS = {
   LOGS_PER_MINUTE: "20",
   LOGS_PER_DAY: "500",
   LOG_KEEP: "50000",                          // records waiting to be collected at most: beyond, new ones are refused (none dropped)
+  FEEDBACK: "on",                             // ratings and written feedback on answers, kept with the records
+  FEEDBACK_PER_MINUTE: "10",
+  FEEDBACK_PER_DAY: "100",
   ALLOWED_ORIGINS: "https://chat.impf.ai,http://chat.impf.ai,https://psknlr.github.io",
 };
 
@@ -74,6 +79,8 @@ export function config(env = {}) {
     chat: { perMinute: num("PER_MINUTE"), perDay: num("PER_DAY"), total: num("TOTAL_PER_DAY"), tokensPerDay: num("TOKENS_PER_DAY"), totalTokens: num("TOTAL_TOKENS_PER_DAY") },
     log: { perMinute: num("LOGS_PER_MINUTE"), perDay: num("LOGS_PER_DAY"), total: 0 },
     logs: String(get("LOGS")).toLowerCase() !== "off",
+    rate: { perMinute: num("FEEDBACK_PER_MINUTE"), perDay: num("FEEDBACK_PER_DAY"), total: 0 },
+    feedback: String(get("FEEDBACK")).toLowerCase() !== "off",
     logMax: num("LOG_MAX_BYTES"),
     keep: num("LOG_KEEP"),
   };
@@ -126,6 +133,7 @@ export async function handle(request, env, deps) {
       case "GET /v1/stats": return await stats(request, env, url, cors, deps);
       case "POST /v1/chat/completions": return await chat(request, env, cfg, cors, allowed, deps, s);
       case "POST /v1/logs": return await submit(request, cfg, cors, allowed, deps, s);
+      case "POST /v1/feedback": return await feedback(request, cfg, cors, allowed, deps, s);
       case "GET /v1/logs/export": return await records(request, env, url, deps);
       case "POST /v1/logs/ack": return await ack(request, env, deps);
       case "GET /v1/logs/archive": return await serveArchive(request, url, { bucket: env.ARCHIVE, prefix: RECORDS, token: env.LOG_EXPORT_TOKEN || "" });
@@ -240,7 +248,7 @@ function limited(gate, limits, cors, what = "请求") {
 function health(env, cfg, cors) {
   return json({
     ok: Boolean(env.MINIMAX_API_KEY), service: "taochronos-relay", version: VERSION, model: cfg.publicModel, models: [cfg.publicModel],
-    logs: cfg.logs, max_output_tokens: cfg.maxTokens, limits: { per_minute: cfg.chat.perMinute, per_day: cfg.chat.perDay, tokens_per_day: cfg.chat.tokensPerDay },
+    logs: cfg.logs, feedback: cfg.feedback, max_output_tokens: cfg.maxTokens, limits: { per_minute: cfg.chat.perMinute, per_day: cfg.chat.perDay, tokens_per_day: cfg.chat.tokensPerDay },
   }, 200, cors);
 }
 
@@ -618,48 +626,101 @@ export function normalizeRecord(r) {
   return JSON.parse(JSON.stringify(out)); // without the undefined fields
 }
 
+// what a visitor may say of an answer (web/js/records.js, REASONS): short words, so that the counts can be read without
+// reading what anyone wrote
+const RATINGS = new Set(["up", "down"]);
+const REASON = /^[a-z_]{1,32}$/;
+
+/** A visitor's feedback on an answer as the page sends it, reduced to the known fields and their limits: which turn (its
+ * message id and conversation, as the turn's own record has them), the rating — "up", "down", or null when the visitor
+ * took it back —, the reasons ticked, what they wrote, whether the turn was recorded (its record then holds the question
+ * and answer), and the turn's question and answer only when the visitor chose to attach them.  Null when it is not one. */
+export function normalizeFeedback(r) {
+  if (!obj(r) || r.v !== 1 || r.kind !== "feedback") return null;
+  const id = str(r.id, 64);
+  const rating = RATINGS.has(r.rating) ? r.rating : r.rating === null ? null : undefined;
+  if (!id || rating === undefined) return null;
+  const out = {
+    v: 1, kind: "feedback", id, conversation: str(r.conversation, 64), turn: num(r.turn), rating, given: str(r.given, 40),
+    model: str(r.model, 80), provider: str(r.provider, 80), runtime: str(r.runtime, 40), corpus: str(r.corpus, 40), app: str(r.app, 40),
+  };
+  if (rating) { // taken back: nothing more is kept
+    Object.assign(out, {
+      reasons: Array.isArray(r.reasons) ? [...new Set(r.reasons.filter((x) => typeof x === "string" && REASON.test(x)))].slice(0, 8) : [],
+      comment: str(r.comment, 2000)?.trim() || undefined, recorded: r.recorded === true || undefined,
+      question: str(r.question, 4000) || undefined, answer: str(r.answer, 20000) || undefined,
+    });
+  }
+  return JSON.parse(JSON.stringify(out)); // without the undefined fields
+}
+
 async function submit(request, cfg, cors, allowed, deps, s) {
+  return intake(request, cfg, cors, allowed, deps, s, {
+    route: "logs", kind: "log", on: cfg.logs, limits: cfg.log, normalize: normalizeRecord, what: "记录",
+    off: ["对话记录已关闭", "logs_off"], full: "对话记录暂存已满，这条记录未保存",
+    // a record of the default service's own conversation comes from a visitor it answered today; a record of a
+    // conversation held with the visitor's own key (another provider) never passed through here, and is taken on its
+    // origin alone
+    served: (record) => (record.provider === RELAY_PROVIDER ? "chat" : undefined),
+    lost: () => new Response(null, { status: 204, headers: cors }), // the record is let go: it is not the visitor's concern
+  });
+}
+
+/** Feedback is the visitor's own act, on a turn of any day: taken on its origin and its own limits, and kept with the
+ * records (the collector takes both).  The visitor waits for it: a feedback that could not be kept says so. */
+async function feedback(request, cfg, cors, allowed, deps, s) {
+  return intake(request, cfg, cors, allowed, deps, s, {
+    route: "feedback", kind: "feedback", on: cfg.feedback, limits: cfg.rate, normalize: normalizeFeedback, what: "反馈",
+    off: ["反馈已关闭", "feedback_off"], full: "暂存已满，这条反馈未保存",
+    day: `今天的反馈已达上限（每人每天 ${cfg.rate.perDay} 条），明天再来`,
+    lost: () => error(503, "反馈暂时无法提交，请稍后再试", "feedback_unavailable", { ...cors, "Retry-After": "60" }),
+  });
+}
+
+/** What the page sends to be kept (a record, a feedback): from the page's origins, within the ten-second gate and the
+ * size limit, of the known fields, past the sentinel and the counters — then into the book for the collector. */
+async function intake(request, cfg, cors, allowed, deps, s, how) {
+  const { route, what } = how;
   if (!allowed) {
-    if (s) note(s, "logs", 403);
+    if (s) note(s, route, 403);
     return error(403, "这个服务只供道乃久网页使用", "forbidden_origin", cors);
   }
-  if (!cfg.logs) return error(404, "对话记录已关闭", "logs_off", cors);
+  if (!how.on) return error(404, how.off[0], how.off[1], cors);
   if (await bursting(request, deps)) {
-    if (s) note(s, "logs", 429);
-    return limited({ reason: "burst" }, cfg.log, cors, "记录");
+    if (s) note(s, route, 429);
+    return limited({ reason: "burst" }, how.limits, cors, what);
   }
   const raw = await readBody(request, cfg.logMax);
-  if (raw === null) return error(413, "记录过大", "too_large", cors);
+  if (raw === null) return error(413, `${what}过大`, "too_large", cors);
   let r;
   try { r = JSON.parse(raw); } catch {
-    if (s) note(s, "logs", 400);
-    return error(400, "记录不是有效的 JSON", "bad_record", cors);
+    if (s) note(s, route, 400);
+    return error(400, `${what}不是有效的 JSON`, "bad_record", cors);
   }
-  const record = normalizeRecord(r);
+  const record = how.normalize(r);
   if (!record) {
-    if (s) note(s, "logs", 400);
-    return error(400, "记录格式不对", "bad_record", cors);
+    if (s) note(s, route, 400);
+    return error(400, `${what}格式不对`, "bad_record", cors);
   }
   // the page names the default service's model by its public name; the records (the owner's) keep the one that answered
   if (record.model === cfg.publicModel) record.model = cfg.model;
-  const a = s ? assess(s.fp, { route: "logs", origins: cfg.origins, ownPrefix: s.cfg.ownPrefix }) : null;
-  // a record of the default service's own conversation comes from a visitor it answered today; a record of a conversation
-  // held with the visitor's own key (another provider) never passed through here, and is taken on its origin alone
-  const served = record.provider === RELAY_PROVIDER ? "chat" : undefined;
+  const a = s ? assess(s.fp, { route, origins: cfg.origins, ownPrefix: s.cfg.ownPrefix }) : null;
   let gate;
   try {
-    gate = await deps.gate({ who: await caller(request, deps.now()), kind: "log", limits: cfg.log, fp: s?.fp, a, cfg: s?.cfg, served });
+    gate = await deps.gate({ who: await caller(request, deps.now()), kind: how.kind, limits: how.limits, fp: s?.fp, a, cfg: s?.cfg,
+      served: how.served?.(record) });
   } catch (err) {
-    console.error("gate", err?.name || "Error"); // the record is let go: it is not the visitor's concern
-    return new Response(null, { status: 204, headers: cors });
+    console.error("gate", err?.name || "Error");
+    return how.lost();
   }
   if (s) logLine("relay", s.fp, a, gate.watch, gate.ok ? 204 : gate.reason === "blocked" ? 403 : 429, s.cfg);
-  if (!gate.ok) return limited(gate, cfg.log, cors, "记录");
+  if (!gate.ok && gate.reason === "day" && how.day) return error(429, how.day, "daily_limit", { ...cors, "Retry-After": String(gate.retry || 60) });
+  if (!gate.ok) return limited(gate, how.limits, cors, what);
   const id = await deps.logbook.add(JSON.stringify(record), new Date(deps.now()).toISOString(), cfg.keep);
   if (id === null) {
-    // the book is full (nothing collected it for a long while): this record is refused, the ones taken in stay
+    // the book is full (nothing collected it for a long while): this one is refused, the ones taken in stay
     console.error("logs full", cfg.keep);
-    return error(503, "对话记录暂存已满，这条记录未保存", "logs_full", { ...cors, "Retry-After": "3600" });
+    return error(503, how.full, "logs_full", { ...cors, "Retry-After": "3600" });
   }
   return new Response(null, { status: 204, headers: cors });
 }

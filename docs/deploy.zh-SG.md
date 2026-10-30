@@ -507,6 +507,7 @@ MiniMax 余额维持在愿意花费的数目。
 | 更新语料 | 3.4，然后 A1+A2 或 B2–B5 |
 | 调整限额或模式 | 经 Pull Request 修改该 Worker 的 `wrangler.toml` 的 `[vars]` |
 | 停止记录对话 | `relay/wrangler.toml` 里 `LOGS = "off"` |
+| 停止收集对回答的反馈（每条回答下的“有帮助 / 有问题”） | `relay/wrangler.toml` 里 `FEEDBACK = "off"` |
 | 暂停默认服务 | 控制台 → `taochronos-relay` → **Settings → Variables and Secrets** → 删除 `MINIMAX_API_KEY` |
 | 立即封锁一个地址 | **Manage Account → Configurations → Lists → `taochronos_block`**，之后补进 `security/blocklist.yaml` |
 

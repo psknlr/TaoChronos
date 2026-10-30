@@ -48,3 +48,30 @@ export function timings({ started, trace, was, now, hidden, asleep }) {
     was: was && (was.runtime !== now.runtime || was.corpus !== now.corpus) ? was : undefined,
   };
 }
+
+/** What a visitor may tick when they rate an answer, under 👍 and under 👎: short words (the relay keeps only such words,
+ * and `taochronos records` counts them without reading what anyone wrote), shown in plain words. */
+export const REASONS = {
+  up: [["accurate", T("内容准确")], ["sourced", T("引文可靠、出处清楚")], ["clear", T("条理清楚")], ["thorough", T("资料全面")],
+    ["insight", T("有新的发现")]],
+  down: [["citation", T("引文有误或查无出处")], ["inaccurate", T("内容不准确")], ["incomplete", T("回答不完整")],
+    ["off_topic", T("没有回答我的问题")], ["slow", T("太慢")], ["other", T("其他")]],
+};
+
+/** A visitor's feedback on a turn, as the relay keeps it (relay/src/relay.js, normalizeFeedback): which turn — its message
+ * and conversation, as the turn's own record names them —, the rating ("up", "down", or null: taken back), the reasons
+ * ticked, what they wrote, and whether the turn was recorded (its record then holds the question and answer).  The
+ * question and answer go with it only when the visitor chose to attach them (`attach`: {question, answer}).  Sent only
+ * when the visitor submits it, whether or not they agreed to their turns being recorded: it is an act of its own. */
+export function feedbackRecord({ conv, msg, rating, reasons = [], comment = "", attach = null, runtime = {}, now = new Date() }) {
+  const idx = conv.messages.indexOf(msg);
+  const record = {
+    v: 1, kind: "feedback", id: msg.id, conversation: conv.id, turn: conv.messages.slice(0, idx).filter((m) => m.role === "user").length,
+    rating, given: now.toISOString(), model: msg.model, provider: msg.provider, runtime: runtime.runtime, corpus: runtime.corpus, app: runtime.app,
+  };
+  if (rating) {
+    Object.assign(record, { reasons: [...reasons], comment: comment.trim().slice(0, 2000) || undefined, recorded: msg.recorded === true || undefined });
+    if (attach) Object.assign(record, { question: String(attach.question || "").slice(0, 4000), answer: String(attach.answer || "").slice(0, 12000) });
+  }
+  return record;
+}

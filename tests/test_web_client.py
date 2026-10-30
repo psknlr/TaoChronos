@@ -24,6 +24,7 @@ import { Accum, ProviderError, splitThink, streamChat } from "./js/llm/openai.js
 import { loadSettings, outputLimit, publicConversation, publicError } from "./js/providers.js";
 import { answerDangling, budgetNote, buildHistory, lessThinking, retryWait, runTurn, userText, withoutReasoning } from "./js/agent.js";
 import { brief, dataNote, deidLabel, isMine, personal, sizeLabel } from "./js/mydata.js";
+import { feedbackRecord, REASONS } from "./js/records.js";
 import { extractCitations } from "./js/markdown.js";
 import { count, hitNotes, returnedText, withFound } from "./js/util.js";
 import { fixedReply, IDENTITY_REPLY, isIdentityQuestion, touchesIdentity } from "./js/fixed.js";
@@ -719,6 +720,26 @@ assert.equal(personal({ messages: [{ role: "user", text: "桂枝汤" }] }), fals
 assert.equal(personal({ messages: [{ role: "user", text: "看看", data: [shape] }] }), true);
 assert.equal(personal({ messages: [{ role: "assistant", segments: [{ type: "tools", calls: [{ name: "mydata__list" }] }] }] }), true);
 assert.equal(personal({ messages: [{ role: "assistant", segments: [{ type: "tools", calls: [{ name: "taochronos_call", args: { tool: "mydata.read" } }] }] }] }), true);
+
+// a visitor's feedback on a turn (records.js): named as the turn's record names it; the turn's words only when attached,
+// none of it once taken back
+const fbAnswer = { id: "m_2", role: "assistant", model: "Tao-R1", provider: "impf", recorded: true };
+const fbConv = { id: "c_1", messages: [{ role: "user", text: "一" }, { id: "m_1", role: "assistant" }, { role: "user", text: "桂枝汤？" }, fbAnswer] };
+const now = new Date("2026-10-30T08:00:00Z");
+const fb = feedbackRecord({ conv: fbConv, msg: fbAnswer, rating: "down", reasons: ["citation"], comment: "  不对。 ", now,
+  runtime: { runtime: "browser", corpus: "canon", app: "0.1.0" } });
+assert.deepEqual(JSON.parse(JSON.stringify(fb)), { v: 1, kind: "feedback", id: "m_2", conversation: "c_1", turn: 2, rating: "down",
+  given: "2026-10-30T08:00:00.000Z", model: "Tao-R1", provider: "impf", runtime: "browser", corpus: "canon", app: "0.1.0",
+  reasons: ["citation"], comment: "不对。", recorded: true });
+const attached = feedbackRecord({ conv: fbConv, msg: { ...fbAnswer, recorded: undefined }, rating: "up", comment: " ", now,
+  attach: { question: "问".repeat(5000), answer: "答".repeat(13000) } });
+assert.deepEqual([attached.question.length, attached.answer.length, attached.comment, attached.recorded], [4000, 12000, undefined, undefined]);
+const back = JSON.parse(JSON.stringify(feedbackRecord({ conv: fbConv, msg: fbAnswer, rating: null, reasons: ["citation"], comment: "x", now,
+  attach: { question: "q", answer: "a" } })));
+assert.deepEqual(Object.keys(back).filter((k) => ["reasons", "comment", "recorded", "question", "answer"].includes(k)), []);
+assert.equal(back.rating, null);
+assert.deepEqual(REASONS.down.map(([code]) => code), ["citation", "inaccurate", "incomplete", "off_topic", "slow", "other"]);
+assert.ok([...REASONS.up, ...REASONS.down].every(([code]) => /^[a-z_]{1,32}$/.test(code))); // what the relay keeps (normalizeFeedback)
 console.log("ok");
 """
 
@@ -3389,6 +3410,155 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
             ctx, page, errors = visit(down=True)
             page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('配置底层模型')", timeout=15000)
             assert "未配置" in page.inner_text("#model-chip")
+            assert not errors, errors
+            ctx.close()
+            browser.close()
+    finally:
+        srv.shutdown()
+        srv.server_close()
+        relay.shutdown()
+        mock.shutdown()
+
+
+def test_an_answer_is_rated_and_told_about_in_a_few_words(tmp_path):
+    """Under each answer, 👍 and 👎 (when the site's relay takes feedback): either opens a dialog — what was good or wrong
+    (several may be ticked), a few words — and nothing is sent before the visitor submits.  The feedback names the turn
+    as its record does; the question and answer go with it only when the visitor ticks the box, and never when the turn
+    was recorded already (its record has them).  The rating stays on the answer after a reload; pressed again, it is
+    taken back.  A refusal is said in the dialog, which stays open to try again."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import MockProvider, MockRelay
+
+    mock = MockProvider().start()
+    relay = MockRelay(mock.base_url).start()
+    web = tmp_path / "web"
+    _published(web, relay.url)
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+
+    def arrived(items, n, wait=15.0):
+        end = time.time() + wait
+        while len(items) < n and time.time() < end:
+            time.sleep(0.1)
+        return items
+
+    down = ".msg.assistant.last button.rate[data-rate=down]"
+    up = ".msg.assistant.last button.rate[data-rate=up]"
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+
+            def asked(question, agree):
+                ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN")
+                page = ctx.new_page()
+                errors: list[str] = []
+                page.on("pageerror", lambda e: errors.append(str(e)))
+                page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
+                page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+                page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('默认服务')", timeout=10000)
+                page.fill("#input", question)
+                page.keyboard.press("Enter")
+                page.wait_for_selector("#consent[open]", timeout=10000)
+                page.click("#consent .btn:not(.secondary)" if agree else "#consent .btn.secondary")
+                page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
+                return ctx, page, errors
+
+            # a visitor who declined the records: 👍 and 👎 under the answer, neither pressed
+            ctx, page, errors = asked("桂枝汤主治什么？请给出原文。", agree=False)
+            assert page.get_attribute(down, "aria-pressed") == "false" and page.get_attribute(up, "aria-pressed") == "false"
+            assert page.get_attribute(down, "title") == "有问题" and page.get_attribute(up, "title") == "有帮助"
+            # 👎: the dialog; dismissed, nothing is sent and nothing is pressed
+            page.click(down)
+            page.wait_for_selector("#feedback[open]")
+            assert "这个回答有问题" in page.inner_text("#feedback")
+            page.click("#feedback .modal-foot .btn.secondary")
+            assert page.query_selector("#feedback[open]") is None
+            time.sleep(0.5)
+            assert relay.feedback == [] and page.get_attribute(down, "aria-pressed") == "false"
+            # again: two reasons, a few words, the turn attached
+            page.click(down)
+            page.wait_for_selector("#feedback[open]")
+            text = page.inner_text("#feedback")
+            assert "附上这一轮的问题和回答" in text and "请不要写入姓名" in text and "研究院" in text
+            assert page.eval_on_selector_all("#feedback .chip", "cs => cs.map((c) => c.dataset.reason)") == [
+                "citation", "inaccurate", "incomplete", "off_topic", "slow", "other"]
+            page.click("#feedback .chip[data-reason=citation]")
+            page.click("#feedback .chip[data-reason=incomplete]")
+            page.click("#feedback .chip[data-reason=slow]")
+            page.click("#feedback .chip[data-reason=slow]")  # ticked and unticked
+            assert page.get_attribute("#feedback .chip[data-reason=citation]", "aria-pressed") == "true"
+            page.fill("#feedback textarea", "  第二条引文与原文不合。  ")
+            page.check("#feedback input[type=checkbox]")
+            page.click("#feedback .modal-foot .btn:not(.secondary)")
+            page.wait_for_function("!document.querySelector('#feedback[open]')", timeout=10000)
+            fb = arrived(relay.feedback, 1)[0]
+            msg_id = page.get_attribute(".msg.assistant.last", "data-id")
+            conv_id = page.evaluate("location.hash.split('/').pop()")
+            assert fb["type"].startswith("text/plain")  # a simple request: no preflight
+            assert (fb["v"], fb["kind"], fb["id"], fb["conversation"], fb["turn"]) == (1, "feedback", msg_id, conv_id, 1)
+            assert (fb["rating"], fb["reasons"], fb["comment"]) == ("down", ["citation", "incomplete"], "第二条引文与原文不合。")
+            assert (fb["provider"], fb["model"]) == ("impf", "Tao-R1") and "recorded" not in fb
+            assert fb["question"] == "桂枝汤主治什么？请给出原文。" and "桂枝汤" in fb["answer"]
+            assert not {"apiKey", "keys", "settings"} & set(fb) and MockRelay.SECRET not in json.dumps(fb, ensure_ascii=False)
+            assert relay.records == []  # the turn itself was not recorded: the visitor declined
+            # pressed now — and still, after a reload
+            page.wait_for_selector(f"{down}[aria-pressed=true]", timeout=5000)
+            assert page.get_attribute(down, "title") == "撤回评价" and page.get_attribute(down, "aria-label") == "有问题"
+            page.reload()
+            page.wait_for_selector(".conv.active", timeout=15000)
+            page.wait_for_selector(f"{down}[aria-pressed=true]", timeout=15000)
+            # pressed again: taken back, said to the relay with nothing else
+            page.click(down)
+            page.wait_for_selector(f"{down}[aria-pressed=false]", timeout=10000)
+            back = arrived(relay.feedback, 2)[1]
+            assert (back["id"], back["rating"]) == (msg_id, None) and not {"reasons", "comment", "question", "answer"} & set(back)
+            # 👍, refused once (too often): said in the dialog, which stays open; submitted again, it goes — without the turn
+            relay.refuse_feedback = 429
+            page.click(up)
+            page.wait_for_selector("#feedback[open]")
+            assert "这个回答有帮助" in page.inner_text("#feedback")
+            page.click("#feedback .chip[data-reason=sourced]")
+            page.click("#feedback .modal-foot .btn:not(.secondary)")
+            page.wait_for_selector("#feedback .notice.err", timeout=10000)
+            assert "提交太频繁" in page.inner_text("#feedback .notice.err") and page.query_selector("#feedback[open]")
+            page.click("#feedback .modal-foot .btn:not(.secondary)")
+            page.wait_for_function("!document.querySelector('#feedback[open]')", timeout=10000)
+            third = arrived(relay.feedback, 3)[2]
+            assert (third["rating"], third["reasons"]) == ("up", ["sourced"]) and not {"comment", "question", "answer"} & set(third)
+            page.wait_for_selector(f"{up}[aria-pressed=true]", timeout=5000)
+            assert page.get_attribute(down, "aria-pressed") == "false"
+            assert not errors, errors
+            ctx.close()
+
+            # a visitor whose turns are recorded: the feedback refers to the record, and carries none of the turn
+            ctx, page, errors = asked("消渴是什么？", agree=True)
+            assert arrived(relay.records, 1) and relay.records[0]["question"] == "消渴是什么？"
+            time.sleep(1)  # the record's answer: the turn is marked recorded
+            page.click(down)
+            page.wait_for_selector("#feedback[open]")
+            assert "已按你的同意记录" in page.inner_text("#feedback") and page.query_selector("#feedback input[type=checkbox]") is None
+            page.click("#feedback .modal-foot .btn:not(.secondary)")
+            page.wait_for_function("!document.querySelector('#feedback[open]')", timeout=10000)
+            fourth = arrived(relay.feedback, 4)[3]
+            assert (fourth["id"], fourth["recorded"], fourth["reasons"]) == (relay.records[0]["id"], True, [])
+            assert not {"question", "answer", "comment"} & set(fourth)
+            assert not errors, errors
+            ctx.close()
+
+            # a relay that takes no feedback: no thumbs
+            relay.takes_feedback = False
+            ctx, page, errors = asked("太阳病是什么？", agree=False)
+            assert page.query_selector(".msg.assistant button.rate") is None
             assert not errors, errors
             ctx.close()
             browser.close()

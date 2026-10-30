@@ -5,7 +5,7 @@ from __future__ import annotations
 import itertools
 import json
 
-from taochronos.chat.records import answer_after_tools, read, summary, whole
+from taochronos.chat.records import answer_after_tools, ratings, read, summary, whole
 from taochronos.cli import main
 
 QUESTION = "桂枝汤主治什么？"
@@ -140,17 +140,53 @@ def test_a_turn_taken_up_again_counts_once_as_it_ended():
     assert summary([again])["resumed"] == {"n": 1, "whole": 1}  # its first record not collected (yet)
 
 
+def rating(id, rating="down", **kw):
+    """A visitor's feedback on a turn, as the relay keeps it (relay/src/relay.js, normalizeFeedback)."""
+    r = {"v": 1, "kind": "feedback", "id": id, "conversation": "c1", "turn": 1, "rating": rating, "given": "2026-10-23T08:05:00.000Z",
+         "provider": "impf", "model": "MiniMax-M3"}
+    if rating:
+        r["reasons"] = ["citation"] if rating == "down" else ["accurate"]
+    r.update(kw)
+    return r
+
+
+def test_the_feedback_on_answers_is_counted_apart_from_the_turns():
+    first, second, third = timed(), timed(), timed()
+    feedback = [
+        rating(first["id"], "down", reasons=["citation", "incomplete"], comment="引的不是这一条。", recorded=True),
+        rating(first["id"], "up", reasons=["accurate", "sourced"], recorded=True),  # thought better of it: the last word stands
+        rating(second["id"], "down", reasons=["citation"], question=QUESTION, answer=ANSWER),
+        rating(third["id"], "up"),
+        rating(third["id"], None),  # taken back
+        rating("m-other", "down", reasons=["slow", "other"], conversation="c2", comment="  "),
+    ]
+    out = summary([first, second, third, *feedback])
+    assert out["turns"] == 3 and out["completion"]["whole"] == {"n": 3, "of": 3, "share": 1.0}  # feedback is no turn
+    assert out["feedback"] == {
+        "rated": 3, "up": 1, "down": 2, "share_up": 0.333, "taken_back": 1,
+        "reasons": {"up": {"accurate": 1, "sourced": 1}, "down": {"citation": 1, "slow": 1, "other": 1}},
+        "commented": 0, "attached": 1, "recorded": 1}
+    # by the day it was given
+    assert ratings(feedback, since="2026-10-24")["rated"] == 0
+    assert ratings([rating("m1", given="2026-10-20T00:00:00Z"), rating("m2")], until="2026-10-21")["rated"] == 1
+    assert summary([])["feedback"] == {"rated": 0, "up": 0, "down": 0, "share_up": None, "taken_back": 0,
+                                       "reasons": {"up": {}, "down": {}}, "commented": 0, "attached": 0, "recorded": 0}
+
+
 def test_the_command_reads_the_collected_days_and_says_no_word_of_them(tmp_path, capsys):
     day = tmp_path / "2026" / "10" / "23.jsonl"
     day.parent.mkdir(parents=True)
     day.write_text("\n".join([json.dumps({"n": 1, "received": "2026-10-23T08:00:07Z", **timed()}, ensure_ascii=False),
-                              "not a record", json.dumps(old(), ensure_ascii=False)]) + "\n", encoding="utf-8")
+                              "not a record", json.dumps(old(), ensure_ascii=False),
+                              json.dumps({"n": 2, "received": "2026-10-23T08:05:01Z", **rating("m-x", comment="桂枝汤引错了")},
+                                         ensure_ascii=False)]) + "\n", encoding="utf-8")
     (tmp_path / "cursor.json").write_text('{"last": 1}', encoding="utf-8")
-    assert [r["started"][:10] for r in read([tmp_path])] == ["2026-10-23", "2026-10-20"]
+    assert [r.get("kind") or r["started"][:10] for r in read([tmp_path])] == ["2026-10-23", "2026-10-20", "feedback"]
     assert main(["records", str(tmp_path)]) == 0
     printed = capsys.readouterr().out
     out = json.loads(printed)
     assert out["turns"] == 2 and out["timed"] == 1 and out["completion"]["whole"]["n"] == 2
+    assert (out["feedback"]["down"], out["feedback"]["commented"]) == (1, 1)
     assert QUESTION not in printed and "桂枝" not in printed and "a.1" not in printed
     assert main(["records", str(tmp_path), "--since", "2026-10-21"]) == 0
     assert json.loads(capsys.readouterr().out)["turns"] == 1

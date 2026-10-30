@@ -152,9 +152,18 @@ export function fillAssistant(body, m, ctx, last) {
       m.ms ? fmtMs(m.ms) : null, m.usage?.output ? `${m.usage.input || 0}→${m.usage.output} tokens` : null].filter(Boolean).join(" · ");
     body.append(h("div.actions",
       h("button.icon-btn", { type: "button", title: T("复制回答"), "aria-label": T("复制回答"), on: { click: () => ctx.onCopy(answerText(m)) } }, icon("copy", "sm")),
+      ctx.canRate?.(m) ? [rateButton(m, "up", ctx), rateButton(m, "down", ctx)] : null,
       last && !ctx.running ? h("button.icon-btn", { type: "button", title: T("重新生成"), "aria-label": T("重新生成"), on: { click: () => ctx.onRegenerate(m.id) } }, icon("redo", "sm")) : null,
       h("span.meta", { title: m.provider === RELAY_ID ? T("道乃久默认服务") : m.model ? T`底层模型 ${m.model}` : null }, meta)));
   }
+}
+
+/** 👍 or 👎 under an answer: pressed when it is the visitor's rating (pressed again, it is taken back). */
+function rateButton(m, rating, ctx) {
+  const on = m.feedback?.rating === rating;
+  const label = rating === "up" ? T("有帮助") : T("有问题");
+  return h("button.icon-btn.rate", { type: "button", class: on ? "on" : "", title: on ? T("撤回评价") : label, "aria-label": label, "aria-pressed": String(on),
+    dataset: { rate: rating }, on: { click: () => ctx.onRate(m.id, rating) } }, icon(rating === "up" ? "thumbup" : "thumbdown", "sm"));
 }
 
 /** The answer as the model wrote it — for the model only; what anyone reads of it is answerText.  An answer the

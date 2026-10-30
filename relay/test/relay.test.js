@@ -7,7 +7,7 @@ import test from "node:test";
 
 import { drain, EVENTS, RECORDS } from "../../security/archive.js";
 import { WatchCore } from "../../security/sentinel.js";
-import { config, handle, normalizeRecord, publicText, withoutReasoning } from "../src/relay.js";
+import { config, handle, normalizeFeedback, normalizeRecord, publicText, withoutReasoning } from "../src/relay.js";
 import { LimiterCore, LogBookCore } from "../src/state.js";
 import { UsageCore } from "../../security/usage.js";
 
@@ -318,7 +318,8 @@ test("health says what the page needs, nothing secret", async () => {
   const r = relay();
   const res = await r.call("/v1/health", { headers: { Origin: PAGE } });
   const j = await res.json();
-  assert.deepEqual([j.ok, j.model, j.models, j.logs], [true, "Tao-R1", ["Tao-R1"], true]);
+  assert.deepEqual([j.ok, j.model, j.models, j.logs, j.feedback], [true, "Tao-R1", ["Tao-R1"], true, true]);
+  assert.equal((await (await relay({ env: { FEEDBACK: "off" } }).call("/v1/health")).json()).feedback, false);
   assert.doesNotMatch(JSON.stringify(j), /MiniMax|minimax/); // the upstream is not named
   assert.equal(res.headers.get("Access-Control-Allow-Origin"), PAGE);
   assert.ok(!JSON.stringify(j).includes(KEY) && !JSON.stringify(j).includes(TOKEN));
@@ -485,6 +486,61 @@ test("a full book refuses the next record and keeps every one it took in", () =>
   const restarted = new LogBookCore(sql);
   restarted.add(JSON.stringify(turn), "2026-10-14T00:00:00Z", 0);
   assert.equal(restarted.waiting(), 4);
+}));
+
+// ------------------------------------------------------------------ feedback on answers
+const rated = {
+  v: 1, kind: "feedback", id: "t1", conversation: "c_x", turn: 1, rating: "down", reasons: ["citation", "incomplete", "Not a code", 7, "citation"],
+  comment: "  引的不是这一条。  ", recorded: true, given: "2026-09-28T12:00:00.000Z", model: "Tao-R1", provider: "impf", runtime: "browser",
+  corpus: "canon", app: "0.1.0", apiKey: "must not be kept", settings: { keys: { minimax: "x" } },
+};
+
+test("feedback: the visitor's own act, on a turn of any day, kept with the records as its known fields", () => quiet(async () => {
+  const r = relay();
+  // no conversation with the relay needed (a rating may come days after the turn, or be of one held with an own key)
+  assert.equal((await r.call("/v1/feedback", post(rated))).status, 204);
+  const attached = { ...rated, id: "t2", rating: "up", reasons: ["accurate"], recorded: false, question: "桂枝汤主治什么？", answer: "太阳中风……" };
+  assert.equal((await r.call("/v1/feedback", post(attached))).status, 204);
+  assert.equal((await r.call("/v1/feedback", post({ ...rated, rating: null, comment: "kept?" }))).status, 204); // taken back
+  const [down, up, back] = r.book.records(0, 10).items.map((i) => i.record);
+  assert.deepEqual(down, { v: 1, kind: "feedback", id: "t1", conversation: "c_x", turn: 1, rating: "down", given: "2026-09-28T12:00:00.000Z",
+    model: "MiniMax-M3", provider: "impf", runtime: "browser", corpus: "canon", app: "0.1.0", reasons: ["citation", "incomplete"],
+    comment: "引的不是这一条。", recorded: true });
+  assert.deepEqual([up.rating, up.question, up.answer, up.recorded], ["up", "桂枝汤主治什么？", "太阳中风……", undefined]);
+  assert.deepEqual([back.rating, back.reasons, back.comment], [null, undefined, undefined]);
+  // the collector takes them with the records, in the order they came
+  const auth = { Authorization: `Bearer ${TOKEN}` };
+  assert.deepEqual((await (await r.call("/v1/logs/export?after=0", { headers: auth })).json()).items.map((i) => i.record.kind), ["feedback", "feedback", "feedback"]);
+  // only from the page; only a feedback; within its limits
+  assert.equal((await r.call("/v1/feedback", post(rated, { Origin: "https://evil.example" }))).status, 403);
+  for (const bad of [{ ...rated, kind: undefined }, { ...rated, rating: "meh" }, { ...rated, id: "" }, { ...rated, v: 2 }, turn]) {
+    const res = await r.call("/v1/feedback", post(bad));
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error.message, "反馈格式不对");
+  }
+  assert.equal((await r.call("/v1/feedback", post("{not json"))).status, 400);
+  assert.equal(normalizeFeedback({ ...rated, comment: "评".repeat(3000) }).comment.length, 2000);
+  assert.equal(normalizeFeedback({ ...rated, answer: "答".repeat(30000) }).answer.length, 20000);
+  assert.equal(normalizeFeedback({ ...rated, reasons: Array.from({ length: 20 }, (_, i) => `r${"x".repeat(i)}`) }).reasons.length, 8);
+  assert.equal((await relay({ env: { FEEDBACK: "off" } }).call("/v1/feedback", post(rated))).status, 404);
+  // FEEDBACK_PER_MINUTE, then FEEDBACK_PER_DAY, each said in its own words
+  const busy = relay({ env: { FEEDBACK_PER_MINUTE: "2", FEEDBACK_PER_DAY: "3" } });
+  let t = Date.UTC(2026, 8, 28, 12, 0, 0);
+  const daily = relay({ env: { FEEDBACK_PER_DAY: "2" }, now: () => t });
+  for (let k = 0; k < 2; k++) assert.equal((await busy.call("/v1/feedback", post(rated))).status, 204);
+  const minute = await busy.call("/v1/feedback", post(rated));
+  assert.equal(minute.status, 429);
+  assert.match((await minute.json()).error.message, /^反馈太频繁/);
+  for (let k = 0; k < 2; k++, t += 61000) assert.equal((await daily.call("/v1/feedback", post(rated))).status, 204);
+  const day = await daily.call("/v1/feedback", post(rated));
+  assert.equal(day.status, 429);
+  assert.equal((await day.json()).error.message, "今天的反馈已达上限（每人每天 2 条），明天再来");
+  // records and feedback are counted apart: a day's feedback leaves the records' room as it was
+  assert.equal((await daily.call("/v1/logs", post({ ...turn, provider: "openai" }))).status, 204);
+  // the visitor waits for a feedback: one that could not be kept says so (a record is let go without a word)
+  const down503 = await relay({ gateFails: true }).call("/v1/feedback", post(rated));
+  assert.deepEqual([down503.status, (await down503.json()).error.type], [503, "feedback_unavailable"]);
+  assert.equal((await relay({ gateFails: true }).call("/v1/logs", post({ ...turn, provider: "openai" }))).status, 204);
 }));
 
 // ------------------------------------------------------------------ the sentinel
