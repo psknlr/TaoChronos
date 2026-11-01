@@ -4,6 +4,7 @@
 // is still missing, and which questions to ask.  Missing data lowers what is offered; it is never made up.
 
 import { ACTIVITY, bmi, limits, measures, protein, ree, target, tdee, waistRisk } from "./energy.js";
+import { BACKGROUNDS, guideFor, region, REGION_CODES, scaleFor, SCALES } from "./regions.js";
 import { ALGORITHM, provenance } from "./sources.js";
 
 export const CONDITIONS = ["none", "pregnant", "breastfeeding", "eating_disorder", "kidney_disease", "diabetes", "glucose_lowering_medicine",
@@ -11,7 +12,7 @@ export const CONDITIONS = ["none", "pregnant", "breastfeeding", "eating_disorder
   "unexplained_weight_loss", "food_allergy", "other", "unsure"];
 export const ALLERGENS = ["none", "peanut", "tree_nut", "crustacean", "mollusc", "fish", "egg", "milk", "soy", "wheat", "sesame", "other"];
 export const DIETS = ["halal", "vegetarian", "vegan", "no_beef", "no_pork", "no_seafood", "ramadan_fasting"];
-export const EATING = ["hawker", "home_cooking", "takeaway", "workplace_canteen", "quick_cooking", "low_budget"];
+export const EATING = ["eating_out", "hawker", "home_cooking", "takeaway", "workplace_canteen", "quick_cooking", "low_budget"];
 export const GOALS = ["lose_weight", "maintain", "eat_better"];
 export const SEXES = ["male", "female", "not_stated"];
 
@@ -33,7 +34,7 @@ const QUESTIONS = {
     question: "How old are you, and what are your height and current weight?",
     fields: ["age (years)", "height (cm)", "weight (kg)"],
     options: ["Skip"],
-    why: "needed for BMI (Singapore's Asian cut-offs) and an energy estimate",
+    why: "needed for BMI and an energy estimate",
   },
   sex: {
     required: true,
@@ -46,6 +47,12 @@ const QUESTIONS = {
     question: "How active are you on a typical day?",
     options: ["Sedentary", "Lightly active", "Moderately active", "Highly active", "Not sure"],
     why: "sets the activity assumption of the energy range",
+  },
+  background: {
+    required: true,
+    question: "Which family background best describes you? Some backgrounds carry higher health risk at a lower BMI, so it decides which BMI scale applies.",
+    options: ["Asian (South, East or Southeast Asian)", "Middle Eastern", "Black African or African-Caribbean", "White / European", "Other or mixed", "Prefer not to say"],
+    why: "your BMI falls where the international scale and the lower thresholds (NICE, WHO) disagree, which decides whether a calorie deficit is advised",
   },
   diabetes_medicine: {
     required: true,
@@ -65,9 +72,9 @@ const QUESTIONS = {
     why: "hard limits on what the plan may contain",
   },
   routine: {
-    question: "How do you usually eat — mostly at hawker centres or food courts, home cooking, or takeaway — and is it two or three meals a day?",
-    options: ["Hawker / food court", "Home cooking", "Takeaway or delivery", "Workplace canteen", "Two meals", "Three meals"],
-    why: "the plan uses dishes where you actually eat",
+    question: "Which country do you live in, and how do you usually eat — home cooking, eating out (restaurants, food courts, hawker centres), takeaway — two or three meals a day?",
+    options: ["Home cooking", "Eating out", "Takeaway or delivery", "Workplace canteen", "Two meals", "Three meals"],
+    why: "your country's food guide and season, and meals that fit where you eat",
   },
   after_meal: {
     question: "How do you usually feel after a meal?",
@@ -98,7 +105,10 @@ export function readProfile(p = {}) {
     allergies: known(p.allergies) ? list(p.allergies, ALLERGENS) : null,
     other_allergy: p.other_allergy ? String(p.other_allergy).slice(0, 120) : undefined,
     diet: known(p.diet) ? list(p.diet, DIETS) : null,
-    eating: known(p.eating) ? list(p.eating, EATING) : null,
+    eating: known(p.eating) ? list(p.eating, EATING).map((e) => (e === "hawker" ? "eating_out" : e)) : null,
+    region: region(p.region)?.code || null,
+    region_named: p.region && !region(p.region) ? String(p.region).slice(0, 60) : undefined,
+    background: BACKGROUNDS.includes(p.background) ? p.background : null,
     meals: Number(p.meals) === 2 || Number(p.meals) === 3 ? Number(p.meals) : null,
     after_meal: ["hungry_soon", "bloated", "comfortable", "unsure"].includes(p.after_meal) ? p.after_meal : null,
     food_style: ["warm_cooked", "light_cool", "dry_mouth", "no_preference"].includes(p.food_style) ? p.food_style : null,
@@ -164,10 +174,11 @@ export function screen(pf, index) {
       pf.goal === "lose_weight" ? "BMI below 18.5: losing weight is not recommended — please check with a doctor." : "BMI below 18.5: the plan keeps energy up; if weight is falling without trying, see a doctor.");
   }
   if (index && index.band === "healthy" && pf.goal === "lose_weight") {
-    flag("healthy_weight", "maintenance", "BMI is in the healthy range (18.5–22.9): rather than a calorie deficit, focus on food quality, enough protein and strength exercise to change body composition.");
+    const S = SCALES[index.scale];
+    flag("healthy_weight", "maintenance", `BMI is in the healthy range (18.5–${(S.over - 0.1).toFixed(1)} on this scale): rather than a calorie deficit, focus on food quality, enough protein and strength exercise to change body composition.`);
   }
-  if (index && index.value >= 32.5) {
-    flag("bmi_32_5_plus", "caution", `BMI ${index.value}: at this level a doctor-supported programme (a polyclinic or GP can refer you) adds to what diet alone does.`);
+  if (index && index.action_point) {
+    flag("bmi_high", "caution", `BMI ${index.value}: at this level a doctor-supported weight-management programme (your doctor can refer you) adds to what diet alone does.`);
   }
   return flags;
 }
@@ -182,11 +193,12 @@ function questions(pf, flags) {
     if (!pf.sex) ask.push("sex");
     if (!pf.activity) ask.push("activity");
   }
+  if (pf.ask_background) ask.push("background");
   if (pf.conditions?.includes("diabetes") && !pf.conditions.includes("glucose_lowering_medicine") && !pf.diabetes_medicine_answered) ask.push("diabetes_medicine");
   if (pf.conditions?.includes("food_allergy") && !pf.allergies) ask.push("allergies");
   const optional = [];
   if (!pf.diet) optional.push("food_rules");
-  if (!pf.eating && !pf.meals) optional.push("routine");
+  if (!pf.eating && !pf.meals && !pf.region) optional.push("routine");
   if (!pf.after_meal) optional.push("after_meal");
   if (!pf.food_style) optional.push("food_style");
   return { required: ask, optional };
@@ -200,7 +212,13 @@ export function assess(input = {}) {
   pf.diabetes_medicine_answered = input.diabetes_medicine === "no" || input.diabetes_medicine === false;
   if (input.diabetes_medicine === "yes" || input.diabetes_medicine === true) pf.conditions = [...new Set([...(pf.conditions || []), "glucose_lowering_medicine"])];
   if (input.diabetes_medicine === "unsure") pf.conditions = [...new Set([...(pf.conditions || []), "unsure"])];
-  const index = bmi(pf.weight_kg, pf.height_cm, pf.age);
+  const scale = scaleFor({ region: pf.region, background: pf.background });
+  const index = bmi(pf.weight_kg, pf.height_cm, pf.age, scale.scale);
+  // on the international scale for want of a background: where the lower thresholds would read the BMI otherwise, and it
+  // decides whether a deficit is advised, the background is asked
+  pf.ask_background = Boolean(scale.ambiguous && !pf.background && index && pf.goal === "lose_weight"
+    && ((index.value >= 23 && index.value < 25) || (index.value >= 27.5 && index.value < 30)));
+  const guide = guideFor(pf.region);
   const flags = screen(pf, index);
   const assumptions = [];
   // the conditions question lists food allergy among its answers: answered without it, there is none to exclude
@@ -240,13 +258,13 @@ export function assess(input = {}) {
   const next = (required.length ? required : optional).slice(0, 2).map(word);
 
   const known_now = Object.fromEntries(Object.entries({
-    goal: pf.goal, age: pf.age, sex: pf.sex, height_cm: pf.height_cm, weight_kg: pf.weight_kg, waist_cm: pf.waist_cm, activity: pf.activity,
+    goal: pf.goal, region: pf.region, region_named: pf.region_named, background: pf.background, age: pf.age, sex: pf.sex, height_cm: pf.height_cm, weight_kg: pf.weight_kg, waist_cm: pf.waist_cm, activity: pf.activity,
     conditions: pf.conditions, other_condition: pf.other_condition, allergies: pf.allergies, other_allergy: pf.other_allergy, diet: pf.diet, eating: pf.eating, meals: pf.meals,
     after_meal: pf.after_meal, food_style: pf.food_style,
   }).filter(([, v]) => v !== null && v !== undefined));
-  const sources = ["hpb_healthy_plate", "hpb_sodium", "hpb_sugar", "who_healthy_diet", "who_carbohydrate"];
-  if (index) sources.push("sg_moh_cpg_obesity");
-  if (index?.action_point) sources.push("who_asian_bmi");
+  const sources = [guide.source, ...(guide.extra || []), "who_healthy_diet", "who_carbohydrate"];
+  if (index) sources.push(index.source);
+  if (pf.waist_cm !== null) sources.push(scale.scale === "china" ? "china_bmi" : "who_waist");
   if (energy) sources.push("mifflin_st_jeor", "activity_factors");
   if (prot) sources.push("protein_reference");
   return {
@@ -259,22 +277,23 @@ export function assess(input = {}) {
     }[status],
     self_reported: known_now,
     goal,
+    region: pf.region ? { code: pf.region, name: region(pf.region).name, guide: guide.name }
+      : { code: null, note: `no region stated${pf.region_named ? ` (${pf.region_named} is not in the list: international defaults)` : ""}: international (WHO) defaults; ask where the user lives for their country's food guide and season` },
+    bmi_scale: { scale: scale.scale, name: SCALES[scale.scale].name, why: scale.why },
     flags: flags.map(({ code, effect, say }) => ({ code, effect, say })),
     bmi: quiet ? null : index,
-    waist: quiet ? null : waistRisk(pf.waist_cm, pf.sex),
+    waist: quiet ? null : waistRisk(pf.waist_cm, pf.sex, scale.scale),
     energy,
     target: goal_target && !quiet ? goal_target : null,
     protein: prot,
-    limits: quiet ? null : limits(kcal),
-    plate: {
-      rule: "My Healthy Plate: half fruit and vegetables, a quarter wholegrains (brown rice, wholemeal bread, oats, wholegrain noodles), a quarter protein (fish, tofu, beans, eggs, lean meat); water to drink; healthier oils in small amounts",
-      source: "hpb_healthy_plate",
-    },
+    limits: quiet ? null : limits(kcal, region(pf.region)?.guide || "who"),
+    plate: { rule: `${guide.name}: ${guide.plate}`, source: guide.source },
     ask_next: next,
     still_optional: required.length ? optional.map(word).map((q) => q.id) : optional.slice(2),
     assumptions,
     problems: pf.problems.length ? pf.problems : undefined,
-    meals_hint: status === "ready" || status === "general_guidance_only" ? "diet.plan builds a day or a week from Singapore dishes within these limits" : undefined,
+    meals_hint: status === "ready" || status === "general_guidance_only"
+      ? "diet.plan builds a day or a week within these limits: everyday meals made of plain foods anywhere, and the local dishes of a region with a dish pack (Singapore and Malaysia now)" : undefined,
     provenance: provenance(sources),
     note: "Self-reported answers, used as given: no diagnosis is made. Never state an energy or nutrient number that is not in a tool result.",
   };

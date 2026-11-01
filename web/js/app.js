@@ -1593,7 +1593,7 @@ function renderComposerHint() {
   el.hint.textContent = ASSISTANT;
   el.hint.title = modelLabel(activeProvider(S.settings));
   const diet = S.conv ? isDietMode(S.conv) : S.ui.mode === DIET_MODE;
-  el.input.placeholder = diet ? T("说说你的目标和情况，例如：我想减重，平时多在小贩中心吃饭……") : PLACEHOLDER;
+  el.input.placeholder = diet ? T("说说你的目标和情况，例如：我想减重，平时多在外面吃饭……") : PLACEHOLDER;
   if (el.disclaimer) {
     el.disclaimer.firstChild.textContent = diet ? `${T("饮食建议以公开的营养指南与食物成分数据为据，数字由本机计算；不构成诊断或治疗。")} ` : DISCLAIMER;
   }

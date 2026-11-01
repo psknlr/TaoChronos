@@ -39,7 +39,7 @@ export const TOOL_WORDS = {
   "research.run_code": "研究脚本",
   "mydata.list": "我的资料", "mydata.read": "资料阅读", "mydata.search": "资料检索", "mydata.describe": "描述统计",
   "mydata.compare": "组间比较", "mydata.prescriptions": "处方用药分析",
-  "diet.assess": "饮食评估", "diet.plan": "饮食方案", "diet.swap": "换菜核算", "diet.dishes": "菜品营养", "diet.context": "新加坡节令",
+  "diet.assess": "饮食评估", "diet.plan": "饮食方案", "diet.swap": "换菜核算", "diet.dishes": "菜品营养", "diet.context": "季节与节令",
   "diet.food_nature": "食物寒热", "diet.progress": "体重趋势",
   taochronos_research: "发现研究", taochronos_session: "研究会话", taochronos_ask: "技能工作流",
   taochronos_catalog: "工具目录", taochronos_call: "调用工具",

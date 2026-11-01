@@ -1,14 +1,16 @@
-// Plans from Singapore dishes: a day or a week, each meal a dish as HPB analysed it (dishes.js), with what to add to
-// make the plate (a vegetable side, fruit) and how to order it.  Hard constraints are never traded away: allergens,
-// halal, vegetarian, no beef or pork, and the screening of assess.js (a plan has an energy target only when screening
-// allows one; with an eating disorder it shows no numbers at all).  Within them it prefers what fits the meal's share of
-// the target, varied across the week, lower in sodium and saturated fat, higher in protein and vegetables, and in the
-// style asked for.  Every total is the sum of the dataset's values; a nutrient missing for a dish is reported missing,
-// never filled in.  A swap rebuilds and re-checks the whole day.
+// Plans from the dish data: a day or a week, everywhere from everyday meals made of plain foods (USDA values), and in a
+// region with a dish pack (Singapore and Malaysia: hawker and kopitiam dishes as HPB analysed them) from its own dishes
+// too (dishes.js), each with what to add to make the plate (a vegetable side, fruit) and how to order or cook it.  Hard
+// constraints are never traded away: allergens, halal, vegetarian, no beef or pork, and the screening of assess.js (a plan
+// has an energy target only when screening allows one; with an eating disorder it shows no numbers at all).  Within them
+// it prefers what fits the meal's share of the target, varied across the week, lower in sodium and saturated fat, higher
+// in protein and vegetables, and in the style asked for.  Every total is the sum of the dataset's values; a nutrient
+// missing for a dish is reported missing, never filled in.  A swap rebuilds and re-checks the whole day.
 
 import { assess } from "./assess.js";
 import { DATASET, DISHES } from "./dishes.js";
 import { preference } from "./tcm.js";
+import { region as regionOf } from "./regions.js";
 import { ALGORITHM, provenance } from "./sources.js";
 
 const NUTRIENTS = ["kcal", "protein_g", "fat_g", "sat_fat_g", "carb_g", "fibre_g", "sugar_g", "sodium_mg"];
@@ -88,17 +90,21 @@ function sides(d, need, slot) {
 }
 
 /** The pieces a day needs besides its mains: a vegetable side for mains without vegetables, fruit twice. */
+/** Is `d` among the dishes a plan for this visitor's region picks by itself: everyday meals of plain foods everywhere,
+ * a region's own dishes (its dish pack) only there.  A dish asked for by name may come from anywhere. */
+export const here = (d, pf) => d.regions.includes("*") || (pf.region && d.regions.includes(pf.region));
+
 function extras(pf) {
-  const ok = (id) => { const d = dish(id); return d && !forbidden(d, pf).length ? d : null; };
-  const veg = ok("side_vegetables_blanched");
-  const fruit = DISHES.filter((d) => d.kind === "fruit" && d.kcal != null && !forbidden(d, pf).length);
+  const ok = (id) => { const d = dish(id); return d && here(d, pf) && !forbidden(d, pf).length ? d : null; };
+  const veg = ok("side_vegetables_blanched") || ok("side_vegetables"); // the stall's side where there is one, else plain vegetables
+  const fruit = DISHES.filter((d) => d.kind === "fruit" && d.kcal != null && here(d, pf) && !forbidden(d, pf).length);
   return { veg, fruit };
 }
 
 function candidates(slot, pf, used, exclude) {
   const from = SLOT_FROM[slot] || [slot];
   return DISHES.filter((d) => d.kind === "main" && d.kcal != null && d.slots.some((s) => from.includes(s)) && !exclude.has(d.id)
-    && !forbidden(d, pf).length);
+    && here(d, pf) && !forbidden(d, pf).length);
 }
 
 /** A day: each slot's dish chosen to fit its share of `kcal` (or, without a target, by quality alone). */
@@ -193,7 +199,7 @@ function balance(day, { range, pf, exclude, style, used, k, fixed = {} }) {
     });
     if (total < lo) {
       for (const d of DISHES) {
-        if ((d.kind !== "snack" && d.kind !== "fruit") || d.kcal == null || forbidden(d, pf).length || day.fruit.includes(d) || exclude.has(d.id)) continue;
+        if ((d.kind !== "snack" && d.kind !== "fruit") || d.kcal == null || !here(d, pf) || forbidden(d, pf).length || day.fruit.includes(d) || exclude.has(d.id)) continue;
         consider(total + d.kcal, quality(d, style) + 0.2, () => ({ ...day, fruit: [...day.fruit, d] })); // a snack keeps the meals as chosen
       }
     }
@@ -239,6 +245,13 @@ function showDay(day, k, ctx, first = true) {
   return out;
 }
 
+// what to drink, said as people order it where they live
+const DRINKS = {
+  default: "water through the day; tea or coffee without sugar if you like; for packaged drinks, check the sugar on the label",
+  SG: "water through the day; kopi-O or teh-O kosong (no sugar) or siew dai (less sugar) if you like; Nutri-Grade A or B for packaged drinks",
+  MY: "water through the day; kopi-O or teh-O kosong (no sugar) or kurang manis (less sugar) if you like",
+};
+
 /** Read the plan's options: days 1–7, meals 2 or 3 (or the Ramadan pair), dishes to leave out, a variant number. */
 function options(args, pf) {
   const days = Math.max(1, Math.min(7, Math.round(Number(args.days) || 1)));
@@ -250,23 +263,26 @@ function options(args, pf) {
 
 function context(args) {
   const a = assess(args.profile || {});
-  const pf = { ...(args.profile || {}), allergies: a.self_reported.allergies || null, diet: a.self_reported.diet || [] };
+  const pf = { ...(args.profile || {}), allergies: a.self_reported.allergies || null, diet: a.self_reported.diet || [], region: a.self_reported.region || null };
   const quiet = a.bmi === null && a.flags.some((f) => f.code === "eating_disorder");
   const range = a.target?.kcal_range || null;
   const kcal = range ? Math.round((range[0] + range[1]) / 2) : null;
   const style = preference({ after_meal: a.self_reported.after_meal, food_style: a.self_reported.food_style });
   const eating = a.self_reported.eating || [];
   style.home = eating.some((e) => e === "home_cooking" || e === "quick_cooking") ? 0.35
-    : eating.length && eating.every((e) => ["hawker", "takeaway", "workplace_canteen"].includes(e)) ? -1 : -0.2;
+    : eating.length && eating.every((e) => ["eating_out", "takeaway", "workplace_canteen"].includes(e)) ? -1 : -0.2;
   return { a, pf, quiet, range, kcal, style, protein: a.protein?.g_range || null, satfat: a.limits?.saturated_fat_g?.max || null };
 }
 
 function header(c, extra = {}) {
   const warn = [];
   if (!c.pf.allergies) warn.push("Food allergies not confirmed yet: ask before anyone prepares or eats these meals; no dish was excluded for an allergen.");
-  if ((c.pf.allergies || []).includes("other")) warn.push(`An allergy the dataset does not tag (${c.a.self_reported.other_allergy || "other"}): check every dish with the stall yourself.`);
-  if ((c.pf.allergies || []).filter((x) => x !== "none").length) warn.push("Allergen marks are the dishes' usual ingredients; recipes differ by stall — with a food allergy, ask the stall every time.");
-  if ((c.pf.diet || []).includes("halal")) warn.push("Halal: choose stalls with MUIS halal certification; the plan uses dishes commonly sold at such stalls.");
+  if ((c.pf.allergies || []).includes("other")) warn.push(`An allergy the dataset does not tag (${c.a.self_reported.other_allergy || "other"}): check every dish and ingredient yourself.`);
+  if ((c.pf.allergies || []).filter((x) => x !== "none").length) warn.push("Allergen marks are the dishes' usual ingredients; recipes and products differ — with a food allergy, check labels and ask whoever cooks, every time.");
+  if ((c.pf.diet || []).includes("halal")) warn.push("Halal: use halal-certified meat and products, and certified stalls when eating out (e.g. MUIS in Singapore, JAKIM in Malaysia).");
+  const r = regionOf(c.pf.region);
+  if (!r) warn.push("No region stated: the meals are everyday dishes made of plain foods; ask where the user lives for their country's food guide and local dishes.");
+  else if (!r.packs.length) warn.push(`No dish data yet for local dishes in ${r.name}: the meals are everyday dishes made of plain foods (USDA values); local dishes can be suggested in words, without numbers.`);
   return {
     ok: true, algorithm: ALGORITHM, status: c.a.status,
     energy_target: c.quiet ? null : c.range ? { kcal_range: c.range, kind: c.a.target.kind } : null,
@@ -305,7 +321,7 @@ export function plan(args = {}) {
   return {
     ...header(c, { meals_per_day: o.meals === "ramadan" ? "ramadan (sahur and iftar)" : o.meals, variant: o.seed }),
     days, week,
-    drinks: "plain water through the day; kopi-O or teh-O kosong (no sugar) or siew dai (less sugar) if you like; Nutri-Grade A or B for packaged drinks",
+    drinks: DRINKS[regionOf(c.pf.region)?.code] || DRINKS.default,
     how_to_use: "Show each meal with its serving, energy and protein (from the result), what to add and how to order it. Offer a swap (diet.swap) for any meal; never alter a number yourself.",
   };
 }
@@ -345,7 +361,9 @@ export function dishes(args = {}) {
   const c = context({ profile: args.profile || {} });
   const words = String(args.query || "").toLowerCase().split(/[\s,，、]+/).filter(Boolean);
   const want = (d) => !words.length || words.every((w) => [d.name, d.zh, d.id, d.cuisine, ...(d.aka || []), ...d.tags].join(" ").toLowerCase().includes(w));
-  let rows = DISHES.filter((d) => want(d) && (!args.slot || d.slots.includes(args.slot)) && (!args.cuisine || d.cuisine === args.cuisine)
+  const r = regionOf(args.region || args.profile?.region);
+  let rows = DISHES.filter((d) => want(d) && (!r || d.regions.includes("*") || d.regions.includes(r.code))
+    && (!args.slot || d.slots.includes(args.slot)) && (!args.cuisine || d.cuisine === args.cuisine)
     && (!Number(args.max_kcal) || (d.kcal != null && d.kcal <= Number(args.max_kcal))));
   if (args.sort === "kcal") rows = rows.sort((a, b) => (a.kcal ?? 1e9) - (b.kcal ?? 1e9));
   else if (args.sort === "sodium") rows = rows.sort((a, b) => (a.sodium_mg ?? 1e9) - (b.sodium_mg ?? 1e9));
@@ -355,7 +373,8 @@ export function dishes(args = {}) {
     ok: true, algorithm: ALGORITHM, count: rows.length,
     dishes: rows.slice(0, limit).map((d) => {
       const no = forbidden(d, c.pf);
-      return { ...shown(d, c.quiet), cuisine: d.cuisine, kind: d.kind, tags: d.tags, other_figure: d.other_figure, per_piece_kcal: d.per_piece_kcal,
+      return { ...shown(d, c.quiet), cuisine: d.cuisine, kind: d.kind, tags: d.tags, regions: d.regions.includes("*") ? "anywhere" : d.regions,
+        other_figure: d.other_figure, per_piece_kcal: d.per_piece_kcal,
         not_for_you: no.length ? no : undefined, source_url: d.source_url || undefined, usda: d.usda };
     }),
     more: rows.length > limit ? rows.length - limit : undefined,

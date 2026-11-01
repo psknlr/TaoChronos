@@ -1,7 +1,11 @@
-// The numbers of a diet plan, computed, never estimated by the model: BMI against Singapore's cut-offs for Asian adults,
-// waist risk, resting energy by Mifflin–St Jeor, total energy as a range over an activity assumption, the energy target
+// The numbers of a diet plan, computed, never estimated by the model: BMI on the scale that fits the visitor (WHO's,
+// the lower thresholds for Asian and some other family backgrounds, or China's standard: regions.js), waist risk on the
+// same, resting energy by Mifflin–St Jeor, total energy as a range over an activity assumption, the energy target
 // a plan may aim for (only when screening allows one, never below its floor), protein, and the daily limits of sodium,
-// added sugar and saturated fat.  Each figure says what it rests on (sources.js) and what it assumes.
+// added sugar and saturated fat as the visitor's national guide sets them (WHO's where it sets none).  Each figure says
+// what it rests on (sources.js) and what it assumes.
+
+import { GUIDES, SCALES, WAIST } from "./regions.js";
 
 /** Activity levels: the multiplier range of resting energy (an assumption, revised by the weight trend). */
 export const ACTIVITY = {
@@ -35,30 +39,33 @@ export function measures(p = {}) {
   return out;
 }
 
-/** BMI and its Singapore/Asian risk band (adults only). */
-export function bmi(weight, height, age = null) {
+/** BMI and its band on a scale (`who`, `asian` or `china`; adults only). */
+export function bmi(weight, height, age = null, scale = "who") {
   if (!finite(weight) || !finite(height)) return null;
+  const S = SCALES[scale] || SCALES.who;
   const value = Math.round((weight / (height / 100) ** 2) * 10) / 10;
-  const out = { value, source: "sg_moh_cpg_obesity" };
+  const out = { value, scale: SCALES[scale] ? scale : "who", source: S.source };
   if (finite(age) && age < 18) {
     return { ...out, band: "not_applicable", note: "Under 18: BMI is read against BMI-for-age charts, not adult cut-offs." };
   }
-  if (value < 18.5) Object.assign(out, { band: "underweight", risk: "risk of nutritional deficiency and osteoporosis" });
-  else if (value < 23) Object.assign(out, { band: "healthy", risk: "low risk" });
-  else if (value < 27.5) Object.assign(out, { band: "overweight", risk: "moderate risk of heart disease, stroke and diabetes" });
-  else Object.assign(out, { band: "obese", risk: "high risk of heart disease, stroke and diabetes" });
-  out.cutoffs = "Singapore (Asian) cut-offs: <18.5 underweight · 18.5–22.9 low risk · 23.0–27.4 moderate risk · ≥27.5 high risk";
-  if (value >= 32.5) out.action_point = value >= 37.5 ? 37.5 : 32.5; // WHO 2004 further action points for Asians
+  if (value < S.under) Object.assign(out, { band: "underweight", risk: "risk of nutritional deficiency and osteoporosis" });
+  else if (value < S.over) Object.assign(out, { band: "healthy", risk: "low risk" });
+  else if (value < S.obese) Object.assign(out, { band: "overweight", risk: "increased risk of heart disease, stroke and type 2 diabetes" });
+  else Object.assign(out, { band: "obese", risk: "high risk of heart disease, stroke and type 2 diabetes" });
+  out.cutoffs = `${S.name}: ${S.bands}`;
+  const point = [...S.higher].reverse().find((p) => value >= p);
+  if (point) out.action_point = point; // obesity class II and III, or their lower-threshold equivalents
   out.note = "BMI does not measure body fat or muscle; waist circumference adds to it.";
   return out;
 }
 
-/** Waist circumference against Singapore's thresholds (needs the sex for the comparison). */
-export function waistRisk(waist, sex) {
+/** Waist circumference against the thresholds of the same scale (needs the sex for the comparison). */
+export function waistRisk(waist, sex, scale = "who") {
   if (!finite(waist)) return null;
-  const limit = sex === "male" ? 90 : sex === "female" ? 80 : null;
-  if (!limit) return { cm: waist, note: "The threshold is 90 cm for men and 80 cm for women; sex not given." };
-  return { cm: waist, threshold_cm: limit, raised: waist >= limit, source: "sg_moh_cpg_obesity" };
+  const W = WAIST[scale] || WAIST.who;
+  const [raised, high] = W[sex] || [];
+  if (!raised) return { cm: waist, note: `Thresholds differ by sex (men ${W.male.join(" / ")} cm, women ${W.female.join(" / ")} cm); sex not given.` };
+  return { cm: waist, thresholds_cm: [raised, high], raised: waist >= raised, high: waist >= high, source: W.source };
 }
 
 /** Resting energy (kcal/day) by Mifflin–St Jeor, for an adult with sex given; else null. */
@@ -98,23 +105,33 @@ export function target({ total, rest, sex, mode }) {
 }
 
 /** Protein (g/day): 1.0–1.2 g per kg of reference weight when losing weight or aged 65 and over, else 0.8–1.0; the
- * reference weight is the weight at BMI 25 when BMI is 27.5 or more.  Null when protein is not ours to set (`withheld`). */
+ * reference weight is the weight at BMI 25 when BMI is in the obesity range of its scale.  Null when protein is not ours to set (`withheld`). */
 export function protein({ weight, height, age, index, losing, withheld }) {
   if (withheld || !finite(weight)) return null;
-  const reference = index && index.value >= 27.5 && finite(height) ? 25 * (height / 100) ** 2 : weight;
+  // in the obesity range, protein is reckoned on the weight at BMI 25 (an adjusted weight), not the whole of it
+  const reference = index?.band === "obese" && finite(height) ? Math.min(weight, 25 * (height / 100) ** 2) : weight;
   const [a, b] = losing || (finite(age) && age >= 65) ? [1.0, 1.2] : [0.8, 1.0];
   return { g_range: [round(reference * a, 5), round(reference * b, 5)], per_kg: [a, b], reference_kg: round(reference, 0.5),
     source: "protein_reference" };
 }
 
-/** The day's limits, scaled to its energy where they are a share of it. */
-export function limits(kcal) {
+/** The day's limits by a national guide (WHO's by default), scaled to the day's energy where they are a share of it. */
+export function limits(kcal, guide = "who") {
   const e = finite(kcal) ? kcal : 2000;
+  const g = GUIDES[guide] || GUIDES.who;
+  const sugar = g.sugar.grams
+    ? { max: g.sugar.grams, kind: g.sugar.kind, source: g.source, note: `${g.name}: no more than ${g.sugar.grams} g ${g.sugar.kind} a day` }
+    : { max: round((g.sugar.share * e) / 4), kind: g.sugar.kind, source: g.sugar.fallback ? "who_healthy_diet" : g.source,
+      note: `${Math.round(g.sugar.share * 100)}% of ${round(e, 10)} kcal${g.sugar.ideal ? ` (ideally under ${Math.round(g.sugar.ideal * 100)}%: ${round((g.sugar.ideal * e) / 4)} g)` : ""}`
+        + `${g.sugar.fallback ? " — WHO's limit, which this guide's number was not checked against" : ""}${g.sugar.note ? `; ${g.sugar.note}` : ""}` };
   return {
-    sodium_mg: { max: 2000, source: "hpb_sodium", note: "about 1 teaspoon of salt, sauces and gravy included" },
-    added_sugar_g: { max: round(0.1 * e / 4), source: "hpb_sugar", note: `10% of ${round(e, 10)} kcal` },
-    saturated_fat_g: { max: round(0.1 * e / 9), source: "who_healthy_diet", note: `under 10% of ${round(e, 10)} kcal` },
+    guide: g.name,
+    sodium_mg: { max: g.sodium_mg, source: g.sodium_mg === 2000 && guide !== "sg" && guide !== "cn" ? "who_healthy_diet" : g.source,
+      note: `${g.salt_g ? `about ${g.salt_g} g of salt` : "salt"}, sauces and stock included` },
+    sugar_g: sugar,
+    saturated_fat_g: { max: round((0.1 * e) / 9), source: "who_healthy_diet", note: `under 10% of ${round(e, 10)} kcal` },
+    ...(g.oil_g ? { cooking_oil_g: { range: g.oil_g, source: g.source } } : {}),
     fibre_g: { min: 25, source: "who_carbohydrate" },
-    fruit_veg: { min: "at least 400 g a day — about 2 servings of fruit and 2 of vegetables", source: "who_healthy_diet" },
+    fruit_veg: { min: "at least 400 g a day — about 5 portions of fruit and vegetables", source: "who_healthy_diet" },
   };
 }

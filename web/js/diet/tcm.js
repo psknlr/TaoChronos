@@ -1,5 +1,6 @@
 // The traditional layer, optional and non-diagnostic: the natures of everyday foods (寒/凉/平/温/热) as Chinese
-// dietetics and Singapore's "heaty" (热气) / "cooling" (凉) food culture describe them — only foods on which common
+// dietetics and the everyday "heaty" (热气 / 上火) and "cooling" (凉) of southern Chinese and Southeast Asian food culture
+// describe them — only foods on which common
 // references agree; those on which they disagree are said to — and how two short preference answers (how one feels
 // after a meal, which food style one likes) shape food choices.  Nothing here diagnoses a pattern or constitution
 // (证型、体质): two questions cannot, and the result says so (`tcm_pattern_status: "unconfirmed"`).  Ordinary foods only:
@@ -7,7 +8,7 @@
 
 import { ALGORITHM, provenance } from "./sources.js";
 
-// [food, 中文, nature, the everyday Singapore word when there is one]
+// [food, 中文, nature, the everyday "heaty"/"cooling" word when there is one]
 const NATURES = [
   ["watermelon", "西瓜", "cold", "cooling"], ["pear", "梨", "cool", "cooling"], ["banana", "香蕉", "cold", null],
   ["star fruit", "杨桃", "cold", "cooling"], ["mangosteen", "山竹", "cold", "cooling"], ["sugarcane juice", "甘蔗汁", "cool", "cooling"],
@@ -28,7 +29,7 @@ const NATURES = [
 ];
 // the everyday culture adds: deep-fried, grilled and very spicy foods are "heaty"; herbal teas and soups are "cooling"
 const DISAGREE = [
-  ["mango", "芒果", "called 'heaty' in everyday Singapore usage, but cool or neutral in Chinese dietetics references"],
+  ["mango", "芒果", "called 'heaty' in everyday southern Chinese and Southeast Asian usage, but cool or neutral in Chinese dietetics references"],
   ["apple", "苹果", "cool in some references, neutral in others"],
   ["beef", "牛肉", "neutral or warm depending on the reference (and on the kind of cattle in older texts)"],
   ["lotus root", "莲藕", "cold when raw, neutral or warm when cooked"],
@@ -54,7 +55,7 @@ export function natures(foods = []) {
 }
 
 const AFTER = {
-  hungry_soon: ["Hungry again soon after meals: build each meal around protein and fibre — egg, tofu, fish or lean meat, a vegetable side, brown rice or wholemeal — and swap sweet drinks, which digest fast, for water or kopi-O/teh-O kosong."],
+  hungry_soon: ["Hungry again soon after meals: build each meal around protein and fibre — egg, tofu, fish or lean meat, a vegetable side, brown rice or wholemeal — and swap sweet drinks, which digest fast, for water or unsweetened tea or coffee."],
   bloated: ["Often bloated: smaller portions eaten slowly; cooked rather than large raw portions of vegetables; fewer fried and oily dishes and fizzy drinks.",
     "If bloating is frequent, or comes with pain, weight loss, vomiting or a change in bowel habits, see a doctor."],
   comfortable: [],
@@ -77,7 +78,7 @@ export function preference({ after_meal = null, food_style = null } = {}) {
     advice: [...(AFTER[after_meal] || []), ...style.advice],
     prefer: style.prefer, avoid: style.avoid,
     tcm_pattern_status: "unconfirmed",
-    boundary: "These are food-preference clues, not a TCM diagnosis: a pattern or constitution (e.g. 痰湿、脾虚) cannot be judged from two questions. For one, see a TCM practitioner registered with Singapore's TCM Practitioners Board. Herbs, tonics and medicinal soups are outside this plan, especially in pregnancy or alongside medicines.",
+    boundary: "These are food-preference clues, not a TCM diagnosis: a pattern or constitution (e.g. 痰湿、脾虚) cannot be judged from two questions. For one, see a registered TCM practitioner (registered where you live, e.g. with Singapore's TCM Practitioners Board or Hong Kong's Chinese Medicine Council). Herbs, tonics and medicinal soups are outside this plan, especially in pregnancy or alongside medicines.",
   };
 }
 
@@ -85,7 +86,7 @@ export function preference({ after_meal = null, food_style = null } = {}) {
 export function foodNature({ foods = [], after_meal = null, food_style = null } = {}) {
   const n = natures(foods);
   const out = { ok: true, algorithm: ALGORITHM, ...n, preference: (after_meal || food_style) ? preference({ after_meal, food_style }) : undefined,
-    everyday_rule: "In everyday Singapore usage deep-fried, grilled and very spicy foods are also called 'heaty'.",
+    everyday_rule: "In everyday usage (southern China, Hong Kong, Singapore, Malaysia) deep-fried, grilled and very spicy foods are also called 'heaty'.",
     use: "Natures describe a traditional way of choosing food; they are not evidence that a food treats a condition or helps weight loss. The nutrition plan's numbers stay as they are.",
     tcm_pattern_status: "unconfirmed",
     provenance: provenance(["tcm_food_nature"]) };

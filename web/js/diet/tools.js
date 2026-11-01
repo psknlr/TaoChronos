@@ -4,6 +4,7 @@
 // agent loop, the tool steps and the turn's record of times treat them alike.
 
 import { ALLERGENS, assess, CONDITIONS, DIETS, EATING, GOALS, SEXES } from "./assess.js";
+import { BACKGROUNDS, REGION_CODES } from "./regions.js";
 import { context } from "./context.js";
 import { dishes, plan, swap } from "./plan.js";
 import { progress } from "./progress.js";
@@ -19,6 +20,8 @@ const PROFILE = {
     + "a field left out is unknown, not 'none'. Pass the same profile, updated, on every call.",
   properties: {
     goal: { type: "string", enum: GOALS, description: "lose_weight, maintain, or eat_better (no calorie deficit)" },
+    region: { type: "string", description: `the country the user lives in, as an ISO code: ${REGION_CODES.join(", ")}; leave out if not said (another country: its name, which gets the international defaults)` },
+    background: { type: "string", enum: BACKGROUNDS, description: "family background, only as the user stated it (it decides the BMI scale: lower thresholds for Asian, Middle Eastern, Black African and African-Caribbean backgrounds)" },
     age: { type: "number", description: "years" },
     sex: { type: "string", enum: SEXES, description: "the sex the energy equation should use; not_stated when the user prefers not to say" },
     height_cm: { type: "number" },
@@ -43,16 +46,18 @@ export const DIET_TOOLS = [
   {
     name: "diet__assess",
     description: "Screen the user's answers and compute what they allow: status (ready, needs_information, general_guidance_only, "
-      + "see_professional_first), BMI against Singapore's Asian cut-offs, resting and total energy (Mifflin–St Jeor, as a range), the "
-      + "energy target (only when screening allows one), protein, daily limits, and the next questions to ask (at most two). Call it first, "
-      + "and again whenever the user tells you more.",
+      + "see_professional_first), BMI on the scale that fits the user (WHO's, the lower thresholds for some family backgrounds, or China's), "
+      + "resting and total energy (Mifflin–St Jeor, as a range), the energy target (only when screening allows one), protein, the daily "
+      + "limits and plate model of the user's national food guide (WHO's by default), and the next questions to ask (at most two). Call it "
+      + "first, and again whenever the user tells you more.",
     parameters: { type: "object", properties: { profile: PROFILE }, required: ["profile"] },
   },
   {
     name: "diet__plan",
-    description: "A day or a week of meals from Singapore dishes (hawker, kopitiam, food court), each with HPB's energy and nutrients "
-      + "for its serving, what to add (vegetables, fruit) and how to order it; hard limits (allergies, halal, vegetarian, no beef or pork) "
-      + "are never broken. The day's totals are checked against the energy target, protein and sodium.",
+    description: "A day or a week of meals, each with its energy and nutrients for the serving stated, what to add (vegetables, fruit) "
+      + "and how to cook or order it: everyday meals made of plain foods (USDA values) anywhere, and a region's own dishes where it has a "
+      + "dish pack (Singapore and Malaysia: hawker and kopitiam dishes, HPB values). Hard limits (allergies, halal, vegetarian, no beef or "
+      + "pork) are never broken. The day's totals are checked against the energy target, protein and sodium.",
     parameters: {
       type: "object",
       properties: {
@@ -86,15 +91,17 @@ export const DIET_TOOLS = [
   },
   {
     name: "diet__dishes",
-    description: "Look up Singapore dishes in the dataset by name or kind (e.g. 'laksa', 'soup', 'halal', 'breakfast'): energy and "
-      + "nutrients per serving as HPB published them, typical allergens, and how to order a lighter version. With a profile, marks the ones "
-      + "the user may not have. Use it to compare dishes; a dish it does not list has no data here.",
+    description: "Look up dishes in the dataset by name or kind (e.g. 'lentil', 'chicken', 'laksa', 'soup', 'breakfast'): energy and "
+      + "nutrients per serving with their source, typical allergens, how to cook or order a lighter version, and where each belongs. "
+      + "With a region, only what is eaten there (and the everyday meals); with a profile, marks what the user may not have. A dish it does "
+      + "not list has no data here.",
     parameters: {
       type: "object",
       properties: {
         query: { type: "string" },
         slot: { type: "string", enum: ["breakfast", "lunch", "dinner", "snack", "drink"] },
-        cuisine: { type: "string", enum: ["chinese", "malay", "indian", "peranakan", "western", "drink", "fruit", "basic"] },
+        region: { type: "string", description: "ISO country code" },
+        cuisine: { type: "string", enum: ["basic", "chinese", "malay", "indian", "peranakan", "drink", "fruit"] },
         max_kcal: { type: "number" },
         sort: { type: "string", enum: ["kcal", "sodium", "protein"] },
         limit: { type: "integer" },
@@ -104,9 +111,15 @@ export const DIET_TOOLS = [
   },
   {
     name: "diet__context",
-    description: "Singapore's date (Asia/Singapore), its monsoon season and what it means for eating and hydration, the current "
-      + "and next of the 24 solar terms (as a cultural calendar), and festive seasons ahead with their foods and tips. No live weather.",
-    parameters: { type: "object", properties: { date: { type: "string", description: "YYYY-MM-DD; default today in Singapore" },
+    description: "The user's date on their own clock, the season where they live (by hemisphere and climate; the monsoons in Singapore "
+      + "and South Asia) and what it means for eating, hydration and food safety, the current and next of the 24 solar terms (a Chinese "
+      + "cultural calendar), and the festive seasons ahead worldwide with their foods and tips, those kept where the user lives first. "
+      + "No live weather.",
+    parameters: { type: "object", properties: {
+      region: { type: "string", description: "ISO country code; without it, no season is given" },
+      climate: { type: "string", enum: ["temperate", "cold", "subtropical", "arid", "tropical"], description: "the user's own climate when their country's broad one does not fit, or when the country is not listed" },
+      hemisphere: { type: "string", enum: ["N", "S"] },
+      date: { type: "string", description: "YYYY-MM-DD; default today on the region's clock (this device's without a region)" },
       within_days: { type: "integer", description: "how far ahead to look for festivals (default 60)" } } },
   },
   {
@@ -139,7 +152,7 @@ const RUN = {
   "diet.plan": (a) => plan(a),
   "diet.swap": (a) => swap(a),
   "diet.dishes": (a) => dishes(a),
-  "diet.context": (a) => context({ date: a.date, within: a.within_days }),
+  "diet.context": (a) => context({ date: a.date, within: a.within_days, region: a.region, climate: a.climate, hemisphere: a.hemisphere }),
   "diet.food_nature": (a) => foodNature(a),
   "diet.progress": (a) => progress(a),
 };
@@ -164,7 +177,7 @@ function summarize(tool, r) {
     case "diet.plan": return `${r.days.length} day(s)${r.energy_target ? ` · target ${r.energy_target.kcal_range.join("–")} kcal` : ""}`;
     case "diet.swap": return `${r.swapped?.slot}: ${r.swapped?.to}`;
     case "diet.dishes": return `${r.count} dish(es)`;
-    case "diet.context": return `${r.date} · ${r.solar_term?.current?.zh} · ${r.season?.phase?.replace(/_/g, " ")}`;
+    case "diet.context": return [r.date, r.region?.name, r.season?.phase?.replace(/_/g, " "), r.solar_term?.current?.zh].filter(Boolean).join(" · ");
     case "diet.food_nature": return `${r.found?.length || 0} food(s)`;
     case "diet.progress": return r.verdict || (r.reviewed ? "" : "not reviewed");
     default: return "";
@@ -194,15 +207,19 @@ export function callDiet(name, args = {}, { maxChars = 16000 } = {}) {
 }
 
 /** The result as the model reads it, within `max` characters: a long plan keeps its first day whole and the others'
- * meals and totals (their ordering tips and the sources' long titles go first). */
+ * meals, numbers and checks (their tips, Chinese names, side servings and the sources' long titles go first). */
 function fit(result, max) {
   let text = JSON.stringify(result);
   if (text.length <= max) return text;
   const slim = structuredClone(result);
   for (const p of slim.provenance || []) delete p.title;
-  for (const d of (slim.days || []).slice(1)) {
-    for (const m of d.meals) { if (m.dish) delete m.dish.order; for (const s of m.add || []) delete s.order; }
-    for (const f of d.fruit_and_snacks || []) delete f.order;
+  for (const d of (slim.days || []).slice(1)) { // the first day keeps everything; the others their dishes and numbers
+    for (const m of d.meals) {
+      if (m.dish) { delete m.dish.order; delete m.dish.zh; }
+      for (const x of m.add || []) { delete x.order; delete x.zh; delete x.serving; }
+    }
+    for (const f of d.fruit_and_snacks || []) { delete f.order; delete f.zh; delete f.serving; }
+    delete d.not_totalled;
     delete d.drinks;
   }
   text = JSON.stringify(slim);

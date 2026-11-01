@@ -1,6 +1,6 @@
 # ADR 0029 — 饮食与体重管理 for Singapore: a mode of its own, computed in the page, never recorded
 
-**Status:** accepted · 2026-11-01
+**Status:** accepted · 2026-11-01 · amended by [ADR 0030](0030-diet-and-weight-worldwide.md): the mode now serves every region, Singapore among them
 
 ## Context
 
