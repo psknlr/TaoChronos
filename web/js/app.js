@@ -14,6 +14,9 @@ import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, 
 import { ACCEPT, brief, cacheList, cachedList, DATA_NOTICE, isMine, MAX_BYTES, noticeSeen, personal, setNoticeSeen, sizeLabel }
   from "./mydata.js";
 import { consent, feedbackRecord, NOTICE, REASONS, setConsent, timings } from "./records.js";
+import { callDiet, DIET_TOOLS, isDiet } from "./diet/tools.js";
+import { DIET_PROMPT } from "./diet/prompt.js";
+import { DIET_MODE, healthConv, healthText, isDietMode } from "./diet/privacy.js";
 import { BrowserRuntime, probeServer, researchText, sameOriginServer, ServerRuntime, turnInstructions } from "./runtime.js";
 import { LIMITS, pageClock } from "./limits.js";
 import { pause, pausedNow, pauseText } from "./pause.js";
@@ -48,7 +51,8 @@ const S = {
   running: null,
   researchRunning: null,
   drawer: { open: false, tab: "evidence", pid: null, quote: null, vertical: false, tool: null, toolQuery: "", famOpen: new Set(), toolArgs: {} },
-  ui: { editing: null, openThink: new Set(), openSteps: new Set(), closedSteps: new Set(), openTools: new Set(), search: "", attachments: [], data: [] },
+  ui: { editing: null, openThink: new Set(), openSteps: new Set(), closedSteps: new Set(), openTools: new Set(), search: "", attachments: [], data: [],
+    mode: null }, // the mode of the next new conversation: null (the classics) or "diet" (饮食与体重管理, docs/diet.md)
   passages: new Map(),
   verify: new Map(),
   stick: true,
@@ -63,10 +67,12 @@ const el = {
   attachments: $("#attachments"),
   attachData: $("#attach-data"), dataFile: $("#data-file"),
   hint: $("#hint"), drawer: $("#drawer"), scrim: $("#scrim"), settings: $("#settings"), report: $("#report"), consent: $("#consent"),
-  feedback: $("#feedback"),
+  feedback: $("#feedback"), newDiet: $("#new-diet"), disclaimer: $(".disclaimer"),
 };
 
 const mobile = () => matchMedia("(max-width: 980px)").matches;
+let PLACEHOLDER = ""; // the composer's placeholder as the page has it (main)
+let DISCLAIMER = ""; // and the line under the composer
 
 // ------------------------------------------------------------------ runtime
 // Auto: the server that served this page (the site's own, on Cloudflare: the full corpus; or `taochronos serve`); else
@@ -243,11 +249,22 @@ function languageNote() {
     + "Chinese terms, formulas and herbs with their Chinese characters, e.g. Guizhi Tang (桂枝汤).";
 }
 
-function systemPrompt(info = S.runtimeInfo, change = "") {
+function systemPrompt(info = S.runtimeInfo, change = "", mode = "") {
   const base = info?.system_prompt || "";
   const extra = (S.settings.instructions || "").trim();
-  return `${base}${change}${extra ? `\n\n## 用户的附加指令\n${extra}` : ""}${languageNote()}`;
+  return `${base}${change}${mode}${extra ? `\n\n## 用户的附加指令\n${extra}` : ""}${languageNote()}`;
 }
+
+/** A diet conversation's instructions: the platform's, then the diet mode's (diet/prompt.js). */
+const dietPrompt = (info, change) => systemPrompt(info, change, DIET_PROMPT);
+
+// the corpus tools a diet conversation keeps beside its own, to quote a classic when the visitor asks
+const DIET_CLASSICS = /^classics(?:__|\.)(?:search|get_passage)$/;
+// a diet turn's runtime when none could start: its own tools still run in the page (routed), the corpus's do not
+const NO_RUNTIME = {
+  call: async () => ({ ok: false, error: T("运行环境不可用"), text: `ERROR: ${T("运行环境不可用")}` }),
+  research: async () => ({ ok: false, error: T("运行环境不可用"), text: `ERROR: ${T("运行环境不可用")}` }),
+};
 
 // ------------------------------------------------------------------ passages and citations
 function getPassage(pid) {
@@ -427,8 +444,11 @@ function registerEvidence(conv, cards) {
 }
 
 // ------------------------------------------------------------------ conversations
-function newConversation(title = T("新对话")) {
-  return { id: uid("c_"), title, created: Date.now(), updated: Date.now(), pinned: false, messages: [], evidence: {}, research: [] };
+function newConversation(title = T("新对话"), mode = null) {
+  const conv = { id: uid("c_"), title, created: Date.now(), updated: Date.now(), pinned: false, messages: [], evidence: {}, research: [] };
+  // a diet conversation lives in this page only until the visitor keeps it (store.js writes no ephemeral one)
+  if (mode === DIET_MODE) Object.assign(conv, { mode: DIET_MODE, ephemeral: true });
+  return conv;
 }
 
 const persistNow = async (conv) => {
@@ -463,8 +483,9 @@ async function openConversation(id) {
   scrollToBottom(false);
 }
 
-function newChat() {
+function newChat(mode = null) {
   S.conv = null;
+  S.ui.mode = mode === DIET_MODE ? DIET_MODE : null;
   S.ui.editing = null;
   S.ui.attachments = [];
   S.drawer.pid = null;
@@ -501,13 +522,16 @@ async function send(text, images = []) {
     }
     if (heldBack()) return; // the question stays where it was typed
   }
-  if (S.relay?.ok && S.relay.logs && consent() === null) await askConsent();
+  const diet = S.conv ? isDietMode(S.conv) : S.ui.mode === DIET_MODE;
+  // a diet conversation is never recorded: there is nothing to ask consent for
+  if (!diet && S.relay?.ok && S.relay.logs && consent() === null) await askConsent();
   let conv = S.conv;
   if (!conv) {
-    conv = newConversation(truncate(text.replace(/\s+/g, " "), 30) || T("图片"));
+    conv = newConversation(truncate(text.replace(/\s+/g, " "), 30) || T("图片"), diet ? DIET_MODE : null);
     S.conv = conv;
     location.hash = `#/c/${conv.id}`;
   }
+  if (healthText(text)) conv.health = true; // the visitor's own health: this conversation is never recorded from now on
   conv.messages.push({ id: uid("m_"), role: "user", text, images, ...(data.length ? { data } : {}), created: Date.now() });
   const msg = { id: uid("m_"), role: "assistant", created: Date.now(), status: "streaming", segments: [] };
   conv.messages.push(msg);
@@ -550,17 +574,20 @@ async function runAssistant(conv, msg, { resume = null } = {}) {
   let was = null; // the runtime and corpus the turn began on
   const clock = pageClock(); // how long the page is hidden, or does not run, while the turn does
   try {
-    const runtime = await turnRuntime();
+    const diet = isDietMode(conv);
+    // a diet conversation needs no runtime for its own tools: one that cannot start leaves it without the corpus only
+    const runtime = diet ? await turnRuntime().catch(() => NO_RUNTIME) : await turnRuntime();
     was = runtimeNow();
-    const catalog = await getCatalog(S.settings.toolMode);
-    const tools = toolDefs(catalog);
-    if (S.data.list.length || personal(conv)) { // the 我的资料 tools, while there is data to read
+    const catalog = runtime === NO_RUNTIME ? { tools: [] } : await (diet ? getCatalog(S.settings.toolMode).catch(() => ({ tools: [] })) : getCatalog(S.settings.toolMode));
+    // a diet conversation: its own tools, run in this page, and the corpus search to quote a classic
+    const tools = diet ? [...DIET_TOOLS, ...toolDefs(catalog).filter((t) => DIET_CLASSICS.test(t.name))] : toolDefs(catalog);
+    if (!diet && (S.data.list.length || personal(conv))) { // the 我的资料 tools, while there is data to read
       for (const t of await mydataDefs()) if (!tools.some((x) => x.name === t.name)) tools.push({ name: t.name, description: t.description, parameters: t.parameters });
     }
     const history = buildHistory(conv.messages.slice(0, idx - 1), provider);
     const result = await runTurn({
       provider, settings: hidden ? { ...S.settings, thinking: false } : S.settings, route: routeFor(), runtime: routed(runtime),
-      tools, system: turnInstructions(runtime, S.runtimeInfo, systemPrompt), history, user, signal: controller.signal, hurry: hurry.signal,
+      tools, system: turnInstructions(runtime, S.runtimeInfo, isDietMode(conv) ? dietPrompt : systemPrompt), history, user, signal: controller.signal, hurry: hurry.signal,
       hooks: makeHooks(conv, msg, before?.usage), sink, trace, resume, rounds: before?.rounds,
       review: (text) => missingCites(conv, text), scope: lookupScope,
     });
@@ -1045,6 +1072,7 @@ async function submitEdit(msgId, text) {
   const idx = conv.messages.findIndex((m) => m.id === msgId);
   if (idx < 0) return;
   conv.messages[idx].text = text;
+  if (healthText(text)) conv.health = true;
   conv.messages.splice(idx + 1);
   S.ui.editing = null;
   const msg = { id: uid("m_"), role: "assistant", created: Date.now(), status: "streaming", segments: [] };
@@ -1132,6 +1160,11 @@ function dataRuntime() {
 function routed(runtime) {
   return {
     call(name, args, options) {
+      // the diet tools run in this page: what the visitor says of their health goes to no runtime or server
+      if (isDiet(name)) return Promise.resolve(callDiet(name, args, options));
+      if (name === "taochronos_call" && isDiet(args?.tool)) {
+        return Promise.resolve({ ...callDiet(args.tool, args?.arguments || {}, options), via: "taochronos_call" });
+      }
       const mine = isMine(name) || (name === "taochronos_call" && isMine(args?.tool));
       return (mine ? dataRuntime() : runtime).call(name, args, options);
     },
@@ -1346,6 +1379,17 @@ const threadCtx = {
   get relayActive() { return Boolean(S.relay?.ok && activeProvider(S.settings).relay); },
   get editing() { return S.ui.editing; },
   get running() { return Boolean(S.running); },
+  get mode() { return S.ui.mode; },
+  onDietMode: () => newChat(DIET_MODE),
+  onLeaveDiet: () => newChat(),
+  onAskWith: (text) => send(text), // the quick check's answers, sent only when the visitor presses the button
+  async onKeep(conv, keep) { // a diet conversation kept in this browser, or back to this page only
+    conv.ephemeral = !keep;
+    if (keep) await persistNow(conv);
+    else await store.deleteConversation(conv.id).catch(() => {});
+    renderMain();
+    toast(keep ? T("已保存在本浏览器（未加密），可随时删除") : T("已从本浏览器删除：只保留在本页面，关闭后消失"));
+  },
   openThink: S.ui.openThink,
   openSteps: S.ui.openSteps,
   closedSteps: S.ui.closedSteps,
@@ -1455,6 +1499,7 @@ function convItem(c) {
   const item = h("div.conv", { class: active ? "active" : "", role: "button", tabindex: 0, "aria-current": active ? "page" : null },
     c.pinned ? icon("pin", "sm pin") : null,
     h("span.t", c.title),
+    isDietMode(c) ? h("span.conv-tag", { title: c.ephemeral ? T("饮食与体重管理 · 只在本页面") : T("饮食与体重管理") }, icon("leaf", "sm")) : null,
     running ? h("span.spinner") : null);
   const more = h("button.more", { type: "button", "aria-label": T("更多操作"), "aria-haspopup": "menu" }, icon("dots", "sm"));
   more.addEventListener("click", (e) => { e.stopPropagation(); convMenu(c, more, item); });
@@ -1547,6 +1592,13 @@ function heldBack() {
 function renderComposerHint() {
   el.hint.textContent = ASSISTANT;
   el.hint.title = modelLabel(activeProvider(S.settings));
+  const diet = S.conv ? isDietMode(S.conv) : S.ui.mode === DIET_MODE;
+  el.input.placeholder = diet ? T("说说你的目标和情况，例如：我想减重，平时多在小贩中心吃饭……") : PLACEHOLDER;
+  if (el.disclaimer) {
+    el.disclaimer.firstChild.textContent = diet ? `${T("饮食建议以公开的营养指南与食物成分数据为据，数字由本机计算；不构成诊断或治疗。")} ` : DISCLAIMER;
+  }
+  el.composer.classList.toggle("diet", diet);
+  el.newDiet?.classList.toggle("active", diet);
 }
 
 function renderAttachments() {
@@ -1745,7 +1797,9 @@ async function citationSummary(conv, msg) {
  * where its time went (runAssistant) — when it began, its trace (agent.js, runTurn), the runtime it began on, and how
  * long the page was hidden or did not run. */
 async function recordTurn(conv, msg, diag = null) {
-  if (!recording() || personal(conv)) return; // a conversation that touches the user's own data is never recorded
+  // a conversation that touches the user's own data, or their health (a diet conversation, a diet tool called, their own
+  // measurements or conditions written in it), is never recorded
+  if (!recording() || personal(conv) || healthConv(conv)) return;
   try {
     const idx = conv.messages.indexOf(msg);
     const user = conv.messages[idx - 1];
@@ -1828,9 +1882,10 @@ function openFeedback(conv, msg, rating) {
     placeholder: up ? T("哪里对你有帮助？（可选）") : T("哪里有问题？你期望怎样的回答？（可选）") });
   // what goes with it: never a word of a conversation that touches the user's own data; nothing more of a turn already
   // recorded (its record has it); else the question and answer only when the visitor ticks the box
-  const mine = personal(conv);
+  const mine = personal(conv) || healthConv(conv);
   const attach = h("input", { type: "checkbox" });
-  const what = mine ? h("p.muted", T("这段对话用到了你的资料：反馈不附带对话内容。"))
+  const what = healthConv(conv) && !personal(conv) ? h("p.muted", T("这段对话涉及你的健康信息：反馈不附带对话内容。"))
+    : mine ? h("p.muted", T("这段对话用到了你的资料：反馈不附带对话内容。"))
     : msg.recorded ? h("p.muted", T("这一轮问答已按你的同意记录，反馈会与那条记录一并保存。"))
       : h("label.check", attach, h("span", T("附上这一轮的问题和回答，帮助我们找到问题所在（不勾选则只发送评价和你写的说明）")));
   const status = h("div.feedback-status", { role: "status" });
@@ -2052,8 +2107,12 @@ function wireChrome() {
   $("#lang-short").replaceWith(icon("globe"), h("span", { class: "lang-short" }, LANGUAGE.short), icon("chevdown", "sm"));
   el.lang.append(...LANGUAGES.map((l) => h("option", { value: l.code, lang: l.code === "zh" ? "zh-CN" : l.code, selected: l.code === LANG }, l.name)));
 
-  el.newChat.addEventListener("click", newChat);
-  el.newChatTop.addEventListener("click", newChat);
+  el.newChat.addEventListener("click", () => newChat());
+  el.newChatTop.addEventListener("click", () => newChat());
+  if (el.newDiet) {
+    el.newDiet.querySelector("#new-diet-icon")?.replaceWith(icon("leaf"));
+    el.newDiet.addEventListener("click", () => newChat(DIET_MODE));
+  }
   el.collapse.addEventListener("click", toggleSidebar);
   el.toggleSidebar.addEventListener("click", toggleSidebar);
   el.toggleDrawer.addEventListener("click", () => toggleDrawer());
@@ -2113,6 +2172,8 @@ async function main() {
   switchRuntime(); // at once: Python and the corpus load in the worker while the page sets itself up
   if (document.documentElement.classList.contains("pre-collapsed")) el.app.classList.add("sidebar-collapsed");
   translatePage();
+  PLACEHOLDER = el.input.placeholder; // the page's own, in its language: a diet conversation shows its own
+  DISCLAIMER = el.disclaimer?.firstChild?.textContent || "";
   applyTheme();
   wireChrome();
   await loadProviders();

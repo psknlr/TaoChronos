@@ -39,12 +39,14 @@ export const TOOL_WORDS = {
   "research.run_code": "研究脚本",
   "mydata.list": "我的资料", "mydata.read": "资料阅读", "mydata.search": "资料检索", "mydata.describe": "描述统计",
   "mydata.compare": "组间比较", "mydata.prescriptions": "处方用药分析",
+  "diet.assess": "饮食评估", "diet.plan": "饮食方案", "diet.swap": "换菜核算", "diet.dishes": "菜品营养", "diet.context": "新加坡节令",
+  "diet.food_nature": "食物寒热", "diet.progress": "体重趋势",
   taochronos_research: "发现研究", taochronos_session: "研究会话", taochronos_ask: "技能工作流",
   taochronos_catalog: "工具目录", taochronos_call: "调用工具",
 };
 const FAMILY_WORDS = { classics: T("检索"), kg: T("知识"), analysis: T("发现"), study: T("治学"), philology: T("文献"), vision: T("文献"),
   validation: T("核验"), audit: T("核验"), graph: T("核验"), bridge: T("古今"), modern: T("现代"), literature: T("现代"), rwd: T("现代"), research: T("代码"),
-  mydata: T("我的资料") };
+  mydata: T("我的资料"), diet: T("饮食") };
 const FIELD_WORDS = { passage_id: T("段落编号"), book_id: T("录本编号"), session_id: T("研究会话编号"), claim_id: T("主张编号"),
   hypothesis_id: T("假说编号"), evidence_id: T("证据编号"), work_id: T("书目编号") };
 // the labels the tools grade with — an audit's verdict, who asserts a link, modern evidence by its design and by what
