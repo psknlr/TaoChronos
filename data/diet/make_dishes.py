@@ -11,7 +11,7 @@ project's.  No value is estimated: a dish without energy is left out.
 
     python data/diet/make_dishes.py            # writes web/js/diet/dishes.js (docs/diet.md, "The data")
 """
-import json, sys, re
+import json, math, sys, re
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -199,7 +199,9 @@ def scaled(parts):
         if any(v is None for v in vals):
             tot[k] = None
         else:
-            v = sum(U[n]["per_100g"][j] * g / 100 for n, g in parts)
+            # math.fsum, not sum: an exactly rounded total, the same on every Python (3.12 changed how sum() adds floats,
+            # and a total near x.x5 would round the other way)
+            v = math.fsum(U[n]["per_100g"][j] * g / 100 for n, g in parts)
             tot[k] = round(v) if k in ("kcal", "sodium_mg") else round(v, 1)
     return tot
 
