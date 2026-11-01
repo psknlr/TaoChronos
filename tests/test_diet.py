@@ -1,11 +1,14 @@
 """饮食与体重管理 (the diet mode, web/js/diet/, docs/diet.md, ADR 0029): its deterministic engine under Node, and the
 mode in Chromium against a scripted provider.
 
-Under Node: Singapore's BMI cut-offs for Asian adults, Mifflin–St Jeor and the activity range, the energy target and its
+Under Node: the BMI scales (WHO's, the lower thresholds for some family backgrounds, China's) and which applies to whom,
+the national food guides' limits, Mifflin–St Jeor and the activity range, the energy target and its
 floor, the screening (who gets no target, who is sent to a professional first, which numbers are withheld), the next
 questions (at most two, safety first), the plans' hard constraints (every allergen, halal, vegetarian, no pork or beef)
 under every combination tried, totals that are the sums of the dataset's own values, a swap that re-checks the day and
-refuses a forbidden dish, the dataset's integrity and provenance, Singapore's date and monsoon, the solar terms against
+refuses a forbidden dish, plans for any region (everyday meals everywhere, a region's own dishes only there), the
+dataset's integrity and provenance, the date on the visitor's clock, seasons by hemisphere and climate (and Singapore's
+and South Asia's monsoons), worldwide festivals (Easter and Thanksgiving computed), the solar terms against
 the National Astronomical Observatory of Japan's 2026 almanac, the festive seasons, the weekly review, the traditional
 layer (never a diagnosis), the tools as the model is offered them, which text and conversations carry health
 information, and the plain words the page shows for the tools.
@@ -32,8 +35,9 @@ ROOT = Path(__file__).resolve().parents[1]
 NODE_DIET = r"""
 import assert from "node:assert/strict";
 import { ALLERGENS, assess, CONDITIONS } from "./js/diet/assess.js";
-import { bmi, limits, protein, ree, target, tdee } from "./js/diet/energy.js";
-import { context, festivals, season, sgDate, solarTerm, termsOf } from "./js/diet/context.js";
+import { bmi, limits, protein, ree, target, tdee, waistRisk } from "./js/diet/energy.js";
+import { context, easter, festivals, localDay, season, solarTerm, termsOf } from "./js/diet/context.js";
+import { GUIDES, region, REGIONS, regionOfZone, scaleFor } from "./js/diet/regions.js";
 import { dish, dishes, forbidden, plan, swap } from "./js/diet/plan.js";
 import { DATASET, DISHES } from "./js/diet/dishes.js";
 import { progress } from "./js/diet/progress.js";
@@ -47,13 +51,27 @@ import { scrub, toolWord } from "./js/redact.js";
 const MAN = { goal: "lose_weight", age: 30, sex: "male", height_cm: 170, weight_kg: 78, activity: "sedentary", conditions: ["none"] };
 const json = (x) => JSON.stringify(x);
 
-// ------------------------------------------------------------------ BMI: Singapore's cut-offs for Asian adults
-const band = (v) => bmi(v, 100, 40).band; // at 1 m, BMI is the weight
-assert.deepEqual([18.4, 18.5, 22.9, 23, 27.4, 27.5, 40].map(band), ["underweight", "healthy", "healthy", "overweight", "overweight", "obese", "obese"]);
+// ------------------------------------------------------------------ BMI: three scales, and which applies to whom
+const band = (scale) => (v) => bmi(v, 100, 40, scale).band; // at 1 m, BMI is the weight
+assert.deepEqual([18.4, 18.5, 24.9, 25, 29.9, 30].map(band("who")), ["underweight", "healthy", "healthy", "overweight", "overweight", "obese"]);
+assert.deepEqual([22.9, 23, 27.4, 27.5].map(band("asian")), ["healthy", "overweight", "overweight", "obese"]);
+assert.deepEqual([23.9, 24, 27.9, 28].map(band("china")), ["healthy", "overweight", "overweight", "obese"]);
 assert.equal(bmi(78, 170, 30).value, 27);
+assert.equal(bmi(78, 170, 30).scale, "who"); // the international scale by default
 assert.equal(bmi(60, 160, 15).band, "not_applicable"); // under 18: BMI-for-age, not adult cut-offs
-assert.equal(bmi(33, 100, 40).action_point, 32.5);
-assert.equal(bmi(38, 100, 40).action_point, 37.5);
+assert.deepEqual([bmi(33, 100, 40).action_point, bmi(33, 100, 40, "asian").action_point, bmi(36, 100, 40).action_point], [undefined, 32.5, 35]);
+// the scale: lower thresholds by family background (NICE, WHO), China's standard in China, else the region's, else WHO's
+assert.equal(scaleFor({}).scale, "who"); assert.ok(scaleFor({}).ambiguous);
+assert.equal(scaleFor({ region: "SG" }).scale, "asian"); assert.equal(scaleFor({ region: "cn" }).scale, "china");
+assert.equal(scaleFor({ region: "US", background: "asian" }).scale, "asian");
+assert.equal(scaleFor({ region: "GB", background: "black_african" }).scale, "asian");
+assert.equal(scaleFor({ region: "SG", background: "white" }).scale, "who");
+assert.ok(scaleFor({ region: "US" }).ambiguous && !scaleFor({ region: "SG" }).ambiguous);
+assert.equal(regionOfZone("Asia/Singapore"), "SG"); assert.equal(regionOfZone("America/Los_Angeles"), "US"); assert.equal(regionOfZone("Mars/Base"), null);
+assert.ok(Object.values(REGIONS).every((r) => GUIDES[r.guide] && ["N", "S"].includes(r.hemisphere)));
+// waist, on the same scale
+assert.deepEqual([waistRisk(95, "male").raised, waistRisk(95, "male").high, waistRisk(92, "male", "asian").raised, waistRisk(86, "female", "china").high],
+  [true, false, true, true]);
 assert.equal(bmi(null, 170), null);
 
 // ------------------------------------------------------------------ energy
@@ -79,8 +97,11 @@ for (const [w, h, a, s, act] of [[120, 180, 25, "male", "high"], [52, 150, 60, "
 assert.deepEqual(protein({ weight: 78, height: 170, age: 30, index: bmi(78, 170), losing: true }).g_range, [80, 95]);
 assert.ok(Math.abs(protein({ weight: 100, height: 170, age: 30, index: bmi(100, 170), losing: true }).reference_kg - 72.25) <= 0.25); // BMI 25 at 170 cm
 assert.equal(protein({ weight: 78, withheld: true }), null);
-assert.equal(limits(1800).added_sugar_g.max, 45);
-assert.equal(limits(1800).sodium_mg.max, 2000);
+// the day's limits by the national guide: WHO's by default
+assert.deepEqual([limits(1800).sugar_g.max, limits(1800).sodium_mg.max], [45, 2000]);
+assert.deepEqual([limits(1800, "uk").sugar_g.max, limits(1800, "uk").sodium_mg.max], [30, 2400]); // 30 g free sugars, 6 g salt
+assert.equal(limits(1800, "us").sodium_mg.max, 2300);
+assert.deepEqual(limits(1800, "cn").cooking_oil_g.range, [25, 30]);
 
 // ------------------------------------------------------------------ screening and the next questions
 let a = assess({});
@@ -192,6 +213,18 @@ for (const d of week.days) {
 assert.ok(week.week.days_within_range >= 5, json(week.week));
 assert.ok(week.week.different_dishes >= 10, json(week.week));
 assert.equal(json(plan({ profile: MAN, days: 7 })), json(week)); // deterministic
+// a region's own dishes only there; everyday meals of plain foods everywhere
+assert.ok(every(week).every((d) => d.regions.includes("*"))); // no region stated: no country's dishes
+const usWeek = plan({ profile: { ...MAN, region: "US" }, days: 7 });
+const sgWeek = plan({ profile: { ...MAN, region: "SG" }, days: 7 });
+assert.ok(every(usWeek).every((d) => d.regions.includes("*")));
+assert.ok(every(sgWeek).some((d) => d.regions.includes("SG")) && every(sgWeek).some((d) => d.regions.includes("*")));
+assert.match(usWeek.warnings.join(" "), /No dish data yet for local dishes in United States/);
+assert.match(week.warnings.join(" "), /No region stated/);
+assert.match(usWeek.drinks, /tea or coffee without sugar/); assert.match(sgWeek.drinks, /kopi-O/);
+assert.ok(!/kopi|hawker|Nutri-Grade|MUIS/i.test(json(usWeek))); // nothing of Singapore in a plan for elsewhere
+assert.deepEqual(swap({ profile: { ...MAN, region: "US" }, day: usWeek.days[0].meals.map((m) => ({ slot: m.slot, dish_id: m.dish.id })), slot: "lunch", want: "laksa" })
+  .day.meals.find((m) => m.slot === "lunch").dish.id, "laksa"); // a dish asked for by name may come from any pack
 assert.ok(new Set([0, 1, 2, 3, 4, 5, 6, 7].map((v) => json(plan({ profile: MAN, days: 1, variant: v }).days))).size >= 4); // other variants, other plans
 assert.ok(plan({ profile: MAN, exclude: ["chicken_rice_steamed"], days: 7 }).days.every((d) => d.meals.every((m) => m.dish.id !== "chicken_rice_steamed")));
 // allergies not confirmed: said, and nothing excluded for them
@@ -216,39 +249,56 @@ assert.equal(refused.ok, false); assert.deepEqual(refused.why, ["contains peanut
 assert.equal(swap({ profile: MAN, day, slot: "lunch", want: "no such dish" }).ok, false);
 assert.equal(swap({ profile: MAN, day, slot: "supper" }).ok, false);
 // the dish lookup: the numbers as published, and what this visitor may not have
-const looked = dishes({ query: "chicken rice", sort: "kcal" });
+const looked = dishes({ query: "chicken rice", cuisine: "chinese", sort: "kcal" });
 assert.deepEqual(looked.dishes.map((d) => d.kcal), [471, 522, 646]);
 assert.deepEqual(dishes({ query: "nasi lemak", profile: { allergies: ["peanut"] } }).dishes[0].not_for_you, ["contains peanut (allergy)"]);
 assert.equal(dishes({ query: "no such dish at all" }).count, 0);
 
-// ------------------------------------------------------------------ Singapore's date, season, solar terms, festivals
-assert.equal(sgDate(null, new Date("2026-10-31T16:30:00Z")).iso, "2026-11-01"); // 00:30 in Singapore
-assert.equal(sgDate(null, new Date("2026-10-31T15:30:00Z")).iso, "2026-10-31");
-assert.equal(sgDate("2026-02-30"), null); assert.equal(sgDate("2026-13-01"), null);
+// ------------------------------------------------------------------ the visitor's date, season, solar terms, festivals
+assert.equal(localDay(null, "Asia/Singapore", new Date("2026-10-31T16:30:00Z")).iso, "2026-11-01"); // 00:30 in Singapore
+assert.equal(localDay(null, "America/New_York", new Date("2026-10-31T16:30:00Z")).iso, "2026-10-31");
+assert.equal(localDay("2026-02-30"), null); assert.equal(localDay("2026-13-01"), null);
 assert.equal(context({ date: "nonsense" }).ok, false);
-const phase = (d) => season(sgDate(d)).phase;
-assert.deepEqual(["2026-12-15", "2027-01-10", "2027-02-10", "2026-04-20", "2026-07-01", "2026-10-15"].map(phase),
+const phase = (d, code) => season(localDay(d), region(code)).phase;
+// Singapore's monsoons
+assert.deepEqual(["2026-12-15", "2027-01-10", "2027-02-10", "2026-04-20", "2026-07-01", "2026-10-15"].map((d) => phase(d, "SG")),
   ["northeast_monsoon_wet", "northeast_monsoon_wet", "northeast_monsoon_dry", "inter_monsoon_1", "southwest_monsoon", "inter_monsoon_2"]);
-assert.match(season(sgDate("2026-07-01")).weather_status, /calendar_only/); // no live weather, said so
-// the National Astronomical Observatory of Japan's 2026 almanac (JST), less one hour
+// temperate seasons by hemisphere; the tropics; South Asia's monsoon
+assert.deepEqual(["2027-01-15", "2026-04-15", "2026-07-15", "2026-10-15"].map((d) => phase(d, "GB")), ["winter", "spring", "summer", "autumn"]);
+assert.deepEqual(["2027-01-15", "2026-07-15"].map((d) => phase(d, "AU")), ["summer", "winter"]);
+assert.equal(phase("2026-07-15", "BR"), "tropical"); assert.equal(phase("2026-07-15", "IN"), "southwest_monsoon");
+assert.ok(season(localDay("2026-07-15"), region("AE")).eating[0].startsWith("Extreme heat"));
+assert.equal(season(localDay("2026-07-15"), { climate: "temperate", hemisphere: "S" }).phase, "winter"); // as the visitor describes it
+assert.equal(season(localDay("2026-07-15"), null).phase, null); // no region: no season, said so
+assert.match(season(localDay("2026-07-01"), region("SG")).weather_status, /calendar_only/); // no live weather, said so
+// the National Astronomical Observatory of Japan's 2026 almanac (JST), less one hour (China Standard Time)
 const NAOJ = { 立春: "2026-02-04T04:02", 春分: "2026-03-20T22:46", 清明: "2026-04-05T02:40", 夏至: "2026-06-21T16:25", 立秋: "2026-08-07T19:43",
   秋分: "2026-09-23T08:05", 立冬: "2026-11-07T17:52", 小雪: "2026-11-22T15:23", 大雪: "2026-12-07T10:53", 冬至: "2026-12-22T04:50" };
 for (const t of termsOf(2026)) {
   if (!NAOJ[t.zh]) continue;
-  const off = Math.abs(Date.parse(`${t.sg_time.replace(" ", "T")}:00Z`) - Date.parse(`${NAOJ[t.zh]}:00Z`)) / 60000;
-  assert.ok(off <= 15, `${t.zh} ${t.sg_time} vs ${NAOJ[t.zh]}`);
+  const off = Math.abs(Date.parse(`${t.cst_time.replace(" ", "T")}:00Z`) - Date.parse(`${NAOJ[t.zh]}:00Z`)) / 60000;
+  assert.ok(off <= 15, `${t.zh} ${t.cst_time} vs ${NAOJ[t.zh]}`);
   assert.equal(t.date, NAOJ[t.zh].slice(0, 10));
 }
 assert.equal(termsOf(2026).length, 24);
-const st = solarTerm(sgDate("2026-11-01"));
+const st = solarTerm(localDay("2026-11-01"), region("SG"));
 assert.deepEqual([st.current.zh, st.next.zh, st.next.date, st.next.in_days], ["霜降", "立冬", "2026-11-07", 6]);
-assert.match(st.note, /monsoons/);
-const fest = festivals(sgDate("2026-11-01")).upcoming;
-assert.deepEqual(fest.map((f) => [f.id, f.date, f.in_days]), [["deepavali", "2026-11-08", 7], ["dongzhi", "2026-12-22", 51], ["christmas", "2026-12-25", 54]]);
-assert.ok(festivals(sgDate("2026-03-01")).upcoming.some((f) => f.id === "ramadan" && f.ongoing));
-assert.match(festivals(sgDate("2028-06-01")).note, /No verified festival dates for 2028/);
-const ctx = context({ date: "2026-11-01" });
-assert.equal(ctx.timezone, "Asia/Singapore (UTC+8)");
+assert.match(st.note, /does not carry over/);
+assert.match(solarTerm(localDay("2026-11-01"), region("AU")).note, /reversed/);
+assert.match(solarTerm(localDay("2026-11-01"), region("CN")).note, /corpus tools/);
+// festivals: computed where a rule fixes them, those kept where the visitor lives first
+assert.deepEqual([easter(2024), easter(2025), easter(2026), easter(2027)], [[3, 31], [4, 20], [4, 5], [3, 28]]);
+const due = (day, code, within) => festivals(localDay(day), within, code).upcoming.map((f) => [f.id, f.date, f.in_days]);
+assert.deepEqual(due("2026-11-01", "SG"), [["diwali", "2026-11-08", 7], ["dongzhi", "2026-12-22", 51], ["christmas", "2026-12-25", 54]]);
+assert.deepEqual(due("2026-11-01", "US").slice(0, 2), [["thanksgiving_us", "2026-11-26", 25], ["christmas", "2026-12-25", 54]]);
+assert.deepEqual(due("2026-10-01", "CA", 30), [["thanksgiving_ca", "2026-10-12", 11]]);
+assert.ok(!due("2026-11-01", "GB").some(([id]) => id.startsWith("thanksgiving"))); // kept in one country only
+assert.equal(festivals(localDay("2026-11-01"), 60, "US").upcoming.find((f) => f.id === "diwali").kept_where_you_live, false);
+assert.ok(festivals(localDay("2026-03-01"), 60, "MY").upcoming.some((f) => f.id === "ramadan" && f.ongoing && f.approximate));
+assert.match(festivals(localDay("2028-06-01")).note, /No published festival dates here for 2028/);
+const ctx = context({ date: "2026-11-01", region: "SG" });
+assert.deepEqual([ctx.region.code, ctx.region.time_zone, ctx.season.phase], ["SG", "Asia/Singapore", "inter_monsoon_2"]);
+assert.equal(context({ date: "2026-11-01" }).region.code, null);
 assert.ok(ctx.provenance.every((p) => SOURCES[p.id]));
 
 // ------------------------------------------------------------------ the weekly review
@@ -395,7 +445,7 @@ def test_a_diet_conversation_in_the_browser(tmp_path):
             page.click("#new-diet")
             page.wait_for_selector(".diet-hero")
             assert "不记录" in page.inner_text(".diet-notice") and "饮食与体重管理" in page.inner_text(".diet-hero h1")
-            assert "小贩中心" in page.get_attribute("#input", "placeholder")
+            assert "外面吃饭" in page.get_attribute("#input", "placeholder")
             before = len(mock.requests)
             page.fill("#input", "我想减重，30 岁男性，170 厘米，78 公斤，久坐，没有其他疾病。")
             page.keyboard.press("Enter")
@@ -408,7 +458,7 @@ def test_a_diet_conversation_in_the_browser(tmp_path):
                                                                      "diet__food_nature", "diet__progress"}
             assert offered - {t for t in offered if t.startswith("diet__")} <= {"classics__search", "classics__get_passage"}
             system = diet_requests[0]["body"]["messages"][0]["content"]
-            assert "## 本对话：饮食与体重管理（新加坡）" in system and "每轮至多两问" in system
+            assert "## 本对话：饮食与体重管理" in system and "每轮至多两问" in system and "国际（WHO）的默认标准" in system
             # the tools' results went back to the model: the plan of the day, its energy target
             plan_result = json.loads([m for m in diet_requests[2]["body"]["messages"] if m.get("role") == "tool"][-1]["content"])
             assert plan_result["energy_target"] == {"kcal_range": [1700, 1800], "kind": "deficit"} and plan_result["days"][0]["meals"]

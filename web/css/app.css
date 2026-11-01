@@ -1019,7 +1019,6 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(2px); }
 }
 .new-diet:hover, .new-diet.active { border-color: var(--jade); color: var(--jade); background: color-mix(in srgb, var(--jade-soft) 50%, transparent); }
 .new-diet .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.new-diet small { margin-inline-start: auto; font: 600 10.5px var(--font-mono); letter-spacing: .08em; color: var(--jade); }
 .conv-tag { display: inline-flex; color: var(--jade); flex: none; }
 .diet-entry-card {
   display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 14px; padding: 12px 14px; border-radius: 14px; text-align: start;

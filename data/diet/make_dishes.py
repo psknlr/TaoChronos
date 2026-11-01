@@ -1,7 +1,13 @@
-"""Builds web/js/diet/dishes.js from the collected records (sg-dishes.sources.json: each dish's values as a publication
-quoting HPB, HealthHub, HealthXchange or a magazine gave them, with its URL and notes; null where none was shown) and
-the annotations below (ids, Chinese names, kinds, allergens, food rules, tags, ordering tips), plus plain foods from USDA
-FoodData Central per 100 g scaled to the serving stated.  No value is estimated: a record without energy is left out.
+"""Builds web/js/diet/dishes.js from two sets of collected records and the annotations below:
+
+- usda.sources.json: plain foods per 100 g as USDA FoodData Central gives them (via mirrors naming the entry; null
+  where none was shown).  The everyday meals, eaten anywhere (regions "*"), are sums of these parts at the weights
+  stated; a nutrient missing for any part is missing for the meal.
+- sg-dishes.sources.json: Singapore dishes as a publication quoting HPB, HealthHub, HealthXchange or a magazine gave
+  them, with its URL and notes; the Singapore/Malaysia dish pack (regions SG, MY).
+
+The annotations (ids, Chinese names, kinds, slots, allergens, food rules, tags, ordering and cooking tips) are this
+project's.  No value is estimated: a dish without energy is left out.
 
     python data/diet/make_dishes.py            # writes web/js/diet/dishes.js (docs/diet.md, "The data")
 """
@@ -12,6 +18,7 @@ from urllib.parse import urlparse
 HERE = Path(__file__).resolve().parent
 SOURCES = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "sg-dishes.sources.json"
 TARGET = Path(sys.argv[2]) if len(sys.argv) > 2 else HERE.parents[1] / "web" / "js" / "diet" / "dishes.js"
+USDA_SOURCES = SOURCES.with_name("usda.sources.json")
 src = json.load(open(SOURCES, encoding="utf-8"))
 by = {r["dish"]: r for r in src}
 
@@ -167,7 +174,7 @@ for dish, ann in A.items():
         v = r.get(j)
         rec[k] = None if v is None else round(v * t, 1) if isinstance(v, float) and not float(v * t).is_integer() else (int(v * t) if v is not None else None)
     rec.update(allergens=ann["allergens"], pork=ann["pork"], beef=ann["beef"], halal=ann["halal"], vegetarian=ann["vegetarian"], vegan=ann["vegan"],
-               tags=ann["tags"], order=ann["order"])
+               tags=ann["tags"], order=ann["order"], regions=["SG", "MY"])
     kind = r.get("source_kind")
     rec["source"] = "hpb_coded" if r.get("hpb_code") else {"HPB/HealthHub": "healthhub", "secondary-quoting-HPB": "hpb_secondary"}.get(kind, "other")
     if r.get("hpb_code"): rec["hpb_code"] = r["hpb_code"]
@@ -179,64 +186,124 @@ for dish, ann in A.items():
     if m: rec["other_figure"] = m.group(0).replace("DISAGREEMENT: ", "").replace("DISAGREEMENTS: ", "")[:220]
     out.append(rec)
 
-# plain foods: USDA FoodData Central (SR Legacy) per 100 g, scaled to the serving shown
-U = {  # name: (kcal, protein, fat, carb, fibre) per 100 g, the USDA entry
-    "pak_choi": ((12, 1.56, 0.16, 1.78, None), "Cabbage, chinese (pak-choi), cooked, boiled, drained, without salt"),
-    "egg": ((155, 12.6, 10.6, 1.1, None), "Egg, whole, cooked, hard-boiled (FDC 173424)"),
-    "tofu": ((144, 17.3, 8.7, 2.8, None), "Tofu, raw, firm, prepared with calcium sulfate (FDC 172475)"),
-    "brown_rice": ((123, 2.7, 1.0, 25.6, 1.6), "Rice, brown, long-grain, cooked (FDC 169704)"),
-    "banana": ((89, 1.1, None, None, 2.6), "Bananas, raw"),
-    "apple": ((52, 0.3, 0.2, 13.8, 2.4), "Apples, raw, with skin (FDC 171688)"),
-    "watermelon": ((30, 0.6, None, 7.5, 0.4), "Watermelon, raw (FDC 167765)"),
-}
+# plain foods: USDA FoodData Central per 100 g, scaled to the serving shown; a meal is the sum of its parts
+U = {r["key"]: r for r in json.load(open(USDA_SOURCES, encoding="utf-8"))}
+KEYS = [("kcal", "energy_kcal"), ("protein_g", "protein_g"), ("fat_g", "fat_g"), ("sat_fat_g", "sat_fat_g"), ("carb_g", "carb_g"),
+        ("fibre_g", "fibre_g"), ("sugar_g", "sugar_g"), ("sodium_mg", "sodium_mg")]
+
+
 def scaled(parts):
     tot = {}
-    for k, idx in [("kcal", 0), ("protein_g", 1), ("fat_g", 2), ("carb_g", 3), ("fibre_g", 4)]:
-        vals = [U[n][0][idx] for n, g in parts]
-        tot[k] = None if any(v is None for v in vals) else round(sum(U[n][0][idx] * g / 100 for n, g in parts), 1)
-        if k == "kcal" and tot[k] is not None: tot[k] = round(tot[k])
-    tot.update(sat_fat_g=None, sugar_g=None, sodium_mg=None)
+    for k, j in KEYS:
+        vals = [U[n]["per_100g"].get(j) for n, g in parts]
+        if any(v is None for v in vals):
+            tot[k] = None
+        else:
+            v = sum(U[n]["per_100g"][j] * g / 100 for n, g in parts)
+            tot[k] = round(v) if k in ("kcal", "sodium_mg") else round(v, 1)
     return tot
-def plain(id, name, zh, kind, slots, parts, serving, allergens, tags, order, veg=True, vegan=True, cuisine="basic"):
+
+
+def entry(n):
+    """A USDA entry as an item names it: its description and FDC id."""
+    fdc = U[n].get("fdc_id")
+    return U[n]["usda_description"] + (f" (FDC {fdc})" if fdc else "")
+
+
+def plain(id, name, zh, kind, slots, parts, serving, allergens, tags, order="", veg=True, vegan=True, cuisine="basic", halal=True,
+          regions=("*",), note=None):
     rec = {"id": id, "name": name, "zh": zh, "cuisine": cuisine, "kind": kind, "slots": slots, "serving": serving}
     rec.update(scaled(parts))
-    rec.update(allergens=sorted(allergens), pork=False, beef=False, halal=True, vegetarian=veg, vegan=vegan, tags=tags, order=order,
-               source="usda", usda=[f"{U[n][1]}: {g} g" for n, g in parts])
+    rec.update(allergens=sorted(allergens), pork=False, beef=False, halal=halal, vegetarian=veg, vegan=vegan, tags=tags, order=order,
+               regions=list(regions), source="usda",
+               usda=[f"{entry(n)}: {g} g" for n, g in parts],
+               usda_urls=sorted({U[n]["source_url"] for n, g in parts}))
+    if note: rec["note"] = note
     out.append(rec)
 
-plain("side_vegetables_blanched", "Blanched greens (side)", "白灼青菜", "side", ["lunch", "dinner"], [("pak_choi", 150)],
-      "1 side plate (150 g), values without sauce", {"mollusc", "soy", "wheat"}, ["vegetables", "side"],
-      "Ask for the oyster sauce on the side or none, and no fried shallot oil: the values are for the greens alone.")
-plain("home_tofu_plate", "Home plate: brown rice, tofu and greens", "糙米豆腐青菜（家常）", "main", ["lunch", "dinner"],
-      [("brown_rice", 150), ("tofu", 150), ("pak_choi", 150)], "brown rice 150 g, firm tofu 150 g, greens 150 g; oil and sauce not included",
-      {"soy"}, ["home", "wholegrain", "vegetables", "steamed", "vegetarian"],
-      "Steam or braise the tofu with little sauce; each teaspoon of oil (about 4.5 g) adds about 40 kcal.")
-plain("home_egg_plate", "Home plate: brown rice, eggs and greens", "糙米鸡蛋青菜（家常）", "main", ["lunch", "dinner"],
-      [("brown_rice", 150), ("egg", 100), ("pak_choi", 150)], "brown rice 150 g, 2 boiled eggs (100 g), greens 150 g; oil and sauce not included",
-      {"egg"}, ["home", "wholegrain", "vegetables", "vegetarian"], "Boiled or steamed eggs; each teaspoon of oil adds about 40 kcal.", vegan=False)
-plain("home_egg_banana_breakfast", "Breakfast: 2 boiled eggs and a banana", "早餐：两个水煮蛋和香蕉", "main", ["breakfast"],
+
+NO_SALT = "values for food cooked without salt: season lightly"
+OIL = "with 1 teaspoon (5 g) of olive oil"
+L, B, S2 = ["lunch", "dinner"], ["breakfast"], ["snack"]
+# breakfasts
+plain("oats_milk_banana", "Porridge oats with milk and banana", "牛奶燕麦粥配香蕉", "main", B,
+      [("oats_dry", 40), ("milk_lowfat", 250), ("banana", 100)], "40 g oats cooked in 250 ml low-fat milk, 1 small banana",
+      {"milk"}, ["home", "wholegrain"], "Oats may carry traces of wheat: with coeliac disease or a wheat allergy, choose oats labelled gluten-free.",
+      vegan=False)
+plain("oats_banana_almonds", "Porridge oats (made with water) with banana and almonds", "清水燕麦粥配香蕉杏仁", "main", B,
+      [("oats_dry", 40), ("banana", 100), ("almonds", 10)], "40 g oats cooked in water, 1 small banana, 10 g almonds",
+      {"tree_nut"}, ["home", "wholegrain", "vegan"], "Oats may carry traces of wheat: choose oats labelled gluten-free if needed.")
+plain("toast_eggs_tomato", "Wholemeal toast with eggs and tomato", "全麦吐司配鸡蛋番茄", "main", B,
+      [("bread_wholewheat", 60), ("egg", 100), ("tomato", 100)], "2 slices wholemeal bread (60 g), 2 boiled or poached eggs, 1 tomato",
+      {"wheat", "egg"}, ["home", "wholegrain"], "Boiled or poached eggs, no butter or a thin scrape; bread can contain milk, soy or sesame: check the label.",
+      vegan=False)
+plain("yogurt_apple_almonds", "Yoghurt with apple and almonds", "酸奶配苹果杏仁", "main", B,
+      [("yogurt_lowfat", 200), ("apple", 130), ("almonds", 15)], "200 g plain low-fat yoghurt, 1 small apple, 15 g almonds",
+      {"milk", "tree_nut"}, ["home", "light"], "Plain (unsweetened) yoghurt; the fruit sweetens it.", vegan=False)
+plain("home_egg_banana_breakfast", "Breakfast: 2 boiled eggs and a banana", "早餐：两个水煮蛋和香蕉", "main", B,
       [("egg", 100), ("banana", 100)], "2 boiled eggs (100 g) and 1 small banana (100 g)", {"egg"}, ["home", "light", "vegetarian"],
       "Quick: boil eggs ahead for the week.", vegan=False)
+# lunches and dinners
+plain("chicken_rice_broccoli", "Chicken, brown rice and broccoli", "鸡胸肉、糙米饭配西兰花", "main", L,
+      [("chicken_breast", 120), ("brown_rice", 150), ("broccoli", 150), ("olive_oil", 5)], f"120 g roast chicken breast, 150 g cooked brown rice, 150 g broccoli, {OIL}",
+      set(), ["home", "wholegrain", "vegetables"], "Roast or grill the chicken without skin; with halal or kosher rules, use certified chicken.",
+      veg=False, vegan=False, note=NO_SALT)
+plain("chicken_white_rice_greens", "Chicken, rice and greens", "鸡胸肉、白米饭配青菜", "main", L,
+      [("chicken_breast", 120), ("rice_white", 150), ("pak_choi", 150), ("olive_oil", 5)], f"120 g chicken breast, 150 g cooked white rice, 150 g pak choi or other greens, {OIL}",
+      set(), ["home", "vegetables"], "Stir-fry the greens with garlic in the teaspoon of oil; with halal or kosher rules, use certified chicken.",
+      veg=False, vegan=False, note=NO_SALT)
+plain("salmon_potato_spinach", "Salmon, potato and spinach", "三文鱼、烤土豆配菠菜", "main", L,
+      [("salmon", 120), ("potato_baked", 200), ("spinach", 150), ("olive_oil", 5)], f"120 g baked salmon, 1 baked potato with skin (200 g), 150 g spinach, {OIL}",
+      {"fish"}, ["home", "vegetables"], "Bake or steam the fish; any oily fish (mackerel, sardines) serves as well.", veg=False, vegan=False, note=NO_SALT)
+plain("lentil_stew_rice", "Lentil and vegetable stew with brown rice", "扁豆蔬菜炖配糙米饭", "main", L,
+      [("lentils", 200), ("tomato", 150), ("spinach", 100), ("brown_rice", 100), ("olive_oil", 5)], f"200 g cooked lentils with tomato and spinach, 100 g cooked brown rice, {OIL}",
+      set(), ["home", "wholegrain", "vegetables", "vegan", "soup"], "A dal, a lentil soup or a stew all fit: spices, garlic and lemon instead of much salt.", note=NO_SALT)
+plain("chickpea_salad_bread", "Chickpea salad with wholemeal bread", "鹰嘴豆沙拉配全麦面包", "main", L,
+      [("chickpeas", 150), ("tomato", 150), ("olive_oil", 10), ("bread_wholewheat", 60)], "150 g chickpeas, 150 g tomato, 2 teaspoons (10 g) olive oil, 2 slices wholemeal bread",
+      {"wheat"}, ["home", "wholegrain", "vegetables"], "Add any salad vegetables freely; bread can contain milk, soy or sesame: check the label.", vegan=False, note=NO_SALT)
+plain("bean_rice_bowl", "Black bean and rice bowl", "黑豆糙米饭碗", "main", L,
+      [("black_beans", 150), ("brown_rice", 150), ("tomato", 100), ("olive_oil", 5)], f"150 g black beans, 150 g cooked brown rice, tomato salsa, {OIL}",
+      set(), ["home", "wholegrain", "vegetables", "vegan"], "Lime, coriander and chilli for flavour; canned beans rinsed to remove salt.", note=NO_SALT)
+plain("pasta_chickpea_tomato", "Wholewheat pasta with chickpeas, tomato and spinach", "全麦意面配鹰嘴豆番茄菠菜", "main", L,
+      [("pasta_wholewheat", 200), ("chickpeas", 100), ("tomato", 150), ("spinach", 100), ("olive_oil", 5)],
+      f"200 g cooked wholewheat pasta, 100 g chickpeas, tomato sauce from 150 g tomatoes, 100 g spinach, {OIL}",
+      {"wheat"}, ["home", "wholegrain", "vegetables", "vegan"], "Dried wholewheat pasta is usually egg-free: check the label.", note=NO_SALT)
+plain("home_tofu_plate", "Brown rice, tofu and greens", "糙米豆腐青菜（家常）", "main", L,
+      [("brown_rice", 150), ("tofu", 150), ("pak_choi", 150), ("olive_oil", 5)], f"150 g cooked brown rice, 150 g firm tofu, 150 g greens, {OIL}",
+      {"soy"}, ["home", "wholegrain", "vegetables", "steamed", "vegan"], "Steam or braise the tofu with little sauce: soy sauce adds salt.", note=NO_SALT)
+plain("home_egg_plate", "Brown rice, eggs and greens", "糙米鸡蛋青菜（家常）", "main", L,
+      [("brown_rice", 150), ("egg", 100), ("pak_choi", 150), ("olive_oil", 5)], f"150 g cooked brown rice, 2 eggs, 150 g greens, {OIL}",
+      {"egg"}, ["home", "wholegrain", "vegetables", "vegetarian"], "Boiled, steamed or scrambled with the teaspoon of oil.", vegan=False, note=NO_SALT)
+# sides, snacks and fruit
+plain("side_vegetables", "Vegetables (side)", "蔬菜（配菜）", "side", L, [("broccoli", 150)], "150 g broccoli or other vegetables, boiled or steamed",
+      set(), ["vegetables", "side"], "Any vegetables, steamed or boiled; a squeeze of lemon instead of butter or salt.")
+plain("side_vegetables_blanched", "Blanched greens (side)", "白灼青菜", "side", L, [("pak_choi", 150)],
+      "1 side plate (150 g), values without sauce", {"mollusc", "soy", "wheat"}, ["vegetables", "side"],
+      "Ask for the oyster sauce on the side or none, and no fried shallot oil: the values are for the greens alone.", regions=("SG", "MY"))
 plain("egg_boiled", "Boiled egg", "水煮蛋", "snack", ["snack", "breakfast"], [("egg", 50)], "1 egg (50 g)", {"egg"}, ["snack"],
-      "Soft-boiled kopitiam eggs are the same egg: go easy on the soy sauce.", vegan=False)
-plain("fruit_banana", "Banana", "香蕉", "fruit", ["snack"], [("banana", 100)], "1 small banana (100 g)", set(), ["fruit"], "")
-plain("fruit_apple", "Apple", "苹果", "fruit", ["snack"], [("apple", 130)], "1 small apple (130 g, 1 serving)", set(), ["fruit"], "")
-plain("fruit_watermelon", "Watermelon", "西瓜", "fruit", ["snack"], [("watermelon", 130)], "1 wedge (130 g, 1 serving)", set(), ["fruit"], "")
+      "Soft-boiled or hard-boiled; go easy on soy sauce or salt.", vegan=False)
+plain("yogurt_snack", "Plain yoghurt", "原味酸奶", "snack", S2, [("yogurt_lowfat", 150)], "150 g plain low-fat yoghurt", {"milk"}, ["snack"], vegan=False)
+plain("almonds_snack", "Almonds", "杏仁", "snack", S2, [("almonds", 20)], "a small handful (20 g)", {"tree_nut"}, ["snack"])
+plain("fruit_banana", "Banana", "香蕉", "fruit", S2, [("banana", 100)], "1 small banana (100 g)", set(), ["fruit"])
+plain("fruit_apple", "Apple", "苹果", "fruit", S2, [("apple", 130)], "1 small apple (130 g, 1 serving)", set(), ["fruit"])
+plain("fruit_orange", "Orange", "橙", "fruit", S2, [("orange", 130)], "1 small orange (130 g, 1 serving)", set(), ["fruit"])
+plain("fruit_watermelon", "Watermelon", "西瓜", "fruit", S2, [("watermelon", 130)], "1 wedge (130 g, 1 serving)", set(), ["fruit"])
 for r in out:
     if not r["order"]: del r["order"]
 
-head = '''// Singapore dishes for the diet plans, generated by data/diet/make_dishes.py (docs/diet.md, "The data"): each a
-// typical serving as HPB's Energy & Nutrient Composition of Food gives it — read through the publications that quote
-// it, since HPB's database could not be reached when the set was made — or, marked so, as SingHealth's HealthXchange or
-// a magazine gives it; the plain foods (rice, tofu, egg, greens, fruit) from USDA FoodData Central per 100 g, scaled to
-// the serving shown.  A value no source showed is null, and stays null: the planner reports it missing, never fills it
-// in.  The allergens, food rules (pork, halal, vegetarian), tags and ordering tips are this project's, from the dishes'
-// usual recipes — recipes differ by stall, so a plan tells a visitor with an allergy to ask.  `other_figure`: another
-// source's value.  Do not edit by hand: edit the sources or the annotations and run the script again.
+head = '''// The dishes of the diet plans, generated by data/diet/make_dishes.py (docs/diet.md, "The data").  Everyday meals for
+// anywhere (`regions: ["*"]`): sums of plain foods at the weights stated, each from USDA FoodData Central per 100 g.  The
+// Singapore/Malaysia dish pack (`regions: ["SG", "MY"]`): a typical serving as HPB's Energy & Nutrient Composition of
+// Food gives it — read through the publications that quote it, since HPB's database could not be reached when the set
+// was made — or, marked so, as SingHealth's HealthXchange or a magazine gives it.  A value no source showed is null, and
+// stays null (a meal with a part lacking it lacks it too): the planner reports it missing, never fills it in.  The
+// allergens, food rules (pork, halal, vegetarian), tags and ordering tips are this project's, from usual recipes —
+// recipes differ, so a plan tells a visitor with an allergy to check.  `other_figure`: another source's value.  Do not
+// edit by hand: edit the sources or the annotations and run the script again.
 
 '''
-meta = {"id": "sg-dishes", "version": "2026-11-01", "status": "secondary_source_unverified",
-        "note": "values as published for HPB's analyses, read through secondary sources (3 with HPB food codes); some from HealthXchange (SingHealth) or magazines; plain foods from USDA FoodData Central — verify against HPB's database (focos.hpb.gov.sg) before production use"}
+meta = {"id": "diet-dishes", "version": "2026-11-01", "status": "secondary_source_unverified",
+        "note": "everyday meals from USDA FoodData Central values read through mirrors naming each entry; the Singapore/Malaysia pack from values published for HPB's analyses, read through secondary sources (3 with HPB food codes), some from HealthXchange (SingHealth) or magazines — verify against FoodData Central and HPB's database before production use"}
 js = head + "export const DATASET = " + json.dumps(meta, ensure_ascii=False, indent=2) + ";\n\n"
 js += "export const DISHES = [\n" + ",\n".join("  " + json.dumps(r, ensure_ascii=False) for r in out) + ",\n];\n"
 open(TARGET, "w", encoding="utf-8").write(js)

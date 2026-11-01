@@ -1,0 +1,444 @@
+[
+ {
+  "key": "oats_dry",
+  "usda_description": "Cereals, oats, regular and quick, not fortified, dry",
+  "fdc_id": "173904",
+  "per_100g": {
+   "energy_kcal": 379,
+   "protein_g": 13.2,
+   "fat_g": 6.5,
+   "sat_fat_g": 1.11,
+   "carb_g": 67.7,
+   "fibre_g": 10.1,
+   "sugar_g": 1.0,
+   "sodium_mg": 6
+  },
+  "source_url": "https://getfoodfacts.com/food/cereals-oats-regular-and-quick-not-fortified-dry-173904",
+  "notes": "sat_fat 1.11 g comes from a plain-text mirror of SR record NDB 08120 (https://gopherproxy.meulie.net/republic.circumlunar.space/0/~joneworlds/nutrition/C/Cereals-oats-regular-and-quick-not-fortified-dry-08120.txt). The getfoodfacts snippet has no sat fat. MyFoodData 173904, per 81 g cup (not per 100 g, not converted): 0.9 g sat fat, 0.8 g total sugars, 4.9 mg sodium. getfoodfacts rounds protein and sugar to 1 decimal."
+ },
+ {
+  "key": "bread_wholewheat",
+  "usda_description": "Bread, whole-wheat, commercially prepared",
+  "fdc_id": "172688",
+  "per_100g": {
+   "energy_kcal": 252,
+   "protein_g": 12.4,
+   "fat_g": 3.5,
+   "sat_fat_g": 0.72,
+   "carb_g": 42.7,
+   "fibre_g": 6.0,
+   "sugar_g": 4.3,
+   "sodium_mg": 455
+  },
+  "source_url": "https://getfoodfacts.com/food/bread-whole-wheat-commercially-prepared-172688",
+  "notes": "sat_fat 0.72 g comes from foodstruct (https://www.foodstruct.com/food/bread-whole-wheat-commerciallyprepared), which also gives sodium 455 mg and sugar 4.3 g. nutrientnorms also gives sugar 4.3 g. Disagreements: Foundation entry FDC 335240, same description, lists 254 kcal, 12.3 g protein, 3.5 g fat, 43.1 g carb and 6.0 g fibre. nutrition-compare gives 5.6 g sugar for an entry it does not identify. One aggregator snippet showed 0 g total sugars on a page that also showed 4.3 g, so that page contradicts itself."
+ },
+ {
+  "key": "milk_lowfat",
+  "usda_description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
+  "fdc_id": "746772",
+  "per_100g": {
+   "energy_kcal": 43,
+   "protein_g": 3.4,
+   "fat_g": 0.9,
+   "sat_fat_g": 0.57,
+   "carb_g": 5.2,
+   "fibre_g": null,
+   "sugar_g": 5.2,
+   "sodium_mg": 39
+  },
+  "source_url": "https://getfoodfacts.com/food/milk-lowfat-fluid-1-milkfat-with-added-vitamin-a-and-vitamin-d-746772",
+  "notes": "LOW CONFIDENCE. No search result confirmed the SR Legacy FDC ID for this description. 746772 is the getfoodfacts page that has this exact description, and its ID looks like the Foundation series. getfoodfacts gives energy, protein, fat, carb and sodium. sat_fat 0.57 g is labelled a 'Foundation' value and sugar 5.2 g is labelled 'SR' on triagemethod (https://triagemethod.com/tools/human-nutrition-explorer/food/milk-lowfat-fluid-1-milkfat-with-added-vitamin-a-and-vitamin-d.html), so the panel mixes two datasets. Energy: 43 kcal (getfoodfacts, triagemethod) vs 42 kcal (another listing). No per-100 g fibre seen. Do not use the protein-fortified variant (FDC 171268: 48 kcal, 0.728 g sat fat, 58 mg sodium)."
+ },
+ {
+  "key": "yogurt_lowfat",
+  "usda_description": "Yogurt, plain, low fat",
+  "fdc_id": "170886",
+  "per_100g": {
+   "energy_kcal": 63,
+   "protein_g": 5.3,
+   "fat_g": 1.6,
+   "sat_fat_g": 1.0,
+   "carb_g": 7.0,
+   "fibre_g": 0,
+   "sugar_g": 7.04,
+   "sodium_mg": 70
+  },
+  "source_url": "https://getfoodfacts.com/food/yogurt-plain-low-fat-170886",
+  "notes": "sat_fat 1.0 g and sugar 7.04 g come from a mirror of SR NDB 01117 (https://gopherproxy.meulie.net/republic.circumlunar.space/0/~joneworlds/nutrition/Y/Yogurt-plain-low-fat-01117.txt), which also gives 63 kcal and 70 mg sodium. Another listing gives 5.25 g protein, 1.55 g fat and 7.04 g carb. fibre 0 is read from the rounded label on getfoodfacts. That label is captioned as a 170 g serving, but its values (63 kcal, 70 mg Na, 7 g carb) match the per-100 g figures. Outlier: Fitatu gives 57 kcal, 4.8 g protein, 1.0 g fat, 7.2 g carb."
+ },
+ {
+  "key": "chicken_breast",
+  "usda_description": "Chicken, broilers or fryers, breast, meat only, cooked, roasted",
+  "fdc_id": null,
+  "per_100g": {
+   "energy_kcal": 165,
+   "protein_g": 31.02,
+   "fat_g": 3.57,
+   "sat_fat_g": 1.01,
+   "carb_g": 0,
+   "fibre_g": null,
+   "sugar_g": 0,
+   "sodium_mg": 74
+  },
+  "source_url": "https://recipal.com/ingredients/883-nutrition-facts-calories-protein-carbs-fat-chicken-broilers-or-fryers-breast-meat-only-cooked-roasted",
+  "notes": "No result showed the FDC ID. Recipal cites USDA NDB 5064 and gives 165 kcal, 31 g protein, 3.5 g fat, 1 g sat fat (rounded), 0 g sugars, 74 mg sodium and 85 mg cholesterol. The more precise 31.02 g protein, 3.57 g fat, 1.01 g sat fat and 0 g carb come from FatSecret's USDA page (https://android.fatsecret.com/calories-nutrition/usda/chicken-breast-meat-(broilers-or-fryers-roasted-cooked)). No fibre value seen."
+ },
+ {
+  "key": "salmon",
+  "usda_description": "Fish, salmon, Atlantic, farmed, cooked, dry heat",
+  "fdc_id": "175168",
+  "per_100g": {
+   "energy_kcal": 206,
+   "protein_g": 22.1,
+   "fat_g": 12.35,
+   "sat_fat_g": 2.397,
+   "carb_g": 0,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 61
+  },
+  "source_url": "https://getfoodfacts.com/food/fish-salmon-atlantic-farmed-cooked-dry-heat-175168",
+  "notes": "sat_fat 2.397 g comes from a mirror of SR NDB 15237 (https://gopherproxy.meulie.net/republic.circumlunar.space/0/~joneworlds/nutrition/F/Fish-salmon-Atlantic-farmed-cooked-dry-heat-15237.txt). FatSecret gives 2.504 g, which disagrees. getfoodfacts rounds fat to 12.4 g; 12.35 g is from another listing. Sodium 61 mg has a single source (getfoodfacts). No fibre or sugar values seen."
+ },
+ {
+  "key": "lentils",
+  "usda_description": "Lentils, mature seeds, cooked, boiled, without salt",
+  "fdc_id": "172421",
+  "per_100g": {
+   "energy_kcal": 116,
+   "protein_g": 9.02,
+   "fat_g": 0.38,
+   "sat_fat_g": 0.053,
+   "carb_g": 20.13,
+   "fibre_g": 7.9,
+   "sugar_g": 1.8,
+   "sodium_mg": 2
+  },
+  "source_url": "https://www.fatsecret.co.za/calories-nutrition/generic/lentils-(mature-seeds-without-salt-cooked-boiled)",
+  "notes": "FDC 172421 is from the caloriefriend URL, which has the exact description. The panel is from a FatSecret listing, which does not cite an FDC ID; recipetips gives this food as USDA #16070. I am not certain which regional FatSecret page supplied fibre, sugar and sodium. A per-198 g cup listing gives 16 g fibre, 4 g sugars and 4 mg sodium, and another gives 15.6 g fibre and 3.6 g sugars. Neither was converted."
+ },
+ {
+  "key": "chickpeas",
+  "usda_description": "Chickpeas (garbanzo beans, bengal gram), mature seeds, cooked, boiled, without salt",
+  "fdc_id": "173757",
+  "per_100g": {
+   "energy_kcal": 164,
+   "protein_g": 8.9,
+   "fat_g": 2.6,
+   "sat_fat_g": 0.269,
+   "carb_g": 27.4,
+   "fibre_g": 7.6,
+   "sugar_g": 4.8,
+   "sodium_mg": 7
+  },
+  "source_url": "https://getfoodfacts.com/food/chickpeas-garbanzo-beans-bengal-gram-mature-seeds-cooked-boiled-without-salt-173757",
+  "notes": "sat_fat 0.269 g comes only from a FatSecret regional page (https://www.fatsecret.com.sg/calories-nutrition/generic/chickpeas-(mature-seeds-without-salt-cooked-boiled)), which gives total fat as 2.59 g. Other mirrors leave sat fat blank."
+ },
+ {
+  "key": "black_beans",
+  "usda_description": "Beans, black, mature seeds, cooked, boiled, without salt",
+  "fdc_id": "173735",
+  "per_100g": {
+   "energy_kcal": 132,
+   "protein_g": 8.86,
+   "fat_g": 0.54,
+   "sat_fat_g": 0.14,
+   "carb_g": 23.71,
+   "fibre_g": 8.7,
+   "sugar_g": null,
+   "sodium_mg": 1
+  },
+  "source_url": "https://fatsecret.com/calories-nutrition/usda/black-beans-(mature-seeds-without-salt-cooked-boiled)",
+  "notes": "MyFoodData 173735 also gives sat fat 0.14 g and fat 0.54 g (https://tools.myfooddata.com/nutrition-facts/173735/100g/1). The FatSecret USDA page shows a dash for sugar, so the value is missing, not zero. A 0.3 g sugar figure exists, but it is on a with-salt listing, so I did not use it. Do not use the with-salt entry FDC 175237 (237 mg sodium)."
+ },
+ {
+  "key": "potato_baked",
+  "usda_description": "Potatoes, baked, flesh and skin, without salt",
+  "fdc_id": "170093",
+  "per_100g": {
+   "energy_kcal": 93,
+   "protein_g": 2.5,
+   "fat_g": 0.13,
+   "sat_fat_g": 0.035,
+   "carb_g": 21.1,
+   "fibre_g": 2.2,
+   "sugar_g": 1.2,
+   "sodium_mg": 10
+  },
+  "source_url": "https://getfoodfacts.com/food/potatoes-baked-flesh-and-skin-without-salt-170093",
+  "notes": "fat 0.13 g and sat_fat 0.035 g come from FatSecret's USDA page (https://fatsecret.com/calories-nutrition/usda/potato-(flesh-and-skin-without-salt-baked)). getfoodfacts rounds fat to 0.1 g. One search summary called the 0.035 g a per-serving figure and another a per-100 g figure, so check that basis. Do not use the flesh-only entry (5 mg sodium, 0.026 g sat fat)."
+ },
+ {
+  "key": "pasta_wholewheat",
+  "usda_description": "Pasta, whole-wheat, cooked (Includes foods for USDA's Food Distribution Program)",
+  "fdc_id": "168910",
+  "per_100g": {
+   "energy_kcal": 149,
+   "protein_g": 5.99,
+   "fat_g": 1.71,
+   "sat_fat_g": 0.24,
+   "carb_g": 30.1,
+   "fibre_g": 3.9,
+   "sugar_g": 0.8,
+   "sodium_mg": 4
+  },
+  "source_url": "https://getfoodfacts.com/food/pasta-whole-wheat-cooked-includes-foods-for-usdas-food-distribution-program-168910",
+  "notes": "sat_fat 0.24 g comes from MyFoodData's comparison tool for 168910 at 100 g (https://tools.myfooddata.com/nutrition-comparison/168910-168910/100g-wt1). MyFoodData gives sugars as 0.75 g, getfoodfacts as 0.8 g. The getfoodfacts page has an inconsistent caption (per 117 g, and 'unenriched, with added salt'). A different FatSecret entry, 'whole wheat spaghetti (cooked)', has 124 kcal, 5.33 g protein, 0.54 g fat, 26.54 g carb, 0.099 g sat fat and 3 mg sodium. Do not mix it with this one."
+ },
+ {
+  "key": "rice_white",
+  "usda_description": "Rice, white, long-grain, regular, enriched, cooked",
+  "fdc_id": "168878",
+  "per_100g": {
+   "energy_kcal": 130,
+   "protein_g": 2.7,
+   "fat_g": 0.28,
+   "sat_fat_g": null,
+   "carb_g": 28.2,
+   "fibre_g": 0.4,
+   "sugar_g": 0.1,
+   "sodium_mg": 1
+  },
+  "source_url": "https://getfoodfacts.com/food/rice-white-long-grain-regular-enriched-cooked-168878",
+  "notes": "getfoodfacts rounds fat to 0.3 g; 0.28 g is from another listing. No sat fat seen for this entry. The with-salt entry FDC 169753 shows 0.08 g sat fat, 603.6 mg sodium, 0.63 g fibre and 0.08 g sugars, but it is a different food and I did not use it."
+ },
+ {
+  "key": "broccoli",
+  "usda_description": "Broccoli, cooked, boiled, drained, without salt",
+  "fdc_id": "169967",
+  "per_100g": {
+   "energy_kcal": 35,
+   "protein_g": 2.4,
+   "fat_g": 0.38,
+   "sat_fat_g": 0.08,
+   "carb_g": 7.2,
+   "fibre_g": 3.3,
+   "sugar_g": 1.4,
+   "sodium_mg": 41
+  },
+  "source_url": "https://tools.myfooddata.com/print/169967/100g",
+  "notes": "fat 0.38 g comes from a USDA-derived sheet (https://www.growables.org/informationVeg/documents/BroccoliCookedUsda.pdf), which also gives 35 kcal. sat_fat 0.08 g was quoted for MyFoodData and for a site citing USDA. triagemethod gives 2.5 g fibre and 1.1 g sugars, but those are AFCD (Australian) values, not USDA."
+ },
+ {
+  "key": "carrots",
+  "usda_description": "Carrots, cooked, boiled, drained, without salt",
+  "fdc_id": "170394",
+  "per_100g": {
+   "energy_kcal": 35,
+   "protein_g": null,
+   "fat_g": 0.18,
+   "sat_fat_g": null,
+   "carb_g": 8.22,
+   "fibre_g": 3.0,
+   "sugar_g": 3.5,
+   "sodium_mg": null
+  },
+  "source_url": "https://foodstruct.com/food/carrots-cooked-boiled-drained-withoutsalt",
+  "notes": "Foodstruct links FDC 170394 and gives 35 kcal, 3.5 g sugar and 3 g fibre. fat 0.18 g came from another listing. carb 8.22 g comes from a mirror of SR NDB 11125 (https://gopherproxy.meulie.net/republic.circumlunar.space/0/~joneworlds/nutrition/C/Carrots-cooked-boiled-drained-without-salt-11125.txt). An older USDA SR R13 listing (cooks.com) gives 45 kcal per 100 g, which disagrees. No per-100 g protein, sat fat or sodium seen. Serving-only values, not converted: sodium 5.63 mg per 10 g tbsp and 45.24 mg per 78 g cup (UH Hospitals); sat fat 0.029 g per half cup."
+ },
+ {
+  "key": "tomato",
+  "usda_description": "Tomatoes, red, ripe, raw, year round average",
+  "fdc_id": "170457",
+  "per_100g": {
+   "energy_kcal": 18,
+   "protein_g": 0.88,
+   "fat_g": 0.2,
+   "sat_fat_g": 0.03,
+   "carb_g": 3.9,
+   "fibre_g": 1.2,
+   "sugar_g": 2.6,
+   "sodium_mg": 5
+  },
+  "source_url": "https://getfoodfacts.com/food/tomatoes-red-ripe-raw-year-round-average-170457",
+  "notes": "sat_fat 0.03 g is labelled 'SR' on triagemethod (https://triagemethod.com/tools/human-nutrition-explorer/food/tomatoes-red-ripe-raw-year-round-average.html). A nutrifyi comparison rounds it to 0.0 g. Protein is 0.9 g on some mirrors and 0.88 g on others."
+ },
+ {
+  "key": "spinach",
+  "usda_description": "Spinach, cooked, boiled, drained, without salt",
+  "fdc_id": "168463",
+  "per_100g": {
+   "energy_kcal": 23,
+   "protein_g": 2.97,
+   "fat_g": 0.3,
+   "sat_fat_g": 0.042,
+   "carb_g": 3.8,
+   "fibre_g": 2.4,
+   "sugar_g": 0.43,
+   "sodium_mg": 70
+  },
+  "source_url": "https://getfoodfacts.com/food/spinach-cooked-boiled-drained-without-salt-168463",
+  "notes": "sat_fat 0.042 g comes from a FatSecret listing for spinach without salt, drained, cooked, boiled. Protein: 3.0 g (getfoodfacts), 2.97 g (a calorie-counter site), 2.8 g (another). getfoodfacts gives sugar as 0.4 g; 0.43 g is from another listing. One MyFoodData page shows 23.3 mg sodium, 0.8 g fibre and 0.14 g sugars with an unclear basis, which conflicts with the above. A UH Hospitals 180 g cup gives 41.4 kcal, 5.35 g protein, 0.47 g fat and 6.75 g carb (not converted)."
+ },
+ {
+  "key": "orange",
+  "usda_description": "Oranges, raw, all commercial varieties",
+  "fdc_id": "169097",
+  "per_100g": {
+   "energy_kcal": 47,
+   "protein_g": 0.9,
+   "fat_g": 0.1,
+   "sat_fat_g": 0.015,
+   "carb_g": 11.8,
+   "fibre_g": 2.4,
+   "sugar_g": 9.35,
+   "sodium_mg": null
+  },
+  "source_url": "https://nutrition-compare.pages.dev/food/orange/",
+  "notes": "sat_fat 0.015 g comes from a mirror of SR NDB 09200 (https://gopherproxy.meulie.net/republic.circumlunar.space/0/~joneworlds/nutrition/O/Oranges-raw-all-commercial-varieties-09200.txt). The snippet cut off before the sodium line. Sugars: 9.4 g (nutrition-compare), 9.35 g (fitnessvolt), 9.3 g (getfoodfacts 169097). An unnamed third-party site said 0 mg sodium; I did not use it. Navel oranges are a different entry (FDC 746771, 9 mg; another navel entry 1 mg)."
+ },
+ {
+  "key": "almonds",
+  "usda_description": "Nuts, almonds",
+  "fdc_id": "170567",
+  "per_100g": {
+   "energy_kcal": 579,
+   "protein_g": 21.2,
+   "fat_g": 49.9,
+   "sat_fat_g": 3.8,
+   "carb_g": 21.6,
+   "fibre_g": 12.5,
+   "sugar_g": 4.3,
+   "sodium_mg": 1
+  },
+  "source_url": "https://getfoodfacts.com/food/nuts-almonds-170567",
+  "notes": "sat_fat 3.8 g comes from MyFoodData 170567 (https://tools.myfooddata.com/nutrition-facts/170567/wt7); fitnessvolt gives 3.80 g. Protein: 21.1 g on getfoodfacts, 21.2 g on a site citing FDC 170567. Fibre: 12.5 g vs 12.40 g on another aggregator. The getfoodfacts header says 'per 143 g' while its body says 'per 100 g'. Ignore one outlier site that gave 57 g fat and 4.70 g sat fat."
+ },
+ {
+  "key": "olive_oil",
+  "usda_description": "Oil, olive, salad or cooking",
+  "fdc_id": "171413",
+  "per_100g": {
+   "energy_kcal": 884,
+   "protein_g": 0,
+   "fat_g": 100,
+   "sat_fat_g": 13.808,
+   "carb_g": 0,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": null
+  },
+  "source_url": "https://HappyForks.com/food/oil/75",
+  "notes": "FDC 171413 is from the MyFoodData URLs. sat_fat 13.808 g comes from foodstruct (https://foodstruct.com/en/food/cooking-oil), which also gives 72.961 g MUFA and 10.523 g PUFA. triagemethod gives 883 kcal (labelled SR Legacy). Open Food Facts (13.9 g) and Recipal (800 kcal, 13 g) are other products. No per-100 g sodium, fibre or sugar seen. UH Hospitals gives 4.32 mg sodium per cup (not converted)."
+ },
+ {
+  "key": "egg",
+  "usda_description": "Egg, whole, cooked, hard-boiled",
+  "fdc_id": "173424",
+  "per_100g": {
+   "energy_kcal": 155,
+   "protein_g": 12.58,
+   "fat_g": 10.61,
+   "sat_fat_g": 3.3,
+   "carb_g": 1.1,
+   "fibre_g": 0,
+   "sugar_g": 1.12,
+   "sodium_mg": 124
+  },
+  "source_url": "https://getfoodfacts.com/food/egg-whole-cooked-hard-boiled-173424",
+  "notes": "getfoodfacts gives 155 kcal, 12.6 g protein, 10.6 g fat, 1.1 g carb and 1.1 g sugars. The more precise 12.58 g protein, 10.61 g fat (happyforks) and 1.12 g sugars come from a mirror of SR NDB 01129 (https://gopherproxy.meulie.net/republic.circumlunar.space/0/~joneworlds/nutrition/E/Egg-whole-cooked-hardboiled-01129.txt). sat_fat disagrees: 3.3 g (MyFoodData 173424), ~3 g (foodstruct), 4 g (openmenu, rounded), 2.5 g (triagemethod, AFCD, not USDA). fibre 0 g is from foodstruct. Sugar: openmenu says 2 g (rounded). Sodium 124 mg is confirmed by several sources."
+ },
+ {
+  "key": "tofu",
+  "usda_description": "Tofu, raw, firm, prepared with calcium sulfate",
+  "fdc_id": "172475",
+  "per_100g": {
+   "energy_kcal": 144,
+   "protein_g": 17.3,
+   "fat_g": 8.7,
+   "sat_fat_g": 1.3,
+   "carb_g": 2.8,
+   "fibre_g": 2.3,
+   "sugar_g": null,
+   "sodium_mg": 14
+  },
+  "source_url": "https://getfoodfacts.com/food/tofu-raw-firm-prepared-with-calcium-sulfate-172475",
+  "notes": "sat_fat 1.3 g comes from a foodstruct label (8.7 g total fat). I could not confirm which foodstruct page it was; the one in the results was the 'regular' tofu page. Disagreement: happyforks and FatSecret give 145 kcal, 15.78 g protein and 4.27 g carb, with sat fat 1.26 g on FatSecret. That looks like a different data release. Sugar: 0.6 g was quoted once for this food and once for nigari firm tofu (FDC 172448), so I left it null."
+ },
+ {
+  "key": "brown_rice",
+  "usda_description": "Rice, brown, long-grain, cooked (Includes foods for USDA's Food Distribution Program)",
+  "fdc_id": "169704",
+  "per_100g": {
+   "energy_kcal": 123,
+   "protein_g": 2.7,
+   "fat_g": 0.97,
+   "sat_fat_g": null,
+   "carb_g": 25.6,
+   "fibre_g": 1.6,
+   "sugar_g": 0.2,
+   "sodium_mg": null
+  },
+  "source_url": "https://tools.myfooddata.com/nutrition-comparison/169704-168935/100g-100g/1-1/1",
+  "notes": "Protein, fat and carb come from MyFoodData's 169704 100 g row. 123 kcal and 0.2 g sugar come from third-party pages, one of which attributes its figures to FDC 169704. Disagreement: FatSecret 'brown rice (long grain cooked)' gives 111 kcal, 2.58 g protein, 0.9 g fat, 22.96 g carb, 0.18 g sat fat and 5 mg sodium. Those macros do not match 169704 (probably an older SR release), so I left its sat fat and sodium out of the panel. They are the only candidates found. A 195 g cup listing gives 3.51 g fibre and 9.75 mg sodium (not converted). Fibre 1.6 g from https://nutrition-compare.pages.dev/food/brown-rice/ (FDC 169704, same energy and carbohydrate)."
+ },
+ {
+  "key": "banana",
+  "usda_description": "Bananas, raw",
+  "fdc_id": "173944",
+  "per_100g": {
+   "energy_kcal": 89,
+   "protein_g": 1.09,
+   "fat_g": 0.3,
+   "sat_fat_g": 0.112,
+   "carb_g": 22.8,
+   "fibre_g": 2.6,
+   "sugar_g": 12.23,
+   "sodium_mg": 1
+  },
+  "source_url": "https://getfoodfacts.com/food/bananas-raw-173944",
+  "notes": "sat_fat 0.112 g comes from SR28 Basic Report 09040 (https://mail.growables.org/information/TropicalFruit/documents/BananaNutrient.pdf); the summary says an FDC 173944 page shows the same value. getfoodfacts gives 1.1 g protein, 0.3 g fat, 22.8 g carb and 12.2 g sugars. fitnessvolt gives 1.09 g protein and 12.23 g sugars. Energy outliers: triagemethod 97 kcal; MyFoodData 105 kcal, which is a per-banana serving, not per 100 g."
+ },
+ {
+  "key": "apple",
+  "usda_description": "Apples, raw, with skin (Includes foods for USDA's Food Distribution Program)",
+  "fdc_id": "171688",
+  "per_100g": {
+   "energy_kcal": 52,
+   "protein_g": 0.26,
+   "fat_g": 0.2,
+   "sat_fat_g": 0.028,
+   "carb_g": 13.81,
+   "fibre_g": 2.4,
+   "sugar_g": 10.4,
+   "sodium_mg": 1
+  },
+  "source_url": "https://getfoodfacts.com/food/apples-raw-with-skin-includes-foods-for-usdas-food-distribution-program-171688",
+  "notes": "sat_fat 0.028 g and carb 13.81 g come from a mirror of SR NDB 09003 (https://gopherproxy.meulie.net/republic.circumlunar.space/0/~joneworlds/nutrition/A/Apples-raw-with-skin--09003.txt). Mirrors agree on 52 kcal and 0.2 g fat. Protein is 0.26 g on most mirrors; one aggregator gives 0.17 g (outlier). Sodium 1 mg has a single source (getfoodfacts). Outlier: openmenu gives 49 kcal and 1 g fat."
+ },
+ {
+  "key": "watermelon",
+  "usda_description": "Watermelon, raw",
+  "fdc_id": "167765",
+  "per_100g": {
+   "energy_kcal": 30,
+   "protein_g": 0.61,
+   "fat_g": 0.15,
+   "sat_fat_g": 0.016,
+   "carb_g": 7.55,
+   "fibre_g": 0.4,
+   "sugar_g": 6.2,
+   "sodium_mg": 1
+  },
+  "source_url": "https://www.growables.com/informationVeg/documents/WatermelonUSDANutrient.pdf",
+  "notes": "Protein, fat, sat fat and carb come from the USDA Basic Report 09326 printout (growables PDF). Energy 30 kcal is confirmed by a database site. Fibre 0.4 g and sodium 1 mg are from getfoodfacts 167765 (https://getfoodfacts.com/food/watermelon-raw-167765); sodium has that single source. Sugar 6.2 g is from fitnessvolt and nutrientnorms. triagemethod (another database) gives 31.1 kcal."
+ },
+ {
+  "key": "pak_choi",
+  "usda_description": "Cabbage, chinese (pak-choi), cooked, boiled, drained, without salt",
+  "fdc_id": "170391",
+  "per_100g": {
+   "energy_kcal": 12,
+   "protein_g": 1.56,
+   "fat_g": 0.16,
+   "sat_fat_g": 0.021,
+   "carb_g": 1.8,
+   "fibre_g": 1.0,
+   "sugar_g": 0.83,
+   "sodium_mg": 34
+  },
+  "source_url": "https://www.fatsecret.com.sg/calories-nutrition/generic/chinese-cabbage-(bok-choy-pak-choi)-(without-salt-drained-cooked-boiled)",
+  "notes": "Foodstruct cites FDC 170391 and gives sat fat 0.02 g and sugar 0.83 g. FatSecret gives 12 kcal, 1.56 g protein, 0.16 g fat and 0.021 g sat fat. MyFoodData 170391 (https://tools.myfooddata.com/print/170391-170391/100g-wt1) gives 1.6 g protein, 0.2 g fat and ~1.8 g carb. Fibre 1 g is from FatSecret UK. Sodium 34 mg has a single source, which the search did not name clearly."
+ }
+]
