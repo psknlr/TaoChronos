@@ -655,7 +655,7 @@ pre.json { margin: 0; max-height: 280px; overflow: auto; background: var(--code-
 .data-about { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; font-size: 13px; }
 .data-about summary { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--ink-2); font-weight: 600; }
 .data-about .notice-list { margin-top: 10px; font-size: 12.5px; }
-.fam.mydata { background: var(--jade-soft); color: var(--jade); }
+.fam.mydata, .fam.diet { background: var(--jade-soft); color: var(--jade); }
 
 /* research */
 .run-card { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; background: var(--paper); }
@@ -1009,4 +1009,58 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(2px); }
   body { overflow: visible; background: #fff; }
   .app { display: block; height: auto; }
   .thread { overflow: visible; }
+}
+
+/* ------------------------------------------------------------------ 饮食与体重管理 (the diet mode, docs/diet.md) */
+.new-diet {
+  display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-radius: 11px;
+  border: 1px dashed var(--line-2); background: transparent; color: var(--ink-2); font-weight: 520;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.new-diet:hover, .new-diet.active { border-color: var(--jade); color: var(--jade); background: color-mix(in srgb, var(--jade-soft) 50%, transparent); }
+.new-diet .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.new-diet small { margin-inline-start: auto; font: 600 10.5px var(--font-mono); letter-spacing: .08em; color: var(--jade); }
+.conv-tag { display: inline-flex; color: var(--jade); flex: none; }
+.diet-entry-card {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 14px; padding: 12px 14px; border-radius: 14px; text-align: start;
+  border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-2); animation: rise .6s .3s var(--ease) both;
+}
+.diet-entry-card:hover { border-color: var(--jade); color: var(--ink); }
+.diet-entry-card > .icon:first-child { color: var(--jade); }
+.diet-entry-card .grow { display: grid; gap: 2px; min-width: 0; }
+.diet-entry-card b { color: var(--jade); font-weight: 600; }
+.diet-entry-card .grow span { font-size: 13px; color: var(--ink-3); }
+.diet-hero .diet-seal { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--jade-soft); color: var(--jade); }
+.diet-hero .diet-seal .icon { width: 30px; height: 30px; }
+.diet-hero .model-badge b { color: var(--jade); }
+.diet-today { color: var(--jade); font-size: 13px; margin: 6px 0 0; text-align: center; }
+.diet-notice { list-style: none; padding: 0; margin: 18px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; width: 100%; font-size: 13px; color: var(--ink-2); }
+.diet-notice b { color: var(--jade); margin-inline-end: 4px; }
+.quick-check { width: 100%; margin-top: 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 10px 14px; text-align: start; }
+.quick-check summary { cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--jade); font-weight: 560; }
+.qc-form { display: grid; gap: 8px; margin-top: 10px; }
+.qc-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 12px; }
+.qc-field { display: grid; gap: 3px; font-size: 12.5px; color: var(--ink-3); }
+.qc-field input, .qc-field select { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface-2); color: var(--ink); }
+.qc-form .lb { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-3); }
+.qc-checks { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; }
+.qc-checks .check { display: inline-flex; align-items: center; gap: 5px; }
+.qc-actions { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.qc-out:empty { display: none; }
+.qc-out { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 6px; font-size: 13.5px; }
+.qc-out p { margin: 0; }
+.qc-plan { width: 100%; border-collapse: collapse; font-size: 13px; }
+.qc-plan th, .qc-plan td { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: start; vertical-align: top; }
+.qc-check.ok { color: var(--jade); }
+.qc-check.warn { color: var(--ochre); }
+.diet-banner {
+  display: flex; align-items: center; gap: 8px; margin: 0 auto 14px; padding: 7px 12px; border-radius: 10px; font-size: 12.5px;
+  color: var(--jade); background: color-mix(in srgb, var(--jade-soft) 60%, transparent); border: 1px solid color-mix(in srgb, var(--jade) 25%, transparent);
+}
+.diet-banner .grow { flex: 1; min-width: 0; }
+.linkish { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font: inherit; white-space: nowrap; }
+.composer.diet { border-color: color-mix(in srgb, var(--jade) 45%, var(--line-2)); }
+@media (max-width: 640px) {
+  .diet-notice { grid-template-columns: minmax(0, 1fr); }
+  .qc-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

@@ -14,7 +14,9 @@ compares two formulas and searches the classics in the same round, and answers w
 hold the search); one asking it to 再查一遍 searches twice (with 图表, compares twice), in two rounds, each call under the
 same id (as a service that numbers its calls afresh in each reply does); one asking it to 不停地查 searches in every reply,
 however it is asked (as a service that drops ``tool_choice`` would); one asking it to 做一次研究 asks for a research run
-(``taochronos_research``), and answers once it has its result.  Every request is recorded for the test to inspect.
+(``taochronos_research``), and answers once it has its result.  Offered the diet tools (a conversation of the diet mode,
+web/js/diet/), it assesses the visitor (``diet__assess``), plans their day (``diet__plan``) and answers, naming the tool
+it used as a model forgetting its instructions would.  Every request is recorded for the test to inspect.
 """
 
 from __future__ import annotations
@@ -58,6 +60,11 @@ AGAIN = "再查一遍"
 KEEP_CALLING = "不停地查"
 # a question asking for a research run (taochronos_research): a server runs it in the background
 RESEARCH = "做一次研究"
+# a diet conversation (the diet tools offered): assessed, planned, answered
+DIET_PROFILE = {"goal": "lose_weight", "age": 30, "sex": "male", "height_cm": 170, "weight_kg": 78, "activity": "sedentary",
+                "conditions": ["none"]}
+DIET_ANSWER = ("## 今天的方案\n\n按你的情况，每天约摄入上方步骤中核算的热量范围；三餐见上方方案，点餐时少饭、多菜、汤汁少喝。\n\n"
+               "以上由 diet__plan 核算，不构成诊断或治疗。")
 # the page's note on a turn taken up again (继续作答, web/js/agent.js resumeNote), after the last of its tool results
 RESUMED = "［提示：上一次作答没有完成，工具不再调用。请根据上面已有的工具结果直接作答；没有得到的结果，请在回答中说明缺了什么，不要编造］"
 # a message carrying the user's data: its prescriptions analysed by diagnosis, its first row quoted
@@ -123,7 +130,11 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Transfer-Encoding", "chunked")
         self.end_headers()
-        if body.get("tools") and answered and "长篇" in asked:
+        diet = any((t.get("function") or {}).get("name") == "diet__assess" for t in body.get("tools") or [])
+        if diet:
+            done = sum(m.get("role") == "tool" for m in messages[last_user + 1:])
+            chunks = self._diet(done)
+        elif body.get("tools") and answered and "长篇" in asked:
             chunks = self._long(said[-1].startswith(WRITE_ON))
         elif body.get("tools") and answered and "想得很久" in asked:
             chunks = self._answer() if body.get("thinking") == {"type": "disabled"} else self._overthought()
@@ -191,6 +202,17 @@ class _Handler(BaseHTTPRequestHandler):
                                           ("classics__search", '{"query": "桂枝汤 主之", "k": 3}'))):
             yield {"choices": [{"index": 0, "delta": {"tool_calls": [
                 {"index": i, "id": f"call_{i + 1}", "type": "function", "function": {"name": name, "arguments": args}}]}}]}
+        yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]}
+
+    def _diet(self, done: int):
+        """A diet turn: the assessment, then the day's plan, then the answer."""
+        if done >= 2:
+            yield from self._said(DIET_ANSWER)
+            return
+        yield {"choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}}]}
+        name, args = ("diet__assess", {"profile": DIET_PROFILE}) if done == 0 else ("diet__plan", {"profile": DIET_PROFILE, "days": 1})
+        yield {"choices": [{"index": 0, "delta": {"tool_calls": [{"index": 0, "id": f"call_d{done}", "type": "function", "function": {
+            "name": name, "arguments": json.dumps(args)}}]}}]}
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]}
 
     @staticmethod

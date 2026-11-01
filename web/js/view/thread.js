@@ -5,6 +5,7 @@ import { renderMarkdown } from "../markdown.js";
 import { redact, toolWord } from "../redact.js";
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY } from "../brand.js";
 import { sizeLabel } from "../mydata.js";
+import { dietBanner, dietEntry, dietHero } from "./diet.js";
 import { RELAY_ID } from "../providers.js";
 import { append, fmtMs, foundBadges, h, icon, passageLabel, prettyJSON, progressBar, replace, truncate } from "../util.js";
 import { T } from "../i18n.js";
@@ -12,6 +13,7 @@ import { T } from "../i18n.js";
 export const FAMILY = {
   retrieval: T("检索"), study: T("治学"), knowledge: T("知识"), analytics: T("发现"), philology: T("文献"), validation: T("核验"),
   bridge: T("古今"), literature: T("现代"), engine: T("研究"), meta: T("目录"), research: T("代码"), mydata: T("我的资料"),
+  diet: T("饮食"),
 };
 
 export function toolFamily(name, catalogIndex) {
@@ -21,7 +23,7 @@ export function toolFamily(name, catalogIndex) {
   const prefix = name.split(/__|\./)[0];
   return { classics: "retrieval", kg: "knowledge", analysis: "analytics", study: "study", philology: "philology", vision: "philology",
     validation: "validation", audit: "validation", graph: "validation", bridge: "bridge", modern: "literature", literature: "literature",
-    rwd: "literature", research: "research", mydata: "mydata" }[prefix] || "meta";
+    rwd: "literature", research: "research", mydata: "mydata", diet: "diet" }[prefix] || "meta";
 }
 
 /** A tool as the page names it: in plain words, never by its inside name (redact.js). */
@@ -32,11 +34,12 @@ export function renderThread(root, conv, ctx) {
   const settled = Boolean(root.querySelector(":scope > .hero"));
   root.replaceChildren();
   if (!conv || !conv.messages.length) {
-    const node = hero(ctx);
+    const node = (conv ? conv.mode === "diet" : ctx.mode === "diet") ? dietHero(ctx) : hero(ctx);
     if (settled) node.classList.add("settled");
     root.append(node);
     return;
   }
+  if (conv.mode === "diet") root.append(dietBanner(conv, ctx));
   conv.messages.forEach((m, k) => root.append(messageNode(m, ctx, k === conv.messages.length - 1)));
 }
 
@@ -61,6 +64,7 @@ function hero(ctx) {
     action,
     h("div.starters", (info?.starters || DEFAULT_STARTERS).map((s) =>
       h("button.starter", { type: "button", on: { click: () => ctx.onStarter(T(s.prompt)) } }, h("b", T(s.title)), T(s.prompt)))),
+    ctx.onDietMode ? dietEntry(ctx) : null,
     ctx.needsKey
       ? h("p.keyhint", T`开始前请先为 ${ASSISTANT} `, h("button", { type: "button", on: { click: ctx.onOpenSettings } }, T("配置底层模型的 API")),
         T("。也可以不配置模型，直接在右侧“工具台”使用全部功能。"))

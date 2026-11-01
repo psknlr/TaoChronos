@@ -1,5 +1,6 @@
 // Conversations live in this browser's IndexedDB (a memory map when it is unavailable, e.g. some private windows).
-// Nothing here leaves the browser.
+// Nothing here leaves the browser.  A conversation marked `ephemeral` (a diet conversation the visitor has not chosen to
+// keep: diet/privacy.js) is never written: it lives only in the page's memory, and is gone when the page is.
 
 const DB = "taochronos";
 const STORE = "conversations";
@@ -53,6 +54,7 @@ export async function getConversation(id) {
 }
 
 export async function putConversation(conv) {
+  if (conv?.ephemeral) return;
   const copy = structuredClone(conv);
   const db = await open();
   if (!db) { memory.set(copy.id, copy); return; }
