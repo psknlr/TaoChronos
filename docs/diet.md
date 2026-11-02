@@ -3,19 +3,19 @@
 A mode of the web client in which 道乃久 gives evidence-based eating advice and weight-management plans to adults
 anywhere: by the visitor's own country — its food guide and limits, the BMI scale that fits them, its season and
 festivals, and its dishes where there is a dish pack — and by international (WHO) defaults until they say where they
-live; with an optional traditional (TCM) food layer, every number computed in the visitor's browser, and nothing of
-the conversation recorded.  The decisions and their reasons: [ADR 0029](adr/0029-diet-and-weight-for-singapore.md)
+live; with an optional traditional (TCM) food layer, every number from the mode's own tools with its source, and
+nothing of the conversation recorded.  The decisions and their reasons: [ADR 0029](adr/0029-diet-and-weight-for-singapore.md)
 (the mode, its privacy, its screening) and [ADR 0030](adr/0030-diet-and-weight-worldwide.md) (every region).  The
 code: `web/js/diet/` (the engine and tools; `regions.js` the countries), `web/js/view/diet.js` (its screens); tests:
 `tests/test_diet.py`.
 
 ```
- visitor ──► 饮食与体重管理 (side bar)            the page (browser)                          model service
+ visitor ──► 饮食与体重管理 (side bar)            the page                                    model service
               │                              ┌──────────────────────────────────────┐      (the visitor's
               ├─ quick check ──────────────► │ assess · plan        (no model, nothing sent)  choice)
               │                              │                                      │
               └─ a question ───────────────► │ agent loop ── tool call diet__* ──► web/js/diet/*.js
-                                             │     ▲                 (in the page: no runtime, no server)
+                                             │     ▲                 (no runtime, no server)
                                              │     └── result (numbers, provenance) │ ◄───────► answer, phrased
                                              │ records ✕ · feedback without content │
                                              │ kept in memory unless 保存在本浏览器    │
@@ -26,11 +26,10 @@ code: `web/js/diet/` (the engine and tools; `regions.js` the countries), `web/js
 
 - **The way in**: 饮食与体重管理 under 新对话, or the card on the opening screen.  The mode's opening screen says what
   happens to what one tells it (not recorded; kept in this page only unless kept; the model service reads what one
-  writes; not a diagnosis), today where the device's time zone suggests (date, country, season, solar term, the next
-  festival kept there — worked out on the device), six starters, and **不用模型，先在本机算一算** — a form (with the
-  country, preselected from the device's time zone, and the family background that decides the BMI scale) whose answers
-  are assessed and planned on the device, shown as a table, and sent to the model only if the visitor presses
-  带着这些信息问道乃久.
+  writes; not a diagnosis), today where the time zone suggests (date, country, season, solar term, the next festival
+  kept there), six starters, and **不用模型，先快速算一算** — a form (with the country, preselected from the time zone,
+  and the family background that decides the BMI scale) whose answers are assessed and planned without a model, shown
+  as a table, and sent to the model only if the visitor presses 带着这些信息问道乃久.
 - **A conversation**: the model asks one or two questions a turn (health conditions and body measurements first, then
   the sex the energy equation should use and activity), gives two or three things to do at once while it asks, and a
   first plan within about two turns; where they live is asked among the optional questions, after the safety ones.  A
@@ -134,11 +133,11 @@ is not modern evidence, a rule of this project is not a trial result.
 
 ## Privacy
 
-- **In the page**: the diet tools run in the browser (`routed()` in `app.js`); the site's server and runtime are never
-  sent them.  The engine makes no network request, reads no location and needs no change to the Content-Security-Policy
+- **Not sent to the site's server**: the diet tools' calls are answered by the page's own code (`routed()` in
+  `app.js`); the site's server and runtime are never sent them.  The engine makes no network request, reads no location and needs no change to the Content-Security-Policy
   or Permissions-Policy.
 - **Where the visitor lives**: the model hears only what the visitor says.  The opening line and the quick check read the
-  device's time zone, on the device, to preselect a country; nothing of it is sent.
+  time zone to preselect a country; nothing of it is sent.
 - **Never recorded**: `healthConv(conv)` — a diet conversation, one that called a diet tool, or one in which the visitor
   wrote their own measurements or conditions — sends no conversation record, whatever the visitor chose under
   设置 → 数据; feedback on it carries no question or answer; the consent question is not asked for it.
