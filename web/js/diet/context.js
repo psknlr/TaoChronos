@@ -325,7 +325,7 @@ export function context({ date = null, within = 60, region: code = null, hemisph
   const ids = [s.source, "solar_terms", ...new Set(fest.upcoming.map((f) => f.source).filter(Boolean))].filter(Boolean);
   return {
     ok: true, algorithm: ALGORITHM,
-    region: r ? { code: r.code, name: r.name, time_zone: r.tz } : { code: null, note: "no region stated: the date is this device's; ask where the user lives for the season and local festivals" },
+    region: r ? { code: r.code, name: r.name, time_zone: r.tz } : { code: null, note: "no region stated: the date is today's local date; ask where the user lives for the season and local festivals" },
     date: day.iso, weekday: day.weekday,
     season: s, solar_term: solarTerm(day, place), festivals: fest.upcoming, festivals_note: fest.note,
     provenance: provenance(ids),

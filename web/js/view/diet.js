@@ -21,7 +21,7 @@ export const DIET_STARTERS = [
 export const DIET_NOTICE = [
   [T("不记录"), T("这类对话不发送对话记录；评价时也不附带对话内容。")],
   [T("只在本页"), T("对话默认只保存在本页面，关闭或刷新后消失；你可以选择保存在本浏览器（不加密）。")],
-  [T("模型读到什么"), T("你在对话中写的内容会发给你所选的模型服务，用来作答；计算（BMI、能量、餐单核算）都在你的浏览器里完成。")],
+  [T("模型读到什么"), T("你在对话中写的内容会发给你所选的模型服务，用来作答。")],
   [T("不是诊断"), T("这里给的是一般的饮食建议，不是诊断或治疗；孕期、未成年、饮食失调、肾病或使用胰岛素等情况，会先建议你咨询专业人员。")],
 ];
 
@@ -59,7 +59,7 @@ export function dietHero(ctx) {
     h("div.diet-seal", icon("leaf")),
     h("h1", T("饮食与体重管理")),
     h("div.model-badge", h("b", T("循证营养")), h("span", T("各国膳食指南 · 家常菜与外出就餐 · 季节与节令"))),
-    h("p.sub", T("说说你的目标，我每次只问一两个问题；两轮之内给出初步方案，所有数字都由本机计算、注明出处。")),
+    h("p.sub", T("说说你的目标，我每次只问一两个问题；两轮之内给出初步方案，所有数字都注明出处。")),
     line ? h("p.diet-today", line) : null,
     h("ul.diet-notice", DIET_NOTICE.map(([b, t]) => h("li", h("b", b), " ", t))),
     h("div.starters", DIET_STARTERS.map((s) => h("button.starter", { type: "button", on: { click: () => ctx.onStarter(s.prompt) } }, h("b", s.title), s.prompt))),
@@ -126,7 +126,7 @@ function quickCheck(ctx, guess = null) {
     h("p.lb", T("健康情况")), checks("conditions", CONDITIONS),
     h("p.lb", T("食物过敏")), checks("allergies", [["none", T("没有")], ...ALLERGENS]),
     h("p.lb", T("饮食规定")), checks("diet", RULES),
-    h("div.qc-actions", h("button.btn", { type: "submit" }, T("在本机计算")), h("span.muted", T("不调用模型，不发送任何内容"))),
+    h("div.qc-actions", h("button.btn", { type: "submit" }, T("计算")), h("span.muted", T("不调用模型，不发送任何内容"))),
     out);
   let last = null;
   form.addEventListener("submit", (e) => {
@@ -139,7 +139,7 @@ function quickCheck(ctx, guess = null) {
     last = profile;
     out.replaceChildren(...quickResult(profile, ctx));
   });
-  return h("details.quick-check", h("summary", icon("shield", "sm"), T("不用模型，先在本机算一算")), form);
+  return h("details.quick-check", h("summary", icon("shield", "sm"), T("不用模型，先快速算一算")), form);
 }
 
 function quickResult(profile, ctx) {

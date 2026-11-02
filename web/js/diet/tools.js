@@ -119,7 +119,7 @@ export const DIET_TOOLS = [
       region: { type: "string", description: "ISO country code; without it, no season is given" },
       climate: { type: "string", enum: ["temperate", "cold", "subtropical", "arid", "tropical"], description: "the user's own climate when their country's broad one does not fit, or when the country is not listed" },
       hemisphere: { type: "string", enum: ["N", "S"] },
-      date: { type: "string", description: "YYYY-MM-DD; default today on the region's clock (this device's without a region)" },
+      date: { type: "string", description: "YYYY-MM-DD; default today on the region's clock (the local date without a region)" },
       within_days: { type: "integer", description: "how far ahead to look for festivals (default 60)" } } },
   },
   {
