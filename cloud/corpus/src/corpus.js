@@ -17,7 +17,7 @@ export const unavailable = () =>
 
 /** What the page is told when this Worker has no container (the account cannot run containers yet): as without it. */
 export const none = () =>
-  json({ error: "本站的全量语料服务未部署：网页在浏览器里运行要籍语料", corpus: "none" }, 503, { "X-TC-Corpus": "none" });
+  json({ error: "本站的全量语料服务未部署：网页改用内置运行环境的要籍语料", corpus: "none" }, 503, { "X-TC-Corpus": "none" });
 
 /**
  * The Durable Object's answer (call: its fetch).  It throws when its class has no container — the Worker was uploaded

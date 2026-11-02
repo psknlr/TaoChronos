@@ -127,7 +127,7 @@ Workers Logs（两个 Worker 都开了 observability）：分数 ≥ 1、状态 
 策略按页面实际加载的东西写成：自己的文件；两段内联脚本与两段内联样式按**哈希**放行（`cloud/test/site.test.js` 核对哈希与 `web/` 一致、两份策略的 `script-src` 相同：
 改了内联脚本就要更新两份策略，否则页面启动不了）；jsDelivr 上 npm 包的文件（`https://cdn.jsdelivr.net/npm/`：Anthropic SDK 与它 `+esm` 引入的依赖；不含 `/gh/`，那里能取到任何公开仓库的文件）；
 Cloudflare Web Analytics 的统计脚本（`static.cloudflareinsights.com`：由边缘插入每个页面，仓库里没有；关掉 Web Analytics 后可从策略里删去）；访客填的任何 https 模型服务与本机服务
-（`https:`、`http://localhost:*`）；附图的 `data:`/`blob:`。浏览器内运行环境的两个 Worker 脚本有自己的策略（`cloud/site/_headers`：WebAssembly 需要 `'wasm-unsafe-eval'`），仍只报告。
+（`https:`、`http://localhost:*`）；附图的 `data:`/`blob:`。内置运行环境的两个 Worker 脚本有自己的策略（`cloud/site/_headers`：WebAssembly 需要 `'wasm-unsafe-eval'`），仍只报告。
 报告只留目录、被拦的来源与出处（不留查询串与页面文字），同一访客的同一违规十分钟内只记一次；同一违规的「执行」（`disposition: enforce`，真被拦下了）与「报告」分开记。
 看报告先按浏览器内核分组：Chromium < 97、Firefox < 102、Safari < 16 不认识 `'wasm-unsafe-eval'`，旧内核（部分应用内 WebView）会为此报 script-src——那不是策略的错。
 
@@ -135,7 +135,7 @@ Cloudflare Web Analytics 的统计脚本（`static.cloudflareinsights.com`：由
 没有一条出自页面自己的代码：5 条是浏览器扩展（其中一条是 iPhone 上应用内浏览器的桥接脚本），8 条是 Cloudflare 的统计脚本在少数浏览器里被拦（执行后这些访问不进
 Web Analytics，访客看不出差别）。上线前用 Chromium 在本地按部署的配置跑过一遍：打开页面、设置、主题、经默认服务的一轮对话、英文界面、关于页与出处页，没有一条违规；
 再往页面里注入一段内联脚本和一张外链图片，二者都被拦下，页面照常可用。**出了问题**：把 `wrangler.toml` 里 `CSP` 的值清空合入 main，就回到只报告（`CSP_REPORT_ONLY` 不变）。
-两个 Worker 脚本的策略要更谨慎——强制后旧内核上的浏览器内运行环境会失效。
+两个 Worker 脚本的策略要更谨慎——强制后旧内核上的内置运行环境会失效。
 
 ## 二、边缘（Cloudflare 免费计划）
 
@@ -254,7 +254,7 @@ data/security-logs/
   （免费套餐的额度是整个账户的、每天 UTC 零点重置：Worker 请求 10 万次、Durable Object 请求 10 万次、写入 10 万行、D1 读取 500 万行、KV 写入 1000 次。）
   对象不可用时（故障）：网站的读取照常放行（速率限制绑定仍在，页面察觉不到），网站的工具调用与研究、中转的模型调用答 503
   （不放行未经核对、要花钱的调用；[ADR 0023](../docs/adr/0023-workers-paid.md)），记录丢弃。网站拒绝一个地址答 403、当天读取用完答 429
-  （都带 `X-TC-Corpus: refused`），网页改用浏览器内的要籍语料并说明原因。
+  （都带 `X-TC-Corpus: refused`），网页改用内置运行环境的要籍语料并说明原因。
   网页本身经过 Worker（`run_worker_first`）是为了安全头与哨兵的可见性，代价是每次打开页面算一次；要省，可把 `/`、`/about`、`/attribution` 从 `run_worker_first` 去掉，把这些头搬进 `_headers`。
 - 运营商 NAT：许多真实访客共用一个 IPv4。按地址计数的限额（中转每人每分钟 30 次、每天 600 次）对他们是共用的；哨兵的 `ua_rotation` 为此只给很轻的分。
 - Cloudflare WARP（ASN 13335）与各种 VPN 出口让真实访客看起来来自托管网络；`dc_asn` 只是两分，规则 5 只质询网页、不碰 API。

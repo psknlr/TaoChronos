@@ -72,12 +72,12 @@ and decide.
 > international defaults until they say where they live; screening first, two questions a turn at most, every number
 > with its source, meals that can be made anywhere (and Singapore/Malaysia hawker dishes there),
 > an optional traditional food layer that never diagnoses — and never recorded ([notes](docs/diet.md),
-> [ADR 0029](docs/adr/0029-diet-and-weight-for-singapore.md), [ADR 0030](docs/adr/0030-diet-and-weight-worldwide.md)).  In the browser TaoChronos runs with Pyodide on the
+> [ADR 0029](docs/adr/0029-diet-and-weight-for-singapore.md), [ADR 0030](docs/adr/0030-diet-and-weight-worldwide.md)).  The built-in runtime runs TaoChronos with Pyodide on the
 > **要籍语料**: 533 of the **535 key works** ranked by how the tradition cited them ([list](corpus/catalog/canon.yaml))
 > (553 witnesses, 10.5 million characters; the first classics whole, the 素问, 灵枢, 伤寒论 and 金匮 with two or three
-> witnesses to collate, the others in chapters; [sources and terms](corpus/web/ATTRIBUTION.md)), kept in the browser after the
+> witnesses to collate, the others in chapters; [sources and terms](corpus/web/ATTRIBUTION.md)), kept after the
 > first visit so that it opens again in seconds.  For **all the books**, build the full corpus and
-> run `taochronos serve`, then connect under Settings → 运行环境 in one step (the browser remembers it; a server on another
+> run `taochronos serve`, then connect under Settings → 运行环境 in one step (the page remembers it; a server on another
 > machine is reached with its access token).  See [docs/web.md](docs/web.md).
 
 > ⚠️ The corpus consists of transcriptions from several sources (Siku, 笈成, McGill rare books, CMETA, the 東亜医学協会,
@@ -134,15 +134,15 @@ and decide.
 | **Modern evidence and real-world data** | PubMed typed by design and population, the cross-level guard, safety warnings; real-world questions as validated study specs over OMOP | `modern search` · `modern safety` · `rwd ask` · `rwd synth` |
 | **Layout, entities, translation, places** | vertical reading order and 双行小注, a multimodal reading, OCR checked against the store; entities in context; five-layer translation; native places, signed prefaces, regional statistics | `vision` · `study entities` · `study translate` · `study places` |
 | **Knowledge discovery** | multi-agent research: lost knowledge, concept drift, formula evolution, hidden associations, contradictions, lost sources; verbatim evidence, falsification, gates, expert review | `research` · `report` · `workspace` · `review` |
-| **Your own data** | upload your own data (a clinic's prescriptions, case records, a survey, notes: CSV, Excel, Word, TXT, JSON) for 道乃久 to analyse: read on your machine (in the browser or by a server on it — never by the site's servers), made anonymous as it is read (names and doctors to pseudonyms, identity and record numbers to codes, telephones and addresses removed), conversations touching it never recorded; descriptive statistics, group comparisons (Kruskal–Wallis, χ² / Fisher, Spearman), prescription mining (frequent drugs, doses, pairs by Fisher + BH, rules, clusters, groups compared, the nearest compositions of the classics with their witnesses), with figures and three-line tables, the rows it cites checked like any citation | [web](docs/web.md#我的资料--the-users-own-data) · [notes](docs/mydata.md) |
+| **Your own data** | upload your own data (a clinic's prescriptions, case records, a survey, notes: CSV, Excel, Word, TXT, JSON) for 道乃久 to analyse: never sent to the site's servers (read by the built-in runtime or by a server you run), made anonymous as it is read (names and doctors to pseudonyms, identity and record numbers to codes, telephones and addresses removed), conversations touching it never recorded; descriptive statistics, group comparisons (Kruskal–Wallis, χ² / Fisher, Spearman), prescription mining (frequent drugs, doses, pairs by Fisher + BH, rules, clusters, groups compared, the nearest compositions of the classics with their witnesses), with figures and three-line tables, the rows it cites checked like any citation | [web](docs/web.md#我的资料--the-users-own-data) · [notes](docs/mydata.md) |
 | **Diet and weight** | for adults anywhere: safety screening (no automatic calorie deficit under 18, in pregnancy or breastfeeding, with an eating disorder, kidney disease or on insulin); BMI on the scale that fits (WHO's, the lower thresholds for Asian, Middle Eastern, Black African and African-Caribbean backgrounds, or China's); Mifflin–St Jeor energy as a range and a target; the country's food guide and salt and sugar limits (WHO's by default); meal plans from everyday dishes made anywhere (USDA values), plus hawker and kopitiam dishes in Singapore and Malaysia, under hard constraints (allergies, halal, vegetarian), swaps that re-check the day; seasons by hemisphere and climate, festive eating worldwide, the solar terms as a cultural calendar; optional food natures (heaty/cooling, no diagnosis); a weekly trend review. Never recorded, not kept unless asked | [notes](docs/diet.md) · [ADR 0029](docs/adr/0029-diet-and-weight-for-singapore.md) · [ADR 0030](docs/adr/0030-diet-and-weight-worldwide.md) |
-| **Everyone (web)** | a ChatGPT/Claude-style multi-turn chat: the default service with no key (MiniMax-M3) or a model of your choice answers through every tool, quotations checked word for word, sources one click away (horizontal or vertical reading); a research panel and a tool console; conversations kept in your browser, exportable | [web](https://chat.impf.ai/) · `serve` · `web build` |
+| **Everyone (web)** | a ChatGPT/Claude-style multi-turn chat: the default service with no key (MiniMax-M3) or a model of your choice answers through every tool, quotations checked word for word, sources one click away (horizontal or vertical reading); a research panel and a tool console; conversations kept for your next visit, exportable | [web](https://chat.impf.ai/) · `serve` · `web build` |
 | **Developers** | plugin kernel, capability registry, a tool mesh of 79 tools, agents as YAML specs, event sourcing and replay, evaluation and architecture governance; the JSON Schemas of the tasks' outputs | `agents` · `eval` · `governance` · `schema --study` |
 
 ## 2. Quick start
 
 **Web**: open <https://chat.impf.ai/> (HTTPS, on Cloudflare: the tools search the full corpus, 958 books, on the site's own
-server, and run the 要籍语料 in the browser when it cannot answer; the default service needs no key; deployment in
+server, and use the built-in runtime's 要籍语料 when it cannot answer; the default service needs no key; deployment in
 [cloud/](cloud/README.md)), or bring the full corpus you built into it on your machine:
 
 ```bash
@@ -673,19 +673,19 @@ decided each item.  External command subagents and Research Code Mode: [docs/age
 **Web chat · 道乃久** ([docs/web.md](docs/web.md), [ADR 0011](docs/adr/0011-web-client.md); the default service and records: [ADR 0012](docs/adr/0012-default-service-relay.md)): the agent 道乃久 (TaoChronos;
 model Tao-R1), published by IMPF-AI — TaoChronos's tools and evidence discipline over the underlying model you choose, which
 the page names (asked who it is, who published it or what model it runs on, the page itself gives a fixed introduction of
-the platform: [ADR 0014](docs/adr/0014-identity-fixed-reply.md); an endpoint not in the list can be set by hand).  The conversation runs in the browser
+the platform: [ADR 0014](docs/adr/0014-identity-fixed-reply.md); an endpoint not in the list can be set by hand).  The conversation runs
 on the default service (no key; the page shows it as 道乃久默认服务 / Tao-R1 and names no vendor) or with your own key,
 straight to the provider or through `taochronos serve`; TaoChronos
-executes the tools in the browser (Pyodide, the 要籍语料: 533 of the 535 key works) or under
-`taochronos serve` (the full corpus, all the books; the browser remembers the server).  The model acts as an
+executes the tools in the built-in runtime (Pyodide, the 要籍语料: 533 of the 535 key works) or under
+`taochronos serve` (the full corpus, all the books; the page remembers the server).  The model acts as an
 agent with read and analysis permissions only, sees nineteen common tools directly and the rest through a catalog;
 MiniMax-M3's `reasoning_details` and tool calls are replayed verbatim turn after turn, and Claude is called through the
 official SDK (adaptive thinking, server-side refusal fallbacks).  The local server binds to 127.0.0.1 by default, answers
 only this machine's pages, its own pages, the published client and named origins, and forwards model requests only to the
 listed providers; bound to any other address it requires an access token.  All the books (about 2.2 GB, under their
 sources' licences) are not published with the site: they reach it through the server.  A user may upload their own data
-for 道乃久 to analyse ([your own data](docs/mydata.md), [ADR 0022](docs/adr/0022-the-users-own-data.md)): it is read and
-made anonymous on their machine, never handled by the site's servers, and a conversation touching it is never recorded.
+for 道乃久 to analyse ([your own data](docs/mydata.md), [ADR 0022](docs/adr/0022-the-users-own-data.md)): it is made
+anonymous as it is read, never sent to the site's servers, and a conversation touching it is never recorded.
 
 ## 8. Evaluation and quality
 
@@ -790,7 +790,7 @@ harness builds in 0.64 s instead of 9.2 s, and a full-corpus research run takes 
 ```
 architecture-policy.yaml   layering, kernel neutrality, SDK isolation, agent rules
 web/                       the web chat client (plain ES modules, no build step): conversations, streaming, quotation checks,
-                           evidence · research · tool console, settings; js/worker.js runs TaoChronos in the browser (Pyodide)
+                           evidence · research · tool console, settings; js/worker.js, the built-in runtime (Pyodide in a Web Worker)
 agents/                    16 AgentSpecs (YAML); agents/core/: the four V2 core agents
 skills/                    SKILL.md packs (incl. source-criticism, the study method); skills/manifests/: the fifteen V2 skills (S01–S15)
 profiles/                  full-discovery, full-corpus, classics-basic, formula-discovery, historical-disease, claude, minimax, poe, litellm

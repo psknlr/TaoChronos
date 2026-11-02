@@ -72,7 +72,7 @@ export function turnInstructions(runtime, began, prompt) {
     if (moved?.rt !== now) {
       const info = await now.info().catch(() => null); // (a browser that cannot start fails the calls: they say so)
       const [from, to] = [CORPUS[began?.corpus?.kind] || CORPUS.full, CORPUS[info?.corpus?.kind] || CORPUS.canon];
-      const change = T`本轮开始时，工具调用由${runtime.label}回答，读${from}；它现在不能回答，此后的调用改在这个浏览器里运行，读${to}（见上面的“运行环境”）。此前得到的工具结果仍然有效，照常引用；此后的检索只覆盖这个语料，没有检得的内容可能只是不在其中，回答时请说明。`;
+      const change = T`本轮开始时，工具调用由${runtime.label}回答，读${from}；它现在不能回答，此后的调用改由内置运行环境回答，读${to}（见上面的“运行环境”）。此前得到的工具结果仍然有效，照常引用；此后的检索只覆盖这个语料，没有检得的内容可能只是不在其中，回答时请说明。`;
       moved = { rt: now, text: prompt(info || began, `\n\n## 运行环境在本轮中的变化\n${change}`) };
     }
     return moved.text;
@@ -117,7 +117,7 @@ export async function probeServer(url, token = "", timeout = 2500) {
 export class BrowserRuntime {
   constructor() {
     this.kind = "browser";
-    this.label = T("浏览器内");
+    this.label = T("内置运行环境");
     this.worker = null;
     this.seq = 0;
     this.starting = null; // the worker's start: {id, resolve, reject}

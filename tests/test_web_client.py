@@ -1264,7 +1264,7 @@ const now = turnInstructions(site, began, prompt);
 assert.equal(await now(), "SERVER|mine");
 await site._or(Object.assign(new Error("down"), { unavailable: true }), () => null); // a call the server could not answer
 const moved = await now();
-assert.equal(moved, "BROWSER\n\n## 运行环境在本轮中的变化\n本轮开始时，工具调用由本站服务回答，读全量语料；它现在不能回答，此后的调用改在这个浏览器里运行，"
+assert.equal(moved, "BROWSER\n\n## 运行环境在本轮中的变化\n本轮开始时，工具调用由本站服务回答，读全量语料；它现在不能回答，此后的调用改由内置运行环境回答，"
   + "读要籍语料（见上面的“运行环境”）。此前得到的工具结果仍然有效，照常引用；此后的检索只覆盖这个语料，没有检得的内容可能只是不在其中，回答时请说明。|mine");
 assert.ok((await now()) === moved && infos === 1);
 // a browser that cannot say what it reads: the instructions the turn began with, and the word of the change
@@ -1277,7 +1277,7 @@ assert.equal(await turnInstructions(new ServerRuntime("https://x.example"), bega
 const small = new ServerRuntime("http://127.0.0.1:8770", "", { label: "本机服务", fallback: () => ({ info: async () => ({ system_prompt: "B", corpus: { kind: "demo" } }) }) });
 const told = turnInstructions(small, { system_prompt: "S", corpus: { kind: "canon" } }, prompt);
 await small._or(Object.assign(new Error("down"), { unavailable: true }), () => null);
-assert.ok((await told()).includes("工具调用由本机服务回答，读要籍语料；它现在不能回答，此后的调用改在这个浏览器里运行，读演示语料（"));
+assert.ok((await told()).includes("工具调用由本机服务回答，读要籍语料；它现在不能回答，此后的调用改由内置运行环境回答，读演示语料（"));
 
 // a research run's result that came after its page was closed: given to the turn as that call's result where the turn's
 // messages wait for it (after the reply that asked for it, with the round's other results), so that 继续作答 answers from
@@ -3808,7 +3808,7 @@ def test_my_data_with_a_server_on_this_machine(tmp_path):
             page.click("#attach-data")
             page.wait_for_selector("dialog.data-notice[open]", timeout=10000)
             notice = page.inner_text("dialog.data-notice")
-            assert "在本机处理" in notice and "读取时即脱敏" in notice and "不记录" in notice and "模型读到什么" in notice
+            assert "不发送到服务器" in notice and "读取时即脱敏" in notice and "不记录" in notice and "模型读到什么" in notice
             with page.expect_file_chooser() as chooser:
                 page.click("dialog.data-notice .btn:not(.secondary)")
             chooser.value.set_files(str(csv_file))

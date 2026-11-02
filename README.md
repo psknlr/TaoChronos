@@ -48,10 +48,10 @@ TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一
 > 国际默认；先筛查、每轮至多两问，热量与营养数字都注明出处，餐单用随处可做的家常餐（另有新加坡与马来西亚的小贩菜品），
 > 可选的中医食养只谈食物寒热、不作辨证；这类对话从不记录（[说明](docs/diet.md)、[ADR 0029](docs/adr/0029-diet-and-weight-for-singapore.md)、
 > [ADR 0030](docs/adr/0030-diet-and-weight-worldwide.md)）。
-> 页面在浏览器里用 Pyodide 运行 TaoChronos，语料为**要籍语料**：按历代引用排序的 **535 部要籍**（[书目](corpus/catalog/canon.yaml)）中
+> 页面用内置运行环境（Pyodide）运行 TaoChronos，语料为**要籍语料**：按历代引用排序的 **535 部要籍**（[书目](corpus/catalog/canon.yaml)）中
 > 533 部的原文（553 个录本、约 1046 万字；前列典籍收全书，素问、灵枢、伤寒、金匮等并收两三个录本可对校，其余按章节节选；
-> [来源与授权](corpus/web/ATTRIBUTION.md)），首次打开后保存在浏览器里，再次打开数秒就绪；**接入全部古籍**：本机构建全量语料后运行 `taochronos serve`，在“设置 → 运行环境”一键连接
-> （浏览器会记住；另一台机器上的服务凭访问令牌连接）。见[网页端说明](docs/web.md)。
+> [来源与授权](corpus/web/ATTRIBUTION.md)），首次打开后会保留，再次打开数秒就绪；**接入全部古籍**：本机构建全量语料后运行 `taochronos serve`，在“设置 → 运行环境”一键连接
+> （页面会记住；另一台机器上的服务凭访问令牌连接）。见[网页端说明](docs/web.md)。
 
 > ⚠️ 语料为各来源的录文（四库本、笈成整理本、麦吉尔善本、CMETA 精校本、东亚医学协会本、维基文库与网络文本集），**均未经本项目逐字校勘**；`corpus/demo`
 > 是为演示方法整理的未经核验的节录。当代出版物与当代名医著作不入库；保留的现代校注本，今人整理成分单列为层或移入元数据。所有输出都是**文献研究与计算推断**，
@@ -104,14 +104,14 @@ TaoChronos 把 966 部中医古籍（约 1.23 亿字、205 万段）整理成一
 | **现代证据与真实世界** | PubMed 记录按设计与对象分级、跨层防护、安全提示；真实世界问题 → 研究规格 → 只读参数化 OMOP 查询 | `modern search` · `modern safety` · `rwd ask` · `rwd synth` |
 | **版面、实体、今译、地域** | 竖排阅读顺序与双行小注、多模态识读、OCR 对库核对；24 类语境实体；五层今译；医家籍贯、序跋落款与地域统计 | `vision` · `study entities` · `study translate` · `study places` |
 | **知识发现** | 多智能体研究：失传知识、概念演变、方剂演化、隐性关联、矛盾发现、佚书线索；逐字证据、证伪、门控、专家核验 | `research` · `report` · `workspace` · `review` |
-| **我的资料** | 上传自己的资料（门诊处方、病案、调查表、笔记：CSV、Excel、Word、TXT、JSON）请道乃久分析：在本机读取（浏览器内或本机服务，不传到道乃久的服务器），读取时即脱敏（姓名、医生换化名，身份证号、病历号换编号，电话、地址删去），涉及资料的对话不记录；描述统计、组间比较（Kruskal–Wallis、χ² / Fisher、Spearman）、处方用药分析（高频药物、剂量、药对 Fisher + BH、关联规则、聚类、按诊断分组比较、与经典方最相近的组成及其出处），附图表与三线表，引用的行可点开核对 | [网页](docs/web.md#我的资料--the-users-own-data) · [说明](docs/mydata.md) |
+| **我的资料** | 上传自己的资料（门诊处方、病案、调查表、笔记：CSV、Excel、Word、TXT、JSON）请道乃久分析：不发送到道乃久的服务器（由内置运行环境或你自己运行的服务读取），读取时即脱敏（姓名、医生换化名，身份证号、病历号换编号，电话、地址删去），涉及资料的对话不记录；描述统计、组间比较（Kruskal–Wallis、χ² / Fisher、Spearman）、处方用药分析（高频药物、剂量、药对 Fisher + BH、关联规则、聚类、按诊断分组比较、与经典方最相近的组成及其出处），附图表与三线表，引用的行可点开核对 | [网页](docs/web.md#我的资料--the-users-own-data) · [说明](docs/mydata.md) |
 | **饮食与体重管理** | 面向世界各地的成年人：安全筛查（未成年、孕期哺乳、饮食失调、肾病、胰岛素等不自动设热量缺口）；BMI 按适合的标准（WHO 国际标准、亚洲等族裔的较低切点、中国标准）；Mifflin–St Jeor 能量范围与目标；所在国家的膳食指南与盐、糖限量（没说时用 WHO）；餐单用随处可做的家常餐（USDA 数据），新加坡与马来西亚另有小贩菜品，过敏、清真、素食等硬约束不放宽，换菜整天重算；按南北半球与气候的季节、全球节日饮食、二十四节气（文化历法）；可选的食物寒热（不辨证）；体重趋势复盘。对话不记录、默认不保存 | [说明](docs/diet.md) · [ADR 0029](docs/adr/0029-diet-and-weight-for-singapore.md) · [ADR 0030](docs/adr/0030-diet-and-weight-worldwide.md) |
-| **所有人（网页）** | 类 ChatGPT / Claude 的多轮对话：默认服务免填密钥（MiniMax-M3），也可自选模型，调用全部工具作答，引文逐字核对、出处一点即读（横排 / 竖排）；研究面板与工具台；对话存于本机浏览器，可导出 | [网页](https://chat.impf.ai/) · `serve` · `web build` |
+| **所有人（网页）** | 类 ChatGPT / Claude 的多轮对话：默认服务免填密钥（MiniMax-M3），也可自选模型，调用全部工具作答，引文逐字核对、出处一点即读（横排 / 竖排）；研究面板与工具台；对话下次打开仍在，可导出 | [网页](https://chat.impf.ai/) · `serve` · `web build` |
 | **开发者** | 插件化内核、能力注册、工具网格（79 个工具）、智能体配置（YAML）、事件溯源与重放、评测与架构治理；各任务输出的 JSON Schema | `agents` · `eval` · `governance` · `schema --study` |
 
 ## 二、快速开始
 
-**网页**：直接打开 <https://chat.impf.ai/>（HTTPS，部署在 Cloudflare；工具在本站服务器上检索全量语料 958 部古籍，服务不可用时改在浏览器内运行要籍语料；默认服务免填密钥。部署见 [cloud/](cloud/README.md)）；或在本机接入你构建的全量语料：
+**网页**：直接打开 <https://chat.impf.ai/>（HTTPS，部署在 Cloudflare；工具在本站服务器上检索全量语料 958 部古籍，服务不可用时改用内置运行环境的要籍语料；默认服务免填密钥。部署见 [cloud/](cloud/README.md)）；或在本机接入你构建的全量语料：
 
 ```bash
 pip install -e .
@@ -582,13 +582,13 @@ Poe（`poe`，`POE_API_KEY`，以机器人名为模型名）、LiteLLM（`litell
 **网页对话 · 道乃久**（[docs/web.md](docs/web.md)、[ADR 0011](docs/adr/0011-web-client.md)、默认服务与对话记录见 [ADR 0012](docs/adr/0012-default-service-relay.md)）：智能体道乃久（TaoChronos，模型 Tao-R1），由医哲未来
 人工智能研究院（IMPF-AI）发布——TaoChronos 的工具与证据纪律加上你选择的底层模型（界面上标明你选择的底层模型；被问到“你是谁、谁发布的、
 基于什么模型”时，由网页直接给出固定的平台介绍，见 [ADR 0014](docs/adr/0014-identity-fixed-reply.md)；列表之外的服务可在“自定义 API”
-中手动设置）。对话在浏览器里进行，经道乃久默认服务（免密钥）或用你自己的密钥直接调用，或经 `taochronos serve` 转发；TaoChronos 在浏览器内
-（Pyodide，要籍语料：535 部要籍中 533 部的原文）或 `taochronos serve`（全量语料，全部古籍；浏览器记住连接过的服务）执行工具。模型以
+中手动设置）。对话经道乃久默认服务（免密钥）或用你自己的密钥直接调用，或经 `taochronos serve` 转发；TaoChronos 在内置运行环境
+（Pyodide，要籍语料：535 部要籍中 533 部的原文）或 `taochronos serve`（全量语料，全部古籍；页面记住连接过的服务）执行工具。模型以
 “智能体”身份只获读与分析权限，默认直接看到 19 个常用工具、经目录按需调用其余工具；MiniMax-M3 的 `reasoning_details` 与工具调用逐轮原样回传，
 Claude 经官方 SDK 调用（自适应思考、服务端拒答回退）。本机服务默认只绑定 127.0.0.1，只接受本机页面、服务自己的网页、已发布的网页与指定来源，
 只向列出的模型平台转发；绑定到其他地址时必须凭访问令牌访问。全部古籍（约 2.2 GB，各来源授权不一）不随网站发布，经服务接入。
-用户可上传自己的资料请道乃久分析（[我的资料](docs/mydata.md)、[ADR 0022](docs/adr/0022-the-users-own-data.md)）：资料只在本机读取并脱敏，
-网站的服务器不经手，涉及资料的对话不发送记录。
+用户可上传自己的资料请道乃久分析（[我的资料](docs/mydata.md)、[ADR 0022](docs/adr/0022-the-users-own-data.md)）：资料读取时即脱敏，
+不发送到网站的服务器，涉及资料的对话不发送记录。
 
 ## 八、评测与质量保证
 
@@ -683,7 +683,7 @@ engine        研究引擎（操作循环与科学循环、分支、锦标赛、
 ```
 architecture-policy.yaml   架构策略（分层、内核中立、SDK 隔离、智能体规则）
 web/                       网页对话客户端（原生 ES 模块，无构建步骤）：对话、流式渲染、引文核对、证据 · 研究 · 工具台、设置；
-                           js/worker.js 在浏览器内用 Pyodide 运行 TaoChronos
+                           js/worker.js 内置运行环境：在 Web Worker 中用 Pyodide 运行 TaoChronos
 agents/                    16 个 AgentSpec（YAML）；agents/core/ 四个 V2 核心智能体
 skills/                    SKILL.md 能力包（含 source-criticism 治学方法）；skills/manifests/ 十五项 V2 技能清单（S01–S15）
 profiles/                  配置画像：full-discovery、full-corpus、classics-basic、formula-discovery、historical-disease、claude、minimax、poe、litellm

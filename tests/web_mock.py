@@ -70,7 +70,7 @@ RESUMED = "［提示：上一次作答没有完成，工具不再调用。请根
 # a message carrying the user's data: its prescriptions analysed by diagnosis, its first row quoted
 DATA_ANSWER = ("## 用药规律\n\n高频药物、药对与各组用药见上方图表。\n\n"
                "- 第一张处方：「处方：柴胡12g 黄芩9g」[[mine:{id}.r1]]\n\n统计只描述这份资料，不构成诊疗建议。")
-DATA_ID = re.compile(r"资料（已在本机脱敏）：(d[0-9a-z]+)「")
+DATA_ID = re.compile(r"资料（已脱敏）：(d[0-9a-z]+)「")
 # the page's note asking the model to write on an answer cut at the output limit (web/js/agent.js), and where the long
 # answer is cut: in the middle of a line
 WRITE_ON = "［提示：上面的回答在输出上限处被截断了"

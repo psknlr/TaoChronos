@@ -23,7 +23,7 @@ from .store import Dataset, number
 
 MAX_GROUPS = 12
 MAX_CATEGORIES = 10
-NOTE = "数据为用户自有资料，在本机读取并已脱敏；统计只描述这份数据，不推断因果。"
+NOTE = "数据为用户自有资料，已脱敏；统计只描述这份数据，不推断因果。"
 
 
 def source(ds: Dataset) -> str:

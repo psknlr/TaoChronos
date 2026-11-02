@@ -3,11 +3,11 @@
 网站与全量语料都在 Cloudflare 上：**https://chat.impf.ai** 由一个 Worker 提供（证书由 Cloudflare 签发，http 一律跳转
 https），页面的工具调用由同一域名下的 API 交给**全量语料服务**——一个运行 `taochronos` 的容器，语料是本项目收录的全部古籍中
 可随网站发布的 958 部录本（1.22 亿字，204 万段；来源与授权见 [ATTRIBUTION.md](ATTRIBUTION.md)）。页面不再下载浏览器语料和
-Pyodide：打开即可提问，引文可在全部古籍中核对。全量语料服务不可用时，页面自动改用浏览器内的要籍语料（与原来一样）。
+Pyodide：打开即可提问，引文可在全部古籍中核对。全量语料服务不可用时，页面自动改用内置运行环境的要籍语料（与原来一样）。
 
 ```
 浏览器 ──https──▶ chat.impf.ai：Worker taochronos-site（cloud/site）
-                   ├─ 网页文件（taochronos web build：客户端 + 浏览器内运行环境，后者只在全量服务不可用时才下载）
+                   ├─ 网页文件（taochronos web build：客户端 + 内置运行环境，后者只在全量服务不可用时才下载）
                    ├─ /api/info、/api/catalog、/api/passage、/api/call、/api/research…（白名单，限流）
                    │     └─ 服务绑定 ──▶ Worker taochronos-corpus（cloud/corpus，无公网地址）
                    │                     └─ Durable Object「main」──▶ 容器：python -m taochronos.chat.cloud serve
@@ -87,7 +87,7 @@ Worker 每次请求只有 10 毫秒的计算。设计、测量与 74 个工具�
         ├─ 否则 D1 备份已导入完成（D1_BACKUP 与数据库所存版本一致）：Worker 用 D1 回答
         │     /api/info（标明「全量语料（备份）」）、/api/catalog（只列出能回答的工具）、/api/passage、/api/call；
         │     /api/research 答 501 并说明原因
-        └─ 否则 503：页面改用浏览器内的要籍语料
+        └─ 否则 503：页面改用内置运行环境的要籍语料
 ```
 
 | 部分 | 作用 |

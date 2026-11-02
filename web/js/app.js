@@ -109,8 +109,8 @@ function inBrowserInstead(err) {
   S.running?.trace?.events.push({ at: Date.now(), what: err?.refused ? `fallback:${err.refused}` : "fallback" }); // for its record
   switchRuntime(rt);
   if (err?.refused) {
-    toast(err.refused === "daily" ? T("今天在本站全量语料上的查询次数已用完：改用浏览器内的要籍语料，明天恢复")
-      : T("本站暂时限制了这个网络地址使用全量语料：改用浏览器内的要籍语料"), "", 8000);
+    toast(err.refused === "daily" ? T("今天在本站全量语料上的查询次数已用完：改用内置运行环境的要籍语料，明天恢复")
+      : T("本站暂时限制了这个网络地址使用全量语料：改用内置运行环境的要籍语料"), "", 8000);
   }
   return rt;
 }
@@ -1241,7 +1241,7 @@ async function addData(files) {
       if (!out?.ok) { toast(T`未能读取「${f.name}」：${out?.error || T("未知原因")}`, "err", 7000); continue; }
       S.ui.data.push(out.dataset.id);
       toast(T`已读取「${truncate(f.name, 24)}」：${sizeLabel(out.dataset)}，已脱敏`);
-      if (out.kept === false) toast(T("此浏览器无法保存资料（隐私模式？）：关闭页面后需重新上传"), "", 6000);
+      if (out.kept === false) toast(T("无法保存资料（隐私模式？）：关闭页面后需重新上传"), "", 6000);
     }
   } catch (err) {
     toast(T`读取资料失败：${err.message}`, "err", 6000);
@@ -1275,7 +1275,7 @@ async function removeData(id) {
 }
 
 async function clearData() {
-  if (!confirm(T("删除本浏览器中的全部资料？此操作不可撤销。"))) return;
+  if (!confirm(T("删除已保存的全部资料？此操作不可撤销。"))) return;
   try {
     await dataRuntime().clearData();
     toast(T("已删除全部资料"));
@@ -1388,7 +1388,7 @@ const threadCtx = {
     if (keep) await persistNow(conv);
     else await store.deleteConversation(conv.id).catch(() => {});
     renderMain();
-    toast(keep ? T("已保存在本浏览器（未加密），可随时删除") : T("已从本浏览器删除：只保留在本页面，关闭后消失"));
+    toast(keep ? T("已保存（未加密），可随时删除") : T("已取消保存：关闭页面后这段对话将消失"));
   },
   openThink: S.ui.openThink,
   openSteps: S.ui.openSteps,
@@ -1499,7 +1499,7 @@ function convItem(c) {
   const item = h("div.conv", { class: active ? "active" : "", role: "button", tabindex: 0, "aria-current": active ? "page" : null },
     c.pinned ? icon("pin", "sm pin") : null,
     h("span.t", c.title),
-    isDietMode(c) ? h("span.conv-tag", { title: c.ephemeral ? T("饮食与体重管理 · 只在本页面") : T("饮食与体重管理") }, icon("leaf", "sm")) : null,
+    isDietMode(c) ? h("span.conv-tag", { title: c.ephemeral ? T("饮食与体重管理 · 未保存") : T("饮食与体重管理") }, icon("leaf", "sm")) : null,
     running ? h("span.spinner") : null);
   const more = h("button.more", { type: "button", "aria-label": T("更多操作"), "aria-haspopup": "menu" }, icon("dots", "sm"));
   more.addEventListener("click", (e) => { e.stopPropagation(); convMenu(c, more, item); });
@@ -1611,7 +1611,7 @@ function renderAttachments() {
       h("span.nm", truncate(d.name, 28)), h("span.sz", sizeLabel(d)),
       h("button", { type: "button", "aria-label": T`不附上「${d.name}」`, on: { click: () => { S.ui.data = S.ui.data.filter((x) => x !== d.id); renderAttachments(); renderComposer(); } } }, "×"))),
     ...(S.data.busy ? [h("div.data-chip.busy", h("span.spinner"), h("span.nm", S.data.busy),
-      S.data.loading ? h("span.sz", truncate(S.data.loading.message || T("准备本机运行环境"), 30)) : null)] : []));
+      S.data.loading ? h("span.sz", truncate(S.data.loading.message || T("准备运行环境"), 30)) : null)] : []));
 }
 
 // ------------------------------------------------------------------ scrolling

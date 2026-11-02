@@ -333,7 +333,7 @@ async function init({ base }) {
   const t0 = performance.now();
   progress(3, T("读取运行清单"));
   const got = await fetch(new URL("runtime/manifest.json", base), { cache: "no-cache" });
-  if (!got.ok) throw new Error(T`这里没有浏览器内运行环境（runtime/manifest.json：HTTP ${got.status}）：请用 taochronos web build 构建站点，或连接 taochronos serve`);
+  if (!got.ok) throw new Error(T`这里没有内置运行环境（runtime/manifest.json：HTTP ${got.status}）：请用 taochronos web build 构建站点，或连接 taochronos serve`);
   const manifest = await got.json();
   const files = manifest.files || {};
   const meta = files["corpus.sqlite.xz"];
@@ -389,7 +389,7 @@ async function init({ base }) {
   if (meta) {
     const src = await corpusSource;
     if (src.kept) {
-      progress(62, T("载入本机保存的要籍语料"));
+      progress(62, T("载入已保存的要籍语料"));
       ownCorpus(await src.whole);
     } else {
       py.runPython(INDEX); // the indexer's code, while the download may still be running
