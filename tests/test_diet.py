@@ -488,7 +488,7 @@ def test_a_diet_conversation_in_the_browser(tmp_path):
             page.keyboard.press("Enter")
             answered(1)
             page.click(".diet-banner button")
-            page.wait_for_function("document.querySelector('.diet-banner').textContent.includes('已保存在本浏览器')")
+            page.wait_for_function("document.querySelector('.diet-banner').textContent.includes('已保存（未加密）')")
             page.reload()
             page.wait_for_selector("#convs .conv .conv-tag", timeout=30000)
             time.sleep(1)

@@ -6,11 +6,11 @@
 
 - **https://chat.impf.ai** 有正式证书（浏览器地址栏显示锁），输入 http 地址会自动跳转到 https；
 - 网站从 Cloudflare 的全球节点提供，国内访问一般比 GitHub Pages 快、也更稳定；
-- **免费版**（Workers Free）就能做到以上两点：页面和原来一样在浏览器里运行要籍语料（535 部要籍中 533 部的原文）；网页文件（脚本、浏览器语料、
+- **免费版**（Workers Free）就能做到以上两点：页面和原来一样用内置运行环境的要籍语料（535 部要籍中 533 部的原文）；网页文件（脚本、浏览器语料、
   Python 运行环境）由 Cloudflare 直接提供，免费且不限量；
 - **开通全量古籍后**（可选，第 1、2 步，需 Workers Paid）：页面打开即可提问，不再下载浏览器语料和 Python 运行环境；工具检索的是
   **全部古籍**：958 部录本、1.22 亿字（本项目收录的全部古籍中，来源条件允许随网站发布的部分；条款禁止转载的 8 部不收，见
-  [ATTRIBUTION.md](ATTRIBUTION.md)）；全量语料服务暂不可用时，页面自动改用浏览器内的要籍语料，照常可用。
+  [ATTRIBUTION.md](ATTRIBUTION.md)）；全量语料服务暂不可用时，页面自动改用内置运行环境的要籍语料，照常可用。
 
 技术说明见 [README.md](README.md)。只用免费版：只做第 3 步，约 5 分钟；要全量古籍：再做第 1、2 步。每一步都只需做一次。
 
@@ -28,7 +28,7 @@
 2. 左侧 **Compute (Workers)**（或 **Workers & Pages**）→ **Plans**（套餐）。
 3. 选 **Workers Paid**（5 美元/月）→ 按提示完成付款。
 
-没有这一步，网站照样部署到 Cloudflare（HTTPS 生效），只是全量语料服务不会部署，页面继续在浏览器里运行要籍语料。
+没有这一步，网站照样部署到 Cloudflare（HTTPS 生效），只是全量语料服务不会部署，页面继续用内置运行环境的要籍语料。
 
 ## 第 2 步（可选）：给 API 令牌加上 Containers 权限
 
@@ -62,7 +62,7 @@ Cloudflare 只在没有自建 DNS 记录的名称上建 Worker 的自定义域�
 
 1. 打开 **https://chat.impf.ai**：地址栏有锁；输入 `http://chat.impf.ai` 会跳到 https。
 2. 左下角显示 **运行环境 · 已就绪**（载入时只显示“加载中”和一条进度条）。页面（包括设置）不显示用的是哪份语料；要确认，
-   打开 **https://chat.impf.ai/api/info**：免费版返回 503（“本站的全量语料服务未部署：网页在浏览器里运行要籍语料”），页面在
+   打开 **https://chat.impf.ai/api/info**：免费版返回 503（“本站的全量语料服务未部署：网页改用内置运行环境的要籍语料”），页面在
    浏览器里运行要籍语料；开通全量古籍后返回全量语料的信息（`corpus` 里 `label` 为“全量语料”，`books` 为 958）。
 3. 问一个问题（如"桂枝汤的组成出自哪部书？"），回答里的引文可点开核对。
 4. **设置 → 关于**：语料一栏链接到全量语料的来源与授权。
@@ -72,7 +72,7 @@ Cloudflare 只在没有自建 DNS 记录的名称上建 Worker 的自定义域�
 ## 第 5 步（建议）：GitHub Pages 的自定义域名
 
 确认 chat.impf.ai 已由 Cloudflare 提供后：GitHub 仓库 → **Settings → Pages → Custom domain** → **Remove**。
-这样 GitHub 不再为这个域名申请证书，`https://psknlr.github.io/TaoChronos/` 继续作为备用镜像（只有浏览器内的要籍语料）。
+这样 GitHub 不再为这个域名申请证书，`https://psknlr.github.io/TaoChronos/` 继续作为备用镜像（只有内置运行环境的要籍语料）。
 **不要在第 3 步完成前移除**，否则切换前的几分钟里 chat.impf.ai 会打不开。
 
 ## 费用
@@ -96,7 +96,7 @@ Cloudflare 只在没有自建 DNS 记录的名称上建 Worker 的自定义域�
 | 警告"the store … is not (all) in the KV namespace" | 全量语料尚未上传：由维护者运行 `taochronos web upload`（见 README.md） |
 | 警告"the account may not deploy containers yet" | 第 1 步或第 2 步未完成（工作流先检查，不白白构建镜像）；补上后 **Run workflow** |
 | 警告"container was not deployed" | 部署容器时出错，日志里有 Cloudflare 的具体报错；修正后 **Run workflow**（可勾选 rebuild 强制重建） |
-| https://chat.impf.ai/api/info 返回 503 | 免费版的正常状态：页面在浏览器里运行要籍语料。开通全量古籍后仍返回 503，说明全量语料服务未部署或暂不可用，页面已自动改用浏览器语料，功能不受影响 |
+| https://chat.impf.ai/api/info 返回 503 | 免费版的正常状态：页面用内置运行环境的要籍语料。开通全量古籍后仍返回 503，说明全量语料服务未部署或暂不可用，页面已自动改用浏览器语料，功能不受影响 |
 | 地址栏仍显示"不安全" | 证书签发需要几分钟；清除浏览器缓存后重试。确认 DNS 里 `chat` 记录类型为 Worker（由 Cloudflare 管理） |
 
 ## 需要时回退到 GitHub Pages
@@ -105,7 +105,7 @@ Cloudflare 只在没有自建 DNS 记录的名称上建 Worker 的自定义域�
 2. **impf.ai → DNS → Records**：新建 CNAME，名称 `chat`，目标 `psknlr.github.io`，代理状态 **DNS only**（灰色云朵）；
 3. GitHub 仓库 → **Settings → Pages → Custom domain** 填回 `chat.impf.ai`。
 
-回退后网站回到 GitHub Pages（在证书签发前只有 http），页面在浏览器内运行要籍语料。
+回退后网站回到 GitHub Pages（在证书签发前只有 http），页面用内置运行环境的要籍语料。
 
 ## 安全说明
 
@@ -120,7 +120,7 @@ Cloudflare 只在没有自建 DNS 记录的名称上建 Worker 的自定义域�
 
 没有 Workers Paid（没有容器）时，网站自己的 Worker 从 **Cloudflare D1**（Workers 免费套餐自带的数据库）回答全量语料：检索、
 原文、书目、要籍、术语、引文核对等工具都在全部 958 部书上运行（https://chat.impf.ai/api/info 的 `label` 为“全量语料（备份）”）。有容器时仍由
-容器回答，D1 备份不起作用；两者都没有时，页面照旧在浏览器里运行要籍语料。技术说明见
+容器回答，D1 备份不起作用；两者都没有时，页面照旧用内置运行环境的要籍语料。技术说明见
 [docs/adr/0017-d1-backup.md](../docs/adr/0017-d1-backup.md)。
 
 ### 只需一步：给 API 令牌加上 D1 权限
@@ -159,7 +159,7 @@ Cloudflare 只在没有自建 DNS 记录的名称上建 Worker 的自定义域�
 
 D1 存储约 1.5 GB（分在 5 个数据库里，每个不超过 500 MB）；每次工具调用在 Worker 里只用几毫秒的计算；一次检索约读 3 千～1.2 万行
 （中位数约 5500 行）。**付费套餐**：每月含 250 亿行读取、5,000 万行写入、5 GB 存储，超出按量计费，没有每日上限。**免费套餐**：
-都在免费额度内，但 D1 每天只有 500 万行读取，即每天约九百次检索；用完后到 UTC 0 点前，页面自动改用浏览器内的要籍语料。
+都在免费额度内，但 D1 每天只有 500 万行读取，即每天约九百次检索；用完后到 UTC 0 点前，页面自动改用内置运行环境的要籍语料。
 
 | 现象 | 原因与处理 |
 |---|---|

@@ -189,7 +189,7 @@ test("every tool of the server's catalog (97) is live, precomputed, or unavailab
   assert.deepEqual([...classed].sort(), [...every].sort());
   assert.equal(new Set(classed).size, classed.length);
   assert.deepEqual([live.length, precomputed.length, Object.keys(unavailable).length], [14, 16, 67]);
-  assert.ok(Object.keys(unavailable).filter((t) => t.startsWith("mydata.")).every((t) => unavailable[t].includes("本机"))); // never the site's
+  assert.ok(Object.keys(unavailable).filter((t) => t.startsWith("mydata.")).every((t) => unavailable[t].includes("不发送到网站的服务器"))); // never the site's
   assert.ok(Object.values(unavailable).every((why) => why.length > 10));
 });
 

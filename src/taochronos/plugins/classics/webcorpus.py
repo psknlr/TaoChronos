@@ -178,7 +178,7 @@ def export_pack(db: sqlite3.Connection, works: list[dict[str, Any]], out: Path,
     chars = sum(b["excerpt"]["kept_chars"] for b in books)
     works_in = len({b["work"] for b in books})
     head = ["# 要籍语料 · 来源与授权", "",
-            f"网页端在浏览器里运行的语料：要籍书目（`corpus/catalog/canon.yaml`，按历代引用排序的 {len(works)} 部要籍）各书的原文，由",
+            f"网页端内置运行环境的语料：要籍书目（`corpus/catalog/canon.yaml`，按历代引用排序的 {len(works)} 部要籍）各书的原文，由",
             "`taochronos web pack` 从全量语料生成：最重要的典籍收全书，其余收分布全书的章节节选。所收均为公有领域的古籍；各录本的",
             "来源与条件见下表：", "",
             "* 开放授权的录本（维基文库、漢籍リポジトリ：CC BY-SA 4.0；數位中醫校書郎 CMETA：CC BY 4.0；McGill：公有领域）按其授权使用，"

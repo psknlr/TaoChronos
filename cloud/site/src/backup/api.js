@@ -43,7 +43,7 @@ const WHY = {
   working_set: "D1–D5 分析与知识谱系读的是研究会话或服务器进程中已检索段落的工作集及其中抽取的主张，备份服务无状态",
   passages: "需要在服务器上对大量段落逐段计算（比对、归类、抽取、统计检验），超出 Worker 每次 10 毫秒的计算；其参数不定，无法预先算好",
   data: "需要服务器上的模型、规则或数据（句读模型、实体与主张抽取规则、现代医学映射与数据库、OCR 版面），Worker 中没有",
-  mine: "我的资料只在用户本机读取（浏览器内的运行环境或本机的服务），网站的服务器不经手个人资料：网页把这些工具交给浏览器内的运行环境",
+  mine: "我的资料不发送到网站的服务器，由网页的内置运行环境（或用户自己运行的服务）读取：网页把这些工具交给内置运行环境",
 };
 const UNAVAILABLE = Object.fromEntries([
   ["engine", ["taochronos_research", "taochronos_session", "taochronos_ask"]],
@@ -69,7 +69,7 @@ const json = (data, status = 200, headers = {}) =>
 /** Is the backup there for this deployment?  (deploy.sh sets D1_BACKUP to the version the import completed.) */
 export const ready = (env) => Boolean(env.D1_BACKUP && env.D1_0);
 
-const DOWN = { error: "本站的全量语料备份暂不可用：网页在浏览器里运行要籍语料", corpus: "none" };
+const DOWN = { error: "本站的全量语料备份暂不可用：网页改用内置运行环境的要籍语料", corpus: "none" };
 
 /** Is this error D1 being unavailable (its daily allowance used up, overloaded, the network) rather than the call's
  * own?  Then the page is answered 503 and falls back to the browser, as when there is no backup. */
@@ -89,7 +89,7 @@ export async function answer(method, url, body, env) {
   }
   if (env.D1_BACKUP !== stats.complete) {
     // the databases hold another version than this deployment was made for (an import in progress): not served
-    return json({ error: "本站的全量语料备份正在更新：网页在浏览器里运行要籍语料", corpus: "none" }, 503, { "X-TC-Corpus": "none" });
+    return json({ error: "本站的全量语料备份正在更新：网页改用内置运行环境的要籍语料", corpus: "none" }, 503, { "X-TC-Corpus": "none" });
   }
   const pre = new Set(Object.keys(stats.precomputed || {}));
   const path = url.pathname;

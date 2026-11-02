@@ -14,7 +14,7 @@ from .formats import ACCEPTED, MAX_BYTES
 from .rx import PrescriptionReader
 from .store import MAX_DATASETS, UserData
 
-HOW = ("我的资料是用户上传的资料，已在本机脱敏；引用其中的段落或行时写 [[mine:…]]。表格：mydata.describe 描述各列，"
+HOW = ("我的资料是用户上传的资料，已脱敏；引用其中的段落或行时写 [[mine:…]]。表格：mydata.describe 描述各列，"
        "mydata.compare 比较组间差异，mydata.prescriptions 分析处方列的用药；文本：mydata.search 检索，mydata.read 阅读。")
 
 

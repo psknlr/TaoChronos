@@ -256,9 +256,9 @@ function runtimePane(d, S, ctx, redraw) {
   return [
     h("h3", T("运行环境")),
     S.runtime?.label === T("本站服务")
-      ? h("p.lead", T("本站服务器（Cloudflare）运行 TaoChronos 的全量语料，打开即用；它暂不可用时，页面自动改在浏览器里运行（Pyodide，要籍语料）。"),
+      ? h("p.lead", T("本站服务器（Cloudflare）运行 TaoChronos 的全量语料，打开即用；它暂不可用时，页面自动改用内置运行环境（Pyodide，要籍语料）。"),
         T("也可以连接你自己运行的 taochronos serve（你构建的全量语料）。"))
-      : h("p.lead", T`TaoChronos 可以在浏览器里运行（Pyodide，要籍语料：按历代引用排序的${canonCount(info)}要籍的原文，开箱即用；首次载入后保存在本机），`,
+      : h("p.lead", T`TaoChronos 自带内置运行环境（Pyodide，要籍语料：按历代引用排序的${canonCount(info)}要籍的原文，开箱即用；首次载入后会保留，下次打开更快），`,
         T("也可以连接 taochronos serve——在你的电脑或服务器上运行，读全部古籍（全量语料）。")),
     h("section.connect",
       h("h4", icon("book", "sm"), full ? T("全量语料已接入") : T("接入全部古籍")),
@@ -269,7 +269,7 @@ function runtimePane(d, S, ctx, redraw) {
       h("ol.steps-list",
         h("li", T("在本机构建全量语料（一次；步骤见项目文档 docs/web.md「接入全部古籍」），然后启动服务："),
           h("pre.json", T("pip install -e .\ntaochronos serve            # http://localhost:8765\ntaochronos serve --env-keys # 模型密钥也可用本机环境变量"))),
-        h("li", T("连接它。这个浏览器会记住：以后打开本页，服务在运行就自动用全量语料，没运行就在浏览器内运行（要籍语料）。"),
+        h("li", T("连接它。本页会记住：以后打开，服务在运行就自动用全量语料，没运行就用内置运行环境（要籍语料）。"),
           h("div.connect-row", url, token, connect), result)),
       h("details.more",
         h("summary", T("在另一台机器上运行（服务器、工作站）")),
@@ -280,8 +280,8 @@ function runtimePane(d, S, ctx, redraw) {
           h("p", T("令牌也可以用 --token 或环境变量 TAOCHRONOS_TOKEN 指定；令牌只随请求发往该服务。"))))),
     h("div.form-grid",
       h("div.field", h("span.lb", T("在哪里运行")),
-        seg([["auto", T("自动")], ["browser", T("浏览器内（要籍语料）")], ["server", T("指定的服务（全量语料）")]], d.runtime, (v) => { d.runtime = v; }),
-        h("div.help", T("自动：本页由服务打开时用该服务；否则先试这个浏览器连接过的服务，不在就在浏览器内运行。"))),
+        seg([["auto", T("自动")], ["browser", T("内置（要籍语料）")], ["server", T("指定的服务（全量语料）")]], d.runtime, (v) => { d.runtime = v; }),
+        h("div.help", T("自动：本页由服务打开时用该服务；否则先试以前连接过的服务，不在就用内置运行环境。"))),
       h("div.field", h("span.lb", T("提供给模型的工具")),
         seg([["core", T("精选 + 目录（推荐）")], ["all", T("全部工具")]], d.toolMode, (v) => { d.toolMode = v; }),
         h("div.help", T("精选：直接提供十几个最常用的工具，其余通过 taochronos_catalog / taochronos_call 按需查用，节省上下文。全部：七十余个工具全部直接提供。"))),
@@ -357,6 +357,6 @@ function aboutPane(d, S) {
           T("只有在你同意后，每轮问答才另记录一份到"), PUBLISHER, T("的服务器，用于测试（设置 → 数据）。使用自己的 API Key 时，请求直接发往你选择的服务，或经你本机的服务转发。"),
           S.relay?.ok && S.relay.feedback ? T("你在回答下给出的评价（有帮助 / 有问题）和反馈，只在你提交时发送；对话内容只在你勾选附上时随之发送。") : null))),
       h("div.muted", { style: { fontSize: "13px", lineHeight: "1.8" } },
-        T`${AGENT} · ${ASSISTANT} · ${AGENT_EN} ${info?.version || "?"} · ${PUBLISHED_BY} · 运行环境 ${info?.runtime === "server" ? S.runtime?.label || T("服务") : T("浏览器")}`)),
+        T`${AGENT} · ${ASSISTANT} · ${AGENT_EN} ${info?.version || "?"} · ${PUBLISHED_BY} · 运行环境 ${info?.runtime === "server" ? S.runtime?.label || T("服务") : T("内置")}`)),
   ];
 }

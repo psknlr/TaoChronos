@@ -26,8 +26,8 @@ from anywhere else, it mis-served them in several ways:
    territories) carries each country's time zone, hemisphere, broad climate, BMI scale, national food guide and dish
    packs.  A country not listed, or none stated, gets the international defaults (WHO's scale, guide and limits, no
    season) — the mode assumes no country.  The model asks where the visitor lives only among the optional questions,
-   after the safety questions.  The page may suggest a region from the device's time zone in its own quick check and
-   opening line, on the device; the model is told only what the visitor says.
+   after the safety questions.  The page may suggest a region from the time zone in its own quick check and
+   opening line, without sending it anywhere; the model is told only what the visitor says.
 2. **The BMI scale follows the person, then the place.**  A family background NICE and WHO name gets the lower
    thresholds (China's standard in China); a background stated otherwise gets WHO's; else the region's scale; else
    WHO's.  On WHO's scale for want of a background, a BMI where the scales disagree on the advice (23–24.9 and
@@ -66,4 +66,4 @@ from anywhere else, it mis-served them in several ways:
 - Region tables are coarse: one time zone, hemisphere and climate per country.  Dish packs beyond Singapore/Malaysia,
   checked national limits beyond those listed, and festival dates after 2027 remain to be added.
 - Tests: `tests/test_diet.py` — the three scales and who gets which, the guides' limits, seasons by hemisphere and
-  climate, computed festivals, plans that use a region's pack only there, and the browser flow unchanged.
+  climate, computed festivals, plans that use a region's pack only there, and the end-to-end flow unchanged.

@@ -275,7 +275,7 @@ async function api(request, env, cfg, deps, url, s) {
     if (verdict.unavailable) return json({ error: "全量语料服务暂时无法核对访问，请稍后再试", starting: false }, 503, { ...cors, "Retry-After": "30" });
   }
   if (!env.CORPUS && !backupReady(env)) {
-    return json({ error: "本站的全量语料服务未部署：网页在浏览器里运行要籍语料", corpus: "none" }, 503, cors);
+    return json({ error: "本站的全量语料服务未部署：网页改用内置运行环境的要籍语料", corpus: "none" }, 503, cors);
   }
   const headers = { Accept: "application/json" };
   let body;

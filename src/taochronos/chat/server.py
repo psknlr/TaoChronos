@@ -249,7 +249,7 @@ class Handler(BaseHTTPRequestHandler):
         """我的资料: a file added, a dataset removed, all removed — on a server only this machine reaches."""
         rt = self.server.runtime
         if not self.server.private:
-            return self._json({"ok": False, "error": "这个服务可由其他机器访问：个人资料不在这里处理，请在浏览器内处理"}, 403)
+            return self._json({"ok": False, "error": "这个服务可由其他机器访问：个人资料不在这里处理，请改用内置运行环境处理"}, 403)
         if path == "/api/data":
             try:
                 raw = base64.b64decode(str(data.get("data") or ""), validate=True)

@@ -20,7 +20,7 @@ export const DIET_STARTERS = [
 
 export const DIET_NOTICE = [
   [T("不记录"), T("这类对话不发送对话记录；评价时也不附带对话内容。")],
-  [T("只在本页"), T("对话默认只保存在本页面，关闭或刷新后消失；你可以选择保存在本浏览器（不加密）。")],
+  [T("默认不保存"), T("对话默认不保存，关闭或刷新页面后消失；你可以选择保存（不加密）。")],
   [T("模型读到什么"), T("你在对话中写的内容会发给你所选的模型服务，用来作答。")],
   [T("不是诊断"), T("这里给的是一般的饮食建议，不是诊断或治疗；孕期、未成年、饮食失调、肾病或使用胰岛素等情况，会先建议你咨询专业人员。")],
 ];
@@ -74,8 +74,8 @@ export function dietBanner(conv, ctx) {
   return h("div.diet-banner", { role: "note" },
     icon("leaf", "sm"),
     h("span.grow", T("饮食与体重管理 · 本对话不发送记录"), " · ",
-      kept ? T("已保存在本浏览器（未加密）") : T("只保存在本页面，关闭后消失")),
-    h("button.linkish", { type: "button", on: { click: () => ctx.onKeep(conv, !kept) } }, kept ? T("不再保存") : T("保存在本浏览器")));
+      kept ? T("已保存（未加密）") : T("未保存，关闭页面后消失")),
+    h("button.linkish", { type: "button", on: { click: () => ctx.onKeep(conv, !kept) } }, kept ? T("不再保存") : T("保存这段对话")));
 }
 
 // ------------------------------------------------------------------ the quick check: on this device, without a model

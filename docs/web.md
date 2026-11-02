@@ -28,8 +28,8 @@ run in one of two places, with the same Python module (`taochronos.chat`) behind
 
 | Runtime | Where | Corpus | Start |
 |---|---|---|---|
-| **浏览器内** (in the browser) | Pyodide (CPython on WebAssembly) in a Web Worker | the 要籍语料: 533 of the 535 key works, the first whole, the rest in excerpts (a site built without the pack: the demonstration corpus, 23 short excerpts) | nothing: the page loads it (about 20 MB the first time, then kept in the browser) |
-| **本站服务** (the site's server) | a container on Cloudflare behind https://chat.impf.ai/api (`cloud/`), started on demand | the full corpus as the site may carry it: 958 books, 2.04 million passages, 122 million characters (`taochronos web store`: never the sources whose terms forbid it) | nothing: the page on chat.impf.ai uses it, and falls back to the browser when it cannot answer (503) — or refuses this visitor (403 for a restricted address, 429 for a day spent: the page says which; [ADR 0023](adr/0023-workers-paid.md)) |
+| **内置** (the built-in runtime) | Pyodide (CPython on WebAssembly) in a Web Worker | the 要籍语料: 533 of the 535 key works, the first whole, the rest in excerpts (a site built without the pack: the demonstration corpus, 23 short excerpts) | nothing: the page loads it (about 20 MB the first time, then kept for the next visit) |
+| **本站服务** (the site's server) | a container on Cloudflare behind https://chat.impf.ai/api (`cloud/`), started on demand | the full corpus as the site may carry it: 958 books, 2.04 million passages, 122 million characters (`taochronos web store`: never the sources whose terms forbid it) | nothing: the page on chat.impf.ai uses it, and falls back to the built-in runtime when it cannot answer (503) — or refuses this visitor (403 for a restricted address, 429 for a day spent: the page says which; [ADR 0023](adr/0023-workers-paid.md)) |
 | **本地服务 / 远程服务** (a TaoChronos server) | `taochronos serve` on your machine, or on another one with a token | the full corpus you built (`corpus ingest …`; this project's build: 966 books, 2.05 million passages, 123 million characters), else the demonstration corpus | `pip install -e . && taochronos serve` |
 
 The full corpus is never part of the site's files: the site's server carries it as a store built once from the full
@@ -165,7 +165,7 @@ side panel's pill; the bar never goes back, also when the runtime tried first do
 once it answers, the pill says 运行环境 · 已就绪 and the opening screen nothing; when it cannot load, what went wrong and
 the way to the settings.  Connected to a server that has only the demonstration corpus, 设置 → 运行环境 says so (the
 corpus is to be built on that machine).  **指定的服务** always uses the server and reports it when it is down;
-**浏览器内** never looks for one.
+**内置** never looks for one.
 
 **On another machine** (a workstation, a server):
 
@@ -388,7 +388,7 @@ A visitor may bring their own data — a clinic's prescriptions, case records, a
   (names and doctors' names to pseudonyms, identity and record numbers to codes, telephones, addresses and e-mails
   removed, a birth date to its year; such numbers in free text replaced; a freely written name may be missed); what the
   model reads (statistics and the rows it asks for, anonymous, sent with the conversation to the chosen model service;
-  the file's name too); never recorded; kept in this browser until removed; statistics describe, they do not infer a
+  the file's name too); never recorded; not sent to the server, kept until removed; statistics describe, they do not infer a
   cause or advise treatment.
 * **Uploading** reads the file and attaches it to the next message as a chip (门诊处方.csv · 表格 120 行 · 9 列); a message
   may carry it alone (the page asks for an overview).  The model reads, with the message, the dataset's id, name,

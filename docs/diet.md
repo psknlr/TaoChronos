@@ -18,14 +18,14 @@ code: `web/js/diet/` (the engine and tools; `regions.js` the countries), `web/js
                                              │     ▲                 (no runtime, no server)
                                              │     └── result (numbers, provenance) │ ◄───────► answer, phrased
                                              │ records ✕ · feedback without content │
-                                             │ kept in memory unless 保存在本浏览器    │
+                                             │ kept in memory unless 保存这段对话      │
                                              └──────────────────────────────────────┘
 ```
 
 ## What a visitor sees
 
 - **The way in**: 饮食与体重管理 under 新对话, or the card on the opening screen.  The mode's opening screen says what
-  happens to what one tells it (not recorded; kept in this page only unless kept; the model service reads what one
+  happens to what one tells it (not recorded; not saved unless the visitor saves it; the model service reads what one
   writes; not a diagnosis), today where the time zone suggests (date, country, season, solar term, the next festival
   kept there), six starters, and **不用模型，先快速算一算** — a form (with the country, preselected from the time zone,
   and the family background that decides the BMI scale) whose answers are assessed and planned without a model, shown
@@ -36,8 +36,8 @@ code: `web/js/diet/` (the engine and tools; `regions.js` the countries), `web/js
   plan is a table — meal, dish and serving, energy, protein, how to cook or order — with
   the day's total against the target, three things to do today, and a line of what has been recorded so the visitor
   can correct it.  Swaps, a week, festive advice, the traditional layer and a weekly review follow when asked.
-- **The banner** at the head of a diet conversation: not recorded; kept only in this page (保存在本浏览器 keeps it in this
-  browser, unencrypted; 不再保存 removes it again).
+- **The banner** at the head of a diet conversation: not recorded; not saved by default (保存这段对话 saves it, unencrypted;
+  不再保存 removes it again).
 
 ## The tools
 

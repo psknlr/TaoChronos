@@ -32,7 +32,7 @@ English version: [deploy.md](deploy.md)。本手册汇总了以下较早的教�
 
 | 部分 | 状态 | 依据 |
 |---|---|---|
-| 网站 `chat.impf.ai` | **运行中**，10 月 11 日 17:31 UTC 部署（版本 `4c6d9a24…`），只在浏览器里运行要籍语料 | 10 月 11 日的 site 运行：`the site runs without the full corpus` |
+| 网站 `chat.impf.ai` | **运行中**，10 月 11 日 17:31 UTC 部署（版本 `4c6d9a24…`），只用内置运行环境的要籍语料 | 10 月 11 日的 site 运行：`the site runs without the full corpus` |
 | 默认服务 `chat-api.impf.ai` | **运行中**，10 月 11 日 17:30 UTC 部署 | 10 月 11 日的 relay 运行 |
 | 全量语料（958 部） | **已上载**到 KV 命名空间 `taochronos-store`：6 个分片齐全，校验和已核对 | 10 月 11 日 00:38 UTC 的 canon 运行取回并核对了每个分片；`cloud/store.json` 自 10 月 1 日以来未变 |
 | 全量语料：容器 | **从未部署** | site 运行：Containers 接口返回 `401`，令牌缺 **Containers · Edit**（或当时账户仍是免费配套） |
@@ -149,7 +149,7 @@ sha256 `ef628936…`；来源与授权见 [cloud/ATTRIBUTION.md](../cloud/ATTRIB
 | 所需时间 | 构建约 20 分钟；休眠后唤醒需几十秒 | 导入约 2–2.5 小时，只需一次 |
 | 费用 | 运行时计费（闲置 15 分钟即休眠） | 存储约 1.5 GB，每次检索按读取行数计 |
 
-部署了容器时，网站把 API 交给容器；否则在 D1 导入完成时交给 D1 备份；两者都没有时，页面在浏览器里运行要籍语料（535 部）。
+部署了容器时，网站把 API 交给容器；否则在 D1 导入完成时交给 D1 备份；两者都没有时，页面用内置运行环境的要籍语料（535 部）。
 **两者都部署**：容器是完整的服务；部署时找不到容器（例如构建失败），D1 就接手，读者不会因此退回浏览器里较小的语料。
 
 ### 3.2 路线 A 经 GitHub Actions
@@ -338,7 +338,7 @@ git add cloud/store.json cloud/ATTRIBUTION.md && git commit -m "The site's store
 curl -s https://chat.impf.ai/api/info | python3 -c 'import json,sys; i=json.load(sys.stdin); c=i.get("corpus",{}); print(i.get("runtime"), c.get("label"), c.get("books"), "backup" if i.get("backup") else "")'
 #   容器：      … 全量语料 958
 #   D1 备份：   d1 全量语料（备份） 958 backup       （只在没有绑定容器时）
-#   两者都没有：返回错误与 "corpus": "none"，页面在浏览器里运行要籍语料
+#   两者都没有：返回错误与 "corpus": "none"，页面用内置运行环境的要籍语料
 curl -s -X POST -H "Content-Type: application/json" -H "Origin: https://chat.impf.ai" \
   -d '{"name":"classics.search","arguments":{"query":"桂枝汤","k":3}}' https://chat.impf.ai/api/call | head -c 400; echo
 ```

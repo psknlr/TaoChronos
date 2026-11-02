@@ -1,4 +1,4 @@
-# ADR 0029 — 饮食与体重管理 for Singapore: a mode of its own, computed in the page, never recorded
+# ADR 0029 — 饮食与体重管理 for Singapore: a mode of its own, computed without a server, never recorded
 
 **Status:** accepted · 2026-11-01 · amended by [ADR 0030](0030-diet-and-weight-worldwide.md): the mode now serves every region, Singapore among them
 
@@ -25,7 +25,7 @@ Singapore changes several of the proposal's premises:
 - **Festivals.**  Chinese New Year, Ramadan and Hari Raya, Deepavali, the Mid-Autumn Festival and Christmas move what
   people eat more than the weather does.
 
-And the repository changes others: the classics' tools run in the browser (Pyodide) or on the site's container; the
+And the repository changes others: the classics' tools run in the built-in runtime (Pyodide) or on the site's container; the
 records of the test period go to the institute's relay ([ADR 0012](0012-default-service-relay.md)); feedback may carry
 a turn ([ADR 0028](0028-feedback-on-answers.md)); only 我的资料 conversations were kept out of both
 ([ADR 0022](0022-the-users-own-data.md)) — a visitor typing their weight into an ordinary chat was not.
@@ -38,8 +38,8 @@ a turn ([ADR 0028](0028-feedback-on-answers.md)); only 我的资料 conversation
    reading; the platform's standing instructions stay (identity, evidence discipline, nothing of the inside named, no
    diagnosis or prescription) and the mode's are added after them (`web/js/diet/prompt.js`).  The classics' tools,
    research gates and quotation checks are unchanged.
-2. **Deterministic tools, in the page.**  The tools are plain JavaScript modules (`web/js/diet/`) that the page runs
-   itself (`routed()` in `app.js`): no runtime, no server, no network — so nothing the visitor says of their health goes
+2. **Deterministic tools, no runtime.**  The tools are plain JavaScript modules (`web/js/diet/`) that the web client
+   answers with its own code (`routed()` in `app.js`): no runtime, no server, no network — so nothing the visitor says of their health goes
    anywhere but to the model service they chose, the site's container never hears of it, and there is no Pyodide to
    download for a diet question.  The model asks, explains and phrases; every number (BMI, energy, targets, a dish's
    energy and nutrients, a day's totals, a trend) comes from the tools, and the instructions forbid any other.
@@ -77,19 +77,19 @@ a turn ([ADR 0028](0028-feedback-on-answers.md)); only 我的资料 conversation
    do not (mango, coffee) — and turns two preference answers into food-style advice.  `tcm_pattern_status` stays
    `unconfirmed`; no herbs, tonics or medicinal soups; a pattern needs a TCMPB-registered practitioner.  A classic is
    quoted through the corpus tools and labelled a historical statement.
-8. **Health is never recorded, and is kept only in the page by default.**  `healthConv()` (`web/js/diet/privacy.js`)
+8. **Health is never recorded, and is not saved by default.**  `healthConv()` (`web/js/diet/privacy.js`)
    holds for a diet conversation, any conversation that called a diet tool, and an ordinary one in which the visitor
    wrote their own measurements or conditions (`healthText`: first person, or a body measurement with its unit — not a
    question about 消渴 or a herb's 9 克).  Such a conversation sends no record **whatever the visitor chose**, its
    feedback carries no word of it, and the consent question is not asked for it.  A diet conversation is `ephemeral`:
-   `store.js` writes none, so it is gone with the page until the visitor presses 保存在本浏览器 (kept unencrypted in
-   that browser, and said so).
-9. **A model is optional.**  The diet opening screen has a quick check that runs `assess` and `plan` on the device and
+   `store.js` writes none, so it is gone when the page closes unless the visitor presses 保存这段对话 (saved
+   unencrypted, and said so).
+9. **A model is optional.**  The diet opening screen has a quick check that runs `assess` and `plan` without a model and
    shows the result without sending anything; 带着这些信息问道乃久 sends it as a message only when pressed.
 
 ## Consequences
 
-- Seven tools exist only in the browser: the tool console (工具台), the local server's catalog and the D1 backup do not
+- Seven tools exist only in the web client: the tool console (工具台), the local server's catalog and the D1 backup do not
   list them, and the Python harness has no `diet` family.  If a later release needs them server-side, they belong in an
   isolated plugin with a `wellness:read` permission no research agent holds, as the proposal suggested.
 - The dataset is small (≈ 40 main dishes) and mostly energy-only; protein, sodium and fibre are often not totalled, and
