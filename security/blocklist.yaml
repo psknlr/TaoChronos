@@ -176,6 +176,58 @@ block:
   - ip: 34.79.12.228
     why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.git-credentials、/.git/logs/refs/heads/main、/config.php），55 次；Google Cloud 比利时，与 35.205.254.119 同一手法"
     seen: 2026-10-24
+  # 2026-11-03：站长当天的安全报告与 data/security-logs（边缘至 11-01、两个哨兵至 11-02）
+  - ip: 130.12.180.164
+    why: "在网站上找 /.env；Omegatech（AS202412），与已封的 130.12.180.117 同一网段"
+    seen: 2026-10-25
+  - ip: 165.154.43.27
+    why: "在中转上找 PHP 后门（/zz.php、/leftDao.php、/CCB/ccb.php、/AppInfo.aspx）与交易所、App 接口，一天 1286 次请求，轮换 UA；UCloud 香港"
+    seen: 2026-10-26
+  - ip: 34.52.133.111
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.aws/credentials、/.gitmodules、/phpinfo），62 次；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-10-27
+  - ip: 165.154.65.46
+    why: "在中转上找 PHP 后门（/zz.php、/leftDao.php、/queryVersion.php）与交易所、App 接口，一天 1629 次请求，轮换 UA；UCloud 香港"
+    seen: 2026-10-28
+  - ip: 128.1.131.87
+    why: "在中转上找 PHP 后门（/zz.php、/admin/webadmin.php、/user/reg.php）与 App、客服接口，一天 1074 次请求，轮换 UA；UCloud 香港"
+    seen: 2026-10-28
+  - ip: 152.32.128.94
+    why: "在 science.impf.ai 上找 PHP 后门（/zz.php、/leftDao.php、/Public/initJs.php）并探测交易所接口（/api/app/contract/getMarketList），69 次；UCloud 香港"
+    seen: 2026-10-28
+  - ip: 101.36.107.248
+    why: "在网站上找 PHP 后门（/CCB/ccb.php、/queryVersion.php、/mobile/login.php）与卖家、App 接口，一天 447 次请求；UCloud 香港"
+    seen: 2026-10-28
+  - ip: 213.209.159.133
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.git-credentials、/.git/config、/.aws/config、/actuator/env），29 次；Feo Prest（AS208137）"
+    seen: 2026-10-28
+  - ip: 128.90.141.20
+    why: "WordPress 漏洞利用：Cloudflare 托管规则「WordPress Remote Code Execution」两次拦下，另探测 /wp-json/batch/v1；AS22363"
+    seen: 2026-10-29
+  - ip: 80.94.92.126
+    why: "在 science.impf.ai 上找 /.git/HEAD 与 /.svn/wc.db，冒充诺基亚 N97；UNMANAGED LTD（AS47890），与已封的 193.32.162.0/24 同一网络"
+    seen: 2026-10-30
+  - ip: 23.95.170.108
+    why: "用 python-httpx 在 science.impf.ai 上找开放的模型接口与 LiteLLM 配置（/v1/models、/.well-known/litellm-ui-config、/health/readiness）；HostPapa（AS36352）"
+    seen: 2026-10-31
+  - ip: 165.154.66.123
+    why: "在中转上找 PHP 后门（/zz.php、/leftDao.php、/user/reg.php）与交易所接口（/api/currency/quotation_new），一天 1071 次请求，轮换 UA；UCloud 香港"
+    seen: 2026-10-31
+  - ip: 165.154.74.247
+    why: "据站长 2026-11-03 的安全报告：PHP 后门扫描（/zz.php、/admin/webadmin.php、/CCB/ccb.php）与交易所接口，960 次；哨兵 11-02 在中转上见过（curl/7.4.0）；UCloud 香港"
+    seen: 2026-11-02
+  - ip: 165.154.74.208
+    why: "据站长 2026-11-03 的安全报告：与 165.154.74.247 同一批 PHP 后门扫描，418 次；UCloud 香港"
+    seen: 2026-11-03
+  - ip: 147.185.133.0/24
+    why: "按站长要求封禁（同 147.185.132.0/24）：Palo Alto Networks Cortex Xpanse 的扫描网段，UA 自报身份，10-14 至 11-01 见过十余个地址"
+    seen: 2026-11-01
+  - ip: 205.210.31.0/24
+    why: "按站长要求封禁（同 147.185.132.0/24）：Palo Alto Networks Cortex Xpanse 的扫描网段，UA 自报身份，10-10 至 11-01 见过 38 个地址"
+    seen: 2026-11-01
+  - ip: 216.25.90.0/24
+    why: "按站长要求封禁（同 147.185.132.0/24）：Palo Alto Networks Cortex Xpanse 的扫描网段，UA 自报身份，10-27 至 11-01 见过 5 个地址"
+    seen: 2026-11-01
 
 # 永不封禁：与这些网段重叠的条目 apply 拒绝写入（整份名单都不写，直到改正）。
 never:
