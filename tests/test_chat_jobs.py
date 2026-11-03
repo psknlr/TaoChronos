@@ -56,8 +56,9 @@ class Runs:
     def __call__(self, job, stop, attach):
         q = job["question"]
         self.seen.append((q, job["session"]))
-        session = self.sessions[q] = Session(job["session"] or f"s-{q}")
-        attach(session)
+        session = Session(job["session"] or f"s-{q}")
+        attach(session)  # the record names its session before the test can see it
+        self.sessions[q] = session
         gate = self.go.setdefault(q, threading.Event())
         while not gate.wait(0.005):
             if q.startswith("stoppable") and stop():
