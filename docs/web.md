@@ -413,13 +413,15 @@ A visitor may bring their own data — a clinic's prescriptions, case records, a
 A mode of its own (饮食与体重管理 in the side bar, or the card on the opening screen): evidence-based eating advice and
 weight-management plans for adults anywhere — by the visitor's country (its food guide and limits, the BMI scale that
 fits them, its season and festivals, its dishes where there is a dish pack; international defaults until they say),
-an optional traditional food layer that never diagnoses.  Its
-seven tools (`diet__*`, `web/js/diet/`) give every number, and their calls never go to a runtime or server; the model asks at most two questions a turn, screening first.  A diet conversation, one that called a diet tool,
+an optional traditional food layer that never diagnoses, and medicinal dishes (药膳) by constitution, season and time of
+day.  Its nine tools (`diet__*`, `web/js/diet/`) give every number, and their calls never go to a runtime or server; the model asks at most two questions a turn, screening first.  A diet conversation, one that called a diet tool,
 or one in which the visitor wrote their own measurements or conditions is **never recorded**, whatever they chose, and
-feedback on it carries none of its words; a diet conversation is kept only in the page until the visitor keeps it in
-the browser.  A quick check on its opening screen assesses and plans without a model.  The design, the
+feedback on it carries none of its words; a diet conversation is not saved until the visitor saves it.  A quick check on its opening screen assesses and plans
+without a model, and a constitution self-check there scores the 60-question standard and suggests medicinal dishes,
+also without a model.  The design, the
 tools, the screening, the regions, the data and their sources, and the limits: [diet.md](diet.md); the decisions:
-[ADR 0029](adr/0029-diet-and-weight-for-singapore.md) and [ADR 0030](adr/0030-diet-and-weight-worldwide.md); the tests:
+[ADR 0029](adr/0029-diet-and-weight-for-singapore.md), [ADR 0030](adr/0030-diet-and-weight-worldwide.md) and
+[ADR 0031](adr/0031-medicinal-dishes.md); the tests:
 `tests/test_diet.py`.
 
 ## 设置 → 统计 — how much the site is used, and from where

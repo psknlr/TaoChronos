@@ -1,0 +1,578 @@
+[
+ {
+  "key": "rice_white_raw",
+  "usda_description": "Rice, white, long-grain, regular, raw, enriched",
+  "fdc_id": "168877",
+  "per_100g": {
+   "energy_kcal": 365,
+   "protein_g": 7.13,
+   "fat_g": 0.66,
+   "sat_fat_g": 0.18,
+   "carb_g": 79.95,
+   "fibre_g": 1.3,
+   "sugar_g": 0.12,
+   "sodium_mg": 5,
+   "potassium_mg": 115
+  },
+  "source_url": "https://www.fatsecret.com.au/calories-nutrition/generic/white-rice-(long-grain-enriched)",
+  "notes": "FDC 168877 is from the getfoodfacts URL with this exact description (https://getfoodfacts.com/food/rice-white-long-grain-regular-raw-enriched-168877). FatSecret gives 365 kcal, 7.13 g protein, 0.66 g fat, 0.18 g sat fat and 79.95 g carb; happyforks gives the same macros. Fibre 1.3 g and sugar 0.12 g are from foodstruct (https://foodstruct.com/food/rice-white-long-grain-regular-raw-enriched). Sodium and potassium were converted from nutritionvalue.org's 1 cup = 185 g serving (https://www.nutritionvalue.org/Rice,_enriched,_raw,_regular,_long-grain,_white_nutritional_value.html): 213 mg K / 1.85 = 115 mg; 9 mg Na / 1.85 = 4.9 mg, rounded to 5 (the 9 mg is itself rounded, so sodium is approximate). A USDA-derived potassium table also gives 115 mg K for the unenriched raw record (FDC 169756). nutritionvalue shows fat as 0.7 g on one page and 0.6 g on another. Outlier: triagemethod gives 340 kcal."
+ },
+ {
+  "key": "millet_raw",
+  "usda_description": "Millet, raw",
+  "fdc_id": "169702",
+  "per_100g": {
+   "energy_kcal": 378,
+   "protein_g": 11.02,
+   "fat_g": 4.22,
+   "sat_fat_g": 0.723,
+   "carb_g": 72.85,
+   "fibre_g": 8.5,
+   "sugar_g": null,
+   "sodium_mg": 5,
+   "potassium_mg": 195
+  },
+  "source_url": "https://foods.fatsecret.com/calories-nutrition/usda/millet?portionid=62439&portionamount=100.000",
+  "notes": "FatSecret's USDA page gives 378 kcal, 4.22 g fat, 0.723 g sat fat, 72.85 g carb and 8.5 g fibre per 100 g. Protein 11.02 g is from a page citing FDC 169702 (https://vitals-hub.pages.dev/en/foods/millet-dry). foodstruct (https://foodstruct.com/food/millet-raw-nutrition) and MyFoodData (https://tools.myfooddata.com/nutrition-comparison/169702/100g) give sat fat 0.72 g. Potassium 195 mg and fibre 8.5 g also from MyFoodData; nutritionvalue.org gives 390 mg K per 200 g, which agrees. Sodium 5 mg from foodstruct. Sugar: foodstruct shows 0 g, FatSecret shows nothing, so left null. Energy: 378 kcal (FatSecret) vs 381 kcal on another site. Do not use FDC 2708377 (cooked millet, survey) or the Foundation whole-grain entry 2512379 (10.0 g protein)."
+ },
+ {
+  "key": "glutinous_rice_raw",
+  "usda_description": "Rice, white, glutinous, unenriched, uncooked",
+  "fdc_id": "168883",
+  "per_100g": {
+   "energy_kcal": 370,
+   "protein_g": 6.8,
+   "fat_g": 0.55,
+   "sat_fat_g": 0.111,
+   "carb_g": 81.68,
+   "fibre_g": 2.8,
+   "sugar_g": null,
+   "sodium_mg": 7,
+   "potassium_mg": 77
+  },
+  "source_url": "https://www.fatsecret.co.za/calories-nutrition/generic/white-rice-(glutinous)",
+  "notes": "FDC 168883 is from the getfoodfacts URL (https://getfoodfacts.com/food/rice-white-glutinous-unenriched-uncooked-168883), which gives 370 kcal, 6.8 g protein, 0.6 g fat, 81.7 g carb and 7 mg sodium. FatSecret gives 0.55 g fat, 0.111 g sat fat and 81.68 g carb. Fibre 2.8 g and potassium 77 mg from foodstruct (https://www.foodstruct.com/food/rice-white-glutinous-unenriched-uncooked); nutritionvalue.org (142 mg per 185 g) and MyFoodData 168883 (142.5 mg per 185 g cup) agree. Sugar: foodstruct shows 0 g, no other source, so left null. A separate foodstruct 'glutinous rice' page shows 10 mg K; it does not say it is this record, so ignored."
+ },
+ {
+  "key": "yam_raw",
+  "usda_description": "Yam, raw",
+  "fdc_id": "170071",
+  "per_100g": {
+   "energy_kcal": 118,
+   "protein_g": 1.53,
+   "fat_g": 0.17,
+   "sat_fat_g": 0.037,
+   "carb_g": 27.9,
+   "fibre_g": 4.1,
+   "sugar_g": 0.5,
+   "sodium_mg": 9,
+   "potassium_mg": 816
+  },
+  "source_url": "https://getfoodfacts.com/food/yam-raw-170071",
+  "notes": "This is the SR Legacy 'Yam, raw' (Dioscorea; not sweet potato). Search results for getfoodfacts 170071 and foodstruct (https://foodstruct.com/food/yam-raw-nutrition) give 118 kcal, 1.53 g protein, 27.9 g carb, 4.1 g fibre, 0.5 g sugars, 9 mg sodium and 816 mg potassium. Fat 0.17 g from FatSecret (https://foods.fatsecret.com/calories-nutrition/usda/yam?portionid=59407&portionamount=100.000) and nutritionvalue.org (0.255 g per 150 g cup). sat_fat converted from nutritionvalue.org's 1 cup cubes = 150 g serving: 0.056 g / 1.5 = 0.037 g (https://www.nutritionvalue.org/Yam%2C_raw_nutritional_value.html); MyFoodData 170071 gives 0.06 g per 150 g. Disagreements: one label shows 0.14 g fat and 8 mg sodium, another 0.2 g fat."
+ },
+ {
+  "key": "lotus_seeds_dried",
+  "usda_description": "Seeds, lotus seeds, dried",
+  "fdc_id": "170149",
+  "per_100g": {
+   "energy_kcal": 332,
+   "protein_g": 15.41,
+   "fat_g": 1.97,
+   "sat_fat_g": 0.33,
+   "carb_g": 64.47,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 5,
+   "potassium_mg": 1368
+  },
+  "source_url": "https://foods.fatsecret.com/calories-nutrition/usda/dried-lotus-seeds?portionid=59751&portionamount=100.000",
+  "notes": "The SR Legacy description is 'Seeds, lotus seeds, dried'; FDC 170149 is from the getfoodfacts URL (https://getfoodfacts.com/food/seeds-lotus-seeds-dried-170149), which gives 332 kcal, 15.4 g protein, 2.0 g fat, 64.5 g carb and 5 mg sodium. FatSecret's USDA page gives 15.41 g protein, 1.97 g fat, 64.47 g carb, 5 mg sodium and 1368 mg potassium, and shows dashes (missing, not zero) for fibre and sugars. sat_fat 0.33 g per 100 g from foodstruct (https://foodstruct.com/food/lotus-seeds); MyFoodData 170149 (0.09 g per 28 g) and nutritionvalue.org (0.1 g per 32 g) agree. Do not use raw lotus seeds (FDC 168591). No fibre or sugar value found in any USDA mirror."
+ },
+ {
+  "key": "jujube_dried",
+  "usda_description": "Jujube, Chinese, fresh, dried",
+  "fdc_id": "168152",
+  "per_100g": {
+   "energy_kcal": 281,
+   "protein_g": 4.72,
+   "fat_g": 0.5,
+   "sat_fat_g": null,
+   "carb_g": 72.5,
+   "fibre_g": 6.0,
+   "sugar_g": null,
+   "sodium_mg": 5,
+   "potassium_mg": 217
+  },
+  "source_url": "https://tools.myfooddata.com/nutrition-facts/168152/100g",
+  "notes": "MyFoodData 168152 (labelled USDA Standard Release) gives 281 kcal, 0.5 g fat, 4.7 g protein, 72.5 g carb, 6 g fibre, 5 mg sodium and 217 mg potassium per 100 g; foodstruct (https://foodstruct.com/food/jujube-chinese-fresh-dried) also gives 217 mg K and 0.5 g fat. Protein 4.72 g and 281 kcal from the SR Basic Report 09147 printout (https://growables.org/information/TropicalFruit/documents/JujubeDryNutr.pdf). Sat fat and total sugars are blank ('--') on MyFoodData. Sugar components on MyFoodData are sucrose 8.6 g, glucose 18.3 g, fructose 20.6 g (sum about 47.5 g, not a reported total, so sugar_g left null). Do not mix with FatSecret's older 'Dried Jujube' entry (https://foods.fatsecret.com/calories-nutrition/usda/dried-jujube?portionid=58575&portionamount=100.000): 287 kcal, 1.1 g fat, 3.7 g protein, 73.6 g carb, 9 mg sodium, no fibre."
+ },
+ {
+  "key": "goji_dried",
+  "usda_description": "Goji berries, dried",
+  "fdc_id": "173032",
+  "per_100g": {
+   "energy_kcal": 349,
+   "protein_g": 14.26,
+   "fat_g": 0.39,
+   "sat_fat_g": 0,
+   "carb_g": 77.06,
+   "fibre_g": 13,
+   "sugar_g": 45.61,
+   "sodium_mg": 298,
+   "potassium_mg": null
+  },
+  "source_url": "https://getfoodfacts.com/food/goji-berries-dried-173032",
+  "notes": "An SR Legacy record does exist: getfoodfacts and MyFoodData list 'Goji berries, dried', FDC 173032, as USDA Standard Reference. getfoodfacts gives 349 kcal, 14.3 g protein, 0.4 g fat, 77.1 g carb, 13 g fibre, 45.6 g sugars and 298 mg sodium; a page citing FDC 173032 and a supplier listing give the unrounded 14.26 g protein, 0.39 g fat, 77.06 g carb and 45.61 g sugars. vegnt gives 2980 mg sodium per kg, which agrees. sat_fat 0 g is the rounded value on MyFoodData's 100 g comparison table and on nutritionvalue.org; low confidence. Potassium: no source showed a per-100 g value for this record (MyFoodData's 100 g table leaves it blank). Unattributed or branded values seen: about 1130 mg/100 g (branded FDC 1868790), 1100 mg/100 g (retail label), 353.1 mg per 30 g serving (calorie site), and a search summary of MyFoodData 173032 giving 330 mg per 28 g that I could not confirm; not used. Soupersage gives 357 kcal (outlier)."
+ },
+ {
+  "key": "adzuki_raw",
+  "usda_description": "Beans, adzuki, mature seeds, raw",
+  "fdc_id": "173727",
+  "per_100g": {
+   "energy_kcal": 329,
+   "protein_g": 19.87,
+   "fat_g": 0.53,
+   "sat_fat_g": 0.191,
+   "carb_g": 62.9,
+   "fibre_g": 12.7,
+   "sugar_g": null,
+   "sodium_mg": 5,
+   "potassium_mg": 1254
+  },
+  "source_url": "https://www.fatsecret.co.nz/calories-nutrition/generic/adzuki-beans-(mature-seeds)?portionid=60945&portionamount=100.000",
+  "notes": "FDC 173727 is from the getfoodfacts URL (https://getfoodfacts.com/food/beans-adzuki-mature-seeds-raw-173727), which gives 329 kcal, 19.9 g protein, 0.5 g fat, 62.9 g carb, 12.7 g fibre and 5 mg sodium. FatSecret (NZ, and the USDA page https://foods.fatsecret.com/calories-nutrition/usda/adzuki-beans-(mature-seeds)?portionid=60945&portionamount=100.000) gives 329 kcal, 19.87 g protein, 0.53 g fat, 0.191 g sat fat, 62.9 g carb, 12.7 g fibre and 1254 mg potassium; its data is dated 2008. No sugar value seen for the raw record."
+ },
+ {
+  "key": "mung_raw",
+  "usda_description": "Mung beans, mature seeds, raw",
+  "fdc_id": "174256",
+  "per_100g": {
+   "energy_kcal": 347,
+   "protein_g": 23.86,
+   "fat_g": 1.15,
+   "sat_fat_g": 0.348,
+   "carb_g": 62.6,
+   "fibre_g": 16.3,
+   "sugar_g": 6.6,
+   "sodium_mg": 15,
+   "potassium_mg": 1246
+  },
+  "source_url": "https://getfoodfacts.com/food/mung-beans-mature-seeds-raw-174256",
+  "notes": "getfoodfacts 174256 gives 347 kcal, 23.9 g protein, 1.1 g fat, 62.6 g carb, 16.3 g fibre and 15 mg sodium. FatSecret gives 1.15 g fat and 0.348 g sat fat. Protein 23.86 g and potassium 1246 mg from nutritionvalue.org (https://www.nutritionvalue.org/Mung_beans%2C_raw%2C_mature_seeds_nutritional_value.html); MyFoodData's comparison (https://tools.myfooddata.com/nutrition-comparison/169957-174256/100g-100g) also gives 1246 mg K, 23.9 g protein and 62.6 g carb. Sugar 6.6 g per 100 g from FatSecret's USDA page (https://foods.fatsecret.com/calories-nutrition/usda/mung-beans-(mature-seeds)) and foodstruct; MyFoodData's 207 g cup (13.7 g) agrees. Do not use 'Mungo beans' (FDC 174259; 18.3 g fibre, 25.2 g protein) or sprouted mung beans (169957)."
+ },
+ {
+  "key": "waxgourd_raw",
+  "usda_description": "Waxgourd, (chinese preserving melon), raw",
+  "fdc_id": "170069",
+  "per_100g": {
+   "energy_kcal": 13,
+   "protein_g": 0.4,
+   "fat_g": 0.2,
+   "sat_fat_g": 0.016,
+   "carb_g": 3.0,
+   "fibre_g": 2.9,
+   "sugar_g": null,
+   "sodium_mg": 111,
+   "potassium_mg": 6
+  },
+  "source_url": "https://foods.fatsecret.com/calories-nutrition/usda/waxgourd-(chinese-preserving-melon)?portionid=59401&portionamount=100.000",
+  "notes": "FDC 170069 is from the getfoodfacts URL (https://getfoodfacts.com/food/waxgourd-chinese-preserving-melon-raw-170069), which gives 13 kcal, 0.4 g protein, 0.2 g fat, 3.0 g carb, 2.9 g fibre and 111 mg sodium. FatSecret's USDA page (data dated 2008) gives the same plus 0.016 g sat fat and 6 mg potassium, and shows a dash (missing) for sugars. nutritionvalue.org gives 8 mg K and 0.021 g sat fat per 132 g cup, which agrees. The unusually high sodium (111 mg) and low potassium (6 mg) are what the USDA record says; several sources agree. A foodstruct comparison gives 1.18 g sugar for 'winter melon' without naming the USDA record; not used. One older listing gives 2 g fibre."
+ },
+ {
+  "key": "pear_raw",
+  "usda_description": "Pears, raw",
+  "fdc_id": "169118",
+  "per_100g": {
+   "energy_kcal": 57,
+   "protein_g": 0.36,
+   "fat_g": 0.14,
+   "sat_fat_g": 0.022,
+   "carb_g": 15.2,
+   "fibre_g": 3.1,
+   "sugar_g": 9.75,
+   "sodium_mg": 1,
+   "potassium_mg": 116
+  },
+  "source_url": "https://getfoodfacts.com/food/pears-raw-169118",
+  "notes": "getfoodfacts 169118 gives 57 kcal, 0.36 g protein, 0.14 g fat, 15.2 g carb, 3.1 g fibre and 1 mg sodium per 100 g. Sat fat, sugar and potassium were converted from nutritionvalue.org's 140 g serving of 'Pears, raw' (https://www.nutritionvalue.org/Pears%2C_raw_nutritional_value.html): 0.031 g sat fat, 13.65 g sugars and 162 mg K per 140 g, divided by 1.4. MyFoodData 169118 gives 0.03 g sat fat and 13.7 g sugars per 140 g, which agrees. FatSecret's older USDA 'Pears' entry gives 119 mg K, 0.006 g sat fat and 9.8 g sugars per 100 g (different data release; not used). Variety records (bartlett, bosc, anjou, asian) differ and were not used."
+ },
+ {
+  "key": "lotus_root_raw",
+  "usda_description": "Lotus root, raw",
+  "fdc_id": "169250",
+  "per_100g": {
+   "energy_kcal": 74,
+   "protein_g": 2.6,
+   "fat_g": 0.1,
+   "sat_fat_g": 0.03,
+   "carb_g": 17.23,
+   "fibre_g": 4.9,
+   "sugar_g": null,
+   "sodium_mg": 40,
+   "potassium_mg": 556
+  },
+  "source_url": "https://www.fatsecret.com/calories-nutrition/usda/lotus-root?portionid=59147&portionamount=100.000&frc=True",
+  "notes": "FatSecret's USDA page (data dated 2008) gives 74 kcal, 2.6 g protein, 0.1 g fat, 0.03 g sat fat, 17.23 g carb, 4.9 g fibre, 40 mg sodium and 556 mg potassium, and shows a dash (missing) for sugars. getfoodfacts (https://getfoodfacts.com/food/lotus-root-raw-169250) gives 74 kcal, 4.9 g fibre and 40 mg sodium. FDC ID unsure: getfoodfacts uses 169250, while foodnutrify cites FDC 169218 for its 556 mg potassium figure. No sugar value found."
+ },
+ {
+  "key": "daikon_raw",
+  "usda_description": "Radishes, oriental, raw",
+  "fdc_id": "168451",
+  "per_100g": {
+   "energy_kcal": 18,
+   "protein_g": 0.6,
+   "fat_g": 0.1,
+   "sat_fat_g": 0.03,
+   "carb_g": 4.1,
+   "fibre_g": 1.6,
+   "sugar_g": 2.5,
+   "sodium_mg": 21,
+   "potassium_mg": 227
+  },
+  "source_url": "https://tools.myfooddata.com/nutrition-comparison/168462-168421-169988-168451-169145-170393-169975/100g-100g-100g-100g-100g-100g-100g",
+  "notes": "MyFoodData 168451 at 100 g gives 18 kcal, 0.6 g protein, 0.1 g fat, 4.1 g carb and 227 mg potassium. getfoodfacts (https://getfoodfacts.com/food/radishes-oriental-raw-168451) gives the same macros and 21 mg sodium. sat_fat 0.03 g from FatSecret (https://www.fatsecret.com.au/calories-nutrition/generic/oriental-radishes). Fibre 1.6 g and sugar 2.5 g were quoted for this food in the search results; MyFoodData's 116 g cup (2.9 g sugars, 263.3 mg K, 0.12 g fat) agrees after scaling. Do not use the dried oriental radish record."
+ },
+ {
+  "key": "lamb_leg_raw",
+  "usda_description": "Lamb, domestic, leg, whole (shank and sirloin), separable lean only, trimmed to 1/4\" fat, choice, raw",
+  "fdc_id": null,
+  "per_100g": {
+   "energy_kcal": 128,
+   "protein_g": 20.56,
+   "fat_g": 4.51,
+   "sat_fat_g": 1.61,
+   "carb_g": 0,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 62,
+   "potassium_mg": 289
+  },
+  "source_url": "https://foods.fatsecret.com/calories-nutrition/usda/lamb-leg-(whole-(shank-and-sirloin)-lean-only-trimmed-to-1-4-fat-choice-grade)?portionid=61167&portionamount=100.000",
+  "notes": "This is the record in the brief (SR NDB 17013 per recipetips). FatSecret's USDA page (data dated 2008) gives 128 kcal, 20.56 g protein, 4.51 g fat, 1.61 g sat fat, 0 g carb, 62 mg sodium, 289 mg potassium and 64 mg cholesterol per 100 g. happyforks (https://happyforks.com/food/lamb/7884) gives the same 128 kcal, 20.56 g protein, 4.51 g fat, 289 mg K and 62 mg Na; foodstruct gives 128 kcal and 64 mg cholesterol. FDC ID not confirmed: MyFoodData 174313 is titled 'Lamb, leg, whole (shank and sirloin), trimmed to 1/4\" fat, choice, raw' and gives 36 kcal, 1.3 g fat and 0.46 g sat fat per 28 g, which fits lean only, but no page tied 174313 to the full description. Do not use the lean-and-fat record (FDC 174311, about 230 kcal) or the sirloin-half record (174317, 134 kcal). No fibre or sugar values seen."
+ },
+ {
+  "key": "chicken_thigh_raw",
+  "usda_description": "Chicken, broilers or fryers, dark meat, thigh, meat only, raw",
+  "fdc_id": "173627",
+  "per_100g": {
+   "energy_kcal": 121,
+   "protein_g": 19.66,
+   "fat_g": 4.12,
+   "sat_fat_g": 1.07,
+   "carb_g": 0,
+   "fibre_g": 0,
+   "sugar_g": null,
+   "sodium_mg": 95,
+   "potassium_mg": 242
+  },
+  "source_url": "https://www.nutritionvalue.org/Chicken%2C_raw%2C_meat_only%2C_thigh%2C_dark_meat%2C_broilers_or_fryers_nutritional_value.html",
+  "notes": "In current SR Legacy the record is named 'Chicken, broilers or fryers, dark meat, thigh, meat only, raw' (FDC 173627, NDB 05096); the brief's wording is the older name of the same record. nutritionvalue.org gives 121 kcal, 0 g carb and 4.1 g fat per 100 g; a page citing FDC 173627 gives 19.66 g protein and 4.12 g fat (also on happyforks). Sodium and potassium converted from nutritionvalue.org's 113 g serving (107 mg Na, 273 mg K, divided by 1.13 = 94.7 and 241.6) and they agree with MyFoodData 173627's 149 g thigh (141.6 mg Na, 360.6 mg K = 95.0 and 242.0 per 100 g). A USDA-derived potassium table gives 242 mg per 100 g. sat_fat is APPROXIMATE: converted from rounded serving values, 1.2 g per 113 g (nutritionvalue) and 1.6 g per 149 g (MyFoodData), so somewhere around 1.04 to 1.11 g; 1.07 is the MyFoodData figure divided by 1.49. Fibre 0 g from an aggregator citing FDC 173627. An older release (FatSecret generic 'chicken thigh meat'; Recipal 'thigh, meat only, raw') gives 119 kcal, 19.65 g protein, 3.91 g fat and 1 g sat fat; not used."
+ },
+ {
+  "key": "duck_raw",
+  "usda_description": "Duck, domesticated, meat only, raw",
+  "fdc_id": "172410",
+  "per_100g": {
+   "energy_kcal": 135,
+   "protein_g": 18.28,
+   "fat_g": 5.95,
+   "sat_fat_g": 2.32,
+   "carb_g": 0.9,
+   "fibre_g": 0,
+   "sugar_g": 0,
+   "sodium_mg": 74,
+   "potassium_mg": 271
+  },
+  "source_url": "https://getfoodfacts.com/food/duck-domesticated-meat-only-raw-172410",
+  "notes": "getfoodfacts 172410 gives 135 kcal. 18.28 g protein, 5.95 g fat, about 0.9 g carb, 74 mg sodium and 271 mg potassium were quoted from USDA-derived listings of this record. FatSecret's USDA 'Duck Meat' page (https://foods.fatsecret.com/calories-nutrition/usda/duck-meat?portionid=57257&portionamount=100.000, dated 2008) gives 2.32 g sat fat, 5.95 g fat, 18.28 g protein, 74 mg sodium and 271 mg potassium, but 132 kcal and 0 g carb (older release; the page does not say raw). nutritionvalue.org and MyFoodData 172410 for a 137 g serving give 185 kcal, 8.2 g fat, 3.2 g sat fat, 1.3 g carb, 0 g fibre, 0 g sugars and 25 g protein, which agree after dividing by 1.37 (sat fat about 2.34). Fibre and sugar 0 are those rounded serving values. Carb 0.9 g is approximate."
+ },
+ {
+  "key": "pork_ribs_raw",
+  "usda_description": "Pork, fresh, spareribs, separable lean and fat, raw",
+  "fdc_id": "167853",
+  "per_100g": {
+   "energy_kcal": 277,
+   "protein_g": 15.47,
+   "fat_g": 23.4,
+   "sat_fat_g": 7.5,
+   "carb_g": null,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 81,
+   "potassium_mg": 242
+  },
+  "source_url": "https://tools.myfooddata.com/print/167853/100g",
+  "notes": "MyFoodData's print page for FDC 167853 at 100 g gives 277 kcal (the snippet stopped before sodium). 15.47 g protein and 23.4 g fat from a nutrient database page for this record; 7.5 g sat fat (38% DV) per 100 g from another database page. Sodium converted from nutritionvalue.org's 113 g serving (https://www.nutritionvalue.org/Pork,_raw,_separable_lean_and_fat,_spareribs,_fresh_nutritional_value.html): 92 mg / 1.13 = 81.4 mg; it gives 8.5 g sat fat (7.52 per 100 g) and 273 mg K (241.6 per 100 g) for the same serving. A potassium table lists 242 mg per 100 g for this record, but the same page shows 718 kcal, so it was not used on its own. Carb not seen. Do not use FatSecret 'Pork Spareribs (Whole)' (286 kcal, 17.09 g protein, 23.6 g fat) or the braised record 167854 (93 mg Na, 320 mg K)."
+ },
+ {
+  "key": "ginger_raw",
+  "usda_description": "Ginger root, raw",
+  "fdc_id": "169231",
+  "per_100g": {
+   "energy_kcal": 80,
+   "protein_g": 1.82,
+   "fat_g": 0.75,
+   "sat_fat_g": 0.203,
+   "carb_g": 17.77,
+   "fibre_g": 2.0,
+   "sugar_g": 1.7,
+   "sodium_mg": 13,
+   "potassium_mg": 415
+  },
+  "source_url": "https://foods.fatsecret.com/calories-nutrition/usda/ginger?portionid=59115&portionamount=100.000",
+  "notes": "FatSecret's USDA 'Ginger' page (dated 2008; it says 'Ginger', not 'Ginger root, raw') gives 80 kcal, 0.75 g fat, 0.203 g sat fat, 17.77 g carb, 2 g fibre, 1.7 g sugars, 13 mg sodium and 415 mg potassium per 100 g. Protein 1.82 g from a nutrition page for FDC 169231 (another gives 1.80 g). getfoodfacts 169231 (https://getfoodfacts.com/food/ginger-root-raw-169231) and other mirrors give the same 80 kcal, 2 g fibre, 1.7 g sugar, 13 mg Na and 415 mg K. Outlier: one site gives 83 kcal. Do not use ground ginger (FatSecret: 5.95 g fat, 1343 mg K)."
+ },
+ {
+  "key": "sesame_seeds",
+  "usda_description": "Seeds, sesame seeds, whole, dried",
+  "fdc_id": "170150",
+  "per_100g": {
+   "energy_kcal": 573,
+   "protein_g": 17.73,
+   "fat_g": 49.67,
+   "sat_fat_g": 6.957,
+   "carb_g": 23.4,
+   "fibre_g": 11.8,
+   "sugar_g": 0.3,
+   "sodium_mg": 11,
+   "potassium_mg": 468
+  },
+  "source_url": "https://www.fatsecret.com/calories-nutrition/usda/dried-whole-sesame-seeds?portionid=59756&portionamount=100.000",
+  "notes": "Carb 23.4 g is the rounded value several databases give for FDC 170150. FatSecret's USDA page (dated 2008) gives 573 kcal, 17.73 g protein, 49.67 g fat and 6.957 g sat fat; another summary of FatSecret gave sat fat as about 7 g. Fibre 11.8 g, sugar 0.3 g and sodium 11 mg were quoted for FDC 170150 in the search results (getfoodfacts and MyFoodData print page https://tools.myfooddata.com/print/170150/100g). Potassium 468 mg per 100 g from MyFoodData's 100 g comparison (https://tools.myfooddata.com/nutrition-comparison/170150/100g), nutritionvalue.org and foodstruct; MyFoodData's 9 g serving (42.1 mg) agrees. Calcium is 975 mg. Do not use decorticated kernels (FDC 169412) or roasted seeds."
+ },
+ {
+  "key": "walnuts",
+  "usda_description": "Nuts, walnuts, english",
+  "fdc_id": "170187",
+  "per_100g": {
+   "energy_kcal": 654,
+   "protein_g": 15.23,
+   "fat_g": 65.21,
+   "sat_fat_g": 6.126,
+   "carb_g": 13.7,
+   "fibre_g": 6.7,
+   "sugar_g": 2.61,
+   "sodium_mg": 2,
+   "potassium_mg": 441
+  },
+  "source_url": "https://getfoodfacts.com/food/nuts-walnuts-english-170187",
+  "notes": "getfoodfacts 170187 gives 654 kcal and 15.2 g protein. 65.21 g fat, 6.126 g sat fat and 2.61 g sugars from a USDA-derived listing (Wikipedia's walnut table gives the same); 13.7 g carb and 6.7 g fibre from a page listing 'Walnuts (raw, english)' per 100 g. Protein 15.23 g and sodium 2 mg from FatSecret's 100 g 'English Walnuts' entry (https://androidembeddedregional.fatsecret.com/calories-nutrition/usda/english-walnuts?portionid=59824&portionamount=100.000). Potassium 441 mg from MyFoodData's 100 g comparison for 170187; MyFoodData's recipe calculator also gives 2 mg sodium per 100 g. Outliers: 697 and 679 kcal on two sites. Do not use the Foundation record 'Nuts, walnuts, English, halves, raw' (FDC 2346394) or black walnuts."
+ },
+ {
+  "key": "chestnuts_chinese_raw",
+  "usda_description": "Nuts, chestnuts, chinese, raw",
+  "fdc_id": "170164",
+  "per_100g": {
+   "energy_kcal": 224,
+   "protein_g": 4.2,
+   "fat_g": 1.11,
+   "sat_fat_g": 0.164,
+   "carb_g": 49.07,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 3,
+   "potassium_mg": 447
+  },
+  "source_url": "https://getfoodfacts.com/food/nuts-chestnuts-chinese-raw-170164",
+  "notes": "getfoodfacts 170164 gives 224 kcal and 3 mg sodium. FatSecret (https://www.fatsecret.com.au/calories-nutrition/generic/chinese-chestnuts) gives 4.2 g protein, 49.07 g carb, 1.11 g fat and 0.164 g sat fat. Potassium 447 mg per 100 g from foodstruct (https://foodstruct.com/food/nuts-chestnuts-chinese-raw); nutritionvalue.org (127 mg per 28.35 g) and MyFoodData (126.9 mg per 1 oz) agree. Fibre: MyFoodData shows '--' (missing) and foodstruct shows 0 g, so left null. No sugar value seen. Do not use European or Japanese chestnut records."
+ },
+ {
+  "key": "longan_dried",
+  "usda_description": "Longans, dried",
+  "fdc_id": "169907",
+  "per_100g": {
+   "energy_kcal": 286,
+   "protein_g": 4.9,
+   "fat_g": 0.4,
+   "sat_fat_g": null,
+   "carb_g": 74.0,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 48,
+   "potassium_mg": 658
+  },
+  "source_url": "https://foods.fatsecret.com/calories-nutrition/usda/dried-longans?portionid=58591&portionamount=100.000",
+  "notes": "FatSecret's USDA page (dated 2008) gives 286 kcal, 4.9 g protein, 0.4 g fat, 74.0 g carb, 48 mg sodium and 658 mg potassium, and shows dashes (missing) for sat fat, fibre and sugars. The SR Basic Report 09173 printout (https://www.growables.org/information/TropicalFruit/documents/LonganDry.pdf) shows 286 kcal and 4.90 g protein. MyFoodData 169907 also leaves fibre, sugars and sat fat blank. Recipal lists 20 g fibre and 50 g sugars, but it did not match the USDA record and the basis is unclear, so not used."
+ },
+ {
+  "key": "honey",
+  "usda_description": "Honey",
+  "fdc_id": "169640",
+  "per_100g": {
+   "energy_kcal": 304,
+   "protein_g": 0.3,
+   "fat_g": 0,
+   "sat_fat_g": null,
+   "carb_g": 82.4,
+   "fibre_g": 0.2,
+   "sugar_g": 82.12,
+   "sodium_mg": 4,
+   "potassium_mg": 52
+  },
+  "source_url": "https://getfoodfacts.com/food/honey-169640",
+  "notes": "getfoodfacts 169640 (SR Legacy) gives 304 kcal, 0.3 g protein and 82.4 g carb; a listing gives 0 g fat. Fibre 0.20 g and sugars 82.12 g (fructose 40.94 g, glucose 35.75 g) from fitnessvolt (https://fitnessvolt.com/app/foods/honey/). Sodium 4 mg and potassium 52 mg per 100 g from MyFoodData's 100 g comparison (https://tools.myfooddata.com/nutrition-comparison/169640-168833/100g-100g) and FatSecret's USDA page (https://foods.fatsecret.com/calories-nutrition/usda/honey?portionid=62267&portionamount=100.000&frc=True). No sat fat value seen. Do not use the survey record FDC 2710281 or branded honeys."
+ },
+ {
+  "key": "sugar_white",
+  "usda_description": "Sugars, granulated",
+  "fdc_id": "169655",
+  "per_100g": {
+   "energy_kcal": 387,
+   "protein_g": 0,
+   "fat_g": 0,
+   "sat_fat_g": null,
+   "carb_g": 99.98,
+   "fibre_g": null,
+   "sugar_g": 99.8,
+   "sodium_mg": 1,
+   "potassium_mg": 2
+  },
+  "source_url": "https://getfoodfacts.com/food/sugars-granulated-169655",
+  "notes": "Stands in for rock sugar. getfoodfacts 169655 gives 387 kcal in its nutrition table (390 in one sentence on the same page), 0 g protein, 0 g fat, 99.8 g total sugars and 1.00 mg sodium. getfoodfacts' comparison (https://getfoodfacts.com/compare/sugars-granulated-169655/sugars-granulated-334247/sugars-granulated-746784) gives 1 mg sodium and 2 mg potassium per 100 g for 169655 and the Foundation record 334247 (385 kcal). Carb 99.98 g from FatSecret's USDA 'Granulated Sugar' page (https://foods.fatsecret.com/calories-nutrition/usda/granulated-sugar?portionid=62290&portionamount=100.000), which also gives 387 kcal, 99.91 g sugars, 0 mg sodium and 2 mg potassium (older release). One listing gives 0.32 g fat; not used. Branded granulated sugars show 375 kcal (label rounding); not used."
+ },
+ {
+  "key": "cloud_ear_dried",
+  "usda_description": "Fungi, Cloud ears, dried",
+  "fdc_id": "168581",
+  "per_100g": {
+   "energy_kcal": 284,
+   "protein_g": 9.25,
+   "fat_g": 0.73,
+   "sat_fat_g": null,
+   "carb_g": 73.0,
+   "fibre_g": 70.1,
+   "sugar_g": null,
+   "sodium_mg": 35,
+   "potassium_mg": 754
+  },
+  "source_url": "https://getfoodfacts.com/food/fungi-cloud-ears-dried-168581",
+  "notes": "getfoodfacts 168581 and FatSecret's USDA page (https://www.fatsecret.com/calories-nutrition/usda/fungi-dried-(clouds-ears)?frc=True) give 284 kcal, 9.25 g protein, 0.73 g fat, about 73 g carb and 35 mg sodium; getfoodfacts and nutrientnorms give 70.1 g fibre. Potassium 754 mg per 100 g from foodstruct; UH Hospitals' 1 cup = 28 g (211.12 mg K, 9.8 mg Na; https://www.uhhospitals.org/health-information/health-and-wellness-library/article/nutritionfacts-v1/fungi-cloud-ears-dried-1-cup) and MyFoodData's 25 g serving (188.5 mg K) both work out to 754 mg. Sat fat and sugars: FatSecret shows none; getfoodfacts shows 0 g per 28 g serving (rounded), so left null. Carb was seen only as 73 g. Not the same as Korean-table 'tree ear mushroom' entries on nutritionvalue.org (167 kcal, 1190 mg K)."
+ },
+ {
+  "key": "pumpkin_raw",
+  "usda_description": "Pumpkin, raw",
+  "fdc_id": "168448",
+  "per_100g": {
+   "energy_kcal": 26,
+   "protein_g": 1.0,
+   "fat_g": 0.1,
+   "sat_fat_g": 0.052,
+   "carb_g": 6.5,
+   "fibre_g": 0.5,
+   "sugar_g": 2.76,
+   "sodium_mg": 1,
+   "potassium_mg": 340
+  },
+  "source_url": "https://foods.fatsecret.com/calories-nutrition/usda/pumpkin?portionid=59282&portionamount=100.000",
+  "notes": "FatSecret's USDA page (dated 2008) gives 26 kcal, 1 g protein, 0.1 g fat, 0.052 g sat fat, 6.5 g carb, 0.5 g fibre, 1 mg sodium and 340 mg potassium per 100 g, but 1.36 g sugars, which looks like an older release. Sugar 2.76 g converted from nutritionvalue.org's 1 cup (1-inch cubes) = 116 g serving (https://www.nutritionvalue.org/Pumpkin%2C_raw_nutritional_value.html): 3.20 g / 1.16; MyFoodData 168448 gives the same 3.2 g per 116 g, and one aggregator gives 2.8 g per 100 g. The same nutritionvalue serving gives 394 mg K (340 per 100 g), which agrees. getfoodfacts 168448 gives 1 mg sodium. Do not use 'Squash, pie pumpkin, peeled, seeded, raw' (Foundation, FDC 2727578)."
+ },
+ {
+  "key": "shiitake_dried",
+  "usda_description": "Mushrooms, shiitake, dried",
+  "fdc_id": "168436",
+  "per_100g": {
+   "energy_kcal": 296,
+   "protein_g": 9.58,
+   "fat_g": 0.99,
+   "sat_fat_g": 0.247,
+   "carb_g": 75.37,
+   "fibre_g": 11.5,
+   "sugar_g": 2.2,
+   "sodium_mg": 13,
+   "potassium_mg": 1534
+  },
+  "source_url": "https://getfoodfacts.com/food/mushrooms-shiitake-dried-168436",
+  "notes": "getfoodfacts 168436 gives 296 kcal, 9.6 g protein, 1.0 g fat, 75.4 g carb and 13 mg sodium. 9.58 g protein, 0.99 g fat and 75.37 g carb from a 100 g nutrition summary (also in the SR NDB 11268 text, which gives carb 75.37 g). sat_fat: 0.247 g (FatSecret) vs 0.23 g (another site). Fibre 11.5 g and sugar 2.2 g were quoted for this record in the search results. Potassium 1534 mg per 100 g from vegnt (https://vegnt.com/foods/mushrooms_shiitake_dried.html) and foodstruct; nutritionvalue.org gives 55 mg per mushroom (about 3.6 g), which agrees. Do not use raw shiitake (169242) or the Foundation record 1999628."
+ },
+ {
+  "key": "pine_nuts",
+  "usda_description": "Nuts, pine nuts, dried",
+  "fdc_id": "170591",
+  "per_100g": {
+   "energy_kcal": 673,
+   "protein_g": 13.7,
+   "fat_g": 68.4,
+   "sat_fat_g": 4.899,
+   "carb_g": 13.1,
+   "fibre_g": 3.7,
+   "sugar_g": 3.59,
+   "sodium_mg": 2,
+   "potassium_mg": 597
+  },
+  "source_url": "https://foods.fatsecret.com/calories-nutrition/usda/dried-pine-nuts?portionid=59819&portionamount=100.000",
+  "notes": "FDC 170591 is from the getfoodfacts URL (https://getfoodfacts.com/food/nuts-pine-nuts-dried-170591), which gives 673 kcal, 13.7 g protein, 68.4 g fat, 13.1 g carb and 2 mg sodium. FatSecret's USDA page (dated 2008) gives 68.4 g fat, 13.7 g protein, 13.1 g carb, 3.7 g fibre, 3.59 g sugars, 2 mg sodium and 597 mg potassium; sat fat 4.899 g from a FatSecret listing. nutritionvalue.org also gives 597 mg K. Disagreement: one site gives 6.6 g sat fat (unclear record). Do not use pinyon pine nuts (170592: about 629 kcal, 61 g fat, 628 mg K) or the Foundation 'Nuts, pine nuts, raw' (2346392: 654.8 mg K)."
+ },
+ {
+  "key": "milk_whole",
+  "usda_description": "Milk, whole, 3.25% milkfat, with added vitamin D",
+  "fdc_id": "171265",
+  "per_100g": {
+   "energy_kcal": 61,
+   "protein_g": 3.15,
+   "fat_g": 3.25,
+   "sat_fat_g": 1.865,
+   "carb_g": 4.8,
+   "fibre_g": 0,
+   "sugar_g": 5.04,
+   "sodium_mg": 43,
+   "potassium_mg": 132
+  },
+  "source_url": "https://tools.myfooddata.com/nutrition-facts/171265/wt9",
+  "notes": "MyFoodData 171265 (labelled USDA Standard Release) gives, for its 16 oz = 488 g serving, 15.9 g fat, 9.1 g sat fat, 24.6 g sugars and 644.2 mg potassium; sat fat, sugar and potassium here are those values divided by 4.88 (1.865 g, 5.04 g, 132.0 mg). Sodium converted from nutritionvalue.org's 1 cup = 244 g (https://www.nutritionvalue.org/Milk,_with_added_vitamin_D,_3.25%_milkfat,_whole_nutritional_value.html): 105 mg / 2.44 = 43 mg; the same page gives 322 mg K and 4.6 g sat fat per cup (132 mg and 1.89 g per 100 g). nutritionvalue's unfortified-milk comparison also gives 43 mg Na per 100 g. 61 kcal, 3.15 g protein, 3.25 g fat and 4.8 g carb per 100 g were quoted by several mirrors (foodstruct, nutrientnorms); one USDA-based page gives 5.1 g sugar and 0 g fibre. Disagreement: one site gives 38 mg sodium and another 60 kcal (FatSecret's old generic entry). The getfoodfacts page with this exact description (FDC 322892) is a different (Foundation-series) record and was not used."
+ },
+ {
+  "key": "salt_table",
+  "usda_description": "Salt, table",
+  "fdc_id": "173468",
+  "per_100g": {
+   "energy_kcal": 0,
+   "protein_g": 0,
+   "fat_g": 0,
+   "sat_fat_g": null,
+   "carb_g": 0,
+   "fibre_g": 0,
+   "sugar_g": null,
+   "sodium_mg": 38758,
+   "potassium_mg": 8
+  },
+  "source_url": "https://getfoodfacts.com/food/salt-table-173468",
+  "notes": "getfoodfacts 173468 (SR Legacy) gives 0 kcal, 0 g protein, 0 g fat, 0 g fibre and 38,758 mg sodium per 100 g. A Hawaii extension handout citing the USDA National Nutrient Database gives the same 38,758 mg and 0 g carb (https://www.ctahr.hawaii.edu/NEW/EFNEP/forms/meetings/2012/Oct12_Salt.pdf); foodstruct also gives 38,758 mg. Potassium 8 mg from a 2023 printout of the USDA record (https://ACL.gov/sites/default/files/nutrition/SaltAndSodium2023.pdf) and foodstruct. 38,700 mg belongs to 'Salt, table, iodized' (FDC 746775), a different record."
+ },
+ {
+  "key": "barley_pearled_raw",
+  "usda_description": "Barley, pearled, raw",
+  "fdc_id": "170284",
+  "per_100g": {
+   "energy_kcal": 352,
+   "protein_g": 9.91,
+   "fat_g": 1.16,
+   "sat_fat_g": 0.244,
+   "carb_g": 77.72,
+   "fibre_g": 15.6,
+   "sugar_g": 0.8,
+   "sodium_mg": 9,
+   "potassium_mg": 280
+  },
+  "source_url": "https://getfoodfacts.com/food/barley-pearled-raw-170284",
+  "notes": "getfoodfacts 170284 gives 352 kcal, 9.9 g protein, 1.2 g fat, 77.7 g carb, 15.6 g fibre and 9 mg sodium. FatSecret (https://www.fatsecret.com.au/calories-nutrition/generic/pearled-barley) gives 1.16 g fat, 0.244 g sat fat, 77.72 g carb and 280 mg potassium. Protein and potassium confirmed by UH Hospitals' 1 cup = 200 g (19.82 g protein, 560 mg K; https://www.uhhospitals.org/health-information/health-and-wellness-library/article/nutritionfacts-v1/barley-pearled-raw-1-cup); nutritionvalue.org and MyFoodData give the same 560 mg per 200 g. Sugar 0.8 g was quoted for this record in the search results. Disagreements: foodstruct gives 16 g fibre; one site gives 340 kcal."
+ },
+ {
+  "key": "black_soybeans_raw",
+  "usda_description": "Beans, black turtle, mature seeds, raw",
+  "fdc_id": "175186",
+  "per_100g": {
+   "energy_kcal": 339,
+   "protein_g": 21.25,
+   "fat_g": 0.9,
+   "sat_fat_g": 0.23,
+   "carb_g": 63.25,
+   "fibre_g": 15.5,
+   "sugar_g": 2.1,
+   "sodium_mg": 9,
+   "potassium_mg": 1500
+  },
+  "source_url": "https://getfoodfacts.com/food/beans-black-turtle-mature-seeds-raw-175186",
+  "notes": "This is the black turtle bean, as the brief asked; it is NOT a black soybean, so the key name is misleading. getfoodfacts 175186 gives 339 kcal, 21.3 g protein, 0.9 g fat, 63.3 g carb, 15.5 g fibre, 2.1 g sugars and 9 mg sodium. 21.25 g protein and 63.25 g carb from another listing of this record. sat_fat 0.23 g and fat 0.9 g from MyFoodData's 100 g comparison (https://tools.myfooddata.com/nutrition-comparison/175186/100g); FatSecret's 1.66 g fat per 184 g cup agrees. Potassium 1500 mg per 100 g from a nutrient database entry for this record (nutrientnorms / potassium table); seen in one source only. Do not use 'Beans, black, mature seeds, raw' (173734)."
+ }
+]

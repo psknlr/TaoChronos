@@ -3,16 +3,19 @@
 A mode of the web client in which 道乃久 gives evidence-based eating advice and weight-management plans to adults
 anywhere: by the visitor's own country — its food guide and limits, the BMI scale that fits them, its season and
 festivals, and its dishes where there is a dish pack — and by international (WHO) defaults until they say where they
-live; with an optional traditional (TCM) food layer, every number from the mode's own tools with its source, and
-nothing of the conversation recorded.  The decisions and their reasons: [ADR 0029](adr/0029-diet-and-weight-for-singapore.md)
-(the mode, its privacy, its screening) and [ADR 0030](adr/0030-diet-and-weight-worldwide.md) (every region).  The
-code: `web/js/diet/` (the engine and tools; `regions.js` the countries), `web/js/view/diet.js` (its screens); tests:
-`tests/test_diet.py`.
+live; with an optional traditional (TCM) food layer, medicinal dishes (药膳) by constitution, season and time of day,
+every number from the mode's own tools with its source, and nothing of the conversation recorded.  The decisions and
+their reasons: [ADR 0029](adr/0029-diet-and-weight-for-singapore.md) (the mode, its privacy, its screening),
+[ADR 0030](adr/0030-diet-and-weight-worldwide.md) (every region) and [ADR 0031](adr/0031-medicinal-dishes.md)
+(medicinal dishes).  The code: `web/js/diet/` (the engine and tools; `regions.js` the countries; `constitution.js`,
+`medicinal.js` and the generated `medicinal-data.js`), `web/js/view/diet.js` and `web/js/view/medicinal.js` (its
+screens); tests: `tests/test_diet.py`.
 
 ```
  visitor ──► 饮食与体重管理 (side bar)            the page                                    model service
               │                              ┌──────────────────────────────────────┐      (the visitor's
               ├─ quick check ──────────────► │ assess · plan        (no model, nothing sent)  choice)
+              ├─ constitution self-check ──► │ constitution · medicinal  (no model, nothing sent)
               │                              │                                      │
               └─ a question ───────────────► │ agent loop ── tool call diet__* ──► web/js/diet/*.js
                                              │     ▲                 (no runtime, no server)
@@ -49,6 +52,8 @@ code: `web/js/diet/` (the engine and tools; `regions.js` the countries), `web/js
 | `diet__dishes` (菜品营养) | Dishes by name or kind, with every nutrient the source gave, the source, another source's figure when they disagree, and why a dish is not for this visitor. |
 | `diet__context` (季节与节令) | The date on the visitor's clock, the season where they live (temperate seasons by hemisphere, tropical wet and dry, South Asia's and Singapore's monsoons) and what it means for eating, hydration and food safety, the current and next solar term (a Chinese cultural calendar, with what it means there), and the festive seasons in the next 60 days worldwide, those kept where the visitor lives first. |
 | `diet__food_nature` (食物寒热) | The natures (寒/凉/平/温/热, "heaty"/"cooling") of ordinary foods where references agree, the disputed ones, and what two preference answers mean for food style.  `tcm_pattern_status: unconfirmed`. |
+| `diet__constitution` (体质自测) | The 60-question constitution questionnaire (ZYYXH/T157-2009) scored as the standard scores it: transformed scores and 是 / 倾向是 / 基本是; a type judged only when all its items are answered.  The questionnaire itself is on the opening screen; the model does not ask it. |
+| `diet__medicinal` (药膳推荐) | Medicinal dishes for the constitution, the local season and the time of day, after a safety screen; each with why it fits, ingredients and method, nutrition per serving, its classical passages (with passage ids, as citations) and cautions; the dishes left out and why.  See [Medicinal dishes](#medicinal-dishes-药膳). |
 | `diet__progress` (体重趋势) | Weigh-ins as a trend (least squares over four weeks; this week's average against last week's): too early, on track, faster than planned, plateau, rising, stable. |
 
 ### Screening
@@ -68,6 +73,43 @@ Diabetes alone asks first whether the visitor takes insulin or a sulfonylurea.  
 background, a BMI of 23–24.9 or 27.5–29.9 with weight loss asked for makes the background a question (the scales
 disagree there on whether a deficit is advised).  A value out of human bounds is reported
 and not used.  The sex for the equation may be withheld: then no energy number is given, and portions follow the plate.
+
+## Medicinal dishes (药膳)
+
+[ADR 0031](adr/0031-medicinal-dishes.md).  Traditional food care (食养) for wellbeing — never a treatment.
+
+- **On the opening screen**, 体质自测与药膳推荐（不用模型）: the sixty questions of 中华中医药学会 ZYYXH/T157-2009 (the
+  CCMQ; in Chinese and English only, the page around them in every language), sex (it decides one 湿热质 question),
+  age, country, a safety check (conditions, regular medicines, allergies, food rules) and the meal; the result —
+  nine transformed scores and judgements, then the dishes in a table (meal, dish and ingredients, why it fits, energy
+  and protein, the classical passage) with each method, its cautions and the dishes left out — is computed in the
+  page and sent nowhere.  带着结果问道乃久 sends a one-line summary as the visitor's message.
+- **In chat**, the model calls `diet__medicinal` and recommends only what it returns, quoting the passages exactly
+  (「…」[[passage_id]]); the page marks them 原文一致 and as returned by the turn's tools.
+
+| Step | Rule |
+|---|---|
+| not offered | pregnancy, breastfeeding, under 18, kidney disease, an eating disorder, unexplained weight loss — ordinary meals instead |
+| asked first | health conditions and regular medicines (and allergies when a food allergy is mentioned) |
+| left out | an allergen; meat for vegetarians, milk or egg for vegans, pork for halal or no-pork; goji or dang gui with a blood thinner (warfarin: case reports); astragalus with an immunosuppressant; any herb with "other" or "not sure" medicines; a long-simmered meat broth with gout; a dish a text warns against for the constitution, cold dishes for 阳虚质, hot ones for 阴虚质 and 湿热质; a season (by the visitor's hemisphere and climate) or a time of day the texts forbid (羊肉「夏月不可食」; ginger not in the evening) |
+| ranked | constitution (是 3, 倾向是 1.5; mild dishes for a balanced or unknown one), then season (2); "day" gives up to two per meal (breakfast, lunch, afternoon, dinner); late in the evening, none — the classics' advice instead |
+
+**The dishes** (`data/diet/make_medicinal.py` → `web/js/diet/medicinal-data.js`): 23 — congees (山药, 小米, 莲子,
+薏苡仁, 绿豆, 赤小豆, 枸杞, 核桃, 牛奶, 胡萝卜), soups and braises (当归生姜羊肉汤, 板栗焖鸡, 冬瓜汤, 白萝卜汤,
+莲藕排骨汤, 黄芪炖鸡, 韭菜炒蛋), teas (姜枣茶, 姜橘汤, 枸杞菊花茶, 山楂茶) and desserts (蒸梨, 黑芝麻糊).  Every
+ingredient is an everyday food or on China's food–medicine list (106 substances: 2002, 2019 — 当归 as a seasoning only —
+2023 — 黄芪 — and 2024), in recipe amounts.
+
+**The classics**: 55 quotations from 神农本草经, 金匮要略, 备急千金要方, 千金食治, 食鉴本草, 寿世青编, 寿亲养老新书,
+产宝 and the 素问 — each checked, character for character, against its passage in `corpus/web` when the module is built
+(and again by a test).  Where the texts disagree, both are given; where a dish began as a prescription
+(当归生姜羊肉汤 for 寒疝 in the 金匮要略), the result says so.
+
+**Nutrition**: per serving, the sum of USDA FoodData Central values (`data/diet/medicinal-usda.sources.json`, 32
+foods, read from search extracts of mirror pages naming each record — to be checked against FoodData Central before
+production use); herbs without a record (薏苡仁, 陈皮, 菊花, 当归, 黄芪, 山楂) and Chinese chives are listed as not
+counted.  Sodium against the region's daily limit, optional added sugar, white-rice congee's glycaemic note for
+diabetes, and the fat of broths are said.
 
 ## Regions
 
@@ -154,6 +196,8 @@ is not modern evidence, a rule of this project is not a trial result.
   review — today the season is calendar-only.
 - National limits are checked for WHO, Singapore, the UK, the US and China; the other guides fall back on WHO's numbers.
 - Festival dates are published for 2026–2027 only (the computed ones run on).
-- The page's own screens are in Chinese, English, Malay and Traditional Chinese; the other four languages show the new
-  strings in Chinese until translated.
+- The page's own screens are in Chinese, English, Malay and Traditional Chinese (the medicinal-dish panel in all eight
+  languages, its questionnaire in Chinese and English); elsewhere the other four languages show some strings in Chinese.
+- Medicinal dishes: the 2009 questionnaire until the 2025 national standard's text is available; few dishes for
+  血瘀质; Chinese dishes only; a short list of herb–drug interactions (anyone on regular medicines is sent to a pharmacist).
 - The engine is JavaScript only; the Python harness, the tool console and the D1 backup do not carry it.

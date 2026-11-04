@@ -65,6 +65,11 @@ DIET_PROFILE = {"goal": "lose_weight", "age": 30, "sex": "male", "height_cm": 17
                 "conditions": ["none"]}
 DIET_ANSWER = ("## 今天的方案\n\n按你的情况，每天约摄入上方步骤中核算的热量范围；三餐见上方方案，点餐时少饭、多菜、汤汁少喝。\n\n"
                "以上由 diet__plan 核算，不构成诊断或治疗。")
+# a diet turn asking for medicinal dishes: the dishes of a breakfast for qi deficiency in China, and an answer quoting the
+# first dish's classic as the tool returned it, with its passage id (the page checks it word for word)
+MEDICINAL = "药膳"
+MEDICINAL_ARGS = {"profile": {"conditions": ["none"], "medicines": ["none"]}, "constitution": {"primary": ["qixu"], "source": "questionnaire"},
+                  "region": "CN", "time": "breakfast"}
 # the page's note on a turn taken up again (继续作答, web/js/agent.js resumeNote), after the last of its tool results
 RESUMED = "［提示：上一次作答没有完成，工具不再调用。请根据上面已有的工具结果直接作答；没有得到的结果，请在回答中说明缺了什么，不要编造］"
 # a message carrying the user's data: its prescriptions analysed by diagnosis, its first row quoted
@@ -133,7 +138,7 @@ class _Handler(BaseHTTPRequestHandler):
         diet = any((t.get("function") or {}).get("name") == "diet__assess" for t in body.get("tools") or [])
         if diet:
             done = sum(m.get("role") == "tool" for m in messages[last_user + 1:])
-            chunks = self._diet(done)
+            chunks = self._medicinal(done, messages) if MEDICINAL in asked else self._diet(done)
         elif body.get("tools") and answered and "长篇" in asked:
             chunks = self._long(said[-1].startswith(WRITE_ON))
         elif body.get("tools") and answered and "想得很久" in asked:
@@ -214,6 +219,19 @@ class _Handler(BaseHTTPRequestHandler):
         yield {"choices": [{"index": 0, "delta": {"tool_calls": [{"index": 0, "id": f"call_d{done}", "type": "function", "function": {
             "name": name, "arguments": json.dumps(args)}}]}}]}
         yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]}
+
+    def _medicinal(self, done: int, messages: list):
+        """A medicinal-dish turn: the tool, then an answer naming the first dish and quoting its classic."""
+        if done == 0:
+            yield {"choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}}]}
+            yield {"choices": [{"index": 0, "delta": {"tool_calls": [{"index": 0, "id": "call_m0", "type": "function", "function": {
+                "name": "diet__medicinal", "arguments": json.dumps(MEDICINAL_ARGS)}}]}}]}
+            yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]}
+            return
+        result = json.loads([m for m in messages if m.get("role") == "tool"][-1]["content"])
+        first = result["dishes"][0]
+        q = first["classics"][0]
+        yield from self._said(f"## 早餐药膳\n\n推荐{first['zh']}。《{q['work']}》：「{q['quote']}」[[{q['passage_id']}]]——这是古籍的说法，不是现代疗效证据。")
 
     @staticmethod
     def _said(text: str):
