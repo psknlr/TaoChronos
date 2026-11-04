@@ -574,5 +574,383 @@
   },
   "source_url": "https://getfoodfacts.com/food/beans-black-turtle-mature-seeds-raw-175186",
   "notes": "This is the black turtle bean, as the brief asked; it is NOT a black soybean, so the key name is misleading. getfoodfacts 175186 gives 339 kcal, 21.3 g protein, 0.9 g fat, 63.3 g carb, 15.5 g fibre, 2.1 g sugars and 9 mg sodium. 21.25 g protein and 63.25 g carb from another listing of this record. sat_fat 0.23 g and fat 0.9 g from MyFoodData's 100 g comparison (https://tools.myfooddata.com/nutrition-comparison/175186/100g); FatSecret's 1.66 g fat per 184 g cup agrees. Potassium 1500 mg per 100 g from a nutrient database entry for this record (nutrientnorms / potassium table); seen in one source only. Do not use 'Beans, black, mature seeds, raw' (173734)."
+ },
+ {
+  "key": "pork_lean_raw",
+  "usda_description": "Pork, fresh, loin, tenderloin, separable lean only, raw",
+  "fdc_id": "168249",
+  "per_100g": {
+   "energy_kcal": 109,
+   "protein_g": 20.9,
+   "fat_g": 2.2,
+   "sat_fat_g": 0.7,
+   "carb_g": 0,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 53,
+   "potassium_mg": 399
+  },
+  "source_url": "https://getfoodfacts.com/food/pork-fresh-loin-tenderloin-separable-lean-only-raw-168249",
+  "notes": "Values read from search-result extracts (USDA pages are blocked here). getfoodfacts (FDC 168249, exact description) gives 109 kcal, 20.9 g protein, 2.2 g fat, 0 g carb and 53 mg sodium per 100 g (rounded to one decimal). Sat fat 0.7 g and potassium 399 mg are from foodstruct (https://foodstruct.com/food/pork-fresh-loin-tenderloin-separableleanonly-raw and its /potassium page). MyFoodData's comparison tool for 168249 gives 93 kcal, 17.8 g protein, 1.8 g fat and 339.2 mg K per 3 oz (85 g), i.e. 109 kcal and 399 mg K per 100 g, which agrees. Disagreement: FatSecret's 'Pork Loin (Tenderloin, Lean Only)' and UH Hospitals' 1 lb listing give about 120 kcal, 20.99 g protein, 3.41 g fat per 100 g - an older SR release, not used. Do not use the 'enhanced' record (106 kcal, 527 mg K). The getfoodfacts page also shows an implausible vitamin D figure (irrelevant here). No fibre or sugar values seen."
+ },
+ {
+  "key": "pork_kidney_raw",
+  "usda_description": "Pork, fresh, variety meats and by-products, kidneys, raw",
+  "fdc_id": "168270",
+  "per_100g": {
+   "energy_kcal": 100,
+   "protein_g": 16.46,
+   "fat_g": 3.25,
+   "sat_fat_g": 1.04,
+   "carb_g": 0,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 121,
+   "potassium_mg": 229
+  },
+  "source_url": "https://foods.fatsecret.com/calories-nutrition/usda/pork-kidneys",
+  "notes": "Values read from search-result extracts. FatSecret's USDA page (last updated 04 Feb 08) gives 100 kcal, 16.46 g protein, 3.25 g fat, 1.04 g sat fat, 0 g carb, 121 mg sodium and 319 mg cholesterol per 100 g. getfoodfacts (FDC 168270, exact description) gives 100 kcal, 16.5 g protein, 3.3 g fat, 0 g carb, which agrees. Potassium 229 mg from happyforks (https://happyforks.com/food/pork/6725); a FatSecret mirror shows the same 229 mg. foodstruct gives sat fat 1 g (rounded). No fibre or sugar values seen."
+ },
+ {
+  "key": "lamb_liver_raw",
+  "usda_description": "Lamb, variety meats and by-products, liver, raw",
+  "fdc_id": "172531",
+  "per_100g": {
+   "energy_kcal": 139,
+   "protein_g": 20.38,
+   "fat_g": 5.02,
+   "sat_fat_g": 1.94,
+   "carb_g": 1.78,
+   "fibre_g": 0,
+   "sugar_g": null,
+   "sodium_mg": 70,
+   "potassium_mg": 314
+  },
+  "source_url": "https://happyforks.com/food/lamb/5044",
+  "notes": "Values read from search-result extracts. happyforks gives 139 kcal, 20.38 g protein, 5.02 g fat and 1.78 g carb per 100 g; getfoodfacts (FDC 172531, exact description) gives 139 kcal, 20.4 g protein, 5.0 g fat, 1.8 g carb, 70 mg sodium and 0 g fibre. Sat fat and potassium are CONVERTED from MyFoodData's comparison tool for 172531 at 1 oz (28.35 g): 0.55 g sat fat -> 1.94 g, 88.9 mg K -> 314 mg per 100 g (sat fat input is rounded, so approximate). MyFoodData shows sugars as missing, so sugar is null. Another table quoted 353.69 mg K with no clear basis; not used. Do not use the New Zealand imported liver record (FDC 172615: 136 kcal, 59 mg Na)."
+ },
+ {
+  "key": "chicken_liver_raw",
+  "usda_description": "Chicken, liver, all classes, raw",
+  "fdc_id": "171060",
+  "per_100g": {
+   "energy_kcal": 119,
+   "protein_g": 16.92,
+   "fat_g": 4.83,
+   "sat_fat_g": 1.563,
+   "carb_g": 0.7,
+   "fibre_g": 0,
+   "sugar_g": 0,
+   "sodium_mg": 71,
+   "potassium_mg": 230
+  },
+  "source_url": "https://getfoodfacts.com/food/chicken-liver-all-classes-raw-171060",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 171060) gives 119 kcal, 16.9 g protein, 4.8 g fat, 0.7 g carb and 71 mg sodium per 100 g. The more precise 16.92 g protein, 4.83 g fat and 1.563 g sat fat are from FatSecret's raw chicken liver page, which however shows 116 kcal and 0 g carb (an older release); MyFoodData 171060 gives 0.69 g sat fat per 44 g liver (= 1.57 g per 100 g), and Recipal 1.5 g / foodstruct 1.6 g, so sat fat is consistent. Potassium CONVERTED: nutritionvalue.org 'Chicken, raw, all classes, liver' gives 260 mg per 113 g serving (= 230 mg/100 g); MyFoodData gives 101 mg per 44 g (= 229.5), which agrees. Sugar 0 g and fibre 0 g shown by both MyFoodData and nutritionvalue.org."
+ },
+ {
+  "key": "chicken_breast_raw",
+  "usda_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
+  "fdc_id": "171077",
+  "per_100g": {
+   "energy_kcal": 120,
+   "protein_g": 22.5,
+   "fat_g": 2.62,
+   "sat_fat_g": null,
+   "carb_g": 0,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": null,
+   "potassium_mg": null
+  },
+  "source_url": "https://www.recipal.com/ingredients/10582-nutrition-facts-calories-protein-carbs-fat-chicken-broiler-or-fryers-breast-skinless-boneless-meat-only-raw",
+  "notes": "In current SR Legacy the brief's 'Chicken, broilers or fryers, breast, meat only, raw' appears under this 'skinless, boneless' name (FDC 171077 per a vitals-hub page citing USDA). Values read from search-result extracts: a happyforks listing with this exact description gives 120 kcal, 22.5 g protein, 0 g carb and 2.62 g fat per 100 g; vitals-hub (FDC 171077) gives 120 kcal and 22.5 g protein. PARTIAL: no sat fat, sodium or potassium seen for this record. Values seen for other records were not used: the older 'breast, meat only, raw' release (Recipal 881) gives 114 kcal; the 'enhanced'/'with added solution' records have 300+ mg sodium; getfoodfacts 2646170 (Foundation, 'Chicken, breast, boneless, skinless, raw') gives 110 kcal and 65 mg Na."
+ },
+ {
+  "key": "squab_raw",
+  "usda_description": "Squab, (pigeon), meat only, raw",
+  "fdc_id": "171079",
+  "per_100g": {
+   "energy_kcal": 142,
+   "protein_g": 17.5,
+   "fat_g": 7.5,
+   "sat_fat_g": 1.96,
+   "carb_g": 0,
+   "fibre_g": 0,
+   "sugar_g": null,
+   "sodium_mg": 51,
+   "potassium_mg": 237
+  },
+  "source_url": "https://getfoodfacts.com/food/squab-pigeon-meat-only-raw-171079",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 171079, exact description) gives 142 kcal, 17.5 g protein and 51 mg sodium per 100 g. Fat 7.5 g, sat fat 1.96 g, 0 g carb and 0 g fibre from the Wikipedia 'Squab' infobox, which gives the USDA raw meat-only profile (594 kJ / 142 kcal, 17.50 g protein). Potassium 237 mg per 100 g from a chrismasterjohnphd.com nutrient-table page naming the exact description (provenance weaker). One test page listed 368 kcal - outlier, ignored. No sugar value seen."
+ },
+ {
+  "key": "carp_raw",
+  "usda_description": "Fish, carp, raw",
+  "fdc_id": "171952",
+  "per_100g": {
+   "energy_kcal": 127,
+   "protein_g": 17.83,
+   "fat_g": 5.6,
+   "sat_fat_g": 1.083,
+   "carb_g": 0,
+   "fibre_g": null,
+   "sugar_g": 0,
+   "sodium_mg": 49,
+   "potassium_mg": 333
+  },
+  "source_url": "https://happyforks.com/food/carp/5749",
+  "notes": "Values read from search-result extracts. happyforks gives 127 kcal, 17.83 g protein, 5.6 g fat and 0 g carb per 100 g; getfoodfacts (FDC 171952) gives 127 kcal, 17.8 g protein, 5.6 g fat, 0 g carb and 49 mg sodium; MyFoodData's 100 g print page gives 49 mg sodium and 1.1 g sat fat. Sat fat 1.083 g from FatSecret's USDA 'Carp (Fish)' page (127 kcal, 5.6 g fat). Potassium 333 mg per 100 g from a chrismasterjohnphd.com table naming 'Carp, raw' (weaker provenance: the same row shows an odd 329 'kcal' figure); MyFoodData's portion page gives 283.1 mg K, which equals 333 per 100 g if that portion is its 85 g serving (MyFoodData shows 108 kcal per 85 g) - basis not explicit in the extract. Sugar 0 g from a 1 oz listing (0 at any weight). triagemethod's 2.4 g sat fat disagrees; not used. No fibre value seen."
+ },
+ {
+  "key": "eel_raw",
+  "usda_description": "Fish, eel, mixed species, raw",
+  "fdc_id": "174193",
+  "per_100g": {
+   "energy_kcal": 184,
+   "protein_g": 18.44,
+   "fat_g": 11.66,
+   "sat_fat_g": 2.358,
+   "carb_g": 0,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 51,
+   "potassium_mg": 272
+  },
+  "source_url": "https://happyforks.com/food/eel/8184",
+  "notes": "Values read from search-result extracts. happyforks / a USDA-based mirror gives 184 kcal, 18.44 g protein, 11.66 g fat and 0 g carb per 100 g; getfoodfacts (FDC 174193) gives 184 kcal, 18.4 g protein, 11.7 g fat, 0 g carb and 51 mg sodium (its intro wrongly says per 85 g; its per-100 g sections and MyFoodData's 85 g serving of 156 kcal agree with per 100 g). Sat fat 2.358 g from FatSecret's 'Eel (Mixed Species)' page (184 kcal); MyFoodData's 100 g print page gives 2.4 g. Potassium 272 mg per 100 g only from a chrismasterjohnphd.com table naming this food (weaker provenance; its 'kcal' column reads 477, which is not per-100 g energy) - treat as UNCONFIRMED. No fibre or sugar values seen."
+ },
+ {
+  "key": "shrimp_raw",
+  "usda_description": "Crustaceans, shrimp, raw",
+  "fdc_id": "175179",
+  "per_100g": {
+   "energy_kcal": 85,
+   "protein_g": 20.1,
+   "fat_g": 0.5,
+   "sat_fat_g": 0.1,
+   "carb_g": 0,
+   "fibre_g": null,
+   "sugar_g": 0,
+   "sodium_mg": 119,
+   "potassium_mg": 264
+  },
+  "source_url": "https://getfoodfacts.com/food/crustaceans-shrimp-raw-175179",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 175179, 'Crustaceans, shrimp, raw') gives 85 kcal, 20.1 g protein, 0.5 g fat, 0 g carb and 119 mg sodium per 100 g; vitals-hub also cites fdcId 175179 for 20.1 g protein. Potassium 264 mg from foodstruct's 'Crustaceans, shrimp, raw (not previously frozen)' page (the older SR name of this record) and its /potassium page. Sat fat about 0.1 g and total sugars 0 g from USDA-based listings for this record (sat fat is rounded). Not used: FDC 175180 is 'shrimp, cooked'; 'mixed species, raw (may contain additives)' FDC 174210 and 'farm raised, raw' (Foundation 2684443, 475 mg Na) are different records. No fibre value seen."
+ },
+ {
+  "key": "oyster_raw",
+  "usda_description": "Mollusks, oyster, Pacific, raw",
+  "fdc_id": "174219",
+  "per_100g": {
+   "energy_kcal": 81,
+   "protein_g": 9.4,
+   "fat_g": 2.3,
+   "sat_fat_g": 0.51,
+   "carb_g": 5.0,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 106,
+   "potassium_mg": 168
+  },
+  "source_url": "https://getfoodfacts.com/food/mollusks-oyster-pacific-raw-174219",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 174219) gives 81 kcal, 9.4 g protein, 2.3 g fat, 5.0 g carb and 106 mg sodium per 100 g (one-decimal rounding); happyforks also gives 81 kcal. Sat fat 0.51 g and potassium 168 mg from foodstruct (https://foodstruct.com/food/mollusks-oyster-pacific-raw and /potassium), which cites FDC 174219; a chrismasterjohnphd.com table also gives 168 mg K. triagemethod gives 66.4 kcal - outlier, not used. Cooked moist-heat record (174250) has about 302 mg K - not this one. No fibre or sugar values seen."
+ },
+ {
+  "key": "soybeans_raw",
+  "usda_description": "Soybeans, mature seeds, raw",
+  "fdc_id": "174270",
+  "per_100g": {
+   "energy_kcal": 446,
+   "protein_g": 36.49,
+   "fat_g": 19.94,
+   "sat_fat_g": 2.884,
+   "carb_g": 30.16,
+   "fibre_g": 9.3,
+   "sugar_g": 7.3,
+   "sodium_mg": 2,
+   "potassium_mg": 1797
+  },
+  "source_url": "https://happyforks.com/food/soybeans/750",
+  "notes": "Values read from search-result extracts. happyforks gives 446 kcal, 36.49 g protein, 19.94 g fat and 30.16 g carb per 100 g. getfoodfacts (FDC 174270, exact description) gives 446 kcal, sugar 7.3 g and 2 mg sodium; nutrientnorms gives 7.3 g sugars and lists potassium 1797.0 mg and sodium 2.0 mg per 100 g. Fibre 9.3 g from a USDA-based listing. Sat fat 2.884 g from FatSecret's 'Soybeans (Mature Seeds)' page; foodstruct gives 2.9 g. Disagreement: that FatSecret page shows 416 kcal (older/different data), so only its sat fat is used and it agrees with foodstruct. getfoodfacts' intro also says '446 calories per 186g', which is a template slip."
+ },
+ {
+  "key": "soymilk",
+  "usda_description": "Soymilk, original and vanilla, unfortified",
+  "fdc_id": "172446",
+  "per_100g": {
+   "energy_kcal": 54,
+   "protein_g": 3.3,
+   "fat_g": 1.8,
+   "sat_fat_g": 0.21,
+   "carb_g": 6.3,
+   "fibre_g": 0.6,
+   "sugar_g": 4.0,
+   "sodium_mg": 51,
+   "potassium_mg": 118
+  },
+  "source_url": "https://getfoodfacts.com/food/soymilk-original-and-vanilla-unfortified-172446",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 172446) gives 54 kcal, 3.3 g protein, 1.8 g fat, 6.3 g carb, 0.6 g fibre, 4.0 g sugar, 51 mg sodium and 118 mg potassium per 100 g (one-decimal rounding). foodstruct gives sat fat 0.21 g and potassium 118 mg per 100 g (287 mg per 243 g cup), citing FDC 172446. Calcium 25 mg (unfortified). Branded soymilks differ (e.g. Vitasoy 47 kcal) - not used."
+ },
+ {
+  "key": "wheat_flour_white",
+  "usda_description": "Wheat flour, white, all-purpose, enriched, bleached",
+  "fdc_id": "168894",
+  "per_100g": {
+   "energy_kcal": 364,
+   "protein_g": 10.33,
+   "fat_g": 0.98,
+   "sat_fat_g": 0.155,
+   "carb_g": 76.31,
+   "fibre_g": 2.7,
+   "sugar_g": 0.27,
+   "sodium_mg": 2,
+   "potassium_mg": 107
+  },
+  "source_url": "https://www.fatsecret.co.nz/calories-nutrition/generic/white-wheat-flour-(all-purpose-bleached-enriched)",
+  "notes": "Values read from search-result extracts. FatSecret's 'White Wheat Flour (All Purpose, Bleached, Enriched)' (USDA data, last updated Feb 2008) gives 364 kcal, 10.33 g protein, 0.98 g fat, 0.155 g sat fat, 76.31 g carb, 2.7 g fibre, 0.27 g sugar, 2 mg sodium and 107 mg potassium per 100 g. Cross-checks: MyFoodData 168894 (exact description) gives 455 kcal and 1.2 g fat per 1 cup (125 g) = 364 kcal / 0.96 g fat per 100 g, and 0.19 g sat fat per cup; foodstruct gives 364 kcal, 2.7 g fibre and 0.27 g sugar. Inlivo shows 133.8 mg K with an unclear basis (= 107 x 1.25, i.e. probably per 125 g cup). Do NOT use the Foundation record 'Flour, wheat, all-purpose, enriched, bleached' (FDC 789890: 366 kcal, 10.9 g protein, 1.5 g fat, 136 mg K), which nutritionvalue.org and some getfoodfacts pages show."
+ },
+ {
+  "key": "wheat_flour_whole",
+  "usda_description": "Wheat flour, whole-grain (Includes foods for USDA's Food Distribution Program)",
+  "fdc_id": "168893",
+  "per_100g": {
+   "energy_kcal": 340,
+   "protein_g": 13.2,
+   "fat_g": 2.5,
+   "sat_fat_g": 0.43,
+   "carb_g": 72.0,
+   "fibre_g": 10.7,
+   "sugar_g": 0.4,
+   "sodium_mg": 2,
+   "potassium_mg": 363
+  },
+  "source_url": "https://getfoodfacts.com/food/wheat-flour-whole-grain-includes-foods-for-usdas-food-distribution-program-168893",
+  "notes": "No SR Legacy record named 'Flour, whole wheat, unenriched' turned up (that wording looks like the newer Foundation naming), so this is the SR Legacy whole-grain wheat flour record. Values read from search-result extracts: getfoodfacts (FDC 168893) gives 2 mg sodium per 100 g; nutrifyi (same record) gives 340 kcal, 13.2 g protein, 2.5 g fat, 72.0 g carb and 10.7 g fibre, and sugar 0.4 g. Sat fat and potassium CONVERTED from MyFoodData 168893's 1 cup (120 g): 0.52 g sat fat -> 0.43 g, 435.6 mg K -> 363 mg per 100 g; vegnt's 1646.54 mg K per 1 lb (453.6 g) also gives 363 mg. Not used: 'Wheat flour, whole-grain, soft wheat' (FDC 168944: 332 kcal, 9.6 g protein, 13.1 g fibre)."
+ },
+ {
+  "key": "rice_brown_raw",
+  "usda_description": "Rice, brown, long-grain, raw (Includes foods for USDA's Food Distribution Program)",
+  "fdc_id": "169703",
+  "per_100g": {
+   "energy_kcal": 367,
+   "protein_g": 7.5,
+   "fat_g": 3.2,
+   "sat_fat_g": 0.59,
+   "carb_g": 76.3,
+   "fibre_g": 3.6,
+   "sugar_g": 0.7,
+   "sodium_mg": 5,
+   "potassium_mg": 250
+  },
+  "source_url": "https://getfoodfacts.com/food/rice-brown-long-grain-raw-includes-foods-for-usdas-food-distribution-program-169703",
+  "notes": "In SR Legacy the record carries the '(Includes foods for USDA's Food Distribution Program)' suffix. Values read from search-result extracts: getfoodfacts (FDC 169703) gives 367 kcal, 7.5 g protein, 3.2 g fat, 76.3 g carb, 3.6 g fibre, 0.7 g sugar and 5 mg sodium per 100 g (its intro wrongly says 'per 185g'). Sat fat 0.59 g from foodstruct (rice-brown-long-grain-raw, which also gives 3.6 g fibre). Potassium 250 mg per 100 g from a chrismasterjohnphd.com potassium table naming 'Rice, brown, long-grain, raw' - weaker provenance, treat as UNCONFIRMED. Disagreement: FatSecret's 'Brown Rice (Long Grain)' gives 2.92 g fat and 0.584 g sat fat with about 370 kcal / 7.94 g protein - an older SR release, not used. A 412.55 mg K figure appeared with no stated basis; not used. Foundation record 2512380 ('unenriched, raw', 250.1 mg K) is a different record."
+ },
+ {
+  "key": "sweet_potato_raw",
+  "usda_description": "Sweet potato, raw, unprepared (Includes foods for USDA's Food Distribution Program)",
+  "fdc_id": "168482",
+  "per_100g": {
+   "energy_kcal": 86,
+   "protein_g": 1.57,
+   "fat_g": 0.05,
+   "sat_fat_g": 0.02,
+   "carb_g": 20.12,
+   "fibre_g": 3.0,
+   "sugar_g": 4.2,
+   "sodium_mg": 55,
+   "potassium_mg": 337
+  },
+  "source_url": "https://fitnessvolt.com/app/foods/sweet-potato/",
+  "notes": "In SR Legacy the record carries the '(Includes foods for USDA's Food Distribution Program)' suffix (FDC 168482 per getfoodfacts/nutrifyi). Values read from search-result extracts: a 'Sweet potato, raw, unprepared' listing (fitnessvolt) gives 86 kcal, 1.57 g protein, 20.12 g carb and 0.05 g fat per 100 g, with 3.0 g fibre and 4.2 g sugars. Sodium 55 mg and sat fat 0.02 g per 100 g from foodstruct and fitnessvolt. Potassium 337 mg from a chrismasterjohnphd.com potassium table naming this food. getfoodfacts 168482 gives 110 kcal, 2 g protein, 0 g fat and 4 g fibre per 130 g sweet potato, consistent with the above. Disagreement: bodbot lists 73 mg sodium and 0.01 g sat fat (probably an older release); not used. Ciqual/AFCD figures (80 kcal) are a different database."
+ },
+ {
+  "key": "taro_raw",
+  "usda_description": "Taro, raw",
+  "fdc_id": "169308",
+  "per_100g": {
+   "energy_kcal": 112,
+   "protein_g": 1.5,
+   "fat_g": 0.2,
+   "sat_fat_g": 0.041,
+   "carb_g": 26.5,
+   "fibre_g": 4.1,
+   "sugar_g": 0.4,
+   "sodium_mg": 11,
+   "potassium_mg": 591
+  },
+  "source_url": "https://getfoodfacts.com/food/taro-raw-169308",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 169308) gives 112 kcal, 1.5 g protein, 0.2 g fat, 26.5 g carb, 4.1 g fibre and 0.4 g sugar per 100 g (one-decimal rounding). Sodium 11 mg from a USDA-based listing; potassium 591 mg per 100 g from a chrismasterjohnphd.com potassium table and a second site ('591mg Potassium per 100g Raw'). Sat fat 0.041 g from foodstruct's taro page (0.04 g on its main page). A nutrition calculator gave 4.3 g fibre; not used. Do not use 'Taro, tahitian, raw' (FDC 169310, 0.20 g sat fat)."
+ },
+ {
+  "key": "chinese_cabbage_raw",
+  "usda_description": "Cabbage, chinese (pe-tsai), raw",
+  "fdc_id": "169979",
+  "per_100g": {
+   "energy_kcal": 16,
+   "protein_g": 1.2,
+   "fat_g": 0.2,
+   "sat_fat_g": 0.04,
+   "carb_g": 3.2,
+   "fibre_g": 1.2,
+   "sugar_g": 1.4,
+   "sodium_mg": 9,
+   "potassium_mg": 238
+  },
+  "source_url": "https://tools.myfooddata.com/print/169979/100g",
+  "notes": "Values read from search-result extracts of USDA-based pages for this exact description (MyFoodData print page 169979/100g, nutrientnorms, foodstruct, Recipal): 16 kcal, 1.2 g protein, 0.2 g fat, 0.04 g sat fat, about 3.2 g carb, 1.2 g fibre, 1.4 g sugars and 9 mg sodium per 100 g. One page gives 1.1 g protein. Potassium 238 mg per 100 g from a chrismasterjohnphd.com potassium table naming this food (single source). Not 'Cabbage, chinese (pak-choi), raw', which is a different record."
+ },
+ {
+  "key": "spinach_raw",
+  "usda_description": "Spinach, raw",
+  "fdc_id": "168462",
+  "per_100g": {
+   "energy_kcal": 23,
+   "protein_g": 2.86,
+   "fat_g": 0.39,
+   "sat_fat_g": 0.06,
+   "carb_g": 3.63,
+   "fibre_g": 2.2,
+   "sugar_g": 0.42,
+   "sodium_mg": 79,
+   "potassium_mg": 558
+  },
+  "source_url": "https://tools.myfooddata.com/nutrition-facts/168462/100g/1",
+  "notes": "Different key and record from usda.sources.json 'spinach' (cooked, boiled). Values read from search-result extracts: MyFoodData 168462 at 100 g gives 23 kcal, 0.39 g fat and 0.06 g sat fat (another listing rounds sat fat to 0.1 g). Protein 2.86 g, carb 3.63 g, sugars 0.42 g and fibre 2.20 g from fitnessvolt's 'Spinach Raw' (a FoodData Central-based page gives the rounded 2.9 / 3.6 / 0.4 / 2.2 / 0.4). Sodium 79 mg from a USDA-attributed aggregator (single source). Potassium 558 mg per 100 g from foodstruct's potassium page (167 mg per 30 g cup) and a chrismasterjohnphd.com table. An 840 mg K 'fresh spinach' figure elsewhere looks like cooked spinach; not used."
+ },
+ {
+  "key": "celery_raw",
+  "usda_description": "Celery, raw",
+  "fdc_id": "169988",
+  "per_100g": {
+   "energy_kcal": 14,
+   "protein_g": 0.7,
+   "fat_g": 0.17,
+   "sat_fat_g": null,
+   "carb_g": 3.0,
+   "fibre_g": 1.6,
+   "sugar_g": 1.34,
+   "sodium_mg": 80,
+   "potassium_mg": 260
+  },
+  "source_url": "https://getfoodfacts.com/food/celery-raw-169988",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 169988) gives 14 kcal, 0.7 g protein, 0.2 g fat, 3.0 g carb, 1.6 g fibre, 1.3 g sugar and 80 mg sodium per 100 g. Fat 0.17 g and sugar 1.34 g from other USDA-based listings of 'Celery, raw'. Potassium 260 mg per 100 g from a single USDA-based listing. Disagreement on energy: foodstruct, foodnutrify and others give 16 kcal (an older SR value); 14 kcal is the figure tied to FDC 169988. Sat fat: only rounded 0 g label values seen, so null. Do not use FDC 2346405 (Foundation 'Celery, raw': 97 mg Na, 0.5 g protein)."
+ },
+ {
+  "key": "bitter_gourd_raw",
+  "usda_description": "Balsam-pear (bitter gourd), pods, raw",
+  "fdc_id": "168393",
+  "per_100g": {
+   "energy_kcal": 17,
+   "protein_g": 1.0,
+   "fat_g": 0.17,
+   "sat_fat_g": null,
+   "carb_g": 3.7,
+   "fibre_g": 2.8,
+   "sugar_g": null,
+   "sodium_mg": 5,
+   "potassium_mg": 296
+  },
+  "source_url": "https://foodstruct.com/food/balsam-pearbittergourd-pods-raw",
+  "notes": "Values read from search-result extracts. foodstruct (exact description; FDC 168393 per getfoodfacts) gives 17 kcal, 1 g protein, 0.17 g fat, 3.7 g carb, 2.8 g fibre (its /fiber page) and 296 mg potassium (its /potassium page) per 100 g; vegnt gives 5 mg sodium per 100 g. FatSecret's USDA 'Balsam-Pear (Bitter Gourd, Pods)' gives 17 kcal and 0.17 g fat and shows sat fat as '-' (not reported), so sat fat is null; foodstruct's 0 g sat fat and 0 g sugar look like placeholders for missing values, so both left null."
  }
 ]

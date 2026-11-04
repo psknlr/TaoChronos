@@ -76,14 +76,19 @@ function exclusion(d, who, now, slot) {
   const hit = d.allergens.find((a) => has(allergies, a));
   if (hit) return { code: "allergen", allergen: hit, why: `contains ${hit.replace("_", " ")}` };
   if (d.meat && (has(diet, "vegetarian") || has(diet, "vegan"))) return { code: "diet", why: `contains ${d.meat}` };
-  if (has(diet, "vegan") && d.allergens.some((a) => a === "milk" || a === "egg")) return { code: "diet", why: "contains milk or egg" };
+  if (has(diet, "vegan") && (d.allergens.some((a) => a === "milk" || a === "egg") || d.ingredients.some((i) => i.food === "honey"))) {
+    return { code: "diet", why: "contains milk, egg or honey" };
+  }
   if (d.pork && (has(diet, "halal") || has(diet, "no_pork"))) return { code: "diet", why: "contains pork" };
+  if (d.beef && has(diet, "no_beef")) return { code: "diet", why: "contains beef" };
+  if (d.meat === "fish" && has(diet, "no_seafood")) return { code: "diet", why: "contains fish" };
   if (meds.anticoagulant && d.herbs.some((h) => h === "goji" || h === "danggui")) {
     return { code: "medicine", why: `${d.herbs.includes("danggui") ? "dang gui" : "goji"} can strengthen the effect of warfarin (case reports): not with a blood thinner` };
   }
   if (meds.immunosuppressant && d.herbs.includes("huangqi")) return { code: "medicine", why: "astragalus may work against immunosuppressants" };
   if ((meds.other || meds.unsure) && d.herbs.length) return { code: "medicine", why: `has ${d.herbs.map((h) => FOODS[h].en).join(", ")}: ask a pharmacist whether it suits your medicines first` };
   if (has(conditions, "gout") && d.purine_broth) return { code: "condition", why: "a long-simmered meat broth, rich in purines: not with gout" };
+  if (who.diabetes && d.sweet) return { code: "condition", why: "very sweet (dried fruit, sugar cane or sugar): not with diabetes" };
   for (const t of who.c.biased) {
     const a = d.avoid.find((x) => x.type === t);
     if (a) return { code: "constitution", type: t, why: `${name(t)}: ${a.why}`, quote: a.quote ? qref(a.quote) : undefined };

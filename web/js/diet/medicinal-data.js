@@ -232,6 +232,17 @@ export const FOODS = {
   },
   "note": null
  },
+ "pine_nut": {
+  "zh": "松子仁",
+  "en": "pine nuts",
+  "homology": "food",
+  "herb": false,
+  "usda": {
+   "description": "Nuts, pine nuts, dried",
+   "fdc_id": "170591"
+  },
+  "note": null
+ },
  "chestnut": {
   "zh": "板栗",
   "en": "Chinese chestnuts",
@@ -356,6 +367,306 @@ export const FOODS = {
   "herb": true,
   "usda": null,
   "note": "Added to the list in 2023 (announcement 2023 No. 9); the NHC's explanation advises moderate amounts eaten in traditional ways and does not recommend it for pregnant or breastfeeding women or infants. No USDA record."
+ },
+ "euryale": {
+  "zh": "芡实",
+  "en": "euryale seed (fox nut)",
+  "homology": "2002",
+  "herb": false,
+  "usda": null,
+  "note": "On the list as 芡实. No USDA record."
+ },
+ "poria": {
+  "zh": "茯苓（粉）",
+  "en": "poria (fu ling), powdered",
+  "homology": "2002",
+  "herb": true,
+  "usda": null,
+  "note": "No USDA record."
+ },
+ "hyacinth_bean": {
+  "zh": "白扁豆",
+  "en": "white hyacinth beans",
+  "homology": "2002",
+  "herb": false,
+  "usda": null,
+  "note": null
+ },
+ "wheat": {
+  "zh": "小麦（全麦粒）",
+  "en": "wheat grain",
+  "homology": "food",
+  "herb": false,
+  "usda": {
+   "description": "Wheat flour, whole-grain (Includes foods for USDA's Food Distribution Program)",
+   "fdc_id": "168893"
+  },
+  "note": "USDA's whole-grain wheat flour stands for the whole grain."
+ },
+ "flour": {
+  "zh": "面粉",
+  "en": "wheat flour",
+  "homology": "food",
+  "herb": false,
+  "usda": {
+   "description": "Wheat flour, white, all-purpose, enriched, bleached",
+   "fdc_id": "168894"
+  },
+  "note": null
+ },
+ "purslane": {
+  "zh": "马齿苋",
+  "en": "purslane",
+  "homology": "2002",
+  "herb": false,
+  "usda": null,
+  "note": null
+ },
+ "longan": {
+  "zh": "桂圆肉（干）",
+  "en": "longan, dried",
+  "homology": "2002",
+  "herb": false,
+  "usda": {
+   "description": "Longans, dried",
+   "fdc_id": "169907"
+  },
+  "note": "On the list as 龙眼肉（桂圆）."
+ },
+ "xiebai": {
+  "zh": "薤白",
+  "en": "Chinese chive bulb (xie bai)",
+  "homology": "2002",
+  "herb": false,
+  "usda": null,
+  "note": "No USDA record."
+ },
+ "scallion": {
+  "zh": "葱白",
+  "en": "spring onion",
+  "homology": "food",
+  "herb": false,
+  "usda": null,
+  "note": null
+ },
+ "chicken_breast": {
+  "zh": "鸡胸肉",
+  "en": "chicken breast",
+  "homology": "food",
+  "herb": false,
+  "usda": {
+   "description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
+   "fdc_id": "171077"
+  },
+  "note": null
+ },
+ "carp": {
+  "zh": "鲤鱼（净肉）",
+  "en": "carp, flesh",
+  "homology": "food",
+  "herb": false,
+  "usda": {
+   "description": "Fish, carp, raw",
+   "fdc_id": "171952"
+  },
+  "note": null
+ },
+ "caoguo": {
+  "zh": "草果（作调料）",
+  "en": "tsaoko (cao guo), as a spice",
+  "homology": "2019",
+  "herb": false,
+  "usda": null,
+  "note": "Added to the list in 2019 for use only as a spice or seasoning. No USDA record."
+ },
+ "chickpeas": {
+  "zh": "鹰嘴豆（熟）",
+  "en": "chickpeas, cooked",
+  "homology": "food",
+  "herb": false,
+  "usda": {
+   "description": "Chickpeas (garbanzo beans, bengal gram), mature seeds, cooked, boiled, without salt",
+   "fdc_id": "173757"
+  },
+  "note": null
+ },
+ "cabbage": {
+  "zh": "大白菜",
+  "en": "Chinese cabbage (napa)",
+  "homology": "food",
+  "herb": false,
+  "usda": {
+   "description": "Cabbage, chinese (pe-tsai), raw",
+   "fdc_id": "169979"
+  },
+  "note": null
+ },
+ "tofu": {
+  "zh": "豆腐",
+  "en": "tofu, firm",
+  "homology": "food",
+  "herb": false,
+  "usda": {
+   "description": "Tofu, raw, firm, prepared with calcium sulfate",
+   "fdc_id": "172475"
+  },
+  "note": null
+ },
+ "garland": {
+  "zh": "茼蒿",
+  "en": "garland chrysanthemum greens",
+  "homology": "food",
+  "herb": false,
+  "usda": null,
+  "note": null
+ },
+ "shepherds_purse": {
+  "zh": "荠菜",
+  "en": "shepherd's purse",
+  "homology": "food",
+  "herb": false,
+  "usda": null,
+  "note": "No USDA record."
+ },
+ "amaranth": {
+  "zh": "苋菜",
+  "en": "amaranth greens",
+  "homology": "food",
+  "herb": false,
+  "usda": null,
+  "note": null
+ },
+ "bamboo": {
+  "zh": "竹笋",
+  "en": "bamboo shoots",
+  "homology": "food",
+  "herb": false,
+  "usda": null,
+  "note": null
+ },
+ "taro": {
+  "zh": "芋头",
+  "en": "taro",
+  "homology": "food",
+  "herb": false,
+  "usda": {
+   "description": "Taro, raw",
+   "fdc_id": "169308"
+  },
+  "note": null
+ },
+ "water_chestnut": {
+  "zh": "荸荠（马蹄）",
+  "en": "Chinese water chestnut",
+  "homology": "food",
+  "herb": false,
+  "usda": null,
+  "note": null
+ },
+ "wumei": {
+  "zh": "乌梅",
+  "en": "smoked plum (wu mei)",
+  "homology": "2002",
+  "herb": false,
+  "usda": null,
+  "note": "No USDA record."
+ },
+ "lotus_starch": {
+  "zh": "藕粉",
+  "en": "lotus-root starch",
+  "homology": "food",
+  "herb": false,
+  "usda": null,
+  "note": "No USDA record."
+ },
+ "beef": {
+  "zh": "牛肉（瘦）",
+  "en": "beef, lean",
+  "homology": "food",
+  "herb": false,
+  "usda": null,
+  "note": null
+ },
+ "lily": {
+  "zh": "百合（干）",
+  "en": "lily bulb, dried",
+  "homology": "2002",
+  "herb": false,
+  "usda": null,
+  "note": "No USDA record."
+ },
+ "yuzhu": {
+  "zh": "玉竹",
+  "en": "Solomon's seal rhizome (yu zhu)",
+  "homology": "2002",
+  "herb": true,
+  "usda": null,
+  "note": "No USDA record."
+ },
+ "kudzu": {
+  "zh": "葛根粉",
+  "en": "kudzu-root starch",
+  "homology": "2002",
+  "herb": false,
+  "usda": null,
+  "note": "On the list as 葛根. No USDA record."
+ },
+ "persimmon_dried": {
+  "zh": "柿饼",
+  "en": "dried persimmon",
+  "homology": "food",
+  "herb": false,
+  "usda": null,
+  "note": null
+ },
+ "goji_leaf": {
+  "zh": "枸杞叶",
+  "en": "goji leaves",
+  "homology": "food",
+  "herb": false,
+  "usda": null,
+  "note": "No USDA record."
+ },
+ "barley": {
+  "zh": "大麦（珍珠麦）",
+  "en": "pearled barley",
+  "homology": "food",
+  "herb": false,
+  "usda": {
+   "description": "Barley, pearled, raw",
+   "fdc_id": "170284"
+  },
+  "note": null
+ },
+ "sugarcane": {
+  "zh": "甘蔗汁",
+  "en": "sugar-cane juice",
+  "homology": "food",
+  "herb": false,
+  "usda": null,
+  "note": "No USDA record."
+ },
+ "duck": {
+  "zh": "鸭肉（去皮）",
+  "en": "duck meat, skinless",
+  "homology": "food",
+  "herb": false,
+  "usda": {
+   "description": "Duck, domesticated, meat only, raw",
+   "fdc_id": "172410"
+  },
+  "note": null
+ },
+ "honey": {
+  "zh": "蜂蜜",
+  "en": "honey",
+  "homology": "2002",
+  "herb": false,
+  "usda": {
+   "description": "Honey",
+   "fdc_id": "169640"
+  },
+  "note": null
  }
 };
 
@@ -854,6 +1165,663 @@ export const QUOTES = {
   "text": "傷肉食宜麥芽山楂。",
   "gloss": "For indigestion from meat, malt and hawthorn.",
   "kind": "ingredient"
+ },
+ "no_autumn_ginger": {
+  "passage_id": "jc_c049.00120",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "菜蔬第三（五十八條）",
+  "text": "八月、九月匆食薑，傷人神，損壽。",
+  "gloss": "Do not eat ginger in the eighth and ninth (lunar) months: it harms the spirit and shortens life (匆 for 勿 in this text).",
+  "kind": "season"
+ },
+ "no_autumn_ginger_2": {
+  "passage_id": "jc_c028.00074",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "菜",
+  "text": "九月食薑。傷人損壽。",
+  "gloss": "Ginger in the ninth month harms and shortens life.",
+  "kind": "season"
+ },
+ "yangrou_sixth_month": {
+  "passage_id": "jc_c049.00180",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "鳥獸第五(四十條)",
+  "text": "六月勿食羊肉，傷人神氣。",
+  "gloss": "Do not eat mutton in the sixth (lunar) month.",
+  "kind": "season"
+ },
+ "jiangzao_yinshan": {
+  "passage_id": "jc_c047.00325",
+  "work": "饮膳正要",
+  "dynasty": "元",
+  "chapter": "諸般湯煎",
+  "text": "和脾胃，進飲食。",
+  "gloss": "Ginger and jujube (a powder taken in hot water): harmonises the spleen and stomach, helps one eat.",
+  "kind": "dish"
+ },
+ "zhengli": {
+  "passage_id": "jc_c028.00331",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "痰",
+  "text": "大雪梨連皮。安飯鍋內蒸。熟食能化痰清火。",
+  "gloss": "Steamed pear: a large pear in its skin, steamed on the rice; eaten cooked, it clears phlegm and fire.",
+  "kind": "dish"
+ },
+ "lianzi_yinshan": {
+  "passage_id": "jc_c047.00538",
+  "work": "饮膳正要",
+  "dynasty": "元",
+  "chapter": "食療諸病",
+  "text": "治心志不寧。補中強志，聰明耳目。",
+  "gloss": "Lotus-seed congee (饮膳正要): for an unsettled mind; supplements the middle, strengthens the will, sharpens ears and eyes.",
+  "kind": "dish"
+ },
+ "lianzi_method": {
+  "passage_id": "jc_c047.00540",
+  "work": "饮膳正要",
+  "dynasty": "元",
+  "chapter": "食療諸病",
+  "text": "上件煮熟，研如泥，與粳米三合，作粥，空腹食之。",
+  "gloss": "Cook the lotus seeds, mash them, make congee with the rice; eat on an empty stomach.",
+  "kind": "dish"
+ },
+ "qianshi_zhou": {
+  "passage_id": "jc_c028.00349",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "虛",
+  "text": "益精氣。強智力。聰耳目。用芡實去殼三合。新者研成膏。陳者作粉。和粳米三合煮食。",
+  "gloss": "Euryale congee: benefits essence and qi, strengthens the mind, sharpens ears and eyes; euryale with rice.",
+  "kind": "dish"
+ },
+ "qianshi_yinshan": {
+  "passage_id": "jc_c047.00541",
+  "work": "饮膳正要",
+  "dynasty": "元",
+  "chapter": "食療諸病",
+  "text": "治精氣不足，強志，明耳目。",
+  "gloss": "Euryale congee (饮膳正要): for insufficient essence and qi.",
+  "kind": "dish"
+ },
+ "qianshi": {
+  "passage_id": "jc_c049.00041",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "果實第二（二十九條）",
+  "text": "雞頭實：味甘、平、無毒。主濕痹，腰脊膝痛；補中；除暴疾；益精氣，強志意，耳目聰明。",
+  "gloss": "Euryale seed: sweet, neutral; for damp painful obstruction, aching back and knees; supplements the middle.",
+  "kind": "ingredient"
+ },
+ "fuling_zhou": {
+  "passage_id": "jc_c028.00327",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "痰",
+  "text": "粳米煮粥。半熟。入茯苓末。和勻煮熟。空心食。能治濕痰健脾。",
+  "gloss": "Poria congee: rice half-cooked, poria powder stirred in; on an empty stomach it treats damp phlegm and strengthens the spleen.",
+  "kind": "dish"
+ },
+ "fuling_zhou_2": {
+  "passage_id": "jc_c028.00353",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "虛",
+  "text": "治虛泄脾弱。又治欲睡不睡。",
+  "gloss": "Poria congee: for weak-spleen diarrhoea, and for wanting to sleep but not sleeping.",
+  "kind": "dish"
+ },
+ "fuling": {
+  "passage_id": "ws_36bca7b992.00086",
+  "work": "神农本草经",
+  "dynasty": "东汉",
+  "chapter": "上經",
+  "text": "久服安魂養神，不饑延年。",
+  "gloss": "Poria: taken long, calms the ethereal soul and nourishes the spirit.",
+  "kind": "ingredient"
+ },
+ "biandou_zhou": {
+  "passage_id": "jc_c028.00355",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "虛",
+  "text": "益精補脾。",
+  "gloss": "Hyacinth-bean congee: benefits essence, supplements the spleen (the recipe adds ginseng, left out here).",
+  "kind": "dish"
+ },
+ "biandou": {
+  "passage_id": "jc_c028.00023",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "穀",
+  "text": "清胃解毒。久食須發不白。又能解酒毒",
+  "gloss": "White hyacinth bean: clears the stomach and toxins, eases the effects of wine.",
+  "kind": "ingredient"
+ },
+ "biandou_caution": {
+  "passage_id": "jc_c028.00023",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "穀",
+  "text": "惟患寒熱及冷氣人忌食。",
+  "gloss": "Not for those with chills and fever or cold qi.",
+  "kind": "caution"
+ },
+ "biandou_jingui": {
+  "passage_id": "cm_jingui_wuqian.01139",
+  "work": "金匮要略方（吴迁本）",
+  "dynasty": "东汉",
+  "chapter": "卷下",
+  "text": "扁豆，寒熱者不可食之。",
+  "gloss": "The 金匮要略: hyacinth beans are not for those with chills and fever.",
+  "kind": "caution"
+ },
+ "luobo_zhou": {
+  "passage_id": "jc_c047.00577",
+  "work": "饮膳正要",
+  "dynasty": "元",
+  "chapter": "食療諸病",
+  "text": "上件，用粳米三合，同水並汁，煮粥食之。",
+  "gloss": "Radish congee (饮膳正要): radish cooked and its juice cooked with rice into congee.",
+  "kind": "dish"
+ },
+ "luobo_zhou_2": {
+  "passage_id": "jc_o031.00944",
+  "work": "寿世青编",
+  "dynasty": "清",
+  "chapter": "病後調理服食法",
+  "text": "蘿卜大者一個，配米二合煮食。",
+  "gloss": "Radish congee (寿世青编): one large radish with rice.",
+  "kind": "dish"
+ },
+ "xiaomai_zhou": {
+  "passage_id": "jc_c047.00598",
+  "work": "饮膳正要",
+  "dynasty": "元",
+  "chapter": "食療諸病",
+  "text": "右以煮粥，或炊作飯，空腹食之。",
+  "gloss": "Wheat: cooked as congee, or as a rice-like dish, on an empty stomach.",
+  "kind": "dish"
+ },
+ "xiaomai_region": {
+  "passage_id": "jc_c028.00015",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "穀",
+  "text": "北方多霜雪。面無毒益人。南方少霜雪。面有濕熱損人。",
+  "gloss": "Wheat flour from the frosty north benefits; from the warm south it carries damp heat (the 食鉴本草's regional view).",
+  "kind": "caution"
+ },
+ "machixian_zhou": {
+  "passage_id": "jc_c047.00595",
+  "work": "饮膳正要",
+  "dynasty": "元",
+  "chapter": "食療諸病",
+  "text": "上件，和粳米同煮粥，空腹食之。",
+  "gloss": "Purslane congee (饮膳正要): purslane juice cooked with rice.",
+  "kind": "dish"
+ },
+ "machixian_geng": {
+  "passage_id": "jc_c028.00311",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "血",
+  "text": "用馬齒莧菜煮熟。用鹽豉或薑醋拌勻食之。",
+  "gloss": "Purslane: boiled, dressed with salt and fermented soybeans, or ginger and vinegar.",
+  "kind": "dish"
+ },
+ "machixian": {
+  "passage_id": "jc_c049.00075",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "菜蔬第三（五十八條）",
+  "text": "久服益氣力，不飢，輕身。",
+  "gloss": "Purslane (its seed, in the 千金食治): taken long, adds strength.",
+  "kind": "ingredient"
+ },
+ "songzi_zhou": {
+  "passage_id": "jc_o031.00971",
+  "work": "寿世青编",
+  "dynasty": "清",
+  "chapter": "病後調理服食法",
+  "text": "潤心肺，和大腸。同米煮粥食。",
+  "gloss": "Pine-nut congee: moistens the heart and lung, harmonises the large intestine.",
+  "kind": "dish"
+ },
+ "songzi": {
+  "passage_id": "jc_c028.00136",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "果",
+  "text": "潤燥明目生痰。久服輕身不老。",
+  "gloss": "Pine nuts: moisten dryness, brighten the eyes — and produce phlegm; taken long, keep the body light.",
+  "kind": "ingredient"
+ },
+ "longyan": {
+  "passage_id": "jc_c028.00138",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "果",
+  "text": "安神補血。久服輕身不老。",
+  "gloss": "Longan: calms the spirit and supplements the blood.",
+  "kind": "ingredient"
+ },
+ "longyan_shennong": {
+  "passage_id": "ws_36bca7b992.00203",
+  "work": "神农本草经",
+  "dynasty": "东汉",
+  "chapter": "中經",
+  "text": "主治五臟邪氣，安誌，厭食。久服強魂，聰明，輕身不老，通神明。",
+  "gloss": "Longan (神农本草经): settles the mind; taken long, strengthens the soul.",
+  "kind": "ingredient"
+ },
+ "dazao_qianjin": {
+  "passage_id": "jc_c049.00037",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "果實第二（二十九條）",
+  "text": "補中益氣，強志，除煩悶",
+  "gloss": "Jujube (千金食治): supplements the middle and benefits qi, eases vexation.",
+  "kind": "ingredient"
+ },
+ "zao_caution": {
+  "passage_id": "jc_c028.00101",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "果",
+  "text": "熟食補脾。和諸藥。凡中滿與腹脹牙痛者。俱不可食。",
+  "gloss": "Jujube: cooked, supplements the spleen; not with fullness, bloating or toothache.",
+  "kind": "caution"
+ },
+ "xiebai_zhou": {
+  "passage_id": "shouqin_yanglao.001.00170",
+  "work": "寿亲养老新书",
+  "dynasty": "宋元",
+  "chapter": "食治老人諸疾方第十四",
+  "text": "薤白粥方",
+  "gloss": "Chinese-chive-bulb (薤白) congee, with rice and spring onion.",
+  "kind": "dish"
+ },
+ "xiebai_method": {
+  "passage_id": "shouqin_yanglao.001.00171",
+  "work": "寿亲养老新书",
+  "dynasty": "宋元",
+  "chapter": "食治老人諸疾方第十四",
+  "text": "右相和作羮下五味椒醬薑空心食常作取效",
+  "gloss": "Cook together, season, eat on an empty stomach.",
+  "kind": "dish"
+ },
+ "xie": {
+  "passage_id": "jc_c049.00090",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "菜蔬第三（五十八條）",
+  "text": "除寒熱，去水氣，溫中，散結氣",
+  "gloss": "Chinese chive bulb: dispels cold and heat, drains water, warms the middle, disperses bound qi.",
+  "kind": "ingredient"
+ },
+ "xie_caution": {
+  "passage_id": "jc_c028.00056",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "菜",
+  "text": "食之生痰涕。動邪火。",
+  "gloss": "It produces phlegm and stirs pathogenic fire.",
+  "kind": "caution"
+ },
+ "ji_geng": {
+  "passage_id": "shouqin_yanglao.001.00184",
+  "work": "寿亲养老新书",
+  "dynasty": "宋元",
+  "chapter": "食治老人諸疾方第十四",
+  "text": "右切雞和煮作羮下五味少著鹽空心食之漸進當效",
+  "gloss": "Hen and rice soup: the hen cut and cooked with rice, a little salt, on an empty stomach.",
+  "kind": "dish"
+ },
+ "ji_huntun": {
+  "passage_id": "shouqin_yanglao.001.00158",
+  "work": "寿亲养老新书",
+  "dynasty": "宋元",
+  "chapter": "食治老人諸疾方第十四",
+  "text": "右以切肉作餛飩下椒醬五味調和煮熟空心食之日一服皆益臟腑悦澤顔色",
+  "gloss": "Hen wontons: the meat in wontons, cooked and seasoned; they benefit the organs and brighten the complexion.",
+  "kind": "dish"
+ },
+ "liyu_chixiaodou": {
+  "passage_id": "jc_c047.00591",
+  "work": "饮膳正要",
+  "dynasty": "元",
+  "chapter": "食療諸病",
+  "text": "大鯉魚（一頭）　赤小豆（一合）　陳皮（二錢，去白）",
+  "gloss": "Carp with adzuki beans and tangerine peel (饮膳正要).",
+  "kind": "dish"
+ },
+ "liyu_chixiaodou_method": {
+  "passage_id": "jc_c047.00592",
+  "work": "饮膳正要",
+  "dynasty": "元",
+  "chapter": "食療諸病",
+  "text": "上件，入五味，調和勻，煮熟，空腹食之。",
+  "gloss": "Season, cook, eat on an empty stomach.",
+  "kind": "dish"
+ },
+ "liyu_caution": {
+  "passage_id": "jc_c028.00194",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "鱗",
+  "text": "發風熱。凡一切風病大癰疽瘡疥瘧痢。俱不可食。",
+  "gloss": "Carp stirs wind-heat: not with skin sores, boils or dysentery.",
+  "kind": "caution"
+ },
+ "chenpi_liyu": {
+  "passage_id": "shouqin_yanglao.001.00216",
+  "work": "寿亲养老新书",
+  "dynasty": "宋元",
+  "chapter": "食治老人諸疾方第十四",
+  "text": "右和煮令爛熟空心以二味少著鹽食之常服並飲少許汁將理為驗",
+  "gloss": "Carp boiled with tangerine peel until tender, a little salt, eaten on an empty stomach with some of the broth.",
+  "kind": "dish"
+ },
+ "chixiaodou_ji": {
+  "passage_id": "jc_c047.00570",
+  "work": "饮膳正要",
+  "dynasty": "元",
+  "chapter": "食療諸病",
+  "text": "黃雌雞（一只，　淨）　草果（二錢）　赤小豆（一升）",
+  "gloss": "Hen with tsaoko and adzuki beans (饮膳正要).",
+  "kind": "dish"
+ },
+ "chixiaodou_ji_method": {
+  "passage_id": "jc_c047.00571",
+  "work": "饮膳正要",
+  "dynasty": "元",
+  "chapter": "食療諸病",
+  "text": "上件，同煮熟，空心食之。",
+  "gloss": "Cook together; eat on an empty stomach.",
+  "kind": "dish"
+ },
+ "chixiaodou_ya": {
+  "passage_id": "jc_c047.00574",
+  "work": "饮膳正要",
+  "dynasty": "元",
+  "chapter": "食療諸病",
+  "text": "上件，用赤小豆半升，入鴨腹內煮熟，五味調，空心食。",
+  "gloss": "Duck with adzuki beans inside it, cooked and seasoned (饮膳正要).",
+  "kind": "dish"
+ },
+ "ya_season": {
+  "passage_id": "jc_c028.00177",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "鳥",
+  "text": "野鴨九月以後宜食。不動氣。",
+  "gloss": "Duck is good from the ninth month on.",
+  "kind": "season"
+ },
+ "yangrou_caoguo": {
+  "passage_id": "jc_c047.00102",
+  "work": "饮膳正要",
+  "dynasty": "元",
+  "chapter": "聚珍異饌",
+  "text": "羊肉（一腳子，卸成事件）　草果（五個）　回回豆子（半升，搗碎，去皮）",
+  "gloss": "Mutton, tsaoko and chickpeas: the broth of the 饮膳正要's court soups.",
+  "kind": "dish"
+ },
+ "yangrou_caoguo_effect": {
+  "passage_id": "jc_c047.00101",
+  "work": "饮膳正要",
+  "dynasty": "元",
+  "chapter": "聚珍異饌",
+  "text": "補中益氣。",
+  "gloss": "It supplements the middle and benefits qi.",
+  "kind": "dish"
+ },
+ "songcai": {
+  "passage_id": "jc_c049.00082",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "菜蔬第三（五十八條）",
+  "text": "菘菜：味甘、溫、澀、無毒。久食通利腸胃，除胸中煩，解消渴。",
+  "gloss": "Chinese cabbage: eaten long, frees the bowels, eases vexation in the chest, relieves thirst.",
+  "kind": "ingredient"
+ },
+ "qingcai_doufu": {
+  "passage_id": "jc_c028.00030",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "菜",
+  "text": "凡往遠方煮青菜豆腐食。則無不服水土病。",
+  "gloss": "Travelling far, cook greens with tofu, and you will not fall ill from strange waters and soils.",
+  "kind": "dish"
+ },
+ "tonghao": {
+  "passage_id": "jc_c049.00101",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "菜蔬第三（五十八條）",
+  "text": "茼蒿：味辛、平，無毒。安心氣，養脾胃。消痰飲。",
+  "gloss": "Garland chrysanthemum: calms heart qi, nourishes spleen and stomach, clears phlegm-fluid.",
+  "kind": "ingredient"
+ },
+ "jicai": {
+  "passage_id": "jc_c049.00079",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "菜蔬第三（五十八條）",
+  "text": "薺菜：味甘、溫、澀、無毒。利肝氣，和中；殺諸毒。",
+  "gloss": "Shepherd's purse: frees liver qi, harmonises the middle.",
+  "kind": "ingredient"
+ },
+ "xiancai": {
+  "passage_id": "jc_c049.00076",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "菜蔬第三（五十八條）",
+  "text": "小莧菜：味甘、大寒、滑、無毒。可久食，益氣力，除熱。",
+  "gloss": "Amaranth greens: very cold; may be eaten long; add strength, clear heat.",
+  "kind": "ingredient"
+ },
+ "xiancai_caution": {
+  "passage_id": "jc_c049.00076",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "菜蔬第三（五十八條）",
+  "text": "不可共鱉肉食",
+  "gloss": "Not with soft-shelled turtle.",
+  "kind": "caution"
+ },
+ "sun": {
+  "passage_id": "jc_c049.00123",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "菜蔬第三（五十八條）",
+  "text": "竹筍。味甘、微寒、無毒。主消渴，利水道，益氣力，可久食，患冷人食之心痛。",
+  "gloss": "Bamboo shoot: slightly cold; for thirst, frees the waterways, adds strength — but those with cold suffer heart pain.",
+  "kind": "ingredient"
+ },
+ "yu": {
+  "passage_id": "jc_c049.00054",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "果實第二（二十九條）",
+  "text": "芋：味辛、平、滑、有毒。寬腸胃、充肌膚，滑中。一名土芝，不可多食，動宿冷。",
+  "gloss": "Taro: eases the bowels, fills out the flesh; not in quantity (it stirs old cold); raw taro is irritant.",
+  "kind": "ingredient"
+ },
+ "wuyu": {
+  "passage_id": "jc_c049.00055",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "果實第二（二十九條）",
+  "text": "烏芋：味苦、甘、微寒、滑，無毒。主消渴、癉熱；益氣。",
+  "gloss": "Water chestnut: slightly cold; for thirst and heat; benefits qi.",
+  "kind": "ingredient"
+ },
+ "biqi": {
+  "passage_id": "jc_c028.00146",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "果",
+  "text": "消食除滿。作粉食之。濃腸胃。",
+  "gloss": "Water chestnut: helps digestion, relieves fullness; as a starch, thickens the intestines.",
+  "kind": "ingredient"
+ },
+ "meishi": {
+  "passage_id": "jc_c049.00048",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "果實第二（二十九條）",
+  "text": "梅實：味酸、平、澀、無毒。下氣，除熱煩滿，安心",
+  "gloss": "Mume (乌梅): sour; sends qi down, clears heat and vexation, calms the heart.",
+  "kind": "ingredient"
+ },
+ "meizi": {
+  "passage_id": "jc_c028.00103",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "果",
+  "text": "止渴生津。多食壞齒損筋",
+  "gloss": "Plum: stops thirst, makes fluids; too much harms the teeth.",
+  "kind": "ingredient"
+ },
+ "oufen": {
+  "passage_id": "jc_c028.00321",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "血",
+  "text": "真藕粉空心滾水沖食。最能散血補陰。",
+  "gloss": "Lotus-root starch, stirred into boiling water on an empty stomach: best to disperse the blood and supplement yin.",
+  "kind": "dish"
+ },
+ "ou_raw": {
+  "passage_id": "jc_c049.00040",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "果實第二（二十九條）",
+  "text": "生根寒，止熱渴，破留血。",
+  "gloss": "Lotus root, raw: cold; stops thirst from heat, breaks up retained blood.",
+  "kind": "ingredient"
+ },
+ "niurou": {
+  "passage_id": "jc_c049.00182",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "鳥獸第五(四十條)",
+  "text": "肉：味甘、平、無毒。主消渴，止唾涎出，安中益氣力，養脾胃氣，不可常食，發宿病。",
+  "gloss": "Beef: sweet, neutral; settles the middle, adds strength, nourishes the spleen and stomach — not every day.",
+  "kind": "ingredient"
+ },
+ "niurou_against": {
+  "passage_id": "jc_c028.00188",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "獸",
+  "text": "耕田。大功於人。不可食。",
+  "gloss": "The ox ploughs the fields, a great service to people: do not eat it (the 食鉴本草's moral view).",
+  "kind": "caution"
+ },
+ "baihe_zheng": {
+  "passage_id": "jc_c004.00042",
+  "work": "食疗本草",
+  "dynasty": "唐",
+  "chapter": "卷上",
+  "text": "蒸過，蜜和食之。作粉尤佳。",
+  "gloss": "Lily bulb: steamed, eaten with honey; even better as a starch.",
+  "kind": "dish"
+ },
+ "baihe": {
+  "passage_id": "ws_36bca7b992.00262",
+  "work": "神农本草经",
+  "dynasty": "东汉",
+  "chapter": "下經",
+  "text": "利大小便。補中益氣。",
+  "gloss": "Lily bulb: frees the bowels and bladder, supplements the middle, benefits qi.",
+  "kind": "ingredient"
+ },
+ "yuzhu": {
+  "passage_id": "jc_c000a.00014",
+  "work": "神农本草经（复古辑本）",
+  "dynasty": "东汉",
+  "chapter": "神農本草經卷二上藥（上品）",
+  "text": "久服去面黑䵟，好顏色，潤澤，輕身，不老。",
+  "gloss": "Solomon's seal (玉竹): taken long, clears dark facial spots, gives a good, moist complexion.",
+  "kind": "ingredient"
+ },
+ "gegen": {
+  "passage_id": "ws_36bca7b992.00160",
+  "work": "神农本草经",
+  "dynasty": "东汉",
+  "chapter": "中經",
+  "text": "主治消渴，身大熱，嘔吐，諸痹，起陰氣，解諸毒。",
+  "gloss": "Kudzu root: for thirst and great body heat, raises yin qi, relieves toxins.",
+  "kind": "ingredient"
+ },
+ "shibing": {
+  "passage_id": "jc_c028.00296",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "燥",
+  "text": "大柿餅放飯鍋內。蒸極爛。空心熱服。最能清火涼血。",
+  "gloss": "Steamed dried persimmon, very soft, eaten hot on an empty stomach: clears fire and cools the blood.",
+  "kind": "dish"
+ },
+ "shi_caution": {
+  "passage_id": "jc_c028.00130",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "果",
+  "text": "多食腹痛。久食寒中。同蟹食。即腹痛泄瀉。",
+  "gloss": "Too much persimmon: abdominal pain; never with crab.",
+  "kind": "caution"
+ },
+ "gouqiye": {
+  "passage_id": "jc_c049.00065",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "菜蔬第三（五十八條）",
+  "text": "枸杞葉：味苦、平、澀、無毒。補虛羸，益精髓。",
+  "gloss": "Goji leaves: supplement weakness, benefit essence and marrow.",
+  "kind": "ingredient"
+ },
+ "damai_tang": {
+  "passage_id": "shouqin_yanglao.001.00182",
+  "work": "寿亲养老新书",
+  "dynasty": "宋元",
+  "chapter": "食治老人諸疾方第十四",
+  "text": "大麥湯方",
+  "gloss": "Barley decoction (寿亲养老新书), for thirst.",
+  "kind": "dish"
+ },
+ "damai": {
+  "passage_id": "jc_c028.00013",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "穀",
+  "text": "健胃。寬中。多食消腎。",
+  "gloss": "Barley: strengthens the stomach, eases the middle; too much depletes the kidney.",
+  "kind": "ingredient"
+ },
+ "ganzhe_zhou": {
+  "passage_id": "jc_c028.00283",
+  "work": "食鉴本草",
+  "dynasty": "清",
+  "chapter": "燥",
+  "text": "用甘蔗搗汁。入米煮粥。空心食之。",
+  "gloss": "Sugar-cane congee: cane juice cooked with rice, on an empty stomach.",
+  "kind": "dish"
+ },
+ "ganzhe": {
+  "passage_id": "jc_c049.00052",
+  "work": "千金食治",
+  "dynasty": "唐",
+  "chapter": "果實第二（二十九條）",
+  "text": "甘蔗：味甘、平、澀、無毒。下氣和中，補脾氣，利大腸，止渴，去煩，解酒毒。",
+  "gloss": "Sugar cane: harmonises the middle, supplements spleen qi, stops thirst.",
+  "kind": "ingredient"
  }
 };
 
@@ -907,7 +1875,9 @@ export const DISHES = [
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 264,
@@ -963,7 +1933,9 @@ export const DISHES = [
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 189,
@@ -1020,6 +1992,8 @@ export const DISHES = [
   "method_zh": "莲子去心，先浸泡两小时；与粳米同煮至莲子酥烂。一定要煮熟。",
   "method_en": "Remove the green germ, soak the lotus seeds two hours, then simmer with the rice until soft. Always cook them through.",
   "evidence": [
+   "lianzi_yinshan",
+   "lianzi_method",
    "lianzi",
    "oushi"
   ],
@@ -1029,7 +2003,9 @@ export const DISHES = [
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 212,
@@ -1101,7 +2077,9 @@ export const DISHES = [
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 110,
@@ -1186,7 +2164,9 @@ export const DISHES = [
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 214,
@@ -1263,7 +2243,9 @@ export const DISHES = [
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 208,
@@ -1335,7 +2317,9 @@ export const DISHES = [
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [
    "goji"
   ],
@@ -1417,7 +2401,9 @@ export const DISHES = [
   ],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 281,
@@ -1482,7 +2468,9 @@ export const DISHES = [
   ],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 268,
@@ -1545,7 +2533,9 @@ export const DISHES = [
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 174,
@@ -1639,12 +2629,15 @@ export const DISHES = [
   ],
   "cautions": [
    "yangrou_summer",
+   "yangrou_sixth_month",
    "no_night_ginger"
   ],
   "allergens": [],
   "meat": "lamb",
   "pork": false,
+  "beef": false,
   "purine_broth": true,
+  "sweet": false,
   "herbs": [
    "danggui"
   ],
@@ -1733,7 +2726,9 @@ export const DISHES = [
   "allergens": [],
   "meat": "chicken",
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 255,
@@ -1820,7 +2815,9 @@ export const DISHES = [
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 41,
@@ -1900,7 +2897,9 @@ export const DISHES = [
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 42,
@@ -1975,7 +2974,9 @@ export const DISHES = [
   "allergens": [],
   "meat": "pork",
   "pork": true,
+  "beef": false,
   "purine_broth": true,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 333,
@@ -2069,7 +3070,9 @@ export const DISHES = [
   "allergens": [],
   "meat": "chicken",
   "pork": false,
+  "beef": false,
   "purine_broth": true,
+  "sweet": false,
   "herbs": [
    "huangqi"
   ],
@@ -2172,7 +3175,9 @@ export const DISHES = [
   ],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 199,
@@ -2216,12 +3221,13 @@ export const DISHES = [
    }
   ],
   "seasons": [
-   "autumn",
    "winter",
    "cold",
    "wet"
   ],
-  "not_seasons": [],
+  "not_seasons": [
+   "autumn"
+  ],
   "slots": [
    "breakfast"
   ],
@@ -2249,16 +3255,20 @@ export const DISHES = [
   "method_zh": "生姜切片、红枣掰开，加水煮十五分钟。宜早晨喝，晚上不喝。",
   "method_en": "Slice the ginger, split the dates, simmer 15 minutes in water. A morning drink, not an evening one.",
   "evidence": [
+   "jiangzao_yinshan",
    "ginger_morning",
    "dazao"
   ],
   "cautions": [
+   "no_autumn_ginger",
    "no_night_ginger"
   ],
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 50,
@@ -2298,7 +3308,9 @@ export const DISHES = [
    }
   ],
   "seasons": [],
-  "not_seasons": [],
+  "not_seasons": [
+   "autumn"
+  ],
   "slots": [
    "breakfast"
   ],
@@ -2330,12 +3342,15 @@ export const DISHES = [
    "jupi"
   ],
   "cautions": [
+   "no_autumn_ginger",
    "no_night_ginger"
   ],
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [
    "chenpi"
   ],
@@ -2412,7 +3427,9 @@ export const DISHES = [
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [
    "chrysanthemum",
    "goji"
@@ -2480,6 +3497,7 @@ export const DISHES = [
   "method_zh": "梨洗净去核，隔水蒸二十分钟，连汁温食。不加糖。",
   "method_en": "Core the pear and steam it 20 minutes; eat it warm with its juice. No sugar.",
   "evidence": [
+   "zhengli",
    "li",
    "ligao"
   ],
@@ -2489,7 +3507,9 @@ export const DISHES = [
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 114,
@@ -2572,7 +3592,9 @@ export const DISHES = [
   ],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [],
   "nutrition": {
    "energy_kcal": 189,
@@ -2626,7 +3648,9 @@ export const DISHES = [
   "allergens": [],
   "meat": null,
   "pork": false,
+  "beef": false,
   "purine_broth": false,
+  "sweet": false,
   "herbs": [
    "hawthorn"
   ],
@@ -2647,5 +3671,3078 @@ export const DISHES = [
   "notes": [
    "Sour: skip with a stomach ulcer or acid reflux."
   ]
+ },
+ {
+  "id": "qianshi_zhou",
+  "zh": "芡实粥",
+  "en": "Euryale (fox-nut) congee",
+  "kind": "congee",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "qixu",
+   "tanshi",
+   "pinghe"
+  ],
+  "avoid": [],
+  "seasons": [],
+  "not_seasons": [],
+  "slots": [
+   "breakfast"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "rice",
+    "zh": "粳米（生）",
+    "en": "white rice, raw",
+    "g": 40,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "euryale",
+    "zh": "芡实",
+    "en": "euryale seed (fox nut)",
+    "g": 20,
+    "homology": "2002",
+    "herb": false
+   }
+  ],
+  "method_zh": "芡实浸泡一夜，先煮半小时，再加粳米同煮至稠。",
+  "method_en": "Soak the euryale overnight, simmer half an hour, add the rice and cook until thick.",
+  "evidence": [
+   "qianshi_zhou",
+   "qianshi_yinshan",
+   "qianshi"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 146,
+   "protein_g": 2.9,
+   "fat_g": 0.3,
+   "sat_fat_g": 0.1,
+   "carb_g": 32.0,
+   "fibre_g": 0.5,
+   "sugar_g": 0.0,
+   "sodium_mg": 2,
+   "potassium_mg": 46
+  },
+  "not_counted": [
+   "euryale seed (fox nut) 20 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "fuling_zhou",
+  "zh": "茯苓粥",
+  "en": "Poria congee",
+  "kind": "congee",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "tanshi",
+   "qixu",
+   "qiyu"
+  ],
+  "avoid": [],
+  "seasons": [
+   "wet"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "breakfast"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "rice",
+    "zh": "粳米（生）",
+    "en": "white rice, raw",
+    "g": 50,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "poria",
+    "zh": "茯苓（粉）",
+    "en": "poria (fu ling), powdered",
+    "g": 10,
+    "homology": "2002",
+    "herb": true
+   }
+  ],
+  "method_zh": "粳米煮粥至半熟，调入茯苓粉，搅匀再煮至熟。宜早晨空腹。",
+  "method_en": "Cook the rice halfway, stir in the poria powder and cook through. Best first thing in the morning.",
+  "evidence": [
+   "fuling_zhou",
+   "fuling_zhou_2",
+   "fuling"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [
+   "poria"
+  ],
+  "nutrition": {
+   "energy_kcal": 182,
+   "protein_g": 3.6,
+   "fat_g": 0.3,
+   "sat_fat_g": 0.1,
+   "carb_g": 40.0,
+   "fibre_g": 0.7,
+   "sugar_g": 0.1,
+   "sodium_mg": 2,
+   "potassium_mg": 58
+  },
+  "not_counted": [
+   "poria (fu ling), powdered 10 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "biandou_zhou",
+  "zh": "白扁豆粥",
+  "en": "White hyacinth-bean congee",
+  "kind": "congee",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "qixu",
+   "tanshi",
+   "shire"
+  ],
+  "avoid": [
+   {
+    "type": "yangxu",
+    "quote": "biandou_caution",
+    "why": "not for those with cold qi"
+   }
+  ],
+  "seasons": [
+   "summer",
+   "wet",
+   "hot"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "breakfast"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "hyacinth_bean",
+    "zh": "白扁豆",
+    "en": "white hyacinth beans",
+    "g": 20,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "rice",
+    "zh": "粳米（生）",
+    "en": "white rice, raw",
+    "g": 40,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "白扁豆浸泡一夜后煮至软烂（一定要煮透），再加粳米同煮。",
+  "method_en": "Soak the beans overnight and simmer until completely soft (never undercooked), then add the rice.",
+  "evidence": [
+   "biandou_zhou",
+   "biandou"
+  ],
+  "cautions": [
+   "biandou_caution",
+   "biandou_jingui"
+  ],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 146,
+   "protein_g": 2.9,
+   "fat_g": 0.3,
+   "sat_fat_g": 0.1,
+   "carb_g": 32.0,
+   "fibre_g": 0.5,
+   "sugar_g": 0.0,
+   "sodium_mg": 2,
+   "potassium_mg": 46
+  },
+  "not_counted": [
+   "white hyacinth beans 20 g"
+  ],
+  "notes": [
+   "Hyacinth beans contain lectins that only thorough cooking destroys: never eat them undercooked."
+  ]
+ },
+ {
+  "id": "luobo_zhou",
+  "zh": "萝卜粥",
+  "en": "Daikon congee",
+  "kind": "congee",
+  "serving": "1 bowl",
+  "nature": "cool",
+  "suits": [
+   "tanshi",
+   "qiyu"
+  ],
+  "avoid": [
+   {
+    "type": "qixu",
+    "quote": "luobo",
+    "why": "too much drains spleen qi"
+   }
+  ],
+  "seasons": [],
+  "not_seasons": [],
+  "slots": [
+   "breakfast",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "daikon",
+    "zh": "白萝卜",
+    "en": "daikon radish",
+    "g": 100,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "rice",
+    "zh": "粳米（生）",
+    "en": "white rice, raw",
+    "g": 40,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "白萝卜切丁（或榨汁），与粳米同煮成粥。",
+  "method_en": "Dice (or juice) the daikon and cook it with the rice into congee.",
+  "evidence": [
+   "luobo_zhou",
+   "luobo_zhou_2",
+   "luobo"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 164,
+   "protein_g": 3.5,
+   "fat_g": 0.4,
+   "sat_fat_g": 0.1,
+   "carb_g": 36.1,
+   "fibre_g": 2.1,
+   "sugar_g": 2.5,
+   "sodium_mg": 23,
+   "potassium_mg": 273
+  },
+  "not_counted": [],
+  "notes": []
+ },
+ {
+  "id": "xiaomai_zhou",
+  "zh": "小麦粥",
+  "en": "Wheat-berry congee",
+  "kind": "congee",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "yinxu",
+   "qiyu",
+   "pinghe"
+  ],
+  "avoid": [],
+  "seasons": [],
+  "not_seasons": [],
+  "slots": [
+   "breakfast"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "wheat",
+    "zh": "小麦（全麦粒）",
+    "en": "wheat grain",
+    "g": 50,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "小麦粒淘净浸泡一夜，小火煮成粥。",
+  "method_en": "Soak the wheat berries overnight and simmer into a porridge.",
+  "evidence": [
+   "xiaomai_zhou"
+  ],
+  "cautions": [
+   "xiaomai_region"
+  ],
+  "allergens": [
+   "wheat"
+  ],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 170,
+   "protein_g": 6.6,
+   "fat_g": 1.2,
+   "sat_fat_g": 0.2,
+   "carb_g": 36.0,
+   "fibre_g": 5.3,
+   "sugar_g": 0.2,
+   "sodium_mg": 1,
+   "potassium_mg": 182
+  },
+  "not_counted": [],
+  "notes": []
+ },
+ {
+  "id": "machixian_zhou",
+  "zh": "马齿苋粥",
+  "en": "Purslane congee",
+  "kind": "congee",
+  "serving": "1 bowl",
+  "nature": "cold",
+  "suits": [
+   "shire"
+  ],
+  "avoid": [
+   {
+    "type": "qixu",
+    "quote": null,
+    "why": "cold"
+   },
+   {
+    "type": "yangxu",
+    "quote": null,
+    "why": "cold"
+   }
+  ],
+  "seasons": [
+   "summer",
+   "hot",
+   "wet"
+  ],
+  "not_seasons": [
+   "winter",
+   "cold"
+  ],
+  "slots": [
+   "breakfast"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "purslane",
+    "zh": "马齿苋",
+    "en": "purslane",
+    "g": 80,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "rice",
+    "zh": "粳米（生）",
+    "en": "white rice, raw",
+    "g": 40,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "马齿苋洗净切碎，粥将熟时放入，再煮五分钟。",
+  "method_en": "Chop the purslane and add it to the congee for its last five minutes.",
+  "evidence": [
+   "machixian_zhou",
+   "machixian"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 146,
+   "protein_g": 2.9,
+   "fat_g": 0.3,
+   "sat_fat_g": 0.1,
+   "carb_g": 32.0,
+   "fibre_g": 0.5,
+   "sugar_g": 0.0,
+   "sodium_mg": 2,
+   "potassium_mg": 46
+  },
+  "not_counted": [
+   "purslane 80 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "songzi_zhou",
+  "zh": "松子仁粥",
+  "en": "Pine-nut congee",
+  "kind": "congee",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "yinxu",
+   "pinghe"
+  ],
+  "avoid": [
+   {
+    "type": "tanshi",
+    "quote": "songzi",
+    "why": "pine nuts produce phlegm"
+   }
+  ],
+  "seasons": [
+   "autumn",
+   "dry",
+   "winter"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "breakfast"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "pine_nut",
+    "zh": "松子仁",
+    "en": "pine nuts",
+    "g": 15,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "rice",
+    "zh": "粳米（生）",
+    "en": "white rice, raw",
+    "g": 50,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "松子仁捣碎，粥将熟时放入同煮。一小撮即可。",
+  "method_en": "Crush the pine nuts and stir them into the congee near the end. A small handful.",
+  "evidence": [
+   "songzi_zhou",
+   "songzi"
+  ],
+  "cautions": [],
+  "allergens": [
+   "tree_nut"
+  ],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 283,
+   "protein_g": 5.6,
+   "fat_g": 10.6,
+   "sat_fat_g": 0.8,
+   "carb_g": 41.9,
+   "fibre_g": 1.2,
+   "sugar_g": 0.6,
+   "sodium_mg": 3,
+   "potassium_mg": 147
+  },
+  "not_counted": [],
+  "notes": []
+ },
+ {
+  "id": "guiyuan_zhou",
+  "zh": "桂圆红枣粥",
+  "en": "Longan and red-date congee",
+  "kind": "congee",
+  "serving": "1 bowl",
+  "nature": "warm",
+  "suits": [
+   "qixu",
+   "qiyu"
+  ],
+  "avoid": [
+   {
+    "type": "yinxu",
+    "quote": null,
+    "why": "warm and sweet"
+   },
+   {
+    "type": "shire",
+    "quote": null,
+    "why": "warm and sweet"
+   },
+   {
+    "type": "tanshi",
+    "quote": null,
+    "why": "sweet"
+   }
+  ],
+  "seasons": [
+   "autumn",
+   "winter",
+   "cold"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "breakfast"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "longan",
+    "zh": "桂圆肉（干）",
+    "en": "longan, dried",
+    "g": 10,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "jujube",
+    "zh": "红枣（干）",
+    "en": "jujube (red date), dried",
+    "g": 10,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "rice",
+    "zh": "粳米（生）",
+    "en": "white rice, raw",
+    "g": 40,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "粳米煮粥，加桂圆肉与去核红枣同煮至稠。不另加糖。",
+  "method_en": "Cook the rice with the dried longan and pitted dates until thick. No added sugar.",
+  "evidence": [
+   "longyan",
+   "longyan_shennong",
+   "dazao_qianjin"
+  ],
+  "cautions": [
+   "zao_caution"
+  ],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": true,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 203,
+   "protein_g": 3.8,
+   "fat_g": 0.4,
+   "sat_fat_g": null,
+   "carb_g": 46.6,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 7,
+   "potassium_mg": 134
+  },
+  "not_counted": [],
+  "notes": []
+ },
+ {
+  "id": "xiebai_zhou",
+  "zh": "薤白粥",
+  "en": "Chinese-chive-bulb congee",
+  "kind": "congee",
+  "serving": "1 bowl",
+  "nature": "warm",
+  "suits": [
+   "yangxu",
+   "qiyu",
+   "xueyu"
+  ],
+  "avoid": [
+   {
+    "type": "yinxu",
+    "quote": "xie_caution",
+    "why": "it stirs fire"
+   },
+   {
+    "type": "shire",
+    "quote": "xie_caution",
+    "why": "it stirs fire"
+   },
+   {
+    "type": "tanshi",
+    "quote": "xie_caution",
+    "why": "it produces phlegm"
+   }
+  ],
+  "seasons": [
+   "winter",
+   "cold"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "breakfast",
+   "lunch"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "xiebai",
+    "zh": "薤白",
+    "en": "Chinese chive bulb (xie bai)",
+    "g": 15,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "rice",
+    "zh": "粳米（生）",
+    "en": "white rice, raw",
+    "g": 50,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "scallion",
+    "zh": "葱白",
+    "en": "spring onion",
+    "g": 10,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "薤白、葱白切碎，粥将熟时放入，再煮片刻，少盐。",
+  "method_en": "Chop the xie bai and spring onion and add them to the congee near the end; a little salt.",
+  "evidence": [
+   "xiebai_zhou",
+   "xiebai_method",
+   "xie"
+  ],
+  "cautions": [
+   "xie_caution"
+  ],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 182,
+   "protein_g": 3.6,
+   "fat_g": 0.3,
+   "sat_fat_g": 0.1,
+   "carb_g": 40.0,
+   "fibre_g": 0.7,
+   "sugar_g": 0.1,
+   "sodium_mg": 2,
+   "potassium_mg": 58
+  },
+  "not_counted": [
+   "Chinese chive bulb (xie bai) 15 g",
+   "spring onion 10 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "lizi_zhou",
+  "zh": "板栗粥",
+  "en": "Chestnut congee",
+  "kind": "congee",
+  "serving": "1 bowl",
+  "nature": "warm",
+  "suits": [
+   "qixu",
+   "yangxu"
+  ],
+  "avoid": [
+   {
+    "type": "shire",
+    "quote": null,
+    "why": "warm and filling"
+   }
+  ],
+  "seasons": [
+   "autumn",
+   "winter",
+   "cold"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "breakfast"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "chestnut",
+    "zh": "板栗",
+    "en": "Chinese chestnuts",
+    "g": 50,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "rice",
+    "zh": "粳米（生）",
+    "en": "white rice, raw",
+    "g": 40,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "板栗去壳切碎，与粳米同煮至软烂。",
+  "method_en": "Shell and chop the chestnuts and simmer them with the rice until soft.",
+  "evidence": [
+   "lizi"
+  ],
+  "cautions": [
+   "lizi_caution"
+  ],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 258,
+   "protein_g": 5.0,
+   "fat_g": 0.8,
+   "sat_fat_g": 0.2,
+   "carb_g": 56.5,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 4,
+   "potassium_mg": 270
+  },
+  "not_counted": [],
+  "notes": []
+ },
+ {
+  "id": "jirou_zhou",
+  "zh": "鸡肉粥",
+  "en": "Chicken congee",
+  "kind": "congee",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "qixu",
+   "pinghe",
+   "tebing"
+  ],
+  "avoid": [],
+  "seasons": [],
+  "not_seasons": [],
+  "slots": [
+   "breakfast",
+   "lunch"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "chicken_breast",
+    "zh": "鸡胸肉",
+    "en": "chicken breast",
+    "g": 60,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "rice",
+    "zh": "粳米（生）",
+    "en": "white rice, raw",
+    "g": 40,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "scallion",
+    "zh": "葱白",
+    "en": "spring onion",
+    "g": 10,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "鸡胸肉切丝，粥将熟时放入煮熟，撒葱白，少盐。",
+  "method_en": "Shred the chicken into the congee near the end; spring onion and a little salt.",
+  "evidence": [
+   "ji_geng",
+   "ji"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": "chicken",
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 218,
+   "protein_g": 16.4,
+   "fat_g": 1.8,
+   "sat_fat_g": null,
+   "carb_g": 32.0,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": null,
+   "potassium_mg": null
+  },
+  "not_counted": [
+   "spring onion 10 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "ji_huntun",
+  "zh": "鸡肉馄饨",
+  "en": "Chicken wontons",
+  "kind": "dish",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "qixu",
+   "pinghe"
+  ],
+  "avoid": [],
+  "seasons": [],
+  "not_seasons": [],
+  "slots": [
+   "breakfast",
+   "lunch"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "chicken_breast",
+    "zh": "鸡胸肉",
+    "en": "chicken breast",
+    "g": 60,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "flour",
+    "zh": "面粉",
+    "en": "wheat flour",
+    "g": 50,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "scallion",
+    "zh": "葱白",
+    "en": "spring onion",
+    "g": 10,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "鸡肉剁馅，加葱白、少盐，用面皮包成馄饨，煮熟连汤吃。",
+  "method_en": "Mince the chicken with spring onion and a little salt, wrap in wonton skins, boil and serve in their broth.",
+  "evidence": [
+   "ji_huntun",
+   "ji"
+  ],
+  "cautions": [],
+  "allergens": [
+   "wheat"
+  ],
+  "meat": "chicken",
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 254,
+   "protein_g": 18.7,
+   "fat_g": 2.1,
+   "sat_fat_g": null,
+   "carb_g": 38.2,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": null,
+   "potassium_mg": null
+  },
+  "not_counted": [
+   "spring onion 10 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "liyu_chixiaodou_tang",
+  "zh": "鲤鱼赤小豆汤",
+  "en": "Carp and adzuki-bean soup",
+  "kind": "soup",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "tanshi"
+  ],
+  "avoid": [
+   {
+    "type": "shire",
+    "quote": "liyu_caution",
+    "why": "carp stirs wind-heat"
+   }
+  ],
+  "seasons": [
+   "wet",
+   "summer"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "lunch",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "carp",
+    "zh": "鲤鱼（净肉）",
+    "en": "carp, flesh",
+    "g": 150,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "adzuki",
+    "zh": "赤小豆",
+    "en": "adzuki beans, raw",
+    "g": 30,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "chenpi",
+    "zh": "陈皮",
+    "en": "dried tangerine peel",
+    "g": 2,
+    "homology": "2002",
+    "herb": true
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "赤小豆先煮半小时，放入鲤鱼与一小片陈皮同煮，少盐。",
+  "method_en": "Simmer the adzuki beans half an hour, add the carp and a sliver of tangerine peel; little salt.",
+  "evidence": [
+   "liyu_chixiaodou",
+   "liyu_chixiaodou_method",
+   "chixiaodou"
+  ],
+  "cautions": [
+   "liyu_caution",
+   "chixiaodou_caution"
+  ],
+  "allergens": [
+   "fish"
+  ],
+  "meat": "fish",
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [
+   "chenpi"
+  ],
+  "nutrition": {
+   "energy_kcal": 289,
+   "protein_g": 32.7,
+   "fat_g": 8.6,
+   "sat_fat_g": null,
+   "carb_g": 18.9,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 463,
+   "potassium_mg": 876
+  },
+  "not_counted": [
+   "dried tangerine peel 2 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "chenpi_liyu_tang",
+  "zh": "陈皮鲤鱼汤",
+  "en": "Carp soup with tangerine peel",
+  "kind": "soup",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "tanshi",
+   "qiyu"
+  ],
+  "avoid": [
+   {
+    "type": "shire",
+    "quote": "liyu_caution",
+    "why": "carp stirs wind-heat"
+   }
+  ],
+  "seasons": [],
+  "not_seasons": [],
+  "slots": [
+   "lunch",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "carp",
+    "zh": "鲤鱼（净肉）",
+    "en": "carp, flesh",
+    "g": 150,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "chenpi",
+    "zh": "陈皮",
+    "en": "dried tangerine peel",
+    "g": 3,
+    "homology": "2002",
+    "herb": true
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "鲤鱼与陈皮同煮至鱼熟汤白，少盐，连汤食。",
+  "method_en": "Simmer the carp with the tangerine peel until done; a little salt; eat with some of the broth.",
+  "evidence": [
+   "chenpi_liyu",
+   "jupi"
+  ],
+  "cautions": [
+   "liyu_caution"
+  ],
+  "allergens": [
+   "fish"
+  ],
+  "meat": "fish",
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [
+   "chenpi"
+  ],
+  "nutrition": {
+   "energy_kcal": 190,
+   "protein_g": 26.7,
+   "fat_g": 8.4,
+   "sat_fat_g": null,
+   "carb_g": 0.0,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 461,
+   "potassium_mg": 500
+  },
+  "not_counted": [
+   "dried tangerine peel 3 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "chixiaodou_dunji",
+  "zh": "赤小豆炖鸡",
+  "en": "Chicken stewed with adzuki beans",
+  "kind": "soup",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "tanshi",
+   "qixu"
+  ],
+  "avoid": [],
+  "seasons": [
+   "wet"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "lunch",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "chicken",
+    "zh": "鸡腿肉（去皮）",
+    "en": "chicken thigh, skinless",
+    "g": 100,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "adzuki",
+    "zh": "赤小豆",
+    "en": "adzuki beans, raw",
+    "g": 30,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "caoguo",
+    "zh": "草果（作调料）",
+    "en": "tsaoko (cao guo), as a spice",
+    "g": 1,
+    "homology": "2019",
+    "herb": false
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "赤小豆浸泡后与鸡块、一枚草果同炖一小时，少盐。",
+  "method_en": "Stew the soaked adzuki beans with the chicken and one tsaoko pod for an hour; little salt.",
+  "evidence": [
+   "chixiaodou_ji",
+   "chixiaodou_ji_method",
+   "ji"
+  ],
+  "cautions": [
+   "chixiaodou_caution"
+  ],
+  "allergens": [],
+  "meat": "chicken",
+  "pork": false,
+  "beef": false,
+  "purine_broth": true,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 220,
+   "protein_g": 25.6,
+   "fat_g": 4.3,
+   "sat_fat_g": null,
+   "carb_g": 18.9,
+   "fibre_g": 3.8,
+   "sugar_g": null,
+   "sodium_mg": 484,
+   "potassium_mg": 618
+  },
+  "not_counted": [
+   "tsaoko (cao guo), as a spice 1 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "chixiaodou_ya_tang",
+  "zh": "赤小豆鸭汤",
+  "en": "Duck and adzuki-bean soup",
+  "kind": "soup",
+  "serving": "1 bowl",
+  "nature": "cool",
+  "suits": [
+   "shire",
+   "tanshi",
+   "yinxu"
+  ],
+  "avoid": [
+   {
+    "type": "yangxu",
+    "quote": null,
+    "why": "cool"
+   }
+  ],
+  "seasons": [
+   "autumn",
+   "wet"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "lunch",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "duck",
+    "zh": "鸭肉（去皮）",
+    "en": "duck meat, skinless",
+    "g": 120,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "adzuki",
+    "zh": "赤小豆",
+    "en": "adzuki beans, raw",
+    "g": 30,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "caoguo",
+    "zh": "草果（作调料）",
+    "en": "tsaoko (cao guo), as a spice",
+    "g": 1,
+    "homology": "2019",
+    "herb": false
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "鸭肉焯水，与赤小豆、一枚草果同炖一个半小时，撇去浮油，少盐。",
+  "method_en": "Blanch the duck, stew with the adzuki beans and a tsaoko pod for 1½ hours, skim the fat; little salt.",
+  "evidence": [
+   "chixiaodou_ya",
+   "ya_season"
+  ],
+  "cautions": [
+   "chixiaodou_caution"
+  ],
+  "allergens": [],
+  "meat": "duck",
+  "pork": false,
+  "beef": false,
+  "purine_broth": true,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 261,
+   "protein_g": 27.9,
+   "fat_g": 7.3,
+   "sat_fat_g": null,
+   "carb_g": 20.0,
+   "fibre_g": 3.8,
+   "sugar_g": null,
+   "sodium_mg": 478,
+   "potassium_mg": 701
+  },
+  "not_counted": [
+   "tsaoko (cao guo), as a spice 1 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "yuzhu_laoya_tang",
+  "zh": "玉竹老鸭汤",
+  "en": "Duck soup with Solomon's seal",
+  "kind": "soup",
+  "serving": "1 bowl",
+  "nature": "cool",
+  "suits": [
+   "yinxu",
+   "pinghe"
+  ],
+  "avoid": [
+   {
+    "type": "yangxu",
+    "quote": null,
+    "why": "cool"
+   },
+   {
+    "type": "tanshi",
+    "quote": null,
+    "why": "moistening"
+   }
+  ],
+  "seasons": [
+   "autumn",
+   "dry"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "lunch",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "duck",
+    "zh": "鸭肉（去皮）",
+    "en": "duck meat, skinless",
+    "g": 120,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "yuzhu",
+    "zh": "玉竹",
+    "en": "Solomon's seal rhizome (yu zhu)",
+    "g": 10,
+    "homology": "2002",
+    "herb": true
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "鸭肉焯水，与玉竹同炖一个半小时，撇去浮油，少盐。",
+  "method_en": "Blanch the duck, stew with the yu zhu for 1½ hours, skim the fat; little salt.",
+  "evidence": [
+   "yuzhu",
+   "ya_season"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": "duck",
+  "pork": false,
+  "beef": false,
+  "purine_broth": true,
+  "sweet": false,
+  "herbs": [
+   "yuzhu"
+  ],
+  "nutrition": {
+   "energy_kcal": 162,
+   "protein_g": 21.9,
+   "fat_g": 7.1,
+   "sat_fat_g": null,
+   "carb_g": 1.1,
+   "fibre_g": 0.0,
+   "sugar_g": null,
+   "sodium_mg": 476,
+   "potassium_mg": 325
+  },
+  "not_counted": [
+   "Solomon's seal rhizome (yu zhu) 10 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "yangrou_caoguo_tang",
+  "zh": "羊肉草果鹰嘴豆汤",
+  "en": "Lamb, tsaoko and chickpea soup",
+  "kind": "soup",
+  "serving": "1 bowl",
+  "nature": "hot",
+  "suits": [
+   "yangxu",
+   "qixu"
+  ],
+  "avoid": [
+   {
+    "type": "yinxu",
+    "quote": null,
+    "why": "very warm"
+   },
+   {
+    "type": "shire",
+    "quote": null,
+    "why": "very warm"
+   }
+  ],
+  "seasons": [
+   "winter",
+   "cold"
+  ],
+  "not_seasons": [
+   "summer",
+   "hot"
+  ],
+  "slots": [
+   "lunch",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "lamb",
+    "zh": "羊肉（瘦）",
+    "en": "lamb, lean",
+    "g": 100,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "chickpeas",
+    "zh": "鹰嘴豆（熟）",
+    "en": "chickpeas, cooked",
+    "g": 60,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "caoguo",
+    "zh": "草果（作调料）",
+    "en": "tsaoko (cao guo), as a spice",
+    "g": 1,
+    "homology": "2019",
+    "herb": false
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "羊肉切块焯水，与煮熟的鹰嘴豆、一枚草果同炖一个半小时，撇去浮油，少盐。",
+  "method_en": "Blanch the diced lamb, stew with cooked chickpeas and a tsaoko pod for 1½ hours, skim the fat; little salt.",
+  "evidence": [
+   "yangrou_caoguo_effect",
+   "yangrou_caoguo",
+   "yangrou"
+  ],
+  "cautions": [
+   "yangrou_summer",
+   "yangrou_sixth_month"
+  ],
+  "allergens": [],
+  "meat": "lamb",
+  "pork": false,
+  "beef": false,
+  "purine_broth": true,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 226,
+   "protein_g": 25.9,
+   "fat_g": 6.1,
+   "sat_fat_g": null,
+   "carb_g": 16.4,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 454,
+   "potassium_mg": null
+  },
+  "not_counted": [
+   "tsaoko (cao guo), as a spice 1 g"
+  ],
+  "notes": [
+   "The 饮膳正要 builds its court soups on this broth (with many more ingredients); here, only the broth and its chickpeas."
+  ]
+ },
+ {
+  "id": "shanyao_niurou",
+  "zh": "山药炖牛肉",
+  "en": "Beef stewed with Chinese yam",
+  "kind": "soup",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "qixu",
+   "pinghe"
+  ],
+  "avoid": [],
+  "seasons": [
+   "autumn",
+   "winter"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "lunch",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "beef",
+    "zh": "牛肉（瘦）",
+    "en": "beef, lean",
+    "g": 100,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "yam",
+    "zh": "鲜山药",
+    "en": "Chinese yam, fresh",
+    "g": 100,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "牛肉切块焯水，炖一小时后放入山药块再炖二十分钟，少盐。",
+  "method_en": "Blanch the diced beef, stew an hour, add the yam and stew twenty minutes more; little salt.",
+  "evidence": [
+   "niurou",
+   "shuyu"
+  ],
+  "cautions": [
+   "niurou_against"
+  ],
+  "allergens": [],
+  "meat": "beef",
+  "pork": false,
+  "beef": true,
+  "purine_broth": true,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 118,
+   "protein_g": 1.5,
+   "fat_g": 0.2,
+   "sat_fat_g": null,
+   "carb_g": 27.9,
+   "fibre_g": 4.1,
+   "sugar_g": null,
+   "sodium_mg": 397,
+   "potassium_mg": 816
+  },
+  "not_counted": [
+   "beef, lean 100 g"
+  ],
+  "notes": [
+   "The 千金食治 commends beef (though not every day); the 食鉴本草 says not to eat the ox that ploughs the fields: both are given."
+  ]
+ },
+ {
+  "id": "baicai_doufu_tang",
+  "zh": "白菜豆腐汤",
+  "en": "Chinese cabbage and tofu soup",
+  "kind": "soup",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "pinghe",
+   "shire",
+   "yinxu"
+  ],
+  "avoid": [],
+  "seasons": [
+   "winter"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "lunch",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "cabbage",
+    "zh": "大白菜",
+    "en": "Chinese cabbage (napa)",
+    "g": 150,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "tofu",
+    "zh": "豆腐",
+    "en": "tofu, firm",
+    "g": 100,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "白菜切段，与豆腐块同煮十分钟，少盐。",
+  "method_en": "Simmer the cabbage and cubed tofu for ten minutes; a little salt.",
+  "evidence": [
+   "songcai",
+   "qingcai_doufu"
+  ],
+  "cautions": [],
+  "allergens": [
+   "soy"
+  ],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 168,
+   "protein_g": 19.1,
+   "fat_g": 9.0,
+   "sat_fat_g": null,
+   "carb_g": 7.6,
+   "fibre_g": 4.1,
+   "sugar_g": null,
+   "sodium_mg": 415,
+   "potassium_mg": null
+  },
+  "not_counted": [],
+  "notes": []
+ },
+ {
+  "id": "chao_tonghao",
+  "zh": "清炒茼蒿",
+  "en": "Stir-fried garland chrysanthemum",
+  "kind": "dish",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "qiyu",
+   "tanshi",
+   "pinghe"
+  ],
+  "avoid": [],
+  "seasons": [
+   "spring",
+   "winter"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "lunch",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "garland",
+    "zh": "茼蒿",
+    "en": "garland chrysanthemum greens",
+    "g": 150,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "oil",
+    "zh": "食用油",
+    "en": "cooking oil",
+    "g": 5,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "茼蒿洗净，少油大火快炒，少盐。",
+  "method_en": "Stir-fry the greens quickly in a little oil over high heat; a little salt.",
+  "evidence": [
+   "tonghao"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 44,
+   "protein_g": 0.0,
+   "fat_g": 5.0,
+   "sat_fat_g": null,
+   "carb_g": 0.0,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": null,
+   "potassium_mg": null
+  },
+  "not_counted": [
+   "garland chrysanthemum greens 150 g"
+  ],
+  "notes": [
+   "Garland chrysanthemum belongs to the daisy family: skip it with a ragweed or daisy allergy."
+  ]
+ },
+ {
+  "id": "jicai_doufu_geng",
+  "zh": "荠菜豆腐羹",
+  "en": "Shepherd's purse and tofu soup",
+  "kind": "soup",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "qiyu",
+   "pinghe"
+  ],
+  "avoid": [],
+  "seasons": [
+   "spring"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "lunch",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "shepherds_purse",
+    "zh": "荠菜",
+    "en": "shepherd's purse",
+    "g": 80,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "tofu",
+    "zh": "豆腐",
+    "en": "tofu, firm",
+    "g": 100,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "荠菜焯水切碎，与豆腐丁同煮，少盐，可勾薄芡。",
+  "method_en": "Blanch and chop the shepherd's purse, simmer with diced tofu; a little salt, lightly thickened if liked.",
+  "evidence": [
+   "jicai",
+   "qingcai_doufu"
+  ],
+  "cautions": [],
+  "allergens": [
+   "soy"
+  ],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 144,
+   "protein_g": 17.3,
+   "fat_g": 8.7,
+   "sat_fat_g": null,
+   "carb_g": 2.8,
+   "fibre_g": 2.3,
+   "sugar_g": null,
+   "sodium_mg": 402,
+   "potassium_mg": null
+  },
+  "not_counted": [
+   "shepherd's purse 80 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "xiancai_tang",
+  "zh": "苋菜汤",
+  "en": "Amaranth soup",
+  "kind": "soup",
+  "serving": "1 bowl",
+  "nature": "cold",
+  "suits": [
+   "shire"
+  ],
+  "avoid": [
+   {
+    "type": "yangxu",
+    "quote": null,
+    "why": "very cold"
+   },
+   {
+    "type": "qixu",
+    "quote": null,
+    "why": "very cold"
+   }
+  ],
+  "seasons": [
+   "summer",
+   "hot"
+  ],
+  "not_seasons": [
+   "winter",
+   "cold"
+  ],
+  "slots": [
+   "lunch",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "amaranth",
+    "zh": "苋菜",
+    "en": "amaranth greens",
+    "g": 150,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "苋菜洗净，水开后放入煮三五分钟，少盐。",
+  "method_en": "Simmer the amaranth greens three to five minutes; a little salt.",
+  "evidence": [
+   "xiancai"
+  ],
+  "cautions": [
+   "xiancai_caution"
+  ],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 0,
+   "protein_g": 0.0,
+   "fat_g": 0.0,
+   "sat_fat_g": null,
+   "carb_g": 0.0,
+   "fibre_g": 0.0,
+   "sugar_g": null,
+   "sodium_mg": 388,
+   "potassium_mg": 0
+  },
+  "not_counted": [
+   "amaranth greens 150 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "chunsun_tang",
+  "zh": "春笋香菇汤",
+  "en": "Bamboo-shoot and shiitake soup",
+  "kind": "soup",
+  "serving": "1 bowl",
+  "nature": "cool",
+  "suits": [
+   "tanshi",
+   "shire"
+  ],
+  "avoid": [
+   {
+    "type": "yangxu",
+    "quote": "sun",
+    "why": "those with cold suffer from it"
+   }
+  ],
+  "seasons": [
+   "spring"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "lunch",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "bamboo",
+    "zh": "竹笋",
+    "en": "bamboo shoots",
+    "g": 120,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "shiitake",
+    "zh": "干香菇",
+    "en": "dried shiitake",
+    "g": 5,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "鲜笋切片焯水去涩，与泡发的香菇同煮十五分钟，少盐。",
+  "method_en": "Slice and blanch the fresh shoots to remove bitterness, then simmer with soaked shiitake for 15 minutes; a little salt.",
+  "evidence": [
+   "sun"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 15,
+   "protein_g": 0.5,
+   "fat_g": 0.0,
+   "sat_fat_g": null,
+   "carb_g": 3.8,
+   "fibre_g": 0.6,
+   "sugar_g": null,
+   "sodium_mg": 388,
+   "potassium_mg": 77
+  },
+  "not_counted": [
+   "bamboo shoots 120 g"
+  ],
+  "notes": [
+   "Fresh bamboo shoots must be cooked through: raw, they contain a cyanide-releasing compound."
+  ]
+ },
+ {
+  "id": "zheng_yutou",
+  "zh": "蒸芋头",
+  "en": "Steamed taro",
+  "kind": "dish",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "qixu",
+   "pinghe"
+  ],
+  "avoid": [
+   {
+    "type": "yangxu",
+    "quote": "yu",
+    "why": "it stirs old cold"
+   }
+  ],
+  "seasons": [],
+  "not_seasons": [],
+  "slots": [
+   "afternoon",
+   "lunch"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "taro",
+    "zh": "芋头",
+    "en": "taro",
+    "g": 150,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "芋头带皮蒸熟（一定要熟透），剥皮蘸少许酱油或白糖吃。",
+  "method_en": "Steam the taro in its skin until fully cooked, then peel; eat plain or with a little soy sauce.",
+  "evidence": [
+   "yu"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 168,
+   "protein_g": 2.2,
+   "fat_g": 0.3,
+   "sat_fat_g": 0.1,
+   "carb_g": 39.8,
+   "fibre_g": 6.2,
+   "sugar_g": 0.6,
+   "sodium_mg": 16,
+   "potassium_mg": 886
+  },
+  "not_counted": [],
+  "notes": [
+   "Raw taro irritates the mouth and throat: always cook it through."
+  ]
+ },
+ {
+  "id": "biqi_li_tang",
+  "zh": "荸荠雪梨汤",
+  "en": "Water-chestnut and pear soup",
+  "kind": "drink",
+  "serving": "1 bowl",
+  "nature": "cool",
+  "suits": [
+   "yinxu",
+   "shire"
+  ],
+  "avoid": [
+   {
+    "type": "yangxu",
+    "quote": "li_caution",
+    "why": "cool"
+   },
+   {
+    "type": "qixu",
+    "quote": "li_caution",
+    "why": "the weak who eat many get diarrhoea"
+   }
+  ],
+  "seasons": [
+   "autumn",
+   "dry"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "afternoon"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "water_chestnut",
+    "zh": "荸荠（马蹄）",
+    "en": "Chinese water chestnut",
+    "g": 80,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "pear",
+    "zh": "梨",
+    "en": "pear",
+    "g": 150,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "荸荠去皮、梨切块，加水煮二十分钟，连汤温食。不加糖。",
+  "method_en": "Peel the water chestnuts, cut the pear, simmer 20 minutes; drink warm with the fruit. No sugar.",
+  "evidence": [
+   "wuyu",
+   "biqi",
+   "li"
+  ],
+  "cautions": [
+   "li_caution"
+  ],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 86,
+   "protein_g": 0.5,
+   "fat_g": 0.2,
+   "sat_fat_g": 0.0,
+   "carb_g": 22.8,
+   "fibre_g": 4.7,
+   "sugar_g": 14.6,
+   "sodium_mg": 2,
+   "potassium_mg": 174
+  },
+  "not_counted": [
+   "Chinese water chestnut 80 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "wumei_tang",
+  "zh": "乌梅汤",
+  "en": "Smoked-plum drink",
+  "kind": "drink",
+  "serving": "1 cup",
+  "nature": "neutral",
+  "suits": [
+   "shire",
+   "yinxu"
+  ],
+  "avoid": [],
+  "seasons": [
+   "summer",
+   "hot"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "afternoon"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "wumei",
+    "zh": "乌梅",
+    "en": "smoked plum (wu mei)",
+    "g": 10,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "hawthorn",
+    "zh": "山楂（干片）",
+    "en": "dried hawthorn slices",
+    "g": 5,
+    "homology": "2002",
+    "herb": true
+   },
+   {
+    "food": "sugar",
+    "zh": "冰糖（可不放）",
+    "en": "rock sugar (optional)",
+    "g": 5,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "乌梅、山楂加水煮半小时，放凉至温热饮，糖可不放。",
+  "method_en": "Simmer the smoked plums and hawthorn for half an hour; drink warm or cool (not iced). Sugar optional.",
+  "evidence": [
+   "meishi",
+   "meizi"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [
+   "hawthorn"
+  ],
+  "nutrition": {
+   "energy_kcal": 19,
+   "protein_g": 0.0,
+   "fat_g": 0.0,
+   "sat_fat_g": null,
+   "carb_g": 5.0,
+   "fibre_g": null,
+   "sugar_g": 5.0,
+   "sodium_mg": 0,
+   "potassium_mg": 0
+  },
+  "not_counted": [
+   "smoked plum (wu mei) 10 g",
+   "dried hawthorn slices 5 g"
+  ],
+  "notes": [
+   "Sour: skip with a stomach ulcer or acid reflux; rinse the mouth after (the texts warn of the teeth)."
+  ]
+ },
+ {
+  "id": "oufen_geng",
+  "zh": "藕粉羹",
+  "en": "Lotus-root starch pudding",
+  "kind": "dessert",
+  "serving": "1 bowl",
+  "nature": "cool",
+  "suits": [
+   "xueyu",
+   "yinxu"
+  ],
+  "avoid": [],
+  "seasons": [],
+  "not_seasons": [],
+  "slots": [
+   "breakfast",
+   "afternoon"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "lotus_starch",
+    "zh": "藕粉",
+    "en": "lotus-root starch",
+    "g": 20,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "honey",
+    "zh": "蜂蜜",
+    "en": "honey",
+    "g": 5,
+    "homology": "2002",
+    "herb": false
+   }
+  ],
+  "method_zh": "藕粉先用少许凉水调开，再用滚水冲成透明的羹，可加少许蜂蜜。宜早晨空腹。",
+  "method_en": "Mix the starch with a little cold water, then pour on boiling water, stirring, until clear; a little honey if liked. Best on an empty stomach in the morning.",
+  "evidence": [
+   "oufen",
+   "ou_raw"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 15,
+   "protein_g": 0.0,
+   "fat_g": 0.0,
+   "sat_fat_g": null,
+   "carb_g": 4.1,
+   "fibre_g": 0.0,
+   "sugar_g": 4.1,
+   "sodium_mg": 0,
+   "potassium_mg": 3
+  },
+  "not_counted": [
+   "lotus-root starch 20 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "lianzi_baihe_geng",
+  "zh": "莲子百合羹",
+  "en": "Lotus-seed and lily-bulb soup",
+  "kind": "dessert",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "yinxu",
+   "qiyu",
+   "qixu"
+  ],
+  "avoid": [],
+  "seasons": [
+   "autumn",
+   "dry"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "afternoon",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "lotus_seed",
+    "zh": "莲子（干）",
+    "en": "lotus seeds, dried",
+    "g": 20,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "lily",
+    "zh": "百合（干）",
+    "en": "lily bulb, dried",
+    "g": 10,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "honey",
+    "zh": "蜂蜜",
+    "en": "honey",
+    "g": 5,
+    "homology": "2002",
+    "herb": false
+   }
+  ],
+  "method_zh": "莲子去心与干百合浸泡后同煮至酥烂，可加少许蜂蜜。",
+  "method_en": "Soak the lotus seeds (germ removed) and dried lily bulb, simmer until soft; a little honey if liked.",
+  "evidence": [
+   "lianzi",
+   "baihe"
+  ],
+  "cautions": [
+   "lianzi_raw"
+  ],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 82,
+   "protein_g": 3.1,
+   "fat_g": 0.4,
+   "sat_fat_g": null,
+   "carb_g": 17.0,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 1,
+   "potassium_mg": 276
+  },
+  "not_counted": [
+   "lily bulb, dried 10 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "fengmi_baihe",
+  "zh": "蜂蜜蒸百合",
+  "en": "Steamed lily bulb with honey",
+  "kind": "dessert",
+  "serving": "1 bowl",
+  "nature": "cool",
+  "suits": [
+   "yinxu",
+   "qiyu"
+  ],
+  "avoid": [
+   {
+    "type": "yangxu",
+    "quote": null,
+    "why": "cool and moistening"
+   }
+  ],
+  "seasons": [
+   "autumn",
+   "dry"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "afternoon"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "lily",
+    "zh": "百合（干）",
+    "en": "lily bulb, dried",
+    "g": 15,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "honey",
+    "zh": "蜂蜜",
+    "en": "honey",
+    "g": 10,
+    "homology": "2002",
+    "herb": false
+   }
+  ],
+  "method_zh": "干百合泡软（或鲜百合掰瓣），隔水蒸十五分钟，淋上蜂蜜。",
+  "method_en": "Soften dried lily bulb (or use fresh petals), steam 15 minutes and drizzle with honey.",
+  "evidence": [
+   "baihe_zheng",
+   "baihe"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": true,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 30,
+   "protein_g": 0.0,
+   "fat_g": 0.0,
+   "sat_fat_g": null,
+   "carb_g": 8.2,
+   "fibre_g": 0.0,
+   "sugar_g": 8.2,
+   "sodium_mg": 0,
+   "potassium_mg": 5
+  },
+  "not_counted": [
+   "lily bulb, dried 15 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "gegen_geng",
+  "zh": "葛根粉羹",
+  "en": "Kudzu-starch pudding",
+  "kind": "dessert",
+  "serving": "1 bowl",
+  "nature": "cool",
+  "suits": [
+   "shire",
+   "yinxu"
+  ],
+  "avoid": [
+   {
+    "type": "yangxu",
+    "quote": null,
+    "why": "cool"
+   }
+  ],
+  "seasons": [
+   "summer",
+   "hot"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "afternoon"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "kudzu",
+    "zh": "葛根粉",
+    "en": "kudzu-root starch",
+    "g": 20,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "honey",
+    "zh": "蜂蜜",
+    "en": "honey",
+    "g": 5,
+    "homology": "2002",
+    "herb": false
+   }
+  ],
+  "method_zh": "葛根粉先用凉水调开，再用滚水冲成透明的羹，可加少许蜂蜜。",
+  "method_en": "Mix the kudzu starch with cold water, then stir in boiling water until clear; a little honey if liked.",
+  "evidence": [
+   "gegen"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 15,
+   "protein_g": 0.0,
+   "fat_g": 0.0,
+   "sat_fat_g": null,
+   "carb_g": 4.1,
+   "fibre_g": 0.0,
+   "sugar_g": 4.1,
+   "sodium_mg": 0,
+   "potassium_mg": 3
+  },
+  "not_counted": [
+   "kudzu-root starch 20 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "zheng_shibing",
+  "zh": "蒸柿饼",
+  "en": "Steamed dried persimmon",
+  "kind": "dessert",
+  "serving": "1 persimmon",
+  "nature": "cool",
+  "suits": [
+   "yinxu",
+   "shire"
+  ],
+  "avoid": [
+   {
+    "type": "yangxu",
+    "quote": "shi_caution",
+    "why": "it cools the middle"
+   },
+   {
+    "type": "qixu",
+    "quote": "shi_caution",
+    "why": "it cools the middle"
+   }
+  ],
+  "seasons": [
+   "autumn",
+   "dry"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "breakfast",
+   "afternoon"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "persimmon_dried",
+    "zh": "柿饼",
+    "en": "dried persimmon",
+    "g": 40,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "柿饼隔水蒸至极软，趁热吃，一次一个。不与螃蟹同食。",
+  "method_en": "Steam the dried persimmon until very soft and eat it hot, one at a time. Never with crab.",
+  "evidence": [
+   "shibing"
+  ],
+  "cautions": [
+   "shi_caution"
+  ],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": true,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 0,
+   "protein_g": 0.0,
+   "fat_g": 0.0,
+   "sat_fat_g": 0.0,
+   "carb_g": 0.0,
+   "fibre_g": 0.0,
+   "sugar_g": 0.0,
+   "sodium_mg": 0,
+   "potassium_mg": 0
+  },
+  "not_counted": [
+   "dried persimmon 40 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "gouqiye_dantang",
+  "zh": "枸杞叶蛋花汤",
+  "en": "Goji-leaf and egg-drop soup",
+  "kind": "soup",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "yinxu",
+   "qixu",
+   "pinghe"
+  ],
+  "avoid": [],
+  "seasons": [
+   "spring",
+   "summer"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "lunch",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "goji_leaf",
+    "zh": "枸杞叶",
+    "en": "goji leaves",
+    "g": 60,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "egg",
+    "zh": "鸡蛋",
+    "en": "egg",
+    "g": 50,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "水开后放入枸杞叶煮两分钟，淋入蛋液成蛋花，少盐。",
+  "method_en": "Simmer the goji leaves two minutes, drizzle in the beaten egg; a little salt.",
+  "evidence": [
+   "gouqiye"
+  ],
+  "cautions": [],
+  "allergens": [
+   "egg"
+  ],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 78,
+   "protein_g": 6.3,
+   "fat_g": 5.3,
+   "sat_fat_g": null,
+   "carb_g": 0.6,
+   "fibre_g": 0.0,
+   "sugar_g": null,
+   "sodium_mg": 450,
+   "potassium_mg": null
+  },
+  "not_counted": [
+   "goji leaves 60 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "damai_cha",
+  "zh": "大麦茶",
+  "en": "Barley tea",
+  "kind": "drink",
+  "serving": "1 cup",
+  "nature": "cool",
+  "suits": [
+   "shire",
+   "tanshi",
+   "pinghe"
+  ],
+  "avoid": [],
+  "seasons": [
+   "summer",
+   "hot"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "afternoon",
+   "lunch"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "barley",
+    "zh": "大麦（珍珠麦）",
+    "en": "pearled barley",
+    "g": 15,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "大麦炒至焦黄，加水煮十分钟，代茶温饮，不加糖。",
+  "method_en": "Toast the barley golden, simmer ten minutes in water; drink warm instead of tea, unsweetened.",
+  "evidence": [
+   "damai_tang",
+   "damai"
+  ],
+  "cautions": [],
+  "allergens": [
+   "wheat"
+  ],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 53,
+   "protein_g": 1.5,
+   "fat_g": 0.2,
+   "sat_fat_g": 0.0,
+   "carb_g": 11.7,
+   "fibre_g": 2.3,
+   "sugar_g": 0.1,
+   "sodium_mg": 1,
+   "potassium_mg": 42
+  },
+  "not_counted": [],
+  "notes": [
+   "Barley contains gluten (the allergen marked is cereal gluten): not for coeliac disease. Strained, the tea carries far less energy than the grain counted."
+  ]
+ },
+ {
+  "id": "donggua_yiyi_tang",
+  "zh": "冬瓜薏米汤",
+  "en": "Winter melon and coix soup",
+  "kind": "soup",
+  "serving": "1 bowl",
+  "nature": "cool",
+  "suits": [
+   "tanshi",
+   "shire"
+  ],
+  "avoid": [
+   {
+    "type": "yinxu",
+    "quote": "donggua_caution",
+    "why": "the 食鉴本草 says those with yin deficiency should not eat winter melon"
+   },
+   {
+    "type": "yangxu",
+    "quote": null,
+    "why": "cool"
+   }
+  ],
+  "seasons": [
+   "summer",
+   "wet",
+   "hot"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "lunch",
+   "dinner"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "waxgourd",
+    "zh": "冬瓜",
+    "en": "winter melon (wax gourd)",
+    "g": 200,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "coix",
+    "zh": "薏苡仁",
+    "en": "Job's tears (coix seed)",
+    "g": 20,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "薏苡仁先煮半小时，再放冬瓜（连皮）煮二十分钟，少盐。",
+  "method_en": "Simmer the coix half an hour, add the winter melon (skin on) and simmer twenty minutes; little salt.",
+  "evidence": [
+   "donggua",
+   "yiyi"
+  ],
+  "cautions": [
+   "donggua_caution"
+  ],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 26,
+   "protein_g": 0.8,
+   "fat_g": 0.4,
+   "sat_fat_g": null,
+   "carb_g": 6.0,
+   "fibre_g": 5.8,
+   "sugar_g": null,
+   "sodium_mg": 610,
+   "potassium_mg": 12
+  },
+  "not_counted": [
+   "Job's tears (coix seed) 20 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "zheng_shanyao",
+  "zh": "蒸山药",
+  "en": "Steamed Chinese yam",
+  "kind": "dish",
+  "serving": "1 bowl",
+  "nature": "neutral",
+  "suits": [
+   "qixu",
+   "pinghe",
+   "tebing"
+  ],
+  "avoid": [],
+  "seasons": [],
+  "not_seasons": [],
+  "slots": [
+   "breakfast",
+   "afternoon"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "yam",
+    "zh": "鲜山药",
+    "en": "Chinese yam, fresh",
+    "g": 150,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "honey",
+    "zh": "蜂蜜",
+    "en": "honey",
+    "g": 5,
+    "homology": "2002",
+    "herb": false
+   }
+  ],
+  "method_zh": "山药去皮切段，隔水蒸二十分钟，可淋少许蜂蜜。",
+  "method_en": "Peel and cut the yam, steam twenty minutes; a little honey if liked.",
+  "evidence": [
+   "shuyu",
+   "shanyao_cool"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 192,
+   "protein_g": 2.3,
+   "fat_g": 0.3,
+   "sat_fat_g": null,
+   "carb_g": 46.0,
+   "fibre_g": 6.2,
+   "sugar_g": 4.9,
+   "sodium_mg": 14,
+   "potassium_mg": 1227
+  },
+  "not_counted": [],
+  "notes": [
+   "Raw Chinese yam can itch on the hands: wear gloves to peel it."
+  ]
+ },
+ {
+  "id": "liangban_machixian",
+  "zh": "凉拌马齿苋",
+  "en": "Purslane with ginger and vinegar",
+  "kind": "dish",
+  "serving": "1 bowl",
+  "nature": "cold",
+  "suits": [
+   "shire"
+  ],
+  "avoid": [
+   {
+    "type": "qixu",
+    "quote": null,
+    "why": "cold"
+   },
+   {
+    "type": "yangxu",
+    "quote": null,
+    "why": "cold"
+   }
+  ],
+  "seasons": [
+   "summer",
+   "hot"
+  ],
+  "not_seasons": [
+   "winter",
+   "cold"
+  ],
+  "slots": [
+   "lunch"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "purslane",
+    "zh": "马齿苋",
+    "en": "purslane",
+    "g": 150,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "ginger",
+    "zh": "生姜",
+    "en": "fresh ginger",
+    "g": 3,
+    "homology": "2002",
+    "herb": false
+   },
+   {
+    "food": "salt",
+    "zh": "盐",
+    "en": "salt",
+    "g": 1,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "马齿苋焯水，拌姜末、少许醋与盐。",
+  "method_en": "Blanch the purslane and dress it with minced ginger, a little vinegar and salt.",
+  "evidence": [
+   "machixian_geng",
+   "machixian"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": false,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 2,
+   "protein_g": 0.1,
+   "fat_g": 0.0,
+   "sat_fat_g": null,
+   "carb_g": 0.5,
+   "fibre_g": 0.1,
+   "sugar_g": null,
+   "sodium_mg": 388,
+   "potassium_mg": 13
+  },
+  "not_counted": [
+   "purslane 150 g"
+  ],
+  "notes": []
+ },
+ {
+  "id": "ganzhe_zhou",
+  "zh": "甘蔗粥",
+  "en": "Sugar-cane congee",
+  "kind": "congee",
+  "serving": "1 bowl",
+  "nature": "cool",
+  "suits": [
+   "yinxu"
+  ],
+  "avoid": [
+   {
+    "type": "tanshi",
+    "quote": null,
+    "why": "very sweet"
+   }
+  ],
+  "seasons": [
+   "autumn",
+   "dry"
+  ],
+  "not_seasons": [],
+  "slots": [
+   "breakfast"
+  ],
+  "not_slots": [],
+  "ingredients": [
+   {
+    "food": "sugarcane",
+    "zh": "甘蔗汁",
+    "en": "sugar-cane juice",
+    "g": 100,
+    "homology": "food",
+    "herb": false
+   },
+   {
+    "food": "rice",
+    "zh": "粳米（生）",
+    "en": "white rice, raw",
+    "g": 40,
+    "homology": "food",
+    "herb": false
+   }
+  ],
+  "method_zh": "甘蔗榨汁，与粳米同煮成粥。宜早晨空腹。",
+  "method_en": "Juice the sugar cane and cook it with the rice into congee. Best first thing in the morning.",
+  "evidence": [
+   "ganzhe_zhou",
+   "ganzhe"
+  ],
+  "cautions": [],
+  "allergens": [],
+  "meat": null,
+  "pork": false,
+  "beef": false,
+  "purine_broth": false,
+  "sweet": true,
+  "herbs": [],
+  "nutrition": {
+   "energy_kcal": 146,
+   "protein_g": 2.9,
+   "fat_g": 0.3,
+   "sat_fat_g": 0.1,
+   "carb_g": 32.0,
+   "fibre_g": 0.5,
+   "sugar_g": 0.0,
+   "sodium_mg": 2,
+   "potassium_mg": 46
+  },
+  "not_counted": [
+   "sugar-cane juice 100 g"
+  ],
+  "notes": []
  }
 ];

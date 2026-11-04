@@ -10,8 +10,8 @@
 - `medicinal-usda.sources.json` — 32 plain foods per 100 g for the medicinal dishes (the same shape, with potassium),
   read from web-search extracts of mirror pages naming each USDA record (no page could be fetched); conversions from a
   serving with its stated weight, second sources and disagreements are in each entry's notes.
-- `make_medicinal.py` — writes `web/js/diet/medicinal-data.js`: the 23 medicinal dishes (药膳), their ingredients and
-  per-serving nutrition from both USDA files, and their 55 classical quotations, each checked against its passage in
+- `make_medicinal.py` — writes `web/js/diet/medicinal-data.js`: the 61 medicinal dishes (药膳), their ingredients and
+  per-serving nutrition from both USDA files, and their 128 classical quotations, each checked against its passage in
   `corpus/web` (the script stops otherwise).  `tests/test_diet.py` checks the module is what the script writes.
 - `make_dishes.py` — writes `web/js/diet/dishes.js` from both and its own annotations (ids, Chinese names, kinds, slots,
   regions, allergens, pork/halal/vegetarian marks, tags, cooking and ordering tips).  `tests/test_diet.py` checks the
