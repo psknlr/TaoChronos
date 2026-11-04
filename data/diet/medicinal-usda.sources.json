@@ -952,5 +952,563 @@
   },
   "source_url": "https://foodstruct.com/food/balsam-pearbittergourd-pods-raw",
   "notes": "Values read from search-result extracts. foodstruct (exact description; FDC 168393 per getfoodfacts) gives 17 kcal, 1 g protein, 0.17 g fat, 3.7 g carb, 2.8 g fibre (its /fiber page) and 296 mg potassium (its /potassium page) per 100 g; vegnt gives 5 mg sodium per 100 g. FatSecret's USDA 'Balsam-Pear (Bitter Gourd, Pods)' gives 17 kcal and 0.17 g fat and shows sat fat as '-' (not reported), so sat fat is null; foodstruct's 0 g sat fat and 0 g sugar look like placeholders for missing values, so both left null."
+ },
+ {
+  "key": "cucumber_raw",
+  "usda_description": "Cucumber, with peel, raw",
+  "fdc_id": "168409",
+  "per_100g": {
+   "energy_kcal": 15,
+   "protein_g": 0.65,
+   "fat_g": 0.11,
+   "sat_fat_g": null,
+   "carb_g": 3.63,
+   "fibre_g": 0.5,
+   "sugar_g": 1.67,
+   "sodium_mg": 2,
+   "potassium_mg": 147
+  },
+  "source_url": "https://getfoodfacts.com/food/cucumber-with-peel-raw-168409",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 168409) gives 15 kcal, 0.7 g protein, 0.5 g fibre, 2 mg sodium and 147 mg potassium per 100 g (its 52 g portion row: 1.04 mg Na, 76.4 mg K, consistent). Protein 0.65 g, fat 0.11 g, carb 3.63 g and sugars 1.67 g from happyforks / FatSecret / fitnessvolt listings of 'Cucumber, with peel, raw' (15 kcal). Sat fat: only a rounded 0 g label seen, so null. Do not use the Foundation record FDC 2346406 (0.2 g fat, 3.0 g carb)."
+ },
+ {
+  "key": "eggplant_raw",
+  "usda_description": "Eggplant, raw",
+  "fdc_id": "169228",
+  "per_100g": {
+   "energy_kcal": 25,
+   "protein_g": 0.98,
+   "fat_g": 0.18,
+   "sat_fat_g": 0.034,
+   "carb_g": 5.88,
+   "fibre_g": 3.0,
+   "sugar_g": 3.5,
+   "sodium_mg": 2,
+   "potassium_mg": 229
+  },
+  "source_url": "https://getfoodfacts.com/food/eggplant-raw-169228",
+  "notes": "Values read from search-result extracts of pages for FDC 169228 / 'Eggplant, raw': 25 kcal, 0.98 g protein, 0.18 g fat, 5.88 g carb, about 3.0 g fibre, about 3.5 g sugar, about 2 mg sodium and 229 mg potassium per 100 g (getfoodfacts gives the rounded 1.0 / 0.2 / 5.9). Sat fat 0.034 g from FatSecret's USDA eggplant page (which shows 24 kcal - older release); foodstruct gives 0.03 g, which agrees. One site gave 22.4 kcal (different energy factors); not used. Sugar is rounded to one decimal. Do not use Foundation FDC 2685577."
+ },
+ {
+  "key": "water_spinach_raw",
+  "usda_description": "Water convolvulus,raw",
+  "fdc_id": "169301",
+  "per_100g": {
+   "energy_kcal": 19,
+   "protein_g": 2.6,
+   "fat_g": 0.2,
+   "sat_fat_g": null,
+   "carb_g": 3.1,
+   "fibre_g": 2.1,
+   "sugar_g": null,
+   "sodium_mg": 113,
+   "potassium_mg": 312
+  },
+  "source_url": "https://getfoodfacts.com/food/water-convolvulusraw-169301",
+  "notes": "No SR Legacy record is named 'Water spinach, raw'; water spinach (Ipomoea aquatica) is in SR Legacy as 'Water convolvulus,raw' (FDC 169301, per getfoodfacts). Values read from search-result extracts: the USDA-based page gives 19 kcal, 2.6 g protein, 0.2 g fat, 3.1 g carb, 2.1 g fibre and 113 mg sodium per 100 g (its header also shows a 56 g portion; the per-100 g figures are used). Potassium 312.0 mg and sodium 113 mg per 100 g from nutrientnorms ('water convolvulus,raw'). No sat fat or sugar values seen. Not used: MyFoodData 11504 / 169302 (cooked, boiled: 20 kcal, 122 mg Na, 284 mg K) and FatSecret 'water spinach' (20 kcal, 2.51 g protein - basis unclear)."
+ },
+ {
+  "key": "purslane_raw",
+  "usda_description": "Purslane, raw",
+  "fdc_id": "169274",
+  "per_100g": {
+   "energy_kcal": 20,
+   "protein_g": 2.0,
+   "fat_g": 0.4,
+   "sat_fat_g": null,
+   "carb_g": 3.4,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 45,
+   "potassium_mg": 494
+  },
+  "source_url": "https://getfoodfacts.com/food/purslane-raw-169274",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 169274) gives 20 kcal, 2.0 g protein, 0.4 g fat, 3.4 g carb and 45 mg sodium per 100 g (one-decimal rounding). Potassium 494 mg per 100 g from foodstruct's purslane potassium page and a nutrient-ranking site (494.0 mg). Disagreement: FatSecret's USDA purslane page gives about 16 kcal, 1.3 g protein and 3.43 g carb (older release) and shows sat fat and sugars as '-'; Recipal and foodforhealth show rounded 0 g sat fat/sugar. No USDA fibre value seen (Norway's table gives 3 g - different database), so fibre, sugar and sat fat are null."
+ },
+ {
+  "key": "garland_chrysanthemum_raw",
+  "usda_description": "Chrysanthemum, garland, raw",
+  "fdc_id": "169995",
+  "per_100g": {
+   "energy_kcal": 24,
+   "protein_g": 3.36,
+   "fat_g": 0.56,
+   "sat_fat_g": null,
+   "carb_g": 3.02,
+   "fibre_g": 3.0,
+   "sugar_g": null,
+   "sodium_mg": 118,
+   "potassium_mg": 567
+  },
+  "source_url": "https://happyforks.com/food/chrysanthemum/3038",
+  "notes": "Values read from search-result extracts. happyforks ('Chrysanthemum, garland, raw') gives 24 kcal, 3.36 g protein, 0.56 g fat and 3.02 g carb per 100 g; getfoodfacts (FDC 169995) gives 3.4 g protein, 0.6 g fat, 3.0 g carb, 3.0 g fibre and 118 mg sodium. Potassium 567 mg per 100 g from vegnt (single source). One site gave 32 kcal / 2.0 g protein - outlier, not used. No sat fat or sugar values seen."
+ },
+ {
+  "key": "onion_raw",
+  "usda_description": "Onions, raw",
+  "fdc_id": "170000",
+  "per_100g": {
+   "energy_kcal": 40,
+   "protein_g": 1.1,
+   "fat_g": 0.1,
+   "sat_fat_g": 0.04,
+   "carb_g": 9.34,
+   "fibre_g": 1.7,
+   "sugar_g": 4.24,
+   "sodium_mg": 4,
+   "potassium_mg": 146
+  },
+  "source_url": "https://getfoodfacts.com/food/onions-raw-170000",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 170000, SR Legacy) gives 40 kcal, 1.10 g protein, 0.10 g fat, 9.34 g carb, 1.70 g fibre, 4.24 g total sugars, 4 mg sodium and 146 mg potassium per 100 g (161 mg per 110 g portion, consistent). Sat fat 0.04 g from foodstruct and triagemethod. getfoodfacts' 171 mg K belongs to the survey record FDC 2709795; not used. Not used: FatSecret's USDA 'Onions' (42 kcal, 0.92 g protein, 10.11 g carb, 0.026 g sat fat - older release)."
+ },
+ {
+  "key": "spring_onion_raw",
+  "usda_description": "Onions, spring or scallions (includes tops and bulb), raw",
+  "fdc_id": "170005",
+  "per_100g": {
+   "energy_kcal": 32,
+   "protein_g": 1.8,
+   "fat_g": 0.2,
+   "sat_fat_g": 0.03,
+   "carb_g": 7.3,
+   "fibre_g": 2.6,
+   "sugar_g": 2.3,
+   "sodium_mg": 16,
+   "potassium_mg": 276
+  },
+  "source_url": "https://tools.myfooddata.com/print/170005/100g",
+  "notes": "Values read from search-result extracts. MyFoodData 170005 at 100 g gives 0.2 g fat and 0.03 g sat fat; getfoodfacts (FDC 170005) and foodstruct give about 32 kcal, 1.8 g protein, 7.3 g carb, 2.6 g fibre, 2.3 g sugar and 16 mg sodium (Recipal agrees on sodium). FatSecret gives 0.032 g sat fat. Potassium 276 mg per 100 g from foodstruct; a chrismasterjohnphd.com potassium table gives the same 276 mg for this description. foodstruct's label panel shows 0 g sugars, contradicting its own 2.3 g breakdown; 2.3 g used."
+ },
+ {
+  "key": "garlic_raw",
+  "usda_description": "Garlic, raw",
+  "fdc_id": "169230",
+  "per_100g": {
+   "energy_kcal": 149,
+   "protein_g": 6.36,
+   "fat_g": 0.5,
+   "sat_fat_g": 0.09,
+   "carb_g": 33.06,
+   "fibre_g": 2.1,
+   "sugar_g": 1.0,
+   "sodium_mg": 17,
+   "potassium_mg": 401
+  },
+  "source_url": "https://getfoodfacts.com/food/garlic-raw-169230",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 169230) and related USDA-based listings give 149 kcal, 6.36 g protein (6.4 rounded), 0.5 g fat, 33.06 g carb, 2.1 g fibre, about 1.0 g sugar and 17 mg sodium per 100 g; vitals-hub (FDC 169230) also gives 149 kcal. Potassium 401 mg per 100 g from foodstruct's garlic potassium page (another site attributes 401 mg to USDA). Sat fat 0.09 g from FatSecret's garlic fat-breakdown table at 100 g (generic entry, 0.50 g total fat); its USDA page gives 0.003 g per 3 g clove, which agrees. Do not use FDC 2709786 or 1104647 (143 kcal, 6.6 g protein, 28.2 g carb)."
+ },
+ {
+  "key": "kelp_raw",
+  "usda_description": "Seaweed, kelp, raw",
+  "fdc_id": null,
+  "per_100g": {
+   "energy_kcal": 43,
+   "protein_g": 1.68,
+   "fat_g": 0.56,
+   "sat_fat_g": 0.247,
+   "carb_g": 9.57,
+   "fibre_g": 1.3,
+   "sugar_g": 0.6,
+   "sodium_mg": 233,
+   "potassium_mg": 89
+  },
+  "source_url": "https://www.fatsecret.co.nz/calories-nutrition/generic/kelp-seaweed",
+  "notes": "SR NDB 11445 (gopherproxy file name); the FDC ID was not shown in any result. Values read from search-result extracts: happyforks ('Seaweed, kelp, raw') gives 43 kcal, 1.68 g protein, 0.56 g fat and 9.57 g carb per 100 g; FatSecret's kelp page gives 0.247 g sat fat, 0.6 g sugar, 233 mg sodium and 89 mg potassium; UH Hospitals' USDA listing gives 23.3 mg Na and 8.9 mg K per 1 tbsp (10 g), which agrees. Fibre 1.3 g from nutrientnorms. foodstruct's kelp page also shows 699 mg Na / 267 mg K in a daily-value block that contradicts its own panel (233 / 89); not used."
+ },
+ {
+  "key": "laver_raw",
+  "usda_description": "Seaweed, laver, raw",
+  "fdc_id": "168458",
+  "per_100g": {
+   "energy_kcal": 35,
+   "protein_g": 5.81,
+   "fat_g": 0.28,
+   "sat_fat_g": null,
+   "carb_g": 5.11,
+   "fibre_g": 0.3,
+   "sugar_g": 0.49,
+   "sodium_mg": 48,
+   "potassium_mg": 356
+  },
+  "source_url": "https://happyforks.com/food/seaweed/2175",
+  "notes": "FDC 168458 from a getfoodfacts comparison URL. Values read from search-result extracts: happyforks and the Wikipedia 'Laverbread' infobox (USDA 'Seaweed, laver, raw') give 35 kcal, 5.81 g protein, 0.28 g fat and 5.11 g carb per 100 g; triagemethod's USDA-based profile gives 0.3 g fibre and 0.49 g sugars. Sodium 48 mg and potassium 356 mg per 100 g from USDA-based listings; a 10-sheet (26 g) serving with 93 mg K and 12 mg Na agrees. Sat fat: only 0 g (rounded) or a per-serving 0.016 g with an unclear sheet weight seen; nutrola gives 0.1 g (record not named) - left null."
+ },
+ {
+  "key": "water_chestnut_raw",
+  "usda_description": "Waterchestnuts, chinese, (matai), raw",
+  "fdc_id": "170066",
+  "per_100g": {
+   "energy_kcal": 97,
+   "protein_g": 1.4,
+   "fat_g": 0.1,
+   "sat_fat_g": null,
+   "carb_g": 23.94,
+   "fibre_g": 3.0,
+   "sugar_g": 4.8,
+   "sodium_mg": 14,
+   "potassium_mg": 584
+  },
+  "source_url": "https://getfoodfacts.com/food/waterchestnuts-chinese-matai-raw-170066",
+  "notes": "Values read from search-result extracts. getfoodfacts / nutrifyi (FDC 170066, exact description) give 97 kcal, 1.4 g protein, 0.1 g fat, 3.0 g fibre, 4.8 g sugar and 14 mg sodium per 100 g; a USDA-based table gives 23.94 g carb. Potassium 584 mg per 100 g from foodstruct's water chestnut potassium page (and a chrismasterjohnphd.com potassium table). bodbot lists 120 kcal / 29.69 g carb (different basis or release); not used. No sat fat value seen."
+ },
+ {
+  "key": "mulberries_raw",
+  "usda_description": "Mulberries, raw",
+  "fdc_id": "169913",
+  "per_100g": {
+   "energy_kcal": 43,
+   "protein_g": 1.44,
+   "fat_g": 0.39,
+   "sat_fat_g": null,
+   "carb_g": 9.8,
+   "fibre_g": 1.7,
+   "sugar_g": 8.1,
+   "sodium_mg": 10,
+   "potassium_mg": 194
+  },
+  "source_url": "https://getfoodfacts.com/food/mulberries-raw-169913",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 169913) gives 43 kcal, 1.4 g protein, 0.4 g fat, 9.8 g carb, 1.7 g fibre and 10 mg sodium per 100 g; a USDA-style listing gives 1.44 g protein, 0.39 g fat and 8.1 g sugars. Potassium 194 mg per 100 g from foodstruct (272 mg per 140 g cup); MyFoodData 169913 gives 271.6 mg per 1 cup (140 g) = 194 per 100 g, which agrees. Sat fat: only 'trace' or a 0,027 g figure from a page that does not name the USDA record, so null."
+ },
+ {
+  "key": "persimmon_raw",
+  "usda_description": "Persimmons, japanese, raw",
+  "fdc_id": "169941",
+  "per_100g": {
+   "energy_kcal": 70,
+   "protein_g": 0.6,
+   "fat_g": 0.19,
+   "sat_fat_g": null,
+   "carb_g": 18.6,
+   "fibre_g": 3.6,
+   "sugar_g": 12.5,
+   "sodium_mg": 1,
+   "potassium_mg": 161
+  },
+  "source_url": "https://getfoodfacts.com/food/persimmons-japanese-raw-169941",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 169941) gives 70 kcal, 0.6 g protein, 0.2 g fat, 18.6 g carb, 3.6 g fibre, 12.5 g sugar and 1 mg sodium per 100 g; the Wikipedia 'Persimmon' infobox (Japanese, raw) gives 293 kJ / 70 kcal; fat 0.19 g from USDA-based figures. Potassium 161.0 mg per 100 g from nutrientnorms ('Potassium in Persimmons, japanese, raw'). One page gave 81 kcal - outlier, not used. No sat fat value seen."
+ },
+ {
+  "key": "loquat_raw",
+  "usda_description": "Loquats, raw",
+  "fdc_id": "169908",
+  "per_100g": {
+   "energy_kcal": 47,
+   "protein_g": 0.43,
+   "fat_g": 0.2,
+   "sat_fat_g": null,
+   "carb_g": 12.14,
+   "fibre_g": 1.7,
+   "sugar_g": null,
+   "sodium_mg": 1,
+   "potassium_mg": 266
+  },
+  "source_url": "https://getfoodfacts.com/food/loquats-raw-169908",
+  "notes": "Values read from search-result extracts of USDA-based pages for FDC 169908 / 'Loquats, raw': 47 kcal, 0.43 g protein, 0.2 g fat, 12.14 g carb, 1.7 g fibre and 1 mg sodium per 100 g. Potassium 266 mg per 100 g from a chrismasterjohnphd.com potassium table naming 'Loquats, raw' (another page gives 266 mg for 'Japanese medlar (loquat) raw'). Sugar unresolved: one site shows 0 g (looks like a placeholder), others are Australian data - null. A 0.04 g sat fat figure appeared without a named record - not used, null."
+ },
+ {
+  "key": "lychee_raw",
+  "usda_description": "Litchis, raw",
+  "fdc_id": "169086",
+  "per_100g": {
+   "energy_kcal": 66,
+   "protein_g": 0.83,
+   "fat_g": 0.44,
+   "sat_fat_g": 0.099,
+   "carb_g": 16.53,
+   "fibre_g": 1.3,
+   "sugar_g": 15.2,
+   "sodium_mg": 1,
+   "potassium_mg": 171
+  },
+  "source_url": "https://happyforks.com/food/litchis/2573",
+  "notes": "Values read from search-result extracts. happyforks gives 66 kcal, 0.83 g protein, 16.53 g carb and 0.44 g fat per 100 g; USDA-based tables give 1.3 g fibre and 15.2 g sugars. getfoodfacts (FDC 169086) gives sodium 1.00 mg per 100 g. Sat fat 0.099 g from foodstruct (nutrientnorms rounds to 0.1 g). Potassium 171 mg per 100 g from a chrismasterjohnphd.com potassium table naming 'Litchis, raw' (single source). One site gave 71 kcal; not used."
+ },
+ {
+  "key": "grapes_raw",
+  "usda_description": "Grapes, red or green (European type, such as Thompson seedless), raw",
+  "fdc_id": "174683",
+  "per_100g": {
+   "energy_kcal": 69,
+   "protein_g": 0.72,
+   "fat_g": 0.16,
+   "sat_fat_g": 0.054,
+   "carb_g": 18.1,
+   "fibre_g": 0.9,
+   "sugar_g": 15.5,
+   "sodium_mg": 2,
+   "potassium_mg": 191
+  },
+  "source_url": "https://www.fatsecret.com.au/calories-nutrition/generic/grapes-(red-or-green-european-type-varieties-such-as-thompson-seedless)",
+  "notes": "Values read from search-result extracts. FatSecret's 'Grapes (Red or Green, European Type Varieties, Such as Thompson Seedless)' gives 0.72 g protein, 0.16 g fat, 0.054 g sat fat and 2 mg sodium per 100 g; getfoodfacts (FDC 174683) gives 69 kcal, about 18.1 g carb, 0.9 g fibre and 15.5 g sugar. Potassium 191 mg per 100 g from nutrientnorms (exact description), MyFoodData 174683 at 100 g and Otago FoodFiles; 288 mg per 151 g cup agrees. Not used: triagemethod 220 mg K (AFCD mix); FatSecret's 306 mg per cup entry (2008, different basis)."
+ },
+ {
+  "key": "peach_raw",
+  "usda_description": "Peaches, yellow, raw",
+  "fdc_id": "169928",
+  "per_100g": {
+   "energy_kcal": 39,
+   "protein_g": 0.9,
+   "fat_g": 0.3,
+   "sat_fat_g": 0.02,
+   "carb_g": 9.5,
+   "fibre_g": 1.5,
+   "sugar_g": 8.4,
+   "sodium_mg": 0,
+   "potassium_mg": 190
+  },
+  "source_url": "https://getfoodfacts.com/food/peaches-yellow-raw-169928",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 169928) gives 39 kcal, 0.9 g protein, 0.3 g fat and 9.5 g carb per 100 g; USDA-based listings give 1.5 g fibre and 8.4 g sugars. Sodium and potassium CONVERTED from MyFoodData 169928's 1 cup slices (154 g): 0 mg Na and 292.6 mg K -> 190 mg K per 100 g. Sat fat 0.02 g from foodstruct (also 0 mg sodium there). Do NOT use the Foundation record 'Peaches, yellow, raw' FDC 325430 (42 kcal, 10.1 g carb, 13 mg sodium), which some pages show. Aprifel's 190 mg K / <0.01 g sat fat is French (Ciqual) data; not used."
+ },
+ {
+  "key": "papaya_raw",
+  "usda_description": "Papayas, raw",
+  "fdc_id": "169926",
+  "per_100g": {
+   "energy_kcal": 43,
+   "protein_g": 0.47,
+   "fat_g": 0.26,
+   "sat_fat_g": 0.08,
+   "carb_g": 10.8,
+   "fibre_g": 1.7,
+   "sugar_g": 7.8,
+   "sodium_mg": 8,
+   "potassium_mg": 182
+  },
+  "source_url": "https://getfoodfacts.com/food/papayas-raw-169926",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 169926) gives 8.00 mg sodium and 182 mg potassium per 100 g (11.6 mg / 264 mg per 145 g cup); the gopherproxy SR file 'Papayas, raw (09226)' gives the same 182 / 8. A USDA-based page gives 43 kcal, 0.47 g protein, 0.26 g fat, 10.8 g carb, 7.8 g sugars and about 0.08 g sat fat; 1.7 g fibre from a 'Papayas, raw' listing. Not used: FatSecret / UH Hospitals figures based on 39 kcal per 100 g (older release)."
+ },
+ {
+  "key": "tangerine_raw",
+  "usda_description": "Tangerines, (mandarin oranges), raw",
+  "fdc_id": "169105",
+  "per_100g": {
+   "energy_kcal": 53,
+   "protein_g": 0.81,
+   "fat_g": 0.31,
+   "sat_fat_g": 0.039,
+   "carb_g": 13.34,
+   "fibre_g": 1.8,
+   "sugar_g": 10.6,
+   "sodium_mg": 2,
+   "potassium_mg": 166
+  },
+  "source_url": "https://getfoodfacts.com/food/tangerines-mandarin-oranges-raw-169105",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 169105) gives 53 kcal, 10.6 g sugar and 2 mg sodium per 100 g; a USDA-based table gives 0.81 g protein, 13.34 g carb and 0.31 g fat; 1.8 g fibre from a listing of this food. Sat fat 0.039 g from FatSecret's USDA 'Tangerines (Mandarin Oranges)' page (0.31 g total fat). Potassium 166 mg per 100 g from foodstruct's mandarin orange potassium page and a chrismasterjohnphd.com table. 136 mg K is the canned juice-pack record; not used."
+ },
+ {
+  "key": "peanuts_raw",
+  "usda_description": "Peanuts, all types, raw",
+  "fdc_id": "172430",
+  "per_100g": {
+   "energy_kcal": 567,
+   "protein_g": 25.8,
+   "fat_g": 49.2,
+   "sat_fat_g": 6.3,
+   "carb_g": 16.1,
+   "fibre_g": 8.5,
+   "sugar_g": 4.7,
+   "sodium_mg": 18,
+   "potassium_mg": 705
+  },
+  "source_url": "https://getfoodfacts.com/food/peanuts-all-types-raw-172430",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 172430) gives 567 kcal, 25.8 g protein, 49.2 g fat, 16.1 g carb, 8.5 g fibre, 4.7 g sugar and 18 mg sodium per 100 g (one-decimal rounding). Sat fat 6.3 g from MyFoodData 172430 at 100 g. Potassium 705 mg per 100 g from nutrition-compare (citing FDC 172430) and a chrismasterjohnphd.com table. Outliers 551 / 576 kcal on other sites; not used. Do not use 'Peanuts, valencia, raw' (172432) or Foundation 'Peanuts, raw' (2515376)."
+ },
+ {
+  "key": "beef_lean_raw",
+  "usda_description": "Beef, round, eye of round, roast, separable lean only, trimmed to 1/8\" fat, all grades, raw",
+  "fdc_id": null,
+  "per_100g": {
+   "energy_kcal": 124,
+   "protein_g": 22.6,
+   "fat_g": 3,
+   "sat_fat_g": 1.027,
+   "carb_g": null,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 60,
+   "potassium_mg": 357
+  },
+  "source_url": "https://www.fatsecret.co.nz/calories-nutrition/generic/beef-eye-of-round-(lean-only-trimmed-to-03-cm-fat)",
+  "notes": "CLOSEST RECORD, not the preferred one. The preferred SR Legacy record exists ('Beef, round, eye of round roast, boneless, separable lean only, trimmed to 0\" fat, all grades, raw', Recipal 11721), but no result showed its per-100 g values (one extract showed about 20 g protein, 45 mg Na and 270 mg K with no serving size, so they could not be used). Used instead: the 1/8\"-trim lean-only all-grades raw record. Values read from search-result extracts: FatSecret's 'Beef Eye of Round (Lean Only, Trimmed to 0.3 cm Fat)' (no grade = all grades; last updated 04 Feb 08) gives 124 kcal (519 kJ), 22.6 g protein, 3 g fat (possibly rounded), 1.027 g sat fat, 41 mg cholesterol, 60 mg sodium and 357 mg potassium per 100 g (the Na/K/cholesterol were read from a jumbled extract - slightly less certain). Recipal 6933 (exact 1/8\" description) agrees: 124 kcal, 3 g fat, 1 g sat fat, 60 mg sodium per 100 g. Carb not shown, so null. Do not use the 'lean and fat' records (happyforks 124 kcal / 23.27 g protein / 3.44 g fat is lean AND fat, 0\" trim) or the cooked roasts (157-162 kcal)."
+ },
+ {
+  "key": "sugar_brown",
+  "usda_description": "Sugars, brown",
+  "fdc_id": "168833",
+  "per_100g": {
+   "energy_kcal": 380,
+   "protein_g": 0.12,
+   "fat_g": 0,
+   "sat_fat_g": null,
+   "carb_g": 98.09,
+   "fibre_g": 0,
+   "sugar_g": 97.0,
+   "sodium_mg": 28,
+   "potassium_mg": 133
+  },
+  "source_url": "https://getfoodfacts.com/food/sugars-brown-168833",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 168833) gives 380 kcal, 28 mg sodium, total sugars 97.0 g and fibre 0.0 g per 100 g (one sentence there wrongly says '3g serving'); happyforks gives 380 kcal, 0.12 g protein and 98.09 g carb; fat 0 g. Potassium 133 mg per 100 g from foodstruct's brown sugar potassium page (soupersage gives the same). A 220 g packed cup listing gives 62 mg sodium, which agrees. Sat fat not shown (total fat 0), left null as for sugar_white. Do not use the brown 'sugar substitute' records."
+ },
+ {
+  "key": "sesame_oil",
+  "usda_description": "Oil, sesame, salad or cooking",
+  "fdc_id": "171016",
+  "per_100g": {
+   "energy_kcal": 884,
+   "protein_g": 0,
+   "fat_g": 100,
+   "sat_fat_g": 14.2,
+   "carb_g": 0,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 0,
+   "potassium_mg": 0
+  },
+  "source_url": "https://foodstruct.com/food/sesame-oil",
+  "notes": "Values read from search-result extracts. foodstruct's sesame oil page cites FDC 171016 and gives 884 kcal, 100 g fat, 0 g protein, 0 g carb and 14.2 g sat fat per 100 g (linoleic acid 40.7 g). UH Hospitals' USDA listing gives 120.22 kcal and 13.6 g fat per 1 tbsp (13.6 g), which agrees; FatSecret gives 1.931 g sat fat per tbsp (= 14.2 per 100 g). Sodium and potassium 0 mg from foodstruct, Nutrifox ('Oil, sesame, salad or cooking') and myfooddiary. Norway's table (2 mg Na, 20 mg K) is a different database; not used. No fibre or sugar values seen."
+ },
+ {
+  "key": "soy_sauce",
+  "usda_description": "Soy sauce made from soy and wheat (shoyu)",
+  "fdc_id": "174277",
+  "per_100g": {
+   "energy_kcal": 53,
+   "protein_g": 8.14,
+   "fat_g": 0.57,
+   "sat_fat_g": null,
+   "carb_g": 4.93,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 5493,
+   "potassium_mg": 435
+  },
+  "source_url": "https://happyforks.com/food/soy-sauce-soy-wheat/1508",
+  "notes": "Values read from search-result extracts. happyforks and a USDA-based listing give 53 kcal, 8.14 g protein, 0.57 g fat and 4.93 g carb per 100 g for 'Soy sauce made from soy and wheat (shoyu)'. Sodium 5493 mg per 100 g from foodstruct (regular shoyu); potassium 435 mg per 100 g from nutrientnorms. getfoodfacts (FDC 174277) gives 14,007 mg Na and 1,109 mg K per 1 cup (255 g) = 5493 / 435 per 100 g, which agrees. Disagreement: UH Hospitals' cup listing (135 kcal, 16.0 g protein, 553 mg K, 14,374 mg Na per 255 g) looks like an older release; not used. Do not use the low-sodium record (FDC 172473: 57 kcal, 3598 mg Na). Sugar: a 0.4 g figure appeared without a named record - null."
+ },
+ {
+  "key": "vinegar",
+  "usda_description": "Vinegar, distilled",
+  "fdc_id": "172237",
+  "per_100g": {
+   "energy_kcal": 18,
+   "protein_g": 0,
+   "fat_g": null,
+   "sat_fat_g": null,
+   "carb_g": 0.04,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 2,
+   "potassium_mg": 2
+  },
+  "source_url": "https://getfoodfacts.com/food/vinegar-distilled-172237",
+  "notes": "No SR Legacy rice-vinegar record turned up, so this is the distilled record. Values read from search-result extracts: getfoodfacts (FDC 172237) gives 2 mg sodium per 100 g; triagemethod's SR column gives 18.0 kcal and 0.04 g carb; a getfoodfacts comparison table gives 2 mg K and 2 mg Na; the Vinegar Institute's 'White Distilled Vinegar USDA Values' sheet (SR28) gives 0 g protein. Recipal's 43 kcal per 238 g cup agrees with 18 kcal per 100 g. Fat, fibre and sugar not seen. Do not use FDC 173469 (cider vinegar) or the survey record 2709351 (21 kcal)."
+ },
+ {
+  "key": "tofu_soft",
+  "usda_description": "Tofu, soft, prepared with calcium sulfate and magnesium chloride (nigari)",
+  "fdc_id": "172449",
+  "per_100g": {
+   "energy_kcal": 61,
+   "protein_g": 7.2,
+   "fat_g": 3.7,
+   "sat_fat_g": 0.53,
+   "carb_g": 1.2,
+   "fibre_g": 0.2,
+   "sugar_g": 0.7,
+   "sodium_mg": 8,
+   "potassium_mg": 120
+  },
+  "source_url": "https://getfoodfacts.com/food/tofu-soft-prepared-with-calcium-sulfate-and-magnesium-chloride-nigari-172449",
+  "notes": "Values read from search-result extracts. getfoodfacts (FDC 172449) gives 61 kcal, 7.2 g protein, 3.7 g fat, 1.2 g carb, 0.2 g fibre, 0.7 g sugar and 8 mg sodium per 100 g. Sat fat 0.53 g from an aggregator for this record; MyFoodData 172449 gives 0.15 g per 1 oz (28.35 g) = 0.53 per 100 g. Potassium 120 mg per 100 g from a chrismasterjohnphd.com potassium table and a second source. Disagreement: happyforks gives 6.55 g protein and 1.8 g carb (with 61 kcal, 3.69 g fat) - possibly an older release; not used. Different key/record from usda.sources.json 'tofu' (firm, calcium sulfate)."
+ },
+ {
+  "key": "mushroom_white_raw",
+  "usda_description": "Mushrooms, white, raw",
+  "fdc_id": "169251",
+  "per_100g": {
+   "energy_kcal": 22,
+   "protein_g": 3.09,
+   "fat_g": 0.34,
+   "sat_fat_g": 0.05,
+   "carb_g": 3.26,
+   "fibre_g": 1.0,
+   "sugar_g": 1.98,
+   "sodium_mg": 5,
+   "potassium_mg": 318
+  },
+  "source_url": "https://fitnessvolt.com/app/foods/mushrooms-white/",
+  "notes": "Values read from search-result extracts. fitnessvolt ('Mushrooms White Raw') gives 22 kcal, 3.09 g protein, 0.34 g fat and 3.26 g carb per 100 g; USDA-based listings give 1.0 g fibre and 1.98 g sugars; getfoodfacts gives 5 mg sodium. Potassium 318 mg and sat fat 0.05 g per 100 g from foodstruct (223 mg K per 70 g cup = 318.6); fitnessvolt also gives 0.05 g sat fat. Other pages gave 24.9 / 30.46 kcal (different data); not used. Do not use the UV-exposed record (169376)."
+ },
+ {
+  "key": "hyacinth_beans_raw",
+  "usda_description": "Hyacinth beans, mature seeds, raw",
+  "fdc_id": "175210",
+  "per_100g": {
+   "energy_kcal": 344,
+   "protein_g": 23.9,
+   "fat_g": 1.69,
+   "sat_fat_g": 0.288,
+   "carb_g": 60.74,
+   "fibre_g": 25.6,
+   "sugar_g": null,
+   "sodium_mg": 21,
+   "potassium_mg": 1235
+  },
+  "source_url": "https://getfoodfacts.com/food/hyacinth-beans-mature-seeds-raw-175210",
+  "notes": "Added at coordinator's request. Values read from search-result extracts of USDA-based pages for FDC 175210 / 'Hyacinth beans, mature seeds, raw': 344 kcal, 23.9 g protein, 1.69 g fat, 0.288 g sat fat, 60.74 g carb, about 25.6 g fibre (one source rounds to 26 g) and 21 mg sodium per 100 g. Potassium 1,235 mg per 100 g from a single potassium table (least corroborated). No sugar value seen. Do not use the immature-seed record (about 46 kcal)."
+ },
+ {
+  "key": "amaranth_leaves_raw",
+  "usda_description": "Amaranth leaves, raw",
+  "fdc_id": "168385",
+  "per_100g": {
+   "energy_kcal": 23,
+   "protein_g": 2.46,
+   "fat_g": 0.33,
+   "sat_fat_g": 0.091,
+   "carb_g": 4.02,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 20,
+   "potassium_mg": 611
+  },
+  "source_url": "https://happyforks.com/food/amaranth-leaves/2154",
+  "notes": "Added at coordinator's request. Values read from search-result extracts. happyforks gives 23 kcal, 2.46 g protein and 4.02 g carb per 100 g; FatSecret's USDA amaranth leaves page gives 0.33 g fat and 0.091 g sat fat; getfoodfacts (FDC 168385) gives 23 kcal, 4.0 g carb and 20 mg sodium. Potassium 611 mg per 100 g from nutritionvalue.org's 'Amaranth leaves, raw 11003' page (its 28 g serving gives 171 mg = 611 per 100 g). Fibre: sources disagree (0 g vs 6.34 g for a 'similar' entry) - null. fitnigerian's 377 mg K / 88.6 kcal is unreliable; not used."
+ },
+ {
+  "key": "bamboo_shoots_raw",
+  "usda_description": "Bamboo shoots, raw",
+  "fdc_id": "169210",
+  "per_100g": {
+   "energy_kcal": 27,
+   "protein_g": 2.6,
+   "fat_g": 0.3,
+   "sat_fat_g": null,
+   "carb_g": 5.2,
+   "fibre_g": 2.2,
+   "sugar_g": 3.0,
+   "sodium_mg": 4,
+   "potassium_mg": 533
+  },
+  "source_url": "https://getfoodfacts.com/food/bamboo-shoots-raw-169210",
+  "notes": "Added at coordinator's request. Values read from search-result extracts. getfoodfacts (FDC 169210) gives 27 kcal, 2.6 g protein, 0.3 g fat, 5.2 g carb, 2.2 g fibre, 3.0 g sugar and 4 mg sodium per 100 g (one-decimal rounding). Potassium 533 mg per 100 g from foodstruct's 'bambooshoots-raw' potassium page; DOUBT: another page gives the same 533 mg for the cooked, boiled record, so check. Sat fat seen only for the cooked record (0.05 g) - null here. caloriedata's 2.3 g fibre / 2.8 g sugar not used."
+ },
+ {
+  "key": "persimmon_dried",
+  "usda_description": "Persimmons, japanese, dried",
+  "fdc_id": "169942",
+  "per_100g": {
+   "energy_kcal": 274,
+   "protein_g": 1.38,
+   "fat_g": 0.59,
+   "sat_fat_g": null,
+   "carb_g": 73.43,
+   "fibre_g": 14.5,
+   "sugar_g": null,
+   "sodium_mg": 2,
+   "potassium_mg": 802
+  },
+  "source_url": "https://www.fatsecret.co.nz/calories-nutrition/generic/dried-japanese-persimmons",
+  "notes": "Added at coordinator's request. Values read from search-result extracts. FatSecret's 'Dried Japanese Persimmons' gives 1.38 g protein, 0.59 g fat, 73.43 g carb and 802 mg potassium per 100 g; getfoodfacts (FDC 169942) gives 274 kcal, 1.4 g protein, 0.6 g fat, 14.5 g fibre and 2 mg sodium. No sugar or sat fat value seen."
  }
 ]

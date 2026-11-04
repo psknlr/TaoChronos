@@ -389,7 +389,10 @@ export const FOODS = {
   "en": "white hyacinth beans",
   "homology": "2002",
   "herb": false,
-  "usda": null,
+  "usda": {
+   "description": "Hyacinth beans, mature seeds, raw",
+   "fdc_id": "175210"
+  },
   "note": null
  },
  "wheat": {
@@ -419,7 +422,10 @@ export const FOODS = {
   "en": "purslane",
   "homology": "2002",
   "herb": false,
-  "usda": null,
+  "usda": {
+   "description": "Purslane, raw",
+   "fdc_id": "169274"
+  },
   "note": null
  },
  "longan": {
@@ -446,7 +452,10 @@ export const FOODS = {
   "en": "spring onion",
   "homology": "food",
   "herb": false,
-  "usda": null,
+  "usda": {
+   "description": "Onions, spring or scallions (includes tops and bulb), raw",
+   "fdc_id": "170005"
+  },
   "note": null
  },
  "chicken_breast": {
@@ -517,7 +526,10 @@ export const FOODS = {
   "en": "garland chrysanthemum greens",
   "homology": "food",
   "herb": false,
-  "usda": null,
+  "usda": {
+   "description": "Chrysanthemum, garland, raw",
+   "fdc_id": "169995"
+  },
   "note": null
  },
  "shepherds_purse": {
@@ -533,7 +545,10 @@ export const FOODS = {
   "en": "amaranth greens",
   "homology": "food",
   "herb": false,
-  "usda": null,
+  "usda": {
+   "description": "Amaranth leaves, raw",
+   "fdc_id": "168385"
+  },
   "note": null
  },
  "bamboo": {
@@ -541,7 +556,10 @@ export const FOODS = {
   "en": "bamboo shoots",
   "homology": "food",
   "herb": false,
-  "usda": null,
+  "usda": {
+   "description": "Bamboo shoots, raw",
+   "fdc_id": "169210"
+  },
   "note": null
  },
  "taro": {
@@ -560,7 +578,10 @@ export const FOODS = {
   "en": "Chinese water chestnut",
   "homology": "food",
   "herb": false,
-  "usda": null,
+  "usda": {
+   "description": "Waterchestnuts, chinese, (matai), raw",
+   "fdc_id": "170066"
+  },
   "note": null
  },
  "wumei": {
@@ -584,8 +605,11 @@ export const FOODS = {
   "en": "beef, lean",
   "homology": "food",
   "herb": false,
-  "usda": null,
-  "note": null
+  "usda": {
+   "description": "Beef, round, eye of round, roast, separable lean only, trimmed to 1/8\" fat, all grades, raw",
+   "fdc_id": null
+  },
+  "note": "The closest USDA record whose values could be read: round, lean only, trimmed to 1/8\" fat, raw."
  },
  "lily": {
   "zh": "百合（干）",
@@ -616,7 +640,10 @@ export const FOODS = {
   "en": "dried persimmon",
   "homology": "food",
   "herb": false,
-  "usda": null,
+  "usda": {
+   "description": "Persimmons, japanese, dried",
+   "fdc_id": "169942"
+  },
   "note": null
  },
  "goji_leaf": {
@@ -3877,19 +3904,17 @@ export const DISHES = [
   "sweet": false,
   "herbs": [],
   "nutrition": {
-   "energy_kcal": 146,
-   "protein_g": 2.9,
-   "fat_g": 0.3,
+   "energy_kcal": 215,
+   "protein_g": 7.6,
+   "fat_g": 0.6,
    "sat_fat_g": 0.1,
-   "carb_g": 32.0,
-   "fibre_g": 0.5,
-   "sugar_g": 0.0,
-   "sodium_mg": 2,
-   "potassium_mg": 46
+   "carb_g": 44.1,
+   "fibre_g": 5.6,
+   "sugar_g": null,
+   "sodium_mg": 6,
+   "potassium_mg": 293
   },
-  "not_counted": [
-   "white hyacinth beans 20 g"
-  ],
+  "not_counted": [],
   "notes": [
    "Hyacinth beans contain lectins that only thorough cooking destroys: never eat them undercooked."
   ]
@@ -4094,19 +4119,17 @@ export const DISHES = [
   "sweet": false,
   "herbs": [],
   "nutrition": {
-   "energy_kcal": 146,
-   "protein_g": 2.9,
-   "fat_g": 0.3,
-   "sat_fat_g": 0.1,
-   "carb_g": 32.0,
-   "fibre_g": 0.5,
-   "sugar_g": 0.0,
-   "sodium_mg": 2,
-   "potassium_mg": 46
+   "energy_kcal": 162,
+   "protein_g": 4.5,
+   "fat_g": 0.6,
+   "sat_fat_g": null,
+   "carb_g": 34.7,
+   "fibre_g": null,
+   "sugar_g": null,
+   "sodium_mg": 38,
+   "potassium_mg": 441
   },
-  "not_counted": [
-   "purslane 80 g"
-  ],
+  "not_counted": [],
   "notes": []
  },
  {
@@ -4363,19 +4386,18 @@ export const DISHES = [
   "sweet": false,
   "herbs": [],
   "nutrition": {
-   "energy_kcal": 182,
-   "protein_g": 3.6,
-   "fat_g": 0.3,
+   "energy_kcal": 186,
+   "protein_g": 3.7,
+   "fat_g": 0.4,
    "sat_fat_g": 0.1,
-   "carb_g": 40.0,
-   "fibre_g": 0.7,
-   "sugar_g": 0.1,
-   "sodium_mg": 2,
-   "potassium_mg": 58
+   "carb_g": 40.7,
+   "fibre_g": 0.9,
+   "sugar_g": 0.3,
+   "sodium_mg": 4,
+   "potassium_mg": 85
   },
   "not_counted": [
-   "Chinese chive bulb (xie bai) 15 g",
-   "spring onion 10 g"
+   "Chinese chive bulb (xie bai) 15 g"
   ],
   "notes": []
  },
@@ -4523,19 +4545,17 @@ export const DISHES = [
   "sweet": false,
   "herbs": [],
   "nutrition": {
-   "energy_kcal": 218,
-   "protein_g": 16.4,
-   "fat_g": 1.8,
+   "energy_kcal": 221,
+   "protein_g": 16.5,
+   "fat_g": 1.9,
    "sat_fat_g": null,
-   "carb_g": 32.0,
+   "carb_g": 32.7,
    "fibre_g": null,
    "sugar_g": null,
    "sodium_mg": null,
    "potassium_mg": null
   },
-  "not_counted": [
-   "spring onion 10 g"
-  ],
+  "not_counted": [],
   "notes": []
  },
  {
@@ -4608,19 +4628,17 @@ export const DISHES = [
   "sweet": false,
   "herbs": [],
   "nutrition": {
-   "energy_kcal": 254,
-   "protein_g": 18.7,
+   "energy_kcal": 257,
+   "protein_g": 18.8,
    "fat_g": 2.1,
    "sat_fat_g": null,
-   "carb_g": 38.2,
+   "carb_g": 38.9,
    "fibre_g": null,
    "sugar_g": null,
    "sodium_mg": null,
    "potassium_mg": null
   },
-  "not_counted": [
-   "spring onion 10 g"
-  ],
+  "not_counted": [],
   "notes": []
  },
  {
@@ -5254,19 +5272,17 @@ export const DISHES = [
   "sweet": false,
   "herbs": [],
   "nutrition": {
-   "energy_kcal": 118,
-   "protein_g": 1.5,
-   "fat_g": 0.2,
+   "energy_kcal": 242,
+   "protein_g": 24.1,
+   "fat_g": 3.2,
    "sat_fat_g": null,
-   "carb_g": 27.9,
-   "fibre_g": 4.1,
+   "carb_g": null,
+   "fibre_g": null,
    "sugar_g": null,
-   "sodium_mg": 397,
-   "potassium_mg": 816
+   "sodium_mg": 457,
+   "potassium_mg": 1173
   },
-  "not_counted": [
-   "beef, lean 100 g"
-  ],
+  "not_counted": [],
   "notes": [
    "The 千金食治 commends beef (though not every day); the 食鉴本草 says not to eat the ox that ploughs the fields: both are given."
   ]
@@ -5412,19 +5428,17 @@ export const DISHES = [
   "sweet": false,
   "herbs": [],
   "nutrition": {
-   "energy_kcal": 44,
-   "protein_g": 0.0,
-   "fat_g": 5.0,
+   "energy_kcal": 80,
+   "protein_g": 5.0,
+   "fat_g": 5.8,
    "sat_fat_g": null,
-   "carb_g": 0.0,
+   "carb_g": 4.5,
    "fibre_g": null,
    "sugar_g": null,
    "sodium_mg": null,
    "potassium_mg": null
   },
-  "not_counted": [
-   "garland chrysanthemum greens 150 g"
-  ],
+  "not_counted": [],
   "notes": [
    "Garland chrysanthemum belongs to the daisy family: skip it with a ragweed or daisy allergy."
   ]
@@ -5577,19 +5591,17 @@ export const DISHES = [
   "sweet": false,
   "herbs": [],
   "nutrition": {
-   "energy_kcal": 0,
-   "protein_g": 0.0,
-   "fat_g": 0.0,
+   "energy_kcal": 34,
+   "protein_g": 3.7,
+   "fat_g": 0.5,
    "sat_fat_g": null,
-   "carb_g": 0.0,
-   "fibre_g": 0.0,
+   "carb_g": 6.0,
+   "fibre_g": null,
    "sugar_g": null,
-   "sodium_mg": 388,
-   "potassium_mg": 0
+   "sodium_mg": 418,
+   "potassium_mg": 917
   },
-  "not_counted": [
-   "amaranth greens 150 g"
-  ],
+  "not_counted": [],
   "notes": []
  },
  {
@@ -5659,19 +5671,17 @@ export const DISHES = [
   "sweet": false,
   "herbs": [],
   "nutrition": {
-   "energy_kcal": 15,
-   "protein_g": 0.5,
-   "fat_g": 0.0,
+   "energy_kcal": 47,
+   "protein_g": 3.6,
+   "fat_g": 0.4,
    "sat_fat_g": null,
-   "carb_g": 3.8,
-   "fibre_g": 0.6,
+   "carb_g": 10.0,
+   "fibre_g": 3.2,
    "sugar_g": null,
-   "sodium_mg": 388,
-   "potassium_mg": 77
+   "sodium_mg": 393,
+   "potassium_mg": 716
   },
-  "not_counted": [
-   "bamboo shoots 120 g"
-  ],
+  "not_counted": [],
   "notes": [
    "Fresh bamboo shoots must be cooked through: raw, they contain a cyanide-releasing compound."
   ]
@@ -5808,19 +5818,17 @@ export const DISHES = [
   "sweet": false,
   "herbs": [],
   "nutrition": {
-   "energy_kcal": 86,
-   "protein_g": 0.5,
-   "fat_g": 0.2,
-   "sat_fat_g": 0.0,
-   "carb_g": 22.8,
-   "fibre_g": 4.7,
-   "sugar_g": 14.6,
-   "sodium_mg": 2,
-   "potassium_mg": 174
+   "energy_kcal": 163,
+   "protein_g": 1.7,
+   "fat_g": 0.3,
+   "sat_fat_g": null,
+   "carb_g": 42.0,
+   "fibre_g": 7.1,
+   "sugar_g": 18.5,
+   "sodium_mg": 13,
+   "potassium_mg": 641
   },
-  "not_counted": [
-   "Chinese water chestnut 80 g"
-  ],
+  "not_counted": [],
   "notes": []
  },
  {
@@ -6261,19 +6269,17 @@ export const DISHES = [
   "sweet": true,
   "herbs": [],
   "nutrition": {
-   "energy_kcal": 0,
-   "protein_g": 0.0,
-   "fat_g": 0.0,
-   "sat_fat_g": 0.0,
-   "carb_g": 0.0,
-   "fibre_g": 0.0,
-   "sugar_g": 0.0,
-   "sodium_mg": 0,
-   "potassium_mg": 0
+   "energy_kcal": 110,
+   "protein_g": 0.6,
+   "fat_g": 0.2,
+   "sat_fat_g": null,
+   "carb_g": 29.4,
+   "fibre_g": 5.8,
+   "sugar_g": null,
+   "sodium_mg": 1,
+   "potassium_mg": 321
   },
-  "not_counted": [
-   "dried persimmon 40 g"
-  ],
+  "not_counted": [],
   "notes": []
  },
  {
@@ -6656,19 +6662,17 @@ export const DISHES = [
   "sweet": false,
   "herbs": [],
   "nutrition": {
-   "energy_kcal": 2,
-   "protein_g": 0.1,
-   "fat_g": 0.0,
+   "energy_kcal": 32,
+   "protein_g": 3.1,
+   "fat_g": 0.6,
    "sat_fat_g": null,
-   "carb_g": 0.5,
-   "fibre_g": 0.1,
+   "carb_g": 5.6,
+   "fibre_g": null,
    "sugar_g": null,
-   "sodium_mg": 388,
-   "potassium_mg": 13
+   "sodium_mg": 455,
+   "potassium_mg": 754
   },
-  "not_counted": [
-   "purslane 150 g"
-  ],
+  "not_counted": [],
   "notes": []
  },
  {
