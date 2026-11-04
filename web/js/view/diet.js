@@ -6,6 +6,7 @@ import { assess } from "../diet/assess.js";
 import { plan } from "../diet/plan.js";
 import { context } from "../diet/context.js";
 import { browserZone, region, REGIONS, regionOfZone } from "../diet/regions.js";
+import { constitutionCheck } from "./medicinal.js";
 import { h, icon } from "../util.js";
 import { LANG, T } from "../i18n.js";
 
@@ -16,6 +17,7 @@ export const DIET_STARTERS = [
   { title: T("节日怎么吃"), prompt: T("最近有什么节日？节日期间怎样吃得健康一些？") },
   { title: T("当季怎么吃"), prompt: T("按我所在地现在的季节，这周饮食上该注意什么？") },
   { title: T("热气与凉"), prompt: T("我常觉得口干、容易“上火”，饮食上该注意什么？") },
+  { title: T("当季药膳"), prompt: T("按我所在地现在的季节和时辰，推荐几道适合我的药膳，并说明古籍出处。") },
 ];
 
 export const DIET_NOTICE = [
@@ -58,12 +60,13 @@ export function dietHero(ctx) {
   return h("div.hero.diet-hero",
     h("div.diet-seal", icon("leaf")),
     h("h1", T("饮食与体重管理")),
-    h("div.model-badge", h("b", T("循证营养")), h("span", T("各国膳食指南 · 家常菜与外出就餐 · 季节与节令"))),
+    h("div.model-badge", h("b", T("循证营养")), h("span", T("各国膳食指南 · 家常菜与外出就餐 · 季节与节令 · 体质与药膳"))),
     h("p.sub", T("说说你的目标，我每次只问一两个问题；两轮之内给出初步方案，所有数字都注明出处。")),
     line ? h("p.diet-today", line) : null,
     h("ul.diet-notice", DIET_NOTICE.map(([b, t]) => h("li", h("b", b), " ", t))),
     h("div.starters", DIET_STARTERS.map((s) => h("button.starter", { type: "button", on: { click: () => ctx.onStarter(s.prompt) } }, h("b", s.title), s.prompt))),
     quickCheck(ctx, guess),
+    constitutionCheck(ctx, guess),
     h("p.keyhint", h("button", { type: "button", on: { click: ctx.onLeaveDiet } }, T("回到中医古籍研究"))),
   );
 }

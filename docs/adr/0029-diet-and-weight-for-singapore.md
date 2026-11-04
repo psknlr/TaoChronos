@@ -1,6 +1,7 @@
 # ADR 0029 — 饮食与体重管理 for Singapore: a mode of its own, computed without a server, never recorded
 
-**Status:** accepted · 2026-11-01 · amended by [ADR 0030](0030-diet-and-weight-worldwide.md): the mode now serves every region, Singapore among them
+**Status:** accepted · 2026-11-01 · amended by [ADR 0030](0030-diet-and-weight-worldwide.md): the mode now serves every region, Singapore among them; and by
+[ADR 0031](0031-medicinal-dishes.md): medicinal dishes (药膳), from a fixed set, after a safety screen
 
 ## Context
 

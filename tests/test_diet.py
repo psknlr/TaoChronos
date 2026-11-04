@@ -327,7 +327,8 @@ assert.ok(!/痰湿.*(是|为)你|you have/i.test(json(fn)));
 assert.ok(plan({ profile: { ...MAN, food_style: "light_cool" } }).preference.boundary.includes("not a TCM diagnosis"));
 
 // ------------------------------------------------------------------ the tools as the model is offered them
-assert.deepEqual(DIET_TOOLS.map((t) => t.name), ["diet__assess", "diet__plan", "diet__swap", "diet__dishes", "diet__context", "diet__food_nature", "diet__progress"]);
+assert.deepEqual(DIET_TOOLS.map((t) => t.name), ["diet__assess", "diet__plan", "diet__swap", "diet__dishes", "diet__context", "diet__food_nature",
+  "diet__constitution", "diet__medicinal", "diet__progress"]);
 for (const t of DIET_TOOLS) {
   assert.match(t.name, /^diet__[a-z_]+$/); assert.equal(t.parameters.type, "object"); assert.ok(t.description.length > 40);
   assert.ok(toolWord(t.name) && !/工具$/.test(toolWord(t.name)), t.name); // plain words of its own (redact.js)
@@ -358,6 +359,186 @@ assert.ok(!healthConv({ messages: [{ role: "user", text: "桂枝汤主治什么�
 console.log("ok");
 """
 
+
+NODE_MEDICINAL = r"""
+import assert from "node:assert/strict";
+import { constitution, ITEMS, itemsFor, judge, score, TYPE_ITEMS, TYPES } from "./js/diet/constitution.js";
+import { medicinal, slotOf } from "./js/diet/medicinal.js";
+import { DISHES, FOODS, QUOTES } from "./js/diet/medicinal-data.js";
+import { callDiet } from "./js/diet/tools.js";
+import { DIET_PROMPT } from "./js/diet/prompt.js";
+import { SOURCES } from "./js/diet/sources.js";
+import { scrub } from "./js/redact.js";
+
+const json = (x) => JSON.stringify(x);
+// ------------------------------------------------------------------ the questionnaire (ZYYXH/T157-2009)
+assert.equal(new Set(ITEMS.map((i) => i.id)).size, ITEMS.length);
+assert.equal(itemsFor("female").length, 60); assert.equal(itemsFor("male").length, 60); assert.equal(itemsFor(null).length, 59);
+const counts = Object.fromEntries(TYPES.map((t) => [t, TYPE_ITEMS[t].length]));
+assert.deepEqual(counts, { pinghe: 8, qixu: 8, yangxu: 7, yinxu: 8, tanshi: 8, shire: 7, xueyu: 7, qiyu: 7, tebing: 7 });
+assert.deepEqual(TYPE_ITEMS.pinghe.filter((x) => x.startsWith("-")).length, 6); // six of 平和质's eight reversed
+const all = (v, sex = "female") => Object.fromEntries(itemsFor(sex).map((i) => [i.id, v]));
+// all "never": every biased type 0, 平和质 (32 − 8) / 32 = 75 → 是
+let c = constitution({ answers: all(1), sex: "female" });
+assert.equal(c.status, "complete");
+assert.deepEqual(c.types.map((t) => t.transformed), [75, 0, 0, 0, 0, 0, 0, 0, 0]);
+assert.equal(c.result.balanced.judgement, "yes"); assert.deepEqual(c.result.primary, []);
+// the transformed score: (raw − n) / 4n × 100; 湿热质 has six items for a woman (and for a man)
+const s = score({ ...all(1), oily_face: 5, acne: 5, bitter_mouth: 3 }, "female");
+assert.equal(s.shire.items, 6); assert.equal(s.shire.raw, 6 + 4 + 4 + 2); assert.equal(s.shire.transformed, Math.round((10 / 24) * 1000) / 10);
+// the bands: ≥40 是, 30 ≤ x < 40 倾向是 (a 7-item type moves in steps of 3.6), and 平和质 is no longer 是 when any other is ≥30
+const yang = (n4) => ({ ...all(1), ...Object.fromEntries(TYPE_ITEMS.yangxu.slice(0, n4).map((id) => [id, 3])) });
+const j = (a) => judge(score(a, "female"));
+assert.equal(score(yang(4), "female").yangxu.transformed, 28.6); assert.equal(j(yang(4)).yangxu, "no");
+assert.equal(score(yang(5), "female").yangxu.transformed, 35.7); assert.equal(j(yang(5)).yangxu, "tendency");
+assert.equal(j(yang(5)).pinghe, "basically"); // the standard's example 2: 平和质 high, one type 30–39 → 基本是, with a tendency
+assert.equal(j({ ...all(1), ...Object.fromEntries(TYPE_ITEMS.yangxu.map((id) => [id, 3])) }).yangxu, "yes"); // 50
+assert.equal(j({ ...all(1), ...Object.fromEntries(TYPE_ITEMS.yangxu.map((id) => [id, 3])) }).pinghe, "no"); // example 1: another ≥40
+// reverse scoring: tiring easily raises 气虚质 and lowers 平和质
+const tired = score({ ...all(1), tired: 5 }, "female");
+assert.ok(tired.qixu.transformed > 0 && tired.pinghe.transformed < 75);
+// unanswered: a type is not judged until all its items are answered; nothing is guessed
+const part = constitution({ answers: { tired: 5, short_breath: 5 }, sex: "male" });
+assert.equal(part.status, "partial"); assert.equal(part.types.length, 0); assert.match(part.result.summary, /Not enough answers/);
+assert.equal(constitution({ answers: {} }).status, "not_started");
+assert.ok(constitution({ answers: all(1, null) }).sex_note); assert.equal(score(all(1, null), null).shire.items, 5);
+assert.match(c.boundary, /not a diagnosis/); assert.match(c.standard, /GB\/T 46939/);
+
+// ------------------------------------------------------------------ the data: every quotation names its passage; nutrition is the sum of its parts
+for (const [id, q] of Object.entries(QUOTES)) { assert.ok(q.passage_id && q.text && q.work && q.gloss, id); }
+for (const d of DISHES) {
+  assert.ok(d.evidence.length >= 1 && d.evidence.every((q) => QUOTES[q]), d.id);
+  assert.ok(d.ingredients.every((i) => FOODS[i.food]), d.id);
+  for (const i of d.ingredients) if (FOODS[i.food].homology !== "food") assert.match(FOODS[i.food].homology, /^20(02|19|23|24)$/);
+  assert.ok(d.slots.length && d.suits.length, d.id);
+}
+const yamCongee = DISHES.find((d) => d.id === "shanyao_zhou");
+assert.equal(yamCongee.nutrition.energy_kcal, 264); // 40 g raw rice (365 kcal/100 g) + 100 g yam (118)
+assert.deepEqual(DISHES.find((d) => d.id === "yiyiren_zhou").not_counted, ["Job's tears (coix seed) 30 g"]);
+
+// ------------------------------------------------------------------ who is offered none, and the safety questions first
+const NONE = { conditions: ["none"], medicines: ["none"] };
+for (const k of ["pregnant", "breastfeeding", "kidney_disease", "eating_disorder", "unexplained_weight_loss"]) {
+  const r = medicinal({ profile: { conditions: [k], medicines: ["none"] } });
+  assert.equal(r.status, "not_offered", k); assert.deepEqual(r.codes, [k]); assert.ok(!r.dishes && !r.meals);
+}
+assert.deepEqual(medicinal({ profile: { ...NONE, age: 16 } }).codes, ["under_18"]);
+assert.deepEqual(medicinal({ profile: {} }).ask_next.map((q) => q.key), ["conditions", "medicines"]);
+assert.deepEqual(medicinal({ profile: { conditions: ["food_allergy"], medicines: ["none"] } }).ask_next.map((q) => q.key), ["allergies"]);
+
+// ------------------------------------------------------------------ the constitution, the season and the time decide
+const WINTER = new Date("2026-01-10T00:30:00Z"), SUMMER = new Date("2026-07-10T00:30:00Z");
+const dishesOf = (r) => (r.meals ? r.meals.flatMap((m) => m.dishes) : r.dishes);
+const ids = (r) => dishesOf(r).map((d) => d.id);
+const yangWinter = medicinal({ profile: NONE, constitution: { primary: ["yangxu"], source: "questionnaire" }, region: "CN", time: "day" }, WINTER);
+assert.equal(yangWinter.status, "ready"); assert.deepEqual(yangWinter.now.season.qualities, ["winter", "cold"]);
+assert.ok(ids(yangWinter).includes("danggui_yangrou_tang") && ids(yangWinter).includes("hutao_zhou"));
+for (const d of dishesOf(yangWinter)) assert.ok(!["cold"].includes(DISHES.find((x) => x.id === d.id).nature), d.id); // no cold dish for 阳虚质
+assert.ok(yangWinter.left_out.some((x) => x.id === "lvdou_zhou" && x.code === "constitution"));
+// lamb is never offered in summer — the 食鉴本草's own words given as the reason
+const yangSummer = medicinal({ profile: NONE, constitution: { primary: ["yangxu"] }, region: "CN", time: "lunch" }, SUMMER);
+const lamb = yangSummer.left_out.find((x) => x.id === "danggui_yangrou_tang");
+assert.equal(lamb.code, "season"); assert.equal(lamb.quote.quote, "夏月不可食。"); assert.ok(lamb.quote.passage_id.startsWith("jc_c028."));
+// hemispheres: January is summer in Australia — the chives of spring are out there, and the lamb too
+const au = medicinal({ profile: NONE, region: "AU", time: "lunch" }, WINTER);
+assert.deepEqual(au.now.season.qualities, ["summer", "hot"]); assert.ok(au.left_out.some((x) => x.id === "jiucai_chaodan" && x.code === "season"));
+// 阴虚质 and 湿热质: no hot dish; the 食鉴本草 against winter melon for 阴虚质
+const yin = medicinal({ profile: NONE, constitution: { primary: ["yinxu"] }, region: "CN", time: "day" }, SUMMER);
+for (const d of dishesOf(yin)) assert.notEqual(DISHES.find((x) => x.id === d.id).nature, "hot");
+assert.equal(yin.left_out.find((x) => x.id === "donggua_tang").quote.quote, "霜降後。方可食。早食傷胃反病。及陰虛人不可食。");
+// the time of day: no ginger in the evening (金匮要略); late at night, nothing but the classics' advice
+const dinner = medicinal({ profile: NONE, constitution: { primary: ["yangxu"] }, region: "CN", time: "dinner" }, WINTER);
+for (const d of dinner.dishes) assert.ok(!DISHES.find((x) => x.id === d.id).ingredients.some((i) => i.food === "ginger"), d.id);
+assert.ok(dinner.time_classics.some((q) => q.quote === "夜食諸薑、蒜、蔥等，傷人心。"));
+assert.deepEqual([slotOf(7), slotOf(12), slotOf(15), slotOf(19), slotOf(23), slotOf(3)], ["breakfast", "lunch", "afternoon", "dinner", "late", "late"]);
+const late = medicinal({ profile: NONE, region: "CN", time: "now" }, new Date("2026-01-10T15:30:00Z")); // 23:30 in China
+assert.equal(late.slot, "late"); assert.deepEqual(late.dishes, []); assert.match(json(late.classics), /飽食即臥乃生百病/);
+// no region: no season, said so; no constitution: matched to the season and time only, and said so
+const bare = medicinal({ profile: NONE, time: "breakfast" }, WINTER);
+assert.equal(bare.now.season.phase, null); assert.equal(bare.constitution.status, "unknown"); assert.ok(bare.dishes.length >= 1);
+
+// ------------------------------------------------------------------ hard exclusions: allergens, food rules, medicines, gout
+const every = (profile) => {
+  const shown = new Set();
+  for (const p of [["yangxu"], ["qixu"], ["yinxu"], ["tanshi"], ["shire"], ["xueyu"], ["qiyu"], ["tebing"], []])
+    for (const when of [WINTER, SUMMER]) for (const region of ["CN", "SG", "AU", null])
+      for (const d of dishesOf(medicinal({ profile, constitution: { primary: p }, region, time: "day" }, when))) shown.add(d.id);
+  return [...shown].map((id) => DISHES.find((d) => d.id === id));
+};
+assert.ok(every({ ...NONE, conditions: ["warfarin"] }).every((d) => !d.herbs.includes("goji") && !d.herbs.includes("danggui")));
+assert.ok(every({ ...NONE, medicines: ["immunosuppressant"] }).every((d) => !d.herbs.includes("huangqi")));
+assert.ok(every({ ...NONE, medicines: ["unsure"] }).every((d) => d.herbs.length === 0));
+assert.ok(every({ ...NONE, conditions: ["gout"] }).every((d) => !d.purine_broth));
+assert.ok(every({ ...NONE, allergies: ["tree_nut", "sesame", "milk", "egg"] }).every((d) => !d.allergens.length));
+assert.ok(every({ ...NONE, diet: ["vegetarian"] }).every((d) => !d.meat));
+assert.ok(every({ ...NONE, diet: ["halal"] }).every((d) => !d.pork));
+assert.ok(every(NONE).length >= 15); // most dishes appear for someone, somewhere, at some time
+
+// ------------------------------------------------------------------ nutrition said with the region's limits; diabetes notes
+const sg = medicinal({ profile: { ...NONE, conditions: ["diabetes"] }, constitution: { primary: ["qixu"] }, region: "SG", time: "breakfast" }, WINTER);
+const congee = sg.dishes.find((d) => d.kind === "congee");
+assert.ok(congee.nutrition_notes.some((n) => /glycaemic/.test(n)));
+const lambDish = yangWinter.meals.flatMap((m) => m.dishes).find((d) => d.id === "danggui_yangrou_tang");
+assert.ok(lambDish.nutrition_notes.some((n) => /Sodium \d+ mg — \d+% of the 2000 mg daily limit/.test(n)));
+assert.deepEqual(lambDish.nutrition.not_counted, ["dang gui (Angelica sinensis root), as a seasoning 3 g"]);
+assert.ok(lambDish.cautions.some((q) => q.note && /prescription for an illness/.test(q.note)));
+
+// ------------------------------------------------------------------ the tools as the model gets them
+const out = callDiet("diet__medicinal", { profile: NONE, constitution: { primary: ["qixu"], source: "questionnaire" }, region: "CN", time: "day" });
+assert.ok(out.ok && out.text.length <= 16000);
+assert.ok(out.citations.length >= 5 && out.citations.every((x) => x.passage_id && x.text && x.title));
+for (const x of out.citations) assert.ok(out.text.includes(x.passage_id));
+const sc = callDiet("diet__constitution", { answers: all(1), sex: "female" });
+assert.ok(sc.ok && /平和质/.test(sc.summary));
+assert.match(DIET_PROMPT, /diet__medicinal/); assert.match(DIET_PROMPT, /不自拟药膳/);
+assert.ok(SOURCES.ccmq && SOURCES.homology_list && SOURCES.classics_corpus && SOURCES.herb_drug && SOURCES.medicinal_rules);
+assert.equal(scrub("由 diet__medicinal 与 diet.constitution 给出。").text, "由药膳推荐与体质自测给出。");
+console.log("ok");
+"""
+
+
+def test_medicinal_dishes_under_node(tmp_path):
+    """The constitution questionnaire scored as the standard scores it (its bands and both of its worked examples), and the
+    medicinal dishes: who is offered none, the safety questions first, the constitution, season (by hemisphere) and
+    time of day deciding, every hard exclusion under every combination tried, the classics' own words given as reasons,
+    nutrition against the region's limits, and the tools as the model gets them (the quoted passages as citations)."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_MEDICINAL, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=120)
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-3000:]
+
+
+def test_the_medicinal_module_is_what_its_sources_make(tmp_path):
+    """web/js/diet/medicinal-data.js is generated from data/diet (the USDA records, the script's annotations) and the
+    corpus pack: written again, it is the same file — so every quotation in it occurs, character for character, in the
+    passage it names (the script stops otherwise), and no number was edited by hand."""
+    out = tmp_path / "medicinal-data.js"
+    run = subprocess.run(["python3", "-I", str(ROOT / "data" / "diet" / "make_medicinal.py"), str(out)], capture_output=True, text=True, timeout=120)
+    assert run.returncode == 0, run.stderr[-2000:]
+    assert out.read_text(encoding="utf-8") == (ROOT / "web" / "js" / "diet" / "medicinal-data.js").read_text(encoding="utf-8")
+
+
+def test_every_quotation_is_in_the_corpus():
+    """Independently of the build script: each quotation of the medicinal dishes is in its passage of corpus/web."""
+    import gzip
+    import re
+
+    src = (ROOT / "web" / "js" / "diet" / "medicinal-data.js").read_text(encoding="utf-8")
+    quotes = json.loads(re.search(r"export const QUOTES = (\{.*?\n\});", src, re.S).group(1))
+    wanted = {q["passage_id"] for q in quotes.values()}
+    found = {}
+    with gzip.open(ROOT / "corpus" / "web" / "passages.jsonl.gz", "rt", encoding="utf-8") as f:
+        for line in f:
+            p = json.loads(line)
+            if p["id"] in wanted:
+                found[p["id"]] = p["text"]
+    assert len(quotes) >= 40
+    for qid, q in quotes.items():
+        assert q["text"] in found.get(q["passage_id"], ""), qid
 
 def test_the_diet_engine_under_node(tmp_path):
     node = shutil.which("node")
@@ -394,6 +575,26 @@ def test_the_page_never_records_health(tmp_path):
         text = js.read_text(encoding="utf-8")
         assert "fetch(" not in text and "geolocation" not in text and "XMLHttpRequest" not in text, js.name
 
+
+_CANON: dict[str, dict] = {}
+
+
+def _canon_passage(route):
+    """A passage of the canon pack (corpus/web) as /api/passage gives it; anything else from the test's own runtime."""
+    import gzip
+    from urllib.parse import parse_qs, urlparse
+
+    if not _CANON:
+        titles = {b["id"]: b["data"]["title"] for b in json.loads((ROOT / "corpus" / "web" / "books.json").read_text(encoding="utf-8"))}
+        with gzip.open(ROOT / "corpus" / "web" / "passages.jsonl.gz", "rt", encoding="utf-8") as f:
+            for line in f:
+                p = json.loads(line)
+                _CANON[p["id"]] = {"ok": True, "passage_id": p["id"], "text": p["text"], "title": titles.get(p["book_id"], p["book_id"])}
+    pid = parse_qs(urlparse(route.request.url).query).get("id", [""])[0]
+    if pid in _CANON:
+        route.fulfill(status=200, content_type="application/json", body=json.dumps(_CANON[pid], ensure_ascii=False))
+    else:
+        route.continue_()
 
 def test_a_diet_conversation_in_the_browser(tmp_path):
     """A visitor who agreed to conversation records opens 饮食与体重管理: the model is offered the diet tools (and the
@@ -455,7 +656,7 @@ def test_a_diet_conversation_in_the_browser(tmp_path):
             assert len(diet_requests) == 3  # assessed, planned, answered
             offered = {t["function"]["name"] for t in diet_requests[0]["body"]["tools"]}
             assert {t for t in offered if t.startswith("diet__")} == {"diet__assess", "diet__plan", "diet__swap", "diet__dishes", "diet__context",
-                                                                     "diet__food_nature", "diet__progress"}
+                                                                     "diet__food_nature", "diet__constitution", "diet__medicinal", "diet__progress"}
             assert offered - {t for t in offered if t.startswith("diet__")} <= {"classics__search", "classics__get_passage"}
             system = diet_requests[0]["body"]["messages"][0]["content"]
             assert "## 本对话：饮食与体重管理" in system and "每轮至多两问" in system and "国际（WHO）的默认标准" in system
@@ -491,6 +692,41 @@ def test_a_diet_conversation_in_the_browser(tmp_path):
             page.wait_for_function("document.querySelector('.diet-banner').textContent.includes('已保存（未加密）')")
             page.reload()
             page.wait_for_selector("#convs .conv .conv-tag", timeout=30000)
+            time.sleep(1)
+            assert relay.records == []
+
+            # the constitution self-check and medicinal dishes on the opening screen: scored and chosen in the page, without
+            # a model, and nothing sent
+            page.click("#new-diet")
+            page.wait_for_selector(".diet-hero .tz-check")
+            asked_before, sent_before = len(mock.requests), len(sent)
+            page.click(".tz-check summary")
+            page.select_option(".tz-form select[name=sex]", "female")
+            assert page.eval_on_selector_all(".tz-item", "els => els.length") == 60
+            page.evaluate("""() => {
+              for (const f of document.querySelectorAll('.tz-item')) f.querySelector('input[value="1"]').checked = true;
+              for (const id of ['tired', 'short_breath', 'palpitations', 'dizzy', 'colds', 'quiet', 'weak_voice', 'sweat_exertion'])
+                document.querySelector(`.tz-item[data-item="${id}"] input[value="5"]`).checked = true;
+            }""")
+            page.select_option(".tz-form select[name=region]", "CN")
+            page.check(".tz-form input[name=conditions][value=none]")
+            page.check(".tz-form input[name=medicines][value=none]")
+            page.select_option(".tz-form select[name=time]", "breakfast")
+            page.click(".tz-form button[type=submit]")
+            page.wait_for_selector(".tz-dishes")
+            shown = page.inner_text(".tz-form .qc-out")
+            assert "你的体质：气虚质" in shown and "宜气虚质" in shown and "粥" in shown and "《" in shown and "千卡" in shown
+            assert len(mock.requests) == asked_before and len(sent) == sent_before
+            # asked in chat: the dish tool runs in the page, and the quotation the model takes from it is checked word for
+            # word against its passage (served here as a runtime holding the canon pack would serve it)
+            page.route("**/api/passage?id=*", lambda route: _canon_passage(route))
+            page.fill("#input", "推荐早餐药膳")
+            page.keyboard.press("Enter")
+            answered(1)
+            steps = page.eval_on_selector_all(".msg.assistant .steps", "els => els.map((e) => e.textContent).join(' ')")
+            assert "药膳推荐" in steps and "diet__" not in steps
+            page.wait_for_selector(".msg.assistant .md .cite.ok", timeout=20000)
+            assert "早餐药膳" in page.inner_text(".msg.assistant .md")
             time.sleep(1)
             assert relay.records == []
 

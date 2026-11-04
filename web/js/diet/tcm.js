@@ -78,7 +78,7 @@ export function preference({ after_meal = null, food_style = null } = {}) {
     advice: [...(AFTER[after_meal] || []), ...style.advice],
     prefer: style.prefer, avoid: style.avoid,
     tcm_pattern_status: "unconfirmed",
-    boundary: "These are food-preference clues, not a TCM diagnosis: a pattern or constitution (e.g. 痰湿、脾虚) cannot be judged from two questions. For one, see a registered TCM practitioner (registered where you live, e.g. with Singapore's TCM Practitioners Board or Hong Kong's Chinese Medicine Council). Herbs, tonics and medicinal soups are outside this plan, especially in pregnancy or alongside medicines.",
+    boundary: "These are food-preference clues, not a TCM diagnosis: a pattern or constitution (e.g. 痰湿、脾虚) cannot be judged from two questions. For one, see a registered TCM practitioner (registered where you live, e.g. with Singapore's TCM Practitioners Board or Hong Kong's Chinese Medicine Council). Herbal tonics are outside this plan; medicinal dishes (药膳) come only from the medicinal-dish tool, after its safety check.",
   };
 }
 

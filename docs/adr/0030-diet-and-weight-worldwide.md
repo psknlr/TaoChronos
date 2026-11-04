@@ -1,6 +1,6 @@
 # ADR 0030 — 饮食与体重管理 worldwide: the visitor's region decides, international defaults until they say
 
-**Status:** accepted · 2026-11-01 · amends [ADR 0029](0029-diet-and-weight-for-singapore.md)
+**Status:** accepted · 2026-11-01 · amends [ADR 0029](0029-diet-and-weight-for-singapore.md) · amended by [ADR 0031](0031-medicinal-dishes.md) (medicinal dishes)
 
 ## Context
 

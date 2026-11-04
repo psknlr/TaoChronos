@@ -135,6 +135,36 @@ export const SOURCES = {
     supports: "The Chinese cultural calendar (e.g. 冬至 Dongzhi).",
     not: "The climate outside the northern temperate zone the terms describe.",
   },
+  ccmq: {
+    label: "tcm_food_guideline", version: "ZYYXH/T157-2009 (60 questions); superseded in 2026 by GB/T 46939—2025 (27 questions), whose text was not available",
+    title: "中华中医药学会《中医体质分类与判定》ZYYXH/T157-2009 — the Constitution in Chinese Medicine Questionnaire (王琦 et al.): nine constitutions, transformed scores and the standard's judgements",
+    supports: "A self-reported constitution tendency (体质) for traditional health care, scored as the published standard scores it.",
+    not: "A diagnosis of a disease or of a TCM pattern (证); the newer national standard's 27-question scoring.",
+  },
+  homology_list: {
+    label: "local_data", version: "106 substances: 2002 (卫法监发〔2002〕51号, 87), 2019 No. 8 (6), 2023 No. 9 (9), 2024 No. 4 (4)",
+    title: "National Health Commission of China, 按照传统既是食品又是中药材的物质目录 (substances that are both food and traditional Chinese medicine); 2019 items as spices or seasonings only; for the 2023 and 2024 items, moderate amounts in traditional ways, not recommended for pregnant or breastfeeding women or infants",
+    supports: "That an ingredient may be eaten as food in China, within the stated limits.",
+    not: "That it has any health effect, or that it suits every person (labels need not state who should avoid it).",
+  },
+  classics_corpus: {
+    label: "classical_text", version: "corpus/web (the 要籍语料), quotations checked character for character when the dish data are built",
+    title: "The classics each medicinal dish rests on (神农本草经, 金匮要略, 备急千金要方, 千金食治, 食鉴本草, 寿世青编, 寿亲养老新书 …), quoted with their passage ids",
+    supports: "What the texts say of a food, a dish, a season or a time of day: historical statements.",
+    not: "Modern evidence that a dish prevents or treats anything.",
+  },
+  medicinal_rules: {
+    label: "personalization_algorithm", version: ALGORITHM,
+    title: "Medicinal-dish rules: who is not offered them (pregnancy, breastfeeding, under 18, kidney disease, eating disorders), exclusions (allergens, food rules, medicines, gout, a constitution a text warns against, a season or time a text forbids), and the ranking (constitution, then season)",
+    supports: "Which dishes are shown for a person and a time, and why the others are not.",
+    not: "A clinical assessment or a prescription.",
+  },
+  herb_drug: {
+    label: "modern_guideline", version: "case reports and monographs (verify the current versions)",
+    title: "Herb–drug cautions: dang gui and goji with warfarin (Page & Lawrence, Pharmacotherapy 1999; Lam et al., Ann Pharmacother 2001); astragalus with immunosuppressants (NCCIH, Astragalus)",
+    supports: "Leaving those ingredients out for people on those medicines.",
+    not: "The size of the risk for a given person: a pharmacist or doctor judges that.",
+  },
   tcm_food_nature: {
     label: "tcm_food_guideline", version: ALGORITHM,
     title: "Traditional food natures (寒/凉/平/温/热) and the everyday 'heaty' (热气) / 'cooling' (凉) food culture; only foods where common references agree",

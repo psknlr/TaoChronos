@@ -1051,6 +1051,25 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(2px); }
 .qc-plan { width: 100%; border-collapse: collapse; font-size: 13px; }
 .qc-plan th, .qc-plan td { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: start; vertical-align: top; }
 .qc-check.ok { color: var(--jade); }
+.tz-items { display: grid; gap: 6px; max-height: 60vh; overflow-y: auto; padding-inline-end: 4px; }
+.tz-item { border: 0; border-bottom: 1px solid var(--line); margin: 0; padding: 4px 0 6px; min-width: 0; }
+.tz-item legend { padding: 0; font-size: 13.5px; color: var(--ink); }
+.tz-item legend small { display: block; }
+.tz-n { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.tz-scale { display: flex; flex-wrap: wrap; gap: 2px 12px; margin-top: 3px; font-size: 12.5px; color: var(--ink-2); }
+.tz-scale .check { display: inline-flex; align-items: center; gap: 4px; }
+.tz-scores tr.on td { color: var(--jade); font-weight: 600; }
+.tz-scores tr.near td { color: var(--ochre); }
+.tz-dishes td small { line-height: 1.4; }
+.tz-quote { font-size: 12.5px; color: var(--ink-2); margin-bottom: 4px; }
+.tz-quote span { color: var(--jade); }
+.tz-method, .tz-left { font-size: 13px; }
+.tz-method summary, .tz-left summary { cursor: pointer; color: var(--jade); }
+.tz-method p, .tz-method ul, .tz-left ul { margin: 4px 0 6px; }
+.tz-check .qc-out { grid-template-columns: minmax(0, 1fr); }
+.tz-scroll { overflow-x: auto; max-width: 100%; }
+.tz-dishes { min-width: 620px; }
+.tz-dishes td:first-child, .tz-dishes th:first-child { white-space: nowrap; }
 .qc-check.warn { color: var(--ochre); }
 .diet-banner {
   display: flex; align-items: center; gap: 8px; margin: 0 auto 14px; padding: 7px 12px; border-radius: 10px; font-size: 12.5px;
