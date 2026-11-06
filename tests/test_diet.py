@@ -469,10 +469,21 @@ assert.ok(every({ ...NONE, conditions: ["warfarin"] }).every((d) => !d.herbs.inc
 assert.ok(every({ ...NONE, medicines: ["immunosuppressant"] }).every((d) => !d.herbs.includes("huangqi")));
 assert.ok(every({ ...NONE, medicines: ["unsure"] }).every((d) => d.herbs.length === 0));
 assert.ok(every({ ...NONE, conditions: ["gout"] }).every((d) => !d.purine_broth));
-assert.ok(every({ ...NONE, allergies: ["tree_nut", "sesame", "milk", "egg"] }).every((d) => !d.allergens.length));
+assert.ok(every({ ...NONE, allergies: ["tree_nut", "sesame", "milk", "egg", "fish", "soy", "wheat"] }).every((d) => !d.allergens.length));
 assert.ok(every({ ...NONE, diet: ["vegetarian"] }).every((d) => !d.meat));
 assert.ok(every({ ...NONE, diet: ["halal"] }).every((d) => !d.pork));
-assert.ok(every(NONE).length >= 15); // most dishes appear for someone, somewhere, at some time
+assert.ok(every({ ...NONE, diet: ["no_beef"] }).every((d) => !d.beef));
+assert.ok(every({ ...NONE, diet: ["vegan"] }).every((d) => !d.meat && !d.ingredients.some((i) => ["honey", "milk", "egg"].includes(i.food))));
+assert.ok(every({ ...NONE, diet: ["no_seafood"] }).every((d) => d.meat !== "fish"));
+assert.ok(every({ ...NONE, conditions: ["diabetes"] }).every((d) => !d.sweet));
+assert.ok(every(NONE).length >= 40); // most dishes appear for someone, somewhere, at some time
+assert.ok(DISHES.length >= 55 && Object.keys(QUOTES).length >= 120);
+// no ginger tea in autumn: the 千金食治 and the 食鉴本草 say so
+const autumn = medicinal({ profile: NONE, constitution: { primary: ["yangxu"] }, region: "CN", time: "breakfast" }, new Date("2026-10-10T00:30:00Z"));
+const ginger = autumn.left_out.find((x) => x.id === "jiangzao_cha");
+assert.equal(ginger.code, "season"); assert.match(ginger.quote.quote, /九月/);
+// every constitution has dishes of its own, in some season
+for (const t of ["qixu", "yangxu", "yinxu", "tanshi", "shire", "xueyu", "qiyu", "tebing"]) assert.ok(DISHES.filter((d) => d.suits.includes(t)).length >= 4, t);
 
 // ------------------------------------------------------------------ nutrition said with the region's limits; diabetes notes
 const sg = medicinal({ profile: { ...NONE, conditions: ["diabetes"] }, constitution: { primary: ["qixu"] }, region: "SG", time: "breakfast" }, WINTER);

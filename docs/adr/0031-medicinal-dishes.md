@@ -75,6 +75,10 @@ Each of those reasons names something a design must answer, not a reason to refu
   dishes are Chinese.  Adding a dish means its passages in the corpus pack, its USDA records, and its annotations.
 - Herb–drug knowledge is a short list; the instructions send anyone on regular medicines to a pharmacist, and "other"
   or "not sure" medicines exclude every dish with a herb.
+- Extended (2026-11-05) to 61 dishes and 128 quotations, adding 饮膳正要 and 食疗本草 and the texts' own recipes
+  (食鉴本草's congees, 饮膳正要's carp and duck with adzuki beans, 寿亲养老新书's wontons and 薤白粥); the texts' calendar
+  now also rules out ginger in autumn; very sweet dishes are left out for diabetes, beef for no-beef, fish for
+  no-seafood, honey for vegans.  USDA records for 52 more foods (84 in all) were collected the same way.
 - Tests: `tests/test_diet.py` — the questionnaire's counts, reverse scoring, bands and the standard's two worked
   examples; every exclusion under every constitution × season × region tried; the classics as reasons; nutrition sums;
   the data module regenerated identically; every quotation found in the pack; and in Chromium, the self-check without a

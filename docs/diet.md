@@ -94,21 +94,29 @@ and not used.  The sex for the equation may be withheld: then no energy number i
 | left out | an allergen; meat for vegetarians, milk or egg for vegans, pork for halal or no-pork; goji or dang gui with a blood thinner (warfarin: case reports); astragalus with an immunosuppressant; any herb with "other" or "not sure" medicines; a long-simmered meat broth with gout; a dish a text warns against for the constitution, cold dishes for 阳虚质, hot ones for 阴虚质 and 湿热质; a season (by the visitor's hemisphere and climate) or a time of day the texts forbid (羊肉「夏月不可食」; ginger not in the evening) |
 | ranked | constitution (是 3, 倾向是 1.5; mild dishes for a balanced or unknown one), then season (2); "day" gives up to two per meal (breakfast, lunch, afternoon, dinner); late in the evening, none — the classics' advice instead |
 
-**The dishes** (`data/diet/make_medicinal.py` → `web/js/diet/medicinal-data.js`): 23 — congees (山药, 小米, 莲子,
-薏苡仁, 绿豆, 赤小豆, 枸杞, 核桃, 牛奶, 胡萝卜), soups and braises (当归生姜羊肉汤, 板栗焖鸡, 冬瓜汤, 白萝卜汤,
-莲藕排骨汤, 黄芪炖鸡, 韭菜炒蛋), teas (姜枣茶, 姜橘汤, 枸杞菊花茶, 山楂茶) and desserts (蒸梨, 黑芝麻糊).  Every
+**The dishes** (`data/diet/make_medicinal.py` → `web/js/diet/medicinal-data.js`): 61 —
+- congees: 山药, 小米, 莲子, 芡实, 茯苓, 薏苡仁, 绿豆, 赤小豆, 白扁豆, 马齿苋, 枸杞, 核桃, 松子仁, 板栗, 桂圆红枣, 牛奶,
+  胡萝卜, 萝卜, 小麦, 薤白, 鸡肉, 甘蔗;
+- soups, stews and dishes: 当归生姜羊肉汤, 羊肉草果鹰嘴豆汤, 山药炖牛肉, 板栗焖鸡, 黄芪炖鸡, 赤小豆炖鸡, 赤小豆鸭汤,
+  玉竹老鸭汤, 鲤鱼赤小豆汤, 陈皮鲤鱼汤, 莲藕排骨汤, 冬瓜汤, 冬瓜薏米汤, 白萝卜汤, 白菜豆腐汤, 荠菜豆腐羹, 苋菜汤,
+  春笋香菇汤, 枸杞叶蛋花汤, 韭菜炒蛋, 清炒茼蒿, 凉拌马齿苋, 鸡肉馄饨, 蒸芋头, 蒸山药;
+- teas and drinks: 姜枣茶, 姜橘汤, 枸杞菊花茶, 山楂茶, 乌梅汤, 大麦茶, 荸荠雪梨汤;
+- desserts: 蒸梨, 黑芝麻糊, 藕粉羹, 葛根粉羹, 莲子百合羹, 蜂蜜蒸百合, 蒸柿饼.
+
+Many are the texts' own recipes — 食鉴本草's congees by season, 饮膳正要's 鲤鱼赤小豆 and 赤小豆鸭, 寿亲养老新书's
+鸡肉馄饨, 薤白粥 and 白煮鲤鱼 — the rest pair everyday foods with what the texts say of each.  Every
 ingredient is an everyday food or on China's food–medicine list (106 substances: 2002, 2019 — 当归 as a seasoning only —
 2023 — 黄芪 — and 2024), in recipe amounts.
 
-**The classics**: 55 quotations from 神农本草经, 金匮要略, 备急千金要方, 千金食治, 食鉴本草, 寿世青编, 寿亲养老新书,
-产宝 and the 素问 — each checked, character for character, against its passage in `corpus/web` when the module is built
+**The classics**: 128 quotations from 神农本草经 (two witnesses), 金匮要略, 备急千金要方, 千金食治, 食鉴本草, 饮膳正要,
+食疗本草, 寿世青编, 寿亲养老新书, 产宝 and the 素问 — each checked, character for character, against its passage in `corpus/web` when the module is built
 (and again by a test).  Where the texts disagree, both are given; where a dish began as a prescription
-(当归生姜羊肉汤 for 寒疝 in the 金匮要略), the result says so.
+(当归生姜羊肉汤 for 寒疝 in the 金匮要略), the result says so.  The texts' calendar is kept: no lamb in summer, no
+ginger in autumn (「八月、九月勿食薑」), chives in spring, duck from autumn on.
 
-**Nutrition**: per serving, the sum of USDA FoodData Central values (`data/diet/medicinal-usda.sources.json`, 32
-foods, read from search extracts of mirror pages naming each record — to be checked against FoodData Central before
-production use); herbs without a record (薏苡仁, 陈皮, 菊花, 当归, 黄芪, 山楂) and Chinese chives are listed as not
-counted.  Sodium against the region's daily limit, optional added sugar, white-rice congee's glycaemic note for
+**Nutrition**: per serving, the sum of USDA FoodData Central values (`data/diet/medicinal-usda.sources.json`, read from search extracts of mirror pages naming each record — to be checked against FoodData Central before
+production use); herbs and foods without a record (薏苡仁, 芡实, 茯苓, 陈皮, 菊花, 当归, 黄芪, 玉竹, 草果, 山楂, 乌梅,
+百合, 薤白, 藕粉, 葛根粉, 荠菜, 枸杞叶, 甘蔗汁, 韭菜) are listed as not counted.  Sodium against the region's daily limit, optional added sugar, white-rice congee's glycaemic note for
 diabetes, and the fat of broths are said.
 
 ## Regions
