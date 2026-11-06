@@ -96106,6 +96106,15 @@ entries:
       heading: 1
     first_year: 1761.0
     first_passage: jc_d040.00632
+- term: 小品养脾丸
+  kind: harvested
+  evidence:
+    count: 1
+    books: 1
+    patterns:
+      heading: 1
+    first_year: 1119.5
+    first_passage: jc_d012.01285
 - term: 小复苏饮
   kind: harvested
   evidence:
@@ -105797,15 +105806,6 @@ entries:
       heading: 1
     first_year: 1648.0
     first_passage: shanglun_pian.005.01056
-- term: 短剧养脾丸
-  kind: harvested
-  evidence:
-    count: 1
-    books: 1
-    patterns:
-      heading: 1
-    first_year: 1119.5
-    first_passage: jc_d012.01285
 - term: 石子荠汤
   kind: harvested
   evidence:
@@ -108569,6 +108569,15 @@ entries:
       heading: 1
     first_year: 1119.5
     first_passage: jc_d012.01180
+- term: 脚气鸡鸣散
+  kind: harvested
+  evidence:
+    count: 1
+    books: 1
+    patterns:
+      heading: 1
+    first_year: 1732.0
+    first_passage: jc_d037.00641
 - term: 脾泻丹
   kind: harvested
   evidence:
@@ -114391,15 +114400,6 @@ entries:
       heading: 1
     first_year: 1253.0
     first_passage: jc_d028.01675
-- term: 香港脚鸡鸣散
-  kind: harvested
-  evidence:
-    count: 1
-    books: 1
-    patterns:
-      heading: 1
-    first_year: 1732.0
-    first_passage: jc_d037.00641
 - term: 香盐散
   kind: harvested
   evidence:

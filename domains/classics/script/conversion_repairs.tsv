@@ -1,0 +1,13 @@
+# Conversion errors in the transcriptions, repaired in the text itself (not only for matching): words that a
+# simplified -> traditional converter with Taiwan phrasing replaced by a modern Taiwan word (脚气 -> 香港腳, 小品 -> 短劇,
+# 循环 -> 迴圈), and characters it resolved to the wrong traditional form (厚朴 -> 厚樸).  Applied to a passage's text and
+# its locator (volume, chapter and section titles) as it enters the store, and to a built store by
+# `taochronos corpus repair`.  See plugins/classics/repairs.py.
+# Curated from corpus contexts: a row goes in only when the wrong form is never the word the edition prints.
+# columns: wrong<TAB>right<TAB>keep (contexts, space-separated, where the wrong form is a real word and stays)<TAB>note
+香港腳	腳氣		腳氣 (the classical disease) turned into the Taiwan word for athlete's foot; 笈成, e.g. 千金要方·卷七風毒腳氣方
+香港脚	脚气		the same, in a simplified copy
+短劇	小品		《小品方》 (陈延之) turned into 短劇 (a comic sketch); 笈成, e.g. 外台秘要 引《短劇》
+短剧	小品		the same, in a simplified copy
+迴圈	循環		循環 turned into the Taiwan computing word for a loop; 笈成, e.g. 經絡晝夜之迴圈
+厚樸	厚朴	敦厚樸 淳厚樸 醇厚樸 渾厚樸 厚樸實 厚樸素	the drug 厚朴 is written 朴 (the tree), not 樸; 厚樸 stays where it means simple and honest (敦厚樸實)

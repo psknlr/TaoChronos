@@ -298,7 +298,9 @@ In all **966 works, ~123 million characters, 2.05 million passages**.
   editors' work, contemporary writings) carry the dynasty label 当代 and belong to no analysis period.
 - **Normalisation for matching only**: OpenCC script conversion + Unihan variants + curated medical variants, length-
   preserving; the text is never altered. Unpunctuated Siku text is read through a machine-segmented view whose spans
-  map back to the source.
+  map back to the source. The one change to the text is the **conversion repairs** (`script/conversion_repairs.tsv`):
+  words and characters a transcription took from a Taiwan-phrasing converter — 香港腳→腳氣, 短劇(方)→小品(方),
+  迴圈→循環, 厚樸→厚朴 — are put right at ingest, and in a store already built by `taochronos corpus repair`.
 - **Search**: a SQLite store with a character-bigram FTS5 index (terms of any length, phrases, proximity); research
   samples a period-stratified frame, falsification queries the whole store.
 - **Other names of a drug** (the alias layer, `domains/classics/aliases/`, [ADR 0023](docs/adr/0023-alias-layer.md)):
@@ -801,7 +803,7 @@ domains/classics/          periods, variants, lexicons, senses, modern concepts,
                            and the study data: taboo.yaml, metrology.yaml, physicians.yaml, drug_families.yaml,
                            collation.yaml, intertext.yaml, cases.yaml, argument.yaml,
                            schools.yaml (schools), clause.yaml (clause roles), exegesis.yaml (commentators' concepts, stances, gloss forms)
-domains/classics/script/   script and variant normalisation (OpenCC / Unihan / curated)
+domains/classics/script/   script and variant normalisation (OpenCC / Unihan / curated); conversion repairs (conversion_repairs.tsv)
 domains/bridge/            the bridge: 168 ancient phenotypes (forms, HPO projections, relation types), 64 disease profiles (ICD-10), homonyms, the HPO hierarchy used
 domains/modern/            modern evidence: the crosswalk for queries, the safety table
 domains/classics/lexicon-harvested/  candidate formula and drug names harvested from the corpus (full-corpus only)

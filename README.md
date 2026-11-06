@@ -254,7 +254,9 @@ taochronos governance              # 架构策略检查
   注疏、新校正、后补篇章、附方按层单独断代（王冰注 762、新校正 1068、证类本草各家注……），不能分离的按最晚一层保守断代。
   无从考定者按清代计，绝不提前。1950 年以后的层（今人整理成分、当代著作）朝代标为“当代”，不计入任何分析分期。
 - **规范化只用于匹配**：OpenCC 繁简 + Unihan 异体 + 医籍语境人工校订（䜴→豉、茰→萸、㪚→散……），长度不变、原文永不改动；
-  四库白文在带虚拟标点的“视图”上抽取，每个引文映射回原文。
+  四库白文在带虚拟标点的“视图”上抽取，每个引文映射回原文。唯一改动正文的是**转换错误修复**（`script/conversion_repairs.tsv`）：
+  录本经“台湾用词”繁简转换带入的词与错字——香港腳→腳氣、短劇（方）→小品（方）、迴圈→循環、厚樸→厚朴——入库时改回，
+  已建的语料库用 `taochronos corpus repair` 修复。
 - **检索**：SQLite 语料库 + 双字 FTS5 全文索引，任意长度的词、短语与邻近查询；研究时按问题分期分层抽样，否证检查则查询整个语料库。
 - **药物异名**（别名层，`domains/classics/aliases/`，[ADR 0023](docs/adr/0023-alias-layer.md)）：检索甘草，也能找到写作“国老”的段落；
   检索木通，也能找到约 960 年以前写作“通草”的段落——在原有排序用完之前占每 10 条中的第 4、7、10 位（用完之后其后各位都归它们），
@@ -693,7 +695,7 @@ domains/classics/          领域包：时期、异体字、词表、历史义�
                            以及治学数据 taboo.yaml（避讳）、metrology.yaml（度量衡）、physicians.yaml（医家）、drug_families.yaml（药物归类），
                            与深层发现数据 collation.yaml（校勘异体）、intertext.yaml（引用、驳斥、解释标记与套语）、cases.yaml（医案）、argument.yaml（论证标记），
                            任务规格数据 schools.yaml（学派）、clause.yaml（条文角色）、exegesis.yaml（注家概念、立场与训诂格式）
-domains/classics/script/   繁简与古籍异体归一表（OpenCC / Unihan / 人工校订）
+domains/classics/script/   繁简与古籍异体归一表（OpenCC / Unihan / 人工校订）；转换错误修复表 conversion_repairs.tsv
 domains/bridge/            古今桥接：168 个古代表型（写法、HPO 投射与关系类型）、64 种现代疾病谱（ICD-10）、同名异义表、HPO 层级
 domains/modern/            现代证据：中英对照（检索用）、安全提示（有毒药物）
 domains/classics/lexicon-harvested/  从全量语料采集的候选方名、药名（仅 full-corpus 画像加载）

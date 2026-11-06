@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from ....protocol.yamlio import load_yaml
+from ..repairs import repair_rows
 from ..store import CorpusStore
 from .kanripo import BookSpec, KanripoFile, KanripoParser, LayerSpec, read_file
 
@@ -157,9 +158,10 @@ class BigramModel:
 def ingest_kanripo(store: CorpusStore, catalog: dict[str, Any], sources: Path, normalize: Callable[[str], str],
                    fingerprint: str, *, only: Iterable[str] | None = None, log: Log = print,
                    dynasty_of: Callable[[float], str | None] | None = None, kr_catalog: dict[str, Any] | None = None,
-                   records_only: bool = False) -> dict[str, Any]:
+                   records_only: bool = False, repairs: Any = None) -> dict[str, Any]:
     """Parse and store the catalogued Kanripo texts; ``kr_catalog`` (the KR-Catalog entries by KR id) adds the
-    responsible persons to the book records; ``records_only`` rewrites the book records of stored books only."""
+    responsible persons to the book records; ``records_only`` rewrites the book records of stored books only;
+    ``repairs`` (``repairs.ConversionRepairs``) puts conversion errors right as the passages enter the store."""
     from . import kanripo as _kanripo
 
     _kanripo.DYNASTY_OF = dynasty_of
@@ -201,7 +203,7 @@ def ingest_kanripo(store: CorpusStore, catalog: dict[str, Any], sources: Path, n
         if detected and detected != spec.note_order:
             report["note_order_warnings"].append({"book": spec.book_id, "catalog": spec.note_order, "detected": detected, "evidence": n})
         repo = sources / e["kr"]
-        rows = parser.parse(repo)
+        rows, repaired = repair_rows(parser.parse(repo), repairs)
         title = next((f.props.get("TITLE") for f in parsed[e["kr"]] if f.props.get("TITLE")), None)
         commit = git_head(repo)
         store.delete_book(spec.book_id, normalize)
@@ -214,6 +216,8 @@ def ingest_kanripo(store: CorpusStore, catalog: dict[str, Any], sources: Path, n
                                          "layers": parser.report["layers"], "notes": parser.report["notes"],
                                          "gaiji": parser.report["gaiji"], "line_width": parser.report.get("line_width"),
                                          "note_order": spec.note_order, "note_order_evidence": n}
+        if repaired:
+            report["books"][spec.book_id]["repaired"] = repaired
         log(f"  {e['kr']} {spec.book_id:28s} {len(rows):6d} passages {chars:9d} chars")
     store.set_meta("normalizer", fingerprint)
     store.commit()
@@ -505,7 +509,8 @@ def jicheng_book_record(entry: dict[str, Any], catalog: dict[str, Any], version:
 
 def ingest_jicheng(store: CorpusStore, catalog: dict[str, Any], root: Path, normalize: Callable[[str], str], fingerprint: str,
                    *, only: Iterable[str] | None = None, log: Log = print, dynasty_of: Callable[[float], str | None] | None = None,
-                   version: str | None = None, chronology: Any = None, changed_only: bool = False) -> dict[str, Any]:
+                   version: str | None = None, chronology: Any = None, changed_only: bool = False,
+                   repairs: Any = None) -> dict[str, Any]:
     from .jicheng import JichengParser, read_nclist
 
     import json
@@ -536,7 +541,7 @@ def ingest_jicheng(store: CorpusStore, catalog: dict[str, Any], root: Path, norm
             report["records_only"] += 1
             continue
         parser = JichengParser(jicheng_spec(entry), nc, dynasty_of, chronology)
-        rows = parser.parse(path)
+        rows, repaired = repair_rows(parser.parse(path), repairs)
         store.delete_book(entry["id"], normalize)
         store.put_book(record, source="jicheng")
         store.add_passages(rows, normalize)
@@ -546,6 +551,8 @@ def ingest_jicheng(store: CorpusStore, catalog: dict[str, Any], root: Path, norm
                                         "layers": parser.report["layers"], "gaiji": parser.report["gaiji"],
                                         "dropped_collation": parser.report["dropped_collation"], "boxes": parser.report["boxes"],
                                         "signed_prefaces": parser.report["signed_prefaces"]}
+        if repaired:
+            report["books"][entry["id"]]["repaired"] = repaired
         if parser.report["unknown_tags"]:
             report["unknown_tags"][entry["code"]] = parser.report["unknown_tags"]
         log(f"  {entry['code']:7s} {entry['id']:12s} {len(rows):6d} passages {chars:9d} chars")

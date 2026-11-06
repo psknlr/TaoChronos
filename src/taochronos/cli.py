@@ -114,6 +114,13 @@ def _corpus_paths(args: argparse.Namespace) -> tuple[Path, Path]:
     return home, data
 
 
+def _repairs(home: Path) -> Any:
+    """The conversion repairs (domains/classics/script/conversion_repairs.tsv)."""
+    from .plugins.classics.repairs import TABLE, ConversionRepairs
+
+    return ConversionRepairs.load(home / "domains" / "classics" / "script" / TABLE)
+
+
 def _store_path(args: argparse.Namespace, data: Path) -> Path:
     return Path(args.db) if getattr(args, "db", None) else data / "corpus" / "tcm.sqlite"
 
@@ -135,13 +142,15 @@ def cmd_corpus(args: argparse.Namespace) -> None:
 
 
 def _corpus_admin(args: argparse.Namespace, action: str) -> None:
-    """fetch / unpack / catalog / ingest / status / reindex — build and maintain the full-corpus store."""
+    """fetch / unpack / catalog / ingest / status / reindex / repair — build and maintain the full-corpus store."""
     home, data = _corpus_paths(args)
     db = _store_path(args, data)
     from .plugins.classics.ingest.collections import COLLECTIONS, RANK
 
     if action == "images":
         return _corpus_images(args, home, data, db)
+    if action == "repair":  # the whole store, whichever source its passages came from (reindex and status live there too)
+        return _corpus_admin_kanripo(args, action, home, data, db, None)
     source = args.source or "kanripo"
     only = [x for x in (args.only or "").split(",") if x] or None
     known = ("kanripo", "kr-catalog", "jicheng", *COLLECTIONS)
@@ -243,7 +252,8 @@ def _corpus_admin_kanripo(args: argparse.Namespace, action: str, home: Path, dat
         kr_catalog = (load_yaml(kr_path) or {}).get("texts") if kr_path.exists() else None
         records_only = bool(getattr(args, "changed", False))
         report = ingest_kanripo(store, catalog, sources_dir, pack.variants.normalize_text, pack.variants.fingerprint, only=only, log=print,
-                                dynasty_of=pack.periods.dynasty_of, kr_catalog=kr_catalog, records_only=records_only)
+                                dynasty_of=pack.periods.dynasty_of, kr_catalog=kr_catalog, records_only=records_only,
+                                repairs=pack.repairs)
         if not records_only:
             store.optimize()
         report["seconds"] = round(time.time() - t0, 1)
@@ -268,6 +278,18 @@ def _corpus_admin_kanripo(args: argparse.Namespace, action: str, home: Path, dat
         store.optimize()
         _out({"reindexed": n, "normalizer": pack.variants.fingerprint})
         return
+    if action == "repair":  # conversion errors put right in a store already built (domains/classics/script/conversion_repairs.tsv)
+        try:
+            report = store.repair(pack.repairs, pack.variants.normalize_text, pack.variants.fingerprint)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from None
+        if report["passages"]:
+            store.optimize()
+        _out({"store": str(db), "repairs_table": pack.repairs.fingerprint, "passages": report["passages"],
+              "repairs": report["repairs"], "books": report["books"],
+              **({"next": "taochronos web store && taochronos web upload (cloud/README.md); taochronos web pack for corpus/web"}
+                 if report["passages"] else {})})
+        return
     corpus = StoreCorpus(store, pack.variants.normalize_text, fingerprint=pack.variants.fingerprint)
     stats = corpus.stats(pack.periods)
     layers = dict(store.db.execute("SELECT layer, COUNT(*) FROM passages GROUP BY layer ORDER BY COUNT(*) DESC LIMIT 40").fetchall())
@@ -276,7 +298,8 @@ def _corpus_admin_kanripo(args: argparse.Namespace, action: str, home: Path, dat
     _out({"store": str(db), "size_mb": round(size / 1e6, 1), "books": stats["books"], "passages": stats["passages"],
           "characters": stats["characters"], "by_period": stats["by_period"], "kinds": kinds, "layers": layers,
           "sources": stats["sources"], "index_current": stats["index_current"],
-          "normalizer": {"store": store.meta("normalizer"), "domain": pack.variants.fingerprint}})
+          "normalizer": {"store": store.meta("normalizer"), "domain": pack.variants.fingerprint},
+          "repairs": {"store": store.meta("repairs"), "domain": pack.repairs.fingerprint}})
 
 
 def _jicheng_root(data: Path, given: str | None = None) -> Path:
@@ -373,7 +396,7 @@ def _corpus_admin_jicheng(args: argparse.Namespace, action: str, home: Path, dat
     report = ingest_jicheng(store, catalog, root, pack.variants.normalize_text, pack.variants.fingerprint, only=only, log=print,
                             dynasty_of=pack.periods.dynasty_of, version=lock.get("version"),
                             chronology=Chronology(home / "domains" / "classics" / "eras.yaml", pack.variants.normalize_text),
-                            changed_only=bool(getattr(args, "changed", False)))
+                            changed_only=bool(getattr(args, "changed", False)), repairs=pack.repairs)
     store.optimize()
     report["seconds"] = round(time.time() - t0, 1)
     (data / "corpus").mkdir(parents=True, exist_ok=True)
@@ -471,7 +494,8 @@ def _corpus_admin_collection(args: argparse.Namespace, action: str, home: Path, 
     lock = ((load_yaml(lock_path) or {}).get(col.id) or {}) if lock_path.exists() else {}
     version = lock.get("commit") or lock.get("revision") or lock.get("latest_revision")
     report = ingest_documents(store, catalog, docs, normalize, pack.variants.fingerprint, chronology=chronology,
-                              dynasty_of=pack.periods.dynasty_of, version=str(version)[:12] if version else None, only=only, log=print)
+                              dynasty_of=pack.periods.dynasty_of, version=str(version)[:12] if version else None, only=only, log=print,
+                              repairs=pack.repairs)
     store.optimize()
     report["seconds"] = round(time.time() - t0, 1)
     (data / "corpus").mkdir(parents=True, exist_ok=True)
@@ -1685,7 +1709,7 @@ def cmd_web(args: argparse.Namespace) -> None:
         ranking = study.canon_rank(top=args.size or CANON_SIZE, extend=args.extend)
         listed = write_catalog(study._canon.path, ranking)
         packed = export_pack(sqlite3.connect(f"file:{db_path}?mode=ro", uri=True), ranking["works"],
-                             Path(args.output or home / "corpus" / "web"))
+                             Path(args.output or home / "corpus" / "web"), repairs=_repairs(home))
         write_tables(home=home, log=lambda line: print(line, file=sys.stderr))  # stdout is the report, JSON only
         _out({"canon": listed | {"ranked": ranking["ranked"], **({"extends": ranking["extends"]} if ranking.get("extends") else {})},
               "pack": packed, "next": "check the numbers the READMEs and docs/web.md quote against corpus/web/ATTRIBUTION.md"})
@@ -1702,7 +1726,8 @@ def cmd_web(args: argparse.Namespace) -> None:
         works = (load_yaml(home / "corpus" / "catalog" / "canon.yaml") or {}).get("works") or []
         if not works:
             raise SystemExit("no corpus/catalog/canon.yaml: run taochronos study canon --write-catalog first")
-        _out(export_pack(sqlite3.connect(f"file:{db_path}?mode=ro", uri=True), works, Path(args.output or home / "corpus" / "web")))
+        _out(export_pack(sqlite3.connect(f"file:{db_path}?mode=ro", uri=True), works, Path(args.output or home / "corpus" / "web"),
+                         repairs=_repairs(home)))
         return
     if args.action == "store":
         from .plugins.classics.webcorpus import compress_store, server_attribution, server_store
@@ -1862,9 +1887,10 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--profile")
     sp.add_argument("--provider", help=argparse.SUPPRESS)
     _llm_args(sp)
-    sp = add("corpus", cmd_corpus, "list the corpus, or fetch / unpack / catalog / ingest / status / reindex the full-corpus store")
+    sp = add("corpus", cmd_corpus, "list the corpus, or fetch / unpack / catalog / ingest / status / reindex / repair the "
+                                   "full-corpus store")
     sp.add_argument("action", nargs="?", default="list",
-                    choices=["list", "fetch", "unpack", "catalog", "ingest", "status", "reindex", "images"])
+                    choices=["list", "fetch", "unpack", "catalog", "ingest", "status", "reindex", "repair", "images"])
     sp.add_argument("source", nargs="?", help="source: kanripo, kr-catalog, jicheng (user-supplied archive), mcgill, cmeta, aeam, "
                                              "wikisource, tcm-ancient-books, tcmoc, hf-tcm-canon, or all (ingest); for images: "
                                              "nijl, nijl:knik …, sbb:unschuld, loc:chinese-rare-books, waseda:ya09, ndl, or all")

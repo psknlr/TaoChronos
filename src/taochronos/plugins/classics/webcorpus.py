@@ -38,6 +38,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from .ingest import load_external_works
+from .repairs import repair_rows
 from .store import CorpusStore, grams
 from .study.canon import OPEN_SOURCES
 
@@ -132,8 +133,9 @@ PUBLISHED = "随道乃久网站发布，供学习研究（发布方 IMPF-AI 决�
 
 
 def export_pack(db: sqlite3.Connection, works: list[dict[str, Any]], out: Path,
-                tiers: Iterable[tuple[int | None, int, int, int]] = TIERS) -> dict[str, Any]:
-    """Write the pack for the ranked ``works`` from the full store's database ``db``."""
+                tiers: Iterable[tuple[int | None, int, int, int]] = TIERS, *, repairs: Any = None) -> dict[str, Any]:
+    """Write the pack for the ranked ``works`` from the full store's database ``db``; ``repairs``
+    (``repairs.ConversionRepairs``) puts right the conversion errors of a store not yet repaired."""
     tiers = tuple(tiers)
     sources: dict[str, str] = {}
     records: dict[str, dict[str, Any]] = {}
@@ -161,6 +163,7 @@ def export_pack(db: sqlite3.Connection, works: list[dict[str, Any]], out: Path,
             kept, extent = select(rows, first if k == 0 else other)
             if not kept:
                 continue
+            kept, _ = repair_rows(kept, repairs)
             data = records[bid]
             src = dict(data.get("source") or {})
             if sources[bid] not in OPEN_SOURCES:  # the terms under which the site carries it, not the local-research note

@@ -110,6 +110,7 @@ taochronos corpus fetch cmeta              # CMETA: the catalogue, the open 精�
 taochronos corpus images all --enrich      # image-witness records → corpus/catalog/images/ (paced, cached; metadata only)
 taochronos corpus status                   # counts by period, kind and layer; whether the index matches the variant table
 taochronos corpus reindex                  # rebuild the full-text index after changing domains/classics/script or variants.yaml
+taochronos corpus repair                   # put conversion errors right in a store already built (script/conversion_repairs.tsv)
 taochronos lexicon harvest                 # candidate formula and drug names → domains/classics/lexicon-harvested/
 taochronos lexicon core                    # the most attested of them → domains/classics/lexicon-core/ (for the browser's corpus)
 taochronos web canon --extend              # the 要籍 list lengthened to CANON_SIZE on this store, the browser's corpus packed again
@@ -477,6 +478,22 @@ with the other witnesses of the same works.
 against corpus contexts, plus manual entries for forms that matter in medical texts (䜴→豉, 䓤→葱, 茰→萸, 㪚→散,
 讝→谵, 痟→消, 芁→艽, 巵→栀 …). Curated `variants.yaml` entries are applied first and recorded as philological
 normalisations; script conversion is systematic and not itemised. All mappings preserve length.
+
+### Conversion repairs (`domains/classics/script/conversion_repairs.tsv`)
+
+Unlike the tables above, which serve matching only, these change the text. Some transcriptions were made from
+simplified copies and converted back to traditional characters with Taiwan phrasing, which replaces a word by the
+modern Taiwan word for it — 腳氣 (the classical disease) became 香港腳 (athlete's foot), 《小品方》 became 《短劇方》
+(a comic sketch), 循環 became 迴圈 (a program loop) — or resolved a one-to-many character to the wrong traditional form
+(the drug 厚朴, after the tree 朴, became 厚樸). These are the converter's, not the edition's, so they are put right in
+the passage's text and its locator (volume, chapter and section titles): at `corpus ingest` (every source), in a store
+already built with `taochronos corpus repair` (the index and the claim cache kept in step; `corpus status` shows the
+table the store was repaired with), and by `taochronos web pack`, so that the 要籍语料 is right even from a store not yet
+repaired. A row goes in only when the wrong form is never what an edition prints; the contexts in which it is a real
+word are listed with it and stay (厚樸 in 敦厚樸實). In the 要籍语料 (2026-11-06) they touched 715 passages of 120 books:
+香港腳 in 635 (all 笈成, 千金要方·卷七風毒腳氣方 among them), 短劇 in 52 (笈成), 厚樸 in 26 (Kanripo, McGill), 迴圈 in 2.
+After `corpus repair` on the full store: `taochronos web store` and `taochronos web upload` (cloud/README.md), so that
+the site's server and the D1 backup are built from the repaired store.
 
 ### Harvested vocabulary (`domains/classics/lexicon-harvested/`)
 
