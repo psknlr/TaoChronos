@@ -9,7 +9,7 @@ import { extractCitations, renderMarkdown } from "./markdown.js";
 import { scrub } from "./redact.js";
 import { AGENT, MODEL as ASSISTANT, PUBLISHER, PUBLISHER_EN } from "./brand.js";
 import { FIXED_ID, fixedReply, touchesIdentity } from "./fixed.js";
-import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, publicConversation, RELAY_ID, saveSettings, setRelay }
+import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, publicConversation, RELAY_ID, relayQuestions, saveSettings, setRelay }
   from "./providers.js";
 import { ACCEPT, brief, cacheList, cachedList, DATA_NOTICE, isMine, MAX_BYTES, noticeSeen, personal, setNoticeSeen, sizeLabel }
   from "./mydata.js";
@@ -37,7 +37,7 @@ const S = {
   here: null,              // the TaoChronos server that served this page, if one did
   runtimeInfo: null,
   runtimeState: { status: "idle", progress: 0, message: "" },
-  relay: null,             // 道乃久默认服务: {url, ok, model, models, logs, feedback, limits, pending} when the site has one (site.json)
+  relay: null,             // 道乃久默认服务: {url, ok, model, models, logs, feedback, sponsor, limits, pending} when the site has one (site.json)
   relayReady: null,
   relayRetry: null,
   catalogs: {},
@@ -563,7 +563,14 @@ async function runAssistant(conv, msg, { resume = null } = {}) {
   const release = hold(msg.id); // a page opened meanwhile leaves the turn to this one (settleCalls)
   renderComposer();
   const provider = activeProvider(S.settings);
-  msg.model = provider.relay ? ASSISTANT : provider.model; // the default service by its own model name only
+  // the default service by its own model names only (Tao-R1, or the second model it offers by its public name)
+  msg.model = provider.relay ? provider.model || ASSISTANT : provider.model;
+  if (provider.relay && provider.model && provider.model !== S.relay?.model) {
+    msg.publicModel = true; // a name the service gave: kept as it is (publicConversation)
+    // the second model is limited in questions: each call of this turn names it, so the turn counts once however many
+    // rounds it takes (relay/src/relay.js, questionOf).  Only for it — a relay older than it would refuse the header
+    provider.headers = { ...(provider.headers || {}), "X-Tao-Turn": msg.id };
+  }
   msg.provider = provider.id;
   const started = Date.now();
   const sink = [];
@@ -1747,8 +1754,8 @@ async function checkRelay(timeouts) {
     clearTimeout(timer);
   }
   if (j?.ok) {
-    Object.assign(S.relay, { ok: true, model: j.model, models: j.models, logs: Boolean(j.logs), feedback: Boolean(j.feedback), limits: j.limits,
-      maxOutput: Number(j.max_output_tokens) || null });
+    Object.assign(S.relay, { ok: true, model: j.model, models: j.models, logs: Boolean(j.logs), feedback: Boolean(j.feedback),
+      sponsor: Boolean(j.sponsor), limits: j.limits, maxOutput: Number(j.max_output_tokens) || null });
   }
   delete S.relay.pending;
   setRelay(S.relay);
@@ -1960,6 +1967,18 @@ const settingsCtx = {
     const p = activeProvider(draft);
     if (!p.apiKey && !p.key_optional && !(draft.route === "proxy" && S.runtimeInfo?.env_keys)) return { ok: false, message: T("请先填写 API Key") };
     const started = Date.now();
+    if (p.relay && Number(relayQuestions()[p.model]) > 0) {
+      // a model the default service counts in questions: a test would spend one of the visitor's day — the service is
+      // asked whether it offers the model, and nothing is asked of the model
+      try {
+        const r = await fetch(`${S.relay.url}/v1/health`, { cache: "no-store", signal: AbortSignal.timeout(15000) });
+        const j = r.ok ? await r.json() : null;
+        if (j?.models?.includes(p.model)) return { ok: true, message: T`连接成功 · ${p.label} · ${p.model} · ${fmtMs(Date.now() - started)}（未提问，不占用今天的问题数）` };
+        return { ok: false, message: T("默认服务暂时不提供这个模型") };
+      } catch {
+        return { ok: false, message: T("默认服务暂时连不上：请稍后再试，或选择其他服务并填入自己的 API Key。") };
+      }
+    }
     const settings = { ...draft, maxTokens: 400, thinking: false };
     const route = routeFor(draft);
     const ctl = new AbortController();
@@ -1994,6 +2013,23 @@ const settingsCtx = {
       return { ok: true };
     } catch (err) {
       return { ok: false, message: err.message, tokenRequired: Boolean(err.tokenRequired) };
+    }
+  },
+  /** A visitor's own API key and model, given to the default service (赞助) — sent once, to the relay only, and kept
+   * nowhere on this page: {ok}, or {ok: false, message} in the page's words. */
+  async sponsor(gift) {
+    if (!S.relay?.ok || !S.relay.sponsor) return { ok: false, message: T("赞助通道尚未开启") };
+    try {
+      // text/plain: a simple request, no preflight, as the records and the feedback
+      const res = await fetch(`${S.relay.url}/v1/sponsor`, { method: "POST", headers: { "Content-Type": "text/plain;charset=UTF-8" },
+        body: JSON.stringify({ v: 1, ...gift }), cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer" });
+      if (res.ok) return { ok: true };
+      let said = "";
+      try { said = (await res.json())?.error?.message || ""; } catch { /* no body */ }
+      if (res.status === 400 && said) return { ok: false, message: T(said) };
+      return { ok: false, message: res.status === 429 ? T("提交太频繁，请稍后再试") : T`赞助未能提交（${res.status}），请稍后再试` };
+    } catch {
+      return { ok: false, message: T("网络不通，赞助未能提交，请稍后再试") };
     }
   },
   consent,

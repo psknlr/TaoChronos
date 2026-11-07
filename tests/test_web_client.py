@@ -3420,6 +3420,102 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
         mock.shutdown()
 
 
+def test_the_default_service_offers_a_second_model_and_takes_sponsorships(tmp_path):
+    """道乃久默认服务 with a second model (GPT-6 Luna, counted in questions): offered beside Tao-R1 when the relay's health
+    names it, each call of its turn naming the turn (X-Tao-Turn) so the turn counts as one question; Tao-R1's calls name
+    none.  And 赞助: a visitor's own key and model, sent once to the relay after they agree, kept nowhere on the page."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import MockProvider, MockRelay
+
+    mock = MockProvider().start()
+    relay = MockRelay(mock.base_url, logs=False, second="GPT-6 Luna", sponsor=True).start()
+    web = tmp_path / "web"
+    _published(web, relay.url)
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            page = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN").new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('默认服务')", timeout=10000)
+
+            # the settings: the default service's two models, the second with its questions a day; chosen and saved
+            page.click("#settings-btn")
+            pane = page.inner_text(".settings-pane")
+            assert "GPT-6 Luna 每人每天可问 3 个问题" in pane
+            page.click(".settings-pane .seg button:has-text('GPT-6 Luna（每天 3 问）')")
+            page.click(".settings-pane .btn:has-text('测试连接')")  # spends none of the visitor's questions
+            page.wait_for_selector(".settings-pane .test-result.ok", timeout=15000)
+            assert "未提问" in page.inner_text(".settings-pane .test-result") and relay.chat == []
+            page.click("#settings .modal-foot .btn:not(.secondary)")
+            assert "GPT-6 Luna" in page.get_attribute("#model-chip", "title")
+
+            page.fill("#input", "桂枝汤主治什么？请给出原文。")
+            page.keyboard.press("Enter")
+            page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
+            luna = [c for c in relay.chat if c["body"].get("model") == "GPT-6 Luna"]
+            assert len(luna) >= 2  # its tool round and its answer
+            turns = {c["headers"].get("X-Tao-Turn") for c in luna}
+            assert len(turns) == 1 and next(iter(turns)).startswith("m_")  # one turn, one question
+            assert not any("Authorization" in c["headers"] for c in luna)  # no key: the relay holds it
+
+            # Tao-R1 again: its calls name no turn (a relay older than the second model would refuse the header)
+            page.click("#settings-btn")
+            page.click(".settings-pane .seg button:has-text('Tao-R1')")
+            page.click("#settings .modal-foot .btn:not(.secondary)")
+            before = len(relay.chat)
+            page.fill("#input", "麻黄汤呢？")
+            page.keyboard.press("Enter")
+            page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 2", timeout=60000)
+            tao = relay.chat[before:]
+            assert tao and all(c["body"].get("model") == "Tao-R1" and "X-Tao-Turn" not in c["headers"] for c in tao)
+
+            # 赞助: from the default service's box, or the settings' own pane
+            page.click("#settings-btn")
+            page.click(".settings-pane button.linkish:has-text('赞助默认服务')")
+            pane = page.inner_text(".settings-pane")
+            assert "加密保存" in pane and "费用从你的账户扣除" in pane and "删除这把密钥" in pane
+            fields = page.query_selector_all(".settings-pane .form-grid input[type=text], .settings-pane .form-grid input[type=url], .settings-pane .form-grid input[type=password]")
+            provider, base, model, key, contact = fields
+            provider.fill("OpenAI")
+            model.fill("gpt-6-luna")
+            key.fill("sk-proj-given-by-a-visitor-0123456789")
+            page.click(".settings-pane .btn:has-text('提交赞助')")
+            assert "请先勾选同意说明" in page.inner_text(".settings-pane [role=status]")
+            assert relay.sponsorships == []  # nothing sent before the visitor agrees
+            page.check(".settings-pane label.check input")
+            page.click(".settings-pane .btn:has-text('提交赞助')")
+            page.wait_for_function("document.querySelector('.settings-pane [role=status]')?.textContent.includes('感谢你的赞助')", timeout=10000)
+            [gift] = relay.sponsorships
+            assert gift["type"].startswith("text/plain")  # a simple request, as the records
+            assert {k: gift[k] for k in ("v", "agree", "provider", "model", "key")} == {
+                "v": 1, "agree": True, "provider": "OpenAI", "model": "gpt-6-luna", "key": "sk-proj-given-by-a-visitor-0123456789"}
+            assert key.input_value() == ""  # given: not kept on the page
+            page.click("#settings .modal-foot .btn:not(.secondary)")  # the settings saved: the key is in none of them
+            stored = page.evaluate("JSON.stringify(Object.fromEntries(Object.entries(localStorage)))")
+            assert "given-by-a-visitor" not in stored
+            assert not errors, errors
+            browser.close()
+    finally:
+        srv.shutdown()
+        relay.shutdown()
+        mock.shutdown()
+
+
 def test_an_answer_is_rated_and_told_about_in_a_few_words(tmp_path):
     """Under each answer, 👍 and 👎 (when the site's relay takes feedback): either opens a dialog — what was good or wrong
     (several may be ticked), a few words — and nothing is sent before the visitor submits.  The feedback names the turn

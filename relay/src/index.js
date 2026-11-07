@@ -1,6 +1,8 @@
 // The Worker: the relay (relay.js) and its two Durable Objects — the counters that limit use together with the sentinel's
 // memory of visitors (security/sentinel.js), and the conversation records waiting for the repository's collector.  With
 // the private bucket ARCHIVE (security/archive.js), each object drains what it keeps waiting into the bucket instead.
+// The visitors' sponsorships (their own API keys, encrypted: relay/src/sponsors.js) are a third object, apart from the
+// records: nothing drains them anywhere.
 // Deployed by .github/workflows/relay.yml (relay/README.md).
 
 import { DurableObject } from "cloudflare:workers";
@@ -8,7 +10,8 @@ import { Drainer, EVENTS, RECORDS } from "../../security/archive.js";
 import { WatchCore } from "../../security/sentinel.js";
 import { UsageCore } from "../../security/usage.js";
 import { handle } from "./relay.js";
-import { LimiterCore, LogBookCore } from "./state.js";
+import { SponsorBookCore } from "./sponsors.js";
+import { ANSWERS, LimiterCore, LogBookCore } from "./state.js";
 
 /** Did the sentinel write an event for this request (security/sentinel.js: WatchCore.record)?  Then the archive drains. */
 const evented = (w, a, extra = {}) => Boolean(w && (w.flagged || w.blocked || w.shadow || a?.route === "honeypot" || extra.kind === "csp"));
@@ -34,17 +37,21 @@ export class Limiter extends DurableObject {
   /** One round trip for a call: the sentinel sees the request (and may refuse it), then the counters.  `served`: the
    * call is let through only for a caller the relay answered lately (a record of the default service's conversation;
    * the caller is known by the sentinel's key, which does not change at midnight — yesterday's is tried too for the
-   * month's turn). */
-  async gate({ who, kind, limits, fp, a, shape, status, cfg, served, reserve, usage }) {
+   * month's turn).  `question`: a model counted in questions (relay.js, secondChat) — the question is asked first, and
+   * counted only with the call it lets through. */
+  async gate({ who, kind, limits, fp, a, shape, status, cfg, served, reserve, usage, question }) {
     const now = Date.now();
     const watch = fp && a ? await this.watch.observe(fp, a, { shape, status }, cfg) : null;
     if (evented(watch, a, { shape, status })) await this.drainer.arm(now);
     if (watch?.blocked) return { ok: false, reason: "blocked", retry: watch.retry, watch };
     const keys = fp ? [await WatchCore.who(fp.ip, cfg, now), await WatchCore.who(fp.ip, cfg, now - 86400000)] : [];
     if (served && !(fp ? this.core.wasServed(keys, now) : this.core.served(who, served, now))) return { ok: false, reason: "not_served", retry: 0, watch };
+    const q = question ? this.core.question(who, question, now) : null;
+    if (q && !q.ok) return { ...q, watch };
     const gate = this.core.hit(who, kind, limits, now, reserve);
-    if (gate.ok && kind === "chat" && keys.length) this.core.markServed(keys[0], now);
-    if (gate.ok && kind === "chat" && usage) {
+    if (gate.ok) q?.commit?.();
+    if (gate.ok && ANSWERS.has(kind) && keys.length) this.core.markServed(keys[0], now);
+    if (gate.ok && ANSWERS.has(kind) && usage) {
       try { this.usage.call(usage, keys[0]); } catch (err) { console.error("usage", err?.name || "Error"); } // never in a call's way
     }
     return { ...gate, watch };
@@ -107,10 +114,34 @@ export class LogBook extends DurableObject {
   }
 }
 
+export class SponsorBook extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.core = new SponsorBookCore(ctx.storage.sql);
+  }
+
+  add(row, keep) {
+    return this.core.add(row, keep);
+  }
+
+  list() {
+    return this.core.list();
+  }
+
+  get(id) {
+    return this.core.get(id);
+  }
+
+  remove(id) {
+    return this.core.remove(id);
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const limiter = () => env.LIMITER.get(env.LIMITER.idFromName("limits"));
     const book = () => env.LOGBOOK.get(env.LOGBOOK.idFromName("records"));
+    const sponsors = () => env.SPONSORS.get(env.SPONSORS.idFromName("sponsors"));
     return handle(request, env, {
       limit: (who, kind, limits) => limiter().hit(who, kind, limits),
       gate: (args) => limiter().gate(args),
@@ -127,6 +158,12 @@ export default {
         add: (record, received, keep) => book().add(record, received, keep),
         records: (after, limit) => book().records(after, limit),
         remove: (through) => book().remove(through),
+      },
+      sponsors: {
+        add: (row, keep) => sponsors().add(row, keep),
+        list: () => sponsors().list(),
+        get: (id) => sponsors().get(id),
+        remove: (id) => sponsors().remove(id),
       },
       // per visitor and Cloudflare location, over ten seconds (wrangler.toml: [[ratelimits]]); without the binding, no gate
       burst: async (key) => {

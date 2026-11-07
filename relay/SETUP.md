@@ -29,6 +29,8 @@ MiniMax 控制台 → 复制密钥 → GitHub 仓库 Secrets → relay 工作流
 | `CLOUDFLARE_API_TOKEN` | 让 GitHub Actions 能部署 Worker 的令牌 | 第 2 步 |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 账户编号 | 第 3 步 |
 | `LOG_EXPORT_TOKEN` | 仓库取回对话记录用的口令，自己生成 | 第 4 步 |
+| `OPENAI_API_KEY`（可选） | 第二个模型 GPT-6 Luna 用的 OpenAI 密钥（每人每天 3 个问题） | 见下文「可选：第二个模型」 |
+| `SPONSOR_SECRET`（可选） | 访客赞助的密钥用它加密，你也用它读取，32 位以上随机串（如 `openssl rand -hex 32`） | 见下文「可选：赞助」 |
 | `STATS_TOKEN`（可选） | 在网页「设置 → 统计」里查看使用次数与地区的令牌，16 位以上随机串（如 `openssl rand -hex 24`）；网站与默认服务共用 | 自己生成（见 docs/web.md） |
 
 取得的值先暂存在密码管理器或本机的临时记事里，存进 GitHub 后就删掉。**不要**把它们发到聊天、Issue、PR 里，也不要提交进仓库。
@@ -197,6 +199,29 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 停用：删除仓库变量 `ARCHIVE_BUCKET`，重新部署两个 Worker；chat-logs 工作流从上次的游标继续收进仓库（编号不会重复），存储桶里已有的不动。
 已提交在 `data/chat-logs/`、`data/security-logs/` 里的旧记录仍在仓库历史中，要清除须另行决定、另行操作。
 
+## 可选：第二个模型 GPT-6 Luna（OpenAI）
+
+1. 在 [platform.openai.com](https://platform.openai.com) → **API keys** → **Create new secret key**，名称填 `taochronos-relay`，
+   **Project** 选一个专门的项目，并在该项目的 **Limits** 里设好每月金额上限。创建后立即复制。
+   之前在聊天、Issue 或 PR 里出现过的密钥一律视为已泄露：新建一把，确认新密钥可用后在 OpenAI 控制台删除旧的。
+2. 仓库 → **Settings → Secrets and variables → Actions → New repository secret**：Name 填 `OPENAI_API_KEY`，Secret 粘贴密钥。
+3. **Actions → relay → Run workflow**。部署步骤里会多一行 `Success! Uploaded secret OPENAI_API_KEY`；检查步骤最后一行多出
+   `"second": {"GPT-6 Luna": "ok"}`（今天的问题已用完时是 `"limited"`，密钥未被调用）。
+4. 打开 <https://chat-api.impf.ai/v1/health>，`models` 应为 `["Tao-R1","GPT-6 Luna"]`，`limits.questions` 为 `{"GPT-6 Luna":3}`。
+
+调整：`relay/wrangler.toml` 里的 `OPENAI_QUESTIONS_PER_DAY`（每人每天的问题数）、`OPENAI_TOTAL_QUESTIONS_PER_DAY`（全体每天）、
+`OPENAI_MODEL`（OpenAI 的模型名）、`OPENAI_PUBLIC_MODEL`（网页上的名字）；`OPENAI = "off"` 停止提供。
+检查步骤报 `OpenAI refused OPENAI_API_KEY` 时更新 Secret 后重跑；报 `OpenAI may not offer this model to the key` 时确认这把密钥所在项目能用 `gpt-6-luna`。
+
+## 可选：赞助（访客交来自己的 API Key）
+
+1. 生成一个 32 位以上的随机串（`openssl rand -hex 32`），存为仓库 Secret `SPONSOR_SECRET`，同时存进你的密码管理器——查看赞助时要用它。
+2. **Actions → relay → Run workflow**。health 里出现 `"sponsor":true`，网页「设置」多出「赞助」一栏。
+3. 查看：`SPONSOR_SECRET=… python3 relay/collect.py sponsors`；取出一把完整密钥：`--reveal 编号`（只在自己的电脑上运行）；删除：`--delete 编号`。
+
+赞助的密钥加密存在中转自己的 Durable Object 里，**不会**进入 `data/chat-logs/` 或任何提交；中转不会自己调用它们。
+用一把赞助的密钥之前，先在对应服务商确认它可用、额度与费用归属清楚。
+
 ## 第 10 步　为 chat.impf.ai 打开 HTTPS
 
 目前 `chat.impf.ai` 只能用 http 访问，因为 GitHub 还没签发它的证书。默认服务在 http 下也能用，但浏览器无法缓存语料，每次打开都要重新下载。
@@ -210,6 +235,9 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 
 | 要做的事 | 怎么做 |
 |---|---|
+| 更换 OpenAI 密钥 | 在 OpenAI 控制台新建密钥 → 更新仓库 Secret `OPENAI_API_KEY` → **Actions → relay → Run workflow** → 检查通过后删除旧密钥 |
+| 停止提供 GPT-6 Luna | `wrangler.toml` 里 `OPENAI = "off"`，合入 main；或在 Cloudflare 的 Worker 机密里删除 `OPENAI_API_KEY` |
+| 停止接收赞助 | `wrangler.toml` 里 `SPONSOR = "off"`，合入 main |
 | 更换 MiniMax 密钥 | 在 MiniMax 控制台新建密钥 → 在仓库 Secrets 里点 `MINIMAX_API_KEY` 的 **Update**，粘贴新值 → **Actions → relay → Run workflow** → 检查通过后，在 MiniMax 控制台删除旧密钥 |
 | 更换 Cloudflare 令牌 | 按第 2 步新建令牌 → 更新 `CLOUDFLARE_API_TOKEN` → 重跑 relay → 在 Cloudflare 删除旧令牌 |
 | 更换收集器令牌 | 生成新串 → 更新 `LOG_EXPORT_TOKEN` → 重跑 relay，Worker 与仓库就同时换成新的 |
