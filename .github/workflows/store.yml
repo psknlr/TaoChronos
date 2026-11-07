@@ -11,9 +11,15 @@ name: store
 # starts no other workflow, so on main the job then starts the site's deployment (a new container, built from the
 # repaired store) and the D1 import (a new store is a new version: the databases are built again).
 # Nothing to repair: nothing is written or committed.
-# Run it: Actions → store → Run workflow, on main; or  gh workflow run store.yml --ref main
+# It runs when a push to main changes the repair table (or this workflow), so that the store the site serves follows the
+# table; and on Actions → store → Run workflow, on main; or  gh workflow run store.yml --ref main
 # Repository secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (cloud/SETUP.md), the token allowed to edit Workers KV.
 on:
+  push:
+    branches: [main]
+    paths:
+      - "domains/classics/script/conversion_repairs.tsv"
+      - ".github/workflows/store.yml"
   workflow_dispatch:
     inputs:
       deploy:
@@ -169,7 +175,7 @@ jobs:
           [ "$pushed" = 1 ] || { echo "::error::cloud/store.json could not be pushed to ${GITHUB_REF_NAME}"; exit 1; }
           echo "pushed=1" >> "$GITHUB_OUTPUT"
       - name: Deploy the site and import D1 with the repaired store
-        if: steps.commit.outputs.pushed == '1' && github.ref == 'refs/heads/main' && inputs.deploy
+        if: steps.commit.outputs.pushed == '1' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.deploy)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
