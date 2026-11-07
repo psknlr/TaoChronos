@@ -1,47 +1,47 @@
 {
  "format": 1,
- "key": "store/ef628936d382e7e22962dacd14de4f28e316849db44906dfb4f30071ef7517fc/",
+ "key": "store/0abaa0178a2605f453f042ec473ed583b6039369f1516d46b3d9ab0cc2bec94d/",
  "encoding": "xz",
- "bytes": 143182284,
- "sha256": "ef628936d382e7e22962dacd14de4f28e316849db44906dfb4f30071ef7517fc",
- "raw_bytes": 1239236608,
- "raw_sha256": "20e70d74ea5df3affca71864cba3394d1c270ca1556af876fbfc14070d80b646",
+ "bytes": 143118816,
+ "sha256": "0abaa0178a2605f453f042ec473ed583b6039369f1516d46b3d9ab0cc2bec94d",
+ "raw_bytes": 1239076864,
+ "raw_sha256": "bfbadd476ce407f1e0f90ea91e18d50167ae6bee1cebd80dbffe5cd51ea035d7",
  "part_bytes": 25165824,
  "parts": [
   {
    "name": "part-000",
    "bytes": 25165824,
-   "sha256": "f4cc46d4b79c8126a4d47cb3338de88abaac6388c1235bbe559b402f66cba5e4"
+   "sha256": "fd9f5b703788f7d6dc1c291b55886d7cfd3049d80429fedda8957efbefb526a6"
   },
   {
    "name": "part-001",
    "bytes": 25165824,
-   "sha256": "6714b98d8acc20eab14882eed72ef489ee4208caf2e5099dc70f229bfc2003d0"
+   "sha256": "70ba470fa958d4a001b925107b424379dfa651c7d0f9009f65acefa751f2f0ba"
   },
   {
    "name": "part-002",
    "bytes": 25165824,
-   "sha256": "3518fabfda00de2b13cb038eb8359c897a37d9dea894471af613c037334d478c"
+   "sha256": "c81c12e9c212d65f8a240b2fe69b30546f7d865fc2b3708448d883acf143b5fe"
   },
   {
    "name": "part-003",
    "bytes": 25165824,
-   "sha256": "c5013b9201ba8781defc2bbe60b84ce5a96340e2791d5566280c78b0bad97f2c"
+   "sha256": "ce08a86613104642ee2c9fc3ca12b7c083b110ae72b82699f2b4c0d9aff9811a"
   },
   {
    "name": "part-004",
    "bytes": 25165824,
-   "sha256": "dc54379f762b6ea782f95464265bef844d67f6573f6a296bafe0df53d7210436"
+   "sha256": "6505fa5fd0514d0986b101c858c800d0d08e06719ddb6fe5080fd620e3cfb983"
   },
   {
    "name": "part-005",
-   "bytes": 17353164,
-   "sha256": "3ca958f5a49588f6528bf81f216d3beab9c17e725eae9b69944cfbaf6d0b66f9"
+   "bytes": 17289696,
+   "sha256": "fd26c80d17098ac9e852f928ef43d6bcbd57a18a996f5c342f74d6c932ba97a4"
   }
  ],
  "books": 958,
  "passages": 2038497,
- "characters": 122219380,
+ "characters": 122212591,
  "sources": {
   "cmeta": {
    "books": 11,
@@ -51,7 +51,7 @@
   "jicheng": {
    "books": 816,
    "passages": 1632424,
-   "characters": 93637607
+   "characters": 93630818
   },
   "kanripo": {
    "books": 100,
