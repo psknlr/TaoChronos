@@ -53,15 +53,23 @@ export function outputLimit(settings, provider) {
 }
 
 export const RELAY_ID = "impf";
-let relay = null; // {url, ok, model, models, logs, limits} once the site's relay has answered (or failed to)
+let relay = null; // {url, ok, model, models, logs, sponsor, limits} once the site's relay has answered (or failed to)
 
 export function setRelay(r) { relay = r; }
 
-/** The default service as a provider: the site's relay, no key.  The page knows its model by the name the relay gives
- * (Tao-R1); whatever the model behind it needs besides, the relay adds. */
+/** The models the default service counts in questions, not calls, and how many a visitor may ask each a day: its
+ * health's limits.questions, {"GPT-6 Luna": 3}. */
+export const relayQuestions = () => {
+  const q = relay?.limits?.questions;
+  return q && typeof q === "object" && !Array.isArray(q) ? q : {};
+};
+
+/** The default service as a provider: the site's relay, no key.  The page knows its models by the names the relay gives
+ * (Tao-R1, and a second one it may offer); whatever the model behind it needs besides, the relay adds. */
 function relayPreset() {
   if (!relay?.url) return null;
   const models = relay.models?.length ? relay.models : relay.model ? [relay.model] : [];
+  const daily = Object.entries(relayQuestions()).filter(([m, n]) => models.includes(m) && Number(n) > 0);
   return {
     id: RELAY_ID, label: T("道乃久默认服务"), format: "openai", base_url: `${relay.url}/v1`, key_optional: true, relay: true,
     max_tokens_param: "max_completion_tokens", extra_body: {}, thinking_off: { thinking: { type: "disabled" } }, examples: models,
@@ -69,6 +77,7 @@ function relayPreset() {
     unavailable: !relay.ok, max_output: relay.maxOutput || null,
     note: relay.ok
       ? T`${PUBLISHER}提供，无需 API Key，直接提问${relay.limits?.per_day ? T`；测试期间每人每天约 ${relay.limits.per_day} 次模型调用（一个问题通常用几次）` : ""}。`
+        + daily.map(([m, n]) => T`${m} 每人每天可问 ${n} 个问题。`).join("")
       : T("默认服务暂时连不上：请稍后再试，或选择其他服务并填入自己的 API Key。"),
   };
 }
@@ -120,7 +129,8 @@ export function saveSettings(settings) {
 }
 
 /** How a provider is named on the page: the default service by its own name (the page names no vendor behind it). */
-export const modelLabel = (p) => (p.relay ? p.label : T`底层模型 ${p.model || T("未选")}（${p.label}）`);
+export const modelLabel = (p) => (p.relay ? (p.model && p.model !== relay?.model ? `${p.label} · ${p.model}` : p.label)
+  : T`底层模型 ${p.model || T("未选")}（${p.label}）`);
 
 /** The provider as configured now: preset + the user's model, base URL and key. */
 export function activeProvider(settings) {
@@ -160,7 +170,7 @@ export function publicConversation(conv) {
   let changed = false;
   for (const m of Array.isArray(conv?.messages) ? conv.messages : []) {
     if (m?.role !== "assistant" || (m.provider !== RELAY_ID && m.wireProvider !== RELAY_ID)) continue;
-    if (m.model !== MODEL) { m.model = MODEL; changed = true; }
+    if (m.model !== MODEL && !m.publicModel) { m.model = MODEL; changed = true; } // a name the service gave (app.js) is kept
     for (const w of Array.isArray(m.wire) ? m.wire : []) {
       for (const d of Array.isArray(w?.reasoning_details) ? w.reasoning_details : []) {
         if (typeof d?.format === "string" && !d.format.startsWith(PUBLIC_FORMAT) && /^[^-]+-./.test(d.format)) {

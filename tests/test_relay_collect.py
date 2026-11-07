@@ -18,6 +18,7 @@ collect = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(collect)
 
 TOKEN = "collector-token-0123456789"
+SPONSOR = "sponsor-secret-0123456789abcdef-0123456789"
 
 
 class FakeRelay(ThreadingHTTPServer):
@@ -30,6 +31,11 @@ class FakeRelay(ThreadingHTTPServer):
         self.chat_status = 200
         self.chat_error = {}
         self.archived: list[dict] | None = None  # the archive's bucket, when the relay has one: its items
+        self.models = ["Tao-R1"]
+        self.second_status = 200
+        self.second_error: dict = {}
+        self.second_turns: list[str] = []
+        self.sponsors = [{"id": 1, "model": "gpt-6-luna", "hint": "sk-…WXYZ"}]
 
     def add(self, received: str, question: str) -> None:
         self.rows.append({"id": self.next_id, "received": received, "record": {"v": 1, "question": question}})
@@ -60,7 +66,13 @@ class _Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         url = urlsplit(self.path)
         if url.path == "/v1/health":
-            return self._json(200, {"ok": True, "model": "Tao-R1", "logs": True, "limits": {"per_day": 600}})
+            return self._json(200, {"ok": True, "model": "Tao-R1", "models": self.server.models, "logs": True, "limits": {"per_day": 600}})
+        if url.path == "/v1/sponsors":
+            if self.headers.get("Authorization") != f"Bearer {SPONSOR}":
+                return self._json(401, {"error": {"message": "需要 SPONSOR_SECRET"}})
+            if "reveal" in parse_qs(url.query):
+                return self._json(200, {"sponsor": {**self.server.sponsors[0], "key": "sk-revealed"}})
+            return self._json(200, {"sponsors": self.server.sponsors})
         if url.path in ("/v1/logs/export", "/v1/logs/archive"):
             if not self._authorized():
                 return self._json(401, {"error": {"message": "需要收集令牌"}})
@@ -88,6 +100,16 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(409, {"error": {"message": "记录由归档取走", "type": "archived"}})
             self.server.rows = [r for r in self.server.rows if r["id"] > body["through"]]
             return self._json(200, {"remaining": len(self.server.rows)})
+        if self.path == "/v1/sponsors/delete":
+            if self.headers.get("Authorization") != f"Bearer {SPONSOR}":
+                return self._json(401, {"error": {"message": "需要 SPONSOR_SECRET"}})
+            self.server.sponsors = [x for x in self.server.sponsors if x["id"] != body["id"]]
+            return self._json(200, {"removed": 1})
+        if self.path == "/v1/chat/completions" and body.get("model") != "Tao-R1":
+            self.server.second_turns.append(self.headers.get("X-Tao-Turn") or "")
+            if self.server.second_status != 200:
+                return self._json(self.server.second_status, {"error": self.server.second_error})
+            return self._json(200, {"choices": [{"message": {"content": "ok"}}]})
         if self.path == "/v1/chat/completions":
             assert self.headers.get("Origin") == "https://chat.impf.ai"
             if self.server.chat_status != 200:
@@ -147,6 +169,36 @@ def test_a_deployment_is_checked_and_a_refused_key_explained(relay):
     relay.chat_status, relay.chat_error = 503, {"message": "默认服务暂时不可用", "type": "upstream_auth"}
     with pytest.raises(SystemExit, match="api.minimax.io"):
         collect.check(relay.url, "https://chat.impf.ai", wait=5)
+
+
+def test_a_second_model_is_checked_as_the_page_asks_it(relay):
+    assert "second" not in collect.check(relay.url, "https://chat.impf.ai", wait=5)  # none offered: none checked
+    relay.models = ["Tao-R1", "GPT-6 Luna"]
+    assert collect.check(relay.url, "https://chat.impf.ai", wait=5)["second"] == {"GPT-6 Luna": "ok"}
+    assert relay.second_turns[-1].startswith("deploy-check-")  # a turn of its own: one question
+    relay.second_status, relay.second_error = 429, {"message": "今天的 GPT-6 Luna 免费额度已用完", "type": "daily_limit"}
+    assert collect.check(relay.url, "https://chat.impf.ai", wait=5)["second"] == {"GPT-6 Luna": "limited"}
+    relay.second_status, relay.second_error = 503, {"message": "默认服务暂时不可用", "type": "upstream_auth"}
+    with pytest.raises(SystemExit, match="OPENAI_API_KEY"):
+        collect.check(relay.url, "https://chat.impf.ai", wait=5)
+
+
+def test_the_owner_reads_the_sponsorships_with_the_sponsor_secret(relay, monkeypatch):
+    monkeypatch.delenv("SPONSOR_SECRET", raising=False)
+    with pytest.raises(SystemExit, match="SPONSOR_SECRET"):
+        collect.sponsors(relay.url)
+    monkeypatch.setenv("SPONSOR_SECRET", "a-wrong-secret-0123456789abcdef-0123")
+    with pytest.raises(SystemExit, match="401"):
+        collect.sponsors(relay.url)
+    monkeypatch.setenv("SPONSOR_SECRET", f" {SPONSOR}\n")  # pasted with a space and a line break
+    assert collect.sponsors(relay.url) == {"sponsors": [{"id": 1, "model": "gpt-6-luna", "hint": "sk-…WXYZ"}]}
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    assert collect.sponsors(relay.url, reveal=1)["sponsor"]["key"] == "sk-revealed"
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")  # a key is never printed into a workflow's log
+    with pytest.raises(SystemExit, match="never in a workflow"):
+        collect.sponsors(relay.url, reveal=1)
+    assert collect.sponsors(relay.url, delete=1) == {"removed": 1}
+    assert relay.sponsors == []
 
 
 def test_a_relay_that_archives_its_records_gives_the_repository_none_and_reads_a_day_back(relay, tmp_path):

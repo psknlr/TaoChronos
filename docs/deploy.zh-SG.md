@@ -117,6 +117,8 @@ D1 · Edit；`r2/buckets`：缺 R2 权限（只有归档需要）。这些正是
 | `CLOUDFLARE_API_TOKEN` | 部署令牌（2.2） | 需要 |
 | `CLOUDFLARE_ACCOUNT_ID` | Account ID | 需要 |
 | `MINIMAX_API_KEY` | MiniMax 密钥 | 默认服务需要 |
+| `OPENAI_API_KEY` | 第二个模型 GPT-6 Luna 用的 OpenAI 密钥（每人每天 3 个问题；relay/SETUP.md） | 可选 |
+| `SPONSOR_SECRET` | 32 位以上随机串：`openssl rand -hex 32`——加密访客赞助的密钥，也是你读取它们的凭据 | 可选（「设置 → 赞助」） |
 | `LOG_EXPORT_TOKEN` | 16 位以上随机串：`openssl rand -hex 32` | 需要 |
 | `SENTINEL_SALT` | `openssl rand -hex 32` | 建议 |
 | `STATS_TOKEN` | 16 位以上随机串 | 可选（「设置 → 统计」） |
@@ -502,6 +504,8 @@ MiniMax 余额维持在愿意花费的数目。
 | 要做的事 | 怎么做 |
 |---|---|
 | 更换 MiniMax 密钥 | 新密钥 → 机密 `MINIMAX_API_KEY` → 部署中转（Actions，或 4.1 的 `secret put`）→ 删除旧密钥 |
+| 更换 OpenAI 密钥 | 新密钥 → 机密 `OPENAI_API_KEY` → 部署中转 → 在 OpenAI 删除旧密钥 |
+| 查看访客的赞助 | `SPONSOR_SECRET=… python3 relay/collect.py sponsors`（密钥只显示首尾）；`--reveal 编号` 显示一把完整密钥，只在自己的电脑上运行 |
 | 更换部署令牌 | 新令牌（2.2）→ 机密 `CLOUDFLARE_API_TOKEN` → 删除旧令牌 |
 | 更换收集器令牌 | 新值 → 机密 `LOG_EXPORT_TOKEN` → 在两个 Worker 上 `secret put`（或经 Actions 部署两者） |
 | 更新语料 | 3.4，然后 A1+A2 或 B2–B5 |

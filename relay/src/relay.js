@@ -16,6 +16,14 @@
 //                               GET /v1/security/archive, a day of them archived
 //   GET  /v1/security/summary   the visitors by score and the addresses refused now (Bearer LOG_EXPORT_TOKEN)
 //   POST /v1/security/csp       a browser's Content-Security-Policy report (kept as an event)
+//   POST /v1/sponsor            a visitor's own API key and model, given to the service (赞助): kept encrypted, apart from
+//                               the records, never logged (relay/src/sponsors.js)
+//   GET  /v1/sponsors           the sponsorships, keys hinted only; ?reveal=ID one key in full (Bearer SPONSOR_SECRET);
+//                               POST /v1/sponsors/delete removes one
+//
+// A second model, GPT-6 Luna (OpenAI), is offered beside the default one when the Worker has OPENAI_API_KEY: the page
+// asks for it by its public name, the relay sends it to OpenAI with that key, and a visitor may ask it a few questions a
+// day (OPENAI_QUESTIONS_PER_DAY; a question is counted once however many calls its tool rounds take).
 //
 // Visitors are counted by a hash of their address and the day; addresses are not stored, and records carry none.  The
 // sentinel (security/sentinel.js) sees every request: a scanner path refuses its address for a day, a request that is
@@ -25,6 +33,7 @@
 import { EVENTS, RECORDS, serveArchive } from "../../security/archive.js";
 import { assess, bodyShape, fingerprint, ipKey, isHoneypot, logLine, sentinelConfig, serveSecurity } from "../../security/sentinel.js";
 import { place, serveStats, usageConfig, usageDay } from "../../security/usage.js";
+import { normalizeSponsor, sealSponsor, sponsorReady, unseal } from "./sponsors.js";
 import { day } from "./state.js";
 
 export const VERSION = "1";
@@ -53,6 +62,23 @@ export const DEFAULTS = {
   FEEDBACK: "on",                             // ratings and written feedback on answers, kept with the records
   FEEDBACK_PER_MINUTE: "10",
   FEEDBACK_PER_DAY: "100",
+  // the second model: GPT-6 Luna through OpenAI, with the Worker's secret OPENAI_API_KEY (offered only when it is set).
+  // Its own limits: questions per visitor per day (a question's tool rounds are not counted again) and in all; and,
+  // under them, calls and tokens — what bounds a question's rounds, and a client that is not the page
+  OPENAI: "on",
+  OPENAI_BASE: "https://api.openai.com/v1",
+  OPENAI_MODEL: "gpt-6-luna",
+  OPENAI_PUBLIC_MODEL: "GPT-6 Luna",          // its name on the page
+  OPENAI_QUESTIONS_PER_DAY: "3",
+  OPENAI_TOTAL_QUESTIONS_PER_DAY: "300",
+  OPENAI_PER_MINUTE: "10",                    // model calls per visitor
+  OPENAI_CALLS_PER_DAY: "60",
+  OPENAI_TOKENS_PER_DAY: "3000000",
+  OPENAI_TOTAL_TOKENS_PER_DAY: "60000000",
+  // visitors' own API keys given to the service (赞助): on only when the Worker also has SPONSOR_SECRET (32+ characters)
+  SPONSOR: "on",
+  SPONSOR_PER_DAY: "5",                       // per visitor
+  SPONSOR_KEEP: "1000",                       // kept at most: beyond, new ones are refused (none dropped)
   ALLOWED_ORIGINS: "https://chat.impf.ai,http://chat.impf.ai,https://psknlr.github.io",
 };
 
@@ -83,8 +109,23 @@ export function config(env = {}) {
     feedback: String(get("FEEDBACK")).toLowerCase() !== "off",
     logMax: num("LOG_MAX_BYTES"),
     keep: num("LOG_KEEP"),
+    openai: {
+      on: String(get("OPENAI")).toLowerCase() !== "off",
+      upstream: String(get("OPENAI_BASE")).replace(/\/+$/, ""),
+      model: String(get("OPENAI_MODEL")),
+      publicModel: String(get("OPENAI_PUBLIC_MODEL")),
+      questions: { perDay: num("OPENAI_QUESTIONS_PER_DAY"), total: num("OPENAI_TOTAL_QUESTIONS_PER_DAY") },
+      chat: { perMinute: num("OPENAI_PER_MINUTE"), perDay: num("OPENAI_CALLS_PER_DAY"), total: 0, tokensPerDay: num("OPENAI_TOKENS_PER_DAY"),
+        totalTokens: num("OPENAI_TOTAL_TOKENS_PER_DAY") },
+    },
+    sponsor: String(get("SPONSOR")).toLowerCase() !== "off",
+    sponsorLimits: { perMinute: 3, perDay: num("SPONSOR_PER_DAY"), total: 0 },
+    sponsorKeep: num("SPONSOR_KEEP"),
   };
 }
+
+/** Is the second model offered: switched on, and the Worker has its key? */
+const secondReady = (env, cfg) => Boolean(cfg.openai.on && env.OPENAI_API_KEY && cfg.openai.model && cfg.openai.publicModel);
 
 /**
  * deps: {gate({who, kind, limits, fp, a, shape, status, cfg}) → {ok, reason, retry, remaining, watch}, observe(fp, a, extra, cfg),
@@ -112,7 +153,7 @@ export async function handle(request, env, deps) {
     }
     return new Response(null, {
       status: 204,
-      headers: { ...cors, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
+      headers: { ...cors, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization, X-Tao-Turn",
         "Access-Control-Max-Age": "86400" },
     });
   }
@@ -137,6 +178,9 @@ export async function handle(request, env, deps) {
       case "GET /v1/logs/export": return await records(request, env, url, deps);
       case "POST /v1/logs/ack": return await ack(request, env, deps);
       case "GET /v1/logs/archive": return await serveArchive(request, url, { bucket: env.ARCHIVE, prefix: RECORDS, token: env.LOG_EXPORT_TOKEN || "" });
+      case "POST /v1/sponsor": return await sponsor(request, env, cfg, cors, allowed, deps, s);
+      case "GET /v1/sponsors": return await sponsors(request, env, url, deps, s);
+      case "POST /v1/sponsors/delete": return await unsponsor(request, env, deps, s);
       default:
         if (s) note(s, "other", 404);
         return error(404, "没有这个接口", "not_found", cors);
@@ -224,9 +268,20 @@ function note(s, route, status, extra = {}) {
 
 const BLOCKED = "该地址因异常访问已被暂时限制，请稍后再试";
 
-function limited(gate, limits, cors, what = "请求") {
+function limited(gate, limits, cors, what = "请求", second = null) {
   const headers = { ...cors, "Retry-After": String(gate.retry || 60) };
   if (gate.reason === "blocked") return error(403, BLOCKED, "blocked", headers);
+  if (second && gate.reason === "questions") {
+    return error(429, `今天的 ${second.publicModel} 免费额度已用完（每人每天 ${second.questions.perDay} 个问题），明天再来；也可以改用道乃久默认服务的其他模型，或在“设置 → 模型”里填入自己的 API Key`,
+      "daily_limit", headers);
+  }
+  if (second && gate.reason === "total_questions") {
+    return error(429, `默认服务的 ${second.publicModel} 今天的总额度已用完，明天再来；也可以改用道乃久默认服务的其他模型，或在“设置 → 模型”里填入自己的 API Key`,
+      "total_limit", headers);
+  }
+  if (second && gate.reason === "no_question") {
+    return error(403, `默认服务的 ${second.publicModel} 按问题计额度：这一轮不属于今天已计的问题，请重新提问`, "no_question", { ...cors });
+  }
   if (gate.reason === "burst") return error(429, `${what}太频繁，请稍后再试`, "rate_limited", { ...cors, "Retry-After": "10" });
   if (gate.reason === "not_served") return error(403, "没有这个对话", "not_served", headers);
   if (gate.reason === "tokens") {
@@ -246,9 +301,14 @@ function limited(gate, limits, cors, what = "请求") {
 
 // ------------------------------------------------------------------ endpoints
 function health(env, cfg, cors) {
+  const second = secondReady(env, cfg) ? cfg.openai : null;
   return json({
-    ok: Boolean(env.MINIMAX_API_KEY), service: "taochronos-relay", version: VERSION, model: cfg.publicModel, models: [cfg.publicModel],
-    logs: cfg.logs, feedback: cfg.feedback, max_output_tokens: cfg.maxTokens, limits: { per_minute: cfg.chat.perMinute, per_day: cfg.chat.perDay, tokens_per_day: cfg.chat.tokensPerDay },
+    ok: Boolean(env.MINIMAX_API_KEY), service: "taochronos-relay", version: VERSION, model: cfg.publicModel,
+    models: [cfg.publicModel, ...(second ? [second.publicModel] : [])],
+    logs: cfg.logs, feedback: cfg.feedback, sponsor: cfg.sponsor && sponsorReady(env), max_output_tokens: cfg.maxTokens,
+    limits: { per_minute: cfg.chat.perMinute, per_day: cfg.chat.perDay, tokens_per_day: cfg.chat.tokensPerDay,
+      // a model counted in questions, not calls: questions per visitor per day
+      ...(second ? { questions: { [second.publicModel]: second.questions.perDay } } : {}) },
   }, 200, cors);
 }
 
@@ -261,7 +321,8 @@ async function chat(request, env, cfg, cors, allowed, deps, s) {
     if (s) note(s, "chat", 403);
     return error(403, "这个服务只供道乃久网页使用", "forbidden_origin", cors);
   }
-  if (!env.MINIMAX_API_KEY) return error(503, "默认服务尚未配置，请在“设置 → 模型”里填入自己的 API Key", "not_configured", cors);
+  const notConfigured = () => error(503, "默认服务尚未配置，请在“设置 → 模型”里填入自己的 API Key", "not_configured", cors);
+  if (!env.MINIMAX_API_KEY && !secondReady(env, cfg)) return notConfigured();
   if (await bursting(request, deps)) {
     if (s) note(s, "chat", 429);
     return limited({ reason: "burst" }, cfg.chat, cors);
@@ -283,8 +344,13 @@ async function chat(request, env, cfg, cors, allowed, deps, s) {
   // the sentinel reads the request's shape before the relay edits it: is this the page asking?
   const shape = s ? await bodyShape(body) : null;
   const a = s ? assess(s.fp, { route: "chat", origins: cfg.origins, shape, knownPrompts: s.cfg.knownPrompts, ownPrefix: s.cfg.ownPrefix }) : null;
-  // the default service's model by its public name, or by none (pages older than it send the upstream's own name)
   const asked = body.model;
+  // the second model, by its public name (or OpenAI's): its own key, its own limits (secondChat)
+  if (typeof asked === "string" && asked && (asked === cfg.openai.publicModel || asked === cfg.openai.model) && secondReady(env, cfg)) {
+    return await secondChat(request, env, cfg, cors, deps, s, { body, raw, shape, a });
+  }
+  if (!env.MINIMAX_API_KEY) return notConfigured();
+  // the default service's model by its public name, or by none (pages older than it send the upstream's own name)
   if (asked !== undefined && asked !== null && asked !== "" && asked !== cfg.publicModel && !cfg.models.includes(asked)) {
     return error(400, "默认服务不提供这个模型：请在“设置 → 模型”里选用道乃久默认服务，或改用自己的 API Key", "model_not_allowed", cors);
   }
@@ -337,12 +403,22 @@ async function chat(request, env, cfg, cors, allowed, deps, s) {
     if (tokens > 0) deps.defer(deps.spend(who, "chat", tokens - (gate.reserved || 0)));
   };
 
+  return relayed({ url: `${cfg.upstream}/chat/completions`, key: env.MINIMAX_API_KEY, payload, request, cors, view: cfg, spend, noReasoning, deps });
+}
+
+/**
+ * The upstream asked, and its reply as a visitor may see it: its refusals in the default service's words (with what to
+ * do instead), its stream or its JSON renamed and filtered for `view` — the model's public name and the upstream's
+ * reasoning-format prefix (publicText, publicFilter) — and, asked for no thinking, without reasoning.  `label` names the
+ * upstream in the Worker's log (a status code only, never a body).
+ */
+async function relayed({ url, key, payload, request, cors, view, spend, noReasoning, deps, label = "upstream" }) {
   let upstream;
   try {
-    upstream = await deps.fetch(`${cfg.upstream}/chat/completions`, {
+    upstream = await deps.fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: request.headers.get("Accept") || "application/json",
-        Authorization: `Bearer ${env.MINIMAX_API_KEY}` },
+        Authorization: `Bearer ${key}` },
       body: payload,
       signal: request.signal, // the visitor leaving, or stopping the answer, ends the model call too
     });
@@ -352,6 +428,7 @@ async function chat(request, env, cfg, cors, allowed, deps, s) {
   const type = upstream.headers.get("Content-Type") || "application/json";
   if (upstream.status === 401 || upstream.status === 403) {
     await upstream.body?.cancel();
+    console.error(label, upstream.status);
     return error(503, "默认服务暂时不可用（模型服务拒绝了它的密钥），请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_auth", cors);
   }
   if (upstream.status === 429) {
@@ -361,7 +438,7 @@ async function chat(request, env, cfg, cors, allowed, deps, s) {
   if (!upstream.ok) {
     // the upstream's own message would name it, its models and its parameters: the visitor is told what to do instead
     await upstream.body?.cancel();
-    console.error("upstream", upstream.status);
+    console.error(label, upstream.status);
     return upstream.status >= 500 || upstream.status === 404
       ? error(502, "默认服务暂时不可用，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_error", cors)
       : error(400, "默认服务无法完成这个请求：请检查“设置 → 模型”里的温度、最大输出等选项，或新开一个对话后重试", "upstream_rejected", cors);
@@ -379,14 +456,80 @@ async function chat(request, env, cfg, cors, allowed, deps, s) {
       return error(status, `${msg}，请稍后再试，或在“设置 → 模型”里填入自己的 API Key`, kind, cors);
     }
     const out = noReasoning && j ? JSON.stringify(withoutReasoning(j)) : text;
-    return new Response(publicText(out, cfg, spend), { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
+    return new Response(publicText(out, view, spend), { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
   }
   if (!type.includes("event-stream") || !upstream.body) {
     const text = await upstream.text().catch(() => "");
-    return new Response(publicText(text, cfg, spend), { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
+    return new Response(publicText(text, view, spend), { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
   }
-  const stream = (noReasoning ? upstream.body.pipeThrough(reasoningFilter()) : upstream.body).pipeThrough(publicFilter(cfg, spend));
+  const stream = (noReasoning ? upstream.body.pipeThrough(reasoningFilter()) : upstream.body).pipeThrough(publicFilter(view, spend));
   return new Response(stream, { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
+}
+
+// ------------------------------------------------------------------ the second model (GPT-6 Luna, through OpenAI)
+// what the page's request may carry on to OpenAI: anything else (MiniMax's own fields, the page's thinking switch, a
+// temperature the model may refuse) stays here
+const OPENAI_FIELDS = ["messages", "tools", "tool_choice", "parallel_tool_calls", "stream", "stream_options", "response_format", "stop", "seed"];
+const MESSAGE_FIELDS = ["role", "content", "name", "tool_calls", "tool_call_id"];
+// the page's id for a turn (app.js: its answer's message id), sent with each of the turn's calls
+const TURN_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
+/** The page's request in OpenAI's terms: the known fields only, each message without the reasoning another model sent
+ * back, the output capped. */
+export function openaiBody(body, model, maxTokens) {
+  const out = { model };
+  for (const k of OPENAI_FIELDS) if (k in body) out[k] = body[k];
+  out.messages = (Array.isArray(body.messages) ? body.messages : []).map((m) => {
+    const o = {};
+    for (const k of MESSAGE_FIELDS) if (m && typeof m === "object" && k in m) o[k] = m[k];
+    return o;
+  });
+  const asked = Math.floor(Number(body.max_completion_tokens ?? body.max_tokens)) || maxTokens;
+  out.max_completion_tokens = Math.min(Math.max(1, asked), maxTokens);
+  return out;
+}
+
+/**
+ * Which question a call belongs to: the page's turn (X-Tao-Turn) when it names one — then every call of the turn,
+ * however it ends (a tool round, the self-check's note), is the same question — else what the visitor last asked (the
+ * text of the last user message: a turn's tool rounds repeat it).  `turn`: may this call ask a new question?  With the
+ * page's turn, yes; else only when it ends with what the visitor asked.
+ */
+async function questionOf(request, messages) {
+  const named = request.headers.get("X-Tao-Turn") || "";
+  if (TURN_ID.test(named)) return { id: `t${hex(await sha256(named)).slice(0, 24)}`, turn: true };
+  let user = null;
+  for (let i = messages.length - 1; i >= 0; i--) if (messages[i]?.role === "user") { user = messages[i]; break; }
+  return { id: `q${hex(await sha256(JSON.stringify(user?.content ?? ""))).slice(0, 24)}`, turn: messages[messages.length - 1]?.role === "user" };
+}
+
+/** A call for the second model: counted in questions per visitor per day (and, under them, in calls and tokens), sent
+ * to OpenAI with the Worker's OPENAI_API_KEY, its reply passed on under the model's public name. */
+async function secondChat(request, env, cfg, cors, deps, s, { body, raw, shape, a }) {
+  const o = cfg.openai;
+  const payload = JSON.stringify(openaiBody(body, o.model, cfg.maxTokens));
+  const noReasoning = body.thinking?.type === "disabled";
+  const who = await caller(request, deps.now());
+  const q = await questionOf(request, body.messages);
+  const reserve = Math.ceil(raw.length / 3);
+  let gate;
+  try {
+    const usage = s ? { day: usageDay(deps.now(), usageConfig(env).offset), ...place(s.fp), turn: Boolean(shape?.turn) } : null;
+    gate = await deps.gate({ who, kind: "openai", limits: o.chat, fp: s?.fp, a, shape, cfg: s?.cfg, reserve, usage,
+      question: { kind: "openai-q", limits: o.questions, id: q.id, turn: q.turn } });
+  } catch (err) {
+    console.error("gate", err?.name || "Error");
+    return error(503, "默认服务暂时不可用，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "unavailable", { ...cors, "Retry-After": "60" });
+  }
+  if (s) logLine("relay", s.fp, a, gate.watch, gate.ok ? null : gate.reason === "blocked" ? 403 : 429, s.cfg);
+  if (!gate.ok) return limited(gate, o.chat, cors, "请求", o);
+  const spend = (usage) => {
+    const tokens = (Number(usage?.prompt_tokens) || 0) + (Number(usage?.completion_tokens) || 0);
+    if (tokens > 0) deps.defer(deps.spend(who, "openai", tokens - (gate.reserved || 0)));
+  };
+  const view = { ...cfg, publicModel: o.publicModel, formatPrefix: "" };
+  return relayed({ url: `${o.upstream}/chat/completions`, key: env.OPENAI_API_KEY, payload, request, cors, view, spend, noReasoning, deps,
+    label: "upstream openai" });
 }
 
 // ------------------------------------------------------------------ what a visitor sees of the upstream: nothing
@@ -704,6 +847,7 @@ async function intake(request, cfg, cors, allowed, deps, s, how) {
   }
   // the page names the default service's model by its public name; the records (the owner's) keep the one that answered
   if (record.model === cfg.publicModel) record.model = cfg.model;
+  else if (record.model === cfg.openai.publicModel) record.model = cfg.openai.model;
   const a = s ? assess(s.fp, { route, origins: cfg.origins, ownPrefix: s.cfg.ownPrefix }) : null;
   let gate;
   try {
@@ -723,6 +867,89 @@ async function intake(request, cfg, cors, allowed, deps, s, how) {
     return error(503, how.full, "logs_full", { ...cors, "Retry-After": "3600" });
   }
   return new Response(null, { status: 204, headers: cors });
+}
+
+// ------------------------------------------------------------------ sponsorship (赞助): visitors' own keys
+const SPONSOR_MAX_BYTES = 8192;
+
+/** A visitor gives the service an API key of their own, and the model it is for: from the page's origins, within the
+ * ten-second gate and its own counters, of the known fields — then encrypted into the sponsors' book (never the
+ * records', which the repository collects).  Nothing of it is logged. */
+async function sponsor(request, env, cfg, cors, allowed, deps, s) {
+  if (!allowed) {
+    if (s) note(s, "sponsor", 403);
+    return error(403, "这个服务只供道乃久网页使用", "forbidden_origin", cors);
+  }
+  if (!cfg.sponsor || !sponsorReady(env)) return error(404, "赞助通道尚未开启", "sponsor_off", cors);
+  if (await bursting(request, deps)) {
+    if (s) note(s, "sponsor", 429);
+    return limited({ reason: "burst" }, cfg.sponsorLimits, cors, "提交");
+  }
+  const raw = await readBody(request, SPONSOR_MAX_BYTES);
+  if (raw === null) return error(413, "赞助信息过大", "too_large", cors);
+  let r;
+  try { r = JSON.parse(raw); } catch {
+    if (s) note(s, "sponsor", 400);
+    return error(400, "赞助信息不是有效的 JSON", "bad_sponsor", cors);
+  }
+  const got = normalizeSponsor(r);
+  if (got.error) {
+    if (s) note(s, "sponsor", 400);
+    return error(400, got.error, "bad_sponsor", cors);
+  }
+  const a = s ? assess(s.fp, { route: "sponsor", origins: cfg.origins, ownPrefix: s.cfg.ownPrefix }) : null;
+  let gate;
+  try {
+    gate = await deps.gate({ who: await caller(request, deps.now()), kind: "sponsor", limits: cfg.sponsorLimits, fp: s?.fp, a, cfg: s?.cfg });
+  } catch (err) {
+    console.error("gate", err?.name || "Error");
+    return error(503, "赞助暂时无法提交，请稍后再试", "sponsor_unavailable", { ...cors, "Retry-After": "60" });
+  }
+  if (s) logLine("relay", s.fp, a, gate.watch, gate.ok ? 204 : gate.reason === "blocked" ? 403 : 429, s.cfg);
+  if (!gate.ok && gate.reason === "day") {
+    return error(429, `今天的赞助提交已达上限（每人每天 ${cfg.sponsorLimits.perDay} 次），明天再来`, "daily_limit", { ...cors, "Retry-After": String(gate.retry || 60) });
+  }
+  if (!gate.ok) return limited(gate, cfg.sponsorLimits, cors, "提交");
+  const kept = await deps.sponsors.add(await sealSponsor(got.sponsor, env.SPONSOR_SECRET, new Date(deps.now()).toISOString()), cfg.sponsorKeep);
+  if (kept === null) {
+    console.error("sponsors full", cfg.sponsorKeep);
+    return error(503, "赞助暂存已满，请稍后再试", "sponsor_full", { ...cors, "Retry-After": "3600" });
+  }
+  return new Response(null, { status: 204, headers: cors });
+}
+
+/** The owner, by SPONSOR_SECRET (compared in constant time; none set, no one). */
+async function sponsorOwner(request, env) {
+  const given = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+  return sponsorReady(env) && given.length > 0 && (await sameSecret(given, env.SPONSOR_SECRET));
+}
+
+/** The sponsorships for the owner: hinted keys; ?reveal=ID, that one's key in full. */
+async function sponsors(request, env, url, deps, s) {
+  if (!(await sponsorOwner(request, env))) {
+    if (s) note(s, "other", 401);
+    return error(401, "需要 SPONSOR_SECRET", "unauthorized");
+  }
+  const reveal = url.searchParams.get("reveal");
+  if (reveal === null) return json({ sponsors: await deps.sponsors.list() });
+  const row = await deps.sponsors.get(Math.floor(Number(reveal)) || 0);
+  if (!row) return error(404, "没有这条赞助", "not_found");
+  const { sealed, ...shown } = row;
+  const key = await unseal(sealed, env.SPONSOR_SECRET);
+  if (key === null) return error(409, "这把密钥无法解密：SPONSOR_SECRET 在它提交后更换过", "unsealable");
+  return json({ sponsor: { ...shown, key } });
+}
+
+async function unsponsor(request, env, deps, s) {
+  if (!(await sponsorOwner(request, env))) {
+    if (s) note(s, "other", 401);
+    return error(401, "需要 SPONSOR_SECRET", "unauthorized");
+  }
+  let body;
+  try { body = JSON.parse(await request.text()); } catch { return error(400, "请求不是有效的 JSON", "bad_request"); }
+  const id = Math.floor(Number(body?.id));
+  if (!Number.isFinite(id) || id < 1) return error(400, "缺少 id", "bad_request");
+  return json(await deps.sponsors.remove(id));
 }
 
 // ------------------------------------------------------------------ the counts for the settings' 统计 pane

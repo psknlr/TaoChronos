@@ -4,6 +4,10 @@
 
 export const day = (now) => new Date(now).toISOString().slice(0, 10);
 
+/** The kinds of model call that answer a visitor (the default model's, the second model's): such a call marks its caller
+ * as answered (a record of the conversation may follow) and is counted for the settings' 统计 pane. */
+export const ANSWERS = new Set(["chat", "openai"]);
+
 /**
  * Fixed windows: per caller per minute (in memory — a minute is lost at worst when the object is evicted), per caller
  * per day and in all per day (stored).  A request is counted only when it is let through.  Tokens — what the answers
@@ -30,16 +34,23 @@ export class LimiterCore {
     this.sql.exec("INSERT INTO hits (k, n, day) VALUES (?, MAX(0, ?), ?) ON CONFLICT(k) DO UPDATE SET n = MAX(0, n + ?)", key, by, today, by);
   }
 
-  /** limits: {perMinute, perDay, total, tokensPerDay, totalTokens} (total, totalTokens: all callers together per day;
-   * 0 = none).  `reserve`: tokens charged now for the call let through (an estimate from the request's size, reconciled
-   * by spend() when the answer's usage is known — else thirty calls could be in flight before the first is counted). */
-  hit(who, kind, limits, now = Date.now(), reserve = 0) {
+  /** Today; on the first call of a new day, the counts of the days before go (and the callers answered before the day
+   * before). */
+  roll(now) {
     const today = day(now);
     if (today !== this.currentDay) {
       this.sql.exec("DELETE FROM hits WHERE day <> ?", today);
       this.sql.exec("DELETE FROM served WHERE last < ?", now - 2 * 86400000);
       this.currentDay = today;
     }
+    return today;
+  }
+
+  /** limits: {perMinute, perDay, total, tokensPerDay, totalTokens} (total, totalTokens: all callers together per day;
+   * 0 = none).  `reserve`: tokens charged now for the call let through (an estimate from the request's size, reconciled
+   * by spend() when the answer's usage is known — else thirty calls could be in flight before the first is counted). */
+  hit(who, kind, limits, now = Date.now(), reserve = 0) {
+    const today = this.roll(now);
     const minute = Math.floor(now / 60000);
     if (minute !== this.currentMinute) {
       this.minute.clear();
@@ -62,6 +73,35 @@ export class LimiterCore {
     const reserved = (limits.tokensPerDay || limits.totalTokens) && reserve > 0 ? Math.floor(reserve) : 0;
     if (reserved) this.spend(who, kind, reserved, now);
     return { ok: true, remaining: limits.perDay ? limits.perDay - d - 1 : null, reserved };
+  }
+
+  /**
+   * A model limited in questions, not in calls (the relay's second model, relay.js): q = {kind, limits: {perDay, total},
+   * id, turn}.  `id` names the question (the page's turn, or a digest of what was asked); `turn`, whether this call may
+   * ask a new one.  A question is counted once a day however many calls it takes (its tool rounds, its self-check, the
+   * page asking again after a failure); a call under a question not counted today is refused unless it asks one.
+   * Returns {ok, reason, retry, remaining} and, for a new question, commit(): count it, once the call itself is let
+   * through (the DO runs both with no await between, so they are one step).
+   */
+  question(who, q, now = Date.now()) {
+    const today = this.roll(now);
+    const asked = `q:${q.kind}:${who}:${q.id}:${today}`;
+    const dk = `d:${q.kind}:${who}:${today}`;
+    const left = (d) => (q.limits.perDay ? Math.max(0, q.limits.perDay - d) : null);
+    if (this.count(asked) > 0) return { ok: true, remaining: left(this.count(dk)) };
+    if (!q.turn) return { ok: false, reason: "no_question", retry: 0 };
+    const tk = `t:${q.kind}:${today}`;
+    if (q.limits.total && this.count(tk) >= q.limits.total) return { ok: false, reason: "total_questions", retry: secondsToMidnight(now) };
+    const d = this.count(dk);
+    if (q.limits.perDay && d >= q.limits.perDay) return { ok: false, reason: "questions", retry: secondsToMidnight(now) };
+    return {
+      ok: true, remaining: left(d + 1),
+      commit: () => {
+        this.bump(dk, today);
+        this.bump(asked, today);
+        if (q.limits.total) this.bump(tk, today);
+      },
+    };
   }
 
   /** Tokens an answer cost, added to the caller's day and to the day (counted after the fact: the call was let through);

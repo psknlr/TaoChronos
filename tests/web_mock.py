@@ -415,8 +415,12 @@ class MockRelay(ThreadingHTTPServer):
     daemon_threads = True
     SECRET = "relay-held-secret"
 
-    def __init__(self, upstream: str, port: int = 0, logs: bool = True, feedback: bool = True) -> None:
+    def __init__(self, upstream: str, port: int = 0, logs: bool = True, feedback: bool = True, second: str = "",
+                 sponsor: bool = False) -> None:
         super().__init__(("127.0.0.1", port), _RelayHandler)
+        self.second = second           # a second model it offers (GPT-6 Luna), counted in questions: its public name
+        self.takes_sponsors = sponsor  # it takes visitors' own keys (赞助)
+        self.sponsorships: list[dict] = []  # what the page sent to /v1/sponsor
         self.upstream = upstream.rstrip("/")
         self.logs = logs
         self.takes_feedback = feedback
@@ -446,7 +450,7 @@ class _RelayHandler(BaseHTTPRequestHandler):
 
     def _cors(self) -> None:
         self.send_header("Access-Control-Allow-Origin", self.headers.get("Origin") or "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept, X-Tao-Turn")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Expose-Headers", "Retry-After")  # as relay.js: the page reads it
         self.send_header("Vary", "Origin")
@@ -471,9 +475,11 @@ class _RelayHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if self.path == "/v1/health":
             time.sleep(self.server.health_delay)
-            self._json(200, {"ok": True, "service": "taochronos-relay", "model": PUBLIC_MODEL, "models": [PUBLIC_MODEL],
-                             "logs": self.server.logs, "feedback": self.server.takes_feedback, "max_output_tokens": 32768,
-                             "limits": {"per_minute": 30, "per_day": 600}})
+            second = self.server.second
+            self._json(200, {"ok": True, "service": "taochronos-relay", "model": PUBLIC_MODEL, "models": [PUBLIC_MODEL, *([second] if second else [])],
+                             "logs": self.server.logs, "feedback": self.server.takes_feedback, "sponsor": self.server.takes_sponsors,
+                             "max_output_tokens": 32768,
+                             "limits": {"per_minute": 30, "per_day": 600, **({"questions": {second: 3}} if second else {})}})
         else:
             self._json(404, {"error": {"message": "not found"}})
 
@@ -493,6 +499,13 @@ class _RelayHandler(BaseHTTPRequestHandler):
                 self._json(status, {"error": {"message": "反馈太频繁，请稍后再试", "type": "rate_limited"}}, {"Retry-After": "10"})
                 return
             self.server.feedback.append({"type": self.headers.get("Content-Type", ""), **json.loads(raw or b"{}")})
+            self.send_response(204)
+            self._cors()
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        if self.path == "/v1/sponsor" and self.server.takes_sponsors:
+            self.server.sponsorships.append({"type": self.headers.get("Content-Type", ""), **json.loads(raw or b"{}")})
             self.send_response(204)
             self._cors()
             self.send_header("Content-Length", "0")

@@ -1,7 +1,7 @@
-# 道乃久默认服务 — the relay between chat.impf.ai and MiniMax (relay/README.md).
-# Deployed by .github/workflows/relay.yml.  Its secrets — MINIMAX_API_KEY and LOG_EXPORT_TOKEN, and SENTINEL_SALT when the
-# repository has one — are set from the repository's Actions secrets at each deployment; they are never written here or
-# anywhere in the repository.
+# 道乃久默认服务 — the relay between chat.impf.ai and MiniMax (relay/README.md), and OpenAI for the second model.
+# Deployed by .github/workflows/relay.yml.  Its secrets — MINIMAX_API_KEY and LOG_EXPORT_TOKEN; OPENAI_API_KEY,
+# SPONSOR_SECRET, SENTINEL_SALT and STATS_TOKEN when the repository has them — are set from the repository's Actions
+# secrets at each deployment; they are never written here or anywhere in the repository.
 name = "taochronos-relay"
 main = "src/index.js"
 compatibility_date = "2025-09-01"
@@ -50,6 +50,27 @@ LOGS = "on"
 # visitors' ratings of answers and what they wrote of them, sent only when they submit, kept with the records; "off"
 # stops collecting them (and the page shows no thumbs).  FEEDBACK_PER_MINUTE / FEEDBACK_PER_DAY: per visitor (10, 100)
 FEEDBACK = "on"
+# the second model, offered beside Tao-R1 only when the Worker has the secret OPENAI_API_KEY: OpenAI's GPT-6 Luna, asked
+# for by the page under OPENAI_PUBLIC_MODEL.  OPENAI_QUESTIONS_PER_DAY: questions per visitor per day (a question's tool
+# rounds and self-check are not counted again; the page names its turn), OPENAI_TOTAL_QUESTIONS_PER_DAY all visitors
+# together.  Under them, calls and tokens per visitor per day bound what one question's rounds (or a client that is not
+# the page) can spend.  "off" stops offering it
+OPENAI = "on"
+OPENAI_BASE = "https://api.openai.com/v1"
+OPENAI_MODEL = "gpt-6-luna"
+OPENAI_PUBLIC_MODEL = "GPT-6 Luna"
+OPENAI_QUESTIONS_PER_DAY = "3"
+OPENAI_TOTAL_QUESTIONS_PER_DAY = "300"
+OPENAI_PER_MINUTE = "10"
+OPENAI_CALLS_PER_DAY = "60"
+OPENAI_TOKENS_PER_DAY = "3000000"
+OPENAI_TOTAL_TOKENS_PER_DAY = "60000000"
+# visitors' own API keys and model names, given to the service (赞助, the settings' 赞助 pane): kept encrypted under the
+# secret SPONSOR_SECRET in a Durable Object of their own, never with the records; on only when that secret is set.
+# SPONSOR_PER_DAY per visitor; SPONSOR_KEEP kept at most.  "off" stops taking them (the page hides the form)
+SPONSOR = "on"
+SPONSOR_PER_DAY = "5"
+SPONSOR_KEEP = "1000"
 ALLOWED_ORIGINS = "https://chat.impf.ai,http://chat.impf.ai,https://psknlr.github.io"
 
 # per visitor and Cloudflare location, over ten seconds: the first gate on a model call or a record, before the counters
@@ -67,9 +88,18 @@ class_name = "Limiter"
 name = "LOGBOOK"
 class_name = "LogBook"
 
+# the visitors' sponsorships (relay/src/sponsors.js): apart from the records, drained nowhere
+[[durable_objects.bindings]]
+name = "SPONSORS"
+class_name = "SponsorBook"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Limiter", "LogBook"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["SponsorBook"]
 
 [observability]
 enabled = true

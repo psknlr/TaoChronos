@@ -1,9 +1,10 @@
 // Settings: the model (provider, key, model name, thinking, route), where TaoChronos runs, standing instructions,
-// the conversations' data, the site's usage (统计: stats.js), and what this page is.
+// the conversations' data, the site's usage (统计: stats.js), sponsoring the default service with a key of one's own
+// (赞助, when the site's relay takes them), and what this page is.
 
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY, PUBLISHER, PUBLISHER_EN } from "../brand.js";
 import { contextBudget } from "../context.js";
-import { allProviders, customPreset, DEFAULTS, newCustomProvider, outputLimit, providerById } from "../providers.js";
+import { allProviders, customPreset, DEFAULTS, newCustomProvider, outputLimit, providerById, relayQuestions } from "../providers.js";
 import { NOTICE } from "../records.js";
 import { h, icon, replace } from "../util.js";
 import { statsPane } from "./stats.js";
@@ -15,6 +16,7 @@ const SECTIONS = [
   ["instructions", T("指令"), "edit"],
   ["data", T("数据"), "download"],
   ["stats", T("统计"), "chart"],
+  ["sponsor", T("赞助"), "key"],
   ["about", T("关于"), "info"],
 ];
 
@@ -24,9 +26,18 @@ export function openSettings(S, ctx, section = "model") {
   const draft = structuredClone(S.settings);
   const nav = h("nav.settings-nav");
   const pane = h("div.settings-pane");
+  // 赞助 only when the site's relay takes sponsorships (its health says so)
+  const shown = () => SECTIONS.filter(([id]) => id !== "sponsor" || S.relay?.sponsor);
+  if (!shown().some(([id]) => id === current)) current = "model";
+  const go = (id) => { current = id; draw(); };
+  // what the footer says of keys: a sponsored key is the one that leaves this browser, once
+  const foot = h("span.muted", { style: { flex: 1, fontSize: "12.5px", alignSelf: "center" } });
   const draw = () => {
-    nav.replaceChildren(...SECTIONS.map(([id, label, ic]) => h("button", { type: "button", class: id === current ? "on" : "", on: { click: () => { current = id; draw(); } } }, icon(ic, "sm"), label)));
-    replace(pane, ({ model: modelPane, runtime: runtimePane, instructions: instructionsPane, data: dataPane, stats: statsPane, about: aboutPane }[current])(draft, S, ctx, draw));
+    foot.textContent = current === "sponsor" ? T("赞助的密钥只在提交时发送一次，只发给研究院的中转服务，不保存在本浏览器。")
+      : T("密钥只保存在本浏览器，只发送给所选服务（或你的本地服务）。");
+    nav.replaceChildren(...shown().map(([id, label, ic]) => h("button", { type: "button", class: id === current ? "on" : "", on: { click: () => go(id) } }, icon(ic, "sm"), label)));
+    replace(pane, ({ model: modelPane, runtime: runtimePane, instructions: instructionsPane, data: dataPane, stats: statsPane, sponsor: sponsorPane,
+      about: aboutPane }[current])(draft, S, ctx, draw, go));
     pane.scrollTop = 0;
   };
   const save = () => { ctx.save(draft); dlg.close(); };
@@ -34,7 +45,7 @@ export function openSettings(S, ctx, section = "model") {
     h("div.modal-head", h("h2", T("设置")), h("button.icon-btn", { type: "button", "aria-label": T("关闭"), on: { click: () => dlg.close() } }, icon("x"))),
     h("div.settings-layout", { style: { minHeight: 0, overflow: "hidden" } }, nav, pane),
     h("div.modal-foot",
-      h("span.muted", { style: { flex: 1, fontSize: "12.5px", alignSelf: "center" } }, T("密钥只保存在本浏览器，只发送给所选服务（或你的本地服务）。")),
+      foot,
       h("button.btn.secondary", { type: "button", on: { click: () => dlg.close() } }, T("取消")),
       h("button.btn", { type: "button", on: { click: save } }, T("保存")))));
   draw();
@@ -60,7 +71,7 @@ function seg(options, value, onChange) {
 }
 
 // ------------------------------------------------------------------ model
-function modelPane(d, S, ctx, redraw) {
+function modelPane(d, S, ctx, redraw, go) {
   const p = providerById(d.provider, d);
   const custom = p.custom ? d.customProviders.find((c) => c.id === p.id) : null;
   const sub = (x) => (x.relay ? (x.unavailable ? T("暂时连不上") : T("免密钥 · 直接提问"))
@@ -125,7 +136,7 @@ function modelPane(d, S, ctx, redraw) {
       T("列表之外的服务（自建网关、私有部署、本地模型）点“自定义 API”手动设置。")),
     h("div.form-grid",
       h("div.field", h("span.lb", T("服务商")), grid, p.note && !p.relay ? h("div.help", p.note) : null), // the default service's in its box
-      ...(p.relay ? relayFields(p) : custom ? customFields(custom, d, redraw, retitle) : presetFields(p, d)),
+      ...(p.relay ? relayFields(p, d, S, go) : custom ? customFields(custom, d, redraw, retitle) : presetFields(p, d)),
       p.relay ? null : keyField,
       p.relay ? null : h("div.field", h("span.lb", T("请求路径")),
         seg([["auto", T("自动")], ["direct", T("浏览器直连")], ["proxy", T("经本地服务转发")]], d.route, (v) => { d.route = v; }),
@@ -309,8 +320,79 @@ function instructionsPane(d, S) {
 
 // ------------------------------------------------------------------ data
 /** 道乃久默认服务: nothing to fill in, and no vendor named. */
-function relayFields(p) {
-  return [h(`div.notice${p.unavailable ? ".warn" : ".ok"}`, icon(p.unavailable ? "warn" : "check"), h("div.grow", p.note))];
+/** The default service: its note; its models to choose from, when it offers more than one (a model counted in questions
+ * says how many a day); and, when it takes them, a way to sponsor it with a key of one's own. */
+function relayFields(p, d, S, go) {
+  const out = [h(`div.notice${p.unavailable ? ".warn" : ".ok"}`, icon(p.unavailable ? "warn" : "check"), h("div.grow", p.note))];
+  const models = p.examples || [];
+  if (!p.unavailable && models.length > 1) {
+    const daily = relayQuestions();
+    const chosen = models.includes(d.models[p.id]) ? d.models[p.id] : p.default_model;
+    out.push(h("div.field", h("span.lb", T("模型")),
+      seg(models.map((m) => [m, Number(daily[m]) > 0 ? T`${m}（每天 ${daily[m]} 问）` : m]), chosen, (v) => { d.models[p.id] = v; }),
+      h("div.help", T("都无需 API Key。按问题计额度的模型，一个问题无论调用几轮工具都只计一次；用完后可换回其他模型。"))));
+  }
+  if (!p.unavailable && S.relay?.sponsor && go) {
+    out.push(h("div.help", T("有自己的 API Key，愿意让更多人免费使用？"), " ",
+      h("button.linkish", { type: "button", on: { click: () => go("sponsor") } }, T("赞助默认服务"))));
+  }
+  return out;
+}
+
+// what a visitor is told before they give a key: where it goes, who reads it, who pays, how to take it back
+const SPONSOR_NOTICE = [
+  T("密钥只经 HTTPS 发送到研究院的中转服务，在那里加密保存；不进网页、代码仓库或对话记录，也不会再显示给任何访客。"),
+  T("只有发布方能解密读取：核对可用后，用于默认服务的模型调用，费用从你的账户扣除。"),
+  T("请为此单独创建一把密钥，并在服务商处设好用量或金额上限。想撤回时，在服务商控制台删除这把密钥即可，立即生效。"),
+  T("不要提交别人的密钥，也不要提交能访问其他资源的高权限密钥。"),
+];
+
+/** 赞助: a visitor's own API key and the model it is for, given to the default service.  The key is sent once, to the
+ * relay only (app.js, sponsor), and kept nowhere on this page — not in the settings, not in this browser. */
+function sponsorPane(d, S, ctx) {
+  const input = (attrs) => h("input", { spellcheck: false, autocomplete: "off", ...attrs });
+  const provider = input({ type: "text", maxLength: 60, placeholder: T("如 OpenAI、DeepSeek（可不填）") });
+  const base = input({ type: "url", maxLength: 300, placeholder: "https://api.example.com/v1" });
+  const model = input({ type: "text", maxLength: 120, placeholder: T("如 gpt-6-luna") });
+  const key = input({ type: "password", maxLength: 400, placeholder: T("粘贴 API Key"), autocomplete: "new-password" });
+  const eye = h("button.icon-btn", { type: "button", title: T("显示/隐藏"), "aria-label": T("显示或隐藏密钥"),
+    on: { click: () => { key.type = key.type === "password" ? "text" : "password"; } } }, icon("key", "sm"));
+  const note = h("textarea", { rows: 3, maxLength: 1000, placeholder: T("用量上限、有效期、想说的话（可不填）") });
+  const contact = input({ type: "text", maxLength: 200, placeholder: T("邮箱等，密钥出问题时便于联系你（可不填）") });
+  const agree = h("input", { type: "checkbox" });
+  const status = h("div", { role: "status" });
+  const say = (ok, text) => status.replaceChildren(h(`div.notice.${ok ? "ok" : "err"}`, icon(ok ? "check" : "warn"), h("div.grow", text)));
+  const submit = h("button.btn", { type: "button" }, icon("key", "sm"), T("提交赞助"));
+  submit.addEventListener("click", async () => {
+    status.replaceChildren();
+    if (!model.value.trim()) return say(false, T("请填写模型名"));
+    if (!key.value.trim()) return say(false, T("请填写 API Key"));
+    if (!agree.checked) return say(false, T("请先勾选同意说明"));
+    submit.disabled = true;
+    const r = await ctx.sponsor({ agree: true, provider: provider.value, base_url: base.value, model: model.value, key: key.value,
+      note: note.value, contact: contact.value });
+    submit.disabled = false;
+    if (!r.ok) return say(false, r.message);
+    key.value = ""; // given: not kept on this page
+    key.type = "password";
+    agree.checked = false;
+    return say(true, T`感谢你的赞助！${PUBLISHER}会先核对这把密钥，确认可用后再用于默认服务。`);
+  });
+  return [
+    h("h3", T("赞助默认服务")),
+    h("p.lead", T`道乃久默认服务让访客无需 API Key 就能提问，费用由${PUBLISHER}承担。你可以把自己的 API Key 和模型名赞助给它，让更多人免费使用。`),
+    h("div.notice.warn", icon("shield"), h("div.grow", ...SPONSOR_NOTICE.map((t) => h("div", t)))),
+    h("div.form-grid",
+      field(T("服务商"), provider),
+      field(T("接口地址（Base URL）"), base, T("OpenAI 兼容接口的地址，须以 https:// 开头；服务商的官方地址可不填")),
+      field(T("模型名"), model),
+      h("div.field", h("label", "API Key"), h("div.inline", key, eye), h("div.help", T("只在提交时发送这一次，不保存在本浏览器"))),
+      field(T("说明"), note),
+      field(T("联系方式"), contact),
+      h("label.check", agree, h("span", T("我已阅读上面的说明，同意把这把密钥交给研究院用于默认服务，调用费用由我的账户承担"))),
+      h("div", submit),
+      status),
+  ];
 }
 
 function dataPane(d, S, ctx) {

@@ -5,7 +5,10 @@
   ack      the relay deletes what the repository now holds (after the commit is pushed, never before)
   archive  a day of the records the relay archived in its private bucket, into .archive/chat-logs/YYYY/MM/DD.jsonl
            (a local copy to read, never committed: .gitignore)
-  check    a deployed relay answers, and MiniMax accepts its key (one tiny call)
+  check    a deployed relay answers, and MiniMax accepts its key (one tiny call); and, when it offers a second model
+           (GPT-6 Luna), that OpenAI accepts its key too
+  sponsors the visitors' sponsored API keys, hinted only; --reveal ID prints one key in full, --delete ID removes one
+           (SPONSOR_SECRET in the environment; for the owner's own machine — never run --reveal in a workflow)
 
 A relay with the archive's bucket (docs/adr/0023-workers-paid.md) drains its records there itself: pull then takes
 nothing (the export says so), and ack is refused (409) — one collector deletes from the relay, never two.
@@ -32,8 +35,8 @@ UA = "taochronos-collector/1"
 
 
 def _request(url: str, *, token: str | None = None, data: dict | None = None, origin: str | None = None,
-             timeout: float = 60) -> tuple[int, dict | str]:
-    headers = {"User-Agent": UA, "Accept": "application/json"}
+             timeout: float = 60, headers: dict | None = None) -> tuple[int, dict | str]:
+    headers = {"User-Agent": UA, "Accept": "application/json", **(headers or {})}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     if origin:
@@ -136,6 +139,22 @@ def archive(relay: str, day: str, out: Path) -> dict:
     return {"day": day, "records": len(lines), "file": str(path)}
 
 
+def _second(relay: str, origin: str, model: str) -> str:
+    """One tiny call to the relay's second model, as the page makes it (a turn of its own: it counts one question of the
+    checker's address).  "ok"; "limited" when the day's questions there are spent (the key is not reached)."""
+    status, reply = _request(f"{relay}/v1/chat/completions", origin=origin, timeout=90, headers={"X-Tao-Turn": f"deploy-check-{int(time.time())}"},
+                             data={"model": model, "messages": [{"role": "user", "content": "Reply with one word: ok"}], "max_completion_tokens": 16})
+    if status == 200:
+        return "ok"
+    kind = reply.get("error", {}).get("type") if isinstance(reply, dict) else ""
+    if status == 429 and kind in ("daily_limit", "total_limit"):
+        return "limited"
+    message = reply.get("error", {}).get("message") if isinstance(reply, dict) else str(reply)[:300]
+    hint = (" — OpenAI refused OPENAI_API_KEY: update the repository secret and deploy again" if kind == "upstream_auth"
+            else " — OpenAI may not offer this model to the key: check OPENAI_MODEL in relay/wrangler.toml" if kind == "upstream_error" else "")
+    raise SystemExit(f"the relay's {model} answered {status}: {message}{hint}")
+
+
 def check(relay: str, origin: str, wait: float = 240) -> dict:
     """Health (retried while a new custom domain comes up), then one tiny completion through the relay."""
     end = time.time() + wait
@@ -160,17 +179,45 @@ def check(relay: str, origin: str, wait: float = 240) -> dict:
             hint = (" — MiniMax refused the key: a key from the international platform (platform.minimax.io) needs "
                     "UPSTREAM_BASE = \"https://api.minimax.io/v1\" in relay/wrangler.toml; a mainland key, https://api.minimax.cn/v1")
         raise SystemExit(f"the relay answered {status}: {message}{hint}")
-    return {"relay": relay, "model": health.get("model"), "logs": health.get("logs"), "limits": health.get("limits"), "call": "ok"}
+    out = {"relay": relay, "model": health.get("model"), "logs": health.get("logs"), "limits": health.get("limits"), "call": "ok"}
+    others = [m for m in health.get("models") or [] if m != health.get("model")]
+    if others:
+        out["second"] = {m: _second(relay, origin, m) for m in others}
+    return out
+
+
+def _sponsor_secret() -> str:
+    secret = "".join(os.environ.get("SPONSOR_SECRET", "").split())
+    if len(secret) < 32:
+        raise SystemExit("SPONSOR_SECRET is not set (the Worker's, at least 32 characters)")
+    return secret
+
+
+def sponsors(relay: str, *, reveal: int | None = None, delete: int | None = None) -> dict:
+    """The visitors' sponsorships: the list (keys hinted), one with its key (reveal), or one removed (delete)."""
+    if reveal and os.environ.get("GITHUB_ACTIONS") == "true":
+        raise SystemExit("--reveal prints a visitor's key: run it on your own machine, never in a workflow (its log is kept)")
+    secret = _sponsor_secret()
+    if delete:
+        status, body = _request(f"{relay}/v1/sponsors/delete", token=secret, data={"id": delete})
+    else:
+        status, body = _request(f"{relay}/v1/sponsors" + (f"?reveal={int(reveal)}" if reveal else ""), token=secret)
+    if status != 200:
+        message = body.get("error", {}).get("message") if isinstance(body, dict) else str(body)[:200]
+        raise SystemExit(f"the relay refused: HTTP {status} {message}")
+    return body
 
 
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("action", choices=["pull", "ack", "archive", "check"])
+    ap.add_argument("action", choices=["pull", "ack", "archive", "check", "sponsors"])
     ap.add_argument("--relay", default=os.environ.get("RELAY_URL") or "https://chat-api.impf.ai")
     ap.add_argument("--out", help="pull: where the records go (data/chat-logs); archive: where the day goes (.archive/chat-logs)")
     ap.add_argument("--day", help="archive: the day (YYYY-MM-DD, UTC)")
     ap.add_argument("--through", type=int, help="ack: the last record the repository holds")
     ap.add_argument("--origin", default="https://chat.impf.ai", help="check: the page's origin")
+    ap.add_argument("--reveal", type=int, help="sponsors: print this sponsorship's key in full")
+    ap.add_argument("--delete", type=int, help="sponsors: remove this sponsorship")
     args = ap.parse_args(argv)
     relay = args.relay.rstrip("/")
     if args.action == "pull":
@@ -183,6 +230,9 @@ def main(argv: list[str] | None = None) -> None:
         if not args.through:
             raise SystemExit("ack needs --through")
         _output(**ack(relay, args.through))
+    elif args.action == "sponsors":
+        # printed only, never into the workflow's outputs: a revealed key is a visitor's
+        print(json.dumps(sponsors(relay, reveal=args.reveal, delete=args.delete), ensure_ascii=False, indent=1))
     else:
         print(json.dumps(check(relay, args.origin), ensure_ascii=False))
 

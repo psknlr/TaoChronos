@@ -125,6 +125,8 @@ variables in the **Variables** tab.
 | `CLOUDFLARE_API_TOKEN` | the deploy token (2.2) | yes |
 | `CLOUDFLARE_ACCOUNT_ID` | the Account ID | yes |
 | `MINIMAX_API_KEY` | the MiniMax key | yes, for the default service |
+| `OPENAI_API_KEY` | an OpenAI key for the second model, GPT-6 Luna (3 questions per visitor per day; relay/SETUP.md) | optional |
+| `SPONSOR_SECRET` | 32+ random characters: `openssl rand -hex 32` — encrypts visitors' sponsored keys, and lets you read them | optional (**设置 → 赞助**) |
 | `LOG_EXPORT_TOKEN` | 16+ random characters: `openssl rand -hex 32` | yes |
 | `SENTINEL_SALT` | `openssl rand -hex 32` | recommended |
 | `STATS_TOKEN` | 16+ random characters | optional (**设置 → 统计**) |
@@ -529,6 +531,8 @@ Billing alerts are not caps: set one anyway (Cloudflare **Notifications → Add 
 | Task | How |
 |---|---|
 | Rotate the MiniMax key | new key → secret `MINIMAX_API_KEY` → deploy the relay (Actions, or `secret put` in 4.1) → delete the old key |
+| Rotate the OpenAI key | new key → secret `OPENAI_API_KEY` → deploy the relay → delete the old key at OpenAI |
+| Read the visitors' sponsorships | `SPONSOR_SECRET=… python3 relay/collect.py sponsors` (keys hinted); `--reveal ID` one key, on your own machine only |
 | Rotate the deploy token | new token (2.2) → secret `CLOUDFLARE_API_TOKEN` → delete the old one |
 | Rotate the collector token | new value → secret `LOG_EXPORT_TOKEN` → `secret put` on both Workers (or deploy both by Actions) |
 | Update the corpus | 3.4, then A1+A2 or B2–B5 |

@@ -7,8 +7,9 @@ import test from "node:test";
 
 import { drain, EVENTS, RECORDS } from "../../security/archive.js";
 import { WatchCore } from "../../security/sentinel.js";
-import { config, handle, normalizeFeedback, normalizeRecord, publicText, withoutReasoning } from "../src/relay.js";
-import { LimiterCore, LogBookCore } from "../src/state.js";
+import { config, handle, normalizeFeedback, normalizeRecord, openaiBody, publicText, withoutReasoning } from "../src/relay.js";
+import { normalizeSponsor, seal, SponsorBookCore, unseal } from "../src/sponsors.js";
+import { ANSWERS, LimiterCore, LogBookCore } from "../src/state.js";
 import { UsageCore } from "../../security/usage.js";
 
 /** The Durable Object SQL API's shape over node:sqlite. */
@@ -39,6 +40,7 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
   const watch = new WatchCore(sqlStore());
   const book = new LogBookCore(sqlStore());
   const usage = new UsageCore(sqlStore());
+  const sponsors = new SponsorBookCore(sqlStore());
   const calls = [];
   const pending = [];
   const bursts = [];
@@ -46,15 +48,18 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
   const deps = {
     limit: async (who, kind, limits) => limiter.hit(who, kind, limits, now()),
     // as the Durable Object does it (relay/src/index.js): the sentinel first, then the counters
-    gate: async ({ who, kind, limits, fp, a, shape, status, cfg, served, reserve, usage: counted }) => {
+    gate: async ({ who, kind, limits, fp, a, shape, status, cfg, served, reserve, usage: counted, question }) => {
       if (gateFails) throw new Error("Durable Object: daily limit reached");
       const w = fp && a ? await observe(fp, a, { shape, status }, cfg) : null;
       if (w?.blocked) return { ok: false, reason: "blocked", retry: w.retry, watch: w };
       const keys = fp ? [await WatchCore.who(fp.ip, cfg, now()), await WatchCore.who(fp.ip, cfg, now() - 86400000)] : [];
       if (served && !(fp ? limiter.wasServed(keys, now()) : limiter.served(who, served, now()))) return { ok: false, reason: "not_served", retry: 0, watch: w };
+      const q = question ? limiter.question(who, question, now()) : null;
+      if (q && !q.ok) return { ...q, watch: w };
       const gate = limiter.hit(who, kind, limits, now(), reserve);
-      if (gate.ok && kind === "chat" && keys.length) limiter.markServed(keys[0], now());
-      if (gate.ok && kind === "chat" && counted) usage.call(counted, keys[0]);
+      if (gate.ok) q?.commit?.();
+      if (gate.ok && ANSWERS.has(kind) && keys.length) limiter.markServed(keys[0], now());
+      if (gate.ok && ANSWERS.has(kind) && counted) usage.call(counted, keys[0]);
       return { ...gate, watch: w };
     },
     stats: async (days, today) => usage.stats(days, today),
@@ -64,6 +69,7 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
     watch: { observe, records: async (...a) => watch.records(...a), remove: async (...a) => watch.remove(...a), summary: async () => watch.summary(now()) },
     defer: (p) => { pending.push(Promise.resolve(p).catch(() => {})); },
     logbook: { add: async (...a) => book.add(...a), records: async (...a) => book.records(...a), remove: async (...a) => book.remove(...a) },
+    sponsors: { add: async (...a) => sponsors.add(...a), list: async () => sponsors.list(), get: async (id) => sponsors.get(id), remove: async (id) => sponsors.remove(id) },
     fetch: async (url, init) => {
       calls.push({ url, init, body: JSON.parse(init.body) });
       return upstream ? upstream(url, init) : sse(["{\"choices\":[{\"delta\":{\"content\":\"可以\"}}]}", "[DONE]"]);
@@ -77,7 +83,7 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
     return handle(request, fullEnv, deps);
   };
   const settle = () => Promise.all(pending.splice(0)); // what the Worker finishes after the answer (ctx.waitUntil)
-  return { call, calls, book, limiter, watch, usage, settle, bursts };
+  return { call, calls, book, limiter, watch, usage, sponsors, settle, bursts };
 }
 
 function sse(events) {
@@ -741,3 +747,208 @@ test("the counts are read with the stats token, from the page's origin", () => q
   const open = relay({ env: { STATS_PUBLIC: "1" } });
   assert.equal((await open.call("/v1/stats", { headers: { Origin: PAGE } })).status, 200);
 }));
+
+// ------------------------------------------------------------------ the second model (GPT-6 Luna, through OpenAI)
+const OKEY = "openai-test-key-not-a-real-one";
+const LUNA = { model: "GPT-6 Luna", messages: [{ role: "system", content: "你是道乃久" }, { role: "user", content: "桂枝汤主治什么？" }], stream: true,
+  tools: [{ type: "function", function: { name: "classics.search" } }], max_completion_tokens: 100000, stream_options: { include_usage: true } };
+const lunaRound = (ask, n = 1) => ({ ...ask, messages: [...ask.messages,
+  { role: "assistant", content: null, reasoning_details: [{ type: "reasoning.text", text: "想" }], tool_calls: [{ id: `c${n}`, type: "function", function: { name: "classics.search", arguments: "{}" } }] },
+  { role: "tool", tool_call_id: `c${n}`, content: "《伤寒论》……" }] });
+const asking = (question) => ({ ...LUNA, messages: [LUNA.messages[0], { role: "user", content: question }] });
+const turnOf = (id, headers = {}) => ({ "X-Tao-Turn": id, ...headers });
+
+test("the second model: offered only with its own key, sent to OpenAI with it, the page's other fields left behind", () => quiet(async () => {
+  const health = async (env) => (await (await relay({ env }).call("/v1/health")).json());
+  assert.deepEqual((await health({})).models, ["Tao-R1"]); // no OPENAI_API_KEY: not offered
+  const offered = await health({ OPENAI_API_KEY: OKEY });
+  assert.deepEqual(offered.models, ["Tao-R1", "GPT-6 Luna"]);
+  assert.deepEqual(offered.limits.questions, { "GPT-6 Luna": 3 });
+  assert.ok(!JSON.stringify(offered).includes(OKEY));
+  assert.deepEqual((await health({ OPENAI_API_KEY: OKEY, OPENAI: "off" })).models, ["Tao-R1"]);
+  const refused = await relay().call("/v1/chat/completions", post(LUNA)); // asked for without the key: not a model it offers
+  assert.equal(refused.status, 400);
+
+  const r = relay({ env: { OPENAI_API_KEY: OKEY }, upstream: (url) => sse([
+    '{"id":"x","model":"gpt-6-luna-2026-10-01","choices":[{"delta":{"content":"太阳中风"}}]}',
+    '{"id":"x","model":"gpt-6-luna-2026-10-01","choices":[],"usage":{"prompt_tokens":120,"completion_tokens":30}}', "[DONE]"]) });
+  const asked = { ...lunaRound(LUNA), thinking: { type: "disabled" }, temperature: 0.3, reasoning_split: true, n: 2 };
+  const res = await r.call("/v1/chat/completions", post({ ...asked, messages: asked.messages.slice(0, 2) }, turnOf("m_a")));
+  assert.equal(res.status, 200);
+  const text = await res.text();
+  assert.match(text, /"model":"GPT-6 Luna"/); // its public name, as the page asked for it
+  assert.doesNotMatch(text, /gpt-6-luna/);
+  const round = await r.call("/v1/chat/completions", post(asked, turnOf("m_a")));
+  assert.equal(round.status, 200);
+  await round.text();
+  const [first, second] = r.calls;
+  assert.equal(first.url, "https://api.openai.com/v1/chat/completions");
+  assert.equal(first.init.headers.Authorization, `Bearer ${OKEY}`); // its own key, never MiniMax's
+  assert.equal(second.body.model, "gpt-6-luna");
+  assert.equal(second.body.max_completion_tokens, 32768);
+  for (const k of ["thinking", "temperature", "reasoning_split", "n", "max_tokens"]) assert.equal(second.body[k], undefined, k);
+  assert.deepEqual(second.body.stream_options, { include_usage: true });
+  assert.equal(second.body.tools.length, 1);
+  assert.equal(second.body.messages[2].reasoning_details, undefined); // what another model sent back stays here
+  assert.equal(second.body.messages[2].tool_calls[0].id, "c1");
+  // Tao-R1 goes on to MiniMax with MiniMax's key, as before
+  await (await r.call("/v1/chat/completions", post(PAGE_ASK))).text();
+  assert.equal(r.calls[2].url, "https://api.minimax.cn/v1/chat/completions");
+  assert.equal(r.calls[2].init.headers.Authorization, `Bearer ${KEY}`);
+  // OpenAI refusing the key: told in the default service's words, the key nowhere
+  const denied = await relay({ env: { OPENAI_API_KEY: OKEY }, upstream: async () => new Response(JSON.stringify({ error: { message: `Incorrect API key provided: ${OKEY}` } }), { status: 401 }) })
+    .call("/v1/chat/completions", post(LUNA, turnOf("m_b")));
+  assert.equal(denied.status, 503);
+  const said = JSON.stringify(await denied.json());
+  assert.ok(!said.includes(OKEY) && !/openai|OpenAI/.test(said), said);
+  assert.deepEqual(openaiBody({ max_tokens: 50, messages: [{ role: "user", content: "问", extra: 1 }] }, "m", 100),
+    { model: "m", messages: [{ role: "user", content: "问" }], max_completion_tokens: 50 });
+}));
+
+test("the second model: three questions a visitor a day, however many rounds a question takes", () => quiet(async () => {
+  let t = Date.UTC(2026, 9, 10, 12, 0, 0);
+  const r = relay({ env: { OPENAI_API_KEY: OKEY }, now: () => t });
+  const call = (body, headers) => r.call("/v1/chat/completions", post(body, headers)).then(async (res) => { await res.text(); return res.status; });
+  // a turn: its question, two tool rounds, the self-check's note (a user message the page adds) — one question
+  assert.equal(await call(LUNA, turnOf("m_1")), 200);
+  assert.equal(await call(lunaRound(LUNA, 1), turnOf("m_1")), 200);
+  assert.equal(await call(lunaRound(lunaRound(LUNA, 1), 2), turnOf("m_1")), 200);
+  const review = { ...lunaRound(LUNA), messages: [...lunaRound(LUNA).messages, { role: "assistant", content: "答" }, { role: "user", content: "［自查：……］" }] };
+  assert.equal(await call(review, turnOf("m_1")), 200);
+  assert.equal(await call(asking("麻黄汤呢？"), turnOf("m_2")), 200);
+  assert.equal(await call(asking("小柴胡汤呢？"), turnOf("m_3")), 200);
+  const fourth = await r.call("/v1/chat/completions", post(asking("葛根汤呢？"), turnOf("m_4")));
+  assert.equal(fourth.status, 429);
+  const msg = (await fourth.json()).error.message;
+  assert.match(msg, /GPT-6 Luna 免费额度已用完（每人每天 3 个问题）/);
+  assert.ok(Number(fourth.headers.get("Retry-After")) > 3600);
+  assert.equal(await call(lunaRound(LUNA, 3), turnOf("m_1")), 200); // a question already counted goes on
+  assert.equal(await call(PAGE_ASK), 200); // Tao-R1 is not counted with it
+  assert.equal(await call(asking("葛根汤呢？"), turnOf("m_4", { "CF-Connecting-IP": "198.51.100.9" })), 200); // another visitor
+  // without the page's turn: a question by what was asked — asked again (the page retrying) counted once; a tool round
+  // of a question not counted today refused
+  const plain = relay({ env: { OPENAI_API_KEY: OKEY }, now: () => t });
+  const pcall = (body) => plain.call("/v1/chat/completions", post(body)).then(async (res) => { await res.text(); return res.status; });
+  assert.equal(await pcall(lunaRound(asking("问一"))), 403);
+  for (const q of ["问一", "问一", "问二", "问三"]) assert.equal(await pcall(asking(q)), 200);
+  assert.equal(await pcall(lunaRound(asking("问一"))), 200);
+  assert.equal(await pcall(asking("问四")), 429);
+  t = Date.UTC(2026, 9, 11, 0, 0, 1); // a new day
+  assert.equal(await call(asking("葛根汤呢？"), turnOf("m_5")), 200);
+  // under the questions, calls: a question's rounds are bounded too
+  const tight = relay({ env: { OPENAI_API_KEY: OKEY, OPENAI_CALLS_PER_DAY: "2" }, now: () => t });
+  const tcall = (body) => tight.call("/v1/chat/completions", post(body, turnOf("m_x"))).then(async (res) => { await res.text(); return res.status; });
+  assert.deepEqual([await tcall(LUNA), await tcall(lunaRound(LUNA)), await tcall(lunaRound(LUNA, 2))], [200, 200, 429]);
+  // a refused call counts no question
+  const minute = relay({ env: { OPENAI_API_KEY: OKEY, OPENAI_PER_MINUTE: "1" }, now: () => t });
+  const mcall = (body, id) => minute.call("/v1/chat/completions", post(body, turnOf(id))).then(async (res) => { await res.text(); return res.status; });
+  assert.deepEqual([await mcall(LUNA, "a"), await mcall(asking("二"), "b")], [200, 429]);
+  assert.equal(Number(minute.limiter.sql.exec("SELECT SUM(n) AS n FROM hits WHERE k LIKE 'd:openai-q:%'").one().n), 1);
+}));
+
+test("a record of a second-model turn keeps the model that answered", () => quiet(async () => {
+  const r = relay({ env: { OPENAI_API_KEY: OKEY } });
+  await (await r.call("/v1/chat/completions", post(LUNA, turnOf("t1")))).text();
+  const res = await r.call("/v1/logs", post({ ...turn, model: "GPT-6 Luna" }));
+  assert.equal(res.status, 204);
+  assert.equal(r.book.records(0, 10).items[0].record.model, "gpt-6-luna");
+}));
+
+// ------------------------------------------------------------------ sponsorship (赞助)
+const SECRET = "sponsor-secret-0123456789abcdef-0123456789";
+const GIFT = { v: 1, agree: true, provider: "OpenAI", base_url: "https://api.openai.com/v1?x=1#y", model: "gpt-6-luna",
+  key: "sk-proj-sponsored-0123456789abcdefXYZ", note: "每月上限 20 美元", contact: "a@example.org", extra: "dropped" };
+
+test("sponsorship: off without SPONSOR_SECRET; a key given is kept encrypted, apart from the records, read only by the owner", () => quiet(async () => {
+  const off = relay();
+  assert.equal((await (await off.call("/v1/health")).json()).sponsor, false);
+  assert.equal((await off.call("/v1/sponsor", post(GIFT))).status, 404);
+  assert.equal((await relay({ env: { SPONSOR_SECRET: "too-short" } }).call("/v1/sponsor", post(GIFT))).status, 404);
+
+  const said = [];
+  const [log, err] = [console.log, console.error];
+  console.log = (...a) => said.push(a.join(" "));
+  console.error = (...a) => said.push(a.join(" "));
+  try {
+    const r = relay({ env: { SPONSOR_SECRET: SECRET } });
+    assert.equal((await (await r.call("/v1/health")).json()).sponsor, true);
+    const res = await r.call("/v1/sponsor", post(GIFT));
+    assert.equal(res.status, 204);
+    assert.equal(res.headers.get("Access-Control-Allow-Origin"), PAGE);
+    // stored: the key sealed, a hint beside it; nothing in the records the repository collects
+    const stored = JSON.stringify(r.sponsors.sql.exec("SELECT * FROM sponsors").toArray());
+    assert.ok(!stored.includes(GIFT.key) && !stored.includes("sponsored-0123"), stored);
+    assert.equal(r.book.records(0, 10).items.length, 0);
+    // the owner's list: hinted keys only; the base URL without its query or fragment; nothing unknown kept
+    const owner = { headers: { Authorization: `Bearer ${SECRET}` } };
+    const { sponsors } = await (await r.call("/v1/sponsors", owner)).json();
+    assert.equal(sponsors.length, 1);
+    assert.deepEqual({ ...sponsors[0], received: undefined }, { id: 1, received: undefined, provider: "OpenAI", base_url: "https://api.openai.com/v1",
+      model: "gpt-6-luna", hint: "sk-…fXYZ", note: "每月上限 20 美元", contact: "a@example.org" });
+    assert.ok(!JSON.stringify(sponsors).includes(GIFT.key));
+    const one = await (await r.call("/v1/sponsors?reveal=1", owner)).json();
+    assert.equal(one.sponsor.key, GIFT.key);
+    assert.equal(one.sponsor.sealed, undefined);
+    // anyone else: nothing
+    for (const auth of [{}, { Authorization: `Bearer ${TOKEN}` }, { Authorization: `Bearer ${SECRET}x` }]) {
+      assert.equal((await r.call("/v1/sponsors?reveal=1", { headers: auth })).status, 401);
+    }
+    assert.equal((await r.call("/v1/sponsors/delete", { method: "POST", body: JSON.stringify({ id: 1 }) })).status, 401);
+    // the same key again: one sponsorship, what was said of it updated
+    assert.equal((await r.call("/v1/sponsor", post({ ...GIFT, model: "gpt-6-luna-mini" }))).status, 204);
+    const again = (await (await r.call("/v1/sponsors", owner)).json()).sponsors;
+    assert.deepEqual(again.map((x) => x.model), ["gpt-6-luna-mini"]);
+    assert.deepEqual(await (await r.call("/v1/sponsors/delete", { ...owner, method: "POST", body: JSON.stringify({ id: 1 }) })).json(), { removed: 1 });
+    assert.deepEqual((await (await r.call("/v1/sponsors", owner)).json()).sponsors, []);
+    // a secret changed since: the key cannot be opened, and the owner is told why
+    await r.call("/v1/sponsor", post(GIFT));
+    const rotated = await handle(new Request("https://chat-api.impf.ai/v1/sponsors?reveal=2", { headers: { Authorization: `Bearer ${SECRET}-new` } }),
+      { MINIMAX_API_KEY: KEY, SPONSOR_SECRET: `${SECRET}-new` }, { now: () => Date.now(), sponsors: { get: async (id) => r.sponsors.get(id) } });
+    assert.equal(rotated.status, 409);
+  } finally {
+    console.log = log;
+    console.error = err;
+  }
+  assert.ok(!said.join("\n").includes(GIFT.key), "a sponsored key is never logged");
+}));
+
+test("sponsorship: only from the page, only what makes sense, within its limits", () => quiet(async () => {
+  const r = relay({ env: { SPONSOR_SECRET: SECRET, SPONSOR_PER_DAY: "2" } });
+  assert.equal((await r.call("/v1/sponsor", post(GIFT, { Origin: "https://evil.example" }))).status, 403);
+  const bad = async (gift, re) => {
+    const res = await r.call("/v1/sponsor", post(gift));
+    assert.equal(res.status, 400, JSON.stringify(gift));
+    assert.match((await res.json()).error.message, re);
+  };
+  await bad({ ...GIFT, agree: false }, /同意/);
+  await bad({ ...GIFT, key: "sk proj with spaces" }, /API Key/);
+  await bad({ ...GIFT, key: "short" }, /API Key/);
+  await bad({ ...GIFT, model: "  " }, /模型名/);
+  await bad({ ...GIFT, base_url: "http://api.example.com/v1" }, /https/);
+  await bad({ ...GIFT, base_url: "https://user:pw@api.example.com/v1" }, /https/);
+  await bad("not json", /JSON/);
+  assert.equal((await r.call("/v1/sponsor", post("x".repeat(9000)))).status, 413);
+  assert.equal(r.sponsors.list().length, 0);
+  assert.equal((await r.call("/v1/sponsor", post({ ...GIFT, key: "sk-one-0123456789abcdef" }))).status, 204);
+  assert.equal((await r.call("/v1/sponsor", post({ ...GIFT, key: "sk-two-0123456789abcdef" }))).status, 204);
+  const third = await r.call("/v1/sponsor", post({ ...GIFT, key: "sk-three-0123456789abcdef" }));
+  assert.equal(third.status, 429);
+  assert.match((await third.json()).error.message, /每人每天 2 次/);
+  const full = relay({ env: { SPONSOR_SECRET: SECRET, SPONSOR_KEEP: "1" } });
+  assert.equal((await full.call("/v1/sponsor", post(GIFT))).status, 204);
+  assert.equal((await full.call("/v1/sponsor", post({ ...GIFT, key: "sk-another-0123456789" }, { "CF-Connecting-IP": "198.51.100.3" }))).status, 503);
+  assert.equal((await full.call("/v1/sponsor", post({ ...GIFT, model: "m2" }))).status, 204); // the same key: an update, not a new one
+}));
+
+test("sponsorship: sealing round-trips under its secret only; the form's fields are reduced to what is known", async () => {
+  const sealed = await seal("sk-abc-0123456789", SECRET);
+  assert.match(sealed, /^v1\./);
+  assert.notEqual(sealed, await seal("sk-abc-0123456789", SECRET)); // a fresh IV each time
+  assert.equal(await unseal(sealed, SECRET), "sk-abc-0123456789");
+  assert.equal(await unseal(sealed, `${SECRET}x`), null);
+  assert.equal(await unseal("not sealed", SECRET), null);
+  const { sponsor } = normalizeSponsor({ ...GIFT, note: ` ${"说".repeat(2000)} ` });
+  assert.deepEqual(Object.keys(sponsor).sort(), ["base_url", "contact", "key", "model", "note", "provider"]);
+  assert.equal(sponsor.note.length, 1000);
+  assert.deepEqual(normalizeSponsor({ ...GIFT, base_url: "" }).sponsor.base_url, "");
+});

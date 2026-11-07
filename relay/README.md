@@ -19,6 +19,8 @@
 | `GET /v1/logs/export`、`POST /v1/logs/ack` | 仓库的收集器取走记录、确认已提交后删除（需 `LOG_EXPORT_TOKEN`） |
 | `GET /v1/security/export`、`POST /v1/security/ack`、`GET /v1/security/summary` | 哨兵记下的可疑请求事件（取走、确认删除）与当前概览（按分数排列的访客、正在被拒绝的地址）；需 `LOG_EXPORT_TOKEN` |
 | `POST /v1/security/csp` | 浏览器上报的内容安全策略违规（存为事件） |
+| `POST /v1/sponsor` | 访客**赞助**的自己的 API Key 与模型名（「设置 → 赞助」，勾选同意后才发送）：只保留已知字段，密钥以 `SPONSOR_SECRET` 派生的密钥 AES-GCM 加密，存在单独的 Durable Object（`SponsorBook`）里——**不与对话记录存在一起，不会被 chat-logs 工作流取进仓库**，不写日志；同一把密钥再交一次只更新说明。每人每天 `SPONSOR_PER_DAY` 次，最多存 `SPONSOR_KEEP` 条；没有 `SPONSOR_SECRET` 时关闭 |
+| `GET /v1/sponsors`、`POST /v1/sponsors/delete` | 发布方查看赞助（密钥只显示首尾几位）、`?reveal=编号` 解密一把、删除一条；需 `Authorization: Bearer SPONSOR_SECRET`（`python3 relay/collect.py sponsors`） |
 | `GET /v1/stats?days=N` | 网页「设置 → 统计」读取的提问与模型调用次数（按天、国家与省份；需 `STATS_TOKEN`，`STATS_PUBLIC = "1"` 时公开；docs/web.md） |
 
 访客按“IP + 日期”的哈希计数，IP 本身不保存；记录里没有 IP。一个问题通常要调用模型几次（每轮工具调用一次）。模型回复末尾报告的
@@ -36,6 +38,36 @@
 一句话（检查哪个选项、稍后再试或改用自己的 Key），上游原文只以状态码记进 Worker 日志。对话记录（研究院自己的）仍记下实际作答的
 模型：中转把公开名换回 `MODELS` 的模型名。
 
+## 第二个模型：GPT-6 Luna（OpenAI）
+
+仓库有 Secret `OPENAI_API_KEY` 时，默认服务在 Tao-R1 之外再提供 **GPT-6 Luna**（OpenAI 的 `gpt-6-luna`）：health 的 `models`
+多出它的公开名（`OPENAI_PUBLIC_MODEL`），`limits.questions` 写明每人每天可问几个问题；网页「设置 → 模型」在默认服务下显示两个模型供选择。
+OpenAI 密钥与 MiniMax 密钥一样**只是这个 Worker 的加密机密**，由 relay 工作流从仓库 Secret 写入，不进网页、仓库或日志。
+
+- 网页按公开名请求，中转换成 `OPENAI_MODEL`，只把 OpenAI 认得的字段转过去（MiniMax 的 `reasoning_split`、网页的 `thinking`、温度等留在中转），
+  输出上限同 `MAX_OUTPUT_TOKENS`；回复里的模型名换回公开名，OpenAI 的报错换成默认服务自己的话。
+- **按问题计额度**：每人每天 `OPENAI_QUESTIONS_PER_DAY` 个问题（默认 3），全体每天 `OPENAI_TOTAL_QUESTIONS_PER_DAY` 个。一个问题要调用
+  几轮工具、还可能自查一次，网页在这一轮的每次调用都带上请求头 `X-Tao-Turn`（这一轮回答的编号），同一轮只计一次；网页因故重发同一问题也不重复计。
+  不带这个头的请求按最后一个问题的内容计，工具轮必须属于今天已计的问题。问题之下另有每人每天的调用次数与 token 上限
+  （`OPENAI_CALLS_PER_DAY`、`OPENAI_TOKENS_PER_DAY`……），约束一个问题最多能花多少，也约束不是网页的客户端。
+- 不想再提供：`OPENAI = "off"` 并重新部署（网页随之只显示 Tao-R1）；或在 Cloudflare 删除机密 `OPENAI_API_KEY`。
+- 想让访客看不到上游的名字：把 `OPENAI_PUBLIC_MODEL` 改成自己的名字（如 `Tao-Luna`）。
+
+## 赞助：访客交来自己的 API Key
+
+「设置 → 赞助」让访客把自己的 API Key 与模型名交给默认服务，让更多人免费使用。提交前网页说明密钥去哪里、谁能读、费用由谁承担、怎样撤回，
+访客勾选同意后才发送，密钥不存进浏览器。中转只做三件事：校验字段、加密保存、交给发布方查看——**它从不自己调用访客的密钥**，
+是否用于默认服务由发布方核对后决定。查看与删除：
+
+```bash
+SPONSOR_SECRET=… python3 relay/collect.py sponsors              # 列表：编号、模型、服务商、密钥首尾几位
+SPONSOR_SECRET=… python3 relay/collect.py sponsors --reveal 3   # 一把完整的密钥（只在自己的电脑上运行，工作流里会被拒绝）
+SPONSOR_SECRET=… python3 relay/collect.py sponsors --delete 3
+```
+
+更换 `SPONSOR_SECRET` 后，之前存下的密钥无法再解密（`--reveal` 会说明），需要的话先取出再换。停止接收：`SPONSOR = "off"` 并重新部署
+（网页随之不再显示「赞助」）。
+
 ## 启用（一次）
 
 分步教程——每一步在哪里点、怎样验证、常见报错怎么处理——见 **[SETUP.md](SETUP.md)**。概要：
@@ -45,6 +77,8 @@
    - `CLOUDFLARE_ACCOUNT_ID`：Workers & Pages → Account Details；
    - `MINIMAX_API_KEY`：建议为网站单独创建的按量付费密钥（从账户余额扣费，余额就是费用上限）；
    - `LOG_EXPORT_TOKEN`：收集器令牌，32 位以上随机串（如 `openssl rand -hex 32`）。
+
+   可选：`OPENAI_API_KEY`（第二个模型 GPT-6 Luna，见上文）；`SPONSOR_SECRET`（32 位以上随机串，打开「赞助」，见上文）。
 
    Secrets 保存后加密存放、无法再查看，只在工作流运行时注入。
 2. 合并含 `relay/` 改动的提交到 main，或运行 **Actions → relay → Run workflow**。它先跑测试，再部署 Worker、写入两个机密，
