@@ -1384,6 +1384,8 @@ const threadCtx = {
   get runtimeState() { return S.runtimeState; },
   get needsKey() { return needsKey(); },
   get relayActive() { return Boolean(S.relay?.ok && activeProvider(S.settings).relay); },
+  get canSponsor() { return canSponsor(); },
+  onSponsor: () => openSponsor(),
   get editing() { return S.ui.editing; },
   get running() { return Boolean(S.running); },
   get mode() { return S.ui.mode; },
@@ -1606,6 +1608,16 @@ function renderComposerHint() {
   }
   el.composer.classList.toggle("diet", diet);
   el.newDiet?.classList.toggle("active", diet);
+  if (el.newSponsor) el.newSponsor.hidden = !canSponsor();
+}
+
+/** Does the site's relay take sponsorships (its health says so)?  Then the way to 赞助 is on the opening screen and in
+ * the sidebar, not only in the settings. */
+const canSponsor = () => Boolean(S.relay?.ok && S.relay.sponsor);
+
+function openSponsor() {
+  el.app.classList.remove("sidebar-open"); // a phone's sidebar, over the page
+  openSettings(S, settingsCtx, "sponsor");
 }
 
 function renderAttachments() {
@@ -2148,6 +2160,11 @@ function wireChrome() {
   if (el.newDiet) {
     el.newDiet.querySelector("#new-diet-icon")?.replaceWith(icon("leaf"));
     el.newDiet.addEventListener("click", () => newChat(DIET_MODE));
+    // 赞助默认服务, under it: shown once the relay says it takes sponsorships (renderComposer)
+    el.newSponsor = h("button#new-sponsor.new-sponsor", { type: "button", title: T("赞助默认服务：交一把自己的 API Key，让更多人免费提问"),
+      on: { click: openSponsor } }, icon("heart"), h("span.nm", T("赞助默认服务")));
+    el.newSponsor.hidden = true;
+    el.newDiet.after(el.newSponsor);
   }
   el.collapse.addEventListener("click", toggleSidebar);
   el.toggleSidebar.addEventListener("click", toggleSidebar);

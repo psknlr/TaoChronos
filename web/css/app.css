@@ -1032,6 +1032,25 @@ dialog::backdrop { background: var(--scrim); backdrop-filter: blur(2px); }
 .diet-entry-card .grow { display: grid; gap: 2px; min-width: 0; }
 .diet-entry-card b { color: var(--jade); font-weight: 600; }
 .diet-entry-card .grow span { font-size: 13px; color: var(--ink-3); }
+/* 赞助默认服务: the way to sponsor the default service with a key of one's own (settings.js, sponsorPane) */
+.new-sponsor {
+  display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-radius: 11px;
+  border: 1px dashed var(--line-2); background: transparent; color: var(--ink-2); font-weight: 520;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.new-sponsor[hidden] { display: none; }
+.new-sponsor:hover { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent-soft) 50%, transparent); }
+.new-sponsor .icon { color: var(--accent); }
+.new-sponsor .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sponsor-entry-card {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 10px; padding: 12px 14px; border-radius: 14px; text-align: start;
+  border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-2); animation: rise .6s .35s var(--ease) both;
+}
+.sponsor-entry-card:hover { border-color: var(--accent); color: var(--ink); }
+.sponsor-entry-card > .icon:first-child { color: var(--accent); }
+.sponsor-entry-card .grow { display: grid; gap: 2px; min-width: 0; }
+.sponsor-entry-card b { color: var(--accent); font-weight: 600; }
+.sponsor-entry-card .grow span { font-size: 13px; color: var(--ink-3); }
 .diet-hero .diet-seal { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--jade-soft); color: var(--jade); }
 .diet-hero .diet-seal .icon { width: 30px; height: 30px; }
 .diet-hero .model-badge b { color: var(--jade); }

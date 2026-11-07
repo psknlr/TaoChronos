@@ -1392,4 +1392,6 @@ export default {
   "赞助信息不是有效的 JSON": "The sponsorship is not valid JSON",
   "连接成功 · {0} · {1} · {2}（未提问，不占用今天的问题数）": "Connected · {0} · {1} · {2} (no question asked: today's questions are untouched)",
   "默认服务暂时不提供这个模型": "The default service does not offer this model at the moment",
+  "交一把自己的 API Key 和模型名，让更多人免费提问；密钥加密保存，只有发布方能读取": "Give an API key and model name of your own so more people can ask for free; the key is stored encrypted, readable only by the publisher",
+  "赞助默认服务：交一把自己的 API Key，让更多人免费提问": "Sponsor the default service: give an API key of your own so more people can ask for free",
 };
