@@ -65,6 +65,7 @@ function hero(ctx) {
     h("div.starters", (info?.starters || DEFAULT_STARTERS).map((s) =>
       h("button.starter", { type: "button", on: { click: () => ctx.onStarter(T(s.prompt)) } }, h("b", T(s.title)), T(s.prompt)))),
     ctx.onDietMode ? dietEntry(ctx) : null,
+    ctx.canSponsor ? sponsorEntry(ctx) : null,
     ctx.needsKey
       ? h("p.keyhint", T`开始前请先为 ${ASSISTANT} `, h("button", { type: "button", on: { click: ctx.onOpenSettings } }, T("配置底层模型的 API")),
         T("。也可以不配置模型，直接在右侧“工具台”使用全部功能。"))
@@ -73,6 +74,14 @@ function hero(ctx) {
         : h("p.keyhint", T("Enter 发送 · Shift+Enter 换行 · "), h("kbd", "Ctrl"), " ", h("kbd", "K"), T(" 新对话")),
     h("p.publisher", PUBLISHED_BY),
   );
+}
+
+/** The way to sponsor the default service (设置 → 赞助), on the opening screen while the site's relay takes sponsorships. */
+function sponsorEntry(ctx) {
+  return h("button.sponsor-entry-card", { type: "button", on: { click: ctx.onSponsor } },
+    icon("heart", "sm"),
+    h("span.grow", h("b", T("赞助默认服务")), h("span", T("交一把自己的 API Key 和模型名，让更多人免费提问；密钥加密保存，只有发布方能读取"))),
+    icon("chev", "sm"));
 }
 
 const DEFAULT_STARTERS = [

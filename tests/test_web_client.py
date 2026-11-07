@@ -3326,6 +3326,8 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
             ctx, page, errors = visit()
             page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('默认服务')", timeout=10000)
             assert "道乃久默认服务" in page.get_attribute("#model-chip", "title")
+            # a relay that takes no sponsorships: no way to 赞助 anywhere
+            assert page.query_selector(".sponsor-entry-card") is None and not page.is_visible("#new-sponsor")
             page.fill("#input", "桂枝汤主治什么？请给出原文。")
             page.keyboard.press("Enter")
             page.wait_for_selector("#consent[open]", timeout=10000)
@@ -3452,6 +3454,16 @@ def test_the_default_service_offers_a_second_model_and_takes_sponsorships(tmp_pa
             page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
             page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
             page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('默认服务')", timeout=10000)
+
+            # 赞助 in plain sight: a card on the opening screen and a button in the sidebar, each to the settings' pane
+            page.wait_for_selector(".hero .sponsor-entry-card", timeout=10000)
+            assert page.is_visible("#new-sponsor")
+            for way in (".hero .sponsor-entry-card", "#new-sponsor"):
+                page.click(way)
+                page.wait_for_selector("#settings[open] .settings-nav button.on:has-text('赞助')", timeout=5000)
+                assert page.inner_text(".settings-pane h3") == "赞助默认服务"
+                page.keyboard.press("Escape")
+                page.wait_for_selector("#settings[open]", state="detached", timeout=5000)
 
             # the settings: the default service's two models, the second with its questions a day; chosen and saved
             page.click("#settings-btn")
