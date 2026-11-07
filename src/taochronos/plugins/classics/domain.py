@@ -28,6 +28,8 @@ from ...protocol.documents import YearRange
 from ...protocol.yamlio import load_yaml
 from .aliases import AliasIndex
 from .cruxes import load_cruxes
+from .repairs import TABLE as REPAIRS_TABLE
+from .repairs import ConversionRepairs
 
 CATEGORY_PRIORITY = [
     "formula",
@@ -612,6 +614,7 @@ class DomainPack:
         self.extra_lexicons = list(extra_lexicons)
         self.periods = Periods(_load(self.root / "periods.yaml"))
         self.script = ScriptTable(self.root / "script")
+        self.repairs = ConversionRepairs.load(self.root / "script" / REPAIRS_TABLE)  # put right in the text, at ingest
         self.variants = VariantTable(_load(self.root / "variants.yaml"), self.script)
         extra = [p for d in self.extra_lexicons for p in sorted((self.root / d).glob("*.yaml"))]
         self.lexicon = Lexicon(sorted((self.root / "lexicon").glob("*.yaml")), normalize=self.variants.normalize_text,

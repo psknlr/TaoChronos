@@ -20,6 +20,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable, Iterator
 
+from ..repairs import repair_rows
 from ..segment import split_long
 from .apparatus import Attacher, ParagraphState, apparatus_rules, cut, describe, heading_rules, paragraph_rules
 from .dedupe import SketchIndex, classify, han, sample
@@ -534,8 +535,9 @@ def document_book_record(entry: dict[str, Any], source: dict[str, Any], version:
 
 def ingest_documents(store: Any, catalog: dict[str, Any], docs: Iterable[Document], normalize: Callable[[str], str],
                      fingerprint: str, *, chronology: Any = None, dynasty_of: Any = None, version: str | None = None,
-                     only: Iterable[str] | None = None, log: Callable[[str], None] = print) -> dict[str, Any]:
-    """Ingest the admitted documents of a catalog; excluded and duplicate ones are removed from the store."""
+                     only: Iterable[str] | None = None, log: Callable[[str], None] = print, repairs: Any = None) -> dict[str, Any]:
+    """Ingest the admitted documents of a catalog; excluded and duplicate ones are removed from the store; ``repairs``
+    (``repairs.ConversionRepairs``) puts conversion errors right as the passages enter it."""
     source = catalog["source"]
     entries = {b["code"]: b for b in catalog["books"]}
     wanted = {x.lower() for x in only} if only else None
@@ -553,7 +555,9 @@ def ingest_documents(store: Any, catalog: dict[str, Any], docs: Iterable[Documen
             bucket[doc.code] = entry.get("excluded_reason") or entry.get("duplicate_of") or entry.get("skipped_reason")
             continue
         info: dict[str, Any] = {}
-        rows = document_rows(doc, entry, chronology=chronology, dynasty_of=dynasty_of, report=info)
+        rows, repaired = repair_rows(document_rows(doc, entry, chronology=chronology, dynasty_of=dynasty_of, report=info), repairs)
+        if repaired:
+            info["repaired"] = repaired
         store.delete_book(entry["id"], normalize)
         store.put_book(document_book_record(entry, source, version), source=source["id"])
         store.add_passages(rows, normalize)

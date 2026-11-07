@@ -526,7 +526,10 @@ pre.json { margin: 0; max-height: 280px; overflow: auto; background: var(--code-
   width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--surface); box-shadow: var(--shadow);
   display: grid; place-items: center; color: var(--ink-2); opacity: 0; pointer-events: none; transition: opacity .2s, translate .2s;
 }
-.to-bottom.show { opacity: 1; pointer-events: auto; }
+/* shown semi-transparent so the text beneath it stays readable; full strength under the pointer or keyboard focus */
+.to-bottom.show { opacity: .45; pointer-events: auto; }
+.to-bottom.show:hover, .to-bottom.show:focus-visible { opacity: 1; }
+@media (hover: none) { .to-bottom.show { opacity: .6; } }
 
 /* ------------------------------------------------------------------ composer */
 .composer-wrap { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 16px 14px; z-index: 5; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--paper) 36px); }

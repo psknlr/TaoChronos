@@ -251,6 +251,44 @@ class CorpusStore:
             n += 1
         return n
 
+    def repair(self, repairs: Any, normalize: Callable[[str], str], fingerprint: str) -> dict[str, Any]:
+        """Apply the conversion repairs (``repairs.ConversionRepairs``) to the passages already stored — their text and
+        locator — keeping the full-text index and the claim cache in step.  The index must have been built with the
+        normaliser given (its entries are deleted with the tokens they were added with).  Returns the passages and
+        repairs per book."""
+        if self.meta("normalizer") not in (None, fingerprint):
+            raise ValueError("the store was indexed with another normaliser: run `taochronos corpus reindex` first")
+        report: dict[str, Any] = {"passages": 0, "repairs": 0, "books": {}}
+        forms = repairs.wrong_forms if repairs else []
+        if not forms:
+            return report
+        built = self.meta("index") != "pending"
+        indexed_to = int(self.meta("index_rid") or 0)
+        cond = " OR ".join(["instr(text, ?) > 0 OR instr(locator, ?) > 0"] * len(forms))
+        args = [f for f in forms for _ in (0, 1)]
+        rows = self.db.execute(f"SELECT rid, id, book_id, text, locator FROM passages WHERE {cond} ORDER BY rid", args).fetchall()
+        cur = self.db.cursor()
+        for rid, pid, book, text, locator in rows:
+            new_text, a = repairs.fix(text)
+            new_locator, b = repairs.fix_value(json.loads(locator))
+            if not (a or b):
+                continue
+            if a and (built or rid <= indexed_to):
+                cur.execute("INSERT INTO grams(grams, rowid, g) VALUES('delete', ?, ?)", (rid, grams(normalize(text))))
+                cur.execute("INSERT INTO grams(rowid, g) VALUES (?, ?)", (rid, grams(normalize(new_text))))
+            cur.execute("UPDATE passages SET text=?, locator=? WHERE rid=?", (new_text, _dump_set(new_locator), rid))
+            cur.execute("DELETE FROM claim_cache WHERE passage_id=?", (pid,))
+            entry = report["books"].setdefault(book, {"passages": 0, "repairs": 0})
+            entry["passages"] += 1
+            entry["repairs"] += a + b
+            report["passages"] += 1
+            report["repairs"] += a + b
+        if report["passages"] and self.meta("counted"):
+            self.count()  # the characters it keeps changed
+        self.set_meta("repairs", repairs.fingerprint)
+        self.db.commit()
+        return report
+
     def reindex(self, normalize: Callable[[str], str], fingerprint: str, progress: Callable[[int], None] | None = None) -> int:
         """Rebuild the FTS index (e.g. after the variant table changed)."""
         self.db.execute("DROP TABLE IF EXISTS grams")
