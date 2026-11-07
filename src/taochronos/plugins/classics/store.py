@@ -253,17 +253,17 @@ class CorpusStore:
 
     def repair(self, repairs: Any, normalize: Callable[[str], str], fingerprint: str) -> dict[str, Any]:
         """Apply the conversion repairs (``repairs.ConversionRepairs``) to the passages already stored — their text and
-        locator — keeping the full-text index and the claim cache in step.  The index must have been built with the
-        normaliser given (its entries are deleted with the tokens they were added with).  Returns the passages and
-        repairs per book."""
-        if self.meta("normalizer") not in (None, fingerprint):
+        locator — keeping the full-text index and the claim cache in step.  An index must have been built with the
+        normaliser given (its entries are deleted with the tokens they were added with); a store whose index is still
+        to be built (the site's, ``meta.index = pending``) has none to keep.  Returns the passages and repairs per book."""
+        built = self.meta("index") != "pending"
+        indexed_to = int(self.meta("index_rid") or 0)
+        if (built or indexed_to) and self.meta("normalizer") not in (None, fingerprint):
             raise ValueError("the store was indexed with another normaliser: run `taochronos corpus reindex` first")
         report: dict[str, Any] = {"passages": 0, "repairs": 0, "books": {}}
         forms = repairs.wrong_forms if repairs else []
         if not forms:
             return report
-        built = self.meta("index") != "pending"
-        indexed_to = int(self.meta("index_rid") or 0)
         cond = " OR ".join(["instr(text, ?) > 0 OR instr(locator, ?) > 0"] * len(forms))
         args = [f for f in forms for _ in (0, 1)]
         rows = self.db.execute(f"SELECT rid, id, book_id, text, locator FROM passages WHERE {cond} ORDER BY rid", args).fetchall()

@@ -67,6 +67,11 @@ git add cloud/store.json cloud/ATTRIBUTION.md && git commit … # 合入 main �
 
 没有有效令牌时上传接口一律拒绝；令牌只以其 sha256 登记，泄露了也只能往 KV 里写分片（部署时逐片按 `store.json` 校验）。
 
+**只修正转换错误**（`domains/classics/script/conversion_repairs.tsv`，香港腳→腳氣、短劇→小品……，见 docs/data.md）不需要本机的全量库
+和上传令牌：Actions → **store** → Run workflow（`main`）。`.github/workflows/store.yml` 从 KV 取回 `store.json` 指定的语料并校验，
+`taochronos web repair` 修复、重新压缩并写出新的 `store.json` 与 `ATTRIBUTION.md`，用 API 令牌把新分片写入 KV（各片读回校验）后才提交
+清单，再启动网站部署（新镜像）与 D1 导入。旧语料仍以原键留在 KV：回退只需还原那次提交。没有可修的就什么都不写。
+
 ## 费用（Cloudflare 公布的价格）
 
 - Workers Paid：每月 5 美元，含 1000 万次请求、3000 万 CPU 毫秒，以及容器的 25 GiB·小时内存、375 vCPU·分钟、200 GB·小时磁盘。

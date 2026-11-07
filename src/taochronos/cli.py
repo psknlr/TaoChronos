@@ -1730,7 +1730,7 @@ def cmd_web(args: argparse.Namespace) -> None:
                          repairs=_repairs(home)))
         return
     if args.action == "store":
-        from .plugins.classics.webcorpus import compress_store, server_attribution, server_store
+        from .plugins.classics.webcorpus import package_store, server_attribution, server_store
 
         _, data = _corpus_paths(args)
         db_path = data / "corpus" / "tcm.sqlite"
@@ -1740,16 +1740,56 @@ def cmd_web(args: argparse.Namespace) -> None:
         work = data / "cloud"
         work.mkdir(parents=True, exist_ok=True)
         info = server_store(db_path, work / "tcm.sqlite")
-        packed = compress_store(work / "tcm.sqlite", work / "tcm.sqlite.xz")
-        final = work / f"{packed['sha256']}.sqlite.xz"
-        (work / "tcm.sqlite.xz").replace(final)
-        manifest = {"format": 1, "key": f"store/{packed['sha256']}/", **packed,
-                    **{k: info[k] for k in ("books", "passages", "characters", "sources", "excluded")}}
+        final, manifest = package_store(work / "tcm.sqlite", work, info)
         out.mkdir(parents=True, exist_ok=True)
         (out / "store.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         (out / "ATTRIBUTION.md").write_text(server_attribution(work / "tcm.sqlite", info), encoding="utf-8")
         (work / "tcm.sqlite").unlink()
         _out({"file": str(final), "manifest": str(out / "store.json"), **manifest})
+        return
+    if args.action == "repair":  # the conversion repairs applied to the site's store as cloud/store.json names it (store.yml)
+        import sqlite3
+
+        from .chat.cloud import unpack
+        from .plugins.classics.domain import DomainPack
+        from .plugins.classics.store import CorpusStore
+        from .plugins.classics.webcorpus import package_store, server_attribution, site_store_info
+
+        manifest_path = Path(args.manifest or home / "cloud" / "store.json")
+        old = json.loads(manifest_path.read_text(encoding="utf-8"))
+        _, data = _corpus_paths(args)
+        work = data / "cloud"
+        work.mkdir(parents=True, exist_ok=True)
+        xz = Path(args.store) if args.store else work / f"{old['sha256']}.sqlite.xz"
+        path = work / "tcm.sqlite"
+        unpack(xz, path, old)  # checked against the manifest's digests
+        pack = DomainPack(home / "domains" / "classics")
+        store = CorpusStore(path)
+        try:
+            report = store.repair(pack.repairs, pack.variants.normalize_text, pack.variants.fingerprint)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from None
+        finally:
+            store.close()
+        result = {"previous": old["sha256"], "repairs_table": pack.repairs.fingerprint, "passages": report["passages"],
+                  "repairs": report["repairs"], "books": len(report["books"])}
+        if not report["passages"]:
+            path.unlink()
+            _out({**result, "note": "nothing to repair: the store and cloud/store.json are left as they are"})
+            return
+        db = sqlite3.connect(path)  # one compact file without a journal, as `web store` writes it
+        db.execute("PRAGMA journal_mode=DELETE")
+        db.execute("VACUUM")
+        db.close()
+        info = {**site_store_info(path), "excluded": old.get("excluded") or {}}
+        final, manifest = package_store(path, work, info)
+        out = Path(args.output) if args.output else manifest_path.parent
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "store.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        (out / "ATTRIBUTION.md").write_text(server_attribution(path, info), encoding="utf-8")
+        path.unlink()
+        _out({**result, "file": str(final), "manifest": str(out / "store.json"), "sha256": manifest["sha256"],
+              "characters": manifest["characters"], "parts": len(manifest["parts"])})
         return
     if args.action == "upload":
         from .chat.cloud import upload
@@ -2157,10 +2197,10 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--open", action="store_true", help="open the client in a browser")
     sp.add_argument("--verbose", action="store_true", help="log requests (paths only)")
     sp = add("web", cmd_web, "the web chat client: build the static site; pack the 要籍语料 it carries (canon: rank the 要籍 anew "
-                             "and pack them); write and upload the full corpus its server carries (Cloudflare)", profile=False)
-    sp.add_argument("action", choices=["build", "pack", "canon", "store", "upload"])
+                             "and pack them); write, upload and repair the full corpus its server carries (Cloudflare)", profile=False)
+    sp.add_argument("action", choices=["build", "pack", "canon", "store", "upload", "repair"])
     sp.add_argument("-o", "--output", help="build: the site directory (default _site); pack, canon: the pack directory (default "
-                                           "corpus/web); store: where store.json and ATTRIBUTION.md go (default cloud)")
+                                           "corpus/web); store, repair: where store.json and ATTRIBUTION.md go (default cloud)")
     sp.add_argument("--data", help="pack, canon, store: the data directory holding the full corpus store")
     sp.add_argument("--size", type=int, help="canon: how many works the 要籍 list keeps (default 535)")
     sp.add_argument("--extend", action="store_true", help="canon: keep the works already listed, with their ranks, and append "
@@ -2168,7 +2208,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--site", default="https://chat.impf.ai", help="build: the site's address (robots.txt, sitemap.xml); "
                                                                  "upload: the site whose Worker takes the store "
                                                                  "(the token: $TAOCHRONOS_STORE_TOKEN)")
-    sp.add_argument("--manifest", help="upload: the store's manifest (default cloud/store.json)")
+    sp.add_argument("--manifest", help="upload, repair: the store's manifest (default cloud/store.json)")
+    sp.add_argument("--store", help="repair: the compressed store the manifest names (default <data>/cloud/<sha256>.sqlite.xz)")
     sp.add_argument("--web", help="the client's sources (default: <home>/web)")
     sp.add_argument("--pyodide", choices=["self", "cdn"], default="self",
                     help="self: put the pinned Pyodide files in the site (default); cdn: load them from jsDelivr")

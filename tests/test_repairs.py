@@ -149,3 +149,50 @@ def test_the_committed_web_pack_holds_no_conversion_error(repairs):
     with gzip.open(pack, "rt", encoding="utf-8") as fh:
         left = [row["id"] for row in map(json.loads, fh) if repairs.fix_row(row)[1]]
     assert not left, f"{len(left)} passages to repair, e.g. {left[:5]}: taochronos web pack (it applies the repairs)"
+
+
+def test_web_repair_puts_the_sites_store_right_and_writes_its_manifest(tmp_path, pack, capsys):
+    """`taochronos web repair` (store.yml): the site's compressed store as cloud/store.json names it — its index still to
+    be built, made with an older normaliser — repaired, compressed again, with a new manifest and credits."""
+    from taochronos.chat.cloud import unpack
+    from taochronos.cli import main
+    from taochronos.plugins.classics.webcorpus import package_store, site_store_info
+
+    work = tmp_path / "data" / "cloud"
+    work.mkdir(parents=True)
+    site = tmp_path / "site.sqlite"
+    store = CorpusStore(site, create=True)
+    store.put_book({"id": "t_a", "title": "测试方", "source": {"license": "CC0 1.0"}}, source="jicheng")
+    store.add_passages(_rows(), pack.variants.normalize_text, index=False)
+    for key, value in (("normalizer", "older"), ("index", "pending"), ("index_rid", "0"), ("edition", "full")):
+        store.set_meta(key, value)
+    store.count()
+    store.commit()
+    store.close()
+    info = {**site_store_info(site), "excluded": {"aeam": 7}}
+    _, old = package_store(site, work, info)
+    cloud = tmp_path / "cloud"
+    cloud.mkdir()
+    (cloud / "store.json").write_text(json.dumps(old), encoding="utf-8")
+    argv = ["--home", str(HOME), "web", "repair", "--data", str(tmp_path / "data"), "--manifest", str(cloud / "store.json")]
+    assert main(argv) in (0, None)
+    report = json.loads(capsys.readouterr().out)
+    assert report["previous"] == old["sha256"] and report["passages"] == 3 and report["repairs"] == 4
+    new = json.loads((cloud / "store.json").read_text(encoding="utf-8"))
+    assert new["sha256"] == report["sha256"] != old["sha256"] and new["key"] == f"store/{new['sha256']}/"
+    assert new["excluded"] == {"aeam": 7} and new["passages"] == old["passages"] == 4
+    assert new["characters"] == old["characters"] - 1  # 香港腳 → 腳氣 once in the text (once more in a title)
+    assert new["sources"]["jicheng"]["characters"] == new["characters"]
+    assert "共 1 部录本" in (cloud / "ATTRIBUTION.md").read_text(encoding="utf-8")
+    back = tmp_path / "back.sqlite"
+    unpack(work / f"{new['sha256']}.sqlite.xz", back, new)  # the new file is the one the manifest names
+    db = CorpusStore(back)
+    assert db.meta("index") == "pending" and db.meta("repairs") == pack.repairs.fingerprint
+    assert not db.db.execute("SELECT COUNT(*) FROM passages WHERE instr(text, '香港') > 0 OR instr(locator, '香港') > 0").fetchone()[0]
+    assert json.loads(db.meta("counted"))["characters"] == new["characters"]
+    db.close()
+    assert not (work / "tcm.sqlite").exists()
+    # a store with nothing left to repair is left alone, and so is its manifest
+    assert main(argv) in (0, None)
+    again = json.loads(capsys.readouterr().out)
+    assert again["passages"] == 0 and json.loads((cloud / "store.json").read_text(encoding="utf-8")) == new
