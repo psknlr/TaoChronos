@@ -493,7 +493,8 @@ repaired. A row goes in only when the wrong form is never what an edition prints
 word are listed with it and stay (厚樸 in 敦厚樸實). In the 要籍语料 (2026-11-06) they touched 715 passages of 120 books:
 香港腳 in 635 (all 笈成, 千金要方·卷七風毒腳氣方 among them), 短劇 in 52 (笈成), 厚樸 in 26 (Kanripo, McGill), 迴圈 in 2.
 After `corpus repair` on the full store: `taochronos web store` and `taochronos web upload` (cloud/README.md), so that
-the site's server and the D1 backup are built from the repaired store.
+the site's server and the D1 backup are built from the repaired store — or, without the full store at hand, the
+**store** workflow (`.github/workflows/store.yml`, `taochronos web repair`) repairs the site's store where it is kept.
 
 ### Harvested vocabulary (`domains/classics/lexicon-harvested/`)
 

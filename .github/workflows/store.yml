@@ -1,0 +1,181 @@
+name: store
+
+# The site's full-corpus store (cloud/store.json) repaired where it is kept — for when no machine at hand holds the full
+# corpus.  The conversion repairs (domains/classics/script/conversion_repairs.tsv: 香港腳→腳氣, 短劇→小品 …, docs/data.md)
+# are applied at every ingest; a store built before them is put right here: the job fetches the store cloud/store.json
+# names from the site's KV namespace (as canon.yml does) and runs `taochronos web repair`, which checks it against the
+# manifest, applies the repairs (`corpus repair`), compresses it again and writes cloud/store.json and
+# cloud/ATTRIBUTION.md.  The new store's parts go into the namespace under its own key, with the API token (each is read
+# back and checked; the deployments check them again as they fetch them), and only then is the manifest committed — the
+# old store stays in the namespace under its key, so going back is reverting that commit.  A commit pushed by a workflow
+# starts no other workflow, so on main the job then starts the site's deployment (a new container, built from the
+# repaired store) and the D1 import (a new store is a new version: the databases are built again).
+# Nothing to repair: nothing is written or committed.
+# Run it: Actions → store → Run workflow, on main; or  gh workflow run store.yml --ref main
+# Repository secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (cloud/SETUP.md), the token allowed to edit Workers KV.
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "On main: deploy the site and import D1 with the repaired store once it is committed"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  actions: write  # to start the site's deployment and the D1 import: a push made with the job's token starts no workflow
+
+concurrency:
+  group: store
+  cancel-in-progress: false
+
+env:
+  STORE_NAMESPACE: taochronos-store
+  TAOCHRONOS_DATA: ${{ github.workspace }}/.taochronos
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Install (the hashed lockfiles in requirements/)
+        run: pip install --require-hashes -r requirements/build.txt -r requirements/runtime.txt && pip install --no-deps --no-build-isolation -e .
+      - name: The site's KV namespace
+        id: plan
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ]; then
+            echo "::error::the store is fetched and written with the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (cloud/SETUP.md)"
+            exit 1
+          fi
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT"
+          ns=$(curl -fsS -H "Authorization: Bearer $CF_TOKEN" "$api/storage/kv/namespaces?per_page=100" \
+                | python3 -c 'import json,sys,os; r=json.load(sys.stdin)["result"]; print(next((n["id"] for n in r if n["title"]==os.environ["STORE_NAMESPACE"]), ""))' || true)
+          if [ -z "$ns" ]; then
+            echo "::error::no KV namespace $STORE_NAMESPACE (the site's deployment creates it; the store is uploaded with taochronos web upload, cloud/README.md)"
+            exit 1
+          fi
+          echo "ns=$ns" >> "$GITHUB_OUTPUT"
+      - name: The store, from the site's KV namespace
+        id: store
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NS: ${{ steps.plan.outputs.ns }}
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces"
+          mkdir -p "$TAOCHRONOS_DATA/cloud/parts"
+          parts="$TAOCHRONOS_DATA/cloud/parts"
+          python3 - <<'EOF' > "$parts.txt"
+          import json, urllib.parse
+          m = json.load(open("cloud/store.json"))
+          for p in m["parts"]:
+              print(urllib.parse.quote(m["key"] + p["name"], safe=""), p["name"], p["sha256"])
+          EOF
+          while read -r key name sha; do
+            curl -fsS -H "Authorization: Bearer $CF_TOKEN" "$api/$NS/values/$key" -o "$parts/$name"
+            echo "$sha  $parts/$name" | sha256sum -c --quiet
+          done < "$parts.txt"
+          sha=$(python3 -c 'import json; print(json.load(open("cloud/store.json"))["sha256"])')
+          while read -r _ name _; do cat "$parts/$name"; done < "$parts.txt" > "$TAOCHRONOS_DATA/cloud/$sha.sqlite.xz"
+          echo "$sha  $TAOCHRONOS_DATA/cloud/$sha.sqlite.xz" | sha256sum -c --quiet
+          rm -rf "$parts" "$parts.txt"
+      - name: Repair it (taochronos web repair)
+        id: repair
+        run: |
+          # the report is stdout alone
+          taochronos web repair > repair-report.json
+          cat repair-report.json
+          python3 - <<'EOF'
+          import json, os
+          r = json.load(open("repair-report.json"))
+          changed = r["passages"] > 0
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"changed={int(changed)}\n")
+              if changed:
+                  out.write(f"file={r['file']}\nsha={r['sha256']}\n")
+          lines = [f"## The site's store, repaired (table {r['repairs_table']})", "",
+                   f"- {r['repairs']:,} repairs in {r['passages']:,} passages of {r['books']} books" if changed else "- nothing to repair",
+                   f"- store {r['previous'][:12]}" + (f" → {r['sha256'][:12]} ({r['characters']:,} characters, {r['parts']} parts)" if changed else "")]
+          open(os.environ["GITHUB_STEP_SUMMARY"], "a").write("\n".join(lines) + "\n")
+          EOF
+          rm repair-report.json
+      - name: Write the repaired store into the namespace
+        if: steps.repair.outputs.changed == '1'
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NS: ${{ steps.plan.outputs.ns }}
+          XZ: ${{ steps.repair.outputs.file }}
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces/$NS/values"
+          parts="$TAOCHRONOS_DATA/cloud/parts"
+          mkdir -p "$parts"
+          # the parts as cloud/store.json (just written) lists them, each with the metadata the site's Worker gives an
+          # uploaded part ({sha256, size}: what `taochronos web upload` asks before sending one again)
+          python3 - <<'EOF' > "$parts.txt"
+          import json, os, urllib.parse
+          m = json.load(open("cloud/store.json"))
+          parts = os.environ["TAOCHRONOS_DATA"] + "/cloud/parts"
+          with open(os.environ["XZ"], "rb") as f:
+              for p in m["parts"]:
+                  chunk = f.read(m["part_bytes"])
+                  assert len(chunk) == p["bytes"], p["name"]
+                  open(f"{parts}/{p['name']}", "wb").write(chunk)
+                  meta = json.dumps({"sha256": p["sha256"], "size": p["bytes"]}, separators=(",", ":"))
+                  print(urllib.parse.quote(m["key"] + p["name"], safe=""), p["name"], p["sha256"], meta)
+              assert not f.read(1), "the file is longer than its parts"
+          EOF
+          while read -r key name sha meta; do
+            echo "$sha  $parts/$name" | sha256sum -c --quiet
+            curl -fsS -X PUT -H "Authorization: Bearer $CF_TOKEN" -F "value=@$parts/$name;type=application/octet-stream" \
+              -F "metadata=$meta" "$api/$key" > /dev/null
+            # read back (the namespace may take a moment to serve a new key everywhere)
+            ok=0
+            for attempt in 1 2 3 4 5 6; do
+              if curl -fsS -H "Authorization: Bearer $CF_TOKEN" "$api/$key" -o "$parts/$name.back" \
+                  && echo "$sha  $parts/$name.back" | sha256sum -c --quiet 2>/dev/null; then ok=1; break; fi
+              sleep $((attempt * 5))
+            done
+            [ "$ok" = 1 ] || { echo "::error::$name could not be read back as written; cloud/store.json is not committed"; exit 1; }
+            rm "$parts/$name.back"
+            echo "  $name written and read back"
+          done < "$parts.txt"
+          rm -rf "$parts" "$parts.txt"
+      - name: Commit the manifest and the credits
+        id: commit
+        if: steps.repair.outputs.changed == '1'
+        env:
+          SHA: ${{ steps.repair.outputs.sha }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cloud/store.json cloud/ATTRIBUTION.md
+          if git diff --cached --quiet; then echo "nothing changed"; echo "pushed=0" >> "$GITHUB_OUTPUT"; exit 0; fi
+          git commit -q -m "全量语料: the site's store with the conversion repairs (${SHA:0:12}, taochronos web repair)"
+          # the branch may have moved while the store was read (the chat-logs job commits to main): rebase and retry
+          pushed=0
+          for attempt in 1 2 3; do
+            if git push -q origin "HEAD:${GITHUB_REF_NAME}"; then pushed=1; break; fi
+            sleep $((attempt * 5))
+            git pull -q --rebase origin "${GITHUB_REF_NAME}"
+          done
+          [ "$pushed" = 1 ] || { echo "::error::cloud/store.json could not be pushed to ${GITHUB_REF_NAME}"; exit 1; }
+          echo "pushed=1" >> "$GITHUB_OUTPUT"
+      - name: Deploy the site and import D1 with the repaired store
+        if: steps.commit.outputs.pushed == '1' && github.ref == 'refs/heads/main' && inputs.deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run site.yml --ref main
+          gh workflow run d1.yml --ref main
+          echo "- started: the site's deployment (a new container) and the D1 import, on main" >> "$GITHUB_STEP_SUMMARY"
+      - name: The site, from a branch
+        if: steps.commit.outputs.pushed == '1' && github.ref != 'refs/heads/main'
+        run: echo "- committed to ${GITHUB_REF_NAME}; the site is deployed with it when the branch is merged into main" >> "$GITHUB_STEP_SUMMARY"

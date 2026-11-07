@@ -333,12 +333,10 @@ def server_store(src: Path, out: Path) -> dict[str, Any]:
     db = store.db
     db.execute("PRAGMA journal_mode=DELETE")
     db.execute("ATTACH DATABASE ? AS full", (f"file:{src}?mode=ro",))
-    kept: dict[str, dict[str, int]] = defaultdict(lambda: {"books": 0})
     excluded: dict[str, int] = defaultdict(int)
     for bid, source, data in db.execute("SELECT id, source, data FROM full.books ORDER BY id").fetchall():
         if source in WEB_SOURCES:
             store.put_book(site_record(json.loads(data), source), source)
-            kept[source]["books"] += 1
         else:
             excluded[source] += 1
     db.execute("INSERT INTO external(id, data) SELECT id, data FROM full.external ORDER BY id")
@@ -348,9 +346,6 @@ def server_store(src: Path, out: Path) -> dict[str, Any]:
     normalizer = db.execute("SELECT value FROM full.meta WHERE key = 'normalizer'").fetchone()
     db.commit()
     db.execute("DETACH DATABASE full")
-    for source, n, chars in db.execute("SELECT b.source, COUNT(*), SUM(LENGTH(p.text)) FROM passages p "
-                                       "JOIN books b ON b.id = p.book_id GROUP BY b.source"):
-        kept[source].update(passages=n, characters=chars)
     if normalizer:
         store.set_meta("normalizer", normalizer[0])
     store.set_meta("edition", "full")
@@ -361,9 +356,33 @@ def server_store(src: Path, out: Path) -> dict[str, Any]:
     store.commit()
     db.execute("VACUUM")
     store.close()
+    return {"path": str(out), **site_store_info(out), "excluded": dict(sorted(excluded.items())), "bytes": out.stat().st_size}
+
+
+def site_store_info(path: Path) -> dict[str, Any]:
+    """What the site's store holds, as ``cloud/store.json`` records it: books, passages and characters, in all and by
+    source (a source whose books have no passage gives its books alone)."""
+    db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        kept: dict[str, dict[str, int]] = {s: {"books": n} for s, n in db.execute("SELECT source, COUNT(*) FROM books GROUP BY source")}
+        for source, n, chars in db.execute("SELECT b.source, COUNT(*), SUM(LENGTH(p.text)) FROM passages p "
+                                           "JOIN books b ON b.id = p.book_id GROUP BY b.source"):
+            kept[source].update(passages=n, characters=chars)
+    finally:
+        db.close()
     totals = {k: sum(v.get(k, 0) for v in kept.values()) for k in ("books", "passages", "characters")}
-    return {"path": str(out), **totals, "sources": {k: dict(v) for k, v in sorted(kept.items())},
-            "excluded": dict(sorted(excluded.items())), "bytes": out.stat().st_size}
+    return {**totals, "sources": {k: kept[k] for k in sorted(kept)}}
+
+
+def package_store(path: Path, work: Path, info: dict[str, Any]) -> tuple[Path, dict[str, Any]]:
+    """The site's store at ``path`` compressed into ``work/<sha256>.sqlite.xz``, and its manifest (``cloud/store.json``)
+    with what ``info`` says it holds (``server_store``, or ``site_store_info`` and the sources left out)."""
+    packed = compress_store(path, work / "tcm.sqlite.xz")
+    final = work / f"{packed['sha256']}.sqlite.xz"
+    (work / "tcm.sqlite.xz").replace(final)
+    manifest = {"format": 1, "key": f"store/{packed['sha256']}/", **packed,
+                **{k: info[k] for k in ("books", "passages", "characters", "sources", "excluded")}}
+    return final, manifest
 
 
 def compress_store(path: Path, dest: Path, *, preset: int = 6) -> dict[str, Any]:
