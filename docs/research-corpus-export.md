@@ -16,8 +16,13 @@ must identify one namespace. All Cloudflare operations are HTTP GET requests.
 
 ## What the artifact contains
 
-The workflow uploads a repository-access-controlled GitHub Actions artifact with
-a seven-day retention period. It is not a public release, site asset or blanket
+The workflow uploads three repository-access-controlled GitHub Actions artifacts with
+a seven-day retention period: `taochronos-raw-store-<run_id>` contains the verified raw
+archive, `taochronos-passages-<run_id>` contains the complete passage export, and
+`taochronos-metadata-<run_id>` contains all remaining metadata and provenance files.
+Separating the binary files keeps each artifact below the download connector's 512 MiB
+limit. The original export files and their recorded hashes are unchanged; the three
+artifacts together contain the complete export directory. It is not a public release, site asset or blanket
 permission to redistribute source texts. Download it while logged into an
 account with access to this private repository. Do not change repository
 visibility or publish artifact download URLs. Source-specific licenses and
