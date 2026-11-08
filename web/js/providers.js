@@ -53,7 +53,7 @@ export function outputLimit(settings, provider) {
 }
 
 export const RELAY_ID = "impf";
-let relay = null; // {url, ok, model, models, logs, sponsor, limits} once the site's relay has answered (or failed to)
+let relay = null; // {url, ok, model, models, default, logs, sponsor, limits} once the site's relay has answered (or failed to)
 
 export function setRelay(r) { relay = r; }
 
@@ -73,7 +73,8 @@ function relayPreset() {
   return {
     id: RELAY_ID, label: T("道乃久默认服务"), format: "openai", base_url: `${relay.url}/v1`, key_optional: true, relay: true,
     max_tokens_param: "max_completion_tokens", extra_body: {}, thinking_off: { thinking: { type: "disabled" } }, examples: models,
-    default_model: relay.model || models[0] || "", reasoning: "reasoning_details", vision: true, stream_usage: true,
+    // the model a visitor who has chosen none asks: the one the service names for now (its health's `default`)
+    default_model: (models.includes(relay.default) ? relay.default : relay.model) || models[0] || "", reasoning: "reasoning_details", vision: true, stream_usage: true,
     unavailable: !relay.ok, max_output: relay.maxOutput || null,
     note: relay.ok
       ? T`${PUBLISHER}提供，无需 API Key，直接提问${relay.limits?.per_day ? T`；测试期间每人每天约 ${relay.limits.per_day} 次模型调用（一个问题通常用几次）` : ""}。`
@@ -129,7 +130,7 @@ export function saveSettings(settings) {
 }
 
 /** How a provider is named on the page: the default service by its own name (the page names no vendor behind it). */
-export const modelLabel = (p) => (p.relay ? (p.model && p.model !== relay?.model ? `${p.label} · ${p.model}` : p.label)
+export const modelLabel = (p) => (p.relay ? (p.model && ((relay?.models?.length || 0) > 1 || p.model !== MODEL) ? `${p.label} · ${p.model}` : p.label)
   : T`底层模型 ${p.model || T("未选")}（${p.label}）`);
 
 /** The provider as configured now: preset + the user's model, base URL and key. */

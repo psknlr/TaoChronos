@@ -9,7 +9,7 @@ import { DurableObject } from "cloudflare:workers";
 import { Drainer, EVENTS, RECORDS } from "../../security/archive.js";
 import { WatchCore } from "../../security/sentinel.js";
 import { UsageCore } from "../../security/usage.js";
-import { handle } from "./relay.js";
+import { DEFAULTS, handle } from "./relay.js";
 import { SponsorBookCore } from "./sponsors.js";
 import { ANSWERS, LimiterCore, LogBookCore } from "./state.js";
 
@@ -137,6 +137,17 @@ export class SponsorBook extends DurableObject {
   }
 }
 
+/** Where the second model is called from (relay.js, OPENAI_LOCATION): a Durable Object created with that location hint
+ * lives there, and so do the calls it makes — OpenAI refuses some regions a visitor's nearest Cloudflare location may be
+ * in.  It keeps nothing, and forwards only to the second model's own host. */
+export class Egress extends DurableObject {
+  async fetch(request) {
+    const allowed = new URL(this.env.OPENAI_BASE || DEFAULTS.OPENAI_BASE).host;
+    if (new URL(request.url).host !== allowed) return new Response("not allowed", { status: 403 });
+    return fetch(request);
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const limiter = () => env.LIMITER.get(env.LIMITER.idFromName("limits"));
@@ -174,6 +185,12 @@ export default {
       // work that may finish after the answer went out (a note of a request, the tokens an answer cost)
       defer: (promise) => ctx.waitUntil(Promise.resolve(promise).catch((err) => console.error("deferred", err?.name || "Error"))),
       fetch: (input, init) => fetch(input, init),
+      // a call made from a Durable Object placed at `location` (Egress).  The visitor leaving still ends it: the
+      // stream it answers with is cancelled (a signal does not cross into the object)
+      egress: (location, input, init = {}) => {
+        const { signal, ...rest } = init;
+        return env.EGRESS.get(env.EGRESS.idFromName(`egress-${location}`), { locationHint: location }).fetch(input, rest);
+      },
       now: () => Date.now(),
     });
   },

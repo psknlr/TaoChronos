@@ -7,7 +7,7 @@ import test from "node:test";
 
 import { drain, EVENTS, RECORDS } from "../../security/archive.js";
 import { WatchCore } from "../../security/sentinel.js";
-import { config, handle, normalizeFeedback, normalizeRecord, openaiBody, publicText, withoutReasoning } from "../src/relay.js";
+import { config, defaultModel, handle, normalizeFeedback, normalizeRecord, openaiBody, publicText, withoutReasoning } from "../src/relay.js";
 import { normalizeSponsor, seal, SponsorBookCore, unseal } from "../src/sponsors.js";
 import { ANSWERS, LimiterCore, LogBookCore } from "../src/state.js";
 import { UsageCore } from "../../security/usage.js";
@@ -35,7 +35,7 @@ const TOKEN = "export-token-0123456789abcdef";
 const PAGE = "https://chat.impf.ai";
 
 /** The relay with its stores in memory.  `cf`: what the edge would say of every request (request.cf). */
-function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0), cf, burst, gateFails = false } = {}) {
+function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0), cf, burst, gateFails = false, egress } = {}) {
   const limiter = new LimiterCore(sqlStore());
   const watch = new WatchCore(sqlStore());
   const book = new LogBookCore(sqlStore());
@@ -74,6 +74,8 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
       calls.push({ url, init, body: JSON.parse(init.body) });
       return upstream ? upstream(url, init) : sse(["{\"choices\":[{\"delta\":{\"content\":\"可以\"}}]}", "[DONE]"]);
     },
+    // the Worker's Durable Object placed at a location (index.js, Egress): here, the same fetch, told where from
+    ...(egress ? { egress: async (location, url, init) => { egress.push(location); return deps.fetch(url, init); } } : {}),
     now,
   };
   const fullEnv = { MINIMAX_API_KEY: KEY, LOG_EXPORT_TOKEN: TOKEN, ...env };
@@ -790,6 +792,7 @@ test("the second model: offered only with its own key, sent to OpenAI with it, t
   assert.deepEqual(second.body.stream_options, { include_usage: true });
   assert.equal(second.body.tools.length, 1);
   assert.equal(second.body.messages[2].reasoning_details, undefined); // what another model sent back stays here
+  assert.equal(second.body.reasoning_effort, "none"); // with tools: GPT-6 Luna on Chat Completions calls functions only so
   assert.equal(second.body.messages[2].tool_calls[0].id, "c1");
   // Tao-R1 goes on to MiniMax with MiniMax's key, as before
   await (await r.call("/v1/chat/completions", post(PAGE_ASK))).text();
@@ -803,7 +806,56 @@ test("the second model: offered only with its own key, sent to OpenAI with it, t
   assert.ok(!said.includes(OKEY) && !/openai|OpenAI/.test(said), said);
   assert.deepEqual(openaiBody({ max_tokens: 50, messages: [{ role: "user", content: "问", extra: 1 }] }, "m", 100),
     { model: "m", messages: [{ role: "user", content: "问" }], max_completion_tokens: 50 });
+  // a cap below the least a reasoning model takes is raised to it (16 was refused); no tools, no effort named
+  assert.deepEqual(openaiBody({ max_completion_tokens: 16, messages: [] }, "m", 32768, 2048), { model: "m", messages: [], max_completion_tokens: 2048 });
+  assert.equal(config().openai.minOutput, 2048);
 }));
+
+test("the second model is called from where OpenAI serves, and a region it refuses is told as such", () => quiet(async () => {
+  const where = [];
+  const r = relay({ env: { OPENAI_API_KEY: OKEY }, egress: where });
+  await (await r.call("/v1/chat/completions", post(LUNA, turnOf("e1")))).text();
+  assert.deepEqual(where, ["enam"]); // OPENAI_LOCATION
+  assert.equal(r.calls[0].url, "https://api.openai.com/v1/chat/completions");
+  await (await r.call("/v1/chat/completions", post(PAGE_ASK))).text(); // Tao-R1: straight from the visitor's location
+  assert.deepEqual(where, ["enam"]);
+  const here = [];
+  const direct = relay({ env: { OPENAI_API_KEY: OKEY, OPENAI_LOCATION: "off" }, egress: here });
+  await (await direct.call("/v1/chat/completions", post(LUNA, turnOf("e2")))).text();
+  assert.deepEqual(here, []);
+  const said = [];
+  const err = console.error;
+  console.error = (...a) => said.push(a.join(" "));
+  try {
+    const refused = relay({ env: { OPENAI_API_KEY: OKEY }, upstream: async () => new Response(JSON.stringify({ error: {
+      message: "Country, region, or territory not supported", type: "request_forbidden", code: "unsupported_country_region_territory" } }), { status: 403 }) });
+    const res = await refused.call("/v1/chat/completions", post(LUNA, turnOf("e3")));
+    assert.equal(res.status, 503);
+    assert.equal((await res.json()).error.type, "upstream_region");
+    const bad = relay({ env: { OPENAI_API_KEY: OKEY }, upstream: async () => new Response(JSON.stringify({ error: {
+      message: "Function tools with reasoning_effort are not supported for gpt-6-luna in /v1/chat/completions.", type: "invalid_request_error",
+      param: "reasoning_effort", code: "unsupported_parameter" } }), { status: 400 }) });
+    assert.equal((await bad.call("/v1/chat/completions", post(LUNA, turnOf("e4")))).status, 400);
+  } finally {
+    console.error = err;
+  }
+  assert.ok(said.includes("upstream openai 403 unsupported_country_region_territory"), said.join("\n"));
+  assert.ok(said.includes("upstream openai 400 unsupported_parameter reasoning_effort"), said.join("\n")); // the owner sees which
+  assert.ok(!said.join("\n").includes("not supported"), "never the upstream's message");
+}));
+
+test("the default model: the one DEFAULT_MODEL names while it is offered and until DEFAULT_MODEL_UNTIL, then Tao-R1", async () => {
+  const until = { DEFAULT_MODEL: "GPT-6 Luna", DEFAULT_MODEL_UNTIL: "2026-11-10T00:00:00+08:00" };
+  const at = (iso, env) => relay({ env, now: () => Date.parse(iso) }).call("/v1/health").then((res) => res.json());
+  assert.equal((await at("2026-11-08T03:00:00Z", { OPENAI_API_KEY: OKEY, ...until })).default, "GPT-6 Luna");
+  assert.equal((await at("2026-11-09T15:59:59Z", { OPENAI_API_KEY: OKEY, ...until })).default, "GPT-6 Luna"); // 9 Nov 23:59:59 in Singapore (UTC+8)
+  assert.equal((await at("2026-11-09T16:00:00Z", { OPENAI_API_KEY: OKEY, ...until })).default, "Tao-R1");
+  assert.equal((await at("2026-11-08T03:00:00Z", until)).default, "Tao-R1"); // not offered (no key): not the default
+  assert.equal((await at("2026-11-08T03:00:00Z", { OPENAI_API_KEY: OKEY })).default, "Tao-R1"); // none named
+  const c = config({ DEFAULT_MODEL: "GPT-6 Luna", DEFAULT_MODEL_UNTIL: "not a time" });
+  assert.equal(defaultModel(["Tao-R1", "GPT-6 Luna"], c, Date.now()), "Tao-R1"); // an unreadable end: never
+  assert.equal(defaultModel(["Tao-R1", "GPT-6 Luna"], config({ DEFAULT_MODEL: "GPT-6 Luna" }), Date.now()), "GPT-6 Luna"); // no end
+});
 
 test("the second model: three questions a visitor a day, however many rounds a question takes", () => quiet(async () => {
   let t = Date.UTC(2026, 9, 10, 12, 0, 0);

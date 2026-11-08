@@ -65,6 +65,16 @@ OPENAI_PER_MINUTE = "10"
 OPENAI_CALLS_PER_DAY = "60"
 OPENAI_TOKENS_PER_DAY = "3000000"
 OPENAI_TOTAL_TOKENS_PER_DAY = "60000000"
+# where OpenAI is called from (a Durable Object placed there): OpenAI refuses some regions a visitor's nearest Cloudflare
+# location may be in (Hong Kong, for one).  enam: eastern North America; "off" calls from the visitor's location
+OPENAI_LOCATION = "enam"
+# the least output cap sent to OpenAI: a reasoning model refuses a very small one
+OPENAI_MIN_OUTPUT = "2048"
+# the model the page chooses for a visitor who has chosen none (one the service offers), until DEFAULT_MODEL_UNTIL;
+# then Tao-R1 again.  GPT-6 Luna through 9 November 2026, Singapore time (SGT, UTC+8): until 10 November 00:00 SGT.
+# "" for both: Tao-R1
+DEFAULT_MODEL = "GPT-6 Luna"
+DEFAULT_MODEL_UNTIL = "2026-11-10T00:00:00+08:00"
 # visitors' own API keys and model names, given to the service (赞助, the settings' 赞助 pane): kept encrypted under the
 # secret SPONSOR_SECRET in a Durable Object of their own, never with the records; on only when that secret is set.
 # SPONSOR_PER_DAY per visitor; SPONSOR_KEEP kept at most.  "off" stops taking them (the page hides the form)
@@ -93,6 +103,11 @@ class_name = "LogBook"
 name = "SPONSORS"
 class_name = "SponsorBook"
 
+# where the second model is called from (relay/src/index.js, Egress; OPENAI_LOCATION): keeps nothing
+[[durable_objects.bindings]]
+name = "EGRESS"
+class_name = "Egress"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Limiter", "LogBook"]
@@ -100,6 +115,10 @@ new_sqlite_classes = ["Limiter", "LogBook"]
 [[migrations]]
 tag = "v2"
 new_sqlite_classes = ["SponsorBook"]
+
+[[migrations]]
+tag = "v3"
+new_sqlite_classes = ["Egress"]
 
 [observability]
 enabled = true

@@ -416,8 +416,9 @@ class MockRelay(ThreadingHTTPServer):
     SECRET = "relay-held-secret"
 
     def __init__(self, upstream: str, port: int = 0, logs: bool = True, feedback: bool = True, second: str = "",
-                 sponsor: bool = False) -> None:
+                 sponsor: bool = False, default: str = "") -> None:
         super().__init__(("127.0.0.1", port), _RelayHandler)
+        self.default = default or PUBLIC_MODEL  # the model a visitor who has chosen none asks (health's `default`)
         self.second = second           # a second model it offers (GPT-6 Luna), counted in questions: its public name
         self.takes_sponsors = sponsor  # it takes visitors' own keys (赞助)
         self.sponsorships: list[dict] = []  # what the page sent to /v1/sponsor
@@ -477,6 +478,7 @@ class _RelayHandler(BaseHTTPRequestHandler):
             time.sleep(self.server.health_delay)
             second = self.server.second
             self._json(200, {"ok": True, "service": "taochronos-relay", "model": PUBLIC_MODEL, "models": [PUBLIC_MODEL, *([second] if second else [])],
+                             "default": self.server.default,
                              "logs": self.server.logs, "feedback": self.server.takes_feedback, "sponsor": self.server.takes_sponsors,
                              "max_output_tokens": 32768,
                              "limits": {"per_minute": 30, "per_day": 600, **({"questions": {second: 3}} if second else {})}})
