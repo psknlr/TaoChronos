@@ -181,6 +181,13 @@ def test_a_second_model_is_checked_as_the_page_asks_it(relay):
     relay.second_status, relay.second_error = 503, {"message": "默认服务暂时不可用", "type": "upstream_auth"}
     with pytest.raises(SystemExit, match="OPENAI_API_KEY"):
         collect.check(relay.url, "https://chat.impf.ai", wait=5)
+    # MiniMax refusing does not hide the second model: both are checked, both told
+    relay.chat_status, relay.chat_error = 429, {"message": "默认服务的模型额度暂时用完", "type": "upstream_rate"}
+    relay.second_status, relay.second_error = 200, {}
+    turns = len(relay.second_turns)
+    with pytest.raises(SystemExit, match="429") as err:
+        collect.check(relay.url, "https://chat.impf.ai", wait=5)
+    assert "GPT-6 Luna" not in str(err.value) and len(relay.second_turns) == turns + 1
 
 
 def test_the_owner_reads_the_sponsorships_with_the_sponsor_secret(relay, monkeypatch):

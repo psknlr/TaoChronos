@@ -1394,4 +1394,9 @@ export default {
   "默认服务暂时不提供这个模型": "The default service does not offer this model at the moment",
   "交一把自己的 API Key 和模型名，让更多人免费提问；密钥加密保存，只有发布方能读取": "Give an API key and model name of your own so more people can ask for free; the key is stored encrypted, readable only by the publisher",
   "赞助默认服务：交一把自己的 API Key，让更多人免费提问": "Sponsor the default service: give an API key of your own so more people can ask for free",
+  "选择模型": "Choose a model",
+  "选择模型：选中即切换": "Choose a model: it switches as soon as you pick it",
+  "已切换到 {0}": "Switched to {0}",
+  "选中即切换，下一个问题起使用；对话框下方也可以切换。都无需 API Key。按问题计额度的模型，一个问题无论调用几轮工具都只计一次；用完后可换回其他模型。": "A model you pick is used from your next question on, and you can also switch below the chat box. None needs an API key. A model counted in questions counts a question once, however many rounds of tools it takes; once they are used up, switch back to another model.",
+  "默认服务暂时无法从当前线路连到这个模型，请稍后再试，或改用默认服务的其他模型": "The default service cannot reach this model from the current route right now; please try again later, or switch to its other model",
 };

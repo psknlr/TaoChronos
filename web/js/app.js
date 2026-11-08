@@ -565,10 +565,10 @@ async function runAssistant(conv, msg, { resume = null } = {}) {
   const provider = activeProvider(S.settings);
   // the default service by its own model names only (Tao-R1, or the second model it offers by its public name)
   msg.model = provider.relay ? provider.model || ASSISTANT : provider.model;
-  if (provider.relay && provider.model && provider.model !== S.relay?.model) {
-    msg.publicModel = true; // a name the service gave: kept as it is (publicConversation)
-    // the second model is limited in questions: each call of this turn names it, so the turn counts once however many
-    // rounds it takes (relay/src/relay.js, questionOf).  Only for it — a relay older than it would refuse the header
+  if (provider.relay && provider.model && provider.model !== ASSISTANT) msg.publicModel = true; // a name the service gave: kept (publicConversation)
+  if (provider.relay && Number(relayQuestions()[provider.model]) > 0) {
+    // a model limited in questions: each call of this turn names it, so the turn counts once however many rounds it
+    // takes (relay/src/relay.js, questionOf).  Only for such a model — a relay older than it would refuse the header
     provider.headers = { ...(provider.headers || {}), "X-Tao-Turn": msg.id };
   }
   msg.provider = provider.id;
@@ -1477,7 +1477,9 @@ function renderTopbar() {
   const p = activeProvider(S.settings);
   const warn = needsKey();
   el.modelChip.classList.toggle("warn", warn);
-  replace(el.modelChip, h("img.seal", { src: "assets/logo.svg", alt: "" }), h("span.nm", ASSISTANT), warn ? h("span.tag", T("未配置")) : null, icon("chevdown", "sm"));
+  // the default service's other model by its own name: the visitor sees which one answers
+  const shown = p.relay && p.model ? p.model : ASSISTANT;
+  replace(el.modelChip, h("img.seal", { src: "assets/logo.svg", alt: "" }), h("span.nm", shown), warn ? h("span.tag", T("未配置")) : null, icon("chevdown", "sm"));
   el.modelChip.title = `${ASSISTANT} · ${modelLabel(p)}${warn ? T(" · 尚未配置 API Key") : ""}`;
   el.modelChip.setAttribute("aria-label", T`${ASSISTANT} 的模型设置`);
   el.title.textContent = S.conv?.title || "";
@@ -1599,8 +1601,22 @@ function heldBack() {
 }
 
 function renderComposerHint() {
+  const p = activeProvider(S.settings);
   el.hint.textContent = ASSISTANT;
-  el.hint.title = modelLabel(activeProvider(S.settings));
+  el.hint.title = modelLabel(p);
+  // the default service's models, to switch between here: shown while it offers more than one
+  const models = p.relay && !p.unavailable ? p.examples || [] : [];
+  if (el.modelPick) {
+    el.modelPick.hidden = models.length < 2;
+    el.hint.hidden = !el.modelPick.hidden;
+    const daily = relayQuestions();
+    const sig = models.map((m) => `${m}:${daily[m] || 0}`).join("|");
+    if (models.length > 1 && el.modelPick.dataset.sig !== sig) { // options anew only when they change (not on each keystroke)
+      el.modelPick.dataset.sig = sig;
+      el.modelPick.replaceChildren(...models.map((m) => h("option", { value: m }, Number(daily[m]) > 0 ? T`${m}（每天 ${daily[m]} 问）` : m)));
+    }
+    if (models.length > 1) el.modelPick.value = p.model;
+  }
   const diet = S.conv ? isDietMode(S.conv) : S.ui.mode === DIET_MODE;
   el.input.placeholder = diet ? T("说说你的目标和情况，例如：我想减重，平时多在外面吃饭……") : PLACEHOLDER;
   if (el.disclaimer) {
@@ -1609,6 +1625,18 @@ function renderComposerHint() {
   el.composer.classList.toggle("diet", diet);
   el.newDiet?.classList.toggle("active", diet);
   if (el.newSponsor) el.newSponsor.hidden = !canSponsor();
+}
+
+/** The default service's model, chosen on the page — in the chat's picker or the settings — and used from the next
+ * question on, at once (kept in this browser).  A visitor who chose none asks the one the service names for now. */
+function pickRelayModel(model) {
+  if (!S.relay?.ok || !(S.relay.models || []).includes(model)) return;
+  const same = S.settings.provider === RELAY_ID && activeProvider(S.settings).model === model;
+  S.settings = { ...S.settings, provider: RELAY_ID, models: { ...S.settings.models, [RELAY_ID]: model } };
+  saveSettings(S.settings);
+  renderTopbar();
+  renderComposer();
+  if (!same) toast(T`已切换到 ${model}`);
 }
 
 /** Does the site's relay take sponsorships (its health says so)?  Then the way to 赞助 is on the opening screen and in
@@ -1766,7 +1794,7 @@ async function checkRelay(timeouts) {
     clearTimeout(timer);
   }
   if (j?.ok) {
-    Object.assign(S.relay, { ok: true, model: j.model, models: j.models, logs: Boolean(j.logs), feedback: Boolean(j.feedback),
+    Object.assign(S.relay, { ok: true, model: j.model, models: j.models, default: j.default, logs: Boolean(j.logs), feedback: Boolean(j.feedback),
       sponsor: Boolean(j.sponsor), limits: j.limits, maxOutput: Number(j.max_output_tokens) || null });
   }
   delete S.relay.pending;
@@ -2027,6 +2055,7 @@ const settingsCtx = {
       return { ok: false, message: err.message, tokenRequired: Boolean(err.tokenRequired) };
     }
   },
+  pickModel: (model) => pickRelayModel(model),
   /** A visitor's own API key and model, given to the default service (赞助) — sent once, to the relay only, and kept
    * nowhere on this page: {ok}, or {ok: false, message} in the page's words. */
   async sponsor(gift) {
@@ -2155,6 +2184,11 @@ function wireChrome() {
   $("#lang-short").replaceWith(icon("globe"), h("span", { class: "lang-short" }, LANGUAGE.short), icon("chevdown", "sm"));
   el.lang.append(...LANGUAGES.map((l) => h("option", { value: l.code, lang: l.code === "zh" ? "zh-CN" : l.code, selected: l.code === LANG }, l.name)));
 
+  // the default service's models, in the chat itself (renderComposerHint): a choice is used from the next question on
+  el.modelPick = h("select#model-pick.model-pick", { "aria-label": T("选择模型"), title: T("选择模型：选中即切换") });
+  el.modelPick.hidden = true;
+  el.modelPick.addEventListener("change", () => pickRelayModel(el.modelPick.value));
+  el.hint.before(el.modelPick);
   el.newChat.addEventListener("click", () => newChat());
   el.newChatTop.addEventListener("click", () => newChat());
   if (el.newDiet) {

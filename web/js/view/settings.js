@@ -136,7 +136,7 @@ function modelPane(d, S, ctx, redraw, go) {
       T("列表之外的服务（自建网关、私有部署、本地模型）点“自定义 API”手动设置。")),
     h("div.form-grid",
       h("div.field", h("span.lb", T("服务商")), grid, p.note && !p.relay ? h("div.help", p.note) : null), // the default service's in its box
-      ...(p.relay ? relayFields(p, d, S, go) : custom ? customFields(custom, d, redraw, retitle) : presetFields(p, d)),
+      ...(p.relay ? relayFields(p, d, S, go, ctx) : custom ? customFields(custom, d, redraw, retitle) : presetFields(p, d)),
       p.relay ? null : keyField,
       p.relay ? null : h("div.field", h("span.lb", T("请求路径")),
         seg([["auto", T("自动")], ["direct", T("浏览器直连")], ["proxy", T("经本地服务转发")]], d.route, (v) => { d.route = v; }),
@@ -322,15 +322,20 @@ function instructionsPane(d, S) {
 /** 道乃久默认服务: nothing to fill in, and no vendor named. */
 /** The default service: its note; its models to choose from, when it offers more than one (a model counted in questions
  * says how many a day); and, when it takes them, a way to sponsor it with a key of one's own. */
-function relayFields(p, d, S, go) {
+function relayFields(p, d, S, go, ctx) {
   const out = [h(`div.notice${p.unavailable ? ".warn" : ".ok"}`, icon(p.unavailable ? "warn" : "check"), h("div.grow", p.note))];
   const models = p.examples || [];
   if (!p.unavailable && models.length > 1) {
     const daily = relayQuestions();
     const chosen = models.includes(d.models[p.id]) ? d.models[p.id] : p.default_model;
     out.push(h("div.field", h("span.lb", T("模型")),
-      seg(models.map((m) => [m, Number(daily[m]) > 0 ? T`${m}（每天 ${daily[m]} 问）` : m]), chosen, (v) => { d.models[p.id] = v; }),
-      h("div.help", T("都无需 API Key。按问题计额度的模型，一个问题无论调用几轮工具都只计一次；用完后可换回其他模型。"))));
+      // chosen, used at once — no 保存 needed — and the draft follows, so that 保存 keeps it too
+      seg(models.map((m) => [m, Number(daily[m]) > 0 ? T`${m}（每天 ${daily[m]} 问）` : m]), chosen, (v) => {
+        d.provider = p.id;
+        d.models[p.id] = v;
+        ctx?.pickModel?.(v);
+      }),
+      h("div.help", T("选中即切换，下一个问题起使用；对话框下方也可以切换。都无需 API Key。按问题计额度的模型，一个问题无论调用几轮工具都只计一次；用完后可换回其他模型。"))));
   }
   if (!p.unavailable && S.relay?.sponsor && go) {
     out.push(h("div.help", T("有自己的 API Key，愿意让更多人免费使用？"), " ",

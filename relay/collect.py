@@ -151,7 +151,9 @@ def _second(relay: str, origin: str, model: str) -> str:
         return "limited"
     message = reply.get("error", {}).get("message") if isinstance(reply, dict) else str(reply)[:300]
     hint = (" — OpenAI refused OPENAI_API_KEY: update the repository secret and deploy again" if kind == "upstream_auth"
-            else " — OpenAI may not offer this model to the key: check OPENAI_MODEL in relay/wrangler.toml" if kind == "upstream_error" else "")
+            else " — OpenAI refused the region the call left from: check OPENAI_LOCATION in relay/wrangler.toml" if kind == "upstream_region"
+            else " — OpenAI may not offer this model to the key: check OPENAI_MODEL in relay/wrangler.toml" if kind == "upstream_error"
+            else " — OpenAI refused the request: the Worker's log names the parameter (upstream openai 400 …)" if kind == "upstream_rejected" else "")
     raise SystemExit(f"the relay's {model} answered {status}: {message}{hint}")
 
 
@@ -170,6 +172,9 @@ def check(relay: str, origin: str, wait: float = 240) -> dict:
         time.sleep(10)
     if not health.get("ok"):
         raise SystemExit("the relay answers but has no MINIMAX_API_KEY: set the repository secret and deploy again")
+    out = {"relay": relay, "model": health.get("model"), "default": health.get("default"), "logs": health.get("logs"),
+           "limits": health.get("limits"), "call": "ok"}
+    failed: list[str] = []  # each model is checked, whatever another said: one failing does not hide the others
     status, reply = _request(f"{relay}/v1/chat/completions", origin=origin, timeout=90, data={
         "model": health.get("model"), "messages": [{"role": "user", "content": "请只回复两个字：可以"}], "max_completion_tokens": 16})
     if status != 200:
@@ -178,11 +183,20 @@ def check(relay: str, origin: str, wait: float = 240) -> dict:
         if isinstance(reply, dict) and reply.get("error", {}).get("type") == "upstream_auth":
             hint = (" — MiniMax refused the key: a key from the international platform (platform.minimax.io) needs "
                     "UPSTREAM_BASE = \"https://api.minimax.io/v1\" in relay/wrangler.toml; a mainland key, https://api.minimax.cn/v1")
-        raise SystemExit(f"the relay answered {status}: {message}{hint}")
-    out = {"relay": relay, "model": health.get("model"), "logs": health.get("logs"), "limits": health.get("limits"), "call": "ok"}
+        out["call"] = "failed"
+        failed.append(f"the relay answered {status}: {message}{hint}")
     others = [m for m in health.get("models") or [] if m != health.get("model")]
     if others:
-        out["second"] = {m: _second(relay, origin, m) for m in others}
+        out["second"] = {}
+        for m in others:
+            try:
+                out["second"][m] = _second(relay, origin, m)
+            except SystemExit as err:
+                out["second"][m] = "failed"
+                failed.append(str(err))
+    if failed:
+        print(json.dumps(out, ensure_ascii=False))  # what did pass, in the log, before the failure
+        raise SystemExit("; ".join(failed))
     return out
 
 

@@ -75,6 +75,14 @@ export const DEFAULTS = {
   OPENAI_CALLS_PER_DAY: "60",
   OPENAI_TOKENS_PER_DAY: "3000000",
   OPENAI_TOTAL_TOKENS_PER_DAY: "60000000",
+  // where OpenAI is called from: a Durable Object placed there (index.js, Egress).  The Worker runs at the visitor's
+  // nearest Cloudflare location, and OpenAI refuses some regions such a location may be in (a 403); "off" calls from there
+  OPENAI_LOCATION: "enam",
+  OPENAI_MIN_OUTPUT: "2048",                  // a reasoning model refuses a smaller output cap (16 was refused)
+  // the model the page chooses for a visitor who has chosen none: a public name the service offers, until
+  // DEFAULT_MODEL_UNTIL (an ISO time; "" no end) — then PUBLIC_MODEL again.  "": PUBLIC_MODEL
+  DEFAULT_MODEL: "",
+  DEFAULT_MODEL_UNTIL: "",
   // visitors' own API keys given to the service (赞助): on only when the Worker also has SPONSOR_SECRET (32+ characters)
   SPONSOR: "on",
   SPONSOR_PER_DAY: "5",                       // per visitor
@@ -117,7 +125,11 @@ export function config(env = {}) {
       questions: { perDay: num("OPENAI_QUESTIONS_PER_DAY"), total: num("OPENAI_TOTAL_QUESTIONS_PER_DAY") },
       chat: { perMinute: num("OPENAI_PER_MINUTE"), perDay: num("OPENAI_CALLS_PER_DAY"), total: 0, tokensPerDay: num("OPENAI_TOKENS_PER_DAY"),
         totalTokens: num("OPENAI_TOTAL_TOKENS_PER_DAY") },
+      location: /^(off|none)$/i.test(String(get("OPENAI_LOCATION")).trim()) ? "" : String(get("OPENAI_LOCATION")).trim(),
+      minOutput: num("OPENAI_MIN_OUTPUT") || 0,
     },
+    defaultModel: String(get("DEFAULT_MODEL")).trim(),
+    defaultUntil: String(get("DEFAULT_MODEL_UNTIL")).trim() ? Date.parse(String(get("DEFAULT_MODEL_UNTIL")).trim()) : Infinity,
     sponsor: String(get("SPONSOR")).toLowerCase() !== "off",
     sponsorLimits: { perMinute: 3, perDay: num("SPONSOR_PER_DAY"), total: 0 },
     sponsorKeep: num("SPONSOR_KEEP"),
@@ -126,6 +138,12 @@ export function config(env = {}) {
 
 /** Is the second model offered: switched on, and the Worker has its key? */
 const secondReady = (env, cfg) => Boolean(cfg.openai.on && env.OPENAI_API_KEY && cfg.openai.model && cfg.openai.publicModel);
+
+/** The model the page chooses for a visitor who has chosen none: DEFAULT_MODEL while it is offered and its time lasts
+ * (an unreadable DEFAULT_MODEL_UNTIL: never), else the default service's own. */
+export function defaultModel(models, cfg, now) {
+  return cfg.defaultModel && models.includes(cfg.defaultModel) && now < cfg.defaultUntil ? cfg.defaultModel : cfg.publicModel;
+}
 
 /**
  * deps: {gate({who, kind, limits, fp, a, shape, status, cfg}) → {ok, reason, retry, remaining, watch}, observe(fp, a, extra, cfg),
@@ -170,7 +188,7 @@ export async function handle(request, env, deps) {
       if (res) return res;
     }
     switch (`${request.method} ${url.pathname}`) {
-      case "GET /v1/health": return health(env, cfg, cors);
+      case "GET /v1/health": return health(env, cfg, cors, deps.now());
       case "GET /v1/stats": return await stats(request, env, url, cors, deps);
       case "POST /v1/chat/completions": return await chat(request, env, cfg, cors, allowed, deps, s);
       case "POST /v1/logs": return await submit(request, cfg, cors, allowed, deps, s);
@@ -300,11 +318,12 @@ function limited(gate, limits, cors, what = "请求", second = null) {
 }
 
 // ------------------------------------------------------------------ endpoints
-function health(env, cfg, cors) {
+function health(env, cfg, cors, now) {
   const second = secondReady(env, cfg) ? cfg.openai : null;
+  const models = [cfg.publicModel, ...(second ? [second.publicModel] : [])];
   return json({
-    ok: Boolean(env.MINIMAX_API_KEY), service: "taochronos-relay", version: VERSION, model: cfg.publicModel,
-    models: [cfg.publicModel, ...(second ? [second.publicModel] : [])],
+    ok: Boolean(env.MINIMAX_API_KEY), service: "taochronos-relay", version: VERSION, model: cfg.publicModel, models,
+    default: defaultModel(models, cfg, now), // what the page chooses for a visitor who has chosen none
     logs: cfg.logs, feedback: cfg.feedback, sponsor: cfg.sponsor && sponsorReady(env), max_output_tokens: cfg.maxTokens,
     limits: { per_minute: cfg.chat.perMinute, per_day: cfg.chat.perDay, tokens_per_day: cfg.chat.tokensPerDay,
       // a model counted in questions, not calls: questions per visitor per day
@@ -412,10 +431,10 @@ async function chat(request, env, cfg, cors, allowed, deps, s) {
  * reasoning-format prefix (publicText, publicFilter) — and, asked for no thinking, without reasoning.  `label` names the
  * upstream in the Worker's log (a status code only, never a body).
  */
-async function relayed({ url, key, payload, request, cors, view, spend, noReasoning, deps, label = "upstream" }) {
+async function relayed({ url, key, payload, request, cors, view, spend, noReasoning, deps, label = "upstream", fetcher = deps.fetch }) {
   let upstream;
   try {
-    upstream = await deps.fetch(url, {
+    upstream = await fetcher(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: request.headers.get("Accept") || "application/json",
         Authorization: `Bearer ${key}` },
@@ -427,8 +446,11 @@ async function relayed({ url, key, payload, request, cors, view, spend, noReason
   }
   const type = upstream.headers.get("Content-Type") || "application/json";
   if (upstream.status === 401 || upstream.status === 403) {
-    await upstream.body?.cancel();
-    console.error(label, upstream.status);
+    const code = await errorCode(upstream);
+    console.error(label, upstream.status, code);
+    if (code === "unsupported_country_region_territory") { // the location the call left from, not the key
+      return error(503, "默认服务暂时无法从当前线路连到这个模型，请稍后再试，或改用默认服务的其他模型", "upstream_region", cors);
+    }
     return error(503, "默认服务暂时不可用（模型服务拒绝了它的密钥），请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_auth", cors);
   }
   if (upstream.status === 429) {
@@ -437,8 +459,8 @@ async function relayed({ url, key, payload, request, cors, view, spend, noReason
   }
   if (!upstream.ok) {
     // the upstream's own message would name it, its models and its parameters: the visitor is told what to do instead
-    await upstream.body?.cancel();
-    console.error(label, upstream.status);
+    // (the owner finds its code and the parameter it names in the Worker's log)
+    console.error(label, upstream.status, await errorCode(upstream, true));
     return upstream.status >= 500 || upstream.status === 404
       ? error(502, "默认服务暂时不可用，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_error", cors)
       : error(400, "默认服务无法完成这个请求：请检查“设置 → 模型”里的温度、最大输出等选项，或新开一个对话后重试", "upstream_rejected", cors);
@@ -466,6 +488,16 @@ async function relayed({ url, key, payload, request, cors, view, spend, noReason
   return new Response(stream, { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
 }
 
+/** What an upstream's refusal says of itself, for the Worker's log: its error code (and, with `param`, the parameter it
+ * names) — short words only, never its message, which may echo what a visitor wrote. */
+async function errorCode(upstream, param = false) {
+  let j = null;
+  try { j = JSON.parse((await upstream.text()).slice(0, 4000)); } catch { /* not JSON */ }
+  const e = j?.error && typeof j.error === "object" ? j.error : {};
+  const word = (v) => (typeof v === "string" && /^[\w.:-]{1,80}$/.test(v) ? v : "");
+  return [word(e.code) || word(e.type), param ? word(e.param) : ""].filter(Boolean).join(" ");
+}
+
 // ------------------------------------------------------------------ the second model (GPT-6 Luna, through OpenAI)
 // what the page's request may carry on to OpenAI: anything else (MiniMax's own fields, the page's thinking switch, a
 // temperature the model may refuse) stays here
@@ -475,8 +507,9 @@ const MESSAGE_FIELDS = ["role", "content", "name", "tool_calls", "tool_call_id"]
 const TURN_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 /** The page's request in OpenAI's terms: the known fields only, each message without the reasoning another model sent
- * back, the output capped. */
-export function openaiBody(body, model, maxTokens) {
+ * back, the output within [minTokens, maxTokens].  With tools, no reasoning: on Chat Completions GPT-6 Luna calls
+ * functions only with reasoning_effort "none" (OpenAI's model page; with tools and its default effort, a 400). */
+export function openaiBody(body, model, maxTokens, minTokens = 0) {
   const out = { model };
   for (const k of OPENAI_FIELDS) if (k in body) out[k] = body[k];
   out.messages = (Array.isArray(body.messages) ? body.messages : []).map((m) => {
@@ -485,7 +518,8 @@ export function openaiBody(body, model, maxTokens) {
     return o;
   });
   const asked = Math.floor(Number(body.max_completion_tokens ?? body.max_tokens)) || maxTokens;
-  out.max_completion_tokens = Math.min(Math.max(1, asked), maxTokens);
+  out.max_completion_tokens = Math.min(Math.max(1, minTokens, asked), maxTokens);
+  if (Array.isArray(out.tools) && out.tools.length) out.reasoning_effort = "none";
   return out;
 }
 
@@ -507,7 +541,7 @@ async function questionOf(request, messages) {
  * to OpenAI with the Worker's OPENAI_API_KEY, its reply passed on under the model's public name. */
 async function secondChat(request, env, cfg, cors, deps, s, { body, raw, shape, a }) {
   const o = cfg.openai;
-  const payload = JSON.stringify(openaiBody(body, o.model, cfg.maxTokens));
+  const payload = JSON.stringify(openaiBody(body, o.model, cfg.maxTokens, o.minOutput));
   const noReasoning = body.thinking?.type === "disabled";
   const who = await caller(request, deps.now());
   const q = await questionOf(request, body.messages);
@@ -528,8 +562,10 @@ async function secondChat(request, env, cfg, cors, deps, s, { body, raw, shape, 
     if (tokens > 0) deps.defer(deps.spend(who, "openai", tokens - (gate.reserved || 0)));
   };
   const view = { ...cfg, publicModel: o.publicModel, formatPrefix: "" };
+  // from where OpenAI serves (OPENAI_LOCATION), not from the visitor's nearest location
+  const fetcher = o.location && deps.egress ? (url, init) => deps.egress(o.location, url, init) : deps.fetch;
   return relayed({ url: `${o.upstream}/chat/completions`, key: env.OPENAI_API_KEY, payload, request, cors, view, spend, noReasoning, deps,
-    label: "upstream openai" });
+    label: "upstream openai", fetcher });
 }
 
 // ------------------------------------------------------------------ what a visitor sees of the upstream: nothing

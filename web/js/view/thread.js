@@ -161,7 +161,8 @@ export function fillAssistant(body, m, ctx, last) {
   if (!live) {
     const bar = verifyBar(m, ctx, renderedCites(body));
     if (bar) body.append(bar);
-    const meta = [ASSISTANT, m.rounds > 1 ? T`${m.rounds} 轮` : null, m.toolCount ? T`${m.toolCount} 次工具调用` : null,
+    // the default service's other model by its own name (it answered, not Tao-R1's)
+    const meta = [m.publicModel && m.model ? m.model : ASSISTANT, m.rounds > 1 ? T`${m.rounds} 轮` : null, m.toolCount ? T`${m.toolCount} 次工具调用` : null,
       m.ms ? fmtMs(m.ms) : null, m.usage?.output ? `${m.usage.input || 0}→${m.usage.output} tokens` : null].filter(Boolean).join(" · ");
     body.append(h("div.actions",
       h("button.icon-btn", { type: "button", title: T("复制回答"), "aria-label": T("复制回答"), on: { click: () => ctx.onCopy(answerText(m)) } }, icon("copy", "sm")),

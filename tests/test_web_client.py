@@ -3326,8 +3326,9 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
             ctx, page, errors = visit()
             page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('默认服务')", timeout=10000)
             assert "道乃久默认服务" in page.get_attribute("#model-chip", "title")
-            # a relay that takes no sponsorships: no way to 赞助 anywhere
+            # a relay that takes no sponsorships: no way to 赞助 anywhere; one model only: no picker in the chat
             assert page.query_selector(".sponsor-entry-card") is None and not page.is_visible("#new-sponsor")
+            assert not page.is_visible("#model-pick") and page.inner_text("#model-chip .nm") == "Tao-R1"
             page.fill("#input", "桂枝汤主治什么？请给出原文。")
             page.keyboard.press("Enter")
             page.wait_for_selector("#consent[open]", timeout=10000)
@@ -3424,8 +3425,10 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
 
 def test_the_default_service_offers_a_second_model_and_takes_sponsorships(tmp_path):
     """道乃久默认服务 with a second model (GPT-6 Luna, counted in questions): offered beside Tao-R1 when the relay's health
-    names it, each call of its turn naming the turn (X-Tao-Turn) so the turn counts as one question; Tao-R1's calls name
-    none.  And 赞助: a visitor's own key and model, sent once to the relay after they agree, kept nowhere on the page."""
+    names it — and asked by a visitor who has chosen none while the health names it the default — each call of its turn
+    naming the turn (X-Tao-Turn) so the turn counts as one question; Tao-R1's calls name none.  Switched in the chat's own
+    picker or the settings, used at once.  And 赞助: a visitor's own key and model, sent once to the relay after they
+    agree, kept nowhere on the page."""
     exe = _chromium()
     if exe is None:
         pytest.skip("playwright is not installed")
@@ -3436,7 +3439,7 @@ def test_the_default_service_offers_a_second_model_and_takes_sponsorships(tmp_pa
     from web_mock import MockProvider, MockRelay
 
     mock = MockProvider().start()
-    relay = MockRelay(mock.base_url, logs=False, second="GPT-6 Luna", sponsor=True).start()
+    relay = MockRelay(mock.base_url, logs=False, second="GPT-6 Luna", sponsor=True, default="GPT-6 Luna").start()
     web = tmp_path / "web"
     _published(web, relay.url)
     rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
@@ -3465,36 +3468,47 @@ def test_the_default_service_offers_a_second_model_and_takes_sponsorships(tmp_pa
                 page.keyboard.press("Escape")
                 page.wait_for_selector("#settings[open]", state="detached", timeout=5000)
 
-            # the settings: the default service's two models, the second with its questions a day; chosen and saved
+            # chosen nothing: the model the relay names the default for now, shown as such, in the chat's own picker too
+            page.wait_for_selector("#model-pick:not([hidden])", timeout=10000)
+            assert page.input_value("#model-pick") == "GPT-6 Luna"
+            assert page.eval_on_selector_all("#model-pick option", "os => os.map((o) => o.textContent)") == ["Tao-R1", "GPT-6 Luna（每天 3 问）"]
+            assert page.inner_text("#model-chip .nm") == "GPT-6 Luna"
+
+            # the settings say so; the connection test there spends none of the visitor's questions
             page.click("#settings-btn")
-            pane = page.inner_text(".settings-pane")
-            assert "GPT-6 Luna 每人每天可问 3 个问题" in pane
-            page.click(".settings-pane .seg button:has-text('GPT-6 Luna（每天 3 问）')")
-            page.click(".settings-pane .btn:has-text('测试连接')")  # spends none of the visitor's questions
+            assert "GPT-6 Luna 每人每天可问 3 个问题" in page.inner_text(".settings-pane")
+            page.click(".settings-pane .btn:has-text('测试连接')")
             page.wait_for_selector(".settings-pane .test-result.ok", timeout=15000)
             assert "未提问" in page.inner_text(".settings-pane .test-result") and relay.chat == []
-            page.click("#settings .modal-foot .btn:not(.secondary)")
-            assert "GPT-6 Luna" in page.get_attribute("#model-chip", "title")
+            page.keyboard.press("Escape")
 
             page.fill("#input", "桂枝汤主治什么？请给出原文。")
             page.keyboard.press("Enter")
             page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
             luna = [c for c in relay.chat if c["body"].get("model") == "GPT-6 Luna"]
-            assert len(luna) >= 2  # its tool round and its answer
+            assert len(luna) >= 2 and len(luna) == len(relay.chat)  # its tool round and its answer, all to GPT-6 Luna
             turns = {c["headers"].get("X-Tao-Turn") for c in luna}
             assert len(turns) == 1 and next(iter(turns)).startswith("m_")  # one turn, one question
             assert not any("Authorization" in c["headers"] for c in luna)  # no key: the relay holds it
+            assert page.inner_text(".msg.assistant .meta").startswith("GPT-6 Luna")  # the answer names who answered
 
-            # Tao-R1 again: its calls name no turn (a relay older than the second model would refuse the header)
-            page.click("#settings-btn")
-            page.click(".settings-pane .seg button:has-text('Tao-R1')")
-            page.click("#settings .modal-foot .btn:not(.secondary)")
+            # switched in the chat: at once, kept; Tao-R1's calls name no turn (an older relay would refuse the header)
+            page.select_option("#model-pick", "Tao-R1")
+            page.wait_for_function("document.querySelector('#model-chip .nm')?.textContent === 'Tao-R1'", timeout=5000)
+            page.wait_for_function("document.querySelector('.toasts')?.textContent.includes('已切换到 Tao-R1')", timeout=5000)
+            assert '"impf":"Tao-R1"' in page.evaluate("localStorage.getItem('tc.settings')")
             before = len(relay.chat)
             page.fill("#input", "麻黄汤呢？")
             page.keyboard.press("Enter")
             page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 2", timeout=60000)
             tao = relay.chat[before:]
             assert tao and all(c["body"].get("model") == "Tao-R1" and "X-Tao-Turn" not in c["headers"] for c in tao)
+
+            # switched in the settings: at once too, without 保存 — the dialog closed as it is
+            page.click("#settings-btn")
+            page.click(".settings-pane .seg button:has-text('GPT-6 Luna（每天 3 问）')")
+            page.click("#settings .modal-head .icon-btn")
+            assert page.inner_text("#model-chip .nm") == "GPT-6 Luna" and page.input_value("#model-pick") == "GPT-6 Luna"
 
             # 赞助: from the default service's box, or the settings' own pane
             page.click("#settings-btn")
