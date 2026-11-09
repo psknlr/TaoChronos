@@ -6,6 +6,7 @@ protocol from a question, and the charts of each — valid specifications, drawn
 from __future__ import annotations
 
 import json
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -247,6 +248,15 @@ def test_charts_are_drawn_as_svg_and_written_as_csv_and_json(study, tmp_path):
     # axes: counts have whole ticks, the top is never far above the data
     assert svg.ticks(0, 10, 4, integer=True) == [0, 5, 10] and svg.ticks(0, 2, integer=True) == [0, 1, 2]
     assert [svg.nice_max(v) for v in (7, 11, 55, 295)] == [8, 15, 60, 300]
+    # an axis in grams steps by 20 and ends on one (as the page's charts: web/js/chart.js); a very wide one by a multiple
+    assert [svg.unit_step(t) for t in ("折合克数（g）", "剂量（g）", "用量(克)", "克", "剂量（mg）", "毫克数", "两")] == [20, 20, 20, 20, 0, 0, 0]
+    assert [svg.unit_top(0, v, 20) for v in (37, 50, 150)] == [40, 60, 160]
+    assert svg.ticks(0, 60, unit=20) == [0, 20, 40, 60] and svg.ticks(0, 600, unit=20) == [0, 100, 200, 300, 400, 500, 600]
+    doses = {"type": "box", "title": "甘草 · 历代汤剂用量（折合克数）", "x": {"key": "period", "label": "时期"}, "y": {"label": "折合克数（g）", "min": 0},
+             "rows": [{"period": "汉", "values": [6, 9, 9, 12, 15]}, {"period": "唐", "values": [3, 6, 9, 30, 47]}]}
+    parts, _ = svg.plot(doses, 600)
+    drawn = [float(t) for t in re.findall(r'text-anchor="end"[^>]*>([\d.]+)</text>', "".join(parts))]
+    assert drawn and all(t % 20 == 0 for t in drawn) and drawn[:3] == [0, 20, 40], drawn
 
 
 def test_the_model_reads_which_charts_the_page_shows_never_their_data():
