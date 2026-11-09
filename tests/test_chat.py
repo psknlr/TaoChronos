@@ -506,8 +506,10 @@ def test_the_site_build_is_deterministic_and_complete(tmp_path):
     assert "classics__search" in core and core - {"taochronos_catalog", "taochronos_call"} < every  # core: some, with the catalog
     html = (site / "index.html").read_text(encoding="utf-8")
     assert not re.search(r'(src|href)="/', html)  # every path is relative: the site lives under /TaoChronos/
-    # the texts' credits travel with the site (the repository is private); no conversation record can enter it
-    assert (site / "attribution.html").is_file() and "CC BY-SA 4.0" in (site / "ATTRIBUTION.md").read_text(encoding="utf-8")
+    # the texts' credits travel with the site (the repository is private) as a short notice kept out of search; the
+    # book-by-book list does not; no conversation record can enter it
+    notice = (site / "attribution.html").read_text(encoding="utf-8")
+    assert "CC BY-SA 4.0" in notice and '<meta name="robots" content="noindex">' in notice and not (site / "ATTRIBUTION.md").exists()
     assert not any("chat-logs" in p.as_posix() or p.relative_to(site).parts[0] == "data" for p in site.rglob("*"))
     assert not any(n.startswith("data/") for n in names)
     assert not (site / "site.json").exists() and info["relay"] is None  # without a relay: the visitor's own key, as before
@@ -528,8 +530,7 @@ def test_the_site_build_is_deterministic_and_complete(tmp_path):
     for agent in ("GPTBot", "ClaudeBot", "CCBot", "Google-Extended", "Applebot-Extended", "meta-externalagent", "Amazonbot"):
         assert not rules.can_fetch(agent, "https://chat.impf.ai/"), agent
     sitemap = (site / "sitemap.xml").read_text(encoding="utf-8")
-    assert re.findall(r"<loc>(.*?)</loc>", sitemap) == ["https://chat.impf.ai/", "https://chat.impf.ai/about",
-                                                         "https://chat.impf.ai/attribution"]
+    assert re.findall(r"<loc>(.*?)</loc>", sitemap) == ["https://chat.impf.ai/", "https://chat.impf.ai/about"]
 
 
 def test_home_zip_carries_the_alias_layer_and_nothing_of_a_local_one():

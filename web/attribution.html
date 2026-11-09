@@ -4,40 +4,50 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>语料来源与授权 · 道乃久</title>
-<meta name="description" content="道乃久网站的要籍语料（浏览器里运行）：各部古籍录本的来源与授权（CC BY-SA 4.0 等），随网站发布。">
+<!-- the credits the texts' licences ask for, travelling with the site (the repository is private): kept out of search
+     engines and the sitemap, linked once from the about page -->
+<meta name="robots" content="noindex">
 <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
 <style>
   :root { --ink: #221f1a; --ink-3: #6b645a; --line: #e4ddd0; --surface: #fbf8f2; --accent: #9b2c1f; color-scheme: light dark; }
   @media (prefers-color-scheme: dark) { :root { --ink: #ece6da; --ink-3: #a59d90; --line: #38342e; --surface: #151412; --accent: #e0796a; } }
   body { margin: 0; background: var(--surface); color: var(--ink); font: 15px/1.75 -apple-system, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; }
-  main { max-width: 1100px; margin: 0 auto; padding: 28px 16px 60px; }
+  main { max-width: 760px; margin: 0 auto; padding: 28px 16px 60px; }
   a { color: var(--accent); }
   h1 { font-size: 22px; font-family: "Songti SC", "Noto Serif CJK SC", serif; }
+  h2 { font-size: 17px; margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line); }
   .back { font-size: 13px; color: var(--ink-3); }
-  .scroll { overflow-x: auto; }
-  table { border-collapse: collapse; font-size: 13px; min-width: 720px; }
-  th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
-  th { position: sticky; top: 0; background: var(--surface); }
-  code { font-size: 12.5px; }
+  ul { padding-inline-start: 1.3em; }
 </style>
 </head>
 <body>
 <main>
-  <p class="back"><a href="./">← 返回道乃久</a> · 本页随网站发布：要籍语料的来源与授权说明</p>
-  <div id="doc" class="scroll">正在载入…</div>
+  <p class="back"><a href="./">← 返回道乃久 · Back to TaoChronos</a></p>
+  <h1>语料来源与授权</h1>
+  <p>道乃久所用古籍的原文属公有领域。网站所收录本来自以下来源，按各自的授权使用：</p>
+  <ul>
+    <li><a href="https://www.kanripo.org/">漢籍リポジトリ Kanseki Repository</a>（Christian Wittern 等）：<a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a></li>
+    <li><a href="https://zh.wikisource.org/">维基文库</a>：<a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a></li>
+    <li><a href="https://cmeta.lctseng.csie.org/prototype/">數位中醫校書郎 CMETA</a>：<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a></li>
+    <li><a href="https://github.com/mcgill-digital/gynaecology_in_chinese_medicine">McGill University Library</a>：<a href="https://creativecommons.org/publicdomain/mark/1.0/">Public Domain Mark 1.0</a></li>
+    <li><a href="https://jicheng.tw/tcm/copyright.html">中醫笈成</a>：<a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a></li>
+  </ul>
+  <p>录本经格式转换、分段与编排，未经逐字校勘。以 CC BY-SA 4.0 授权的录本，其改编部分仍按 CC BY-SA 4.0 授权。</p>
+
+  <section lang="en">
+    <h2>Corpus sources and licences</h2>
+    <p>The classical texts TaoChronos uses are in the public domain. The transcriptions on this site come from the sources below,
+      used under their licences:</p>
+    <ul>
+      <li><a href="https://www.kanripo.org/">Kanseki Repository</a> (Christian Wittern et al.): <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a></li>
+      <li><a href="https://zh.wikisource.org/">Chinese Wikisource</a>: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a></li>
+      <li><a href="https://cmeta.lctseng.csie.org/prototype/">CMETA (數位中醫校書郎)</a>: <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a></li>
+      <li><a href="https://github.com/mcgill-digital/gynaecology_in_chinese_medicine">McGill University Library</a>: <a href="https://creativecommons.org/publicdomain/mark/1.0/">Public Domain Mark 1.0</a></li>
+      <li><a href="https://jicheng.tw/tcm/copyright.html">JiCheng (中醫笈成)</a>: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a></li>
+    </ul>
+    <p>The transcriptions were reformatted, segmented and arranged, and not proofread character by character. Adaptations of
+      CC BY-SA 4.0 transcriptions remain under CC BY-SA 4.0.</p>
+  </section>
 </main>
-<script type="module">
-  import { renderMarkdown } from "./js/markdown.js";
-  import { T, translatePage } from "./js/i18n.js";
-  translatePage();
-  const doc = document.getElementById("doc");
-  try {
-    const r = await fetch("ATTRIBUTION.md", { cache: "no-cache" });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    doc.replaceChildren(renderMarkdown(await r.text()));
-  } catch (err) {
-    doc.textContent = T`来源与授权说明未能载入（${err.message}）。`;
-  }
-</script>
 </body>
 </html>
