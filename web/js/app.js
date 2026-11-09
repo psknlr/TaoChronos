@@ -843,10 +843,14 @@ function makeHooks(conv, msg, usageBefore = null) {
         laterToast(out);
       });
     },
-    retry(attempt) {
+    retry(attempt, err) {
       // its thinking, its text and the calls it was writing (none had run)
       drop();
-      toast(T`连接中断，正在重试（第 ${attempt} 次）…`);
+      // said as it is: the service answered and refused for now, or the connection itself broke
+      const status = Number(err?.status) || 0;
+      toast(status === 429 ? T`模型服务繁忙，正在重试（第 ${attempt} 次）…`
+        : status >= 500 ? T`模型服务暂时出错（${status}），正在重试（第 ${attempt} 次）…`
+          : T`连接中断，正在重试（第 ${attempt} 次）…`);
       update();
     },
     usage(u) { msg.usage = addUsage(usageBefore, u); },

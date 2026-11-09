@@ -76,8 +76,9 @@ export const DEFAULTS = {
   OPENAI_TOKENS_PER_DAY: "3000000",
   OPENAI_TOTAL_TOKENS_PER_DAY: "60000000",
   // where OpenAI is called from: a Durable Object placed there (index.js, Egress).  The Worker runs at the visitor's
-  // nearest Cloudflare location, and OpenAI refuses some regions such a location may be in (a 403); "off" calls from there
-  OPENAI_LOCATION: "enam",
+  // nearest Cloudflare location, and OpenAI refuses some regions such a location may be in (a 403).  A list: the next is
+  // tried when OpenAI refuses the region of one.  "off" calls from the visitor's location
+  OPENAI_LOCATION: "enam,wnam",
   OPENAI_MIN_OUTPUT: "2048",                  // a reasoning model refuses a smaller output cap (16 was refused)
   // the model the page chooses for a visitor who has chosen none: a public name the service offers, until
   // DEFAULT_MODEL_UNTIL (an ISO time; "" no end) — then PUBLIC_MODEL again.  "": PUBLIC_MODEL
@@ -125,7 +126,7 @@ export function config(env = {}) {
       questions: { perDay: num("OPENAI_QUESTIONS_PER_DAY"), total: num("OPENAI_TOTAL_QUESTIONS_PER_DAY") },
       chat: { perMinute: num("OPENAI_PER_MINUTE"), perDay: num("OPENAI_CALLS_PER_DAY"), total: 0, tokensPerDay: num("OPENAI_TOKENS_PER_DAY"),
         totalTokens: num("OPENAI_TOTAL_TOKENS_PER_DAY") },
-      location: /^(off|none)$/i.test(String(get("OPENAI_LOCATION")).trim()) ? "" : String(get("OPENAI_LOCATION")).trim(),
+      locations: list("OPENAI_LOCATION").filter((x) => PLACES.has(x)), // "off" (or anything else): none
       minOutput: num("OPENAI_MIN_OUTPUT") || 0,
     },
     defaultModel: String(get("DEFAULT_MODEL")).trim(),
@@ -135,6 +136,9 @@ export function config(env = {}) {
     sponsorKeep: num("SPONSOR_KEEP"),
   };
 }
+
+// Durable Objects' location hints (Cloudflare): where the second model may be called from
+const PLACES = new Set(["wnam", "enam", "sam", "weur", "eeur", "apac", "oc", "afr", "me"]);
 
 /** Is the second model offered: switched on, and the Worker has its key? */
 const secondReady = (env, cfg) => Boolean(cfg.openai.on && env.OPENAI_API_KEY && cfg.openai.model && cfg.openai.publicModel);
@@ -190,6 +194,7 @@ export async function handle(request, env, deps) {
     switch (`${request.method} ${url.pathname}`) {
       case "GET /v1/health": return health(env, cfg, cors, deps.now());
       case "GET /v1/stats": return await stats(request, env, url, cors, deps);
+      case "GET /v1/egress": return await egress(request, cfg, cors, deps);
       case "POST /v1/chat/completions": return await chat(request, env, cfg, cors, allowed, deps, s);
       case "POST /v1/logs": return await submit(request, cfg, cors, allowed, deps, s);
       case "POST /v1/feedback": return await feedback(request, cfg, cors, allowed, deps, s);
@@ -562,8 +567,9 @@ async function secondChat(request, env, cfg, cors, deps, s, { body, raw, shape, 
     if (tokens > 0) deps.defer(deps.spend(who, "openai", tokens - (gate.reserved || 0)));
   };
   const view = { ...cfg, publicModel: o.publicModel, formatPrefix: "" };
-  // from where OpenAI serves (OPENAI_LOCATION), not from the visitor's nearest location
-  const fetcher = o.location && deps.egress ? (url, init) => deps.egress(o.location, url, init) : deps.fetch;
+  // from where OpenAI serves (OPENAI_LOCATION), not from the visitor's nearest location; the next place when OpenAI
+  // refuses the region of one
+  const fetcher = o.locations.length && deps.egress ? placed(o.locations, deps) : deps.fetch;
   return relayed({ url: `${o.upstream}/chat/completions`, key: env.OPENAI_API_KEY, payload, request, cors, view, spend, noReasoning, deps,
     label: "upstream openai", fetcher });
 }
@@ -903,6 +909,45 @@ async function intake(request, cfg, cors, allowed, deps, s, how) {
     return error(503, how.full, "logs_full", { ...cors, "Retry-After": "3600" });
   }
   return new Response(null, { status: 204, headers: cors });
+}
+
+/** A fetch made from the Durable Object at each place in turn (index.js, Egress) until OpenAI does not refuse its
+ * region — the last place's answer whatever it is. */
+function placed(places, deps) {
+  return async (url, init) => {
+    let res;
+    for (const [i, place] of places.entries()) {
+      res = await deps.egress(place, url, init);
+      if (res.status !== 403 || i === places.length - 1) return res;
+      const text = await res.clone().text().catch(() => "");
+      if (!text.includes("unsupported_country_region_territory")) return res;
+      await res.body?.cancel();
+      console.error("upstream openai region refused from", place);
+    }
+    return res;
+  };
+}
+
+/** Where a call to the second model comes from, as OpenAI's own edge sees it (Cloudflare's trace on its host: the
+ * location and country): from this Worker, which runs where the caller is, and from each place it may be called from
+ * instead.  No secret, nothing of the caller beyond its Cloudflare location; within the ten-second gate. */
+async function egress(request, cfg, cors, deps) {
+  if (await bursting(request, deps)) return error(429, "请求太频繁，请稍后再试", "rate_limited", { ...cors, "Retry-After": "10" });
+  const trace = `${new URL(cfg.openai.upstream).origin}/cdn-cgi/trace`;
+  const read = async (pending) => {
+    try {
+      const res = await pending;
+      const text = res.ok ? await res.text() : "";
+      const field = (k) => (new RegExp(`^${k}=([A-Za-z0-9-]{1,12})$`, "m").exec(text) || [])[1] || null;
+      return res.ok ? { colo: field("colo"), loc: field("loc") } : { error: res.status };
+    } catch {
+      return { error: "unreachable" };
+    }
+  };
+  const init = { method: "GET", headers: {} };
+  const out = { worker: request.cf?.colo || null, direct: await read(deps.fetch(trace, init)), places: {} };
+  for (const place of cfg.openai.locations) out.places[place] = deps.egress ? await read(deps.egress(place, trace, init)) : null;
+  return json(out, 200, cors);
 }
 
 // ------------------------------------------------------------------ sponsorship (赞助): visitors' own keys

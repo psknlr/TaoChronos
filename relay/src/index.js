@@ -142,9 +142,18 @@ export class SponsorBook extends DurableObject {
  * in.  It keeps nothing, and forwards only to the second model's own host. */
 export class Egress extends DurableObject {
   async fetch(request) {
+    const target = new URL(request.url);
     const allowed = new URL(this.env.OPENAI_BASE || DEFAULTS.OPENAI_BASE).host;
-    if (new URL(request.url).host !== allowed) return new Response("not allowed", { status: 403 });
-    return fetch(request);
+    if (target.host !== allowed) return new Response("not allowed", { status: 403 });
+    // a request of its own, made here: only the headers the call needs — nothing else of the Worker's request travels
+    // on (forwarding the incoming request as it is let some calls still be seen from the visitor's region)
+    const headers = {};
+    for (const name of ["Content-Type", "Accept", "Authorization"]) {
+      const value = request.headers.get(name);
+      if (value) headers[name] = value;
+    }
+    const body = request.method === "GET" || request.method === "HEAD" ? undefined : await request.text();
+    return fetch(target.href, { method: request.method, headers, body });
   }
 }
 

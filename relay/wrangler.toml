@@ -66,8 +66,9 @@ OPENAI_CALLS_PER_DAY = "60"
 OPENAI_TOKENS_PER_DAY = "3000000"
 OPENAI_TOTAL_TOKENS_PER_DAY = "60000000"
 # where OpenAI is called from (a Durable Object placed there): OpenAI refuses some regions a visitor's nearest Cloudflare
-# location may be in (Hong Kong, for one).  enam: eastern North America; "off" calls from the visitor's location
-OPENAI_LOCATION = "enam"
+# location may be in (Hong Kong, for one).  A list, tried in turn when OpenAI refuses the region of one: enam, eastern
+# North America, then wnam, western.  "off" calls from the visitor's location.  GET /v1/egress shows each as OpenAI sees it
+OPENAI_LOCATION = "enam,wnam"
 # the least output cap sent to OpenAI: a reasoning model refuses a very small one
 OPENAI_MIN_OUTPUT = "2048"
 # the model the page chooses for a visitor who has chosen none (one the service offers), until DEFAULT_MODEL_UNTIL;

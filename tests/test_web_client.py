@@ -3542,6 +3542,62 @@ def test_the_default_service_offers_a_second_model_and_takes_sponsorships(tmp_pa
         mock.shutdown()
 
 
+def test_a_conversation_is_kept_when_the_browser_closes_its_database(tmp_path):
+    """The browser may close the page's IndexedDB connection under it — a tab it reclaims in the background, its storage
+    cleared or failing.  The page opens a new one and saves: no "保存失败 … The database connection is closing", and the
+    conversation is there after a reload (store.js)."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import MockProvider, MockRelay
+
+    mock = MockProvider().start()
+    relay = MockRelay(mock.base_url, logs=False).start()
+    web = tmp_path / "web"
+    _published(web, relay.url)
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{srv.server_address[1]}"
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            page = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN").new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(url + "/")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            page.fill("#input", "桂枝汤主治什么？")
+            page.keyboard.press("Enter")
+            page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
+            # the browser closes the connection (Chromium does so when the origin's IndexedDB is cleared)
+            page.context.new_cdp_session(page).send("Storage.clearDataForOrigin", {"origin": url, "storageTypes": "indexeddb"})
+            page.fill("#input", "麻黄汤呢？")
+            page.keyboard.press("Enter")
+            page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 2", timeout=60000)
+            page.wait_for_timeout(1500)  # the debounced save
+            toasts = page.eval_on_selector_all(".toasts > *", "els => els.map((e) => e.textContent)")
+            assert not [t for t in toasts if "保存失败" in t], toasts
+            page.reload()
+            page.wait_for_selector("#convs .conv", timeout=30000)
+            page.click("#convs .conv")
+            page.wait_for_function("document.querySelectorAll('.msg.user').length >= 2", timeout=10000)
+            assert "麻黄汤呢？" in page.inner_text("#thread")
+            assert not errors, errors
+            browser.close()
+    finally:
+        srv.shutdown()
+        relay.shutdown()
+        mock.shutdown()
+
+
 def test_an_answer_is_rated_and_told_about_in_a_few_words(tmp_path):
     """Under each answer, 👍 and 👎 (when the site's relay takes feedback): either opens a dialog — what was good or wrong
     (several may be ticked), a few words — and nothing is sent before the visitor submits.  The feedback names the turn

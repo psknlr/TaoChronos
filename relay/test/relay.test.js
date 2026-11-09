@@ -71,7 +71,7 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
     logbook: { add: async (...a) => book.add(...a), records: async (...a) => book.records(...a), remove: async (...a) => book.remove(...a) },
     sponsors: { add: async (...a) => sponsors.add(...a), list: async () => sponsors.list(), get: async (id) => sponsors.get(id), remove: async (id) => sponsors.remove(id) },
     fetch: async (url, init) => {
-      calls.push({ url, init, body: JSON.parse(init.body) });
+      calls.push({ url, init, body: init.body ? JSON.parse(init.body) : null });
       return upstream ? upstream(url, init) : sse(["{\"choices\":[{\"delta\":{\"content\":\"可以\"}}]}", "[DONE]"]);
     },
     // the Worker's Durable Object placed at a location (index.js, Egress): here, the same fetch, told where from
@@ -809,6 +809,9 @@ test("the second model: offered only with its own key, sent to OpenAI with it, t
   // a cap below the least a reasoning model takes is raised to it (16 was refused); no tools, no effort named
   assert.deepEqual(openaiBody({ max_completion_tokens: 16, messages: [] }, "m", 32768, 2048), { model: "m", messages: [], max_completion_tokens: 2048 });
   assert.equal(config().openai.minOutput, 2048);
+  assert.deepEqual(config().openai.locations, ["enam", "wnam"]);
+  assert.deepEqual(config({ OPENAI_LOCATION: "off" }).openai.locations, []);
+  assert.deepEqual(config({ OPENAI_LOCATION: "apac, nowhere" }).openai.locations, ["apac"]); // a place Cloudflare has only
 }));
 
 test("the second model is called from where OpenAI serves, and a region it refuses is told as such", () => quiet(async () => {
@@ -842,6 +845,28 @@ test("the second model is called from where OpenAI serves, and a region it refus
   assert.ok(said.includes("upstream openai 403 unsupported_country_region_territory"), said.join("\n"));
   assert.ok(said.includes("upstream openai 400 unsupported_parameter reasoning_effort"), said.join("\n")); // the owner sees which
   assert.ok(!said.join("\n").includes("not supported"), "never the upstream's message");
+}));
+
+test("a region OpenAI refuses from one place is asked from the next; where each is seen is told", () => quiet(async () => {
+  const where = [];
+  let n = 0;
+  const region = () => new Response(JSON.stringify({ error: { code: "unsupported_country_region_territory" } }), { status: 403 });
+  const r = relay({ env: { OPENAI_API_KEY: OKEY }, egress: where, upstream: async () => (n++ === 0 ? region() : sse(['{"choices":[{"delta":{"content":"答"}}]}', "[DONE]"])) });
+  const res = await r.call("/v1/chat/completions", post(LUNA, turnOf("p1")));
+  assert.equal(res.status, 200);
+  assert.match(await res.text(), /答/);
+  assert.deepEqual(where, ["enam", "wnam"]);
+  const all = relay({ env: { OPENAI_API_KEY: OKEY }, egress: [], upstream: async () => region() }); // refused from everywhere: told so
+  assert.equal((await (await all.call("/v1/chat/completions", post(LUNA, turnOf("p2")))).json()).error.type, "upstream_region");
+  // GET /v1/egress: OpenAI's edge's own trace, from the Worker and from each place
+  const traced = [];
+  const t = relay({ env: { OPENAI_API_KEY: OKEY }, egress: traced, cf: { colo: "HKG" }, upstream: async (url) => {
+    assert.equal(url, "https://api.openai.com/cdn-cgi/trace");
+    return new Response(`fl=1\nip=2a06:98c0::1\ncolo=${traced.length ? "IAD" : "HKG"}\nloc=${traced.length ? "US" : "HK"}\n`, { status: 200 });
+  } });
+  const seen = await (await t.call("/v1/egress", { headers: { Origin: PAGE } })).json();
+  assert.deepEqual(seen, { worker: "HKG", direct: { colo: "HKG", loc: "HK" }, places: { enam: { colo: "IAD", loc: "US" }, wnam: { colo: "IAD", loc: "US" } } });
+  assert.ok(!JSON.stringify(seen).includes("2a06")); // no address
 }));
 
 test("the default model: the one DEFAULT_MODEL names while it is offered and until DEFAULT_MODEL_UNTIL, then Tao-R1", async () => {
