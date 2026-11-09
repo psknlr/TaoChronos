@@ -50,8 +50,11 @@ OpenAI 密钥与 MiniMax 密钥一样**只是这个 Worker 的加密机密**，�
   几轮工具、还可能自查一次，网页在这一轮的每次调用都带上请求头 `X-Tao-Turn`（这一轮回答的编号），同一轮只计一次；网页因故重发同一问题也不重复计。
   不带这个头的请求按最后一个问题的内容计，工具轮必须属于今天已计的问题。问题之下另有每人每天的调用次数与 token 上限
   （`OPENAI_CALLS_PER_DAY`、`OPENAI_TOKENS_PER_DAY`……），约束一个问题最多能花多少，也约束不是网页的客户端。
-- **从美国线路调用**：Worker 在离访客最近的 Cloudflare 机房运行，OpenAI 拒绝部分地区（如香港）发出的请求（403）。中转经一个放在
-  `OPENAI_LOCATION`（默认 `enam`，北美东部）的 Durable Object（`Egress`，不存任何东西）调用 OpenAI；`"off"` 则直接从访客所在机房调用。
+- **从美国线路调用**：Worker 在离访客最近的 Cloudflare 机房运行，OpenAI 拒绝部分地区（如香港）发出的请求（403）。中转经放在
+  `OPENAI_LOCATION` 的 Durable Object（`Egress`，不存任何东西；它另起一个只带必要请求头的请求，不转发 Worker 的原请求）调用 OpenAI。
+  默认 `"enam,wnam"`：先北美东部，OpenAI 仍拒绝地区时再试北美西部；`"off"` 则直接从访客所在机房调用。
+  **`GET /v1/egress`** 显示 OpenAI 的边缘看到的位置（Cloudflare 的 trace：机房与国家），分别是直接从访客所在机房、和从每个地点调用时；
+  在受影响的地区打开它，`direct.loc` 若是 `HK`、`places.*.loc` 是 `US`，就说明绕行有效。
 - **带工具时不思考**：在 Chat Completions 上，GPT-6 Luna 只有在 `reasoning_effort: "none"` 时才能调用函数（OpenAI 的模型页），
   网页的请求都带工具，中转因此加上它；输出上限至少 `OPENAI_MIN_OUTPUT`（2048，过小会被拒绝）。OpenAI 的拒绝在 Worker 日志里记为
   `upstream openai <状态码> <错误代码> <参数名>`（不记原文）。

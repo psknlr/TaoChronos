@@ -54,8 +54,10 @@ export class ProviderError extends Error {
 }
 
 // refusals that asking again soon does not change: the visitor's or the service's allowance for the day spent, an address
-// blocked, the default service not set up, its own key refused or its quota spent, a provider's quota spent
-const FINAL = new Set(["daily_limit", "total_limit", "blocked", "not_configured", "upstream_auth", "upstream_quota", "insufficient_quota"]);
+// blocked, the default service not set up, its own key refused or its quota spent, the model refusing the region the
+// call came from, a provider's quota spent
+const FINAL = new Set(["daily_limit", "total_limit", "blocked", "not_configured", "upstream_auth", "upstream_quota", "upstream_region",
+  "insufficient_quota"]);
 
 /** The error's type in a provider's error body ({error: {type}}; the default service's are FINAL's and rate_limited …). */
 function errorKind(body) {

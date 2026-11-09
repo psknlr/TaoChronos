@@ -45,25 +45,37 @@ const every = (ms, fn) => { let last = 0; return (...a) => { const now = perform
 /** IndexedDB, reduced to what this worker needs; every call resolves (undefined / false when storage is unavailable). */
 const kept = (() => {
   let opened = null;
+  // a connection the browser closes (storage reclaimed or cleared, another tab's upgrade) is forgotten: the next use
+  // opens a new one (store.js does the same for the conversations)
+  const forget = (db) => { try { db.close(); } catch { /* closed already */ } opened = null; };
   const open = () => (opened ||= new Promise((resolve) => {
     try {
       const req = indexedDB.open("taochronos-runtime", 1);
       req.onupgradeneeded = () => req.result.createObjectStore("files");
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => {
+        const db = req.result;
+        db.onclose = db.onversionchange = () => forget(db);
+        resolve(db);
+      };
       req.onerror = req.onblocked = () => resolve(null);
     } catch { resolve(null); }
   }));
+  const once = (db, mode, fn) => new Promise((resolve) => {
+    try {
+      const tx = db.transaction("files", mode);
+      const req = fn(tx.objectStore("files"));
+      tx.oncomplete = () => resolve({ ok: true, value: req?.result });
+      tx.onerror = tx.onabort = () => resolve({ ok: false });
+    } catch (err) { resolve({ ok: false, gone: err?.name === "InvalidStateError" }); }
+  });
   const run = async (mode, fn) => {
     const db = await open();
     if (!db) return { ok: false };
-    return new Promise((resolve) => {
-      try {
-        const tx = db.transaction("files", mode);
-        const req = fn(tx.objectStore("files"));
-        tx.oncomplete = () => resolve({ ok: true, value: req?.result });
-        tx.onerror = tx.onabort = () => resolve({ ok: false });
-      } catch { resolve({ ok: false }); }
-    });
+    const got = await once(db, mode, fn);
+    if (!got.gone) return got;
+    forget(db); // closed under the worker: once more, on a new connection
+    const again = await open();
+    return again ? once(again, mode, fn) : { ok: false };
   };
   return {
     get: async (key) => (await run("readonly", (s) => s.get(key))).value,
