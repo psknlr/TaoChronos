@@ -43,11 +43,11 @@ HONEYPOT = "block"
 STATS_PUBLIC = "0"
 STATS_UTC_OFFSET = "8"
 # the pages' Content-Security-Policy (empty: none is sent), written from what the page loads (security/README.md): its own
-# files, the two inline scripts and two inline styles by their hashes (cloud/test/site.test.js checks them against web/),
+# files, the inline script and the two inline styles by their hashes (cloud/test/site.test.js checks them against web/),
 # the Anthropic SDK from jsDelivr's npm files, Cloudflare's Web Analytics beacon (the edge adds it to every page; it is
 # not in web/), any https model service a visitor names and a local one, images attached as data: and blob:.  Both
 # report to /api/security/csp, with the sentinel's events.
-# CSP is enforced: what stops a script that is not the page's — script-src (no inline script but the two hashed, no
+# CSP is enforced: what stops a script that is not the page's — script-src (no inline script but the one hashed, no
 # eval), object-src, base-uri — and what a script could send or show the page's data through: connect-src, img-src,
 # worker-src, form-action, frame-ancestors.  Enforced since 2026-10-28, after three weeks of the whole policy reported
 # (2026-10-06 to 10-28: 144 reports, 13 under these directives) without one from the page's own code: those 13 were
@@ -58,8 +58,8 @@ STATS_UTC_OFFSET = "8"
 # browsers add their own (a dark mode's or a translator's <style>, an icon font, a bridge's <iframe>), and refusing those
 # would cost the visitor the extension, not protect the page.  The in-browser runtime's workers get their own policy in
 # _headers (a worker's policy is the one on its own file)
-CSP = "script-src 'self' 'sha256-8cHKOAsMjSAfwzaoDvyOuFfoKbHgnKmcCuF/FxBYBS4=' 'sha256-rG4snmT/AK9g6DAPK6sFUU1wxTQhkalY+1qGVAE7ZE4=' https://cdn.jsdelivr.net/npm/ https://static.cloudflareinsights.com; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'; worker-src 'self'; manifest-src 'self'; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; report-uri /api/security/csp; report-to csp"
-CSP_REPORT_ONLY = "default-src 'self'; script-src 'self' 'sha256-8cHKOAsMjSAfwzaoDvyOuFfoKbHgnKmcCuF/FxBYBS4=' 'sha256-rG4snmT/AK9g6DAPK6sFUU1wxTQhkalY+1qGVAE7ZE4=' https://cdn.jsdelivr.net/npm/ https://static.cloudflareinsights.com; style-src 'self' 'sha256-F+NGlB08BV4yTTs+PCi5GRPVJ5tSBBBemhlV4rmC3ew=' 'sha256-5Fv00cN5Xaipqi9gKad2XUqLKm7+TNig9gVVRc0rhR0='; style-src-attr 'unsafe-hashes' 'sha256-qFn50HMKisaTPwbV1pKoe3olf1lYhv+m32EWXEn8+S4='; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; worker-src 'self'; manifest-src 'self'; font-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'; report-uri /api/security/csp; report-to csp"
+CSP = "script-src 'self' 'sha256-8cHKOAsMjSAfwzaoDvyOuFfoKbHgnKmcCuF/FxBYBS4=' https://cdn.jsdelivr.net/npm/ https://static.cloudflareinsights.com; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'; worker-src 'self'; manifest-src 'self'; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; report-uri /api/security/csp; report-to csp"
+CSP_REPORT_ONLY = "default-src 'self'; script-src 'self' 'sha256-8cHKOAsMjSAfwzaoDvyOuFfoKbHgnKmcCuF/FxBYBS4=' https://cdn.jsdelivr.net/npm/ https://static.cloudflareinsights.com; style-src 'self' 'sha256-F+NGlB08BV4yTTs+PCi5GRPVJ5tSBBBemhlV4rmC3ew=' 'sha256-aPcvRsfwJr+7rNkTbydiD4Z2JolUcX881HfhUtux9n0='; style-src-attr 'unsafe-hashes' 'sha256-qFn50HMKisaTPwbV1pKoe3olf1lYhv+m32EWXEn8+S4='; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; worker-src 'self'; manifest-src 'self'; font-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'; report-uri /api/security/csp; report-to csp"
 # sha256 of the token that may upload the full corpus store (`taochronos web upload`).  Empty: uploads are off.  To
 # upload a new store, register a new token's sha256 in the repository variable STORE_TOKEN_SHA256 for as long as the
 # upload takes (cloud/README.md); the token itself is kept nowhere here.
