@@ -143,10 +143,39 @@ export function niceMax(x) {
   return 10 * mag;
 }
 
-/** Round ticks over [lo, hi]; ``integer``: no fractions (counts). */
-export function ticks(lo, hi, n = 5, integer = false) {
+/** An axis whose title names grams (剂量（g）, 折合克数, 克, grams — not mg, kg, 毫克, 千克) steps by 20 g; 0: any other. */
+export function unitStep(label) {
+  const t = String(label ?? "");
+  if (!t || /mg|kg|毫克|千克|公斤/i.test(t)) return 0;
+  return /[（(]\s*(?:g|克)\s*[)）]|克数|^\s*(?:g|克)\s*$|\bgrams?\b/i.test(t) ? 20 : 0;
+}
+
+const MOST_TICKS = 12;
+
+/** The step an axis of a fixed unit `step` takes over [lo, hi]: the step itself, or — where that would draw more than
+ * MOST_TICKS ticks — the least of 2, 5, 10, 20 … times it that does not. */
+export function unitTicksStep(lo, hi, step) {
+  const span = Math.max(hi - lo, 0);
+  for (let m = 1; ; m *= 10) for (const k of [1, 2, 5]) if (span / (step * k * m) <= MOST_TICKS) return step * k * m;
+}
+
+/** An axis's top on a fixed unit step: rounded up to the next tick, so that the axis ends on one. */
+export function unitTop(lo, hi, step) {
+  if (!step || !(hi > lo)) return hi;
+  const s = unitTicksStep(lo, hi, step);
+  return Math.ceil(hi / s - 1e-9) * s;
+}
+
+/** Round ticks over [lo, hi]; ``integer``: no fractions (counts); ``unit``: an axis of a fixed unit step (unitStep). */
+export function ticks(lo, hi, n = 5, integer = false, unit = 0) {
   const span = hi - lo;
   if (!(span > 0)) return [lo];
+  if (unit > 0) {
+    const s = unitTicksStep(lo, hi, unit);
+    const out = [];
+    for (let t = Math.ceil(lo / s - 1e-9) * s; t <= hi + s * 1e-9; t += s) out.push(Number(t.toFixed(10)));
+    return out;
+  }
   const raw = span / n;
   const mag = 10 ** Math.floor(Math.log10(raw));
   const steps = integer ? [1, 2, 5, 10].map((s) => s * Math.max(1, mag)) : [1, 2, 2.5, 5, 10].map((s) => s * mag);
@@ -254,6 +283,9 @@ function legend(items, width, kind = "rect") {
 /** Are these counts (whole numbers)?  Their axis then has no fractions. */
 const whole = (values) => values.every((x) => x === null || Number.isInteger(x));
 
+/** A value axis's ticks: on the unit its title names (grams: by 20), else round ones. */
+const axisTicks = (lo, hi, label, integer = false, percent = false) => ticks(lo, hi, 5, integer && !percent, percent ? 0 : unitStep(label));
+
 /** The room an axis on the left needs: its tick labels, and in a journal its title turned along it. */
 function leftFor(tickTexts, label) {
   if (!J) return 52;
@@ -263,7 +295,7 @@ function leftFor(tickTexts, label) {
 /** A y axis; on screen its title above it, ``head`` over the plot's top. */
 function yAxis(g, left, right, top, bottom, lo, hi, percent, label, integer = false, head = 8) {
   const scale = (val) => (hi > lo ? bottom - ((val - lo) / (hi - lo)) * (bottom - top) : bottom);
-  const tks = ticks(lo, hi, 5, integer && !percent);
+  const tks = axisTicks(lo, hi, label, integer, percent);
   if (J) {
     g.append(line(left, top, left, bottom));
     for (const t of tks) g.append(line(left - 4, scale(t), left, scale(t)), text(left - 7, scale(t) + 3.5, fmt(t, percent), { size: 10.5, anchor: "end", cls: "tick" }));
@@ -310,7 +342,7 @@ function xLabels(g, cats, xs, bottom, band, label = null) {
 }
 
 /** A numeric axis under a plot: its line and ticks, and its title; on screen a light grid up to ``gridTop``. */
-function xAxisNumeric(g, left, right, bottom, lo, hi, { label = "", percent = false, year = false, log = false, gridTop = null } = {}) {
+function xAxisNumeric(g, left, right, bottom, lo, hi, { label = "", percent = false, year = false, log = false, gridTop = null, step = 0 } = {}) {
   let scale, tks;
   if (log) {
     const a = Math.log10(lo), b = Math.log10(hi);
@@ -318,7 +350,7 @@ function xAxisNumeric(g, left, right, bottom, lo, hi, { label = "", percent = fa
     tks = logTicks(lo, hi);
   } else {
     scale = (val) => (hi > lo ? left + ((val - lo) / (hi - lo)) * (right - left) : left);
-    tks = ticks(lo, hi, 5);
+    tks = ticks(lo, hi, 5, false, percent || year ? 0 : step);
   }
   const label_ = (t) => (year ? yearText(t) : log ? String(Number(t.toPrecision(6))) : fmt(t, percent));
   g.append(line(left, bottom, right, bottom));
@@ -356,7 +388,8 @@ function series(spec, width) {
     lo = num(y.min) ?? Math.min(0, ...vals);
     integer = whole(vals);
   }
-  const left = leftFor(ticks(lo, hi, 5, integer && !percent).map((t) => fmt(t, percent)), y.label), right = width - 16;
+  if (!percent && num(y.max) === null) hi = unitTop(lo, hi, unitStep(y.label)); // a gram axis ends on a 20
+  const left = leftFor(axisTicks(lo, hi, y.label, integer, percent).map((t) => fmt(t, percent)), y.label), right = width - 16;
   const top = lg.height + 22, bottom = top + Math.min(280, Math.max(J ? 170 : 180, width * (J ? 0.5 : 0.42)));
   const scale = yAxis(g, left, right, top, bottom, lo, hi, percent, y.label, integer);
   const band = (right - left) / Math.max(rows.length, 1);
@@ -455,10 +488,11 @@ function hbar(spec, width) {
   const left = labelW, right = width - 60;
   const top = 8, step = J ? 20 : 24, bh = J ? 13 : 16;
   const vals = rows.map((r) => num(r[s.key]) || 0);
-  const lo = Math.min(0, ...vals), hi = niceMax(Math.max(0, ...vals));
+  const unit = percent ? 0 : unitStep(spec.y?.label || s.label);
+  const lo = Math.min(0, ...vals), hi = unitTop(lo, niceMax(Math.max(0, ...vals)), unit);
   const scale = (val) => (hi > lo ? left + ((val - lo) / (hi - lo)) * (right - left) : left);
   const bottom = top + step * rows.length;
-  for (const t of ticks(lo, hi, 4, whole(vals) && !percent)) {
+  for (const t of ticks(lo, hi, 4, whole(vals) && !percent, unit)) {
     const x = scale(t);
     g.append(J ? line(x, bottom, x, bottom + 4) : line(x, top, x, bottom, "viz-grid"),
       text(x, bottom + 15, fmt(t, percent), { size: 10.5, fill: J ? "viz-ink-2" : "viz-muted", anchor: "middle", cls: "tick" }));
@@ -556,8 +590,8 @@ function range(spec, width) {
   const boxes = rows.flatMap((r) => [num(r[keys.q3]), num(r[keys.median])]).filter((n) => n !== null);
   // the axis reads the boxes: a few very large values would flatten them — it stops at 2.5× the largest upper quartile,
   // longer whiskers are cut there with their value at the top (the table has every number)
-  const hi = niceMax(Math.min(Math.max(1, ...vals), Math.max(1, ...boxes) * 2.5));
-  const left = leftFor(ticks(0, hi).map((t) => fmt(t)), spec.y?.label), right = width - 16, top = 20, bottom = top + Math.min(260, Math.max(170, width * 0.38));
+  const hi = unitTop(0, niceMax(Math.min(Math.max(1, ...vals), Math.max(1, ...boxes) * 2.5)), unitStep(spec.y?.label));
+  const left = leftFor(axisTicks(0, hi, spec.y?.label).map((t) => fmt(t)), spec.y?.label), right = width - 16, top = 20, bottom = top + Math.min(260, Math.max(170, width * 0.38));
   const scale = yAxis(g, left, right, top, bottom, 0, hi, false, spec.y?.label);
   const clip = (n) => Math.min(n, hi);
   const band = (right - left) / Math.max(rows.length, 1);
@@ -601,11 +635,11 @@ function box(spec, width) {
   const clip = Math.max(0, ...tops) > cap * 2.5;
   const y = spec.y || {};
   const lo = num(y.min) ?? Math.min(0, ...rows.map((r) => num(r.lo) ?? 0));
-  const hi = niceMax(clip ? cap * 2.5 : Math.max(1e-9, ...tops) * 1.04);
+  const hi = unitTop(lo, niceMax(clip ? cap * 2.5 : Math.max(1e-9, ...tops) * 1.04), unitStep(y.label));
   const g = el("g");
   // values past the axis are counted over their box (▲n) in a row of their own, under the axis title and the key to ▲
   const over = clip && rows.some((r) => valuesOf(r).some((val) => val > hi));
-  const left = leftFor(ticks(lo, hi).map((t) => fmt(t)), y.label), right = width - 16, top = over ? 40 : 20;
+  const left = leftFor(axisTicks(lo, hi, y.label).map((t) => fmt(t)), y.label), right = width - 16, top = over ? 40 : 20;
   const bottom = top + Math.min(270, Math.max(170, width * (J ? 0.5 : 0.4)));
   const scale = yAxis(g, left, right, top, bottom, lo, hi, false, y.label, false, over ? top - 12 : 8);
   const band = (right - left) / Math.max(rows.length, 1);
@@ -733,12 +767,13 @@ function scatter(spec, width) {
   xhi += pad;
   const ylo = num(ay.min) ?? Math.min(0, ...yv);
   const topY = Math.max(...yv, ...fit.map(([, b]) => b));
-  const yhi = num(ay.max) ?? (ay.percent && topY <= 1 ? 1 : niceMax(topY));
-  const left = leftFor(ticks(ylo, yhi).map((t) => fmt(t, ay.percent)), ay.label), right = width - 16;
+  const yhi = num(ay.max) ?? (ay.percent && topY <= 1 ? 1 : unitTop(ylo, niceMax(topY), ay.percent ? 0 : unitStep(ay.label)));
+  const left = leftFor(axisTicks(ylo, yhi, ay.label, false, Boolean(ay.percent)).map((t) => fmt(t, ay.percent)), ay.label), right = width - 16;
   const head = sk ? 18 : 8; // the axis title and the key to the bubbles clear of a bubble at the top (radius 10 at most)
   const top = lg.height + 14 + head, bottom = top + Math.min(280, Math.max(180, width * (J ? 0.55 : 0.45)));
   const yscale = yAxis(g, left, right, top, bottom, ylo, yhi, Boolean(ay.percent), ay.label, false, head);
-  let { scale: xscale, end } = xAxisNumeric(g, left, right, bottom, xlo, xhi, { label: J ? ax.label || "" : "", percent: Boolean(ax.percent), year: Boolean(ax.year), gridTop: top });
+  let { scale: xscale, end } = xAxisNumeric(g, left, right, bottom, xlo, xhi, { label: J ? ax.label || "" : "", percent: Boolean(ax.percent), year: Boolean(ax.year), gridTop: top,
+    step: unitStep(ax.label) });
   if (!J && ax.label) { g.append(text(right, end + 10, ax.label, { size: 10.5, fill: "viz-muted", anchor: "end" })); end += 14; }
   const smax = sk ? Math.max(1e-9, ...pts.map(([r]) => num(r[sk]) || 0)) : 1;
   const rad = (r) => (sk ? 3 + 7 * Math.sqrt(Math.max(num(r[sk]) || 0, 0) / smax) : 3);

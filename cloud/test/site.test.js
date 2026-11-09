@@ -467,7 +467,7 @@ test("the policies deployed name the pages' inline scripts and styles by their h
     for (const m of html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)) inline.styles.push(hash(m[1]));
     for (const m of html.matchAll(/ style="([^"]*)"/g)) inline.attrs.push(hash(m[1]));
   }
-  assert.deepEqual([inline.scripts.length, inline.styles.length, inline.attrs.length], [2, 2, 1]); // an inline block added to a page needs its hash in the policy
+  assert.deepEqual([inline.scripts.length, inline.styles.length, inline.attrs.length], [1, 2, 1]); // an inline block added to a page needs its hash in the policy
   const directive = (name, of = policy) => (new RegExp(`(?:^|; )${name} ([^;]*)`).exec(of) || [])[1] || "";
   for (const h of inline.scripts) assert.ok(directive("script-src").includes(h), `script-src lacks ${h}`);
   // the enforced policy: the same scripts (a page whose inline script lost its hash would not start), and what keeps

@@ -23,6 +23,7 @@ import contextlib
 import csv
 import io
 import math
+import re
 from dataclasses import dataclass
 from typing import Any, Iterator
 from xml.sax.saxutils import escape
@@ -134,11 +135,50 @@ def nice_max(v: float) -> float:
     return 10 * mag
 
 
-def ticks(lo: float, hi: float, n: int = 5, integer: bool = False) -> list[float]:
-    """Round ticks over [lo, hi]; ``integer``: no fractions (counts)."""
+_UNIT_OTHER = re.compile(r"mg|kg|毫克|千克|公斤", re.I)
+_GRAMS = re.compile(r"[（(]\s*(?:g|克)\s*[)）]|克数|^\s*(?:g|克)\s*$|\bgrams?\b", re.I)
+MOST_TICKS = 12
+
+
+def unit_step(label: Any) -> float:
+    """An axis whose title names grams (剂量（g）, 折合克数, 克, grams — not mg, kg, 毫克, 千克) steps by 20 g; 0: any other."""
+    t = str(label or "")
+    if not t or _UNIT_OTHER.search(t):
+        return 0.0
+    return 20.0 if _GRAMS.search(t) else 0.0
+
+
+def unit_ticks_step(lo: float, hi: float, step: float) -> float:
+    """The step an axis of a fixed unit ``step`` takes over [lo, hi]: the step itself, or — where that would draw more
+    than MOST_TICKS ticks — the least of 2, 5, 10, 20 … times it that does not."""
+    span, m = max(hi - lo, 0.0), 1
+    while True:
+        for k in (1, 2, 5):
+            if span / (step * k * m) <= MOST_TICKS:
+                return step * k * m
+        m *= 10
+
+
+def unit_top(lo: float, hi: float, step: float) -> float:
+    """An axis's top on a fixed unit step: rounded up to the next tick, so that the axis ends on one."""
+    if not step or not hi > lo:
+        return hi
+    s = unit_ticks_step(lo, hi, step)
+    return math.ceil(hi / s - 1e-9) * s
+
+
+def ticks(lo: float, hi: float, n: int = 5, integer: bool = False, unit: float = 0) -> list[float]:
+    """Round ticks over [lo, hi]; ``integer``: no fractions (counts); ``unit``: an axis of a fixed unit step (unit_step)."""
     span = hi - lo
     if span <= 0:
         return [lo]
+    if unit > 0:
+        s = unit_ticks_step(lo, hi, unit)
+        out, v = [], math.ceil(lo / s - 1e-9) * s
+        while v <= hi + s * 1e-9:
+            out.append(round(v, 10))
+            v += s
+        return out
     raw = span / n
     mag = 10 ** math.floor(math.log10(raw))
     steps = [s * max(1, mag) for s in (1, 2, 5, 10)] if integer else [s * mag for s in (1, 2, 2.5, 5, 10)]
@@ -256,6 +296,11 @@ def _whole(values: list[Any]) -> bool:
     return all(float(v).is_integer() for v in values if v is not None and v != "")
 
 
+def _axis_ticks(lo: float, hi: float, label: Any, integer: bool = False, percent: bool = False) -> list[float]:
+    """A value axis's ticks: on the unit its title names (grams: by 20), else round ones."""
+    return ticks(lo, hi, integer=integer and not percent, unit=0 if percent else unit_step(label))
+
+
 def _left(tks: list[str], label: str | None) -> float:
     """The room an axis on the left needs: its tick labels, and in a journal its title turned along it."""
     widest = max((text_width(t, 10.5) for t in tks), default=0)
@@ -266,7 +311,7 @@ def _y_axis(p: list[str], left: float, right: float, top: float, bottom: float, 
             integer: bool = False, head: float = 8) -> Any:
     """A y axis; on screen its title above it, ``head`` over the plot's top."""
     scale = (lambda v: bottom - (v - lo) / (hi - lo) * (bottom - top)) if hi > lo else (lambda v: bottom)
-    tks = ticks(lo, hi, integer=integer and not percent)
+    tks = _axis_ticks(lo, hi, label, integer, percent)
     if S.journal:
         p.append(_line(left, top, left, bottom, S.axis))
         for t in tks:
@@ -322,7 +367,7 @@ def _x_labels(p: list[str], cats: list[str], xs: list[float], bottom: float, ban
 
 
 def _x_axis_numeric(p: list[str], left: float, right: float, bottom: float, lo: float, hi: float, *, label: str = "",
-                    percent: bool = False, year: bool = False, log: bool = False, grid_top: float | None = None) -> Any:
+                    percent: bool = False, year: bool = False, log: bool = False, grid_top: float | None = None, unit: float = 0) -> Any:
     """A numeric axis under a plot: its ticks, and in a journal its line and title; on screen a light grid up the plot."""
     if log:
         lo_l, hi_l = math.log10(lo), math.log10(hi)
@@ -330,7 +375,7 @@ def _x_axis_numeric(p: list[str], left: float, right: float, bottom: float, lo: 
         tks = log_ticks(lo, hi)
     else:
         scale = (lambda v: left + (v - lo) / (hi - lo) * (right - left)) if hi > lo else (lambda v: left)  # noqa: E731
-        tks = ticks(lo, hi, 5)
+        tks = ticks(lo, hi, 5, unit=0 if percent or year else unit)
     text = (lambda t: year_text(t)) if year else (lambda t: fmt(t, percent) if not log else (f"{t:g}"))  # noqa: E731
     p.append(_line(left, bottom, right, bottom, S.axis))
     for t in tks:
@@ -366,7 +411,9 @@ def _series(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
         hi = _num(y.get("max")) or nice_max(max(vals or [0]))
         lo = _num(y.get("min")) if _num(y.get("min")) is not None else min(0.0, min(vals or [0]))
         whole = _whole(vals)
-    tks = [fmt(t, percent) for t in ticks(lo, hi, integer=whole and not percent)]
+    if not percent and _num(y.get("max")) is None:
+        hi = unit_top(lo, hi, unit_step(y.get("label")))  # a gram axis ends on a 20
+    tks = [fmt(t, percent) for t in _axis_ticks(lo, hi, y.get("label"), whole, percent)]
     left, right = _left(tks, y.get("label")), width - 16
     top = lh + 22
     bottom = top + min(280, max(170 if S.journal else 180, width * (0.5 if S.journal else 0.42)))
@@ -474,11 +521,13 @@ def _hbar(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     left, right = label_w, width - 60
     top, step = 8.0, 24.0 if not S.journal else 20.0
     vals = [_num(r.get(s.get("key"))) or 0.0 for r in rows]
-    lo, hi = min(0.0, min(vals or [0])), nice_max(max(vals or [0]))
+    unit = 0.0 if percent else unit_step(spec.get("y", {}).get("label") or s.get("label"))
+    lo = min(0.0, min(vals or [0]))
+    hi = unit_top(lo, nice_max(max(vals or [0])), unit)
     scale = (lambda v: left + (v - lo) / (hi - lo) * (right - left)) if hi > lo else (lambda v: left)
     bottom = top + step * len(rows)
     bh = 16 if not S.journal else 13
-    for t in ticks(lo, hi, 4, integer=_whole(vals) and not percent):
+    for t in ticks(lo, hi, 4, integer=_whole(vals) and not percent, unit=unit):
         x = scale(t)
         if S.journal:
             p.append(_line(x, bottom, x, bottom + 4, S.axis))
@@ -574,10 +623,10 @@ def _range(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     boxes = [v for r in rows for k in ("q3", "median") for v in [_num(r.get(keys[k]))] if v is not None]
     # the axis reads the boxes: a few very large values would flatten them — it stops at 2.5× the largest upper quartile,
     # longer whiskers are cut there with their value at the top (the table has every number)
-    hi = nice_max(min(max(vals or [1]), max(boxes or [1]) * 2.5))
-    p: list[str] = []
     label = spec.get("y", {}).get("label", "")
-    left, right, top = _left([fmt(t) for t in ticks(0, hi)], label), width - 16, 20.0
+    hi = unit_top(0.0, nice_max(min(max(vals or [1]), max(boxes or [1]) * 2.5)), unit_step(label))
+    p: list[str] = []
+    left, right, top = _left([fmt(t) for t in _axis_ticks(0, hi, label)], label), width - 16, 20.0
     bottom = top + min(260, max(170, width * 0.38))
     scale = _y_axis(p, left, right, top, bottom, 0.0, hi, False, label)
     band = (right - left) / max(len(rows), 1)
@@ -634,9 +683,9 @@ def _box(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     clip = max(tops or [1]) > cap * 2.5
     y = spec.get("y", {})
     lo = _num(y.get("min")) if _num(y.get("min")) is not None else min([0.0] + [_num(r.get("lo")) or 0 for r in rows])
-    hi = nice_max(cap * 2.5 if clip else max(tops or [1]) * 1.04)
+    hi = unit_top(lo, nice_max(cap * 2.5 if clip else max(tops or [1]) * 1.04), unit_step(y.get("label")))
     p: list[str] = []
-    left, right = _left([fmt(t) for t in ticks(lo, hi)], y.get("label")), width - 16
+    left, right = _left([fmt(t) for t in _axis_ticks(lo, hi, y.get("label"))], y.get("label")), width - 16
     # values past the axis are counted over their box (▲n) in a row of their own, under the axis title and the key to ▲
     over = clip and any(_num(v) > hi for r in rows for v in values_of(r))
     top = 40.0 if over else 20.0
@@ -779,8 +828,8 @@ def _scatter(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     y_lo = _num(ys_.get("min")) if _num(ys_.get("min")) is not None else min(0.0, min(yv))
     percent_y = bool(ys_.get("percent"))
     top_y = max(yv + [b for _, b in fit])
-    y_hi = _num(ys_.get("max")) or (1.0 if percent_y and top_y <= 1 else nice_max(top_y))
-    tks = [fmt(t, percent_y) for t in ticks(y_lo, y_hi)]
+    y_hi = _num(ys_.get("max")) or (1.0 if percent_y and top_y <= 1 else unit_top(y_lo, nice_max(top_y), 0 if percent_y else unit_step(ys_.get("label"))))
+    tks = [fmt(t, percent_y) for t in _axis_ticks(y_lo, y_hi, ys_.get("label"), False, percent_y)]
     left, right = _left(tks, ys_.get("label")), width - 16
     sk = size.get("key")
     head = 18.0 if sk else 8.0  # the axis title and the key to the bubbles clear of a bubble at the top (radius 10 at most)
@@ -788,7 +837,8 @@ def _scatter(spec: dict[str, Any], width: float) -> tuple[list[str], float]:
     bottom = top + min(280, max(180, width * (0.55 if S.journal else 0.45)))
     yscale = _y_axis(p, left, right, top, bottom, y_lo, y_hi, percent_y, ys_.get("label", ""), head=head)
     xscale, end = _x_axis_numeric(p, left, right, bottom, x_lo, x_hi, label=xs_.get("label", "") if S.journal else "",
-                                  percent=bool(xs_.get("percent")), year=bool(xs_.get("year")), grid_top=top)
+                                  percent=bool(xs_.get("percent")), year=bool(xs_.get("year")), grid_top=top,
+                                  unit=unit_step(xs_.get("label")))
     if not S.journal and xs_.get("label"):
         p.append(_t(right, end + 10, xs_["label"], size=10.5, fill=S.muted, anchor="end"))
         end += 14

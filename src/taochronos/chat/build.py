@@ -187,7 +187,9 @@ def fetch_pyodide(dest: Path, *, base: str = PYODIDE_CDN, packages: list[str] = 
 
 
 # the pages a search engine may index (sitemap.xml), by their addresses without .html (the site redirects those)
-PAGES = ("", "about", "attribution")
+# the pages search engines are pointed to; the attribution page (the credits the texts' licences ask for) is not one of
+# them — it travels with the site, kept out of search (noindex), linked once from the about page
+PAGES = ("", "about")
 
 
 # crawlers that gather pages only to train models: asked here to stay away, and refused by name at the edge
@@ -218,8 +220,8 @@ def search_files(site: str) -> dict[str, str]:
 def build_site(out: Path, *, home: Path, web: Path | None = None, pyodide: str = "self", relay: str | None = None,
                unlist: Iterable[str] = (), site: str = "https://chat.impf.ai") -> dict[str, Any]:
     """Assemble the site in ``out``: the client, the runtime, providers.json (without the presets named in ``unlist``),
-    (``pyodide="self"``) Pyodide, the texts' attribution (the repository may be private: the licence's credits travel
-    with the site), robots.txt and sitemap.xml for the site's address ``site`` and, with ``relay``, site.json naming
+    (``pyodide="self"``) Pyodide, the texts' credits (attribution.html, a short notice of each licensed source: the
+    repository may be private, and the licences' credits travel with the site), robots.txt and sitemap.xml for the site's address ``site`` and, with ``relay``, site.json naming
     the 道乃久默认服务 relay (relay/) the page may use without a key."""
     search = search_files(site)
     relay = (relay or "").strip().rstrip("/")
@@ -256,10 +258,8 @@ def build_site(out: Path, *, home: Path, web: Path | None = None, pyodide: str =
         info["pyodide_files"] = fetch_pyodide(out / "pyodide")
     (runtime / "manifest.json").write_text(json.dumps(info, ensure_ascii=False, indent=1), encoding="utf-8")
     (out / "providers.json").write_text(json.dumps(web_providers(unlist), ensure_ascii=False, indent=1), encoding="utf-8")
-    credits = home / "corpus" / "web" / "ATTRIBUTION.md"
-    if credits.is_file():
-        shutil.copyfile(credits, out / "ATTRIBUTION.md")
-    # the full corpus's book-by-book credits (cloud/ATTRIBUTION.md) stay in the repository: the publisher's choice
+    # the book-by-book credits (corpus/web/ATTRIBUTION.md, and the full corpus's cloud/ATTRIBUTION.md) stay in the
+    # repository, by the publisher's choice: the site carries attribution.html, the credits the licences ask for
     if relay:
         (out / "site.json").write_text(json.dumps({"relay": relay}, ensure_ascii=False, indent=1), encoding="utf-8")
     for name, text in search.items():

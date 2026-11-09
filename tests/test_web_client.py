@@ -30,7 +30,7 @@ import { count, hitNotes, returnedText, withFound } from "./js/util.js";
 import { fixedReply, IDENTITY_REPLY, isIdentityQuestion, touchesIdentity } from "./js/fixed.js";
 import { ServerRuntime } from "./js/runtime.js";
 import { redact, scrub, toolWord } from "./js/redact.js";
-import { boxRows, captionText, chartsOf, clipText, commonTitle, documentOf, fmt, fmtEst, forestDomain, invalid, logTicks, niceMax, normalize, seriesColors, stemGaps, textWidth, ticks, timelineLanes, toCSV, toMarkdown, tukey } from "./js/chart.js";
+import { boxRows, captionText, chartsOf, clipText, commonTitle, documentOf, fmt, fmtEst, forestDomain, invalid, logTicks, niceMax, normalize, seriesColors, stemGaps, textWidth, ticks, timelineLanes, toCSV, toMarkdown, tukey, unitStep, unitTop } from "./js/chart.js";
 import { crc32, packBits, pngWithDpi, tiff, unpackBits, zip } from "./js/bytes.js";
 import { documentXML, headRows, invalidTable, runs, tablesOf, tex, toCSV as tableCSV, toLaTeX, toMarkdown as tableMarkdown } from "./js/table.js";
 
@@ -512,6 +512,11 @@ const cut = clipText("加味甘草汤（出《太平惠民和剂局方》卷三�
 assert.ok(cut.endsWith("…") && textWidth(cut, 11) <= 60 && cut.startsWith("加味甘草") && clipText("甘草", 11, 60) === "甘草");
 assert.deepEqual(ticks(0, 10, 4, true), [0, 5, 10]);
 assert.deepEqual(ticks(0, 1.5), [0, 0.5, 1, 1.5]);
+// an axis in grams steps by 20 and ends on one (as the Python figures: tests/test_formulas.py); a wide one by a multiple
+assert.deepEqual(["折合克数（g）", "剂量（g）", "用量(克)", "克", "grams", "剂量（mg）", "毫克数", "千克", "两", "条数"].map(unitStep), [20, 20, 20, 20, 20, 0, 0, 0, 0, 0]);
+assert.deepEqual([unitTop(0, 37, 20), unitTop(0, 50, 20), unitTop(0, 150, 20), unitTop(0, 40, 0)], [40, 60, 160, 40]);
+assert.deepEqual(ticks(0, 60, 5, false, 20), [0, 20, 40, 60]);
+assert.deepEqual(ticks(0, 600, 5, false, 20), [0, 100, 200, 300, 400, 500, 600]);
 assert.deepEqual([fmt(0.125, true), fmt(1234), fmt(2), fmt(0.4375)], ["13%", "1.2K", "2", "0.438"]);
 assert.deepEqual(chartsOf({ charts: [spec, { type: "pie" }] }), [spec]);
 assert.deepEqual(chartsOf(null), []);

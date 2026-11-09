@@ -9,6 +9,7 @@ import hashlib
 import json
 import lzma
 import os
+import re
 import sqlite3
 import threading
 import tomllib
@@ -278,16 +279,29 @@ def test_the_manifest_in_the_repository_names_the_store_it_describes():
     assert credits.count("\n| ") - len(manifest["sources"]) - 2 == manifest["books"]  # a row per book
 
 
-def test_the_site_carries_the_browsers_credits_and_not_the_full_corpus_list(tmp_path):
-    """The full corpus's book-by-book credits (cloud/ATTRIBUTION.md) stay in the repository, by the publisher's choice;
-    the site's attribution page is the 要籍语料's, which names every source and its terms."""
+def test_the_site_carries_the_licences_credits_and_not_the_book_lists(tmp_path):
+    """The book-by-book credits (corpus/web/ATTRIBUTION.md, cloud/ATTRIBUTION.md) stay in the repository, by the
+    publisher's choice; the site carries a short notice of what the licences ask — each licensed source, its licence,
+    that the texts were reformatted — kept out of search engines and the sitemap, linked once from the about page."""
     from taochronos.chat.build import build_site
 
     os.environ.setdefault("TAOCHRONOS_WEB_XZ_PRESET", "1")
     build_site(tmp_path / "site", home=ROOT, pyodide="cdn")
-    assert (tmp_path / "site" / "ATTRIBUTION.md").read_text(encoding="utf-8") == (ROOT / "corpus" / "web" / "ATTRIBUTION.md").read_text(encoding="utf-8")
-    assert not (tmp_path / "site" / "ATTRIBUTION-full.md").exists()
-    assert "corpus=full" not in (tmp_path / "site" / "attribution.html").read_text(encoding="utf-8")
+    site = tmp_path / "site"
+    assert not (site / "ATTRIBUTION.md").exists() and not (site / "ATTRIBUTION-full.md").exists()
+    notice = (site / "attribution.html").read_text(encoding="utf-8")
+    assert '<meta name="robots" content="noindex">' in notice and "corpus=full" not in notice
+    # every source whose licence asks for credit, with its licence and a link to both; and what was done to the texts
+    for source, licence in (("Kanseki Repository", "by-sa/4.0"), ("维基文库", "by-sa/4.0"), ("CMETA", "by/4.0"),
+                            ("McGill University Library", "publicdomain/mark/1.0"), ("中醫笈成", "publicdomain/zero/1.0")):
+        assert source in notice and f"https://creativecommons.org/{'licenses/' if licence.startswith('by') else ''}{licence}/" in notice, source
+    assert "未经逐字校勘" in notice and "remain under CC BY-SA 4.0" in notice
+    for gone in ("经发布方", "TCM-Ancient-Books", "tcmoc", "字，"):  # the publisher's notes and the counts stay in the repository
+        assert gone not in notice, gone
+    assert "attribution" not in (site / "sitemap.xml").read_text(encoding="utf-8")
+    about = (site / "about.html").read_text(encoding="utf-8")
+    assert about.count('href="attribution"') == 8  # once per language, in its text
+    assert not re.search(r'class="nav">[^\n]*href="attribution"', about)
     assert "corpus=full" not in (tmp_path / "site" / "js" / "view" / "settings.js").read_text(encoding="utf-8")
 
 
