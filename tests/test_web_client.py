@@ -3514,7 +3514,9 @@ def test_the_default_service_offers_a_second_model_and_takes_sponsorships(tmp_pa
             page.click("#settings-btn")
             page.click(".settings-pane button.linkish:has-text('赞助默认服务')")
             pane = page.inner_text(".settings-pane")
-            assert "加密保存" in pane and "费用从你的账户扣除" in pane and "删除这把密钥" in pane
+            assert "加密传输和保存" in pane and "费用由你的账户承担" in pane and "在服务商处删除它" in pane
+            told = page.inner_text(".settings-pane .notice.warn") + page.inner_text("#settings .modal-foot")
+            assert not any(w in told for w in ("研究院", "中转", "代码仓库", "对话记录", "发布方", "HTTPS"))  # nothing of how the site works
             fields = page.query_selector_all(".settings-pane .form-grid input[type=text], .settings-pane .form-grid input[type=url], .settings-pane .form-grid input[type=password]")
             provider, base, model, key, contact = fields
             provider.fill("OpenAI")

@@ -80,7 +80,7 @@ function hero(ctx) {
 function sponsorEntry(ctx) {
   return h("button.sponsor-entry-card", { type: "button", on: { click: ctx.onSponsor } },
     icon("heart", "sm"),
-    h("span.grow", h("b", T("赞助默认服务")), h("span", T("交一把自己的 API Key 和模型名，让更多人免费提问；密钥加密保存，只有发布方能读取"))),
+    h("span.grow", h("b", T("赞助默认服务")), h("span", T("交一把自己的 API Key 和模型名，让更多人免费提问；密钥加密保存"))),
     icon("chev", "sm"));
 }
 

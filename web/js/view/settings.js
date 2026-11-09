@@ -33,7 +33,7 @@ export function openSettings(S, ctx, section = "model") {
   // what the footer says of keys: a sponsored key is the one that leaves this browser, once
   const foot = h("span.muted", { style: { flex: 1, fontSize: "12.5px", alignSelf: "center" } });
   const draw = () => {
-    foot.textContent = current === "sponsor" ? T("赞助的密钥只在提交时发送一次，只发给研究院的中转服务，不保存在本浏览器。")
+    foot.textContent = current === "sponsor" ? T("赞助的密钥只在提交时发送一次，不保存在本浏览器。")
       : T("密钥只保存在本浏览器，只发送给所选服务（或你的本地服务）。");
     nav.replaceChildren(...shown().map(([id, label, ic]) => h("button", { type: "button", class: id === current ? "on" : "", on: { click: () => go(id) } }, icon(ic, "sm"), label)));
     replace(pane, ({ model: modelPane, runtime: runtimePane, instructions: instructionsPane, data: dataPane, stats: statsPane, sponsor: sponsorPane,
@@ -344,12 +344,12 @@ function relayFields(p, d, S, go, ctx) {
   return out;
 }
 
-// what a visitor is told before they give a key: where it goes, who reads it, who pays, how to take it back
+// what a visitor is told before they give a key: that it is kept safe, what it is used for, who pays, how to take it back
 const SPONSOR_NOTICE = [
-  T("密钥只经 HTTPS 发送到研究院的中转服务，在那里加密保存；不进网页、代码仓库或对话记录，也不会再显示给任何访客。"),
-  T("只有发布方能解密读取：核对可用后，用于默认服务的模型调用，费用从你的账户扣除。"),
-  T("请为此单独创建一把密钥，并在服务商处设好用量或金额上限。想撤回时，在服务商控制台删除这把密钥即可，立即生效。"),
-  T("不要提交别人的密钥，也不要提交能访问其他资源的高权限密钥。"),
+  T("密钥加密传输和保存，不会公开，也不会显示给其他访客。"),
+  T("密钥只用于默认服务的模型调用，费用由你的账户承担。"),
+  T("请单独创建一把密钥并设好用量上限；想撤回时，在服务商处删除它即可。"),
+  T("请只提交你自己的、权限最小的密钥。"),
 ];
 
 /** 赞助: a visitor's own API key and the model it is for, given to the default service.  The key is sent once, to the
@@ -394,7 +394,7 @@ function sponsorPane(d, S, ctx) {
       h("div.field", h("label", "API Key"), h("div.inline", key, eye), h("div.help", T("只在提交时发送这一次，不保存在本浏览器"))),
       field(T("说明"), note),
       field(T("联系方式"), contact),
-      h("label.check", agree, h("span", T("我已阅读上面的说明，同意把这把密钥交给研究院用于默认服务，调用费用由我的账户承担"))),
+      h("label.check", agree, h("span", T("我已阅读上面的说明，同意这把密钥用于默认服务，费用由我的账户承担"))),
       h("div", submit),
       status),
   ];
