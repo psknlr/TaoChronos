@@ -23,6 +23,15 @@ PUBLIC_MODEL = "Tao-R1"
 # tokens a reply may use, its reasoning included (MiniMax-M3 counts it; the page asks up to this when the visitor set
 # no number): the day's token budgets below bound what replies cost, not this
 MAX_OUTPUT_TOKENS = "32768"
+# a model service that sends nothing — no status, no header — for UPSTREAM_FIRST_BYTE_SECONDS is not waited for: the
+# call is given up and made again, UPSTREAM_ATTEMPTS times in all (a 5xx of its own and a failed connection are asked
+# again too; a refusal is not), before the visitor is told — nothing of a reply has gone out by then, and the visitor is
+# counted once.  In the records to 2026-11-10: of 1,215 calls a page watched to their answer, none took 90 s to begin
+# and 2.5% took more than 30 s; one call in ten never began (53 s to the service's own 5xx, or past the page's 120 s).
+# Seconds × attempts stays under the page's own wait for a first reply (web/js/limits.js, firstReply: 120 s).
+# "0" seconds: waited for as long as it takes; "1" attempt: asked once, as before
+UPSTREAM_FIRST_BYTE_SECONDS = "30"
+UPSTREAM_ATTEMPTS = "3"
 # model calls (a question takes several: one per round of tool use)
 PER_MINUTE = "30"
 PER_DAY = "600"
