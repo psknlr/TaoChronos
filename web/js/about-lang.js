@@ -12,6 +12,7 @@
     ar: "حول TaoChronos · اكتشاف المعرفة العلمية من نصوص الطب الصيني التقليدي القديمة",
     ms: "Perihal TaoChronos · Penemuan Pengetahuan Saintifik daripada Teks Purba PTC",
     ja: "TaoChronos について · 中医学古典籍からの科学的知識の発見",
+    de: "Über TaoChronos · Wissenschaftliche Wissensentdeckung in alten TCM-Texten",
   };
   // a browser language tag as one of the page's (zh-TW → zh-Hant, en-SG → en), or null
   function fromTag(tag) {
