@@ -253,14 +253,17 @@ Keyboard: Enter sends, Shift+Enter breaks the line (input methods are respected)
 conversation, Ctrl/⌘+B the conversation list, Ctrl/⌘+J the side panel, `/` focuses the input.  Conversations are kept in
 this browser (IndexedDB); **设置 → 数据** exports and imports them (JSON) or one as Markdown.
 
-### Eight languages
+### Sixteen languages
 
-The page reads in eight languages: the six of the United Nations (简体中文, English, Français, Español, Русский,
-العربية), 繁體中文 for readers from Taiwan, Hong Kong and Macau, and Bahasa Melayu.  A browser gets its own language when
-the page has it (`zh-TW`, `zh-HK` and `zh-Hant` get Traditional Chinese) and English otherwise; the language menu in the
-top bar changes it (kept in this browser as `tc.lang`), and a link can ask for one with `?lang=` and the code: `zh`,
-`zh-Hant`, `en`, `fr`, `es`, `ru`, `ar` or `ms`.  Arabic is laid out right to left; the stylesheet says start and end,
-not left and right, and code, keys and addresses stay left to right.
+The page reads in sixteen languages: the six of the United Nations (简体中文, English, Français, Español, Русский,
+العربية), 繁體中文 for readers from Taiwan, Hong Kong and Macau, Bahasa Melayu, 日本語, 한국어, Tiếng Việt, ไทย, हिन्दी,
+संस्कृतम्, עברית and Deutsch.  A browser gets its own language when the page has it (`zh-TW`, `zh-HK` and `zh-Hant` get
+Traditional Chinese; Hebrew's old tag `iw` gets Hebrew) and English otherwise; the language menu in the top bar changes
+it (kept in this browser as `tc.lang`), and a link can ask for one with `?lang=` and the code: `zh`, `zh-Hant`, `en`,
+`fr`, `es`, `ru`, `ar`, `ms`, `ja`, `ko`, `vi`, `th`, `hi`, `sa`, `he` or `de`.  Arabic and Hebrew are laid out right
+to left; the stylesheet says start and end, not left and right, and code, keys and addresses stay left to right.
+Japanese and Korean are set in their own fonts (the page's CJK fonts lead with Chinese ones, whose forms of shared
+characters differ); Thai dates count Gregorian years, and Thai, Hindi and Sanskrit write numbers in the page's digits.
 
 The code is written in Chinese: every string a visitor reads goes through `T` (`web/js/i18n.js`), which looks it up in
 `web/js/i18n-<code>.js` by the Chinese (a template's `{0}`, `{1}`… are its values); a string with no translation there
@@ -268,7 +271,7 @@ is shown in Chinese, and a Chinese page fetches no dictionary at all.  The Tradi
 converted with OpenCC (`s2twp`, Taiwan wording, 「」 quotation marks).  The model is asked to answer in the page's
 language, quoting the classics in the original Chinese (exactly as the tools return them, so that the quotation check
 still holds) with a translation; the corpus is searched in Chinese as always.  The About page (`about.html`) carries
-all eight languages.  The top bar's **TaoChronos | TCMScience** switch links this site (chat.impf.ai) and TCMScience
+all sixteen languages.  The top bar's **TaoChronos | TCMScience** switch links this site (chat.impf.ai) and TCMScience
 (science.impf.ai), each with its description on hover.
 
 ## 别名 — a drug's other names

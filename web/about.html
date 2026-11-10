@@ -27,13 +27,21 @@
   .nav { font-size: 14px; color: var(--ink-3); }
   .start { display: inline-block; margin: 14px 0 4px; padding: 8px 18px; border-radius: 999px; background: var(--accent); color: #fff8f0; text-decoration: none; }
   li { margin: 4px 0; }
-  /* the page in the site's eight languages: the visitor's choice (?lang=, or the menu on the site, kept as tc.lang), else
+  /* the page in the site's sixteen languages: the visitor's choice (?lang=, or the menu on the site, kept as tc.lang), else
      the browser's (js/about-lang.js); without the script, 简体中文 */
   main { display: none; }
   html:not([data-lang]) main[data-lang="zh"], html[data-lang="zh"] main[data-lang="zh"],
   html[data-lang="zh-Hant"] main[data-lang="zh-Hant"], html[data-lang="en"] main[data-lang="en"],
   html[data-lang="fr"] main[data-lang="fr"], html[data-lang="es"] main[data-lang="es"], html[data-lang="ru"] main[data-lang="ru"],
-  html[data-lang="ar"] main[data-lang="ar"], html[data-lang="ms"] main[data-lang="ms"] { display: block; }
+  html[data-lang="ar"] main[data-lang="ar"], html[data-lang="ms"] main[data-lang="ms"], html[data-lang="ja"] main[data-lang="ja"],
+  html[data-lang="ko"] main[data-lang="ko"], html[data-lang="vi"] main[data-lang="vi"], html[data-lang="th"] main[data-lang="th"],
+  html[data-lang="hi"] main[data-lang="hi"], html[data-lang="sa"] main[data-lang="sa"], html[data-lang="he"] main[data-lang="he"],
+  html[data-lang="de"] main[data-lang="de"] { display: block; }
+  /* Japanese and Korean in their own glyph forms */
+  main:lang(ja) { font-family: -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", sans-serif; }
+  main:lang(ja) h1, main:lang(ja) h2 { font-family: "Hiragino Mincho ProN", "Noto Serif CJK JP", "Yu Mincho", serif; }
+  main:lang(ko) { font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans CJK KR", "Malgun Gothic", sans-serif; }
+  main:lang(ko) h1, main:lang(ko) h2 { font-family: "AppleMyungjo", "Noto Serif CJK KR", "Batang", serif; }
   .langs { max-width: 760px; margin: 0 auto; padding: 16px 16px 0; display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 13px; }
   .langs a { color: var(--ink-3); text-decoration: none; }
   .langs a:hover { color: var(--accent); text-decoration: underline; }
@@ -68,6 +76,14 @@
   <a href="?lang=ru" lang="ru" data-lang="ru">Русский</a>
   <a href="?lang=ar" lang="ar" data-lang="ar">العربية</a>
   <a href="?lang=ms" lang="ms" data-lang="ms">Bahasa Melayu</a>
+  <a href="?lang=ja" lang="ja" data-lang="ja">日本語</a>
+  <a href="?lang=ko" lang="ko" data-lang="ko">한국어</a>
+  <a href="?lang=vi" lang="vi" data-lang="vi">Tiếng Việt</a>
+  <a href="?lang=th" lang="th" data-lang="th">ไทย</a>
+  <a href="?lang=hi" lang="hi" data-lang="hi">हिन्दी</a>
+  <a href="?lang=sa" lang="sa" data-lang="sa">संस्कृतम्</a>
+  <a href="?lang=he" lang="he" data-lang="he" dir="rtl">עברית</a>
+  <a href="?lang=de" lang="de" data-lang="de">Deutsch</a>
 </nav>
 <main data-lang="zh">
   <p class="nav"><a href="./">道乃久</a> · 关于</p>

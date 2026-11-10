@@ -1,10 +1,11 @@
-// The page in eight languages: the six of the United Nations, Traditional Chinese, and Malay.  The page is written in
+// The page in sixteen languages: the six of the United Nations, Traditional Chinese, Malay, Japanese, Korean,
+// Vietnamese, Thai, Hindi, Sanskrit, Hebrew and German.  The page is written in
 // (simplified) Chinese: every string a visitor reads goes through T, which gives it back as it is, or, when the page is in
 // another language, its translation from i18n-<code>.js (keyed by the Chinese; a template's key has {0}, {1}… where its
 // values go).  A string with no translation yet is shown in Chinese.  The language is the visitor's choice (?lang=…, or
 // the menu in the top bar, kept in this browser), else the browser's first language the page has, else English.  A
 // worker is told the page's language in its URL (?lang=…); under Node (the tests) the page is in Chinese.  Changing the
-// language reloads the page.  Arabic is laid out right to left.
+// language reloads the page.  Arabic and Hebrew are laid out right to left.
 
 const KEY = "tc.lang";
 
@@ -19,6 +20,15 @@ export const LANGUAGES = [
   { code: "ru", name: "Русский", short: "RU", locale: "ru-RU", english: "Russian" },
   { code: "ar", name: "العربية", short: "ع", locale: "ar-u-nu-latn", english: "Arabic", rtl: true },
   { code: "ms", name: "Bahasa Melayu", short: "MS", locale: "ms-SG", english: "Malay" },
+  { code: "ja", name: "日本語", short: "日", locale: "ja-JP", english: "Japanese" },
+  { code: "ko", name: "한국어", short: "한", locale: "ko-KR", english: "Korean" },
+  { code: "vi", name: "Tiếng Việt", short: "VI", locale: "vi-VN", english: "Vietnamese" },
+  // the Gregorian year (Thai dates otherwise count from the Buddha), the page's digits
+  { code: "th", name: "ไทย", short: "ไทย", locale: "th-TH-u-ca-gregory-nu-latn", english: "Thai" },
+  { code: "hi", name: "हिन्दी", short: "हि", locale: "hi-IN-u-nu-latn", english: "Hindi" },
+  { code: "sa", name: "संस्कृतम्", short: "सं", locale: "sa-IN-u-nu-latn", english: "Sanskrit" },
+  { code: "he", name: "עברית", short: "עב", locale: "he-IL", english: "Hebrew", rtl: true },
+  { code: "de", name: "Deutsch", short: "DE", locale: "de-DE", english: "German" },
 ];
 const CODES = LANGUAGES.map((l) => l.code);
 
@@ -27,6 +37,7 @@ export function fromTag(tag) {
   const t = String(tag || "").toLowerCase();
   if (/^zh\b/.test(t)) return /hant|-tw|-hk|-mo/.test(t) ? "zh-Hant" : "zh";
   const base = t.split("-")[0];
+  if (base === "iw") return "he"; // Hebrew's old tag, which some browsers still send
   return CODES.includes(base) ? base : null;
 }
 
