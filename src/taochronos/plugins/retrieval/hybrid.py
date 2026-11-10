@@ -21,6 +21,7 @@ still flags a passage that writes a name before it came into use.
 from __future__ import annotations
 
 import re
+import threading
 from dataclasses import dataclass, field
 from itertools import zip_longest
 from types import SimpleNamespace
@@ -566,6 +567,14 @@ def _witness(wits: list[Any], cfg: dict[str, Any]) -> str | None:
     return next((w.pid for w in wits if w.web or not web), None)
 
 
+class _Running(threading.local):
+    """What a search keeps while it runs, one for each thread: the index's rank of its candidates, and the indexes built
+    over them.  (A thread that has run no search reads no ranks.)"""
+
+    rank: dict[str, float] = {}
+    local: Any = None
+
+
 class HybridRetriever:
     def __init__(self, pack: DomainPack, corpus: Corpus, knowledge: Any = None, embedder: Any = None,
                  weights: dict[str, float] | None = None, alias: dict[str, Any] | None = None) -> None:
@@ -580,13 +589,38 @@ class HybridRetriever:
         self.dense = DenseIndex(self.embedder)
         self.large = bool(getattr(corpus, "large", False))
         self._norm: dict[str, str] = {}
-        self._rank: dict[str, float] = {}  # large corpora: index BM25 rank of the current candidates
+        # What a search keeps of its candidates while it runs — their ranks in the index (_rank), the indexes built over
+        # them (_local) — is each thread's own (_Running).  A server runs its callers' searches on threads, four of one
+        # page's at once: kept on the retriever itself, each search read the others' candidates part of the way, and gave
+        # other passages than the same search asked alone (of 24 asked four at a time on the site's pack, 15 did; one
+        # kept 3 of its 10 passages, its dense route gone).  Searches still run side by side, as before: none waits for
+        # another, so one that takes long holds up no one else's.  (A copy of the retriever shares it, as it shares the
+        # caches: a thread runs one search at a time.)
+        self._running = _Running()
         if not self.large:
             for p in corpus.passages():
                 norm = pack.variants.normalize_text(p.text)
                 self._norm[p.id] = norm
                 self.bm25.add(p.id, norm)
                 self.dense.add(p.id, norm)
+
+    # large corpora: the index's BM25 rank of the candidates of the search this thread runs, and the indexes built over
+    # them (_local_indexes) — read and set as attributes, kept per thread
+    @property
+    def _rank(self) -> dict[str, float]:
+        return self._running.rank
+
+    @_rank.setter
+    def _rank(self, value: dict[str, float]) -> None:
+        self._running.rank = value
+
+    @property
+    def _local(self) -> tuple[BM25Index, DenseIndex]:
+        return self._running.local
+
+    @_local.setter
+    def _local(self, value: tuple[BM25Index, DenseIndex]) -> None:
+        self._running.local = value
 
     def norm(self, pid: str) -> str:
         cached = self._norm.get(pid)
@@ -759,10 +793,12 @@ class HybridRetriever:
             passage = self.corpus.passage(pid)
             year = self.corpus.year(passage)
             best = 0.0
+            context = None  # the terms the passage writes: read once, for the first target that needs them
             for term, wanted, anchors in targets:
                 if term not in norm or (anchors and not any(a in norm for a in anchors)):
                     continue
-                context = {m.entry.term for m in self.pack.lexicon.match(norm)}
+                if context is None:
+                    context = {m.entry.term for m in self.pack.lexicon.match(norm)}
                 sense, p, alts, _ = self.pack.terminology.resolve(term, norm, context, year)
                 if sense is None:
                     continue
