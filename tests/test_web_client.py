@@ -4356,7 +4356,8 @@ def test_the_page_in_sixteen_languages(tmp_path):
             for locale, lang, new_chat in [("zh-TW", "zh-Hant", "新對話"), ("es-ES", "es", "Nueva conversación"),
                                            ("ru-RU", "ru", "Новый чат"), ("ms-SG", "ms", "Sembang baharu"),
                                            ("ja-JP", "ja", "新しい会話"), ("ko-KR", "ko", "새 대화"), ("vi-VN", "vi", "Trò chuyện mới"), ("th-TH", "th", "การสนทนาใหม่"),
-                                           ("hi-IN", "hi", "नई बातचीत"), ("de-DE", "de", "Neuer Chat"), ("pt-BR", "en", "New chat")]:
+                                           ("hi-IN", "hi", "नई बातचीत"), ("sa", "sa", "नूतनः संवादः"), ("de-DE", "de", "Neuer Chat"),
+                                           ("pt-BR", "en", "New chat")]:
                 page = opened(locale)
                 assert page.evaluate("document.documentElement.lang") == lang, locale
                 assert page.inner_text("#new-chat").startswith(new_chat), locale
