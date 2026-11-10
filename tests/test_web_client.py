@@ -4296,11 +4296,11 @@ def test_my_data_stays_in_the_browser_when_the_site_answers(tmp_path):
         mock.shutdown()
 
 
-def test_the_page_in_eight_languages(tmp_path):
+def test_the_page_in_sixteen_languages(tmp_path):
     """A browser not set to Chinese reads the page in its own language if the page has it (the six of the United Nations,
-    Traditional Chinese and Malay), else in English; the menu in the top bar changes it, and the choice is kept
-    (web/js/i18n.js).  Arabic is laid out right to left.  A browser set to Chinese, as the tests above, reads it in
-    Chinese."""
+    Traditional Chinese, Malay, Japanese, Korean, Vietnamese, Thai, Hindi, Sanskrit, Hebrew and German), else in English;
+    the menu in the top bar changes it, and the choice is kept (web/js/i18n.js).  Arabic and Hebrew are laid out right to
+    left.  A browser set to Chinese, as the tests above, reads it in Chinese."""
     exe = _chromium()
     if exe is None:
         pytest.skip("playwright is not installed")
@@ -4339,7 +4339,8 @@ def test_the_page_in_eight_languages(tmp_path):
             page.keyboard.press("Escape")
             # the menu: every language by its own name, the page's chosen
             assert page.eval_on_selector_all("#lang-select option", "os => os.map((o) => o.textContent)") == [
-                "简体中文", "繁體中文", "English", "Français", "Español", "Русский", "العربية", "Bahasa Melayu"]
+                "简体中文", "繁體中文", "English", "Français", "Español", "Русский", "العربية", "Bahasa Melayu",
+                "日本語", "한국어", "Tiếng Việt", "ไทย", "हिन्दी", "संस्कृतम्", "עברית", "Deutsch"]
             assert page.input_value("#lang-select") == "en" and page.inner_text(".lang-short") == "EN"
             page.select_option("#lang-select", "zh")  # to Chinese, kept in this browser
             page.wait_for_function("document.documentElement.lang === 'zh-CN'", timeout=30000)
@@ -4353,7 +4354,9 @@ def test_the_page_in_eight_languages(tmp_path):
 
             # the browser's own language, where the page has it; Traditional Chinese for Taiwan, Hong Kong and Macau
             for locale, lang, new_chat in [("zh-TW", "zh-Hant", "新對話"), ("es-ES", "es", "Nueva conversación"),
-                                           ("ru-RU", "ru", "Новый чат"), ("ms-SG", "ms", "Sembang baharu"), ("de-DE", "en", "New chat")]:
+                                           ("ru-RU", "ru", "Новый чат"), ("ms-SG", "ms", "Sembang baharu"),
+                                           ("ja-JP", "ja", "新しい会話"), ("ko-KR", "ko", "새 대화"), ("vi-VN", "vi", "Trò chuyện mới"), ("th-TH", "th", "การสนทนาใหม่"),
+                                           ("hi-IN", "hi", "नई बातचीत"), ("de-DE", "de", "Neuer Chat"), ("pt-BR", "en", "New chat")]:
                 page = opened(locale)
                 assert page.evaluate("document.documentElement.lang") == lang, locale
                 assert page.inner_text("#new-chat").startswith(new_chat), locale
@@ -4363,6 +4366,16 @@ def test_the_page_in_eight_languages(tmp_path):
             # right to left: the conversation list on the right
             sidebar, main = page.eval_on_selector_all("#sidebar, #main", "es => es.map((e) => e.getBoundingClientRect().x)")
             assert sidebar > main
+            # Hebrew too, by its tag or its old one (iw)
+            for locale in ("he-IL", "iw"):
+                page = opened(locale)
+                assert page.evaluate("[document.documentElement.lang, document.documentElement.dir]") == ["he", "rtl"], locale
+                assert page.inner_text("#new-chat").startswith("שיחה חדשה")
+                sidebar, main = page.eval_on_selector_all("#sidebar, #main", "es => es.map((e) => e.getBoundingClientRect().x)")
+                assert sidebar > main
+            # Japanese and Korean in their own glyph forms: fonts of their own lead the page's
+            assert "Hiragino Sans" in opened("ja-JP").evaluate("getComputedStyle(document.body).fontFamily")
+            assert "Apple SD Gothic Neo" in opened("ko-KR").evaluate("getComputedStyle(document.body).fontFamily")
             assert not errors, errors
             browser.close()
     finally:

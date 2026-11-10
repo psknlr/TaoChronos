@@ -17,6 +17,7 @@
     vi: "Về TaoChronos · Khám phá tri thức khoa học từ cổ thư Đông y",
     hi: "TaoChronos के बारे में · प्राचीन पारंपरिक चीनी चिकित्सा ग्रंथों से वैज्ञानिक ज्ञान-अन्वेषण",
     he: "אודות TaoChronos · גילוי ידע מדעי מכתבים עתיקים של הרפואה הסינית המסורתית",
+    th: "เกี่ยวกับ TaoChronos · การค้นพบความรู้ทางวิทยาศาสตร์จากคัมภีร์การแพทย์แผนจีนโบราณ",
   };
   // a browser language tag as one of the page's (zh-TW → zh-Hant, en-SG → en), or null
   function fromTag(tag) {
