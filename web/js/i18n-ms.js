@@ -1358,4 +1358,7 @@ export default {
   "药膳推荐": "Hidangan ubatan",
   "BMI {0}（{1}；{2}）": "BMI {0} ({1}; {2})",
   "＊ 中国“食药物质目录”所列之物": "＊ dalam senarai China bagi bahan yang merupakan makanan dan ubat tradisional",
+  "正在等待模型回应…": "Menunggu jawapan model…",
+  "正在重新请求模型（第 {0} 次重试）…": "Meminta model semula (cubaan semula ke-{0})…",
+  "模型服务回应较慢，仍在等待；一直没有回应时会自动重新请求。": "Perkhidmatan model lambat menjawab; masih menunggu. Jika tiada jawapan, permintaan dihantar semula secara automatik.",
 };

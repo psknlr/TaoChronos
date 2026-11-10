@@ -1400,4 +1400,7 @@ export default {
   "赞助的密钥只在提交时发送一次，不保存在本浏览器。": "Ein gesponserter Schlüssel wird nur einmal beim Absenden gesendet und nicht in diesem Browser gespeichert.",
   "我已阅读上面的说明，同意这把密钥用于默认服务，费用由我的账户承担": "Ich habe die obigen Hinweise gelesen und stimme zu, dass dieser Schlüssel für den Standarddienst verwendet wird und die Kosten meinem Konto belastet werden",
   "交一把自己的 API Key 和模型名，让更多人免费提问；密钥加密保存": "Geben Sie einen eigenen API Key und Modellnamen, damit mehr Menschen kostenlos fragen können; der Schlüssel wird verschlüsselt gespeichert",
+  "正在等待模型回应…": "Warte auf die Antwort des Modells…",
+  "正在重新请求模型（第 {0} 次重试）…": "Das Modell wird erneut gefragt (Wiederholung {0})…",
+  "模型服务回应较慢，仍在等待；一直没有回应时会自动重新请求。": "Der Modelldienst antwortet langsam; es wird weiter gewartet. Kommt keine Antwort, wird die Anfrage automatisch erneut gesendet.",
 };

@@ -147,7 +147,11 @@ export function fillAssistant(body, m, ctx, last) {
       body.append(md);
     }
   });
-  if (live && !segs.length) body.append(h("div.think.live", h("summary", h("span.lbl", T("正在思考…")))));
+  // the model is asked and nothing of its reply is here yet (after the first round too, where the steps above are done
+  // and nothing else would move): said, with how long; before the turn's first request, as before
+  const wait = live ? ctx.waiting?.(m) : null;
+  if (wait) body.append(waitNode(wait));
+  else if (live && !segs.length) body.append(h("div.think.live", h("summary", h("span.lbl", T("正在思考…")))));
   // 继续作答: a turn that did not get its answer, taken up again from what its tools gave (not begun again, as 重试 is)
   const resume = () => (ctx.canResume?.(m)
     ? h("button.btn.secondary.resume", { type: "button", title: T("根据已经得到的工具结果接着作答，不再重新调用工具"),
@@ -170,6 +174,28 @@ export function fillAssistant(body, m, ctx, last) {
       last && !ctx.running ? h("button.icon-btn", { type: "button", title: T("重新生成"), "aria-label": T("重新生成"), on: { click: () => ctx.onRegenerate(m.id) } }, icon("redo", "sm")) : null,
       h("span.meta", { title: m.provider === RELAY_ID ? T("道乃久默认服务") : m.model ? T`底层模型 ${m.model}` : null }, meta)));
   }
+}
+
+// a wait for the model: its seconds are shown from WAIT_COUNTED on (a service that answers at once shows none), and from
+// WAIT_SLOW on the page says the service is slow, and that it asks again by itself
+const WAIT_COUNTED = 3000;
+const WAIT_SLOW = 30000;
+
+/** What a wait for the model says (`w`: {since, attempt, heard}, app.js makeHooks; `now`: the page's clock): its label —
+ * waiting for the reply, asking again after the attempt that failed, or thinking where the thinking is not shown —, the
+ * seconds it has lasted once they are worth counting, and whether to say that the service is slow. */
+export function waitText(w, now = Date.now()) {
+  const ms = Math.max(0, now - w.since);
+  const label = w.heard ? T("正在思考…") : w.attempt > 1 ? T`正在重新请求模型（第 ${w.attempt - 1} 次重试）…` : T("正在等待模型回应…");
+  const secs = ms < WAIT_COUNTED ? "" : ms < 60000 ? T`${Math.floor(ms / 1000)} 秒` : fmtMs(ms);
+  return { label, secs, slow: !w.heard && ms >= WAIT_SLOW };
+}
+
+/** The model asked, and nothing of its reply here yet: a page that shows nothing looks as if it had stopped. */
+function waitNode(w) {
+  const { label, secs, slow } = waitText(w);
+  return h("div.think.live.wait", h("summary", h("span.lbl", label), secs ? h("span", ` · ${secs}`) : null),
+    slow ? h("div.slow", T("模型服务回应较慢，仍在等待；一直没有回应时会自动重新请求。")) : null);
 }
 
 /** 👍 or 👎 under an answer: pressed when it is the visitor's rating (pressed again, it is taken back). */

@@ -1400,4 +1400,7 @@ export default {
   "赞助的密钥只在提交时发送一次，不保存在本浏览器。": "Khóa tài trợ chỉ được gửi một lần khi bạn bấm gửi, và không được lưu trong trình duyệt này.",
   "我已阅读上面的说明，同意这把密钥用于默认服务，费用由我的账户承担": "Tôi đã đọc nội dung ở trên và đồng ý cho khóa này được dùng cho dịch vụ mặc định, với chi phí tính vào tài khoản của tôi",
   "交一把自己的 API Key 和模型名，让更多人免费提问；密钥加密保存": "Đóng góp API Key và tên mô hình của riêng bạn để nhiều người hơn được hỏi miễn phí; khóa được lưu an toàn",
+  "正在等待模型回应…": "Đang chờ mô hình trả lời…",
+  "正在重新请求模型（第 {0} 次重试）…": "Đang yêu cầu lại mô hình (lần thử lại {0})…",
+  "模型服务回应较慢，仍在等待；一直没有回应时会自动重新请求。": "Dịch vụ mô hình trả lời chậm; vẫn đang chờ. Nếu không có trả lời, yêu cầu sẽ tự động được gửi lại.",
 };

@@ -74,6 +74,16 @@ assert.equal(da[1].content[0].tool_use_id, "t1");
 {
   const { reviewNote, runTurn } = await import("./js/agent.js");
   const { rawAnswer } = await import("./js/view/thread.js");
+  // a wait for the model, as the page says it (thread.js, waitNode): no seconds for a service that answers at once,
+  // then how long; after half a minute, that the service is slow; which try it is once it is asked again; and, where
+  // the thinking is not shown, that it thinks (no word of slowness: it is answering)
+  const { waitText } = await import("./js/view/thread.js");
+  assert.deepEqual(waitText({ since: 1000, attempt: 1, heard: false }, 1500), { label: "正在等待模型回应…", secs: "", slow: false });
+  assert.deepEqual(waitText({ since: 1000, attempt: 1, heard: false }, 13400), { label: "正在等待模型回应…", secs: "12 秒", slow: false });
+  assert.deepEqual(waitText({ since: 0, attempt: 1, heard: false }, 31000), { label: "正在等待模型回应…", secs: "31 秒", slow: true });
+  assert.deepEqual(waitText({ since: 0, attempt: 3, heard: false }, 2000), { label: "正在重新请求模型（第 2 次重试）…", secs: "", slow: false });
+  assert.deepEqual(waitText({ since: 0, attempt: 1, heard: true }, 95000), { label: "正在思考…", secs: "1 分 35 秒", slow: false });
+  assert.equal(waitText({ since: 5000, attempt: 1, heard: false }, 1000).secs, ""); // a clock set back
   // an answer the self-check had rewritten is not the turn's: neither replayed to another provider nor read
   const rewritten = { role: "assistant", segments: [{ type: "text", text: "初稿[[x.1]]", superseded: true },
     { type: "check", missing: ["x.1"] }, { type: "text", text: "重写" }] };
@@ -2758,6 +2768,104 @@ def test_a_search_that_does_not_come_back_does_not_hold_up_the_answer(tmp_path):
         srv.server_close()
         relay.shutdown()
         mock.shutdown()
+
+
+def test_the_page_says_it_waits_for_the_model_in_every_round(tmp_path):
+    """A model request that has sent nothing of its reply is said to be waited for — with how long once that is worth
+    counting, and, after half a minute, that the service is slow and is asked again by itself.  In a later round too:
+    the steps above are done then, and a page that showed nothing more looked as if it had stopped.  A request asked
+    again after a failure says which try it is.  Once the reply comes the wait is gone."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import MockProvider, MockRelay
+
+    mock = MockProvider().start()
+    relay = MockRelay(mock.base_url).start()
+    web = tmp_path / "web"
+    _published(web, relay.url)
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    consent = {"v": 1, "logs": False, "at": "2026-09-28T00:00:00Z"}
+    WAIT = ".msg.assistant .think.live.wait"
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            ctx = browser.new_context(viewport={"width": 1280, "height": 900}, locale="zh-CN")
+            ctx.add_init_script(f"localStorage.setItem('tc.consent', {json.dumps(json.dumps(consent))});")
+            page = ctx.new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            held: list = []
+            holding = [True]
+
+            def hold(route) -> None:  # the model's reply does not begin until the test lets it
+                if holding[0] and route.request.method == "POST":
+                    held.append(route)
+                else:
+                    route.continue_()
+
+            def asked(n: int) -> None:
+                for _ in range(400):
+                    if len(held) >= n:
+                        return
+                    page.wait_for_timeout(25)
+                raise AssertionError(f"the model was asked {len(held)} times, not {n}")
+
+            page.route("**/v1/chat/completions", hold)
+            page.clock.install()  # the page's own time, which the test moves on
+            page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+            page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('默认服务')", timeout=10000)
+            page.fill("#input", "桂枝汤主治什么？请给出原文。")
+            page.keyboard.press("Enter")
+            # the first round: asked, nothing heard — said at once, without seconds yet
+            asked(1)
+            page.wait_for_selector(WAIT, timeout=10000)
+            assert page.text_content(f"{WAIT} summary") == "正在等待模型回应…"
+            assert not page.query_selector(f"{WAIT} .slow")
+            page.clock.fast_forward(6000)
+            page.wait_for_function(f"/^正在等待模型回应… · [5-9] 秒$/.test(document.querySelector('{WAIT} summary')?.textContent || '')", timeout=10000)
+            assert not page.query_selector(f"{WAIT} .slow")
+            page.clock.fast_forward(30000)  # half a minute: slow, and the page says what it does about it
+            page.wait_for_selector(f"{WAIT} .slow", timeout=10000)
+            assert "回应较慢" in page.inner_text(f"{WAIT} .slow") and "自动重新请求" in page.inner_text(f"{WAIT} .slow")
+            assert re.fullmatch(r"正在等待模型回应… · 3\d 秒", page.text_content(f"{WAIT} summary"))
+            held[0].continue_()
+            # the second round: its steps are done, and the model is asked again — the wait is said under them
+            asked(2)
+            page.wait_for_function("document.querySelector('.msg.assistant .steps') && !document.querySelector('.msg.assistant .steps .spinner')"
+                                   f" && document.querySelector('{WAIT}')", timeout=20000)
+            assert page.text_content(f"{WAIT} summary") == "正在等待模型回应…"
+            assert page.evaluate(f"document.querySelector('.msg.assistant .body').lastElementChild === document.querySelector('{WAIT}')")
+            # the request fails: asked again after its pause, the wait says which try this is
+            held[1].fulfill(status=503, headers={"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                            body=json.dumps({"error": {"message": "默认服务暂时不可用，请稍后再试", "type": "upstream_error"}}, ensure_ascii=False))
+            page.wait_for_function(f"(document.querySelector('{WAIT} summary')?.textContent || '').startsWith('正在重新请求模型（第 1 次重试）…')", timeout=10000)
+            assert "正在重试（第 1 次）" in page.inner_text(".toasts")
+            page.clock.fast_forward(3000)  # its pause
+            asked(3)
+            assert page.text_content(f"{WAIT} summary").startswith("正在重新请求模型（第 1 次重试）…")
+            # the reply comes: no wait is shown any more, in this round or at the turn's end
+            holding[0] = False
+            held[2].continue_()
+            page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
+            assert not page.query_selector(".think.wait") and not page.query_selector(".think.live")
+            assert "桂枝汤" in page.inner_text(".msg.assistant .md:not(.superseded)")
+            assert errors == []
+            browser.close()
+    finally:
+        srv.shutdown()
+        mock.shutdown()
+        relay.shutdown()
 
 
 def test_a_research_run_on_the_server_is_followed_again_after_a_reload(tmp_path):
