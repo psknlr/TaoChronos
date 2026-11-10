@@ -733,6 +733,24 @@ function makeHooks(conv, msg, usageBefore = null) {
   let joining = false;
   let base = null;
   const update = () => { if (S.conv === conv) renderMessageSoon(msg); persistSoon(conv); };
+  // the model is asked, and nothing of its reply has come: kept with the running turn (not the message: it is not
+  // stored), and drawn again each second so that the page says how long (thread.js, waitNode).  `heard`: its thinking
+  // comes, where that is not shown
+  const run = S.running;
+  let ticking = null;
+  const waitOver = () => {
+    clearInterval(ticking);
+    ticking = null;
+    if (run) run.wait = null;
+  };
+  const waitFor = (attempt) => {
+    if (!run) return;
+    run.wait = { since: Date.now(), attempt, heard: false };
+    ticking ||= setInterval(() => {
+      if (S.running !== run || !run.wait) { clearInterval(ticking); ticking = null; return; } // the turn is over
+      if (S.conv === conv) renderMessageSoon(msg);
+    }, 1000);
+  };
   const segment = (type) => {
     if (!refs[type]) {
       refs[type] = type === "tools" ? { type, round, calls: [] } : { type, round, text: "" };
@@ -774,17 +792,24 @@ function makeHooks(conv, msg, usageBefore = null) {
       else { refs = {}; base = null; }
       joining = false;
       msg.rounds = n;
+      waitFor(1); // its request goes out next
+      update();
     },
     thinking(delta) {
-      if (msg.hideThinking) return;
+      if (msg.hideThinking) { // it thinks, unseen: the wait says so
+        if (run?.wait && !run.wait.heard) { run.wait.heard = true; update(); }
+        return;
+      }
+      waitOver();
       const s = segment("thinking");
       s.started ||= Date.now();
       s.text += delta;
       s.ms = Date.now() - s.started;
       update();
     },
-    text(full) { segment("text").text = (base?.text || "") + full; update(); },
+    text(full) { waitOver(); segment("text").text = (base?.text || "") + full; update(); },
     toolPending(index, name) {
+      waitOver();
       const s = segment("tools");
       const key = `p${index}`;
       let c = s.calls.find((x) => x.pending === key);
@@ -793,6 +818,7 @@ function makeHooks(conv, msg, usageBefore = null) {
       update();
     },
     toolStart(call) {
+      waitOver();
       const s = segment("tools");
       s.calls = s.calls.filter((c) => !c.pending);
       const c = { id: call.id, name: call.name, args: call.args, status: "running", family: toolFamily(call.name, S.catalogIndex), started: call.started, since: call.started };
@@ -851,10 +877,12 @@ function makeHooks(conv, msg, usageBefore = null) {
       toast(status === 429 ? T`模型服务繁忙，正在重试（第 ${attempt} 次）…`
         : status >= 500 ? T`模型服务暂时出错（${status}），正在重试（第 ${attempt} 次）…`
           : T`连接中断，正在重试（第 ${attempt} 次）…`);
+      waitFor(attempt + 1); // asked again after its pause: the wait says which try this is
       update();
     },
     usage(u) { msg.usage = addUsage(usageBefore, u); },
     assistant(res) {
+      waitOver(); // the reply is whole (its tools run next, or the page checks its citations)
       msg.heard = round; // the last round whose reply came whole: what a later one showed goes if the turn is taken up again
       if (res.thinking && !refs.thinking && !msg.hideThinking) segment("thinking").text = res.thinking;
       const text = (base?.text || "") + (res.text || "");
@@ -1421,6 +1449,8 @@ const threadCtx = {
   onResume: resumeAnswer,
   canResume,
   onAnswerNow: answerNow,
+  // the wait for the model's reply in the turn this page runs for `m`, if it waits now (makeHooks)
+  waiting: (m) => (S.running?.msgId === m.id ? S.running.wait || null : null),
   canRate,
   onRate: rate,
   onOpenResearch(runId) {

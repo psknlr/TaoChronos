@@ -430,6 +430,10 @@ kbd { white-space: nowrap; font: 11px var(--font-mono); color: var(--ink-3); bor
   max-height: 360px; overflow-y: auto;
 }
 .think.live summary .lbl { background: linear-gradient(90deg, var(--ink-3) 0%, var(--ink) 50%, var(--ink-3) 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 1.8s linear infinite; }
+/* the model is asked and nothing of its reply is here yet: how long, and — after a while — that it is slow */
+.think.wait summary { cursor: default; font-variant-numeric: tabular-nums; }
+.think.wait summary:hover { color: var(--ink-3); background: none; }
+.think.wait .slow { margin: 2px 0 0; padding-inline-start: 8px; font-size: 12.5px; line-height: 1.6; color: var(--ink-3); }
 
 /* tool steps */
 .steps { margin: 2px 0 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; box-shadow: var(--shadow-sm); }

@@ -191,6 +191,15 @@ quotation in every witness whatever its punctuation: as written, by its runs of 
 runs across a witness's own marks — by its 3-grams, each candidate then checked character by character (a changed or
 missing character is never accepted).
 
+**A search gives the same asked together with others or alone** ([ADR 0032](adr/0032-a-turn-that-waits-says-so-and-waits-less.md)).
+A server runs its callers' calls on threads, and a page sends a round's calls four at a time.  What a search keeps of
+its candidates while it runs — their ranks in the index, the indexes built over them — is its thread's own
+(`plugins/retrieval/hybrid.py`, `_Running`).  Before, it was kept on the one retriever, and searches asked together
+read each other's candidates part of the way: of 24 asked four at a time on the site's pack, 15 gave other passages
+than the same search alone.  Searches still run side by side; and the per-search indexes
+(`plugins/retrieval/index.py`) now reach the same numbers with less work: every token, vector, score and the order of
+the results as their plain definitions give them, bit for bit (`tests/test_retrieval_index.py`).
+
 **Reading on, and an id that is no passage.**  `classics.get_passage` gives with a passage the ids of the passages
 before and after it in its book (`prev`, `next`: `around` on the corpus).  The 要籍语料 the page carries keeps most of
 its books (461 of 553) as whole chapters spread through the book, so that the passage after one is often not the next
@@ -626,6 +635,23 @@ keep the model from explaining a chart that already has:
 | a round's tools | 20 s | the page offers 不再等待 (below) |
 | the turn | 30 min | no more tools run, and the model answers from what it has |
 
+**The default service does not wait that long itself** ([ADR 0032](adr/0032-a-turn-that-waits-says-so-and-waits-less.md)).
+The relay answers the page once the model service has answered it; a model service that sends nothing — no status, no
+header — for 30 seconds (`UPSTREAM_FIRST_BYTE_SECONDS`) is given up and asked again by the relay itself, three times in
+all (`UPSTREAM_ATTEMPTS`), and so is one that cannot be reached or answers with a failure of its own (5xx).  Nothing of
+a reply has gone to the page by then, the visitor is counted once, and a refusal (a key, a rate, a parameter) is not
+asked again.  Silent every time, the page is told so within 90 seconds (504, `upstream_timeout`) — before its own two
+minutes — and asks again as after any 5xx.  In the records to 2026-11-10 one model request in ten never began: the
+service's own 5xx after 53 seconds, or nothing for the page's two minutes; of those that answered, none took 90 seconds
+to begin.
+
+**While the model is waited for, the page says so** (`web/js/view/thread.js`, `waitNode`).  From a round's request to
+the first part of its reply: 正在等待模型回应…, with the seconds from the third on; after half a minute, that the service
+is slow and is asked again by itself; asked again after a failure, 正在重新请求模型（第 n 次重试）…; where the thinking is
+not shown (a question that touches who answers), 正在思考… once it comes.  In every round — in a later one the steps
+above are done, and a page that drew nothing more looked as if it had stopped.  The wait is the running turn's: it is
+not kept with the conversation, exported or recorded.
+
 A limit counts the time the page runs, by a clock it looks at every second: a phone asleep or a tab the browser froze
 uses none of it (a gap between two looks counts as 65 seconds at most — a hidden tab's timers may run once a minute, and
 that minute counts).  A call's limit counts while it runs, not while it waits for the browser's runtime to load or for
@@ -795,7 +821,9 @@ for Tao-R1 and sends nothing only the upstream would understand (the relay adds 
 reasoning formats the page sends back); in the replies the model reads Tao-R1 and the reasoning formats `Tao-…`, the
 upstream's own fields (`base_resp`, the `*_sensitive` flags, `usage.total_characters`) are dropped, and an upstream error
 — an HTTP error, a failure reported in a 200 body or inside the stream — reaches the visitor as a sentence of the
-service's own, never the upstream's text (the relay logs its status only).  The page shows the service's errors without
+service's own, never the upstream's text (the relay logs its status and its short code only).  A quota that is spent is
+told apart from a busy moment where the upstream says which (`upstream_quota`: the page does not ask again); what the
+upstream asks to wait (`Retry-After`) is passed on to the page, a minute at most.  The page shows the service's errors without
 the model client's preamble, and brings conversations kept by an older page in line as it loads
 (`web/js/providers.js`, `publicConversation`).  The records, which are the institute's, keep the model that answered: the
 relay turns the public name back.  The consent notice speaks of recording to the institute's server.  Nor do the
@@ -894,8 +922,12 @@ terms the site carries it under; a 宋本 found for a punctuated 伤寒论 claus
 within a view's bounds, none a scope withholds; through the tools in `tests/test_chat.py`, in a research session in
 `tests/test_boundaries.py`) and what an id that is no passage names; a quotation found whatever its punctuation and in either script, across a
 witness's own marks, never with a changed or missing character; outside a session `classics.list_books` lists every
-book with its filters and `kg.claims` / `kg.neighbors` read the passages that write the term.  `tests/test_web_client.py` — the
-client's logic under Node (cumulative and incremental streams, a reply that breaks off asked again and one read whole,
+book with its filters and `kg.claims` / `kg.neighbors` read the passages that write the term.  `tests/test_retrieval_index.py` — the retrieval indexes against their plain definitions (the tokens,
+each passage's vector, every score, the order of the results; an embedder that keeps only so many hashes), and a search
+asked while another is held part-way: neither waits for the other nor touches what it keeps, and both give what they
+give alone.
+`tests/test_web_client.py` — the
+client's logic under Node (what a wait for the model says — its words, its seconds, when it is slow, which try it is —, cumulative and incremental streams, a reply that breaks off asked again and one read whole,
 a stream that ends without a finish reason or `[DONE]` asked again, which refusals are retried and how long after, the
 spread of the waits, what a reply may use, an answer cut at the output limit written on, one that only thought asked
 again without thinking, no call of a cut reply run, the content filter and a full context told, the rounds of tools left
@@ -943,7 +975,9 @@ limit written on and shown as one, and a reply that only thought asked again wit
 at low effort), and Claude's stream that ends part-way or without a stop reason asked again; a chart drawn while the
 search beside it is held — the steps counting, 不再等待 offered and taken, the search skipped and the answer noted as
 perhaps incomplete, a search past its deadline ended, a stop that leaves the page usable, and two rounds' calls under
-one id each shown with its own end (the second, the same search, answered from the first); the answer asked for with no
+one id each shown with its own end (the second, the same search, answered from the first); the wait for the model said in the first round and in a
+later one under its finished steps, with its seconds, the word that the service is slow after half a minute, and which
+try it is once a request that failed is asked again — gone once the reply comes; the answer asked for with no
 tool to call once 不再等待 is taken or the rounds are used, a stopped turn taken up again by 继续作答 with no call run again,
 and a model that keeps calling tools ending with a notice, taken up again and still running none, and a turn whose day's
 free calls run out while its search runs, failing once, the service paused until the hour the relay named (the composer
@@ -979,7 +1013,10 @@ workbook across a reload; and the page working with a server elsewhere keeping t
 Pyodide, the 要籍语料 downloaded, the first-ranked works indexed before it answers and the rest in the background, the
 store kept in IndexedDB and a reload that downloads no corpus, a turn answered on it.  The browser tests are skipped where Playwright or Chromium is missing.  `relay/test/relay.test.js`
 (`node --test`, in CI) — the Worker's handler and its two stores on SQLite: the key added by the relay and never shown,
-origins, models, output cap and body size, the three limits and a new day, MiniMax's refusals turned into plain messages, no reasoning let through when the page asks for none (however the stream is cut),
+origins, models, output cap and body size, the three limits and a new day, MiniMax's refusals turned into plain messages,
+an upstream that sends nothing given up and asked again within the one call the visitor was counted for (silent every
+time: told so; a 5xx or a failed connection asked again, a refusal not; a visitor who leaves ending it), a quota spent
+told apart from a busy moment and the upstream's `Retry-After` passed on, no reasoning let through when the page asks for none (however the stream is cut),
 the records reduced to their fields, feedback taken from any visitor on its own limits and reduced to its fields, and the
 collector's token, cursor, deletion and ids never reused.
 `tests/test_relay_collect.py` — `relay/collect.py` against a stand-in relay: records pulled once, by day, the cursor

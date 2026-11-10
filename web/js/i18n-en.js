@@ -1401,4 +1401,7 @@ export default {
   "赞助的密钥只在提交时发送一次，不保存在本浏览器。": "A sponsored key is sent once, when you submit, and is not kept in this browser.",
   "我已阅读上面的说明，同意这把密钥用于默认服务，费用由我的账户承担": "I have read the above and agree to this key being used for the default service, with the cost charged to my account",
   "交一把自己的 API Key 和模型名，让更多人免费提问；密钥加密保存": "Give an API key and model name of your own so more people can ask for free; the key is kept securely",
+  "正在等待模型回应…": "Waiting for the model to reply…",
+  "正在重新请求模型（第 {0} 次重试）…": "Asking the model again (retry {0})…",
+  "模型服务回应较慢，仍在等待；一直没有回应时会自动重新请求。": "The model service is slow to reply; still waiting. If no reply comes, the request is sent again automatically.",
 };

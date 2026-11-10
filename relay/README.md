@@ -114,6 +114,15 @@ SPONSOR_SECRET=… python3 relay/collect.py sponsors --delete 3
 ## 调整与维护
 
 - 限额、模型、允许的来源：改 `wrangler.toml` 的 `[vars]`，合入 main 后自动重新部署。
+- **模型服务迟迟不回应时**（[ADR 0032](../docs/adr/0032-a-turn-that-waits-says-so-and-waits-less.md)）：模型服务在
+  `UPSTREAM_FIRST_BYTE_SECONDS`（默认 30 秒）内什么都没发回（连状态行都没有），中转就放弃这一次、自己重新请求，总共
+  `UPSTREAM_ATTEMPTS`（默认 3）次；连不上、或模型服务自己报 5xx 时也重新请求（稍作停顿），被拒绝（密钥、地区、频率、参数）
+  则不重试。此时回复还没有一个字发给访客，所以不会重复；访客只计一次调用；访客离开或停止，请求随即结束。每次都没有回应时，
+  在 90 秒内告诉网页（504 `upstream_timeout`，网页会照常重试），早于网页自己的 120 秒。秒数 × 次数应小于 120。
+  设 `UPSTREAM_ATTEMPTS = "1"`、`UPSTREAM_FIRST_BYTE_SECONDS = "0"` 即恢复为只问一次、一直等。
+- **额度用完与一时繁忙分开告知**：模型服务以 429 拒绝时，若它说明是额度用完（OpenAI 的 `insufficient_quota`、MiniMax 的
+  `base_resp` 1008），访客立刻看到“额度已用完”（`upstream_quota`，网页不再重试）；其余 429 仍按“繁忙”处理，模型服务给出的
+  `Retry-After` 会转给网页（最多 60 秒）。它的错误代码（不含原话）记在 Worker 日志里：`upstream 429 …`、`upstream silent ask 1/3`。
 - 哨兵的模式与阈值（`SENTINEL`、`HONEYPOT`、`FLAG_SCORE`、`BLOCK_SCORE`、`BLOCK_SECONDS`、`KNOWN_PROMPTS`……）：同样在 `[vars]`；
   含义与建议见 [`security/README.md`](../security/README.md)。可选 Secret `SENTINEL_SALT`（任意长随机串）让访客的哈希键跨月不变。
 - 看哨兵现在看到什么：`LOG_EXPORT_TOKEN=… python3 security/collect.py summary --site ""`（只看中转）。

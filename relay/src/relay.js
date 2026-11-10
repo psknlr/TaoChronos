@@ -48,6 +48,13 @@ export const DEFAULTS = {
   UPSTREAM_FIELDS: '{"reasoning_split":true}',
   FORMAT_PREFIX: "MiniMax-",
   MAX_OUTPUT_TOKENS: "32768",                 // per reply, its reasoning included (MiniMax-M3 itself takes far more)
+  // a model service that sends nothing — no status, no header — for this long is not waited for: the call is given up
+  // and made again, UPSTREAM_ATTEMPTS times in all, before the visitor is told (0 seconds: waited for as long as it
+  // takes).  In the records to 2026-11-10, of the calls a page watched, none that answered took 90 s to begin, 2.5%
+  // took more than 30 s — and one in ten began never: 53 s to the service's own 5xx, or past the page's two minutes.
+  // The attempts together stay under the page's own wait for a first reply (web/js/limits.js, firstReply: 120 s)
+  UPSTREAM_FIRST_BYTE_SECONDS: "30",
+  UPSTREAM_ATTEMPTS: "3",
   MAX_BODY_BYTES: "2000000",
   PER_MINUTE: "30",                           // model calls per visitor (one question takes several: the tools)
   PER_DAY: "600",
@@ -109,6 +116,9 @@ export function config(env = {}) {
     upstreamFields: fields,
     formatPrefix: String(get("FORMAT_PREFIX")),
     maxTokens: num("MAX_OUTPUT_TOKENS"),
+    // the wait for the upstream's first byte, in milliseconds (0: none), and how many times it is asked (1 to 5)
+    firstByteMs: Math.max(0, Math.round((num("UPSTREAM_FIRST_BYTE_SECONDS") || 0) * 1000)),
+    attempts: Math.min(5, Math.max(1, Math.floor(num("UPSTREAM_ATTEMPTS")) || 1)),
     maxBody: num("MAX_BODY_BYTES"),
     origins: list("ALLOWED_ORIGINS"),
     chat: { perMinute: num("PER_MINUTE"), perDay: num("PER_DAY"), total: num("TOTAL_PER_DAY"), tokensPerDay: num("TOKENS_PER_DAY"), totalTokens: num("TOTAL_TOKENS_PER_DAY") },
@@ -437,18 +447,21 @@ async function chat(request, env, cfg, cors, allowed, deps, s) {
  * upstream in the Worker's log (a status code only, never a body).
  */
 async function relayed({ url, key, payload, request, cors, view, spend, noReasoning, deps, label = "upstream", fetcher = deps.fetch }) {
-  let upstream;
-  try {
-    upstream = await fetcher(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: request.headers.get("Accept") || "application/json",
-        Authorization: `Bearer ${key}` },
-      body: payload,
-      signal: request.signal, // the visitor leaving, or stopping the answer, ends the model call too
-    });
-  } catch {
-    return error(502, "默认服务暂时连不上模型服务，请稍后再试", "upstream_unreachable", cors);
+  const init = {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: request.headers.get("Accept") || "application/json",
+      Authorization: `Bearer ${key}` },
+    body: payload,
+  };
+  // the visitor leaving, or stopping the answer, ends the model call too (request.signal)
+  const got = await reach({ fetcher, url, init, signal: request.signal, ms: view.firstByteMs, attempts: view.attempts, label,
+    pause: deps.pause || pauseFor });
+  if (!got.res) {
+    return got.silent
+      ? error(504, "默认服务的模型服务暂时没有回应，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_timeout", cors)
+      : error(502, "默认服务暂时连不上模型服务，请稍后再试", "upstream_unreachable", cors);
   }
+  const upstream = got.res;
   const type = upstream.headers.get("Content-Type") || "application/json";
   if (upstream.status === 401 || upstream.status === 403) {
     const code = await errorCode(upstream);
@@ -459,8 +472,15 @@ async function relayed({ url, key, payload, request, cors, view, spend, noReason
     return error(503, "默认服务暂时不可用（模型服务拒绝了它的密钥），请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_auth", cors);
   }
   if (upstream.status === 429) {
-    await upstream.body?.cancel();
-    return error(429, "默认服务的模型额度暂时用完或调用过于频繁，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_rate", cors);
+    // a quota that is spent is told apart from a busy moment where the upstream says which: asking again soon does not
+    // change it, and the page does not ask (web/js/llm/openai.js, FINAL).  What the upstream asks to wait is passed on,
+    // a minute at most (the page asks again no sooner).  The owner finds its word for the refusal in the Worker's log
+    const { quota, code } = await rateRefusal(upstream);
+    console.error(label, 429, code);
+    if (quota) return error(503, "默认服务的模型额度已用完，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_quota", cors);
+    const wait = waitAsked(upstream.headers.get("Retry-After"), deps.now());
+    return error(429, "默认服务的模型额度暂时用完或调用过于频繁，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_rate", cors,
+      wait ? { "Retry-After": String(wait) } : {});
   }
   if (!upstream.ok) {
     // the upstream's own message would name it, its models and its parameters: the visitor is told what to do instead
@@ -493,14 +513,115 @@ async function relayed({ url, key, payload, request, cors, view, spend, noReason
   return new Response(stream, { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
 }
 
+const word = (v) => (typeof v === "string" && /^[\w.:-]{1,80}$/.test(v) ? v : "");
+
+/** An upstream's refusal as JSON (its first 4000 characters), or null. */
+async function refusalBody(upstream) {
+  try { return JSON.parse((await upstream.text()).slice(0, 4000)); } catch { return null; }
+}
+
 /** What an upstream's refusal says of itself, for the Worker's log: its error code (and, with `param`, the parameter it
  * names) — short words only, never its message, which may echo what a visitor wrote. */
 async function errorCode(upstream, param = false) {
-  let j = null;
-  try { j = JSON.parse((await upstream.text()).slice(0, 4000)); } catch { /* not JSON */ }
+  const j = await refusalBody(upstream);
   const e = j?.error && typeof j.error === "object" ? j.error : {};
-  const word = (v) => (typeof v === "string" && /^[\w.:-]{1,80}$/.test(v) ? v : "");
   return [word(e.code) || word(e.type), param ? word(e.param) : ""].filter(Boolean).join(" ");
+}
+
+// an upstream's own words for a quota that is spent (OpenAI's code; MiniMax's are in BASE_RESP): any other 429 is a
+// busy moment
+const QUOTA = new Set(["insufficient_quota"]);
+
+/** A 429 of the upstream's: is it a quota spent (`quota`) and not a busy moment, and its own short word for it (`code`:
+ * its error code or type, or the status code of its base_resp) — never its message. */
+async function rateRefusal(upstream) {
+  const j = await refusalBody(upstream);
+  const e = j?.error && typeof j.error === "object" ? j.error : {};
+  const base = Number(j?.base_resp?.status_code) || 0;
+  return {
+    quota: BASE_RESP[base]?.[1] === "upstream_quota" || QUOTA.has(e.code) || QUOTA.has(e.type),
+    code: word(e.code) || word(e.type) || (base ? String(base) : ""),
+  };
+}
+
+// the most of an upstream's Retry-After that is passed on to the page, in seconds: the page waits out up to half a
+// minute within a turn, and holds its next question back for longer (web/js/pause.js) — for a limit that is the
+// service's and not the visitor's, never for long
+const MAX_WAIT_ASKED = 60;
+
+/** The seconds an upstream's Retry-After asks to wait (seconds, or a date), within MAX_WAIT_ASKED; 0 when it asks none. */
+export function waitAsked(value, now) {
+  const v = String(value ?? "").trim();
+  if (!v) return 0;
+  const s = /^\d+$/.test(v) ? Number(v) : Math.ceil((Date.parse(v) - now) / 1000);
+  return Number.isFinite(s) && s > 0 ? Math.min(s, MAX_WAIT_ASKED) : 0;
+}
+
+// ------------------------------------------------------------------ the upstream asked, within a wait, more than once
+const SILENT = Symbol("silent");
+// before an ask that failed at once is made again (times the attempts made): a failure met at once is not met again at once
+const RETRY_PAUSE_MS = 400;
+
+/** A wait of `ms` that ends early when `signal` does. */
+function pauseFor(ms, signal) {
+  return new Promise((resolve) => {
+    if (signal?.aborted) return resolve();
+    const done = () => { clearTimeout(timer); signal?.removeEventListener("abort", done); resolve(); };
+    const timer = setTimeout(done, ms);
+    signal?.addEventListener("abort", done, { once: true });
+  });
+}
+
+/**
+ * One ask of the upstream: {res} when it answers (its status and headers: its first byte), {silent: true} when it sends
+ * nothing for `ms` (0: waited for as long as it takes) — the ask is then ended —, {} when it cannot be made.  `signal`
+ * (the visitor's request) ends the ask, and goes on ending an answer's stream once it is passed on.
+ */
+async function askOnce(fetcher, url, init, signal, ms) {
+  const ctl = new AbortController();
+  const leave = () => ctl.abort();
+  if (signal?.aborted) ctl.abort();
+  else signal?.addEventListener("abort", leave, { once: true });
+  let timer = null;
+  const pending = Promise.resolve().then(() => fetcher(url, { ...init, signal: ctl.signal }));
+  const waits = ms > 0 ? [pending, new Promise((resolve) => { timer = setTimeout(resolve, ms, SILENT); })] : [pending];
+  try {
+    const res = await Promise.race(waits);
+    if (res !== SILENT) return { res };
+    ctl.abort();
+    // an answer that comes all the same (a fetch the signal does not reach: one made from a placed object) is not read
+    pending.then((late) => late?.body?.cancel()).catch(() => {});
+    signal?.removeEventListener("abort", leave);
+    return { silent: true };
+  } catch {
+    signal?.removeEventListener("abort", leave);
+    return {};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * The upstream asked until it answers.  An ask it meets with silence (askOnce), one that cannot be made, and one it
+ * answers with a failure of its own (5xx) is made again — `attempts` times in all — before any of a reply has gone to
+ * the visitor: nothing is said twice, and it is still the one call the visitor was counted for (asked again by the
+ * page, it would be counted again, and wait the page's own pause first).  A refusal (4xx: a key, a region, a rate, a
+ * parameter) is the answer.  → {res}: the answer, the last ask's whatever it is; or, when the last ask got none,
+ * {silent: true} (the upstream sent nothing) or {} (it could not be reached, or the visitor left).
+ */
+async function reach({ fetcher, url, init, signal, ms, attempts, label, pause }) {
+  let silent = false;
+  for (let i = 1; i <= attempts; i++) {
+    if (signal?.aborted) return {};
+    const got = await askOnce(fetcher, url, init, signal, ms);
+    if (got.res && (got.res.status < 500 || i === attempts)) return { res: got.res };
+    if (signal?.aborted) return {};
+    silent = Boolean(got.silent);
+    // a status or a word, never a body: which ask of how many, for the owner
+    console.error(label, got.res ? `${got.res.status} ${await errorCode(got.res, true)}`.trim() : silent ? "silent" : "unreachable", `ask ${i}/${attempts}`);
+    if (!silent && i < attempts) await pause(RETRY_PAUSE_MS * i, signal);
+  }
+  return { silent };
 }
 
 // ------------------------------------------------------------------ the second model (GPT-6 Luna, through OpenAI)

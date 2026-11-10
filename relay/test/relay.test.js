@@ -7,7 +7,7 @@ import test from "node:test";
 
 import { drain, EVENTS, RECORDS } from "../../security/archive.js";
 import { WatchCore } from "../../security/sentinel.js";
-import { config, defaultModel, handle, normalizeFeedback, normalizeRecord, openaiBody, publicText, withoutReasoning } from "../src/relay.js";
+import { config, defaultModel, handle, normalizeFeedback, normalizeRecord, openaiBody, publicText, waitAsked, withoutReasoning } from "../src/relay.js";
 import { normalizeSponsor, seal, SponsorBookCore, unseal } from "../src/sponsors.js";
 import { ANSWERS, LimiterCore, LogBookCore } from "../src/state.js";
 import { UsageCore } from "../../security/usage.js";
@@ -44,6 +44,7 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
   const calls = [];
   const pending = [];
   const bursts = [];
+  const pauses = [];
   const observe = async (fp, a, extra, cfg) => watch.observe(fp, a, extra, cfg, now());
   const deps = {
     limit: async (who, kind, limits) => limiter.hit(who, kind, limits, now()),
@@ -76,6 +77,7 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
     },
     // the Worker's Durable Object placed at a location (index.js, Egress): here, the same fetch, told where from
     ...(egress ? { egress: async (location, url, init) => { egress.push(location); return deps.fetch(url, init); } } : {}),
+    pause: async (ms) => { pauses.push(ms); }, // between two asks of the upstream: noted, not waited for
     now,
   };
   const fullEnv = { MINIMAX_API_KEY: KEY, LOG_EXPORT_TOKEN: TOKEN, ...env };
@@ -85,7 +87,7 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
     return handle(request, fullEnv, deps);
   };
   const settle = () => Promise.all(pending.splice(0)); // what the Worker finishes after the answer (ctx.waitUntil)
-  return { call, calls, book, limiter, watch, usage, sponsors, settle, bursts };
+  return { call, calls, book, limiter, watch, usage, sponsors, settle, bursts, pauses };
 }
 
 function sse(events) {
@@ -320,6 +322,168 @@ test("MiniMax's refusals become messages a visitor can act on, without its detai
   assert.doesNotMatch(JSON.stringify(await o.json()), /MiniMax|2013/);
   const down = relay({ upstream: async () => { throw new TypeError("network"); } });
   assert.equal((await down.call("/v1/chat/completions", post(ask))).status, 502);
+});
+
+// ------------------------------------------------------------------ an upstream that does not answer
+const answer = () => sse(['{"choices":[{"delta":{"content":"答"}}]}', "[DONE]"]);
+/** An upstream that sends nothing until the ask is ended (its signal), as a service that hangs does. */
+const hang = (url, init) => new Promise((resolve, reject) => {
+  init.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+});
+/** Run with the Worker's log kept (console.error): what the owner reads of an upstream's failures. */
+const logged = async (fn) => {
+  const said = [];
+  const err = console.error;
+  console.error = (...a) => said.push(a.join(" "));
+  try { await fn(said); } finally { console.error = err; }
+  return said;
+};
+
+test("an upstream that sends nothing is given up and asked again, within the one call the visitor was counted for", async () => {
+  let n = 0;
+  const r = relay({ env: { UPSTREAM_FIRST_BYTE_SECONDS: "0.03", PER_DAY: "2" }, upstream: (url, init) => (n++ === 0 ? hang(url, init) : answer()) });
+  const said = await logged(async () => {
+    const res = await r.call("/v1/chat/completions", post(ask));
+    assert.equal(res.status, 200);
+    assert.match(await res.text(), /答/);
+  });
+  assert.equal(r.calls.length, 2);
+  assert.equal(r.calls[0].init.signal.aborted, true);   // the ask that hung is ended, not left running
+  assert.equal(r.calls[1].init.signal.aborted, false);
+  assert.deepEqual(r.calls[0].body, r.calls[1].body);   // the same request, with the key
+  assert.equal(r.calls[1].init.headers.Authorization, `Bearer ${KEY}`);
+  assert.deepEqual(said, ["upstream silent ask 1/3"]);  // a word for the owner, nothing of the request
+  assert.deepEqual(r.pauses, []);                       // it had waited already: asked again at once
+  // counted once: of a day of two calls, one is left (asked again by the page, it would have been counted again)
+  assert.equal((await r.call("/v1/chat/completions", post(ask))).status, 200);
+  assert.equal((await r.call("/v1/chat/completions", post(ask))).status, 429);
+});
+
+test("an upstream silent every time is told as one that did not answer, in the default service's words", async () => {
+  const r = relay({ env: { UPSTREAM_FIRST_BYTE_SECONDS: "0.02", UPSTREAM_ATTEMPTS: "2" }, upstream: hang });
+  const said = await logged(async () => {
+    const res = await r.call("/v1/chat/completions", post(ask));
+    assert.equal(res.status, 504); // the page asks again, after its own pause (web/js/llm/openai.js: 5xx, not FINAL)
+    assert.equal(res.headers.get("Access-Control-Allow-Origin"), PAGE);
+    const j = await res.json();
+    assert.equal(j.error.type, "upstream_timeout");
+    assert.match(j.error.message, /没有回应/);
+    assert.doesNotMatch(j.error.message, /MiniMax|minimax/);
+  });
+  assert.equal(r.calls.length, 2);
+  assert.ok(r.calls.every((c) => c.init.signal.aborted));
+  assert.deepEqual(said, ["upstream silent ask 1/2", "upstream silent ask 2/2"]);
+});
+
+test("a failure of the upstream's own, or of the connection, is asked again; a refusal is the answer", async () => {
+  // 5xx, then an answer
+  let n = 0;
+  const flaky = relay({ upstream: async () => (n++ === 0 ? new Response(JSON.stringify({ error: { type: "overloaded_error", message: "MiniMax busy" } }), { status: 503 }) : answer()) });
+  const said = await logged(async () => {
+    const res = await flaky.call("/v1/chat/completions", post(ask));
+    assert.equal(res.status, 200);
+    assert.match(await res.text(), /答/);
+  });
+  assert.equal(flaky.calls.length, 2);
+  assert.deepEqual(said, ["upstream 503 overloaded_error ask 1/3"]); // its code, never its message
+  assert.deepEqual(flaky.pauses, [400]); // a failure met at once is not met again at once
+  // the connection fails, then an answer
+  let m = 0;
+  const reset = relay({ upstream: async () => { if (m++ === 0) throw new TypeError("connection reset"); return answer(); } });
+  await logged(async () => assert.equal((await reset.call("/v1/chat/completions", post(ask))).status, 200));
+  assert.equal(reset.calls.length, 2);
+  // failing every time: told as before, after every ask
+  const broken = relay({ upstream: async () => new Response("MiniMax internal error", { status: 500 }) });
+  await logged(async () => {
+    const res = await broken.call("/v1/chat/completions", post(ask));
+    assert.equal(res.status, 502);
+    assert.equal((await res.json()).error.type, "upstream_error");
+  });
+  assert.equal(broken.calls.length, 3);
+  assert.deepEqual(broken.pauses, [400, 800]);
+  const down = relay({ upstream: async () => { throw new TypeError("network"); } });
+  await logged(async () => {
+    const res = await down.call("/v1/chat/completions", post(ask));
+    assert.equal(res.status, 502);
+    assert.equal((await res.json()).error.type, "upstream_unreachable");
+  });
+  assert.equal(down.calls.length, 3);
+  // a refusal — a key, a rate, a parameter — is not asked again
+  for (const status of [400, 401, 403, 404, 429]) {
+    const refused = relay({ upstream: async () => new Response(JSON.stringify({ error: { message: "no" } }), { status }) });
+    await logged(async () => { await refused.call("/v1/chat/completions", post(ask)); });
+    assert.equal(refused.calls.length, 1, String(status));
+  }
+  // one ask only, and no wait, when set so: as before
+  const once = relay({ env: { UPSTREAM_ATTEMPTS: "1", UPSTREAM_FIRST_BYTE_SECONDS: "0" }, upstream: async () => new Response("down", { status: 502 }) });
+  await logged(async () => assert.equal((await once.call("/v1/chat/completions", post(ask))).status, 502));
+  assert.equal(once.calls.length, 1);
+  assert.deepEqual([config().firstByteMs, config().attempts], [30000, 3]);
+  assert.deepEqual([config({ UPSTREAM_ATTEMPTS: "99" }).attempts, config({ UPSTREAM_ATTEMPTS: "0" }).attempts, config({ UPSTREAM_ATTEMPTS: "x" }).attempts], [5, 1, 1]);
+  assert.deepEqual([config({ UPSTREAM_FIRST_BYTE_SECONDS: "0" }).firstByteMs, config({ UPSTREAM_FIRST_BYTE_SECONDS: "-3" }).firstByteMs, config({ UPSTREAM_FIRST_BYTE_SECONDS: "x" }).firstByteMs], [0, 0, 0]);
+  // the attempts together stay under the page's wait for a first reply (web/js/limits.js, firstReply: 120 s)
+  assert.ok(config().firstByteMs * config().attempts < 120000);
+});
+
+test("a visitor who leaves ends the ask, and no other is made; one who leaves mid-answer ends the stream", async () => {
+  const gone = new AbortController();
+  const r = relay({ env: { UPSTREAM_FIRST_BYTE_SECONDS: "5" }, upstream: hang });
+  const waiting = logged(async () => { await r.call("/v1/chat/completions", { ...post(ask), signal: gone.signal }); });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  gone.abort();
+  assert.deepEqual(await waiting, []); // not a failure of the upstream's: nothing for the log
+  assert.equal(r.calls.length, 1);
+  assert.equal(r.calls[0].init.signal.aborted, true);
+  const left = new AbortController();
+  const s = relay();
+  const res = await s.call("/v1/chat/completions", { ...post(ask), signal: left.signal });
+  assert.equal(res.status, 200);
+  assert.equal(s.calls[0].init.signal.aborted, false);
+  left.abort(); // the answer is streaming: the model call ends with the visitor's request
+  assert.equal(s.calls[0].init.signal.aborted, true);
+});
+
+test("the second model's asks are bounded alike: a place that sends nothing is given up and asked again", async () => {
+  let n = 0;
+  const where = [];
+  // (a fetch made from a placed object is not reached by the signal: here it simply never answers)
+  const r = relay({ env: { OPENAI_API_KEY: OKEY, UPSTREAM_FIRST_BYTE_SECONDS: "0.03" }, egress: where, upstream: () => (n++ === 0 ? new Promise(() => {}) : answer()) });
+  await logged(async () => {
+    const res = await r.call("/v1/chat/completions", post(LUNA, turnOf("s1")));
+    assert.equal(res.status, 200);
+    assert.match(await res.text(), /答/);
+  });
+  assert.equal(r.calls.length, 2);
+  assert.deepEqual(where, ["enam", "enam"]);
+});
+
+test("a quota spent is told apart from a busy moment, and what the upstream asks to wait is passed on", async () => {
+  const refuse = (body, headers = {}) => relay({ upstream: async () => new Response(JSON.stringify(body), { status: 429, headers }) });
+  const said = await logged(async () => {
+    // OpenAI's code for a quota spent, MiniMax's status code for a balance spent: not a busy moment
+    for (const body of [{ error: { message: "You exceeded your current quota", type: "insufficient_quota", code: "insufficient_quota" } },
+      { base_resp: { status_code: 1008, status_msg: "insufficient balance" } }]) {
+      const res = await refuse(body).call("/v1/chat/completions", post(ask));
+      assert.equal(res.status, 503);
+      const j = await res.json();
+      assert.equal(j.error.type, "upstream_quota"); // the page does not ask again (FINAL)
+      assert.match(j.error.message, /额度已用完/);
+      assert.doesNotMatch(JSON.stringify(j), /insufficient|exceeded|balance|1008/); // none of the upstream's own words
+    }
+    // a busy moment: as before; with what the upstream asks to wait, a minute at most
+    const busy = await refuse({ error: { message: "MiniMax rate limit", type: "rate_limit_error" } }).call("/v1/chat/completions", post(ask));
+    assert.deepEqual([busy.status, busy.headers.get("Retry-After")], [429, null]);
+    assert.equal((await busy.json()).error.type, "upstream_rate");
+    const asked = await refuse({ base_resp: { status_code: 1002 } }, { "Retry-After": "20" }).call("/v1/chat/completions", post(ask));
+    assert.deepEqual([asked.status, asked.headers.get("Retry-After"), asked.headers.get("Access-Control-Expose-Headers")], [429, "20", "Retry-After"]);
+    const long = await refuse({}, { "Retry-After": "86400" }).call("/v1/chat/completions", post(ask));
+    assert.deepEqual([long.status, long.headers.get("Retry-After")], [429, "60"]);
+  });
+  assert.deepEqual(said, ["upstream 429 insufficient_quota", "upstream 429 1008", "upstream 429 rate_limit_error", "upstream 429 1002", "upstream 429 "]);
+  const now = Date.UTC(2026, 10, 10, 12, 0, 0);
+  assert.deepEqual([waitAsked("7", now), waitAsked("0", now), waitAsked("", now), waitAsked(null, now), waitAsked("soon", now), waitAsked("-5", now)], [7, 0, 0, 0, 0, 0]);
+  assert.equal(waitAsked(new Date(now + 12000).toUTCString(), now), 12);
+  assert.equal(waitAsked(new Date(now - 12000).toUTCString(), now), 0);
 });
 
 test("health says what the page needs, nothing secret", async () => {

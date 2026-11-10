@@ -3,7 +3,7 @@
 // through its service binding.  Deployed by .github/workflows/site.yml (cloud/README.md).
 
 import { Container } from "@cloudflare/containers";
-import { reach, route, unavailable } from "./corpus.js";
+import { forwarded, reach, route } from "./corpus.js";
 
 const PORT = 8080;
 // a container starting from its image: the instance, then Python and the runtime over the full corpus (tens of seconds)
@@ -43,25 +43,42 @@ export class Corpus extends Container {
     });
   }
 
-  warm() {
-    this.renewActivityTimeout();
-    this.startAndWaitForPorts({ ports: PORT, cancellationOptions: START }).catch((err) => console.error("warm", err?.message || err));
+  /** Started and found listening by this object (`up`: in its memory only — an object brought back finds out again),
+   * and still running. */
+  isUp() {
+    return Boolean(this.up && this.ctx.container?.running);
   }
 
-  async forward(request) {
-    try {
-      await this.startAndWaitForPorts({ ports: PORT, cancellationOptions: START });
-    } catch (err) {
-      console.error("start", err?.message || err);
-      return unavailable();
-    }
+  /** Start the container if it is not running, and wait until it listens. */
+  async begin() {
+    await this.startAndWaitForPorts({ ports: PORT, cancellationOptions: START });
+    this.up = true;
+  }
+
+  warm() {
+    this.renewActivityTimeout();
+    if (this.isUp()) return; // awake already: nothing to start
+    this.begin().catch((err) => console.error("warm", err?.message || err));
+  }
+
+  forward(request) {
     const headers = new Headers(request.headers);
     headers.set("X-TC-Token", this.token);
-    const res = await this.containerFetch(new Request(request, { headers }), PORT);
-    return res.status >= 500 && !(res.headers.get("Content-Type") || "").includes("json") ? unavailable() : res;
+    // a container that is up is asked at once, not started and waited for again at every call (corpus.js, forwarded)
+    return forwarded({
+      up: () => this.isUp(),
+      mark: (up) => { this.up = up; },
+      start: () => this.begin(),
+      send: () => this.containerFetch(new Request(request, { headers }), PORT),
+    });
+  }
+
+  onStop() {
+    this.up = false; // asleep, or stopped: the next call starts it again
   }
 
   onError(error) {
+    this.up = false;
     console.error("container", error?.message || error); // reported; the next call starts it again
   }
 }

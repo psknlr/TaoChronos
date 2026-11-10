@@ -1183,4 +1183,7 @@ export default {
   "药膳推荐": "Plats médicinaux",
   "BMI {0}（{1}；{2}）": "IMC {0} ({1} ; {2})",
   "＊ 中国“食药物质目录”所列之物": "＊ figure sur la liste chinoise des substances à la fois aliments et remèdes traditionnels",
+  "正在等待模型回应…": "En attente de la réponse du modèle…",
+  "正在重新请求模型（第 {0} 次重试）…": "Nouvelle demande au modèle (tentative {0})…",
+  "模型服务回应较慢，仍在等待；一直没有回应时会自动重新请求。": "Le service du modèle tarde à répondre ; l'attente se poursuit. Sans réponse, la demande est renvoyée automatiquement.",
 };
