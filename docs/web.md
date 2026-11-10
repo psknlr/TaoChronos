@@ -645,6 +645,21 @@ minutes — and asks again as after any 5xx.  In the records to 2026-11-10 one m
 service's own 5xx after 53 seconds, or nothing for the page's two minutes; of those that answered, none took 90 seconds
 to begin.
 
+**And it asks from more than one place** ([ADR 0033](adr/0033-the-model-asked-from-more-than-one-place.md)).  The relay
+runs where the visitor reached Cloudflare — for a visitor in mainland China, in Europe or North America (the sentinel's
+events: 44% and 56% of 1,829 browser requests; East Asia, 8) — and the model service is in mainland China: asked from
+there, a request crossed the border a second time on that location's own path, and it is there that one request in ten
+never began (one visitor's for a while, never everyone's; never another service's from the same page).  So the default
+model is asked from the places `UPSTREAM_VIA` names, in turn (`direct,apac`: where the Worker runs, then an object
+placed in East Asia, the `Egress` object that already makes the second model's calls).  An ask silent for 12 seconds
+(`UPSTREAM_HEDGE_SECONDS`) is joined — not given up — by one from the next place, and the first to answer is the reply;
+the place that was silent, failed or refused is asked last for five minutes by the instance that saw it (longer each
+time, half an hour at most; forgotten when it answers).  A 429 or 403 that may be one place's own is asked about at
+another, once; a key or a parameter refused is the answer at once.  Each reply says how it came (`X-Tao-Asks`,
+`X-Tao-Via`), the turn's record keeps it (`requests[].asks`, `.via`), and `taochronos records` counts it
+(`asked_again`: how often the page asked again, how often the service needed one ask, which place answered).
+`GET /v1/egress` on the relay shows whether the model service's host answers from each place, and how soon.
+
 **While the model is waited for, the page says so** (`web/js/view/thread.js`, `waitNode`).  From a round's request to
 the first part of its reply: 正在等待模型回应…, with the seconds from the third on; after half a minute, that the service
 is slow and is asked again by itself; asked again after a failure, 正在重新请求模型（第 n 次重试）…; where the thinking is
@@ -1016,11 +1031,16 @@ store kept in IndexedDB and a reload that downloads no corpus, a turn answered o
 origins, models, output cap and body size, the three limits and a new day, MiniMax's refusals turned into plain messages,
 an upstream that sends nothing given up and asked again within the one call the visitor was counted for (silent every
 time: told so; a 5xx or a failed connection asked again, a refusal not; a visitor who leaves ending it), a quota spent
-told apart from a busy moment and the upstream's `Retry-After` passed on, no reasoning let through when the page asks for none (however the stream is cut),
+told apart from a busy moment and the upstream's `Retry-After` passed on, the default model asked from more than one
+place (a silent ask joined by the next place's and the place remembered, a slow place not thrown away, a failure asked
+at the next place, a place's own refusal asked about at another and the service's own word told at once, the placed
+object forwarding to the two model services' hosts only and ending a call it hears nothing of, a record keeping how
+many asks a reply took and where it came from), no reasoning let through when the page asks for none (however the stream is cut),
 the records reduced to their fields, feedback taken from any visitor on its own limits and reduced to its fields, and the
 collector's token, cursor, deletion and ids never reused.
 `tests/test_relay_collect.py` — `relay/collect.py` against a stand-in relay: records pulled once, by day, the cursor
-committed with them, deleted only once held, a deployment checked (and a refused key explained).  The site build writes
+committed with them, deleted only once held, a deployment checked (and a refused key explained; the places the model
+service's host answers from told in the log, never the deployment's failure).  The site build writes
 `site.json` only when given a relay, carries the texts' attribution, and never a conversation record or a key.
 
 ## Limits
