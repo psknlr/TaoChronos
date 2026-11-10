@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { reach, route, unavailable } from "../corpus/src/corpus.js";
+import { forwarded, reach, route, unavailable } from "../corpus/src/corpus.js";
 
 function box({ version = "v2", answer } = {}) {
   const storage = new Map();
@@ -88,4 +88,70 @@ test("a Durable Object without its container, or failing, is answered as the pag
   assert.equal(broken.status, 503);
   assert.equal(broken.headers.get("Retry-After"), "10");
   assert.equal((await broken.json()).starting, true);
+});
+
+/** The Durable Object's side of a call (index.js): whether it knows its container up, and what it did. */
+function container({ running = true, start, send } = {}) {
+  const c = { known: false, running, did: [] };
+  c.box = {
+    up: () => c.known && c.running,
+    mark: (up) => { c.known = up; },
+    start: async () => { c.did.push("start"); if (start) await start(c); c.running = true; },
+    send: async () => { c.did.push("send"); return send ? send(c) : new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } }); },
+  };
+  return c;
+}
+
+test("a container that is up is asked at once: it is started, and waited for, only when it is not known to be", async () => {
+  const c = container();
+  for (let i = 0; i < 4; i++) assert.equal((await forwarded(c.box)).status, 200); // a round of tools
+  assert.deepEqual(c.did, ["start", "send", "send", "send", "send"]); // the first call finds out; the others pay nothing
+  // asleep (it stopped running): the next call starts it again, and the ones after are asked at once again
+  c.running = false;
+  await forwarded(c.box);
+  await forwarded(c.box);
+  assert.deepEqual(c.did.slice(5), ["start", "send", "send"]);
+  // an object brought back (its memory gone) finds out again, once
+  c.known = false;
+  await forwarded(c.box);
+  await forwarded(c.box);
+  assert.deepEqual(c.did.slice(8), ["start", "send", "send"]);
+});
+
+test("a container that cannot start, or that does not answer as the runtime does, is not taken for up", async () => {
+  const quiet = async (fn) => { const err = console.error; console.error = () => {}; try { return await fn(); } finally { console.error = err; } };
+  // it cannot start: the page is told what it can fall back on, nothing is sent, and the next call tries again
+  let fail = true;
+  const cold = container({ running: false, start: async () => { if (fail) throw new Error("no instance"); } });
+  const res = await quiet(() => forwarded(cold.box));
+  assert.equal(res.status, 503);
+  assert.equal(res.headers.get("X-TC-Corpus"), "unavailable");
+  assert.deepEqual(cold.did, ["start"]);
+  fail = false;
+  assert.equal((await forwarded(cold.box)).status, 200);
+  assert.deepEqual(cold.did, ["start", "start", "send"]);
+  // an answer that is not the runtime's (a 5xx that is not JSON): unavailable, and the next call waits for it again
+  let odd = false;
+  const ill = container({ send: () => (odd ? new Response("upstream connect error", { status: 502 }) : new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } })) });
+  await forwarded(ill.box);
+  odd = true;
+  const bad = await forwarded(ill.box);
+  assert.equal(bad.status, 503);
+  assert.equal(ill.known, false);
+  odd = false;
+  assert.equal((await forwarded(ill.box)).status, 200);
+  assert.deepEqual(ill.did, ["start", "send", "send", "start", "send"]);
+  // the runtime's own failure (JSON) is its answer: passed on, the container still up
+  const own = container({ send: () => new Response(JSON.stringify({ error: "KeyError: x" }), { status: 500, headers: { "Content-Type": "application/json" } }) });
+  assert.equal((await forwarded(own.box)).status, 500);
+  assert.equal(own.known, true);
+  // the container gone under the call: the failure is the caller's to tell (reach), and it is started again next time
+  let gone = true;
+  const lost = container({ send: () => { if (gone) throw new Error("Network connection lost."); return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } }); } });
+  const told = await quiet(() => reach(() => forwarded(lost.box)));
+  assert.equal(told.status, 503);
+  assert.equal(lost.known, false);
+  gone = false;
+  assert.equal((await forwarded(lost.box)).status, 200);
+  assert.deepEqual(lost.did, ["start", "send", "start", "send"]);
 });

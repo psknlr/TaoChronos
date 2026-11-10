@@ -34,6 +34,46 @@ export async function reach(call) {
 }
 
 /**
+ * A call sent to the container, which is started — and waited for until it listens — only when it is not known to be
+ * up.  The start-and-wait is not free once the container runs: each time it asks the container's port again (a round
+ * trip to the container) and writes the object's state (a storage write, the object's other requests held meanwhile),
+ * and every tool call of every round would pay for it.  A container this object started and found listening, and that
+ * still runs, is asked at once; one that does not answer as the runtime does is no longer taken for up, so the next
+ * call starts it, or waits for it, again.
+ *
+ * box: {
+ *   up() → boolean                 started and found listening by this object, and still running
+ *   mark(up)                       remember that it is, or is not
+ *   start() → Promise              start it if it is not running, and wait until it listens (throws when it cannot)
+ *   send() → Promise<Response>     the call, to the container
+ * }
+ */
+export async function forwarded(box) {
+  if (!box.up()) {
+    try {
+      await box.start();
+      box.mark(true);
+    } catch (err) {
+      box.mark(false);
+      console.error("start", err?.message || err);
+      return unavailable();
+    }
+  }
+  let res;
+  try {
+    res = await box.send();
+  } catch (err) {
+    box.mark(false); // it went away under the call: the page is told (reach), and the next call starts it again
+    throw err;
+  }
+  if (res.status >= 500 && !(res.headers.get("Content-Type") || "").includes("json")) { // not the runtime's own answer
+    box.mark(false);
+    return unavailable();
+  }
+  return res;
+}
+
+/**
  * box: {
  *   version,                               the deployed version (the Worker's VERSION: commit and store)
  *   get(key), put(key, value), list(prefix) → Map, delete(keys)       the Durable Object's storage
