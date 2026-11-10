@@ -55,6 +55,16 @@ export const DEFAULTS = {
   // The attempts together stay under the page's own wait for a first reply (web/js/limits.js, firstReply: 120 s)
   UPSTREAM_FIRST_BYTE_SECONDS: "30",
   UPSTREAM_ATTEMPTS: "3",
+  // where the default model is asked from, in turn: "direct" — the Cloudflare location the visitor reached, where this
+  // Worker runs — and Durable Object location hints (an object placed there makes the call: index.js, Egress).  A
+  // visitor in mainland China reaches Cloudflare in Amsterdam, Seattle, San Jose, Los Angeles or London (the sentinel's
+  // events), and the model service is in mainland China: asked from there, the request crosses the border a second
+  // time, on that location's own path — and it is on that path that one request in ten never began (never another
+  // visitor's in the same minutes, never another service's from the same page: docs/adr/0033).  An ask that is silent
+  // for UPSTREAM_HEDGE_SECONDS is joined — not given up — by one from the next place, and the first to answer is the
+  // reply; the place that was silent, failed or refused is asked last for a while (deps.routes, this instance's memory)
+  UPSTREAM_VIA: "direct,apac",
+  UPSTREAM_HEDGE_SECONDS: "12",
   MAX_BODY_BYTES: "2000000",
   PER_MINUTE: "30",                           // model calls per visitor (one question takes several: the tools)
   PER_DAY: "600",
@@ -119,6 +129,10 @@ export function config(env = {}) {
     // the wait for the upstream's first byte, in milliseconds (0: none), and how many times it is asked (1 to 5)
     firstByteMs: Math.max(0, Math.round((num("UPSTREAM_FIRST_BYTE_SECONDS") || 0) * 1000)),
     attempts: Math.min(5, Math.max(1, Math.floor(num("UPSTREAM_ATTEMPTS")) || 1)),
+    // the places the default model is asked from, in order ("direct", or a location hint; none named: direct), and how
+    // long an ask may be silent before another place joins it, in milliseconds (0: none joins)
+    via: ((v) => (v.length ? v : [DIRECT]))([...new Set(list("UPSTREAM_VIA").map((x) => x.toLowerCase()).filter((x) => x === DIRECT || PLACES.has(x)))]),
+    hedgeMs: Math.max(0, Math.round((num("UPSTREAM_HEDGE_SECONDS") || 0) * 1000)),
     maxBody: num("MAX_BODY_BYTES"),
     origins: list("ALLOWED_ORIGINS"),
     chat: { perMinute: num("PER_MINUTE"), perDay: num("PER_DAY"), total: num("TOTAL_PER_DAY"), tokensPerDay: num("TOKENS_PER_DAY"), totalTokens: num("TOTAL_TOKENS_PER_DAY") },
@@ -147,8 +161,9 @@ export function config(env = {}) {
   };
 }
 
-// Durable Objects' location hints (Cloudflare): where the second model may be called from
+// Durable Objects' location hints (Cloudflare): where a model may be called from besides where the Worker runs
 const PLACES = new Set(["wnam", "enam", "sam", "weur", "eeur", "apac", "oc", "afr", "me"]);
+const DIRECT = "direct"; // from where the Worker runs: the Cloudflare location the visitor reached
 
 /** Is the second model offered: switched on, and the Worker has its key? */
 const secondReady = (env, cfg) => Boolean(cfg.openai.on && env.OPENAI_API_KEY && cfg.openai.model && cfg.openai.publicModel);
@@ -170,7 +185,8 @@ export async function handle(request, env, deps) {
   const origin = request.headers.get("Origin") || "";
   const allowed = cfg.origins.includes(origin);
   // the page reads how long a refusal asks it to wait (Retry-After), and asks again no sooner
-  const cors = allowed ? { "Access-Control-Allow-Origin": origin, "Access-Control-Expose-Headers": "Retry-After", Vary: "Origin" } : { Vary: "Origin" };
+  // (and how many times the model service was asked for a reply, and from where it came: for the turn's record)
+  const cors = allowed ? { "Access-Control-Allow-Origin": origin, "Access-Control-Expose-Headers": "Retry-After, X-Tao-Asks, X-Tao-Via", Vary: "Origin" } : { Vary: "Origin" };
   // the sentinel: the request as seen at the edge, and a note of it when it is worth one (security/sentinel.js)
   const scfg = sentinelConfig(env);
   const s = scfg.mode === "off" ? null : { cfg: scfg, fp: fingerprint(request, deps.now()), origins: cfg.origins, deps };
@@ -437,7 +453,16 @@ async function chat(request, env, cfg, cors, allowed, deps, s) {
     if (tokens > 0) deps.defer(deps.spend(who, "chat", tokens - (gate.reserved || 0)));
   };
 
-  return relayed({ url: `${cfg.upstream}/chat/completions`, key: env.MINIMAX_API_KEY, payload, request, cors, view: cfg, spend, noReasoning, deps });
+  return relayed({ url: `${cfg.upstream}/chat/completions`, key: env.MINIMAX_API_KEY, payload, request, cors, view: cfg, spend, noReasoning, deps,
+    ways: waysOf(cfg.via, deps) });
+}
+
+/** The ways a model service is asked, in order: from where the Worker runs, and through an object placed elsewhere
+ * (deps.egress; without one — a test, a Worker without the binding — only direct). */
+function waysOf(via, deps) {
+  const ways = via.filter((v) => v === DIRECT || deps.egress)
+    .map((v) => (v === DIRECT ? { name: DIRECT, fetch: deps.fetch } : { name: v, placed: true, fetch: (url, init) => deps.egress(v, url, init) }));
+  return ways.length ? ways : [{ name: DIRECT, fetch: deps.fetch }];
 }
 
 /**
@@ -446,7 +471,7 @@ async function chat(request, env, cfg, cors, allowed, deps, s) {
  * reasoning-format prefix (publicText, publicFilter) — and, asked for no thinking, without reasoning.  `label` names the
  * upstream in the Worker's log (a status code only, never a body).
  */
-async function relayed({ url, key, payload, request, cors, view, spend, noReasoning, deps, label = "upstream", fetcher = deps.fetch }) {
+async function relayed({ url, key, payload, request, cors: plain, view, spend, noReasoning, deps, label = "upstream", ways }) {
   const init = {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: request.headers.get("Accept") || "application/json",
@@ -454,11 +479,14 @@ async function relayed({ url, key, payload, request, cors, view, spend, noReason
     body: payload,
   };
   // the visitor leaving, or stopping the answer, ends the model call too (request.signal)
-  const got = await reach({ fetcher, url, init, signal: request.signal, ms: view.firstByteMs, attempts: view.attempts, label,
-    pause: deps.pause || pauseFor });
+  const got = await reach({ ways, url, init, signal: request.signal, ms: view.firstByteMs, hedgeMs: view.hedgeMs, attempts: view.attempts, label,
+    pause: deps.pause || pauseFor, health: deps.routes, now: deps.now, at: request.cf?.colo });
+  // how the reply came, for the page's record of the turn: the asks it took, and the place the reply is from
+  const cors = { ...plain, "X-Tao-Asks": String(got.asks || 0), ...(got.via ? { "X-Tao-Via": got.via } : {}) };
   if (!got.res) {
-    return got.silent
-      ? error(504, "默认服务的模型服务暂时没有回应，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_timeout", cors)
+    if (got.silent) return error(504, "默认服务的模型服务暂时没有回应，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_timeout", cors);
+    return got.failed
+      ? error(502, "默认服务暂时不可用，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_error", cors)
       : error(502, "默认服务暂时连不上模型服务，请稍后再试", "upstream_unreachable", cors);
   }
   const upstream = got.res;
@@ -557,10 +585,18 @@ export function waitAsked(value, now) {
   return Number.isFinite(s) && s > 0 ? Math.min(s, MAX_WAIT_ASKED) : 0;
 }
 
-// ------------------------------------------------------------------ the upstream asked, within a wait, more than once
+// ------------------------------------------------------------------ the upstream asked, from more than one place
 const SILENT = Symbol("silent");
-// before an ask that failed at once is made again (times the attempts made): a failure met at once is not met again at once
+const JOIN = Symbol("join");
+// before an ask that failed at once is made again (times the asks made): a failure met at once is not met again at once
 const RETRY_PAUSE_MS = 400;
+// how long a place that was silent, failed or refused is asked last (this instance's memory, deps.routes): doubled each
+// time it does so again, up to REST_MOST_MS; forgotten when it answers
+const REST_MS = 300000;
+const REST_REFUSED_MS = 60000;
+const REST_MOST_MS = 1800000;
+// refusals that may be one place's and not the service's: its address limited (429) or not let in (403)
+const PLACE_REFUSAL = new Set([403, 429]);
 
 /** A wait of `ms` that ends early when `signal` does. */
 function pauseFor(ms, signal) {
@@ -573,55 +609,192 @@ function pauseFor(ms, signal) {
 }
 
 /**
- * One ask of the upstream: {res} when it answers (its status and headers: its first byte), {silent: true} when it sends
- * nothing for `ms` (0: waited for as long as it takes) — the ask is then ended —, {} when it cannot be made.  `signal`
- * (the visitor's request) ends the ask, and goes on ending an answer's stream once it is passed on.
+ * One ask of the upstream.  `settled`: {res} when it answers (its status and headers: its first byte), {silent: true}
+ * when it sends nothing for `ms` (0: waited for as long as it takes) — the ask is then ended —, {} when it cannot be
+ * made, or is no longer waited for.  drop(): it is not waited for any more — ended, and whatever it still answers (a
+ * fetch the signal does not reach: one made from a placed object) is not read.  `signal` (the visitor's request) ends
+ * the ask, and goes on ending an answer's stream once it is passed on.
  */
-async function askOnce(fetcher, url, init, signal, ms) {
+function ask(fetcher, url, init, signal, ms) {
   const ctl = new AbortController();
   const leave = () => ctl.abort();
   if (signal?.aborted) ctl.abort();
   else signal?.addEventListener("abort", leave, { once: true });
   let timer = null;
+  let dropped = false;
   const pending = Promise.resolve().then(() => fetcher(url, { ...init, signal: ctl.signal }));
-  const waits = ms > 0 ? [pending, new Promise((resolve) => { timer = setTimeout(resolve, ms, SILENT); })] : [pending];
-  try {
-    const res = await Promise.race(waits);
-    if (res !== SILENT) return { res };
+  const drop = () => {
+    if (dropped) return;
+    dropped = true;
+    clearTimeout(timer);
     ctl.abort();
-    // an answer that comes all the same (a fetch the signal does not reach: one made from a placed object) is not read
-    pending.then((late) => late?.body?.cancel()).catch(() => {});
     signal?.removeEventListener("abort", leave);
+    pending.then((late) => late?.body?.cancel()).catch(() => {});
+  };
+  const waits = ms > 0 ? [pending, new Promise((resolve) => { timer = setTimeout(resolve, ms, SILENT); })] : [pending];
+  const settled = Promise.race(waits).then((res) => {
+    clearTimeout(timer);
+    if (res !== SILENT) return dropped ? {} : { res };
+    drop();
     return { silent: true };
-  } catch {
+  }, () => {
+    clearTimeout(timer);
     signal?.removeEventListener("abort", leave);
     return {};
+  });
+  return { settled, drop };
+}
+
+/** The ways in the order to ask them now: those this instance has just seen silent, failing or refusing go last. */
+function inOrder(ways, health, now) {
+  const resting = (w) => (health?.get(w.name)?.until > now ? 1 : 0);
+  return [...ways].sort((a, b) => resting(a) - resting(b)); // (stable: otherwise as they are set)
+}
+
+/** A place did not answer: asked last for `ms`, doubled each time it does so again before it has answered. */
+function rest(health, way, now, ms) {
+  if (!health) return;
+  const h = health.get(way.name) || { fails: 0, until: 0 };
+  h.fails += 1;
+  h.until = Math.max(h.until, now + Math.min(REST_MOST_MS, ms * 2 ** (h.fails - 1)));
+  health.set(way.name, h);
+}
+
+/**
+ * The upstream asked until it answers, from the places it may be asked from (`ways`: {name, fetch, placed}, in order;
+ * those that just failed last).
+ *
+ * - An ask that is silent for `hedgeMs` is joined by an ask from the next place: both are waited for, and the first to
+ *   answer is the reply (the other is dropped).  A request that hangs on one place's path costs the wait for the next
+ *   place, not the whole wait; one that is only slow is not thrown away.
+ * - An ask silent for `ms`, one that cannot be made, and one the upstream answers with a failure of its own (5xx) is
+ *   over; while no other is under way the next is made (after a short pause, unless it had waited already).
+ * - A refusal (4xx) is the answer — but one that may be the place's and not the service's (its address limited, 429,
+ *   or not let in, 403) is kept while a place not yet asked is asked once.
+ * - `attempts` asks in all, before any of a reply has gone to the visitor: nothing is said twice, and it is still the
+ *   one call the visitor was counted for.  The visitor leaving (`signal`) ends them all.
+ *
+ * → {res, asks, via}: the answer, how many asks it took and the place it is from; or, when none came, {silent: true}
+ * (the upstream sent nothing), {failed: status} (its own failure) or {} (it could not be reached, or the visitor left),
+ * each with `asks`.  `health` (a Map, this instance's): what it remembers of the places between calls.
+ */
+async function reach({ ways, url, init, signal, ms, hedgeMs, attempts, label, pause, health, now, at }) {
+  const order = inOrder(ways, health, now());
+  const where = at ? ` at ${at}` : "";
+  const asked = new Set();
+  const open = new Set();
+  let made = 0;
+  let join = null;   // the wait after which another place joins: {wait, stop}
+  let held = null;   // a refusal kept while another place is asked: {res, way}
+  let failed = 0;    // the status of the upstream's last failure of its own
+  let silent = false;
+  const lost = new Set(); // the places an ask was over at without an answer
+  const resting = (w) => health?.get(w.name)?.until > now();
+  const begin = () => {
+    const way = order.find((w) => !asked.has(w.name)) || order[made % order.length];
+    asked.add(way.name);
+    made += 1;
+    // (a placed object ends its own call when it hears nothing for as long: the signal does not reach into it)
+    const a = ask(way.fetch, url, way.placed && ms > 0 ? { ...init, headers: { ...init.headers, "X-Tao-Wait": String(ms) } } : init, signal, ms);
+    const entry = { way, n: made, drop: a.drop };
+    entry.settled = a.settled.then((got) => ({ entry, got }));
+    open.add(entry);
+    join?.stop();
+    join = null;
+    if (hedgeMs > 0 && made < attempts) {
+      let timer = null;
+      join = { wait: new Promise((resolve) => { timer = setTimeout(resolve, hedgeMs, JOIN); }), stop: () => clearTimeout(timer) };
+    }
+  };
+  const over = () => {
+    join?.stop();
+    for (const e of open) e.drop();
+    open.clear();
+  };
+  try {
+    for (;;) {
+      if (signal?.aborted) return { asks: made };
+      if (!open.size) {
+        if (made >= attempts || held) break; // (a refusal kept, and the other place gave nothing: the refusal is the answer)
+        begin();
+      }
+      const ev = await Promise.race([...[...open].map((e) => e.settled), ...(join ? [join.wait] : [])]);
+      if (signal?.aborted) return { asks: made };
+      if (ev === JOIN) { // silent so far: another place joins, and what is silent is not the place to ask first next time
+        join = null;
+        for (const e of open) rest(health, e.way, now(), REST_MS);
+        console.error(label, "silent so far", `ask ${made}/${attempts} via ${[...open].map((e) => e.way.name).join("+")}${where}: joined`);
+        begin();
+        continue;
+      }
+      const { entry, got } = ev;
+      open.delete(entry);
+      const res = got.res;
+      if (res?.ok) { // the reply
+        health?.delete(entry.way.name);
+        if (held) await held.res.body?.cancel().catch(() => {});
+        return { res, asks: made, via: entry.way.name };
+      }
+      if (res && res.status < 500) { // a refusal: the answer, unless it may be this place's and another is left to ask
+        if (held) await held.res.body?.cancel().catch(() => {});
+        held = { res, way: entry.way };
+        const places = PLACE_REFUSAL.has(res.status);
+        if (!places) break; // the service's own word (a key, a parameter): no place would hear another
+        rest(health, entry.way, now(), REST_REFUSED_MS);
+        if (open.size) continue; // another ask is under way: its answer may be a reply
+        // (a place not yet asked, and not itself just seen refusing: a limit that is the service's is not asked about twice)
+        if (!(made < attempts && order.some((w) => !asked.has(w.name) && !resting(w)))) break;
+        console.error(label, res.status, `ask ${made}/${attempts} via ${entry.way.name}${where}: another place asked`);
+        begin();
+        continue;
+      }
+      // over without an answer: silent to the end, unreachable, or a failure of the upstream's own
+      rest(health, entry.way, now(), REST_MS);
+      lost.add(entry.way.name);
+      silent = Boolean(got.silent);
+      if (res) failed = res.status;
+      // a status or a word, never a body: which ask of how many, from where, for the owner
+      console.error(label, res ? `${res.status} ${await errorCode(res, true)}`.trim() : silent ? "silent" : "unreachable",
+        `ask ${entry.n}/${attempts} via ${entry.way.name}${where}`);
+      if (!open.size && made < attempts && !silent) await pause(RETRY_PAUSE_MS * made, signal);
+    }
+    // A refusal that may be one place's own, while another place gave no answer at all, does not speak for the service:
+    // the visitor is told it did not answer (and the page asks again), not that it refused — were the refusal the
+    // service's, the place that was silent would say so itself the next time it answers
+    const others = held && PLACE_REFUSAL.has(held.res.status) && [...lost].some((name) => name !== held.way.name);
+    if (held && !others) return { res: held.res, asks: made, via: held.way.name };
+    if (held) await held.res.body?.cancel().catch(() => {});
+    return silent ? { silent, asks: made } : failed ? { failed, asks: made } : { asks: made };
   } finally {
-    clearTimeout(timer);
+    over();
   }
 }
 
 /**
- * The upstream asked until it answers.  An ask it meets with silence (askOnce), one that cannot be made, and one it
- * answers with a failure of its own (5xx) is made again — `attempts` times in all — before any of a reply has gone to
- * the visitor: nothing is said twice, and it is still the one call the visitor was counted for (asked again by the
- * page, it would be counted again, and wait the page's own pause first).  A refusal (4xx: a key, a region, a rate, a
- * parameter) is the answer.  → {res}: the answer, the last ask's whatever it is; or, when the last ask got none,
- * {silent: true} (the upstream sent nothing) or {} (it could not be reached, or the visitor left).
+ * What an object placed elsewhere does with a call handed to it (index.js, Egress): a request of its own to one of the
+ * model services' hosts — the default model's or the second's, no other — with only the headers the call needs (nothing
+ * else of the Worker's request travels on), ended when the host sends nothing for as long as the relay waits (X-Tao-Wait,
+ * milliseconds: the relay's own signal does not reach into the object).  It keeps nothing.
  */
-async function reach({ fetcher, url, init, signal, ms, attempts, label, pause }) {
-  let silent = false;
-  for (let i = 1; i <= attempts; i++) {
-    if (signal?.aborted) return {};
-    const got = await askOnce(fetcher, url, init, signal, ms);
-    if (got.res && (got.res.status < 500 || i === attempts)) return { res: got.res };
-    if (signal?.aborted) return {};
-    silent = Boolean(got.silent);
-    // a status or a word, never a body: which ask of how many, for the owner
-    console.error(label, got.res ? `${got.res.status} ${await errorCode(got.res, true)}`.trim() : silent ? "silent" : "unreachable", `ask ${i}/${attempts}`);
-    if (!silent && i < attempts) await pause(RETRY_PAUSE_MS * i, signal);
+export async function placedFetch(request, env, fetcher) {
+  const target = new URL(request.url);
+  const hosts = new Set([env.OPENAI_BASE || DEFAULTS.OPENAI_BASE, env.UPSTREAM_BASE || DEFAULTS.UPSTREAM_BASE].map((u) => new URL(u).host));
+  if (target.protocol !== "https:" || !hosts.has(target.host)) return new Response("not allowed", { status: 403 });
+  const headers = {};
+  for (const name of ["Content-Type", "Accept", "Authorization"]) {
+    const value = request.headers.get(name);
+    if (value) headers[name] = value;
   }
-  return { silent };
+  const body = request.method === "GET" || request.method === "HEAD" ? undefined : await request.text();
+  const wait = Math.min(120000, Math.max(0, Math.floor(Number(request.headers.get("X-Tao-Wait")) || 0)));
+  if (!wait) return fetcher(target.href, { method: request.method, headers, body });
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), wait);
+  try {
+    return await fetcher(target.href, { method: request.method, headers, body, signal: ctl.signal }); // answered: its stream is not ended
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // ------------------------------------------------------------------ the second model (GPT-6 Luna, through OpenAI)
@@ -690,9 +863,10 @@ async function secondChat(request, env, cfg, cors, deps, s, { body, raw, shape, 
   const view = { ...cfg, publicModel: o.publicModel, formatPrefix: "" };
   // from where OpenAI serves (OPENAI_LOCATION), not from the visitor's nearest location; the next place when OpenAI
   // refuses the region of one
-  const fetcher = o.locations.length && deps.egress ? placed(o.locations, deps) : deps.fetch;
+  const far = Boolean(o.locations.length && deps.egress);
+  const ways = [far ? { name: o.locations.join("+"), placed: true, fetch: placed(o.locations, deps) } : { name: DIRECT, fetch: deps.fetch }];
   return relayed({ url: `${o.upstream}/chat/completions`, key: env.OPENAI_API_KEY, payload, request, cors, view, spend, noReasoning, deps,
-    label: "upstream openai", fetcher });
+    label: "upstream openai", ways });
 }
 
 // ------------------------------------------------------------------ what a visitor sees of the upstream: nothing
@@ -892,6 +1066,9 @@ const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : undefined)
 const obj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : null);
 const list = (v, n, each) => (Array.isArray(v) ? v.slice(0, n).map((x) => each(obj(x) || {})) : undefined);
 
+// a place a reply came from, as the relay itself names it (X-Tao-Via): "direct", or location hints
+const PLACE = /^[a-z]{2,8}(\+[a-z]{2,8}){0,4}$/;
+
 /** A turn as the page sends it, reduced to the known fields and their limits (anything else is dropped).  Where its time
  * went (web/js/records.js, timings): its model requests, its calls' times and ends, what happened between them, how long the
  * page was hidden or did not run, and the runtime it began on — numbers and short words only. */
@@ -913,6 +1090,7 @@ export function normalizeRecord(r) {
       round: num(q.round), attempt: num(q.attempt), sent: num(q.sent), open: num(q.open), first: num(q.first), text: num(q.text),
       last: num(q.last), end: num(q.end), finish: str(q.finish, 40), failed: str(q.failed, 40), expired: str(q.expired, 20),
       status: num(q.status), input: num(q.input), output: num(q.output), hidden: num(q.hidden), asleep: num(q.asleep),
+      asks: num(q.asks), via: typeof q.via === "string" && PLACE.test(q.via) ? q.via : undefined, // how many times the service asked the model service, and from where the reply came
     })),
     events: list(r.events, 40, (e) => ({ at: num(e.at), what: str(e.what, 40) })),
     hidden: num(r.hidden), asleep: num(r.asleep),
@@ -1049,6 +1227,9 @@ function placed(places, deps) {
   };
 }
 
+// how long the diagnostic waits for the default model's host to answer from one place
+const PROBE_MS = 8000;
+
 /** Where a call to the second model comes from, as OpenAI's own edge sees it (Cloudflare's trace on its host: the
  * location and country): from this Worker, which runs where the caller is, and from each place it may be called from
  * instead.  No secret, nothing of the caller beyond its Cloudflare location; within the ten-second gate. */
@@ -1068,6 +1249,16 @@ async function egress(request, cfg, cors, deps) {
   const init = { method: "GET", headers: {} };
   const out = { worker: request.cf?.colo || null, direct: await read(deps.fetch(trace, init)), places: {} };
   for (const place of cfg.openai.locations) out.places[place] = deps.egress ? await read(deps.egress(place, trace, init)) : null;
+  // and the default model's host from each place it is asked from (UPSTREAM_VIA): whether it answers anything at all
+  // there, and how soon — no key is sent, and nothing of the host is told
+  const host = `${new URL(cfg.upstream).origin}/`;
+  out.model = {};
+  for (const way of waysOf(cfg.via, deps)) {
+    const began = Date.now();
+    const got = await ask(way.fetch, host, way.placed ? { ...init, headers: { "X-Tao-Wait": String(PROBE_MS) } } : init, request.signal, PROBE_MS).settled;
+    await got.res?.body?.cancel().catch(() => {});
+    out.model[way.name] = got.res ? { status: got.res.status, ms: Date.now() - began } : { error: got.silent ? "silent" : "unreachable", ms: Date.now() - began };
+  }
   return json(out, 200, cors);
 }
 

@@ -9,7 +9,7 @@ import { DurableObject } from "cloudflare:workers";
 import { Drainer, EVENTS, RECORDS } from "../../security/archive.js";
 import { WatchCore } from "../../security/sentinel.js";
 import { UsageCore } from "../../security/usage.js";
-import { DEFAULTS, handle } from "./relay.js";
+import { handle, placedFetch } from "./relay.js";
 import { SponsorBookCore } from "./sponsors.js";
 import { ANSWERS, LimiterCore, LogBookCore } from "./state.js";
 
@@ -137,25 +137,21 @@ export class SponsorBook extends DurableObject {
   }
 }
 
-/** Where the second model is called from (relay.js, OPENAI_LOCATION): a Durable Object created with that location hint
- * lives there, and so do the calls it makes — OpenAI refuses some regions a visitor's nearest Cloudflare location may be
- * in.  It keeps nothing, and forwards only to the second model's own host. */
+/** Where a model service is called from when not from where the Worker runs (relay.js: UPSTREAM_VIA for the default
+ * model, OPENAI_LOCATION for the second): a Durable Object created with that location hint lives there, and so do the
+ * calls it makes.  The Worker runs at the Cloudflare location the visitor reached — for a visitor in mainland China one
+ * in Europe or North America, far from a model service in mainland China — and OpenAI refuses some regions such a
+ * location may be in.  It keeps nothing, and forwards only to the two model services' own hosts (placedFetch). */
 export class Egress extends DurableObject {
-  async fetch(request) {
-    const target = new URL(request.url);
-    const allowed = new URL(this.env.OPENAI_BASE || DEFAULTS.OPENAI_BASE).host;
-    if (target.host !== allowed) return new Response("not allowed", { status: 403 });
-    // a request of its own, made here: only the headers the call needs — nothing else of the Worker's request travels
-    // on (forwarding the incoming request as it is let some calls still be seen from the visitor's region)
-    const headers = {};
-    for (const name of ["Content-Type", "Accept", "Authorization"]) {
-      const value = request.headers.get(name);
-      if (value) headers[name] = value;
-    }
-    const body = request.method === "GET" || request.method === "HEAD" ? undefined : await request.text();
-    return fetch(target.href, { method: request.method, headers, body });
+  fetch(request) {
+    return placedFetch(request, this.env, (input, init) => fetch(input, init));
   }
 }
+
+// what this instance remembers of the places the default model is asked from, between calls (relay.js, reach): the one
+// that was just silent, failing or refusing is asked last for a while.  An instance serves one Cloudflare location, and
+// it is that location's own path to the model service that fails; another instance finds out for itself
+const ROUTES = new Map();
 
 export default {
   async fetch(request, env, ctx) {
@@ -200,6 +196,7 @@ export default {
         const { signal, ...rest } = init;
         return env.EGRESS.get(env.EGRESS.idFromName(`egress-${location}`), { locationHint: location }).fetch(input, rest);
       },
+      routes: ROUTES,
       now: () => Date.now(),
     });
   },

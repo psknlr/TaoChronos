@@ -32,6 +32,23 @@ MAX_OUTPUT_TOKENS = "32768"
 # "0" seconds: waited for as long as it takes; "1" attempt: asked once, as before
 UPSTREAM_FIRST_BYTE_SECONDS = "30"
 UPSTREAM_ATTEMPTS = "3"
+# where the default model is asked from, in turn: "direct" — the Cloudflare location the visitor reached, where this
+# Worker runs — and Durable Object location hints (wnam, enam, sam, weur, eeur, apac, oc, afr, me): an object placed
+# there makes the call (EGRESS, below).  Why: a visitor in mainland China reaches Cloudflare in Amsterdam, Seattle, San
+# Jose, Los Angeles or London (the sentinel's events), and the model service is in mainland China — asked from there, the
+# request crosses the border a second time, on that location's own path.  In the records to 2026-11-10 it is on that
+# path that requests never began: one in ten, one in five in the Beijing evening, more after an idle gap and with a
+# longer request, a few visitors bearing most of them — while other visitors' requests in the same minutes, and the
+# other services' from the same page, went through (docs/adr/0033-the-model-asked-from-more-than-one-place.md).
+# An ask that is silent for UPSTREAM_HEDGE_SECONDS is joined — not given up — by one from the next place, and the first
+# to answer is the reply: of the requests that answered, 92% had begun within 12 s, so about one in thirteen is asked
+# twice (the second ended as soon as the first answers).  A place that was silent, failed or refused is asked last for
+# five minutes (twice as long each time it does so again, half an hour at most) by the instance that saw it.
+# The turns' records say which place answered and how many asks it took (`via`, `asks`): put first the place that
+# answers.  GET /v1/egress shows whether the model service's host answers from each place, and how soon.
+# "direct" alone: asked from where the Worker runs only, as before; "0" seconds: no place joins
+UPSTREAM_VIA = "direct,apac"
+UPSTREAM_HEDGE_SECONDS = "12"
 # model calls (a question takes several: one per round of tool use)
 PER_MINUTE = "30"
 PER_DAY = "600"
@@ -113,7 +130,8 @@ class_name = "LogBook"
 name = "SPONSORS"
 class_name = "SponsorBook"
 
-# where the second model is called from (relay/src/index.js, Egress; OPENAI_LOCATION): keeps nothing
+# where a model service is called from when not from where the Worker runs (relay/src/index.js, Egress; UPSTREAM_VIA for
+# the default model, OPENAI_LOCATION for the second): keeps nothing
 [[durable_objects.bindings]]
 name = "EGRESS"
 class_name = "Egress"

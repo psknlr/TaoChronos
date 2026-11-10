@@ -7,7 +7,7 @@ import test from "node:test";
 
 import { drain, EVENTS, RECORDS } from "../../security/archive.js";
 import { WatchCore } from "../../security/sentinel.js";
-import { config, defaultModel, handle, normalizeFeedback, normalizeRecord, openaiBody, publicText, waitAsked, withoutReasoning } from "../src/relay.js";
+import { config, defaultModel, handle, normalizeFeedback, normalizeRecord, openaiBody, placedFetch, publicText, waitAsked, withoutReasoning } from "../src/relay.js";
 import { normalizeSponsor, seal, SponsorBookCore, unseal } from "../src/sponsors.js";
 import { ANSWERS, LimiterCore, LogBookCore } from "../src/state.js";
 import { UsageCore } from "../../security/usage.js";
@@ -35,7 +35,7 @@ const TOKEN = "export-token-0123456789abcdef";
 const PAGE = "https://chat.impf.ai";
 
 /** The relay with its stores in memory.  `cf`: what the edge would say of every request (request.cf). */
-function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0), cf, burst, gateFails = false, egress } = {}) {
+function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0), cf, burst, gateFails = false, egress, routes } = {}) {
   const limiter = new LimiterCore(sqlStore());
   const watch = new WatchCore(sqlStore());
   const book = new LogBookCore(sqlStore());
@@ -71,12 +71,13 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
     defer: (p) => { pending.push(Promise.resolve(p).catch(() => {})); },
     logbook: { add: async (...a) => book.add(...a), records: async (...a) => book.records(...a), remove: async (...a) => book.remove(...a) },
     sponsors: { add: async (...a) => sponsors.add(...a), list: async () => sponsors.list(), get: async (id) => sponsors.get(id), remove: async (id) => sponsors.remove(id) },
-    fetch: async (url, init) => {
-      calls.push({ url, init, body: init.body ? JSON.parse(init.body) : null });
-      return upstream ? upstream(url, init) : sse(["{\"choices\":[{\"delta\":{\"content\":\"可以\"}}]}", "[DONE]"]);
+    fetch: async (url, init, place) => {
+      calls.push({ url, init, body: init.body ? JSON.parse(init.body) : null, via: place || "direct" });
+      return upstream ? upstream(url, init, place) : sse(["{\"choices\":[{\"delta\":{\"content\":\"可以\"}}]}", "[DONE]"]);
     },
     // the Worker's Durable Object placed at a location (index.js, Egress): here, the same fetch, told where from
-    ...(egress ? { egress: async (location, url, init) => { egress.push(location); return deps.fetch(url, init); } } : {}),
+    ...(egress ? { egress: async (location, url, init) => { egress.push(location); return deps.fetch(url, init, location); } } : {}),
+    ...(routes ? { routes } : {}), // what the instance remembers of the places between calls
     pause: async (ms) => { pauses.push(ms); }, // between two asks of the upstream: noted, not waited for
     now,
   };
@@ -272,7 +273,7 @@ test("limits: per visitor per minute, per visitor per day, all visitors per day"
   const minute = await r.call("/v1/chat/completions", post(ask));
   assert.equal(minute.status, 429);
   assert.ok(Number(minute.headers.get("Retry-After")) > 0);
-  assert.equal(minute.headers.get("Access-Control-Expose-Headers"), "Retry-After"); // the page waits as long as it is asked
+  assert.match(minute.headers.get("Access-Control-Expose-Headers"), /^Retry-After\b/); // the page waits as long as it is asked
   assert.match((await minute.json()).error.message, /每分钟最多 2 次/);
   let t = Date.UTC(2026, 8, 28, 12, 5, 0);
   const later = relay({ env: { PER_MINUTE: "10", PER_DAY: "2", TOTAL_PER_DAY: "3" }, now: () => t });
@@ -324,6 +325,15 @@ test("MiniMax's refusals become messages a visitor can act on, without its detai
   assert.equal((await down.call("/v1/chat/completions", post(ask))).status, 502);
 });
 
+test("a record keeps how many times the model service was asked for a reply and where it came from, as the relay names them", () => {
+  const rec = (q) => normalizeRecord({ v: 1, question: "问", requests: [{ round: 1, attempt: 1, sent: 1, end: 2, ...q }] }).requests[0];
+  assert.deepEqual(rec({ asks: 2, via: "apac" }), { round: 1, attempt: 1, sent: 1, end: 2, asks: 2, via: "apac" });
+  assert.equal(rec({ via: "enam+wnam" }).via, "enam+wnam");
+  assert.equal(rec({ via: "direct" }).via, "direct");
+  for (const via of ["https://example.com", "apac; drop", "A".repeat(9), 7, "", null, "api.minimax.cn"]) assert.equal(rec({ via }).via, undefined, String(via));
+  assert.equal(rec({ asks: "2" }).asks, undefined);
+});
+
 // ------------------------------------------------------------------ an upstream that does not answer
 const answer = () => sse(['{"choices":[{"delta":{"content":"答"}}]}', "[DONE]"]);
 /** An upstream that sends nothing until the ask is ended (its signal), as a service that hangs does. */
@@ -352,7 +362,7 @@ test("an upstream that sends nothing is given up and asked again, within the one
   assert.equal(r.calls[1].init.signal.aborted, false);
   assert.deepEqual(r.calls[0].body, r.calls[1].body);   // the same request, with the key
   assert.equal(r.calls[1].init.headers.Authorization, `Bearer ${KEY}`);
-  assert.deepEqual(said, ["upstream silent ask 1/3"]);  // a word for the owner, nothing of the request
+  assert.deepEqual(said, ["upstream silent ask 1/3 via direct"]);  // a word for the owner, nothing of the request
   assert.deepEqual(r.pauses, []);                       // it had waited already: asked again at once
   // counted once: of a day of two calls, one is left (asked again by the page, it would have been counted again)
   assert.equal((await r.call("/v1/chat/completions", post(ask))).status, 200);
@@ -372,7 +382,7 @@ test("an upstream silent every time is told as one that did not answer, in the d
   });
   assert.equal(r.calls.length, 2);
   assert.ok(r.calls.every((c) => c.init.signal.aborted));
-  assert.deepEqual(said, ["upstream silent ask 1/2", "upstream silent ask 2/2"]);
+  assert.deepEqual(said, ["upstream silent ask 1/2 via direct", "upstream silent ask 2/2 via direct"]);
 });
 
 test("a failure of the upstream's own, or of the connection, is asked again; a refusal is the answer", async () => {
@@ -385,7 +395,7 @@ test("a failure of the upstream's own, or of the connection, is asked again; a r
     assert.match(await res.text(), /答/);
   });
   assert.equal(flaky.calls.length, 2);
-  assert.deepEqual(said, ["upstream 503 overloaded_error ask 1/3"]); // its code, never its message
+  assert.deepEqual(said, ["upstream 503 overloaded_error ask 1/3 via direct"]); // its code, never its message
   assert.deepEqual(flaky.pauses, [400]); // a failure met at once is not met again at once
   // the connection fails, then an answer
   let m = 0;
@@ -457,6 +467,162 @@ test("the second model's asks are bounded alike: a place that sends nothing is g
   assert.deepEqual(where, ["enam", "enam"]);
 });
 
+// ------------------------------------------------------------------ the default model asked from more than one place
+/** An answer that begins only after `ms` (a place that is slow, not silent); ended like any ask. */
+const slow = (ms) => (url, init) => new Promise((resolve, reject) => {
+  const timer = setTimeout(() => resolve(answer()), ms);
+  init.signal.addEventListener("abort", () => { clearTimeout(timer); reject(new DOMException("aborted", "AbortError")); }, { once: true });
+});
+const asks = (res) => [res.status, res.headers.get("X-Tao-Asks"), res.headers.get("X-Tao-Via")];
+
+test("an ask that is silent is joined by one from the next place, and the place is remembered", async () => {
+  let t = Date.UTC(2026, 10, 10, 12, 0, 0);
+  const routes = new Map();
+  const where = [];
+  // from where the Worker runs the model service does not answer; from the place in East Asia it does
+  const r = relay({ env: { UPSTREAM_HEDGE_SECONDS: "0.02", UPSTREAM_FIRST_BYTE_SECONDS: "5", PER_DAY: "4" }, egress: where, routes, now: () => t, cf: { colo: "AMS" },
+    upstream: (url, init, place) => (place ? answer() : hang(url, init)) });
+  const said = await logged(async () => {
+    const res = await r.call("/v1/chat/completions", post(ask));
+    assert.deepEqual(asks(res), [200, "2", "apac"]); // told to the page, for the turn's record
+    assert.match(res.headers.get("Access-Control-Expose-Headers"), /X-Tao-Asks, X-Tao-Via/);
+    assert.match(await res.text(), /答/);
+  });
+  assert.deepEqual(r.calls.map((c) => c.via), ["direct", "apac"]);
+  assert.deepEqual(where, ["apac"]);
+  assert.deepEqual(r.calls[0].body, r.calls[1].body);                 // the same request
+  assert.equal(r.calls[1].init.headers.Authorization, `Bearer ${KEY}`);
+  assert.equal(r.calls[1].init.headers["X-Tao-Wait"], "5000");         // the placed object ends its own call when it hears nothing
+  assert.equal(r.calls[0].init.headers["X-Tao-Wait"], undefined);      // nothing of ours goes to the model service itself
+  assert.equal(r.calls[0].init.signal.aborted, true);                  // the silent one is dropped once the reply is here
+  assert.deepEqual(said, ["upstream silent so far ask 1/3 via direct at AMS: joined"]); // where, for the owner
+  // remembered: the next call asks the place that answered first, and waits for nothing
+  const next = await r.call("/v1/chat/completions", post(ask));
+  assert.deepEqual(asks(next), [200, "1", "apac"]);
+  assert.deepEqual(r.calls.map((c) => c.via), ["direct", "apac", "apac"]);
+  // for a while (five minutes); then the Worker's own place is tried first again — and, silent again, rests twice as long
+  t += 299000;
+  assert.deepEqual(asks(await r.call("/v1/chat/completions", post(ask))), [200, "1", "apac"]);
+  t += 2000;
+  await logged(async () => assert.deepEqual(asks(await r.call("/v1/chat/completions", post(ask))), [200, "2", "apac"]));
+  assert.deepEqual(r.calls.slice(-2).map((c) => c.via), ["direct", "apac"]);
+  assert.equal(routes.get("direct").until, t + 600000);
+  assert.equal(routes.has("apac"), false); // a place that answers is not held anything against
+  // counted once each, whatever it took: four calls, a day of four spent
+  assert.equal((await r.call("/v1/chat/completions", post(ask))).status, 429);
+});
+
+test("a place that is only slow is not thrown away: the first to answer is the reply, the other is dropped", async () => {
+  const routes = new Map();
+  const r = relay({ env: { UPSTREAM_HEDGE_SECONDS: "0.02", UPSTREAM_FIRST_BYTE_SECONDS: "5", UPSTREAM_ATTEMPTS: "2" }, egress: [], routes,
+    upstream: (url, init, place) => (place ? hang(url, init) : slow(60)(url, init)) });
+  await logged(async () => {
+    const res = await r.call("/v1/chat/completions", post(ask));
+    assert.deepEqual(asks(res), [200, "2", "direct"]);
+    assert.match(await res.text(), /答/);
+  });
+  assert.deepEqual(r.calls.map((c) => c.via), ["direct", "apac"]);
+  assert.equal(r.calls[0].init.signal.aborted, false); // the reply's own call goes on: its stream is being read
+  assert.equal(routes.has("direct"), false);           // it answered, late as it was
+});
+
+test("a failure at one place is asked at the next; every place failing is told as before", async () => {
+  // the Worker's own place gets the upstream's 5xx; the other answers
+  const r = relay({ egress: [], routes: new Map(), upstream: async (url, init, place) => (place ? answer() : new Response("bad gateway", { status: 502 })) });
+  const said = await logged(async () => assert.deepEqual(asks(await r.call("/v1/chat/completions", post(ask))), [200, "2", "apac"]));
+  assert.deepEqual(said, ["upstream 502 ask 1/3 via direct"]);
+  assert.deepEqual(r.pauses, [400]);
+  // silent everywhere: three asks, turn about, each given up; told as a service that did not answer
+  const dead = relay({ env: { UPSTREAM_FIRST_BYTE_SECONDS: "0.03", UPSTREAM_HEDGE_SECONDS: "0.01" }, egress: [], routes: new Map(), upstream: hang });
+  await logged(async () => {
+    const res = await dead.call("/v1/chat/completions", post(ask));
+    assert.deepEqual(asks(res), [504, "3", null]);
+    assert.equal((await res.json()).error.type, "upstream_timeout");
+  });
+  assert.deepEqual(dead.calls.map((c) => c.via), ["direct", "apac", "direct"]);
+  assert.ok(dead.calls.every((c) => c.init.signal.aborted));
+  // without a placed object (a Worker without the binding), or set so: from where the Worker runs only, as before
+  for (const one of [relay({ upstream: hang, env: { UPSTREAM_FIRST_BYTE_SECONDS: "0.02", UPSTREAM_HEDGE_SECONDS: "0" } }),
+    relay({ upstream: hang, egress: [], env: { UPSTREAM_VIA: "direct", UPSTREAM_FIRST_BYTE_SECONDS: "0.02", UPSTREAM_HEDGE_SECONDS: "0" } })]) {
+    await logged(async () => assert.deepEqual(asks(await one.call("/v1/chat/completions", post(ask))), [504, "3", null]));
+    assert.deepEqual(one.calls.map((c) => c.via), ["direct", "direct", "direct"]);
+  }
+  assert.deepEqual([config().via, config().hedgeMs], [["direct", "apac"], 12000]);
+  assert.deepEqual(config({ UPSTREAM_VIA: "APAC, direct, apac, nowhere" }).via, ["apac", "direct"]); // in the order set; a place Cloudflare has only
+  assert.deepEqual([config({ UPSTREAM_VIA: "off" }).via, config({ UPSTREAM_VIA: "" }).via, config({ UPSTREAM_HEDGE_SECONDS: "x" }).hedgeMs], [["direct"], ["direct", "apac"], 0]);
+});
+
+test("a refusal that may be one place's own is asked about at another, once; the service's own word is the answer at once", async () => {
+  let t = Date.UTC(2026, 10, 10, 12, 0, 0);
+  const limited = () => new Response(JSON.stringify({ error: { type: "rate_limit_error", message: "too many requests from this address" } }), { status: 429 });
+  // the Worker's place is limited (its address is everyone's); the other is not
+  const routes = new Map();
+  const r = relay({ egress: [], routes, now: () => t, upstream: async (url, init, place) => (place ? answer() : limited()) });
+  const said = await logged(async () => assert.deepEqual(asks(await r.call("/v1/chat/completions", post(ask))), [200, "2", "apac"]));
+  assert.deepEqual(said, ["upstream 429 ask 1/3 via direct: another place asked"]);
+  assert.deepEqual(asks(await r.call("/v1/chat/completions", post(ask))), [200, "1", "apac"]); // remembered, for a minute
+  t += 61000;
+  await logged(async () => assert.deepEqual(asks(await r.call("/v1/chat/completions", post(ask))), [200, "2", "apac"]));
+  // limited everywhere: it is the service's — told as before, after one ask at each; and not asked twice again while both rest
+  const both = relay({ egress: [], routes: new Map(), now: () => t, upstream: async () => limited() });
+  await logged(async () => {
+    const res = await both.call("/v1/chat/completions", post(ask));
+    assert.deepEqual(asks(res), [429, "2", "apac"]);
+    assert.equal((await res.json()).error.type, "upstream_rate");
+    assert.equal((await both.call("/v1/chat/completions", post(ask))).headers.get("X-Tao-Asks"), "1");
+  });
+  assert.deepEqual(both.calls.map((c) => c.via), ["direct", "apac", "direct"]);
+  // a key refused, a parameter refused: the service's own word — the answer at once, no other place asked
+  for (const status of [400, 401, 404]) {
+    const no = relay({ egress: [], routes: new Map(), upstream: async () => new Response(JSON.stringify({ error: { message: "no" } }), { status }) });
+    await logged(async () => { await no.call("/v1/chat/completions", post(ask)); });
+    assert.deepEqual(no.calls.map((c) => c.via), ["direct"], String(status));
+  }
+  // the other place refuses for itself (not let in) while the Worker's own gives no answer: that does not speak for the
+  // service — the visitor is told it did not answer, and the page asks again; not that its key was refused
+  const shut = relay({ env: { UPSTREAM_FIRST_BYTE_SECONDS: "0.05", UPSTREAM_HEDGE_SECONDS: "0.01" }, egress: [], routes: new Map(),
+    upstream: (url, init, place) => (place ? new Response(JSON.stringify({ error: { message: "forbidden" } }), { status: 403 }) : hang(url, init)) });
+  await logged(async () => {
+    const res = await shut.call("/v1/chat/completions", post(ask));
+    assert.equal(res.status, 504);
+    assert.equal((await res.json()).error.type, "upstream_timeout");
+  });
+  // refused where the Worker runs and nowhere else to ask: the refusal is the answer
+  const only = relay({ upstream: async () => new Response(JSON.stringify({ error: { message: "forbidden" } }), { status: 403 }) });
+  await logged(async () => assert.equal((await (await only.call("/v1/chat/completions", post(ask))).json()).error.type, "upstream_auth"));
+});
+
+test("an object placed elsewhere forwards to the model services' hosts only, with the call's headers only, and ends a call it hears nothing of", async () => {
+  const seen = [];
+  const ok = async (url, init) => { seen.push({ url, init }); return new Response("ok"); };
+  const to = (url, init = {}) => new Request(url, { method: "POST", body: "{}", ...init, headers: { "Content-Type": "application/json", Accept: "text/event-stream",
+    Authorization: "Bearer k", Cookie: "a=b", "X-Forwarded-For": "203.0.113.7", "CF-Connecting-IP": "203.0.113.7", ...(init.headers || {}) } });
+  for (const url of ["https://api.minimax.cn/v1/chat/completions", "https://api.openai.com/v1/chat/completions"]) {
+    assert.equal((await placedFetch(to(url), {}, ok)).status, 200);
+  }
+  assert.deepEqual(seen.map((c) => c.url), ["https://api.minimax.cn/v1/chat/completions", "https://api.openai.com/v1/chat/completions"]);
+  assert.deepEqual(Object.keys(seen[0].init.headers).sort(), ["Accept", "Authorization", "Content-Type"]); // nothing of the visitor
+  assert.equal(seen[0].init.body, "{}");
+  // any other host, or the same host in clear: refused, nothing sent
+  for (const url of ["https://example.com/v1/chat/completions", "https://api.minimax.cn.evil.example/v1", "http://api.minimax.cn/v1/chat/completions"]) {
+    assert.equal((await placedFetch(to(url), {}, ok)).status, 403, url);
+  }
+  assert.equal(seen.length, 2);
+  // the hosts are the Worker's own settings
+  assert.equal((await placedFetch(to("https://api.minimax.io/v1/chat/completions"), { UPSTREAM_BASE: "https://api.minimax.io/v1" }, ok)).status, 200);
+  assert.equal((await placedFetch(to("https://api.minimax.cn/v1/chat/completions"), { UPSTREAM_BASE: "https://api.minimax.io/v1" }, ok)).status, 403);
+  // told how long to wait: a host that sends nothing is given up (the relay's signal does not reach in here) …
+  await assert.rejects(placedFetch(to("https://api.minimax.cn/v1/chat/completions", { headers: { "X-Tao-Wait": "20" } }), {}, hang));
+  // … and one that has begun to answer is left to finish, however long its answer takes
+  let signal = null;
+  const res = await placedFetch(to("https://api.minimax.cn/v1/chat/completions", { headers: { "X-Tao-Wait": "20" } }), {},
+    async (url, init) => { signal = init.signal; return answer(); });
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.equal(signal.aborted, false);
+  assert.match(await res.text(), /答/);
+  assert.equal(seen.every((c) => !("X-Tao-Wait" in c.init.headers)), true);
+});
+
 test("a quota spent is told apart from a busy moment, and what the upstream asks to wait is passed on", async () => {
   const refuse = (body, headers = {}) => relay({ upstream: async () => new Response(JSON.stringify(body), { status: 429, headers }) });
   const said = await logged(async () => {
@@ -475,7 +641,7 @@ test("a quota spent is told apart from a busy moment, and what the upstream asks
     assert.deepEqual([busy.status, busy.headers.get("Retry-After")], [429, null]);
     assert.equal((await busy.json()).error.type, "upstream_rate");
     const asked = await refuse({ base_resp: { status_code: 1002 } }, { "Retry-After": "20" }).call("/v1/chat/completions", post(ask));
-    assert.deepEqual([asked.status, asked.headers.get("Retry-After"), asked.headers.get("Access-Control-Expose-Headers")], [429, "20", "Retry-After"]);
+    assert.deepEqual([asked.status, asked.headers.get("Retry-After"), asked.headers.get("Access-Control-Expose-Headers")], [429, "20", "Retry-After, X-Tao-Asks, X-Tao-Via"]);
     const long = await refuse({}, { "Retry-After": "86400" }).call("/v1/chat/completions", post(ask));
     assert.deepEqual([long.status, long.headers.get("Retry-After")], [429, "60"]);
   });
@@ -1022,15 +1188,28 @@ test("a region OpenAI refuses from one place is asked from the next; where each 
   assert.deepEqual(where, ["enam", "wnam"]);
   const all = relay({ env: { OPENAI_API_KEY: OKEY }, egress: [], upstream: async () => region() }); // refused from everywhere: told so
   assert.equal((await (await all.call("/v1/chat/completions", post(LUNA, turnOf("p2")))).json()).error.type, "upstream_region");
-  // GET /v1/egress: OpenAI's edge's own trace, from the Worker and from each place
+  // GET /v1/egress: OpenAI's edge's own trace, from the Worker and from each place; and whether the default model's
+  // host answers anything at all from each place it is asked from, and how soon (no key sent, the host not named)
   const traced = [];
-  const t = relay({ env: { OPENAI_API_KEY: OKEY }, egress: traced, cf: { colo: "HKG" }, upstream: async (url) => {
+  const sent = [];
+  const t = relay({ env: { OPENAI_API_KEY: OKEY }, egress: traced, cf: { colo: "HKG" }, upstream: async (url, init, place) => {
+    if (url === "https://api.minimax.cn/") {
+      sent.push(init);
+      if (place) throw new TypeError("connection refused");
+      return new Response("404 page not found", { status: 404 });
+    }
     assert.equal(url, "https://api.openai.com/cdn-cgi/trace");
-    return new Response(`fl=1\nip=2a06:98c0::1\ncolo=${traced.length ? "IAD" : "HKG"}\nloc=${traced.length ? "US" : "HK"}\n`, { status: 200 });
+    return new Response(`fl=1\nip=2a06:98c0::1\ncolo=${place ? "IAD" : "HKG"}\nloc=${place ? "US" : "HK"}\n`, { status: 200 });
   } });
   const seen = await (await t.call("/v1/egress", { headers: { Origin: PAGE } })).json();
-  assert.deepEqual(seen, { worker: "HKG", direct: { colo: "HKG", loc: "HK" }, places: { enam: { colo: "IAD", loc: "US" }, wnam: { colo: "IAD", loc: "US" } } });
-  assert.ok(!JSON.stringify(seen).includes("2a06")); // no address
+  const { model, ...openai } = seen;
+  assert.deepEqual(openai, { worker: "HKG", direct: { colo: "HKG", loc: "HK" }, places: { enam: { colo: "IAD", loc: "US" }, wnam: { colo: "IAD", loc: "US" } } });
+  assert.deepEqual(Object.keys(model), ["direct", "apac"]); // UPSTREAM_VIA
+  assert.equal(model.direct.status, 404); // it answered: reachable from here
+  assert.equal(model.apac.error, "unreachable");
+  assert.ok(Number.isFinite(model.direct.ms) && Number.isFinite(model.apac.ms));
+  assert.ok(sent.every((init) => !init.headers.Authorization && init.method === "GET")); // no key
+  assert.ok(!JSON.stringify(seen).includes("2a06") && !/minimax|openai/i.test(JSON.stringify(seen))); // no address, no host
 }));
 
 test("the default model: the one DEFAULT_MODEL names while it is offered and until DEFAULT_MODEL_UNTIL, then Tao-R1", async () => {
