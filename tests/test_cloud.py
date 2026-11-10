@@ -300,7 +300,7 @@ def test_the_site_carries_the_licences_credits_and_not_the_book_lists(tmp_path):
         assert gone not in notice, gone
     assert "attribution" not in (site / "sitemap.xml").read_text(encoding="utf-8")
     about = (site / "about.html").read_text(encoding="utf-8")
-    assert about.count('href="attribution"') == 8  # once per language, in its text
+    assert about.count('href="attribution"') == about.count("<main data-lang=") == 16  # once per language, in its text
     assert not re.search(r'class="nav">[^\n]*href="attribution"', about)
     assert "corpus=full" not in (tmp_path / "site" / "js" / "view" / "settings.js").read_text(encoding="utf-8")
 
