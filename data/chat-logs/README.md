@@ -19,7 +19,7 @@
 | `model`、`provider` | 底层模型与服务（`impf` 为默认服务；`fixed` 为网页自己给出的固定回复，如问“你是谁”，此时没有 `model`，`rounds` 为 0） |
 | `runtime`、`corpus` | 运行环境（browser / server）与语料（canon 要籍语料 / full 全量 / demo） |
 | `tools` | 调用的工具：名称、是否成功、耗时、参数（≤300 字）；记录时间的网页另记 `id`、第几轮 `round`、结局 `status`（ok / error / timeout / stopped / skipped / background / refused）、开始于第几毫秒 `at`、等运行环境或排队的毫秒数 `wait`、运行环境自报的计算耗时 `compute` |
-| `requests` | 每次模型请求（记录时间的网页才有）：第几轮 `round`、第几次 `attempt`；从本轮开始起算的毫秒数——发出 `sent`、回复开始 `open`、第一段 `first`、回答的第一个字 `text`、最后一段 `last`、结束 `end`；结束方式 `finish`（服务给的原因，如 stop / length / tool_calls）或失败原因 `failed`（stopped / timeout / unfinished / network / 服务的错误类型或 `http 状态码`，不含服务的原话）及 HTTP 状态码 `status`，超时时 `expired` 为哪一个时限（firstReply / silence / whole）；`input` / `output` token；这次请求期间网页隐藏的毫秒数 `hidden` 与完全没有运行的毫秒数 `asleep`（此后的网页才记：网页没人看着时断开的回复，可能是浏览器切断的，而非服务） |
+| `requests` | 每次模型请求（记录时间的网页才有）：第几轮 `round`、第几次 `attempt`；从本轮开始起算的毫秒数——发出 `sent`、回复开始 `open`、第一段 `first`、回答的第一个字 `text`、最后一段 `last`、结束 `end`；结束方式 `finish`（服务给的原因，如 stop / length / tool_calls）或失败原因 `failed`（stopped / timeout / unfinished / network / 服务的错误类型或 `http 状态码`，不含服务的原话）及 HTTP 状态码 `status`，超时时 `expired` 为哪一个时限（firstReply / silence / whole）；`input` / `output` token；这次请求期间网页隐藏的毫秒数 `hidden` 与完全没有运行的毫秒数 `asleep`（此后的网页才记：网页没人看着时断开的回复，可能是浏览器切断的，而非服务）；默认服务为这一次回复向模型服务请求了几次 `asks`、回复来自哪个位置 `via`（`direct` 为中转所在的 Cloudflare 节点，其余为另设对象的位置，如 `apac`；[ADR 0033](../../docs/adr/0033-the-model-asked-from-more-than-one-place.md) 之后的中转与网页才有） |
 | `events` | 请求之间发生的事：`continued`（在输出上限处截断的回答接着写）、`lighter`（少想一些重问）、`asked` / `time` / `steps`（工具到此为止：访客按了“不再等待”、本轮时间用完、轮数用完）、`resume`（访客按了“继续作答”：根据已有的工具结果接着作答，不再调用工具）、`cut:…`（回复被截断）、`compacted`（为不超出上下文预算，这次请求比上一次少发了内容）、`reused`（同一检索本轮已做过，结果取自那一次，没有重新运行）、`review`（自查：回答所引段落查无此段，请模型重写）、`unchecked`（重写没有完整给出，撤下，原回答保留）、`fallback`（站点服务不可用，改用内置运行环境），各带毫秒数 `at` |
 | `hidden`、`asleep`、`was` | 本轮中网页隐藏的毫秒数，网页完全没有运行的毫秒数（手机休眠、标签页被冻结），以及本轮开始时的运行环境与语料（结束时已换了才有） |
 | `citations` | 引文核对：总数与 ok（与原文一致）/ warn（存疑）/ bad（查无此段）/ pending，及所引段落号 |
@@ -44,6 +44,6 @@
 | `given`、`model`、`provider`、`runtime`、`corpus`、`app` | 提交时间，以及那一轮的模型、服务、运行环境、语料与 TaoChronos 版本 |
 
 `taochronos records [目录或文件…] [--since 年-月-日] [--until 年-月-日]` 汇总这些记录（默认读本目录）：从最后一个工具结果到回答第一个字的
-时间及其组成、模型请求中断（超时、没说完就断开、连接或服务出错）后仍得到完整回答的比例、中断的请求中有多少发生在网页隐藏或休眠期间（`unseen`）、完整回答与其中引文全部核验通过的比例、时间花在哪里
+时间及其组成、模型被重新请求的频率（`asked_again`：网页重新请求的占比、默认服务只向模型服务请求一次即得到回复的占比、各位置给出回复的次数）、模型请求中断（超时、没说完就断开、连接或服务出错）后仍得到完整回答的比例、中断的请求中有多少发生在网页隐藏或休眠期间（`unseen`）、完整回答与其中引文全部核验通过的比例、时间花在哪里
 （模型请求、各轮工具、网页隐藏或休眠，以及工具等待与运行之比），以及反馈（`feedback`：有评价的轮数、有帮助与有问题各几条、
 各原因的次数、附了说明或问答的条数）。只输出计数与时长。

@@ -74,6 +74,22 @@ assert.equal(da[1].content[0].tool_use_id, "t1");
 {
   const { reviewNote, runTurn } = await import("./js/agent.js");
   const { rawAnswer } = await import("./js/view/thread.js");
+  // what the default service says of how a reply came — how many times it asked the model service, and from where the
+  // reply is — is kept for the turn's record, and only in the form the service gives it
+  {
+    const { askedOf } = await import("./js/llm/openai.js");
+    const { timings } = await import("./js/records.js");
+    const head = (h) => ({ get: (k) => h[k] ?? null });
+    assert.deepEqual(askedOf(head({ "X-Tao-Asks": "2", "X-Tao-Via": "apac" })), { asks: 2, via: "apac" });
+    assert.deepEqual(askedOf(head({ "X-Tao-Asks": "1", "X-Tao-Via": "enam+wnam" })), { asks: 1, via: "enam+wnam" });
+    assert.deepEqual(askedOf(head({ "X-Tao-Asks": "3" })), { asks: 3 });                      // no reply came: no place
+    assert.deepEqual(askedOf(head({})), {});                                                    // a service that does not say
+    assert.deepEqual(askedOf(head({ "X-Tao-Asks": "many", "X-Tao-Via": "<script>" })), {});
+    assert.deepEqual(askedOf(null), {});
+    const t = timings({ started: 1000, trace: { requests: [{ round: 1, attempt: 1, sent: 1010, end: 1900, finish: "stop", asks: 2, via: "apac" }], tools: [], events: [] },
+      was: null, now: {}, hidden: 0, asleep: 0 });
+    assert.deepEqual([t.requests[0].asks, t.requests[0].via], [2, "apac"]);
+  }
   // a wait for the model, as the page says it (thread.js, waitNode): no seconds for a service that answers at once,
   // then how long; after half a minute, that the service is slow; which try it is once it is asked again; and, where
   // the thinking is not shown, that it thinks (no word of slowness: it is answering)

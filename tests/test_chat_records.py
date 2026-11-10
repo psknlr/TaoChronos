@@ -107,6 +107,24 @@ def test_the_summary():
     assert summary([timed(), old()], until="2026-10-21")["turns"] == 1
 
 
+def test_how_often_the_model_is_asked_again():
+    """Of the model requests, those the page asked again; of those whose service said how many times it asked the model
+    service itself, those it asked once; and the place each reply came from (ADR 0033)."""
+    smooth = timed(requests=[
+        {"round": 1, "attempt": 1, "sent": 10, "open": 300, "end": 905, "finish": "tool_calls", "asks": 1, "via": "direct"},
+        {"round": 2, "attempt": 1, "sent": 2010, "open": 2600, "text": 4010, "end": 6005, "finish": "stop", "asks": 2, "via": "apac"}])
+    rough = timed(requests=[
+        {"round": 1, "attempt": 1, "sent": 10, "end": 46000, "failed": "upstream_timeout", "status": 504, "asks": 3},  # no reply: no place
+        {"round": 1, "attempt": 2, "sent": 47500, "open": 49000, "text": 50000, "end": 60000, "finish": "stop", "asks": 1, "via": "apac"}])
+    out = summary([smooth, rough, timed(), old()])  # (a page that does not say, and one that times nothing)
+    assert out["asked_again"] == {
+        "by_page": {"n": 1, "of": 6, "share": 0.167},              # one request of six was a second asking of its round
+        "service_asked_once": {"n": 2, "of": 4, "share": 0.5},     # of the four that say: two took one ask of the model service
+        "via": {"apac": 2, "direct": 1}}
+    assert summary([old()])["asked_again"] == {"by_page": {"n": 0, "of": 0, "share": None},
+                                               "service_asked_once": {"n": 0, "of": 0, "share": None}, "via": {}}
+
+
 def test_the_requests_that_broke_off_while_the_page_was_not_seen():
     """A page that times each model request with its own clock says how long it was hidden, or not running, while each was
     asked: of the requests that broke off, those asked while no one could see the page may have been cut by the browser."""
