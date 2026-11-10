@@ -14,6 +14,7 @@
     ja: "TaoChronos について · 中医学古典籍からの科学的知識の発見",
     de: "Über TaoChronos · Wissenschaftliche Wissensentdeckung in alten TCM-Texten",
     ko: "TaoChronos 소개 · 중의학 고전 문헌의 과학적 지식 발견",
+    vi: "Về TaoChronos · Khám phá tri thức khoa học từ cổ thư Đông y",
   };
   // a browser language tag as one of the page's (zh-TW → zh-Hant, en-SG → en), or null
   function fromTag(tag) {
