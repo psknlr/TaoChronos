@@ -1,8 +1,8 @@
-// about.html in the site's eight languages, as the rest of the site (i18n.js): the visitor's choice (?lang=, or the menu
+// about.html in the site's sixteen languages, as the rest of the site (i18n.js): the visitor's choice (?lang=, or the menu
 // on the site, kept as tc.lang), else the browser's first language the page has, else English.  A classic script in the
 // page's head, so the right version shows from the first paint; its links to the other languages keep the choice.
 (function () {
-  var CODES = ["zh", "zh-Hant", "en", "fr", "es", "ru", "ar", "ms"];
+  var CODES = ["zh", "zh-Hant", "en", "fr", "es", "ru", "ar", "ms", "ja", "ko", "vi", "th", "hi", "sa", "he", "de"];
   var TITLES = {
     "zh-Hant": "關於道乃久 · 中醫古籍科學知識發現智能體平臺",
     en: "About TaoChronos · Scientific Knowledge Discovery from Ancient TCM Texts",
@@ -11,12 +11,21 @@
     ru: "О TaoChronos · Научное открытие знаний в древних текстах ТКМ",
     ar: "حول TaoChronos · اكتشاف المعرفة العلمية من نصوص الطب الصيني التقليدي القديمة",
     ms: "Perihal TaoChronos · Penemuan Pengetahuan Saintifik daripada Teks Purba PTC",
+    ja: "TaoChronos について · 中医学古典籍からの科学的知識の発見",
+    de: "Über TaoChronos · Wissenschaftliche Wissensentdeckung in alten TCM-Texten",
+    ko: "TaoChronos 소개 · 중의학 고전 문헌의 과학적 지식 발견",
+    vi: "Về TaoChronos · Khám phá tri thức khoa học từ cổ thư Đông y",
+    hi: "TaoChronos के बारे में · प्राचीन पारंपरिक चीनी चिकित्सा ग्रंथों से वैज्ञानिक ज्ञान-अन्वेषण",
+    he: "אודות TaoChronos · גילוי ידע מדעי מכתבים עתיקים של הרפואה הסינית המסורתית",
+    th: "เกี่ยวกับ TaoChronos · การค้นพบความรู้ทางวิทยาศาสตร์จากคัมภีร์การแพทย์แผนจีนโบราณ",
+    sa: "TaoChronos इत्यस्य परिचयः · चीनीयपारम्परिकवैद्यस्य प्राचीनग्रन्थेभ्यः वैज्ञानिकज्ञानाविष्कारः",
   };
   // a browser language tag as one of the page's (zh-TW → zh-Hant, en-SG → en), or null
   function fromTag(tag) {
     var t = String(tag || "").toLowerCase();
     if (/^zh\b/.test(t)) return /hant|-tw|-hk|-mo/.test(t) ? "zh-Hant" : "zh";
     var base = t.split("-")[0];
+    if (base === "iw") return "he"; // Hebrew's old tag
     return CODES.indexOf(base) >= 0 ? base : null;
   }
   var lang = null;
@@ -29,7 +38,7 @@
   }
   var root = document.documentElement;
   root.lang = lang === "zh" ? "zh-CN" : lang;
-  root.dir = lang === "ar" ? "rtl" : "ltr";
+  root.dir = lang === "ar" || lang === "he" ? "rtl" : "ltr";
   root.setAttribute("data-lang", lang);
   if (TITLES[lang]) document.title = TITLES[lang];
   document.addEventListener("DOMContentLoaded", function () {

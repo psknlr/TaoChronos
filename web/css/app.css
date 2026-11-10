@@ -315,6 +315,18 @@ kbd { white-space: nowrap; font: 11px var(--font-mono); color: var(--ink-3); bor
 .lang-pick select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
 /* right to left (Arabic): the grid and the flex rows mirror themselves and the rules here say start and end, not left
    and right; code, keys and addresses stay left to right */
+/* Japanese and Korean in their own glyph forms (the fonts above lead with Chinese ones, whose forms of shared characters
+   differ) */
+:root:lang(ja) {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans CJK JP",
+    "Source Han Sans JP", "Yu Gothic UI", "Meiryo", sans-serif;
+  --font-serif: "Hiragino Mincho ProN", "Noto Serif CJK JP", "Source Han Serif JP", "Yu Mincho", serif;
+}
+:root:lang(ko) {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Source Han Sans KR",
+    "Malgun Gothic", sans-serif;
+  --font-serif: "AppleMyungjo", "Noto Serif CJK KR", "Source Han Serif KR", "Batang", serif;
+}
 :root[dir="rtl"] { --dir: -1; }
 [dir="rtl"] pre, [dir="rtl"] code, [dir="rtl"] kbd, [dir="rtl"] input[type="url"], [dir="rtl"] input[type="password"] { direction: ltr; }
 [dir="rtl"] pre { text-align: left; }
