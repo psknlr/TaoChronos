@@ -36,6 +36,7 @@ class FakeRelay(ThreadingHTTPServer):
         self.second_error: dict = {}
         self.second_turns: list[str] = []
         self.sponsors = [{"id": 1, "model": "gpt-6-luna", "hint": "sk-…WXYZ"}]
+        self.places: dict | None = None  # what GET /v1/egress says of the model service's host from each place (none: an older relay)
 
     def add(self, received: str, question: str) -> None:
         self.rows.append({"id": self.next_id, "received": received, "record": {"v": 1, "question": question}})
@@ -67,6 +68,10 @@ class _Handler(BaseHTTPRequestHandler):
         url = urlsplit(self.path)
         if url.path == "/v1/health":
             return self._json(200, {"ok": True, "model": "Tao-R1", "models": self.server.models, "logs": True, "limits": {"per_day": 600}})
+        if url.path == "/v1/egress":
+            if self.server.places is None:
+                return self._json(404, {"error": {"message": "没有这个接口"}})
+            return self._json(200, {"worker": "IAD", "direct": {"colo": "IAD", "loc": "US"}, "places": {}, "model": self.server.places})
         if url.path == "/v1/sponsors":
             if self.headers.get("Authorization") != f"Bearer {SPONSOR}":
                 return self._json(401, {"error": {"message": "需要 SPONSOR_SECRET"}})
@@ -166,6 +171,13 @@ def test_the_collector_needs_its_token(relay, tmp_path, monkeypatch):
 
 def test_a_deployment_is_checked_and_a_refused_key_explained(relay):
     assert collect.check(relay.url, "https://chat.impf.ai", wait=5)["call"] == "ok"
+    # the places the model service is asked from, as the relay sees them answer: in the log, and never the deployment's
+    # failure (a place that does not answer is asked last by the relay itself; an older relay says nothing)
+    assert "places" not in collect.check(relay.url, "https://chat.impf.ai", wait=5)
+    relay.places = {"direct": {"status": 404, "ms": 812}, "apac": {"error": "silent", "ms": 8000}}
+    checked = collect.check(relay.url, "https://chat.impf.ai", wait=5)
+    assert checked["call"] == "ok" and checked["places"] == {"from": "IAD", "direct": {"status": 404, "ms": 812}, "apac": {"error": "silent", "ms": 8000}}
+    relay.places = None
     relay.chat_status, relay.chat_error = 503, {"message": "默认服务暂时不可用", "type": "upstream_auth"}
     with pytest.raises(SystemExit, match="api.minimax.io"):
         collect.check(relay.url, "https://chat.impf.ai", wait=5)

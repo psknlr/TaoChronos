@@ -1,6 +1,7 @@
 # ADR 0032 — A turn that waits says so, and waits less: measured first, then five changes
 
 **Status:** accepted · 2026-11-10 · refines [ADR 0012](0012-default-service-relay.md), [ADR 0016](0016-site-and-full-corpus-on-cloudflare.md)
+· refined by [ADR 0033](0033-the-model-asked-from-more-than-one-place.md) (where the model service is asked from; a silent ask joined by a second)
 
 ## Context
 

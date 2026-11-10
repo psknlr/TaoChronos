@@ -120,6 +120,16 @@ SPONSOR_SECRET=… python3 relay/collect.py sponsors --delete 3
   则不重试。此时回复还没有一个字发给访客，所以不会重复；访客只计一次调用；访客离开或停止，请求随即结束。每次都没有回应时，
   在 90 秒内告诉网页（504 `upstream_timeout`，网页会照常重试），早于网页自己的 120 秒。秒数 × 次数应小于 120。
   设 `UPSTREAM_ATTEMPTS = "1"`、`UPSTREAM_FIRST_BYTE_SECONDS = "0"` 即恢复为只问一次、一直等。
+- **从不止一处请求模型服务**（[ADR 0033](../docs/adr/0033-the-model-asked-from-more-than-one-place.md)）：中转运行在访客所到的
+  Cloudflare 节点——中国大陆的访客几乎都落在欧洲或北美（哨兵事件：1,829 次浏览器请求中 44% 与 56%，东亚仅 8 次）——再从那里
+  请求位于中国大陆的模型服务，等于第二次跨境。记录里“没有回应”的请求正出在这条路上：十次里有一次，北京时间晚上五次里有一次，
+  同一时刻别的访客并不受影响。`UPSTREAM_VIA`（默认 `direct,apac`）列出依次请求的位置：`direct` 是中转所在节点，其余是
+  Durable Object 的位置提示（由放在那里的 `Egress` 对象代为请求，第二个模型本来就这样做）。某处 `UPSTREAM_HEDGE_SECONDS`
+  （默认 12 秒）没有回应，就**同时**向下一处请求，谁先回复用谁，另一个随即结束；没有回应、出错或拒绝的位置在本实例内排到最后
+  5 分钟（再犯则加倍，至多半小时；一旦回复即恢复）。可能只是某处被限（429、403）的拒绝，会换一处再问一次；密钥、参数被拒则
+  立即告知。每次回复带 `X-Tao-Asks`（请求了几次）与 `X-Tao-Via`（来自哪里），网页记入对话记录，`taochronos records` 的
+  `asked_again` 汇总。部署后打开 `https://chat-api.impf.ai/v1/egress` 可看到模型服务的主机从各处是否有回应、多快（`model`）。
+  记录显示 `apac` 稳定回复后，把 `UPSTREAM_VIA` 改成 `apac,direct` 即以它为先；设为 `direct` 则恢复为只从所在节点请求。
 - **额度用完与一时繁忙分开告知**：模型服务以 429 拒绝时，若它说明是额度用完（OpenAI 的 `insufficient_quota`、MiniMax 的
   `base_resp` 1008），访客立刻看到“额度已用完”（`upstream_quota`，网页不再重试）；其余 429 仍按“繁忙”处理，模型服务给出的
   `Retry-After` 会转给网页（最多 60 秒）。它的错误代码（不含原话）记在 Worker 日志里：`upstream 429 …`、`upstream silent ask 1/3`。

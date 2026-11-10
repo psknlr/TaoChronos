@@ -77,6 +77,15 @@ export function retryAfter(headers) {
   return Number.isFinite(s) ? Math.max(0, s) : null;
 }
 
+/** What the default service says of how a reply came (relay/src/relay.js: X-Tao-Asks, X-Tao-Via): how many times it
+ * asked the model service for it, and the place the reply is from — for the turn's record; nothing from a service that
+ * does not say. */
+export function askedOf(headers) {
+  const asks = Number(headers?.get?.("X-Tao-Asks"));
+  const via = String(headers?.get?.("X-Tao-Via") ?? "");
+  return { ...(Number.isInteger(asks) && asks > 0 ? { asks } : {}), ...(/^[a-z+]{2,40}$/.test(via) ? { via } : {}) };
+}
+
 /** A connection that broke off while the reply was read (Chrome's "network error", Safari's "Load failed"), or one a
  * limit of the request's watch ended (`w`, limits.js): the round is asked again from its start, since no tool has run
  * on what it had said. */
@@ -149,14 +158,15 @@ export async function streamChat({ provider, messages, tools, settings, route, s
 
   const w = watch(signal, limits, mark);
   try {
-    return await send({ provider, route, url, target, headers, body, onEvent }, w);
+    return await send({ provider, route, url, target, headers, body, onEvent, mark }, w);
   } finally {
     w.close();
   }
 }
 
-/** The request sent and its reply read, within the limits of its watch `w`. */
-async function send({ provider, route, url, target, headers, body, onEvent }, w) {
+/** The request sent and its reply read, within the limits of its watch `w`; `mark` (the request's record, when it has
+ * one) is told what the service says of how the reply came (askedOf). */
+async function send({ provider, route, url, target, headers, body, onEvent, mark }, w) {
   let resp;
   try {
     w.sent();
@@ -172,6 +182,7 @@ async function send({ provider, route, url, target, headers, body, onEvent }, w)
         : T`无法连接 ${new URL(url).host}：网络不通，或该服务不允许浏览器直接访问（CORS）。可在设置中改为“经本地服务转发”。`,
       { retryable: true });
   }
+  if (mark) Object.assign(mark, askedOf(resp.headers));
   if (!resp.ok) {
     const text = await until(resp.text(), w.signal).catch(() => "");
     const message = errorMessage(resp.status, text);

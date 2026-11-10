@@ -36,6 +36,7 @@ export function timings({ started, trace, was, now, hidden, asleep }) {
       round: q.round, attempt: q.attempt, sent: at(q.sent), open: at(q.open), first: at(q.first), text: at(q.text),
       last: at(q.last), end: at(q.end), finish: q.finish, failed: q.failed, expired: q.expired, status: q.status,
       input: q.input, output: q.output, hidden: q.hidden, asleep: q.asleep,
+      asks: q.asks, via: q.via, // the default service's own asks of the model service for this reply, and where it came from
     })),
     tools: trace.tools.slice(0, 40).map((c) => ({
       name: c.name, ok: c.status === "ok", ms: c.end ? c.end - c.start : undefined, args: truncate(JSON.stringify(c.args ?? {}), 300),

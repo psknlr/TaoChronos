@@ -190,6 +190,10 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
       corpus lacks (✕) or left unchecked; whole and verified (it cites, and every citation is ✓); whole, citing nothing;
     * ``time`` — per timed turn: in model requests, in rounds of calls, the page hidden, the page asleep (seconds);
       and of the calls' own time, how much went on waiting for their runtime or their turn;
+    * ``asked_again`` — how often the model was asked again: of the model requests, those the page asked again (a
+      round's second request and later: after a failure, a stall, a cut connection); of the requests whose service said
+      how many times it asked the model service itself (``asks``: the default service, ADR 0033), those it asked once;
+      and the place the reply came from (``via``), for the replies that came;
     * ``resumed`` — the turns taken up again (继续作答), and how many of them then answered whole;
     * ``feedback`` — the visitors' ratings of answers (:func:`ratings`), given from *since* to *until*.
     """
@@ -204,6 +208,9 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
     spent: dict[str, list[float]] = {"model": [], "tools": [], "hidden": [], "asleep": []}
     waited = ran = 0.0
     resumed = resumed_whole = 0
+    asked = again = 0  # model requests, and those the page asked again
+    told = once = 0  # the requests whose service said how many times it asked the model service; those it asked once
+    via: Counter[str] = Counter()  # the place a reply came from
     for runs in _turns(r for r in records if r.get("kind") != FEEDBACK):
         r = runs[-1]  # as the turn ended
         day = str(runs[0].get("started") or runs[0].get("received") or "")[:10]
@@ -232,6 +239,14 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
         requests = [q for x in timed_runs for q in x.get("requests") or [] if isinstance(q, dict)]
         failures = [q for q in requests if _failed(q)]
         kinds.update(map(_failed, failures))
+        asked += len(requests)
+        again += sum((_n(q.get("attempt")) or 1) > 1 for q in requests)
+        for q in requests:
+            if (_n(q.get("asks")) or 0) >= 1:
+                told += 1
+                once += q["asks"] == 1
+                if q.get("finish") and isinstance(q.get("via"), str):
+                    via[q["via"]] += 1
         if any(map(_broke_off, failures)):
             broke += 1
             recovered += ok
@@ -257,6 +272,7 @@ def summary(records: Iterable[dict[str, Any]], since: str | None = None, until: 
                        "whole_verified": _share(verified, turns), "whole_uncited": _share(uncited, turns)},
         "time": {**{k: _seconds(v) for k, v in spent.items()},
                  "calls_waiting": round(waited / (waited + ran), 3) if waited + ran else None},
+        "asked_again": {"by_page": _share(again, asked), "service_asked_once": _share(once, told), "via": dict(via.most_common())},
         "resumed": {"n": resumed, "whole": resumed_whole},
         "feedback": ratings(feedback, since, until),
     }
