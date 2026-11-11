@@ -1403,4 +1403,13 @@ export default {
   "正在等待模型回应…": "Đang chờ mô hình trả lời…",
   "正在重新请求模型（第 {0} 次重试）…": "Đang yêu cầu lại mô hình (lần thử lại {0})…",
   "模型服务回应较慢，仍在等待；一直没有回应时会自动重新请求。": "Dịch vụ mô hình trả lời chậm; vẫn đang chờ. Nếu không có trả lời, yêu cầu sẽ tự động được gửi lại.",
+  "导出为 Word 文档（含图表，打包为 .zip）": "Xuất thành tài liệu Word (kèm hình và bảng, gói trong tệp .zip)",
+  "导出为 Word 文档": "Xuất thành tài liệu Word",
+  "正在生成 Word 文档…": "Đang tạo tài liệu Word…",
+  "已导出：Word 文档，{0} 幅图，{1} 张表": "Đã xuất: tài liệu Word, {0} hình, {1} bảng",
+  "导出失败：{0}": "Xuất thất bại: {0}",
+  "问题": "Câu hỏi",
+  "回答": "Câu trả lời",
+  "工具生成的图表": "Hình và bảng do công cụ tạo",
+  "引文与核对": "Trích dẫn và đối chiếu",
 };

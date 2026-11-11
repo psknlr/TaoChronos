@@ -1404,4 +1404,13 @@ export default {
   "正在等待模型回应…": "Waiting for the model to reply…",
   "正在重新请求模型（第 {0} 次重试）…": "Asking the model again (retry {0})…",
   "模型服务回应较慢，仍在等待；一直没有回应时会自动重新请求。": "The model service is slow to reply; still waiting. If no reply comes, the request is sent again automatically.",
+  "导出为 Word 文档（含图表，打包为 .zip）": "Export as a Word document (with figures and tables, as a .zip)",
+  "导出为 Word 文档": "Export as a Word document",
+  "正在生成 Word 文档…": "Making the Word document…",
+  "已导出：Word 文档，{0} 幅图，{1} 张表": "Exported: a Word document, {0} figures, {1} tables",
+  "导出失败：{0}": "Export failed: {0}",
+  "问题": "Question",
+  "回答": "Answer",
+  "工具生成的图表": "Figures and tables made by the tools",
+  "引文与核对": "Citations and checks",
 };

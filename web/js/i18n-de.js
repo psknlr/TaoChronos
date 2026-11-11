@@ -1403,4 +1403,13 @@ export default {
   "正在等待模型回应…": "Warte auf die Antwort des Modells…",
   "正在重新请求模型（第 {0} 次重试）…": "Das Modell wird erneut gefragt (Wiederholung {0})…",
   "模型服务回应较慢，仍在等待；一直没有回应时会自动重新请求。": "Der Modelldienst antwortet langsam; es wird weiter gewartet. Kommt keine Antwort, wird die Anfrage automatisch erneut gesendet.",
+  "导出为 Word 文档（含图表，打包为 .zip）": "Als Word-Dokument exportieren (mit Abbildungen und Tabellen, als .zip)",
+  "导出为 Word 文档": "Als Word-Dokument exportieren",
+  "正在生成 Word 文档…": "Word-Dokument wird erstellt…",
+  "已导出：Word 文档，{0} 幅图，{1} 张表": "Exportiert: ein Word-Dokument, {0} Abbildungen, {1} Tabellen",
+  "导出失败：{0}": "Export fehlgeschlagen: {0}",
+  "问题": "Frage",
+  "回答": "Antwort",
+  "工具生成的图表": "Von den Tools erstellte Abbildungen und Tabellen",
+  "引文与核对": "Zitate und Prüfung",
 };

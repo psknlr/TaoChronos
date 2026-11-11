@@ -1372,6 +1372,9 @@ function journalPreview(spec, number, settings) {
 
 /** A chart card: 图 n and its title, the chart (or its table, or its journal figure), its exports; null when the
  * specification cannot be drawn. */
+/** The spec each chart card was drawn from (normalized): what an export draws again (export.js). */
+export const specOf = new WeakMap();
+
 export function chartCard(raw, number) {
   if (invalid(raw)) return null;
   const spec = normalize(raw);
@@ -1398,6 +1401,7 @@ export function chartCard(raw, number) {
     body,
     spec.note || spec.source ? h("div.viz-foot", [spec.note, spec.source].filter(Boolean).join(" · ")) : null);
   render();
+  specOf.set(card, spec);
   return card;
 }
 
