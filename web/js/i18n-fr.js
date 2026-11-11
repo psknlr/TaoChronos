@@ -1186,4 +1186,13 @@ export default {
   "正在等待模型回应…": "En attente de la réponse du modèle…",
   "正在重新请求模型（第 {0} 次重试）…": "Nouvelle demande au modèle (tentative {0})…",
   "模型服务回应较慢，仍在等待；一直没有回应时会自动重新请求。": "Le service du modèle tarde à répondre ; l'attente se poursuit. Sans réponse, la demande est renvoyée automatiquement.",
+  "导出为 Word 文档（含图表，打包为 .zip）": "Exporter en document Word (avec figures et tableaux, en .zip)",
+  "导出为 Word 文档": "Exporter en document Word",
+  "正在生成 Word 文档…": "Création du document Word…",
+  "已导出：Word 文档，{0} 幅图，{1} 张表": "Exporté : un document Word, {0} figures, {1} tableaux",
+  "导出失败：{0}": "Échec de l'export : {0}",
+  "问题": "Question",
+  "回答": "Réponse",
+  "工具生成的图表": "Figures et tableaux produits par les outils",
+  "引文与核对": "Citations et vérifications",
 };

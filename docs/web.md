@@ -382,6 +382,16 @@ tab-separated text — pasted into Word or WPS it is a three-line table, into Ex
 **LaTeX** (booktabs), **CSV** and **Markdown** — the same files as `taochronos study … --charts` (`study/tablefmt.py`).  The
 Word document and the ZIP inside it, the PNG's pHYs and the TIFF are written by `web/js/bytes.js`, without a library.
 
+**An answer as a Word document**: under each answer, beside 👍 and 👎 (有问题), the download button (导出为 Word 文档) puts
+the whole answer in one ZIP with one click (`web/js/export.js`): `TaoChronos-<question>-<date>.docx` — the question, the
+answer with its headings, lists, quotations, code, links and citations (〔label〕), its ```chart figures and its tables
+in place, then the figures and tables of the turn's tools under 工具生成的图表 (numbered on from the answer's own), a tool's
+document (a research protocol) under its title, 引文与核对 (each cited passage, its id, and how its quotations checked) and the
+disclaimer; the figures in the journal style at 1.5 columns, as PNG at three times their size, each with its 图 n caption
+and source; the tables as three-line tables with their notes.  Beside it in the ZIP: the answer as Markdown, each figure
+as SVG and PNG under `figures/`, each table as CSV under `tables/`, each tool document under `documents/`.  It is built in
+the browser and sends nothing.
+
 A conversation exported as Markdown appends each chart's data and each table.  A research protocol (`study.protocol`) comes
 with its whole text — **下载研究方案（Markdown）** under its step and in the 工具台 — and its tables to copy or download as Word:
 filled with the pilot's numbers where the pilot ran the step that fills them (…（预试验）), shells with ×× placeholders where

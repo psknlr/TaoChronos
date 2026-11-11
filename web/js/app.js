@@ -22,12 +22,13 @@ import { LIMITS, pageClock } from "./limits.js";
 import { pause, pausedNow, pauseText } from "./pause.js";
 import * as store from "./store.js";
 import {
-  $, bare, copyText, dateGroup, debounce, download, fmtMs, h, icon, moveBar, passageLabel, progressBar, replace, returnedText, sleep,
+  $, bare, copyText, dateGroup, debounce, download, downloadBlob, fmtMs, h, icon, moveBar, passageLabel, progressBar, replace, returnedText, sleep,
   storage, throttleFrame, toast, truncate, uid, withFound, yearLabel,
 } from "./util.js";
 import { renderDrawer, reportNode } from "./view/drawer.js";
 import { openSettings } from "./view/settings.js";
 import { answerText, displayName, fillAssistant, rawAnswer, renderedCites, renderThread, toolFamily, verifyBar } from "./view/thread.js";
+import { answerArchive } from "./export.js";
 import { LANG, LANGUAGE, LANGUAGES, LOCALE, setLang, SOURCE_PAGE, T, translatePage } from "./i18n.js";
 
 // ------------------------------------------------------------------ state
@@ -1442,6 +1443,7 @@ const threadCtx = {
   onOpenSettings: () => openSettings(S, settingsCtx, "model"),
   onOpenRuntime: () => openSettings(S, settingsCtx, "runtime"),
   onCopy: (text) => copyText(text).then((ok) => toast(ok ? T("已复制") : T("复制失败"))),
+  onExport: (id) => exportAnswer(id),
   onEdit(id) { S.ui.editing = id; renderMain(); },
   onEditCancel() { S.ui.editing = null; renderMain(); },
   onEditSubmit: submitEdit,
@@ -1671,6 +1673,42 @@ function pickRelayModel(model) {
   renderTopbar();
   renderComposer();
   if (!same) toast(T`已切换到 ${model}`);
+}
+
+/** One answer, in one click: a Word document with its question, its text, its figures and tables and those its tools
+ * made, and the passages it cites with how each quotation checked; zipped with the figures, tables and documents as
+ * files of their own (export.js).  Made in this browser: nothing is sent. */
+let exporting = false;
+async function exportAnswer(msgId) {
+  const conv = S.conv;
+  const at = conv?.messages.findIndex((m) => m.id === msgId) ?? -1;
+  const msg = conv?.messages[at];
+  if (!msg || msg.role !== "assistant" || exporting) return;
+  exporting = true;
+  toast(T("正在生成 Word 文档…"));
+  try {
+    const user = conv.messages[at - 1];
+    const calls = (msg.segments || []).filter((s) => s.type === "tools").flatMap((s) => s.calls || []);
+    const when = new Date(msg.created || Date.now());
+    const { name, bytes, counts } = await answerArchive({
+      question: user?.role === "user" ? user.text || "" : "",
+      answer: answerText(msg),
+      charts: calls.flatMap((c) => c.charts || []),
+      tables: calls.flatMap((c) => c.tables || []),
+      documents: calls.map((c) => c.document).filter(Boolean),
+      cite: (pid) => passageLabel(conv.evidence?.[pid] || passageNow(pid), pid),
+      status: (pid, quote) => statusFor(pid, quote),
+      meta: `${AGENT}（${msg.publicModel && msg.model ? msg.model : ASSISTANT}）· ${PUBLISHER}（${PUBLISHER_EN}）· ${when.toLocaleString(LOCALE)}`,
+      disclaimer: DISCLAIMER,
+      when,
+    });
+    downloadBlob(name, new Blob([bytes], { type: "application/zip" }));
+    toast(T`已导出：Word 文档，${counts.figures} 幅图，${counts.tables} 张表`);
+  } catch (err) {
+    toast(T`导出失败：${err?.message || err}`, "err");
+  } finally {
+    exporting = false;
+  }
 }
 
 /** Does the site's relay take sponsorships (its health says so)?  Then the way to 赞助 is on the opening screen and in

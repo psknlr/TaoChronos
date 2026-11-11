@@ -1361,4 +1361,13 @@ export default {
   "正在等待模型回应…": "Menunggu jawapan model…",
   "正在重新请求模型（第 {0} 次重试）…": "Meminta model semula (cubaan semula ke-{0})…",
   "模型服务回应较慢，仍在等待；一直没有回应时会自动重新请求。": "Perkhidmatan model lambat menjawab; masih menunggu. Jika tiada jawapan, permintaan dihantar semula secara automatik.",
+  "导出为 Word 文档（含图表，打包为 .zip）": "Eksport sebagai dokumen Word (dengan rajah dan jadual, dalam .zip)",
+  "导出为 Word 文档": "Eksport sebagai dokumen Word",
+  "正在生成 Word 文档…": "Sedang menjana dokumen Word…",
+  "已导出：Word 文档，{0} 幅图，{1} 张表": "Dieksport: dokumen Word, {0} rajah, {1} jadual",
+  "导出失败：{0}": "Eksport gagal: {0}",
+  "问题": "Soalan",
+  "回答": "Jawapan",
+  "工具生成的图表": "Rajah dan jadual yang dihasilkan oleh alat",
+  "引文与核对": "Petikan dan semakan",
 };

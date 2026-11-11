@@ -204,10 +204,14 @@ function wTable(spec) {
   return out.join("");
 }
 
+/** One table as Word XML, as a document lays it out: its caption (表 N …), the table, its notes. */
+export function tableXML(spec, number) {
+  return [wPara(caption(spec, number), { align: "center", bold: true, before: 240, after: 80, keep: true }),
+    wTable(spec), ...notesOf(spec).map((n) => wPara(n, { size: 18, before: 40 }))].join("");
+}
+
 export function documentXML(specs, numbers) {
-  const body = specs.map((spec, i) => [
-    wPara(caption(spec, numbers ? numbers[i] : i + 1), { align: "center", bold: true, before: 240, after: 80, keep: true }),
-    wTable(spec), ...notesOf(spec).map((n) => wPara(n, { size: 18, before: 40 })), "<w:p/>"].join("")).join("");
+  const body = specs.map((spec, i) => `${tableXML(spec, numbers ? numbers[i] : i + 1)}<w:p/>`).join("");
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<w:document xmlns:w="${W}"><w:body>${body}`
     + '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="851" w:footer="992" w:gutter="0"/></w:sectPr></w:body></w:document>';
 }

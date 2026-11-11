@@ -3729,6 +3729,118 @@ def test_a_conversation_is_kept_when_the_browser_closes_its_database(tmp_path):
         mock.shutdown()
 
 
+def test_an_answer_is_exported_as_a_word_document_with_its_figures_and_tables(tmp_path):
+    """⤓ beside 👍 👎 under an answer: one click, a .zip made in the browser (nothing is sent) of a Word document — the
+    question, the answer as the page shows it (headings, lists, 「」 quotations, citations), its tables as Word tables and
+    its charts as figures, the figures and tables its tools made, the passages cited with how each quotation checked —
+    and beside it the figures as PNG and SVG, the tables as CSV, the answer as Markdown (web/js/export.js)."""
+    import io
+    import xml.etree.ElementTree as ET
+    import zipfile
+
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import MockProvider, MockRelay
+
+    mock = MockProvider().start()
+    relay = MockRelay(mock.base_url, logs=False).start()
+    web = tmp_path / "web"
+    _published(web, relay.url)
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+
+    def opened(path):
+        z = zipfile.ZipFile(path)
+        names = z.namelist()
+        [docx_name] = [n for n in names if n.endswith(".docx")]
+        docx = zipfile.ZipFile(io.BytesIO(z.read(docx_name)))
+        for part in docx.namelist():  # every part well-formed
+            if part.endswith((".xml", ".rels")):
+                ET.fromstring(docx.read(part))
+        doc = ET.fromstring(docx.read("word/document.xml"))
+        paras = [("".join(t.text or "" for t in p.iter(f"{W}t")), (p.find(f"{W}pPr/{W}pStyle") is not None and p.find(f"{W}pPr/{W}pStyle").get(f"{W}val")) or "")
+                 for p in doc.iter(f"{W}p")]
+        return z, names, docx, doc, paras
+
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            page = browser.new_context(viewport={"width": 1280, "height": 900}, locale="zh-CN", accept_downloads=True).new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=30000)
+
+            def export(question, n):
+                page.fill("#input", question)
+                page.keyboard.press("Enter")
+                page.wait_for_function(f"document.querySelectorAll('.msg.assistant .actions .export').length >= {n}", timeout=60000)
+                page.wait_for_timeout(1500)  # the quotations' checks
+                asked = len(relay.chat)
+                with page.expect_download(timeout=30000) as got:
+                    page.locator(".msg.assistant .actions .export").nth(n - 1).click()
+                path = tmp_path / f"export-{n}.zip"
+                got.value.save_as(path)
+                assert len(relay.chat) == asked  # made in the browser: nothing sent
+                return got.value.suggested_filename, path
+
+            # an answer with its quotations and a table
+            name, path = export("桂枝汤主治什么？请给出原文。", 1)
+            assert name.startswith("TaoChronos-桂枝汤主治什么") and name.endswith(".zip")
+            # beside 👎 (有问题), as asked
+            assert page.evaluate("document.querySelector('.msg.assistant .actions .rate[data-rate=down]').nextElementSibling.classList.contains('export')")
+            z, names, docx, doc, paras = opened(path)
+            assert sorted(n.rsplit(".", 1)[-1] for n in names if "/" not in n) == ["docx", "md"] and "tables/表1.csv" in names
+            texts = [t for t, _ in paras]
+            styles = dict(paras)
+            assert paras[0] == ("桂枝汤主治什么？请给出原文。", "Title")  # the question as the title, and again under 问题
+            assert styles["问题"] == styles["回答"] == styles["引文与核对"] == "Heading1" and styles["结论"] == "Heading3"
+            assert "• 原文：「太阳病，头痛，发热，汗出，恶风，桂枝汤主之」〔伤寒论·第13条〕" in texts  # the list, the quotation, its citation
+            checked = [t for t in texts if "shanghanlun.c013" in t]
+            assert checked and "✓" in checked[0]  # the quotation's check, said once
+            assert any("shanghanlun.c012" in t and "≠" in t for t in texts)
+            assert len(list(doc.iter(f"{W}tbl"))) == 1 and texts[-1].startswith("回答以工具返回的古籍原文为据")  # the table; the disclaimer last
+            assert "Consolas" in docx.read("word/styles.xml").decode()
+
+            # an answer with a chart and a table of its own, after tools that made figures and tables
+            name, path = export("比较桂枝汤与麻黄汤，并作图表。", 2)
+            z, names, docx, doc, paras = opened(path)
+            figures = sorted(n for n in names if n.startswith("figures/"))
+            assert [n.rsplit(".", 1)[-1] for n in figures].count("png") == 3 and [n.rsplit(".", 1)[-1] for n in figures].count("svg") == 3
+            assert "figures/图1-桂枝汤与麻黄汤共有之药.png" in names and "tables/表1-两方共有之药的剂量.csv" in names
+            assert len([n for n in names if n.startswith("tables/")]) == 3
+            texts = [t for t, _ in paras]
+            assert "图1　桂枝汤与麻黄汤共有之药" in texts and "表1　两方共有之药的剂量" in texts and "工具生成的图表" in texts
+            assert texts.index("图1　桂枝汤与麻黄汤共有之药") < texts.index("工具生成的图表") < texts.index("图2　配伍比例对照")
+            assert len(list(doc.iter(f"{W}tbl"))) == 3
+            # each image in the document is a PNG the package holds, by its relationship
+            rels = {r.get("Id"): r.get("Target") for r in ET.fromstring(docx.read("word/_rels/document.xml.rels"))}
+            blips = [b.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed")
+                     for b in doc.iter("{http://schemas.openxmlformats.org/drawingml/2006/main}blip")]
+            assert len(blips) == 3
+            for rid in blips:
+                assert docx.read(f"word/{rels[rid]}")[:8] == b"\x89PNG\r\n\x1a\n"
+            assert "image/png" in docx.read("[Content_Types].xml").decode()
+            assert all(z.read(n)[:8] == b"\x89PNG\r\n\x1a\n" for n in figures if n.endswith(".png"))
+            assert all(z.read(n).startswith(b"<svg") for n in figures if n.endswith(".svg"))
+            assert not errors, errors
+            browser.close()
+    finally:
+        srv.shutdown()
+        relay.shutdown()
+        mock.shutdown()
+
+
 def test_an_answer_is_rated_and_told_about_in_a_few_words(tmp_path):
     """Under each answer, 👍 and 👎 (when the site's relay takes feedback): either opens a dialog — what was good or wrong
     (several may be ticked), a few words — and nothing is sent before the visitor submits.  The feedback names the turn
