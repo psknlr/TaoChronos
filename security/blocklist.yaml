@@ -228,6 +228,31 @@ block:
   - ip: 216.25.90.0/24
     why: "按站长要求封禁（同 147.185.132.0/24）：Palo Alto Networks Cortex Xpanse 的扫描网段，UA 自报身份，10-27 至 11-01 见过 5 个地址"
     seen: 2026-11-01
+  # 2026-11-12：站长当天的安全报告与 data/security-logs（边缘与两个哨兵至 11-11）
+  - ip: 35.236.216.97
+    why: "在 science.impf.ai 上探测 /.git/config，不带 UA；Google Cloud 美国"
+    seen: 2026-11-06
+  - ip: 8.234.32.154
+    why: "在 science.impf.ai 上探测 /.git/config，不带 UA；Google Cloud 美国"
+    seen: 2026-11-06
+  - ip: 54.90.216.118
+    why: "React 远程代码执行漏洞利用（CVE-2025-55182）：Cloudflare 托管规则在中转上九次拦下；AWS 弗吉尼亚"
+    seen: 2026-11-07
+  - ip: 35.233.97.20
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.aws/config、/database.sql、/dump.sql、/actuator/env），61 次；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-11-08
+  - ip: 34.140.69.197
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.gitmodules、/.github/workflows/deploy.yml、/actuator/env），35 次；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-11-10
+  - ip: 34.78.49.147
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/api/actuator/env、/_profiler/phpinfo），64 次；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-11-10
+  - ip: 165.154.94.31
+    why: "在中转上找 PHP 后门（/zz.php、/leftDao.php、/admin/webadmin.php）与交易所、游戏接口，一天 715 次请求，轮换 UA；UCloud 香港"
+    seen: 2026-11-10
+  - ip: 34.62.31.226
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.git-credentials、/db.php、/.github/workflows/deploy.yml），55 次；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-11-11
 
 # 永不封禁：与这些网段重叠的条目 apply 拒绝写入（整份名单都不写，直到改正）。
 never:

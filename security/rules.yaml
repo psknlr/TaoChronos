@@ -92,8 +92,13 @@ custom_rules:
   # Worker 为 impf.ai）。Worker 可以随意填写 Origin，所以来源检查拦不住它；它的地址一律是 2a06:98c0:3600::103（Cloudflare 为跨区域
   # 子请求填写的地址，在 never 的网段里，不能进封禁名单）。两个中转（chat-api.impf.ai 的道乃久默认服务、science.impf.ai 的 Tao-S1）
   # 的 /v1/* 只给网页用，网页的请求从不经 Worker 转发（security/README.md「封禁名单」）
+  #
+  # 第三部分：中转（chat-api.impf.ai）只有 /v1/* 的接口（relay/src/relay.js），别的路径一律答 404。2026-10 至 11 月，这里的
+  # /v1/ 之外的请求约 8500 次，没有一次是真实访客：UCloud 香港的扫描器轮换地址，每个地址一天几百上千次地找交易所与 App 的
+  # 后台接口。在边缘拒绝，这些请求就不进 Worker、不计次数；证书签发（/.well-known/acme-challenge/）与 Cloudflare 自己的
+  # /cdn-cgi/ 除外
   - ref: tc-relay-origin
-    description: "[taochronos] 3 relays: a model call, a record or a feedback only from the page's origins, and none forwarded by another zone's Worker"
+    description: "[taochronos] 3 relays: a model call, a record or a feedback only from the page's origins, none forwarded by another zone's Worker, nothing outside /v1/"
     action: block
     expression: >-
       (http.host eq "chat-api.impf.ai" and http.request.method eq "POST"
@@ -101,6 +106,8 @@ custom_rules:
        and not (http.request.headers["origin"][0] in {${ORIGINS}}))
       or (http.host in {"chat-api.impf.ai" "science.impf.ai"} and starts_with(http.request.uri.path, "/v1/")
           and not (cf.worker.upstream_zone in {"" "impf.ai"}))
+      or (http.host eq "chat-api.impf.ai" and not starts_with(http.request.uri.path, "/v1/")
+          and not starts_with(http.request.uri.path, "/.well-known/acme-challenge/") and not starts_with(http.request.uri.path, "/cdn-cgi/"))
 
   - ref: tc-tooling-and-spoofed-crawlers
     description: "[taochronos] 4 no agent, scanners, scraping libraries, a crawler's name without Cloudflare's verification, crawlers for AI training"

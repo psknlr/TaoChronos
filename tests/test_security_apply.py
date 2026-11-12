@@ -321,7 +321,9 @@ def test_the_relays_take_nothing_another_zones_worker_forwards():
     (chat-api.impf.ai, science.impf.ai's Tao-S1) takes anything a Worker of another zone forwards.  A Worker writes any
     Origin it likes, and every cross-zone subrequest comes from 2a06:98c0:3600::103, Cloudflare's own address (never on
     the block list): 2,225 model calls in the owner's report of 2026-10-21.  The page's calls (no upstream zone), our own
-    Workers' (impf.ai), a page or the site's API fetched by a Worker, and a health check pass."""
+    Workers' (impf.ai), a page or the site's API fetched by a Worker, and a health check pass.  And the relay has nothing
+    outside /v1/: the back-end and back-door paths scanners ask it for are refused at the edge (certificate issuance and
+    Cloudflare's /cdn-cgi/ aside), while the site's own pages are not touched."""
     r3 = rendered_rule("tc-relay-origin")
     page = yaml.safe_load(RULES.read_text(encoding="utf-8"))["origins"][0]
 
@@ -333,11 +335,18 @@ def test_the_relays_take_nothing_another_zones_worker_forwards():
               req("science.impf.ai", origin="https://science.impf.ai"),
               req("chat-api.impf.ai", zone="impf.ai"), req("chat-api.impf.ai", "/v1/health", "GET", origin=""),
               req("science.impf.ai", "/v1/health", "GET", origin=""), req("chat.impf.ai", "/", "GET", origin="", zone="someone.workers.dev"),
-              req("chat.impf.ai", "/api/call", origin="https://chat.impf.ai", zone="someone.workers.dev")]
+              req("chat.impf.ai", "/api/call", origin="https://chat.impf.ai", zone="someone.workers.dev"),
+              req("chat-api.impf.ai", "/v1/logs/export", "GET", origin=""), req("chat-api.impf.ai", "/v1/security/export", "GET", origin=""),
+              req("chat-api.impf.ai", "/v1/chat/completions", "OPTIONS"), req("chat-api.impf.ai", "/.well-known/acme-challenge/abc", "GET", origin=""),
+              req("chat-api.impf.ai", "/cdn-cgi/trace", "GET", origin=""), req("chat.impf.ai", "/api/info", "GET", origin=""),
+              req("science.impf.ai", "/", "GET", origin="")]
     blocked = [req("chat-api.impf.ai", origin="https://example.com"), req("chat-api.impf.ai", origin=""),
                req("chat-api.impf.ai", "/v1/logs", origin="https://example.com"), req("chat-api.impf.ai", "/v1/feedback", origin=""),
                req("chat-api.impf.ai", zone="someone.workers.dev"),
                req("science.impf.ai", origin="https://science.impf.ai", zone="proxy.example.com"),
-               req("science.impf.ai", "/v1/models", "GET", origin="", zone="someone.workers.dev")]
+               req("science.impf.ai", "/v1/models", "GET", origin="", zone="someone.workers.dev"),
+               req("chat-api.impf.ai", "/", "GET", origin=""), req("chat-api.impf.ai", "/leftDao.php", "GET", origin=""),
+               req("chat-api.impf.ai", "/api/user/ismustmobile", "GET"), req("chat-api.impf.ai", "/api/currency/quotation_new", "POST"),
+               req("chat-api.impf.ai", "/favicon.ico", "GET", origin="")]
     assert [(r["http.host"], r["http.request.uri.path"]) for r in passes if evaluate(r3, r)] == []
     assert [(r["http.host"], r["http.request.uri.path"]) for r in blocked if not evaluate(r3, r)] == []
