@@ -2,7 +2,7 @@
 // model, the value for the interface, the passages it cites, a few words for the tool card.  Ported line by line: the
 // page checks each [[passage_id]] the model writes against these citations.
 
-const CARD_FIELDS = ["passage_id", "book_id", "title", "dynasty", "year", "period", "locator"];
+const CARD_FIELDS = ["passage_id", "book_id", "title", "authors", "dynasty", "year", "period", "locator"];
 const TEXT_FIELDS = ["quote", "text"];
 // (items kept per list, characters kept per string), from loose to tight
 const LEVELS = [[40, 1600], [24, 800], [12, 400], [8, 220], [5, 140], [3, 90]];

@@ -523,7 +523,7 @@ test("classics.get_passage, list_books and canon, as the server gives them", { s
   const p = await callTool("classics.get_passage", { passage_id: "suwen_wangbing.000.00001" });
   assert.equal(p.ok, true, p.error);
   assert.equal(p.result.passage_id, "suwen_wangbing.000.00001");
-  assert.deepEqual(Object.keys(p.result), ["passage_id", "book_id", "title", "dynasty", "year", "period", "locator", "text", "variants",
+  assert.deepEqual(Object.keys(p.result), ["passage_id", "book_id", "title", "authors", "dynasty", "year", "period", "locator", "text", "variants",
     "collation_status", "notes", "temporal", "prev", "next"]);
   assert.deepEqual([p.result.prev, p.result.next], ["suwen_wangbing.000.00000", "suwen_wangbing.000.00002"]);
   // the next passage the pack keeps, over the chapters it leaves out, and back
@@ -541,6 +541,8 @@ test("classics.get_passage, list_books and canon, as the server gives them", { s
   assert.equal(invalid.error, "invalid arguments: $: missing required property 'passage_id' · classics.get_passage takes: passage_id (string, required)");
   const books = await callTool("classics.list_books", {});
   assert.equal(books.result.length, 10);
+  assert.deepEqual(p.result.authors, books.result.find((b) => b.book_id === p.result.book_id).authors);
+  assert.deepEqual(p.citations[0].authors, p.result.authors);
   const sorted = books.result.map((b) => [b.composition || "", b.book_id]);
   assert.deepEqual(sorted, [...sorted].sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] < b[1] ? -1 : 1)));
   const dyn = await callTool("classics.list_books", { dynasty: "清" });

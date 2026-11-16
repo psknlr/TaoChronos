@@ -46,6 +46,10 @@ def test_tools_are_called_by_either_name_and_failures_are_results_not_crashes(rt
     assert by_model_name["ok"] and by_model_name["tool"] == "classics.search"
     assert by_model_name["citations"] and all(c["passage_id"] for c in by_model_name["citations"])
     assert json.loads(by_model_name["text"])["hits"]
+    for hit in by_model_name["result"]["hits"]:
+        expected = rt.h.corpus.book(hit["book_id"]).authors
+        assert hit["authors"] == expected
+        assert next(c for c in by_model_name["citations"] if c["passage_id"] == hit["passage_id"])["authors"] == expected
     assert rt.call("classics.get_passage", {"passage_id": "shanghanlun.c013"})["ok"]
     for name, args, needle in [("kg.propose_change", {}, "people"), ("research.run_code", {"code": "1"}, "Code Mode"),
                                ("no.such_tool", {}, "unknown tool"),
