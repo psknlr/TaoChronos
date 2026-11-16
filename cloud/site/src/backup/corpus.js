@@ -310,6 +310,7 @@ export function passageCard(hit, card, { full = false, focus = null } = {}) {
     passage_id: passageId(hit.book, hit.p),
     book_id: hit.book,
     title: card?.title ?? hit.book,
+    authors: [...(card?.authors ?? [])],
     dynasty: card?.dynasty ?? "",
     year,
     period: periodLabel(periodOf(year) || ""),

@@ -16,7 +16,7 @@ from ..protocol.base import to_jsonable
 
 # ``labels``: what a taochronos_ask source was found under (ADR 0023: each via and flag in words, ``via 国老→甘草（…）``,
 # ``年代存疑（…）``), for the page's badges — kept only as a list of words (web/js/util.js withFound)
-CARD_FIELDS = ("passage_id", "book_id", "title", "dynasty", "year", "period", "locator", "labels")
+CARD_FIELDS = ("passage_id", "book_id", "title", "authors", "dynasty", "year", "period", "locator", "labels")
 TEXT_FIELDS = ("quote", "text")
 
 # (items kept per list, characters kept per string), from loose to tight
