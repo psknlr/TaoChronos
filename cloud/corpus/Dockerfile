@@ -3,7 +3,7 @@
 # the workflow fetched the store cloud/store.json names into cloud/.store/<sha256>.sqlite.xz.
 # The base image by digest (python:3.12-slim as published on 2026-10-26: Python 3.12.16; Dependabot proposes the next),
 # and every Python package from the hashed lockfiles in requirements/ (requirements/README.md): the same bytes each build.
-FROM python:3.12-slim@sha256:12316debbfb86890f6b2d825820612741ba527ad5a44e3902759141d572bfe8f AS base
+FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b AS base
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 \
     TAOCHRONOS_HOME=/srv/taochronos TAOCHRONOS_DATA=/srv/data
 WORKDIR /srv/taochronos
