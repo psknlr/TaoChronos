@@ -1,0 +1,74 @@
+name: research-corpus-export
+
+# Temporary research branch only. Do not merge this PR into main.
+# GETs existing KV data, then creates a private repository Actions artifact.
+on:
+  push:
+    branches:
+      - "codex/taostroke-corpus-export-*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: research-corpus-export-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  export:
+    if: >-
+      github.repository == 'psknlr/TaoChronos' &&
+      github.event.repository.private == true &&
+      startsWith(github.ref, 'refs/heads/codex/taostroke-corpus-export-') &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, same pin as existing workflows
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0, same pin as existing workflows
+        with:
+          python-version: "3.12"
+      - name: Offline export safety and completeness tests
+        run: python -m unittest discover -s tests -p test_research_corpus_export.py -v
+      - name: Export every row of the verified full store (read only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          python scripts/export_research_corpus.py
+          --manifest cloud/store.json
+          --output research-export
+          --repository-root .
+      - name: Private raw archive (separate artifact under the connector limit)
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: taochronos-raw-store-${{ github.run_id }}
+          path: research-export/raw_verified.sqlite.xz
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+      - name: Private passage export (separate artifact under the connector limit)
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: taochronos-passages-${{ github.run_id }}
+          path: research-export/passages.jsonl.gz
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+      - name: Private metadata, provenance, or safe failure ledger
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: taochronos-metadata-${{ github.run_id }}
+          path: |
+            research-export/
+            !research-export/raw_verified.sqlite.xz
+            !research-export/passages.jsonl.gz
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
