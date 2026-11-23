@@ -1,0 +1,38 @@
+{
+ "warnings": [
+  "fonts other than Arial / Noto Sans CJK embedded: ['LiberationSans', 'LiberationSans-Bold', 'LiberationSans-Italic']"
+ ],
+ "text_sizes_pt": [
+  5.0,
+  5.5,
+  6.0,
+  6.5,
+  7.0,
+  8.0
+ ],
+ "stroke_widths_pt": [
+  0.25,
+  0.3,
+  0.4,
+  0.5,
+  0.6,
+  0.7,
+  1.0
+ ],
+ "n_texts": 246,
+ "width_mm": 183.0,
+ "height_mm": 170.0,
+ "fonts": [
+  "LiberationSans",
+  "LiberationSans-Bold",
+  "LiberationSans-Italic",
+  "NotoSansCJKsc-Bold",
+  "NotoSansCJKsc-Regular"
+ ],
+ "live_text_chars": 5504,
+ "files": [
+  "/home/user/TaoChronos/paper/cases/out/Case1_herbal_formula_knee_pain.pdf",
+  "/home/user/TaoChronos/paper/cases/out/Case1_herbal_formula_knee_pain.svg",
+  "/home/user/TaoChronos/paper/cases/out/Case1_herbal_formula_knee_pain.png"
+ ]
+}

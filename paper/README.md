@@ -12,6 +12,8 @@
 - 补充材料：[`supplementary/Supplementary_Information.md`](supplementary/Supplementary_Information.md)（另有 `.docx`），
   补充表 1–12 的 CSV 在 `supplementary/tables/`，补充数据 1–2 为端到端案例的完整报告与事件日志
 - 合规报告：[`figures/out/qc/QC_REPORT.md`](figures/out/qc/QC_REPORT.md)（10 张图全部 PASS）
+- 案例图：[`cases/`](cases/README.md)（三次真实问答各一张图：方剂、本草、针灸；英文图注、源数据、出图时的逐项核对与
+  读回成品 PDF 的校验脚本；不计入上面的 10 张图与合规报告）
 
 Nature 的 Article 正文通常最多 6 个显示项，所以本轮把两张表移为扩展数据表（Extended Data Table 1–2），正文保留 6 张图。
 
@@ -116,4 +118,5 @@ paper/
   supplementary/
     make_supplementary.py · Supplementary_Information.md/.docx · tables/S1–S12*.csv
     Supplementary_Data_1_e2e_discovery_report.md · Supplementary_Data_2_e2e_event_log.jsonl.gz
+  cases/                        三张案例图（Case Fig. 1–3）：README.md · legends.md · 脚本 · source_data/ · out/
 ```
