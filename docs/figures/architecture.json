@@ -1,0 +1,526 @@
+{
+ "profile": "full-discovery",
+ "events": {
+  "types": 61,
+  "may_emit": {
+   "agent": 29,
+   "validator": 40,
+   "human": 17,
+   "kernel": 55
+  }
+ },
+ "agents": [
+  {
+   "role": "curator",
+   "mode": "procedure"
+  },
+  {
+   "role": "director",
+   "mode": "hybrid"
+  },
+  {
+   "role": "evidence",
+   "mode": "hybrid"
+  },
+  {
+   "role": "evolution",
+   "mode": "procedure"
+  },
+  {
+   "role": "extractor",
+   "mode": "hybrid"
+  },
+  {
+   "role": "hypothesis",
+   "mode": "hybrid"
+  },
+  {
+   "role": "lineage",
+   "mode": "procedure"
+  },
+  {
+   "role": "meta_reviewer",
+   "mode": "hybrid"
+  },
+  {
+   "role": "modern_evidence",
+   "mode": "hybrid"
+  },
+  {
+   "role": "ontologist",
+   "mode": "hybrid"
+  },
+  {
+   "role": "pattern_miner",
+   "mode": "procedure"
+  },
+  {
+   "role": "philologist",
+   "mode": "hybrid"
+  },
+  {
+   "role": "scholar",
+   "mode": "procedure"
+  },
+  {
+   "role": "semanticist",
+   "mode": "hybrid"
+  },
+  {
+   "role": "skeptic",
+   "mode": "hybrid"
+  },
+  {
+   "role": "statistician",
+   "mode": "procedure"
+  }
+ ],
+ "core_agents": [
+  "classical_scholar",
+  "critic",
+  "orchestrator",
+  "translational"
+ ],
+ "skill_manifests": [
+  "S01",
+  "S02",
+  "S03",
+  "S04",
+  "S05",
+  "S06",
+  "S07",
+  "S08",
+  "S09",
+  "S10",
+  "S11",
+  "S12",
+  "S13",
+  "S14",
+  "S15"
+ ],
+ "tools": {
+  "total": 96,
+  "families": {
+   "study": 52,
+   "analytics": 9,
+   "mydata": 6,
+   "philology": 6,
+   "validation": 5,
+   "retrieval": 5,
+   "knowledge": 5,
+   "literature": 4,
+   "bridge": 3,
+   "research": 1
+  },
+  "permissions": {
+   "classics:read": 70,
+   "analysis:run": 9,
+   "mydata:read": 6,
+   "kg:read": 4,
+   "literature:read": 4,
+   "kg:propose": 1,
+   "codemode:exec": 1,
+   "validation:run": 1
+  }
+ },
+ "hooks": {
+  "points": [
+   "ResearchStart",
+   "BeforeToolCall",
+   "AfterToolCall",
+   "BeforeLLMCall",
+   "BeforeClaimCommit",
+   "AfterHypothesis",
+   "BeforeGraphWrite",
+   "BeforeArtifactPublish",
+   "ResearchEnd"
+  ],
+  "installed": {
+   "BeforeToolCall": [
+    "scope_guard"
+   ],
+   "AfterToolCall": [
+    "scope_firewall"
+   ],
+   "BeforeClaimCommit": [
+    "provenance_validator",
+    "semantic_support",
+    "anachronism_guard"
+   ],
+   "AfterHypothesis": [
+    "anachronism_guard"
+   ],
+   "BeforeGraphWrite": [
+    "anachronism_guard"
+   ],
+   "BeforeArtifactPublish": [
+    "publish_guard"
+   ]
+  }
+ },
+ "gates": {
+  "G0": "Source",
+  "G1": "OCR / transcription",
+  "G2": "Philology",
+  "G3": "Semantic",
+  "G4": "Claim provenance",
+  "G5": "Cross-source",
+  "G6": "Falsification",
+  "G7": "Expert",
+  "G8": "Biomedical evidence"
+ },
+ "capabilities": {
+  "audit": [
+   "classics"
+  ],
+  "bridge": [
+   "classics"
+  ],
+  "citations": [
+   "classics"
+  ],
+  "corpus": [
+   "demo"
+  ],
+  "domain": [
+   "classics"
+  ],
+  "embedding": [
+   "hashing"
+  ],
+  "event_store": [
+   "jsonl",
+   "memory",
+   "sqlite"
+  ],
+  "extractor": [
+   "lexicon-rules"
+  ],
+  "graph_export": [
+   "cypher",
+   "graphml",
+   "json",
+   "prov"
+  ],
+  "knowledge": [
+   "corpus"
+  ],
+  "lineage": [
+   "classics"
+  ],
+  "llm": [
+   "anthropic",
+   "litellm",
+   "offline"
+  ],
+  "modern": [
+   "pubmed"
+  ],
+  "philology": [
+   "classics"
+  ],
+  "retriever": [
+   "hybrid"
+  ],
+  "reuse": [
+   "classics"
+  ],
+  "rwd": [
+   "omop"
+  ],
+  "sandbox": [
+   "codemode",
+   "namespace",
+   "router",
+   "subprocess"
+  ],
+  "study": [
+   "classics"
+  ],
+  "subagent": [
+   "local"
+  ],
+  "vision": [
+   "classics"
+  ]
+ },
+ "plugins": [
+  "classics",
+  "knowledge",
+  "retrieval",
+  "models.offline",
+  "models.anthropic_provider",
+  "models.openai_compat",
+  "models.litellm_provider",
+  "sandbox",
+  "subagents",
+  "modern",
+  "storage"
+ ],
+ "llm": {
+  "openai_compatible_presets": 15
+ },
+ "sandbox": {
+  "required_for": {
+   "harness": "in_process",
+   "trusted": "process",
+   "model": "namespace",
+   "user": "namespace"
+  }
+ },
+ "memory_layers": [
+  "M0",
+  "M1",
+  "M2",
+  "M3",
+  "M4"
+ ],
+ "evals": {
+  "suites": 42,
+  "invariants": [
+   {
+    "id": "I01",
+    "boundary": "BeforeToolCall scope guard · scoped views"
+   },
+   {
+    "id": "I02",
+    "boundary": "AfterToolCall scope firewall"
+   },
+   {
+    "id": "I03",
+    "boundary": "reducer (monotone manifest)"
+   },
+   {
+    "id": "I04",
+    "boundary": "BeforeClaimCommit semantic support · G4 layers"
+   },
+   {
+    "id": "I05",
+    "boundary": "skeptic merge · reducer · G6"
+   },
+   {
+    "id": "I06",
+    "boundary": "reducer (objection state machine)"
+   },
+   {
+    "id": "I07",
+    "boundary": "tool scheduler"
+   },
+   {
+    "id": "I08",
+    "boundary": "sandbox router"
+   },
+   {
+    "id": "I09",
+    "boundary": "namespace tier"
+   },
+   {
+    "id": "I10",
+    "boundary": "transaction pre-validation · commit"
+   },
+   {
+    "id": "I11",
+    "boundary": "session (validate before persist)"
+   },
+   {
+    "id": "I12",
+    "boundary": "event authority"
+   },
+   {
+    "id": "I13",
+    "boundary": "provenance verification"
+   },
+   {
+    "id": "I14",
+    "boundary": "G8 layers"
+   },
+   {
+    "id": "I15",
+    "boundary": "session views · event authority"
+   },
+   {
+    "id": "I16",
+    "boundary": "round integrity check"
+   },
+   {
+    "id": "I17",
+    "boundary": "reducer (retraction)"
+   },
+   {
+    "id": "I18",
+    "boundary": "BeforeArtifactPublish publish guard"
+   },
+   {
+    "id": "I19",
+    "boundary": "research contract"
+   }
+  ]
+ },
+ "layers": {
+  "order": [
+   "protocol",
+   "capabilities",
+   "kernel",
+   "science",
+   "verification",
+   "tools",
+   "plugins",
+   "agents",
+   "engine",
+   "evals",
+   "app"
+  ],
+  "may_import": {
+   "protocol": [],
+   "capabilities": [
+    "protocol"
+   ],
+   "kernel": [
+    "protocol"
+   ],
+   "science": [
+    "protocol"
+   ],
+   "verification": [
+    "protocol",
+    "kernel"
+   ],
+   "tools": [
+    "protocol",
+    "kernel",
+    "science",
+    "verification"
+   ],
+   "plugins": [
+    "protocol",
+    "capabilities",
+    "kernel",
+    "science",
+    "verification",
+    "tools",
+    "plugins"
+   ],
+   "agents": [
+    "protocol",
+    "capabilities",
+    "kernel",
+    "science",
+    "verification",
+    "tools",
+    "agents"
+   ],
+   "engine": [
+    "protocol",
+    "capabilities",
+    "kernel",
+    "science",
+    "verification",
+    "tools",
+    "agents",
+    "engine"
+   ],
+   "evals": [
+    "*"
+   ],
+   "app": [
+    "*"
+   ]
+  },
+  "files": {
+   "protocol": 21,
+   "capabilities": 4,
+   "kernel": 16,
+   "science": 15,
+   "verification": 10,
+   "tools": 4,
+   "plugins": 134,
+   "agents": 28,
+   "engine": 8,
+   "evals": 14,
+   "app": 22
+  },
+  "lines": {
+   "protocol": 2913,
+   "capabilities": 641,
+   "kernel": 3046,
+   "science": 2821,
+   "verification": 2125,
+   "tools": 1728,
+   "plugins": 45470,
+   "agents": 5185,
+   "engine": 2224,
+   "evals": 5723,
+   "app": 7991
+  },
+  "imports": {
+   "agents>capabilities": 5,
+   "agents>kernel": 19,
+   "agents>protocol": 73,
+   "agents>science": 3,
+   "agents>tools": 2,
+   "agents>verification": 3,
+   "app>agents": 8,
+   "app>capabilities": 2,
+   "app>engine": 9,
+   "app>evals": 4,
+   "app>kernel": 27,
+   "app>plugins": 91,
+   "app>protocol": 18,
+   "app>tools": 2,
+   "app>verification": 4,
+   "capabilities>protocol": 1,
+   "engine>agents": 3,
+   "engine>kernel": 13,
+   "engine>protocol": 21,
+   "engine>science": 3,
+   "engine>tools": 3,
+   "engine>verification": 4,
+   "evals>agents": 6,
+   "evals>app": 8,
+   "evals>engine": 6,
+   "evals>kernel": 17,
+   "evals>plugins": 48,
+   "evals>protocol": 41,
+   "evals>science": 8,
+   "evals>tools": 2,
+   "evals>verification": 11,
+   "kernel>protocol": 25,
+   "plugins>capabilities": 11,
+   "plugins>kernel": 2,
+   "plugins>protocol": 67,
+   "plugins>science": 16,
+   "plugins>verification": 7,
+   "science>protocol": 8,
+   "tools>kernel": 2,
+   "tools>protocol": 8,
+   "tools>science": 4,
+   "tools>verification": 2,
+   "verification>kernel": 2,
+   "verification>protocol": 18
+  },
+  "governance": {
+   "files_checked": 277,
+   "violations": 0,
+   "rules": [
+    "layering",
+    "kernel_forbidden_term",
+    "vendor_sdk",
+    "agents_import_plugins",
+    "privileged_identity",
+    "session_internals",
+    "agent_specs"
+   ]
+  }
+ },
+ "deployment": {
+  "site_store": {
+   "books": 958,
+   "passages": 2038497,
+   "characters": 122212591
+  },
+  "browser_pack": {
+   "witnesses": 553,
+   "works": 533
+  }
+ }
+}
