@@ -1,6 +1,6 @@
 {
  "days": 30,
- "updated": "2026-11-24T11:36:45+00:00",
+ "updated": "2026-11-25T09:29:48+00:00",
  "suspects": {
   "34.163.30.172": {
    "first": "2026-11-12",
@@ -689,6 +689,45 @@
     "firewallCustom"
    ],
    "score": 67
+  },
+  "169.40.142.190": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 14,
+   "requests": 15,
+   "blocked": 14,
+   "challenged": 0,
+   "scanner_paths": 14,
+   "tool_agents": 0,
+   "errors": 15,
+   "asn": "215599",
+   "asOrg": "Zkillu SAS",
+   "country": "FR",
+   "agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+   ],
+   "paths": [
+    "/.env.save",
+    "/.env.bak",
+    "/.env.swp",
+    "/.git/HEAD",
+    "/.env.production",
+    "/.git/config",
+    "/.env.staging",
+    "/.env.txt",
+    "/.env.local",
+    "/pathscan-645214fbc73a-nope.env",
+    "/.env",
+    "/.env.dev"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom",
+    "unknown"
+   ],
+   "score": 56
   },
   "2400:c800:109:20c:9d7e:cf2b:adf3:d71c": {
    "first": "2026-11-15",
@@ -1606,6 +1645,44 @@
    ],
    "score": 40
   },
+  "35.195.251.123": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 76,
+   "requests": 0,
+   "blocked": 76,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 0,
+   "asn": "396982",
+   "asOrg": "Google LLC",
+   "country": "BE",
+   "agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+   ],
+   "paths": [
+    "/.env.old",
+    "/application/.env",
+    "/.env.test",
+    "/actuator/heapdump",
+    "/backend/.env",
+    "/old/.env",
+    "/app/.env",
+    "/backup.sql",
+    "/.env.docker",
+    "/dump.sql",
+    "/api/v3/.env",
+    "/.github/workflows/ci.yml"
+   ],
+   "hosts": [
+    "science.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 40
+  },
   "165.154.74.208": {
    "first": "2026-11-02",
    "last": "2026-11-02",
@@ -2199,44 +2276,33 @@
    ],
    "score": 14
   },
-  "117.29.104.203": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 3,
-   "requests": 23,
-   "blocked": 3,
+  "45.138.12.215": {
+   "first": "2026-11-06",
+   "last": "2026-11-24",
+   "events": 4,
+   "requests": 4,
+   "blocked": 4,
    "challenged": 0,
    "scanner_paths": 3,
    "tool_agents": 0,
-   "errors": 23,
-   "asn": "4134",
-   "asOrg": "CHINANET BACKBONE",
-   "country": "CN",
+   "errors": 4,
+   "asn": "218785",
+   "asOrg": "TC DATACENTER LIMITED",
+   "country": "PL",
    "agents": [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
    ],
    "paths": [
-    "/fwc",
-    "/1",
-    "/assets/favicon-aOK6_042.ico",
-    "/assets/GanjingAbout-Cb73sJYd.js",
-    "/res/favicon.ico",
-    "/favicon-32x32.png",
-    "/icons/favicon.ico",
-    "/fzh",
-    "/images/01.jpg",
-    "/news5c/assets/images/logo.svg",
-    "/wp-content/uploads/2023/08/logo-gold.png",
-    "/aaabbbccc"
+    "/",
+    "/.env"
    ],
    "hosts": [
-    "chat-api.impf.ai"
+    "chat.impf.ai"
    ],
    "sources": [
-    "firewallCustom",
-    "unknown"
+    "firewallCustom"
    ],
-   "score": 13
+   "score": 14
   },
   "2a13:9500:1e4:30::e:373": {
    "first": "2026-10-27",
@@ -2277,44 +2343,6 @@
     "unknown"
    ],
    "score": 13
-  },
-  "175.30.48.169": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 3,
-   "requests": 13,
-   "blocked": 3,
-   "challenged": 0,
-   "scanner_paths": 3,
-   "tool_agents": 0,
-   "errors": 13,
-   "asn": "4134",
-   "asOrg": "CHINANET BACKBONE",
-   "country": "CN",
-   "agents": [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
-   ],
-   "paths": [
-    "/wp-content/uploads/2023/08/logo-gold.png",
-    "/wp-content/uploads/2023/02/1677572030-814390417fe413b.png",
-    "/wp-content/uploads/2020/10/official-logo-512x512.png",
-    "/",
-    "/aaabbbccc",
-    "/favicon.ico",
-    "/news5c/assets/images/logo.svg",
-    "/fwc",
-    "/assets/GanjingAbout-Cb73sJYd.js",
-    "/fb",
-    "/res/favicon.ico"
-   ],
-   "hosts": [
-    "chat-api.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom",
-    "unknown"
-   ],
-   "score": 12
   },
   "123.114.40.131": {
    "first": "2026-10-26",
@@ -2429,6 +2457,34 @@
    "hosts": [
     "chat.impf.ai",
     "chat-api.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 12
+  },
+  "45.138.12.217": {
+   "first": "2026-11-09",
+   "last": "2026-11-24",
+   "events": 5,
+   "requests": 5,
+   "blocked": 5,
+   "challenged": 0,
+   "scanner_paths": 1,
+   "tool_agents": 0,
+   "errors": 5,
+   "asn": "218785",
+   "asOrg": "TC DATACENTER LIMITED",
+   "country": "PL",
+   "agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+   ],
+   "paths": [
+    "/",
+    "/.env"
+   ],
+   "hosts": [
+    "chat.impf.ai"
    ],
    "sources": [
     "firewallCustom"
@@ -2554,90 +2610,6 @@
     "firewallCustom"
    ],
    "score": 10
-  },
-  "45.138.12.215": {
-   "first": "2026-11-06",
-   "last": "2026-11-17",
-   "events": 3,
-   "requests": 3,
-   "blocked": 3,
-   "challenged": 0,
-   "scanner_paths": 2,
-   "tool_agents": 0,
-   "errors": 3,
-   "asn": "218785",
-   "asOrg": "TC DATACENTER LIMITED",
-   "country": "PL",
-   "agents": [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
-   ],
-   "paths": [
-    "/",
-    "/.env"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 10
-  },
-  "45.138.12.217": {
-   "first": "2026-11-09",
-   "last": "2026-11-22",
-   "events": 4,
-   "requests": 4,
-   "blocked": 4,
-   "challenged": 0,
-   "scanner_paths": 1,
-   "tool_agents": 0,
-   "errors": 4,
-   "asn": "218785",
-   "asOrg": "TC DATACENTER LIMITED",
-   "country": "PL",
-   "agents": [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
-   ],
-   "paths": [
-    "/",
-    "/.env"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 10
-  },
-  "147.185.133.63": {
-   "first": "2026-10-25",
-   "last": "2026-11-06",
-   "events": 4,
-   "requests": 1,
-   "blocked": 4,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 1,
-   "errors": 1,
-   "asn": "396982",
-   "asOrg": "Google LLC",
-   "country": "FI",
-   "agents": [
-    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "science.impf.ai",
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 8
   },
   "65.111.29.82": {
    "first": "2026-11-09",
@@ -3085,6 +3057,34 @@
    ],
    "score": 6
   },
+  "147.185.133.63": {
+   "first": "2026-11-03",
+   "last": "2026-11-06",
+   "events": 3,
+   "requests": 1,
+   "blocked": 3,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 1,
+   "errors": 1,
+   "asn": "396982",
+   "asOrg": "Google LLC",
+   "country": "FI",
+   "agents": [
+    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "science.impf.ai",
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 6
+  },
   "240e:804:400:94e:446b:3170:90cd:9b7": {
    "first": "2026-11-06",
    "last": "2026-11-06",
@@ -3201,38 +3201,6 @@
    ],
    "score": 6
   },
-  "58.48.161.58": {
-   "first": "2026-11-06",
-   "last": "2026-11-22",
-   "events": 3,
-   "requests": 8,
-   "blocked": 3,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 8,
-   "asn": "137266",
-   "asOrg": "CHINATELECOM Hubei province Wuhan 5G network",
-   "country": "CN",
-   "agents": [
-    "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Mobile Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36 Edg/106.0.1370.37",
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari/604.1"
-   ],
-   "paths": [
-    "/",
-    "/favicon.ico"
-   ],
-   "hosts": [
-    "chat-api.impf.ai",
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown",
-    "firewallCustom"
-   ],
-   "score": 6
-  },
   "2409:8a1e:5c11:a2f0:e401:b70b:7986:ffe8": {
    "first": "2026-11-22",
    "last": "2026-11-22",
@@ -3265,24 +3233,55 @@
    ],
    "score": 6
   },
-  "130.12.180.164": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 1,
-   "requests": 1,
-   "blocked": 1,
+  "58.48.161.58": {
+   "first": "2026-11-06",
+   "last": "2026-11-24",
+   "events": 3,
+   "requests": 9,
+   "blocked": 3,
    "challenged": 0,
-   "scanner_paths": 1,
+   "scanner_paths": 0,
    "tool_agents": 0,
-   "errors": 1,
-   "asn": "202412",
-   "asOrg": "Omegatech LTD",
-   "country": "DE",
+   "errors": 9,
+   "asn": "137266",
+   "asOrg": "CHINATELECOM Hubei province Wuhan 5G network",
+   "country": "CN",
    "agents": [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36 Edg/106.0.1370.37",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari/604.1"
    ],
    "paths": [
-    "/.env"
+    "/",
+    "/favicon.ico"
+   ],
+   "hosts": [
+    "chat-api.impf.ai",
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown",
+    "firewallCustom"
+   ],
+   "score": 6
+  },
+  "2409:8a1e:5c10:e720:1960:c70f:e84c:87d8": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 3,
+   "requests": 3,
+   "blocked": 3,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 3,
+   "errors": 3,
+   "asn": "24400",
+   "asOrg": "Shanghai Mobile Communications Co.,Ltd.",
+   "country": "CN",
+   "agents": [],
+   "paths": [
+    "/",
+    "/favicon.ico"
    ],
    "hosts": [
     "chat.impf.ai"
@@ -3290,7 +3289,7 @@
    "sources": [
     "firewallCustom"
    ],
-   "score": 4
+   "score": 6
   },
   "45.138.12.52": {
    "first": "2026-10-26",
@@ -3398,33 +3397,6 @@
    ],
    "score": 4
   },
-  "198.235.24.55": {
-   "first": "2026-10-25",
-   "last": "2026-10-29",
-   "events": 2,
-   "requests": 2,
-   "blocked": 2,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 2,
-   "errors": 2,
-   "asn": "396982",
-   "asOrg": "Google LLC",
-   "country": "TW",
-   "agents": [
-    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 4
-  },
   "20.53.110.196": {
    "first": "2026-10-29",
    "last": "2026-10-29",
@@ -3474,35 +3446,6 @@
    ],
    "hosts": [
     "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 4
-  },
-  "80.94.92.126": {
-   "first": "2026-10-25",
-   "last": "2026-10-30",
-   "events": 2,
-   "requests": 0,
-   "blocked": 2,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 0,
-   "asn": "47890",
-   "asOrg": "UNMANAGED LTD",
-   "country": "RO",
-   "agents": [
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36 Edg/101.0.1210.47",
-    "Mozilla/5.0 (SymbianOS 9.4; Series60/5.0 NokiaN97-1/10.0.012; Profile/MIDP-2.1 Configuration/CLDC-1.1; en-us) AppleWebKit/525 (KHTML, like Gecko) WicKed/7.1.12344"
-   ],
-   "paths": [
-    "/.git/HEAD",
-    "/.svn/wc.db"
-   ],
-   "hosts": [
-    "science.impf.ai"
    ],
    "sources": [
     "firewallCustom"
@@ -4891,34 +4834,6 @@
    ],
    "score": 4
   },
-  "198.235.24.150": {
-   "first": "2026-10-25",
-   "last": "2026-11-13",
-   "events": 2,
-   "requests": 1,
-   "blocked": 2,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 1,
-   "errors": 1,
-   "asn": "396982",
-   "asOrg": "Google LLC",
-   "country": "BE",
-   "agents": [
-    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "chat.impf.ai",
-    "science.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 4
-  },
   "2409:8900:27b4:d6e2:e44a:5af4:aeea:fd66": {
    "first": "2026-11-13",
    "last": "2026-11-13",
@@ -5358,34 +5273,6 @@
    ],
    "score": 4
   },
-  "198.235.24.99": {
-   "first": "2026-10-25",
-   "last": "2026-11-21",
-   "events": 2,
-   "requests": 1,
-   "blocked": 2,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 1,
-   "errors": 1,
-   "asn": "396982",
-   "asOrg": "Google LLC",
-   "country": "TW",
-   "agents": [
-    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "chat.impf.ai",
-    "science.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 4
-  },
   "216.25.90.65": {
    "first": "2026-10-27",
    "last": "2026-11-21",
@@ -5556,6 +5443,89 @@
    ],
    "score": 4
   },
+  "205.210.31.55": {
+   "first": "2026-11-18",
+   "last": "2026-11-24",
+   "events": 2,
+   "requests": 1,
+   "blocked": 2,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 1,
+   "errors": 1,
+   "asn": "396982",
+   "asOrg": "Google LLC",
+   "country": "US",
+   "agents": [
+    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "chat.impf.ai",
+    "science.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 4
+  },
+  "43.159.139.164": {
+   "first": "2026-11-23",
+   "last": "2026-11-24",
+   "events": 2,
+   "requests": 2,
+   "blocked": 2,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 2,
+   "asn": "132203",
+   "asOrg": "Tencent Building, Kejizhongyi Avenue",
+   "country": "US",
+   "agents": [
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "chat-api.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 4
+  },
+  "216.73.216.222": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 2,
+   "requests": 0,
+   "blocked": 2,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 0,
+   "asn": "16509",
+   "asOrg": "Amazon.com, Inc.",
+   "country": "US",
+   "agents": [
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)"
+   ],
+   "paths": [
+    "/robots.txt",
+    "/"
+   ],
+   "hosts": [
+    "science.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 4
+  },
   "185.248.184.161": {
    "first": "2026-10-26",
    "last": "2026-10-26",
@@ -5690,337 +5660,6 @@
     "unknown"
    ],
    "score": 3
-  },
-  "147.185.133.39": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 1,
-   "requests": 1,
-   "blocked": 1,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 1,
-   "errors": 1,
-   "asn": "396982",
-   "asOrg": "Google LLC",
-   "country": "FI",
-   "agents": [
-    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 2
-  },
-  "198.235.24.220": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 1,
-   "requests": 1,
-   "blocked": 1,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 1,
-   "errors": 1,
-   "asn": "396982",
-   "asOrg": "Google LLC",
-   "country": "BE",
-   "agents": [
-    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 2
-  },
-  "205.210.31.10": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 1,
-   "requests": 1,
-   "blocked": 1,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 1,
-   "errors": 1,
-   "asn": "396982",
-   "asOrg": "Google LLC",
-   "country": "US",
-   "agents": [
-    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 2
-  },
-  "147.185.132.234": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 1,
-   "requests": 1,
-   "blocked": 1,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 1,
-   "errors": 1,
-   "asn": "396982",
-   "asOrg": "Google LLC",
-   "country": "US",
-   "agents": [
-    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 2
-  },
-  "147.185.132.109": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 1,
-   "requests": 1,
-   "blocked": 1,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 1,
-   "errors": 1,
-   "asn": "396982",
-   "asOrg": "Google LLC",
-   "country": "US",
-   "agents": [
-    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 2
-  },
-  "205.210.31.79": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 1,
-   "requests": 0,
-   "blocked": 1,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 0,
-   "asn": "396982",
-   "asOrg": "Google LLC",
-   "country": "US",
-   "agents": [
-    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "science.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 2
-  },
-  "198.235.24.192": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 1,
-   "requests": 0,
-   "blocked": 1,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 0,
-   "asn": "396982",
-   "asOrg": "Google LLC",
-   "country": "BE",
-   "agents": [
-    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "science.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 2
-  },
-  "66.132.195.208": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 1,
-   "requests": 1,
-   "blocked": 1,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 1,
-   "errors": 1,
-   "asn": "398324",
-   "asOrg": "Censys, Inc.",
-   "country": "US",
-   "agents": [
-    "Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "chat-api.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 2
-  },
-  "198.235.24.164": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 1,
-   "requests": 0,
-   "blocked": 1,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 0,
-   "asn": "396982",
-   "asOrg": "Google LLC",
-   "country": "BE",
-   "agents": [
-    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "science.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 2
-  },
-  "66.132.172.193": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 1,
-   "requests": 1,
-   "blocked": 1,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 1,
-   "errors": 1,
-   "asn": "398324",
-   "asOrg": "Censys, Inc.",
-   "country": "US",
-   "agents": [
-    "Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "chat-api.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 2
-  },
-  "205.210.31.48": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 1,
-   "requests": 0,
-   "blocked": 1,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 0,
-   "asn": "396982",
-   "asOrg": "Google LLC",
-   "country": "US",
-   "agents": [
-    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "science.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 2
-  },
-  "114.86.13.252": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 0,
-   "requests": 408,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 8,
-   "asn": null,
-   "asOrg": null,
-   "country": "CN",
-   "agents": [
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
-    "MobileSafari/8618.2.12.10.9 CFNetwork/1496.0.7 Darwin/23.5.0",
-    "NetworkingExtension/8618.2.12.10.9 CFNetwork/1496.0.7 Darwin/23.5.0"
-   ],
-   "paths": [
-    "/js/llm/openai.js",
-    "/apple-touch-icon.png",
-    "/apple-touch-icon-precomposed.png",
-    "/apple-touch-icon-120x120-precomposed.png",
-    "/apple-touch-icon-120x120.png",
-    "/favicon.ico"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 2
   },
   "66.132.172.206": {
    "first": "2026-10-26",
@@ -6723,6 +6362,33 @@
    ],
    "score": 2
   },
+  "198.235.24.55": {
+   "first": "2026-10-29",
+   "last": "2026-10-29",
+   "events": 1,
+   "requests": 1,
+   "blocked": 1,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 1,
+   "errors": 1,
+   "asn": "396982",
+   "asOrg": "Google LLC",
+   "country": "TW",
+   "agents": [
+    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 2
+  },
   "205.210.31.99": {
    "first": "2026-10-29",
    "last": "2026-10-29",
@@ -6849,6 +6515,33 @@
    ],
    "paths": [
     "/"
+   ],
+   "hosts": [
+    "science.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 2
+  },
+  "80.94.92.126": {
+   "first": "2026-10-30",
+   "last": "2026-10-30",
+   "events": 1,
+   "requests": 0,
+   "blocked": 1,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 0,
+   "asn": "47890",
+   "asOrg": "UNMANAGED LTD",
+   "country": "RO",
+   "agents": [
+    "Mozilla/5.0 (SymbianOS 9.4; Series60/5.0 NokiaN97-1/10.0.012; Profile/MIDP-2.1 Configuration/CLDC-1.1; en-us) AppleWebKit/525 (KHTML, like Gecko) WicKed/7.1.12344"
+   ],
+   "paths": [
+    "/.svn/wc.db"
    ],
    "hosts": [
     "science.impf.ai"
@@ -10531,6 +10224,33 @@
    ],
    "score": 2
   },
+  "198.235.24.150": {
+   "first": "2026-11-13",
+   "last": "2026-11-13",
+   "events": 1,
+   "requests": 0,
+   "blocked": 1,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 0,
+   "asn": "396982",
+   "asOrg": "Google LLC",
+   "country": "BE",
+   "agents": [
+    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "science.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 2
+  },
   "66.132.195.126": {
    "first": "2026-11-14",
    "last": "2026-11-14",
@@ -11750,33 +11470,6 @@
    ],
    "score": 2
   },
-  "205.210.31.55": {
-   "first": "2026-11-18",
-   "last": "2026-11-18",
-   "events": 1,
-   "requests": 1,
-   "blocked": 1,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 1,
-   "errors": 1,
-   "asn": "396982",
-   "asOrg": "Google LLC",
-   "country": "US",
-   "agents": [
-    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 2
-  },
   "43.153.96.233": {
    "first": "2026-11-18",
    "last": "2026-11-18",
@@ -12338,6 +12031,33 @@
    ],
    "hosts": [
     "chat-api.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 2
+  },
+  "198.235.24.99": {
+   "first": "2026-11-21",
+   "last": "2026-11-21",
+   "events": 1,
+   "requests": 0,
+   "blocked": 1,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 0,
+   "asn": "396982",
+   "asOrg": "Google LLC",
+   "country": "TW",
+   "agents": [
+    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "science.impf.ai"
    ],
    "sources": [
     "firewallCustom"
@@ -13054,33 +12774,6 @@
    ],
    "score": 2
   },
-  "43.159.139.164": {
-   "first": "2026-11-23",
-   "last": "2026-11-23",
-   "events": 1,
-   "requests": 1,
-   "blocked": 1,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 1,
-   "asn": "132203",
-   "asOrg": "Tencent Building, Kejizhongyi Avenue",
-   "country": "US",
-   "agents": [
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
-   ],
-   "paths": [
-    "/"
-   ],
-   "hosts": [
-    "chat-api.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 2
-  },
   "198.235.24.16": {
    "first": "2026-11-23",
    "last": "2026-11-23",
@@ -13108,34 +12801,302 @@
    ],
    "score": 2
   },
-  "199.91.67.166": {
-   "first": "2026-10-25",
-   "last": "2026-10-26",
-   "events": 0,
-   "requests": 31,
-   "blocked": 0,
+  "147.185.133.150": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 1,
+   "requests": 1,
+   "blocked": 1,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 1,
+   "errors": 1,
+   "asn": "396982",
+   "asOrg": "Google LLC",
+   "country": "FI",
+   "agents": [
+    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 2
+  },
+  "2602:80d:1008::9c": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 1,
+   "requests": 0,
+   "blocked": 1,
    "challenged": 0,
    "scanner_paths": 0,
    "tool_agents": 0,
-   "errors": 31,
-   "asn": null,
-   "asOrg": null,
+   "errors": 0,
+   "asn": "398324",
+   "asOrg": "Censys, Inc.",
    "country": "US",
    "agents": [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)"
    ],
    "paths": [
-    "/api/research/job_7f35672415e6",
-    "/v1/chat/completions"
+    "/"
    ],
    "hosts": [
-    "chat.impf.ai",
+    "science.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 2
+  },
+  "43.153.123.3": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 1,
+   "requests": 1,
+   "blocked": 1,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 1,
+   "asn": "132203",
+   "asOrg": "Tencent Building, Kejizhongyi Avenue",
+   "country": "US",
+   "agents": [
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
     "chat-api.impf.ai"
    ],
    "sources": [
-    "unknown"
+    "firewallCustom"
    ],
-   "score": 1
+   "score": 2
+  },
+  "198.235.24.70": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 1,
+   "requests": 0,
+   "blocked": 1,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 0,
+   "asn": "396982",
+   "asOrg": "Google LLC",
+   "country": "TW",
+   "agents": [
+    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "science.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 2
+  },
+  "170.85.74.84": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 1,
+   "requests": 0,
+   "blocked": 1,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 0,
+   "asn": "22616",
+   "asOrg": "ZSCALER, INC.",
+   "country": "US",
+   "agents": [
+    "python-httpx/0.28.1"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "science.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 2
+  },
+  "170.85.74.98": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 1,
+   "requests": 0,
+   "blocked": 1,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 0,
+   "asn": "22616",
+   "asOrg": "ZSCALER, INC.",
+   "country": "US",
+   "agents": [
+    "python-httpx/0.28.1"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "science.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 2
+  },
+  "20.28.214.139": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 1,
+   "requests": 1,
+   "blocked": 1,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 1,
+   "asn": "8075",
+   "asOrg": "Microsoft Corporation",
+   "country": "AU",
+   "agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "chat-api.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 2
+  },
+  "205.210.31.71": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 1,
+   "requests": 0,
+   "blocked": 1,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 0,
+   "asn": "396982",
+   "asOrg": "Google LLC",
+   "country": "US",
+   "agents": [
+    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "science.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 2
+  },
+  "161.178.130.59": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 1,
+   "requests": 1,
+   "blocked": 1,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 1,
+   "asn": "16509",
+   "asOrg": "Amazon.com, Inc.",
+   "country": "US",
+   "agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "chat-api.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 2
+  },
+  "198.235.24.158": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 1,
+   "requests": 0,
+   "blocked": 1,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 0,
+   "asn": "396982",
+   "asOrg": "Google LLC",
+   "country": "BE",
+   "agents": [
+    "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "science.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 2
+  },
+  "43.164.3.182": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 1,
+   "requests": 1,
+   "blocked": 1,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 1,
+   "asn": "132203",
+   "asOrg": "Tencent Building, Kejizhongyi Avenue",
+   "country": "TH",
+   "agents": [
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+   ],
+   "paths": [
+    "/"
+   ],
+   "hosts": [
+    "chat-api.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 2
   },
   "115.171.55.106": {
    "first": "2026-10-26",
@@ -13330,618 +13291,6 @@
     "unknown"
    ],
    "score": 1
-  },
-  "172.200.23.64": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 4,
-   "requests": 0,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 0,
-   "asn": "8075",
-   "asOrg": "Microsoft Corporation",
-   "country": "US",
-   "agents": [
-    "taochronos-collector/1"
-   ],
-   "paths": [
-    "/api/security/ack",
-    "/api/security/export",
-    "/v1/security/export",
-    "/v1/logs/export"
-   ],
-   "hosts": [
-    "chat.impf.ai",
-    "chat-api.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 0
-  },
-  "20.83.38.20": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 3,
-   "requests": 0,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 0,
-   "asn": "8075",
-   "asOrg": "Microsoft Corporation",
-   "country": "US",
-   "agents": [
-    "taochronos-collector/1"
-   ],
-   "paths": [
-    "/api/security/export",
-    "/v1/security/export",
-    "/v1/logs/export"
-   ],
-   "hosts": [
-    "chat.impf.ai",
-    "chat-api.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 0
-  },
-  "20.169.74.18": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 6,
-   "requests": 0,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 0,
-   "asn": "8075",
-   "asOrg": "Microsoft Corporation",
-   "country": "US",
-   "agents": [
-    "taochronos-collector/1"
-   ],
-   "paths": [
-    "/v1/security/ack",
-    "/api/security/ack",
-    "/v1/logs/ack",
-    "/api/security/export",
-    "/v1/security/export",
-    "/v1/logs/export"
-   ],
-   "hosts": [
-    "chat-api.impf.ai",
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 0
-  },
-  "135.119.22.211": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 5,
-   "requests": 0,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 0,
-   "asn": "8075",
-   "asOrg": "Microsoft Corporation",
-   "country": "US",
-   "agents": [
-    "taochronos-deploy/1"
-   ],
-   "paths": [
-    "/api/call",
-    "/",
-    "/api/info",
-    "/runtime/boot.json"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 0
-  },
-  "135.237.130.147": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 4,
-   "requests": 0,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 0,
-   "asn": "8075",
-   "asOrg": "Microsoft Corporation",
-   "country": "US",
-   "agents": [
-    "taochronos-deploy/1"
-   ],
-   "paths": [
-    "/api/call",
-    "/",
-    "/runtime/boot.json"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 0
-  },
-  "20.84.246.20": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 2,
-   "requests": 0,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 0,
-   "asn": "8075",
-   "asOrg": "Microsoft Corporation",
-   "country": "US",
-   "agents": [
-    "taochronos-collector/1"
-   ],
-   "paths": [
-    "/v1/chat/completions",
-    "/v1/health"
-   ],
-   "hosts": [
-    "chat-api.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 0
-  },
-  "57.154.3.146": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 5,
-   "requests": 0,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 0,
-   "asn": "8075",
-   "asOrg": "Microsoft Corporation",
-   "country": "US",
-   "agents": [
-    "taochronos-collector/1"
-   ],
-   "paths": [
-    "/v1/logs/ack",
-    "/api/security/ack",
-    "/api/security/export",
-    "/v1/security/export",
-    "/v1/logs/export"
-   ],
-   "hosts": [
-    "chat-api.impf.ai",
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 0
-  },
-  "4.154.182.176": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 4,
-   "requests": 0,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 0,
-   "asn": "8075",
-   "asOrg": "Microsoft Corporation",
-   "country": "US",
-   "agents": [
-    "taochronos-collector/1"
-   ],
-   "paths": [
-    "/v1/logs/ack",
-    "/v1/security/export",
-    "/api/security/export",
-    "/v1/logs/export"
-   ],
-   "hosts": [
-    "chat-api.impf.ai",
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 0
-  },
-  "48.217.108.240": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 3,
-   "requests": 0,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 0,
-   "asn": "8075",
-   "asOrg": "Microsoft Corporation",
-   "country": "US",
-   "agents": [
-    "taochronos-collector/1"
-   ],
-   "paths": [
-    "/api/security/export",
-    "/v1/security/export",
-    "/v1/logs/export"
-   ],
-   "hosts": [
-    "chat.impf.ai",
-    "chat-api.impf.ai"
-   ],
-   "sources": [
-    "firewallCustom"
-   ],
-   "score": 0
-  },
-  "2409:8a74:1091:a6d0:f59a:2121:daa4:df9": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 0,
-   "requests": 5,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 5,
-   "asn": null,
-   "asOrg": null,
-   "country": "CN",
-   "agents": [
-    "Quark/10.19.5 (iPhone; iOS 27.0.1; Scale/3.00)"
-   ],
-   "paths": [
-    "/favicon.ico"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "202.120.79.140": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 0,
-   "requests": 1,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 1,
-   "asn": null,
-   "asOrg": null,
-   "country": "CN",
-   "agents": [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36"
-   ],
-   "paths": [
-    "/favicon.ico"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "112.232.67.92": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 0,
-   "requests": 3,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 3,
-   "asn": null,
-   "asOrg": null,
-   "country": "CN",
-   "agents": [
-    "NetworkingExtension/8624.5.1.10.3 Network/5812.160.9 iOS/26.6.2"
-   ],
-   "paths": [
-    "/apple-touch-icon-precomposed.png",
-    "/apple-touch-icon.png",
-    "/favicon.ico"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "2408:8411:54a0:758e::1": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 0,
-   "requests": 6,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 6,
-   "asn": null,
-   "asOrg": null,
-   "country": "CN",
-   "agents": [
-    "Mozilla/5.0 (Linux; Android 16; PKK110 Build/BP2A.250605.015) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.7204.179 Mobile Safari/537.36"
-   ],
-   "paths": [
-    "/cdn-cgi/rum"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "2405:9800:b940:643b:b1d0:4079:7d95:fd81": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 0,
-   "requests": 2,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 2,
-   "asn": null,
-   "asOrg": null,
-   "country": "TH",
-   "agents": [
-    "NetworkingExtension/8625.1.29.10.33 Network/6681.2.2 iOS/27.0.1"
-   ],
-   "paths": [
-    "/apple-touch-icon-precomposed.png",
-    "/apple-touch-icon.png"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "18.141.163.100": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 0,
-   "requests": 4,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 4,
-   "asn": null,
-   "asOrg": null,
-   "country": "SG",
-   "agents": [
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
-   ],
-   "paths": [
-    "/api/security/csp",
-    "/api/info"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "240e:328:a901:694a:a5ac:5b5:68b7:24f1": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 0,
-   "requests": 2,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 2,
-   "asn": null,
-   "asOrg": null,
-   "country": "CN",
-   "agents": [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:158.0) Gecko/20100101 Firefox/158.0"
-   ],
-   "paths": [
-    "/api/stats",
-    "/v1/stats"
-   ],
-   "hosts": [
-    "chat.impf.ai",
-    "chat-api.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "54.151.185.214": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 0,
-   "requests": 1,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 1,
-   "asn": null,
-   "asOrg": null,
-   "country": "SG",
-   "agents": [
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
-   ],
-   "paths": [
-    "/api/security/csp"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "13.213.38.100": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 0,
-   "requests": 1,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 1,
-   "asn": null,
-   "asOrg": null,
-   "country": "SG",
-   "agents": [
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
-   ],
-   "paths": [
-    "/api/security/csp"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "2409:8a74:1091:a6d0:94d0:1ec5:a2:a86": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 0,
-   "requests": 4,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 4,
-   "asn": null,
-   "asOrg": null,
-   "country": "CN",
-   "agents": [
-    "Quark/10.19.5 (iPhone; iOS 27.0.1; Scale/3.00)"
-   ],
-   "paths": [
-    "/favicon.ico"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "192.178.16.135": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 0,
-   "requests": 1,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 1,
-   "asn": null,
-   "asOrg": null,
-   "country": "US",
-   "agents": [
-    "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.8010.52 Mobile Safari/537.36 (compatible; AdsBot-Google-Mobile; +http://www.google.com/mobile/adsbot.html)"
-   ],
-   "paths": [
-    "/apple-app-site-association"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "36.106.166.121": {
-   "first": "2026-10-25",
-   "last": "2026-10-25",
-   "events": 0,
-   "requests": 10,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 10,
-   "asn": null,
-   "asOrg": null,
-   "country": "CN",
-   "agents": [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
-   ],
-   "paths": [
-    "/",
-    "/assets/favicon-aOK6_042.ico",
-    "/images/01.jpg",
-    "/fzh",
-    "/icons/favicon.ico",
-    "/main.c6d13be3ea6fc9cb.js",
-    "/favicon-32x32.png",
-    "/favicon.ico",
-    "/1"
-   ],
-   "hosts": [
-    "chat-api.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
   },
   "20.51.199.196": {
    "first": "2026-10-26",
@@ -14369,6 +13718,33 @@
    ],
    "score": 0
   },
+  "199.91.67.166": {
+   "first": "2026-10-26",
+   "last": "2026-10-26",
+   "events": 0,
+   "requests": 11,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 11,
+   "asn": null,
+   "asOrg": null,
+   "country": "US",
+   "agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"
+   ],
+   "paths": [
+    "/v1/chat/completions"
+   ],
+   "hosts": [
+    "chat-api.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
   "223.160.130.220": {
    "first": "2026-10-26",
    "last": "2026-10-26",
@@ -14671,35 +14047,6 @@
    ],
    "hosts": [
     "chat-api.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "183.134.40.84": {
-   "first": "2026-10-25",
-   "last": "2026-10-28",
-   "events": 0,
-   "requests": 2,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 2,
-   "asn": null,
-   "asOrg": null,
-   "country": "CN",
-   "agents": [
-    "Dalvik/2.1.0 (Linux; U; Android 9.0; ZTE BA520 Build/MRA58K)"
-   ],
-   "paths": [
-    "/",
-    "/favicon.ico"
-   ],
-   "hosts": [
-    "chat-api.impf.ai",
-    "chat.impf.ai"
    ],
    "sources": [
     "unknown"
@@ -15180,6 +14527,33 @@
     "/bot-connect.js",
     "/js/qrcode_twint.js",
     "/licensor.js"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
+  "183.134.40.84": {
+   "first": "2026-10-28",
+   "last": "2026-10-28",
+   "events": 0,
+   "requests": 1,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 1,
+   "asn": null,
+   "asOrg": null,
+   "country": "CN",
+   "agents": [
+    "Dalvik/2.1.0 (Linux; U; Android 9.0; ZTE BA520 Build/MRA58K)"
+   ],
+   "paths": [
+    "/favicon.ico"
    ],
    "hosts": [
     "chat.impf.ai"
@@ -15767,34 +15141,6 @@
    ],
    "score": 0
   },
-  "192.178.16.131": {
-   "first": "2026-10-25",
-   "last": "2026-10-30",
-   "events": 0,
-   "requests": 2,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 2,
-   "asn": null,
-   "asOrg": null,
-   "country": "US",
-   "agents": [
-    "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.8010.52 Mobile Safari/537.36 (compatible; AdsBot-Google-Mobile; +http://www.google.com/mobile/adsbot.html)"
-   ],
-   "paths": [
-    "/.well-known/apple-app-site-association",
-    "/apple-app-site-association"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
   "44.228.147.113": {
    "first": "2026-10-30",
    "last": "2026-10-30",
@@ -16005,6 +15351,33 @@
    ],
    "sources": [
     "firewallCustom"
+   ],
+   "score": 0
+  },
+  "192.178.16.131": {
+   "first": "2026-10-30",
+   "last": "2026-10-30",
+   "events": 0,
+   "requests": 1,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 1,
+   "asn": null,
+   "asOrg": null,
+   "country": "US",
+   "agents": [
+    "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.8010.52 Mobile Safari/537.36 (compatible; AdsBot-Google-Mobile; +http://www.google.com/mobile/adsbot.html)"
+   ],
+   "paths": [
+    "/apple-app-site-association"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown"
    ],
    "score": 0
   },
@@ -19020,35 +18393,6 @@
    ],
    "hosts": [
     "chat-api.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "111.45.23.13": {
-   "first": "2026-11-02",
-   "last": "2026-11-04",
-   "events": 0,
-   "requests": 6,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 6,
-   "asn": null,
-   "asOrg": null,
-   "country": "CN",
-   "agents": [
-    "com.apple.WebKit.Networking/21624.5.1.11.3 Network/5812.160.9 macOS/26.6.2"
-   ],
-   "paths": [
-    "/apple-touch-icon-precomposed.png",
-    "/favicon.ico",
-    "/apple-touch-icon.png"
-   ],
-   "hosts": [
-    "chat.impf.ai"
    ],
    "sources": [
     "unknown"
@@ -25109,33 +24453,6 @@
    ],
    "score": 0
   },
-  "66.249.93.199": {
-   "first": "2026-10-25",
-   "last": "2026-11-10",
-   "events": 0,
-   "requests": 6,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 6,
-   "asn": null,
-   "asOrg": null,
-   "country": "BE",
-   "agents": [
-    "GoogleAssociationService"
-   ],
-   "paths": [
-    "/.well-known/assetlinks.json"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
   "60.216.105.162": {
    "first": "2026-10-26",
    "last": "2026-11-10",
@@ -28003,33 +27320,6 @@
    ],
    "score": 0
   },
-  "66.102.9.69": {
-   "first": "2026-10-25",
-   "last": "2026-11-16",
-   "events": 0,
-   "requests": 2,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 2,
-   "asn": null,
-   "asOrg": null,
-   "country": "FI",
-   "agents": [
-    "GoogleAssociationService"
-   ],
-   "paths": [
-    "/.well-known/assetlinks.json"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
   "103.157.217.145": {
    "first": "2026-10-26",
    "last": "2026-11-16",
@@ -28376,6 +27666,33 @@
     "/apple-touch-icon-precomposed.png",
     "/favicon.ico",
     "/apple-touch-icon.png"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
+  "66.102.9.69": {
+   "first": "2026-11-16",
+   "last": "2026-11-16",
+   "events": 0,
+   "requests": 1,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 1,
+   "asn": null,
+   "asOrg": null,
+   "country": "FI",
+   "agents": [
+    "GoogleAssociationService"
+   ],
+   "paths": [
+    "/.well-known/assetlinks.json"
    ],
    "hosts": [
     "chat.impf.ai"
@@ -29057,15 +28374,15 @@
    "score": 0
   },
   "202.120.79.143": {
-   "first": "2026-10-25",
+   "first": "2026-11-02",
    "last": "2026-11-19",
    "events": 0,
-   "requests": 5,
+   "requests": 4,
    "blocked": 0,
    "challenged": 0,
    "scanner_paths": 0,
    "tool_agents": 0,
-   "errors": 5,
+   "errors": 4,
    "asn": null,
    "asOrg": null,
    "country": "CN",
@@ -29462,33 +28779,6 @@
    ],
    "score": 0
   },
-  "175.24.212.109": {
-   "first": "2026-11-19",
-   "last": "2026-11-19",
-   "events": 0,
-   "requests": 1,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 1,
-   "asn": null,
-   "asOrg": null,
-   "country": "CN",
-   "agents": [
-    "Lightpanda/1.0"
-   ],
-   "paths": [
-    "/api/info"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
   "223.160.206.91": {
    "first": "2026-11-19",
    "last": "2026-11-19",
@@ -29540,37 +28830,6 @@
     "/js/worker.js",
     "/apple-touch-icon.png",
     "/favicon.ico",
-    "/apple-touch-icon-precomposed.png"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "171.103.46.177": {
-   "first": "2026-11-03",
-   "last": "2026-11-20",
-   "events": 0,
-   "requests": 15,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 15,
-   "asn": null,
-   "asOrg": null,
-   "country": "TH",
-   "agents": [
-    "com.apple.WebKit.Networking/21625.1.29.18.28 Network/5812.160.9 macOS/26.7.1",
-    "NetworkingExtension/8625.1.29.10.33 Network/6681.2.2 iOS/27.0.1",
-    "com.apple.WebKit.Networking/21625.2.8.18.4 Network/5812.160.9 macOS/26.7.3"
-   ],
-   "paths": [
-    "/favicon.ico",
-    "/apple-touch-icon.png",
     "/apple-touch-icon-precomposed.png"
    ],
    "hosts": [
@@ -30190,60 +29449,6 @@
    ],
    "score": 0
   },
-  "66.249.93.201": {
-   "first": "2026-10-25",
-   "last": "2026-11-22",
-   "events": 0,
-   "requests": 11,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 11,
-   "asn": null,
-   "asOrg": null,
-   "country": "BE",
-   "agents": [
-    "GoogleAssociationService"
-   ],
-   "paths": [
-    "/.well-known/assetlinks.json"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "66.249.93.200": {
-   "first": "2026-10-25",
-   "last": "2026-11-22",
-   "events": 0,
-   "requests": 7,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 7,
-   "asn": null,
-   "asOrg": null,
-   "country": "BE",
-   "agents": [
-    "GoogleAssociationService"
-   ],
-   "paths": [
-    "/.well-known/assetlinks.json"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
   "114.86.27.189": {
    "first": "2026-10-28",
    "last": "2026-11-22",
@@ -30262,6 +29467,33 @@
    ],
    "paths": [
     "/favicon.ico"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
+  "66.249.93.200": {
+   "first": "2026-10-30",
+   "last": "2026-11-22",
+   "events": 0,
+   "requests": 6,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 6,
+   "asn": null,
+   "asOrg": null,
+   "country": "BE",
+   "agents": [
+    "GoogleAssociationService"
+   ],
+   "paths": [
+    "/.well-known/assetlinks.json"
    ],
    "hosts": [
     "chat.impf.ai"
@@ -30794,16 +30026,16 @@
    ],
    "score": 0
   },
-  "66.102.9.70": {
-   "first": "2026-10-25",
+  "66.102.9.71": {
+   "first": "2026-10-26",
    "last": "2026-11-23",
    "events": 0,
-   "requests": 12,
+   "requests": 9,
    "blocked": 0,
    "challenged": 0,
    "scanner_paths": 0,
    "tool_agents": 0,
-   "errors": 12,
+   "errors": 9,
    "asn": null,
    "asOrg": null,
    "country": "FI",
@@ -30822,42 +30054,15 @@
    "score": 0
   },
   "66.102.9.72": {
-   "first": "2026-10-25",
-   "last": "2026-11-23",
-   "events": 0,
-   "requests": 7,
-   "blocked": 0,
-   "challenged": 0,
-   "scanner_paths": 0,
-   "tool_agents": 0,
-   "errors": 7,
-   "asn": null,
-   "asOrg": null,
-   "country": "FI",
-   "agents": [
-    "GoogleAssociationService"
-   ],
-   "paths": [
-    "/.well-known/assetlinks.json"
-   ],
-   "hosts": [
-    "chat.impf.ai"
-   ],
-   "sources": [
-    "unknown"
-   ],
-   "score": 0
-  },
-  "66.102.9.71": {
    "first": "2026-10-26",
    "last": "2026-11-23",
    "events": 0,
-   "requests": 9,
+   "requests": 6,
    "blocked": 0,
    "challenged": 0,
    "scanner_paths": 0,
    "tool_agents": 0,
-   "errors": 9,
+   "errors": 6,
    "asn": null,
    "asOrg": null,
    "country": "FI",
@@ -31167,6 +30372,408 @@
     "/v1/chat/completions"
    ],
    "hosts": [
+    "chat-api.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
+  "66.102.9.70": {
+   "first": "2026-10-26",
+   "last": "2026-11-24",
+   "events": 0,
+   "requests": 10,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 10,
+   "asn": null,
+   "asOrg": null,
+   "country": "FI",
+   "agents": [
+    "GoogleAssociationService"
+   ],
+   "paths": [
+    "/.well-known/assetlinks.json"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
+  "66.249.93.199": {
+   "first": "2026-10-30",
+   "last": "2026-11-24",
+   "events": 0,
+   "requests": 3,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 3,
+   "asn": null,
+   "asOrg": null,
+   "country": "BE",
+   "agents": [
+    "GoogleAssociationService"
+   ],
+   "paths": [
+    "/.well-known/assetlinks.json"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
+  "66.249.93.201": {
+   "first": "2026-11-02",
+   "last": "2026-11-24",
+   "events": 0,
+   "requests": 10,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 10,
+   "asn": null,
+   "asOrg": null,
+   "country": "BE",
+   "agents": [
+    "GoogleAssociationService"
+   ],
+   "paths": [
+    "/.well-known/assetlinks.json"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
+  "111.45.23.13": {
+   "first": "2026-11-02",
+   "last": "2026-11-24",
+   "events": 0,
+   "requests": 12,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 12,
+   "asn": null,
+   "asOrg": null,
+   "country": "CN",
+   "agents": [
+    "com.apple.WebKit.Networking/21624.5.1.11.3 Network/5812.160.9 macOS/26.6.2"
+   ],
+   "paths": [
+    "/apple-touch-icon-precomposed.png",
+    "/favicon.ico",
+    "/apple-touch-icon.png"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
+  "171.103.46.177": {
+   "first": "2026-11-03",
+   "last": "2026-11-24",
+   "events": 0,
+   "requests": 18,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 18,
+   "asn": null,
+   "asOrg": null,
+   "country": "TH",
+   "agents": [
+    "com.apple.WebKit.Networking/21625.1.29.18.28 Network/5812.160.9 macOS/26.7.1",
+    "NetworkingExtension/8625.1.29.10.33 Network/6681.2.2 iOS/27.0.1",
+    "com.apple.WebKit.Networking/21625.2.8.18.4 Network/5812.160.9 macOS/26.7.3"
+   ],
+   "paths": [
+    "/favicon.ico",
+    "/apple-touch-icon.png",
+    "/apple-touch-icon-precomposed.png"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
+  "175.24.212.109": {
+   "first": "2026-11-19",
+   "last": "2026-11-24",
+   "events": 0,
+   "requests": 2,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 2,
+   "asn": null,
+   "asOrg": null,
+   "country": "CN",
+   "agents": [
+    "Lightpanda/1.0"
+   ],
+   "paths": [
+    "/api/info"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
+  "172.203.255.244": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 5,
+   "requests": 0,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 0,
+   "asn": "8075",
+   "asOrg": "Microsoft Corporation",
+   "country": "US",
+   "agents": [
+    "taochronos-collector/1"
+   ],
+   "paths": [
+    "/api/security/ack",
+    "/v1/logs/ack",
+    "/v1/security/export",
+    "/api/security/export",
+    "/v1/logs/export"
+   ],
+   "hosts": [
+    "chat.impf.ai",
+    "chat-api.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 0
+  },
+  "13.89.127.25": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 4,
+   "requests": 0,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 0,
+   "asn": "8075",
+   "asOrg": "Microsoft Corporation",
+   "country": "US",
+   "agents": [
+    "taochronos-collector/1"
+   ],
+   "paths": [
+    "/v1/logs/ack",
+    "/api/security/ack",
+    "/v1/logs/export",
+    "/v1/security/export"
+   ],
+   "hosts": [
+    "chat-api.impf.ai",
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 0
+  },
+  "68.220.172.247": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 5,
+   "requests": 0,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 0,
+   "asn": "8075",
+   "asOrg": "Microsoft Corporation",
+   "country": "US",
+   "agents": [
+    "taochronos-collector/1"
+   ],
+   "paths": [
+    "/v1/logs/ack",
+    "/api/security/ack",
+    "/api/security/export",
+    "/v1/logs/export",
+    "/v1/security/export"
+   ],
+   "hosts": [
+    "chat-api.impf.ai",
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "firewallCustom"
+   ],
+   "score": 0
+  },
+  "2408:8340:6a21:2cb0:6406:986c:faec:bf36": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 0,
+   "requests": 3,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 3,
+   "asn": null,
+   "asOrg": null,
+   "country": "CN",
+   "agents": [
+    "Mozilla/5.0 (Linux; Android 13; SM-S9110 Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/156.0.8078.79 Mobile Safari/537.36 XWEB/1560023 MMWEBSDK/20260902 MMWEBID/546 REV/7a5b56919f68a2b7321920e61b73b26c36ddd46b MicroMessenger/8.0.80.3220(0x2800503B) WeChat/arm64 Weixin NetType/WIFI Language/zh_CN ABI/arm64"
+   ],
+   "paths": [
+    "/api/call"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
+  "2409:8a74:1094:ddc0:1cc0:d15c:ca3f:eb05": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 0,
+   "requests": 2,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 2,
+   "asn": null,
+   "asOrg": null,
+   "country": "CN",
+   "agents": [
+    "Quark/10.20.6 (iPhone; iOS 27.0.1; Scale/3.00)"
+   ],
+   "paths": [
+    "/favicon.ico"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
+  "2409:895a:6483:4ee1:3c76:5ff3:72d1:bdbe": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 0,
+   "requests": 3,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 3,
+   "asn": null,
+   "asOrg": null,
+   "country": "CN",
+   "agents": [
+    "com.apple.WebKit.Networking/21624.5.1.11.3 Network/5812.160.9 macOS/26.6.2"
+   ],
+   "paths": [
+    "/favicon.ico",
+    "/apple-touch-icon-precomposed.png",
+    "/apple-touch-icon.png"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
+  "223.104.150.78": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 0,
+   "requests": 1,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 1,
+   "asn": null,
+   "asOrg": null,
+   "country": "CN",
+   "agents": [
+    "Mozilla/5.0 (phone; OpenHarmony 7.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 ArkWeb/4.1.6.1 Mobile Quark/10.21.0.241"
+   ],
+   "paths": [
+    "/favicon.ico"
+   ],
+   "hosts": [
+    "chat.impf.ai"
+   ],
+   "sources": [
+    "unknown"
+   ],
+   "score": 0
+  },
+  "2409:8934:cf0:2809:2484:fbc1:6316:4287": {
+   "first": "2026-11-24",
+   "last": "2026-11-24",
+   "events": 0,
+   "requests": 2,
+   "blocked": 0,
+   "challenged": 0,
+   "scanner_paths": 0,
+   "tool_agents": 0,
+   "errors": 2,
+   "asn": null,
+   "asOrg": null,
+   "country": "CN",
+   "agents": [
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.80(0x18005040) NetType/4G Language/zh_CN"
+   ],
+   "paths": [
+    "/api/call",
+    "/v1/chat/completions"
+   ],
+   "hosts": [
+    "chat.impf.ai",
     "chat-api.impf.ai"
    ],
    "sources": [
