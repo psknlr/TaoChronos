@@ -50,6 +50,7 @@ test("user agents by kind, and what a browser is expected to send", () => {
   assert.equal(uaClass("Python-urllib/3.11"), "tool");
   assert.equal(uaClass("Go-http-client/1.1"), "tool");
   assert.equal(uaClass("curl/8.4.0"), "tool");
+  assert.equal(uaClass("Lightpanda/1.0"), "tool"); // a headless browser for automation: it has no window for a reader
   assert.equal(uaClass("Mozilla/5.0 (compatible; Nuclei - Open-source project)"), "scanner");
   assert.equal(uaClass("Mozilla/5.0 (compatible; CensysInspect/1.1)"), "scanner");
   assert.equal(uaClass("ChatGPT-User/1.0"), "bot");
@@ -76,10 +77,17 @@ test("scanner paths, and nothing the site serves", () => {
     "/.env", "/.env.production", "/xmlrpc.php", "/phpmyadmin/index.php", "/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php", "/actuator/health",
     "/cgi-bin/luci", "/boaform/admin/formLogin", "/HNAP1/", "/index.php", "/admin/login.asp", "/backup.sql", "/.aws/credentials", "/.DS_Store",
     "/server-status", "/owa/auth/logon.aspx", "/id_rsa.pem"]) assert.equal(isHoneypot(p), true, p);
+  // a file or a directory whose name starts with a dot, at any depth: the credentials scanners ask for now, none of them named one by one
+  for (const p of ["/.openai/credentials.json", "/.anthropic/config.json", "/.cache/huggingface/token", "/.ssh/id_rsa", "/.kube/config",
+    "/.config/gcloud/application_default_credentials.json", "/.npmrc", "/.netrc", "/.pypirc", "/.bash_history", "/.docker/config.json",
+    "/.terraform/terraform.tfstate", "/.vscode/sftp.json", "/.hg/hgrc", "/.htpasswd", "/api/.env", "/backend/.git/config", "/app/.npmrc",
+    "/@fs/root/.aws/credentials", "/%2eenv", "/%2f%2eenv", "/%2Fadmin%2F%2Eenv"]) assert.equal(isHoneypot(p), true, p);
   for (const p of ["/", "/about", "/attribution.html", "/js/worker.js", "/js/app.js", "/css/app.css", "/runtime/corpus.sqlite.xz", "/runtime/boot.json",
     "/pyodide/python_stdlib.zip", "/pyodide/pyodide.asm.wasm", "/runtime/home.zip", "/assets/logo.svg", "/manifest.webmanifest", "/robots.txt",
     "/sitemap.xml", "/site.json", "/providers.json", "/.well-known/security.txt", "/api/info", "/api/call", "/v1/health", "/v1/chat/completions",
-    "/v1/logs", "/v1/logs/export", "/favicon.ico"]) assert.equal(isHoneypot(p), false, p);
+    "/v1/logs", "/v1/logs/export", "/favicon.ico", "/.well-known", "/.well-known/acme-challenge/token",
+    "/.well-known/appspecific/com.chrome.devtools.json",
+    "/api/research/job_1a2b", "/js/llm/anthropic.js", "/runtime/taochronos-0.1.0-py3-none-any.whl"]) assert.equal(isHoneypot(p), false, p);
 });
 
 test("the fingerprint: the edge's properties and the browser's headers, the referer's origin only, traversal noted", () => {

@@ -175,7 +175,7 @@ export function fingerprint(request, now = Date.now()) {
 
 // user agents by kind: what scans, what is a program, what claims to be a known crawler, what is a browser
 const SCANNER = /masscan|zgrab|zmap|nmap|nikto|sqlmap|nuclei|dirbuster|gobuster|feroxbuster|ffuf|wfuzz|wpscan|acunetix|nessus|openvas|w3af|arachni|l9explore|l9tcpid|xmrig|censysinspect|expanse|paloaltonetworks|internetmeasurement|netsystemsresearch|projectdiscovery|odin|hello.?world|zoominfo|scanner/i;
-const TOOL = /^curl\/|^wget\/|python-requests|python-urllib|python-httpx|^python\/|aiohttp|go-http-client|^java\/|okhttp|apache-httpclient|node-fetch|undici|^axios\/|^got \(|libwww|lwp-trivial|httpie|scrapy|postmanruntime|insomnia|^dart\/|^ruby|^php\/|guzzle|faraday|restsharp|winhttp|microsoft url control|coldfusion|headlesschrome|phantomjs|selenium|puppeteer|playwright|^mozilla\/[45]\.0$/i;
+const TOOL = /^curl\/|^wget\/|python-requests|python-urllib|python-httpx|^python\/|aiohttp|go-http-client|^java\/|okhttp|apache-httpclient|node-fetch|undici|^axios\/|^got \(|libwww|lwp-trivial|httpie|scrapy|postmanruntime|insomnia|^dart\/|^ruby|^php\/|guzzle|faraday|restsharp|winhttp|microsoft url control|coldfusion|headlesschrome|lightpanda|phantomjs|selenium|puppeteer|playwright|^mozilla\/[45]\.0$/i;
 const BOT = /googlebot|bingbot|baiduspider|yandexbot|duckduckbot|applebot|sogou\s?(?:web\s?)?spider|360spider|bytespider|petalbot|facebookexternalhit|twitterbot|linkedinbot|slackbot|telegrambot|whatsapp|discordbot|gptbot|chatgpt-user|oai-searchbot|claudebot|claude-web|claude-user|claude-searchbot|anthropic-ai|perplexitybot|perplexity-user|google-extended|amazonbot|ccbot|meta-externalagent|meta-externalfetcher|diffbot|cohere-ai|youbot|duckassistbot|mistralai-user|semrushbot|ahrefsbot|mj12bot|dotbot|barkrowler|seznambot|archive\.org_bot|ia_archiver|timpibot|omgili|dataforseo|bravebot/i;
 const BROWSER = /chrome\/|crios\/|firefox\/|fxios\/|safari\/|edg[ea]?\/|opr\/|micromessenger|qqbrowser|ucbrowser|baiduboxapp|quark|heytapbrowser|miuibrowser|huaweibrowser|samsungbrowser|vivobrowser|sogoumobilebrowser|mobile/i;
 
@@ -221,19 +221,23 @@ export const DATACENTER = new Set([16509, 14618, 8987, 55960, 15169, 396982, 195
 // the paths a scanner asks for (lower-cased); none of them exists on these hosts.  Conservative: a hit refuses the
 // address for a day, so nothing the site serves (.js, .json, .wasm, .whl, .zip, .xz, .svg, .css, .html, .txt, .xml,
 // .webmanifest) and nothing under /.well-known/ is listed
-const HONEYPOT_PREFIXES = ["/wp-", "/wordpress", "/blog/wp-", "/xmlrpc.php", "/.git", "/.svn", "/.hg", "/.env", "/.aws", "/.ssh",
-  "/.docker", "/.vscode", "/.idea", "/.ds_store", "/phpmyadmin", "/pma/", "/myadmin", "/adminer", "/cgi-bin/", "/vendor/phpunit",
-  "/actuator", "/jmx-console", "/web-console", "/manager/html", "/geoserver", "/druid/", "/nacos", "/solr/", "/jenkins", "/boaform",
-  "/hnap1", "/goform/", "/eval-stdin", "/phpinfo", "/info.php", "/server-status", "/server-info", "/telescope", "/_profiler",
+const HONEYPOT_PREFIXES = ["/wp-", "/wordpress", "/blog/wp-", "/xmlrpc.php", "/phpmyadmin", "/pma/", "/myadmin", "/adminer", "/cgi-bin/",
+  "/vendor/phpunit", "/actuator", "/jmx-console", "/web-console", "/manager/html", "/geoserver", "/druid/", "/nacos", "/solr/", "/jenkins",
+  "/boaform", "/hnap1", "/goform/", "/eval-stdin", "/phpinfo", "/info.php", "/server-status", "/server-info", "/telescope", "/_profiler",
   "/owa/", "/ecp/", "/autodiscover", "/remote/login", "/console/", "/_ignition", "/laravel", "/config.json.bak", "/backup.sql",
-  "/dump.sql", "/db.sql", "/.htaccess", "/.htpasswd", "/web.config", "/api/.env", "/debug/default", "/elmah.axd", "/cf_scripts"];
+  "/dump.sql", "/db.sql", "/web.config", "/debug/default", "/elmah.axd", "/cf_scripts"];
 const HONEYPOT_SUFFIXES = [".php", ".php7", ".phtml", ".asp", ".aspx", ".jsp", ".jspx", ".cgi", ".bak", ".sql", ".old", ".orig", ".swp",
   ".save", ".rar", ".7z", ".env", ".ini", ".log", ".pem", ".key"];
+// a file or a directory whose name starts with a dot, at any depth (/.git, /api/.env, /.ssh/id_rsa, /.openai/credentials.json,
+// /.config/gcloud/…, /.kube/config, /.npmrc; the slash or the dot percent-encoded too: /%2f%2eenv): the hosts serve none
+// outside /.well-known/, and naming them one by one fell behind what scanners ask for
+const DOTFILE = /(?:\/|%2f)(?:\.|%2e)/;
 
 /** Is this a path only a scanner asks for? */
 export function isHoneypot(pathname) {
   const p = String(pathname || "").toLowerCase();
-  if (p.startsWith("/.well-known/")) return false;
+  if (p === "/.well-known" || p.startsWith("/.well-known/")) return false;
+  if (DOTFILE.test(p)) return true;
   for (const prefix of HONEYPOT_PREFIXES) if (p.startsWith(prefix)) return true;
   for (const suffix of HONEYPOT_SUFFIXES) if (p.endsWith(suffix)) return true;
   return false;

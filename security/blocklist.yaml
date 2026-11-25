@@ -17,9 +17,6 @@ block:
   - ip: 216.81.200.21
     why: "在两个主机上探测 /.git/config，冒充 Googlebot-Image 与旧版安卓 Chrome"
     seen: 2026-10-05
-  - ip: 93.123.109.101
-    why: "在中转上找 AI 与模型网关的配置和密钥（/api/config/ai、/litellm_config.yaml）及 Atlassian 接口；托管网络 AS48090"
-    seen: 2026-10-06
   - ip: 34.76.3.119
     why: "Joomla 探测（/media/system/js/core.js），伪造来源页；Google Cloud 机房"
     seen: 2026-10-06
@@ -136,9 +133,6 @@ block:
   - ip: 87.120.186.178
     why: "据站长 2026-10-21 的安全报告：找 /twilio/bin/.env，10 次"
     seen: 2026-10-21
-  - ip: 93.123.109.152
-    why: "在 science.impf.ai 上找 .git/config（/.git/config、/app/.git/config、/backend/.git/config……），18 次；TECHOFF SRV（AS48090），与已封的 93.123.109.101 同一网段"
-    seen: 2026-10-17
   - ip: 147.185.132.0/24
     why: "按站长要求封禁：Palo Alto Networks Cortex Xpanse 的互联网扫描（UA 自报身份），本网段见过 .24、.69、.115，只请求首页"
     seen: 2026-10-06
@@ -253,6 +247,130 @@ block:
   - ip: 34.62.31.226
     why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.git-credentials、/db.php、/.github/workflows/deploy.yml），55 次；Google Cloud 比利时，与 35.205.254.119 同一手法"
     seen: 2026-11-11
+  # 2026-11-25：站长当天的安全报告与 data/security-logs（边缘至 11-23、网站哨兵至 11-25）；这一次把 10 月下旬以来
+  # 日志里有攻击意图而未入名单的地址一并补上
+  - ip: 167.233.211.246
+    why: "React 远程代码执行漏洞利用（CVE-2025-55182）：在中转上向 / 发 10 次 POST，Cloudflare 托管规则九次拦下；Hetzner"
+    seen: 2026-10-20
+  - ip: 47.128.253.187
+    why: "React 远程代码执行漏洞利用（CVE-2025-55182）：在网站上向 / 发 10 次 POST，Cloudflare 托管规则九次拦下；AWS 新加坡"
+    seen: 2026-10-26
+  - ip: 100.54.194.69
+    why: "React 远程代码执行漏洞利用（CVE-2025-55182）：在中转上向 / 发 10 次 POST，Cloudflare 托管规则九次拦下；AWS 弗吉尼亚"
+    seen: 2026-10-28
+  - ip: 3.89.197.184
+    why: "React 远程代码执行漏洞利用（CVE-2025-55182）：在网站上向 / 发 9 次 POST，Cloudflare 托管规则九次拦下；AWS 弗吉尼亚"
+    seen: 2026-10-29
+  - ip: 45.148.10.0/24
+    why: "TECHOFF SRV（AS48090）同一网段三个地址：.21 在 science.impf.ai 上找 .env（53 个路径），.123 在两个主机上做 WordPress 探测（332 次，部分冒充 Googlebot），.120 探测 /.git/config"
+    seen: 2026-11-22
+  - ip: 93.123.109.0/24
+    why: "TECHOFF SRV（AS48090）同一网段三个地址：.101 找模型网关的配置与密钥（/api/config/ai、/litellm_config.yaml），.152 找 .git/config，.165 冒充 Googlebot 做 WordPress 探测（92 次）"
+    seen: 2026-11-05
+  - ip: 169.40.142.172
+    why: "在中转上找 .git 与 .env（/.git/config、/.env.production、/.env.backup……）并探测 Gravity SMTP 插件接口，48 次；Zkillu SAS（AS215599），与已封的 2a0c:b641:b0:a1a1::/64 同一网络"
+    seen: 2026-11-03
+  - ip: 165.154.60.92
+    why: "在中转上找 PHP 后门（/queryVersion.php、/AppInfo.aspx、/mobile/login.php）与交易所、App 接口（/api/room/join），一天 1262 次请求，轮换 UA；UCloud 香港"
+    seen: 2026-11-03
+  - ip: 152.32.254.94
+    why: "在中转上找 PHP 后门（/admin/webadmin.php、/AppInfo.aspx、/user/reg.php）与 App、客服接口（/api/kf-fe/qrcode/check），一天 1347 次请求，轮换 UA；UCloud 香港"
+    seen: 2026-11-03
+  - ip: 101.36.126.155
+    why: "在 science.impf.ai 上找 PHP 后门（/leftDao.php、/zz.php、/CCB/ccb.php、/AppInfo.aspx 等九个路径），轮换 UA；UCloud 香港"
+    seen: 2026-11-03
+  - ip: 34.62.246.24
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.aws/credentials.bak、/.git-credentials、/actuator/env），62 个路径；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-11-03
+  - ip: 101.36.108.85
+    why: "在中转上找 PHP 后门（/admin/webadmin.php、/CCB/ccb.php、/user/reg.php）与 App 接口（/api/site-visits），一天 966 次请求，轮换 UA；UCloud 香港"
+    seen: 2026-11-04
+  - ip: 165.154.7.164
+    why: "在 science.impf.ai 上找 PHP 后门（/leftDao.php、/zz.php、/CCB/ccb.php）并探测交易所、游戏接口（/api/v1/getGameList），69 个路径；UCloud 香港"
+    seen: 2026-11-04
+  - ip: 103.218.242.28
+    why: "在 science.impf.ai 上找 PHP 后门（/leftDao.php、/zz.php、/CCB/ccb.php、/AppInfo.aspx 等九个路径），轮换 UA；UCloud 香港"
+    seen: 2026-11-04
+  - ip: 128.90.141.19
+    why: "WordPress 漏洞利用：Cloudflare 托管规则「WordPress Remote Code Execution」拦下，另探测 /wp-json/batch/v1；AS22363，与已封的 128.90.141.20 相邻"
+    seen: 2026-11-04
+  - ip: 35.187.35.191
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.aws/credentials.bak、/.git/logs/refs/heads/main、/api/actuator/env），39 个路径；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-11-05
+  - ip: 3.72.8.157
+    why: "在中转上探测 /.git/config，冒充旧版安卓 Chrome；AWS 法兰克福"
+    seen: 2026-11-06
+  - ip: 34.76.228.132
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.env.anthropic、/.git/config、/wp-config.php.bak），60 个路径；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-11-09
+  - ip: 54.37.156.66
+    why: "在中转上找 /.env 与 /_profiler/phpinfo，并以 /static../manage.py 试目录穿越；OVH"
+    seen: 2026-11-11
+  - ip: 34.163.30.172
+    why: "在两个主机上找 .env 与 phpinfo（两百多个目录下的变体：/gitlab/.env、/uat/phpinfo.php……）、/gcp-key.json、/firebase-key.json，798 次请求，另有 React 漏洞利用四次；Google Cloud 法国"
+    seen: 2026-11-13
+  - ip: 207.175.85.46
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/app/etc/env.php、/actuator/prometheus、/server-status），103 个路径；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-11-13
+  - ip: 45.115.26.203
+    why: "在网站上找密钥与配置（.env 的各种变体、/.git-credentials、/.pypirc、/.netrc、/actuator/env、/debug/vars），43 次；SolidCore Hosting（AS199457）"
+    seen: 2026-11-13
+  - ip: 81.171.72.135
+    why: "用 Go-http-client 在网站上找私钥与备份（/.ssh/id_rsa、/server.key、/.bash_history、/wp-config.php、/backup.zip、/database.sql），28 次；BIP Backbone（AS34343）"
+    seen: 2026-11-13
+  - ip: 104.207.39.215
+    why: "用 Go-http-client 在中转上找凭据与配置（/.ssh/id_rsa、/.npmrc、/.netrc、/credentials.json、/serviceaccount.json、/.terraform/terraform.tfstate），50 次；3xK Tech（AS200373）"
+    seen: 2026-11-13
+  - ip: 152.32.175.118
+    why: "在 science.impf.ai 上找 PHP 后门（/leftDao.php、/zz.php、/chat/index.php）并探测 App 接口（/api/app/indexList、/api/common/menus），77 个路径；UCloud 香港"
+    seen: 2026-11-14
+  - ip: 34.78.85.62
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.git/COMMIT_EDITMSG），并以 /@fs/root/.aws/credentials 试 Vite 的文件读取漏洞，50 个路径；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-11-15
+  - ip: 35.205.160.102
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.git/refs/heads/production、/.svn/wc.db、/settings.php），53 个路径；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-11-17
+  - ip: 35.223.124.108
+    why: "React 远程代码执行漏洞利用（CVE-2025-55182）：在网站上向 / 发 10 次 POST，Cloudflare 托管规则九次拦下；Google Cloud 美国"
+    seen: 2026-11-18
+  - ip: 3.208.10.80
+    why: "React 远程代码执行漏洞利用（CVE-2025-55182）：在网站上向 / 发 10 次 POST，Cloudflare 托管规则九次拦下；AWS 弗吉尼亚"
+    seen: 2026-11-18
+  - ip: 35.254.199.166
+    why: "在中转上向 / 发 12 次 POST，轮换 Chrome 144–146 的 UA：与同日 React 漏洞利用（CVE-2025-55182）的两个地址同一形状，被第 3 条先行拦下；Google Cloud 美国"
+    seen: 2026-11-18
+  - ip: 34.52.188.32
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.git/index、/database.sql、/.github/workflows/deploy.yml），72 个路径；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-11-19
+  - ip: 34.140.188.38
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.git/refs/heads/master、/actuator/heapdump、/.github/workflows/main.yml），49 个路径；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-11-19
+  - ip: 2a02:4780:41:f32b::/64
+    why: "在网站上探测 WordPress 插件 Gravity SMTP 的接口（/wp-json/gravitysmtp/v1/tests/mock-data）；Hostinger（AS47583）"
+    seen: 2026-11-19
+  - ip: 34.178.6.65
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.env.openai、/.git/refs/heads/staging、/.aws/credentials.bak），85 个路径；Google Cloud 荷兰，与 35.205.254.119 同一手法"
+    seen: 2026-11-20
+  - ip: 34.22.192.206
+    why: "在 science.impf.ai 上找密钥与配置（.env 的各种变体、/.config/fabric/.env、/.git/packed-refs、/.svn/entries），61 个路径；Google Cloud 比利时，与 35.205.254.119 同一手法"
+    seen: 2026-11-21
+  - ip: 85.11.167.160
+    why: "用 fasthttp 每十天在两个主机上探测一次 /.git/HEAD（11-03、11-13、11-23）；TechTies（AS197170），与已封的 eff9::/64、d666::/64 同一网络"
+    seen: 2026-11-23
+  - ip: 35.195.251.123
+    why: "据站长 2026-11-25 的安全报告：与另四个 Google Cloud 地址一同在 science.impf.ai 上找密钥与配置（/.env.production、/.git/config、/.openai/credentials.json、/.aws/credentials……）；日志尚未取回"
+    seen: 2026-11-25
+  # 按站长要求（2026-11-25 的安全报告）：Lightpanda 是给自动化与 AI 代理用的无头浏览器，UA 自报身份。它没有攻击路径，一周里
+  # 载入了三次首页及其脚本（任何访客的浏览器都会下载的公开文件），所以写了到期日；按名字的拦截在 rules.yaml 的第 4 条。
+  # 只封这两个地址，不封 175.24.212.0/24：腾讯云的网段里有微信的链接预览与安全检测（security/README.md「封禁名单」）
+  - ip: 175.24.212.109
+    why: "按站长要求封禁：Lightpanda 无头浏览器（UA 自报身份），11-19、11-24 各载入一次首页及其脚本，没有攻击路径；腾讯云上海"
+    seen: 2026-11-24
+    until: 2027-02-25
+  - ip: 175.24.212.169
+    why: "按站长要求封禁：Lightpanda 无头浏览器（UA 自报身份），11-22 载入一次首页及其脚本，没有攻击路径；腾讯云上海，与 175.24.212.109 同一来源"
+    seen: 2026-11-22
+    until: 2027-02-25
 
 # 永不封禁：与这些网段重叠的条目 apply 拒绝写入（整份名单都不写，直到改正）。
 never:

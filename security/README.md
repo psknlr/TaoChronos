@@ -83,7 +83,9 @@ chat.impf.ai（网站）与 chat-api.impf.ai（道乃久默认服务的中转）
 
 ### 扫描器路径（蜜罐）
 
-`isHoneypot()`：`/wp-*`、`/wordpress`、`/xmlrpc.php`、`/.git`、`/.svn`、`/.env`、`/.aws`、`/.ssh`、`/.DS_Store`、`/phpmyadmin`、`/adminer`、`/cgi-bin/`、
+`isHoneypot()`：**任何一层以点开头的文件或目录**（`/.git`、`/.env`、`/api/.env`、`/.aws`、`/.ssh/id_rsa`、`/.kube/config`、`/.npmrc`……；2026-11 起扫描器改找
+AI 与云的凭据——`/.openai/credentials.json`、`/.anthropic/config.json`、`/.cache/huggingface/token`、`/.config/gcloud/…`——逐个点名追不上，所以不再点名）；
+`/wp-*`、`/wordpress`、`/xmlrpc.php`、`/phpmyadmin`、`/adminer`、`/cgi-bin/`、
 `/vendor/phpunit`、`/actuator`、`/boaform`、`/HNAP1`、`/eval-stdin`、`/phpinfo`、`/server-status`、`/owa/`、`/autodiscover`…… 以及后缀
 `.php .php7 .phtml .asp .aspx .jsp .jspx .cgi .bak .sql .old .orig .swp .save .rar .7z .env .ini .log .pem .key`（完整表在 `sentinel.js` 的
 `HONEYPOT_PREFIXES` / `HONEYPOT_SUFFIXES`）。
@@ -158,9 +160,9 @@ Web Analytics，访客看不出差别）。上线前用 Chromium 在本地按部
 | 序 | ref | 动作 | 拦什么 | 误伤 |
 |---|---|---|---|---|
 | 1 | `tc-own-clients` | skip（只跳过浏览器完整性检查） | 仓库自己的客户端：`taochronos-collector/1`（收集器）、`taochronos-deploy/1`（`deploy.sh` 的检查） | 冒充这个 UA 只能绕过这一项（突发限制也不免：自己的客户端一小时只发几十个请求），其余规则照常 |
-| 2 | `tc-scanner-paths` | block | `wp-`、`/.git`、`/.env`、`.php`、`xmlrpc`、`/../`…… 这两个主机上根本不存在的路径（与哨兵的列表同源） | 无：网站没有这些路径；`/.well-known/` 除外 |
+| 2 | `tc-scanner-paths` | block | `wp-`、`.php`、`xmlrpc`、`/../`……，以及**任何一层以点开头的文件或目录**（`/.git`、`/.env`、`/.ssh`、`/.openai/credentials.json`……）：这些主机上根本不存在的路径（与哨兵的列表同源） | 无：网站没有这些路径；`/.well-known/` 除外 |
 | 3 | `tc-relay-origin` | block | 向中转 `POST /v1/chat/…`、`/v1/logs`、`/v1/feedback` 而 `Origin` 不是网页的来源——中转自己也会拒，但在边缘拒绝**不进 Worker、不计次数**；以及**别的区域的 Worker 转发**到两个中转（`chat-api.impf.ai`、science.impf.ai 的 Tao-S1）`/v1/*` 的请求（`cf.worker.upstream_zone` 既不为空、也不是 `impf.ai`）：Worker 可以随意填写 Origin，来源检查拦不住它（见下文「封禁名单」里的 2a06:98c0:3600::103）；以及中转上 **`/v1/` 之外的一切路径**（中转只有 `/v1/*` 的接口：UCloud 香港的扫描器轮换地址，每个地址一天几百上千次地在这里找交易所与 App 的后台接口，10 至 11 月约 8500 次） | 无：浏览器一定带 Origin，网页的请求也从不经 Worker 转发；本区域自己的 Worker 放行；仓库自己的客户端（收集器、部署检查）只用 `/v1/*`；证书签发（`/.well-known/acme-challenge/`）与 `/cdn-cgi/` 除外；来源表与 `relay/wrangler.toml` 一致，改一处要改另一处 |
-| 4 | `tc-tooling-and-spoofed-crawlers` | block | 只为训练模型抓取的爬虫（`training_agents`：GPTBot、ClaudeBot、CCBot、meta-externalagent……，**验证与否都拦**，与站点 robots.txt 的名单一致）；没有 UA；`python*`、`Go-http-client`、`Java/`、扫描器名；以及自称 Googlebot、bingbot、ChatGPT-User、PerplexityBot…… 却**没有通过 Cloudflare 验证**（`not cf.client.bot`）的 | 真正的搜索引擎与 AI 助手（验证通过）放行；`curl`、`wget` 不拦（站长自己会用）；`/.well-known/acme-challenge/` 除外 |
+| 4 | `tc-tooling-and-spoofed-crawlers` | block | 只为训练模型抓取的爬虫（`training_agents`：GPTBot、ClaudeBot、CCBot、meta-externalagent……，**验证与否都拦**，与站点 robots.txt 的名单一致）；没有 UA；`python*`、`Go-http-client`、`Java/`、扫描器名、Lightpanda（给自动化与 AI 代理用的无头浏览器，按站长要求）；以及自称 Googlebot、bingbot、ChatGPT-User、PerplexityBot…… 却**没有通过 Cloudflare 验证**（`not cf.client.bot`）的 | 真正的搜索引擎与 AI 助手（验证通过）放行；`curl`、`wget` 不拦（站长自己会用）；HeadlessChrome 不拦（本项目自己的检查就是它）；`/.well-known/acme-challenge/` 除外 |
 | 5 | `tc-block-list` | block | 列表 `taochronos_block` 里的地址与网段（全站），由 `security/blocklist.yaml` 管理，见下文「封禁名单」。没有列表时这条省略 | 只拦名单上的 |
 | 速率 | `tc-api-burst` | block 10 秒 | `/api/*`、`/v1/*`（两个主机共用计数；`/api/security/csp` 除外）每个地址每个节点 10 秒 240 次 | 网页核对引文时几秒内最多取 60 段原文、再做最多 60 次规范化调用，仍在其下 |
 
@@ -180,6 +182,10 @@ Web Analytics，访客看不出差别）。上线前用 Chromium 在本地按部
 **与控制台助手方案的差别**：它提的两条 60 秒窗口、300 秒封禁的速率限制在免费计划上写不进去（只有 1 条、10 秒）；12 个固定 IP 的拦截名单一周就过时
 （扫描器换网段），其中 160.79.106.129 还是 Anthropic 公布的 ClaudeBot 网段——真爬虫该由验证字段与 AI 爬虫设置处理，固定名单改用随时可改的列表；
 任何依赖 bot score、威胁分数、正则的规则在免费计划上无效。
+它后来的报告还提过三件事，各有不照做的理由：按 UA 拦 HeadlessChrome（2026-11-12）——那些请求来自 160.79.106.0/24，是本项目在 Claude Code 里的检查
+（Playwright 的 Chromium），拦了这些检查也过不去；封 175.24.212.0/24（2026-11-25，Lightpanda 的两个地址所在）——那是腾讯云的网段，微信的链接预览与安全检测
+也从腾讯云来，所以只按名字拦 Lightpanda（第 4 条），两个地址进名单并写了到期日；给 `/api/passage` 另加速率限制（2026-11-25）——免费计划只有一条，
+已经管着全部 `/api/*`，每个地址每天的读取上限在 Worker 里（`API_READS_PER_DAY`）。
 
 ### 启用
 
@@ -217,6 +223,10 @@ Web Analytics，访客看不出差别）。上线前用 Chromium 在本地按部
   多半是 science.impf.ai 的 Tao-S1。
 - **控制台里手动加的地址**（应急，立即生效）不带 `[taochronos]` 标记，写入名单时保留；事后照样补进 `blocklist.yaml`。
 - 候选从 `data/security-logs/edge/suspects.json`（边缘）与 `data/security-logs/{site,relay}/` 里哨兵标记的事件（`fp.ip`、`reasons`、`state.paths`）来。
+  `suspects.json` 按分数排，分数低的也要看：托管规则拦下的漏洞利用（React、WordPress 的远程代码执行）一个地址只有九、十次请求，
+  探测 `/.git/config` 的只有一两次。
+- **一个地址只来一两次的代理池不逐个进名单**：2026-11-09，3xK Tech（AS200373）等的七十多个地址各向中转问了一个密钥路径（`/.env.*`、`/.ssh/id_rsa`、
+  `/.kube/config`、`/%2f%2eenv`……），每个地址用过即弃，名单追不上也不必追——这类请求由第 2、3 条规则在边缘拒绝。同一网络里持续扫描的单个地址照常进名单。
 
 ### 应急
 
