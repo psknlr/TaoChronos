@@ -277,6 +277,15 @@ already has: no need to supply `LOG_EXPORT_TOKEN` and the others here (the warni
 not rewritten).  The log ends with `a search on the full corpus: …`.  The first call after a new image may take minutes
 while the container starts; `deploy.sh` waits for it.
 
+**A deployed image is not at once the image that answers.**  The container that was running goes on, from the image
+before (and with the Worker's version before: what it kept of the runtime's info and catalogs is still answered),
+until the platform has stopped it: its rollout sends `SIGTERM` and waits up to fifteen minutes before killing a
+container that has not gone.  On 2026-11-25 the image deployed at 15:16 UTC was not yet answering at 15:19 and was at
+15:33.  The server stops when it is asked (`taochronos.chat.cloud`, which says so in the container's log: `asked to
+stop (SIGTERM)`), so that the next call starts the new image.  To see which image answers, call a tool the deployment
+changed, or ask for the full catalog (`curl -s 'https://chat.impf.ai/api/catalog?mode=all'`): the first answer after
+the switch carries `X-TC-Corpus: live`.
+
 **B5. Import the D1 backup** (about two hours with four processors; in `tmux`):
 
 ```bash
