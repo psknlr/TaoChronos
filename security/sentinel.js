@@ -302,6 +302,8 @@ export async function bodyShape(body) {
 }
 
 // ------------------------------------------------------------------ the score of one request
+// what the page posts to the relay: a browser's fetch from the page's origin, or it is not the page's
+const PAGE_POSTS = new Set(["chat", "logs", "feedback", "sponsor", "activity"]);
 // what a browser that opened a scanner's path may have against it and still be a person's: its network, a header some
 // builds leave out
 const OPENED_WITH = new Set(["dc_asn", "warp", "no_ch_ua"]);
@@ -336,7 +338,7 @@ export function assess(fp, context = {}) {
     if (fp.enc !== undefined && !/gzip|br|zstd|deflate/i.test(fp.enc)) add("enc_odd", 1); // a browser always compresses
   } else if (fp.chUa && fp.ua) add("ch_ua_odd", 2); // client hints come from Chromium browsers only
   if (fp.sfMode) {
-    const api = route === "chat" || route === "logs" || route === "feedback" || route === "sponsor" || route.startsWith("api-");
+    const api = PAGE_POSTS.has(route) || route.startsWith("api-");
     if (api && fp.sfMode !== "cors" && fp.sfMode !== "same-origin") add("sec_fetch_mode", 2);
     if (api && fp.sfDest && fp.sfDest !== "empty") add("sec_fetch_dest", 1);
   }
@@ -347,7 +349,7 @@ export function assess(fp, context = {}) {
     const origins = context.origins;
     const self = context.selfOrigin;
     if (fp.origin && !origins.includes(fp.origin) && fp.origin !== self) add("origin_foreign", 3);
-    else if (!fp.origin && (route === "chat" || route === "logs" || route === "feedback" || route === "sponsor")) add("origin_missing", 2);
+    else if (!fp.origin && PAGE_POSTS.has(route)) add("origin_missing", 2);
     if (fp.referer && !origins.includes(fp.referer) && fp.referer !== self) add("referer_foreign", 2);
   }
   if (fp.method && !["GET", "POST", "OPTIONS", "HEAD", "PUT"].includes(fp.method)) add("method_odd", 2);

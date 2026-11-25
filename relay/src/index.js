@@ -2,19 +2,21 @@
 // memory of visitors (security/sentinel.js), and the conversation records waiting for the repository's collector.  With
 // the private bucket ARCHIVE (security/archive.js), each object drains what it keeps waiting into the bucket instead.
 // The visitors' sponsorships (their own API keys, encrypted: relay/src/sponsors.js) are a third object, apart from the
-// records: nothing drains them anywhere.
+// records: nothing drains them anywhere.  The counters' object also remembers which turn a call belongs to (a question
+// is counted once however many calls it takes) and, with the ledger's key and registry (ACTIVITY_KEY, ACTIVITY_DB),
+// keeps the activity ledger's outbox and drains it from the same alarm (security/ledger.js).
 // Deployed by .github/workflows/relay.yml (relay/README.md).
 
 import { DurableObject } from "cloudflare:workers";
 import { Drainer, EVENTS, RECORDS } from "../../security/archive.js";
+import { LedgerCore, LedgerDrainer } from "../../security/ledger.js";
 import { WatchCore } from "../../security/sentinel.js";
-import { UsageCore } from "../../security/usage.js";
+import { UsageCore, usageConfig } from "../../security/usage.js";
+import { ledgerConfig } from "../../security/visitor.js";
+import { evented, gateCall, logged, turnFinished, turnRecorded } from "./gate.js";
 import { handle, placedFetch } from "./relay.js";
 import { SponsorBookCore } from "./sponsors.js";
-import { ANSWERS, LimiterCore, LogBookCore } from "./state.js";
-
-/** Did the sentinel write an event for this request (security/sentinel.js: WatchCore.record)?  Then the archive drains. */
-const evented = (w, a, extra = {}) => Boolean(w && (w.flagged || w.blocked || w.shadow || a?.route === "honeypot" || extra.kind === "csp"));
+import { LimiterCore, LogBookCore } from "./state.js";
 
 export class Limiter extends DurableObject {
   constructor(ctx, env) {
@@ -23,38 +25,70 @@ export class Limiter extends DurableObject {
     this.watch = new WatchCore(ctx.storage.sql);
     this.usage = new UsageCore(ctx.storage.sql);
     this.drainer = new Drainer(ctx.storage, env.ARCHIVE, { store: this.watch, prefix: EVENTS("relay"), field: "event", extra: { source: "relay" } });
+    // which turn a call belongs to, and — with the ledger's key and registry — the activity ledger's outbox and what
+    // empties it (security/ledger.js)
+    this.ledgerConfig = ledgerConfig(env);
+    this.ledger = new LedgerCore(ctx.storage.sql, "relay");
+    this.ledgerDrain = new LedgerDrainer(ctx.storage, this.ledger, { db: this.ledgerConfig.on ? env.ACTIVITY_DB : null, bucket: env.ARCHIVE,
+      cfg: this.ledgerConfig, offset: usageConfig(env).offset });
   }
 
-  /** The sentinel's events, into the archive's bucket (security/archive.js). */
+  /** The sentinel's events into the archive's bucket (security/archive.js), and the ledger's outbox into its registry
+   * and the archive: one alarm for both, each asking for the next when it needs one. */
   async alarm() {
     await this.drainer.run();
+    await this.ledgerDrain.run();
   }
 
   hit(who, kind, limits) {
     return this.core.hit(who, kind, limits);
   }
 
-  /** One round trip for a call: the sentinel sees the request (and may refuse it), then the counters.  `served`: the
-   * call is let through only for a caller the relay answered lately (a record of the default service's conversation;
-   * the caller is known by the sentinel's key, which does not change at midnight — yesterday's is tried too for the
-   * month's turn).  `question`: a model counted in questions (relay.js, secondChat) — the question is asked first, and
-   * counted only with the call it lets through. */
-  async gate({ who, kind, limits, fp, a, shape, status, cfg, served, reserve, usage, question }) {
+  /** One round trip for a call: the sentinel sees the request (and may refuse it), then the counters; the turn the
+   * call belongs to, its question counted once, and the ledger's events of it (gate.js: gateCall, where each argument
+   * is said). */
+  async gate(args) {
     const now = Date.now();
-    const watch = fp && a ? await this.watch.observe(fp, a, { shape, status }, cfg) : null;
-    if (evented(watch, a, { shape, status })) await this.drainer.arm(now);
-    if (watch?.blocked) return { ok: false, reason: "blocked", retry: watch.retry, watch };
-    const keys = fp ? [await WatchCore.who(fp.ip, cfg, now), await WatchCore.who(fp.ip, cfg, now - 86400000)] : [];
-    if (served && !(fp ? this.core.wasServed(keys, now) : this.core.served(who, served, now))) return { ok: false, reason: "not_served", retry: 0, watch };
-    const q = question ? this.core.question(who, question, now) : null;
-    if (q && !q.ok) return { ...q, watch };
-    const gate = this.core.hit(who, kind, limits, now, reserve);
-    if (gate.ok) q?.commit?.();
-    if (gate.ok && ANSWERS.has(kind) && keys.length) this.core.markServed(keys[0], now);
-    if (gate.ok && ANSWERS.has(kind) && usage) {
-      try { this.usage.call(usage, keys[0]); } catch (err) { console.error("usage", err?.name || "Error"); } // never in a call's way
-    }
-    return { ...gate, watch };
+    if (args.activity?.ledger && !this.ledgerDrain.on) args = { ...args, activity: { ...args.activity, ledger: false } }; // nowhere to drain it to
+    const out = await gateCall(this, args, now);
+    if (evented(out.watch, args.a, { shape: args.shape, status: args.status })) await this.drainer.arm(now);
+    if (args.activity?.ledger) await this.ledgerDrain.arm(now);
+    return out;
+  }
+
+  // ---- the activity ledger (security/ledger.js): each a no-op without it
+  /** How a model call ended and what it cost (relay.js: settle). */
+  async settle(outcome) {
+    if (!this.ledgerDrain.on) return;
+    this.ledger.settle(outcome, Date.now(), { offset: this.ledgerDrain.offset, keep: this.ledgerConfig.keep });
+    await this.ledgerDrain.arm();
+  }
+
+  /** A turn's end, as the page tells it (POST /v1/activity). */
+  async finished(act, key, info) {
+    if (!this.ledgerDrain.on) return;
+    const now = Date.now();
+    turnFinished(this.ledger, act, key, info, now, this.ledgerConfig);
+    await this.ledgerDrain.arm(now);
+  }
+
+  /** A conversation record taken in for a turn (POST /v1/logs). */
+  async recorded(act, key, info) {
+    if (!this.ledgerDrain.on) return;
+    const now = Date.now();
+    turnRecorded(this.ledger, act, key, info, now, this.ledgerConfig);
+    await this.ledgerDrain.arm(now);
+  }
+
+  /** Anything else worth an event: a feedback, a sponsorship. */
+  async logged(act) {
+    if (!this.ledgerDrain.on) return;
+    logged(this.ledger, { ...act, ledger: true, keep: this.ledgerConfig.keep });
+    await this.ledgerDrain.arm();
+  }
+
+  ledgerHealth() {
+    return this.ledger.health();
   }
 
   /** The counts for the settings' 统计 pane (security/usage.js). */
@@ -65,6 +99,11 @@ export class Limiter extends DurableObject {
   async observe(fp, a, extra, cfg) {
     const w = await this.watch.observe(fp, a, extra, cfg);
     if (evented(w, a, extra)) await this.drainer.arm();
+    // a request noted is an event of the ledger too, with what the sentinel made of it
+    if (extra?.activity && this.ledgerDrain.on) {
+      logged(this.ledger, { ...extra.activity, fp, a, w, status: extra.status, ledger: true, keep: this.ledgerConfig.keep });
+      await this.ledgerDrain.arm();
+    }
     return w;
   }
 
@@ -164,6 +203,14 @@ export default {
       observe: (fp, a, extra, cfg) => limiter().observe(fp, a, extra, cfg),
       spend: (who, kind, tokens) => limiter().spend(who, kind, tokens),
       stats: (days, today) => limiter().stats(days, today),
+      // the activity ledger's outbox (the Limiter object keeps it: security/ledger.js)
+      ledger: {
+        settle: (outcome) => limiter().settle(outcome),
+        finished: (act, key, info) => limiter().finished(act, key, info),
+        recorded: (act, key, info) => limiter().recorded(act, key, info),
+        logged: (act) => limiter().logged(act),
+        health: () => limiter().ledgerHealth(),
+      },
       watch: {
         observe: (fp, a, extra, cfg) => limiter().observe(fp, a, extra, cfg),
         records: (after, limit) => limiter().records(after, limit),

@@ -16,6 +16,12 @@
 //                                       Content-Security-Policy reports; GET /api/security/archive?day=, a day of the
 //                                       events archived in the private bucket ARCHIVE, when the site has one (then the
 //                                       events go there, not to the repository: security/archive.js)
+//   POST /api/activity/hello            the page, once it has loaded: who its visitor is to the activity ledger (a pass
+//   POST /api/activity/choice, forget   for the relay; security/visitor.js), and the visitor's own switches — the count
+//   GET  /api/activity/me               off or on, everything of theirs forgotten, what is held of them
+//   GET  /api/activity/stats            the ledger's counts for the 统计 pane and the daily reports (the stats token);
+//   GET  /api/activity/health, archive  how its pipeline stands and whether a day of its archive is whole (Bearer
+//                                       LOG_EXPORT_TOKEN) — security/ledger.js, security/ledger-d1.js
 //
 // Nothing else reaches the corpus: not the model proxy of `taochronos serve` (the page talks to its models itself, or to
 // the relay), not its static files.  API calls are limited per visitor (the rate-limit bindings).  The sentinel
@@ -29,10 +35,18 @@
 // calls spent 429, each with Retry-After and X-TC-Corpus: refused; 503 is kept for a corpus that cannot answer.  The page
 // carries on with the 要籍语料 in the browser either way — public files, not a way round the refusal — and says which.
 // A call or a research run (work the account pays for) is not let through while the sentinel cannot be asked.
+//
+// The activity ledger (security/ledger.js), when the Worker has its key (ACTIVITY_KEY) and its registry (ACTIVITY_DB):
+// every request is written down as an event — a page opened, the API read or called, what was refused — whatever the
+// sentinel scored it, with a visitor's id where the browser has one and never an address.  It decides nothing and is
+// never waited for: without it, or when it fails, the site is what it was.
 
 import { EVENTS, serveArchive } from "../../../security/archive.js";
-import { assess, fingerprint, ipKey, isHoneypot, ledFrom, logLine, sentinelConfig, serveSecurity, WatchCore } from "../../../security/sentinel.js";
+import { envelope, verifyArchive } from "../../../security/ledger.js";
+import { ensure, forget, known, serveLedgerStats } from "../../../security/ledger-d1.js";
+import { assess, bearerOk, fingerprint, ipKey, isHoneypot, keptPath, ledFrom, logLine, readText, sentinelConfig, serveSecurity, WatchCore } from "../../../security/sentinel.js";
 import { place, serveStats, usageConfig, usageDay } from "../../../security/usage.js";
+import { clearCookie, identify, ledgerConfig, OFF, passFor, setCookie } from "../../../security/visitor.js";
 import { answer as backupAnswer, ready as backupReady } from "./backup/api.js";
 
 export const DEFAULTS = {
@@ -103,6 +117,14 @@ export async function handle(request, env, deps = {}) {
   // what the API refuses it is a rule of access, not a note
   const from = ledFrom(fp, cfg.origins, url.origin);
   if (s) s.led = from;
+  // the activity ledger: on with its key, its registry and the object that keeps its outbox.  `mark` is what this
+  // request will be written down as (the branch that answers it says; anything else is a `request`), `who` its visitor
+  const lcfg = ledgerConfig(env);
+  const L = lcfg.on && env.ACTIVITY_DB && deps.watch?.activity
+    ? { cfg: lcfg, db: env.ACTIVITY_DB, fp, now, deps, led: from, flagScore: scfg.flagScore, offset: usageConfig(env).offset, began: Date.now(), mark: null, who: null }
+    : null;
+  if (L) L.identify = (mintable = false) => (L.who ||= identify(request, lcfg, now, { mintable }));
+  if (s) s.L = L;
   let response;
   try {
     if (s && isHoneypot(url.pathname)) {
@@ -111,15 +133,70 @@ export async function handle(request, env, deps = {}) {
       note(s, "honeypot", 404);
       response = new Response("Not Found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
     } else if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
-      response = await api(request, env, cfg, deps, url, s, from);
+      response = await api(request, env, cfg, deps, url, s, from, L);
     } else {
-      response = await site(request, env, s);
+      response = await site(request, env, s, L, url, cfg);
     }
   } catch (err) {
     console.error("site error", err?.name || "Error", err?.message || ""); // never the request: it may carry what a visitor wrote
     response = json({ error: "服务出错了，请稍后再试" }, 500);
   }
+  if (L) {
+    try {
+      record(L, L.mark || { type: "request", route: "other" }, response.status);
+    } catch (err) {
+      console.error("ledger", err?.name || "Error"); // never in an answer's way
+    }
+  }
   return secure(response, cfg, url.origin);
+}
+
+// ------------------------------------------------------------------ the activity ledger
+const LEDGER_MS = 2000;   // events are held this long in the instance, and go to the object together
+const LEDGER_HELD = 500;  // at most: beyond, they are counted as lost (the object has been out of reach)
+
+/**
+ * A request written down for the ledger (security/ledger.js: envelope), held in this instance (deps.ledger) and sent to
+ * the object a moment later with the others of that moment, after the answer.  m: {type, route, a, w, visitor, more,
+ * sum, page} — sum: a reader's like requests of the minute are one line with their number (a citation-heavy answer
+ * reads sixty passages); page: a page a visitor opened, which another site's link may have led to.  An event that could
+ * not be brought to the object is counted, and the count goes with the next that can.
+ */
+function record(L, m, status) {
+  const latency = Date.now() - L.began;
+  const event = envelope({ type: m.type, source: "site", fp: L.fp, a: m.a || null, w: m.w || null, led: m.page ? null : L.led, status, visitor: m.visitor || null,
+    now: L.now, offset: L.offset, route: m.route, latency, flagScore: L.flagScore, more: m.more || {} });
+  const b = L.deps.ledger || (L.deps.ledger = { events: [], sums: new Map(), pending: false, lost: 0 });
+  if (b.events.length + b.sums.size >= LEDGER_HELD) b.lost += 1;
+  else if (m.sum) {
+    const key = [Math.floor(L.now / 60000), event.event_type, event.visitor_id, event.route, event.status, event.traffic_class, event.security_action, event.country, event.region].join("|");
+    const held = b.sums.get(key);
+    if (held) { held.event.n += 1; held.ms += latency; } else b.sums.set(key, { event, ms: latency });
+  } else b.events.push(event);
+  if (b.pending) return;
+  b.pending = true;
+  const moment = L.deps.batch ? L.deps.batch() : new Promise((resolve) => setTimeout(resolve, LEDGER_MS)); // a test says when
+  L.deps.defer((async () => {
+    await moment;
+    const events = [...b.events, ...[...b.sums.values()].map((h) => ({ ...h.event, latency_ms: Math.round(h.ms / h.event.n) }))];
+    const lost = b.lost;
+    b.events = [];
+    b.sums = new Map();
+    b.pending = false;
+    b.lost = 0;
+    try {
+      await L.deps.watch.activity(events, lost);
+    } catch (err) {
+      b.lost += lost + events.reduce((n, e) => n + (e.n || 1), 0);
+      console.error("ledger", err?.name || "Error");
+    }
+  })());
+}
+
+/** A page's address as the ledger keeps it — "/", "/about", "/attribution" — or null for what is not one of the pages. */
+function pageRoute(pathname) {
+  const m = /^\/(index|about|attribution)?(?:\.html)?$/.exec(pathname);
+  return m ? (m[1] && m[1] !== "index" ? `/${m[1]}` : "/") : null;
 }
 
 /**
@@ -131,6 +208,7 @@ export async function handle(request, env, deps = {}) {
 function note(s, route, status) {
   if (s.led) return led(s, route, status); // none of the reader's doing: not noted
   const a = assess(s.fp, { route, origins: s.origins, selfOrigin: s.self, ownPrefix: s.cfg.ownPrefix });
+  if (s.L) s.L.mark = s.L.mark ? { ...s.L.mark, a } : { type: "request", route, a };
   logLine("site", s.fp, a, null, status, s.cfg);
   const local = s.deps.local || (s.deps.local = new Map());
   const who = ipKey(s.fp.ip);
@@ -162,7 +240,7 @@ function led(s, route, status) {
 const BLOCKED = "该地址因异常访问已被暂时限制，请稍后再试";
 
 // ------------------------------------------------------------------ the site
-async function site(request, env, s) {
+async function site(request, env, s, L, url, cfg) {
   if (request.method !== "GET" && request.method !== "HEAD") {
     if (s) note(s, "page", 405);
     return new Response("Method Not Allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
@@ -172,10 +250,28 @@ async function site(request, env, s) {
     // a page asked for by what is not a browser, or a file that is not there (a probe, or a link gone stale): noted
     if (res.status === 404) note(s, "other", 404);
     else if (assess(s.fp, { route: "page", ownPrefix: s.cfg.ownPrefix }).score >= 1) note(s, "page", res.status);
-    // a page a browser opened (only the pages come through this Worker: run_worker_first) is counted for the 统计 pane —
-    // one a visitor came to by a link too, not one another site's page loaded as its image or its frame
-    const opened = !s.led || (s.fp.sfDest ? s.fp.sfDest === "document" : /text\/html/.test(s.fp.accept || ""));
-    if (res.status === 200 && request.method === "GET" && s.fp.uaClass === "browser" && opened && s.deps.watch?.usage) tally(s, env);
+  }
+  if (!s && !L) return res;
+  // a page a browser opened (only the pages come through this Worker: run_worker_first) is counted for the 统计 pane —
+  // one a visitor came to by a link too, not one another site's page loaded as its image or its frame; and one the
+  // browser already holds and asks about (304: it is shown from the browser's copy) as much as one sent anew
+  const fp = s?.fp || L.fp;
+  const from = s ? s.led : L.led;
+  const route = pageRoute(url.pathname);
+  const opened = !from || (fp.sfDest ? fp.sfDest === "document" : /text\/html/.test(fp.accept || ""));
+  const page = request.method === "GET" && (res.status === 200 || (res.status === 304 && route !== null)) && fp.uaClass === "browser" && opened;
+  if (page && s?.deps.watch?.usage) tally(s, env);
+  if (L && page && route !== null) {
+    // the ledger's page view, for the visitor the browser's cookie names — or the one it is given now (visitor.js)
+    const who = await L.identify(true);
+    const came = fp.referer && /^https?:\/\//.test(fp.referer) && fp.referer !== url.origin && !cfg.origins.includes(fp.referer) ? fp.referer.slice(0, 120) : null;
+    L.mark = { type: "page_view", route, page: true, a: L.mark?.a || assess(fp, { route: "page", ownPrefix: sentinelConfig(env).ownPrefix }), visitor: who.visitor,
+      more: { ...(came ? { referrer: came } : {}), ...(who.state === "new" ? { new_visitor: true } : {}) } };
+    if (who.cookie) {
+      const out = new Response(res.body, res);
+      out.headers.append("Set-Cookie", who.cookie);
+      return out;
+    }
   }
   return res;
 }
@@ -239,7 +335,7 @@ function secure(response, cfg, origin) {
 const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), { status, headers: { ...headers, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 
-async function api(request, env, cfg, deps, url, s, from = null) {
+async function api(request, env, cfg, deps, url, s, from = null, L = null) {
   const origin = request.headers.get("Origin");
   const allowed = !origin || origin === url.origin || cfg.origins.includes(origin);
   const cors = origin && allowed ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" } : { Vary: "Origin" };
@@ -265,6 +361,7 @@ async function api(request, env, cfg, deps, url, s, from = null) {
     return json({ error: `origin ${origin} may not call this API` }, 403, cors);
   }
   const who = ipKey(request.headers.get("CF-Connecting-IP") || "unknown"); // an IPv6 address by its /64
+  if (url.pathname.startsWith("/api/activity/")) return activity(request, env, deps, url, L, cors, who);
   const store = url.pathname.match(STORE);
   if (store) {
     if (deps.limit && !(await deps.limit("call", who))) return json({ error: "请求太频繁，请稍候再试", rate_limited: true }, 429, { "Retry-After": "60" });
@@ -283,6 +380,12 @@ async function api(request, env, cfg, deps, url, s, from = null) {
     return json({ error: `no such endpoint ${request.method} ${url.pathname}` }, 404, cors);
   }
   const route = isGet ? "api-read" : url.pathname === "/api/research" ? "api-research" : "api-call";
+  // to the ledger: a read (a reader's like reads of the minute are one line), a call, or a research run begun — for the
+  // visitor the browser's cookie names; a refusal below is the same event with its status
+  if (L) {
+    L.mark = { type: isGet ? "api_read" : route === "api-research" ? "research_started" : "api_call", route: keptPath(url.pathname),
+      visitor: (await L.identify()).visitor, sum: isGet };
+  }
   if (deps.limit && !(await deps.limit(isGet ? "read" : "call", who))) {
     if (s) note(s, route, 429);
     return json({ error: "请求太频繁，请稍候再试", rate_limited: true }, 429, { ...cors, "Retry-After": "60" });
@@ -297,6 +400,7 @@ async function api(request, env, cfg, deps, url, s, from = null) {
     // sentinel cannot be asked is the site's failure, not the visitor's (503: the page carries on in the browser too)
     const status = verdict.blocked ? 403 : verdict.over ? 429 : verdict.unavailable ? 503 : null;
     logLine("site", s.fp, a, verdict.w, status, s.cfg);
+    if (L) Object.assign(L.mark, { a, w: verdict.w });
     if (verdict.blocked) return json({ error: BLOCKED, blocked: true, starting: false }, 403, { ...cors, "Retry-After": String(verdict.retry || 60), "X-TC-Corpus": "refused" });
     // a day's research runs spent is the run's refusal, not the corpus's: the page goes on reading and calling it
     if (verdict.over && route === "api-research") return json({ error: `今天从这个地址发起的研究已达上限（每天 ${cfg.researchPerDay} 次），明天再来`, rate_limited: true, research_daily: true }, 429, { ...cors, "Retry-After": String(secondsToMidnight(s.now)) });
@@ -347,6 +451,88 @@ async function api(request, env, cfg, deps, url, s, from = null) {
 }
 
 const secondsToMidnight = (now) => Math.ceil((86400000 - (now % 86400000)) / 1000);
+
+// ------------------------------------------------------------------ the activity ledger's endpoints
+const LANG = /^[a-z]{2,3}(?:-[A-Za-z]{2,8})?$/;
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const TABLES = ["visitors", "visitor_daily_activity", "sessions", "activity_events", "question_events", "model_invocations", "daily_metrics", "archive_manifest",
+  "ledger_dirty", "deletion_log"];
+
+/**
+ * Under /api/activity/ (the site's own pages and the owner's tools; another site's page was refused before this):
+ *
+ *   POST hello          the page, once loaded: {ids, state, visitor, pass, expires} — the mode the ledger runs in, what
+ *                       this browser is to it (valid · none · off · declined), its id (shown to the visitor, who may ask
+ *                       for it to be forgotten) and a pass for the relay.  Counted as a page that loaded
+ *   POST choice {ids}   "off": no id from now on (the cookie says so, and nothing more); "on": one is made
+ *   POST forget         everything held of this visitor is deleted (ledger-d1.js: forget), and the count is off
+ *   GET  me             what is held of this visitor: their first and last day, the days and questions counted
+ *   GET  stats          the counts (the stats token, or public: ledger-d1.js)
+ *   GET  health         the outbox, the registry's rows, what was dropped or lost (Bearer LOG_EXPORT_TOKEN)
+ *   GET  archive?day=   that day of the archive against its manifest, both Workers' (Bearer LOG_EXPORT_TOKEN)
+ */
+async function activity(request, env, deps, url, L, cors, address) {
+  const what = url.pathname.slice("/api/activity/".length);
+  if (!L) return json({ error: "这里没有活动账本", ledger: false }, 404, cors);
+  if (deps.limit && !(await deps.limit("read", address))) return json({ error: "请求太频繁，请稍候再试", rate_limited: true }, 429, { ...cors, "Retry-After": "60" });
+  const ucfg = usageConfig(env);
+  L.mark = { type: "request", route: `/api/activity/${["hello", "choice", "forget", "me", "stats", "health", "archive"].includes(what) ? what : "…"}` };
+  const get = request.method === "GET" || request.method === "HEAD";
+  if (what === "stats") return serveLedgerStats(request, url, { db: L.db, cfg: ucfg, ledger: L.cfg, today: usageDay(L.now, ucfg.offset), cors, collector: env.LOG_EXPORT_TOKEN || "" });
+  if (what === "health" || what === "archive") {
+    if (!get) return json({ error: "GET" }, 405, { ...cors, Allow: "GET" });
+    if (!(await bearerOk(request, env.LOG_EXPORT_TOKEN || ""))) return json({ error: "需要收集令牌" }, 401, cors);
+    if (what === "archive") {
+      const day = url.searchParams.get("day") || "";
+      if (!env.ARCHIVE) return json({ error: "没有归档", archive: false }, 404, cors);
+      if (!DAY.test(day)) return json({ error: "day=YYYY-MM-DD" }, 400, cors);
+      const sources = ["site", "relay"].filter((x) => !url.searchParams.get("source") || url.searchParams.get("source") === x);
+      return json({ v: 1, day, sources: Object.fromEntries(await Promise.all(sources.map(async (x) => [x, await verifyArchive(env.ARCHIVE, x, day)]))) }, 200, cors);
+    }
+    await ensure(L.db);
+    const counts = await L.db.batch(TABLES.map((t) => L.db.prepare(`SELECT COUNT(*) AS n FROM ${t}`)));
+    const days = await L.db.prepare("SELECT MIN(day) AS first, MAX(day) AS last FROM daily_metrics").first();
+    return json({ v: 1, site: await deps.watch.ledgerHealth(), archive: Boolean(env.ARCHIVE), ids: L.cfg.ids,
+      registry: { ...Object.fromEntries(TABLES.map((t, i) => [t, Number(counts[i].results?.[0]?.n || 0)])), first_day: days?.first || null, last_day: days?.last || null } }, 200, cors);
+  }
+  // the page's own, from a browser: its visitor is whoever the cookie names
+  if (L.fp.uaClass !== "browser" || (L.fp.sfSite && L.fp.sfSite !== "same-origin")) return json({ error: "这个接口只供本站的网页调用" }, 403, cors);
+  if (what === "me") {
+    if (!get) return json({ error: "GET" }, 405, { ...cors, Allow: "GET" });
+    const who = await L.identify();
+    return json({ v: 1, ids: L.cfg.ids, state: who.state, visitor: who.visitor, held: who.visitor ? await known(L.db, who.visitor).catch(() => null) : null }, 200, cors);
+  }
+  if (request.method !== "POST") return json({ error: "POST" }, 405, { ...cors, Allow: "POST" });
+  const text = await readText(request, 1024);
+  if (text === null) return json({ error: "请求太大" }, 413, cors);
+  let body = {};
+  try { body = text ? JSON.parse(text) : {}; } catch { return json({ error: "请求不是有效的 JSON" }, 400, cors); }
+  // what the page is told of its visitor: the id is theirs to see, the pass is what the relay reads it from
+  const told = async (who) => ({ v: 1, ledger: true, ids: L.cfg.ids, state: who.state === "new" ? "valid" : who.state, visitor: who.visitor,
+    pass: who.visitor ? await passFor(who.visitor, L.cfg.key, L.now, L.cfg.passMs) : null, expires: who.visitor ? L.now + L.cfg.passMs : null });
+  if (what === "hello") {
+    const who = await L.identify();
+    const lang = typeof body?.lang === "string" && LANG.test(body.lang) ? body.lang : null;
+    L.mark = { type: "page_ready", route: "/", visitor: who.visitor, more: lang ? { detail: lang } : {} };
+    return json(await told(who), 200, cors);
+  }
+  if (what === "choice" && (body?.ids === "on" || body?.ids === "off")) {
+    L.mark = { type: "visitor_choice", route: "/api/activity/choice", more: { detail: body.ids } };
+    if (body.ids === "off") return json({ v: 1, ledger: true, ids: L.cfg.ids, state: "off", visitor: null, pass: null, expires: null }, 200, { ...cors, "Set-Cookie": setCookie(OFF, L.cfg.visitorDays) });
+    L.who = identify(request, L.cfg, L.now, { optedIn: true });
+    const who = await L.who;
+    return json(await told(who), 200, who.cookie ? { ...cors, "Set-Cookie": who.cookie } : cors);
+  }
+  if (what === "forget") {
+    const who = await L.identify();
+    L.mark = { type: "visitor_choice", route: "/api/activity/forget", more: { detail: "forget" } };
+    const done = who.visitor ? await forget(L.db, who.visitor, { by: "self", now: L.now }) : { found: false };
+    // the cookie goes, and none is made again: someone who asked to be forgotten is not counted anew the next day
+    return json({ v: 1, ledger: true, ids: L.cfg.ids, state: "off", visitor: null, pass: null, expires: null, forgotten: Boolean(done.found) }, 200,
+      { ...cors, "Set-Cookie": L.cfg.ids === "off" ? clearCookie() : setCookie(OFF, L.cfg.visitorDays) });
+  }
+  return json({ error: `no such endpoint ${request.method} ${url.pathname}` }, 404, cors);
+}
 
 /**
  * The sentinel's word on an API request (a: its assessment; cap: its route's allowance for the day): {w, blocked, retry,

@@ -8,8 +8,12 @@ import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
 import { drain, EVENTS } from "../../security/archive.js";
+import { LedgerCore } from "../../security/ledger.js";
+import { apply, ensure, rollup } from "../../security/ledger-d1.js";
 import { WatchCore } from "../../security/sentinel.js";
+import { d1 } from "../../security/test/fakes.js";
 import { UsageCore } from "../../security/usage.js";
+import { COOKIE, isVisitor, readPass } from "../../security/visitor.js";
 import { DEFAULTS, handle } from "../site/src/site.js";
 
 const TOKEN = "upload-token-for-tests-only";
@@ -34,9 +38,12 @@ function sqlStore() {
   };
 }
 
+const ACTIVITY_KEY = "activity-key-for-tests-0123456789abcdef";
+
 /** The site with plain objects for its bindings.  watch: true gives it the sentinel's memory; cf: what the edge would
- * say of every request (request.cf). */
-function site({ corpus = true, store = false, env = {}, limit, watch = false, cf } = {}) {
+ * say of every request (request.cf); ledger: true gives it the activity ledger — its key, its registry (a D1 in
+ * memory) and the object's outbox (`ledger`; `registry()` drains the outbox into the registry and sums its days). */
+function site({ corpus = true, store = false, env = {}, limit, watch = false, cf, ledger = false } = {}) {
   const seen = { assets: [], corpus: [], puts: [] };
   const objects = new Map();
   const full = {
@@ -74,9 +81,12 @@ function site({ corpus = true, store = false, env = {}, limit, watch = false, cf
       },
       STORE_TOKEN_SHA256: TOKEN_SHA,
     } : {}),
+    ...(ledger ? { ACTIVITY_KEY, ACTIVITY_DB: d1() } : {}),
     ...env,
   };
   const core = watch ? new WatchCore(sqlStore()) : null;
+  const book = ledger ? new LedgerCore(sqlStore(), "site") : null;
+  const brought = []; // what the instance brought the object, call by call
   const counts = watch ? new UsageCore(sqlStore()) : null;
   const usageCalls = [];
   const pending = [];
@@ -88,14 +98,28 @@ function site({ corpus = true, store = false, env = {}, limit, watch = false, cf
     deps.watch = { observe: (fp, a, extra, cfg) => core.observe(fp, a, extra, cfg, t), blocked: (ip, cfg) => core.blocked(ip, cfg, t),
       records: (...a) => core.records(...a), remove: (...a) => core.remove(...a), summary: () => core.summary(t),
       usage: async (c, seen, today) => { usageCalls.push(c); counts.add(c, seen, today); }, stats: async (days, today) => counts.stats(days, today) };
+    if (book) {
+      deps.watch.activity = async (events, lost = 0) => { brought.push({ events, lost }); for (const e of events) book.note(e, t); book.bump("lost", lost); };
+      deps.watch.ledgerHealth = async () => book.health(t);
+    }
   }
+  const registry = async () => {
+    const db = full.ACTIVITY_DB;
+    await ensure(db);
+    book.flush(t, 0, true);
+    await apply(db, book.batch(book.get("applied"), 5000).map((r) => { book.set("applied", r.seq); return r.event; }));
+    await rollup(db);
+    return db;
+  };
   const call = (url, init = {}) => {
     const request = new Request(url, init);
     if (cf) request.cf = cf;
     return handle(request, full, deps);
   };
   const settle = () => { for (const go of held.splice(0)) go(); return Promise.all(pending.splice(0)); }; // what the Worker finishes after the answer (ctx.waitUntil)
-  return { call, seen, objects, watch: core, counts, usageCalls, settle, advance: (ms) => { t += ms; }, deps };
+  return { call, seen, objects, watch: core, counts, usageCalls, settle, advance: (ms) => { t += ms; }, deps, ledger: book, brought, registry, env: full,
+    // (what is not a visitor's is added up by the minute in the object, and written when the minute is over: here, now)
+    events: () => { book.flush(t, 0, true); return book.batch(0, 5000).map((r) => r.event); } };
 }
 const quiet = async (fn) => { const log = console.log; console.log = () => {}; try { return await fn(); } finally { console.log = log; } };
 
@@ -605,4 +629,222 @@ test("the counts are read with the stats token; without the sentinel's object th
   assert.equal(foreign.status, 403);
   const bare = site({ env: { STATS_PUBLIC: "1" } });
   assert.equal((await bare.call(`${PAGE}/api/stats`)).status, 404);
+});
+
+// ------------------------------------------------------------------ the activity ledger (security/ledger.js)
+const NAV = { "User-Agent": CHROME, Accept: "text/html,application/xhtml+xml", "Accept-Language": "zh-CN,zh;q=0.9", "Sec-Fetch-Site": "none", "Sec-Fetch-Mode": "navigate",
+  "Sec-Fetch-Dest": "document", "Sec-CH-UA": '"Chromium";v="129"', "CF-Connecting-IP": "203.0.113.9" };
+const CF = { country: "CN", regionCode: "GD", asn: 4134, httpProtocol: "HTTP/2", tlsVersion: "TLSv1.3" };
+const open = (call, headers = {}, path = "/") => call(`${PAGE}${path}`, { headers: { ...NAV, ...headers } });
+const cookieOf = (res) => (res.headers.get("Set-Cookie") || "").split(";")[0];
+const post = (call, path, body, headers = {}) => call(`${PAGE}${path}`, { method: "POST", headers: { ...BROWSER, Origin: PAGE, "Content-Type": "application/json", ...headers },
+  body: JSON.stringify(body) });
+
+test("without the ledger's key the site is what it was: no cookie, nothing written, no endpoint", async () => {
+  const { call, settle, deps } = site({ watch: true, cf: CF });
+  const res = await open(call);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("Set-Cookie"), null);
+  await settle();
+  assert.equal(deps.ledger, undefined);
+  assert.deepEqual(await (await post(call, "/api/activity/hello", {})).json(), { error: "这里没有活动账本", ledger: false });
+  // nor with the key and no registry, or with the ledger switched off
+  for (const env of [{ ACTIVITY_KEY }, { ACTIVITY_KEY, ACTIVITY_DB: d1(), ACTIVITY: "off" }]) {
+    const half = site({ watch: true, cf: CF, env });
+    assert.equal((await open(half.call)).headers.get("Set-Cookie"), null);
+    assert.equal((await half.call(`${PAGE}/api/activity/stats`)).status, 404);
+  }
+});
+
+test("a page a browser opens is written down for a visitor: an id it is given, and is known by when it comes back", async () => {
+  const { call, settle, events, advance, env } = site({ watch: true, ledger: true, cf: CF });
+  const first = await open(call, { Referer: "https://www.baidu.com/s?wd=%E6%A1%82%E6%9E%9D%E6%B1%A4" });
+  assert.equal(first.status, 200);
+  assert.match(first.headers.get("Set-Cookie"), /^__Host-tcv=[A-Za-z0-9_-]{22}\.[0-9a-z]+\.[A-Za-z0-9_-]{22}; Path=\/; Max-Age=33696000; Secure; HttpOnly; SameSite=Lax$/);
+  assert.match(await first.text(), /道乃久/); // the page itself, as before
+  assert.ok(first.headers.get("Content-Security-Policy") !== undefined && first.headers.get("X-Frame-Options") === "SAMEORIGIN");
+  const cookie = cookieOf(first);
+  advance(60000);
+  const again = await open(call, { Cookie: cookie }, "/about");
+  assert.equal(again.headers.get("Set-Cookie"), null); // it has one
+  // a page the browser holds and asks about is a page opened too
+  env.ASSETS = { fetch: async () => new Response(null, { status: 304, headers: { ETag: "\"x\"" } }) };
+  advance(60000);
+  assert.equal((await open(call, { Cookie: cookie, "If-None-Match": "\"x\"" })).status, 304);
+  await settle();
+  const seen = events();
+  assert.deepEqual(seen.map((e) => [e.event_type, e.route, e.status, e.traffic_class, e.security_action, e.new_visitor === true, e.referrer || null]),
+    [["page_view", "/", 200, "human", "none", true, "https://www.baidu.com"], ["page_view", "/about", 200, "human", "none", false, null], ["page_view", "/", 304, "human", "none", false, null]]);
+  assert.ok(isVisitor(seen[0].visitor_id));
+  assert.deepEqual(new Set(seen.map((e) => e.visitor_id)).size, 1);
+  assert.deepEqual([seen[0].browser_family, seen[0].os_family, seen[0].device_type, seen[0].language, seen[0].country, seen[0].region, seen[0].asn, seen[0].http_protocol],
+    ["Chrome", "Windows", "desktop", "zh-CN", "CN", "GD", 4134, "HTTP/2"]);
+  const text = JSON.stringify(seen);
+  for (const kept of ["203.0.113", "Mozilla", "wd=", cookie.slice(11, 33)]) assert.ok(!text.includes(kept), kept); // no address, no agent, no query, not the cookie
+});
+
+test("who is given no id: what is not a browser, a browser that asks not to be tracked, one whose user switched the count off", async () => {
+  const { call, settle, events } = site({ watch: true, ledger: true, cf: CF });
+  const curl = await quiet(() => call(`${PAGE}/`, { headers: { "User-Agent": "curl/8.5.0", "CF-Connecting-IP": "203.0.113.20" } }));
+  assert.equal(curl.headers.get("Set-Cookie"), null);
+  assert.equal((await open(call, { "Sec-GPC": "1" })).headers.get("Set-Cookie"), null);
+  assert.equal((await open(call, { DNT: "1" })).headers.get("Set-Cookie"), null);
+  assert.equal((await open(call, { Cookie: `${COOKIE}=off` })).headers.get("Set-Cookie"), null);
+  assert.equal((await call(`${PAGE}/`, { method: "HEAD", headers: NAV })).headers.get("Set-Cookie"), null);
+  // another site's page loading ours as its image: served, and no visit of anyone's
+  await quiet(() => call(`${PAGE}/`, { headers: { ...NAV, "Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "no-cors", "Sec-Fetch-Dest": "image", Referer: "https://forum.example/t/1" } }));
+  // a forged cookie is not counted for the visitor it names: a new one is made
+  const forged = await open(call, { Cookie: `${COOKIE}=${"A".repeat(22)}.abc.${"B".repeat(22)}` });
+  assert.match(forged.headers.get("Set-Cookie"), /^__Host-tcv=/);
+  await settle();
+  const seen = events();
+  assert.deepEqual(seen.map((e) => [e.event_type, e.traffic_class, e.visitor_id === null]), [["page_view", "human", true], ["page_view", "human", true],
+    ["page_view", "human", true], ["request", "human", true], ["page_view", "human", false], ["request", "automation", true], ["request", "cross_site", true]]);
+  assert.deepEqual([seen[6].security_action, seen[6].country, seen[6].asn, seen[6].browser_family], ["cross_site", "CN", undefined, undefined]);
+});
+
+test("optin: an id only once the visitor switched the count on; off: none at all, and everything is still counted", async () => {
+  const optin = site({ watch: true, ledger: true, cf: CF, env: { ACTIVITY_IDS: "optin" } });
+  assert.equal((await open(optin.call)).headers.get("Set-Cookie"), null);
+  const told = await post(optin.call, "/api/activity/hello", { lang: "zh" });
+  assert.deepEqual(await told.json(), { v: 1, ledger: true, ids: "optin", state: "none", visitor: null, pass: null, expires: null });
+  const on = await post(optin.call, "/api/activity/choice", { ids: "on" });
+  const cookie = cookieOf(on);
+  assert.match(cookie, /^__Host-tcv=[A-Za-z0-9_-]{22}\./);
+  const body = await on.json();
+  assert.deepEqual([body.state, isVisitor(body.visitor), await readPass(body.pass, ACTIVITY_KEY, T0)], ["valid", true, body.visitor]);
+  assert.equal((await open(optin.call, { Cookie: cookie })).headers.get("Set-Cookie"), null);
+  await optin.settle();
+  assert.deepEqual(optin.events().map((e) => [e.event_type, e.visitor_id !== null, e.detail || null]),
+    [["page_view", false, null], ["page_ready", false, "zh"], ["visitor_choice", false, "on"], ["page_view", true, null]]);
+  const off = site({ watch: true, ledger: true, cf: CF, env: { ACTIVITY_IDS: "off" } });
+  assert.equal((await open(off.call)).headers.get("Set-Cookie"), null);
+  assert.equal((await (await post(off.call, "/api/activity/choice", { ids: "on" })).json()).state, "disabled");
+  await off.settle();
+  assert.deepEqual(off.events().map((e) => [e.event_type, e.visitor_id]), [["page_view", null], ["visitor_choice", null]]);
+});
+
+test("the page, once loaded, is told who its visitor is: an id to show them and a pass for the relay", async () => {
+  const { call, settle, events } = site({ watch: true, ledger: true, cf: CF });
+  const cookie = cookieOf(await open(call));
+  const res = await post(call, "/api/activity/hello", { lang: "en", more: "ignored" }, { Cookie: cookie });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("Set-Cookie"), null);
+  assert.equal(res.headers.get("Cache-Control"), "no-store");
+  const told = await res.json();
+  assert.deepEqual([told.ledger, told.ids, told.state, told.expires], [true, "notice", "valid", T0 + 86400000]);
+  assert.equal(await readPass(told.pass, ACTIVITY_KEY, T0), told.visitor);
+  assert.ok(!told.pass.includes(cookie.slice(11, 33)));
+  // without a cookie (the mirror's page asking, a browser that keeps none): no id, no pass
+  assert.deepEqual(await (await post(call, "/api/activity/hello", {})).json(), { v: 1, ledger: true, ids: "notice", state: "none", visitor: null, pass: null, expires: null });
+  assert.equal((await (await post(call, "/api/activity/hello", {}, { Cookie: cookie, "Sec-GPC": "1" })).json()).state, "declined");
+  // only the site's own pages, from a browser
+  assert.equal((await quiet(() => post(call, "/api/activity/hello", {}, { "User-Agent": "curl/8.5.0" }))).status, 403);
+  assert.equal((await quiet(() => post(call, "/api/activity/hello", {}, { Origin: "https://evil.example", "Sec-Fetch-Site": "cross-site" }))).status, 403);
+  assert.equal((await call(`${PAGE}/api/activity/hello`, { headers: BROWSER })).status, 405);
+  assert.equal((await post(call, "/api/activity/hello", "x".repeat(2000), { Cookie: cookie })).status, 413);
+  assert.equal((await post(call, "/api/activity/nothing", {})).status, 404);
+  await settle();
+  const ready = events().filter((e) => e.event_type === "page_ready");
+  assert.deepEqual(ready.map((e) => [e.visitor_id, e.detail || null]), [[told.visitor, "en"], [null, null], [null, null]]);
+});
+
+test("the visitor's own switches: the count off, on again, and everything held of them forgotten", async () => {
+  const { call, settle, registry, events } = site({ watch: true, ledger: true, cf: CF });
+  const cookie = cookieOf(await open(call));
+  const hello = await (await post(call, "/api/activity/hello", {}, { Cookie: cookie })).json();
+  await settle();
+  const db = await registry();
+  assert.deepEqual(db.rows("SELECT visitor_id, confirmed FROM visitors"), [{ visitor_id: hello.visitor, confirmed: 1 }]);
+  const me = await (await call(`${PAGE}/api/activity/me`, { headers: { ...BROWSER, Cookie: cookie } })).json();
+  assert.deepEqual(me, { v: 1, ids: "notice", state: "valid", visitor: hello.visitor, held: { first_day: "2026-10-05", last_day: "2026-10-05", days: 1, page_views: 1, questions: 0 } });
+  // off: the cookie says so and nothing more; a page opened after it makes no new id
+  const off = await post(call, "/api/activity/choice", { ids: "off" }, { Cookie: cookie });
+  assert.equal(off.headers.get("Set-Cookie"), "__Host-tcv=off; Path=/; Max-Age=33696000; Secure; HttpOnly; SameSite=Lax");
+  assert.deepEqual(await off.json(), { v: 1, ledger: true, ids: "notice", state: "off", visitor: null, pass: null, expires: null });
+  assert.equal((await open(call, { Cookie: "__Host-tcv=off" })).headers.get("Set-Cookie"), null);
+  assert.equal((await (await post(call, "/api/activity/hello", {}, { Cookie: "__Host-tcv=off" })).json()).state, "off");
+  // on again: a new id (the old one is not taken up again)
+  const on = await post(call, "/api/activity/choice", { ids: "on" }, { Cookie: "__Host-tcv=off" });
+  const next = await on.json();
+  assert.ok(isVisitor(next.visitor) && next.visitor !== hello.visitor);
+  assert.match(on.headers.get("Set-Cookie"), /^__Host-tcv=[A-Za-z0-9_-]{22}\./);
+  assert.equal((await post(call, "/api/activity/choice", { ids: "perhaps" })).status, 404);
+  // forgotten: the first visitor's rows go, and the cookie is "off"
+  const gone = await post(call, "/api/activity/forget", {}, { Cookie: cookie });
+  assert.deepEqual(await gone.json(), { v: 1, ledger: true, ids: "notice", state: "off", visitor: null, pass: null, expires: null, forgotten: true });
+  assert.match(gone.headers.get("Set-Cookie"), /^__Host-tcv=off;/);
+  assert.deepEqual(db.rows("SELECT COUNT(*) AS n FROM visitors WHERE visitor_id = ?", hello.visitor), [{ n: 0 }]);
+  assert.deepEqual(db.rows("SELECT what, by FROM deletion_log"), [{ what: "visitor", by: "self" }]);
+  assert.equal((await (await post(call, "/api/activity/forget", {})).json()).forgotten, false); // no one to forget
+  await settle();
+  assert.deepEqual(events().filter((e) => e.event_type === "visitor_choice").map((e) => [e.detail, e.visitor_id]), [["off", null], ["on", null], ["forget", null], ["forget", null]]);
+});
+
+test("the API is written down whatever its score: a reader's reads of a minute one line, a call its own, a refusal with its status", async () => {
+  const { call, settle, events, advance } = site({ watch: true, ledger: true, cf: CF, env: { API_READS_PER_DAY: "4" } });
+  const cookie = cookieOf(await open(call));
+  const api = (path, init = {}) => call(`${PAGE}${path}`, { ...init, headers: { ...BROWSER, Cookie: cookie, ...(init.headers || {}) } });
+  for (let i = 0; i < 3; i++) assert.equal((await api(`/api/passage?id=p${i}`)).status, 200);
+  assert.equal((await api("/api/call", { method: "POST", headers: { "Content-Type": "application/json", Origin: PAGE }, body: '{"name":"classics.search"}' })).status, 200);
+  assert.equal((await api("/api/research", { method: "POST", headers: { "Content-Type": "application/json", Origin: PAGE }, body: "{}" })).status, 200);
+  assert.equal((await api("/api/research/job_secret-id-0123456789")).status, 200);
+  advance(61000); // the day's reads spent, as the object says at the next round trip
+  assert.equal((await api("/api/passage?id=p9")).status, 429);
+  assert.equal((await quiet(() => api("/api/nothing"))).status, 404);
+  // another site's page making the reader's browser ask: refused, counted for no one
+  assert.equal((await quiet(() => api("/api/passage?id=p1", { headers: { "Sec-Fetch-Site": "cross-site", Origin: "https://forum.example" } }))).status, 403);
+  await settle();
+  const seen = events().filter((e) => e.event_type !== "page_view");
+  assert.deepEqual(seen.map((e) => [e.event_type, e.route, e.status, e.n, e.security_action, e.visitor_id !== null]), [
+    ["api_call", "/api/call", 200, 1, "none", true], ["research_started", "/api/research", 200, 1, "none", true], ["request", "other", 404, 1, "none", false],
+    ["api_read", "/api/passage", 200, 3, "none", true], ["api_read", "/api/research/…", 200, 1, "none", true], ["api_read", "/api/passage", 429, 1, "rate_limited", true],
+    ["request", "other", 403, 1, "cross_site", false]]);
+  assert.ok(!JSON.stringify(seen).includes("secret-id")); // a research run's id is the only key to it
+  assert.ok(seen.every((e) => e.latency_ms >= 0));
+});
+
+test("the ledger's counts are read with the stats token; its pipeline and its archive with the collector's", async () => {
+  const { call, settle, registry, advance } = site({ watch: true, ledger: true, cf: CF, env: { STATS_TOKEN: STATS, LOG_EXPORT_TOKEN: EXPORT } });
+  const a = cookieOf(await open(call));
+  await post(call, "/api/activity/hello", {}, { Cookie: a });
+  advance(40 * 60000);
+  await open(call, { Cookie: a }); // forty minutes on: a second visit
+  const b = cookieOf(await open(call, { "CF-Connecting-IP": "203.0.113.10" }));
+  await post(call, "/api/activity/hello", {}, { Cookie: b, "CF-Connecting-IP": "203.0.113.10" });
+  await open(call, { "CF-Connecting-IP": "203.0.113.11", "Sec-GPC": "1" });
+  await settle();
+  await registry();
+  assert.equal((await call(`${PAGE}/api/activity/stats?range=all`)).status, 401);
+  const res = await call(`${PAGE}/api/activity/stats?range=all`, { headers: { Authorization: `Bearer ${STATS}` } });
+  assert.equal(res.status, 200);
+  const s = await res.json();
+  assert.deepEqual([s.from, s.to, s.totals.visitors, s.totals.visits, s.totals.page_views, s.coverage.page_views_identified, s.coverage.page_ready], ["2026-10-05", "2026-10-05", 2, 3, 4, 3, 2]);
+  assert.deepEqual(s.places, [{ country: "CN", region: "GD", visitors: 2, page_views: 4, questions: 0 }]);
+  assert.deepEqual(s.sessions.lengths.find(([k]) => k === "0-10s"), ["0-10s", 3]);
+  // the pipeline, for the owner
+  assert.equal((await call(`${PAGE}/api/activity/health`, { headers: { Authorization: `Bearer ${STATS}` } })).status, 401);
+  const health = await (await call(`${PAGE}/api/activity/health`, { headers: { Authorization: `Bearer ${EXPORT}` } })).json();
+  assert.deepEqual([health.site.source, health.site.appended, health.site.dropped, health.site.lost, health.archive, health.ids, health.registry.visitors, health.registry.first_day],
+    ["site", 6, 0, 0, false, "notice", 2, "2026-10-05"]);
+  assert.equal((await call(`${PAGE}/api/activity/archive?day=2026-10-05`, { headers: { Authorization: `Bearer ${EXPORT}` } })).status, 404); // no bucket
+});
+
+test("a ledger that cannot be reached is never in a visitor's way, and what it missed is counted", async () => {
+  const { call, settle, deps, brought, ledger } = site({ watch: true, ledger: true, cf: CF });
+  const reach = deps.watch.activity;
+  deps.watch.activity = async () => { throw new Error("Durable Object reset"); };
+  const errors = console.error;
+  console.error = () => {};
+  try {
+    assert.equal((await open(call)).status, 200);
+    assert.equal((await open(call, {}, "/about")).status, 200);
+    await settle();
+  } finally { console.error = errors; }
+  assert.equal(brought.length, 0);
+  deps.watch.activity = reach;
+  assert.equal((await open(call)).status, 200);
+  await settle();
+  assert.deepEqual(brought.map((b) => [b.events.length, b.lost]), [[1, 2]]);
+  assert.equal(ledger.get("lost"), 2);
 });

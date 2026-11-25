@@ -11,6 +11,10 @@
 //
 //   chat-logs/YYYY/MM/DD/<id>.json                  a conversation record (the relay)
 //   security-logs/<source>/YYYY/MM/DD/<id>.json     an event of a sentinel (source: relay | site)
+//   activity-logs/<source>/YYYY/MM/DD/HH.jsonl.gz   an hour of the activity ledger's events (security/ledger.js): many a
+//                                                   line, gzip, written once the hour is over (a further part of a busy
+//                                                   hour: HH.p01.jsonl.gz); activity-logs/manifests/<source>/YYYY/MM/DD.json
+//                                                   says what a day's objects are and what each must hash to
 //
 // No name, address or text is in a key.  While a Worker has the bucket, the archive is its stores' only collector: the
 // repository's acknowledgement is refused (409), so that two collectors never delete from the same store.  The holder of
@@ -90,7 +94,7 @@ export class Drainer {
   async arm(now = Date.now()) {
     if (!this.bucket || this.armed) return;
     this.armed = true;
-    if ((await this.storage.getAlarm()) === null) await this.storage.setAlarm(now + this.delay);
+    await sooner(this.storage, now + this.delay);
   }
 
   async run(now = Date.now()) {
@@ -99,10 +103,62 @@ export class Drainer {
     const out = await drain(this.job.store, this.bucket, this.job);
     if (out.failed || out.more) {
       this.armed = true;
-      await this.storage.setAlarm(now + (out.failed ? this.retry : 1000));
+      await sooner(this.storage, now + (out.failed ? this.retry : 1000));
     }
     return out;
   }
+}
+
+/**
+ * A Durable Object has one alarm, and may have more than one thing to wake for (this drain; the ledger's:
+ * security/ledger.js).  Each asks for the alarm no later than it needs; the one already set for sooner stands, and the
+ * object's alarm() runs them all.
+ */
+export async function sooner(storage, at) {
+  const set = await storage.getAlarm();
+  if (set === null || set > at) await storage.setAlarm(at);
+}
+
+// ------------------------------------------------------------------ batches: many lines an object
+export const ACTIVITY = (source) => `activity-logs/${source}/`;
+export const MANIFESTS = (source) => `activity-logs/manifests/${source}/`;
+
+/** Text as gzip, and back (CompressionStream: a Worker has it, and so has Node). */
+export async function gzip(text) {
+  return new Uint8Array(await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer());
+}
+
+export async function gunzip(bytes) {
+  return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+}
+
+/** The key of an hour's batch under a prefix (the hour as UTC milliseconds): YYYY/MM/DD/HH.jsonl.gz; a further part of
+ * the same hour, HH.pNN.jsonl.gz. */
+export function batchKey(prefix, hour, part = 0) {
+  const d = new Date(hour).toISOString();
+  return `${prefix}${d.slice(0, 4)}/${d.slice(5, 7)}/${d.slice(8, 10)}/${d.slice(11, 13)}${part ? `.p${String(part).padStart(2, "0")}` : ""}.jsonl.gz`;
+}
+
+/**
+ * Lines into the bucket as one gzip object, R2 checking its sha256 on the way in: → {key, events, bytes, sha256}.
+ * Throws when it is not written; a write repeated lands on the same key.
+ */
+export async function putBatch(bucket, key, lines, customMetadata = {}) {
+  const body = await gzip(lines.map((line) => `${line}\n`).join(""));
+  const sha256 = hex(await crypto.subtle.digest("SHA-256", body));
+  // a .gz file wherever it is read: no Content-Encoding, which a client would undo and leave the name wrong
+  const put = await bucket.put(key, body, { sha256, httpMetadata: { contentType: "application/gzip" },
+    customMetadata: { ...customMetadata, events: String(lines.length) } });
+  if (!put) throw new Error("not written");
+  return { key, events: lines.length, bytes: body.byteLength, sha256 };
+}
+
+/** A batch read back: its lines, parsed (a line that is not JSON: {unreadable: true}); null when it is not there. */
+export async function readBatch(bucket, key) {
+  const got = await bucket.get(key);
+  if (!got) return null;
+  const text = await gunzip(new Uint8Array(await got.arrayBuffer()));
+  return text.split("\n").filter(Boolean).map((line) => { try { return JSON.parse(line); } catch { return { unreadable: true }; } });
 }
 
 /**
