@@ -6,7 +6,17 @@
 // sleeps: the page can then begin a conversation at once, and a page asking for it wakes the container, which is up by
 // the time the model calls a tool.  Everything else goes to the container.
 
-const KEPT = { "/api/info": () => "info", "/api/catalog": (q) => (["core", "all"].includes(q.get("mode") || "core") ? `catalog:${q.get("mode") || "core"}` : null) };
+// What is kept, by path: the key it is kept under, and the one query the container is asked for it.  The key and the
+// question always agree, whatever else a request's query says: asked as the request came, `?mode=core&mode=all` was
+// kept as the core catalog (the first `mode`) while the runtime answered the full one (it reads the last) — one such
+// request before any other, and every page would have been given every tool until the next deployment.
+const KEPT = {
+  "/api/info": () => ({ key: "info", search: "" }),
+  "/api/catalog": (q) => {
+    const mode = q.get("mode") || "core";
+    return ["core", "all"].includes(mode) ? { key: `catalog:${mode}`, search: `?mode=${mode}` } : null;
+  },
+};
 
 export const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), { status, headers: { ...headers, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
@@ -85,13 +95,14 @@ export async function route(request, box) {
   const url = new URL(request.url);
   const kept = request.method === "GET" && KEPT[url.pathname]?.(url.searchParams);
   if (!kept) return box.forward(request);
-  const key = `snap:${box.version}:${kept}`;
+  const key = `snap:${box.version}:${kept.key}`;
   const hit = await box.get(key);
   if (hit) {
     box.warm();
     return new Response(hit, { status: 200, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-TC-Corpus": "kept" } });
   }
-  const res = await box.forward(request);
+  url.search = kept.search; // the question the key names, not the request's own
+  const res = await box.forward(new Request(url, request));
   if (res.status !== 200) return res;
   const body = await res.text();
   try {

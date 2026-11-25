@@ -686,6 +686,7 @@ engine        研究引擎（操作循环与科学循环、分支、锦标赛、
 
 ```
 architecture-policy.yaml   架构策略（分层、内核中立、SDK 隔离、智能体规则）
+distribution-policy.yaml   发布策略：仓库里每个路径的类别（公开 / 受限 / 保密），网站带出去的只有这里写明的（构建时核对）
 web/                       网页对话客户端（原生 ES 模块，无构建步骤）：对话、流式渲染、引文核对、证据 · 研究 · 工具台、设置；
                            js/worker.js 内置运行环境：在 Web Worker 中用 Pyodide 运行 TaoChronos
 agents/                    16 个 AgentSpec（YAML）；agents/core/ 四个 V2 核心智能体
@@ -700,7 +701,7 @@ domains/bridge/            古今桥接：168 个古代表型（写法、HPO 投
 domains/modern/            现代证据：中英对照（检索用）、安全提示（有毒药物）
 domains/classics/lexicon-harvested/  从全量语料采集的候选方名、药名（仅 full-corpus 画像加载）
 corpus/                    演示语料（未经核验）、现代证据摘要、全量书目 catalog/ 与来源锁定 sources.lock.yaml
-evals/gold/                评测金标准
+evals/gold/                评测金标准（保密：不进网站，也不进服务端镜像）
 src/taochronos/            protocol/ kernel/ capabilities/ science/ verification/ tools/ plugins/ agents/ engine/ evals/ workspace/ chat/
   chat/                    网页对话的运行时（工具目录、调用、引文、研究会话）、本机服务 serve、站点构建 web build、模型平台列表
   plugins/classics/study/  治学层：concordance · formulas · herbs · terms · taboo · network · metrology · learning · dataset · render

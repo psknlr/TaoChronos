@@ -95,8 +95,17 @@ def read_tokens(data: Any) -> list[Token]:
     return out
 
 
+MAX_FILE = 32 * 1024 * 1024  # an engine's output for one page is a few megabytes at most
+
+
 def read_file(path: str | Path, fmt: str | None = None) -> list[Token]:
+    """The tokens of an OCR engine's output file.  Only a regular file of a page's size: a device or a pipe never ends,
+    and a file of gigabytes is not a page — either would take the process with it."""
     p = Path(path)
+    if not p.is_file():
+        raise ValueError(f"not a file: {p}")
+    if p.stat().st_size > MAX_FILE:
+        raise ValueError(f"{p} is larger than {MAX_FILE // (1024 * 1024)} MB: not one page of OCR output")
     text = p.read_text(encoding="utf-8")
     fmt = fmt or _guess(p, text)
     if fmt == "alto":

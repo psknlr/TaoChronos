@@ -21,6 +21,9 @@
 // the relay), not its static files.  API calls are limited per visitor (the rate-limit bindings).  The sentinel
 // (security/sentinel.js) sees the pages, the API and what is not found: a scanner path refuses its address for a day, an
 // API call that is not the page's is scored and, flagged, kept whole for the owner; addresses are kept only then.
+// A request the page of another site made a reader's browser send (ledFrom) is none of the reader's doing: the API
+// answers it 403, a path that is not there 404, and nothing of it is counted or kept against the address — only the
+// site's own pages are served to it, as to anyone who follows a link.
 //
 // A refusal says so (docs/adr/0023-workers-paid.md): an address the sentinel refuses is answered 403, a day's reads or
 // calls spent 429, each with Retry-After and X-TC-Corpus: refused; 503 is kept for a corpus that cannot answer.  The page
@@ -28,7 +31,7 @@
 // A call or a research run (work the account pays for) is not let through while the sentinel cannot be asked.
 
 import { EVENTS, serveArchive } from "../../../security/archive.js";
-import { assess, fingerprint, ipKey, isHoneypot, logLine, sentinelConfig, serveSecurity, WatchCore } from "../../../security/sentinel.js";
+import { assess, fingerprint, ipKey, isHoneypot, ledFrom, logLine, sentinelConfig, serveSecurity, WatchCore } from "../../../security/sentinel.js";
 import { place, serveStats, usageConfig, usageDay } from "../../../security/usage.js";
 import { answer as backupAnswer, ready as backupReady } from "./backup/api.js";
 
@@ -46,6 +49,9 @@ export const DEFAULTS = {
   // Many people may share one address (carrier NAT), so these are wide; 0: no cap
   API_READS_PER_DAY: "6000",
   API_CALLS_PER_DAY: "3000",
+  // research runs started per visitor per day: the corpus runs one at a time, a minute or two each, and holds only so
+  // many waiting (src/taochronos/chat/jobs.py) — an address that could start thousands would keep everyone else out
+  API_RESEARCH_PER_DAY: "100",
   // what the page never uses (the clipboard it does: copying an answer stays allowed)
   PERMISSIONS_POLICY: "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), "
     + "magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), "
@@ -71,6 +77,7 @@ export function config(env = {}) {
     permissions: get("PERMISSIONS_POLICY").trim(),
     readsPerDay: Number(get("API_READS_PER_DAY")),
     callsPerDay: Number(get("API_CALLS_PER_DAY")),
+    researchPerDay: Number(get("API_RESEARCH_PER_DAY")),
   };
 }
 
@@ -90,14 +97,21 @@ export async function handle(request, env, deps = {}) {
   // the sentinel: the request as seen at the edge, and a note of it when it is worth one (security/sentinel.js)
   const scfg = sentinelConfig(env);
   const now = deps.now ? deps.now() : Date.now();
-  const s = deps.watch && scfg.mode !== "off" ? { cfg: scfg, fp: fingerprint(request, now), origins: cfg.origins, self: url.origin, deps, now } : null;
+  const fp = fingerprint(request, now);
+  const s = deps.watch && scfg.mode !== "off" ? { cfg: scfg, fp, origins: cfg.origins, self: url.origin, deps, now } : null;
+  // the page of another site that made a browser send this, if one did: read whether or not the sentinel records —
+  // what the API refuses it is a rule of access, not a note
+  const from = ledFrom(fp, cfg.origins, url.origin);
+  if (s) s.led = from;
   let response;
   try {
     if (s && isHoneypot(url.pathname)) {
-      note(s, "honeypot", 404); // the address is noted — and, HONEYPOT = block, refused the API from now on — after the answer
+      // the address is noted — and, HONEYPOT = block, refused the API from now on — after the answer (not a reader's
+      // whom another site's page sent here: note)
+      note(s, "honeypot", 404);
       response = new Response("Not Found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
     } else if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
-      response = await api(request, env, cfg, deps, url, s);
+      response = await api(request, env, cfg, deps, url, s, from);
     } else {
       response = await site(request, env, s);
     }
@@ -115,6 +129,7 @@ export async function handle(request, env, deps = {}) {
  * request a minute, not one a miss.
  */
 function note(s, route, status) {
+  if (s.led) return led(s, route, status); // none of the reader's doing: not noted
   const a = assess(s.fp, { route, origins: s.origins, selfOrigin: s.self, ownPrefix: s.cfg.ownPrefix });
   logLine("site", s.fp, a, null, status, s.cfg);
   const local = s.deps.local || (s.deps.local = new Map());
@@ -138,6 +153,12 @@ function note(s, route, status) {
   s.deps.defer(s.deps.watch.observe(s.fp, a, extra, s.cfg));
 }
 
+/** A request another site's page made a browser send (s.led: that page's origin): a line in the Worker's log, without
+ * the address, and nothing kept or counted against it. */
+function led(s, route, status) {
+  logLine("site", s.fp, { route, score: 0, reasons: ["led"], led: s.led }, null, status, s.cfg);
+}
+
 const BLOCKED = "该地址因异常访问已被暂时限制，请稍后再试";
 
 // ------------------------------------------------------------------ the site
@@ -151,8 +172,10 @@ async function site(request, env, s) {
     // a page asked for by what is not a browser, or a file that is not there (a probe, or a link gone stale): noted
     if (res.status === 404) note(s, "other", 404);
     else if (assess(s.fp, { route: "page", ownPrefix: s.cfg.ownPrefix }).score >= 1) note(s, "page", res.status);
-    // a page a browser opened (only the pages come through this Worker: run_worker_first) is counted for the 统计 pane
-    if (res.status === 200 && request.method === "GET" && s.fp.uaClass === "browser" && s.deps.watch?.usage) tally(s, env);
+    // a page a browser opened (only the pages come through this Worker: run_worker_first) is counted for the 统计 pane —
+    // one a visitor came to by a link too, not one another site's page loaded as its image or its frame
+    const opened = !s.led || (s.fp.sfDest ? s.fp.sfDest === "document" : /text\/html/.test(s.fp.accept || ""));
+    if (res.status === 200 && request.method === "GET" && s.fp.uaClass === "browser" && opened && s.deps.watch?.usage) tally(s, env);
   }
   return res;
 }
@@ -216,7 +239,7 @@ function secure(response, cfg, origin) {
 const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), { status, headers: { ...headers, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 
-async function api(request, env, cfg, deps, url, s) {
+async function api(request, env, cfg, deps, url, s, from = null) {
   const origin = request.headers.get("Origin");
   const allowed = !origin || origin === url.origin || cfg.origins.includes(origin);
   const cors = origin && allowed ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" } : { Vary: "Origin" };
@@ -224,6 +247,10 @@ async function api(request, env, cfg, deps, url, s) {
     if (!allowed) return new Response(null, { status: 403, headers: cors });
     return new Response(null, { status: 204, headers: { ...cors, "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Max-Age": "86400" } });
+  }
+  if (from) { // another site's page made the browser ask: nothing is answered, and nothing counted against the reader
+    if (s) led(s, "api", 403);
+    return json({ error: "this API answers the site's own pages only" }, 403, cors);
   }
   if (url.pathname.startsWith("/api/security/")) { // before the origin check: a browser's report may come with none
     if (!s) return url.pathname === "/api/security/csp" ? new Response(null, { status: 204 }) : json({ error: "no such endpoint" }, 404, cors);
@@ -255,7 +282,7 @@ async function api(request, env, cfg, deps, url, s) {
     if (s) note(s, "other", 404);
     return json({ error: `no such endpoint ${request.method} ${url.pathname}` }, 404, cors);
   }
-  const route = isGet ? "api-read" : "api-call";
+  const route = isGet ? "api-read" : url.pathname === "/api/research" ? "api-research" : "api-call";
   if (deps.limit && !(await deps.limit(isGet ? "read" : "call", who))) {
     if (s) note(s, route, 429);
     return json({ error: "请求太频繁，请稍候再试", rate_limited: true }, 429, { ...cors, "Retry-After": "60" });
@@ -265,12 +292,14 @@ async function api(request, env, cfg, deps, url, s) {
     // day's reads or calls waits for tomorrow.  A call, and a reader's first request, wait for the object; a quiet
     // reader's further requests within the minute are counted here and reported with the next round trip
     const a = assess(s.fp, { route, origins: cfg.origins, selfOrigin: url.origin, ownPrefix: s.cfg.ownPrefix });
-    const verdict = await consult(deps, s, a, who, isGet, cfg);
+    const verdict = await consult(deps, s, a, who, isGet, route === "api-research" ? cfg.researchPerDay : isGet ? cfg.readsPerDay : cfg.callsPerDay);
     // a refusal is told as one (the page carries on in the browser and says why: web/js/runtime.js); a call while the
     // sentinel cannot be asked is the site's failure, not the visitor's (503: the page carries on in the browser too)
     const status = verdict.blocked ? 403 : verdict.over ? 429 : verdict.unavailable ? 503 : null;
     logLine("site", s.fp, a, verdict.w, status, s.cfg);
     if (verdict.blocked) return json({ error: BLOCKED, blocked: true, starting: false }, 403, { ...cors, "Retry-After": String(verdict.retry || 60), "X-TC-Corpus": "refused" });
+    // a day's research runs spent is the run's refusal, not the corpus's: the page goes on reading and calling it
+    if (verdict.over && route === "api-research") return json({ error: `今天从这个地址发起的研究已达上限（每天 ${cfg.researchPerDay} 次），明天再来`, rate_limited: true, research_daily: true }, 429, { ...cors, "Retry-After": String(secondsToMidnight(s.now)) });
     if (verdict.over) return json({ error: "今天的查询次数已用完，明天再来", rate_limited: true, daily: true, starting: false }, 429, { ...cors, "Retry-After": String(secondsToMidnight(s.now)), "X-TC-Corpus": "refused" });
     if (verdict.unavailable) return json({ error: "全量语料服务暂时无法核对访问，请稍后再试", starting: false }, 503, { ...cors, "Retry-After": "30" });
   }
@@ -320,13 +349,14 @@ async function api(request, env, cfg, deps, url, s) {
 const secondsToMidnight = (now) => Math.ceil((86400000 - (now % 86400000)) / 1000);
 
 /**
- * The sentinel's word on an API request: {w, blocked, retry, over, unavailable}.  deps.local (a Map, this instance's)
+ * The sentinel's word on an API request (a: its assessment; cap: its route's allowance for the day): {w, blocked, retry,
+ * over, unavailable}.  deps.local (a Map, this instance's)
  * remembers per address the last round trip and the reads since; a quiet reader (score 0) within the minute is answered
  * from it.  The object out of reach (a failure) lets reads go on — the corpus's public passages, the rate-limit bindings
  * still standing — and refuses calls and research runs (unavailable): work the account pays for is not let through
  * unchecked.  On the Free plan the object's daily allowance made this unaffordable; on Workers Paid it has none.
  */
-async function consult(deps, s, a, who, isGet, cfg) {
+async function consult(deps, s, a, who, isGet, cap) {
   const local = deps.local || (deps.local = new Map());
   let l = local.get(who);
   if (!l) {
@@ -334,8 +364,6 @@ async function consult(deps, s, a, who, isGet, cfg) {
     l = { at: 0, reads: 0, today: 0, blockedUntil: 0, notedAt: 0, notes: 0, paths: [] };
     local.set(who, l);
   }
-  const route = isGet ? "api-read" : "api-call";
-  const cap = isGet ? cfg.readsPerDay : cfg.callsPerDay;
   const sameDay = Math.floor(l.at / 86400000) === Math.floor(s.now / 86400000);
   if (isGet && a.score < 1 && l.at && s.now - l.at < 60000 && sameDay) {
     l.reads += 1;
@@ -352,7 +380,7 @@ async function consult(deps, s, a, who, isGet, cfg) {
   if (!w) return { w: null, blocked: false, retry: 0, over: false, unavailable: !isGet };
   if (isGet) l.today = Number(w.today?.["api-read"] || 0);
   l.blockedUntil = w.blocked ? w.until : 0;
-  return { w, blocked: w.blocked, retry: w.retry, over: cap > 0 && Number(w.today?.[route] || 0) > cap };
+  return { w, blocked: w.blocked, retry: w.retry, over: cap > 0 && Number(w.today?.[a.route] || 0) > cap };
 }
 
 // ------------------------------------------------------------------ the store's upload

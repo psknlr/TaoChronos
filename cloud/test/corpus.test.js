@@ -48,8 +48,26 @@ test("info and the catalogs are asked once per version, then answered while the 
   await route(get("/api/catalog?mode=core"), b);
   await route(get("/api/catalog?mode=all"), b);
   await route(get("/api/catalog?mode=all"), b);
-  assert.deepEqual(b.seen.forwarded, ["GET /api/info", "GET /api/catalog", "GET /api/catalog?mode=all"]);
+  assert.deepEqual(b.seen.forwarded, ["GET /api/info", "GET /api/catalog?mode=core", "GET /api/catalog?mode=all"]);
   assert.deepEqual([...b.storage.keys()].filter((k) => k.startsWith("snap:")).sort(), ["snap:v2:catalog:all", "snap:v2:catalog:core", "snap:v2:info"]);
+});
+
+test("what is kept is the answer to the question its key names, whatever else the request's query says", async () => {
+  // the runtime reads the last `mode` of a query, the key was made from the first: `?mode=core&mode=all`, asked before
+  // any other request of a deployment, was kept as the core catalog with the full one's answer
+  const asked = (request) => `${new URL(request.url).pathname}${new URL(request.url).search}`;
+  const b = box({ answer: (request) => new Response(JSON.stringify({ asked: asked(request) }), { headers: { "Content-Type": "application/json" } }) });
+  const first = await route(get("/api/catalog?mode=core&mode=all&x=1"), b);
+  assert.equal((await first.json()).asked, "/api/catalog?mode=core");
+  assert.deepEqual(b.seen.forwarded, ["GET /api/catalog?mode=core"]);
+  assert.equal(JSON.parse(b.storage.get("snap:v2:catalog:core")).asked, "/api/catalog?mode=core");
+  const page = await route(get("/api/catalog"), b);
+  assert.deepEqual([page.headers.get("X-TC-Corpus"), (await page.json()).asked], ["kept", "/api/catalog?mode=core"]);
+  await route(get("/api/catalog?mode=all&mode=core"), b);
+  await route(get("/api/info?mode=all&lang=en"), b);
+  assert.deepEqual(b.seen.forwarded, ["GET /api/catalog?mode=core", "GET /api/catalog?mode=all", "GET /api/info"]);
+  assert.equal(JSON.parse(b.storage.get("snap:v2:catalog:all")).asked, "/api/catalog?mode=all");
+  assert.equal(JSON.parse(b.storage.get("snap:v2:info")).asked, "/api/info");
 });
 
 test("everything else goes to the container, every time", async () => {

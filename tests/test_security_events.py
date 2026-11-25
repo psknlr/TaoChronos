@@ -138,6 +138,88 @@ def test_what_the_zone_does_not_offer_is_left_out_of_the_query(monkeypatch, tmp_
         assert "requestSource" not in q and "clientRequestHTTPHost: $host" in q
 
 
+CHROME = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+
+
+def test_the_runtimes_files_are_counted_by_day_without_addresses_and_who_takes_them_in_bulk_or_by_a_tool_is_kept(monkeypatch, tmp_path):
+    """The files the runtime in the browser is made of are public and served past the Worker: what is known of who takes
+    them is known at the edge.  A day's totals by file, status and kind of agent are kept with the bytes sent and no
+    address (they are every reader's own downloads); an address only with a fetch by what is not a browser, or with one
+    file taken more often in the day than readers take it.  And the id of a research run goes into no kept path."""
+    def group(ip, ua, path, status, count, size, method="GET"):
+        return {"count": count, "avg": {"sampleInterval": 1}, "sum": {"edgeResponseBytes": size},
+                "dimensions": {"clientIP": ip, "userAgent": ua, "clientRequestPath": path, "clientRequestHTTPHost": "chat.impf.ai",
+                               "clientRequestHTTPMethodName": method, "edgeResponseStatus": status}}
+
+    windows = {
+        "2026-10-05T08:00:00Z": [
+            group("203.0.113.1", CHROME, "/runtime/taochronos.zip", 200, 1, 1111791),   # two readers: the page's own downloads
+            group("203.0.113.2", CHROME, "/runtime/taochronos.zip", 200, 1, 1111791),
+            group("203.0.113.1", CHROME, "/runtime/corpus.sqlite.xz", 206, 2, 9000000),  # in parts
+            group("203.0.113.1", CHROME, "/runtime/boot.json", 304, 1, 0),
+            group("198.51.100.3", "curl/8.4.0", "/runtime/corpus.sqlite.xz", 200, 1, 16853896),  # a tool
+            group("198.51.100.4", "Lightpanda/1.0", "/runtime/home.zip", 200, 1, 1468338),       # neither a browser nor a known tool
+            group("198.51.100.5", CHROME, "/runtime/home.zip", 200, 12, 12 * 1468338),          # a browser's name, in bulk
+            group("198.51.100.6", CHROME, "/api/research/job_0123456789abcdef0123456789abcdef/cancel", 403, 1, 80, "POST"),
+        ],
+        "2026-10-05T12:00:00Z": [group("198.51.100.5", CHROME, "/runtime/home.zip", 200, 20, 20 * 1468338)],
+    }
+    settings = zone_settings()
+    settings["httpRequestsAdaptiveGroups"]["availableFields"].append("sum_edgeResponseBytes")
+    asked = []
+
+    def api(token, q, variables):
+        if "settings" in q:
+            return {"viewer": {"zones": [{"settings": settings}]}}
+        if "firewallEventsAdaptive(" in q:
+            rows = [{"datetime": "2026-10-05T09:00:00Z", "action": "block", "ruleId": "r5", "rayName": "ray9", "clientIP": "198.51.100.6",
+                     "clientRequestPath": "/api/session/ses_0123456789abcdef0123456789abcdef"}] if variables["start"] <= "2026-10-05T09:00:00Z" <= variables["end"] else []
+            return {"viewer": {"zones": [{"firewallEventsAdaptive": rows}]}}
+        asked.append(q)
+        return {"viewer": {"zones": [{"httpRequestsAdaptiveGroups": windows.get(variables["start"], [])}]}}
+
+    monkeypatch.setattr(events, "query", api)
+    result = events.pull("token", "zone", DAY, tmp_path, ["chat.impf.ai"], now=LATER)
+    assert "sum { edgeResponseBytes }" in asked[0]
+    rows = [json.loads(line) for line in (tmp_path / "2026" / "10" / "05.jsonl").read_text(encoding="utf-8").splitlines()]
+    totals = {(r["path"], r["status"], r["agent"]): r for r in rows if r["kind"] == "artifacts"}
+    assert result["artifacts"] == len(totals) == 6
+    assert [totals["/runtime/taochronos.zip", 200, "browser"][k] for k in ("requests", "addresses", "bytes", "method", "complete")] == [2, 2, 2223582, "GET", True]
+    assert [totals["/runtime/corpus.sqlite.xz", 206, "browser"][k] for k in ("requests", "addresses", "bytes")] == [2, 1, 9000000]
+    assert totals["/runtime/boot.json", 304, "browser"]["requests"] == 1
+    assert [totals["/runtime/home.zip", 200, "browser"][k] for k in ("requests", "addresses", "bytes")] == [32, 1, 32 * 1468338]  # both windows
+    assert totals["/runtime/corpus.sqlite.xz", 200, "tool"]["requests"] == 1 and totals["/runtime/home.zip", 200, "other"]["requests"] == 1
+    assert not any("clientIP" in r or "userAgent" in r for r in totals.values())  # every reader's own downloads: no address
+    by_ip = {r["clientIP"]: r for r in rows if r["kind"] == "requests"}
+    assert set(by_ip) == {"198.51.100.3", "198.51.100.4", "198.51.100.5", "198.51.100.6"}  # not the two readers
+    assert by_ip["198.51.100.3"]["why"] == ["ua_tool"] and by_ip["198.51.100.3"]["bytes"] == 16853896
+    assert by_ip["198.51.100.4"]["why"] == ["artifact_agent"]
+    assert [by_ip["198.51.100.5"][k] for k in ("why", "requests", "fetched")] == [["artifact_volume"], 12, 32]
+    assert events.ARTIFACT_VOLUME == 30 and events.worth(windows["2026-10-05T08:00:00Z"][0], 1, 29) == []
+    # a device's own networking under a browser or an app is a reader's, not a program's: no address for it
+    for stack in ("Quark/7.4.5.680 (iPhone; iOS 18.1; Scale/3.00)", "NetworkingExtension/8621.1.15.10.7 Network/4277.42.2 iOS/18.1",
+                  "com.apple.WebKit.Networking/20621.1.15 CFNetwork/1568.200.51 Darwin/24.1.0", "Dalvik/2.1.0 (Linux; U; Android 13; BKQ-AN10 Build/HONORBKQ-AN10)"):
+        assert events.worth(group("203.0.113.7", stack, "/runtime/corpus.sqlite.xz", 200, 1, 9), 1, 1) == [], stack
+    assert events.worth(group("203.0.113.7", "opencode/latest/1.0/cli", "/runtime/boot.json", 200, 1, 9), 1, 1) == ["artifact_agent"]
+    # the id of a research run or its session: in no kept path
+    assert by_ip["198.51.100.6"]["clientRequestPath"] == "/api/research/…/cancel"
+    assert next(r for r in rows if r["kind"] == "firewall")["clientRequestPath"] == "/api/session/…"
+    assert "0123456789abcdef" not in (tmp_path / "2026" / "10" / "05.jsonl").read_text(encoding="utf-8")
+    # the suspects: what took the runtime's files by a tool or in bulk is counted; the day's totals name nobody
+    monkeypatch.setattr(events, "SUSPECT_DAYS", 100000)
+    ranked = events.suspects(tmp_path)
+    assert {ip: s["artifacts"] for ip, s in ranked.items()} == {"198.51.100.3": 1, "198.51.100.4": 1, "198.51.100.5": 32, "198.51.100.6": 0}
+    assert ranked["198.51.100.5"]["score"] == 20 and next(iter(ranked)) == "198.51.100.5"
+    # a second pull of the day adds nothing
+    again = events.pull("token", "zone", DAY, tmp_path, ["chat.impf.ai"], now=LATER)
+    assert [again["events"], again["requests"], again.get("artifacts", 0)] == [0, 0, 0]
+
+
+def test_a_zone_that_does_not_list_the_bytes_is_not_asked_for_them(monkeypatch, tmp_path):
+    _, api, _ = run(monkeypatch, tmp_path, zone_settings())
+    assert "edgeResponseBytes" not in api.of("httpRequestsAdaptiveGroups")[0][0]
+
+
 def kept(out: Path, *days: str) -> None:
     for d in days:
         f = out / d[:4] / d[5:7] / f"{d[8:]}.jsonl"

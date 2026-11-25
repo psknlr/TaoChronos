@@ -13,7 +13,6 @@
 !corpus/modern/
 !agents/
 !skills/
-!evals/gold/
 !cloud/store.json
 !cloud/.store/
 **/__pycache__

@@ -71,6 +71,8 @@ class _Handler(BaseHTTPRequestHandler):
         if url.path == "/v1/egress":
             if self.server.places is None:
                 return self._json(404, {"error": {"message": "没有这个接口"}})
+            if not self._authorized():  # without the collector's token: only how it looks from where the caller is
+                return self._json(200, {"worker": "IAD", "direct": {"colo": "IAD", "loc": "US"}})
             return self._json(200, {"worker": "IAD", "direct": {"colo": "IAD", "loc": "US"}, "places": {}, "model": self.server.places})
         if url.path == "/v1/sponsors":
             if self.headers.get("Authorization") != f"Bearer {SPONSOR}":
@@ -169,7 +171,7 @@ def test_the_collector_needs_its_token(relay, tmp_path, monkeypatch):
         collect.ack(relay.url, 1)
 
 
-def test_a_deployment_is_checked_and_a_refused_key_explained(relay):
+def test_a_deployment_is_checked_and_a_refused_key_explained(relay, monkeypatch):
     assert collect.check(relay.url, "https://chat.impf.ai", wait=5)["call"] == "ok"
     # the places the model service is asked from, as the relay sees them answer: in the log, and never the deployment's
     # failure (a place that does not answer is asked last by the relay itself; an older relay says nothing)
@@ -177,6 +179,12 @@ def test_a_deployment_is_checked_and_a_refused_key_explained(relay):
     relay.places = {"direct": {"status": 404, "ms": 812}, "apac": {"error": "silent", "ms": 8000}}
     checked = collect.check(relay.url, "https://chat.impf.ai", wait=5)
     assert checked["call"] == "ok" and checked["places"] == {"from": "IAD", "direct": {"status": 404, "ms": 812}, "apac": {"error": "silent", "ms": 8000}}
+    # the relay tells them to the collector's token only: a check without it, or with a wrong one, passes and says nothing of them
+    for token in (None, "a-wrong-token-0123456789"):
+        monkeypatch.delenv("LOG_EXPORT_TOKEN") if token is None else monkeypatch.setenv("LOG_EXPORT_TOKEN", token)
+        quiet = collect.check(relay.url, "https://chat.impf.ai", wait=5)
+        assert quiet["call"] == "ok" and "places" not in quiet
+    monkeypatch.setenv("LOG_EXPORT_TOKEN", TOKEN)
     relay.places = None
     relay.chat_status, relay.chat_error = 503, {"message": "默认服务暂时不可用", "type": "upstream_auth"}
     with pytest.raises(SystemExit, match="api.minimax.io"):

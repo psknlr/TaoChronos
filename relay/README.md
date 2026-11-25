@@ -53,8 +53,11 @@ OpenAI 密钥与 MiniMax 密钥一样**只是这个 Worker 的加密机密**，�
 - **从美国线路调用**：Worker 在离访客最近的 Cloudflare 机房运行，OpenAI 拒绝部分地区（如香港）发出的请求（403）。中转经放在
   `OPENAI_LOCATION` 的 Durable Object（`Egress`，不存任何东西；它另起一个只带必要请求头的请求，不转发 Worker 的原请求）调用 OpenAI。
   默认 `"enam,wnam"`：先北美东部，OpenAI 仍拒绝地区时再试北美西部；`"off"` 则直接从访客所在机房调用。
-  **`GET /v1/egress`** 显示 OpenAI 的边缘看到的位置（Cloudflare 的 trace：机房与国家），分别是直接从访客所在机房、和从每个地点调用时；
-  在受影响的地区打开它，`direct.loc` 若是 `HK`、`places.*.loc` 是 `US`，就说明绕行有效。
+  **`GET /v1/egress`** 显示 OpenAI 的边缘看到的位置（Cloudflare 的 trace：机房与国家）。谁都可以看从自己所在机房直接调用时是什么样
+  （`direct`：在受影响的地区打开它，`direct.loc` 若是 `HK`，就是被拒绝的那种情形）；从每个地点调用时的样子（`places`）与默认模型的主机
+  从各处是否有回应（`model`）只给站长：带收集令牌（`curl -H "Authorization: Bearer $LOG_EXPORT_TOKEN" …/v1/egress`，或
+  `LOG_EXPORT_TOKEN=… python3 relay/collect.py check`）——这一部分一次请求要从好几处发出十来个请求、每个最多等八秒，也说出了服务从哪里
+  调用模型，不该谁都能触发、谁都能看。`places.*.loc` 是 `US`，就说明绕行有效。
 - **带工具时不思考**：在 Chat Completions 上，GPT-6 Luna 只有在 `reasoning_effort: "none"` 时才能调用函数（OpenAI 的模型页），
   网页的请求都带工具，中转因此加上它；输出上限至少 `OPENAI_MIN_OUTPUT`（2048，过小会被拒绝）。OpenAI 的拒绝在 Worker 日志里记为
   `upstream openai <状态码> <错误代码> <参数名>`（不记原文）。
@@ -128,7 +131,8 @@ SPONSOR_SECRET=… python3 relay/collect.py sponsors --delete 3
   （默认 12 秒）没有回应，就**同时**向下一处请求，谁先回复用谁，另一个随即结束；没有回应、出错或拒绝的位置在本实例内排到最后
   5 分钟（再犯则加倍，至多半小时；一旦回复即恢复）。可能只是某处被限（429、403）的拒绝，会换一处再问一次；密钥、参数被拒则
   立即告知。每次回复带 `X-Tao-Asks`（请求了几次）与 `X-Tao-Via`（来自哪里），网页记入对话记录，`taochronos records` 的
-  `asked_again` 汇总。部署后打开 `https://chat-api.impf.ai/v1/egress` 可看到模型服务的主机从各处是否有回应、多快（`model`）。
+  `asked_again` 汇总。部署后带收集令牌请求 `https://chat-api.impf.ai/v1/egress`（见上），可看到模型服务的主机从各处是否有回应、多快（`model`）；部署工作流的检查
+  也会把它写进日志（`places`）。
   记录显示 `apac` 稳定回复后，把 `UPSTREAM_VIA` 改成 `apac,direct` 即以它为先；设为 `direct` 则恢复为只从所在节点请求。
 - **额度用完与一时繁忙分开告知**：模型服务以 429 拒绝时，若它说明是额度用完（OpenAI 的 `insufficient_quota`、MiniMax 的
   `base_resp` 1008），访客立刻看到“额度已用完”（`upstream_quota`，网页不再重试）；其余 429 仍按“繁忙”处理，模型服务给出的

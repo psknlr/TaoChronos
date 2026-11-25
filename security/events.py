@@ -5,7 +5,11 @@
            has) from the GraphQL Analytics API, for a day (UTC; by default every day after the last one kept, through
            yesterday — runs that did not happen are caught up — no further back than CATCH_UP_DAYS), appended to
            data/security-logs/edge/YYYY/MM/DD.jsonl (events once each, by their ray id) — and the suspects: per address,
-           over the days kept, what it did (data/security-logs/edge/suspects.json)
+           over the days kept, what it did (data/security-logs/edge/suspects.json).  The files the runtime in the
+           browser is made of (/runtime/…: the package, its home, the corpus, what it starts with) are counted too,
+           served or not: a day's totals by file, status and kind of agent, with the bytes sent — and no address,
+           these being every reader's own downloads; an address is kept with them only when what fetched them is not a
+           browser, or fetched one ARTIFACT_VOLUME times in the day
   suspects the suspects, printed
 
 Environment: CLOUDFLARE_ANALYTICS_TOKEN — a read-only token with Zone → Analytics: Read on impf.ai (never the deploy
@@ -45,6 +49,19 @@ BROWSER = re.compile(r"^Mozilla/5\.0 .*(?:Chrome/|CriOS/|Firefox/|FxiOS/|Safari/
 TOOL = re.compile(r"^curl/|^wget/|python|aiohttp|go-http-client|^java/|okhttp|apache-httpclient|node-fetch|undici|axios|libwww|scrapy|masscan|zgrab|zmap|"
                   r"nmap|nikto|sqlmap|nuclei|gobuster|ffuf|wpscan|censys|expanse|paloaltonetworks|internetmeasurement|^mozilla/[45]\.0$", re.I)
 OWN = ("taochronos-",)
+# the files the runtime in the browser is made of (docs/adr/0034-what-the-site-ships.md): public, static, served past
+# the Worker — so what is known of who takes them is known here or nowhere
+RUNTIME = re.compile(r"^/runtime/[^/]+$")
+ARTIFACT_VOLUME = 30  # one of them fetched this often in a day from one address: more than a household of readers
+# a phone's or a desktop's own networking, under a browser or an app (Quark's downloader, an in-app page's fetches by
+# the system: all seen here asking for icons): a reader's device, not a program that names itself
+DEVICE = re.compile(r"CFNetwork/|Darwin/|^Dalvik/|^Quark/|NetworkingExtension/|com\.apple\.WebKit|\bNetwork/\d", re.I)
+ID_PATH = re.compile(r"^(/api/(?:research|session)/)[^/]+")
+
+
+def kept_path(path: str) -> str:
+    """A path as it is kept: the id of a research run or its session is the only key to it, and goes into no log."""
+    return ID_PATH.sub(r"\1…", path or "")
 
 
 def query(token: str, q: str, variables: dict) -> dict:
@@ -136,14 +153,16 @@ def firewall_events(token: str, zone: str, start: str, end: str, fields: list[st
 
 
 def request_groups(token: str, zone: str, windows: list[tuple[str, str]], host: str, dims: list[str], page: int,
-                   sampled: bool = True, eyeball: bool = True) -> tuple[list[dict], bool]:
+                   sampled: bool = True, eyeball: bool = True, summed: bool = False) -> tuple[list[dict], bool]:
     """The request groups of the windows (a group node cannot be paged, so they are narrow: four hours at most);
     (groups, complete) — not complete when a window filled its page.  sampled: ask for the sample interval (a group's
-    count is of the sampled requests); eyeball: only what visitors asked, not the Workers' own fetches."""
+    count is of the sampled requests); eyeball: only what visitors asked, not the Workers' own fetches; summed: ask
+    for the bytes sent in answer."""
     where = "datetime_geq: $start, datetime_lt: $end, " + ('requestSource: "eyeball", ' if eyeball else "") + "clientRequestHTTPHost: $host"
     q = ("query($zone: string, $start: Time, $end: Time, $host: string, $limit: Int) { viewer { zones(filter: {zoneTag: $zone}) { "
          f"httpRequestsAdaptiveGroups(filter: {{{where}}}, limit: $limit, orderBy: [count_DESC]) "
-         f"{{ count {'avg { sampleInterval } ' if sampled else ''}dimensions {{ {' '.join(dims)} }} }} }} }} }}")
+         f"{{ count {'avg { sampleInterval } ' if sampled else ''}{'sum { edgeResponseBytes } ' if summed else ''}"
+         f"dimensions {{ {' '.join(dims)} }} }} }} }} }}")
     out: list[dict] = []
     complete = True
     for start, end in windows:
@@ -167,8 +186,9 @@ def ua_class(ua: str) -> str:
     return "other"
 
 
-def worth(row: dict, volume: int) -> list[str]:
-    """Why a request group is kept: the reasons (none: it is a reader's)."""
+def worth(row: dict, volume: int, fetched: int = 0) -> list[str]:
+    """Why a request group is kept: the reasons (none: it is a reader's).  fetched: how often the group's address was
+    served the group's file in the day, when it is one of the runtime's."""
     d = row["dimensions"]
     why = []
     status = int(d.get("edgeResponseStatus") or 0)
@@ -185,6 +205,11 @@ def worth(row: dict, volume: int) -> list[str]:
         why.append(f"ua_{kind}")
     if volume >= 300:
         why.append("volume")
+    if RUNTIME.match(path) and status < 400:  # the runtime's files, served: every reader's browser takes them once
+        if kind == "other" and not DEVICE.search(d.get("userAgent") or ""):
+            why.append("artifact_agent")  # by a program that is neither a browser nor a known tool (a tool is kept above)
+        if fetched >= ARTIFACT_VOLUME:
+            why.append("artifact_volume")
     return why
 
 
@@ -238,10 +263,13 @@ def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str], now:
             if key in seen:
                 continue
             seen.add(key)
+            if ev.get("clientRequestPath"):
+                ev = {**ev, "clientRequestPath": kept_path(ev["clientRequestPath"])}
             lines.append(json.dumps({"key": key, "kind": "firewall", "day": the_day, **ev}, ensure_ascii=False, sort_keys=True))
             kept["events"] += 1
     sampled = bool(offered(["sampleInterval"], rq, "avg"))
-    dims = capped(offered(REQUEST_DIMENSIONS, rq, "dimensions"), rq, 1 + sampled)
+    summed = bool((rq.get("availableFields") or []) and offered(["edgeResponseBytes"], rq, "sum"))  # asked only where listed
+    dims = capped(offered(REQUEST_DIMENSIONS, rq, "dimensions"), rq, 1 + sampled + summed)
     begin = within(rq, "request groups") if rq.get("enabled") and "clientRequestHTTPHost" in dims else None
     if not rq.get("enabled"):
         kept["skipped"].append("httpRequestsAdaptiveGroups is not enabled for this zone/token")
@@ -253,22 +281,58 @@ def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str], now:
         eyeball = bool(offered(["requestSource"], rq, "dimensions"))
         actions: dict[str, int] = {}
         for host in hosts:
-            groups, complete = request_groups(token, zone, windows, host, dims, page, sampled, eyeball)
+            groups, complete = request_groups(token, zone, windows, host, dims, page, sampled, eyeball, summed)
             if not complete:
                 kept["skipped"].append(f"request groups of {host}: a window filled its page of {page} (the rarest groups may be missing)")
+            volume_of = lambda row: int(round((row.get("count") or 0) * float((row.get("avg") or {}).get("sampleInterval") or 1)))  # noqa: E731
+            # the runtime's files over the whole day (a group comes once a window): what each address was served of each,
+            # and the day's totals by file, status, method and kind of agent — these without an address
+            fetched: dict[tuple[str, str], int] = {}
+            totals: dict[tuple[str, int, str, str], dict] = {}
+            for row in groups:
+                d = row["dimensions"]
+                asked, status = d.get("clientRequestPath") or "", int(d.get("edgeResponseStatus") or 0)
+                if not RUNTIME.match(asked):
+                    continue
+                n = volume_of(row)
+                if status < 400:
+                    fetched[(str(d.get("clientIP") or ""), asked)] = fetched.get((str(d.get("clientIP") or ""), asked), 0) + n
+                t = totals.setdefault((asked, status, str(d.get("clientRequestHTTPMethodName") or ""), ua_class(d.get("userAgent") or "")),
+                                      {"requests": 0, "bytes": 0, "addresses": set()})
+                t["requests"] += n
+                t["bytes"] += int((row.get("sum") or {}).get("edgeResponseBytes") or 0)
+                t["addresses"].add(d.get("clientIP"))
+            for (asked, status, method, agent), t in sorted(totals.items()):
+                key = f"art:{host}:{asked}:{status}:{method}:{agent}"
+                if key in seen:
+                    continue
+                seen.add(key)
+                line = {"key": key, "kind": "artifacts", "day": the_day, "host": host, "path": asked, "status": status, "method": method,
+                        "agent": agent, "requests": t["requests"], "addresses": len(t["addresses"] - {None}), "complete": complete}
+                if summed:
+                    line["bytes"] = t["bytes"]
+                lines.append(json.dumps(line, ensure_ascii=False, sort_keys=True))
+                kept["artifacts"] = kept.get("artifacts", 0) + 1
             for row in groups:
                 act = str(row["dimensions"].get("securityAction") or "")
                 actions[act] = actions.get(act, 0) + 1
                 d = row["dimensions"]
-                volume = int(round((row.get("count") or 0) * float((row.get("avg") or {}).get("sampleInterval") or 1)))
-                why = worth(row, volume)
+                volume = volume_of(row)
+                took = fetched.get((str(d.get("clientIP") or ""), d.get("clientRequestPath") or ""), 0)
+                why = worth(row, volume, took)
                 if not why:
                     continue
+                d = {**d, "clientRequestPath": kept_path(d.get("clientRequestPath") or "")}  # the key is kept too
                 key = "rq:" + ":".join(str(d.get(k) or "") for k in ("clientIP", "userAgent", "clientRequestPath", "edgeResponseStatus", "clientRequestHTTPMethodName")) + f":{host}"
                 if key in seen:
                     continue
                 seen.add(key)
-                lines.append(json.dumps({"key": key, "kind": "requests", "day": the_day, "requests": volume, "why": why, **d}, ensure_ascii=False, sort_keys=True))
+                line = {"key": key, "kind": "requests", "day": the_day, "requests": volume, "why": why, **d}
+                if took:
+                    line["fetched"] = took  # the day's count for this address and file (requests: the first window's)
+                if summed:
+                    line["bytes"] = int((row.get("sum") or {}).get("edgeResponseBytes") or 0)
+                lines.append(json.dumps(line, ensure_ascii=False, sort_keys=True))
                 kept["requests"] += 1
         kept["security_actions_seen"] = actions  # what the zone reports as 'no action': checked once against what worth() ignores
     if lines:
@@ -298,7 +362,8 @@ def suspects(out: Path, write: bool = False) -> dict:
             if not ip:
                 continue
             s = by_ip.setdefault(ip, {"first": day, "last": day, "events": 0, "requests": 0, "blocked": 0, "challenged": 0, "scanner_paths": 0,
-                                     "tool_agents": 0, "errors": 0, "asn": None, "asOrg": None, "country": None, "agents": [], "paths": [], "hosts": [], "sources": []})
+                                     "tool_agents": 0, "errors": 0, "artifacts": 0, "asn": None, "asOrg": None, "country": None, "agents": [], "paths": [],
+                                     "hosts": [], "sources": []})
             s["first"], s["last"] = min(s["first"], day), max(s["last"], day)
             s["asn"] = e.get("clientAsn") or s["asn"]
             s["asOrg"] = e.get("clientASNDescription") or s["asOrg"]
@@ -324,9 +389,12 @@ def suspects(out: Path, write: bool = False) -> dict:
                     s["tool_agents"] += n
                 if any(w.startswith("status_") for w in why):
                     s["errors"] += n
+                if RUNTIME.match(e.get("clientRequestPath") or "") and int(e.get("edgeResponseStatus") or 0) < 400:
+                    s["artifacts"] += int(e.get("fetched") or n)  # the runtime's files it was served: by a tool, or in bulk
     for s in by_ip.values():
         s["score"] = (min(s["blocked"], 20) * 2 + min(s["challenged"], 20) + min(s["scanner_paths"], 50) * 2 + min(s["tool_agents"], 200) // 10
-                      + min(s["errors"], 200) // 20 + (5 if s["requests"] >= 1000 else 2 if s["requests"] >= 300 else 0))
+                      + min(s["errors"], 200) // 20 + (5 if s["requests"] >= 1000 else 2 if s["requests"] >= 300 else 0)
+                      + min(s.get("artifacts", 0), 10) * 2)
     ranked = dict(sorted(by_ip.items(), key=lambda kv: (-kv[1]["score"], kv[1]["last"]), reverse=False))
     if write:
         out.mkdir(parents=True, exist_ok=True)
@@ -361,7 +429,8 @@ def main(argv: list[str] | None = None) -> None:
         ranked = suspects(out)
         for ip, s in list(ranked.items())[: args.top]:
             print(f"{s['score']:4d}  {ip:40s} {str(s['country'] or '?'):3s} AS{s['asn'] or '?'} {str(s['asOrg'] or '')[:24]:24s} "
-                  f"events {s['events']} blocked {s['blocked']} requests {s['requests']} scanner_paths {s['scanner_paths']}  {s['last']}")
+                  f"events {s['events']} blocked {s['blocked']} requests {s['requests']} scanner_paths {s['scanner_paths']} "
+                  f"artifacts {s.get('artifacts', 0)}  {s['last']}")
         return
     token = "".join(os.environ.get("CLOUDFLARE_ANALYTICS_TOKEN", "").split())
     zone = os.environ.get("CLOUDFLARE_ZONE_ID", "").strip()
@@ -373,7 +442,7 @@ def main(argv: list[str] | None = None) -> None:
         result = pull(token, zone, day, out, [h.strip() for h in args.hosts.split(",") if h.strip()])
         for note in result.pop("skipped"):
             print(f"::notice::{note}")
-        new += result["events"] + result["requests"]
+        new += result["events"] + result["requests"] + result.get("artifacts", 0)
         print(json.dumps({"day": day.strftime("%Y-%m-%d"), **result}, ensure_ascii=False))
     path = os.environ.get("GITHUB_OUTPUT")
     if path:

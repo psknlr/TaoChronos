@@ -5,6 +5,9 @@
 //                               only the allowed models, output capped, limited per visitor per minute and per day and in
 //                               all per day
 //   GET  /v1/health             whether the service is configured, its model, whether records are collected, the limits
+//   GET  /v1/egress             how a call from where the caller is looks to the second model's edge; with Bearer
+//                               LOG_EXPORT_TOKEN, the owner's diagnostic: the same from each place the models are called
+//                               from, and whether the default model's host answers from each
 //   POST /v1/logs               one turn of a conversation, sent by the page only when the visitor agreed to it
 //   POST /v1/feedback           a visitor's rating of an answer (👍 / 👎), what they wrote of it, and — only when they chose
 //                               to attach it — the turn's question and answer; kept with the records
@@ -29,9 +32,11 @@
 // sentinel (security/sentinel.js) sees every request: a scanner path refuses its address for a day, a request that is
 // not the page's is scored and, flagged, kept whole for the owner; in enforce mode an address over the block score is
 // refused for a while.  An answer's tokens, as the upstream reports them, count against the visitor's day and the day.
+// A request the page of another site made a reader's browser send (security/sentinel.js, ledFrom) is answered 403
+// before any of that: it is none of the reader's doing, so nothing of it is counted or kept against the address.
 
 import { EVENTS, RECORDS, serveArchive } from "../../security/archive.js";
-import { assess, bodyShape, fingerprint, ipKey, isHoneypot, logLine, sentinelConfig, serveSecurity } from "../../security/sentinel.js";
+import { assess, bodyShape, fingerprint, ipKey, isHoneypot, ledFrom, logLine, sentinelConfig, serveSecurity } from "../../security/sentinel.js";
 import { place, serveStats, usageConfig, usageDay } from "../../security/usage.js";
 import { normalizeSponsor, sealSponsor, sponsorReady, unseal } from "./sponsors.js";
 import { day } from "./state.js";
@@ -105,7 +110,7 @@ export const DEFAULTS = {
   SPONSOR: "on",
   SPONSOR_PER_DAY: "5",                       // per visitor
   SPONSOR_KEEP: "1000",                       // kept at most: beyond, new ones are refused (none dropped)
-  ALLOWED_ORIGINS: "https://chat.impf.ai,http://chat.impf.ai,https://psknlr.github.io",
+  ALLOWED_ORIGINS: "https://chat.impf.ai,https://psknlr.github.io", // https only: the site serves no page over http
 };
 
 export function config(env = {}) {
@@ -189,7 +194,16 @@ export async function handle(request, env, deps) {
   const cors = allowed ? { "Access-Control-Allow-Origin": origin, "Access-Control-Expose-Headers": "Retry-After, X-Tao-Asks, X-Tao-Via", Vary: "Origin" } : { Vary: "Origin" };
   // the sentinel: the request as seen at the edge, and a note of it when it is worth one (security/sentinel.js)
   const scfg = sentinelConfig(env);
-  const s = scfg.mode === "off" ? null : { cfg: scfg, fp: fingerprint(request, deps.now()), origins: cfg.origins, deps };
+  const fp = fingerprint(request, deps.now());
+  const s = scfg.mode === "off" ? null : { cfg: scfg, fp, origins: cfg.origins, deps };
+  // a request the page of another site made a reader's browser send (an image, a form, a script's fetch pointed here):
+  // this host answers the project's own pages only — a rule of access, whether or not the sentinel records — and
+  // nothing of it is counted or kept against the reader's address
+  const led = ledFrom(fp, cfg.origins);
+  if (led) {
+    if (s) logLine("relay", fp, { route: "led", score: 0, reasons: ["led"], led }, null, 403, scfg);
+    return error(403, "此接口只供道乃久的网页调用", "cross_site", cors);
+  }
   if (url.protocol === "http:" && !LOCAL.has(url.hostname)) { // a conversation is never taken in clear
     if (s) note(s, "other", 403);
     return error(403, "请使用 https", "https_required", cors);
@@ -220,7 +234,7 @@ export async function handle(request, env, deps) {
     switch (`${request.method} ${url.pathname}`) {
       case "GET /v1/health": return health(env, cfg, cors, deps.now());
       case "GET /v1/stats": return await stats(request, env, url, cors, deps);
-      case "GET /v1/egress": return await egress(request, cfg, cors, deps);
+      case "GET /v1/egress": return await egress(request, env, cfg, cors, deps);
       case "POST /v1/chat/completions": return await chat(request, env, cfg, cors, allowed, deps, s);
       case "POST /v1/logs": return await submit(request, cfg, cors, allowed, deps, s);
       case "POST /v1/feedback": return await feedback(request, cfg, cors, allowed, deps, s);
@@ -1231,10 +1245,15 @@ function placed(places, deps) {
 const PROBE_MS = 8000;
 
 /** Where a call to the second model comes from, as OpenAI's own edge sees it (Cloudflare's trace on its host: the
- * location and country): from this Worker, which runs where the caller is, and from each place it may be called from
- * instead.  No secret, nothing of the caller beyond its Cloudflare location; within the ten-second gate. */
-async function egress(request, cfg, cors, deps) {
+ * location and country).  Anyone may ask how it looks from where they are (this Worker runs where the caller is: one
+ * request, no secret, nothing of the caller beyond its Cloudflare location) — someone in a region OpenAI refuses can
+ * see that it is so.  The rest is the owner's diagnostic, with the collector's token (Bearer LOG_EXPORT_TOKEN): from
+ * each place the models may be called from instead, and whether the default model's host answers from each — a dozen
+ * requests from several places, seconds waited for each, and where the service calls from: not something anyone may
+ * set off or read.  Within the ten-second gate. */
+async function egress(request, env, cfg, cors, deps) {
   if (await bursting(request, deps)) return error(429, "请求太频繁，请稍后再试", "rate_limited", { ...cors, "Retry-After": "10" });
+  const owner = await authorized(request, env);
   const trace = `${new URL(cfg.openai.upstream).origin}/cdn-cgi/trace`;
   const read = async (pending) => {
     try {
@@ -1247,7 +1266,9 @@ async function egress(request, cfg, cors, deps) {
     }
   };
   const init = { method: "GET", headers: {} };
-  const out = { worker: request.cf?.colo || null, direct: await read(deps.fetch(trace, init)), places: {} };
+  const out = { worker: request.cf?.colo || null, direct: await read(deps.fetch(trace, init)) };
+  if (!owner) return json(out, 200, cors);
+  out.places = {};
   for (const place of cfg.openai.locations) out.places[place] = deps.egress ? await read(deps.egress(place, trace, init)) : null;
   // and the default model's host from each place it is asked from (UPSTREAM_VIA): whether it answers anything at all
   // there, and how soon — no key is sent, and nothing of the host is told

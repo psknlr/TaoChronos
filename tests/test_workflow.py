@@ -113,6 +113,24 @@ def test_each_core_agent_acts_with_its_own_permissions(registry, harness, tmp_pa
     assert s10["status"] == "failed" and "lacks permission 'classics:read'" in s10["errors"][0]
 
 
+def test_a_run_reads_a_page_only_when_the_one_who_started_it_named_one(registry, harness, tmp_path):
+    """S02 reads a file.  The run's agents may when the caller of ``ask`` gave the page (the command line's ``--page``):
+    the grant is that run's, not the agent's.  The same plan run without it — a conversation starts runs so, and never
+    with a page — is refused the file by the scheduler."""
+    skills, agents = registry
+    page = tmp_path / "page.json"
+    page.write_text(json.dumps([{"text": "太阳病", "bbox": [400, 80, 40, 120]}, {"text": "发热", "bbox": [340, 80, 40, 80]}],
+                               ensure_ascii=False), encoding="utf-8")
+    assert "files:read" not in {p for a in agents.values() for p in a.permissions}
+    run = ask(harness, "此页的版面与文字", page=str(page), resume=False)
+    s02 = next(s for s in run["steps"] if s["skill"] == "S02")
+    assert s02["status"] == "ok" and s02["results"][0]["result"]["text"] == "太阳病发热"
+    plan = WorkflowCompiler(skills, harness).plan("此页的版面与文字", page=str(page))
+    ungranted = Executor(harness, skills, agents, tmp_path / "ws").run(plan, run_id="no-grant")
+    s02 = next(s for s in ungranted["steps"] if s["skill"] == "S02")
+    assert not s02["results"] and "lacks permission 'files:read' for the argument 'path'" in s02["errors"][0]
+
+
 def test_ask_and_skills_through_the_cli(capsys, tmp_path):
     assert main(["--data", str(tmp_path), "ask", "桂枝汤条文的版本异文", "--plan-only", "--profile", "full-discovery"]) == 0
     plan = json.loads(capsys.readouterr().out)

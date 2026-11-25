@@ -1266,11 +1266,13 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  "passes the presentism guardrail.",
                  obj({"text": S, "passage_id": S, "items": I, "chars": I}), _study_translate, family="study",
                  permission="classics:read", expensive=True, returns="the five layers; glosses and senses; a checked translation"),
-        ToolSpec("vision.layout", "版面理解 (T1): the layout and reading order of a page from an OCR engine's boxes (a file in "
-                 "ALTO, hOCR, PAGE, PaddleOCR or token JSON, or tokens {text, bbox}) — vertical columns right to left, "
-                 "双行小注 read right half first, 版心 and 书眉 set apart — as a PageGraph with the running text.",
+        ToolSpec("vision.layout", "版面理解 (T1): the layout and reading order of a page from an OCR engine's boxes (tokens "
+                 "{text, bbox}; for a caller that may read files of this machine, a file in ALTO, hOCR, PAGE, PaddleOCR or "
+                 "token JSON) — vertical columns right to left, 双行小注 read right half first, 版心 and 书眉 set apart — "
+                 "as a PageGraph with the running text.",
                  obj({"path": S, "format": S, "tokens": {"type": "array"}}), _vision_layout, family="philology",
-                 permission="classics:read", returns="blocks with kind, box and order; the running text; the apparatus"),
+                 permission="classics:read", returns="blocks with kind, box and order; the running text; the apparatus",
+                 guarded={"path": "files:read", "format": "files:read"}),  # a path is the operator's to name, never a model's
         ToolSpec("vision.compare", "OCR 核对 (T2): an OCR text against the transcription of the store it reads (found by probes, "
                  "or a passage given) or a reference: character error rate, after normalising variants too, the engine's "
                  "commonest substitutions and each difference in context.",

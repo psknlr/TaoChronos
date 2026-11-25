@@ -101,6 +101,32 @@ def test_runs_wait_their_turn_first_come_first_served_and_say_where_they_are():
     assert jobs.view("job_none") == {"id": "job_none", "state": "unknown", "status": "unknown"}
 
 
+def test_a_runs_id_is_its_only_key_and_only_so_many_runs_wait():
+    """Whoever names a run may follow, stop and read it, so its id is not a short handle: 128 random bits.  And the
+    queue has an end: a run asked for beyond it is refused at once, not queued behind hours of others."""
+    runs = Runs()
+    jobs = Jobs(runs, lock=threading.Lock(), limit=2)
+    first = jobs.start("stoppable")
+    until(lambda: state(jobs, first) == "running")
+    waiting = [jobs.start("w1"), jobs.start("w2")]
+    ids = [first, *waiting]
+    assert all(len(i) == len("job_") + 32 and int(i[4:], 16) >= 0 for i in ids) and len(set(ids)) == 3
+    assert J.QUEUE == 20 and Jobs(runs, lock=threading.Lock()).limit == 20
+    try:
+        jobs.start("w3")
+        raise AssertionError("a third waiting run was taken")
+    except J.QueueFull as exc:
+        assert "2 个研究在等候" in str(exc)
+    assert len(jobs.records) == 3  # the one refused left no record
+    jobs.cancel(waiting[0])  # a place freed is a place to take
+    third = jobs.start("w3")
+    assert [jobs.view(waiting[1])["position"], jobs.view(third)["position"]] == [1, 2]
+    for q in ("w2", "w3"):
+        runs.let(q)
+    jobs.cancel(first)
+    until(lambda: state(jobs, third) == "completed")
+
+
 def test_a_run_asked_for_directly_keeps_the_next_one_waiting_first_in_the_queue():
     runs, lock = Runs(), threading.Lock()
     jobs = Jobs(runs, lock=lock)

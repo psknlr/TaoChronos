@@ -1,9 +1,17 @@
 """``taochronos web build``: the web client as a static site (GitHub Pages).
 
-The site holds the client (``web/``), the in-browser runtime — the package (``runtime/taochronos.zip``) and the data it
-reads (``runtime/home.zip``: profiles, domain packs, the demonstration corpus, agents, skills, gold sets) — the provider
-list (``providers.json``) and, unless ``--pyodide cdn``, the Pyodide files the runtime runs on, so that the site
-depends on no other host.  Archives are deterministic: the same checkout builds the same bytes.
+The site holds the client (``web/``), the in-browser runtime — the package as the browser can import it
+(``runtime/taochronos.zip``) and the data it reads (``runtime/home.zip``: the browser's profiles, domain packs, the
+demonstration corpus, the catalogs, agents, skills) — the provider list (``providers.json``) and, unless ``--pyodide
+cdn``, the Pyodide files the runtime runs on, so that the site depends on no other host.  Archives are deterministic:
+the same checkout builds the same bytes.
+
+Whatever the site carries is public, so what it may carry is written down (``distribution-policy.yaml``, read by
+:mod:`taochronos.chat.distribution`; docs/adr/0034-what-the-site-ships.md): of the package, the modules the browser can
+import — never the server, the command line, the evaluation suites or the corpus pipeline; of the home, the files the
+policy names — never the gold sets, the conversation records or the logs.  The build starts the runtime on exactly
+those two archives, in a process that can import nothing else of the package, before it publishes them (what it
+reports then is ``runtime/boot.json``), and checks the finished site against the policy: a violation stops the build.
 
 The full corpus store is never part of the site.  The site carries the 要籍语料 (``corpus/web``: the texts of the
 ranked works, ``taochronos web pack``) as a store without its full-text index, xz-compressed (``runtime/corpus.sqlite.xz``);
@@ -19,66 +27,44 @@ from __future__ import annotations
 
 import functools
 import hashlib
-import io
 import json
 import lzma
 import os
 import re
 import shutil
+import subprocess
+import sys
 import tempfile
 import urllib.request
-import zipfile
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
 from .. import __version__
+from ..config import find_home
+from .distribution import PACKAGE, DistributionError, audit_site, home_files, load_policy, package_files, zipped
 from .providers import ORDER, web_providers
 
 PYODIDE_VERSION = "0.28.2"
 PYODIDE_CDN = f"https://cdn.jsdelivr.net/pyodide/v{PYODIDE_VERSION}/full/"
 PYODIDE_CORE = ["pyodide.mjs", "pyodide.asm.js", "pyodide.asm.wasm", "python_stdlib.zip", "pyodide-lock.json"]
 PYODIDE_PACKAGES = ["pyyaml", "sqlite3"]
-HOME_PARTS = ["architecture-policy.yaml", "profiles", "domains", "corpus/demo", "corpus/catalog", "corpus/modern", "agents",
-              "skills", "evals/gold"]
-HOME_SKIP = ("domains/classics/lexicon-harvested",)  # harvested from the full corpus, read only with it
 EPOCH = (1980, 1, 1, 0, 0, 0)
-PACKAGE = Path(__file__).resolve().parents[1]
 
 
-def _zip(entries: list[tuple[str, Path]]) -> bytes:
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-        for name, path in sorted(entries):
-            info = zipfile.ZipInfo(name, EPOCH)
-            info.compress_type = zipfile.ZIP_DEFLATED
-            info.external_attr = 0o644 << 16
-            zf.writestr(info, path.read_bytes())
-    return buf.getvalue()
+def package_zip(package: Path = PACKAGE, home: Path | None = None, policy: dict[str, Any] | None = None) -> bytes:
+    """The ``taochronos`` package as the browser can import it, to be unpacked into its site-packages: the modules the
+    policy of ``home`` (by default this checkout's) lets the site carry (:func:`distribution.browser_modules`)."""
+    return zipped(package_files(home or find_home(), policy, package), EPOCH)
 
 
-def package_zip(package: Path = PACKAGE) -> bytes:
-    """The ``taochronos`` package, to be unpacked into the browser's site-packages."""
-    entries = [(f"taochronos/{p.relative_to(package).as_posix()}", p) for p in package.rglob("*")
-               if p.is_file() and "__pycache__" not in p.parts and p.suffix not in (".pyc", ".pyo")]
-    return _zip(entries)
-
-
-def home_zip(home: Path, yaml_cache: Path | None = None) -> bytes:
-    """What the harness reads from its home, for the demonstration corpus; with ``yaml_cache``, that YAML parsed
-    (``.cache/yaml/…``: the browser points ``TAOCHRONOS_CACHE`` at ``.cache``)."""
-    entries: list[tuple[str, Path]] = []
+def home_zip(home: Path, yaml_cache: Path | None = None, policy: dict[str, Any] | None = None) -> bytes:
+    """What the harness reads from its home, as the policy names it (:func:`distribution.home_files`); with
+    ``yaml_cache``, that YAML parsed (``.cache/yaml/…``: the browser points ``TAOCHRONOS_CACHE`` at ``.cache``)."""
+    entries: list[tuple[str, Path | bytes]] = list(home_files(home, policy))
     if yaml_cache is not None:
         entries += [(f".cache/yaml/{p.relative_to(yaml_cache).as_posix()}", p) for p in sorted(yaml_cache.rglob("*.pickle"))]
-    for part in HOME_PARTS:
-        root = home / part
-        paths = [root] if root.is_file() else sorted(p for p in root.rglob("*") if p.is_file()) if root.is_dir() else []
-        for p in paths:
-            rel = p.relative_to(home).as_posix()
-            if "__pycache__" in p.parts or any(rel.startswith(s + "/") for s in HOME_SKIP):
-                continue
-            entries.append((rel, p))
-    return _zip(entries)
+    return zipped(entries, EPOCH)
 
 
 def manifest(pkg: bytes, home: bytes) -> dict[str, Any]:
@@ -128,33 +114,65 @@ def _corpus_store(home_dir: str, digest: str, preset: int) -> tuple[bytes, dict[
                   "profile": "web-canon"}
 
 
-def boot_file(home: Path, corpus: bytes | None, yaml_cache: Path | None = None) -> dict[str, Any]:
-    """What the browser runtime will report once loaded — its info and tool catalogs — computed here on the same code and
-    corpus, so that the page can put the first question to the model while the runtime loads.  With ``yaml_cache`` (an
-    empty directory), the YAML this reads is left there parsed, for the browser."""
-    before = os.environ.get("TAOCHRONOS_CACHE")
-    if yaml_cache is not None:
-        os.environ["TAOCHRONOS_CACHE"] = str(yaml_cache.parent)  # yamlio keeps its entries in <cache>/yaml
-    try:
-        return _boot(home, corpus)
-    finally:
-        if yaml_cache is not None:
-            if before is None:
-                os.environ.pop("TAOCHRONOS_CACHE", None)
-            else:
-                os.environ["TAOCHRONOS_CACHE"] = before
+# What the runtime says of itself, asked of the two archives as the browser will hold them: a process whose only
+# taochronos is the unpacked package and whose home is the unpacked home.  It fails if any module it imported came from
+# anywhere else — the archive lacks what the runtime needs, and a visitor's browser would have found out first.
+_BOOT = r"""
+import json, sys
+from pathlib import Path
+package, home, profile, data, out = sys.argv[1:6]
+import taochronos
+root = Path(package).resolve()
+if root not in Path(taochronos.__file__).resolve().parents:
+    raise SystemExit(f"the package imported is not the one the site would ship: {taochronos.__file__}")
+from taochronos.chat import ChatRuntime
+rt = ChatRuntime.create(profile, home=home, data_dir=data, kind="browser", ephemeral=True)
+report = {"info": rt.info(), "catalogs": {mode: rt.catalog(mode) for mode in ("core", "all")}}
+strays = sorted(name for name, mod in sys.modules.items() if (name == "taochronos" or name.startswith("taochronos."))
+                and getattr(mod, "__file__", None) and root not in Path(mod.__file__).resolve().parents)
+if strays:
+    raise SystemExit("imported from outside what the site would ship: " + ", ".join(strays))
+Path(out).write_text(json.dumps(report, ensure_ascii=False), encoding="utf-8")
+"""
 
 
-def _boot(home: Path, corpus: bytes | None) -> dict[str, Any]:
-    from . import ChatRuntime
+def boot_file(package: Path, home: Path, corpus: bytes | None, yaml_cache: Path | None = None) -> dict[str, Any]:
+    """What the browser runtime will report once loaded — its info and tool catalogs — asked of the archives' own
+    content: ``package`` (a directory holding the shipped ``taochronos``) and ``home`` (the shipped home) are all the
+    process started here has of TaoChronos.  The page can then put the first question to the model while its runtime
+    loads, and a site whose archives lack what the runtime needs is never built.  With ``yaml_cache`` (an empty
+    directory), the YAML this reads is left there parsed, for the browser.
 
+    :raises DistributionError: the runtime does not start on what the site would ship."""
     with tempfile.TemporaryDirectory() as tmp:
+        data, out = Path(tmp) / "data", Path(tmp) / "boot.json"
         if corpus is not None:
-            (Path(tmp) / "corpus").mkdir(parents=True)
-            (Path(tmp) / "corpus" / "tcm.sqlite").write_bytes(lzma.decompress(corpus))
-        rt = ChatRuntime.create("web-canon" if corpus is not None else "full-discovery", home=home, data_dir=tmp,
-                                kind="browser", ephemeral=True)
-        return {"info": rt.info(), "catalogs": {mode: rt.catalog(mode) for mode in ("core", "all")}}
+            (data / "corpus").mkdir(parents=True)
+            (data / "corpus" / "tcm.sqlite").write_bytes(lzma.decompress(corpus))
+        env = {k: v for k, v in os.environ.items() if not k.startswith("TAOCHRONOS_") or k == "TAOCHRONOS_SQLITE_JOURNAL"}
+        env |= {"PYTHONPATH": str(package), "TAOCHRONOS_HOME": str(home), "TAOCHRONOS_DATA": str(data), "PYTHONDONTWRITEBYTECODE": "1",
+                "PYTHONIOENCODING": "utf-8",
+                # yamlio keeps its entries in <cache>/yaml
+                "TAOCHRONOS_CACHE": str(yaml_cache.parent) if yaml_cache is not None else "off"}
+        profile = "web-canon" if corpus is not None else "full-discovery"
+        # from a directory of its own: `python -c` looks for modules in the working directory first
+        ran = subprocess.run([sys.executable, "-c", _BOOT, str(package), str(home), profile, str(data), str(out)],  # noqa: S603
+                             cwd=tmp, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900)
+        if ran.returncode != 0 or not out.is_file():
+            why = (ran.stderr or ran.stdout or "").strip().splitlines()
+            raise DistributionError("the runtime does not start on what the site would ship (distribution-policy.yaml: a module "
+                                    "the browser imports, or a file it reads, is not among what is published): "
+                                    + (" | ".join(why[-4:]) or f"exit {ran.returncode}"))
+        return json.loads(out.read_text(encoding="utf-8"))
+
+
+def _unpack(entries: Iterable[tuple[str, Path | bytes]], dest: Path) -> Path:
+    """The entries of an archive as files under ``dest``: what the browser will have unpacked."""
+    for name, src in entries:
+        target = dest / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(src if isinstance(src, bytes) else src.read_bytes())
+    return dest
 
 
 def _download(url: str) -> bytes:
@@ -222,7 +240,15 @@ def build_site(out: Path, *, home: Path, web: Path | None = None, pyodide: str =
     """Assemble the site in ``out``: the client, the runtime, providers.json (without the presets named in ``unlist``),
     (``pyodide="self"``) Pyodide, the texts' credits (attribution.html, a short notice of each licensed source: the
     repository may be private, and the licences' credits travel with the site), robots.txt and sitemap.xml for the site's address ``site`` and, with ``relay``, site.json naming
-    the 道乃久默认服务 relay (relay/) the page may use without a key."""
+    the 道乃久默认服务 relay (relay/) the page may use without a key.
+
+    The runtime's two archives hold what ``distribution-policy.yaml`` lets the site carry; the runtime is started on
+    them before they are written, and the finished site is checked against the policy.
+
+    :raises DistributionError: the policy is missing or broken by what would ship, the runtime does not start on the
+        archives, or the finished site holds what the policy does not allow (it is left in ``out`` to be looked at;
+        nothing should publish it)."""
+    policy = load_policy(home)
     search = search_files(site)
     relay = (relay or "").strip().rstrip("/")
     if relay.lower() in ("", "none", "off"):
@@ -244,8 +270,10 @@ def build_site(out: Path, *, home: Path, web: Path | None = None, pyodide: str =
     with tempfile.TemporaryDirectory() as tmp:
         yaml_cache = Path(tmp) / "yaml"  # what booting the runtime parses, parsed once here
         yaml_cache.mkdir()
-        boot = boot_file(home, corpus[0] if corpus is not None else None, yaml_cache)
-        pkg, data = package_zip(), home_zip(home, yaml_cache)
+        shipped_package = _unpack(package_files(home, policy), Path(tmp) / "package")
+        shipped_home = _unpack(home_files(home, policy), Path(tmp) / "home")
+        boot = boot_file(shipped_package, shipped_home, corpus[0] if corpus is not None else None, yaml_cache)
+        pkg, data = package_zip(home=home, policy=policy), home_zip(home, yaml_cache, policy)
     (runtime / "taochronos.zip").write_bytes(pkg)
     (runtime / "home.zip").write_bytes(data)
     info = manifest(pkg, data)
@@ -265,4 +293,8 @@ def build_site(out: Path, *, home: Path, web: Path | None = None, pyodide: str =
     for name, text in search.items():
         (out / name).write_text(text, encoding="utf-8")
     (out / ".nojekyll").write_text("", encoding="utf-8")
+    problems = audit_site(out, home, policy, web=web)
+    if problems:
+        raise DistributionError(f"the site built in {out} breaks distribution-policy.yaml and must not be published: "
+                                + "; ".join(problems[:12]) + (f"; and {len(problems) - 12} more" if len(problems) > 12 else ""))
     return {"out": str(out), **info, "relay": relay or None}

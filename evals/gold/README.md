@@ -1,5 +1,21 @@
 # TaoChronos-Eval gold sets
 
+> **Confidential from 2026-11-25, and public before it.**  Until that day the site's `runtime/home.zip` carried this
+> whole directory to every visitor (and the mirror on GitHub Pages still serves old copies of it to whoever kept one):
+> every file here on that date — the splits called held out among them (`ner_heldout.yaml`, the held-out half of
+> `aliases.yaml`, the lost work of `fragments/`) — **is to be taken as known to any system evaluated on it**.  Their
+> scores stay what the caveat below says they are: regression tests.
+>
+> Since then `evals/` is of the class that goes into no built artifact — not the site's archives, not the server's
+> image ([`distribution-policy.yaml`](../../distribution-policy.yaml), [ADR 0034](../../docs/adr/0034-what-the-site-ships.md));
+> a build that would carry any of it fails.  A holdout worth the name has to be annotated anew, by someone other than
+> the system's authors, and never committed anywhere the site is built from.
+>
+> **The mark.**  Every YAML file under `evals/` begins with a comment naming a canary GUID (the one in the policy's
+> `site.canaries`).  Keep the line when a file is edited and put it first in a new one (a test checks).  It is how a
+> copy under another name is refused by the site's audit, and how a copy met elsewhere — on the web, in a model's
+> output — is known for evaluation data.  It is a comment: nothing that parses the file sees it.
+
 These gold sets are **author-constructed for the demo corpus** (`corpus/demo`, itself an unverified
 transcription for method demonstration). They exercise the evaluation *machinery* and document the
 intended behaviour; they are not expert-annotated benchmarks and their small size makes the resulting

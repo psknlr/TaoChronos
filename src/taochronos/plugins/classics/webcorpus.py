@@ -37,8 +37,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-from .ingest import load_external_works
 from .repairs import repair_rows
+from .sources import JC_SOURCE, load_external_works
 from .store import CorpusStore, grams
 from .study.canon import OPEN_SOURCES
 
@@ -312,8 +312,6 @@ def site_record(data: dict[str, Any], source: str) -> dict[str, Any]:
     CC0 — a record written by an older ingest may still say "local research only"."""
     src = dict(data.get("source") or {})
     if source == "jicheng":
-        from .ingest import JC_SOURCE
-
         src["license"] = JC_SOURCE["license"]
     elif source not in OPEN_SOURCES:
         src.update(license=WEB_SOURCES[source], published=PUBLISHED)

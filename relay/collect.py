@@ -195,13 +195,16 @@ def check(relay: str, origin: str, wait: float = 240) -> dict:
                 out["second"][m] = "failed"
                 failed.append(str(err))
     # whether the model service's host answers from each place the relay asks it from, and how soon (GET /v1/egress,
-    # docs/adr/0033): for whoever reads the log — the deployment stands whatever this says, or if it says nothing
-    try:
-        status, seen = _request(f"{relay}/v1/egress", origin=origin, timeout=45)
-        if status == 200 and isinstance(seen, dict) and isinstance(seen.get("model"), dict):
-            out["places"] = {"from": seen.get("worker"), **seen["model"]}
-    except (urllib.error.URLError, TimeoutError, OSError):
-        pass
+    # docs/adr/0033): for whoever reads the log — the deployment stands whatever this says, or if it says nothing.  The
+    # relay answers it to the collector's token only (it is the owner's diagnostic): asked when this run has the token
+    token = "".join(os.environ.get("LOG_EXPORT_TOKEN", "").split())
+    if len(token) >= 16:
+        try:
+            status, seen = _request(f"{relay}/v1/egress", token=token, timeout=45)
+            if status == 200 and isinstance(seen, dict) and isinstance(seen.get("model"), dict):
+                out["places"] = {"from": seen.get("worker"), **seen["model"]}
+        except (urllib.error.URLError, TimeoutError, OSError):
+            pass
     if failed:
         print(json.dumps(out, ensure_ascii=False))  # what did pass, in the log, before the failure
         raise SystemExit("; ".join(failed))

@@ -267,6 +267,34 @@ test("a visitor's day of the API has a ceiling: reads and calls apart, wide, by 
   assert.equal(down.seen.corpus.length, 1); // only the read reached the corpus
 }));
 
+test("research runs started have a day's ceiling of their own, and their ids go into no log", () => quiet(async () => {
+  // the corpus runs one research at a time and holds only so many waiting: an address is given so many a day, counted
+  // apart from its calls, and told so in words the page shows — the corpus itself goes on answering it
+  const { call, seen, watch, settle } = site({ watch: true, env: { API_RESEARCH_PER_DAY: "2", API_CALLS_PER_DAY: "2", LOG_EXPORT_TOKEN: EXPORT } });
+  const post = (body = "{}") => ({ method: "POST", body, headers: { ...BROWSER, Origin: PAGE, "Content-Type": "application/json" } });
+  for (let i = 0; i < 2; i++) assert.equal((await call(`${PAGE}/api/research`, post('{"question":"消渴"}'))).status, 200);
+  const over = await call(`${PAGE}/api/research`, post('{"question":"消渴"}'));
+  assert.equal(over.status, 429);
+  assert.deepEqual(await over.json(), { error: "今天从这个地址发起的研究已达上限（每天 2 次），明天再来", rate_limited: true, research_daily: true });
+  assert.equal(over.headers.get("X-TC-Corpus"), null); // not a refusal of the corpus: the page does not leave it
+  assert.equal(Number(over.headers.get("Retry-After")), 16 * 3600);
+  assert.equal((await call(`${PAGE}/api/call`, post())).status, 200); // calls are counted apart: the day's two are still there
+  const job = "job_0123456789abcdef0123456789abcdef";
+  assert.equal((await call(`${PAGE}/api/research/${job}`, { headers: BROWSER })).status, 200); // following a run is a read
+  assert.equal((await call(`${PAGE}/api/research/${job}/cancel`, post())).status, 200); // stopping one is a call, not a start
+  assert.equal((await (await call(`${PAGE}/api/call`, post())).json()).daily, true); // and now the calls are spent
+  assert.equal(seen.corpus.length, 5);
+  assert.equal(DEFAULTS.API_RESEARCH_PER_DAY, "100");
+  // a run's id is the only key to it: what the sentinel keeps of a request names none (a scanner asking after a run is
+  // flagged, its event kept whole — but for the id)
+  const script = { "User-Agent": "Mozilla/5.0 (compatible; Nuclei - Open-source project)", "CF-Connecting-IP": "198.51.100.61" };
+  await call(`${PAGE}/api/research/${job}`, { headers: script });
+  await call(`${PAGE}/api/session/ses_0123456789abcdef0123456789abcdef?what=report`, { headers: script });
+  await settle();
+  const kept = JSON.stringify([watch.records().items, watch.summary(T0)]);
+  assert.ok(kept.includes("/api/research/…") && !kept.includes("0123456789abcdef"), kept);
+}));
+
 test("the store is uploaded part by part, only with the token, with the digest it is checked against later", async () => {
   const part = Buffer.from("xz-bytes-of-the-store");
   const sha = createHash("sha256").update(part).digest("hex");
@@ -356,6 +384,50 @@ test("a scanner path refuses its address the API for a day; the page's own calls
   // a browser's reports: taken within the rate limit
   const limited = site({ watch: true, limit: async () => false });
   assert.equal((await limited.call(`${PAGE}/api/security/csp`, { method: "POST", headers: BROWSER, body: "{}" })).status, 429);
+}));
+
+test("what another site's page makes a reader's browser send: the API refuses it, a miss is not noted, a page is served", () => quiet(async () => {
+  const { call, seen, settle, watch, counts } = site({ watch: true, env: { SENTINEL: "enforce" }, cf: { country: "CN", regionCode: "GD", asn: 4134, httpProtocol: "HTTP/2" } });
+  // an image on a forum's page, pointed here: the reader's browser asks, and says who made it ask
+  const planted = (path, headers = {}, init = {}) => call(`${PAGE}${path}`, { ...init, headers: { ...BROWSER, Accept: "image/avif,image/webp,*/*", "Sec-Fetch-Site": "cross-site",
+    "Sec-Fetch-Mode": "no-cors", "Sec-Fetch-Dest": "image", Referer: "https://forum.example/t/42", ...headers } });
+  assert.equal((await planted("/backup.sql")).status, 404); // a scanner's path
+  for (let i = 0; i < 30; i++) assert.equal((await planted(`/missing/pixel-${i}.png`)).status, 404); // thirty that are not there
+  assert.equal((await planted("/api/passage?passage_id=shanghanlun.c013")).status, 403); // a read: the reader's day is not another site's to spend
+  assert.equal((await planted("/api/call", { Origin: "https://forum.example", "Content-Type": "text/plain" }, { method: "POST", body: "{}" })).status, 403);
+  assert.equal((await planted("/api/security/csp", { Origin: "https://forum.example", "Content-Type": "text/plain" }, { method: "POST",
+    body: JSON.stringify({ "csp-report": { "violated-directive": "script-src", "blocked-uri": "https://x.example/a.js" } }) })).status, 403);
+  assert.equal((await planted("/", {}, { method: "POST", body: "x" })).status, 405);
+  await settle();
+  assert.equal(seen.corpus.length, 0);
+  const none = watch.summary(T0);
+  assert.deepEqual([none.visitors, none.events, none.blocked], [0, 0, []]); // not a row, not an event, not a refusal
+  // the reader's own calls afterwards: served, nothing against the address
+  assert.equal((await call(`${PAGE}/api/info`, { headers: BROWSER })).status, 200);
+  await settle();
+  const [reader] = watch.summary(T0).top;
+  assert.deepEqual([reader.n, reader.score, reader.flagged, reader.ip], [1, 0, 0, undefined]);
+  // a link followed from another site to a page of ours is a visit; the page as that site's frame or image is served
+  // (it is public) and is not one
+  const link = { ...BROWSER, "Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Dest": "document", Referer: "https://www.google.com/", "CF-Connecting-IP": "203.0.113.21" };
+  assert.equal((await call(`${PAGE}/`, { headers: link })).status, 200);
+  assert.equal((await call(`${PAGE}/`, { headers: { ...link, "Sec-Fetch-Dest": "iframe", "CF-Connecting-IP": "203.0.113.22" } })).status, 200);
+  assert.equal((await planted("/", { "CF-Connecting-IP": "203.0.113.23" })).status, 200);
+  await settle();
+  assert.deepEqual(counts.stats(1, "2026-10-05").today, { view: 1, visitor: 1, question: 0, call: 0, asker: 0 });
+  // a browser too old to say it is read by where it comes from
+  const OLD = "Mozilla/5.0 (Linux; U; Android 9; zh-cn; MI 6 Build/PKQ1) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/66.0.3359.126 MQQBrowser/10.1 Mobile Safari/537.36";
+  assert.equal((await call(`${PAGE}/api/info`, { headers: { "User-Agent": OLD, "Accept-Language": "zh-CN", Referer: "https://forum.example/t/42", "CF-Connecting-IP": "203.0.113.31" } })).status, 403);
+  assert.equal((await call(`${PAGE}/api/info`, { headers: { "User-Agent": OLD, "Accept-Language": "zh-CN", Referer: `${PAGE}/`, "CF-Connecting-IP": "203.0.113.31" } })).status, 200);
+  // a scanner's path asked for in the visitor's own name refuses the address as before
+  assert.equal((await call(`${PAGE}/backup.sql`, { headers: { "User-Agent": "Go-http-client/1.1", "CF-Connecting-IP": "45.138.12.10" } })).status, 404);
+  await settle();
+  assert.equal((await call(`${PAGE}/api/info`, { headers: { ...BROWSER, "CF-Connecting-IP": "45.138.12.10" } })).status, 403);
+  // without the sentinel the API's refusal stands: a rule of access, not a note
+  const bare = site();
+  assert.equal((await bare.call(`${PAGE}/api/info`, { headers: { ...BROWSER, "Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "no-cors", "Sec-Fetch-Dest": "image" } })).status, 403);
+  assert.equal(bare.seen.corpus.length, 0);
+  assert.equal((await bare.call(`${PAGE}/api/info`, { headers: BROWSER })).status, 200);
 }));
 
 test("a scanner path within a quiet reader's minute: the address's next read waits for the object, and is refused", () => quiet(async () => {

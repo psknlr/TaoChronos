@@ -794,6 +794,7 @@ harness builds in 0.64 s instead of 9.2 s, and a full-corpus research run takes 
 
 ```
 architecture-policy.yaml   layering, kernel neutrality, SDK isolation, agent rules
+distribution-policy.yaml   what may be published: a class for every path (public / restricted / confidential); the site ships only what it names, and the build checks
 web/                       the web chat client (plain ES modules, no build step): conversations, streaming, quotation checks,
                            evidence · research · tool console, settings; js/worker.js, the built-in runtime (Pyodide in a Web Worker)
 agents/                    16 AgentSpecs (YAML); agents/core/: the four V2 core agents

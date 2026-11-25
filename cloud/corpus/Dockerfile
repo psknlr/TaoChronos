@@ -22,7 +22,8 @@ COPY corpus/demo ./corpus/demo
 COPY corpus/modern ./corpus/modern
 COPY agents ./agents
 COPY skills ./skills
-COPY evals/gold ./evals/gold
+# nothing of evals/ or data/: the server reads neither, and what distribution-policy.yaml classes as confidential goes
+# into no image (tests/test_distribution.py reads this file)
 
 # unpack and check the store, index it with this code's normalizer, warm the tools' caches (python -m taochronos.chat.cloud)
 FROM base AS store

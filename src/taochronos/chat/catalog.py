@@ -151,10 +151,23 @@ def offered(registry: Any, *, code_mode: bool = False) -> list[Any]:
     return [s for s in registry.list() if s.name not in NEVER and (code_mode or s.name != CODE_MODE)]
 
 
+def chat_schema(spec: Any) -> dict[str, Any]:
+    """A mesh tool's parameters as a chat model has them: without the arguments that need a further permission
+    (``ToolSpec.guarded`` — a path on the machine the runtime is on).  A chat model holds none of those permissions,
+    whoever runs the runtime, so it is not offered what the scheduler would refuse; a call that names one all the same
+    is answered like any call with a parameter the tool does not take."""
+    schema = clean_schema(spec.input_schema)
+    for name in getattr(spec, "guarded", None) or ():
+        schema["properties"].pop(name, None)
+    if "required" in schema:
+        schema["required"] = [k for k in schema["required"] if k in schema["properties"]]
+    return schema
+
+
 def tool_entry(spec: Any) -> dict[str, Any]:
     desc = spec.description + (f" Returns: {spec.returns}" if spec.returns else "")
     return {"name": llm_name(spec.name), "tool": spec.name, "family": spec.family, "description": desc,
-            "parameters": clean_schema(spec.input_schema), "expensive": bool(spec.expensive)}
+            "parameters": chat_schema(spec), "expensive": bool(spec.expensive)}
 
 
 def llm_tools(registry: Any, *, mode: str = "core", code_mode: bool = False) -> list[dict[str, Any]]:

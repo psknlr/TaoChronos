@@ -41,6 +41,32 @@ def test_the_catalog_offers_the_core_tools_and_reaches_every_other_through_meta_
     assert clean_schema({"type": "object", "properties": {"x": {"type": "array"}}})["properties"]["x"]["items"]
 
 
+def test_a_model_cannot_make_the_runtime_read_a_file_of_its_machine(rt, tmp_path):
+    """The arguments of a tool are a model's — on the hosted runtime, anyone's who posts to it.  An argument that names
+    a path (``ToolSpec.guarded``) is not offered to a chat model, is refused like any parameter the tool does not take
+    when named all the same, and would be refused by the scheduler if it got that far: the chat's actor holds no
+    permission a guarded argument needs."""
+    guarded = {s.name: s.guarded for s in rt.h.tools.list() if s.guarded}
+    assert guarded == {"vision.layout": {"path": "files:read", "format": "files:read"}}
+    assert not {p for g in guarded.values() for p in g.values()} & rt.actor.permissions
+    secret = tmp_path / "tokens.json"
+    secret.write_text(json.dumps([{"text": "不可读", "bbox": [0, 0, 40, 120]}], ensure_ascii=False), encoding="utf-8")
+    for mode in ("core", "all"):
+        for t in rt.catalog(mode)["tools"]:
+            if t["tool"] == "vision.layout":
+                assert set(t["parameters"]["properties"]) == {"tokens"}
+    shown = rt.call("taochronos_catalog", {"query": "vision.layout"})["result"]["matched"][0]
+    assert shown["tool"] == "vision.layout" and set(shown["parameters"]["properties"]) == {"tokens"}
+    for name, args in [("vision.layout", {"path": str(secret)}), ("vision__layout", {"path": "/etc/passwd"}),
+                       ("taochronos_call", {"tool": "vision.layout", "arguments": {"path": str(secret), "format": "tokens"}})]:
+        out = rt.call(name, args)
+        assert not out["ok"] and "unknown parameter 'path'" in out["error"] and "不可读" not in json.dumps(out, ensure_ascii=False)
+    from taochronos.kernel import ToolCall
+    direct = rt.h.scheduler.execute(ToolCall("vision.layout", {"path": str(secret)}), actor=rt.actor)
+    assert not direct.ok and "files:read" in direct.error
+    assert rt.call("vision.layout", {"tokens": [{"text": "可读", "bbox": [0, 0, 40, 80]}]})["result"]["text"] == "可读"
+
+
 def test_tools_are_called_by_either_name_and_failures_are_results_not_crashes(rt):
     by_model_name = rt.call("classics__search", {"query": "桂枝汤", "k": 3})
     assert by_model_name["ok"] and by_model_name["tool"] == "classics.search"
@@ -254,6 +280,7 @@ def test_a_research_run_returns_its_hypotheses_with_evidence_and_can_be_followed
     assert any(h["supporting"] for h in res["hypotheses"])
     assert res["metrics"]["agents_spawned"]
     assert "假说" in out["summary"]
+    assert re.fullmatch(r"ses_[0-9a-f]{32}", res["session_id"])  # the only key to it where a server's sessions are shared
     h1 = rt.call("taochronos_session", {"session_id": res["session_id"], "what": "hypothesis", "hypothesis": "H1"})
     assert h1["ok"] and h1["result"]["id"] == res["hypotheses"][0]["id"]
     assert rt.call("taochronos_session", {"session_id": res["session_id"], "what": "report", "section": "替代解释"})["result"]["matched"]
@@ -317,9 +344,14 @@ def test_the_server_admits_only_this_machine_and_the_published_client(server):
                                                              "Access-Control-Request-Private-Network": "true"})
     assert resp.status == 204 and resp.getheader("Access-Control-Allow-Origin") == "https://psknlr.github.io"
     assert resp.getheader("Access-Control-Allow-Private-Network") == "true"
-    for origin in ("https://chat.impf.ai", "http://chat.impf.ai"):  # the published client under its own domain
-        resp, _ = request(server, "OPTIONS", "/api/call", headers={"Origin": origin, "Access-Control-Request-Method": "POST"})
-        assert resp.status == 204 and resp.getheader("Access-Control-Allow-Origin") == origin
+    resp, _ = request(server, "OPTIONS", "/api/call", headers={"Origin": "https://chat.impf.ai", "Access-Control-Request-Method": "POST"})
+    assert resp.status == 204 and resp.getheader("Access-Control-Allow-Origin") == "https://chat.impf.ai"  # the published client
+    # its address over plain http is not the client: the site redirects it, so a page there is one somebody on the
+    # network put in its place — and this machine's tools, data and model keys are not for it
+    resp, _ = request(server, "OPTIONS", "/api/call", headers={"Origin": "http://chat.impf.ai", "Access-Control-Request-Method": "POST"})
+    assert resp.status == 403 and resp.getheader("Access-Control-Allow-Origin") is None
+    resp, _ = request(server, "POST", "/api/call", {"name": "classics.search", "arguments": {"query": "x"}}, {"Origin": "http://chat.impf.ai"})
+    assert resp.status == 403
     resp, _ = request(server, "POST", "/api/call", {"name": "classics.search", "arguments": {"query": "x"}},
                       {"Origin": "https://evil.example"})
     assert resp.status == 403
@@ -391,6 +423,16 @@ def test_research_runs_in_the_background_and_is_polled(server):
     # its state, how long it waited and ran, what its session did
     assert [st["state"], st["position"], st["heartbeat_s"], st["session"]] == ["completed", None, None, st["outcome"]["result"]["session_id"]]
     assert st["queued_s"] >= 0 and st["run_s"] > 0 and st["progress"]["events"] > 0 and st["progress"]["hypotheses"]
+    # the run's id and its session's are the only keys to them on a server every visitor shares: 128 random bits each
+    assert re.fullmatch(r"job_[0-9a-f]{32}", job) and re.fullmatch(r"ses_[0-9a-f]{32}", st["session"])
+    # and only so many runs wait: one asked for beyond that is refused at once, with words the page can show
+    jobs = server.runtime.jobs
+    limit, jobs.limit = jobs.limit, 0
+    try:
+        resp, raw = request(server, "POST", "/api/research", {"question": "消渴", "max_rounds": 1})
+    finally:
+        jobs.limit = limit
+    assert resp.status == 429 and json.loads(raw)["queue_full"] is True and "研究队列已满" in json.loads(raw)["error"]
 
 
 def test_a_research_run_on_the_server_reads_its_arguments_as_a_call_does(rt, server):
