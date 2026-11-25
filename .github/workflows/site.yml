@@ -23,9 +23,9 @@ on:
       - "corpus/**"
       - "agents/**"
       - "skills/**"
-      - "evals/gold/**"
       - "security/**"
       - "architecture-policy.yaml"
+      - "distribution-policy.yaml"
       - "pyproject.toml"
       - "requirements/build.txt"
       - "requirements/runtime.txt"
@@ -134,7 +134,7 @@ jobs:
           # the version: the store and every tracked file the image is built from
           store=$(python3 -c 'import json; print(json.load(open("cloud/store.json"))["sha256"])')
           tree=$(git ls-tree -r HEAD -- pyproject.toml requirements/build.txt requirements/runtime.txt README.md src \
-                   architecture-policy.yaml profiles domains corpus/catalog corpus/demo corpus/modern agents skills evals/gold \
+                   architecture-policy.yaml profiles domains corpus/catalog corpus/demo corpus/modern agents skills \
                    cloud/corpus cloud/store.json .dockerignore | sha256sum | cut -c1-12)
           version="${store:0:12}-${tree}"
           echo "version=$version" >> "$GITHUB_OUTPUT"

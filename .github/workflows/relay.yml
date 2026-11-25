@@ -104,4 +104,6 @@ jobs:
           elif [ -n "$sponsor" ]; then echo "::warning::SPONSOR_SECRET is shorter than 32 characters: not set, sponsorship stays off (relay/SETUP.md)"; fi
       - name: Check it answers, and that MiniMax takes its key (one tiny call)
         if: steps.secrets.outputs.ready == '1'
+        env:
+          LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}  # the relay tells where it calls the models from to this token only
         run: python3 relay/collect.py check --relay "$RELAY_URL"
